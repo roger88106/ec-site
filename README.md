@@ -27,6 +27,7 @@
 | [modules/](docs/modules) | モジュールごとの現在の設計 |
 | [specs/](docs/specs) | 機能ごとの spec（何を・なぜ）、plan（どう作るか）、tasks（作業の手順） |
 | [api/openapi/](api/openapi) | API 契約の正本（`admin.yaml`：管理画面、`store.yaml`：店舗） |
+| [AGENTS.md](AGENTS.md) | AI エージェントが作業するときの手順（SDD + TDD の進め方、Git） |
 
 ## 進め方（SDD）
 

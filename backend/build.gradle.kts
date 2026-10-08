@@ -113,6 +113,9 @@ dependencies {
 // -----------------------------------------------------------------------------
 tasks.named<Test>("test") {
     useJUnitPlatform()
+    // 契約テスト（AdminApiPermissionContractTest）が読む OpenAPI の置き場所
+    systemProperty("openapi.dir", file("../api/openapi").absolutePath)
+    inputs.dir("../api/openapi")
 }
 
 val integrationTest = tasks.register<Test>("integrationTest") {

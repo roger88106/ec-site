@@ -1,6 +1,6 @@
 # Plan 001：商品カタログと在庫
 
-ステータス：承認済み（OpenAPI 初版のレビュー待ち）　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 本 spec で追加するモジュールの設計は、各モジュールの設計書に書く。本書には、モジュールをまたぐ決定と、作り方の段取りだけを書く。
 
@@ -118,7 +118,7 @@ URL には内部 ID を使い、品番を使わない（AC-66）。
 
 ## 6. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-foundation.md)、[01](tasks/01-tax.md)、[02](tasks/02-category.md)、[03](tasks/03-product.md)、[04](tasks/04-inventory.md)、[05](tasks/05-admin-product-list.md)、[06](tasks/06-storefront.md)、[07](tasks/07-admin-ui.md)、[08](tasks/08-store-ui.md)、[09](tasks/09-p2.md)）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|

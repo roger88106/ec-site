@@ -176,7 +176,8 @@ ec-site/
 将来の連携を「書き換え」ではなく「追加」で済ませるため、今から次を守る：
 
 1. domain と application は Spring Security の型に依存しない。「操作者は誰か」が必要な場合は、引数（例：`actorId`）で渡す。
-2. `/api/admin/**` の各 endpoint について、必要な権限を spec に明記する。命名は MyIAM 流の `resource:action`（例：`product:write`、`inventory:write`）。後から `@PreAuthorize("hasAuthority('...')")` を機械的に付けられるようにする。
+2. `/api/admin/**` の各 endpoint について、必要な権限を spec に明記する。命名は MyIAM 流の `resource:action`（例：`product:write`、`inventory:write`）。後から認可チェックを機械的に付けられるようにする。
+   - ただし、権限の**粒度**と**受け渡し方**（token に載せるか、サーバー側で role から解決するか）はここでは決めない。EC は機能が多く、すべての権限を token に載せると token（HTTP ヘッダー）が肥大化するおそれがあるため、MyIAM 連携時に見直す。spec に書く権限名は「必要な操作の記録」として扱い、最終的な権限モデルではない。【確定：連携時に随時見直す】
 3. C 側と B 側のパスプレフィックス（4.3）が、将来の認可ルールの境界線になる。
 4. 将来は、EC が Resource Server として MyIAM（JWT）に接続する想定。これは方向性であり、MVP の範囲ではない。
 

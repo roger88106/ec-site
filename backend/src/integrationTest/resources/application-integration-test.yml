@@ -5,6 +5,9 @@
 # ============================================================================
 
 spring:
+  messages:
+    # テスト用のメッセージを追加する（アプリのメッセージはそのまま使う）
+    basename: messages,messages-test
   flyway:
     # Testcontainers の PostgreSQL にマイグレーションを適用する（constitution 7.2）
     enabled: true

@@ -81,6 +81,8 @@ dependencies {
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.validation)
+    // 分散トレーシング（Brave + Zipkin）。エラーレスポンスの traceId にも使う
+    implementation(libs.spring.boot.starter.zipkin)
 
     // --- API（OpenAPI の生成コード） ---
     implementation(libs.jackson.databind.nullable)
@@ -103,6 +105,7 @@ dependencies {
     // --- テスト：統合 ---
     "integrationTestImplementation"(libs.spring.boot.testcontainers)
     "integrationTestImplementation"(libs.testcontainers.postgresql)
+    "integrationTestImplementation"(libs.spring.boot.starter.webmvc.test)
 }
 
 // -----------------------------------------------------------------------------

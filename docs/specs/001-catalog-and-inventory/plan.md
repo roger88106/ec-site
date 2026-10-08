@@ -6,19 +6,21 @@
 
 | モジュール | 設計書 | 主な担当 |
 |------------|--------|----------|
-| `tax` | [tax.md](../../modules/tax.md) | US-1 |
-| `catalog` | [catalog.md](../../modules/catalog.md) | US-2〜7、9、11、13 |
-| `inventory` | [inventory.md](../../modules/inventory.md) | US-8 |
-| `storefront` | [storefront.md](../../modules/storefront.md) | US-10〜12 |
+| 税 | [tax.md](../../modules/tax.md) | US-1 |
+| 商品カタログ | [catalog.md](../../modules/catalog.md) | US-2〜7、9、11、13 |
+| 在庫 | [inventory.md](../../modules/inventory.md) | US-8 |
+| 店舗 | [storefront.md](../../modules/storefront.md) | US-10〜12 |
+
+用語と識別子の対応は[用語集](../../glossary.md)。
 
 ## 1. モジュール間の関係
 
 ```mermaid
 flowchart LR
-    storefront["<b>storefront</b><br/>C 側 API（組み合わせ）"]
-    catalog["<b>catalog</b>"]
-    inventory["<b>inventory</b>"]
-    tax["<b>tax</b>"]
+    storefront["<b>店舗</b><br/>C 側 API（組み合わせ）"]
+    catalog["<b>商品カタログ</b>"]
+    inventory["<b>在庫</b>"]
+    tax["<b>税</b>"]
 
     storefront -- "api" --> catalog
     storefront -- "api" --> inventory
@@ -28,12 +30,12 @@ flowchart LR
 
 矢印の向きが依存の向き（実線＝API、点線＝イベント購読）。
 
-- `tax` を `catalog` から分けるのは、将来 `order` も税計算に使うため。
-- `inventory` は `catalog` のイベントでバリアントの登録・削除を知る。そのため `catalog` は `inventory` を呼べず、C 側での組み合わせは `storefront` が行う。
-- B 側の在庫数合計（AC-49）は、管理画面が商品一覧 API と在庫集計 API を呼んで組み合わせる。
-- 税込価格での並べ替え（AC-53、54）のため、`catalog` は `tax` から税率の一覧を受け取り、SQL で税込価格を計算する（[catalog.md](../../modules/catalog.md)）。
+- 税を商品カタログから分けるのは、将来の注文モジュールも税計算に使うため。
+- 在庫は、商品カタログのイベントでバリアントの登録・削除を知る。そのため商品カタログは在庫を呼べず（依存が循環する）、C 側での組み合わせは店舗モジュールが行う。
+- B 側の在庫数の合計（AC-49）は、管理画面が商品一覧 API と在庫集計 API を呼んで組み合わせる。
+- 税込価格で並べ替えるため（AC-53、54）、商品カタログは税モジュールから税率の一覧を受け取り、SQL で税込価格を計算する（[catalog.md](../../modules/catalog.md)）。
 
-パッケージのルートは `com.ecsite`。共通部品（例外体系、i18n、`Money`、ページング）は `common/` に置く。
+パッケージのルートは `com.ecsite`。例外体系、i18n、金額、ページングなどの共通部品は `common` に置く。
 
 ## 2. API
 
@@ -97,7 +99,7 @@ URL には内部 ID を使い、品番を使わない（AC-66）。
 | 依存バージョン | MyIAM の `libs.versions.toml` を起点に、着手時点の最新安定版にする |
 | Flyway | Spring Boot 4 では `spring-boot-starter-flyway` が必要 |
 | イベント発行記録 | Spring Modulith の公式 DDL を `common` schema のマイグレーションに含める（自動作成は使わない） |
-| イベント購読 | `@ApplicationModuleListener`。再起動時の未完了イベントの自動再発行は無効のまま |
+| イベント購読 | Spring Modulith のモジュール間リスナー（コミット後・非同期）。再起動時の未完了イベントの自動再発行は無効のまま |
 | トレーシング | Micrometer Tracing。Zipkin 形式から始める |
 | ローカル環境 | `compose.yaml` に PostgreSQL 18 と Zipkin |
 | Seed | 税区分（標準 10%、軽減 8%）、カテゴリ、商品のサンプル |
@@ -106,13 +108,13 @@ URL には内部 ID を使い、品番を使わない（AC-66）。
 
 | 対象 | 単体 | 統合 |
 |------|------|------|
-| US-1 | `replaceRates` の各検証、`rateAt`、値オブジェクト | API 経由の登録、AC-4 のシナリオ、排他制約 |
+| US-1 | 税率の一覧の置き換えの各検証、指定時点の税率、値オブジェクト | API 経由の登録、AC-4 のシナリオ、排他制約 |
 | US-2 | 深さ、名称 | 削除の拒否（AC-12）、木の取得 |
 | US-3〜5 | 登録、軸、一意性、公開条件、状態遷移、削除条件 | 品番の一意性、AC-6、Repository |
-| US-8 | `StockAdjustment` | AC-43、**並行調整（AC-44）**、履歴、イベントでのレコード作成 |
+| US-8 | 在庫調整の検証 | AC-43、**並行調整（AC-44）**、履歴、イベントによる在庫の作成 |
 | US-9 | | 絞り込み、ページング |
 | US-10〜12 | 税込計算 | 表示条件、税込での並べ替え・絞り込み、**Java と SQL の税込計算の一致**、在庫なし、検索 |
-| 横断 | | `ModulithTest`、B 側 endpoint の権限名の記載漏れを検出する契約テスト |
+| 横断 | | モジュール境界の検証、B 側 endpoint の権限名の記載漏れを検出する契約テスト |
 
 ## 6. 実装の順序
 

@@ -1,64 +1,57 @@
-# catalog モジュール
+# 商品カタログモジュール
 
 商品、バリアント、カテゴリ、公開状態、商品検索を管理する。
 
 - レベル：A（軸の組み合わせの一意性、公開の条件など、不変条件が多い）
-- 依存：`tax`（api）
+- 依存：税モジュール（API）
 - 関連 spec：001（US-2〜7、9、11、13）
+- 用語と識別子：[用語集](../glossary.md)
 
-## 集約
+## 商品（集約）
 
-### Product
+- 商品は、商品品番、名称、説明、税区分、所属カテゴリ、バリアント軸（最大 3 つ）、公開状態、初回表示日時、公開期間、バリアント、画像を持つ。
+- バリアントは、バリアント品番、軸の値、税抜価格、表示順、販売停止、画像を持つ。
+- 商品とバリアントは 1 つの集約にする。軸の値の組み合わせが商品内で一意であることは、商品単位の不変条件のため。
+- 初回表示日時は、新着順の基準になる。また、これが空かどうかで「公開したことがあるか」を判定し、商品・バリアントを削除できるかを決める。
+- 品番は属性であり、他のデータからの参照には使わない（constitution 7.1）。
 
-- `Product`（集約）：`id`、`ProductCode`、名称、説明、`taxCategoryId`、`categoryIds`、軸（最大 3）、`PublicationStatus`、`firstShownAt`、公開期間、`variants`、`images`、`version`
-- `Variant`（エンティティ）：`id`、`VariantCode`、軸の値、`Money`（税抜）、表示順、販売停止、`imageId`
+## カテゴリ（集約）
 
-- Product と Variant は 1 つの集約にする。軸の組み合わせの一意性が、商品単位の不変条件のため。
-- `PublicationStatus`：`UNPUBLISHED` / `PUBLISHED` / `DISCONTINUED`
-- `firstShownAt`：最初に C 側へ表示された日時。新着順のキーであり、null かどうかで「公開したことがあるか」を判定する（商品・バリアントの削除可否）。
-- `ProductCode` / `VariantCode` は属性であり、他のデータからの参照には使わない（constitution 7.1）。
-
-### Category
-
-- `Category`（集約）：`id`、`parentId`、名称、`depth`（1〜3）、表示順、`version`
+- カテゴリは、親カテゴリ、名称、階層の深さ（1〜3）、表示順を持つ。
 - 商品とは ID でだけつながる。
 
 ## C 側に表示される条件
 
-状態が `PUBLISHED` で、公開期間内であること。
+公開状態が「公開」で、公開期間内であること。
 
-この条件は、ドメインの `Product.isVisibleAt(Instant)` と参照用 SQL の 2 か所にある。SQL 側は 1 つの部品にまとめ、一覧と検索の両方で使う（検索だけに非公開の商品が出る事故を防ぐ）。ドメインと SQL の一致は統合テストで確認する。
+この条件は、ドメインと参照用の SQL の 2 か所にある。SQL 側は 1 つの部品にまとめて一覧と検索の両方で使い、検索だけに非公開の商品が出る事故を防ぐ。両者が一致することは統合テストで確認する。
 
 ## 税込価格での並べ替え・絞り込み
 
 税区分ごとに税率が違うため、税抜の順と税込の順は一致しない（例：1,000 円・8% は 1,080 円、990 円・10% は 1,089 円）。そのため、一覧の SQL で税込価格を計算する。
 
-1. `taxdir` 経由で、税区分ごとの税率の一覧（予定を含む）を取得する。Caffeine で 30 秒キャッシュする。
-2. 表示時刻で有効な税率を決め、`CASE tax_category_id WHEN ... THEN rate END` として SQL に埋め込む。
-3. `floor(price * (100 + rate) / 100)` で、販売中バリアントの最安値、価格帯の絞り込み、並べ替えを行う。
+1. 税モジュールから、税区分ごとの税率の一覧（予定を含む）を取得する。インスタンス内で 30 秒キャッシュする。
+2. 表示時刻で有効な税率を決め、税区分ごとの率を SQL に埋め込む。
+3. 税込価格を計算し、販売中バリアントの最安値、価格帯の絞り込み、並べ替えに使う。
 
-- 有効な税率は表示時刻で判定するので、税率の切り替え時刻ちょうどに切り替わる。キャッシュの影響は「税率の登録・変更の反映が最大 30 秒遅れる」ことだけ。
-- 税込計算が tax（Java）とここ（SQL）の 2 か所にある。端数の境界値を含めて、結果の一致を統合テストで確認する。
+- 有効な税率は表示時刻で判定するので、切り替えの時刻ちょうどに切り替わる。キャッシュの影響は、税率の登録・変更の反映が最大 30 秒遅れることだけ。
+- 税込価格の計算が、税モジュール（Java）とここ（SQL）の 2 か所にある。端数の境界値を含めて、結果の一致を統合テストで確認する。
 
 ## キーワード検索
 
-- 検索用の port `ProductSearch` を置く。通常の一覧（`ProductQueryRepository`）とはコードを分ける（constitution 4.4）。
-- MVP の実装 `PostgresProductSearch`：商品名と説明への `ILIKE`。`%` と `_` はエスケープする。並びは新着順で固定。専用のインデックスは作らない。
-- 検索エンジン導入時は、`ProductSearch` の実装を差し替え、下記のイベントでインデックスを同期する。
+- キーワード検索は専用の窓口（商品検索）の後ろに置き、通常の商品照会とはコードを分ける（constitution 4.4）。
+- MVP では、商品名と説明に対する部分一致で探す。キーワード中のワイルドカード文字はエスケープする。並びは新着順で固定し、専用のインデックスは作らない。
+- 検索エンジンを入れるときは、商品検索の実装を差し替え、下記のイベントでインデックスを同期する。
 
 ## 他モジュールへの公開
 
-- `api/store`：C 側向けの商品一覧・検索・詳細（税込価格を含む）、カテゴリの木
-- `event`：
+| 種類 | 内容 | 利用者 |
+|------|------|--------|
+| API | C 側向けの商品一覧・検索・詳細（税込価格を含む）、カテゴリの木 | 店舗 |
+| イベント | バリアント登録、バリアント削除、商品削除 | 在庫 |
+| イベント | 商品公開、商品非公開、商品販売終了、バリアント価格変更 | なし（将来の検索インデックス同期用） |
 
-| イベント | 購読者 |
-|----------|--------|
-| `VariantRegistered(productId, variantId)` | inventory |
-| `VariantDeleted(productId, variantId)` | inventory |
-| `ProductDeleted(productId, variantIds)` | inventory |
-| `ProductPublished` / `ProductUnpublished` / `ProductDiscontinued` / `VariantPriceChanged` | なし（将来の検索インデックス同期用） |
-
-## データモデル（草案。Flyway のマイグレーションができたら、そちらへのリンクに置き換える）
+## データモデル（草案。Flyway のマイグレーションができたら、リンクに置き換える）
 
 ```sql
 CREATE TABLE catalog.category (
@@ -105,7 +98,7 @@ CREATE TABLE catalog.variant (
     id               uuid PRIMARY KEY,
     product_id       uuid        NOT NULL REFERENCES catalog.product (id),
     variant_code     varchar(32) NOT NULL UNIQUE,
-    axis_key         text        NOT NULL,  -- 軸の値を連結した値
+    axis_key         text        NOT NULL,
     price_excl_tax   bigint      NOT NULL CHECK (price_excl_tax >= 1),
     display_order    int         NOT NULL,
     sales_suspended  boolean     NOT NULL DEFAULT false,
@@ -121,5 +114,5 @@ CREATE TABLE catalog.variant_axis_value (
 );
 ```
 
-- `tax_category_id` は tax モジュールの ID なので、外部キーは張らない（constitution 6）。
+- 税区分は税モジュールの ID なので、外部キーは張らない（constitution 6）。
 - 画像のテーブルは spec 001 の US-7 で追加する。

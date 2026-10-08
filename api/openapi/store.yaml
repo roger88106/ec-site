@@ -260,7 +260,7 @@ components:
           description: バリアントで価格が異なる。true なら「〜」を付けて表示する（AC-55）
         inStock:
           type: boolean
-          description: いずれかのバリアントに在庫がある。false なら「在庫なし」（AC-56）
+          description: 販売中（販売停止でない）のいずれかのバリアントに在庫がある。false なら「在庫なし」（AC-56）
     ProductDetail:
       type: object
       required: [id, name, description, imageUrls, axes, variants]
@@ -284,7 +284,9 @@ components:
             $ref: '#/components/schemas/VariantAxis'
         variants:
           type: array
-          description: 選択できるバリアント（販売停止中のものは含まない）。表示順
+          description: |
+            すべてのバリアント（表示順）。販売停止中や在庫切れのものも含む。
+            画面では、`salesSuspended` が true または `inStock` が false のバリアントを、選べない状態（グレーなど）で表示する。
           items:
             $ref: '#/components/schemas/Variant'
     VariantAxis:
@@ -301,7 +303,7 @@ components:
           example: [白, 黒]
     Variant:
       type: object
-      required: [id, axisValues, price, inStock]
+      required: [id, axisValues, price, inStock, salesSuspended]
       properties:
         id:
           type: string
@@ -315,6 +317,9 @@ components:
           $ref: '#/components/schemas/Price'
         inStock:
           type: boolean
+        salesSuspended:
+          type: boolean
+          description: 販売停止中。true なら選択できない（AC-28）
         imageUrl:
           type: string
           nullable: true

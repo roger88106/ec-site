@@ -2,7 +2,7 @@
 
 | 項目 | 内容 |
 |------|------|
-| ステータス | ドラフト（レビュー待ち） |
+| ステータス | 承認済み（OpenAPI 契約の作成待ち） |
 | 対象 spec | [spec.md](spec.md) |
 | 作成日 | 2026-10-08 |
 
@@ -90,14 +90,14 @@ com.ecsite
 
 ## 2. plan 作成中に見つかった spec の不足
 
-constitution 第 16 節に従い、spec を先に直す。各項目に推奨案を付ける。**回答をもらってから spec を更新し、その後で該当箇所の実装に入る。**
+constitution 第 16 節に従い、spec を先に直した。決定の内容は spec 第 8 節（G1〜G4）を参照。
 
-| # | 不足 | 影響する AC | 推奨案 |
-|---|------|-------------|--------|
-| G1 | 過去の日時を適用開始日時とする税率を、新たに登録できるか。できると、過去に表示した価格の根拠が後から変わってしまう（AC-5 の趣旨と矛盾） | AC-2、AC-5 | 適用開始日時は**現在より後**に限る。ただし、その税区分に税率が 1 つもない場合（初期設定）だけ、過去の日時を許す |
-| G2 | 未来の税率しか持たない税区分を商品に割り当てると、現時点の税込価格が計算できない | AC-6 | AC-6 を「**現時点で有効な税率**を持たない税区分は、商品に割り当てられない」に変える |
-| G3 | バリアントの削除が spec にない。登録ミスを直す手段がない | US-4 | **一度も公開していない商品のバリアントだけ**削除できる（AC-33 と同じ考え方）。公開済みの商品のバリアントは、販売停止（AC-28）で対応する |
-| G4 | 新着順（AC-54）の「公開した日時」が、最初に公開した日時か、最後に公開し直した日時か決まっていない | AC-54 | **最初に C 側へ表示された日時**。非公開から再公開しても順位は上がらない。予約公開（US-6）の場合は公開開始日時 |
+| # | 不足 | 反映先 |
+|---|------|--------|
+| G1 | 税率の期間の表し方と、過去の日時の扱い | spec AC-2〜5（適用開始・終了日時、重複・途切れの禁止） |
+| G2 | 未来の税率しか持たない税区分の割り当て | spec AC-6 |
+| G3 | バリアントの削除 | spec AC-71 |
+| G4 | 新着順の基準 | spec AC-54 |
 
 ## 3. ドメインモデル
 
@@ -111,28 +111,41 @@ classDiagram
         TaxCategoryName name
         List~TaxRate~ rates
         long version
-        +addRate(TaxRate, Instant now)
-        +changeRate(UUID rateId, TaxRate, Instant now)
-        +removeRate(UUID rateId, Instant now)
+        +replaceRates(List~TaxRateDraft~, Instant now)
         +rateAt(Instant) Optional~RatePercent~
     }
     class TaxRate {
         <<Entity>>
         UUID id
         RatePercent percent
-        Instant effectiveFrom
+        EffectivePeriod period
+    }
+    class EffectivePeriod {
+        <<ValueObject>>
+        Instant from
+        Instant to
+        +contains(Instant) boolean
     }
     class RatePercent {
         <<ValueObject>>
         BigDecimal value
     }
     TaxCategory "1" *-- "0..*" TaxRate
+    TaxRate --> EffectivePeriod
     TaxRate --> RatePercent
 ```
 
+- `EffectivePeriod`：半開区間 `[from, to)`。`from` が null は「過去すべて」、`to` が null は「無期限」（AC-2）。`from < to` を検証する。
 - `RatePercent`：0 以上 100 未満、小数第 2 位まで（AC-7）。
-- `rateAt(t)`：`effectiveFrom <= t` の税率のうち、`effectiveFrom` が最も新しいもの（AC-3）。
-- `addRate` / `changeRate` / `removeRate` は、`now` と比べて開始済みの税率を拒否する（AC-5）。同じ `effectiveFrom` の重複は拒否する（AC-4）。G1 の回答もここに入る。
+- **税率は一覧ごと置き換える**（`replaceRates`）。1 件ずつの追加・変更・削除にしない理由：期間限定の税率を入れるには、「既存の税率に終了日時を入れる」「期間限定の税率を足す」「戻りの税率を足す」を同時に行う必要がある（AC-4）。1 件ずつだと途中の状態で途切れが生じ、AC-3 を満たせない。
+- `replaceRates` が検証すること：
+  1. 期間が重複しない。期間の間に途切れがない。最後の `to` は null（AC-3）。
+  2. 既存の税率とは ID で対応づけ、`now` と比べて変更の可否を判定する（AC-5）。
+     - 開始済み（`from` が null、または `from <= now`）：税率と `from` は変更不可、削除不可。`to` は `now` より後の値に変更できる。
+     - 終了済み（`to <= now`）：一切変更不可。
+     - 未開始：自由に変更・削除できる。
+  3. 新たに設定する `from` / `to` は、null または `now` より後（AC-5）。
+- `rateAt(t)`：`period.contains(t)` の税率（AC-4）。期間が重複しないので、該当は 0 件か 1 件。
 - 現在時刻は、ドメインに `Instant now` として渡す。アプリケーション層は `Clock` を注入して取得する。テストで時刻を固定するため。
 
 ### 3.2 catalog
@@ -272,14 +285,25 @@ CREATE TABLE tax.tax_category (
     updated_at  timestamptz NOT NULL
 );
 
+CREATE EXTENSION IF NOT EXISTS btree_gist;
+
 CREATE TABLE tax.tax_rate (
     id               uuid PRIMARY KEY,
     tax_category_id  uuid         NOT NULL REFERENCES tax.tax_category (id),
     rate_percent     numeric(4,2) NOT NULL CHECK (rate_percent >= 0 AND rate_percent < 100),
-    effective_from   timestamptz  NOT NULL,
-    UNIQUE (tax_category_id, effective_from)
+    effective_from   timestamptz,          -- null は「過去すべて」
+    effective_to     timestamptz,          -- null は「無期限」
+    CHECK (effective_from IS NULL OR effective_to IS NULL OR effective_from < effective_to),
+    -- 同じ税区分の中で期間が重なることを DB でも禁止する（最後の防衛線）
+    EXCLUDE USING gist (
+        tax_category_id WITH =,
+        tstzrange(effective_from, effective_to, '[)') WITH &&
+    )
 );
 ```
+
+- 期間の重複は排他制約（`EXCLUDE`）で DB でも防ぐ。`tstzrange` は null の端を無限として扱うので、AC-3 の「空白は無限」と一致する。
+- 「途切れがない」「最後は無期限」は DB の制約では表しにくいため、ドメイン（`replaceRates`）とテストで担保する。
 
 ### 5.2 catalog
 
@@ -386,9 +410,7 @@ OpenAPI の正本（`api/openapi/store.yaml`、`admin.yaml`）は、本 plan の
 |--------|------|------|------|----|
 | GET | `/tax-categories` | 税区分の一覧（税率を含む） | `tax:read` | |
 | POST | `/tax-categories` | 税区分の登録 | `tax:write` | 1 |
-| POST | `/tax-categories/{id}/rates` | 税率の登録 | `tax:write` | 2〜4、7 |
-| PUT | `/tax-categories/{id}/rates/{rateId}` | 税率の変更 | `tax:write` | 5 |
-| DELETE | `/tax-categories/{id}/rates/{rateId}` | 税率の削除 | `tax:write` | 5 |
+| PUT | `/tax-categories/{id}/rates` | 税率の一覧をまとめて置き換える | `tax:write` | 2〜5、7 |
 | GET | `/categories` | カテゴリの木 | `category:read` | |
 | POST | `/categories` | カテゴリの登録 | `category:write` | 8〜10 |
 | PUT | `/categories/{id}` | 名称の変更 | `category:write` | 10、11 |
@@ -405,7 +427,7 @@ OpenAPI の正本（`api/openapi/store.yaml`、`admin.yaml`）は、本 plan の
 | PUT | `/products/{id}/publication-period` | 公開期間の設定（P2） | `product:write` | 34〜36 |
 | POST | `/products/{id}/variants` | バリアントの登録 | `product:write` | 20〜25 |
 | PUT | `/products/{id}/variants/{variantId}` | バリアントの編集（価格など） | `product:write` | 26 |
-| DELETE | `/products/{id}/variants/{variantId}` | バリアントの削除（G3） | `product:write` | |
+| DELETE | `/products/{id}/variants/{variantId}` | バリアントの削除 | `product:write` | 71 |
 | PUT | `/products/{id}/variants/order` | バリアントの並び順 | `product:write` | 27 |
 | PUT | `/products/{id}/variants/{variantId}/suspend`、`/resume` | 販売停止・解除（P2） | `product:write` | 28 |
 | GET | `/inventory/variants/{variantId}` | 在庫数 | `inventory:read` | |
@@ -517,9 +539,9 @@ constitution 12.2（テスト先行、提案）に沿って、AC ごとにテス
 
 | 対象 | 単体（`src/test`） | 統合（`src/integrationTest`） |
 |------|-------------------|------------------------------|
-| US-1 税 | `TaxCategory` の税率の追加・変更・削除、`rateAt`、`RatePercent`（AC-3〜7） | API 経由の登録と、開始済み税率の変更拒否（AC-1〜5） |
+| US-1 税 | `replaceRates` の検証（重複、途切れ、最後が無期限、過去日時、開始済み・終了済みの変更制限）、`rateAt`、`EffectivePeriod`、`RatePercent`（AC-2〜5、7） | API 経由の登録、AC-4 のシナリオ、排他制約による重複の拒否（AC-1〜5） |
 | US-2 カテゴリ | 深さ、名称の検証（AC-9、10） | 削除の拒否（子あり・商品あり）（AC-12）、木の取得 |
-| US-3〜5 商品 | `Product` の登録、軸、バリアントの一意性、公開の条件、状態遷移、削除の条件（AC-13〜33） | 品番の一意性（AC-14、21）、税率のない税区分の割り当て拒否（AC-6）、Repository の再構築・差分更新・イベント発行 |
+| US-3〜5 商品 | `Product` の登録、軸、バリアントの一意性、公開の条件、状態遷移、商品・バリアントの削除の条件（AC-13〜33、71） | 品番の一意性（AC-14、21）、税率のない税区分の割り当て拒否（AC-6）、Repository の再構築・差分更新・イベント発行 |
 | US-8 在庫 | `StockAdjustment` の検証（AC-46） | 負になる調整の拒否（AC-43）、**並行調整**（AC-44：複数スレッドから同時に調整し、合計が一致すること）、履歴（AC-45）、イベントによる在庫レコードの作成（AC-41） |
 | US-9 B 側一覧 | | 絞り込みとページング（AC-47〜50） |
 | US-10〜12 C 側 | 税込計算（BR-1） | 表示条件（AC-51、59、65）、税込での並べ替え・絞り込み（AC-53、54）、**Java と SQL の税込計算の一致**、在庫なしの表示（AC-56、64）、検索（AC-58） |
@@ -549,7 +571,7 @@ constitution 12.2（テスト先行、提案）に沿って、AC ごとにテス
 
 ## 12. constitution への変更提案
 
-本 plan の承認とあわせて、constitution を次のように更新する。
+本 plan の承認とあわせて、constitution を次のように更新した。
 
 | # | 節 | 変更 |
 |---|----|------|
@@ -564,13 +586,12 @@ constitution 12.2（テスト先行、提案）に沿って、AC ごとにテス
 
 ## 13. 次の作業
 
-1. 本 plan のレビュー（第 2 節の G1〜G4 への回答を含む）
-2. spec の更新（G1〜G4）と constitution の更新（第 12 節）
-3. OpenAPI の正本（`api/openapi/store.yaml`、`admin.yaml`）の作成。これも plan の一部としてレビューする
-4. tasks.md の作成
+1. OpenAPI の正本（`api/openapi/store.yaml`、`admin.yaml`）の作成。これも plan の一部としてレビューする
+2. tasks.md の作成
 
 ## 14. 変更履歴
 
 | 日付 | 内容 |
 |------|------|
 | 2026-10-08 | 初版（ドラフト） |
+| 2026-10-08 | G1〜G4 を反映。税率を適用期間（開始・終了）で持ち、一覧ごと置き換える方式に変更。承認 |

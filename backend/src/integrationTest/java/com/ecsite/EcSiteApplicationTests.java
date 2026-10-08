@@ -1,10 +1,12 @@
 package com.ecsite;
 
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.jdbc.core.JdbcTemplate;
 
+import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -15,6 +17,9 @@ class EcSiteApplicationTests {
 
     @Autowired
     JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    DSLContext dsl;
 
     @Test
     void contextLoads() {
@@ -37,5 +42,13 @@ class EcSiteApplicationTests {
                 Integer.class);
 
         assertThat(count).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("jOOQ の生成コードでテーブルにアクセスできる")
+    void generatedJooqCodeCanAccessTable() {
+        var count = dsl.fetchCount(EVENT_PUBLICATION);
+
+        assertThat(count).isZero();
     }
 }

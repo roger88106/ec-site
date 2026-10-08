@@ -52,6 +52,7 @@ repositories {
 
 dependencyManagement {
     imports {
+        mavenBom(libs.spring.modulith.bom.get().toString())
         mavenBom(libs.jmolecules.bom.get().toString())
     }
 }
@@ -90,6 +91,9 @@ dependencies {
     // 分散トレーシング（Brave + Zipkin）。エラーレスポンスの traceId にも使う
     implementation(libs.spring.boot.starter.zipkin)
 
+    // --- モジュラーモノリス（constitution 4.1） ---
+    implementation(libs.bundles.spring.modulith)
+
     // --- API（OpenAPI の生成コード） ---
     implementation(libs.jackson.databind.nullable)
 
@@ -116,6 +120,7 @@ dependencies {
     "integrationTestImplementation"(libs.spring.boot.testcontainers)
     "integrationTestImplementation"(libs.testcontainers.postgresql)
     "integrationTestImplementation"(libs.spring.boot.starter.webmvc.test)
+    "integrationTestImplementation"(libs.spring.modulith.starter.test)
 }
 
 // -----------------------------------------------------------------------------

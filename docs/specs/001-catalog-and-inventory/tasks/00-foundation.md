@@ -31,10 +31,12 @@
 
 ## API の生成
 
-- [ ] **T008** OpenAPI Generator の Gradle プラグインで、`api/openapi/admin.yaml` と `store.yaml` から Spring のインターフェースとモデルを生成する。
+- [x] **T008** OpenAPI Generator の Gradle プラグインで、`api/openapi/admin.yaml` と `store.yaml` から Spring のインターフェースとモデルを生成する。
   - 設定：`interfaceOnly`、`useSpringBoot4`、`useJackson3`、`useTags`。
   - パッケージ：`com.ecsite.api.admin`、`com.ecsite.api.store`（生成物はコミットしない）。
   - nullable の項目：既定（`openApiNullable=true`）では `JsonNullable` が使われ、jackson-databind-nullable に依存する。これが Jackson 3 に対応しているかを確認し、対応していなければ `openApiNullable=false` にする。確認の結果は本タスクに追記する。
+    - 結果：jackson-databind-nullable 0.2.12 は Jackson 3 用のモジュールを含み、自動で登録される。`openApiNullable=true` のままにする。null を送った場合と送らなかった場合を区別できることを、統合テスト（`OpenApiModelJsonTest`）で確認している。
+    - あわせて分かったこと：受け取った日時は UTC に揃えて出力される（`+09:00` → `Z`）。同じ時点で、ISO 8601 のオフセット付き文字列でもあるので、constitution 9 に合う。
   - 完了：生成コードを含めてコンパイルが通る。
 - [ ] **T009** 権限の記載漏れを検出するテストを作る：`admin.yaml` のすべての操作に `x-required-permission` があり、`resource:action` の形であること（constitution 10）。
 

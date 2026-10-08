@@ -31,6 +31,7 @@ plugins {
     alias(libs.plugins.spring.boot)
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.jooq)
+    alias(libs.plugins.openapi.generator)
 }
 
 group = "com.ecsite"
@@ -79,6 +80,10 @@ idea {
 dependencies {
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
+    implementation(libs.spring.boot.starter.validation)
+
+    // --- API（OpenAPI の生成コード） ---
+    implementation(libs.jackson.databind.nullable)
 
     // --- データベース ---
     implementation(libs.spring.boot.starter.jooq)
@@ -201,6 +206,61 @@ tasks.named<JooqGenerate>("generateJooq") {
         container.stop()
     }
 }
+
+// -----------------------------------------------------------------------------
+// OpenAPI からのコード生成
+//   API 契約の正本はリポジトリのルートの api/openapi/（constitution 9）。
+//   Controller が実装するインターフェースとモデルを生成する。生成コードはコミットしない（build/ 配下）。
+// -----------------------------------------------------------------------------
+val openApiDir = rootProject.layout.projectDirectory.dir("../api/openapi")
+
+// 生成する API：名前 → パッケージ（com.ecsite.api.<名前>）
+val openApiSpecs = listOf("admin", "store")
+
+val openApiGenerateTasks = openApiSpecs.map { spec ->
+    tasks.register<org.openapitools.generator.gradle.plugin.tasks.GenerateTask>("openApiGenerate${spec.replaceFirstChar { it.uppercase() }}") {
+        description = "api/openapi/$spec.yaml から Spring のインターフェースとモデルを生成する"
+        group = "openapi"
+        generatorName.set("spring")
+        inputSpec.set(openApiDir.file("$spec.yaml").asFile.absolutePath)
+        outputDir.set(layout.buildDirectory.dir("generated/openapi/$spec").get().asFile.absolutePath)
+        apiPackage.set("com.ecsite.api.$spec")
+        modelPackage.set("com.ecsite.api.$spec.model")
+        // 生成するのはソースだけ（README、pom など不要）
+        globalProperties.set(mapOf("apis" to "", "models" to "", "supportingFiles" to "ApiUtil.java"))
+        configOptions.set(
+            mapOf(
+                // Controller が実装するインターフェースだけを生成する
+                "interfaceOnly" to "true",
+                // 未実装のメソッドがコンパイルエラーになるよう、既定の実装（501）を作らない
+                "skipDefaultInterface" to "true",
+                "useSpringBoot4" to "true",
+                "useJackson3" to "true",
+                // tag ごとにインターフェースを分ける
+                "useTags" to "true",
+                // 入力検証は Bean Validation で行う（constitution 9）
+                "useBeanValidation" to "true",
+                // Swagger のアノテーションは付けない
+                "documentationProvider" to "none",
+                "annotationLibrary" to "none",
+                "hideGenerationTimestamp" to "true",
+                // JSON の出力・null の扱いはアプリ全体の設定に任せる（項目ごとのアノテーションは付けない）
+                "generateJsonIncludeAnnotations" to "false",
+                "generateJsonSetterNullsAnnotations" to "false",
+                // nullable の項目は JsonNullable で表す（既定）。jackson-databind-nullable は Jackson 3 に対応済み
+                "openApiNullable" to "true",
+            )
+        )
+        // 契約が変わったら再生成する
+        inputs.dir(openApiDir)
+    }
+}
+
+sourceSets.main {
+    java.srcDirs(openApiSpecs.map { layout.buildDirectory.dir("generated/openapi/$it/src/main/java") })
+}
+
+tasks.named("compileJava") { dependsOn(openApiGenerateTasks) }
 
 // -----------------------------------------------------------------------------
 // コンパイルオプション

@@ -2,12 +2,19 @@
 # 全環境共通の設定
 #
 # 環境依存の値（DB の接続先、開発用ログレベル等）はここに書かない。
-# ローカル開発は application-local.yml、それ以外は環境変数 / 外部設定で与える。
+# ローカル開発は application-local.yml、それ以外は環境変数で与える。
+#
+# すべての値は環境変数で上書きできる（Spring Boot の緩い束縛）。
+#   例：spring.datasource.url → SPRING_DATASOURCE_URL、server.port → SERVER_PORT
 # ============================================================================
 
 spring:
   application:
     name: ecsite
+  flyway:
+    # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（constitution 5-10）。
+    # 起動時の実行は local profile でだけ有効にする。
+    enabled: false
 
 server:
   port: 8080

@@ -15,7 +15,7 @@
   - 完了：空のアプリが `./gradlew bootRun` で起動する。
 - [x] **T002** ソースセットを MyIAM と同じく `src/test`（単体）と `src/integrationTest`（統合）に分け、`./gradlew check` で両方が走るようにする。
 - [x] **T003** ルートに `compose.yaml` を作る（PostgreSQL 18、Zipkin）。
-- [ ] **T004** 設定ファイルを分ける。
+- [x] **T004** 設定ファイルを分ける。
   - `application.yml`：環境に依存しない設定。値は環境変数で上書きできるようにする。
   - `application-local.yml`：ローカル開発用（compose の接続先、起動時のマイグレーション実行）。
   - 本番相当の profile では、起動時のマイグレーションを無効にする（constitution 5-10）。

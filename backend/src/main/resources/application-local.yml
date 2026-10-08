@@ -1,0 +1,24 @@
+# ============================================================================
+# ローカル開発用の設定
+#
+# 有効化：起動時に spring.profiles.active=local を指定する
+#   - IntelliJ：実行構成 → Active profiles に local
+#   - Gradle  ：./gradlew bootRun --args='--spring.profiles.active=local'
+#
+# 接続先はリポジトリのルートの compose.yaml に合わせている。
+# ============================================================================
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ec_site
+    username: ec_site
+    password: ec_site
+  flyway:
+    # ローカルでは起動時にマイグレーションを適用する
+    enabled: true
+
+logging:
+  level:
+    com.ecsite: DEBUG
+    # SQL とバインドパラメータ
+    org.jooq.tools.LoggerListener: DEBUG

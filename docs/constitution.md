@@ -62,8 +62,11 @@ ec-site/
 ├── api/openapi/          # API 契約の正本（store.yaml、admin.yaml）
 ├── docs/
 │   ├── constitution.md
-│   ├── modules/          # モジュールごとの設計書
-│   └── specs/NNN-<feature>/{spec,plan,tasks}.md
+│   ├── modules/          # モジュールごとの現在の設計
+│   └── specs/NNN-<feature>/
+│       ├── spec.md
+│       ├── plan.md
+│       └── tasks/        # 段階ごとに 1 ファイル（例：01-tax.md）
 ├── backend/
 ├── frontend/{store,admin}/
 └── compose.yaml          # ローカル開発用
@@ -238,7 +241,7 @@ MVP では実装しない。将来 MyIAM（EC は Resource Server として JWT 
 | infrastructure、Controller の配線 | 実装後に書いてよい |
 | フロントの UI | 求めない |
 
-`tasks.md` では、テストのタスクを実装タスクより前に置く。
+tasks では、テストのタスクを実装タスクより前に置く。
 
 ## 13. CI
 
@@ -253,9 +256,18 @@ MVP では実装しない。将来 MyIAM（EC は Resource Server として JWT 
 ## 15. SDD ワークフロー
 
 1. **Spec**（`spec.md`）：何を、なぜ、と受け入れ条件。実装（クラス名、カラム、フレームワーク）は書かない。
-2. **Plan**（`plan.md`）：アーキテクチャ、データモデル、OpenAPI。
-3. **Tasks**（`tasks.md`）：plan を検証可能な小さなタスクに分け、対応する AC を記す。
+2. **Plan**（`plan.md`）：今回の変更について、モジュールをまたぐ決定、API と AC の対応、テストの割り当て、実装の順序。
+3. **Tasks**（`tasks/`）：plan を検証可能な小さなタスクに分け、対応する AC を記す。段階ごとに 1 ファイル。
 4. **実装**。
+
+文書の置き場所：
+
+| 内容 | 置き場所 |
+|------|----------|
+| 今回の変更で何をどう作るか | `plan.md` |
+| モジュールの現在の設計（集約、不変条件の置き場所、公開する api / event、コードから読み取りにくい設計の理由） | `docs/modules/<module>.md`。plan で決めたら、ここを更新する |
+| API の項目 | OpenAPI（`api/openapi/`） |
+| テーブル定義 | Flyway のマイグレーション。できるまでは `docs/modules/` に草案を置き、できたらリンクに置き換える |
 
 ルール：
 
@@ -274,3 +286,4 @@ MVP では実装しない。将来 MyIAM（EC は Resource Server として JWT 
 | 定期ジョブの分散ロック方式 | 最初に定期ジョブが必要になる plan |
 | デプロイ先とイメージのビルド方式（B 側 SPA の配信を含む） | MVP のコアフローが通った後 |
 | フロントのテスト方針の詳細（E2E の自動化） | MVP のコアフローが通った後 |
+| 仕様の管理を、変更単位（`specs/NNN/`）から現状単位（業務領域ごとの現行仕様 + 変更の差分）に移すか | 1 → 10 の着手時 |

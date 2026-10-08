@@ -1,0 +1,1221 @@
+openapi: 3.0.3
+info:
+  title: EC Site 管理 API
+  version: 0.1.0
+  description: |
+    B 側（運営者）向けの API。
+
+    - 認証は MVP では実装しない。各操作に必要な権限を `x-required-permission` に記す（constitution 10）。
+    - 同時に編集されうるリソースの更新では、取得時の `version` を送る。一致しなければ 409 を返す。
+    - 日時は ISO 8601 のオフセット付き文字列。
+servers:
+  - url: /api/admin
+tags:
+  - name: tax
+    description: 税区分と税率（spec 001 US-1）
+  - name: category
+    description: カテゴリ（spec 001 US-2）
+  - name: product
+    description: 商品とバリアント（spec 001 US-3〜6、9）
+  - name: inventory
+    description: 在庫（spec 001 US-8）
+
+paths:
+  # ============================== 税 ==============================
+  /tax-categories:
+    get:
+      tags: [tax]
+      operationId: listTaxCategories
+      summary: 税区分の一覧（税率を含む）
+      x-required-permission: tax:read
+      responses:
+        '200':
+          description: 税区分の一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxCategoryList'
+    post:
+      tags: [tax]
+      operationId: createTaxCategory
+      summary: 税区分の登録（AC-1）
+      x-required-permission: tax:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateTaxCategoryRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /tax-categories/{taxCategoryId}/rates:
+    parameters:
+      - $ref: '#/components/parameters/TaxCategoryId'
+    put:
+      tags: [tax]
+      operationId: replaceTaxRates
+      summary: 税率の一覧を置き換える（AC-2〜5、7）
+      description: |
+        税区分の税率を一覧ごと置き換える。既存の税率を残す場合は `id` を指定する。
+        `id` のない要素は新しい税率として扱い、送られなかった既存の税率は削除として扱う。
+      x-required-permission: tax:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReplaceTaxRatesRequest'
+      responses:
+        '204':
+          description: 置き換えた
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ============================== カテゴリ ==============================
+  /categories:
+    get:
+      tags: [category]
+      operationId: listCategories
+      summary: カテゴリの木
+      x-required-permission: category:read
+      responses:
+        '200':
+          description: 最上位カテゴリの一覧（子孫を含む）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryTree'
+    post:
+      tags: [category]
+      operationId: createCategory
+      summary: カテゴリの登録（AC-8〜10）
+      x-required-permission: category:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateCategoryRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /categories/order:
+    put:
+      tags: [category]
+      operationId: reorderCategories
+      summary: 兄弟カテゴリの並び順を変更する（AC-11）
+      description: 同じ親を持つカテゴリを、並べたい順にすべて送る。
+      x-required-permission: category:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderCategoriesRequest'
+      responses:
+        '204':
+          description: 変更した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /categories/{categoryId}:
+    parameters:
+      - $ref: '#/components/parameters/CategoryId'
+    put:
+      tags: [category]
+      operationId: renameCategory
+      summary: カテゴリ名の変更（AC-10、11）
+      x-required-permission: category:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RenameCategoryRequest'
+      responses:
+        '204':
+          description: 変更した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [category]
+      operationId: deleteCategory
+      summary: カテゴリの削除（AC-12）
+      description: 子カテゴリを持つ、または商品が所属しているカテゴリは削除できない（400）。
+      x-required-permission: category:write
+      responses:
+        '204':
+          description: 削除した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================== 商品 ==============================
+  /products:
+    get:
+      tags: [product]
+      operationId: searchProducts
+      summary: 商品の一覧・絞り込み（AC-47〜50）
+      description: 状態に関係なく、すべての商品が対象。並びは登録日時の新しい順。
+      x-required-permission: product:read
+      parameters:
+        - name: code
+          in: query
+          description: 商品品番またはバリアント品番の前方一致
+          schema:
+            type: string
+            maxLength: 32
+        - name: name
+          in: query
+          description: 商品名の部分一致
+          schema:
+            type: string
+            maxLength: 200
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/PublicationStatus'
+        - name: categoryId
+          in: query
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 商品の一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+    post:
+      tags: [product]
+      operationId: createProduct
+      summary: 商品の登録（AC-6、13〜17）
+      x-required-permission: product:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateProductRequest'
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /products/{productId}:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    get:
+      tags: [product]
+      operationId: getProduct
+      summary: 商品の詳細（バリアントを含む）
+      x-required-permission: product:read
+      responses:
+        '200':
+          description: 商品の詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    put:
+      tags: [product]
+      operationId: updateProduct
+      summary: 商品の編集（AC-6、18、19）
+      x-required-permission: product:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateProductRequest'
+      responses:
+        '204':
+          description: 変更した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [product]
+      operationId: deleteProduct
+      summary: 商品の削除（AC-33）
+      description: 一度でも公開した商品は削除できない（400）。
+      x-required-permission: product:write
+      parameters:
+        - $ref: '#/components/parameters/Version'
+      responses:
+        '204':
+          description: 削除した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /products/{productId}/publish:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    put:
+      tags: [product]
+      operationId: publishProduct
+      summary: 公開する（AC-29、31）
+      x-required-permission: product:write
+      responses:
+        '204':
+          description: 公開した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{productId}/unpublish:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    put:
+      tags: [product]
+      operationId: unpublishProduct
+      summary: 非公開にする（AC-30）
+      x-required-permission: product:write
+      responses:
+        '204':
+          description: 非公開にした
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{productId}/discontinue:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    put:
+      tags: [product]
+      operationId: discontinueProduct
+      summary: 販売終了にする（AC-32）
+      x-required-permission: product:write
+      responses:
+        '204':
+          description: 販売終了にした
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{productId}/publication-period:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    put:
+      tags: [product]
+      operationId: setPublicationPeriod
+      summary: 公開期間の設定（AC-34〜36、P2）
+      x-required-permission: product:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SetPublicationPeriodRequest'
+      responses:
+        '204':
+          description: 設定した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ============================== バリアント ==============================
+  /products/{productId}/variants:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    post:
+      tags: [product]
+      operationId: addVariant
+      summary: バリアントの登録（AC-20〜25）
+      description: バリアントは商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
+      x-required-permission: product:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddVariantRequest'
+      responses:
+        '201':
+          description: 登録した
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedId'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /products/{productId}/variants/order:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+    put:
+      tags: [product]
+      operationId: reorderVariants
+      summary: バリアントの表示順を変更する（AC-27）
+      description: 商品のすべてのバリアントを、並べたい順に送る。
+      x-required-permission: product:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ReorderVariantsRequest'
+      responses:
+        '204':
+          description: 変更した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /products/{productId}/variants/{variantId}:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/VariantId'
+    put:
+      tags: [product]
+      operationId: updateVariant
+      summary: バリアントの編集（AC-26）
+      x-required-permission: product:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateVariantRequest'
+      responses:
+        '204':
+          description: 変更した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+    delete:
+      tags: [product]
+      operationId: deleteVariant
+      summary: バリアントの削除（AC-71）
+      description: 一度でも公開した商品のバリアントは削除できない（400）。
+      x-required-permission: product:write
+      parameters:
+        - $ref: '#/components/parameters/Version'
+      responses:
+        '204':
+          description: 削除した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /products/{productId}/variants/{variantId}/suspend:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/VariantId'
+    put:
+      tags: [product]
+      operationId: suspendVariant
+      summary: バリアントを販売停止にする（AC-28、P2）
+      x-required-permission: product:write
+      responses:
+        '204':
+          description: 販売停止にした
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /products/{productId}/variants/{variantId}/resume:
+    parameters:
+      - $ref: '#/components/parameters/ProductId'
+      - $ref: '#/components/parameters/VariantId'
+    put:
+      tags: [product]
+      operationId: resumeVariant
+      summary: バリアントの販売停止を解除する（AC-28、P2）
+      x-required-permission: product:write
+      responses:
+        '204':
+          description: 解除した
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  # ============================== 在庫 ==============================
+  /inventory/variants/{variantId}:
+    parameters:
+      - $ref: '#/components/parameters/VariantId'
+    get:
+      tags: [inventory]
+      operationId: getStock
+      summary: バリアントの在庫数
+      x-required-permission: inventory:read
+      responses:
+        '200':
+          description: 在庫数
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Stock'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /inventory/variants/{variantId}/adjustments:
+    parameters:
+      - $ref: '#/components/parameters/VariantId'
+    post:
+      tags: [inventory]
+      operationId: adjustStock
+      summary: 在庫の調整（AC-42〜44、46）
+      description: 在庫調整は履歴の 1 件で単独の URL を持たないため、`Location` は返さず、本文で結果を返す。
+      x-required-permission: inventory:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AdjustStockRequest'
+      responses:
+        '201':
+          description: 調整した
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustment'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    get:
+      tags: [inventory]
+      operationId: listStockAdjustments
+      summary: 在庫調整の履歴（AC-45）
+      description: 新しい順。
+      x-required-permission: inventory:read
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 履歴
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockAdjustmentPage'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /inventory/stock-summaries:
+    get:
+      tags: [inventory]
+      operationId: listStockSummaries
+      summary: 商品ごとの在庫数の合計（AC-49）
+      x-required-permission: inventory:read
+      parameters:
+        - name: productIds
+          in: query
+          required: true
+          style: form
+          explode: false
+          schema:
+            type: array
+            minItems: 1
+            maxItems: 100
+            items:
+              type: string
+              format: uuid
+      responses:
+        '200':
+          description: 在庫数の合計。在庫がまだない商品は 0
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/StockSummaryList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+components:
+  parameters:
+    TaxCategoryId:
+      name: taxCategoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CategoryId:
+      name: categoryId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    ProductId:
+      name: productId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VariantId:
+      name: variantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    Version:
+      name: version
+      in: query
+      required: true
+      description: 取得時のバージョン（楽観ロック）
+      schema:
+        type: integer
+        format: int64
+    Page:
+      name: page
+      in: query
+      description: ページ番号（1 始まり）
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        default: 1
+    Size:
+      name: size
+      in: query
+      description: 1 ページの件数
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    Created:
+      description: 登録した
+      headers:
+        Location:
+          description: 登録したリソースの URL
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreatedId'
+    BadRequest:
+      description: 入力の誤り、または業務ルール違反
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: 見つからない
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    Conflict:
+      description: 一意性の違反、または他の人が先に更新した（バージョン不一致）
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    # ---------- 共通 ----------
+    Problem:
+      type: object
+      description: エラー（RFC 9457 に項目を追加したもの。constitution 9）
+      required: [status, errorCode, message, traceId]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+        errorCode:
+          type: string
+          description: フロントが分岐に使うコード
+          example: PRODUCT_CODE_ALREADY_EXISTS
+        message:
+          type: string
+          description: 画面にそのまま出せるメッセージ
+          example: 商品品番 ABC-001 はすでに使われています。
+        traceId:
+          type: string
+        errors:
+          type: array
+          description: 入力検証エラーのときだけ
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    PageMeta:
+      type: object
+      required: [page, size, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+    CreatedId:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: uuid
+    Version:
+      type: integer
+      format: int64
+      description: 取得時のバージョン（楽観ロック）
+
+    # ---------- 税 ----------
+    TaxCategoryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/TaxCategory'
+    TaxCategory:
+      type: object
+      required: [id, name, rates, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        currentRatePercent:
+          type: number
+          nullable: true
+          description: 現時点で有効な率。なければ null
+        rates:
+          type: array
+          description: 適用期間の古い順
+          items:
+            $ref: '#/components/schemas/TaxRate'
+        version:
+          $ref: '#/components/schemas/Version'
+    TaxRate:
+      type: object
+      required: [id, ratePercent]
+      properties:
+        id:
+          type: string
+          format: uuid
+        ratePercent:
+          $ref: '#/components/schemas/RatePercent'
+        effectiveFrom:
+          type: string
+          format: date-time
+          nullable: true
+          description: 適用開始日時。null は過去すべて
+        effectiveTo:
+          type: string
+          format: date-time
+          nullable: true
+          description: 適用終了日時（この日時を含まない）。null は無期限
+    RatePercent:
+      type: number
+      minimum: 0
+      maximum: 100
+      exclusiveMaximum: true
+      description: 率（%）。小数第 2 位まで
+      example: 10
+    CreateTaxCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+    ReplaceTaxRatesRequest:
+      type: object
+      required: [version, rates]
+      properties:
+        version:
+          $ref: '#/components/schemas/Version'
+        rates:
+          type: array
+          minItems: 1
+          items:
+            $ref: '#/components/schemas/TaxRateDraft'
+    TaxRateDraft:
+      type: object
+      required: [ratePercent]
+      properties:
+        id:
+          type: string
+          format: uuid
+          nullable: true
+          description: 既存の税率を残す場合に指定する。null は新しい税率
+        ratePercent:
+          $ref: '#/components/schemas/RatePercent'
+        effectiveFrom:
+          type: string
+          format: date-time
+          nullable: true
+        effectiveTo:
+          type: string
+          format: date-time
+          nullable: true
+
+    # ---------- カテゴリ ----------
+    CategoryTree:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryNode'
+    CategoryNode:
+      type: object
+      required: [id, name, depth, displayOrder, version, children]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        depth:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 3
+        displayOrder:
+          type: integer
+          format: int32
+        version:
+          $ref: '#/components/schemas/Version'
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryNode'
+    CreateCategoryRequest:
+      type: object
+      required: [name]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: null は最上位
+    RenameCategoryRequest:
+      type: object
+      required: [name, version]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+        version:
+          $ref: '#/components/schemas/Version'
+    ReorderCategoriesRequest:
+      type: object
+      required: [categoryIds]
+      properties:
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: null は最上位のカテゴリを並べ替える
+        categoryIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+
+    # ---------- 商品 ----------
+    PublicationStatus:
+      type: string
+      enum: [UNPUBLISHED, PUBLISHED, DISCONTINUED]
+      description: 非公開、公開、販売終了
+    ProductCode:
+      type: string
+      pattern: '^[A-Za-z0-9-]{1,32}$'
+      description: 商品品番。半角英数字とハイフンで 1〜32 文字
+    VariantCode:
+      type: string
+      pattern: '^[A-Za-z0-9-]{1,32}$'
+      description: バリアント品番。半角英数字とハイフンで 1〜32 文字
+    ProductSummaryPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProductSummary'
+    ProductSummary:
+      type: object
+      description: 在庫数の合計は在庫の API（stock-summaries）で取得する
+      required: [id, productCode, name, status, variantCount]
+      properties:
+        id:
+          type: string
+          format: uuid
+        productCode:
+          type: string
+        name:
+          type: string
+        status:
+          $ref: '#/components/schemas/PublicationStatus'
+        variantCount:
+          type: integer
+          format: int32
+    ProductDetail:
+      type: object
+      required: [id, productCode, name, description, taxCategoryId, categoryIds, axes, status, variants, version, createdAt, updatedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        productCode:
+          type: string
+        name:
+          type: string
+        description:
+          type: string
+        taxCategoryId:
+          type: string
+          format: uuid
+        categoryIds:
+          type: array
+          items:
+            type: string
+            format: uuid
+        axes:
+          type: array
+          description: バリアント軸の名前（並び順どおり）
+          maxItems: 3
+          items:
+            type: string
+        status:
+          $ref: '#/components/schemas/PublicationStatus'
+        firstShownAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 初回表示日時。null は一度も公開していない
+        publishStart:
+          type: string
+          format: date-time
+          nullable: true
+        publishEnd:
+          type: string
+          format: date-time
+          nullable: true
+        variants:
+          type: array
+          description: 表示順
+          items:
+            $ref: '#/components/schemas/Variant'
+        version:
+          $ref: '#/components/schemas/Version'
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Variant:
+      type: object
+      required: [id, variantCode, axisValues, priceExclTax, priceInclTax, salesSuspended]
+      properties:
+        id:
+          type: string
+          format: uuid
+        variantCode:
+          type: string
+        axisValues:
+          type: array
+          description: 軸の値（商品の axes と同じ並び）
+          items:
+            type: string
+        priceExclTax:
+          type: integer
+          format: int64
+          description: 税抜価格（円）
+        priceInclTax:
+          type: integer
+          format: int64
+          nullable: true
+          description: 現時点の税込価格（円）。有効な税率がなければ null
+        salesSuspended:
+          type: boolean
+    CreateProductRequest:
+      type: object
+      required: [productCode, name, description, taxCategoryId]
+      properties:
+        productCode:
+          $ref: '#/components/schemas/ProductCode'
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 10000
+        taxCategoryId:
+          type: string
+          format: uuid
+        categoryIds:
+          type: array
+          uniqueItems: true
+          default: []
+          items:
+            type: string
+            format: uuid
+        axes:
+          type: array
+          maxItems: 3
+          uniqueItems: true
+          default: []
+          items:
+            type: string
+            minLength: 1
+            maxLength: 30
+    UpdateProductRequest:
+      type: object
+      description: 商品品番とバリアント軸は変更できない
+      required: [name, description, taxCategoryId, categoryIds, version]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 200
+        description:
+          type: string
+          maxLength: 10000
+        taxCategoryId:
+          type: string
+          format: uuid
+        categoryIds:
+          type: array
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        version:
+          $ref: '#/components/schemas/Version'
+    SetPublicationPeriodRequest:
+      type: object
+      required: [version]
+      properties:
+        publishStart:
+          type: string
+          format: date-time
+          nullable: true
+        publishEnd:
+          type: string
+          format: date-time
+          nullable: true
+        version:
+          $ref: '#/components/schemas/Version'
+    AddVariantRequest:
+      type: object
+      required: [variantCode, axisValues, priceExclTax, version]
+      properties:
+        variantCode:
+          $ref: '#/components/schemas/VariantCode'
+        axisValues:
+          type: array
+          description: 軸の値（商品の axes と同じ並び。軸がない商品は空）
+          maxItems: 3
+          items:
+            type: string
+            minLength: 1
+            maxLength: 50
+        priceExclTax:
+          type: integer
+          format: int64
+          minimum: 1
+        version:
+          $ref: '#/components/schemas/Version'
+    UpdateVariantRequest:
+      type: object
+      required: [priceExclTax, version]
+      properties:
+        priceExclTax:
+          type: integer
+          format: int64
+          minimum: 1
+        version:
+          $ref: '#/components/schemas/Version'
+    ReorderVariantsRequest:
+      type: object
+      required: [variantIds, version]
+      properties:
+        variantIds:
+          type: array
+          minItems: 1
+          uniqueItems: true
+          items:
+            type: string
+            format: uuid
+        version:
+          $ref: '#/components/schemas/Version'
+
+    # ---------- 在庫 ----------
+    Stock:
+      type: object
+      required: [variantId, quantity]
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        quantity:
+          type: integer
+          format: int32
+          minimum: 0
+    StockAdjustmentReason:
+      type: string
+      enum: [ARRIVAL, STOCKTAKE, DAMAGE_OR_LOSS, OTHER]
+      description: 入荷、棚卸差異、破損・紛失、その他
+    AdjustStockRequest:
+      type: object
+      required: [delta, reason]
+      properties:
+        delta:
+          type: integer
+          format: int32
+          description: 増減量。0 は不可
+        reason:
+          $ref: '#/components/schemas/StockAdjustmentReason'
+        memo:
+          type: string
+          nullable: true
+          maxLength: 500
+          description: 理由が OTHER のときは必須
+    StockAdjustment:
+      type: object
+      required: [id, delta, reason, quantityAfter, adjustedAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        delta:
+          type: integer
+          format: int32
+        reason:
+          $ref: '#/components/schemas/StockAdjustmentReason'
+        memo:
+          type: string
+          nullable: true
+        quantityAfter:
+          type: integer
+          format: int32
+          description: 調整後の在庫数
+        adjustedAt:
+          type: string
+          format: date-time
+    StockAdjustmentPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/StockAdjustment'
+    StockSummaryList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/StockSummary'
+    StockSummary:
+      type: object
+      required: [productId, totalQuantity]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        totalQuantity:
+          type: integer
+          format: int64

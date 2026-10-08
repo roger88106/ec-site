@@ -1,0 +1,344 @@
+openapi: 3.0.3
+info:
+  title: EC Site 店舗 API
+  version: 0.1.0
+  description: |
+    C 側（消費者）向けの API。
+
+    - 対象は C 側に表示される商品だけ（spec 001 BR-2）。表示されない商品は、存在しない商品と同じく 404 を返す。
+    - 価格は税込・税抜の両方を返す。画面では「1,980 円（税抜 1,800 円）」の形で表示する（BR-4）。
+    - 在庫は有無だけを返し、数量は返さない（AC-64）。
+servers:
+  - url: /api/store
+tags:
+  - name: product
+    description: 商品（spec 001 US-10〜12）
+  - name: category
+    description: カテゴリ（絞り込み用）
+
+paths:
+  /products:
+    get:
+      tags: [product]
+      operationId: listProducts
+      summary: 商品一覧（AC-51〜57）
+      parameters:
+        - name: categoryId
+          in: query
+          description: カテゴリで絞り込む。子孫カテゴリの商品も含む
+          schema:
+            type: string
+            format: uuid
+        - name: minPrice
+          in: query
+          description: 税込価格の下限（円、この値を含む）
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: maxPrice
+          in: query
+          description: 税込価格の上限（円、この値を含む）
+          schema:
+            type: integer
+            format: int64
+            minimum: 0
+        - name: sort
+          in: query
+          schema:
+            $ref: '#/components/schemas/ProductSort'
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 商品一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /products/search:
+    get:
+      tags: [product]
+      operationId: searchProducts
+      summary: キーワード検索（AC-58〜61）
+      description: 商品名または説明にキーワードを含む商品。並びは新着順で固定。精度は問わない。
+      parameters:
+        - name: q
+          in: query
+          required: true
+          schema:
+            type: string
+            minLength: 1
+            maxLength: 100
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 検索結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /products/{productId}:
+    get:
+      tags: [product]
+      operationId: getProduct
+      summary: 商品の詳細（AC-62〜66）
+      parameters:
+        - name: productId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: 商品の詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProductDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /categories:
+    get:
+      tags: [category]
+      operationId: listCategories
+      summary: カテゴリの木（AC-52 の絞り込み用）
+      responses:
+        '200':
+          description: 最上位カテゴリの一覧（子孫を含む）。並び順は運営者が決めた順
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryTree'
+
+components:
+  parameters:
+    Page:
+      name: page
+      in: query
+      description: ページ番号（1 始まり）
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        default: 1
+    Size:
+      name: size
+      in: query
+      description: 1 ページの件数
+      schema:
+        type: integer
+        format: int32
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  responses:
+    BadRequest:
+      description: 入力の誤り
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    NotFound:
+      description: 見つからない（C 側に表示されない商品を含む）
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  schemas:
+    # ---------- 共通 ----------
+    Problem:
+      type: object
+      description: エラー（RFC 9457 に項目を追加したもの。constitution 9）
+      required: [status, errorCode, message, traceId]
+      properties:
+        type:
+          type: string
+        title:
+          type: string
+        status:
+          type: integer
+          format: int32
+        detail:
+          type: string
+        instance:
+          type: string
+        errorCode:
+          type: string
+        message:
+          type: string
+        traceId:
+          type: string
+        errors:
+          type: array
+          items:
+            $ref: '#/components/schemas/FieldError'
+    FieldError:
+      type: object
+      required: [field, message]
+      properties:
+        field:
+          type: string
+        message:
+          type: string
+    PageMeta:
+      type: object
+      required: [page, size, totalItems, totalPages]
+      properties:
+        page:
+          type: integer
+          format: int32
+        size:
+          type: integer
+          format: int32
+        totalItems:
+          type: integer
+          format: int64
+        totalPages:
+          type: integer
+          format: int32
+
+    # ---------- 価格 ----------
+    Price:
+      type: object
+      description: 価格（円）
+      required: [inclTax, exclTax]
+      properties:
+        inclTax:
+          type: integer
+          format: int64
+          description: 税込価格
+        exclTax:
+          type: integer
+          format: int64
+          description: 税抜価格
+
+    # ---------- 商品 ----------
+    ProductSort:
+      type: string
+      enum: [newest, price_asc, price_desc]
+      default: newest
+      description: 新着順、価格の安い順、価格の高い順（いずれも税込価格）
+    ProductSummaryPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/ProductSummary'
+    ProductSummary:
+      type: object
+      required: [id, name, lowestPrice, hasPriceRange, inStock]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        imageUrl:
+          type: string
+          nullable: true
+          description: 代表画像。画像の機能（US-7）までは null
+        lowestPrice:
+          $ref: '#/components/schemas/Price'
+        hasPriceRange:
+          type: boolean
+          description: バリアントで価格が異なる。true なら「〜」を付けて表示する（AC-55）
+        inStock:
+          type: boolean
+          description: いずれかのバリアントに在庫がある。false なら「在庫なし」（AC-56）
+    ProductDetail:
+      type: object
+      required: [id, name, description, imageUrls, axes, variants]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        description:
+          type: string
+        imageUrls:
+          type: array
+          description: 並び順。先頭が代表画像。画像の機能（US-7）までは空
+          items:
+            type: string
+        axes:
+          type: array
+          description: バリアント軸と、選べる値
+          items:
+            $ref: '#/components/schemas/VariantAxis'
+        variants:
+          type: array
+          description: 選択できるバリアント（販売停止中のものは含まない）。表示順
+          items:
+            $ref: '#/components/schemas/Variant'
+    VariantAxis:
+      type: object
+      required: [name, values]
+      properties:
+        name:
+          type: string
+          example: 色
+        values:
+          type: array
+          items:
+            type: string
+          example: [白, 黒]
+    Variant:
+      type: object
+      required: [id, axisValues, price, inStock]
+      properties:
+        id:
+          type: string
+          format: uuid
+        axisValues:
+          type: array
+          description: 軸の値（axes と同じ並び）
+          items:
+            type: string
+        price:
+          $ref: '#/components/schemas/Price'
+        inStock:
+          type: boolean
+        imageUrl:
+          type: string
+          nullable: true
+          description: バリアントの画像。なければ null（代表画像を使う）
+
+    # ---------- カテゴリ ----------
+    CategoryTree:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryNode'
+    CategoryNode:
+      type: object
+      required: [id, name, children]
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        children:
+          type: array
+          items:
+            $ref: '#/components/schemas/CategoryNode'

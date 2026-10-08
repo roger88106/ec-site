@@ -1,6 +1,6 @@
 # Plan 001：商品カタログと在庫
 
-ステータス：承認済み（OpenAPI の作成待ち）　対象：[spec.md](spec.md)
+ステータス：承認済み（OpenAPI 初版のレビュー待ち）　対象：[spec.md](spec.md)
 
 本 spec で追加するモジュールの設計は、各モジュールの設計書に書く。本書には、モジュールをまたぐ決定と、作り方の段取りだけを書く。
 
@@ -39,7 +39,7 @@ flowchart LR
 
 ## 2. API
 
-OpenAPI（`api/openapi/`）は本 plan の後に作る。規約は constitution 第 9 節。
+項目の定義は OpenAPI（[admin.yaml](../../../api/openapi/admin.yaml)、[store.yaml](../../../api/openapi/store.yaml)）。規約は constitution 第 9 節。本節は endpoint と AC の対応だけを示す。
 
 ### 2.1 B 側（`/api/admin`）
 

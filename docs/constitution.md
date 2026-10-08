@@ -190,7 +190,7 @@ ec-site/
 - **契約先行**：OpenAPI を plan の一部として書く。正本は `api/openapi/`（`store.yaml`、`admin.yaml`）。
   - バックエンド：OpenAPI Generator の `spring` ジェネレーター（`interfaceOnly`、`useSpringBoot4`、`useJackson3`）が生成するインターフェースを実装する。
   - フロント：`openapi-typescript` で型を生成する。生成物はコミットしない。
-- 作成は `201` + `Location`、戻り値のない更新は `204`。
+- 作成は `201` + `Location` で、本文に作成した ID を返す。単独の URL を持たないもの（集約の一部、履歴の 1 件など）は `Location` を返さず、本文で結果を返す。戻り値のない更新は `204`。
 - 入力検証は presentation 層（Bean Validation）、ドメインルールは domain で行う。
 - 例外：`ErrorCode`（`ErrorType`、i18n メッセージ、公開レベル）と `BusinessException` / `SystemException`。ドメインごとに `XxxErrorCode` enum を持ち、`GlobalExceptionHandler` で変換する。
 - **エラーレスポンス**：RFC 9457（Problem Details）に次を加える。

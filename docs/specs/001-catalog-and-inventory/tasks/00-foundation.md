@@ -91,7 +91,7 @@
 
 ## CI
 
-- [ ] **T020** GitHub Actions を作る。
+- [x] **T020** GitHub Actions を作る。
   - push と pull request で、バックエンドのビルド（単体・統合テスト）を実行する。
   - OpenAPI の構文を検証する。
   - フロントのジョブは段階 7・8 で追加する。

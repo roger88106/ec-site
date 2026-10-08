@@ -1,0 +1,55 @@
+# ============================================================================
+# CI（constitution 13）
+#
+# push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
+#   backend：ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
+#   フロントのジョブは段階 7（管理画面）・8（店舗画面）で追加する。
+# ============================================================================
+
+name: CI
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+# 同じブランチで新しい実行が始まったら、古い実行は止める
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: バックエンド
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Gradle のキャッシュと、wrapper の検証
+      - uses: gradle/actions/setup-gradle@v6
+
+      # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
+      - name: ビルドとテスト
+        run: ./gradlew build
+
+      - name: テストレポートを保存（失敗時）
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            backend/build/reports/tests/
+            backend/build/test-results/
+          retention-days: 7

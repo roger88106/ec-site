@@ -289,6 +289,19 @@ sourceSets.main {
 
 tasks.named("compileJava") { dependsOn(openApiGenerateTasks) }
 
+// OpenAPI の構文の検証。check に含めるので、ローカルと CI で同じ検証が走る
+val openApiValidateTasks = openApiSpecs.map { spec ->
+    tasks.register<org.openapitools.generator.gradle.plugin.tasks.ValidateTask>("openApiValidate${spec.replaceFirstChar { it.uppercase() }}") {
+        description = "api/openapi/$spec.yaml の構文を検証する"
+        group = "openapi"
+        inputSpec.set(openApiDir.file("$spec.yaml").asFile.absolutePath)
+        // 推奨事項（ルールの違反ではないもの）でも失敗させる
+        recommend.set(true)
+    }
+}
+
+tasks.check { dependsOn(openApiValidateTasks) }
+
 // -----------------------------------------------------------------------------
 // コンパイルオプション
 // -----------------------------------------------------------------------------

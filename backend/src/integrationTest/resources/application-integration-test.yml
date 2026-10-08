@@ -1,0 +1,10 @@
+# ============================================================================
+# 統合テスト用の設定（@IntegrationTest で有効になる）
+#
+# 接続先は TestcontainersConfig の @ServiceConnection が与える。
+# ============================================================================
+
+spring:
+  flyway:
+    # Testcontainers の PostgreSQL にマイグレーションを適用する（constitution 7.2）
+    enabled: true

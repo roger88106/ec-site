@@ -55,6 +55,12 @@ dependencies {
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
 
+    // --- データベース ---
+    implementation(libs.spring.boot.starter.jdbc)
+    implementation(libs.spring.boot.starter.flyway)
+    implementation(libs.flyway.database.postgresql)
+    runtimeOnly(libs.postgresql)
+
     // --- コード生成（Lombok） ---
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
@@ -62,6 +68,10 @@ dependencies {
     // --- テスト：単体 ---
     testImplementation(libs.spring.boot.starter.test)
     testRuntimeOnly(libs.junit.platform.launcher)
+
+    // --- テスト：統合 ---
+    "integrationTestImplementation"(libs.spring.boot.testcontainers)
+    "integrationTestImplementation"(libs.testcontainers.postgresql)
 }
 
 // -----------------------------------------------------------------------------

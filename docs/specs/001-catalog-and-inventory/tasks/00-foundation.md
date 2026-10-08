@@ -22,7 +22,7 @@
 
 ## DB
 
-- [ ] **T005** Flyway を入れる（`spring-boot-starter-flyway` と PostgreSQL 用モジュール）。
+- [x] **T005** Flyway を入れる（`spring-boot-starter-flyway` と PostgreSQL 用モジュール）。
   - 最初のマイグレーションで schema（`common`、`tax`、`catalog`、`inventory`）を作る。
   - Spring Modulith のイベント発行記録のテーブルを、使用バージョンの公式 DDL から `common` schema に作る。
   - 完了：ローカルで起動するとマイグレーションが適用される。

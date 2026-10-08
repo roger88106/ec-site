@@ -1,0 +1,5 @@
+-- モジュールごとの schema（constitution 7.1）
+CREATE SCHEMA IF NOT EXISTS common;
+CREATE SCHEMA IF NOT EXISTS tax;
+CREATE SCHEMA IF NOT EXISTS catalog;
+CREATE SCHEMA IF NOT EXISTS inventory;

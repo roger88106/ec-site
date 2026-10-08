@@ -25,6 +25,30 @@ repositories {
 }
 
 // -----------------------------------------------------------------------------
+// source set
+//   src/test            : 単体（純 JVM、Docker 不要）
+//   src/integrationTest : 統合（Spring コンテキスト + Testcontainers、Docker 必須）
+//   ※ dependencies より前に定義すること
+// -----------------------------------------------------------------------------
+sourceSets {
+    create("integrationTest") {
+        compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output
+        runtimeClasspath += sourceSets.main.get().output + sourceSets.test.get().output
+    }
+}
+
+configurations["integrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
+configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
+
+// IntelliJ に integrationTest をテストソースとして認識させる（@Autowired 等の Spring 補助が効くようになる）
+idea {
+    module {
+        testSources.from(sourceSets["integrationTest"].java.srcDirs)
+        testResources.from(sourceSets["integrationTest"].resources.srcDirs)
+    }
+}
+
+// -----------------------------------------------------------------------------
 // 依存関係
 // -----------------------------------------------------------------------------
 dependencies {
@@ -42,10 +66,24 @@ dependencies {
 
 // -----------------------------------------------------------------------------
 // テスト task
+//   ./gradlew test             → 単体のみ
+//   ./gradlew integrationTest  → 統合のみ
+//   ./gradlew check / build    → 両方
 // -----------------------------------------------------------------------------
 tasks.named<Test>("test") {
     useJUnitPlatform()
 }
+
+val integrationTest = tasks.register<Test>("integrationTest") {
+    description = "統合テストを実行する（Docker 必須）"
+    group = "verification"
+    testClassesDirs = sourceSets["integrationTest"].output.classesDirs
+    classpath = sourceSets["integrationTest"].runtimeClasspath
+    useJUnitPlatform()
+    shouldRunAfter(tasks.test)
+}
+
+tasks.check { dependsOn(integrationTest) }
 
 // -----------------------------------------------------------------------------
 // コンパイルオプション

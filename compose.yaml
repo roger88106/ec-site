@@ -1,0 +1,37 @@
+# ============================================================================
+# ローカル開発用のミドルウェア
+#
+#   起動：docker compose up -d
+#   停止：docker compose stop
+#
+# スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
+# ここでは空のデータベースを用意するだけ。
+# ============================================================================
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: ec-site-postgres
+    environment:
+      POSTGRES_DB: ec_site
+      POSTGRES_USER: ec_site
+      POSTGRES_PASSWORD: ec_site
+    ports:
+      - "5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ec_site -d ec_site"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # 分散トレーシングの収集と表示（http://localhost:9411）
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: ec-site-zipkin
+    ports:
+      - "9411:9411"
+
+volumes:
+  postgres_data:

@@ -14,7 +14,7 @@
   - `.gitattributes` で改行を LF に揃える（Windows の `.bat` は CRLF）。`gradlew` が CRLF になると、Linux の CI で実行できないため。
   - 完了：空のアプリが `./gradlew bootRun` で起動する。
 - [x] **T002** ソースセットを MyIAM と同じく `src/test`（単体）と `src/integrationTest`（統合）に分け、`./gradlew check` で両方が走るようにする。
-- [ ] **T003** ルートに `compose.yaml` を作る（PostgreSQL 18、Zipkin）。
+- [x] **T003** ルートに `compose.yaml` を作る（PostgreSQL 18、Zipkin）。
 - [ ] **T004** 設定ファイルを分ける。
   - `application.yml`：環境に依存しない設定。値は環境変数で上書きできるようにする。
   - `application-local.yml`：ローカル開発用（compose の接続先、起動時のマイグレーション実行）。

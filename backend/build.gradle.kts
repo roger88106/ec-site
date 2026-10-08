@@ -91,7 +91,8 @@ dependencies {
     implementation(libs.spring.boot.starter.jooq)
     implementation(libs.spring.boot.starter.flyway)
     implementation(libs.flyway.database.postgresql)
-    runtimeOnly(libs.postgresql)
+    // 制約違反の制約名を取り出すため、コンパイル時にも使う（ConstraintViolationTranslator）
+    implementation(libs.postgresql)
     jooqGenerator(libs.postgresql)
 
     // --- コード生成（Lombok） ---

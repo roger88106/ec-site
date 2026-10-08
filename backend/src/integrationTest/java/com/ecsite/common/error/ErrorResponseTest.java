@@ -28,6 +28,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.util.List;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -123,8 +124,9 @@ class ErrorResponseTest {
                     .andExpect(status().isBadRequest())
                     .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST))
                     .andExpect(jsonPath("$.errors", hasSize(2)))
-                    .andExpect(jsonPath("$.errors[?(@.field == 'name')].message").value(matchesPattern(JAPANESE)))
-                    .andExpect(jsonPath("$.errors[?(@.field == 'size')].message").value(matchesPattern(JAPANESE)));
+                    // フィルター式の結果は配列になる
+                    .andExpect(jsonPath("$.errors[?(@.field == 'name')].message").value(contains(matchesPattern(JAPANESE))))
+                    .andExpect(jsonPath("$.errors[?(@.field == 'size')].message").value(contains(matchesPattern(JAPANESE))));
         }
 
         @Test

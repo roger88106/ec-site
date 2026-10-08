@@ -52,7 +52,7 @@
   - すべてのエラー（500 を含む）で `errorCode`、`message`、`traceId` が入り、Content-Type が `application/problem+json`。
     - `message` は画面にそのまま出せる日本語の文字列（メッセージのキーやパラメータの構造ではない）。
     - トレースの span がない状態（サンプリングされない場合など）でも、`traceId` を返し、例外ハンドラー自体が失敗しない。
-- [ ] **T011** 例外体系を MyIAM から移植する（`ErrorCode`、`ErrorType`、`BusinessException`、`SystemException`、`GlobalExceptionHandler`、i18n メッセージ）。T010 を通す。
+- [x] **T011** 例外体系を MyIAM から移植する（`ErrorCode`、`ErrorType`、`BusinessException`、`SystemException`、`GlobalExceptionHandler`、i18n メッセージ）。T010 を通す。
   - MyIAM のまま写すと constitution 9 に合わない箇所があるので、次を直す。
     - `message`：MyIAM はメッセージのキーとパラメータの構造を入れていて、日本語の文字列は `detail` に入っている。`message` に日本語の文字列を入れる。
     - `traceId`：MyIAM は 500 のときだけ返す。すべてのエラーで返す。

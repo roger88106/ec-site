@@ -11,6 +11,11 @@
 spring:
   application:
     name: ecsite
+  web:
+    # 対象市場は日本だけなので、メッセージ（入力検証を含む）は常に日本語にする（constitution 1、14）。
+    # リクエストの Accept-Language や、実行環境の既定のロケールに左右されないよう固定する。
+    locale: ja
+    locale-resolver: fixed
   flyway:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（constitution 5-10）。
     # 起動時の実行は local profile でだけ有効にする。

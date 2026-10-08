@@ -32,6 +32,41 @@ spring:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（constitution 5-10）。
     # 起動時の実行は local profile でだけ有効にする。
     enabled: false
+  lifecycle:
+    # graceful shutdown で、処理中のリクエストの完了を待つ上限
+    timeout-per-shutdown-phase: 30s
 
 server:
   port: 8080
+  # 停止時に新しいリクエストの受付を止め、処理中のリクエストを終えてから止める（constitution 5-9）
+  shutdown: graceful
+
+# ============================== 運用（constitution 5-9） ==============================
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 死活監視（health）とメトリクスの収集（prometheus）だけを公開する。開発用の追加公開は application-local.yml
+        include: health,prometheus
+  endpoint:
+    health:
+      # liveness（/actuator/health/liveness）と readiness（/actuator/health/readiness）を有効にする
+      probes:
+        enabled: true
+      # 外部には UP / DOWN のみ返す（DB などの個別の状態は出さない）
+      show-details: never
+  tracing:
+    sampling:
+      # 記録するリクエストの割合。環境に合わせて MANAGEMENT_TRACING_SAMPLING_PROBABILITY で変える
+      probability: 0.1
+    export:
+      zipkin:
+        # 送信先。環境に合わせて MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT で変える
+        endpoint: http://localhost:9411/api/v2/spans
+
+logging:
+  structured:
+    format:
+      # ログは標準出力に JSON で出す（Elastic Common Schema）。トレース ID・span ID も入る
+      console: ecs

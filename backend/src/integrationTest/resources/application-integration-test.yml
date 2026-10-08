@@ -4,6 +4,12 @@
 # 接続先は TestcontainersConfig の @ServiceConnection が与える。
 # ============================================================================
 
+logging:
+  structured:
+    format:
+      # テストの出力は読みやすさを優先して、通常のテキストにする
+      console: ""
+
 spring:
   messages:
     # テスト用のメッセージを追加する（アプリのメッセージはそのまま使う）

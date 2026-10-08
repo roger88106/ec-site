@@ -20,7 +20,26 @@ spring:
     locations: classpath:db/migration,classpath:db/seed/local
 
 logging:
+  structured:
+    format:
+      # ローカルでは読みやすさを優先して、JSON ではなく通常のテキストで出す（トレース ID は行に入る）
+      console: ""
   level:
     com.ecsite: DEBUG
     # SQL とバインドパラメータ
     org.jooq.tools.LoggerListener: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 開発用：Bean 一覧 / 自動構成の判定結果 / 環境変数 / マッピング一覧 / モジュール構成
+        include: health,prometheus,beans,conditions,env,mappings,modulith
+  endpoint:
+    health:
+      # 開発中は DB などの個別の状態も見たい
+      show-details: always
+  tracing:
+    sampling:
+      # ローカルでは全リクエストを記録し、compose の Zipkin（http://localhost:9411）で見る
+      probability: 1.0

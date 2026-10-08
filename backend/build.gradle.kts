@@ -88,6 +88,10 @@ dependencies {
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.validation)
+    // --- 可観測性（constitution 5-9） ---
+    // ヘルスチェック（liveness / readiness）、メトリクス（Prometheus）
+    implementation(libs.spring.boot.starter.actuator)
+    runtimeOnly(libs.micrometer.registry.prometheus)
     // 分散トレーシング（Brave + Zipkin）。エラーレスポンスの traceId にも使う
     implementation(libs.spring.boot.starter.zipkin)
 
@@ -121,6 +125,8 @@ dependencies {
     "integrationTestImplementation"(libs.testcontainers.postgresql)
     "integrationTestImplementation"(libs.spring.boot.starter.webmvc.test)
     "integrationTestImplementation"(libs.spring.modulith.starter.test)
+    "integrationTestImplementation"(libs.spring.boot.micrometer.tracing.test)
+    "integrationTestImplementation"(libs.spring.boot.micrometer.metrics.test)
 }
 
 // -----------------------------------------------------------------------------

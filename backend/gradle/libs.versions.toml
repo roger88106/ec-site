@@ -54,6 +54,9 @@ spring-boot-starter-zipkin = { module = "org.springframework.boot:spring-boot-st
 spring-boot-starter-jooq = { module = "org.springframework.boot:spring-boot-starter-jooq" }
 spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
 
+# --- 可観測性（Boot BOM 管理） ---
+micrometer-registry-prometheus = { module = "io.micrometer:micrometer-registry-prometheus" }
+
 # --- Spring Modulith（Modulith BOM 管理） ---
 spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
 spring-modulith-events-api = { module = "org.springframework.modulith:spring-modulith-events-api" }
@@ -86,6 +89,8 @@ spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-star
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
 spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+spring-boot-micrometer-tracing-test = { module = "org.springframework.boot:spring-boot-micrometer-tracing-test" }
+spring-boot-micrometer-metrics-test = { module = "org.springframework.boot:spring-boot-micrometer-metrics-test" }
 testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
 junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
 

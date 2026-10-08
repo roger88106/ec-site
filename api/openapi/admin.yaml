@@ -7,6 +7,8 @@ info:
 
     - 認証は MVP では実装しない。各操作に必要な権限を `x-required-permission` に記す（constitution 10）。
     - 同時に編集されうるリソースの更新では、取得時の `version` を送る。一致しなければ 409 を返す。
+    - 状態の切り替え（公開・非公開・販売終了、販売停止・解除）は冪等で、`version` を送らない。すでにその状態なら何もせず 204 を返す。
+    - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。constitution 9）。
     - 日時は ISO 8601 のオフセット付き文字列。
 servers:
   - url: /api/admin
@@ -53,6 +55,24 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '409':
           $ref: '#/components/responses/Conflict'
+
+  /tax-categories/{taxCategoryId}:
+    parameters:
+      - $ref: '#/components/parameters/TaxCategoryId'
+    get:
+      tags: [tax]
+      operationId: getTaxCategory
+      summary: 税区分の取得（税率を含む）
+      x-required-permission: tax:read
+      responses:
+        '200':
+          description: 税区分
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/TaxCategory'
+        '404':
+          $ref: '#/components/responses/NotFound'
 
   /tax-categories/{taxCategoryId}/rates:
     parameters:
@@ -140,6 +160,20 @@ paths:
   /categories/{categoryId}:
     parameters:
       - $ref: '#/components/parameters/CategoryId'
+    get:
+      tags: [category]
+      operationId: getCategory
+      summary: カテゴリの取得
+      x-required-permission: category:read
+      responses:
+        '200':
+          description: カテゴリ（子カテゴリは含まない）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          $ref: '#/components/responses/NotFound'
     put:
       tags: [category]
       operationId: renameCategory
@@ -178,14 +212,14 @@ paths:
   /products:
     get:
       tags: [product]
-      operationId: searchProducts
+      operationId: listProducts
       summary: 商品の一覧・絞り込み（AC-47〜50）
-      description: 状態に関係なく、すべての商品が対象。並びは登録日時の新しい順。
+      description: 状態に関係なく、すべての商品が対象。並びは登録日時の新しい順（同じなら ID 順）。
       x-required-permission: product:read
       parameters:
         - name: code
           in: query
-          description: 商品品番またはバリアント品番の前方一致
+          description: 商品品番またはバリアント品番の前方一致（英小文字は大文字として扱う）
           schema:
             type: string
             maxLength: 32
@@ -218,7 +252,7 @@ paths:
     post:
       tags: [product]
       operationId: createProduct
-      summary: 商品の登録（AC-6、13〜17）
+      summary: 商品の登録（AC-6、13〜17、25）
       x-required-permission: product:write
       requestBody:
         required: true
@@ -254,7 +288,7 @@ paths:
     put:
       tags: [product]
       operationId: updateProduct
-      summary: 商品の編集（AC-6、18、19）
+      summary: 商品の編集（AC-6、18、19、25、26）
       x-required-permission: product:write
       requestBody:
         required: true
@@ -275,7 +309,7 @@ paths:
       tags: [product]
       operationId: deleteProduct
       summary: 商品の削除（AC-33）
-      description: 一度でも公開した商品は削除できない（400）。
+      description: C 側に一度でも表示された商品は削除できない（400）。
       x-required-permission: product:write
       parameters:
         - $ref: '#/components/parameters/Version'
@@ -296,6 +330,7 @@ paths:
       tags: [product]
       operationId: publishProduct
       summary: 公開する（AC-29、31）
+      description: 冪等。すでに公開なら何もしない。バリアントのない商品、販売終了の商品は 400。
       x-required-permission: product:write
       responses:
         '204':
@@ -304,6 +339,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /products/{productId}/unpublish:
     parameters:
@@ -312,6 +349,7 @@ paths:
       tags: [product]
       operationId: unpublishProduct
       summary: 非公開にする（AC-30）
+      description: 冪等。すでに非公開なら何もしない。販売終了の商品は 400。
       x-required-permission: product:write
       responses:
         '204':
@@ -320,6 +358,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /products/{productId}/discontinue:
     parameters:
@@ -328,6 +368,7 @@ paths:
       tags: [product]
       operationId: discontinueProduct
       summary: 販売終了にする（AC-32）
+      description: 冪等。すでに販売終了なら何もしない。
       x-required-permission: product:write
       responses:
         '204':
@@ -336,6 +377,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /products/{productId}/publication-period:
     parameters:
@@ -368,7 +411,7 @@ paths:
     post:
       tags: [product]
       operationId: addVariant
-      summary: バリアントの登録（AC-20〜25）
+      summary: バリアントの登録（AC-20〜24）
       description: バリアントは商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
       x-required-permission: product:write
       requestBody:
@@ -420,31 +463,11 @@ paths:
     parameters:
       - $ref: '#/components/parameters/ProductId'
       - $ref: '#/components/parameters/VariantId'
-    put:
-      tags: [product]
-      operationId: updateVariant
-      summary: バリアントの編集（AC-26）
-      x-required-permission: product:write
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UpdateVariantRequest'
-      responses:
-        '204':
-          description: 変更した
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '404':
-          $ref: '#/components/responses/NotFound'
-        '409':
-          $ref: '#/components/responses/Conflict'
     delete:
       tags: [product]
       operationId: deleteVariant
       summary: バリアントの削除（AC-71）
-      description: 一度でも公開した商品のバリアントは削除できない（400）。
+      description: C 側に一度でも表示された商品のバリアントは削除できない（400）。
       x-required-permission: product:write
       parameters:
         - $ref: '#/components/parameters/Version'
@@ -466,12 +489,17 @@ paths:
       tags: [product]
       operationId: suspendVariant
       summary: バリアントを販売停止にする（AC-28、P2）
+      description: 冪等。すでに販売停止なら何もしない。
       x-required-permission: product:write
       responses:
         '204':
           description: 販売停止にした
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   /products/{productId}/variants/{variantId}/resume:
     parameters:
@@ -481,12 +509,17 @@ paths:
       tags: [product]
       operationId: resumeVariant
       summary: バリアントの販売停止を解除する（AC-28、P2）
+      description: 冪等。販売停止でなければ何もしない。
       x-required-permission: product:write
       responses:
         '204':
           description: 解除した
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   # ============================== 在庫 ==============================
   /inventory/variants/{variantId}:
@@ -865,6 +898,30 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CategoryNode'
+    Category:
+      type: object
+      required: [id, name, depth, displayOrder, version]
+      properties:
+        id:
+          type: string
+          format: uuid
+        parentId:
+          type: string
+          format: uuid
+          nullable: true
+          description: null は最上位
+        name:
+          type: string
+        depth:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 3
+        displayOrder:
+          type: integer
+          format: int32
+        version:
+          $ref: '#/components/schemas/Version'
     CreateCategoryRequest:
       type: object
       required: [name]
@@ -912,12 +969,18 @@ components:
       description: 非公開、公開、販売終了
     ProductCode:
       type: string
-      pattern: '^[A-Za-z0-9-]{1,32}$'
-      description: 商品品番。半角英数字とハイフンで 1〜32 文字
+      minLength: 1
+      maxLength: 32
+      pattern: '^[A-Z0-9]+(-[A-Z0-9]+)*$'
+      description: 商品品番。半角の英大文字・数字とハイフンで 1〜32 文字。ハイフンは英数字の間にだけ置ける（AC-15）
+      example: ABC-001
     VariantCode:
       type: string
-      pattern: '^[A-Za-z0-9-]{1,32}$'
-      description: バリアント品番。半角英数字とハイフンで 1〜32 文字
+      minLength: 1
+      maxLength: 32
+      pattern: '^[A-Z0-9]+(-[A-Z0-9]+)*$'
+      description: バリアント品番。形式は商品品番と同じ（AC-21）
+      example: ABC-001-WH-M
     ProductSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -947,7 +1010,7 @@ components:
           format: int32
     ProductDetail:
       type: object
-      required: [id, productCode, name, description, taxCategoryId, categoryIds, axes, status, variants, version, createdAt, updatedAt]
+      required: [id, productCode, name, description, taxCategoryId, priceExclTax, priceInclTax, categoryIds, axes, status, variants, version, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -961,6 +1024,15 @@ components:
         taxCategoryId:
           type: string
           format: uuid
+        priceExclTax:
+          type: integer
+          format: int64
+          description: 税抜価格（円）。全バリアント共通
+        priceInclTax:
+          type: integer
+          format: int64
+          nullable: true
+          description: 現時点の税込価格（円）。有効な税率がなければ null
         categoryIds:
           type: array
           items:
@@ -978,7 +1050,7 @@ components:
           type: string
           format: date-time
           nullable: true
-          description: 初回表示日時。null は一度も公開していない
+          description: 初回表示日時。未来の値は表示予定。null または未来なら、C 側に一度も表示されていない
         publishStart:
           type: string
           format: date-time
@@ -1002,7 +1074,7 @@ components:
           format: date-time
     Variant:
       type: object
-      required: [id, variantCode, axisValues, priceExclTax, priceInclTax, salesSuspended]
+      required: [id, variantCode, axisValues, salesSuspended]
       properties:
         id:
           type: string
@@ -1014,20 +1086,11 @@ components:
           description: 軸の値（商品の axes と同じ並び）
           items:
             type: string
-        priceExclTax:
-          type: integer
-          format: int64
-          description: 税抜価格（円）
-        priceInclTax:
-          type: integer
-          format: int64
-          nullable: true
-          description: 現時点の税込価格（円）。有効な税率がなければ null
         salesSuspended:
           type: boolean
     CreateProductRequest:
       type: object
-      required: [productCode, name, description, taxCategoryId]
+      required: [productCode, name, description, taxCategoryId, priceExclTax]
       properties:
         productCode:
           $ref: '#/components/schemas/ProductCode'
@@ -1041,6 +1104,11 @@ components:
         taxCategoryId:
           type: string
           format: uuid
+        priceExclTax:
+          type: integer
+          format: int64
+          minimum: 1
+          description: 税抜価格（円）。全バリアント共通
         categoryIds:
           type: array
           uniqueItems: true
@@ -1060,7 +1128,7 @@ components:
     UpdateProductRequest:
       type: object
       description: 商品品番とバリアント軸は変更できない
-      required: [name, description, taxCategoryId, categoryIds, version]
+      required: [name, description, taxCategoryId, priceExclTax, categoryIds, version]
       properties:
         name:
           type: string
@@ -1072,6 +1140,11 @@ components:
         taxCategoryId:
           type: string
           format: uuid
+        priceExclTax:
+          type: integer
+          format: int64
+          minimum: 1
+          description: 税抜価格（円）。全バリアント共通
         categoryIds:
           type: array
           uniqueItems: true
@@ -1096,7 +1169,7 @@ components:
           $ref: '#/components/schemas/Version'
     AddVariantRequest:
       type: object
-      required: [variantCode, axisValues, priceExclTax, version]
+      required: [variantCode, axisValues, version]
       properties:
         variantCode:
           $ref: '#/components/schemas/VariantCode'
@@ -1108,20 +1181,6 @@ components:
             type: string
             minLength: 1
             maxLength: 50
-        priceExclTax:
-          type: integer
-          format: int64
-          minimum: 1
-        version:
-          $ref: '#/components/schemas/Version'
-    UpdateVariantRequest:
-      type: object
-      required: [priceExclTax, version]
-      properties:
-        priceExclTax:
-          type: integer
-          format: int64
-          minimum: 1
         version:
           $ref: '#/components/schemas/Version'
     ReorderVariantsRequest:

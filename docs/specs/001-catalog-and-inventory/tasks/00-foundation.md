@@ -32,6 +32,7 @@
 - [ ] **T008** OpenAPI Generator の Gradle プラグインで、`api/openapi/admin.yaml` と `store.yaml` から Spring のインターフェースとモデルを生成する。
   - 設定：`interfaceOnly`、`useSpringBoot4`、`useJackson3`、`useTags`。
   - パッケージ：`com.ecsite.api.admin`、`com.ecsite.api.store`（生成物はコミットしない）。
+  - nullable の項目：既定（`openApiNullable=true`）では `JsonNullable` が使われ、jackson-databind-nullable に依存する。これが Jackson 3 に対応しているかを確認し、対応していなければ `openApiNullable=false` にする。確認の結果は本タスクに追記する。
   - 完了：生成コードを含めてコンパイルが通る。
 - [ ] **T009** 権限の記載漏れを検出するテストを作る：`admin.yaml` のすべての操作に `x-required-permission` があり、`resource:action` の形であること（constitution 10）。
 
@@ -42,9 +43,10 @@
   - 業務ルール違反：400。見つからない：404。バージョン不一致：409（`CONCURRENT_MODIFICATION`）。想定外の例外：500。
   - すべてのエラーで `errorCode`、`message`（日本語）、`traceId` が入り、Content-Type が `application/problem+json`。
 - [ ] **T011** 例外体系を MyIAM から移植する（`ErrorCode`、`ErrorType`、`BusinessException`、`SystemException`、`GlobalExceptionHandler`、i18n メッセージ）。MyIAM との違い：`traceId` をすべてのエラーで返す。メッセージは日本語。T010 を通す。
+  - DB の制約違反は、各リポジトリで業務のエラーに変換する（constitution 9）。ここでは変換に使う共通の部品（制約名から業務のエラーを引く仕組みなど）を用意する。
 - [ ] **T012** [テスト] 金額（`Money`）の単体テスト：円単位の整数、負数の拒否、加算。
 - [ ] **T013** 金額を実装する。T012 を通す。
-- [ ] **T014** [テスト] ページングの単体テスト：`page` は 1 始まり、`size` は既定 20・最大 100、総件数からの総ページ数の計算。
+- [ ] **T014** [テスト] ページングの単体テスト：`page` は 1 始まり、`size` は既定 20・最大 100、総件数からの総ページ数の計算。並びの最後に ID を加えて順序を確定させる仕組み（constitution 9）。
 - [ ] **T015** ページングの共通部品を実装する（リクエストの変換と、レスポンスの組み立て）。T014 を通す。
 - [ ] **T016** `Clock` を Bean として定義する。統合テストでは固定の `Clock` に差し替えられるようにする。
 

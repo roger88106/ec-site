@@ -73,8 +73,9 @@ CREATE TABLE tax.tax_rate (
     EXCLUDE USING gist (
         tax_category_id WITH =,
         tstzrange(effective_from, effective_to, '[)') WITH &&
-    )
+    ) DEFERRABLE INITIALLY DEFERRED
 );
 ```
 
-排他制約の範囲型は、null の端を無限として扱う。
+- 排他制約の範囲型は、null の端を無限として扱う。
+- 排他制約の検査はコミット時まで遅らせる。一覧の置き換えでは複数の税率を 1 件ずつ書き換えるため、途中で一時的に期間が重なることがあるが、置き換えの結果に重なりがなければよい。

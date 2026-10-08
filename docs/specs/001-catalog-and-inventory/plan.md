@@ -47,24 +47,25 @@ flowchart LR
 |--------|------|------|----|
 | GET | `/tax-categories` | `tax:read` | |
 | POST | `/tax-categories` | `tax:write` | 1 |
+| GET | `/tax-categories/{id}` | `tax:read` | |
 | PUT | `/tax-categories/{id}/rates`（一覧ごと置き換え） | `tax:write` | 2〜5、7 |
 | GET | `/categories`（木） | `category:read` | |
 | POST | `/categories` | `category:write` | 8〜10 |
+| GET | `/categories/{id}` | `category:read` | |
 | PUT | `/categories/{id}` | `category:write` | 10、11 |
 | PUT | `/categories/order`（兄弟の並び順） | `category:write` | 11 |
 | DELETE | `/categories/{id}` | `category:write` | 12 |
 | GET | `/products` | `product:read` | 47〜50 |
 | GET | `/products/{id}` | `product:read` | |
-| POST | `/products` | `product:write` | 6、13〜17 |
-| PUT | `/products/{id}` | `product:write` | 6、18、19 |
+| POST | `/products` | `product:write` | 6、13〜17、25 |
+| PUT | `/products/{id}` | `product:write` | 6、18、19、25、26 |
 | DELETE | `/products/{id}` | `product:write` | 33 |
-| PUT | `/products/{id}/publish`、`/unpublish`、`/discontinue` | `product:write` | 29〜32 |
+| PUT | `/products/{id}/publish`、`/unpublish`、`/discontinue`（冪等） | `product:write` | 29〜32 |
 | PUT | `/products/{id}/publication-period`（P2） | `product:write` | 34〜36 |
-| POST | `/products/{id}/variants` | `product:write` | 20〜25 |
-| PUT | `/products/{id}/variants/{variantId}` | `product:write` | 26 |
+| POST | `/products/{id}/variants` | `product:write` | 20〜24 |
 | DELETE | `/products/{id}/variants/{variantId}` | `product:write` | 71 |
 | PUT | `/products/{id}/variants/order` | `product:write` | 27 |
-| PUT | `/products/{id}/variants/{variantId}/suspend`、`/resume`（P2） | `product:write` | 28 |
+| PUT | `/products/{id}/variants/{variantId}/suspend`、`/resume`（P2、冪等） | `product:write` | 28 |
 | GET | `/inventory/variants/{variantId}` | `inventory:read` | |
 | POST | `/inventory/variants/{variantId}/adjustments` | `inventory:write` | 42〜44、46 |
 | GET | `/inventory/variants/{variantId}/adjustments` | `inventory:read` | 45 |
@@ -89,6 +90,7 @@ URL には内部 ID を使い、品番を使わない（AC-66）。
 |---|---|---|
 | 画面 | トップ、商品一覧、検索結果、商品詳細 | 税区分、カテゴリ、商品一覧、商品編集（バリアントを含む）、在庫調整 |
 | API 呼び出し | サーバーコンポーネントから直接 | ブラウザから。開発時は Vite のプロキシ |
+| キャッシュ | API の結果のキャッシュは最大 60 秒（NFR-1） | TanStack Query の既定 |
 
 価格表示（BR-4）と日本時間への変換（BR-3）は共通の部品にする。
 
@@ -99,7 +101,7 @@ URL には内部 ID を使い、品番を使わない（AC-66）。
 | 依存バージョン | MyIAM の `libs.versions.toml` を起点に、着手時点の最新安定版にする |
 | Flyway | Spring Boot 4 では `spring-boot-starter-flyway` が必要 |
 | イベント発行記録 | Spring Modulith の公式 DDL を `common` schema のマイグレーションに含める（自動作成は使わない） |
-| イベント購読 | Spring Modulith のモジュール間リスナー（コミット後・非同期）。再起動時の未完了イベントの自動再発行は無効のまま |
+| イベント購読 | Spring Modulith のモジュール間リスナー（コミット後・非同期）。再起動時の未完了イベントの自動再発行は無効のまま。失敗時のリスクと手動の復旧手順は [inventory.md](../../modules/inventory.md) |
 | トレーシング | Micrometer Tracing。Zipkin 形式から始める |
 | ローカル環境 | `compose.yaml` に PostgreSQL 18 と Zipkin |
 | Seed | 税区分（標準 10%、軽減 8%）、カテゴリ、商品のサンプル |

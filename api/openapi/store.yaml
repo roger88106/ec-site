@@ -6,7 +6,8 @@ info:
     C 側（消費者）向けの API。
 
     - 対象は C 側に表示される商品だけ（spec 001 BR-2）。表示されない商品は、存在しない商品と同じく 404 を返す。
-    - 価格は税込・税抜の両方を返す。画面では「1,980 円（税抜 1,800 円）」の形で表示する（BR-4）。
+    - 価格は商品単位（全バリアント共通）で、税込・税抜の両方を返す。画面では「1,980 円（税抜 1,800 円）」の形で表示する（BR-4）。
+    - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。constitution 9）。
     - 在庫は有無だけを返し、数量は返さない（AC-64）。
 servers:
   - url: /api/store
@@ -229,7 +230,7 @@ components:
       type: string
       enum: [newest, price_asc, price_desc]
       default: newest
-      description: 新着順、価格の安い順、価格の高い順（いずれも税込価格）
+      description: 新着順（初回表示日時）、価格の安い順、価格の高い順（税込価格）。同じ値なら ID 順
     ProductSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -242,7 +243,7 @@ components:
                 $ref: '#/components/schemas/ProductSummary'
     ProductSummary:
       type: object
-      required: [id, name, lowestPrice, hasPriceRange, inStock]
+      required: [id, name, price, inStock]
       properties:
         id:
           type: string
@@ -253,17 +254,14 @@ components:
           type: string
           nullable: true
           description: 代表画像。画像の機能（US-7）までは null
-        lowestPrice:
+        price:
           $ref: '#/components/schemas/Price'
-        hasPriceRange:
-          type: boolean
-          description: バリアントで価格が異なる。true なら「〜」を付けて表示する（AC-55）
         inStock:
           type: boolean
           description: 販売中（販売停止でない）のいずれかのバリアントに在庫がある。false なら「在庫なし」（AC-56）
     ProductDetail:
       type: object
-      required: [id, name, description, imageUrls, axes, variants]
+      required: [id, name, description, price, imageUrls, axes, variants]
       properties:
         id:
           type: string
@@ -272,6 +270,8 @@ components:
           type: string
         description:
           type: string
+        price:
+          $ref: '#/components/schemas/Price'
         imageUrls:
           type: array
           description: 並び順。先頭が代表画像。画像の機能（US-7）までは空
@@ -279,7 +279,7 @@ components:
             type: string
         axes:
           type: array
-          description: バリアント軸と、選べる値
+          description: バリアント軸と、その値のすべて（在庫切れ・販売停止で選べない値も含む。AC-62）
           items:
             $ref: '#/components/schemas/VariantAxis'
         variants:
@@ -303,7 +303,7 @@ components:
           example: [白, 黒]
     Variant:
       type: object
-      required: [id, axisValues, price, inStock, salesSuspended]
+      required: [id, axisValues, inStock, salesSuspended]
       properties:
         id:
           type: string
@@ -313,8 +313,6 @@ components:
           description: 軸の値（axes と同じ並び）
           items:
             type: string
-        price:
-          $ref: '#/components/schemas/Price'
         inStock:
           type: boolean
         salesSuspended:

@@ -28,19 +28,19 @@
 | 用語 | 識別子 | 意味 |
 |------|--------|------|
 | 商品 | `Product` / `product` | 消費者から見た 1 つの商品ページの単位 |
-| 商品品番 | `ProductCode` / `product_code` | 運営者が商品に付ける業務上の番号。一意だが、付け替えられることがある |
+| 商品品番 | `ProductCode` / `product_code` | 運営者が商品に付ける業務上の番号。英大文字・数字とハイフン。一意だが、付け替えられることがある |
 | バリアント | `Variant` / `variant` | 商品の中で、実際に販売・在庫管理する単位（例：「白 / M」） |
 | バリアント品番 | `VariantCode` / `variant_code` | 運営者がバリアントに付ける業務上の番号 |
 | バリアント軸 | `VariantAxis` / `product_axis` | バリアントを区別する観点（例：色、サイズ）。1 商品に最大 3 つ |
 | 軸の値 | `AxisValue` / `variant_axis_value` | バリアントが各軸で持つ値（例：白、M） |
 | 軸キー | `axis_key` | 軸の値を連結した値。商品内での組み合わせの一意性を DB で守るために使う |
 | カテゴリ | `Category` / `category` | 商品の分類。最大 3 階層 |
-| 税抜価格 | `priceExclTax` / `price_excl_tax` | 運営者が登録する価格 |
+| 税抜価格 | `priceExclTax` / `price_excl_tax` | 運営者が商品に登録する価格。バリアント間で共通 |
 | 税込価格 | `priceInclTax` | 税抜価格に、その時点の税率を適用した価格 |
 | 金額 | `Money` | 円単位の整数を表す値オブジェクト |
 | 公開状態 | `PublicationStatus` / `status` | 非公開（`UNPUBLISHED`）、公開（`PUBLISHED`）、販売終了（`DISCONTINUED`） |
 | 公開期間 | `PublicationPeriod` / `publish_start`、`publish_end` | 公開状態でも、C 側に表示する期間を限る |
-| 初回表示日時 | `firstShownAt` / `first_shown_at` | 最初に C 側へ表示された日時 |
+| 初回表示日時 | `firstShownAt` / `first_shown_at` | 最初に C 側へ表示された日時。未来の値は「表示される予定」で、過去になった時点で確定する |
 | 表示条件 | `isVisibleAt` | C 側に表示される条件（公開状態が「公開」で、公開期間内） |
 | 販売停止 | `salesSuspended` / `sales_suspended` | バリアントを C 側で選べなくする |
 | 商品検索 | `ProductSearch` | キーワード検索の窓口 |
@@ -67,4 +67,4 @@
 | 商品公開 | `ProductPublished` | 商品カタログ |
 | 商品非公開 | `ProductUnpublished` | 商品カタログ |
 | 商品販売終了 | `ProductDiscontinued` | 商品カタログ |
-| バリアント価格変更 | `VariantPriceChanged` | 商品カタログ |
+| 商品価格変更 | `ProductPriceChanged` | 商品カタログ |

@@ -1,0 +1,104 @@
+# =============================================================================
+# バージョンカタログ ― 依存関係・プラグインのバージョンはここで一元管理する
+#
+# [versions]  : バージョン番号
+# [libraries] : 依存関係。Boot BOM が管理するものは version を持たない
+# [bundles]   : まとめて追加する依存関係のグループ
+# [plugins]   : Gradle プラグイン
+#
+# ※ライブラリは、使うタスクで build.gradle.kts に追加する。版はここで先に決めておく。
+# =============================================================================
+
+# ============================== [versions] ==============================
+
+[versions]
+java = "21"
+
+# --- フレームワーク ---
+spring-boot = "4.1.1"
+spring-dependency-management = "1.1.7"
+spring-modulith = "2.1.1"
+
+# --- DB ---
+jooq = "3.21.9"
+jooqPlugin = "10.2.1"
+
+# --- API ---
+openapi-generator = "7.26.0"
+
+# --- ユーティリティ ---
+mapstruct = "1.6.3"
+lombok-mapstruct-binding = "0.2.0"
+jmolecules = "2025.0.2"
+
+# --- テスト ---
+testcontainers = "2.0.5"
+
+# ============================== [libraries] ==============================
+
+[libraries]
+# --- BOM ---
+spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
+jmolecules-bom = { module = "org.jmolecules:jmolecules-bom", version.ref = "jmolecules" }
+
+# --- Spring Boot starters（Boot BOM 管理） ---
+spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
+spring-boot-starter-validation = { module = "org.springframework.boot:spring-boot-starter-validation" }
+spring-boot-starter-actuator = { module = "org.springframework.boot:spring-boot-starter-actuator" }
+spring-boot-starter-zipkin = { module = "org.springframework.boot:spring-boot-starter-zipkin" }
+spring-boot-starter-jooq = { module = "org.springframework.boot:spring-boot-starter-jooq" }
+spring-boot-starter-flyway = { module = "org.springframework.boot:spring-boot-starter-flyway" }
+
+# --- Spring Modulith（Modulith BOM 管理） ---
+spring-modulith-starter-core = { module = "org.springframework.modulith:spring-modulith-starter-core" }
+spring-modulith-events-api = { module = "org.springframework.modulith:spring-modulith-events-api" }
+spring-modulith-events-jdbc = { module = "org.springframework.modulith:spring-modulith-events-jdbc" }
+spring-modulith-events-jackson = { module = "org.springframework.modulith:spring-modulith-events-jackson" }
+
+# --- データベース ---
+postgresql = { module = "org.postgresql:postgresql" }
+flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
+
+# --- ユーティリティ ---
+mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
+mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
+lombok = { module = "org.projectlombok:lombok" }
+lombok-mapstruct-binding = { module = "org.projectlombok:lombok-mapstruct-binding", version.ref = "lombok-mapstruct-binding" }
+jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
+jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
+
+# --- テスト ---
+spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
+spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
+spring-modulith-starter-test = { module = "org.springframework.modulith:spring-modulith-starter-test" }
+testcontainers-postgresql = { module = "org.testcontainers:testcontainers-postgresql", version.ref = "testcontainers" }
+junit-platform-launcher = { module = "org.junit.platform:junit-platform-launcher" }
+
+# ============================== [bundles] ==============================
+
+[bundles]
+spring-modulith = [
+    "spring-modulith-starter-core",
+    "spring-modulith-events-api",
+    "spring-modulith-events-jdbc",
+    "spring-modulith-events-jackson",
+]
+jmolecules = [
+    "jmolecules-ddd",
+    "jmolecules-events",
+]
+integration-test = [
+    "spring-modulith-starter-test",
+    "spring-boot-testcontainers",
+    "spring-boot-starter-webmvc-test",
+    "testcontainers-postgresql",
+]
+
+# ============================== [plugins] ==============================
+
+[plugins]
+spring-boot = { id = "org.springframework.boot", version.ref = "spring-boot" }
+spring-dependency-management = { id = "io.spring.dependency-management", version.ref = "spring-dependency-management" }
+jooq = { id = "nu.studer.jooq", version.ref = "jooqPlugin" }
+openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }

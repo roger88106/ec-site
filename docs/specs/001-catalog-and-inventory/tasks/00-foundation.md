@@ -7,8 +7,8 @@
 
 ## プロジェクトの骨格
 
-- [ ] **T001** `backend/` に Gradle（Kotlin DSL）のプロジェクトを作る。
-  - `gradle/libs.versions.toml` は MyIAM を起点に、着手時点の最新安定版にする（Spring Boot 4.0.x、Spring Modulith、jOOQ、Testcontainers、Flyway、OpenAPI Generator 7.16 以降）。
+- [x] **T001** `backend/` に Gradle（Kotlin DSL）のプロジェクトを作る。
+  - `gradle/libs.versions.toml` は MyIAM を起点に、着手時点の最新安定版にする（Spring Boot 4.1.x、Spring Modulith、jOOQ、Testcontainers、Flyway、OpenAPI Generator 7.16 以降）。
   - `lombok.config` は MyIAM から写す。ルートパッケージは `com.ecsite`。
   - MyIAM から除く依存：Spring Security と OAuth2（constitution 10）、Thymeleaf、Redis（constitution 2）。Guava を使う場合は `-android` ではなく `-jre` 版にする。
   - `.gitattributes` で改行を LF に揃える（Windows の `.bat` は CRLF）。`gradlew` が CRLF になると、Linux の CI で実行できないため。

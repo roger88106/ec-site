@@ -21,7 +21,7 @@
 
 | 領域 | 採用 |
 |------|------|
-| 言語・フレームワーク | Java 21、Spring Boot 4.0.x |
+| 言語・フレームワーク | Java 21、Spring Boot 4.1.x |
 | モジュール化 | Spring Modulith、jMolecules |
 | DB・データアクセス | PostgreSQL 18、jOOQ（コード生成）、Flyway |
 | ファイル保存 | S3 互換オブジェクトストレージ |

@@ -1,0 +1,52 @@
+package com.ecsite.common.model;
+
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.exception.BusinessException;
+import org.jmolecules.ddd.annotation.ValueObject;
+
+/**
+ * 金額（円）。<br />
+ * 通貨は日本円だけなので、円単位の整数で表す（constitution 1、7.3）。小数を含む計算（税込価格など）は
+ * 呼び出す側が誤差の出ない十進数で行い、端数を処理してから金額にする。
+ *
+ * @param yen 金額（円）。0 以上
+ */
+@ValueObject
+public record Money(long yen) {
+
+    /**
+     * 0 円
+     */
+    public static final Money ZERO = new Money(0);
+
+    /**
+     * コンストラクタ。
+     *
+     * @param yen 金額（円）
+     */
+    public Money {
+        if (yen < 0) {
+            throw BusinessException.of(CommonErrorCode.INVALID_MONEY);
+        }
+    }
+
+    /**
+     * 金額を作る。
+     *
+     * @param yen 金額（円）。0 以上
+     * @return 金額
+     */
+    public static Money of(long yen) {
+        return new Money(yen);
+    }
+
+    /**
+     * 加算する。
+     *
+     * @param other 足す金額
+     * @return 合計の金額
+     */
+    public Money plus(Money other) {
+        return new Money(Math.addExact(yen, other.yen));
+    }
+}

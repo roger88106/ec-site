@@ -50,6 +50,12 @@ repositories {
     mavenCentral()
 }
 
+dependencyManagement {
+    imports {
+        mavenBom(libs.jmolecules.bom.get().toString())
+    }
+}
+
 // -----------------------------------------------------------------------------
 // source set
 //   src/test            : 単体（純 JVM、Docker 不要）
@@ -98,6 +104,9 @@ dependencies {
     // --- コード生成（Lombok） ---
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+
+    // --- DDD（ドメインのオブジェクトの明示。constitution 4.2） ---
+    implementation(libs.bundles.jmolecules)
 
     // --- テスト：単体 ---
     testImplementation(libs.spring.boot.starter.test)

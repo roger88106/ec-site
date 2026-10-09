@@ -1,17 +1,28 @@
 package com.ecsite.module.catalog.infrastructure;
 
+import com.ecsite.common.paging.PageRequest;
+import com.ecsite.common.paging.PageResult;
+import com.ecsite.common.persistence.LikePatterns;
 import com.ecsite.jooq.catalog.tables.records.ProductRecord;
 import com.ecsite.module.catalog.application.ProductQueryRepository;
+import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
+import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import lombok.RequiredArgsConstructor;
+import org.jooq.Condition;
 import org.jooq.DSLContext;
+import org.jooq.Record1;
+import org.jooq.Select;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.ecsite.jooq.catalog.Tables.CATEGORY;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
@@ -44,7 +55,80 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .map(this::toDetail);
     }
 
+    /**
+     * B 側の商品一覧を取得する。
+     *
+     * @param query   絞り込みの条件
+     * @param request ページの指定
+     * @return 商品の一覧
+     */
+    @Override
+    public PageResult<ProductSummaryView> findSummaries(ProductListQuery query, PageRequest request) {
+        var condition = summaryCondition(query);
+        var variantCount = DSL.selectCount()
+                .from(VARIANT)
+                .where(VARIANT.PRODUCT_ID.eq(PRODUCT.ID))
+                .<Integer>asField("variant_count");
+
+        var items = dsl.select(PRODUCT.ID, PRODUCT.PRODUCT_CODE, PRODUCT.NAME, PRODUCT.STATUS, variantCount)
+                .from(PRODUCT)
+                .where(condition)
+                .orderBy(PRODUCT.CREATED_AT.desc(), PRODUCT.ID)
+                .limit(request.size())
+                .offset(request.offset())
+                .fetch(record -> new ProductSummaryView(
+                        record.value1(), record.value2(), record.value3(), record.value4(), record.value5()));
+
+        return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
+    }
+
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * B 側の商品一覧の絞り込みの条件を作る（docs/modules/catalog.md）。
+     *
+     * @param query 絞り込みの条件
+     * @return 条件
+     */
+    private static Condition summaryCondition(ProductListQuery query) {
+        var condition = DSL.noCondition();
+        if (query.code() != null && !query.code().isBlank()) {
+            // 英小文字は大文字として扱う。品番は英大文字・数字・ハイフンだけなので、大文字にそろえて比べる
+            var pattern = LikePatterns.startsWith(query.code().toUpperCase(Locale.ROOT));
+            condition = condition.and(PRODUCT.PRODUCT_CODE.like(pattern, LikePatterns.ESCAPE)
+                    .or(DSL.exists(DSL.selectOne()
+                            .from(VARIANT)
+                            .where(VARIANT.PRODUCT_ID.eq(PRODUCT.ID))
+                            .and(VARIANT.VARIANT_CODE.like(pattern, LikePatterns.ESCAPE)))));
+        }
+        if (query.name() != null && !query.name().isBlank()) {
+            condition = condition.and(PRODUCT.NAME.likeIgnoreCase(LikePatterns.contains(query.name()), LikePatterns.ESCAPE));
+        }
+        if (query.status() != null) {
+            condition = condition.and(PRODUCT.STATUS.eq(query.status()));
+        }
+        if (query.categoryId() != null) {
+            condition = condition.and(PRODUCT.ID.in(DSL.select(PRODUCT_CATEGORY.PRODUCT_ID)
+                    .from(PRODUCT_CATEGORY)
+                    .where(PRODUCT_CATEGORY.CATEGORY_ID.in(selfAndDescendants(query.categoryId())))));
+        }
+        return condition;
+    }
+
+    /**
+     * カテゴリと、その子孫のカテゴリの ID を選ぶ。階層は最大 3 なので、子と孫まででよい（AC-9）。
+     *
+     * @param categoryId カテゴリ ID
+     * @return カテゴリ ID の選択
+     */
+    private static Select<Record1<UUID>> selfAndDescendants(UUID categoryId) {
+        var child = CATEGORY.as("child");
+        return DSL.select(CATEGORY.ID)
+                .from(CATEGORY)
+                .where(CATEGORY.ID.eq(categoryId))
+                .or(CATEGORY.PARENT_ID.eq(categoryId))
+                .or(CATEGORY.PARENT_ID.in(DSL.select(child.ID).from(child).where(child.PARENT_ID.eq(categoryId))));
+    }
 
     /**
      * レコードから商品の詳細に変換する。商品の一部は別に取得する。

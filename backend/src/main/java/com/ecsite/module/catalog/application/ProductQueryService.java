@@ -3,7 +3,11 @@ package com.ecsite.module.catalog.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.Money;
+import com.ecsite.common.paging.PageRequest;
+import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
+import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.domain.product.port.TaxDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -48,5 +52,16 @@ public class ProductQueryService {
                 .map(Money::yen)
                 .orElse(null);
         return view.withPriceInclTax(priceInclTax);
+    }
+
+    /**
+     * B 側の商品一覧を取得する（AC-47〜50）。
+     *
+     * @param query   絞り込みの条件
+     * @param request ページの指定
+     * @return 商品の一覧
+     */
+    public PageResult<ProductSummaryView> listProducts(ProductListQuery query, PageRequest request) {
+        return productQueryRepository.findSummaries(query, request);
     }
 }

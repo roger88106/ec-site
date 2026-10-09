@@ -10,8 +10,10 @@ import com.ecsite.api.admin.model.PublicationStatus;
 import com.ecsite.api.admin.model.ReorderVariantsRequest;
 import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
+import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.application.ProductCommandService;
 import com.ecsite.module.catalog.application.ProductQueryService;
+import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -46,14 +48,22 @@ class ProductController implements ProductApi {
 // ============================== GET ==============================
 
     /**
-     * 商品の一覧・絞り込み（AC-47〜50）。段階 5 で実装する
+     * 商品の一覧・絞り込み（AC-47〜50）
      *
-     * @return Http 501
+     * @param code       商品品番またはバリアント品番の前方一致
+     * @param name       商品名の部分一致
+     * @param status     公開状態
+     * @param categoryId カテゴリ ID（子孫のカテゴリを含む）
+     * @param page       ページ番号
+     * @param size       1 ページの件数
+     * @return Http 200 : {@link ProductSummaryPage}
      */
     @Override
     public ResponseEntity<ProductSummaryPage> listProducts(String code, String name, PublicationStatus status,
                                                            UUID categoryId, Integer page, Integer size) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var query = new ProductListQuery(code, name, status == null ? null : status.getValue(), categoryId);
+        var result = queryService.listProducts(query, PageRequest.of(page, size));
+        return ResponseEntity.ok(mapper.toProductSummaryPage(result));
     }
 
     /**

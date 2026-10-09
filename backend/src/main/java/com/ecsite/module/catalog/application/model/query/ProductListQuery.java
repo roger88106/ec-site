@@ -1,0 +1,17 @@
+package com.ecsite.module.catalog.application.model.query;
+
+import jakarta.annotation.Nullable;
+
+import java.util.UUID;
+
+/**
+ * B 側の商品一覧の絞り込みの条件（AC-48）。null の項目では絞り込まない。
+ *
+ * @param code       商品品番またはバリアント品番の前方一致
+ * @param name       商品名の部分一致
+ * @param status     公開状態（{@code UNPUBLISHED} / {@code PUBLISHED} / {@code DISCONTINUED}）
+ * @param categoryId カテゴリ ID（子孫のカテゴリを含む）
+ */
+public record ProductListQuery(@Nullable String code, @Nullable String name, @Nullable String status,
+                               @Nullable UUID categoryId) {
+}

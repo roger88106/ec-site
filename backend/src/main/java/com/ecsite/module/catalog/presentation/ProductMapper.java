@@ -3,15 +3,19 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.api.admin.model.AddVariantRequest;
 import com.ecsite.api.admin.model.CreateProductRequest;
 import com.ecsite.api.admin.model.ProductDetail;
+import com.ecsite.api.admin.model.ProductSummary;
+import com.ecsite.api.admin.model.ProductSummaryPage;
 import com.ecsite.api.admin.model.PublicationStatus;
 import com.ecsite.api.admin.model.ReorderVariantsRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.api.admin.model.Variant;
+import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.command.AddVariantCommand;
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderVariantsCommand;
 import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
+import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -111,6 +115,20 @@ class ProductMapper {
                 .firstShownAt(toOffsetDateTime(view.firstShownAt()))
                 .publishStart(toOffsetDateTime(view.publishStart()))
                 .publishEnd(toOffsetDateTime(view.publishEnd()));
+    }
+
+    /**
+     * B 側の商品一覧のレスポンスに変換する。
+     *
+     * @param page 商品の一覧
+     * @return 商品の一覧のレスポンス
+     */
+    ProductSummaryPage toProductSummaryPage(PageResult<ProductSummaryView> page) {
+        return new ProductSummaryPage(page.page(), page.size(), page.totalItems(), page.totalPages(),
+                page.items().stream()
+                        .map(view -> new ProductSummary(view.id(), view.productCode(), view.name(),
+                                PublicationStatus.fromValue(view.status()), view.variantCount()))
+                        .toList());
     }
 
 // ============================== プライベートメソッド ==============================

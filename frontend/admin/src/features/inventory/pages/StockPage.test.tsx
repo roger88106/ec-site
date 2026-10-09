@@ -1,0 +1,113 @@
+import { screen } from '@testing-library/react'
+import { describe, expect, it } from 'vitest'
+import type { components } from '@/api/generated/admin'
+import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
+import { renderApp } from '@/test/renderApp'
+import { http, problem, server } from '@/test/server'
+
+type AdjustStockRequest = components['schemas']['AdjustStockRequest']
+
+const VARIANT = variant()
+const URL = `/products/${PRODUCT_ID}/variants/${VARIANT.id}/stock`
+
+/**
+ * 在庫の画面が使う API に応答する。在庫数は quantity から始める。<br />
+ * 調整は、調整後に負になるなら 400（INSUFFICIENT_STOCK）、「その他」でメモがなければ 400（STOCK_MEMO_REQUIRED）、
+ * それ以外は在庫数に反映する。調整の要求は requests に取っておく。
+ */
+function serveStock(quantity: number) {
+  const state = { quantity, requests: [] as AdjustStockRequest[] }
+  server.use(
+    http.get('/products/{productId}', ({ response }) => response(200).json(productDetail({ variants: [VARIANT] }))),
+    http.get('/inventory/variants/{variantId}', ({ response }) =>
+      response(200).json({ variantId: VARIANT.id, quantity: state.quantity }),
+    ),
+    http.get('/inventory/variants/{variantId}/adjustments', ({ response }) =>
+      response(200).json({ items: [], page: 1, size: 20, totalItems: 0, totalPages: 0 }),
+    ),
+    http.post('/inventory/variants/{variantId}/adjustments', async ({ request, response }) => {
+      const body = await request.json()
+      state.requests.push(body)
+      if (state.quantity + body.delta < 0) {
+        return Response.json(problem(400, 'INSUFFICIENT_STOCK', `在庫が足りません（在庫数 ${state.quantity}）。`), {
+          status: 400,
+        }) as never
+      }
+      if (body.reason === 'OTHER' && !body.memo) {
+        return Response.json(
+          problem(400, 'STOCK_MEMO_REQUIRED', '理由が「その他」のときは、メモを入力してください。'),
+          {
+            status: 400,
+          },
+        ) as never
+      }
+      state.quantity += body.delta
+      return response(201).json({
+        id: '00000000-0000-0000-0000-000000000301',
+        delta: body.delta,
+        reason: body.reason,
+        memo: body.memo,
+        quantityAfter: state.quantity,
+        adjustedAt: '2026-10-10T10:00:00+09:00',
+      })
+    }),
+  )
+  return state
+}
+
+/** 在庫数のカードに出ている数 */
+async function shownQuantity(expected: number) {
+  return screen.findByText(String(expected), { selector: 'p' })
+}
+
+describe('在庫の調整', () => {
+  it('増減量と理由で調整すると、結果を知らせ、在庫数を取得し直す', async () => {
+    const state = serveStock(5)
+    const { user } = renderApp(URL)
+    await shownQuantity(5)
+
+    await user.type(screen.getByLabelText('増減量'), '10')
+    await user.click(screen.getByRole('combobox', { name: '理由' }))
+    await user.click(await screen.findByRole('option', { name: '入荷' }))
+    await user.click(screen.getByRole('button', { name: '調整する' }))
+
+    expect(await screen.findByText('+10 を反映し、在庫数は 15 になりました')).toBeInTheDocument()
+    expect(await shownQuantity(15)).toBeInTheDocument()
+    expect(screen.getByLabelText('増減量')).toHaveValue(null)
+    expect(state.requests).toEqual([{ delta: 10, reason: 'ARRIVAL', memo: null }])
+  })
+
+  it('AC-43 調整後に負になる調整は拒否され、そのメッセージを出し、在庫数は変わらない', async () => {
+    serveStock(2)
+    const { user } = renderApp(URL)
+    await shownQuantity(2)
+
+    await user.type(screen.getByLabelText('増減量'), '-3')
+    await user.click(screen.getByRole('combobox', { name: '理由' }))
+    await user.click(await screen.findByRole('option', { name: '破損・紛失' }))
+    await user.click(screen.getByRole('button', { name: '調整する' }))
+
+    expect(await screen.findByText('在庫が足りません（在庫数 2）。')).toBeInTheDocument()
+    expect(screen.getByLabelText('増減量')).toHaveValue(-3)
+    expect(await shownQuantity(2)).toBeInTheDocument()
+  })
+
+  it('AC-46 理由が「その他」のときはメモが必須と示し、メモがなければ拒否のメッセージを出す', async () => {
+    serveStock(5)
+    const { user } = renderApp(URL)
+    await shownQuantity(5)
+
+    expect(screen.getByLabelText('メモ（任意）')).toBeInTheDocument()
+    await user.type(screen.getByLabelText('増減量'), '1')
+    await user.click(screen.getByRole('combobox', { name: '理由' }))
+    await user.click(await screen.findByRole('option', { name: 'その他' }))
+    expect(screen.getByLabelText('メモ（必須）')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '調整する' }))
+
+    expect(await screen.findByText('理由が「その他」のときは、メモを入力してください。')).toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('メモ（必須）'), '展示品を引き当て')
+    await user.click(screen.getByRole('button', { name: '調整する' }))
+    expect(await screen.findByText('+1 を反映し、在庫数は 6 になりました')).toBeInTheDocument()
+  })
+})

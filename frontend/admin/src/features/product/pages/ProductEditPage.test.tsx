@@ -1,7 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { ProductDetail } from '@/api/types'
-import { PRODUCT_ID, productDetail, taxCategory } from '@/test/fixtures'
+import { PRODUCT_ID, productDetail, taxCategory, variant } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
@@ -113,5 +113,25 @@ describe('商品の編集', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '削除' })).not.toBeInTheDocument()
+  })
+  it('AC-24 軸を持たない商品は、バリアントがなければ追加の欄を出し、1 つあれば追加の欄を出さない', async () => {
+    const state = serveProduct(productDetail({ axes: [] }))
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 0 }),
+      ),
+      http.post('/products/{productId}/variants', ({ response }) => {
+        state.current = { ...state.current, variants: [variant({ axisValues: [] })], version: 1 }
+        return response(201).json(variant({ axisValues: [] }))
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-x')
+    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+
+    expect(await screen.findByText('軸を持たない商品のバリアントは 1 つだけです。')).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: 'ABC-001-RED' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
   })
 })

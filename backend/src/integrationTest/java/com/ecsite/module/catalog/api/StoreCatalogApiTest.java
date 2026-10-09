@@ -25,6 +25,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
@@ -151,7 +152,9 @@ class StoreCatalogApiTest {
                     .forEach(item -> collected.add(item.id()));
         }
 
-        assertThat(collected).doesNotHaveDuplicates().containsExactlyElementsOf(ids.stream().sorted().toList());
+        // PostgreSQL の uuid の順は文字列の辞書順（Java の UUID#compareTo は符号付きで比べるので使えない）
+        assertThat(collected).doesNotHaveDuplicates()
+                .containsExactlyElementsOf(ids.stream().sorted(Comparator.comparing(UUID::toString)).toList());
     }
 
     @Test

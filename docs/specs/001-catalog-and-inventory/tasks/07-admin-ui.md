@@ -2,13 +2,14 @@
 
 - 前提：段階 1〜5（B 側 API）
 - 完了条件：B 側の操作が画面からひととおりでき、下記の手動確認がすべて通る。CI でフロントのジョブが通る。
-- 参照：constitution 2（フロントエンド）、[plan](../plan.md) 第 3 節、`admin.yaml`
+- 参照：constitution 2（フロントエンド）、[plan](../plan.md) 第 3 節、[管理画面の構成](../../../frontend/admin.md)、`admin.yaml`
+- 画面は、管理画面の構成の第 9 節（画面を追加する手順）に沿って作る。
 
 ## 骨格
 
-- [ ] **T701** Vite + React + TypeScript のプロジェクトを作る（pnpm、Tailwind CSS、shadcn/ui、TanStack Query）。
-- [ ] **T702** `admin.yaml` から `openapi-typescript` で型を生成するスクリプトを作り、ビルド前に実行する（生成物はコミットしない）。API の呼び出しは `openapi-fetch` を使う。開発時は Vite のプロキシでバックエンドに転送する。
-- [ ] **T703** エラーの表示：エラーレスポンスの `message` をそのまま表示する。バージョン不一致（409）では「他の人が先に更新しました。再読み込みしてください」を案内する。
+- [ ] **T701** Vite + React + TypeScript のプロジェクトを作る（pnpm、Tailwind CSS、shadcn/ui、TanStack Query、React Router、React Hook Form、Biome）。管理画面の構成の第 2 節のディレクトリと、Sidebar の版面、toast を用意する。
+- [ ] **T702** `admin.yaml` から `openapi-typescript` で型を生成するスクリプトを作り、ビルド前に実行する（生成物はコミットしない）。API の呼び出しは `openapi-fetch` + `openapi-react-query`。エラーの応答を `ApiError` に変換し、4xx は繰り返さない。開発時は Vite のプロキシでバックエンドに転送する。
+- [ ] **T703** エラーの表示：エラーレスポンスの `message` をそのまま表示し、入力検証エラーは項目ごとに出す。バージョン不一致（409）では「他の人が先に更新しました。再読み込みしてください」と再読み込みのボタンを出す。取り消せない操作の確認のダイアログを用意する。
 
 ## 共通の部品
 

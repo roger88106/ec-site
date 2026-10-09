@@ -50,32 +50,9 @@
 | API | 税区分ごとの税率の一覧（予定を含む）、指定時点の税率、税込価格の計算 | 商品カタログ |
 | イベント | なし | |
 
-## データモデル（草案。Flyway のマイグレーションができたら、リンクに置き換える）
+## データモデル
 
-```sql
-CREATE TABLE tax.tax_category (
-    id          uuid PRIMARY KEY,
-    name        varchar(50) NOT NULL UNIQUE,
-    version     bigint      NOT NULL,
-    created_at  timestamptz NOT NULL,
-    updated_at  timestamptz NOT NULL
-);
-
-CREATE EXTENSION IF NOT EXISTS btree_gist;
-
-CREATE TABLE tax.tax_rate (
-    id               uuid PRIMARY KEY,
-    tax_category_id  uuid         NOT NULL REFERENCES tax.tax_category (id),
-    rate_percent     numeric(4,2) NOT NULL CHECK (rate_percent >= 0 AND rate_percent < 100),
-    effective_from   timestamptz,  -- null：過去すべて
-    effective_to     timestamptz,  -- null：無期限
-    CHECK (effective_from IS NULL OR effective_to IS NULL OR effective_from < effective_to),
-    EXCLUDE USING gist (
-        tax_category_id WITH =,
-        tstzrange(effective_from, effective_to, '[)') WITH &&
-    ) DEFERRABLE INITIALLY DEFERRED
-);
-```
+[V202610091000__tax_create_tax_category.sql](../../backend/src/main/resources/db/migration/V202610091000__tax_create_tax_category.sql)
 
 - 排他制約の範囲型は、null の端を無限として扱う。
 - 排他制約の検査は、置き換えの書き込みがすべて終わるまで遅らせる。一覧の置き換えでは複数の税率を 1 件ずつ書き換えるため、途中で一時的に期間が重なることがあるが、置き換えの結果に重なりがなければよい。

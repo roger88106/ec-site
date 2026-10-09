@@ -97,7 +97,7 @@ class ProductApiTest {
         @DisplayName("AC-13、17 指定した内容で登録され、非公開になる。Location の URL で詳細を取得できる")
         void createsAndGetsByLocation() throws Exception {
             var result = createProduct("""
-                    {"productCode": "ABC-001", "name": "T シャツ", "description": "綿 100%",
+                    {"productCode": "ABC-001", "name": "T シャツ", "description": "綿 100%%",
                      "taxCategoryId": "%s", "priceExclTax": 1000,
                      "categoryIds": ["%s"], "axes": ["色", "サイズ"]}""".formatted(standard, clothing))
                     .andExpect(status().isCreated())

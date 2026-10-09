@@ -11,6 +11,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.time.Instant;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -50,9 +51,18 @@ public class TaxCategoryQueryService {
      * @return 税区分（現時点の率を含む）
      */
     public TaxCategoryView getTaxCategory(UUID id) {
+        return findTaxCategory(id).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+    }
+
+    /**
+     * 税区分を取得する。なければ空を返す。
+     *
+     * @param id 税区分 ID
+     * @return 税区分（現時点の率を含む）。なければ空
+     */
+    public Optional<TaxCategoryView> findTaxCategory(UUID id) {
         return taxCategoryQueryRepository.findById(id)
-                .map(view -> withCurrentRate(view, clock.instant()))
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+                .map(view -> withCurrentRate(view, clock.instant()));
     }
 
 // ============================== プライベートメソッド ==============================

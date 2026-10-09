@@ -40,7 +40,7 @@ describe('商品の登録', () => {
   })
 
   it('AC-15 品番の英小文字は入力した時点で大文字になり、登録すると編集の画面に移る', async () => {
-    const requests = serveCreate(() => Response.json(productDetail(), { status: 201 }))
+    const requests = serveCreate(() => Response.json({ id: PRODUCT_ID }, { status: 201 }))
     const { user, router } = renderApp('/products/new')
 
     await user.type(await screen.findByLabelText('商品品番（登録後は変更できません）'), 'abc-001')

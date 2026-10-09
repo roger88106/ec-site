@@ -122,7 +122,7 @@ describe('商品の編集', () => {
       ),
       http.post('/products/{productId}/variants', ({ response }) => {
         state.current = { ...state.current, variants: [variant({ axisValues: [] })], version: 1 }
-        return response(201).json(variant({ axisValues: [] }))
+        return response(201).json({ id: variant().id })
       }),
     )
     const { user } = renderApp(URL)

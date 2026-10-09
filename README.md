@@ -102,7 +102,7 @@ pnpm install
 # 開発サーバー（http://localhost:5173）。/api はバックエンド（localhost:8080）に転送する
 pnpm dev
 
-# CI と同じ確認（lint と整形、型チェック、テスト、ビルド）
+# CI と同じ確認（lint と整形、型チェック、単体・結合テスト、ビルド）
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 
 # 整形と、自動で直せる lint の指摘を直す
@@ -111,6 +111,7 @@ pnpm lint:fix
 
 - 先にバックエンドを local profile で起動しておく。
 - API の型は [admin.yaml](api/openapi/admin.yaml) から `dev`・`typecheck`・`build` の前に生成する（コミットしない）。
+- 結合テスト（画面の操作の流れ）はバックエンドなしで動く。API の応答は MSW で差し替える。書き方は [管理画面の構成](docs/frontend/admin.md) 第 10 節。
 - ディレクトリと画面の追加手順は [管理画面の構成](docs/frontend/admin.md)。
 
 ### 店舗画面（`frontend/store`）
@@ -131,6 +132,30 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - 先にバックエンドを local profile で起動しておく。接続先を変えるときは環境変数 `STORE_API_BASE_URL`（例：`http://localhost:8080/api/store`）。
 - API の結果は最大 60 秒キャッシュする（NFR-1）。管理画面での変更は、1 分以内に店舗画面に反映される。
 - ディレクトリと画面の追加手順は [店舗画面の構成](docs/frontend/store.md)。
+
+### E2E（`frontend/e2e`）
+
+バックエンド、管理画面、店舗画面を起動して、ブラウザ（Chromium）で操作する（Playwright）。
+
+```bash
+# リポジトリのルートで、PostgreSQL を起動する
+docker compose up -d
+
+# 管理画面と店舗画面の依存を入れておく（それぞれのディレクトリで pnpm install）
+
+# frontend/e2e/ で、依存とブラウザを入れる
+pnpm install
+pnpm exec playwright install chromium
+
+# E2E。バックエンド（local profile）、管理画面（:4173）、店舗画面（:3100）を起動してから動かす
+pnpm test
+```
+
+- バックエンドの起動に JDK 21 を使うので、`JAVA_HOME` を JDK 21 に向けておく。
+- すでに起動しているサーバー（:8080、:4173、:3100）があれば、それを使う。管理画面・店舗画面を直したときは、止めてからやり直す（ビルドし直すため）。
+- テストのデータは管理 API で作り、品番・名称に実行ごとの印（`E2E-<印>-…`）を付ける。消さないので、ローカルの DB に残る。
+- 店舗画面の API のキャッシュは、E2E では 1 秒にする（`STORE_API_REVALIDATE_SECONDS`）。
+- 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を見る。
 
 ### 環境変数
 

@@ -1,7 +1,7 @@
 import { ImageIcon } from 'lucide-react'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getApi } from '@/api/client'
+import { getApi, UNCACHED } from '@/api/client'
 import { unwrap } from '@/api/result'
 import { PriceText } from '@/components/PriceText'
 import { VariantPicker } from '@/features/catalog/components/VariantPicker'
@@ -11,14 +11,14 @@ const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /**
  * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする（AC-65）。<br />
- * 同じリクエストの中では fetch のキャッシュで 1 回だけ呼ぶ。
+ * 非公開にした直後から見つからなくなるよう、キャッシュを使わない（UNCACHED）。
  */
 async function fetchProduct(productId: string) {
   if (!UUID.test(productId)) {
     notFound()
   }
   const api = await getApi()
-  return unwrap(await api.GET('/products/{productId}', { params: { path: { productId } } }))
+  return unwrap(await api.GET('/products/{productId}', { params: { path: { productId } }, ...UNCACHED }))
 }
 
 export async function generateMetadata({ params }: PageProps<'/products/[productId]'>): Promise<Metadata> {

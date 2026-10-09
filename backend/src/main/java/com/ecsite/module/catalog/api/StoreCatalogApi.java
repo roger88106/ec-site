@@ -42,6 +42,17 @@ public class StoreCatalogApi {
     }
 
     /**
+     * キーワードで商品を探す（AC-58〜61）。並びは新着順で固定。
+     *
+     * @param keyword キーワード
+     * @param request ページの指定
+     * @return 検索結果
+     */
+    public PageResult<StoreProductSummary> searchProducts(String keyword, PageRequest request) {
+        return storeProductQueryService.searchProducts(keyword, request);
+    }
+
+    /**
      * 商品の詳細を取得する（AC-62、65）。
      *
      * @param productId 商品 ID

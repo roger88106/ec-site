@@ -29,6 +29,11 @@ public class StoreProductQueryService {
     private final StoreProductQueryRepository storeProductQueryRepository;
 
     /**
+     * 商品検索
+     */
+    private final ProductSearch productSearch;
+
+    /**
      * 税の腐敗防止層
      */
     private final TaxDirectory taxDirectory;
@@ -48,6 +53,18 @@ public class StoreProductQueryService {
     public PageResult<StoreProductSummary> listProducts(StoreProductQuery query, PageRequest request) {
         var now = clock.instant();
         return storeProductQueryRepository.findVisible(query, request, now, taxDirectory.ratesAt(now));
+    }
+
+    /**
+     * キーワードで商品を探す（AC-58〜61）。
+     *
+     * @param keyword キーワード
+     * @param request ページの指定
+     * @return 検索結果（新着順）
+     */
+    public PageResult<StoreProductSummary> searchProducts(String keyword, PageRequest request) {
+        var now = clock.instant();
+        return productSearch.search(keyword, request, now, taxDirectory.ratesAt(now));
     }
 
     /**

@@ -16,7 +16,6 @@ import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -65,7 +64,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .offset(request.offset())
                 .fetch();
 
-        var sellable = sellableVariantIds(rows.map(row -> row.value1()));
+        var sellable = SellableVariants.byProduct(dsl, rows.map(row -> row.value1()));
         var items = rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), row.value3(), row.value4(),
                 sellable.getOrDefault(row.value1(), List.of())));
 
@@ -124,21 +123,6 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
             case PRICE_ASC -> List.of(priceInclTax.asc(), PRODUCT.ID);
             case PRICE_DESC -> List.of(priceInclTax.desc(), PRODUCT.ID);
         };
-    }
-
-    /**
-     * 販売中（販売停止でない）のバリアントの ID を、商品ごとに表示順で取得する。
-     *
-     * @param productIds 商品 ID
-     * @return 商品 ID → バリアント ID
-     */
-    private Map<UUID, List<UUID>> sellableVariantIds(Collection<UUID> productIds) {
-        return dsl.select(VARIANT.PRODUCT_ID, VARIANT.ID)
-                .from(VARIANT)
-                .where(VARIANT.PRODUCT_ID.in(productIds))
-                .and(VARIANT.SALES_SUSPENDED.isFalse())
-                .orderBy(VARIANT.PRODUCT_ID, VARIANT.DISPLAY_ORDER)
-                .fetchGroups(VARIANT.PRODUCT_ID, VARIANT.ID);
     }
 
     /**

@@ -1,0 +1,29 @@
+package com.ecsite.module.catalog.application;
+
+import com.ecsite.common.paging.PageRequest;
+import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.catalog.api.StoreProductSummary;
+
+import java.math.BigDecimal;
+import java.time.Instant;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * 商品検索：キーワード検索の窓口（constitution 4.4、docs/modules/catalog.md）。<br />
+ * 通常の商品照会とはコードを分け、検索エンジンを入れるときはこの実装を差し替える。
+ * 対象は C 側に表示される商品だけ（AC-59）。並びは新着順で固定。精度は問わない（AC-60）。
+ */
+public interface ProductSearch {
+
+    /**
+     * キーワードで商品を探す（AC-58〜61）。
+     *
+     * @param keyword キーワード
+     * @param request ページの指定
+     * @param now     表示時刻
+     * @param rates   税区分 ID → 表示時刻で有効な率（%）
+     * @return 検索結果（新着順）
+     */
+    PageResult<StoreProductSummary> search(String keyword, PageRequest request, Instant now, Map<UUID, BigDecimal> rates);
+}

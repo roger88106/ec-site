@@ -1,4 +1,3 @@
-import type { UseQueryResult } from '@tanstack/react-query'
 import type { ReactNode } from 'react'
 import { ErrorMessage } from '@/components/ErrorMessage'
 
@@ -7,7 +6,7 @@ export function QueryState<T>({
   query,
   children,
 }: {
-  query: Pick<UseQueryResult<T>, 'isPending' | 'isError' | 'error' | 'data'>
+  query: { isPending: boolean; isError: boolean; error: unknown; data: T | undefined }
   children: (data: T) => ReactNode
 }) {
   if (query.isPending) {

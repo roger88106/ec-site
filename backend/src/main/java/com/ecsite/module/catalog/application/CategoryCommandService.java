@@ -109,6 +109,11 @@ public class CategoryCommandService {
             throw BusinessException.of(CategoryErrorCode.CATEGORY_HAS_CHILDREN);
         }
 
+        // 商品が所属しているカテゴリは削除できない ※同時に商品へ割り当てられた場合は、DB の外部キーで検出する
+        if (categoryRepository.hasProducts(categoryId)) {
+            throw BusinessException.of(CategoryErrorCode.CATEGORY_HAS_PRODUCTS);
+        }
+
         // カテゴリ削除
         categoryRepository.delete(category);
     }

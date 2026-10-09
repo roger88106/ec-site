@@ -546,6 +546,26 @@ class ProductApiTest {
         }
     }
 
+    @Nested
+    @DisplayName("AC-12 商品が所属しているカテゴリ")
+    class AssignedCategory {
+
+        @Test
+        @DisplayName("AC-12 商品が所属しているカテゴリは削除できず 400。所属を外せば削除できる")
+        void rejectsDeletingCategoryWithProducts() throws Exception {
+            var id = createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
+                    {"productCode": "ABC-001", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
+                     "priceExclTax": 1000, "categoryIds": ["%s"]}""".formatted(standard, clothing)));
+
+            mockMvc.perform(delete("/api/admin/categories/" + clothing))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("CATEGORY_HAS_PRODUCTS"));
+
+            updateProduct(id, updateJson(standard, 1000, 0)).andExpect(status().isNoContent());
+            mockMvc.perform(delete("/api/admin/categories/" + clothing)).andExpect(status().isNoContent());
+        }
+    }
+
     // ============================== 補助 ==============================
 
     private String createTaxCategory(String name, String rates) throws Exception {

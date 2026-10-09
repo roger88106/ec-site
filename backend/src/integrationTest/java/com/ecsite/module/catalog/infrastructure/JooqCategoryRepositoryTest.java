@@ -6,17 +6,25 @@ import com.ecsite.module.catalog.domain.category.Category;
 import com.ecsite.module.catalog.domain.category.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
+import com.ecsite.module.catalog.domain.product.ProductFactory;
+import com.ecsite.module.catalog.domain.product.port.ProductRepository;
+import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
+import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+import java.util.Set;
+import java.util.UUID;
+
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * カテゴリのリポジトリの統合テスト（T205）。<br />
- * 削除と子カテゴリの登録が同時に起きた場合を、アプリケーション層の確認を通さずにリポジトリを呼んで再現する。
+ * カテゴリのリポジトリの統合テスト（T205、T311）。<br />
+ * 削除と、子カテゴリの登録・商品への割り当てが同時に起きた場合を、アプリケーション層の確認を通さずにリポジトリを呼んで再現する。
  * テストごとにロールバックする。
  */
 @IntegrationTest
@@ -29,6 +37,12 @@ class JooqCategoryRepositoryTest {
     @Autowired
     CategoryFactory factory;
 
+    @Autowired
+    ProductRepository productRepository;
+
+    @Autowired
+    ProductFactory productFactory;
+
     @Test
     @DisplayName("AC-12 子カテゴリを持つカテゴリを削除すると、外部キーの違反が業務のエラーになる（500 にならない）")
     void rejectsDeletingParentByForeignKey() {
@@ -36,6 +50,18 @@ class JooqCategoryRepositoryTest {
         added(parent, "トップス");
 
         assertBusinessError(() -> repository.delete(parent), CategoryErrorCode.CATEGORY_HAS_CHILDREN);
+    }
+
+    @Test
+    @DisplayName("AC-12 商品が所属しているカテゴリを削除すると、外部キーの違反が業務のエラーになる（500 にならない）")
+    void rejectsDeletingCategoryWithProductsByForeignKey() {
+        var category = added(null, "衣類");
+        var product = productFactory.create(ProductCode.of("ABC-001"), "T シャツ", "",
+                UUID.fromString("00000000-0000-0000-0000-000000000001"), PriceExclTax.of(1000), Set.of(category.id()), List.of());
+        productRepository.add(product);
+
+        // 削除の確認の後に、商品への割り当てが同時に起きた場合を再現する（アプリケーション層の確認を通さない）
+        assertBusinessError(() -> repository.delete(category), CategoryErrorCode.CATEGORY_HAS_PRODUCTS);
     }
 
     @Test

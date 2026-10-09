@@ -26,6 +26,7 @@ import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.CATEGORY;
+import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
 
 /**
  * カテゴリのリポジトリ
@@ -52,10 +53,12 @@ class JooqCategoryRepository implements CategoryRepository {
             PARENT_FKEY, () -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
 
     /**
-     * 削除時の制約名 → 業務のエラー。外部キーの違反は、子カテゴリが同時に登録された場合
+     * 削除時の制約名 → 業務のエラー。外部キーの違反は、子カテゴリの登録や商品への割り当てが同時に起きた場合
      */
     private static final ConstraintViolationTranslator DELETE_CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
-            PARENT_FKEY, () -> BusinessException.of(CategoryErrorCode.CATEGORY_HAS_CHILDREN)));
+            PARENT_FKEY, () -> BusinessException.of(CategoryErrorCode.CATEGORY_HAS_CHILDREN),
+            Keys.PRODUCT_CATEGORY__PRODUCT_CATEGORY_CATEGORY_ID_FKEY.getName(),
+            () -> BusinessException.of(CategoryErrorCode.CATEGORY_HAS_PRODUCTS)));
 
     /**
      * jOOQ DSL Context
@@ -130,6 +133,17 @@ class JooqCategoryRepository implements CategoryRepository {
     @Override
     public boolean hasChildren(UUID id) {
         return dsl.fetchExists(CATEGORY, CATEGORY.PARENT_ID.eq(id));
+    }
+
+    /**
+     * 商品が所属しているかを返す。
+     *
+     * @param id カテゴリ ID
+     * @return 商品が所属していれば true
+     */
+    @Override
+    public boolean hasProducts(UUID id) {
+        return dsl.fetchExists(PRODUCT_CATEGORY, PRODUCT_CATEGORY.CATEGORY_ID.eq(id));
     }
 
     /**

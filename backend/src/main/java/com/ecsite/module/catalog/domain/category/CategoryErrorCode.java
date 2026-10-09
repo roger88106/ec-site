@@ -30,6 +30,10 @@ public enum CategoryErrorCode implements ErrorCodeProvider {
      * 子カテゴリを持つカテゴリを削除しようとした（AC-12）
      */
     CATEGORY_HAS_CHILDREN(ErrorType.BUSINESS_RULE_ERROR, CategoryMessage.CATEGORY_HAS_CHILDREN),
+    /**
+     * 商品が所属しているカテゴリを削除しようとした（AC-12）
+     */
+    CATEGORY_HAS_PRODUCTS(ErrorType.BUSINESS_RULE_ERROR, CategoryMessage.CATEGORY_HAS_PRODUCTS),
     ;
 
     /**

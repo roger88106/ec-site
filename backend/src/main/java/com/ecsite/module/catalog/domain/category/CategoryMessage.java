@@ -35,6 +35,11 @@ public class CategoryMessage {
      */
     public static final I18nMessage CATEGORY_HAS_CHILDREN = I18nMessage.of(Code.CATEGORY_HAS_CHILDREN);
 
+    /**
+     * 商品が所属しているカテゴリは削除できません。
+     */
+    public static final I18nMessage CATEGORY_HAS_PRODUCTS = I18nMessage.of(Code.CATEGORY_HAS_PRODUCTS);
+
     // ============================== コード定義 ==============================
 
     /**
@@ -66,5 +71,10 @@ public class CategoryMessage {
          * 子カテゴリを持つカテゴリは削除できません。
          */
         public static final String CATEGORY_HAS_CHILDREN = "ecsite.catalog.category_has_children";
+
+        /**
+         * 商品が所属しているカテゴリは削除できません。
+         */
+        public static final String CATEGORY_HAS_PRODUCTS = "ecsite.catalog.category_has_products";
     }
 }

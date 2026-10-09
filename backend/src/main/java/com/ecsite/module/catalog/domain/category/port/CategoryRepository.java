@@ -46,6 +46,14 @@ public interface CategoryRepository {
     boolean hasChildren(UUID id);
 
     /**
+     * 商品が所属しているかを返す。
+     *
+     * @param id カテゴリ ID
+     * @return 商品が所属していれば true
+     */
+    boolean hasProducts(UUID id);
+
+    /**
      * カテゴリがすべて存在するかを返す。
      *
      * @param ids カテゴリ ID
@@ -73,7 +81,7 @@ public interface CategoryRepository {
 
     /**
      * カテゴリを削除する。<br />
-     * 子カテゴリを持てば {@code CATEGORY_HAS_CHILDREN}、すでに削除されていれば {@code NOT_FOUND} の業務のエラーを投げる。
+     * 子カテゴリを持てば {@code CATEGORY_HAS_CHILDREN}、商品が所属していれば {@code CATEGORY_HAS_PRODUCTS}、すでに削除されていれば {@code NOT_FOUND} の業務のエラーを投げる。
      *
      * @param category カテゴリ
      */

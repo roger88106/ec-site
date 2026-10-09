@@ -10,6 +10,7 @@ import com.ecsite.module.tax.domain.taxcategory.TaxRateDraft;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -51,6 +52,9 @@ class JooqTaxCategoryRepositoryTest {
 
     @Autowired
     TaxCategoryFactory factory;
+
+    @Autowired
+    DSLContext dsl;
 
     @Test
     @DisplayName("登録した税区分を再構築できる")
@@ -161,6 +165,25 @@ class JooqTaxCategoryRepositoryTest {
                 rate("8", APR_2027, null)), category.version()));
 
         assertBusinessError(() -> repository.save(overlapping), TaxErrorCode.TAX_RATE_PERIODS_OVERLAP);
+    }
+
+    @Test
+    @DisplayName("リポジトリが名前で指す排他制約が、マイグレーションに、検査を遅らせる設定で存在する")
+    void periodNoOverlapConstraintExists() {
+        // jOOQ は排他制約のコードを生成しないので、名前のずれをコンパイルで検出できない。ここで確かめる
+        var constraint = dsl.fetchOne("""
+                        SELECT c.contype, c.condeferrable, c.condeferred
+                        FROM pg_constraint c
+                        JOIN pg_namespace n ON n.oid = c.connamespace
+                        WHERE n.nspname = {0} AND c.conname = {1}""",
+                JooqTaxCategoryRepository.PERIOD_NO_OVERLAP.first(),
+                JooqTaxCategoryRepository.PERIOD_NO_OVERLAP.last());
+
+        assertThat(constraint).as("制約 %s がない", JooqTaxCategoryRepository.PERIOD_NO_OVERLAP).isNotNull();
+        // x：排他制約
+        assertThat(constraint.get("contype", String.class)).isEqualTo("x");
+        assertThat(constraint.get("condeferrable", Boolean.class)).isTrue();
+        assertThat(constraint.get("condeferred", Boolean.class)).isTrue();
     }
 
     // ============================== 補助 ==============================

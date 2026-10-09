@@ -3,6 +3,7 @@ package com.ecsite.module.tax.infrastructure;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.persistence.ConstraintViolationTranslator;
+import com.ecsite.jooq.tax.Keys;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
@@ -13,6 +14,8 @@ import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.Name;
+import org.jooq.impl.DSL;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
@@ -33,11 +36,18 @@ import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 class JooqTaxCategoryRepository implements TaxCategoryRepository {
 
     /**
+     * 適用期間の重複を防ぐ排他制約（検査を遅らせる設定）。<br />
+     * jOOQ は排他制約のコードを生成せず、SET CONSTRAINTS の DSL もないため、名前で指す。
+     * マイグレーションとの一致は統合テストで確かめる（JooqTaxCategoryRepositoryTest）。
+     */
+    static final Name PERIOD_NO_OVERLAP = DSL.name("tax", "tax_rate_period_no_overlap");
+
+    /**
      * 制約名 → 業務のエラー
      */
     private static final ConstraintViolationTranslator CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
-            "tax_category_name_key", () -> BusinessException.of(TaxErrorCode.TAX_CATEGORY_NAME_ALREADY_EXISTS),
-            "tax_rate_period_no_overlap", () -> BusinessException.of(TaxErrorCode.TAX_RATE_PERIODS_OVERLAP)));
+            Keys.TAX_CATEGORY_NAME_KEY.getName(), () -> BusinessException.of(TaxErrorCode.TAX_CATEGORY_NAME_ALREADY_EXISTS),
+            PERIOD_NO_OVERLAP.last(), () -> BusinessException.of(TaxErrorCode.TAX_RATE_PERIODS_OVERLAP)));
 
     /**
      * jOOQ DSL Context
@@ -184,8 +194,8 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
      * 検査の後は遅らせる設定に戻し、同じトランザクションの後続の書き込みでも途中の重なりを許す。
      */
     private void checkDeferredConstraints() {
-        dsl.execute("SET CONSTRAINTS tax.tax_rate_period_no_overlap IMMEDIATE");
-        dsl.execute("SET CONSTRAINTS tax.tax_rate_period_no_overlap DEFERRED");
+        dsl.execute("SET CONSTRAINTS {0} IMMEDIATE", PERIOD_NO_OVERLAP);
+        dsl.execute("SET CONSTRAINTS {0} DEFERRED", PERIOD_NO_OVERLAP);
     }
 
     /**

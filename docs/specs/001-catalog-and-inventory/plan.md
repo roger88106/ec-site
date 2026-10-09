@@ -122,7 +122,7 @@ admin のディレクトリ、API の呼び出し方、フォーム、画面の�
 
 ## 6. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-foundation.md)、[01](tasks/01-tax.md)、[02](tasks/02-category.md)、[03](tasks/03-product.md)、[04](tasks/04-inventory.md)、[05](tasks/05-admin-product-list.md)、[06](tasks/06-storefront.md)、[07](tasks/07-admin-ui.md)、[08](tasks/08-store-ui.md)、[09](tasks/09-p2.md)）。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-foundation.md)、[01](tasks/01-tax.md)、[02](tasks/02-category.md)、[03](tasks/03-product.md)、[04](tasks/04-inventory.md)、[05](tasks/05-admin-product-list.md)、[06](tasks/06-storefront.md)、[07](tasks/07-admin-ui.md)、[08](tasks/08-store-ui.md)、[09](tasks/09-frontend-tests.md)、[10](tasks/10-p2.md)）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|
@@ -135,4 +135,5 @@ tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-fo
 | 6 | storefront（US-10〜12） | 同上 |
 | 7 | 管理画面 | 画面から B 側の操作ができる |
 | 8 | 店舗画面 | 画面から C 側の閲覧ができる |
-| 9 | P2（US-6、AC-28、US-7、US-13） | US-7 の前に画像の設計を追記する |
+| 9 | フロントのテスト（結合テスト、E2E） | 主な操作の流れの結合テストと、コアフローの E2E が CI で通る |
+| 10 | P2（US-6、AC-28、US-7、US-13） | US-7 の前に画像の設計を追記する |

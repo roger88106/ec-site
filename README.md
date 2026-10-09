@@ -45,7 +45,7 @@ spec がコードに先行する。仕様の誤りに気づいたら、spec を�
 
 | spec | 内容 | 状態 |
 |------|------|------|
-| [001](docs/specs/001-catalog-and-inventory) | 商品カタログと在庫 | 実装中。[段階 0（基盤）](docs/specs/001-catalog-and-inventory/tasks/00-foundation.md)、[段階 1（税）](docs/specs/001-catalog-and-inventory/tasks/01-tax.md)、[段階 2（カテゴリ）](docs/specs/001-catalog-and-inventory/tasks/02-category.md)、[段階 3（商品）](docs/specs/001-catalog-and-inventory/tasks/03-product.md)、[段階 4（在庫）](docs/specs/001-catalog-and-inventory/tasks/04-inventory.md)、[段階 5（B 側の商品一覧）](docs/specs/001-catalog-and-inventory/tasks/05-admin-product-list.md)、[段階 6（店舗）](docs/specs/001-catalog-and-inventory/tasks/06-storefront.md)、[段階 7（管理画面）](docs/specs/001-catalog-and-inventory/tasks/07-admin-ui.md)、[段階 8（店舗画面）](docs/specs/001-catalog-and-inventory/tasks/08-store-ui.md) 完了（P1 はすべて完了。残りは [段階 9（P2）](docs/specs/001-catalog-and-inventory/tasks/09-p2.md)） |
+| [001](docs/specs/001-catalog-and-inventory) | 商品カタログと在庫 | 実装中。[段階 0（基盤）](docs/specs/001-catalog-and-inventory/tasks/00-foundation.md)、[段階 1（税）](docs/specs/001-catalog-and-inventory/tasks/01-tax.md)、[段階 2（カテゴリ）](docs/specs/001-catalog-and-inventory/tasks/02-category.md)、[段階 3（商品）](docs/specs/001-catalog-and-inventory/tasks/03-product.md)、[段階 4（在庫）](docs/specs/001-catalog-and-inventory/tasks/04-inventory.md)、[段階 5（B 側の商品一覧）](docs/specs/001-catalog-and-inventory/tasks/05-admin-product-list.md)、[段階 6（店舗）](docs/specs/001-catalog-and-inventory/tasks/06-storefront.md)、[段階 7（管理画面）](docs/specs/001-catalog-and-inventory/tasks/07-admin-ui.md)、[段階 8（店舗画面）](docs/specs/001-catalog-and-inventory/tasks/08-store-ui.md) 完了（P1 はすべて完了。残りは [段階 9（フロントのテスト）](docs/specs/001-catalog-and-inventory/tasks/09-frontend-tests.md) と [段階 10（P2）](docs/specs/001-catalog-and-inventory/tasks/10-p2.md)） |
 
 ## 起動とテスト
 

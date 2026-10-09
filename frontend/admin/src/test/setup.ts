@@ -1,5 +1,6 @@
 import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
+import { toast } from 'sonner'
 import { afterAll, afterEach } from 'vitest'
 import { server } from '@/test/server'
 
@@ -8,6 +9,8 @@ import { server } from '@/test/server'
 server.listen({ onUnhandledRequest: 'error' })
 
 afterEach(() => {
+  // toast は画面の外（sonner）に残るので、次のテストに出ないよう消す
+  toast.dismiss()
   cleanup()
   server.resetHandlers()
 })

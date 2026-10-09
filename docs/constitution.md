@@ -37,10 +37,13 @@ C 側と B 側は別のプロジェクトにする。
 
 | | C 側（`frontend/store`） | B 側（`frontend/admin`） |
 |---|---|---|
-| フレームワーク | Next.js（App Router） | Vite + React の SPA |
-| サーバー状態 | Next.js の fetch とキャッシュ | TanStack Query |
+| フレームワーク | Next.js（App Router） | Vite + React の SPA、React Router |
+| サーバー状態 | Next.js の fetch とキャッシュ | TanStack Query + `openapi-react-query` |
+| フォーム | | React Hook Form |
 
-共通：TypeScript、pnpm、Tailwind CSS、shadcn/ui、`openapi-typescript` + `openapi-fetch`。
+共通：TypeScript、pnpm、Tailwind CSS、shadcn/ui、`openapi-typescript` + `openapi-fetch`、Biome（lint・整形）、Vitest。
+
+アプリごとの構成（ディレクトリ、画面の追加手順など）は `docs/frontend/` に書く。
 
 ### 後から導入する技術
 
@@ -64,6 +67,7 @@ ec-site/
 │   ├── constitution.md
 │   ├── glossary.md       # 用語集（論理名と物理名の対応）
 │   ├── modules/          # モジュールごとの現在の設計
+│   ├── frontend/         # フロントのアプリごとの構成（admin.md、store.md）
 │   └── specs/NNN-<feature>/
 │       ├── spec.md
 │       ├── plan.md

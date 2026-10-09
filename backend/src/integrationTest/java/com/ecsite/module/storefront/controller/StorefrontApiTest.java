@@ -132,7 +132,7 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("AC-56 販売停止のバリアントだけに在庫がある商品は、在庫なしと示される")
+        @DisplayName("AC-56、28 販売停止のバリアントだけに在庫がある商品は、在庫なしと示される")
         void ignoresSuspendedVariantsForStock() throws Exception {
             var product = product("販売停止", 1000, "色").variant("白").variant("黒").publish();
             stock(product.variantIds.get(0), 5);
@@ -224,7 +224,7 @@ class StorefrontApiTest {
     class Detail {
 
         @Test
-        @DisplayName("AC-62〜64 価格、軸と選択肢、バリアントごとの在庫の有無が返る。販売停止・在庫切れのバリアントも返る")
+        @DisplayName("AC-62〜64、28 価格、軸と選択肢、バリアントごとの在庫の有無が返る。販売停止・在庫切れのバリアントも返る")
         void returnsDetail() throws Exception {
             var product = product("T シャツ", 1800, "色", "サイズ")
                     .variant("白", "M").variant("白", "L").variant("黒", "M").publish();

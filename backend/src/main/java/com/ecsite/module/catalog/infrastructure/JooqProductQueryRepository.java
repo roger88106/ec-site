@@ -11,8 +11,6 @@ import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
-import org.jooq.Record1;
-import org.jooq.Select;
 import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
@@ -22,7 +20,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
-import static com.ecsite.jooq.catalog.Tables.CATEGORY;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
@@ -108,26 +105,9 @@ class JooqProductQueryRepository implements ProductQueryRepository {
             condition = condition.and(PRODUCT.STATUS.eq(query.status()));
         }
         if (query.categoryId() != null) {
-            condition = condition.and(PRODUCT.ID.in(DSL.select(PRODUCT_CATEGORY.PRODUCT_ID)
-                    .from(PRODUCT_CATEGORY)
-                    .where(PRODUCT_CATEGORY.CATEGORY_ID.in(selfAndDescendants(query.categoryId())))));
+            condition = condition.and(CategoryConditions.productInCategory(query.categoryId()));
         }
         return condition;
-    }
-
-    /**
-     * カテゴリと、その子孫のカテゴリの ID を選ぶ。階層は最大 3 なので、子と孫まででよい（AC-9）。
-     *
-     * @param categoryId カテゴリ ID
-     * @return カテゴリ ID の選択
-     */
-    private static Select<Record1<UUID>> selfAndDescendants(UUID categoryId) {
-        var child = CATEGORY.as("child");
-        return DSL.select(CATEGORY.ID)
-                .from(CATEGORY)
-                .where(CATEGORY.ID.eq(categoryId))
-                .or(CATEGORY.PARENT_ID.eq(categoryId))
-                .or(CATEGORY.PARENT_ID.in(DSL.select(child.ID).from(child).where(child.PARENT_ID.eq(categoryId))));
     }
 
     /**

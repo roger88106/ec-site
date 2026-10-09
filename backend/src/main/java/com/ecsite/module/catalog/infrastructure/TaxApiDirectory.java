@@ -6,7 +6,10 @@ import com.ecsite.module.tax.api.TaxRateApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.math.BigDecimal;
 import java.time.Instant;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -21,6 +24,11 @@ class TaxApiDirectory implements TaxDirectory {
      * 税モジュールの API
      */
     private final TaxRateApi taxRateApi;
+
+    /**
+     * 税率の一覧のキャッシュ
+     */
+    private final TaxRateScheduleCache taxRateScheduleCache;
 
     /**
      * 税区分が、指定した時点で有効な税率を持つかを返す。
@@ -46,5 +54,20 @@ class TaxApiDirectory implements TaxDirectory {
     public Optional<Money> priceInclTaxAt(UUID taxCategoryId, Money priceExclTax, Instant instant) {
         return taxRateApi.rateAt(taxCategoryId, instant)
                 .map(ratePercent -> taxRateApi.priceInclTax(priceExclTax, ratePercent));
+    }
+
+    /**
+     * すべての税区分について、指定した時点で有効な率を返す。税率の一覧はキャッシュから取得する。
+     *
+     * @param instant 時点
+     * @return 税区分 ID → 率（%）
+     */
+    @Override
+    public Map<UUID, BigDecimal> ratesAt(Instant instant) {
+        var rates = new HashMap<UUID, BigDecimal>();
+        for (var schedule : taxRateScheduleCache.schedules()) {
+            schedule.rateAt(instant).ifPresent(rate -> rates.put(schedule.taxCategoryId(), rate));
+        }
+        return rates;
     }
 }

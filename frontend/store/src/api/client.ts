@@ -1,4 +1,5 @@
 import 'server-only'
+import { connection } from 'next/server'
 import createClient from 'openapi-fetch'
 import type { paths } from '@/api/generated/store'
 
@@ -6,10 +7,20 @@ import type { paths } from '@/api/generated/store'
 const REVALIDATE_SECONDS = 60
 
 /**
- * 店舗 API（store.yaml）のクライアント（店舗画面の構成 第 4 節）。サーバーコンポーネントからだけ使う。<br />
+ * 店舗 API（store.yaml）のクライアント（店舗画面の構成 第 4 節）。<br />
  * 接続先は環境変数 STORE_API_BASE_URL。結果は Next.js の fetch のキャッシュで最大 60 秒使い回す。
  */
-export const api = createClient<paths>({
+const api = createClient<paths>({
   baseUrl: process.env.STORE_API_BASE_URL ?? 'http://localhost:8080/api/store',
   requestInitExt: { next: { revalidate: REVALIDATE_SECONDS } },
 })
+
+/**
+ * サーバーコンポーネントから API を呼ぶときに使う。<br />
+ * 画面をリクエストのたびに作るようにしてから（connection）、クライアントを返す。
+ * ビルドのときに画面を作って API を呼ぶ（バックエンドが要る）のを避けるため。API の結果のキャッシュは別に効く。
+ */
+export async function getApi() {
+  await connection()
+  return api
+}

@@ -17,6 +17,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.ResultMatcher;
+import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -44,10 +45,15 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @AutoConfigureMockMvc
-@Import(ErrorResponseTest.ErrorTestController.class)
+@Import({ErrorResponseTest.ErrorTestController.class, ErrorResponseTest.ValidatedTestController.class})
 class ErrorResponseTest {
 
     private static final String BASE = "/api/test-errors";
+
+    /**
+     * @Validated の Controller のパス。生成インターフェースは @Validated 付きなので、検証は Controller の AOP で行われる
+     */
+    private static final String VALIDATED_BASE = "/api/test-validated";
 
     // 期待するメッセージ（messages.properties）
     private static final String INVALID_REQUEST = "入力内容に誤りがあります。";
@@ -133,6 +139,16 @@ class ErrorResponseTest {
         @DisplayName("メソッド引数の検証エラー（size の上限超え）は 400。errors が入る")
         void methodParameterValidation() throws Exception {
             mockMvc.perform(get(BASE + "/method-validation").param("size", "101"))
+                    .andExpect(status().isBadRequest())
+                    .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST))
+                    .andExpect(jsonPath("$.errors[0].field").value("size"))
+                    .andExpect(jsonPath("$.errors[0].message").value(matchesPattern(JAPANESE)));
+        }
+
+        @Test
+        @DisplayName("@Validated の Controller（生成インターフェース）でのメソッド引数の検証エラーも 400。errors が入る")
+        void methodParameterValidationOnValidatedController() throws Exception {
+            mockMvc.perform(get(VALIDATED_BASE + "/method-validation").param("size", "101"))
                     .andExpect(status().isBadRequest())
                     .andExpectAll(problem("INVALID_REQUEST", INVALID_REQUEST))
                     .andExpect(jsonPath("$.errors[0].field").value("size"))
@@ -291,6 +307,19 @@ class ErrorResponseTest {
 
         @GetMapping("/required-param")
         void requiredParam(@RequestParam String q) {
+        }
+    }
+
+    /**
+     * @Validated の Controller（生成インターフェースと同じく、メソッド引数の検証が AOP で行われる）
+     */
+    @RestController
+    @RequestMapping(VALIDATED_BASE)
+    @Validated
+    static class ValidatedTestController {
+
+        @GetMapping("/method-validation")
+        void methodValidation(@RequestParam @Max(100) Integer size) {
         }
     }
 }

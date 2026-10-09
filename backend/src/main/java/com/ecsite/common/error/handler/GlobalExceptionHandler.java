@@ -6,6 +6,8 @@ import com.ecsite.common.error.ErrorDetail;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.message.MessageHelper;
+import jakarta.validation.ConstraintViolationException;
+import jakarta.validation.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
@@ -157,6 +159,30 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                 })
                 .toList();
         return handleInvalidRequest(status, headers, errors, request);
+    }
+
+    /**
+     * メソッド引数の検証例外のハンドラー（{@code @Validated} の Controller）<br />
+     * 生成インターフェースは {@code @Validated} 付きなので、{@code @RequestParam} の制約は Spring MVC ではなく
+     * メソッド検証の AOP で検査され、{@link HandlerMethodValidationException} ではなくこの例外になる。
+     * {@code errors} の {@code field} は、プロパティパスの最後（引数名）にする。
+     *
+     * @param ex      {@link ConstraintViolationException} 制約違反
+     * @param request リクエスト
+     * @return Http 400 + 例外明細
+     */
+    @ExceptionHandler(ConstraintViolationException.class)
+    public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex, WebRequest request) {
+        List<FieldValidationError> errors = ex.getConstraintViolations().stream()
+                .map(violation -> {
+                    String field = null;
+                    for (Path.Node node : violation.getPropertyPath()) {
+                        field = node.getName();
+                    }
+                    return new FieldValidationError(field, violation.getMessage());
+                })
+                .toList();
+        return handleInvalidRequest(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY, errors, request);
     }
 
     // ============================== Spring MVC の標準の例外 ==============================

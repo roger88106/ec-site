@@ -48,6 +48,11 @@ pnpm-debug.log*
 .vercel
 # openapi-typescript の生成物（ビルド前に生成する。constitution 9）
 frontend/*/src/api/generated/
+frontend/e2e/src/generated/
+# Playwright の結果とレポート
+frontend/e2e/test-results/
+frontend/e2e/playwright-report/
+frontend/e2e/blob-report/
 
 ### IntelliJ IDEA ###
 .idea

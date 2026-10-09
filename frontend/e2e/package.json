@@ -1,0 +1,25 @@
+{
+  "name": "ec-site-e2e",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "generate:api": "openapi-typescript ../../api/openapi/admin.yaml -o src/generated/admin.ts --enum-values",
+    "test": "pnpm generate:api && playwright test",
+    "typecheck": "pnpm generate:api && tsc --noEmit",
+    "lint": "biome check --error-on-warnings",
+    "lint:fix": "biome check --write"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@playwright/test": "^1.64.0",
+    "@types/node": "^24.19.1",
+    "openapi-fetch": "^0.17.0",
+    "openapi-typescript": "^7.13.0",
+    "typescript": "~6.0.3"
+  }
+}

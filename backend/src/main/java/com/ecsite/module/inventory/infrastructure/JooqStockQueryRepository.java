@@ -12,6 +12,7 @@ import org.springframework.stereotype.Repository;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
@@ -88,5 +89,20 @@ class JooqStockQueryRepository implements StockQueryRepository {
                 .where(STOCK_ITEM.PRODUCT_ID.in(productIds))
                 .groupBy(STOCK_ITEM.PRODUCT_ID)
                 .fetchMap(STOCK_ITEM.PRODUCT_ID, total);
+    }
+
+    /**
+     * 在庫数が 1 以上のバリアントを返す。
+     *
+     * @param variantIds バリアント ID
+     * @return 在庫があるバリアントの ID
+     */
+    @Override
+    public Set<UUID> findInStockVariantIds(Collection<UUID> variantIds) {
+        return dsl.select(STOCK_ITEM.VARIANT_ID)
+                .from(STOCK_ITEM)
+                .where(STOCK_ITEM.VARIANT_ID.in(variantIds))
+                .and(STOCK_ITEM.QUANTITY.gt(0))
+                .fetchSet(STOCK_ITEM.VARIANT_ID);
     }
 }

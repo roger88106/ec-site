@@ -7,6 +7,7 @@ import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -39,4 +40,12 @@ public interface StockQueryRepository {
      * @return 商品 ID → 在庫数の合計。在庫がまだない商品は含まない
      */
     Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds);
+
+    /**
+     * 在庫数が 1 以上のバリアントを返す。
+     *
+     * @param variantIds バリアント ID
+     * @return 指定したうち、在庫があるバリアントの ID
+     */
+    Set<UUID> findInStockVariantIds(Collection<UUID> variantIds);
 }

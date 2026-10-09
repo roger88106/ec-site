@@ -46,6 +46,8 @@ coverage/
 npm-debug.log*
 pnpm-debug.log*
 .vercel
+# openapi-typescript の生成物（ビルド前に生成する。constitution 9）
+frontend/*/src/api/generated/
 
 ### IntelliJ IDEA ###
 .idea

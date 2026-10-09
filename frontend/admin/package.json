@@ -8,9 +8,10 @@
     "node": ">=24"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
-    "typecheck": "tsc -b",
+    "generate:api": "openapi-typescript ../../api/openapi/admin.yaml -o src/api/generated/admin.ts --enum-values",
+    "dev": "pnpm generate:api && vite",
+    "build": "pnpm generate:api && tsc -b && vite build",
+    "typecheck": "pnpm generate:api && tsc -b",
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write",
     "test": "vitest run",
@@ -25,6 +26,8 @@
     "cn": "^0.4.0",
     "lucide-react": "^1.53.0",
     "next-themes": "^0.4.6",
+    "openapi-fetch": "^0.17.0",
+    "openapi-react-query": "^0.5.4",
     "react": "^19.2.8",
     "react-dom": "^19.2.8",
     "react-hook-form": "^7.89.0",
@@ -40,6 +43,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "openapi-typescript": "^7.13.0",
     "typescript": "~6.0.2",
     "vite": "^8.3.0",
     "vitest": "^5.0.3"

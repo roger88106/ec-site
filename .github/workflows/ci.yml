@@ -4,7 +4,7 @@
 # push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
 #   backend：ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
 #   admin：管理画面の lint（Biome）、型チェック、テスト、ビルド
-#   店舗画面（frontend/store）のジョブは段階 8 で追加する。
+#   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）
 # ============================================================================
 
 name: CI
@@ -90,5 +90,44 @@ jobs:
       - name: テスト
         run: pnpm test
 
+      - name: ビルド
+        run: pnpm build
+
+  store:
+    name: 店舗画面
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend/store
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
+      - uses: pnpm/action-setup@v6
+        with:
+          package_json_file: frontend/store/package.json
+          cache: true
+          cache_dependency_path: frontend/store/pnpm-lock.yaml
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: 依存のインストール
+        run: pnpm install --frozen-lockfile
+
+      # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
+      - name: lint と整形の確認
+        run: pnpm lint
+
+      - name: 型チェック
+        run: pnpm typecheck
+
+      - name: テスト
+        run: pnpm test
+
+      # 画面はリクエストのたびに作るので、ビルドにバックエンドは要らない
       - name: ビルド
         run: pnpm build

@@ -4,6 +4,8 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -29,4 +31,12 @@ public interface StockQueryRepository {
      * @return 調整履歴。在庫がまだなければ空
      */
     Optional<PageResult<StockAdjustmentView>> findAdjustments(UUID variantId, PageRequest request);
+
+    /**
+     * 商品ごとに在庫数を合計する（AC-49）。
+     *
+     * @param productIds 商品 ID
+     * @return 商品 ID → 在庫数の合計。在庫がまだない商品は含まない
+     */
+    Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds);
 }

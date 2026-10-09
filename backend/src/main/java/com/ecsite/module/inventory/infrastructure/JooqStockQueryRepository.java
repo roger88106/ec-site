@@ -6,8 +6,11 @@ import com.ecsite.module.inventory.application.StockQueryRepository;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
+import org.jooq.impl.DSL;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -69,5 +72,21 @@ class JooqStockQueryRepository implements StockQueryRepository {
                                     record.getAdjustedAt()));
                     return PageResult.of(items, request, dsl.fetchCount(STOCK_ADJUSTMENT, condition));
                 });
+    }
+
+    /**
+     * 商品ごとに在庫数を合計する。
+     *
+     * @param productIds 商品 ID
+     * @return 商品 ID → 在庫数の合計
+     */
+    @Override
+    public Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds) {
+        var total = DSL.sum(STOCK_ITEM.QUANTITY).cast(Long.class);
+        return dsl.select(STOCK_ITEM.PRODUCT_ID, total)
+                .from(STOCK_ITEM)
+                .where(STOCK_ITEM.PRODUCT_ID.in(productIds))
+                .groupBy(STOCK_ITEM.PRODUCT_ID)
+                .fetchMap(STOCK_ITEM.PRODUCT_ID, total);
     }
 }

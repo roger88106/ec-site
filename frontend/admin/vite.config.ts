@@ -1,3 +1,4 @@
+/// <reference types="vitest/config" />
 import path from 'node:path'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
@@ -16,5 +17,10 @@ export default defineConfig({
     proxy: {
       '/api': 'http://localhost:8080',
     },
+  },
+  test: {
+    // 結合テスト（管理画面の構成 第 10 節）のため jsdom で動かす。単体テストもそのまま動く
+    environment: 'jsdom',
+    setupFiles: ['src/test/setup.ts'],
   },
 })

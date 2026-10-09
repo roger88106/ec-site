@@ -18,7 +18,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | フォーム | React Hook Form | 入力の状態、変更の有無、サーバーの項目ごとのエラーの表示に使う |
 | UI | shadcn/ui、Tailwind CSS、lucide-react | 版面は shadcn の Sidebar、成功の通知は sonner（toast） |
 | lint・整形 | Biome | lint、整形、import の整理、Tailwind のクラスの並べ替え |
-| テスト | Vitest | 画面に依存しない関数と表示の部品（constitution 12） |
+| テスト | Vitest、React Testing Library、user-event、MSW（openapi-msw）、jsdom | 単体テストは画面に依存しない関数と表示の部品、結合テストは画面の操作の流れ（第 10 節、constitution 12） |
 
 ## 2. ディレクトリ
 
@@ -35,6 +35,7 @@ frontend/admin/src/
 │   └── *.tsx         # 機能をまたいで使う部品（価格、日時、エラー、ページングなど）
 ├── hooks/            # 機能をまたいで使う hook（バージョン付きのフォームなど。shadcn/ui の use-mobile もここに生成される）
 ├── lib/              # 画面に依存しない関数（表示の整形、品番の正規化など）。単体テストを横に置く
+├── test/             # 結合テストの土台（描画の補助、API の応答の差し替え、jsdom の補い）。画面のコードからは import しない
 └── features/
     └── <機能>/       # tax、category、product、inventory
         ├── pages/        # ルートに対応する画面。データの取得と部品の組み立てだけを書く
@@ -110,7 +111,8 @@ frontend/admin/src/
 ## 8. 品質
 
 - CI で、lint（Biome）、型チェック、テスト、ビルドを実行する（constitution 13）。型チェックとビルドは、型の生成の後に行う。
-- 単体テストの対象は `lib/` の関数と、価格・日時などの表示の部品。画面の操作は、段階の最後に手で確かめる（constitution 12）。
+- 単体テストの対象は `lib/` の関数と、価格・日時などの表示の部品。
+- 主な操作の流れは結合テスト（第 10 節）で確かめる。見た目（配置、色、狭い画面）は、段階の最後に手で確かめる（constitution 12）。
 
 ## 9. 画面を追加する手順
 
@@ -118,4 +120,35 @@ frontend/admin/src/
 2. `features/<機能>/pages/` に画面を作り、`app/` のルーターに URL を足す。機能の入口なら、Sidebar のメニューにも足す。
 3. 取得と更新は第 4 節、フォームは第 5 節、結果の知らせ方は第 6 節に従う。更新の後に取り直すパスを、第 4 節の表に足す。
 4. 新しい表示の決まり（列挙の表示名など）は `lib/` に置き、単体テストを書く。
-5. lint、型チェック、テスト、ビルドを通し、開発サーバーで操作を確かめる。
+5. 主な操作の流れに結合テストを書く（第 10 節）。
+6. lint、型チェック、テスト、ビルドを通し、開発サーバーで見た目を確かめる。
+
+## 10. 結合テストの書き方
+
+画面を本物のルーター・サーバー状態のキャッシュ・toast で描画し、API の応答だけを MSW で差し替えて、利用者と同じように操作する（constitution 12）。
+
+```tsx
+// features/<機能>/pages/<画面>.test.tsx
+server.use(
+  http.get('/tax-categories', ({ response }) => response(200).json({ items: [...] })),
+  http.put('/tax-categories/{taxCategoryId}/rates', ({ response }) =>
+    response(409).json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。')),
+  ),
+)
+const { user } = renderApp('/tax-categories/<ID>')
+await user.click(await screen.findByRole('button', { name: '保存' }))
+expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
+```
+
+| 補助（`src/test/`） | 内容 |
+|------|------|
+| `renderApp(url)` | その URL を開いた状態で画面全体を描画する。操作に使う `user`（user-event）と、URL を確かめる `router` を返す |
+| `http` | `admin.yaml` の型に合わせた MSW のハンドラーを作る（openapi-msw）。パス・本文・状態が `admin.yaml` にないと型エラーになる |
+| `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で、そのテストで呼ばれる API の応答を渡す |
+| `problem(...)` | エラーレスポンスの本文を作る |
+
+- 置き場所は、主に確かめる画面（`pages/`）の横。テスト名は、画面に起きることを書き、AC があれば AC 番号を入れる（例：`AC-43 調整後に負になる調整はエラーを出す`）。
+- 要素は、画面に見える役割と名前で探す（`getByRole('button', { name: '保存' })`、`getByLabelText('名称')`）。CSS のクラスや内部の状態は見ない。
+  - ボタンの見た目のリンク（`Button` の `render={<Link />}`）は、役割が `button` になる。
+- ハンドラーのない API が呼ばれると、テストは失敗する。送った内容を確かめるときは、ハンドラーの中で `request.json()` を変数に取っておく。
+- 画面の外で起きること（バックエンドの業務ルール、店舗画面への反映）は確かめない。前者はバックエンドのテスト、後者は E2E で確かめる。

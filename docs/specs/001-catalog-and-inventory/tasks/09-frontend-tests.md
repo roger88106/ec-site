@@ -7,7 +7,7 @@
 
 ## 結合テストの土台
 
-- [ ] **T901** 管理画面に React Testing Library、user-event、MSW、jsdom を入れる。テスト用の描画の補助（QueryClient、ルーター、toast を含む）と、API の応答を差し替える補助（admin.yaml の型に合わせた MSW のハンドラー）を作る。管理画面の構成に、結合テストの書き方の節を足す。
+- [x] **T901** 管理画面に React Testing Library、user-event、MSW、jsdom を入れる。テスト用の描画の補助（QueryClient、ルーター、toast を含む）と、API の応答を差し替える補助（admin.yaml の型に合わせた MSW のハンドラー）を作る。管理画面の構成に、結合テストの書き方の節を足す。
 
 ## 管理画面の結合テスト
 

@@ -19,10 +19,11 @@ const throwOnError: Middleware = {
 
 /**
  * 管理 API（admin.yaml）の fetch クライアント。開発時は Vite のプロキシがバックエンドに転送する。<br />
+ * 接続先は画面と同じオリジンの /api/admin。絶対 URL にするのは、結合テスト（Node の fetch）が相対 URL を受け付けないため。
  * 配列のクエリは、admin.yaml の定義（style: form、explode: false）どおりカンマ区切りで送る。
  */
 export const fetchClient = createFetchClient<paths>({
-  baseUrl: '/api/admin',
+  baseUrl: `${window.location.origin}/api/admin`,
   querySerializer: { array: { style: 'form', explode: false } },
 })
 fetchClient.use(throwOnError)

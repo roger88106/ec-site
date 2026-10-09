@@ -62,31 +62,10 @@ MVP では、処理に失敗したイベントを自動では再発行しない�
 | API | 複数のバリアントについての在庫の有無（在庫数が 1 以上なら「あり」。在庫がまだないバリアントは「なし」） | 店舗 |
 | イベント | なし | |
 
-## データモデル（草案。Flyway のマイグレーションができたら、リンクに置き換える）
+## データモデル
 
-```sql
-CREATE TABLE inventory.stock_item (
-    id          uuid PRIMARY KEY,
-    variant_id  uuid        NOT NULL UNIQUE,
-    product_id  uuid        NOT NULL,
-    quantity    int         NOT NULL CHECK (quantity >= 0),
-    created_at  timestamptz NOT NULL,
-    updated_at  timestamptz NOT NULL
-);
-
-CREATE TABLE inventory.stock_adjustment (
-    id              uuid PRIMARY KEY,
-    sequence_no     bigint GENERATED ALWAYS AS IDENTITY, -- 同じ日時の調整の順序
-    stock_item_id   uuid        NOT NULL REFERENCES inventory.stock_item (id),
-    delta           int         NOT NULL CHECK (delta <> 0),
-    reason          varchar(20) NOT NULL,
-    memo            varchar(500),
-    quantity_after  int         NOT NULL,
-    actor_id        uuid,       -- 認証の導入までは null
-    adjusted_at     timestamptz NOT NULL
-);
-CREATE INDEX ON inventory.stock_adjustment (stock_item_id, adjusted_at DESC, sequence_no DESC);
-```
+[V202610091600__inventory_create_stock_item.sql](../../backend/src/main/resources/db/migration/V202610091600__inventory_create_stock_item.sql)
 
 - バリアントと商品は商品カタログモジュールの ID なので、外部キーは張らない（constitution 6）。
 - 商品を持つのは、B 側で商品ごとの在庫数の合計を出すため。
+- 調整履歴は、在庫の削除で一緒に消える（`ON DELETE CASCADE`）。バリアント・商品の削除のイベントで在庫を消すため。

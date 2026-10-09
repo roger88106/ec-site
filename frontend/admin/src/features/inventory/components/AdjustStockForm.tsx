@@ -1,0 +1,105 @@
+import { Controller, useForm } from 'react-hook-form'
+import { toast } from 'sonner'
+import { $api } from '@/api/client'
+import { setServerFieldErrors } from '@/api/formErrors'
+import { stockAdjustmentReasonValues } from '@/api/generated/admin'
+import { useInvalidate } from '@/api/invalidate'
+import type { StockAdjustmentReason } from '@/api/types'
+import { ErrorMessage } from '@/components/ErrorMessage'
+import { OptionSelect } from '@/components/OptionSelect'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Field, FieldError, FieldLabel } from '@/components/ui/field'
+import { Input } from '@/components/ui/input'
+import { Textarea } from '@/components/ui/textarea'
+import { formatDelta } from '@/lib/delta'
+import { stockAdjustmentReasonLabels } from '@/lib/labels'
+
+type Values = { delta: string; reason: StockAdjustmentReason | null; memo: string }
+
+const EMPTY: Values = { delta: '', reason: null, memo: '' }
+
+const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
+
+const reasonOptions = stockAdjustmentReasonValues.map((reason) => ({
+  value: reason,
+  label: stockAdjustmentReasonLabels[reason],
+}))
+
+/**
+ * 在庫の調整（AC-42、43、46）。増減量と理由で調整し、在庫数を直接上書きする欄は作らない。<br />
+ * 負になる調整や、「その他」でメモがない調整の拒否は、サーバーのエラーを表示する。
+ */
+export function AdjustStockForm({ variantId }: { variantId: string }) {
+  const invalidate = useInvalidate()
+  const form = useForm<Values>({ defaultValues: EMPTY })
+  const mutation = $api.useMutation('post', '/inventory/variants/{variantId}/adjustments', {
+    onSuccess: async (adjustment) => {
+      toast.success(`${formatDelta(adjustment.delta)} を反映し、在庫数は ${adjustment.quantityAfter} になりました`)
+      form.reset(EMPTY)
+      await invalidate('/inventory')
+    },
+    onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
+  })
+  const values = form.watch()
+  const filled = values.delta.trim() !== '' && values.reason !== null
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>調整</CardTitle>
+      </CardHeader>
+      <CardContent>
+        <form
+          className="grid gap-4"
+          onSubmit={form.handleSubmit((submitted) =>
+            mutation.mutate({
+              params: { path: { variantId } },
+              body: {
+                delta: Number(submitted.delta),
+                reason: submitted.reason as StockAdjustmentReason,
+                memo: submitted.memo.trim() || null,
+              },
+            }),
+          )}
+        >
+          <div className="flex flex-wrap items-start gap-3">
+            <Field className="w-32">
+              <FieldLabel htmlFor="stock-delta">増減量</FieldLabel>
+              <Input id="stock-delta" placeholder="+10 / -3" step={1} type="number" {...form.register('delta')} />
+              <FieldError errors={[form.formState.errors.delta]} />
+            </Field>
+            <Field className="w-40">
+              <FieldLabel htmlFor="stock-reason">理由</FieldLabel>
+              <Controller
+                control={form.control}
+                name="reason"
+                render={({ field }) => (
+                  <OptionSelect
+                    className="w-40"
+                    id="stock-reason"
+                    onChange={field.onChange}
+                    options={reasonOptions}
+                    value={field.value}
+                  />
+                )}
+              />
+              <FieldError errors={[form.formState.errors.reason]} />
+            </Field>
+          </div>
+          <Field>
+            <FieldLabel htmlFor="stock-memo">メモ{values.reason === 'OTHER' ? '（必須）' : '（任意）'}</FieldLabel>
+            <Textarea id="stock-memo" maxLength={500} rows={2} {...form.register('memo')} />
+            <FieldError errors={[form.formState.errors.memo]} />
+          </Field>
+          <ErrorMessage error={mutation.error} shownFields={FIELD_NAMES} />
+          <div>
+            <Button disabled={mutation.isPending || !filled} type="submit">
+              調整する
+            </Button>
+          </div>
+        </form>
+      </CardContent>
+    </Card>
+  )
+}

@@ -2,6 +2,7 @@ import { createBrowserRouter, Navigate } from 'react-router'
 import { Layout } from '@/app/Layout'
 import { NotFoundPage } from '@/app/NotFoundPage'
 import { CategoryPage } from '@/features/category/pages/CategoryPage'
+import { StockPage } from '@/features/inventory/pages/StockPage'
 import { ProductCreatePage } from '@/features/product/pages/ProductCreatePage'
 import { ProductEditPage } from '@/features/product/pages/ProductEditPage'
 import { ProductListPage } from '@/features/product/pages/ProductListPage'
@@ -18,6 +19,7 @@ export const router = createBrowserRouter([
       { path: 'products', element: <ProductListPage /> },
       { path: 'products/new', element: <ProductCreatePage /> },
       { path: 'products/:productId', element: <ProductEditPage /> },
+      { path: 'products/:productId/variants/:variantId/stock', element: <StockPage /> },
       { path: 'categories', element: <CategoryPage /> },
       { path: 'tax-categories', element: <TaxCategoryListPage /> },
       { path: 'tax-categories/:taxCategoryId', element: <TaxRatesPage /> },

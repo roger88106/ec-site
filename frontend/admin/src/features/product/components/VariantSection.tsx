@@ -10,6 +10,7 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddVariantForm } from '@/features/product/components/AddVariantForm'
+import { StockLink } from '@/features/product/components/StockLink'
 import { isNeverShown } from '@/features/product/product'
 import { move } from '@/lib/array'
 
@@ -58,6 +59,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
                   <TableHead key={axis}>{axis}</TableHead>
                 ))}
                 <TableHead>販売</TableHead>
+                <TableHead className="text-right">在庫数</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -70,6 +72,9 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
                   ))}
                   <TableCell>
                     {variant.salesSuspended ? <Badge variant="secondary">販売停止</Badge> : '販売中'}
+                  </TableCell>
+                  <TableCell className="text-right">
+                    <StockLink productId={product.id} variantId={variant.id} />
                   </TableCell>
                   <TableCell className="space-x-1 whitespace-nowrap text-right">
                     <Button

@@ -30,6 +30,12 @@ RETURNING quantity;
 
 **「在庫数は負にならない」というルールは、ドメインではなく、この更新の条件と DB の CHECK 制約にある。** ルールを変えるときは、ここを変える。
 
+### 調整の検証と履歴の並び
+
+- 増減量が 0、または理由が「その他」でメモが空のときは、DB に触れる前にドメインで拒否する（400）。メモは 500 文字まで。
+- 調整後に負になる調整は 400（AC-43）。在庫がまだないバリアントへの調整は 404。
+- 履歴は調整日時の新しい順。同じ日時の調整は、記録した順（連番）の新しい順に並べ、ページをまたいでも順序が変わらないようにする。
+
 ## 在庫の作成と削除
 
 - バリアントが登録されたら、在庫数 0 の在庫を作る。同じイベントが 2 回届いても、在庫は 1 つだけになるようにする。
@@ -70,6 +76,7 @@ CREATE TABLE inventory.stock_item (
 
 CREATE TABLE inventory.stock_adjustment (
     id              uuid PRIMARY KEY,
+    sequence_no     bigint GENERATED ALWAYS AS IDENTITY, -- 同じ日時の調整の順序
     stock_item_id   uuid        NOT NULL REFERENCES inventory.stock_item (id),
     delta           int         NOT NULL CHECK (delta <> 0),
     reason          varchar(20) NOT NULL,

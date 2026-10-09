@@ -38,6 +38,8 @@
 | 軸の値 | `AxisValue` / `variant_axis_value` | バリアントが各軸で持つ値（例：白、M） |
 | 軸キー | `axis_key` | 軸の値を連結した値。商品内での組み合わせの一意性を DB で守るために使う |
 | カテゴリ | `Category` / `category` | 商品の分類。最大 3 階層 |
+| 階層の深さ | `depth` | カテゴリの階層。最上位が 1、最大 3 |
+| 表示順 | `displayOrder` / `display_order` | 兄弟カテゴリの中の並び順。小さいほど先 |
 | 税抜価格 | `priceExclTax` / `price_excl_tax` | 運営者が商品に登録する価格。バリアント間で共通 |
 | 税込価格 | `priceInclTax` | 税抜価格に、その時点の税率を適用した価格 |
 | 金額 | `Money` | 円単位の整数を表す値オブジェクト |

@@ -81,21 +81,14 @@
 | イベント | バリアント登録、バリアント削除、商品削除 | 在庫 |
 | イベント | 商品公開、商品非公開、商品販売終了、商品価格変更 | なし（将来の検索インデックス同期用） |
 
-## データモデル（草案。Flyway のマイグレーションができたら、リンクに置き換える）
+## データモデル
+
+- カテゴリ：[V202610091200__catalog_create_category.sql](../../backend/src/main/resources/db/migration/V202610091200__catalog_create_category.sql)
+  - 同じ親の下での名称の一意性は、最上位（親が null）同士も含める（`UNIQUE NULLS NOT DISTINCT`）。
+
+### 草案（Flyway のマイグレーションができたら、リンクに置き換える）
 
 ```sql
-CREATE TABLE catalog.category (
-    id             uuid PRIMARY KEY,
-    parent_id      uuid REFERENCES catalog.category (id),
-    name           varchar(50) NOT NULL,
-    depth          smallint    NOT NULL CHECK (depth BETWEEN 1 AND 3),
-    display_order  int         NOT NULL,
-    version        bigint      NOT NULL,
-    created_at     timestamptz NOT NULL,
-    updated_at     timestamptz NOT NULL,
-    UNIQUE NULLS NOT DISTINCT (parent_id, name)
-);
-
 CREATE TABLE catalog.product (
     id               uuid PRIMARY KEY,
     product_code     varchar(32)  NOT NULL UNIQUE,

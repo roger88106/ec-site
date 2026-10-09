@@ -45,7 +45,7 @@ spec がコードに先行する。仕様の誤りに気づいたら、spec を�
 
 | spec | 内容 | 状態 |
 |------|------|------|
-| [001](docs/specs/001-catalog-and-inventory) | 商品カタログと在庫 | 実装中。[段階 0（基盤）](docs/specs/001-catalog-and-inventory/tasks/00-foundation.md)、[段階 1（税）](docs/specs/001-catalog-and-inventory/tasks/01-tax.md)、[段階 2（カテゴリ）](docs/specs/001-catalog-and-inventory/tasks/02-category.md)、[段階 3（商品）](docs/specs/001-catalog-and-inventory/tasks/03-product.md)、[段階 4（在庫）](docs/specs/001-catalog-and-inventory/tasks/04-inventory.md)、[段階 5（B 側の商品一覧）](docs/specs/001-catalog-and-inventory/tasks/05-admin-product-list.md)、[段階 6（店舗）](docs/specs/001-catalog-and-inventory/tasks/06-storefront.md)、[段階 7（管理画面）](docs/specs/001-catalog-and-inventory/tasks/07-admin-ui.md) 完了 |
+| [001](docs/specs/001-catalog-and-inventory) | 商品カタログと在庫 | 実装中。[段階 0（基盤）](docs/specs/001-catalog-and-inventory/tasks/00-foundation.md)、[段階 1（税）](docs/specs/001-catalog-and-inventory/tasks/01-tax.md)、[段階 2（カテゴリ）](docs/specs/001-catalog-and-inventory/tasks/02-category.md)、[段階 3（商品）](docs/specs/001-catalog-and-inventory/tasks/03-product.md)、[段階 4（在庫）](docs/specs/001-catalog-and-inventory/tasks/04-inventory.md)、[段階 5（B 側の商品一覧）](docs/specs/001-catalog-and-inventory/tasks/05-admin-product-list.md)、[段階 6（店舗）](docs/specs/001-catalog-and-inventory/tasks/06-storefront.md)、[段階 7（管理画面）](docs/specs/001-catalog-and-inventory/tasks/07-admin-ui.md)、[段階 8（店舗画面）](docs/specs/001-catalog-and-inventory/tasks/08-store-ui.md) 完了（P1 はすべて完了。残りは [段階 9（P2）](docs/specs/001-catalog-and-inventory/tasks/09-p2.md)） |
 
 ## 起動とテスト
 
@@ -112,6 +112,25 @@ pnpm lint:fix
 - 先にバックエンドを local profile で起動しておく。
 - API の型は [admin.yaml](api/openapi/admin.yaml) から `dev`・`typecheck`・`build` の前に生成する（コミットしない）。
 - ディレクトリと画面の追加手順は [管理画面の構成](docs/frontend/admin.md)。
+
+### 店舗画面（`frontend/store`）
+
+前提は管理画面と同じ。
+
+```bash
+# frontend/store/ で、依存を入れる
+pnpm install
+
+# 開発サーバー（http://localhost:3000）。API はサーバーから呼ぶ（既定は localhost:8080）
+pnpm dev
+
+# CI と同じ確認（lint と整形、型チェック、テスト、ビルド）
+pnpm lint && pnpm typecheck && pnpm test && pnpm build
+```
+
+- 先にバックエンドを local profile で起動しておく。接続先を変えるときは環境変数 `STORE_API_BASE_URL`（例：`http://localhost:8080/api/store`）。
+- API の結果は最大 60 秒キャッシュする（NFR-1）。管理画面での変更は、1 分以内に店舗画面に反映される。
+- ディレクトリと画面の追加手順は [店舗画面の構成](docs/frontend/store.md)。
 
 ### 環境変数
 

@@ -113,57 +113,8 @@
 
 - カテゴリ：[V202610091200__catalog_create_category.sql](../../backend/src/main/resources/db/migration/V202610091200__catalog_create_category.sql)
   - 同じ親の下での名称の一意性は、最上位（親が null）同士も含める（`UNIQUE NULLS NOT DISTINCT`）。
-
-### 草案（Flyway のマイグレーションができたら、リンクに置き換える）
-
-```sql
-CREATE TABLE catalog.product (
-    id               uuid PRIMARY KEY,
-    product_code     varchar(32)  NOT NULL UNIQUE,
-    name             varchar(200) NOT NULL,
-    description      text         NOT NULL,
-    tax_category_id  uuid         NOT NULL,
-    price_excl_tax   bigint       NOT NULL CHECK (price_excl_tax >= 1),
-    status           varchar(20)  NOT NULL,
-    first_shown_at   timestamptz,
-    publish_start    timestamptz,
-    publish_end      timestamptz,
-    version          bigint       NOT NULL,
-    created_at       timestamptz  NOT NULL,
-    updated_at       timestamptz  NOT NULL
-);
-
-CREATE TABLE catalog.product_axis (
-    product_id  uuid        NOT NULL REFERENCES catalog.product (id),
-    position    smallint    NOT NULL CHECK (position BETWEEN 1 AND 3),
-    name        varchar(30) NOT NULL,
-    PRIMARY KEY (product_id, position)
-);
-
-CREATE TABLE catalog.product_category (
-    product_id   uuid NOT NULL REFERENCES catalog.product (id),
-    category_id  uuid NOT NULL REFERENCES catalog.category (id),
-    PRIMARY KEY (product_id, category_id)
-);
-
-CREATE TABLE catalog.variant (
-    id               uuid PRIMARY KEY,
-    product_id       uuid        NOT NULL REFERENCES catalog.product (id),
-    variant_code     varchar(32) NOT NULL UNIQUE,
-    axis_key         text        NOT NULL,
-    display_order    int         NOT NULL,
-    sales_suspended  boolean     NOT NULL DEFAULT false,
-    image_id         uuid,
-    UNIQUE (product_id, axis_key)
-);
-
-CREATE TABLE catalog.variant_axis_value (
-    variant_id  uuid        NOT NULL REFERENCES catalog.variant (id),
-    position    smallint    NOT NULL,
-    value       varchar(50) NOT NULL,
-    PRIMARY KEY (variant_id, position)
-);
-```
-
-- 税区分は税モジュールの ID なので、外部キーは張らない（constitution 6）。
-- 画像のテーブルは spec 001 の US-7 で追加する。
+- 商品・バリアント：[V202610091400__catalog_create_product.sql](../../backend/src/main/resources/db/migration/V202610091400__catalog_create_product.sql)
+  - 商品の一部（軸、所属カテゴリ、バリアント、軸の値）は、商品の削除で一緒に消える（`ON DELETE CASCADE`）。
+  - 所属カテゴリからカテゴリへの外部キーは CASCADE にしない。商品が所属しているカテゴリの削除を拒否するため（AC-12）。
+  - 税区分は税モジュールの ID なので、外部キーは張らない（constitution 6）。
+  - 画像のテーブルは spec 001 の US-7 で追加する。

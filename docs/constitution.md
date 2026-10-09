@@ -41,7 +41,7 @@ C 側と B 側は別のプロジェクトにする。
 | サーバー状態 | Next.js の fetch とキャッシュ | TanStack Query + `openapi-react-query` |
 | フォーム | | React Hook Form |
 
-共通：TypeScript、pnpm、Tailwind CSS、shadcn/ui、`openapi-typescript` + `openapi-fetch`、Biome（lint・整形）、Vitest。
+共通：TypeScript、pnpm、Tailwind CSS、shadcn/ui、`openapi-typescript` + `openapi-fetch`、Biome（lint・整形）、Vitest、React Testing Library、MSW、Playwright（E2E）。
 
 アプリごとの構成（ディレクトリ、画面の追加手順など）は `docs/frontend/` に書く。
 
@@ -237,7 +237,17 @@ MVP では実装しない。将来 MyIAM（EC は Resource Server として JWT 
 - テストは `main` と同じパッケージに置く。
 - 必須の統合テスト：Modulith の境界、Repository（永続化・再構築・差分更新・イベント発行）、並行性（並行の不変条件を持つモジュール）、外部連携の port（mock と実装の挙動の一致）。
 - すべての AC に、少なくとも 1 つのテストを対応させる。テスト名（`@DisplayName`）に AC 番号を入れる。
-- E2E は MVP では手動。フロントは Vitest で、表示部品とロジックを単体テストする。
+
+フロントは、テストの種類ごとに次のように置く。画面の AC を確かめるテストも、テスト名に AC 番号を入れる。
+
+| 種類 | 対象 | 道具 | 置き場所 |
+|------|------|------|----------|
+| 単体テスト | 画面に依存しない関数（判定、変換、表示の整形） | Vitest | 対象の横（`*.test.ts`） |
+| 結合テスト | 部品を描画し、利用者の操作で振る舞いを確かめる。API は MSW で置き換える | Vitest + React Testing Library + MSW | 対象の横（`*.test.tsx`） |
+| E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `frontend/e2e/` |
+
+- 結合テストと E2E は、画面に見えるもの（文字、ラベル、ボタンの名前）で確かめる。部品の内部（state、クラス名など）は確かめない。作り直しても、振る舞いが同じならテストが壊れないようにするため。
+- 見た目（配置、色、余白）は自動で確かめず、手で確かめる。
 
 ### 12.2 テスト先行【提案】
 
@@ -246,13 +256,15 @@ MVP では実装しない。将来 MyIAM（EC は Resource Server として JWT 
 | domain | 厳密な TDD |
 | AC 単位の振る舞い | 実装前に受け入れテストを書き、レッドから始める |
 | infrastructure、Controller の配線 | 実装後に書いてよい |
-| フロントの UI | 求めない |
+| フロントの関数（判定、変換、表示の整形） | 厳密な TDD |
+| フロントの主な操作の流れ（保存、エラーの表示、確認など） | 結合テストを書く。実装の前でも後でもよい |
+| フロントの見た目 | 求めない（手で確かめる） |
 
 tasks では、テストのタスクを実装タスクより前に置く。
 
 ## 13. CI
 
-- push と pull request で、バックエンド（ビルド、単体・統合テスト）とフロント（lint、型チェック、テスト、ビルド）を実行する。
+- push と pull request で、バックエンド（ビルド、単体・統合テスト）、フロント（lint、型チェック、単体・結合テスト、ビルド）、E2E を実行する。
 - CI が失敗している状態で、次の spec の実装に進まない。
 
 ## 14. 言語
@@ -299,5 +311,4 @@ tasks では、テストのタスクを実装タスクより前に置く。
 | 未完了イベントの自動再発行（MVP は手動。[inventory.md](modules/inventory.md)） | 分散ロック方式と同時、または注文の spec |
 | 一覧の正式なページング方式（カーソル方式など。MVP は第 9 節の暫定） | 検索エンジンの導入時 |
 | デプロイ先とイメージのビルド方式（B 側 SPA の配信を含む） | MVP のコアフローが通った後 |
-| フロントのテスト方針の詳細（E2E の自動化） | MVP のコアフローが通った後 |
 | 仕様の管理を、変更単位（`specs/NNN/`）から現状単位（業務領域ごとの現行仕様 + 変更の差分）に移すか | 1 → 10 の着手時 |

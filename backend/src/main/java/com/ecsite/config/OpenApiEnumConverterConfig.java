@@ -1,0 +1,68 @@
+package com.ecsite.config;
+
+import org.jspecify.annotations.NonNull;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.core.convert.converter.Converter;
+import org.springframework.core.convert.converter.ConverterFactory;
+import org.springframework.format.FormatterRegistry;
+import org.springframework.web.servlet.config.annotation.WebMvcConfigurer;
+
+import java.lang.reflect.InvocationTargetException;
+import java.lang.reflect.Method;
+
+/**
+ * クエリパラメータの文字列を、OpenAPI から生成した列挙型に変換する。<br />
+ * 生成した列挙型は、API 上の値（例：{@code price_asc}）と定数名（{@code PRICE_ASC}）が違うことがある。
+ * Spring MVC の既定の変換は定数名で探すので、生成した列挙型が持つ {@code fromValue} で変換する。
+ * {@code fromValue} を持たない列挙型は、既定どおり定数名で変換する。
+ */
+@Configuration
+class OpenApiEnumConverterConfig implements WebMvcConfigurer {
+
+    /**
+     * 変換を登録する。
+     *
+     * @param registry 登録先
+     */
+    @Override
+    public void addFormatters(@NonNull FormatterRegistry registry) {
+        registry.addConverterFactory(new StringToEnumConverterFactory());
+    }
+
+    /**
+     * 文字列から列挙型への変換。値が合わなければ {@link IllegalArgumentException}（400 になる）。
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static final class StringToEnumConverterFactory implements ConverterFactory<String, Enum> {
+
+        @Override
+        public <T extends Enum> @NonNull Converter<String, T> getConverter(@NonNull Class<T> targetType) {
+            Method fromValue = findFromValue(targetType);
+            if (fromValue == null) {
+                return source -> (T) Enum.valueOf(targetType, source.trim());
+            }
+            return source -> invoke(fromValue, source);
+        }
+
+        private static Method findFromValue(Class<?> targetType) {
+            try {
+                return targetType.getMethod("fromValue", String.class);
+            } catch (NoSuchMethodException e) {
+                return null;
+            }
+        }
+
+        private static <T> T invoke(Method fromValue, String source) {
+            try {
+                return (T) fromValue.invoke(null, source);
+            } catch (InvocationTargetException e) {
+                if (e.getCause() instanceof RuntimeException runtimeException) {
+                    throw runtimeException;
+                }
+                throw new IllegalArgumentException(e.getCause());
+            } catch (IllegalAccessException e) {
+                throw new IllegalStateException(e);
+            }
+        }
+    }
+}

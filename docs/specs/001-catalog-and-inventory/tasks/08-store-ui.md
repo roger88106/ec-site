@@ -2,17 +2,18 @@
 
 - 前提：段階 6（C 側 API）
 - 完了条件：C 側の閲覧が画面からひととおりでき、下記の手動確認がすべて通る。CI でフロントのジョブが通る。
-- 参照：constitution 2（フロントエンド）、[plan](../plan.md) 第 3 節、`store.yaml`
+- 参照：constitution 2（フロントエンド）、[plan](../plan.md) 第 3 節、[店舗画面の構成](../../../frontend/store.md)、`store.yaml`
+- 画面は、店舗画面の構成の第 8 節（画面を追加する手順）に沿って作る。
 
 ## 骨格
 
-- [ ] **T801** Next.js（App Router）+ TypeScript のプロジェクトを作る（pnpm、Tailwind CSS、shadcn/ui）。
+- [ ] **T801** Next.js（App Router）+ TypeScript のプロジェクトを作る（pnpm、Tailwind CSS、shadcn/ui、Biome、Vitest）。
 - [ ] **T802** `store.yaml` から型を生成するスクリプトを作り、ビルド前に実行する。API はサーバーコンポーネントから `openapi-fetch` で呼ぶ。API の結果のキャッシュは最大 60 秒にする（NFR-1）。
 
 ## 共通の部品
 
-- [ ] **T803** [テスト] 価格表示（BR-4）の単体テスト（Vitest）。
-- [ ] **T804** 価格表示の部品を実装する。T803 を通す。
+- [ ] **T803** [テスト] 価格表示（BR-4）と、バリアントの選択（選べない値の判定、選んだバリアントの特定。AC-62、63、28）の単体テスト（Vitest）。
+- [ ] **T804** 価格表示の部品と、バリアントの選択の関数を実装する。T803 を通す。
 
 ## 画面
 

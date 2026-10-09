@@ -371,11 +371,12 @@ public class Product extends AggregateRoot {
      * 公開する（AC-29、31）。すでに公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
+     * @return 状態が変わったら true。すでにその状態なら false
      */
-    public void publish(@NonNull Instant now) {
+    public boolean publish(@NonNull Instant now) {
         verifyNotDiscontinued();
         if (status == PublicationStatus.PUBLISHED) {
-            return;
+            return false;
         }
         if (variants.isEmpty()) {
             throw BusinessException.of(ProductErrorCode.PRODUCT_HAS_NO_VARIANTS);
@@ -385,39 +386,44 @@ public class Product extends AggregateRoot {
         this.firstShownAt = calculateFirstShownAt(now);
 
         registerEvent(ProductPublished.of(now, id));
+        return true;
     }
 
     /**
      * 非公開にする（AC-30）。すでに非公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
+     * @return 状態が変わったら true。すでにその状態なら false
      */
-    public void unpublish(@NonNull Instant now) {
+    public boolean unpublish(@NonNull Instant now) {
         verifyNotDiscontinued();
         if (status == PublicationStatus.UNPUBLISHED) {
-            return;
+            return false;
         }
 
         this.status = PublicationStatus.UNPUBLISHED;
         clearScheduledFirstShownAt(now);
 
         registerEvent(ProductUnpublished.of(now, id));
+        return true;
     }
 
     /**
      * 販売終了にする（AC-32）。すでに販売終了なら何もしない（冪等）。
      *
      * @param now 現在時刻
+     * @return 状態が変わったら true。すでにその状態なら false
      */
-    public void discontinue(@NonNull Instant now) {
+    public boolean discontinue(@NonNull Instant now) {
         if (status == PublicationStatus.DISCONTINUED) {
-            return;
+            return false;
         }
 
         this.status = PublicationStatus.DISCONTINUED;
         clearScheduledFirstShownAt(now);
 
         registerEvent(ProductDiscontinued.of(now, id));
+        return true;
     }
 
     /**

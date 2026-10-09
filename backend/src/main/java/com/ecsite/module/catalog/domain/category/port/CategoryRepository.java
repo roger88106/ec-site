@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.domain.category.port;
 
 import com.ecsite.module.catalog.domain.category.Category;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -43,6 +44,14 @@ public interface CategoryRepository {
      * @return 子カテゴリを持つなら true
      */
     boolean hasChildren(UUID id);
+
+    /**
+     * カテゴリがすべて存在するかを返す。
+     *
+     * @param ids カテゴリ ID
+     * @return すべて存在すれば true。空なら true
+     */
+    boolean existsAll(Collection<UUID> ids);
 
     /**
      * カテゴリを登録する。<br />

@@ -18,9 +18,11 @@ import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.CATEGORY;
@@ -128,6 +130,18 @@ class JooqCategoryRepository implements CategoryRepository {
     @Override
     public boolean hasChildren(UUID id) {
         return dsl.fetchExists(CATEGORY, CATEGORY.PARENT_ID.eq(id));
+    }
+
+    /**
+     * カテゴリがすべて存在するかを返す。
+     *
+     * @param ids カテゴリ ID
+     * @return すべて存在すれば true
+     */
+    @Override
+    public boolean existsAll(Collection<UUID> ids) {
+        var distinct = Set.copyOf(ids);
+        return distinct.isEmpty() || dsl.fetchCount(CATEGORY, CATEGORY.ID.in(distinct)) == distinct.size();
     }
 
     /**

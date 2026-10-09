@@ -27,6 +27,7 @@
 | [constitution](docs/constitution.md) | プロジェクト全体の長期ルール。まずここを読む |
 | [用語集](docs/glossary.md) | 業務の用語と、コード・DB の識別子の対応 |
 | [modules/](docs/modules) | モジュールごとの現在の設計 |
+| [frontend/](docs/frontend) | フロントのアプリごとの構成（ディレクトリ、API の呼び出し方、画面の追加手順） |
 | [specs/](docs/specs) | 機能ごとの spec（何を・なぜ）、plan（どう作るか）、tasks（作業の手順） |
 | [api/openapi/](api/openapi) | API 契約の正本（`admin.yaml`：管理画面、`store.yaml`：店舗） |
 | [AGENTS.md](AGENTS.md) | AI エージェントが作業するときの手順（SDD + TDD の進め方、Git） |

@@ -53,7 +53,7 @@ MVP では、処理に失敗したイベントを自動では再発行しない�
 
 | 種類 | 内容 | 利用者 |
 |------|------|--------|
-| API | 複数のバリアントについての在庫の有無 | 店舗 |
+| API | 複数のバリアントについての在庫の有無（在庫数が 1 以上なら「あり」。在庫がまだないバリアントは「なし」） | 店舗 |
 | イベント | なし | |
 
 ## データモデル（草案。Flyway のマイグレーションができたら、リンクに置き換える）
@@ -78,7 +78,7 @@ CREATE TABLE inventory.stock_adjustment (
     actor_id        uuid,       -- 認証の導入までは null
     adjusted_at     timestamptz NOT NULL
 );
-CREATE INDEX ON inventory.stock_adjustment (stock_item_id, adjusted_at DESC);
+CREATE INDEX ON inventory.stock_adjustment (stock_item_id, adjusted_at DESC, sequence_no DESC);
 ```
 
 - バリアントと商品は商品カタログモジュールの ID なので、外部キーは張らない（constitution 6）。

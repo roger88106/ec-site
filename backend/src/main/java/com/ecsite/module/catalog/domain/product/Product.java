@@ -9,7 +9,6 @@ import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.ProductDiscontinued;
-import com.ecsite.module.catalog.event.ProductImageDeleted;
 import com.ecsite.module.catalog.event.ProductPriceChanged;
 import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
@@ -426,16 +425,16 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を並びの最後に加える（AC-37、40）。ファイルは、呼び出す前に配信のバケットに置いておく。
+     * 画像を並びの最後に加える（AC-37、40）。ファイルは、呼び出す前にメディアモジュールでアセットとして確定しておく。
      *
-     * @param imageId    画像 ID
-     * @param storageKey 配信のバケットのキー
+     * @param imageId 画像 ID
+     * @param assetId メディアモジュールのアセット ID
      */
-    public void addImage(@NonNull UUID imageId, @NonNull String storageKey) {
+    public void addImage(@NonNull UUID imageId, @NonNull UUID assetId) {
         verifyCanAddImage();
         var nextOrder = images.stream().mapToInt(ProductImage::displayOrder).max().orElse(0) + 1;
         var added = new ArrayList<>(images);
-        added.add(new ProductImage(imageId, storageKey, nextOrder));
+        added.add(new ProductImage(imageId, assetId, nextOrder));
         this.images = List.copyOf(added);
     }
 
@@ -462,12 +461,12 @@ public class Product extends AggregateRoot {
 
     /**
      * 画像を削除する。その画像を指定していたバリアントの指定は外す（代表画像に戻る）。<br />
-     * 配信のバケットのファイルは、登録したイベントで消す。C 側に表示されたことのある商品の画像も削除できる。
+     * C 側に表示されたことのある商品の画像も削除できる。呼んだ側は、返したアセットを手放す。
      *
      * @param imageId 画像 ID
-     * @param now     現在時刻
+     * @return 削除した画像のアセット ID
      */
-    public void deleteImage(@NonNull UUID imageId, @NonNull Instant now) {
+    public UUID deleteImage(@NonNull UUID imageId) {
         var image = images.stream().filter(candidate -> candidate.id().equals(imageId)).findFirst()
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
 
@@ -475,8 +474,7 @@ public class Product extends AggregateRoot {
         this.variants = variants.stream()
                 .map(variant -> imageId.equals(variant.imageId()) ? variant.withImageId(null) : variant)
                 .toList();
-
-        registerEvent(ProductImageDeleted.of(now, id, imageId, image.storageKey()));
+        return image.assetId();
     }
 
     /**

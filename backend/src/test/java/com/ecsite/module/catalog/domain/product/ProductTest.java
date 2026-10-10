@@ -7,7 +7,6 @@ import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.ProductDiscontinued;
-import com.ecsite.module.catalog.event.ProductImageDeleted;
 import com.ecsite.module.catalog.event.ProductPriceChanged;
 import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
@@ -524,13 +523,14 @@ class ProductTest {
             var product = productWithVariant();
             var first = UUID.randomUUID();
             var second = UUID.randomUUID();
+            var firstAsset = UUID.randomUUID();
+            var secondAsset = UUID.randomUUID();
 
-            product.addImage(first, "products/p/first.png");
-            product.addImage(second, "products/p/second.png");
+            product.addImage(first, firstAsset);
+            product.addImage(second, secondAsset);
 
             assertThat(product.images()).extracting(ProductImage::id).containsExactly(first, second);
-            assertThat(product.images()).extracting(ProductImage::storageKey)
-                    .containsExactly("products/p/first.png", "products/p/second.png");
+            assertThat(product.images()).extracting(ProductImage::assetId).containsExactly(firstAsset, secondAsset);
             assertThat(product.representativeImage()).map(ProductImage::id).contains(first);
         }
 
@@ -545,7 +545,7 @@ class ProductTest {
         void acceptsUpToTwentyImages() {
             var product = productWithImages(20);
 
-            assertBusinessError(() -> product.addImage(UUID.randomUUID(), "products/p/21.png"),
+            assertBusinessError(() -> product.addImage(UUID.randomUUID(), UUID.randomUUID()),
                     ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
             assertThat(product.images()).hasSize(20);
         }
@@ -602,22 +602,19 @@ class ProductTest {
         }
 
         @Test
-        @DisplayName("画像を削除すると並びから消え、指定していたバリアントの指定が外れ、ファイルのキーを持つイベントが登録される")
+        @DisplayName("画像を削除すると並びから消え、指定していたバリアントの指定が外れ、手放すアセット ID が返る")
         void deletesImage() {
             var product = productWithImages(2);
             var variantId = product.variants().getFirst().id();
             var deleted = product.images().getFirst();
             product.setVariantImage(variantId, deleted.id());
 
-            product.deleteImage(deleted.id(), NOW);
+            var released = product.deleteImage(deleted.id());
 
             assertThat(product.images()).extracting(ProductImage::id).doesNotContain(deleted.id()).hasSize(1);
             assertThat(product.variants().getFirst().imageId()).isNull();
-            assertThat(product.pullEvents()).singleElement().isInstanceOfSatisfying(ProductImageDeleted.class, event -> {
-                assertThat(event.productId()).isEqualTo(product.id());
-                assertThat(event.imageId()).isEqualTo(deleted.id());
-                assertThat(event.storageKey()).isEqualTo(deleted.storageKey());
-            });
+            assertThat(released).isEqualTo(deleted.assetId());
+            assertThat(product.pullEvents()).isEmpty();
         }
 
         @Test
@@ -626,8 +623,8 @@ class ProductTest {
             var product = productWithImages(1);
             product.publish(NOW);
 
-            assertThatCode(() -> product.deleteImage(product.images().getFirst().id(), NOW)).doesNotThrowAnyException();
-            assertBusinessError(() -> product.deleteImage(UUID.randomUUID(), NOW), CommonErrorCode.NOT_FOUND);
+            assertThatCode(() -> product.deleteImage(product.images().getFirst().id())).doesNotThrowAnyException();
+            assertBusinessError(() -> product.deleteImage(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
         }
 
         @Test
@@ -647,7 +644,7 @@ class ProductTest {
         private Product productWithImages(int count) {
             var product = productWithVariant();
             for (int i = 1; i <= count; i++) {
-                product.addImage(UUID.randomUUID(), "products/p/" + i + ".png");
+                product.addImage(UUID.randomUUID(), UUID.randomUUID());
             }
             return product;
         }

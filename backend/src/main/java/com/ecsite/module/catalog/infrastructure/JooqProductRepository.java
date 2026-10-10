@@ -248,7 +248,7 @@ class JooqProductRepository implements ProductRepository {
                 dsl.insertInto(PRODUCT_IMAGE)
                         .set(PRODUCT_IMAGE.ID, image.id())
                         .set(PRODUCT_IMAGE.PRODUCT_ID, snapshot.id())
-                        .set(PRODUCT_IMAGE.STORAGE_KEY, image.storageKey())
+                        .set(PRODUCT_IMAGE.ASSET_ID, image.assetId())
                         .set(PRODUCT_IMAGE.DISPLAY_ORDER, image.displayOrder())
                         .set(PRODUCT_IMAGE.CREATED_AT, clock.instant())
                         .execute();
@@ -357,7 +357,7 @@ class JooqProductRepository implements ProductRepository {
         var images = dsl.selectFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
                 .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
-                .fetch(image -> new ProductImage(image.getId(), image.getStorageKey(), image.getDisplayOrder()));
+                .fetch(image -> new ProductImage(image.getId(), image.getAssetId(), image.getDisplayOrder()));
 
         return factory.restore(new Product.Snapshot(
                 id,

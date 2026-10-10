@@ -11,6 +11,8 @@ import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
+import com.ecsite.module.catalog.domain.product.ProductImage;
+import com.ecsite.module.catalog.domain.product.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import com.ecsite.module.catalog.domain.product.port.TaxDirectory;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
@@ -53,6 +55,11 @@ public class ProductCommandService {
      * 税の腐敗防止層
      */
     private final TaxDirectory taxDirectory;
+
+    /**
+     * メディアの腐敗防止層（画像のアセットを手放す）
+     */
+    private final MediaDirectory mediaDirectory;
 
     /**
      * 時計
@@ -113,7 +120,7 @@ public class ProductCommandService {
     }
 
     /**
-     * 商品を削除する（AC-33）。
+     * 商品を削除する（AC-33）。画像のアセットも手放す（配信のファイルは、コミットの後にメディアモジュールが消す）。
      *
      * @param productId 商品 ID
      * @param version   取得時のバージョン
@@ -125,6 +132,7 @@ public class ProductCommandService {
         product.delete(clock.instant());
 
         productRepository.delete(product);
+        mediaDirectory.release(product.images().stream().map(ProductImage::assetId).toList());
     }
 
     /**

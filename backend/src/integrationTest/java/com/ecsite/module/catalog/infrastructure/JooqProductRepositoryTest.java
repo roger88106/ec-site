@@ -15,7 +15,6 @@ import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
-import com.ecsite.module.catalog.event.ProductImageDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -194,8 +193,9 @@ class JooqProductRepositoryTest {
         var variantId = product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
         var first = UUID.randomUUID();
         var second = UUID.randomUUID();
-        product.addImage(first, "products/p/first.png");
-        product.addImage(second, "products/p/second.webp");
+        var firstAsset = UUID.randomUUID();
+        product.addImage(first, firstAsset);
+        product.addImage(second, UUID.randomUUID());
         product.setVariantImage(variantId, second);
         repository.add(product);
 
@@ -203,19 +203,16 @@ class JooqProductRepositoryTest {
         assertThat(added.toSnapshot()).isEqualTo(product.toSnapshot());
 
         var third = UUID.randomUUID();
-        added.addImage(third, "products/p/third.jpg");
+        var thirdAsset = UUID.randomUUID();
+        added.addImage(third, thirdAsset);
         added.reorderImages(List.of(third, second, first));
-        added.deleteImage(second, NOW);
+        added.deleteImage(second);
         repository.save(added);
 
         var restored = repository.findById(product.id()).orElseThrow();
         assertThat(restored.images()).extracting(ProductImage::id).containsExactly(third, first);
-        assertThat(restored.images()).extracting(ProductImage::storageKey)
-                .containsExactly("products/p/third.jpg", "products/p/first.png");
+        assertThat(restored.images()).extracting(ProductImage::assetId).containsExactly(thirdAsset, firstAsset);
         assertThat(restored.variants().getFirst().imageId()).isNull();
-        assertThat(events.stream(ProductImageDeleted.class))
-                .singleElement()
-                .satisfies(event -> assertThat(event.storageKey()).isEqualTo("products/p/second.webp"));
     }
 
     @Test

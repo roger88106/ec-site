@@ -4,21 +4,18 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.domain.product.Product;
-import com.ecsite.module.catalog.domain.product.ProductErrorCode;
-import com.ecsite.module.catalog.domain.product.port.ImageStorage;
+import com.ecsite.module.catalog.domain.product.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
-import com.ecsite.module.catalog.domain.product.vo.ImageFormat;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.util.List;
 import java.util.UUID;
 
 /**
  * 商品画像のアプリケーションサービス（US-7。plan 001 第 7 節）。<br />
- * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、登録のときに形式を確かめて配信のバケットへコピーする。
+ * ファイルの受け付け・検証・配信・削除はメディアモジュールが行い、ここでは商品の規則（枚数、並び順、バリアントの画像）を扱う。
  */
 @Service
 @RequiredArgsConstructor
@@ -30,18 +27,13 @@ public class ProductImageService {
     private final ProductRepository productRepository;
 
     /**
-     * 画像の置き場所
+     * メディアの腐敗防止層
      */
-    private final ImageStorage imageStorage;
+    private final MediaDirectory mediaDirectory;
 
     /**
-     * 時計
-     */
-    private final Clock clock;
-
-    /**
-     * 画像のアップロードを受け付ける（AC-39、40）。形式・大きさ・枚数を確かめ、署名付き URL を発行する。<br />
-     * 受付は DB に記録しない（受付のキーに商品 ID を含める。登録されなかったファイルはライフサイクル規則で消える）。
+     * 画像のアップロードを受け付ける（AC-39、40）。枚数を確かめ、形式と大きさはメディアモジュールが確かめる。<br />
+     * 受付は DB に記録しない（受付の範囲を商品 ID にする。登録されなかったファイルはライフサイクル規則で消える）。
      *
      * @param productId     商品 ID
      * @param contentType   ファイルの形式（申告）
@@ -51,20 +43,14 @@ public class ProductImageService {
     public ImageUploadView createUpload(UUID productId, String contentType, long contentLength) {
         var product = findProduct(productId);
         product.verifyCanAddImage();
-        var format = ImageFormat.ofContentType(contentType)
-                .orElseThrow(() -> BusinessException.of(ProductErrorCode.UNSUPPORTED_IMAGE_FORMAT));
-        verifySize(contentLength);
 
-        var uploadId = UUID.randomUUID();
-        var presigned = imageStorage.presignUpload(ProductImageKeys.upload(productId, uploadId), format.contentType(),
-                contentLength);
-        return new ImageUploadView(uploadId, presigned.url(), presigned.headers(), presigned.expiresAt());
+        var upload = mediaDirectory.requestImageUpload(productId, contentType, contentLength);
+        return new ImageUploadView(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
     }
 
     /**
      * 受け付けた画像を登録する（AC-37、39、40）。<br />
-     * 受付のファイルの大きさと、先頭のバイトで判定した形式を確かめ（申告は信用しない）、配信のバケットへコピーしてから、
-     * 商品の画像の最後に加える。コピーの後に保存が失敗すると配信のファイルが残るが、だれからも参照されないだけで害はない。
+     * 同じトランザクションの中で、メディアモジュールにアセットを確定させ（ファイルの中身を確かめる）、商品の画像の最後に加える。
      *
      * @param productId 商品 ID
      * @param uploadId  受付 ID
@@ -76,18 +62,10 @@ public class ProductImageService {
         var product = getProduct(productId, version);
         product.verifyCanAddImage();
 
-        var uploadKey = ProductImageKeys.upload(productId, uploadId);
-        var size = imageStorage.findUploadSize(uploadKey)
-                .orElseThrow(() -> BusinessException.of(ProductErrorCode.IMAGE_UPLOAD_NOT_FOUND));
-        verifySize(size);
-        var format = ImageFormat.detect(imageStorage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH))
-                .orElseThrow(() -> BusinessException.of(ProductErrorCode.INVALID_IMAGE_FILE));
+        var assetId = mediaDirectory.confirmImage(productId, uploadId);
 
         var imageId = UUID.randomUUID();
-        var publicKey = ProductImageKeys.published(productId, imageId, format);
-        imageStorage.publish(uploadKey, publicKey, format.contentType());
-
-        product.addImage(imageId, publicKey);
+        product.addImage(imageId, assetId);
         productRepository.save(product);
         return imageId;
     }
@@ -109,7 +87,7 @@ public class ProductImageService {
     }
 
     /**
-     * 画像を削除する。配信のファイルは、商品画像削除のイベントで消す。
+     * 画像を削除する。同じトランザクションの中でアセットを手放す（配信のファイルは、コミットの後にメディアモジュールが消す）。
      *
      * @param productId 商品 ID
      * @param imageId   画像 ID
@@ -119,9 +97,10 @@ public class ProductImageService {
     public void deleteImage(UUID productId, UUID imageId, long version) {
         var product = getProduct(productId, version);
 
-        product.deleteImage(imageId, clock.instant());
+        var assetId = product.deleteImage(imageId);
 
         productRepository.save(product);
+        mediaDirectory.release(List.of(assetId));
     }
 
     /**
@@ -142,15 +121,6 @@ public class ProductImageService {
     }
 
 // ============================== プライベートメソッド ==============================
-
-    /**
-     * 大きさが 1 バイト以上、上限（10MB）以下であることを確かめる（AC-39）。
-     */
-    private static void verifySize(long size) {
-        if (size <= 0 || size > ImageFormat.MAX_BYTES) {
-            throw BusinessException.of(ProductErrorCode.IMAGE_TOO_LARGE);
-        }
-    }
 
     private Product findProduct(UUID productId) {
         return productRepository.findById(productId)

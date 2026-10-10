@@ -8,14 +8,14 @@ import java.util.UUID;
 
 /**
  * 商品画像（商品集約の一部。AC-37）。<br />
- * ファイルはオブジェクトストレージの配信のバケットに置き、ここにはキーだけを持つ（plan 001 第 7 節）。
+ * ファイルはメディアモジュールのアセットで、ここにはアセット ID だけを持つ（docs/modules/catalog.md「商品画像」）。
  *
  * @param id           画像 ID
- * @param storageKey   配信のバケットのキー。上書きしない
+ * @param assetId      メディアモジュールのアセット ID
  * @param displayOrder 商品の中の表示順（先頭が代表画像）
  */
 @Entity
-public record ProductImage(@Identity @NonNull UUID id, @NonNull String storageKey, int displayOrder) {
+public record ProductImage(@Identity @NonNull UUID id, @NonNull UUID assetId, int displayOrder) {
 
     /**
      * 表示順を変えた画像を返す。
@@ -24,6 +24,6 @@ public record ProductImage(@Identity @NonNull UUID id, @NonNull String storageKe
      * @return 画像
      */
     ProductImage withDisplayOrder(int displayOrder) {
-        return new ProductImage(id, storageKey, displayOrder);
+        return new ProductImage(id, assetId, displayOrder);
     }
 }

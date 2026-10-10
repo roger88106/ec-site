@@ -4,11 +4,12 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.persistence.LikePatterns;
 import com.ecsite.jooq.catalog.tables.records.ProductRecord;
+import com.ecsite.jooq.catalog.tables.records.ProductImageRecord;
 import com.ecsite.module.catalog.application.ProductQueryRepository;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
-import com.ecsite.module.catalog.domain.product.port.ImageStorage;
+import com.ecsite.module.catalog.domain.product.port.MediaDirectory;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -41,9 +42,9 @@ class JooqProductQueryRepository implements ProductQueryRepository {
     private final DSLContext dsl;
 
     /**
-     * 画像の置き場所（配信の URL を組み立てる）
+     * メディアの腐敗防止層（画像の配信の URL）
      */
-    private final ImageStorage imageStorage;
+    private final MediaDirectory mediaDirectory;
 
     /**
      * 商品の詳細を取得する。
@@ -156,12 +157,12 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                         variant.getSalesSuspended(),
                         variant.getImageId()));
 
-        var images = dsl.selectFrom(PRODUCT_IMAGE)
+        var imageRecords = dsl.selectFrom(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
                 .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
-                .fetch(image -> new ProductDetailView.ImageView(
-                        image.getId(),
-                        imageStorage.publicUrl(image.getStorageKey())));
+                .fetch();
+        var urls = mediaDirectory.urls(imageRecords.map(ProductImageRecord::getAssetId));
+        var images = imageRecords.map(image -> new ProductDetailView.ImageView(image.getId(), urls.get(image.getAssetId())));
 
         return new ProductDetailView(
                 id,

@@ -71,26 +71,6 @@ public class ProductMessage {
     public static final I18nMessage TOO_MANY_PRODUCT_IMAGES = I18nMessage.of(Code.TOO_MANY_PRODUCT_IMAGES);
 
     /**
-     * 画像の形式は JPEG、PNG、WebP のいずれかにしてください。
-     */
-    public static final I18nMessage UNSUPPORTED_IMAGE_FORMAT = I18nMessage.of(Code.UNSUPPORTED_IMAGE_FORMAT);
-
-    /**
-     * 画像は 1 ファイル 10MB までです。
-     */
-    public static final I18nMessage IMAGE_TOO_LARGE = I18nMessage.of(Code.IMAGE_TOO_LARGE);
-
-    /**
-     * アップロードした画像が見つかりません。もう一度アップロードしてください。
-     */
-    public static final I18nMessage IMAGE_UPLOAD_NOT_FOUND = I18nMessage.of(Code.IMAGE_UPLOAD_NOT_FOUND);
-
-    /**
-     * ファイルの中身が JPEG、PNG、WebP の画像ではありません。
-     */
-    public static final I18nMessage INVALID_IMAGE_FILE = I18nMessage.of(Code.INVALID_IMAGE_FILE);
-
-    /**
      * 存在しないカテゴリが指定されています。
      */
     public static final I18nMessage INVALID_CATEGORY_ID = I18nMessage.of(Code.INVALID_CATEGORY_ID);
@@ -201,26 +181,6 @@ public class ProductMessage {
          * 画像は 1 商品あたり 20 枚まで登録できます。
          */
         public static final String TOO_MANY_PRODUCT_IMAGES = "ecsite.catalog.too_many_product_images";
-
-        /**
-         * 画像の形式は JPEG、PNG、WebP のいずれかにしてください。
-         */
-        public static final String UNSUPPORTED_IMAGE_FORMAT = "ecsite.catalog.unsupported_image_format";
-
-        /**
-         * 画像は 1 ファイル 10MB までです。
-         */
-        public static final String IMAGE_TOO_LARGE = "ecsite.catalog.image_too_large";
-
-        /**
-         * アップロードした画像が見つかりません。もう一度アップロードしてください。
-         */
-        public static final String IMAGE_UPLOAD_NOT_FOUND = "ecsite.catalog.image_upload_not_found";
-
-        /**
-         * ファイルの中身が JPEG、PNG、WebP の画像ではありません。
-         */
-        public static final String INVALID_IMAGE_FILE = "ecsite.catalog.invalid_image_file";
 
         /**
          * 存在しないカテゴリが指定されています。

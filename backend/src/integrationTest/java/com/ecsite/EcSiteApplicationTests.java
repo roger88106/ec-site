@@ -51,4 +51,43 @@ class EcSiteApplicationTests {
         // 件数は、先に動いたテスト（ロールバックしないもの）が発行したイベントで変わるので見ない
         assertThatCode(() -> dsl.fetchCount(EVENT_PUBLICATION)).doesNotThrowAnyException();
     }
+
+    @Test
+    @DisplayName("すべてのテーブルに論理名のコメントがある")
+    void everyTableHasLogicalName() {
+        // PostgreSQL のシステムの schema と、Flyway の履歴のテーブルは除く
+        var tables = jdbcTemplate.queryForList("""
+                SELECT n.nspname || '.' || c.relname
+                  FROM pg_class c
+                  JOIN pg_namespace n ON n.oid = c.relnamespace
+                 WHERE c.relkind IN ('r', 'p')
+                   AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+                   AND n.nspname NOT LIKE 'pg\\_%'
+                   AND c.relname <> 'flyway_schema_history'
+                   AND obj_description(c.oid, 'pg_class') IS NULL
+                """, String.class);
+
+        assertThat(tables).isEmpty();
+    }
+
+    @Test
+    @DisplayName("すべてのカラムに論理名のコメントがある")
+    void everyColumnHasLogicalName() {
+        // テーブルの検査と同じ範囲の、削除済みでないカラム
+        var columns = jdbcTemplate.queryForList("""
+                SELECT n.nspname || '.' || c.relname || '.' || a.attname
+                  FROM pg_attribute a
+                  JOIN pg_class c ON c.oid = a.attrelid
+                  JOIN pg_namespace n ON n.oid = c.relnamespace
+                 WHERE c.relkind IN ('r', 'p')
+                   AND a.attnum > 0
+                   AND NOT a.attisdropped
+                   AND n.nspname NOT IN ('pg_catalog', 'information_schema')
+                   AND n.nspname NOT LIKE 'pg\\_%'
+                   AND c.relname <> 'flyway_schema_history'
+                   AND col_description(c.oid, a.attnum) IS NULL
+                """, String.class);
+
+        assertThat(columns).isEmpty();
+    }
 }

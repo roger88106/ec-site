@@ -7,6 +7,7 @@ import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
+import com.ecsite.module.catalog.domain.product.ProductImage;
 import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.Variant;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
@@ -14,6 +15,7 @@ import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
+import com.ecsite.module.catalog.event.ProductImageDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -183,6 +185,37 @@ class JooqProductRepositoryTest {
         var other = newProduct("ABC-002", "色");
         other.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
         repository.add(other);
+    }
+
+    @Test
+    @DisplayName("画像を差分で保存する：追加・並び替え・削除、バリアントの画像の指定。削除した画像の指定は外れる")
+    void savesImages() {
+        var product = newProduct("ABC-001", "色");
+        var variantId = product.addVariant(VariantCode.of("V1"), List.of("白"), NOW);
+        var first = UUID.randomUUID();
+        var second = UUID.randomUUID();
+        product.addImage(first, "products/p/first.png");
+        product.addImage(second, "products/p/second.webp");
+        product.setVariantImage(variantId, second);
+        repository.add(product);
+
+        var added = repository.findById(product.id()).orElseThrow();
+        assertThat(added.toSnapshot()).isEqualTo(product.toSnapshot());
+
+        var third = UUID.randomUUID();
+        added.addImage(third, "products/p/third.jpg");
+        added.reorderImages(List.of(third, second, first));
+        added.deleteImage(second, NOW);
+        repository.save(added);
+
+        var restored = repository.findById(product.id()).orElseThrow();
+        assertThat(restored.images()).extracting(ProductImage::id).containsExactly(third, first);
+        assertThat(restored.images()).extracting(ProductImage::storageKey)
+                .containsExactly("products/p/third.jpg", "products/p/first.png");
+        assertThat(restored.variants().getFirst().imageId()).isNull();
+        assertThat(events.stream(ProductImageDeleted.class))
+                .singleElement()
+                .satisfies(event -> assertThat(event.storageKey()).isEqualTo("products/p/second.webp"));
     }
 
     @Test

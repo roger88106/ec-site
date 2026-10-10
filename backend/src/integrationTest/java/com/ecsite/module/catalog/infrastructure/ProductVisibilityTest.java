@@ -103,7 +103,7 @@ class ProductVisibilityTest {
     // ============================== 補助 ==============================
 
     /**
-     * 状態と公開期間を指定した商品（公開期間の設定は P2 なので、スナップショットから作る）
+     * 状態と公開期間を指定した商品（バリアントなしで状態を決めるため、スナップショットから作る）
      */
     private Product restored(int sequence, PublicationStatus status, PublicationPeriod period) {
         var created = factory.create(ProductCode.of("VIS-" + sequence), "商品 " + sequence, "",
@@ -111,6 +111,6 @@ class ProductVisibilityTest {
         var snapshot = created.toSnapshot();
         return factory.restore(new Product.Snapshot(snapshot.id(), snapshot.productCode(), snapshot.name(),
                 snapshot.description(), snapshot.taxCategoryId(), snapshot.priceExclTax(), snapshot.categoryIds(),
-                snapshot.axes(), status, null, period, snapshot.variants(), snapshot.version()));
+                snapshot.axes(), status, null, period, snapshot.images(), snapshot.variants(), snapshot.version()));
     }
 }

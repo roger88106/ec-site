@@ -56,6 +56,21 @@ public class ProductMessage {
     public static final I18nMessage INVALID_VARIANT_ORDER = I18nMessage.of(Code.INVALID_VARIANT_ORDER);
 
     /**
+     * 並べ替える画像が、商品の画像と一致しません。再読み込みしてください。
+     */
+    public static final I18nMessage INVALID_IMAGE_ORDER = I18nMessage.of(Code.INVALID_IMAGE_ORDER);
+
+    /**
+     * バリアントには、その商品の画像だけを指定できます。
+     */
+    public static final I18nMessage INVALID_VARIANT_IMAGE = I18nMessage.of(Code.INVALID_VARIANT_IMAGE);
+
+    /**
+     * 画像は 1 商品あたり 20 枚まで登録できます。
+     */
+    public static final I18nMessage TOO_MANY_PRODUCT_IMAGES = I18nMessage.of(Code.TOO_MANY_PRODUCT_IMAGES);
+
+    /**
      * 存在しないカテゴリが指定されています。
      */
     public static final I18nMessage INVALID_CATEGORY_ID = I18nMessage.of(Code.INVALID_CATEGORY_ID);
@@ -151,6 +166,21 @@ public class ProductMessage {
          * 並べ替えるバリアントが、商品のバリアントと一致しません。再読み込みしてください。
          */
         public static final String INVALID_VARIANT_ORDER = "ecsite.catalog.invalid_variant_order";
+
+        /**
+         * 並べ替える画像が、商品の画像と一致しません。再読み込みしてください。
+         */
+        public static final String INVALID_IMAGE_ORDER = "ecsite.catalog.invalid_image_order";
+
+        /**
+         * バリアントには、その商品の画像だけを指定できます。
+         */
+        public static final String INVALID_VARIANT_IMAGE = "ecsite.catalog.invalid_variant_image";
+
+        /**
+         * 画像は 1 商品あたり 20 枚まで登録できます。
+         */
+        public static final String TOO_MANY_PRODUCT_IMAGES = "ecsite.catalog.too_many_product_images";
 
         /**
          * 存在しないカテゴリが指定されています。

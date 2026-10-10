@@ -47,6 +47,18 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     INVALID_VARIANT_ORDER(ErrorType.VALIDATION_ERROR, ProductMessage.INVALID_VARIANT_ORDER),
     /**
+     * 並び順の変更で送られた画像が、商品の画像と過不足なく一致しない（AC-37）
+     */
+    INVALID_IMAGE_ORDER(ErrorType.VALIDATION_ERROR, ProductMessage.INVALID_IMAGE_ORDER),
+    /**
+     * バリアントに、その商品にない画像を指定した（AC-38）
+     */
+    INVALID_VARIANT_IMAGE(ErrorType.VALIDATION_ERROR, ProductMessage.INVALID_VARIANT_IMAGE),
+    /**
+     * 商品の画像が上限（20 枚）に達している（AC-40）
+     */
+    TOO_MANY_PRODUCT_IMAGES(ErrorType.BUSINESS_RULE_ERROR, ProductMessage.TOO_MANY_PRODUCT_IMAGES),
+    /**
      * 所属カテゴリに存在しないカテゴリが指定された
      */
     INVALID_CATEGORY_ID(ErrorType.VALIDATION_ERROR, ProductMessage.INVALID_CATEGORY_ID),

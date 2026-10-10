@@ -9,6 +9,7 @@ import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.ProductDiscontinued;
+import com.ecsite.module.catalog.event.ProductImageDeleted;
 import com.ecsite.module.catalog.event.ProductPriceChanged;
 import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
@@ -24,6 +25,7 @@ import java.util.Comparator;
 import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -59,6 +61,11 @@ public class Product extends AggregateRoot {
      * 軸の値の最大の文字数
      */
     static final int AXIS_VALUE_MAX_LENGTH = 50;
+
+    /**
+     * 1 商品あたりの画像の上限（AC-40）
+     */
+    static final int MAX_IMAGES = 20;
 
 // ============================== フィールド定義 ==============================
 
@@ -119,6 +126,11 @@ public class Product extends AggregateRoot {
     private PublicationPeriod publicationPeriod;
 
     /**
+     * 画像（表示順。先頭が代表画像）
+     */
+    private List<ProductImage> images;
+
+    /**
      * バリアント（表示順）
      */
     private List<Variant> variants;
@@ -147,6 +159,7 @@ public class Product extends AggregateRoot {
         this.status = snapshot.status();
         this.firstShownAt = snapshot.firstShownAt();
         this.publicationPeriod = snapshot.publicationPeriod();
+        this.images = snapshot.images().stream().sorted(Comparator.comparingInt(ProductImage::displayOrder)).toList();
         this.variants = snapshot.variants().stream().sorted(Comparator.comparingInt(Variant::displayOrder)).toList();
         this.version = snapshot.version();
     }
@@ -168,7 +181,7 @@ public class Product extends AggregateRoot {
                           PriceExclTax priceExclTax, Collection<UUID> categoryIds, List<String> axes) {
         return new Product(new Snapshot(id, productCode, name, description, taxCategoryId, priceExclTax,
                 Set.copyOf(categoryIds), List.copyOf(axes), PublicationStatus.UNPUBLISHED, null,
-                PublicationPeriod.UNLIMITED, List.of(), 0));
+                PublicationPeriod.UNLIMITED, List.of(), List.of(), 0));
     }
 
 // ============================== Getter ==============================
@@ -251,6 +264,20 @@ public class Product extends AggregateRoot {
     }
 
     /**
+     * @return 画像（表示順、変更不可）
+     */
+    public List<ProductImage> images() {
+        return images;
+    }
+
+    /**
+     * @return 代表画像（画像の並びの先頭。AC-37）。画像がなければ空
+     */
+    public Optional<ProductImage> representativeImage() {
+        return images.stream().findFirst();
+    }
+
+    /**
      * @return バリアント（表示順、変更不可）
      */
     public List<Variant> variants() {
@@ -310,7 +337,7 @@ public class Product extends AggregateRoot {
         if (variants.stream().anyMatch(variant -> variant.variantCode().equals(variantCode))) {
             throw BusinessException.of(ProductErrorCode.VARIANT_CODE_ALREADY_EXISTS);
         }
-        var variant = new Variant(UUID.randomUUID(), variantCode, axisValues, nextVariantDisplayOrder(), false);
+        var variant = new Variant(UUID.randomUUID(), variantCode, axisValues, nextVariantDisplayOrder(), false, null);
         if (variants.stream().anyMatch(other -> other.axisKey().equals(variant.axisKey()))) {
             throw BusinessException.of(ProductErrorCode.VARIANT_AXIS_VALUES_ALREADY_EXISTS);
         }
@@ -386,6 +413,88 @@ public class Product extends AggregateRoot {
      */
     public boolean resumeVariant(@NonNull UUID variantId) {
         return changeSalesSuspended(variantId, false);
+    }
+
+    /**
+     * 画像を加えられるか（上限の 20 枚に達していないか）を確かめる（AC-40）。<br />
+     * アップロードの受付の前に呼ぶ。登録のときも {@link #addImage} が確かめ直す。
+     */
+    public void verifyCanAddImage() {
+        if (images.size() >= MAX_IMAGES) {
+            throw BusinessException.of(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
+        }
+    }
+
+    /**
+     * 画像を並びの最後に加える（AC-37、40）。ファイルは、呼び出す前に配信のバケットに置いておく。
+     *
+     * @param imageId    画像 ID
+     * @param storageKey 配信のバケットのキー
+     */
+    public void addImage(@NonNull UUID imageId, @NonNull String storageKey) {
+        verifyCanAddImage();
+        var nextOrder = images.stream().mapToInt(ProductImage::displayOrder).max().orElse(0) + 1;
+        var added = new ArrayList<>(images);
+        added.add(new ProductImage(imageId, storageKey, nextOrder));
+        this.images = List.copyOf(added);
+    }
+
+    /**
+     * 画像の並び順を変更する（AC-37）。送られた順に 1 から表示順を振り直す。先頭が代表画像になる。<br />
+     * すべての画像と過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
+     *
+     * @param orderedIds 並べたい順の画像 ID
+     */
+    public void reorderImages(@NonNull List<UUID> orderedIds) {
+        var currentIds = images.stream().map(ProductImage::id).collect(Collectors.toSet());
+        if (orderedIds.size() != currentIds.size() || !currentIds.equals(new HashSet<>(orderedIds))) {
+            throw BusinessException.of(ProductErrorCode.INVALID_IMAGE_ORDER);
+        }
+
+        var reordered = new ArrayList<ProductImage>();
+        for (int i = 0; i < orderedIds.size(); i++) {
+            var imageId = orderedIds.get(i);
+            var image = images.stream().filter(candidate -> candidate.id().equals(imageId)).findFirst().orElseThrow();
+            reordered.add(image.withDisplayOrder(i + 1));
+        }
+        this.images = List.copyOf(reordered);
+    }
+
+    /**
+     * 画像を削除する。その画像を指定していたバリアントの指定は外す（代表画像に戻る）。<br />
+     * 配信のバケットのファイルは、登録したイベントで消す。C 側に表示されたことのある商品の画像も削除できる。
+     *
+     * @param imageId 画像 ID
+     * @param now     現在時刻
+     */
+    public void deleteImage(@NonNull UUID imageId, @NonNull Instant now) {
+        var image = images.stream().filter(candidate -> candidate.id().equals(imageId)).findFirst()
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+
+        this.images = images.stream().filter(candidate -> !candidate.id().equals(imageId)).toList();
+        this.variants = variants.stream()
+                .map(variant -> imageId.equals(variant.imageId()) ? variant.withImageId(null) : variant)
+                .toList();
+
+        registerEvent(ProductImageDeleted.of(now, id, imageId, image.storageKey()));
+    }
+
+    /**
+     * バリアントの画像を指定する（AC-38）。指定できるのは、その商品の画像だけ。
+     *
+     * @param variantId バリアント ID
+     * @param imageId   画像 ID。null で指定を外す（代表画像を使う）
+     */
+    public void setVariantImage(@NonNull UUID variantId, UUID imageId) {
+        if (variants.stream().noneMatch(variant -> variant.id().equals(variantId))) {
+            throw BusinessException.of(CommonErrorCode.NOT_FOUND);
+        }
+        if (imageId != null && images.stream().noneMatch(image -> image.id().equals(imageId))) {
+            throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_IMAGE);
+        }
+        this.variants = variants.stream()
+                .map(variant -> variant.id().equals(variantId) ? variant.withImageId(imageId) : variant)
+                .toList();
     }
 
     /**
@@ -648,7 +757,7 @@ public class Product extends AggregateRoot {
     public record Snapshot(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
                            PriceExclTax priceExclTax, Set<UUID> categoryIds, List<String> axes,
                            PublicationStatus status, Instant firstShownAt, PublicationPeriod publicationPeriod,
-                           List<Variant> variants, long version) {
+                           List<ProductImage> images, List<Variant> variants, long version) {
     }
 
     /**
@@ -658,6 +767,6 @@ public class Product extends AggregateRoot {
      */
     public Snapshot toSnapshot() {
         return new Snapshot(id, productCode, name, description, taxCategoryId, priceExclTax, categoryIds, axes,
-                status, firstShownAt, publicationPeriod, variants, version);
+                status, firstShownAt, publicationPeriod, images, variants, version);
     }
 }

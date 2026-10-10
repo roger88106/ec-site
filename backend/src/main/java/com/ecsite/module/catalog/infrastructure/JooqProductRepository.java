@@ -8,6 +8,7 @@ import com.ecsite.jooq.catalog.tables.records.ProductRecord;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
+import com.ecsite.module.catalog.domain.product.ProductImage;
 import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import com.ecsite.module.catalog.domain.product.Variant;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
@@ -31,6 +32,7 @@ import java.util.UUID;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
+import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
@@ -122,8 +124,9 @@ class JooqProductRepository implements ProductRepository {
                         .execute();
             }
 
-            // 所属カテゴリ、バリアントの登録
+            // 所属カテゴリ、画像、バリアントの登録 ※バリアントが画像を指すので、画像を先に保存する
             saveCategories(snapshot);
+            saveImages(snapshot);
             saveVariants(snapshot);
         } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
             throw CONSTRAINTS.translate(e);
@@ -134,7 +137,7 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 商品を更新する。所属カテゴリとバリアントは差分で更新する。
+     * 商品を更新する。所属カテゴリ、画像、バリアントは差分で更新する。
      *
      * @param product 商品
      */
@@ -164,6 +167,7 @@ class JooqProductRepository implements ProductRepository {
             }
 
             saveCategories(snapshot);
+            saveImages(snapshot);
             saveVariants(snapshot);
         } catch (DataAccessException | org.jooq.exception.DataAccessException e) {
             throw CONSTRAINTS.translate(e);
@@ -216,7 +220,44 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * バリアントを差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順と販売停止を更新する。<br />
+     * 画像を差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順を更新する。<br />
+     * キーは登録後に変わらないので、更新しない。削除した画像を指すバリアントの指定は、外部キーで外れる。
+     *
+     * @param snapshot 商品のスナップショット
+     */
+    private void saveImages(Product.Snapshot snapshot) {
+        var imageIds = snapshot.images().stream().map(ProductImage::id).toList();
+
+        dsl.deleteFrom(PRODUCT_IMAGE)
+                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
+                .and(PRODUCT_IMAGE.ID.notIn(imageIds))
+                .execute();
+
+        var existingIds = new HashSet<>(dsl.select(PRODUCT_IMAGE.ID)
+                .from(PRODUCT_IMAGE)
+                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(snapshot.id()))
+                .fetch(PRODUCT_IMAGE.ID));
+
+        for (var image : snapshot.images()) {
+            if (existingIds.contains(image.id())) {
+                dsl.update(PRODUCT_IMAGE)
+                        .set(PRODUCT_IMAGE.DISPLAY_ORDER, image.displayOrder())
+                        .where(PRODUCT_IMAGE.ID.eq(image.id()))
+                        .execute();
+            } else {
+                dsl.insertInto(PRODUCT_IMAGE)
+                        .set(PRODUCT_IMAGE.ID, image.id())
+                        .set(PRODUCT_IMAGE.PRODUCT_ID, snapshot.id())
+                        .set(PRODUCT_IMAGE.STORAGE_KEY, image.storageKey())
+                        .set(PRODUCT_IMAGE.DISPLAY_ORDER, image.displayOrder())
+                        .set(PRODUCT_IMAGE.CREATED_AT, clock.instant())
+                        .execute();
+            }
+        }
+    }
+
+    /**
+     * バリアントを差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順、販売停止、画像を更新する。<br />
      * 品番と軸の値は登録後に変わらないので、更新しない。
      *
      * @param snapshot 商品のスナップショット
@@ -240,6 +281,7 @@ class JooqProductRepository implements ProductRepository {
                 dsl.update(VARIANT)
                         .set(VARIANT.DISPLAY_ORDER, variant.displayOrder())
                         .set(VARIANT.SALES_SUSPENDED, variant.salesSuspended())
+                        .set(VARIANT.IMAGE_ID, variant.imageId())
                         .where(VARIANT.ID.eq(variant.id()))
                         .execute();
             } else {
@@ -262,6 +304,7 @@ class JooqProductRepository implements ProductRepository {
                 .set(VARIANT.AXIS_KEY, variant.axisKey())
                 .set(VARIANT.DISPLAY_ORDER, variant.displayOrder())
                 .set(VARIANT.SALES_SUSPENDED, variant.salesSuspended())
+                .set(VARIANT.IMAGE_ID, variant.imageId())
                 .execute();
         for (int i = 0; i < variant.axisValues().size(); i++) {
             dsl.insertInto(VARIANT_AXIS_VALUE)
@@ -308,7 +351,13 @@ class JooqProductRepository implements ProductRepository {
                         VariantCode.of(variant.getVariantCode()),
                         axisValuesByVariant.getOrDefault(variant.getId(), List.of()),
                         variant.getDisplayOrder(),
-                        variant.getSalesSuspended()));
+                        variant.getSalesSuspended(),
+                        variant.getImageId()));
+
+        var images = dsl.selectFrom(PRODUCT_IMAGE)
+                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
+                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
+                .fetch(image -> new ProductImage(image.getId(), image.getStorageKey(), image.getDisplayOrder()));
 
         return factory.restore(new Product.Snapshot(
                 id,
@@ -322,6 +371,7 @@ class JooqProductRepository implements ProductRepository {
                 PublicationStatus.valueOf(record.getStatus()),
                 record.getFirstShownAt(),
                 PublicationPeriod.of(record.getPublishStart(), record.getPublishEnd()),
+                images,
                 variants,
                 record.getVersion()));
     }

@@ -8,6 +8,8 @@ import com.ecsite.module.storefront.catalogdir.CatalogCategory;
 import com.ecsite.module.storefront.catalogdir.CatalogDirectory;
 import com.ecsite.module.storefront.catalogdir.CatalogProduct;
 import com.ecsite.module.storefront.catalogdir.CatalogProductDetail;
+import com.ecsite.module.storefront.orderdir.CartView;
+import com.ecsite.module.storefront.orderdir.OrderDirectory;
 import com.ecsite.module.storefront.catalogdir.ProductCondition;
 import com.ecsite.module.storefront.stockdir.StockDirectory;
 import lombok.RequiredArgsConstructor;
@@ -35,6 +37,11 @@ public class StorefrontService {
      * 在庫の腐敗防止層
      */
     private final StockDirectory stockDirectory;
+
+    /**
+     * 注文の腐敗防止層（カートの見積もり）
+     */
+    private final OrderDirectory orderDirectory;
 
     /**
      * 商品一覧を取得する（AC-51〜57）。
@@ -75,6 +82,16 @@ public class StorefrontService {
                 .toList();
         return new ProductDetailView(detail.id(), detail.name(), detail.description(), detail.priceInclTax(),
                 detail.priceExclTax(), axes(detail), variants, detail.imageUrls());
+    }
+
+    /**
+     * カートを表示する（AC-77、79〜81）。金額と購入できるかは、注文モジュールの見積もりで求める。
+     *
+     * @param cartId カート ID
+     * @return カートの表示
+     */
+    public CartView getCart(UUID cartId) {
+        return orderDirectory.findCart(cartId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
     /**

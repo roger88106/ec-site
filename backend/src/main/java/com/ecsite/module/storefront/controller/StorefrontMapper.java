@@ -1,16 +1,23 @@
 package com.ecsite.module.storefront.controller;
 
+import com.ecsite.api.store.model.Amounts;
+import com.ecsite.api.store.model.AxisValue;
+import com.ecsite.api.store.model.Cart;
 import com.ecsite.api.store.model.CategoryNode;
 import com.ecsite.api.store.model.Price;
 import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummary;
 import com.ecsite.api.store.model.ProductSummaryPage;
+import com.ecsite.api.store.model.QuoteItem;
+import com.ecsite.api.store.model.TaxAmount;
+import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.api.store.model.Variant;
 import com.ecsite.api.store.model.VariantAxis;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.storefront.catalogdir.CatalogCategory;
 import com.ecsite.module.storefront.catalogdir.ProductCondition;
+import com.ecsite.module.storefront.orderdir.CartView;
 import com.ecsite.module.storefront.service.ProductDetailView;
 import com.ecsite.module.storefront.service.ProductSummaryView;
 import org.springframework.stereotype.Component;
@@ -88,5 +95,35 @@ class StorefrontMapper {
     private static ProductSummary toProductSummary(ProductSummaryView view) {
         return new ProductSummary(view.id(), view.name(), new Price(view.priceInclTax(), view.priceExclTax()), view.inStock())
                 .imageUrl(view.imageUrl());
+    }
+
+    /**
+     * カートの表示のレスポンスに変換する（AC-77、80）。
+     *
+     * @param view カートの表示
+     * @return カートのレスポンス
+     */
+    Cart toCart(CartView view) {
+        var amounts = view.amounts();
+        return new Cart(view.cartId(),
+                view.items().stream().map(StorefrontMapper::toQuoteItem).toList(),
+                new Amounts(amounts.itemsTotal().yen(), amounts.shippingFee().yen(), amounts.total().yen(),
+                        amounts.taxes().stream()
+                                .map(tax -> new TaxAmount(tax.ratePercent(), tax.taxableAmount().yen(), tax.taxAmount().yen()))
+                                .toList()),
+                view.orderable());
+    }
+
+    /**
+     * カートの品目のレスポンスに変換する。画像と購入できない理由は、null でも項目として返す。
+     */
+    private static QuoteItem toQuoteItem(CartView.Item item) {
+        return new QuoteItem(item.variantId(), item.productId(), item.productName(),
+                item.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
+                new Price(item.unitPriceInclTax().yen(), item.unitPriceExclTax().yen()), item.quantity(),
+                item.subtotal().yen(), item.unpurchasableReason() == null)
+                .imageUrl(item.imageUrl())
+                .unpurchasableReason(item.unpurchasableReason() == null
+                        ? null : UnpurchasableReason.fromValue(item.unpurchasableReason()));
     }
 }

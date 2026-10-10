@@ -5,6 +5,7 @@ import { QueryState } from '@/components/QueryState'
 import { Button } from '@/components/ui/button'
 import { BasicInfoCard } from '@/features/product/components/BasicInfoCard'
 import { ProductStatusCard } from '@/features/product/components/ProductStatusCard'
+import { PublicationPeriodCard } from '@/features/product/components/PublicationPeriodCard'
 import { StatusBadge } from '@/features/product/components/StatusBadge'
 import { VariantSection } from '@/features/product/components/VariantSection'
 
@@ -31,6 +32,7 @@ export function ProductEditPage() {
           <div className="max-w-4xl space-y-6">
             {/* 商品が変わったら（バージョンが変わったら）、前の操作のエラーを消す */}
             <ProductStatusCard key={product.version} product={product} />
+            <PublicationPeriodCard product={product} refetch={query.refetch} />
             <BasicInfoCard product={product} refetch={query.refetch} />
             <VariantSection product={product} refetch={query.refetch} />
           </div>

@@ -180,3 +180,86 @@ describe('商品の編集', () => {
     expect(calls).toEqual([`suspend ${variant().id}`, `resume ${variant().id}`])
   })
 })
+
+describe('公開期間', () => {
+  type PeriodBody = { publishStart?: string | null; publishEnd?: string | null; version: number }
+
+  /** 公開期間の設定に応答する。バージョンが今のものと違えば 409、終了が開始以前なら 400（AC-36） */
+  function servePeriod(state: ReturnType<typeof serveProduct>) {
+    const requests: PeriodBody[] = []
+    server.use(
+      http.put('/products/{productId}/publication-period', async ({ request, response }) => {
+        const body = await request.json()
+        requests.push(body)
+        if (body.version !== state.current.version) {
+          return Response.json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。'), {
+            status: 409,
+          }) as never
+        }
+        if (body.publishStart && body.publishEnd && body.publishStart >= body.publishEnd) {
+          return Response.json(
+            problem(400, 'INVALID_PUBLICATION_PERIOD', '公開終了日時は、公開開始日時より後にしてください。'),
+            { status: 400 },
+          ) as never
+        }
+        state.current = {
+          ...state.current,
+          publishStart: body.publishStart ?? null,
+          publishEnd: body.publishEnd ?? null,
+          version: state.current.version + 1,
+        }
+        return response(204).empty()
+      }),
+    )
+    return requests
+  }
+
+  it('AC-34 日本時間で入れた公開開始・終了を保存し、保存を知らせる', async () => {
+    const state = serveProduct(productDetail())
+    const requests = servePeriod(state)
+    const { user } = renderApp(URL)
+
+    fireEvent.change(await screen.findByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
+    fireEvent.change(screen.getByLabelText('公開終了（この日時は含まない）'), { target: { value: '2026-12-01T00:00' } })
+    await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+
+    expect(await screen.findByText('公開期間を保存しました')).toBeInTheDocument()
+    expect(requests).toEqual([
+      { publishStart: '2026-11-01T10:00:00+09:00', publishEnd: '2026-12-01T00:00:00+09:00', version: 0 },
+    ])
+  })
+
+  it('AC-36 終了が開始より後でなければ、サーバーのエラーのメッセージを出す', async () => {
+    const state = serveProduct(productDetail())
+    servePeriod(state)
+    const { user } = renderApp(URL)
+
+    fireEvent.change(await screen.findByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
+    fireEvent.change(screen.getByLabelText('公開終了（この日時は含まない）'), { target: { value: '2026-11-01T10:00' } })
+    await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+
+    expect(await screen.findByText('公開終了日時は、公開開始日時より後にしてください。')).toBeInTheDocument()
+  })
+
+  it('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の期間に作り直す', async () => {
+    const state = serveProduct(productDetail())
+    const requests = servePeriod(state)
+    const { user } = renderApp(URL)
+
+    fireEvent.change(await screen.findByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
+    // 入力中に、他の人が商品名を変えた。利用者が別のタブから戻ると、画面は取得し直す
+    state.current = productDetail({ name: 'T シャツ（新）', version: 1, publishEnd: '2026-12-31T15:00:00Z' })
+    fireEvent(window, new Event('visibilitychange'))
+    expect(await screen.findByDisplayValue('T シャツ（新）')).toBeInTheDocument()
+    expect(screen.getByLabelText('公開開始')).toHaveValue('2026-11-01T10:00')
+    await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+
+    expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '再読み込み' }))
+    expect(await screen.findByDisplayValue('2027-01-01T00:00')).toBe(
+      screen.getByLabelText('公開終了（この日時は含まない）'),
+    )
+    expect(screen.getByLabelText('公開開始')).toHaveValue('')
+    expect(requests.map((request) => request.version)).toEqual([0])
+  })
+})

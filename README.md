@@ -57,7 +57,7 @@ IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/bui
 ### ローカルで起動する
 
 ```bash
-# リポジトリのルートで、PostgreSQL、Zipkin、SeaweedFS（画像の置き場所）を起動する
+# リポジトリのルートで、PostgreSQL、Zipkin、SeaweedFS（画像の置き場所）、imgproxy（画像の変換）を起動する
 docker compose up -d
 
 # backend/ で、local profile で起動する（マイグレーションとローカル用の seed は起動時に適用される）
@@ -71,6 +71,7 @@ docker compose up -d
 | http://localhost:8080/actuator/health | ヘルスチェック（`/liveness`、`/readiness`） |
 | http://localhost:9411 | Zipkin（トレースの表示。local では全リクエストを記録する） |
 | http://localhost:8333 | SeaweedFS（S3 互換。画像のバケットは `seaweedfs-init` が作る。[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7 節） |
+| http://localhost:8081 | imgproxy（画像の WebP への変換。署名のない URL は拒否する。[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7.5 節） |
 
 - DB の接続先は [compose.yaml](compose.yaml) と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
 - 止めるときは `docker compose stop`。データを消して作り直すときは `docker compose down -v`。
@@ -171,6 +172,8 @@ pnpm test
 | `ECSITE_MEDIA_STORAGE_REGION`、`ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL` | バケットのリージョン、画像の配信の基準 URL（CDN） |
 | `ECSITE_MEDIA_STORAGE_ENDPOINT`、`ECSITE_MEDIA_STORAGE_PATH_STYLE_ACCESS` | S3 互換のストレージを使うときだけ。AWS では設定しない（資格情報は IAM ロール） |
 | `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | 画像のアップロードの署名付き URL の有効期間（既定 5m） |
+| `ECSITE_MEDIA_CONVERTER_BASE_URL`、`ECSITE_MEDIA_CONVERTER_KEY`、`ECSITE_MEDIA_CONVERTER_SALT` | 画像の変換（imgproxy）の URL と、URL の署名の鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値。plan 001 第 7.5 節） |
+| `ECSITE_MEDIA_CONVERTER_QUALITY`、`ECSITE_MEDIA_CONVERTER_TIMEOUT` | WebP の品質（既定 82）、変換を待つ時間の上限（既定 30s） |
 
 - マイグレーションは起動時には適用しない。デプロイごとに 1 回だけ実行する（constitution 5-10）。
 - ログは標準出力に JSON（Elastic Common Schema）で出る。

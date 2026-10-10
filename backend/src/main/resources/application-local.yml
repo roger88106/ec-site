@@ -57,3 +57,8 @@ ecsite:
       incoming-bucket: ec-site-images-incoming
       public-bucket: ec-site-images
       public-base-url: http://localhost:8333/ec-site-images
+    converter:
+      # compose の imgproxy（画像の変換。plan 001 第 7.5 節）。鍵とソルトは compose.yaml と同じローカル専用の値
+      base-url: http://localhost:8081
+      key: 6563736974652d6c6f63616c2d696d6770726f78792d6b6579
+      salt: 6563736974652d6c6f63616c2d696d6770726f78792d73616c74

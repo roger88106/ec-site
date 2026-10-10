@@ -31,7 +31,7 @@ class EcSiteApplicationTests {
         var schemas = jdbcTemplate.queryForList(
                 "SELECT schema_name FROM information_schema.schemata", String.class);
 
-        assertThat(schemas).contains("common", "tax", "catalog", "inventory");
+        assertThat(schemas).contains("common", "tax", "catalog", "media", "inventory");
     }
 
     @Test

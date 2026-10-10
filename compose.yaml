@@ -5,7 +5,7 @@
 #   停止：docker compose stop
 #
 # スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
-# ここでは空のデータベースを用意するだけ。
+# ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）を用意するだけ。
 # ============================================================================
 
 services:
@@ -33,5 +33,40 @@ services:
     ports:
       - "9411:9411"
 
+  # 画像のファイルの置き場所（S3 互換。plan 001 第 7 節）。http://localhost:8333
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    container_name: ec-site-seaweedfs
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    ports:
+      - "8333:8333"
+    volumes:
+      - ./compose/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+      - seaweedfs_data:/data
+    healthcheck:
+      # S3 の口が応答すれば準備完了（認証なしの要求は 403 だが、応答があればよい）。localhost は IPv6 になるので使わない
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://127.0.0.1:8333/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # 画像のバケット、CORS、公開の設定、ライフサイクル規則を作って終わる
+  seaweedfs-init:
+    image: amazon/aws-cli:2.31.13
+    container_name: ec-site-seaweedfs-init
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    entrypoint: ["sh", "/init.sh"]
+    environment:
+      AWS_ACCESS_KEY_ID: ec-site-local
+      AWS_SECRET_ACCESS_KEY: ec-site-local-secret
+      AWS_DEFAULT_REGION: us-east-1
+      INCOMING_BUCKET: ec-site-images-incoming
+      PUBLIC_BUCKET: ec-site-images
+    volumes:
+      - ./compose/seaweedfs/init.sh:/init.sh:ro
+
 volumes:
   postgres_data:
+  seaweedfs_data:

@@ -57,7 +57,7 @@ IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/bui
 ### ローカルで起動する
 
 ```bash
-# リポジトリのルートで、PostgreSQL と Zipkin を起動する
+# リポジトリのルートで、PostgreSQL、Zipkin、SeaweedFS（画像の置き場所）を起動する
 docker compose up -d
 
 # backend/ で、local profile で起動する（マイグレーションとローカル用の seed は起動時に適用される）
@@ -70,6 +70,7 @@ docker compose up -d
 | http://localhost:8080/api/store | 店舗 API（[store.yaml](api/openapi/store.yaml)） |
 | http://localhost:8080/actuator/health | ヘルスチェック（`/liveness`、`/readiness`） |
 | http://localhost:9411 | Zipkin（トレースの表示。local では全リクエストを記録する） |
+| http://localhost:8333 | SeaweedFS（S3 互換。画像のバケットは `seaweedfs-init` が作る。[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7 節） |
 
 - DB の接続先は [compose.yaml](compose.yaml) と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
 - 止めるときは `docker compose stop`。データを消して作り直すときは `docker compose down -v`。
@@ -138,7 +139,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 バックエンド、管理画面、店舗画面を起動して、ブラウザ（Chromium）で操作する（Playwright）。
 
 ```bash
-# リポジトリのルートで、PostgreSQL を起動する
+# リポジトリのルートで、PostgreSQL と SeaweedFS を起動する
 docker compose up -d
 
 # 管理画面と店舗画面の依存を入れておく（それぞれのディレクトリで pnpm install）

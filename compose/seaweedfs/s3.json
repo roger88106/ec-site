@@ -1,0 +1,9 @@
+{
+  "identities": [
+    {
+      "name": "ec-site-local",
+      "credentials": [{ "accessKey": "ec-site-local", "secretKey": "ec-site-local-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    }
+  ]
+}

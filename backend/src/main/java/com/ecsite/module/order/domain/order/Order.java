@@ -5,6 +5,7 @@ import com.ecsite.common.model.AggregateRoot;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
+import com.ecsite.module.order.event.OrderCancelled;
 import com.ecsite.module.order.event.OrderPlaced;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
@@ -20,7 +21,7 @@ import java.util.stream.IntStream;
 
 /**
  * 注文の Aggregate Root（docs/modules/order.md「注文」）。<br />
- * 明細と金額は注文時点の写しで、成立の後は変わらない（AC-92）。変わるのは状態とキャンセルの記録だけ（BR-9）。
+ * 明細と金額は注文時点の写しで、成立の後は変わらない（AC-92）。変わるのは状態とキャンセルの記録だけ（BR-9、docs/modules/order.md「状態遷移」）。
  */
 @Getter
 @Accessors(fluent = true)
@@ -31,6 +32,11 @@ public class Order extends AggregateRoot {
      * メールアドレスの最大の文字数
      */
     static final int EMAIL_MAX_LENGTH = 254;
+
+    /**
+     * キャンセルの理由の最大の文字数（AC-95、103）
+     */
+    static final int REASON_MAX_LENGTH = 500;
 
     /**
      * メールアドレスの形（ローカル部 @ ドメイン。細かな規則は問わない）
@@ -153,7 +159,111 @@ public class Order extends AggregateRoot {
         return order;
     }
 
+// ============================== ドメインの振る舞い ==============================
+
+    /**
+     * 消費者がキャンセルを申請する（AC-95、96）。「受付」から「キャンセル申請中」にする。<br />
+     * 申請中なら何もしない（冪等）。申請は 1 回だけで、却下済み・キャンセル済みの注文は申請できない。
+     *
+     * @param reason 理由（任意、500 文字まで）。空白だけなら理由なし
+     * @param now    現在時刻
+     */
+    public void requestCancellation(String reason, @NonNull Instant now) {
+        if (status == OrderStatus.CANCELLATION_REQUESTED) {
+            return;
+        }
+        if (status != OrderStatus.ACCEPTED || cancellationRequest != null) {
+            throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
+        }
+        cancellationRequest = new CancellationRequest(now, optionalReason(reason), CancellationRequest.Result.PENDING, null);
+        status = OrderStatus.CANCELLATION_REQUESTED;
+    }
+
+    /**
+     * キャンセルの申請を承認し、キャンセルにする（AC-101）。キャンセル済みなら何もしない（AC-105）。
+     *
+     * @param now 現在時刻
+     * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。すでにキャンセルなら false
+     */
+    public boolean approveCancellation(@NonNull Instant now) {
+        if (status == OrderStatus.CANCELLED) {
+            return false;
+        }
+        if (status != OrderStatus.CANCELLATION_REQUESTED) {
+            throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
+        }
+        decideRequest(CancellationRequest.Result.APPROVED, now);
+        cancel(new Cancellation(now, false, null));
+        return true;
+    }
+
+    /**
+     * キャンセルの申請を却下し、「受付」に戻す（AC-102）。申請中でない注文（キャンセル済みを含む）は却下できない。
+     *
+     * @param now 現在時刻
+     */
+    public void rejectCancellation(@NonNull Instant now) {
+        if (status != OrderStatus.CANCELLATION_REQUESTED) {
+            throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
+        }
+        decideRequest(CancellationRequest.Result.REJECTED, now);
+        status = OrderStatus.ACCEPTED;
+    }
+
+    /**
+     * 運営者の判断でキャンセルする（AC-103）。申請中なら、申請は承認されたものとする。<br />
+     * キャンセル済みなら何もせず、理由も変えない（AC-105）。
+     *
+     * @param reason 理由（必須、500 文字まで）
+     * @param now    現在時刻
+     * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。すでにキャンセルなら false
+     */
+    public boolean cancelByOperator(String reason, @NonNull Instant now) {
+        var required = optionalReason(reason);
+        if (required == null) {
+            throw BusinessException.of(OrderErrorCode.CANCELLATION_REASON_REQUIRED);
+        }
+        if (status == OrderStatus.CANCELLED) {
+            return false;
+        }
+        if (status == OrderStatus.CANCELLATION_REQUESTED) {
+            decideRequest(CancellationRequest.Result.APPROVED, now);
+        }
+        cancel(new Cancellation(now, true, required));
+        return true;
+    }
+
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 申請に結果を記録する。
+     */
+    private void decideRequest(CancellationRequest.Result result, Instant now) {
+        cancellationRequest = new CancellationRequest(cancellationRequest.requestedAt(), cancellationRequest.reason(),
+                result, now);
+    }
+
+    /**
+     * キャンセルにし、注文キャンセルのイベントを登録する。
+     */
+    private void cancel(Cancellation cancellation) {
+        this.cancellation = cancellation;
+        status = OrderStatus.CANCELLED;
+        registerEvent(OrderCancelled.of(cancellation.cancelledAt(), id));
+    }
+
+    /**
+     * 理由を検証する。空白だけなら理由なし（null）とし、500 文字を超えれば拒否する。
+     */
+    private static String optionalReason(String reason) {
+        if (reason == null || reason.isBlank()) {
+            return null;
+        }
+        if (reason.codePointCount(0, reason.length()) > REASON_MAX_LENGTH) {
+            throw BusinessException.of(OrderErrorCode.INVALID_CANCELLATION_REASON);
+        }
+        return reason;
+    }
 
     /**
      * 見積もりの品目を、注文時点の写しの明細にする（AC-92）。

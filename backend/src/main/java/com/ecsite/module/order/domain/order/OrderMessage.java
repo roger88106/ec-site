@@ -60,6 +60,26 @@ public class OrderMessage {
      */
     public static final I18nMessage CART_CHANGED = I18nMessage.of(Code.CART_CHANGED);
 
+    /**
+     * この注文はキャンセルを申請できません。キャンセルをご希望の場合は、お問い合わせください。
+     */
+    public static final I18nMessage CANCELLATION_NOT_REQUESTABLE = I18nMessage.of(Code.CANCELLATION_NOT_REQUESTABLE);
+
+    /**
+     * この注文には、承認・却下できるキャンセルの申請がありません。
+     */
+    public static final I18nMessage CANCELLATION_NOT_PENDING = I18nMessage.of(Code.CANCELLATION_NOT_PENDING);
+
+    /**
+     * キャンセルの理由を入力してください。
+     */
+    public static final I18nMessage CANCELLATION_REASON_REQUIRED = I18nMessage.of(Code.CANCELLATION_REASON_REQUIRED);
+
+    /**
+     * キャンセルの理由は 500 文字以内で入力してください。
+     */
+    public static final I18nMessage INVALID_CANCELLATION_REASON = I18nMessage.of(Code.INVALID_CANCELLATION_REASON);
+
     // ============================== コード定義 ==============================
 
     /**
@@ -117,5 +137,24 @@ public class OrderMessage {
          * 注文手続きを始めた後にカートが変わりました。もう一度注文手続きに進んでください。
          */
         public static final String CART_CHANGED = "ecsite.order.cart_changed";
+        /**
+         * この注文はキャンセルを申請できません。キャンセルをご希望の場合は、お問い合わせください。
+         */
+        public static final String CANCELLATION_NOT_REQUESTABLE = "ecsite.order.cancellation_not_requestable";
+
+        /**
+         * この注文には、承認・却下できるキャンセルの申請がありません。
+         */
+        public static final String CANCELLATION_NOT_PENDING = "ecsite.order.cancellation_not_pending";
+
+        /**
+         * キャンセルの理由を入力してください。
+         */
+        public static final String CANCELLATION_REASON_REQUIRED = "ecsite.order.cancellation_reason_required";
+
+        /**
+         * キャンセルの理由は 500 文字以内で入力してください。
+         */
+        public static final String INVALID_CANCELLATION_REASON = "ecsite.order.invalid_cancellation_reason";
     }
 }

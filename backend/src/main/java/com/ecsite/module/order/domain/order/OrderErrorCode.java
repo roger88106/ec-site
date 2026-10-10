@@ -51,6 +51,22 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      * 注文手続きを始めた後にカートが変わった
      */
     CART_CHANGED(ErrorType.CONFLICT_ERROR, OrderMessage.CART_CHANGED),
+    /**
+     * 申請できない注文（却下済み、キャンセル済み。申請は 1 回だけ。AC-96）
+     */
+    CANCELLATION_NOT_REQUESTABLE(ErrorType.BUSINESS_RULE_ERROR, OrderMessage.CANCELLATION_NOT_REQUESTABLE),
+    /**
+     * 申請中でない注文の承認・却下（AC-105）
+     */
+    CANCELLATION_NOT_PENDING(ErrorType.BUSINESS_RULE_ERROR, OrderMessage.CANCELLATION_NOT_PENDING),
+    /**
+     * 運営者のキャンセルの理由がない（AC-103）
+     */
+    CANCELLATION_REASON_REQUIRED(ErrorType.VALIDATION_ERROR, OrderMessage.CANCELLATION_REASON_REQUIRED),
+    /**
+     * キャンセルの理由が 500 文字を超える（AC-95、103）
+     */
+    INVALID_CANCELLATION_REASON(ErrorType.VALIDATION_ERROR, OrderMessage.INVALID_CANCELLATION_REASON),
     ;
 
     /**

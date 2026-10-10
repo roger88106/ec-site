@@ -3,6 +3,7 @@ package com.ecsite.module.catalog.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.application.model.command.AddVariantCommand;
+import com.ecsite.module.catalog.application.model.command.ChangePublicationPeriodCommand;
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderVariantsCommand;
 import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
@@ -14,6 +15,7 @@ import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import com.ecsite.module.catalog.domain.product.port.TaxDirectory;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
+import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -201,6 +203,20 @@ public class ProductCommandService {
     @Transactional
     public void discontinueProduct(UUID productId) {
         changeStatus(productId, Product::discontinue);
+    }
+
+    /**
+     * 公開期間を変更する（AC-34〜36）。
+     *
+     * @param command 公開期間の変更コマンド
+     */
+    @Transactional
+    public void changePublicationPeriod(ChangePublicationPeriodCommand command) {
+        var product = getProduct(command.productId(), command.version());
+
+        product.changePublicationPeriod(PublicationPeriod.of(command.publishStart(), command.publishEnd()), clock.instant());
+
+        productRepository.save(product);
     }
 
     /**

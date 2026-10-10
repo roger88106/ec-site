@@ -116,6 +116,31 @@ class StorefrontApiTest {
         }
 
         @Test
+        @DisplayName("AC-35、54 公開期間の外では出ず、開始日時に出て終了日時に消える。新着順は開始日時で並ぶ")
+        void listsOnlyWithinPublicationPeriod() throws Exception {
+            var start = NOW.plus(Duration.ofDays(1));
+            var end = NOW.plus(Duration.ofDays(2));
+            var reserved = product("予約の商品", 1000).period(start, end).publish();
+            var plain = product("通常の商品", 1000).publish();
+
+            mockMvc.perform(get(BASE + "/products"))
+                    .andExpect(jsonPath("$.items[*].id", contains(plain.id)));
+            mockMvc.perform(get(BASE + "/products/" + reserved.id)).andExpect(status().isNotFound());
+
+            // 運営者の操作なしに、開始日時で表示される
+            clock.setInstant(start);
+            mockMvc.perform(get(BASE + "/products"))
+                    .andExpect(jsonPath("$.items[*].id", contains(reserved.id, plain.id)));
+            mockMvc.perform(get(BASE + "/products/" + reserved.id)).andExpect(status().isOk());
+
+            // 終了日時ちょうどは含まない
+            clock.setInstant(end);
+            mockMvc.perform(get(BASE + "/products"))
+                    .andExpect(jsonPath("$.items[*].id", contains(plain.id)));
+            mockMvc.perform(get(BASE + "/products/" + reserved.id)).andExpect(status().isNotFound());
+        }
+
+        @Test
         @DisplayName("AC-56 全バリアントが在庫なしの商品も出て、在庫なしと示される。在庫がまだないバリアントも在庫なし")
         void marksOutOfStock() throws Exception {
             var inStock = product("在庫あり", 1000, "色").variant("白").variant("黒").publish();
@@ -380,6 +405,22 @@ class StorefrontApiTest {
         TestProduct discontinue() throws Exception {
             mockMvc.perform(put("/api/admin/products/" + id + "/discontinue")).andExpect(status().isNoContent());
             return this;
+        }
+
+        TestProduct period(Instant publishStart, Instant publishEnd) throws Exception {
+            var body = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
+            long current = ((Number) JsonPath.read(body, "$.version")).longValue();
+            mockMvc.perform(put("/api/admin/products/" + id + "/publication-period")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"publishStart": %s, "publishEnd": %s, "version": %d}"""
+                                    .formatted(jsonInstant(publishStart), jsonInstant(publishEnd), current)))
+                    .andExpect(status().isNoContent());
+            return this;
+        }
+
+        private static String jsonInstant(Instant instant) {
+            return instant == null ? "null" : "\"" + instant + "\"";
         }
     }
 }

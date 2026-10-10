@@ -7,10 +7,12 @@ import com.ecsite.api.admin.model.ProductSummary;
 import com.ecsite.api.admin.model.ProductSummaryPage;
 import com.ecsite.api.admin.model.PublicationStatus;
 import com.ecsite.api.admin.model.ReorderVariantsRequest;
+import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.api.admin.model.Variant;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.command.AddVariantCommand;
+import com.ecsite.module.catalog.application.model.command.ChangePublicationPeriodCommand;
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderVariantsCommand;
 import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
@@ -91,6 +93,20 @@ class ProductMapper {
     }
 
     /**
+     * 公開期間の変更コマンドに変換する。日時を省略・null にしたら、その側は限りがない。
+     *
+     * @param productId 商品 ID
+     * @param request   公開期間の設定リクエスト
+     * @return 公開期間の変更コマンド
+     */
+    ChangePublicationPeriodCommand toChangePublicationPeriodCommand(UUID productId, SetPublicationPeriodRequest request) {
+        return new ChangePublicationPeriodCommand(productId,
+                toInstant(request.getPublishStart().orElse(null)),
+                toInstant(request.getPublishEnd().orElse(null)),
+                request.getVersion());
+    }
+
+    /**
      * 商品の詳細のレスポンスに変換する。
      *
      * @param view 商品の詳細のビュー
@@ -139,5 +155,9 @@ class ProductMapper {
 
     private static OffsetDateTime toOffsetDateTime(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
+    }
+
+    private static Instant toInstant(OffsetDateTime dateTime) {
+        return dateTime == null ? null : dateTime.toInstant();
     }
 }

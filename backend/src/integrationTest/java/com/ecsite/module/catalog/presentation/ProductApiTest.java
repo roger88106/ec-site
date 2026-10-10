@@ -547,6 +547,64 @@ class ProductApiTest {
     }
 
     @Nested
+    @DisplayName("AC-34〜36 公開期間")
+    class PublicationPeriod {
+
+        @Test
+        @DisplayName("AC-34 公開開始・終了日時を設定でき、詳細に出て、バージョンが上がる。空にもできる")
+        void setsPeriod() throws Exception {
+            var id = productWithVariant("ABC-001");
+
+            setPeriod(id, "\"2026-10-10T00:00:00+09:00\"", "\"2026-10-20T00:00:00+09:00\"", 1)
+                    .andExpect(status().isNoContent());
+            getProduct(id)
+                    .andExpect(jsonPath("$.publishStart").value("2026-10-09T15:00:00Z"))
+                    .andExpect(jsonPath("$.publishEnd").value("2026-10-19T15:00:00Z"))
+                    .andExpect(jsonPath("$.version").value(2));
+
+            setPeriod(id, "null", "null", 2).andExpect(status().isNoContent());
+            getProduct(id)
+                    .andExpect(jsonPath("$.publishStart").doesNotExist())
+                    .andExpect(jsonPath("$.publishEnd").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("公開中に開始日時を未来にすると、初回表示日時がその日時になり、C 側に表示されていない扱いになる")
+        void reschedulesFirstShownAt() throws Exception {
+            var id = productWithVariant("ABC-001");
+            setPeriod(id, "\"2026-10-10T00:00:00+09:00\"", "null", 1).andExpect(status().isNoContent());
+
+            publish(id).andExpect(status().isNoContent());
+
+            getProduct(id).andExpect(jsonPath("$.firstShownAt").value("2026-10-09T15:00:00Z"));
+            // 表示前なので、予約を取り消せば削除できる（AC-33）
+            unpublish(id).andExpect(status().isNoContent());
+            deleteProduct(id, 4).andExpect(status().isNoContent());
+        }
+
+        @Test
+        @DisplayName("AC-36 終了日時が開始日時より後でなければ 400")
+        void rejectsEndNotAfterStart() throws Exception {
+            var id = productWithVariant("ABC-001");
+
+            setPeriod(id, "\"2026-10-10T00:00:00+09:00\"", "\"2026-10-10T00:00:00+09:00\"", 1)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_PUBLICATION_PERIOD"));
+        }
+
+        @Test
+        @DisplayName("取得時のバージョンと一致しなければ 409。存在しない商品は 404")
+        void rejectsStaleVersionAndUnknownProduct() throws Exception {
+            var id = productWithVariant("ABC-001");
+
+            setPeriod(id, "null", "null", 0)
+                    .andExpect(status().isConflict())
+                    .andExpect(jsonPath("$.errorCode").value("CONCURRENT_MODIFICATION"));
+            setPeriod(UNKNOWN_ID, "null", "null", 0).andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
     @DisplayName("AC-28 バリアントの販売停止")
     class SalesSuspension {
 
@@ -703,6 +761,13 @@ class ProductApiTest {
 
     private ResultActions discontinue(String id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/discontinue"));
+    }
+
+    private ResultActions setPeriod(String id, String publishStart, String publishEnd, long version) throws Exception {
+        return mockMvc.perform(put(BASE + "/" + id + "/publication-period")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"publishStart": %s, "publishEnd": %s, "version": %d}""".formatted(publishStart, publishEnd, version)));
     }
 
     private ResultActions suspend(String productId, String variantId) throws Exception {

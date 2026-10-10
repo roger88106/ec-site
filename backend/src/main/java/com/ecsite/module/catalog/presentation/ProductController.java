@@ -23,8 +23,7 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.util.UUID;
 
 /**
- * 商品のコントローラー（B 側。admin.yaml の tag: product）。<br />
- * 後の段階で実装する endpoint は、実装するまで 501 を返す（docs/modules/catalog.md）。
+ * 商品のコントローラー（B 側。admin.yaml の tag: product）。
  */
 @RestController
 @RequiredArgsConstructor
@@ -164,13 +163,16 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 公開期間の設定（AC-34〜36）。P2（段階 10）で実装する
+     * 公開期間の設定（AC-34〜36）
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param request   公開期間の設定リクエスト
+     * @return Http 204 : VOID
      */
     @Override
     public ResponseEntity<Void> setPublicationPeriod(UUID productId, SetPublicationPeriodRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        commandService.changePublicationPeriod(mapper.toChangePublicationPeriodCommand(productId, request));
+        return ResponseEntity.noContent().build();
     }
 
     /**

@@ -2,9 +2,11 @@ import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 import { ADMIN_URL, BACKEND_URL, STORE_URL } from './src/urls'
 
+/** CI で動いているか（test.only を禁止し、HTML のレポートを残し、起動済みのサーバーを使い回さない） */
 const CI = Boolean(process.env.CI)
 /** バックエンドの Gradle プロジェクト。Windows の cmd は作業ディレクトリのスクリプトを名前だけでは探さないので、絶対パスで呼ぶ */
 const BACKEND_DIR = path.resolve(import.meta.dirname, '../../backend')
+/** バックエンドを起動する Gradle Wrapper のパス */
 const GRADLEW = path.join(BACKEND_DIR, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew')
 
 /**

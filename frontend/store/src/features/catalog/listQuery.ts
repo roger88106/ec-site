@@ -44,6 +44,7 @@ export function listHref(query: ListQuery): string {
   return search ? `/products?${search}` : '/products'
 }
 
+/** 同じ名前のパラメータが複数あれば、最初のものを使う */
 function first(value: string | string[] | undefined): string | undefined {
   return Array.isArray(value) ? value[0] : value
 }
@@ -56,6 +57,7 @@ function toPrice(value: string | undefined): number | null {
   return Number(value)
 }
 
+/** 1 以上の整数だけをページ番号として扱い、それ以外は 1 ページ目にする */
 function toPage(value: string | undefined): number {
   const page = Number(value)
   return Number.isInteger(page) && page >= 1 ? page : 1

@@ -2,6 +2,7 @@ import createClient from 'openapi-fetch'
 import type { components, paths } from './generated/admin'
 import { BACKEND_URL } from './urls'
 
+/** バリアントの登録の要求の本文 */
 type AddVariantRequest = components['schemas']['AddVariantRequest']
 
 /**

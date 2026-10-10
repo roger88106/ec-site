@@ -8,6 +8,7 @@ import { Input } from '@/components/ui/input'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
 import { parseSearchQuery, searchHref } from '@/features/catalog/searchQuery'
 
+/** ブラウザのタブの題名 */
 export const metadata: Metadata = { title: '検索結果' }
 
 /**

@@ -29,6 +29,7 @@ export function isValueSelectable(
     (variant) =>
       isPurchasable(variant) &&
       axes.every((_, index) => {
+        // 選ぼうとしている軸はその値、ほかの軸は選んでいる値と比べる。未選択の軸はどの値でもよい
         const wanted = index === axisIndex ? value : selection[index]
         return wanted === null || variant.axisValues[index] === wanted
       }),

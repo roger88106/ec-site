@@ -4,8 +4,10 @@ import { SiteHeader } from '@/components/SiteHeader'
 import { cn } from '@/lib/utils'
 import './globals.css'
 
+/** 本文の書体（CSS の変数 --font-sans で使う） */
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 
+/** ブラウザのタブの題名（画面ごとの題名の後ろに店名を付ける） */
 export const metadata: Metadata = {
   title: { default: 'EC Site', template: '%s | EC Site' },
   description: 'EC Site の店舗',

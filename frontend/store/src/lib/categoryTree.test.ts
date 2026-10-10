@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import type { CategoryNode } from '@/api/types'
 import { flattenTree } from '@/lib/categoryTree'
 
+/** カテゴリの木の節を作る */
 const node = (id: string, children: CategoryNode[] = []): CategoryNode => ({ id, name: id, children })
 
 describe('カテゴリの木', () => {

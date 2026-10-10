@@ -45,6 +45,7 @@ export function VariantPicker({
             {axis.values.map((value) => {
               const selected = selection[axisIndex] === value
               const selectable = isValueSelectable(axes, variants, selection, axisIndex, value)
+              // 選べない値は取り消し線で出す。選んでいる値は、選べなくなっても外せるよう押せるままにする
               return (
                 <Button
                   aria-pressed={selected}

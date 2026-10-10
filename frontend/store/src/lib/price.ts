@@ -1,5 +1,6 @@
 import type { Price } from '@/api/types'
 
+/** 金額の書式（3 桁ごとのカンマ） */
 const yen = new Intl.NumberFormat('ja-JP')
 
 /** 価格の表示（BR-4）。税込価格を主に、税抜価格を括弧で併記する（例：「1,980 円（税抜 1,800 円）」） */

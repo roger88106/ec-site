@@ -9,11 +9,13 @@ import {
   toggleValue,
 } from '@/features/catalog/variantSelection'
 
+/** テストの商品の軸（色とサイズ） */
 const axes: VariantAxis[] = [
   { name: '色', values: ['白', '黒', '赤'] },
   { name: 'サイズ', values: ['M', 'L'] },
 ]
 
+/** テストのバリアントを作る */
 const variant = (id: string, axisValues: string[], inStock: boolean, salesSuspended = false): Variant => ({
   id,
   axisValues,

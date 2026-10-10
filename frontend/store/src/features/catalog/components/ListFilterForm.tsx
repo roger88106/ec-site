@@ -19,6 +19,7 @@ export function ListFilterForm({ query, categories }: { query: ListQuery; catego
           <NativeSelectOption value="">すべて</NativeSelectOption>
           {categories.map((category) => (
             <NativeSelectOption key={category.id} value={category.id}>
+              {/* 階層を全角の空白で字下げする */}
               {'　'.repeat(category.depth - 1)}
               {category.name}
             </NativeSelectOption>

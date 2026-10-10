@@ -5,9 +5,10 @@ import com.ecsite.api.admin.model.CancelOrderRequest;
 import com.ecsite.api.admin.model.OrderDetail;
 import com.ecsite.api.admin.model.OrderStatus;
 import com.ecsite.api.admin.model.OrderSummaryPage;
+import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderQueryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -27,25 +28,44 @@ class AdminOrderController implements OrderApi {
     private final OrderCancellationService orderCancellationService;
 
     /**
-     * 注文一覧（AC-97〜99、106）。T2406 で実装する
+     * 注文の照会のサービス
+     */
+    private final OrderQueryService orderQueryService;
+
+    /**
+     * 管理 API（注文）のマッパー
+     */
+    private final AdminOrderMapper mapper;
+
+    /**
+     * 注文一覧（AC-97〜99、106）。注文日時の新しい順
      *
-     * @return Http 501
+     * @param orderNumber 注文番号の前方一致
+     * @param status      状態
+     * @param orderedFrom 注文日の範囲の開始（日本時間）
+     * @param orderedTo   注文日の範囲の終了（日本時間）
+     * @param page        ページ番号
+     * @param size        1 ページの件数
+     * @return Http 200 : {@link OrderSummaryPage}
      */
     @Override
     public ResponseEntity<OrderSummaryPage> listOrders(String orderNumber, OrderStatus status, LocalDate orderedFrom,
                                                        LocalDate orderedTo, Integer page, Integer size) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var result = orderQueryService.list(orderNumber,
+                status == null ? null : com.ecsite.module.order.domain.order.OrderStatus.valueOf(status.getValue()),
+                orderedFrom, orderedTo, PageRequest.of(page, size));
+        return ResponseEntity.ok(mapper.toOrderSummaryPage(result));
     }
 
     /**
-     * 注文の詳細（AC-100、106）。T2406 で実装する
+     * 注文の詳細（AC-100、106）
      *
      * @param orderId 注文 ID
-     * @return Http 501
+     * @return Http 200 : {@link OrderDetail}
      */
     @Override
     public ResponseEntity<OrderDetail> getOrder(UUID orderId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        return ResponseEntity.ok(mapper.toOrderDetail(orderQueryService.get(orderId)));
     }
 
     /**

@@ -5,6 +5,7 @@ import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
+import { OptionSelect } from '@/components/OptionSelect'
 import { Badge } from '@/components/ui/badge'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -41,7 +42,18 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
       await invalidate('/products')
     },
   })
-  const mutations = [reorder, remove, suspend, resume]
+  const setImage = $api.useMutation('put', '/products/{productId}/variants/{variantId}/image', {
+    onSuccess: async () => {
+      toast.success('バリアントの画像を変更しました')
+      await invalidate('/products')
+    },
+  })
+  // バリアントの画像は、その商品の画像から選ぶ。指定しなければ代表画像（AC-38）
+  const imageOptions = [
+    { value: null, label: '代表画像' },
+    ...product.images.map((image, index) => ({ value: image.id, label: `画像 ${index + 1}` })),
+  ]
+  const mutations = [reorder, remove, suspend, resume, setImage]
   const ids = product.variants.map((variant) => variant.id)
   const pending = mutations.some((mutation) => mutation.isPending)
   /** 別の操作を始めたら、前の操作のエラーを消す */
@@ -77,6 +89,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
                 {product.axes.map((axis) => (
                   <TableHead key={axis}>{axis}</TableHead>
                 ))}
+                <TableHead>画像</TableHead>
                 <TableHead>販売</TableHead>
                 <TableHead className="text-right">在庫数</TableHead>
                 <TableHead />
@@ -89,6 +102,21 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
                   {product.axes.map((axis, axisIndex) => (
                     <TableCell key={axis}>{variant.axisValues[axisIndex]}</TableCell>
                   ))}
+                  <TableCell>
+                    <OptionSelect
+                      ariaLabel={`${variant.variantCode}の画像`}
+                      className="w-28"
+                      onChange={(imageId) => {
+                        resetErrors()
+                        setImage.mutate({
+                          params: { path: { productId: product.id, variantId: variant.id } },
+                          body: { imageId, version: product.version },
+                        })
+                      }}
+                      options={imageOptions}
+                      value={variant.imageId ?? null}
+                    />
+                  </TableCell>
                   <TableCell>
                     {variant.salesSuspended ? <Badge variant="secondary">販売停止</Badge> : '販売中'}
                   </TableCell>

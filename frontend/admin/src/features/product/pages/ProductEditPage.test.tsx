@@ -1,4 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react'
+import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { ProductDetail } from '@/api/types'
 import { PRODUCT_ID, productDetail, taxCategory, variant } from '@/test/fixtures'
@@ -261,5 +262,132 @@ describe('公開期間', () => {
     )
     expect(screen.getByLabelText('公開開始')).toHaveValue('')
     expect(requests.map((request) => request.version)).toEqual([0])
+  })
+})
+
+describe('商品画像', () => {
+  const UPLOAD_URL = 'http://storage.test/images-incoming/upload-1?X-Amz-Signature=test'
+
+  /** 画像の受付・ストレージへの PUT・登録に応答する。登録すると、商品の画像の最後に加える */
+  function serveUpload(state: ReturnType<typeof serveProduct>) {
+    const calls: string[] = []
+    server.use(
+      http.post('/products/{productId}/image-uploads', async ({ request, response }) => {
+        const body = await request.json()
+        calls.push(`受付 ${body.contentType} ${body.contentLength}`)
+        return response(201).json({
+          uploadId: '00000000-0000-0000-0000-000000000901',
+          uploadUrl: UPLOAD_URL,
+          headers: { 'Content-Type': body.contentType },
+          expiresAt: '2026-10-10T10:05:00Z',
+        })
+      }),
+      rawHttp.put(UPLOAD_URL.split('?')[0], ({ request }) => {
+        calls.push(`PUT ${request.headers.get('Content-Type')}`)
+        return new HttpResponse(null, { status: 200 })
+      }),
+      http.post('/products/{productId}/images', async ({ request, response }) => {
+        const body = await request.json()
+        calls.push(`登録 version=${body.version}`)
+        const id = `00000000-0000-0000-0000-00000000095${state.current.images.length}`
+        state.current = {
+          ...state.current,
+          images: [...state.current.images, { id, url: `http://cdn.test/products/p/${id}.png` }],
+          version: state.current.version + 1,
+        }
+        return response(201).json({ id })
+      }),
+    )
+    return calls
+  }
+
+  it('AC-37 選んだ画像を受付・PUT・登録の順に送り、登録した画像を代表画像として出す', async () => {
+    const state = serveProduct(productDetail())
+    const calls = serveUpload(state)
+    const { user } = renderApp(URL)
+
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+    )
+
+    expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
+    expect(await screen.findByRole('img', { name: '画像 1' })).toBeInTheDocument()
+    expect(screen.getByText('代表画像', { selector: 'span' })).toBeInTheDocument()
+    expect(calls).toEqual(['受付 image/png 2', 'PUT image/png', '登録 version=0'])
+  })
+
+  it('AC-39 JPEG、PNG、WebP 以外のファイルは送らずに誤りを出す', async () => {
+    serveProduct(productDetail())
+    renderApp(URL)
+
+    fireEvent.change(await screen.findByLabelText('画像のファイル'), {
+      target: { files: [new File(['GIF89a'], 'a.gif', { type: 'image/gif' })] },
+    })
+
+    expect(await screen.findByText('画像の形式は JPEG、PNG、WebP のいずれかにしてください。')).toBeInTheDocument()
+  })
+
+  it('AC-40 20 枚ある商品は、画像を追加できない', async () => {
+    const images = Array.from({ length: 20 }, (_, index) => ({
+      id: `00000000-0000-0000-0000-0000000009${String(index).padStart(2, '0')}`,
+      url: `http://cdn.test/${index}.png`,
+    }))
+    serveProduct(productDetail({ images }))
+    renderApp(URL)
+
+    expect(await screen.findByRole('button', { name: '画像を追加' })).toBeDisabled()
+  })
+
+  it('AC-40 サーバーが上限で拒否したら、そのメッセージを出す', async () => {
+    const state = serveProduct(productDetail())
+    serveUpload(state)
+    server.use(
+      http.post('/products/{productId}/image-uploads', () =>
+        Response.json(problem(400, 'TOO_MANY_PRODUCT_IMAGES', '画像は 1 商品あたり 20 枚まで登録できます。'), {
+          status: 400,
+        }),
+      ),
+    )
+    const { user } = renderApp(URL)
+
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+    )
+
+    expect(await screen.findByText('画像は 1 商品あたり 20 枚まで登録できます。')).toBeInTheDocument()
+  })
+
+  it('AC-38 バリアントの画像に、その商品の画像を選べる', async () => {
+    const images = [
+      { id: '00000000-0000-0000-0000-000000000951', url: 'http://cdn.test/1.png' },
+      { id: '00000000-0000-0000-0000-000000000952', url: 'http://cdn.test/2.png' },
+    ]
+    const state = serveProduct(productDetail({ images, variants: [variant()] }))
+    const requests: unknown[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 0 }),
+      ),
+      http.put('/products/{productId}/variants/{variantId}/image', async ({ request, response }) => {
+        const body = await request.json()
+        requests.push(body)
+        state.current = {
+          ...state.current,
+          variants: [variant({ imageId: body.imageId ?? null })],
+          version: state.current.version + 1,
+        }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.click(await screen.findByRole('combobox', { name: 'ABC-001-REDの画像' }))
+    await user.click(await screen.findByRole('option', { name: '画像 2' }))
+
+    expect(await screen.findByText('バリアントの画像を変更しました')).toBeInTheDocument()
+    expect(requests).toEqual([{ imageId: images[1].id, version: 0 }])
+    expect(screen.getByRole('combobox', { name: 'ABC-001-REDの画像' })).toHaveTextContent('画像 2')
   })
 })

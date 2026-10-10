@@ -54,7 +54,7 @@ frontend/admin/src/
 |-----|------|------|
 | `/products` | 商品の一覧（既定の画面） | product |
 | `/products/new` | 商品の登録 | product |
-| `/products/:productId` | 商品の編集（状態、公開期間、基本情報、バリアントと販売停止） | product |
+| `/products/:productId` | 商品の編集（状態、公開期間、基本情報、画像、バリアントと販売停止・画像） | product |
 | `/products/:productId/variants/:variantId/stock` | バリアントの在庫（在庫数、調整、履歴） | inventory |
 | `/categories` | カテゴリ | category |
 | `/tax-categories` | 税区分の一覧と登録 | tax |
@@ -153,4 +153,5 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
   - ボタンの見た目のリンク（`Button` の `render={<Link />}`）は、役割が `button` になる。
 - ハンドラーのない API が呼ばれると、テストは失敗する。送った内容を確かめるときは、ハンドラーの中で `request.json()` を変数に取っておく。
 - バージョンの決まり（第 5 節）を確かめるテストでは、入力中に他の人が更新した後で、画面に取得し直させる（`fireEvent(window, new Event('visibilitychange'))`：別のタブから戻った）。取得し直しても入力が消えず、送るバージョンがフォームを作ったときのままであることまで確かめる。
+- 管理 API の外への要求（画像のファイルのストレージへの PUT）は、`msw` の `http` でハンドラーを作る（`admin.yaml` の型がないため）。
 - 画面の外で起きること（バックエンドの業務ルール、店舗画面への反映）は確かめない。前者はバックエンドのテスト、後者は E2E で確かめる。

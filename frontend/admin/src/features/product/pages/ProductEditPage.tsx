@@ -4,6 +4,7 @@ import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { Button } from '@/components/ui/button'
 import { BasicInfoCard } from '@/features/product/components/BasicInfoCard'
+import { ProductImagesCard } from '@/features/product/components/ProductImagesCard'
 import { ProductStatusCard } from '@/features/product/components/ProductStatusCard'
 import { PublicationPeriodCard } from '@/features/product/components/PublicationPeriodCard'
 import { StatusBadge } from '@/features/product/components/StatusBadge'
@@ -34,6 +35,7 @@ export function ProductEditPage() {
             <ProductStatusCard key={product.version} product={product} />
             <PublicationPeriodCard product={product} refetch={query.refetch} />
             <BasicInfoCard product={product} refetch={query.refetch} />
+            <ProductImagesCard product={product} />
             <VariantSection product={product} refetch={query.refetch} />
           </div>
         </>

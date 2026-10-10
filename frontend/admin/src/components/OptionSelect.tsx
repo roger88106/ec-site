@@ -14,6 +14,7 @@ export function OptionSelect<V extends string>({
   onChange,
   placeholder = '選択してください',
   className,
+  ariaLabel,
 }: {
   id?: string
   options: readonly Option<V>[]
@@ -21,10 +22,12 @@ export function OptionSelect<V extends string>({
   onChange: (value: V | null) => void
   placeholder?: string
   className?: string
+  /** ラベルの要素がないときの名前（表の中など） */
+  ariaLabel?: string
 }) {
   return (
     <Select items={options} onValueChange={(selected) => onChange(selected as V | null)} value={value}>
-      <SelectTrigger className={className} id={id}>
+      <SelectTrigger aria-label={ariaLabel} className={className} id={id}>
         <SelectValue placeholder={placeholder} />
       </SelectTrigger>
       <SelectContent>

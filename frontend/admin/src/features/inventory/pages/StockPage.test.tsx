@@ -7,6 +7,8 @@ import { http, problem, server } from '@/test/server'
 
 /** 在庫の調整の要求の本文（送った内容を確かめる） */
 type AdjustStockRequest = components['schemas']['AdjustStockRequest']
+/** 調整履歴の 1 件 */
+type StockAdjustment = components['schemas']['StockAdjustment']
 
 /** 在庫を調整するバリアント */
 const VARIANT = variant()
@@ -16,9 +18,9 @@ const URL = `/products/${PRODUCT_ID}/variants/${VARIANT.id}/stock`
 /**
  * 在庫の画面が使う API に応答する。在庫数は quantity から始める。<br />
  * 調整は、調整後に負になるなら 400（INSUFFICIENT_STOCK）、「その他」でメモがなければ 400（STOCK_MEMO_REQUIRED）、
- * それ以外は在庫数に反映する。調整の要求は requests に取っておく。
+ * それ以外は在庫数に反映する。調整の要求は requests に取っておく。履歴は history を返す。
  */
-function serveStock(quantity: number) {
+function serveStock(quantity: number, history: StockAdjustment[] = []) {
   const state = { quantity, requests: [] as AdjustStockRequest[] }
   server.use(
     http.get('/products/{productId}', ({ response }) => response(200).json(productDetail({ variants: [VARIANT] }))),
@@ -26,7 +28,7 @@ function serveStock(quantity: number) {
       response(200).json({ variantId: VARIANT.id, quantity: state.quantity }),
     ),
     http.get('/inventory/variants/{variantId}/adjustments', ({ response }) =>
-      response(200).json({ items: [], page: 1, size: 20, totalItems: 0, totalPages: 0 }),
+      response(200).json({ items: history, page: 1, size: 20, totalItems: history.length, totalPages: 1 }),
     ),
     http.post('/inventory/variants/{variantId}/adjustments', async ({ request, response }) => {
       const body = await request.json()
@@ -112,5 +114,29 @@ describe('在庫の調整', () => {
     await user.type(screen.getByLabelText('メモ（必須）'), '展示品を引き当て')
     await user.click(screen.getByRole('button', { name: '調整する' }))
     expect(await screen.findByText('+1 を反映し、在庫数は 6 になりました')).toBeInTheDocument()
+  })
+
+  it('AC-107 注文に由来する調整は理由と注文番号を履歴に出し、調整の理由には選べない', async () => {
+    serveStock(3, [
+      {
+        id: '00000000-0000-0000-0000-000000000302',
+        delta: -2,
+        reason: 'ORDER',
+        memo: null,
+        orderId: '00000000-0000-0000-0000-000000000401',
+        orderNumber: '20261010-482915',
+        quantityAfter: 3,
+        adjustedAt: '2026-10-10T10:00:00+09:00',
+      },
+    ])
+    const { user } = renderApp(URL)
+
+    expect(await screen.findByText('注文番号 20261010-482915')).toBeInTheDocument()
+    expect(screen.getByRole('cell', { name: '注文' })).toBeInTheDocument()
+
+    await user.click(screen.getByRole('combobox', { name: '理由' }))
+    expect(await screen.findByRole('option', { name: '入荷' })).toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: '注文' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('option', { name: '注文のキャンセル' })).not.toBeInTheDocument()
   })
 })

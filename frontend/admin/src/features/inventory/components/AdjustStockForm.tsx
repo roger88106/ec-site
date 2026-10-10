@@ -2,9 +2,9 @@ import { Controller, useForm } from 'react-hook-form'
 import { toast } from 'sonner'
 import { $api } from '@/api/client'
 import { setServerFieldErrors } from '@/api/formErrors'
-import { stockAdjustmentReasonValues } from '@/api/generated/admin'
+import { manualStockAdjustmentReasonValues } from '@/api/generated/admin'
 import { useInvalidate } from '@/api/invalidate'
-import type { StockAdjustmentReason } from '@/api/types'
+import type { ManualStockAdjustmentReason } from '@/api/types'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Button } from '@/components/ui/button'
@@ -16,7 +16,7 @@ import { formatDelta } from '@/lib/delta'
 import { stockAdjustmentReasonLabels } from '@/lib/labels'
 
 /** 入力欄の値（増減量は入力中の文字列のまま持ち、送るときに数にする） */
-type Values = { delta: string; reason: StockAdjustmentReason | null; memo: string }
+type Values = { delta: string; reason: ManualStockAdjustmentReason | null; memo: string }
 
 /** 空の入力（調整したら、ここに戻す） */
 const EMPTY: Values = { delta: '', reason: null, memo: '' }
@@ -24,8 +24,8 @@ const EMPTY: Values = { delta: '', reason: null, memo: '' }
 /** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
 
-/** 理由の選択肢（admin.yaml の値と、画面の表示名） */
-const reasonOptions = stockAdjustmentReasonValues.map((reason) => ({
+/** 理由の選択肢（admin.yaml の値と、画面の表示名）。注文に由来する理由は選べない（AC-107） */
+const reasonOptions = manualStockAdjustmentReasonValues.map((reason) => ({
   value: reason,
   label: stockAdjustmentReasonLabels[reason],
 }))
@@ -61,7 +61,7 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
               params: { path: { variantId } },
               body: {
                 delta: Number(submitted.delta),
-                reason: submitted.reason as StockAdjustmentReason,
+                reason: submitted.reason as ManualStockAdjustmentReason,
                 memo: submitted.memo.trim() || null,
               },
             }),

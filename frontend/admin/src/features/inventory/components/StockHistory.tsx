@@ -46,7 +46,10 @@ export function StockHistory({ variantId }: { variantId: string }) {
                       <TableCell className="text-right tabular-nums">{formatDelta(item.delta)}</TableCell>
                       <TableCell>{stockAdjustmentReasonLabels[item.reason]}</TableCell>
                       <TableCell className="text-right tabular-nums">{item.quantityAfter}</TableCell>
-                      <TableCell className="whitespace-pre-wrap">{item.memo}</TableCell>
+                      {/* 注文に由来する調整は、メモの代わりに注文番号を出す（AC-107） */}
+                      <TableCell className="whitespace-pre-wrap">
+                        {item.orderNumber ? `注文番号 ${item.orderNumber}` : item.memo}
+                      </TableCell>
                     </TableRow>
                   ))}
                   {result.items.length === 0 && (

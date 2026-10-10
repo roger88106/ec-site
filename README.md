@@ -167,6 +167,10 @@ pnpm test
 | `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` | DB の接続先 |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | トレースの送信先（既定 `http://localhost:9411/api/v2/spans`） |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合（既定 0.1） |
+| `ECSITE_IMAGE_STORAGE_INCOMING_BUCKET`、`ECSITE_IMAGE_STORAGE_PUBLIC_BUCKET` | 画像の受付（非公開）・配信（公開）のバケット（[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7 節） |
+| `ECSITE_IMAGE_STORAGE_REGION`、`ECSITE_IMAGE_STORAGE_PUBLIC_BASE_URL` | バケットのリージョン、画像の配信の基準 URL（CDN） |
+| `ECSITE_IMAGE_STORAGE_ENDPOINT`、`ECSITE_IMAGE_STORAGE_PATH_STYLE_ACCESS` | S3 互換のストレージを使うときだけ。AWS では設定しない（資格情報は IAM ロール） |
+| `ECSITE_IMAGE_STORAGE_UPLOAD_URL_TTL` | 画像のアップロードの署名付き URL の有効期間（既定 5m） |
 
 - マイグレーションは起動時には適用しない。デプロイごとに 1 回だけ実行する（constitution 5-10）。
 - ログは標準出力に JSON（Elastic Common Schema）で出る。

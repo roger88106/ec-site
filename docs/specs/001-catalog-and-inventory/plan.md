@@ -66,12 +66,17 @@ flowchart LR
 | DELETE | `/products/{id}/variants/{variantId}` | `product:write` | 71 |
 | PUT | `/products/{id}/variants/order` | `product:write` | 27 |
 | PUT | `/products/{id}/variants/{variantId}/suspend`、`/resume`（P2、冪等） | `product:write` | 28 |
+| POST | `/products/{id}/image-uploads`（P2） | `product:write` | 39、40 |
+| POST | `/products/{id}/images`（P2） | `product:write` | 37、39、40 |
+| PUT | `/products/{id}/images/order`（P2） | `product:write` | 37 |
+| DELETE | `/products/{id}/images/{imageId}`（P2） | `product:write` | 37 |
+| PUT | `/products/{id}/variants/{variantId}/image`（P2） | `product:write` | 38 |
 | GET | `/inventory/variants/{variantId}` | `inventory:read` | |
 | POST | `/inventory/variants/{variantId}/adjustments` | `inventory:write` | 42〜44、46 |
 | GET | `/inventory/variants/{variantId}/adjustments` | `inventory:read` | 45 |
 | GET | `/inventory/stock-summaries?productIds=` | `inventory:read` | 49 |
 
-画像（US-7、US-13）の endpoint は US-7 の着手時に追記する。
+画像のアップロードの流れは第 7 節。
 
 ### 2.2 C 側（`/api/store`）
 
@@ -105,7 +110,7 @@ admin のディレクトリ、API の呼び出し方、フォーム、画面の�
 | イベント発行記録 | Spring Modulith の公式 DDL を `common` schema のマイグレーションに含める（自動作成は使わない） |
 | イベント購読 | Spring Modulith のモジュール間リスナー（コミット後・非同期）。再起動時の未完了イベントの自動再発行は無効のまま。失敗時のリスクと手動の復旧手順は [inventory.md](../../modules/inventory.md) |
 | トレーシング | Micrometer Tracing。Zipkin 形式から始める |
-| ローカル環境 | `compose.yaml` に PostgreSQL 18 と Zipkin |
+| ローカル環境 | `compose.yaml` に PostgreSQL 18、Zipkin、SeaweedFS（S3 互換。画像） |
 | Seed | 税区分（標準 10%、軽減 8%）、カテゴリ、商品のサンプル |
 
 ## 5. テスト
@@ -117,6 +122,7 @@ admin のディレクトリ、API の呼び出し方、フォーム、画面の�
 | US-3〜5 | 登録、軸、一意性、公開条件、状態遷移、削除条件 | 品番の一意性、AC-6、Repository |
 | US-8 | 在庫調整の検証 | AC-43、**並行調整（AC-44）**、履歴、イベントによる在庫の作成 |
 | US-9 | | 絞り込み、ページング |
+| US-7 | 枚数、並び順、バリアントの画像、削除のときの指定の解除 | 受付から登録までの流れ（SeaweedFS）、形式・サイズ・枚数の拒否、偽った形式の拒否、削除のイベントでのファイルの削除 |
 | US-10〜12 | 税込計算 | 表示条件、税込での並べ替え・絞り込み、**Java と SQL の税込計算の一致**、在庫なし、検索 |
 | 横断 | | モジュール境界の検証、B 側 endpoint の権限名の記載漏れを検出する契約テスト |
 
@@ -136,4 +142,61 @@ tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-fo
 | 7 | 管理画面 | 画面から B 側の操作ができる |
 | 8 | 店舗画面 | 画面から C 側の閲覧ができる |
 | 9 | フロントのテスト（結合テスト、E2E） | 主な操作の流れの結合テストと、コアフローの E2E が CI で通る |
-| 10 | P2（US-6、AC-28、US-7、US-13） | US-7 の前に画像の設計を追記する |
+| 10 | P2（US-6、AC-28、US-7、US-13） | 各項目の AC のテストが通る。画像の設計は第 7 節 |
+
+## 7. 商品画像（US-7）
+
+画像のファイルはオブジェクトストレージ（S3 API）に置き、DB には置き場所（キー）だけを持つ（constitution 5-1：ローカルディスクにファイルを置かない）。AWS を本番の前提にし、GCP（GCS）でも同じ作りで動くように、ストレージの機能は両方にあるものだけを使う。商品集約の規則（枚数、並び順、バリアントの画像）は [catalog.md](../../modules/catalog.md)。
+
+### 7.1 置き場所
+
+| バケット | 内容 | 読み取り | 消し方 |
+|----------|------|----------|--------|
+| 受付（incoming） | アップロードされたままのファイル。キーは `{productId}/{uploadId}` | 非公開 | ライフサイクル規則で 1 日後に自動で消す（受付だけして登録されなかったもの） |
+| 配信（public） | 登録した画像。キーは `products/{productId}/{imageId}.{拡張子}` | 公開（本番は CDN の後ろ） | 画像・商品の削除のイベントで消す |
+
+- バケットを 2 つに分けるのは、公開の範囲とライフサイクル規則をバケット単位で設定するため（GCS は公開の設定をバケット単位でしか持てない）。
+- 配信のキーは画像 ID で作り、同じキーを上書きしない。そのため `Cache-Control: public, max-age=31536000, immutable` を付けて、CDN とブラウザに長くキャッシュさせる。
+- API は、配信の基準 URL（設定）とキーから画像の URL を組み立てて返す。CDN に変えても、DB は変わらない。
+- 非公開の商品の画像も URL を知っていれば見られる。URL に推測できない画像 ID を含むことで、MVP では許容する。
+
+### 7.2 アップロードの流れ
+
+画像のファイルは、ブラウザから受付のバケットへ直接送る（署名付き URL）。バックエンドはファイルを中継しない。
+
+```mermaid
+sequenceDiagram
+    participant A as 管理画面
+    participant B as バックエンド
+    participant S as ストレージ
+    A->>B: POST /products/{id}/image-uploads（形式、サイズ）
+    B-->>A: uploadId、署名付き URL（PUT、有効 5 分）
+    A->>S: PUT 署名付き URL（ファイル）
+    A->>B: POST /products/{id}/images（uploadId、version）
+    B->>S: 受付のファイルを確かめ、配信のバケットへコピー
+    B-->>A: 画像 ID
+```
+
+1. **受付**：形式（AC-39：JPEG、PNG、WebP）、サイズ（10MB まで）、枚数（AC-40：20 枚まで）を確かめ、署名付き URL を返す。受付の記録は DB に持たない（キーに商品 ID を含め、別の商品の受付を使えないようにする）。
+2. **登録**：受付のファイルの大きさと、先頭のバイト（マジックナンバー）で形式を確かめる。ブラウザが申告した形式は信用しない。確かめたら配信のバケットへコピーし、商品の画像の最後に加える。枚数とバージョンもここで確かめ直す。
+3. US-13 では、2 の「コピー」を「WebP への変換（メタデータの除去を含む）」に置き換える。変換は登録の要求の中で行い、失敗したらその場でエラーを返す（AC-70）。対応形式と変換の方法は US-13 の着手時に決める。
+
+### 7.3 ストレージの抽象
+
+商品カタログに、ストレージの操作をまとめたポート（`ImageStorage`）を置く。操作は、署名付きの PUT の URL の発行、ファイルの情報の取得、先頭のバイトの読み取り、バケット間のコピー、削除だけにする。
+
+| 環境 | 実装 | 補足 |
+|------|------|------|
+| ローカル・CI | S3 の実装 + SeaweedFS | compose と Testcontainers で動かす。SeaweedFS は署名付き URL の署名・期限、CORS を検証する |
+| AWS | S3 の実装（AWS SDK v2） | 認証は既定の資格情報の連鎖（IAM ロール）。配信は CloudFront（OAC） |
+| GCP | GCS の実装（必要になったら足す） | 署名付き URL（V4）、IAM、Cloud CDN。S3 互換の API で済むかを先に試し、だめなら GCS のクライアントで作る |
+
+- 設定（環境変数で上書きする。constitution 5-8）：受付・配信のバケット名、エンドポイント（エミュレーターのときだけ）、リージョン、パス形式のアドレス、配信の基準 URL、署名付き URL の有効期間。
+- SeaweedFS は、署名に含めた `Content-Type` を検証しない（AWS は検証する）。形式は 2 の登録で確かめるので、影響はない。
+- バケット、CORS（管理画面のオリジンから PUT）、公開の設定、ライフサイクル規則は、本番では基盤の構成（IaC）で作る。ローカルは compose の初期化で作る。
+
+### 7.4 C 側の表示
+
+- 一覧の代表画像は、商品の画像の先頭（AC-37）。なければ null（店舗画面は代わりの図を出す）。
+- 詳細のバリアントの画像は、バリアントに指定した画像、なければ代表画像（AC-38）を API が決めて返す。
+- 店舗画面は API が返した URL をそのまま使う（画像の縮小・形式の変換は配信の側で行う。US-13 と、その後の CDN の設定）。

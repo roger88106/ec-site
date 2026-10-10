@@ -24,7 +24,7 @@
 | 言語・フレームワーク | Java 21、Spring Boot 4.1.x |
 | モジュール化 | Spring Modulith、jMolecules |
 | DB・データアクセス | PostgreSQL 18、jOOQ（コード生成）、Flyway |
-| ファイル保存 | S3 互換オブジェクトストレージ |
+| ファイル保存 | S3 互換オブジェクトストレージ（AWS SDK。ローカルと CI は SeaweedFS） |
 | ビルド | Gradle Kotlin DSL + version catalog（`gradle/libs.versions.toml`） |
 | オブジェクト変換 | MapStruct、Lombok |
 | テスト | JUnit 5、AssertJ、Testcontainers、MockMvc |
@@ -306,7 +306,6 @@ tasks では、テストのタスクを実装タスクより前に置く。
 | 項目 | 決めるタイミング |
 |------|------------------|
 | 注文時の税計算（インボイス制度への対応） | 注文の spec |
-| ローカル用の S3 互換エミュレーター（MinIO のコミュニティ版は配布停止のため避ける） | spec 001 の US-7 |
 | 定期ジョブの分散ロック方式 | 最初に定期ジョブが必要になる plan |
 | 未完了イベントの自動再発行（MVP は手動。[inventory.md](modules/inventory.md)） | 分散ロック方式と同時、または注文の spec |
 | 一覧の正式なページング方式（カーソル方式など。MVP は第 9 節の暫定） | 検索エンジンの導入時 |

@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.NullAndEmptySource;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Instant;
+import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -49,7 +50,8 @@ class StockAdjustmentTest {
     }
 
     @ParameterizedTest
-    @EnumSource(value = StockAdjustmentReason.class, names = "OTHER", mode = EnumSource.Mode.EXCLUDE)
+    @EnumSource(value = StockAdjustmentReason.class, names = {"OTHER", "ORDER", "ORDER_CANCELLATION"},
+            mode = EnumSource.Mode.EXCLUDE)
     @DisplayName("AC-46 その他以外の理由では、メモは省略できる")
     void acceptsMissingMemoForReasonsOtherThanOther(StockAdjustmentReason reason) {
         assertThatCode(() -> StockAdjustment.create(1, reason, null, NOW)).doesNotThrowAnyException();
@@ -83,5 +85,27 @@ class StockAdjustmentTest {
     @DisplayName("空白だけのメモは、メモなしとして扱う")
     void treatsBlankMemoAsNull() {
         assertThat(StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, " ", NOW).memo()).isNull();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = StockAdjustmentReason.class, names = {"ORDER", "ORDER_CANCELLATION"})
+    @DisplayName("AC-107 運営者の調整では、注文に由来する理由を選べない")
+    void rejectsOrderReasonsForManualAdjustment(StockAdjustmentReason reason) {
+        assertBusinessError(() -> StockAdjustment.create(1, reason, null, NOW),
+                InventoryErrorCode.ORDER_REASON_NOT_SELECTABLE);
+    }
+
+    @Test
+    @DisplayName("AC-107 注文による調整は、注文 ID と注文番号を持ち、メモを持たない")
+    void createsOrderAdjustment() {
+        var orderId = UUID.randomUUID();
+
+        var adjustment = StockAdjustment.forOrder(-2, StockAdjustmentReason.ORDER, orderId, "20261010-482915", NOW);
+
+        assertThat(adjustment.delta()).isEqualTo(-2);
+        assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER);
+        assertThat(adjustment.memo()).isNull();
+        assertThat(adjustment.orderId()).isEqualTo(orderId);
+        assertThat(adjustment.orderNumber()).isEqualTo("20261010-482915");
     }
 }

@@ -150,6 +150,15 @@ class InventoryApiTest {
         }
 
         @Test
+        @DisplayName("AC-107 注文に由来する理由は、運営者の調整では選べず 400")
+        void rejectsOrderReasons() throws Exception {
+            adjust(variantId, 1, "ORDER", null).andExpect(status().isBadRequest());
+            adjust(variantId, 1, "ORDER_CANCELLATION", null).andExpect(status().isBadRequest());
+
+            mockMvc.perform(get(BASE + "/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(0));
+        }
+
+        @Test
         @DisplayName("増減量が 0 なら 400")
         void rejectsZeroDelta() throws Exception {
             adjust(variantId, 0, "ARRIVAL", null)

@@ -37,7 +37,7 @@ frontend/admin/src/
 ├── lib/              # 画面に依存しない関数（表示の整形、品番の正規化など）。単体テストを横に置く
 ├── test/             # 結合テストの土台（描画の補助、API の応答の差し替え、jsdom の補い）。画面のコードからは import しない
 └── features/
-    └── <機能>/       # tax、category、product、inventory
+    └── <機能>/       # tax、category、product、inventory、order
         ├── pages/        # ルートに対応する画面。データの取得と部品の組み立てだけを書く
         ├── components/   # その機能の中だけで使う部品
         └── *.ts          # その機能の中だけで使う関数・型・hook
@@ -59,6 +59,8 @@ frontend/admin/src/
 | `/categories` | カテゴリ | category |
 | `/tax-categories` | 税区分の一覧と登録 | tax |
 | `/tax-categories/:taxCategoryId` | 税率の一覧の編集 | tax |
+| `/orders` | 注文一覧（クエリ：`orderNumber`、`status`、`orderedFrom`、`orderedTo`、`page`） | order |
+| `/orders/:orderId` | 注文の詳細（明細、金額の内訳、お届け先、キャンセルの申請とキャンセル。承認・却下・キャンセルの操作） | order |
 
 - 一覧の絞り込みとページは、URL のクエリに持つ。戻る・再読み込みで同じ一覧を出すため。
 - 左のメニューに出すのは、各機能の入口（一覧）だけ。
@@ -76,6 +78,7 @@ frontend/admin/src/
 | カテゴリ | `/categories` |
 | 商品・バリアント | `/products`、`/inventory`（バリアントの増減で在庫も変わる） |
 | 在庫 | `/inventory` |
+| 注文（承認・却下・キャンセル） | `/orders`、`/inventory`（キャンセルで在庫数と調整履歴が変わる） |
 
 - 削除した対象の詳細は、先に別の画面へ移ってから取り直す（削除した詳細を取り直すと 404 になるため）。
 - 画像のアップロードは、受付 → ストレージへの直接の PUT（署名付き URL。受付の応答のヘッダーを付ける）→ 登録の順に送る（plan 001 第 7.2 節）。

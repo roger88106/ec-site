@@ -1,4 +1,4 @@
-import type { PublicationStatus, StockAdjustmentReason } from '@/api/types'
+import type { OrderStatus, PublicationStatus, StockAdjustmentReason } from '@/api/types'
 
 /** 商品の状態の表示名（AC-32） */
 export const publicationStatusLabels: Record<PublicationStatus, string> = {
@@ -15,4 +15,11 @@ export const stockAdjustmentReasonLabels: Record<StockAdjustmentReason, string> 
   OTHER: 'その他',
   ORDER: '注文',
   ORDER_CANCELLATION: '注文のキャンセル',
+}
+
+/** 注文の状態の表示名（BR-9） */
+export const orderStatusLabels: Record<OrderStatus, string> = {
+  ACCEPTED: '受付',
+  CANCELLATION_REQUESTED: 'キャンセル申請中',
+  CANCELLED: 'キャンセル',
 }

@@ -5,12 +5,11 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
-import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.CartChangedHandler;
+import com.ecsite.module.order.application.CheckoutService;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -40,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文手続きの受け入れテスト（T2311、AC-82、84、85、88）。<br />
- * カート変更のイベントはコミット後に非同期で届くので、ここではイベントのリスナーを直接呼んで確かめる。テストごとにロールバックする。
+ * カート変更のイベントはコミット後に非同期で届くので、ここではリスナーが呼ぶ引当の解除を直接呼んで確かめる。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -66,7 +65,7 @@ class CheckoutApiTest {
     StockReservationApi stockReservationApi;
 
     @Autowired
-    CartChangedHandler cartChangedHandler;
+    CheckoutService checkoutService;
 
     @Autowired
     DSLContext dsl;
@@ -167,7 +166,7 @@ class CheckoutApiTest {
         add(cartId, variant, 2);
         startCheckout(cartId);
 
-        cartChangedHandler.on(CartChanged.of(clock.instant(), cartId));
+        checkoutService.releaseReservations(cartId);
 
         assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
     }

@@ -1,6 +1,7 @@
 package com.ecsite.module.order.application;
 
 import com.ecsite.module.order.api.CartQuote;
+import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.port.CartDirectory;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
@@ -31,12 +32,17 @@ public class CartQuoteService {
     private final QuoteService quoteService;
 
     /**
+     * 注文手続きリポジトリ（自分の引当の持ち主）
+     */
+    private final CheckoutRepository checkoutRepository;
+
+    /**
      * 時計
      */
     private final Clock clock;
 
     /**
-     * カートを現在の価格・税率・販売可能数で見積もる。
+     * カートを現在の価格・税率・販売可能数で見積もる。注文手続き中なら、自分の引当を販売可能数から除く。
      *
      * @param cartId カート ID
      * @return 見積もり。カートがなければ空
@@ -44,7 +50,8 @@ public class CartQuoteService {
     @Transactional(readOnly = true)
     public Optional<CartQuote> quoteCart(UUID cartId) {
         var now = clock.instant();
-        return cartDirectory.find(cartId).map(cart -> toCartQuote(cartId, quoteService.quote(cart.lines(), now, null)));
+        var holderId = checkoutRepository.findLatestIdByCartId(cartId).orElse(null);
+        return cartDirectory.find(cartId).map(cart -> toCartQuote(cartId, quoteService.quote(cart.lines(), now, holderId)));
     }
 
     /**

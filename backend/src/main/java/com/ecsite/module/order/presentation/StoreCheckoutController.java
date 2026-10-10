@@ -1,0 +1,74 @@
+package com.ecsite.module.order.presentation;
+
+import com.ecsite.api.store.CheckoutApi;
+import com.ecsite.api.store.model.Checkout;
+import com.ecsite.api.store.model.CreatedId;
+import com.ecsite.api.store.model.PlaceOrderRequest;
+import com.ecsite.module.order.application.CheckoutService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
+
+import java.util.UUID;
+
+/**
+ * 注文手続きのコントローラー（C 側。store.yaml の tag: checkout）
+ */
+@RestController
+@RequiredArgsConstructor
+class StoreCheckoutController implements CheckoutApi {
+
+    /**
+     * 注文手続きのサービス
+     */
+    private final CheckoutService checkoutService;
+
+    /**
+     * 店舗 API（注文手続き・注文）のマッパー
+     */
+    private final StoreOrderMapper mapper;
+
+    /**
+     * 注文手続きに進む（AC-82〜84）
+     *
+     * @param cartId カート ID
+     * @return Http 201 : {@link CreatedId}
+     */
+    @Override
+    public ResponseEntity<CreatedId> startCheckout(UUID cartId) {
+        var id = checkoutService.start(cartId);
+
+        // ロケーション：作った注文手続きの URL
+        var location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/store/checkouts/{id}")
+                .buildAndExpand(id)
+                .toUri();
+
+        return ResponseEntity.created(location).body(new CreatedId(id));
+    }
+
+    /**
+     * 注文手続きの表示（AC-84、85）
+     *
+     * @param checkoutId 注文手続き ID
+     * @return Http 200 : {@link Checkout}
+     */
+    @Override
+    public ResponseEntity<Checkout> getCheckout(UUID checkoutId) {
+        return ResponseEntity.ok(mapper.toCheckout(checkoutService.get(checkoutId)));
+    }
+
+    /**
+     * 注文する（AC-86〜92、107）。段階 3 の T2314 で実装する
+     *
+     * @param checkoutId 注文手続き ID
+     * @param request    注文のリクエスト
+     * @return Http 501
+     */
+    @Override
+    public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    }
+}

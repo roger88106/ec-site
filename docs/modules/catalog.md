@@ -145,4 +145,5 @@
   - 商品の一部（軸、所属カテゴリ、バリアント、軸の値）は、商品の削除で一緒に消える（`ON DELETE CASCADE`）。
   - 所属カテゴリからカテゴリへの外部キーは CASCADE にしない。商品が所属しているカテゴリの削除を拒否するため（AC-12）。
   - 税区分は税モジュールの ID なので、外部キーは張らない（constitution 6）。
-  - 商品画像のテーブルは、段階 10 の US-7 で追加する。
+- 商品画像：[V202610101000__catalog_create_product_image.sql](../../backend/src/main/resources/db/migration/V202610101000__catalog_create_product_image.sql)
+  - バリアントの画像は、同じ商品の画像だけを指せる（商品 ID と画像 ID の組で外部キーを張る）。画像を削除すると、バリアントの指定だけが外れる（`ON DELETE SET NULL (image_id)`）。

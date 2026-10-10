@@ -54,7 +54,7 @@ frontend/admin/src/
 |-----|------|------|
 | `/products` | 商品の一覧（既定の画面） | product |
 | `/products/new` | 商品の登録 | product |
-| `/products/:productId` | 商品の編集（状態、基本情報、バリアント） | product |
+| `/products/:productId` | 商品の編集（状態、公開期間、基本情報、バリアントと販売停止） | product |
 | `/products/:productId/variants/:variantId/stock` | バリアントの在庫（在庫数、調整、履歴） | inventory |
 | `/categories` | カテゴリ | category |
 | `/tax-categories` | 税区分の一覧と登録 | tax |

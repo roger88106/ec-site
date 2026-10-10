@@ -66,6 +66,23 @@ class StoreImageUrls {
         return toUrls(assetIds);
     }
 
+    /**
+     * 画像 ID ごとの URL を取得する（バリアントの画像。AC-38）。
+     *
+     * @param imageIds 画像 ID
+     * @return 画像 ID → URL。見つからない画像は含まない
+     */
+    Map<UUID, String> ofImages(Collection<UUID> imageIds) {
+        if (imageIds.isEmpty()) {
+            return Map.of();
+        }
+        var assetIds = dsl.select(PRODUCT_IMAGE.ID, PRODUCT_IMAGE.ASSET_ID)
+                .from(PRODUCT_IMAGE)
+                .where(PRODUCT_IMAGE.ID.in(imageIds))
+                .fetchMap(PRODUCT_IMAGE.ID, PRODUCT_IMAGE.ASSET_ID);
+        return toUrls(assetIds);
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**

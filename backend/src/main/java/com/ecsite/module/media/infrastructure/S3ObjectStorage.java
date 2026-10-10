@@ -2,8 +2,8 @@ package com.ecsite.module.media.infrastructure;
 
 import com.ecsite.module.media.service.ObjectStorage;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.MetadataDirective;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
 import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
@@ -85,15 +85,13 @@ class S3ObjectStorage implements ObjectStorage {
     }
 
     @Override
-    public void publish(String uploadKey, String publicKey, String contentType) {
-        s3.copyObject(request -> request
-                .sourceBucket(properties.incomingBucket())
-                .sourceKey(uploadKey)
-                .destinationBucket(properties.publicBucket())
-                .destinationKey(publicKey)
-                .metadataDirective(MetadataDirective.REPLACE)
-                .contentType(contentType)
-                .cacheControl(PUBLIC_CACHE_CONTROL));
+    public void putPublished(String publicKey, byte[] content, String contentType) {
+        s3.putObject(request -> request
+                        .bucket(properties.publicBucket())
+                        .key(publicKey)
+                        .contentType(contentType)
+                        .cacheControl(PUBLIC_CACHE_CONTROL),
+                RequestBody.fromBytes(content));
     }
 
     @Override

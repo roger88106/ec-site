@@ -40,13 +40,13 @@ public interface ObjectStorage {
     byte[] readUploadHead(String uploadKey, int length);
 
     /**
-     * 受付のバケットのファイルを、配信のバケットへコピーする。長くキャッシュさせる（キーを上書きしないため）。
+     * 配信のバケットへファイルを書き込む。長くキャッシュさせる（キーを上書きしないため）。
      *
-     * @param uploadKey   受付のバケットのキー
      * @param publicKey   配信のバケットのキー
+     * @param content     ファイルの中身（変換した画像）
      * @param contentType 配信するときの形式
      */
-    void publish(String uploadKey, String publicKey, String contentType);
+    void putPublished(String publicKey, byte[] content, String contentType);
 
     /**
      * 配信のバケットのファイルを消す。ファイルがなくても成功とする（何度行っても同じ結果）。

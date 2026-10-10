@@ -11,13 +11,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.URI;
 import java.time.Clock;
 import java.util.Collection;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
  * メディアのサービス（docs/modules/media.md）。{@link MediaApi} の実装。<br />
- * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、確定のときに中身を確かめて配信のバケットへコピーする。
+ * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、確定のときに中身を確かめ、WebP に変換して配信のバケットへ置く。
  */
 @Service
 @RequiredArgsConstructor
@@ -34,6 +35,11 @@ class MediaService implements MediaApi {
     private final ObjectStorage storage;
 
     /**
+     * 画像の変換
+     */
+    private final ImageConverter imageConverter;
+
+    /**
      * イベントの発行
      */
     private final ApplicationEventPublisher eventPublisher;
@@ -47,17 +53,19 @@ class MediaService implements MediaApi {
     public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
         var uploadId = UUID.randomUUID();
         var uploadKey = AssetKeys.upload(scope, uploadId);
-        var format = ImageFormat.ofContentType(contentType)
+        ImageFormat.ofContentType(contentType)
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT));
         verifySize(contentLength);
 
-        var presigned = storage.presignUpload(uploadKey, format.contentType(), contentLength);
+        // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザが付ける Content-Type と合う）
+        var presigned = storage.presignUpload(uploadKey, contentType.toLowerCase(Locale.ROOT), contentLength);
         return new ImageUpload(uploadId, presigned.url(), presigned.headers(), presigned.expiresAt());
     }
 
     /**
      * {@inheritDoc}<br />
-     * コピーの後に呼んだ側の保存が失敗すると配信のファイルが残るが、だれからも参照されないだけで害はない。
+     * 中身を WebP に変換して（AC-68、69）配信のバケットへ置く。変換できなければ登録しない（AC-70）。<br />
+     * 書き込みの後に呼んだ側の保存が失敗すると配信のファイルが残るが、だれからも参照されないだけで害はない。
      */
     @Override
     @Transactional
@@ -66,14 +74,16 @@ class MediaService implements MediaApi {
         var size = storage.findUploadSize(uploadKey)
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND));
         verifySize(size);
-        var format = ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH))
+        // 変換の前に、受け付ける形式であることを確かめる（判定できないものは変換に回さない）
+        ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH))
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE));
+        var webp = imageConverter.convertToWebp(uploadKey);
 
         var assetId = UUID.randomUUID();
-        var storageKey = AssetKeys.published(assetId, format);
-        storage.publish(uploadKey, storageKey, format.contentType());
+        var storageKey = AssetKeys.published(assetId, ImageFormat.WEBP);
+        storage.putPublished(storageKey, webp, ImageFormat.WEBP.contentType());
 
-        assetRepository.insert(new Asset(assetId, format, storageKey, clock.instant()));
+        assetRepository.insert(new Asset(assetId, ImageFormat.WEBP, storageKey, clock.instant()));
         return assetId;
     }
 

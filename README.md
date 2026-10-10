@@ -133,6 +133,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
 - 先にバックエンドを local profile で起動しておく。接続先を変えるときは環境変数 `STORE_API_BASE_URL`（例：`http://localhost:8080/api/store`）。
+- キャンセルの申請が却下された注文に示す問い合わせ先は、環境変数 `STORE_CONTACT_EMAIL`（既定 `support@example.com`）。
 - API の結果は最大 60 秒キャッシュする（NFR-1）。管理画面での変更は、1 分以内に店舗画面に反映される。
 - ディレクトリと画面の追加手順は [店舗画面の構成](docs/frontend/store.md)。
 

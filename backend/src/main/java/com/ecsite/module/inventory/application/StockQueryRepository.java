@@ -4,6 +4,7 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 
+import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
@@ -48,4 +49,14 @@ public interface StockQueryRepository {
      * @return 指定したうち、在庫があるバリアントの ID
      */
     Set<UUID> findInStockVariantIds(Collection<UUID> variantIds);
+
+    /**
+     * 販売可能数（在庫数 − 有効な引当の合計）を返す（spec 002 BR-11）。
+     *
+     * @param variantIds       バリアント ID
+     * @param excludedHolderId 販売可能数から除かない（数えない）引当の持ち主。なければ null
+     * @param now              現在時刻
+     * @return バリアント ID → 販売可能数。在庫のないバリアントは含まない
+     */
+    Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, UUID excludedHolderId, Instant now);
 }

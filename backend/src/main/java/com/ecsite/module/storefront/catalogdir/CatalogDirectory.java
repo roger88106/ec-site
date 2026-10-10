@@ -83,15 +83,17 @@ public class CatalogDirectory {
 
     private static CatalogProduct toProduct(StoreProductSummary summary) {
         return new CatalogProduct(summary.id(), summary.name(), summary.priceInclTax(), summary.priceExclTax(),
-                summary.sellableVariantIds());
+                summary.sellableVariantIds(), summary.imageUrl());
     }
 
     private static CatalogProductDetail toDetail(StoreProductDetail detail) {
         return new CatalogProductDetail(detail.id(), detail.name(), detail.description(), detail.priceInclTax(),
                 detail.priceExclTax(), detail.axes(),
                 detail.variants().stream()
-                        .map(variant -> new CatalogProductDetail.Variant(variant.id(), variant.axisValues(), variant.salesSuspended()))
-                        .toList());
+                        .map(variant -> new CatalogProductDetail.Variant(variant.id(), variant.axisValues(),
+                                variant.salesSuspended(), variant.imageUrl()))
+                        .toList(),
+                detail.imageUrls());
     }
 
     private static CatalogCategory toCategory(StoreCategoryNode node) {

@@ -64,11 +64,11 @@ class StorefrontMapper {
                 view.name(),
                 view.description(),
                 new Price(view.priceInclTax(), view.priceExclTax()),
-                List.of(),
+                view.imageUrls(),
                 view.axes().stream().map(axis -> new VariantAxis(axis.name(), axis.values())).toList(),
                 view.variants().stream()
                         .map(variant -> new Variant(variant.id(), variant.axisValues(), variant.inStock(), variant.salesSuspended())
-                                .imageUrl(null))
+                                .imageUrl(variant.imageUrl()))
                         .toList());
     }
 
@@ -86,6 +86,6 @@ class StorefrontMapper {
 
     private static ProductSummary toProductSummary(ProductSummaryView view) {
         return new ProductSummary(view.id(), view.name(), new Price(view.priceInclTax(), view.priceExclTax()), view.inStock())
-                .imageUrl(null);
+                .imageUrl(view.imageUrl());
     }
 }

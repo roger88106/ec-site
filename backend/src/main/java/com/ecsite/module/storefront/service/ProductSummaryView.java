@@ -1,5 +1,7 @@
 package com.ecsite.module.storefront.service;
 
+import jakarta.annotation.Nullable;
+
 import java.util.UUID;
 
 /**
@@ -10,6 +12,8 @@ import java.util.UUID;
  * @param priceInclTax 税込価格（円）
  * @param priceExclTax 税抜価格（円）
  * @param inStock      販売中のいずれかのバリアントに在庫がある
+ * @param imageUrl     代表画像の URL。なければ null
  */
-public record ProductSummaryView(UUID id, String name, long priceInclTax, long priceExclTax, boolean inStock) {
+public record ProductSummaryView(UUID id, String name, long priceInclTax, long priceExclTax, boolean inStock,
+                                 @Nullable String imageUrl) {
 }

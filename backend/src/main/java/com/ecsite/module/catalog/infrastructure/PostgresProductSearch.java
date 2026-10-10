@@ -32,6 +32,11 @@ class PostgresProductSearch implements ProductSearch {
     private final DSLContext dsl;
 
     /**
+     * C 側に返す商品画像の URL
+     */
+    private final StoreImageUrls storeImageUrls;
+
+    /**
      * キーワードで商品を探す。
      *
      * @param keyword キーワード
@@ -62,9 +67,11 @@ class PostgresProductSearch implements ProductSearch {
                 .offset(request.offset())
                 .fetch();
 
-        var sellable = SellableVariants.byProduct(dsl, rows.map(row -> row.value1()));
+        var productIds = rows.map(row -> row.value1());
+        var sellable = SellableVariants.byProduct(dsl, productIds);
+        var images = storeImageUrls.representatives(productIds);
         var items = rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), row.value3(), row.value4(),
-                sellable.getOrDefault(row.value1(), List.of())));
+                sellable.getOrDefault(row.value1(), List.of()), images.get(row.value1())));
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }

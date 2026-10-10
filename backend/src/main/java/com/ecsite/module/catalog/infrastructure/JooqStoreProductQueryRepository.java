@@ -39,6 +39,11 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     private final DSLContext dsl;
 
     /**
+     * C 側に返す商品画像の URL
+     */
+    private final StoreImageUrls storeImageUrls;
+
+    /**
      * C 側の商品一覧を取得する。
      *
      * @param query   絞り込みと並び順
@@ -64,9 +69,11 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .offset(request.offset())
                 .fetch();
 
-        var sellable = SellableVariants.byProduct(dsl, rows.map(row -> row.value1()));
+        var productIds = rows.map(row -> row.value1());
+        var sellable = SellableVariants.byProduct(dsl, productIds);
+        var images = storeImageUrls.representatives(productIds);
         var items = rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), row.value3(), row.value4(),
-                sellable.getOrDefault(row.value1(), List.of())));
+                sellable.getOrDefault(row.value1(), List.of()), images.get(row.value1())));
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }
@@ -91,8 +98,11 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .and(ProductVisibility.visibleAt(now))
                 .and(priceInclTax.isNotNull())
                 .fetchOptional()
-                .map(row -> new StoreProductDetail(row.value1(), row.value2(), row.value3(), row.value4(), row.value5(),
-                        axes(id), variants(id)));
+                .map(row -> {
+                    var images = storeImageUrls.ofProduct(id);
+                    return new StoreProductDetail(row.value1(), row.value2(), row.value3(), row.value4(), row.value5(),
+                            axes(id), variants(id, images), List.copyOf(images.values()));
+                });
     }
 
 // ============================== プライベートメソッド ==============================
@@ -137,9 +147,9 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * すべてのバリアント（販売停止中を含む）を表示順で取得する。
+     * すべてのバリアント（販売停止中を含む）を表示順で取得する。バリアントの画像は、指定した画像の URL（なければ null）。
      */
-    private List<StoreProductDetail.Variant> variants(UUID productId) {
+    private List<StoreProductDetail.Variant> variants(UUID productId, Map<UUID, String> imageUrls) {
         Map<UUID, List<String>> axisValuesByVariant = dsl.select(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE)
                 .from(VARIANT_AXIS_VALUE)
                 .join(VARIANT).on(VARIANT.ID.eq(VARIANT_AXIS_VALUE.VARIANT_ID))
@@ -152,6 +162,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .fetch(variant -> new StoreProductDetail.Variant(
                         variant.getId(),
                         axisValuesByVariant.getOrDefault(variant.getId(), List.of()),
-                        variant.getSalesSuspended()));
+                        variant.getSalesSuspended(),
+                        variant.getImageId() == null ? null : imageUrls.get(variant.getImageId())));
     }
 }

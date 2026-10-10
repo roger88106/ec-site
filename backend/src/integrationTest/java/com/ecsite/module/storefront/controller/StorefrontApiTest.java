@@ -21,6 +21,10 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
@@ -29,6 +33,7 @@ import java.util.List;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
@@ -52,6 +57,11 @@ class StorefrontApiTest {
     private static final String BASE = "/api/store";
 
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+
+    /**
+     * PNG の先頭（形式の判定に足りる長さ）
+     */
+    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13};
 
     @Autowired
     MockMvc mockMvc;
@@ -104,7 +114,7 @@ class StorefrontApiTest {
         }
 
         @Test
-        @DisplayName("AC-55 商品名と、税込・税抜の価格が返る。代表画像は画像の機能までは null")
+        @DisplayName("AC-55 商品名と、税込・税抜の価格が返る。画像がなければ代表画像は null")
         void returnsNameAndPrice() throws Exception {
             product("T シャツ", 1800).publish();
 
@@ -113,6 +123,17 @@ class StorefrontApiTest {
                     .andExpect(jsonPath("$.items[0].price.inclTax").value(1980))
                     .andExpect(jsonPath("$.items[0].price.exclTax").value(1800))
                     .andExpect(jsonPath("$.items[0].imageUrl").value(nullValue()));
+        }
+
+        @Test
+        @DisplayName("AC-55、37 代表画像は、商品の画像の並びの先頭の URL")
+        void returnsRepresentativeImage() throws Exception {
+            var product = product("画像のある商品", 1000).image().image().publish();
+
+            mockMvc.perform(get(BASE + "/products"))
+                    .andExpect(jsonPath("$.items[0].imageUrl").value(product.imageUrls.getFirst()));
+            mockMvc.perform(get(BASE + "/products/search").param("q", "画像のある"))
+                    .andExpect(jsonPath("$.items[0].imageUrl").value(product.imageUrls.getFirst()));
         }
 
         @Test
@@ -278,6 +299,18 @@ class StorefrontApiTest {
         }
 
         @Test
+        @DisplayName("AC-37、38 画像の URL が並び順で返る。バリアントの画像は、指定した画像の URL で、指定がなければ null")
+        void returnsImages() throws Exception {
+            var product = product("画像", 1000, "色").variant("白").variant("黒").image().image();
+            product.variantImage(1, 1).publish();
+
+            mockMvc.perform(get(BASE + "/products/" + product.id))
+                    .andExpect(jsonPath("$.imageUrls", contains(product.imageUrls.toArray())))
+                    .andExpect(jsonPath("$.variants[0].imageUrl").value(nullValue()))
+                    .andExpect(jsonPath("$.variants[1].imageUrl").value(product.imageUrls.get(1)));
+        }
+
+        @Test
         @DisplayName("AC-65 表示されない商品は、存在しない商品と同じく 404")
         void returnsNotFoundForInvisibleProduct() throws Exception {
             var unpublished = product("非公開", 1000).publish().unpublish();
@@ -373,6 +406,10 @@ class StorefrontApiTest {
 
         private final List<String> variantIds = new ArrayList<>();
 
+        private final List<String> imageIds = new ArrayList<>();
+
+        private final List<String> imageUrls = new ArrayList<>();
+
         private long version;
 
         TestProduct(String id) {
@@ -387,6 +424,41 @@ class StorefrontApiTest {
                             {"variantCode": "ST-%d-%d", "axisValues": [%s], "version": %d}"""
                             .formatted(sequence, variantIds.size() + 1, values, version)));
             variantIds.add(variantId);
+            version++;
+            return this;
+        }
+
+        TestProduct image() throws Exception {
+            var upload = mockMvc.perform(post("/api/admin/products/" + id + "/image-uploads")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"contentType": "image/png", "contentLength": %d}""".formatted(PNG.length)))
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+            var request = HttpRequest.newBuilder(URI.create(JsonPath.read(upload, "$.uploadUrl")))
+                    .header("Content-Type", "image/png")
+                    .PUT(HttpRequest.BodyPublishers.ofByteArray(PNG));
+            assertThat(HttpClient.newHttpClient().send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode())
+                    .isEqualTo(200);
+            mockMvc.perform(post("/api/admin/products/" + id + "/images")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"uploadId": "%s", "version": %d}""".formatted(JsonPath.<String>read(upload, "$.uploadId"), version)))
+                    .andExpect(status().isCreated());
+            version++;
+            var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
+            imageUrls.clear();
+            imageUrls.addAll(JsonPath.read(detail, "$.images[*].url"));
+            imageIds.clear();
+            imageIds.addAll(JsonPath.read(detail, "$.images[*].id"));
+            return this;
+        }
+
+        TestProduct variantImage(int variantIndex, int imageIndex) throws Exception {
+            mockMvc.perform(put("/api/admin/products/" + id + "/variants/" + variantIds.get(variantIndex) + "/image")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"imageId": "%s", "version": %d}""".formatted(imageIds.get(imageIndex), version)))
+                    .andExpect(status().isNoContent());
             version++;
             return this;
         }

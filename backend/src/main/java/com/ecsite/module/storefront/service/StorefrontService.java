@@ -71,10 +71,10 @@ public class StorefrontService {
 
         var variants = detail.variants().stream()
                 .map(variant -> new ProductDetailView.VariantView(variant.id(), variant.axisValues(),
-                        inStock.contains(variant.id()), variant.salesSuspended()))
+                        inStock.contains(variant.id()), variant.salesSuspended(), variant.imageUrl()))
                 .toList();
         return new ProductDetailView(detail.id(), detail.name(), detail.description(), detail.priceInclTax(),
-                detail.priceExclTax(), axes(detail), variants);
+                detail.priceExclTax(), axes(detail), variants, detail.imageUrls());
     }
 
     /**
@@ -100,7 +100,8 @@ public class StorefrontService {
                 .flatMap(product -> product.sellableVariantIds().stream())
                 .toList());
         return page.map(product -> new ProductSummaryView(product.id(), product.name(), product.priceInclTax(),
-                product.priceExclTax(), product.sellableVariantIds().stream().anyMatch(inStock::contains)));
+                product.priceExclTax(), product.sellableVariantIds().stream().anyMatch(inStock::contains),
+                product.imageUrl()));
     }
 
     /**

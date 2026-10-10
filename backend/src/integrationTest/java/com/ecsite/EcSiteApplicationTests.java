@@ -8,6 +8,7 @@ import org.springframework.jdbc.core.JdbcTemplate;
 
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * アプリケーションコンテキストが起動し、マイグレーションが適用されることの検証。
@@ -47,8 +48,7 @@ class EcSiteApplicationTests {
     @Test
     @DisplayName("jOOQ の生成コードでテーブルにアクセスできる")
     void generatedJooqCodeCanAccessTable() {
-        var count = dsl.fetchCount(EVENT_PUBLICATION);
-
-        assertThat(count).isZero();
+        // 件数は、先に動いたテスト（ロールバックしないもの）が発行したイベントで変わるので見ない
+        assertThatCode(() -> dsl.fetchCount(EVENT_PUBLICATION)).doesNotThrowAnyException();
     }
 }

@@ -37,3 +37,8 @@ export function formatYen(amount: number): string {
 export function taxLabel(tax: OrderTaxAmount): string {
   return `${tax.ratePercent}% 対象 ${formatYen(tax.taxableAmount)}（内消費税 ${formatYen(tax.taxAmount)}）`
 }
+
+/** 郵便番号（API はハイフンなしの 7 桁を返す。例：「100-0001」） */
+export function formatPostalCode(postalCode: string): string {
+  return `${postalCode.slice(0, 3)}-${postalCode.slice(3)}`
+}

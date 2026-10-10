@@ -3,6 +3,7 @@ import { Layout } from '@/app/Layout'
 import { NotFoundPage } from '@/app/NotFoundPage'
 import { CategoryPage } from '@/features/category/pages/CategoryPage'
 import { StockPage } from '@/features/inventory/pages/StockPage'
+import { OrderDetailPage } from '@/features/order/pages/OrderDetailPage'
 import { OrderListPage } from '@/features/order/pages/OrderListPage'
 import { ProductCreatePage } from '@/features/product/pages/ProductCreatePage'
 import { ProductEditPage } from '@/features/product/pages/ProductEditPage'
@@ -25,6 +26,7 @@ export const routes: RouteObject[] = [
       { path: 'tax-categories', element: <TaxCategoryListPage /> },
       { path: 'tax-categories/:taxCategoryId', element: <TaxRatesPage /> },
       { path: 'orders', element: <OrderListPage /> },
+      { path: 'orders/:orderId', element: <OrderDetailPage /> },
       { path: '*', element: <NotFoundPage /> },
     ],
   },

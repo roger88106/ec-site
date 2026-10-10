@@ -135,6 +135,17 @@ class JooqOrderRepository implements OrderRepository {
                 .fetchOptional(SALES_ORDER.ID);
     }
 
+    /**
+     * 注文番号が使われているか。
+     *
+     * @param orderNumber 注文番号
+     * @return 使われていれば true
+     */
+    @Override
+    public boolean existsByOrderNumber(OrderNumber orderNumber) {
+        return dsl.fetchExists(SALES_ORDER, SALES_ORDER.ORDER_NUMBER.eq(orderNumber.value()));
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**

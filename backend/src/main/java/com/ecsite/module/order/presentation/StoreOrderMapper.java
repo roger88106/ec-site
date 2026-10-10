@@ -2,17 +2,25 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.api.store.model.Amounts;
 import com.ecsite.api.store.model.AxisValue;
+import com.ecsite.api.store.model.CancellationRequest;
 import com.ecsite.api.store.model.Checkout;
+import com.ecsite.api.store.model.Order;
+import com.ecsite.api.store.model.OrderLine;
+import com.ecsite.api.store.model.OrderStatus;
+import com.ecsite.api.store.model.PlaceOrderRequest;
 import com.ecsite.api.store.model.Price;
 import com.ecsite.api.store.model.QuoteItem;
+import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.module.order.application.CheckoutView;
+import com.ecsite.module.order.application.PlaceOrderCommand;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
 
 /**
  * 店舗 API（注文手続き・注文）のレスポンスと、アプリケーション層のモデルの変換
@@ -30,6 +38,46 @@ class StoreOrderMapper {
         return new Checkout(view.id(), toQuoteItems(view.quote()), toAmounts(view.quote().amounts()),
                 view.expiresAt().atOffset(ZoneOffset.UTC))
                 .orderId(view.orderId());
+    }
+
+    /**
+     * 注文のコマンドに変換する。
+     *
+     * @param checkoutId 注文手続き ID
+     * @param request    注文のリクエスト
+     * @return 注文のコマンド
+     */
+    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request) {
+        var address = request.getShippingAddress();
+        return new PlaceOrderCommand(checkoutId, request.getEmail(), address.getName(), address.getPostalCode(),
+                address.getPrefecture(), address.getAddress(), address.getPhone(), request.getExpectedTotal());
+    }
+
+    /**
+     * 注文のレスポンスに変換する（AC-93）。
+     *
+     * @param order 注文
+     * @return 注文のレスポンス
+     */
+    Order toOrder(com.ecsite.module.order.domain.order.Order order) {
+        var address = order.shippingAddress();
+        var response = new Order(order.id(), order.orderNumber().value(), order.orderedAt().atOffset(ZoneOffset.UTC),
+                OrderStatus.fromValue(order.status().name()),
+                order.lines().stream().map(line -> new OrderLine(line.productCode(), line.variantCode(),
+                        line.productName(),
+                        line.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
+                        new Price(line.unitPriceInclTax().yen(), line.unitPriceExclTax().yen()), line.ratePercent(),
+                        line.quantity(), line.subtotal().yen())).toList(),
+                toAmounts(order.amounts()), order.email(),
+                new ShippingAddress(address.name(), address.postalCode(), address.prefecture(), address.address(),
+                        address.phone()));
+        var request = order.cancellationRequest();
+        if (request != null) {
+            response.cancellationRequest(new CancellationRequest(request.requestedAt().atOffset(ZoneOffset.UTC),
+                    CancellationRequest.ResultEnum.fromValue(request.result().name()))
+                    .reason(request.reason()));
+        }
+        return response;
     }
 
     /**

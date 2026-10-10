@@ -5,8 +5,8 @@ import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.PlaceOrderRequest;
 import com.ecsite.module.order.application.CheckoutService;
+import com.ecsite.module.order.application.OrderPlacementService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
@@ -24,6 +24,11 @@ class StoreCheckoutController implements CheckoutApi {
      * 注文手続きのサービス
      */
     private final CheckoutService checkoutService;
+
+    /**
+     * 注文の成立のサービス
+     */
+    private final OrderPlacementService orderPlacementService;
 
     /**
      * 店舗 API（注文手続き・注文）のマッパー
@@ -61,14 +66,26 @@ class StoreCheckoutController implements CheckoutApi {
     }
 
     /**
-     * 注文する（AC-86〜92、107）。段階 3 の T2314 で実装する
+     * 注文する（AC-86〜92、107）。同じ注文手続きでの再送には、作成済みの注文 ID を 200 で返す（AC-91）
      *
      * @param checkoutId 注文手続き ID
      * @param request    注文のリクエスト
-     * @return Http 501
+     * @return Http 201 : {@link CreatedId}（再送は Http 200）
      */
     @Override
     public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request));
+        var body = new CreatedId(result.orderId());
+        if (!result.created()) {
+            return ResponseEntity.ok(body);
+        }
+
+        // ロケーション：作った注文の URL
+        var location = ServletUriComponentsBuilder.fromCurrentContextPath()
+                .path("/api/store/orders/{id}")
+                .buildAndExpand(result.orderId())
+                .toUri();
+
+        return ResponseEntity.created(location).body(body);
     }
 }

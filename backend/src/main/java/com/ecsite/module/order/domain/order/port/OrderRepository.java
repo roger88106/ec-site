@@ -1,6 +1,7 @@
 package com.ecsite.module.order.domain.order.port;
 
 import com.ecsite.module.order.domain.order.Order;
+import com.ecsite.module.order.domain.order.OrderNumber;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -34,4 +35,12 @@ public interface OrderRepository {
      * @return 注文 ID。まだ注文がなければ空
      */
     Optional<UUID> findIdByCheckoutId(UUID checkoutId);
+
+    /**
+     * 注文番号が使われているか（BR-10）。
+     *
+     * @param orderNumber 注文番号
+     * @return 使われていれば true
+     */
+    boolean existsByOrderNumber(OrderNumber orderNumber);
 }

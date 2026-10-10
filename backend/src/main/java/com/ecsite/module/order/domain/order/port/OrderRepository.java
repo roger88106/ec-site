@@ -1,0 +1,37 @@
+package com.ecsite.module.order.domain.order.port;
+
+import com.ecsite.module.order.domain.order.Order;
+
+import java.util.Optional;
+import java.util.UUID;
+
+/**
+ * 注文のリポジトリ
+ */
+public interface OrderRepository {
+
+    /**
+     * 新しい注文を保存し、登録されたイベントを発行する。<br />
+     * 注文番号が重複したら何も保存せずに false を返す（呼ぶ側が番号を作り直す）。トランザクションは壊さない。
+     *
+     * @param order 注文
+     * @return 保存したら true
+     */
+    boolean insert(Order order);
+
+    /**
+     * 注文を取得する。
+     *
+     * @param id 注文 ID
+     * @return 注文。なければ空
+     */
+    Optional<Order> findById(UUID id);
+
+    /**
+     * 注文手続きの注文 ID を取得する（AC-91）。
+     *
+     * @param checkoutId 注文手続き ID
+     * @return 注文 ID。まだ注文がなければ空
+     */
+    Optional<UUID> findIdByCheckoutId(UUID checkoutId);
+}

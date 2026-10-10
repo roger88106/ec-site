@@ -108,7 +108,7 @@ class S3ObjectStorageTest {
 
     @Test
     @DisplayName("配信のファイルを消せる。ないファイルを消しても成功する")
-    void deletesPublished() throws Exception {
+    void deletesPublished() {
         var publicKey = "assets/%s.webp".formatted(UUID.randomUUID());
         storage.putPublished(publicKey, WEBP, "image/webp");
 

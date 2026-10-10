@@ -32,8 +32,6 @@ openapi-generator = "7.26.0"
 jackson-databind-nullable = "0.2.12"
 
 # --- ユーティリティ ---
-mapstruct = "1.6.3"
-lombok-mapstruct-binding = "0.2.0"
 jmolecules = "2025.0.2"
 
 # --- 画像のファイル（オブジェクトストレージ。plan 001 第 7 節） ---
@@ -85,10 +83,7 @@ buildscript-postgresql = { module = "org.postgresql:postgresql", version.ref = "
 jackson-databind-nullable = { module = "org.openapitools:jackson-databind-nullable", version.ref = "jackson-databind-nullable" }
 
 # --- ユーティリティ ---
-mapstruct = { module = "org.mapstruct:mapstruct", version.ref = "mapstruct" }
-mapstruct-processor = { module = "org.mapstruct:mapstruct-processor", version.ref = "mapstruct" }
 lombok = { module = "org.projectlombok:lombok" }
-lombok-mapstruct-binding = { module = "org.projectlombok:lombok-mapstruct-binding", version.ref = "lombok-mapstruct-binding" }
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 
@@ -114,12 +109,6 @@ spring-modulith = [
 jmolecules = [
     "jmolecules-ddd",
     "jmolecules-events",
-]
-integration-test = [
-    "spring-modulith-starter-test",
-    "spring-boot-testcontainers",
-    "spring-boot-starter-webmvc-test",
-    "testcontainers-postgresql",
 ]
 
 # ============================== [plugins] ==============================

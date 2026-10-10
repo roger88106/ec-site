@@ -32,9 +32,9 @@ class PostgresProductSearch implements ProductSearch {
     private final DSLContext dsl;
 
     /**
-     * C 側に返す商品画像の URL
+     * C 側の一覧・検索の 1 ページ分の商品の組み立て
      */
-    private final StoreImageUrls storeImageUrls;
+    private final StoreProductSummaries storeProductSummaries;
 
     /**
      * キーワードで商品を探す。
@@ -68,12 +68,7 @@ class PostgresProductSearch implements ProductSearch {
                 .offset(request.offset())
                 .fetch();
 
-        var productIds = rows.map(row -> row.value1());
-        // このページの商品の、販売中のバリアントと代表画像をまとめて取得する（商品ごとに問い合わせない）
-        var sellable = SellableVariants.byProduct(dsl, productIds);
-        var images = storeImageUrls.representatives(productIds);
-        var items = rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), row.value3(), row.value4(),
-                sellable.getOrDefault(row.value1(), List.of()), images.get(row.value1())));
+        var items = storeProductSummaries.of(rows);
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }

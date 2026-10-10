@@ -106,7 +106,7 @@ class JooqTaxCategoryRepositoryTest {
         var category = saved(
                 newDraft("10", null, APR_2027),
                 newDraft("8", APR_2027, null));
-        var base = category.rates().get(0);
+        var base = category.rates().getFirst();
 
         category.replaceRates(List.of(
                 draft(base.id(), "10", null, APR_2028),
@@ -125,7 +125,7 @@ class JooqTaxCategoryRepositoryTest {
         var category = saved(
                 newDraft("10", null, APR_2027),
                 newDraft("8", APR_2027, null));
-        var first = category.rates().get(0);
+        var first = category.rates().getFirst();
         var second = category.rates().get(1);
 
         // 1 件目の終了を先に延ばすと、2 件目を書き換えるまでの間、期間が重なる

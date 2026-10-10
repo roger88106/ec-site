@@ -5,8 +5,6 @@ import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.ErrorDetail;
 import lombok.NonNull;
 
-import java.util.List;
-
 /**
  * システム上予期せぬエラー。 ※HTTP 500系
  */
@@ -32,35 +30,12 @@ public class SystemException extends BaseException {
     /**
      * {@code SystemException}の新しいインスタンスを作成して返します。
      *
-     * @param debugMessage      デバッグ用メッセージ
-     * @param cause             原因となった例外
-     * @param errorCodeProvider エラーコードプロバイダー
-     * @param messageParams     メッセージパラメータ
-     * @return 指定されたパラメータで初期化された新しい{@code SystemException}インスタンス
-     */
-    public static SystemException of(String debugMessage, Throwable cause, @NonNull ErrorCodeProvider errorCodeProvider, List<Object> messageParams) {
-        return new SystemException(debugMessage, cause, ErrorDetail.of(errorCodeProvider.getCode(), messageParams));
-    }
-
-    /**
-     * {@code SystemException}の新しいインスタンスを作成して返します。
-     *
      * @param debugMessage デバッグ用メッセージ
      * @param cause        原因となった例外
      * @return 指定されたパラメータで初期化された新しい{@code SystemException}インスタンス
      */
     public static SystemException of(String debugMessage, Throwable cause) {
         return new SystemException(debugMessage, cause, SYSTEM_ERROR_DETAIL);
-    }
-
-    /**
-     * {@code SystemException}の新しいインスタンスを作成して返します。
-     *
-     * @param cause 原因となった例外
-     * @return 指定されたパラメータで初期化された新しい{@code SystemException}インスタンス
-     */
-    public static SystemException of(Throwable cause) {
-        return new SystemException(cause.getMessage(), cause, SYSTEM_ERROR_DETAIL);
     }
 
     /**

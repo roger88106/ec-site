@@ -5,6 +5,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * テスト用の、時刻を決められる時計。<br />
@@ -14,9 +15,9 @@ import java.time.ZoneOffset;
 public final class MutableClock extends Clock {
 
     /**
-     * 現在の時刻
+     * 現在の時刻。テストとアプリのスレッドの両方から読み書きするので、原子的に更新する
      */
-    private volatile Instant instant;
+    private final AtomicReference<Instant> instant;
 
     /**
      * 指定した時刻の時計を作る。
@@ -24,7 +25,7 @@ public final class MutableClock extends Clock {
      * @param instant 時刻
      */
     public MutableClock(Instant instant) {
-        this.instant = instant;
+        this.instant = new AtomicReference<>(instant);
     }
 
     /**
@@ -33,7 +34,7 @@ public final class MutableClock extends Clock {
      * @param instant 時刻
      */
     public void setInstant(Instant instant) {
-        this.instant = instant;
+        this.instant.set(instant);
     }
 
     /**
@@ -42,7 +43,7 @@ public final class MutableClock extends Clock {
      * @param duration 進める時間
      */
     public void advance(Duration duration) {
-        this.instant = instant.plus(duration);
+        instant.updateAndGet(current -> current.plus(duration));
     }
 
     @Override
@@ -57,6 +58,6 @@ public final class MutableClock extends Clock {
 
     @Override
     public Instant instant() {
-        return instant;
+        return instant.get();
     }
 }

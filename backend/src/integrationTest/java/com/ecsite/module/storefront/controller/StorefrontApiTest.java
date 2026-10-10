@@ -172,10 +172,10 @@ class StorefrontApiTest {
         @DisplayName("AC-56 全バリアントが在庫なしの商品も出て、在庫なしと示される。在庫がまだないバリアントも在庫なし")
         void marksOutOfStock() throws Exception {
             var inStock = product("在庫あり", 1000, "色").variant("白").variant("黒").publish();
-            stock(inStock.variantIds.get(0), 0);
+            stock(inStock.variantIds.getFirst(), 0);
             stock(inStock.variantIds.get(1), 3);
             var soldOut = product("在庫なし", 1000, "色").variant("白").variant("黒").publish();
-            stock(soldOut.variantIds.get(0), 0);
+            stock(soldOut.variantIds.getFirst(), 0);
             // 2 つ目のバリアントの在庫は、まだない
 
             mockMvc.perform(get(BASE + "/products"))
@@ -187,9 +187,9 @@ class StorefrontApiTest {
         @DisplayName("AC-56、28 販売停止のバリアントだけに在庫がある商品は、在庫なしと示される")
         void ignoresSuspendedVariantsForStock() throws Exception {
             var product = product("販売停止", 1000, "色").variant("白").variant("黒").publish();
-            stock(product.variantIds.get(0), 5);
+            stock(product.variantIds.getFirst(), 5);
             stock(product.variantIds.get(1), 0);
-            suspend(product.id, product.variantIds.get(0));
+            suspend(product.id, product.variantIds.getFirst());
 
             mockMvc.perform(get(BASE + "/products"))
                     .andExpect(jsonPath("$.items[0].inStock").value(false));
@@ -280,7 +280,7 @@ class StorefrontApiTest {
         void returnsDetail() throws Exception {
             var product = product("T シャツ", 1800, "色", "サイズ")
                     .variant("白", "M").variant("白", "L").variant("黒", "M").publish();
-            stock(product.variantIds.get(0), 2);
+            stock(product.variantIds.getFirst(), 2);
             stock(product.variantIds.get(1), 0);
             stock(product.variantIds.get(2), 4);
             suspend(product.id, product.variantIds.get(2));

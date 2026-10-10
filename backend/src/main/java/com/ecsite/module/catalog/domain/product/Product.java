@@ -29,6 +29,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
+import java.util.function.BiFunction;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -285,19 +287,8 @@ public class Product extends AggregateRoot {
      * @param orderedIds 並べたい順のバリアント ID
      */
     public void reorderVariants(@NonNull List<UUID> orderedIds) {
-        var currentIds = variants.stream().map(Variant::id).collect(Collectors.toSet());
-        // 数が同じで、集合としても等しければ、重複も漏れもない
-        if (orderedIds.size() != currentIds.size() || !currentIds.equals(new HashSet<>(orderedIds))) {
-            throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_ORDER);
-        }
-
-        var reordered = new ArrayList<Variant>();
-        for (int i = 0; i < orderedIds.size(); i++) {
-            var variantId = orderedIds.get(i);
-            var variant = variants.stream().filter(v -> v.id().equals(variantId)).findFirst().orElseThrow();
-            reordered.add(variant.withDisplayOrder(i + 1));
-        }
-        this.variants = List.copyOf(reordered);
+        this.variants = reorder(variants, Variant::id, Variant::withDisplayOrder, orderedIds,
+                ProductErrorCode.INVALID_VARIANT_ORDER);
     }
 
     /**
@@ -352,19 +343,8 @@ public class Product extends AggregateRoot {
      * @param orderedIds 並べたい順の画像 ID
      */
     public void reorderImages(@NonNull List<UUID> orderedIds) {
-        var currentIds = images.stream().map(ProductImage::id).collect(Collectors.toSet());
-        // 数が同じで、集合としても等しければ、重複も漏れもない
-        if (orderedIds.size() != currentIds.size() || !currentIds.equals(new HashSet<>(orderedIds))) {
-            throw BusinessException.of(ProductErrorCode.INVALID_IMAGE_ORDER);
-        }
-
-        var reordered = new ArrayList<ProductImage>();
-        for (int i = 0; i < orderedIds.size(); i++) {
-            var imageId = orderedIds.get(i);
-            var image = images.stream().filter(candidate -> candidate.id().equals(imageId)).findFirst().orElseThrow();
-            reordered.add(image.withDisplayOrder(i + 1));
-        }
-        this.images = List.copyOf(reordered);
+        this.images = reorder(images, ProductImage::id, ProductImage::withDisplayOrder, orderedIds,
+                ProductErrorCode.INVALID_IMAGE_ORDER);
     }
 
     /**
@@ -557,6 +537,32 @@ public class Product extends AggregateRoot {
         if (!hasBeenShown(now)) {
             this.firstShownAt = null;
         }
+    }
+
+    /**
+     * 並び替える。送られた順に 1 から表示順を振り直す（AC-27、37）。<br />
+     * 今の要素と過不足なく一致しなければ（重複・漏れ・ないものを含めば）、何も変えずに業務のエラーを投げる。
+     *
+     * @param items            今の要素
+     * @param idOf             要素の ID
+     * @param withDisplayOrder 表示順を変えた要素を作る
+     * @param orderedIds       並べたい順の ID
+     * @param error            一致しないときのエラー
+     * @param <T>              要素の型
+     * @return 並び替えた要素（変更できない一覧）
+     */
+    private static <T> List<T> reorder(List<T> items, Function<T, UUID> idOf, BiFunction<T, Integer, T> withDisplayOrder,
+                                       List<UUID> orderedIds, ProductErrorCode error) {
+        var byId = items.stream().collect(Collectors.toMap(idOf, Function.identity()));
+        // 数が同じで、集合としても等しければ、重複も漏れもない
+        if (orderedIds.size() != byId.size() || !byId.keySet().equals(new HashSet<>(orderedIds))) {
+            throw BusinessException.of(error);
+        }
+        var reordered = new ArrayList<T>();
+        for (int i = 0; i < orderedIds.size(); i++) {
+            reordered.add(withDisplayOrder.apply(byId.get(orderedIds.get(i)), i + 1));
+        }
+        return List.copyOf(reordered);
     }
 
     /**

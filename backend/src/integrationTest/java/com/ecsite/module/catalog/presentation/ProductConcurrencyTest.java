@@ -101,6 +101,8 @@ class ProductConcurrencyTest {
             }
             assertThat(statuses).containsExactlyInAnyOrder(201, 409);
         } finally {
+            // try-with-resources（close）は全部の処理の終わりを待つので、途中で失敗すると start を待つスレッドが残って止まる。
+            // 割り込んで止める shutdownNow を使う
             executor.shutdownNow();
         }
     }

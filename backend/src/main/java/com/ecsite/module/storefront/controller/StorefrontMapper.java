@@ -15,8 +15,6 @@ import com.ecsite.module.storefront.service.ProductDetailView;
 import com.ecsite.module.storefront.service.ProductSummaryView;
 import org.springframework.stereotype.Component;
 
-import java.util.List;
-
 /**
  * 店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルの変換。<br />
  * 画像は US-7 までないので、代表画像・バリアントの画像は null、画像の一覧は空にする。

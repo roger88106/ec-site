@@ -47,17 +47,7 @@ class StoreImageUrls {
                 .where(PRODUCT_IMAGE.PRODUCT_ID.in(productIds))
                 .orderBy(PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.DISPLAY_ORDER)
                 .fetchMap(PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.ASSET_ID);
-        var urls = mediaDirectory.urls(assetIds.values());
-
-        var representatives = new LinkedHashMap<UUID, String>();
-        assetIds.forEach((productId, assetId) -> {
-            // URL のないアセット（メディアモジュールに記録がない）は出さない
-            var url = urls.get(assetId);
-            if (url != null) {
-                representatives.put(productId, url.toString());
-            }
-        });
-        return representatives;
+        return toUrls(assetIds);
     }
 
     /**
@@ -73,16 +63,27 @@ class StoreImageUrls {
                 .where(PRODUCT_IMAGE.PRODUCT_ID.eq(productId))
                 .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
                 .forEach(record -> assetIds.put(record.value1(), record.value2()));
-        var urls = mediaDirectory.urls(assetIds.values());
+        return toUrls(assetIds);
+    }
 
-        var images = new LinkedHashMap<UUID, String>();
-        assetIds.forEach((imageId, assetId) -> {
-            // URL のないアセット（メディアモジュールに記録がない）は出さない
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * アセット ID を、メディアモジュールからまとめて取得した配信の URL に置き換える。並びは保つ。
+     *
+     * @param assetIds キー（商品 ID、画像 ID など）→ アセット ID
+     * @param <K>      キーの型
+     * @return キー → 配信の URL。URL のないアセット（メディアモジュールに記録がない）は含めない
+     */
+    private <K> Map<K, String> toUrls(Map<K, UUID> assetIds) {
+        var urls = mediaDirectory.urls(assetIds.values());
+        var result = new LinkedHashMap<K, String>();
+        assetIds.forEach((key, assetId) -> {
             var url = urls.get(assetId);
             if (url != null) {
-                images.put(imageId, url.toString());
+                result.put(key, url.toString());
             }
         });
-        return images;
+        return result;
     }
 }

@@ -39,6 +39,7 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -147,7 +148,7 @@ class ProductImageApiTest {
             assertThat(JsonPath.<Integer>read(detail, "$.version")).isEqualTo(3);
             var urls = JsonPath.<List<String>>read(detail, "$.images[*].url");
             // 配信するのは、変換した WebP（AC-68）
-            var delivered = fetch(urls.get(0));
+            var delivered = fetch(urls.getFirst());
             assertThat(delivered.statusCode()).isEqualTo(200);
             assertThat(new String(delivered.body(), 8, 4, StandardCharsets.US_ASCII)).isEqualTo("WEBP");
             assertThat(delivered.headers().firstValue("Content-Type")).contains("image/webp");
@@ -474,11 +475,8 @@ class ProductImageApiTest {
     /**
      * 配信のファイルが、コミット後のイベントで消えるのを待つ
      */
-    private void assertEventuallyGone(String url) throws Exception {
-        var deadline = Instant.now().plus(Duration.ofSeconds(10));
-        while (fetch(url).statusCode() == 200) {
-            assertThat(Instant.now()).as("配信のファイルが消えない：%s", url).isBefore(deadline);
-            Thread.sleep(200);
-        }
+    private void assertEventuallyGone(String url) {
+        await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(200)).untilAsserted(() ->
+                assertThat(fetch(url).statusCode()).as("配信のファイルが消えない：%s", url).isNotEqualTo(200));
     }
 }

@@ -1,6 +1,7 @@
 package com.ecsite.common.error.handler;
 
 import io.micrometer.tracing.Span;
+import io.micrometer.tracing.TraceContext;
 import io.micrometer.tracing.Tracer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.beans.factory.ObjectProvider;
@@ -32,7 +33,7 @@ class TraceIdResolver {
         return Optional.ofNullable(tracer.getIfAvailable())
                 .map(Tracer::currentSpan)
                 .map(Span::context)
-                .map(context -> context.traceId())
+                .map(TraceContext::traceId)
                 .filter(traceId -> !traceId.isBlank())
                 .orElseGet(TraceIdResolver::newTraceId);
     }

@@ -54,7 +54,7 @@ class ErrorResponseTest {
     private static final String BASE = "/api/test-errors";
 
     /**
-     * @Validated の Controller のパス。生成インターフェースは @Validated 付きなので、検証は Controller の AOP で行われる
+     * {@code @Validated} の Controller のパス。生成インターフェースは {@code @Validated} 付きなので、検証は Controller の AOP で行われる
      */
     private static final String VALIDATED_BASE = "/api/test-validated";
 
@@ -314,7 +314,7 @@ class ErrorResponseTest {
     }
 
     /**
-     * @Validated の Controller（生成インターフェースと同じく、メソッド引数の検証が AOP で行われる）
+     * {@code @Validated} の Controller（生成インターフェースと同じく、メソッド引数の検証が AOP で行われる）
      */
     @RestController
     @RequestMapping(VALIDATED_BASE)

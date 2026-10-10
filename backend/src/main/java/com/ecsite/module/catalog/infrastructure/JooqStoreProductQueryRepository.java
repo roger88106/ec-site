@@ -44,6 +44,11 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     private final StoreImageUrls storeImageUrls;
 
     /**
+     * C 側の一覧の 1 ページ分の商品の組み立て
+     */
+    private final StoreProductSummaries storeProductSummaries;
+
+    /**
      * C 側の商品一覧を取得する。
      *
      * @param query   絞り込みと並び順
@@ -70,12 +75,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .offset(request.offset())
                 .fetch();
 
-        var productIds = rows.map(row -> row.value1());
-        // このページの商品の、販売中のバリアントと代表画像をまとめて取得する（商品ごとに問い合わせない）
-        var sellable = SellableVariants.byProduct(dsl, productIds);
-        var images = storeImageUrls.representatives(productIds);
-        var items = rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), row.value3(), row.value4(),
-                sellable.getOrDefault(row.value1(), List.of()), images.get(row.value1())));
+        var items = storeProductSummaries.of(rows);
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }

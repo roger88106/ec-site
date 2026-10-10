@@ -11,6 +11,8 @@
 | 商品カタログモジュール | `catalog` | 商品、バリアント、カテゴリ、公開、商品検索 |
 | 在庫モジュール | `inventory` | 在庫数と調整履歴 |
 | 店舗モジュール | `storefront` | C 側 API。複数モジュールの結果を組み合わせる |
+| カートモジュール | `cart` | カートと、その品目 |
+| 注文モジュール | `order` | 見積もり、注文手続き、注文、キャンセル |
 | メディアモジュール | `media` | アップロードされたファイル（画像）の受け付け、検証、保存、配信 |
 
 ## 共通
@@ -75,9 +77,36 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 在庫数 | `quantity` | 販売可能な数量 |
 | 在庫調整 | `StockAdjustment` / `stock_adjustment` | 増減量と理由による在庫数の変更。履歴として残す |
 | 増減量 | `delta` | 在庫調整で加える量（0 以外） |
-| 調整理由 | `reason` | 入荷（`ARRIVAL`）、棚卸差異（`STOCKTAKE`）、破損・紛失（`DAMAGE_OR_LOSS`）、その他（`OTHER`） |
+| 調整理由 | `reason` | 入荷（`ARRIVAL`）、棚卸差異（`STOCKTAKE`）、破損・紛失（`DAMAGE_OR_LOSS`）、その他（`OTHER`）。注文に由来する、注文（`ORDER`）、注文のキャンセル（`ORDER_CANCELLATION`）は運営者が選べない |
 | 連番 | `sequence_no` | 同じ日時の在庫調整の順序を決める番号 |
+| 引当 | `StockReservation` / `stock_reservation` | 注文手続きの間、在庫を期限付きで確保したもの。在庫数は変えない |
+| 持ち主 | `holderId` / `holder_id` | 引当を持つ注文手続き |
+| 販売可能数 | `sellableQuantity` | 在庫数から、有効な引当の数量を引いた数 |
 | 調整後の在庫数 | `quantity_after` | 履歴に残す、調整した直後の在庫数 |
+
+## カート
+
+| 用語 | 識別子 | 意味 |
+|------|--------|------|
+| カート | `Cart` / `cart` | 消費者が購入する予定の品目の一覧。ブラウザーごとに 1 つ |
+| カートの品目 | `CartItem` / `cart_item` | カートに入れたバリアントと数量 |
+
+## 注文
+
+| 用語 | 識別子 | 意味 |
+|------|--------|------|
+| 見積もり | `Quote` | 品目と時点から、金額と購入できるかを求めたもの。カートの表示、注文手続き、注文で同じ計算をする |
+| 注文手続き | `Checkout` / `checkout` | カートから注文に進んだ 1 回の手続き。引当の持ち主 |
+| 注文 | `Order` / `sales_order` | 成立した注文 |
+| 注文番号 | `OrderNumber` / `order_number` | 人が使う注文の番号（例：20261010-482915）。識別子ではなく属性 |
+| 注文明細 | `OrderLine` / `sales_order_line` | 注文時点の品番・商品名・価格・税率の写しと数量 |
+| 注文の状態 | `OrderStatus` / `status` | 受付（`ACCEPTED`）、キャンセル申請中（`CANCELLATION_REQUESTED`）、キャンセル（`CANCELLED`） |
+| キャンセルの申請 | `CancellationRequest` | 消費者によるキャンセルの申請。1 つの注文に 1 回だけ。結果は承認・却下 |
+| 運営者のキャンセル | `cancel` | 申請の承認によらない、運営者の判断によるキャンセル。理由が必須 |
+| 送料 | `shippingFee` / `shipping_fee` | 1 注文にかかる送料（税込） |
+| 総額 | `totalAmount` / `total_amount` | 小計の合計と送料の合計 |
+| 消費税額 | `taxAmount` / `sales_order_tax` | 税率ごとに、税込金額の合計から 1 回だけ計算した消費税 |
+| お届け先 | `ShippingAddress` | 氏名、郵便番号、都道府県、住所、電話番号 |
 
 ## メディア
 
@@ -103,4 +132,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 商品非公開 | `ProductUnpublished` | 商品カタログ |
 | 商品販売終了 | `ProductDiscontinued` | 商品カタログ |
 | 商品価格変更 | `ProductPriceChanged` | 商品カタログ |
+| カート変更 | `CartChanged` | カート |
+| 注文成立 | `OrderPlaced` | 注文 |
+| 注文キャンセル | `OrderCancelled` | 注文 |
 | アセット解放 | `AssetReleased` | メディア（モジュールの中だけで使う） |

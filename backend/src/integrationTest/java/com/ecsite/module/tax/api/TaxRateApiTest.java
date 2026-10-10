@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 商品カタログ向けの税 API の統合テスト（T112）。<br />
+ * 商品カタログ・注文向けの税 API の統合テスト（T112、T2102）。<br />
  * 現在時刻は 2026-10-08 00:00（日本時間）に固定する。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -101,6 +101,19 @@ class TaxRateApiTest {
     @DisplayName("BR-1 税込価格を計算する")
     void calculatesPriceInclTax() {
         assertThat(taxRateApi.priceInclTax(Money.of(1_234), new BigDecimal("8"))).isEqualTo(Money.of(1_332));
+    }
+
+    @Test
+    @DisplayName("BR-8 税率ごとの消費税額を、税率の高い順に返す")
+    void calculatesConsumptionTaxes() {
+        var taxes = taxRateApi.consumptionTaxes(List.of(
+                new TaxableAmount(new BigDecimal("8"), Money.of(1_332)),
+                new TaxableAmount(new BigDecimal("10"), Money.of(2_970)),
+                new TaxableAmount(new BigDecimal("10.00"), Money.of(1_000))));
+
+        assertThat(taxes).containsExactly(
+                new ConsumptionTaxAmount(new BigDecimal("10"), Money.of(3_970), Money.of(360)),
+                new ConsumptionTaxAmount(new BigDecimal("8"), Money.of(1_332), Money.of(98)));
     }
 
     // ============================== 補助 ==============================

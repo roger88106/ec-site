@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税モジュールが商品カタログに公開する API（docs/modules/tax.md「他モジュールへの公開」）
+ * 税モジュールが商品カタログと注文に公開する API（docs/modules/tax.md「他モジュールへの公開」）
  */
 @Component
 @RequiredArgsConstructor
@@ -56,6 +56,21 @@ public class TaxRateApi {
      */
     public Money priceInclTax(Money priceExclTax, BigDecimal ratePercent) {
         return TaxCalculator.priceInclTax(priceExclTax, RatePercent.of(ratePercent));
+    }
+
+    /**
+     * 税率ごとの消費税額を計算する（spec 002 BR-8）。
+     *
+     * @param taxables 税率と税込金額の組の一覧
+     * @return 税率ごとの消費税額（税率の高い順）
+     */
+    public List<ConsumptionTaxAmount> consumptionTaxes(List<TaxableAmount> taxables) {
+        var domainTaxables = taxables.stream()
+                .map(taxable -> new TaxCalculator.Taxable(RatePercent.of(taxable.ratePercent()), taxable.amountInclTax()))
+                .toList();
+        return TaxCalculator.consumptionTaxes(domainTaxables).stream()
+                .map(tax -> new ConsumptionTaxAmount(tax.ratePercent().value(), tax.taxableAmount(), tax.taxAmount()))
+                .toList();
     }
 
 // ============================== プライベートメソッド ==============================

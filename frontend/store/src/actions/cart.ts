@@ -1,6 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { readCartId, writeCartId } from '@/api/cartCookie'
 import { getApi } from '@/api/client'
 import { type ActionResult, CONNECTION_FAILED, SUCCESS, toFailure } from '@/lib/actionResult'
@@ -34,7 +35,89 @@ export async function addToCart(_previous: ActionResult | null, formData: FormDa
   }
 }
 
+/**
+ * 品目の数量を変える（AC-75、76、78）。フォームの項目：variantId、quantity。
+ */
+export async function changeCartItemQuantity(
+  _previous: ActionResult | null,
+  formData: FormData,
+): Promise<ActionResult> {
+  const variantId = String(formData.get('variantId') ?? '')
+  const quantity = Number(formData.get('quantity'))
+  return updateCart(async (api, cartId) =>
+    api.PUT('/carts/{cartId}/items/{variantId}', { params: { path: { cartId, variantId } }, body: { quantity } }),
+  )
+}
+
+/**
+ * 品目を削除する（AC-78）。フォームの項目：variantId。
+ */
+export async function removeCartItem(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const variantId = String(formData.get('variantId') ?? '')
+  return updateCart(async (api, cartId) =>
+    api.DELETE('/carts/{cartId}/items/{variantId}', { params: { path: { cartId, variantId } } }),
+  )
+}
+
+/**
+ * 注文手続きに進む（AC-82〜84）。全品目を引き当て、注文手続きの画面へ移る。<br />
+ * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す（AC-82）。
+ */
+export async function startCheckout(_previous: ActionResult | null, _formData: FormData): Promise<ActionResult> {
+  const cartId = await readCartId()
+  if (cartId === null) {
+    return { ok: false, message: CART_MISSING }
+  }
+  let checkoutId: string
+  try {
+    const api = await getApi()
+    const { data, error, response } = await api.POST('/carts/{cartId}/checkouts', {
+      params: { path: { cartId } },
+    })
+    if (!data) {
+      revalidatePath('/cart')
+      return toFailure(response.status, error)
+    }
+    checkoutId = data.id
+  } catch {
+    return { ok: false, message: CONNECTION_FAILED }
+  }
+  // redirect は例外で移動を知らせるので、try の外で呼ぶ
+  redirect(`/checkout/${checkoutId}`)
+}
+
 // ============================== プライベート ==============================
+
+/** Cookie のカートがないときの案内 */
+const CART_MISSING = 'カートが見つかりません。商品をカートに入れ直してください。'
+
+/**
+ * カートの変更を行い、成功したらカートの画面を表示し直す。Cookie の有効期限も延ばす。
+ *
+ * @param request API の呼び出し
+ */
+async function updateCart(
+  request: (
+    api: Awaited<ReturnType<typeof getApi>>,
+    cartId: string,
+  ) => Promise<{ error?: unknown; response: Response }>,
+): Promise<ActionResult> {
+  const cartId = await readCartId()
+  if (cartId === null) {
+    return { ok: false, message: CART_MISSING }
+  }
+  try {
+    const { error, response } = await request(await getApi(), cartId)
+    revalidatePath('/cart')
+    if (!response.ok) {
+      return toFailure(response.status, error)
+    }
+    await writeCartId(cartId)
+    return SUCCESS
+  } catch {
+    return { ok: false, message: CONNECTION_FAILED }
+  }
+}
 
 /** カートを作り、その ID を返す（AC-73） */
 async function createCart(): Promise<string> {

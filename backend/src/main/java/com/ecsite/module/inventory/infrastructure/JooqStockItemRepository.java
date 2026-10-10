@@ -11,6 +11,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
 import java.util.UUID;
+import java.util.function.BooleanSupplier;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -55,7 +56,7 @@ class JooqStockItemRepository implements StockItemRepository {
 
     /**
      * 在庫数に増減量を足し、調整履歴を記録する（docs/modules/inventory.md）。<br />
-     * 更新されなかったら、「負になる」か「在庫がない」のどちらかなので、在庫の有無でエラーを分ける。
+     * 更新されなかったら、「負になる」か「在庫がない」のどちらかなので、増減量と在庫の有無でエラーを分ける。
      *
      * @param variantId  バリアント ID
      * @param adjustment 在庫調整
@@ -73,9 +74,7 @@ class JooqStockItemRepository implements StockItemRepository {
                 .and(STOCK_ITEM.QUANTITY.plus(delta).ge(0))
                 .returningResult(STOCK_ITEM.ID, STOCK_ITEM.QUANTITY)
                 .fetchOptional()
-                .orElseThrow(() -> dsl.fetchExists(STOCK_ITEM, STOCK_ITEM.VARIANT_ID.eq(variantId))
-                        ? BusinessException.of(InventoryErrorCode.INSUFFICIENT_STOCK)
-                        : BusinessException.of(CommonErrorCode.NOT_FOUND));
+                .orElseThrow(() -> failureOf(delta, () -> dsl.fetchExists(STOCK_ITEM, STOCK_ITEM.VARIANT_ID.eq(variantId))));
         int quantityAfter = updated.value2();
 
         // 調整履歴の記録
@@ -90,6 +89,24 @@ class JooqStockItemRepository implements StockItemRepository {
                 .execute();
 
         return quantityAfter;
+    }
+
+    /**
+     * 調整が更新されなかったときのエラーを選ぶ（docs/modules/inventory.md）。<br />
+     * 増やす調整は在庫があれば必ず更新されるので、更新の時点で在庫がなかったことになる。
+     * 在庫の有無を確かめると、更新の後に作られた在庫が見えて「負になる」と誤るため、確かめずに「見つからない」とする。
+     *
+     * @param delta       増減量
+     * @param stockExists 在庫の有無（減らす調整のときだけ確かめる）
+     * @return 業務のエラー
+     */
+    static BusinessException failureOf(int delta, BooleanSupplier stockExists) {
+        if (delta > 0) {
+            return BusinessException.of(CommonErrorCode.NOT_FOUND);
+        }
+        return stockExists.getAsBoolean()
+                ? BusinessException.of(InventoryErrorCode.INSUFFICIENT_STOCK)
+                : BusinessException.of(CommonErrorCode.NOT_FOUND);
     }
 
     /**

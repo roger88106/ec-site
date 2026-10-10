@@ -229,9 +229,11 @@ class CartApiTest {
     void dropsExpiredItems() throws Exception {
         var old = stockedVariant(3);
         var fresh = stockedVariant(3);
+        // 商品の公開で時計が進むので、カートを変えた時刻から数える
+        var changedAt = clock.instant();
         add(cartId, old, 1).andExpect(status().isNoContent());
 
-        clock.setInstant(NOW.plus(Duration.ofDays(30)));
+        clock.setInstant(changedAt.plus(Duration.ofDays(30)));
         add(cartId, fresh, 1).andExpect(status().isNoContent());
 
         assertThat(items()).containsExactly(Map.entry(fresh, 1));

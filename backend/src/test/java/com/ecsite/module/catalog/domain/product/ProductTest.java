@@ -7,6 +7,7 @@ import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
 import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.ProductDiscontinued;
+import com.ecsite.module.catalog.event.ProductImageDeleted;
 import com.ecsite.module.catalog.event.ProductPriceChanged;
 import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
@@ -510,6 +511,145 @@ class ProductTest {
             product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
 
             assertThat(product.pullEvents()).isEmpty();
+        }
+    }
+
+    @Nested
+    @DisplayName("商品画像")
+    class Images {
+
+        @Test
+        @DisplayName("AC-37 画像は並びの最後に加わり、先頭が代表画像になる")
+        void addsImagesInOrder() {
+            var product = productWithVariant();
+            var first = UUID.randomUUID();
+            var second = UUID.randomUUID();
+
+            product.addImage(first, "products/p/first.png");
+            product.addImage(second, "products/p/second.png");
+
+            assertThat(product.images()).extracting(ProductImage::id).containsExactly(first, second);
+            assertThat(product.images()).extracting(ProductImage::storageKey)
+                    .containsExactly("products/p/first.png", "products/p/second.png");
+            assertThat(product.representativeImage()).map(ProductImage::id).contains(first);
+        }
+
+        @Test
+        @DisplayName("画像がなければ代表画像もない")
+        void hasNoRepresentativeImageWithoutImages() {
+            assertThat(productWithVariant().representativeImage()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-40 画像は 1 商品あたり 20 枚まで。21 枚目は拒否される")
+        void acceptsUpToTwentyImages() {
+            var product = productWithImages(20);
+
+            assertBusinessError(() -> product.addImage(UUID.randomUUID(), "products/p/21.png"),
+                    ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
+            assertThat(product.images()).hasSize(20);
+        }
+
+        @Test
+        @DisplayName("AC-40 枚数の上限に達しているかを、受付の前に確かめられる")
+        void verifiesCapacityBeforeUpload() {
+            assertThatCode(() -> productWithImages(19).verifyCanAddImage()).doesNotThrowAnyException();
+            assertBusinessError(() -> productWithImages(20).verifyCanAddImage(), ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
+        }
+
+        @Test
+        @DisplayName("AC-37 送った順に並べ替えられ、先頭が代表画像になる。過不足・重複があれば拒否される")
+        void reordersImages() {
+            var product = productWithImages(3);
+            var ids = product.images().stream().map(ProductImage::id).toList();
+
+            product.reorderImages(List.of(ids.get(2), ids.get(0), ids.get(1)));
+
+            assertThat(product.images()).extracting(ProductImage::id).containsExactly(ids.get(2), ids.get(0), ids.get(1));
+            assertThat(product.representativeImage()).map(ProductImage::id).contains(ids.get(2));
+            assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(1))),
+                    ProductErrorCode.INVALID_IMAGE_ORDER);
+            assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(0), ids.get(1))),
+                    ProductErrorCode.INVALID_IMAGE_ORDER);
+            assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(1), UUID.randomUUID())),
+                    ProductErrorCode.INVALID_IMAGE_ORDER);
+        }
+
+        @Test
+        @DisplayName("AC-38 バリアントにその商品の画像を 1 枚指定でき、指定を外せる")
+        void setsVariantImage() {
+            var product = productWithImages(2);
+            var variantId = product.variants().getFirst().id();
+            var imageId = product.images().get(1).id();
+
+            product.setVariantImage(variantId, imageId);
+            assertThat(product.variants().getFirst().imageId()).isEqualTo(imageId);
+
+            product.setVariantImage(variantId, null);
+            assertThat(product.variants().getFirst().imageId()).isNull();
+        }
+
+        @Test
+        @DisplayName("AC-38 その商品にない画像は、バリアントに指定できない。商品にないバリアントは見つからない")
+        void rejectsForeignImage() {
+            var product = productWithImages(1);
+            var variantId = product.variants().getFirst().id();
+
+            assertBusinessError(() -> product.setVariantImage(variantId, UUID.randomUUID()),
+                    ProductErrorCode.INVALID_VARIANT_IMAGE);
+            assertBusinessError(() -> product.setVariantImage(UUID.randomUUID(), product.images().getFirst().id()),
+                    CommonErrorCode.NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("画像を削除すると並びから消え、指定していたバリアントの指定が外れ、ファイルのキーを持つイベントが登録される")
+        void deletesImage() {
+            var product = productWithImages(2);
+            var variantId = product.variants().getFirst().id();
+            var deleted = product.images().getFirst();
+            product.setVariantImage(variantId, deleted.id());
+
+            product.deleteImage(deleted.id(), NOW);
+
+            assertThat(product.images()).extracting(ProductImage::id).doesNotContain(deleted.id()).hasSize(1);
+            assertThat(product.variants().getFirst().imageId()).isNull();
+            assertThat(product.pullEvents()).singleElement().isInstanceOfSatisfying(ProductImageDeleted.class, event -> {
+                assertThat(event.productId()).isEqualTo(product.id());
+                assertThat(event.imageId()).isEqualTo(deleted.id());
+                assertThat(event.storageKey()).isEqualTo(deleted.storageKey());
+            });
+        }
+
+        @Test
+        @DisplayName("C 側に表示されたことのある商品の画像も削除できる。商品にない画像は見つからない")
+        void deletesImageOfShownProduct() {
+            var product = productWithImages(1);
+            product.publish(NOW);
+
+            assertThatCode(() -> product.deleteImage(product.images().getFirst().id(), NOW)).doesNotThrowAnyException();
+            assertBusinessError(() -> product.deleteImage(UUID.randomUUID(), NOW), CommonErrorCode.NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("画像は復元できる（スナップショットに含まれる）")
+        void restoresImages() {
+            var product = productWithImages(2);
+            product.setVariantImage(product.variants().getFirst().id(), product.images().get(1).id());
+
+            var restored = factory.restore(product.toSnapshot());
+
+            assertThat(restored.toSnapshot()).isEqualTo(product.toSnapshot());
+        }
+
+        /**
+         * バリアントが 1 つで、画像を count 枚持つ非公開の商品
+         */
+        private Product productWithImages(int count) {
+            var product = productWithVariant();
+            for (int i = 1; i <= count; i++) {
+                product.addImage(UUID.randomUUID(), "products/p/" + i + ".png");
+            }
+            return product;
         }
     }
 

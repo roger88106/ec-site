@@ -21,6 +21,21 @@ public interface OrderRepository {
     boolean insert(Order order);
 
     /**
+     * 注文の状態の変更（状態、キャンセルの申請、キャンセル）を保存し、登録されたイベントを発行する。バージョンを上げる。
+     *
+     * @param order 変更した注文
+     */
+    void update(Order order);
+
+    /**
+     * 注文を行ロックして取得する。同じ注文への操作を 1 つずつ処理し、在庫を二重に戻さないため。トランザクションの中で呼ぶ。
+     *
+     * @param id 注文 ID
+     * @return 注文。なければ空
+     */
+    Optional<Order> lockById(UUID id);
+
+    /**
      * 注文を取得する。
      *
      * @param id 注文 ID

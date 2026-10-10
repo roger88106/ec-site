@@ -3,9 +3,9 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.api.store.OrderApi;
 import com.ecsite.api.store.model.Order;
 import com.ecsite.api.store.model.RequestOrderCancellationRequest;
+import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -24,6 +24,11 @@ class StoreOrderController implements OrderApi {
     private final OrderQueryService orderQueryService;
 
     /**
+     * キャンセルのサービス
+     */
+    private final OrderCancellationService orderCancellationService;
+
+    /**
      * 店舗 API（注文手続き・注文）のマッパー
      */
     private final StoreOrderMapper mapper;
@@ -40,14 +45,15 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * キャンセルの申請（AC-95、96）。段階 4 の T2404 で実装する
+     * キャンセルの申請（AC-95、96）。申請中なら何もしない
      *
      * @param orderId 注文 ID
      * @param request キャンセルの申請のリクエスト
-     * @return Http 501
+     * @return Http 204
      */
     @Override
     public ResponseEntity<Void> requestOrderCancellation(UUID orderId, RequestOrderCancellationRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        orderCancellationService.request(orderId, request.getReason().orElse(null));
+        return ResponseEntity.noContent().build();
     }
 }

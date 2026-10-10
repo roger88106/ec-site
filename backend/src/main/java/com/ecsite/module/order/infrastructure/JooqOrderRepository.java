@@ -108,6 +108,37 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
+     * 注文の状態の変更を保存する。明細と金額は成立の後に変わらないので、注文の行だけを更新する。
+     *
+     * @param order 変更した注文
+     */
+    @Override
+    public void update(Order order) {
+        var snapshot = order.toSnapshot();
+        var record = dsl.newRecord(SALES_ORDER);
+        writeState(record, snapshot);
+        record.setVersion(snapshot.version() + 1);
+        record.setUpdatedAt(clock.instant());
+        dsl.update(SALES_ORDER).set(record).where(SALES_ORDER.ID.eq(snapshot.id())).execute();
+        order.pullEvents().forEach(eventPublisher::publishEvent);
+    }
+
+    /**
+     * 注文を行ロックして取得する。
+     *
+     * @param id 注文 ID
+     * @return 注文
+     */
+    @Override
+    public Optional<Order> lockById(UUID id) {
+        return dsl.selectFrom(SALES_ORDER)
+                .where(SALES_ORDER.ID.eq(id))
+                .forUpdate()
+                .fetchOptional()
+                .map(this::restore);
+    }
+
+    /**
      * 注文を取得する。
      *
      * @param id 注文 ID

@@ -2,6 +2,7 @@ package com.ecsite.module.media.api;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestcontainersConfig;
+import com.ecsite.TestImages;
 import com.ecsite.common.error.exception.BusinessException;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.jooq.DSLContext;
@@ -9,6 +10,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -19,6 +22,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
@@ -32,7 +36,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 
 /**
- * メディアモジュールの API の統合テスト（T1028。docs/modules/media.md）。<br />
+ * メディアモジュールの API の統合テスト（T1028、T1037。docs/modules/media.md）。<br />
+ * 確定では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
  * ファイルは、受付の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
  * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったアセットを消す。
  * エラーコードは、商品画像 API の契約と同じ文字列であることを確かめる。
@@ -46,10 +51,6 @@ class MediaApiTest {
     private static final int MAX_BYTES = 10 * 1024 * 1024;
 
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
-
-    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 13, 'I', 'H', 'D', 'R'};
-
-    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 16, 'J', 'F', 'I', 'F'};
 
     private static final byte[] GIF = {'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, 0, 0};
 
@@ -82,17 +83,19 @@ class MediaApiTest {
     class RequestUpload {
 
         @Test
-        @DisplayName("AC-39 JPEG、PNG、WebP は受け付け、署名付き URL を返す")
+        @DisplayName("AC-39、67 JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF は受け付け、署名付き URL を返す")
         void acceptsSupportedFormats() throws Exception {
-            for (var contentType : List.of("image/jpeg", "image/png", "image/webp")) {
+            for (var contentType : List.of(
+                    "image/jpeg", "image/png", "image/webp", "image/bmp", "image/heic", "image/heif", "image/avif")) {
                 var upload = media.requestImageUpload(scope(), contentType, 100);
 
                 assertThat(upload.uploadId()).isNotNull();
                 assertThat(upload.headers()).containsEntry("Content-Type", contentType);
                 assertThat(upload.expiresAt()).isAfter(java.time.Instant.now());
             }
-            var upload = media.requestImageUpload(scope(), "image/png", PNG.length);
-            assertThat(put(upload, PNG)).isEqualTo(200);
+            var png = TestImages.png();
+            var upload = media.requestImageUpload(scope(), "image/png", png.length);
+            assertThat(put(upload, png)).isEqualTo(200);
         }
 
         @Test
@@ -124,33 +127,64 @@ class MediaApiTest {
     class Confirm {
 
         @Test
-        @DisplayName("AC-37 確定すると、アセットが記録され、配信の URL でファイルを取得できる")
+        @DisplayName("AC-37、68 確定すると WebP に変換してアセットが記録され、配信の URL で取得できる")
         void confirms() throws Exception {
             var scope = scope();
-            var upload = uploaded(scope, "image/png", PNG);
+            var upload = uploaded(scope, "image/png", TestImages.png());
 
             var assetId = confirm(scope, upload.uploadId());
 
             assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isTrue();
+            assertThat(dsl.fetchValue(ASSET.FORMAT, ASSET.ID.eq(assetId))).isEqualTo("WEBP");
             var url = media.urls(List.of(assetId)).get(assetId);
-            assertThat(url.toString()).endsWith("/assets/" + assetId + ".png");
+            assertThat(url.toString()).endsWith("/assets/" + assetId + ".webp");
             var response = get(url);
             assertThat(response.statusCode()).isEqualTo(200);
-            assertThat(response.body()).containsExactly(PNG);
-            assertThat(response.headers().firstValue("Content-Type")).contains("image/png");
+            assertThat(new String(response.body(), 8, 4, StandardCharsets.US_ASCII)).isEqualTo("WEBP");
+            assertThat(response.headers().firstValue("Content-Type")).contains("image/webp");
         }
 
-        @Test
-        @DisplayName("AC-39 形式は申告ではなく先頭のバイトで判定する（PNG と申告した JPEG は JPEG で配信する）")
-        void detectsFormatFromContent() throws Exception {
+        @ParameterizedTest(name = "{0}（{1}）")
+        @CsvSource({
+                "source.jpg, image/jpeg",
+                "source.webp, image/webp",
+                "source.bmp, image/bmp",
+                "source.heic, image/heic",
+                "source.heic, image/heif",
+                "source.avif, image/avif",
+        })
+        @DisplayName("AC-67、68 スマートフォンの形式を含め、どの形式も WebP にして配信する")
+        void convertsEveryFormat(String file, String contentType) throws Exception {
             var scope = scope();
-            var upload = uploaded(scope, "image/png", JPEG);
+            var upload = uploaded(scope, contentType, TestImages.of(file));
 
             var assetId = confirm(scope, upload.uploadId());
 
             var url = media.urls(List.of(assetId)).get(assetId);
-            assertThat(url.toString()).endsWith("/assets/" + assetId + ".jpg");
-            assertThat(get(url).headers().firstValue("Content-Type")).contains("image/jpeg");
+            assertThat(url.toString()).endsWith(".webp");
+            assertThat(get(url).headers().firstValue("Content-Type")).contains("image/webp");
+        }
+
+        @Test
+        @DisplayName("AC-39 形式は申告ではなく先頭のバイトで判定する（PNG と申告した JPEG も変換できる）")
+        void detectsFormatFromContent() throws Exception {
+            var scope = scope();
+            var upload = uploaded(scope, "image/png", TestImages.jpeg());
+
+            var assetId = confirm(scope, upload.uploadId());
+
+            assertThat(media.urls(List.of(assetId)).get(assetId).toString()).endsWith(".webp");
+        }
+
+        @Test
+        @DisplayName("AC-70 変換できない（壊れた）ファイルは拒否し、アセットを残さない")
+        void rejectsUnconvertibleFile() throws Exception {
+            var scope = scope();
+            var upload = uploaded(scope, "image/heic", TestImages.of("broken.heic"));
+            var before = dsl.fetchCount(ASSET);
+
+            assertErrorCode(() -> media.confirmImage(scope, upload.uploadId()), "IMAGE_CONVERSION_FAILED");
+            assertThat(dsl.fetchCount(ASSET)).isEqualTo(before);
         }
 
         @Test
@@ -168,7 +202,8 @@ class MediaApiTest {
             var scope = scope();
             var uploadId = UUID.randomUUID();
             var body = new byte[MAX_BYTES + 1];
-            System.arraycopy(PNG, 0, body, 0, PNG.length);
+            var png = TestImages.png();
+            System.arraycopy(png, 0, body, 0, png.length);
             s3.putObject(request -> request.bucket(TestcontainersConfig.INCOMING_BUCKET).key(scope + "/" + uploadId),
                     RequestBody.fromBytes(body));
 
@@ -178,7 +213,7 @@ class MediaApiTest {
         @Test
         @DisplayName("受付のない uploadId、別の範囲の受付は拒否する")
         void rejectsMissingUpload() throws Exception {
-            var upload = uploaded(scope(), "image/png", PNG);
+            var upload = uploaded(scope(), "image/png", TestImages.png());
 
             assertErrorCode(() -> media.confirmImage(scope(), UUID.randomUUID()), "IMAGE_UPLOAD_NOT_FOUND");
             assertErrorCode(() -> media.confirmImage(scope(), upload.uploadId()), "IMAGE_UPLOAD_NOT_FOUND");
@@ -188,7 +223,7 @@ class MediaApiTest {
         @DisplayName("呼んだ側のトランザクションが取り消されると、アセットの記録も残らない")
         void rollsBackWithCaller() throws Exception {
             var scope = scope();
-            var upload = uploaded(scope, "image/png", PNG);
+            var upload = uploaded(scope, "image/png", TestImages.png());
 
             var assetId = transactionTemplate.execute(status -> {
                 var id = media.confirmImage(scope, upload.uploadId());
@@ -290,7 +325,7 @@ class MediaApiTest {
      */
     private UUID confirmed() throws Exception {
         var scope = scope();
-        return confirm(scope, uploaded(scope, "image/png", PNG).uploadId());
+        return confirm(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
     }
 
     private static void assertErrorCode(ThrowingCallable callable, String errorCode) {

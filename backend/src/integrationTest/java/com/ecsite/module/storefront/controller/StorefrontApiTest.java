@@ -3,6 +3,7 @@ package com.ecsite.module.storefront.controller;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestImages;
 import com.ecsite.module.catalog.infrastructure.TaxRateScheduleCache;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
@@ -59,9 +60,9 @@ class StorefrontApiTest {
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
-     * PNG の先頭（形式の判定に足りる長さ）
+     * PNG（登録のときに imgproxy で変換するので、本物の画像）
      */
-    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', 0x0D, 0x0A, 0x1A, 0x0A, 0, 0, 0, 13};
+    private static final byte[] PNG = TestImages.png();
 
     @Autowired
     MockMvc mockMvc;

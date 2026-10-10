@@ -4,6 +4,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestcontainersConfig;
+import com.ecsite.TestImages;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -25,6 +26,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -48,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 商品画像 API の受け入れテスト（T1018、US-7。plan 001 第 7 節）。<br />
- * ファイルは、受付の応答の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
+ * ファイルは、受付の応答の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。登録のときに imgproxy で WebP に変換するので、本物の画像を使う。
  * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったデータを消す。
  */
 @IntegrationTest
@@ -72,11 +74,11 @@ class ProductImageApiTest {
      */
     private static final int MAX_BYTES = 10 * 1024 * 1024;
 
-    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 13, 'I', 'H', 'D', 'R'};
+    private static final byte[] PNG = TestImages.png();
 
-    private static final byte[] JPEG = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF, (byte) 0xE0, 0, 16, 'J', 'F', 'I', 'F'};
+    private static final byte[] JPEG = TestImages.jpeg();
 
-    private static final byte[] WEBP = {'R', 'I', 'F', 'F', 36, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '};
+    private static final byte[] WEBP = TestImages.of("source.webp");
 
     private final HttpClient http = HttpClient.newHttpClient();
 
@@ -135,12 +137,12 @@ class ProductImageApiTest {
             assertThat(JsonPath.<List<String>>read(detail, "$.images[*].url")).hasSize(2);
             assertThat(JsonPath.<Integer>read(detail, "$.version")).isEqualTo(3);
             var urls = JsonPath.<List<String>>read(detail, "$.images[*].url");
-            var png = fetch(urls.get(0));
-            assertThat(png.statusCode()).isEqualTo(200);
-            assertThat(png.body()).containsExactly(PNG);
-            assertThat(png.headers().firstValue("Content-Type")).contains("image/png");
-            assertThat(urls.get(0)).endsWith(".png");
-            assertThat(urls.get(1)).endsWith(".jpg");
+            // 配信するのは、変換した WebP（AC-68）
+            var delivered = fetch(urls.get(0));
+            assertThat(delivered.statusCode()).isEqualTo(200);
+            assertThat(new String(delivered.body(), 8, 4, StandardCharsets.US_ASCII)).isEqualTo("WEBP");
+            assertThat(delivered.headers().firstValue("Content-Type")).contains("image/webp");
+            assertThat(urls).allSatisfy(url -> assertThat(url).endsWith(".webp"));
         }
 
         @Test

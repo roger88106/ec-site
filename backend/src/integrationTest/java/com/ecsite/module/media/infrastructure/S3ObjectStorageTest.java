@@ -20,13 +20,15 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * ファイルの置き場所の S3 の実装の統合テスト（T1016、T1027。plan 001 第 7 節）。<br />
- * Testcontainers の SeaweedFS（資格情報を検証する設定）に対して、署名付き URL での PUT からコピー・削除までを確かめる。
+ * ファイルの置き場所の S3 の実装の統合テスト（T1016、T1027、T1037。plan 001 第 7 節）。<br />
+ * Testcontainers の SeaweedFS（資格情報を検証する設定）に対して、署名付き URL での PUT から、配信のバケットへの書き込み・削除までを確かめる。
  */
 @IntegrationTest
 class S3ObjectStorageTest {
 
     private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 1, 2, 3, 4};
+
+    private static final byte[] WEBP = {'R', 'I', 'F', 'F', 4, 0, 0, 0, 'W', 'E', 'B', 'P'};
 
     private final HttpClient http = HttpClient.newHttpClient();
 
@@ -90,17 +92,16 @@ class S3ObjectStorageTest {
     }
 
     @Test
-    @DisplayName("配信のバケットへコピーすると、だれでも読め、形式と長いキャッシュの指定が付く")
-    void publishes() throws Exception {
-        var key = uploaded();
-        var publicKey = "assets/%s.png".formatted(UUID.randomUUID());
+    @DisplayName("配信のバケットへ書き込むと、だれでも読め、形式と長いキャッシュの指定が付く")
+    void putsPublished() throws Exception {
+        var publicKey = "assets/%s.webp".formatted(UUID.randomUUID());
 
-        storage.publish(key, publicKey, "image/png");
+        storage.putPublished(publicKey, WEBP, "image/webp");
 
         var response = get(storage.publicUrl(publicKey));
         assertThat(response.statusCode()).isEqualTo(200);
-        assertThat(response.body()).containsExactly(PNG);
-        assertThat(response.headers().firstValue("Content-Type")).contains("image/png");
+        assertThat(response.body()).containsExactly(WEBP);
+        assertThat(response.headers().firstValue("Content-Type")).contains("image/webp");
         assertThat(response.headers().firstValue("Cache-Control")).contains("public, max-age=31536000, immutable");
         assertThat(storage.publicUrl(publicKey).toString()).isEqualTo(properties.publicBaseUrl() + "/" + publicKey);
     }
@@ -108,8 +109,8 @@ class S3ObjectStorageTest {
     @Test
     @DisplayName("配信のファイルを消せる。ないファイルを消しても成功する")
     void deletesPublished() throws Exception {
-        var publicKey = "assets/%s.png".formatted(UUID.randomUUID());
-        storage.publish(uploaded(), publicKey, "image/png");
+        var publicKey = "assets/%s.webp".formatted(UUID.randomUUID());
+        storage.putPublished(publicKey, WEBP, "image/webp");
 
         storage.deletePublished(publicKey);
 
@@ -121,15 +122,6 @@ class S3ObjectStorageTest {
 
     private static String uploadKey() {
         return UUID.randomUUID() + "/" + UUID.randomUUID();
-    }
-
-    /**
-     * 受付のバケットに PNG を置き、そのキーを返す
-     */
-    private String uploaded() throws Exception {
-        var key = uploadKey();
-        assertThat(put(storage.presignUpload(key, "image/png", PNG.length), PNG)).isEqualTo(200);
-        return key;
     }
 
     private int put(ObjectStorage.PresignedUpload upload, byte[] body) throws IOException, InterruptedException {

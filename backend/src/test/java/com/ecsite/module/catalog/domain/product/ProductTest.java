@@ -365,7 +365,7 @@ class ProductTest {
         @DisplayName("公開開始日時が未来なら、初回表示日時は公開開始日時になり、表示前に非公開にすると空に戻る")
         void clearsFutureFirstShownAtWhenUnpublished() {
             var start = NOW.plus(ONE_DAY);
-            var product = restoredWithPeriod(PublicationPeriod.of(start, null));
+            var product = productWithPeriod(PublicationPeriod.of(start, null));
 
             product.publish(NOW);
             assertThat(product.firstShownAt()).isEqualTo(start);
@@ -379,7 +379,7 @@ class ProductTest {
         @Test
         @DisplayName("表示前に販売終了にしても、初回表示日時は空に戻る")
         void clearsFutureFirstShownAtWhenDiscontinued() {
-            var product = restoredWithPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null));
+            var product = productWithPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null));
             product.publish(NOW);
 
             product.discontinue(NOW);
@@ -390,7 +390,7 @@ class ProductTest {
         @Test
         @DisplayName("公開終了日時を過ぎていれば表示されないので、初回表示日時は空のまま")
         void leavesFirstShownAtEmptyAfterPublishEnd() {
-            var product = restoredWithPeriod(PublicationPeriod.of(null, NOW));
+            var product = productWithPeriod(PublicationPeriod.of(null, NOW));
 
             product.publish(NOW);
 
@@ -615,7 +615,7 @@ class ProductTest {
         @Test
         @DisplayName("AC-33 初回表示日時が未来（表示予定）の商品は削除できる")
         void deletesScheduledProduct() {
-            var product = restoredWithPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null));
+            var product = productWithPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null));
             product.publish(NOW);
 
             assertThatCode(() -> product.delete(NOW)).doesNotThrowAnyException();
@@ -649,7 +649,7 @@ class ProductTest {
         @Test
         @DisplayName("公開中（表示予定）の商品の最後のバリアントは削除できない")
         void rejectsDeletingLastVariantOfPublishedProduct() {
-            var product = restoredWithPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null));
+            var product = productWithPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null));
             product.publish(NOW);
             var variantId = product.variants().getFirst().id();
 
@@ -710,12 +710,11 @@ class ProductTest {
     }
 
     /**
-     * 公開期間を持つ、バリアントが 1 つの非公開の商品（公開期間の設定は P2 なので、スナップショットから作る）
+     * 公開期間を持つ、バリアントが 1 つの非公開の商品
      */
-    private Product restoredWithPeriod(PublicationPeriod period) {
-        var snapshot = productWithVariant().toSnapshot();
-        return factory.restore(new Product.Snapshot(snapshot.id(), snapshot.productCode(), snapshot.name(),
-                snapshot.description(), snapshot.taxCategoryId(), snapshot.priceExclTax(), snapshot.categoryIds(),
-                snapshot.axes(), snapshot.status(), snapshot.firstShownAt(), period, snapshot.variants(), snapshot.version()));
+    private Product productWithPeriod(PublicationPeriod period) {
+        var product = productWithVariant();
+        product.changePublicationPeriod(period, NOW);
+        return product;
     }
 }

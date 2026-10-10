@@ -116,7 +116,7 @@ public class Product extends AggregateRoot {
     /**
      * 公開期間
      */
-    private final PublicationPeriod publicationPeriod;
+    private PublicationPeriod publicationPeriod;
 
     /**
      * バリアント（表示順）
@@ -448,6 +448,20 @@ public class Product extends AggregateRoot {
     }
 
     /**
+     * 公開期間を変える（AC-34〜36）。終了が開始より後であることは、公開期間（値オブジェクト）が検証する。<br />
+     * 公開中なら、表示前の初回表示日時を計算し直す（docs/modules/catalog.md）。表示されて確定した値は変わらない。
+     *
+     * @param period 公開期間
+     * @param now    現在時刻
+     */
+    public void changePublicationPeriod(@NonNull PublicationPeriod period, @NonNull Instant now) {
+        this.publicationPeriod = period;
+        if (status == PublicationStatus.PUBLISHED) {
+            this.firstShownAt = calculateFirstShownAt(now);
+        }
+    }
+
+    /**
      * 削除する（AC-33）。C 側に表示されたことのある商品は削除できない。<br />
      * 削除そのものはリポジトリが行う。ここでは削除できるかを検証し、イベントを登録する。
      *
@@ -502,8 +516,8 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開したときの初回表示日時を求める（docs/modules/catalog.md）。<br />
-     * 確定済み（過去）ならそのまま。そうでなければ「公開した時刻と公開開始日時の遅いほう」。
+     * 公開したとき（または公開中に公開期間を変えたとき）の初回表示日時を求める（docs/modules/catalog.md）。<br />
+     * 確定済み（過去）ならそのまま。そうでなければ「現在時刻と公開開始日時の遅いほう」。
      * その日時が公開終了日時以降なら、表示されないので空にする。
      *
      * @param now 現在時刻

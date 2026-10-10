@@ -48,6 +48,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import({ErrorResponseTest.ErrorTestController.class, ErrorResponseTest.ValidatedTestController.class})
 class ErrorResponseTest {
 
+    /**
+     * エラーを起こすテスト用の Controller のパス
+     */
     private static final String BASE = "/api/test-errors";
 
     /**
@@ -55,7 +58,7 @@ class ErrorResponseTest {
      */
     private static final String VALIDATED_BASE = "/api/test-validated";
 
-    // 期待するメッセージ（messages.properties）
+    // 期待するメッセージ（messages.properties）。メッセージを変えたら、ここも合わせる
     private static final String INVALID_REQUEST = "入力内容に誤りがあります。";
     private static final String NOT_FOUND = "見つかりませんでした。";
     private static final String CONCURRENT_MODIFICATION = "他の人が先に更新しました。再読み込みしてください。";

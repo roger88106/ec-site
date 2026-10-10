@@ -31,8 +31,14 @@ import static org.awaitility.Awaitility.await;
 @IntegrationTest
 class CatalogEventHandlerTest {
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * コミット後のイベントの処理を待つ時間の上限
+     */
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @Autowired
@@ -128,6 +134,9 @@ class CatalogEventHandlerTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 新しい商品 ID を作り、テストの後に在庫を消すために覚えておく
+     */
     private UUID newProductId() {
         var productId = UUID.randomUUID();
         productIds.add(productId);
@@ -141,6 +150,9 @@ class CatalogEventHandlerTest {
         transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
     }
 
+    /**
+     * バリアントの在庫の件数（あれば 1、なければ 0）
+     */
     private int stockCount(UUID variantId) {
         return dsl.fetchCount(STOCK_ITEM, STOCK_ITEM.VARIANT_ID.eq(variantId));
     }

@@ -35,8 +35,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class ProductVisibilityTest {
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * 1 日
+     */
     private static final Duration ONE_DAY = Duration.ofDays(1);
 
     @Autowired

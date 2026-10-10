@@ -45,6 +45,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class StoreCatalogApiTest {
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired
@@ -202,10 +205,16 @@ class StoreCatalogApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * C 側の一覧の絞り込みと並び順を作る
+     */
     private static StoreProductQuery query(UUID categoryId, Long minPrice, Long maxPrice, StoreProductSort sort) {
         return new StoreProductQuery(categoryId, minPrice, maxPrice, sort);
     }
 
+    /**
+     * API の応答の ID（文字列）を UUID にする
+     */
     private static UUID id(String value) {
         return UUID.fromString(value);
     }
@@ -217,11 +226,17 @@ class StoreCatalogApiTest {
         return taxRateApi.priceInclTax(Money.of(price), rate).yen();
     }
 
+    /**
+     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     */
     private String createdId(RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * 税区分を登録し、期間のない税率を 1 つ設定して、その ID を返す
+     */
     private String createTaxCategory(String name, String ratePercent) throws Exception {
         var id = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
                 {"name": "%s"}""".formatted(name)));
@@ -233,6 +248,9 @@ class StoreCatalogApiTest {
         return id;
     }
 
+    /**
+     * カテゴリを登録して、その ID を返す。親がなければ最上位
+     */
     private String createCategory(String name, String parentId) throws Exception {
         var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
         return createdId(post("/api/admin/categories").contentType(MediaType.APPLICATION_JSON).content("""

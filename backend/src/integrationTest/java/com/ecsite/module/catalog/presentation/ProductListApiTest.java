@@ -37,8 +37,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ProductListApiTest {
 
+    /**
+     * API のパス
+     */
     private static final String BASE = "/api/admin/products";
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired
@@ -193,11 +199,17 @@ class ProductListApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     */
     private String createdId(RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * カテゴリを登録して、その ID を返す。親がなければ最上位
+     */
     private String createCategory(String name, String parentId) throws Exception {
         var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
         return createdId(post("/api/admin/categories").contentType(MediaType.APPLICATION_JSON).content("""
@@ -216,6 +228,9 @@ class ProductListApiTest {
         return id;
     }
 
+    /**
+     * 軸のない商品にバリアントを登録し、201 を確かめる
+     */
     private void addVariant(String productId, String code, long version) throws Exception {
         mockMvc.perform(post(BASE + "/" + productId + "/variants")
                         .contentType(MediaType.APPLICATION_JSON)

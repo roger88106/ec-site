@@ -50,6 +50,9 @@ class MediaApiTest {
      */
     private static final int MAX_BYTES = 10 * 1024 * 1024;
 
+    /**
+     * コミット後のイベントの処理を待つ時間の上限
+     */
     private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private static final byte[] GIF = {'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, 0, 0};
@@ -301,6 +304,9 @@ class MediaApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * テストごとに別の範囲（受付の持ち主）を作る
+     */
     private static String scope() {
         return UUID.randomUUID().toString();
     }
@@ -314,6 +320,9 @@ class MediaApiTest {
         return upload;
     }
 
+    /**
+     * 受け付けた画像を確定し、テストの後に消すためにアセット ID を覚えておく
+     */
     private UUID confirm(String scope, UUID uploadId) {
         var assetId = media.confirmImage(scope, uploadId);
         assetIds.add(assetId);
@@ -328,17 +337,26 @@ class MediaApiTest {
         return confirm(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
     }
 
+    /**
+     * 処理が、指定したエラーコード（文字列）の業務のエラーで失敗することを確かめる
+     */
     private static void assertErrorCode(ThrowingCallable callable, String errorCode) {
         assertThatThrownBy(callable).isInstanceOfSatisfying(BusinessException.class, ex ->
                 assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo(errorCode));
     }
 
+    /**
+     * 署名付き URL へ、指定のヘッダーを付けてファイルを PUT し、HTTP ステータスを返す
+     */
     private int put(ImageUpload upload, byte[] body) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(upload.uploadUrl()).PUT(HttpRequest.BodyPublishers.ofByteArray(body));
         upload.headers().forEach(request::header);
         return http.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode();
     }
 
+    /**
+     * 配信の URL を、認証なしで取得する
+     */
     private HttpResponse<byte[]> get(URI url) throws IOException, InterruptedException {
         return http.send(HttpRequest.newBuilder(url).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
     }

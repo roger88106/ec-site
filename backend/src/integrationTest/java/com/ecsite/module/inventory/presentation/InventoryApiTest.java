@@ -39,8 +39,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class InventoryApiTest {
 
+    /**
+     * API のパス
+     */
     private static final String BASE = "/api/admin/inventory";
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired
@@ -227,6 +233,9 @@ class InventoryApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 在庫を調整する。メモがなければ null で送る
+     */
     private ResultActions adjust(UUID variantId, int delta, String reason, String memo) throws Exception {
         var memoJson = memo == null ? "null" : "\"%s\"".formatted(memo);
         return mockMvc.perform(post(BASE + "/variants/" + variantId + "/adjustments")

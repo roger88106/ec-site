@@ -36,8 +36,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class CategoryApiTest {
 
+    /**
+     * API のパス
+     */
     private static final String BASE = "/api/admin/categories";
 
+    /**
+     * 存在しない ID
+     */
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
 
     @Autowired
@@ -351,6 +357,9 @@ class CategoryApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * カテゴリを登録する。親がなければ最上位
+     */
     private ResultActions createCategory(String name, String parentId) throws Exception {
         var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
         return mockMvc.perform(post(BASE)
@@ -359,11 +368,17 @@ class CategoryApiTest {
                         {"name": "%s", "parentId": %s}""".formatted(name, parent)));
     }
 
+    /**
+     * カテゴリを登録して、その ID を返す
+     */
     private String createdId(String name, String parentId) throws Exception {
         var body = createCategory(name, parentId).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * カテゴリの名称を変える
+     */
     private ResultActions rename(String id, String name, long version) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -371,6 +386,9 @@ class CategoryApiTest {
                         {"name": "%s", "version": %d}""".formatted(name, version)));
     }
 
+    /**
+     * 兄弟のカテゴリを、指定した順に並び替える。親がなければ最上位
+     */
     private ResultActions reorder(String parentId, String... categoryIds) throws Exception {
         var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
         var ids = Arrays.stream(categoryIds).map("\"%s\""::formatted).collect(Collectors.joining(", "));

@@ -42,8 +42,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class StorefrontFreshnessTest {
 
+    /**
+     * API のパス
+     */
     private static final String STORE = "/api/store";
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired
@@ -153,6 +159,9 @@ class StorefrontFreshnessTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     */
     private String createdId(RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");

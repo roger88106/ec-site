@@ -42,6 +42,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class TaxCategoryApiTest {
 
+    /**
+     * API のパス
+     */
     private static final String BASE = "/api/admin/tax-categories";
 
     /**
@@ -355,6 +358,9 @@ class TaxCategoryApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 税区分を登録する
+     */
     private ResultActions createCategory(String name) throws Exception {
         return mockMvc.perform(post(BASE)
                 .contentType(MediaType.APPLICATION_JSON)
@@ -362,11 +368,17 @@ class TaxCategoryApiTest {
                         {"name": "%s"}""".formatted(name)));
     }
 
+    /**
+     * 税区分を登録して、その ID を返す
+     */
     private String createdId(String name) throws Exception {
         var body = createCategory(name).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * 税率の一覧（JSON）を置き換える
+     */
     private ResultActions replaceRates(String id, long version, String rates) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/rates")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -374,11 +386,17 @@ class TaxCategoryApiTest {
                         {"version": %d, "rates": %s}""".formatted(version, rates)));
     }
 
+    /**
+     * 税区分の税率の ID を、一覧の順に返す
+     */
     private String[] rateIds(String id) throws Exception {
         var body = mockMvc.perform(get(BASE + "/" + id)).andReturn().getResponse().getContentAsString();
         return JsonPath.<java.util.List<String>>read(body, "$.rates[*].id").toArray(String[]::new);
     }
 
+    /**
+     * 時計を指定した時刻にして、その時点の税率が期待どおりかを確かめる
+     */
     private void assertCurrentRateAt(String id, String at, int expectedRatePercent) throws Exception {
         clock.setInstant(OffsetDateTime.parse(at).toInstant());
         mockMvc.perform(get(BASE + "/" + id))

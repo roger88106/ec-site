@@ -42,8 +42,14 @@ class TaxCategoryTest {
      */
     private static final Instant APR_2026 = Instant.parse("2026-03-31T15:00:00Z");
 
+    /**
+     * 1 分
+     */
     private static final Duration ONE_MINUTE = Duration.ofMinutes(1);
 
+    /**
+     * テストで使う ID
+     */
     private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     private final TaxCategoryFactory factory = new TaxCategoryFactory();
@@ -383,22 +389,37 @@ class TaxCategoryTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 税率の一覧を持つ税区分を、保存済みのものとして復元する
+     */
     private TaxCategory restore(TaxRate... rates) {
         return factory.restore(new TaxCategory.Snapshot(CATEGORY_ID, "標準", List.of(rates), 3));
     }
 
+    /**
+     * 税率を作る（ID は新しく振る）。期間の端の null は無限
+     */
     private static TaxRate rate(String percent, Instant from, Instant to) {
         return new TaxRate(UUID.randomUUID(), RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
     }
 
+    /**
+     * 新しい税率（ID なし）の置き換えの要素を作る
+     */
     private static TaxRateDraft newDraft(String percent, Instant from, Instant to) {
         return draft(null, percent, from, to);
     }
 
+    /**
+     * 置き換えの要素を作る。既存の税率を残すなら、その ID を渡す
+     */
     private static TaxRateDraft draft(UUID id, String percent, Instant from, Instant to) {
         return new TaxRateDraft(id, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
     }
 
+    /**
+     * 指定した時点の率を、比べやすい文字列（例：10）で返す
+     */
     private static String rateAt(TaxCategory category, Instant at) {
         return category.rateAt(at).orElseThrow().ratePercent().value().toPlainString();
     }

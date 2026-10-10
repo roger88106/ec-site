@@ -37,10 +37,19 @@ class ProductTest {
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * 1 日
+     */
     private static final Duration ONE_DAY = Duration.ofDays(1);
 
+    /**
+     * 税区分 ID（税モジュールの ID なので、存在しなくてよい）
+     */
     private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
+    /**
+     * テストで使う ID
+     */
     private static final UUID CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000001001");
 
     private final ProductFactory factory = new ProductFactory();
@@ -822,15 +831,24 @@ class ProductTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 軸を指定して、非公開の商品を作る（バリアントなし）
+     */
     private Product productWithAxes(String... axes) {
         return factory.create(ProductCode.of("ABC-001"), "T シャツ", "", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of(axes));
     }
 
+    /**
+     * 商品名を指定して、軸のない商品を作る（商品名の検証のため）
+     */
     private Product productNamed(String name) {
         return factory.create(ProductCode.of("ABC-001"), name, "", TAX_CATEGORY_ID, PriceExclTax.of(1000), Set.of(), List.of());
     }
 
+    /**
+     * 説明を指定して、軸のない商品を作る（説明の検証のため）
+     */
     private Product productDescribed(String description) {
         return factory.create(ProductCode.of("ABC-001"), "T シャツ", description, TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(), List.of());

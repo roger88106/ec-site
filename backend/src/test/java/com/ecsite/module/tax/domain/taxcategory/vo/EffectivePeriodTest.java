@@ -15,7 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class EffectivePeriodTest {
 
+    /**
+     * 期間の端に使う時刻（日本時間 2027-04-01 0:00）
+     */
     private static final Instant T1 = Instant.parse("2027-03-31T15:00:00Z");
+    /**
+     * 期間の端に使う時刻（日本時間 2028-04-01 0:00）
+     */
     private static final Instant T2 = Instant.parse("2028-03-31T15:00:00Z");
 
     @Nested

@@ -55,8 +55,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class StorefrontApiTest {
 
+    /**
+     * API のパス
+     */
     private static final String BASE = "/api/store";
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     /**
@@ -358,11 +364,17 @@ class StorefrontApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     */
     private String createdId(RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * カテゴリを登録して、その ID を返す。親がなければ最上位
+     */
     private String createCategory(String name, String parentId) throws Exception {
         var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
         return createdId(post("/api/admin/categories").contentType(MediaType.APPLICATION_JSON).content("""
@@ -385,6 +397,9 @@ class StorefrontApiTest {
         return product;
     }
 
+    /**
+     * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
+     */
     private void stock(String variantId, int quantity) {
         var id = UUID.fromString(variantId);
         stockItemRepository.createIfAbsent(id, UUID.randomUUID());
@@ -393,6 +408,9 @@ class StorefrontApiTest {
         }
     }
 
+    /**
+     * バリアントを販売停止にし、204 を確かめる
+     */
     private void suspend(String productId, String variantId) throws Exception {
         mockMvc.perform(put("/api/admin/products/" + productId + "/variants/" + variantId + "/suspend"))
                 .andExpect(status().isNoContent());

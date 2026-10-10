@@ -37,6 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @IntegrationTest
 class JooqStockItemRepositoryTest {
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired
@@ -188,10 +191,16 @@ class JooqStockItemRepositoryTest {
         return transactionTemplate.execute(status -> repository.adjust(variantId, adjustment));
     }
 
+    /**
+     * 調整履歴の最初のページ（20 件）
+     */
     private PageResult<StockAdjustmentView> history() {
         return history(PageRequest.of(1, 20));
     }
 
+    /**
+     * 調整履歴を、指定したページで取得する
+     */
     private PageResult<StockAdjustmentView> history(PageRequest request) {
         return queryRepository.findAdjustments(variantId, request).orElseThrow();
     }

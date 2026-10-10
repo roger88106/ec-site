@@ -112,6 +112,9 @@ class ImgproxyImageConverterTest {
         return key;
     }
 
+    /**
+     * テスト用の画像を読む
+     */
     private static byte[] resource(String file) {
         try (var in = ImgproxyImageConverterTest.class.getResourceAsStream("/images/" + file)) {
             assertThat(in).as(file).isNotNull();
@@ -121,6 +124,9 @@ class ImgproxyImageConverterTest {
         }
     }
 
+    /**
+     * imgproxy に直接 GET し、HTTP ステータスを返す
+     */
     private int status(String path) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(URI.create(imgproxyUrl + path)).GET().build();
         return http.send(request, HttpResponse.BodyHandlers.discarding()).statusCode();
@@ -161,10 +167,16 @@ class ImgproxyImageConverterTest {
         return new byte[0];
     }
 
+    /**
+     * リトルエンディアンの 3 バイトの符号なし整数を読む
+     */
     private static int uint24(byte[] data, int offset) {
         return (data[offset] & 0xFF) | ((data[offset + 1] & 0xFF) << 8) | ((data[offset + 2] & 0xFF) << 16);
     }
 
+    /**
+     * バイト列の中に、指定したバイトの並びがあるかを返す
+     */
     private static boolean contains(byte[] data, byte[] part) {
         for (int i = 0; i + part.length <= data.length; i++) {
             if (Arrays.equals(data, i, i + part.length, part, 0, part.length)) {

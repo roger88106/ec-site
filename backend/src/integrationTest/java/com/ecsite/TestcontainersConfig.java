@@ -39,8 +39,14 @@ public class TestcontainersConfig {
      */
     public static final String PUBLIC_BUCKET = "images";
 
+    /**
+     * SeaweedFS の資格情報（テスト専用。resources/seaweedfs/s3.json）
+     */
     private static final String ACCESS_KEY_ID = "integration-test";
 
+    /**
+     * SeaweedFS の資格情報のシークレット（テスト専用）
+     */
     private static final String SECRET_ACCESS_KEY = "integration-test-secret";
 
     private static final int S3_PORT = 8333;
@@ -58,10 +64,13 @@ public class TestcontainersConfig {
     private static final int IMGPROXY_PORT = 8080;
 
     /**
-     * imgproxy の URL の署名の鍵とソルト（16 進。テスト専用）
+     * imgproxy の URL の署名の鍵（16 進。テスト専用）
      */
     private static final String IMGPROXY_KEY = "696e746567726174696f6e2d746573742d6b6579";
 
+    /**
+     * imgproxy の URL の署名のソルト（16 進。テスト専用）
+     */
     private static final String IMGPROXY_SALT = "696e746567726174696f6e2d746573742d73616c74";
 
     /**
@@ -181,6 +190,9 @@ public class TestcontainersConfig {
         };
     }
 
+    /**
+     * テストの JVM から見た、SeaweedFS の S3 の口の URL（割り当てられたポート）
+     */
     private static URI endpoint(GenericContainer<?> container) {
         return URI.create("http://" + container.getHost() + ":" + container.getMappedPort(S3_PORT));
     }

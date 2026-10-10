@@ -120,20 +120,32 @@ class S3ObjectStorageTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * テストごとに別の、受付のバケットのキー（{範囲}/{受付 ID} の形）
+     */
     private static String uploadKey() {
         return UUID.randomUUID() + "/" + UUID.randomUUID();
     }
 
+    /**
+     * 署名付き URL へ、指定のヘッダーを付けてファイルを PUT し、HTTP ステータスを返す
+     */
     private int put(ObjectStorage.PresignedUpload upload, byte[] body) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(upload.url()).PUT(HttpRequest.BodyPublishers.ofByteArray(body));
         upload.headers().forEach(request::header);
         return http.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode();
     }
 
+    /**
+     * 配信の URL を、認証なしで取得する
+     */
     private HttpResponse<byte[]> get(URI url) throws IOException, InterruptedException {
         return http.send(HttpRequest.newBuilder(url).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
     }
 
+    /**
+     * 配信のバケットに、そのキーのファイルがあるかを返す
+     */
     private boolean existsPublished(String publicKey) {
         return !s3.listObjectsV2(request -> request.bucket(properties.publicBucket()).prefix(publicKey)).contents().isEmpty();
     }

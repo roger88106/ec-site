@@ -23,6 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 class StockAvailabilityApiTest {
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired

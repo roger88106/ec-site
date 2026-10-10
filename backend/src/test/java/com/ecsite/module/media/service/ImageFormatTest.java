@@ -114,6 +114,9 @@ class ImageFormatTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * int で書いた値を、バイト列にする（0x80 以上を書きやすくするため）
+     */
     private static byte[] bytes(int... values) {
         var result = new byte[values.length];
         for (int i = 0; i < values.length; i++) {

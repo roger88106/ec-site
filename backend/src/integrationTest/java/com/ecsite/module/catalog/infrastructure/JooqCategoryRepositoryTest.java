@@ -88,6 +88,9 @@ class JooqCategoryRepositoryTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * カテゴリを作って登録する。親がなければ最上位
+     */
     private Category added(Category parent, String name) {
         var category = factory.create(parent, name, repository.nextDisplayOrder(parent == null ? null : parent.id()));
         repository.add(category);

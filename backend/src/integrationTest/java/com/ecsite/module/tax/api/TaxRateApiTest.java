@@ -105,6 +105,9 @@ class TaxRateApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 税区分を登録し、税率の一覧を設定して、その ID を返す
+     */
     private UUID createWithRates(Rate... rates) {
         var id = commandService.createTaxCategory(new CreateTaxCategoryCommand("標準"));
         commandService.replaceTaxRates(new ReplaceTaxRatesCommand(id, 0, List.of(rates)));

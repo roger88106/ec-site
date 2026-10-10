@@ -58,8 +58,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestClockConfig.class)
 class ProductImageApiTest {
 
+    /**
+     * API のパス
+     */
     private static final String BASE = "/api/admin/products";
 
+    /**
+     * 存在しない ID
+     */
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
 
     /**
@@ -67,6 +73,9 @@ class ProductImageApiTest {
      */
     private static final String CODE_PREFIX = "IMG-";
 
+    /**
+     * テストの現在時刻
+     */
     private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
 
     /**
@@ -170,7 +179,7 @@ class ProductImageApiTest {
         }
 
         @Test
-        @DisplayName("AC-39 JPEG、PNG、WebP 以外の形式は受け付けず 400")
+        @DisplayName("AC-39、67 受け付ける形式以外は 400")
         void rejectsUnsupportedFormat() throws Exception {
             var productId = productWithVariant();
 
@@ -377,6 +386,9 @@ class ProductImageApiTest {
         return JsonPath.read(detail(productId), "$.images[*].id");
     }
 
+    /**
+     * 画像のアップロードを受け付ける
+     */
     private ResultActions createUpload(String productId, String contentType, long contentLength) throws Exception {
         return mockMvc.perform(post(BASE + "/" + productId + "/image-uploads")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -397,6 +409,9 @@ class ProductImageApiTest {
         return JsonPath.read(body, "$.uploadId");
     }
 
+    /**
+     * 受け付けた画像を登録する
+     */
     private ResultActions addImage(String productId, String uploadId, long version) throws Exception {
         return mockMvc.perform(post(BASE + "/" + productId + "/images")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -404,6 +419,9 @@ class ProductImageApiTest {
                         {"uploadId": "%s", "version": %d}""".formatted(uploadId, version)));
     }
 
+    /**
+     * 画像を、指定した順に並び替える
+     */
     private ResultActions reorder(String productId, long version, String... imageIds) throws Exception {
         var ids = String.join(", ", Arrays.stream(imageIds).map("\"%s\""::formatted).toList());
         return mockMvc.perform(put(BASE + "/" + productId + "/images/order")
@@ -412,10 +430,16 @@ class ProductImageApiTest {
                         {"imageIds": [%s], "version": %d}""".formatted(ids, version)));
     }
 
+    /**
+     * 画像を削除する
+     */
     private ResultActions deleteImage(String productId, String imageId, long version) throws Exception {
         return mockMvc.perform(delete(BASE + "/" + productId + "/images/" + imageId).param("version", String.valueOf(version)));
     }
 
+    /**
+     * バリアントの画像を指定する。画像 ID は JSON の値（文字列か null）で渡す
+     */
     private ResultActions setVariantImage(String productId, String variantId, String imageIdJson, long version)
             throws Exception {
         return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/image")
@@ -424,16 +448,25 @@ class ProductImageApiTest {
                         {"imageId": %s, "version": %d}""".formatted(imageIdJson, version)));
     }
 
+    /**
+     * 商品の詳細を取得し、200 を確かめて本文を返す
+     */
     private String detail(String productId) throws Exception {
         return mockMvc.perform(get(BASE + "/" + productId)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
     }
 
+    /**
+     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     */
     private String createdId(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * 配信の URL を、認証なしで取得する（だれでも読めることを確かめる）
+     */
     private HttpResponse<byte[]> fetch(String url) throws IOException, InterruptedException {
         return http.send(HttpRequest.newBuilder(URI.create(url)).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
     }

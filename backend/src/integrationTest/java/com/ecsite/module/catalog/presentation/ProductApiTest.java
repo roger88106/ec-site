@@ -44,8 +44,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Transactional
 class ProductApiTest {
 
+    /**
+     * API のパス
+     */
     private static final String BASE = "/api/admin/products";
 
+    /**
+     * 存在しない ID
+     */
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
 
     /**
@@ -664,6 +670,9 @@ class ProductApiTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 税区分を登録し、税率の一覧（JSON）を設定して、その ID を返す
+     */
     private String createTaxCategory(String name, String rates) throws Exception {
         var id = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
                 {"name": "%s"}""".formatted(name)));
@@ -675,27 +684,42 @@ class ProductApiTest {
         return id;
     }
 
+    /**
+     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     */
     private String createdId(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * 商品の登録の本文（軸なし、所属カテゴリなし）
+     */
     private String productJson(String code, String taxCategoryId, long price) {
         return """
                 {"productCode": "%s", "name": "T シャツ", "description": "", "taxCategoryId": "%s", "priceExclTax": %d}"""
                 .formatted(code, taxCategoryId, price);
     }
 
+    /**
+     * 商品の編集の本文（所属カテゴリなし）
+     */
     private String updateJson(String taxCategoryId, long price, long version) {
         return """
                 {"name": "T シャツ", "description": "", "taxCategoryId": "%s", "priceExclTax": %d,
                  "categoryIds": [], "version": %d}""".formatted(taxCategoryId, price, version);
     }
 
+    /**
+     * 商品を登録する
+     */
     private ResultActions createProduct(String json) throws Exception {
         return mockMvc.perform(post(BASE).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 
+    /**
+     * 標準の税区分で商品を登録して、その ID を返す
+     */
     private String productId(String code, String... axes) throws Exception {
         var axesJson = Arrays.stream(axes).map("\"%s\""::formatted).collect(Collectors.joining(", "));
         return createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
@@ -712,18 +736,30 @@ class ProductApiTest {
         return id;
     }
 
+    /**
+     * 商品の詳細を取得する
+     */
     private ResultActions getProduct(String id) throws Exception {
         return mockMvc.perform(get(BASE + "/" + id));
     }
 
+    /**
+     * 商品を編集する
+     */
     private ResultActions updateProduct(String id, String json) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id).contentType(MediaType.APPLICATION_JSON).content(json));
     }
 
+    /**
+     * 商品を削除する
+     */
     private ResultActions deleteProduct(String id, long version) throws Exception {
         return mockMvc.perform(delete(BASE + "/" + id).param("version", String.valueOf(version)));
     }
 
+    /**
+     * バリアントを登録する
+     */
     private ResultActions addVariant(String productId, String code, long version, String... axisValues) throws Exception {
         var values = Arrays.stream(axisValues).map("\"%s\""::formatted).collect(Collectors.joining(", "));
         return mockMvc.perform(post(BASE + "/" + productId + "/variants")
@@ -732,12 +768,18 @@ class ProductApiTest {
                         {"variantCode": "%s", "axisValues": [%s], "version": %d}""".formatted(code, values, version)));
     }
 
+    /**
+     * バリアントを登録して、その ID を返す
+     */
     private String variantId(String productId, String code, long version, String... axisValues) throws Exception {
         var body = addVariant(productId, code, version, axisValues)
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
+    /**
+     * バリアントを、指定した順に並び替える
+     */
     private ResultActions reorderVariants(String productId, long version, String... variantIds) throws Exception {
         var ids = Arrays.stream(variantIds).map("\"%s\""::formatted).collect(Collectors.joining(", "));
         return mockMvc.perform(put(BASE + "/" + productId + "/variants/order")
@@ -746,23 +788,38 @@ class ProductApiTest {
                         {"variantIds": [%s], "version": %d}""".formatted(ids, version)));
     }
 
+    /**
+     * バリアントを削除する
+     */
     private ResultActions deleteVariant(String productId, String variantId, long version) throws Exception {
         return mockMvc.perform(delete(BASE + "/" + productId + "/variants/" + variantId)
                 .param("version", String.valueOf(version)));
     }
 
+    /**
+     * 商品を公開する
+     */
     private ResultActions publish(String id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/publish"));
     }
 
+    /**
+     * 商品を非公開にする
+     */
     private ResultActions unpublish(String id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/unpublish"));
     }
 
+    /**
+     * 商品を販売終了にする
+     */
     private ResultActions discontinue(String id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/discontinue"));
     }
 
+    /**
+     * 公開期間を設定する。日時は JSON の値（文字列か null）で渡す
+     */
     private ResultActions setPeriod(String id, String publishStart, String publishEnd, long version) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/publication-period")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -770,10 +827,16 @@ class ProductApiTest {
                         {"publishStart": %s, "publishEnd": %s, "version": %d}""".formatted(publishStart, publishEnd, version)));
     }
 
+    /**
+     * バリアントを販売停止にする
+     */
     private ResultActions suspend(String productId, String variantId) throws Exception {
         return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/suspend"));
     }
 
+    /**
+     * バリアントの販売停止を解除する
+     */
     private ResultActions resume(String productId, String variantId) throws Exception {
         return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/resume"));
     }

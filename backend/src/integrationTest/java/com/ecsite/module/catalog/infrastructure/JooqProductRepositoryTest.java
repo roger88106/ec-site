@@ -46,6 +46,9 @@ class JooqProductRepositoryTest {
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
+    /**
+     * 税区分 ID（税モジュールの ID なので、存在しなくてよい）
+     */
     private static final UUID TAX_CATEGORY_ID = UUID.fromString("00000000-0000-0000-0000-000000000001");
 
     @Autowired
@@ -238,6 +241,9 @@ class JooqProductRepositoryTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 所属カテゴリが 1 つの、非公開の商品を作る（保存はしない）
+     */
     private Product newProduct(String code, String... axes) {
         return factory.create(ProductCode.of(code), "T シャツ", "綿 100%", TAX_CATEGORY_ID, PriceExclTax.of(1000),
                 Set.of(clothing), List.of(axes));

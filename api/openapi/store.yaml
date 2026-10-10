@@ -8,7 +8,8 @@ info:
     - 対象は C 側に表示される商品だけ（spec 001 BR-2）。表示されない商品は、存在しない商品と同じく 404 を返す。
     - 価格は商品単位（全バリアント共通）で、税込・税抜の両方を返す。画面では「1,980 円（税抜 1,800 円）」の形で表示する（BR-4）。
     - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。constitution 9）。
-    - 在庫は有無だけを返し、数量は返さない（AC-64）。
+    - 在庫は有無だけを返し、数量は返さない（AC-64）。在庫の有無とカートの判定は、販売可能数（在庫数から有効な引当を除いた数。spec 002 BR-11）で行う。
+    - カート・注文手続き・注文は、推測できない ID を知っていることが使える条件になる（ログインなし。plan 002 第 3 節）。
 servers:
   - url: /api/store
 tags:
@@ -16,6 +17,12 @@ tags:
     description: 商品（spec 001 US-10〜12）
   - name: category
     description: カテゴリ（絞り込み用）
+  - name: cart
+    description: カート（spec 002 US-14、15）
+  - name: checkout
+    description: 注文手続きと注文の成立（spec 002 US-16）
+  - name: order
+    description: 注文の表示とキャンセルの申請（spec 002 US-17、18）
 
 paths:
   /products:
@@ -121,6 +128,210 @@ paths:
               schema:
                 $ref: '#/components/schemas/CategoryTree'
 
+
+  # ============================== カート ==============================
+  /carts:
+    post:
+      tags: [cart]
+      operationId: createCart
+      summary: カートを作る（AC-73）
+      description: 空のカートを作る。返したカート ID を知っていることが、カートを使える条件になる（plan 002 第 3 節）。
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+
+  /carts/{cartId}:
+    parameters:
+      - $ref: '#/components/parameters/CartId'
+    get:
+      tags: [cart]
+      operationId: getCart
+      summary: カートの表示（AC-77、79〜81）
+      description: |
+        品目は入れた順。単価は現在の価格（AC-79）。購入できない品目は理由を付け、合計に含めない（AC-80）。
+        最後の変更から 30 日たったカートは空として返す（AC-81）。注文手続き中なら、その引当を除いた販売可能数で判定する。
+      responses:
+        '200':
+          description: カート
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Cart'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /carts/{cartId}/items:
+    parameters:
+      - $ref: '#/components/parameters/CartId'
+    post:
+      tags: [cart]
+      operationId: addCartItem
+      summary: カートに入れる（AC-72、74〜76）
+      description: 品目はカートの一部で単独の URL を持たないため、`Location` は返さない。同じバリアントは数量を合算する。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AddCartItemRequest'
+      responses:
+        '204':
+          description: 入れた
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /carts/{cartId}/items/{variantId}:
+    parameters:
+      - $ref: '#/components/parameters/CartId'
+      - $ref: '#/components/parameters/VariantId'
+    put:
+      tags: [cart]
+      operationId: changeCartItemQuantity
+      summary: 品目の数量の変更（AC-75、76、78）
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ChangeCartItemQuantityRequest'
+      responses:
+        '204':
+          description: 変更した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [cart]
+      operationId: removeCartItem
+      summary: 品目の削除（AC-78）
+      description: カートにないバリアントでも 204（冪等）。
+      responses:
+        '204':
+          description: 削除した
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /carts/{cartId}/checkouts:
+    parameters:
+      - $ref: '#/components/parameters/CartId'
+    post:
+      tags: [checkout]
+      operationId: startCheckout
+      summary: 注文手続きに進む（AC-82〜84）
+      description: |
+        全品目をカートの数量だけ 15 分間引き当てる。同じカートの前の注文手続きの引当は解く。
+        1 品目でも引き当てられなければ 409（`OUT_OF_STOCK`）で、どれも引き当てない。どの品目が足りないかは、カートの表示（AC-80）で示す。
+      responses:
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          description: 空のカート、または購入できない品目を含む（AC-88）
+          content:
+            application/problem+json:
+              schema:
+                $ref: '#/components/schemas/Problem'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ============================== 注文手続き ==============================
+  /checkouts/{checkoutId}:
+    parameters:
+      - $ref: '#/components/parameters/CheckoutId'
+    get:
+      tags: [checkout]
+      operationId: getCheckout
+      summary: 注文手続きの表示（AC-84、85）
+      description: 見積もりは表示の時点の価格と税率。注文が成立済みなら `orderId` を返す（画面は注文の画面へ移る）。
+      responses:
+        '200':
+          description: 注文手続き
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Checkout'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /checkouts/{checkoutId}/order:
+    parameters:
+      - $ref: '#/components/parameters/CheckoutId'
+    post:
+      tags: [checkout]
+      operationId: placeOrder
+      summary: 注文する（AC-86〜92、107）
+      description: |
+        引当を在庫数の減算に置き換え、注文を作り、カートを空にする。引当の期限が切れていれば、その場で引き当て直す（AC-87）。
+        同じ注文手続きでの再送には、作成済みの注文の ID を 200 で返す（AC-91）。
+        409 の `errorCode`：`OUT_OF_STOCK`（在庫不足）、`TOTAL_AMOUNT_CHANGED`（確認した総額と違う。AC-89）、`CART_CHANGED`（注文手続きの後にカートが変わった）。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PlaceOrderRequest'
+      responses:
+        '200':
+          description: 作成済みの注文（再送）
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreatedId'
+        '201':
+          $ref: '#/components/responses/Created'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  # ============================== 注文 ==============================
+  /orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      tags: [order]
+      operationId: getOrder
+      summary: 注文の表示（AC-93、94、96）
+      responses:
+        '200':
+          description: 注文
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Order'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /orders/{orderId}/cancellation-request:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    put:
+      tags: [order]
+      operationId: requestOrderCancellation
+      summary: キャンセルの申請（AC-95、96）
+      description: |
+        「受付」の注文を「キャンセル申請中」にする。申請中なら何もせず 204（冪等）。
+        申請は 1 つの注文に 1 回だけで、却下済み・キャンセル済みの注文は 400。
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RequestOrderCancellationRequest'
+      responses:
+        '204':
+          description: 申請した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   parameters:
     Page:
@@ -142,8 +353,53 @@ components:
         minimum: 1
         maximum: 100
         default: 20
+    CartId:
+      name: cartId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    VariantId:
+      name: variantId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    CheckoutId:
+      name: checkoutId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OrderId:
+      name: orderId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
 
   responses:
+    Created:
+      description: 作成した
+      headers:
+        Location:
+          description: 作成したリソースの URL
+          schema:
+            type: string
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/CreatedId'
+    Conflict:
+      description: 在庫不足、または確認した内容と現在の内容が違う（`errorCode` で区別する）
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
     BadRequest:
       description: 入力の誤り
       content:
@@ -345,3 +601,278 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CategoryNode'
+
+    # ---------- カート・注文手続き・注文（spec 002） ----------
+    CreatedId:
+      type: object
+      required: [id]
+      properties:
+        id:
+          type: string
+          format: uuid
+    Quantity:
+      type: integer
+      format: int32
+      minimum: 1
+      maximum: 10
+      description: 1 品目の数量（AC-75）
+    RatePercent:
+      type: number
+      description: 税率（%）。小数第 2 位まで
+      example: 10
+    AxisValue:
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          type: string
+          example: 色
+        value:
+          type: string
+          example: 白
+    AddCartItemRequest:
+      type: object
+      required: [variantId, quantity]
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        quantity:
+          $ref: '#/components/schemas/Quantity'
+    ChangeCartItemQuantityRequest:
+      type: object
+      required: [quantity]
+      properties:
+        quantity:
+          $ref: '#/components/schemas/Quantity'
+    Cart:
+      type: object
+      required: [id, items, amounts, orderable]
+      properties:
+        id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          description: 入れた順
+          items:
+            $ref: '#/components/schemas/QuoteItem'
+        amounts:
+          $ref: '#/components/schemas/Amounts'
+        orderable:
+          type: boolean
+          description: 品目が 1 つ以上あり、すべて購入できる。false なら注文手続きに進めない（AC-88）
+    QuoteItem:
+      type: object
+      required: [variantId, productId, productName, axisValues, unitPrice, quantity, subtotal, purchasable]
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        axisValues:
+          type: array
+          description: 軸の名前と値（商品の軸の並び）。軸のない商品は空
+          items:
+            $ref: '#/components/schemas/AxisValue'
+        imageUrl:
+          type: string
+          nullable: true
+          description: バリアントの画像、なければ代表画像。どちらもなければ null
+        unitPrice:
+          $ref: '#/components/schemas/Price'
+        quantity:
+          $ref: '#/components/schemas/Quantity'
+        subtotal:
+          type: integer
+          format: int64
+          description: 税込単価 × 数量
+        purchasable:
+          type: boolean
+        unpurchasableReason:
+          $ref: '#/components/schemas/UnpurchasableReason'
+    UnpurchasableReason:
+      type: string
+      nullable: true
+      enum: [NOT_SHOWN, SALES_SUSPENDED, OUT_OF_STOCK, INSUFFICIENT_STOCK]
+      description: 購入できない理由（AC-80）。C 側に表示されない、販売停止、販売可能数がない、販売可能数が数量より少ない。購入できる品目は null
+    Amounts:
+      type: object
+      description: 金額の内訳（BR-7、8）。購入できない品目は含めない
+      required: [itemsTotal, shippingFee, total, taxes]
+      properties:
+        itemsTotal:
+          type: integer
+          format: int64
+          description: 小計の合計
+        shippingFee:
+          type: integer
+          format: int64
+          description: 送料（税込）。購入できる品目がなければ 0
+        total:
+          type: integer
+          format: int64
+          description: 総額
+        taxes:
+          type: array
+          description: 税率ごとの消費税額（税率の高い順）
+          items:
+            $ref: '#/components/schemas/TaxAmount'
+    TaxAmount:
+      type: object
+      required: [ratePercent, taxableAmount, taxAmount]
+      properties:
+        ratePercent:
+          $ref: '#/components/schemas/RatePercent'
+        taxableAmount:
+          type: integer
+          format: int64
+          description: その税率の対象の税込金額（小計と送料）の合計
+        taxAmount:
+          type: integer
+          format: int64
+          description: 消費税額。対象額 × 率 ÷（100 ＋ 率）の 1 円未満を切り捨て
+    Checkout:
+      type: object
+      required: [id, items, amounts, expiresAt]
+      properties:
+        id:
+          type: string
+          format: uuid
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/QuoteItem'
+        amounts:
+          $ref: '#/components/schemas/Amounts'
+        expiresAt:
+          type: string
+          format: date-time
+          description: 引当の期限。過ぎても注文はできる（AC-87）
+        orderId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 注文が成立済みなら、その注文 ID
+    ShippingAddress:
+      type: object
+      required: [name, postalCode, prefecture, address, phone]
+      properties:
+        name:
+          type: string
+          minLength: 1
+          maxLength: 50
+          description: 氏名
+        postalCode:
+          type: string
+          pattern: '^[0-9]{3}-?[0-9]{4}$'
+          description: 郵便番号。保存と応答はハイフンなしの 7 桁
+          example: '1000001'
+        prefecture:
+          type: string
+          description: 都道府県名（47 都道府県のいずれか）
+          example: 東京都
+        address:
+          type: string
+          minLength: 1
+          maxLength: 200
+          description: 市区町村以降の住所
+        phone:
+          type: string
+          pattern: '^[0-9-]{10,13}$'
+          description: 電話番号。数字 10〜11 桁（ハイフンは任意）。保存と応答は数字だけ
+          example: '0312345678'
+    PlaceOrderRequest:
+      type: object
+      required: [email, shippingAddress, expectedTotal]
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 254
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        expectedTotal:
+          type: integer
+          format: int64
+          description: 注文手続きの画面で表示した総額（AC-89）
+    OrderStatus:
+      type: string
+      enum: [ACCEPTED, CANCELLATION_REQUESTED, CANCELLED]
+      description: 受付、キャンセル申請中、キャンセル（BR-9）
+    CancellationRequest:
+      type: object
+      required: [requestedAt, result]
+      properties:
+        requestedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          nullable: true
+        result:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+          description: 申請中、承認、却下
+    OrderLine:
+      type: object
+      description: 注文時点の写し（AC-92）
+      required: [productCode, variantCode, productName, axisValues, unitPrice, ratePercent, quantity, subtotal]
+      properties:
+        productCode:
+          type: string
+        variantCode:
+          type: string
+        productName:
+          type: string
+        axisValues:
+          type: array
+          items:
+            $ref: '#/components/schemas/AxisValue'
+        unitPrice:
+          $ref: '#/components/schemas/Price'
+        ratePercent:
+          $ref: '#/components/schemas/RatePercent'
+        quantity:
+          $ref: '#/components/schemas/Quantity'
+        subtotal:
+          type: integer
+          format: int64
+    Order:
+      type: object
+      required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress]
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+          example: 20261010-482915
+        orderedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+        amounts:
+          $ref: '#/components/schemas/Amounts'
+        email:
+          type: string
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        cancellationRequest:
+          $ref: '#/components/schemas/CancellationRequest'
+    RequestOrderCancellationRequest:
+      type: object
+      properties:
+        reason:
+          type: string
+          nullable: true
+          maxLength: 500

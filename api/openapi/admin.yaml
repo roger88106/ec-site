@@ -7,7 +7,7 @@ info:
 
     - 認証は MVP では実装しない。各操作に必要な権限を `x-required-permission` に記す（constitution 10）。
     - 同時に編集されうるリソースの更新では、取得時の `version` を送る。一致しなければ 409 を返す。
-    - 状態の切り替え（公開・非公開・販売終了、販売停止・解除）は冪等で、`version` を送らない。すでにその状態なら何もせず 204 を返す。
+    - 状態の切り替え（公開・非公開・販売終了、販売停止・解除、注文のキャンセルとその申請の承認）は冪等で、`version` を送らない。すでにその状態なら何もせず 204 を返す。
     - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。constitution 9）。
     - 日時は ISO 8601 のオフセット付き文字列。
 servers:
@@ -21,6 +21,8 @@ tags:
     description: 商品とバリアント（spec 001 US-3〜6、9）
   - name: inventory
     description: 在庫（spec 001 US-8）
+  - name: order
+    description: 注文（spec 002 US-19〜21）
 
 paths:
   # ============================== 税 ==============================
@@ -748,6 +750,127 @@ paths:
         '400':
           $ref: '#/components/responses/BadRequest'
 
+
+  # ============================== 注文 ==============================
+  /orders:
+    get:
+      tags: [order]
+      operationId: listOrders
+      summary: 注文一覧（AC-97〜99、106）
+      description: 注文日時の新しい順。キャンセル済みの注文も含む。
+      x-required-permission: order:read
+      parameters:
+        - name: orderNumber
+          in: query
+          description: 注文番号の前方一致
+          schema:
+            type: string
+            maxLength: 15
+        - name: status
+          in: query
+          schema:
+            $ref: '#/components/schemas/OrderStatus'
+        - name: orderedFrom
+          in: query
+          description: 注文日の範囲の開始（日本時間の日付。この日を含む）
+          schema:
+            type: string
+            format: date
+        - name: orderedTo
+          in: query
+          description: 注文日の範囲の終了（日本時間の日付。この日を含む）
+          schema:
+            type: string
+            format: date
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 注文一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
+  /orders/{orderId}:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    get:
+      tags: [order]
+      operationId: getOrder
+      summary: 注文の詳細（AC-100、106）
+      x-required-permission: order:read
+      responses:
+        '200':
+          description: 注文の詳細
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /orders/{orderId}/cancellation-request/approve:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    put:
+      tags: [order]
+      operationId: approveOrderCancellation
+      summary: キャンセルの申請の承認（AC-101、104、105）
+      description: |
+        キャンセルにし、同じトランザクションで明細の数量だけ在庫数を戻す。キャンセル済みなら何もせず 204（冪等）。
+        申請中でない「受付」の注文は 400。
+      x-required-permission: order:write
+      responses:
+        '204':
+          description: 承認した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /orders/{orderId}/cancellation-request/reject:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    put:
+      tags: [order]
+      operationId: rejectOrderCancellation
+      summary: キャンセルの申請の却下（AC-102、105）
+      description: 「受付」に戻す。申請中でない注文（キャンセル済みを含む）は 400。
+      x-required-permission: order:write
+      responses:
+        '204':
+          description: 却下した
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /orders/{orderId}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    put:
+      tags: [order]
+      operationId: cancelOrder
+      summary: 運営者の判断によるキャンセル（AC-103〜105）
+      description: 「受付」「キャンセル申請中」の注文をキャンセルにし、在庫数を戻す。キャンセル済みなら何もせず 204（冪等。理由は変えない）。
+      x-required-permission: order:write
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CancelOrderRequest'
+      responses:
+        '204':
+          description: キャンセルした
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
 components:
   parameters:
     TaxCategoryId:
@@ -773,6 +896,13 @@ components:
         format: uuid
     ImageId:
       name: imageId
+      in: path
+      required: true
+      schema:
+        type: string
+        format: uuid
+    OrderId:
+      name: orderId
       in: path
       required: true
       schema:
@@ -1505,3 +1635,198 @@ components:
         totalQuantity:
           type: integer
           format: int64
+
+    # ---------- 注文（spec 002） ----------
+    OrderStatus:
+      type: string
+      enum: [ACCEPTED, CANCELLATION_REQUESTED, CANCELLED]
+      description: 受付、キャンセル申請中、キャンセル（BR-9）
+    OrderSummaryPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderSummary'
+    OrderSummary:
+      type: object
+      required: [id, orderNumber, orderedAt, customerName, total, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+        orderedAt:
+          type: string
+          format: date-time
+        customerName:
+          type: string
+          description: お届け先の氏名
+        total:
+          type: integer
+          format: int64
+          description: 総額（円）
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+    OrderDetail:
+      type: object
+      required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress]
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+        orderedAt:
+          type: string
+          format: date-time
+        status:
+          $ref: '#/components/schemas/OrderStatus'
+        lines:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderLine'
+        amounts:
+          $ref: '#/components/schemas/OrderAmounts'
+        email:
+          type: string
+        shippingAddress:
+          $ref: '#/components/schemas/ShippingAddress'
+        cancellationRequest:
+          $ref: '#/components/schemas/CancellationRequest'
+        cancellation:
+          $ref: '#/components/schemas/Cancellation'
+    OrderLine:
+      type: object
+      description: 注文時点の写し（AC-92）
+      required: [variantId, productCode, variantCode, productName, axisValues, unitPriceExclTax, unitPriceInclTax, ratePercent, quantity, subtotal]
+      properties:
+        variantId:
+          type: string
+          format: uuid
+          description: 在庫の参照用。表示には品番の写しを使う
+        productCode:
+          type: string
+        variantCode:
+          type: string
+        productName:
+          type: string
+        axisValues:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderAxisValue'
+        unitPriceExclTax:
+          type: integer
+          format: int64
+        unitPriceInclTax:
+          type: integer
+          format: int64
+        ratePercent:
+          $ref: '#/components/schemas/RatePercent'
+        quantity:
+          type: integer
+          format: int32
+        subtotal:
+          type: integer
+          format: int64
+    OrderAxisValue:
+      type: object
+      required: [name, value]
+      properties:
+        name:
+          type: string
+        value:
+          type: string
+    OrderAmounts:
+      type: object
+      description: 金額の内訳（BR-7、8）
+      required: [itemsTotal, shippingFee, total, taxes]
+      properties:
+        itemsTotal:
+          type: integer
+          format: int64
+        shippingFee:
+          type: integer
+          format: int64
+        total:
+          type: integer
+          format: int64
+        taxes:
+          type: array
+          description: 税率ごとの消費税額（税率の高い順）
+          items:
+            $ref: '#/components/schemas/OrderTaxAmount'
+    OrderTaxAmount:
+      type: object
+      required: [ratePercent, taxableAmount, taxAmount]
+      properties:
+        ratePercent:
+          $ref: '#/components/schemas/RatePercent'
+        taxableAmount:
+          type: integer
+          format: int64
+        taxAmount:
+          type: integer
+          format: int64
+    ShippingAddress:
+      type: object
+      required: [name, postalCode, prefecture, address, phone]
+      properties:
+        name:
+          type: string
+        postalCode:
+          type: string
+        prefecture:
+          type: string
+        address:
+          type: string
+        phone:
+          type: string
+    CancellationRequest:
+      type: object
+      description: 消費者によるキャンセルの申請。なければ省く
+      required: [requestedAt, result]
+      properties:
+        requestedAt:
+          type: string
+          format: date-time
+        reason:
+          type: string
+          nullable: true
+        result:
+          type: string
+          enum: [PENDING, APPROVED, REJECTED]
+          description: 申請中、承認、却下
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+          description: 承認・却下した日時
+    Cancellation:
+      type: object
+      description: キャンセルした内容。キャンセルでなければ省く
+      required: [cancelledAt, byOperator]
+      properties:
+        cancelledAt:
+          type: string
+          format: date-time
+        byOperator:
+          type: boolean
+          description: 運営者の判断によるキャンセル（申請の承認でない）
+        reason:
+          type: string
+          nullable: true
+          description: 運営者の判断によるキャンセルの理由
+    CancelOrderRequest:
+      type: object
+      required: [reason]
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 500
+          description: キャンセルの理由（必須）

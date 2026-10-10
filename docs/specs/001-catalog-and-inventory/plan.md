@@ -70,8 +70,8 @@ flowchart LR
 | DELETE | `/products/{id}/variants/{variantId}` | `product:write` | 71 |
 | PUT | `/products/{id}/variants/order` | `product:write` | 27 |
 | PUT | `/products/{id}/variants/{variantId}/suspend`、`/resume`（P2、冪等） | `product:write` | 28 |
-| POST | `/products/{id}/image-uploads`（P2） | `product:write` | 39、40 |
-| POST | `/products/{id}/images`（P2） | `product:write` | 37、39、40 |
+| POST | `/products/{id}/image-uploads`（P2） | `product:write` | 39、40、67 |
+| POST | `/products/{id}/images`（P2） | `product:write` | 37、39、40、67〜70 |
 | PUT | `/products/{id}/images/order`（P2） | `product:write` | 37 |
 | DELETE | `/products/{id}/images/{imageId}`（P2） | `product:write` | 37 |
 | PUT | `/products/{id}/variants/{variantId}/image`（P2） | `product:write` | 38 |
@@ -126,13 +126,14 @@ admin のディレクトリ、API の呼び出し方、フォーム、画面の�
 | US-3〜5 | 登録、軸、一意性、公開条件、状態遷移、削除条件 | 品番の一意性、AC-6、Repository |
 | US-8 | 在庫調整の検証 | AC-43、**並行調整（AC-44）**、履歴、イベントによる在庫の作成 |
 | US-9 | | 絞り込み、ページング |
-| US-7 | 枚数、並び順、バリアントの画像、削除のときの指定の解除 | 受付から登録までの流れ（SeaweedFS）、形式・サイズ・枚数の拒否、偽った形式の拒否、削除のイベントでのファイルの削除 |
+| US-7 | 枚数、並び順、バリアントの画像、削除のときの指定の解除 | 受付から登録までの流れ（SeaweedFS）、形式・サイズ・枚数の拒否、偽った形式の拒否、アセットの解放でのファイルの削除（メディアモジュール） |
+| US-13 | 形式の判定（BMP、HEIC / HEIF、AVIF） | imgproxy での変換（WebP、向きの反映、メタデータの除去）、変換の失敗の拒否、確定で WebP になること |
 | US-10〜12 | 税込計算 | 表示条件、税込での並べ替え・絞り込み、**Java と SQL の税込計算の一致**、在庫なし、検索 |
 | 横断 | | モジュール境界の検証、B 側 endpoint の権限名の記載漏れを検出する契約テスト |
 
 ## 6. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-foundation.md)、[01](tasks/01-tax.md)、[02](tasks/02-category.md)、[03](tasks/03-product.md)、[04](tasks/04-inventory.md)、[05](tasks/05-admin-product-list.md)、[06](tasks/06-storefront.md)、[07](tasks/07-admin-ui.md)、[08](tasks/08-store-ui.md)、[09](tasks/09-frontend-tests.md)、[10](tasks/10-p2.md)）。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-foundation.md)、[01](tasks/01-tax.md)、[02](tasks/02-category.md)、[03](tasks/03-product.md)、[04](tasks/04-inventory.md)、[05](tasks/05-admin-product-list.md)、[06](tasks/06-storefront.md)、[07](tasks/07-admin-ui.md)、[08](tasks/08-store-ui.md)、[09](tasks/09-frontend-tests.md)、[10](tasks/10-p2.md)、[11](tasks/11-review.md)）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|
@@ -147,6 +148,7 @@ tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-fo
 | 8 | 店舗画面 | 画面から C 側の閲覧ができる |
 | 9 | フロントのテスト（結合テスト、E2E） | 主な操作の流れの結合テストと、コアフローの E2E が CI で通る |
 | 10 | P2（US-6、AC-28、US-7、US-13） | 各項目の AC のテストが通る。画像の設計は第 7 節 |
+| 11 | 見直し | 実装と文書の食い違い、読みにくさ、コメントの不足を直し、テストが通る |
 
 ## 7. 商品画像（US-7）
 
@@ -182,7 +184,7 @@ sequenceDiagram
     A->>S: PUT 署名付き URL（ファイル）
     A->>C: POST /products/{id}/images（uploadId、version）
     C->>M: 確定（範囲＝商品 ID、uploadId）
-    M->>S: 受付のファイルを確かめ、配信のバケットへコピー
+    M->>S: 受付のファイルを確かめ、WebP に変換して（7.5）配信のバケットへ置く
     M-->>C: アセット ID
     C-->>A: 画像 ID
 ```
@@ -194,7 +196,7 @@ sequenceDiagram
 
 ### 7.3 ストレージの抽象
 
-メディアモジュールに、ストレージの操作をまとめたポート（`ObjectStorage`）を置く。操作は、署名付きの PUT の URL の発行、ファイルの情報の取得、先頭のバイトの読み取り、配信のバケットへの書き込み、削除だけにする（US-13 で、バケット間のコピーを書き込みに変える）。
+メディアモジュールに、ストレージの操作をまとめたポート（`ObjectStorage`）を置く。操作は、署名付きの PUT の URL の発行、ファイルの情報の取得、先頭のバイトの読み取り、配信のバケットへの書き込み、削除だけにする。
 
 | 環境 | 実装 | 補足 |
 |------|------|------|
@@ -241,7 +243,7 @@ sequenceDiagram
 
 1. メディアモジュールが、受付のファイルの大きさと先頭のバイトで形式を確かめる（これまでどおり）。
 2. imgproxy に、受付のバケットのファイル（`s3://{受付のバケット}/{受付のキー}`）を WebP に変換させ、結果を受け取る。imgproxy は受付のバケットを直接読む（S3 の連携。GCS にも同じ連携がある）。バックエンドはファイルを中継しない。
-3. 変換した WebP を、配信のバケットに書き込む（`Cache-Control` はこれまでどおり）。バケット間のコピーはやめる。
+3. 変換した WebP を、配信のバケットに書き込む（長くキャッシュさせる。7.1）。
 4. アセットを記録する（形式は WebP）。
 
 - 変換の内容：向き（EXIF の Orientation）を画素に反映してから、メタデータ（位置情報、撮影機器など）をすべて除き（AC-69）、WebP（品質は設定。既定 82）で保存する。大きさ（画素数）は変えない。変換した WebP には、libvips が書く最小限の EXIF（向き＝標準、解像度、画素数）だけが残る。

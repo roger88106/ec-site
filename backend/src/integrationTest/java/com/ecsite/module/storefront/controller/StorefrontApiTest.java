@@ -5,6 +5,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestImages;
 import com.ecsite.module.catalog.infrastructure.TaxRateScheduleCache;
+import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -31,6 +32,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -81,6 +83,9 @@ class StorefrontApiTest {
 
     @Autowired
     StockItemRepository stockItemRepository;
+
+    @Autowired
+    StockReservationApi stockReservationApi;
 
     @Autowired
     DSLContext dsl;
@@ -303,6 +308,19 @@ class StorefrontApiTest {
                     .andExpect(jsonPath("$.variants[0].imageUrl").value(nullValue()))
                     // 数量は返さない（AC-64）
                     .andExpect(jsonPath("$.variants[0].quantity").doesNotExist());
+        }
+
+        @Test
+        @DisplayName("BR-11 在庫数がすべて引き当てられたバリアントは在庫なしと示される")
+        void treatsReservedStockAsOutOfStock() throws Exception {
+            var product = product("T シャツ", 1800, "色").variant("白").variant("黒").publish();
+            stock(product.variantIds.getFirst(), 1);
+            stock(product.variantIds.get(1), 1);
+            stockReservationApi.reserve(UUID.randomUUID(), Map.of(UUID.fromString(product.variantIds.getFirst()), 1),
+                    clock.instant().plus(Duration.ofMinutes(15)));
+
+            mockMvc.perform(get(BASE + "/products/" + product.id))
+                    .andExpect(jsonPath("$.variants[*].inStock", contains(false, true)));
         }
 
         @Test

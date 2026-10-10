@@ -13,7 +13,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
@@ -97,20 +96,6 @@ class JooqStockQueryRepository implements StockQueryRepository {
                 .fetchMap(STOCK_ITEM.PRODUCT_ID, total);
     }
 
-    /**
-     * 在庫数が 1 以上のバリアントを返す。
-     *
-     * @param variantIds バリアント ID
-     * @return 在庫があるバリアントの ID
-     */
-    @Override
-    public Set<UUID> findInStockVariantIds(Collection<UUID> variantIds) {
-        return dsl.select(STOCK_ITEM.VARIANT_ID)
-                .from(STOCK_ITEM)
-                .where(STOCK_ITEM.VARIANT_ID.in(variantIds))
-                .and(STOCK_ITEM.QUANTITY.gt(0))
-                .fetchSet(STOCK_ITEM.VARIANT_ID);
-    }
 
     /**
      * 販売可能数を返す。在庫数から、在庫ごとの有効な引当の合計を引く。

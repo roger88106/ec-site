@@ -8,7 +8,6 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.Map;
 import java.util.Optional;
-import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -42,13 +41,6 @@ public interface StockQueryRepository {
      */
     Map<UUID, Long> sumQuantitiesByProduct(Collection<UUID> productIds);
 
-    /**
-     * 在庫数が 1 以上のバリアントを返す。
-     *
-     * @param variantIds バリアント ID
-     * @return 指定したうち、在庫があるバリアントの ID
-     */
-    Set<UUID> findInStockVariantIds(Collection<UUID> variantIds);
 
     /**
      * 販売可能数（在庫数 − 有効な引当の合計）を返す（spec 002 BR-11）。

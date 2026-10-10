@@ -54,6 +54,7 @@ dependencyManagement {
     imports {
         mavenBom(libs.spring.modulith.bom.get().toString())
         mavenBom(libs.jmolecules.bom.get().toString())
+        mavenBom(libs.awssdk.bom.get().toString())
     }
 }
 
@@ -108,6 +109,9 @@ dependencies {
     // 制約違反の制約名を取り出すため、コンパイル時にも使う（ConstraintViolationTranslator）
     implementation(libs.postgresql)
     jooqGenerator(libs.postgresql)
+
+    // --- 画像のファイル（S3 API。plan 001 第 7 節） ---
+    implementation(libs.awssdk.s3)
 
     // --- コード生成（Lombok） ---
     compileOnly(libs.lombok)

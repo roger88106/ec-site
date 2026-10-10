@@ -1,0 +1,165 @@
+package com.ecsite.module.catalog.infrastructure;
+
+import com.ecsite.IntegrationTest;
+import com.ecsite.module.catalog.domain.product.port.ImageStorage;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+
+import java.io.IOException;
+import java.net.URI;
+import java.net.http.HttpClient;
+import java.net.http.HttpRequest;
+import java.net.http.HttpResponse;
+import java.time.Duration;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
+
+/**
+ * 画像の置き場所の S3 の実装の統合テスト（T1016。plan 001 第 7 節）。<br />
+ * Testcontainers の SeaweedFS（資格情報を検証する設定）に対して、署名付き URL での PUT からコピー・削除までを確かめる。
+ */
+@IntegrationTest
+class S3ImageStorageTest {
+
+    private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 1, 2, 3, 4};
+
+    private final HttpClient http = HttpClient.newHttpClient();
+
+    @Autowired
+    ImageStorage storage;
+
+    @Autowired
+    S3Client s3;
+
+    @Autowired
+    S3Presigner presigner;
+
+    @Autowired
+    ImageStorageProperties properties;
+
+    @Test
+    @DisplayName("署名付き URL で受付のバケットへ PUT でき、大きさと先頭のバイトを読める")
+    void uploadsWithPresignedUrl() throws Exception {
+        var key = uploadKey();
+        var upload = storage.presignUpload(key, "image/png", PNG.length);
+
+        assertThat(put(upload, PNG)).isEqualTo(200);
+        assertThat(upload.headers()).containsEntry("Content-Type", "image/png");
+        assertThat(upload.expiresAt()).isAfter(java.time.Instant.now());
+        assertThat(storage.findUploadSize(key)).contains((long) PNG.length);
+        assertThat(storage.readUploadHead(key, 4)).containsExactly((byte) 0x89, 'P', 'N', 'G');
+        assertThat(storage.readUploadHead(key, 100)).containsExactly(PNG);
+    }
+
+    @Test
+    @DisplayName("受付のないキーは、大きさが空になる")
+    void returnsEmptyForMissingUpload() {
+        assertThat(storage.findUploadSize(uploadKey())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("署名を書き換えた URL、別のキーの URL では PUT できない")
+    void rejectsTamperedUrl() throws Exception {
+        var key = uploadKey();
+        var upload = storage.presignUpload(key, "image/png", PNG.length);
+        var url = upload.url().toString();
+
+        var tampered = url.replaceFirst("X-Amz-Signature=[0-9a-f]{4}", "X-Amz-Signature=0000");
+        assertThat(put(new ImageStorage.PresignedUpload(URI.create(tampered), upload.headers(), upload.expiresAt()), PNG))
+                .isEqualTo(403);
+        var otherKey = url.replace(key, uploadKey());
+        assertThat(put(new ImageStorage.PresignedUpload(URI.create(otherKey), upload.headers(), upload.expiresAt()), PNG))
+                .isEqualTo(403);
+        assertThat(storage.findUploadSize(key)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("期限の切れた URL では PUT できない")
+    void rejectsExpiredUrl() throws Exception {
+        var shortLived = new S3ImageStorage(s3, presigner, properties.withUploadUrlTtl(Duration.ofSeconds(1)));
+        var upload = shortLived.presignUpload(uploadKey(), "image/png", PNG.length);
+
+        Thread.sleep(2_500);
+
+        assertThat(put(upload, PNG)).isEqualTo(403);
+    }
+
+    @Test
+    @DisplayName("配信のバケットへコピーすると、だれでも読め、形式と長いキャッシュの指定が付く")
+    void publishes() throws Exception {
+        var key = uploaded();
+        var publicKey = "products/%s/%s.png".formatted(UUID.randomUUID(), UUID.randomUUID());
+
+        storage.publish(key, publicKey, "image/png");
+
+        var response = get(storage.publicUrl(publicKey));
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.body()).containsExactly(PNG);
+        assertThat(response.headers().firstValue("Content-Type")).contains("image/png");
+        assertThat(response.headers().firstValue("Cache-Control")).contains("public, max-age=31536000, immutable");
+        assertThat(storage.publicUrl(publicKey).toString()).isEqualTo(properties.publicBaseUrl() + "/" + publicKey);
+    }
+
+    @Test
+    @DisplayName("配信のファイルを消せる。ないファイルを消しても成功する")
+    void deletesPublished() throws Exception {
+        var publicKey = "products/%s/a.png".formatted(UUID.randomUUID());
+        storage.publish(uploaded(), publicKey, "image/png");
+
+        storage.deletePublished(publicKey);
+
+        assertThat(existsPublished(publicKey)).isFalse();
+        assertThatCode(() -> storage.deletePublished(publicKey)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("接頭辞で始まる配信のファイルをまとめて消せ、ほかの商品のファイルは残る")
+    void deletesPublishedByPrefix() throws Exception {
+        var product = "products/%s/".formatted(UUID.randomUUID());
+        var other = "products/%s/keep.png".formatted(UUID.randomUUID());
+        storage.publish(uploaded(), product + "a.png", "image/png");
+        storage.publish(uploaded(), product + "b.png", "image/png");
+        storage.publish(uploaded(), other, "image/png");
+
+        storage.deletePublishedByPrefix(product);
+
+        assertThat(existsPublished(product + "a.png")).isFalse();
+        assertThat(existsPublished(product + "b.png")).isFalse();
+        assertThat(existsPublished(other)).isTrue();
+        assertThatCode(() -> storage.deletePublishedByPrefix(product)).doesNotThrowAnyException();
+    }
+
+    // ============================== 補助 ==============================
+
+    private static String uploadKey() {
+        return UUID.randomUUID() + "/" + UUID.randomUUID();
+    }
+
+    /**
+     * 受付のバケットに PNG を置き、そのキーを返す
+     */
+    private String uploaded() throws Exception {
+        var key = uploadKey();
+        assertThat(put(storage.presignUpload(key, "image/png", PNG.length), PNG)).isEqualTo(200);
+        return key;
+    }
+
+    private int put(ImageStorage.PresignedUpload upload, byte[] body) throws IOException, InterruptedException {
+        var request = HttpRequest.newBuilder(upload.url()).PUT(HttpRequest.BodyPublishers.ofByteArray(body));
+        upload.headers().forEach(request::header);
+        return http.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode();
+    }
+
+    private HttpResponse<byte[]> get(URI url) throws IOException, InterruptedException {
+        return http.send(HttpRequest.newBuilder(url).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+    }
+
+    private boolean existsPublished(String publicKey) {
+        return !s3.listObjectsV2(request -> request.bucket(properties.publicBucket()).prefix(publicKey)).contents().isEmpty();
+    }
+}

@@ -36,6 +36,9 @@ mapstruct = "1.6.3"
 lombok-mapstruct-binding = "0.2.0"
 jmolecules = "2025.0.2"
 
+# --- 画像のファイル（オブジェクトストレージ。plan 001 第 7 節） ---
+awssdk = "2.46.7"
+
 # --- テスト ---
 testcontainers = "2.0.5"
 
@@ -45,6 +48,7 @@ testcontainers = "2.0.5"
 # --- BOM ---
 spring-modulith-bom = { module = "org.springframework.modulith:spring-modulith-bom", version.ref = "spring-modulith" }
 jmolecules-bom = { module = "org.jmolecules:jmolecules-bom", version.ref = "jmolecules" }
+awssdk-bom = { module = "software.amazon.awssdk:bom", version.ref = "awssdk" }
 
 # --- Spring Boot starters（Boot BOM 管理） ---
 spring-boot-starter-webmvc = { module = "org.springframework.boot:spring-boot-starter-webmvc" }
@@ -62,6 +66,9 @@ spring-modulith-starter-core = { module = "org.springframework.modulith:spring-m
 spring-modulith-events-api = { module = "org.springframework.modulith:spring-modulith-events-api" }
 spring-modulith-events-jdbc = { module = "org.springframework.modulith:spring-modulith-events-jdbc" }
 spring-modulith-events-jackson = { module = "org.springframework.modulith:spring-modulith-events-jackson" }
+
+# --- オブジェクトストレージ（AWS SDK BOM 管理） ---
+awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 
 # --- データベース ---
 postgresql = { module = "org.postgresql:postgresql" }

@@ -1568,8 +1568,12 @@ components:
           minimum: 0
     StockAdjustmentReason:
       type: string
+      enum: [ARRIVAL, STOCKTAKE, DAMAGE_OR_LOSS, OTHER, ORDER, ORDER_CANCELLATION]
+      description: 入荷、棚卸差異、破損・紛失、その他、注文、注文のキャンセル（注文の 2 つは注文に由来し、運営者の調整では選べない。AC-107）
+    ManualStockAdjustmentReason:
+      type: string
       enum: [ARRIVAL, STOCKTAKE, DAMAGE_OR_LOSS, OTHER]
-      description: 入荷、棚卸差異、破損・紛失、その他
+      description: 運営者が調整で選べる理由。入荷、棚卸差異、破損・紛失、その他
     AdjustStockRequest:
       type: object
       required: [delta, reason]
@@ -1579,7 +1583,7 @@ components:
           format: int32
           description: 増減量。0 は不可
         reason:
-          $ref: '#/components/schemas/StockAdjustmentReason'
+          $ref: '#/components/schemas/ManualStockAdjustmentReason'
         memo:
           type: string
           nullable: true
@@ -1600,6 +1604,15 @@ components:
         memo:
           type: string
           nullable: true
+        orderId:
+          type: string
+          format: uuid
+          nullable: true
+          description: 注文に由来する調整の注文 ID
+        orderNumber:
+          type: string
+          nullable: true
+          description: 注文に由来する調整の注文番号（写し）
         quantityAfter:
           type: integer
           format: int32

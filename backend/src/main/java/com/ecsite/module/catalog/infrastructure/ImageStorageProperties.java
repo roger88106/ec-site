@@ -10,7 +10,7 @@ import java.net.URI;
 import java.time.Duration;
 
 /**
- * 画像の置き場所の設定（plan 001 第 7.3 節）。環境変数で上書きする（例：ECSITE_IMAGE_STORAGE_PUBLIC_BUCKET）。
+ * 画像の置き場所の設定（plan 001 第 7.3 節）。環境変数で上書きする（例：ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET）。
  *
  * @param endpoint        S3 のエンドポイント。エミュレーター（SeaweedFS）のときだけ指定し、AWS では空にする
  * @param region          リージョン
@@ -23,7 +23,7 @@ import java.time.Duration;
  * @param uploadUrlTtl    署名付き URL の有効期間
  */
 @Validated
-@ConfigurationProperties("ecsite.image.storage")
+@ConfigurationProperties("ecsite.media.storage")
 public record ImageStorageProperties(
         URI endpoint,
         @NotBlank String region,

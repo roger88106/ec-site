@@ -1,7 +1,7 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.media.infrastructure;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.module.catalog.domain.product.port.ImageStorage;
+import com.ecsite.module.media.service.ObjectStorage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -20,18 +20,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * 画像の置き場所の S3 の実装の統合テスト（T1016。plan 001 第 7 節）。<br />
+ * ファイルの置き場所の S3 の実装の統合テスト（T1016、T1027。plan 001 第 7 節）。<br />
  * Testcontainers の SeaweedFS（資格情報を検証する設定）に対して、署名付き URL での PUT からコピー・削除までを確かめる。
  */
 @IntegrationTest
-class S3ImageStorageTest {
+class S3ObjectStorageTest {
 
     private static final byte[] PNG = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 1, 2, 3, 4};
 
     private final HttpClient http = HttpClient.newHttpClient();
 
     @Autowired
-    ImageStorage storage;
+    ObjectStorage storage;
 
     @Autowired
     S3Client s3;
@@ -40,7 +40,7 @@ class S3ImageStorageTest {
     S3Presigner presigner;
 
     @Autowired
-    ImageStorageProperties properties;
+    MediaStorageProperties properties;
 
     @Test
     @DisplayName("署名付き URL で受付のバケットへ PUT でき、大きさと先頭のバイトを読める")
@@ -70,10 +70,10 @@ class S3ImageStorageTest {
         var url = upload.url().toString();
 
         var tampered = url.replaceFirst("X-Amz-Signature=[0-9a-f]{4}", "X-Amz-Signature=0000");
-        assertThat(put(new ImageStorage.PresignedUpload(URI.create(tampered), upload.headers(), upload.expiresAt()), PNG))
+        assertThat(put(new ObjectStorage.PresignedUpload(URI.create(tampered), upload.headers(), upload.expiresAt()), PNG))
                 .isEqualTo(403);
         var otherKey = url.replace(key, uploadKey());
-        assertThat(put(new ImageStorage.PresignedUpload(URI.create(otherKey), upload.headers(), upload.expiresAt()), PNG))
+        assertThat(put(new ObjectStorage.PresignedUpload(URI.create(otherKey), upload.headers(), upload.expiresAt()), PNG))
                 .isEqualTo(403);
         assertThat(storage.findUploadSize(key)).isEmpty();
     }
@@ -81,7 +81,7 @@ class S3ImageStorageTest {
     @Test
     @DisplayName("期限の切れた URL では PUT できない")
     void rejectsExpiredUrl() throws Exception {
-        var shortLived = new S3ImageStorage(s3, presigner, properties.withUploadUrlTtl(Duration.ofSeconds(1)));
+        var shortLived = new S3ObjectStorage(s3, presigner, properties.withUploadUrlTtl(Duration.ofSeconds(1)));
         var upload = shortLived.presignUpload(uploadKey(), "image/png", PNG.length);
 
         Thread.sleep(2_500);
@@ -93,7 +93,7 @@ class S3ImageStorageTest {
     @DisplayName("配信のバケットへコピーすると、だれでも読め、形式と長いキャッシュの指定が付く")
     void publishes() throws Exception {
         var key = uploaded();
-        var publicKey = "products/%s/%s.png".formatted(UUID.randomUUID(), UUID.randomUUID());
+        var publicKey = "assets/%s.png".formatted(UUID.randomUUID());
 
         storage.publish(key, publicKey, "image/png");
 
@@ -108,30 +108,13 @@ class S3ImageStorageTest {
     @Test
     @DisplayName("配信のファイルを消せる。ないファイルを消しても成功する")
     void deletesPublished() throws Exception {
-        var publicKey = "products/%s/a.png".formatted(UUID.randomUUID());
+        var publicKey = "assets/%s.png".formatted(UUID.randomUUID());
         storage.publish(uploaded(), publicKey, "image/png");
 
         storage.deletePublished(publicKey);
 
         assertThat(existsPublished(publicKey)).isFalse();
         assertThatCode(() -> storage.deletePublished(publicKey)).doesNotThrowAnyException();
-    }
-
-    @Test
-    @DisplayName("接頭辞で始まる配信のファイルをまとめて消せ、ほかの商品のファイルは残る")
-    void deletesPublishedByPrefix() throws Exception {
-        var product = "products/%s/".formatted(UUID.randomUUID());
-        var other = "products/%s/keep.png".formatted(UUID.randomUUID());
-        storage.publish(uploaded(), product + "a.png", "image/png");
-        storage.publish(uploaded(), product + "b.png", "image/png");
-        storage.publish(uploaded(), other, "image/png");
-
-        storage.deletePublishedByPrefix(product);
-
-        assertThat(existsPublished(product + "a.png")).isFalse();
-        assertThat(existsPublished(product + "b.png")).isFalse();
-        assertThat(existsPublished(other)).isTrue();
-        assertThatCode(() -> storage.deletePublishedByPrefix(product)).doesNotThrowAnyException();
     }
 
     // ============================== 補助 ==============================
@@ -149,7 +132,7 @@ class S3ImageStorageTest {
         return key;
     }
 
-    private int put(ImageStorage.PresignedUpload upload, byte[] body) throws IOException, InterruptedException {
+    private int put(ObjectStorage.PresignedUpload upload, byte[] body) throws IOException, InterruptedException {
         var request = HttpRequest.newBuilder(upload.url()).PUT(HttpRequest.BodyPublishers.ofByteArray(body));
         upload.headers().forEach(request::header);
         return http.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode();

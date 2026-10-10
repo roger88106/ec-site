@@ -82,14 +82,14 @@ public class TestcontainersConfig {
     DynamicPropertyRegistrar imageStorageProperties(GenericContainer<?> seaweedfs) {
         return registry -> {
             var endpoint = endpoint(seaweedfs);
-            registry.add("ecsite.image.storage.endpoint", endpoint::toString);
-            registry.add("ecsite.image.storage.region", () -> "us-east-1");
-            registry.add("ecsite.image.storage.path-style-access", () -> "true");
-            registry.add("ecsite.image.storage.access-key-id", () -> ACCESS_KEY_ID);
-            registry.add("ecsite.image.storage.secret-access-key", () -> SECRET_ACCESS_KEY);
-            registry.add("ecsite.image.storage.incoming-bucket", () -> INCOMING_BUCKET);
-            registry.add("ecsite.image.storage.public-bucket", () -> PUBLIC_BUCKET);
-            registry.add("ecsite.image.storage.public-base-url", () -> endpoint + "/" + PUBLIC_BUCKET);
+            registry.add("ecsite.media.storage.endpoint", endpoint::toString);
+            registry.add("ecsite.media.storage.region", () -> "us-east-1");
+            registry.add("ecsite.media.storage.path-style-access", () -> "true");
+            registry.add("ecsite.media.storage.access-key-id", () -> ACCESS_KEY_ID);
+            registry.add("ecsite.media.storage.secret-access-key", () -> SECRET_ACCESS_KEY);
+            registry.add("ecsite.media.storage.incoming-bucket", () -> INCOMING_BUCKET);
+            registry.add("ecsite.media.storage.public-bucket", () -> PUBLIC_BUCKET);
+            registry.add("ecsite.media.storage.public-base-url", () -> endpoint + "/" + PUBLIC_BUCKET);
         };
     }
 

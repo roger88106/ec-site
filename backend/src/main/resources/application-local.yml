@@ -45,7 +45,7 @@ management:
       probability: 1.0
 
 ecsite:
-  image:
+  media:
     storage:
       # compose の SeaweedFS（S3 互換）。バケットは compose の seaweedfs-init が作る（plan 001 第 7 節）
       endpoint: http://localhost:8333

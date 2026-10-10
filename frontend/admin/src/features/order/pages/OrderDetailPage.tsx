@@ -6,11 +6,12 @@ import { QueryState } from '@/components/QueryState'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CancellationCard } from '@/features/order/components/CancellationCard'
+import { OrderActions } from '@/features/order/components/OrderActions'
 import { OrderLinesCard } from '@/features/order/components/OrderLinesCard'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { formatPostalCode } from '@/features/order/order'
 
-/** 注文の詳細（T2602。AC-100、106） */
+/** 注文の詳細（T2602。AC-100、106）と、承認・却下・キャンセルの操作（T2603。AC-101〜103、105） */
 export function OrderDetailPage() {
   const { orderId = '' } = useParams()
   const query = $api.useQuery('get', '/orders/{orderId}', { params: { path: { orderId } } })
@@ -45,6 +46,7 @@ export function OrderDetailPage() {
                 </dd>
               </div>
             </dl>
+            <OrderActions order={order} />
             <OrderLinesCard amounts={order.amounts} lines={order.lines} />
             <Card>
               <CardHeader>

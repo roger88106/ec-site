@@ -23,12 +23,24 @@ class S3ObjectStorage implements ObjectStorage {
      */
     static final String PUBLIC_CACHE_CONTROL = "public, max-age=31536000, immutable";
 
+    /**
+     * ファイルがないときの HTTP ステータス
+     */
     private static final int NOT_FOUND = 404;
 
+    /**
+     * S3 のクライアント
+     */
     private final S3Client s3;
 
+    /**
+     * 署名付き URL の発行に使うクライアント
+     */
     private final S3Presigner presigner;
 
+    /**
+     * ファイルの置き場所の設定
+     */
     private final MediaStorageProperties properties;
 
     /**

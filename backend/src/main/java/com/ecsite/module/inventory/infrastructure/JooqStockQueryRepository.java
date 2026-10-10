@@ -57,10 +57,12 @@ class JooqStockQueryRepository implements StockQueryRepository {
                 .from(STOCK_ITEM)
                 .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
                 .fetchOptional(STOCK_ITEM.ID)
+                // 在庫がなければ（そのバリアントがなければ）空。あれば、その在庫の調整履歴を 1 ページ分取得する
                 .map(stockItemId -> {
                     var condition = STOCK_ADJUSTMENT.STOCK_ITEM_ID.eq(stockItemId);
                     var items = dsl.selectFrom(STOCK_ADJUSTMENT)
                             .where(condition)
+                            // 同じ時刻の調整は、記録した順（連番）の新しいほうを先にする
                             .orderBy(STOCK_ADJUSTMENT.ADJUSTED_AT.desc(), STOCK_ADJUSTMENT.SEQUENCE_NO.desc())
                             .limit(request.size())
                             .offset(request.offset())

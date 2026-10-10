@@ -150,6 +150,7 @@ public class TaxCategory extends AggregateRoot {
 
         // 一覧の形を検証する（AC-3）
         var replaced = drafts.stream()
+                // 新しい税率（ID なし）には ID を振る
                 .map(draft -> new TaxRate(Objects.requireNonNullElseGet(draft.id(), UUID::randomUUID),
                         draft.ratePercent(), draft.period()))
                 .sorted(BY_EFFECTIVE_FROM)

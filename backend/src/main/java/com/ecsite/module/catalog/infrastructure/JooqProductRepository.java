@@ -178,7 +178,8 @@ class JooqProductRepository implements ProductRepository {
     }
 
     /**
-     * 商品を削除する。商品の一部は外部キーの ON DELETE CASCADE で消える。
+     * 商品を削除する。商品の一部（画像を含む）は外部キーの ON DELETE CASCADE で消える。<br />
+     * 画像のアセットを手放すのは、アプリケーションサービス（メディアモジュールの呼び出し）。
      *
      * @param product 商品
      */
@@ -221,7 +222,8 @@ class JooqProductRepository implements ProductRepository {
 
     /**
      * 画像を差分で保存する：なくなったものを削除し、新しいものを追加し、残るものの表示順を更新する。<br />
-     * キーは登録後に変わらないので、更新しない。削除した画像を指すバリアントの指定は、外部キーで外れる。
+     * アセット ID は登録後に変わらないので、更新しない。削除した画像を指すバリアントの指定は、外部キーで外れる。
+     * 削除した画像のアセットを手放すのは、アプリケーションサービス（メディアモジュールの呼び出し）。
      *
      * @param snapshot 商品のスナップショット
      */

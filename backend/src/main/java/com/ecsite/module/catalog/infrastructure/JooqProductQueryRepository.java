@@ -70,6 +70,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
     @Override
     public PageResult<ProductSummaryView> findSummaries(ProductListQuery query, PageRequest request) {
         var condition = summaryCondition(query);
+        // 商品ごとのバリアントの数（行ごとに数える副問い合わせ）
         var variantCount = DSL.selectCount()
                 .from(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(PRODUCT.ID))

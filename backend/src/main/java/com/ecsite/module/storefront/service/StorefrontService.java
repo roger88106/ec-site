@@ -114,6 +114,7 @@ public class StorefrontService {
     private static List<ProductDetailView.AxisView> axes(CatalogProductDetail detail) {
         return IntStream.range(0, detail.axes().size())
                 .mapToObj(position -> {
+                    // その軸の位置の値を、バリアントの表示順に、重複を除いて集める
                     var values = new LinkedHashSet<String>();
                     detail.variants().forEach(variant -> values.add(variant.axisValues().get(position)));
                     return new ProductDetailView.AxisView(detail.axes().get(position), List.copyOf(values));

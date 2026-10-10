@@ -21,6 +21,9 @@ import static com.ecsite.jooq.media.Tables.ASSET;
 @RequiredArgsConstructor
 class JooqAssetRepository implements AssetRepository {
 
+    /**
+     * jOOQ DSL Context
+     */
     private final DSLContext dsl;
 
     @Override
@@ -48,6 +51,9 @@ class JooqAssetRepository implements AssetRepository {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * アセットのレコードを、アセットに変換する。
+     */
     private static Asset toAsset(AssetRecord record) {
         return new Asset(record.getId(), ImageFormat.valueOf(record.getFormat()), record.getStorageKey(),
                 record.getCreatedAt());

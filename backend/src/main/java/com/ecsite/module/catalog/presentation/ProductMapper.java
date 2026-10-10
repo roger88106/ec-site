@@ -151,7 +151,6 @@ class ProductMapper {
                         .toList());
     }
 
-
     /**
      * 画像のアップロードの受付のレスポンスに変換する。
      *
@@ -164,15 +163,24 @@ class ProductMapper {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * バリアントをレスポンスに変換する。画像 ID は指定がなければ null のまま返す。
+     */
     private static Variant toVariant(ProductDetailView.VariantView view) {
         return new Variant(view.id(), view.variantCode(), view.axisValues(), view.salesSuspended())
                 .imageId(view.imageId());
     }
 
+    /**
+     * 時刻をレスポンスの日時（UTC）に変換する。null は null のまま。
+     */
     private static OffsetDateTime toOffsetDateTime(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 
+    /**
+     * リクエストの日時を時刻に変換する。null は null のまま。
+     */
     private static Instant toInstant(OffsetDateTime dateTime) {
         return dateTime == null ? null : dateTime.toInstant();
     }

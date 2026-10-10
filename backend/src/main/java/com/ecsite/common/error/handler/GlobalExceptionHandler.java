@@ -49,19 +49,19 @@ import java.util.stream.Stream;
 class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
 
     /**
-     * ProblemDetail追加パラメータ：エラーコード
+     * ProblemDetail の追加の項目：エラーコード
      */
     private static final String PROPERTY_ERROR_CODE = "errorCode";
     /**
-     * ProblemDetail追加パラメータ：エラーメッセージ
+     * ProblemDetail の追加の項目：エラーメッセージ
      */
     private static final String PROPERTY_MESSAGE = "message";
     /**
-     * ProblemDetail追加パラメータ：トレース ID
+     * ProblemDetail の追加の項目：トレース ID
      */
     private static final String PROPERTY_TRACE_ID = "traceId";
     /**
-     * ProblemDetail追加パラメータ：フィールド検証エラー一覧
+     * ProblemDetail の追加の項目：フィールド検証エラー一覧
      */
     private static final String PROPERTY_ERRORS = "errors";
 
@@ -175,6 +175,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     public ResponseEntity<Object> handleConstraintViolationException(ConstraintViolationException ex, WebRequest request) {
         List<FieldValidationError> errors = ex.getConstraintViolations().stream()
                 .map(violation -> {
+                    // プロパティパス（メソッド名.引数名.…）の最後の名前を、フィールド名にする
                     String field = null;
                     for (Path.Node node : violation.getPropertyPath()) {
                         field = node.getName();
@@ -308,6 +309,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     private static List<FieldValidationError> toFieldErrors(Stream<ObjectError> errors) {
         return errors
                 .map(error -> new FieldValidationError(
+                        // クラスに付いた制約など、フィールドに結び付かないエラーはオブジェクト名にする
                         error instanceof FieldError fieldError ? fieldError.getField() : error.getObjectName(),
                         error.getDefaultMessage()))
                 .toList();

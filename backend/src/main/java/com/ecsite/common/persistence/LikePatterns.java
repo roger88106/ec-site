@@ -12,6 +12,9 @@ public final class LikePatterns {
      */
     public static final char ESCAPE = '!';
 
+    /**
+     * インスタンスを作らせない（static のメソッドだけを持つ）
+     */
     private LikePatterns() {
     }
 

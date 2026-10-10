@@ -60,6 +60,9 @@ public class TaxRateApi {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * 税区分の照会結果を、公開する型（税率の一覧）に変換する。
+     */
     private static TaxRateSchedule toSchedule(TaxCategoryView view) {
         return new TaxRateSchedule(view.id(), view.rates().stream()
                 .map(rate -> new TaxRateSchedule.Rate(rate.ratePercent(), rate.effectiveFrom(), rate.effectiveTo()))

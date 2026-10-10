@@ -14,6 +14,9 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT;
  */
 final class SellableVariants {
 
+    /**
+     * インスタンスを作らせない（static のメソッドだけを持つ）
+     */
     private SellableVariants() {
     }
 

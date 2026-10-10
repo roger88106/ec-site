@@ -122,6 +122,9 @@ public class ProductImageService {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * 商品を取得する。なければ 404 の業務のエラーにする。
+     */
     private Product findProduct(UUID productId) {
         return productRepository.findById(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));

@@ -62,6 +62,9 @@ class TaxCategoryMapper {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * リクエストの税率（新しい税率は ID なし）を、置き換えのコマンドの税率に変換する。
+     */
     private static ReplaceTaxRatesCommand.Rate toRate(TaxRateDraft draft) {
         return new ReplaceTaxRatesCommand.Rate(
                 draft.getId().orElse(null),
@@ -70,16 +73,25 @@ class TaxCategoryMapper {
                 toInstant(draft.getEffectiveTo().orElse(null)));
     }
 
+    /**
+     * 税率をレスポンスに変換する。
+     */
     private static TaxRate toTaxRate(TaxCategoryView.TaxRateView view) {
         return new TaxRate(view.id(), view.ratePercent())
                 .effectiveFrom(toOffsetDateTime(view.effectiveFrom()))
                 .effectiveTo(toOffsetDateTime(view.effectiveTo()));
     }
 
+    /**
+     * リクエストの日時を時刻に変換する。null（期間の端がない）は null のまま。
+     */
     private static Instant toInstant(OffsetDateTime dateTime) {
         return dateTime == null ? null : dateTime.toInstant();
     }
 
+    /**
+     * 時刻をレスポンスの日時（UTC）に変換する。null は null のまま。
+     */
     private static OffsetDateTime toOffsetDateTime(Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }

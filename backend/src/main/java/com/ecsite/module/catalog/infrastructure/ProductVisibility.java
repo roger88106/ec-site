@@ -14,6 +14,9 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
  */
 final class ProductVisibility {
 
+    /**
+     * インスタンスを作らせない（static のメソッドだけを持つ）
+     */
     private ProductVisibility() {
     }
 

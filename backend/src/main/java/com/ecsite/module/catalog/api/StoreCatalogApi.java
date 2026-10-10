@@ -73,6 +73,9 @@ public class StoreCatalogApi {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * カテゴリを、子孫まで含めて公開する型に変換する（再帰）。
+     */
     private static StoreCategoryNode toNode(CategoryNodeView view) {
         return new StoreCategoryNode(view.id(), view.name(), view.children().stream().map(StoreCatalogApi::toNode).toList());
     }

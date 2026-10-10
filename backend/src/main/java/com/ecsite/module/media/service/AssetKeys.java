@@ -13,6 +13,9 @@ final class AssetKeys {
      */
     private static final Pattern SCOPE = Pattern.compile("[A-Za-z0-9-]{1,64}");
 
+    /**
+     * インスタンスを作らせない（static のメソッドだけを持つ）
+     */
     private AssetKeys() {
     }
 

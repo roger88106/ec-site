@@ -18,6 +18,9 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
  */
 final class PriceInclTaxField {
 
+    /**
+     * インスタンスを作らせない（static のメソッドだけを持つ）
+     */
     private PriceInclTaxField() {
     }
 
@@ -42,6 +45,7 @@ final class PriceInclTaxField {
      * @return 率（%）の式
      */
     private static Field<BigDecimal> rateField(Map<UUID, BigDecimal> rates) {
+        // 税区分 ID ごとに WHEN を連ねる。どれにも当たらない（有効な税率のない）税区分は null になる
         CaseWhenStep<UUID, BigDecimal> step = null;
         for (var entry : rates.entrySet()) {
             var key = DSL.inline(entry.getKey());

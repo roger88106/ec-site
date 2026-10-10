@@ -9,6 +9,9 @@ import org.springframework.boot.autoconfigure.SpringBootApplication;
 @SpringBootApplication
 public class EcSiteApplication {
 
+    /**
+     * アプリを起動する。
+     */
     public static void main(String[] args) {
         SpringApplication.run(EcSiteApplication.class, args);
     }

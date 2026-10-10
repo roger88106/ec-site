@@ -95,7 +95,7 @@ class JooqCategoryRepository implements CategoryRepository {
     }
 
     /**
-     * 子カテゴリをすべて取得し、ID の順にロックする。
+     * 子カテゴリをすべて取得し、ID の順にロックする（並び替えが同時に起きても、いつも同じ順にロックしてデッドロックを避ける）。
      *
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 子カテゴリの一覧
@@ -154,6 +154,7 @@ class JooqCategoryRepository implements CategoryRepository {
      */
     @Override
     public boolean existsAll(Collection<UUID> ids) {
+        // 同じ ID が重複して送られても、件数の比較がずれないようにする
         var distinct = Set.copyOf(ids);
         return distinct.isEmpty() || dsl.fetchCount(CATEGORY, CATEGORY.ID.in(distinct)) == distinct.size();
     }

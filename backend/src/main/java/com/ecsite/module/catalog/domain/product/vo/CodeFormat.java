@@ -18,6 +18,9 @@ final class CodeFormat {
      */
     private static final Pattern PATTERN = Pattern.compile("[A-Z0-9]+(-[A-Z0-9]+)*");
 
+    /**
+     * インスタンスを作らせない（static のメソッドだけを持つ）
+     */
     private CodeFormat() {
     }
 

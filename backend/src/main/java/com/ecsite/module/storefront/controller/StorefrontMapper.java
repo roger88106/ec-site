@@ -84,6 +84,9 @@ class StorefrontMapper {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * 一覧の商品をレスポンスに変換する。代表画像がなければ null。
+     */
     private static ProductSummary toProductSummary(ProductSummaryView view) {
         return new ProductSummary(view.id(), view.name(), new Price(view.priceInclTax(), view.priceExclTax()), view.inStock())
                 .imageUrl(view.imageUrl());

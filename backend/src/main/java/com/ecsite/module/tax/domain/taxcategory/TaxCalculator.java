@@ -21,6 +21,9 @@ import java.math.RoundingMode;
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class TaxCalculator {
 
+    /**
+     * 率（%）を割合にするための 100
+     */
     private static final BigDecimal HUNDRED = BigDecimal.valueOf(100);
 
     /**

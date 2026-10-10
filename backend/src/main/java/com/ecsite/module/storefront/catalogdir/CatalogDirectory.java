@@ -73,6 +73,9 @@ public class CatalogDirectory {
 
 // ============================== プライベートメソッド ==============================
 
+    /**
+     * 店舗の並び順を、商品カタログの並び順に変換する。
+     */
     private static StoreProductSort toSort(ProductCondition.Sort sort) {
         return switch (sort) {
             case NEWEST -> StoreProductSort.NEWEST;
@@ -81,11 +84,17 @@ public class CatalogDirectory {
         };
     }
 
+    /**
+     * 商品カタログの一覧の要素を、店舗の型に変換する。
+     */
     private static CatalogProduct toProduct(StoreProductSummary summary) {
         return new CatalogProduct(summary.id(), summary.name(), summary.priceInclTax(), summary.priceExclTax(),
                 summary.sellableVariantIds(), summary.imageUrl());
     }
 
+    /**
+     * 商品カタログの商品の詳細を、店舗の型に変換する（バリアントを含む）。
+     */
     private static CatalogProductDetail toDetail(StoreProductDetail detail) {
         return new CatalogProductDetail(detail.id(), detail.name(), detail.description(), detail.priceInclTax(),
                 detail.priceExclTax(), detail.axes(),
@@ -96,6 +105,9 @@ public class CatalogDirectory {
                 detail.imageUrls());
     }
 
+    /**
+     * 商品カタログのカテゴリを、子孫まで含めて店舗の型に変換する（再帰）。
+     */
     private static CatalogCategory toCategory(StoreCategoryNode node) {
         return new CatalogCategory(node.id(), node.name(), node.children().stream().map(CatalogDirectory::toCategory).toList());
     }

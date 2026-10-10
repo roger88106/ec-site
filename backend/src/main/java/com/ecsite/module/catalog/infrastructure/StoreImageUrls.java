@@ -41,6 +41,7 @@ class StoreImageUrls {
             return Map.of();
         }
         var assetIds = dsl.select(PRODUCT_IMAGE.PRODUCT_ID, PRODUCT_IMAGE.ASSET_ID)
+                // 商品ごとに、表示順の最初の 1 枚だけを取る
                 .distinctOn(PRODUCT_IMAGE.PRODUCT_ID)
                 .from(PRODUCT_IMAGE)
                 .where(PRODUCT_IMAGE.PRODUCT_ID.in(productIds))
@@ -50,6 +51,7 @@ class StoreImageUrls {
 
         var representatives = new LinkedHashMap<UUID, String>();
         assetIds.forEach((productId, assetId) -> {
+            // URL のないアセット（メディアモジュールに記録がない）は出さない
             var url = urls.get(assetId);
             if (url != null) {
                 representatives.put(productId, url.toString());
@@ -75,6 +77,7 @@ class StoreImageUrls {
 
         var images = new LinkedHashMap<UUID, String>();
         assetIds.forEach((imageId, assetId) -> {
+            // URL のないアセット（メディアモジュールに記録がない）は出さない
             var url = urls.get(assetId);
             if (url != null) {
                 images.put(imageId, url.toString());

@@ -48,6 +48,7 @@ class PostgresProductSearch implements ProductSearch {
     @Override
     public PageResult<StoreProductSummary> search(String keyword, PageRequest request, Instant now,
                                                   Map<UUID, BigDecimal> rates) {
+        // 有効な税率がひとつもなければ、どの商品も税込価格を出せない（表示できない）
         if (rates.isEmpty()) {
             return PageResult.of(List.of(), request, 0);
         }
@@ -68,6 +69,7 @@ class PostgresProductSearch implements ProductSearch {
                 .fetch();
 
         var productIds = rows.map(row -> row.value1());
+        // このページの商品の、販売中のバリアントと代表画像をまとめて取得する（商品ごとに問い合わせない）
         var sellable = SellableVariants.byProduct(dsl, productIds);
         var images = storeImageUrls.representatives(productIds);
         var items = rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), row.value3(), row.value4(),

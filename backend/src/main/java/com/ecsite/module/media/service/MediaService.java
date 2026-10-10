@@ -87,6 +87,10 @@ class MediaService implements MediaApi {
         return assetId;
     }
 
+    /**
+     * {@inheritDoc}<br />
+     * イベントはコミットの後に届き、ファイルを消す（{@link AssetFileHandler}）。呼んだ側の保存が失敗すれば、イベントも取り消される。
+     */
     @Override
     @Transactional
     public void release(Collection<UUID> assetIds) {
@@ -100,6 +104,10 @@ class MediaService implements MediaApi {
         assets.forEach(asset -> eventPublisher.publishEvent(AssetReleased.of(now, asset)));
     }
 
+    /**
+     * {@inheritDoc}<br />
+     * URL は配信の基準 URL とキーから組み立てる（ストレージへの問い合わせはしない）。
+     */
     @Override
     @Transactional(readOnly = true)
     public Map<UUID, URI> urls(Collection<UUID> assetIds) {

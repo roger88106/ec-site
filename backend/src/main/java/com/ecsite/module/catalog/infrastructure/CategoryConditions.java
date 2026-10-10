@@ -16,6 +16,9 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
  */
 final class CategoryConditions {
 
+    /**
+     * インスタンスを作らせない（static のメソッドだけを持つ）
+     */
     private CategoryConditions() {
     }
 

@@ -32,6 +32,11 @@ public final class ConstraintViolationTranslator {
      */
     private final Map<String, Supplier<? extends BusinessException>> errorsByConstraint;
 
+    /**
+     * コンストラクタ。{@link #of} で作る。
+     *
+     * @param errorsByConstraint 制約名 → 業務のエラーを作る関数
+     */
     private ConstraintViolationTranslator(Map<String, Supplier<? extends BusinessException>> errorsByConstraint) {
         this.errorsByConstraint = Map.copyOf(errorsByConstraint);
     }

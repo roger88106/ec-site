@@ -380,6 +380,7 @@ public class Product extends AggregateRoot {
      */
     public void reorderVariants(@NonNull List<UUID> orderedIds) {
         var currentIds = variants.stream().map(Variant::id).collect(Collectors.toSet());
+        // 数が同じで、集合としても等しければ、重複も漏れもない
         if (orderedIds.size() != currentIds.size() || !currentIds.equals(new HashSet<>(orderedIds))) {
             throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_ORDER);
         }
@@ -446,6 +447,7 @@ public class Product extends AggregateRoot {
      */
     public void reorderImages(@NonNull List<UUID> orderedIds) {
         var currentIds = images.stream().map(ProductImage::id).collect(Collectors.toSet());
+        // 数が同じで、集合としても等しければ、重複も漏れもない
         if (orderedIds.size() != currentIds.size() || !currentIds.equals(new HashSet<>(orderedIds))) {
             throw BusinessException.of(ProductErrorCode.INVALID_IMAGE_ORDER);
         }
@@ -749,6 +751,7 @@ public class Product extends AggregateRoot {
      * @param status            公開状態
      * @param firstShownAt      初回表示日時
      * @param publicationPeriod 公開期間
+     * @param images            画像
      * @param variants          バリアント
      * @param version           バージョン
      */

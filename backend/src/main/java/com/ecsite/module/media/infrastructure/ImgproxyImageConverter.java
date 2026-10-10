@@ -33,14 +33,29 @@ import java.util.HexFormat;
 @EnableConfigurationProperties(ImgproxyProperties.class)
 class ImgproxyImageConverter implements ImageConverter {
 
+    /**
+     * imgproxy への接続を待つ時間の上限（変換を待つ時間とは別）
+     */
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
 
+    /**
+     * URL に入れる base64（URL セーフ、パディングなし。imgproxy の決まり）
+     */
     private static final Base64.Encoder BASE64_URL = Base64.getUrlEncoder().withoutPadding();
 
+    /**
+     * imgproxy を呼ぶ HTTP クライアント（基準 URL と時間の上限を設定済み）
+     */
     private final RestClient restClient;
 
+    /**
+     * 画像の変換の設定
+     */
     private final ImgproxyProperties properties;
 
+    /**
+     * ファイルの置き場所の設定（受付のバケットの名前）
+     */
     private final MediaStorageProperties storageProperties;
 
     /**

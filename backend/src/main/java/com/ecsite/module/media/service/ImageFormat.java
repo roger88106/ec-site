@@ -78,10 +78,22 @@ public enum ImageFormat {
      */
     private static final Set<String> GENERIC_BRANDS = Set.of("mif1", "msf1");
 
+    /**
+     * ファイルの拡張子
+     */
     private final String extension;
 
+    /**
+     * MIME タイプ（先頭が代表）
+     */
     private final List<String> contentTypes;
 
+    /**
+     * コンストラクタ
+     *
+     * @param extension    ファイルの拡張子
+     * @param contentTypes MIME タイプ（先頭が代表）
+     */
     ImageFormat(String extension, String... contentTypes) {
         this.extension = extension;
         this.contentTypes = List.of(contentTypes);
@@ -168,10 +180,16 @@ public enum ImageFormat {
         return Optional.of(HEIF);
     }
 
+    /**
+     * ftyp の箱の、指定した位置の 4 文字のブランドを読む。
+     */
     private static String brand(byte[] data, int offset) {
         return new String(data, offset, 4, StandardCharsets.US_ASCII);
     }
 
+    /**
+     * 指定した位置から、署名（決まったバイトの並び）が続くかを返す。
+     */
     private static boolean startsWith(byte[] data, byte[] signature, int offset) {
         return data.length >= offset + signature.length
                 && Arrays.equals(data, offset, offset + signature.length, signature, 0, signature.length);

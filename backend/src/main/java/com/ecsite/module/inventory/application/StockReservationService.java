@@ -1,9 +1,13 @@
 package com.ecsite.module.inventory.application;
 
 import com.ecsite.module.inventory.domain.stock.LockedStock;
+import com.ecsite.module.inventory.domain.stock.StockAdjustment;
+import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.StockAllocation;
+import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -23,6 +27,7 @@ import java.util.stream.Collectors;
  * 引当のサービス（docs/modules/inventory.md「引当」、spec 002 BR-11）。<br />
  * 呼び出し元（注文モジュール）のトランザクションに参加し、注文の成立などと同じトランザクションで在庫を扱う（plan 002 第 2 節）。
  */
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class StockReservationService {
@@ -31,6 +36,11 @@ public class StockReservationService {
      * 引当リポジトリ
      */
     private final StockReservationRepository reservationRepository;
+
+    /**
+     * 在庫リポジトリ（在庫数の増減と履歴）
+     */
+    private final StockItemRepository stockItemRepository;
 
     /**
      * 在庫クエリリポジトリ（販売可能数の照会）
@@ -90,6 +100,53 @@ public class StockReservationService {
     @Transactional
     public void release(UUID holderId) {
         reservationRepository.deleteByHolder(holderId);
+    }
+
+    /**
+     * 引当を在庫数の減算に置き換える（AC-87、107）。<br />
+     * 引当の期限が切れていても、その時点で足りれば減算する（引き当て直しを兼ねる）。1 つでも足りなければ何も変えない。
+     *
+     * @param holderId    持ち主 ID（注文手続き）
+     * @param quantities  バリアント ID → 数量
+     * @param orderId     注文 ID
+     * @param orderNumber 注文番号
+     * @return 足りないバリアントの ID。減算したら空
+     */
+    @Transactional
+    public Set<UUID> commit(UUID holderId, Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
+        var now = clock.instant();
+        var locked = lockStocks(quantities.keySet());
+        var shortages = StockAllocation.shortages(quantities, sellableOf(locked, holderId, now));
+        if (!shortages.isEmpty()) {
+            return shortages;
+        }
+        // 行ロックの中で足りることを確かめたので、減算は必ず成功する
+        locked.keySet().forEach(variantId -> stockItemRepository.adjust(variantId, StockAdjustment.forOrder(
+                -quantities.get(variantId), StockAdjustmentReason.ORDER, orderId, orderNumber, now)));
+        reservationRepository.deleteByHolder(holderId);
+        return shortages;
+    }
+
+    /**
+     * キャンセルした注文の数量を在庫数に戻す（AC-101、103、107）。<br />
+     * 在庫がないバリアント（削除済み）は戻せないので、警告を残して飛ばす。C 側に表示された商品のバリアントは削除できないため、通常は起きない。
+     *
+     * @param quantities  バリアント ID → 数量
+     * @param orderId     注文 ID
+     * @param orderNumber 注文番号
+     */
+    @Transactional
+    public void restore(Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
+        var now = clock.instant();
+        var locked = lockStocks(quantities.keySet());
+        quantities.forEach((variantId, quantity) -> {
+            if (!locked.containsKey(variantId)) {
+                log.warn("在庫がないため、注文のキャンセルの数量を戻せません: orderId={}, variantId={}", orderId, variantId);
+                return;
+            }
+            stockItemRepository.adjust(variantId, StockAdjustment.forOrder(
+                    quantity, StockAdjustmentReason.ORDER_CANCELLATION, orderId, orderNumber, now));
+        });
     }
 
 // ============================== プライベートメソッド ==============================

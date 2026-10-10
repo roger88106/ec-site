@@ -10,11 +10,14 @@ import java.util.UUID;
  *
  * @param id            在庫調整 ID
  * @param delta         増減量
- * @param reason        調整理由（{@code ARRIVAL} / {@code STOCKTAKE} / {@code DAMAGE_OR_LOSS} / {@code OTHER}）
+ * @param reason        調整理由（{@code StockAdjustmentReason} の名前）
  * @param memo          メモ。なければ null
+ * @param orderId       注文 ID。注文に由来する調整でなければ null
+ * @param orderNumber   注文番号（写し）。注文に由来する調整でなければ null
  * @param quantityAfter 調整後の在庫数
  * @param adjustedAt    調整日時
  */
-public record StockAdjustmentView(UUID id, int delta, String reason, @Nullable String memo, int quantityAfter,
+public record StockAdjustmentView(UUID id, int delta, String reason, @Nullable String memo,
+                                  @Nullable UUID orderId, @Nullable String orderNumber, int quantityAfter,
                                   Instant adjustedAt) {
 }

@@ -55,4 +55,29 @@ public class StockReservationApi {
     public void release(UUID holderId) {
         reservationService.release(holderId);
     }
+
+    /**
+     * 引当を在庫数の減算に置き換え、理由「注文」で調整履歴を書く（AC-87、107）。<br />
+     * 引当の期限が切れていても、その時点で足りれば減算する。1 つでも足りなければ何も変えない。
+     *
+     * @param holderId    持ち主 ID（注文手続き）
+     * @param quantities  バリアント ID → 数量
+     * @param orderId     注文 ID
+     * @param orderNumber 注文番号
+     * @return 足りないバリアントの ID。減算したら空
+     */
+    public Set<UUID> commit(UUID holderId, Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
+        return reservationService.commit(holderId, quantities, orderId, orderNumber);
+    }
+
+    /**
+     * キャンセルした注文の数量を在庫数に戻し、理由「注文のキャンセル」で調整履歴を書く（AC-101、103、107）。
+     *
+     * @param quantities  バリアント ID → 数量
+     * @param orderId     注文 ID
+     * @param orderNumber 注文番号
+     */
+    public void restore(Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
+        reservationService.restore(quantities, orderId, orderNumber);
+    }
 }

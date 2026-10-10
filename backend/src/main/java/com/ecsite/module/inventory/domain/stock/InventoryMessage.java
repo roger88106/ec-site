@@ -30,6 +30,11 @@ public class InventoryMessage {
      */
     public static final I18nMessage INSUFFICIENT_STOCK = I18nMessage.of(Code.INSUFFICIENT_STOCK);
 
+    /**
+     * 注文に由来する理由は、在庫の調整では選べません。
+     */
+    public static final I18nMessage ORDER_REASON_NOT_SELECTABLE = I18nMessage.of(Code.ORDER_REASON_NOT_SELECTABLE);
+
     // ============================== コード定義 ==============================
 
     /**
@@ -56,5 +61,10 @@ public class InventoryMessage {
          * 在庫数が足りません。調整後の在庫数が負になります。
          */
         public static final String INSUFFICIENT_STOCK = "ecsite.inventory.insufficient_stock";
+
+        /**
+         * 注文に由来する理由は、在庫の調整では選べません。
+         */
+        public static final String ORDER_REASON_NOT_SELECTABLE = "ecsite.inventory.order_reason_not_selectable";
     }
 }

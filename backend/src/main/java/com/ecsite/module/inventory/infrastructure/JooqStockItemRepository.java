@@ -84,6 +84,8 @@ class JooqStockItemRepository implements StockItemRepository {
                 .set(STOCK_ADJUSTMENT.DELTA, delta)
                 .set(STOCK_ADJUSTMENT.REASON, adjustment.reason().name())
                 .set(STOCK_ADJUSTMENT.MEMO, adjustment.memo())
+                .set(STOCK_ADJUSTMENT.ORDER_ID, adjustment.orderId())
+                .set(STOCK_ADJUSTMENT.ORDER_NUMBER, adjustment.orderNumber())
                 .set(STOCK_ADJUSTMENT.QUANTITY_AFTER, quantityAfter)
                 .set(STOCK_ADJUSTMENT.ADJUSTED_AT, adjustment.adjustedAt())
                 .execute();

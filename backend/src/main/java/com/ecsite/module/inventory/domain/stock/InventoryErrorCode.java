@@ -27,6 +27,10 @@ public enum InventoryErrorCode implements ErrorCodeProvider {
      * 調整後の在庫数が負になる（AC-43）
      */
     INSUFFICIENT_STOCK(ErrorType.BUSINESS_RULE_ERROR, InventoryMessage.INSUFFICIENT_STOCK),
+    /**
+     * 運営者の調整で、注文に由来する理由を選んだ（AC-107）
+     */
+    ORDER_REASON_NOT_SELECTABLE(ErrorType.BUSINESS_RULE_ERROR, InventoryMessage.ORDER_REASON_NOT_SELECTABLE),
     ;
 
     /**

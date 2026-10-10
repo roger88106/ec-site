@@ -41,7 +41,9 @@ class InventoryMapper {
     StockAdjustment toStockAdjustment(StockAdjustmentView view) {
         return new StockAdjustment(view.id(), view.delta(), StockAdjustmentReason.fromValue(view.reason()),
                 view.quantityAfter(), view.adjustedAt().atOffset(ZoneOffset.UTC))
-                .memo(view.memo());
+                .memo(view.memo())
+                .orderId(view.orderId())
+                .orderNumber(view.orderNumber());
     }
 
     /**

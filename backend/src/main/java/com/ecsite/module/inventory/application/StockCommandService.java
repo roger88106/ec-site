@@ -44,6 +44,6 @@ public class StockCommandService {
         int quantityAfter = stockItemRepository.adjust(command.variantId(), adjustment);
 
         return new StockAdjustmentView(adjustment.id(), adjustment.delta(), adjustment.reason().name(),
-                adjustment.memo(), quantityAfter, adjustment.adjustedAt());
+                adjustment.memo(), null, null, quantityAfter, adjustment.adjustedAt());
     }
 }

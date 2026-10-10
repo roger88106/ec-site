@@ -134,4 +134,49 @@ describe('商品の編集', () => {
     expect(screen.getByRole('cell', { name: 'ABC-001-RED' })).toBeInTheDocument()
     expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
   })
+  it('AC-28 バリアントを販売停止にすると「販売停止」と出て、販売を再開できる', async () => {
+    const state = serveProduct(productDetail({ variants: [variant()] }))
+    const calls: string[] = []
+    const setSuspended = (salesSuspended: boolean) => {
+      state.current = {
+        ...state.current,
+        variants: [variant({ salesSuspended })],
+        version: state.current.version + 1,
+      }
+    }
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 3 }),
+      ),
+      http.put('/products/{productId}/variants/{variantId}/suspend', ({ params, response }) => {
+        calls.push(`suspend ${params.variantId}`)
+        setSuspended(true)
+        return response(204).empty()
+      }),
+      http.put('/products/{productId}/variants/{variantId}/resume', ({ params, response }) => {
+        calls.push(`resume ${params.variantId}`)
+        setSuspended(false)
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+    const row = () => {
+      const found = screen.getByRole('cell', { name: 'ABC-001-RED' }).closest('tr')
+      if (!found) {
+        throw new Error('ABC-001-RED の行がない')
+      }
+      return found
+    }
+
+    await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを販売停止' }))
+
+    expect(await screen.findByText('販売停止にしました')).toBeInTheDocument()
+    expect(await within(row()).findByText('販売停止')).toBeInTheDocument()
+
+    await user.click(within(row()).getByRole('button', { name: 'ABC-001-REDの販売を再開' }))
+
+    expect(await screen.findByText('販売を再開しました')).toBeInTheDocument()
+    expect(await within(row()).findByText('販売中')).toBeInTheDocument()
+    expect(calls).toEqual([`suspend ${variant().id}`, `resume ${variant().id}`])
+  })
 })

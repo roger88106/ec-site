@@ -15,7 +15,7 @@ import { isNeverShown } from '@/features/product/product'
 import { move } from '@/lib/array'
 
 /**
- * バリアントの一覧、登録、削除、並び替え（T709。AC-20〜24、27、71）。<br />
+ * バリアントの一覧、登録、削除、並び替え、販売停止（T709、T1003。AC-20〜24、27、28、71）。<br />
  * 並び替えと削除は、表示している一覧のバージョンで送る。
  */
 export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
@@ -29,13 +29,32 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
       await invalidate('/products', '/inventory')
     },
   })
+  const suspend = $api.useMutation('put', '/products/{productId}/variants/{variantId}/suspend', {
+    onSuccess: async () => {
+      toast.success('販売停止にしました')
+      await invalidate('/products')
+    },
+  })
+  const resume = $api.useMutation('put', '/products/{productId}/variants/{variantId}/resume', {
+    onSuccess: async () => {
+      toast.success('販売を再開しました')
+      await invalidate('/products')
+    },
+  })
+  const mutations = [reorder, remove, suspend, resume]
   const ids = product.variants.map((variant) => variant.id)
-  const pending = reorder.isPending || remove.isPending
+  const pending = mutations.some((mutation) => mutation.isPending)
+  /** 別の操作を始めたら、前の操作のエラーを消す */
+  const resetErrors = () => {
+    for (const mutation of mutations) {
+      mutation.reset()
+    }
+  }
   const neverShown = isNeverShown(product)
   // 軸を持たない商品のバリアントは 1 つだけ（AC-24）
   const canAdd = product.axes.length > 0 || product.variants.length === 0
   const reorderTo = (variantIds: string[]) => {
-    remove.reset()
+    resetErrors()
     reorder.mutate({
       params: { path: { productId: product.id } },
       body: { variantIds, version: product.version },
@@ -95,13 +114,41 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
                     >
                       <ArrowDownIcon />
                     </Button>
+                    {/* 販売停止のバリアントも C 側の選択肢に出るが、選べない（AC-28） */}
+                    {variant.salesSuspended ? (
+                      <Button
+                        aria-label={`${variant.variantCode}の販売を再開`}
+                        disabled={pending}
+                        onClick={() => {
+                          resetErrors()
+                          resume.mutate({ params: { path: { productId: product.id, variantId: variant.id } } })
+                        }}
+                        size="xs"
+                        variant="outline"
+                      >
+                        販売を再開
+                      </Button>
+                    ) : (
+                      <Button
+                        aria-label={`${variant.variantCode}を販売停止`}
+                        disabled={pending}
+                        onClick={() => {
+                          resetErrors()
+                          suspend.mutate({ params: { path: { productId: product.id, variantId: variant.id } } })
+                        }}
+                        size="xs"
+                        variant="outline"
+                      >
+                        販売停止
+                      </Button>
+                    )}
                     {/* C 側に表示されたことのある商品のバリアントは削除できない（AC-71） */}
                     {neverShown && (
                       <ConfirmDialog
                         confirmLabel="削除する"
                         description="在庫もあわせて削除します。"
                         onConfirm={() => {
-                          reorder.reset()
+                          resetErrors()
                           remove.mutate({
                             params: {
                               path: { productId: product.id, variantId: variant.id },
@@ -123,7 +170,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
             </TableBody>
           </Table>
         )}
-        <ErrorMessage error={reorder.error ?? remove.error} />
+        <ErrorMessage error={mutations.find((mutation) => mutation.error)?.error} />
         {canAdd ? (
           <AddVariantForm product={product} refetch={refetch} />
         ) : (

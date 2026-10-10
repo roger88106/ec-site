@@ -91,19 +91,12 @@ MVP では、処理に失敗したイベントを自動では再発行しない�
 
 ## データモデル
 
-[V202610091600__inventory_create_stock_item.sql](../../backend/src/main/resources/db/migration/V202610091600__inventory_create_stock_item.sql)
+- [V202610091600__inventory_create_stock_item.sql](../../backend/src/main/resources/db/migration/V202610091600__inventory_create_stock_item.sql)：在庫、在庫調整
+- [V202610111000__inventory_create_stock_reservation.sql](../../backend/src/main/resources/db/migration/V202610111000__inventory_create_stock_reservation.sql)：引当、在庫調整の注文の理由と注文（spec 002）
 
 - バリアントと商品は商品カタログモジュールの ID なので、外部キーは張らない（constitution 6）。
 - 商品を持つのは、B 側で商品ごとの在庫数の合計を出すため。
 - 調整履歴は、在庫の削除で一緒に消える（`ON DELETE CASCADE`）。バリアント・商品の削除のイベントで在庫を消すため。
-
-### spec 002 での追加（草案）
-
-マイグレーションができたら、リンクに置き換える。
-
-| テーブル | 論理名 | 変更 |
-|----------|--------|------|
-| `inventory.stock_reservation` | 引当 | 新規。引当 ID、持ち主 ID、在庫 ID、数量（1 以上）、期限、作成日時。持ち主と在庫の組で一意。在庫の削除で一緒に消える |
-| `inventory.stock_adjustment` | 在庫調整 | 調整理由に「注文」「注文のキャンセル」を足す。注文 ID と注文番号（写し）のカラムを足す（注文の理由のときだけ値がある） |
-
 - 持ち主（注文手続き）と注文は注文モジュールの ID なので、外部キーは張らない（constitution 6）。
+- 引当も在庫の削除で一緒に消える。期限切れの引当を消す処理はまだない（期限で数えなくなるだけ）。
+- 注文に由来する調整だけが注文 ID と注文番号を持つことは、CHECK 制約でも守る。

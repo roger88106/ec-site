@@ -399,6 +399,80 @@ class ProductTest {
     }
 
     @Nested
+    @DisplayName("バリアントの販売停止")
+    class SuspendVariant {
+
+        @Test
+        @DisplayName("AC-28 バリアントを販売停止にでき、解除できる")
+        void suspendsAndResumes() {
+            var product = productWithVariant();
+            var variantId = product.variants().getFirst().id();
+
+            assertThat(product.suspendVariant(variantId)).isTrue();
+            assertThat(product.variants().getFirst().salesSuspended()).isTrue();
+
+            assertThat(product.resumeVariant(variantId)).isTrue();
+            assertThat(product.variants().getFirst().salesSuspended()).isFalse();
+        }
+
+        @Test
+        @DisplayName("AC-28 販売停止にしても、ほかのバリアントと並び順は変わらない")
+        void keepsOtherVariants() {
+            var product = productWithAxes("色");
+            var white = product.addVariant(VariantCode.of("V-WH"), List.of("白"), NOW);
+            var black = product.addVariant(VariantCode.of("V-BK"), List.of("黒"), NOW);
+
+            product.suspendVariant(white);
+
+            assertThat(product.variants()).extracting(Variant::id).containsExactly(white, black);
+            assertThat(product.variants()).extracting(Variant::salesSuspended).containsExactly(true, false);
+        }
+
+        @Test
+        @DisplayName("同じ状態への切り替えは何もしない（冪等）")
+        void isIdempotent() {
+            var product = productWithVariant();
+            var variantId = product.variants().getFirst().id();
+
+            assertThat(product.resumeVariant(variantId)).isFalse();
+            product.suspendVariant(variantId);
+            assertThat(product.suspendVariant(variantId)).isFalse();
+            assertThat(product.variants().getFirst().salesSuspended()).isTrue();
+        }
+
+        @Test
+        @DisplayName("販売終了の商品のバリアントも、販売停止・解除できる")
+        void suspendsVariantOfDiscontinuedProduct() {
+            var product = productWithVariant();
+            product.discontinue(NOW);
+            var variantId = product.variants().getFirst().id();
+
+            assertThat(product.suspendVariant(variantId)).isTrue();
+        }
+
+        @Test
+        @DisplayName("商品にないバリアントは見つからない")
+        void rejectsUnknownVariant() {
+            var product = productWithVariant();
+
+            assertBusinessError(() -> product.suspendVariant(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+            assertBusinessError(() -> product.resumeVariant(UUID.randomUUID()), CommonErrorCode.NOT_FOUND);
+        }
+
+        @Test
+        @DisplayName("イベントは登録されない")
+        void registersNoEvent() {
+            var product = productWithVariant();
+            var variantId = product.variants().getFirst().id();
+
+            product.suspendVariant(variantId);
+            product.resumeVariant(variantId);
+
+            assertThat(product.pullEvents()).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("削除")
     class Delete {
 

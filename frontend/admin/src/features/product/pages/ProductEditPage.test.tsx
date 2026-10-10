@@ -317,7 +317,7 @@ describe('商品画像', () => {
     expect(calls).toEqual(['受付 image/png 2', 'PUT image/png', '登録 version=0'])
   })
 
-  it('AC-39 JPEG、PNG、WebP 以外のファイルは送らずに誤りを出す', async () => {
+  it('AC-39、67 受け付ける形式以外のファイルは送らずに誤りを出す', async () => {
     serveProduct(productDetail())
     renderApp(URL)
 
@@ -325,7 +325,52 @@ describe('商品画像', () => {
       target: { files: [new File(['GIF89a'], 'a.gif', { type: 'image/gif' })] },
     })
 
-    expect(await screen.findByText('画像の形式は JPEG、PNG、WebP のいずれかにしてください。')).toBeInTheDocument()
+    expect(
+      await screen.findByText('画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。'),
+    ).toBeInTheDocument()
+  })
+
+  it('AC-67 ブラウザが形式を空で渡す HEIC も、拡張子で形式を補って送る', async () => {
+    const state = serveProduct(productDetail())
+    const calls = serveUpload(state)
+    renderApp(URL)
+
+    fireEvent.change(await screen.findByLabelText('画像のファイル'), {
+      target: { files: [new File([new Uint8Array([0, 0, 0, 0x18])], 'IMG_0001.HEIC', { type: '' })] },
+    })
+
+    expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
+    expect(calls).toEqual(['受付 image/heic 4', 'PUT image/heic', '登録 version=0'])
+  })
+
+  it('AC-70 変換に失敗した画像は登録されず、そのメッセージを出す', async () => {
+    const state = serveProduct(productDetail())
+    serveUpload(state)
+    server.use(
+      http.post('/products/{productId}/images', () =>
+        Response.json(
+          problem(
+            400,
+            'IMAGE_CONVERSION_FAILED',
+            '画像を変換できませんでした。ファイルが壊れていないか確かめて、もう一度アップロードしてください。',
+          ),
+          { status: 400 },
+        ),
+      ),
+    )
+    const { user } = renderApp(URL)
+
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+    )
+
+    expect(
+      await screen.findByText(
+        '画像を変換できませんでした。ファイルが壊れていないか確かめて、もう一度アップロードしてください。',
+      ),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: '画像 1' })).not.toBeInTheDocument()
   })
 
   it('AC-40 20 枚ある商品は、画像を追加できない', async () => {

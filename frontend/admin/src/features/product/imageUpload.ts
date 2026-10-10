@@ -1,7 +1,35 @@
 import { fetchClient } from '@/api/client'
 
-/** 受け付ける画像の形式（AC-39） */
-export const IMAGE_CONTENT_TYPES = ['image/jpeg', 'image/png', 'image/webp'] as const
+/** 受け付ける画像の形式（AC-39、67）。登録のときに WebP に変換される（AC-68） */
+export const IMAGE_CONTENT_TYPES = [
+  'image/jpeg',
+  'image/png',
+  'image/webp',
+  'image/bmp',
+  'image/heic',
+  'image/heif',
+  'image/avif',
+] as const
+
+/**
+ * 拡張子からの形式。ブラウザが HEIC などの形式を空で渡すことがあるため（Windows の Chrome など）、拡張子で補う
+ */
+const CONTENT_TYPES_BY_EXTENSION: Readonly<Record<string, (typeof IMAGE_CONTENT_TYPES)[number]>> = {
+  jpg: 'image/jpeg',
+  jpeg: 'image/jpeg',
+  png: 'image/png',
+  webp: 'image/webp',
+  bmp: 'image/bmp',
+  heic: 'image/heic',
+  heif: 'image/heif',
+  avif: 'image/avif',
+}
+
+/** ファイルの選択で出す形式（MIME タイプと拡張子。拡張子がないと HEIC を選べない OS がある） */
+export const IMAGE_ACCEPT = [
+  ...IMAGE_CONTENT_TYPES,
+  ...Object.keys(CONTENT_TYPES_BY_EXTENSION).map((ext) => `.${ext}`),
+].join(',')
 
 /** 1 ファイルの大きさの上限（10MB。AC-39） */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
@@ -13,13 +41,30 @@ export const MAX_IMAGES = 20
 export class ImageUploadError extends Error {}
 
 /**
+ * 受付に申告する画像の形式。ブラウザの形式が空（または汎用のもの）なら、拡張子で補う。
+ *
+ * @returns 形式。受け付けない形式なら null
+ */
+export function imageContentType(file: Pick<File, 'type' | 'name'>): string | null {
+  const type = file.type.toLowerCase()
+  if ((IMAGE_CONTENT_TYPES as readonly string[]).includes(type)) {
+    return type
+  }
+  if (type !== '' && type !== 'application/octet-stream') {
+    return null
+  }
+  const extension = file.name.split('.').pop()?.toLowerCase() ?? ''
+  return CONTENT_TYPES_BY_EXTENSION[extension] ?? null
+}
+
+/**
  * 送る前に確かめられる、画像のファイルの誤り（形式と大きさ）。サーバーも同じ検証をする。
  *
  * @returns 誤りのメッセージ。なければ null
  */
-export function imageFileError(file: Pick<File, 'type' | 'size'>): string | null {
-  if (!(IMAGE_CONTENT_TYPES as readonly string[]).includes(file.type)) {
-    return '画像の形式は JPEG、PNG、WebP のいずれかにしてください。'
+export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): string | null {
+  if (imageContentType(file) === null) {
+    return '画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。'
   }
   if (file.size === 0 || file.size > MAX_IMAGE_BYTES) {
     return '画像は 1 ファイル 10MB までです。'
@@ -39,7 +84,8 @@ export function imageFileError(file: Pick<File, 'type' | 'size'>): string | null
 export async function uploadProductImage(productId: string, file: File, version: number): Promise<void> {
   const { data: upload } = await fetchClient.POST('/products/{productId}/image-uploads', {
     params: { path: { productId } },
-    body: { contentType: file.type, contentLength: file.size },
+    // 形式は imageFileError で確かめてから呼ぶ
+    body: { contentType: imageContentType(file) ?? file.type, contentLength: file.size },
   })
   if (!upload) {
     throw new ImageUploadError('画像の受付に失敗しました。もう一度やり直してください。')

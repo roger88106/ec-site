@@ -11,7 +11,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
-  IMAGE_CONTENT_TYPES,
+  IMAGE_ACCEPT,
   ImageUploadError,
   imageFileError,
   MAX_IMAGES,
@@ -20,7 +20,7 @@ import {
 import { move } from '@/lib/array'
 
 /**
- * 商品の画像の登録・並び替え・削除（T1021。AC-37、39、40）。先頭が代表画像。<br />
+ * 商品の画像の登録・並び替え・削除（T1021、T1039。AC-37、39、40、67、70）。先頭が代表画像。<br />
  * ファイルは署名付き URL でストレージへ直接送る（plan 001 第 7.2 節）。並び替えと削除は、表示している商品のバージョンで送る。
  */
 export function ProductImagesCard({ product }: { product: ProductDetail }) {
@@ -85,7 +85,9 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
       </CardHeader>
       <CardContent className="space-y-4">
         <p className="text-muted-foreground text-sm">
-          JPEG、PNG、WebP で 1 ファイル 10MB まで、{MAX_IMAGES} 枚まで登録できます。先頭の画像が代表画像です。
+          JPEG、PNG、WebP、BMP、HEIC、AVIF で 1 ファイル 10MB まで、{MAX_IMAGES}{' '}
+          枚まで登録できます。先頭の画像が代表画像です。 登録した画像は WebP
+          に変換し、位置情報などの情報は取り除きます。
         </p>
         {images.length === 0 ? (
           <p className="text-muted-foreground text-sm">画像はまだありません。</p>
@@ -145,7 +147,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
           </ul>
         )}
         <input
-          accept={IMAGE_CONTENT_TYPES.join(',')}
+          accept={IMAGE_ACCEPT}
           aria-label="画像のファイル"
           className="hidden"
           multiple

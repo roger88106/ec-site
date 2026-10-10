@@ -89,6 +89,8 @@ dependencies {
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.validation)
+    // 外部の HTTP の呼び出し（画像の変換の imgproxy）。トレースとメトリクスが付く RestClient.Builder を使う
+    implementation(libs.spring.boot.starter.restclient)
     // --- 可観測性（constitution 5-9） ---
     // ヘルスチェック（liveness / readiness）、メトリクス（Prometheus）
     implementation(libs.spring.boot.starter.actuator)

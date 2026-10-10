@@ -18,7 +18,16 @@ import {
  * 軸ごとに値を並べ、在庫切れ・販売停止のバリアントにしかならない値は、選べない状態（グレー）で出す。
  * すべての軸を選ぶと、そのバリアントの在庫状況（「在庫あり」「在庫なし」）を出す。
  */
-export function VariantPicker({ axes, variants }: { axes: VariantAxis[]; variants: Variant[] }) {
+export function VariantPicker({
+  axes,
+  variants,
+  onSelectVariant,
+}: {
+  axes: VariantAxis[]
+  variants: Variant[]
+  /** すべての軸を選んでバリアントが決まったとき（決まらなくなったときは null）に呼ぶ */
+  onSelectVariant?: (variant: Variant | null) => void
+}) {
   const [selection, setSelection] = useState(() => emptySelection(axes))
   const chosen = selectedVariant(axes, variants, selection)
   const soldOut = !variants.some(isPurchasable)
@@ -42,7 +51,11 @@ export function VariantPicker({ axes, variants }: { axes: VariantAxis[]; variant
                   className={selectable ? undefined : 'line-through'}
                   disabled={!selectable && !selected}
                   key={value}
-                  onClick={() => setSelection(toggleValue(selection, axisIndex, value))}
+                  onClick={() => {
+                    const next = toggleValue(selection, axisIndex, value)
+                    setSelection(next)
+                    onSelectVariant?.(selectedVariant(axes, variants, next) ?? null)
+                  }}
                   size="sm"
                   type="button"
                   variant={selected ? 'default' : 'outline'}

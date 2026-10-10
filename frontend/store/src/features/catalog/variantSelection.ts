@@ -67,3 +67,17 @@ export function toggleValue(selection: Selection, axisIndex: number, value: stri
 export function stockLabel(variant: Variant): '在庫あり' | '在庫なし' {
   return isPurchasable(variant) ? '在庫あり' : '在庫なし'
 }
+
+/**
+ * 選んだバリアントのときに出す画像（AC-38）。バリアントに指定した画像、なければ代表画像（画像の先頭）。
+ *
+ * @param imageUrls 商品の画像（先頭が代表画像）
+ * @param variant   選んだバリアント。選んでいなければ null
+ * @returns 画像の URL。商品に画像がなく、バリアントにも指定がなければ null
+ */
+export function imageForVariant(
+  imageUrls: readonly string[],
+  variant: Pick<Variant, 'imageUrl'> | null,
+): string | null {
+  return variant?.imageUrl ?? imageUrls[0] ?? null
+}

@@ -10,10 +10,10 @@ export function ProductCard({ product }: { product: ProductSummary }) {
     <Link className="group block space-y-2" href={`/products/${product.id}`}>
       <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
         {product.imageUrl ? (
-          // biome-ignore lint/performance/noImgElement: 画像の機能（US-7）で配信の方法を決めるまでは img を使う
+          // biome-ignore lint/performance/noImgElement: 画像は配信の側（CDN）で最適化する（plan 001 第 7.4 節）
           <img alt="" className="size-full object-cover" src={product.imageUrl} />
         ) : (
-          // 画像の機能（US-7）までは、代わりの図を出す
+          // 画像がなければ、代わりの図を出す
           <ImageIcon aria-hidden className="size-10 text-muted-foreground" />
         )}
         {!product.inStock && (

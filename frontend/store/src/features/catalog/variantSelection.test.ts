@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import type { Variant, VariantAxis } from '@/api/types'
 import {
   emptySelection,
+  imageForVariant,
   isValueSelectable,
   selectedVariant,
   stockLabel,
@@ -81,5 +82,22 @@ describe('バリアントの選択', () => {
     expect(stockLabel(variant('a', [], true))).toBe('在庫あり')
     expect(stockLabel(variant('b', [], false))).toBe('在庫なし')
     expect(stockLabel(variant('c', [], true, true))).toBe('在庫なし')
+  })
+})
+
+describe('imageForVariant', () => {
+  const images = ['https://cdn.test/1.png', 'https://cdn.test/2.png']
+
+  test('AC-38 バリアントに指定した画像を出す', () => {
+    expect(imageForVariant(images, { imageUrl: 'https://cdn.test/2.png' })).toBe('https://cdn.test/2.png')
+  })
+
+  test('AC-38 指定がなければ代表画像を出す。選んでいなくても代表画像', () => {
+    expect(imageForVariant(images, { imageUrl: null })).toBe('https://cdn.test/1.png')
+    expect(imageForVariant(images, null)).toBe('https://cdn.test/1.png')
+  })
+
+  test('画像がなければ null', () => {
+    expect(imageForVariant([], null)).toBeNull()
   })
 })

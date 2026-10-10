@@ -399,6 +399,121 @@ class ProductTest {
     }
 
     @Nested
+    @DisplayName("公開期間")
+    class ChangePublicationPeriod {
+
+        @Test
+        @DisplayName("AC-34 公開開始・終了日時を設定でき、どちらも空にできる")
+        void setsPeriod() {
+            var product = productWithVariant();
+            var period = PublicationPeriod.of(NOW.plus(ONE_DAY), NOW.plus(ONE_DAY.multipliedBy(10)));
+
+            product.changePublicationPeriod(period, NOW);
+            assertThat(product.publicationPeriod()).isEqualTo(period);
+
+            product.changePublicationPeriod(PublicationPeriod.UNLIMITED, NOW);
+            assertThat(product.publicationPeriod()).isEqualTo(PublicationPeriod.UNLIMITED);
+        }
+
+        @Test
+        @DisplayName("AC-36 終了日時は開始日時より後。同じか前なら拒否される")
+        void rejectsEndNotAfterStart() {
+            assertBusinessError(() -> PublicationPeriod.of(NOW, NOW), ProductErrorCode.INVALID_PUBLICATION_PERIOD);
+            assertBusinessError(() -> PublicationPeriod.of(NOW, NOW.minus(ONE_DAY)),
+                    ProductErrorCode.INVALID_PUBLICATION_PERIOD);
+            assertThatCode(() -> PublicationPeriod.of(NOW, NOW.plusSeconds(1))).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("AC-35 公開中でも、開始日時より前と終了日時以降は C 側に表示されない")
+        void isVisibleOnlyWithinPeriod() {
+            var start = NOW.plus(ONE_DAY);
+            var end = NOW.plus(ONE_DAY.multipliedBy(2));
+            var product = productWithVariant();
+            product.changePublicationPeriod(PublicationPeriod.of(start, end), NOW);
+            product.publish(NOW);
+
+            assertThat(product.isVisibleAt(start.minusSeconds(1))).isFalse();
+            assertThat(product.isVisibleAt(start)).isTrue();
+            assertThat(product.isVisibleAt(end.minusSeconds(1))).isTrue();
+            assertThat(product.isVisibleAt(end)).isFalse();
+        }
+
+        @Test
+        @DisplayName("公開中に開始日時を変えると、表示前の初回表示日時を計算し直す")
+        void recalculatesScheduledFirstShownAt() {
+            var product = productWithVariant();
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+            product.publish(NOW);
+            assertThat(product.firstShownAt()).isEqualTo(NOW.plus(ONE_DAY));
+
+            var later = NOW.plus(ONE_DAY.multipliedBy(3));
+            product.changePublicationPeriod(PublicationPeriod.of(later, null), NOW);
+            assertThat(product.firstShownAt()).isEqualTo(later);
+
+            // 開始を空にすると、変えた時刻から表示される
+            var changedAt = NOW.plusSeconds(60);
+            product.changePublicationPeriod(PublicationPeriod.UNLIMITED, changedAt);
+            assertThat(product.firstShownAt()).isEqualTo(changedAt);
+        }
+
+        @Test
+        @DisplayName("AC-54 表示されて確定した初回表示日時は、公開期間を変えても変わらない")
+        void keepsConfirmedFirstShownAt() {
+            var product = productWithVariant();
+            product.publish(NOW);
+
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW.plusSeconds(60));
+
+            assertThat(product.firstShownAt()).isEqualTo(NOW);
+        }
+
+        @Test
+        @DisplayName("公開中に終了日時を過ぎた期間にすると、表示されないので初回表示日時は空になる")
+        void clearsFirstShownAtWhenPeriodHasEnded() {
+            var product = productWithVariant();
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+            product.publish(NOW);
+
+            product.changePublicationPeriod(PublicationPeriod.of(null, NOW), NOW);
+
+            assertThat(product.firstShownAt()).isNull();
+        }
+
+        @Test
+        @DisplayName("公開中でない商品の期間を変えても、初回表示日時は空のまま")
+        void leavesFirstShownAtOfUnpublished() {
+            var product = productWithVariant();
+
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+
+            assertThat(product.firstShownAt()).isNull();
+        }
+
+        @Test
+        @DisplayName("AC-33 公開を予約し、開始日時の前に取り消した（非公開にした）商品は削除できる")
+        void deletesCancelledReservation() {
+            var product = productWithVariant();
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+            product.publish(NOW);
+
+            product.unpublish(NOW.plusSeconds(60));
+
+            assertThatCode(() -> product.delete(NOW.plusSeconds(60))).doesNotThrowAnyException();
+        }
+
+        @Test
+        @DisplayName("イベントは登録されない")
+        void registersNoEvent() {
+            var product = productWithVariant();
+
+            product.changePublicationPeriod(PublicationPeriod.of(NOW.plus(ONE_DAY), null), NOW);
+
+            assertThat(product.pullEvents()).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("バリアントの販売停止")
     class SuspendVariant {
 

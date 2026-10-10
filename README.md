@@ -5,7 +5,7 @@
 自社 B2C の EC サイト。個人のポートフォリオとして、本番相当のやり方を模擬する。
 閲覧 → カート → 注文 → 決済 → 出荷 → 配送状況のコアフローを、省略せずに作る。
 
-> 現在は MVP の 2 つ目の機能（spec 002）の OpenAPI と tasks を書く前の段階。仕様駆動開発（SDD）で進めている。
+> 現在は MVP の 2 つ目の機能（spec 002）を実装している。仕様駆動開発（SDD）で進めている。
 
 ## 技術スタック
 
@@ -46,7 +46,7 @@ spec がコードに先行する。仕様の誤りに気づいたら、spec を�
 | spec | 内容 | 状態 |
 |------|------|------|
 | [001](docs/specs/001-catalog-and-inventory) | 商品カタログと在庫 | 完了。[段階 0（基盤）](docs/specs/001-catalog-and-inventory/tasks/00-foundation.md)、[段階 1（税）](docs/specs/001-catalog-and-inventory/tasks/01-tax.md)、[段階 2（カテゴリ）](docs/specs/001-catalog-and-inventory/tasks/02-category.md)、[段階 3（商品）](docs/specs/001-catalog-and-inventory/tasks/03-product.md)、[段階 4（在庫）](docs/specs/001-catalog-and-inventory/tasks/04-inventory.md)、[段階 5（B 側の商品一覧）](docs/specs/001-catalog-and-inventory/tasks/05-admin-product-list.md)、[段階 6（店舗）](docs/specs/001-catalog-and-inventory/tasks/06-storefront.md)、[段階 7（管理画面）](docs/specs/001-catalog-and-inventory/tasks/07-admin-ui.md)、[段階 8（店舗画面）](docs/specs/001-catalog-and-inventory/tasks/08-store-ui.md)、[段階 9（フロントのテスト）](docs/specs/001-catalog-and-inventory/tasks/09-frontend-tests.md) 完了（P1 はすべて完了）。[段階 10（P2）](docs/specs/001-catalog-and-inventory/tasks/10-p2.md) は、バリアントの販売停止、公開日時の予約、商品画像（US-7）、メディアモジュールへの切り出し、画像形式の受け付けと WebP 変換（US-13）が完了（P2 はすべて完了）。[段階 11（見直し）](docs/specs/001-catalog-and-inventory/tasks/11-review.md) 完了 |
-| [002](docs/specs/002-cart-and-order) | カートと注文 | spec 確定。plan 承認済み（OpenAPI と tasks は未作成） |
+| [002](docs/specs/002-cart-and-order) | カートと注文 | 実装中。[段階 1（税と在庫の土台）](docs/specs/002-cart-and-order/tasks/01-foundation.md) から |
 
 ## 起動とテスト
 

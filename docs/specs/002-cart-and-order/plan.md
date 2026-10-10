@@ -1,6 +1,6 @@
 # Plan 002：カートと注文
 
-ステータス：承認済み（OpenAPI と tasks は未作成）　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 本 spec で追加・変更するモジュールの設計は、各モジュールの設計書に書く。本書には、モジュールをまたぐ決定と、作り方の段取りだけを書く。
 
@@ -143,7 +143,7 @@ flowchart LR
 | PUT | `/orders/{orderId}/cancellation-request/reject` | `order:write` | 102、105 |
 | PUT | `/orders/{orderId}/cancel`（理由が必須。冪等） | `order:write` | 103〜105 |
 
-在庫の調整履歴（`GET /inventory/variants/{variantId}/adjustments`）は、理由に「注文」「注文のキャンセル」と注文番号が加わる（AC-107）。運営者の調整（`POST .../adjustments`）では、これらの理由は 400。
+在庫の調整履歴（`GET /inventory/variants/{variantId}/adjustments`）は、理由に「注文」「注文のキャンセル」と注文番号が加わる（AC-107）。運営者の調整（`POST .../adjustments`）では、これらの理由は 400。`admin.yaml` へのこの変更は、既存の管理画面と同時に直すため、段階 1（T2103）で行う。
 
 ## 6. フロントエンド
 
@@ -173,7 +173,7 @@ flowchart LR
 
 ## 8. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-foundation.md)、[02](tasks/02-cart.md)、[03](tasks/03-order.md)、[04](tasks/04-cancellation-and-admin.md)、[05](tasks/05-store-ui.md)、[06](tasks/06-admin-ui.md)、[07](tasks/07-frontend-tests.md)、[08](tasks/08-review.md)）。タスク番号は `T2` ＋ 段階 ＋ 連番（例：T2101）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|

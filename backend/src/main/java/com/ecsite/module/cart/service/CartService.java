@@ -2,6 +2,7 @@ package com.ecsite.module.cart.service;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.cart.api.CartContents;
 import com.ecsite.module.cart.catalogdir.CartCatalogDirectory;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.cart.stockdir.CartStockDirectory;
@@ -12,8 +13,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.function.Consumer;
 
 /**
  * カートのサービス（docs/modules/cart.md）。<br />
@@ -108,6 +109,29 @@ public class CartService {
     @Transactional
     public void removeItem(UUID cartId, UUID variantId) {
         change(cartId, (cart, now) -> cart.remove(variantId, now));
+    }
+
+    /**
+     * カートの中身を返す（注文モジュール向け）。期限切れのカートは品目が空（AC-81）。
+     *
+     * @param cartId カート ID
+     * @return カートの中身。カートがなければ空
+     */
+    @Transactional(readOnly = true)
+    public Optional<CartContents> findContents(UUID cartId) {
+        var now = clock.instant();
+        return cartRepository.findById(cartId).map(cart -> new CartContents(cart.id(), cart.version(),
+                cart.itemsAt(now).stream().map(item -> new CartContents.Item(item.variantId(), item.quantity())).toList()));
+    }
+
+    /**
+     * カートを空にする（注文の成立。AC-90）。
+     *
+     * @param cartId カート ID
+     */
+    @Transactional
+    public void clear(UUID cartId) {
+        change(cartId, Cart::clear);
     }
 
 // ============================== プライベートメソッド ==============================

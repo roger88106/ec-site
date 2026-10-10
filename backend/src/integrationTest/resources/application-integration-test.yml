@@ -17,3 +17,8 @@ spring:
   flyway:
     # Testcontainers の PostgreSQL にマイグレーションを適用する（constitution 7.2）
     enabled: true
+
+ecsite:
+  order:
+    # 送料に適用する税区分。テストの補助（CatalogTestData#shippingTaxCategory）がこの ID で作る
+    shipping-tax-category-id: 00000000-0000-0000-0000-00000000f001

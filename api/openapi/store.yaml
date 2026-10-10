@@ -18,7 +18,9 @@ tags:
   - name: category
     description: カテゴリ（絞り込み用）
   - name: cart
-    description: カート（spec 002 US-14、15）
+    description: カートの作成と品目の変更（spec 002 US-14、15。カートモジュール）
+  - name: cart-view
+    description: カートの表示（spec 002 US-15。店舗モジュールが、カートと注文の見積もりを組み合わせる）
   - name: checkout
     description: 注文手続きと注文の成立（spec 002 US-16）
   - name: order
@@ -144,7 +146,7 @@ paths:
     parameters:
       - $ref: '#/components/parameters/CartId'
     get:
-      tags: [cart]
+      tags: [cart-view]
       operationId: getCart
       summary: カートの表示（AC-77、79〜81）
       description: |

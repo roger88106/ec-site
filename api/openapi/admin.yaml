@@ -528,7 +528,7 @@ paths:
     post:
       tags: [product]
       operationId: createImageUpload
-      summary: 画像のアップロードを受け付ける（AC-39、40、P2）
+      summary: 画像のアップロードを受け付ける（AC-39、40、67、P2）
       description: |
         形式・サイズ・枚数を確かめ、受付のバケットへの署名付き URL（PUT）を返す（plan 001 第 7 節）。
         ブラウザは `uploadUrl` に `headers` を付けてファイルを PUT し、その後 `POST /products/{productId}/images` で登録する。
@@ -558,9 +558,10 @@ paths:
     post:
       tags: [product]
       operationId: addProductImage
-      summary: 受け付けた画像を登録する（AC-37、39、40、P2）
+      summary: 受け付けた画像を登録する（AC-37、39、40、67〜70、P2）
       description: |
-        受付のファイルの大きさと形式（先頭のバイト）を確かめ、配信のバケットへコピーして、商品の画像の最後に加える。
+        受付のファイルの大きさと形式（先頭のバイト）を確かめ、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 第 7.5 節）。
+        変換に失敗した画像は登録せず、400（`IMAGE_CONVERSION_FAILED`）を返す（AC-70）。
         バリアントと同じく商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
       x-required-permission: product:write
       requestBody:
@@ -1255,7 +1256,7 @@ components:
       properties:
         contentType:
           type: string
-          description: ファイルの形式。image/jpeg、image/png、image/webp（AC-39）
+          description: ファイルの形式。image/jpeg、image/png、image/webp、image/bmp、image/heic、image/heif、image/avif（AC-39、67）
           example: image/jpeg
         contentLength:
           type: integer

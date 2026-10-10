@@ -27,6 +27,10 @@ public enum MediaErrorCode implements ErrorCodeProvider {
      * ファイルの中身が対象の画像でない（AC-39）
      */
     INVALID_IMAGE_FILE(ErrorType.VALIDATION_ERROR, MediaMessage.INVALID_IMAGE_FILE),
+    /**
+     * 画像を変換できなかった（壊れたファイル、時間切れ。AC-70）
+     */
+    IMAGE_CONVERSION_FAILED(ErrorType.VALIDATION_ERROR, MediaMessage.IMAGE_CONVERSION_FAILED),
     ;
 
     /**

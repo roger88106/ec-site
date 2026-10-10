@@ -11,7 +11,7 @@ import lombok.NoArgsConstructor;
 public class MediaMessage {
 
     /**
-     * 画像の形式は JPEG、PNG、WebP のいずれかにしてください。
+     * 画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。
      */
     public static final I18nMessage UNSUPPORTED_IMAGE_FORMAT = I18nMessage.of(Code.UNSUPPORTED_IMAGE_FORMAT);
 
@@ -26,9 +26,14 @@ public class MediaMessage {
     public static final I18nMessage IMAGE_UPLOAD_NOT_FOUND = I18nMessage.of(Code.IMAGE_UPLOAD_NOT_FOUND);
 
     /**
-     * ファイルの中身が JPEG、PNG、WebP の画像ではありません。
+     * ファイルの中身が対応している形式（JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF）の画像ではありません。
      */
     public static final I18nMessage INVALID_IMAGE_FILE = I18nMessage.of(Code.INVALID_IMAGE_FILE);
+
+    /**
+     * 画像を変換できませんでした。ファイルが壊れていないか確かめて、もう一度アップロードしてください。
+     */
+    public static final I18nMessage IMAGE_CONVERSION_FAILED = I18nMessage.of(Code.IMAGE_CONVERSION_FAILED);
 
     /**
      * メッセージコード
@@ -37,7 +42,7 @@ public class MediaMessage {
     public static class Code {
 
         /**
-         * 画像の形式は JPEG、PNG、WebP のいずれかにしてください。
+         * 画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。
          */
         public static final String UNSUPPORTED_IMAGE_FORMAT = "ecsite.media.unsupported_image_format";
 
@@ -52,8 +57,13 @@ public class MediaMessage {
         public static final String IMAGE_UPLOAD_NOT_FOUND = "ecsite.media.image_upload_not_found";
 
         /**
-         * ファイルの中身が JPEG、PNG、WebP の画像ではありません。
+         * ファイルの中身が対応している形式（JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF）の画像ではありません。
          */
         public static final String INVALID_IMAGE_FILE = "ecsite.media.invalid_image_file";
+
+        /**
+         * 画像を変換できませんでした。ファイルが壊れていないか確かめて、もう一度アップロードしてください。
+         */
+        public static final String IMAGE_CONVERSION_FAILED = "ecsite.media.image_conversion_failed";
     }
 }

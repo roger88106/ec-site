@@ -3,12 +3,14 @@
 import { ImageIcon } from 'lucide-react'
 import { type ReactNode, useState } from 'react'
 import type { Variant, VariantAxis } from '@/api/types'
+import { AddToCartForm } from '@/features/catalog/components/AddToCartForm'
 import { VariantPicker } from '@/features/catalog/components/VariantPicker'
-import { imageForVariant } from '@/features/catalog/variantSelection'
+import { emptySelection, imageForVariant, selectedVariant } from '@/features/catalog/variantSelection'
 
 /**
- * 商品の詳細の、画像とバリアントの選択（AC-37、38、62〜64）。<br />
+ * 商品の詳細の、画像とバリアントの選択と、カートに入れる操作（AC-37、38、62〜64、72）。<br />
  * 大きな画像は代表画像から始め、バリアントを選ぶとその画像（指定がなければ代表画像）に、小さな画像を押すとその画像に替える。
+ * カートに入れるのは、選んだバリアント（軸のない商品は、ただ 1 つのバリアント）。
  */
 export function ProductShowcase({
   imageUrls,
@@ -26,6 +28,7 @@ export function ProductShowcase({
   children?: ReactNode
 }) {
   const [shown, setShown] = useState(() => imageForVariant(imageUrls, null))
+  const [chosen, setChosen] = useState(() => selectedVariant(axes, variants, emptySelection(axes)))
   return (
     <article className="grid gap-8 md:grid-cols-2">
       <div className="space-y-3">
@@ -60,9 +63,13 @@ export function ProductShowcase({
         {header}
         <VariantPicker
           axes={axes}
-          onSelectVariant={(variant) => setShown(imageForVariant(imageUrls, variant))}
+          onSelectVariant={(variant) => {
+            setShown(imageForVariant(imageUrls, variant))
+            setChosen(variant)
+          }}
           variants={variants}
         />
+        <AddToCartForm variant={chosen} />
         {children}
       </div>
     </article>

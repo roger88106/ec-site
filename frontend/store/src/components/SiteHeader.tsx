@@ -1,8 +1,8 @@
-import { SearchIcon } from 'lucide-react'
+import { SearchIcon, ShoppingCartIcon } from 'lucide-react'
 import Link from 'next/link'
 import { Input } from '@/components/ui/input'
 
-/** 画面の上のヘッダー。サイト名、商品一覧へのリンク、キーワード検索（フォームの GET で /search へ） */
+/** 画面の上のヘッダー。サイト名、商品一覧へのリンク、キーワード検索（フォームの GET で /search へ）、カートへのリンク */
 export function SiteHeader() {
   return (
     <header className="border-b">
@@ -28,6 +28,10 @@ export function SiteHeader() {
             />
           </form>
         </search>
+        <Link className="flex items-center gap-1 text-sm hover:underline" href="/cart">
+          <ShoppingCartIcon aria-hidden className="size-4" />
+          カート
+        </Link>
       </div>
     </header>
   )

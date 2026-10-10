@@ -173,6 +173,8 @@ pnpm test
 | `ECSITE_MEDIA_STORAGE_REGION`、`ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL` | バケットのリージョン、画像の配信の基準 URL（CDN） |
 | `ECSITE_MEDIA_STORAGE_ENDPOINT`、`ECSITE_MEDIA_STORAGE_PATH_STYLE_ACCESS` | S3 互換のストレージを使うときだけ。AWS では設定しない（資格情報は IAM ロール） |
 | `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | 画像のアップロードの署名付き URL の有効期間（既定 5m） |
+| `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（必須。標準税率の税区分。[plan 002](docs/specs/002-cart-and-order/plan.md) 第 4 節） |
+| `ECSITE_ORDER_SHIPPING_FEE`、`ECSITE_ORDER_RESERVATION_TTL` | 送料（税込、円。既定 1000）、引当の期限（既定 15m） |
 | `ECSITE_MEDIA_CONVERTER_BASE_URL`、`ECSITE_MEDIA_CONVERTER_KEY`、`ECSITE_MEDIA_CONVERTER_SALT` | 画像の変換（imgproxy）の URL と、URL の署名の鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値。plan 001 第 7.5 節） |
 | `ECSITE_MEDIA_CONVERTER_QUALITY`、`ECSITE_MEDIA_CONVERTER_TIMEOUT` | WebP の品質（既定 82）、変換を待つ時間の上限（既定 30s） |
 

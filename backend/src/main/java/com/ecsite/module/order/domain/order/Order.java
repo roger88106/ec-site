@@ -270,9 +270,18 @@ public class Order extends AggregateRoot {
      */
     private static OrderLine toLine(int lineNo, QuoteItem item) {
         var variant = item.variant();
-        return new OrderLine(lineNo, variant.variantId(), variant.productCode(), variant.variantCode(),
-                variant.productName(), variant.axisValues(), variant.priceExclTax(), item.ratePercent(),
-                item.unitPriceInclTax(), item.quantity(), item.subtotal());
+        return new OrderLine(
+                lineNo,
+                variant.variantId(),
+                variant.productCode(),
+                variant.variantCode(),
+                variant.productName(),
+                variant.axisValues(),
+                variant.priceExclTax(),
+                item.ratePercent(),
+                item.unitPriceInclTax(),
+                item.quantity(),
+                item.subtotal());
     }
 
 // ============================== スナップショット関連処理 ==============================

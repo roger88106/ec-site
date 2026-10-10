@@ -14,6 +14,7 @@ import com.ecsite.api.admin.model.ShippingAddress;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.domain.order.Order;
+import com.ecsite.module.order.domain.quote.Amounts;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -33,10 +34,12 @@ class AdminOrderMapper {
      * @return 注文一覧のページのレスポンス
      */
     OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page) {
-        return new OrderSummaryPage(page.page(), page.size(), page.totalItems(), page.totalPages(),
-                page.items().stream().map(view -> new OrderSummary(view.id(), view.orderNumber(),
-                        toOffset(view.orderedAt()), view.customerName(), view.total(),
-                        OrderStatus.fromValue(view.status().name()))).toList());
+        return new OrderSummaryPage()
+                .page(page.page())
+                .size(page.size())
+                .totalItems(page.totalItems())
+                .totalPages(page.totalPages())
+                .items(page.items().stream().map(AdminOrderMapper::toSummary).toList());
     }
 
     /**
@@ -46,34 +49,125 @@ class AdminOrderMapper {
      * @return 注文の詳細のレスポンス
      */
     OrderDetail toOrderDetail(Order order) {
-        var amounts = order.amounts();
-        var address = order.shippingAddress();
-        var detail = new OrderDetail(order.id(), order.orderNumber().value(), toOffset(order.orderedAt()),
-                OrderStatus.fromValue(order.status().name()),
-                order.lines().stream().map(line -> new OrderLine(line.variantId(), line.productCode(),
-                        line.variantCode(), line.productName(),
-                        line.axisValues().stream().map(axis -> new OrderAxisValue(axis.name(), axis.value())).toList(),
-                        line.unitPriceExclTax().yen(), line.unitPriceInclTax().yen(), line.ratePercent(),
-                        line.quantity(), line.subtotal().yen())).toList(),
-                new OrderAmounts(amounts.itemsTotal().yen(), amounts.shippingFee().yen(), amounts.total().yen(),
-                        amounts.taxes().stream().map(tax -> new OrderTaxAmount(tax.ratePercent(),
-                                tax.taxableAmount().yen(), tax.taxAmount().yen())).toList()),
-                order.email(),
-                new ShippingAddress(address.name(), address.postalCode(), address.prefecture(), address.address(),
-                        address.phone()));
-        var request = order.cancellationRequest();
-        if (request != null) {
-            detail.cancellationRequest(new CancellationRequest(toOffset(request.requestedAt()),
-                    CancellationRequest.ResultEnum.fromValue(request.result().name()))
-                    .reason(request.reason())
-                    .decidedAt(toOffset(request.decidedAt())));
+        var detail = new OrderDetail()
+                .id(order.id())
+                .orderNumber(order.orderNumber().value())
+                .orderedAt(toOffset(order.orderedAt()))
+                .status(toStatus(order.status()))
+                .lines(order.lines().stream().map(AdminOrderMapper::toLine).toList())
+                .amounts(toAmounts(order.amounts()))
+                .email(order.email())
+                .shippingAddress(toAddress(order.shippingAddress()));
+        if (order.cancellationRequest() != null) {
+            detail.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }
-        var cancellation = order.cancellation();
-        if (cancellation != null) {
-            detail.cancellation(new Cancellation(toOffset(cancellation.cancelledAt()), cancellation.byOperator())
-                    .reason(cancellation.reason()));
+        if (order.cancellation() != null) {
+            detail.cancellation(toCancellation(order.cancellation()));
         }
         return detail;
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 注文一覧の 1 件。
+     */
+    private static OrderSummary toSummary(OrderSummaryView view) {
+        return new OrderSummary()
+                .id(view.id())
+                .orderNumber(view.orderNumber())
+                .orderedAt(toOffset(view.orderedAt()))
+                .customerName(view.customerName())
+                .total(view.total())
+                .status(toStatus(view.status()));
+    }
+
+    /**
+     * 注文明細 1 件（注文時点の写し。AC-92）。
+     */
+    private static OrderLine toLine(com.ecsite.module.order.domain.order.OrderLine line) {
+        return new OrderLine()
+                .variantId(line.variantId())
+                .productCode(line.productCode())
+                .variantCode(line.variantCode())
+                .productName(line.productName())
+                .axisValues(line.axisValues().stream().map(AdminOrderMapper::toAxisValue).toList())
+                .unitPriceExclTax(line.unitPriceExclTax().yen())
+                .unitPriceInclTax(line.unitPriceInclTax().yen())
+                .ratePercent(line.ratePercent())
+                .quantity(line.quantity())
+                .subtotal(line.subtotal().yen());
+    }
+
+    /**
+     * 金額の内訳（BR-7、8）。
+     */
+    private static OrderAmounts toAmounts(Amounts amounts) {
+        return new OrderAmounts()
+                .itemsTotal(amounts.itemsTotal().yen())
+                .shippingFee(amounts.shippingFee().yen())
+                .total(amounts.total().yen())
+                .taxes(amounts.taxes().stream().map(AdminOrderMapper::toTaxAmount).toList());
+    }
+
+    /**
+     * 1 つの税率の消費税額。
+     */
+    private static OrderTaxAmount toTaxAmount(com.ecsite.module.order.domain.quote.TaxAmount tax) {
+        return new OrderTaxAmount()
+                .ratePercent(tax.ratePercent())
+                .taxableAmount(tax.taxableAmount().yen())
+                .taxAmount(tax.taxAmount().yen());
+    }
+
+    /**
+     * お届け先。
+     */
+    private static ShippingAddress toAddress(com.ecsite.module.order.domain.order.ShippingAddress address) {
+        return new ShippingAddress()
+                .name(address.name())
+                .postalCode(address.postalCode())
+                .prefecture(address.prefecture())
+                .address(address.address())
+                .phone(address.phone());
+    }
+
+    /**
+     * キャンセルの申請。
+     */
+    private static CancellationRequest toCancellationRequest(
+            com.ecsite.module.order.domain.order.CancellationRequest request) {
+        return new CancellationRequest()
+                .requestedAt(toOffset(request.requestedAt()))
+                .reason(request.reason())
+                .result(CancellationRequest.ResultEnum.fromValue(request.result().name()))
+                .decidedAt(toOffset(request.decidedAt()));
+    }
+
+    /**
+     * キャンセル。
+     */
+    private static Cancellation toCancellation(com.ecsite.module.order.domain.order.Cancellation cancellation) {
+        return new Cancellation()
+                .cancelledAt(toOffset(cancellation.cancelledAt()))
+                .byOperator(cancellation.byOperator())
+                .reason(cancellation.reason());
+    }
+
+    /**
+     * 軸の名前と値。
+     */
+    private static OrderAxisValue toAxisValue(com.ecsite.module.order.domain.quote.AxisValue axis) {
+        return new OrderAxisValue()
+                .name(axis.name())
+                .value(axis.value());
+    }
+
+    /**
+     * 注文の状態。
+     */
+    private static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
+        return OrderStatus.fromValue(status.name());
     }
 
     /**

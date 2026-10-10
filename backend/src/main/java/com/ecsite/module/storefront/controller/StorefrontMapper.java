@@ -104,26 +104,58 @@ class StorefrontMapper {
      * @return カートのレスポンス
      */
     Cart toCart(CartView view) {
-        var amounts = view.amounts();
-        return new Cart(view.cartId(),
-                view.items().stream().map(StorefrontMapper::toQuoteItem).toList(),
-                new Amounts(amounts.itemsTotal().yen(), amounts.shippingFee().yen(), amounts.total().yen(),
-                        amounts.taxes().stream()
-                                .map(tax -> new TaxAmount(tax.ratePercent(), tax.taxableAmount().yen(), tax.taxAmount().yen()))
-                                .toList()),
-                view.orderable());
+        return new Cart()
+                .id(view.cartId())
+                .items(view.items().stream().map(StorefrontMapper::toQuoteItem).toList())
+                .amounts(toAmounts(view.amounts()))
+                .orderable(view.orderable());
     }
 
     /**
      * カートの品目のレスポンスに変換する。画像と購入できない理由は、null でも項目として返す。
      */
     private static QuoteItem toQuoteItem(CartView.Item item) {
-        return new QuoteItem(item.variantId(), item.productId(), item.productName(),
-                item.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
-                new Price(item.unitPriceInclTax().yen(), item.unitPriceExclTax().yen()), item.quantity(),
-                item.subtotal().yen(), item.unpurchasableReason() == null)
+        var purchasable = item.unpurchasableReason() == null;
+        return new QuoteItem()
+                .variantId(item.variantId())
+                .productId(item.productId())
+                .productName(item.productName())
+                .axisValues(item.axisValues().stream().map(StorefrontMapper::toAxisValue).toList())
                 .imageUrl(item.imageUrl())
-                .unpurchasableReason(item.unpurchasableReason() == null
-                        ? null : UnpurchasableReason.fromValue(item.unpurchasableReason()));
+                .unitPrice(new Price().inclTax(item.unitPriceInclTax().yen()).exclTax(item.unitPriceExclTax().yen()))
+                .quantity(item.quantity())
+                .subtotal(item.subtotal().yen())
+                .purchasable(purchasable)
+                .unpurchasableReason(purchasable ? null : UnpurchasableReason.fromValue(item.unpurchasableReason()));
+    }
+
+    /**
+     * カートの金額の内訳のレスポンスに変換する（BR-7、8）。
+     */
+    private static Amounts toAmounts(CartView.Amounts amounts) {
+        return new Amounts()
+                .itemsTotal(amounts.itemsTotal().yen())
+                .shippingFee(amounts.shippingFee().yen())
+                .total(amounts.total().yen())
+                .taxes(amounts.taxes().stream().map(StorefrontMapper::toTaxAmount).toList());
+    }
+
+    /**
+     * 1 つの税率の消費税額のレスポンスに変換する。
+     */
+    private static TaxAmount toTaxAmount(CartView.TaxAmount tax) {
+        return new TaxAmount()
+                .ratePercent(tax.ratePercent())
+                .taxableAmount(tax.taxableAmount().yen())
+                .taxAmount(tax.taxAmount().yen());
+    }
+
+    /**
+     * 軸の名前と値のレスポンスに変換する。
+     */
+    private static AxisValue toAxisValue(CartView.AxisValue axis) {
+        return new AxisValue()
+                .name(axis.name())
+                .value(axis.value());
     }
 }

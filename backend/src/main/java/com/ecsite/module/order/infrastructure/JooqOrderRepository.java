@@ -227,11 +227,18 @@ class JooqOrderRepository implements OrderRepository {
         var lines = dsl.selectFrom(SALES_ORDER_LINE)
                 .where(SALES_ORDER_LINE.ORDER_ID.eq(record.getId()))
                 .orderBy(SALES_ORDER_LINE.LINE_NO)
-                .fetch(line -> new OrderLine(line.getLineNo(), line.getVariantId(), line.getProductCode(),
-                        line.getVariantCode(), line.getProductName(),
+                .fetch(line -> new OrderLine(
+                        line.getLineNo(),
+                        line.getVariantId(),
+                        line.getProductCode(),
+                        line.getVariantCode(),
+                        line.getProductName(),
                         jsonMapper.readValue(line.getAxisValues().data(), AXIS_VALUES),
-                        Money.of(line.getUnitPriceExclTax()), normalize(line.getRatePercent()),
-                        Money.of(line.getUnitPriceInclTax()), line.getQuantity(), Money.of(line.getSubtotal())));
+                        Money.of(line.getUnitPriceExclTax()),
+                        normalize(line.getRatePercent()),
+                        Money.of(line.getUnitPriceInclTax()),
+                        line.getQuantity(),
+                        Money.of(line.getSubtotal())));
         var taxes = dsl.selectFrom(SALES_ORDER_TAX)
                 .where(SALES_ORDER_TAX.ORDER_ID.eq(record.getId()))
                 // 税率の高い順（BR-8 の表示の順）
@@ -248,9 +255,19 @@ class JooqOrderRepository implements OrderRepository {
                 record.getCancellationDecidedAt());
         var cancellation = record.getCancelledAt() == null ? null : new Cancellation(record.getCancelledAt(),
                 record.getCancelledByOperator(), record.getCancellationReason());
-        return Order.restore(new Order.Snapshot(record.getId(), OrderNumber.of(record.getOrderNumber()),
-                record.getCheckoutId(), record.getOrderedAt(), OrderStatus.valueOf(record.getStatus()), lines, amounts,
-                record.getEmail(), address, request, cancellation, record.getVersion()));
+        return Order.restore(new Order.Snapshot(
+                record.getId(),
+                OrderNumber.of(record.getOrderNumber()),
+                record.getCheckoutId(),
+                record.getOrderedAt(),
+                OrderStatus.valueOf(record.getStatus()),
+                lines,
+                amounts,
+                record.getEmail(),
+                address,
+                request,
+                cancellation,
+                record.getVersion()));
     }
 
     /**

@@ -36,10 +36,17 @@ class ProductApiDirectory implements ProductDirectory {
      * 商品カタログの型を、注文モジュールの型に変換する。
      */
     private static VariantInfo toInfo(OrderableVariant variant) {
-        return new VariantInfo(variant.variantId(), variant.productId(), variant.productCode(), variant.variantCode(),
+        return new VariantInfo(
+                variant.variantId(),
+                variant.productId(),
+                variant.productCode(),
+                variant.variantCode(),
                 variant.productName(),
                 variant.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
-                variant.priceExclTax(), variant.taxCategoryId(), variant.imageUrl(), variant.visible(),
+                variant.priceExclTax(),
+                variant.taxCategoryId(),
+                variant.imageUrl(),
+                variant.visible(),
                 variant.salesSuspended());
     }
 }

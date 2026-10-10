@@ -13,11 +13,14 @@ import com.ecsite.api.store.model.QuoteItem;
 import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
+import com.ecsite.common.model.Money;
 import com.ecsite.module.order.application.CheckoutView;
 import com.ecsite.module.order.application.PlaceOrderCommand;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
@@ -35,8 +38,11 @@ class StoreOrderMapper {
      * @return 注文手続きのレスポンス
      */
     Checkout toCheckout(CheckoutView view) {
-        return new Checkout(view.id(), toQuoteItems(view.quote()), toAmounts(view.quote().amounts()),
-                view.expiresAt().atOffset(ZoneOffset.UTC))
+        return new Checkout()
+                .id(view.id())
+                .items(toQuoteItems(view.quote()))
+                .amounts(toAmounts(view.quote().amounts()))
+                .expiresAt(toOffset(view.expiresAt()))
                 .orderId(view.orderId());
     }
 
@@ -49,54 +55,47 @@ class StoreOrderMapper {
      */
     PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request) {
         var address = request.getShippingAddress();
-        return new PlaceOrderCommand(checkoutId, request.getEmail(), address.getName(), address.getPostalCode(),
-                address.getPrefecture(), address.getAddress(), address.getPhone(), request.getExpectedTotal());
+        return new PlaceOrderCommand(
+                checkoutId,
+                request.getEmail(),
+                address.getName(),
+                address.getPostalCode(),
+                address.getPrefecture(),
+                address.getAddress(),
+                address.getPhone(),
+                request.getExpectedTotal());
     }
 
     /**
-     * 注文のレスポンスに変換する（AC-93）。
+     * 注文のレスポンスに変換する（AC-93）。キャンセルの申請がなければ、その項目を返さない。
      *
      * @param order 注文
      * @return 注文のレスポンス
      */
     Order toOrder(com.ecsite.module.order.domain.order.Order order) {
-        var address = order.shippingAddress();
-        var response = new Order(order.id(), order.orderNumber().value(), order.orderedAt().atOffset(ZoneOffset.UTC),
-                OrderStatus.fromValue(order.status().name()),
-                order.lines().stream().map(line -> new OrderLine(line.productCode(), line.variantCode(),
-                        line.productName(),
-                        line.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
-                        new Price(line.unitPriceInclTax().yen(), line.unitPriceExclTax().yen()), line.ratePercent(),
-                        line.quantity(), line.subtotal().yen())).toList(),
-                toAmounts(order.amounts()), order.email(),
-                new ShippingAddress(address.name(), address.postalCode(), address.prefecture(), address.address(),
-                        address.phone()));
-        var request = order.cancellationRequest();
-        if (request != null) {
-            response.cancellationRequest(new CancellationRequest(request.requestedAt().atOffset(ZoneOffset.UTC),
-                    CancellationRequest.ResultEnum.fromValue(request.result().name()))
-                    .reason(request.reason()));
+        var response = new Order()
+                .id(order.id())
+                .orderNumber(order.orderNumber().value())
+                .orderedAt(toOffset(order.orderedAt()))
+                .status(OrderStatus.fromValue(order.status().name()))
+                .lines(order.lines().stream().map(StoreOrderMapper::toLine).toList())
+                .amounts(toAmounts(order.amounts()))
+                .email(order.email())
+                .shippingAddress(toAddress(order.shippingAddress()));
+        if (order.cancellationRequest() != null) {
+            response.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }
         return response;
     }
 
     /**
-     * 見積もりの品目のレスポンスに変換する。画像と購入できない理由は、null でも項目として返す。
+     * 見積もりの品目のレスポンスに変換する。
      *
      * @param quote 見積もり
      * @return 品目のレスポンス
      */
     List<QuoteItem> toQuoteItems(Quote quote) {
-        return quote.items().stream().map(item -> {
-            var variant = item.variant();
-            return new QuoteItem(variant.variantId(), variant.productId(), variant.productName(),
-                    variant.axisValues().stream().map(axis -> new AxisValue(axis.name(), axis.value())).toList(),
-                    new Price(item.unitPriceInclTax().yen(), variant.priceExclTax().yen()), item.quantity(),
-                    item.subtotal().yen(), item.purchasable())
-                    .imageUrl(variant.imageUrl())
-                    .unpurchasableReason(item.purchasable()
-                            ? null : UnpurchasableReason.fromValue(item.unpurchasableReason().name()));
-        }).toList();
+        return quote.items().stream().map(StoreOrderMapper::toQuoteItem).toList();
     }
 
     /**
@@ -106,9 +105,105 @@ class StoreOrderMapper {
      * @return 金額の内訳のレスポンス
      */
     Amounts toAmounts(com.ecsite.module.order.domain.quote.Amounts amounts) {
-        return new Amounts(amounts.itemsTotal().yen(), amounts.shippingFee().yen(), amounts.total().yen(),
-                amounts.taxes().stream()
-                        .map(tax -> new TaxAmount(tax.ratePercent(), tax.taxableAmount().yen(), tax.taxAmount().yen()))
-                        .toList());
+        return new Amounts()
+                .itemsTotal(amounts.itemsTotal().yen())
+                .shippingFee(amounts.shippingFee().yen())
+                .total(amounts.total().yen())
+                .taxes(amounts.taxes().stream().map(StoreOrderMapper::toTaxAmount).toList());
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 見積もりの品目 1 件。画像と購入できない理由は、null でも項目として返す。
+     */
+    private static QuoteItem toQuoteItem(com.ecsite.module.order.domain.quote.QuoteItem item) {
+        var variant = item.variant();
+        return new QuoteItem()
+                .variantId(variant.variantId())
+                .productId(variant.productId())
+                .productName(variant.productName())
+                .axisValues(variant.axisValues().stream().map(StoreOrderMapper::toAxisValue).toList())
+                .imageUrl(variant.imageUrl())
+                .unitPrice(toPrice(item.unitPriceInclTax(), variant.priceExclTax()))
+                .quantity(item.quantity())
+                .subtotal(item.subtotal().yen())
+                .purchasable(item.purchasable())
+                .unpurchasableReason(item.purchasable()
+                        ? null
+                        : UnpurchasableReason.fromValue(item.unpurchasableReason().name()));
+    }
+
+    /**
+     * 注文明細 1 件（注文時点の写し。AC-92）。
+     */
+    private static OrderLine toLine(com.ecsite.module.order.domain.order.OrderLine line) {
+        return new OrderLine()
+                .productCode(line.productCode())
+                .variantCode(line.variantCode())
+                .productName(line.productName())
+                .axisValues(line.axisValues().stream().map(StoreOrderMapper::toAxisValue).toList())
+                .unitPrice(toPrice(line.unitPriceInclTax(), line.unitPriceExclTax()))
+                .ratePercent(line.ratePercent())
+                .quantity(line.quantity())
+                .subtotal(line.subtotal().yen());
+    }
+
+    /**
+     * 1 つの税率の消費税額。
+     */
+    private static TaxAmount toTaxAmount(com.ecsite.module.order.domain.quote.TaxAmount tax) {
+        return new TaxAmount()
+                .ratePercent(tax.ratePercent())
+                .taxableAmount(tax.taxableAmount().yen())
+                .taxAmount(tax.taxAmount().yen());
+    }
+
+    /**
+     * お届け先。
+     */
+    private static ShippingAddress toAddress(com.ecsite.module.order.domain.order.ShippingAddress address) {
+        return new ShippingAddress()
+                .name(address.name())
+                .postalCode(address.postalCode())
+                .prefecture(address.prefecture())
+                .address(address.address())
+                .phone(address.phone());
+    }
+
+    /**
+     * キャンセルの申請。
+     */
+    private static CancellationRequest toCancellationRequest(
+            com.ecsite.module.order.domain.order.CancellationRequest request) {
+        return new CancellationRequest()
+                .requestedAt(toOffset(request.requestedAt()))
+                .reason(request.reason())
+                .result(CancellationRequest.ResultEnum.fromValue(request.result().name()));
+    }
+
+    /**
+     * 軸の名前と値。
+     */
+    private static AxisValue toAxisValue(com.ecsite.module.order.domain.quote.AxisValue axis) {
+        return new AxisValue()
+                .name(axis.name())
+                .value(axis.value());
+    }
+
+    /**
+     * 価格（税込・税抜。BR-4）。
+     */
+    private static Price toPrice(Money inclTax, Money exclTax) {
+        return new Price()
+                .inclTax(inclTax.yen())
+                .exclTax(exclTax.yen());
+    }
+
+    /**
+     * 日時を、オフセット付きの日時（UTC）にする。
+     */
+    private static OffsetDateTime toOffset(Instant instant) {
+        return instant.atOffset(ZoneOffset.UTC);
     }
 }

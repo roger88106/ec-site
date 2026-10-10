@@ -35,17 +35,40 @@ public class OrderDirectory {
      * 注文モジュールの型を、店舗モジュールの型に変換する。
      */
     private static CartView toView(CartQuote quote) {
-        var amounts = quote.amounts();
-        return new CartView(quote.cartId(),
-                quote.items().stream().map(item -> new CartView.Item(item.variantId(), item.productId(),
-                        item.productName(),
-                        item.axisValues().stream().map(axis -> new CartView.AxisValue(axis.name(), axis.value())).toList(),
-                        item.imageUrl(), item.unitPriceExclTax(), item.unitPriceInclTax(), item.quantity(), item.subtotal(),
-                        item.unpurchasableReason())).toList(),
-                new CartView.Amounts(amounts.itemsTotal(), amounts.shippingFee(), amounts.total(),
-                        amounts.taxes().stream()
-                                .map(tax -> new CartView.TaxAmount(tax.ratePercent(), tax.taxableAmount(), tax.taxAmount()))
-                                .toList()),
+        return new CartView(
+                quote.cartId(),
+                quote.items().stream().map(OrderDirectory::toItem).toList(),
+                toAmounts(quote.amounts()),
                 quote.orderable());
+    }
+
+    /**
+     * 品目を変換する。
+     */
+    private static CartView.Item toItem(CartQuote.Item item) {
+        return new CartView.Item(
+                item.variantId(),
+                item.productId(),
+                item.productName(),
+                item.axisValues().stream().map(axis -> new CartView.AxisValue(axis.name(), axis.value())).toList(),
+                item.imageUrl(),
+                item.unitPriceExclTax(),
+                item.unitPriceInclTax(),
+                item.quantity(),
+                item.subtotal(),
+                item.unpurchasableReason());
+    }
+
+    /**
+     * 金額の内訳を変換する。
+     */
+    private static CartView.Amounts toAmounts(CartQuote.Amounts amounts) {
+        return new CartView.Amounts(
+                amounts.itemsTotal(),
+                amounts.shippingFee(),
+                amounts.total(),
+                amounts.taxes().stream()
+                        .map(tax -> new CartView.TaxAmount(tax.ratePercent(), tax.taxableAmount(), tax.taxAmount()))
+                        .toList());
     }
 }

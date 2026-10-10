@@ -3,6 +3,7 @@ package com.ecsite.module.order.application;
 import com.ecsite.module.order.api.CartQuote;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.port.CartDirectory;
+import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
@@ -58,11 +59,10 @@ public class CartQuoteService {
      * 見積もりを、公開する型に変換する。
      */
     static CartQuote toCartQuote(UUID cartId, Quote quote) {
-        var amounts = quote.amounts();
-        return new CartQuote(cartId,
+        return new CartQuote(
+                cartId,
                 quote.items().stream().map(CartQuoteService::toItem).toList(),
-                new CartQuote.Amounts(amounts.itemsTotal(), amounts.shippingFee(), amounts.total(),
-                        amounts.taxes().stream().map(CartQuoteService::toTaxAmount).toList()),
+                toAmounts(quote.amounts()),
                 quote.orderable());
     }
 
@@ -71,10 +71,28 @@ public class CartQuoteService {
      */
     private static CartQuote.Item toItem(QuoteItem item) {
         var variant = item.variant();
-        return new CartQuote.Item(variant.variantId(), variant.productId(), variant.productName(),
+        return new CartQuote.Item(
+                variant.variantId(),
+                variant.productId(),
+                variant.productName(),
                 variant.axisValues().stream().map(axis -> new CartQuote.AxisValue(axis.name(), axis.value())).toList(),
-                variant.imageUrl(), variant.priceExclTax(), item.unitPriceInclTax(), item.quantity(), item.subtotal(),
+                variant.imageUrl(),
+                variant.priceExclTax(),
+                item.unitPriceInclTax(),
+                item.quantity(),
+                item.subtotal(),
                 item.purchasable() ? null : item.unpurchasableReason().name());
+    }
+
+    /**
+     * 金額の内訳を、公開する型に変換する。
+     */
+    private static CartQuote.Amounts toAmounts(Amounts amounts) {
+        return new CartQuote.Amounts(
+                amounts.itemsTotal(),
+                amounts.shippingFee(),
+                amounts.total(),
+                amounts.taxes().stream().map(CartQuoteService::toTaxAmount).toList());
     }
 
     /**

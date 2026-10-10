@@ -124,6 +124,8 @@ class ProductMapper {
                 view.categoryIds(),
                 view.axes(),
                 PublicationStatus.fromValue(view.status()),
+                // 商品画像（US-7）は T1015 以降で実装する。それまでは空
+                List.of(),
                 view.variants().stream().map(ProductMapper::toVariant).toList(),
                 view.version(),
                 toOffsetDateTime(view.createdAt()),

@@ -36,6 +36,7 @@ export function productDetail(overrides: Partial<ProductDetail> = {}): ProductDe
     firstShownAt: null,
     publishStart: null,
     publishEnd: null,
+    images: [],
     variants: [],
     version: 0,
     createdAt: '2026-10-01T00:00:00+09:00',

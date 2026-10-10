@@ -1,14 +1,19 @@
 package com.ecsite.module.catalog.presentation;
 
 import com.ecsite.api.admin.ProductApi;
+import com.ecsite.api.admin.model.AddProductImageRequest;
 import com.ecsite.api.admin.model.AddVariantRequest;
+import com.ecsite.api.admin.model.CreateImageUploadRequest;
 import com.ecsite.api.admin.model.CreateProductRequest;
 import com.ecsite.api.admin.model.CreatedId;
+import com.ecsite.api.admin.model.ImageUpload;
 import com.ecsite.api.admin.model.ProductDetail;
 import com.ecsite.api.admin.model.ProductSummaryPage;
 import com.ecsite.api.admin.model.PublicationStatus;
+import com.ecsite.api.admin.model.ReorderProductImagesRequest;
 import com.ecsite.api.admin.model.ReorderVariantsRequest;
 import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
+import com.ecsite.api.admin.model.SetVariantImageRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.application.ProductCommandService;
@@ -23,7 +28,8 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 import java.util.UUID;
 
 /**
- * 商品のコントローラー（B 側。admin.yaml の tag: product）。
+ * 商品のコントローラー（B 側。admin.yaml の tag: product）。<br />
+ * 後の段階で実装する endpoint は、実装するまで 501 を返す（docs/modules/catalog.md）。
  */
 @RestController
 @RequiredArgsConstructor
@@ -212,6 +218,58 @@ class ProductController implements ProductApi {
     public ResponseEntity<Void> resumeVariant(UUID productId, UUID variantId) {
         commandService.resumeVariant(productId, variantId);
         return ResponseEntity.noContent().build();
+    }
+
+// ============================== 商品画像（US-7。実装するまで 501） ==============================
+
+    /**
+     * 画像のアップロードの受付（AC-39、40）。P2（段階 10）で実装する
+     *
+     * @return Http 501
+     */
+    @Override
+    public ResponseEntity<ImageUpload> createImageUpload(UUID productId, CreateImageUploadRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    }
+
+    /**
+     * 受け付けた画像の登録（AC-37、39、40）。P2（段階 10）で実装する
+     *
+     * @return Http 501
+     */
+    @Override
+    public ResponseEntity<CreatedId> addProductImage(UUID productId, AddProductImageRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    }
+
+    /**
+     * 画像の並び順の変更（AC-37）。P2（段階 10）で実装する
+     *
+     * @return Http 501
+     */
+    @Override
+    public ResponseEntity<Void> reorderProductImages(UUID productId, ReorderProductImagesRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    }
+
+    /**
+     * 画像の削除（AC-37）。P2（段階 10）で実装する
+     *
+     * @return Http 501
+     */
+    @Override
+    public ResponseEntity<Void> deleteProductImage(UUID productId, UUID imageId, Long version) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+    }
+
+    /**
+     * バリアントの画像の指定（AC-38）。P2（段階 10）で実装する
+     *
+     * @return Http 501
+     */
+    @Override
+    public ResponseEntity<Void> setVariantImage(UUID productId, UUID variantId, SetVariantImageRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
 // ============================== DELETE ==============================

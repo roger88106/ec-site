@@ -547,6 +547,44 @@ class ProductApiTest {
     }
 
     @Nested
+    @DisplayName("AC-28 バリアントの販売停止")
+    class SalesSuspension {
+
+        @Test
+        @DisplayName("AC-28 販売停止・解除でき、バージョンが上がる。同じ状態への切り替えは 204 で、何も変わらない")
+        void suspendsAndResumes() throws Exception {
+            var id = productWithVariant("ABC-001");
+            var variantId = JsonPath.<String>read(getProduct(id).andReturn().getResponse().getContentAsString(),
+                    "$.variants[0].id");
+
+            suspend(id, variantId).andExpect(status().isNoContent());
+            getProduct(id)
+                    .andExpect(jsonPath("$.variants[0].salesSuspended").value(true))
+                    .andExpect(jsonPath("$.version").value(2));
+
+            suspend(id, variantId).andExpect(status().isNoContent());
+            getProduct(id).andExpect(jsonPath("$.version").value(2));
+
+            resume(id, variantId).andExpect(status().isNoContent());
+            getProduct(id)
+                    .andExpect(jsonPath("$.variants[0].salesSuspended").value(false))
+                    .andExpect(jsonPath("$.version").value(3));
+        }
+
+        @Test
+        @DisplayName("存在しない商品・バリアントは 404")
+        void rejectsUnknown() throws Exception {
+            var id = productWithVariant("ABC-001");
+
+            suspend(UNKNOWN_ID, UNKNOWN_ID).andExpect(status().isNotFound());
+            suspend(id, UNKNOWN_ID)
+                    .andExpect(status().isNotFound())
+                    .andExpect(jsonPath("$.errorCode").value("NOT_FOUND"));
+            resume(id, UNKNOWN_ID).andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
     @DisplayName("AC-12 商品が所属しているカテゴリ")
     class AssignedCategory {
 
@@ -665,5 +703,13 @@ class ProductApiTest {
 
     private ResultActions discontinue(String id) throws Exception {
         return mockMvc.perform(put(BASE + "/" + id + "/discontinue"));
+    }
+
+    private ResultActions suspend(String productId, String variantId) throws Exception {
+        return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/suspend"));
+    }
+
+    private ResultActions resume(String productId, String variantId) throws Exception {
+        return mockMvc.perform(put(BASE + "/" + productId + "/variants/" + variantId + "/resume"));
     }
 }

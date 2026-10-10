@@ -164,7 +164,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 公開期間の設定（AC-34〜36）。P2（段階 9）で実装する
+     * 公開期間の設定（AC-34〜36）。P2（段階 10）で実装する
      *
      * @return Http 501
      */
@@ -187,23 +187,29 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの販売停止（AC-28）。P2（段階 9）で実装する
+     * バリアントの販売停止（AC-28）。冪等
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param variantId バリアント ID
+     * @return Http 204 : VOID
      */
     @Override
     public ResponseEntity<Void> suspendVariant(UUID productId, UUID variantId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        commandService.suspendVariant(productId, variantId);
+        return ResponseEntity.noContent().build();
     }
 
     /**
-     * バリアントの販売停止の解除（AC-28）。P2（段階 9）で実装する
+     * バリアントの販売停止の解除（AC-28）。冪等
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param variantId バリアント ID
+     * @return Http 204 : VOID
      */
     @Override
     public ResponseEntity<Void> resumeVariant(UUID productId, UUID variantId) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        commandService.resumeVariant(productId, variantId);
+        return ResponseEntity.noContent().build();
     }
 
 // ============================== DELETE ==============================

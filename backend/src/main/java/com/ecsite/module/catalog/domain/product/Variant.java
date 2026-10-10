@@ -52,4 +52,14 @@ public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCo
     Variant withDisplayOrder(int displayOrder) {
         return new Variant(id, variantCode, axisValues, displayOrder, salesSuspended);
     }
+
+    /**
+     * 販売停止を変えたバリアントを返す。
+     *
+     * @param salesSuspended 販売停止
+     * @return バリアント
+     */
+    Variant withSalesSuspended(boolean salesSuspended) {
+        return new Variant(id, variantCode, axisValues, displayOrder, salesSuspended);
+    }
 }

@@ -30,7 +30,6 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -137,7 +136,7 @@ class StorefrontApiTest {
             var product = product("販売停止", 1000, "色").variant("白").variant("黒").publish();
             stock(product.variantIds.get(0), 5);
             stock(product.variantIds.get(1), 0);
-            suspend(product.variantIds.get(0));
+            suspend(product.id, product.variantIds.get(0));
 
             mockMvc.perform(get(BASE + "/products"))
                     .andExpect(jsonPath("$.items[0].inStock").value(false));
@@ -231,7 +230,7 @@ class StorefrontApiTest {
             stock(product.variantIds.get(0), 2);
             stock(product.variantIds.get(1), 0);
             stock(product.variantIds.get(2), 4);
-            suspend(product.variantIds.get(2));
+            suspend(product.id, product.variantIds.get(2));
 
             mockMvc.perform(get(BASE + "/products/" + product.id))
                     .andExpect(status().isOk())
@@ -335,9 +334,9 @@ class StorefrontApiTest {
         }
     }
 
-    private void suspend(String variantId) {
-        // 販売停止の操作は P2 なので、DB を直接更新する
-        dsl.update(VARIANT).set(VARIANT.SALES_SUSPENDED, true).where(VARIANT.ID.eq(UUID.fromString(variantId))).execute();
+    private void suspend(String productId, String variantId) throws Exception {
+        mockMvc.perform(put("/api/admin/products/" + productId + "/variants/" + variantId + "/suspend"))
+                .andExpect(status().isNoContent());
     }
 
     /**

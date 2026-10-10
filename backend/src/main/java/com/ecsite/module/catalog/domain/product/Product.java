@@ -368,6 +368,27 @@ public class Product extends AggregateRoot {
     }
 
     /**
+     * バリアントを販売停止にする（AC-28）。すでに販売停止なら何もしない（冪等）。<br />
+     * 販売停止のバリアントも C 側の選択肢に出るが、選べない。販売終了の商品のバリアントも停止できる。
+     *
+     * @param variantId バリアント ID
+     * @return 変わったら true。すでに販売停止なら false
+     */
+    public boolean suspendVariant(@NonNull UUID variantId) {
+        return changeSalesSuspended(variantId, true);
+    }
+
+    /**
+     * バリアントの販売停止を解除する（AC-28）。販売停止でなければ何もしない（冪等）。
+     *
+     * @param variantId バリアント ID
+     * @return 変わったら true。販売停止でなければ false
+     */
+    public boolean resumeVariant(@NonNull UUID variantId) {
+        return changeSalesSuspended(variantId, false);
+    }
+
+    /**
      * 公開する（AC-29、31）。すでに公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
@@ -460,6 +481,25 @@ public class Product extends AggregateRoot {
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * バリアントの販売停止を変える。商品にないバリアントなら、見つからない業務のエラーを投げる。
+     *
+     * @param variantId      バリアント ID
+     * @param salesSuspended 販売停止
+     * @return 変わったら true。すでにその状態なら false
+     */
+    private boolean changeSalesSuspended(UUID variantId, boolean salesSuspended) {
+        var variant = variants.stream().filter(v -> v.id().equals(variantId)).findFirst()
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        if (variant.salesSuspended() == salesSuspended) {
+            return false;
+        }
+        this.variants = variants.stream()
+                .map(v -> v.id().equals(variantId) ? v.withSalesSuspended(salesSuspended) : v)
+                .toList();
+        return true;
+    }
 
     /**
      * 公開したときの初回表示日時を求める（docs/modules/catalog.md）。<br />

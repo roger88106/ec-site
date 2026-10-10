@@ -203,10 +203,32 @@ public class ProductCommandService {
         changeStatus(productId, Product::discontinue);
     }
 
+    /**
+     * バリアントを販売停止にする（AC-28）。冪等。
+     *
+     * @param productId 商品 ID
+     * @param variantId バリアント ID
+     */
+    @Transactional
+    public void suspendVariant(UUID productId, UUID variantId) {
+        changeStatus(productId, (product, now) -> product.suspendVariant(variantId));
+    }
+
+    /**
+     * バリアントの販売停止を解除する（AC-28）。冪等。
+     *
+     * @param productId 商品 ID
+     * @param variantId バリアント ID
+     */
+    @Transactional
+    public void resumeVariant(UUID productId, UUID variantId) {
+        changeStatus(productId, (product, now) -> product.resumeVariant(variantId));
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 状態を切り替える。<br />
+     * 状態（公開状態、バリアントの販売停止）を切り替える。<br />
      * 状態の切り替えはバージョンを受け取らない（constitution 9）。すでにその状態なら保存しないので、バージョンも上がらない。
      * 取得から保存までの間に他で更新されていれば、保存時に競合になる。
      *

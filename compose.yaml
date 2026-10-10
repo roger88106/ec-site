@@ -37,7 +37,9 @@ services:
   seaweedfs:
     image: chrislusf/seaweedfs:4.48
     container_name: ec-site-seaweedfs
-    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json
+    # ボリュームの数の上限は「空きの容量 ÷ ボリュームの大きさ（既定 30GB）」。空きの少ない環境（CI）でも
+    # 両方のバケットにボリュームを割り当てられるよう、ボリュームを小さくする
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=100
     ports:
       - "8333:8333"
     volumes:

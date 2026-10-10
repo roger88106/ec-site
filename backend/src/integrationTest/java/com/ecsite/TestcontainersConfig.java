@@ -46,6 +46,11 @@ public class TestcontainersConfig {
     private static final int S3_PORT = 8333;
 
     /**
+     * SeaweedFS のボリュームの大きさ（MB）。compose.yaml と同じ
+     */
+    private static final int VOLUME_SIZE_LIMIT_MB = 100;
+
+    /**
      * コンテナ同士のネットワークの中での SeaweedFS の名前
      */
     private static final String SEAWEEDFS_ALIAS = "seaweedfs";
@@ -80,7 +85,10 @@ public class TestcontainersConfig {
     @Bean
     GenericContainer<?> seaweedfs(Network network) {
         var container = new GenericContainer<>(DockerImageName.parse("chrislusf/seaweedfs:4.48"))
-                .withCommand("server", "-dir=/data", "-s3", "-s3.port=" + S3_PORT, "-s3.config=/etc/seaweedfs/s3.json")
+                // ボリュームの数の上限は「空きの容量 ÷ ボリュームの大きさ（既定 30GB）」になる。空きの少ない CI の
+                // 環境では 2 つ目のバケットにボリュームを割り当てられず 500 になるので、ボリュームを小さくする
+                .withCommand("server", "-dir=/data", "-s3", "-s3.port=" + S3_PORT, "-s3.config=/etc/seaweedfs/s3.json",
+                        "-master.volumeSizeLimitMB=" + VOLUME_SIZE_LIMIT_MB)
                 .withCopyFileToContainer(MountableFile.forClasspathResource("seaweedfs/s3.json"), "/etc/seaweedfs/s3.json")
                 .withNetwork(network)
                 .withNetworkAliases(SEAWEEDFS_ALIAS)

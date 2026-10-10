@@ -4,6 +4,7 @@ import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.ErrorType;
 import com.ecsite.common.message.I18nMessage;
+import lombok.Getter;
 
 /**
  * 商品のエラーコード
@@ -99,7 +100,8 @@ public enum ProductErrorCode implements ErrorCodeProvider {
     /**
      * エラーコード
      */
-    private final ErrorCode errorCode;
+    @Getter
+    private final ErrorCode code;
 
     /**
      * コンストラクタ
@@ -108,16 +110,7 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      * @param message   メッセージ
      */
     ProductErrorCode(ErrorType errorType, I18nMessage message) {
-        this.errorCode = ErrorCode.of(this.name(), errorType, message);
+        this.code = ErrorCode.of(this.name(), errorType, message);
     }
 
-    /**
-     * エラーコード取得
-     *
-     * @return {@link ErrorCode}
-     */
-    @Override
-    public ErrorCode getCode() {
-        return errorCode;
-    }
 }

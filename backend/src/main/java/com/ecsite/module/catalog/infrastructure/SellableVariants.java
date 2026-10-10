@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.infrastructure;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.jooq.DSLContext;
 
 import java.util.Collection;
@@ -12,13 +14,8 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT;
 /**
  * 販売中（販売停止でない）のバリアントの取得。C 側の一覧と検索で共通（在庫の有無の判定に使う。AC-56）。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class SellableVariants {
-
-    /**
-     * インスタンスを作らせない（static のメソッドだけを持つ）
-     */
-    private SellableVariants() {
-    }
 
     /**
      * 販売中のバリアントの ID を、商品ごとに表示順で取得する。

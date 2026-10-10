@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.infrastructure;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.Record1;
 import org.jooq.Select;
@@ -14,13 +16,8 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
 /**
  * カテゴリによる商品の絞り込みの SQL。B 側の一覧と C 側の一覧で共通（子孫のカテゴリを含む。AC-52）。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class CategoryConditions {
-
-    /**
-     * インスタンスを作らせない（static のメソッドだけを持つ）
-     */
-    private CategoryConditions() {
-    }
 
     /**
      * カテゴリか、その子孫のカテゴリに所属する商品であること。

@@ -1,6 +1,8 @@
 package com.ecsite.module.catalog.infrastructure;
 
 import com.ecsite.module.catalog.domain.product.PublicationStatus;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.jooq.Condition;
 
 import java.time.Instant;
@@ -12,13 +14,8 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
  * 一覧と検索の両方で、この部品だけを使う。検索だけに非公開の商品が出る事故を防ぐため（docs/modules/catalog.md）。
  * ドメインの {@code Product#isVisibleAt} と同じ条件で、両者の一致は統合テストで確かめる。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ProductVisibility {
-
-    /**
-     * インスタンスを作らせない（static のメソッドだけを持つ）
-     */
-    private ProductVisibility() {
-    }
 
     /**
      * 公開状態が「公開」で、公開期間内（開始を含み、終了を含まない。null は無限）であること。

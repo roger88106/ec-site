@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.infrastructure;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.jooq.CaseWhenStep;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
@@ -16,13 +18,8 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
  * 税区分ごとの率を埋め込み、{@code floor(税抜価格 × (100 + 率) ÷ 100)} を計算する。1 円未満は切り捨て。
  * 税モジュール（Java）の計算と同じ結果になることは、統合テストで確かめる。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class PriceInclTaxField {
-
-    /**
-     * インスタンスを作らせない（static のメソッドだけを持つ）
-     */
-    private PriceInclTaxField() {
-    }
 
     /**
      * 税込価格の式を作る。率のない税区分の商品は null になる。

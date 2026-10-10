@@ -1,22 +1,20 @@
 package com.ecsite.common.persistence;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 /**
  * LIKE の検索パターンを作る。<br />
  * 利用者が入力した文字列の中のワイルドカード文字（{@code %}、{@code _}）を、ただの文字として扱うためにエスケープする。
  * エスケープ文字は {@link #ESCAPE}。jOOQ では {@code field.like(pattern, LikePatterns.ESCAPE)} のように使う。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class LikePatterns {
 
     /**
      * エスケープ文字
      */
     public static final char ESCAPE = '!';
-
-    /**
-     * インスタンスを作らせない（static のメソッドだけを持つ）
-     */
-    private LikePatterns() {
-    }
 
     /**
      * 前方一致のパターンを作る。

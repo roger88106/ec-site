@@ -1,6 +1,8 @@
 package com.ecsite.module.media.service;
 
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
@@ -81,6 +83,8 @@ public enum ImageFormat {
     /**
      * ファイルの拡張子
      */
+    @Getter
+    @Accessors(fluent = true)
     private final String extension;
 
     /**
@@ -104,13 +108,6 @@ public enum ImageFormat {
      */
     public String contentType() {
         return contentTypes.getFirst();
-    }
-
-    /**
-     * @return ファイルの拡張子（例：jpg）
-     */
-    public String extension() {
-        return extension;
     }
 
     /**

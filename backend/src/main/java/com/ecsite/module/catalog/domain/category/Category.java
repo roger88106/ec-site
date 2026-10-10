@@ -2,7 +2,9 @@ package com.ecsite.module.catalog.domain.category;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.AggregateRoot;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
 
 import java.util.ArrayList;
@@ -16,6 +18,8 @@ import java.util.stream.Collectors;
  * カテゴリの Aggregate Root。<br />
  * 親カテゴリ、名称、階層の深さ、兄弟の中の表示順を持つ（docs/modules/catalog.md）。
  */
+@Getter
+@Accessors(fluent = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Category extends AggregateRoot {
 
@@ -103,50 +107,6 @@ public class Category extends AggregateRoot {
             return new Category(id, null, name, 1, displayOrder, 0);
         }
         return new Category(id, parent.id, name, parent.depth + 1, displayOrder, 0);
-    }
-
-// ============================== Getter ==============================
-
-    /**
-     * @return カテゴリ ID
-     */
-    public UUID id() {
-        return id;
-    }
-
-    /**
-     * @return 親カテゴリ ID。最上位なら null
-     */
-    public UUID parentId() {
-        return parentId;
-    }
-
-    /**
-     * @return 名称
-     */
-    public String name() {
-        return name;
-    }
-
-    /**
-     * @return 階層の深さ（最上位が 1）
-     */
-    public int depth() {
-        return depth;
-    }
-
-    /**
-     * @return 兄弟の中の表示順
-     */
-    public int displayOrder() {
-        return displayOrder;
-    }
-
-    /**
-     * @return バージョン
-     */
-    public long version() {
-        return version;
     }
 
 // ============================== ドメインの振る舞い ==============================

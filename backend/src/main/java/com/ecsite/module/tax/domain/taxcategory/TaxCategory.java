@@ -2,7 +2,9 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.AggregateRoot;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
 
 import java.time.Instant;
@@ -20,6 +22,8 @@ import java.util.stream.Collectors;
  * 税区分の Aggregate Root。<br />
  * 名称と、税率の一覧を持つ。税率は 1 件ずつではなく、一覧ごと置き換える（docs/modules/tax.md）。
  */
+@Getter
+@Accessors(fluent = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class TaxCategory extends AggregateRoot {
 
@@ -86,36 +90,6 @@ public class TaxCategory extends AggregateRoot {
      */
     static TaxCategory create(UUID id, String name) {
         return new TaxCategory(id, name, List.of(), 0);
-    }
-
-// ============================== Getter ==============================
-
-    /**
-     * @return 税区分 ID
-     */
-    public UUID id() {
-        return id;
-    }
-
-    /**
-     * @return 名称
-     */
-    public String name() {
-        return name;
-    }
-
-    /**
-     * @return 税率の一覧（適用開始日時の古い順、変更不可）
-     */
-    public List<TaxRate> rates() {
-        return rates;
-    }
-
-    /**
-     * @return バージョン
-     */
-    public long version() {
-        return version;
     }
 
 // ============================== ドメインの振る舞い ==============================

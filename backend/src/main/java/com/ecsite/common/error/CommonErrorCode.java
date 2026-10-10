@@ -2,6 +2,7 @@ package com.ecsite.common.error;
 
 import com.ecsite.common.message.CommonMessage;
 import com.ecsite.common.message.I18nMessage;
+import lombok.Getter;
 
 /**
  * 共通エラーコード
@@ -40,17 +41,8 @@ public enum CommonErrorCode implements ErrorCodeProvider {
     /**
      * エラーコード
      */
-    private final ErrorCode errorCode;
-
-    /**
-     * エラーコード取得
-     *
-     * @return {@link ErrorCode}
-     */
-    @Override
-    public ErrorCode getCode() {
-        return errorCode;
-    }
+    @Getter
+    private final ErrorCode code;
 
     /**
      * コンストラクタ
@@ -59,6 +51,6 @@ public enum CommonErrorCode implements ErrorCodeProvider {
      * @param message   エラーメッセージ
      */
     CommonErrorCode(ErrorType errorType, I18nMessage message) {
-        errorCode = ErrorCode.of(this.name(), errorType, message);
+        this.code = ErrorCode.of(this.name(), errorType, message);
     }
 }

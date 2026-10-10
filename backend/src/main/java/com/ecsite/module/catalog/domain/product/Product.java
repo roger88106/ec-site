@@ -14,7 +14,9 @@ import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import lombok.Getter;
 import lombok.NonNull;
+import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
 
 import java.time.Instant;
@@ -33,6 +35,8 @@ import java.util.stream.Collectors;
  * 商品の Aggregate Root。<br />
  * バリアントを含む。軸の値の組み合わせが商品内で一意であることは、商品単位の不変条件のため（docs/modules/catalog.md）。
  */
+@Getter
+@Accessors(fluent = true)
 @org.jmolecules.ddd.annotation.AggregateRoot
 public class Product extends AggregateRoot {
 
@@ -100,12 +104,12 @@ public class Product extends AggregateRoot {
     private PriceExclTax priceExclTax;
 
     /**
-     * 所属カテゴリの ID
+     * 所属カテゴリの ID（変更できない集合）
      */
     private Set<UUID> categoryIds;
 
     /**
-     * バリアント軸の名前（並び順）。登録後は変更できない
+     * バリアント軸の名前（並び順。変更できない一覧）。登録後は変わらない
      */
     private final List<String> axes;
 
@@ -125,12 +129,12 @@ public class Product extends AggregateRoot {
     private PublicationPeriod publicationPeriod;
 
     /**
-     * 画像（表示順。先頭が代表画像）
+     * 画像（表示順。先頭が代表画像。変更できない一覧）
      */
     private List<ProductImage> images;
 
     /**
-     * バリアント（表示順）
+     * バリアント（表示順。変更できない一覧）
      */
     private List<Variant> variants;
 
@@ -183,111 +187,13 @@ public class Product extends AggregateRoot {
                 PublicationPeriod.UNLIMITED, List.of(), List.of(), 0));
     }
 
-// ============================== Getter ==============================
-
-    /**
-     * @return 商品 ID
-     */
-    public UUID id() {
-        return id;
-    }
-
-    /**
-     * @return 商品品番
-     */
-    public ProductCode productCode() {
-        return productCode;
-    }
-
-    /**
-     * @return 商品名
-     */
-    public String name() {
-        return name;
-    }
-
-    /**
-     * @return 説明
-     */
-    public String description() {
-        return description;
-    }
-
-    /**
-     * @return 税区分 ID
-     */
-    public UUID taxCategoryId() {
-        return taxCategoryId;
-    }
-
-    /**
-     * @return 税抜価格
-     */
-    public PriceExclTax priceExclTax() {
-        return priceExclTax;
-    }
-
-    /**
-     * @return 所属カテゴリの ID（変更不可）
-     */
-    public Set<UUID> categoryIds() {
-        return categoryIds;
-    }
-
-    /**
-     * @return バリアント軸の名前（並び順、変更不可）
-     */
-    public List<String> axes() {
-        return axes;
-    }
-
-    /**
-     * @return 公開状態
-     */
-    public PublicationStatus status() {
-        return status;
-    }
-
-    /**
-     * @return 初回表示日時。null は一度も表示されていない
-     */
-    public Instant firstShownAt() {
-        return firstShownAt;
-    }
-
-    /**
-     * @return 公開期間
-     */
-    public PublicationPeriod publicationPeriod() {
-        return publicationPeriod;
-    }
-
-    /**
-     * @return 画像（表示順、変更不可）
-     */
-    public List<ProductImage> images() {
-        return images;
-    }
+// ============================== Getter（ほかのフィールドの Getter は Lombok で作る） ==============================
 
     /**
      * @return 代表画像（画像の並びの先頭。AC-37）。画像がなければ空
      */
     public Optional<ProductImage> representativeImage() {
         return images.stream().findFirst();
-    }
-
-    /**
-     * @return バリアント（表示順、変更不可）
-     */
-    public List<Variant> variants() {
-        return variants;
-    }
-
-    /**
-     * @return バージョン
-     */
-    public long version() {
-        return version;
     }
 
 // ============================== ドメインの振る舞い ==============================

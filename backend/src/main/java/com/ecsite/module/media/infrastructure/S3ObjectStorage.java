@@ -1,6 +1,8 @@
 package com.ecsite.module.media.infrastructure;
 
 import com.ecsite.module.media.service.ObjectStorage;
+import lombok.AccessLevel;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -16,6 +18,7 @@ import java.util.Optional;
  * ファイルの置き場所の S3 の実装（plan 001 第 7.3 節）。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
  */
 @Component
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 class S3ObjectStorage implements ObjectStorage {
 
     /**
@@ -42,19 +45,6 @@ class S3ObjectStorage implements ObjectStorage {
      * ファイルの置き場所の設定
      */
     private final MediaStorageProperties properties;
-
-    /**
-     * コンストラクタ
-     *
-     * @param s3         S3 のクライアント
-     * @param presigner  署名付き URL の発行に使うクライアント
-     * @param properties ファイルの置き場所の設定
-     */
-    S3ObjectStorage(S3Client s3, S3Presigner presigner, MediaStorageProperties properties) {
-        this.s3 = s3;
-        this.presigner = presigner;
-        this.properties = properties;
-    }
 
     /**
      * 受付のバケットへの署名付き URL を発行する。形式と大きさを署名に含める（AWS は、違う形式・大きさの PUT を拒否する）。

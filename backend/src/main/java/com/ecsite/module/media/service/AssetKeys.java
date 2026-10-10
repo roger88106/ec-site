@@ -1,23 +1,21 @@
 package com.ecsite.module.media.service;
 
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
+
 import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
  * ファイルのキーの決まり（plan 001 第 7.1 節）。キーの形はここでだけ決める。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class AssetKeys {
 
     /**
      * 範囲に使える文字。キーの区切り（/）を含めさせない
      */
     private static final Pattern SCOPE = Pattern.compile("[A-Za-z0-9-]{1,64}");
-
-    /**
-     * インスタンスを作らせない（static のメソッドだけを持つ）
-     */
-    private AssetKeys() {
-    }
 
     /**
      * 受付のバケットのキー。範囲を含め、別の範囲の受付を確定できないようにする

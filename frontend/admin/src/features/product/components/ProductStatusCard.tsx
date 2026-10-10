@@ -18,6 +18,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
   const queryClient = useQueryClient()
   const invalidate = useInvalidate()
   const path = { params: { path: { productId: product.id } } }
+  /** 状態を変えたあとの処理。状態で在庫の画面の表示も変わるので、在庫も読み直す */
   const onChanged = (message: string) => async () => {
     toast.success(message)
     await invalidate('/products', '/inventory')

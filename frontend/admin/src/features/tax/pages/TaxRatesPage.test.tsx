@@ -5,10 +5,14 @@ import type { TaxCategory } from '@/api/types'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
+/** 税率の一覧の置き換えの要求の本文（送った内容を確かめる） */
 type ReplaceTaxRatesRequest = components['schemas']['ReplaceTaxRatesRequest']
 
+/** テストで使う税区分の ID */
 const TAX_CATEGORY_ID = '00000000-0000-0000-0000-000000000001'
+/** 既存の税率の ID */
 const RATE_ID = '00000000-0000-0000-0000-000000000011'
+/** 税率の画面の URL */
 const URL = `/tax-categories/${TAX_CATEGORY_ID}`
 
 /** 「標準」に 10%（開始・終了とも空白）だけがある税区分 */

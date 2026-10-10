@@ -5,7 +5,9 @@ import type { ProductDetail, TaxCategory, Variant } from '@/api/types'
  * どれも、テストに関係のない項目にありふれた値を入れたもの。テストで確かめる項目は overrides で与える。
  */
 
+/** テストのデータの税区分の ID */
 export const TAX_CATEGORY_ID = '00000000-0000-0000-0000-000000000001'
+/** テストのデータの商品の ID */
 export const PRODUCT_ID = '00000000-0000-0000-0000-000000000101'
 
 /** 「標準」に 10%（開始・終了とも空白）だけがある税区分 */

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { EMPTY_PRODUCT_FIELDS, isNeverShown, isProductFieldsFilled, toProductBody } from '@/features/product/product'
 
+/** テストの現在時刻 */
 const NOW = Date.parse('2026-10-08T12:00:00+09:00')
 
 describe('C 側に表示されたことがあるか', () => {

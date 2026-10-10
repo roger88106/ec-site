@@ -11,10 +11,13 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
+/** 入力欄の値（軸の値は、商品の軸と同じ並び） */
 type Values = { variantCode: string; axisValues: { value: string }[] }
 
+/** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['variantCode', 'axisValues'] as const
 
+/** 空の入力。軸の値の欄は、商品の軸の数だけ作る */
 function emptyValues(product: ProductDetail): Values {
   return { variantCode: '', axisValues: product.axes.map(() => ({ value: '' })) }
 }

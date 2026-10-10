@@ -18,6 +18,7 @@ export function CategoryPage() {
   const query = $api.useQuery('get', '/categories')
   const invalidate = useInvalidate()
   const [dialog, setDialog] = useState<DialogState>(null)
+  /** 並び替えのあと、カテゴリの木を読み直す */
   const onSuccess = () => invalidate('/categories')
   const reorder = $api.useMutation('put', '/categories/order', { onSuccess })
   const remove = $api.useMutation('delete', '/categories/{categoryId}', {

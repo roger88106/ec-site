@@ -15,12 +15,16 @@ import { Textarea } from '@/components/ui/textarea'
 import { formatDelta } from '@/lib/delta'
 import { stockAdjustmentReasonLabels } from '@/lib/labels'
 
+/** 入力欄の値（増減量は入力中の文字列のまま持ち、送るときに数にする） */
 type Values = { delta: string; reason: StockAdjustmentReason | null; memo: string }
 
+/** 空の入力（調整したら、ここに戻す） */
 const EMPTY: Values = { delta: '', reason: null, memo: '' }
 
+/** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
 
+/** 理由の選択肢（admin.yaml の値と、画面の表示名） */
 const reasonOptions = stockAdjustmentReasonValues.map((reason) => ({
   value: reason,
   label: stockAdjustmentReasonLabels[reason],

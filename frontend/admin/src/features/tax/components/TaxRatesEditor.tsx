@@ -19,8 +19,10 @@ type RateRow = {
   effectiveTo: string | null
 }
 
+/** 入力欄の値（税率の一覧） */
 type Values = { rates: RateRow[] }
 
+/** 税区分の税率の一覧を、入力欄の行にする（率は入力中の文字列として持つ） */
 function toValues(taxCategory: TaxCategory): Values {
   return {
     rates: taxCategory.rates.map((rate) => ({

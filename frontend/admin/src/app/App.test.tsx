@@ -3,6 +3,7 @@ import { describe, expect, it } from 'vitest'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
+/** テストで使う税区分の ID */
 const TAX_CATEGORY_ID = '00000000-0000-0000-0000-000000000001'
 
 describe('結合テストの土台', () => {

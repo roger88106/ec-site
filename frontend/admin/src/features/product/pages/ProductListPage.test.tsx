@@ -4,6 +4,7 @@ import type { ProductSummary } from '@/api/types'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
+/** 一覧に出す商品（公開中） */
 const SHIRT: ProductSummary = {
   id: '00000000-0000-0000-0000-000000000101',
   productCode: 'ABC-001',
@@ -11,6 +12,8 @@ const SHIRT: ProductSummary = {
   status: 'PUBLISHED',
   variantCount: 2,
 }
+
+/** 一覧に出す商品（非公開） */
 const CAP: ProductSummary = {
   id: '00000000-0000-0000-0000-000000000102',
   productCode: 'ABC-002',

@@ -43,7 +43,9 @@ export function ProductListPage() {
     { params: { query: { productIds } } },
     { enabled: productIds.length > 0 },
   )
+  /** 商品 ID → 在庫数の合計（在庫の API の結果を、一覧の行に合わせる） */
   const totals = new Map(stocks.data?.items.map((item) => [item.productId, item.totalQuantity]))
+  /** 絞り込みを URL に反映する（URL が絞り込みの正本。再読み込み・共有しても同じ一覧になる） */
   const apply = (next: ProductFilter) => setSearchParams(toSearchParams(next))
 
   return (

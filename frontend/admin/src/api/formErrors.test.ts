@@ -2,6 +2,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { toApiError } from '@/api/errors'
 import { setServerFieldErrors } from '@/api/formErrors'
 
+/** テスト用のフォームの値 */
 type Form = { name: string; priceExclTax: string }
 
 describe('サーバーの入力検証エラーの表示', () => {

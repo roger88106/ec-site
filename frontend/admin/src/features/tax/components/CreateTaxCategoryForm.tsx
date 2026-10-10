@@ -9,6 +9,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 
+/** 入力欄の値 */
 type Values = { name: string }
 
 /** 税区分の登録（AC-1） */

@@ -51,6 +51,7 @@ export function fieldErrors(error: unknown): { field: string; message: string }[
   return error instanceof ApiError ? (error.problem?.errors ?? []) : []
 }
 
+/** 応答の本文が Problem Details の形（message を持つ）なら、その型で返す */
 function asProblem(body: unknown): Problem | undefined {
   if (typeof body === 'object' && body !== null && 'message' in body && typeof body.message === 'string') {
     return body as Problem

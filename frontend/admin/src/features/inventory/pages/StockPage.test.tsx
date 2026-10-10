@@ -5,9 +5,12 @@ import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
+/** 在庫の調整の要求の本文（送った内容を確かめる） */
 type AdjustStockRequest = components['schemas']['AdjustStockRequest']
 
+/** 在庫を調整するバリアント */
 const VARIANT = variant()
+/** 在庫の画面の URL */
 const URL = `/products/${PRODUCT_ID}/variants/${VARIANT.id}/stock`
 
 /**

@@ -5,6 +5,7 @@ import { PRODUCT_ID, productDetail, taxCategory } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
+/** 商品の登録の要求の本文（送った内容を確かめる） */
 type CreateProductRequest = components['schemas']['CreateProductRequest']
 
 /** 商品の登録の画面が使う API に応答する。登録の要求は requests に取っておく */

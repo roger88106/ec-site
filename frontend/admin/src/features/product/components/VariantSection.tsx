@@ -65,6 +65,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
   const neverShown = isNeverShown(product)
   // 軸を持たない商品のバリアントは 1 つだけ（AC-24）
   const canAdd = product.axes.length > 0 || product.variants.length === 0
+  /** 表示している商品のバージョンで、バリアントの並びを送る */
   const reorderTo = (variantIds: string[]) => {
     resetErrors()
     reorder.mutate({

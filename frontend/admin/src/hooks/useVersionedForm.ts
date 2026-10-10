@@ -28,6 +28,7 @@ export function useVersionedForm<R extends Versioned, T extends FieldValues>(
   markSaved: () => void
   reload: () => Promise<void>
 } {
+  // 呼ぶ側が毎回新しい関数を渡しても、作り直しの effect が走り直さないよう、最新の関数を ref に持つ
   const toValuesRef = useRef(toValues)
   toValuesRef.current = toValues
   const form = useForm<T>({ defaultValues: toValues(resource) as DefaultValues<T> })
@@ -36,6 +37,7 @@ export function useVersionedForm<R extends Versioned, T extends FieldValues>(
   const { isDirty } = form.formState
 
   useEffect(() => {
+    // 取得し直しの途中か、入力を変えていないときだけ作り直す（入力中の値を黙って捨てない）
     if ((reloading || !isDirty) && resource.version !== baseVersion) {
       form.reset(toValuesRef.current(resource))
       setBaseVersion(resource.version)

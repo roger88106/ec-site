@@ -10,8 +10,10 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
+/** 入力欄の値（日時は ISO 8601 の文字列。空は限りがない） */
 type Values = { publishStart: string | null; publishEnd: string | null }
 
+/** 商品の公開期間を、入力欄の値にする */
 function toValues(product: ProductDetail): Values {
   return { publishStart: product.publishStart ?? null, publishEnd: product.publishEnd ?? null }
 }

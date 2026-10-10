@@ -1,6 +1,7 @@
 /** 日本時間の UTC からのずれ（日本に夏時間はない） */
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000
 
+/** 金額の書式（3 桁ごとのカンマ） */
 const yen = new Intl.NumberFormat('ja-JP')
 
 /**
@@ -46,6 +47,7 @@ export function toDateTimeInput(iso: string | null | undefined): string {
 /** 日本時間での年月日・時分（ゼロ埋め）。ブラウザのタイムゾーンに依存しないよう、UTC にずれを足して求める */
 function jstParts(iso: string) {
   const jst = new Date(new Date(iso).getTime() + JST_OFFSET_MS)
+  /** 2 桁にゼロ埋めする */
   const pad = (value: number) => String(value).padStart(2, '0')
   return {
     year: String(jst.getUTCFullYear()),

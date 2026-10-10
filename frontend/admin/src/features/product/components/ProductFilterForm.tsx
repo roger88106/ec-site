@@ -10,6 +10,7 @@ import { Input } from '@/components/ui/input'
 import { EMPTY_FILTER, type ProductFilter } from '@/features/product/productFilter'
 import { publicationStatusLabels } from '@/lib/labels'
 
+/** 状態の選択肢（「すべて」は絞り込まない） */
 const statusOptions = [
   { value: null, label: 'すべて' },
   ...publicationStatusValues.map((status) => ({ value: status, label: publicationStatusLabels[status] })),

@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 import { imageContentType, imageFileError, MAX_IMAGE_BYTES } from '@/features/product/imageUpload'
 
+/** 形式の誤りのメッセージ */
 const FORMAT_ERROR = '画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。'
 
 describe('imageContentType', () => {

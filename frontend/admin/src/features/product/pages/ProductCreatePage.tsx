@@ -23,11 +23,13 @@ import {
 /** バリアント軸の上限（AC-13） */
 const MAX_AXES = 3
 
+/** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を足したもの） */
 type Values = ProductFieldsValues & {
   productCode: string
   axes: { name: string }[]
 }
 
+/** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = [...PRODUCT_FIELD_NAMES, 'productCode', 'axes'] as const
 
 /**

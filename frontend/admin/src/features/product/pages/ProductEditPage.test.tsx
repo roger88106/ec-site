@@ -6,6 +6,7 @@ import { PRODUCT_ID, productDetail, taxCategory, variant } from '@/test/fixtures
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
+/** 商品の編集の画面の URL */
 const URL = `/products/${PRODUCT_ID}`
 
 /**

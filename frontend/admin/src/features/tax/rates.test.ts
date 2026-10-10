@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { rateState } from '@/features/tax/rates'
 
+/** テストの現在時刻 */
 const NOW = Date.parse('2026-10-08T00:00:00+09:00')
 
 describe('税率の行の状態', () => {

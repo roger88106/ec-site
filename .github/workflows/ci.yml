@@ -183,6 +183,12 @@ jobs:
           pnpm --dir frontend/store install --frozen-lockfile
           pnpm --dir frontend/e2e install --frozen-lockfile
 
+      # 画像の置き場所（S3 互換）。バケット、CORS、公開の設定は、compose の初期化のコンテナで作る（plan 001 第 7 節）
+      - name: 画像の置き場所（SeaweedFS）の起動
+        run: |
+          docker compose up -d --wait seaweedfs
+          docker compose run --rm seaweedfs-init
+
       - name: lint と整形の確認、型チェック
         working-directory: frontend/e2e
         run: pnpm lint && pnpm typecheck

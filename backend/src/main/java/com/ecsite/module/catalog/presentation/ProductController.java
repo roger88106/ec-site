@@ -17,6 +17,7 @@ import com.ecsite.api.admin.model.SetVariantImageRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.application.ProductCommandService;
+import com.ecsite.module.catalog.application.ProductImageService;
 import com.ecsite.module.catalog.application.ProductQueryService;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import lombok.RequiredArgsConstructor;
@@ -25,11 +26,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品のコントローラー（B 側。admin.yaml の tag: product）。<br />
- * 後の段階で実装する endpoint は、実装するまで 501 を返す（docs/modules/catalog.md）。
+ * 商品のコントローラー（B 側。admin.yaml の tag: product）。
  */
 @RestController
 @RequiredArgsConstructor
@@ -44,6 +45,11 @@ class ProductController implements ProductApi {
      * 商品クエリサービス
      */
     private final ProductQueryService queryService;
+
+    /**
+     * 商品画像のアプリケーションサービス
+     */
+    private final ProductImageService imageService;
 
     /**
      * 商品マッパー
@@ -220,56 +226,74 @@ class ProductController implements ProductApi {
         return ResponseEntity.noContent().build();
     }
 
-// ============================== 商品画像（US-7。実装するまで 501） ==============================
+// ============================== 商品画像（US-7） ==============================
 
     /**
-     * 画像のアップロードの受付（AC-39、40）。P2（段階 10）で実装する
+     * 画像のアップロードの受付（AC-39、40）
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param request   画像のアップロードの受付リクエスト
+     * @return Http 201 : 受付（署名付き URL）
      */
     @Override
     public ResponseEntity<ImageUpload> createImageUpload(UUID productId, CreateImageUploadRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var upload = imageService.createUpload(productId, request.getContentType(), request.getContentLength());
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toImageUpload(upload));
     }
 
     /**
-     * 受け付けた画像の登録（AC-37、39、40）。P2（段階 10）で実装する
+     * 受け付けた画像の登録（AC-37、39、40）。商品の一部で単独の URL を持たないので、Location は返さない
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param request   画像の登録リクエスト
+     * @return Http 201 : 画像 ID
      */
     @Override
     public ResponseEntity<CreatedId> addProductImage(UUID productId, AddProductImageRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var id = imageService.addImage(productId, request.getUploadId(), request.getVersion());
+        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId(id));
     }
 
     /**
-     * 画像の並び順の変更（AC-37）。P2（段階 10）で実装する
+     * 画像の並び順の変更（AC-37）
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param request   画像の並び順の変更リクエスト
+     * @return Http 204 : VOID
      */
     @Override
     public ResponseEntity<Void> reorderProductImages(UUID productId, ReorderProductImagesRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        // imageIds は LinkedHashSet で受け取るので、送られた順を保つ
+        imageService.reorderImages(productId, List.copyOf(request.getImageIds()), request.getVersion());
+        return ResponseEntity.noContent().build();
     }
 
     /**
-     * 画像の削除（AC-37）。P2（段階 10）で実装する
+     * 画像の削除（AC-37）
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param imageId   画像 ID
+     * @param version   取得時のバージョン
+     * @return Http 204 : VOID
      */
     @Override
     public ResponseEntity<Void> deleteProductImage(UUID productId, UUID imageId, Long version) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        imageService.deleteImage(productId, imageId, version);
+        return ResponseEntity.noContent().build();
     }
 
     /**
-     * バリアントの画像の指定（AC-38）。P2（段階 10）で実装する
+     * バリアントの画像の指定（AC-38）
      *
-     * @return Http 501
+     * @param productId 商品 ID
+     * @param variantId バリアント ID
+     * @param request   バリアントの画像の指定リクエスト
+     * @return Http 204 : VOID
      */
     @Override
     public ResponseEntity<Void> setVariantImage(UUID productId, UUID variantId, SetVariantImageRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        imageService.setVariantImage(productId, variantId, request.getImageId().orElse(null), request.getVersion());
+        return ResponseEntity.noContent().build();
     }
 
 // ============================== DELETE ==============================

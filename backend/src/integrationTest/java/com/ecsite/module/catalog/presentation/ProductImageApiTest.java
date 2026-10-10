@@ -5,6 +5,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestcontainersConfig;
 import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -14,6 +15,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.jooq.DSLContext;
 import org.springframework.test.web.servlet.ResultActions;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -31,6 +33,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.jooq.catalog.Tables.PRODUCT;
+import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
+import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.hasSize;
@@ -44,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 商品画像 API の受け入れテスト（T1018、US-7。plan 001 第 7 節）。<br />
  * ファイルは、受付の応答の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
- * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックしない（品番は実行ごとに変える）。
+ * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったデータを消す。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -54,6 +59,11 @@ class ProductImageApiTest {
     private static final String BASE = "/api/admin/products";
 
     private static final String UNKNOWN_ID = "00000000-0000-0000-0000-000000000000";
+
+    /**
+     * このテストで作る商品の品番の接頭辞
+     */
+    private static final String CODE_PREFIX = "IMG-";
 
     private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
 
@@ -79,6 +89,9 @@ class ProductImageApiTest {
     @Autowired
     S3Client s3;
 
+    @Autowired
+    DSLContext dsl;
+
     private String taxCategoryId;
 
     @BeforeEach
@@ -91,6 +104,17 @@ class ProductImageApiTest {
                         .content("""
                                 {"version": 0, "rates": [{"ratePercent": 10}]}"""))
                 .andExpect(status().isNoContent());
+    }
+
+    /**
+     * ロールバックしないので、作った商品と税区分を消す（全件を数えるほかのテストに影響しないように）。<br />
+     * 商品は DB から直接消す（配信のファイルはテストのコンテナに残るが、ほかのテストは参照しない）。
+     */
+    @AfterEach
+    void cleanUp() {
+        dsl.deleteFrom(PRODUCT).where(PRODUCT.PRODUCT_CODE.startsWith(CODE_PREFIX)).execute();
+        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(UUID.fromString(taxCategoryId))).execute();
+        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(UUID.fromString(taxCategoryId))).execute();
     }
 
     @Nested
@@ -331,7 +355,7 @@ class ProductImageApiTest {
      * 軸がなく、バリアントを 1 つ持つ非公開の商品（バージョン 1）
      */
     private String productWithVariant() throws Exception {
-        var code = "IMG-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        var code = CODE_PREFIX + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
         var id = createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
                 {"productCode": "%s", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
                  "priceExclTax": 1000}""".formatted(code, taxCategoryId)));

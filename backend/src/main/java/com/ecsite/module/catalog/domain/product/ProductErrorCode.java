@@ -59,6 +59,22 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     TOO_MANY_PRODUCT_IMAGES(ErrorType.BUSINESS_RULE_ERROR, ProductMessage.TOO_MANY_PRODUCT_IMAGES),
     /**
+     * 受け付けない画像の形式（AC-39）
+     */
+    UNSUPPORTED_IMAGE_FORMAT(ErrorType.VALIDATION_ERROR, ProductMessage.UNSUPPORTED_IMAGE_FORMAT),
+    /**
+     * 画像が 0 バイトか、10MB を超える（AC-39）
+     */
+    IMAGE_TOO_LARGE(ErrorType.VALIDATION_ERROR, ProductMessage.IMAGE_TOO_LARGE),
+    /**
+     * 受け付けた画像のファイルがない（PUT していない、期限切れで消えた、別の商品の受付）
+     */
+    IMAGE_UPLOAD_NOT_FOUND(ErrorType.VALIDATION_ERROR, ProductMessage.IMAGE_UPLOAD_NOT_FOUND),
+    /**
+     * ファイルの中身が、受け付ける形式の画像でない
+     */
+    INVALID_IMAGE_FILE(ErrorType.VALIDATION_ERROR, ProductMessage.INVALID_IMAGE_FILE),
+    /**
      * 所属カテゴリに存在しないカテゴリが指定された
      */
     INVALID_CATEGORY_ID(ErrorType.VALIDATION_ERROR, ProductMessage.INVALID_CATEGORY_ID),

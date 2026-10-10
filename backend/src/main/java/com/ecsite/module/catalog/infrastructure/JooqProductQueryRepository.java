@@ -8,6 +8,7 @@ import com.ecsite.module.catalog.application.ProductQueryRepository;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
+import com.ecsite.module.catalog.domain.product.port.ImageStorage;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -23,6 +24,7 @@ import java.util.UUID;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
+import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
@@ -37,6 +39,11 @@ class JooqProductQueryRepository implements ProductQueryRepository {
      * jOOQ DSL Context
      */
     private final DSLContext dsl;
+
+    /**
+     * 画像の置き場所（配信の URL を組み立てる）
+     */
+    private final ImageStorage imageStorage;
 
     /**
      * 商品の詳細を取得する。
@@ -146,7 +153,15 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                         variant.getId(),
                         variant.getVariantCode(),
                         axisValuesByVariant.getOrDefault(variant.getId(), List.of()),
-                        variant.getSalesSuspended()));
+                        variant.getSalesSuspended(),
+                        variant.getImageId()));
+
+        var images = dsl.selectFrom(PRODUCT_IMAGE)
+                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(id))
+                .orderBy(PRODUCT_IMAGE.DISPLAY_ORDER)
+                .fetch(image -> new ProductDetailView.ImageView(
+                        image.getId(),
+                        imageStorage.publicUrl(image.getStorageKey())));
 
         return new ProductDetailView(
                 id,
@@ -162,6 +177,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 record.getFirstShownAt(),
                 record.getPublishStart(),
                 record.getPublishEnd(),
+                images,
                 variants,
                 record.getVersion(),
                 record.getCreatedAt(),

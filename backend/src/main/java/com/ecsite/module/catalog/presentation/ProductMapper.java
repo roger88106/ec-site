@@ -2,7 +2,9 @@ package com.ecsite.module.catalog.presentation;
 
 import com.ecsite.api.admin.model.AddVariantRequest;
 import com.ecsite.api.admin.model.CreateProductRequest;
+import com.ecsite.api.admin.model.ImageUpload;
 import com.ecsite.api.admin.model.ProductDetail;
+import com.ecsite.api.admin.model.ProductImage;
 import com.ecsite.api.admin.model.ProductSummary;
 import com.ecsite.api.admin.model.ProductSummaryPage;
 import com.ecsite.api.admin.model.PublicationStatus;
@@ -16,6 +18,7 @@ import com.ecsite.module.catalog.application.model.command.ChangePublicationPeri
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderVariantsCommand;
 import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
+import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import org.springframework.stereotype.Component;
@@ -124,8 +127,7 @@ class ProductMapper {
                 view.categoryIds(),
                 view.axes(),
                 PublicationStatus.fromValue(view.status()),
-                // 商品画像（US-7）は T1015 以降で実装する。それまでは空
-                List.of(),
+                view.images().stream().map(image -> new ProductImage(image.id(), image.url())).toList(),
                 view.variants().stream().map(ProductMapper::toVariant).toList(),
                 view.version(),
                 toOffsetDateTime(view.createdAt()),
@@ -149,10 +151,22 @@ class ProductMapper {
                         .toList());
     }
 
+
+    /**
+     * 画像のアップロードの受付のレスポンスに変換する。
+     *
+     * @param view 画像のアップロードの受付
+     * @return 画像のアップロードの受付のレスポンス
+     */
+    ImageUpload toImageUpload(ImageUploadView view) {
+        return new ImageUpload(view.uploadId(), view.uploadUrl(), view.headers(), toOffsetDateTime(view.expiresAt()));
+    }
+
 // ============================== プライベートメソッド ==============================
 
     private static Variant toVariant(ProductDetailView.VariantView view) {
-        return new Variant(view.id(), view.variantCode(), view.axisValues(), view.salesSuspended());
+        return new Variant(view.id(), view.variantCode(), view.axisValues(), view.salesSuspended())
+                .imageId(view.imageId());
     }
 
     private static OffsetDateTime toOffsetDateTime(Instant instant) {

@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application.model.view;
 
 import jakarta.annotation.Nullable;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -22,6 +23,7 @@ import java.util.UUID;
  * @param firstShownAt  初回表示日時
  * @param publishStart  公開開始日時
  * @param publishEnd    公開終了日時
+ * @param images        画像（表示順。先頭が代表画像）
  * @param variants      バリアント（表示順）
  * @param version       バージョン
  * @param createdAt     登録日時
@@ -31,7 +33,7 @@ public record ProductDetailView(UUID id, String productCode, String name, String
                                 long priceExclTax, @Nullable Long priceInclTax, List<UUID> categoryIds,
                                 List<String> axes, String status, @Nullable Instant firstShownAt,
                                 @Nullable Instant publishStart, @Nullable Instant publishEnd,
-                                List<VariantView> variants, long version, Instant createdAt, Instant updatedAt) {
+                                List<ImageView> images,                                 List<VariantView> variants, long version, Instant createdAt, Instant updatedAt) {
 
     /**
      * 税込価格を設定したビューを返す。
@@ -41,7 +43,8 @@ public record ProductDetailView(UUID id, String productCode, String name, String
      */
     public ProductDetailView withPriceInclTax(@Nullable Long priceInclTax) {
         return new ProductDetailView(id, productCode, name, description, taxCategoryId, priceExclTax, priceInclTax,
-                categoryIds, axes, status, firstShownAt, publishStart, publishEnd, variants, version, createdAt, updatedAt);
+                categoryIds, axes, status, firstShownAt, publishStart, publishEnd, images, variants, version, createdAt,
+                updatedAt);
     }
 
     /**
@@ -51,7 +54,18 @@ public record ProductDetailView(UUID id, String productCode, String name, String
      * @param variantCode    バリアント品番
      * @param axisValues     軸の値（商品の軸と同じ並び）
      * @param salesSuspended 販売停止
+     * @param imageId        指定した画像（AC-38）。なければ null
      */
-    public record VariantView(UUID id, String variantCode, List<String> axisValues, boolean salesSuspended) {
+    public record VariantView(UUID id, String variantCode, List<String> axisValues, boolean salesSuspended,
+                              @Nullable UUID imageId) {
+    }
+
+    /**
+     * 画像のビュー
+     *
+     * @param id  画像 ID
+     * @param url 配信の URL
+     */
+    public record ImageView(UUID id, URI url) {
     }
 }

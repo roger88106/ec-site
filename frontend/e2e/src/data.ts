@@ -74,6 +74,8 @@ export type PublishedProduct = {
   axes?: string[]
   /** バリアント。code は品番の後ろの部分で、商品品番の後ろに付ける */
   variants: { code: string; axisValues?: string[]; stock: number }[]
+  /** 公開開始日時（公開の予約。AC-34）。省略すると、公開した時刻から表示される */
+  publishStart?: Date
 }
 
 /** 実行ごとの印を付けた品番（例：E2E-MG3K2J1A-SHIRT） */
@@ -109,6 +111,14 @@ export async function createPublishedProduct(product: PublishedProduct): Promise
     if (variant.stock > 0) {
       await arrive(created.id, variant.stock)
     }
+  }
+  if (product.publishStart) {
+    unwrap(
+      await api.PUT('/products/{productId}/publication-period', {
+        params: { path: { productId: id } },
+        body: { publishStart: product.publishStart.toISOString(), version: await productVersion(id) },
+      }),
+    )
   }
   unwrap(await api.PUT('/products/{productId}/publish', { params: { path: { productId: id } } }))
   return id

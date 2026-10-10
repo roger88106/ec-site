@@ -57,8 +57,8 @@
 
 ## ストレージ
 
-ストレージの操作は、ポート（`ObjectStorage`）の背後に置く。操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする（署名付きの PUT の URL、ファイルの情報、先頭の読み取り、受付のファイルの取り出し、配信のバケットへの書き込み、削除）。
-画像の変換は、ポート（`ImageConverter`）の背後に置く。実装は libvips のコマンドを呼ぶ（plan 001 第 7.5 節）。設定は `ecsite.media.converter`。
+ストレージの操作は、ポート（`ObjectStorage`）の背後に置く。操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする（署名付きの PUT の URL、ファイルの情報、先頭の読み取り、配信のバケットへの書き込み、削除）。
+画像の変換は、ポート（`ImageConverter`）の背後に置く。実装は、別のコンテナの imgproxy を HTTP で呼ぶ（plan 001 第 7.5 節）。設定は `ecsite.media.converter`。
 実装は S3（AWS SDK v2）で、ローカルと CI は SeaweedFS で動かす。設定は `ecsite.media.storage`（環境変数で上書き。README の「環境変数」）。
 
 ## データモデル

@@ -1,20 +1,13 @@
 ---
 name: local-dev
-description: ec-site をローカルで起動・確認する手順。Node・JDK のパス、DB（compose）の起動と接続、バックエンドの local profile での起動と待ち方、フロント（store・admin）の lint・型チェック・テスト・ビルドを要約だけで流すスクリプト。バックエンドやフロントを動かす、テストを流す、DB を見るときに使う。
+description: ec-site をローカルで起動・確認する手順。DB（compose）の起動と接続、バックエンドの local profile での起動と待ち方、フロント（store・admin）の lint・型チェック・テスト・ビルドを要約だけで流すスクリプト。バックエンドやフロントを動かす、テストを流す、DB を見るときに使う。
 ---
 
 # ローカルでの起動と確認
 
-README の「起動とテスト」を、このマシンでそのまま実行できる形にしたもの。調べ直さずにこの通りに実行する。
+README の「起動とテスト」を、エージェントがそのまま実行できる形にしたもの。調べ直さずにこの通りに実行する。
 
-## 環境（Bash ツール）
-
-シェルの既定では Node と JDK 21 が見つからない。コマンドごとに次を前に付ける。
-
-```bash
-export PATH="/c/Program Files/nodejs:/c/Users/roger/AppData/Roaming/npm:$PATH"   # node、pnpm
-export JAVA_HOME=~/.jdks/ms-21.0.12.1                                              # Gradle（既定は JVM 8）
-```
+前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う（AGENTS.md「環境」）。
 
 ## ミドルウェア（compose）
 
@@ -32,10 +25,10 @@ docker compose stop           # 止める（データは残る）
 
 ## バックエンド（`backend/`）
 
-起動は `run_in_background` で行い、出力はスクラッチパッドのファイルに捨てる（ログが多いため）。
+起動はバックグラウンドで行い、出力はファイルに捨てる（ログが多いため）。
 
 ```bash
-cd backend && JAVA_HOME=~/.jdks/ms-21.0.12.1 ./gradlew bootRun --args='--spring.profiles.active=local' > <スクラッチパッド>/bootrun.log 2>&1
+cd backend && ./gradlew bootRun --args='--spring.profiles.active=local' > <作業用のディレクトリ>/bootrun.log 2>&1
 ```
 
 起動を待つのは sleep ではなく curl の再試行で行う（初回のコンパイル込みで 1〜2 分）。
@@ -47,12 +40,12 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 - 200 が出たら起動済み。すでに起動しているかは同じ curl を `--retry` なしで確かめる。
 - 起動に失敗したら `bootrun.log` を `grep -n "ERROR\|Caused by" ` で見る。全体を読まない。
 - local profile では、起動時にマイグレーションとローカル用の seed（`db/seed/local`）が適用される。
-- 止める（PowerShell）：`Stop-Process -Id (Get-NetTCPConnection -LocalPort 8080 -State Listen).OwningProcess`
+- 止めるときは、ポート 8080 で待ち受けているプロセスを止める。
 
 テスト（`backend/` で。Docker が要る）：
 
 ```bash
-JAVA_HOME=~/.jdks/ms-21.0.12.1 ./gradlew check -q --console=plain 2>&1 | tail -40
+./gradlew check -q --console=plain 2>&1 | tail -40
 ```
 
 - `check` は単体・統合テストと OpenAPI の検証を含む（AGENTS.md の完了の基準）。一部だけなら `test`（単体）、`integrationTest`（統合）、`--tests '<クラス名>'`。
@@ -68,7 +61,7 @@ scripts/check-frontend.sh admin test            # 管理画面のテストだけ
 scripts/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 ```
 
-- PATH はスクリプトの中で通す。末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
+- 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
 - 整形と自動で直せる lint は、各アプリで `pnpm lint:fix`。
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
 

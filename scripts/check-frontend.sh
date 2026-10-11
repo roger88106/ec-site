@@ -14,7 +14,6 @@
 set -u
 
 ROOT="$(cd "$(dirname "$0")/.." && pwd)"
-export PATH="/c/Program Files/nodejs:/c/Users/roger/AppData/Roaming/npm:$PATH"
 
 TAIL_LINES="${TAIL_LINES:-30}"
 LOG_DIR="${LOG_DIR:-$(mktemp -d -t check-frontend.XXXXXX)}"

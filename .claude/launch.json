@@ -3,13 +3,13 @@
   "configurations": [
     {
       "name": "admin",
-      "runtimeExecutable": "C:/Program Files/nodejs/node.exe",
+      "runtimeExecutable": "node",
       "runtimeArgs": ["frontend/admin/node_modules/vite/bin/vite.js", "frontend/admin", "--port", "5173", "--strictPort"],
       "port": 5173
     },
     {
       "name": "store",
-      "runtimeExecutable": "C:/Program Files/nodejs/node.exe",
+      "runtimeExecutable": "node",
       "runtimeArgs": ["frontend/store/node_modules/next/dist/bin/next", "dev", "frontend/store", "--port", "3000"],
       "port": 3000
     }

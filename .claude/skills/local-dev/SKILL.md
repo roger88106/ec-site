@@ -1,6 +1,6 @@
 ---
 name: local-dev
-description: ec-site をローカルで起動・確認する手順。DB（compose）の起動と接続、バックエンドの local profile での起動と待ち方、フロント（store・admin）の lint・型チェック・テスト・ビルドを要約だけで流すスクリプト。バックエンドやフロントを動かす、テストを流す、DB を見るときに使う。
+description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、フロント（store・admin）の lint・型チェック・テスト・ビルドを要約だけで流すスクリプト。バックエンドやフロントを動かす、テストを流す、DB や token を見るときに使う。
 ---
 
 # ローカルでの起動と確認
@@ -12,9 +12,12 @@ README の「起動とテスト」を、エージェントがそのまま実行�
 ## ミドルウェア（compose）
 
 ```bash
-docker compose up -d          # リポジトリのルートで。PostgreSQL、Zipkin、SeaweedFS、imgproxy
+docker compose up -d          # リポジトリのルートで。PostgreSQL、Zipkin、SeaweedFS、imgproxy、Keycloak、Mailpit
 docker compose stop           # 止める（データは残る）
 ```
+
+- Keycloak は起動に 20 秒ほどかかる。`docker inspect -f '{{.State.Health.Status}}' ec-site-keycloak` が `healthy` になるまで待つ。
+- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、README「ローカルで起動する」の手順で一度だけ作る。
 
 - DB：`localhost:5432`、DB `ec_site`、ユーザー `ec_site`、パスワード `ec_site`。
 - SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で引く。注文は `ordering`）。
@@ -22,6 +25,20 @@ docker compose stop           # 止める（データは残る）
   ```bash
   docker exec ec-site-postgres psql -U ec_site -d ec_site -c "select order_number, status from ordering.sales_order order by ordered_at desc limit 5"
   ```
+
+## 認証（Keycloak、Mailpit）
+
+realm の設定は `keycloak/realms/` の JSON。アカウントと、JSON を変えたときの取り込み直しは README「認証（Keycloak）」。
+
+```bash
+scripts/dev/keycloak.sh token ec-admin admin@example.com admin-pass-1   # access token の payload を出す（権限・audience の確認）
+scripts/dev/keycloak.sh token ec-store member@example.com member-pass-1
+scripts/dev/keycloak.sh admin GET /admin/realms/ec-store                # 管理 API（realm の設定を読む）
+curl -s http://localhost:8025/api/v1/messages | head -c 500              # Mailpit に届いたメールの一覧
+```
+
+- `token` は、web の client のパスワードによる取得（Direct Access Grant）を一時的に有効にし、終わったら無効に戻す。途中で止めたら、`admin` で `directAccessGrantsEnabled` が `false` か確かめる。
+- 管理 API で設定を変えても、realm の JSON は変わらない。残す設定は JSON を直し、取り込み直して確かめる。
 
 ## バックエンド（`backend/`）
 

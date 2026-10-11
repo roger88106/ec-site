@@ -59,7 +59,8 @@ IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/bui
 ### ローカルで起動する
 
 ```bash
-# リポジトリのルートで、PostgreSQL、Zipkin、SeaweedFS（画像の置き場所）、imgproxy（画像の変換）を起動する
+# リポジトリのルートで、PostgreSQL、Zipkin、SeaweedFS（画像の置き場所）、imgproxy（画像の変換）、
+# Keycloak（認証）、Mailpit（Keycloak が送るメールの受け取り）を起動する
 docker compose up -d
 
 # backend/ で、local profile で起動する（マイグレーションとローカル用の seed は起動時に適用される）
@@ -74,10 +75,33 @@ docker compose up -d
 | http://localhost:9411 | Zipkin（トレースの表示。local では全リクエストを記録する） |
 | http://localhost:8333 | SeaweedFS（S3 互換。画像のバケットは `seaweedfs-init` が作る。[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7 節） |
 | http://localhost:8081 | imgproxy（画像の WebP への変換。署名のない URL は拒否する。[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7.5 節） |
+| http://localhost:8180 | Keycloak（認証。管理の画面は `/admin`、`admin` / `admin`。[plan 003](docs/specs/003-auth/plan.md) 第 2 節） |
+| http://localhost:8025 | Mailpit（Keycloak が送ったメール。外には送らない） |
 
 - DB の接続先は [compose.yaml](compose.yaml) と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
 - 止めるときは `docker compose stop`。データを消して作り直すときは `docker compose down -v`。
 - Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回の起動）に作られる。それより前からある volume では作られないので、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < compose/postgres/init-keycloak.sql` を流してから `docker compose up -d` する（`docker compose down -v` で作り直してもよい）。
+
+#### 認証（Keycloak）
+
+realm の設定は [keycloak/realms/](keycloak/realms) の JSON が正本で、Keycloak の起動時に取り込まれる（[plan 003](docs/specs/003-auth/plan.md) 第 2 節）。ローカルと CI で使うアカウント（パスワードはローカル専用の値）：
+
+| realm | 画面 | アカウント | パスワード | 職務 |
+|-------|------|------------|------------|------|
+| `ec-store`（消費者） | 店舗 | `member@example.com` | `member-pass-1` | |
+| `ec-admin`（運営者） | 管理画面 | `admin@example.com` | `admin-pass-1` | 管理者 |
+| `ec-admin`（運営者） | 管理画面 | `viewer@example.com` | `viewer-pass-1` | 閲覧者 |
+
+- 会員登録の確認のメールと、パスワードの再設定のメールは Mailpit（http://localhost:8025）に届く。
+- すでにある realm は取り込み直さない。realm の JSON を変えたら、Keycloak の database を作り直して取り込み直す（ローカルで登録した会員も消える）。
+
+  ```bash
+  docker compose stop keycloak
+  docker exec ec-site-postgres psql -U ec_site -d ec_site -c "drop database keycloak" -c "create database keycloak owner keycloak"
+  docker compose up -d keycloak
+  ```
+
+- token の中身を見るときは `scripts/dev/keycloak.sh token <realm> <アカウント> <パスワード>`（[skill local-dev](.claude/skills/local-dev/SKILL.md)）。
 
 ### テスト
 

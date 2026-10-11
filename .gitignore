@@ -11,9 +11,9 @@ note.md
 # CLAUDE.md や CLAUDE.local.md を置くと、Claude Code は AGENTS.md を読まなくなるので置かない
 CLAUDE.md
 CLAUDE.local.md
-# .claude は個人の設定なので置かない。作業の手順（skill）だけは共有する
-.claude/*
-!.claude/skills/
+# .claude はまるごと共有する（skill、プレビューの開発サーバーの設定など）。
+# Git に入れないものは /.local に置く。置き場所をツールが決めているものだけを、ここに例外として書く
+.claude/settings.local.json
 
 ### Java / Gradle ###
 *.class

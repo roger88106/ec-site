@@ -21,4 +21,4 @@ AI エージェントが作業のたびに起動の手順や画面の書き方�
 - [x] **T2707** 画面を追加するときの型を、エージェントの skill（`.claude/skills/new-screen`）にする。店舗画面・管理画面それぞれの最小の例と、読むべき既存のファイルを挙げる。完了：skill の例が、店舗画面・管理画面の構成（`docs/frontend/`）と既存のコードに合っている。
 - [x] **T2708** 外部の汎用 skill（mattpocock/skills、MIT）から、`handoff`（段階ごとに新しいセッションへ引き継ぐ）、`retro`（セッションの振り返りで環境の改善点を挙げる）、`writing-for-agents`（retro が使う、エージェント向けの文書の書き方）を `.claude/skills/` に取り込み、このリポジトリの文書の置き場所に合わせる。完了：skill が取り込まれ、出典と許諾が書かれている。
 - [x] **T2710** `.claude/t3-flare`（Ginz9013/t3-flare、MIT。Cloudflare 向けのサイト構築の skill 集）から、このリポジトリで使える内容を skill に取り込み、ディレクトリを消す。完了：取り込んだ内容に出典と許諾が書かれ、t3-flare がない。
-- [ ] **T2711** `.claude` をまるごと Git の管理に入れる。Git に入れないものはリポジトリの `/.local/` に置き、置き場所をツールが決めているもの（`.claude/settings.local.json` など）だけを `.gitignore` の例外にする。`.claude/launch.json`（プレビュー用の開発サーバーの設定）は残すか決める。完了：`.gitignore` と AGENTS.md（または local-dev の skill）に決まりが書かれている。
+- [x] **T2711** `.claude` をまるごと Git の管理に入れる。Git に入れないものはリポジトリの `/.local/` に置き、置き場所をツールが決めているもの（`.claude/settings.local.json` など）だけを `.gitignore` の例外にする。`.claude/launch.json`（プレビュー用の開発サーバーの設定）は残すか決める。完了：`.gitignore` と AGENTS.md（または local-dev の skill）に決まりが書かれている。

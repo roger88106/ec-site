@@ -48,4 +48,5 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 
 - JDK 21 を使う。シェルの既定は JVM 8 なので、Gradle を実行するときは `JAVA_HOME` を `~/.jdks/ms-21.0.12.1` に向ける。
 - 起動・テストの手順は README の「起動とテスト」。統合テストと jOOQ のコード生成には Docker が必要。
+- このマシンでの起動・テスト・DB の見方は skill `local-dev`（`.claude/skills/local-dev`）にまとめてある。調べ直す前にそれを使う。
 - 共通部品やビルド設定の移植元は `../MyIAM`（tasks の「参照」で MyIAM と書かれているもの）。MyIAM のコードは constitution と違う箇所があるので、そのまま写さず constitution に合わせる。

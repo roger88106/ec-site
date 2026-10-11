@@ -11,7 +11,9 @@ note.md
 # CLAUDE.md や CLAUDE.local.md を置くと、Claude Code は AGENTS.md を読まなくなるので置かない
 CLAUDE.md
 CLAUDE.local.md
-.claude
+# .claude は個人の設定なので置かない。作業の手順（skill）だけは共有する
+.claude/*
+!.claude/skills/
 
 ### Java / Gradle ###
 *.class

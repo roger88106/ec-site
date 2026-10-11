@@ -1,6 +1,6 @@
 # Plan 003：認証
 
-ステータス：承認済み　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 本 spec で変更するモジュールの設計は、各モジュールの設計書に書く。本書には、モジュールをまたぐ決定と、作り方の段取りだけを書く。
 
@@ -246,7 +246,7 @@ flowchart LR
 
 ## 8. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする。タスク番号は `T3` ＋ 段階 ＋ 連番（例：T3101）。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-idp.md)、[02](tasks/02-backend-auth.md)、[03](tasks/03-member-cart-order.md)、[04](tasks/04-store-ui.md)、[05](tasks/05-admin-ui.md)、[06](tasks/06-e2e-ci.md)、[07](tasks/07-operator-record.md)、[08](tasks/08-review.md)）。タスク番号は `T3` ＋ 段階 ＋ 連番（例：T3101）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|

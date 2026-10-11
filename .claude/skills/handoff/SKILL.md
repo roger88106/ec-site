@@ -5,7 +5,7 @@ argument-hint: "What will the next session be used for?"
 disable-model-invocation: true
 ---
 
-<!-- 説明（日本語）：今の会話を、別のエージェントが続きから作業できる引き継ぎの文書にまとめる。段階の区切りで新しいセッションに移るときに、利用者が /handoff で呼ぶ。出典は mattpocock/skills（MIT）で、本文は原文のまま。末尾にこのリポジトリ向けの追記がある。 -->
+<!-- 説明（日本語）：今の会話を、別のエージェントが続きから作業できる引き継ぎの文書にまとめる。spec の区切りや、作業を途中でやめて新しいセッションに移るときに、利用者が /handoff で呼ぶ。出典は mattpocock/skills（MIT）で、本文は原文のまま。末尾にこのリポジトリ向けの追記がある。 -->
 
 Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS (`$TMPDIR`, else `/tmp`; `%TEMP%` on Windows) - not the current workspace.
 
@@ -21,5 +21,5 @@ If the user passed arguments, treat them as a description of what the next sessi
 
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
 - 文書は OS の一時ディレクトリではなく、リポジトリの `/.local/handoff/`（`/.local/` は Git に入れないものの置き場所。AGENTS.md）に `<内容>.md` の名前（例：`003-auth.md`）で置く。上の原文の置き場所より、こちらを優先する。
-- 主に、段階の区切りで新しいセッションに移るときに使う。作業の正本は tasks ファイル（`docs/specs/NNN-*/tasks/`）と README の spec の状態なので、引き継ぎの文書には、次に着手するタスク番号と、tasks・commit に残っていないこと（未確定の判断、手動確認で気づいたこと、ローカルの DB に残したテストデータなど）だけを書く。
+- 主に、spec の区切りや、作業を途中でやめて新しいセッションに移るときに使う（AGENTS.md「セッションの始めと終わり」）。作業の正本は tasks ファイル（`docs/specs/NNN-*/tasks/`）と README の spec の状態なので、引き継ぎの文書には、次に着手するタスク番号と、tasks・commit に残っていないこと（未確定の判断、手動確認で気づいたこと、ローカルの DB に残したテストデータなど）だけを書く。
 - 「suggested skills」には、このリポジトリの `local-dev`、`new-screen` のうち次の作業で使うものを挙げる。

@@ -53,8 +53,12 @@ class StorefrontMapper {
      * @return 商品一覧のレスポンス
      */
     ProductSummaryPage toProductSummaryPage(PageResult<ProductSummaryView> page) {
-        return new ProductSummaryPage(page.page(), page.size(), page.totalItems(), page.totalPages(),
-                page.items().stream().map(StorefrontMapper::toProductSummary).toList());
+        return new ProductSummaryPage()
+                .page(page.page())
+                .size(page.size())
+                .totalItems(page.totalItems())
+                .totalPages(page.totalPages())
+                .items(page.items().stream().map(StorefrontMapper::toProductSummary).toList());
     }
 
     /**
@@ -64,17 +68,14 @@ class StorefrontMapper {
      * @return 商品の詳細のレスポンス
      */
     ProductDetail toProductDetail(ProductDetailView view) {
-        return new ProductDetail(
-                view.id(),
-                view.name(),
-                view.description(),
-                new Price(view.priceInclTax(), view.priceExclTax()),
-                view.imageUrls(),
-                view.axes().stream().map(axis -> new VariantAxis(axis.name(), axis.values())).toList(),
-                view.variants().stream()
-                        .map(variant -> new Variant(variant.id(), variant.axisValues(), variant.inStock(), variant.salesSuspended())
-                                .imageUrl(variant.imageUrl()))
-                        .toList());
+        return new ProductDetail()
+                .id(view.id())
+                .name(view.name())
+                .description(view.description())
+                .price(toPrice(view.priceInclTax(), view.priceExclTax()))
+                .imageUrls(view.imageUrls())
+                .axes(view.axes().stream().map(StorefrontMapper::toVariantAxis).toList())
+                .variants(view.variants().stream().map(StorefrontMapper::toVariant).toList());
     }
 
     /**
@@ -84,17 +85,10 @@ class StorefrontMapper {
      * @return カテゴリの木の節のレスポンス
      */
     CategoryNode toCategoryNode(CatalogCategory category) {
-        return new CategoryNode(category.id(), category.name(), category.children().stream().map(this::toCategoryNode).toList());
-    }
-
-// ============================== プライベートメソッド ==============================
-
-    /**
-     * 一覧の商品をレスポンスに変換する。代表画像がなければ null。
-     */
-    private static ProductSummary toProductSummary(ProductSummaryView view) {
-        return new ProductSummary(view.id(), view.name(), new Price(view.priceInclTax(), view.priceExclTax()), view.inStock())
-                .imageUrl(view.imageUrl());
+        return new CategoryNode()
+                .id(category.id())
+                .name(category.name())
+                .children(category.children().stream().map(this::toCategoryNode).toList());
     }
 
     /**
@@ -109,6 +103,46 @@ class StorefrontMapper {
                 .items(view.items().stream().map(StorefrontMapper::toQuoteItem).toList())
                 .amounts(toAmounts(view.amounts()))
                 .orderable(view.orderable());
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 一覧の商品をレスポンスに変換する。代表画像がなければ null。
+     */
+    private static ProductSummary toProductSummary(ProductSummaryView view) {
+        return new ProductSummary()
+                .id(view.id())
+                .name(view.name())
+                .price(toPrice(view.priceInclTax(), view.priceExclTax()))
+                .inStock(view.inStock())
+                .imageUrl(view.imageUrl());
+    }
+
+    /**
+     * 税込・税抜の価格のレスポンスに変換する。
+     */
+    private static Price toPrice(long inclTax, long exclTax) {
+        return new Price().inclTax(inclTax).exclTax(exclTax);
+    }
+
+    /**
+     * 商品の軸のレスポンスに変換する。
+     */
+    private static VariantAxis toVariantAxis(ProductDetailView.AxisView axis) {
+        return new VariantAxis().name(axis.name()).values(axis.values());
+    }
+
+    /**
+     * バリアントのレスポンスに変換する。画像がなければ null。
+     */
+    private static Variant toVariant(ProductDetailView.VariantView variant) {
+        return new Variant()
+                .id(variant.id())
+                .axisValues(variant.axisValues())
+                .inStock(variant.inStock())
+                .salesSuspended(variant.salesSuspended())
+                .imageUrl(variant.imageUrl());
     }
 
     /**

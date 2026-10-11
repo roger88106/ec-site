@@ -222,3 +222,10 @@ export function FooActions({ fooId }: { fooId: string }) {
 ### 結合テスト（`pages/FooPage.test.tsx`）
 
 書き方は admin.md 第 10 節。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API はすべてハンドラーを渡す、テスト名に AC 番号。
+
+## 画面を足し終えたら
+
+- 使用者に、確かめる URL を全部挙げて伝える（店舗画面は `http://localhost:3000/...`、管理画面は `http://localhost:5173/...`。動的な部分は実際に開ける ID にする）。新しい画面は、メニューやヘッダーにリンクを足さない限りどこからも辿れないので、辿り方（メニューのどれか、どの画面のどのリンクか）も添える。
+- あわせて、何を足したか（ルート、メニュー・ヘッダーのリンク、API の呼び出し）を短く書く。リンクを足していない画面は、足すかを使用者に確かめる。
+
+出典：この節は [Ginz9013/t3-flare](https://github.com/Ginz9013/t3-flare) の site-builder（`references/build-features.md` の「Report the routes to the user」）を、このリポジトリ向けに書き直したもの（MIT。`../LICENSE-t3-flare`）。

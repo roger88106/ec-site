@@ -7,7 +7,7 @@
 
 ## 文書
 
-- [ ] **T3101** constitution 9 のエラーレスポンスのステータスに、401（認証がない・無効）と 403（権限がない）を足す。`errorCode` は `UNAUTHENTICATED`、`FORBIDDEN`（plan 第 3.3 節）。
+- [x] **T3101** constitution 9 のエラーレスポンスのステータスに、401（認証がない・無効）と 403（権限がない）を足す。`errorCode` は `UNAUTHENTICATED`、`FORBIDDEN`（plan 第 3.3 節）。
 - [ ] **T3102** 用語集に、会員、会員 ID、IdP のアカウントの ID、運営者、運営者 ID、職務、権限、IdP、realm を足す。職務と権限（BR-12）の識別子（`administrator`、`viewer`、`resource:action`）も書く。
 
 ## 開発環境

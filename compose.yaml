@@ -127,6 +127,7 @@ services:
       KC_BOOTSTRAP_ADMIN_PASSWORD: admin
     volumes:
       - ./keycloak/realms:/opt/keycloak/data/import:ro
+      - ./keycloak/themes/ec-site:/opt/keycloak/themes/ec-site:ro
     healthcheck:
       # イメージに curl がないので、bash で管理用のポート（9000）の readiness を読む
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]

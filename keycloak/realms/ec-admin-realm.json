@@ -2,6 +2,7 @@
   "realm": "ec-admin",
   "displayName": "EC Site 管理",
   "enabled": true,
+  "loginTheme": "ec-site",
   "registrationAllowed": false,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,

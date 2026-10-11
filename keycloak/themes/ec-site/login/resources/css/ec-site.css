@@ -1,0 +1,31 @@
+/* 店舗画面（frontend/store）の見た目に合わせる。主な色は店舗の --primary（oklch(0.205 0 0)）に近い #171717 */
+:root {
+  --pf-v5-global--primary-color--100: #171717;
+  --pf-v5-global--primary-color--200: #404040;
+  --pf-v5-global--link--Color: #171717;
+  --pf-v5-global--link--Color--hover: #404040;
+  --pf-v5-c-button--m-primary--BackgroundColor: #171717;
+  --pf-v5-c-button--m-primary--hover--BackgroundColor: #404040;
+  --pf-v5-c-button--m-primary--focus--BackgroundColor: #404040;
+  --pf-v5-c-button--m-primary--active--BackgroundColor: #404040;
+  /* 既定のテーマ（keycloak.v2）の変数：入力の枠の上の線の色 */
+  --keycloak-card-top-color: #171717;
+}
+
+/* 背景は店舗画面と同じく白にする（既定は暗い画像） */
+.login-pf body {
+  background: #ffffff none;
+}
+
+/* サイト名（realm の表示名）。既定は暗い背景に向けた白い大文字なので、店舗のヘッダーのサイト名と同じ濃い太字にする */
+#kc-header-wrapper {
+  --pf-v5-global--Color--light-100: #171717;
+  font-weight: 600;
+  letter-spacing: normal;
+  text-transform: none;
+}
+
+/* 入力の枠を、白い背景の上で見えるようにする */
+.pf-v5-c-login__main {
+  border: 1px solid #e5e5e5;
+}

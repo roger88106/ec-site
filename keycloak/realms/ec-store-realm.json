@@ -2,6 +2,7 @@
   "realm": "ec-store",
   "displayName": "EC Site",
   "enabled": true,
+  "loginTheme": "ec-site",
   "registrationAllowed": true,
   "registrationEmailAsUsername": true,
   "loginWithEmailAllowed": true,

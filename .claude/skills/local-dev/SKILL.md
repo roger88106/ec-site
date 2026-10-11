@@ -81,6 +81,22 @@ scripts/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 - 店舗画面の一覧は API の結果を最大 60 秒キャッシュする。管理画面での変更がすぐ出ないのは正常。
 
+## 動作確認用の注文を作る
+
+画面を確かめるための注文は、ブラウザで操作せずにスクリプトで作る（店舗 API を直接呼ぶ。バックエンドが要る）。
+
+```bash
+node scripts/dev/mkorder.js                          # seed のバリアント（在庫 100）を 1 つ注文する
+node scripts/dev/mkorder.js --qty 2 --request        # 注文して、キャンセルを申請する（理由は既定の文）
+node scripts/dev/mkorder.js --request '色違いと間違えた' --name '佐藤 花子'
+node scripts/dev/mkorder.js --variant <バリアント ID>
+```
+
+- 出力は「注文 ID、注文番号、状態」の 1 行と、店舗画面・管理画面の注文の URL。
+- 承認・却下・運営者のキャンセルは管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）で行う。
+- seed の在庫は 3021（在庫 100）、3001（10）、3003（5）、3011（3）、3013（8）、3031（20）。3002・3004・3012 は在庫 0（バリアント ID は `00000000-0000-0000-0000-00000000` + 4 桁）。
+- 失敗した手順と API のエラーの本文が出る（在庫不足なら「品目の追加に失敗しました（HTTP 400）」）。
+
 ## E2E（`frontend/e2e`）
 
 README の「E2E」の通り。バックエンド（:8080）、管理画面（:4173）、店舗画面（:3100）は、起動していなければ Playwright が起動する。

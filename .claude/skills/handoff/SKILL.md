@@ -18,5 +18,6 @@ If the user passed arguments, treat them as a description of what the next sessi
 ## このリポジトリでの使い方
 
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
+- 文書は OS の一時ディレクトリではなく、リポジトリの `/.local/`（Git に入れないものの置き場所。AGENTS.md）に `handoff-<内容>.md` の名前で置く。上の原文の置き場所より、こちらを優先する。
 - 主に、段階の区切りで新しいセッションに移るときに使う。作業の正本は tasks ファイル（`docs/specs/NNN-*/tasks/`）と README の spec の状態なので、引き継ぎの文書には、次に着手するタスク番号と、tasks・commit に残っていないこと（未確定の判断、手動確認で気づいたこと、ローカルの DB に残したテストデータなど）だけを書く。
 - 「suggested skills」には、このリポジトリの `local-dev`、`new-screen` のうち次の作業で使うものを挙げる。

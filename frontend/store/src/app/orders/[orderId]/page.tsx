@@ -9,9 +9,6 @@ import { CancellationSection } from '@/features/order/components/CancellationSec
 import { axisValuesLabel, formatDateTime, formatPostalCode, formatYen, orderStatusLabel } from '@/lib/orderDisplay'
 import { isUuid } from '@/lib/uuid'
 
-/** キャンセルの申請が却下されたときに示す、問い合わせ先（AC-96。店舗画面の構成 第 6 節） */
-const CONTACT_EMAIL = process.env.STORE_CONTACT_EMAIL ?? 'support@example.com'
-
 /** ブラウザのタブの題名 */
 export const metadata: Metadata = { title: 'ご注文の内容' }
 
@@ -22,7 +19,13 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
     notFound()
   }
   const api = await getApi()
-  const order = unwrap(await api.GET('/orders/{orderId}', { params: { path: { orderId } }, ...UNCACHED }))
+  // 店舗の情報（キャンセルの申請が却下されたときに示す問い合わせ先。AC-96）は設定の値なので、キャッシュを使う
+  const [orderResult, shopResult] = await Promise.all([
+    api.GET('/orders/{orderId}', { params: { path: { orderId } }, ...UNCACHED }),
+    api.GET('/shop'),
+  ])
+  const order = unwrap(orderResult)
+  const shop = unwrap(shopResult)
   const address = order.shippingAddress
 
   return (
@@ -86,7 +89,7 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
 
       <section className="space-y-3">
         <h2 className="font-semibold">キャンセル</h2>
-        <CancellationSection contactEmail={CONTACT_EMAIL} order={order} />
+        <CancellationSection contactEmail={shop.contactEmail} order={order} />
       </section>
     </div>
   )

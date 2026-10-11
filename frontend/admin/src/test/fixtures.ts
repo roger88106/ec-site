@@ -1,4 +1,4 @@
-import type { ProductDetail, TaxCategory, Variant } from '@/api/types'
+import type { OrderDetail, OrderSummary, ProductDetail, TaxCategory, Variant } from '@/api/types'
 
 /**
  * 結合テストで API の応答に使うデータ（管理画面の構成 第 10 節）。<br />
@@ -54,6 +54,61 @@ export function variant(overrides: Partial<Variant> = {}): Variant {
     variantCode: 'ABC-001-RED',
     axisValues: ['赤'],
     salesSuspended: false,
+    ...overrides,
+  }
+}
+
+/** テストのデータの注文の ID */
+export const ORDER_ID = '00000000-0000-0000-0000-000000000501'
+
+/** 一覧の「受付」の注文 1 件 */
+export function orderSummary(overrides: Partial<OrderSummary> = {}): OrderSummary {
+  return {
+    id: ORDER_ID,
+    orderNumber: '20261010-123456',
+    orderedAt: '2026-10-10T01:00:00Z',
+    customerName: '山田 太郎',
+    total: 4300,
+    status: 'ACCEPTED',
+    ...overrides,
+  }
+}
+
+/** 10% の商品 1 品目（税込 1,100 円 × 3）と送料の、「受付」の注文。申請・キャンセルはない */
+export function orderDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
+  return {
+    id: ORDER_ID,
+    orderNumber: '20261010-123456',
+    orderedAt: '2026-10-10T01:00:00Z',
+    status: 'ACCEPTED',
+    lines: [
+      {
+        variantId: '00000000-0000-0000-0000-000000000201',
+        productCode: 'ABC-001',
+        variantCode: 'ABC-001-RED',
+        productName: 'T シャツ',
+        axisValues: [{ name: '色', value: '赤' }],
+        unitPriceExclTax: 1000,
+        unitPriceInclTax: 1100,
+        ratePercent: 10,
+        quantity: 3,
+        subtotal: 3300,
+      },
+    ],
+    amounts: {
+      itemsTotal: 3300,
+      shippingFee: 1000,
+      total: 4300,
+      taxes: [{ ratePercent: 10, taxableAmount: 4300, taxAmount: 390 }],
+    },
+    email: 'taro@example.com',
+    shippingAddress: {
+      name: '山田 太郎',
+      postalCode: '1000001',
+      prefecture: '東京都',
+      address: '千代田区千代田1-1',
+      phone: '0312345678',
+    },
     ...overrides,
   }
 }

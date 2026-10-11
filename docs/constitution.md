@@ -26,7 +26,7 @@
 | DB・データアクセス | PostgreSQL 18、jOOQ（コード生成）、Flyway |
 | ファイル保存 | S3 互換オブジェクトストレージ（AWS SDK。ローカルと CI は SeaweedFS） |
 | ビルド | Gradle Kotlin DSL + version catalog（`gradle/libs.versions.toml`） |
-| オブジェクト変換 | MapStruct、Lombok |
+| 定型コードの生成 | Lombok |
 | テスト | JUnit 5、AssertJ、Testcontainers、MockMvc |
 | 可観測性 | Actuator、Micrometer（Prometheus）、分散トレーシング、構造化ログ |
 | CI | GitHub Actions |
@@ -134,6 +134,16 @@ ec-site/
 - キーワード検索は `catalog` の検索用 port の背後に置く。
 - MVP は PostgreSQL による簡易実装とし、精度は求めない（チューニングや形態素解析はしない）。
 - 検索エンジンに置き換えるときは、商品イベントでインデックスを同期し、C 側 API は変えない。
+
+### 4.5 コードの書き方
+
+- **Javadoc**：クラスとすべてのメンバー（private を含む）に書く。言語は第 14 節。
+- **コメントに書くこと**：今のコードが何をするか、なぜそうするか（業務のルール、AC・BR の番号）。決定の経緯（名前の付け方の理由、前の実装との違い、検討して採らなかった案）は書かず、コミットメッセージに書く（第 15 節）。
+- **Lombok**：getter・setter・private コンストラクター・コンストラクターの注入などの定型コードは、main のコードでは Lombok で書く。テストのソースセット（`src/test`、`src/integrationTest`）では使わず、手で書く。
+- **レスポンス・リクエストへの変換**：変換のライブラリーは使わず、mapper を手で書く。
+  - OpenAPI から生成したモデルは、引数なしのコンストラクターと項目名のセッター（`new OrderLine().productCode(...).quantity(...)`）で組み立てる。位置で並べるコンストラクターは使わない。
+  - 入れ子の型（明細、金額、住所など）は、型ごとに小さな private メソッドに分け、上位のメソッドには項目の並びだけを残す。
+  - 自分で定義した record は、引数が多ければ 1 行に 1 つ書き、入れ子の部分はメソッドに分ける。
 
 ## 5. クラウドネイティブ・水平スケール
 

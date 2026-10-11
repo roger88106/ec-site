@@ -48,6 +48,9 @@ ecsite:
   order:
     # 送料に適用する税区分：seed の「標準」（10%）
     shipping-tax-category-id: 00000000-0000-0000-0000-000000000001
+  shop:
+    # 問い合わせ先（AC-96）：ローカル用の例の値
+    contact-email: support@example.com
   media:
     storage:
       # compose の SeaweedFS（S3 互換）。バケットは compose の seaweedfs-init が作る（plan 001 第 7 節）

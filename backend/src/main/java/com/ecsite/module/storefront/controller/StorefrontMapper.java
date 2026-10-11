@@ -9,6 +9,7 @@ import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummary;
 import com.ecsite.api.store.model.ProductSummaryPage;
+import com.ecsite.api.store.model.Shop;
 import com.ecsite.api.store.model.QuoteItem;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
@@ -20,6 +21,7 @@ import com.ecsite.module.storefront.catalogdir.ProductCondition;
 import com.ecsite.module.storefront.orderdir.CartView;
 import com.ecsite.module.storefront.service.ProductDetailView;
 import com.ecsite.module.storefront.service.ProductSummaryView;
+import com.ecsite.module.storefront.service.ShopProperties;
 import org.springframework.stereotype.Component;
 
 /**
@@ -103,6 +105,17 @@ class StorefrontMapper {
                 .items(view.items().stream().map(StorefrontMapper::toQuoteItem).toList())
                 .amounts(toAmounts(view.amounts()))
                 .orderable(view.orderable());
+    }
+
+    /**
+     * 店舗の情報のレスポンスに変換する（AC-96）。
+     *
+     * @param properties 店舗の情報の設定
+     * @return 店舗の情報のレスポンス
+     */
+    Shop toShop(ShopProperties properties) {
+        return new Shop()
+                .contactEmail(properties.contactEmail());
     }
 
 // ============================== プライベートメソッド ==============================

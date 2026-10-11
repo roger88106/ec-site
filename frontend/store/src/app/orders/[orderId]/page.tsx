@@ -6,10 +6,8 @@ import { AmountsSummary } from '@/components/AmountsSummary'
 import { PriceText } from '@/components/PriceText'
 import { Badge } from '@/components/ui/badge'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
-import { formatDateTime, formatPostalCode, formatYen, orderStatusLabel } from '@/lib/orderDisplay'
-
-/** UUID の形（形の違う ID は API を呼ばずに「見つかりません」にする） */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { axisValuesLabel, formatDateTime, formatPostalCode, formatYen, orderStatusLabel } from '@/lib/orderDisplay'
+import { isUuid } from '@/lib/uuid'
 
 /** キャンセルの申請が却下されたときに示す、問い合わせ先（AC-96。店舗画面の構成 第 6 節） */
 const CONTACT_EMAIL = process.env.STORE_CONTACT_EMAIL ?? 'support@example.com'
@@ -20,7 +18,7 @@ export const metadata: Metadata = { title: 'ご注文の内容' }
 /** 注文（T2506。AC-93〜96）。注文の直後の表示と、URL を知っている人の後からの照会を兼ねる */
 export default async function OrderPage({ params }: PageProps<'/orders/[orderId]'>) {
   const { orderId } = await params
-  if (!UUID.test(orderId)) {
+  if (!isUuid(orderId)) {
     notFound()
   }
   const api = await getApi()
@@ -57,9 +55,7 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
               <div className="space-y-1">
                 <p className="font-medium">{line.productName}</p>
                 {line.axisValues.length > 0 && (
-                  <p className="text-muted-foreground">
-                    {line.axisValues.map((axis) => `${axis.name}：${axis.value}`).join('　')}
-                  </p>
+                  <p className="text-muted-foreground">{axisValuesLabel(line.axisValues)}</p>
                 )}
                 <PriceText price={line.unitPrice} />
               </div>

@@ -7,9 +7,7 @@ import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import { RemainingTime } from '@/features/checkout/components/RemainingTime'
 import { formatYen } from '@/lib/orderDisplay'
-
-/** UUID の形（形の違う ID は API を呼ばずに「見つかりません」にする） */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isUuid } from '@/lib/uuid'
 
 /** ブラウザのタブの題名 */
 export const metadata: Metadata = { title: 'ご注文手続き' }
@@ -17,7 +15,7 @@ export const metadata: Metadata = { title: 'ご注文手続き' }
 /** 注文手続き（T2505。AC-84〜89）。注文が成立済みなら、注文の画面へ移る */
 export default async function CheckoutPage({ params }: PageProps<'/checkout/[checkoutId]'>) {
   const { checkoutId } = await params
-  if (!UUID.test(checkoutId)) {
+  if (!isUuid(checkoutId)) {
     notFound()
   }
   const api = await getApi()

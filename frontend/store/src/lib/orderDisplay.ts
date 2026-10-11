@@ -29,6 +29,9 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   CANCELLED: 'キャンセル',
 }
 
+/** 1 品目の数量の選択肢（AC-75。1〜10） */
+export const QUANTITY_OPTIONS = Array.from({ length: 10 }, (_, index) => index + 1)
+
 /**
  * 注文のキャンセルの状況（AC-95、96）。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み
  */
@@ -42,6 +45,11 @@ export function formatYen(amount: number): string {
 /** 1 つの税率の消費税額（BR-8。例：「10% 対象 11,000 円（内消費税 1,000 円）」） */
 export function taxLabel(tax: TaxAmount): string {
   return `${tax.ratePercent}% 対象 ${formatYen(tax.taxableAmount)}（内消費税 ${formatYen(tax.taxAmount)}）`
+}
+
+/** 軸の名前と値（例：「色：黒　サイズ：M」） */
+export function axisValuesLabel(axisValues: { name: string; value: string }[]): string {
+  return axisValues.map((axis) => `${axis.name}：${axis.value}`).join('　')
 }
 
 /** 購入できない理由の文言（AC-80） */

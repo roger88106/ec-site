@@ -4,7 +4,7 @@ import type { ReactNode } from 'react'
 import type { QuoteItem } from '@/api/types'
 import { PriceText } from '@/components/PriceText'
 import { Badge } from '@/components/ui/badge'
-import { unpurchasableReasonLabel } from '@/lib/orderDisplay'
+import { axisValuesLabel, unpurchasableReasonLabel } from '@/lib/orderDisplay'
 
 /**
  * カート・注文手続きの品目（AC-77、80）。画像、商品名、軸の値、単価を出し、購入できなければ理由を示す。<br />
@@ -26,9 +26,7 @@ export function QuoteItemSummary({ item, children }: { item: QuoteItem; children
           {item.productName}
         </Link>
         {item.axisValues.length > 0 && (
-          <p className="text-muted-foreground text-sm">
-            {item.axisValues.map((axis) => `${axis.name}：${axis.value}`).join('　')}
-          </p>
+          <p className="text-muted-foreground text-sm">{axisValuesLabel(item.axisValues)}</p>
         )}
         <PriceText price={item.unitPrice} />
         {!item.purchasable && item.unpurchasableReason && (

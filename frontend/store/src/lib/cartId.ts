@@ -1,5 +1,4 @@
-/** UUID の形 */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isUuid } from '@/lib/uuid'
 
 /** カートの有効期限（最後の変更から 30 日。AC-81）と同じ、Cookie の有効期限（秒） */
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60
@@ -14,7 +13,7 @@ export const CART_NOT_FOUND = Symbol('CART_NOT_FOUND')
  * @returns カート ID。Cookie がない・形の違う値なら null（カートがない）
  */
 export function parseCartId(value: string | undefined): string | null {
-  return value !== undefined && UUID.test(value) ? value : null
+  return value !== undefined && isUuid(value) ? value : null
 }
 
 /**

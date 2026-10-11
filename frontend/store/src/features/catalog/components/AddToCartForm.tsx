@@ -8,9 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { isPurchasable } from '@/features/catalog/variantSelection'
-
-/** 1 品目の数量の選択肢（AC-75） */
-const QUANTITIES = Array.from({ length: 10 }, (_, index) => index + 1)
+import { QUANTITY_OPTIONS } from '@/lib/orderDisplay'
 
 /**
  * 数量を選んでカートに入れる（AC-72、74〜76）。<br />
@@ -27,7 +25,7 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
       <div className="flex items-center gap-3">
         <Label htmlFor={quantityId}>数量</Label>
         <NativeSelect className="w-20" defaultValue="1" id={quantityId} name="quantity">
-          {QUANTITIES.map((quantity) => (
+          {QUANTITY_OPTIONS.map((quantity) => (
             <NativeSelectOption key={quantity} value={quantity}>
               {quantity}
             </NativeSelectOption>

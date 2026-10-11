@@ -4,16 +4,14 @@ import { getApi, UNCACHED } from '@/api/client'
 import { unwrap } from '@/api/result'
 import { PriceText } from '@/components/PriceText'
 import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
-
-/** UUID の形（形の違う ID は API を呼ばずに「見つかりません」にする） */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isUuid } from '@/lib/uuid'
 
 /**
  * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする（AC-65）。<br />
  * 非公開にした直後から見つからなくなるよう、キャッシュを使わない（UNCACHED）。
  */
 async function fetchProduct(productId: string) {
-  if (!UUID.test(productId)) {
+  if (!isUuid(productId)) {
     notFound()
   }
   const api = await getApi()

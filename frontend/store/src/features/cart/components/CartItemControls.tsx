@@ -6,10 +6,7 @@ import type { QuoteItem } from '@/api/types'
 import { Button } from '@/components/ui/button'
 import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { formatYen } from '@/lib/orderDisplay'
-
-/** 1 品目の数量の選択肢（AC-75） */
-const QUANTITIES = Array.from({ length: 10 }, (_, index) => index + 1)
+import { formatYen, QUANTITY_OPTIONS } from '@/lib/orderDisplay'
 
 /**
  * カートの品目の数量の変更と削除（AC-78）、小計（購入できない品目は打ち消し線）。<br />
@@ -36,7 +33,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
           name="quantity"
           onChange={(event) => event.currentTarget.form?.requestSubmit()}
         >
-          {QUANTITIES.map((quantity) => (
+          {QUANTITY_OPTIONS.map((quantity) => (
             <NativeSelectOption key={quantity} value={quantity}>
               {quantity}
             </NativeSelectOption>

@@ -36,9 +36,7 @@ import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getApi, UNCACHED } from '@/api/client'
 import { unwrap } from '@/api/result'
-
-/** UUID の形（形の違う ID は API を呼ばずに「見つかりません」にする） */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
+import { isUuid } from '@/lib/uuid'
 
 /** ブラウザのタブの題名 */
 export const metadata: Metadata = { title: '〇〇' }
@@ -46,7 +44,8 @@ export const metadata: Metadata = { title: '〇〇' }
 /** 〇〇（T____。AC-__） */
 export default async function FooPage({ params }: PageProps<'/foos/[fooId]'>) {
   const { fooId } = await params
-  if (!UUID.test(fooId)) {
+  // 形の違う ID は API を呼ばずに「見つかりません」にする
+  if (!isUuid(fooId)) {
     notFound()
   }
   const api = await getApi()

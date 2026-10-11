@@ -77,6 +77,7 @@ docker compose up -d
 
 - DB の接続先は [compose.yaml](compose.yaml) と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
 - 止めるときは `docker compose stop`。データを消して作り直すときは `docker compose down -v`。
+- Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回の起動）に作られる。それより前からある volume では作られないので、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < compose/postgres/init-keycloak.sql` を流してから `docker compose up -d` する（`docker compose down -v` で作り直してもよい）。
 
 ### テスト
 

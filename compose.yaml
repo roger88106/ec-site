@@ -5,7 +5,8 @@
 #   停止：docker compose stop
 #
 # スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
-# ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）、画像の変換（imgproxy）を用意するだけ。
+# ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）、画像の変換（imgproxy）、
+# 認証（Keycloak）と、Keycloak が送るメールの受け取り（Mailpit）を用意するだけ。
 # ============================================================================
 
 services:
@@ -20,6 +21,8 @@ services:
       - "5432:5432"
     volumes:
       - postgres_data:/var/lib/postgresql/18/data
+      # Keycloak の database を作る。volume が空のとき（初回の起動）だけ走る
+      - ./compose/postgres/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ec_site -d ec_site"]
       interval: 5s
@@ -100,6 +103,45 @@ services:
       interval: 5s
       timeout: 3s
       retries: 20
+
+  # 認証（IdP。plan 003 第 2 節）。http://localhost:8180（管理の画面は /admin、admin / admin）
+  # 起動時に keycloak/realms/ の realm を取り込む。すでにある realm は取り込み直さない
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.0
+    container_name: ec-site-keycloak
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: start-dev --import-realm --http-port=8180
+    ports:
+      - "8180:8180"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      # token の issuer を、ブラウザー・バックエンド・店舗画面のどこから見ても同じ URL にする
+      KC_HOSTNAME: http://localhost:8180
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realms:/opt/keycloak/data/import:ro
+    healthcheck:
+      # イメージに curl がないので、bash で管理用のポート（9000）の readiness を読む
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+  # Keycloak が送るメール（確認・パスワードの再設定）を受け取って見せる。外には送らない。
+  # http://localhost:8025（画面と API）、SMTP は 1025
+  mailpit:
+    image: axllent/mailpit:v1.31.5
+    container_name: ec-site-mailpit
+    ports:
+      - "1025:1025"
+      - "8025:8025"
 
 volumes:
   postgres_data:

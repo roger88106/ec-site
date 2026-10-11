@@ -25,6 +25,8 @@ tags:
     description: 注文手続きと注文の成立（spec 002 US-16）
   - name: order
     description: 注文の表示とキャンセルの申請（spec 002 US-17、18）
+  - name: shop
+    description: 店舗の情報（spec 002 AC-96 の問い合わせ先。店舗モジュール）
 
 paths:
   /products:
@@ -333,6 +335,21 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '404':
           $ref: '#/components/responses/NotFound'
+
+  # ============================== 店舗の情報 ==============================
+  /shop:
+    get:
+      tags: [shop]
+      operationId: getShop
+      summary: 店舗の情報（AC-96）
+      description: 問い合わせ先など、画面に示す店舗の情報。値はバックエンドの設定（plan 002 第 4 節）。
+      responses:
+        '200':
+          description: 店舗の情報
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Shop'
 
 components:
   parameters:
@@ -878,3 +895,14 @@ components:
           type: string
           nullable: true
           maxLength: 500
+
+    # ---------- 店舗の情報（spec 002） ----------
+    Shop:
+      type: object
+      required: [contactEmail]
+      properties:
+        contactEmail:
+          type: string
+          format: email
+          description: 問い合わせ先のメールアドレス。キャンセルの申請が却下された注文に示す（AC-96）
+          example: support@example.com

@@ -1,0 +1,87 @@
+{
+  "realm": "ec-store",
+  "displayName": "EC Site",
+  "enabled": true,
+  "registrationAllowed": true,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": true,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "editUsernameAllowed": false,
+  "passwordPolicy": "length(8) and maxLength(64) and notEmail",
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 900,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "ssoSessionIdleTimeout": 604800,
+  "ssoSessionMaxLifespan": 2592000,
+  "accessTokenLifespan": 300,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["ja"],
+  "defaultLocale": "ja",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@ec-site.example",
+    "fromDisplayName": "EC Site"
+  },
+  "clients": [
+    {
+      "clientId": "ec-store-web",
+      "name": "店舗画面",
+      "enabled": true,
+      "publicClient": false,
+      "secret": "ec-store-web-local-secret",
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": ["http://localhost:3000/*", "http://localhost:3100/*"],
+      "webOrigins": ["http://localhost:3000", "http://localhost:3100"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:3000/*##http://localhost:3100/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-ec-store-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "ec-store-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "ec-store-api",
+      "name": "店舗 API（token の audience）",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "users": [
+    {
+      "username": "member@example.com",
+      "email": "member@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "太郎",
+      "lastName": "会員",
+      "credentials": [
+        { "type": "password", "value": "member-pass-1", "temporary": false }
+      ]
+    }
+  ]
+}

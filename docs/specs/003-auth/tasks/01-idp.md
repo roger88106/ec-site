@@ -15,7 +15,7 @@
 - [x] **T3103** compose に Keycloak（ポート 8180。イメージのタグは着手の時点の最新の安定版に固定）と Mailpit（1025、8025）を足す。
   - Keycloak の DB は、既存の PostgreSQL の別の database（`keycloak`）にし、初期化のスクリプトで作る。既存の DB の volume では初期化のスクリプトが走らないので、作り直す手順を README に書く。
   - Keycloak は起動時に `keycloak/realms/` の realm を取り込む。
-- [ ] **T3104** 消費者の realm（`ec-store`）の設定を作り、JSON に書き出す（plan 第 2.1、2.3 節）。
+- [x] **T3104** 消費者の realm（`ec-store`）の設定を作り、JSON に書き出す（plan 第 2.1、2.3 節）。
   - client：`ec-store-web`（confidential、認可コード + PKCE、戻り先は店舗画面）、`ec-store-api`（audience 用）。`ec-store-web` の access token の audience に `ec-store-api` を入れる
   - 会員登録を有効、ログイン ID はメールアドレス、メールアドレスの確認を必須、パスワードを忘れたときを有効、姓と名を必須
   - パスワードの条件、ログインの失敗による一時的な停止、SSO セッションの時間、access token の有効期間

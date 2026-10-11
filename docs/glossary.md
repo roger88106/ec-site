@@ -104,8 +104,12 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 注文の状態 | `OrderStatus` / `status` | 受付（`ACCEPTED`）、キャンセル申請中（`CANCELLATION_REQUESTED`）、キャンセル（`CANCELLED`） |
 | キャンセルの申請 | `CancellationRequest` | 消費者によるキャンセルの申請。1 つの注文に 1 回だけ。結果は承認・却下 |
 | 運営者のキャンセル | `cancel` | 申請の承認によらない、運営者の判断によるキャンセル。理由が必須 |
+| 購入できない理由 | `UnpurchasableReason` | 見積もりで、品目を購入できない理由（表示されない、販売停止、在庫切れ、在庫不足）。その品目は合計に含めない |
+| 小計 | `subtotal` | 品目ごとの、税込単価 × 数量 |
+| 商品の合計 | `itemsTotal` / `items_total` | 購入できる品目の小計の合計 |
 | 送料 | `shippingFee` / `shipping_fee` | 1 注文にかかる送料（税込） |
-| 総額 | `totalAmount` / `total_amount` | 小計の合計と送料の合計 |
+| 総額 | `total` / `total_amount` | 商品の合計と送料の合計 |
+| 確認した総額 | `expectedTotal` | 注文手続きの画面で表示し、消費者が確認した総額。注文の時点の総額と違えば注文しない |
 | 消費税額 | `taxAmount` / `sales_order_tax` | 税率ごとに、税込金額の合計から 1 回だけ計算した消費税 |
 | お届け先 | `ShippingAddress` | 氏名、郵便番号、都道府県、住所、電話番号 |
 

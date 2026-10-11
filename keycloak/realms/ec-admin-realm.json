@@ -1,0 +1,154 @@
+{
+  "realm": "ec-admin",
+  "displayName": "EC Site 管理",
+  "enabled": true,
+  "registrationAllowed": false,
+  "registrationEmailAsUsername": true,
+  "loginWithEmailAllowed": true,
+  "duplicateEmailsAllowed": false,
+  "verifyEmail": false,
+  "resetPasswordAllowed": true,
+  "rememberMe": false,
+  "editUsernameAllowed": false,
+  "passwordPolicy": "length(8) and maxLength(64) and notEmail",
+  "bruteForceProtected": true,
+  "permanentLockout": false,
+  "failureFactor": 5,
+  "waitIncrementSeconds": 900,
+  "maxFailureWaitSeconds": 900,
+  "maxDeltaTimeSeconds": 43200,
+  "ssoSessionIdleTimeout": 1800,
+  "ssoSessionMaxLifespan": 28800,
+  "accessTokenLifespan": 300,
+  "internationalizationEnabled": true,
+  "supportedLocales": ["ja"],
+  "defaultLocale": "ja",
+  "smtpServer": {
+    "host": "mailpit",
+    "port": "1025",
+    "from": "no-reply@ec-site.example",
+    "fromDisplayName": "EC Site 管理"
+  },
+  "roles": {
+    "realm": [
+      {
+        "name": "administrator",
+        "description": "管理者：すべての権限",
+        "composite": true,
+        "composites": {
+          "client": {
+            "ec-admin-api": [
+              "tax:read", "tax:write",
+              "category:read", "category:write",
+              "product:read", "product:write",
+              "inventory:read", "inventory:write",
+              "order:read", "order:write"
+            ]
+          }
+        }
+      },
+      {
+        "name": "viewer",
+        "description": "閲覧者：参照の権限すべて",
+        "composite": true,
+        "composites": {
+          "client": {
+            "ec-admin-api": [
+              "tax:read", "category:read", "product:read", "inventory:read", "order:read"
+            ]
+          }
+        }
+      }
+    ],
+    "client": {
+      "ec-admin-api": [
+        { "name": "tax:read" }, { "name": "tax:write" },
+        { "name": "category:read" }, { "name": "category:write" },
+        { "name": "product:read" }, { "name": "product:write" },
+        { "name": "inventory:read" }, { "name": "inventory:write" },
+        { "name": "order:read" }, { "name": "order:write" }
+      ]
+    }
+  },
+  "clients": [
+    {
+      "clientId": "ec-admin-web",
+      "name": "管理画面",
+      "enabled": true,
+      "publicClient": true,
+      "standardFlowEnabled": true,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false,
+      "fullScopeAllowed": false,
+      "redirectUris": ["http://localhost:5173/*", "http://localhost:4173/*"],
+      "webOrigins": ["http://localhost:5173", "http://localhost:4173"],
+      "attributes": {
+        "pkce.code.challenge.method": "S256",
+        "post.logout.redirect.uris": "http://localhost:5173/*##http://localhost:4173/*"
+      },
+      "protocolMappers": [
+        {
+          "name": "audience-ec-admin-api",
+          "protocol": "openid-connect",
+          "protocolMapper": "oidc-audience-mapper",
+          "config": {
+            "included.client.audience": "ec-admin-api",
+            "access.token.claim": "true",
+            "id.token.claim": "false"
+          }
+        }
+      ]
+    },
+    {
+      "clientId": "ec-admin-api",
+      "name": "管理 API（token の audience と権限）",
+      "enabled": true,
+      "publicClient": false,
+      "standardFlowEnabled": false,
+      "implicitFlowEnabled": false,
+      "directAccessGrantsEnabled": false,
+      "serviceAccountsEnabled": false
+    }
+  ],
+  "clientScopeMappings": {
+    "ec-admin-api": [
+      {
+        "client": "ec-admin-web",
+        "roles": [
+          "tax:read", "tax:write",
+          "category:read", "category:write",
+          "product:read", "product:write",
+          "inventory:read", "inventory:write",
+          "order:read", "order:write"
+        ]
+      }
+    ]
+  },
+  "users": [
+    {
+      "username": "admin@example.com",
+      "email": "admin@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "花子",
+      "lastName": "管理",
+      "realmRoles": ["administrator"],
+      "credentials": [
+        { "type": "password", "value": "admin-pass-1", "temporary": false }
+      ]
+    },
+    {
+      "username": "viewer@example.com",
+      "email": "viewer@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "次郎",
+      "lastName": "閲覧",
+      "realmRoles": ["viewer"],
+      "credentials": [
+        { "type": "password", "value": "viewer-pass-1", "temporary": false }
+      ]
+    }
+  ]
+}

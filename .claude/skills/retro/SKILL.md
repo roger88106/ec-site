@@ -4,6 +4,8 @@ description: "Conduct a retrospective on a coding session."
 disable-model-invocation: true
 ---
 
+<!-- 説明（日本語）：セッションの振り返りを行い、エージェントの環境（skill、自動の確認、文書の置き場所、ツールの使い方）の改善点を、重要な順に挙げる。直すことはせず、提案だけをする。利用者が /retro で呼ぶ。出典は mattpocock/skills（MIT）で、本文は原文のまま。末尾にこのリポジトリ向けの読み替えがある。 -->
+
 The user has asked for a **retrospective**. You are suggesting improvements to the coding agent's **environment** to improve future runs.
 
 ## Steps

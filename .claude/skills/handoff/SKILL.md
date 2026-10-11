@@ -5,6 +5,8 @@ argument-hint: "What will the next session be used for?"
 disable-model-invocation: true
 ---
 
+<!-- 説明（日本語）：今の会話を、別のエージェントが続きから作業できる引き継ぎの文書にまとめる。段階の区切りで新しいセッションに移るときに、利用者が /handoff で呼ぶ。出典は mattpocock/skills（MIT）で、本文は原文のまま。末尾にこのリポジトリ向けの追記がある。 -->
+
 Write a handoff document summarising the current conversation so a fresh agent can continue the work. Save to the temporary directory of the user's OS (`$TMPDIR`, else `/tmp`; `%TEMP%` on Windows) - not the current workspace.
 
 Include a "suggested skills" section in the document, naming which skills the next agent should call the Skill tool for.

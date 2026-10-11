@@ -3,6 +3,8 @@ name: writing-for-agents
 description: Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 ---
 
+<!-- 説明（日本語）：エージェントが読む文書（skill、AGENTS.md など）の書き方の手引き。skill や AGENTS.md を作る・直すときに使う。retro もこれを参照する。詳しい決まり（frontmatter、呼び出し方の選び方）は同じフォルダーの SKILL-MECHANICS.md。出典は mattpocock/skills（MIT）で、原文のまま。 -->
+
 Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
 When the document you're writing is a skill, read [`SKILL-MECHANICS.md`](SKILL-MECHANICS.md) for frontmatter, invocation choice, and router skills.

@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（constitution 4.1、docs/modules/cart.md）。店舗の腐敗防止層と Bean 名が重ならないよう、名前に Cart を付ける。<br />
+ * 商品カタログの腐敗防止層（constitution 4.1、docs/modules/cart.md）。<br />
  * 商品カタログの API を呼び、カートに入れられるかの判定に変換する。
  */
 @Component

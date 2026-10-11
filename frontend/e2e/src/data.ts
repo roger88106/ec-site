@@ -157,3 +157,9 @@ export async function unpublish(productId: string): Promise<void> {
 export async function discontinue(productId: string): Promise<void> {
   unwrap(await api.PUT('/products/{productId}/discontinue', { params: { path: { productId } } }))
 }
+
+/** 商品のバリアントの ID（登録した順） */
+export async function variantIds(productId: string): Promise<string[]> {
+  const product = unwrap(await api.GET('/products/{productId}', { params: { path: { productId } } }))
+  return product.variants.map((variant) => variant.id)
+}

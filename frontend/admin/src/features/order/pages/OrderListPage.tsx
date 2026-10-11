@@ -8,8 +8,8 @@ import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { OrderFilterForm } from '@/features/order/components/OrderFilterForm'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
-import { formatYen } from '@/features/order/order'
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
+import { formatYen } from '@/lib/format'
 
 /**
  * 注文一覧（T2601。AC-97〜99、106）。注文日時の新しい順で、キャンセル済みも含む。<br />

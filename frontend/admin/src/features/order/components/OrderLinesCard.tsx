@@ -1,7 +1,8 @@
 import type { OrderAmounts, OrderLine } from '@/api/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { formatYen, taxLabel } from '@/features/order/order'
+import { taxLabel } from '@/features/order/order'
+import { formatYen } from '@/lib/format'
 
 /**
  * 明細と金額の内訳（AC-100。BR-7、8）。明細は注文時点の写し（AC-92）で、今の商品の内容ではない。

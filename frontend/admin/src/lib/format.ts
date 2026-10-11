@@ -4,15 +4,20 @@ const JST_OFFSET_MS = 9 * 60 * 60 * 1000
 /** 金額の書式（3 桁ごとのカンマ） */
 const yen = new Intl.NumberFormat('ja-JP')
 
+/** 金額（例：「1,000 円」） */
+export function formatYen(amount: number): string {
+  return `${yen.format(amount)} 円`
+}
+
 /**
  * 価格の表示（BR-4）。税込価格を主に、税抜価格を括弧で併記する。<br />
  * 例：「1,980 円（税抜 1,800 円）」。有効な税率がなく税込価格がなければ、税抜価格だけを出す。
  */
 export function formatPrice(priceInclTax: number | null | undefined, priceExclTax: number): string {
   if (priceInclTax == null) {
-    return `税抜 ${yen.format(priceExclTax)} 円（税込価格は計算できません）`
+    return `税抜 ${formatYen(priceExclTax)}（税込価格は計算できません）`
   }
-  return `${yen.format(priceInclTax)} 円（税抜 ${yen.format(priceExclTax)} 円）`
+  return `${formatYen(priceInclTax)}（税抜 ${formatYen(priceExclTax)}）`
 }
 
 /** 日時の表示（BR-3）。日本時間の「yyyy/MM/dd HH:mm」。空白（null）は空文字 */

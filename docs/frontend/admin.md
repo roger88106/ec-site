@@ -16,7 +16,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | API の呼び出し | openapi-fetch + openapi-react-query | 取得・更新を、パスと型から呼ぶ。キャッシュのキーも自動で決まる |
 | サーバー状態 | TanStack Query | 既定の設定。ただし 4xx は繰り返さない（第 4 節） |
 | フォーム | React Hook Form | 入力の状態、変更の有無、サーバーの項目ごとのエラーの表示に使う |
-| UI | shadcn/ui、Tailwind CSS、lucide-react | 版面は shadcn の Sidebar、成功の通知は sonner（toast） |
+| UI | shadcn/ui、Tailwind CSS、lucide-react | レイアウトは shadcn の Sidebar、成功の通知は sonner（toast） |
 | lint・整形 | Biome | lint、整形、import の整理、Tailwind のクラスの並べ替え |
 | テスト | Vitest、React Testing Library、user-event、MSW（openapi-msw）、jsdom | 単体テストは画面に依存しない関数と表示の部品、結合テストは画面の操作の流れ（第 10 節、constitution 12） |
 
@@ -24,7 +24,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 
 ```
 frontend/admin/src/
-├── app/              # 入口、ルーター、Provider、版面（Sidebar）
+├── app/              # 入口、ルーター、Provider、レイアウト（Sidebar）
 ├── api/
 │   ├── generated/    # admin.yaml から生成（コミットしない）
 │   ├── client.ts     # openapi-fetch と openapi-react-query のクライアント

@@ -7,7 +7,7 @@
 
 ## 骨格
 
-- [x] **T701** Vite + React + TypeScript のプロジェクトを作る（pnpm、Tailwind CSS、shadcn/ui、TanStack Query、React Router、React Hook Form、Biome）。管理画面の構成の第 2 節のディレクトリと、Sidebar の版面、toast を用意する。
+- [x] **T701** Vite + React + TypeScript のプロジェクトを作る（pnpm、Tailwind CSS、shadcn/ui、TanStack Query、React Router、React Hook Form、Biome）。管理画面の構成の第 2 節のディレクトリと、Sidebar のレイアウト、toast を用意する。
 - [x] **T702** `admin.yaml` から `openapi-typescript` で型を生成するスクリプトを作り、ビルド前に実行する（生成物はコミットしない）。API の呼び出しは `openapi-fetch` + `openapi-react-query`。エラーの応答を `ApiError` に変換し、4xx は繰り返さない。開発時は Vite のプロキシでバックエンドに転送する。
 - [x] **T703** エラーの表示：エラーレスポンスの `message` をそのまま表示し、入力検証エラーは項目ごとに出す。バージョン不一致（409）では「他の人が先に更新しました。再読み込みしてください」と再読み込みのボタンを出す。取り消せない操作の確認のダイアログを用意する。
 

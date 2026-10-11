@@ -26,16 +26,25 @@ class TaxRateApiDirectory implements TaxDirectory {
      */
     private final TaxRateApi taxRateApi;
 
+    /**
+     * 指定した時点の税率を返す。
+     */
     @Override
     public Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant) {
         return taxRateApi.rateAt(taxCategoryId, instant);
     }
 
+    /**
+     * 税抜価格から税込価格を求める。
+     */
     @Override
     public Money priceInclTax(Money priceExclTax, BigDecimal ratePercent) {
         return taxRateApi.priceInclTax(priceExclTax, ratePercent);
     }
 
+    /**
+     * 税率ごとの消費税額を求める。
+     */
     @Override
     public List<TaxAmount> consumptionTaxes(List<Taxable> taxables) {
         var amounts = taxables.stream()

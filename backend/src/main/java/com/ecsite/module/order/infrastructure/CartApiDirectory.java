@@ -20,12 +20,18 @@ class CartApiDirectory implements CartDirectory {
      */
     private final CartContentsApi cartContentsApi;
 
+    /**
+     * カートの中身を取り、注文モジュールの型に変換する。
+     */
     @Override
     public Optional<CartSnapshot> find(UUID cartId) {
         return cartContentsApi.find(cartId).map(contents -> new CartSnapshot(contents.cartId(), contents.version(),
                 contents.items().stream().map(item -> new Line(item.variantId(), item.quantity())).toList()));
     }
 
+    /**
+     * カートを空にする。
+     */
     @Override
     public void clear(UUID cartId) {
         cartContentsApi.clear(cartId);

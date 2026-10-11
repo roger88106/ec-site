@@ -23,26 +23,41 @@ class StockApiDirectory implements StockDirectory {
      */
     private final StockReservationApi stockReservationApi;
 
+    /**
+     * バリアントの販売可能数を返す。
+     */
     @Override
     public Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, UUID excludedHolderId) {
         return stockReservationApi.sellableQuantities(variantIds, excludedHolderId);
     }
 
+    /**
+     * 在庫を引き当てる。
+     */
     @Override
     public Set<UUID> reserve(UUID holderId, Map<UUID, Integer> quantities, Instant expiresAt) {
         return stockReservationApi.reserve(holderId, quantities, expiresAt);
     }
 
+    /**
+     * 引当を解放する。
+     */
     @Override
     public void release(UUID holderId) {
         stockReservationApi.release(holderId);
     }
 
+    /**
+     * 引当を確定して出庫する。
+     */
     @Override
     public Set<UUID> commit(UUID holderId, Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
         return stockReservationApi.commit(holderId, quantities, orderId, orderNumber);
     }
 
+    /**
+     * 出庫した在庫を戻す。
+     */
     @Override
     public void restore(Map<UUID, Integer> quantities, UUID orderId, String orderNumber) {
         stockReservationApi.restore(quantities, orderId, orderNumber);

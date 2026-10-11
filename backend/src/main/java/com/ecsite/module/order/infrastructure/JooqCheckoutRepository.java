@@ -25,6 +25,9 @@ class JooqCheckoutRepository implements CheckoutRepository {
      */
     private final DSLContext dsl;
 
+    /**
+     * 注文手続きを追加する。
+     */
     @Override
     public void insert(Checkout checkout) {
         dsl.insertInto(CHECKOUT)
@@ -36,22 +39,34 @@ class JooqCheckoutRepository implements CheckoutRepository {
                 .execute();
     }
 
+    /**
+     * 注文手続きを ID で探す。
+     */
     @Override
     public Optional<Checkout> findById(UUID id) {
         return dsl.selectFrom(CHECKOUT).where(CHECKOUT.ID.eq(id)).fetchOptional().map(JooqCheckoutRepository::toCheckout);
     }
 
+    /**
+     * 注文手続きを行ロックして探す。
+     */
     @Override
     public Optional<Checkout> lockById(UUID id) {
         return dsl.selectFrom(CHECKOUT).where(CHECKOUT.ID.eq(id)).forUpdate().fetchOptional()
                 .map(JooqCheckoutRepository::toCheckout);
     }
 
+    /**
+     * カートの注文手続きの ID を返す。
+     */
     @Override
     public List<UUID> findIdsByCartId(UUID cartId) {
         return dsl.select(CHECKOUT.ID).from(CHECKOUT).where(CHECKOUT.CART_ID.eq(cartId)).fetch(CHECKOUT.ID);
     }
 
+    /**
+     * カートの最新の注文手続きの ID を返す。同時刻なら ID の順で決める。
+     */
     @Override
     public Optional<UUID> findLatestIdByCartId(UUID cartId) {
         return dsl.select(CHECKOUT.ID)

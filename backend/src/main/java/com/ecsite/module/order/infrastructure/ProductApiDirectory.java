@@ -25,6 +25,9 @@ class ProductApiDirectory implements ProductDirectory {
      */
     private final OrderCatalogApi orderCatalogApi;
 
+    /**
+     * バリアントの情報を、商品カタログの API から取って変換する。
+     */
     @Override
     public Map<UUID, VariantInfo> findVariants(Collection<UUID> variantIds) {
         var result = new LinkedHashMap<UUID, VariantInfo>();

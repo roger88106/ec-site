@@ -1,5 +1,6 @@
--- 税のローカル用 seed（plan 001 第 4 節）
+-- 税の seed（local と e2e の profile で適用する。db/seed/local/README.md）
 -- 税区分「標準」（10%）、「軽減」（8%）。税率は開始・終了とも空白（過去すべて〜無期限）。
+-- 「標準」の固定の ID は、送料の税区分（order.shipping-tax-category-id）が指す
 
 INSERT INTO tax.tax_category (id, name, version, created_at, updated_at)
 VALUES ('00000000-0000-0000-0000-000000000001', '標準', 0, now(), now()),

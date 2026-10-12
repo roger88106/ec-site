@@ -16,8 +16,8 @@ spring:
   flyway:
     # ローカルでは起動時にマイグレーションを適用する
     enabled: true
-    # ローカル用の seed も適用する（db/seed/local/README.md）
-    locations: classpath:db/migration,classpath:db/seed/local
+    # 税のデータ（base）とローカル用の seed（local）も適用する（db/seed/local/README.md）
+    locations: classpath:db/migration,classpath:db/seed/base,classpath:db/seed/local
 
 logging:
   structured:

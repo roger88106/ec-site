@@ -57,7 +57,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 
 - 200 が出たら起動済み。すでに起動しているかは同じ curl を `--retry` なしで確かめる。
 - 起動に失敗したら `bootrun.log` を `grep -n "ERROR\|Caused by" ` で見る。全体を読まない。
-- local profile では、起動時にマイグレーションとローカル用の seed（`db/seed/local`）が適用される。
+- local profile では、起動時にマイグレーションと seed（`db/seed/base`、`db/seed/local`）が適用される。使い分けは `db/seed/local/README.md`。
 - 止めるときは、ポート 8080 で待ち受けているプロセスを止める。
 
 テスト（`backend/ecsite/` で。Docker が要る）：

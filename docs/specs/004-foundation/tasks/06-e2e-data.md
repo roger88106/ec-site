@@ -7,7 +7,7 @@
 ## タスク
 
 - [x] **T4601** E2E が `seed/local` のどのデータに依存しているかを調べて報告する（税区分の「標準」「軽減」のほか）。
-- [ ] **T4602** seed を分ける：`db/seed/base/`（税区分と税率）、`db/seed/local/`、`db/seed/e2e/`（要るものがなければ置かない）。`application-local.yml` の Flyway の場所を直す。`db/seed/local/README.md` を、3 つの使い分けの説明にする（DC-25）。
+- [x] **T4602** seed を分ける：`db/seed/base/`（税区分と税率）、`db/seed/local/`、`db/seed/e2e/`（要るものがなければ置かない）。`application-local.yml` の Flyway の場所を直す。`db/seed/local/README.md` を、3 つの使い分けの説明にする（DC-25）。
 - [ ] **T4603** compose：Keycloak の E2E 用（profile `e2e`、ポート 8181、database `keycloak_e2e`、同じ realm の JSON）、`seaweedfs-init` に E2E 用のバケット、imgproxy の読める範囲に E2E 用の受付のバケット。
 - [ ] **T4604** バックエンドの `application-e2e.yml`（profile `local,e2e` で重ねる）：ポート 8090、database `ec_site_e2e`、seed の場所、issuer（8181）、画像のバケット。管理画面の `vite.config.ts` の API の転送先を環境変数で変えられるようにする。
 - [ ] **T4605** `e2e/scripts/prepare.ts`：E2E 用の Keycloak を止め、`ec_site_e2e`・`keycloak_e2e` を作り直し、Keycloak を起動して準備ができるのを待つ。`pnpm test` を「prepare → Playwright」にする。

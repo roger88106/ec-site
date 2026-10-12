@@ -26,6 +26,7 @@
 |------|------|
 | [constitution](docs/constitution.md) | プロジェクト全体の長期ルール。まずここを読む |
 | [用語集](docs/glossary.md) | 業務の用語と、コード・DB の識別子の対応 |
+| [文書の記号と番号](docs/notation.md) | spec の種類（機能・整理）、AC・DC などの番号、対象、優先度、タスクの番号と記号の意味 |
 | [modules/](docs/modules) | モジュールごとの現在の設計 |
 | [frontend/](docs/frontend) | フロントのアプリごとの構成（ディレクトリ、API の呼び出し方、画面の追加手順） |
 | [specs/](docs/specs) | 機能ごとの spec（何を・なぜ）、plan（どう作るか）、tasks（作業の手順） |

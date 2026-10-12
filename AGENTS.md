@@ -9,7 +9,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 2. [docs/constitution.md](docs/constitution.md)：長期ルール。すべての作業はこれに従う
 3. 着手する段階の tasks ファイル（`docs/specs/NNN-*/tasks/`）と、その冒頭の「参照」に挙がっている文書
 
-用語と識別子の対応は [docs/glossary.md](docs/glossary.md) で引く。
+用語と識別子の対応は [docs/glossary.md](docs/glossary.md) で、spec・plan・tasks の番号と記号（AC・DC、`[テスト]` など）の意味は [docs/notation.md](docs/notation.md) で引く。
 
 ## 進め方：SDD + TDD
 

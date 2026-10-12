@@ -16,23 +16,10 @@ public record I18nMessage(@NonNull String code, @NonNull List<String> paramKeys)
      * I18nメッセージを生成する
      *
      * @param code メッセージコード
-     * @return {@link I18nMessage}
-     */
-    public static I18nMessage of(@NonNull String code) {
-        return new I18nMessage(code, List.of());
-    }
-
-    /**
-     * I18nメッセージを生成する
-     *
-     * @param code メッセージコード
      * @param paramKeys メッセージパラメータリスト
      * @return {@link I18nMessage}
      */
-    public static I18nMessage of(@NonNull String code, List<String> paramKeys) {
-        if (paramKeys == null) {
-            paramKeys = List.of();
-        }
-        return new I18nMessage(code, paramKeys);
+    public static I18nMessage of(@NonNull String code, @NonNull List<String> paramKeys) {
+        return new I18nMessage(code, List.copyOf(paramKeys));
     }
 }

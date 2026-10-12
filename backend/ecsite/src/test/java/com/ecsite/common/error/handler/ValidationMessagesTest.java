@@ -19,10 +19,17 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.i18n.LocaleContextHolder;
+import org.springframework.context.support.DefaultMessageSourceResolvable;
 import org.springframework.context.support.ResourceBundleMessageSource;
+import org.springframework.core.MethodParameter;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.validation.ObjectError;
+import org.springframework.validation.beanvalidation.SpringValidatorAdapter;
+import org.springframework.validation.method.ParameterValidationResult;
 
 import java.math.BigDecimal;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Locale;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -124,6 +131,33 @@ class ValidationMessagesTest {
     @DisplayName("文を用意していない種類の制約は「値が正しくありません。」")
     void unknownConstraint() {
         assertThat(messageOf("future", LocalDate.of(2000, 1, 1))).isEqualTo("値が正しくありません。");
+    }
+
+    @Test
+    @DisplayName("Bean Validation の違反でない検証エラー（型の変換の失敗など）は「値が正しくありません。」")
+    void notConstraintViolation() {
+        assertThat(messages.of(new ObjectError("request", "Failed to convert"))).isEqualTo("値が正しくありません。");
+    }
+
+    @Test
+    @DisplayName("メソッド引数の検証エラーで、Bean Validation の違反でないものは「値が正しくありません。」")
+    void parameterErrorWithoutConstraintViolation() throws NoSuchMethodException {
+        var parameter = new MethodParameter(ValidationMessagesTest.class.getDeclaredMethod("messageOf", String.class, Object.class), 0);
+        var error = new DefaultMessageSourceResolvable("typeMismatch");
+        var result = new ParameterValidationResult(parameter, "x", List.of(error), null, null, null,
+                (resolvable, type) -> null);
+
+        assertThat(messages.of(result, error)).isEqualTo("値が正しくありません。");
+    }
+
+    @Test
+    @DisplayName("Bean Validation の違反から作った検証エラーは、制約の種類の文になる")
+    void fromSpringValidator() {
+        var target = new Sample(null, "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "A", "a@b.jp", null);
+        var errors = new BeanPropertyBindingResult(target, "sample");
+        new SpringValidatorAdapter(validator).validate(target, errors);
+
+        assertThat(messages.of(errors.getFieldError("notNull"))).isEqualTo("入力してください。");
     }
 
     /**

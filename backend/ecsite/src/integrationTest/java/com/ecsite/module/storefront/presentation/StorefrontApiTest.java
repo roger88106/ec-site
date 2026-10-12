@@ -210,6 +210,8 @@ class StorefrontApiTest {
 
             mockMvc.perform(get(BASE + "/products").param("minPrice", "1100").param("maxPrice", "2200").param("sort", "price_desc"))
                     .andExpect(jsonPath("$.items[*].id", contains(c.id, b.id)));
+            mockMvc.perform(get(BASE + "/products").param("minPrice", "1100").param("maxPrice", "2200").param("sort", "price_asc"))
+                    .andExpect(jsonPath("$.items[*].id", contains(b.id, c.id)));
         }
 
         @Test

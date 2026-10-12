@@ -25,5 +25,5 @@
 | テスト | [名前は振る舞いを書く](testing.md#12-名前は振る舞いを書く) |
 | テスト | [統合テストの土台](testing.md#21-統合テストの土台)、[テストデータは補助のクラス](testing.md#22-テストデータは補助のクラスで作る) |
 | テスト | [画面に見えるもので探す](testing.md#31-画面に見えるもので探す)、[E2E のデータの印](testing.md#33-e2e-のデータには実行ごとの印)、[時間で待たない](testing.md#4-待ち方) |
-| コメント | [何を書くか](comments.md#1-何を書くか)、[Javadoc](comments.md#2-javajavadoc)、[TSDoc](comments.md#3-typescripttsdoc)、[処理の中のコメント](comments.md#4-処理の中のコメント)、[複雑な処理のコメント](comments.md#5-複雑な処理のコメント) |
+| コメント | [何を書くか](comments.md#1-何を書くか)、[Javadoc](comments.md#2-javajavadoc)、[TSDoc](comments.md#3-typescripttsdoc)、[処理の中のコメント](comments.md#4-処理の中のコメント)、[複雑な処理のコメント](comments.md#5-複雑な処理のコメント)、[フロントの文言・型・処理のコメント](comments.md#6-フロントの文言型処理のコメント) |
 | 文書 | 日本語の文書・コメント・コミットメッセージに、中国語の字や言い回しが混ざっていない（constitution 14） |

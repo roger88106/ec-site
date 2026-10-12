@@ -8,4 +8,4 @@
 ## タスク
 
 - [x] **T6101** `docs/style/frontend.md`：共有のパッケージに入れる・入れない基準、画面の URL を直接書かない、表示の文言を直接書かない（例外の一覧）、文言のキーの形、ロケールの置き場所、店舗画面の環境変数とサーバー側のログの形。各規則に確かめ方を書く。
-- [ ] **T6102** `docs/style/comments.md`：文言をキーにした所のコメント、型の項目の TSDoc、一目で意図が分からない処理のコメント（plan 第 5 節）。`docs/style/review.md` に人手の項目を足す。`docs/frontend/admin.md`・`store.md` の該当する節から、`docs/style/` へリンクする。
+- [x] **T6102** `docs/style/comments.md`：文言をキーにした所のコメント、型の項目の TSDoc、一目で意図が分からない処理のコメント（plan 第 5 節）。`docs/style/review.md` に人手の項目を足す。`docs/frontend/admin.md`・`store.md` の該当する節から、`docs/style/` へリンクする。

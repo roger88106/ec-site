@@ -48,7 +48,7 @@ class StoreCheckoutController implements CheckoutApi {
     private final CurrentMemberIds currentMemberIds;
 
     /**
-     * 注文手続きに進む（AC-82〜84）
+     * 注文手続きに進む
      *
      * @param cartId カート ID
      * @return Http 201 : {@link CreatedId}
@@ -67,7 +67,7 @@ class StoreCheckoutController implements CheckoutApi {
     }
 
     /**
-     * 注文手続きの表示（AC-84、85）
+     * 注文手続きの表示
      *
      * @param checkoutId 注文手続き ID
      * @return Http 200 : {@link Checkout}
@@ -78,7 +78,7 @@ class StoreCheckoutController implements CheckoutApi {
     }
 
     /**
-     * 注文する（AC-86〜92、107）。同じ注文手続きでの再送には、作成済みの注文 ID を 200 で返す（AC-91）
+     * 注文する。同じ注文手続きでの再送には、作成済みの注文 ID を 200 で返す
      *
      * @param checkoutId 注文手続き ID
      * @param request    注文のリクエスト

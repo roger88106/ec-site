@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税の腐敗防止層（constitution 4.1）。税込単価と消費税額の計算は、税モジュールに任せる（plan 002 第 1 節）。
+ * 税の腐敗防止層（constitution 4.1）。税込単価と消費税額の計算は、税モジュールに任せる。
  */
 public interface TaxDirectory {
 
@@ -24,7 +24,7 @@ public interface TaxDirectory {
     Optional<BigDecimal> rateAt(UUID taxCategoryId, Instant instant);
 
     /**
-     * 税込価格を計算する（BR-1）。
+     * 税込価格を計算する。
      *
      * @param priceExclTax 税抜価格
      * @param ratePercent  率（%）
@@ -33,7 +33,7 @@ public interface TaxDirectory {
     Money priceInclTax(Money priceExclTax, BigDecimal ratePercent);
 
     /**
-     * 税率ごとの消費税額を計算する（BR-8）。
+     * 税率ごとの消費税額を計算する。
      *
      * @param taxables 税率と税込金額の組の一覧
      * @return 税率ごとの消費税額（税率の高い順）

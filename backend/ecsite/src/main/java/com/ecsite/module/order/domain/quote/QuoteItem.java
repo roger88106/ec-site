@@ -8,7 +8,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.math.BigDecimal;
 
 /**
- * 見積もりの品目（BR-7、AC-80）
+ * 見積もりの品目
  *
  * @param variant             バリアントの情報
  * @param quantity            数量
@@ -49,7 +49,7 @@ public record QuoteItem(VariantInfo variant, int quantity, @Nullable BigDecimal 
     }
 
     /**
-     * 購入できない理由を、表示 → 販売停止 → 在庫の順に判定する（AC-80）。
+     * 購入できない理由を、表示 → 販売停止 → 在庫の順に判定する。
      *
      * @return 理由。購入できれば null
      */

@@ -12,7 +12,7 @@ import java.util.UUID;
  *
  * @param cartId    カート ID
  * @param items     品目（入れた順）
- * @param amounts   金額の内訳（BR-7、8）
+ * @param amounts   金額の内訳
  * @param orderable 注文できるか（品目が 1 つ以上あり、すべて購入できる）
  */
 public record CartQuote(UUID cartId, List<Item> items, Amounts amounts, boolean orderable) {

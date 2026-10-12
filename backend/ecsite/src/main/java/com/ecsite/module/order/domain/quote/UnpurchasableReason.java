@@ -1,12 +1,12 @@
 package com.ecsite.module.order.domain.quote;
 
 /**
- * 購入できない理由（AC-80）
+ * 購入できない理由
  */
 public enum UnpurchasableReason {
 
     /**
-     * 商品が C 側に表示されない（BR-2）。有効な税率がない場合も含む
+     * 商品が C 側に表示されない。有効な税率がない場合も含む
      */
     NOT_SHOWN,
 

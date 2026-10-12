@@ -18,7 +18,7 @@ public interface CartDirectory {
     Optional<CartSnapshot> find(UUID cartId);
 
     /**
-     * カートを空にする（注文の成立。AC-90）。
+     * カートを空にする（注文の成立）。
      *
      * @param cartId カート ID
      */
@@ -35,7 +35,7 @@ public interface CartDirectory {
     record CartSnapshot(UUID cartId, UUID memberId, long version, List<Line> lines) {
 
         /**
-         * 要求した会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも（AC-120、121）。
+         * 要求した会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
          *
          * @param requester 要求した会員の ID（ログインしていなければ null）
          * @return 使えれば true
@@ -46,7 +46,7 @@ public interface CartDirectory {
 
         /**
          * @param memberId 会員 ID
-         * @return 会員のカートで、その会員が持ち主なら true（注文手続きを始められるカート。AC-125）
+         * @return 会員のカートで、その会員が持ち主なら true（注文手続きを始められるカート）
          */
         public boolean isOwnedBy(UUID memberId) {
             return this.memberId != null && this.memberId.equals(memberId);

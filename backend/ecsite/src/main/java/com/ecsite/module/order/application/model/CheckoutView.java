@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文手続きの表示（AC-85）
+ * 注文手続きの表示
  *
  * @param id        注文手続き ID
  * @param quote     表示の時点の見積もり（自分の引当を販売可能数から除く）

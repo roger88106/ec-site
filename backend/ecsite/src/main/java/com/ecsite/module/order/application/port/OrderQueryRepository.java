@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文の一覧のクエリリポジトリ（B 側。AC-97〜99）
+ * 注文の一覧のクエリリポジトリ（B 側）
  */
 public interface OrderQueryRepository {
 
@@ -25,7 +25,7 @@ public interface OrderQueryRepository {
     /**
      * 絞り込みの条件。指定しない項目は null
      *
-     * @param memberId          会員 ID（会員の注文の一覧。AC-129）
+     * @param memberId          会員 ID（会員の注文の一覧）
      * @param orderNumberPrefix 注文番号の前方一致
      * @param status            状態
      * @param orderedFrom       注文日時の下限（この時刻を含む）
@@ -44,7 +44,7 @@ public interface OrderQueryRepository {
     }
 
     /**
-     * 注文一覧の 1 件（AC-97）
+     * 注文一覧の 1 件
      *
      * @param id           注文 ID
      * @param orderNumber  注文番号

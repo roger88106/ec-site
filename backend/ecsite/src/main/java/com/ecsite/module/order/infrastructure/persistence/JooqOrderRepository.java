@@ -249,7 +249,7 @@ class JooqOrderRepository implements OrderRepository {
                         Money.of(line.getSubtotal())));
         var taxes = dsl.selectFrom(SALES_ORDER_TAX)
                 .where(SALES_ORDER_TAX.ORDER_ID.eq(record.getId()))
-                // 税率の高い順（BR-8 の表示の順）
+                // 税率の高い順（の表示の順）
                 .orderBy(SALES_ORDER_TAX.RATE_PERCENT.desc())
                 .fetch(tax -> new TaxAmount(normalize(tax.getRatePercent()), Money.of(tax.getTaxableAmount()),
                         Money.of(tax.getTaxAmount())));
@@ -290,7 +290,7 @@ class JooqOrderRepository implements OrderRepository {
     }
 
     /**
-     * 操作した運営者（AC-142）。記録を始める前の行は空なので null。
+     * 操作した運営者。記録を始める前の行は空なので null。
      */
     private static Operator operatorOf(UUID id, String name) {
         return id == null ? null : new Operator(id, name);

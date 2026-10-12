@@ -34,7 +34,7 @@ import java.util.UUID;
 class StoreOrderMapper {
 
     /**
-     * 注文手続きのレスポンスに変換する（AC-85）。
+     * 注文手続きのレスポンスに変換する。
      *
      * @param view 注文手続きの表示
      * @return 注文手続きのレスポンス
@@ -54,7 +54,7 @@ class StoreOrderMapper {
      * @param checkoutId 注文手続き ID
      * @param request    注文のリクエスト
      * @param memberId      会員 ID
-     * @param email         連絡先のメールアドレス（会員の token のもの。AC-127）
+     * @param email         連絡先のメールアドレス（会員の token のもの）
      * @param emailVerified メールアドレスが確認済みか（token のもの）
      * @return 注文のコマンド
      */
@@ -75,7 +75,7 @@ class StoreOrderMapper {
     }
 
     /**
-     * 注文のレスポンスに変換する（AC-93）。キャンセルの申請がなければ、その項目を返さない。
+     * 注文のレスポンスに変換する。キャンセルの申請がなければ、その項目を返さない。
      *
      * @param order 注文
      * @return 注文のレスポンス
@@ -107,7 +107,7 @@ class StoreOrderMapper {
     }
 
     /**
-     * 金額の内訳のレスポンスに変換する（BR-7、8）。
+     * 金額の内訳のレスポンスに変換する。
      *
      * @param amounts 金額の内訳
      * @return 金額の内訳のレスポンス
@@ -143,7 +143,7 @@ class StoreOrderMapper {
     }
 
     /**
-     * 注文明細 1 件（注文時点の写し。AC-92）。
+     * 注文明細 1 件（注文時点の写し）。
      */
     private static OrderLine toLine(com.ecsite.module.order.domain.order.OrderLine line) {
         return new OrderLine()
@@ -203,7 +203,7 @@ class StoreOrderMapper {
      * 日時を、オフセット付きの日時（UTC）にする。
      */
     /**
-     * 自分の注文の一覧のレスポンスに変換する（AC-129）。
+     * 自分の注文の一覧のレスポンスに変換する。
      *
      * @param page 注文の一覧
      * @return 注文の一覧のレスポンス

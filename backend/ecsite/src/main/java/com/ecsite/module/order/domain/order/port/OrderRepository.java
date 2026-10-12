@@ -44,7 +44,7 @@ public interface OrderRepository {
     Optional<Order> findById(UUID id);
 
     /**
-     * 注文手続きの注文 ID を取得する（AC-91）。
+     * 注文手続きの注文 ID を取得する。
      *
      * @param checkoutId 注文手続き ID
      * @return 注文 ID。まだ注文がなければ空
@@ -52,7 +52,7 @@ public interface OrderRepository {
     Optional<UUID> findIdByCheckoutId(UUID checkoutId);
 
     /**
-     * 注文番号が使われているか（BR-10）。
+     * 注文番号が使われているか。
      *
      * @param orderNumber 注文番号
      * @return 使われていれば true

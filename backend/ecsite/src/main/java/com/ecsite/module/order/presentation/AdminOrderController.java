@@ -39,12 +39,12 @@ class AdminOrderController implements OrderApi {
     private final AdminOrderMapper mapper;
 
     /**
-     * 要求の token の運営者（AC-142）
+     * 要求の token の運営者
      */
     private final CurrentOperator currentOperator;
 
     /**
-     * 注文一覧（AC-97〜99、106）。注文日時の新しい順
+     * 注文一覧。注文日時の新しい順
      *
      * @param orderNumber 注文番号の前方一致
      * @param status      状態
@@ -64,7 +64,7 @@ class AdminOrderController implements OrderApi {
     }
 
     /**
-     * 注文の詳細（AC-100、106）
+     * 注文の詳細
      *
      * @param orderId 注文 ID
      * @return Http 200 : {@link OrderDetail}
@@ -75,7 +75,7 @@ class AdminOrderController implements OrderApi {
     }
 
     /**
-     * キャンセルの申請の承認（AC-101、104、105）。キャンセル済みなら何もしない
+     * キャンセルの申請の承認。キャンセル済みなら何もしない
      *
      * @param orderId 注文 ID
      * @return Http 204
@@ -87,7 +87,7 @@ class AdminOrderController implements OrderApi {
     }
 
     /**
-     * キャンセルの申請の却下（AC-102、105）
+     * キャンセルの申請の却下
      *
      * @param orderId 注文 ID
      * @return Http 204
@@ -99,7 +99,7 @@ class AdminOrderController implements OrderApi {
     }
 
     /**
-     * 運営者の判断によるキャンセル（AC-103〜105）。キャンセル済みなら何もしない
+     * 運営者の判断によるキャンセル。キャンセル済みなら何もしない
      *
      * @param orderId 注文 ID
      * @param request キャンセルのリクエスト（理由は必須）

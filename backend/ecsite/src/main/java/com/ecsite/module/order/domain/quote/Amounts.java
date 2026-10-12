@@ -6,7 +6,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.List;
 
 /**
- * 金額の内訳（BR-7、8）
+ * 金額の内訳
  *
  * @param itemsTotal  商品の合計（購入できる品目の小計の合計）
  * @param shippingFee 送料（購入できる品目がなければ 0）

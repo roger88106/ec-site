@@ -1,7 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
 /**
- * 注文の状態（BR-9）
+ * 注文の状態
  */
 public enum OrderStatus {
 

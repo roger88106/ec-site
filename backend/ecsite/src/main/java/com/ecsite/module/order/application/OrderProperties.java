@@ -10,11 +10,11 @@ import java.time.Duration;
 import java.util.UUID;
 
 /**
- * 注文の設定（plan 002 第 4 節）。環境変数で上書きする（例：ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID）。
+ * 注文の設定。環境変数で上書きする（例：ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID）。
  *
- * @param shippingFee           送料（税込、円。BR-6）
+ * @param shippingFee           送料（税込、円）
  * @param shippingTaxCategoryId 送料に適用する税区分の ID（標準税率）。税率は注文日時のものを税モジュールから取る
- * @param reservationTtl        引当の期限（注文手続きに進んでからの時間。AC-82）
+ * @param reservationTtl        引当の期限（注文手続きに進んでからの時間）
  */
 @Validated
 @ConfigurationProperties("ecsite.order")

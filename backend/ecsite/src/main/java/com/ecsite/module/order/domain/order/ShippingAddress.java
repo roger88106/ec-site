@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 /**
- * お届け先（AC-86）。郵便番号と電話番号はハイフンを除いた数字で持つ。
+ * お届け先。郵便番号と電話番号はハイフンを除いた数字で持つ。
  *
  * @param name       氏名（50 文字まで）
  * @param postalCode 郵便番号（数字 7 桁）

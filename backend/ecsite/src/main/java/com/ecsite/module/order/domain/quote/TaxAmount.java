@@ -6,7 +6,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.math.BigDecimal;
 
 /**
- * 1 つの税率の消費税額（BR-8）
+ * 1 つの税率の消費税額
  *
  * @param ratePercent   率（%）
  * @param taxableAmount その率の対象の税込金額（小計と送料）の合計

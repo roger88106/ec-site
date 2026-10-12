@@ -25,7 +25,7 @@ import org.springframework.stereotype.Component;
 class AdminOrderMapper {
 
     /**
-     * 注文一覧のページのレスポンスに変換する（AC-97、99）。
+     * 注文一覧のページのレスポンスに変換する。
      *
      * @param page 注文一覧のページ
      * @return 注文一覧のページのレスポンス
@@ -40,7 +40,7 @@ class AdminOrderMapper {
     }
 
     /**
-     * 注文の詳細のレスポンスに変換する（AC-100）。申請・キャンセルがなければ、その項目を返さない。
+     * 注文の詳細のレスポンスに変換する。申請・キャンセルがなければ、その項目を返さない。
      *
      * @param order 注文
      * @return 注文の詳細のレスポンス
@@ -80,7 +80,7 @@ class AdminOrderMapper {
     }
 
     /**
-     * 注文明細 1 件（注文時点の写し。AC-92）。
+     * 注文明細 1 件（注文時点の写し）。
      */
     private static OrderLine toLine(com.ecsite.module.order.domain.order.OrderLine line) {
         return new OrderLine()
@@ -97,7 +97,7 @@ class AdminOrderMapper {
     }
 
     /**
-     * 金額の内訳（BR-7、8）。
+     * 金額の内訳。
      */
     private static OrderAmounts toAmounts(Amounts amounts) {
         return new OrderAmounts()

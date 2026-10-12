@@ -52,7 +52,7 @@ public class QuoteService {
     private final OrderProperties properties;
 
     /**
-     * カートの品目を、指定した時点の価格・税率・販売可能数で見積もる（BR-7、8、AC-80）。
+     * カートの品目を、指定した時点の価格・税率・販売可能数で見積もる。
      *
      * @param lines    品目（カートの並び）
      * @param at       価格と税率を判定する時点

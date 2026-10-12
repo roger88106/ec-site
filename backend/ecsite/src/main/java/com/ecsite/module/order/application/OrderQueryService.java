@@ -26,7 +26,7 @@ import java.util.UUID;
 public class OrderQueryService {
 
     /**
-     * 日本時間（注文日の範囲の解釈。BR-3）
+     * 日本時間（注文日の範囲の解釈）
      */
     private static final ZoneId JAPAN = ZoneId.of("Asia/Tokyo");
 
@@ -41,7 +41,7 @@ public class OrderQueryService {
     private final OrderQueryRepository orderQueryRepository;
 
     /**
-     * 注文を取得する（AC-93、94、100）。
+     * 注文を取得する。
      *
      * @param orderId 注文 ID
      * @return 注文
@@ -51,7 +51,7 @@ public class OrderQueryService {
     }
 
     /**
-     * 会員の注文を取得する（AC-130、131）。注文した会員でなければ、ないときと同じく 404。
+     * 会員の注文を取得する。注文した会員でなければ、ないときと同じく 404。
      *
      * @param orderId  注文 ID
      * @param memberId 要求した会員の ID
@@ -64,7 +64,7 @@ public class OrderQueryService {
     }
 
     /**
-     * 会員の注文を、注文日時の新しい順に一覧する（AC-129）。
+     * 会員の注文を、注文日時の新しい順に一覧する。
      *
      * @param memberId 会員 ID
      * @param request  ページの指定
@@ -75,7 +75,7 @@ public class OrderQueryService {
     }
 
     /**
-     * 注文を、注文日時の新しい順に一覧する（AC-97〜99、106）。注文日の範囲は日本時間の日付で、両端を含む（BR-3）。
+     * 注文を、注文日時の新しい順に一覧する。注文日の範囲は日本時間の日付で、両端を含む。
      *
      * @param orderNumberPrefix 注文番号の前方一致。なければ null
      * @param status            状態。なければ null

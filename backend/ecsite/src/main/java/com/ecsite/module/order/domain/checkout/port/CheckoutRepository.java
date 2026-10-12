@@ -27,7 +27,7 @@ public interface CheckoutRepository {
     Optional<Checkout> findById(UUID id);
 
     /**
-     * 注文手続きを行ロックして取得する。同じ注文手続きでの注文を 1 つずつ処理するため（AC-91）。トランザクションの中で呼ぶ。
+     * 注文手続きを行ロックして取得する。同じ注文手続きでの注文を 1 つずつ処理するため。トランザクションの中で呼ぶ。
      *
      * @param id 注文手続き ID
      * @return 注文手続き。なければ空

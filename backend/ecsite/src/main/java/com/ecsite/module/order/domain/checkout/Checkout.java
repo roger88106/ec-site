@@ -13,7 +13,7 @@ import java.util.UUID;
  * 作った後は変わらない。
  *
  * @param id          注文手続き ID（引当の持ち主 ID）
- * @param memberId    会員 ID（始めた会員。その会員だけが参照・注文できる。AC-126）
+ * @param memberId    会員 ID（始めた会員。その会員だけが参照・注文できる）
  * @param cartId      カート ID
  * @param cartVersion 始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
  * @param expiresAt   引当の期限
@@ -23,7 +23,7 @@ import java.util.UUID;
 public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt) {
 
     /**
-     * 注文手続きを始める（AC-82）。
+     * 注文手続きを始める。
      *
      * @param id             注文手続き ID
      * @param memberId       会員 ID

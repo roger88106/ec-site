@@ -17,8 +17,8 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * キャンセルのサービス（docs/modules/order.md「状態遷移」、US-18、21）。<br />
- * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻す（AC-104、NFR-2）。
+ * キャンセルのサービス（docs/modules/order.md「状態遷移」）。<br />
+ * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻す。
  */
 @Service
 @RequiredArgsConstructor
@@ -40,7 +40,7 @@ public class OrderCancellationService {
     private final Clock clock;
 
     /**
-     * 会員がキャンセルを申請する（AC-95、96、130）。注文した会員でなければ、ないときと同じく 404（AC-131）。
+     * 会員がキャンセルを申請する。注文した会員でなければ、ないときと同じく 404。
      *
      * @param orderId  注文 ID
      * @param memberId 要求した会員の ID
@@ -57,10 +57,10 @@ public class OrderCancellationService {
     }
 
     /**
-     * キャンセルの申請を承認する（AC-101、105）。キャンセルになったら在庫を戻す。
+     * キャンセルの申請を承認する。キャンセルになったら在庫を戻す。
      *
      * @param orderId  注文 ID
-     * @param operator 承認した運営者（AC-142）
+     * @param operator 承認した運営者
      */
     @Transactional
     public void approve(UUID orderId, Operator operator) {
@@ -68,10 +68,10 @@ public class OrderCancellationService {
     }
 
     /**
-     * キャンセルの申請を却下する（AC-102）。
+     * キャンセルの申請を却下する。
      *
      * @param orderId  注文 ID
-     * @param operator 却下した運営者（AC-142）
+     * @param operator 却下した運営者
      */
     @Transactional
     public void reject(UUID orderId, Operator operator) {
@@ -81,11 +81,11 @@ public class OrderCancellationService {
     }
 
     /**
-     * 運営者の判断でキャンセルする（AC-103、105）。キャンセルになったら在庫を戻す。
+     * 運営者の判断でキャンセルする。キャンセルになったら在庫を戻す。
      *
      * @param orderId  注文 ID
      * @param reason   理由（必須）
-     * @param operator キャンセルした運営者（AC-142）
+     * @param operator キャンセルした運営者
      */
     @Transactional
     public void cancel(UUID orderId, String reason, Operator operator) {
@@ -102,8 +102,8 @@ public class OrderCancellationService {
     }
 
     /**
-     * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻す（AC-101、103、107）。<br />
-     * すでにキャンセルなら何もしない（AC-105）。在庫の戻しに失敗すれば、注文の変更ごと取り消される（AC-104）。
+     * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻す。<br />
+     * すでにキャンセルなら何もしない。在庫の戻しに失敗すれば、注文の変更ごと取り消される。
      *
      * @param orderId 注文 ID
      * @param cancel  キャンセルにする操作。キャンセルにしたら true

@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートの見積もりのサービス（店舗のカートの表示。AC-77、79〜81）
+ * カートの見積もりのサービス（店舗のカートの表示）
  */
 @Service
 @RequiredArgsConstructor
@@ -45,7 +45,7 @@ public class CartQuoteService {
     /**
      * カートを現在の価格・税率・販売可能数で見積もる。注文手続き中なら、自分の引当を販売可能数から除く。
      *
-     * 会員のカートは、持ち主の会員にだけ見積もる（AC-121。ほかの人には、カートがないときと同じく空）。
+     * 会員のカートは、持ち主の会員にだけ見積もる（ほかの人には、カートがないときと同じく空）。
      *
      * @param cartId    カート ID
      * @param requester 要求した会員の ID（ログインしていなければ null）

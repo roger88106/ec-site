@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 注文明細。注文時点の写しで、注文の成立後は変わらない（AC-92）。
+ * 注文明細。注文時点の写しで、注文の成立後は変わらない。
  *
  * @param lineNo           行番号（1 始まり。カートの並び）
  * @param variantId        バリアント ID（在庫の戻しに使う。表示には写しを使う）

@@ -18,7 +18,7 @@ import java.util.UUID;
  * @param priceExclTax   税抜価格
  * @param taxCategoryId  税区分 ID
  * @param imageUrl       画像の URL。なければ null
- * @param visible        商品が C 側に表示されるか（BR-2）
+ * @param visible        商品が C 側に表示されるか
  * @param salesSuspended 販売停止か
  */
 public record VariantInfo(UUID variantId, UUID productId, String productCode, String variantCode, String productName,

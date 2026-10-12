@@ -42,7 +42,7 @@ class StoreOrderController implements OrderApi {
     private final CurrentMemberIds currentMemberIds;
 
     /**
-     * 注文の表示（AC-93、94、96）
+     * 注文の表示
      *
      * @param orderId 注文 ID
      * @return Http 200 : {@link Order}
@@ -53,7 +53,7 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * キャンセルの申請（AC-95、96）。申請中なら何もしない
+     * キャンセルの申請。申請中なら何もしない
      *
      * @param orderId 注文 ID
      * @param request キャンセルの申請のリクエスト
@@ -66,7 +66,7 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 自分の注文の一覧（AC-129）。注文日時の新しい順
+     * 自分の注文の一覧。注文日時の新しい順
      *
      * @param page ページ番号
      * @param size 1 ページの件数

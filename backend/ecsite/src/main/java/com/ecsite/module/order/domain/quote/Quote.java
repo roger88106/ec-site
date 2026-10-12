@@ -9,18 +9,18 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 見積もり（docs/modules/order.md「見積もり」）。カートの表示、注文手続き、注文の成立で同じ計算をする（BR-7）。
+ * 見積もり（docs/modules/order.md「見積もり」）。カートの表示、注文手続き、注文の成立で同じ計算をする。
  *
  * @param items     品目（カートの並び）
  * @param amounts   金額の内訳
- * @param orderable 注文できるか（品目が 1 つ以上あり、すべて購入できる。AC-88）
+ * @param orderable 注文できるか（品目が 1 つ以上あり、すべて購入できる）
  */
 @ValueObject
 public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
 
     /**
-     * 品目から金額の内訳を求める。購入できない品目は合計・消費税額に含めない（AC-80）。<br />
-     * 送料は購入できる品目があるときだけかけ、標準税率の対象として消費税額に含める（BR-6、8）。
+     * 品目から金額の内訳を求める。購入できない品目は合計・消費税額に含めない。<br />
+     * 送料は購入できる品目があるときだけかけ、標準税率の対象として消費税額に含める。
      *
      * @param items          品目
      * @param missingVariant 存在しなくなったバリアントがカートにあるか（あれば注文できない）

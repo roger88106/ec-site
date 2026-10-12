@@ -6,7 +6,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.math.BigDecimal;
 
 /**
- * 送料（BR-6）
+ * 送料
  *
  * @param fee         送料（税込）
  * @param ratePercent 送料に適用する率（%。標準税率）

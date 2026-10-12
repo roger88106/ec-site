@@ -11,43 +11,43 @@ import lombok.Getter;
 public enum OrderErrorCode implements ErrorCodeProvider {
 
     /**
-     * メールアドレスの形が違う（AC-86）
+     * メールアドレスの形が違う
      */
     INVALID_EMAIL(ErrorType.VALIDATION_ERROR),
     /**
-     * 会員のメールアドレスが確認済みでない（AC-127）
+     * 会員のメールアドレスが確認済みでない
      */
     EMAIL_NOT_VERIFIED(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 氏名が空白、または 50 文字を超える（AC-86）
+     * 氏名が空白、または 50 文字を超える
      */
     INVALID_RECIPIENT_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 郵便番号が数字 7 桁でない（AC-86）
+     * 郵便番号が数字 7 桁でない
      */
     INVALID_POSTAL_CODE(ErrorType.VALIDATION_ERROR),
     /**
-     * 47 都道府県のいずれでもない（AC-86）
+     * 47 都道府県のいずれでもない
      */
     INVALID_PREFECTURE(ErrorType.VALIDATION_ERROR),
     /**
-     * 住所が空白、または 200 文字を超える（AC-86）
+     * 住所が空白、または 200 文字を超える
      */
     INVALID_ADDRESS(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 電話番号が数字 10〜11 桁でない（AC-86）
+     * 電話番号が数字 10〜11 桁でない
      */
     INVALID_PHONE_NUMBER(ErrorType.VALIDATION_ERROR),
     /**
-     * 空のカート、または購入できない品目を含むカート（AC-88）
+     * 空のカート、または購入できない品目を含むカート
      */
     CART_NOT_ORDERABLE(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 在庫が足りない（AC-82、83、87）
+     * 在庫が足りない
      */
     OUT_OF_STOCK(ErrorType.CONFLICT_ERROR),
     /**
-     * 確認した総額と、注文時点の総額が違う（AC-89）
+     * 確認した総額と、注文時点の総額が違う
      */
     TOTAL_AMOUNT_CHANGED(ErrorType.CONFLICT_ERROR),
     /**
@@ -55,19 +55,19 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     CART_CHANGED(ErrorType.CONFLICT_ERROR),
     /**
-     * 申請できない注文（却下済み、キャンセル済み。申請は 1 回だけ。AC-96）
+     * 申請できない注文（却下済み、キャンセル済み。申請は 1 回だけ）
      */
     CANCELLATION_NOT_REQUESTABLE(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 申請中でない注文の承認・却下（AC-105）
+     * 申請中でない注文の承認・却下
      */
     CANCELLATION_NOT_PENDING(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 運営者のキャンセルの理由がない（AC-103）
+     * 運営者のキャンセルの理由がない
      */
     CANCELLATION_REASON_REQUIRED(ErrorType.VALIDATION_ERROR),
     /**
-     * キャンセルの理由が 500 文字を超える（AC-95、103）
+     * キャンセルの理由が 500 文字を超える
      */
     INVALID_CANCELLATION_REASON(ErrorType.VALIDATION_ERROR, "max"),
     ;

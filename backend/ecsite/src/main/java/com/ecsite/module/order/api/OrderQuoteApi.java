@@ -20,9 +20,9 @@ public class OrderQuoteApi {
     private final CartQuoteService cartQuoteService;
 
     /**
-     * カートを現在の価格・税率・販売可能数で見積もる（AC-77、79〜81）。
+     * カートを現在の価格・税率・販売可能数で見積もる。
      *
-     * 会員のカートは、持ち主の会員にだけ見積もる（AC-121）。
+     * 会員のカートは、持ち主の会員にだけ見積もる。
      *
      * @param cartId    カート ID
      * @param requester 要求した会員の ID（ログインしていなければ null）

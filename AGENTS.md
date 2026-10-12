@@ -8,8 +8,22 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 1. [README.md](README.md)：全体像と文書の地図
 2. [docs/constitution.md](docs/constitution.md)：長期ルール。すべての作業はこれに従う
 3. 着手する段階の tasks ファイル（`docs/specs/NNN-*/tasks/`）と、その冒頭の「参照」に挙がっている文書
+4. [docs/notation.md](docs/notation.md)：spec・plan・tasks の番号と記号の意味
+5. [docs/style/](docs/style/README.md)：コードの書き方とプロジェクトの習慣。コードを書く・見直す前に、関わる主題の文書を読む
 
-用語と識別子の対応は [docs/glossary.md](docs/glossary.md) で、spec・plan・tasks の番号と記号（AC・DC、`[テスト]` など）の意味は [docs/notation.md](docs/notation.md) で引く。
+用語と識別子の対応は [docs/glossary.md](docs/glossary.md) で引く。
+
+## skill の一覧
+
+`.claude/skills/` にある。skill を足す・消すときは、この一覧も直す（skill `writing-for-agents` の追記）。
+
+| skill | いつ使うか |
+|-------|------------|
+| `local-dev` | compose・バックエンド・フロントを起動する、テストを流す、DB や token を見る |
+| `new-screen` | 店舗画面・管理画面に画面や操作を足す、直す |
+| `handoff` | spec の区切りや、作業を途中でやめるときに、引き継ぎの文書を作る（利用者が `/handoff` で呼ぶ） |
+| `retro` | セッションを振り返り、エージェントの環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
+| `writing-for-agents` | skill や AGENTS.md を作る、直す |
 
 ## 進め方：SDD + TDD
 

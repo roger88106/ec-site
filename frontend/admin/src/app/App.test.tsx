@@ -1,6 +1,6 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { renderApp } from '@/test/renderApp'
+import { renderApp, TEST_OPERATOR_NAME } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
 /** テストで使う税区分の ID */
@@ -24,5 +24,17 @@ describe('結合テストの土台', () => {
 
     expect(router.state.location.pathname).toBe(`/tax-categories/${TAX_CATEGORY_ID}`)
     expect(await screen.findByText('税区分が見つかりません。')).toBeInTheDocument()
+  })
+})
+
+describe('ログインしている運営者', () => {
+  it('AC-135 ヘッダーに運営者の氏名を出し、ログアウトを押すとログアウトする', async () => {
+    server.use(http.get('/tax-categories', ({ response }) => response(200).json({ items: [] })))
+    const { user, logout } = renderApp('/tax-categories')
+
+    expect(await screen.findByText(TEST_OPERATOR_NAME)).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: 'ログアウト' }))
+
+    expect(logout).toHaveBeenCalledOnce()
   })
 })

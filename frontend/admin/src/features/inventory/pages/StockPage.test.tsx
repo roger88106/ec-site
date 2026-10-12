@@ -140,3 +140,24 @@ describe('在庫の調整', () => {
     expect(screen.queryByRole('option', { name: '注文のキャンセル' })).not.toBeInTheDocument()
   })
 })
+
+describe('権限のない操作', () => {
+  it('AC-141 権限のない運営者（閲覧者）が調整すると、権限がないことを調整のフォームに出す', async () => {
+    serveStock(5)
+    server.use(
+      http.post('/inventory/variants/{variantId}/adjustments', ({ response }) =>
+        response(403).json(problem(403, 'FORBIDDEN', 'この操作を行う権限がありません。')),
+      ),
+    )
+    const { user } = renderApp(URL)
+    await shownQuantity(5)
+
+    await user.type(screen.getByLabelText('増減量'), '10')
+    await user.click(screen.getByRole('combobox', { name: '理由' }))
+    await user.click(await screen.findByRole('option', { name: '入荷' }))
+    await user.click(screen.getByRole('button', { name: '調整する' }))
+
+    expect(await screen.findByText('この操作を行う権限がありません。')).toBeInTheDocument()
+    expect(await shownQuantity(5)).toBeInTheDocument()
+  })
+})

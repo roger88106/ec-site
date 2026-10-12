@@ -1,13 +1,15 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect, unstable_rethrow } from 'next/navigation'
+import { redirect } from 'next/navigation'
+import { withActionResult } from '@/actions/withActionResult'
 import { currentCartChoice, memberCartId } from '@/api/cart'
 import { deleteCartMergeNotice, writeCartId } from '@/api/cartCookie'
 import { getApi, getMemberApi } from '@/api/client'
 import { redirectToLogin } from '@/auth'
-import { type ActionResult, CONNECTION_FAILED, SUCCESS, toFailure } from '@/lib/actionResult'
+import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
+import { readInt, readString } from '@/lib/server/formData'
 
 /**
  * カートに入れる（AC-72〜76）。<br />
@@ -15,9 +17,10 @@ import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
  * Cookie に書く（AC-73）。フォームの項目：variantId、quantity。
  */
 export async function addToCart(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const variantId = String(formData.get('variantId') ?? '')
-  const quantity = Number(formData.get('quantity'))
-  try {
+  const variantId = readString(formData, 'variantId')
+  // 数でなければ API が断る（入力の検証の 400）
+  const quantity = readInt(formData, 'quantity') ?? Number.NaN
+  return withActionResult(async () => {
     const choice = await currentCartChoice()
     if (choice.kind === 'member') {
       return await updateMemberCart(async (api, cartId) =>
@@ -43,10 +46,7 @@ export async function addToCart(_previous: ActionResult | null, formData: FormDa
     }
     revalidatePath('/cart')
     return SUCCESS
-  } catch (error) {
-    unstable_rethrow(error)
-    return { ok: false, message: CONNECTION_FAILED }
-  }
+  })
 }
 
 /**
@@ -56,8 +56,9 @@ export async function changeCartItemQuantity(
   _previous: ActionResult | null,
   formData: FormData,
 ): Promise<ActionResult> {
-  const variantId = String(formData.get('variantId') ?? '')
-  const quantity = Number(formData.get('quantity'))
+  const variantId = readString(formData, 'variantId')
+  // 数でなければ API が断る（入力の検証の 400）
+  const quantity = readInt(formData, 'quantity') ?? Number.NaN
   return updateCart(async (api, cartId) =>
     api.PUT('/carts/{cartId}/items/{variantId}', { params: { path: { cartId, variantId } }, body: { quantity } }),
   )
@@ -67,7 +68,7 @@ export async function changeCartItemQuantity(
  * 品目を削除する（AC-78）。フォームの項目：variantId。
  */
 export async function removeCartItem(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const variantId = String(formData.get('variantId') ?? '')
+  const variantId = readString(formData, 'variantId')
   return updateCart(async (api, cartId) =>
     api.DELETE('/carts/{cartId}/items/{variantId}', { params: { path: { cartId, variantId } } }),
   )
@@ -79,8 +80,7 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
  * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す（AC-82）。
  */
 export async function startCheckout(_previous: ActionResult | null, _formData: FormData): Promise<ActionResult> {
-  let checkoutId: string
-  try {
+  const checkoutId = await withActionResult(async () => {
     if ((await currentCartChoice()).kind !== 'member') {
       await redirectToLogin('/cart')
     }
@@ -96,13 +96,12 @@ export async function startCheckout(_previous: ActionResult | null, _formData: F
       revalidatePath('/cart')
       return toFailure(response.status, error)
     }
-    checkoutId = data.id
-  } catch (error) {
-    // ログインの画面への移動（redirect の例外）は、そのまま投げる
-    unstable_rethrow(error)
-    return { ok: false, message: CONNECTION_FAILED }
+    return data.id
+  })
+  if (typeof checkoutId !== 'string') {
+    return checkoutId
   }
-  // redirect は例外で移動を知らせるので、try の外で呼ぶ
+  // redirect は例外で移動を知らせるので、包みの外で呼ぶ
   redirect(`/checkout/${checkoutId}`)
 }
 
@@ -131,7 +130,7 @@ type CartRequest = (
  * @param request API の呼び出し
  */
 async function updateCart(request: CartRequest): Promise<ActionResult> {
-  try {
+  return withActionResult(async () => {
     const choice = await currentCartChoice()
     if (choice.kind === 'member') {
       return await updateMemberCart(request)
@@ -146,10 +145,7 @@ async function updateCart(request: CartRequest): Promise<ActionResult> {
     }
     await writeCartId(choice.cartId)
     return SUCCESS
-  } catch (error) {
-    unstable_rethrow(error)
-    return { ok: false, message: CONNECTION_FAILED }
-  }
+  })
 }
 
 /**

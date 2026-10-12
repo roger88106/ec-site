@@ -19,6 +19,8 @@
 
 - jOOQ のコードと OpenAPI のインターフェースは、コンパイル時に生成される（コミットしない）。
   jOOQ の生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うので、Docker が必要（compose の DB は不要）。
+  マイグレーションと生成の設定が変わらなければ、生成は省かれる（`generateJooq UP-TO-DATE`）。そのときは単体テストに Docker は要らない。
+- 単体テストには、構成と契約の検査も入る：モジュールの境界（`ModulithTest`）、標準の構成（`architecture/` の ArchUnit）、API の契約の制約の漏れと上限の一致（`contract/`）、エラーの定義とメッセージの対応（`MessageContractTest`）。規則は [バックエンドの書き方](../style/backend.md)。
 - `./gradlew check`（`build`）の後に、単体と統合を合わせたカバレッジの報告が `build/reports/jacoco/coverageReport/` にできる（`./gradlew coverageReport` だけでも作れる。統合テストも流れる）。
 
 ## 管理画面・店舗画面

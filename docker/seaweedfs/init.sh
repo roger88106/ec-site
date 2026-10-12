@@ -49,3 +49,13 @@ setup_buckets() {
 
 setup_buckets "$INCOMING_BUCKET" "$PUBLIC_BUCKET"
 setup_buckets "$E2E_INCOMING_BUCKET" "$E2E_PUBLIC_BUCKET"
+
+# ローカル用の seed の商品画像を、ローカルの配信のバケットの assets/ に写す（db/seed/local/R__media_seed.sql）。
+# すでにあるものは上書きしない。E2E のバケットには写さない（E2E は画像を API で作る）
+for file in /seed/assets/*.webp; do
+  [ -e "$file" ] || continue
+  key="assets/$(basename "$file")"
+  $S3 head-object --bucket "$PUBLIC_BUCKET" --key "$key" >/dev/null 2>&1 \
+    || $S3 put-object --bucket "$PUBLIC_BUCKET" --key "$key" --body "$file" --content-type image/webp >/dev/null
+done
+echo "seed の商品画像を用意した：$PUBLIC_BUCKET/assets/"

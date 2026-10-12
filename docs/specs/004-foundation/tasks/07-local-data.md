@@ -10,5 +10,5 @@
 - [x] **T4702** 画像を作る：Antigravity の CLI（`agy`）が使えれば使う。使えなければ、利用者が提示詞で手で作る。WebP にして `docker/seaweedfs/seed/assets/` に置く（アセット ID のファイル名）。
 - [x] **T4703** realm の JSON の会員（`member@example.com`）に固定の ID を付ける。Keycloak の取り込み直しの手順を `docs/dev/setup.md` に書く。
 - [x] **T4704** `seed/local` を書き直す：カテゴリ（今の 3 階層・2 階層に雑貨を足す）、商品、バリアント、在庫と引当、アセットと商品画像、会員、注文（受付、キャンセルの申請中、申請の却下、キャンセル済み）。何度実行しても同じ結果になる形（`db/seed/local/README.md` の書き方）。
-- [ ] **T4705** `seaweedfs-init` が seed の画像を配信のバケットの `assets/` に写すようにする（すでにあれば上書きしない）。
+- [x] **T4705** `seaweedfs-init` が seed の画像を配信のバケットの `assets/` に写すようにする（すでにあれば上書きしない）。
 - [ ] **T4706** `scripts/dev/mkorder.js` を消し、使っている文書を直す。ローカルの DB を作り直して画面を見て、DC-26 を確かめ、画面の写しを利用者に見せる。

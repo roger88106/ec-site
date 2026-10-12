@@ -4,6 +4,7 @@
 #   scripts/dev/keycloak.sh admin GET /admin/realms/ec-store            管理 API を呼ぶ（master の admin / admin で）
 #   scripts/dev/keycloak.sh admin PUT /admin/realms/ec-store -d '{...}'  curl の引数をそのまま渡せる
 #   scripts/dev/keycloak.sh token ec-admin admin@example.com admin-pass-1  access token の中身（payload）を出す
+#   scripts/dev/keycloak.sh access-token ec-store member@example.com member-pass-1  access token そのものを出す
 #
 # token：web の client は、パスワードで token を取る方式（Direct Access Grant）を無効にしている。
 # 一時的に有効にして token を取り、終わったら無効に戻す。ローカルの確認専用。
@@ -32,8 +33,8 @@ b64url_decode() {
   printf '%s' "$s" | base64 -d
 }
 
-# realm の web の client で、利用者の access token を取り、payload を出す
-token() {
+# realm の web の client で、利用者の access token を取って出す
+access_token() {
   local realm=$1 user=$2 password=$3
   local client=${realm}-web
   local id
@@ -56,7 +57,12 @@ token() {
     printf '%s\n' "$response" >&2
     exit 1
   fi
-  printf '%s' "$access" | cut -d. -f2 | b64url_decode
+  printf '%s' "$access"
+}
+
+# 利用者の access token を取り、payload を出す
+token() {
+  access_token "$@" | cut -d. -f2 | b64url_decode
   echo
 }
 
@@ -65,5 +71,6 @@ shift || true
 case "$command" in
   admin) admin "$@" ;;
   token) token "$@" ;;
-  *) sed -n '2,9p' "$0"; exit 1 ;;
+  access-token) access_token "$@" ;;
+  *) sed -n '2,10p' "$0"; exit 1 ;;
 esac

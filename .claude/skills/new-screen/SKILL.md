@@ -13,7 +13,7 @@ description: ec-site のフロントに画面や操作を足すときの型。�
 - 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に直す（constitution 15）。
 - 画面の文言・コメントは日本語。コメントは何をするかを書き、決定の経緯はコミットメッセージに書く。
 - 表示の決まり（列挙の表示名、金額の整形など）は関数にして `lib/` か `features/<機能>/` に置き、単体テストを横に置く。
-- 終わったら `scripts/check-frontend.sh <store|admin>` を通し、プレビューで表示を確かめる（skill `local-dev`）。
+- 終わったら `scripts/dev/check-frontend.sh <store|admin>` を通し、プレビューで表示を確かめる（skill `local-dev`）。
 
 ## 店舗画面（`frontend/store`）
 

@@ -2,10 +2,10 @@
 # ============================================================================
 # フロントの確認（lint、型チェック、テスト、ビルド）を実行し、手順ごとに結果の要約だけを出す
 #
-#   使い方：scripts/check-frontend.sh [store|admin|all] [手順...]
-#     例：scripts/check-frontend.sh                    # 両方のアプリで lint typecheck test build
-#         scripts/check-frontend.sh admin test         # 管理画面のテストだけ
-#         scripts/check-frontend.sh store lint typecheck
+#   使い方：scripts/dev/check-frontend.sh [store|admin|all] [手順...]
+#     例：scripts/dev/check-frontend.sh                    # 両方のアプリで lint typecheck test build
+#         scripts/dev/check-frontend.sh admin test         # 管理画面のテストだけ
+#         scripts/dev/check-frontend.sh store lint typecheck
 #
 # 成功した手順は 1 行だけ出す。失敗した手順は、出力の末尾（TAIL_LINES 行。既定 30）を添える。
 # 出力の全体は LOG_DIR（既定は一時ディレクトリ）に手順ごとに残す。
@@ -13,7 +13,7 @@
 # ============================================================================
 set -u
 
-ROOT="$(cd "$(dirname "$0")/.." && pwd)"
+ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
 TAIL_LINES="${TAIL_LINES:-30}"
 LOG_DIR="${LOG_DIR:-$(mktemp -d -t check-frontend.XXXXXX)}"

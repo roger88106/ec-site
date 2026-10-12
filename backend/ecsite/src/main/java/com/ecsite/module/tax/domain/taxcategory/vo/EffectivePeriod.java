@@ -23,6 +23,7 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
      * @param effectiveTo   適用終了日時
      */
     public EffectivePeriod {
+        // 開始と終了の両方があるときだけ、開始が終了より前であることを求める
         if (effectiveFrom != null && effectiveTo != null && !effectiveFrom.isBefore(effectiveTo)) {
             throw BusinessException.of(TaxErrorCode.INVALID_EFFECTIVE_PERIOD);
         }

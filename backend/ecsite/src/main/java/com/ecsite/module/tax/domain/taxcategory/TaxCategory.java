@@ -147,6 +147,7 @@ public class TaxCategory extends AggregateRoot {
     private static Map<UUID, TaxRateDraft> verifyReferences(List<TaxRateDraft> drafts, Map<UUID, TaxRate> currentById) {
         var seen = new HashSet<UUID>();
         for (var draft : drafts) {
+            // ID のある税率（今の税率の変更）は、税区分にあって重複しないこと。新しい税率は ID を持たない
             if (draft.id() != null && (!currentById.containsKey(draft.id()) || !seen.add(draft.id()))) {
                 throw BusinessException.of(TaxErrorCode.INVALID_TAX_RATE_ID);
             }
@@ -196,6 +197,7 @@ public class TaxCategory extends AggregateRoot {
         var to = draft.period().effectiveTo();
         boolean fromChanged = current == null || !Objects.equals(current.period().effectiveFrom(), from);
         boolean toChanged = current == null || !Objects.equals(current.period().effectiveTo(), to);
+        // 変わった開始・終了の日時が現在以前なら断る（新しい税率は、両方とも変わったとみなす）
         if ((fromChanged && isNotFuture(from, now)) || (toChanged && isNotFuture(to, now))) {
             throw BusinessException.of(TaxErrorCode.TAX_RATE_PAST_DATETIME);
         }

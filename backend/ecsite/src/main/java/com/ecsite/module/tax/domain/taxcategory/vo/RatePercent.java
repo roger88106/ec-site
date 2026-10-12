@@ -34,6 +34,7 @@ public record RatePercent(BigDecimal value) {
      */
     public RatePercent(@NonNull BigDecimal value) {
         var normalized = normalize(value);
+        // 率は 0 以上 100 未満で、小数の桁が上限以内
         if (normalized.signum() < 0 || normalized.compareTo(UPPER_BOUND) >= 0 || normalized.scale() > MAX_SCALE) {
             throw BusinessException.of(TaxErrorCode.INVALID_RATE_PERCENT, List.of(MAX_SCALE));
         }

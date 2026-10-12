@@ -155,6 +155,29 @@ class KeycloakIntegrationTest {
     }
 
     @Nested
+    @DisplayName("AC-138 店舗 API の会員の操作")
+    class Store {
+
+        @Test
+        @DisplayName("AC-121 会員の token で、会員のカートを使える")
+        void memberTokenIsAccepted() throws Exception {
+            var token = storeToken("member@example.com", "member-pass-1");
+
+            mockMvc.perform(withToken(get("/api/store/me/cart"), token))
+                    .andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("AC-138 運営者の token では、会員の操作は 401")
+        void operatorTokenIsRejected() throws Exception {
+            var token = adminToken("admin@example.com", "admin-pass-1");
+
+            mockMvc.perform(withToken(get("/api/store/me/cart"), token))
+                    .andExpect(status().isUnauthorized());
+        }
+    }
+
+    @Nested
     @DisplayName("realm の設定")
     class RealmSettings {
 

@@ -1,6 +1,8 @@
-package com.ecsite.module.member.service;
+package com.ecsite.module.member.application;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.member.application.port.MemberRepository;
+import com.ecsite.module.member.domain.Member;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

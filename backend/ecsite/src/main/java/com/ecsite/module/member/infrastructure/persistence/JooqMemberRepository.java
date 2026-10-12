@@ -1,7 +1,7 @@
-package com.ecsite.module.member.infrastructure;
+package com.ecsite.module.member.infrastructure.persistence;
 
-import com.ecsite.module.member.service.Member;
-import com.ecsite.module.member.service.MemberRepository;
+import com.ecsite.module.member.application.port.MemberRepository;
+import com.ecsite.module.member.domain.Member;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;

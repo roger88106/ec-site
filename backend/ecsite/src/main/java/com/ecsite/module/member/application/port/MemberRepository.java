@@ -1,4 +1,6 @@
-package com.ecsite.module.member.service;
+package com.ecsite.module.member.application.port;
+
+import com.ecsite.module.member.domain.Member;
 
 import java.util.Optional;
 import java.util.UUID;

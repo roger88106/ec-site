@@ -1,6 +1,6 @@
 package com.ecsite.module.member.api;
 
-import com.ecsite.module.member.service.MemberService;
+import com.ecsite.module.member.application.MemberService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

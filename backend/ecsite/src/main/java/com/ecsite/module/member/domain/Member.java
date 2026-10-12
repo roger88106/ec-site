@@ -1,4 +1,4 @@
-package com.ecsite.module.member.service;
+package com.ecsite.module.member.domain;
 
 import lombok.NonNull;
 

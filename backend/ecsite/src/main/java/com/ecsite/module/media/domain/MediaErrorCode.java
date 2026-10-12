@@ -12,11 +12,11 @@ import lombok.Getter;
 public enum MediaErrorCode implements ErrorCodeProvider {
 
     /**
-     * 画像の形式が対象外（AC-39）
+     * 画像の形式が対象外
      */
     UNSUPPORTED_IMAGE_FORMAT(ErrorType.VALIDATION_ERROR),
     /**
-     * 画像の大きさが範囲の外（0 バイト、または 10MB を超える。AC-39）
+     * 画像の大きさが範囲の外（0 バイト、または 10MB を超える）
      */
     IMAGE_TOO_LARGE(ErrorType.VALIDATION_ERROR, "maxMegabytes"),
     /**
@@ -24,11 +24,11 @@ public enum MediaErrorCode implements ErrorCodeProvider {
      */
     IMAGE_UPLOAD_NOT_FOUND(ErrorType.VALIDATION_ERROR),
     /**
-     * ファイルの中身が対象の画像でない（AC-39）
+     * ファイルの中身が対象の画像でない
      */
     INVALID_IMAGE_FILE(ErrorType.VALIDATION_ERROR),
     /**
-     * 画像を変換できなかった（壊れたファイル、時間切れ。AC-70）
+     * 画像を変換できなかった（壊れたファイル、時間切れ）
      */
     IMAGE_CONVERSION_FAILED(ErrorType.VALIDATION_ERROR),
     ;

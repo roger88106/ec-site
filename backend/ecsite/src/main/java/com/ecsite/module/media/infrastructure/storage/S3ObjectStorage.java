@@ -15,7 +15,7 @@ import java.util.Map;
 import java.util.Optional;
 
 /**
- * ファイルの置き場所の S3 の実装（plan 001 第 7.3 節）。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
+ * ファイルの置き場所の S3 の実装。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
  */
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)

@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * 受け付ける画像の形式（AC-39、67。plan 001 第 7.5 節）。ファイルの先頭のバイト（マジックナンバー）で判定する。<br />
+ * 受け付ける画像の形式。ファイルの先頭のバイト（マジックナンバー）で判定する。<br />
  * ブラウザが申告した形式は信用せず、確定のときに先頭のバイトで確かめる（docs/modules/media.md）。
  */
 public enum ImageFormat {
@@ -42,7 +42,7 @@ public enum ImageFormat {
     AVIF("avif", "image/avif");
 
     /**
-     * 1 ファイルの大きさの上限（10MB。AC-39）
+     * 1 ファイルの大きさの上限（10MB）
      */
     public static final long MAX_BYTES = 10L * 1024 * 1024;
 

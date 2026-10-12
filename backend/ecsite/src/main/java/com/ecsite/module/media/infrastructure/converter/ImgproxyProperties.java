@@ -12,7 +12,7 @@ import java.net.URI;
 import java.time.Duration;
 
 /**
- * 画像の変換（imgproxy）の設定（plan 001 第 7.5 節）。環境変数で上書きする（例：ECSITE_MEDIA_CONVERTER_BASE_URL）。
+ * 画像の変換（imgproxy）の設定。環境変数で上書きする（例：ECSITE_MEDIA_CONVERTER_BASE_URL）。
  *
  * @param baseUrl imgproxy の URL（内部のネットワークだけで公開する）
  * @param key     URL の署名の鍵（16 進。imgproxy の IMGPROXY_KEY と同じ値）

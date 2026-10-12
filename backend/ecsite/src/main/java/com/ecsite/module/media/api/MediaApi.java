@@ -12,7 +12,7 @@ import java.util.UUID;
 public interface MediaApi {
 
     /**
-     * 画像のアップロードを受け付ける（AC-39）。形式と大きさを確かめ、受付のバケットへの署名付き URL を返す。<br />
+     * 画像のアップロードを受け付ける。形式と大きさを確かめ、受付のバケットへの署名付き URL を返す。<br />
      * 受付は DB に記録しない。枚数の上限など、使う側の規則は、呼ぶ前に使う側が確かめる。
      *
      * @param scope         範囲（持ち主。例：商品 ID）。英数字とハイフンだけ。確定のときに同じ範囲を渡す
@@ -24,7 +24,7 @@ public interface MediaApi {
     ImageUpload requestImageUpload(String scope, String contentType, long contentLength);
 
     /**
-     * 受け付けた画像を確定する（AC-37、39）。<br />
+     * 受け付けた画像を確定する。<br />
      * 受付のファイルの大きさと、先頭のバイトで判定した形式を確かめ（申告は信用しない）、配信のバケットへ置いてアセットを記録する。
      * 呼んだ側のトランザクションの中で呼ぶ。呼んだ側の保存が失敗すると、アセットの記録も取り消される。
      *

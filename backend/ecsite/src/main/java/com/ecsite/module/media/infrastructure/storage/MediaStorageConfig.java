@@ -15,7 +15,7 @@ import software.amazon.awssdk.services.s3.S3Configuration;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 /**
- * ファイルの置き場所（S3 API）のクライアントの設定（plan 001 第 7.3 節）。
+ * ファイルの置き場所（S3 API）のクライアントの設定。
  */
 @Configuration(proxyBeanMethods = false)
 @EnableConfigurationProperties(MediaStorageProperties.class)

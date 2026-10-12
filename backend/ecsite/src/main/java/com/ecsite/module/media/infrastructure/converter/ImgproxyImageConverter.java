@@ -26,7 +26,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * 画像の変換の imgproxy の実装（plan 001 第 7.5 節）。<br />
+ * 画像の変換の imgproxy の実装。<br />
  * imgproxy は受付のバケットを S3 の連携で直接読み、変換した WebP を返す。向きの反映とメタデータの除去は、
  * imgproxy の設定（IMGPROXY_AUTO_ROTATE、IMGPROXY_STRIP_METADATA）で行う。URL には署名を付ける。
  */

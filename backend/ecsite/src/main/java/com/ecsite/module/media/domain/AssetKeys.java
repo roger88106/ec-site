@@ -7,7 +7,7 @@ import java.util.UUID;
 import java.util.regex.Pattern;
 
 /**
- * ファイルのキーの決まり（plan 001 第 7.1 節）。キーの形はここでだけ決める。
+ * ファイルのキーの決まり。キーの形はここでだけ決める。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AssetKeys {

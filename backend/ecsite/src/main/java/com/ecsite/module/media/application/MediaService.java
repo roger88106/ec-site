@@ -81,7 +81,7 @@ class MediaService implements MediaApi {
 
     /**
      * {@inheritDoc}<br />
-     * 中身を WebP に変換して（AC-68、69）配信のバケットへ置く。変換できなければ登録しない（AC-70）。<br />
+     * 中身を WebP に変換して配信のバケットへ置く。変換できなければ登録しない。<br />
      * 書き込みの後に呼んだ側の保存が失敗すると配信のファイルが残るが、だれからも参照されないだけで害はない。
      */
     @Override
@@ -138,7 +138,7 @@ class MediaService implements MediaApi {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 大きさが 1 バイト以上、上限（10MB）以下であることを確かめる（AC-39）。
+     * 大きさが 1 バイト以上、上限（10MB）以下であることを確かめる。
      */
     private static void verifySize(long size) {
         if (size <= 0 || size > ImageFormat.MAX_BYTES) {

@@ -10,7 +10,7 @@ import java.net.URI;
 import java.time.Duration;
 
 /**
- * ファイルの置き場所の設定（plan 001 第 7.3 節）。環境変数で上書きする（例：ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET）。
+ * ファイルの置き場所の設定。環境変数で上書きする（例：ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET）。
  *
  * @param endpoint        S3 のエンドポイント。エミュレーター（SeaweedFS）のときだけ指定し、AWS では空にする
  * @param region          リージョン

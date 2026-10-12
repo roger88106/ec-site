@@ -4,6 +4,9 @@ import com.ecsite.api.store.CartApi;
 import com.ecsite.api.store.model.AddCartItemRequest;
 import com.ecsite.api.store.model.ChangeCartItemQuantityRequest;
 import com.ecsite.api.store.model.CreatedId;
+import com.ecsite.api.store.model.MemberCart;
+import com.ecsite.api.store.model.MergeCartRequest;
+import com.ecsite.api.store.model.MergeCartResult;
 import com.ecsite.module.cart.service.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -81,5 +84,16 @@ class CartController implements CartApi {
     public ResponseEntity<Void> removeCartItem(UUID cartId, UUID variantId) {
         cartService.removeItem(cartId, variantId);
         return ResponseEntity.noContent().build();
+    }
+
+    // T3309 で実装する（store.yaml の変更でインターフェースに足された）
+    @Override
+    public ResponseEntity<MemberCart> getMemberCart() {
+        throw new UnsupportedOperationException("T3309");
+    }
+
+    @Override
+    public ResponseEntity<MergeCartResult> mergeCart(MergeCartRequest request) {
+        throw new UnsupportedOperationException("T3309");
     }
 }

@@ -9,7 +9,11 @@ info:
     - 価格は商品単位（全バリアント共通）で、税込・税抜の両方を返す。画面では「1,980 円（税抜 1,800 円）」の形で表示する（BR-4）。
     - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。constitution 9）。
     - 在庫は有無だけを返し、数量は返さない（AC-64）。在庫の有無とカートの判定は、販売可能数（在庫数から有効な引当を除いた数。spec 002 BR-11）で行う。
-    - カート・注文手続き・注文は、推測できない ID を知っていることが使える条件になる（ログインなし。plan 002 第 3 節）。
+    - 認証は、消費者の realm（IdP）が発行した会員の access token（audience `ec-store-api`）を `Authorization: Bearer` で付ける（spec 003、plan 003 第 5.1 節）。
+      - 会員の操作（`security` が `memberToken` だけ）：token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）。
+      - 任意の操作（カート）：token があれば会員として扱い、なければログインしていない人として扱う。token が無効なら 401。
+      - そのほか（商品・カテゴリ・店舗の情報）：認証は要らない。
+    - ログインせずに作ったカートは、推測できないカート ID を知っていることが使える条件になる（plan 002 第 3 節）。会員のカート・注文手続き・注文は、持ち主の会員だけが使える。ほかの人には、ないときと同じく 404 を返す（存在を推測させない。AC-121、126、131）。
 servers:
   - url: /api/store
 tags:
@@ -18,13 +22,13 @@ tags:
   - name: category
     description: カテゴリ（絞り込み用）
   - name: cart
-    description: カートの作成と品目の変更（spec 002 US-14、15。カートモジュール）
+    description: カートの作成と品目の変更、会員のカートとカートを移す処理（spec 002 US-14、15、spec 003 US-25。カートモジュール）
   - name: cart-view
     description: カートの表示（spec 002 US-15。店舗モジュールが、カートと注文の見積もりを組み合わせる）
   - name: checkout
-    description: 注文手続きと注文の成立（spec 002 US-16）
+    description: 注文手続きと注文の成立（spec 002 US-16、spec 003 US-26）
   - name: order
-    description: 注文の表示とキャンセルの申請（spec 002 US-17、18）
+    description: 注文の表示とキャンセルの申請、自分の注文の一覧（spec 002 US-17、18、spec 003 US-27）
   - name: shop
     description: 店舗の情報（spec 002 AC-96 の問い合わせ先。店舗モジュール）
 
@@ -150,6 +154,9 @@ paths:
     get:
       tags: [cart-view]
       operationId: getCart
+      security:
+        - {}
+        - memberToken: []
       summary: カートの表示（AC-77、79〜81）
       description: |
         品目は入れた順。単価は現在の価格（AC-79）。購入できない品目は理由を付け、合計に含めない（AC-80）。
@@ -161,8 +168,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Cart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
 
   /carts/{cartId}/items:
     parameters:
@@ -170,6 +179,9 @@ paths:
     post:
       tags: [cart]
       operationId: addCartItem
+      security:
+        - {}
+        - memberToken: []
       summary: カートに入れる（AC-72、74〜76）
       description: 品目はカートの一部で単独の URL を持たないため、`Location` は返さない。同じバリアントは数量を合算する。
       requestBody:
@@ -183,8 +195,10 @@ paths:
           description: 入れた
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
 
   /carts/{cartId}/items/{variantId}:
     parameters:
@@ -193,6 +207,9 @@ paths:
     put:
       tags: [cart]
       operationId: changeCartItemQuantity
+      security:
+        - {}
+        - memberToken: []
       summary: 品目の数量の変更（AC-75、76、78）
       requestBody:
         required: true
@@ -205,18 +222,77 @@ paths:
           description: 変更した
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
     delete:
       tags: [cart]
       operationId: removeCartItem
+      security:
+        - {}
+        - memberToken: []
       summary: 品目の削除（AC-78）
       description: カートにないバリアントでも 204（冪等）。
       responses:
         '204':
           description: 削除した
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
+
+  /me/cart:
+    get:
+      tags: [cart]
+      operationId: getMemberCart
+      summary: 会員のカート（AC-121）
+      description: |
+        token の会員のカートの ID を返す。まだなければ空のカートを作って返す（会員ごとに 1 つ）。
+        カートの表示と品目の変更は、この ID で `/carts/{cartId}` を使う。
+      security:
+        - memberToken: []
+      responses:
+        '200':
+          description: 会員のカート
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MemberCart'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /me/cart/merge:
+    post:
+      tags: [cart]
+      operationId: mergeCart
+      summary: カートを移す（AC-122、123）
+      description: |
+        ログインせずに使っていたカートの品目を、token の会員のカートへ移し、移したカートを空にする。
+        同じバリアントは数量を合算し、10 を超えたら 10 に切り詰める。品目が 30 に達したら、移すカートの後ろの品目から移さない。
+        商品・在庫は確かめない（カートの表示で示す）。空のカート（移し終えたカートを含む）を指定しても、何も変わらない。
+        移す元に指定できるのは、会員を持たないカートだけ（会員のカートは 404）。
+      security:
+        - memberToken: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeCartRequest'
+      responses:
+        '200':
+          description: 移した結果
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeCartResult'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundForOthers'
 
   /carts/{cartId}/checkouts:
     parameters:
@@ -224,6 +300,8 @@ paths:
     post:
       tags: [checkout]
       operationId: startCheckout
+      security:
+        - memberToken: []
       summary: 注文手続きに進む（AC-82〜84）
       description: |
         全品目をカートの数量だけ 15 分間引き当てる。同じカートの前の注文手続きの引当は解く。
@@ -237,8 +315,10 @@ paths:
             application/problem+json:
               schema:
                 $ref: '#/components/schemas/Problem'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
         '409':
           $ref: '#/components/responses/Conflict'
 
@@ -249,6 +329,8 @@ paths:
     get:
       tags: [checkout]
       operationId: getCheckout
+      security:
+        - memberToken: []
       summary: 注文手続きの表示（AC-84、85）
       description: 見積もりは表示の時点の価格と税率。注文が成立済みなら `orderId` を返す（画面は注文の画面へ移る）。
       responses:
@@ -258,8 +340,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Checkout'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
 
   /checkouts/{checkoutId}/order:
     parameters:
@@ -267,6 +351,8 @@ paths:
     post:
       tags: [checkout]
       operationId: placeOrder
+      security:
+        - memberToken: []
       summary: 注文する（AC-86〜92、107）
       description: |
         引当を在庫数の減算に置き換え、注文を作り、カートを空にする。引当の期限が切れていれば、その場で引き当て直す（AC-87）。
@@ -289,18 +375,45 @@ paths:
           $ref: '#/components/responses/Created'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
         '409':
           $ref: '#/components/responses/Conflict'
 
   # ============================== 注文 ==============================
+  /me/orders:
+    get:
+      tags: [order]
+      operationId: listMemberOrders
+      summary: 自分の注文の一覧（AC-129）
+      description: token の会員の注文を、注文日時の新しい順に返す（同じ日時なら ID の順）。
+      security:
+        - memberToken: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Size'
+      responses:
+        '200':
+          description: 注文の一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/OrderSummaryPage'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
   /orders/{orderId}:
     parameters:
       - $ref: '#/components/parameters/OrderId'
     get:
       tags: [order]
       operationId: getOrder
+      security:
+        - memberToken: []
       summary: 注文の表示（AC-93、94、96）
       responses:
         '200':
@@ -309,8 +422,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Order'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
 
   /orders/{orderId}/cancellation-request:
     parameters:
@@ -318,6 +433,8 @@ paths:
     put:
       tags: [order]
       operationId: requestOrderCancellation
+      security:
+        - memberToken: []
       summary: キャンセルの申請（AC-95、96）
       description: |
         「受付」の注文を「キャンセル申請中」にする。申請中なら何もせず 204（冪等）。
@@ -333,8 +450,10 @@ paths:
           description: 申請した
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
         '404':
-          $ref: '#/components/responses/NotFound'
+          $ref: '#/components/responses/NotFoundForOthers'
 
   # ============================== 店舗の情報 ==============================
   /shop:
@@ -437,6 +556,19 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    NotFoundForOthers:
+      description: 見つからない。持ち主でない会員のカート・注文手続き・注文も同じ（存在を推測させない。AC-121、126、131）
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+
+  securitySchemes:
+    memberToken:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: 消費者の realm（`ec-store`）の会員の access token
 
   schemas:
     # ---------- 共通 ----------
@@ -670,6 +802,50 @@ components:
       properties:
         quantity:
           $ref: '#/components/schemas/Quantity'
+    MemberCart:
+      type: object
+      required: [cartId]
+      properties:
+        cartId:
+          type: string
+          format: uuid
+          description: 会員のカートの ID
+    MergeCartRequest:
+      type: object
+      required: [cartId]
+      properties:
+        cartId:
+          type: string
+          format: uuid
+          description: ログインせずに使っていたカートの ID（移す元）
+    MergeCartResult:
+      type: object
+      description: 移した結果（AC-123）。画面は、切り詰めた品目と移せなかった品目があれば一度だけ知らせる
+      required: [cartId, truncatedItems, skippedItems]
+      properties:
+        cartId:
+          type: string
+          format: uuid
+          description: 会員のカートの ID
+        truncatedItems:
+          type: array
+          description: 数量を 10 に切り詰めた品目（切り詰めた後の数量）
+          items:
+            $ref: '#/components/schemas/MergedCartItem'
+        skippedItems:
+          type: array
+          description: 品目の上限（30）を超えたので移さなかった品目（移す元の数量）
+          items:
+            $ref: '#/components/schemas/MergedCartItem'
+    MergedCartItem:
+      type: object
+      required: [variantId, quantity]
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        quantity:
+          $ref: '#/components/schemas/Quantity'
     Cart:
       type: object
       required: [id, items, amounts, orderable]
@@ -813,12 +989,9 @@ components:
           example: '0312345678'
     PlaceOrderRequest:
       type: object
-      required: [email, shippingAddress, expectedTotal]
+      description: 連絡先のメールアドレスは受けず、会員の token のメールアドレス（確認済み）を使う（AC-127）
+      required: [shippingAddress, expectedTotal]
       properties:
-        email:
-          type: string
-          format: email
-          maxLength: 254
         shippingAddress:
           $ref: '#/components/schemas/ShippingAddress'
         expectedTotal:
@@ -894,6 +1067,36 @@ components:
           $ref: '#/components/schemas/ShippingAddress'
         cancellationRequest:
           $ref: '#/components/schemas/CancellationRequest'
+    OrderSummaryPage:
+      allOf:
+        - $ref: '#/components/schemas/PageMeta'
+        - type: object
+          required: [items]
+          properties:
+            items:
+              type: array
+              items:
+                $ref: '#/components/schemas/OrderSummary'
+    OrderSummary:
+      type: object
+      description: 自分の注文の一覧の 1 行（AC-129）
+      required: [id, orderNumber, orderedAt, totalAmount, status]
+      properties:
+        id:
+          type: string
+          format: uuid
+        orderNumber:
+          type: string
+          example: 20261010-482915
+        orderedAt:
+          type: string
+          format: date-time
+        totalAmount:
+          type: integer
+          format: int64
+          description: 総額（税込、送料を含む）
+        status:
+          $ref: '#/components/schemas/OrderStatus'
     RequestOrderCancellationRequest:
       type: object
       properties:

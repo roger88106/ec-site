@@ -2,6 +2,7 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.api.store.OrderApi;
 import com.ecsite.api.store.model.Order;
+import com.ecsite.api.store.model.OrderSummaryPage;
 import com.ecsite.api.store.model.RequestOrderCancellationRequest;
 import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
@@ -55,5 +56,11 @@ class StoreOrderController implements OrderApi {
     public ResponseEntity<Void> requestOrderCancellation(UUID orderId, RequestOrderCancellationRequest request) {
         orderCancellationService.request(orderId, request.getReason().orElse(null));
         return ResponseEntity.noContent().build();
+    }
+
+    // T3312 で実装する（store.yaml の変更でインターフェースに足された）
+    @Override
+    public ResponseEntity<OrderSummaryPage> listMemberOrders(Integer page, Integer size) {
+        throw new UnsupportedOperationException("T3312");
     }
 }

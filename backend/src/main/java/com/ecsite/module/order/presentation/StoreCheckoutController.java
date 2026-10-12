@@ -74,7 +74,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
-        var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request));
+        var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request, null) /* T3312 で会員の token から取る */);
         var body = new CreatedId(result.orderId());
         if (!result.created()) {
             return ResponseEntity.ok(body);

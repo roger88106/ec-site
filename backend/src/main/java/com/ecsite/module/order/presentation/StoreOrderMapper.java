@@ -51,13 +51,14 @@ class StoreOrderMapper {
      *
      * @param checkoutId 注文手続き ID
      * @param request    注文のリクエスト
+     * @param email      連絡先のメールアドレス
      * @return 注文のコマンド
      */
-    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request) {
+    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request, String email) {
         var address = request.getShippingAddress();
         return new PlaceOrderCommand(
                 checkoutId,
-                request.getEmail(),
+                email,
                 address.getName(),
                 address.getPostalCode(),
                 address.getPrefecture(),

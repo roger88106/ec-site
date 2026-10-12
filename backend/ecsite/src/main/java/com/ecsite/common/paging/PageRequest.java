@@ -36,6 +36,7 @@ public record PageRequest(int page, int size) {
      * @param size 1 ページの件数
      */
     public PageRequest {
+        // ページ番号と件数は 1 以上、件数は上限まで
         if (page < 1 || size < 1 || size > MAX_SIZE) {
             throw BusinessException.of(CommonErrorCode.INVALID_REQUEST);
         }

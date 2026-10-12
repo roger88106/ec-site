@@ -156,6 +156,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     protected ResponseEntity<Object> handleHandlerMethodValidationException(
             @NonNull HandlerMethodValidationException ex, @NonNull HttpHeaders headers,
             @NonNull HttpStatusCode status, @NonNull WebRequest request) {
+        // 引数ごとの検証の結果を、項目ごとの検証のエラーの一覧に平らにする
         List<FieldValidationError> errors = ex.getParameterValidationResults().stream()
                 .flatMap(result -> {
                     // 本文などのオブジェクトの検証はフィールド単位、それ以外は引数単位で返す
@@ -287,6 +288,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * @return HTTP ステータス
      */
     private static HttpStatus resolveHttpStatus(ErrorCode errorCode) {
+        // エラーの種類から HTTP の状態を決める（入力と業務の規則の誤りは 400、復元とシステムの誤りは 500）
         return switch (errorCode.type()) {
             case VALIDATION_ERROR, BUSINESS_RULE_ERROR -> HttpStatus.BAD_REQUEST;
             case NOT_FOUND_ERROR -> HttpStatus.NOT_FOUND;
@@ -304,6 +306,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * @return エラーコード
      */
     private static ErrorCode resolveErrorCode(HttpStatusCode status) {
+        // Spring MVC が決めた状態から、応答のエラーコードを選ぶ（404・405 のほかは入力の誤りとして扱う）
         return switch (status.value()) {
             case 404 -> CommonErrorCode.NOT_FOUND.getCode();
             case 405 -> CommonErrorCode.METHOD_NOT_ALLOWED.getCode();

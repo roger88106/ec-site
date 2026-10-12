@@ -44,11 +44,13 @@ class PermissionConverter implements Converter<Jwt, Collection<GrantedAuthority>
      */
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {
+        // token の resource_access.<client>.roles をたどる。途中のどれかがなければ、権限なし
         if (!(jwt.getClaims().get(RESOURCE_ACCESS) instanceof Map<?, ?> resourceAccess)
                 || !(resourceAccess.get(clientId) instanceof Map<?, ?> client)
                 || !(client.get(ROLES) instanceof Collection<?> roles)) {
             return List.of();
         }
+        // 文字の client role を、そのまま権限にする
         return roles.stream()
                 .filter(String.class::isInstance)
                 .map(role -> (GrantedAuthority) new SimpleGrantedAuthority((String) role))

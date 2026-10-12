@@ -31,6 +31,7 @@ public class CurrentOperator {
             throw BusinessException.of(CommonErrorCode.UNAUTHENTICATED);
         }
         var jwt = token.getToken();
+        // 氏名は「姓 名」。空の部分は飛ばす
         var name = Stream.of(jwt.getClaimAsString("family_name"), jwt.getClaimAsString("given_name"))
                 .filter(Objects::nonNull)
                 .filter(part -> !part.isBlank())

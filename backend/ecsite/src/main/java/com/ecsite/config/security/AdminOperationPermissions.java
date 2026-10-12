@@ -110,6 +110,7 @@ class AdminOperationPermissions {
      */
     Optional<String> requiredPermission(String method, String path) {
         var container = PathContainer.parsePath(path);
+        // メソッドとパスが合う最初の操作の権限を返す
         return operations.stream()
                 .filter(op -> op.method().equals(method) && op.pattern().matches(container))
                 .map(Operation::permission)

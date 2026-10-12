@@ -11,8 +11,7 @@ import { operatorName } from '@/lib/login'
  * ログインしていれば、運営者（氏名とログアウト）と、API に付ける token を渡してから画面を出す。
  */
 export function AuthGate({ children }: { children: ReactNode }) {
-  const auth = useAuth()
-  const { isLoading, isAuthenticated, activeNavigator, error, user, signinRedirect, signoutRedirect } = auth
+  const { isLoading, isAuthenticated, activeNavigator, error, user, signinRedirect, signoutRedirect } = useAuth()
   // IdP へ移るのは 1 回だけ（開発時の StrictMode で effect が 2 回動いても、2 つ目の state を作らない）
   const redirecting = useRef(false)
 

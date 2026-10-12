@@ -21,6 +21,7 @@ describe('ログインの後に戻る画面', () => {
     expect(returnPath(undefined)).toBe('/')
     expect(returnPath({ returnTo: 'https://evil.example.com/' })).toBe('/')
     expect(returnPath({ returnTo: '//evil.example.com/' })).toBe('/')
+    expect(returnPath({ returnTo: '/\\evil.example.com/' })).toBe('/')
     expect(returnPath('not-an-object')).toBe('/')
   })
 })

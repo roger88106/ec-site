@@ -16,7 +16,12 @@ export function operatorName(familyName: string | undefined, givenName: string |
  */
 export function returnPath(state: unknown): string {
   const returnTo = typeof state === 'object' && state !== null ? (state as { returnTo?: unknown }).returnTo : undefined
-  if (typeof returnTo !== 'string' || !returnTo.startsWith('/') || returnTo.startsWith('//')) {
+  if (
+    typeof returnTo !== 'string' ||
+    !returnTo.startsWith('/') ||
+    returnTo.startsWith('//') ||
+    returnTo.startsWith('/\\')
+  ) {
     return '/'
   }
   return returnTo

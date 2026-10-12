@@ -3,6 +3,7 @@
 #
 #   起動：docker compose up -d（リポジトリのルートで。ルートの .env の COMPOSE_FILE がこのファイルを指す）
 #   停止：docker compose stop
+#   E2E 用の Keycloak（profile e2e）は、E2E の準備の script が起動する（docs/dev/testing.md）
 #
 # スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
 # ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）、画像の変換（imgproxy）、
@@ -71,11 +72,14 @@ services:
       AWS_DEFAULT_REGION: us-east-1
       INCOMING_BUCKET: ec-site-images-incoming
       PUBLIC_BUCKET: ec-site-images
+      # E2E 用（plan 004 第 6.1 節）。ローカルの画像と混ざらないよう、別のバケットにする
+      E2E_INCOMING_BUCKET: ec-site-e2e-images-incoming
+      E2E_PUBLIC_BUCKET: ec-site-e2e-images
     volumes:
       - ./seaweedfs/init.sh:/init.sh:ro
 
   # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 第 7.5 節）。http://localhost:8081
-  # 受付のバケットだけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
+  # 受付のバケット（ローカル用と E2E 用）だけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
   imgproxy:
     image: darthsim/imgproxy:v4.0.17
     container_name: ec-site-imgproxy
@@ -93,7 +97,7 @@ services:
       IMGPROXY_S3_REGION: us-east-1
       AWS_ACCESS_KEY_ID: ec-site-imgproxy
       AWS_SECRET_ACCESS_KEY: ec-site-imgproxy-secret
-      IMGPROXY_ALLOWED_SOURCES: s3://ec-site-images-incoming/
+      IMGPROXY_ALLOWED_SOURCES: s3://ec-site-images-incoming/,s3://ec-site-e2e-images-incoming/
       IMGPROXY_MAX_SRC_FILE_SIZE: "10485760"
       IMGPROXY_MAX_SRC_RESOLUTION: "60"
       IMGPROXY_TIMEOUT: "30"
@@ -132,6 +136,37 @@ services:
       - ./keycloak/themes/ec-site:/opt/keycloak/themes/ec-site:ro
     healthcheck:
       # イメージに curl がないので、bash で管理用のポート（9000）の readiness を読む
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+  # E2E 用の IdP（plan 004 第 6.1 節）。http://localhost:8181。profile e2e でだけ起動する
+  # E2E の準備の script（e2e/scripts/prepare.ts）が、database keycloak_e2e を作り直してから起動するので、
+  # 毎回、realm の JSON の状態から始まる。E2E で登録した会員は、ローカルの Keycloak に残らない
+  keycloak-e2e:
+    image: quay.io/keycloak/keycloak:26.8.0
+    container_name: ec-site-keycloak-e2e
+    profiles: [e2e]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: start-dev --import-realm --http-port=8181
+    ports:
+      - "8181:8181"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_e2e
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME: http://localhost:8181
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realms:/opt/keycloak/data/import:ro
+      - ./keycloak/themes/ec-site:/opt/keycloak/themes/ec-site:ro
+    healthcheck:
       test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
       interval: 5s
       timeout: 3s

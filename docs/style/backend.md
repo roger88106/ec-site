@@ -26,10 +26,11 @@ module/<モジュール>/
 
 | 層 | 依存してよい先 |
 |----|----------------|
-| presentation | application、domain（エラーの定義と値の型）、common |
+| api・event | application、domain、common（infrastructure に依存しない） |
+| presentation | application、domain（エラーの定義と値の型）、common（infrastructure に依存しない） |
 | application | domain、common |
 | domain | common（レベル A は Spring・jOOQ・他の層に依存しない） |
-| infrastructure | application の port、domain、common |
+| infrastructure | application の port、domain、common（presentation に依存しない） |
 
 | レベル | 中身の違い |
 |--------|------------|

@@ -11,7 +11,7 @@
 
 ## 検査のテスト
 
-- [ ] **T5203** [テスト] `src/test/java/com/ecsite/architecture/` に ArchUnit の規則を書く：層の依存の向き、モジュールの直下のパッケージの名前、`@Transactional`・`@RestController` の置き場所、パッケージの直下のファイルが 20 を超えない、`*dir` のパッケージがない。今のコードで失敗することを確かめる（DC-30）。
+- [x] **T5203** [テスト] `src/test/java/com/ecsite/architecture/` に ArchUnit の規則を書く：層の依存の向き、モジュールの直下のパッケージの名前、`@Transactional`・`@RestController` の置き場所、パッケージの直下のファイルが 20 を超えない、`*dir` のパッケージがない。今のコードで失敗することを確かめる（DC-30）。
 
 ## 移動（モジュールごとに、`git mv` の commit と参照の修正の commit を分ける）
 
@@ -21,6 +21,7 @@
 - [ ] **T5207** storefront を標準の構成に（`catalogdir`・`orderdir`・`stockdir` を `application/port/` と `infrastructure/directory/` に）。
 - [ ] **T5208** catalog：`infrastructure/` を `persistence/`・`directory/`・`cache/` に、application の参照の Repository の口を `application/port/` に。
 - [ ] **T5209** order、tax、inventory：application の口を `application/port/` に、order の `domain/port/` の Directory を使う層の port に。
+- [ ] **T5211** レベル A の domain の Factory（`TaxCategoryFactory`、`CategoryFactory`、`ProductFactory`）から Spring の注釈（`@Component`）を外す。T5203 で見つかった（domain は何にも依存しない。constitution 4.2）。Repository が Factory を Spring の部品として受け取るのをやめ、Factory を状態を持たないクラスとして直接使う。
 - [ ] **T5210** 各モジュールの設計書と `package-info.java` の説明を新しい構成に合わせる。T5203 が通る（DC-27〜30）。
 
 ## 移し先の表（T5201）

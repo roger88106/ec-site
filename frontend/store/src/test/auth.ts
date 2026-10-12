@@ -19,9 +19,11 @@ export const authState: {
   token: JWT | null
   /** auth.ts が NextAuth に渡した設定 */
   config: NextAuthConfig | undefined
+  /** signIn の呼び出し */
+  signIn: Mock<(...args: unknown[]) => unknown>
   /** signOut の呼び出し */
   signOut: Mock<(...args: unknown[]) => unknown>
-} = { session: null, token: null, config: undefined, signOut: vi.fn() }
+} = { session: null, token: null, config: undefined, signIn: vi.fn(), signOut: vi.fn() }
 
 /**
  * 会員がログインしている状態にする。
@@ -49,6 +51,7 @@ export function signInAs(token: Partial<JWT> = {}) {
 export function resetAuth() {
   authState.session = null
   authState.token = null
+  authState.signIn.mockReset()
   authState.signOut.mockReset()
 }
 
@@ -60,7 +63,7 @@ export const nextAuthMock = {
       handlers: {},
       // proxy.ts の auth(処理) は、セッションを確かめずに処理をそのまま返す
       auth: (handler?: unknown) => (typeof handler === 'function' ? handler : Promise.resolve(authState.session)),
-      signIn: vi.fn(),
+      signIn: (...args: unknown[]) => authState.signIn(...args),
       signOut: (...args: unknown[]) => authState.signOut(...args),
     }
   },

@@ -5,6 +5,7 @@
 #   backend：ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
 #   admin：管理画面の lint（Biome）、型チェック、テスト、ビルド
 #   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）
+#   ac-check：機能の spec の AC が、テスト名に出ていること
 #   e2e：バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する（Playwright）
 # ============================================================================
 
@@ -183,6 +184,26 @@ jobs:
       # 画面はリクエストのたびに作るので、ビルドにバックエンドは要らない
       - name: ビルド
         run: pnpm build
+
+  ac-check:
+    name: AC とテストの対応
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # CI の script のテスト
+      - name: script のテスト
+        run: node --test "scripts/ci/*.test.mjs"
+
+      # 機能の spec のすべての AC が、テスト名に 1 つずつ出ていること（constitution 12.1）
+      - name: AC とテスト名の照合
+        run: node scripts/ci/ac-check.mjs
 
   e2e:
     name: E2E

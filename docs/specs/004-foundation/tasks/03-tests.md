@@ -12,7 +12,7 @@
 
 - [x] **T4302** バックエンドに JaCoCo を入れる：単体と統合の実行データを合わせた報告、生成したコードを除く。admin・store に `@vitest/coverage-v8` を入れ、`test` で報告を作る。CI で artifact に保存し、合計（行・分岐）を job の summary に書く（DC-11）。
 - [x] **T4303** [テスト] `scripts/ci/ac-check.mjs` のテスト：AC の取り出し、テスト名の照合（Java・Vitest・Playwright）、範囲の表記で失敗、足りない AC で失敗、除外の一覧。
-- [ ] **T4304** `scripts/ci/ac-check.mjs` と `scripts/ci/ac-exclusions.json` を作り、CI の軽い job で流す。T4303 を通す（DC-12）。
+- [x] **T4304** `scripts/ci/ac-check.mjs` と `scripts/ci/ac-exclusions.json` を作り、CI の軽い job で流す。T4303 を通す（DC-12）。
 - [ ] **T4305** テスト名の範囲の表記（約 17 件）を、確かめている AC を 1 つずつ並べる形に直す（名前だけを変える）。ac-check が通る（DC-12）。
 - [ ] **T4306** [テスト] 店舗画面のヘッダー：ログインしている会員に、IdP のアカウントの画面へのリンクが出る（AC-119。DC-13）。
 

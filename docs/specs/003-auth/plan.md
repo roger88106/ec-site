@@ -174,7 +174,7 @@ flowchart LR
 | 項目 | 決定 |
 |------|------|
 | IdP | Keycloak（constitution 10.1）。realm は消費者と運営者で分ける |
-| 店舗画面のログイン | Auth.js（`next-auth`）の Keycloak の provider。セッションは暗号化した Cookie（JWT 方式）に持ち、サーバーの状態を持たない（constitution 5-1）。access token の期限が近ければ、refresh token で取り直す |
+| 店舗画面のログイン | Auth.js（`next-auth`）の Keycloak の provider。セッションは暗号化した Cookie（JWT 方式）に持ち、サーバーの状態を持たない（constitution 5-1）。access token の期限が近ければ、refresh token で取り直す。着手の時点（2026-10）の状況：Auth.js は 2025-09 から Better Auth のチームが保守し、セキュリティの修正だけを出している。v5 は beta（5.0.0-beta.32）のままだが、Next.js 16 に対応している。ログインの処理は `src/auth.ts` に集め、替えるときの範囲を狭くする（T3401） |
 | 管理画面のログイン | `oidc-client-ts` + `react-oidc-context`。token はメモリーに持ち、期限が近ければ refresh token で取り直す |
 | ログアウト（AC-115） | IdP の RP-Initiated Logout（ID token を添えて IdP のログアウトに移る）で、IdP のログインの状態も終える。店舗画面は自分の Cookie も消す |
 | 権限の判定 | `admin.yaml` の `x-required-permission` を起動時に読み、要求ごとに判定する（第 3.2 節） |

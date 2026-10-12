@@ -7,7 +7,7 @@
 ## タスク
 
 - [x] **T5701** バックエンドの全体を `docs/style/` と本 spec の規則に照らして読み、見つけたもの（重複、使われていないコード、規則に合わない所）を下の「見つけたもの」に 1 項目ずつ足す。読む量が多いので、別のセッションで行ってもよい。
-- [ ] **T5702** 見つけたものを直す（項目ごとに commit）。直さないものには理由を書く。
+- [x] **T5702** 見つけたものを直す（項目ごとに commit）。直さないものには理由を書く。
 
 ## 見つけたもの
 
@@ -17,7 +17,7 @@
 - [x] 手で書いた型の変換：直さない（spec の Non-goals）。
 - [x] `member/api/MemberApi`：T5502 の後、本番のコードから使われていない（統合テスト `MemberApiTest` だけが使う）。消した。統合テストは `MemberService` を確かめる形に移した（T5502 で見つけた）。
 - [x] `common/paging/Sorting`：本番のコードから使われていない（並びの最後の ID は、各 Repository が並びの指定に直接書いている）。消し、そのテストも消した。
-- [ ] Javadoc のない項目とメソッドが 21（`ImageFormat` の形式の印 7、`MediaApiDirectory`・`JooqAssetRepository`・`S3ObjectStorage` の @Override のメソッド、`MediaService.requestImageUpload`、`ApiPathConfig.configurePathMatch`）。書く（コメントだけの commit）。
+- [x] Javadoc のない項目とメソッドが 21（`ImageFormat` の形式の印 7、`MediaApiDirectory`・`JooqAssetRepository`・`S3ObjectStorage` の @Override のメソッド、`MediaService.requestImageUpload`、`ApiPathConfig.configurePathMatch`）。書いた（コメントだけの commit）。
 - [x] 日時の変換（`Instant` と API の `OffsetDateTime`）が、4 つの mapper（商品、税、管理と店舗の注文）に同じ形である。共通の部品（`common/presentation/ApiDateTimes`）にした。
 - [x] 店舗の API の価格（`Price`）を作る変換が、注文と店舗の mapper に同じ形である。共通の部品（`common/presentation/StorePrices`）にした。
 - [x] 税率の正規化（末尾の 0 を除く）が、税の `RatePercent` と注文の `JooqOrderRepository` にある：直さない（注文は税の domain の型を使わない。モジュールの境界を越えて型を共有しない。constitution 6）。

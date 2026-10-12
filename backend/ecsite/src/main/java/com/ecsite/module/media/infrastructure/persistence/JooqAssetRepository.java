@@ -26,6 +26,11 @@ class JooqAssetRepository implements AssetRepository {
      */
     private final DSLContext dsl;
 
+    /**
+     * アセットを記録する。
+     *
+     * @param asset アセット
+     */
     @Override
     public void insert(Asset asset) {
         dsl.insertInto(ASSET)
@@ -36,11 +41,22 @@ class JooqAssetRepository implements AssetRepository {
                 .execute();
     }
 
+    /**
+     * アセットをまとめて取得する。
+     *
+     * @param ids アセット ID
+     * @return アセット。ないものは含めない
+     */
     @Override
     public List<Asset> findAllById(Collection<UUID> ids) {
         return dsl.selectFrom(ASSET).where(ASSET.ID.in(ids)).fetch(JooqAssetRepository::toAsset);
     }
 
+    /**
+     * アセットの記録をまとめて消す。ないものは無視する。
+     *
+     * @param ids アセット ID
+     */
     @Override
     public void deleteAllById(Collection<UUID> ids) {
         if (ids.isEmpty()) {

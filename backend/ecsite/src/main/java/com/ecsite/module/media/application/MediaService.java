@@ -58,6 +58,14 @@ class MediaService implements MediaApi {
      */
     private final Clock clock;
 
+    /**
+     * 画像の受付を始める。形式と大きさを確かめ、受付のバケットへの署名付き URL を発行する。
+     *
+     * @param scope         受付の範囲（呼ぶ側が決める。例：商品ごと）
+     * @param contentType   ファイルの形式
+     * @param contentLength ファイルの大きさ（バイト）
+     * @return 受付の情報
+     */
     @Override
     public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
         var uploadId = UUID.randomUUID();

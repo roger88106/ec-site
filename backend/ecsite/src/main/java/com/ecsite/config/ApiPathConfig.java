@@ -27,6 +27,11 @@ class ApiPathConfig implements WebMvcConfigurer {
             "com.ecsite.api.admin", "/api/admin",
             "com.ecsite.api.store", "/api/store");
 
+    /**
+     * 生成したインターフェースのパッケージごとに、パスの前に付ける部分を決める。
+     *
+     * @param configurer パスの対応の設定
+     */
     @Override
     public void configurePathMatch(PathMatchConfigurer configurer) {
         PREFIXES.forEach((apiPackage, prefix) ->

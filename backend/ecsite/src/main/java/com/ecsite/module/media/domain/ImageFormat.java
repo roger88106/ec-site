@@ -51,18 +51,39 @@ public enum ImageFormat {
      */
     public static final int SIGNATURE_LENGTH = 32;
 
+    /**
+     * JPEG の先頭のバイト（SOI と、次の印の始まり）
+     */
     private static final byte[] JPEG_SIGNATURE = {(byte) 0xFF, (byte) 0xD8, (byte) 0xFF};
 
+    /**
+     * PNG の先頭のバイト（PNG の印）
+     */
     private static final byte[] PNG_SIGNATURE = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n'};
 
+    /**
+     * RIFF の入れ物の先頭のバイト（WebP の 0〜3 バイト目）
+     */
     private static final byte[] RIFF = {'R', 'I', 'F', 'F'};
 
+    /**
+     * WebP の形式の名前（RIFF の入れ物の 8〜11 バイト目）
+     */
     private static final byte[] WEBP_FOURCC = {'W', 'E', 'B', 'P'};
 
+    /**
+     * BMP の先頭のバイト
+     */
     private static final byte[] BMP_SIGNATURE = {'B', 'M'};
 
+    /**
+     * BMP の予約の領域（6〜9 バイト目。必ず 0）
+     */
     private static final byte[] BMP_RESERVED = {0, 0, 0, 0};
 
+    /**
+     * HEIC・HEIF・AVIF の ftyp の箱の名前（4〜7 バイト目）
+     */
     private static final byte[] FTYP = {'f', 't', 'y', 'p'};
 
     /**

@@ -62,6 +62,12 @@ class S3ObjectStorage implements ObjectStorage {
                 presigned.expiration());
     }
 
+    /**
+     * 受付のバケットのファイルの大きさを返す。
+     *
+     * @param uploadKey 受付のキー
+     * @return 大きさ（バイト）。ファイルがなければ空
+     */
     @Override
     public Optional<Long> findUploadSize(String uploadKey) {
         try {
@@ -78,6 +84,13 @@ class S3ObjectStorage implements ObjectStorage {
         }
     }
 
+    /**
+     * 受付のバケットのファイルの先頭を読む（形式の判定に使う）。
+     *
+     * @param uploadKey 受付のキー
+     * @param length    読む長さ（バイト）
+     * @return 先頭のバイト。ファイルが length より短ければ、ファイルの全体
+     */
     @Override
     public byte[] readUploadHead(String uploadKey, int length) {
         return s3.getObjectAsBytes(request -> request
@@ -86,6 +99,13 @@ class S3ObjectStorage implements ObjectStorage {
                 .range("bytes=0-" + (length - 1))).asByteArray();
     }
 
+    /**
+     * 配信のバケットへファイルを書き込む。長くキャッシュさせる（キーを上書きしないため）。
+     *
+     * @param publicKey   配信のキー
+     * @param content     中身
+     * @param contentType 形式
+     */
     @Override
     public void putPublished(String publicKey, byte[] content, String contentType) {
         s3.putObject(request -> request
@@ -96,12 +116,23 @@ class S3ObjectStorage implements ObjectStorage {
                 RequestBody.fromBytes(content));
     }
 
+    /**
+     * 配信のバケットのファイルを消す。ファイルがなくても成功とする（何度行っても同じ結果）。
+     *
+     * @param publicKey 配信のキー
+     */
     @Override
     public void deletePublished(String publicKey) {
         // S3 の削除は、ファイルがなくても成功する
         s3.deleteObject(request -> request.bucket(properties.publicBucket()).key(publicKey));
     }
 
+    /**
+     * 配信のバケットのファイルの URL を返す。
+     *
+     * @param publicKey 配信のキー
+     * @return 配信の URL
+     */
     @Override
     public URI publicUrl(String publicKey) {
         return URI.create(properties.publicBaseUrl() + "/" + publicKey);

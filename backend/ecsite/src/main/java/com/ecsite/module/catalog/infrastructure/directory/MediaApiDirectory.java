@@ -22,22 +22,48 @@ class MediaApiDirectory implements MediaDirectory {
      */
     private final MediaApi mediaApi;
 
+    /**
+     * 商品の画像の受付を、メディアモジュールに頼む。範囲は商品ごとにする。
+     *
+     * @param productId     商品 ID
+     * @param contentType   ファイルの形式
+     * @param contentLength ファイルの大きさ（バイト）
+     * @return 受付の情報（アップロードの URL など）
+     */
     @Override
     public ImageUpload requestImageUpload(UUID productId, String contentType, long contentLength) {
         var upload = mediaApi.requestImageUpload(scope(productId), contentType, contentLength);
         return new ImageUpload(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
     }
 
+    /**
+     * 受け付けた画像を、メディアモジュールで確定する。
+     *
+     * @param productId 商品 ID
+     * @param uploadId  受付の ID
+     * @return アセット ID
+     */
     @Override
     public UUID confirmImage(UUID productId, UUID uploadId) {
         return mediaApi.confirmImage(scope(productId), uploadId);
     }
 
+    /**
+     * アセットを手放す。配信のファイルは、コミットの後にメディアモジュールが消す。
+     *
+     * @param assetIds アセット ID
+     */
     @Override
     public void release(Collection<UUID> assetIds) {
         mediaApi.release(assetIds);
     }
 
+    /**
+     * アセットの配信の URL をまとめて返す。
+     *
+     * @param assetIds アセット ID
+     * @return アセット ID → URL
+     */
     @Override
     public Map<UUID, URI> urls(Collection<UUID> assetIds) {
         return mediaApi.urls(assetIds);

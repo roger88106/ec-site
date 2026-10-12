@@ -1,4 +1,4 @@
-package com.ecsite.module.member.api;
+package com.ecsite.module.member.application;
 
 import com.ecsite.IntegrationTest;
 import org.jooq.DSLContext;
@@ -23,10 +23,10 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 同時の初回の要求を確かめるため、要求ごとにコミットする。ロールバックしないので、作った会員を後で消す。
  */
 @IntegrationTest
-class MemberApiTest {
+class MemberServiceTest {
 
     @Autowired
-    MemberApi memberApi;
+    MemberService memberService;
 
     @Autowired
     DSLContext dsl;
@@ -46,7 +46,7 @@ class MemberApiTest {
     void createsMemberOnFirstRequest() {
         var subject = newSubject();
 
-        var memberId = memberApi.memberIdOf(subject);
+        var memberId = memberService.memberIdOf(subject);
 
         assertThat(memberId).isNotNull();
         assertThat(dsl.fetchCount(MEMBER_, MEMBER_.IDP_SUBJECT.eq(subject))).isEqualTo(1);
@@ -59,8 +59,8 @@ class MemberApiTest {
     void returnsSameMemberForSameAccount() {
         var subject = newSubject();
 
-        var first = memberApi.memberIdOf(subject);
-        var second = memberApi.memberIdOf(subject);
+        var first = memberService.memberIdOf(subject);
+        var second = memberService.memberIdOf(subject);
 
         assertThat(second).isEqualTo(first);
         assertThat(first.toString()).isNotEqualTo(subject);
@@ -70,7 +70,7 @@ class MemberApiTest {
     @Test
     @DisplayName("別の IdP のアカウントは、別の会員になる")
     void returnsDifferentMembersForDifferentAccounts() {
-        assertThat(memberApi.memberIdOf(newSubject())).isNotEqualTo(memberApi.memberIdOf(newSubject()));
+        assertThat(memberService.memberIdOf(newSubject())).isNotEqualTo(memberService.memberIdOf(newSubject()));
     }
 
     @Test
@@ -87,7 +87,7 @@ class MemberApiTest {
                 futures.add(executor.submit(() -> {
                     ready.countDown();
                     start.await();
-                    return memberApi.memberIdOf(subject);
+                    return memberService.memberIdOf(subject);
                 }));
             }
             ready.await();

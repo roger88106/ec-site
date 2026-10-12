@@ -10,7 +10,7 @@
 
 ## 移動
 
-- [ ] **T4402** `git mv` だけの commit（DN-2）：`backend/` → `backend/ecsite/`、`frontend/e2e/` → `e2e/`、`compose.yaml` → `docker/compose.yaml`、`compose/*` → `docker/*`、`keycloak/` → `docker/keycloak/`。
+- [x] **T4402** `git mv` だけの commit（DN-2）：`backend/` → `backend/ecsite/`、`frontend/e2e/` → `e2e/`、`compose.yaml` → `docker/compose.yaml`、`compose/*` → `docker/*`、`keycloak/` → `docker/keycloak/`。
 - [x] **T4403** 参照を直す（plan 第 5.2 節の表）：相対パス、compose の中のパスと `name: ec-site`、ルートの `.env`、テストの中のパス、`.gitignore`、CI の `working-directory`・キャッシュ・artifact。`./gradlew check`（`backend/ecsite`）、フロントの確かめ、E2E が手元で通る（DC-18、19）。
 - [x] **T4404** 文書のパスを直す：constitution、README・`docs/dev/`、AGENTS.md、`docs/modules/*.md`、`docs/frontend/*.md`、skill `local-dev`。spec・plan・tasks（001〜003）は直さない（DC-21）。
 - [x] **T4405** 手元で、控えたローカルのデータが残っていることを確かめる。IntelliJ の Gradle のプロジェクトの取り込み直しの手順を `docs/dev/setup.md` に書く（DC-19）。

@@ -109,17 +109,33 @@ module/<モジュール>/
 - 消すもの：`<モジュール>Message` と、その `Code`（7 クラス、約 1,100 行）。
 - メッセージのキーは enum から決める：`ecsite.<モジュール>.<enum の名前の小文字>`。`ErrorCodeProvider` に、モジュールの名前を返すメソッドだけを各 enum に書かせ、キーは共通の既定のメソッドで作る。
 - `MessageContractTest`：すべての `ErrorCodeProvider` の enum の定数に `messages.properties` のキーがあり、`messages.properties` の `ecsite.<モジュール>.*` のキーに enum の定数があることを確かめる（検証のキー `ecsite.validation.*` と共通の `ecsite.common.*` は別の表で確かめる）。
-- エラーではないメッセージ（`CommonMessage` など）があれば、移す前に一覧にして扱いを決める。
+- エラーではないメッセージ（`CommonMessage` など）があれば、移す前に一覧にして扱いを決める。2026-10-13 に調べた結果：`CommonMessage` もすべてエラーのメッセージで、ほかの `<モジュール>Message` と同じく消す。消すのは Java の定数のクラスだけで、`messages.properties` の文は残り、エラーの応答は今と同じく文を返す。
+- `CommonErrorCode.RESTORE_ERROR` は `SYSTEM_ERROR` の文を共有している。キーを規則で決めるため、`ecsite.common.restore_error` に同じ文を足す（キーを個別に指定する例外の仕組みは作らない。2026-10-13 に利用者が確かめた）。
 
 ### 3.2 入力の検証のメッセージ（DC-37）
 
 - `GlobalExceptionHandler` で、制約の種類（`NotNull`、`Size`、`Min`、`Max`、`Pattern`、`Email`、`DecimalMin` など）からキー `ecsite.validation.<種類>` を選び、制約の値（上限・下限）を差し込んでメッセージを作る。知らない種類は `ecsite.validation.invalid`。
 - 枠組みの既定のメッセージ（JVM のロケールで言語が変わる）を使わない。項目の名前は今のまま（API の項目名）。
-- 変わる文（今の既定の文 → 新しい文）は、段階 4 の最初のタスクで一覧にして利用者に確かめる（spec DN-4 の例外）。管理画面の表示が変わる所も挙げる。
+- 新しい文（2026-10-13 に利用者が確かめた）。今の業務のメッセージの言い方に合わせる：
+
+| キー | 文 |
+|------|----|
+| `ecsite.validation.notnull`、`notblank` | 入力してください。 |
+| `ecsite.validation.size` | {max} 文字以内にしてください。（下限があれば {min} 文字以上 {max} 文字以内にしてください。） |
+| `ecsite.validation.min`、`decimalmin` | {value} 以上にしてください。 |
+| `ecsite.validation.max`、`decimalmax` | {value} 以下にしてください。 |
+| `ecsite.validation.pattern` | 形式が正しくありません。 |
+| `ecsite.validation.email` | メールアドレスの形式が正しくありません。 |
+| `ecsite.validation.invalid` | 値が正しくありません。 |
+
+- 段階 4 の最初のタスクで、今の既定の文（ローカルと CI の JVM のロケールで）と、管理画面の表示が変わる所を一覧にする（spec DN-4 の例外）。
 
 ### 3.3 差し込み（DC-38）
 
-- 今の差し込みのあるメッセージ（`{0}` など）を一覧にし、整理の前後で同じ文になることをテストで確かめる。
+- 2026-10-13 に調べた結果：`messages.properties` に差し込みのあるメッセージはない。業務の規則の値（文字の数の上限、品目の数の上限など）は、文に数字で書いてある。
+- 書式は名前で差し込む（`{max}`）。検証のメッセージ（第 3.2 節）と同じ形にする。`MessageSource` から取り出した文の `{名前}` を、値で置き換える。
+- 業務の例外は、エラーの定義と一緒に、差し込む値（名前と値）を持てる。値はドメインの定数から渡す（例：`カートに入れられるのは {max} 品目までです。` の `max` は、カートの品目の上限の定数）。
+- 文に規則の値を数字で書いているメッセージを一覧にし、すべて差し込みにする（2026-10-13 に利用者が決めた）。差し込みの前後で同じ文になることを、テストで確かめる（spec DN-4）。
 
 ### 3.4 画像の変換の結果の確かめ（DC-64）
 

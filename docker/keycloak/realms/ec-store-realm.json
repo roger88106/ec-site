@@ -75,6 +75,7 @@
   ],
   "users": [
     {
+      "id": "00000000-0000-0000-0000-000000009001",
       "username": "member@example.com",
       "email": "member@example.com",
       "emailVerified": true,
@@ -86,6 +87,7 @@
       ]
     },
     {
+      "id": "00000000-0000-0000-0000-000000009002",
       "username": "member2@example.com",
       "email": "member2@example.com",
       "emailVerified": true,

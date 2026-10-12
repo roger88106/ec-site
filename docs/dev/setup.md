@@ -48,8 +48,9 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 | `ec-admin`（運営者） | 管理画面 | `viewer@example.com` | `viewer-pass-1` | 閲覧者 |
 
 - 手動確認で使うアカウントは、ここに挙げたもの（realm の JSON にあり、誰の環境にもある）を使う。足りなければ realm の JSON に足し、この表に書く。画面から登録した会員は、その人の環境にしかない。
+- 会員のアカウントの ID は realm の JSON で固定している（`member@example.com` は `00000000-0000-0000-0000-000000009001`、`member2@example.com` は `…9002`）。ローカル用の seed の注文が、この ID の会員のものになるため（`db/seed/local/`）。
 - 会員登録の確認のメールと、パスワードの再設定のメールは Mailpit（http://localhost:8025）に届く。
-- すでにある realm は取り込み直さない。realm の JSON を変えたら、Keycloak の database を作り直して取り込み直す（ローカルで登録した会員も消える）。
+- すでにある realm は取り込み直さない。realm の JSON を変えたら（spec 004 で会員の ID を固定したときも）、Keycloak の database を作り直して取り込み直す（ローカルで登録した会員も消える）。
 
   ```bash
   docker compose stop keycloak

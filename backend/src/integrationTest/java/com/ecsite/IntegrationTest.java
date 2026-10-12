@@ -12,13 +12,14 @@ import java.lang.annotation.Target;
 
 /**
  * 統合テストの共通設定。<br />
- * Spring コンテキストを起動し、Testcontainers の PostgreSQL に Flyway のマイグレーションを適用する。
+ * Spring コンテキストを起動し、Testcontainers の PostgreSQL に Flyway のマイグレーションを適用する。<br />
+ * 認証は、IdP を起動せずにテストの鍵で確かめる（{@link TestTokens}）。
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @SpringBootTest
-@Import(TestcontainersConfig.class)
+@Import({TestcontainersConfig.class, TestSecurityConfig.class})
 @ActiveProfiles("integration-test")
 public @interface IntegrationTest {
 }

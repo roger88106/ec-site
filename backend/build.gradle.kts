@@ -91,6 +91,8 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     // 外部の HTTP の呼び出し（画像の変換の imgproxy）。トレースとメトリクスが付く RestClient.Builder を使う
     implementation(libs.spring.boot.starter.restclient)
+    // 認証（OAuth 2.0 の Resource Server。運営者・会員の access token を検証する。plan 003 第 3.1 節）
+    implementation(libs.spring.boot.starter.security.oauth2.resource.server)
     // --- 可観測性（constitution 5-9） ---
     // ヘルスチェック（liveness / readiness）、メトリクス（Prometheus）
     implementation(libs.spring.boot.starter.actuator)
@@ -130,6 +132,7 @@ dependencies {
     "integrationTestImplementation"(libs.spring.boot.testcontainers)
     "integrationTestImplementation"(libs.testcontainers.postgresql)
     "integrationTestImplementation"(libs.spring.boot.starter.webmvc.test)
+    "integrationTestImplementation"(libs.spring.boot.starter.security.test)
     "integrationTestImplementation"(libs.spring.modulith.starter.test)
     "integrationTestImplementation"(libs.spring.boot.micrometer.tracing.test)
     "integrationTestImplementation"(libs.spring.boot.micrometer.metrics.test)

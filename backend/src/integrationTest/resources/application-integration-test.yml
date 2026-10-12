@@ -25,3 +25,12 @@ ecsite:
   shop:
     # 問い合わせ先（StorefrontShopTest が確かめる）
     contact-email: contact@shop.example
+  security:
+    # IdP は起動せず、テストの鍵で署名した token を使う（TestTokens、TestSecurityConfig）。
+    # issuer は TestTokens と同じ値にする
+    admin:
+      issuer-uri: http://idp.test/realms/ec-admin
+      audience: ec-admin-api
+    store:
+      issuer-uri: http://idp.test/realms/ec-store
+      audience: ec-store-api

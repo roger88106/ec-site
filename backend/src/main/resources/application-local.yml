@@ -68,3 +68,11 @@ ecsite:
       base-url: http://localhost:8081
       key: 6563736974652d6c6f63616c2d696d6770726f78792d6b6579
       salt: 6563736974652d6c6f63616c2d696d6770726f78792d73616c74
+  security:
+    # compose の Keycloak（plan 003 第 2 節）。audience は realm の API の client（keycloak/realms/）
+    admin:
+      issuer-uri: http://localhost:8180/realms/ec-admin
+      audience: ec-admin-api
+    store:
+      issuer-uri: http://localhost:8180/realms/ec-store
+      audience: ec-store-api

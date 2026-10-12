@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { listHref, parseListQuery } from '@/features/catalog/listQuery'
 
 describe('商品一覧の URL のクエリ', () => {
-  test('AC-52〜54、57 絞り込み・並び順・ページを読む', () => {
+  test('AC-52、53、54、57 絞り込み・並び順・ページを読む', () => {
     expect(
       parseListQuery({ categoryId: 'c1', minPrice: '1000', maxPrice: '5000', sort: 'price_asc', page: '2' }),
     ).toEqual({ categoryId: 'c1', minPrice: 1000, maxPrice: 5000, sort: 'price_asc', page: 2 })

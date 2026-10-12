@@ -125,7 +125,7 @@ class CancellationApiTest {
     }
 
     @Nested
-    @DisplayName("AC-101〜103、105 承認・却下・運営者のキャンセル（B 側）")
+    @DisplayName("AC-101、102、103、105 承認・却下・運営者のキャンセル（B 側）")
     class Decide {
 
         @Test

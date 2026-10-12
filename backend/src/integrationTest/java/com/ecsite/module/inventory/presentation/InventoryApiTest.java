@@ -99,7 +99,7 @@ class InventoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-42〜44、46 在庫の調整")
+    @DisplayName("AC-42、43、44、46 在庫の調整")
     class Adjust {
 
         @Test

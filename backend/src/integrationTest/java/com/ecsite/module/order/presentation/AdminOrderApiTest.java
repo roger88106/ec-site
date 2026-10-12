@@ -86,7 +86,7 @@ class AdminOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-97〜99、106 注文一覧")
+    @DisplayName("AC-97、98、99、106 注文一覧")
     class ListOrders {
 
         @Test

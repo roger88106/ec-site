@@ -96,7 +96,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-6、13〜17、25 商品の登録")
+    @DisplayName("AC-6、13、14、15、16、17、25 商品の登録")
     class Create {
 
         @Test
@@ -298,7 +298,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-20〜24、27、71 バリアント")
+    @DisplayName("AC-20、21、22、23、24、27、71 バリアント")
     class Variants {
 
         @Test
@@ -453,7 +453,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-29〜33 公開・非公開・販売終了・削除")
+    @DisplayName("AC-29、30、31、32、33 公開・非公開・販売終了・削除")
     class Status {
 
         @Test
@@ -553,7 +553,7 @@ class ProductApiTest {
     }
 
     @Nested
-    @DisplayName("AC-34〜36 公開期間")
+    @DisplayName("AC-34、35、36 公開期間")
     class PublicationPeriod {
 
         @Test

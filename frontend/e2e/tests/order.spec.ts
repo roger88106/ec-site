@@ -4,7 +4,7 @@ import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/
 import { emptyCart, fillShipping } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
 
-test('AC-72、77、82、85〜87、93、95、101、107 店舗画面でカートに入れて注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
+test('AC-72、77、82、85、86、87、93、95、101、107 店舗画面でカートに入れて注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
   page,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)

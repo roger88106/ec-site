@@ -12,7 +12,7 @@ async function addToCart(page: Page, productId: string, quantity: string) {
   await expect(page.getByText('カートに入れました。')).toBeVisible()
 }
 
-test('AC-108、111〜115、122、124、125、129 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
+test('AC-108、111、112、113、114、115、122、124、125、129 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
   page,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)

@@ -50,7 +50,7 @@ class CategoryApiTest {
     MockMvc mockMvc;
 
     @Nested
-    @DisplayName("AC-8〜10 カテゴリの登録")
+    @DisplayName("AC-8、9、10 カテゴリの登録")
     class Create {
 
         @Test

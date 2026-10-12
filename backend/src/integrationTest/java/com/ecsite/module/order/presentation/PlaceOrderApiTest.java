@@ -98,7 +98,7 @@ class PlaceOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-87〜92 注文の成立")
+    @DisplayName("AC-87、88、89、90、91、92 注文の成立")
     class Place {
 
         @Test
@@ -223,7 +223,7 @@ class PlaceOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-92〜94 注文の表示")
+    @DisplayName("AC-92、93、94 注文の表示")
     class Show {
 
         @Test

@@ -100,7 +100,7 @@ class CartApiTest {
     }
 
     @Nested
-    @DisplayName("AC-72〜76 カートに入れる")
+    @DisplayName("AC-72、73、74、75、76 カートに入れる")
     class AddItem {
 
         @Test

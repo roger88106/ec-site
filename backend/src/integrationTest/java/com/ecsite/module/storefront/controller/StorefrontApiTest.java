@@ -109,7 +109,7 @@ class StorefrontApiTest {
     }
 
     @Nested
-    @DisplayName("AC-51〜57 商品一覧")
+    @DisplayName("AC-51、52、53、54、55、56、57 商品一覧")
     class ListProducts {
 
         @Test
@@ -238,7 +238,7 @@ class StorefrontApiTest {
     }
 
     @Nested
-    @DisplayName("AC-58〜61 キーワード検索")
+    @DisplayName("AC-58、59、61 キーワード検索")
     class Search {
 
         @Test
@@ -278,11 +278,11 @@ class StorefrontApiTest {
     }
 
     @Nested
-    @DisplayName("AC-62〜66 商品の詳細")
+    @DisplayName("AC-62、63、64、65、66 商品の詳細")
     class Detail {
 
         @Test
-        @DisplayName("AC-62〜64、28 価格、軸と選択肢、バリアントごとの在庫の有無が返る。販売停止・在庫切れのバリアントも返る")
+        @DisplayName("AC-62、63、64、28 価格、軸と選択肢、バリアントごとの在庫の有無が返る。販売停止・在庫切れのバリアントも返る")
         void returnsDetail() throws Exception {
             var product = product("T シャツ", 1800, "色", "サイズ")
                     .variant("白", "M").variant("白", "L").variant("黒", "M").publish();

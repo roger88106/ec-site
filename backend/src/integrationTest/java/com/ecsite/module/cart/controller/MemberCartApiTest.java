@@ -187,7 +187,7 @@ class MemberCartApiTest {
     }
 
     @Nested
-    @DisplayName("AC-122〜124 カートを移す")
+    @DisplayName("AC-122、123、124 カートを移す")
     class Merge {
 
         @Test

@@ -13,9 +13,10 @@ export default defineConfig({
     },
   },
   server: {
-    // 開発時は API をバックエンド（local profile で起動したもの）に転送する
+    // 開発時は API をバックエンド（local profile で起動したもの）に転送する。vite preview も同じ転送先を使う。
+    // E2E は、E2E 用のバックエンド（8090）を ADMIN_API_PROXY_TARGET で渡す
     proxy: {
-      '/api': 'http://localhost:8080',
+      '/api': process.env.ADMIN_API_PROXY_TARGET ?? 'http://localhost:8080',
     },
   },
   test: {

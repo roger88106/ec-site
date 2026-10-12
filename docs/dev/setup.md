@@ -77,6 +77,7 @@ pnpm lint:fix
 
 - 先に compose（Keycloak を含む）とバックエンド（local profile）を起動しておく。ログインは「認証（Keycloak）」の運営者のアカウントで行う。
 - IdP の接続先は環境変数 `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）、`VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。ビルドのときに埋め込む。
+- `/api` の転送先は環境変数 `ADMIN_API_PROXY_TARGET`（既定 `http://localhost:8080`）。開発サーバーと `vite preview` が使う（E2E は 8090 を渡す）。
 - API の型は [admin.yaml](../../api/openapi/admin.yaml) から `dev`・`typecheck`・`build` の前に生成する（コミットしない）。
 - ディレクトリと画面の追加手順は [管理画面の構成](../frontend/admin.md)。
 

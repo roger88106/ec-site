@@ -10,7 +10,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 
 | 用途 | 採用 | 補足 |
 |------|------|------|
-| ビルド・開発サーバー | Vite | 開発時は `/api` をバックエンド（`localhost:8080`）に転送する |
+| ビルド・開発サーバー | Vite | 開発時は `/api` をバックエンド（既定 `localhost:8080`、環境変数 `ADMIN_API_PROXY_TARGET`）に転送する |
 | 画面の切り替え | React Router | URL に ID を持つ画面（商品の編集など）を、再読み込みやリンクで開けるようにする |
 | API の型 | openapi-typescript | `admin.yaml` から生成する。生成物はコミットしない（constitution 9） |
 | API の呼び出し | openapi-fetch + openapi-react-query | 取得・更新を、パスと型から呼ぶ。キャッシュのキーも自動で決まる |

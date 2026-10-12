@@ -1,0 +1,54 @@
+import 'server-only'
+import { deleteCartId, readCartId, writeCartMergeNotice } from '@/api/cartCookie'
+import { getMemberApi } from '@/api/client'
+import { unwrapMember } from '@/api/result'
+import { currentMember } from '@/auth'
+import { type CartChoice, chooseCart, shouldMergeCart } from '@/lib/cartChoice'
+import { cartMergeNotice } from '@/lib/cartMergeNotice'
+
+/**
+ * 使うカートを選ぶ（店舗画面の構成 第 4.2 節。AC-120、121）。
+ * ログインしていれば会員のカート、していなければ Cookie のカート。
+ */
+export async function currentCartChoice(): Promise<CartChoice> {
+  return chooseCart((await currentMember()) !== null, await readCartId())
+}
+
+/**
+ * 会員のカートの ID（GET /me/cart。なければ API が作る）。401 なら、ログインの画面へ移す。
+ */
+export async function memberCartId(): Promise<string> {
+  const api = await getMemberApi()
+  return (await unwrapMember(await api.GET('/me/cart'))).cartId
+}
+
+/**
+ * ログインの直後に、Cookie のカートを会員のカートへ移す（AC-122、123）。Auth.js の signIn のイベントから呼ぶ。<br />
+ * 移す前にカートの内容を取っておき、切り詰めた品目と移せなかった品目の名前を、知らせの Cookie に書く。
+ * 移せなかったときも Cookie のカート ID は消す（ログインしている間は使わず、残すとログアウトの後に古いカートが見えるため）。
+ *
+ * @param accessToken ログインで得た access token（セッションの Cookie はまだ書かれていない）
+ */
+export async function mergeCartAfterLogin(accessToken: string): Promise<void> {
+  const cartId = await readCartId()
+  if (!shouldMergeCart(cartId)) {
+    return
+  }
+  try {
+    const api = await getMemberApi()
+    const headers = { Authorization: `Bearer ${accessToken}` }
+    const source = await api.GET('/carts/{cartId}', { params: { path: { cartId } }, headers })
+    const { data } = await api.POST('/me/cart/merge', { body: { cartId }, headers })
+    if (data) {
+      const notice = cartMergeNotice(data, source.data?.items ?? [])
+      if (notice !== null) {
+        await writeCartMergeNotice(notice)
+      }
+    } else {
+      console.error('カートを移せませんでした', cartId)
+    }
+  } catch (error) {
+    console.error('カートを移せませんでした', cartId, error)
+  }
+  await deleteCartId()
+}

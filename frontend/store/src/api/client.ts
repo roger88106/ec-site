@@ -32,7 +32,8 @@ const memberApi = createClient<paths>({
 })
 memberApi.use({
   async onRequest({ request }) {
-    const accessToken = await getAccessToken()
+    // 呼ぶ側が token を付けたとき（ログインの直後で、セッションの Cookie がまだないとき）は、そのまま使う
+    const accessToken = request.headers.has('Authorization') ? null : await getAccessToken()
     if (accessToken !== null) {
       request.headers.set('Authorization', `Bearer ${accessToken}`)
     }

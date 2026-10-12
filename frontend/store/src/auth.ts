@@ -5,6 +5,7 @@ import NextAuth from 'next-auth'
 import { getToken, type JWT } from 'next-auth/jwt'
 import Keycloak from 'next-auth/providers/keycloak'
 import { cache } from 'react'
+import { mergeCartAfterLogin } from '@/api/cart'
 import { loginPath, memberName, needsTokenRefresh, safeReturnTo } from '@/lib/login'
 
 /**
@@ -50,6 +51,14 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   session: { strategy: 'jwt' },
   useSecureCookies: SECURE_COOKIE,
   trustHost: true,
+  events: {
+    async signIn({ account }) {
+      // ログインの直後に、Cookie のカートを会員のカートへ移す（AC-122）
+      if (account?.access_token) {
+        await mergeCartAfterLogin(account.access_token)
+      }
+    },
+  },
   callbacks: {
     async jwt({ token, account, profile }): Promise<MemberJwt | null> {
       if (account) {

@@ -4,6 +4,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.TestcontainersConfig;
 import com.ecsite.TestImages;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.media.service.ObjectStorage;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
@@ -13,9 +14,11 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 
 import java.io.IOException;
 import java.net.URI;
@@ -34,6 +37,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doThrow;
 
 /**
  * メディアモジュールの API の統合テスト（T1028、T1037。docs/modules/media.md）。<br />
@@ -70,6 +76,12 @@ class MediaApiTest {
 
     @Autowired
     S3Client s3;
+
+    /**
+     * ファイルの置き場所（配信のバケットへの書き込みの失敗を起こすため、本物を包む）
+     */
+    @MockitoSpyBean
+    ObjectStorage storage;
 
     /**
      * このテストで確定したアセットの ID（後で記録を消す）
@@ -187,6 +199,19 @@ class MediaApiTest {
             var before = dsl.fetchCount(ASSET);
 
             assertErrorCode(() -> media.confirmImage(scope, upload.uploadId()), "IMAGE_CONVERSION_FAILED");
+            assertThat(dsl.fetchCount(ASSET)).isEqualTo(before);
+        }
+
+        @Test
+        @DisplayName("配信のバケットに書けなければ、確定は失敗し、アセットを記録しない")
+        void failsWhenPublishingFails() throws Exception {
+            var scope = scope();
+            var upload = uploaded(scope, "image/png", TestImages.png());
+            var before = dsl.fetchCount(ASSET);
+            doThrow(S3Exception.builder().statusCode(404).message("The specified bucket does not exist").build())
+                    .when(storage).putPublished(anyString(), any(), anyString());
+
+            assertThatThrownBy(() -> media.confirmImage(scope, upload.uploadId())).isInstanceOf(S3Exception.class);
             assertThat(dsl.fetchCount(ASSET)).isEqualTo(before);
         }
 

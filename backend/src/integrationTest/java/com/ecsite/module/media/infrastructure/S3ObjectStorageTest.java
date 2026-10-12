@@ -5,7 +5,11 @@ import com.ecsite.module.media.service.ObjectStorage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
+import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.S3Exception;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.io.IOException;
@@ -18,6 +22,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * ファイルの置き場所の S3 の実装の統合テスト（T1016、T1027、T1037。plan 001 第 7 節）。<br />
@@ -116,6 +121,24 @@ class S3ObjectStorageTest {
 
         assertThat(existsPublished(publicKey)).isFalse();
         assertThatCode(() -> storage.deletePublished(publicKey)).doesNotThrowAnyException();
+    }
+
+    @Test
+    @DisplayName("配信のバケットに書けなければ（書く権限がない）、例外になる")
+    void failsWhenPublicBucketIsNotWritable() {
+        // imgproxy の資格情報は、受付のバケットを読む権限だけを持つ（seaweedfs/s3.json）
+        try (var readOnly = S3Client.builder()
+                .endpointOverride(properties.endpoint())
+                .region(Region.of(properties.region()))
+                .forcePathStyle(true)
+                .credentialsProvider(StaticCredentialsProvider.create(
+                        AwsBasicCredentials.create("integration-test-imgproxy", "integration-test-imgproxy-secret")))
+                .build()) {
+            var broken = new S3ObjectStorage(readOnly, presigner, properties);
+
+            assertThatThrownBy(() -> broken.putPublished("assets/%s.webp".formatted(UUID.randomUUID()), WEBP, "image/webp"))
+                    .isInstanceOfSatisfying(S3Exception.class, ex -> assertThat(ex.statusCode()).isEqualTo(403));
+        }
     }
 
     // ============================== 補助 ==============================

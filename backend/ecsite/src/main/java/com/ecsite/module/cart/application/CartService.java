@@ -98,6 +98,7 @@ public class CartService {
     @Transactional
     public void changeQuantity(UUID cartId, UUID requester, UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
+            // 今の数量より増やすときだけ、在庫を確かめる（減らす操作は、在庫が減っていても受け付ける）
             var current = cart.itemsAt(now).stream()
                     .filter(item -> item.variantId().equals(variantId))
                     .mapToInt(CartItem::quantity)

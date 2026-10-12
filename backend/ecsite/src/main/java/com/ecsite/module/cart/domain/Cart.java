@@ -224,6 +224,7 @@ public class Cart {
         var skipped = new ArrayList<CartMergeResult.Item>();
         for (var item : sourceItems) {
             var index = indexOf(item.variantId());
+            // 同じバリアントは数量を合算して上限で切り詰め、新しいバリアントは品目の数の上限を超える分を移さない
             if (index >= 0) {
                 var merged = items.get(index).quantity() + item.quantity();
                 if (merged > MAX_QUANTITY) {

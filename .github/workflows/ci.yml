@@ -53,13 +53,11 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照らす（constitution 17）。
-      # check にも含まれるが、ビルドより先に、別の手順として結果を見せる
-      - name: 依存のライセンスの検査
-        run: ./gradlew checkLicense
-
+      # 別の手順にすると Gradle の起動と依存の解決が 2 回になり、1 分ほど延びるので、ビルドと同じ呼び出しで流す。
+      # 失敗したときは、ログの「Some library licenses are not allowed」と build/reports/dependency-license/ を見る。
       # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
-      - name: ビルドとテスト
-        run: ./gradlew build
+      - name: ライセンスの検査、ビルドとテスト
+        run: ./gradlew checkLicense build
 
       # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
@@ -83,6 +81,7 @@ jobs:
           path: |
             backend/ecsite/build/reports/tests/
             backend/ecsite/build/test-results/
+            backend/ecsite/build/reports/dependency-license/dependencies-without-allowed-license.json
           retention-days: 7
 
   admin:

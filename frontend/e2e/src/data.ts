@@ -1,4 +1,5 @@
 import createClient from 'openapi-fetch'
+import { ACCOUNTS, operatorAccessToken } from './auth'
 import type { components, paths } from './generated/admin'
 import { BACKEND_URL } from './urls'
 
@@ -11,8 +12,25 @@ type AddVariantRequest = components['schemas']['AddVariantRequest']
  */
 export const RUN_ID = Date.now().toString(36).toUpperCase()
 
-/** 管理 API のクライアント。テストのデータを画面を通さずに作るときに使う */
+/** 管理 API のクライアント。テストのデータを画面を通さずに作るときに使う。管理者の token を付ける */
 const api = createClient<paths>({ baseUrl: `${BACKEND_URL}/api/admin` })
+api.use({
+  async onRequest({ request }) {
+    request.headers.set('Authorization', `Bearer ${await administratorToken()}`)
+    return request
+  },
+})
+
+/** 管理者の access token と、取り直す時刻（有効期間 5 分より前に取り直す） */
+let cachedToken: { value: string; refreshAt: number } | null = null
+
+/** 管理者の access token（テストのデータを作るため。src/auth.ts） */
+async function administratorToken(): Promise<string> {
+  if (cachedToken === null || Date.now() >= cachedToken.refreshAt) {
+    cachedToken = { value: await operatorAccessToken(ACCOUNTS.administrator), refreshAt: Date.now() + 4 * 60_000 }
+  }
+  return cachedToken.value
+}
 
 /** API の結果を取り出す。エラーなら、応答の本文を添えて投げる */
 function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T {

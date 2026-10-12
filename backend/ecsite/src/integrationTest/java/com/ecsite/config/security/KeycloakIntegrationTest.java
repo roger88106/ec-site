@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * IdP の設定の統合テスト（T3208、plan 003 第 2 節）。<br />
- * Keycloak を Testcontainers で起動して、両 realm の JSON（{@code keycloak/realms/}）を取り込み、
+ * Keycloak を Testcontainers で起動して、両 realm の JSON（{@code docker/keycloak/realms/}）を取り込み、
  * Keycloak が発行した token で管理 API を呼ぶ。バックエンドは本番と同じく、issuer の OpenID Connect の設定から公開鍵を取る
  * （テストの鍵に差し替える {@code TestSecurityConfig} は使わないので、{@code @IntegrationTest} とは別の設定で起動する）。<br />
  * token は、パスワードで取る（Direct Access Grant）。realm の JSON では web の client でこれを無効にしているので、
@@ -57,7 +57,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class KeycloakIntegrationTest {
 
     /**
-     * compose.yaml と同じイメージ
+     * docker/compose.yaml と同じイメージ
      */
     private static final String IMAGE = "quay.io/keycloak/keycloak:26.8.0";
 
@@ -67,8 +67,8 @@ class KeycloakIntegrationTest {
     /**
      * realm の設定とテーマの置き場所。Gradle の integrationTest task が設定する
      */
-    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../keycloak/realms"));
-    private static final Path THEME_DIR = Path.of(System.getProperty("keycloak.theme.dir", "../keycloak/themes/ec-site"));
+    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../../docker/keycloak/realms"));
+    private static final Path THEME_DIR = Path.of(System.getProperty("keycloak.theme.dir", "../../docker/keycloak/themes/ec-site"));
 
     private static final String TAX_CATEGORIES = "/api/admin/tax-categories";
 

@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * realm の設定の契約テスト（T3209、plan 003 第 2.3 節）。<br />
- * Keycloak は起動せず、realm の JSON（{@code keycloak/realms/}）の値が plan のとおりであることを確かめる。
+ * Keycloak は起動せず、realm の JSON（{@code docker/keycloak/realms/}）の値が plan のとおりであることを確かめる。
  * 会員と運営者のアカウントが別の realm にあること（AC-133）は、KeycloakIntegrationTest と段階 1 の手動確認で確かめる。
  */
 class RealmSettingsContractTest {
@@ -24,7 +24,7 @@ class RealmSettingsContractTest {
     /**
      * realm の設定の置き場所。Gradle の test task が設定する
      */
-    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../keycloak/realms"));
+    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../../docker/keycloak/realms"));
 
     private static final String STORE = "ec-store";
     private static final String ADMIN = "ec-admin";

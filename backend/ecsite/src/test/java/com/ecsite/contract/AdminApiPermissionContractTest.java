@@ -23,9 +23,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class AdminApiPermissionContractTest {
 
     /**
-     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ からの相対パス
+     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ecsite/ からの相対パス
      */
-    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../api/openapi"));
+    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../../api/openapi"));
 
     /**
      * 権限の拡張項目の名前

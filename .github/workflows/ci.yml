@@ -39,7 +39,7 @@ jobs:
     timeout-minutes: 20
     defaults:
       run:
-        working-directory: backend
+        working-directory: backend/ecsite
 
     steps:
       - uses: actions/checkout@v7
@@ -59,14 +59,14 @@ jobs:
       # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
         if: always()
-        run: node ../scripts/ci/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
+        run: node ../../scripts/ci/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
 
       - name: カバレッジの報告を保存
         if: always()
         uses: actions/upload-artifact@v7
         with:
           name: coverage-backend
-          path: backend/build/reports/jacoco/coverageReport/
+          path: backend/ecsite/build/reports/jacoco/coverageReport/
           if-no-files-found: ignore
           retention-days: 7
 
@@ -76,8 +76,8 @@ jobs:
         with:
           name: test-reports
           path: |
-            backend/build/reports/tests/
-            backend/build/test-results/
+            backend/ecsite/build/reports/tests/
+            backend/ecsite/build/test-results/
           retention-days: 7
 
   admin:
@@ -225,9 +225,9 @@ jobs:
       # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
       - uses: pnpm/action-setup@v6
         with:
-          package_json_file: frontend/e2e/package.json
+          package_json_file: e2e/package.json
           cache: true
-          cache_dependency_path: frontend/e2e/pnpm-lock.yaml
+          cache_dependency_path: e2e/pnpm-lock.yaml
 
       - uses: actions/setup-node@v7
         with:
@@ -237,10 +237,10 @@ jobs:
         run: |
           pnpm --dir frontend/admin install --frozen-lockfile
           pnpm --dir frontend/store install --frozen-lockfile
-          pnpm --dir frontend/e2e install --frozen-lockfile
+          pnpm --dir e2e install --frozen-lockfile
 
       # バックエンドの local profile の接続先（PostgreSQL）と IdP（Keycloak、realm の JSON を取り込む）、IdP が送るメールの受け手（Mailpit）。
-      # compose.yaml をそのまま使う（Keycloak は同じ PostgreSQL の別の database を使うので、GitHub の services ではなく compose で起動する）。
+      # docker/compose.yaml（ルートの .env が指す）をそのまま使う（Keycloak は同じ PostgreSQL の別の database を使うので、GitHub の services ではなく compose で起動する）。
       # IdP の接続先と secret は、バックエンド（application-local.yml）・店舗画面・管理画面の既定の値が、realm の JSON のローカルと CI 用の値と同じなので渡さない（plan 003 第 2.4 節）
       - name: DB・IdP・メールの起動
         run: docker compose up -d --wait postgres keycloak mailpit
@@ -252,16 +252,16 @@ jobs:
           docker compose run --rm seaweedfs-init
 
       - name: lint と整形の確認、型チェック
-        working-directory: frontend/e2e
+        working-directory: e2e
         run: pnpm lint && pnpm typecheck
 
       - name: ブラウザのインストール
-        working-directory: frontend/e2e
+        working-directory: e2e
         run: pnpm exec playwright install --with-deps chromium
 
       # バックエンド（local profile）、管理画面、店舗画面のビルドと起動は playwright.config.ts が行う
       - name: E2E
-        working-directory: frontend/e2e
+        working-directory: e2e
         run: pnpm test
 
       - name: Playwright のレポートを保存（失敗時）
@@ -270,6 +270,6 @@ jobs:
         with:
           name: playwright-report
           path: |
-            frontend/e2e/playwright-report/
-            frontend/e2e/test-results/
+            e2e/playwright-report/
+            e2e/test-results/
           retention-days: 7

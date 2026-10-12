@@ -52,7 +52,7 @@ public class TestcontainersConfig {
     private static final int S3_PORT = 8333;
 
     /**
-     * SeaweedFS のボリュームの大きさ（MB）。compose.yaml と同じ
+     * SeaweedFS のボリュームの大きさ（MB）。docker/compose.yaml と同じ
      */
     private static final int VOLUME_SIZE_LIMIT_MB = 100;
 
@@ -74,7 +74,7 @@ public class TestcontainersConfig {
     private static final String IMGPROXY_SALT = "696e746567726174696f6e2d746573742d73616c74";
 
     /**
-     * PostgreSQL コンテナ。compose.yaml と同じイメージを使う。
+     * PostgreSQL コンテナ。docker/compose.yaml と同じイメージを使う。
      *
      * @return PostgreSQL コンテナ
      */
@@ -85,7 +85,7 @@ public class TestcontainersConfig {
     }
 
     /**
-     * SeaweedFS コンテナ。compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確かめるため）。<br />
+     * SeaweedFS コンテナ。docker/compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確かめるため）。<br />
      * 起動したら、受付・配信のバケットを作り、配信のバケットをだれでも読めるようにする。
      *
      * @param network コンテナ同士のネットワーク
@@ -141,7 +141,7 @@ public class TestcontainersConfig {
     }
 
     /**
-     * imgproxy コンテナ（画像の変換。plan 001 第 7.5 節）。compose.yaml と同じイメージと設定を使う。<br />
+     * imgproxy コンテナ（画像の変換。plan 001 第 7.5 節）。docker/compose.yaml と同じイメージと設定を使う。<br />
      * 受付のバケットを、読むだけの資格情報で、SeaweedFS のネットワークの中の名前で読む。
      *
      * @param network   コンテナ同士のネットワーク
@@ -198,7 +198,7 @@ public class TestcontainersConfig {
     }
 
     /**
-     * 受付・配信のバケットを作り、配信のバケットをだれでも読めるようにする（compose/seaweedfs/init.sh と同じ）。
+     * 受付・配信のバケットを作り、配信のバケットをだれでも読めるようにする（docker/seaweedfs/init.sh と同じ）。
      */
     private static void createBuckets(URI endpoint) {
         try (var s3 = S3Client.builder()

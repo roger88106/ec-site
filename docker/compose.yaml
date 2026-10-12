@@ -1,13 +1,15 @@
 # ============================================================================
 # ローカル開発用のミドルウェア
 #
-#   起動：docker compose up -d
+#   起動：docker compose up -d（リポジトリのルートで。ルートの .env の COMPOSE_FILE がこのファイルを指す）
 #   停止：docker compose stop
 #
 # スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
 # ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）、画像の変換（imgproxy）、
 # 認証（Keycloak）と、Keycloak が送るメールの受け取り（Mailpit）を用意するだけ。
 # ============================================================================
+
+name: ec-site
 
 services:
   postgres:
@@ -22,7 +24,7 @@ services:
     volumes:
       - postgres_data:/var/lib/postgresql/18/data
       # Keycloak の database を作る。volume が空のとき（初回の起動）だけ走る
-      - ./compose/postgres/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql:ro
+      - ./postgres/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql:ro
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U ec_site -d ec_site"]
       interval: 5s
@@ -46,7 +48,7 @@ services:
     ports:
       - "8333:8333"
     volumes:
-      - ./compose/seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
       - seaweedfs_data:/data
     healthcheck:
       # S3 の口が応答すれば準備完了（認証なしの要求は 403 だが、応答があればよい）。localhost は IPv6 になるので使わない
@@ -70,7 +72,7 @@ services:
       INCOMING_BUCKET: ec-site-images-incoming
       PUBLIC_BUCKET: ec-site-images
     volumes:
-      - ./compose/seaweedfs/init.sh:/init.sh:ro
+      - ./seaweedfs/init.sh:/init.sh:ro
 
   # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 第 7.5 節）。http://localhost:8081
   # 受付のバケットだけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用

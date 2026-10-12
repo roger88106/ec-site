@@ -3,6 +3,8 @@
 .env
 .env.*
 !.env.example
+# ルートの .env は compose の設定のファイルの場所だけを持つ（秘密の値は置かない）
+!/.env
 
 ### AI ###
 # 共有するルールは AGENTS.md に置く。
@@ -28,7 +30,7 @@ replay_pid*
 HELP.md
 .gradle
 build/
-# Gradle wrapper は実行に必要なのでコミットする（backend/ 配下にあるため ** を付ける）
+# Gradle wrapper は実行に必要なのでコミットする（backend/ecsite/ 配下にあるため ** を付ける）
 !**/gradle/wrapper/gradle-wrapper.jar
 !**/src/main/**/build/
 !**/src/test/**/build/
@@ -48,11 +50,11 @@ pnpm-debug.log*
 .vercel
 # openapi-typescript の生成物（ビルド前に生成する。constitution 9）
 frontend/*/src/api/generated/
-frontend/e2e/src/generated/
+e2e/src/generated/
 # Playwright の結果とレポート
-frontend/e2e/test-results/
-frontend/e2e/playwright-report/
-frontend/e2e/blob-report/
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
 
 ### IntelliJ IDEA ###
 .idea

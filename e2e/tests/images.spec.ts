@@ -7,7 +7,7 @@ import { STORE_URL } from '../src/urls'
 
 /**
  * スマートフォンの形式の画像（AVIF）。左が赤、右が青の 64x32 で、向き（時計回りに 90 度）と位置情報が付いている。
- * backend/src/integrationTest/resources/images/source.avif と同じもの（作り方は同じ場所の generate.sh）
+ * backend/ecsite/src/integrationTest/resources/images/source.avif と同じもの（作り方は同じ場所の generate.sh）
  */
 const PHOTO = path.resolve(import.meta.dirname, '../fixtures/photo.avif')
 

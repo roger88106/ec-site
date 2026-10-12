@@ -148,11 +148,11 @@ dependencies {
 tasks.named<Test>("test") {
     useJUnitPlatform()
     // 契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
-    systemProperty("openapi.dir", file("../api/openapi").absolutePath)
-    inputs.dir("../api/openapi")
+    systemProperty("openapi.dir", file("../../api/openapi").absolutePath)
+    inputs.dir("../../api/openapi")
     // 契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
-    systemProperty("keycloak.realms.dir", file("../keycloak/realms").absolutePath)
-    inputs.dir("../keycloak/realms")
+    systemProperty("keycloak.realms.dir", file("../../docker/keycloak/realms").absolutePath)
+    inputs.dir("../../docker/keycloak/realms")
 }
 
 val integrationTest = tasks.register<Test>("integrationTest") {
@@ -162,9 +162,9 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     classpath = sourceSets["integrationTest"].runtimeClasspath
     useJUnitPlatform()
     // IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
-    systemProperty("keycloak.realms.dir", file("../keycloak/realms").absolutePath)
-    systemProperty("keycloak.theme.dir", file("../keycloak/themes/ec-site").absolutePath)
-    inputs.dir("../keycloak")
+    systemProperty("keycloak.realms.dir", file("../../docker/keycloak/realms").absolutePath)
+    systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
+    inputs.dir("../../docker/keycloak")
     shouldRunAfter(tasks.test)
 }
 
@@ -256,7 +256,7 @@ tasks.named<JooqGenerate>("generateJooq") {
     // マイグレーションが変わったら再生成する
     inputs.dir(migrationDir)
 
-    // 使い捨て PostgreSQL（compose.yaml と同じイメージ）
+    // 使い捨て PostgreSQL（docker/compose.yaml と同じイメージ）
     val container = PostgreSQLContainer(DockerImageName.parse("postgres:18-alpine"))
 
     // jooq { } ブロックで組んだ Configuration と同一インスタンスを参照している
@@ -284,7 +284,7 @@ tasks.named<JooqGenerate>("generateJooq") {
 //   API 契約の正本はリポジトリのルートの api/openapi/（constitution 9）。
 //   Controller が実装するインターフェースとモデルを生成する。生成コードはコミットしない（build/ 配下）。
 // -----------------------------------------------------------------------------
-val openApiDir = rootProject.layout.projectDirectory.dir("../api/openapi")
+val openApiDir = rootProject.layout.projectDirectory.dir("../../api/openapi")
 
 // 生成する API：名前 → パッケージ（com.ecsite.api.<名前>）
 val openApiSpecs = listOf("admin", "store")

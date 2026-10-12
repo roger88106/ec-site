@@ -5,7 +5,7 @@ import { ADMIN_URL, BACKEND_URL, STORE_URL } from './src/urls'
 /** CI で動いているか（test.only を禁止し、HTML のレポートを残し、起動済みのサーバーを使い回さない） */
 const CI = Boolean(process.env.CI)
 /** バックエンドの Gradle プロジェクト。Windows の cmd は作業ディレクトリのスクリプトを名前だけでは探さないので、絶対パスで呼ぶ */
-const BACKEND_DIR = path.resolve(import.meta.dirname, '../../backend')
+const BACKEND_DIR = path.resolve(import.meta.dirname, '../backend/ecsite')
 /** バックエンドを起動する Gradle Wrapper のパス */
 const GRADLEW = path.join(BACKEND_DIR, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew')
 
@@ -44,7 +44,7 @@ export default defineConfig({
       // ビルドしたものを vite preview で配る。/api はバックエンドに転送する（vite.config.ts の server.proxy）
       name: 'admin',
       command: 'pnpm build && pnpm preview --port 4173 --strictPort',
-      cwd: '../admin',
+      cwd: '../frontend/admin',
       url: ADMIN_URL,
       timeout: 180_000,
       reuseExistingServer: !CI,
@@ -53,7 +53,7 @@ export default defineConfig({
       // API の結果のキャッシュを 1 秒にし、NFR-1 の 60 秒を待たずに一覧への反映を確かめる
       name: 'store',
       command: 'pnpm build && pnpm start --port 3100',
-      cwd: '../store',
+      cwd: '../frontend/store',
       url: STORE_URL,
       env: { STORE_API_REVALIDATE_SECONDS: '1' },
       timeout: 180_000,

@@ -18,19 +18,19 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 管理 API の権限と、運営者の realm の設定が一致することを確かめる契約テスト（T3207、plan 003 第 2.2 節、BR-12）。<br />
- * Keycloak は起動せず、{@code admin.yaml} と realm の JSON（{@code keycloak/realms/ec-admin-realm.json}）を読む。
+ * Keycloak は起動せず、{@code admin.yaml} と realm の JSON（{@code docker/keycloak/realms/ec-admin-realm.json}）を読む。
  */
 class AdminRealmPermissionContractTest {
 
     /**
-     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ からの相対パス
+     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ecsite/ からの相対パス
      */
-    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../api/openapi"));
+    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../../api/openapi"));
 
     /**
      * realm の設定の置き場所。Gradle の test task が設定する
      */
-    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../keycloak/realms"));
+    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../../docker/keycloak/realms"));
 
     /**
      * 権限の role を持つ client（管理 API）

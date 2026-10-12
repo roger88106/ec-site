@@ -25,7 +25,7 @@ class StorefrontCategoryController implements CategoryApi {
     private final StorefrontMapper mapper;
 
     /**
-     * カテゴリの木（AC-52 の絞り込み用）
+     * カテゴリの木（の絞り込み用）
      *
      * @return Http 200 : {@link CategoryTree}
      */

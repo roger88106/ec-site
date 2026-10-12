@@ -26,8 +26,7 @@ import com.ecsite.module.storefront.application.port.ProductCondition;
 import org.springframework.stereotype.Component;
 
 /**
- * 店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルの変換。<br />
- * 画像は US-7 までないので、代表画像・バリアントの画像は null、画像の一覧は空にする。
+ * 店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルの変換。
  */
 @Component
 class StorefrontMapper {
@@ -95,7 +94,7 @@ class StorefrontMapper {
     }
 
     /**
-     * カートの表示のレスポンスに変換する（AC-77、80）。
+     * カートの表示のレスポンスに変換する。
      *
      * @param view カートの表示
      * @return カートのレスポンス
@@ -109,7 +108,7 @@ class StorefrontMapper {
     }
 
     /**
-     * 店舗の情報のレスポンスに変換する（AC-96）。
+     * 店舗の情報のレスポンスに変換する。
      *
      * @param properties 店舗の情報の設定
      * @return 店舗の情報のレスポンス
@@ -171,7 +170,7 @@ class StorefrontMapper {
     }
 
     /**
-     * カートの金額の内訳のレスポンスに変換する（BR-7、8）。
+     * カートの金額の内訳のレスポンスに変換する。
      */
     private static Amounts toAmounts(CartView.Amounts amounts) {
         return new Amounts()

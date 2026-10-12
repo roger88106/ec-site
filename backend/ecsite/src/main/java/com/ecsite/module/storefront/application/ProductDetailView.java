@@ -7,7 +7,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * C 側の商品の詳細（AC-62〜64）
+ * C 側の商品の詳細
  *
  * @param id           商品 ID
  * @param name         商品名
@@ -31,7 +31,7 @@ public record ProductDetailView(UUID id, String name, String description, Money 
     }
 
     /**
-     * バリアント。在庫は有無だけ（AC-64）
+     * バリアント。在庫は有無だけ
      *
      * @param id             バリアント ID
      * @param axisValues     軸の値

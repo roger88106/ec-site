@@ -6,7 +6,7 @@ import jakarta.annotation.Nullable;
 import java.util.UUID;
 
 /**
- * 商品一覧の絞り込みと並び順（AC-52〜54）
+ * 商品一覧の絞り込みと並び順
  *
  * @param categoryId カテゴリ ID（子孫のカテゴリを含む）。null は絞り込まない
  * @param minPrice   税込価格の下限（円、この値を含む）。null は絞り込まない

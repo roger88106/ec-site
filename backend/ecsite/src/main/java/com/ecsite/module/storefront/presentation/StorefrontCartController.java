@@ -33,7 +33,7 @@ class StorefrontCartController implements CartViewApi {
     private final CurrentMemberIds currentMemberIds;
 
     /**
-     * カートの表示（AC-77、79〜81）
+     * カートの表示
      *
      * @param cartId カート ID
      * @return Http 200 : {@link Cart}

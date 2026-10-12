@@ -22,7 +22,7 @@ import java.util.stream.IntStream;
 
 /**
  * 店舗のサービス。商品カタログと在庫の結果を組み合わせる（docs/modules/storefront.md）。<br />
- * 商品・価格・公開状態・在庫はキャッシュしない（NFR-1）。
+ * 商品・価格・公開状態・在庫はキャッシュしない。
  */
 @Service
 @RequiredArgsConstructor
@@ -44,7 +44,7 @@ public class StorefrontService {
     private final OrderDirectory orderDirectory;
 
     /**
-     * 商品一覧を取得する（AC-51〜57）。
+     * 商品一覧を取得する。
      *
      * @param condition 絞り込みと並び順
      * @param request   ページの指定
@@ -55,7 +55,7 @@ public class StorefrontService {
     }
 
     /**
-     * キーワードで商品を探す（AC-58〜61）。
+     * キーワードで商品を探す。
      *
      * @param keyword キーワード
      * @param request ページの指定
@@ -66,7 +66,7 @@ public class StorefrontService {
     }
 
     /**
-     * 商品の詳細を取得する（AC-62〜65）。表示されない商品は、存在しない商品と同じく見つからない。
+     * 商品の詳細を取得する。表示されない商品は、存在しない商品と同じく見つからない。
      *
      * @param productId 商品 ID
      * @return 商品の詳細（バリアントごとの在庫の有無を含む）
@@ -85,8 +85,8 @@ public class StorefrontService {
     }
 
     /**
-     * カートを表示する（AC-77、79〜81）。金額と購入できるかは、注文モジュールの見積もりで求める。<br />
-     * 会員のカートは、持ち主の会員だけに見せる。ほかの人には 404（AC-121）。
+     * カートを表示する。金額と購入できるかは、注文モジュールの見積もりで求める。<br />
+     * 会員のカートは、持ち主の会員だけに見せる。ほかの人には 404。
      *
      * @param cartId    カート ID
      * @param requester 要求した会員の ID（ログインしていなければ null）
@@ -108,7 +108,7 @@ public class StorefrontService {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 1 ページ分の商品に、在庫の有無を付ける。販売中のいずれかのバリアントに在庫があれば「在庫あり」（AC-56）。<br />
+     * 1 ページ分の商品に、在庫の有無を付ける。販売中のいずれかのバリアントに在庫があれば「在庫あり」。<br />
      * 在庫の有無は、ページのすべてのバリアントについてまとめて 1 回で問い合わせる。
      *
      * @param page 商品の一覧
@@ -125,7 +125,7 @@ public class StorefrontService {
     }
 
     /**
-     * バリアント軸と、その値のすべてを求める（AC-62）。値は、バリアントの表示順で最初に現れた順。
+     * バリアント軸と、その値のすべてを求める。値は、バリアントの表示順で最初に現れた順。
      * 在庫切れ・販売停止で選べない値も含める。
      *
      * @param detail 商品の詳細

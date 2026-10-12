@@ -25,7 +25,7 @@ class StorefrontShopController implements ShopApi {
     private final StorefrontMapper mapper;
 
     /**
-     * 店舗の情報（AC-96）
+     * 店舗の情報
      *
      * @return Http 200 : {@link Shop}
      */

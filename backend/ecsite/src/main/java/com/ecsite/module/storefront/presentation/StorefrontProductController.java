@@ -32,7 +32,7 @@ class StorefrontProductController implements ProductApi {
     private final StorefrontMapper mapper;
 
     /**
-     * 商品一覧（AC-51〜57）
+     * 商品一覧
      *
      * @param categoryId カテゴリ ID（子孫のカテゴリを含む）
      * @param minPrice   税込価格の下限
@@ -52,7 +52,7 @@ class StorefrontProductController implements ProductApi {
     }
 
     /**
-     * キーワード検索（AC-58〜61）
+     * キーワード検索
      *
      * @param q    キーワード
      * @param page ページ番号
@@ -66,7 +66,7 @@ class StorefrontProductController implements ProductApi {
     }
 
     /**
-     * 商品の詳細（AC-62〜66）。表示されない商品は 404
+     * 商品の詳細。表示されない商品は 404
      *
      * @param productId 商品 ID
      * @return Http 200 : {@link ProductDetail}

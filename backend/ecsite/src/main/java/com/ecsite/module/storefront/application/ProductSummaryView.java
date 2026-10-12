@@ -6,7 +6,7 @@ import jakarta.annotation.Nullable;
 import java.util.UUID;
 
 /**
- * C 側の商品一覧の 1 件（AC-55、56）
+ * C 側の商品一覧の 1 件
  *
  * @param id           商品 ID
  * @param name         商品名

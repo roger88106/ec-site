@@ -49,7 +49,7 @@ class JooqOrderableVariantQueryRepository implements OrderableVariantQueryReposi
      */
     @Override
     public Map<UUID, OrderableVariant> findVariants(Collection<UUID> variantIds, Instant now) {
-        // 表示条件（BR-2）は、一覧・検索と同じ部品で判定する
+        // 表示条件は、一覧・検索と同じ部品で判定する
         var visible = DSL.field(ProductVisibility.visibleAt(now));
         var rows = dsl.select(VARIANT.ID, VARIANT.PRODUCT_ID, PRODUCT.PRODUCT_CODE, VARIANT.VARIANT_CODE, PRODUCT.NAME,
                         PRODUCT.PRICE_EXCL_TAX, PRODUCT.TAX_CATEGORY_ID, VARIANT.IMAGE_ID, visible, VARIANT.SALES_SUSPENDED)
@@ -68,7 +68,7 @@ class JooqOrderableVariantQueryRepository implements OrderableVariantQueryReposi
             var variantId = row.get(VARIANT.ID);
             var productId = row.get(VARIANT.PRODUCT_ID);
             var imageId = row.get(VARIANT.IMAGE_ID);
-            // バリアントの画像、なければ代表画像（AC-38）
+            // バリアントの画像、なければ代表画像
             var imageUrl = imageId != null && imageUrls.containsKey(imageId)
                     ? imageUrls.get(imageId)
                     : representatives.get(productId);

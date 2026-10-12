@@ -41,7 +41,7 @@ public class ProductQueryService {
     private final Clock clock;
 
     /**
-     * 商品の詳細を取得する。税込価格は現時点の税率で計算する（AC-19）。
+     * 商品の詳細を取得する。税込価格は現時点の税率で計算する。
      *
      * @param id 商品 ID
      * @return 商品の詳細
@@ -56,7 +56,7 @@ public class ProductQueryService {
     }
 
     /**
-     * B 側の商品一覧を取得する（AC-47〜50）。
+     * B 側の商品一覧を取得する。
      *
      * @param query   絞り込みの条件
      * @param request ページの指定

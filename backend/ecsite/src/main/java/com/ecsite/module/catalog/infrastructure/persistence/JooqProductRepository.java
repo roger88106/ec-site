@@ -45,7 +45,7 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 class JooqProductRepository implements ProductRepository {
 
     /**
-     * 制約名 → 業務のエラー。所属カテゴリの外部キーの違反は、存在しないカテゴリか、同時に削除されたカテゴリ（AC-12）
+     * 制約名 → 業務のエラー。所属カテゴリの外部キーの違反は、存在しないカテゴリか、同時に削除されたカテゴリ
      */
     private static final ConstraintViolationTranslator CONSTRAINTS = ConstraintViolationTranslator.of(Map.of(
             Keys.PRODUCT_PRODUCT_CODE_KEY.getName(), () -> BusinessException.of(ProductErrorCode.PRODUCT_CODE_ALREADY_EXISTS),

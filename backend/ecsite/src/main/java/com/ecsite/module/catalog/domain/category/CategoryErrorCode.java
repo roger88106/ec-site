@@ -15,23 +15,23 @@ public enum CategoryErrorCode implements ErrorCodeProvider {
      */
     INVALID_CATEGORY_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 4 階層目のカテゴリを登録しようとした（AC-9）
+     * 4 階層目のカテゴリを登録しようとした
      */
     CATEGORY_DEPTH_EXCEEDED(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**
-     * 同じ親の下で名称が重複している（AC-10）
+     * 同じ親の下で名称が重複している
      */
     CATEGORY_NAME_ALREADY_EXISTS(ErrorType.CONFLICT_ERROR),
     /**
-     * 並び順の変更で送られたカテゴリが、兄弟と過不足なく一致しない（AC-11）
+     * 並び順の変更で送られたカテゴリが、兄弟と過不足なく一致しない
      */
     INVALID_CATEGORY_ORDER(ErrorType.VALIDATION_ERROR),
     /**
-     * 子カテゴリを持つカテゴリを削除しようとした（AC-12）
+     * 子カテゴリを持つカテゴリを削除しようとした
      */
     CATEGORY_HAS_CHILDREN(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 商品が所属しているカテゴリを削除しようとした（AC-12）
+     * 商品が所属しているカテゴリを削除しようとした
      */
     CATEGORY_HAS_PRODUCTS(ErrorType.BUSINESS_RULE_ERROR),
     ;

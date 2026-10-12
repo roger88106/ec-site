@@ -11,15 +11,15 @@ import lombok.Getter;
 public enum ProductErrorCode implements ErrorCodeProvider {
 
     /**
-     * 商品品番の形式が正しくない（AC-15）
+     * 商品品番の形式が正しくない
      */
     INVALID_PRODUCT_CODE(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * バリアント品番の形式が正しくない（AC-21）
+     * バリアント品番の形式が正しくない
      */
     INVALID_VARIANT_CODE(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 税抜価格が 1 円未満（AC-25）
+     * 税抜価格が 1 円未満
      */
     INVALID_PRICE_EXCL_TAX(ErrorType.VALIDATION_ERROR),
     /**
@@ -31,11 +31,11 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     INVALID_PRODUCT_DESCRIPTION(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * バリアント軸が 3 つを超えている、名前が 1 文字以上 30 文字以内でない、または重複している（AC-13）
+     * バリアント軸が 3 つを超えている、名前が 1 文字以上 30 文字以内でない、または重複している
      */
     INVALID_VARIANT_AXES(ErrorType.VALIDATION_ERROR, "maxAxes", "max"),
     /**
-     * 軸の値が商品の軸と同じ数でない、または 1 文字以上 50 文字以内でない（AC-22）
+     * 軸の値が商品の軸と同じ数でない、または 1 文字以上 50 文字以内でない
      */
     INVALID_AXIS_VALUES(ErrorType.VALIDATION_ERROR, "max"),
     /**
@@ -43,19 +43,19 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     INVALID_PUBLICATION_PERIOD(ErrorType.VALIDATION_ERROR),
     /**
-     * 並び順の変更で送られたバリアントが、商品のバリアントと過不足なく一致しない（AC-27）
+     * 並び順の変更で送られたバリアントが、商品のバリアントと過不足なく一致しない
      */
     INVALID_VARIANT_ORDER(ErrorType.VALIDATION_ERROR),
     /**
-     * 並び順の変更で送られた画像が、商品の画像と過不足なく一致しない（AC-37）
+     * 並び順の変更で送られた画像が、商品の画像と過不足なく一致しない
      */
     INVALID_IMAGE_ORDER(ErrorType.VALIDATION_ERROR),
     /**
-     * バリアントに、その商品にない画像を指定した（AC-38）
+     * バリアントに、その商品にない画像を指定した
      */
     INVALID_VARIANT_IMAGE(ErrorType.VALIDATION_ERROR),
     /**
-     * 商品の画像が上限（20 枚）に達している（AC-40）
+     * 商品の画像が上限（20 枚）に達している
      */
     TOO_MANY_PRODUCT_IMAGES(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**
@@ -63,35 +63,35 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     INVALID_CATEGORY_ID(ErrorType.VALIDATION_ERROR),
     /**
-     * 税区分が存在しないか、現時点で有効な税率を持たない（AC-6）
+     * 税区分が存在しないか、現時点で有効な税率を持たない
      */
     TAX_CATEGORY_NOT_ASSIGNABLE(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 商品品番が重複している（AC-14）
+     * 商品品番が重複している
      */
     PRODUCT_CODE_ALREADY_EXISTS(ErrorType.CONFLICT_ERROR),
     /**
-     * バリアント品番が重複している（AC-21）
+     * バリアント品番が重複している
      */
     VARIANT_CODE_ALREADY_EXISTS(ErrorType.CONFLICT_ERROR),
     /**
-     * 商品の中で軸の値の組み合わせが重複している（AC-23）
+     * 商品の中で軸の値の組み合わせが重複している
      */
     VARIANT_AXIS_VALUES_ALREADY_EXISTS(ErrorType.CONFLICT_ERROR),
     /**
-     * 軸を持たない商品に 2 つ目のバリアントを登録しようとした（AC-24）
+     * 軸を持たない商品に 2 つ目のバリアントを登録しようとした
      */
     SINGLE_VARIANT_ONLY(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * バリアントのない商品を公開しようとした、または公開中の商品の最後のバリアントを削除しようとした（AC-31）
+     * バリアントのない商品を公開しようとした、または公開中の商品の最後のバリアントを削除しようとした
      */
     PRODUCT_HAS_NO_VARIANTS(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 販売終了の商品を公開・非公開にしようとした（AC-32）
+     * 販売終了の商品を公開・非公開にしようとした
      */
     PRODUCT_DISCONTINUED(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * C 側に表示されたことのある商品・バリアントを削除しようとした（AC-33、71）
+     * C 側に表示されたことのある商品・バリアントを削除しようとした
      */
     PRODUCT_ALREADY_SHOWN(ErrorType.BUSINESS_RULE_ERROR),
     ;

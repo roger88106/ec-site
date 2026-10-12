@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * 店舗向けの商品カタログの API（docs/modules/catalog.md「他モジュールへの公開」）。<br />
- * 対象は C 側に表示される商品だけ（BR-2）。価格は税込・税抜の両方を返す。
+ * 対象は C 側に表示される商品だけ。価格は税込・税抜の両方を返す。
  */
 @Component
 @RequiredArgsConstructor
@@ -31,7 +31,7 @@ public class StoreCatalogApi {
     private final CategoryQueryService categoryQueryService;
 
     /**
-     * 商品一覧を取得する（AC-51〜54、57）。
+     * 商品一覧を取得する。
      *
      * @param query   絞り込みと並び順
      * @param request ページの指定
@@ -42,7 +42,7 @@ public class StoreCatalogApi {
     }
 
     /**
-     * キーワードで商品を探す（AC-58〜61）。並びは新着順で固定。
+     * キーワードで商品を探す。並びは新着順で固定。
      *
      * @param keyword キーワード
      * @param request ページの指定
@@ -53,7 +53,7 @@ public class StoreCatalogApi {
     }
 
     /**
-     * 商品の詳細を取得する（AC-62、65）。
+     * 商品の詳細を取得する。
      *
      * @param productId 商品 ID
      * @return 商品の詳細。表示されない商品なら空
@@ -63,7 +63,7 @@ public class StoreCatalogApi {
     }
 
     /**
-     * カテゴリの木を取得する（AC-52 の絞り込み用）。
+     * カテゴリの木を取得する（の絞り込み用）。
      *
      * @return 最上位カテゴリの一覧（子孫を含む。運営者が決めた並び順）
      */

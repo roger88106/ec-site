@@ -15,7 +15,7 @@ import java.util.UUID;
 public interface TaxDirectory {
 
     /**
-     * 税区分が、指定した時点で有効な税率を持つかを返す（AC-6）。存在しない税区分は持たないとみなす。
+     * 税区分が、指定した時点で有効な税率を持つかを返す。存在しない税区分は持たないとみなす。
      *
      * @param taxCategoryId 税区分 ID
      * @param instant       時点
@@ -24,7 +24,7 @@ public interface TaxDirectory {
     boolean hasRateAt(UUID taxCategoryId, Instant instant);
 
     /**
-     * 指定した時点の税込価格を返す（AC-19）。
+     * 指定した時点の税込価格を返す。
      *
      * @param taxCategoryId 税区分 ID
      * @param priceExclTax  税抜価格

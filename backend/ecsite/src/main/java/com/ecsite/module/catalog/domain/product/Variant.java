@@ -17,7 +17,7 @@ import java.util.UUID;
  * @param axisValues     軸の値（商品の軸と同じ並び）
  * @param displayOrder   商品の中の表示順
  * @param salesSuspended 販売停止
- * @param imageId        指定した画像（AC-38）。なければ null（代表画像を使う）
+ * @param imageId        指定した画像。なければ null（代表画像を使う）
  */
 @Entity
 public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues,

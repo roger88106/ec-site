@@ -14,7 +14,7 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_CATEGORY;
 
 /**
- * カテゴリによる商品の絞り込みの SQL。B 側の一覧と C 側の一覧で共通（子孫のカテゴリを含む。AC-52）。
+ * カテゴリによる商品の絞り込みの SQL。B 側の一覧と C 側の一覧で共通（子孫のカテゴリを含む）。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class CategoryConditions {
@@ -32,7 +32,7 @@ final class CategoryConditions {
     }
 
     /**
-     * カテゴリと、その子孫のカテゴリの ID を選ぶ。階層は最大 3 なので、子と孫まででよい（AC-9）。
+     * カテゴリと、その子孫のカテゴリの ID を選ぶ。階層は最大 3 なので、子と孫まででよい。
      *
      * @param categoryId カテゴリ ID
      * @return カテゴリ ID の選択

@@ -111,7 +111,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 一覧の条件：表示される商品（BR-2）で、税込価格を出せること。カテゴリ・価格の範囲で絞り込む。
+     * 一覧の条件：表示される商品で、税込価格を出せること。カテゴリ・価格の範囲で絞り込む。
      */
     private static Condition condition(StoreProductQuery query, Instant now, Field<Long> priceInclTax) {
         var condition = ProductVisibility.visibleAt(now).and(priceInclTax.isNotNull());
@@ -128,7 +128,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * 並び順（AC-54）。同じ値なら ID の順にし、ページをまたいでも重複・欠落しないようにする（constitution 9）。
+     * 並び順。同じ値なら ID の順にし、ページをまたいでも重複・欠落しないようにする（constitution 9）。
      */
     private static List<OrderField<?>> orderBy(StoreProductSort sort, Field<Long> priceInclTax) {
         return switch (sort == null ? StoreProductSort.NEWEST : sort) {

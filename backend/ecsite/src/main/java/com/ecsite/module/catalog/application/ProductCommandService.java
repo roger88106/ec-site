@@ -65,7 +65,7 @@ public class ProductCommandService {
     private final ProductLoader productLoader;
 
     /**
-     * 商品を登録する（AC-6、13〜17、25）。
+     * 商品を登録する。
      *
      * @param command 商品の登録コマンド
      * @return 登録した商品の ID
@@ -95,7 +95,7 @@ public class ProductCommandService {
     }
 
     /**
-     * 商品を編集する（AC-6、18、19、25、26）。
+     * 商品を編集する。
      *
      * @param command 商品の編集コマンド
      */
@@ -118,7 +118,7 @@ public class ProductCommandService {
     }
 
     /**
-     * 商品を削除する（AC-33）。画像のアセットも手放す（配信のファイルは、コミットの後にメディアモジュールが消す）。
+     * 商品を削除する。画像のアセットも手放す（配信のファイルは、コミットの後にメディアモジュールが消す）。
      *
      * @param productId 商品 ID
      * @param version   取得時のバージョン
@@ -136,7 +136,7 @@ public class ProductCommandService {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 税区分が現時点で有効な税率を持つことを確かめる（AC-6）。
+     * 税区分が現時点で有効な税率を持つことを確かめる。
      *
      * @param taxCategoryId 税区分 ID
      * @param now           現在時刻

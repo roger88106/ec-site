@@ -14,7 +14,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品画像のアプリケーションサービス（US-7。plan 001 第 7 節）。<br />
+ * 商品画像のアプリケーションサービス。<br />
  * ファイルの受け付け・検証・配信・削除はメディアモジュールが行い、ここでは商品の規則（枚数、並び順、バリアントの画像）を扱う。
  */
 @Service
@@ -37,7 +37,7 @@ public class ProductImageService {
     private final ProductLoader productLoader;
 
     /**
-     * 画像のアップロードを受け付ける（AC-39、40）。枚数を確かめ、形式と大きさはメディアモジュールが確かめる。<br />
+     * 画像のアップロードを受け付ける。枚数を確かめ、形式と大きさはメディアモジュールが確かめる。<br />
      * 受付は DB に記録しない（受付の範囲を商品 ID にする。登録されなかったファイルはライフサイクル規則で消える）。
      *
      * @param productId     商品 ID
@@ -54,7 +54,7 @@ public class ProductImageService {
     }
 
     /**
-     * 受け付けた画像を登録する（AC-37、39、40）。<br />
+     * 受け付けた画像を登録する。<br />
      * 同じトランザクションの中で、メディアモジュールにアセットを確定させ（ファイルの中身を確かめる）、商品の画像の最後に加える。
      *
      * @param productId 商品 ID
@@ -76,7 +76,7 @@ public class ProductImageService {
     }
 
     /**
-     * 画像の並び順を変更する（AC-37）。
+     * 画像の並び順を変更する。
      *
      * @param productId 商品 ID
      * @param imageIds  並べたい順の画像 ID（すべて）
@@ -109,7 +109,7 @@ public class ProductImageService {
     }
 
     /**
-     * バリアントの画像を指定する（AC-38）。
+     * バリアントの画像を指定する。
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID

@@ -71,7 +71,7 @@ class ProductController implements ProductApi {
 // ============================== GET ==============================
 
     /**
-     * 商品の一覧・絞り込み（AC-47〜50）
+     * 商品の一覧・絞り込み
      *
      * @param code       商品品番またはバリアント品番の前方一致
      * @param name       商品名の部分一致
@@ -103,7 +103,7 @@ class ProductController implements ProductApi {
 // ============================== POST ==============================
 
     /**
-     * 商品の登録（AC-6、13〜17、25）
+     * 商品の登録
      *
      * @param request 商品の登録リクエスト
      * @return Http 201 : {@link CreatedId}
@@ -123,7 +123,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの登録（AC-20〜24）。商品の一部で単独の URL を持たないので、Location は返さない
+     * バリアントの登録。商品の一部で単独の URL を持たないので、Location は返さない
      *
      * @param productId 商品 ID
      * @param request   バリアントの登録リクエスト
@@ -138,7 +138,7 @@ class ProductController implements ProductApi {
 // ============================== PUT ==============================
 
     /**
-     * 商品の編集（AC-6、18、19、25、26）
+     * 商品の編集
      *
      * @param productId 商品 ID
      * @param request   商品の編集リクエスト
@@ -151,7 +151,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 公開する（AC-29、31）。冪等
+     * 公開する。冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -163,7 +163,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 非公開にする（AC-30）。冪等
+     * 非公開にする。冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -175,7 +175,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 販売終了にする（AC-32）。冪等
+     * 販売終了にする。冪等
      *
      * @param productId 商品 ID
      * @return Http 204 : VOID
@@ -187,7 +187,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 公開期間の設定（AC-34〜36）
+     * 公開期間の設定
      *
      * @param productId 商品 ID
      * @param request   公開期間の設定リクエスト
@@ -200,7 +200,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの表示順の変更（AC-27）
+     * バリアントの表示順の変更
      *
      * @param productId 商品 ID
      * @param request   バリアントの並び順の変更リクエスト
@@ -213,7 +213,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの販売停止（AC-28）。冪等
+     * バリアントの販売停止。冪等
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -226,7 +226,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの販売停止の解除（AC-28）。冪等
+     * バリアントの販売停止の解除。冪等
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -238,10 +238,10 @@ class ProductController implements ProductApi {
         return ResponseEntity.noContent().build();
     }
 
-// ============================== 商品画像（US-7） ==============================
+// ============================== 商品画像 ==============================
 
     /**
-     * 画像のアップロードの受付（AC-39、40）
+     * 画像のアップロードの受付
      *
      * @param productId 商品 ID
      * @param request   画像のアップロードの受付リクエスト
@@ -254,7 +254,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 受け付けた画像の登録（AC-37、39、40）。商品の一部で単独の URL を持たないので、Location は返さない
+     * 受け付けた画像の登録。商品の一部で単独の URL を持たないので、Location は返さない
      *
      * @param productId 商品 ID
      * @param request   画像の登録リクエスト
@@ -267,7 +267,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 画像の並び順の変更（AC-37）
+     * 画像の並び順の変更
      *
      * @param productId 商品 ID
      * @param request   画像の並び順の変更リクエスト
@@ -281,7 +281,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * 画像の削除（AC-37）
+     * 画像の削除
      *
      * @param productId 商品 ID
      * @param imageId   画像 ID
@@ -295,7 +295,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの画像の指定（AC-38）
+     * バリアントの画像の指定
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -311,7 +311,7 @@ class ProductController implements ProductApi {
 // ============================== DELETE ==============================
 
     /**
-     * 商品の削除（AC-33）
+     * 商品の削除
      *
      * @param productId 商品 ID
      * @param version   取得時のバージョン
@@ -324,7 +324,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの削除（AC-71）
+     * バリアントの削除
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID

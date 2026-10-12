@@ -33,7 +33,7 @@ public class CategoryCommandService {
     private final CategoryFactory categoryFactory;
 
     /**
-     * カテゴリを登録する（AC-8〜10）。兄弟の最後に並べる。
+     * カテゴリを登録する。兄弟の最後に並べる。
      *
      * @param command カテゴリの登録コマンド
      * @return 登録したカテゴリの ID
@@ -54,7 +54,7 @@ public class CategoryCommandService {
     }
 
     /**
-     * カテゴリ名を変更する（AC-10、11）。
+     * カテゴリ名を変更する。
      *
      * @param command カテゴリ名の変更コマンド
      */
@@ -76,7 +76,7 @@ public class CategoryCommandService {
     }
 
     /**
-     * 兄弟カテゴリの並び順を変更する（AC-11）。
+     * 兄弟カテゴリの並び順を変更する。
      *
      * @param command 並び順の変更コマンド
      */
@@ -95,7 +95,7 @@ public class CategoryCommandService {
     }
 
     /**
-     * カテゴリを削除する（AC-12）。
+     * カテゴリを削除する。
      *
      * @param categoryId カテゴリ ID
      */

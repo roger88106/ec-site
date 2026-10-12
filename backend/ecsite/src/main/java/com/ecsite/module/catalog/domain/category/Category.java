@@ -28,7 +28,7 @@ public class Category extends AggregateRoot {
     static final int NAME_MAX_LENGTH = 50;
 
     /**
-     * 階層の最大の深さ（AC-9）
+     * 階層の最大の深さ
      */
     static final int MAX_DEPTH = 3;
 
@@ -93,7 +93,7 @@ public class Category extends AggregateRoot {
     }
 
     /**
-     * カテゴリを作る（AC-8、9）。
+     * カテゴリを作る。
      *
      * @param id           カテゴリ ID
      * @param parent       親カテゴリ。最上位なら null
@@ -111,7 +111,7 @@ public class Category extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
-     * 名称を変更する（AC-11）。
+     * 名称を変更する。
      *
      * @param name 新しい名称
      */
@@ -120,7 +120,7 @@ public class Category extends AggregateRoot {
     }
 
     /**
-     * 兄弟の並び順を変更する（AC-11）。<br />
+     * 兄弟の並び順を変更する。<br />
      * 送られた順に 1 から表示順を振り直す。兄弟と過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
      *
      * @param siblings   同じ親を持つ、今のカテゴリのすべて

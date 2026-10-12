@@ -7,7 +7,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.List;
 
 /**
- * バリアント品番（AC-21）。形式は商品品番と同じ。<br />
+ * バリアント品番。形式は商品品番と同じ。<br />
  * 業務上の番号であり、他のデータからの参照には使わない（constitution 7.1）。
  *
  * @param value バリアント品番

@@ -34,7 +34,7 @@ public class VariantCommandService {
     private final Clock clock;
 
     /**
-     * バリアントを登録する（AC-20〜24）。
+     * バリアントを登録する。
      *
      * @param command バリアントの登録コマンド
      * @return 登録したバリアントの ID
@@ -52,7 +52,7 @@ public class VariantCommandService {
     }
 
     /**
-     * バリアントを削除する（AC-71）。
+     * バリアントを削除する。
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -68,7 +68,7 @@ public class VariantCommandService {
     }
 
     /**
-     * バリアントの並び順を変更する（AC-27）。
+     * バリアントの並び順を変更する。
      *
      * @param command バリアントの並び順の変更コマンド
      */
@@ -82,7 +82,7 @@ public class VariantCommandService {
     }
 
     /**
-     * バリアントを販売停止にする（AC-28）。冪等。
+     * バリアントを販売停止にする。冪等。
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID
@@ -93,7 +93,7 @@ public class VariantCommandService {
     }
 
     /**
-     * バリアントの販売停止を解除する（AC-28）。冪等。
+     * バリアントの販売停止を解除する。冪等。
      *
      * @param productId 商品 ID
      * @param variantId バリアント ID

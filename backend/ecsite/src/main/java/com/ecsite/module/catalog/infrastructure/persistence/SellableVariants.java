@@ -12,7 +12,7 @@ import java.util.UUID;
 import static com.ecsite.jooq.catalog.Tables.VARIANT;
 
 /**
- * 販売中（販売停止でない）のバリアントの取得。C 側の一覧と検索で共通（在庫の有無の判定に使う。AC-56）。
+ * 販売中（販売停止でない）のバリアントの取得。C 側の一覧と検索で共通（在庫の有無の判定に使う）。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class SellableVariants {

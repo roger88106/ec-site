@@ -15,7 +15,7 @@ import java.util.UUID;
 public class ProductFactory {
 
     /**
-     * 商品を作る（AC-13、17）。登録直後は非公開で、バリアントはない。
+     * 商品を作る。登録直後は非公開で、バリアントはない。
      *
      * @param productCode   商品品番
      * @param name          商品名

@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * C 側のカテゴリの木の節（AC-52 の絞り込み用）
+ * C 側のカテゴリの木の節（の絞り込み用）
  *
  * @param id       カテゴリ ID
  * @param name     名称

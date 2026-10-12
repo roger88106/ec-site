@@ -53,7 +53,7 @@ public class Product extends AggregateRoot {
     static final int DESCRIPTION_MAX_LENGTH = 10_000;
 
     /**
-     * バリアント軸の最大の数（AC-13）
+     * バリアント軸の最大の数
      */
     static final int MAX_AXES = 3;
 
@@ -68,7 +68,7 @@ public class Product extends AggregateRoot {
     static final int AXIS_VALUE_MAX_LENGTH = 50;
 
     /**
-     * 1 商品あたりの画像の上限（AC-40）
+     * 1 商品あたりの画像の上限
      */
     static final int MAX_IMAGES = 20;
 
@@ -81,7 +81,7 @@ public class Product extends AggregateRoot {
     private final UUID id;
 
     /**
-     * 商品品番。登録後は変更できない（AC-15）
+     * 商品品番。登録後は変更できない
      */
     private final ProductCode productCode;
 
@@ -170,7 +170,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 商品を作る（AC-13、17）。登録直後は非公開で、バリアントはない。
+     * 商品を作る。登録直後は非公開で、バリアントはない。
      *
      * @param id            商品 ID
      * @param productCode   商品品番
@@ -192,7 +192,7 @@ public class Product extends AggregateRoot {
 // ============================== Getter（ほかのフィールドの Getter は Lombok で作る） ==============================
 
     /**
-     * @return 代表画像（画像の並びの先頭。AC-37）。画像がなければ空
+     * @return 代表画像（画像の並びの先頭）。画像がなければ空
      */
     public Optional<ProductImage> representativeImage() {
         return images.stream().findFirst();
@@ -201,8 +201,8 @@ public class Product extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
-     * 商品を編集する（AC-18、19、25）。税抜価格が変わったら、商品価格変更のイベントを登録する。<br />
-     * 税区分に有効な税率があること（AC-6）は、税モジュールに確かめる必要があるため、アプリケーション層で検証する。
+     * 商品を編集する。税抜価格が変わったら、商品価格変更のイベントを登録する。<br />
+     * 税区分に有効な税率があることは、税モジュールに確かめる必要があるため、アプリケーション層で検証する。
      *
      * @param name          商品名
      * @param description   説明
@@ -229,7 +229,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを登録する（AC-20〜24）。並びの最後に加える。
+     * バリアントを登録する。並びの最後に加える。
      *
      * @param variantCode バリアント品番
      * @param axisValues  軸の値（商品の軸と同じ並び）
@@ -258,8 +258,8 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを削除する（AC-71）。C 側に表示されたことのある商品のバリアントは削除できない。<br />
-     * 公開中の商品の最後のバリアントも削除できない（AC-31 と同じ理由）。
+     * バリアントを削除する。C 側に表示されたことのある商品のバリアントは削除できない。<br />
+     * 公開中の商品の最後のバリアントも削除できない（同じ理由）。
      *
      * @param variantId バリアント ID
      * @param now       現在時刻
@@ -281,7 +281,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントの並び順を変更する（AC-27）。送られた順に 1 から表示順を振り直す。<br />
+     * バリアントの並び順を変更する。送られた順に 1 から表示順を振り直す。<br />
      * すべてのバリアントと過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
      *
      * @param orderedIds 並べたい順のバリアント ID
@@ -292,7 +292,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントを販売停止にする（AC-28）。すでに販売停止なら何もしない（冪等）。<br />
+     * バリアントを販売停止にする。すでに販売停止なら何もしない（冪等）。<br />
      * 販売停止のバリアントも C 側の選択肢に出るが、選べない。販売終了の商品のバリアントも停止できる。
      *
      * @param variantId バリアント ID
@@ -303,7 +303,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントの販売停止を解除する（AC-28）。販売停止でなければ何もしない（冪等）。
+     * バリアントの販売停止を解除する。販売停止でなければ何もしない（冪等）。
      *
      * @param variantId バリアント ID
      * @return 変わったら true。販売停止でなければ false
@@ -313,7 +313,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を加えられるか（上限の 20 枚に達していないか）を確かめる（AC-40）。<br />
+     * 画像を加えられるか（上限の 20 枚に達していないか）を確かめる。<br />
      * アップロードの受付の前に呼ぶ。登録のときも {@link #addImage} が確かめ直す。
      */
     public void verifyCanAddImage() {
@@ -323,7 +323,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を並びの最後に加える（AC-37、40）。ファイルは、呼び出す前にメディアモジュールでアセットとして確定しておく。
+     * 画像を並びの最後に加える。ファイルは、呼び出す前にメディアモジュールでアセットとして確定しておく。
      *
      * @param imageId 画像 ID
      * @param assetId メディアモジュールのアセット ID
@@ -337,7 +337,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像の並び順を変更する（AC-37）。送られた順に 1 から表示順を振り直す。先頭が代表画像になる。<br />
+     * 画像の並び順を変更する。送られた順に 1 から表示順を振り直す。先頭が代表画像になる。<br />
      * すべての画像と過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
      *
      * @param orderedIds 並べたい順の画像 ID
@@ -366,7 +366,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアントの画像を指定する（AC-38）。指定できるのは、その商品の画像だけ。
+     * バリアントの画像を指定する。指定できるのは、その商品の画像だけ。
      *
      * @param variantId バリアント ID
      * @param imageId   画像 ID。null で指定を外す（代表画像を使う）
@@ -384,7 +384,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開する（AC-29、31）。すでに公開なら何もしない（冪等）。
+     * 公開する。すでに公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
      * @return 状態が変わったら true。すでにその状態なら false
@@ -406,7 +406,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 非公開にする（AC-30）。すでに非公開なら何もしない（冪等）。
+     * 非公開にする。すでに非公開なら何もしない（冪等）。
      *
      * @param now 現在時刻
      * @return 状態が変わったら true。すでにその状態なら false
@@ -425,7 +425,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 販売終了にする（AC-32）。すでに販売終了なら何もしない（冪等）。
+     * 販売終了にする。すでに販売終了なら何もしない（冪等）。
      *
      * @param now 現在時刻
      * @return 状態が変わったら true。すでにその状態なら false
@@ -443,7 +443,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開期間を変える（AC-34〜36）。終了が開始より後であることは、公開期間（値オブジェクト）が検証する。<br />
+     * 公開期間を変える。終了が開始より後であることは、公開期間（値オブジェクト）が検証する。<br />
      * 公開中なら、表示前の初回表示日時を計算し直す（docs/modules/catalog.md）。表示されて確定した値は変わらない。
      *
      * @param period 公開期間
@@ -457,7 +457,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 削除する（AC-33）。C 側に表示されたことのある商品は削除できない。<br />
+     * 削除する。C 側に表示されたことのある商品は削除できない。<br />
      * 削除そのものはリポジトリが行う。ここでは削除できるかを検証し、イベントを登録する。
      *
      * @param now 現在時刻
@@ -540,7 +540,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 並び替える。送られた順に 1 から表示順を振り直す（AC-27、37）。<br />
+     * 並び替える。送られた順に 1 から表示順を振り直す。<br />
      * 今の要素と過不足なく一致しなければ（重複・漏れ・ないものを含めば）、何も変えずに業務のエラーを投げる。
      *
      * @param items            今の要素
@@ -562,7 +562,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 販売終了でないことを検証する（AC-32）。
+     * 販売終了でないことを検証する。
      */
     private void verifyNotDiscontinued() {
         if (status == PublicationStatus.DISCONTINUED) {
@@ -578,7 +578,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜50 文字であることを検証する（AC-22）。<br />
+     * 軸の値が、商品の軸と同じ数で、それぞれ 1〜50 文字であることを検証する。<br />
      * 軸キーの区切り文字は、値に含められない。
      *
      * @param axisValues 軸の値
@@ -618,7 +618,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * バリアント軸が 0〜3 つで、名前が 1〜30 文字、重複がないことを検証する（AC-13）。
+     * バリアント軸が 0〜3 つで、名前が 1〜30 文字、重複がないことを検証する。
      *
      * @param axes バリアント軸の名前
      * @return 変更できない一覧

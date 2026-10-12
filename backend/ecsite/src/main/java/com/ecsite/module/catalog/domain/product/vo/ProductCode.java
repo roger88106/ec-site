@@ -7,7 +7,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.util.List;
 
 /**
- * 商品品番（AC-15）。<br />
+ * 商品品番。<br />
  * 業務上の番号であり、他のデータからの参照には使わない（constitution 7.1）。
  *
  * @param value 商品品番

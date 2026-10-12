@@ -34,7 +34,7 @@ public class ProductPublicationService {
     private final Clock clock;
 
     /**
-     * 公開する（AC-29、31）。冪等。
+     * 公開する。冪等。
      *
      * @param productId 商品 ID
      */
@@ -44,7 +44,7 @@ public class ProductPublicationService {
     }
 
     /**
-     * 非公開にする（AC-30）。冪等。
+     * 非公開にする。冪等。
      *
      * @param productId 商品 ID
      */
@@ -54,7 +54,7 @@ public class ProductPublicationService {
     }
 
     /**
-     * 販売終了にする（AC-32）。冪等。
+     * 販売終了にする。冪等。
      *
      * @param productId 商品 ID
      */
@@ -64,7 +64,7 @@ public class ProductPublicationService {
     }
 
     /**
-     * 公開期間を変更する（AC-34〜36）。
+     * 公開期間を変更する。
      *
      * @param command 公開期間の変更コマンド
      */

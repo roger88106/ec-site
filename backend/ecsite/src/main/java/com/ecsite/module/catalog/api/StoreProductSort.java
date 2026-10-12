@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.api;
 
 /**
- * C 側の商品一覧の並び順（AC-54）。同じ値なら商品 ID の順
+ * C 側の商品一覧の並び順。同じ値なら商品 ID の順
  */
 public enum StoreProductSort {
 

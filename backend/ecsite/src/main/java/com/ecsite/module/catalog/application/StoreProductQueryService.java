@@ -18,7 +18,7 @@ import java.util.UUID;
 
 /**
  * C 側向けの商品照会のクエリサービス。<br />
- * 表示時刻は呼ばれた時点の現在時刻。税率の一覧はキャッシュされる（最大 30 秒）が、商品・価格・公開状態はキャッシュしない（NFR-1）。
+ * 表示時刻は呼ばれた時点の現在時刻。税率の一覧はキャッシュされる（最大 30 秒）が、商品・価格・公開状態はキャッシュしない。
  */
 @Service
 @RequiredArgsConstructor
@@ -46,7 +46,7 @@ public class StoreProductQueryService {
     private final Clock clock;
 
     /**
-     * C 側の商品一覧を取得する（AC-51〜54、57）。
+     * C 側の商品一覧を取得する。
      *
      * @param query   絞り込みと並び順
      * @param request ページの指定
@@ -58,7 +58,7 @@ public class StoreProductQueryService {
     }
 
     /**
-     * キーワードで商品を探す（AC-58〜61）。
+     * キーワードで商品を探す。
      *
      * @param keyword キーワード
      * @param request ページの指定
@@ -70,7 +70,7 @@ public class StoreProductQueryService {
     }
 
     /**
-     * C 側の商品の詳細を取得する（AC-62、65）。
+     * C 側の商品の詳細を取得する。
      *
      * @param id 商品 ID
      * @return 商品の詳細。表示されない商品なら空（存在しない商品と同じ扱い）

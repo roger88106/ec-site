@@ -54,7 +54,7 @@ public record ProductDetailView(UUID id, String productCode, String name, String
      * @param variantCode    バリアント品番
      * @param axisValues     軸の値（商品の軸と同じ並び）
      * @param salesSuspended 販売停止
-     * @param imageId        指定した画像（AC-38）。なければ null
+     * @param imageId        指定した画像。なければ null
      */
     public record VariantView(UUID id, String variantCode, List<String> axisValues, boolean salesSuspended,
                               @Nullable UUID imageId) {

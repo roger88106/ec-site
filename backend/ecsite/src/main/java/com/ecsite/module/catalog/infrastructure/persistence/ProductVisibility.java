@@ -10,7 +10,7 @@ import java.time.Instant;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 
 /**
- * C 側に表示される条件（BR-2）の SQL。<br />
+ * C 側に表示される条件の SQL。<br />
  * 一覧と検索の両方で、この部品だけを使う。検索だけに非公開の商品が出る事故を防ぐため（docs/modules/catalog.md）。
  * ドメインの {@code Product#isVisibleAt} と同じ条件で、両者の一致は統合テストで確かめる。
  */

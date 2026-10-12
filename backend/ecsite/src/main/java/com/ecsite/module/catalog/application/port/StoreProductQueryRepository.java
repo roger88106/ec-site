@@ -14,13 +14,13 @@ import java.util.UUID;
 
 /**
  * C 側向けの商品照会のクエリリポジトリ。<br />
- * 対象は C 側に表示される商品（BR-2）だけ。税込価格は、渡された税区分ごとの率で SQL で計算する（docs/modules/catalog.md）。
+ * 対象は C 側に表示される商品だけ。税込価格は、渡された税区分ごとの率で SQL で計算する（docs/modules/catalog.md）。
  * 率のない税区分の商品は、税込価格を出せないので対象にしない。
  */
 public interface StoreProductQueryRepository {
 
     /**
-     * C 側の商品一覧を取得する（AC-51〜54、57）。
+     * C 側の商品一覧を取得する。
      *
      * @param query   絞り込みと並び順
      * @param request ページの指定
@@ -32,7 +32,7 @@ public interface StoreProductQueryRepository {
                                                 Map<UUID, BigDecimal> rates);
 
     /**
-     * C 側の商品の詳細を取得する（AC-62、65）。
+     * C 側の商品の詳細を取得する。
      *
      * @param id    商品 ID
      * @param now   表示時刻

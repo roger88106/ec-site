@@ -6,7 +6,7 @@ import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
- * 税抜価格。1 円以上の整数（AC-25）。全バリアント共通。
+ * 税抜価格。1 円以上の整数。全バリアント共通。
  *
  * @param yen 税抜価格（円）
  */

@@ -65,7 +65,7 @@ class CategoryController implements CategoryApi {
 // ============================== POST ==============================
 
     /**
-     * カテゴリの登録（AC-8〜10）
+     * カテゴリの登録
      *
      * @param request カテゴリの登録リクエスト
      * @return Http 201 : {@link CreatedId}
@@ -87,7 +87,7 @@ class CategoryController implements CategoryApi {
 // ============================== PUT ==============================
 
     /**
-     * カテゴリ名の変更（AC-10、11）
+     * カテゴリ名の変更
      *
      * @param categoryId カテゴリ ID
      * @param request    カテゴリ名の変更リクエスト
@@ -100,7 +100,7 @@ class CategoryController implements CategoryApi {
     }
 
     /**
-     * 兄弟カテゴリの並び順の変更（AC-11）
+     * 兄弟カテゴリの並び順の変更
      *
      * @param request 並び順の変更リクエスト
      * @return Http 204 : VOID
@@ -114,7 +114,7 @@ class CategoryController implements CategoryApi {
 // ============================== DELETE ==============================
 
     /**
-     * カテゴリの削除（AC-12）
+     * カテゴリの削除
      *
      * @param categoryId カテゴリ ID
      * @return Http 204 : VOID

@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /**
  * 注文に使うバリアントの情報（docs/modules/catalog.md「他モジュールへの公開」）。<br />
- * カートに入れられるか（AC-72）、購入できるか（AC-80）の判定と、注文の写し（AC-92）に使う。
+ * カートに入れられるか、購入できるかの判定と、注文の写しに使う。
  *
  * @param variantId      バリアント ID
  * @param productId      商品 ID
@@ -19,7 +19,7 @@ import java.util.UUID;
  * @param priceExclTax   税抜価格（商品の価格。バリアント間で共通）
  * @param taxCategoryId  税区分 ID
  * @param imageUrl       バリアントの画像、なければ商品の代表画像の URL。どちらもなければ null
- * @param visible        商品が現在 C 側に表示されるか（BR-2）
+ * @param visible        商品が現在 C 側に表示されるか
  * @param salesSuspended バリアントが販売停止か
  */
 public record OrderableVariant(UUID variantId, UUID productId, String productCode, String variantCode,

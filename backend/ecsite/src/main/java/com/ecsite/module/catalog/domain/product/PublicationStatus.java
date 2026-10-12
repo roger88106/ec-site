@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.product;
 
 /**
- * 公開状態（AC-32）
+ * 公開状態
  */
 public enum PublicationStatus {
 

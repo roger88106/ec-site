@@ -11,7 +11,7 @@ import java.util.UUID;
 public class CategoryFactory {
 
     /**
-     * カテゴリを作る（AC-8、9）。
+     * カテゴリを作る。
      *
      * @param parent       親カテゴリ。最上位なら null
      * @param name         名称

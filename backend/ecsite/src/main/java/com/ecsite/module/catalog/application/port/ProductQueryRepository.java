@@ -24,7 +24,7 @@ public interface ProductQueryRepository {
     Optional<ProductDetailView> findDetailById(UUID id);
 
     /**
-     * B 側の商品一覧を取得する（AC-47〜50）。状態に関係なく、すべての商品が対象。<br />
+     * B 側の商品一覧を取得する。状態に関係なく、すべての商品が対象。<br />
      * 並びは登録日時の新しい順で、同じなら ID の順。
      *
      * @param query   絞り込みの条件

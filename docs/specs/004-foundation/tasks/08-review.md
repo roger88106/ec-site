@@ -26,7 +26,7 @@
 | DC-5 | ○ | `docs/notation.md` に番号と記号の辞書がある。AGENTS.md の最初に読むものに入っている |
 | DC-6 | ○ | constitution 15 に、spec の 2 つの種類と書き方がある |
 | DC-63 | ○ | README は全体像・文書の地図・進み具合だけ。手順・アカウント・環境変数は `docs/dev/` にあり、README から引ける |
-| DC-7 | △ | CI の push は、文書・skill・`scripts/dev/` などだけの変更では流れない（`paths-ignore`）。pull request はいつも流れる設定。文書だけの push で流れないことの確かめが残る（T4204） |
+| DC-7 | ○ | CI の push は、文書・skill・`scripts/dev/` などだけの変更では流れない（`paths-ignore`）。T4804 の commit（7c161b2、MD だけ）を push して、CI が流れないことを確かめた（T4204）。pull request はいつも流れる設定 |
 | DC-8 | △ | 直下に `LICENSE`（MIT）、各 `package.json` に `"license": "MIT"`。GitHub の判定は既定のブランチ（main）を見るので、develop を main に入れた後に確かめる |
 | DC-9 | ○ | constitution 17 と `scripts/ci/licenses/policy.json`（許可・条件付き・禁止、有料の版がある製品の扱い） |
 | DC-10 | ○ | 手元で禁止の部品を足すと、バックエンド（`checkLicense`）とフロント（`check-frontend.mjs`）の検査がそれぞれ失敗した（T4506）。どちらも CI で流す |

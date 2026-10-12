@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.net.URI;
 import java.time.Clock;
 import java.util.Collection;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
@@ -133,7 +134,7 @@ class MediaService implements MediaApi {
      */
     private static void verifySize(long size) {
         if (size <= 0 || size > ImageFormat.MAX_BYTES) {
-            throw BusinessException.of(MediaErrorCode.IMAGE_TOO_LARGE);
+            throw BusinessException.of(MediaErrorCode.IMAGE_TOO_LARGE, List.of(ImageFormat.MAX_BYTES / (1024 * 1024)));
         }
     }
 }

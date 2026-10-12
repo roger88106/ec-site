@@ -13,11 +13,11 @@ public enum ProductErrorCode implements ErrorCodeProvider {
     /**
      * 商品品番の形式が正しくない（AC-15）
      */
-    INVALID_PRODUCT_CODE(ErrorType.VALIDATION_ERROR),
+    INVALID_PRODUCT_CODE(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * バリアント品番の形式が正しくない（AC-21）
      */
-    INVALID_VARIANT_CODE(ErrorType.VALIDATION_ERROR),
+    INVALID_VARIANT_CODE(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 税抜価格が 1 円未満（AC-25）
      */
@@ -25,19 +25,19 @@ public enum ProductErrorCode implements ErrorCodeProvider {
     /**
      * 商品名が 1 文字以上 200 文字以内でない
      */
-    INVALID_PRODUCT_NAME(ErrorType.VALIDATION_ERROR),
+    INVALID_PRODUCT_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 説明が 10,000 文字を超えている
      */
-    INVALID_PRODUCT_DESCRIPTION(ErrorType.VALIDATION_ERROR),
+    INVALID_PRODUCT_DESCRIPTION(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * バリアント軸が 3 つを超えている、名前が 1 文字以上 30 文字以内でない、または重複している（AC-13）
      */
-    INVALID_VARIANT_AXES(ErrorType.VALIDATION_ERROR),
+    INVALID_VARIANT_AXES(ErrorType.VALIDATION_ERROR, "maxAxes", "max"),
     /**
      * 軸の値が商品の軸と同じ数でない、または 1 文字以上 50 文字以内でない（AC-22）
      */
-    INVALID_AXIS_VALUES(ErrorType.VALIDATION_ERROR),
+    INVALID_AXIS_VALUES(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 公開開始日時が公開終了日時より前でない
      */
@@ -57,7 +57,7 @@ public enum ProductErrorCode implements ErrorCodeProvider {
     /**
      * 商品の画像が上限（20 枚）に達している（AC-40）
      */
-    TOO_MANY_PRODUCT_IMAGES(ErrorType.BUSINESS_RULE_ERROR),
+    TOO_MANY_PRODUCT_IMAGES(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**
      * 所属カテゴリに存在しないカテゴリが指定された
      */

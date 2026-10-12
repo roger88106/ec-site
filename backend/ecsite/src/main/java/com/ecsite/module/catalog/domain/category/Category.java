@@ -81,7 +81,7 @@ public class Category extends AggregateRoot {
      */
     private Category(@NonNull UUID id, UUID parentId, String name, int depth, int displayOrder, long version) {
         if (depth < 1 || depth > MAX_DEPTH) {
-            throw BusinessException.of(CategoryErrorCode.CATEGORY_DEPTH_EXCEEDED);
+            throw BusinessException.of(CategoryErrorCode.CATEGORY_DEPTH_EXCEEDED, List.of(MAX_DEPTH));
         }
         if ((parentId == null) != (depth == 1)) {
             throw new IllegalArgumentException("最上位のカテゴリだけが深さ 1 になる：parentId=%s, depth=%d".formatted(parentId, depth));
@@ -158,7 +158,7 @@ public class Category extends AggregateRoot {
      */
     private static String verifyName(String name) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
-            throw BusinessException.of(CategoryErrorCode.INVALID_CATEGORY_NAME);
+            throw BusinessException.of(CategoryErrorCode.INVALID_CATEGORY_NAME, List.of(NAME_MAX_LENGTH));
         }
         return name;
     }

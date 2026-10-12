@@ -45,7 +45,7 @@ public record ErrorMessage(@NonNull String code, @Nullable Map<String, String> p
                 .boxed()
                 .collect(Collectors.toMap(
                         paramKeys::get,
-                        i -> messageParams.get(i) == null ? "" : messageParams.get(i).toString()
+                        i -> MessageHelper.formatValue(messageParams.get(i))
                 ));
 
         return new ErrorMessage(i18n.code(), messageParamsMap);

@@ -319,7 +319,7 @@ public class Product extends AggregateRoot {
      */
     public void verifyCanAddImage() {
         if (images.size() >= MAX_IMAGES) {
-            throw BusinessException.of(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);
+            throw BusinessException.of(ProductErrorCode.TOO_MANY_PRODUCT_IMAGES, List.of(MAX_IMAGES));
         }
     }
 
@@ -592,7 +592,7 @@ public class Product extends AggregateRoot {
         if (axisValues.size() != axes.size()
                 || !axisValues.stream().allMatch(value -> BoundedText.isFilledWithin(value, AXIS_VALUE_MAX_LENGTH)
                 && !value.contains(Variant.AXIS_KEY_SEPARATOR))) {
-            throw BusinessException.of(ProductErrorCode.INVALID_AXIS_VALUES);
+            throw BusinessException.of(ProductErrorCode.INVALID_AXIS_VALUES, List.of(AXIS_VALUE_MAX_LENGTH));
         }
     }
 
@@ -604,7 +604,7 @@ public class Product extends AggregateRoot {
      */
     private static String verifyName(String name) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
-            throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_NAME);
+            throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_NAME, List.of(NAME_MAX_LENGTH));
         }
         return name;
     }
@@ -617,7 +617,7 @@ public class Product extends AggregateRoot {
      */
     private static String verifyDescription(String description) {
         if (!BoundedText.fitsWithin(description, DESCRIPTION_MAX_LENGTH)) {
-            throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
+            throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_DESCRIPTION, List.of(DESCRIPTION_MAX_LENGTH));
         }
         return description;
     }
@@ -632,7 +632,7 @@ public class Product extends AggregateRoot {
         if (axes.size() > MAX_AXES
                 || !axes.stream().allMatch(axis -> BoundedText.isFilledWithin(axis, AXIS_NAME_MAX_LENGTH))
                 || new LinkedHashSet<>(axes).size() != axes.size()) {
-            throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_AXES);
+            throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_AXES, List.of(MAX_AXES, AXIS_NAME_MAX_LENGTH));
         }
         return List.copyOf(axes);
     }

@@ -8,6 +8,7 @@ import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -55,7 +56,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
             throw BusinessException.of(InventoryErrorCode.STOCK_MEMO_REQUIRED);
         }
         if (normalizedMemo != null && !BoundedText.fitsWithin(normalizedMemo, MEMO_MAX_LENGTH)) {
-            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_MEMO);
+            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_MEMO, List.of(MEMO_MAX_LENGTH));
         }
         return new StockAdjustment(UUID.randomUUID(), delta, reason, normalizedMemo, null, null, now, operator);
     }

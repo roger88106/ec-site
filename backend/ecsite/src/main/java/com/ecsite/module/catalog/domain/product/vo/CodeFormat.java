@@ -15,7 +15,7 @@ final class CodeFormat {
     /**
      * 最大の文字数
      */
-    private static final int MAX_LENGTH = 32;
+    static final int MAX_LENGTH = 32;
 
     /**
      * 英数字のかたまりを、ハイフン 1 つでつないだ形

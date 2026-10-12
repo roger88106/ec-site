@@ -74,7 +74,7 @@ public class TaxCategory extends AggregateRoot {
      */
     private TaxCategory(@NonNull UUID id, String name, @NonNull List<TaxRate> rates, long version) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
-            throw BusinessException.of(TaxErrorCode.INVALID_TAX_CATEGORY_NAME);
+            throw BusinessException.of(TaxErrorCode.INVALID_TAX_CATEGORY_NAME, List.of(NAME_MAX_LENGTH));
         }
         this.id = id;
         this.name = name;

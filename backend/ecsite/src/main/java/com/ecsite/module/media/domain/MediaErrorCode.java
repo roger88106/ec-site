@@ -18,7 +18,7 @@ public enum MediaErrorCode implements ErrorCodeProvider {
     /**
      * 画像の大きさが範囲の外（0 バイト、または 10MB を超える。AC-39）
      */
-    IMAGE_TOO_LARGE(ErrorType.VALIDATION_ERROR),
+    IMAGE_TOO_LARGE(ErrorType.VALIDATION_ERROR, "maxMegabytes"),
     /**
      * 受付がない（期限切れで消えたもの、別の範囲のものを含む）
      */

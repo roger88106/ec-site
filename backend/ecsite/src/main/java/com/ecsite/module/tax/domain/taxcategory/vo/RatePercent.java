@@ -6,6 +6,7 @@ import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;
+import java.util.List;
 
 /**
  * 率（%）。0 以上 100 未満、小数第 2 位まで（AC-7）。<br />
@@ -34,7 +35,7 @@ public record RatePercent(BigDecimal value) {
     public RatePercent(@NonNull BigDecimal value) {
         var normalized = normalize(value);
         if (normalized.signum() < 0 || normalized.compareTo(UPPER_BOUND) >= 0 || normalized.scale() > MAX_SCALE) {
-            throw BusinessException.of(TaxErrorCode.INVALID_RATE_PERCENT);
+            throw BusinessException.of(TaxErrorCode.INVALID_RATE_PERCENT, List.of(MAX_SCALE));
         }
         this.value = normalized;
     }

@@ -13,11 +13,11 @@ public enum CartErrorCode implements ErrorCodeProvider {
     /**
      * 1 品目の数量が 1〜10 でない。合算した結果を含む（AC-75）
      */
-    INVALID_CART_QUANTITY(ErrorType.VALIDATION_ERROR),
+    INVALID_CART_QUANTITY(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 31 品目めを入れようとした（AC-75）
      */
-    TOO_MANY_CART_ITEMS(ErrorType.BUSINESS_RULE_ERROR),
+    TOO_MANY_CART_ITEMS(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**
      * 選べないバリアント（表示されない商品、販売停止、存在しない）を入れようとした（AC-72）
      */

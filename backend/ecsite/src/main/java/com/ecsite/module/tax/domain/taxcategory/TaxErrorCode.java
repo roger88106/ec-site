@@ -13,7 +13,7 @@ public enum TaxErrorCode implements ErrorCodeProvider {
     /**
      * 率が 0 以上 100 未満、小数第 2 位まででない（AC-7）
      */
-    INVALID_RATE_PERCENT(ErrorType.VALIDATION_ERROR),
+    INVALID_RATE_PERCENT(ErrorType.VALIDATION_ERROR, "scale"),
     /**
      * 適用期間の開始が終了より前でない（AC-2）
      */
@@ -21,7 +21,7 @@ public enum TaxErrorCode implements ErrorCodeProvider {
     /**
      * 税区分の名称が 1 文字以上 50 文字以内でない
      */
-    INVALID_TAX_CATEGORY_NAME(ErrorType.VALIDATION_ERROR),
+    INVALID_TAX_CATEGORY_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 税区分の名称が重複している（AC-1）
      */

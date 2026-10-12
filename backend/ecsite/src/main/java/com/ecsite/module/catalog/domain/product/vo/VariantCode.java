@@ -4,6 +4,8 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import org.jmolecules.ddd.annotation.ValueObject;
 
+import java.util.List;
+
 /**
  * バリアント品番（AC-21）。形式は商品品番と同じ。<br />
  * 業務上の番号であり、他のデータからの参照には使わない（constitution 7.1）。
@@ -20,7 +22,7 @@ public record VariantCode(String value) {
      */
     public VariantCode {
         if (!CodeFormat.matches(value)) {
-            throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_CODE);
+            throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_CODE, List.of(CodeFormat.MAX_LENGTH));
         }
     }
 

@@ -274,7 +274,7 @@ public class Order extends AggregateRoot {
             return null;
         }
         if (!BoundedText.fitsWithin(reason, REASON_MAX_LENGTH)) {
-            throw BusinessException.of(OrderErrorCode.INVALID_CANCELLATION_REASON);
+            throw BusinessException.of(OrderErrorCode.INVALID_CANCELLATION_REASON, List.of(REASON_MAX_LENGTH));
         }
         return reason;
     }

@@ -4,6 +4,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.BoundedText;
 import org.jmolecules.ddd.annotation.ValueObject;
 
+import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -63,7 +64,7 @@ public record ShippingAddress(String name, String postalCode, String prefecture,
      */
     public static ShippingAddress of(String name, String postalCode, String prefecture, String address, String phone) {
         if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
-            throw BusinessException.of(OrderErrorCode.INVALID_RECIPIENT_NAME);
+            throw BusinessException.of(OrderErrorCode.INVALID_RECIPIENT_NAME, List.of(NAME_MAX_LENGTH));
         }
         if (postalCode == null || !POSTAL_CODE.matcher(postalCode).matches()) {
             throw BusinessException.of(OrderErrorCode.INVALID_POSTAL_CODE);
@@ -72,7 +73,7 @@ public record ShippingAddress(String name, String postalCode, String prefecture,
             throw BusinessException.of(OrderErrorCode.INVALID_PREFECTURE);
         }
         if (!BoundedText.isFilledWithin(address, ADDRESS_MAX_LENGTH)) {
-            throw BusinessException.of(OrderErrorCode.INVALID_ADDRESS);
+            throw BusinessException.of(OrderErrorCode.INVALID_ADDRESS, List.of(ADDRESS_MAX_LENGTH));
         }
         var phoneDigits = phone == null ? "" : phone.replace("-", "");
         if (!PHONE_DIGITS.matcher(phoneDigits).matches()) {

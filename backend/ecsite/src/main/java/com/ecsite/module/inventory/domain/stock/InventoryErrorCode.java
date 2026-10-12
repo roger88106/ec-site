@@ -21,7 +21,7 @@ public enum InventoryErrorCode implements ErrorCodeProvider {
     /**
      * メモが 500 文字を超えている
      */
-    INVALID_STOCK_MEMO(ErrorType.VALIDATION_ERROR),
+    INVALID_STOCK_MEMO(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 調整後の在庫数が負になる（AC-43）
      */

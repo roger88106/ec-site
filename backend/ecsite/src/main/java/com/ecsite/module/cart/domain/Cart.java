@@ -166,7 +166,7 @@ public class Cart {
             items.set(index, items.get(index).withQuantity(merged));
         } else {
             if (items.size() >= MAX_ITEMS) {
-                throw BusinessException.of(CartErrorCode.TOO_MANY_CART_ITEMS);
+                throw BusinessException.of(CartErrorCode.TOO_MANY_CART_ITEMS, List.of(MAX_ITEMS));
             }
             items.add(new CartItem(variantId, quantity, now));
         }
@@ -275,7 +275,7 @@ public class Cart {
      */
     private static void verifyQuantity(int quantity) {
         if (quantity < 1 || quantity > MAX_QUANTITY) {
-            throw BusinessException.of(CartErrorCode.INVALID_CART_QUANTITY);
+            throw BusinessException.of(CartErrorCode.INVALID_CART_QUANTITY, List.of(MAX_QUANTITY));
         }
     }
 

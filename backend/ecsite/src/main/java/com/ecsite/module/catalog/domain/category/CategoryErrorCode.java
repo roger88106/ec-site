@@ -13,11 +13,11 @@ public enum CategoryErrorCode implements ErrorCodeProvider {
     /**
      * カテゴリの名称が 1 文字以上 50 文字以内でない
      */
-    INVALID_CATEGORY_NAME(ErrorType.VALIDATION_ERROR),
+    INVALID_CATEGORY_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 4 階層目のカテゴリを登録しようとした（AC-9）
      */
-    CATEGORY_DEPTH_EXCEEDED(ErrorType.BUSINESS_RULE_ERROR),
+    CATEGORY_DEPTH_EXCEEDED(ErrorType.BUSINESS_RULE_ERROR, "max"),
     /**
      * 同じ親の下で名称が重複している（AC-10）
      */

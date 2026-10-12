@@ -4,6 +4,8 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import org.jmolecules.ddd.annotation.ValueObject;
 
+import java.util.List;
+
 /**
  * 商品品番（AC-15）。<br />
  * 業務上の番号であり、他のデータからの参照には使わない（constitution 7.1）。
@@ -20,7 +22,7 @@ public record ProductCode(String value) {
      */
     public ProductCode {
         if (!CodeFormat.matches(value)) {
-            throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_CODE);
+            throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_CODE, List.of(CodeFormat.MAX_LENGTH));
         }
     }
 

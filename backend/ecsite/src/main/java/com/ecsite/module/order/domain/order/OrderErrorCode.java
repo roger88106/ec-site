@@ -21,7 +21,7 @@ public enum OrderErrorCode implements ErrorCodeProvider {
     /**
      * 氏名が空白、または 50 文字を超える（AC-86）
      */
-    INVALID_RECIPIENT_NAME(ErrorType.VALIDATION_ERROR),
+    INVALID_RECIPIENT_NAME(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 郵便番号が数字 7 桁でない（AC-86）
      */
@@ -33,7 +33,7 @@ public enum OrderErrorCode implements ErrorCodeProvider {
     /**
      * 住所が空白、または 200 文字を超える（AC-86）
      */
-    INVALID_ADDRESS(ErrorType.VALIDATION_ERROR),
+    INVALID_ADDRESS(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 電話番号が数字 10〜11 桁でない（AC-86）
      */
@@ -69,7 +69,7 @@ public enum OrderErrorCode implements ErrorCodeProvider {
     /**
      * キャンセルの理由が 500 文字を超える（AC-95、103）
      */
-    INVALID_CANCELLATION_REASON(ErrorType.VALIDATION_ERROR),
+    INVALID_CANCELLATION_REASON(ErrorType.VALIDATION_ERROR, "max"),
     ;
 
     /**

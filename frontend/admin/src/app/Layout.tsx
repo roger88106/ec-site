@@ -1,5 +1,8 @@
+import { LogOutIcon } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { menu } from '@/app/menu'
+import { useOperator } from '@/auth/operator'
+import { Button } from '@/components/ui/button'
 import {
   Sidebar,
   SidebarContent,
@@ -14,9 +17,10 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 
-/** 画面の共通の枠（左のメニューと本文） */
+/** 画面の共通の枠（左のメニューと本文。上に運営者の氏名とログアウト。AC-135） */
 export function Layout() {
   const { pathname } = useLocation()
+  const operator = useOperator()
   return (
     <SidebarProvider>
       <Sidebar>
@@ -41,8 +45,13 @@ export function Layout() {
         </SidebarContent>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-12 items-center border-b px-4">
+        <header className="flex h-12 items-center gap-4 border-b px-4">
           <SidebarTrigger />
+          <span className="ml-auto text-sm">{operator.name}</span>
+          <Button onClick={operator.logout} size="sm" variant="ghost">
+            <LogOutIcon />
+            ログアウト
+          </Button>
         </header>
         <div className="flex-1 p-6">
           <Outlet />

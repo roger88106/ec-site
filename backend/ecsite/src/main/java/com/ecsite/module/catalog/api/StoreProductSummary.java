@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.common.model.value.Money;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
@@ -15,6 +16,6 @@ import java.util.UUID;
  * @param sellableVariantIds 販売中（販売停止でない）のバリアントの ID。在庫の有無の判定に使う（AC-56）
  * @param imageUrl           代表画像の URL（AC-37）。画像がなければ null
  */
-public record StoreProductSummary(UUID id, String name, long priceInclTax, long priceExclTax,
+public record StoreProductSummary(UUID id, String name, Money priceInclTax, Money priceExclTax,
                                   List<UUID> sellableVariantIds, @Nullable String imageUrl) {
 }

@@ -225,7 +225,7 @@ public class Product extends AggregateRoot {
         this.categoryIds = Set.copyOf(categoryIds);
 
         if (priceChanged) {
-            registerEvent(ProductPriceChanged.of(now, id, priceExclTax.yen()));
+            registerEvent(ProductPriceChanged.of(now, id, priceExclTax.toMoney()));
         }
     }
 

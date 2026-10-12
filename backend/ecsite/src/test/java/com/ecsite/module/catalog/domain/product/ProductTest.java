@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
@@ -133,7 +134,7 @@ class ProductTest {
             assertThat(product.pullEvents()).singleElement()
                     .isInstanceOfSatisfying(ProductPriceChanged.class, event -> {
                         assertThat(event.productId()).isEqualTo(product.id());
-                        assertThat(event.priceExclTax()).isEqualTo(2000);
+                        assertThat(event.priceExclTax()).isEqualTo(Money.of(2000));
                         assertThat(event.occurredAt()).isEqualTo(NOW);
                     });
         }

@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.application;
 
+import com.ecsite.common.model.value.Money;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
@@ -17,7 +18,7 @@ import java.util.UUID;
  * @param variants     すべてのバリアント（表示順）
  * @param imageUrls    画像の URL（表示順。先頭が代表画像）
  */
-public record ProductDetailView(UUID id, String name, String description, long priceInclTax, long priceExclTax,
+public record ProductDetailView(UUID id, String name, String description, Money priceInclTax, Money priceExclTax,
                                 List<AxisView> axes, List<VariantView> variants, List<String> imageUrls) {
 
     /**

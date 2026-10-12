@@ -3,6 +3,7 @@ package com.ecsite.module.catalog.api;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
 import com.jayway.jsonpath.JsonPath;
@@ -80,7 +81,7 @@ class StoreProductSearchTest {
         var page = api.searchProducts("cotton", PageRequest.of(1, 20));
 
         assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(id(byDescription), id(byName));
-        assertThat(page.items().getFirst().priceInclTax()).isEqualTo(1100);
+        assertThat(page.items().getFirst().priceInclTax()).isEqualTo(Money.of(1100));
     }
 
     @Test

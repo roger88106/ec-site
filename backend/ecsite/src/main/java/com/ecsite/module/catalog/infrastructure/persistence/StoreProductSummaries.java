@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.api.StoreProductSummary;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -39,7 +40,7 @@ class StoreProductSummaries {
         var productIds = rows.map(Record4::value1);
         var sellable = SellableVariants.byProduct(dsl, productIds);
         var images = storeImageUrls.representatives(productIds);
-        return rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), row.value3(), row.value4(),
+        return rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), Money.of(row.value3()), Money.of(row.value4()),
                 sellable.getOrDefault(row.value1(), List.of()), images.get(row.value1())));
     }
 }

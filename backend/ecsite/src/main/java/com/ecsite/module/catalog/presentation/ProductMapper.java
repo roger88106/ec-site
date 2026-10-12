@@ -12,6 +12,7 @@ import com.ecsite.api.admin.model.ReorderVariantsRequest;
 import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.api.admin.model.Variant;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.model.command.AddVariantCommand;
 import com.ecsite.module.catalog.application.model.command.ChangePublicationPeriodCommand;
@@ -48,7 +49,7 @@ class ProductMapper {
                 request.getName(),
                 request.getDescription(),
                 request.getTaxCategoryId(),
-                request.getPriceExclTax(),
+                Money.of(request.getPriceExclTax()),
                 List.copyOf(request.getCategoryIds()),
                 List.copyOf(request.getAxes()));
     }
@@ -66,7 +67,7 @@ class ProductMapper {
                 request.getName(),
                 request.getDescription(),
                 request.getTaxCategoryId(),
-                request.getPriceExclTax(),
+                Money.of(request.getPriceExclTax()),
                 List.copyOf(request.getCategoryIds()),
                 request.getVersion());
     }

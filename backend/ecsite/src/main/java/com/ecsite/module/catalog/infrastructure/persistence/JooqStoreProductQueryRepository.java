@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.StoreProductDetail;
@@ -102,7 +103,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .fetchOptional()
                 .map(row -> {
                     var images = storeImageUrls.ofProduct(id);
-                    return new StoreProductDetail(row.value1(), row.value2(), row.value3(), row.value4(), row.value5(),
+                    return new StoreProductDetail(row.value1(), row.value2(), row.value3(), Money.of(row.value4()), Money.of(row.value5()),
                             axes(id), variants(id, images), List.copyOf(images.values()));
                 });
     }
@@ -118,10 +119,10 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
             condition = condition.and(CategoryConditions.productInCategory(query.categoryId()));
         }
         if (query.minPrice() != null) {
-            condition = condition.and(priceInclTax.ge(query.minPrice()));
+            condition = condition.and(priceInclTax.ge(query.minPrice().yen()));
         }
         if (query.maxPrice() != null) {
-            condition = condition.and(priceInclTax.le(query.maxPrice()));
+            condition = condition.and(priceInclTax.le(query.maxPrice().yen()));
         }
         return condition;
     }

@@ -86,7 +86,7 @@ public class ProductCommandService {
                 command.name(),
                 command.description(),
                 command.taxCategoryId(),
-                PriceExclTax.of(command.priceExclTax()),
+                PriceExclTax.of(command.priceExclTax().yen()),
                 command.categoryIds(),
                 command.axes());
 
@@ -114,7 +114,7 @@ public class ProductCommandService {
 
         // 商品編集
         product.update(command.name(), command.description(), command.taxCategoryId(),
-                PriceExclTax.of(command.priceExclTax()), command.categoryIds(), now);
+                PriceExclTax.of(command.priceExclTax().yen()), command.categoryIds(), now);
 
         productRepository.save(product);
     }

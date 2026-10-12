@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.application.port;
 
+import com.ecsite.common.model.value.Money;
 import jakarta.annotation.Nullable;
 
 import java.util.List;
@@ -15,6 +16,6 @@ import java.util.UUID;
  * @param sellableVariantIds 販売中（販売停止でない）のバリアントの ID
  * @param imageUrl           代表画像の URL。なければ null
  */
-public record CatalogProduct(UUID id, String name, long priceInclTax, long priceExclTax, List<UUID> sellableVariantIds,
+public record CatalogProduct(UUID id, String name, Money priceInclTax, Money priceExclTax, List<UUID> sellableVariantIds,
                              @Nullable String imageUrl) {
 }

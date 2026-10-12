@@ -15,6 +15,7 @@ import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.api.store.model.Variant;
 import com.ecsite.api.store.model.VariantAxis;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.storefront.application.ProductDetailView;
 import com.ecsite.module.storefront.application.ProductSummaryView;
@@ -135,8 +136,8 @@ class StorefrontMapper {
     /**
      * 税込・税抜の価格のレスポンスに変換する。
      */
-    private static Price toPrice(long inclTax, long exclTax) {
-        return new Price().inclTax(inclTax).exclTax(exclTax);
+    private static Price toPrice(Money inclTax, Money exclTax) {
+        return new Price().inclTax(inclTax.yen()).exclTax(exclTax.yen());
     }
 
     /**

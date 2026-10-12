@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.application.model.command;
 
+import com.ecsite.common.model.value.Money;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -15,5 +17,5 @@ import java.util.UUID;
  * @param axes          バリアント軸の名前（並び順）
  */
 public record CreateProductCommand(String productCode, String name, String description, UUID taxCategoryId,
-                                   long priceExclTax, List<UUID> categoryIds, List<String> axes) {
+                                   Money priceExclTax, List<UUID> categoryIds, List<String> axes) {
 }

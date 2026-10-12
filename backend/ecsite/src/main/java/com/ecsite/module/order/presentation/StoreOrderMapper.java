@@ -73,7 +73,7 @@ class StoreOrderMapper {
                 address.getPrefecture(),
                 address.getAddress(),
                 address.getPhone(),
-                request.getExpectedTotal());
+                Money.of(request.getExpectedTotal()));
     }
 
     /**

@@ -14,7 +14,7 @@
 - [x] **T5306** `common/model/value/BoundedText` を作り、各ドメインの文字の判定を置き換える（`TaxCategory`、`Category`、`Product`、`ShippingAddress`、`StockAdjustment`、`Order`）。T5305 と既存のテストが通る（DC-31）。
 - [x] **T5307** `common/model` を `base/`・`value/` に分ける（`git mv` の commit を分ける。DC-35）。
 - [x] **T5308** [テスト] ArchUnit：`api` の record と command に、金額の名前の整数の項目がない。今のコードで失敗することを確かめる。
-- [ ] **T5309** モジュールの間の公開の型と command の金額を `Money` にする。整数は presentation と infrastructure だけ。T5308 と既存のテストが通る（DC-34）。
+- [x] **T5309** モジュールの間の公開の型と command の金額を `Money` にする。整数は presentation と infrastructure だけ。T5308 と既存のテストが通る（DC-34）。
 
 ## 足す制約の一覧（T5301）
 

@@ -1,5 +1,7 @@
 package com.ecsite.module.order.application.model;
 
+import com.ecsite.common.model.value.Money;
+
 import java.util.UUID;
 
 /**
@@ -18,5 +20,5 @@ import java.util.UUID;
  */
 public record PlaceOrderCommand(UUID checkoutId, UUID memberId, String email, boolean emailVerified,
                                 String name, String postalCode, String prefecture,
-                                String address, String phone, long expectedTotal) {
+                                String address, String phone, Money expectedTotal) {
 }

@@ -105,7 +105,7 @@ public class OrderPlacementService {
         }
         var quote = quoteService.quote(cart.lines(), now, checkout.id());
         CheckoutService.verifyOrderable(quote);
-        if (quote.amounts().total().yen() != command.expectedTotal()) {
+        if (!quote.amounts().total().equals(command.expectedTotal())) {
             throw BusinessException.of(OrderErrorCode.TOTAL_AMOUNT_CHANGED);
         }
         var address = ShippingAddress.of(command.name(), command.postalCode(), command.prefecture(), command.address(),

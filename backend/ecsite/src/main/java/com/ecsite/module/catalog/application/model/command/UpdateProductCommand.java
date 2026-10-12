@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.application.model.command;
 
+import com.ecsite.common.model.value.Money;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -15,5 +17,5 @@ import java.util.UUID;
  * @param version       取得時のバージョン
  */
 public record UpdateProductCommand(UUID productId, String name, String description, UUID taxCategoryId,
-                                   long priceExclTax, List<UUID> categoryIds, long version) {
+                                   Money priceExclTax, List<UUID> categoryIds, long version) {
 }

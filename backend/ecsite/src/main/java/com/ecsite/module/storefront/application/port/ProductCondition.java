@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.application.port;
 
+import com.ecsite.common.model.value.Money;
 import jakarta.annotation.Nullable;
 
 import java.util.UUID;
@@ -12,7 +13,7 @@ import java.util.UUID;
  * @param maxPrice   税込価格の上限（円、この値を含む）。null は絞り込まない
  * @param sort       並び順
  */
-public record ProductCondition(@Nullable UUID categoryId, @Nullable Long minPrice, @Nullable Long maxPrice, Sort sort) {
+public record ProductCondition(@Nullable UUID categoryId, @Nullable Money minPrice, @Nullable Money maxPrice, Sort sort) {
 
     /**
      * 並び順

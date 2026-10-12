@@ -96,7 +96,7 @@ class StoreCatalogApiTest {
         var page = api.listProducts(query(null, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 100));
 
         // 新着順なので、公開した順の逆
-        var actual = new ArrayList<>(page.items().stream().map(StoreProductSummary::priceInclTax).toList());
+        var actual = new ArrayList<>(page.items().stream().map(summary -> summary.priceInclTax().yen()).toList());
         Collections.reverse(actual);
         assertThat(actual).containsExactlyElementsOf(expected);
     }
@@ -112,7 +112,7 @@ class StoreCatalogApiTest {
         var page = api.listProducts(query(null, 1100L, 2160L, StoreProductSort.PRICE_ASC), PageRequest.of(1, 20));
 
         assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(id(lower), id(upper));
-        assertThat(page.items()).extracting(StoreProductSummary::priceExclTax).containsExactly(1000L, 2000L);
+        assertThat(page.items()).extracting(StoreProductSummary::priceExclTax).containsExactly(Money.of(1000), Money.of(2000));
     }
 
     @Test
@@ -209,7 +209,8 @@ class StoreCatalogApiTest {
      * C 側の一覧の絞り込みと並び順を作る
      */
     private static StoreProductQuery query(UUID categoryId, Long minPrice, Long maxPrice, StoreProductSort sort) {
-        return new StoreProductQuery(categoryId, minPrice, maxPrice, sort);
+        return new StoreProductQuery(categoryId, minPrice == null ? null : Money.of(minPrice),
+                maxPrice == null ? null : Money.of(maxPrice), sort);
     }
 
     /**

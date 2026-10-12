@@ -15,11 +15,11 @@ C 側の画面は、商品の情報と在庫の有無を同時に必要とする
 
 ```
 storefront/
-├── catalogdir/   # 商品カタログの API を自分の型に変換する腐敗防止層
-├── stockdir/     # 在庫の API を自分の型に変換する腐敗防止層
-├── orderdir/     # 注文の API（見積もり）を自分の型に変換する腐敗防止層
-├── service/      # 組み合わせ、店舗の情報の設定
-└── controller/   # OpenAPI（store.yaml）から生成したインターフェースを実装
+├── presentation/           # OpenAPI（store.yaml）から生成したインターフェースを実装
+├── application/            # 組み合わせ、表示の型、店舗の情報の設定
+│   └── port/               # 腐敗防止層の口と、その返す型
+└── infrastructure/
+    └── directory/          # 商品カタログ・在庫・注文の API を自分の型に変換する腐敗防止層
 ```
 
 ## 組み合わせ方

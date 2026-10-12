@@ -31,9 +31,12 @@ presentation 層が、token から会員の情報（IdP のアカウントの ID
 
 ```
 member/
-├── api/             # 会員 ID を求める（カート・注文の presentation 層が使う）
-├── service/         # 会員、リポジトリの port
-└── infrastructure/  # リポジトリの実装
+├── api/                    # 会員 ID を求める（カート・注文の presentation 層が使う）
+├── application/            # IdP のアカウントから会員 ID を求める（初めてなら会員を作る）
+│   └── port/               # リポジトリの口
+├── domain/                 # 会員
+└── infrastructure/
+    └── persistence/        # リポジトリの実装
 ```
 
 ## 他モジュールへの公開

@@ -6,6 +6,8 @@ import type { NextConfig } from 'next'
  * Cache Components（'use cache'）は使わない。
  */
 const nextConfig: NextConfig = {
+  // 共有のパッケージは TypeScript のソースのまま使う（フロントの書き方 第 5 節）
+  transpilePackages: ['@ec-site/shared'],
   turbopack: {
     rules: {
       '*.css': {

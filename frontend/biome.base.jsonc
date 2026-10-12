@@ -45,7 +45,7 @@
   "overrides": [
     {
       // shadcn/ui の生成物は手で直さない（管理画面の構成・店舗画面の構成 第 2 節）。整形せず、lint の一部の規則を外す
-      "includes": ["src/components/ui/**", "src/hooks/use-mobile.ts"],
+      "includes": ["src/components/ui/**", "src/ui/**", "src/hooks/use-mobile.ts"],
       "formatter": {
         "enabled": false
       },

@@ -19,6 +19,7 @@
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
+    "@ec-site/shared": "workspace:*",
     "class-variance-authority": "^0.7.1",
     "cn": "^0.4.0",
     "lucide-react": "^1.53.0",

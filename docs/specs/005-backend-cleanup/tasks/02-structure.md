@@ -7,7 +7,7 @@
 ## 準備
 
 - [x] **T5201** 全ファイルの移し先の表を作り（plan 第 1.2 節を元に。order と catalog の application の分け方を含む）、利用者に確かめる。
-- [ ] **T5202** `ModulithTest` を `src/test` に移す。Docker を止めた状態で通ることを確かめる。
+- [x] **T5202** `ModulithTest` を `src/test` に移す。Docker を止めた状態で通ることを確かめる。
 
 ## 検査のテスト
 

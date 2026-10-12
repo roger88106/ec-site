@@ -128,6 +128,7 @@ dependencies {
 
     // --- テスト：単体 ---
     testImplementation(libs.spring.boot.starter.test)
+    testImplementation(libs.spring.modulith.starter.test)
     testRuntimeOnly(libs.junit.platform.launcher)
 
     // --- テスト：統合 ---
@@ -135,7 +136,6 @@ dependencies {
     "integrationTestImplementation"(libs.testcontainers.postgresql)
     "integrationTestImplementation"(libs.spring.boot.starter.webmvc.test)
     "integrationTestImplementation"(libs.spring.boot.starter.security.test)
-    "integrationTestImplementation"(libs.spring.modulith.starter.test)
     "integrationTestImplementation"(libs.spring.boot.micrometer.tracing.test)
     "integrationTestImplementation"(libs.spring.boot.micrometer.metrics.test)
 }

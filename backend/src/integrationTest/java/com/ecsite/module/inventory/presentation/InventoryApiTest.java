@@ -3,6 +3,8 @@ package com.ecsite.module.inventory.presentation;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
+import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,6 +20,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
@@ -57,6 +60,9 @@ class InventoryApiTest {
 
     @Autowired
     StockItemRepository stockItemRepository;
+
+    @Autowired
+    StockReservationApi stockReservationApi;
 
     private UUID productId;
 
@@ -237,6 +243,36 @@ class InventoryApiTest {
             mockMvc.perform(get(BASE + "/stock-summaries"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+    }
+
+    @Nested
+    @DisplayName("AC-142 操作した運営者")
+    class Operator {
+
+        @Test
+        @DisplayName("AC-142 運営者の調整は、token の運営者の氏名の写しを残し、応答と履歴に出す")
+        void recordsOperatorName() throws Exception {
+            mockMvc.perform(post(BASE + "/variants/" + variantId + "/adjustments")
+                            .with(TestTokens.administrator().name("在庫", "一郎").bearer())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"delta": 3, "reason": "ARRIVAL", "memo": null}"""))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.operatorName").value("在庫 一郎"));
+
+            mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"))
+                    .andExpect(jsonPath("$.items[0].operatorName").value("在庫 一郎"));
+        }
+
+        @Test
+        @DisplayName("AC-142 注文に由来する調整は、運営者の操作でないので空")
+        void leavesOrderAdjustmentEmpty() throws Exception {
+            stockReservationApi.restore(Map.of(variantId, 2), UUID.randomUUID(), "20261008-000001");
+
+            mockMvc.perform(get(BASE + "/variants/" + variantId + "/adjustments"))
+                    .andExpect(jsonPath("$.items[0].reason").value("ORDER_CANCELLATION"))
+                    .andExpect(jsonPath("$.items[0].operatorName").value(nullValue()));
         }
     }
 

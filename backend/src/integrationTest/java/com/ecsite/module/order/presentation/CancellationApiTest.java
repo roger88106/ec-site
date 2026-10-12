@@ -6,6 +6,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -20,11 +21,15 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -200,6 +205,84 @@ class CancellationApiTest {
                     .andExpect(jsonPath("$.errorCode").value("CANCELLATION_NOT_PENDING"));
             mockMvc.perform(put("/api/admin/orders/" + UUID.randomUUID() + "/cancellation-request/approve"))
                     .andExpect(status().isNotFound());
+        }
+    }
+
+    @Nested
+    @DisplayName("AC-142 操作した運営者")
+    class Operator {
+
+        /**
+         * 判断した運営者
+         */
+        private static final UUID JUDGE = UUID.fromString("00000000-0000-0000-0000-0000000a0101");
+
+        /**
+         * キャンセルした運営者
+         */
+        private static final UUID CANCELLER = UUID.fromString("00000000-0000-0000-0000-0000000a0102");
+
+        @Test
+        @DisplayName("AC-142 申請を承認すると、承認した運営者を、判断した運営者とキャンセルした運営者に残す")
+        void recordsApprover() throws Exception {
+            request(null).andExpect(status().isNoContent());
+
+            asOperator(put("/api/admin/orders/" + orderId + "/cancellation-request/approve"), JUDGE, "審査", "一郎")
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.cancellationRequest.decidedBy").value("審査 一郎"))
+                    .andExpect(jsonPath("$.cancellation.cancelledBy").value("審査 一郎"));
+            expectOperatorIds(JUDGE, JUDGE);
+        }
+
+        @Test
+        @DisplayName("AC-142 却下した後に運営者がキャンセルすると、判断した運営者とキャンセルした運営者を別々に残す")
+        void recordsJudgeAndCancellerSeparately() throws Exception {
+            request(null).andExpect(status().isNoContent());
+            asOperator(put("/api/admin/orders/" + orderId + "/cancellation-request/reject"), JUDGE, "審査", "一郎")
+                    .andExpect(status().isNoContent());
+
+            asOperator(put("/api/admin/orders/" + orderId + "/cancel")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"reason": "在庫の不備"}"""), CANCELLER, "取消", "二郎")
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.cancellationRequest.result").value("REJECTED"))
+                    .andExpect(jsonPath("$.cancellationRequest.decidedBy").value("審査 一郎"))
+                    .andExpect(jsonPath("$.cancellation.cancelledBy").value("取消 二郎"));
+            expectOperatorIds(JUDGE, CANCELLER);
+        }
+
+        @Test
+        @DisplayName("AC-142 申請中の判断前は、判断した運営者は空")
+        void leavesPendingRequestEmpty() throws Exception {
+            request(null).andExpect(status().isNoContent());
+
+            mockMvc.perform(get("/api/admin/orders/" + orderId))
+                    .andExpect(jsonPath("$.cancellationRequest.decidedBy").value(nullValue()));
+        }
+
+        /**
+         * 指定した運営者の token で送る
+         */
+        private ResultActions asOperator(MockHttpServletRequestBuilder builder, UUID subject, String familyName,
+                                         String givenName) throws Exception {
+            return mockMvc.perform(builder.with(TestTokens.administrator().subject(subject).name(familyName, givenName).bearer()));
+        }
+
+        /**
+         * 注文に残った、判断した運営者 ID とキャンセルした運営者 ID を確かめる
+         */
+        private void expectOperatorIds(UUID decidedBy, UUID cancelledBy) {
+            var order = dsl.select(SALES_ORDER.CANCELLATION_DECIDED_BY_ID, SALES_ORDER.CANCELLED_BY_ID)
+                    .from(SALES_ORDER)
+                    .where(SALES_ORDER.ID.eq(orderId))
+                    .fetchSingle();
+            assertThat(order.value1()).isEqualTo(decidedBy);
+            assertThat(order.value2()).isEqualTo(cancelledBy);
         }
     }
 

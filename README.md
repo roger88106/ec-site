@@ -5,7 +5,7 @@
 自社 B2C の EC サイト。個人のポートフォリオとして、本番相当のやり方を模擬する。
 閲覧 → カート → 注文 → 決済 → 出荷 → 配送状況のコアフローを、省略せずに作る。
 
-> MVP の 3 つ目の機能（spec 003：認証）まで完了し、今はコードと文書の整理（spec 004〜006）を進めている。仕様駆動開発（SDD）で進めている。
+> MVP の 3 つ目の機能（spec 003：認証）まで完了し、今はコードと文書の整理（spec 004〜006）を進めている（004 は完了）。仕様駆動開発（SDD）で進めている。
 
 ## 技術スタック
 
@@ -51,7 +51,7 @@ spec がコードに先行する。仕様の誤りに気づいたら、spec を�
 | [001](docs/specs/001-catalog-and-inventory) | 機能 | 商品カタログと在庫 | 完了。[段階 0（基盤）](docs/specs/001-catalog-and-inventory/tasks/00-foundation.md)、[段階 1（税）](docs/specs/001-catalog-and-inventory/tasks/01-tax.md)、[段階 2（カテゴリ）](docs/specs/001-catalog-and-inventory/tasks/02-category.md)、[段階 3（商品）](docs/specs/001-catalog-and-inventory/tasks/03-product.md)、[段階 4（在庫）](docs/specs/001-catalog-and-inventory/tasks/04-inventory.md)、[段階 5（B 側の商品一覧）](docs/specs/001-catalog-and-inventory/tasks/05-admin-product-list.md)、[段階 6（店舗）](docs/specs/001-catalog-and-inventory/tasks/06-storefront.md)、[段階 7（管理画面）](docs/specs/001-catalog-and-inventory/tasks/07-admin-ui.md)、[段階 8（店舗画面）](docs/specs/001-catalog-and-inventory/tasks/08-store-ui.md)、[段階 9（フロントのテスト）](docs/specs/001-catalog-and-inventory/tasks/09-frontend-tests.md) 完了（P1 はすべて完了）。[段階 10（P2）](docs/specs/001-catalog-and-inventory/tasks/10-p2.md) は、バリアントの販売停止、公開日時の予約、商品画像（US-7）、メディアモジュールへの切り出し、画像形式の受け付けと WebP 変換（US-13）が完了（P2 はすべて完了）。[段階 11（見直し）](docs/specs/001-catalog-and-inventory/tasks/11-review.md) 完了 |
 | [002](docs/specs/002-cart-and-order) | 機能 | カートと注文 | 完了。[段階 1（税と在庫の土台）](docs/specs/002-cart-and-order/tasks/01-foundation.md)〜[段階 4（キャンセルと B 側の注文）](docs/specs/002-cart-and-order/tasks/04-cancellation-and-admin.md) 完了（バックエンド）。[段階 5（店舗画面）](docs/specs/002-cart-and-order/tasks/05-store-ui.md)、[段階 6（管理画面）](docs/specs/002-cart-and-order/tasks/06-admin-ui.md)、[段階 7（フロントのテスト）](docs/specs/002-cart-and-order/tasks/07-frontend-tests.md) 完了。[段階 8（見直し）](docs/specs/002-cart-and-order/tasks/08-review.md) 完了 |
 | [003](docs/specs/003-auth) | 機能 | 認証 | 完了。[段階 1（IdP と開発環境）](docs/specs/003-auth/tasks/01-idp.md)、[段階 2（バックエンドの認証の土台）](docs/specs/003-auth/tasks/02-backend-auth.md)、[段階 3（会員とカート・注文）](docs/specs/003-auth/tasks/03-member-cart-order.md) 完了。[段階 4（店舗画面）](docs/specs/003-auth/tasks/04-store-ui.md) 完了。[段階 5（管理画面）](docs/specs/003-auth/tasks/05-admin-ui.md) 完了。[段階 6（E2E と CI）](docs/specs/003-auth/tasks/06-e2e-ci.md) 完了。[段階 7（操作した運営者）](docs/specs/003-auth/tasks/07-operator-record.md)、[段階 8（見直し）](docs/specs/003-auth/tasks/08-review.md) 完了 |
-| [004](docs/specs/004-foundation) | 整理 | 開発の基盤の整理（規則の文書、CI、ライセンス、テストの網、リポジトリの構成、E2E のデータ） | 実装中。[段階 1（規則の文書）](docs/specs/004-foundation/tasks/01-docs.md) 完了。[段階 2（CI）](docs/specs/004-foundation/tasks/02-ci.md) は、文書だけの push で CI が流れないことの確かめが残る。[段階 3（テストの網）](docs/specs/004-foundation/tasks/03-tests.md)、[段階 4（リポジトリの構成）](docs/specs/004-foundation/tasks/04-layout.md)、[段階 5（ライセンス）](docs/specs/004-foundation/tasks/05-licenses.md)、[段階 6（E2E のデータ）](docs/specs/004-foundation/tasks/06-e2e-data.md) 完了。[段階 7（ローカルの画面のデータ）](docs/specs/004-foundation/tasks/07-local-data.md) 完了。[段階 8（見直し）](docs/specs/004-foundation/tasks/08-review.md) が残る |
+| [004](docs/specs/004-foundation) | 整理 | 開発の基盤の整理（規則の文書、CI、ライセンス、テストの網、リポジトリの構成、E2E のデータ） | 完了。[段階 1〜8](docs/specs/004-foundation/tasks/) を終えた。残りの確かめ（GitHub のライセンスの判定は main に入れた後）と、CI の所要時間を上限より少し超えて受け入れたことは [見直しの結果](docs/specs/004-foundation/tasks/08-review.md) |
 | [005](docs/specs/005-backend-cleanup) | 整理 | バックエンドの整理 | tasks 作成済み。004 の完了の後に着手 |
 | [006](docs/specs/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n | tasks 作成済み。004 の完了の後に着手（段階 5 は 005 の段階 2 の後） |
 

@@ -92,22 +92,14 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 - 店舗画面の一覧は API の結果を最大 60 秒キャッシュする。管理画面での変更がすぐ出ないのは正常。
 
-## 動作確認用の注文を作る
+## ローカルの画面のデータ
 
-画面を確かめるための注文は、ブラウザで操作せずにスクリプトで作る（店舗 API を直接呼ぶ。バックエンドと Keycloak が要る）。会員（既定は `docs/dev/setup.md` の `member@example.com`）の token を `keycloak.sh access-token` で取り、会員のカートを空にしてから注文する。
+local profile の seed（`db/seed/local/`）が、画面を確かめるためのデータを作る。注文を作るスクリプトは要らない。
 
-```bash
-node scripts/dev/mkorder.js                          # seed のバリアント（在庫 100）を 1 つ注文する
-node scripts/dev/mkorder.js --qty 2 --request        # 注文して、キャンセルを申請する（理由は既定の文）
-node scripts/dev/mkorder.js --request '色違いと間違えた' --name '佐藤 花子'
-node scripts/dev/mkorder.js --variant <バリアント ID>
-node scripts/dev/mkorder.js --member member2@example.com member2-pass-1   # 別の会員で注文する
-```
-
-- 出力は「注文 ID、注文番号、状態」の 1 行と、店舗画面・管理画面の注文の URL。店舗画面の注文は、注文した会員でログインしないと開けない。
-- 承認・却下・運営者のキャンセルは管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）で行う。
-- seed の在庫は 3021（在庫 100）、3001（10）、3003（5）、3011（3）、3013（8）、3031（20）。3002・3004・3012 は在庫 0（バリアント ID は `00000000-0000-0000-0000-00000000` + 4 桁）。
-- 失敗した手順と API のエラーの本文が出る（在庫不足なら「品目の追加に失敗しました（HTTP 400）」）。
+- 商品 15（公開 13、非公開 1、公開の予約 1）、カテゴリ 13、商品画像 31。在庫切れ（`TEE-001` の L、`PANTS-001-M`、`SENBEI-001`）と残りわずか（`TEE-002-M`、`JUICE-001`、`MUG-001-GY` など）がある。
+- 会員 `member@example.com` の注文 4 件：受付、キャンセルの申請中、申請の却下（受付のまま）、キャンセル済み。承認・却下・運営者のキャンセルは、申請中の注文で管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）から試す。
+- ID は固定（`00000000-0000-0000-0000-00000000` + 4 桁）：カテゴリ 1xxx、商品 2xxx、バリアント 3xxx、在庫 4xxx、会員 6001、注文 61xx、アセット 7xxx、商品画像 8xxx。
+- 画面で変えたデータは、seed を流し直しても戻らない。最初の状態に戻すときは、ローカルの DB を作り直す（`docs/dev/setup.md`）。
 
 ## E2E（`e2e/`）
 

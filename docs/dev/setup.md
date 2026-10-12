@@ -34,6 +34,11 @@ docker compose up -d
 
 - DB の接続先は [docker/compose.yaml](../../docker/compose.yaml)（ルートの `.env` の `COMPOSE_FILE` が指すので、`docker compose` はリポジトリのルートで実行する） と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
 - 止めるときは `docker compose stop`。データを消して作り直すときは `docker compose down -v`。
+- 画面を確かめるためのデータ（商品、在庫、画像、会員 `member@example.com` の注文）は、ローカル用の seed（`db/seed/local/`）が起動時に作る。画面で変えたデータは seed を流し直しても戻らないので、最初の状態に戻すときは、バックエンドを止めてから DB だけを作り直す（Keycloak と画像はそのまま）：
+
+  ```bash
+  docker exec ec-site-postgres psql -U ec_site -d postgres -c "drop database ec_site with (force)" -c "create database ec_site owner ec_site"
+  ```
 - Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回の起動）に作られる。それより前からある volume では作られないので、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < docker/postgres/init-keycloak.sql` を流してから `docker compose up -d` する（`docker compose down -v` で作り直してもよい）。
 
 ### 認証（Keycloak）

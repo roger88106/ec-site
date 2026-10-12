@@ -8,10 +8,9 @@ import com.ecsite.api.store.model.MemberCart;
 import com.ecsite.api.store.model.MergeCartRequest;
 import com.ecsite.api.store.model.MergeCartResult;
 import com.ecsite.api.store.model.MergedCartItem;
-import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.cart.application.CartService;
 import com.ecsite.module.cart.domain.CartMergeResult;
-import com.ecsite.module.member.api.MemberApi;
+import com.ecsite.module.member.api.CurrentMemberIds;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -34,14 +33,9 @@ class CartController implements CartApi {
     private final CartService cartService;
 
     /**
-     * token の会員
+     * 要求した会員の会員 ID
      */
-    private final CurrentMember currentMember;
-
-    /**
-     * 会員の API（会員 ID を求める）
-     */
-    private final MemberApi memberApi;
+    private final CurrentMemberIds currentMemberIds;
 
     /**
      * カートを作る（AC-73）
@@ -70,7 +64,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> addCartItem(UUID cartId, AddCartItemRequest request) {
-        cartService.addItem(cartId, requester(), request.getVariantId(), request.getQuantity());
+        cartService.addItem(cartId, currentMemberIds.find().orElse(null), request.getVariantId(), request.getQuantity());
         return ResponseEntity.noContent().build();
     }
 
@@ -84,7 +78,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> changeCartItemQuantity(UUID cartId, UUID variantId, ChangeCartItemQuantityRequest request) {
-        cartService.changeQuantity(cartId, requester(), variantId, request.getQuantity());
+        cartService.changeQuantity(cartId, currentMemberIds.find().orElse(null), variantId, request.getQuantity());
         return ResponseEntity.noContent().build();
     }
 
@@ -97,7 +91,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> removeCartItem(UUID cartId, UUID variantId) {
-        cartService.removeItem(cartId, requester(), variantId);
+        cartService.removeItem(cartId, currentMemberIds.find().orElse(null), variantId);
         return ResponseEntity.noContent().build();
     }
 
@@ -108,7 +102,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<MemberCart> getMemberCart() {
-        return ResponseEntity.ok(new MemberCart(cartService.memberCartId(memberId())));
+        return ResponseEntity.ok(new MemberCart(cartService.memberCartId(currentMemberIds.require())));
     }
 
     /**
@@ -119,7 +113,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<MergeCartResult> mergeCart(MergeCartRequest request) {
-        var merged = cartService.merge(memberId(), request.getCartId());
+        var merged = cartService.merge(currentMemberIds.require(), request.getCartId());
         return ResponseEntity.ok(new MergeCartResult(
                 merged.cartId(),
                 merged.result().truncatedItems().stream().map(CartController::toMergedItem).toList(),
@@ -127,20 +121,6 @@ class CartController implements CartApi {
     }
 
 // ============================== プライベートメソッド ==============================
-
-    /**
-     * 要求した会員の ID。ログインしていなければ null
-     */
-    private UUID requester() {
-        return currentMember.find().map(member -> memberApi.memberIdOf(member.subject())).orElse(null);
-    }
-
-    /**
-     * token の会員の ID（会員の操作。token がなければ 401）
-     */
-    private UUID memberId() {
-        return memberApi.memberIdOf(currentMember.require().subject());
-    }
 
     /**
      * 移した結果の品目を、レスポンスの品目にする。

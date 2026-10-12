@@ -15,3 +15,4 @@
 
 - [x] カートと注文の両方にある `isAccessibleBy`：直さない（モジュールの境界を越えて型を共有しない。constitution 6）。
 - [x] 手で書いた型の変換：直さない（spec の Non-goals）。
+- [ ] `member/api/MemberApi`：T5502 の後、本番のコードから使われていない（統合テスト `MemberApiTest` だけが使う）。消すか、残す理由を書く（T5502 で見つけた）。

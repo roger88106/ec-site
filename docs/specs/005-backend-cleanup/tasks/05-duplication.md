@@ -7,7 +7,7 @@
 ## タスク
 
 - [x] **T5501** [テスト] `CurrentMemberIds` の単体テスト：`require()` はログインがなければ 401 の例外、`find()` は空、会員の ID の求め方。
-- [ ] **T5502** `member/api/CurrentMemberIds` を作り、4 つの Controller の `requester()`・`memberId()` を置き換える。T5501 と既存のテストが通る（DC-39）。
+- [x] **T5502** `member/api/CurrentMemberIds` を作り、4 つの Controller の `requester()`・`memberId()` を置き換える。T5501 と既存のテストが通る（DC-39）。
 - [ ] **T5503** [テスト] 並び順の付け直しの部品の単体テスト（移動、末尾への追加、存在しない ID）。
 - [ ] **T5504** 並び順の部品を `common/model/value/` に作り、商品（バリアント、画像）とカテゴリで使う。T5503 と既存のテストが通る。
 - [ ] **T5505** `ProductCommandService` を、商品、バリアント、公開、画像に分ける（取引の境界は今のまま）。既存のテストが通る。`Product` の行数を報告する（DC-40）。

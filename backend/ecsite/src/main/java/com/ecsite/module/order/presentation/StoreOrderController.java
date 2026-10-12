@@ -5,8 +5,7 @@ import com.ecsite.api.store.model.Order;
 import com.ecsite.api.store.model.OrderSummaryPage;
 import com.ecsite.api.store.model.RequestOrderCancellationRequest;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.common.security.CurrentMember;
-import com.ecsite.module.member.api.MemberApi;
+import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
 import lombok.RequiredArgsConstructor;
@@ -38,14 +37,9 @@ class StoreOrderController implements OrderApi {
     private final StoreOrderMapper mapper;
 
     /**
-     * token の会員
+     * 要求した会員の会員 ID
      */
-    private final CurrentMember currentMember;
-
-    /**
-     * 会員の API（会員 ID を求める）
-     */
-    private final MemberApi memberApi;
+    private final CurrentMemberIds currentMemberIds;
 
     /**
      * 注文の表示（AC-93、94、96）
@@ -55,7 +49,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Order> getOrder(UUID orderId) {
-        return ResponseEntity.ok(mapper.toOrder(orderQueryService.getForMember(orderId, memberId())));
+        return ResponseEntity.ok(mapper.toOrder(orderQueryService.getForMember(orderId, currentMemberIds.require())));
     }
 
     /**
@@ -67,7 +61,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> requestOrderCancellation(UUID orderId, RequestOrderCancellationRequest request) {
-        orderCancellationService.request(orderId, memberId(), request.getReason().orElse(null));
+        orderCancellationService.request(orderId, currentMemberIds.require(), request.getReason().orElse(null));
         return ResponseEntity.noContent().build();
     }
 
@@ -80,14 +74,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<OrderSummaryPage> listMemberOrders(Integer page, Integer size) {
-        var result = orderQueryService.listForMember(memberId(), PageRequest.of(page, size));
+        var result = orderQueryService.listForMember(currentMemberIds.require(), PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toOrderSummaryPage(result));
-    }
-
-    /**
-     * token の会員の ID（会員の操作。token がなければ 401）
-     */
-    private UUID memberId() {
-        return memberApi.memberIdOf(currentMember.require().subject());
     }
 }

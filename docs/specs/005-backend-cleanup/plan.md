@@ -1,0 +1,204 @@
+# Plan 005：バックエンドの整理
+
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
+
+前提：spec 004 が完了している（バックエンドは `backend/ecsite/`、規則の文書は `docs/style/`、カバレッジの報告と AC の検査が CI にある）。パスは `backend/ecsite/src/main/java/com/ecsite/` を `…/` と略す。
+
+| 対象 | 本書 | 主な担当 |
+|------|------|----------|
+| 標準の構成と検査 | 第 1 節 | DS-8 |
+| 値と入力の検証 | 第 2 節 | DS-9 |
+| エラーとメッセージ | 第 3 節 | DS-10 |
+| 重複と大きいクラス、全体の走査 | 第 4 節 | DS-11 |
+| 設定とビルド | 第 5 節 | DS-12 |
+| コメント | 第 6 節 | DS-13 |
+
+## 1. 標準の構成（DS-8）
+
+### 1.1 層とパッケージ（DC-27、DC-28）
+
+レベル A・B とも、層の名前を同じにする（constitution 4.2 を直す。レベル B は「中身が簡略な 4 層」と書き直す）。
+
+```
+module/<モジュール>/
+├── api/                公開の同期の API（@NamedInterface("api")）。他のモジュールが呼ぶ
+├── event/              公開のイベント（@NamedInterface("event")）
+├── presentation/       API の入口（生成した interface の実装）と、API の型への変換
+├── application/        use case（取引の境界。@Transactional はここだけ）
+│   ├── model/          command・query・view（レベル A。レベル B は要るときだけ）
+│   └── port/           application が使う口（参照の Repository、他のモジュールの Directory）
+├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode）
+│   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
+└── infrastructure/     port の実装
+    ├── persistence/    jOOQ の Repository と、その部品
+    ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
+    └── <外部>/          外部の仕組み（ストレージ、画像の変換など）
+```
+
+| レベル | 違い |
+|--------|------|
+| A | domain は何にも依存しない。application は domain の port を通す。CQRS（command と query の Repository を分ける） |
+| B | domain の型は振る舞いの少ない型でよい。port は application/port に置き、domain/<集約>/port は作らない。CQRS を求めない |
+
+- **腐敗防止層**（DC-28）：口（interface と、相手のモジュールの情報を写す自分の型）は、使う層の `port/` に置く。実装は `infrastructure/directory/`。`*dir` のパッケージは作らない。
+- **設定の値の型**（`@ConfigurationProperties`）は、使う層に置く（第 5 節）。
+- 図と表は `docs/style/backend.md` に置き、constitution 4.2 からリンクする。
+
+### 1.2 今のモジュールの移し方
+
+| モジュール | 今 | 移し方 |
+|------------|----|--------|
+| cart（B） | `controller/`、`service/`（`Cart`、`CartItem`、`CartService`、エラー、Repository の口）、`catalogdir/`、`stockdir/` | `presentation/`、`application/`（`CartService`）、`application/port/`（`CartRepository`、Directory の口）、`domain/`（`Cart`、`CartItem`、`CartMergeResult`、`CartErrorCode`）、`infrastructure/directory/`（Directory の実装） |
+| media（B） | `service/` 11 | `application/`（`MediaService`、`AssetFileHandler`）、`application/port/`（`AssetRepository`、`ObjectStorage`、`ImageConverter`）、`domain/`（`Asset`、`AssetKeys`、`ImageFormat`、`AssetReleased`、`MediaErrorCode`）、`infrastructure/storage/`・`infrastructure/converter/`・`infrastructure/persistence/` |
+| member（B） | `service/` 3 | `application/`（`MemberService`）、`application/port/`（`MemberRepository`）、`domain/`（`Member`） |
+| storefront（B、参照だけ） | `controller/`、`service/`、`catalogdir/`、`orderdir/`、`stockdir/` | `presentation/`（Controller、`StorefrontMapper`）、`application/`（`StorefrontService`、view、`ShopProperties`）、`application/port/`（Directory の口と、その型）、`infrastructure/directory/` |
+| catalog（A） | `infrastructure/` 16 | `infrastructure/persistence/`（jOOQ の Repository と部品）、`infrastructure/directory/`（`MediaApiDirectory`、`TaxApiDirectory`）、`infrastructure/cache/`（`TaxRateScheduleCache`）。application の参照の Repository の口 4 つは `application/port/` |
+| order（A） | `application/` 12、`domain/port/` | application の口を `application/port/`、`domain/port/` の Directory は使う集約の `port/` か `application/port/`（呼ぶ層で決める） |
+| tax・inventory（A） | ほぼ標準 | application の参照の Repository の口を `application/port/` |
+
+正確な移し先は、段階 2 の最初のタスクで全ファイルの表にして利用者に確かめる。
+
+### 1.3 パッケージの大きさ（DC-29）
+
+- パッケージの直下の `.java`（`package-info.java` を除く）は、目安 10、上限 20。テストは数えない。
+- 今の目安超え：catalog/infrastructure 16（1.2 で分ける）、order/application 12、catalog/application 11、media/service 11（1.2 で分ける）。order と catalog の application は、use case のまとまり（第 4.2 節の商品の更新の分割）で分ける。分けないと判断したものは、理由を `docs/style/backend.md` の例外の表に書く。
+
+### 1.4 自動の検査（DC-30）
+
+- `ModulithTest` を `src/integrationTest` から `src/test` に移す（Spring もコンテナも起動しない。移す前に Docker なしで通ることを確かめる）。
+- ArchUnit（Modulith が入れている）で、`src/test/java/com/ecsite/architecture/` に規則を書く：
+  - 層の依存の向き（presentation → application → domain ← infrastructure。レベル A の domain は Spring・jOOQ・他の層に依存しない）
+  - パッケージの名前（モジュールの直下は `api`・`event`・`presentation`・`application`・`domain`・`infrastructure` だけ）
+  - `@Transactional` は application だけ。`@RestController` は presentation だけ
+  - パッケージの直下のファイルが 20 を超えない（目安の 10 は検査しない）
+- 先にテストを書いて今のコードで失敗することを確かめ（レッド）、移した後に通す。
+
+## 2. 値と入力の検証（DS-9）
+
+### 2.1 文字の検証（DC-31）
+
+- `common/model/value/BoundedText`：「空白でない」「長さの上限を code point で数える」の判定を 1 か所にする（静的な判定の関数）。各ドメインは上限の定数とエラーの種類だけを持ち、判定をこの部品に任せる。
+- 置き換える所：`TaxCategory`、`Category`、`Product`（名前、説明、軸の名前・値）、`ShippingAddress`、`StockAdjustment`、`Order`（理由）。
+
+### 2.2 制約の一致（DC-32、DC-33）
+
+- `FieldConstraintContractTest`（`src/test/…/contract/`）：同じ項目の、API の契約の `maxLength`・`minimum`・`maximum`、ドメインの上限の定数、データベースの列の長さ（jOOQ の生成した型の長さ）を表にして照らす。表はテストの中に書く（項目を足したら表も足す）。
+  - 食い違いが見つかったら、直す前に利用者に確かめる（DN-6）。
+- `OpenApiRequestConstraintTest`：`admin.yaml`・`store.yaml` のリクエスト（本文、クエリ、パス）の数値の項目に範囲、文字の項目に長さか形式（`pattern`・`format`・`enum`）があることを確かめる。
+  - 今の漏れ（2026-10-12）：`version` 8 か所（`minimum: 0`）、画像の受付の `contentLength`（`maximum` は 10MB）・`contentType`、在庫の調整の `delta`、店舗の `expectedTotal`（`minimum: 0`）、お届け先の都道府県（`maxLength`）。値は spec の AC と DB の列に合わせ、plan の段階 3 の最初のタスクで一覧にして確かめる。
+- 統合テストに「長すぎる・形式の誤り → 400」のテストがある項目を数え、無い種類（長さ、範囲、形式）だけ代表を足す。
+
+### 2.3 金額（DC-34）
+
+- モジュールの間の公開の型（`api/` の record）の金額を `Money` にする（`StoreProductDetail`、`StoreProductSummary` など）。command の型（`CreateProductCommand` など）も `Money`。整数は presentation（API の型との変換）と infrastructure（DB）だけ。
+
+### 2.4 共通の型の置き場所（DC-35）
+
+| パッケージ | 中身 |
+|------------|------|
+| `common/model/base/` | `AggregateRoot`、`DomainEvent` |
+| `common/model/value/` | `Money`、`BoundedText`、`Operator`（操作した運営者の写し） |
+
+共通の値の型にする基準（`docs/style/backend.md`）：2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つもの。1 つのモジュールだけのものは、そのモジュールの `vo/`。
+
+## 3. エラーとメッセージ（DS-10）
+
+### 3.1 1 か所の定義（DC-36）
+
+- 残すもの：`<モジュール>ErrorCode`（enum）。種類（`ErrorType`）と、Javadoc（いつ起きるか、AC）を持つ。
+- 消すもの：`<モジュール>Message` と、その `Code`（7 クラス、約 1,100 行）。
+- メッセージのキーは enum から決める：`ecsite.<モジュール>.<enum の名前の小文字>`。`ErrorCodeProvider` に、モジュールの名前を返すメソッドだけを各 enum に書かせ、キーは共通の既定のメソッドで作る。
+- `MessageContractTest`：すべての `ErrorCodeProvider` の enum の定数に `messages.properties` のキーがあり、`messages.properties` の `ecsite.<モジュール>.*` のキーに enum の定数があることを確かめる（検証のキー `ecsite.validation.*` と共通の `ecsite.common.*` は別の表で確かめる）。
+- エラーではないメッセージ（`CommonMessage` など）があれば、移す前に一覧にして扱いを決める。
+
+### 3.2 入力の検証のメッセージ（DC-37）
+
+- `GlobalExceptionHandler` で、制約の種類（`NotNull`、`Size`、`Min`、`Max`、`Pattern`、`Email`、`DecimalMin` など）からキー `ecsite.validation.<種類>` を選び、制約の値（上限・下限）を差し込んでメッセージを作る。知らない種類は `ecsite.validation.invalid`。
+- 枠組みの既定のメッセージ（JVM のロケールで言語が変わる）を使わない。項目の名前は今のまま（API の項目名）。
+- 変わる文（今の既定の文 → 新しい文）は、段階 4 の最初のタスクで一覧にして利用者に確かめる（spec DN-4 の例外）。管理画面の表示が変わる所も挙げる。
+
+### 3.3 差し込み（DC-38）
+
+- 今の差し込みのあるメッセージ（`{0}` など）を一覧にし、整理の前後で同じ文になることをテストで確かめる。
+
+## 4. 重複と大きいクラス（DS-11）
+
+### 4.1 現在の会員（DC-39）
+
+- `member/api/CurrentMemberIds`：`require()`（ログインが要る。なければ 401）、`find()`（任意）。会員の識別（IdP の subject → 会員 ID）は会員モジュールの中に閉じる。
+- `CartController`、`StoreCheckoutController`、`StoreOrderController`、`StorefrontCartController` の `requester()`・`memberId()` を置き換える。
+
+### 4.2 商品（DC-40）
+
+- 並び順の付け直し（`reorder`、`nextDisplayOrder`）を `common/model/value/` の部品にし、商品のバリアント・画像、カテゴリで使う。
+- 文字の検証は第 2.1 節の部品へ。
+- 商品の更新の処理（`ProductCommandService`、312 行）を、商品、バリアント、公開、画像（既存の `ProductImageService`）に分ける。取引の境界（1 つの操作 = 1 つのトランザクション）は今のまま。
+- `Product` の行数は目安 400（規則にはしない）。
+
+### 4.3 全体の走査（DC-41）
+
+- 段階 2〜5 の後に、バックエンドの全体を `docs/style/` と本 spec の規則に照らして読む。読む量が多いので、別のセッションで行ってもよい。
+- 見つけたもの（重複、使われていないコード、規則に合わない所）は、段階 7 の tasks に 1 項目ずつチェックボックスで足し、直したか、直さない理由を書く。
+- 直さないと決めているもの：カートと注文の両方にある `isAccessibleBy`（モジュールの境界を越えて型を共有しない。constitution 6）、手で書いた型の変換（spec の Non-goals）。
+
+## 5. 設定とビルド（DS-12、P2）
+
+### 5.1 設定の値（DC-42）
+
+| 今 | 後 |
+|----|----|
+| `config/security/SecurityProperties` | 今のまま（モジュールではない共通の設定） |
+| `media/infrastructure/ImgproxyProperties`、`MediaStorageProperties` | `media/infrastructure/converter/`、`…/storage/` |
+| `order/application/OrderProperties` | 今のまま（application が使う） |
+| `storefront/service/ShopProperties` | `storefront/application/` |
+
+- 規則（`docs/style/backend.md`）：接頭辞は `ecsite.<モジュール>.<範囲>`、`@Validated` を付け、環境ごとに変わる値（接続先、資格情報、ID）は既定値を持たず必須にする。環境によらない値だけ既定値を持つ。
+- 起動に失敗することを、必須の値がない設定で確かめる（統合テストか、設定の型の単体テスト）。
+
+### 5.2 jOOQ のコード生成（DC-43）
+
+- 今は `generateJooq` が `Task.upToDateWhen is false` で毎回走る（約 6 秒。うちコンテナの起動 2 秒。2026-10-12 に計測）。プラグインの `allInputsDeclared` を true にし、入力（マイグレーションのディレクトリと生成の設定）が変わらなければ省かれるようにする。
+- 確かめ方：続けて 2 回ビルドし、2 回目に `generateJooq UP-TO-DATE`。マイグレーションを足すと生成し直す。CI（キャッシュなし）は毎回生成する。
+
+## 6. コメント（DS-13）
+
+- `docs/style/comments.md` に「複雑な処理」の基準と書き方を足す（段階 1）：
+  - 基準：stream の 2 段以上の変換、`groupingBy`・`flatMap`・`reduce`、入れ子の繰り返し、`&&`・`||` が 3 つ以上の条件、3 つ以上の分岐。
+  - 書き方：何の結果を得るか・なぜそうするかを 1 行。AC・BR の番号があれば付ける。
+- 段階 8 で、基準に当たる所を一覧にし（stream は約 120 か所。直前の行にコメントがあるのは 2 か所）、読んで意味を確かめてから足す。分からない所は一覧にして利用者に聞く。
+- コメントだけの commit にする（DN-5）。
+
+## 7. 確かめ方
+
+| DC | 確かめ方 |
+|----|----------|
+| 27〜30 | ArchUnit と Modulith のテスト（単体テスト）が通る。図が `docs/style/backend.md` にある |
+| 31 | 文字の判定の重複がない（見直しで `git grep` で探す） |
+| 32、33 | 契約テストが通る |
+| 34 | ArchUnit：`api` の record に金額の整数の項目がない（名前が `price`・`amount`・`total`・`fee` で `long` の項目を検出） |
+| 35 | 見直しで読む |
+| 36〜38 | `MessageContractTest` と、検証のメッセージのテストが通る |
+| 39、40 | テストが通る。同じメソッドがない（見直し） |
+| 41 | 段階 7 の tasks のチェックボックスがすべて埋まる |
+| 42 | 必須の値がないときに起動に失敗するテスト |
+| 43 | 第 5.2 節の手順 |
+| 44 | 見直しで読む（第 6 節の一覧を使う） |
+| DN-4 | すべてのテストが通る。`api/` の差分は第 2.2 節の制約の追加だけ |
+| DN-5 | `git log --stat` |
+| DN-6 | `db/migration` に新しいファイルがない（食い違いを直す場合を除く） |
+
+## 8. 実装の順序
+
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-docs.md)、[02](tasks/02-structure.md)、[03](tasks/03-values.md)、[04](tasks/04-errors.md)、[05](tasks/05-duplication.md)、[06](tasks/06-config-build.md)、[07](tasks/07-scan.md)、[08](tasks/08-comments.md)、[09](tasks/09-review.md)）。タスク番号は `T5` ＋ 段階 ＋ 連番（例：T5101）。
+
+| # | 段階 | 完了条件 |
+|---|------|----------|
+| 1 | 規則の文書（constitution 4.2、`docs/style/backend.md` の標準の構成・大きさ・共通の型・エラーのキー・設定の値、`comments.md` の複雑な処理） | 文書がある |
+| 2 | 標準の構成（第 1 節。検査のテストを先に書き、移動の commit と参照の修正の commit を分ける） | DC-27〜30 のテストが通る |
+| 3 | 値と入力の検証（第 2 節。契約テストを先に） | DC-31〜35 のテストが通る |
+| 4 | エラーとメッセージ（第 3 節） | DC-36〜38 のテストが通る。変わる文を利用者が確かめた |
+| 5 | 重複と大きいクラス（第 4.1、4.2 節） | DC-39、40 のテストが通る |
+| 6 | 設定とビルド（第 5 節、P2） | DC-42、43 |
+| 7 | 全体の走査（第 4.3 節） | 一覧のすべての項目に結論がある |
+| 8 | コメント（第 6 節） | DC-44 |
+| 9 | 見直し | `docs/style/review.md` で確かめ、`check-zh.mjs --all` が通り、カバレッジが段階 1 の前より下がっていない。README の spec の状態を直す |

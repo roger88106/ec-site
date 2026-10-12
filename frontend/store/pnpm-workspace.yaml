@@ -1,5 +1,0 @@
-allowBuilds:
-  # Service Worker を public に写すだけ。サーバーの処理のテストは Node の MSW（msw/node）を使うので要らない
-  msw: false
-  sharp: false
-  unrs-resolver: false

@@ -1,4 +1,0 @@
-# 依存のインストール時のスクリプトの実行（pnpm は、ここに書いていないものがあるとエラーにする）
-allowBuilds:
-  # Service Worker を public に写すだけ。結合テストは Node の MSW（msw/node）を使うので要らない
-  msw: false

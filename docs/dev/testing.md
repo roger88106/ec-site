@@ -23,7 +23,7 @@
 
 ## 管理画面・店舗画面
 
-`frontend/admin/`・`frontend/store/` で実行する。依存の入れ方は [setup.md](setup.md)。
+`frontend/admin/`・`frontend/store/` で実行する。依存の入れ方は [setup.md](setup.md)。リポジトリのルートの `pnpm lint`・`pnpm typecheck`・`pnpm test`・`pnpm build` は、すべてのプロジェクトでまとめて流す。
 
 ```bash
 # CI と同じ確認（lint と整形、型チェック、単体・結合テスト、ビルド）
@@ -42,10 +42,10 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 # リポジトリのルートで、PostgreSQL、SeaweedFS、Keycloak、Mailpit などを起動する
 docker compose up -d
 
-# 管理画面と店舗画面の依存を入れておく（それぞれのディレクトリで pnpm install）
-
-# e2e/ で、依存とブラウザを入れる
+# リポジトリのルートで、依存を入れる（管理画面・店舗画面・E2E をまとめて）
 pnpm install
+
+# e2e/ で、ブラウザを入れる
 pnpm exec playwright install chromium
 
 # E2E。バックエンド（local profile）、管理画面（:4173）、店舗画面（:3100）を起動してから動かす

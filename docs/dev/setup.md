@@ -64,9 +64,10 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 前提：Node.js 24 以上、pnpm（版は `package.json` の `packageManager`）
 
 ```bash
-# frontend/admin/ で、依存を入れる
+# リポジトリのルートで、依存を入れる（管理画面・店舗画面・E2E をまとめて。pnpm の workspace）
 pnpm install
 
+# 以下は frontend/admin/ で
 # 開発サーバー（http://localhost:5173）。/api はバックエンド（localhost:8080）に転送する
 pnpm dev
 
@@ -84,9 +85,7 @@ pnpm lint:fix
 前提は管理画面と同じ。
 
 ```bash
-# frontend/store/ で、依存を入れる
-pnpm install
-
+# 依存はルートで入れる（管理画面と同じ）。以下は frontend/store/ で
 # 開発サーバー（http://localhost:3000）。API はサーバーから呼ぶ（既定は localhost:8080）
 pnpm dev
 ```

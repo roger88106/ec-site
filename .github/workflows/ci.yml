@@ -94,9 +94,9 @@ jobs:
       # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
       - uses: pnpm/action-setup@v6
         with:
-          package_json_file: frontend/admin/package.json
+          package_json_file: package.json
           cache: true
-          cache_dependency_path: frontend/admin/pnpm-lock.yaml
+          cache_dependency_path: pnpm-lock.yaml
 
       - uses: actions/setup-node@v7
         with:
@@ -146,9 +146,9 @@ jobs:
       # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
       - uses: pnpm/action-setup@v6
         with:
-          package_json_file: frontend/store/package.json
+          package_json_file: package.json
           cache: true
-          cache_dependency_path: frontend/store/pnpm-lock.yaml
+          cache_dependency_path: pnpm-lock.yaml
 
       - uses: actions/setup-node@v7
         with:
@@ -225,19 +225,17 @@ jobs:
       # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
       - uses: pnpm/action-setup@v6
         with:
-          package_json_file: e2e/package.json
+          package_json_file: package.json
           cache: true
-          cache_dependency_path: e2e/pnpm-lock.yaml
+          cache_dependency_path: pnpm-lock.yaml
 
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
 
       - name: 依存のインストール
-        run: |
-          pnpm --dir frontend/admin install --frozen-lockfile
-          pnpm --dir frontend/store install --frozen-lockfile
-          pnpm --dir e2e install --frozen-lockfile
+        # workspace（ルートの pnpm-workspace.yaml）の依存をまとめて入れる
+        run: pnpm install --frozen-lockfile
 
       # バックエンドの local profile の接続先（PostgreSQL）と IdP（Keycloak、realm の JSON を取り込む）、IdP が送るメールの受け手（Mailpit）。
       # docker/compose.yaml（ルートの .env が指す）をそのまま使う（Keycloak は同じ PostgreSQL の別の database を使うので、GitHub の services ではなく compose で起動する）。

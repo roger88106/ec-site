@@ -7,7 +7,7 @@
 ## タスク
 
 - [x] **T5401** 一覧を作る：文に規則の値を数字で書いているメッセージ（plan 第 3.3 節）、入力の検証のメッセージの今の文（ローカルと CI の JVM のロケールで）と新しい文（plan 第 3.2 節）、管理画面に表示が変わる所。
-- [ ] **T5402** [テスト] `MessageContractTest`：すべての `ErrorCodeProvider` の定数に `messages.properties` のキーがあり、逆もある。キーは `ecsite.<モジュール>.<定数の名前の小文字>`。
+- [x] **T5402** [テスト] `MessageContractTest`：すべての `ErrorCodeProvider` の定数に `messages.properties` のキーがあり、逆もある。キーは `ecsite.<モジュール>.<定数の名前の小文字>`。
 - [ ] **T5403** `ErrorCodeProvider` にキーを作る既定のメソッドを足し、各 `<モジュール>ErrorCode` をそれに合わせる。`<モジュール>Message` と `Code` を消す。T5402 と既存のテストが通る（DC-36）。
 - [ ] **T5404** [テスト] 入力の検証のメッセージ：制約の種類ごとに `ecsite.validation.<種類>` の文になり、上限・下限が差し込まれる。知らない種類は `ecsite.validation.invalid`。JVM のロケールによらない（DC-37）。
 - [ ] **T5405** `GlobalExceptionHandler` の検証のエラーを、キーから文を作る形にする。`messages.properties` に検証のキーを足す。T5404 を通す。管理画面・E2E のテストで、変わった文に合わせる所を直す（DN-4 の例外）。

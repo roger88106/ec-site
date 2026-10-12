@@ -4,7 +4,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.catalog.infrastructure.TaxRateScheduleCache;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

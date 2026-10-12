@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

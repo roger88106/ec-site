@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.directory;
 
 import com.ecsite.module.tax.api.TaxRateApi;
 import com.ecsite.module.tax.api.TaxRateSchedule;

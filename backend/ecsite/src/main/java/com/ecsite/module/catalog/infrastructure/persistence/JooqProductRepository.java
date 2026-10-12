@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;

@@ -7,14 +7,14 @@ import com.ecsite.module.catalog.application.model.command.ChangePublicationPeri
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderVariantsCommand;
 import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
+import com.ecsite.module.catalog.application.port.MediaDirectory;
+import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
 import com.ecsite.module.catalog.domain.product.ProductImage;
-import com.ecsite.module.catalog.domain.product.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
-import com.ecsite.module.catalog.domain.product.port.TaxDirectory;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;

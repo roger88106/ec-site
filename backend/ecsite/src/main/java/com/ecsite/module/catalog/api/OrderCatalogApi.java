@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.api;
 
-import com.ecsite.module.catalog.application.OrderableVariantQueryRepository;
+import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;

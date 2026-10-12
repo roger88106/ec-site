@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.application;
+package com.ecsite.module.catalog.application.port;
 
 import com.ecsite.module.catalog.application.model.view.CategoryView;
 

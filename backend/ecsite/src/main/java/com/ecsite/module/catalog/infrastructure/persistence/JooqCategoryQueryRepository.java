@@ -1,8 +1,8 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.jooq.catalog.tables.records.CategoryRecord;
-import com.ecsite.module.catalog.application.CategoryQueryRepository;
 import com.ecsite.module.catalog.application.model.view.CategoryView;
+import com.ecsite.module.catalog.application.port.CategoryQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;

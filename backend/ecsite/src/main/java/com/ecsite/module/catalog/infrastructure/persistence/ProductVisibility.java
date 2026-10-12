@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import lombok.AccessLevel;

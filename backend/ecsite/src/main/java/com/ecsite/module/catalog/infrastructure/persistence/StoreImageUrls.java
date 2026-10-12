@@ -1,6 +1,6 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.module.catalog.domain.product.port.MediaDirectory;
+import com.ecsite.module.catalog.application.port.MediaDirectory;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Component;

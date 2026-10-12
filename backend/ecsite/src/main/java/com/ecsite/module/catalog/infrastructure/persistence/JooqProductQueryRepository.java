@@ -1,15 +1,15 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.persistence.LikePatterns;
-import com.ecsite.jooq.catalog.tables.records.ProductRecord;
 import com.ecsite.jooq.catalog.tables.records.ProductImageRecord;
-import com.ecsite.module.catalog.application.ProductQueryRepository;
+import com.ecsite.jooq.catalog.tables.records.ProductRecord;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
-import com.ecsite.module.catalog.domain.product.port.MediaDirectory;
+import com.ecsite.module.catalog.application.port.MediaDirectory;
+import com.ecsite.module.catalog.application.port.ProductQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;

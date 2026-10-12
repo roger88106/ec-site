@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -6,7 +6,7 @@ import com.ecsite.module.catalog.api.StoreProductDetail;
 import com.ecsite.module.catalog.api.StoreProductQuery;
 import com.ecsite.module.catalog.api.StoreProductSort;
 import com.ecsite.module.catalog.api.StoreProductSummary;
-import com.ecsite.module.catalog.application.StoreProductQueryRepository;
+import com.ecsite.module.catalog.application.port.StoreProductQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;

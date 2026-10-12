@@ -1,10 +1,10 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.persistence.LikePatterns;
 import com.ecsite.module.catalog.api.StoreProductSummary;
-import com.ecsite.module.catalog.application.ProductSearch;
+import com.ecsite.module.catalog.application.port.ProductSearch;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;

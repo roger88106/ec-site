@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.application.model.view.CategoryNodeView;
 import com.ecsite.module.catalog.application.model.view.CategoryView;
+import com.ecsite.module.catalog.application.port.CategoryQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

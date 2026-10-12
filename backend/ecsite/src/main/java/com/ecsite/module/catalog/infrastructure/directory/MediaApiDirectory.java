@@ -1,6 +1,6 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.directory;
 
-import com.ecsite.module.catalog.domain.product.port.MediaDirectory;
+import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.media.api.MediaApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

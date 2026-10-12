@@ -1,7 +1,7 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.directory;
 
 import com.ecsite.common.model.Money;
-import com.ecsite.module.catalog.domain.product.port.TaxDirectory;
+import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.tax.api.TaxRateApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

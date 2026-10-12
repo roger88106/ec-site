@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.infrastructure;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.module.catalog.domain.product.Product;

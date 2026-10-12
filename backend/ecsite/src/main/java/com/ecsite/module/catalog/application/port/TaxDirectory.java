@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.domain.product.port;
+package com.ecsite.module.catalog.application.port;
 
 import com.ecsite.common.model.Money;
 

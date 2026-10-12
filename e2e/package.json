@@ -10,7 +10,7 @@
   },
   "scripts": {
     "generate:api": "openapi-typescript ../api/openapi/admin.yaml -o src/generated/admin.ts --enum-values",
-    "test": "pnpm generate:api && playwright test",
+    "test": "pnpm generate:api && node scripts/prepare.ts && playwright test",
     "typecheck": "pnpm generate:api && tsc --noEmit",
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write"

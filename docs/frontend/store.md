@@ -129,13 +129,14 @@ frontend/store/src/
 ## 7. 品質
 
 - CI で、lint（Biome）、型チェック、テスト、ビルドを実行する（constitution 13）。型チェックとビルドは、型の生成の後に行う。
-- テストは次のように分ける。管理画面と違い、React Testing Library と MSW の結合テストは使わない。画面はサーバーコンポーネントで、操作はサーバーアクション（サーバーで API を呼ぶ）を通るので、ブラウザーの中だけでは振る舞いを再現できないため。
+- テストは次のように分ける。管理画面と違い、React Testing Library で部品を描画して操作する結合テストは使わない。画面はサーバーコンポーネントで、操作はサーバーアクション（サーバーで API を呼ぶ）を通るので、ブラウザーの中だけでは振る舞いを再現できないため。代わりに、サーバーの処理を Node の上で直接呼んで確かめる。
 
 | 対象 | テスト | 置き場所 |
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、表示の整形、エラーの欄への対応） | Vitest の単体テスト。厳密な TDD（constitution 12.2） | 対象の横（`*.test.ts`） |
 | 表示の部品（価格、品目、金額の内訳など。状態を持たないもの） | `react-dom/server` の `renderToStaticMarkup` で HTML にし、出る文字と並びを確かめる | 対象の横（`*.test.tsx`） |
-| 操作の流れ（カートに入れる、注文する、エラーの表示、入力が残ること） | E2E（`frontend/e2e`） | `frontend/e2e/tests/` |
+| サーバーの処理（サーバーアクション、`api/cart.ts`、`auth.ts` のコールバック、`proxy.ts`） | Vitest（Node）で直接呼ぶ。Next.js の口（`next/headers`、`next/navigation`、`next/cache`）と `@/auth` は `src/test/` の置き換えに、バックエンドは MSW（`msw/node`）にする | 対象の横（`*.test.ts`） |
+| 画面をつないだ操作の流れ（カートに入れて注文する、エラーの表示、入力が残ること） | E2E（`frontend/e2e`） | `frontend/e2e/tests/` |
 
 ## 8. 画面を追加する手順
 

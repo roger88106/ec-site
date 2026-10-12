@@ -6,7 +6,7 @@
 
 ## 文書
 
-- [ ] **T4301** constitution 12.1 を直す：店舗画面のサーバーの処理は Node の上でテストする、テスト名の AC 番号は 1 つずつ書く（範囲でまとめない）、カバレッジは報告だけ。`docs/frontend/store.md` 第 7 節と `docs/style/testing.md` も合わせる（DC-11、12、14）。
+- [x] **T4301** constitution 12.1 を直す：店舗画面のサーバーの処理は Node の上でテストする、テスト名の AC 番号は 1 つずつ書く（範囲でまとめない）、カバレッジは報告だけ。`docs/frontend/store.md` 第 7 節と `docs/style/testing.md` も合わせる（DC-11、12、14）。
 
 ## カバレッジと AC の検査
 

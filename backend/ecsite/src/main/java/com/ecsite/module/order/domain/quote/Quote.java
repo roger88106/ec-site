@@ -30,10 +30,12 @@ public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
      */
     public static Quote of(@NonNull List<QuoteItem> items, boolean missingVariant, @NonNull Shipping shipping,
                            @NonNull TaxDirectory tax) {
+        // 買える品目だけを合計する。送料は、買える品目があるときだけかかる
         var purchasable = items.stream().filter(QuoteItem::purchasable).toList();
         var itemsTotal = purchasable.stream().map(QuoteItem::subtotal).reduce(Money.ZERO, Money::plus);
         var shippingFee = purchasable.isEmpty() ? Money.ZERO : shipping.fee();
 
+        // 消費税は、品目と送料（あれば）の課税対象から、税率ごとに求める
         var taxables = new ArrayList<TaxDirectory.Taxable>();
         purchasable.forEach(item -> taxables.add(new TaxDirectory.Taxable(item.ratePercent(), item.subtotal())));
         if (shippingFee.yen() > 0) {
@@ -42,6 +44,7 @@ public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
         var taxes = taxables.isEmpty() ? List.<TaxAmount>of() : tax.consumptionTaxes(taxables);
 
         var amounts = new Amounts(itemsTotal, shippingFee, itemsTotal.plus(shippingFee), taxes);
+        // 品目があり、なくなったバリアントがなく、すべての品目が買えるときだけ注文できる
         var orderable = !items.isEmpty() && !missingVariant && purchasable.size() == items.size();
         return new Quote(List.copyOf(items), amounts, orderable);
     }

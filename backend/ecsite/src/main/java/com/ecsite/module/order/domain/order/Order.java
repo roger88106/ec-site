@@ -158,6 +158,7 @@ public class Order extends AggregateRoot {
         if (!quote.orderable()) {
             throw new IllegalArgumentException("注文できない見積もりからは注文を作れません");
         }
+        // メールアドレスは、空でなく、長さの上限以内で、形式に合うこと
         if (email == null || email.length() > EMAIL_MAX_LENGTH || !EMAIL.matcher(email).matches()) {
             throw BusinessException.of(OrderErrorCode.INVALID_EMAIL);
         }

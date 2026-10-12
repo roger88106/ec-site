@@ -149,7 +149,7 @@ module/<モジュール>/
 | リポジトリの port（domain） | `XxxRepository` | `TaxCategoryRepository` |
 | 参照用のリポジトリの port（application） | `XxxQueryRepository` | `TaxCategoryQueryRepository` |
 | jOOQ の実装 | `JooqXxxRepository` | `JooqTaxCategoryRepository` |
-| service（レベル A） | `XxxCommandService`、`XxxQueryService` | `TaxCategoryCommandService` |
+| service（レベル A） | 参照は `XxxQueryService`。更新は `XxxCommandService`、または用途の名前（1 つの集約に用途が複数あるとき、ほかのモジュールの呼び出しを組み合わせるとき） | `TaxCategoryCommandService`、`ProductPublicationService`、`OrderPlacementService` |
 | 他モジュールの腐敗防止層の口 | `<相手>Directory`（使う層の `port/` の interface） | `TaxDirectory` |
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `TaxApiDirectory` |
 

@@ -21,7 +21,7 @@
 - [x] 日時の変換（`Instant` と API の `OffsetDateTime`）が、4 つの mapper（商品、税、管理と店舗の注文）に同じ形である。共通の部品（`common/presentation/ApiDateTimes`）にした。
 - [x] 店舗の API の価格（`Price`）を作る変換が、注文と店舗の mapper に同じ形である。共通の部品（`common/presentation/StorePrices`）にした。
 - [x] 税率の正規化（末尾の 0 を除く）が、税の `RatePercent` と注文の `JooqOrderRepository` にある：直さない（注文は税の domain の型を使わない。モジュールの境界を越えて型を共有しない。constitution 6）。
-- [ ] 規則の文書（第 5.2 節）は、レベル A の service の名前を `XxxCommandService`・`XxxQueryService` としている。order（`CheckoutService`、`OrderPlacementService` など）と、段階 5 で分けた catalog の service は、用途の名前を使っている。規則を、用途の名前も認める形に直す。
+- [x] 規則の文書（第 5.2 節）は、レベル A の service の名前を `XxxCommandService`・`XxxQueryService` としている。order（`CheckoutService`、`OrderPlacementService` など）と、段階 5 で分けた catalog の service は、用途の名前を使っている。規則を、用途の名前も認める形に直した。
 - [x] `StorefrontService` に `@Transactional` がない：直さない（自分の DB を持たず、ほかのモジュールの api を組み合わせるだけ。各 api の application が取引を持つ）。
 - [x] 3 つの Factory の復元で `catch (Exception e)`：直さない（DB の行から集約を作れない理由は何でも、復元のエラーとして記録する。意図した広さ）。
 - [x] `Product.isVisibleAt`・`representativeImage` がテストだけから使われる：直さない（表示の条件と代表画像の業務の規則を集約に持ち、参照の SQL（`ProductVisibility` など）と同じ結果になることをテストで確かめている）。

@@ -11,7 +11,7 @@
 ## 認証と認可
 
 - [x] **T3202** Spring Security の Resource Server を依存に足し、両 realm の issuer と audience を設定に持つ（環境変数で上書きできる）。テスト用に、権限や IdP のアカウントの ID を指定して token を付ける補助を作る（Spring Security のテストの機能を使い、Keycloak は起動しない）。
-- [ ] **T3203** [テスト] 認可の統合テスト。
+- [x] **T3203** [テスト] 認可の統合テスト。
   - 管理 API：token がないと 401、権限があれば通る、権限が足りないと 403（AC-136、137）
   - `admin.yaml` にない要求（メソッドかパスが違う）は、権限があっても拒否される（NFR-3）
   - 401・403 が Problem Details（`errorCode`、`message`、`traceId`）で返る

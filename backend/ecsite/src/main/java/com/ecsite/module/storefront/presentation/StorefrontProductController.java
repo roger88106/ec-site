@@ -1,12 +1,12 @@
-package com.ecsite.module.storefront.controller;
+package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.api.store.ProductApi;
 import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummaryPage;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.storefront.catalogdir.ProductCondition;
-import com.ecsite.module.storefront.service.StorefrontService;
+import com.ecsite.module.storefront.application.StorefrontService;
+import com.ecsite.module.storefront.application.port.ProductCondition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;

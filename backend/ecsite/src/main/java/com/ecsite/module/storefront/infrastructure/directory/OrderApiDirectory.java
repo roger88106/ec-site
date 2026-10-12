@@ -1,7 +1,9 @@
-package com.ecsite.module.storefront.orderdir;
+package com.ecsite.module.storefront.infrastructure.directory;
 
+import com.ecsite.module.storefront.application.port.OrderDirectory;
 import com.ecsite.module.order.api.CartQuote;
 import com.ecsite.module.order.api.OrderQuoteApi;
+import com.ecsite.module.storefront.application.port.CartView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -14,7 +16,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-public class OrderDirectory {
+public class OrderApiDirectory implements OrderDirectory {
 
     /**
      * 見積もりの API
@@ -28,8 +30,9 @@ public class OrderDirectory {
      * @param requester 要求した会員の ID（ログインしていなければ null）
      * @return カートの表示。カートがない、または会員のカートで持ち主でなければ空
      */
+    @Override
     public Optional<CartView> findCart(UUID cartId, UUID requester) {
-        return orderQuoteApi.quoteCart(cartId, requester).map(OrderDirectory::toView);
+        return orderQuoteApi.quoteCart(cartId, requester).map(OrderApiDirectory::toView);
     }
 
     /**
@@ -38,7 +41,7 @@ public class OrderDirectory {
     private static CartView toView(CartQuote quote) {
         return new CartView(
                 quote.cartId(),
-                quote.items().stream().map(OrderDirectory::toItem).toList(),
+                quote.items().stream().map(OrderApiDirectory::toItem).toList(),
                 toAmounts(quote.amounts()),
                 quote.orderable());
     }

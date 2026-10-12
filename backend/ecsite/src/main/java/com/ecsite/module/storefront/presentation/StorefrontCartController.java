@@ -1,10 +1,10 @@
-package com.ecsite.module.storefront.controller;
+package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.api.store.CartViewApi;
 import com.ecsite.api.store.model.Cart;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.api.MemberApi;
-import com.ecsite.module.storefront.service.StorefrontService;
+import com.ecsite.module.storefront.application.StorefrontService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;

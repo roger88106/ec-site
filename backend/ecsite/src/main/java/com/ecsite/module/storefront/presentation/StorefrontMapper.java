@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.controller;
+package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.api.store.model.Amounts;
 import com.ecsite.api.store.model.AxisValue;
@@ -9,19 +9,19 @@ import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummary;
 import com.ecsite.api.store.model.ProductSummaryPage;
-import com.ecsite.api.store.model.Shop;
 import com.ecsite.api.store.model.QuoteItem;
+import com.ecsite.api.store.model.Shop;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.api.store.model.Variant;
 import com.ecsite.api.store.model.VariantAxis;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.storefront.catalogdir.CatalogCategory;
-import com.ecsite.module.storefront.catalogdir.ProductCondition;
-import com.ecsite.module.storefront.orderdir.CartView;
-import com.ecsite.module.storefront.service.ProductDetailView;
-import com.ecsite.module.storefront.service.ProductSummaryView;
-import com.ecsite.module.storefront.service.ShopProperties;
+import com.ecsite.module.storefront.application.ProductDetailView;
+import com.ecsite.module.storefront.application.ProductSummaryView;
+import com.ecsite.module.storefront.application.ShopProperties;
+import com.ecsite.module.storefront.application.port.CartView;
+import com.ecsite.module.storefront.application.port.CatalogCategory;
+import com.ecsite.module.storefront.application.port.ProductCondition;
 import org.springframework.stereotype.Component;
 
 /**

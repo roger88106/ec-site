@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.service;
+package com.ecsite.module.storefront.application;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;

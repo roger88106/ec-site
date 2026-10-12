@@ -1,10 +1,10 @@
-package com.ecsite.module.storefront.controller;
+package com.ecsite.module.storefront.presentation;
 
-import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestImages;
+import com.ecsite.TestTokens;
 import com.ecsite.module.catalog.infrastructure.TaxRateScheduleCache;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
@@ -37,8 +37,8 @@ import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;

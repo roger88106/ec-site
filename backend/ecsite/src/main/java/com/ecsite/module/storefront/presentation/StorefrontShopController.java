@@ -1,8 +1,8 @@
-package com.ecsite.module.storefront.controller;
+package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.api.store.ShopApi;
 import com.ecsite.api.store.model.Shop;
-import com.ecsite.module.storefront.service.ShopProperties;
+import com.ecsite.module.storefront.application.ShopProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;

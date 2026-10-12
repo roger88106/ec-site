@@ -1,5 +1,6 @@
-package com.ecsite.module.storefront.stockdir;
+package com.ecsite.module.storefront.infrastructure.directory;
 
+import com.ecsite.module.storefront.application.port.StockDirectory;
 import com.ecsite.module.inventory.api.StockAvailabilityApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -16,7 +17,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @RequiredArgsConstructor
-public class StockDirectory {
+public class StockApiDirectory implements StockDirectory {
 
     /**
      * 店舗向けの在庫の API
@@ -29,6 +30,7 @@ public class StockDirectory {
      * @param variantIds バリアント ID
      * @return 指定したうち、在庫のあるバリアントの ID
      */
+    @Override
     public Set<UUID> inStock(Collection<UUID> variantIds) {
         return stockAvailabilityApi.availabilityOf(variantIds).entrySet().stream()
                 .filter(Map.Entry::getValue)

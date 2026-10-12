@@ -1,9 +1,9 @@
-package com.ecsite.module.storefront.controller;
+package com.ecsite.module.storefront.presentation;
 
-import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.module.catalog.infrastructure.TaxRateScheduleCache;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;

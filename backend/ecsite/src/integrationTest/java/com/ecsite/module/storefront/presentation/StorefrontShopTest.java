@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.controller;
+package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.IntegrationTest;
 import org.junit.jupiter.api.DisplayName;

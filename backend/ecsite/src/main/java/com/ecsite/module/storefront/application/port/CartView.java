@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.orderdir;
+package com.ecsite.module.storefront.application.port;
 
 import com.ecsite.common.model.Money;
 import jakarta.annotation.Nullable;

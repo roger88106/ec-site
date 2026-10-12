@@ -1,17 +1,17 @@
-package com.ecsite.module.storefront.service;
+package com.ecsite.module.storefront.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.storefront.catalogdir.CatalogCategory;
-import com.ecsite.module.storefront.catalogdir.CatalogDirectory;
-import com.ecsite.module.storefront.catalogdir.CatalogProduct;
-import com.ecsite.module.storefront.catalogdir.CatalogProductDetail;
-import com.ecsite.module.storefront.orderdir.CartView;
-import com.ecsite.module.storefront.orderdir.OrderDirectory;
-import com.ecsite.module.storefront.catalogdir.ProductCondition;
-import com.ecsite.module.storefront.stockdir.StockDirectory;
+import com.ecsite.module.storefront.application.port.CartView;
+import com.ecsite.module.storefront.application.port.CatalogCategory;
+import com.ecsite.module.storefront.application.port.CatalogDirectory;
+import com.ecsite.module.storefront.application.port.CatalogProduct;
+import com.ecsite.module.storefront.application.port.CatalogProductDetail;
+import com.ecsite.module.storefront.application.port.OrderDirectory;
+import com.ecsite.module.storefront.application.port.ProductCondition;
+import com.ecsite.module.storefront.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

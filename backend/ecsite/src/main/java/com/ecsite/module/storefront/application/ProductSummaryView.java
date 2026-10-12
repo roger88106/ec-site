@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.service;
+package com.ecsite.module.storefront.application;
 
 import jakarta.annotation.Nullable;
 

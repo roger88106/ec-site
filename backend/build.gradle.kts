@@ -179,7 +179,7 @@ tasks.check { dependsOn(integrationTest) }
 val migrationDir = layout.projectDirectory.dir("src/main/resources/db/migration")
 
 // 生成の対象にする schema（モジュールごと）。Flyway の履歴（public）は対象外
-val jooqSchemas = listOf("common", "tax", "catalog", "media", "inventory", "cart", "ordering")
+val jooqSchemas = listOf("common", "tax", "catalog", "media", "inventory", "cart", "ordering", "member")
 
 jooq {
     version.set(libs.versions.jooq.get())

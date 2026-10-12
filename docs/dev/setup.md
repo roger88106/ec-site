@@ -8,6 +8,7 @@ JDK 21、Docker（Docker Desktop など）
 
 バックエンドの Gradle プロジェクトは `backend/ecsite/` にある。バックエンドのコマンドは `backend/ecsite/` で実行する。
 IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/ecsite/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
+- 前の置き場所（`backend/`）でリンクしていた場合は、Gradle のツールウィンドウで古いプロジェクトのリンクを外し（Unlink Gradle Project）、`backend/ecsite/build.gradle.kts` をリンクし直す。古い `backend/.gradle`・`backend/build` が残っていれば消してよい。
 
 ## ローカルで起動する
 

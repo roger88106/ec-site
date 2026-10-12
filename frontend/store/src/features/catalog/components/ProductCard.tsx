@@ -1,8 +1,8 @@
+import { Badge } from '@ec-site/shared/ui/badge'
 import { ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ProductSummary } from '@/api/types'
 import { PriceText } from '@/components/PriceText'
-import { Badge } from '@/components/ui/badge'
 
 /** 一覧の商品（AC-55、56）。商品名、代表画像、価格を出し、在庫がなければ「在庫なし」と示す */
 export function ProductCard({ product }: { product: ProductSummary }) {

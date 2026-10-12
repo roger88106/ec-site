@@ -1,9 +1,9 @@
+import { Button } from '@ec-site/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Link, useParams } from 'react-router'
 import { $api } from '@/api/client'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { AdjustStockForm } from '@/features/inventory/components/AdjustStockForm'
 import { StockHistory } from '@/features/inventory/components/StockHistory'
 

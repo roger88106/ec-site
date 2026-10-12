@@ -1,6 +1,6 @@
+import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
+import { Button } from '@ec-site/shared/ui/button'
 import { ApiError, errorMessage, fieldErrors } from '@/api/errors'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
 
 /**
  * 操作した場所に出すエラー（T703。管理画面の構成 第 6 節）。<br />

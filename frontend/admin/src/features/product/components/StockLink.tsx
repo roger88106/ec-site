@@ -1,6 +1,6 @@
+import { Button } from '@ec-site/shared/ui/button'
 import { Link } from 'react-router'
 import { $api } from '@/api/client'
-import { Button } from '@/components/ui/button'
 
 /**
  * バリアントの在庫数と、在庫の画面へのリンク（T710）。<br />

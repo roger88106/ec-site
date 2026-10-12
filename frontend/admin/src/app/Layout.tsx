@@ -1,8 +1,8 @@
+import { Button } from '@ec-site/shared/ui/button'
 import { LogOutIcon } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { menu } from '@/app/menu'
 import { useOperator } from '@/auth/operator'
-import { Button } from '@/components/ui/button'
 import {
   Sidebar,
   SidebarContent,

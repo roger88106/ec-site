@@ -1,9 +1,9 @@
 'use client'
 
+import { Badge } from '@ec-site/shared/ui/badge'
+import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
 import type { Variant, VariantAxis } from '@/api/types'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
 import {
   emptySelection,
   isPurchasable,

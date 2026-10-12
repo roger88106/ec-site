@@ -1,3 +1,5 @@
+import { Button } from '@ec-site/shared/ui/button'
+import { Input } from '@ec-site/shared/ui/input'
 import { Controller } from 'react-hook-form'
 import { toast } from 'sonner'
 import { $api } from '@/api/client'
@@ -6,9 +8,7 @@ import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
 import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Button } from '@/components/ui/button'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
 /** 入力欄の値（軸の値は、商品の軸と同じ並び） */

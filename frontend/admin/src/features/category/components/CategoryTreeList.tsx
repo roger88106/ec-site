@@ -1,7 +1,7 @@
+import { Button } from '@ec-site/shared/ui/button'
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
 import type { CategoryNode } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
-import { Button } from '@/components/ui/button'
 import { move } from '@/lib/array'
 import { MAX_CATEGORY_DEPTH } from '@/lib/categoryTree'
 

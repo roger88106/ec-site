@@ -1,10 +1,10 @@
+import { Button } from '@ec-site/shared/ui/button'
+import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
 import { orderStatusValues } from '@/api/generated/admin'
 import type { OrderStatus } from '@/api/types'
 import { OptionSelect } from '@/components/OptionSelect'
-import { Button } from '@/components/ui/button'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
 import { orderStatusLabels } from '@/lib/labels'
 

@@ -1,9 +1,9 @@
+import { Badge } from '@ec-site/shared/ui/badge'
 import { ImageIcon } from 'lucide-react'
 import Link from 'next/link'
 import type { ReactNode } from 'react'
 import type { QuoteItem } from '@/api/types'
 import { PriceText } from '@/components/PriceText'
-import { Badge } from '@/components/ui/badge'
 import { axisValuesLabel, unpurchasableReasonLabel } from '@/lib/orderDisplay'
 
 /**

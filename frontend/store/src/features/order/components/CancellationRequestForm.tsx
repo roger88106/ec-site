@@ -1,9 +1,9 @@
 'use client'
 
+import { Button } from '@ec-site/shared/ui/button'
+import { Label } from '@ec-site/shared/ui/label'
 import { useActionState } from 'react'
 import { requestCancellation } from '@/actions/order'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 
 /** 理由の長さの上限（AC-95） */
 const REASON_MAX_LENGTH = 500

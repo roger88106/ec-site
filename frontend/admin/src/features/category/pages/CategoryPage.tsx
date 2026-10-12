@@ -1,3 +1,4 @@
+import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { $api } from '@/api/client'
@@ -6,7 +7,6 @@ import type { CategoryNode } from '@/api/types'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
-import { Button } from '@/components/ui/button'
 import { CategoryNameDialog } from '@/features/category/components/CategoryNameDialog'
 import { type CategoryActions, CategoryTreeList } from '@/features/category/components/CategoryTreeList'
 

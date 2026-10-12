@@ -1,10 +1,10 @@
+import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
+import { Button } from '@ec-site/shared/ui/button'
+import { Input } from '@ec-site/shared/ui/input'
 import type { Metadata } from 'next'
 import { getApi } from '@/api/client'
 import { unwrap } from '@/api/result'
 import { PageLinks } from '@/components/PageLinks'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
 import { parseSearchQuery, searchHref } from '@/features/catalog/searchQuery'
 

@@ -1,8 +1,8 @@
 'use client'
 
+import { Alert, AlertDescription, AlertTitle } from '@ec-site/shared/ui/alert'
 import { useEffect, useState } from 'react'
 import { dismissCartMergeNotice } from '@/actions/cart'
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert'
 import type { CartMergeNotice } from '@/lib/cartMergeNotice'
 
 /**

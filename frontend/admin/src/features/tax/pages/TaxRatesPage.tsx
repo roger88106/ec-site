@@ -1,8 +1,8 @@
+import { Button } from '@ec-site/shared/ui/button'
 import { Link, useParams } from 'react-router'
 import { $api } from '@/api/client'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
-import { Button } from '@/components/ui/button'
 import { TaxRatesEditor } from '@/features/tax/components/TaxRatesEditor'
 import { formatRate } from '@/lib/rate'
 

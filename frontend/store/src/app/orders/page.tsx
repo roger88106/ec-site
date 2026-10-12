@@ -1,10 +1,10 @@
+import { Badge } from '@ec-site/shared/ui/badge'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getMemberApi } from '@/api/client'
 import { unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
 import { PageLinks } from '@/components/PageLinks'
-import { Badge } from '@/components/ui/badge'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
 import { formatDateTime, formatYen, orderStatusLabel } from '@/lib/orderDisplay'
 

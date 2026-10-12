@@ -1,4 +1,4 @@
-import { Input } from '@/components/ui/input'
+import { Input } from '@ec-site/shared/ui/input'
 import { normalizeCode } from '@/lib/code'
 
 /** 品番の入力。半角の英小文字は、入力した時点で大文字にする（管理画面の構成 第 5 節） */

@@ -1,4 +1,4 @@
-import { Input } from '@/components/ui/input'
+import { Input } from '@ec-site/shared/ui/input'
 import { fromDateTimeInput, toDateTimeInput } from '@/lib/format'
 
 /**

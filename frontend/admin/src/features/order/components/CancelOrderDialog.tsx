@@ -1,7 +1,7 @@
+import { Button } from '@ec-site/shared/ui/button'
 import { useForm } from 'react-hook-form'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Button } from '@/components/ui/button'
 import {
   Dialog,
   DialogContent,

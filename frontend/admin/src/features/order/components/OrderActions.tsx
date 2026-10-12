@@ -1,3 +1,4 @@
+import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
 import { toast } from 'sonner'
 import { $api } from '@/api/client'
@@ -5,7 +6,6 @@ import { useInvalidate } from '@/api/invalidate'
 import type { OrderDetail } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Button } from '@/components/ui/button'
 import { CancelOrderDialog } from '@/features/order/components/CancelOrderDialog'
 import { availableActions } from '@/features/order/order'
 

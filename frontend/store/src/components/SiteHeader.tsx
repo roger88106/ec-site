@@ -1,10 +1,10 @@
+import { Input } from '@ec-site/shared/ui/input'
 import { SearchIcon, ShoppingCartIcon } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { logout } from '@/actions/auth'
 import { ACCOUNT_URL, currentMember } from '@/auth'
 import { LoginLinks } from '@/components/LoginLinks'
-import { Input } from '@/components/ui/input'
 
 /**
  * 画面の上のヘッダー。サイト名、商品一覧へのリンク、キーワード検索（フォームの GET で /search へ）、カートへのリンク、

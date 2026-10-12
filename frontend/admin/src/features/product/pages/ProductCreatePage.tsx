@@ -1,3 +1,6 @@
+import { Button } from '@ec-site/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
+import { Input } from '@ec-site/shared/ui/input'
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
 import { toast } from 'sonner'
@@ -7,10 +10,7 @@ import { useInvalidate } from '@/api/invalidate'
 import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 import { ProductFields } from '@/features/product/components/ProductFields'
 import {
   EMPTY_PRODUCT_FIELDS,

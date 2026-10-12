@@ -1,10 +1,10 @@
 'use client'
 
+import { Button } from '@ec-site/shared/ui/button'
+import { Label } from '@ec-site/shared/ui/label'
 import { useActionState, useId } from 'react'
 import { changeCartItemQuantity, removeCartItem } from '@/actions/cart'
 import type { QuoteItem } from '@/api/types'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { formatYen, QUANTITY_OPTIONS } from '@/lib/orderDisplay'
 

@@ -1,3 +1,6 @@
+import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
+import { Button } from '@ec-site/shared/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -7,9 +10,6 @@ import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Alert, AlertDescription } from '@/components/ui/alert'
-import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   IMAGE_ACCEPT,
   ImageUploadError,

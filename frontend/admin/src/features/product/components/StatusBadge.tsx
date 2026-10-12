@@ -1,5 +1,5 @@
+import { Badge } from '@ec-site/shared/ui/badge'
 import type { PublicationStatus } from '@/api/types'
-import { Badge } from '@/components/ui/badge'
 import { publicationStatusLabels } from '@/lib/labels'
 
 /** 商品の状態の表示 */

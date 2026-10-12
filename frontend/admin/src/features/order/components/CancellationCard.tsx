@@ -1,6 +1,6 @@
+import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import type { Cancellation, CancellationRequest } from '@/api/types'
 import { DateTime } from '@/components/DateTime'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cancellationRequestResultLabel } from '@/features/order/order'
 
 /**

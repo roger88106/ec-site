@@ -1,4 +1,4 @@
-import { Button } from '@/components/ui/button'
+import { Button } from '@ec-site/shared/ui/button'
 
 /** ページング（constitution 9 のレスポンスの page、totalPages、totalItems を受ける） */
 export function Pagination({

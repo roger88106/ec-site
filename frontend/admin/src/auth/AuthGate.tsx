@@ -1,9 +1,9 @@
 import { fullName } from '@ec-site/shared/lib/login'
+import { Button } from '@ec-site/shared/ui/button'
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { hasAuthParams, useAuth } from 'react-oidc-context'
 import { type Operator, OperatorProvider } from '@/auth/operator'
 import { setTokenSource } from '@/auth/token'
-import { Button } from '@/components/ui/button'
 
 /**
  * すべての画面を包み、ログインを求める（AC-132。管理画面の構成 第 11 節）。<br />

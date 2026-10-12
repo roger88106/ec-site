@@ -1,5 +1,5 @@
+import { Button } from '@ec-site/shared/ui/button'
 import Link from 'next/link'
-import { Button } from '@/components/ui/button'
 
 /** ページ送り（constitution 9 のレスポンスの page、totalPages、totalItems を受ける）。リンクで移る */
 export function PageLinks({

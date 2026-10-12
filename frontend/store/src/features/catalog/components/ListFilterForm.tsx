@@ -1,8 +1,8 @@
 import type { FlatCategory } from '@ec-site/shared/lib/categoryTree'
+import { Button } from '@ec-site/shared/ui/button'
+import { Input } from '@ec-site/shared/ui/input'
+import { Label } from '@ec-site/shared/ui/label'
 import { productSortValues } from '@/api/generated/store'
-import { Button } from '@/components/ui/button'
-import { Input } from '@/components/ui/input'
-import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type ListQuery, sortLabels } from '@/features/catalog/listQuery'
 

@@ -1,11 +1,11 @@
 'use client'
 
+import { Button } from '@ec-site/shared/ui/button'
+import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { useActionState, useId } from 'react'
 import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
-import { Button } from '@/components/ui/button'
-import { Label } from '@/components/ui/label'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { isPurchasable } from '@/features/catalog/variantSelection'
 import { QUANTITY_OPTIONS } from '@/lib/orderDisplay'

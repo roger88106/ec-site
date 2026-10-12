@@ -1,5 +1,5 @@
+import { Badge } from '@ec-site/shared/ui/badge'
 import type { OrderStatus } from '@/api/types'
-import { Badge } from '@/components/ui/badge'
 import { orderStatusLabels } from '@/lib/labels'
 
 /** 状態ごとの見た目。対応が要る「キャンセル申請中」を目立たせる */

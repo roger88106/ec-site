@@ -1,10 +1,10 @@
+import { Button } from '@ec-site/shared/ui/button'
+import { Input } from '@ec-site/shared/ui/input'
 import { useForm } from 'react-hook-form'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { Input } from '@/components/ui/input'
 
 /** 入力欄の値 */
 type Values = { name: string }

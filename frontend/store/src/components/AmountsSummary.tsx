@@ -1,5 +1,5 @@
+import { Separator } from '@ec-site/shared/ui/separator'
 import type { Amounts } from '@/api/types'
-import { Separator } from '@/components/ui/separator'
 import { formatYen, taxLabel } from '@/lib/orderDisplay'
 
 /**

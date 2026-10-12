@@ -1,8 +1,8 @@
 'use client'
 
+import { Button } from '@ec-site/shared/ui/button'
 import { useActionState } from 'react'
 import { startCheckout } from '@/actions/cart'
-import { Button } from '@/components/ui/button'
 
 /**
  * 注文手続きに進む（AC-82、88）。<br />

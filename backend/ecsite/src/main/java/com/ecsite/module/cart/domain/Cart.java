@@ -16,27 +16,27 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * カート（docs/modules/cart.md）。品目を入れた順に持つ。価格は持たない（AC-79）。<br />
- * 最後の変更から 30 日たったカートは空として扱い、次に書くときに品目を消す（AC-81）。
+ * カート（docs/modules/cart.md）。品目を入れた順に持つ。価格は持たない。<br />
+ * 最後の変更から 30 日たったカートは空として扱い、次に書くときに品目を消す。
  * 変更のたびにバージョンを上げる（注文手続きの後の変更を見つけるため）。<br />
- * 会員のカートは会員 ID を持ち、持ち主の会員だけが使える。ログインせずに作ったカートは会員を持たず、ID を知っていればだれでも使える（AC-120、121）。
+ * 会員のカートは会員 ID を持ち、持ち主の会員だけが使える。ログインせずに作ったカートは会員を持たず、ID を知っていればだれでも使える。
  */
 @Getter
 @Accessors(fluent = true)
 public class Cart {
 
     /**
-     * 1 品目の数量の上限（AC-75）
+     * 1 品目の数量の上限
      */
     static final int MAX_QUANTITY = 10;
 
     /**
-     * 品目の数の上限（AC-75）
+     * 品目の数の上限
      */
     static final int MAX_ITEMS = 30;
 
     /**
-     * 最後の変更からこの期間がたったら、空として扱う（AC-81）
+     * 最後の変更からこの期間がたったら、空として扱う
      */
     static final Duration LIFETIME = Duration.ofDays(30);
 
@@ -85,7 +85,7 @@ public class Cart {
     }
 
     /**
-     * 空のカートを作る（AC-73）。
+     * 空のカートを作る。
      *
      * @param id  カート ID
      * @param now 現在時刻
@@ -96,7 +96,7 @@ public class Cart {
     }
 
     /**
-     * 会員の空のカートを作る（AC-121）。
+     * 会員の空のカートを作る。
      *
      * @param id       カート ID
      * @param memberId 会員 ID
@@ -115,7 +115,7 @@ public class Cart {
     }
 
     /**
-     * 要求した人がカートを使えるか（AC-120、121）。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
+     * 要求した人がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
      *
      * @param requesterMemberId 要求した会員の ID（ログインしていなければ null）
      * @return 使えれば true
@@ -125,7 +125,7 @@ public class Cart {
     }
 
     /**
-     * 指定した時刻での品目を返す。期限が切れていれば空（AC-81）。
+     * 指定した時刻での品目を返す。期限が切れていれば空。
      *
      * @param now 現在時刻
      * @return 品目（入れた順）
@@ -135,7 +135,7 @@ public class Cart {
     }
 
     /**
-     * バリアントを入れた後の数量を、変更せずに求める（AC-74、76。販売可能数と比べるため）。
+     * バリアントを入れた後の数量を、変更せずに求める（販売可能数と比べるため）。
      *
      * @param variantId バリアント ID
      * @param quantity  入れる数量
@@ -150,7 +150,7 @@ public class Cart {
     }
 
     /**
-     * バリアントを入れる。カートにあれば数量を合算する（AC-74）。
+     * バリアントを入れる。カートにあれば数量を合算する。
      *
      * @param variantId バリアント ID
      * @param quantity  入れる数量（1〜10）
@@ -174,7 +174,7 @@ public class Cart {
     }
 
     /**
-     * 品目の数量を変える（AC-78）。
+     * 品目の数量を変える。
      *
      * @param variantId バリアント ID
      * @param quantity  新しい数量（1〜10）
@@ -192,7 +192,7 @@ public class Cart {
     }
 
     /**
-     * 品目を削除する（AC-78）。カートになければ何もしない（冪等）。
+     * 品目を削除する。カートになければ何もしない（冪等）。
      *
      * @param variantId バリアント ID
      * @param now       現在時刻
@@ -206,7 +206,7 @@ public class Cart {
     }
 
     /**
-     * ログインせずに使っていたカートの品目を、このカート（会員のカート）へ移し、移したカートを空にする（AC-122、123）。<br />
+     * ログインせずに使っていたカートの品目を、このカート（会員のカート）へ移し、移したカートを空にする。<br />
      * 品目を入れた順に後ろへ入れ、同じバリアントは数量を合算して 10 で切り詰める。品目が 30 に達したら、残りの新しいバリアントは移さない。
      * 商品カタログ・在庫は確かめない。移すカートが空なら（2 回目）、どちらも変えない。
      *
@@ -244,7 +244,7 @@ public class Cart {
     }
 
     /**
-     * 品目をすべて消す（注文の成立。AC-90）。
+     * 品目をすべて消す（注文の成立）。
      *
      * @param now 現在時刻
      */
@@ -263,7 +263,7 @@ public class Cart {
     }
 
     /**
-     * 期限が切れていれば、書く前に品目を消す（AC-81）。
+     * 期限が切れていれば、書く前に品目を消す。
      */
     private void dropIfExpired(Instant now) {
         if (isExpiredAt(now)) {
@@ -272,7 +272,7 @@ public class Cart {
     }
 
     /**
-     * 数量が 1〜10 であることを確かめる（AC-75）。
+     * 数量が 1〜10 であることを確かめる。
      */
     private static void verifyQuantity(int quantity) {
         if (quantity < 1 || quantity > MAX_QUANTITY) {

@@ -24,8 +24,8 @@ import java.util.UUID;
 
 /**
  * カートのサービス（docs/modules/cart.md）。<br />
- * 変更したら、カート変更のイベントを発行する（注文モジュールが引当を解く。AC-84）。
- * 会員のカートは、持ち主の会員だけが使える。ほかの人には、カートがないときと同じく 404 にする（AC-121）。
+ * 変更したら、カート変更のイベントを発行する（注文モジュールが引当を解く）。
+ * 会員のカートは、持ち主の会員だけが使える。ほかの人には、カートがないときと同じく 404 にする。
  */
 @Service
 @RequiredArgsConstructor
@@ -57,7 +57,7 @@ public class CartService {
     private final Clock clock;
 
     /**
-     * 空のカートを作る（AC-73）。
+     * 空のカートを作る。
      *
      * @return カート ID
      */
@@ -69,7 +69,7 @@ public class CartService {
     }
 
     /**
-     * バリアントを入れる（AC-72、74〜76）。同じバリアントは数量を合算する。
+     * バリアントを入れる。同じバリアントは数量を合算する。
      *
      * @param cartId    カート ID
      * @param requester 要求した会員の ID（ログインしていなければ null）
@@ -88,7 +88,7 @@ public class CartService {
     }
 
     /**
-     * 品目の数量を変える（AC-78）。増やすときだけ販売可能数を確かめる。
+     * 品目の数量を変える。増やすときだけ販売可能数を確かめる。
      *
      * @param cartId    カート ID
      * @param requester 要求した会員の ID（ログインしていなければ null）
@@ -111,7 +111,7 @@ public class CartService {
     }
 
     /**
-     * 品目を削除する（AC-78）。カートになければ何もしない。
+     * 品目を削除する。カートになければ何もしない。
      *
      * @param cartId    カート ID
      * @param requester 要求した会員の ID（ログインしていなければ null）
@@ -123,7 +123,7 @@ public class CartService {
     }
 
     /**
-     * カートの中身を返す（注文モジュール向け）。期限切れのカートは品目が空（AC-81）。
+     * カートの中身を返す（注文モジュール向け）。期限切れのカートは品目が空。
      *
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空
@@ -136,7 +136,7 @@ public class CartService {
     }
 
     /**
-     * カートを空にする（注文の成立。AC-90）。
+     * カートを空にする（注文の成立）。
      *
      * @param cartId カート ID
      */
@@ -151,7 +151,7 @@ public class CartService {
     }
 
     /**
-     * 会員のカートの ID を返す。まだなければ空のカートを作る（AC-121。会員ごとに 1 つ）。<br />
+     * 会員のカートの ID を返す。まだなければ空のカートを作る（会員ごとに 1 つ）。<br />
      * 同じ会員の初回の要求が同時に来ても、会員ごとの一意制約で 1 つだけ作られ、作れなかった要求は先に作られたカートを読み直す。
      *
      * @param memberId 会員 ID
@@ -169,9 +169,9 @@ public class CartService {
     }
 
     /**
-     * ログインせずに使っていたカートの品目を、会員のカートへ移す（AC-122、123）。移したカートは空になる。<br />
+     * ログインせずに使っていたカートの品目を、会員のカートへ移す。移したカートは空になる。<br />
      * 移す元に指定できるのは、会員を持たないカートだけ（会員のカートは 404）。商品カタログ・在庫は確かめない。
-     * 変わったカートごとに、カート変更のイベントを発行する（その注文手続きの引当を解く。AC-84）。
+     * 変わったカートごとに、カート変更のイベントを発行する（その注文手続きの引当を解く）。
      *
      * @param memberId     会員 ID
      * @param sourceCartId 移すカートの ID
@@ -240,7 +240,7 @@ public class CartService {
     }
 
     /**
-     * 数量が販売可能数を超えないことを確かめる（AC-76）。
+     * 数量が販売可能数を超えないことを確かめる。
      */
     private void verifyStock(UUID variantId, int quantity) {
         if (quantity > stockDirectory.sellableQuantity(variantId)) {

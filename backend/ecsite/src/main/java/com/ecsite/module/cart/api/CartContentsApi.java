@@ -21,7 +21,7 @@ public class CartContentsApi {
     private final CartService cartService;
 
     /**
-     * カートの中身を返す。最後の変更から 30 日たったカートは品目が空（AC-81）。
+     * カートの中身を返す。最後の変更から 30 日たったカートは品目が空。
      *
      * @param cartId カート ID
      * @return カートの中身。カートがなければ空
@@ -31,7 +31,7 @@ public class CartContentsApi {
     }
 
     /**
-     * カートを空にする（注文の成立。AC-90）。カート変更のイベントを発行する。
+     * カートを空にする（注文の成立）。カート変更のイベントを発行する。
      *
      * @param cartId カート ID
      */

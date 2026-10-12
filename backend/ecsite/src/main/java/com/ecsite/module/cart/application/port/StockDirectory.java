@@ -9,7 +9,7 @@ import java.util.UUID;
 public interface StockDirectory {
 
     /**
-     * バリアントの販売可能数（spec 002 BR-11）を返す。<br />
+     * バリアントの販売可能数を返す。<br />
      * カートは注文手続き（引当の持ち主）を知らないので、自分の引当も数える。
      *
      * @param variantId バリアント ID

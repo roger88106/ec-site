@@ -21,7 +21,7 @@ import java.util.UUID;
 /**
  * カートのコントローラー（C 側。store.yaml の tag: cart）。<br />
  * カートの表示（tag: cart-view）は、店舗モジュールが受ける。<br />
- * カートの操作は認証が任意で、token があれば会員として扱う。会員のカートは持ち主だけが使える（AC-121）。
+ * カートの操作は認証が任意で、token があれば会員として扱う。会員のカートは持ち主だけが使える。
  */
 @RestController
 @RequiredArgsConstructor
@@ -38,7 +38,7 @@ class CartController implements CartApi {
     private final CurrentMemberIds currentMemberIds;
 
     /**
-     * カートを作る（AC-73）
+     * カートを作る
      *
      * @return Http 201 : {@link CreatedId}
      */
@@ -56,7 +56,7 @@ class CartController implements CartApi {
     }
 
     /**
-     * カートに入れる（AC-72、74〜76）。品目はカートの一部で単独の URL を持たないので、Location は返さない
+     * カートに入れる。品目はカートの一部で単独の URL を持たないので、Location は返さない
      *
      * @param cartId  カート ID
      * @param request カートに入れるリクエスト
@@ -69,7 +69,7 @@ class CartController implements CartApi {
     }
 
     /**
-     * 品目の数量の変更（AC-75、76、78）
+     * 品目の数量の変更
      *
      * @param cartId    カート ID
      * @param variantId バリアント ID
@@ -83,7 +83,7 @@ class CartController implements CartApi {
     }
 
     /**
-     * 品目の削除（AC-78）。カートにない品目でも 204
+     * 品目の削除。カートにない品目でも 204
      *
      * @param cartId    カート ID
      * @param variantId バリアント ID
@@ -96,7 +96,7 @@ class CartController implements CartApi {
     }
 
     /**
-     * 会員のカート（AC-121）。なければ作る
+     * 会員のカート。なければ作る
      *
      * @return Http 200 : {@link MemberCart}
      */
@@ -106,7 +106,7 @@ class CartController implements CartApi {
     }
 
     /**
-     * カートを移す（AC-122、123）
+     * カートを移す
      *
      * @param request カートを移すリクエスト
      * @return Http 200 : {@link MergeCartResult}

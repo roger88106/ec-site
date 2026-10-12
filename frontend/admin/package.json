@@ -15,7 +15,7 @@
     "typecheck": "pnpm generate:api && tsc -b",
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write",
-    "test": "vitest run",
+    "test": "vitest run --coverage",
     "preview": "vite preview"
   },
   "dependencies": {
@@ -50,6 +50,7 @@
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
     "@vitejs/plugin-react": "^6.1.1",
+    "@vitest/coverage-v8": "^5.0.3",
     "jsdom": "^30.1.2",
     "msw": "^2.15.0",
     "openapi-msw": "^2.1.0",

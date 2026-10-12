@@ -22,5 +22,12 @@ export default defineConfig({
     // 結合テスト（管理画面の構成 第 10 節）のため jsdom で動かす。単体テストもそのまま動く
     environment: 'jsdom',
     setupFiles: ['src/test/setup.ts'],
+    // カバレッジは報告だけ（constitution 12.1）。生成物と shadcn/ui の生成物、テストの補助は数えない
+    coverage: {
+      provider: 'v8',
+      include: ['src/**/*.{ts,tsx}'],
+      exclude: ['src/api/generated/**', 'src/components/ui/**', 'src/test/**', '**/*.test.{ts,tsx}'],
+      reporter: ['text-summary', 'json-summary', 'html'],
+    },
   },
 })

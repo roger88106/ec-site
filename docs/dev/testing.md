@@ -19,6 +19,7 @@
 
 - jOOQ のコードと OpenAPI のインターフェースは、コンパイル時に生成される（コミットしない）。
   jOOQ の生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うので、Docker が必要（compose の DB は不要）。
+- `./gradlew check`（`build`）の後に、単体と統合を合わせたカバレッジの報告が `build/reports/jacoco/coverageReport/` にできる（`./gradlew coverageReport` だけでも作れる。統合テストも流れる）。
 
 ## 管理画面・店舗画面
 
@@ -29,6 +30,7 @@
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
+- `pnpm test` はカバレッジの報告を `coverage/` に作る（`index.html`）。
 - 管理画面の結合テスト（画面の操作の流れ）はバックエンドなしで動く。API の応答は MSW で差し替える。書き方は [管理画面の構成](../frontend/admin.md) 第 10 節。
 - 要約だけを出す script `scripts/dev/check-frontend.sh` でも流せる（skill `local-dev`）。
 

@@ -15,7 +15,7 @@
     "typecheck": "pnpm generate:api && next typegen && tsc --noEmit",
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write",
-    "test": "vitest run --passWithNoTests"
+    "test": "vitest run --coverage --passWithNoTests"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -37,6 +37,7 @@
     "@types/node": "^24.19.1",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@vitest/coverage-v8": "^5.0.3",
     "openapi-typescript": "^7.13.0",
     "tailwindcss": "^4",
     "typescript": "^5",

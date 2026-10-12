@@ -32,6 +32,7 @@ plugins {
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.jooq)
     alias(libs.plugins.openapi.generator)
+    jacoco
 }
 
 group = "com.ecsite"
@@ -168,6 +169,34 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 }
 
 tasks.check { dependsOn(integrationTest) }
+
+// -----------------------------------------------------------------------------
+// カバレッジ（constitution 12.1。報告だけで、基準の値では失敗させない）
+//   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
+//   報告：build/reports/jacoco/coverageReport/（html、xml）
+// -----------------------------------------------------------------------------
+jacoco {
+    toolVersion = libs.versions.jacoco.get()
+}
+
+val coverageReport = tasks.register<JacocoReport>("coverageReport") {
+    description = "単体と統合のテストを合わせたカバレッジの報告を作る"
+    group = "verification"
+    executionData.from(
+        tasks.test.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile!! },
+        integrationTest.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile!! },
+    )
+    sourceSets(sourceSets.main.get())
+    classDirectories.setFrom(sourceSets.main.get().output.classesDirs.asFileTree.matching {
+        exclude("com/ecsite/jooq/**", "com/ecsite/api/**")
+    })
+    reports {
+        xml.required = true
+        html.required = true
+    }
+}
+
+tasks.check { finalizedBy(coverageReport) }
 
 // -----------------------------------------------------------------------------
 // jOOQ コード生成

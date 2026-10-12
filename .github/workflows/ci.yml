@@ -55,6 +55,20 @@ jobs:
       - name: ビルドとテスト
         run: ./gradlew build
 
+      # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
+      - name: カバレッジの合計を summary に書く
+        if: always()
+        run: node ../scripts/ci/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
+
+      - name: カバレッジの報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-backend
+          path: backend/build/reports/jacoco/coverageReport/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: テストレポートを保存（失敗時）
         if: failure()
         uses: actions/upload-artifact@v7
@@ -100,6 +114,20 @@ jobs:
       - name: テスト
         run: pnpm test
 
+      # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
+      - name: カバレッジの合計を summary に書く
+        if: always()
+        run: node ../../scripts/ci/coverage-summary.mjs 管理画面 coverage/coverage-summary.json
+
+      - name: カバレッジの報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-admin
+          path: frontend/admin/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
       - name: ビルド
         run: pnpm build
 
@@ -137,6 +165,20 @@ jobs:
 
       - name: テスト
         run: pnpm test
+
+      # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
+      - name: カバレッジの合計を summary に書く
+        if: always()
+        run: node ../../scripts/ci/coverage-summary.mjs 店舗画面 coverage/coverage-summary.json
+
+      - name: カバレッジの報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-store
+          path: frontend/store/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
 
       # 画面はリクエストのたびに作るので、ビルドにバックエンドは要らない
       - name: ビルド

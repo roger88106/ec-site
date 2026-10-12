@@ -13,6 +13,7 @@
 
 [versions]
 java = "21"
+jacoco = "0.8.13"
 
 # --- フレームワーク ---
 spring-boot = "4.1.1"

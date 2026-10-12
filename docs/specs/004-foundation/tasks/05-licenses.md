@@ -11,4 +11,4 @@
 - [x] **T4503** バックエンド：`com.github.jk1.dependency-license-report` を入れ、`checkLicense` が policy の許可と条件付きの一覧で検査する（実行時、コンパイル時、テスト、注釈の処理、jOOQ のコード生成）。CI のバックエンドの job で流す。
 - [x] **T4504** [テスト] `scripts/ci/licenses/check-frontend.mjs` のテスト：許可、条件付き（一覧にある部品・ない部品）、禁止、`OR`・`AND`、不明。
 - [x] **T4505** `check-frontend.mjs` を作り（`pnpm licenses list --json` を policy と照らす）、CI のフロントの job で流す。T4504 を通す。
-- [ ] **T4506** 禁止のライセンスの部品を一時的に足すと、バックエンドとフロントの検査がそれぞれ失敗することを手元で確かめる（commit しない）。
+- [x] **T4506** 禁止のライセンスの部品を一時的に足すと、バックエンドとフロントの検査がそれぞれ失敗することを手元で確かめる（commit しない）。

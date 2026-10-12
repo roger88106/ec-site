@@ -7,7 +7,7 @@
 ## タスク
 
 - [x] **T5801** 「複雑な処理」の基準に当たる所の一覧を作る（stream の 2 段以上の変換、`groupingBy`・`flatMap`・`reduce`、入れ子の繰り返し、3 つ以上の条件、3 つ以上の分岐）。すでに説明があるものを除く。
-- [ ] **T5802** 一覧の所に、コードを読んで意味を確かめてから、何の結果を得るか・なぜそうするかを 1 行で書く。分からない所は書かずに一覧にして利用者に聞く。モジュールごとに commit。
+- [x] **T5802** 一覧の所に、コードを読んで意味を確かめてから、何の結果を得るか・なぜそうするかを 1 行で書く。分からない所は書かずに一覧にして利用者に聞く。モジュールごとに commit。
 - [ ] **T5803** 本番のコード（`src/main` と `build.gradle.kts`）のコメントの spec・plan・tasks の番号を、規則の言葉に書き換える（`docs/style/comments.md` 第 1 節）。番号を消すだけで済む所は消す。モジュールごとに commit（DC-65）。
 
 ## 複雑な処理の一覧（T5801）
@@ -58,3 +58,7 @@ module/tax/domain/taxcategory/vo/EffectivePeriod.java:26  [条件 3 つ]  if (ef
 module/tax/domain/taxcategory/vo/RatePercent.java:37  [条件 3 つ]  if (normalized.signum() < 0 || normalized.compareTo(UPPER_BOUND) >= 0 
 module/tax/infrastructure/persistence/JooqTaxCategoryQueryRepository.java:72  [集計]  }
 ```
+
+## 結果（T5802）
+
+一覧の 40 か所のうち 20 か所に書いた。残りの 20 か所は、Javadoc がすでに結果を説明している 1 行のメソッド、1 段の変換を並べただけのもの、すでにコメントのあるものとして書かなかった（各 commit に理由を書いた）。意味が分からず利用者に聞く所はなかった。

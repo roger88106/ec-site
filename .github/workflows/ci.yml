@@ -4,7 +4,7 @@
 # push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
 #   backend：ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
 #   admin：管理画面の lint（Biome）、型チェック、テスト、ビルド
-#   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）
+#   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）。フロントの依存のライセンスの検査
 #   ac-check：機能の spec の AC が、テスト名に出ていること
 #   e2e：バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する（Playwright）
 # ============================================================================
@@ -135,6 +135,11 @@ jobs:
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
 
+      # workspace のすべての依存（開発用を含む）のライセンスを、方針と照らす（constitution 17）
+      - name: 依存のライセンスの検査
+        working-directory: .
+        run: node scripts/ci/licenses/check-frontend.mjs
+
       # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認
         run: pnpm lint
@@ -177,7 +182,7 @@ jobs:
 
       # CI の script のテスト
       - name: script のテスト
-        run: node --test "scripts/ci/*.test.mjs"
+        run: node --test "scripts/ci/**/*.test.mjs"
 
       # 機能の spec のすべての AC が、テスト名に 1 つずつ出ていること（constitution 12.1）
       - name: AC とテスト名の照合

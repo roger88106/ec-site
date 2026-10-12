@@ -115,6 +115,7 @@ public class StorefrontService {
      * @return 在庫の有無を付けた一覧
      */
     private PageResult<ProductSummaryView> withStock(PageResult<CatalogProduct> page) {
+        // 一覧のすべての商品の、販売できるバリアントの在庫をまとめて問い合わせる
         var inStock = stockDirectory.inStock(page.items().stream()
                 .flatMap(product -> product.sellableVariantIds().stream())
                 .toList());

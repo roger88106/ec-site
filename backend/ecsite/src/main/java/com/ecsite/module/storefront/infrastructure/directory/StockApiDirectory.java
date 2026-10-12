@@ -32,6 +32,7 @@ public class StockApiDirectory implements StockDirectory {
      */
     @Override
     public Set<UUID> inStock(Collection<UUID> variantIds) {
+        // 在庫があるバリアントの ID だけを残す
         return stockAvailabilityApi.availabilityOf(variantIds).entrySet().stream()
                 .filter(Map.Entry::getValue)
                 .map(Map.Entry::getKey)

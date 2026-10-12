@@ -2,7 +2,7 @@
 # CI（constitution 13）
 #
 # push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
-#   backend：ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
+#   backend：依存のライセンスの検査、ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
 #   admin：管理画面の lint（Biome）、型チェック、テスト、ビルド
 #   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）。フロントの依存のライセンスの検査
 #   ac-check：機能の spec の AC が、テスト名に出ていること
@@ -51,6 +51,11 @@ jobs:
 
       # Gradle のキャッシュと、wrapper の検証
       - uses: gradle/actions/setup-gradle@v6
+
+      # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照らす（constitution 17）。
+      # check にも含まれるが、ビルドより先に、別の手順として結果を見せる
+      - name: 依存のライセンスの検査
+        run: ./gradlew checkLicense
 
       # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
       - name: ビルドとテスト

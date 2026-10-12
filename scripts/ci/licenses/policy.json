@@ -57,8 +57,10 @@
     "UNKNOWN"
   ],
   "normalize": {
-    "$comment": "依存が書くライセンスの名前 → SPDX の識別子",
+    "$comment": "依存が書くライセンスの名前 → SPDX の識別子。OR の式は、選ぶライセンスにする",
     "Apache License, Version 2.0": "Apache-2.0",
+    "Apache License 2.0": "Apache-2.0",
+    "(Apache-2.0 OR EPL-2.0)": "Apache-2.0",
     "The Apache License, Version 2.0": "Apache-2.0",
     "The Apache Software License, Version 2.0": "Apache-2.0",
     "Apache 2.0": "Apache-2.0",
@@ -75,9 +77,15 @@
     "PUBLIC DOMAIN": "CC0-1.0",
     "Eclipse Public License - v 1.0": "EPL-1.0",
     "Eclipse Public License - v 2.0": "EPL-2.0",
+    "Eclipse Public License v. 2.0": "EPL-2.0",
+    "Eclipse Public License v2.0": "EPL-2.0",
+    "EPL 2.0": "EPL-2.0",
     "Eclipse Distribution License - v 1.0": "EDL-1.0",
+    "EDL 1.0": "EDL-1.0",
     "GNU LESSER GENERAL PUBLIC LICENSE, Version 2.1": "LGPL-2.1-only",
     "GNU GENERAL PUBLIC LICENSE, Version 2 + Classpath Exception": "GPL-2.0-with-classpath-exception",
+    "GNU General Public License, version 2 with the GNU Classpath Exception": "GPL-2.0-with-classpath-exception",
+    "GPL2 w/ CPE": "GPL-2.0-with-classpath-exception",
     "https://www.jooq.org/inc/LICENSE.txt": "Apache-2.0"
   },
   "gradlePlugins": {

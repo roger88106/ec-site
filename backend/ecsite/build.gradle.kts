@@ -32,6 +32,7 @@ plugins {
     alias(libs.plugins.spring.dependency.management)
     alias(libs.plugins.jooq)
     alias(libs.plugins.openapi.generator)
+    alias(libs.plugins.dependency.license.report)
     jacoco
 }
 
@@ -197,6 +198,110 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
 }
 
 tasks.check { finalizedBy(coverageReport) }
+
+// -----------------------------------------------------------------------------
+// 依存のライセンスの検査（constitution 17）
+//   方針の正本は scripts/ci/licenses/policy.json（フロントの検査と共通）。
+//   依存が書くライセンスの名前を policy の normalize で SPDX の識別子にそろえ、許可の一覧と、
+//   条件付きの一覧（部品ごと）に合わない部品があれば checkLicense が失敗する。
+//   どれか 1 つのライセンスが通れば通る（複数のライセンスから選べる部品のため）。
+//   報告：build/reports/dependency-license/
+// -----------------------------------------------------------------------------
+val licensePolicyFile = rootProject.layout.projectDirectory.file("../../scripts/ci/licenses/policy.json").asFile
+
+@Suppress("UNCHECKED_CAST")
+val licensePolicy = groovy.json.JsonSlurper().parse(licensePolicyFile) as Map<String, Any>
+
+/** 方針の部品の名前の形（maven:group:name、* は任意の文字列）→ checkLicense の正規表現（group:name） */
+fun componentPattern(key: String): String =
+    key.removePrefix("maven:").split("*").joinToString(".*") { Regex.escape(it) }
+
+/** policy の normalize を、LicenseBundleNormalizer の bundle（名前の完全一致 → SPDX の識別子）にする */
+fun licenseNormalizerBundle(): String {
+    @Suppress("UNCHECKED_CAST")
+    val normalize = (licensePolicy["normalize"] as Map<String, String>).filterKeys { it != "\$comment" }
+    val ids = normalize.values.toSortedSet()
+    return groovy.json.JsonOutput.toJson(
+        mapOf(
+            "bundles" to ids.map { mapOf("bundleName" to it, "licenseName" to it) },
+            "transformationRules" to normalize.map { (name, id) ->
+                mapOf("bundleName" to id, "licenseNamePattern" to Regex.escape(name))
+            },
+        )
+    )
+}
+
+/** policy の許可と条件付きの一覧を、checkLicense の許可の一覧（allowedLicensesFile）にする */
+fun allowedLicenses(): String {
+    @Suppress("UNCHECKED_CAST")
+    val allowed = licensePolicy["allowed"] as List<String>
+    @Suppress("UNCHECKED_CAST")
+    val conditional = licensePolicy["conditional"] as Map<String, Any>
+    @Suppress("UNCHECKED_CAST")
+    val conditionalLicenses = conditional["licenses"] as List<String>
+    @Suppress("UNCHECKED_CAST")
+    val components = (conditional["components"] as Map<String, String>).keys.filter { it.startsWith("maven:") }
+    val entries = allowed.map { mapOf("moduleLicense" to Regex.escape(it), "moduleName" to ".*") } +
+        components.flatMap { component ->
+            conditionalLicenses.map { mapOf("moduleLicense" to Regex.escape(it), "moduleName" to componentPattern(component)) }
+        }
+    return groovy.json.JsonOutput.toJson(mapOf("allowedLicenses" to entries))
+}
+
+/**
+ * POM にライセンスの名前があれば、POM だけを使う（MANIFEST と、jar の中のライセンスのファイルを捨てる）。
+ * jar のライセンスのファイルは、同梱した他の部品のライセンスの文も含むことがあり（mysql-connector-j の
+ * GPL の LICENSE の中の Apache-2.0 など）、それで通ってしまうのを防ぐ。POM に名前がなければ、他から読む。
+ */
+class PreferPomLicenses : com.github.jk1.license.filter.DependencyFilter {
+    override fun filter(source: com.github.jk1.license.ProjectData): com.github.jk1.license.ProjectData {
+        source.configurations.flatMap { it.dependencies }.forEach { module ->
+            if (module.poms.any { pom -> pom.licenses.any { !it.name.isNullOrBlank() } }) {
+                module.manifests.clear()
+                module.licenseFiles.clear()
+            }
+        }
+        return source
+    }
+}
+
+val allowedLicensesOutput =layout.buildDirectory.file("license-policy/allowed-licenses.json")
+
+licenseReport {
+    // 実行時、コンパイル時、テスト、注釈の処理、jOOQ のコード生成。
+    // buildscript の classpath（生成で使う Testcontainers・Flyway）は構成に出ないが、同じ部品が統合テストと実行時の構成に入る
+    configurations = arrayOf(
+        "compileClasspath", "runtimeClasspath",
+        "testCompileClasspath", "testRuntimeClasspath",
+        "integrationTestCompileClasspath", "integrationTestRuntimeClasspath",
+        "annotationProcessor", "jooqGenerator",
+    )
+    filters = arrayOf(
+        PreferPomLicenses(),
+        com.github.jk1.license.filter.LicenseBundleNormalizer(licenseNormalizerBundle().byteInputStream(), false),
+    )
+    renderers = arrayOf(com.github.jk1.license.render.JsonReportRenderer("licenses.json", false))
+    allowedLicensesFile = allowedLicensesOutput.get().asFile
+}
+
+val licensePolicyTask = tasks.register("licensePolicy") {
+    description = "policy.json から checkLicense の許可の一覧を作る"
+    group = "verification"
+    inputs.file(licensePolicyFile)
+    outputs.file(allowedLicensesOutput)
+    doLast {
+        allowedLicensesOutput.get().asFile.writeText(allowedLicenses())
+    }
+}
+
+tasks.named("checkLicense") {
+    dependsOn(licensePolicyTask)
+    // 依存の名前の正規化は設定のときに読むので、方針が変わったら報告も作り直す
+    inputs.file(licensePolicyFile)
+}
+tasks.named("generateLicenseReport") { inputs.file(licensePolicyFile) }
+
+tasks.check { dependsOn("checkLicense") }
 
 // -----------------------------------------------------------------------------
 // jOOQ コード生成

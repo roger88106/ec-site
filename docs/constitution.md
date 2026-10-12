@@ -109,12 +109,12 @@ ec-site/
 
 ### 4.2 モジュール内のアーキテクチャレベル
 
-モジュールごとに、複雑さに応じてレベルを選ぶ。選んだレベルと理由は `docs/modules/<module>.md` に書く。
+モジュールごとに、複雑さに応じてレベルを選ぶ。選んだレベルと理由は `docs/modules/<module>.md` に書く。どのレベルでも層とパッケージの名前は同じにし、読む人がどのモジュールでも同じ場所に同じものを見つけられるようにする（標準の構成の図と表は [バックエンドの書き方](style/backend.md) 第 1 節）。
 
 | レベル | 構成 | 適する場面 |
 |--------|------|------------|
 | A. フル | DDD + Clean Architecture + CQRS（domain / application / infrastructure / presentation） | 不変条件や状態機械が複雑 |
-| B. 簡略 | 3 層（controller / service / repository） | ルールが単純、または参照のみ |
+| B. 簡略 | A と同じ層の名前で、中身を簡略にする（domain の型は振る舞いが少なくてよい。CQRS を求めない） | ルールが単純、または参照のみ |
 | C. イベントストア | Event Sourcing | 状態の変化の履歴自体に価値がある。採用前に plan で保存方式・スナップショット・read model を説明し、本書を更新する |
 
 レベル A のルール：

@@ -1,8 +1,9 @@
 package com.ecsite.module.order.domain.order;
 
-import com.ecsite.common.model.Operator;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.AggregateRoot;
+import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
@@ -272,7 +273,7 @@ public class Order extends AggregateRoot {
         if (reason == null || reason.isBlank()) {
             return null;
         }
-        if (reason.codePointCount(0, reason.length()) > REASON_MAX_LENGTH) {
+        if (!BoundedText.fitsWithin(reason, REASON_MAX_LENGTH)) {
             throw BusinessException.of(OrderErrorCode.INVALID_CANCELLATION_REASON);
         }
         return reason;

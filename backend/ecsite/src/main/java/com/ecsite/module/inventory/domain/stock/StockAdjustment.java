@@ -2,6 +2,7 @@ package com.ecsite.module.inventory.domain.stock;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.BoundedText;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
@@ -53,7 +54,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
         if (reason == StockAdjustmentReason.OTHER && normalizedMemo == null) {
             throw BusinessException.of(InventoryErrorCode.STOCK_MEMO_REQUIRED);
         }
-        if (normalizedMemo != null && normalizedMemo.codePointCount(0, normalizedMemo.length()) > MEMO_MAX_LENGTH) {
+        if (normalizedMemo != null && !BoundedText.fitsWithin(normalizedMemo, MEMO_MAX_LENGTH)) {
             throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_MEMO);
         }
         return new StockAdjustment(UUID.randomUUID(), delta, reason, normalizedMemo, null, null, now, operator);

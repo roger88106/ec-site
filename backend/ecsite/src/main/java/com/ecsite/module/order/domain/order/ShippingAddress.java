@@ -1,6 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.value.BoundedText;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.Set;
@@ -61,7 +62,7 @@ public record ShippingAddress(String name, String postalCode, String prefecture,
      * @return お届け先
      */
     public static ShippingAddress of(String name, String postalCode, String prefecture, String address, String phone) {
-        if (isBlankOrLongerThan(name, NAME_MAX_LENGTH)) {
+        if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(OrderErrorCode.INVALID_RECIPIENT_NAME);
         }
         if (postalCode == null || !POSTAL_CODE.matcher(postalCode).matches()) {
@@ -70,7 +71,7 @@ public record ShippingAddress(String name, String postalCode, String prefecture,
         if (!PREFECTURES.contains(prefecture)) {
             throw BusinessException.of(OrderErrorCode.INVALID_PREFECTURE);
         }
-        if (isBlankOrLongerThan(address, ADDRESS_MAX_LENGTH)) {
+        if (!BoundedText.isFilledWithin(address, ADDRESS_MAX_LENGTH)) {
             throw BusinessException.of(OrderErrorCode.INVALID_ADDRESS);
         }
         var phoneDigits = phone == null ? "" : phone.replace("-", "");
@@ -78,12 +79,5 @@ public record ShippingAddress(String name, String postalCode, String prefecture,
             throw BusinessException.of(OrderErrorCode.INVALID_PHONE_NUMBER);
         }
         return new ShippingAddress(name, postalCode.replace("-", ""), prefecture, address, phoneDigits);
-    }
-
-    /**
-     * 空白だけか、最大の文字数を超えるか。
-     */
-    private static boolean isBlankOrLongerThan(String value, int maxLength) {
-        return value == null || value.isBlank() || value.codePointCount(0, value.length()) > maxLength;
     }
 }

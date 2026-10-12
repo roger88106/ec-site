@@ -3,6 +3,7 @@ package com.ecsite.module.catalog.domain.product;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.AggregateRoot;
+import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
@@ -589,7 +590,7 @@ public class Product extends AggregateRoot {
      */
     private void verifyAxisValues(List<String> axisValues) {
         if (axisValues.size() != axes.size()
-                || !axisValues.stream().allMatch(value -> isValidText(value, AXIS_VALUE_MAX_LENGTH)
+                || !axisValues.stream().allMatch(value -> BoundedText.isFilledWithin(value, AXIS_VALUE_MAX_LENGTH)
                 && !value.contains(Variant.AXIS_KEY_SEPARATOR))) {
             throw BusinessException.of(ProductErrorCode.INVALID_AXIS_VALUES);
         }
@@ -602,7 +603,7 @@ public class Product extends AggregateRoot {
      * @return 商品名
      */
     private static String verifyName(String name) {
-        if (!isValidText(name, NAME_MAX_LENGTH)) {
+        if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_NAME);
         }
         return name;
@@ -615,7 +616,7 @@ public class Product extends AggregateRoot {
      * @return 説明
      */
     private static String verifyDescription(String description) {
-        if (description == null || description.codePointCount(0, description.length()) > DESCRIPTION_MAX_LENGTH) {
+        if (!BoundedText.fitsWithin(description, DESCRIPTION_MAX_LENGTH)) {
             throw BusinessException.of(ProductErrorCode.INVALID_PRODUCT_DESCRIPTION);
         }
         return description;
@@ -629,22 +630,11 @@ public class Product extends AggregateRoot {
      */
     private static List<String> verifyAxes(List<String> axes) {
         if (axes.size() > MAX_AXES
-                || !axes.stream().allMatch(axis -> isValidText(axis, AXIS_NAME_MAX_LENGTH))
+                || !axes.stream().allMatch(axis -> BoundedText.isFilledWithin(axis, AXIS_NAME_MAX_LENGTH))
                 || new LinkedHashSet<>(axes).size() != axes.size()) {
             throw BusinessException.of(ProductErrorCode.INVALID_VARIANT_AXES);
         }
         return List.copyOf(axes);
-    }
-
-    /**
-     * 文字列が、空白のみでなく、最大の文字数以内かを返す。
-     *
-     * @param text      文字列
-     * @param maxLength 最大の文字数
-     * @return 正しければ true
-     */
-    private static boolean isValidText(String text, int maxLength) {
-        return text != null && !text.isBlank() && text.codePointCount(0, text.length()) <= maxLength;
     }
 
 // ============================== スナップショット関連処理 ==============================

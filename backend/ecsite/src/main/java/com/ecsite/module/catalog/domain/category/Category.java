@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.domain.category;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.AggregateRoot;
+import com.ecsite.common.model.value.BoundedText;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -156,7 +157,7 @@ public class Category extends AggregateRoot {
      * @return 名称
      */
     private static String verifyName(String name) {
-        if (name == null || name.isBlank() || name.codePointCount(0, name.length()) > NAME_MAX_LENGTH) {
+        if (!BoundedText.isFilledWithin(name, NAME_MAX_LENGTH)) {
             throw BusinessException.of(CategoryErrorCode.INVALID_CATEGORY_NAME);
         }
         return name;

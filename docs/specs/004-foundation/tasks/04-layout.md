@@ -6,7 +6,7 @@
 
 ## 確かめ（移す前）
 
-- [ ] **T4401** 前提を確かめる：ルートの `.env` の `COMPOSE_FILE` で `docker compose up -d` が `docker/compose.yaml` を使うこと、`name: ec-site` で volume の名前が変わらないこと、shadcn の CLI が workspace で動くこと。小さな試しで確かめ、だめなら代わりの方法を報告する。移す前のローカルのデータの件数（商品、注文、Keycloak の会員）を控える。
+- [x] **T4401** 前提を確かめる：ルートの `.env` の `COMPOSE_FILE` で `docker compose up -d` が `docker/compose.yaml` を使うこと、`name: ec-site` で volume の名前が変わらないこと、shadcn の CLI が workspace で動くこと。小さな試しで確かめ、だめなら代わりの方法を報告する。移す前のローカルのデータの件数（商品、注文、Keycloak の会員）を控える。
 
 ## 移動
 

@@ -2,17 +2,13 @@ package com.ecsite.common.paging;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import org.jooq.SQLDialect;
-import org.jooq.impl.DSL;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 
-import java.time.Instant;
 import java.util.List;
-import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -83,24 +79,6 @@ class PagingTest {
             assertThat(mapped.size()).isEqualTo(2);
             assertThat(mapped.totalItems()).isEqualTo(5);
             assertThat(mapped.totalPages()).isEqualTo(3);
-        }
-    }
-
-    @Nested
-    @DisplayName("並びの確定")
-    class TiebreakerTest {
-
-        @Test
-        @DisplayName("並びの最後に ID を加え、同じ値の行の順序を確定させる")
-        void appendsIdAtTheEnd() {
-            var firstShownAt = DSL.field(DSL.name("first_shown_at"), Instant.class);
-            var id = DSL.field(DSL.name("id"), UUID.class);
-
-            var orderBy = Sorting.withIdTiebreaker(List.of(firstShownAt.desc()), id);
-
-            var sql = DSL.using(SQLDialect.POSTGRES)
-                    .renderInlined(DSL.select(id).from(DSL.table(DSL.name("product"))).orderBy(orderBy));
-            assertThat(sql).endsWith("order by \"first_shown_at\" desc, \"id\" asc");
         }
     }
 }

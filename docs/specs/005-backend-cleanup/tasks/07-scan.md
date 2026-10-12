@@ -16,7 +16,7 @@
 - [x] カートと注文の両方にある `isAccessibleBy`：直さない（モジュールの境界を越えて型を共有しない。constitution 6）。
 - [x] 手で書いた型の変換：直さない（spec の Non-goals）。
 - [x] `member/api/MemberApi`：T5502 の後、本番のコードから使われていない（統合テスト `MemberApiTest` だけが使う）。消した。統合テストは `MemberService` を確かめる形に移した（T5502 で見つけた）。
-- [ ] `common/paging/Sorting`：本番のコードから使われていない（並びの最後の ID は、各 Repository が並びの指定に直接書いている）。消し、そのテストも消す。
+- [x] `common/paging/Sorting`：本番のコードから使われていない（並びの最後の ID は、各 Repository が並びの指定に直接書いている）。消し、そのテストも消した。
 - [ ] Javadoc のない項目とメソッドが 21（`ImageFormat` の形式の印 7、`MediaApiDirectory`・`JooqAssetRepository`・`S3ObjectStorage` の @Override のメソッド、`MediaService.requestImageUpload`、`ApiPathConfig.configurePathMatch`）。書く（コメントだけの commit）。
 - [ ] 日時の変換（`Instant` と API の `OffsetDateTime`）が、4 つの mapper（商品、税、管理と店舗の注文）に同じ形である。共通の部品にする。
 - [ ] 店舗の API の価格（`Price`）を作る変換が、注文と店舗の mapper に同じ形である。共通の部品にする。

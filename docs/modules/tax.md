@@ -61,7 +61,7 @@
 
 ## データモデル
 
-[V202610091000__tax_create_tax_category.sql](../../backend/src/main/resources/db/migration/V202610091000__tax_create_tax_category.sql)
+[V202610091000__tax_create_tax_category.sql](../../backend/ecsite/src/main/resources/db/migration/V202610091000__tax_create_tax_category.sql)
 
 - 排他制約の範囲型は、null の端を無限として扱う。
 - 排他制約の検査は、置き換えの書き込みがすべて終わるまで遅らせる。一覧の置き換えでは複数の税率を 1 件ずつ書き換えるため、途中で一時的に期間が重なることがあるが、置き換えの結果に重なりがなければよい。

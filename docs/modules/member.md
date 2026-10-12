@@ -44,7 +44,7 @@ member/
 
 ## データモデル
 
-[V202610121000__member_create_member.sql](../../backend/src/main/resources/db/migration/V202610121000__member_create_member.sql)
+[V202610121000__member_create_member.sql](../../backend/ecsite/src/main/resources/db/migration/V202610121000__member_create_member.sql)
 
 - 会員 ID とは別に、IdP のアカウントの ID を一意で持つ。カート・注文手続き・注文は会員 ID だけを持つ（BR-13）。
 - 登録日時は、会員を作った日時（IdP で登録した日時ではない）。

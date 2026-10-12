@@ -63,6 +63,6 @@
 
 ## データモデル
 
-- アセット：[V202610101100__media_create_asset.sql](../../backend/src/main/resources/db/migration/V202610101100__media_create_asset.sql)
+- アセット：[V202610101100__media_create_asset.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101100__media_create_asset.sql)
   - 使う側からの外部キーは受けない（モジュールをまたぐため。constitution 6）。
   - メディアモジュールに移す前に登録した商品画像のアセットは、もとの配信のキー（`products/{productId}/{imageId}.{拡張子}`）を使う（[catalog.md](catalog.md) のデータモデル）。

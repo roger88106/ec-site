@@ -8,7 +8,7 @@
 
 - **規則**：他のモジュールから使う型は `api/`（同期の呼び出し）と `event/`（イベント）に置く。呼ぶ側は、相手の型を `XxxDirectory`（例：`cart/catalogdir/CartCatalogDirectory`）で自分の型に包み、内部に持ち込まない。
 - **理由**：モジュールの中を、他のモジュールに影響を与えずに変えられるようにするため（constitution 4.1）。
-- **確かめ方**：自動。[ModulithTest](../../backend/src/integrationTest/java/com/ecsite/modulith/ModulithTest.java)。
+- **確かめ方**：自動。[ModulithTest](../../backend/ecsite/src/integrationTest/java/com/ecsite/modulith/ModulithTest.java)。
 
 ### 1.2 レベル A の層
 
@@ -48,11 +48,11 @@
 
 - **規則**：業務のエラーは、モジュールごとの `XxxErrorCode`（`ErrorCodeProvider` の enum。`ErrorType` とメッセージ）で表し、`BusinessException.of(...)` で投げる。メッセージの文は `messages.properties` の `ecsite.<モジュール>.<名前>` に置き、`XxxMessage` の enum で引く。レスポンスへの変換は `GlobalExceptionHandler` だけが行う。
 - **理由**：フロントが `errorCode` で分岐でき、画面にそのまま出せる日本語を 1 か所で管理するため（constitution 9）。
-- **確かめ方**：自動（[ErrorResponseTest](../../backend/src/integrationTest/java/com/ecsite/common/error/ErrorResponseTest.java)）と人手（見直し）。
+- **確かめ方**：自動（[ErrorResponseTest](../../backend/ecsite/src/integrationTest/java/com/ecsite/common/error/ErrorResponseTest.java)）と人手（見直し）。
 
 ### 3.3 DB の制約の違反は、リポジトリで業務のエラーに変える
 
-- **規則**：一意性など、同時の操作で DB の制約でしか守れない規則の違反は、リポジトリが [ConstraintViolationTranslator](../../backend/src/main/java/com/ecsite/common/persistence/ConstraintViolationTranslator.java) で業務のエラーに変える。制約名と業務のエラーの対応は、各リポジトリの `CONSTRAINTS` に置く。
+- **規則**：一意性など、同時の操作で DB の制約でしか守れない規則の違反は、リポジトリが [ConstraintViolationTranslator](../../backend/ecsite/src/main/java/com/ecsite/common/persistence/ConstraintViolationTranslator.java) で業務のエラーに変える。制約名と業務のエラーの対応は、各リポジトリの `CONSTRAINTS` に置く。
 - **理由**：制約の違反を 500 にしないため（constitution 9）。
 - **確かめ方**：自動（各リポジトリの統合テストで、違反が業務のエラーになることを確かめる）。
 

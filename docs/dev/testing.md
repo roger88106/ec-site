@@ -4,7 +4,7 @@
 
 ## バックエンド
 
-`backend/` で実行する。
+`backend/ecsite/` で実行する。
 
 ```bash
 # 単体テスト（Spring を起動しない。Docker 不要）
@@ -34,7 +34,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 - 管理画面の結合テスト（画面の操作の流れ）はバックエンドなしで動く。API の応答は MSW で差し替える。書き方は [管理画面の構成](../frontend/admin.md) 第 10 節。
 - 要約だけを出す script `scripts/dev/check-frontend.sh` でも流せる（skill `local-dev`）。
 
-## E2E（`frontend/e2e`）
+## E2E（`e2e/`）
 
 バックエンド、管理画面、店舗画面を起動して、ブラウザ（Chromium）で操作する（Playwright）。
 
@@ -44,7 +44,7 @@ docker compose up -d
 
 # 管理画面と店舗画面の依存を入れておく（それぞれのディレクトリで pnpm install）
 
-# frontend/e2e/ で、依存とブラウザを入れる
+# e2e/ で、依存とブラウザを入れる
 pnpm install
 pnpm exec playwright install chromium
 

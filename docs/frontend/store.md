@@ -136,7 +136,7 @@ frontend/store/src/
 | `lib/`・`features/` の関数（判定、変換、表示の整形、エラーの欄への対応） | Vitest の単体テスト。厳密な TDD（constitution 12.2） | 対象の横（`*.test.ts`） |
 | 表示の部品（価格、品目、金額の内訳など。状態を持たないもの） | `react-dom/server` の `renderToStaticMarkup` で HTML にし、出る文字と並びを確かめる | 対象の横（`*.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth.ts` のコールバック、`proxy.ts`） | Vitest（Node）で直接呼ぶ。Next.js の口（`next/headers`、`next/navigation`、`next/cache`）と `@/auth` は `src/test/` の置き換えに、バックエンドは MSW（`msw/node`）にする | 対象の横（`*.test.ts`） |
-| 画面をつないだ操作の流れ（カートに入れて注文する、エラーの表示、入力が残ること） | E2E（`frontend/e2e`） | `frontend/e2e/tests/` |
+| 画面をつないだ操作の流れ（カートに入れて注文する、エラーの表示、入力が残ること） | E2E（`e2e/`） | `e2e/tests/` |
 
 ## 8. 画面を追加する手順
 

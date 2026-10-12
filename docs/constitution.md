@@ -74,9 +74,10 @@ ec-site/
 │       ├── spec.md
 │       ├── plan.md
 │       └── tasks/        # 段階ごとに 1 ファイル（例：01-tax.md）
-├── backend/
+├── backend/ecsite/       # バックエンド（Gradle）
 ├── frontend/{store,admin}/
-└── compose.yaml          # ローカル開発用
+├── e2e/                  # E2E（Playwright）
+└── docker/               # ローカル開発用の compose（compose.yaml、postgres、seaweedfs、keycloak）
 ```
 
 ## 4. バックエンドのアーキテクチャ
@@ -187,7 +188,7 @@ ec-site/
 
 ### 7.2 Flyway
 
-- スキーマの正本は Flyway のマイグレーション（`backend/src/main/resources/db/migration/`）。
+- スキーマの正本は Flyway のマイグレーション（`backend/ecsite/src/main/resources/db/migration/`）。
 - コミット済みのマイグレーションは変更しない。変更は新しいバージョンで行う。
 - バージョンはタイムスタンプ形式にする（例：`V202610081400__catalog_create_product.sql`）。
 - jOOQ のコード生成と統合テストは、Testcontainers の PostgreSQL に Flyway を適用して行う。
@@ -272,7 +273,7 @@ MVP で導入する（spec 003）。会員の注文の照会や、会員だけ�
 |------|------|------|----------|
 | 単体テスト | 画面に依存しない関数（判定、変換、表示の整形） | Vitest | 対象の横（`*.test.ts`） |
 | 結合テスト | 部品を描画し、利用者の操作で振る舞いを確かめる。API は MSW で置き換える | Vitest + React Testing Library + MSW | 対象の横（`*.test.tsx`） |
-| E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `frontend/e2e/` |
+| E2E | 管理画面・店舗画面・バックエンドをつないだ、コアフローの少数のシナリオ | Playwright | `e2e/` |
 
 - 店舗画面は、操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないので、部品を描画して操作する結合テストを置かない。表示の部品は HTML に描画して確かめ、サーバーの処理（サーバーアクション、ログインのコールバックなど）は Node の上で直接呼んで確かめる。画面をつないだ操作の流れは E2E で確かめる（[店舗画面の構成](frontend/store.md) 第 7 節）。
 - 結合テストと E2E は、画面に見えるもの（文字、ラベル、ボタンの名前）で確かめる。部品の内部（state、クラス名など）は確かめない。作り直しても、振る舞いが同じならテストが壊れないようにするため。

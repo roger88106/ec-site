@@ -28,7 +28,7 @@ docker compose stop           # 止める（データは残る）
 
 ## 認証（Keycloak、Mailpit）
 
-realm の設定は `keycloak/realms/` の JSON。アカウントと、JSON を変えたときの取り込み直しは `docs/dev/setup.md`「認証（Keycloak）」。
+realm の設定は `docker/keycloak/realms/` の JSON。アカウントと、JSON を変えたときの取り込み直しは `docs/dev/setup.md`「認証（Keycloak）」。
 
 ```bash
 scripts/dev/keycloak.sh token ec-admin admin@example.com admin-pass-1   # access token の payload を出す（権限・audience の確認）
@@ -41,12 +41,12 @@ curl -s http://localhost:8025/api/v1/messages | head -c 500              # Mailp
 - `token`・`access-token` は、web の client のパスワードによる取得（Direct Access Grant）を一時的に有効にし、終わったら無効に戻す。途中で止めたら、`admin` で `directAccessGrantsEnabled` が `false` か確かめる。
 - 管理 API で設定を変えても、realm の JSON は変わらない。残す設定は JSON を直し、取り込み直して確かめる。
 
-## バックエンド（`backend/`）
+## バックエンド（`backend/ecsite/`）
 
 起動はバックグラウンドで行い、出力はファイルに捨てる（ログが多いため）。
 
 ```bash
-cd backend && ./gradlew bootRun --args='--spring.profiles.active=local' > <作業用のディレクトリ>/bootrun.log 2>&1
+cd backend/ecsite && ./gradlew bootRun --args='--spring.profiles.active=local' > <作業用のディレクトリ>/bootrun.log 2>&1
 ```
 
 起動を待つのは sleep ではなく curl の再試行で行う（初回のコンパイル込みで 1〜2 分）。
@@ -60,7 +60,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 - local profile では、起動時にマイグレーションとローカル用の seed（`db/seed/local`）が適用される。
 - 止めるときは、ポート 8080 で待ち受けているプロセスを止める。
 
-テスト（`backend/` で。Docker が要る）：
+テスト（`backend/ecsite/` で。Docker が要る）：
 
 ```bash
 ./gradlew check -q --console=plain 2>&1 | tail -40
@@ -109,10 +109,10 @@ node scripts/dev/mkorder.js --member member2@example.com member2-pass-1   # 別�
 - seed の在庫は 3021（在庫 100）、3001（10）、3003（5）、3011（3）、3013（8）、3031（20）。3002・3004・3012 は在庫 0（バリアント ID は `00000000-0000-0000-0000-00000000` + 4 桁）。
 - 失敗した手順と API のエラーの本文が出る（在庫不足なら「品目の追加に失敗しました（HTTP 400）」）。
 
-## E2E（`frontend/e2e`）
+## E2E（`e2e/`）
 
 `docs/dev/testing.md` の「E2E」の通り。バックエンド（:8080）、管理画面（:4173）、店舗画面（:3100）は、起動していなければ Playwright が起動する。
 
 ```bash
-cd frontend/e2e && pnpm test 2>&1 | tail -30
+cd e2e && pnpm test 2>&1 | tail -30
 ```

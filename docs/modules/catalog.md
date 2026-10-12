@@ -133,14 +133,14 @@
 
 ## データモデル
 
-- カテゴリ：[V202610091200__catalog_create_category.sql](../../backend/src/main/resources/db/migration/V202610091200__catalog_create_category.sql)
+- カテゴリ：[V202610091200__catalog_create_category.sql](../../backend/ecsite/src/main/resources/db/migration/V202610091200__catalog_create_category.sql)
   - 同じ親の下での名称の一意性は、最上位（親が null）同士も含める（`UNIQUE NULLS NOT DISTINCT`）。
-- 商品・バリアント：[V202610091400__catalog_create_product.sql](../../backend/src/main/resources/db/migration/V202610091400__catalog_create_product.sql)
+- 商品・バリアント：[V202610091400__catalog_create_product.sql](../../backend/ecsite/src/main/resources/db/migration/V202610091400__catalog_create_product.sql)
   - 商品の一部（軸、所属カテゴリ、バリアント、軸の値）は、商品の削除で一緒に消える（`ON DELETE CASCADE`）。
   - 所属カテゴリからカテゴリへの外部キーは CASCADE にしない。商品が所属しているカテゴリの削除を拒否するため（AC-12）。
   - 税区分は税モジュールの ID なので、外部キーは張らない（constitution 6）。
-- 商品画像：[V202610101000__catalog_create_product_image.sql](../../backend/src/main/resources/db/migration/V202610101000__catalog_create_product_image.sql)
+- 商品画像：[V202610101000__catalog_create_product_image.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101000__catalog_create_product_image.sql)
   - バリアントの画像は、同じ商品の画像だけを指せる（商品 ID と画像 ID の組で外部キーを張る）。画像を削除すると、バリアントの指定だけが外れる（`ON DELETE SET NULL (image_id)`）。
   - 画像は、メディアモジュールのアセット ID を持つ（モジュールをまたぐので外部キーは張らない）。配信のキーは持たない。1 つのアセットを持つのは 1 つの画像だけ。
-- 商品画像のファイルのメディアモジュールへの移し替え：[V202610101200__catalog_move_product_image_files_to_media.sql](../../backend/src/main/resources/db/migration/V202610101200__catalog_move_product_image_files_to_media.sql)
+- 商品画像のファイルのメディアモジュールへの移し替え：[V202610101200__catalog_move_product_image_files_to_media.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101200__catalog_move_product_image_files_to_media.sql)
   - 移す前に登録した画像は、アセット ID を画像 ID と同じにし、配信のキー（`products/{productId}/{imageId}.{拡張子}`）をそのまま使う。

@@ -92,8 +92,8 @@ MVP では、処理に失敗したイベントを自動では再発行しない�
 
 ## データモデル
 
-- [V202610091600__inventory_create_stock_item.sql](../../backend/src/main/resources/db/migration/V202610091600__inventory_create_stock_item.sql)：在庫、在庫調整
-- [V202610111000__inventory_create_stock_reservation.sql](../../backend/src/main/resources/db/migration/V202610111000__inventory_create_stock_reservation.sql)：引当、在庫調整の注文の理由と注文（spec 002）
+- [V202610091600__inventory_create_stock_item.sql](../../backend/ecsite/src/main/resources/db/migration/V202610091600__inventory_create_stock_item.sql)：在庫、在庫調整
+- [V202610111000__inventory_create_stock_reservation.sql](../../backend/ecsite/src/main/resources/db/migration/V202610111000__inventory_create_stock_reservation.sql)：引当、在庫調整の注文の理由と注文（spec 002）
 
 - バリアントと商品は商品カタログモジュールの ID なので、外部キーは張らない（constitution 6）。
 - 商品を持つのは、B 側で商品ごとの在庫数の合計を出すため。

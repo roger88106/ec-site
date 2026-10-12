@@ -6,8 +6,8 @@
 
 JDK 21、Docker（Docker Desktop など）
 
-バックエンドの Gradle プロジェクトは `backend/` にある。バックエンドのコマンドは `backend/` で実行する。
-IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
+バックエンドの Gradle プロジェクトは `backend/ecsite/` にある。バックエンドのコマンドは `backend/ecsite/` で実行する。
+IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/ecsite/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
 
 ## ローカルで起動する
 
@@ -16,7 +16,7 @@ IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/bui
 # Keycloak（認証）、Mailpit（Keycloak が送るメールの受け取り）を起動する
 docker compose up -d
 
-# backend/ で、local profile で起動する（マイグレーションとローカル用の seed は起動時に適用される）
+# backend/ecsite/ で、local profile で起動する（マイグレーションとローカル用の seed は起動時に適用される）
 ./gradlew bootRun --args='--spring.profiles.active=local'
 ```
 
@@ -31,13 +31,13 @@ docker compose up -d
 | http://localhost:8180 | Keycloak（認証。管理の画面は `/admin`、`admin` / `admin`。[plan 003](../specs/003-auth/plan.md) 第 2 節） |
 | http://localhost:8025 | Mailpit（Keycloak が送ったメール。外には送らない） |
 
-- DB の接続先は [compose.yaml](../../compose.yaml) と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
+- DB の接続先は [docker/compose.yaml](../../docker/compose.yaml)（ルートの `.env` の `COMPOSE_FILE` が指すので、`docker compose` はリポジトリのルートで実行する） と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
 - 止めるときは `docker compose stop`。データを消して作り直すときは `docker compose down -v`。
-- Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回の起動）に作られる。それより前からある volume では作られないので、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < compose/postgres/init-keycloak.sql` を流してから `docker compose up -d` する（`docker compose down -v` で作り直してもよい）。
+- Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回の起動）に作られる。それより前からある volume では作られないので、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < docker/postgres/init-keycloak.sql` を流してから `docker compose up -d` する（`docker compose down -v` で作り直してもよい）。
 
 ### 認証（Keycloak）
 
-realm の設定は [keycloak/realms/](../../keycloak/realms) の JSON が正本で、Keycloak の起動時に取り込まれる（[plan 003](../specs/003-auth/plan.md) 第 2 節）。ローカルと CI で使うアカウント（パスワードはローカル専用の値）：
+realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の JSON が正本で、Keycloak の起動時に取り込まれる（[plan 003](../specs/003-auth/plan.md) 第 2 節）。ローカルと CI で使うアカウント（パスワードはローカル専用の値）：
 
 | realm | 画面 | アカウント | パスワード | 職務 |
 |-------|------|------------|------------|------|

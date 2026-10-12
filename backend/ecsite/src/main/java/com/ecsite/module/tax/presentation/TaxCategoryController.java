@@ -64,7 +64,7 @@ class TaxCategoryController implements TaxApi {
 // ============================== POST ==============================
 
     /**
-     * 税区分の登録（AC-1）
+     * 税区分の登録
      *
      * @param request 税区分の登録リクエスト
      * @return Http 201 : {@link CreatedId}
@@ -86,7 +86,7 @@ class TaxCategoryController implements TaxApi {
 // ============================== PUT ==============================
 
     /**
-     * 税率の一覧の置き換え（AC-2〜5、7）
+     * 税率の一覧の置き換え
      *
      * @param taxCategoryId 税区分 ID
      * @param request       税率の一覧の置き換えリクエスト

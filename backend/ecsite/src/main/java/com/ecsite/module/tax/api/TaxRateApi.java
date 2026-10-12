@@ -36,8 +36,8 @@ public class TaxRateApi {
     }
 
     /**
-     * 指定した時点の率を返す（AC-4）。<br />
-     * 商品への割り当て時に、現時点で有効な税率を持つかの判定にも使う（AC-6）。
+     * 指定した時点の率を返す。<br />
+     * 商品への割り当て時に、現時点で有効な税率を持つかの判定にも使う。
      *
      * @param taxCategoryId 税区分 ID
      * @param instant       時点
@@ -48,7 +48,7 @@ public class TaxRateApi {
     }
 
     /**
-     * 税込価格を計算する（BR-1）。
+     * 税込価格を計算する。
      *
      * @param priceExclTax 税抜価格
      * @param ratePercent  率（%）
@@ -59,7 +59,7 @@ public class TaxRateApi {
     }
 
     /**
-     * 税率ごとの消費税額を計算する（spec 002 BR-8）。
+     * 税率ごとの消費税額を計算する。
      *
      * @param taxables 税率と税込金額の組の一覧
      * @return 税率ごとの消費税額（税率の高い順）

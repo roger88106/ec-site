@@ -8,7 +8,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.time.Instant;
 
 /**
- * 適用期間（AC-2）。開始を含み、終了を含まない。空白（null）は無限を意味する。
+ * 適用期間。開始を含み、終了を含まない。空白（null）は無限を意味する。
  *
  * @param effectiveFrom 適用開始日時。null は過去すべて
  * @param effectiveTo   適用終了日時（この日時を含まない）。null は無期限

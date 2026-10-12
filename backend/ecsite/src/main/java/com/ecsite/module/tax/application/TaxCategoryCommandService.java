@@ -39,7 +39,7 @@ public class TaxCategoryCommandService {
     private final Clock clock;
 
     /**
-     * 税区分を登録する（AC-1）。
+     * 税区分を登録する。
      *
      * @param command 税区分の登録コマンド
      * @return 登録した税区分の ID
@@ -56,7 +56,7 @@ public class TaxCategoryCommandService {
     }
 
     /**
-     * 税率の一覧を置き換える（AC-2〜5、7）。
+     * 税率の一覧を置き換える。
      *
      * @param command 税率の一覧の置き換えコマンド
      */

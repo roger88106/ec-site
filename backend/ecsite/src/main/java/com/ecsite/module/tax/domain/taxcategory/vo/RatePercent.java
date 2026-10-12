@@ -9,7 +9,7 @@ import java.math.BigDecimal;
 import java.util.List;
 
 /**
- * 率（%）。0 以上 100 未満、小数第 2 位まで（AC-7）。<br />
+ * 率（%）。0 以上 100 未満、小数第 2 位まで。<br />
  * 値は末尾の 0 を除いた形にそろえる。書き方（{@code 10} と {@code 10.00}）が違っても、同じ値なら等しい。
  *
  * @param value 率（%）

@@ -83,7 +83,7 @@ public class TaxCategory extends AggregateRoot {
     }
 
     /**
-     * 税率のない税区分を作る（AC-1）。
+     * 税率のない税区分を作る。
      *
      * @param id   税区分 ID
      * @param name 名称
@@ -96,7 +96,7 @@ public class TaxCategory extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
-     * 指定した時点の税率を返す（AC-4）。期間は重複しないので、該当は 0 件か 1 件。
+     * 指定した時点の税率を返す。期間は重複しないので、該当は 0 件か 1 件。
      *
      * @param instant 時点
      * @return その時点を含む税率。なければ空
@@ -106,7 +106,7 @@ public class TaxCategory extends AggregateRoot {
     }
 
     /**
-     * 税率の一覧を置き換える（AC-3〜5）。<br />
+     * 税率の一覧を置き換える。<br />
      * 検証に失敗した場合は、一覧を変えずに業務のエラーを投げる。
      *
      * @param drafts 置き換え後の税率の一覧。既存の税率を残す場合は ID を指定する
@@ -119,11 +119,11 @@ public class TaxCategory extends AggregateRoot {
         var currentById = rates.stream().collect(Collectors.toMap(TaxRate::id, Function.identity()));
         var draftsById = verifyReferences(drafts, currentById);
 
-        // 既存の税率と照らし合わせて、変更できるかを判定する（AC-5）
+        // 既存の税率と照らし合わせて、変更できるかを判定する
         rates.forEach(current -> verifyChangeable(current, draftsById.get(current.id()), now));
         drafts.forEach(draft -> verifyNoPastDateTime(draft, currentById.get(draft.id()), now));
 
-        // 一覧の形を検証する（AC-3）
+        // 一覧の形を検証する
         var replaced = drafts.stream()
                 // 新しい税率（ID なし）には ID を振る
                 .map(draft -> new TaxRate(Objects.requireNonNullElseGet(draft.id(), UUID::randomUUID),
@@ -158,7 +158,7 @@ public class TaxCategory extends AggregateRoot {
     }
 
     /**
-     * 既存の税率を、置き換え後の内容に変更できるかを検証する（AC-5）。
+     * 既存の税率を、置き換え後の内容に変更できるかを検証する。
      * <ul>
      *     <li>終了済み：変更も削除もできない</li>
      *     <li>開始済み（開始が空白のものを含む）：率と開始は変更できず、削除もできない。終了は変更できる</li>
@@ -185,7 +185,7 @@ public class TaxCategory extends AggregateRoot {
     }
 
     /**
-     * 新たに設定する開始・終了が、空白か現在より後であることを検証する（AC-5）。
+     * 新たに設定する開始・終了が、空白か現在より後であることを検証する。
      * 既存の税率で変えていない日時は、新たに設定したものとみなさない。
      *
      * @param draft   置き換え後の税率
@@ -215,7 +215,7 @@ public class TaxCategory extends AggregateRoot {
     }
 
     /**
-     * 期間が重複せず、途切れがなく、最後の税率の終了が空白であることを検証する（AC-3）。
+     * 期間が重複せず、途切れがなく、最後の税率の終了が空白であることを検証する。
      *
      * @param sorted 適用開始日時の古い順に並べた税率の一覧
      */

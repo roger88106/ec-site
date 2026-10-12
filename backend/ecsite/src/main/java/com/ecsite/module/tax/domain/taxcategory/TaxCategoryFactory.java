@@ -11,7 +11,7 @@ import java.util.UUID;
 public class TaxCategoryFactory {
 
     /**
-     * 税率のない税区分を作る（AC-1）。
+     * 税率のない税区分を作る。
      *
      * @param name 名称
      * @return 税区分

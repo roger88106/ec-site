@@ -1,9 +1,10 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { redirect, unstable_rethrow } from 'next/navigation'
 import { readCartId, writeCartId } from '@/api/cartCookie'
-import { getApi } from '@/api/client'
+import { getApi, getMemberApi } from '@/api/client'
+import { redirectToLogin } from '@/auth'
 import { type ActionResult, CONNECTION_FAILED, SUCCESS, toFailure } from '@/lib/actionResult'
 import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
 
@@ -70,16 +71,22 @@ export async function startCheckout(_previous: ActionResult | null, _formData: F
   }
   let checkoutId: string
   try {
-    const api = await getApi()
+    const api = await getMemberApi()
     const { data, error, response } = await api.POST('/carts/{cartId}/checkouts', {
       params: { path: { cartId } },
     })
+    if (response.status === 401) {
+      // 注文手続きに進むにはログインが要る。ログインの後はカートに戻る（AC-125）
+      await redirectToLogin('/cart')
+    }
     if (!data) {
       revalidatePath('/cart')
       return toFailure(response.status, error)
     }
     checkoutId = data.id
-  } catch {
+  } catch (error) {
+    // ログインの画面への移動（redirect の例外）は、そのまま投げる
+    unstable_rethrow(error)
     return { ok: false, message: CONNECTION_FAILED }
   }
   // redirect は例外で移動を知らせるので、try の外で呼ぶ

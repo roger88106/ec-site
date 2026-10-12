@@ -1,7 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { getApi } from '@/api/client'
+import { unstable_rethrow } from 'next/navigation'
+import { getMemberApi } from '@/api/client'
+import { redirectToLogin } from '@/auth'
 import { type ActionResult, CONNECTION_FAILED, SUCCESS, toFailure } from '@/lib/actionResult'
 
 /**
@@ -12,14 +14,19 @@ export async function requestCancellation(_previous: ActionResult | null, formDa
   const orderId = String(formData.get('orderId') ?? '')
   const reason = String(formData.get('reason') ?? '').trim()
   try {
-    const api = await getApi()
+    const api = await getMemberApi()
     const { error, response } = await api.PUT('/orders/{orderId}/cancellation-request', {
       params: { path: { orderId } },
       body: { reason: reason === '' ? null : reason },
     })
+    if (response.status === 401) {
+      await redirectToLogin()
+    }
     revalidatePath(`/orders/${orderId}`)
     return response.ok ? SUCCESS : toFailure(response.status, error)
-  } catch {
+  } catch (error) {
+    // ログインの画面への移動（redirect の例外）は、そのまま投げる
+    unstable_rethrow(error)
     return { ok: false, message: CONNECTION_FAILED }
   }
 }

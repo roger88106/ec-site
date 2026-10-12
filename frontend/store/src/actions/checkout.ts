@@ -1,8 +1,9 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
-import { getApi } from '@/api/client'
+import { redirect, unstable_rethrow } from 'next/navigation'
+import { getMemberApi } from '@/api/client'
+import { redirectToLogin } from '@/auth'
 import { type ActionResult, CONNECTION_FAILED, toFailure } from '@/lib/actionResult'
 
 /** 確認した総額が注文の時点と違う（AC-89）ときのエラーコード */
@@ -17,7 +18,7 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
   const checkoutId = text(formData, 'checkoutId')
   let orderId: string
   try {
-    const api = await getApi()
+    const api = await getMemberApi()
     const { data, error, response } = await api.POST('/checkouts/{checkoutId}/order', {
       params: { path: { checkoutId } },
       body: {
@@ -32,6 +33,9 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
         expectedTotal: Number(formData.get('expectedTotal')),
       },
     })
+    if (response.status === 401) {
+      await redirectToLogin()
+    }
     if (!data) {
       const failure = toFailure(response.status, error)
       if (failure.errorCode === TOTAL_AMOUNT_CHANGED) {
@@ -40,7 +44,9 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
       return failure
     }
     orderId = data.id
-  } catch {
+  } catch (error) {
+    // ログインの画面への移動（redirect の例外）は、そのまま投げる
+    unstable_rethrow(error)
     return { ok: false, message: CONNECTION_FAILED }
   }
   // redirect は例外で移動を知らせるので、try の外で呼ぶ

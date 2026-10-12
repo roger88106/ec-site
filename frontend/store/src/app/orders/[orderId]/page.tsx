@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
-import { getApi, UNCACHED } from '@/api/client'
-import { unwrap } from '@/api/result'
+import { getApi, getMemberApi } from '@/api/client'
+import { unwrap, unwrapMember } from '@/api/result'
 import { AmountsSummary } from '@/components/AmountsSummary'
 import { PriceText } from '@/components/PriceText'
 import { Badge } from '@/components/ui/badge'
@@ -18,13 +18,12 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
   if (!isUuid(orderId)) {
     notFound()
   }
-  const api = await getApi()
-  // 店舗の情報（キャンセルの申請が却下されたときに示す問い合わせ先。AC-96）は設定の値なので、キャッシュを使う
+  // 店舗の情報（キャンセルの申請が却下されたときに示す問い合わせ先。AC-96）は設定の値なので、公開の口でキャッシュを使う
   const [orderResult, shopResult] = await Promise.all([
-    api.GET('/orders/{orderId}', { params: { path: { orderId } }, ...UNCACHED }),
-    api.GET('/shop'),
+    (await getMemberApi()).GET('/orders/{orderId}', { params: { path: { orderId } } }),
+    (await getApi()).GET('/shop'),
   ])
-  const order = unwrap(orderResult)
+  const order = await unwrapMember(orderResult)
   const shop = unwrap(shopResult)
   const address = order.shippingAddress
 

@@ -1,7 +1,7 @@
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
-import { getApi, UNCACHED } from '@/api/client'
-import { unwrap } from '@/api/result'
+import { getMemberApi } from '@/api/client'
+import { unwrapMember } from '@/api/result'
 import { AmountsSummary } from '@/components/AmountsSummary'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
@@ -18,8 +18,8 @@ export default async function CheckoutPage({ params }: PageProps<'/checkout/[che
   if (!isUuid(checkoutId)) {
     notFound()
   }
-  const api = await getApi()
-  const checkout = unwrap(await api.GET('/checkouts/{checkoutId}', { params: { path: { checkoutId } }, ...UNCACHED }))
+  const api = await getMemberApi()
+  const checkout = await unwrapMember(await api.GET('/checkouts/{checkoutId}', { params: { path: { checkoutId } } }))
   if (checkout.orderId) {
     redirect(`/orders/${checkout.orderId}`)
   }

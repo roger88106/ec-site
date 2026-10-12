@@ -32,6 +32,11 @@ public class ProductImageService {
     private final MediaDirectory mediaDirectory;
 
     /**
+     * 商品の取り出しと状態の切り替え
+     */
+    private final ProductLoader productLoader;
+
+    /**
      * 画像のアップロードを受け付ける（AC-39、40）。枚数を確かめ、形式と大きさはメディアモジュールが確かめる。<br />
      * 受付は DB に記録しない（受付の範囲を商品 ID にする。登録されなかったファイルはライフサイクル規則で消える）。
      *
@@ -59,7 +64,7 @@ public class ProductImageService {
      */
     @Transactional
     public UUID addImage(UUID productId, UUID uploadId, long version) {
-        var product = getProduct(productId, version);
+        var product = productLoader.get(productId, version);
         product.verifyCanAddImage();
 
         var assetId = mediaDirectory.confirmImage(productId, uploadId);
@@ -79,7 +84,7 @@ public class ProductImageService {
      */
     @Transactional
     public void reorderImages(UUID productId, List<UUID> imageIds, long version) {
-        var product = getProduct(productId, version);
+        var product = productLoader.get(productId, version);
 
         product.reorderImages(imageIds);
 
@@ -95,7 +100,7 @@ public class ProductImageService {
      */
     @Transactional
     public void deleteImage(UUID productId, UUID imageId, long version) {
-        var product = getProduct(productId, version);
+        var product = productLoader.get(productId, version);
 
         var assetId = product.deleteImage(imageId);
 
@@ -113,7 +118,7 @@ public class ProductImageService {
      */
     @Transactional
     public void setVariantImage(UUID productId, UUID variantId, UUID imageId, long version) {
-        var product = getProduct(productId, version);
+        var product = productLoader.get(productId, version);
 
         product.setVariantImage(variantId, imageId);
 
@@ -130,15 +135,4 @@ public class ProductImageService {
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
-    /**
-     * 商品を取得し、取得時のバージョンと一致することを確かめる。
-     */
-    private Product getProduct(UUID productId, long version) {
-        var product = findProduct(productId);
-        // 取得時のバージョンと一致しなければ、他の人が先に更新している
-        if (product.version() != version) {
-            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
-        }
-        return product;
-    }
 }

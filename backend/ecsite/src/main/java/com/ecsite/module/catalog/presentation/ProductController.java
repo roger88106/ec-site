@@ -17,6 +17,8 @@ import com.ecsite.api.admin.model.SetVariantImageRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.application.ProductCommandService;
+import com.ecsite.module.catalog.application.ProductPublicationService;
+import com.ecsite.module.catalog.application.VariantCommandService;
 import com.ecsite.module.catalog.application.ProductImageService;
 import com.ecsite.module.catalog.application.ProductQueryService;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;
@@ -40,6 +42,16 @@ class ProductController implements ProductApi {
      * 商品コマンドサービス
      */
     private final ProductCommandService commandService;
+
+    /**
+     * バリアントのコマンドサービス
+     */
+    private final VariantCommandService variantCommandService;
+
+    /**
+     * 公開のコマンドサービス
+     */
+    private final ProductPublicationService productPublicationService;
 
     /**
      * 商品クエリサービス
@@ -119,7 +131,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<CreatedId> addVariant(UUID productId, AddVariantRequest request) {
-        UUID id = commandService.addVariant(mapper.toAddVariantCommand(productId, request));
+        UUID id = variantCommandService.addVariant(mapper.toAddVariantCommand(productId, request));
         return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId(id));
     }
 
@@ -146,7 +158,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> publishProduct(UUID productId) {
-        commandService.publishProduct(productId);
+        productPublicationService.publishProduct(productId);
         return ResponseEntity.noContent().build();
     }
 
@@ -158,7 +170,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> unpublishProduct(UUID productId) {
-        commandService.unpublishProduct(productId);
+        productPublicationService.unpublishProduct(productId);
         return ResponseEntity.noContent().build();
     }
 
@@ -170,7 +182,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> discontinueProduct(UUID productId) {
-        commandService.discontinueProduct(productId);
+        productPublicationService.discontinueProduct(productId);
         return ResponseEntity.noContent().build();
     }
 
@@ -183,7 +195,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> setPublicationPeriod(UUID productId, SetPublicationPeriodRequest request) {
-        commandService.changePublicationPeriod(mapper.toChangePublicationPeriodCommand(productId, request));
+        productPublicationService.changePublicationPeriod(mapper.toChangePublicationPeriodCommand(productId, request));
         return ResponseEntity.noContent().build();
     }
 
@@ -196,7 +208,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> reorderVariants(UUID productId, ReorderVariantsRequest request) {
-        commandService.reorderVariants(mapper.toReorderVariantsCommand(productId, request));
+        variantCommandService.reorderVariants(mapper.toReorderVariantsCommand(productId, request));
         return ResponseEntity.noContent().build();
     }
 
@@ -209,7 +221,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> suspendVariant(UUID productId, UUID variantId) {
-        commandService.suspendVariant(productId, variantId);
+        variantCommandService.suspendVariant(productId, variantId);
         return ResponseEntity.noContent().build();
     }
 
@@ -222,7 +234,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> resumeVariant(UUID productId, UUID variantId) {
-        commandService.resumeVariant(productId, variantId);
+        variantCommandService.resumeVariant(productId, variantId);
         return ResponseEntity.noContent().build();
     }
 
@@ -321,7 +333,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<Void> deleteVariant(UUID productId, UUID variantId, Long version) {
-        commandService.deleteVariant(productId, variantId, version);
+        variantCommandService.deleteVariant(productId, variantId, version);
         return ResponseEntity.noContent().build();
     }
 }

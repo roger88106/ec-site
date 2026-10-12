@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 import java.util.stream.Stream;
 
 /**
- * 要求の token の運営者を取り出す（AC-142、plan 003 第 3.5 節）。管理 API の presentation 層が使う。<br />
+ * 要求の token の運営者を取り出す。管理 API の presentation 層が使う。<br />
  * Spring Security の型は、ここより先（application 層）に出さない（constitution 10.2）。
  * 管理 API の filter chain は運営者の realm の token だけを受け付けるので、ここで取り出せるのは運営者だけ。
  */

@@ -49,7 +49,7 @@ public enum ErrorType {
      * 認証がないエラー（401）
      * <p>使用例：</p>
      * <ul>
-     *     <li>token がない・無効・期限切れの場合（plan 003 第 3.3 節）</li>
+     *     <li>token がない・無効・期限切れの場合</li>
      * </ul>
      */
     UNAUTHENTICATED_ERROR,
@@ -58,7 +58,7 @@ public enum ErrorType {
      * 権限がないエラー（403）
      * <p>使用例：</p>
      * <ul>
-     *     <li>操作に必要な権限が token にない場合（plan 003 第 3.3 節）</li>
+     *     <li>操作に必要な権限が token にない場合</li>
      * </ul>
      */
     FORBIDDEN_ERROR,

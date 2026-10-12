@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 認証と認可の設定（plan 003 第 3.1〜3.3 節、constitution 10.2）。<br />
+ * 認証と認可の設定（第 3.1〜3.3 節、constitution 10.2）。<br />
  * パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
  * <ul>
  *     <li>{@code /api/admin/**}：運営者の realm の token が必須。権限は {@code admin.yaml} で決める</li>
@@ -95,7 +95,7 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API：消費者の realm の token を受け付ける。会員の token には権限を載せない（plan 003 第 2.1 節）。
+     * 店舗 API：消費者の realm の token を受け付ける。会員の token には権限を載せない。
      */
     @Bean
     @Order(2)
@@ -112,7 +112,7 @@ class SecurityConfig {
                         .authenticationEntryPoint(responder)
                         .accessDeniedHandler(responder))
                 .authorizeHttpRequests(authorize -> authorize
-                        // 会員の操作（plan 003 第 5.1 節）。token がなければ 401
+                        // 会員の操作。token がなければ 401
                         .requestMatchers("/api/store/me/**", "/api/store/checkouts/**", "/api/store/orders/**").authenticated()
                         .requestMatchers(HttpMethod.POST, "/api/store/carts/*/checkouts").authenticated()
                         // 認証が不要・任意の操作

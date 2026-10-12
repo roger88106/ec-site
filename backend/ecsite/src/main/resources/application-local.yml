@@ -50,11 +50,11 @@ ecsite:
     shipping-tax-category-id: 00000000-0000-0000-0000-000000000001
   storefront:
     shop:
-      # 問い合わせ先（AC-96）：ローカル用の例の値
+      # 問い合わせ先：ローカル用の例の値
       contact-email: support@example.com
   media:
     storage:
-      # compose の SeaweedFS（S3 互換）。バケットは compose の seaweedfs-init が作る（plan 001 第 7 節）
+      # compose の SeaweedFS（S3 互換）。バケットは compose の seaweedfs-init が作る
       endpoint: http://localhost:8333
       region: us-east-1
       path-style-access: true
@@ -65,12 +65,12 @@ ecsite:
       public-bucket: ec-site-images
       public-base-url: http://localhost:8333/ec-site-images
     converter:
-      # compose の imgproxy（画像の変換。plan 001 第 7.5 節）。鍵とソルトは docker/compose.yaml と同じローカル専用の値
+      # compose の imgproxy（画像の変換）。鍵とソルトは docker/compose.yaml と同じローカル専用の値
       base-url: http://localhost:8081
       key: 6563736974652d6c6f63616c2d696d6770726f78792d6b6579
       salt: 6563736974652d6c6f63616c2d696d6770726f78792d73616c74
   security:
-    # compose の Keycloak（plan 003 第 2 節）。audience は realm の API の client（docker/keycloak/realms/）
+    # compose の Keycloak。audience は realm の API の client（docker/keycloak/realms/）
     admin:
       issuer-uri: http://localhost:8180/realms/ec-admin
       audience: ec-admin-api

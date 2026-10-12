@@ -20,10 +20,10 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * 管理 API の操作ごとに必要な権限（plan 003 第 3.2 節）。<br />
+ * 管理 API の操作ごとに必要な権限。<br />
  * {@code admin.yaml} の各操作（メソッドとパス）と {@code x-required-permission} の対応を読み込む。
  * Controller には権限を書かないので、契約と食い違わず、書き漏れで公開されることもない。
- * 対応にない要求には権限を返さない（呼び出し側が拒否する。NFR-3）。
+ * 対応にない要求には権限を返さない（呼び出し側が拒否する）。
  */
 class AdminOperationPermissions {
 
@@ -74,7 +74,7 @@ class AdminOperationPermissions {
     }
 
     /**
-     * {@code admin.yaml} の操作を読み、パスの具体的なものが先になるように並べる。権限のない操作があれば起動を止める（NFR-3）。
+     * {@code admin.yaml} の操作を読み、パスの具体的なものが先になるように並べる。権限のない操作があれば起動を止める。
      */
     @SuppressWarnings("unchecked")
     private static AdminOperationPermissions parse(InputStream in) {

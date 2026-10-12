@@ -93,7 +93,7 @@ dependencies {
     implementation(libs.spring.boot.starter.validation)
     // 外部の HTTP の呼び出し（画像の変換の imgproxy）。トレースとメトリクスが付く RestClient.Builder を使う
     implementation(libs.spring.boot.starter.restclient)
-    // 認証（OAuth 2.0 の Resource Server。運営者・会員の access token を検証する。plan 003 第 3.1 節）
+    // 認証（OAuth 2.0 の Resource Server。運営者・会員の access token を検証する）
     implementation(libs.spring.boot.starter.security.oauth2.resource.server)
     // --- 可観測性（constitution 5-9） ---
     // ヘルスチェック（liveness / readiness）、メトリクス（Prometheus）
@@ -116,7 +116,7 @@ dependencies {
     implementation(libs.postgresql)
     jooqGenerator(libs.postgresql)
 
-    // --- 画像のファイル（S3 API。plan 001 第 7 節） ---
+    // --- 画像のファイル（S3 API） ---
     implementation(libs.awssdk.s3)
 
     // --- コード生成（Lombok） ---
@@ -442,7 +442,7 @@ sourceSets.main {
 
 tasks.named("compileJava") { dependsOn(openApiGenerateTasks) }
 
-// 管理 API の権限の判定（plan 003 第 3.2 節）は、起動時に admin.yaml の x-required-permission を読む。
+// 管理 API の権限の判定は、起動時に admin.yaml の x-required-permission を読む。
 // 生成と同じファイルをリソースに写す（classpath:openapi/admin.yaml）
 tasks.processResources {
     from(openApiDir.file("admin.yaml")) { into("openapi") }

@@ -7,7 +7,7 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.validation.annotation.Validated;
 
 /**
- * 認証の設定（plan 003 第 3.1 節）。realm ごとに、受け付ける access token の issuer と audience を持つ。<br />
+ * 認証の設定。realm ごとに、受け付ける access token の issuer と audience を持つ。<br />
  * 環境変数で上書きする（例：ECSITE_SECURITY_ADMIN_ISSUER_URI）。
  *
  * @param admin 運営者の realm（{@code /api/admin/**}）

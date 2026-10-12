@@ -29,6 +29,7 @@ public record PublicationPeriod(Instant publishStart, Instant publishEnd) {
      * @param publishEnd   公開終了日時
      */
     public PublicationPeriod {
+        // 開始と終了の両方があるときだけ、開始が終了より前であることを求める
         if (publishStart != null && publishEnd != null && !publishStart.isBefore(publishEnd)) {
             throw BusinessException.of(ProductErrorCode.INVALID_PUBLICATION_PERIOD);
         }
@@ -52,6 +53,7 @@ public record PublicationPeriod(Instant publishStart, Instant publishEnd) {
      * @return 含めば true
      */
     public boolean contains(@NonNull Instant instant) {
+        // 空白の側は限りなしとする。開始の時点は含み、終了の時点は含まない
         return (publishStart == null || !instant.isBefore(publishStart))
                 && (publishEnd == null || instant.isBefore(publishEnd));
     }

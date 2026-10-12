@@ -58,6 +58,7 @@ class JooqOrderableVariantQueryRepository implements OrderableVariantQueryReposi
                 .where(VARIANT.ID.in(variantIds))
                 .fetch();
         var axisValues = axisValues(variantIds);
+        // バリアントに画像を指定しているものだけ、画像の URL をまとめて引く
         var imageUrls = storeImageUrls.ofImages(
                 rows.stream().map(row -> row.get(VARIANT.IMAGE_ID)).filter(Objects::nonNull).toList());
         var representatives = storeImageUrls.representatives(new HashSet<>(rows.map(row -> row.get(VARIANT.PRODUCT_ID))));

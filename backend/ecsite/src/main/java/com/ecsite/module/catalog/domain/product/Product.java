@@ -553,6 +553,7 @@ public class Product extends AggregateRoot {
      */
     private static <T> List<T> reorder(List<T> items, Function<T, UUID> idOf, BiFunction<T, Integer, T> withDisplayOrder,
                                        List<UUID> orderedIds, ProductErrorCode error) {
+        // 送られた順に新しい表示順を振り、その順に並べ直す
         var orders = DisplayOrders.assign(items.stream().map(idOf).toList(), orderedIds, error);
         return items.stream()
                 .map(item -> withDisplayOrder.apply(item, orders.get(idOf.apply(item))))

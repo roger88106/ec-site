@@ -3,7 +3,7 @@
 IdP（Keycloak）のアカウントと、EC の会員 ID の対応を管理する。
 
 - レベル：B（業務の不変条件は「1 つのアカウントに 1 人の会員」だけ。3 層：api / service / infrastructure）
-- 依存：なし（カート・注文の presentation 層から api で呼ばれる）
+- 依存：なし（カート・注文・店舗の presentation 層から api で呼ばれる）
 - 関連 spec：003（US-25〜27、BR-13）
 - 用語と識別子：[用語集](../glossary.md)
 

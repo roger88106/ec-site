@@ -131,7 +131,7 @@ flowchart LR
 - **権限を読むのは 1 か所**：token の `resource_access.ec-admin-api.roles` を、Spring Security の権限に変換する処理を 1 つだけ置く（constitution 10.2 の 2）。受け渡し方を変えるときは、ここだけを変える。
 - **endpoint ごとの権限は `admin.yaml` から決める**：起動時に、`admin.yaml` の各操作（メソッドとパス）と `x-required-permission` の対応を読み込み、`/api/admin/**` の要求に必要な権限を判定する。対応にない要求は拒否する（NFR-3）。Controller に権限を書かないので、`admin.yaml` と食い違わず、書き漏れで公開されることもない。
   - `admin.yaml` は、ビルドのときにバックエンドのリソースに写す（OpenAPI Generator と同じファイルを読む）。
-- **操作者**：会員と運営者の識別子は token の subject（Keycloak のユーザー ID。UUID）。presentation 層で token から取り出し、application 層には `memberId`・`operatorId` などの引数で渡す（constitution 10.2 の 1）。Spring Security の型は presentation 層と設定の外に出さない。
+- **操作者**：会員と運営者の識別子は token の subject（Keycloak のユーザー ID。UUID）。presentation 層で token から取り出し、application 層には会員 ID（`memberId`）や運営者（`Operator`：運営者 ID と氏名の写し。第 3.5 節）の引数で渡す（constitution 10.2 の 1）。Spring Security の型は presentation 層と設定の外に出さない。
 - 置き場所：token の検証、権限の変換、`admin.yaml` による判定は、モジュールではなく `config/security` に置く（業務のモジュールの依存を増やさないため）。presentation 層が使う「今の会員」「今の運営者」を取り出す部品は `common/security` に置く。
 
 ### 3.3 エラー
@@ -151,7 +151,7 @@ flowchart LR
   - カート・注文手続き・注文が持つのは、IdP のアカウントの ID ではなく EC の会員 ID にする。IdP を替える・アカウントを移すときに、EC のデータを書き換えずに、会員の表の対応だけを直せるようにするため（BR-13）。
   - 会員は、会員の token で初めて EC の API を呼んだときに作る（IdP の登録を EC に知らせる仕組みを作らないため）。同じアカウントの同時の初回の要求でも 1 人だけ作る（IdP のアカウントの ID の一意性で、作成済みなら読み直す）。
   - メールアドレスと氏名は会員の表に持たず、必要なときに token から読む（IdP が正本。写しを同期しないため）。
-  - 会員モジュールは「token の subject から会員 ID を求める（なければ作る）」API を公開し、カートと注文の presentation 層が使う。
+  - 会員モジュールは「token の subject から会員 ID を求める（なければ作る）」API を公開し、カート・注文・店舗の presentation 層が使う。
 - **カート**：会員 ID を持てるようにする（ログインせずに作ったカートは持たない）。会員のカートは会員ごとに 1 つ（一意）。
   - 会員のカートは、その会員だけが読み書きできる。ほかの人には 404。会員を持たないカートは、今までどおりカート ID を知っていれば使える（AC-120）。
   - 会員のカートは、初めて使うときに作る。
@@ -167,7 +167,8 @@ flowchart LR
 ### 3.5 操作した運営者（P2：US-30）
 
 - 在庫の調整と、注文のキャンセルの承認・却下・運営者のキャンセルに、運営者 ID と、token の氏名の写しを残す（AC-142）。表示は写しを使う（運営者の氏名が後で変わっても、記録は変わらない。constitution 7.1）。
-- P1 の間は、application 層に運営者 ID を渡す口だけを先に作っておき、記録は P2 で足す。
+- 運営者は、presentation 層で token の subject と姓・名から作り（`common/security` の `CurrentOperator`。氏名は「姓 名」）、application 層に渡す。
+- 注文に由来する在庫の調整（減算・戻し）は、運営者を持たない。記録を始める前の行も空にする。
 
 ## 4. 決めたこと
 

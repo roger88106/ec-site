@@ -146,9 +146,12 @@ dependencies {
 // -----------------------------------------------------------------------------
 tasks.named<Test>("test") {
     useJUnitPlatform()
-    // 契約テスト（AdminApiPermissionContractTest）が読む OpenAPI の置き場所
+    // 契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
     systemProperty("openapi.dir", file("../api/openapi").absolutePath)
     inputs.dir("../api/openapi")
+    // 契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
+    systemProperty("keycloak.realms.dir", file("../keycloak/realms").absolutePath)
+    inputs.dir("../keycloak/realms")
 }
 
 val integrationTest = tasks.register<Test>("integrationTest") {

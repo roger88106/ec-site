@@ -1,0 +1,107 @@
+package com.ecsite.contract;
+
+import com.jayway.jsonpath.JsonPath;
+import org.junit.jupiter.api.BeforeAll;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+/**
+ * 管理 API の権限と、運営者の realm の設定が一致することを確かめる契約テスト（T3207、plan 003 第 2.2 節、BR-12）。<br />
+ * Keycloak は起動せず、{@code admin.yaml} と realm の JSON（{@code keycloak/realms/ec-admin-realm.json}）を読む。
+ */
+class AdminRealmPermissionContractTest {
+
+    /**
+     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ からの相対パス
+     */
+    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../api/openapi"));
+
+    /**
+     * realm の設定の置き場所。Gradle の test task が設定する
+     */
+    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../keycloak/realms"));
+
+    /**
+     * 権限の role を持つ client（管理 API）
+     */
+    private static final String API_CLIENT = "ec-admin-api";
+
+    /**
+     * 運営者がログインする client（token を発行する）
+     */
+    private static final String WEB_CLIENT = "ec-admin-web";
+
+    private static Set<String> declaredPermissions;
+    private static String realm;
+
+    @BeforeAll
+    @SuppressWarnings("unchecked")
+    static void load() throws IOException {
+        Map<String, Object> spec = new Yaml().load(Files.readString(OPENAPI_DIR.resolve("admin.yaml")));
+        var paths = (Map<String, Map<String, Object>>) spec.get("paths");
+        declaredPermissions = new TreeSet<>();
+        paths.values().forEach(item -> item.values().forEach(value -> {
+            if (value instanceof Map<?, ?> operation && operation.get("x-required-permission") instanceof String permission) {
+                declaredPermissions.add(permission);
+            }
+        }));
+        realm = Files.readString(REALMS_DIR.resolve("ec-admin-realm.json"));
+    }
+
+    @Test
+    @DisplayName("BR-12 admin.yaml の権限と、管理 API の client role が一致する")
+    void clientRolesMatchDeclaredPermissions() {
+        assertThat(declaredPermissions).isNotEmpty();
+        List<String> roles = read("$.roles.client['" + API_CLIENT + "'][*].name");
+        assertThat(new TreeSet<>(roles))
+                .isEqualTo(declaredPermissions);
+    }
+
+    @Test
+    @DisplayName("BR-12 職務の管理者（administrator）は、すべての権限を含む")
+    void administratorHasAllPermissions() {
+        assertThat(new TreeSet<>(compositePermissions("administrator"))).isEqualTo(declaredPermissions);
+    }
+
+    @Test
+    @DisplayName("BR-12 職務の閲覧者（viewer）は、参照（:read）の権限すべてを含み、ほかは含まない")
+    void viewerHasAllReadPermissions() {
+        var readPermissions = new TreeSet<>(declaredPermissions.stream().filter(p -> p.endsWith(":read")).toList());
+
+        assertThat(readPermissions).isNotEmpty();
+        assertThat(new TreeSet<>(compositePermissions("viewer"))).isEqualTo(readPermissions);
+    }
+
+    @Test
+    @DisplayName("運営者がログインする client の token に、すべての権限が載りうる（client の scope の対応）")
+    void webClientScopeIncludesAllPermissions() {
+        // ec-admin-web は fullScopeAllowed が false なので、scope の対応にない role は token に載らない
+        List<Boolean> fullScopeAllowed = read("$.clients[?(@.clientId == '" + WEB_CLIENT + "')].fullScopeAllowed");
+        assertThat(fullScopeAllowed).containsExactly(false);
+        List<List<String>> mapped = read("$.clientScopeMappings['" + API_CLIENT + "'][?(@.client == '" + WEB_CLIENT + "')].roles");
+
+        assertThat(mapped).hasSize(1);
+        assertThat(new TreeSet<>(mapped.getFirst())).isEqualTo(declaredPermissions);
+    }
+
+    private static List<String> compositePermissions(String role) {
+        List<List<String>> composites = read("$.roles.realm[?(@.name == '" + role + "')].composites.client['" + API_CLIENT + "']");
+        assertThat(composites).as("職務 %s", role).hasSize(1);
+        return composites.getFirst();
+    }
+
+    private static <T> T read(String path) {
+        return JsonPath.read(realm, path);
+    }
+}

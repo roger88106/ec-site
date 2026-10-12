@@ -3,6 +3,9 @@ import type { Problem } from '@/api/types'
 /** バージョン不一致（他の人が先に更新した）のエラーコード */
 const CONCURRENT_MODIFICATION = 'CONCURRENT_MODIFICATION'
 
+/** 権限がない（403）のときの案内。本文がエラーレスポンスでないときに使う（AC-141。バックエンドの FORBIDDEN と同じ文） */
+const FORBIDDEN_MESSAGE = 'この操作を行う権限がありません。'
+
 /** バージョン不一致のときの案内（T703） */
 export const CONCURRENT_MODIFICATION_MESSAGE = '他の人が先に更新しました。再読み込みしてください'
 
@@ -15,7 +18,7 @@ export class ApiError extends Error {
   readonly problem: Problem | undefined
 
   constructor(status: number, problem: Problem | undefined) {
-    super(problem?.message ?? `通信に失敗しました（HTTP ${status}）`)
+    super(problem?.message ?? (status === 403 ? FORBIDDEN_MESSAGE : `通信に失敗しました（HTTP ${status}）`))
     this.name = 'ApiError'
     this.status = status
     this.problem = problem

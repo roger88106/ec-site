@@ -29,6 +29,13 @@ describe('API のエラー', () => {
     expect(errorMessage(toApiError(502, 'Bad Gateway'))).toBe('通信に失敗しました（HTTP 502）')
   })
 
+  test('AC-141 権限がない（403）は、エラーレスポンスの message を出し、本文がなくても権限がないことを出す', () => {
+    expect(errorMessage(toApiError(403, problem(403, 'FORBIDDEN', 'この操作を行う権限がありません。')))).toBe(
+      'この操作を行う権限がありません。',
+    )
+    expect(errorMessage(toApiError(403, undefined))).toBe('この操作を行う権限がありません。')
+  })
+
   test('通信そのものの失敗は、接続できなかったことを出す', () => {
     expect(errorMessage(new TypeError('Failed to fetch'))).toBe('サーバーに接続できませんでした。')
   })

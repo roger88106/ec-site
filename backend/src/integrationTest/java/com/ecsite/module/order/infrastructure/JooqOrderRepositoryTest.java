@@ -101,7 +101,7 @@ class JooqOrderRepositoryTest {
         var amounts = new Amounts(Money.of(4302), Money.of(1000), Money.of(5302), List.of(
                 new TaxAmount(BigDecimal.TEN, Money.of(3970), Money.of(360)),
                 new TaxAmount(new BigDecimal("8"), Money.of(1332), Money.of(98))));
-        return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, ORDERED_AT,
+        return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, UUID.randomUUID(), ORDERED_AT,
                 new Quote(items, amounts, true), "taro@example.com",
                 ShippingAddress.of("山田 太郎", "100-0001", "東京都", "千代田区千代田 1-1", "03-1234-5678"));
     }

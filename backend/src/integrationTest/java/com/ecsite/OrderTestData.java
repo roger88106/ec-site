@@ -12,6 +12,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 統合テストで、C 側の API でカートに入れて注文する補助（spec 002 のキャンセル・B 側の注文のテストで使う）。<br />
+ * 既定の会員（{@link TestSecurityConfig}）として、会員のカートで注文する。
  * 商品と在庫は、呼ぶ側が先に用意する。
  */
 public class OrderTestData {
@@ -50,8 +51,9 @@ public class OrderTestData {
      * @return 注文 ID
      */
     public UUID placeOrder(UUID variantId, int quantity, String name) throws Exception {
-        var cartId = createdId(mockMvc.perform(post("/api/store/carts")).andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString());
+        // 既定の会員（TestSecurityConfig）の会員のカート。注文の後は空になるので、続けて注文できる
+        var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(get("/api/store/me/cart")).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString(), "$.cartId"));
         mockMvc.perform(post("/api/store/carts/" + cartId + "/items")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
@@ -64,7 +66,7 @@ public class OrderTestData {
         var order = mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"email": "taro@example.com", "expectedTotal": %d, "shippingAddress": {"name": "%s",
+                                {"expectedTotal": %d, "shippingAddress": {"name": "%s",
                                  "postalCode": "1000001", "prefecture": "東京都", "address": "千代田区千代田 1-1",
                                  "phone": "0312345678"}}""".formatted(total, name)))
                 .andExpect(status().isCreated())

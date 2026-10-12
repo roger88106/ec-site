@@ -13,27 +13,29 @@ import java.util.UUID;
  * 作った後は変わらない。
  *
  * @param id          注文手続き ID（引当の持ち主 ID）
+ * @param memberId    会員 ID（始めた会員。その会員だけが参照・注文できる。AC-126）
  * @param cartId      カート ID
  * @param cartVersion 始めたときのカートのバージョン（注文の時点で違えば、カートが変わっている）
  * @param expiresAt   引当の期限
  * @param createdAt   作成日時
  */
 @AggregateRoot
-public record Checkout(@Identity UUID id, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt) {
+public record Checkout(@Identity UUID id, UUID memberId, UUID cartId, long cartVersion, Instant expiresAt, Instant createdAt) {
 
     /**
      * 注文手続きを始める（AC-82）。
      *
      * @param id             注文手続き ID
+     * @param memberId       会員 ID
      * @param cartId         カート ID
      * @param cartVersion    カートのバージョン
      * @param now            現在時刻
      * @param reservationTtl 引当の期限までの時間（15 分）
      * @return 注文手続き
      */
-    public static Checkout start(@NonNull UUID id, @NonNull UUID cartId, long cartVersion, @NonNull Instant now,
+    public static Checkout start(@NonNull UUID id, @NonNull UUID memberId, @NonNull UUID cartId, long cartVersion, @NonNull Instant now,
                                  @NonNull Duration reservationTtl) {
-        return new Checkout(id, cartId, cartVersion, now.plus(reservationTtl), now);
+        return new Checkout(id, memberId, cartId, cartVersion, now.plus(reservationTtl), now);
     }
 
     /**
@@ -44,5 +46,13 @@ public record Checkout(@Identity UUID id, UUID cartId, long cartVersion, Instant
      */
     public boolean cartChangedSince(long currentCartVersion) {
         return cartVersion != currentCartVersion;
+    }
+
+    /**
+     * @param requester 要求した会員の ID
+     * @return 始めた会員なら true
+     */
+    public boolean isOwnedBy(UUID requester) {
+        return memberId.equals(requester);
     }
 }

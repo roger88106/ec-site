@@ -32,6 +32,7 @@ class JooqCheckoutRepository implements CheckoutRepository {
     public void insert(Checkout checkout) {
         dsl.insertInto(CHECKOUT)
                 .set(CHECKOUT.ID, checkout.id())
+                .set(CHECKOUT.MEMBER_ID, checkout.memberId())
                 .set(CHECKOUT.CART_ID, checkout.cartId())
                 .set(CHECKOUT.CART_VERSION, checkout.cartVersion())
                 .set(CHECKOUT.EXPIRES_AT, checkout.expiresAt())
@@ -81,7 +82,7 @@ class JooqCheckoutRepository implements CheckoutRepository {
      * レコードから注文手続きを作る。
      */
     private static Checkout toCheckout(CheckoutRecord record) {
-        return new Checkout(record.getId(), record.getCartId(), record.getCartVersion(), record.getExpiresAt(),
+        return new Checkout(record.getId(), record.getMemberId(), record.getCartId(), record.getCartVersion(), record.getExpiresAt(),
                 record.getCreatedAt());
     }
 }

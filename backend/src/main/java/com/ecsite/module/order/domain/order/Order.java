@@ -62,6 +62,11 @@ public class Order extends AggregateRoot {
     private final UUID checkoutId;
 
     /**
+     * 会員 ID（注文した会員。AC-128）
+     */
+    private final UUID memberId;
+
+    /**
      * 注文日時（価格と税率を判定した時点）
      */
     private final Instant orderedAt;
@@ -113,13 +118,14 @@ public class Order extends AggregateRoot {
     /**
      * 全属性コンストラクタ
      */
-    private Order(@NonNull UUID id, @NonNull OrderNumber orderNumber, @NonNull UUID checkoutId,
+    private Order(@NonNull UUID id, @NonNull OrderNumber orderNumber, @NonNull UUID checkoutId, @NonNull UUID memberId,
                   @NonNull Instant orderedAt, @NonNull OrderStatus status, @NonNull List<OrderLine> lines,
                   @NonNull Amounts amounts, @NonNull String email, @NonNull ShippingAddress shippingAddress,
                   CancellationRequest cancellationRequest, Cancellation cancellation, long version) {
         this.id = id;
         this.orderNumber = orderNumber;
         this.checkoutId = checkoutId;
+        this.memberId = memberId;
         this.orderedAt = orderedAt;
         this.status = status;
         this.lines = List.copyOf(lines);
@@ -137,13 +143,15 @@ public class Order extends AggregateRoot {
      * @param id              注文 ID
      * @param orderNumber     注文番号
      * @param checkoutId      注文手続き ID
+     * @param memberId        会員 ID（注文した会員）
      * @param orderedAt       注文日時
      * @param quote           注文日時の見積もり（注文できるもの）
      * @param email           メールアドレス
      * @param shippingAddress お届け先
      * @return 注文
      */
-    public static Order place(UUID id, OrderNumber orderNumber, UUID checkoutId, Instant orderedAt, @NonNull Quote quote,
+    public static Order place(UUID id, OrderNumber orderNumber, UUID checkoutId, UUID memberId, Instant orderedAt,
+                              @NonNull Quote quote,
                               String email, ShippingAddress shippingAddress) {
         if (!quote.orderable()) {
             throw new IllegalArgumentException("注文できない見積もりからは注文を作れません");
@@ -153,7 +161,7 @@ public class Order extends AggregateRoot {
         }
         var items = quote.items();
         var lines = IntStream.range(0, items.size()).mapToObj(i -> toLine(i + 1, items.get(i))).toList();
-        var order = new Order(id, orderNumber, checkoutId, orderedAt, OrderStatus.ACCEPTED, lines, quote.amounts(),
+        var order = new Order(id, orderNumber, checkoutId, memberId, orderedAt, OrderStatus.ACCEPTED, lines, quote.amounts(),
                 email, shippingAddress, null, null, 0);
         order.registerEvent(OrderPlaced.of(orderedAt, id));
         return order;
@@ -292,6 +300,7 @@ public class Order extends AggregateRoot {
      * @param id                  注文 ID
      * @param orderNumber         注文番号
      * @param checkoutId          注文手続き ID
+     * @param memberId            会員 ID
      * @param orderedAt           注文日時
      * @param status              状態
      * @param lines               明細
@@ -302,7 +311,7 @@ public class Order extends AggregateRoot {
      * @param cancellation        キャンセル
      * @param version             バージョン
      */
-    public record Snapshot(UUID id, OrderNumber orderNumber, UUID checkoutId, Instant orderedAt, OrderStatus status,
+    public record Snapshot(UUID id, OrderNumber orderNumber, UUID checkoutId, UUID memberId, Instant orderedAt, OrderStatus status,
                            List<OrderLine> lines, Amounts amounts, String email, ShippingAddress shippingAddress,
                            @Nullable CancellationRequest cancellationRequest, @Nullable Cancellation cancellation,
                            long version) {
@@ -314,7 +323,7 @@ public class Order extends AggregateRoot {
      * @return 注文のスナップショット
      */
     public Snapshot toSnapshot() {
-        return new Snapshot(id, orderNumber, checkoutId, orderedAt, status, lines, amounts, email, shippingAddress,
+        return new Snapshot(id, orderNumber, checkoutId, memberId, orderedAt, status, lines, amounts, email, shippingAddress,
                 cancellationRequest, cancellation, version);
     }
 
@@ -325,7 +334,7 @@ public class Order extends AggregateRoot {
      * @return 注文
      */
     public static Order restore(Snapshot snapshot) {
-        return new Order(snapshot.id(), snapshot.orderNumber(), snapshot.checkoutId(), snapshot.orderedAt(),
+        return new Order(snapshot.id(), snapshot.orderNumber(), snapshot.checkoutId(), snapshot.memberId(), snapshot.orderedAt(),
                 snapshot.status(), snapshot.lines(), snapshot.amounts(), snapshot.email(), snapshot.shippingAddress(),
                 snapshot.cancellationRequest(), snapshot.cancellation(), snapshot.version());
     }

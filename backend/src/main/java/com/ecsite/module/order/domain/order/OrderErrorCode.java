@@ -16,6 +16,10 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     INVALID_EMAIL(ErrorType.VALIDATION_ERROR, OrderMessage.INVALID_EMAIL),
     /**
+     * 会員のメールアドレスが確認済みでない（AC-127）
+     */
+    EMAIL_NOT_VERIFIED(ErrorType.BUSINESS_RULE_ERROR, OrderMessage.EMAIL_NOT_VERIFIED),
+    /**
      * 氏名が空白、または 50 文字を超える（AC-86）
      */
     INVALID_RECIPIENT_NAME(ErrorType.VALIDATION_ERROR, OrderMessage.INVALID_RECIPIENT_NAME),

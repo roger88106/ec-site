@@ -189,17 +189,13 @@ class PlaceOrderApiTest {
             var checkoutId = startCheckout();
 
             placeWith(checkoutId, """
-                    {"email": "taro@example.com", "expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
+                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
                      "postalCode": "100-0001", "prefecture": "東京", "address": "千代田区", "phone": "03-1234-5678"}}""")
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_PREFECTURE"));
             placeWith(checkoutId, """
-                    {"email": "taro@example.com", "expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
+                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
                      "postalCode": "1000", "prefecture": "東京都", "address": "千代田区", "phone": "03-1234-5678"}}""")
-                    .andExpect(status().isBadRequest());
-            placeWith(checkoutId, """
-                    {"email": "taro", "expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
-                     "postalCode": "1000001", "prefecture": "東京都", "address": "千代田区", "phone": "0312345678"}}""")
                     .andExpect(status().isBadRequest());
         }
 
@@ -252,7 +248,7 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.amounts.shippingFee").value(1000))
                     .andExpect(jsonPath("$.amounts.total").value(6940))
                     .andExpect(jsonPath("$.amounts.taxes[0].taxAmount").value(630))
-                    .andExpect(jsonPath("$.email").value("taro@example.com"))
+                    .andExpect(jsonPath("$.email").value("member@example.com"))
                     .andExpect(jsonPath("$.shippingAddress.postalCode").value("1000001"))
                     .andExpect(jsonPath("$.shippingAddress.phone").value("0312345678"))
                     .andExpect(jsonPath("$.status").value("ACCEPTED"));
@@ -280,7 +276,7 @@ class PlaceOrderApiTest {
      */
     private ResultActions place(UUID checkoutId, long expectedTotal) throws Exception {
         return placeWith(checkoutId, """
-                {"email": "taro@example.com", "expectedTotal": %d, "shippingAddress": {"name": "山田 太郎",
+                {"expectedTotal": %d, "shippingAddress": {"name": "山田 太郎",
                  "postalCode": "100-0001", "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "03-1234-5678"}}"""
                 .formatted(expectedTotal));
     }
@@ -304,11 +300,11 @@ class PlaceOrderApiTest {
     }
 
     /**
-     * カートを作り、カート ID を返す
+     * 既定の会員（TestSecurityConfig）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる。AC-125）
      */
     private UUID createCart() throws Exception {
-        var body = mockMvc.perform(post("/api/store/carts")).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        var body = mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString();
+        return UUID.fromString(JsonPath.read(body, "$.cartId"));
     }
 
     /**

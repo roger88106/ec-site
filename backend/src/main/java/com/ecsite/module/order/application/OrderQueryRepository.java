@@ -25,13 +25,22 @@ public interface OrderQueryRepository {
     /**
      * 絞り込みの条件。指定しない項目は null
      *
+     * @param memberId          会員 ID（会員の注文の一覧。AC-129）
      * @param orderNumberPrefix 注文番号の前方一致
      * @param status            状態
      * @param orderedFrom       注文日時の下限（この時刻を含む）
      * @param orderedUntil      注文日時の上限（この時刻を含まない）
      */
-    record Filter(@Nullable String orderNumberPrefix, @Nullable OrderStatus status, @Nullable Instant orderedFrom,
+    record Filter(@Nullable UUID memberId, @Nullable String orderNumberPrefix, @Nullable OrderStatus status, @Nullable Instant orderedFrom,
                   @Nullable Instant orderedUntil) {
+
+        /**
+         * @param memberId 会員 ID
+         * @return 会員の注文だけの条件
+         */
+        static Filter ofMember(UUID memberId) {
+            return new Filter(memberId, null, null, null, null);
+        }
     }
 
     /**

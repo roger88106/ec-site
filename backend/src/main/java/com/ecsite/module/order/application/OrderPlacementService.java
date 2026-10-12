@@ -73,6 +73,7 @@ public class OrderPlacementService {
      * 注文する。<br />
      * 判定（カートの変更、購入できるか、総額、入力）をすべて済ませてから、在庫の減算 → 注文の保存 → カートを空にする、の順に書く。
      * どこかで失敗すれば、トランザクションごと取り消される。
+     * 注文できるのは注文手続きを始めた会員だけで、メールアドレスは会員の token のもの（確認済み）を写す（AC-126〜128）。
      *
      * @param command 注文のコマンド
      * @return 注文の結果
@@ -82,7 +83,13 @@ public class OrderPlacementService {
         var now = clock.instant();
         // 同じ注文手続きでの送信を 1 つずつ処理する。2 回目以降は作成済みの注文を返す（AC-91）
         var checkout = checkoutRepository.lockById(command.checkoutId())
+                // 始めた会員だけが注文できる。ほかの会員には 404（AC-126）
+                .filter(found -> found.isOwnedBy(command.memberId()))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        // 連絡先は確認済みのメールアドレスだけ（IdP の設定で確認前はログインできないが、念のため。AC-127）
+        if (!command.emailVerified()) {
+            throw BusinessException.of(OrderErrorCode.EMAIL_NOT_VERIFIED);
+        }
         var existing = orderRepository.findIdByCheckoutId(checkout.id());
         if (existing.isPresent()) {
             return new PlacementResult(existing.get(), false);
@@ -101,7 +108,8 @@ public class OrderPlacementService {
         }
         var address = ShippingAddress.of(command.name(), command.postalCode(), command.prefecture(), command.address(),
                 command.phone());
-        var order = Order.place(UUID.randomUUID(), unusedOrderNumber(now), checkout.id(), now, quote, command.email(),
+        var order = Order.place(UUID.randomUUID(), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
+                command.email(),
                 address);
 
         // 書き込み：在庫の減算（期限切れなら引き当て直し。AC-87、107）→ 注文 → カートを空にする（AC-90）

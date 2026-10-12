@@ -16,6 +16,11 @@ public class OrderMessage {
     public static final I18nMessage INVALID_EMAIL = I18nMessage.of(Code.INVALID_EMAIL);
 
     /**
+     * メールアドレスの確認が済んでいないため、注文できません。
+     */
+    public static final I18nMessage EMAIL_NOT_VERIFIED = I18nMessage.of(Code.EMAIL_NOT_VERIFIED);
+
+    /**
      * 氏名を 50 文字以内で入力してください。
      */
     public static final I18nMessage INVALID_RECIPIENT_NAME = I18nMessage.of(Code.INVALID_RECIPIENT_NAME);
@@ -92,6 +97,11 @@ public class OrderMessage {
          * メールアドレスの形が正しくありません。
          */
         public static final String INVALID_EMAIL = "ecsite.order.invalid_email";
+
+        /**
+         * メールアドレスの確認が済んでいないため、注文できません。
+         */
+        public static final String EMAIL_NOT_VERIFIED = "ecsite.order.email_not_verified";
 
         /**
          * 氏名を 50 文字以内で入力してください。

@@ -79,6 +79,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setId(snapshot.id());
         record.setOrderNumber(snapshot.orderNumber().value());
         record.setCheckoutId(snapshot.checkoutId());
+        record.setMemberId(snapshot.memberId());
         record.setOrderedAt(snapshot.orderedAt());
         record.setItemsTotal(snapshot.amounts().itemsTotal().yen());
         record.setShippingFee(snapshot.amounts().shippingFee().yen());
@@ -259,6 +260,7 @@ class JooqOrderRepository implements OrderRepository {
                 record.getId(),
                 OrderNumber.of(record.getOrderNumber()),
                 record.getCheckoutId(),
+                record.getMemberId(),
                 record.getOrderedAt(),
                 OrderStatus.valueOf(record.getStatus()),
                 lines,

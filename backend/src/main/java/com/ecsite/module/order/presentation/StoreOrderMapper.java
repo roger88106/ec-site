@@ -7,6 +7,8 @@ import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.Order;
 import com.ecsite.api.store.model.OrderLine;
 import com.ecsite.api.store.model.OrderStatus;
+import com.ecsite.api.store.model.OrderSummary;
+import com.ecsite.api.store.model.OrderSummaryPage;
 import com.ecsite.api.store.model.PlaceOrderRequest;
 import com.ecsite.api.store.model.Price;
 import com.ecsite.api.store.model.QuoteItem;
@@ -14,7 +16,9 @@ import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.common.model.Money;
+import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.CheckoutView;
+import com.ecsite.module.order.application.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.application.PlaceOrderCommand;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.springframework.stereotype.Component;
@@ -51,14 +55,19 @@ class StoreOrderMapper {
      *
      * @param checkoutId 注文手続き ID
      * @param request    注文のリクエスト
-     * @param email      連絡先のメールアドレス
+     * @param memberId      会員 ID
+     * @param email         連絡先のメールアドレス（会員の token のもの。AC-127）
+     * @param emailVerified メールアドレスが確認済みか（token のもの）
      * @return 注文のコマンド
      */
-    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request, String email) {
+    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request, UUID memberId, String email,
+                                          boolean emailVerified) {
         var address = request.getShippingAddress();
         return new PlaceOrderCommand(
                 checkoutId,
+                memberId,
                 email,
+                emailVerified,
                 address.getName(),
                 address.getPostalCode(),
                 address.getPrefecture(),
@@ -204,6 +213,26 @@ class StoreOrderMapper {
     /**
      * 日時を、オフセット付きの日時（UTC）にする。
      */
+    /**
+     * 自分の注文の一覧のレスポンスに変換する（AC-129）。
+     *
+     * @param page 注文の一覧
+     * @return 注文の一覧のレスポンス
+     */
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page) {
+        return new OrderSummaryPage()
+                .page(page.page())
+                .size(page.size())
+                .totalItems(page.totalItems())
+                .totalPages(page.totalPages())
+                .items(page.items().stream().map(view -> new OrderSummary()
+                        .id(view.id())
+                        .orderNumber(view.orderNumber())
+                        .orderedAt(toOffset(view.orderedAt()))
+                        .totalAmount(view.total())
+                        .status(OrderStatus.fromValue(view.status().name()))).toList());
+    }
+
     private static OffsetDateTime toOffset(Instant instant) {
         return instant.atOffset(ZoneOffset.UTC);
     }

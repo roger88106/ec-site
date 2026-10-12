@@ -39,14 +39,18 @@ public class OrderCancellationService {
     private final Clock clock;
 
     /**
-     * 消費者がキャンセルを申請する（AC-95、96）。
+     * 会員がキャンセルを申請する（AC-95、96、130）。注文した会員でなければ、ないときと同じく 404（AC-131）。
      *
-     * @param orderId 注文 ID
-     * @param reason  理由（任意）
+     * @param orderId  注文 ID
+     * @param memberId 要求した会員の ID
+     * @param reason   理由（任意）
      */
     @Transactional
-    public void request(UUID orderId, String reason) {
+    public void request(UUID orderId, UUID memberId, String reason) {
         var order = lock(orderId);
+        if (!order.memberId().equals(memberId)) {
+            throw BusinessException.of(CommonErrorCode.NOT_FOUND);
+        }
         order.requestCancellation(reason, clock.instant());
         orderRepository.update(order);
     }

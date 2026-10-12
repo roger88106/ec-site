@@ -52,6 +52,9 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
      */
     private static Condition where(Filter filter) {
         var where = DSL.noCondition();
+        if (filter.memberId() != null) {
+            where = where.and(SALES_ORDER.MEMBER_ID.eq(filter.memberId()));
+        }
         if (filter.orderNumberPrefix() != null) {
             where = where.and(SALES_ORDER.ORDER_NUMBER.startsWith(filter.orderNumberPrefix()));
         }

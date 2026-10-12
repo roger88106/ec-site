@@ -201,11 +201,11 @@ class CheckoutApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * カートを作り、カート ID を返す
+     * 既定の会員（TestSecurityConfig）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる。AC-125）
      */
     private UUID createCart() throws Exception {
-        var body = mockMvc.perform(post("/api/store/carts")).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        var body = mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString();
+        return UUID.fromString(JsonPath.read(body, "$.cartId"));
     }
 
     /**

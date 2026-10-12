@@ -5,6 +5,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -24,9 +25,12 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.concurrent.Callable;
+import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -63,7 +67,7 @@ class PlaceOrderConcurrencyTest {
      * 注文の本文（総額は %d）
      */
     private static final String ORDER_BODY = """
-            {"email": "taro@example.com", "expectedTotal": %d, "shippingAddress": {"name": "山田 太郎",
+            {"expectedTotal": %d, "shippingAddress": {"name": "山田 太郎",
              "postalCode": "1000001", "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "0312345678"}}""";
 
     @Autowired
@@ -83,6 +87,16 @@ class PlaceOrderConcurrencyTest {
     private CatalogTestData.TestProduct product;
 
     private final List<UUID> cartIds = new ArrayList<>();
+
+    /**
+     * カート ID → 持ち主の会員の token（同じテストで 2 人の消費者を表すため、カートごとに会員を分ける）
+     */
+    private final Map<UUID, TestTokens.Builder> owners = new HashMap<>();
+
+    /**
+     * 注文手続き ID → 持ち主の会員の token
+     */
+    private final Map<UUID, TestTokens.Builder> checkoutOwners = new ConcurrentHashMap<>();
 
     @BeforeEach
     void setUp() throws Exception {
@@ -178,22 +192,26 @@ class PlaceOrderConcurrencyTest {
      * 注文する（総額は 1,100 円 × 数量 ＋ 送料。数量はカートのとおり）
      */
     private MockHttpServletResponse place(UUID checkoutId) throws Exception {
-        var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId)).andReturn().getResponse().getContentAsString();
+        var owner = checkoutOwners.get(checkoutId);
+        var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId).with(owner.bearer()))
+                .andReturn().getResponse().getContentAsString();
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        return mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order")
+        return mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order").with(owner.bearer())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ORDER_BODY.formatted(total)))
                 .andReturn().getResponse();
     }
 
     /**
-     * カートを作って商品を入れ、カート ID を返す
+     * 新しい会員の会員のカートに商品を入れ、カート ID を返す
      */
     private UUID cartWith(int quantity) throws Exception {
-        var body = mockMvc.perform(post("/api/store/carts")).andReturn().getResponse().getContentAsString();
-        var cartId = UUID.fromString(JsonPath.read(body, "$.id"));
+        var owner = TestTokens.member().subject(UUID.randomUUID());
+        var body = mockMvc.perform(get("/api/store/me/cart").with(owner.bearer())).andReturn().getResponse().getContentAsString();
+        var cartId = UUID.fromString(JsonPath.read(body, "$.cartId"));
         cartIds.add(cartId);
-        mockMvc.perform(post("/api/store/carts/" + cartId + "/items")
+        owners.put(cartId, owner);
+        mockMvc.perform(post("/api/store/carts/" + cartId + "/items").with(owner.bearer())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"variantId": "%s", "quantity": %d}""".formatted(product.variantIds.getFirst(), quantity)))
@@ -205,9 +223,12 @@ class PlaceOrderConcurrencyTest {
      * 注文手続きに進み、注文手続き ID を返す
      */
     private UUID startCheckout(UUID cartId) throws Exception {
-        var body = mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts"))
+        var owner = owners.get(cartId);
+        var body = mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts").with(owner.bearer()))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        var checkoutId = UUID.fromString(JsonPath.read(body, "$.id"));
+        checkoutOwners.put(checkoutId, owner);
+        return checkoutId;
     }
 
     /**

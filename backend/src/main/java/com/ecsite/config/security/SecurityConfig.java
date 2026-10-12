@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -112,7 +113,8 @@ class SecurityConfig {
                         .accessDeniedHandler(responder))
                 .authorizeHttpRequests(authorize -> authorize
                         // 会員の操作（plan 003 第 5.1 節）。token がなければ 401
-                        .requestMatchers("/api/store/me/**").authenticated()
+                        .requestMatchers("/api/store/me/**", "/api/store/checkouts/**", "/api/store/orders/**").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/store/carts/*/checkouts").authenticated()
                         // 認証が不要・任意の操作
                         .anyRequest().permitAll())
                 .build();

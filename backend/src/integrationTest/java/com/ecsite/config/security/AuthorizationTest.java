@@ -202,14 +202,14 @@ class AuthorizationTest {
         @Test
         @DisplayName("店舗 API の商品の一覧は、token なしで使える")
         void storeProductsWithoutToken() throws Exception {
-            mockMvc.perform(get("/api/store/products"))
+            mockMvc.perform(get("/api/store/products").with(TestTokens.none()))
                     .andExpect(status().isOk());
         }
 
         @Test
         @DisplayName("店舗 API のカートの作成は、token なしで使える")
         void storeCartWithoutToken() throws Exception {
-            mockMvc.perform(post("/api/store/carts"))
+            mockMvc.perform(post("/api/store/carts").with(TestTokens.none()))
                     .andExpect(status().isCreated());
         }
 

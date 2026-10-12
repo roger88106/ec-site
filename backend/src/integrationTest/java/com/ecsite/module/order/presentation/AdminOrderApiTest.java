@@ -182,7 +182,7 @@ class AdminOrderApiTest {
                     .andExpect(jsonPath("$.lines[0].subtotal").value(5940))
                     .andExpect(jsonPath("$.amounts.total").value(6940))
                     .andExpect(jsonPath("$.amounts.taxes[0].taxableAmount").value(6940))
-                    .andExpect(jsonPath("$.email").value("taro@example.com"))
+                    .andExpect(jsonPath("$.email").value("member@example.com"))
                     .andExpect(jsonPath("$.shippingAddress.name").value("山田 太郎"))
                     .andExpect(jsonPath("$.shippingAddress.prefecture").value("東京都"))
                     .andExpect(jsonPath("$.cancellationRequest.reason").value("サイズ違い"))

@@ -83,7 +83,7 @@ class OrderTest {
     @ValueSource(strings = {"", " ", "taro", "taro@", "@example.com"})
     @DisplayName("AC-86 メールアドレスの形が違えば拒否される")
     void rejectsInvalidEmail(String email) {
-        assertBusinessError(() -> Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(),
+        assertBusinessError(() -> Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
                 ORDERED_AT, quote(), email, ADDRESS), OrderErrorCode.INVALID_EMAIL);
     }
 
@@ -93,7 +93,7 @@ class OrderTest {
      * 注文を作る
      */
     private static Order place(Quote quote) {
-        return Order.place(UUID.randomUUID(), OrderNumber.of("20261008-482915"), UUID.randomUUID(), ORDERED_AT,
+        return Order.place(UUID.randomUUID(), OrderNumber.of("20261008-482915"), UUID.randomUUID(), UUID.randomUUID(), ORDERED_AT,
                 quote, "taro@example.com", ADDRESS);
     }
 

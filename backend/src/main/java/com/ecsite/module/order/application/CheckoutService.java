@@ -64,20 +64,24 @@ public class CheckoutService {
     /**
      * 注文手続きに進む（AC-82〜84）。全品目をカートの数量だけ引き当てる。<br />
      * 同じカートの前の注文手続きの引当は解く（進み直し）。1 品目でも引き当てられなければ何も引き当てない。
+     * 始められるのは、会員の自分の会員のカートだけ。ログインせずに作ったカートと、ほかの会員のカートは 404（AC-125、126）。
      *
-     * @param cartId カート ID
+     * @param cartId   カート ID
+     * @param memberId 会員 ID
      * @return 注文手続き ID
      */
     @Transactional
-    public UUID start(UUID cartId) {
+    public UUID start(UUID cartId, UUID memberId) {
         var now = clock.instant();
-        var cart = cartDirectory.find(cartId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        var cart = cartDirectory.find(cartId)
+                .filter(found -> found.isOwnedBy(memberId))
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         // 進み直し：前の注文手続きの引当を解いてから判定する（自分の前の引当で足りなくならないように）
         releaseReservations(cartId);
 
         verifyOrderable(quoteService.quote(cart.lines(), now, null));
 
-        var checkout = Checkout.start(UUID.randomUUID(), cartId, cart.version(), now, properties.reservationTtl());
+        var checkout = Checkout.start(UUID.randomUUID(), memberId, cartId, cart.version(), now, properties.reservationTtl());
         checkoutRepository.insert(checkout);
         var shortages = stockDirectory.reserve(checkout.id(), quantities(cart.lines()), checkout.expiresAt());
         if (!shortages.isEmpty()) {
@@ -99,14 +103,17 @@ public class CheckoutService {
 
     /**
      * 注文手続きを表示する（AC-85）。見積もりは表示の時点の価格・税率で、自分の引当を販売可能数から除く。
+     * 始めた会員だけが参照できる。ほかの会員には 404（AC-126）。
      *
      * @param checkoutId 注文手続き ID
+     * @param memberId   要求した会員の ID
      * @return 注文手続きの表示
      */
     @Transactional(readOnly = true)
-    public CheckoutView get(UUID checkoutId) {
+    public CheckoutView get(UUID checkoutId, UUID memberId) {
         var now = clock.instant();
         var checkout = checkoutRepository.findById(checkoutId)
+                .filter(found -> found.isOwnedBy(memberId))
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         var lines = cartDirectory.find(checkout.cartId()).map(CartDirectory.CartSnapshot::lines).orElse(List.of());
         return new CheckoutView(checkout.id(), quoteService.quote(lines, now, checkout.id()), checkout.expiresAt(),

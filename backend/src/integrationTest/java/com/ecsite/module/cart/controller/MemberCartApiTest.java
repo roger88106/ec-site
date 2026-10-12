@@ -125,7 +125,7 @@ class MemberCartApiTest {
         @Test
         @DisplayName("AC-137 token がなければ 401")
         void requiresToken() throws Exception {
-            mockMvc.perform(get(MEMBER_CART))
+            mockMvc.perform(get(MEMBER_CART).with(TestTokens.none()))
                     .andExpect(status().isUnauthorized())
                     .andExpect(jsonPath("$.errorCode").value("UNAUTHENTICATED"));
         }

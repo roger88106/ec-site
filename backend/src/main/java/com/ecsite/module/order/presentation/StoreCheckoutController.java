@@ -4,6 +4,8 @@ import com.ecsite.api.store.CheckoutApi;
 import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.PlaceOrderRequest;
+import com.ecsite.common.security.CurrentMember;
+import com.ecsite.module.member.api.MemberApi;
 import com.ecsite.module.order.application.CheckoutService;
 import com.ecsite.module.order.application.OrderPlacementService;
 import lombok.RequiredArgsConstructor;
@@ -36,6 +38,16 @@ class StoreCheckoutController implements CheckoutApi {
     private final StoreOrderMapper mapper;
 
     /**
+     * token の会員
+     */
+    private final CurrentMember currentMember;
+
+    /**
+     * 会員の API（会員 ID を求める）
+     */
+    private final MemberApi memberApi;
+
+    /**
      * 注文手続きに進む（AC-82〜84）
      *
      * @param cartId カート ID
@@ -43,7 +55,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<CreatedId> startCheckout(UUID cartId) {
-        var id = checkoutService.start(cartId);
+        var id = checkoutService.start(cartId, memberId());
 
         // ロケーション：作った注文手続きの URL
         var location = ServletUriComponentsBuilder.fromCurrentContextPath()
@@ -62,7 +74,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<Checkout> getCheckout(UUID checkoutId) {
-        return ResponseEntity.ok(mapper.toCheckout(checkoutService.get(checkoutId)));
+        return ResponseEntity.ok(mapper.toCheckout(checkoutService.get(checkoutId, memberId())));
     }
 
     /**
@@ -74,7 +86,9 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
-        var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request, null) /* T3312 で会員の token から取る */);
+        var member = currentMember.require();
+        var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request,
+                memberApi.memberIdOf(member.subject()), member.email(), member.emailVerified()));
         var body = new CreatedId(result.orderId());
         if (!result.created()) {
             return ResponseEntity.ok(body);
@@ -87,5 +101,12 @@ class StoreCheckoutController implements CheckoutApi {
                 .toUri();
 
         return ResponseEntity.created(location).body(body);
+    }
+
+    /**
+     * token の会員の ID（会員の操作。token がなければ 401）
+     */
+    private UUID memberId() {
+        return memberApi.memberIdOf(currentMember.require().subject());
     }
 }

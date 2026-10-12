@@ -298,6 +298,12 @@ sourceSets.main {
 
 tasks.named("compileJava") { dependsOn(openApiGenerateTasks) }
 
+// 管理 API の権限の判定（plan 003 第 3.2 節）は、起動時に admin.yaml の x-required-permission を読む。
+// 生成と同じファイルをリソースに写す（classpath:openapi/admin.yaml）
+tasks.processResources {
+    from(openApiDir.file("admin.yaml")) { into("openapi") }
+}
+
 // OpenAPI の構文の検証。check に含めるので、ローカルと CI で同じ検証が走る
 val openApiValidateTasks = openApiSpecs.map { spec ->
     tasks.register<org.openapitools.generator.gradle.plugin.tasks.ValidateTask>("openApiValidate${spec.replaceFirstChar { it.uppercase() }}") {

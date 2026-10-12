@@ -282,6 +282,8 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case VALIDATION_ERROR, BUSINESS_RULE_ERROR -> HttpStatus.BAD_REQUEST;
             case NOT_FOUND_ERROR -> HttpStatus.NOT_FOUND;
             case CONFLICT_ERROR -> HttpStatus.CONFLICT;
+            case UNAUTHENTICATED_ERROR -> HttpStatus.UNAUTHORIZED;
+            case FORBIDDEN_ERROR -> HttpStatus.FORBIDDEN;
             case RESTORE_ERROR, SYSTEM_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
         };
     }

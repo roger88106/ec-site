@@ -30,6 +30,16 @@ public class CommonMessage {
     public static final I18nMessage METHOD_NOT_ALLOWED = I18nMessage.of(Code.METHOD_NOT_ALLOWED);
 
     /**
+     * ログインしてください。
+     */
+    public static final I18nMessage UNAUTHENTICATED = I18nMessage.of(Code.UNAUTHENTICATED);
+
+    /**
+     * この操作を行う権限がありません。
+     */
+    public static final I18nMessage FORBIDDEN = I18nMessage.of(Code.FORBIDDEN);
+
+    /**
      * 金額は 0 円以上にしてください。
      */
     public static final I18nMessage INVALID_MONEY = I18nMessage.of(Code.INVALID_MONEY);
@@ -65,6 +75,16 @@ public class CommonMessage {
          * この操作は許可されていません。
          */
         public static final String METHOD_NOT_ALLOWED = "ecsite.common.method_not_allowed";
+
+        /**
+         * ログインしてください。
+         */
+        public static final String UNAUTHENTICATED = "ecsite.common.unauthenticated";
+
+        /**
+         * この操作を行う権限がありません。
+         */
+        public static final String FORBIDDEN = "ecsite.common.forbidden";
 
         /**
          * 金額は 0 円以上にしてください。

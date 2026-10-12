@@ -45,6 +45,24 @@ public enum ErrorType {
      */
     CONFLICT_ERROR,
 
+    /**
+     * 認証がないエラー（401）
+     * <p>使用例：</p>
+     * <ul>
+     *     <li>token がない・無効・期限切れの場合（plan 003 第 3.3 節）</li>
+     * </ul>
+     */
+    UNAUTHENTICATED_ERROR,
+
+    /**
+     * 権限がないエラー（403）
+     * <p>使用例：</p>
+     * <ul>
+     *     <li>操作に必要な権限が token にない場合（plan 003 第 3.3 節）</li>
+     * </ul>
+     */
+    FORBIDDEN_ERROR,
+
 // ==================== システム系 ====================
 
     /**

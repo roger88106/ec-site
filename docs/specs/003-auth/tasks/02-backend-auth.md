@@ -17,7 +17,7 @@
   - 401・403 が Problem Details（`errorCode`、`message`、`traceId`）で返る
   - 店舗 API：今までどおり認証なしで使える endpoint が、token なしで使える
 - [x] **T3204** [テスト] token から権限への変換の単体テスト：`resource_access.ec-admin-api.roles` だけを権限にし、ほかの client の role と realm の role は権限にしない。
-- [ ] **T3205** 認証と認可を実装する（plan 第 3.1〜3.3 節）。T3203、T3204 を通す。
+- [x] **T3205** 認証と認可を実装する（plan 第 3.1〜3.3 節）。T3203、T3204 を通す。
   - パスごとの filter chain と、realm ごとの token の検証（issuer と audience）
   - 権限の変換（1 か所）
   - `admin.yaml` をビルドのときにリソースに写し、起動時に読んで、要求ごとに必要な権限を判定する。対応にない要求は拒否する

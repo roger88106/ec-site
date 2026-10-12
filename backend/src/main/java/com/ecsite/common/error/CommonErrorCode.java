@@ -26,6 +26,14 @@ public enum CommonErrorCode implements ErrorCodeProvider {
      */
     METHOD_NOT_ALLOWED(ErrorType.VALIDATION_ERROR, CommonMessage.METHOD_NOT_ALLOWED),
     /**
+     * 認証がない、または token が無効
+     */
+    UNAUTHENTICATED(ErrorType.UNAUTHENTICATED_ERROR, CommonMessage.UNAUTHENTICATED),
+    /**
+     * 操作に必要な権限がない
+     */
+    FORBIDDEN(ErrorType.FORBIDDEN_ERROR, CommonMessage.FORBIDDEN),
+    /**
      * 金額が負
      */
     INVALID_MONEY(ErrorType.VALIDATION_ERROR, CommonMessage.INVALID_MONEY),

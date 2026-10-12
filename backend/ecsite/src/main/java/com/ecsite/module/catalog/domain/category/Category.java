@@ -3,17 +3,15 @@ package com.ecsite.module.catalog.domain.category;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
+import com.ecsite.common.model.value.DisplayOrders;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
 import java.util.UUID;
-import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * カテゴリの Aggregate Root。<br />
@@ -130,16 +128,11 @@ public class Category extends AggregateRoot {
      * @return 表示順が変わったカテゴリ
      */
     public static List<Category> reorder(@NonNull List<Category> siblings, @NonNull List<UUID> orderedIds) {
-        var siblingsById = siblings.stream().collect(Collectors.toMap(Category::id, Function.identity()));
-        if (orderedIds.size() != siblingsById.size()
-                || !siblingsById.keySet().equals(new HashSet<>(orderedIds))) {
-            throw BusinessException.of(CategoryErrorCode.INVALID_CATEGORY_ORDER);
-        }
-
+        var orders = DisplayOrders.assign(siblings.stream().map(Category::id).toList(), orderedIds,
+                CategoryErrorCode.INVALID_CATEGORY_ORDER);
         var changed = new ArrayList<Category>();
-        for (int i = 0; i < orderedIds.size(); i++) {
-            var category = siblingsById.get(orderedIds.get(i));
-            int displayOrder = i + 1;
+        for (var category : siblings) {
+            int displayOrder = orders.get(category.id);
             if (category.displayOrder != displayOrder) {
                 category.displayOrder = displayOrder;
                 changed.add(category);

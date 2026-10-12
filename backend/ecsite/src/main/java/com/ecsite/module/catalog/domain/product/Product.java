@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
+import com.ecsite.common.model.value.DisplayOrders;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;
@@ -24,7 +25,6 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Optional;
@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
 import java.util.function.Function;
-import java.util.stream.Collectors;
 
 /**
  * 商品の Aggregate Root。<br />
@@ -331,7 +330,7 @@ public class Product extends AggregateRoot {
      */
     public void addImage(@NonNull UUID imageId, @NonNull UUID assetId) {
         verifyCanAddImage();
-        var nextOrder = images.stream().mapToInt(ProductImage::displayOrder).max().orElse(0) + 1;
+        var nextOrder = DisplayOrders.next(images.stream().mapToInt(ProductImage::displayOrder));
         var added = new ArrayList<>(images);
         added.add(new ProductImage(imageId, assetId, nextOrder));
         this.images = List.copyOf(added);
@@ -554,16 +553,11 @@ public class Product extends AggregateRoot {
      */
     private static <T> List<T> reorder(List<T> items, Function<T, UUID> idOf, BiFunction<T, Integer, T> withDisplayOrder,
                                        List<UUID> orderedIds, ProductErrorCode error) {
-        var byId = items.stream().collect(Collectors.toMap(idOf, Function.identity()));
-        // 数が同じで、集合としても等しければ、重複も漏れもない
-        if (orderedIds.size() != byId.size() || !byId.keySet().equals(new HashSet<>(orderedIds))) {
-            throw BusinessException.of(error);
-        }
-        var reordered = new ArrayList<T>();
-        for (int i = 0; i < orderedIds.size(); i++) {
-            reordered.add(withDisplayOrder.apply(byId.get(orderedIds.get(i)), i + 1));
-        }
-        return List.copyOf(reordered);
+        var orders = DisplayOrders.assign(items.stream().map(idOf).toList(), orderedIds, error);
+        return items.stream()
+                .map(item -> withDisplayOrder.apply(item, orders.get(idOf.apply(item))))
+                .sorted(Comparator.comparing(idOf, Comparator.comparing(orders::get)))
+                .toList();
     }
 
     /**
@@ -579,7 +573,7 @@ public class Product extends AggregateRoot {
      * @return 新しいバリアントの表示順（最大＋1。なければ 1）
      */
     private int nextVariantDisplayOrder() {
-        return variants.stream().mapToInt(Variant::displayOrder).max().orElse(0) + 1;
+        return DisplayOrders.next(variants.stream().mapToInt(Variant::displayOrder));
     }
 
     /**

@@ -23,4 +23,4 @@
 - ログは標準出力に JSON（Elastic Common Schema）で出る。
 - **公開ネットワークへのデプロイは、IdP の本番の構成・secret の管理・HTTPS などの前提を決めてから行う**（constitution 10、16）。
 
-管理画面・店舗画面の環境変数（IdP の接続先、API の接続先、secret）は [setup.md](setup.md) の各画面の節。
+管理画面・店舗画面の環境変数（IdP の接続先、API の接続先、secret）は [setup.md](setup.md) の各画面の節。店舗画面は、本番のモードで `AUTH_SECRET`・`AUTH_KEYCLOAK_SECRET`・`AUTH_KEYCLOAK_ISSUER`・`AUTH_KEYCLOAK_ID`・`STORE_API_BASE_URL` がなければ起動に失敗する（[店舗画面の構成](../frontend/store.md) 第 9 節）。

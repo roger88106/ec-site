@@ -64,6 +64,10 @@ export default defineConfig({
         STORE_API_REVALIDATE_SECONDS: '1',
         STORE_API_BASE_URL: `${BACKEND_URL}/api/store`,
         AUTH_KEYCLOAK_ISSUER: `${IDP_URL}/realms/ec-store`,
+        // next start は本番のモードなので、必須の値をすべて渡す（値は realm の JSON と同じ、ローカルと E2E だけの値）
+        AUTH_KEYCLOAK_ID: 'ec-store-web',
+        AUTH_KEYCLOAK_SECRET: 'ec-store-web-local-secret',
+        AUTH_SECRET: 'ec-store-local-auth-secret-only-for-local-and-ci',
       },
       timeout: 180_000,
       reuseExistingServer: !CI,

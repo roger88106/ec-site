@@ -3,6 +3,7 @@ import { connection } from 'next/server'
 import createClient from 'openapi-fetch'
 import type { paths } from '@/api/generated/store'
 import { getAccessToken } from '@/auth'
+import { readServerConfig } from '@/auth/config'
 
 /**
  * API の結果をキャッシュする秒数（NFR-1：変更は 1 分以内に C 側へ反映する）。<br />
@@ -11,7 +12,7 @@ import { getAccessToken } from '@/auth'
 const REVALIDATE_SECONDS = Number(process.env.STORE_API_REVALIDATE_SECONDS ?? 60)
 
 /** 店舗 API の接続先 */
-const BASE_URL = process.env.STORE_API_BASE_URL ?? 'http://localhost:8080/api/store'
+const BASE_URL = readServerConfig().apiBaseUrl
 
 /**
  * 店舗 API（store.yaml）の公開の口（店舗画面の構成 第 4 節）。token を付けない。<br />

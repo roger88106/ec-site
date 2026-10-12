@@ -7,7 +7,7 @@
 ## 環境変数（DC-45）
 
 - [x] **T6201** [テスト] 起動時の確かめ：本番のモードで必須の値がなければ、足りない名前を並べた例外。開発のモードでは既定の値。
-- [ ] **T6202** `src/auth/config.ts` と `instrumentation.ts` を作り、T6201 を通す。`playwright.config.ts` と CI の E2E に値を渡す。値のない `next start` が起動に失敗することを手元で一度確かめる。`docs/frontend/store.md` 第 9 節と `docs/dev/environment.md` を直す。
+- [x] **T6202** `src/auth/config.ts` と `instrumentation.ts` を作り、T6201 を通す。`playwright.config.ts` と CI の E2E に値を渡す。値のない `next start` が起動に失敗することを手元で一度確かめる。`docs/frontend/store.md` 第 9 節と `docs/dev/environment.md` を直す。
 
 ## サーバーアクション（DC-46）
 

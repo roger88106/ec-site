@@ -75,7 +75,7 @@ URL は 1 か所で作り、画面のコードに文字列で書かない（[フ
 
 - サーバーコンポーネントで `const api = await getApi()` としてから、`api.GET('<パス>', ...)` で呼ぶ。クライアントは `server-only` にし、ブラウザのバンドルに入れない。
 - `getApi` は画面をリクエストのたびに作るようにする（ビルドのときに API を呼ばない）。API の結果のキャッシュはこれとは別に効く。
-- 接続先は環境変数 `STORE_API_BASE_URL`（既定 `http://localhost:8080/api/store`）。
+- 接続先は環境変数 `STORE_API_BASE_URL`（既定 `http://localhost:8080/api/store`。既定は開発のモードとテストだけ。第 9 節）。
 - 結果のキャッシュは最大 60 秒（NFR-1）。在庫や価格の変更は、1 分以内に表示に反映される。秒数は環境変数 `STORE_API_REVALIDATE_SECONDS` で変えられる（E2E で短くするため。本番相当の環境では設定しない）。
 - ただし、1 件を取る API（商品の詳細）はキャッシュを使わない（`UNCACHED`）。Next.js のキャッシュは、取得し直した応答が 404 だと古い 200 を置き換えないため、キャッシュすると、非公開・販売終了にした商品の詳細がいつまでも表示されてしまう。一覧・検索・カテゴリは常に 200 を返すので、キャッシュしてよい。
 - カート・注文手続き・注文の取得もキャッシュを使わない（`UNCACHED`）。数量・引当・状態が操作のたびに変わるため（plan 002 第 6 節）。
@@ -157,7 +157,7 @@ plan 003 第 1、4、6 節の決定を、店舗画面でどう作るか。店舗
 
 - **設定**：`auth.ts` に Auth.js の設定を集める（ライブラリを替えるときの範囲を狭くするため。plan 003 第 4 節）。
   - provider は Keycloak（`ec-store` realm の `ec-store-web`、confidential client）。認可コード + PKCE。
-  - 接続先と secret は環境変数：`AUTH_KEYCLOAK_ISSUER`（既定 `http://localhost:8180/realms/ec-store`）、`AUTH_KEYCLOAK_ID`（既定 `ec-store-web`）、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`（Cookie の暗号化の鍵）。secret の既定は、ローカルと CI だけで使う値（realm の JSON と同じ。plan 003 第 2.4 節）。本番相当の環境では必ず設定する（constitution 5-8）。
+  - 接続先と secret は環境変数：`AUTH_KEYCLOAK_ISSUER`（既定 `http://localhost:8180/realms/ec-store`）、`AUTH_KEYCLOAK_ID`（既定 `ec-store-web`）、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`（Cookie の暗号化の鍵）。既定の値は、ローカルと CI だけで使う値（realm の JSON と同じ。plan 003 第 2.4 節）で、開発のモード（`next dev`）とテストでだけ使う。本番のモード（`next start`）では、この 4 つと `STORE_API_BASE_URL` がなければ、起動のとき（`instrumentation.ts`）に足りない名前を出して失敗する（`src/auth/config.ts`。[フロントの書き方](../style/frontend.md) 第 8.1 節）。E2E は `playwright.config.ts` で値を渡す。
 - **セッション**：暗号化した HttpOnly の Cookie（Auth.js の JWT 方式）に、access token、refresh token、ID token、access token の期限、会員の氏名・メールアドレスを持つ。サーバーに状態を持たない（constitution 5-1）。
   - 画面から読める情報（`auth()` の結果。Auth.js の `/api/auth/session` でブラウザーからも読める）には、氏名とメールアドレスだけを入れ、token は入れない。token は `auth.ts` の `getAccessToken()` で Cookie から直接読む（サーバー専用）。
   - 氏名は、token の姓（`family_name`）と名（`given_name`）を「姓 名」の順に並べる。

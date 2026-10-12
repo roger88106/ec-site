@@ -6,26 +6,17 @@ import { getToken, type JWT } from 'next-auth/jwt'
 import Keycloak from 'next-auth/providers/keycloak'
 import { cache } from 'react'
 import { mergeCartAfterLogin } from '@/api/cart'
+import { readServerConfig } from '@/auth/config'
 import { loginPath, memberName, needsTokenRefresh, safeReturnTo } from '@/lib/login'
 
 /**
  * ログイン（店舗画面の構成 第 9 節）。Auth.js の設定と、ログインの状態・token を読む関数をこのファイルに集める
  * （ライブラリを替えるときの範囲を狭くするため。plan 003 第 4 節）。<br />
- * 接続先と secret は環境変数。既定はローカルと CI だけで使う値（realm の JSON と同じ。plan 003 第 2.4 節）で、
- * 本番相当の環境では必ず設定する（constitution 5-8）。
+ * 接続先と secret は環境変数（`auth/config.ts`。本番で値がなければ起動に失敗する）。
  */
 
-/** 消費者の realm の issuer */
-const ISSUER = process.env.AUTH_KEYCLOAK_ISSUER ?? 'http://localhost:8180/realms/ec-store'
-
-/** 店舗画面の client（confidential） */
-const CLIENT_ID = process.env.AUTH_KEYCLOAK_ID ?? 'ec-store-web'
-
-/** 店舗画面の client の secret */
-const CLIENT_SECRET = process.env.AUTH_KEYCLOAK_SECRET ?? 'ec-store-web-local-secret'
-
-/** セッションの Cookie を暗号化する鍵 */
-const SECRET = process.env.AUTH_SECRET ?? 'ec-store-local-auth-secret-only-for-local-and-ci'
+/** 接続先と secret */
+const { issuer: ISSUER, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, secret: SECRET } = readServerConfig()
 
 /** セッションの Cookie を HTTPS だけで送るか（カート ID の Cookie と同じく、本番の起動で true） */
 const SECURE_COOKIE = process.env.NODE_ENV === 'production'

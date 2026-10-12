@@ -91,19 +91,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
-      - uses: pnpm/action-setup@v6
-        with:
-          package_json_file: package.json
-          cache: true
-          cache_dependency_path: pnpm-lock.yaml
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-
-      - name: 依存のインストール
-        run: pnpm install --frozen-lockfile
+      # pnpm と Node の準備、workspace の依存のインストール
+      - uses: ./.github/actions/setup-frontend
 
       # 型チェックとビルドは、admin.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認
@@ -143,19 +132,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
 
-      # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
-      - uses: pnpm/action-setup@v6
-        with:
-          package_json_file: package.json
-          cache: true
-          cache_dependency_path: pnpm-lock.yaml
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-
-      - name: 依存のインストール
-        run: pnpm install --frozen-lockfile
+      # pnpm と Node の準備、workspace の依存のインストール
+      - uses: ./.github/actions/setup-frontend
 
       # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認
@@ -222,20 +200,8 @@ jobs:
 
       - uses: gradle/actions/setup-gradle@v6
 
-      # pnpm の版は package.json の packageManager に合わせる。依存のストアをキャッシュする
-      - uses: pnpm/action-setup@v6
-        with:
-          package_json_file: package.json
-          cache: true
-          cache_dependency_path: pnpm-lock.yaml
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-
-      - name: 依存のインストール
-        # workspace（ルートの pnpm-workspace.yaml）の依存をまとめて入れる
-        run: pnpm install --frozen-lockfile
+      # pnpm と Node の準備、workspace の依存のインストール
+      - uses: ./.github/actions/setup-frontend
 
       # バックエンドの local profile の接続先（PostgreSQL）と IdP（Keycloak、realm の JSON を取り込む）、IdP が送るメールの受け手（Mailpit）。
       # docker/compose.yaml（ルートの .env が指す）をそのまま使う（Keycloak は同じ PostgreSQL の別の database を使うので、GitHub の services ではなく compose で起動する）。
@@ -253,9 +219,28 @@ jobs:
         working-directory: e2e
         run: pnpm lint && pnpm typecheck
 
-      - name: ブラウザのインストール
+      # Playwright のブラウザーはキャッシュする（キーは Playwright の版）。当たったときは OS の依存だけを入れる
+      - name: Playwright の版
+        id: playwright
+        working-directory: e2e
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: ブラウザーのキャッシュ
+        id: browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: ブラウザーのインストール
+        if: steps.browsers.outputs.cache-hit != 'true'
         working-directory: e2e
         run: pnpm exec playwright install --with-deps chromium
+
+      - name: ブラウザーの OS の依存のインストール（キャッシュが当たったとき）
+        if: steps.browsers.outputs.cache-hit == 'true'
+        working-directory: e2e
+        run: pnpm exec playwright install-deps chromium
 
       # バックエンド（local profile）、管理画面、店舗画面のビルドと起動は playwright.config.ts が行う
       - name: E2E

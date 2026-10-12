@@ -52,6 +52,9 @@ class AdminOperationPermissions {
      */
     private final List<Operation> operations;
 
+    /**
+     * @param operations 操作の一覧（パスの具体的なものが先）
+     */
     private AdminOperationPermissions(List<Operation> operations) {
         this.operations = operations;
     }
@@ -70,6 +73,9 @@ class AdminOperationPermissions {
         }
     }
 
+    /**
+     * {@code admin.yaml} の操作を読み、パスの具体的なものが先になるように並べる。権限のない操作があれば起動を止める（NFR-3）。
+     */
     @SuppressWarnings("unchecked")
     private static AdminOperationPermissions parse(InputStream in) {
         Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);

@@ -233,6 +233,9 @@ class StoreOrderMapper {
                         .status(OrderStatus.fromValue(view.status().name()))).toList());
     }
 
+    /**
+     * 日時を、オフセット付きの日時（UTC）にする。
+     */
     private static OffsetDateTime toOffset(Instant instant) {
         return instant.atOffset(ZoneOffset.UTC);
     }

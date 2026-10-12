@@ -33,6 +33,9 @@ class AdminPermissionAuthorizationManager implements AuthorizationManager<Reques
         this.permissions = permissions;
     }
 
+    /**
+     * 要求のメソッドとパスに必要な権限を求め、token がその権限を持てば許す。{@code admin.yaml} にない要求は拒否する。
+     */
     @Override
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication, RequestAuthorizationContext context) {
         var request = context.getRequest();

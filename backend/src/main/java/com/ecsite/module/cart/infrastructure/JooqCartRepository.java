@@ -51,6 +51,9 @@ class JooqCartRepository implements CartRepository {
                 .execute();
     }
 
+    /**
+     * 会員のカートの ID を探す。
+     */
     @Override
     public Optional<UUID> findIdByMemberId(UUID memberId) {
         return dsl.select(CART_.ID).from(CART_).where(CART_.MEMBER_ID.eq(memberId)).fetchOptional(CART_.ID);

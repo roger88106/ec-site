@@ -39,6 +39,9 @@ class PermissionConverter implements Converter<Jwt, Collection<GrantedAuthority>
         this.clientId = clientId;
     }
 
+    /**
+     * 管理 API の client role を権限にする。client role がなければ、権限なし。
+     */
     @Override
     public Collection<GrantedAuthority> convert(Jwt jwt) {
         if (!(jwt.getClaims().get(RESOURCE_ACCESS) instanceof Map<?, ?> resourceAccess)

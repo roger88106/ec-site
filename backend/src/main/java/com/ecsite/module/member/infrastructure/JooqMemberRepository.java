@@ -23,11 +23,17 @@ class JooqMemberRepository implements MemberRepository {
      */
     private final DSLContext dsl;
 
+    /**
+     * IdP のアカウントの ID で、会員 ID を探す。
+     */
     @Override
     public Optional<UUID> findIdByIdpSubject(String idpSubject) {
         return dsl.select(MEMBER_.ID).from(MEMBER_).where(MEMBER_.IDP_SUBJECT.eq(idpSubject)).fetchOptional(MEMBER_.ID);
     }
 
+    /**
+     * 会員を作る。同じ IdP のアカウントの会員がすでにいれば、何もしない。
+     */
     @Override
     public void insertIfAbsent(Member member) {
         // 同じアカウントの会員を、ほかの要求が先に作っていたら何もしない（一意制約の違反でトランザクションを壊さない）

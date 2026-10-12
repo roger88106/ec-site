@@ -142,6 +142,9 @@ class CartController implements CartApi {
         return memberApi.memberIdOf(currentMember.require().subject());
     }
 
+    /**
+     * 移した結果の品目を、レスポンスの品目にする。
+     */
     private static MergedCartItem toMergedItem(CartMergeResult.Item item) {
         return new MergedCartItem(item.variantId(), item.quantity());
     }

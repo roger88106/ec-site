@@ -125,7 +125,7 @@ public class CartService {
     @Transactional(readOnly = true)
     public Optional<CartContents> findContents(UUID cartId) {
         var now = clock.instant();
-        return cartRepository.findById(cartId).map(cart -> new CartContents(cart.id(),                 cart.memberId().orElse(null), cart.version(),
+        return cartRepository.findById(cartId).map(cart -> new CartContents(cart.id(), cart.memberId().orElse(null), cart.version(),
                 cart.itemsAt(now).stream().map(item -> new CartContents.Item(item.variantId(), item.quantity())).toList()));
     }
 

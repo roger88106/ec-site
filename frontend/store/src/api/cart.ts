@@ -5,6 +5,7 @@ import { unwrapMember } from '@/api/result'
 import { currentMember } from '@/auth'
 import { type CartChoice, chooseCart, shouldMergeCart } from '@/lib/cartChoice'
 import { cartMergeNotice } from '@/lib/cartMergeNotice'
+import { log } from '@/lib/server/log'
 
 /**
  * 使うカートを選ぶ（店舗画面の構成 第 4.2 節。AC-120、121）。
@@ -45,10 +46,10 @@ export async function mergeCartAfterLogin(accessToken: string): Promise<void> {
         await writeCartMergeNotice(notice)
       }
     } else {
-      console.error('カートを移せませんでした', cartId)
+      await log.warn('カートを移せませんでした', { cartId })
     }
   } catch (error) {
-    console.error('カートを移せませんでした', cartId, error)
+    await log.warn('カートを移せませんでした', { cartId, error: String(error) })
   }
   await deleteCartId()
 }

@@ -1,9 +1,11 @@
 import 'server-only'
+import { headers } from 'next/headers'
 import { connection } from 'next/server'
 import createClient from 'openapi-fetch'
 import type { paths } from '@/api/generated/store'
 import { getAccessToken } from '@/auth'
 import { readServerConfig } from '@/auth/config'
+import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 
 /**
  * API の結果をキャッシュする秒数（NFR-1：変更は 1 分以内に C 側へ反映する）。<br />
@@ -37,6 +39,11 @@ memberApi.use({
     const accessToken = request.headers.has('Authorization') ? null : await getAccessToken()
     if (accessToken !== null) {
       request.headers.set('Authorization', `Bearer ${accessToken}`)
+    }
+    // 画面の要求と同じ追跡の ID で、バックエンドのログを辿れるようにする
+    const traceparent = (await headers()).get(TRACEPARENT_HEADER)
+    if (traceparent !== null) {
+      request.headers.set(TRACEPARENT_HEADER, traceparent)
     }
     return request
   },

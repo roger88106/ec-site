@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -84,7 +85,7 @@ class CancellationAtomicityTest {
         product = data.product(taxCategoryId, "一貫性の商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId, StockAdjustment.create(5, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(5, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         orderId = new OrderTestData(mockMvc).placeOrder(variantId, 2);
     }
 

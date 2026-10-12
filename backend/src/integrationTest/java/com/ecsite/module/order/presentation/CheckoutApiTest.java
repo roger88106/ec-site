@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -134,7 +135,7 @@ class CheckoutApiTest {
         var product = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
         stockItemRepository.createIfAbsent(product.variantIds.getFirst(), product.id);
         stockItemRepository.adjust(product.variantIds.getFirst(),
-                StockAdjustment.create(3, StockAdjustmentReason.ARRIVAL, null, clock.instant()));
+                StockAdjustment.create(3, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
         add(cartId, product.variantIds.getFirst(), 1);
         product.suspend(0);
 
@@ -238,7 +239,7 @@ class CheckoutApiTest {
         var variantId = product.variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, product.id);
         stockItemRepository.adjust(variantId,
-                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, clock.instant()));
+                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
         return variantId;
     }
 }

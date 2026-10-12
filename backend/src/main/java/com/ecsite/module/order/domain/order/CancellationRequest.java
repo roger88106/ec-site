@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.common.model.Operator;
 import jakarta.annotation.Nullable;
 import org.jmolecules.ddd.annotation.ValueObject;
 
@@ -12,10 +13,11 @@ import java.time.Instant;
  * @param reason      理由。なければ null
  * @param result      結果
  * @param decidedAt   承認・却下した日時。申請中なら null
+ * @param decidedBy   承認・却下した運営者（AC-142）。申請中と、記録を始める前の判断は null
  */
 @ValueObject
 public record CancellationRequest(Instant requestedAt, @Nullable String reason, Result result,
-                                  @Nullable Instant decidedAt) {
+                                  @Nullable Instant decidedAt, @Nullable Operator decidedBy) {
 
     /**
      * 申請の結果

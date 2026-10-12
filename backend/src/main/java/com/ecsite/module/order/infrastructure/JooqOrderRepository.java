@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure;
 
+import com.ecsite.common.model.Operator;
 import com.ecsite.common.model.Money;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
 import com.ecsite.module.order.domain.order.Cancellation;
@@ -190,10 +191,16 @@ class JooqOrderRepository implements OrderRepository {
         record.setCancellationRequestReason(request == null ? null : request.reason());
         record.setCancellationRequestResult(request == null ? null : request.result().name());
         record.setCancellationDecidedAt(request == null ? null : request.decidedAt());
+        var decidedBy = request == null ? null : request.decidedBy();
+        record.setCancellationDecidedById(decidedBy == null ? null : decidedBy.id());
+        record.setCancellationDecidedByName(decidedBy == null ? null : decidedBy.name());
         var cancellation = snapshot.cancellation();
         record.setCancelledAt(cancellation == null ? null : cancellation.cancelledAt());
         record.setCancelledByOperator(cancellation == null ? null : cancellation.byOperator());
         record.setCancellationReason(cancellation == null ? null : cancellation.reason());
+        var cancelledBy = cancellation == null ? null : cancellation.cancelledBy();
+        record.setCancelledById(cancelledBy == null ? null : cancelledBy.id());
+        record.setCancelledByName(cancelledBy == null ? null : cancelledBy.name());
     }
 
     /**
@@ -253,9 +260,11 @@ class JooqOrderRepository implements OrderRepository {
         var request = record.getCancellationRequestedAt() == null ? null : new CancellationRequest(
                 record.getCancellationRequestedAt(), record.getCancellationRequestReason(),
                 CancellationRequest.Result.valueOf(record.getCancellationRequestResult()),
-                record.getCancellationDecidedAt());
+                record.getCancellationDecidedAt(),
+                operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
         var cancellation = record.getCancelledAt() == null ? null : new Cancellation(record.getCancelledAt(),
-                record.getCancelledByOperator(), record.getCancellationReason());
+                record.getCancelledByOperator(), record.getCancellationReason(),
+                operatorOf(record.getCancelledById(), record.getCancelledByName()));
         return Order.restore(new Order.Snapshot(
                 record.getId(),
                 OrderNumber.of(record.getOrderNumber()),
@@ -278,5 +287,12 @@ class JooqOrderRepository implements OrderRepository {
     private static BigDecimal normalize(BigDecimal ratePercent) {
         var stripped = ratePercent.stripTrailingZeros();
         return stripped.scale() < 0 ? stripped.setScale(0) : stripped;
+    }
+
+    /**
+     * 操作した運営者（AC-142）。記録を始める前の行は空なので null。
+     */
+    private static Operator operatorOf(UUID id, String name) {
+        return id == null ? null : new Operator(id, name);
     }
 }

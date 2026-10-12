@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
@@ -47,7 +48,7 @@ class StockAvailabilityApiTest {
         var withoutStock = UUID.randomUUID();
         stockItemRepository.createIfAbsent(inStock, productId);
         stockItemRepository.createIfAbsent(soldOut, productId);
-        stockItemRepository.adjust(inStock, StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(inStock, StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
 
         var availability = api.availabilityOf(List.of(inStock, soldOut, withoutStock));
 
@@ -65,8 +66,8 @@ class StockAvailabilityApiTest {
         var partlyReserved = UUID.randomUUID();
         stockItemRepository.createIfAbsent(reserved, productId);
         stockItemRepository.createIfAbsent(partlyReserved, productId);
-        stockItemRepository.adjust(reserved, StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, NOW));
-        stockItemRepository.adjust(partlyReserved, StockAdjustment.create(2, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(reserved, StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        stockItemRepository.adjust(partlyReserved, StockAdjustment.create(2, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         // 期限は実際の時計より十分先にする
         var expiresAt = Instant.now().plus(Duration.ofHours(1));
         reservationApi.reserve(UUID.randomUUID(), Map.of(reserved, 1, partlyReserved, 1), expiresAt);

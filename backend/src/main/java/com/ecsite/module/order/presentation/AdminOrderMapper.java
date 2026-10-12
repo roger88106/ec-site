@@ -141,7 +141,8 @@ class AdminOrderMapper {
                 .requestedAt(toOffset(request.requestedAt()))
                 .reason(request.reason())
                 .result(CancellationRequest.ResultEnum.fromValue(request.result().name()))
-                .decidedAt(toOffset(request.decidedAt()));
+                .decidedAt(toOffset(request.decidedAt()))
+                .decidedBy(request.decidedBy() == null ? null : request.decidedBy().name());
     }
 
     /**
@@ -151,7 +152,8 @@ class AdminOrderMapper {
         return new Cancellation()
                 .cancelledAt(toOffset(cancellation.cancelledAt()))
                 .byOperator(cancellation.byOperator())
-                .reason(cancellation.reason());
+                .reason(cancellation.reason())
+                .cancelledBy(cancellation.cancelledBy() == null ? null : cancellation.cancelledBy().name());
     }
 
     /**

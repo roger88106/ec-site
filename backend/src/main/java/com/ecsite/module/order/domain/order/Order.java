@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.common.model.Operator;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.AggregateRoot;
 import com.ecsite.module.order.domain.quote.Amounts;
@@ -183,38 +184,41 @@ public class Order extends AggregateRoot {
         if (status != OrderStatus.ACCEPTED || cancellationRequest != null) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
         }
-        cancellationRequest = new CancellationRequest(now, optionalReason(reason), CancellationRequest.Result.PENDING, null);
+        cancellationRequest = new CancellationRequest(now, optionalReason(reason), CancellationRequest.Result.PENDING,
+                null, null);
         status = OrderStatus.CANCELLATION_REQUESTED;
     }
 
     /**
      * キャンセルの申請を承認し、キャンセルにする（AC-101）。キャンセル済みなら何もしない（AC-105）。
      *
-     * @param now 現在時刻
+     * @param operator 承認した運営者（AC-142）
+     * @param now      現在時刻
      * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。すでにキャンセルなら false
      */
-    public boolean approveCancellation(@NonNull Instant now) {
+    public boolean approveCancellation(@NonNull Operator operator, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLED) {
             return false;
         }
         if (status != OrderStatus.CANCELLATION_REQUESTED) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
-        decideRequest(CancellationRequest.Result.APPROVED, now);
-        cancel(new Cancellation(now, false, null));
+        decideRequest(CancellationRequest.Result.APPROVED, operator, now);
+        cancel(new Cancellation(now, false, null, operator));
         return true;
     }
 
     /**
      * キャンセルの申請を却下し、「受付」に戻す（AC-102）。申請中でない注文（キャンセル済みを含む）は却下できない。
      *
-     * @param now 現在時刻
+     * @param operator 却下した運営者（AC-142）
+     * @param now      現在時刻
      */
-    public void rejectCancellation(@NonNull Instant now) {
+    public void rejectCancellation(@NonNull Operator operator, @NonNull Instant now) {
         if (status != OrderStatus.CANCELLATION_REQUESTED) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
-        decideRequest(CancellationRequest.Result.REJECTED, now);
+        decideRequest(CancellationRequest.Result.REJECTED, operator, now);
         status = OrderStatus.ACCEPTED;
     }
 
@@ -222,11 +226,12 @@ public class Order extends AggregateRoot {
      * 運営者の判断でキャンセルする（AC-103）。申請中なら、申請は承認されたものとする。<br />
      * キャンセル済みなら何もせず、理由も変えない（AC-105）。
      *
-     * @param reason 理由（必須、500 文字まで）
-     * @param now    現在時刻
+     * @param reason   理由（必須、500 文字まで）
+     * @param operator キャンセルした運営者（AC-142）。申請中なら、判断した運営者にもなる
+     * @param now      現在時刻
      * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。すでにキャンセルなら false
      */
-    public boolean cancelByOperator(String reason, @NonNull Instant now) {
+    public boolean cancelByOperator(String reason, @NonNull Operator operator, @NonNull Instant now) {
         var required = optionalReason(reason);
         if (required == null) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_REASON_REQUIRED);
@@ -235,9 +240,9 @@ public class Order extends AggregateRoot {
             return false;
         }
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
-            decideRequest(CancellationRequest.Result.APPROVED, now);
+            decideRequest(CancellationRequest.Result.APPROVED, operator, now);
         }
-        cancel(new Cancellation(now, true, required));
+        cancel(new Cancellation(now, true, required, operator));
         return true;
     }
 
@@ -246,9 +251,9 @@ public class Order extends AggregateRoot {
     /**
      * 申請に結果を記録する。
      */
-    private void decideRequest(CancellationRequest.Result result, Instant now) {
+    private void decideRequest(CancellationRequest.Result result, Operator operator, Instant now) {
         cancellationRequest = new CancellationRequest(cancellationRequest.requestedAt(), cancellationRequest.reason(),
-                result, now);
+                result, now, operator);
     }
 
     /**

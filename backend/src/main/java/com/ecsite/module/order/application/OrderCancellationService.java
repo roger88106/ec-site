@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application;
 
+import com.ecsite.common.model.Operator;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.domain.order.Order;
@@ -58,34 +59,37 @@ public class OrderCancellationService {
     /**
      * キャンセルの申請を承認する（AC-101、105）。キャンセルになったら在庫を戻す。
      *
-     * @param orderId 注文 ID
+     * @param orderId  注文 ID
+     * @param operator 承認した運営者（AC-142）
      */
     @Transactional
-    public void approve(UUID orderId) {
-        changeAndRestore(orderId, order -> order.approveCancellation(clock.instant()));
+    public void approve(UUID orderId, Operator operator) {
+        changeAndRestore(orderId, order -> order.approveCancellation(operator, clock.instant()));
     }
 
     /**
      * キャンセルの申請を却下する（AC-102）。
      *
-     * @param orderId 注文 ID
+     * @param orderId  注文 ID
+     * @param operator 却下した運営者（AC-142）
      */
     @Transactional
-    public void reject(UUID orderId) {
+    public void reject(UUID orderId, Operator operator) {
         var order = lock(orderId);
-        order.rejectCancellation(clock.instant());
+        order.rejectCancellation(operator, clock.instant());
         orderRepository.update(order);
     }
 
     /**
      * 運営者の判断でキャンセルする（AC-103、105）。キャンセルになったら在庫を戻す。
      *
-     * @param orderId 注文 ID
-     * @param reason  理由（必須）
+     * @param orderId  注文 ID
+     * @param reason   理由（必須）
+     * @param operator キャンセルした運営者（AC-142）
      */
     @Transactional
-    public void cancel(UUID orderId, String reason) {
-        changeAndRestore(orderId, order -> order.cancelByOperator(reason, clock.instant()));
+    public void cancel(UUID orderId, String reason, Operator operator) {
+        changeAndRestore(orderId, order -> order.cancelByOperator(reason, operator, clock.instant()));
     }
 
 // ============================== プライベートメソッド ==============================

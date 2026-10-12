@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -179,7 +180,7 @@ class StockReservationApiTest {
         var variantId = UUID.randomUUID();
         stockItemRepository.createIfAbsent(variantId, productId);
         if (quantity > 0) {
-            stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, NOW));
+            stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         }
         return variantId;
     }

@@ -322,7 +322,7 @@ class MemberCartApiTest {
     private UUID stockedVariant(int quantity) throws Exception {
         var variantId = data.product(standard, "商品", 1000).publish().variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         return variantId;
     }
 

@@ -7,6 +7,7 @@ import com.ecsite.api.admin.model.StockAdjustment;
 import com.ecsite.api.admin.model.StockAdjustmentPage;
 import com.ecsite.api.admin.model.StockSummaryList;
 import com.ecsite.common.paging.PageRequest;
+import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.inventory.application.StockCommandService;
 import com.ecsite.module.inventory.application.StockQueryService;
 import lombok.RequiredArgsConstructor;
@@ -38,6 +39,11 @@ class InventoryController implements InventoryApi {
      * 在庫マッパー
      */
     private final InventoryMapper mapper;
+
+    /**
+     * 要求の token の運営者（AC-142）
+     */
+    private final CurrentOperator currentOperator;
 
 // ============================== GET ==============================
 
@@ -89,7 +95,7 @@ class InventoryController implements InventoryApi {
      */
     @Override
     public ResponseEntity<StockAdjustment> adjustStock(UUID variantId, AdjustStockRequest request) {
-        var adjustment = commandService.adjustStock(mapper.toAdjustStockCommand(variantId, request));
+        var adjustment = commandService.adjustStock(mapper.toAdjustStockCommand(variantId, request, currentOperator.require()));
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toStockAdjustment(adjustment));
     }
 }

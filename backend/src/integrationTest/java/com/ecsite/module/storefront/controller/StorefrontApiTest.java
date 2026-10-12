@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.controller;
 
+import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -422,7 +423,7 @@ class StorefrontApiTest {
         var id = UUID.fromString(variantId);
         stockItemRepository.createIfAbsent(id, UUID.randomUUID());
         if (quantity > 0) {
-            stockItemRepository.adjust(id, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, NOW));
+            stockItemRepository.adjust(id, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         }
     }
 

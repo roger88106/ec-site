@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -324,6 +325,6 @@ class PlaceOrderApiTest {
     private void stock(UUID variantId, int quantity) {
         stockItemRepository.createIfAbsent(variantId, shirt.id);
         stockItemRepository.adjust(variantId,
-                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, clock.instant()));
+                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
     }
 }

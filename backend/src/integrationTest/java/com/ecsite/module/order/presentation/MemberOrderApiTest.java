@@ -94,7 +94,7 @@ class MemberOrderApiTest {
         var standard = data.taxCategory("標準", "10");
         variantId = data.product(standard, "T シャツ", 2700).publish().variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        stockItemRepository.adjust(variantId, StockAdjustment.create(50, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(50, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
     }
 
     @Nested

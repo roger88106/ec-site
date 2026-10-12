@@ -1,5 +1,6 @@
 package com.ecsite;
 
+import com.ecsite.common.model.Operator;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
@@ -54,6 +55,11 @@ public final class TestTokens {
      * 既定の運営者の IdP のアカウントの ID
      */
     public static final UUID OPERATOR_SUBJECT = UUID.fromString("00000000-0000-0000-0000-0000000a0001");
+
+    /**
+     * {@link #operator} の token の運営者（氏名は「姓 名」）。テストのデータを運営者の操作として作るときに使う
+     */
+    public static final Operator OPERATOR = new Operator(OPERATOR_SUBJECT, "管理 花子");
 
     /**
      * 既定の会員の IdP のアカウントの ID

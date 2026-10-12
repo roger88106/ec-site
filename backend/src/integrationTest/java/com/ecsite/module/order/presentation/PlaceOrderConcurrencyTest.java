@@ -237,7 +237,7 @@ class PlaceOrderConcurrencyTest {
     private void stock(int quantity) {
         var variantId = product.variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
     }
 
     /**

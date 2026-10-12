@@ -75,7 +75,8 @@ class JooqStockQueryRepository implements StockQueryRepository {
                                     record.getOrderId(),
                                     record.getOrderNumber(),
                                     record.getQuantityAfter(),
-                                    record.getAdjustedAt()));
+                                    record.getAdjustedAt(),
+                                    record.getActorName()));
                     return PageResult.of(items, request, dsl.fetchCount(STOCK_ADJUSTMENT, condition));
                 });
     }

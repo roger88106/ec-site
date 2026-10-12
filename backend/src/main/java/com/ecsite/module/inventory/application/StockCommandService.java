@@ -38,12 +38,12 @@ public class StockCommandService {
     public StockAdjustmentView adjustStock(AdjustStockCommand command) {
         // 在庫調整作成 ※増減量とメモの検証
         var adjustment = StockAdjustment.create(command.delta(), StockAdjustmentReason.valueOf(command.reason()),
-                command.memo(), clock.instant());
+                command.memo(), command.operator(), clock.instant());
 
         // 差分の加算と履歴の記録 ※負になるか、在庫がなければ業務のエラー
         int quantityAfter = stockItemRepository.adjust(command.variantId(), adjustment);
 
         return new StockAdjustmentView(adjustment.id(), adjustment.delta(), adjustment.reason().name(),
-                adjustment.memo(), null, null, quantityAfter, adjustment.adjustedAt());
+                adjustment.memo(), null, null, quantityAfter, adjustment.adjustedAt(), command.operator().name());
     }
 }

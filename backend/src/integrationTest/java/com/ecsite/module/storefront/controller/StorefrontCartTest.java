@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.controller;
 
+import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -202,6 +203,6 @@ class StorefrontCartTest {
      */
     private void adjust(UUID variantId, int delta) {
         var reason = delta > 0 ? StockAdjustmentReason.ARRIVAL : StockAdjustmentReason.DAMAGE_OR_LOSS;
-        stockItemRepository.adjust(variantId, StockAdjustment.create(delta, reason, null, clock.instant()));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(delta, reason, null, TestTokens.OPERATOR, clock.instant()));
     }
 }

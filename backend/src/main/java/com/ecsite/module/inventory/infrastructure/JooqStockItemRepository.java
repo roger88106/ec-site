@@ -88,6 +88,8 @@ class JooqStockItemRepository implements StockItemRepository {
                 .set(STOCK_ADJUSTMENT.ORDER_NUMBER, adjustment.orderNumber())
                 .set(STOCK_ADJUSTMENT.QUANTITY_AFTER, quantityAfter)
                 .set(STOCK_ADJUSTMENT.ADJUSTED_AT, adjustment.adjustedAt())
+                .set(STOCK_ADJUSTMENT.ACTOR_ID, adjustment.operator() == null ? null : adjustment.operator().id())
+                .set(STOCK_ADJUSTMENT.ACTOR_NAME, adjustment.operator() == null ? null : adjustment.operator().name())
                 .execute();
 
         return quantityAfter;

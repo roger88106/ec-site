@@ -1,6 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.model.Money;
+import com.ecsite.common.model.Operator;
 import com.ecsite.module.order.domain.order.CancellationRequest.Result;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
@@ -36,6 +37,11 @@ class OrderCancellationTest {
      */
     private static final Instant LATER = ORDERED_AT.plus(Duration.ofHours(1));
 
+    /**
+     * 判断・キャンセルした運営者（AC-142）
+     */
+    private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
+
     @Nested
     @DisplayName("AC-95、96 キャンセルの申請")
     class Request {
@@ -49,7 +55,7 @@ class OrderCancellationTest {
 
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLATION_REQUESTED);
             assertThat(order.cancellationRequest())
-                    .isEqualTo(new CancellationRequest(LATER, "サイズを間違えました", Result.PENDING, null));
+                    .isEqualTo(new CancellationRequest(LATER, "サイズを間違えました", Result.PENDING, null, null));
         }
 
         @Test
@@ -69,9 +75,9 @@ class OrderCancellationTest {
         void rejectsSecondRequest() {
             var rejected = acceptedOrder();
             rejected.requestCancellation(null, LATER);
-            rejected.rejectCancellation(LATER);
+            rejected.rejectCancellation(OPERATOR, LATER);
             var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", LATER);
+            cancelled.cancelByOperator("在庫の不備", OPERATOR, LATER);
 
             assertBusinessError(() -> rejected.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
             assertBusinessError(() -> cancelled.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
@@ -97,13 +103,13 @@ class OrderCancellationTest {
         void approves() {
             var order = requestedOrder();
 
-            var cancelled = order.approveCancellation(LATER);
+            var cancelled = order.approveCancellation(OPERATOR, LATER);
 
             assertThat(cancelled).isTrue();
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
             assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
-            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, false, null));
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, false, null, OPERATOR));
             assertThat(order.pullEvents()).singleElement().isInstanceOf(OrderCancelled.class);
         }
 
@@ -112,11 +118,12 @@ class OrderCancellationTest {
         void rejects() {
             var order = requestedOrder();
 
-            order.rejectCancellation(LATER);
+            order.rejectCancellation(OPERATOR, LATER);
 
             assertThat(order.status()).isEqualTo(OrderStatus.ACCEPTED);
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.REJECTED);
             assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
+            assertThat(order.cancellationRequest().decidedBy()).isEqualTo(OPERATOR);
             assertThat(order.cancellation()).isNull();
         }
 
@@ -124,20 +131,20 @@ class OrderCancellationTest {
         @DisplayName("AC-105 キャンセル済みの注文の承認は何もせず、在庫も戻さない。却下はできない")
         void handlesCancelledOrder() {
             var order = requestedOrder();
-            order.approveCancellation(LATER);
+            order.approveCancellation(OPERATOR, LATER);
             order.pullEvents();
 
-            assertThat(order.approveCancellation(LATER.plusSeconds(60))).isFalse();
+            assertThat(order.approveCancellation(OPERATOR, LATER.plusSeconds(60))).isFalse();
             assertThat(order.cancellation().cancelledAt()).isEqualTo(LATER);
             assertThat(order.pullEvents()).isEmpty();
-            assertBusinessError(() -> order.rejectCancellation(LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
+            assertBusinessError(() -> order.rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
 
         @Test
         @DisplayName("申請のない「受付」の注文は、承認も却下もできない")
         void rejectsDecisionWithoutRequest() {
-            assertBusinessError(() -> acceptedOrder().approveCancellation(LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
-            assertBusinessError(() -> acceptedOrder().rejectCancellation(LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
+            assertBusinessError(() -> acceptedOrder().approveCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
+            assertBusinessError(() -> acceptedOrder().rejectCancellation(OPERATOR, LATER), OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
     }
 
@@ -150,10 +157,10 @@ class OrderCancellationTest {
         void cancelsAcceptedOrder() {
             var order = acceptedOrder();
 
-            assertThat(order.cancelByOperator("在庫の不備", LATER)).isTrue();
+            assertThat(order.cancelByOperator("在庫の不備", OPERATOR, LATER)).isTrue();
 
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, true, "在庫の不備"));
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, true, "在庫の不備", OPERATOR));
             assertThat(order.pullEvents()).singleElement().isInstanceOf(OrderCancelled.class);
         }
 
@@ -162,7 +169,7 @@ class OrderCancellationTest {
         void cancelsRequestedOrder() {
             var order = requestedOrder();
 
-            order.cancelByOperator("お客様の申請による", LATER);
+            order.cancelByOperator("お客様の申請による", OPERATOR, LATER);
 
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
@@ -172,9 +179,9 @@ class OrderCancellationTest {
         @Test
         @DisplayName("AC-103 理由は必須で 500 文字まで")
         void requiresReason() {
-            assertBusinessError(() -> acceptedOrder().cancelByOperator(" ", LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
-            assertBusinessError(() -> acceptedOrder().cancelByOperator(null, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
-            assertBusinessError(() -> acceptedOrder().cancelByOperator("あ".repeat(501), LATER),
+            assertBusinessError(() -> acceptedOrder().cancelByOperator(" ", OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
+            assertBusinessError(() -> acceptedOrder().cancelByOperator(null, OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
+            assertBusinessError(() -> acceptedOrder().cancelByOperator("あ".repeat(501), OPERATOR, LATER),
                     OrderErrorCode.INVALID_CANCELLATION_REASON);
         }
 
@@ -182,9 +189,9 @@ class OrderCancellationTest {
         @DisplayName("AC-105 キャンセル済みの注文へのキャンセルは何もせず、理由も変えない")
         void ignoresCancelledOrder() {
             var order = acceptedOrder();
-            order.cancelByOperator("最初の理由", LATER);
+            order.cancelByOperator("最初の理由", OPERATOR, LATER);
 
-            assertThat(order.cancelByOperator("次の理由", LATER.plusSeconds(60))).isFalse();
+            assertThat(order.cancelByOperator("次の理由", OPERATOR, LATER.plusSeconds(60))).isFalse();
 
             assertThat(order.cancellation().reason()).isEqualTo("最初の理由");
         }

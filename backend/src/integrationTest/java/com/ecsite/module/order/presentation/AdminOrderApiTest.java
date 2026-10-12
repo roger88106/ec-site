@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -80,7 +81,7 @@ class AdminOrderApiTest {
         var product = data.product(data.taxCategory("標準", "10"), "T シャツ", 2700, "色").variant("白").publish();
         variantId = product.variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId, StockAdjustment.create(50, StockAdjustmentReason.ARRIVAL, null, clock.instant()));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(50, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
         orders = new OrderTestData(mockMvc);
     }
 

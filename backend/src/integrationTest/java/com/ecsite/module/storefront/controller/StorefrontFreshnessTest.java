@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.controller;
 
+import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -124,7 +125,7 @@ class StorefrontFreshnessTest {
     void reflectsStockChange() throws Exception {
         mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(false));
 
-        stockItemRepository.adjust(UUID.fromString(variantId), StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(UUID.fromString(variantId), StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
 
         mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(true));
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(jsonPath("$.variants[0].inStock").value(true));

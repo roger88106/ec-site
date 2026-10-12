@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.infrastructure;
 
+import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.paging.PageRequest;
@@ -101,7 +102,7 @@ class JooqStockItemRepositoryTest {
     @Test
     @DisplayName("在庫がまだないバリアントへの調整は見つからない")
     void rejectsUnknownVariant() {
-        var adjustment = StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, NOW);
+        var adjustment = StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW);
 
         assertBusinessError(() -> transactionTemplate.executeWithoutResult(
                 status -> repository.adjust(UUID.randomUUID(), adjustment)), CommonErrorCode.NOT_FOUND);
@@ -189,7 +190,7 @@ class JooqStockItemRepositoryTest {
      */
     private int adjust(int delta, StockAdjustmentReason reason) {
         var memo = reason == StockAdjustmentReason.OTHER ? "メモ" : null;
-        var adjustment = StockAdjustment.create(delta, reason, memo, NOW);
+        var adjustment = StockAdjustment.create(delta, reason, memo, TestTokens.OPERATOR, NOW);
         return transactionTemplate.execute(status -> repository.adjust(variantId, adjustment));
     }
 

@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.api.admin.OrderApi;
 import com.ecsite.api.admin.model.CancelOrderRequest;
 import com.ecsite.api.admin.model.OrderDetail;
@@ -36,6 +37,11 @@ class AdminOrderController implements OrderApi {
      * 管理 API（注文）のマッパー
      */
     private final AdminOrderMapper mapper;
+
+    /**
+     * 要求の token の運営者（AC-142）
+     */
+    private final CurrentOperator currentOperator;
 
     /**
      * 注文一覧（AC-97〜99、106）。注文日時の新しい順
@@ -76,7 +82,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> approveOrderCancellation(UUID orderId) {
-        orderCancellationService.approve(orderId);
+        orderCancellationService.approve(orderId, currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 
@@ -88,7 +94,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> rejectOrderCancellation(UUID orderId) {
-        orderCancellationService.reject(orderId);
+        orderCancellationService.reject(orderId, currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 
@@ -101,7 +107,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Void> cancelOrder(UUID orderId, CancelOrderRequest request) {
-        orderCancellationService.cancel(orderId, request.getReason());
+        orderCancellationService.cancel(orderId, request.getReason(), currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 }

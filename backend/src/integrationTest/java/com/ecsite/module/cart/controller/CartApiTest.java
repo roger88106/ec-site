@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.controller;
 
+import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -188,12 +189,12 @@ class CartApiTest {
             var variant = stockedVariant(3);
             add(cartId, variant, 3).andExpect(status().isNoContent());
             // 入れた後に在庫が減っても、減らす変更はできる
-            stockItemRepository.adjust(variant, StockAdjustment.create(-3, StockAdjustmentReason.DAMAGE_OR_LOSS, null, NOW));
+            stockItemRepository.adjust(variant, StockAdjustment.create(-3, StockAdjustmentReason.DAMAGE_OR_LOSS, null, TestTokens.OPERATOR, NOW));
 
             change(cartId, variant, 2).andExpect(status().isNoContent());
             assertThat(items()).containsExactly(Map.entry(variant, 2));
 
-            stockItemRepository.adjust(variant, StockAdjustment.create(2, StockAdjustmentReason.ARRIVAL, null, NOW));
+            stockItemRepository.adjust(variant, StockAdjustment.create(2, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
             change(cartId, variant, 3)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("QUANTITY_EXCEEDS_STOCK"));
@@ -275,7 +276,7 @@ class CartApiTest {
      */
     private void stock(UUID variantId, int quantity) {
         stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, NOW));
+        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
     }
 
     /**

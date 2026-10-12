@@ -6,6 +6,7 @@ import com.ecsite.api.admin.model.StockAdjustmentPage;
 import com.ecsite.api.admin.model.StockAdjustmentReason;
 import com.ecsite.api.admin.model.StockSummary;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.common.model.Operator;
 import com.ecsite.module.inventory.application.model.command.AdjustStockCommand;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.model.view.StockSummaryView;
@@ -25,11 +26,12 @@ class InventoryMapper {
      *
      * @param variantId バリアント ID
      * @param request   在庫の調整リクエスト
+     * @param operator  調整した運営者（token の運営者）
      * @return 在庫の調整コマンド
      */
-    AdjustStockCommand toAdjustStockCommand(UUID variantId, AdjustStockRequest request) {
+    AdjustStockCommand toAdjustStockCommand(UUID variantId, AdjustStockRequest request, Operator operator) {
         return new AdjustStockCommand(variantId, request.getDelta(), request.getReason().getValue(),
-                request.getMemo().orElse(null));
+                request.getMemo().orElse(null), operator);
     }
 
     /**
@@ -43,7 +45,8 @@ class InventoryMapper {
                 view.quantityAfter(), view.adjustedAt().atOffset(ZoneOffset.UTC))
                 .memo(view.memo())
                 .orderId(view.orderId())
-                .orderNumber(view.orderNumber());
+                .orderNumber(view.orderNumber())
+                .operatorName(view.operatorName());
     }
 
     /**

@@ -11,7 +11,7 @@
 
 ## サーバーアクション（DC-46）
 
-- [ ] **T6203** [テスト] `readString`・`readInt` の単体テスト（空、数でない、小数、範囲）と、`withActionResult` の単体テスト（画面の移動の例外を通す、接続の失敗、予期しない例外）。
+- [x] **T6203** [テスト] `readString`・`readInt` の単体テスト（空、数でない、小数、範囲）と、`withActionResult` の単体テスト（画面の移動の例外を通す、接続の失敗、予期しない例外）。
 - [ ] **T6204** `src/lib/server/formData.ts` と `src/actions/withActionResult.ts` を作り、`actions/` を置き換える。T6203 と、spec 004 のサーバーの処理のテストが通る。
 
 ## 認証とログ（P2）

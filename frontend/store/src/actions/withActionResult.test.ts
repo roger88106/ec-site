@@ -1,0 +1,36 @@
+import { notFound, redirect } from 'next/navigation'
+import { describe, expect, test } from 'vitest'
+import { withActionResult } from '@/actions/withActionResult'
+import { CONNECTION_FAILED } from '@/lib/actionResult'
+import { redirectedTo } from '@/test/next'
+
+describe('サーバーアクションの処理の包み', () => {
+  test('処理が返した値をそのまま返す', async () => {
+    expect(await withActionResult(async () => 'checkout-1')).toBe('checkout-1')
+    expect(await withActionResult(async () => ({ ok: true }))).toEqual({ ok: true })
+  })
+
+  test('画面の移動（redirect）の例外は飲み込まずに通す', async () => {
+    expect(await redirectedTo(() => withActionResult(async () => redirect('/login')))).toBe('/login')
+  })
+
+  test('not found の例外も通す', async () => {
+    await expect(withActionResult(async () => notFound())).rejects.toThrow()
+  })
+
+  test('接続の失敗は、接続できなかったことを示す失敗の結果にする', async () => {
+    const result = await withActionResult(async () => {
+      throw new TypeError('fetch failed')
+    })
+
+    expect(result).toEqual({ ok: false, message: CONNECTION_FAILED })
+  })
+
+  test('予期しない例外も、失敗の結果にする（画面を壊さない）', async () => {
+    const result = await withActionResult(async () => {
+      throw new Error('unexpected')
+    })
+
+    expect(result).toEqual({ ok: false, message: CONNECTION_FAILED })
+  })
+})

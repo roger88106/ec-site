@@ -13,7 +13,7 @@
 
 ## 2. Java（Javadoc）
 
-- **規則**：クラスと、すべてのメンバー（private を含む）に Javadoc を書く。1 文目に何かを書き、続けて補足が要るときは 1 文目の後に `<br />` を置く。メソッドには `@param`・`@return`（例外を投げる条件があれば `@throws`）を書く。record は、項目を `@param` で書く。
+- **規則**：クラスと、すべてのメンバー（private を含む）に Javadoc を書く。ただし、テストで `@DisplayName` を付けたクラスとメソッドには書かなくてよい（`@DisplayName` が説明になっている）。1 文目に何かを書き、続けて補足が要るときは 1 文目の後に `<br />` を置く。メソッドには `@param`・`@return`（例外を投げる条件があれば `@throws`）を書く。record は、項目を `@param` で書く。
 - **理由**：constitution 4.5。
 - **確かめ方**：人手（見直し）。
 
@@ -50,4 +50,22 @@ export type CartMergeNotice = {
 ```ts
 // redirect は例外で移動を知らせるので、try の外で呼ぶ
 redirect(`/checkout/${checkoutId}`)
+```
+
+## 5. 複雑な処理のコメント
+
+- **規則**：次のどれかに当たる処理の直前に、何の結果を得るか（必要なら、なぜそうするか）を 1 行で書く。規則は番号ではなく言葉で書く（第 1 節）。
+  - stream の 2 段以上の変換（`map` の後に `filter` など。`toList()` などの終わりの操作は数えない）
+  - `groupingBy`・`flatMap`・`reduce` を使う集計
+  - 入れ子の繰り返し
+  - `&&`・`||` で 3 つ以上をつないだ条件
+  - 3 つ以上の分岐（`if`・`else if` の連なり、`switch` の 3 つ以上の場合）
+- **規則**：コードを読んで意味を確かめてから書く。意味が分からない所は推測で書かず、利用者に確かめる。
+- **理由**：段を追って読まなくても、何を作っているかが分かるようにするため。書き直すときに、結果の意味を変えないため。
+- **確かめ方**：人手（見直し）。
+
+```java
+// 税率ごとに、税込みの金額を合計する（税は税率ごとに 1 回だけ端数を切り捨てるため）
+Map<BigDecimal, Money> totalByRate = lines.stream()
+        .collect(groupingBy(Line::taxRate, reducing(Money.ZERO, Line::amount, Money::add)));
 ```

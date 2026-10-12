@@ -1,4 +1,4 @@
-package com.ecsite.module.cart.controller;
+package com.ecsite.module.cart.presentation;
 
 import com.ecsite.api.store.CartApi;
 import com.ecsite.api.store.model.AddCartItemRequest;
@@ -9,8 +9,8 @@ import com.ecsite.api.store.model.MergeCartRequest;
 import com.ecsite.api.store.model.MergeCartResult;
 import com.ecsite.api.store.model.MergedCartItem;
 import com.ecsite.common.security.CurrentMember;
-import com.ecsite.module.cart.service.CartMergeResult;
-import com.ecsite.module.cart.service.CartService;
+import com.ecsite.module.cart.application.CartService;
+import com.ecsite.module.cart.domain.CartMergeResult;
 import com.ecsite.module.member.api.MemberApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;

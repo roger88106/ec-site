@@ -1,4 +1,4 @@
-package com.ecsite.module.cart.controller;
+package com.ecsite.module.cart.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;

@@ -1,10 +1,10 @@
-package com.ecsite.module.cart.infrastructure;
+package com.ecsite.module.cart.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.cart.service.Cart;
-import com.ecsite.module.cart.service.CartItem;
-import com.ecsite.module.cart.service.CartRepository;
+import com.ecsite.module.cart.application.port.CartRepository;
+import com.ecsite.module.cart.domain.Cart;
+import com.ecsite.module.cart.domain.CartItem;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;

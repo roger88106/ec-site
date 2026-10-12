@@ -1,4 +1,6 @@
-package com.ecsite.module.cart.service;
+package com.ecsite.module.cart.application.port;
+
+import com.ecsite.module.cart.domain.Cart;
 
 import java.util.Optional;
 import java.util.UUID;

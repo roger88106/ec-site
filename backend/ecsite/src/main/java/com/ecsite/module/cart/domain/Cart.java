@@ -1,4 +1,4 @@
-package com.ecsite.module.cart.service;
+package com.ecsite.module.cart.domain;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;

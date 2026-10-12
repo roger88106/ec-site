@@ -1,4 +1,4 @@
-package com.ecsite.module.cart.service;
+package com.ecsite.module.cart.domain;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

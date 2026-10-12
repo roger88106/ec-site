@@ -152,6 +152,8 @@ module/<モジュール>/
 | service（レベル A） | `XxxCommandService`、`XxxQueryService` | `TaxCategoryCommandService` |
 | 他モジュールの腐敗防止層の口 | `<相手>Directory`（使う層の `port/` の interface） | `TaxDirectory` |
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `TaxApiDirectory` |
+
+- 別のモジュールに同じ単純名のクラスがあってよい（腐敗防止層の実装など）。Spring の部品の名前は完全修飾名にしている（`EcSiteApplication`）。
 | イベント | 過去形 | `OrderPlaced` |
 
 - **確かめ方**：人手（見直し）。

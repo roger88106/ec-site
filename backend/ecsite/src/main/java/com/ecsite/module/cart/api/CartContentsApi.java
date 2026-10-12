@@ -1,6 +1,6 @@
 package com.ecsite.module.cart.api;
 
-import com.ecsite.module.cart.service.CartService;
+import com.ecsite.module.cart.application.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

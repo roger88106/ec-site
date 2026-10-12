@@ -1,6 +1,7 @@
-package com.ecsite.module.cart.catalogdir;
+package com.ecsite.module.cart.infrastructure.directory;
 
 import com.ecsite.module.catalog.api.OrderCatalogApi;
+import com.ecsite.module.cart.application.port.CatalogDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-public class CartCatalogDirectory {
+public class CatalogApiDirectory implements CatalogDirectory {
 
     /**
      * カート・注文向けの商品カタログの API
@@ -26,6 +27,7 @@ public class CartCatalogDirectory {
      * @param variantId バリアント ID
      * @return 選べれば true。存在しないバリアントは false
      */
+    @Override
     public boolean isSelectable(UUID variantId) {
         var variant = orderCatalogApi.findVariants(List.of(variantId)).get(variantId);
         return variant != null && variant.visible() && !variant.salesSuspended();

@@ -1,6 +1,7 @@
-package com.ecsite.module.cart.stockdir;
+package com.ecsite.module.cart.infrastructure.directory;
 
 import com.ecsite.module.inventory.api.StockReservationApi;
+import com.ecsite.module.cart.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -13,7 +14,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-public class CartStockDirectory {
+public class StockApiDirectory implements StockDirectory {
 
     /**
      * 販売可能数と引当の API
@@ -27,6 +28,7 @@ public class CartStockDirectory {
      * @param variantId バリアント ID
      * @return 販売可能数。在庫がなければ 0
      */
+    @Override
     public int sellableQuantity(UUID variantId) {
         return stockReservationApi.sellableQuantities(List.of(variantId), null).getOrDefault(variantId, 0);
     }

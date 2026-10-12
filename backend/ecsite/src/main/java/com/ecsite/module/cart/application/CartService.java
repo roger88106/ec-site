@@ -1,12 +1,17 @@
-package com.ecsite.module.cart.service;
+package com.ecsite.module.cart.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.cart.api.CartContents;
-import com.ecsite.module.cart.catalogdir.CartCatalogDirectory;
+import com.ecsite.module.cart.application.port.CartRepository;
+import com.ecsite.module.cart.application.port.CatalogDirectory;
+import com.ecsite.module.cart.application.port.StockDirectory;
+import com.ecsite.module.cart.domain.Cart;
+import com.ecsite.module.cart.domain.CartErrorCode;
+import com.ecsite.module.cart.domain.CartItem;
+import com.ecsite.module.cart.domain.CartMergeResult;
 import com.ecsite.module.cart.event.CartChanged;
-import com.ecsite.module.cart.stockdir.CartStockDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
@@ -34,12 +39,12 @@ public class CartService {
     /**
      * 商品カタログの腐敗防止層（選べるバリアントか）
      */
-    private final CartCatalogDirectory catalogDirectory;
+    private final CatalogDirectory catalogDirectory;
 
     /**
      * 在庫の腐敗防止層（販売可能数）
      */
-    private final CartStockDirectory stockDirectory;
+    private final StockDirectory stockDirectory;
 
     /**
      * イベントの発行

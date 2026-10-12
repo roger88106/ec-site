@@ -2,11 +2,14 @@ package com.ecsite;
 
 import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
+import org.springframework.context.annotation.FullyQualifiedAnnotationBeanNameGenerator;
 
 /**
- * EC サイトのアプリケーション。
+ * EC サイトのアプリケーション。<br />
+ * 部品の名前は、クラスの完全修飾名にする。モジュールの標準の構成では、別のモジュールに同じ単純名の部品
+ * （腐敗防止層の実装 {@code StockApiDirectory} など）があるため（docs/style/backend.md 第 1.1 節）。
  */
-@SpringBootApplication
+@SpringBootApplication(nameGenerator = FullyQualifiedAnnotationBeanNameGenerator.class)
 public class EcSiteApplication {
 
     /**

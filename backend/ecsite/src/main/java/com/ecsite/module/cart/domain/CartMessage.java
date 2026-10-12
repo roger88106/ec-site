@@ -1,4 +1,4 @@
-package com.ecsite.module.cart.service;
+package com.ecsite.module.cart.domain;
 
 import com.ecsite.common.message.I18nMessage;
 import lombok.AccessLevel;

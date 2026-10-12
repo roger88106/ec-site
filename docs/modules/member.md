@@ -40,14 +40,11 @@ member/
 
 | 種類 | 内容 | 利用者 |
 |------|------|--------|
-| API | IdP のアカウントの ID から会員 ID を求める（なければ作る） | カート、注文 |
+| API | IdP のアカウントの ID から会員 ID を求める（なければ作る） | カート、注文、店舗 |
 
 ## データモデル
 
-草案（T3303 でマイグレーションに置き換える）。
+[V202610121000__member_create_member.sql](../../backend/src/main/resources/db/migration/V202610121000__member_create_member.sql)
 
-| 列 | 型 | 説明 |
-|----|----|------|
-| `id` | uuid | 会員 ID（主キー） |
-| `idp_subject` | varchar(255) | IdP のアカウントの ID。一意 |
-| `created_at` | timestamptz | 登録日時（会員を作った日時。IdP の登録日時ではない） |
+- 会員 ID とは別に、IdP のアカウントの ID を一意で持つ。カート・注文手続き・注文は会員 ID だけを持つ（BR-13）。
+- 登録日時は、会員を作った日時（IdP で登録した日時ではない）。

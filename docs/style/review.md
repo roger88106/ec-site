@@ -21,6 +21,7 @@
 | フロント | [画面に依存しない処理は lib/ の関数](frontend.md#11-画面に依存しない処理は-lib-の関数にする)、[機能ごとに features/](frontend.md#12-機能ごとに-features機能) |
 | フロント | [エラーの文は API の message](frontend.md#22-エラーの文は-api-の-message-を出す) |
 | フロント | [catch では unstable_rethrow を先に](frontend.md#31-catch-では-unstable_rethrow-を先に呼ぶ)、[結果は ActionResult](frontend.md#32-結果は-actionresult-で返す) |
+| フロント | [共有のパッケージに入れるもの・入れないもの](frontend.md#51-入れるもの入れないもの)、[画面の URL を直接書かない](frontend.md#6-画面の-url)、[文言のキーの形](frontend.md#72-文言のキーの形)、[ロケールは 1 か所](frontend.md#73-ロケールは-1-か所)、[console を直接呼ばない](frontend.md#82-サーバー側のログは-1-行-1-件の-json) |
 | テスト | [名前は振る舞いを書く](testing.md#12-名前は振る舞いを書く) |
 | テスト | [統合テストの土台](testing.md#21-統合テストの土台)、[テストデータは補助のクラス](testing.md#22-テストデータは補助のクラスで作る) |
 | テスト | [画面に見えるもので探す](testing.md#31-画面に見えるもので探す)、[E2E のデータの印](testing.md#33-e2e-のデータには実行ごとの印)、[時間で待たない](testing.md#4-待ち方) |

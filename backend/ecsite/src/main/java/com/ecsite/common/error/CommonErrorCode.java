@@ -1,7 +1,5 @@
 package com.ecsite.common.error;
 
-import com.ecsite.common.message.CommonMessage;
-import com.ecsite.common.message.I18nMessage;
 import lombok.Getter;
 
 /**
@@ -12,39 +10,39 @@ public enum CommonErrorCode implements ErrorCodeProvider {
     /**
      * 見つかりませんでした。
      */
-    NOT_FOUND(ErrorType.NOT_FOUND_ERROR, CommonMessage.NOT_FOUND),
+    NOT_FOUND(ErrorType.NOT_FOUND_ERROR),
     /**
      * 更新処理排他エラー
      */
-    CONCURRENT_MODIFICATION(ErrorType.CONFLICT_ERROR, CommonMessage.CONCURRENT_MODIFICATION),
+    CONCURRENT_MODIFICATION(ErrorType.CONFLICT_ERROR),
     /**
      * リクエスト内容の検証エラー
      */
-    INVALID_REQUEST(ErrorType.VALIDATION_ERROR, CommonMessage.INVALID_REQUEST),
+    INVALID_REQUEST(ErrorType.VALIDATION_ERROR),
     /**
      * 許可されていない HTTP メソッド。HTTP ステータス（405）は Spring MVC の例外が決める
      */
-    METHOD_NOT_ALLOWED(ErrorType.VALIDATION_ERROR, CommonMessage.METHOD_NOT_ALLOWED),
+    METHOD_NOT_ALLOWED(ErrorType.VALIDATION_ERROR),
     /**
      * 認証がない、または token が無効
      */
-    UNAUTHENTICATED(ErrorType.UNAUTHENTICATED_ERROR, CommonMessage.UNAUTHENTICATED),
+    UNAUTHENTICATED(ErrorType.UNAUTHENTICATED_ERROR),
     /**
      * 操作に必要な権限がない
      */
-    FORBIDDEN(ErrorType.FORBIDDEN_ERROR, CommonMessage.FORBIDDEN),
+    FORBIDDEN(ErrorType.FORBIDDEN_ERROR),
     /**
      * 金額が負
      */
-    INVALID_MONEY(ErrorType.VALIDATION_ERROR, CommonMessage.INVALID_MONEY),
+    INVALID_MONEY(ErrorType.VALIDATION_ERROR),
     /**
      * リポジトリ復元エラー
      */
-    RESTORE_ERROR(ErrorType.RESTORE_ERROR, CommonMessage.SYSTEM_ERROR),
+    RESTORE_ERROR(ErrorType.RESTORE_ERROR),
     /**
      * システムエラー
      */
-    SYSTEM_ERROR(ErrorType.SYSTEM_ERROR, CommonMessage.SYSTEM_ERROR);
+    SYSTEM_ERROR(ErrorType.SYSTEM_ERROR);
 
     /**
      * エラーコード
@@ -56,9 +54,9 @@ public enum CommonErrorCode implements ErrorCodeProvider {
      * コンストラクタ
      *
      * @param errorType エラータイプ
-     * @param message   エラーメッセージ
+     * @param paramKeys 文に差し込む値の名前
      */
-    CommonErrorCode(ErrorType errorType, I18nMessage message) {
-        this.code = ErrorCode.of(this.name(), errorType, message);
+    CommonErrorCode(ErrorType errorType, String... paramKeys) {
+        this.code = ErrorCodeProvider.errorCode("common", this.name(), errorType, paramKeys);
     }
 }

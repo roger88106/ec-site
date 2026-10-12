@@ -11,7 +11,16 @@
 name: CI
 
 on:
+  # CI の結果に関わらないファイルだけを変えた push では流さない（constitution 13）。
+  # 1 つでも他のファイルが含まれていれば、すべての job を流す
   push:
+    paths-ignore:
+      - '**.md'           # 文書、skill の本文
+      - '.claude/**'      # エージェントの設定と、ローカルの画面の確認の設定
+      - 'scripts/dev/**'  # ローカル用の script（CI で使う script は scripts/ci/ に置く）
+      - '.gitignore'
+      - 'LICENSE'
+  # pull request は、変えたファイルによらずいつも流す（main に入る前に必ず確かめる）
   pull_request:
 
 permissions:

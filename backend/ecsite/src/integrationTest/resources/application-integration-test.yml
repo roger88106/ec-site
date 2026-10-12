@@ -22,9 +22,10 @@ ecsite:
   order:
     # 送料に適用する税区分。テストの補助（CatalogTestData#shippingTaxCategory）がこの ID で作る
     shipping-tax-category-id: 00000000-0000-0000-0000-00000000f001
-  shop:
-    # 問い合わせ先（StorefrontShopTest が確かめる）
-    contact-email: contact@shop.example
+  storefront:
+    shop:
+      # 問い合わせ先（StorefrontShopTest が確かめる）
+      contact-email: contact@shop.example
   security:
     # IdP は起動せず、テストの鍵で署名した token を使う（TestTokens、TestSecurityConfig）。
     # issuer は TestTokens と同じ値にする

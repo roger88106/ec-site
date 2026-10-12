@@ -11,6 +11,6 @@ import org.springframework.validation.annotation.Validated;
  * @param contactEmail 問い合わせ先のメールアドレス。キャンセルの申請が却下された注文に示す（AC-96）
  */
 @Validated
-@ConfigurationProperties("ecsite.shop")
+@ConfigurationProperties("ecsite.storefront.shop")
 public record ShopProperties(@NotBlank @Email String contactEmail) {
 }

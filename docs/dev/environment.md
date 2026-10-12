@@ -15,7 +15,7 @@
 | `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | 画像のアップロードの署名付き URL の有効期間（既定 5m） |
 | `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（必須。標準税率の税区分。[plan 002](../specs/002-cart-and-order/plan.md) 第 4 節） |
 | `ECSITE_ORDER_SHIPPING_FEE`、`ECSITE_ORDER_RESERVATION_TTL` | 送料（税込、円。既定 1000）、引当の期限（既定 15m） |
-| `ECSITE_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（必須。キャンセルの申請が却下された注文に示す。[plan 002](../specs/002-cart-and-order/plan.md) 第 4 節） |
+| `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（必須。キャンセルの申請が却下された注文に示す。[plan 002](../specs/002-cart-and-order/plan.md) 第 4 節） |
 | `ECSITE_MEDIA_CONVERTER_BASE_URL`、`ECSITE_MEDIA_CONVERTER_KEY`、`ECSITE_MEDIA_CONVERTER_SALT` | 画像の変換（imgproxy）の URL と、URL の署名の鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値。plan 001 第 7.5 節） |
 | `ECSITE_MEDIA_CONVERTER_QUALITY`、`ECSITE_MEDIA_CONVERTER_TIMEOUT` | WebP の品質（既定 82）、変換を待つ時間の上限（既定 30s） |
 

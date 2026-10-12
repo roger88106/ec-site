@@ -105,7 +105,7 @@ module/<モジュール>/
 
 ### 3.1 1 か所の定義（DC-36）
 
-- 残すもの：`<モジュール>ErrorCode`（enum）。種類（`ErrorType`）と、Javadoc（いつ起きるか、AC）を持つ。
+- 残すもの：`<モジュール>ErrorCode`（enum）。種類（`ErrorType`）と、Javadoc（いつ起きるか）を持つ。
 - 消すもの：`<モジュール>Message` と、その `Code`（7 クラス、約 1,100 行）。
 - メッセージのキーは enum から決める：`ecsite.<モジュール>.<enum の名前の小文字>`。`ErrorCodeProvider` に、モジュールの名前を返すメソッドだけを各 enum に書かせ、キーは共通の既定のメソッドで作る。
 - `MessageContractTest`：すべての `ErrorCodeProvider` の enum の定数に `messages.properties` のキーがあり、`messages.properties` の `ecsite.<モジュール>.*` のキーに enum の定数があることを確かめる（検証のキー `ecsite.validation.*` と共通の `ecsite.common.*` は別の表で確かめる）。
@@ -169,8 +169,9 @@ module/<モジュール>/
 
 - `docs/style/comments.md` に「複雑な処理」の基準と書き方を足す（段階 1）：
   - 基準：stream の 2 段以上の変換、`groupingBy`・`flatMap`・`reduce`、入れ子の繰り返し、`&&`・`||` が 3 つ以上の条件、3 つ以上の分岐。
-  - 書き方：何の結果を得るか・なぜそうするかを 1 行。AC・BR の番号があれば付ける。
+  - 書き方：何の結果を得るか・なぜそうするかを 1 行。規則は番号ではなく言葉で書く。
 - 段階 8 で、基準に当たる所を一覧にし（stream は約 120 か所。直前の行にコメントがあるのは 2 か所）、読んで意味を確かめてから足す。分からない所は一覧にして利用者に聞く。
+- spec・plan・tasks の番号を、規則の言葉に書き換える（DC-65。`docs/style/comments.md` 第 1 節）。今は約 570 か所（AC 約 440、BR・US・NFR 約 70、spec・plan の節 約 60）。コメントがすでに規則を言葉で書いていれば、番号を消すだけにする。番号の指す規則が分からない所は、spec を読んで書く。モジュールごとに commit。
 - コメントだけの commit にする（DN-5）。
 
 ## 7. 確かめ方
@@ -189,6 +190,7 @@ module/<モジュール>/
 | 43 | 第 5.2 節の手順 |
 | 44 | 見直しで読む（第 6 節の一覧を使う） |
 | 64 | `ImgproxyImageConverterFailureTest` の WebP でない応答の場合が通る |
+| 65 | 見直しで読む：`src/main` で、spec の番号（`AC-` など）、`spec NNN`、`plan … 第`、タスク番号を `git grep` で探し、残っているものがコメントの番号でないことを確かめる |
 | DN-4 | すべてのテストが通る。`api/` の差分は第 2.2 節の制約の追加だけ |
 | DN-5 | `git log --stat` |
 | DN-6 | `db/migration` に新しいファイルがない（食い違いを直す場合を除く） |

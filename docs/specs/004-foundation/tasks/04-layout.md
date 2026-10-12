@@ -18,5 +18,5 @@
 ## workspace と CI
 
 - [x] **T4406** ルートの `package.json`（`private`、`license: MIT`、`packageManager`、全体の script）、`pnpm-workspace.yaml`（`frontend/*`、`e2e`、`allowBuilds`）を作り、各プロジェクトの lock と `pnpm-workspace.yaml` を消して `pnpm install` する。依存の版の書き方を揃える（DC-20）。
-- [ ] **T4407** `frontend/biome.base.jsonc`、`frontend/tsconfig.base.json` を作り、admin・store・e2e が `extends` で読む。各プロジェクトには違う所だけを残す。lint・型チェック・テスト・ビルドが通る（DC-20）。
+- [x] **T4407** `frontend/biome.base.jsonc`、`frontend/tsconfig.base.json` を作り、admin・store・e2e が `extends` で読む。各プロジェクトには違う所だけを残す。lint・型チェック・テスト・ビルドが通る（DC-20）。
 - [ ] **T4408** CI：`.github/actions/setup-frontend/`（composite action）を作り、admin・store・e2e の job が使う。Playwright のブラウザーをキャッシュする。push して CI が通り、所要時間を DN-3 と比べて報告する。

@@ -1,0 +1,9 @@
+{
+  // 管理画面・店舗画面・E2E が共通に使う TypeScript の設定。各プロジェクトの tsconfig が extends で読み、違う所だけを書く
+  "compilerOptions": {
+    "module": "esnext",
+    "moduleResolution": "bundler",
+    "skipLibCheck": true,
+    "noEmit": true
+  }
+}

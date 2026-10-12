@@ -242,7 +242,7 @@ MVP で導入する（spec 003）。会員の注文の照会や、会員だけ�
 
 認証の仕組みに業務のコードが縛られないよう、次を守る。
 
-1. domain と application は Spring Security の型に依存しない。操作者が必要な場合は `actorId` などの引数で渡す。
+1. domain と application は Spring Security の型に依存しない。操作者が必要な場合は、会員 ID や運営者（ID と氏名の写し）などの値で渡す。
 2. `/api/admin/**` の endpoint ごとに、必要な権限を `resource:action` の形（例：`product:write`）で spec に書く。権限は運営者の realm の role として token に載せ、EC は token の role を権限として読む。token から権限を読む処理は 1 か所にまとめ、受け渡し方を変えても endpoint の検査に影響しないようにする。
 3. C 側と B 側のパスプレフィックスを、認可の境界にする。`/api/admin/**` は運営者の realm が発行した token だけを、`/api/store/**` は消費者の realm が発行した token だけを受け付ける。
 

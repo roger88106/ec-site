@@ -140,7 +140,8 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 pnpm lint:fix
 ```
 
-- 先にバックエンドを local profile で起動しておく。
+- 先に compose（Keycloak を含む）とバックエンド（local profile）を起動しておく。ログインは「認証（Keycloak）」の運営者のアカウントで行う。
+- IdP の接続先は環境変数 `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）、`VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。ビルドのときに埋め込む。
 - API の型は [admin.yaml](api/openapi/admin.yaml) から `dev`・`typecheck`・`build` の前に生成する（コミットしない）。
 - 結合テスト（画面の操作の流れ）はバックエンドなしで動く。API の応答は MSW で差し替える。書き方は [管理画面の構成](docs/frontend/admin.md) 第 10 節。
 - ディレクトリと画面の追加手順は [管理画面の構成](docs/frontend/admin.md)。
@@ -160,7 +161,8 @@ pnpm dev
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
-- 先にバックエンドを local profile で起動しておく。接続先を変えるときは環境変数 `STORE_API_BASE_URL`（例：`http://localhost:8080/api/store`）。
+- 先に compose（Keycloak を含む）とバックエンド（local profile）を起動しておく。接続先を変えるときは環境変数 `STORE_API_BASE_URL`（例：`http://localhost:8080/api/store`）。
+- ログインの接続先と secret は環境変数 `AUTH_KEYCLOAK_ISSUER`、`AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`。既定はローカルと CI だけで使う値で、本番相当の環境では必ず設定する（[店舗画面の構成](docs/frontend/store.md) 第 9 節）。
 - API の結果は最大 60 秒キャッシュする（NFR-1）。管理画面での変更は、1 分以内に店舗画面に反映される。
 - ディレクトリと画面の追加手順は [店舗画面の構成](docs/frontend/store.md)。
 
@@ -169,7 +171,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 バックエンド、管理画面、店舗画面を起動して、ブラウザ（Chromium）で操作する（Playwright）。
 
 ```bash
-# リポジトリのルートで、PostgreSQL と SeaweedFS を起動する
+# リポジトリのルートで、PostgreSQL、SeaweedFS、Keycloak、Mailpit などを起動する
 docker compose up -d
 
 # 管理画面と店舗画面の依存を入れておく（それぞれのディレクトリで pnpm install）

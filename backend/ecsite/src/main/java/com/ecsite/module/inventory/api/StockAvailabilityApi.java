@@ -24,7 +24,7 @@ public class StockAvailabilityApi {
     private final StockReservationService reservationService;
 
     /**
-     * 在庫の有無を返す。販売可能数（在庫数 − 有効な引当。spec 002 BR-11）が 1 以上なら「あり」。<br />
+     * 在庫の有無を返す。販売可能数（在庫数 − 有効な引当）が 1 以上なら「あり」。<br />
      * 在庫がまだないバリアント（登録のイベントの処理前など）は「なし」とする。
      *
      * @param variantIds バリアント ID

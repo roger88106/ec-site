@@ -16,7 +16,7 @@ import java.util.UUID;
  * @param orderNumber   注文番号（写し）。注文に由来する調整でなければ null
  * @param quantityAfter 調整後の在庫数
  * @param adjustedAt    調整日時
- * @param operatorName  調整した運営者の氏名（写し。AC-142）。運営者の調整でなければ（記録を始める前も）null
+ * @param operatorName  調整した運営者の氏名（写し）。運営者の調整でなければ（記録を始める前も）null
  */
 public record StockAdjustmentView(UUID id, int delta, String reason, @Nullable String memo,
                                   @Nullable UUID orderId, @Nullable String orderNumber, int quantityAfter,

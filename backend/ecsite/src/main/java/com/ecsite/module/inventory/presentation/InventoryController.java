@@ -41,7 +41,7 @@ class InventoryController implements InventoryApi {
     private final InventoryMapper mapper;
 
     /**
-     * 要求の token の運営者（AC-142）
+     * 要求の token の運営者
      */
     private final CurrentOperator currentOperator;
 
@@ -59,7 +59,7 @@ class InventoryController implements InventoryApi {
     }
 
     /**
-     * 在庫調整の履歴（AC-45）
+     * 在庫調整の履歴
      *
      * @param variantId バリアント ID
      * @param page      ページ番号
@@ -73,7 +73,7 @@ class InventoryController implements InventoryApi {
     }
 
     /**
-     * 商品ごとの在庫数の合計（AC-49）
+     * 商品ごとの在庫数の合計
      *
      * @param productIds 商品 ID
      * @return Http 200 : {@link StockSummaryList}
@@ -87,7 +87,7 @@ class InventoryController implements InventoryApi {
 // ============================== POST ==============================
 
     /**
-     * 在庫の調整（AC-42〜44、46）。履歴の 1 件で単独の URL を持たないので、Location は返さない
+     * 在庫の調整。履歴の 1 件で単独の URL を持たないので、Location は返さない
      *
      * @param variantId バリアント ID
      * @param request   在庫の調整リクエスト

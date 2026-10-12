@@ -25,8 +25,8 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 引当のサービス（docs/modules/inventory.md「引当」、spec 002 BR-11）。<br />
- * 呼び出し元（注文モジュール）のトランザクションに参加し、注文の成立などと同じトランザクションで在庫を扱う（plan 002 第 2 節）。
+ * 引当のサービス（docs/modules/inventory.md「引当」）。<br />
+ * 呼び出し元（注文モジュール）のトランザクションに参加し、注文の成立などと同じトランザクションで在庫を扱う。
  */
 @Slf4j
 @Service
@@ -72,7 +72,7 @@ public class StockReservationService {
     }
 
     /**
-     * 全品目を引き当てる（AC-82、83）。1 つでも足りなければ、何も書かずに足りない品目を返す。<br />
+     * 全品目を引き当てる。1 つでも足りなければ、何も書かずに足りない品目を返す。<br />
      * 同じ持ち主の引当は置き換える。判定では自分の引当を数えない。
      *
      * @param holderId   持ち主 ID（注文手続き）
@@ -94,7 +94,7 @@ public class StockReservationService {
     }
 
     /**
-     * 持ち主の引当を解く（AC-84）。なければ何もしない。
+     * 持ち主の引当を解く。なければ何もしない。
      *
      * @param holderId 持ち主 ID
      */
@@ -104,7 +104,7 @@ public class StockReservationService {
     }
 
     /**
-     * 引当を在庫数の減算に置き換える（AC-87、107）。<br />
+     * 引当を在庫数の減算に置き換える。<br />
      * 引当の期限が切れていても、その時点で足りれば減算する（引き当て直しを兼ねる）。1 つでも足りなければ何も変えない。
      *
      * @param holderId    持ち主 ID（注文手続き）
@@ -129,7 +129,7 @@ public class StockReservationService {
     }
 
     /**
-     * キャンセルした注文の数量を在庫数に戻す（AC-101、103、107）。<br />
+     * キャンセルした注文の数量を在庫数に戻す。<br />
      * 在庫がないバリアント（削除済み）は戻せないので、警告を残して飛ばす。C 側に表示された商品のバリアントは削除できないため、通常は起きない。
      *
      * @param quantities  バリアント ID → 数量

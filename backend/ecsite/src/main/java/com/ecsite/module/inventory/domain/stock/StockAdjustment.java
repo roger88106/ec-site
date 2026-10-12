@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 在庫調整（AC-42、46、107）。増減量、調整理由、メモを持つ。注文に由来する調整は、注文 ID と注文番号の写しを持つ。<br />
+ * 在庫調整。増減量、調整理由、メモを持つ。注文に由来する調整は、注文 ID と注文番号の写しを持つ。<br />
  * 在庫数が負にならないことは、ここではなく、リポジトリの条件付きの更新と DB の CHECK 制約で守る（docs/modules/inventory.md）。
  *
  * @param id         在庫調整 ID
@@ -22,7 +22,7 @@ import java.util.UUID;
  * @param orderId     注文 ID。注文に由来する調整でなければ null
  * @param orderNumber 注文番号（写し）。注文に由来する調整でなければ null
  * @param adjustedAt  調整日時
- * @param operator    調整した運営者（AC-142）。注文に由来する調整なら null
+ * @param operator    調整した運営者。注文に由来する調整なら null
  */
 @Entity
 public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReason reason, String memo, UUID orderId,
@@ -34,12 +34,12 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
     static final int MEMO_MAX_LENGTH = 500;
 
     /**
-     * 運営者の在庫調整を作る。空白だけのメモは、メモなしとして扱う。注文に由来する理由は選べない（AC-107）。
+     * 運営者の在庫調整を作る。空白だけのメモは、メモなしとして扱う。注文に由来する理由は選べない。
      *
      * @param delta  増減量（0 以外）
      * @param reason 調整理由
      * @param memo     メモ。理由が「その他」なら必須
-     * @param operator 調整した運営者（AC-142）
+     * @param operator 調整した運営者
      * @param now      現在時刻
      * @return 在庫調整
      */
@@ -62,7 +62,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
     }
 
     /**
-     * 注文による在庫調整を作る（AC-107）。
+     * 注文による在庫調整を作る。
      *
      * @param delta       増減量（注文は負、キャンセルは正）
      * @param reason      調整理由（注文・注文のキャンセル）

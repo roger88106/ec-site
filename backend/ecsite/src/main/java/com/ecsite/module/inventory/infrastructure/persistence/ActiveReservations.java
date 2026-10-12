@@ -10,7 +10,7 @@ import java.util.UUID;
 import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
 
 /**
- * 有効な引当の条件。引当のリポジトリと、販売可能数の照会で同じ条件を使う（spec 002 BR-11）。
+ * 有効な引当の条件。引当のリポジトリと、販売可能数の照会で同じ条件を使う。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class ActiveReservations {

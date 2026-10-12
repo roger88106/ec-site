@@ -22,7 +22,7 @@ class CatalogEventHandler {
     private final StockItemRepository stockItemRepository;
 
     /**
-     * バリアント登録：在庫数 0 の在庫を作る（AC-41）。
+     * バリアント登録：在庫数 0 の在庫を作る。
      *
      * @param event バリアント登録
      */

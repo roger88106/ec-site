@@ -1,7 +1,7 @@
 package com.ecsite.module.inventory.domain.stock;
 
 /**
- * 調整理由（AC-46、107）。注文に由来する理由は、運営者の調整では選べない。
+ * 調整理由。注文に由来する理由は、運営者の調整では選べない。
  */
 public enum StockAdjustmentReason {
 

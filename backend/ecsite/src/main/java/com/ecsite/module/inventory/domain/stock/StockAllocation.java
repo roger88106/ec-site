@@ -10,7 +10,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 引当・注文による減算で、在庫が足りるかの判定（spec 002 BR-11）。
+ * 引当・注文による減算で、在庫が足りるかの判定。
  */
 @Service
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

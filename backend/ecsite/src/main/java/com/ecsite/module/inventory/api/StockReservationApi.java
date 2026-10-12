@@ -13,7 +13,7 @@ import java.util.UUID;
 
 /**
  * カートと注文に公開する、販売可能数と引当の API（docs/modules/inventory.md「引当」）。<br />
- * 書き込みの操作は呼び出し元のトランザクションに参加する（plan 002 第 2 節）。
+ * 書き込みの操作は呼び出し元のトランザクションに参加する。
  */
 @Component
 @RequiredArgsConstructor
@@ -25,7 +25,7 @@ public class StockReservationApi {
     private final StockReservationService reservationService;
 
     /**
-     * 販売可能数（在庫数 − 有効な引当の合計）を返す（spec 002 BR-11）。在庫のないバリアントは 0。
+     * 販売可能数（在庫数 − 有効な引当の合計）を返す。在庫のないバリアントは 0。
      *
      * @param variantIds       バリアント ID
      * @param excludedHolderId 数えない引当の持ち主（注文手続き中の自分の引当）。なければ null
@@ -36,7 +36,7 @@ public class StockReservationApi {
     }
 
     /**
-     * 全品目を引き当てる（AC-82、83）。同じ持ち主の引当は置き換える。
+     * 全品目を引き当てる。同じ持ち主の引当は置き換える。
      *
      * @param holderId   持ち主 ID（注文手続き）
      * @param quantities バリアント ID → 数量
@@ -48,7 +48,7 @@ public class StockReservationApi {
     }
 
     /**
-     * 持ち主の引当を解く（AC-84）。なければ何もしない。
+     * 持ち主の引当を解く。なければ何もしない。
      *
      * @param holderId 持ち主 ID
      */
@@ -57,7 +57,7 @@ public class StockReservationApi {
     }
 
     /**
-     * 引当を在庫数の減算に置き換え、理由「注文」で調整履歴を書く（AC-87、107）。<br />
+     * 引当を在庫数の減算に置き換え、理由「注文」で調整履歴を書く。<br />
      * 引当の期限が切れていても、その時点で足りれば減算する。1 つでも足りなければ何も変えない。
      *
      * @param holderId    持ち主 ID（注文手続き）
@@ -71,7 +71,7 @@ public class StockReservationApi {
     }
 
     /**
-     * キャンセルした注文の数量を在庫数に戻し、理由「注文のキャンセル」で調整履歴を書く（AC-101、103、107）。
+     * キャンセルした注文の数量を在庫数に戻し、理由「注文のキャンセル」で調整履歴を書く。
      *
      * @param quantities  バリアント ID → 数量
      * @param orderId     注文 ID

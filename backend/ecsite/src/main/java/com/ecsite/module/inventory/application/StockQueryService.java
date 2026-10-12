@@ -39,7 +39,7 @@ public class StockQueryService {
     }
 
     /**
-     * バリアントの調整履歴を取得する（AC-45）。
+     * バリアントの調整履歴を取得する。
      *
      * @param variantId バリアント ID
      * @param request   ページの指定
@@ -51,7 +51,7 @@ public class StockQueryService {
     }
 
     /**
-     * 商品ごとの在庫数の合計を取得する（AC-49）。
+     * 商品ごとの在庫数の合計を取得する。
      *
      * @param productIds 商品 ID
      * @return 指定した順の合計。在庫がまだない商品は 0

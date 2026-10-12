@@ -15,7 +15,7 @@ public enum InventoryErrorCode implements ErrorCodeProvider {
      */
     INVALID_STOCK_DELTA(ErrorType.VALIDATION_ERROR),
     /**
-     * 理由が「その他」なのにメモがない（AC-46）
+     * 理由が「その他」なのにメモがない
      */
     STOCK_MEMO_REQUIRED(ErrorType.VALIDATION_ERROR),
     /**
@@ -23,11 +23,11 @@ public enum InventoryErrorCode implements ErrorCodeProvider {
      */
     INVALID_STOCK_MEMO(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 調整後の在庫数が負になる（AC-43）
+     * 調整後の在庫数が負になる
      */
     INSUFFICIENT_STOCK(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 運営者の調整で、注文に由来する理由を選んだ（AC-107）
+     * 運営者の調整で、注文に由来する理由を選んだ
      */
     ORDER_REASON_NOT_SELECTABLE(ErrorType.BUSINESS_RULE_ERROR),
     ;

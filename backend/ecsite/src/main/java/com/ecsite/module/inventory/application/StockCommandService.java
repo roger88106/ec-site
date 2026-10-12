@@ -29,7 +29,7 @@ public class StockCommandService {
     private final Clock clock;
 
     /**
-     * 在庫を調整する（AC-42〜44、46）。
+     * 在庫を調整する。
      *
      * @param command 在庫の調整コマンド
      * @return 記録した在庫調整

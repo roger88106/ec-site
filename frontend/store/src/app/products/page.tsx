@@ -1,3 +1,4 @@
+import { flattenTree } from '@ec-site/shared/lib/categoryTree'
 import type { Metadata } from 'next'
 import { getApi } from '@/api/client'
 import { unwrap } from '@/api/result'
@@ -7,7 +8,6 @@ import { Alert, AlertDescription } from '@/components/ui/alert'
 import { ListFilterForm } from '@/features/catalog/components/ListFilterForm'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
 import { listHref, parseListQuery } from '@/features/catalog/listQuery'
-import { flattenTree } from '@/lib/categoryTree'
 
 /** ブラウザのタブの題名 */
 export const metadata: Metadata = { title: '商品一覧' }

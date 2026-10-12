@@ -1,9 +1,9 @@
+import { fullName } from '@ec-site/shared/lib/login'
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { hasAuthParams, useAuth } from 'react-oidc-context'
 import { type Operator, OperatorProvider } from '@/auth/operator'
 import { setTokenSource } from '@/auth/token'
 import { Button } from '@/components/ui/button'
-import { operatorName } from '@/lib/login'
 
 /**
  * すべての画面を包み、ログインを求める（AC-132。管理画面の構成 第 11 節）。<br />
@@ -43,7 +43,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     () =>
       user
         ? {
-            name: operatorName(user.profile.family_name, user.profile.given_name),
+            name: fullName(user.profile.family_name, user.profile.given_name),
             logout: () => void signoutRedirect({ id_token_hint: user.id_token }),
           }
         : null,

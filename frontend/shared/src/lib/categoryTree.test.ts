@@ -1,9 +1,8 @@
 import { describe, expect, test } from 'vitest'
-import type { CategoryNode } from '@/api/types'
-import { flattenTree } from '@/lib/categoryTree'
+import { type CategoryTreeNode, flattenTree } from './categoryTree'
 
 /** カテゴリの木の節を作る */
-const node = (id: string, children: CategoryNode[] = []): CategoryNode => ({ id, name: id, children })
+const node = (id: string, children: CategoryTreeNode[] = []): CategoryTreeNode => ({ id, name: id, children })
 
 describe('カテゴリの木', () => {
   test('深さ優先（親の直後に子孫）で並べ、深さを付ける', () => {

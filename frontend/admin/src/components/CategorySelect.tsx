@@ -1,6 +1,6 @@
+import { flattenTree } from '@ec-site/shared/lib/categoryTree'
 import { $api } from '@/api/client'
 import { OptionSelect } from '@/components/OptionSelect'
-import { flattenTree } from '@/lib/categoryTree'
 
 /** カテゴリを 1 つ選ぶ（絞り込み用）。null は「すべて」。階層は字下げで示す */
 export function CategorySelect({

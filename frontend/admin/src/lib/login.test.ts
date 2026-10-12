@@ -1,16 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { operatorName, returnPath } from '@/lib/login'
-
-describe('運営者の氏名', () => {
-  test('AC-135 姓と名を「姓 名」の順に並べる', () => {
-    expect(operatorName('管理', '花子')).toBe('管理 花子')
-  })
-
-  test('片方しかなければ、それだけにする', () => {
-    expect(operatorName('管理', undefined)).toBe('管理')
-    expect(operatorName(undefined, undefined)).toBe('')
-  })
-})
+import { returnPath } from '@/lib/login'
 
 describe('ログインの後に戻る画面', () => {
   test('AC-132 移る前のパスとクエリに戻る', () => {

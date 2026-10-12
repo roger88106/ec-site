@@ -1,4 +1,5 @@
 import 'server-only'
+import { fullName } from '@ec-site/shared/lib/login'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import NextAuth from 'next-auth'
@@ -9,7 +10,7 @@ import { mergeCartAfterLogin } from '@/api/cart'
 import { readServerConfig } from '@/auth/config'
 import { logoutUrl } from '@/auth/logout'
 import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
-import { loginPath, memberName, safeReturnTo } from '@/lib/login'
+import { loginPath, safeReturnTo } from '@/lib/login'
 
 /**
  * ログイン（店舗画面の構成 第 9 節）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
@@ -50,7 +51,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
         // ログインした直後：token と、画面に出す氏名・メールアドレスを持つ
         return {
           ...token,
-          name: memberName(profile?.family_name as string | undefined, profile?.given_name as string | undefined),
+          name: fullName(profile?.family_name as string | undefined, profile?.given_name as string | undefined),
           email: profile?.email ?? token.email,
           accessToken: account.access_token,
           refreshToken: account.refresh_token,

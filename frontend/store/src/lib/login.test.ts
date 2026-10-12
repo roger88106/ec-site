@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { loginPath, memberName, needsTokenRefresh, safeReturnTo } from '@/lib/login'
+import { loginPath, needsTokenRefresh, safeReturnTo } from '@/lib/login'
 
 describe('ログインの後に戻る画面', () => {
   test('AC-113 店舗画面の中のパス（クエリを含む）なら、そのまま戻す', () => {
@@ -23,18 +23,6 @@ describe('ログインの後に戻る画面', () => {
   test('ログインの口のパスに、戻る画面をクエリで付ける', () => {
     expect(loginPath('/orders?page=2')).toBe('/login?returnTo=%2Forders%3Fpage%3D2')
     expect(loginPath('/cart', { register: true })).toBe('/login?returnTo=%2Fcart&register=1')
-  })
-})
-
-describe('会員の氏名', () => {
-  test('AC-114 姓と名を「姓 名」の順に並べる', () => {
-    expect(memberName('会員', '太郎')).toBe('会員 太郎')
-  })
-
-  test('片方しかなければ、それだけにする', () => {
-    expect(memberName('会員', undefined)).toBe('会員')
-    expect(memberName(undefined, '太郎')).toBe('太郎')
-    expect(memberName(undefined, undefined)).toBe('')
   })
 })
 

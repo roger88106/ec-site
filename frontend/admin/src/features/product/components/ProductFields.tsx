@@ -1,3 +1,4 @@
+import { flattenTree } from '@ec-site/shared/lib/categoryTree'
 import { Controller, useFormContext } from 'react-hook-form'
 import { $api } from '@/api/client'
 import { OptionSelect } from '@/components/OptionSelect'
@@ -6,7 +7,6 @@ import { Field, FieldError, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Input } from '@/components/ui/input'
 import { Textarea } from '@/components/ui/textarea'
 import type { ProductFieldsValues } from '@/features/product/product'
-import { flattenTree } from '@/lib/categoryTree'
 import { formatRate } from '@/lib/rate'
 
 /**

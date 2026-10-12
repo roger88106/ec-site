@@ -1,3 +1,5 @@
+import { isSafeReturnPath } from '@ec-site/shared/lib/login'
+
 /** ログインの後に戻る画面の既定（店舗のトップ） */
 const HOME = '/'
 
@@ -8,10 +10,7 @@ const HOME = '/'
  * @returns 戻り先のパス（クエリを含む）。受け付けなければ店舗のトップ
  */
 export function safeReturnTo(value: string | null | undefined): string {
-  if (!value?.startsWith('/') || value.startsWith('//') || value.startsWith('/\\')) {
-    return HOME
-  }
-  return value
+  return isSafeReturnPath(value) ? value : HOME
 }
 
 /**
@@ -26,16 +25,6 @@ export function loginPath(returnTo: string, options: { register?: boolean } = {}
     query.set('register', '1')
   }
   return `/login?${query}`
-}
-
-/**
- * 会員の氏名を「姓 名」の順に並べる（AC-114）。
- *
- * @param familyName 姓（token の family_name）
- * @param givenName  名（token の given_name）
- */
-export function memberName(familyName: string | undefined, givenName: string | undefined): string {
-  return [familyName, givenName].filter((part) => part).join(' ')
 }
 
 /**

@@ -5,7 +5,7 @@ description: ec-site をローカルで起動・確認する手順。DB・Keyclo
 
 # ローカルでの起動と確認
 
-README の「起動とテスト」を、エージェントがそのまま実行できる形にしたもの。調べ直さずにこの通りに実行する。
+`docs/dev/`（起動とテストの手順）を、エージェントがそのまま実行できる形にしたもの。調べ直さずにこの通りに実行する。
 
 前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う（AGENTS.md「環境」）。
 
@@ -17,7 +17,7 @@ docker compose stop           # 止める（データは残る）
 ```
 
 - Keycloak は起動に 20 秒ほどかかる。`docker inspect -f '{{.State.Health.Status}}' ec-site-keycloak` が `healthy` になるまで待つ。
-- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、README「ローカルで起動する」の手順で一度だけ作る。
+- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`docs/dev/setup.md`「ローカルで起動する」の手順で一度だけ作る。
 
 - DB：`localhost:5432`、DB `ec_site`、ユーザー `ec_site`、パスワード `ec_site`。
 - SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で引く。注文は `ordering`）。
@@ -28,7 +28,7 @@ docker compose stop           # 止める（データは残る）
 
 ## 認証（Keycloak、Mailpit）
 
-realm の設定は `keycloak/realms/` の JSON。アカウントと、JSON を変えたときの取り込み直しは README「認証（Keycloak）」。
+realm の設定は `keycloak/realms/` の JSON。アカウントと、JSON を変えたときの取り込み直しは `docs/dev/setup.md`「認証（Keycloak）」。
 
 ```bash
 scripts/dev/keycloak.sh token ec-admin admin@example.com admin-pass-1   # access token の payload を出す（権限・audience の確認）
@@ -94,7 +94,7 @@ scripts/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 ## 動作確認用の注文を作る
 
-画面を確かめるための注文は、ブラウザで操作せずにスクリプトで作る（店舗 API を直接呼ぶ。バックエンドと Keycloak が要る）。会員（既定は README の `member@example.com`）の token を `keycloak.sh access-token` で取り、会員のカートを空にしてから注文する。
+画面を確かめるための注文は、ブラウザで操作せずにスクリプトで作る（店舗 API を直接呼ぶ。バックエンドと Keycloak が要る）。会員（既定は `docs/dev/setup.md` の `member@example.com`）の token を `keycloak.sh access-token` で取り、会員のカートを空にしてから注文する。
 
 ```bash
 node scripts/dev/mkorder.js                          # seed のバリアント（在庫 100）を 1 つ注文する
@@ -111,7 +111,7 @@ node scripts/dev/mkorder.js --member member2@example.com member2-pass-1   # 別�
 
 ## E2E（`frontend/e2e`）
 
-README の「E2E」の通り。バックエンド（:8080）、管理画面（:4173）、店舗画面（:3100）は、起動していなければ Playwright が起動する。
+`docs/dev/testing.md` の「E2E」の通り。バックエンド（:8080）、管理画面（:4173）、店舗画面（:3100）は、起動していなければ Playwright が起動する。
 
 ```bash
 cd frontend/e2e && pnpm test 2>&1 | tail -30

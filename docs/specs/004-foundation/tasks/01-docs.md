@@ -17,6 +17,6 @@
 
 - [x] **T4106** `docs/style/` を作る：`README.md`（一覧、constitution との分担、規則の形「規則・理由・確かめ方」）、`backend.md`、`frontend.md`、`testing.md`、`comments.md`。今のコードで守られている習慣を書き出す（DB の制約の違反の変換、生成した interface の実装、`@Transactional` の置き場所、テスト名の AC 番号、`unstable_rethrow`、Javadoc・TSDoc の書き方など）。書く前に、コードと既存の文書（constitution、`docs/frontend/`、モジュール設計書）を読んで、食い違いを一覧にして報告する（DC-1）。
 - [x] **T4107** `docs/style/review.md`：「見直しで読む」規則の一覧（DC-1 の文書から集める）と、見直しの段階での使い方。各 spec の見直しの tasks がこれを使うことを constitution 15 か AGENTS.md に書く（DC-4）。
-- [ ] **T4108** `docs/dev/`（`setup.md`、`testing.md`、`environment.md`）に README の起動・アカウント・テスト・環境変数を移し、README を概要・文書の地図・進め方・進捗に絞る。AGENTS.md と skill `local-dev` の参照を直す（DC-63）。
+- [x] **T4108** `docs/dev/`（`setup.md`、`testing.md`、`environment.md`）に README の起動・アカウント・テスト・環境変数を移し、README を概要・文書の地図・進め方・進捗に絞る。AGENTS.md と skill `local-dev` の参照を直す（DC-63）。
 - [x] **T4110** AGENTS.md「テストが先」と constitution 12.2 を、TDD の循環（レッド → グリーン → リファクタリング → 次の振る舞いのレッド）の形に書き直す。リファクタリングの前に今の振る舞いを固定するテスト（最初から通る）は、一時的にコードか期待値を変えて失敗しうることを確かめる。あわせて AGENTS.md に「段階を始める前に、その段階で利用者に確かめることをまとめて聞く」を書く（2026-10-12 利用者の指示）。
 - [ ] **T4109** 用語集に、カバレッジ、引き継ぎの文書、規則の文書、整理の spec を足す。README の spec の表に「種類」の列を足し、004〜006 を載せる。

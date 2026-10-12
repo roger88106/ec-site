@@ -6,7 +6,7 @@ import { ADMIN_URL, IDP_URL, MAILPIT_URL, STORE_URL } from './urls'
 /** ログインに使うアカウント */
 export type Account = { email: string; password: string }
 
-/** realm の JSON にあるローカルと CI 用のアカウント（README の「認証（Keycloak）」） */
+/** realm の JSON にあるローカルと CI 用のアカウント（docs/dev/setup.md の「認証（Keycloak）」） */
 export const ACCOUNTS = {
   /** 運営者の realm の管理者（すべての権限） */
   administrator: { email: 'admin@example.com', password: 'admin-pass-1' },

@@ -32,7 +32,7 @@ export default defineConfig({
   },
   webServer: [
     {
-      // 先に compose の PostgreSQL を起動しておく（README の「E2E」）
+      // 先に compose の PostgreSQL を起動しておく（docs/dev/testing.md の「E2E」）
       name: 'backend',
       command: `"${GRADLEW}" bootRun --args=--spring.profiles.active=local`,
       cwd: BACKEND_DIR,

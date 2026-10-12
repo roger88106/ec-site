@@ -29,8 +29,10 @@
 | [文書の記号と番号](docs/notation.md) | spec の種類（機能・整理）、AC・DC などの番号、対象、優先度、タスクの番号と記号の意味 |
 | [modules/](docs/modules) | モジュールごとの現在の設計 |
 | [frontend/](docs/frontend) | フロントのアプリごとの構成（ディレクトリ、API の呼び出し方、画面の追加手順） |
-| [specs/](docs/specs) | 機能ごとの spec（何を・なぜ）、plan（どう作るか）、tasks（作業の手順） |
+| [specs/](docs/specs) | spec（機能・整理。何を・なぜ）、plan（どう作るか）、tasks（作業の手順） |
 | [api/openapi/](api/openapi) | API 契約の正本（`admin.yaml`：管理画面、`store.yaml`：店舗） |
+| [style/](docs/style) | コードの書き方とプロジェクトの習慣、見直しで読む規則 |
+| [dev/](docs/dev) | 起動・テスト・環境変数の手順 |
 | [AGENTS.md](AGENTS.md) | AI エージェントが作業するときの手順（SDD + TDD の進め方、Git） |
 
 ## 進め方（SDD）
@@ -52,166 +54,10 @@ spec がコードに先行する。仕様の誤りに気づいたら、spec を�
 
 ## 起動とテスト
 
-前提：JDK 21、Docker（Docker Desktop など）
+前提は JDK 21、Docker、Node.js 24 以上、pnpm。手順は [docs/dev/](docs/dev) にある。
 
-バックエンドの Gradle プロジェクトは `backend/` にある。以下のコマンドは `backend/` で実行する。
-IntelliJ IDEA でリポジトリのルートを開いた場合は、`backend/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
-
-### ローカルで起動する
-
-```bash
-# リポジトリのルートで、PostgreSQL、Zipkin、SeaweedFS（画像の置き場所）、imgproxy（画像の変換）、
-# Keycloak（認証）、Mailpit（Keycloak が送るメールの受け取り）を起動する
-docker compose up -d
-
-# backend/ で、local profile で起動する（マイグレーションとローカル用の seed は起動時に適用される）
-./gradlew bootRun --args='--spring.profiles.active=local'
-```
-
-| URL | 内容 |
-|-----|------|
-| http://localhost:8080/api/admin | 管理 API（[admin.yaml](api/openapi/admin.yaml)） |
-| http://localhost:8080/api/store | 店舗 API（[store.yaml](api/openapi/store.yaml)） |
-| http://localhost:8080/actuator/health | ヘルスチェック（`/liveness`、`/readiness`） |
-| http://localhost:9411 | Zipkin（トレースの表示。local では全リクエストを記録する） |
-| http://localhost:8333 | SeaweedFS（S3 互換。画像のバケットは `seaweedfs-init` が作る。[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7 節） |
-| http://localhost:8081 | imgproxy（画像の WebP への変換。署名のない URL は拒否する。[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7.5 節） |
-| http://localhost:8180 | Keycloak（認証。管理の画面は `/admin`、`admin` / `admin`。[plan 003](docs/specs/003-auth/plan.md) 第 2 節） |
-| http://localhost:8025 | Mailpit（Keycloak が送ったメール。外には送らない） |
-
-- DB の接続先は [compose.yaml](compose.yaml) と `application-local.yml` で揃えてある（`localhost:5432/ec_site`）。
-- 止めるときは `docker compose stop`。データを消して作り直すときは `docker compose down -v`。
-- Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回の起動）に作られる。それより前からある volume では作られないので、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < compose/postgres/init-keycloak.sql` を流してから `docker compose up -d` する（`docker compose down -v` で作り直してもよい）。
-
-#### 認証（Keycloak）
-
-realm の設定は [keycloak/realms/](keycloak/realms) の JSON が正本で、Keycloak の起動時に取り込まれる（[plan 003](docs/specs/003-auth/plan.md) 第 2 節）。ローカルと CI で使うアカウント（パスワードはローカル専用の値）：
-
-| realm | 画面 | アカウント | パスワード | 職務 |
-|-------|------|------------|------------|------|
-| `ec-store`（消費者） | 店舗 | `member@example.com` | `member-pass-1` | |
-| `ec-store`（消費者） | 店舗 | `member2@example.com` | `member2-pass-1` | （他人のデータが見えないことの確認用） |
-| `ec-admin`（運営者） | 管理画面 | `admin@example.com` | `admin-pass-1` | 管理者 |
-| `ec-admin`（運営者） | 管理画面 | `viewer@example.com` | `viewer-pass-1` | 閲覧者 |
-
-- 手動確認で使うアカウントは、ここに挙げたもの（realm の JSON にあり、誰の環境にもある）を使う。足りなければ realm の JSON に足し、この表に書く。画面から登録した会員は、その人の環境にしかない。
-- 会員登録の確認のメールと、パスワードの再設定のメールは Mailpit（http://localhost:8025）に届く。
-- すでにある realm は取り込み直さない。realm の JSON を変えたら、Keycloak の database を作り直して取り込み直す（ローカルで登録した会員も消える）。
-
-  ```bash
-  docker compose stop keycloak
-  docker exec ec-site-postgres psql -U ec_site -d ec_site -c "drop database keycloak" -c "create database keycloak owner keycloak"
-  docker compose up -d keycloak
-  ```
-
-- token の中身を見るときは `scripts/dev/keycloak.sh token <realm> <アカウント> <パスワード>`（[skill local-dev](.claude/skills/local-dev/SKILL.md)）。
-
-### テスト
-
-```bash
-# 単体テスト（Spring を起動しない。Docker 不要）
-./gradlew test
-
-# 統合テスト（Spring + Testcontainers の PostgreSQL。Docker が必要）
-./gradlew integrationTest
-
-# ビルド（単体・統合テスト、OpenAPI の構文の検証を含む。CI と同じ）
-./gradlew build
-```
-
-- テストの構成と方針は [constitution](docs/constitution.md) 第 12 節。
-- jOOQ のコードと OpenAPI のインターフェースは、コンパイル時に生成される（コミットしない）。
-  jOOQ の生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うので、Docker が必要（compose の DB は不要）。
-
-### 管理画面（`frontend/admin`）
-
-前提：Node.js 24 以上、pnpm（版は `package.json` の `packageManager`）
-
-```bash
-# frontend/admin/ で、依存を入れる
-pnpm install
-
-# 開発サーバー（http://localhost:5173）。/api はバックエンド（localhost:8080）に転送する
-pnpm dev
-
-# CI と同じ確認（lint と整形、型チェック、単体・結合テスト、ビルド）
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
-
-# 整形と、自動で直せる lint の指摘を直す
-pnpm lint:fix
-```
-
-- 先に compose（Keycloak を含む）とバックエンド（local profile）を起動しておく。ログインは「認証（Keycloak）」の運営者のアカウントで行う。
-- IdP の接続先は環境変数 `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）、`VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。ビルドのときに埋め込む。
-- API の型は [admin.yaml](api/openapi/admin.yaml) から `dev`・`typecheck`・`build` の前に生成する（コミットしない）。
-- 結合テスト（画面の操作の流れ）はバックエンドなしで動く。API の応答は MSW で差し替える。書き方は [管理画面の構成](docs/frontend/admin.md) 第 10 節。
-- ディレクトリと画面の追加手順は [管理画面の構成](docs/frontend/admin.md)。
-
-### 店舗画面（`frontend/store`）
-
-前提は管理画面と同じ。
-
-```bash
-# frontend/store/ で、依存を入れる
-pnpm install
-
-# 開発サーバー（http://localhost:3000）。API はサーバーから呼ぶ（既定は localhost:8080）
-pnpm dev
-
-# CI と同じ確認（lint と整形、型チェック、テスト、ビルド）
-pnpm lint && pnpm typecheck && pnpm test && pnpm build
-```
-
-- 先に compose（Keycloak を含む）とバックエンド（local profile）を起動しておく。接続先を変えるときは環境変数 `STORE_API_BASE_URL`（例：`http://localhost:8080/api/store`）。
-- ログインの接続先と secret は環境変数 `AUTH_KEYCLOAK_ISSUER`、`AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`。既定はローカルと CI だけで使う値で、本番相当の環境では必ず設定する（[店舗画面の構成](docs/frontend/store.md) 第 9 節）。
-- API の結果は最大 60 秒キャッシュする（NFR-1）。管理画面での変更は、1 分以内に店舗画面に反映される。
-- ディレクトリと画面の追加手順は [店舗画面の構成](docs/frontend/store.md)。
-
-### E2E（`frontend/e2e`）
-
-バックエンド、管理画面、店舗画面を起動して、ブラウザ（Chromium）で操作する（Playwright）。
-
-```bash
-# リポジトリのルートで、PostgreSQL、SeaweedFS、Keycloak、Mailpit などを起動する
-docker compose up -d
-
-# 管理画面と店舗画面の依存を入れておく（それぞれのディレクトリで pnpm install）
-
-# frontend/e2e/ で、依存とブラウザを入れる
-pnpm install
-pnpm exec playwright install chromium
-
-# E2E。バックエンド（local profile）、管理画面（:4173）、店舗画面（:3100）を起動してから動かす
-pnpm test
-```
-
-- バックエンドの起動に JDK 21 を使うので、`JAVA_HOME` を JDK 21 に向けておく。
-- すでに起動しているサーバー（:8080、:4173、:3100）があれば、それを使う。管理画面・店舗画面を直したときは、止めてからやり直す（ビルドし直すため）。
-- テストのデータは管理 API で作り、品番・名称に実行ごとの印（`E2E-<印>-…`）を付ける。消さないので、ローカルの DB に残る。
-- 店舗画面の API のキャッシュは、E2E では 1 秒にする（`STORE_API_REVALIDATE_SECONDS`）。
-- 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を見る。
-
-### 環境変数
-
-本番相当の環境では profile を付けずに起動し、環境に依存する値を環境変数で与える（[constitution](docs/constitution.md) 第 5 節）。
-
-| 環境変数 | 内容 |
-|----------|------|
-| `SPRING_DATASOURCE_URL`、`SPRING_DATASOURCE_USERNAME`、`SPRING_DATASOURCE_PASSWORD` | DB の接続先 |
-| `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | トレースの送信先（既定 `http://localhost:9411/api/v2/spans`） |
-| `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合（既定 0.1） |
-| `ECSITE_SECURITY_ADMIN_ISSUER_URI`、`ECSITE_SECURITY_ADMIN_AUDIENCE` | 管理 API が受け付ける token の issuer（運営者の realm）と audience（必須。[plan 003](docs/specs/003-auth/plan.md) 第 3.1 節） |
-| `ECSITE_SECURITY_STORE_ISSUER_URI`、`ECSITE_SECURITY_STORE_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience（必須） |
-| `ECSITE_MEDIA_STORAGE_INCOMING_BUCKET`、`ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET` | 画像の受付（非公開）・配信（公開）のバケット（[plan 001](docs/specs/001-catalog-and-inventory/plan.md) 第 7 節） |
-| `ECSITE_MEDIA_STORAGE_REGION`、`ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL` | バケットのリージョン、画像の配信の基準 URL（CDN） |
-| `ECSITE_MEDIA_STORAGE_ENDPOINT`、`ECSITE_MEDIA_STORAGE_PATH_STYLE_ACCESS` | S3 互換のストレージを使うときだけ。AWS では設定しない（資格情報は IAM ロール） |
-| `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | 画像のアップロードの署名付き URL の有効期間（既定 5m） |
-| `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（必須。標準税率の税区分。[plan 002](docs/specs/002-cart-and-order/plan.md) 第 4 節） |
-| `ECSITE_ORDER_SHIPPING_FEE`、`ECSITE_ORDER_RESERVATION_TTL` | 送料（税込、円。既定 1000）、引当の期限（既定 15m） |
-| `ECSITE_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（必須。キャンセルの申請が却下された注文に示す。[plan 002](docs/specs/002-cart-and-order/plan.md) 第 4 節） |
-| `ECSITE_MEDIA_CONVERTER_BASE_URL`、`ECSITE_MEDIA_CONVERTER_KEY`、`ECSITE_MEDIA_CONVERTER_SALT` | 画像の変換（imgproxy）の URL と、URL の署名の鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値。plan 001 第 7.5 節） |
-| `ECSITE_MEDIA_CONVERTER_QUALITY`、`ECSITE_MEDIA_CONVERTER_TIMEOUT` | WebP の品質（既定 82）、変換を待つ時間の上限（既定 30s） |
-
-- マイグレーションは起動時には適用しない。デプロイごとに 1 回だけ実行する（constitution 5-10）。
-- ログは標準出力に JSON（Elastic Common Schema）で出る。
-- **公開ネットワークへのデプロイは、IdP の本番の構成・secret の管理・HTTPS などの前提を決めてから行う**（constitution 10、16）。
+| 文書 | 内容 |
+|------|------|
+| [setup.md](docs/dev/setup.md) | compose・バックエンド・管理画面・店舗画面の起動、ローカルと CI で使うアカウント |
+| [testing.md](docs/dev/testing.md) | 単体・統合テスト、フロントの確認、E2E の流し方 |
+| [environment.md](docs/dev/environment.md) | 環境変数 |

@@ -81,5 +81,5 @@ TDD の循環で進める：レッド（失敗するテストを書く）→ グ
 
 - マシンに固有の環境（JDK の場所、PATH、OS の癖など）と、利用者個人の作業の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば、始めに読んで従う。Git に入れない。
 - JDK 21 を使う。
-- 起動・テストの手順は README の「起動とテスト」。統合テストと jOOQ のコード生成には Docker が必要。
+- 起動・テストの手順は [docs/dev/](docs/dev)（README の「起動とテスト」から引ける）。統合テストと jOOQ のコード生成には Docker が必要。
 - エージェントが起動・テスト・DB の確認をする手順は skill `local-dev`（`.claude/skills/local-dev`）にまとめてある。調べ直す前にそれを使う。

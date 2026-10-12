@@ -13,10 +13,10 @@
 
 | 対象 | 規則 |
 |------|------|
-| バックエンド | [層とパッケージ（レベル A）](backend.md#12-レベル-a-の層)、[レベル B の層](backend.md#13-レベル-b-の層) |
+| バックエンド | [腐敗防止層の口と実装の分け方](backend.md#13-他のモジュールは腐敗防止層で包む)、[パッケージの大きさの目安と例外の表](backend.md#14-パッケージの大きさ)、[共通の型の置き場所と基準](backend.md#15-共通の型) |
 | バックエンド | [契約にない endpoint を足さない](backend.md#21-生成した-interface-を実装する)、[応答への変換は手で書く](backend.md#22-応答への変換は手で書く) |
-| バックエンド | [形の検証と業務の規則の置き場所](backend.md#31-形の検証は-presentation業務の規則は-domain)、[エラーは XxxErrorCode と BusinessException](backend.md#32-エラーは-xxxerrorcode-と-businessexception) |
-| バックエンド | [トランザクションの置き場所](backend.md#41-トランザクションは-applicationレベル-b-は-service)、[現在時刻は Clock から](backend.md#42-現在時刻は-clock-から) |
+| バックエンド | [形の検証と業務の規則の置き場所、文字の判定の重複](backend.md#31-形の検証は-presentation業務の規則は-domain)、[エラーの定義と、文に数字を書かず差し込む](backend.md#32-エラーは-xxxerrorcode-と-businessexception) |
+| バックエンド | [infrastructure の @Transactional の理由](backend.md#41-トランザクションは-application)、[現在時刻は Clock から](backend.md#42-現在時刻は-clock-から)、[設定の値の型の置き場所と接頭辞](backend.md#61-設定の値の型) |
 | バックエンド | [Lombok は main だけ](backend.md#51-lombok-は-main-だけ)、[名前の形](backend.md#52-名前の形) |
 | フロント | [画面に依存しない処理は lib/ の関数](frontend.md#11-画面に依存しない処理は-lib-の関数にする)、[機能ごとに features/](frontend.md#12-機能ごとに-features機能) |
 | フロント | [エラーの文は API の message](frontend.md#22-エラーの文は-api-の-message-を出す) |

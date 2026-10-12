@@ -12,11 +12,20 @@ import { PREFECTURES } from '@/features/checkout/prefectures'
 import { formatYen } from '@/lib/orderDisplay'
 
 /**
- * メールアドレスとお届け先の入力と、注文（AC-85、86、89、91）。<br />
+ * お届け先の入力と、注文（AC-85、86、89、91）。連絡先のメールアドレスは会員のものを示すだけで、入力しない（AC-127）。<br />
  * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
  * フォームの action ではなく onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。
  */
-export function OrderForm({ checkoutId, expectedTotal }: { checkoutId: string; expectedTotal: number }) {
+export function OrderForm({
+  checkoutId,
+  expectedTotal,
+  email,
+}: {
+  checkoutId: string
+  expectedTotal: number
+  /** 会員のメールアドレス（注文の連絡先） */
+  email: string
+}) {
   const [result, formAction, pending] = useActionState(placeOrder, null)
   const errors = placeOrderErrors(result)
 
@@ -32,9 +41,11 @@ export function OrderForm({ checkoutId, expectedTotal }: { checkoutId: string; e
     >
       <input name="checkoutId" type="hidden" value={checkoutId} />
       <input name="expectedTotal" type="hidden" value={expectedTotal} />
-      <Field error={errors.fields.email} label="メールアドレス" name="email">
-        <Input autoComplete="email" id="email" maxLength={254} name="email" type="email" />
-      </Field>
+      <div className="space-y-1.5 text-sm">
+        <p className="font-medium">メールアドレス</p>
+        <p>{email}</p>
+        <p className="text-muted-foreground text-xs">ご注文の連絡は、会員のメールアドレスにお送りします。</p>
+      </div>
       <Field error={errors.fields.name} label="氏名" name="name">
         <Input autoComplete="name" id="name" maxLength={50} name="name" />
       </Field>

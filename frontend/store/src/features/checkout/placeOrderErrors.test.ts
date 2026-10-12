@@ -7,11 +7,15 @@ describe('注文のエラーの出し方（店舗画面の構成 第 6 節）', 
       ok: false,
       message: '入力内容に誤りがあります。',
       errorCode: 'VALIDATION_ERROR',
-      fieldErrors: { email: 'メールアドレスの形', 'shippingAddress.postalCode': '郵便番号の形', other: '対応なし' },
+      fieldErrors: {
+        'shippingAddress.name': '氏名の長さ',
+        'shippingAddress.postalCode': '郵便番号の形',
+        other: '対応なし',
+      },
     })
 
     expect(errors.fields).toEqual({
-      email: 'メールアドレスの形が正しくありません。',
+      name: '氏名を 50 文字以内で入力してください。',
       postalCode: '郵便番号は数字 7 桁で入力してください。',
     })
     expect(errors.message).toBe('入力内容に誤りがあります。')
@@ -45,6 +49,15 @@ describe('注文のエラーの出し方（店舗画面の構成 第 6 節）', 
       message: '総額が変わりました',
       backToCart: false,
     })
+  })
+
+  test('AC-127 メールアドレスは入力しないので、欄に対応させない（確認していないメールアドレスのエラーはフォームの下に出す）', () => {
+    expect(
+      placeOrderErrors({ ok: false, message: 'メールアドレスを確認してください', errorCode: 'EMAIL_NOT_VERIFIED' }),
+    ).toEqual({ fields: {}, message: 'メールアドレスを確認してください', backToCart: false })
+    expect(
+      placeOrderErrors({ ok: false, message: '入力内容に誤りがあります。', fieldErrors: { email: '形' } }).fields,
+    ).toEqual({})
   })
 
   test('結果がない・成功なら、何も出さない', () => {

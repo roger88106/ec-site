@@ -1,7 +1,7 @@
 import type { ActionResult } from '@/lib/actionResult'
 
-/** 注文のフォームの入力欄 */
-export type OrderField = 'email' | 'name' | 'postalCode' | 'prefecture' | 'address' | 'phone'
+/** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない。AC-127） */
+export type OrderField = 'name' | 'postalCode' | 'prefecture' | 'address' | 'phone'
 
 /** 注文のフォームに出すエラー。入力欄ごとのメッセージ、フォームの下のメッセージ、カートへのリンクを添えるか */
 export type PlaceOrderErrors = {
@@ -12,7 +12,6 @@ export type PlaceOrderErrors = {
 
 /** 入力検証エラーの API の項目名 → 入力欄 */
 const FIELD_BY_PATH: Record<string, OrderField> = {
-  email: 'email',
   'shippingAddress.name': 'name',
   'shippingAddress.postalCode': 'postalCode',
   'shippingAddress.prefecture': 'prefecture',
@@ -25,7 +24,6 @@ const FIELD_BY_PATH: Record<string, OrderField> = {
  * API が返すメッセージは検証の部品の既定の文（正規表現など）なので、業務の検証エラーと同じ文に揃える。
  */
 const FIELD_MESSAGES: Record<OrderField, string> = {
-  email: 'メールアドレスの形が正しくありません。',
   name: '氏名を 50 文字以内で入力してください。',
   postalCode: '郵便番号は数字 7 桁で入力してください。',
   prefecture: '都道府県を選んでください。',
@@ -35,7 +33,6 @@ const FIELD_MESSAGES: Record<OrderField, string> = {
 
 /** 業務の検証エラーのエラーコード → 入力欄（AC-86） */
 const FIELD_BY_ERROR_CODE: Record<string, OrderField> = {
-  INVALID_EMAIL: 'email',
   INVALID_RECIPIENT_NAME: 'name',
   INVALID_POSTAL_CODE: 'postalCode',
   INVALID_PREFECTURE: 'prefecture',

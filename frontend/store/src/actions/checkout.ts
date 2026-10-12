@@ -11,7 +11,8 @@ const TOTAL_AMOUNT_CHANGED = 'TOTAL_AMOUNT_CHANGED'
 
 /**
  * 注文する（AC-85〜91）。成立したら、注文の画面へ移る。<br />
- * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、email、name、postalCode、prefecture、address、phone。
+ * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、name、postalCode、prefecture、address、phone。
+ * 連絡先のメールアドレスは、API が会員の token から取る（AC-127）。
  * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す（AC-89）。
  */
 export async function placeOrder(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -22,7 +23,6 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
     const { data, error, response } = await api.POST('/checkouts/{checkoutId}/order', {
       params: { path: { checkoutId } },
       body: {
-        email: text(formData, 'email'),
         shippingAddress: {
           name: text(formData, 'name'),
           postalCode: text(formData, 'postalCode'),

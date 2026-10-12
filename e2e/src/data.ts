@@ -46,30 +46,18 @@ function unwrap<T>(result: { data?: T; error?: unknown; response: Response }): T
 export type TaxCategoryRef = { id: string; name: string }
 
 /**
- * 現時点の率が ratePercent の税区分を返す。local profile の seed の「標準」（10%）「軽減」（8%）などを使う。<br />
- * なければ作り、バックエンドの税率のキャッシュ（有効期間 30 秒。docs/modules/catalog.md）が切れるまで待つ。
- * 作ったばかりの税区分の商品は、キャッシュが切れるまで率がなく、店舗画面に出ないため。
+ * 現時点の率が ratePercent の税区分を返す。E2E の DB の seed（db/seed/base）の「標準」（10%）「軽減」（8%）を使う。<br />
+ * 作らずに、なければ失敗する。作ったばかりの税区分は、バックエンドの税率のキャッシュ（有効期間 30 秒）が切れるまで
+ * 率がなく、時間で待つことになるため。
  */
 export async function taxCategoryWithRate(ratePercent: number): Promise<TaxCategoryRef> {
   const { items } = unwrap(await api.GET('/tax-categories'))
   const found = items.find((item) => item.currentRatePercent === ratePercent)
-  if (found) {
-    return { id: found.id, name: found.name }
+  if (!found) {
+    throw new Error(`現時点の率が ${ratePercent}% の税区分がない（E2E の DB に db/seed/base が入っているか確かめる）`)
   }
-  const name = `E2E ${ratePercent}% ${RUN_ID}`
-  const { id } = unwrap(await api.POST('/tax-categories', { body: { name } }))
-  unwrap(
-    await api.PUT('/tax-categories/{taxCategoryId}/rates', {
-      params: { path: { taxCategoryId: id } },
-      body: { version: 0, rates: [{ ratePercent }] },
-    }),
-  )
-  await new Promise((resolve) => setTimeout(resolve, TAX_RATE_CACHE_MILLIS))
-  return { id, name }
+  return { id: found.id, name: found.name }
 }
-
-/** バックエンドの税率のキャッシュの有効期間（30 秒）に、余裕を足したもの */
-const TAX_RATE_CACHE_MILLIS = 32_000
 
 /** カテゴリの名称に付ける通し番号。同じ実行の中で名称が重ならないようにする */
 let categorySequence = 0

@@ -1,9 +1,9 @@
-package com.ecsite.module.inventory.infrastructure;
+package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.inventory.application.StockQueryRepository;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
+import com.ecsite.module.inventory.application.port.StockQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;

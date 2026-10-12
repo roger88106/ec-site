@@ -1,7 +1,7 @@
 package com.ecsite.module.order.domain.quote;
 
 import com.ecsite.common.model.Money;
-import com.ecsite.module.order.domain.port.TaxDirectory;
+import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

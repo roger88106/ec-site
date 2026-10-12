@@ -17,9 +17,9 @@ import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.common.model.Money;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.order.application.CheckoutView;
-import com.ecsite.module.order.application.OrderQueryRepository.OrderSummaryView;
-import com.ecsite.module.order.application.PlaceOrderCommand;
+import com.ecsite.module.order.application.model.CheckoutView;
+import com.ecsite.module.order.application.model.PlaceOrderCommand;
+import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.springframework.stereotype.Component;
 

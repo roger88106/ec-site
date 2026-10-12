@@ -1,12 +1,12 @@
-package com.ecsite.module.inventory.infrastructure;
+package com.ecsite.module.inventory.infrastructure.persistence;
 
-import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
+import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.inventory.application.StockQueryRepository;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
+import com.ecsite.module.inventory.application.port.StockQueryRepository;
 import com.ecsite.module.inventory.domain.stock.InventoryErrorCode;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;

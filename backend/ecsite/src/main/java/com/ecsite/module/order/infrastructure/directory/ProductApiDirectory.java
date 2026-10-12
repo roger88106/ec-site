@@ -1,8 +1,8 @@
-package com.ecsite.module.order.infrastructure;
+package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.module.catalog.api.OrderCatalogApi;
 import com.ecsite.module.catalog.api.OrderableVariant;
-import com.ecsite.module.order.domain.port.ProductDirectory;
+import com.ecsite.module.order.application.port.ProductDirectory;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.VariantInfo;
 import lombok.RequiredArgsConstructor;

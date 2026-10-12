@@ -3,6 +3,7 @@ package com.ecsite.module.tax.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
+import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

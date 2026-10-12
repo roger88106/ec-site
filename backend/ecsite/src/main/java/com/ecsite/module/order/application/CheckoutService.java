@@ -2,12 +2,13 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.order.application.model.CheckoutView;
+import com.ecsite.module.order.application.port.CartDirectory;
+import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.OrderErrorCode;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
-import com.ecsite.module.order.domain.port.CartDirectory;
-import com.ecsite.module.order.domain.port.StockDirectory;
 import com.ecsite.module.order.domain.quote.Quote;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

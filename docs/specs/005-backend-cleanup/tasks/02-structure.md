@@ -20,7 +20,7 @@
 - [x] **T5206** member を標準の構成に。
 - [x] **T5207** storefront を標準の構成に（`catalogdir`・`orderdir`・`stockdir` を `application/port/` と `infrastructure/directory/` に）。
 - [x] **T5208** catalog：`infrastructure/` を `persistence/`・`directory/`・`cache/` に、application の参照の Repository の口を `application/port/` に。
-- [ ] **T5209** order、tax、inventory：application の口を `application/port/` に、order の `domain/port/` の Directory を使う層の port に。
+- [x] **T5209** order、tax、inventory：application の口を `application/port/` に、order の `domain/port/` の Directory を使う層の port に。
 - [ ] **T5211** レベル A の domain の Factory（`TaxCategoryFactory`、`CategoryFactory`、`ProductFactory`）から Spring の注釈（`@Component`）を外す。T5203 で見つかった（domain は何にも依存しない。constitution 4.2）。Repository が Factory を Spring の部品として受け取るのをやめ、Factory を状態を持たないクラスとして直接使う。
 - [ ] **T5210** 各モジュールの設計書と `package-info.java` の説明を新しい構成に合わせる。T5203 が通る（DC-27〜30）。
 

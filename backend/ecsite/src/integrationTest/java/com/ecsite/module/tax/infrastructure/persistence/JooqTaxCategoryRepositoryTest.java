@@ -1,4 +1,4 @@
-package com.ecsite.module.tax.infrastructure;
+package com.ecsite.module.tax.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;

@@ -1,4 +1,4 @@
-package com.ecsite.module.inventory.infrastructure;
+package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;

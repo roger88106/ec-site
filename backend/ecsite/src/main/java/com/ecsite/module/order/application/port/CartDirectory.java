@@ -1,4 +1,4 @@
-package com.ecsite.module.order.domain.port;
+package com.ecsite.module.order.application.port;
 
 import java.util.List;
 import java.util.Optional;

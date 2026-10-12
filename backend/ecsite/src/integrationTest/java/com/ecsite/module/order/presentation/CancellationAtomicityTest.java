@@ -1,16 +1,16 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.domain.port.StockDirectory;
+import com.ecsite.module.order.application.port.StockDirectory;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;

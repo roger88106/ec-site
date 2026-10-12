@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;

@@ -2,14 +2,14 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.Money;
-import com.ecsite.module.order.domain.port.CartDirectory;
-import com.ecsite.module.order.domain.port.ProductDirectory;
-import com.ecsite.module.order.domain.port.StockDirectory;
-import com.ecsite.module.order.domain.port.TaxDirectory;
+import com.ecsite.module.order.application.port.CartDirectory;
+import com.ecsite.module.order.application.port.ProductDirectory;
+import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.Shipping;
 import com.ecsite.module.order.domain.quote.VariantInfo;
+import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

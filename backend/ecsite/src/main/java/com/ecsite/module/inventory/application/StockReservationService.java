@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.application;
 
+import com.ecsite.module.inventory.application.port.StockQueryRepository;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;

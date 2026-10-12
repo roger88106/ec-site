@@ -6,6 +6,7 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.model.view.StockSummaryView;
+import com.ecsite.module.inventory.application.port.StockQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

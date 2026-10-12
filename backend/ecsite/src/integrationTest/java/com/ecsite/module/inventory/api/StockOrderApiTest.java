@@ -1,12 +1,12 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.inventory.application.StockQueryRepository;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
+import com.ecsite.module.inventory.application.port.StockQueryRepository;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;

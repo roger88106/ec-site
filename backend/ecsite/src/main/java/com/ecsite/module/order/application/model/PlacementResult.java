@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application;
+package com.ecsite.module.order.application.model;
 
 import java.util.UUID;
 

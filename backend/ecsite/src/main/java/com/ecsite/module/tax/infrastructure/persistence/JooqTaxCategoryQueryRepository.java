@@ -1,10 +1,10 @@
-package com.ecsite.module.tax.infrastructure;
+package com.ecsite.module.tax.infrastructure.persistence;
 
 import com.ecsite.jooq.tax.tables.records.TaxCategoryRecord;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
-import com.ecsite.module.tax.application.TaxCategoryQueryRepository;
-import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView.TaxRateView;
+import com.ecsite.module.tax.application.model.view.TaxCategoryView;
+import com.ecsite.module.tax.application.port.TaxCategoryQueryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;

@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application;
+package com.ecsite.module.order.application.port;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
@@ -38,7 +38,7 @@ public interface OrderQueryRepository {
          * @param memberId 会員 ID
          * @return 会員の注文だけの条件
          */
-        static Filter ofMember(UUID memberId) {
+        public static Filter ofMember(UUID memberId) {
             return new Filter(memberId, null, null, null, null);
         }
     }

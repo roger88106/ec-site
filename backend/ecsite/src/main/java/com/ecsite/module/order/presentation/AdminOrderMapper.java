@@ -12,7 +12,7 @@ import com.ecsite.api.admin.model.OrderSummaryPage;
 import com.ecsite.api.admin.model.OrderTaxAmount;
 import com.ecsite.api.admin.model.ShippingAddress;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.order.application.OrderQueryRepository.OrderSummaryView;
+import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.quote.Amounts;
 import org.springframework.stereotype.Component;

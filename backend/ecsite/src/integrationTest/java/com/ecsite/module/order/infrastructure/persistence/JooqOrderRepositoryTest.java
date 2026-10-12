@@ -1,4 +1,4 @@
-package com.ecsite.module.order.infrastructure;
+package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.Money;

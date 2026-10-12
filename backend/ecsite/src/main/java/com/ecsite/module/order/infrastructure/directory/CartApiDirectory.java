@@ -1,7 +1,7 @@
-package com.ecsite.module.order.infrastructure;
+package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.module.cart.api.CartContentsApi;
-import com.ecsite.module.order.domain.port.CartDirectory;
+import com.ecsite.module.order.application.port.CartDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

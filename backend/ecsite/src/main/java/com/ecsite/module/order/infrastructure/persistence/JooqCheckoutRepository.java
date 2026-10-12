@@ -1,4 +1,4 @@
-package com.ecsite.module.order.infrastructure;
+package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.jooq.ordering.tables.records.CheckoutRecord;
 import com.ecsite.module.order.domain.checkout.Checkout;

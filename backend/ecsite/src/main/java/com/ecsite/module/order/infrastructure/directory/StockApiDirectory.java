@@ -1,7 +1,7 @@
-package com.ecsite.module.order.infrastructure;
+package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.module.order.domain.port.StockDirectory;
+import com.ecsite.module.order.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

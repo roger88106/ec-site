@@ -1,8 +1,8 @@
-package com.ecsite.module.order.infrastructure;
+package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.model.Money;
-import com.ecsite.module.order.domain.port.TaxDirectory;
 import com.ecsite.module.order.domain.quote.TaxAmount;
+import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import com.ecsite.module.tax.api.TaxRateApi;
 import com.ecsite.module.tax.api.TaxableAmount;
 import lombok.RequiredArgsConstructor;
@@ -19,7 +19,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-class TaxRateApiDirectory implements TaxDirectory {
+class TaxApiDirectory implements TaxDirectory {
 
     /**
      * 税モジュールの API

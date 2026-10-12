@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application;
+package com.ecsite.module.order.application.model;
 
 import com.ecsite.module.order.domain.quote.Quote;
 import jakarta.annotation.Nullable;

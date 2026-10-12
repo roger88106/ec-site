@@ -1,4 +1,4 @@
-package com.ecsite.module.inventory.application;
+package com.ecsite.module.inventory.application.port;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;

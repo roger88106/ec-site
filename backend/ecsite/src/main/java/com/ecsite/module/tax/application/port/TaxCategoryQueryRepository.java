@@ -1,4 +1,4 @@
-package com.ecsite.module.tax.application;
+package com.ecsite.module.tax.application.port;
 
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 

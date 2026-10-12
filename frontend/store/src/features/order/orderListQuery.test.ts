@@ -1,0 +1,21 @@
+import { describe, expect, test } from 'vitest'
+import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
+
+describe('注文の一覧のページ（AC-129）', () => {
+  test('クエリの page を読む', () => {
+    expect(parseOrderListPage({ page: '3' })).toBe(3)
+    expect(parseOrderListPage({ page: ['2', '5'] })).toBe(2)
+  })
+
+  test('ない・形の違う値・1 より小さい値なら 1 ページ目にする', () => {
+    expect(parseOrderListPage({})).toBe(1)
+    expect(parseOrderListPage({ page: 'abc' })).toBe(1)
+    expect(parseOrderListPage({ page: '0' })).toBe(1)
+    expect(parseOrderListPage({ page: '1.5' })).toBe(1)
+  })
+
+  test('ページの URL。1 ページ目はクエリを付けない', () => {
+    expect(orderListHref(1)).toBe('/orders')
+    expect(orderListHref(2)).toBe('/orders?page=2')
+  })
+})

@@ -1,7 +1,9 @@
 import type { Metadata } from 'next'
+import Link from 'next/link'
 import { notFound } from 'next/navigation'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
+import { currentMember, redirectToLogin } from '@/auth'
 import { AmountsSummary } from '@/components/AmountsSummary'
 import { PriceText } from '@/components/PriceText'
 import { Badge } from '@/components/ui/badge'
@@ -12,9 +14,15 @@ import { isUuid } from '@/lib/uuid'
 /** ブラウザのタブの題名 */
 export const metadata: Metadata = { title: 'ご注文の内容' }
 
-/** 注文（T2506。AC-93〜96）。注文の直後の表示と、URL を知っている人の後からの照会を兼ねる */
+/**
+ * 注文（T2506、T3408。AC-93〜96、130、131）。注文の直後の表示と、注文の一覧からの照会を兼ねる。<br />
+ * ログインを求め、注文した会員のものでなければ「見つかりません」にする（AC-131）。
+ */
 export default async function OrderPage({ params }: PageProps<'/orders/[orderId]'>) {
   const { orderId } = await params
+  if ((await currentMember()) === null) {
+    return redirectToLogin()
+  }
   if (!isUuid(orderId)) {
     notFound()
   }
@@ -32,7 +40,11 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
       <header className="space-y-2">
         <h1 className="font-heading font-semibold text-2xl">ご注文の内容</h1>
         <p className="text-muted-foreground text-sm">
-          この画面の URL を控えておくと、後からご注文の内容を確かめたり、キャンセルを申請したりできます。
+          ご注文の内容とキャンセルの申請は、
+          <Link className="underline" href="/orders">
+            ご注文履歴
+          </Link>
+          からいつでも確かめられます。
         </p>
       </header>
 

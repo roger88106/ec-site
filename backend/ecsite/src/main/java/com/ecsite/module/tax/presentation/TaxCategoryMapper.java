@@ -5,14 +5,12 @@ import com.ecsite.api.admin.model.ReplaceTaxRatesRequest;
 import com.ecsite.api.admin.model.TaxCategory;
 import com.ecsite.api.admin.model.TaxRate;
 import com.ecsite.api.admin.model.TaxRateDraft;
+import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.tax.application.model.command.CreateTaxCategoryCommand;
 import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.UUID;
 
 /**
@@ -69,8 +67,8 @@ class TaxCategoryMapper {
         return new ReplaceTaxRatesCommand.Rate(
                 draft.getId().orElse(null),
                 draft.getRatePercent(),
-                toInstant(draft.getEffectiveFrom().orElse(null)),
-                toInstant(draft.getEffectiveTo().orElse(null)));
+                ApiDateTimes.toInstant(draft.getEffectiveFrom().orElse(null)),
+                ApiDateTimes.toInstant(draft.getEffectiveTo().orElse(null)));
     }
 
     /**
@@ -78,21 +76,7 @@ class TaxCategoryMapper {
      */
     private static TaxRate toTaxRate(TaxCategoryView.TaxRateView view) {
         return new TaxRate(view.id(), view.ratePercent())
-                .effectiveFrom(toOffsetDateTime(view.effectiveFrom()))
-                .effectiveTo(toOffsetDateTime(view.effectiveTo()));
-    }
-
-    /**
-     * リクエストの日時を時刻に変換する。null（期間の端がない）は null のまま。
-     */
-    private static Instant toInstant(OffsetDateTime dateTime) {
-        return dateTime == null ? null : dateTime.toInstant();
-    }
-
-    /**
-     * 時刻をレスポンスの日時（UTC）に変換する。null は null のまま。
-     */
-    private static OffsetDateTime toOffsetDateTime(Instant instant) {
-        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
+                .effectiveFrom(ApiDateTimes.toOffsetDateTime(view.effectiveFrom()))
+                .effectiveTo(ApiDateTimes.toOffsetDateTime(view.effectiveTo()));
     }
 }

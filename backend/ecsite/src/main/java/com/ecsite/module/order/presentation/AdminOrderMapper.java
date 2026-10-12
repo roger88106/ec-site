@@ -12,14 +12,11 @@ import com.ecsite.api.admin.model.OrderSummaryPage;
 import com.ecsite.api.admin.model.OrderTaxAmount;
 import com.ecsite.api.admin.model.ShippingAddress;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.quote.Amounts;
 import org.springframework.stereotype.Component;
-
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 
 /**
  * 管理 API（注文）のレスポンスと、アプリケーション層のモデルの変換
@@ -52,7 +49,7 @@ class AdminOrderMapper {
         var detail = new OrderDetail()
                 .id(order.id())
                 .orderNumber(order.orderNumber().value())
-                .orderedAt(toOffset(order.orderedAt()))
+                .orderedAt(ApiDateTimes.toOffsetDateTime(order.orderedAt()))
                 .status(toStatus(order.status()))
                 .lines(order.lines().stream().map(AdminOrderMapper::toLine).toList())
                 .amounts(toAmounts(order.amounts()))
@@ -76,7 +73,7 @@ class AdminOrderMapper {
         return new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())
-                .orderedAt(toOffset(view.orderedAt()))
+                .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .customerName(view.customerName())
                 .total(view.total())
                 .status(toStatus(view.status()));
@@ -138,10 +135,10 @@ class AdminOrderMapper {
     private static CancellationRequest toCancellationRequest(
             com.ecsite.module.order.domain.order.CancellationRequest request) {
         return new CancellationRequest()
-                .requestedAt(toOffset(request.requestedAt()))
+                .requestedAt(ApiDateTimes.toOffsetDateTime(request.requestedAt()))
                 .reason(request.reason())
                 .result(CancellationRequest.ResultEnum.fromValue(request.result().name()))
-                .decidedAt(toOffset(request.decidedAt()))
+                .decidedAt(ApiDateTimes.toOffsetDateTime(request.decidedAt()))
                 .decidedBy(request.decidedBy() == null ? null : request.decidedBy().name());
     }
 
@@ -150,7 +147,7 @@ class AdminOrderMapper {
      */
     private static Cancellation toCancellation(com.ecsite.module.order.domain.order.Cancellation cancellation) {
         return new Cancellation()
-                .cancelledAt(toOffset(cancellation.cancelledAt()))
+                .cancelledAt(ApiDateTimes.toOffsetDateTime(cancellation.cancelledAt()))
                 .byOperator(cancellation.byOperator())
                 .reason(cancellation.reason())
                 .cancelledBy(cancellation.cancelledBy() == null ? null : cancellation.cancelledBy().name());
@@ -170,12 +167,5 @@ class AdminOrderMapper {
      */
     private static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
         return OrderStatus.fromValue(status.name());
-    }
-
-    /**
-     * 日時を、オフセット付きの日時（UTC）にする。null は null のまま。
-     */
-    private static OffsetDateTime toOffset(Instant instant) {
-        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 }

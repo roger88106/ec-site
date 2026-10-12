@@ -10,22 +10,20 @@ import com.ecsite.api.store.model.OrderStatus;
 import com.ecsite.api.store.model.OrderSummary;
 import com.ecsite.api.store.model.OrderSummaryPage;
 import com.ecsite.api.store.model.PlaceOrderRequest;
-import com.ecsite.api.store.model.Price;
 import com.ecsite.api.store.model.QuoteItem;
 import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.common.presentation.ApiDateTimes;
+import com.ecsite.common.presentation.StorePrices;
 import com.ecsite.module.order.application.model.CheckoutView;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -46,7 +44,7 @@ class StoreOrderMapper {
                 .id(view.id())
                 .items(toQuoteItems(view.quote()))
                 .amounts(toAmounts(view.quote().amounts()))
-                .expiresAt(toOffset(view.expiresAt()))
+                .expiresAt(ApiDateTimes.toOffsetDateTime(view.expiresAt()))
                 .orderId(view.orderId());
     }
 
@@ -86,7 +84,7 @@ class StoreOrderMapper {
         var response = new Order()
                 .id(order.id())
                 .orderNumber(order.orderNumber().value())
-                .orderedAt(toOffset(order.orderedAt()))
+                .orderedAt(ApiDateTimes.toOffsetDateTime(order.orderedAt()))
                 .status(OrderStatus.fromValue(order.status().name()))
                 .lines(order.lines().stream().map(StoreOrderMapper::toLine).toList())
                 .amounts(toAmounts(order.amounts()))
@@ -135,7 +133,7 @@ class StoreOrderMapper {
                 .productName(variant.productName())
                 .axisValues(variant.axisValues().stream().map(StoreOrderMapper::toAxisValue).toList())
                 .imageUrl(variant.imageUrl())
-                .unitPrice(toPrice(item.unitPriceInclTax(), variant.priceExclTax()))
+                .unitPrice(StorePrices.of(item.unitPriceInclTax(), variant.priceExclTax()))
                 .quantity(item.quantity())
                 .subtotal(item.subtotal().yen())
                 .purchasable(item.purchasable())
@@ -153,7 +151,7 @@ class StoreOrderMapper {
                 .variantCode(line.variantCode())
                 .productName(line.productName())
                 .axisValues(line.axisValues().stream().map(StoreOrderMapper::toAxisValue).toList())
-                .unitPrice(toPrice(line.unitPriceInclTax(), line.unitPriceExclTax()))
+                .unitPrice(StorePrices.of(line.unitPriceInclTax(), line.unitPriceExclTax()))
                 .ratePercent(line.ratePercent())
                 .quantity(line.quantity())
                 .subtotal(line.subtotal().yen());
@@ -187,7 +185,7 @@ class StoreOrderMapper {
     private static CancellationRequest toCancellationRequest(
             com.ecsite.module.order.domain.order.CancellationRequest request) {
         return new CancellationRequest()
-                .requestedAt(toOffset(request.requestedAt()))
+                .requestedAt(ApiDateTimes.toOffsetDateTime(request.requestedAt()))
                 .reason(request.reason())
                 .result(CancellationRequest.ResultEnum.fromValue(request.result().name()));
     }
@@ -199,15 +197,6 @@ class StoreOrderMapper {
         return new AxisValue()
                 .name(axis.name())
                 .value(axis.value());
-    }
-
-    /**
-     * 価格（税込・税抜。BR-4）。
-     */
-    private static Price toPrice(Money inclTax, Money exclTax) {
-        return new Price()
-                .inclTax(inclTax.yen())
-                .exclTax(exclTax.yen());
     }
 
     /**
@@ -228,15 +217,8 @@ class StoreOrderMapper {
                 .items(page.items().stream().map(view -> new OrderSummary()
                         .id(view.id())
                         .orderNumber(view.orderNumber())
-                        .orderedAt(toOffset(view.orderedAt()))
+                        .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                         .totalAmount(view.total())
                         .status(OrderStatus.fromValue(view.status().name()))).toList());
-    }
-
-    /**
-     * 日時を、オフセット付きの日時（UTC）にする。
-     */
-    private static OffsetDateTime toOffset(Instant instant) {
-        return instant.atOffset(ZoneOffset.UTC);
     }
 }

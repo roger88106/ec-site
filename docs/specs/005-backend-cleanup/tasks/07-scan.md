@@ -18,8 +18,8 @@
 - [x] `member/api/MemberApi`：T5502 の後、本番のコードから使われていない（統合テスト `MemberApiTest` だけが使う）。消した。統合テストは `MemberService` を確かめる形に移した（T5502 で見つけた）。
 - [x] `common/paging/Sorting`：本番のコードから使われていない（並びの最後の ID は、各 Repository が並びの指定に直接書いている）。消し、そのテストも消した。
 - [ ] Javadoc のない項目とメソッドが 21（`ImageFormat` の形式の印 7、`MediaApiDirectory`・`JooqAssetRepository`・`S3ObjectStorage` の @Override のメソッド、`MediaService.requestImageUpload`、`ApiPathConfig.configurePathMatch`）。書く（コメントだけの commit）。
-- [ ] 日時の変換（`Instant` と API の `OffsetDateTime`）が、4 つの mapper（商品、税、管理と店舗の注文）に同じ形である。共通の部品にする。
-- [ ] 店舗の API の価格（`Price`）を作る変換が、注文と店舗の mapper に同じ形である。共通の部品にする。
+- [x] 日時の変換（`Instant` と API の `OffsetDateTime`）が、4 つの mapper（商品、税、管理と店舗の注文）に同じ形である。共通の部品（`common/presentation/ApiDateTimes`）にした。
+- [x] 店舗の API の価格（`Price`）を作る変換が、注文と店舗の mapper に同じ形である。共通の部品（`common/presentation/StorePrices`）にした。
 - [x] 税率の正規化（末尾の 0 を除く）が、税の `RatePercent` と注文の `JooqOrderRepository` にある：直さない（注文は税の domain の型を使わない。モジュールの境界を越えて型を共有しない。constitution 6）。
 - [ ] 規則の文書（第 5.2 節）は、レベル A の service の名前を `XxxCommandService`・`XxxQueryService` としている。order（`CheckoutService`、`OrderPlacementService` など）と、段階 5 で分けた catalog の service は、用途の名前を使っている。規則を、用途の名前も認める形に直す。
 - [x] `StorefrontService` に `@Transactional` がない：直さない（自分の DB を持たず、ほかのモジュールの api を組み合わせるだけ。各 api の application が取引を持つ）。

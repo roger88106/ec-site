@@ -15,8 +15,8 @@ import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.api.store.model.Variant;
 import com.ecsite.api.store.model.VariantAxis;
-import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.common.presentation.StorePrices;
 import com.ecsite.module.storefront.application.ProductDetailView;
 import com.ecsite.module.storefront.application.ProductSummaryView;
 import com.ecsite.module.storefront.application.ShopProperties;
@@ -75,7 +75,7 @@ class StorefrontMapper {
                 .id(view.id())
                 .name(view.name())
                 .description(view.description())
-                .price(toPrice(view.priceInclTax(), view.priceExclTax()))
+                .price(StorePrices.of(view.priceInclTax(), view.priceExclTax()))
                 .imageUrls(view.imageUrls())
                 .axes(view.axes().stream().map(StorefrontMapper::toVariantAxis).toList())
                 .variants(view.variants().stream().map(StorefrontMapper::toVariant).toList());
@@ -128,16 +128,9 @@ class StorefrontMapper {
         return new ProductSummary()
                 .id(view.id())
                 .name(view.name())
-                .price(toPrice(view.priceInclTax(), view.priceExclTax()))
+                .price(StorePrices.of(view.priceInclTax(), view.priceExclTax()))
                 .inStock(view.inStock())
                 .imageUrl(view.imageUrl());
-    }
-
-    /**
-     * 税込・税抜の価格のレスポンスに変換する。
-     */
-    private static Price toPrice(Money inclTax, Money exclTax) {
-        return new Price().inclTax(inclTax.yen()).exclTax(exclTax.yen());
     }
 
     /**

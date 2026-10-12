@@ -14,6 +14,7 @@ import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.api.admin.model.Variant;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.catalog.application.model.command.AddVariantCommand;
 import com.ecsite.module.catalog.application.model.command.ChangePublicationPeriodCommand;
 import com.ecsite.module.catalog.application.model.command.CreateProductCommand;
@@ -24,9 +25,6 @@ import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import org.springframework.stereotype.Component;
 
-import java.time.Instant;
-import java.time.OffsetDateTime;
-import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
 
@@ -105,8 +103,8 @@ class ProductMapper {
      */
     ChangePublicationPeriodCommand toChangePublicationPeriodCommand(UUID productId, SetPublicationPeriodRequest request) {
         return new ChangePublicationPeriodCommand(productId,
-                toInstant(request.getPublishStart().orElse(null)),
-                toInstant(request.getPublishEnd().orElse(null)),
+                ApiDateTimes.toInstant(request.getPublishStart().orElse(null)),
+                ApiDateTimes.toInstant(request.getPublishEnd().orElse(null)),
                 request.getVersion());
     }
 
@@ -131,11 +129,11 @@ class ProductMapper {
                 view.images().stream().map(image -> new ProductImage(image.id(), image.url())).toList(),
                 view.variants().stream().map(ProductMapper::toVariant).toList(),
                 view.version(),
-                toOffsetDateTime(view.createdAt()),
-                toOffsetDateTime(view.updatedAt()))
-                .firstShownAt(toOffsetDateTime(view.firstShownAt()))
-                .publishStart(toOffsetDateTime(view.publishStart()))
-                .publishEnd(toOffsetDateTime(view.publishEnd()));
+                ApiDateTimes.toOffsetDateTime(view.createdAt()),
+                ApiDateTimes.toOffsetDateTime(view.updatedAt()))
+                .firstShownAt(ApiDateTimes.toOffsetDateTime(view.firstShownAt()))
+                .publishStart(ApiDateTimes.toOffsetDateTime(view.publishStart()))
+                .publishEnd(ApiDateTimes.toOffsetDateTime(view.publishEnd()));
     }
 
     /**
@@ -159,7 +157,7 @@ class ProductMapper {
      * @return 画像のアップロードの受付のレスポンス
      */
     ImageUpload toImageUpload(ImageUploadView view) {
-        return new ImageUpload(view.uploadId(), view.uploadUrl(), view.headers(), toOffsetDateTime(view.expiresAt()));
+        return new ImageUpload(view.uploadId(), view.uploadUrl(), view.headers(), ApiDateTimes.toOffsetDateTime(view.expiresAt()));
     }
 
 // ============================== プライベートメソッド ==============================
@@ -170,19 +168,5 @@ class ProductMapper {
     private static Variant toVariant(ProductDetailView.VariantView view) {
         return new Variant(view.id(), view.variantCode(), view.axisValues(), view.salesSuspended())
                 .imageId(view.imageId());
-    }
-
-    /**
-     * 時刻をレスポンスの日時（UTC）に変換する。null は null のまま。
-     */
-    private static OffsetDateTime toOffsetDateTime(Instant instant) {
-        return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
-    }
-
-    /**
-     * リクエストの日時を時刻に変換する。null は null のまま。
-     */
-    private static Instant toInstant(OffsetDateTime dateTime) {
-        return dateTime == null ? null : dateTime.toInstant();
     }
 }

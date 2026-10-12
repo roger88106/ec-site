@@ -47,7 +47,7 @@ spec がコードに先行する。仕様の誤りに気づいたら、spec を�
 |------|------|------|
 | [001](docs/specs/001-catalog-and-inventory) | 商品カタログと在庫 | 完了。[段階 0（基盤）](docs/specs/001-catalog-and-inventory/tasks/00-foundation.md)、[段階 1（税）](docs/specs/001-catalog-and-inventory/tasks/01-tax.md)、[段階 2（カテゴリ）](docs/specs/001-catalog-and-inventory/tasks/02-category.md)、[段階 3（商品）](docs/specs/001-catalog-and-inventory/tasks/03-product.md)、[段階 4（在庫）](docs/specs/001-catalog-and-inventory/tasks/04-inventory.md)、[段階 5（B 側の商品一覧）](docs/specs/001-catalog-and-inventory/tasks/05-admin-product-list.md)、[段階 6（店舗）](docs/specs/001-catalog-and-inventory/tasks/06-storefront.md)、[段階 7（管理画面）](docs/specs/001-catalog-and-inventory/tasks/07-admin-ui.md)、[段階 8（店舗画面）](docs/specs/001-catalog-and-inventory/tasks/08-store-ui.md)、[段階 9（フロントのテスト）](docs/specs/001-catalog-and-inventory/tasks/09-frontend-tests.md) 完了（P1 はすべて完了）。[段階 10（P2）](docs/specs/001-catalog-and-inventory/tasks/10-p2.md) は、バリアントの販売停止、公開日時の予約、商品画像（US-7）、メディアモジュールへの切り出し、画像形式の受け付けと WebP 変換（US-13）が完了（P2 はすべて完了）。[段階 11（見直し）](docs/specs/001-catalog-and-inventory/tasks/11-review.md) 完了 |
 | [002](docs/specs/002-cart-and-order) | カートと注文 | 完了。[段階 1（税と在庫の土台）](docs/specs/002-cart-and-order/tasks/01-foundation.md)〜[段階 4（キャンセルと B 側の注文）](docs/specs/002-cart-and-order/tasks/04-cancellation-and-admin.md) 完了（バックエンド）。[段階 5（店舗画面）](docs/specs/002-cart-and-order/tasks/05-store-ui.md)、[段階 6（管理画面）](docs/specs/002-cart-and-order/tasks/06-admin-ui.md)、[段階 7（フロントのテスト）](docs/specs/002-cart-and-order/tasks/07-frontend-tests.md) 完了。[段階 8（見直し）](docs/specs/002-cart-and-order/tasks/08-review.md) 完了 |
-| [003](docs/specs/003-auth) | 認証 | [段階 1（IdP と開発環境）](docs/specs/003-auth/tasks/01-idp.md)、[段階 2（バックエンドの認証の土台）](docs/specs/003-auth/tasks/02-backend-auth.md)、[段階 3（会員とカート・注文）](docs/specs/003-auth/tasks/03-member-cart-order.md) 完了。[段階 4（店舗画面）](docs/specs/003-auth/tasks/04-store-ui.md) は手動確認（T3409）の会員登録の後の戻り（AC-112）を除いて完了。[段階 5（管理画面）](docs/specs/003-auth/tasks/05-admin-ui.md) 完了。E2E は、ログインを組み込む[段階 6](docs/specs/003-auth/tasks/06-e2e-ci.md) まで動かない |
+| [003](docs/specs/003-auth) | 認証 | [段階 1（IdP と開発環境）](docs/specs/003-auth/tasks/01-idp.md)、[段階 2（バックエンドの認証の土台）](docs/specs/003-auth/tasks/02-backend-auth.md)、[段階 3（会員とカート・注文）](docs/specs/003-auth/tasks/03-member-cart-order.md) 完了。[段階 4（店舗画面）](docs/specs/003-auth/tasks/04-store-ui.md) 完了。[段階 5（管理画面）](docs/specs/003-auth/tasks/05-admin-ui.md) 完了。E2E は、ログインを組み込む[段階 6](docs/specs/003-auth/tasks/06-e2e-ci.md) まで動かない |
 
 ## 起動とテスト
 
@@ -89,9 +89,11 @@ realm の設定は [keycloak/realms/](keycloak/realms) の JSON が正本で、K
 | realm | 画面 | アカウント | パスワード | 職務 |
 |-------|------|------------|------------|------|
 | `ec-store`（消費者） | 店舗 | `member@example.com` | `member-pass-1` | |
+| `ec-store`（消費者） | 店舗 | `member2@example.com` | `member2-pass-1` | （他人のデータが見えないことの確認用） |
 | `ec-admin`（運営者） | 管理画面 | `admin@example.com` | `admin-pass-1` | 管理者 |
 | `ec-admin`（運営者） | 管理画面 | `viewer@example.com` | `viewer-pass-1` | 閲覧者 |
 
+- 手動確認で使うアカウントは、ここに挙げたもの（realm の JSON にあり、誰の環境にもある）を使う。足りなければ realm の JSON に足し、この表に書く。画面から登録した会員は、その人の環境にしかない。
 - 会員登録の確認のメールと、パスワードの再設定のメールは Mailpit（http://localhost:8025）に届く。
 - すでにある realm は取り込み直さない。realm の JSON を変えたら、Keycloak の database を作り直して取り込み直す（ローカルで登録した会員も消える）。
 

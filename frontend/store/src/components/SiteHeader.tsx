@@ -1,9 +1,18 @@
 import { SearchIcon, ShoppingCartIcon } from 'lucide-react'
 import Link from 'next/link'
+import { Suspense } from 'react'
+import { logout } from '@/actions/auth'
+import { ACCOUNT_URL, currentMember } from '@/auth'
+import { LoginLinks } from '@/components/LoginLinks'
 import { Input } from '@/components/ui/input'
 
-/** 画面の上のヘッダー。サイト名、商品一覧へのリンク、キーワード検索（フォームの GET で /search へ）、カートへのリンク */
-export function SiteHeader() {
+/**
+ * 画面の上のヘッダー。サイト名、商品一覧へのリンク、キーワード検索（フォームの GET で /search へ）、カートへのリンク、
+ * ログインの状態（AC-108、113、114、119）。<br />
+ * ログインしていなければ「ログイン」「会員登録」、していれば氏名、「アカウント」（IdP のアカウントの画面）、「ログアウト」。
+ */
+export async function SiteHeader() {
+  const member = await currentMember()
   return (
     <header className="border-b">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
@@ -32,6 +41,25 @@ export function SiteHeader() {
           <ShoppingCartIcon aria-hidden className="size-4" />
           カート
         </Link>
+        <div className="flex items-center gap-4 text-sm">
+          {member === null ? (
+            <Suspense>
+              <LoginLinks />
+            </Suspense>
+          ) : (
+            <>
+              <span>{member.name} 様</span>
+              <a className="hover:underline" href={ACCOUNT_URL}>
+                アカウント
+              </a>
+              <form action={logout}>
+                <button className="cursor-pointer hover:underline" type="submit">
+                  ログアウト
+                </button>
+              </form>
+            </>
+          )}
+        </div>
       </div>
     </header>
   )

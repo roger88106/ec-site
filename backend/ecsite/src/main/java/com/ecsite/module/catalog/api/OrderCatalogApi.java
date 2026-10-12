@@ -1,11 +1,9 @@
 package com.ecsite.module.catalog.api;
 
-import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;
+import com.ecsite.module.catalog.application.OrderableVariantQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.util.Collection;
 import java.util.Map;
 import java.util.UUID;
@@ -16,18 +14,12 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-@Transactional(readOnly = true)
 public class OrderCatalogApi {
 
     /**
-     * 注文に使うバリアントの情報のクエリリポジトリ
+     * 注文に使うバリアントの情報の参照
      */
-    private final OrderableVariantQueryRepository queryRepository;
-
-    /**
-     * 時計（表示されるかの判定）
-     */
-    private final Clock clock;
+    private final OrderableVariantQueryService queryService;
 
     /**
      * 複数のバリアントについて、注文に使う情報を返す。
@@ -36,9 +28,6 @@ public class OrderCatalogApi {
      * @return バリアント ID → 情報。存在しないバリアントは含めない
      */
     public Map<UUID, OrderableVariant> findVariants(Collection<UUID> variantIds) {
-        if (variantIds.isEmpty()) {
-            return Map.of();
-        }
-        return queryRepository.findVariants(variantIds, clock.instant());
+        return queryService.findVariants(variantIds);
     }
 }

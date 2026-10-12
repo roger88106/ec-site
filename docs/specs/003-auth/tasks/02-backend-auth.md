@@ -24,9 +24,10 @@
   - 401・403 の Problem Details
 - [x] **T3206** 既存の統合テストのうち、管理 API を呼ぶものに、必要な権限の token を付ける。テストの意図は変えない。
 - [x] **T3207** [テスト] `admin.yaml` の権限と、運営者の realm の JSON の `ec-admin-api` の client role が一致し、`administrator` がすべての権限を、`viewer` が `:read` の権限すべてを含むことを確かめる契約テスト（Keycloak は起動しない）。
-- [ ] **T3208** [テスト] IdP の設定の統合テスト（Keycloak を Testcontainers で起動し、両 realm の JSON を取り込む）。token を取るための client は、テストの中で作る（realm の JSON には入れない）。
+- [x] **T3208** [テスト] IdP の設定の統合テスト（Keycloak を Testcontainers で起動し、両 realm の JSON を取り込む）。token は、テストの中で web の client のパスワードによる取得（Direct Access Grant）を有効にして取る（realm の JSON には入れない。画面と同じ client の token で確かめるため）。
   - 運営者の token で、管理 API を職務どおりに使える：管理者は更新でき、閲覧者は参照だけで、更新は 403（AC-136、139）
   - 会員の token では、管理 API は 401（AC-138）
-  - 期限切れ・署名の不正な token は 401（AC-137）
+  - 署名の不正な token は 401（AC-137）。期限切れは、検証の処理が同じなので、T3203 のテストの鍵の token で確かめる（Keycloak の token の有効期間 5 分を待たないため）
+  - 会員と運営者のアカウントが別の realm にあり、ほかの realm ではログインできない（AC-133）。access token の有効期間が 5 分（AC-140）
   - 店舗の側（運営者の token で会員向けの操作が 401）は、操作ができる段階 3 で足す（T3313）
 - [ ] **T3209** [テスト] realm の設定の契約テスト（両 realm の JSON を読む。Keycloak は起動しない）：登録済みのメールアドレスを許さない（AC-109）、パスワードの条件（AC-110）、メールアドレスの確認が必須（AC-111、112）、ログインの失敗による一時的な停止（AC-116）、SSO セッションの時間（AC-117）、パスワードを忘れたときが有効（AC-118）、運営者の realm は会員登録が無効（AC-134）、access token の有効期間（AC-140）が plan 第 2.3 節のとおりであること。会員と運営者のアカウントが別の realm にあること（AC-133）は、T3208 と段階 1 の手動確認で確かめる。

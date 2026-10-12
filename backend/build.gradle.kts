@@ -160,6 +160,10 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     testClassesDirs = sourceSets["integrationTest"].output.classesDirs
     classpath = sourceSets["integrationTest"].runtimeClasspath
     useJUnitPlatform()
+    // IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
+    systemProperty("keycloak.realms.dir", file("../keycloak/realms").absolutePath)
+    systemProperty("keycloak.theme.dir", file("../keycloak/themes/ec-site").absolutePath)
+    inputs.dir("../keycloak")
     shouldRunAfter(tasks.test)
 }
 

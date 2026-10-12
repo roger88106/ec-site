@@ -1,6 +1,6 @@
 package com.ecsite.module.order.domain.quote;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;

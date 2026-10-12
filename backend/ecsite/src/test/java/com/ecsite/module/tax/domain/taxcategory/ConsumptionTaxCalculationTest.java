@@ -1,6 +1,6 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.domain.taxcategory.TaxCalculator.ConsumptionTax;
 import com.ecsite.module.tax.domain.taxcategory.TaxCalculator.Taxable;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;

@@ -1,7 +1,7 @@
 package com.ecsite.module.order.domain.order;
 
-import com.ecsite.common.model.Money;
-import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.Money;
+import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.order.CancellationRequest.Result;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;

@@ -1,6 +1,6 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;

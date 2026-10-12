@@ -1,6 +1,6 @@
 package com.ecsite.module.media.domain;
 
-import com.ecsite.common.model.DomainEvent;
+import com.ecsite.common.model.base.DomainEvent;
 
 import java.time.Instant;
 import java.util.UUID;

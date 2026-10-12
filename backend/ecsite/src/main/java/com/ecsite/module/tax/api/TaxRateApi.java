@@ -1,6 +1,6 @@
 package com.ecsite.module.tax.api;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.application.TaxCategoryQueryService;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import com.ecsite.module.tax.domain.taxcategory.TaxCalculator;

@@ -1,6 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
-import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.Operator;
 import jakarta.annotation.Nullable;
 import org.jmolecules.ddd.annotation.ValueObject;
 

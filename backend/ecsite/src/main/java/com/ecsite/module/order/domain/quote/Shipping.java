@@ -1,6 +1,6 @@
 package com.ecsite.module.order.domain.quote;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.math.BigDecimal;

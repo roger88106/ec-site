@@ -1,6 +1,6 @@
 package com.ecsite;
 
-import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.Operator;
 import com.nimbusds.jose.JOSEException;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;

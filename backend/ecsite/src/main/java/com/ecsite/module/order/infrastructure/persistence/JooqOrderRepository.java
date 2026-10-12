@@ -1,7 +1,7 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
-import com.ecsite.common.model.Money;
-import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.Money;
+import com.ecsite.common.model.value.Operator;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
 import com.ecsite.module.order.domain.order.Cancellation;
 import com.ecsite.module.order.domain.order.CancellationRequest;

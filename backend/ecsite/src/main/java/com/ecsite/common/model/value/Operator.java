@@ -1,4 +1,4 @@
-package com.ecsite.common.model;
+package com.ecsite.common.model.value;
 
 import org.jmolecules.ddd.annotation.ValueObject;
 

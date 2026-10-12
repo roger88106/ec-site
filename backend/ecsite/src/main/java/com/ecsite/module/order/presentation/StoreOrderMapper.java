@@ -15,7 +15,7 @@ import com.ecsite.api.store.model.QuoteItem;
 import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.model.CheckoutView;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;

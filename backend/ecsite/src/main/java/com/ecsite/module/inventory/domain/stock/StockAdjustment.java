@@ -1,8 +1,8 @@
 package com.ecsite.module.inventory.domain.stock;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.Operator;
 import com.ecsite.common.model.value.BoundedText;
+import com.ecsite.common.model.value.Operator;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;

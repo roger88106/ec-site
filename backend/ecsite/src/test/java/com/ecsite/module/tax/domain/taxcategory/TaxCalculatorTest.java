@@ -1,6 +1,6 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;

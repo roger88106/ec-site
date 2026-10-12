@@ -1,6 +1,6 @@
 package com.ecsite.module.storefront.application.port;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;

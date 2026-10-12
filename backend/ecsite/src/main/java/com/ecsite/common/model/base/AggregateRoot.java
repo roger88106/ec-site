@@ -1,4 +1,4 @@
-package com.ecsite.common.model;
+package com.ecsite.common.model.base;
 
 import java.util.ArrayList;
 import java.util.List;

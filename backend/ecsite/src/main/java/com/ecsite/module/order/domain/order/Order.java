@@ -1,9 +1,9 @@
 package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.AggregateRoot;
-import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
+import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;

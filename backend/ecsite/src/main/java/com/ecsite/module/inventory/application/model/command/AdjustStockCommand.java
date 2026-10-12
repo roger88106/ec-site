@@ -1,8 +1,7 @@
 package com.ecsite.module.inventory.application.model.command;
 
+import com.ecsite.common.model.value.Operator;
 import jakarta.annotation.Nullable;
-
-import com.ecsite.common.model.Operator;
 
 import java.util.UUID;
 

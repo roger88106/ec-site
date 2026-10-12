@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.product.vo;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import org.jmolecules.ddd.annotation.ValueObject;
 

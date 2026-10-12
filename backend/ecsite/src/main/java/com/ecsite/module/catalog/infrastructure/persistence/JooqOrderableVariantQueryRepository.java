@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.api.OrderableVariant.AxisValue;
 import com.ecsite.module.catalog.api.OrderableVariant;
 import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;

@@ -1,7 +1,7 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.AggregateRoot;
+import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
 import lombok.Getter;
 import lombok.NonNull;

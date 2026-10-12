@@ -1,6 +1,6 @@
 package com.ecsite.module.tax.api;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 
 import java.math.BigDecimal;
 

@@ -1,6 +1,6 @@
 package com.ecsite.module.inventory.domain.stock;
 
-import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.Operator;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

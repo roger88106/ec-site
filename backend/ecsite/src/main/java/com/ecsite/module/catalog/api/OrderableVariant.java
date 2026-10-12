@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.api;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import jakarta.annotation.Nullable;
 
 import java.util.List;

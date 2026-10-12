@@ -1,6 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import org.jmolecules.ddd.annotation.ValueObject;
 

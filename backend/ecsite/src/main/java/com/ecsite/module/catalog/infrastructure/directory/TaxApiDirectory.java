@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.directory;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.tax.api.TaxRateApi;
 import lombok.RequiredArgsConstructor;

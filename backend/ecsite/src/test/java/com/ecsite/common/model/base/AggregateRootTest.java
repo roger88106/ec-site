@@ -1,4 +1,4 @@
-package com.ecsite.common.model;
+package com.ecsite.common.model.base;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

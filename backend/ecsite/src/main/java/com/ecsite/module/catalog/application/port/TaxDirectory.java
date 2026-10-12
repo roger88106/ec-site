@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.application.port;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 
 import java.math.BigDecimal;
 import java.time.Instant;

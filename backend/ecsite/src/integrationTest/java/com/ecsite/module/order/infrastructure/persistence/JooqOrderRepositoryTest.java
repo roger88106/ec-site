@@ -1,7 +1,7 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderNumber;
 import com.ecsite.module.order.domain.order.ShippingAddress;

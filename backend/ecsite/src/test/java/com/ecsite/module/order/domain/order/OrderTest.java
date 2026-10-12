@@ -1,6 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.Quote;

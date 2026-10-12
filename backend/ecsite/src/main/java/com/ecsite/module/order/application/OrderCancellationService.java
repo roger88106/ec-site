@@ -2,7 +2,7 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.common.model.Operator;
+import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;

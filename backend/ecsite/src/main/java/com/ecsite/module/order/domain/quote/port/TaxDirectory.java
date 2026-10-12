@@ -1,6 +1,6 @@
 package com.ecsite.module.order.domain.quote.port;
 
-import com.ecsite.common.model.Money;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 
 import java.math.BigDecimal;

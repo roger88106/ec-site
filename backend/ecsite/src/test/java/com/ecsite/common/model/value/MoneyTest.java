@@ -1,4 +1,4 @@
-package com.ecsite.common.model;
+package com.ecsite.common.model.value;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;

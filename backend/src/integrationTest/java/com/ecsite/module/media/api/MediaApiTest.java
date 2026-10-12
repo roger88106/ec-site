@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static com.ecsite.jooq.media.Tables.ASSET;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
@@ -278,6 +279,7 @@ class MediaApiTest {
 
             assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isFalse();
             assertThat(media.urls(List.of(assetId))).isEmpty();
+            assertThat(releaseRegistered(assetId)).isTrue();
             await().atMost(TIMEOUT).untilAsserted(() -> assertThat(get(url).statusCode()).isEqualTo(404));
         }
 
@@ -293,8 +295,8 @@ class MediaApiTest {
             });
 
             assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isTrue();
-            // 消すイベントが届いていないことを、少し待ってから確かめる
-            Thread.sleep(1_000);
+            // 取り消されたトランザクションでは、ファイルを消すイベントが登録されない（待たずに確かめられる）
+            assertThat(releaseRegistered(assetId)).isFalse();
             assertThat(get(url).statusCode()).isEqualTo(200);
         }
 
@@ -328,6 +330,17 @@ class MediaApiTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * アセット解放のイベントが、イベント発行記録に登録されたか
+     *
+     * @param assetId アセット ID
+     * @return 登録されていれば true
+     */
+    private boolean releaseRegistered(UUID assetId) {
+        return dsl.fetchExists(EVENT_PUBLICATION, EVENT_PUBLICATION.EVENT_TYPE.endsWith(".AssetReleased")
+                .and(EVENT_PUBLICATION.SERIALIZED_EVENT.contains(assetId.toString())));
+    }
 
     /**
      * テストごとに別の範囲（受付の持ち主）を作る

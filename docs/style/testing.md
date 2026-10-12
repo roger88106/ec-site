@@ -60,4 +60,4 @@
 
 - **規則**：時間で待たない（`Thread.sleep`、`waitForTimeout`）。条件で待つ（Playwright の `expect(...).toBeVisible()` などの自動の再試行、状態を直接確かめる）。
 - **理由**：遅い環境で失敗し、速い環境で時間を無駄にするため。
-- **確かめ方**：人手（見直し）。今は `MediaApiTest` と `S3ObjectStorageTest` に `Thread.sleep` が残っている（spec 004 の段階 3 で直す）。
+- **確かめ方**：人手（見直し）。

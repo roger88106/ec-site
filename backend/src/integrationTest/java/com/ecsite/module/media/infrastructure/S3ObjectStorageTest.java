@@ -7,6 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import software.amazon.awssdk.auth.credentials.AwsBasicCredentials;
 import software.amazon.awssdk.auth.credentials.StaticCredentialsProvider;
+import software.amazon.awssdk.http.SdkHttpMethod;
+import software.amazon.awssdk.http.SdkHttpRequest;
+import software.amazon.awssdk.http.auth.aws.signer.AwsV4HttpSigner;
+import software.amazon.awssdk.http.auth.spi.signer.HttpSigner;
+import software.amazon.awssdk.identity.spi.AwsCredentialsIdentity;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -17,6 +22,7 @@ import java.net.URI;
 import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
+import java.time.Clock;
 import java.time.Duration;
 import java.util.UUID;
 
@@ -86,14 +92,17 @@ class S3ObjectStorageTest {
     }
 
     @Test
-    @DisplayName("期限の切れた URL では PUT できない")
+    @DisplayName("URL の有効期間は設定のとおりで、期限の切れた URL では PUT できない")
     void rejectsExpiredUrl() throws Exception {
-        var shortLived = new S3ObjectStorage(s3, presigner, properties.withUploadUrlTtl(Duration.ofSeconds(1)));
+        var shortLived = new S3ObjectStorage(s3, presigner, properties.withUploadUrlTtl(Duration.ofMinutes(1)));
         var upload = shortLived.presignUpload(uploadKey(), "image/png", PNG.length);
+        assertThat(upload.url().getQuery()).contains("X-Amz-Expires=60");
 
-        Thread.sleep(2_500);
-
-        assertThat(put(upload, PNG)).isEqualTo(403);
+        // 期限が切れたかの判定は置き場所が行う。時間を待たないよう、署名の時計を 10 分前にずらして、
+        // 作った時点で期限（1 分）の切れた URL を作る。同じ作り方で今の時刻に署名した URL は通る（署名そのものは正しい）
+        var now = Clock.systemUTC();
+        assertThat(putSignedAt(now, uploadKey())).isEqualTo(200);
+        assertThat(putSignedAt(Clock.offset(now, Duration.ofMinutes(-10)), uploadKey())).isEqualTo(403);
     }
 
     @Test
@@ -142,6 +151,35 @@ class S3ObjectStorageTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * 受付のバケットへの PUT の署名付き URL（有効期間 1 分）を、指定の時計の時刻で署名して作り、PUT する。<br />
+     * アプリの署名者は署名の時刻を変えられないので、同じ方式（SigV4、クエリに署名）の署名者を直接使う。
+     *
+     * @param clock     署名の時刻を取る時計
+     * @param uploadKey 受付のキー
+     * @return HTTP ステータス
+     */
+    private int putSignedAt(Clock clock, String uploadKey) throws IOException, InterruptedException {
+        var unsigned = SdkHttpRequest.builder()
+                .method(SdkHttpMethod.PUT)
+                .uri(URI.create(properties.endpoint() + "/" + properties.incomingBucket() + "/" + uploadKey))
+                .putHeader("Content-Type", "image/png")
+                .build();
+        var signed = AwsV4HttpSigner.create().sign(request -> request
+                .identity(AwsCredentialsIdentity.create(properties.accessKeyId(), properties.secretAccessKey()))
+                .request(unsigned)
+                .putProperty(AwsV4HttpSigner.SERVICE_SIGNING_NAME, "s3")
+                .putProperty(AwsV4HttpSigner.REGION_NAME, properties.region())
+                .putProperty(AwsV4HttpSigner.AUTH_LOCATION, AwsV4HttpSigner.AuthLocation.QUERY_STRING)
+                .putProperty(AwsV4HttpSigner.EXPIRATION_DURATION, Duration.ofMinutes(1))
+                .putProperty(AwsV4HttpSigner.PAYLOAD_SIGNING_ENABLED, false)
+                .putProperty(HttpSigner.SIGNING_CLOCK, clock));
+        var request = HttpRequest.newBuilder(signed.request().getUri())
+                .header("Content-Type", "image/png")
+                .PUT(HttpRequest.BodyPublishers.ofByteArray(PNG));
+        return http.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode();
+    }
 
     /**
      * テストごとに別の、受付のバケットのキー（{範囲}/{受付 ID} の形）

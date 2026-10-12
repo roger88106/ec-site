@@ -14,8 +14,7 @@ class ValidationConfig {
     /**
      * バリデーター。<br />
      * 制約アノテーションの {@code {key}} 形式のメッセージを messages.properties から解決する。
-     * 標準の制約（{@code @NotBlank} など）のメッセージは、Hibernate Validator の日本語のものを使う
-     * （ロケールは application.yml で日本語に固定している）。
+     * API の応答の検証のエラーの文は、この文ではなく {@code ValidationMessages} が制約の種類から作る。
      *
      * @param messageSource メッセージソース
      * @return バリデーター

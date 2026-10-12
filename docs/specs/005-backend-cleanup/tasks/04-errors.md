@@ -10,7 +10,7 @@
 - [x] **T5402** [テスト] `MessageContractTest`：すべての `ErrorCodeProvider` の定数に `messages.properties` のキーがあり、逆もある。キーは `ecsite.<モジュール>.<定数の名前の小文字>`。
 - [x] **T5403** `ErrorCodeProvider` にキーを作る既定のメソッドを足し、各 `<モジュール>ErrorCode` をそれに合わせる。`<モジュール>Message` と `Code` を消す。T5402 と既存のテストが通る（DC-36）。
 - [x] **T5404** [テスト] 入力の検証のメッセージ：制約の種類ごとに `ecsite.validation.<種類>` の文になり、上限・下限が差し込まれる。知らない種類は `ecsite.validation.invalid`。JVM のロケールによらない（DC-37）。
-- [ ] **T5405** `GlobalExceptionHandler` の検証のエラーを、キーから文を作る形にする。`messages.properties` に検証のキーを足す。T5404 を通す。管理画面・E2E のテストで、変わった文に合わせる所を直す（DN-4 の例外）。
+- [x] **T5405** `GlobalExceptionHandler` の検証のエラーを、キーから文を作る形にする。`messages.properties` に検証のキーを足す。T5404 を通す。管理画面・E2E のテストで、変わった文に合わせる所を直す（DN-4 の例外）。
 - [ ] **T5406** [テスト] 文に数字を書いていたメッセージを差し込みにしても、整理の前と同じ文になる。差し込む値がドメインの定数から来る（DC-38）。
 - [ ] **T5409** 業務の例外に差し込む値を持たせ、T5401 の一覧のメッセージを差し込みにする。T5406 を通す（DC-38）。
 - [ ] **T5407** [テスト] `ImgproxyImageConverterFailureTest`：imgproxy の代わりが 200 で WebP でない本文（PNG など）を返すと、変換の失敗のエラーになる。今のコードで失敗することを確かめる（DC-64）。

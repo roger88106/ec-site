@@ -6,12 +6,14 @@ import com.ecsite.common.error.ErrorDetail;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.message.MessageHelper;
+import jakarta.validation.ConstraintViolation;
 import jakarta.validation.ConstraintViolationException;
 import jakarta.validation.Path;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jspecify.annotations.NonNull;
 import org.jspecify.annotations.Nullable;
+import org.springframework.context.MessageSourceResolvable;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.HttpStatusCode;
@@ -20,6 +22,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.method.ParameterErrors;
+import org.springframework.validation.method.ParameterValidationResult;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -30,6 +33,7 @@ import org.springframework.web.servlet.mvc.method.annotation.ResponseEntityExcep
 
 import java.net.URI;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Stream;
 
 /**
@@ -74,6 +78,11 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * トレース ID の解決
      */
     private final TraceIdResolver traceIdResolver;
+
+    /**
+     * 入力の検証のエラーの文
+     */
+    private final ValidationMessages validationMessages;
 
     // ============================== アプリの例外 ==============================
 
@@ -155,7 +164,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     }
                     String parameterName = result.getMethodParameter().getParameterName();
                     return result.getResolvableErrors().stream()
-                            .map(error -> new FieldValidationError(parameterName, error.getDefaultMessage()));
+                            .map(error -> new FieldValidationError(parameterName, messageOf(result, error)));
                 })
                 .toList();
         return handleInvalidRequest(status, headers, errors, request);
@@ -180,7 +189,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     for (Path.Node node : violation.getPropertyPath()) {
                         field = node.getName();
                     }
-                    return new FieldValidationError(field, violation.getMessage());
+                    return new FieldValidationError(field, validationMessages.of(violation));
                 })
                 .toList();
         return handleInvalidRequest(HttpStatus.BAD_REQUEST, HttpHeaders.EMPTY, errors, request);
@@ -308,13 +317,42 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * @param errors 検証エラー
      * @return フィールドごとの検証エラー
      */
-    private static List<FieldValidationError> toFieldErrors(Stream<ObjectError> errors) {
+    private List<FieldValidationError> toFieldErrors(Stream<ObjectError> errors) {
         return errors
                 .map(error -> new FieldValidationError(
                         // クラスに付いた制約など、フィールドに結び付かないエラーはオブジェクト名にする
                         error instanceof FieldError fieldError ? fieldError.getField() : error.getObjectName(),
-                        error.getDefaultMessage()))
+                        messageOf(error)))
                 .toList();
+    }
+
+    /**
+     * 検証エラーの文を作る。Bean Validation の違反なら制約の種類から作り、そうでなければ（型の変換の失敗など）
+     * 入力の検証の共通の文にする。
+     *
+     * @param error 検証エラー
+     * @return 文
+     */
+    private String messageOf(ObjectError error) {
+        if (error.contains(ConstraintViolation.class)) {
+            return validationMessages.of(error.unwrap(ConstraintViolation.class));
+        }
+        return validationMessages.of("invalid", Map.of());
+    }
+
+    /**
+     * メソッド引数の検証エラーの文を作る。
+     *
+     * @param result 引数の検証の結果
+     * @param error  検証エラー
+     * @return 文
+     */
+    private String messageOf(ParameterValidationResult result, MessageSourceResolvable error) {
+        try {
+            return validationMessages.of(result.unwrap(error, ConstraintViolation.class));
+        } catch (IllegalArgumentException e) {
+            return validationMessages.of("invalid", Map.of());
+        }
     }
 
     // ============================== プライベートレコード ==============================

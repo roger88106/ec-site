@@ -45,6 +45,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // テストで差し替えた関数（console.error など）を戻す
+  vi.restoreAllMocks()
   server.resetHandlers()
   const requests = unhandledRequests.splice(0)
   if (requests.length > 0) {

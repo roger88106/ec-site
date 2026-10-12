@@ -18,6 +18,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | フォーム | React Hook Form | 入力の状態、変更の有無、サーバーの項目ごとのエラーの表示に使う |
 | UI | shadcn/ui、Tailwind CSS、lucide-react | レイアウトは shadcn の Sidebar、成功の通知は sonner（toast） |
 | lint・整形 | Biome | lint、整形、import の整理、Tailwind のクラスの並べ替え |
+| ログイン | oidc-client-ts + react-oidc-context | 認可コード + PKCE（public client）。token はメモリーにだけ持つ（第 11 節、plan 003 第 1、4 節） |
 | テスト | Vitest、React Testing Library、user-event、MSW（openapi-msw）、jsdom | 単体テストは画面に依存しない関数と表示の部品、結合テストは画面の操作の流れ（第 10 節、constitution 12） |
 
 ## 2. ディレクトリ
@@ -25,6 +26,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 ```
 frontend/admin/src/
 ├── app/              # 入口、ルーター、Provider、レイアウト（Sidebar）
+├── auth/             # ログイン（IdP の設定、ログインを求める枠、ログインしている運営者、API に付ける token）。第 11 節
 ├── api/
 │   ├── generated/    # admin.yaml から生成（コミットしない）
 │   ├── client.ts     # openapi-fetch と openapi-react-query のクライアント
@@ -69,6 +71,8 @@ frontend/admin/src/
 
 - 取得は `$api.useQuery('get', '<パス>', { params })`、更新は `$api.useMutation('<メソッド>', '<パス>')` で書く。キャッシュのキーとクエリの関数を、画面ごとに手で書かない。
 - エラーの応答は、クライアントの middleware で `ApiError`（状態コードとエラーレスポンス）に変換して投げる。画面は `ApiError` だけを扱う。
+- 運営者の access token は、クライアントの middleware で `Authorization` ヘッダーに付ける（第 11 節）。
+- 401 は、ログインし直す（IdP へ移り、戻ったら同じ画面）。403 は、操作した場所に API のメッセージ（「この操作を行う権限がありません。」。AC-141）を出す。ほかのエラーと同じく第 6 節のとおりに出す。
 - 失敗した取得の繰り返しは、5xx と通信の失敗だけ（TanStack Query の既定の 3 回）。4xx は繰り返しても結果が変わらず、表示が遅れるだけなので繰り返さない。
 - 更新に成功したら、影響する取得をパスの前方一致で取り直す（`invalidate` の補助関数を使う）。
 
@@ -163,3 +167,17 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 - バージョンの決まり（第 5 節）を確かめるテストでは、入力中に他の人が更新した後で、画面に取得し直させる（`fireEvent(window, new Event('visibilitychange'))`：別のタブから戻った）。取得し直しても入力が消えず、送るバージョンがフォームを作ったときのままであることまで確かめる。
 - 管理 API の外への要求（画像のファイルのストレージへの PUT）は、`msw` の `http` でハンドラーを作る（`admin.yaml` の型がないため）。
 - 画面の外で起きること（バックエンドの業務ルール、店舗画面への反映）は確かめない。前者はバックエンドのテスト、後者は E2E で確かめる。
+
+## 11. ログイン
+
+plan 003 第 1、4、6 節の決定を、管理画面でどう作るか。SPA がブラウザーで IdP とやり取りし（public client）、token はメモリーにだけ持つ。
+
+- **設定**（`auth/oidc.ts`）：`ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は環境変数 `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）と `VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。IdP からの戻り先と、ログアウトの後の戻り先は、画面のオリジンのトップ。
+- **token をメモリーにだけ持つ**：oidc-client-ts の利用者の保存先を、メモリー（`InMemoryWebStorage`）にする（既定の sessionStorage には置かない。JavaScript から読める場所に残さないため）。IdP へ移る間の `state` と PKCE の値だけは、戻ってきたときに要るので sessionStorage に置く（token ではない）。
+- **ログインを求める**（AC-132）：`auth/AuthGate` がすべての画面を包み、ログインしていなければ、何も表示せずに IdP のログインへ移る。戻ってきたら、移る前の画面（パスとクエリ）に戻す。
+  - 再読み込み・新しいタブでは、メモリーに token がないので IdP へ移るが、IdP のログインの状態（SSO セッション）があれば、パスワードを求めずにすぐ戻る（plan 003 第 1 節）。画面の中に隠した iframe は使わない（IdP のログインの状態を iframe で確かめる仕組みも切る）。
+- **token の更新**：access token の期限が近ければ、refresh token で取り直す（oidc-client-ts の自動更新）。取り直せなければ（IdP のログインの状態が切れた。最後の操作から 30 分、最長 8 時間）、ログインし直す。
+- **ログインしている運営者**：`auth/operator` の `useOperator()` で、氏名（姓 名）とログアウトの操作を読む。画面の部品は react-oidc-context を直接使わない（結合テストでログインを置き換えるため）。
+- **API に付ける token**：`AuthGate` が、いまの access token を読む関数と、401 のときにログインし直す関数を `auth/token.ts` に渡し、API のクライアントの middleware がそれを使う。
+- **ログアウト**（AC-135）：IdP のログアウト（RP-Initiated Logout。ID token と、画面のトップを戻り先に添える）へ移る。メモリーの token は、画面を離れるので消える。戻ってきたらログインを求める（パスワードが要る）。
+- **結合テスト**：`renderApp` は `AuthGate` を通さず、ログインしている運営者（氏名とログアウトの操作）を差し替えて描画する。token は付けないので、MSW のハンドラーは `Authorization` を見ない。401 で IdP へ移る処理は、テストでは何もしない。

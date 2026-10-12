@@ -2,17 +2,20 @@ import 'server-only'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
 import NextAuth from 'next-auth'
-import { getToken, type JWT } from 'next-auth/jwt'
+import { getToken } from 'next-auth/jwt'
 import Keycloak from 'next-auth/providers/keycloak'
 import { cache } from 'react'
 import { mergeCartAfterLogin } from '@/api/cart'
 import { readServerConfig } from '@/auth/config'
-import { loginPath, memberName, needsTokenRefresh, safeReturnTo } from '@/lib/login'
+import { logoutUrl } from '@/auth/logout'
+import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
+import { loginPath, memberName, safeReturnTo } from '@/lib/login'
 
 /**
- * ログイン（店舗画面の構成 第 9 節）。Auth.js の設定と、ログインの状態・token を読む関数をこのファイルに集める
+ * ログイン（店舗画面の構成 第 9 節）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
  * （ライブラリを替えるときの範囲を狭くするため。plan 003 第 4 節）。<br />
- * 接続先と secret は環境変数（`auth/config.ts`。本番で値がなければ起動に失敗する）。
+ * 接続先と secret は環境変数（`config.ts`。本番で値がなければ起動に失敗する）。token の取り直しは `refresh.ts`、
+ * ログアウトの URL は `logout.ts`。外からは `@/auth` だけを import する。
  */
 
 /** 接続先と secret */
@@ -26,15 +29,6 @@ const REFRESH_MARGIN_SECONDS = 60
 
 /** proxy が、いまの画面のパス（クエリを含む）を知らせる要求のヘッダー */
 export const PATHNAME_HEADER = 'x-pathname'
-
-/** セッションの Cookie に持つ値（token はサーバーだけで扱い、画面から読める session には入れない） */
-type MemberJwt = JWT & {
-  accessToken?: string
-  refreshToken?: string
-  idToken?: string
-  /** access token の期限（UNIX 時刻の秒） */
-  expiresAt?: number
-}
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   providers: [Keycloak({ issuer: ISSUER, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET })],
@@ -129,11 +123,7 @@ export async function idpLogoutUrl(): Promise<string> {
   const token = await readToken()
   const requestHeaders = await headers()
   const origin = `${requestHeaders.get('x-forwarded-proto') ?? 'http'}://${requestHeaders.get('host')}`
-  const query = new URLSearchParams({ client_id: CLIENT_ID, post_logout_redirect_uri: `${origin}/` })
-  if (token?.idToken) {
-    query.set('id_token_hint', token.idToken)
-  }
-  return `${ISSUER}/protocol/openid-connect/logout?${query}`
+  return logoutUrl(origin, token?.idToken)
 }
 
 /** IdP のアカウントの画面（AC-119） */
@@ -148,49 +138,4 @@ async function readToken(): Promise<MemberJwt | null> {
     secret: SECRET,
     secureCookie: SECURE_COOKIE,
   })) as MemberJwt | null
-}
-
-/**
- * access token の期限が近ければ、refresh token で取り直す。
- *
- * @returns 取り直した（または取り直さなくてよい）token。IdP に断られたら null（ログインしていないものとする。AC-117）
- */
-async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): Promise<MemberJwt | null> {
-  if (!needsTokenRefresh(token.expiresAt, Math.floor(Date.now() / 1000), marginSeconds)) {
-    return token
-  }
-  if (!token.refreshToken) {
-    return null
-  }
-  try {
-    const response = await fetch(`${ISSUER}/protocol/openid-connect/token`, {
-      method: 'POST',
-      body: new URLSearchParams({
-        grant_type: 'refresh_token',
-        client_id: CLIENT_ID,
-        client_secret: CLIENT_SECRET,
-        refresh_token: token.refreshToken,
-      }),
-      cache: 'no-store',
-    })
-    if (!response.ok) {
-      return null
-    }
-    const refreshed = (await response.json()) as {
-      access_token: string
-      expires_in: number
-      refresh_token?: string
-      id_token?: string
-    }
-    return {
-      ...token,
-      accessToken: refreshed.access_token,
-      expiresAt: Math.floor(Date.now() / 1000) + refreshed.expires_in,
-      refreshToken: refreshed.refresh_token ?? token.refreshToken,
-      idToken: refreshed.id_token ?? token.idToken,
-    }
-  } catch {
-    // IdP に届かなかった：ログインの状態は残す（期限が切れていれば、API が 401 を返し、ログインの画面へ移る）
-    return token
-  }
 }

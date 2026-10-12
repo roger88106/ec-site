@@ -23,7 +23,8 @@ C 側（消費者）の画面。Next.js（App Router）で、店舗 API（`store
 
 ```
 frontend/store/src/
-├── auth.ts           # ログイン（Auth.js の設定、セッション、token の更新、ログインの直後にカートを移す）。第 9 節
+├── auth/             # ログイン（index：Auth.js の設定とセッション、config：環境変数、refresh：token の更新、logout：IdP のログアウトの URL）。第 9 節
+├── instrumentation.ts # 起動のときに、本番で必須の環境変数を確かめる
 ├── proxy.ts          # 要求ごとにセッションを確かめ、token の期限が近ければ更新して Cookie に書く。いまの画面のパスを知らせる
 ├── app/              # ルート（page.tsx、layout.tsx、not-found.tsx）。データの取得と部品の組み立てだけを書く
 │   ├── api/auth/     # Auth.js の口（IdP からの戻り先など）
@@ -139,7 +140,7 @@ URL は 1 か所で作り、画面のコードに文字列で書かない（[フ
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、表示の整形、エラーの欄への対応） | Vitest の単体テスト。厳密な TDD（constitution 12.2） | 対象の横（`*.test.ts`） |
 | 表示の部品（価格、品目、金額の内訳など。状態を持たないもの） | `react-dom/server` の `renderToStaticMarkup` で HTML にし、出る文字と並びを確かめる | 対象の横（`*.test.tsx`） |
-| サーバーの処理（サーバーアクション、`api/cart.ts`、`auth.ts` のコールバック、`proxy.ts`） | Vitest（Node）で直接呼ぶ。Next.js の口（`next/headers`、`next/navigation`、`next/cache`）と `@/auth` は `src/test/` の置き換えに、バックエンドは MSW（`msw/node`）にする | 対象の横（`*.test.ts`） |
+| サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Vitest（Node）で直接呼ぶ。Next.js の口（`next/headers`、`next/navigation`、`next/cache`）と `@/auth` は `src/test/` の置き換えに、バックエンドは MSW（`msw/node`）にする | 対象の横（`*.test.ts`） |
 | 画面をつないだ操作の流れ（カートに入れて注文する、エラーの表示、入力が残ること） | E2E（`e2e/`） | `e2e/tests/` |
 
 ## 8. 画面を追加する手順
@@ -155,17 +156,17 @@ URL は 1 か所で作り、画面のコードに文字列で書かない（[フ
 
 plan 003 第 1、4、6 節の決定を、店舗画面でどう作るか。店舗画面のサーバーが IdP とやり取りし（BFF）、token はサーバーだけで扱う。
 
-- **設定**：`auth.ts` に Auth.js の設定を集める（ライブラリを替えるときの範囲を狭くするため。plan 003 第 4 節）。
+- **設定**：`auth/` に Auth.js の設定を集め、外からは `@/auth` だけを import する（ライブラリを替えるときの範囲を狭くするため。plan 003 第 4 節）。
   - provider は Keycloak（`ec-store` realm の `ec-store-web`、confidential client）。認可コード + PKCE。
   - 接続先と secret は環境変数：`AUTH_KEYCLOAK_ISSUER`（既定 `http://localhost:8180/realms/ec-store`）、`AUTH_KEYCLOAK_ID`（既定 `ec-store-web`）、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`（Cookie の暗号化の鍵）。既定の値は、ローカルと CI だけで使う値（realm の JSON と同じ。plan 003 第 2.4 節）で、開発のモード（`next dev`）とテストでだけ使う。本番のモード（`next start`）では、この 4 つと `STORE_API_BASE_URL` がなければ、起動のとき（`instrumentation.ts`）に足りない名前を出して失敗する（`src/auth/config.ts`。[フロントの書き方](../style/frontend.md) 第 8.1 節）。E2E は `playwright.config.ts` で値を渡す。
 - **セッション**：暗号化した HttpOnly の Cookie（Auth.js の JWT 方式）に、access token、refresh token、ID token、access token の期限、会員の氏名・メールアドレスを持つ。サーバーに状態を持たない（constitution 5-1）。
-  - 画面から読める情報（`auth()` の結果。Auth.js の `/api/auth/session` でブラウザーからも読める）には、氏名とメールアドレスだけを入れ、token は入れない。token は `auth.ts` の `getAccessToken()` で Cookie から直接読む（サーバー専用）。
+  - 画面から読める情報（`auth()` の結果。Auth.js の `/api/auth/session` でブラウザーからも読める）には、氏名とメールアドレスだけを入れ、token は入れない。token は `@/auth` の `getAccessToken()` で Cookie から直接読む（サーバー専用）。
   - 氏名は、token の姓（`family_name`）と名（`given_name`）を「姓 名」の順に並べる。
 - **token の更新**：access token の期限（5 分。plan 003 第 2.3 節）が 1 分を切っていたら、refresh token で取り直す。
   - `proxy.ts` が要求ごとにセッションを確かめ、取り直した token を Cookie に書く（サーバーコンポーネントは Cookie を書けないため）。
   - ただし、同じ要求の中では画面は古い Cookie を読む。`getAccessToken()` は、読んだ access token の期限が切れていれば（しばらく操作がなかったとき）、自分でも取り直して使う（Cookie には書かない。次の要求で `proxy.ts` が書く）。
   - 取り直せなければ（IdP のログインの状態が切れた。AC-117）、ログインしていないものとして扱う。
-- **ログインの状態の取り方**：サーバーコンポーネントとサーバーアクションで `currentMember()`（`auth.ts`）を呼ぶ。ログインしていれば氏名とメールアドレス、していなければ `null`。クライアントコンポーネントでは取らない（Auth.js の `SessionProvider` は使わない）。必要なら、サーバーコンポーネントから props で渡す。
+- **ログインの状態の取り方**：サーバーコンポーネントとサーバーアクションで `currentMember()`（`@/auth`）を呼ぶ。ログインしていれば氏名とメールアドレス、していなければ `null`。クライアントコンポーネントでは取らない（Auth.js の `SessionProvider` は使わない）。必要なら、サーバーコンポーネントから props で渡す。
 - **ログインの画面へ移す**：`/login?returnTo=<戻る画面>` へ移す。ここから IdP のログインの画面へ移り、ログインの後は `returnTo` に戻る（AC-113）。`returnTo` は店舗画面の中のパス（`/` で始まり、`//` と `/\` で始まらない）だけを受け付け、それ以外は `/` にする（外のサイトへ戻さない）。
   - 会員登録は `/login?register=1&returnTo=...`。IdP の会員登録の画面（OIDC の `prompt=create`）へ移る（AC-108）。
   - 画面とサーバーアクションは、`redirectToLogin()` でいまの画面に戻るように移す。いまの画面のパスは、`proxy.ts` が要求のヘッダー（`x-pathname`）に入れて知らせる（サーバーコンポーネントは URL を直接は知らないため）。

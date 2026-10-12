@@ -431,6 +431,12 @@ components:
         application/problem+json:
           schema:
             $ref: '#/components/schemas/Problem'
+    Unauthorized:
+      description: 会員の認証がない、または token が無効（`errorCode` は `UNAUTHENTICATED`）
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
 
   schemas:
     # ---------- 共通 ----------

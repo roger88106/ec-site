@@ -2,14 +2,12 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.SystemException;
-import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 /**
  * 税区分のファクトリー
  */
-@Component
 public class TaxCategoryFactory {
 
     /**

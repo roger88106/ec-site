@@ -4,7 +4,6 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
-import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.List;
@@ -13,7 +12,6 @@ import java.util.UUID;
 /**
  * 商品のファクトリー
  */
-@Component
 public class ProductFactory {
 
     /**

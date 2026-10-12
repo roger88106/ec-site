@@ -2,14 +2,12 @@ package com.ecsite.module.catalog.domain.category;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.SystemException;
-import org.springframework.stereotype.Component;
 
 import java.util.UUID;
 
 /**
  * カテゴリのファクトリー
  */
-@Component
 public class CategoryFactory {
 
     /**

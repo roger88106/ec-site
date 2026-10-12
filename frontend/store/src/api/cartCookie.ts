@@ -22,3 +22,11 @@ export async function readCartId(): Promise<string | null> {
 export async function writeCartId(cartId: string): Promise<void> {
   ;(await cookies()).set(CART_COOKIE, cartId, cartCookieOptions(process.env.NODE_ENV === 'production'))
 }
+
+/**
+ * カート ID の Cookie を消す（ログアウト・カートを移した後。店舗画面の構成 第 4.2 節）。サーバーアクションと
+ * ルートハンドラーからだけ呼べる。
+ */
+export async function deleteCartId(): Promise<void> {
+  ;(await cookies()).delete(CART_COOKIE)
+}

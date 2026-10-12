@@ -20,3 +20,4 @@
 - [x] **T4406** ルートの `package.json`（`private`、`license: MIT`、`packageManager`、全体の script）、`pnpm-workspace.yaml`（`frontend/*`、`e2e`、`allowBuilds`）を作り、各プロジェクトの lock と `pnpm-workspace.yaml` を消して `pnpm install` する。依存の版の書き方を揃える（DC-20）。
 - [x] **T4407** `frontend/biome.base.jsonc`、`frontend/tsconfig.base.json` を作り、admin・store・e2e が `extends` で読む。各プロジェクトには違う所だけを残す。lint・型チェック・テスト・ビルドが通る（DC-20）。
 - [ ] **T4408** CI：`.github/actions/setup-frontend/`（composite action）を作り、admin・store・e2e の job が使う。Playwright のブラウザーをキャッシュする。push して CI が通り、所要時間を DN-3 と比べて報告する。
+- [x] **T4409** CI の失敗を直す：T4402 の移動で `backend/ecsite/gradlew` の実行の権限（Git の 100755）が落ち、CI のバックエンドの job が `Permission denied` で失敗した。権限を戻し、移す前に実行の権限があったファイルがほかにないことを確かめる。

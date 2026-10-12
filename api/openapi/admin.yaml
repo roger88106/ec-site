@@ -1794,6 +1794,10 @@ components:
         adjustedAt:
           type: string
           format: date-time
+        operatorName:
+          type: string
+          nullable: true
+          description: 調整した運営者の氏名（調整の時点の写し。AC-142）。注文に由来する調整と、記録を始める前の調整は null
     StockAdjustmentPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -1993,6 +1997,10 @@ components:
           format: date-time
           nullable: true
           description: 承認・却下した日時
+        decidedBy:
+          type: string
+          nullable: true
+          description: 承認・却下した運営者の氏名（判断の時点の写し。AC-142）。申請中と、記録を始める前の判断は null
     Cancellation:
       type: object
       description: キャンセルした内容。キャンセルでなければ省く
@@ -2008,6 +2016,10 @@ components:
           type: string
           nullable: true
           description: 運営者の判断によるキャンセルの理由
+        cancelledBy:
+          type: string
+          nullable: true
+          description: キャンセルした運営者の氏名（キャンセルの時点の写し。AC-142）。申請の承認なら承認した運営者。記録を始める前のキャンセルは null
     CancelOrderRequest:
       type: object
       required: [reason]

@@ -358,6 +358,9 @@ jooq {
 }
 
 tasks.named<JooqGenerate>("generateJooq") {
+    // 入力（マイグレーションと生成の設定）が変わらなければ省く。プラグインの既定は毎回生成し直す（約 6 秒）。
+    // 接続先はコンテナを起動した後に差し替えるので、入力の比較には入らない
+    allInputsDeclared.set(true)
     // マイグレーションが変わったら再生成する
     inputs.dir(migrationDir)
 

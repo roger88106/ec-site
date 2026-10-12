@@ -51,11 +51,9 @@ setup_buckets "$INCOMING_BUCKET" "$PUBLIC_BUCKET"
 setup_buckets "$E2E_INCOMING_BUCKET" "$E2E_PUBLIC_BUCKET"
 
 # ローカル用の seed の商品画像を、ローカルの配信のバケットの assets/ に写す（db/seed/local/R__media_seed.sql）。
-# すでにあるものは上書きしない。E2E のバケットには写さない（E2E は画像を API で作る）
-for file in /seed/assets/*.webp; do
-  [ -e "$file" ] || continue
-  key="assets/$(basename "$file")"
-  $S3 head-object --bucket "$PUBLIC_BUCKET" --key "$key" >/dev/null 2>&1 \
-    || $S3 put-object --bucket "$PUBLIC_BUCKET" --key "$key" --body "$file" --content-type image/webp >/dev/null
-done
+# sync は、バケットにないものと、大きさの違うものだけを写す（1 回の呼び出しで済ませ、CI の時間を延ばさない）。
+# アセットのファイルはアプリが上書きしないので、seed の画像はいつも seed と同じになる。
+# E2E のバケットには写さない（E2E は画像を API で作る）
+aws --endpoint-url http://seaweedfs:8333 s3 sync /seed/assets "s3://$PUBLIC_BUCKET/assets/" \
+  --exclude "*" --include "*.webp" --content-type image/webp --size-only --only-show-errors
 echo "seed の商品画像を用意した：$PUBLIC_BUCKET/assets/"

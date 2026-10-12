@@ -66,9 +66,10 @@
 
 ### 4.1 トランザクションは application（レベル B は service）
 
-- **規則**：`@Transactional` は application の service（レベル B は `service/`）のクラスに付ける。参照だけの service は `readOnly = true`。
+- **規則**：`@Transactional` は application の service（レベル B は `service/`）のクラスに付ける。参照だけの service は `readOnly = true`。api（ほかのモジュールに見せる口）や presentation には付けない。
+- **例外**：infrastructure で、外の仕組みの都合で別のトランザクションが要るもの（例：呼び出し元と別に確定させる記録）。付けた所に理由を書く。
 - **理由**：1 つの操作を 1 つのトランザクションにし、境界を層で決めるため。
-- **確かめ方**：人手（見直し）。今は `catalog/api/OrderCatalogApi` だけが `api/` のクラスに付けている。
+- **確かめ方**：spec 005 の ArchUnit の規則（T5203）。今は `catalog/api/OrderCatalogApi` だけが `api/` のクラスに付けている（005 で application に移す）。
 
 ### 4.2 現在時刻は `Clock` から
 

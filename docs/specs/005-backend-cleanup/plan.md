@@ -69,7 +69,7 @@ module/<モジュール>/
 - ArchUnit（Modulith が入れている）で、`src/test/java/com/ecsite/architecture/` に規則を書く：
   - 層の依存の向き（presentation → application → domain ← infrastructure。レベル A の domain は Spring・jOOQ・他の層に依存しない）
   - パッケージの名前（モジュールの直下は `api`・`event`・`presentation`・`application`・`domain`・`infrastructure` だけ）
-  - `@Transactional` は application だけ。`@RestController` は presentation だけ
+  - `@Transactional` は application だけ（infrastructure は、外の仕組みの都合の例外として許す。`docs/style/backend.md` 4.1）。`@RestController` は presentation だけ。今 api に付いている `catalog/api/OrderCatalogApi` は application に移す
   - パッケージの直下のファイルが 20 を超えない（目安の 10 は検査しない）
 - 先にテストを書いて今のコードで失敗することを確かめ（レッド）、移した後に通す。
 
@@ -120,6 +120,11 @@ module/<モジュール>/
 ### 3.3 差し込み（DC-38）
 
 - 今の差し込みのあるメッセージ（`{0}` など）を一覧にし、整理の前後で同じ文になることをテストで確かめる。
+
+### 3.4 画像の変換の結果の確かめ（DC-64）
+
+- `ImgproxyImageConverter` は、imgproxy の応答の本文の先頭のバイト（`RIFF` と `WEBP`）で WebP であることを確かめる。違えば、今の変換の失敗と同じエラー（`IMAGE_CONVERSION_FAILED`）にする。`Content-Type` には頼らない（受け付けのときの形式の判定と同じく、中身で決める）。
+- テストは今の `ImgproxyImageConverterFailureTest`（JDK の HttpServer で imgproxy の代わりをする）に、WebP でない本文を返す場合を足す。
 
 ## 4. 重複と大きいクラス（DS-11）
 
@@ -183,6 +188,7 @@ module/<モジュール>/
 | 42 | 必須の値がないときに起動に失敗するテスト |
 | 43 | 第 5.2 節の手順 |
 | 44 | 見直しで読む（第 6 節の一覧を使う） |
+| 64 | `ImgproxyImageConverterFailureTest` の WebP でない応答の場合が通る |
 | DN-4 | すべてのテストが通る。`api/` の差分は第 2.2 節の制約の追加だけ |
 | DN-5 | `git log --stat` |
 | DN-6 | `db/migration` に新しいファイルがない（食い違いを直す場合を除く） |

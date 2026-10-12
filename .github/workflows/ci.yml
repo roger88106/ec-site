@@ -140,22 +140,6 @@ jobs:
     # 各部分のジョブが通ってから動かす（失敗の原因を、部分のジョブで先に見つけるため）
     needs: [backend, admin, store]
 
-    # バックエンドの local profile の接続先（compose.yaml と同じ）
-    services:
-      postgres:
-        image: postgres:18-alpine
-        env:
-          POSTGRES_DB: ec_site
-          POSTGRES_USER: ec_site
-          POSTGRES_PASSWORD: ec_site
-        ports:
-          - 5432:5432
-        options: >-
-          --health-cmd "pg_isready -U ec_site -d ec_site"
-          --health-interval 5s
-          --health-timeout 3s
-          --health-retries 10
-
     steps:
       - uses: actions/checkout@v7
 
@@ -182,6 +166,12 @@ jobs:
           pnpm --dir frontend/admin install --frozen-lockfile
           pnpm --dir frontend/store install --frozen-lockfile
           pnpm --dir frontend/e2e install --frozen-lockfile
+
+      # バックエンドの local profile の接続先（PostgreSQL）と IdP（Keycloak、realm の JSON を取り込む）、IdP が送るメールの受け手（Mailpit）。
+      # compose.yaml をそのまま使う（Keycloak は同じ PostgreSQL の別の database を使うので、GitHub の services ではなく compose で起動する）。
+      # IdP の接続先と secret は、バックエンド（application-local.yml）・店舗画面・管理画面の既定の値が、realm の JSON のローカルと CI 用の値と同じなので渡さない（plan 003 第 2.4 節）
+      - name: DB・IdP・メールの起動
+        run: docker compose up -d --wait postgres keycloak mailpit
 
       # 画像の置き場所（S3 互換）と変換（imgproxy）。バケット、CORS、公開の設定は、compose の初期化のコンテナで作る（plan 001 第 7 節）
       - name: 画像の置き場所（SeaweedFS）と変換（imgproxy）の起動

@@ -10,7 +10,7 @@
 - [x] **T4101** constitution 15 に、spec の 2 つの種類（機能・整理）と、整理の spec の書き方（DS・DC・DN、目的・完了の条件、対象 D）を書く。「1 つの spec は機能の縦切り 1 つ」を機能の spec の規則にする。`docs/notation.md`（草案は作成済み）を確かめて、constitution・README・AGENTS.md から引けるようにする（DC-5、DC-6）。
 - [x] **T4102** AGENTS.md と skill `handoff` の追記：引き継ぎの文書の置き場所（`/.local/handoff/yyyyMMddHHmmss-<名前>/`、中の MD は 1 つでも複数でもよい）、新しいセッションは指示がなければ最新のものを読む、古いものは利用者が消す（DC-3）。
 - [x] **T4103** AGENTS.md に「skill の一覧」の節を足す。skill を足す・消すときに一覧も直す決まりを、skill `writing-for-agents` のこのリポジトリ向けの追記に書く。「最初に読むもの」に `docs/notation.md` と `docs/style/` を足す（DC-2）。
-- [ ] **T4104** constitution 新 17 節「依存とライセンス」：プロジェクトのライセンス（MIT）、依存のライセンスの方針（許可・条件付き・禁止）、有料の版がある製品（jOOQ、Flyway、imgproxy、Keycloak）の使う範囲（DC-9。plan 第 3.2 節）。
+- [x] **T4104** constitution 新 17 節「依存とライセンス」：プロジェクトのライセンス（MIT）、依存のライセンスの方針（許可・条件付き・禁止）、有料の版がある製品（jOOQ、Flyway、imgproxy、Keycloak）の使う範囲（DC-9。plan 第 3.2 節）。
 - [ ] **T4105** リポジトリの直下に `LICENSE`（MIT。著作権者 `roger88106`、2026）。admin・store・e2e の `package.json` に `"license": "MIT"`（DC-8。ルートの workspace の `package.json` は段階 4 で作るときに付ける）。
 
 ## 規則の文書と開発の手順

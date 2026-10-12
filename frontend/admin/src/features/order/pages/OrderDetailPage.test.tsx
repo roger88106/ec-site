@@ -71,8 +71,18 @@ describe('注文の詳細', () => {
       REQUESTED,
       orderDetail({
         status: 'CANCELLED',
-        cancellationRequest: { ...REQUEST, result: 'APPROVED' },
-        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', byOperator: false, reason: null },
+        cancellationRequest: {
+          ...REQUEST,
+          result: 'APPROVED',
+          decidedAt: '2026-10-10T03:00:00Z',
+          decidedBy: '審査 一郎',
+        },
+        cancellation: {
+          cancelledAt: '2026-10-10T03:00:00Z',
+          byOperator: false,
+          reason: null,
+          cancelledBy: '審査 一郎',
+        },
       }),
     )
     const { user } = renderApp(URL)
@@ -85,6 +95,9 @@ describe('注文の詳細', () => {
     expect(await screen.findByText('申請を承認し、キャンセルしました')).toBeInTheDocument()
     expect(await shownStatus('キャンセル')).toBeInTheDocument()
     expect(screen.getByText('お客様の申請の承認')).toBeInTheDocument()
+    // AC-142 判断した運営者とキャンセルした運営者の氏名を出す
+    expect(screen.getByText('判断した運営者').nextElementSibling).toHaveTextContent('審査 一郎')
+    expect(screen.getByText('キャンセルした運営者').nextElementSibling).toHaveTextContent('審査 一郎')
   })
 
   it('AC-102 申請を却下すると「受付」に戻り、キャンセルの操作だけが残る', async () => {

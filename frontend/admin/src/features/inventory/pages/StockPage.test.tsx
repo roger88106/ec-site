@@ -141,6 +141,38 @@ describe('在庫の調整', () => {
   })
 })
 
+describe('操作した運営者', () => {
+  it('AC-142 運営者の調整は、調整した運営者の氏名を履歴に出す。注文に由来する調整は空', async () => {
+    serveStock(4, [
+      {
+        id: '00000000-0000-0000-0000-000000000303',
+        delta: 2,
+        reason: 'ARRIVAL',
+        memo: null,
+        quantityAfter: 4,
+        adjustedAt: '2026-10-10T11:00:00+09:00',
+        operatorName: '在庫 一郎',
+      },
+      {
+        id: '00000000-0000-0000-0000-000000000302',
+        delta: -2,
+        reason: 'ORDER',
+        memo: null,
+        orderId: '00000000-0000-0000-0000-000000000401',
+        orderNumber: '20261010-482915',
+        quantityAfter: 2,
+        adjustedAt: '2026-10-10T10:00:00+09:00',
+        operatorName: null,
+      },
+    ])
+    renderApp(URL)
+
+    const operatorCells = await screen.findAllByRole('cell', { name: '在庫 一郎' })
+    expect(operatorCells).toHaveLength(1)
+    expect(screen.getByRole('columnheader', { name: '操作した運営者' })).toBeInTheDocument()
+  })
+})
+
 describe('権限のない操作', () => {
   it('AC-141 権限のない運営者（閲覧者）が調整すると、権限がないことを調整のフォームに出す', async () => {
     serveStock(5)

@@ -35,6 +35,7 @@ export function StockHistory({ variantId }: { variantId: string }) {
                     <TableHead>理由</TableHead>
                     <TableHead className="text-right">調整後の在庫数</TableHead>
                     <TableHead>メモ</TableHead>
+                    <TableHead>操作した運営者</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -50,11 +51,13 @@ export function StockHistory({ variantId }: { variantId: string }) {
                       <TableCell className="whitespace-pre-wrap">
                         {item.orderNumber ? `注文番号 ${item.orderNumber}` : item.memo}
                       </TableCell>
+                      {/* 注文に由来する調整と、記録を始める前の調整は空（AC-142） */}
+                      <TableCell>{item.operatorName}</TableCell>
                     </TableRow>
                   ))}
                   {result.items.length === 0 && (
                     <TableRow>
-                      <TableCell className="text-center text-muted-foreground" colSpan={5}>
+                      <TableCell className="text-center text-muted-foreground" colSpan={6}>
                         調整はまだありません。
                       </TableCell>
                     </TableRow>

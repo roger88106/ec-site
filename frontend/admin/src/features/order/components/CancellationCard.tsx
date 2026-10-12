@@ -39,6 +39,12 @@ export function CancellationCard({
                   </span>
                 )}
               </dd>
+              {request.decidedBy && (
+                <>
+                  <dt className="text-muted-foreground">判断した運営者</dt>
+                  <dd>{request.decidedBy}</dd>
+                </>
+              )}
             </dl>
           </section>
         )}
@@ -56,6 +62,12 @@ export function CancellationCard({
                 <>
                   <dt className="text-muted-foreground">理由</dt>
                   <dd className="whitespace-pre-wrap">{cancellation.reason}</dd>
+                </>
+              )}
+              {cancellation.cancelledBy && (
+                <>
+                  <dt className="text-muted-foreground">キャンセルした運営者</dt>
+                  <dd>{cancellation.cancelledBy}</dd>
                 </>
               )}
             </dl>

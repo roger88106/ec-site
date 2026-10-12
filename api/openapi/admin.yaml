@@ -1077,6 +1077,7 @@ components:
       description: 取得時のバージョン（楽観ロック）
       schema:
         type: integer
+        minimum: 0
         format: int64
     Page:
       name: page
@@ -1215,6 +1216,7 @@ components:
     Version:
       type: integer
       format: int64
+      minimum: 0
       description: 取得時のバージョン（楽観ロック）
 
     # ---------- 税 ----------
@@ -1560,11 +1562,13 @@ components:
       properties:
         contentType:
           type: string
+          maxLength: 100
           description: ファイルの形式。image/jpeg、image/png、image/webp、image/bmp、image/heic、image/heif、image/avif（AC-39、67）
           example: image/jpeg
         contentLength:
           type: integer
           format: int64
+          minimum: 0
           description: ファイルの大きさ（バイト）。10MB（10,485,760）まで（AC-39）
     ImageUpload:
       type: object
@@ -1755,6 +1759,8 @@ components:
         delta:
           type: integer
           format: int32
+          minimum: -2147483648
+          maximum: 2147483647
           description: 増減量。0 は不可
         reason:
           $ref: '#/components/schemas/ManualStockAdjustmentReason'

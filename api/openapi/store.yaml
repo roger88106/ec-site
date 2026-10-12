@@ -975,6 +975,7 @@ components:
           example: '1000001'
         prefecture:
           type: string
+          maxLength: 4
           description: 都道府県名（47 都道府県のいずれか）
           example: 東京都
         address:
@@ -997,6 +998,7 @@ components:
         expectedTotal:
           type: integer
           format: int64
+          minimum: 0
           description: 注文手続きの画面で表示した総額（AC-89）
     OrderStatus:
       type: string

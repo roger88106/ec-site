@@ -201,6 +201,19 @@ class PlaceOrderApiTest {
         }
 
         @Test
+        @DisplayName("都道府県が契約の長さ（4 文字）を超えれば、入力の検証で 400")
+        void rejectsTooLongPrefecture() throws Exception {
+            var checkoutId = startCheckout();
+
+            placeWith(checkoutId, """
+                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
+                     "postalCode": "100-0001", "prefecture": "東京都千代田", "address": "千代田区", "phone": "03-1234-5678"}}""")
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.prefecture"));
+        }
+
+        @Test
         @DisplayName("AC-91 同じ注文手続きでの再送には、作成済みの注文 ID を 200 で返し、注文は 1 件だけ")
         void returnsExistingOrderOnResend() throws Exception {
             var checkoutId = startCheckout();

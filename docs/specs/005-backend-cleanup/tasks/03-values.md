@@ -8,7 +8,7 @@
 
 - [x] **T5301** API の契約の制約の漏れの一覧と、足す値（`version` は `minimum: 0`、`contentLength` は 10MB まで、`delta` の範囲、`expectedTotal` は `minimum: 0`、都道府県の `maxLength` など）を、spec の AC と DB の列に照らして作り、利用者に確かめる。
 - [x] **T5302** [テスト] `OpenApiRequestConstraintTest`：リクエストの数値の項目に範囲、文字の項目に長さか形式。今の契約で失敗することを確かめる（DC-33）。
-- [ ] **T5303** `admin.yaml`・`store.yaml` に T5301 の制約を足す。T5302 を通す。足した制約の「400 になる」代表の統合テストを足す（長さ・範囲・形式の種類ごとに、無いものだけ）。
+- [x] **T5303** `admin.yaml`・`store.yaml` に T5301 の制約を足す。T5302 を通す。足した制約の「400 になる」代表の統合テストを足す（長さ・範囲・形式の種類ごとに、無いものだけ）。
 - [ ] **T5304** [テスト] `FieldConstraintContractTest`：同じ項目の契約・ドメインの定数・DB の列の長さを表で照らす。食い違いが見つかったら、直す前に利用者に確かめる（DC-32、DN-6）。
 - [ ] **T5305** [テスト] `BoundedText` の単体テスト（空白、code point の数え方、上限ちょうど）。
 - [ ] **T5306** `common/model/value/BoundedText` を作り、各ドメインの文字の判定を置き換える（`TaxCategory`、`Category`、`Product`、`ShippingAddress`、`StockAdjustment`、`Order`）。T5305 と既存のテストが通る（DC-31）。

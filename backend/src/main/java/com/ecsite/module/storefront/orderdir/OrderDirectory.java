@@ -24,11 +24,12 @@ public class OrderDirectory {
     /**
      * カートを見積もり、表示の形にする。
      *
-     * @param cartId カート ID
-     * @return カートの表示。カートがなければ空
+     * @param cartId    カート ID
+     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @return カートの表示。カートがない、または会員のカートで持ち主でなければ空
      */
-    public Optional<CartView> findCart(UUID cartId) {
-        return orderQuoteApi.quoteCart(cartId).map(OrderDirectory::toView);
+    public Optional<CartView> findCart(UUID cartId, UUID requester) {
+        return orderQuoteApi.quoteCart(cartId, requester).map(OrderDirectory::toView);
     }
 
     /**

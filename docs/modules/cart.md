@@ -68,7 +68,7 @@ cart/
 
 ## データモデル
 
-[V202610111100__cart_create_cart.sql](../../backend/src/main/resources/db/migration/V202610111100__cart_create_cart.sql)
+[V202610111100__cart_create_cart.sql](../../backend/src/main/resources/db/migration/V202610111100__cart_create_cart.sql)、[V202610121100__cart_add_member_id.sql](../../backend/src/main/resources/db/migration/V202610121100__cart_add_member_id.sql)
 
 - バリアントは商品カタログモジュールの ID なので、外部キーは張らない（constitution 6）。
 - 品目は入れた順の連番を持つ。保存では品目を入れ直すので、連番は入れた順に振り直される。

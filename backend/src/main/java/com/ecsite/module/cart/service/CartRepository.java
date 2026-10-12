@@ -9,11 +9,19 @@ import java.util.UUID;
 public interface CartRepository {
 
     /**
-     * カートを作る。
+     * カートを作る。会員のカートは、同じ会員のカートがすでにあれば何もしない（同じ会員の同時の初回の要求）。
      *
      * @param cart 空のカート
      */
     void create(Cart cart);
+
+    /**
+     * 会員のカートの ID を探す。
+     *
+     * @param memberId 会員 ID
+     * @return カート ID。なければ空
+     */
+    Optional<UUID> findIdByMemberId(UUID memberId);
 
     /**
      * カートを取得する。

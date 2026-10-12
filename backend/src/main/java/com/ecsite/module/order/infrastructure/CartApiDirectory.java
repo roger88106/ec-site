@@ -25,7 +25,7 @@ class CartApiDirectory implements CartDirectory {
      */
     @Override
     public Optional<CartSnapshot> find(UUID cartId) {
-        return cartContentsApi.find(cartId).map(contents -> new CartSnapshot(contents.cartId(), contents.version(),
+        return cartContentsApi.find(cartId).map(contents -> new CartSnapshot(contents.cartId(), contents.memberId(), contents.version(),
                 contents.items().stream().map(item -> new Line(item.variantId(), item.quantity())).toList()));
     }
 

@@ -7,7 +7,11 @@ import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.MemberCart;
 import com.ecsite.api.store.model.MergeCartRequest;
 import com.ecsite.api.store.model.MergeCartResult;
+import com.ecsite.api.store.model.MergedCartItem;
+import com.ecsite.common.security.CurrentMember;
+import com.ecsite.module.cart.service.CartMergeResult;
 import com.ecsite.module.cart.service.CartService;
+import com.ecsite.module.member.api.MemberApi;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -17,7 +21,8 @@ import java.util.UUID;
 
 /**
  * カートのコントローラー（C 側。store.yaml の tag: cart）。<br />
- * カートの表示（tag: cart-view）は、店舗モジュールが受ける。
+ * カートの表示（tag: cart-view）は、店舗モジュールが受ける。<br />
+ * カートの操作は認証が任意で、token があれば会員として扱う。会員のカートは持ち主だけが使える（AC-121）。
  */
 @RestController
 @RequiredArgsConstructor
@@ -27,6 +32,16 @@ class CartController implements CartApi {
      * カートのサービス
      */
     private final CartService cartService;
+
+    /**
+     * token の会員
+     */
+    private final CurrentMember currentMember;
+
+    /**
+     * 会員の API（会員 ID を求める）
+     */
+    private final MemberApi memberApi;
 
     /**
      * カートを作る（AC-73）
@@ -55,7 +70,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> addCartItem(UUID cartId, AddCartItemRequest request) {
-        cartService.addItem(cartId, request.getVariantId(), request.getQuantity());
+        cartService.addItem(cartId, requester(), request.getVariantId(), request.getQuantity());
         return ResponseEntity.noContent().build();
     }
 
@@ -69,7 +84,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> changeCartItemQuantity(UUID cartId, UUID variantId, ChangeCartItemQuantityRequest request) {
-        cartService.changeQuantity(cartId, variantId, request.getQuantity());
+        cartService.changeQuantity(cartId, requester(), variantId, request.getQuantity());
         return ResponseEntity.noContent().build();
     }
 
@@ -82,18 +97,52 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<Void> removeCartItem(UUID cartId, UUID variantId) {
-        cartService.removeItem(cartId, variantId);
+        cartService.removeItem(cartId, requester(), variantId);
         return ResponseEntity.noContent().build();
     }
 
-    // T3309 で実装する（store.yaml の変更でインターフェースに足された）
+    /**
+     * 会員のカート（AC-121）。なければ作る
+     *
+     * @return Http 200 : {@link MemberCart}
+     */
     @Override
     public ResponseEntity<MemberCart> getMemberCart() {
-        throw new UnsupportedOperationException("T3309");
+        return ResponseEntity.ok(new MemberCart(cartService.memberCartId(memberId())));
     }
 
+    /**
+     * カートを移す（AC-122、123）
+     *
+     * @param request カートを移すリクエスト
+     * @return Http 200 : {@link MergeCartResult}
+     */
     @Override
     public ResponseEntity<MergeCartResult> mergeCart(MergeCartRequest request) {
-        throw new UnsupportedOperationException("T3309");
+        var merged = cartService.merge(memberId(), request.getCartId());
+        return ResponseEntity.ok(new MergeCartResult(
+                merged.cartId(),
+                merged.result().truncatedItems().stream().map(CartController::toMergedItem).toList(),
+                merged.result().skippedItems().stream().map(CartController::toMergedItem).toList()));
+    }
+
+// ============================== プライベートメソッド ==============================
+
+    /**
+     * 要求した会員の ID。ログインしていなければ null
+     */
+    private UUID requester() {
+        return currentMember.find().map(member -> memberApi.memberIdOf(member.subject())).orElse(null);
+    }
+
+    /**
+     * token の会員の ID（会員の操作。token がなければ 401）
+     */
+    private UUID memberId() {
+        return memberApi.memberIdOf(currentMember.require().subject());
+    }
+
+    private static MergedCartItem toMergedItem(CartMergeResult.Item item) {
+        return new MergedCartItem(item.variantId(), item.quantity());
     }
 }

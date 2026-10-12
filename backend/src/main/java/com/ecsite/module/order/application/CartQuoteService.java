@@ -45,14 +45,19 @@ public class CartQuoteService {
     /**
      * カートを現在の価格・税率・販売可能数で見積もる。注文手続き中なら、自分の引当を販売可能数から除く。
      *
-     * @param cartId カート ID
-     * @return 見積もり。カートがなければ空
+     * 会員のカートは、持ち主の会員にだけ見積もる（AC-121。ほかの人には、カートがないときと同じく空）。
+     *
+     * @param cartId    カート ID
+     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @return 見積もり。カートがない、または持ち主でなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<CartQuote> quoteCart(UUID cartId) {
+    public Optional<CartQuote> quoteCart(UUID cartId, UUID requester) {
         var now = clock.instant();
         var holderId = checkoutRepository.findLatestIdByCartId(cartId).orElse(null);
-        return cartDirectory.find(cartId).map(cart -> toCartQuote(cartId, quoteService.quote(cart.lines(), now, holderId)));
+        return cartDirectory.find(cartId)
+                .filter(cart -> cart.isAccessibleBy(requester))
+                .map(cart -> toCartQuote(cartId, quoteService.quote(cart.lines(), now, holderId)));
     }
 
     /**

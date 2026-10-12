@@ -111,6 +111,9 @@ class SecurityConfig {
                         .authenticationEntryPoint(responder)
                         .accessDeniedHandler(responder))
                 .authorizeHttpRequests(authorize -> authorize
+                        // 会員の操作（plan 003 第 5.1 節）。token がなければ 401
+                        .requestMatchers("/api/store/me/**").authenticated()
+                        // 認証が不要・任意の操作
                         .anyRequest().permitAll())
                 .build();
     }

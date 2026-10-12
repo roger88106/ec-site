@@ -11,13 +11,15 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
  * カート（docs/modules/cart.md）。品目を入れた順に持つ。価格は持たない（AC-79）。<br />
  * 最後の変更から 30 日たったカートは空として扱い、次に書くときに品目を消す（AC-81）。
- * 変更のたびにバージョンを上げる（注文手続きの後の変更を見つけるため）。
+ * 変更のたびにバージョンを上げる（注文手続きの後の変更を見つけるため）。<br />
+ * 会員のカートは会員 ID を持ち、持ち主の会員だけが使える。ログインせずに作ったカートは会員を持たず、ID を知っていればだれでも使える（AC-120、121）。
  */
 @Getter
 @Accessors(fluent = true)
@@ -44,6 +46,12 @@ public class Cart {
     private final UUID id;
 
     /**
+     * 会員 ID。ログインせずに作ったカートは null
+     */
+    @Getter(AccessLevel.NONE)
+    private final UUID memberId;
+
+    /**
      * 品目（入れた順）
      */
     @Getter(AccessLevel.NONE)
@@ -63,12 +71,14 @@ public class Cart {
      * 全属性コンストラクタ（リポジトリが復元に使う）
      *
      * @param id        カート ID
+     * @param memberId  会員 ID（ログインせずに作ったカートは null）
      * @param items     品目（入れた順）
      * @param version   バージョン
      * @param updatedAt 最終更新日時
      */
-    public Cart(@NonNull UUID id, @NonNull List<CartItem> items, long version, @NonNull Instant updatedAt) {
+    public Cart(@NonNull UUID id, UUID memberId, @NonNull List<CartItem> items, long version, @NonNull Instant updatedAt) {
         this.id = id;
+        this.memberId = memberId;
         this.items = new ArrayList<>(items);
         this.version = version;
         this.updatedAt = updatedAt;
@@ -82,7 +92,36 @@ public class Cart {
      * @return カート
      */
     public static Cart create(UUID id, Instant now) {
-        return new Cart(id, List.of(), 0, now);
+        return new Cart(id, null, List.of(), 0, now);
+    }
+
+    /**
+     * 会員の空のカートを作る（AC-121）。
+     *
+     * @param id       カート ID
+     * @param memberId 会員 ID
+     * @param now      現在時刻
+     * @return カート
+     */
+    public static Cart createForMember(UUID id, @NonNull UUID memberId, Instant now) {
+        return new Cart(id, memberId, List.of(), 0, now);
+    }
+
+    /**
+     * @return 会員 ID。ログインせずに作ったカートは空
+     */
+    public Optional<UUID> memberId() {
+        return Optional.ofNullable(memberId);
+    }
+
+    /**
+     * 要求した人がカートを使えるか（AC-120、121）。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
+     *
+     * @param requesterMemberId 要求した会員の ID（ログインしていなければ null）
+     * @return 使えれば true
+     */
+    public boolean isAccessibleBy(UUID requesterMemberId) {
+        return memberId == null || memberId.equals(requesterMemberId);
     }
 
     /**
@@ -164,6 +203,43 @@ public class Cart {
             items.remove(index);
             touch(now);
         }
+    }
+
+    /**
+     * ログインせずに使っていたカートの品目を、このカート（会員のカート）へ移し、移したカートを空にする（AC-122、123）。<br />
+     * 品目を入れた順に後ろへ入れ、同じバリアントは数量を合算して 10 で切り詰める。品目が 30 に達したら、残りの新しいバリアントは移さない。
+     * 商品カタログ・在庫は確かめない。移すカートが空なら（2 回目）、どちらも変えない。
+     *
+     * @param source 移すカート（ログインせずに使っていたもの）
+     * @param now    現在時刻
+     * @return 切り詰めた品目と、移さなかった品目
+     */
+    public CartMergeResult mergeFrom(@NonNull Cart source, @NonNull Instant now) {
+        var sourceItems = source.itemsAt(now);
+        if (sourceItems.isEmpty()) {
+            return CartMergeResult.EMPTY;
+        }
+        dropIfExpired(now);
+        var truncated = new ArrayList<CartMergeResult.Item>();
+        var skipped = new ArrayList<CartMergeResult.Item>();
+        for (var item : sourceItems) {
+            var index = indexOf(item.variantId());
+            if (index >= 0) {
+                var merged = items.get(index).quantity() + item.quantity();
+                if (merged > MAX_QUANTITY) {
+                    merged = MAX_QUANTITY;
+                    truncated.add(new CartMergeResult.Item(item.variantId(), merged));
+                }
+                items.set(index, items.get(index).withQuantity(merged));
+            } else if (items.size() >= MAX_ITEMS) {
+                skipped.add(new CartMergeResult.Item(item.variantId(), item.quantity()));
+            } else {
+                items.add(new CartItem(item.variantId(), Math.min(item.quantity(), MAX_QUANTITY), now));
+            }
+        }
+        touch(now);
+        source.clear(now);
+        return new CartMergeResult(truncated, skipped);
     }
 
     /**

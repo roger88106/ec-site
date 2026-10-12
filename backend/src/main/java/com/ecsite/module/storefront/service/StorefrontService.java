@@ -85,13 +85,15 @@ public class StorefrontService {
     }
 
     /**
-     * カートを表示する（AC-77、79〜81）。金額と購入できるかは、注文モジュールの見積もりで求める。
+     * カートを表示する（AC-77、79〜81）。金額と購入できるかは、注文モジュールの見積もりで求める。<br />
+     * 会員のカートは、持ち主の会員だけに見せる。ほかの人には 404（AC-121）。
      *
-     * @param cartId カート ID
+     * @param cartId    カート ID
+     * @param requester 要求した会員の ID（ログインしていなければ null）
      * @return カートの表示
      */
-    public CartView getCart(UUID cartId) {
-        return orderDirectory.findCart(cartId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+    public CartView getCart(UUID cartId, UUID requester) {
+        return orderDirectory.findCart(cartId, requester).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
     /**

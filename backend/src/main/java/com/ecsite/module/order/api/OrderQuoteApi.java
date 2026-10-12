@@ -22,10 +22,13 @@ public class OrderQuoteApi {
     /**
      * カートを現在の価格・税率・販売可能数で見積もる（AC-77、79〜81）。
      *
-     * @param cartId カート ID
-     * @return 見積もり。カートがなければ空
+     * 会員のカートは、持ち主の会員にだけ見積もる（AC-121）。
+     *
+     * @param cartId    カート ID
+     * @param requester 要求した会員の ID（ログインしていなければ null）
+     * @return 見積もり。カートがない、または持ち主でなければ空
      */
-    public Optional<CartQuote> quoteCart(UUID cartId) {
-        return cartQuoteService.quoteCart(cartId);
+    public Optional<CartQuote> quoteCart(UUID cartId, UUID requester) {
+        return cartQuoteService.quoteCart(cartId, requester);
     }
 }

@@ -27,11 +27,30 @@ public interface CartDirectory {
     /**
      * カートの中身
      *
-     * @param cartId  カート ID
-     * @param version バージョン（注文手続きの後の変更を見つけるため）
-     * @param lines   品目（入れた順）
+     * @param cartId   カート ID
+     * @param memberId 会員 ID（ログインせずに作ったカートは null）
+     * @param version  バージョン（注文手続きの後の変更を見つけるため）
+     * @param lines    品目（入れた順）
      */
-    record CartSnapshot(UUID cartId, long version, List<Line> lines) {
+    record CartSnapshot(UUID cartId, UUID memberId, long version, List<Line> lines) {
+
+        /**
+         * 要求した会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも（AC-120、121）。
+         *
+         * @param requester 要求した会員の ID（ログインしていなければ null）
+         * @return 使えれば true
+         */
+        public boolean isAccessibleBy(UUID requester) {
+            return memberId == null || memberId.equals(requester);
+        }
+
+        /**
+         * @param memberId 会員 ID
+         * @return 会員のカートで、その会員が持ち主なら true（注文手続きを始められるカート。AC-125）
+         */
+        public boolean isOwnedBy(UUID memberId) {
+            return this.memberId != null && this.memberId.equals(memberId);
+        }
     }
 
     /**

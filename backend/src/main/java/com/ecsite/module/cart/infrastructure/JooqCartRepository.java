@@ -34,7 +34,7 @@ class JooqCartRepository implements CartRepository {
     private final Clock clock;
 
     /**
-     * カートを作る。
+     * カートを作る。会員のカートは、同じ会員のカートがすでにあれば作らない（一意制約の違反でトランザクションを壊さない）。
      *
      * @param cart 空のカート
      */
@@ -42,10 +42,18 @@ class JooqCartRepository implements CartRepository {
     public void create(Cart cart) {
         dsl.insertInto(CART_)
                 .set(CART_.ID, cart.id())
+                .set(CART_.MEMBER_ID, cart.memberId().orElse(null))
                 .set(CART_.VERSION, cart.version())
                 .set(CART_.CREATED_AT, clock.instant())
                 .set(CART_.UPDATED_AT, cart.updatedAt())
+                .onConflict(CART_.MEMBER_ID)
+                .doNothing()
                 .execute();
+    }
+
+    @Override
+    public Optional<UUID> findIdByMemberId(UUID memberId) {
+        return dsl.select(CART_.ID).from(CART_).where(CART_.MEMBER_ID.eq(memberId)).fetchOptional(CART_.ID);
     }
 
     /**
@@ -59,7 +67,7 @@ class JooqCartRepository implements CartRepository {
         return dsl.selectFrom(CART_)
                 .where(CART_.ID.eq(id))
                 .fetchOptional()
-                .map(cart -> new Cart(cart.getId(),
+                .map(cart -> new Cart(cart.getId(), cart.getMemberId(),
                         dsl.selectFrom(CART_ITEM)
                                 .where(CART_ITEM.CART_ID.eq(id))
                                 .orderBy(CART_ITEM.SEQUENCE_NO)

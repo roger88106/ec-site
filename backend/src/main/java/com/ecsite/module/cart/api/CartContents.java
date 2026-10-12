@@ -6,11 +6,12 @@ import java.util.UUID;
 /**
  * カートの中身（docs/modules/cart.md「他モジュールへの公開」）。期限切れのカートは品目が空。
  *
- * @param cartId  カート ID
- * @param version バージョン（変更のたびに上がる）
- * @param items   品目（入れた順）
+ * @param cartId   カート ID
+ * @param memberId 会員 ID（ログインせずに作ったカートは null）。持ち主の確認に使う（AC-121）
+ * @param version  バージョン（変更のたびに上がる）
+ * @param items    品目（入れた順）
  */
-public record CartContents(UUID cartId, long version, List<Item> items) {
+public record CartContents(UUID cartId, UUID memberId, long version, List<Item> items) {
 
     /**
      * 品目

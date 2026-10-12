@@ -54,6 +54,9 @@ class MessageContractTest {
      */
     private static final List<Enum<?>> ERROR_CODES = new ArrayList<>();
 
+    /**
+     * メッセージのファイルと、すべてのエラーの定義の定数を読む
+     */
     @BeforeAll
     static void load() throws IOException {
         try (var stream = MessageContractTest.class.getResourceAsStream("/messages.properties")) {

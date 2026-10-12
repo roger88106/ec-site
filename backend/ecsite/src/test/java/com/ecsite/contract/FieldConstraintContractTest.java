@@ -111,6 +111,9 @@ class FieldConstraintContractTest {
                         "com.ecsite.common.paging.PageRequest#MAX_SIZE", List.of()));
     }
 
+    /**
+     * 2 つの API の契約を読む
+     */
     @BeforeAll
     static void loadContracts() throws IOException {
         for (String file : List.of("admin.yaml", "store.yaml")) {

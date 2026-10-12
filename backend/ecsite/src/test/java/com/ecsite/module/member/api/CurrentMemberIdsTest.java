@@ -48,6 +48,9 @@ class CurrentMemberIdsTest {
                 }
             }, Clock.systemUTC()));
 
+    /**
+     * ログインの状態を消す
+     */
     @AfterEach
     void clearAuthentication() {
         SecurityContextHolder.clearContext();

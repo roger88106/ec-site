@@ -65,6 +65,9 @@ class ValidationMessagesTest {
      */
     private ValidationMessages messages;
 
+    /**
+     * JVM と要求のロケールを英語にし、メッセージのファイルを読む部品を作る
+     */
     @BeforeEach
     void setUp() {
         originalLocale = Locale.getDefault();
@@ -78,6 +81,9 @@ class ValidationMessagesTest {
         messages = new ValidationMessages(new MessageHelper(messageSource));
     }
 
+    /**
+     * ロケールを元に戻す
+     */
     @AfterEach
     void tearDown() {
         Locale.setDefault(originalLocale);

@@ -1,9 +1,9 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.converter;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestcontainersConfig;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.media.service.ImageConverter;
+import com.ecsite.module.media.application.port.ImageConverter;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

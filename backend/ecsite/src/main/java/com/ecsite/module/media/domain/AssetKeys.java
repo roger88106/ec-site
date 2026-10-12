@@ -1,4 +1,4 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.domain;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
  * ファイルのキーの決まり（plan 001 第 7.1 節）。キーの形はここでだけ決める。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-final class AssetKeys {
+public final class AssetKeys {
 
     /**
      * 範囲に使える文字。キーの区切り（/）を含めさせない
@@ -25,7 +25,7 @@ final class AssetKeys {
      * @return {範囲}/{uploadId}
      * @throws IllegalArgumentException 範囲に使えない文字がある
      */
-    static String upload(String scope, UUID uploadId) {
+    public static String upload(String scope, UUID uploadId) {
         if (scope == null || !SCOPE.matcher(scope).matches()) {
             throw new IllegalArgumentException("範囲は英数字とハイフンで 1〜64 文字にする：" + scope);
         }
@@ -39,7 +39,7 @@ final class AssetKeys {
      * @param format  形式
      * @return assets/{assetId}.{拡張子}
      */
-    static String published(UUID assetId, ImageFormat format) {
+    public static String published(UUID assetId, ImageFormat format) {
         return "assets/" + assetId + "." + format.extension();
     }
 }

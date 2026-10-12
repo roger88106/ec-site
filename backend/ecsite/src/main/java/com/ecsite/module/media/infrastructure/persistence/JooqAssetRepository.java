@@ -1,9 +1,9 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.persistence;
 
 import com.ecsite.jooq.media.tables.records.AssetRecord;
-import com.ecsite.module.media.service.Asset;
-import com.ecsite.module.media.service.AssetRepository;
-import com.ecsite.module.media.service.ImageFormat;
+import com.ecsite.module.media.application.port.AssetRepository;
+import com.ecsite.module.media.domain.Asset;
+import com.ecsite.module.media.domain.ImageFormat;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;

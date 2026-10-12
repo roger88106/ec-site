@@ -1,4 +1,6 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.application.port;
+
+import com.ecsite.module.media.domain.Asset;
 
 import java.util.Collection;
 import java.util.List;

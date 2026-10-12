@@ -1,4 +1,4 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.converter;
 
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;

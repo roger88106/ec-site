@@ -1,8 +1,16 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.application;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.media.api.ImageUpload;
 import com.ecsite.module.media.api.MediaApi;
+import com.ecsite.module.media.application.port.AssetRepository;
+import com.ecsite.module.media.application.port.ImageConverter;
+import com.ecsite.module.media.application.port.ObjectStorage;
+import com.ecsite.module.media.domain.Asset;
+import com.ecsite.module.media.domain.AssetKeys;
+import com.ecsite.module.media.domain.AssetReleased;
+import com.ecsite.module.media.domain.ImageFormat;
+import com.ecsite.module.media.domain.MediaErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;

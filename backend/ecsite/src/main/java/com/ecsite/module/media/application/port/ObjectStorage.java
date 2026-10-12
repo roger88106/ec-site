@@ -1,4 +1,4 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.application.port;
 
 import java.net.URI;
 import java.time.Instant;

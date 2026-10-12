@@ -1,4 +1,4 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.domain;
 
 import lombok.Getter;
 import lombok.NonNull;

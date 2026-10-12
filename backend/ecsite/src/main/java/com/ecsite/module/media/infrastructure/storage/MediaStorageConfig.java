@@ -1,4 +1,4 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.storage;
 
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

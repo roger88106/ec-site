@@ -16,7 +16,7 @@
 ## 移動（モジュールごとに、`git mv` の commit と参照の修正の commit を分ける）
 
 - [x] **T5204** cart を標準の構成に（Directory の口と実装を分ける）。
-- [ ] **T5205** media を標準の構成に（`service/` 11 を application・domain・infrastructure に）。
+- [x] **T5205** media を標準の構成に（`service/` 11 を application・domain・infrastructure に）。
 - [ ] **T5206** member を標準の構成に。
 - [ ] **T5207** storefront を標準の構成に（`catalogdir`・`orderdir`・`stockdir` を `application/port/` と `infrastructure/directory/` に）。
 - [ ] **T5208** catalog：`infrastructure/` を `persistence/`・`directory/`・`cache/` に、application の参照の Repository の口を `application/port/` に。

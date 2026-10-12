@@ -1,6 +1,6 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.storage;
 
-import com.ecsite.module.media.service.ObjectStorage;
+import com.ecsite.module.media.application.port.ObjectStorage;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

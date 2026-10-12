@@ -1,7 +1,7 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.storage;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.module.media.service.ObjectStorage;
+import com.ecsite.module.media.application.port.ObjectStorage;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;

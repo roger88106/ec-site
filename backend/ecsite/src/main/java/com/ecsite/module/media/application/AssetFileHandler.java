@@ -1,5 +1,7 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.application;
 
+import com.ecsite.module.media.application.port.ObjectStorage;
+import com.ecsite.module.media.domain.AssetReleased;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;

@@ -1,10 +1,11 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.converter;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
-import com.ecsite.module.media.service.ImageConverter;
-import com.ecsite.module.media.service.MediaErrorCode;
+import com.ecsite.module.media.application.port.ImageConverter;
+import com.ecsite.module.media.domain.MediaErrorCode;
+import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
@@ -13,8 +14,6 @@ import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.client.RestClientResponseException;
 
-import javax.crypto.Mac;
-import javax.crypto.spec.SecretKeySpec;
 import java.net.http.HttpClient;
 import java.net.http.HttpTimeoutException;
 import java.nio.charset.StandardCharsets;
@@ -22,6 +21,8 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 /**
  * 画像の変換の imgproxy の実装（plan 001 第 7.5 節）。<br />

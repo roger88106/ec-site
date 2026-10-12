@@ -1,4 +1,4 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.application.port;
 
 /**
  * 画像の変換（plan 001 第 7.5 節）。受付のバケットのファイルを、配信する形式（WebP）に変換する。<br />

@@ -1,4 +1,4 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.storage;
 
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;

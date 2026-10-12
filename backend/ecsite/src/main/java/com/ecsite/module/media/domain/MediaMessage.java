@@ -1,4 +1,4 @@
-package com.ecsite.module.media.service;
+package com.ecsite.module.media.domain;
 
 import com.ecsite.common.message.I18nMessage;
 import lombok.AccessLevel;

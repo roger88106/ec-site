@@ -1,10 +1,10 @@
 package com.ecsite.module.media.api;
 
 import com.ecsite.IntegrationTest;
-import com.ecsite.TestcontainersConfig;
 import com.ecsite.TestImages;
+import com.ecsite.TestcontainersConfig;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.media.service.ObjectStorage;
+import com.ecsite.module.media.application.port.ObjectStorage;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;

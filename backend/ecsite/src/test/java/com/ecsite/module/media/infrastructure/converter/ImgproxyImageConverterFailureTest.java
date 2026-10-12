@@ -1,7 +1,8 @@
-package com.ecsite.module.media.infrastructure;
+package com.ecsite.module.media.infrastructure.converter;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;

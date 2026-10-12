@@ -27,7 +27,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 認証と認可の統合テスト（T3203、plan 003 第 3.1〜3.3 節）。<br />
  * token は {@link TestTokens} がテストの鍵で署名したもので、本番と同じ検証（署名・issuer・audience・有効期限）と、
- * {@code admin.yaml} の {@code x-required-permission} による判定を通す。
+ * {@code admin.yaml} の {@code x-required-permission} による判定を通す。<br />
+ * 管理 API の要求には既定で管理者の token が付く（{@link com.ecsite.TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -50,7 +51,7 @@ class AuthorizationTest {
         @Test
         @DisplayName("AC-137 token がないと 401")
         void rejectsMissingToken() throws Exception {
-            mockMvc.perform(get(TAX_CATEGORIES))
+            mockMvc.perform(get(TAX_CATEGORIES).with(TestTokens.none()))
                     .andExpect(status().isUnauthorized())
                     .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
         }
@@ -188,7 +189,7 @@ class AuthorizationTest {
         @Test
         @DisplayName("NFR-3 admin.yaml にない要求も、token がなければ 401")
         void rejectsUndeclaredWithoutToken() throws Exception {
-            mockMvc.perform(get("/api/admin/undeclared"))
+            mockMvc.perform(get("/api/admin/undeclared").with(TestTokens.none()))
                     .andExpect(status().isUnauthorized())
                     .andExpectAll(problem("UNAUTHENTICATED", UNAUTHENTICATED));
         }

@@ -111,7 +111,7 @@ node scripts/dev/mkorder.js --member member2@example.com member2-pass-1   # 別�
 
 ## E2E（`e2e/`）
 
-`docs/dev/testing.md` の「E2E」の通り。バックエンド（:8080）、管理画面（:4173）、店舗画面（:3100）は、起動していなければ Playwright が起動する。
+`docs/dev/testing.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を作り直し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
 
 ```bash
 cd e2e && pnpm test 2>&1 | tail -30

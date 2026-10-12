@@ -213,11 +213,11 @@ jobs:
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
 
-      # バックエンドの local profile の接続先（PostgreSQL）と IdP（Keycloak、realm の JSON を取り込む）、IdP が送るメールの受け手（Mailpit）。
-      # docker/compose.yaml（ルートの .env が指す）をそのまま使う（Keycloak は同じ PostgreSQL の別の database を使うので、GitHub の services ではなく compose で起動する）。
-      # IdP の接続先と secret は、バックエンド（application-local.yml）・店舗画面・管理画面の既定の値が、realm の JSON のローカルと CI 用の値と同じなので渡さない（plan 003 第 2.4 節）
-      - name: DB・IdP・メールの起動
-        run: docker compose up -d --wait postgres keycloak mailpit
+      # E2E 用の DB と IdP の置き場所（PostgreSQL）と、IdP が送るメールの受け手（Mailpit）。
+      # docker/compose.yaml（ルートの .env が指す）をそのまま使う。E2E 用の DB・Keycloak（profile e2e）の作り直しと起動は、
+      # pnpm test の準備の script（e2e/scripts/prepare.ts）が手元と同じように行う（plan 004 第 6.1 節）
+      - name: DB・メールの起動
+        run: docker compose up -d --wait postgres mailpit
 
       # 画像の置き場所（S3 互換）と変換（imgproxy）。バケット、CORS、公開の設定は、compose の初期化のコンテナで作る（plan 001 第 7 節）
       - name: 画像の置き場所（SeaweedFS）と変換（imgproxy）の起動
@@ -252,7 +252,8 @@ jobs:
         working-directory: e2e
         run: pnpm exec playwright install-deps chromium
 
-      # バックエンド（local profile）、管理画面、店舗画面のビルドと起動は playwright.config.ts が行う
+      # E2E の準備（DB と IdP の作り直し）の後に、バックエンド（local,e2e profile）、管理画面、店舗画面を
+      # playwright.config.ts が起動する
       - name: E2E
         working-directory: e2e
         run: pnpm test

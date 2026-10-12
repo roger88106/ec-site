@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { STORE_URL } from '../src/urls'
 
 test('E2E の土台：API で作った公開の商品が、管理画面の一覧と店舗画面の詳細に出る', async ({ page }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
@@ -12,7 +13,7 @@ test('E2E の土台：API で作った公開の商品が、管理画面の一覧
     variants: [{ code: 'A', stock: 1 }],
   })
 
-  await page.goto(`${ADMIN_URL}/products/${productId}`)
+  await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
   await expect(page.getByText('公開', { exact: true }).first()).toBeVisible()
 
   await page.goto(`${STORE_URL}/products/${productId}`)

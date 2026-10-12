@@ -14,6 +14,8 @@ export const ACCOUNTS = {
   viewer: { email: 'viewer@example.com', password: 'viewer-pass-1' },
   /** 消費者の realm の会員 */
   member: { email: 'member@example.com', password: 'member-pass-1' },
+  /** 消費者の realm の 2 人目の会員（他人のデータ、別々の会員の同時の操作） */
+  member2: { email: 'member2@example.com', password: 'member2-pass-1' },
 } satisfies Record<string, Account>
 
 /**

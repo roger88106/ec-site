@@ -1,16 +1,8 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
+import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
+import { emptyCart, fillShipping } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
-
-/** お届け先の入力（郵便番号だけを差し替えられる） */
-async function fillShipping(page: Page, postalCode: string) {
-  await page.getByLabel('メールアドレス').fill('e2e@example.com')
-  await page.getByLabel('氏名').fill('E2E 太郎')
-  await page.getByLabel('郵便番号').fill(postalCode)
-  await page.getByLabel('都道府県').selectOption('東京都')
-  await page.getByLabel('住所').fill('千代田区千代田1-1')
-  await page.getByLabel('電話番号').fill('03-1234-5678')
-}
 
 test('AC-72、77、82、85〜87、93、95、101、107 店舗画面でカートに入れて注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
   page,
@@ -27,7 +19,9 @@ test('AC-72、77、82、85〜87、93、95、101、107 店舗画面でカート�
   const [variantId] = await variantIds(productId)
   let orderUrl = ''
 
-  await test.step('店舗画面：商品の詳細から 2 つカートに入れ、カートで金額の内訳を確かめる', async () => {
+  await test.step('店舗画面：会員としてログインし、商品の詳細から 2 つカートに入れ、カートで金額の内訳を確かめる', async () => {
+    await loginStore(page, ACCOUNTS.member)
+    await emptyCart(page)
     await page.goto(`${STORE_URL}/products/${productId}`)
     await page.getByLabel('数量').selectOption('2')
     await page.getByRole('button', { name: 'カートに入れる' }).click()
@@ -45,11 +39,12 @@ test('AC-72、77、82、85〜87、93、95、101、107 店舗画面でカート�
     await page.getByRole('button', { name: '注文手続きへ進む' }).click()
     await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
     await expect(page.getByText(/在庫を確保しています。残り/)).toBeVisible()
+    await expect(page.getByText(ACCOUNTS.member.email)).toBeVisible()
 
     await fillShipping(page, '12')
     await page.getByRole('button', { name: /^注文する/ }).click()
     await expect(page.getByText('郵便番号は数字 7 桁で入力してください。')).toBeVisible()
-    await expect(page.getByLabel('メールアドレス')).toHaveValue('e2e@example.com')
+    await expect(page.getByLabel('氏名')).toHaveValue('E2E 太郎')
 
     await page.getByLabel('郵便番号').fill('100-0001')
     await page.getByRole('button', { name: /^注文する/ }).click()
@@ -68,7 +63,7 @@ test('AC-72、77、82、85〜87、93、95、101、107 店舗画面でカート�
 
   await test.step('管理画面：申請を承認するとキャンセルになり、在庫数が戻って履歴に残る', async () => {
     const orderId = new URL(orderUrl).pathname.split('/').at(-1)
-    await page.goto(`${ADMIN_URL}/orders/${orderId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
     await page.getByRole('button', { name: '申請を承認する' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: '承認してキャンセルする' }).click()
     await expect(page.getByText('申請を承認し、キャンセルしました')).toBeVisible()

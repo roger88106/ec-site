@@ -1,6 +1,7 @@
 import { expect, test } from '@playwright/test'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createPublishedProduct, productCode, RUN_ID, taxCategoryWithRate } from '../src/data'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { STORE_URL } from '../src/urls'
 
 test('AC-28、62 管理画面でバリアントを販売停止にすると、店舗画面の詳細でその値が選べなくなる', async ({ page }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
@@ -21,7 +22,7 @@ test('AC-28、62 管理画面でバリアントを販売停止にすると、店
   await page.goto(`${STORE_URL}/products/${productId}`)
   await expect(page.getByRole('button', { name: '赤' })).toBeEnabled()
 
-  await page.goto(`${ADMIN_URL}/products/${productId}`)
+  await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
   await page.getByRole('button', { name: `${code}-REDを販売停止` }).click()
   await expect(page.getByText('販売停止にしました')).toBeVisible()
 

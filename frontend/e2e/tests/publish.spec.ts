@@ -1,7 +1,8 @@
 import { expect, test } from '@playwright/test'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createCategory, productCode, RUN_ID, taxCategoryWithRate } from '../src/data'
 import { expectEventually, productCard } from '../src/store'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { STORE_URL } from '../src/urls'
 
 test('AC-29、51、58、62〜64 管理画面で商品を登録し、バリアントと在庫を用意して公開すると、店舗画面の一覧・検索・詳細に出る', async ({
   page,
@@ -14,7 +15,7 @@ test('AC-29、51、58、62〜64 管理画面で商品を登録し、バリアン
   const name = `E2E ${keyword} T シャツ`
 
   await test.step('管理画面：商品を登録する（品番は小文字で入れても大文字になる）', async () => {
-    await page.goto(`${ADMIN_URL}/products/new`)
+    await loginAdmin(page, ACCOUNTS.administrator, `/products/new`)
     await page.getByLabel('商品品番（登録後は変更できません）').fill(code.toLowerCase())
     await expect(page.getByLabel('商品品番（登録後は変更できません）')).toHaveValue(code)
     await page.getByLabel('商品名').fill(name)

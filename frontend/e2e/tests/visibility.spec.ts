@@ -1,4 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import {
   createCategory,
   createPublishedProduct,
@@ -8,7 +9,7 @@ import {
   unpublish,
 } from '../src/data'
 import { expectEventually, productCard } from '../src/store'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { STORE_URL } from '../src/urls'
 
 /** 店舗画面の詳細が「見つかりません」であることを確かめる（AC-65） */
 async function expectNotFound(page: Page, productId: string) {
@@ -41,7 +42,7 @@ for (const [label, change, button, toast] of [
     await page.goto(`${STORE_URL}/products/${productId}`)
     await expect(page.getByRole('heading', { name })).toBeVisible()
 
-    await page.goto(`${ADMIN_URL}/products/${productId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
     await page.getByRole('button', { name: button }).click()
     if (change === discontinue) {
       // 販売終了は確認のダイアログで確定する

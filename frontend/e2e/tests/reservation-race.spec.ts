@@ -1,5 +1,7 @@
 import { expect, test } from '@playwright/test'
+import { ACCOUNTS, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
+import { emptyCart } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 test('AC-82、83 在庫 1 の商品を 2 つのブラウザーで注文手続きに進むと、後の方は在庫不足と示される', async ({
@@ -13,9 +15,14 @@ test('AC-82、83 在庫 1 の商品を 2 つのブラウザーで注文手続き
     priceExclTax: 1000,
     variants: [{ code: 'A', stock: 1 }],
   })
-  // カートはブラウザーごと（Cookie）なので、別々のコンテキストで操作する
+  // 注文手続きに進むにはログインが要る（AC-125）。会員のカートは会員ごとなので、別々の会員が別々のコンテキストで操作する
   const [first, second] = await Promise.all([browser.newPage(), browser.newPage()])
-  for (const page of [first, second]) {
+  for (const [page, account] of [
+    [first, ACCOUNTS.member],
+    [second, ACCOUNTS.member2],
+  ] as const) {
+    await loginStore(page, account)
+    await emptyCart(page)
     await page.goto(`${STORE_URL}/products/${productId}`)
     await page.getByRole('button', { name: 'カートに入れる' }).click()
     await expect(page.getByText('カートに入れました。')).toBeVisible()

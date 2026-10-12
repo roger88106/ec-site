@@ -1,8 +1,9 @@
 import path from 'node:path'
 import { expect, test } from '@playwright/test'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createCategory, createPublishedProduct, RUN_ID, taxCategoryWithRate } from '../src/data'
 import { expectEventually, productCard } from '../src/store'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { STORE_URL } from '../src/urls'
 
 /**
  * スマートフォンの形式の画像（AVIF）。左が赤、右が青の 64x32 で、向き（時計回りに 90 度）と位置情報が付いている。
@@ -26,7 +27,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を登録すると、WebP �
   })
 
   await test.step('管理画面：画像を選ぶと、ストレージへ送って登録する', async () => {
-    await page.goto(`${ADMIN_URL}/products/${productId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
     await page.getByLabel('画像のファイル').setInputFiles(PHOTO)
     await expect(page.getByText('画像を 1 枚登録しました')).toBeVisible()
     await expect(page.getByRole('img', { name: '画像 1' })).toBeVisible()

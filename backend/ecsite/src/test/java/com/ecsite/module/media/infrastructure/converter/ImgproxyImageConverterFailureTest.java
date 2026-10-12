@@ -72,6 +72,24 @@ class ImgproxyImageConverterFailureTest {
     }
 
     @Test
+    @DisplayName("AC-68 imgproxy が 200 で WebP でない本文を返したら、Content-Type が WebP でも変換の失敗になる")
+    void failsWhenBodyIsNotWebp() {
+        byte[] png = {(byte) 0x89, 'P', 'N', 'G', '\r', '\n', 0x1a, '\n', 0, 0, 0, 0, 'I', 'H', 'D', 'R'};
+        responder.set(exchange -> sendBytes(exchange, "image/webp", png));
+
+        assertConversionFailed(converter(baseUrl()));
+    }
+
+    @Test
+    @DisplayName("imgproxy が 200 で WebP の本文を返したら、その本文を変換の結果にする")
+    void returnsWebpBody() {
+        byte[] webp = {'R', 'I', 'F', 'F', 4, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '};
+        responder.set(exchange -> sendBytes(exchange, "image/webp", webp));
+
+        assertThat(converter(baseUrl()).convertToWebp("scope/upload")).isEqualTo(webp);
+    }
+
+    @Test
     @DisplayName("imgproxy が要求を断った（4xx）ら、変換の失敗になる")
     void failsOnClientError() {
         responder.set(exchange -> send(exchange, 422, "unprocessable"));
@@ -177,6 +195,22 @@ class ImgproxyImageConverterFailureTest {
         exchange.sendResponseHeaders(status, bytes.length);
         try (var out = exchange.getResponseBody()) {
             out.write(bytes);
+        }
+    }
+
+    /**
+     * 200 と、形式と本文を返す。
+     *
+     * @param exchange    要求と応答
+     * @param contentType 応答の形式
+     * @param body        本文
+     * @throws IOException 応答を書けない
+     */
+    private static void sendBytes(HttpExchange exchange, String contentType, byte[] body) throws IOException {
+        exchange.getResponseHeaders().set("Content-Type", contentType);
+        exchange.sendResponseHeaders(200, body.length);
+        try (var out = exchange.getResponseBody()) {
+            out.write(body);
         }
     }
 }

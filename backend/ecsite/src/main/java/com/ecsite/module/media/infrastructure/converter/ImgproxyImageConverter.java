@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ImageConverter;
+import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
 import lombok.extern.slf4j.Slf4j;
@@ -78,13 +79,20 @@ class ImgproxyImageConverter implements ImageConverter {
 
     /**
      * imgproxy に変換させる。imgproxy がエラーを返したとき（壊れたファイルには 500 を返すこともある）と、時間切れは、
-     * 変換の失敗にする。応答だけではストレージの不具合と区別できないため、応答をログに残す。
+     * 変換の失敗にする。応答だけではストレージの不具合と区別できないため、応答をログに残す。<br />
+     * 配信する画像はすべて WebP にするので、応答の本文が WebP でなければ（先頭のバイトで判定し、Content-Type には
+     * 頼らない）、変換の失敗にする。
      */
     @Override
     public byte[] convertToWebp(String uploadKey) {
         var path = processingPath(uploadKey);
         try {
-            return restClient.get().uri(signature(path) + path).retrieve().body(byte[].class);
+            byte[] body = restClient.get().uri(signature(path) + path).retrieve().body(byte[].class);
+            if (body == null || ImageFormat.detect(body).filter(ImageFormat.WEBP::equals).isEmpty()) {
+                log.warn("imgproxy の応答が WebP でない：uploadKey={}, bytes={}", uploadKey, body == null ? 0 : body.length);
+                throw BusinessException.of(MediaErrorCode.IMAGE_CONVERSION_FAILED);
+            }
+            return body;
         } catch (RestClientResponseException e) {
             log.warn("imgproxy が画像を変換できなかった：uploadKey={}, status={}, body={}",
                     uploadKey, e.getStatusCode().value(), e.getResponseBodyAsString());

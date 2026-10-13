@@ -13,7 +13,8 @@
     "test": "pnpm generate:api && node scripts/prepare.ts && playwright test",
     "typecheck": "pnpm generate:api && tsc --noEmit",
     "lint": "biome check --error-on-warnings",
-    "lint:fix": "biome check --write"
+    "lint:fix": "biome check --write",
+    "capture": "playwright test -c playwright.showcase.config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

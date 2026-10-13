@@ -9,7 +9,7 @@ import { fileURLToPath } from 'node:url'
 const TEST_FILES = [
   /^backend\/ecsite\/src\/(?:test|integrationTest)\/.*\.java$/,
   /^frontend\/(?:admin|store|shared)\/src\/.*\.test\.tsx?$/,
-  /^e2e\/(?:tests|src)\/.*\.ts$/,
+  /^e2e\/(?:tests|src|showcase)\/.*\.ts$/,
 ]
 
 /** 時間で待つ呼び出し（Thread.sleep、TimeUnit の sleep、Playwright の waitForTimeout） */

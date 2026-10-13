@@ -12,5 +12,5 @@
     "allowImportingTsExtensions": true,
     "noEmit": true
   },
-  "include": ["src", "tests", "scripts", "playwright.config.ts"]
+  "include": ["src", "tests", "scripts", "showcase", "playwright.config.ts", "playwright.showcase.config.ts"]
 }

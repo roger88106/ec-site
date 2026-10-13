@@ -1,4 +1,4 @@
-/** API のクライアントが使う、ログインの情報の出どころ（管理画面の構成 第 11 節） */
+/** API のクライアントが使う、ログインの情報の出どころ（管理画面の構成 第 10 節） */
 type TokenSource = {
   /** いまの access token。なければ undefined */
   accessToken: () => string | undefined

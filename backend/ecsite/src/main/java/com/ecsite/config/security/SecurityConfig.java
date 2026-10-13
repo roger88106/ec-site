@@ -27,7 +27,7 @@ import java.util.Collection;
 import java.util.List;
 
 /**
- * 認証と認可の設定（第 3.1〜3.3 節、constitution 10.2）。<br />
+ * 認証と認可の設定（第 3.1〜3.3 節、バックエンドのアーキテクチャ 第 7.2 節）。<br />
  * パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
  * <ul>
  *     <li>{@code /api/admin/**}：運営者の realm の token が必須。権限は {@code admin.yaml} で決める</li>

@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文の腐敗防止層（constitution 4.1、docs/modules/storefront.md）。<br />
+ * 注文の腐敗防止層（バックエンドのアーキテクチャ 第 1 節、docs/backend/modules/storefront.md）。<br />
  * 注文モジュールの見積もりの API を呼び、カートの表示に変換する。
  */
 @Component

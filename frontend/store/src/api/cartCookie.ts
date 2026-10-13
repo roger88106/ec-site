@@ -7,7 +7,7 @@ import { type CartMergeNotice, parseCartMergeNotice, serializeCartMergeNotice } 
 const CART_COOKIE = 'cart_id'
 
 /**
- * Cookie のカート ID を読む（店舗画面の構成 第 4.2 節）。サーバーコンポーネントとサーバーアクションから呼ぶ。
+ * Cookie のカート ID を読む（店舗画面の構成 第 4.4 節）。サーバーコンポーネントとサーバーアクションから呼ぶ。
  *
  * @returns カート ID。Cookie がない・形の違う値なら null
  */
@@ -25,14 +25,14 @@ export async function writeCartId(cartId: string): Promise<void> {
 }
 
 /**
- * カート ID の Cookie を消す（ログアウト・カートを移した後。店舗画面の構成 第 4.2 節）。サーバーアクションと
+ * カート ID の Cookie を消す（ログアウト・カートを移した後。店舗画面の構成 第 4.4 節）。サーバーアクションと
  * ルートハンドラーからだけ呼べる。
  */
 export async function deleteCartId(): Promise<void> {
   ;(await cookies()).delete(CART_COOKIE)
 }
 
-/** カートを移した結果の知らせを持つ Cookie の名前（店舗画面の構成 第 4.2 節） */
+/** カートを移した結果の知らせを持つ Cookie の名前（店舗画面の構成 第 4.5 節） */
 const CART_MERGE_NOTICE_COOKIE = 'cart_merge_notice'
 
 /**

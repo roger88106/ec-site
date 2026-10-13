@@ -82,7 +82,7 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 - 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
 - 整形と自動で直せる lint は、各アプリで `pnpm lint:fix`。
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
-- 依存を足した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を流し直す（`docs/style/frontend.md` 第 9.1 節）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
+- 依存を足した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を流し直す（`docs/frontend/coding.md` 第 9.1 節）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
 
 開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で `.claude/launch.json` の名前を指定して起動する。
 
@@ -104,7 +104,7 @@ local profile の seed（`db/seed/local/`）が、画面を確かめるための
 
 ## E2E（`e2e/`）
 
-`docs/dev/testing.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を作り直し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
+`docs/testing/running.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を作り直し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
 
 ```bash
 cd e2e && pnpm test 2>&1 | tail -30

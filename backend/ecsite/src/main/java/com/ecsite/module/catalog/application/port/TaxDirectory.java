@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税の腐敗防止層（constitution 4.1）。<br />
+ * 税の腐敗防止層（バックエンドのアーキテクチャ 第 1 節）。<br />
  * 税モジュールの API を、商品カタログが必要とする形で包む。税モジュールの型を商品カタログの内部に持ち込まない。
  */
 public interface TaxDirectory {
@@ -35,7 +35,7 @@ public interface TaxDirectory {
 
     /**
      * すべての税区分について、指定した時点で有効な率を返す。C 側の一覧の SQL に埋め込むために使う。<br />
-     * 税率の一覧はインスタンス内で 30 秒キャッシュする（docs/modules/catalog.md）。
+     * 税率の一覧はインスタンス内で 30 秒キャッシュする（docs/backend/modules/catalog.md）。
      *
      * @param instant 時点
      * @return 税区分 ID → 率（%）。有効な税率のない税区分は含まない

@@ -1,5 +1,5 @@
 // ============================================================================
-// フロントの依存のライセンスを、方針（policy.json。constitution 17.2）と照らす
+// フロントの依存のライセンスを、方針（policy.json。依存とライセンス 第 2 節）と照らす
 //
 //   使い方：node scripts/ci/licenses/check-frontend.mjs
 //
@@ -108,7 +108,7 @@ function main() {
   const count = Object.values(report).reduce((sum, packages) => sum + packages.length, 0)
   console.log(`${failures.length === 0 ? 'OK' : 'NG'}：部品 ${count} 件、方針に合わない部品 ${failures.length} 件`)
   if (failures.length > 0) {
-    console.log('  方針に合う部品に替えるか、条件付きなら理由を scripts/ci/licenses/policy.json に足す（constitution 17）。')
+    console.log('  方針に合う部品に替えるか、条件付きなら理由を scripts/ci/licenses/policy.json に足す（依存とライセンス）。')
   }
   process.exit(failures.length === 0 ? 0 : 1)
 }

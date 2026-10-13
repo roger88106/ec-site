@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文に公開するカートの API（docs/modules/cart.md「他モジュールへの公開」）。<br />
+ * 注文に公開するカートの API（docs/backend/modules/cart.md「他のモジュールへの公開」）。<br />
  * カートを空にする操作は、呼び出し元（注文の成立）のトランザクションに参加する。
  */
 @Component

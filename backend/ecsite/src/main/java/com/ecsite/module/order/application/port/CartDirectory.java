@@ -5,7 +5,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートの腐敗防止層（constitution 4.1）
+ * カートの腐敗防止層（バックエンドのアーキテクチャ 第 1 節）
  */
 public interface CartDirectory {
 

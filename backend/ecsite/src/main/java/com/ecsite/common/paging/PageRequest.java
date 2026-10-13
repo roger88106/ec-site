@@ -5,7 +5,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import org.jspecify.annotations.Nullable;
 
 /**
- * ページの指定（constitution 9）。<br />
+ * ページの指定（API の規約）。<br />
  * ページは 1 始まり、件数は既定 20・最大 100。MVP はオフセット方式。
  *
  * @param page ページ番号（1 始まり）

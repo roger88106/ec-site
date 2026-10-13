@@ -1,7 +1,7 @@
 # seed
 
 開発と E2E で使うデータ。`db/seed/` の下に、使う profile ごとに分けて置く（`application-local.yml` と `application-e2e.yml` の `spring.flyway.locations`）。
-本番相当の環境と統合テストには適用されない（constitution 7.2）。
+本番相当の環境と統合テストには適用されない（バックエンドのアーキテクチャ 第 6.2 節）。
 
 | 置き場所 | 中身 | 使う profile |
 |----------|------|--------------|
@@ -20,7 +20,7 @@
   - ファイル名は、`base`・`local`・`e2e` を通して重ねない（Flyway は名前で繰り返し実行のマイグレーションを見分けるため）。
 - 何度実行しても同じ結果になるように書く（`INSERT ... ON CONFLICT (id) DO UPDATE` など）。
 - ID は固定の UUID にする。画面や `.http` から同じデータを指せるようにするため。
-- データ（名称など）は日本語で書く（constitution 14）。
+- データ（名称など）は日本語で書く（開発の進め方 第 3 節）。
 
 例：
 

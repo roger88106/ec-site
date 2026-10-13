@@ -38,7 +38,7 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
                         SALES_ORDER.RECIPIENT_NAME, SALES_ORDER.TOTAL_AMOUNT, SALES_ORDER.STATUS)
                 .from(SALES_ORDER)
                 .where(where)
-                // 同じ日時なら ID の順にし、ページをまたいでも重複・欠落が出ないようにする（constitution 9）
+                // 同じ日時なら ID の順にし、ページをまたいでも重複・欠落が出ないようにする（API の規約）
                 .orderBy(SALES_ORDER.ORDERED_AT.desc(), SALES_ORDER.ID)
                 .limit(request.size())
                 .offset(request.offset())

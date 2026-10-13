@@ -95,14 +95,14 @@ dependencies {
     implementation(libs.spring.boot.starter.restclient)
     // 認証（OAuth 2.0 の Resource Server。運営者・会員の access token を検証する）
     implementation(libs.spring.boot.starter.security.oauth2.resource.server)
-    // --- 可観測性（constitution 5-9） ---
+    // --- 可観測性（バックエンドのアーキテクチャ 第 5 節） ---
     // ヘルスチェック（liveness / readiness）、メトリクス（Prometheus）
     implementation(libs.spring.boot.starter.actuator)
     runtimeOnly(libs.micrometer.registry.prometheus)
     // 分散トレーシング（Brave + Zipkin）。エラーレスポンスの traceId にも使う
     implementation(libs.spring.boot.starter.zipkin)
 
-    // --- モジュラーモノリス（constitution 4.1） ---
+    // --- モジュラーモノリス（バックエンドのアーキテクチャ 第 1 節） ---
     implementation(libs.bundles.spring.modulith)
 
     // --- API（OpenAPI の生成コード） ---
@@ -123,7 +123,7 @@ dependencies {
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
-    // --- DDD（ドメインのオブジェクトの明示。constitution 4.2） ---
+    // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
     implementation(libs.bundles.jmolecules)
 
     // --- テスト：単体 ---
@@ -172,7 +172,7 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 tasks.check { dependsOn(integrationTest) }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（constitution 12.1。報告だけで、基準の値では失敗させない）
+// カバレッジ（テストの書き方 第 1 節。報告だけで、基準の値では失敗させない）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
 //   報告：build/reports/jacoco/coverageReport/（html、xml）
 // -----------------------------------------------------------------------------
@@ -200,7 +200,7 @@ val coverageReport = tasks.register<JacocoReport>("coverageReport") {
 tasks.check { finalizedBy(coverageReport) }
 
 // -----------------------------------------------------------------------------
-// 依存のライセンスの検査（constitution 17）
+// 依存のライセンスの検査（依存とライセンス）
 //   方針の正本は scripts/ci/licenses/policy.json（フロントの検査と共通）。
 //   依存が書くライセンスの名前を policy の normalize で SPDX の識別子にそろえ、許可の一覧と、
 //   条件付きの一覧（部品ごと）に合わない部品があれば checkLicense が失敗する。
@@ -305,7 +305,7 @@ tasks.check { dependsOn("checkLicense") }
 
 // -----------------------------------------------------------------------------
 // jOOQ コード生成
-//   スキーマの正本は Flyway のマイグレーション（constitution 7.2）。
+//   スキーマの正本は Flyway のマイグレーション（バックエンドのアーキテクチャ 第 6.2 節）。
 //   生成時に Testcontainers で使い捨ての PostgreSQL を起動し、マイグレーションを適用してから生成する。
 //   → compose の DB を起動していなくてもビルドできる（Docker は必要）
 //   生成コードはコミットしない（build/ 配下）。
@@ -389,7 +389,7 @@ tasks.named<JooqGenerate>("generateJooq") {
 
 // -----------------------------------------------------------------------------
 // OpenAPI からのコード生成
-//   API 契約の正本はリポジトリのルートの api/openapi/（constitution 9）。
+//   API 契約の正本はリポジトリのルートの api/openapi/（API の規約）。
 //   Controller が実装するインターフェースとモデルを生成する。生成コードはコミットしない（build/ 配下）。
 // -----------------------------------------------------------------------------
 val openApiDir = rootProject.layout.projectDirectory.dir("../../api/openapi")
@@ -418,7 +418,7 @@ val openApiGenerateTasks = openApiSpecs.map { spec ->
                 "useJackson3" to "true",
                 // tag ごとにインターフェースを分ける
                 "useTags" to "true",
-                // 入力検証は Bean Validation で行う（constitution 9）
+                // 入力検証は Bean Validation で行う（API の規約）
                 "useBeanValidation" to "true",
                 // Swagger のアノテーションは付けない
                 "documentationProvider" to "none",

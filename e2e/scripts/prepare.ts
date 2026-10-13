@@ -4,7 +4,7 @@
  * 毎回、マイグレーションと seed/base だけの DB と、realm の JSON の状態の IdP から始まる。
  * ローカルの DB（ec_site）と Keycloak（keycloak、8180）には触れない。
  *
- * 前提：compose の PostgreSQL が起動している（docs/dev/testing.md の「E2E」）。
+ * 前提：compose の PostgreSQL が起動している（docs/testing/running.md の「E2E」）。
  *
  * 使い方：node scripts/prepare.ts（e2e/ で）
  */

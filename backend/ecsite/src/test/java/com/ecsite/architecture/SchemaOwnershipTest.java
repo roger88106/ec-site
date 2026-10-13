@@ -21,7 +21,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * schema の持ち主の検査（constitution「PostgreSQL の schema をモジュールごとに分ける」）。<br />
+ * schema の持ち主の検査（バックエンドのアーキテクチャ 第 6.1 節）。<br />
  * 各モジュールが自分の schema の jOOQ の生成クラスだけを使うことを、本番のクラスファイルから確かめる。
  * jOOQ の生成コード（{@code com.ecsite.jooq.<schema>}）はモジュールのパッケージの外にあるので、
  * {@code ModulithTest} では他のモジュールのテーブルの読み書きを検出できない。

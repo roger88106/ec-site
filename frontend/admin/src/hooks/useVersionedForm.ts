@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react'
 import { type DefaultValues, type FieldValues, type UseFormReturn, useForm } from 'react-hook-form'
 
-/** 同時に編集されうるリソース（constitution 9 の version を持つ） */
+/** 同時に編集されうるリソース（API の規約の version を持つ） */
 type Versioned = { version: number }
 
 /**

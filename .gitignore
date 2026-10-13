@@ -48,7 +48,7 @@ coverage/
 npm-debug.log*
 pnpm-debug.log*
 .vercel
-# openapi-typescript の生成物（ビルド前に生成する。constitution 9）
+# openapi-typescript の生成物（ビルド前に生成する。API の規約）
 frontend/*/src/api/generated/
 e2e/src/generated/
 # Playwright の結果とレポート

@@ -43,7 +43,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 
 /**
- * メディアモジュールの API の統合テスト（T1028、T1037。docs/modules/media.md）。<br />
+ * メディアモジュールの API の統合テスト（T1028、T1037。docs/backend/modules/media.md）。<br />
  * 確定では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
  * ファイルは、受付の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
  * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったアセットを消す。

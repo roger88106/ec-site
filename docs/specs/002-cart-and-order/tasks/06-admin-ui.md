@@ -2,7 +2,7 @@
 
 - 前提：段階 4（B 側 API）
 - 完了条件：注文の一覧・詳細と、承認・却下・キャンセルが画面からでき、下記の手動確認が通る。CI でフロントのジョブが通る。
-- 参照：[plan](../plan.md) 第 6 節、[管理画面の構成](../../../frontend/admin.md)、`admin.yaml`（tag: order）
+- 参照：[plan](../plan.md) 第 6 節、[管理画面の構成](../../../frontend/apps/admin.md)、`admin.yaml`（tag: order）
 
 ## タスク
 

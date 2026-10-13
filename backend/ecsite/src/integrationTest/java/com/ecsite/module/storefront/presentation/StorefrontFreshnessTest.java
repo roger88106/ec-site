@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * NFR-1 の確認（T609）。<br />
  * 商品・価格・公開状態・在庫の変更は、直後の照会に反映される（キャッシュしない）。
- * 税率の一覧だけはインスタンス内で 30 秒キャッシュする（docs/modules/catalog.md）。テストごとにロールバックする。
+ * 税率の一覧だけはインスタンス内で 30 秒キャッシュする（docs/backend/modules/catalog.md）。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

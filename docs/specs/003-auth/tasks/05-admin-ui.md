@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：管理者で全操作ができ、閲覧者は更新で「権限がない」と示される。下記の手動確認が通る。管理画面の lint・型チェック・テスト・ビルドが通る。
-- 参照：[plan](../plan.md) 第 1、4、6 節、[管理画面の構成](../../../frontend/admin.md)、skill `new-screen`
+- 参照：[plan](../plan.md) 第 1、4、6 節、[管理画面の構成](../../../frontend/apps/admin.md)、skill `new-screen`
 
 ## タスク
 

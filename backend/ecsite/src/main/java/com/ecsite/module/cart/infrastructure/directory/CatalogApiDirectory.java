@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（constitution 4.1、docs/modules/cart.md）。<br />
+ * 商品カタログの腐敗防止層（バックエンドのアーキテクチャ 第 1 節、docs/backend/modules/cart.md）。<br />
  * 商品カタログの API を呼び、カートに入れられるかの判定に変換する。
  */
 @Component

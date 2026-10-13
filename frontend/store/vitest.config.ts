@@ -11,7 +11,7 @@ export default defineConfig({
   test: {
     // サーバーの処理のテストのための置き換えと、API の代わりのサーバー（店舗画面の構成 第 7 節）
     setupFiles: ['src/test/setup.ts'],
-    // カバレッジは報告だけ（constitution 12.1）。生成物と shadcn/ui の生成物、テストの補助は数えない
+    // カバレッジは報告だけ（テストの書き方 第 1 節）。生成物と shadcn/ui の生成物、テストの補助は数えない
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

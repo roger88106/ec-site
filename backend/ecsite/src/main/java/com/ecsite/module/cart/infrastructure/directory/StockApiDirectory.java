@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層（constitution 4.1、docs/modules/cart.md）。<br />
+ * 在庫の腐敗防止層（バックエンドのアーキテクチャ 第 1 節、docs/backend/modules/cart.md）。<br />
  * 在庫モジュールの API を呼び、バリアントの販売可能数に変換する。
  */
 @Component

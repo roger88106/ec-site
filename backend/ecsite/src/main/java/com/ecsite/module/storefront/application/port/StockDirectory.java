@@ -5,13 +5,13 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層の口（constitution 4.1、docs/modules/storefront.md）。<br />
+ * 在庫の腐敗防止層の口（バックエンドのアーキテクチャ 第 1 節、docs/backend/modules/storefront.md）。<br />
  * 在庫があるバリアントを返す。
  */
 public interface StockDirectory {
 
     /**
-     * 在庫のあるバリアントを返す。在庫がまだないバリアントは「在庫なし」とする（docs/modules/inventory.md）。
+     * 在庫のあるバリアントを返す。在庫がまだないバリアントは「在庫なし」とする（docs/backend/modules/inventory.md）。
      *
      * @param variantIds バリアント ID
      * @return 指定したうち、在庫のあるバリアントの ID

@@ -4,7 +4,7 @@ import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 /**
- * 文字の項目の判定（docs/style/backend.md 第 3.1 節）。<br />
+ * 文字の項目の判定（docs/backend/coding.md 第 3.1 節）。<br />
  * 長さは code point で数える（サロゲートペアの文字を 1 文字とし、画面の見た目の文字数と合わせるため）。
  * 各ドメインは上限の定数とエラーの種類だけを持ち、判定はここに任せる。
  */

@@ -8,7 +8,7 @@ import { type Operator, OperatorProvider } from '@/auth/operator'
 import { setTokenSource } from '@/auth/token'
 
 /**
- * すべての画面を包み、ログインを求める（管理画面の構成 第 11 節）。<br />
+ * すべての画面を包み、ログインを求める（管理画面の構成 第 10 節）。<br />
  * ログインしていなければ、何も表示せずに IdP のログインへ移り、戻ってきたら移る前の画面に戻す。
  * ログインしていれば、運営者（氏名とログアウト）と、API に付ける token を渡してから画面を出す。
  */

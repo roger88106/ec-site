@@ -2,7 +2,7 @@
 
 - 前提：段階 1〜5
 - 完了条件：US-10〜12 の AC（AC-51〜66）、AC-29・30・32 の C 側での見え方、NFR-1 のテストが通る。バックエンドの全 AC にテストが対応している。
-- 参照：spec US-10〜12、[catalog.md](../../../modules/catalog.md)、[storefront.md](../../../modules/storefront.md)、`store.yaml`
+- 参照：spec US-10〜12、[catalog.md](../../../backend/modules/catalog.md)、[storefront.md](../../../backend/modules/storefront.md)、`store.yaml`
 
 ## 商品カタログ側
 

@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：AC-120〜131 と AC-138（店舗 API の側）のバックエンドのテストが通る。会員の同時の初回の要求で 1 人だけ作られる。モジュール境界の検証と既存のテストが通る（`./gradlew check`）。
-- 参照：[plan](../plan.md) 第 3.4、5.1 節、[cart.md](../../../modules/cart.md)、[order.md](../../../modules/order.md)、[storefront.md](../../../modules/storefront.md)、`store.yaml`
+- 参照：[plan](../plan.md) 第 3.4、5.1 節、[cart.md](../../../backend/modules/cart.md)、[order.md](../../../backend/modules/order.md)、[storefront.md](../../../backend/modules/storefront.md)、`store.yaml`
 
 ## 文書と契約
 

@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：AC-95〜106 のテストが通る。B 側 endpoint の権限名の記載漏れの検出が通る。
-- 参照：spec US-18〜21、BR-9、[order.md](../../../modules/order.md)「状態遷移」、`store.yaml`（tag: order）、`admin.yaml`（tag: order）
+- 参照：spec US-18〜21、BR-9、[order.md](../../../backend/modules/order.md)「状態遷移」、`store.yaml`（tag: order）、`admin.yaml`（tag: order）
 
 ## タスク
 

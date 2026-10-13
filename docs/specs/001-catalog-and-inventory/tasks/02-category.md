@@ -2,7 +2,7 @@
 
 - 前提：段階 0
 - 完了条件：AC-8〜11 と、AC-12 のうち「子カテゴリを持つ」場合のテストが通る。AC-12 の「商品が所属している」場合は段階 3 で確認する。
-- 参照：spec US-2、[catalog.md](../../../modules/catalog.md)、`admin.yaml`（tag: category）
+- 参照：spec US-2、[catalog.md](../../../backend/modules/catalog.md)、`admin.yaml`（tag: category）
 
 ## タスク
 
@@ -18,4 +18,4 @@
   - 登録の `Location` の URL で、そのカテゴリを取得できる。存在しない ID は 404
 - [x] **T205** リポジトリ、アプリケーション層、Controller を実装する。T204 を通す。
 - [x] **T206** seed：サンプルのカテゴリ（2〜3 階層）。
-- [x] **T207** [catalog.md](../../../modules/catalog.md) のカテゴリのテーブルを、マイグレーションへのリンクに置き換える。
+- [x] **T207** [catalog.md](../../../backend/modules/catalog.md) のカテゴリのテーブルを、マイグレーションへのリンクに置き換える。

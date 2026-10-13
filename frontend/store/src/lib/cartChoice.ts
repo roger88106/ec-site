@@ -1,4 +1,4 @@
-/** 使うカート（店舗画面の構成 第 4.2 節） */
+/** 使うカート（店舗画面の構成 第 4.5 節） */
 export type CartChoice =
   /** 会員のカート（GET /me/cart の ID。会員の token を付けて操作する） */
   | { kind: 'member' }

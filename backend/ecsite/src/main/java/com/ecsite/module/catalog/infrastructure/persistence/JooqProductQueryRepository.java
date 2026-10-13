@@ -91,7 +91,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * B 側の商品一覧の絞り込みの条件を作る（docs/modules/catalog.md）。
+     * B 側の商品一覧の絞り込みの条件を作る（docs/backend/modules/catalog.md）。
      *
      * @param query 絞り込みの条件
      * @return 条件

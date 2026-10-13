@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * メディアのサービス（docs/modules/media.md）。{@link MediaApi} の実装。<br />
+ * メディアのサービス（docs/backend/modules/media.md）。{@link MediaApi} の実装。<br />
  * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、確定のときに中身を確かめ、WebP に変換して配信のバケットへ置く。
  */
 @Service

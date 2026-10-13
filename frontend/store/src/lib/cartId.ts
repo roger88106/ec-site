@@ -7,7 +7,7 @@ const MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 export const CART_NOT_FOUND = Symbol('CART_NOT_FOUND')
 
 /**
- * Cookie の値をカート ID にする（店舗画面の構成 第 4.2 節）。
+ * Cookie の値をカート ID にする（店舗画面の構成 第 4.4 節）。
  *
  * @param value Cookie の値
  * @returns カート ID。Cookie がない・形の違う値なら null（カートがない）
@@ -17,7 +17,7 @@ export function parseCartId(value: string | undefined): string | null {
 }
 
 /**
- * カート ID の Cookie の属性（店舗画面の構成 第 4.2 節）。ブラウザの JavaScript からは読めない。
+ * カート ID の Cookie の属性（店舗画面の構成 第 4.4 節）。ブラウザの JavaScript からは読めない。
  *
  * @param secure HTTPS だけで送るか（本番では true）
  */

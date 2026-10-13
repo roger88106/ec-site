@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 可観測性の検証（T019、constitution 5-9）。<br />
+ * 可観測性の検証（T019、バックエンドのアーキテクチャ 第 5 節）。<br />
  * テストでは通常トレーシングとメトリクスが無効なので、このテストでは有効にする（送信はしない）。
  */
 @IntegrationTest

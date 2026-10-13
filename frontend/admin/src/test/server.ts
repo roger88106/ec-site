@@ -4,7 +4,7 @@ import type { paths } from '@/api/generated/admin'
 import type { Problem } from '@/api/types'
 
 /**
- * 管理 API の応答を差し替えるハンドラーを作る（管理画面の構成 第 10 節）。<br />
+ * 管理 API の応答を差し替えるハンドラーを作る（管理画面の構成 第 9 節）。<br />
  * パス・パラメーター・リクエストとレスポンスの本文は admin.yaml の型に合わせる。admin.yaml にない応答は型エラーになる。
  * 例：{@code http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))}
  */

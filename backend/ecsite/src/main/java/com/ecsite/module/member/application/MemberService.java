@@ -11,7 +11,7 @@ import java.time.Clock;
 import java.util.UUID;
 
 /**
- * 会員のサービス（docs/modules/member.md）。<br />
+ * 会員のサービス（docs/backend/modules/member.md）。<br />
  * 会員は、会員の token で初めて EC の API を呼んだときに作る。
  */
 @Service

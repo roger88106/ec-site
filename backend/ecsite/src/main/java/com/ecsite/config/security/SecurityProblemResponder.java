@@ -12,9 +12,9 @@ import org.springframework.security.web.access.AccessDeniedHandler;
 import org.springframework.web.servlet.HandlerExceptionResolver;
 
 /**
- * 認証・認可の失敗を、ほかのエラーと同じ Problem Details で返す（constitution 9）。<br />
+ * 認証・認可の失敗を、ほかのエラーと同じ Problem Details で返す（API の規約）。<br />
  * filter で起きた失敗を、業務の例外（{@code UNAUTHENTICATED}、{@code FORBIDDEN}）に置き換えて、
- * Controller と同じエラーハンドラーに渡す。Spring Security の型は、ここより先（common）に出さない（constitution 10.2）。
+ * Controller と同じエラーハンドラーに渡す。Spring Security の型は、ここより先（common）に出さない（バックエンドのアーキテクチャ 第 7.2 節）。
  */
 class SecurityProblemResponder implements AuthenticationEntryPoint, AccessDeniedHandler {
 

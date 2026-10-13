@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層（constitution 4.1）
+ * 商品カタログの腐敗防止層（バックエンドのアーキテクチャ 第 1 節）
  */
 public interface ProductDirectory {
 

@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 店舗に公開する見積もりの API（docs/modules/order.md「他モジュールへの公開」）
+ * 店舗に公開する見積もりの API（docs/backend/modules/order.md「他のモジュールへの公開」）
  */
 @Component
 @RequiredArgsConstructor

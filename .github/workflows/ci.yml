@@ -1,5 +1,5 @@
 # ============================================================================
-# CI（constitution 13）
+# CI（constitution 12）
 #
 # push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
 #   backend：依存のライセンスの検査、ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
@@ -14,7 +14,7 @@
 name: CI
 
 on:
-  # CI の結果に関わらないファイルだけを変えた push では流さない（constitution 13）。
+  # CI の結果に関わらないファイルだけを変えた push では流さない（constitution 12）。
   # 1 つでも他のファイルが含まれていれば、すべての job を流す
   push:
     paths-ignore:
@@ -54,14 +54,14 @@ jobs:
       # Gradle のキャッシュと、wrapper の検証
       - uses: gradle/actions/setup-gradle@v6
 
-      # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照らす（constitution 17）。
+      # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照らす（依存とライセンス）。
       # 別の手順にすると Gradle の起動と依存の解決が 2 回になり、1 分ほど延びるので、ビルドと同じ呼び出しで流す。
       # 失敗したときは、ログの「Some library licenses are not allowed」と build/reports/dependency-license/ を見る。
       # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
       - name: ライセンスの検査、ビルドとテスト
         run: ./gradlew checkLicense build
 
-      # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
+      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
@@ -110,7 +110,7 @@ jobs:
       - name: テスト
         run: pnpm test
 
-      # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
+      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/coverage-summary.mjs 管理画面 coverage/coverage-summary.json
@@ -141,7 +141,7 @@ jobs:
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
 
-      # workspace のすべての依存（開発用を含む）のライセンスを、方針と照らす（constitution 17）
+      # workspace のすべての依存（開発用を含む）のライセンスを、方針と照らす（依存とライセンス）
       - name: 依存のライセンスの検査
         working-directory: .
         run: node scripts/ci/licenses/check-frontend.mjs
@@ -171,7 +171,7 @@ jobs:
       - name: テスト
         run: pnpm test
 
-      # カバレッジ（constitution 12.1）。報告だけで、基準の値では失敗させない
+      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/coverage-summary.mjs 店舗画面 coverage/coverage-summary.json
@@ -205,7 +205,7 @@ jobs:
       - name: script のテスト
         run: node --test "scripts/ci/**/*.test.mjs"
 
-      # 機能の spec のすべての AC が、テスト名に 1 つずつ出ていること（constitution 12.1）
+      # 機能の spec のすべての AC が、テスト名に 1 つずつ出ていること（テストの書き方 第 2.1 節）
       - name: AC とテスト名の照合
         run: node scripts/ci/ac-check.mjs
 

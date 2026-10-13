@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * カートと注文に公開する商品カタログの API（docs/modules/catalog.md「他モジュールへの公開」）。<br />
+ * カートと注文に公開する商品カタログの API（docs/backend/modules/catalog.md「他のモジュールへの公開」）。<br />
  * 表示されない商品・販売停止のバリアントも返し、判定は呼ぶ側が行う（カートの表示で理由を示すため）。
  */
 @Component

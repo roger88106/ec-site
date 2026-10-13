@@ -9,7 +9,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層（constitution 4.1）。書き込みの操作は、呼び出し元のトランザクションで行われる。
+ * 在庫の腐敗防止層（バックエンドのアーキテクチャ 第 1 節）。書き込みの操作は、呼び出し元のトランザクションで行われる。
  */
 public interface StockDirectory {
 

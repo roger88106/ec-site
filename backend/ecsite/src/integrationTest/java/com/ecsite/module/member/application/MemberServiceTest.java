@@ -19,7 +19,7 @@ import static com.ecsite.jooq.member.Tables.MEMBER_;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 会員の統合テスト（T3304、docs/modules/member.md）。<br />
+ * 会員の統合テスト（T3304、docs/backend/modules/member.md）。<br />
  * 同時の初回の要求を確かめるため、要求ごとにコミットする。ロールバックしないので、作った会員を後で消す。
  */
 @IntegrationTest

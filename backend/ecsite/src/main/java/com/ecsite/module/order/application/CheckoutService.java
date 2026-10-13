@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 注文手続きのサービス（docs/modules/order.md「注文手続き」）
+ * 注文手続きのサービス（docs/backend/modules/order.md「注文手続き」）
  */
 @Service
 @RequiredArgsConstructor

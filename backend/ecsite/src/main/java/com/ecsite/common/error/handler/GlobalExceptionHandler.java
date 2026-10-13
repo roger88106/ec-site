@@ -34,7 +34,7 @@ import java.util.stream.Stream;
 
 /**
  * グローバルエラーハンドラー。<br />
- * すべてのエラーを RFC 9457（Problem Details）に次の項目を加えた形で返す（constitution 9）。
+ * すべてのエラーを RFC 9457（Problem Details）に次の項目を加えた形で返す（API の規約）。
  * <ul>
  *     <li>{@code errorCode}：フロントが分岐に使うコード</li>
  *     <li>{@code message}：画面にそのまま出せる日本語の文字列</li>

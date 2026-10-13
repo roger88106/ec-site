@@ -224,7 +224,7 @@ class AuthorizationTest {
     // ============================== 検証の部品 ==============================
 
     /**
-     * Problem Details の形（constitution 9）。
+     * Problem Details の形（API の規約）。
      *
      * @param errorCode エラーコード
      * @param message   メッセージ

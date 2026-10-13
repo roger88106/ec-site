@@ -22,8 +22,8 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 /**
- * 注文の Aggregate Root（docs/modules/order.md「注文」）。<br />
- * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/modules/order.md「状態遷移」）。
+ * 注文の Aggregate Root（docs/backend/modules/order.md「注文」）。<br />
+ * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/backend/modules/order.md「状態遷移」）。
  */
 @Getter
 @Accessors(fluent = true)

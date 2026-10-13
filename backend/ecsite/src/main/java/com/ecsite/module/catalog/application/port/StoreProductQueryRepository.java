@@ -14,7 +14,7 @@ import java.util.UUID;
 
 /**
  * C 側向けの商品照会のクエリリポジトリ。<br />
- * 対象は C 側に表示される商品だけ。税込価格は、渡された税区分ごとの率で SQL で計算する（docs/modules/catalog.md）。
+ * 対象は C 側に表示される商品だけ。税込価格は、渡された税区分ごとの率で SQL で計算する（docs/backend/modules/catalog.md）。
  * 率のない税区分の商品は、税込価格を出せないので対象にしない。
  */
 public interface StoreProductQueryRepository {

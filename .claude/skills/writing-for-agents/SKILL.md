@@ -86,4 +86,4 @@ You win twice: fewer tokens, and a sharper hook for the agent to hang its thinki
 
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
 - skill を足す・消す・役割を変えるときは、同じ commit で AGENTS.md「skill の一覧」も直す。一覧には名前と、いつ使うかを 1 行で書き、`description` を写さない。
-- 外から取り込んだ skill は原文の言語のまま置き、frontmatter の直後に日本語の説明をコメントで書く（constitution 14）。
+- 外から取り込んだ skill は原文の言語のまま置き、frontmatter の直後に日本語の説明をコメントで書く（開発の進め方 第 3 節）。

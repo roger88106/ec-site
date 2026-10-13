@@ -1,5 +1,5 @@
 // ============================================================================
-// カバレッジの合計（行・分岐）を、GitHub Actions の job の summary に書く（constitution 12.1）
+// カバレッジの合計（行・分岐）を、GitHub Actions の job の summary に書く（テストの書き方 第 1 節）
 //
 //   使い方：node scripts/ci/coverage-summary.mjs <名前> <報告のファイル>
 //     報告のファイル：JaCoCo の XML（*.xml）か、Vitest の json-summary（coverage-summary.json）

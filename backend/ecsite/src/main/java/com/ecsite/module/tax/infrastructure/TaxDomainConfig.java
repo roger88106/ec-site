@@ -6,7 +6,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * 税モジュールの domain の部品を、Spring の部品にする。<br />
- * domain は Spring に依存しないので、注釈を付けずにここで登録する（constitution 4.2）。
+ * domain は Spring に依存しないので、注釈を付けずにここで登録する（バックエンドのアーキテクチャ 第 2 節）。
  */
 @Configuration(proxyBeanMethods = false)
 class TaxDomainConfig {

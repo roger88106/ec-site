@@ -7,8 +7,8 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 手放したアセットの配信のファイルを、コミットの後に消す（docs/modules/media.md「アセットを手放す」）。<br />
- * イベントは重ねて届くことがある（constitution 5-7）。削除は何度行っても同じ結果になる。
+ * 手放したアセットの配信のファイルを、コミットの後に消す（docs/backend/modules/media.md「アセットを手放す」）。<br />
+ * イベントは重ねて届くことがある（バックエンドのアーキテクチャ 第 5 節）。削除は何度行っても同じ結果になる。
  */
 @Component
 @RequiredArgsConstructor

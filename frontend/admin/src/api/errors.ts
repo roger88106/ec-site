@@ -6,7 +6,7 @@ const CONCURRENT_MODIFICATION = 'CONCURRENT_MODIFICATION'
 
 /**
  * API がエラーを返した（管理画面の構成 第 4 節）。<br />
- * 本文がエラーレスポンス（constitution 9）なら {@link problem} に入る。プロキシのエラーなどで本文の形が違えば undefined。
+ * 本文がエラーレスポンス（API の規約）なら {@link problem} に入る。プロキシのエラーなどで本文の形が違えば undefined。
  */
 export class ApiError extends Error {
   readonly status: number

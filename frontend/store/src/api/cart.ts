@@ -8,7 +8,7 @@ import { cartMergeNotice } from '@/lib/cartMergeNotice'
 import { log } from '@/lib/server/log'
 
 /**
- * 使うカートを選ぶ（店舗画面の構成 第 4.2 節）。
+ * 使うカートを選ぶ（店舗画面の構成 第 4.5 節）。
  * ログインしていれば会員のカート、していなければ Cookie のカート。
  */
 export async function currentCartChoice(): Promise<CartChoice> {

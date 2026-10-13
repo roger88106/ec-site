@@ -5,11 +5,11 @@ info:
   description: |
     B 側（運営者）向けの API。
 
-    - すべての操作に、運営者の realm（IdP）が発行した access token（audience `ec-admin-api`）を `Authorization: Bearer` で付ける。token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）を返す（constitution 10）。
+    - すべての操作に、運営者の realm（IdP）が発行した access token（audience `ec-admin-api`）を `Authorization: Bearer` で付ける。token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）を返す（バックエンドのアーキテクチャ 第 7 節）。
     - 各操作に必要な権限を `x-required-permission` に記す。token の権限（`resource_access.ec-admin-api.roles`）に含まれなければ 403（`FORBIDDEN`）を返す。本書にない操作は、権限によらず拒否する（spec 003 NFR-3）。
     - 同時に編集されうるリソースの更新では、取得時の `version` を送る。一致しなければ 409 を返す。
     - 状態の切り替え（公開・非公開・販売終了、販売停止・解除、注文のキャンセルとその申請の承認）は冪等で、`version` を送らない。すでにその状態なら何もせず 204 を返す。
-    - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。constitution 9）。
+    - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。API の規約）。
     - 日時は ISO 8601 のオフセット付き文字列。
 servers:
   - url: /api/admin
@@ -1153,7 +1153,7 @@ components:
     # ---------- 共通 ----------
     Problem:
       type: object
-      description: エラー（RFC 9457 に項目を追加したもの。constitution 9）
+      description: エラー（RFC 9457 に項目を追加したもの。API の規約）
       required: [status, errorCode, message, traceId]
       properties:
         type:

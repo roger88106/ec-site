@@ -26,7 +26,7 @@ const api = createClient<paths>({
 })
 
 /**
- * 店舗 API の会員の口（店舗画面の構成 第 4.3 節）。会員の access token を付け、キャッシュを使わない
+ * 店舗 API の会員の口（店舗画面の構成 第 4.6 節）。会員の access token を付け、キャッシュを使わない
  * （会員ごとに違う結果を、共有のキャッシュに載せないため）。ログインしていなければ token を付けない。
  */
 const memberApi = createClient<paths>({
@@ -69,7 +69,7 @@ export async function getApi() {
 }
 
 /**
- * 会員の操作（/me/**、会員のカート、注文手続き、注文）を呼ぶときに使う（店舗画面の構成 第 4.3 節）。<br />
+ * 会員の操作（/me/**、会員のカート、注文手続き、注文）を呼ぶときに使う（店舗画面の構成 第 4.6 節）。<br />
  * 401 は、呼んだ側でログインの画面へ移す（取得は result.ts の unwrapMember、操作は auth.ts の redirectToLogin）。
  */
 export async function getMemberApi() {

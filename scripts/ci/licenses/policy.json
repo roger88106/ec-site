@@ -1,5 +1,5 @@
 {
-  "$comment": "依存のライセンスの方針（constitution 17.2）。バックエンドの checkLicense と scripts/ci/licenses/check-frontend.mjs が読む。部品の名前の * は任意の文字列",
+  "$comment": "依存のライセンスの方針（依存とライセンス 第 2 節）。バックエンドの checkLicense と scripts/ci/licenses/check-frontend.mjs が読む。部品の名前の * は任意の文字列",
   "allowed": [
     "MIT",
     "MIT-0",

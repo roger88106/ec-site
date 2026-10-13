@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：AC-77、79、80、82〜94 のテストが通る。同時の注文と二重送信を含む。モジュール境界の検証が通る。
-- 参照：spec US-15〜17、BR-6〜11、[plan](../plan.md) 第 2〜4 節、[order.md](../../../modules/order.md)、[storefront.md](../../../modules/storefront.md)、`store.yaml`（tag: cart、checkout、order）
+- 参照：spec US-15〜17、BR-6〜11、[plan](../plan.md) 第 2〜4 節、[order.md](../../../backend/modules/order.md)、[storefront.md](../../../backend/modules/storefront.md)、`store.yaml`（tag: cart、checkout、order）
 
 ## 見積もり
 
@@ -37,4 +37,4 @@
   - 注文成立のイベントが発行される
 - [x] **T2314** 注文の成立と注文の表示を実装する（plan 002 第 2 節の手順）。T2313 を通す。
 - [x] **T2315** seed：送料の税区分の設定をローカルの設定に入れる。
-- [x] **T2316** [order.md](../../../modules/order.md) の草案を、マイグレーションへのリンクに置き換える。
+- [x] **T2316** [order.md](../../../backend/modules/order.md) の草案を、マイグレーションへのリンクに置き換える。

@@ -14,7 +14,7 @@
 [versions]
 java = "21"
 jacoco = "0.8.13"
-# 依存のライセンスの検査（constitution 17）
+# 依存のライセンスの検査（依存とライセンス）
 dependency-license-report = "3.0.1"
 
 # --- フレームワーク ---

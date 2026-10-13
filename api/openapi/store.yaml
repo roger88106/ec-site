@@ -7,7 +7,7 @@ info:
 
     - 対象は C 側に表示される商品だけ（spec 001 BR-2）。表示されない商品は、存在しない商品と同じく 404 を返す。
     - 価格は商品単位（全バリアント共通）で、税込・税抜の両方を返す。画面では「1,980 円（税抜 1,800 円）」の形で表示する（BR-4）。
-    - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。constitution 9）。
+    - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。API の規約）。
     - 在庫は有無だけを返し、数量は返さない（AC-64）。在庫の有無とカートの判定は、販売可能数（在庫数から有効な引当を除いた数。spec 002 BR-11）で行う。
     - 認証は、消費者の realm（IdP）が発行した会員の access token（audience `ec-store-api`）を `Authorization: Bearer` で付ける（spec 003、plan 003 第 5.1 節）。
       - 会員の操作（`security` が `memberToken` だけ）：token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）。
@@ -574,7 +574,7 @@ components:
     # ---------- 共通 ----------
     Problem:
       type: object
-      description: エラー（RFC 9457 に項目を追加したもの。constitution 9）
+      description: エラー（RFC 9457 に項目を追加したもの。API の規約）
       required: [status, errorCode, message, traceId]
       properties:
         type:

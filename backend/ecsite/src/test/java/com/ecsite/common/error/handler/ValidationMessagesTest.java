@@ -35,7 +35,7 @@ import java.util.Locale;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 入力の検証のメッセージの単体テスト（docs/style/backend.md 第 3.5 節、spec 005 DC-37）。<br />
+ * 入力の検証のメッセージの単体テスト（docs/backend/coding.md 第 3.3 節、spec 005 DC-37）。<br />
  * 制約の種類から ecsite.validation.* の文を選び、制約の値を差し込む。JVM と要求のロケールによらず、同じ日本語になる。
  */
 class ValidationMessagesTest {

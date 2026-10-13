@@ -9,7 +9,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * 見積もり（docs/modules/order.md「見積もり」）。カートの表示、注文手続き、注文の成立で同じ計算をする。
+ * 見積もり（docs/backend/modules/order.md「見積もり」）。カートの表示、注文手続き、注文の成立で同じ計算をする。
  *
  * @param items     品目（カートの並び）
  * @param amounts   金額の内訳

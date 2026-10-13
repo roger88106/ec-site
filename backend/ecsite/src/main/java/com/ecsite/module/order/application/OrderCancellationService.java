@@ -17,7 +17,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * キャンセルのサービス（docs/modules/order.md「状態遷移」）。<br />
+ * キャンセルのサービス（docs/backend/modules/order.md「状態遷移」）。<br />
  * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻す。
  */
 @Service

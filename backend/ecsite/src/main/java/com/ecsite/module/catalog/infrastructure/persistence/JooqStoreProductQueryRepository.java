@@ -28,7 +28,7 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
 /**
- * C 側向けの商品照会のクエリリポジトリ（docs/modules/catalog.md）
+ * C 側向けの商品照会のクエリリポジトリ（docs/backend/modules/catalog.md）
  */
 @Repository
 @RequiredArgsConstructor
@@ -128,7 +128,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     }
 
     /**
-     * 並び順。同じ値なら ID の順にし、ページをまたいでも重複・欠落しないようにする（constitution 9）。
+     * 並び順。同じ値なら ID の順にし、ページをまたいでも重複・欠落しないようにする（API の規約）。
      */
     private static List<OrderField<?>> orderBy(StoreProductSort sort, Field<Long> priceInclTax) {
         return switch (sort == null ? StoreProductSort.NEWEST : sort) {

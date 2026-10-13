@@ -1,7 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { useTranslations } from 'use-intl'
 
-/** ページング（constitution 9 のレスポンスの page、totalPages、totalItems を受ける） */
+/** ページング（API の規約のレスポンスの page、totalPages、totalItems を受ける） */
 export function Pagination({
   page,
   totalPages,

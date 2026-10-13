@@ -28,7 +28,7 @@ createRoot(document.getElementById('root')!).render(
       <AuthProvider
         {...oidcSettings}
         onSigninCallback={(user) => {
-          // IdP から戻った URL の code と state を消し、移る前の画面に戻す（管理画面の構成 第 11 節）
+          // IdP から戻った URL の code と state を消し、移る前の画面に戻す（管理画面の構成 第 10 節）
           window.history.replaceState({}, document.title, returnPath(user?.state))
         }}
       >

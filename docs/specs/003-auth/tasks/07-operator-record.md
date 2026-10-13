@@ -2,7 +2,7 @@
 
 - 前提：段階 2、5
 - 完了条件：AC-142 のテストが通る。在庫の調整履歴と注文の詳細に、操作した運営者の氏名が出る。
-- 参照：[plan](../plan.md) 第 3.5 節、[inventory.md](../../../modules/inventory.md)、[order.md](../../../modules/order.md)、`admin.yaml`
+- 参照：[plan](../plan.md) 第 3.5 節、[inventory.md](../../../backend/modules/inventory.md)、[order.md](../../../backend/modules/order.md)、`admin.yaml`
 
 ## タスク
 

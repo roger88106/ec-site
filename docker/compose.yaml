@@ -3,7 +3,7 @@
 #
 #   起動：docker compose up -d（リポジトリのルートで。ルートの .env の COMPOSE_FILE がこのファイルを指す）
 #   停止：docker compose stop
-#   E2E 用の Keycloak（profile e2e）は、E2E の準備の script が起動する（docs/dev/testing.md）
+#   E2E 用の Keycloak（profile e2e）は、E2E の準備の script が起動する（docs/testing/running.md）
 #
 # スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
 # ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）、画像の変換（imgproxy）、

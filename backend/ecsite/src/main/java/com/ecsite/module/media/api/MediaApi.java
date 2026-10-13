@@ -6,7 +6,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * メディアモジュールが公開する API（docs/modules/media.md「他モジュールへの公開」）。<br />
+ * メディアモジュールが公開する API（docs/backend/modules/media.md「他のモジュールへの公開」）。<br />
  * 使う側はアセット ID だけを持つ。配信のキーや URL の形は、このモジュールの外に出さない。
  */
 public interface MediaApi {

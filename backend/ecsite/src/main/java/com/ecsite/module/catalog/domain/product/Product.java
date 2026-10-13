@@ -36,7 +36,7 @@ import java.util.function.Function;
 
 /**
  * 商品の Aggregate Root。<br />
- * バリアントを含む。軸の値の組み合わせが商品内で一意であることは、商品単位の不変条件のため（docs/modules/catalog.md）。
+ * バリアントを含む。軸の値の組み合わせが商品内で一意であることは、商品単位の不変条件のため（docs/backend/modules/catalog.md）。
  */
 @Getter
 @Accessors(fluent = true)
@@ -445,7 +445,7 @@ public class Product extends AggregateRoot {
 
     /**
      * 公開期間を変える。終了が開始より後であることは、公開期間（値オブジェクト）が検証する。<br />
-     * 公開中なら、表示前の初回表示日時を計算し直す（docs/modules/catalog.md）。表示されて確定した値は変わらない。
+     * 公開中なら、表示前の初回表示日時を計算し直す（docs/backend/modules/catalog.md）。表示されて確定した値は変わらない。
      *
      * @param period 公開期間
      * @param now    現在時刻
@@ -544,7 +544,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 公開したとき（または公開中に公開期間を変えたとき）の初回表示日時を求める（docs/modules/catalog.md）。<br />
+     * 公開したとき（または公開中に公開期間を変えたとき）の初回表示日時を求める（docs/backend/modules/catalog.md）。<br />
      * 確定済み（過去）ならそのまま。そうでなければ「現在時刻と公開開始日時の遅いほう」。
      * その日時が公開終了日時以降なら、表示されないので空にする。
      *

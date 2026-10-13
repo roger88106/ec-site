@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 例外とエラーレスポンスの統合テスト（T010、constitution 9）。<br />
+ * 例外とエラーレスポンスの統合テスト（T010、API の規約）。<br />
  * テスト用の Controller から各種の例外を発生させ、エラーレスポンスの形を確かめる。
  */
 @IntegrationTest

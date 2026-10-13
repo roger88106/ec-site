@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 会員のカートの受け入れテスト（T3308、spec 003 US-25、docs/modules/cart.md）。<br />
+ * 会員のカートの受け入れテスト（T3308、spec 003 US-25、docs/backend/modules/cart.md）。<br />
  * 会員の token はテストの鍵で作る（TestTokens）。テストごとにロールバックする。
  */
 @IntegrationTest

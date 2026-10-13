@@ -5,12 +5,12 @@ description: ec-site のフロントに画面や操作を足すときの型。�
 
 # 画面を足すときの型
 
-決まりの正本は [店舗画面の構成](../../../docs/frontend/store.md) と [管理画面の構成](../../../docs/frontend/admin.md)。
-本書はその要点と、そのまま写せる最小の例。迷ったら正本を読む（store.md 第 4〜6・8 節、admin.md 第 4〜6・9・10 節）。
+決まりの正本は [店舗画面の構成](../../../docs/frontend/apps/store.md) と [管理画面の構成](../../../docs/frontend/apps/admin.md)。
+本書はその要点と、そのまま写せる最小の例。迷ったら正本を読む（store.md 第 4〜6・8 節、admin.md 第 4〜6・8・9 節）。
 
 共通の前提：
 
-- 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に直す（constitution 15）。
+- 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に直す（開発の進め方 第 1 節）。
 - 画面の文言・コメントは日本語。コメントは何をするかを書き、決定の経緯はコミットメッセージに書く。
 - 表示の決まり（列挙の表示名、金額の整形など）は関数にして `lib/` か `features/<機能>/` に置き、単体テストを横に置く。
 - 終わったら `scripts/dev/check-frontend.sh <store|admin>` を通し、プレビューで表示を確かめる（skill `local-dev`）。
@@ -219,7 +219,7 @@ export function FooActions({ fooId }: { fooId: string }) {
 
 ### 結合テスト（`pages/FooPage.test.tsx`）
 
-書き方は admin.md 第 10 節。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API はすべてハンドラーを渡す、テスト名に AC 番号。
+書き方は admin.md 第 9 節。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API はすべてハンドラーを渡す、テスト名に AC 番号。
 
 ## 画面を足し終えたら
 

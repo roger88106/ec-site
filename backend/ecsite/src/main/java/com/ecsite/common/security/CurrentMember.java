@@ -10,7 +10,7 @@ import java.util.Optional;
 
 /**
  * 要求の token の会員を取り出す。店舗 API の presentation 層が使う。<br />
- * Spring Security の型は、ここより先（application 層）に出さない（constitution 10.2）。
+ * Spring Security の型は、ここより先（application 層）に出さない（バックエンドのアーキテクチャ 第 7.2 節）。
  * 店舗 API の filter chain は消費者の realm の token だけを受け付けるので、ここで取り出せるのは会員だけ。
  * 管理 API の presentation 層では使わない。
  */

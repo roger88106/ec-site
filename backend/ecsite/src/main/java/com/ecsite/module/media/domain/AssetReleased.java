@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * アセット解放。メディアモジュールの中だけで使い、コミットの後に配信のファイルを消す（docs/modules/media.md）。
+ * アセット解放。メディアモジュールの中だけで使い、コミットの後に配信のファイルを消す（docs/backend/modules/media.md）。
  *
  * @param eventId    イベント ID
  * @param occurredAt 発生時刻

@@ -4,7 +4,7 @@ import { toApiError } from '@/api/errors'
 import type { paths } from '@/api/generated/admin'
 import { currentAccessToken, handleUnauthorized } from '@/auth/token'
 
-/** 運営者の access token を Authorization ヘッダーに付ける（管理画面の構成 第 11 節） */
+/** 運営者の access token を Authorization ヘッダーに付ける（管理画面の構成 第 10 節） */
 const withAccessToken: Middleware = {
   onRequest({ request }) {
     const accessToken = currentAccessToken()

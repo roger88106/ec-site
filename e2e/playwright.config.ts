@@ -10,7 +10,7 @@ const BACKEND_DIR = path.resolve(import.meta.dirname, '../backend/ecsite')
 const GRADLEW = path.join(BACKEND_DIR, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew')
 
 /**
- * E2E（constitution 12）。バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する。<br />
+ * E2E（テストの書き方）。バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する。<br />
  * E2E 用の DB・IdP・画像のバケットを使い、ローカルのデータを変えない（plan 004 第 6.1 節）。DB と IdP は、
  * 準備の script（scripts/prepare.ts）が毎回作り直す。
  * どのテストも同じ DB を使うので、1 つずつ順に動かす。テストのデータは実行ごとの印を付けて作る（src/data.ts）。

@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * メディアの腐敗防止層（constitution 4.1）。<br />
+ * メディアの腐敗防止層（バックエンドのアーキテクチャ 第 1 節）。<br />
  * メディアモジュールの API を、商品カタログが必要とする形で包む。受付の範囲は商品 ID にする（別の商品の受付を確定できない）。
  */
 public interface MediaDirectory {

@@ -3,7 +3,7 @@ import type { Route } from 'next'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
-/** ページ送り（constitution 9 のレスポンスの page、totalPages、totalItems を受ける）。リンクで移る */
+/** ページ送り（API の規約のレスポンスの page、totalPages、totalItems を受ける）。リンクで移る */
 export function PageLinks({
   page,
   totalPages,

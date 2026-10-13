@@ -42,30 +42,24 @@ describe('注文の状態（BR-9）', () => {
 })
 
 describe('キャンセルの申請の状況（AC-95、96）', () => {
-  /** 申請の日時 */
-  const requestedAt = '2026-10-10T05:00:00Z'
+  /** API が返す旗 */
+  const requestable = { requestCancellation: true }
+  const notRequestable = { requestCancellation: false }
 
-  test('AC-95 申請のない「受付」の注文は、申請できる', () => {
-    expect(cancellationState({ status: 'ACCEPTED' })).toBe('REQUESTABLE')
+  test('AC-95 申請できる（API の旗）「受付」の注文は、申請できる', () => {
+    expect(cancellationState({ status: 'ACCEPTED', actions: requestable })).toBe('REQUESTABLE')
   })
 
   test('AC-95 申請中', () => {
-    expect(
-      cancellationState({ status: 'CANCELLATION_REQUESTED', cancellationRequest: { requestedAt, result: 'PENDING' } }),
-    ).toBe('PENDING')
+    expect(cancellationState({ status: 'CANCELLATION_REQUESTED', actions: notRequestable })).toBe('PENDING')
   })
 
-  test('AC-96 却下された注文は、もう申請できない（問い合わせ先を示す）', () => {
-    expect(cancellationState({ status: 'ACCEPTED', cancellationRequest: { requestedAt, result: 'REJECTED' } })).toBe(
-      'REJECTED',
-    )
+  test('AC-96 申請できない「受付」の注文は、却下された注文（問い合わせ先を示す）', () => {
+    expect(cancellationState({ status: 'ACCEPTED', actions: notRequestable })).toBe('REJECTED')
   })
 
   test('キャンセル済み（申請の承認、運営者の判断のどちらでも）', () => {
-    expect(cancellationState({ status: 'CANCELLED', cancellationRequest: { requestedAt, result: 'APPROVED' } })).toBe(
-      'CANCELLED',
-    )
-    expect(cancellationState({ status: 'CANCELLED' })).toBe('CANCELLED')
+    expect(cancellationState({ status: 'CANCELLED', actions: notRequestable })).toBe('CANCELLED')
   })
 })
 

@@ -1,5 +1,5 @@
 import { schemas } from '@/api/generated/constraints'
-import type { CancellationRequest, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
+import type { Order, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
 
 /** 金額の書式（3 桁ごとのカンマ） */
 const yen = new Intl.NumberFormat('ja-JP')
@@ -67,19 +67,23 @@ export function orderStatusLabel(status: OrderStatus): string {
 }
 
 /**
- * 注文のキャンセルの状況（AC-95、96）。申請は 1 つの注文に 1 回だけなので、却下された「受付」の注文は申請できない。
+ * 注文のキャンセルの状況（AC-95、96）。申請できるかは API の旗で決める。
+ * 申請できない「受付」の注文は、申請が却下された注文（申請は 1 つの注文に 1 回だけ）。
  */
 export function cancellationState(order: {
   status: OrderStatus
-  cancellationRequest?: Pick<CancellationRequest, 'requestedAt' | 'result'>
+  actions: Pick<Order['actions'], 'requestCancellation'>
 }): CancellationState {
+  if (order.actions.requestCancellation) {
+    return 'REQUESTABLE'
+  }
   switch (order.status) {
     case 'CANCELLED':
       return 'CANCELLED'
     case 'CANCELLATION_REQUESTED':
       return 'PENDING'
     case 'ACCEPTED':
-      return order.cancellationRequest ? 'REJECTED' : 'REQUESTABLE'
+      return 'REJECTED'
   }
 }
 

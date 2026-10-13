@@ -11,7 +11,6 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DateTime } from '@/components/DateTime'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Price } from '@/components/Price'
-import { isNeverShown } from '@/features/product/product'
 
 /** 価格・日時の表示と、公開・非公開・販売終了・削除（AC-29〜33） */
 export function ProductStatusCard({ product }: { product: ProductDetail }) {
@@ -39,7 +38,6 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
     },
   })
   const { pending, error } = useMutationGroup(publish, unpublish, discontinue, remove)
-  const neverShown = isNeverShown(product)
 
   return (
     <Card>
@@ -66,17 +64,17 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
           </dd>
         </dl>
         <div className="flex flex-wrap gap-2">
-          {product.status === 'UNPUBLISHED' && (
+          {product.actions.publish && (
             <Button disabled={pending} onClick={() => publish.mutate(path)}>
               公開する
             </Button>
           )}
-          {product.status === 'PUBLISHED' && (
+          {product.actions.unpublish && (
             <Button disabled={pending} onClick={() => unpublish.mutate(path)} variant="outline">
               非公開にする
             </Button>
           )}
-          {product.status !== 'DISCONTINUED' && (
+          {product.actions.discontinue && (
             <ConfirmDialog
               confirmLabel="販売終了にする"
               description="販売終了にすると、公開に戻せません。"
@@ -89,7 +87,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
               }
             />
           )}
-          {neverShown && (
+          {product.actions.delete && (
             <ConfirmDialog
               confirmLabel="削除する"
               description="バリアントと在庫もあわせて削除します。"
@@ -110,7 +108,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
         {product.status === 'DISCONTINUED' && (
           <p className="text-muted-foreground text-sm">販売終了の商品は、公開に戻せません。</p>
         )}
-        {!neverShown && (
+        {!product.actions.delete && (
           <p className="text-muted-foreground text-sm">
             店舗に表示されたことがあるため、削除できません。取り扱いをやめるときは販売終了にしてください。
           </p>

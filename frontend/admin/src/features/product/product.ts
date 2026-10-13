@@ -47,8 +47,3 @@ export function toProductBody(values: ProductFieldsValues) {
 export function isProductFieldsFilled(values: ProductFieldsValues): boolean {
   return values.name.trim() !== '' && values.taxCategoryId !== null && values.priceExclTax.trim() !== ''
 }
-
-/** C 側に一度も表示されていないか。初回表示日時が空白か未来なら、表示されていない（AC-33、71） */
-export function isNeverShown(product: Pick<ProductDetail, 'firstShownAt'>, now: number = Date.now()): boolean {
-  return !product.firstShownAt || new Date(product.firstShownAt).getTime() > now
-}

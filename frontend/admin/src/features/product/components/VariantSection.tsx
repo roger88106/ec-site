@@ -6,7 +6,6 @@ import { ErrorMessage } from '@/components/ErrorMessage'
 import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddVariantForm } from '@/features/product/components/AddVariantForm'
 import { VariantRow, type VariantRowActions } from '@/features/product/components/VariantRow'
-import { isNeverShown } from '@/features/product/product'
 import { move } from '@/lib/array'
 
 /**
@@ -39,9 +38,6 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
   const ids = product.variants.map((variant) => variant.id)
   // 別の操作を始めたら、前の操作のエラーを消す
   const { pending, error, resetErrors } = useMutationGroup(reorder, remove, suspend, resume, setImage)
-  const neverShown = isNeverShown(product)
-  // 軸を持たない商品のバリアントは 1 つだけ（AC-24）
-  const canAdd = product.axes.length > 0 || product.variants.length === 0
   /** 表示している商品のバージョンで、バリアントの並びを送る */
   const reorderTo = (variantIds: string[]) => {
     resetErrors()
@@ -97,7 +93,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
                 <VariantRow
                   actions={rowActions(variant.id, index)}
                   axes={product.axes}
-                  deletable={neverShown}
+                  deletable={product.actions.deleteVariants}
                   first={index === 0}
                   imageOptions={imageOptions}
                   key={variant.id}
@@ -111,7 +107,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
           </Table>
         )}
         <ErrorMessage error={error} />
-        {canAdd ? (
+        {product.actions.addVariant ? (
           <AddVariantForm product={product} refetch={refetch} />
         ) : (
           <p className="text-muted-foreground text-sm">軸を持たない商品のバリアントは 1 つだけです。</p>

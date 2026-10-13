@@ -2,7 +2,7 @@ import { fireEvent, screen, within } from '@testing-library/react'
 import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, it } from 'vitest'
 import type { ProductDetail } from '@/api/types'
-import { PRODUCT_ID, productDetail, taxCategory, variant } from '@/test/fixtures'
+import { PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
@@ -33,7 +33,12 @@ function serveProduct(initial: ProductDetail) {
     }),
     http.put('/products/{productId}/discontinue', ({ response }) => {
       state.calls.push('PUT discontinue')
-      state.current = { ...state.current, status: 'DISCONTINUED', version: state.current.version + 1 }
+      state.current = {
+        ...state.current,
+        status: 'DISCONTINUED',
+        actions: productActions({ publish: false, discontinue: false }),
+        version: state.current.version + 1,
+      }
       return response(204).empty()
     }),
     http.delete('/products/{productId}', ({ query, response }) => {
@@ -75,7 +80,9 @@ describe('商品の編集', () => {
   })
 
   it('販売終了は確認のダイアログで確定したときだけ行い、やめれば何もしない', async () => {
-    const state = serveProduct(productDetail({ status: 'PUBLISHED' }))
+    const state = serveProduct(
+      productDetail({ status: 'PUBLISHED', actions: productActions({ publish: false, unpublish: true }) }),
+    )
     const { user } = renderApp(URL)
 
     await user.click(await screen.findByRole('button', { name: '販売終了にする' }))
@@ -106,7 +113,13 @@ describe('商品の編集', () => {
   })
 
   it('AC-33 C 側に表示されたことのある商品には削除のボタンがなく、販売終了を案内する', async () => {
-    serveProduct(productDetail({ status: 'PUBLISHED', firstShownAt: '2026-10-01T00:00:00+09:00' }))
+    serveProduct(
+      productDetail({
+        status: 'PUBLISHED',
+        firstShownAt: '2026-10-01T00:00:00+09:00',
+        actions: productActions({ publish: false, unpublish: true, delete: false, deleteVariants: false }),
+      }),
+    )
     renderApp(URL)
 
     expect(
@@ -123,7 +136,12 @@ describe('商品の編集', () => {
         response(200).json({ variantId: params.variantId, quantity: 0 }),
       ),
       http.post('/products/{productId}/variants', ({ response }) => {
-        state.current = { ...state.current, variants: [variant({ axisValues: [] })], version: 1 }
+        state.current = {
+          ...state.current,
+          variants: [variant({ axisValues: [] })],
+          actions: productActions({ addVariant: false }),
+          version: 1,
+        }
         return response(201).json({ id: variant().id })
       }),
     )

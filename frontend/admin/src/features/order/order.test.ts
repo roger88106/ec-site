@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { availableActions, cancellationRequestResultLabel, formatPostalCode, taxLabel } from '@/features/order/order'
+import { cancellationRequestResultLabel, formatPostalCode, taxLabel } from '@/features/order/order'
 import { orderStatusLabels } from '@/lib/labels'
 
 describe('注文の状態の表示名（BR-9）', () => {
@@ -15,20 +15,6 @@ describe('注文の状態の表示名（BR-9）', () => {
     expect(cancellationRequestResultLabel('PENDING')).toBe('申請中')
     expect(cancellationRequestResultLabel('APPROVED')).toBe('承認')
     expect(cancellationRequestResultLabel('REJECTED')).toBe('却下')
-  })
-})
-
-describe('注文に行える操作（AC-101、102、103、105）', () => {
-  test('AC-101 AC-102 AC-103 キャンセル申請中の注文は、承認・却下・キャンセルができる', () => {
-    expect(availableActions('CANCELLATION_REQUESTED')).toEqual({ approve: true, reject: true, cancel: true })
-  })
-
-  test('AC-103 受付の注文は、キャンセルだけができる', () => {
-    expect(availableActions('ACCEPTED')).toEqual({ approve: false, reject: false, cancel: true })
-  })
-
-  test('AC-105 キャンセル済みの注文には、操作を出さない', () => {
-    expect(availableActions('CANCELLED')).toEqual({ approve: false, reject: false, cancel: false })
   })
 })
 

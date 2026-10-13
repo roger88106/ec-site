@@ -7,7 +7,6 @@ import { useMutationGroup } from '@/api/useMutationGroup'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { CancelOrderDialog } from '@/features/order/components/CancelOrderDialog'
-import { availableActions } from '@/features/order/order'
 
 /**
  * 注文の操作（AC-101〜103、105）。申請の承認・却下と、運営者の判断によるキャンセル。<br />
@@ -27,18 +26,18 @@ export function OrderActions({ order }: { order: OrderDetail }) {
     invalidate,
   })
   const cancel = useApiMutation('put', '/orders/{orderId}/cancel', { success: 'キャンセルしました', invalidate })
-  const actions = availableActions(order.status)
+  const { actions } = order
   const { pending } = useMutationGroup(approve, reject, cancel)
   // キャンセルの失敗はダイアログの中に出す
   const { error } = useMutationGroup(approve, reject)
 
-  if (!actions.approve && !actions.reject && !actions.cancel) {
+  if (!actions.approveCancellation && !actions.rejectCancellation && !actions.cancel) {
     return null
   }
   return (
     <div className="space-y-3">
       <div className="flex flex-wrap gap-2">
-        {actions.approve && (
+        {actions.approveCancellation && (
           <ConfirmDialog
             confirmLabel="承認してキャンセルする"
             description="注文をキャンセルし、明細の数量だけ在庫数を戻します。元に戻せません。"
@@ -47,7 +46,7 @@ export function OrderActions({ order }: { order: OrderDetail }) {
             trigger={<Button disabled={pending}>申請を承認する</Button>}
           />
         )}
-        {actions.reject && (
+        {actions.rejectCancellation && (
           <ConfirmDialog
             confirmLabel="却下する"
             description="注文は「受付」に戻ります。お客様は、もう一度申請できません。"

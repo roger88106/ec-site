@@ -1,4 +1,12 @@
-import type { OrderDetail, OrderSummary, ProductDetail, TaxCategory, Variant } from '@/api/types'
+import type {
+  OrderActions,
+  OrderDetail,
+  OrderSummary,
+  ProductActions,
+  ProductDetail,
+  TaxCategory,
+  Variant,
+} from '@/api/types'
 
 /**
  * 結合テストで API の応答に使うデータ（管理画面の構成 第 10 節）。<br />
@@ -40,9 +48,23 @@ export function productDetail(overrides: Partial<ProductDetail> = {}): ProductDe
     publishEnd: null,
     images: [],
     variants: [],
+    actions: productActions(),
     version: 0,
     createdAt: '2026-10-01T00:00:00+09:00',
     updatedAt: '2026-10-01T00:00:00+09:00',
+    ...overrides,
+  }
+}
+
+/** 非公開で、C 側に表示されたことのない商品にできる操作（API が返す旗） */
+export function productActions(overrides: Partial<ProductActions> = {}): ProductActions {
+  return {
+    publish: true,
+    unpublish: false,
+    discontinue: true,
+    delete: true,
+    deleteVariants: true,
+    addVariant: true,
     ...overrides,
   }
 }
@@ -60,6 +82,11 @@ export function variant(overrides: Partial<Variant> = {}): Variant {
 
 /** テストのデータの注文の ID */
 export const ORDER_ID = '00000000-0000-0000-0000-000000000501'
+
+/** 「受付」の注文にできる操作（API が返す旗） */
+export function orderActions(overrides: Partial<OrderActions> = {}): OrderActions {
+  return { approveCancellation: false, rejectCancellation: false, cancel: true, ...overrides }
+}
 
 /** 一覧の「受付」の注文 1 件 */
 export function orderSummary(overrides: Partial<OrderSummary> = {}): OrderSummary {
@@ -102,6 +129,7 @@ export function orderDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
       taxes: [{ ratePercent: 10, taxableAmount: 4300, taxAmount: 390 }],
     },
     email: 'taro@example.com',
+    actions: orderActions(),
     shippingAddress: {
       name: '山田 太郎',
       postalCode: '1000001',

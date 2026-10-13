@@ -1,7 +1,7 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { CancellationRequest, OrderDetail } from '@/api/types'
-import { ORDER_ID, orderDetail } from '@/test/fixtures'
+import { ORDER_ID, orderActions, orderDetail } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
@@ -16,7 +16,11 @@ const REQUEST: CancellationRequest = {
 }
 
 /** 「キャンセル申請中」の注文 */
-const REQUESTED = orderDetail({ status: 'CANCELLATION_REQUESTED', cancellationRequest: REQUEST })
+const REQUESTED = orderDetail({
+  status: 'CANCELLATION_REQUESTED',
+  cancellationRequest: REQUEST,
+  actions: orderActions({ approveCancellation: true, rejectCancellation: true }),
+})
 
 /**
  * 注文の詳細と操作の API に応答する。操作が成功したら、詳細は after を返す。
@@ -71,6 +75,7 @@ describe('注文の詳細', () => {
       REQUESTED,
       orderDetail({
         status: 'CANCELLED',
+        actions: orderActions({ cancel: false }),
         cancellationRequest: {
           ...REQUEST,
           result: 'APPROVED',
@@ -120,6 +125,7 @@ describe('注文の詳細', () => {
       orderDetail(),
       orderDetail({
         status: 'CANCELLED',
+        actions: orderActions({ cancel: false }),
         cancellation: { cancelledAt: '2026-10-10T03:00:00Z', byOperator: true, reason: '電話で取り消しの依頼' },
       }),
     )
@@ -193,6 +199,7 @@ describe('注文の詳細', () => {
     serveOrder(
       orderDetail({
         status: 'CANCELLED',
+        actions: orderActions({ cancel: false }),
         cancellation: { cancelledAt: '2026-10-10T03:00:00Z', byOperator: true, reason: '在庫の誤り' },
       }),
     )

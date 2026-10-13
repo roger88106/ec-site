@@ -1,5 +1,6 @@
 import { keepPreviousData } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
 import { DateTime } from '@/components/DateTime'
@@ -17,6 +18,7 @@ import { formatYen } from '@/lib/format'
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  */
 export function OrderListPage() {
+  const t = useTranslations('order.list')
   const [searchParams, setSearchParams] = useSearchParams()
   const filter = parseFilter(searchParams)
   const navigate = useNavigate()
@@ -42,7 +44,7 @@ export function OrderListPage() {
 
   return (
     <>
-      <PageHeader title="注文" />
+      <PageHeader title={t('title') /* 注文 */} />
       <div className="space-y-4">
         {/* 絞り込みを変えたら（URL が変わったら）入力欄を作り直す */}
         <OrderFilterForm filter={filter} key={searchParams.toString()} onApply={apply} />
@@ -52,11 +54,11 @@ export function OrderListPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>注文番号</TableHead>
-                    <TableHead>注文日時</TableHead>
-                    <TableHead>氏名</TableHead>
-                    <TableHead className="text-right">総額</TableHead>
-                    <TableHead>状態</TableHead>
+                    <TableHead>{t('orderNumber') /* 注文番号 */}</TableHead>
+                    <TableHead>{t('orderedAt') /* 注文日時 */}</TableHead>
+                    <TableHead>{t('customerName') /* 氏名 */}</TableHead>
+                    <TableHead className="text-right">{t('total') /* 総額 */}</TableHead>
+                    <TableHead>{t('status') /* 状態 */}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -80,7 +82,7 @@ export function OrderListPage() {
                   {result.items.length === 0 && (
                     <TableRow>
                       <TableCell className="text-center text-muted-foreground" colSpan={5}>
-                        該当する注文はありません。
+                        {t('empty') /* 該当なし */}
                       </TableCell>
                     </TableRow>
                   )}

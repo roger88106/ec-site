@@ -26,6 +26,13 @@
     "moveUp": "{name}を上へ",
     "moveDown": "{name}を下へ",
     "all": "すべて",
-    "none": "なし"
+    "none": "なし",
+    "filter": {
+      "submit": "絞り込む",
+      "clear": "クリア"
+    },
+    "axisValue": "{name}：{value}",
+    "listSeparator": "、",
+    "noneParenthesized": "（なし）"
   }
 }

@@ -19,7 +19,7 @@ export function CategorySelect({
     { value: null, label: t('all') /* すべて */ },
     ...flattenTree(query.data?.items ?? []).map((category) => ({
       value: category.id,
-      label: `${'　'.repeat(category.depth - 1)}${category.name}`,
+      label: `${t('indent').repeat(category.depth - 1)}${category.name}`, // 階層の深さだけ字下げ
     })),
   ]
   return <OptionSelect className="w-48" id={id} onChange={onChange} options={options} value={value} />

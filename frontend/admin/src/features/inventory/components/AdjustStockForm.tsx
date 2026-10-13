@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { manualStockAdjustmentReasonValues } from '@/api/generated/admin'
 import { schemas } from '@/api/generated/constraints'
@@ -34,10 +35,10 @@ const reasonOptions = manualStockAdjustmentReasonValues.map((reason) => ({
  * 負になる調整や、「その他」でメモがない調整の拒否は、サーバーのエラーを表示する。
  */
 export function AdjustStockForm({ variantId }: { variantId: string }) {
+  const t = useTranslations('inventory.adjust')
   const form = useForm<Values>({ defaultValues: EMPTY })
   const mutation = useApiMutation('post', '/inventory/variants/{variantId}/adjustments', {
-    success: (adjustment) =>
-      `${formatDelta(adjustment.delta)} を反映し、在庫数は ${adjustment.quantityAfter} になりました`,
+    success: (adjustment) => t('applied', { delta: formatDelta(adjustment.delta), quantity: adjustment.quantityAfter }), // 反映の知らせ
     invalidate: ['/inventory'],
     onSuccess: () => form.reset(EMPTY),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
@@ -48,7 +49,7 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>調整</CardTitle>
+        <CardTitle>{t('title') /* 調整 */}</CardTitle>
       </CardHeader>
       <CardContent>
         <form
@@ -66,12 +67,12 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
         >
           <div className="flex flex-wrap items-start gap-3">
             <Field className="w-32">
-              <FieldLabel htmlFor="stock-delta">増減量</FieldLabel>
+              <FieldLabel htmlFor="stock-delta">{t('delta') /* 増減量 */}</FieldLabel>
               <Input id="stock-delta" placeholder="+10 / -3" step={1} type="number" {...form.register('delta')} />
               <FieldError errors={[form.formState.errors.delta]} />
             </Field>
             <Field className="w-40">
-              <FieldLabel htmlFor="stock-reason">理由</FieldLabel>
+              <FieldLabel htmlFor="stock-reason">{t('reason') /* 理由 */}</FieldLabel>
               <Controller
                 control={form.control}
                 name="reason"
@@ -89,7 +90,9 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
             </Field>
           </div>
           <Field>
-            <FieldLabel htmlFor="stock-memo">メモ{values.reason === 'OTHER' ? '（必須）' : '（任意）'}</FieldLabel>
+            <FieldLabel htmlFor="stock-memo">
+              {values.reason === 'OTHER' ? t('memoRequired') : t('memoOptional') /* メモ（必須か任意） */}
+            </FieldLabel>
             <Textarea
               id="stock-memo"
               maxLength={schemas.AdjustStockRequest.memo.maxLength}
@@ -101,7 +104,7 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
           <ErrorMessage error={mutation.error} shownFields={FIELD_NAMES} />
           <div>
             <Button disabled={mutation.isPending || !filled} type="submit">
-              調整する
+              {t('submit') /* 調整する */}
             </Button>
           </div>
         </form>

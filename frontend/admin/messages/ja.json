@@ -27,7 +27,8 @@
       "placeholder": "選択してください"
     },
     "categorySelect": {
-      "all": "すべて"
+      "all": "すべて",
+      "indent": "　"
     }
   },
   "api": {
@@ -125,9 +126,7 @@
       "code": "品番（前方一致）",
       "name": "商品名（部分一致）",
       "status": "状態",
-      "category": "カテゴリ（子孫を含む）",
-      "submit": "絞り込む",
-      "clear": "クリア"
+      "category": "カテゴリ（子孫を含む）"
     },
     "create": {
       "title": "商品の登録",
@@ -234,6 +233,122 @@
       "suspend": "販売停止",
       "deleteDescription": "在庫もあわせて削除します。",
       "deleteTitle": "バリアント「{code}」を削除しますか？"
+    }
+  },
+  "auth": {
+    "gate": {
+      "failed": "ログインできませんでした。（{message}）",
+      "retry": "ログインし直す"
+    }
+  },
+  "inventory": {
+    "page": {
+      "titlePrefix": "在庫：",
+      "backToProduct": "商品へ戻る",
+      "axes": "（{values}）",
+      "quantity": "在庫数"
+    },
+    "adjust": {
+      "title": "調整",
+      "applied": "{delta} を反映し、在庫数は {quantity} になりました",
+      "delta": "増減量",
+      "reason": "理由",
+      "memoRequired": "メモ（必須）",
+      "memoOptional": "メモ（任意）",
+      "submit": "調整する"
+    },
+    "history": {
+      "title": "調整の履歴",
+      "adjustedAt": "日時",
+      "delta": "増減量",
+      "reason": "理由",
+      "quantityAfter": "調整後の在庫数",
+      "memo": "メモ",
+      "operator": "操作した運営者",
+      "orderNumber": "注文番号 {orderNumber}",
+      "empty": "調整はまだありません。"
+    }
+  },
+  "order": {
+    "list": {
+      "title": "注文",
+      "orderNumber": "注文番号",
+      "orderedAt": "注文日時",
+      "customerName": "氏名",
+      "total": "総額",
+      "status": "状態",
+      "empty": "該当する注文はありません。"
+    },
+    "filter": {
+      "orderNumber": "注文番号（前方一致）",
+      "status": "状態",
+      "orderedFrom": "注文日（から）",
+      "orderedTo": "注文日（まで）"
+    },
+    "detail": {
+      "titlePrefix": "注文：",
+      "status": "状態",
+      "orderedAt": "注文日時",
+      "customer": "お客様とお届け先",
+      "email": "メールアドレス",
+      "name": "氏名",
+      "address": "住所",
+      "postalAddress": "〒{postalCode} {prefecture}",
+      "phone": "電話番号"
+    },
+    "lines": {
+      "title": "明細",
+      "code": "品番",
+      "productName": "商品名",
+      "unitPriceExclTax": "税抜単価",
+      "ratePercent": "税率",
+      "unitPriceInclTax": "税込単価",
+      "quantity": "数量",
+      "subtotal": "小計",
+      "itemsTotal": "商品の合計",
+      "shippingFee": "送料",
+      "total": "総額（税込）",
+      "taxOf": "{ratePercent}% の消費税"
+    },
+    "cancellation": {
+      "title": "キャンセル",
+      "none": "キャンセルの申請はありません。",
+      "request": "お客様からの申請",
+      "requestedAt": "申請日時",
+      "reason": "理由",
+      "result": "結果",
+      "decidedAt": "（<date></date>）",
+      "decidedBy": "判断した運営者",
+      "cancelledAt": "日時",
+      "trigger": "きっかけ",
+      "byOperator": "運営者の判断",
+      "byRequest": "お客様の申請の承認",
+      "cancelledBy": "キャンセルした運営者"
+    },
+    "requestResult": {
+      "PENDING": "申請中",
+      "APPROVED": "承認",
+      "REJECTED": "却下"
+    },
+    "actions": {
+      "approved": "申請を承認し、キャンセルしました",
+      "rejected": "申請を却下しました",
+      "cancelled": "キャンセルしました",
+      "approveConfirm": "承認してキャンセルする",
+      "approveDescription": "注文をキャンセルし、明細の数量だけ在庫数を戻します。元に戻せません。",
+      "approveTitle": "注文 {orderNumber} のキャンセルの申請を承認しますか？",
+      "approve": "申請を承認する",
+      "rejectConfirm": "却下する",
+      "rejectDescription": "注文は「受付」に戻ります。お客様は、もう一度申請できません。",
+      "rejectTitle": "注文 {orderNumber} のキャンセルの申請を却下しますか？",
+      "reject": "申請を却下する",
+      "cancel": "キャンセルする"
+    },
+    "cancelDialog": {
+      "title": "注文 {orderNumber} をキャンセルしますか？",
+      "description": "キャンセルすると、明細の数量だけ在庫数を戻します。元に戻せません。",
+      "reason": "理由（必須）",
+      "submit": "キャンセルする"
     }
   }
 }

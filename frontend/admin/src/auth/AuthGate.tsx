@@ -2,6 +2,7 @@ import { fullName } from '@ec-site/shared/lib/login'
 import { Button } from '@ec-site/shared/ui/button'
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { hasAuthParams, useAuth } from 'react-oidc-context'
+import { useTranslations } from 'use-intl'
 import { paths } from '@/app/paths'
 import { type Operator, OperatorProvider } from '@/auth/operator'
 import { setTokenSource } from '@/auth/token'
@@ -12,6 +13,7 @@ import { setTokenSource } from '@/auth/token'
  * ログインしていれば、運営者（氏名とログアウト）と、API に付ける token を渡してから画面を出す。
  */
 export function AuthGate({ children }: { children: ReactNode }) {
+  const t = useTranslations('auth.gate')
   const { isLoading, isAuthenticated, activeNavigator, error, user, signinRedirect, signoutRedirect } = useAuth()
   // IdP へ移るのは 1 回だけ（開発時の StrictMode で effect が 2 回動いても、2 つ目の state を作らない）
   const redirecting = useRef(false)
@@ -54,8 +56,10 @@ export function AuthGate({ children }: { children: ReactNode }) {
   if (error && !isAuthenticated) {
     return (
       <div className="mx-auto max-w-md space-y-4 p-8 text-sm">
-        <p>ログインできませんでした。（{error.message}）</p>
-        <Button onClick={() => void signinRedirect({ state: { returnTo: paths.top() } })}>ログインし直す</Button>
+        <p>{t('failed', { message: error.message }) /* ログインの失敗 */}</p>
+        <Button onClick={() => void signinRedirect({ state: { returnTo: paths.top() } })}>
+          {t('retry') /* ログインし直す */}
+        </Button>
       </div>
     )
   }

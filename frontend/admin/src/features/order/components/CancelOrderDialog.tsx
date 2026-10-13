@@ -1,5 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { useForm } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -37,13 +38,14 @@ export function CancelOrderDialog({
   onSubmit: (reason: string, callbacks: { onSuccess: () => void; onError: (error: unknown) => void }) => void
   onClose: () => void
 }) {
+  const t = useTranslations('order.cancelDialog')
   const form = useForm<Values>({ defaultValues: { reason: '' } })
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
       <DialogContent>
         <DialogHeader>
-          <DialogTitle>注文 {orderNumber} をキャンセルしますか？</DialogTitle>
-          <DialogDescription>キャンセルすると、明細の数量だけ在庫数を戻します。元に戻せません。</DialogDescription>
+          <DialogTitle>{t('title', { orderNumber }) /* キャンセルの確認 */}</DialogTitle>
+          <DialogDescription>{t('description') /* キャンセルの影響 */}</DialogDescription>
         </DialogHeader>
         <form
           className="grid gap-4"
@@ -55,7 +57,7 @@ export function CancelOrderDialog({
           )}
         >
           <Field>
-            <FieldLabel htmlFor="cancel-reason">理由（必須）</FieldLabel>
+            <FieldLabel htmlFor="cancel-reason">{t('reason') /* 理由 */}</FieldLabel>
             <Textarea
               autoFocus
               id="cancel-reason"
@@ -67,7 +69,7 @@ export function CancelOrderDialog({
           <ErrorMessage error={error} shownFields={['reason']} />
           <DialogFooter>
             <Button disabled={pending || !form.watch('reason').trim()} type="submit" variant="destructive">
-              キャンセルする
+              {t('submit') /* キャンセルする */}
             </Button>
           </DialogFooter>
         </form>

@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Link, useParams } from 'react-router'
+import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
 import { DateTime } from '@/components/DateTime'
@@ -14,6 +15,8 @@ import { formatPostalCode } from '@/features/order/order'
 
 /** 注文の詳細（T2602。AC-100、106）と、承認・却下・キャンセルの操作（T2603。AC-101〜103、105） */
 export function OrderDetailPage() {
+  const t = useTranslations('order.detail')
+  const tCommon = useTranslations('common')
   const { orderId = '' } = useParams()
   const query = $api.useQuery('get', '/orders/{orderId}', { params: { path: { orderId } } })
 
@@ -22,12 +25,13 @@ export function OrderDetailPage() {
       <PageHeader
         title={
           <span>
-            注文：<span className="font-mono">{query.data?.orderNumber ?? '…'}</span>
+            {t('titlePrefix') /* 注文 */}
+            <span className="font-mono">{query.data?.orderNumber ?? '…'}</span>
           </span>
         }
       >
         <Button nativeButton={false} render={<Link to={paths.orders()} />} variant="outline">
-          一覧へ戻る
+          {tCommon('backToList') /* 一覧へ戻る */}
         </Button>
       </PageHeader>
       <QueryState query={query}>
@@ -35,13 +39,13 @@ export function OrderDetailPage() {
           <div className="max-w-5xl space-y-6">
             <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
               <div className="flex items-center gap-2">
-                <dt className="text-muted-foreground">状態</dt>
+                <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
                 <dd>
                   <OrderStatusBadge status={order.status} />
                 </dd>
               </div>
               <div className="flex items-center gap-2">
-                <dt className="text-muted-foreground">注文日時</dt>
+                <dt className="text-muted-foreground">{t('orderedAt') /* 注文日時 */}</dt>
                 <dd>
                   <DateTime value={order.orderedAt} />
                 </dd>
@@ -51,20 +55,25 @@ export function OrderDetailPage() {
             <OrderLinesCard amounts={order.amounts} lines={order.lines} />
             <Card>
               <CardHeader>
-                <CardTitle>お客様とお届け先</CardTitle>
+                <CardTitle>{t('customer') /* お客様とお届け先 */}</CardTitle>
               </CardHeader>
               <CardContent>
                 <dl className="grid grid-cols-[7rem_1fr] gap-y-1 text-sm">
-                  <dt className="text-muted-foreground">メールアドレス</dt>
+                  <dt className="text-muted-foreground">{t('email') /* メールアドレス */}</dt>
                   <dd>{order.email}</dd>
-                  <dt className="text-muted-foreground">氏名</dt>
+                  <dt className="text-muted-foreground">{t('name') /* 氏名 */}</dt>
                   <dd>{order.shippingAddress.name}</dd>
-                  <dt className="text-muted-foreground">住所</dt>
+                  <dt className="text-muted-foreground">{t('address') /* 住所 */}</dt>
                   <dd>
-                    〒{formatPostalCode(order.shippingAddress.postalCode)} {order.shippingAddress.prefecture}
+                    {
+                      t('postalAddress', {
+                        postalCode: formatPostalCode(order.shippingAddress.postalCode),
+                        prefecture: order.shippingAddress.prefecture,
+                      }) /* 郵便番号と都道府県 */
+                    }
                     {order.shippingAddress.address}
                   </dd>
-                  <dt className="text-muted-foreground">電話番号</dt>
+                  <dt className="text-muted-foreground">{t('phone') /* 電話番号 */}</dt>
                   <dd className="tabular-nums">{order.shippingAddress.phone}</dd>
                 </dl>
               </CardContent>

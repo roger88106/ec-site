@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
+import { useTranslations } from 'use-intl'
 import type { OrderAmounts, OrderLine } from '@/api/types'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { taxLabel } from '@/features/order/order'
@@ -8,22 +9,24 @@ import { formatYen } from '@/lib/format'
  * 明細と金額の内訳（AC-100。BR-7、8）。明細は注文時点の写し（AC-92）で、今の商品の内容ではない。
  */
 export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts: OrderAmounts }) {
+  const t = useTranslations('order.lines')
+  const tCommon = useTranslations('common')
   return (
     <Card>
       <CardHeader>
-        <CardTitle>明細</CardTitle>
+        <CardTitle>{t('title') /* 明細 */}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>品番</TableHead>
-              <TableHead>商品名</TableHead>
-              <TableHead className="text-right">税抜単価</TableHead>
-              <TableHead className="text-right">税率</TableHead>
-              <TableHead className="text-right">税込単価</TableHead>
-              <TableHead className="text-right">数量</TableHead>
-              <TableHead className="text-right">小計</TableHead>
+              <TableHead>{t('code') /* 品番 */}</TableHead>
+              <TableHead>{t('productName') /* 商品名 */}</TableHead>
+              <TableHead className="text-right">{t('unitPriceExclTax') /* 税抜単価 */}</TableHead>
+              <TableHead className="text-right">{t('ratePercent') /* 税率 */}</TableHead>
+              <TableHead className="text-right">{t('unitPriceInclTax') /* 税込単価 */}</TableHead>
+              <TableHead className="text-right">{t('quantity') /* 数量 */}</TableHead>
+              <TableHead className="text-right">{t('subtotal') /* 小計 */}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -37,7 +40,11 @@ export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts
                   <div>{line.productName}</div>
                   {line.axisValues.length > 0 && (
                     <div className="text-muted-foreground">
-                      {line.axisValues.map((axis) => `${axis.name}：${axis.value}`).join('、')}
+                      {
+                        line.axisValues
+                          .map((axis) => tCommon('axisValue', axis))
+                          .join(tCommon('listSeparator')) /* 軸の名前と値 */
+                      }
                     </div>
                   )}
                 </TableCell>
@@ -52,20 +59,20 @@ export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts
         </Table>
         <dl className="ml-auto w-full max-w-sm space-y-1 text-sm">
           <div className="flex justify-between">
-            <dt>商品の合計</dt>
+            <dt>{t('itemsTotal') /* 商品の合計 */}</dt>
             <dd className="tabular-nums">{formatYen(amounts.itemsTotal)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt>送料</dt>
+            <dt>{t('shippingFee') /* 送料 */}</dt>
             <dd className="tabular-nums">{formatYen(amounts.shippingFee)}</dd>
           </div>
           <div className="flex justify-between border-t pt-1 font-semibold">
-            <dt>総額（税込）</dt>
+            <dt>{t('total') /* 総額 */}</dt>
             <dd className="tabular-nums">{formatYen(amounts.total)}</dd>
           </div>
           {amounts.taxes.map((tax) => (
             <div className="text-right text-muted-foreground tabular-nums" key={tax.ratePercent}>
-              <dt className="sr-only">{tax.ratePercent}% の消費税</dt>
+              <dt className="sr-only">{t('taxOf', { ratePercent: tax.ratePercent }) /* 税率ごとの消費税 */}</dt>
               <dd>{taxLabel(tax)}</dd>
             </div>
           ))}

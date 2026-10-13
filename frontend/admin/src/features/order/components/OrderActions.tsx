@@ -1,5 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
+import { useTranslations } from 'use-intl'
 import type { ApiPathPrefix } from '@/api/invalidate'
 import type { OrderDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -14,18 +15,22 @@ import { CancelOrderDialog } from '@/features/order/components/CancelOrderDialog
  * 行える操作がない（キャンセル済み）ときは何も出さない。
  */
 export function OrderActions({ order }: { order: OrderDetail }) {
+  const t = useTranslations('order.actions')
   const [cancelling, setCancelling] = useState(false)
   const path = { params: { path: { orderId: order.id } } }
   const invalidate: ApiPathPrefix[] = ['/orders', '/inventory']
   const approve = useApiMutation('put', '/orders/{orderId}/cancellation-request/approve', {
-    success: '申請を承認し、キャンセルしました',
+    success: t('approved'), // 承認の知らせ
     invalidate,
   })
   const reject = useApiMutation('put', '/orders/{orderId}/cancellation-request/reject', {
-    success: '申請を却下しました',
+    success: t('rejected'), // 却下の知らせ
     invalidate,
   })
-  const cancel = useApiMutation('put', '/orders/{orderId}/cancel', { success: 'キャンセルしました', invalidate })
+  const cancel = useApiMutation('put', '/orders/{orderId}/cancel', {
+    success: t('cancelled') /* キャンセルの知らせ */,
+    invalidate,
+  })
   const { actions } = order
   const { pending } = useMutationGroup(approve, reject, cancel)
   // キャンセルの失敗はダイアログの中に出す
@@ -39,22 +44,22 @@ export function OrderActions({ order }: { order: OrderDetail }) {
       <div className="flex flex-wrap gap-2">
         {actions.approveCancellation && (
           <ConfirmDialog
-            confirmLabel="承認してキャンセルする"
-            description="注文をキャンセルし、明細の数量だけ在庫数を戻します。元に戻せません。"
+            confirmLabel={t('approveConfirm') /* 承認してキャンセル */}
+            description={t('approveDescription') /* 承認の影響 */}
             onConfirm={() => approve.mutate(path)}
-            title={`注文 ${order.orderNumber} のキャンセルの申請を承認しますか？`}
-            trigger={<Button disabled={pending}>申請を承認する</Button>}
+            title={t('approveTitle', { orderNumber: order.orderNumber }) /* 承認の確認 */}
+            trigger={<Button disabled={pending}>{t('approve') /* 申請を承認する */}</Button>}
           />
         )}
         {actions.rejectCancellation && (
           <ConfirmDialog
-            confirmLabel="却下する"
-            description="注文は「受付」に戻ります。お客様は、もう一度申請できません。"
+            confirmLabel={t('rejectConfirm') /* 却下する */}
+            description={t('rejectDescription') /* 却下の影響 */}
             onConfirm={() => reject.mutate(path)}
-            title={`注文 ${order.orderNumber} のキャンセルの申請を却下しますか？`}
+            title={t('rejectTitle', { orderNumber: order.orderNumber }) /* 却下の確認 */}
             trigger={
               <Button disabled={pending} variant="outline">
-                申請を却下する
+                {t('reject') /* 申請を却下する */}
               </Button>
             }
           />
@@ -68,7 +73,7 @@ export function OrderActions({ order }: { order: OrderDetail }) {
             }}
             variant="destructive"
           >
-            キャンセルする
+            {t('cancel') /* キャンセルする */}
           </Button>
         )}
       </div>

@@ -99,6 +99,8 @@ module/<モジュール>/
 
 Controller は OpenAPI から生成した interface（`XxxApi`）を実装する。パスと入力の形は interface に任せ、`@RequestMapping` を書かない。
 
+例外：外部のサービスとのやり取りの口（mock の支払の画面、Stripe の通知の受け口）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](modules/payment.md)）。
+
 理由：契約（`api/openapi/`）を正本にし、実装とずれないようにするため。
 
 ### 2.2 応答への変換は手で書く

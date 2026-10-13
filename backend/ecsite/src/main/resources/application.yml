@@ -70,3 +70,10 @@ logging:
     format:
       # ログは標準出力に JSON で出す（Elastic Common Schema）。トレース ID・span ID も入る
       console: ecs
+
+ecsite:
+  payment:
+    stripe:
+      # Stripe の秘密の値。Git に入れず、Stripe の名前の環境変数で渡す（決済サービスが stripe のときだけ使う）
+      secret-key: ${STRIPE_SECRET_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}

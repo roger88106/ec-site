@@ -155,5 +155,6 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 - 依存を足す・上げたら、ルートで `pnpm install --frozen-lockfile` を流し直す。
 - インストール時のスクリプトを持つライブラリ（間接の依存も含む）は、`pnpm-workspace.yaml` の `allowBuilds` に、実行するか（`true`・`false`）と理由を書く。
 - ライセンスも確かめる（`node scripts/ci/licenses/check-frontend.mjs`）。
+- 両方は `scripts/dev/check-frontend.sh` の `install`・`licenses` の手順でも流せる（既定で流す）。
 
 理由：`allowBuilds` にないライブラリがあると pnpm はインストールを失敗にするが、手元は依存が入った後なので気づかず、CI で初めて失敗するため。

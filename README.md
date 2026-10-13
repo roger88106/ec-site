@@ -26,4 +26,4 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [004](docs/specs/004-foundation) | 整理 | 開発基盤の整理 | 完了 |
 | [005](docs/specs/005-backend-cleanup) | 整理 | バックエンドの整理 | 完了 |
 | [006](docs/specs/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n | 完了 |
-| [007](docs/specs/007-payment) | 機能 | 決済 | 段階 1 完了 |
+| [007](docs/specs/007-payment) | 機能 | 決済 | 段階 2 完了 |

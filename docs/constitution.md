@@ -100,6 +100,7 @@ ec-site/
 │   ├── admin/            # B 側（管理画面）
 │   └── shared/           # 共有のパッケージ
 ├── e2e/                  # E2E
+├── showcase/             # 機能紹介のページ（GitHub Pages で公開する）
 ├── scripts/              # CI と開発の script
 └── docker/               # ローカル開発の compose
 ```

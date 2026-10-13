@@ -7,6 +7,10 @@
 
 Java・Spring Boot のモジュラーモノリスと、Next.js（店舗画面）・React（管理画面）で作り、仕様駆動開発（SDD）とテスト駆動開発（TDD）で進める。
 
+できることと作り方は、[機能紹介のページ](https://roger88106.github.io/ec-site/)（エンジニアでない方向け）にまとめている。
+
+![店舗画面のトップ。カテゴリと新着の商品が写真付きで並ぶ](showcase/img/store-top.png)
+
 ## 文書
 
 [constitution](docs/constitution.md) から読む。プロジェクトの大綱と、すべての文書の地図がある。

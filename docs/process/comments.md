@@ -4,7 +4,7 @@
 
 ## 規則の一覧
 
-すべて人手で確かめ、各 spec の [見直し](review.md) で読む。
+第 1 節の spec・plan・tasks の番号は、CI の `spec-numbers.mjs` で確かめる。他は人手で確かめ、各 spec の [見直し](review.md) で読む。
 
 | 節 | 規則 |
 |----|------|

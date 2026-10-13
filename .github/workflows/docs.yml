@@ -3,6 +3,7 @@
 #
 # 文書だけを変えた push でも流す（ci.yml は文書だけの push では流さないため、別のワークフローにする）。
 #   参照：Markdown のリンクと、節の参照（`店舗画面の構成 第 4.5 節` など）が切れていないこと
+#   spec の番号：本番のコードのコメントに、spec・plan・tasks の番号を書いていないこと
 # script のテストは ci.yml の ac-check で流す。
 # ============================================================================
 
@@ -34,3 +35,7 @@ jobs:
 
       - name: 参照の検査
         run: node scripts/ci/doc-refs.mjs
+
+      # 本番のコードに spec・plan・tasks の番号を書いていないこと（コメントの書き方 第 1 節）
+      - name: 本番のコードの spec の番号の検査
+        run: node scripts/ci/spec-numbers.mjs

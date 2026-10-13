@@ -12,6 +12,7 @@ import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.OrderPaymentService;
 import com.ecsite.module.order.application.port.StockDirectory;
+import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
@@ -22,9 +23,11 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
@@ -35,6 +38,7 @@ import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
+import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -75,6 +79,9 @@ class CancellationAtomicityTest {
     @Autowired
     DSLContext dsl;
 
+    @Autowired
+    EventPublicationRegistry publicationRegistry;
+
     @MockitoSpyBean
     StockDirectory stockDirectory;
 
@@ -95,6 +102,7 @@ class CancellationAtomicityTest {
         stockItemRepository.createIfAbsent(variantId, product.id);
         stockItemRepository.adjust(variantId, StockAdjustment.create(5, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         orderId = new OrderTestData(mockMvc, gateway, orderPaymentService).placeOrder(variantId, 2);
+        awaitAuthorizedHandled();
     }
 
     @AfterEach
@@ -108,6 +116,17 @@ class CancellationAtomicityTest {
         dsl.deleteFrom(PRODUCT).where(PRODUCT.ID.eq(product.id)).execute();
         dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(taxCategoryId)).execute();
         dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(taxCategoryId)).execute();
+    }
+
+    /**
+     * 与信の成功のイベントのリスナーが終わるのを待つ。<br />
+     * このテストはコミットするので、支払うとリスナーが非同期で注文を受け付け直す。終わる前にキャンセルすると、
+     * 楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある。
+     */
+    private void awaitAuthorizedHandled() {
+        await().atMost(Duration.ofSeconds(10)).until(() -> publicationRegistry.findIncompletePublications().stream()
+                .noneMatch(publication -> publication.getEvent() instanceof PaymentAuthorized event
+                        && event.orderId().equals(orderId)));
     }
 
     @Test

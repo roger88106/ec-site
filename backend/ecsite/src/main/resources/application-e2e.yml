@@ -21,6 +21,9 @@ ecsite:
   payment:
     # E2E の店舗画面（e2e/playwright.config.ts）
     return-url: http://localhost:3100/orders/{orderId}?payment=returned
+    mock:
+      # mock の支払の画面を出す E2E のバックエンド
+      base-url: http://localhost:8090
   media:
     storage:
       # compose の seaweedfs-init が作る E2E 用のバケット

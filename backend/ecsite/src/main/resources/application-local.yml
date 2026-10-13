@@ -51,6 +51,9 @@ ecsite:
   payment:
     # 支払の画面から戻る店舗の注文の画面（店舗画面の開発サーバー）
     return-url: http://localhost:3000/orders/{orderId}?payment=returned
+    mock:
+      # mock の支払の画面を出すバックエンド
+      base-url: http://localhost:8080
   storefront:
     shop:
       # 問い合わせ先：ローカル用の例の値

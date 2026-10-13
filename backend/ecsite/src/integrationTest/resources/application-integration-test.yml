@@ -25,6 +25,9 @@ ecsite:
   payment:
     # 支払の画面から戻る先（テストでは開かない）
     return-url: http://store.example/orders/{orderId}?payment=returned
+    mock:
+      # MockMvc で開く mock の支払の画面
+      base-url: http://localhost
   order:
     # 送料に適用する税区分。テストの補助（CatalogTestData#shippingTaxCategory）がこの ID で作る
     shipping-tax-category-id: 00000000-0000-0000-0000-00000000f001

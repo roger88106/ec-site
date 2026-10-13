@@ -1,4 +1,5 @@
 import { fetchClient } from '@/api/client'
+import { translate } from '@/i18n/translate'
 
 /** 受け付ける画像の形式（AC-39、67）。登録のときに WebP に変換される（AC-68） */
 export const IMAGE_CONTENT_TYPES = [
@@ -64,10 +65,10 @@ export function imageContentType(file: Pick<File, 'type' | 'name'>): string | nu
  */
 export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): string | null {
   if (imageContentType(file) === null) {
-    return '画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。'
+    return translate('product.images.invalidType') // 形式の誤り
   }
   if (file.size === 0 || file.size > MAX_IMAGE_BYTES) {
-    return '画像は 1 ファイル 10MB までです。'
+    return translate('product.images.tooLarge') // 大きさの誤り
   }
   return null
 }
@@ -88,11 +89,11 @@ export async function uploadProductImage(productId: string, file: File, version:
     body: { contentType: imageContentType(file) ?? file.type, contentLength: file.size },
   })
   if (!upload) {
-    throw new ImageUploadError('画像の受付に失敗しました。もう一度やり直してください。')
+    throw new ImageUploadError(translate('product.images.uploadRejected')) // 受付の失敗
   }
   const stored = await fetch(upload.uploadUrl, { method: 'PUT', headers: upload.headers, body: file })
   if (!stored.ok) {
-    throw new ImageUploadError('画像のファイルを送れませんでした。もう一度やり直してください。')
+    throw new ImageUploadError(translate('product.images.uploadFailed')) // 送信の失敗
   }
   await fetchClient.POST('/products/{productId}/images', {
     params: { path: { productId } },

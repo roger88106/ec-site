@@ -5,6 +5,7 @@ import { useMutation } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
+import { useTranslations } from 'use-intl'
 import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -26,6 +27,8 @@ import { move } from '@/lib/array'
  */
 export function ProductImagesCard({ product }: { product: ProductDetail }) {
   const invalidate = useInvalidate()
+  const t = useTranslations('product.images')
+  const tCommon = useTranslations('common')
   const fileInput = useRef<HTMLInputElement>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const images = product.images
@@ -38,13 +41,13 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
         await uploadProductImage(product.id, file, product.version + index)
       }
     },
-    onSuccess: (_, files) => toast.success(`画像を ${files.length} 枚登録しました`),
+    onSuccess: (_, files) => toast.success(t('registered', { count: files.length })), // 登録の知らせ
     // 途中で失敗しても、それまでに登録した画像を出す
     onSettled: () => invalidate('/products'),
   })
   const reorder = useApiMutation('put', '/products/{productId}/images/order', { invalidate: ['/products'] })
   const remove = useApiMutation('delete', '/products/{productId}/images/{imageId}', {
-    success: '画像を削除しました',
+    success: t('deleted'), // 削除の知らせ
     invalidate: ['/products'],
   })
   const group = useMutationGroup(upload, reorder, remove)
@@ -64,7 +67,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
     if (invalid) {
       setFileError(invalid)
     } else if (images.length + files.length > MAX_IMAGES) {
-      setFileError(`画像は 1 商品あたり ${MAX_IMAGES} 枚まで登録できます。`)
+      setFileError(t('tooMany', { max: MAX_IMAGES })) // 枚数の上限
     } else if (files.length > 0) {
       upload.mutate(files)
     }
@@ -78,30 +81,28 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>画像</CardTitle>
+        <CardTitle>{t('title') /* 画像 */}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-muted-foreground text-sm">
-          JPEG、PNG、WebP、BMP、HEIC、AVIF で 1 ファイル 10MB まで、{MAX_IMAGES}{' '}
-          枚まで登録できます。先頭の画像が代表画像です。 登録した画像は WebP
-          に変換し、位置情報などの情報は取り除きます。
-        </p>
+        <p className="text-muted-foreground text-sm">{t('help', { max: MAX_IMAGES }) /* 形式・大きさ・枚数と変換 */}</p>
         {images.length === 0 ? (
-          <p className="text-muted-foreground text-sm">画像はまだありません。</p>
+          <p className="text-muted-foreground text-sm">{t('empty') /* まだない */}</p>
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {images.map((image, index) => (
               <li className="space-y-1" key={image.id}>
                 <img
-                  alt={`画像 ${index + 1}`}
+                  alt={t('image', { number: index + 1 }) /* 画像の番号 */}
                   className="aspect-square w-full rounded-md border object-cover"
                   src={image.url}
                 />
                 <div className="flex items-center justify-between gap-1 text-xs">
-                  <span className="text-muted-foreground">{index === 0 ? '代表画像' : `画像 ${index + 1}`}</span>
+                  <span className="text-muted-foreground">
+                    {index === 0 ? t('representative') : t('image', { number: index + 1 }) /* 代表画像か番号 */}
+                  </span>
                   <span className="flex gap-1">
                     <Button
-                      aria-label={`画像 ${index + 1}を前へ`}
+                      aria-label={t('moveBefore', { number: index + 1 }) /* 前へ */}
                       disabled={index === 0 || pending}
                       onClick={() => reorderTo(move(ids, index, index - 1))}
                       size="icon-xs"
@@ -110,7 +111,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
                       <ArrowLeftIcon />
                     </Button>
                     <Button
-                      aria-label={`画像 ${index + 1}を後へ`}
+                      aria-label={t('moveAfter', { number: index + 1 }) /* 後へ */}
                       disabled={index === ids.length - 1 || pending}
                       onClick={() => reorderTo(move(ids, index, index + 1))}
                       size="icon-xs"
@@ -119,8 +120,8 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
                       <ArrowRightIcon />
                     </Button>
                     <ConfirmDialog
-                      confirmLabel="削除する"
-                      description="この画像を指定しているバリアントは、代表画像を使うようになります。"
+                      confirmLabel={tCommon('deleteConfirm') /* 削除する */}
+                      description={t('deleteDescription') /* 削除の影響 */}
                       onConfirm={() => {
                         resetErrors()
                         remove.mutate({
@@ -130,10 +131,15 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
                           },
                         })
                       }}
-                      title={`画像 ${index + 1}を削除しますか？`}
+                      title={t('deleteTitle', { number: index + 1 }) /* 削除の確認 */}
                       trigger={
-                        <Button aria-label={`画像 ${index + 1}を削除`} disabled={pending} size="xs" variant="outline">
-                          削除
+                        <Button
+                          aria-label={t('deleteLabel', { number: index + 1 }) /* 削除 */}
+                          disabled={pending}
+                          size="xs"
+                          variant="outline"
+                        >
+                          {tCommon('delete') /* 削除 */}
                         </Button>
                       }
                     />
@@ -145,7 +151,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
         )}
         <input
           accept={IMAGE_ACCEPT}
-          aria-label="画像のファイル"
+          aria-label={t('file') /* 画像のファイル */}
           className="hidden"
           multiple
           onChange={(event) => {
@@ -162,7 +168,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
           type="button"
           variant="outline"
         >
-          {upload.isPending ? 'アップロード中…' : '画像を追加'}
+          {upload.isPending ? t('uploading') : t('add') /* 送信中か、追加 */}
         </Button>
         {localError ? (
           <Alert variant="destructive">

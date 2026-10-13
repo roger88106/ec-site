@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { keepPreviousData } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router'
+import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
 import { PageHeader } from '@/components/PageHeader'
@@ -17,6 +18,7 @@ import { type ProductFilter, parseFilter, toSearchParams } from '@/features/prod
  * 在庫数の合計は、表示中のページの商品について在庫の集計 API を呼んで組み合わせる（AC-49）。
  */
 export function ProductListPage() {
+  const t = useTranslations('product.list')
   const [searchParams, setSearchParams] = useSearchParams()
   const filter = parseFilter(searchParams)
   const navigate = useNavigate()
@@ -51,9 +53,9 @@ export function ProductListPage() {
 
   return (
     <>
-      <PageHeader title="商品">
+      <PageHeader title={t('title') /* 商品 */}>
         <Button nativeButton={false} render={<Link to={paths.productNew()} />}>
-          商品を登録
+          {t('create') /* 商品を登録 */}
         </Button>
       </PageHeader>
       <div className="space-y-4">
@@ -65,11 +67,11 @@ export function ProductListPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>商品品番</TableHead>
-                    <TableHead>商品名</TableHead>
-                    <TableHead>状態</TableHead>
-                    <TableHead className="text-right">バリアント数</TableHead>
-                    <TableHead className="text-right">在庫数の合計</TableHead>
+                    <TableHead>{t('productCode') /* 商品品番 */}</TableHead>
+                    <TableHead>{t('name') /* 商品名 */}</TableHead>
+                    <TableHead>{t('status') /* 状態 */}</TableHead>
+                    <TableHead className="text-right">{t('variantCount') /* バリアント数 */}</TableHead>
+                    <TableHead className="text-right">{t('stockTotal') /* 在庫数の合計 */}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -87,14 +89,14 @@ export function ProductListPage() {
                       <TableCell className="text-right tabular-nums">{item.variantCount}</TableCell>
                       <TableCell className="text-right tabular-nums">
                         {/* 集計の取得に失敗しても、一覧は出す */}
-                        {totals.get(item.id) ?? (stocks.isError ? '取得できません' : '…')}
+                        {totals.get(item.id) ?? (stocks.isError ? t('stockUnavailable') /* 取得できない */ : '…')}
                       </TableCell>
                     </TableRow>
                   ))}
                   {result.items.length === 0 && (
                     <TableRow>
                       <TableCell className="text-center text-muted-foreground" colSpan={5}>
-                        該当する商品はありません。
+                        {t('empty') /* 該当なし */}
                       </TableCell>
                     </TableRow>
                   )}

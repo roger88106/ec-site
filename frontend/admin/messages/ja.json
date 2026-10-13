@@ -108,5 +108,132 @@
       "deleteDescription": "子カテゴリを持つカテゴリと、商品が所属しているカテゴリは削除できません。",
       "deleteTitle": "カテゴリ「{name}」を削除しますか？"
     }
+  },
+  "product": {
+    "list": {
+      "title": "商品",
+      "create": "商品を登録",
+      "productCode": "商品品番",
+      "name": "商品名",
+      "status": "状態",
+      "variantCount": "バリアント数",
+      "stockTotal": "在庫数の合計",
+      "stockUnavailable": "取得できません",
+      "empty": "該当する商品はありません。"
+    },
+    "filter": {
+      "code": "品番（前方一致）",
+      "name": "商品名（部分一致）",
+      "status": "状態",
+      "category": "カテゴリ（子孫を含む）",
+      "submit": "絞り込む",
+      "clear": "クリア"
+    },
+    "create": {
+      "title": "商品の登録",
+      "registered": "商品を登録しました",
+      "basicInfo": "基本情報",
+      "productCode": "商品品番（登録後は変更できません）",
+      "productCodeHelp": "半角の英大文字・数字とハイフン。英小文字は大文字にします。",
+      "axes": "バリアント軸（登録後は変更できません）",
+      "axesHelp": "色・サイズなど、バリアントを分ける軸を 0〜{max} 個指定します。軸がなければ、バリアントは 1 つだけです。",
+      "axis": "軸 {number}",
+      "axisPlaceholder1": "色",
+      "axisPlaceholder2": "サイズ",
+      "addAxis": "軸を追加"
+    },
+    "fields": {
+      "name": "商品名",
+      "description": "説明",
+      "taxCategory": "税区分",
+      "priceExclTax": "税抜価格（円）",
+      "categories": "所属カテゴリ（複数可）",
+      "taxCategoryOption": "{name}（現時点の率：{rate}）",
+      "noCategories": "カテゴリはまだありません。"
+    },
+    "basicInfo": {
+      "title": "基本情報",
+      "saved": "基本情報を保存しました",
+      "productCode": "商品品番",
+      "axes": "バリアント軸",
+      "axisSeparator": "、"
+    },
+    "status": {
+      "title": "状態",
+      "published": "公開しました",
+      "unpublished": "非公開にしました",
+      "discontinued": "販売終了にしました",
+      "deleted": "商品を削除しました",
+      "currentPrice": "現時点の価格",
+      "firstShownAt": "初回表示日時",
+      "notShownYet": "まだ表示されていません",
+      "createdAt": "登録日時",
+      "updatedAt": "更新日時",
+      "publish": "公開する",
+      "unpublish": "非公開にする",
+      "discontinue": "販売終了にする",
+      "discontinueDescription": "販売終了にすると、公開に戻せません。",
+      "discontinueTitle": "商品「{name}」を販売終了にしますか？",
+      "deleteDescription": "バリアントと在庫もあわせて削除します。",
+      "deleteTitle": "商品「{name}」を削除しますか？",
+      "discontinuedNote": "販売終了の商品は、公開に戻せません。",
+      "shownNote": "店舗に表示されたことがあるため、削除できません。取り扱いをやめるときは販売終了にしてください。"
+    },
+    "period": {
+      "title": "公開期間",
+      "saved": "公開期間を保存しました",
+      "help": "日時は日本時間。公開中でも、開始より前と終了以降は店舗に表示されません。空なら限りがありません。",
+      "start": "公開開始",
+      "end": "公開終了（この日時は含まない）",
+      "save": "公開期間を保存"
+    },
+    "images": {
+      "title": "画像",
+      "registered": "画像を {count} 枚登録しました",
+      "deleted": "画像を削除しました",
+      "tooMany": "画像は 1 商品あたり {max} 枚まで登録できます。",
+      "help": "JPEG、PNG、WebP、BMP、HEIC、AVIF で 1 ファイル 10MB まで、{max} 枚まで登録できます。先頭の画像が代表画像です。 登録した画像は WebP に変換し、位置情報などの情報は取り除きます。",
+      "empty": "画像はまだありません。",
+      "image": "画像 {number}",
+      "representative": "代表画像",
+      "moveBefore": "画像 {number}を前へ",
+      "moveAfter": "画像 {number}を後へ",
+      "deleteDescription": "この画像を指定しているバリアントは、代表画像を使うようになります。",
+      "deleteTitle": "画像 {number}を削除しますか？",
+      "deleteLabel": "画像 {number}を削除",
+      "file": "画像のファイル",
+      "uploading": "アップロード中…",
+      "add": "画像を追加",
+      "invalidType": "画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。",
+      "tooLarge": "画像は 1 ファイル 10MB までです。",
+      "uploadRejected": "画像の受付に失敗しました。もう一度やり直してください。",
+      "uploadFailed": "画像のファイルを送れませんでした。もう一度やり直してください。"
+    },
+    "variants": {
+      "title": "バリアント",
+      "empty": "バリアントはまだありません。公開するには 1 つ以上必要です。",
+      "variantCode": "バリアント品番",
+      "image": "画像",
+      "sales": "販売",
+      "stock": "在庫数",
+      "singleOnly": "軸を持たない商品のバリアントは 1 つだけです。",
+      "deleted": "バリアントを削除しました",
+      "suspended": "販売停止にしました",
+      "resumed": "販売を再開しました",
+      "imageChanged": "バリアントの画像を変更しました",
+      "add": "バリアントを追加",
+      "added": "バリアントを追加しました"
+    },
+    "variantRow": {
+      "image": "{code}の画像",
+      "suspendedBadge": "販売停止",
+      "onSale": "販売中",
+      "resumeLabel": "{code}の販売を再開",
+      "resume": "販売を再開",
+      "suspendLabel": "{code}を販売停止",
+      "suspend": "販売停止",
+      "deleteDescription": "在庫もあわせて削除します。",
+      "deleteTitle": "バリアント「{code}」を削除しますか？"
+    }
   }
 }

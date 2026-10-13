@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Controller } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { DateTimeInput } from '@/components/DateTimeInput'
@@ -29,8 +30,9 @@ export function PublicationPeriodCard({
   refetch: () => Promise<unknown>
 }) {
   const { form, baseVersion, markSaved, reload } = useVersionedForm(product, toValues, refetch)
+  const t = useTranslations('product.period')
   const mutation = useApiMutation('put', '/products/{productId}/publication-period', {
-    success: '公開期間を保存しました',
+    success: t('saved'), // 保存の知らせ
     invalidate: ['/products'],
     onSuccess: markSaved,
   })
@@ -38,7 +40,7 @@ export function PublicationPeriodCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle>公開期間</CardTitle>
+        <CardTitle>{t('title') /* 公開期間 */}</CardTitle>
       </CardHeader>
       <CardContent>
         <form
@@ -50,12 +52,10 @@ export function PublicationPeriodCard({
             }),
           )}
         >
-          <p className="text-muted-foreground text-sm">
-            日時は日本時間。公開中でも、開始より前と終了以降は店舗に表示されません。空なら限りがありません。
-          </p>
+          <p className="text-muted-foreground text-sm">{t('help') /* 期間の決まり */}</p>
           <div className="flex flex-wrap gap-4">
             <Field className="w-60">
-              <FieldLabel htmlFor="publish-start">公開開始</FieldLabel>
+              <FieldLabel htmlFor="publish-start">{t('start') /* 公開開始 */}</FieldLabel>
               <Controller
                 control={form.control}
                 name="publishStart"
@@ -65,7 +65,7 @@ export function PublicationPeriodCard({
               />
             </Field>
             <Field className="w-60">
-              <FieldLabel htmlFor="publish-end">公開終了（この日時は含まない）</FieldLabel>
+              <FieldLabel htmlFor="publish-end">{t('end') /* 公開終了 */}</FieldLabel>
               <Controller
                 control={form.control}
                 name="publishEnd"
@@ -82,7 +82,7 @@ export function PublicationPeriodCard({
           />
           <div>
             <Button disabled={mutation.isPending} type="submit">
-              公開期間を保存
+              {t('save') /* 公開期間を保存 */}
             </Button>
           </div>
         </form>

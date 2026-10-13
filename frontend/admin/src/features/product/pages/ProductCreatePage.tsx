@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/car
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
+import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -37,11 +38,13 @@ const FIELD_NAMES = [...PRODUCT_FIELD_NAMES, 'productCode', 'axes'] as const
  * 商品品番とバリアント軸は登録後に変更できないので、この画面でだけ入力する。登録後は編集の画面に移る。
  */
 export function ProductCreatePage() {
+  const t = useTranslations('product.create')
+  const tCommon = useTranslations('common')
   const navigate = useNavigate()
   const form = useForm<Values>({ defaultValues: { ...EMPTY_PRODUCT_FIELDS, productCode: '', axes: [] } })
   const axes = useFieldArray({ control: form.control, name: 'axes' })
   const mutation = useApiMutation('post', '/products', {
-    success: '商品を登録しました',
+    success: t('registered'), // 登録の知らせ
     invalidate: ['/products'],
     onSuccess: (created) => navigate(paths.product(created.id)),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
@@ -52,9 +55,9 @@ export function ProductCreatePage() {
 
   return (
     <>
-      <PageHeader title="商品の登録">
+      <PageHeader title={t('title') /* 商品の登録 */}>
         <Button nativeButton={false} render={<Link to={paths.products()} />} variant="outline">
-          一覧へ戻る
+          {tCommon('backToList') /* 一覧へ戻る */}
         </Button>
       </PageHeader>
       <FormProvider {...form}>
@@ -72,11 +75,11 @@ export function ProductCreatePage() {
         >
           <Card>
             <CardHeader>
-              <CardTitle>基本情報</CardTitle>
+              <CardTitle>{t('basicInfo') /* 基本情報 */}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-4">
               <Field className="w-64">
-                <FieldLabel htmlFor="product-code">商品品番（登録後は変更できません）</FieldLabel>
+                <FieldLabel htmlFor="product-code">{t('productCode') /* 商品品番 */}</FieldLabel>
                 <Controller
                   control={form.control}
                   name="productCode"
@@ -90,7 +93,7 @@ export function ProductCreatePage() {
                     />
                   )}
                 />
-                <FieldDescription>半角の英大文字・数字とハイフン。英小文字は大文字にします。</FieldDescription>
+                <FieldDescription>{t('productCodeHelp') /* 品番の形 */}</FieldDescription>
                 <FieldError errors={[form.formState.errors.productCode]} />
               </Field>
               <ProductFields />
@@ -99,26 +102,23 @@ export function ProductCreatePage() {
 
           <Card>
             <CardHeader>
-              <CardTitle>バリアント軸（登録後は変更できません）</CardTitle>
+              <CardTitle>{t('axes') /* バリアント軸 */}</CardTitle>
             </CardHeader>
             <CardContent className="grid gap-3">
-              <p className="text-muted-foreground text-sm">
-                色・サイズなど、バリアントを分ける軸を 0〜{MAX_AXES} 個指定します。軸がなければ、バリアントは 1
-                つだけです。
-              </p>
+              <p className="text-muted-foreground text-sm">{t('axesHelp', { max: MAX_AXES }) /* 軸の数の説明 */}</p>
               {axes.fields.map((axis, index) => (
                 <div className="flex items-center gap-2" key={axis.id}>
                   <Input
-                    aria-label={`軸 ${index + 1}`}
+                    aria-label={t('axis', { number: index + 1 }) /* 軸の番号 */}
                     // 「軸を追加」で増えた欄に入力を移す（autoFocus は欄を作ったときだけ効く）
                     autoFocus
                     className="w-56"
                     maxLength={schemas.CreateProductRequest.axes.items.maxLength}
-                    placeholder={['色', 'サイズ', ''][index]}
+                    placeholder={[t('axisPlaceholder1'), t('axisPlaceholder2'), ''][index] /* 軸の例 */}
                     {...form.register(`axes.${index}.name`)}
                   />
                   <Button onClick={() => axes.remove(index)} size="sm" type="button" variant="ghost">
-                    削除
+                    {tCommon('delete') /* 削除 */}
                   </Button>
                 </div>
               ))}
@@ -131,7 +131,7 @@ export function ProductCreatePage() {
                   type="button"
                   variant="outline"
                 >
-                  軸を追加
+                  {t('addAxis') /* 軸を追加 */}
                 </Button>
               </div>
             </CardContent>
@@ -139,7 +139,7 @@ export function ProductCreatePage() {
 
           <ErrorMessage error={mutation.error} shownFields={FIELD_NAMES} />
           <Button disabled={mutation.isPending || !filled} type="submit">
-            登録
+            {tCommon('register') /* 登録 */}
           </Button>
         </form>
       </FormProvider>

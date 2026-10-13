@@ -1,6 +1,7 @@
 import { Badge } from '@ec-site/shared/ui/badge'
 import { Button } from '@ec-site/shared/ui/button'
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
+import { useTranslations } from 'use-intl'
 import type { ProductDetail } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { OptionSelect } from '@/components/OptionSelect'
@@ -52,6 +53,8 @@ export function VariantRow({
   pending: boolean
   actions: VariantRowActions
 }) {
+  const t = useTranslations('product.variantRow')
+  const tCommon = useTranslations('common')
   return (
     <TableRow>
       <TableCell className="font-mono">{variant.variantCode}</TableCell>
@@ -60,20 +63,28 @@ export function VariantRow({
       ))}
       <TableCell>
         <OptionSelect
-          ariaLabel={`${variant.variantCode}の画像`}
+          ariaLabel={t('image', { code: variant.variantCode }) /* 画像の選択 */}
           className="w-28"
           onChange={actions.setImage}
           options={imageOptions}
           value={variant.imageId ?? null}
         />
       </TableCell>
-      <TableCell>{variant.salesSuspended ? <Badge variant="secondary">販売停止</Badge> : '販売中'}</TableCell>
+      <TableCell>
+        {
+          variant.salesSuspended ? (
+            <Badge variant="secondary">{t('suspendedBadge')}</Badge>
+          ) : (
+            t('onSale')
+          ) /* 販売停止か販売中 */
+        }
+      </TableCell>
       <TableCell className="text-right">
         <StockLink productId={productId} variantId={variant.id} />
       </TableCell>
       <TableCell className="space-x-1 whitespace-nowrap text-right">
         <Button
-          aria-label={`${variant.variantCode}を上へ`}
+          aria-label={tCommon('moveUp', { name: variant.variantCode }) /* 上へ */}
           disabled={first || pending}
           onClick={actions.moveUp}
           size="icon-xs"
@@ -82,7 +93,7 @@ export function VariantRow({
           <ArrowUpIcon />
         </Button>
         <Button
-          aria-label={`${variant.variantCode}を下へ`}
+          aria-label={tCommon('moveDown', { name: variant.variantCode }) /* 下へ */}
           disabled={last || pending}
           onClick={actions.moveDown}
           size="icon-xs"
@@ -93,35 +104,35 @@ export function VariantRow({
         {/* 販売停止のバリアントも C 側の選択肢に出るが、選べない（AC-28） */}
         {variant.salesSuspended ? (
           <Button
-            aria-label={`${variant.variantCode}の販売を再開`}
+            aria-label={t('resumeLabel', { code: variant.variantCode }) /* 販売を再開 */}
             disabled={pending}
             onClick={actions.resume}
             size="xs"
             variant="outline"
           >
-            販売を再開
+            {t('resume') /* 販売を再開 */}
           </Button>
         ) : (
           <Button
-            aria-label={`${variant.variantCode}を販売停止`}
+            aria-label={t('suspendLabel', { code: variant.variantCode }) /* 販売停止 */}
             disabled={pending}
             onClick={actions.suspend}
             size="xs"
             variant="outline"
           >
-            販売停止
+            {t('suspend') /* 販売停止 */}
           </Button>
         )}
         {/* C 側に表示されたことのある商品のバリアントは削除できない（AC-71） */}
         {deletable && (
           <ConfirmDialog
-            confirmLabel="削除する"
-            description="在庫もあわせて削除します。"
+            confirmLabel={tCommon('deleteConfirm') /* 削除する */}
+            description={t('deleteDescription') /* あわせて消すもの */}
             onConfirm={actions.remove}
-            title={`バリアント「${variant.variantCode}」を削除しますか？`}
+            title={t('deleteTitle', { code: variant.variantCode }) /* 削除の確認 */}
             trigger={
               <Button disabled={pending} size="xs" variant="outline">
-                削除
+                {tCommon('delete') /* 削除 */}
               </Button>
             }
           />

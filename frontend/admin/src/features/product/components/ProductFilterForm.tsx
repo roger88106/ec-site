@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { publicationStatusValues } from '@/api/generated/admin'
 import { parameters } from '@/api/generated/constraints'
 import type { PublicationStatus } from '@/api/types'
@@ -9,11 +10,12 @@ import { CodeInput } from '@/components/CodeInput'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { EMPTY_FILTER, type ProductFilter } from '@/features/product/productFilter'
+import { translate } from '@/i18n/translate'
 import { publicationStatusLabel } from '@/lib/labels'
 
 /** 状態の選択肢（「すべて」は絞り込まない） */
 const statusOptions = [
-  { value: null, label: 'すべて' },
+  { value: null, label: translate('common.all') }, // すべて
   ...publicationStatusValues.map((status) => ({ value: status, label: publicationStatusLabel(status) })),
 ]
 
@@ -25,6 +27,7 @@ export function ProductFilterForm({
   filter: ProductFilter
   onApply: (filter: ProductFilter) => void
 }) {
+  const t = useTranslations('product.filter')
   const form = useForm<ProductFilter>({ defaultValues: filter })
   return (
     <form
@@ -34,7 +37,7 @@ export function ProductFilterForm({
       )}
     >
       <Field className="w-40">
-        <FieldLabel htmlFor="filter-code">品番（前方一致）</FieldLabel>
+        <FieldLabel htmlFor="filter-code">{t('code') /* 品番 */}</FieldLabel>
         <Controller
           control={form.control}
           name="code"
@@ -49,11 +52,11 @@ export function ProductFilterForm({
         />
       </Field>
       <Field className="w-56">
-        <FieldLabel htmlFor="filter-name">商品名（部分一致）</FieldLabel>
+        <FieldLabel htmlFor="filter-name">{t('name') /* 商品名 */}</FieldLabel>
         <Input id="filter-name" maxLength={parameters.listProducts.name.maxLength} {...form.register('name')} />
       </Field>
       <Field className="w-32">
-        <FieldLabel htmlFor="filter-status">状態</FieldLabel>
+        <FieldLabel htmlFor="filter-status">{t('status') /* 状態 */}</FieldLabel>
         <Controller
           control={form.control}
           name="status"
@@ -69,16 +72,16 @@ export function ProductFilterForm({
         />
       </Field>
       <Field className="w-48">
-        <FieldLabel htmlFor="filter-category">カテゴリ（子孫を含む）</FieldLabel>
+        <FieldLabel htmlFor="filter-category">{t('category') /* カテゴリ */}</FieldLabel>
         <Controller
           control={form.control}
           name="categoryId"
           render={({ field }) => <CategorySelect id="filter-category" onChange={field.onChange} value={field.value} />}
         />
       </Field>
-      <Button type="submit">絞り込む</Button>
+      <Button type="submit">{t('submit') /* 絞り込む */}</Button>
       <Button onClick={() => onApply(EMPTY_FILTER)} type="button" variant="ghost">
-        クリア
+        {t('clear') /* クリア */}
       </Button>
     </form>
   )

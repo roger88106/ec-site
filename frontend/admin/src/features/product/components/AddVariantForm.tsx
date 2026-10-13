@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
@@ -27,8 +28,9 @@ function emptyValues(product: ProductDetail): Values {
  */
 export function AddVariantForm({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, reload } = useVersionedForm(product, emptyValues, refetch)
+  const t = useTranslations('product.variants')
   const mutation = useApiMutation('post', '/products/{productId}/variants', {
-    success: 'バリアントを追加しました',
+    success: t('added'), // 追加の知らせ
     invalidate: ['/products', '/inventory'],
     // 入力を空に戻す。取得し直した商品で、送るバージョンも新しくなる
     onSuccess: () => form.reset(emptyValues(product)),
@@ -53,7 +55,7 @@ export function AddVariantForm({ product, refetch }: { product: ProductDetail; r
     >
       <div className="flex flex-wrap items-start gap-3">
         <Field className="w-56">
-          <FieldLabel htmlFor="variant-code">バリアント品番</FieldLabel>
+          <FieldLabel htmlFor="variant-code">{t('variantCode') /* バリアント品番 */}</FieldLabel>
           <Controller
             control={form.control}
             name="variantCode"
@@ -80,7 +82,7 @@ export function AddVariantForm({ product, refetch }: { product: ProductDetail; r
           </Field>
         ))}
         <Button className="mt-6" disabled={mutation.isPending || !filled} type="submit">
-          バリアントを追加
+          {t('add') /* バリアントを追加 */}
         </Button>
       </div>
       <ErrorMessage

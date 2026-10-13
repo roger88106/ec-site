@@ -1,4 +1,5 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
+import { useTranslations } from 'use-intl'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { useMutationGroup } from '@/api/useMutationGroup'
@@ -13,27 +14,29 @@ import { move } from '@/lib/array'
  * 並び替えと削除は、表示している一覧のバージョンで送る。
  */
 export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
+  const t = useTranslations('product.variants')
+  const tImages = useTranslations('product.images')
   const reorder = useApiMutation('put', '/products/{productId}/variants/order', { invalidate: ['/products'] })
   const remove = useApiMutation('delete', '/products/{productId}/variants/{variantId}', {
-    success: 'バリアントを削除しました',
+    success: t('deleted'), // 削除の知らせ
     invalidate: ['/products', '/inventory'],
   })
   const suspend = useApiMutation('put', '/products/{productId}/variants/{variantId}/suspend', {
-    success: '販売停止にしました',
+    success: t('suspended'), // 販売停止の知らせ
     invalidate: ['/products'],
   })
   const resume = useApiMutation('put', '/products/{productId}/variants/{variantId}/resume', {
-    success: '販売を再開しました',
+    success: t('resumed'), // 再開の知らせ
     invalidate: ['/products'],
   })
   const setImage = useApiMutation('put', '/products/{productId}/variants/{variantId}/image', {
-    success: 'バリアントの画像を変更しました',
+    success: t('imageChanged'), // 画像の変更の知らせ
     invalidate: ['/products'],
   })
   // バリアントの画像は、その商品の画像から選ぶ。指定しなければ代表画像（AC-38）
   const imageOptions = [
-    { value: null, label: '代表画像' },
-    ...product.images.map((image, index) => ({ value: image.id, label: `画像 ${index + 1}` })),
+    { value: null, label: tImages('representative') }, // 代表画像
+    ...product.images.map((image, index) => ({ value: image.id, label: tImages('image', { number: index + 1 }) })), // 画像の番号
   ]
   const ids = product.variants.map((variant) => variant.id)
   // 別の操作を始めたら、前の操作のエラーを消す
@@ -69,22 +72,22 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
   return (
     <Card>
       <CardHeader>
-        <CardTitle>バリアント</CardTitle>
+        <CardTitle>{t('title') /* バリアント */}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
         {product.variants.length === 0 ? (
-          <p className="text-muted-foreground text-sm">バリアントはまだありません。公開するには 1 つ以上必要です。</p>
+          <p className="text-muted-foreground text-sm">{t('empty') /* まだない */}</p>
         ) : (
           <Table>
             <TableHeader>
               <TableRow>
-                <TableHead>バリアント品番</TableHead>
+                <TableHead>{t('variantCode') /* バリアント品番 */}</TableHead>
                 {product.axes.map((axis) => (
                   <TableHead key={axis}>{axis}</TableHead>
                 ))}
-                <TableHead>画像</TableHead>
-                <TableHead>販売</TableHead>
-                <TableHead className="text-right">在庫数</TableHead>
+                <TableHead>{t('image') /* 画像 */}</TableHead>
+                <TableHead>{t('sales') /* 販売 */}</TableHead>
+                <TableHead className="text-right">{t('stock') /* 在庫数 */}</TableHead>
                 <TableHead />
               </TableRow>
             </TableHeader>
@@ -110,7 +113,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
         {product.actions.addVariant ? (
           <AddVariantForm product={product} refetch={refetch} />
         ) : (
-          <p className="text-muted-foreground text-sm">軸を持たない商品のバリアントは 1 つだけです。</p>
+          <p className="text-muted-foreground text-sm">{t('singleOnly') /* 1 つだけ */}</p>
         )}
       </CardContent>
     </Card>

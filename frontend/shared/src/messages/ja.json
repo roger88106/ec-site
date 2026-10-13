@@ -24,6 +24,8 @@
     "deleteConfirm": "削除する",
     "backToList": "一覧へ戻る",
     "moveUp": "{name}を上へ",
-    "moveDown": "{name}を下へ"
+    "moveDown": "{name}を下へ",
+    "all": "すべて",
+    "none": "なし"
   }
 }

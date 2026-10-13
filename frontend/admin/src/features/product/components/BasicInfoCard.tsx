@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { FormProvider } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -15,8 +16,10 @@ import { useVersionedForm } from '@/hooks/useVersionedForm'
  */
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, markSaved, reload } = useVersionedForm(product, toProductFields, refetch)
+  const t = useTranslations('product.basicInfo')
+  const tCommon = useTranslations('common')
   const mutation = useApiMutation('put', '/products/{productId}', {
-    success: '基本情報を保存しました',
+    success: t('saved'), // 保存の知らせ
     invalidate: ['/products'],
     onSuccess: markSaved,
     onError: (error) => setServerFieldErrors(error, form.setError, PRODUCT_FIELD_NAMES),
@@ -25,7 +28,7 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
   return (
     <Card>
       <CardHeader>
-        <CardTitle>基本情報</CardTitle>
+        <CardTitle>{t('title') /* 基本情報 */}</CardTitle>
       </CardHeader>
       <CardContent>
         <FormProvider {...form}>
@@ -39,10 +42,16 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
             )}
           >
             <dl className="grid grid-cols-[8rem_1fr] gap-x-4 gap-y-1 text-sm">
-              <dt className="text-muted-foreground">商品品番</dt>
+              <dt className="text-muted-foreground">{t('productCode') /* 商品品番 */}</dt>
               <dd className="font-mono">{product.productCode}</dd>
-              <dt className="text-muted-foreground">バリアント軸</dt>
-              <dd>{product.axes.length > 0 ? product.axes.join('、') : 'なし'}</dd>
+              <dt className="text-muted-foreground">{t('axes') /* バリアント軸 */}</dt>
+              <dd>
+                {
+                  product.axes.length > 0
+                    ? product.axes.join(t('axisSeparator'))
+                    : tCommon('none') /* 軸の並び、なければ「なし」 */
+                }
+              </dd>
             </dl>
             <ProductFields />
             <ErrorMessage
@@ -55,7 +64,7 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
             />
             <div>
               <Button disabled={mutation.isPending || !isProductFieldsFilled(form.watch())} type="submit">
-                保存
+                {tCommon('save') /* 保存 */}
               </Button>
             </div>
           </form>

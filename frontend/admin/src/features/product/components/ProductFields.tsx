@@ -1,6 +1,7 @@
 import { flattenTree } from '@ec-site/shared/lib/categoryTree'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useFormContext } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { schemas } from '@/api/generated/constraints'
 import { OptionSelect } from '@/components/OptionSelect'
@@ -15,12 +16,13 @@ import { formatRate } from '@/lib/rate'
  * 外側の FormProvider のフォームに、これらの項目を持たせる。
  */
 export function ProductFields() {
+  const t = useTranslations('product.fields')
   const { register, control, formState } = useFormContext<ProductFieldsValues>()
   const errors = formState.errors
   return (
     <div className="grid gap-4">
       <Field>
-        <FieldLabel htmlFor="product-name">商品名</FieldLabel>
+        <FieldLabel htmlFor="product-name">{t('name') /* 商品名 */}</FieldLabel>
         <Input
           id="product-name"
           maxLength={schemas.UpdateProductRequest.name.maxLength}
@@ -29,7 +31,7 @@ export function ProductFields() {
         <FieldError errors={[errors.name]} />
       </Field>
       <Field>
-        <FieldLabel htmlFor="product-description">説明</FieldLabel>
+        <FieldLabel htmlFor="product-description">{t('description') /* 説明 */}</FieldLabel>
         <Textarea
           id="product-description"
           maxLength={schemas.UpdateProductRequest.description.maxLength}
@@ -40,7 +42,7 @@ export function ProductFields() {
       </Field>
       <div className="flex flex-wrap gap-4">
         <Field className="w-64">
-          <FieldLabel htmlFor="product-tax-category">税区分</FieldLabel>
+          <FieldLabel htmlFor="product-tax-category">{t('taxCategory') /* 税区分 */}</FieldLabel>
           <Controller
             control={control}
             name="taxCategoryId"
@@ -51,7 +53,7 @@ export function ProductFields() {
           <FieldError errors={[errors.taxCategoryId]} />
         </Field>
         <Field className="w-40">
-          <FieldLabel htmlFor="product-price">税抜価格（円）</FieldLabel>
+          <FieldLabel htmlFor="product-price">{t('priceExclTax') /* 税抜価格 */}</FieldLabel>
           <Input
             id="product-price"
             min={schemas.UpdateProductRequest.priceExclTax.minimum}
@@ -63,7 +65,7 @@ export function ProductFields() {
         </Field>
       </div>
       <FieldSet>
-        <span className="font-medium text-sm">所属カテゴリ（複数可）</span>
+        <span className="font-medium text-sm">{t('categories') /* 所属カテゴリ */}</span>
         <Controller
           control={control}
           name="categoryIds"
@@ -86,20 +88,22 @@ function TaxCategorySelect({
   onChange: (value: string | null) => void
 }) {
   const query = $api.useQuery('get', '/tax-categories')
+  const t = useTranslations('product.fields')
   /** 税区分の選択肢。選ぶときの目安に、現時点の率を名前に添える */
   const options = (query.data?.items ?? []).map((taxCategory) => ({
     value: taxCategory.id,
-    label: `${taxCategory.name}（現時点の率：${formatRate(taxCategory.currentRatePercent)}）`,
+    label: t('taxCategoryOption', { name: taxCategory.name, rate: formatRate(taxCategory.currentRatePercent) }), // 名前と現時点の率
   }))
   return <OptionSelect className="w-64" id={id} onChange={onChange} options={options} value={value} />
 }
 
 /** 所属カテゴリの選択。木を字下げして並べる */
 function CategoryCheckboxes({ value, onChange }: { value: string[]; onChange: (value: string[]) => void }) {
+  const t = useTranslations('product.fields')
   const query = $api.useQuery('get', '/categories')
   const categories = flattenTree(query.data?.items ?? [])
   if (categories.length === 0) {
-    return <p className="text-muted-foreground text-sm">カテゴリはまだありません。</p>
+    return <p className="text-muted-foreground text-sm">{t('noCategories') /* まだない */}</p>
   }
   return (
     <ul className="grid gap-1 rounded-md border p-3">

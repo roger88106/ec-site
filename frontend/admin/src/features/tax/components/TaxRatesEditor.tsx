@@ -13,9 +13,13 @@ import { useVersionedForm } from '@/hooks/useVersionedForm'
 
 /** 編集中の税率の 1 行。rateId がなければ新しい税率 */
 type RateRow = {
+  /** 保存済みの税率の ID。null は新しい税率 */
   rateId: string | null
+  /** 率（%）。入力中の文字のまま持ち、送るときに数にする */
   ratePercent: string
+  /** 適用開始日時。null は過去すべて */
   effectiveFrom: string | null
+  /** 適用終了日時（この日時を含まない）。null は無期限 */
   effectiveTo: string | null
 }
 

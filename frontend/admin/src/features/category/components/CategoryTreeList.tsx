@@ -9,6 +9,7 @@ import { MAX_CATEGORY_DEPTH } from '@/lib/categoryTree'
 /** 木の各行から呼ぶ操作 */
 export type CategoryActions = {
   pending: boolean
+  /** 兄弟の並びを送る。parentId が null なら最上位の並び */
   reorder: (parentId: string | null, categoryIds: string[]) => void
   remove: (category: CategoryNode) => void
   rename: (category: CategoryNode) => void

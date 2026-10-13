@@ -15,6 +15,7 @@ type Variant = ProductDetail['variants'][number]
 export type VariantRowActions = {
   moveUp: () => void
   moveDown: () => void
+  /** バリアントの画像を選ぶ。null は代表画像を使う */
   setImage: (imageId: string | null) => void
   suspend: () => void
   resume: () => void

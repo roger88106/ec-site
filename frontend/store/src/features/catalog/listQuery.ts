@@ -5,10 +5,14 @@ import { translate } from '@/i18n/translate'
 
 /** 商品一覧の絞り込み・並び順・ページ。URL のクエリに持つ（店舗画面の構成 第 3 節） */
 export type ListQuery = {
+  /** カテゴリ（子孫を含む）。null は絞り込まない */
   categoryId: string | null
+  /** 税込価格の下限（円、この値を含む）。null は下限なし */
   minPrice: number | null
+  /** 税込価格の上限（円、この値を含む）。null は上限なし */
   maxPrice: number | null
   sort: ProductSort
+  /** ページ番号。1 始まり */
   page: number
 }
 

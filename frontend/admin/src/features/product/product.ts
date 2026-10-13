@@ -4,7 +4,9 @@ import type { ProductDetail } from '@/api/types'
 export type ProductFieldsValues = {
   name: string
   description: string
+  /** 税区分。null はまだ選んでいない */
   taxCategoryId: string | null
+  /** 税抜価格（円）。入力中の文字のまま持ち、送るときに数にする */
   priceExclTax: string
   categoryIds: string[]
 }

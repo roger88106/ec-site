@@ -8,10 +8,12 @@ const DATE = /^\d{4}-\d{2}-\d{2}$/
 export type OrderFilter = {
   /** 注文番号（前方一致） */
   orderNumber: string
+  /** 状態。null はすべて */
   status: OrderStatus | null
   /** 注文日の範囲（日本時間の日付。両端を含む） */
   orderedFrom: string
   orderedTo: string
+  /** ページ番号。1 始まり */
   page: number
 }
 

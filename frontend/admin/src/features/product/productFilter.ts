@@ -3,10 +3,15 @@ import type { PublicationStatus } from '@/api/types'
 
 /** 商品の一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成 第 3 節） */
 export type ProductFilter = {
+  /** 商品品番かバリアント品番（前方一致）。空なら絞り込まない */
   code: string
+  /** 商品名（部分一致）。空なら絞り込まない */
   name: string
+  /** 状態。null はすべて */
   status: PublicationStatus | null
+  /** カテゴリ（子孫を含む）。null はすべて */
   categoryId: string | null
+  /** ページ番号。1 始まり */
   page: number
 }
 

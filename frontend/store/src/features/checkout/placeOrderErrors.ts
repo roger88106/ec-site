@@ -7,7 +7,9 @@ export type OrderField = 'name' | 'postalCode' | 'prefecture' | 'address' | 'pho
 /** 注文のフォームに出すエラー。入力欄ごとのメッセージ、フォームの下のメッセージ、カートへのリンクを添えるか */
 export type PlaceOrderErrors = {
   fields: Partial<Record<OrderField, string>>
+  /** フォームの下に出すメッセージ。null は出さない */
   message: string | null
+  /** カートへのリンクを添えるか（カートを直さないと注文できないエラーのとき） */
   backToCart: boolean
 }
 

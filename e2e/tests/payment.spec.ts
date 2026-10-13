@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
-import { emptyCart, fillShipping, payOnMockPage } from '../src/store'
+import { emptyCart, fillShipping, orderCart, payOnMockPage } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
 
 /**
@@ -62,5 +62,28 @@ test('AC-143、145、146、147、149 注文すると mock の支払の画面に�
   await test.step('注文した品目がカートから除かれる（AC-147）', async () => {
     await page.goto(`${STORE_URL}/cart`)
     await expect(page.getByText('カートに商品がありません。')).toBeVisible()
+  })
+})
+
+test('AC-148 mock でカードを拒否させても注文は支払待ちのままで、やり直して支払える', async ({ context, page }) => {
+  await memberCartWith(page, 'DECLINE')
+  await orderCart(page)
+
+  await test.step('カードを拒否させると、支払の画面に拒否が出て、注文は支払待ちのまま', async () => {
+    await page.getByRole('button', { name: 'カードを拒否させる' }).click()
+    await expect(page.getByText('カードが拒否されました。別のカードでやり直してください。')).toBeVisible()
+    // 支払の画面を開いたまま、注文の一覧の最も新しい注文（いま注文したもの）を別のページで開く
+    const order = await context.newPage()
+    await order.goto(`${STORE_URL}/orders`)
+    await order
+      .getByRole('link', { name: /^\d{8}-\d{6}$/ })
+      .first()
+      .click()
+    await expect(order.getByText('支払待ち', { exact: true })).toBeVisible()
+    await order.close()
+  })
+
+  await test.step('やり直して支払うと、受付になる', async () => {
+    await payOnMockPage(page)
   })
 })

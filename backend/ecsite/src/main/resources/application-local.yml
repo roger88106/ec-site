@@ -48,6 +48,9 @@ ecsite:
   order:
     # 送料に適用する税区分：seed の「標準」（10%）
     shipping-tax-category-id: 00000000-0000-0000-0000-000000000001
+  payment:
+    # 支払の画面から戻る店舗の注文の画面（店舗画面の開発サーバー）
+    return-url: http://localhost:3000/orders/{orderId}?payment=returned
   storefront:
     shop:
       # 問い合わせ先：ローカル用の例の値

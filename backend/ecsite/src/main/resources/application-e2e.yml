@@ -18,6 +18,9 @@ spring:
     locations: classpath:db/migration,classpath:db/seed/base
 
 ecsite:
+  payment:
+    # E2E の店舗画面（e2e/playwright.config.ts）
+    return-url: http://localhost:3100/orders/{orderId}?payment=returned
   media:
     storage:
       # compose の seaweedfs-init が作る E2E 用のバケット

@@ -1,5 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
+import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { useInvalidate } from '@/api/invalidate'
 import type { CategoryNode } from '@/api/types'
@@ -16,11 +17,12 @@ type DialogState = { kind: 'create'; parent: CategoryNode | null } | { kind: 're
 
 /** カテゴリの木の表示、登録、名称の変更、並び替え、削除（T707。US-2） */
 export function CategoryPage() {
+  const t = useTranslations('category.page')
   const query = $api.useQuery('get', '/categories')
   const [dialog, setDialog] = useState<DialogState>(null)
   const reorder = useApiMutation('put', '/categories/order', { invalidate: ['/categories'] })
   const remove = useApiMutation('delete', '/categories/{categoryId}', {
-    success: 'カテゴリを削除しました',
+    success: t('deleted'), // 削除の知らせ
     invalidate: ['/categories'],
   })
   const { pending, error, resetErrors } = useMutationGroup(reorder, remove)
@@ -41,15 +43,15 @@ export function CategoryPage() {
 
   return (
     <>
-      <PageHeader title="カテゴリ">
-        <Button onClick={() => setDialog({ kind: 'create', parent: null })}>最上位に追加</Button>
+      <PageHeader title={t('title') /* カテゴリ */}>
+        <Button onClick={() => setDialog({ kind: 'create', parent: null })}>{t('addTop') /* 最上位に追加 */}</Button>
       </PageHeader>
       <div className="max-w-4xl space-y-4">
         <ErrorMessage error={error} />
         <QueryState query={query}>
           {({ items }) =>
             items.length === 0 ? (
-              <p className="text-muted-foreground text-sm">カテゴリはまだありません。</p>
+              <p className="text-muted-foreground text-sm">{t('empty') /* まだない */}</p>
             ) : (
               <CategoryTreeList actions={actions} nodes={items} parentId={null} />
             )
@@ -64,8 +66,9 @@ export function CategoryPage() {
 
 /** カテゴリの登録（AC-8〜10） */
 function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClose: () => void }) {
+  const t = useTranslations('category.page')
   const mutation = useApiMutation('post', '/categories', {
-    success: 'カテゴリを登録しました',
+    success: t('registered'), // 登録の知らせ
     invalidate: ['/categories'],
   })
   return (
@@ -75,16 +78,17 @@ function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClos
       onClose={onClose}
       onSubmit={(name, callbacks) => mutation.mutate({ body: { name, parentId: parent?.id ?? null } }, callbacks)}
       pending={mutation.isPending}
-      title={parent ? `「${parent.name}」の子カテゴリを追加` : '最上位のカテゴリを追加'}
+      title={parent ? t('createChildTitle', { name: parent.name }) : t('createTopTitle') /* 追加のダイアログの題名 */}
     />
   )
 }
 
 /** カテゴリ名の変更（AC-10、11）。送るバージョンは、ダイアログを開いたときのもの */
 function RenameDialog({ category, onClose }: { category: CategoryNode; onClose: () => void }) {
+  const t = useTranslations('category.page')
   const invalidate = useInvalidate()
   const mutation = useApiMutation('put', '/categories/{categoryId}', {
-    success: '名称を変更しました',
+    success: t('renamed'), // 変更の知らせ
     invalidate: ['/categories'],
   })
   return (
@@ -103,7 +107,7 @@ function RenameDialog({ category, onClose }: { category: CategoryNode; onClose: 
         )
       }
       pending={mutation.isPending}
-      title="名称の変更"
+      title={t('renameTitle') /* 名称の変更 */}
     />
   )
 }

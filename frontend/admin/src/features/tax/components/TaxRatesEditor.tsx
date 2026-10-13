@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useFieldArray } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { schemas } from '@/api/generated/constraints'
 import type { TaxCategory } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -51,9 +52,11 @@ export function TaxRatesEditor({
   refetch: () => Promise<unknown>
 }) {
   const { form, baseVersion, markSaved, reload } = useVersionedForm(taxCategory, toValues, refetch)
+  const t = useTranslations('tax.rates')
+  const tCommon = useTranslations('common')
   const rates = useFieldArray({ control: form.control, name: 'rates' })
   const mutation = useApiMutation('put', '/tax-categories/{taxCategoryId}/rates', {
-    success: '税率を保存しました',
+    success: t('saved'), // 保存の知らせ
     invalidate: ['/tax-categories'],
     onSuccess: markSaved,
   })
@@ -77,17 +80,14 @@ export function TaxRatesEditor({
 
   return (
     <form className="space-y-4" onSubmit={save}>
-      <p className="text-muted-foreground text-sm">
-        日時は日本時間。開始が空白なら過去すべて、終了が空白なら無期限。終了日時ちょうどは含まない。
-        期間は重複も途切れもなく並べ、最後の税率の終了は空白にする。
-      </p>
+      <p className="text-muted-foreground text-sm">{t('help') /* 日時と期間の決まり */}</p>
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-32">率（%）</TableHead>
-            <TableHead>適用開始</TableHead>
-            <TableHead>適用終了</TableHead>
-            <TableHead>状態</TableHead>
+            <TableHead className="w-32">{t('ratePercent') /* 率 */}</TableHead>
+            <TableHead>{t('effectiveFrom') /* 適用開始 */}</TableHead>
+            <TableHead>{t('effectiveTo') /* 適用終了 */}</TableHead>
+            <TableHead>{t('state') /* 状態 */}</TableHead>
             <TableHead />
           </TableRow>
         </TableHeader>
@@ -96,7 +96,7 @@ export function TaxRatesEditor({
             <TableRow key={field.id}>
               <TableCell>
                 <Input
-                  aria-label="率（%）"
+                  aria-label={t('ratePercent') /* 率 */}
                   max={RATE_MAX}
                   min={schemas.RatePercent.minimum}
                   step={RATE_STEP}
@@ -109,7 +109,11 @@ export function TaxRatesEditor({
                   control={form.control}
                   name={`rates.${index}.effectiveFrom`}
                   render={({ field: input }) => (
-                    <DateTimeInput aria-label="適用開始" onChange={input.onChange} value={input.value} />
+                    <DateTimeInput
+                      aria-label={t('effectiveFrom') /* 適用開始 */}
+                      onChange={input.onChange}
+                      value={input.value}
+                    />
                   )}
                 />
               </TableCell>
@@ -118,14 +122,18 @@ export function TaxRatesEditor({
                   control={form.control}
                   name={`rates.${index}.effectiveTo`}
                   render={({ field: input }) => (
-                    <DateTimeInput aria-label="適用終了" onChange={input.onChange} value={input.value} />
+                    <DateTimeInput
+                      aria-label={t('effectiveTo') /* 適用終了 */}
+                      onChange={input.onChange}
+                      value={input.value}
+                    />
                   )}
                 />
               </TableCell>
               <TableCell className="text-muted-foreground text-sm">{rateState(rows[index])}</TableCell>
               <TableCell className="text-right">
                 <Button onClick={() => rates.remove(index)} size="sm" type="button" variant="ghost">
-                  削除
+                  {tCommon('delete') /* 削除 */}
                 </Button>
               </TableCell>
             </TableRow>
@@ -146,10 +154,10 @@ export function TaxRatesEditor({
           type="button"
           variant="outline"
         >
-          税率を追加
+          {t('add') /* 税率を追加 */}
         </Button>
         <Button disabled={mutation.isPending || incomplete} type="submit">
-          保存
+          {tCommon('save') /* 保存 */}
         </Button>
       </div>
       <ErrorMessage

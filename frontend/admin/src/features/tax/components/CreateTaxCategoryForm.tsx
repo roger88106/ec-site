@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Input } from '@ec-site/shared/ui/input'
 import { useForm } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -13,9 +14,11 @@ type Values = { name: string }
 
 /** 税区分の登録（AC-1） */
 export function CreateTaxCategoryForm() {
+  const t = useTranslations('tax.create')
+  const tCommon = useTranslations('common')
   const form = useForm<Values>({ defaultValues: { name: '' } })
   const mutation = useApiMutation('post', '/tax-categories', {
-    success: '税区分を登録しました',
+    success: t('registered'), // 登録の知らせ
     invalidate: ['/tax-categories'],
     onSuccess: () => form.reset(),
     onError: (error) => setServerFieldErrors(error, form.setError, ['name']),
@@ -24,7 +27,7 @@ export function CreateTaxCategoryForm() {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>税区分の登録</CardTitle>
+        <CardTitle>{t('title') /* 税区分の登録 */}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-3">
         <form
@@ -32,7 +35,7 @@ export function CreateTaxCategoryForm() {
           onSubmit={form.handleSubmit((values) => mutation.mutate({ body: values }))}
         >
           <Field className="w-64">
-            <FieldLabel htmlFor="tax-category-name">名称</FieldLabel>
+            <FieldLabel htmlFor="tax-category-name">{tCommon('name') /* 名称 */}</FieldLabel>
             <Input
               id="tax-category-name"
               maxLength={schemas.CreateTaxCategoryRequest.name.maxLength}
@@ -41,7 +44,7 @@ export function CreateTaxCategoryForm() {
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Button className="mt-6" disabled={mutation.isPending || !form.watch('name').trim()} type="submit">
-            登録
+            {tCommon('register') /* 登録 */}
           </Button>
         </form>
         <ErrorMessage error={mutation.error} shownFields={['name']} />

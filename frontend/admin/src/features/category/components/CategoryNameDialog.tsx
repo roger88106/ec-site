@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { useForm } from 'react-hook-form'
+import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { schemas } from '@/api/generated/constraints'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -32,6 +33,7 @@ export function CategoryNameDialog({
   /** バージョン不一致（409）の後の再読み込み。既定は閉じるだけ */
   onReload?: () => void
 }) {
+  const tCommon = useTranslations('common')
   const form = useForm<Values>({ defaultValues: { name: initialName } })
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
@@ -49,7 +51,7 @@ export function CategoryNameDialog({
           )}
         >
           <Field>
-            <FieldLabel htmlFor="category-name">名称</FieldLabel>
+            <FieldLabel htmlFor="category-name">{tCommon('name') /* 名称 */}</FieldLabel>
             <Input
               autoFocus
               id="category-name"
@@ -61,7 +63,7 @@ export function CategoryNameDialog({
           <ErrorMessage error={error} onReload={onReload} shownFields={['name']} />
           <DialogFooter>
             <Button disabled={pending || !form.watch('name').trim()} type="submit">
-              保存
+              {tCommon('save') /* 保存 */}
             </Button>
           </DialogFooter>
         </form>

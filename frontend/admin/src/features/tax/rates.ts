@@ -1,3 +1,5 @@
+import { translate } from '@/i18n/translate'
+
 /** 税率の行の状態の判定に使う値 */
 type RateLike = { rateId: string | null; effectiveFrom: string | null; effectiveTo: string | null }
 
@@ -7,13 +9,13 @@ type RateLike = { rateId: string | null; effectiveFrom: string | null; effective
  */
 export function rateState(row: RateLike | undefined, now: number = Date.now()): string {
   if (!row || row.rateId === null) {
-    return '新規'
+    return translate('tax.rateState.NEW') // 新規
   }
   if (row.effectiveTo !== null && new Date(row.effectiveTo).getTime() <= now) {
-    return '終了済み'
+    return translate('tax.rateState.ENDED') // 終了済み
   }
   if (row.effectiveFrom === null || new Date(row.effectiveFrom).getTime() <= now) {
-    return '適用中'
+    return translate('tax.rateState.ACTIVE') // 適用中
   }
-  return '未開始'
+  return translate('tax.rateState.SCHEDULED') // 未開始
 }

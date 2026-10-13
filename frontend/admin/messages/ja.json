@@ -59,5 +59,54 @@
       "none": "なし",
       "value": "{rate}%"
     }
+  },
+  "tax": {
+    "list": {
+      "title": "税区分",
+      "name": "名称",
+      "currentRate": "現時点の率",
+      "rateCount": "税率の件数",
+      "editRates": "税率を編集"
+    },
+    "create": {
+      "title": "税区分の登録",
+      "registered": "税区分を登録しました"
+    },
+    "rates": {
+      "help": "日時は日本時間。開始が空白なら過去すべて、終了が空白なら無期限。終了日時ちょうどは含まない。 期間は重複も途切れもなく並べ、最後の税率の終了は空白にする。",
+      "title": "税区分「{name}」の税率",
+      "currentRate": "現時点の率：{rate}",
+      "saved": "税率を保存しました",
+      "ratePercent": "率（%）",
+      "effectiveFrom": "適用開始",
+      "effectiveTo": "適用終了",
+      "state": "状態",
+      "add": "税率を追加"
+    },
+    "rateState": {
+      "NEW": "新規",
+      "ENDED": "終了済み",
+      "ACTIVE": "適用中",
+      "SCHEDULED": "未開始"
+    }
+  },
+  "category": {
+    "page": {
+      "title": "カテゴリ",
+      "addTop": "最上位に追加",
+      "empty": "カテゴリはまだありません。",
+      "deleted": "カテゴリを削除しました",
+      "registered": "カテゴリを登録しました",
+      "renamed": "名称を変更しました",
+      "createChildTitle": "「{name}」の子カテゴリを追加",
+      "createTopTitle": "最上位のカテゴリを追加",
+      "renameTitle": "名称の変更"
+    },
+    "tree": {
+      "rename": "名称の変更",
+      "addChild": "子を追加",
+      "deleteDescription": "子カテゴリを持つカテゴリと、商品が所属しているカテゴリは削除できません。",
+      "deleteTitle": "カテゴリ「{name}」を削除しますか？"
+    }
   }
 }

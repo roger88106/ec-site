@@ -36,11 +36,11 @@ class OrderTest {
             ShippingAddress.of("山田 太郎", "100-0001", "東京都", "千代田区千代田 1-1", "03-1234-5678");
 
     @Test
-    @DisplayName("AC-90、BR-9 成立した注文は「受付」で、注文成立のイベントが登録される")
-    void placesAcceptedOrder() {
+    @DisplayName("AC-143、BR-14 成立した注文は「支払待ち」で、注文成立のイベントが登録される")
+    void placesPendingPaymentOrder() {
         var order = place(quote());
 
-        assertThat(order.status()).isEqualTo(OrderStatus.ACCEPTED);
+        assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderPlaced.class,
                 event -> assertThat(event.orderId()).isEqualTo(order.id()));
     }

@@ -173,7 +173,7 @@ class OrderCancellationTest {
 
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
-            assertThat(order.cancellation().byOperator()).isTrue();
+            assertThat(order.cancellation().kind()).isEqualTo(CancellationKind.OPERATOR);
         }
 
         @Test
@@ -247,7 +247,7 @@ class OrderCancellationTest {
     // ============================== 補助 ==============================
 
     /**
-     * 「受付」の注文（成立のイベントは取り出し済み）
+     * 「受付」の注文（与信の成功の後。成立のイベントは取り出し済み）
      */
     private static Order acceptedOrder() {
         var variant = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(),
@@ -257,6 +257,7 @@ class OrderCancellationTest {
         var quote = new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, true);
         var order = Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(), ORDERED_AT,
                 quote, "taro@example.com", ShippingAddress.of("山田 太郎", "1000001", "東京都", "千代田区", "0312345678"));
+        order.acceptPayment(ORDERED_AT.plusSeconds(30));
         order.pullEvents();
         return order;
     }

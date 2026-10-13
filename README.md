@@ -26,5 +26,5 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [004](docs/specs/004-foundation) | 整理 | 開発基盤の整理 | 完了 |
 | [005](docs/specs/005-backend-cleanup) | 整理 | バックエンドの整理 | 完了 |
 | [006](docs/specs/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n | 完了 |
-| [007](docs/specs/007-payment) | 機能 | 決済 | 段階 5 まで完了（段階 4 は Stripe の鍵待ち） |
+| [007](docs/specs/007-payment) | 機能 | 決済 | 段階 1〜5 完了 |
 | [008](docs/specs/008-showcase) | 整理 | 機能紹介のページ | spec の草案（spec 007 の後に着手） |

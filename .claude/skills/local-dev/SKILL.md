@@ -126,6 +126,10 @@ for s in doc-refs spec-numbers doc-terms time-waits; do node scripts/ci/$s.mjs |
 - 支払は `payment.payment`（`status`、`page_id`、`authorization_ref`）、注文は `ordering.sales_order`。
 - Stripe の Checkout の画面は描くのが遅く、入力が遅れて二重に入ることがある。入力の後に拡大して確かめてから支払う。
 
+## 機能紹介のページのスクリーンショット
+
+`docs/dev/setup.md`「機能紹介のページのスクリーンショット」の通り。DB を作り直してから、`e2e/` で `pnpm capture`。
+
 ## ローカルの画面のデータ
 
 local profile の seed（`db/seed/local/`）が、画面を確かめるためのデータを作る。注文を作るスクリプトは要らない。

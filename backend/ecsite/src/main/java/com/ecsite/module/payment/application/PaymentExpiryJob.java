@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-class PaymentExpiryJob {
+public class PaymentExpiryJob {
 
     /**
      * 1 回に処理する支払の数の上限（残りは次の回で処理する）
@@ -41,7 +41,7 @@ class PaymentExpiryJob {
      */
     @Scheduled(fixedDelayString = "${ecsite.payment.expiry-interval:PT1M}")
     @SchedulerLock(name = "payment-expiry")
-    void expire() {
+    public void expire() {
         for (var payment : commandService.findPastDeadline(BATCH_SIZE)) {
             try {
                 expire(payment);

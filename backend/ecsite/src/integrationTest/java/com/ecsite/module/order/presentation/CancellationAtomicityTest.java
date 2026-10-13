@@ -10,7 +10,9 @@ import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.application.OrderPaymentService;
 import com.ecsite.module.order.application.port.StockDirectory;
+import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -59,6 +61,12 @@ class CancellationAtomicityTest {
     MockMvc mockMvc;
 
     @Autowired
+    MockPaymentGateway gateway;
+
+    @Autowired
+    OrderPaymentService orderPaymentService;
+
+    @Autowired
     MutableClock clock;
 
     @Autowired
@@ -86,7 +94,7 @@ class CancellationAtomicityTest {
         var variantId = product.variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, product.id);
         stockItemRepository.adjust(variantId, StockAdjustment.create(5, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
-        orderId = new OrderTestData(mockMvc).placeOrder(variantId, 2);
+        orderId = new OrderTestData(mockMvc, gateway, orderPaymentService).placeOrder(variantId, 2);
     }
 
     @AfterEach

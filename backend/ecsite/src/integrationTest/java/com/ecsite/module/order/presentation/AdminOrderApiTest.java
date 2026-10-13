@@ -1,15 +1,17 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.application.OrderPaymentService;
+import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +63,12 @@ class AdminOrderApiTest {
     MockMvc mockMvc;
 
     @Autowired
+    MockPaymentGateway gateway;
+
+    @Autowired
+    OrderPaymentService orderPaymentService;
+
+    @Autowired
     MutableClock clock;
 
     @Autowired
@@ -82,7 +90,7 @@ class AdminOrderApiTest {
         variantId = product.variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, product.id);
         stockItemRepository.adjust(variantId, StockAdjustment.create(50, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
-        orders = new OrderTestData(mockMvc);
+        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
     }
 
     @Nested

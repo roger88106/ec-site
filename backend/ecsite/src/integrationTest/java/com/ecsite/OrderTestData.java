@@ -1,21 +1,30 @@
 package com.ecsite;
 
+import com.ecsite.module.order.application.OrderPaymentService;
+import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.time.Duration;
 import java.util.UUID;
 
+import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 統合テストで、C 側の API でカートに入れて注文する補助（spec 002 のキャンセル・B 側の注文のテストで使う）。<br />
+ * 統合テストで、C 側の API でカートに入れて注文し、mock の決済サービスで支払う補助（spec 002 のキャンセル・B 側の注文、spec 007 の支払のテストで使う）。<br />
  * 既定の会員（{@link TestSecurityConfig}）として、会員のカートで注文する。
  * 商品と在庫は、呼ぶ側が先に用意する。
  */
 public class OrderTestData {
+
+    /**
+     * 注文が指定の状態になるのを待つ時間の上限（決済のイベントはコミット後に非同期で処理される）
+     */
+    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     /**
      * MockMvc
@@ -23,16 +32,30 @@ public class OrderTestData {
     private final MockMvc mockMvc;
 
     /**
+     * mock の決済サービス
+     */
+    private final MockPaymentGateway gateway;
+
+    /**
+     * 注文の支払の結果のサービス
+     */
+    private final OrderPaymentService orderPaymentService;
+
+    /**
      * コンストラクタ
      *
-     * @param mockMvc MockMvc
+     * @param mockMvc             MockMvc
+     * @param gateway             mock の決済サービス
+     * @param orderPaymentService 注文の支払の結果のサービス
      */
-    public OrderTestData(MockMvc mockMvc) {
+    public OrderTestData(MockMvc mockMvc, MockPaymentGateway gateway, OrderPaymentService orderPaymentService) {
         this.mockMvc = mockMvc;
+        this.gateway = gateway;
+        this.orderPaymentService = orderPaymentService;
     }
 
     /**
-     * 決まったお届け先（氏名：山田 太郎）で注文する。
+     * 決まったお届け先（氏名：山田 太郎）で注文し、支払って「受付」にする。
      *
      * @param variantId バリアント ID
      * @param quantity  数量
@@ -43,7 +66,7 @@ public class OrderTestData {
     }
 
     /**
-     * 氏名を指定して注文する。
+     * 氏名を指定して注文し、支払って「受付」にする。注文した品目はカートから除かれるので、続けて注文できる。
      *
      * @param variantId バリアント ID
      * @param quantity  数量
@@ -51,7 +74,63 @@ public class OrderTestData {
      * @return 注文 ID
      */
     public UUID placeOrder(UUID variantId, int quantity, String name) throws Exception {
-        // 既定の会員（TestSecurityConfig）の会員のカート。注文の後は空になるので、続けて注文できる
+        var orderId = placePendingOrder(variantId, quantity, name);
+        pay(orderId);
+        return orderId;
+    }
+
+    /**
+     * 注文する（支払わない）。注文は「支払待ち」で、カートは変わらない。
+     *
+     * @param variantId バリアント ID
+     * @param quantity  数量
+     * @return 注文 ID
+     */
+    public UUID placePendingOrder(UUID variantId, int quantity) throws Exception {
+        return placePendingOrder(variantId, quantity, "山田 太郎");
+    }
+
+    /**
+     * 注文の支払の画面を開く。
+     *
+     * @param orderId 注文 ID
+     * @return 支払の画面 ID
+     */
+    public String openPaymentPage(UUID orderId) throws Exception {
+        var body = mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page"))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        String url = JsonPath.read(body, "$.url");
+        return url.substring(url.lastIndexOf('/') + 1);
+    }
+
+    /**
+     * 支払の画面を開いて支払い、注文を「受付」にする。<br />
+     * 与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。
+     * そのため、リスナーと同じ処理をここで呼ぶ（冪等なので、コミットするテストで後からイベントが届いても変わらない）。
+     *
+     * @param orderId 注文 ID
+     */
+    public void pay(UUID orderId) throws Exception {
+        gateway.pay(openPaymentPage(orderId));
+        orderPaymentService.accept(orderId);
+    }
+
+    /**
+     * 注文が指定の状態になるのを待つ。
+     *
+     * @param orderId 注文 ID
+     * @param status  注文の状態
+     */
+    public void awaitStatus(UUID orderId, String status) {
+        await().atMost(TIMEOUT).until(() -> status.equals(JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId))
+                .andReturn().getResponse().getContentAsString(), "$.status")));
+    }
+
+    /**
+     * 氏名を指定して注文する（支払わない）。
+     */
+    private UUID placePendingOrder(UUID variantId, int quantity, String name) throws Exception {
+        // 既定の会員（TestSecurityConfig）の会員のカート
         var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(get("/api/store/me/cart")).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString(), "$.cartId"));
         mockMvc.perform(post("/api/store/carts/" + cartId + "/items")

@@ -15,7 +15,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・直す
 | `docs/process/` | 開発の進め方、記号と番号、コメントの書き方、書き方の規則と見直し |
 | `docs/backend/`・`docs/frontend/` | `architecture.md`（構成）、`coding.md`（書き方の規則）、`modules/<モジュール>.md`・`apps/<アプリ>.md`（今の設計） |
 | `docs/api/`・`docs/testing/`・`docs/dev/`・`docs/reference/` | API の規約、テストの書き方と流し方、開発環境、用語集とライセンス |
-| `docs/specs/` | spec・plan・tasks（当時の記録） |
+| `docs/specs/` | spec・plan・tasks（当時の記録）。書き方は [開発の進め方](../../../docs/process/workflow.md) 第 1.4 節 |
 | `README.md` | 概要、起動とテストへの案内、進捗だけ。文書は constitution へ案内する |
 | `AGENTS.md`・skill | エージェントに固有の手順だけ。規則は docs/ を指す |
 
@@ -52,7 +52,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・直す
 | 見出しの名前（`「他のモジュールへの公開」` など） | 見出しを変えたら、`git grep` で引用を探して直す |
 
 - 適用済みのマイグレーションと seed の SQL は直さない（Flyway の checksum が変わり、既存の DB で起動に失敗する）。
-- `docs/specs/` は当時の記録なので、リンクのパスだけを直し、節の番号は変えない。
+- `docs/specs/` の完了した文書は、リンクのパスだけを直す（開発の進め方 第 1.4 節）。
 - コードが多く引用している文書の名前（`管理画面の構成` など）は、見出しを変えずに残す。
 
 ## 5. 落とし穴

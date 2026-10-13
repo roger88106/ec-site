@@ -78,7 +78,27 @@ stateDiagram-v2
 
 ### Stripe
 
-段階 4 で書く（通知の受け口、通知の種類、署名の検証）。
+| 項目 | 内容 |
+|------|------|
+| ライブラリ | `stripe-java`。API のバージョンはライブラリのものに固定される |
+| 支払の画面 | Checkout Session（`mode=payment`、`capture_method=manual`、通貨 JPY、金額は総額の 1 行）。支払の画面 ID は Session の ID |
+| 画面の期限 | 作ってから 31 分（Stripe の最短の 30 分に、時計のずれの余裕を足す） |
+| 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、与信だけを取れる方法（カードと、カードで払う Link）が出る |
+| 通知の受け口 | `POST /api/webhooks/stripe`。認証は付けず、署名（ヘッダー `Stripe-Signature`、鍵 `STRIPE_WEBHOOK_SECRET`）で確かめる。署名が合わない・古い通知は 400 で拒否する |
+| 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../../dev/environment.md)） |
+
+通知の種類と、支払への反映：
+
+| 通知の種類 | 中身 | 反映 |
+|------------|------|------|
+| `checkout.session.completed` | Session の `status` は `complete`、`payment_status` は `unpaid`（与信だけで売上はまだ）。`payment_intent` が与信の ID | 与信の成功。与信の参照は `payment_intent` |
+| `checkout.session.expired` | 期限切れ、または画面を閉じた Session | 支払の画面の期限切れ |
+| その他 | `payment_intent.*`、`charge.*` など | 受け付けて（200）、何もしない |
+
+- 消費者が支払の画面を離れても、通知は来ない。Session は期限まで開いたまま。カードの拒否は画面に出るだけで、Session の通知は来ない。
+- 支払の画面を閉じる（Session を期限切れにする）とき、`open` でない Session は Stripe が拒否する。拒否されたら Session を読み、`complete` なら「支払が済んでいた」、`expired` なら「閉じた」とする。
+- 与信を取り消す（PaymentIntent の取消）とき、取消済みは Stripe が拒否する（`payment_intent_unexpected_state`）。拒否されたら PaymentIntent を読み、`canceled` なら成功とする。
+- Stripe が応えない、上の他の拒否は、システムのエラーにする。
 
 ## 他のモジュールへの公開
 

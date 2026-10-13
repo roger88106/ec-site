@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { ACCOUNTS, loginStore } from '../src/auth'
+import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { emptyCart, expectOrderPage, fillShipping, orderCart, payOnMockPage } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
@@ -115,3 +115,31 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
     await expect(page.getByRole('button', { name: '支払う' })).toHaveCount(0)
   })
 })
+
+test('AC-162 管理画面で受付の注文をキャンセルすると、支払の状態が与信の取消済みになる', async ({ page }) => {
+  await memberCartWith(page, 'VOID')
+  await orderCart(page)
+  const orderId = new URL(await payOnMockPage(page)).pathname.split('/').at(-1)
+
+  await test.step('管理画面：受付の注文は与信済みで、運営者がキャンセルする', async () => {
+    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
+    await expect(paymentStatus(page)).toHaveText('与信済み')
+    await page.getByRole('button', { name: 'キャンセルする' }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('理由（必須）').fill('E2E の与信の取消')
+    await dialog.getByRole('button', { name: 'キャンセルする' }).click()
+    await expect(page.getByText('キャンセルしました')).toBeVisible()
+  })
+
+  await test.step('与信の取消は裏で行うので、開き直しながら与信の取消済みになるのを待つ', async () => {
+    await expect(async () => {
+      await page.reload()
+      await expect(paymentStatus(page)).toHaveText('与信の取消済み', { timeout: 1_000 })
+    }).toPass({ timeout: 20_000, intervals: [500, 1_000] })
+  })
+})
+
+/** 管理画面の注文の詳細の、支払の状態 */
+function paymentStatus(page: Page) {
+  return page.locator('dt', { hasText: /^支払$/ }).locator('xpath=following-sibling::dd[1]')
+}

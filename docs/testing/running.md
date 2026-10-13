@@ -46,7 +46,7 @@ pnpm test
 
 | 段階 | 内容 |
 |------|------|
-| 準備（`e2e/scripts/prepare.ts`） | E2E 用の DB と Keycloak の database を作り直し、E2E 用の Keycloak（compose の profile `e2e`）を起動し直す。毎回、マイグレーションと税のデータ（`db/seed/base`）だけの DB、realm の JSON の状態の IdP から始まる |
+| 準備（`e2e/scripts/prepare.ts`） | E2E のサーバーのポート（:8090、:4173、:3100）で待ち受けられるかを確かめる（Windows の予約範囲に入ったポートは EACCES で止まる）。E2E 用の DB と Keycloak の database を作り直し、E2E 用の Keycloak（compose の profile `e2e`）を起動し直す。毎回、マイグレーションと税のデータ（`db/seed/base`）だけの DB、realm の JSON の状態の IdP から始まる |
 | 起動 | バックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）と店舗画面（:3100）は、起動していなければ起動する |
 | データ | 管理 API で作り、品番・名称に実行ごとの印（`E2E-<印>-…`）を付ける |
 
@@ -56,4 +56,5 @@ pnpm test
 - 店舗画面の API のキャッシュは、E2E では 1 秒（`STORE_API_REVALIDATE_SECONDS`）。
 - 決済は mock で、外部の決済サービスに接続しない。支払の期限は、期限切れを待つテストのため 30 秒（`application-e2e.yml`）。
 - compose の設定を変えたコミットを取り込んだら、`docker compose up -d` で反映し、`docker compose run --rm seaweedfs-init` でバケットを作る（`docker/seaweedfs/s3.json` を変えたときは `docker compose restart seaweedfs` も必要）。
+- 結果の要約だけを見るときは、ルートで `scripts/dev/e2e.sh [Playwright の引数]`（テストごとの ok / x と失敗の要点だけを出し、全体はログのファイルに残す）。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を見る。

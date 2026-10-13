@@ -5,11 +5,14 @@
  * ローカルの DB（ec_site）と Keycloak（keycloak、8180）には触れない。
  *
  * 前提：compose の PostgreSQL が起動している（docs/testing/running.md の「E2E」）。
+ * 初めに、E2E のサーバーのポートで待ち受けられるかを確かめる（Windows の予約範囲に入ったポートは、起動の後まで分からないため）。
  *
  * 使い方：node scripts/prepare.ts（e2e/ で）
  */
 import { execFileSync } from 'node:child_process'
+import { createServer } from 'node:net'
 import path from 'node:path'
+import { ADMIN_URL, BACKEND_URL, STORE_URL } from '../src/urls.ts'
 
 /** リポジトリのルート。ルートの .env の COMPOSE_FILE が docker/compose.yaml を指す */
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -31,7 +34,33 @@ function psql(...statements: string[]): void {
   compose('exec', '-T', 'postgres', 'psql', '-U', 'ec_site', '-d', 'ec_site', '-v', 'ON_ERROR_STOP=1', ...commands)
 }
 
+/**
+ * ポートで待ち受けられるかを、画面のサーバーと同じく localhost の IPv4・IPv6 の両方で確かめる。
+ * OS が拒んだ（EACCES）ときだけ投げる。使用中（起動済みのサーバー）や、IPv6 のない環境はよいとする。
+ * Windows では、WinNAT などの予約範囲（netsh interface ipv4 show excludedportrange protocol=tcp）に入ったポートが EACCES になる。
+ */
+async function assertListenable(url: string): Promise<void> {
+  const port = Number(new URL(url).port)
+  for (const host of ['127.0.0.1', '::1']) {
+    const code = await new Promise<string | null>((resolve) => {
+      const server = createServer()
+      server.once('error', (error: NodeJS.ErrnoException) => resolve(error.code ?? null))
+      server.listen(port, host, () => server.close(() => resolve(null)))
+    })
+    if (code === 'EACCES') {
+      throw new Error(
+        `ポート ${port}（${url}）で待ち受けられない（${host}、EACCES）。Windows なら予約範囲に入っていないかを確かめる：` +
+          'netsh interface ipv4 show excludedportrange protocol=tcp',
+      )
+    }
+  }
+}
+
 const started = Date.now()
+
+for (const url of [BACKEND_URL, ADMIN_URL, STORE_URL]) {
+  await assertListenable(url)
+}
 
 // 古い database を使っている Keycloak を先に止める。前の E2E のバックエンドの接続は FORCE で切る
 compose('--profile', 'e2e', 'stop', 'keycloak-e2e')

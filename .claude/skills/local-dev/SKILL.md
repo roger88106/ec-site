@@ -122,5 +122,8 @@ local profile の seed（`db/seed/local/`）が、画面を確かめるための
 `docs/testing/running.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を作り直し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
 
 ```bash
-cd e2e && pnpm test 2>&1 | tail -30
+scripts/dev/e2e.sh                                   # ルートで。テストごとの ok / x と失敗の要点だけを出す
+scripts/dev/e2e.sh tests/payment.spec.ts -g AC-148   # 引数は Playwright にそのまま渡す
 ```
+
+- 準備でポートの EACCES が出たら、Windows の予約範囲（WinNAT）に入っている。`/.local/agent/environment.md` の手順で外す。

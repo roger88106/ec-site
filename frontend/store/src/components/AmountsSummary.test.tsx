@@ -1,10 +1,10 @@
-import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, test } from 'vitest'
 import { AmountsSummary } from '@/components/AmountsSummary'
+import { renderMarkup } from '@/test/render'
 
 describe('金額の内訳（BR-7、8）', () => {
   test('AC-77 商品の合計、送料、総額、税率ごとの消費税額の順に出す', () => {
-    const html = renderToStaticMarkup(
+    const html = renderMarkup(
       <AmountsSummary
         amounts={{
           itemsTotal: 3462,

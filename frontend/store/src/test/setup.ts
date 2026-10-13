@@ -23,6 +23,16 @@ vi.mock('next/server', async (importOriginal) => ({
   // 画面をリクエストのたびに作る印。テストでは何もしない
   connection: async () => {},
 }))
+// 文言（next-intl）のサーバーの関数。Next.js の plugin が読む設定（src/i18n/request.ts）の代わりに、日本語の文言で作る
+vi.mock('next-intl/server', async () => {
+  const { createTranslator } = await import('next-intl')
+  const { LOCALE } = await import('@ec-site/shared/lib/locale')
+  const { messages } = await import('@/i18n/messages')
+  return {
+    getTranslations: async (namespace?: string) =>
+      createTranslator({ locale: LOCALE, messages, namespace: namespace as never }),
+  }
+})
 vi.mock('next-auth', async () => (await import('@/test/auth')).nextAuthMock)
 vi.mock('next-auth/jwt', async () => (await import('@/test/auth')).nextAuthJwtMock)
 vi.mock('next-auth/providers/keycloak', () => ({ default: (options: object) => ({ id: 'keycloak', options }) }))

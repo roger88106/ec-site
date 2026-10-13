@@ -6,13 +6,14 @@ import { App } from '@/app/App'
 import { createQueryClient } from '@/app/queryClient'
 import { routes } from '@/app/router'
 import { type Operator, OperatorProvider } from '@/auth/operator'
+import { I18nProvider } from '@/i18n/I18nProvider'
 
 /** 結合テストでログインしている運営者（IdP を使わずに差し替える。管理画面の構成 第 11 節） */
 export const TEST_OPERATOR_NAME = '管理 花子'
 
 /**
  * 管理画面を、指定した URL を開いた状態で描画する（管理画面の構成 第 10 節）。<br />
- * ルーター・サーバー状態のキャッシュ・toast は本物と同じものを使い、テストごとに新しく作る。
+ * ルーター・サーバー状態のキャッシュ・toast・日本語の文言は本物と同じものを使い、テストごとに新しく作る。
  * API の応答は、先に {@code server.use(...)} で与えておく。
  * ログインは置き換え、運営者（{@link TEST_OPERATOR_NAME}）がログインしている状態にする。token は付けない。
  *
@@ -25,9 +26,11 @@ export function renderApp(url: string) {
   const logout = vi.fn()
   const operator: Operator = { name: TEST_OPERATOR_NAME, logout }
   render(
-    <OperatorProvider value={operator}>
-      <App queryClient={createQueryClient()} router={router} />
-    </OperatorProvider>,
+    <I18nProvider>
+      <OperatorProvider value={operator}>
+        <App queryClient={createQueryClient()} router={router} />
+      </OperatorProvider>
+    </I18nProvider>,
   )
   return { user, router, logout }
 }

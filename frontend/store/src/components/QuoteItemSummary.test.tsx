@@ -1,7 +1,7 @@
-import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, test } from 'vitest'
 import type { QuoteItem } from '@/api/types'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
+import { renderMarkup } from '@/test/render'
 
 /** 色とサイズの軸を持つ、購入できる品目 */
 function item(overrides: Partial<QuoteItem> = {}): QuoteItem {
@@ -25,7 +25,7 @@ function item(overrides: Partial<QuoteItem> = {}): QuoteItem {
 
 describe('カート・注文手続きの品目', () => {
   test('AC-77 商品名、軸の値、単価（税込と税抜）を出し、商品の詳細へのリンクにする', () => {
-    const html = renderToStaticMarkup(<QuoteItemSummary item={item()} />)
+    const html = renderMarkup(<QuoteItemSummary item={item()} />)
 
     expect(html).toContain('T シャツ')
     expect(html).toContain('色：赤　サイズ：M')
@@ -36,7 +36,7 @@ describe('カート・注文手続きの品目', () => {
   })
 
   test('AC-80 購入できない品目は「購入できません」と理由を出し、数量は出さない（AC-64）', () => {
-    const html = renderToStaticMarkup(
+    const html = renderMarkup(
       <QuoteItemSummary item={item({ purchasable: false, unpurchasableReason: 'INSUFFICIENT_STOCK' })} />,
     )
 

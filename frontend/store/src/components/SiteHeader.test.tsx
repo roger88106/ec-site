@@ -1,6 +1,6 @@
-import { renderToStaticMarkup } from 'react-dom/server'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { SiteHeader } from '@/components/SiteHeader'
+import { renderMarkup } from '@/test/render'
 
 /** IdP のアカウントの画面（テストの値） */
 const ACCOUNT_URL = 'http://idp.test/realms/ec-store/account'
@@ -16,7 +16,7 @@ vi.mock('@/components/LoginLinks', () => ({ LoginLinks: () => <a href="/login">�
 
 /** ヘッダーを HTML にする（サーバーコンポーネントなので、関数として呼んでから描画する） */
 async function renderHeader() {
-  return renderToStaticMarkup(await SiteHeader())
+  return renderMarkup(await SiteHeader())
 }
 
 describe('ヘッダーのログインの状態', () => {

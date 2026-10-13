@@ -5,6 +5,7 @@ import {
   formatPostalCode,
   formatYen,
   orderStatusLabel,
+  paymentState,
   remainingTime,
   taxLabel,
   unpurchasableReasonLabel,
@@ -33,8 +34,9 @@ describe('購入できない理由（AC-80）', () => {
   })
 })
 
-describe('注文の状態（BR-9）', () => {
-  test('BR-9 受付、キャンセル申請中、キャンセル', () => {
+describe('注文の状態（BR-9、14）', () => {
+  test('BR-9、14 支払待ち、受付、キャンセル申請中、キャンセル', () => {
+    expect(orderStatusLabel('PENDING_PAYMENT')).toBe('支払待ち')
     expect(orderStatusLabel('ACCEPTED')).toBe('受付')
     expect(orderStatusLabel('CANCELLATION_REQUESTED')).toBe('キャンセル申請中')
     expect(orderStatusLabel('CANCELLED')).toBe('キャンセル')
@@ -60,6 +62,51 @@ describe('キャンセルの申請の状況（AC-95、96）', () => {
 
   test('キャンセル済み（申請の承認、運営者の判断のどちらでも）', () => {
     expect(cancellationState({ status: 'CANCELLED', actions: notRequestable })).toBe('CANCELLED')
+    expect(
+      cancellationState({
+        status: 'CANCELLED',
+        actions: notRequestable,
+        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR' },
+      }),
+    ).toBe('CANCELLED')
+  })
+
+  test('AC-155 支払期限切れのキャンセルは、ほかのキャンセルと分ける', () => {
+    expect(
+      cancellationState({
+        status: 'CANCELLED',
+        actions: notRequestable,
+        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'PAYMENT_EXPIRED' },
+      }),
+    ).toBe('PAYMENT_EXPIRED')
+  })
+
+  test('AC-158 支払待ちの注文は、まだ申請できない（支払の期限で自動でキャンセルになる）', () => {
+    expect(cancellationState({ status: 'PENDING_PAYMENT', actions: notRequestable })).toBe('NOT_YET')
+  })
+})
+
+describe('支払の状況（AC-150、151）', () => {
+  /** API が返す旗 */
+  const payable = { pay: true }
+  const notPayable = { pay: false }
+
+  test('AC-151 支払待ちで支払える（API の旗）なら、支払える', () => {
+    expect(paymentState({ status: 'PENDING_PAYMENT', actions: payable }, false)).toBe('PAYABLE')
+  })
+
+  test('AC-150 支払の画面から戻った直後に、まだ支払待ちなら、支払の確認中', () => {
+    expect(paymentState({ status: 'PENDING_PAYMENT', actions: payable }, true)).toBe('CONFIRMING')
+    expect(paymentState({ status: 'PENDING_PAYMENT', actions: notPayable }, true)).toBe('CONFIRMING')
+  })
+
+  test('支払待ちで支払えないのは、支払の期限を過ぎた（まもなくキャンセルになる）', () => {
+    expect(paymentState({ status: 'PENDING_PAYMENT', actions: notPayable }, false)).toBe('CLOSING')
+  })
+
+  test('支払待ちでなければ、支払の欄は出さない（戻った直後でも）', () => {
+    expect(paymentState({ status: 'ACCEPTED', actions: notPayable }, true)).toBe('NONE')
+    expect(paymentState({ status: 'CANCELLED', actions: notPayable }, false)).toBe('NONE')
   })
 })
 

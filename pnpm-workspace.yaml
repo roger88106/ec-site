@@ -7,5 +7,8 @@ packages:
 allowBuilds:
   # Service Worker を public に写すだけ。テストは Node の MSW（msw/node）を使うので要らない
   msw: false
+  # next-intl の依存。文言をコードから抜き出す機能でだけ使い、ここでは使わない（@swc/core は環境ごとの部品が別の依存で入る）
+  '@parcel/watcher': false
+  '@swc/core': false
   sharp: false
   unrs-resolver: false

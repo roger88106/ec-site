@@ -10,6 +10,7 @@
 - [x] **T6902** 文書の見直し：`check-zh.mjs --all` が通る。`docs/frontend/`・`docs/style/`・用語集と実装の食い違いを直す。
 - [x] **T6903** plan 第 6 節の確かめ方で、DC-45〜62 と DN-7、8 を確かめて表にする。画面を手で見て、見た目と文言が spec の前と変わっていないことを確かめ、画面の写しを利用者に見せる。
 - [x] **T6904** 完了確認：直したこと、直さずに残したこと（理由付き）を報告し、spec 006 を完了にする。README の spec の状態を直す。引き継ぎの文書を作る。
+- [x] **T6905** CI の失敗を直す：T6602 で入れた next-intl の依存（`@parcel/watcher`、`@swc/core`）のインストール時のスクリプトを `pnpm-workspace.yaml` の `allowBuilds` に書いておらず、CI の `pnpm install` が `ERR_PNPM_IGNORED_BUILDS` で失敗した。どちらも文言をコードから抜き出す機能でだけ使うので、実行しない（`false`）と書く。
 
 ### T6901 の結果：見直しで読む規則との照らし合わせ
 

@@ -128,7 +128,9 @@ export function FooForm({ fooId }: { fooId: string }) {
 | `src/features/<機能>/components/` | フォーム、表、操作のボタン |
 | `src/app/router.tsx` | ルートを足す。機能の入口なら `src/app/menu.ts` にも |
 | `src/api/client.ts` | `$api`（openapi-react-query） |
-| `src/api/invalidate.ts` | `useInvalidate()`。新しいパスの前方一致は `ApiPathPrefix` と admin.md 第 4 節の表に足す |
+| `src/api/useApiMutation.ts` | 更新の操作（成功の知らせ、続きの処理、一覧の取り直し） |
+| `src/api/useMutationGroup.ts` | 1 つの場所の複数の更新の操作の、待ち状態・最初のエラー・エラーの消去 |
+| `src/api/invalidate.ts` | 取り直すパスの前方一致 `ApiPathPrefix`。新しいパスは admin.md 第 4 節の表にも足す |
 | `src/components/` | `PageHeader`、`QueryState`、`ErrorMessage`、`ConfirmDialog`、`Pagination`、`DateTime`、`Price` |
 | `src/hooks/useVersionedForm.ts` | バージョンを持つリソースのフォーム（409 の扱い。admin.md 第 5 節） |
 
@@ -182,21 +184,16 @@ export function FooListPage() {
 ### 操作（更新、取り直し、toast、確認）
 
 ```tsx
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
-import { useInvalidate } from '@/api/invalidate'
+import { useApiMutation } from '@/api/useApiMutation'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Button } from '@/components/ui/button'
 
 /** 〇〇の操作（AC-__）。取り消せないので確認してから送る */
 export function FooActions({ fooId }: { fooId: string }) {
-  const invalidate = useInvalidate()
-  const close = $api.useMutation('put', '/foos/{fooId}/close', {
-    onSuccess: async () => {
-      toast.success('〇〇しました')
-      await invalidate('/foos') // 影響する取得をパスの前方一致で取り直す（admin.md 第 4 節の表）
-    },
+  const close = useApiMutation('put', '/foos/{fooId}/close', {
+    success: '〇〇しました',
+    invalidate: ['/foos'], // 影響する取得をパスの前方一致で取り直す（admin.md 第 4 節の表）
   })
   return (
     <div className="space-y-3">
@@ -214,6 +211,7 @@ export function FooActions({ fooId }: { fooId: string }) {
 }
 ```
 
+- 操作が複数あれば `const { pending, error, resetErrors } = useMutationGroup(close, reopen)`。例は `features/product/components/VariantSection.tsx`。
 - 詳細の画面は `const { fooId = '' } = useParams()` と `$api.useQuery('get', '/foos/{fooId}', { params: { path: { fooId } } })`。
 - フォームは React Hook Form。サーバーの `errors[]` を欄に出すのは `api/formErrors.ts` の `setServerFieldErrors`。画面での検証は必須の未入力だけ。
 - 列挙の表示名は `lib/labels.ts`（または機能の `*.ts`）に置き、画面に文字列を直接書かない。

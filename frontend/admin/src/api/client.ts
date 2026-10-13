@@ -48,7 +48,7 @@ fetchClient.use(withAccessToken, throwOnError)
 
 /**
  * 管理 API の TanStack Query のクライアント。<br />
- * 取得は {@code $api.useQuery('get', '<パス>', ...)}、更新は {@code $api.useMutation('<メソッド>', '<パス>')}。
+ * 取得は {@code $api.useQuery('get', '<パス>', ...)}、更新は {@code useApiMutation('<メソッド>', '<パス>', ...)}（useApiMutation.ts）。
  * 失敗したときの error は、型の上はエラーレスポンスだが、実際は ApiError（または通信の失敗）になる。
  */
 export const $api = createClient(fetchClient)

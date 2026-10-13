@@ -10,6 +10,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -60,6 +61,31 @@ public class PaymentCommandService {
     public Optional<Payment> findPayable(UUID orderId) {
         var now = clock.instant();
         return paymentRepository.findByOrderId(orderId).filter(payment -> payment.isPayable(now));
+    }
+
+    /**
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
+     *
+     * @param limit 取得する数の上限
+     * @return 支払
+     */
+    @Transactional(readOnly = true)
+    public List<Payment> findPastDeadline(int limit) {
+        return paymentRepository.findUnpaidPastDeadline(clock.instant(), limit);
+    }
+
+    /**
+     * 期限を過ぎた未払いの支払を、支払なしにする。<br />
+     * 行ロックの後に確かめ直すので、その間に与信済みになった支払や、期限の前の支払は変えない。
+     *
+     * @param paymentId 支払 ID
+     */
+    public void expire(UUID paymentId) {
+        var now = clock.instant();
+        paymentRepository.lockById(paymentId)
+                .filter(payment -> !payment.isPayable(now))
+                .filter(payment -> payment.expire(now))
+                .ifPresent(paymentRepository::update);
     }
 
     /**

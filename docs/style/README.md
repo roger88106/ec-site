@@ -5,7 +5,7 @@
 | 文書 | 主題 |
 |------|------|
 | [backend.md](backend.md) | バックエンドの層とパッケージ、エラーの変換、入力の検証、トランザクション、時刻、命名 |
-| [frontend.md](frontend.md) | フロントの部品の置き場所、API の呼び出し、店舗画面のサーバーアクション、整形と lint |
+| [frontend.md](frontend.md) | フロントの部品の置き場所、API の呼び出し、店舗画面のサーバーアクション、整形と lint、画面の URL、文言とロケール、店舗画面のサーバーの設定とログ、依存の足し方 |
 | [testing.md](testing.md) | テストの種類と置き場所、テスト名、テストデータ、待ち方 |
 | [comments.md](comments.md) | コメント（Javadoc・TSDoc、型の項目、複雑な処理の前） |
 | [review.md](review.md) | 見直しで読む規則の一覧 |

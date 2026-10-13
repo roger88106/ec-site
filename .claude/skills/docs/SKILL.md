@@ -38,7 +38,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・直す
 3. 文書を移した、節の番号や見出しを変えたときは、第 4 節で参照を直す。
 4. 確かめる。次がすべて通ること：
    - `node .local/agent/check-zh.mjs --all`（マシンに固有の検査。あれば流す）
-   - `node .claude/skills/docs/check-links.cjs`（Markdown のリンクの先のファイルと見出し）
+   - `node scripts/ci/doc-refs.mjs`（Markdown のリンクと、`<文書の名前> 第 N 節` の参照。CI の docs.yml でも流す）
    - コードのコメントを直したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`
 5. commit を分ける：文書のまとまりごとに 1 つ、参照の直しは最後に 1 つ。spec の外の作業はタスク番号を付けない。push は利用者の許可を得てから。
 
@@ -48,7 +48,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・直す
 |------|--------|
 | Markdown のリンク | `node .claude/skills/docs/fix-links.cjs 旧パス=新パス ...`（切れたリンクだけを、移した先に直す） |
 | コード・skill・CI・script の中のパス | `git grep` で旧パスを探して置き換える |
-| 節の番号（`<文書の名前> 第 N 節`、`constitution N`） | 旧番号から新番号への表を作って置き換え、置き換えた行を読み直す。番号が 2 回付け替わらないよう、1 回で流す |
+| 節の番号（`<文書の名前> 第 N 節`） | 旧番号から新番号への表を作って置き換え、置き換えた行を読み直す。番号が 2 回付け替わらないよう、1 回で流す。`doc-refs.mjs` は、ない節を指す参照だけを見つける（番号が残っていて意味の違う節を指すものは見つけない） |
 | 見出しの名前（`「他のモジュールへの公開」` など） | 見出しを変えたら、`git grep` で引用を探して直す |
 
 - 適用済みのマイグレーションと seed の SQL は直さない（Flyway の checksum が変わり、既存の DB で起動に失敗する）。

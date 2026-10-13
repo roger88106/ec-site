@@ -1,0 +1,36 @@
+# ============================================================================
+# 文書とコメントの検査（constitution 第 12 節）
+#
+# 文書だけを変えた push でも流す（ci.yml は文書だけの push では流さないため、別のワークフローにする）。
+#   参照：Markdown のリンクと、節の参照（`店舗画面の構成 第 4.5 節` など）が切れていないこと
+# script のテストは ci.yml の ac-check で流す。
+# ============================================================================
+
+name: 文書
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: 文書とコメントの検査
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      - name: 参照の検査
+        run: node scripts/ci/doc-refs.mjs

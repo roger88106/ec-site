@@ -62,8 +62,10 @@ export function CancellationCard({
                 <DateTime value={cancellation.cancelledAt} />
               </dd>
               <dt className="text-muted-foreground">{t('trigger') /* きっかけ */}</dt>
-              <dd>{cancellation.byOperator ? t('byOperator') : t('byRequest') /* 運営者の判断か申請の承認 */}</dd>
-              {cancellation.byOperator && (
+              <dd>
+                {cancellation.kind === 'OPERATOR' ? t('byOperator') : t('byRequest') /* 運営者の判断か申請の承認 */}
+              </dd>
+              {cancellation.kind === 'OPERATOR' && (
                 <>
                   <dt className="text-muted-foreground">{t('reason') /* 理由 */}</dt>
                   <dd className="whitespace-pre-wrap">{cancellation.reason}</dd>

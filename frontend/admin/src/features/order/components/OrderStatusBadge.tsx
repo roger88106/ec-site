@@ -4,6 +4,7 @@ import { orderStatusLabel } from '@/lib/labels'
 
 /** 状態ごとの見た目。対応が要る「キャンセル申請中」を目立たせる */
 const variants: Record<OrderStatus, 'default' | 'destructive' | 'secondary'> = {
+  PENDING_PAYMENT: 'secondary',
   ACCEPTED: 'default',
   CANCELLATION_REQUESTED: 'destructive',
   CANCELLED: 'secondary',

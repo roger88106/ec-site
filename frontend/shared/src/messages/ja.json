@@ -13,6 +13,7 @@
     "priceWithExclTax": "{inclTax} 円（税抜 {exclTax} 円）",
     "taxAmount": "{ratePercent}% 対象 {taxableAmount}（内消費税 {taxAmount}）",
     "orderStatus": {
+      "PENDING_PAYMENT": "支払待ち",
       "ACCEPTED": "受付",
       "CANCELLATION_REQUESTED": "キャンセル申請中",
       "CANCELLED": "キャンセル"

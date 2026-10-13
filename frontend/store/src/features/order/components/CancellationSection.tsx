@@ -48,5 +48,7 @@ export function CancellationSection({ order, contactEmail }: { order: Order; con
       )
     case 'CANCELLED':
       return <p className="text-sm">{t('cancelled') /* キャンセルされた */}</p>
+    case 'NOT_YET':
+      return null
   }
 }

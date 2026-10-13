@@ -355,7 +355,8 @@ paths:
         - memberToken: []
       summary: 注文する（AC-86〜92、107）
       description: |
-        引当を在庫数の減算に置き換え、注文を作り、カートを空にする。引当の期限が切れていれば、その場で引き当て直す（AC-87）。
+        引当を在庫数の減算に置き換え、注文を「支払待ち」で作り、支払を作る（AC-143、144）。引当の期限が切れていれば、その場で引き当て直す（AC-87）。
+        カートは変えない。与信が成功したら、注文した品目をカートから除く（AC-147）。
         同じ注文手続きでの再送には、作成済みの注文の ID を 200 で返す（AC-91）。
         409 の `errorCode`：`OUT_OF_STOCK`（在庫不足）、`TOTAL_AMOUNT_CHANGED`（確認した総額と違う。AC-89）、`CART_CHANGED`（注文手続きの後にカートが変わった）。
       requestBody:
@@ -454,6 +455,33 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFoundForOthers'
+
+  /orders/{orderId}/payment-page:
+    parameters:
+      - $ref: '#/components/parameters/OrderId'
+    post:
+      tags: [order]
+      operationId: openOrderPaymentPage
+      security:
+        - memberToken: []
+      summary: 支払の画面を開く（AC-143、151、152）
+      description: |
+        決済サービスの支払の画面の URL を返す。店舗画面はこの URL に移す。
+        開いている画面があれば同じ URL を返し、決済サービスに作り直させない（AC-152）。
+        支払待ちで支払の期限の前の注文だけ。それ以外は 409（`errorCode`：`ORDER_NOT_PAYABLE`）。
+      responses:
+        '200':
+          description: 支払の画面
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PaymentPage'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFoundForOthers'
+        '409':
+          $ref: '#/components/responses/Conflict'
 
   # ============================== 店舗の情報 ==============================
   /shop:
@@ -1002,8 +1030,8 @@ components:
           description: 注文手続きの画面で表示した総額（AC-89）
     OrderStatus:
       type: string
-      enum: [ACCEPTED, CANCELLATION_REQUESTED, CANCELLED]
-      description: 受付、キャンセル申請中、キャンセル（BR-9）
+      enum: [PENDING_PAYMENT, ACCEPTED, CANCELLATION_REQUESTED, CANCELLED]
+      description: 支払待ち、受付、キャンセル申請中、キャンセル（BR-9、14）
     CancellationRequest:
       type: object
       required: [requestedAt, result]
@@ -1067,18 +1095,49 @@ components:
           type: string
         shippingAddress:
           $ref: '#/components/schemas/ShippingAddress'
+        paymentDeadline:
+          type: string
+          format: date-time
+          description: 支払の期限（BR-16）。支払待ちのときだけ。それ以外は省く
         cancellationRequest:
           $ref: '#/components/schemas/CancellationRequest'
+        cancellation:
+          $ref: '#/components/schemas/Cancellation'
         actions:
           $ref: '#/components/schemas/OrderActions'
+    Cancellation:
+      type: object
+      description: キャンセルした内容。キャンセルでなければ省く
+      required: [cancelledAt, kind]
+      properties:
+        cancelledAt:
+          type: string
+          format: date-time
+        kind:
+          $ref: '#/components/schemas/CancellationKind'
+    CancellationKind:
+      type: string
+      enum: [REQUEST_APPROVED, OPERATOR, PAYMENT_EXPIRED]
+      description: 申請の承認、運営者の判断、支払期限切れ（AC-155）
     OrderActions:
       type: object
       description: 今の注文に会員ができる操作。画面はこれで操作を出し分け、同じ判定を持たない
-      required: [requestCancellation]
+      required: [requestCancellation, pay]
       properties:
         requestCancellation:
           type: boolean
           description: キャンセルを申請できる（受付で、まだ申請していないとき。AC-95）
+        pay:
+          type: boolean
+          description: 支払の画面に移れる（支払待ちで、支払の期限の前のとき。AC-151）
+    PaymentPage:
+      type: object
+      required: [url]
+      properties:
+        url:
+          type: string
+          format: uri
+          description: 決済サービスの支払の画面の URL
     OrderSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -1109,6 +1168,10 @@ components:
           description: 総額（税込、送料を含む）
         status:
           $ref: '#/components/schemas/OrderStatus'
+        paymentDeadline:
+          type: string
+          format: date-time
+          description: 支払の期限（AC-159）。支払待ちのときだけ。それ以外は省く
     RequestOrderCancellationRequest:
       type: object
       properties:

@@ -24,9 +24,10 @@ export const QUANTITY_OPTIONS = Array.from(
 )
 
 /**
- * 注文のキャンセルの状況。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み
+ * 注文のキャンセルの状況。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み、
+ * まだ申請できない（支払待ち。支払の期限で自動でキャンセルになる）
  */
-export type CancellationState = 'REQUESTABLE' | 'PENDING' | 'REJECTED' | 'CANCELLED'
+export type CancellationState = 'REQUESTABLE' | 'PENDING' | 'REJECTED' | 'CANCELLED' | 'NOT_YET'
 
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {
@@ -71,6 +72,8 @@ export function cancellationState(order: {
     return 'REQUESTABLE'
   }
   switch (order.status) {
+    case 'PENDING_PAYMENT':
+      return 'NOT_YET'
     case 'CANCELLED':
       return 'CANCELLED'
     case 'CANCELLATION_REQUESTED':

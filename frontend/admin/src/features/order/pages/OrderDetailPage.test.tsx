@@ -84,7 +84,7 @@ describe('注文の詳細', () => {
         },
         cancellation: {
           cancelledAt: '2026-10-10T03:00:00Z',
-          byOperator: false,
+          kind: 'REQUEST_APPROVED',
           reason: null,
           cancelledBy: '審査 一郎',
         },
@@ -126,7 +126,7 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'CANCELLED',
         actions: orderActions({ cancel: false }),
-        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', byOperator: true, reason: '電話で取り消しの依頼' },
+        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '電話で取り消しの依頼' },
       }),
     )
     const { user } = renderApp(URL)
@@ -200,7 +200,7 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'CANCELLED',
         actions: orderActions({ cancel: false }),
-        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', byOperator: true, reason: '在庫の誤り' },
+        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り' },
       }),
     )
     renderApp(URL)

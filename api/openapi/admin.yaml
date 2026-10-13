@@ -1861,8 +1861,12 @@ components:
     # ---------- 注文（spec 002） ----------
     OrderStatus:
       type: string
-      enum: [ACCEPTED, CANCELLATION_REQUESTED, CANCELLED]
-      description: 受付、キャンセル申請中、キャンセル（BR-9）
+      enum: [PENDING_PAYMENT, ACCEPTED, CANCELLATION_REQUESTED, CANCELLED]
+      description: 支払待ち、受付、キャンセル申請中、キャンセル（BR-9、14）
+    PaymentStatus:
+      type: string
+      enum: [UNPAID, AUTHORIZED, VOID_PENDING, VOIDED, NOT_PAID]
+      description: 未払い、与信済み、与信の取消待ち、与信の取消済み、支払なし（BR-15）
     OrderSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'
@@ -1894,6 +1898,8 @@ components:
           description: 総額（円）
         status:
           $ref: '#/components/schemas/OrderStatus'
+        paymentStatus:
+          $ref: '#/components/schemas/PaymentStatus'
     OrderDetail:
       type: object
       required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress, actions]
@@ -1922,8 +1928,21 @@ components:
           $ref: '#/components/schemas/CancellationRequest'
         cancellation:
           $ref: '#/components/schemas/Cancellation'
+        payment:
+          $ref: '#/components/schemas/Payment'
         actions:
           $ref: '#/components/schemas/OrderActions'
+    Payment:
+      type: object
+      description: 注文の支払（AC-160）。決済を入れる前の注文は省く
+      required: [status, deadline]
+      properties:
+        status:
+          $ref: '#/components/schemas/PaymentStatus'
+        deadline:
+          type: string
+          format: date-time
+          description: 支払の期限（BR-16）
     OrderActions:
       type: object
       description: 今の注文にできる操作。画面はこれで操作を出し分け、同じ判定を持たない
@@ -1937,7 +1956,7 @@ components:
           description: キャンセルの申請を却下できる（キャンセル申請中のとき。AC-102）
         cancel:
           type: boolean
-          description: キャンセルできる（キャンセル済みでないとき。AC-103）
+          description: キャンセルできる（受付かキャンセル申請中のとき。AC-103、158）
     OrderLine:
       type: object
       description: 注文時点の写し（AC-92）
@@ -2051,14 +2070,13 @@ components:
     Cancellation:
       type: object
       description: キャンセルした内容。キャンセルでなければ省く
-      required: [cancelledAt, byOperator]
+      required: [cancelledAt, kind]
       properties:
         cancelledAt:
           type: string
           format: date-time
-        byOperator:
-          type: boolean
-          description: 運営者の判断によるキャンセル（申請の承認でない）
+        kind:
+          $ref: '#/components/schemas/CancellationKind'
         reason:
           type: string
           nullable: true
@@ -2067,6 +2085,10 @@ components:
           type: string
           nullable: true
           description: キャンセルした運営者の氏名（キャンセルの時点の写し。AC-142）。申請の承認なら承認した運営者。記録を始める前のキャンセルは null
+    CancellationKind:
+      type: string
+      enum: [REQUEST_APPROVED, OPERATOR, PAYMENT_EXPIRED]
+      description: 申請の承認、運営者の判断、支払期限切れ（AC-155）
     CancelOrderRequest:
       type: object
       required: [reason]

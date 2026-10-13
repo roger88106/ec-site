@@ -83,7 +83,7 @@ stateDiagram-v2
 | ライブラリ | `stripe-java`。API のバージョンはライブラリのものに固定される |
 | 支払の画面 | Checkout Session（`mode=payment`、`capture_method=manual`、通貨 JPY、金額は総額の 1 行）。支払の画面 ID は Session の ID |
 | 画面の期限 | 作ってから 31 分（Stripe の最短の 30 分に、時計のずれの余裕を足す） |
-| 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、与信だけを取れる方法（カードと、カードで払う Link）が出る |
+| 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、カードだけを有効にする。カードで払うウォレット（Apple Pay、Google Pay、Link）も与信だけを取れるが、MVP の後に見直す |
 | 通知の受け口 | `POST /api/webhooks/stripe`。認証は付けず、署名（ヘッダー `Stripe-Signature`、鍵 `STRIPE_WEBHOOK_SECRET`）で確かめる。署名が合わない・古い通知は 400 で拒否する |
 | 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../../dev/environment.md)） |
 

@@ -109,5 +109,5 @@ Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき
 
 - 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で見る。止めるときは `docker compose --profile stripe stop stripe-cli`。
 - テストのカード番号は Stripe の文書のもの（成功は `4242 4242 4242 4242`、拒否は `4000 0000 0000 0002`。有効期限は未来の日付、セキュリティコードは任意の 3 桁）。
-- 支払の画面に出る支払の方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードと、カードで払うウォレット（Apple Pay、Google Pay、Link）だけを有効にする。カード以外の方法は与信だけを取れない。
+- 支払の画面に出る支払の方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードだけを有効にする。カード以外の方法（コンビニ、銀行振込など）は与信だけを取れない。カードで払うウォレット（Apple Pay、Google Pay、Link）は MVP の後に見直す。
 - 期限切れを早く確かめるときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を足す。Stripe の支払の画面は作ってから 31 分で切れるが、支払の期限で期限切れのジョブが閉じる。

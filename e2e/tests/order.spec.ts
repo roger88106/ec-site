@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
-import { emptyCart, fillShipping } from '../src/store'
+import { emptyCart, fillShipping, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
 
 test('AC-72、77、82、85、86、87、93、95、101、107 店舗画面でカートに入れて注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
@@ -35,7 +35,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107 店舗画面でカー
     await expect(page.getByText('10% 対象 3,200 円（内消費税 290 円）')).toBeVisible()
   })
 
-  await test.step('注文手続き：郵便番号の形の誤りは欄の下に出て入力が残り、直すと注文できる', async () => {
+  await test.step('注文手続き：郵便番号の形の誤りは欄の下に出て入力が残り、直すと注文でき、支払うと受付になる', async () => {
     await page.getByRole('button', { name: '注文手続きへ進む' }).click()
     await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
     await expect(page.getByText(/在庫を確保しています。残り/)).toBeVisible()
@@ -48,9 +48,8 @@ test('AC-72、77、82、85、86、87、93、95、101、107 店舗画面でカー
 
     await page.getByLabel('郵便番号').fill('100-0001')
     await page.getByRole('button', { name: /^注文する/ }).click()
-    await expect(page.getByRole('heading', { name: 'ご注文の内容' })).toBeVisible()
-    await expect(page.getByText('受付', { exact: true })).toBeVisible()
-    orderUrl = page.url()
+    await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+    orderUrl = await payOnMockPage(page)
   })
 
   await test.step('注文の画面：キャンセルを申請すると「キャンセル申請中」になる', async () => {

@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
-import { emptyCart, fillShipping } from '../src/store'
+import { emptyCart, fillShipping, payOnMockPage } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 test('AC-136、141 閲覧者は注文を見られるが、キャンセルの申請を承認すると「権限がない」と示される', async ({
@@ -28,9 +28,8 @@ test('AC-136、141 閲覧者は注文を見られるが、キャンセルの申�
     await store.getByRole('button', { name: '注文手続きへ進む' }).click()
     await fillShipping(store, '100-0001')
     await store.getByRole('button', { name: /^注文する/ }).click()
-    // 注文手続きの画面にも「ご注文の内容」の見出しがあるので、注文の画面へ移ったことを URL で確かめる
-    await expect(store).toHaveURL(/\/orders\//)
-    orderId = new URL(store.url()).pathname.split('/').at(-1) ?? ''
+    await expect(store.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+    orderId = new URL(await payOnMockPage(store)).pathname.split('/').at(-1) ?? ''
     store.once('dialog', (dialog) => dialog.accept())
     await store.getByRole('button', { name: 'キャンセルを申請する' }).click()
     await expect(store.getByText('キャンセル申請中', { exact: true })).toBeVisible()

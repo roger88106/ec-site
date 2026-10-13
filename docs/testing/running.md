@@ -54,5 +54,6 @@ pnpm test
 - 手元の開発のバックエンド（:8080）と並べて動かせる。
 - 起動済みの管理画面・店舗画面を直したときは、止めてからやり直す（ビルドし直すため）。
 - 店舗画面の API のキャッシュは、E2E では 1 秒（`STORE_API_REVALIDATE_SECONDS`）。
+- 決済は mock で、外部の決済サービスに接続しない。支払の期限は、期限切れを待つテストのため 30 秒（`application-e2e.yml`）。
 - compose の設定を変えたコミットを取り込んだら、`docker compose up -d` で反映し、`docker compose run --rm seaweedfs-init` でバケットを作る（`docker/seaweedfs/s3.json` を変えたときは `docker compose restart seaweedfs` も必要）。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を見る。

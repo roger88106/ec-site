@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { latestIdpLink, memberEmail, submitIdpLogin } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
-import { fillShipping } from '../src/store'
+import { fillShipping, payOnMockPage } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 /** 商品の詳細から、ログインせずにカートに入れる */
@@ -56,8 +56,8 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
     await expect(page.getByText(account.email)).toBeVisible()
     await fillShipping(page, '100-0001')
     await page.getByRole('button', { name: /^注文する/ }).click()
-    // 注文手続きの画面にも「ご注文の内容」の見出しがあるので、注文の画面へ移ったことを URL で確かめる
-    await expect(page).toHaveURL(/\/orders\//)
+    await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+    await payOnMockPage(page)
     const orderNumber = (await page.locator('dd').first().textContent()) ?? ''
 
     await page.getByRole('link', { name: 'ご注文履歴' }).first().click()

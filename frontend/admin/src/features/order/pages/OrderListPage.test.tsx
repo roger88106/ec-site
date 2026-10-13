@@ -67,6 +67,42 @@ describe('注文一覧', () => {
     expect(queries.at(-1)?.get('status')).toBe('CANCELLATION_REQUESTED')
   })
 
+  it('AC-160 支払の状態の列を出す（決済を入れる前の注文は空）', async () => {
+    serveOrders([
+      orderSummary({ paymentStatus: 'AUTHORIZED' }),
+      orderSummary({
+        id: '00000000-0000-0000-0000-000000000502',
+        orderNumber: '20261009-654321',
+        status: 'PENDING_PAYMENT',
+        paymentStatus: 'UNPAID',
+      }),
+      orderSummary({ id: '00000000-0000-0000-0000-000000000503', orderNumber: '20261001-000001' }),
+    ])
+    renderApp('/orders')
+
+    expect(await screen.findByRole('columnheader', { name: '支払' })).toBeInTheDocument()
+    const authorized = (await screen.findByRole('link', { name: '20261010-123456' })).closest('tr') as HTMLElement
+    expect(within(authorized).getByText('与信済み')).toBeInTheDocument()
+    const pending = screen.getByRole('link', { name: '20261009-654321' }).closest('tr') as HTMLElement
+    expect(within(pending).getByText('支払待ち')).toBeInTheDocument()
+    expect(within(pending).getByText('未払い')).toBeInTheDocument()
+    const old = screen.getByRole('link', { name: '20261001-000001' }).closest('tr') as HTMLElement
+    expect(within(old).getAllByRole('cell').at(-1)?.textContent).toBe('')
+  })
+
+  it('AC-161 状態「支払待ち」で絞り込むと、URL に残し、その状態で取得し直す', async () => {
+    const queries = serveOrders()
+    const { user, router } = renderApp('/orders')
+    await screen.findByRole('link', { name: '20261010-123456' })
+
+    await user.click(screen.getByLabelText('状態'))
+    await user.click(await screen.findByRole('option', { name: '支払待ち' }))
+    await user.click(screen.getByRole('button', { name: '絞り込む' }))
+
+    expect(router.state.location.search).toBe('?status=PENDING_PAYMENT')
+    await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('PENDING_PAYMENT'))
+  })
+
   it('該当する注文がなければ、そう示す', async () => {
     serveOrders([])
     renderApp('/orders')

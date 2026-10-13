@@ -4,12 +4,13 @@ import com.ecsite.module.cart.application.CartService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * 注文に公開するカートの API（docs/backend/modules/cart.md「他のモジュールへの公開」）。<br />
- * カートを空にする操作は、呼び出し元（注文の成立）のトランザクションに参加する。
+ * 品目を除く操作は、呼び出し元（注文の与信の成功）のトランザクションに参加する。
  */
 @Component
 @RequiredArgsConstructor
@@ -31,11 +32,13 @@ public class CartContentsApi {
     }
 
     /**
-     * カートを空にする（注文の成立）。カート変更のイベントを発行する。
+     * 注文した品目（バリアント）を、数量によらず行ごとカートから除く（注文の与信の成功）。<br />
+     * 変わったらカート変更のイベントを発行する。カートがなければ何もしない。
      *
-     * @param cartId カート ID
+     * @param cartId     カート ID
+     * @param variantIds 除くバリアントの ID
      */
-    public void clear(UUID cartId) {
-        cartService.clear(cartId);
+    public void removeItems(UUID cartId, Collection<UUID> variantIds) {
+        cartService.removeItems(cartId, variantIds);
     }
 }

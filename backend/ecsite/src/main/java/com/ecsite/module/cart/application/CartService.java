@@ -19,6 +19,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -136,18 +137,21 @@ public class CartService {
     }
 
     /**
-     * カートを空にする（注文の成立）。
+     * 注文した品目（バリアント）を、数量によらず行ごとカートから除く（注文の与信の成功）。<br />
+     * 注文の後に足した品目は残る。カートがなければ何もしない。
      *
-     * @param cartId カート ID
+     * @param cartId     カート ID
+     * @param variantIds 除くバリアントの ID
      */
     @Transactional
-    public void clear(UUID cartId) {
-        // 注文の成立で呼ばれる。持ち主の確認は、注文手続きを始めるときに注文モジュールが済ませている
+    public void removeItems(UUID cartId, Collection<UUID> variantIds) {
+        // 注文の与信の成功で呼ばれる。持ち主の確認は、注文手続きを始めるときに注文モジュールが済ませている
         var now = clock.instant();
-        var cart = load(cartId);
-        var version = cart.version();
-        cart.clear(now);
-        saveIfChanged(cart, version, now);
+        cartRepository.findById(cartId).ifPresent(cart -> {
+            var version = cart.version();
+            variantIds.forEach(variantId -> cart.remove(variantId, now));
+            saveIfChanged(cart, version, now);
+        });
     }
 
     /**

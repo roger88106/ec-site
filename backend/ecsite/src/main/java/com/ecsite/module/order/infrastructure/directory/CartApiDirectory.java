@@ -5,6 +5,7 @@ import com.ecsite.module.order.application.port.CartDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -30,10 +31,10 @@ class CartApiDirectory implements CartDirectory {
     }
 
     /**
-     * カートを空にする。
+     * 注文した品目をカートから除く。
      */
     @Override
-    public void clear(UUID cartId) {
-        cartContentsApi.clear(cartId);
+    public void removeItems(UUID cartId, Collection<UUID> variantIds) {
+        cartContentsApi.removeItems(cartId, variantIds);
     }
 }

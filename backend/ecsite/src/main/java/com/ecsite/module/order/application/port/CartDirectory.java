@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.port;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -18,11 +19,12 @@ public interface CartDirectory {
     Optional<CartSnapshot> find(UUID cartId);
 
     /**
-     * カートを空にする（注文の成立）。
+     * 注文した品目（バリアント）を、数量によらず行ごとカートから除く（与信の成功）。カートがなければ何もしない。
      *
-     * @param cartId カート ID
+     * @param cartId     カート ID
+     * @param variantIds 除くバリアントの ID
      */
-    void clear(UUID cartId);
+    void removeItems(UUID cartId, Collection<UUID> variantIds);
 
     /**
      * カートの中身

@@ -2,7 +2,7 @@
 
 import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
-import { redirect, unstable_rethrow } from 'next/navigation'
+import { redirect } from 'next/navigation'
 import { withActionResult } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
 import { redirectToLogin } from '@/auth'
@@ -62,13 +62,11 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
  * 注文の支払の画面の URL を求める。得られなければ（決済サービスが応えないなど）null。
  */
 async function paymentPageUrl(orderId: string): Promise<string | null> {
-  try {
+  const url = await withActionResult(async () => {
     const api = await getMemberApi()
     const { data } = await api.POST('/orders/{orderId}/payment-page', { params: { path: { orderId } } })
     return data?.url ?? null
-  } catch (error) {
-    // ログイン画面への移動などは通す（フロントの書き方 第 3.1 節）
-    unstable_rethrow(error)
-    return null
-  }
+  })
+  // 接続の失敗も、URL を得られなかったときと同じに扱う
+  return typeof url === 'string' ? url : null
 }

@@ -11,7 +11,7 @@
 | 2.1 | 生成した型で API を呼ぶ | 自動（型チェック） |
 | 2.2 | エラーの文は API の `message` を出す | 人手 |
 | 2.3 | 入力の制約は契約から書き出した定数 | 自動（`input-constraints.mjs`） |
-| 3.1 | `catch` では `unstable_rethrow` を先に | 人手 |
+| 3.1 | サーバーアクションは `withActionResult` で包む | 自動（Biome の plugin `no-catch-in-actions`） |
 | 3.2 | サーバーアクションの結果は `ActionResult` | 人手 |
 | 4 | 整形と lint は Biome | 自動（`pnpm lint`） |
 | 5.1 | 共有パッケージに入れるもの・入れないもの | 人手（admin と store に同じファイルがないか） |
@@ -62,9 +62,9 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 
 ## 3. 店舗画面のサーバーアクション
 
-### 3.1 `catch` では `unstable_rethrow` を先に
+### 3.1 サーバーアクションは `withActionResult` で包む
 
-サーバーアクションで例外を `catch` するときは、最初に `unstable_rethrow(error)` を呼ぶ。`redirect` は try の外で呼ぶ。
+サーバーアクション（`src/actions/`）では `catch` を書かず、例外は `withActionResult` で結果にする。`withActionResult` は、最初に `unstable_rethrow(error)` を呼んで Next.js の移動を通す。`redirect` は包みの外で呼ぶ。
 
 理由：Next.js の `redirect`・`notFound` は例外で移動を知らせるので、飲み込むとログイン画面への移動などが通信の失敗に見えてしまうため。
 

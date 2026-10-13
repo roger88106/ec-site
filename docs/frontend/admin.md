@@ -52,7 +52,7 @@ frontend/admin/src/
 
 ## 3. 画面の URL
 
-URL は 1 か所で作り、画面のコードに文字列で書かない（[フロントの書き方](../style/frontend.md) 第 6 節）。
+URL は `src/app/paths.ts` の 1 か所で作り、画面のコードに文字列で書かない（[フロントの書き方](../style/frontend.md) 第 6 節）。ルーターは `routePatterns`、`<Link to>`・`navigate()`・メニューは `paths` の関数を使う。
 
 | URL | 画面 | 機能 |
 |-----|------|------|

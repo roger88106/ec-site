@@ -6,6 +6,7 @@ import type { ApiPathPrefix } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { useMutationGroup } from '@/api/useMutationGroup'
+import { paths } from '@/app/paths'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DateTime } from '@/components/DateTime'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -33,7 +34,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
     invalidate,
     // 先に一覧へ移り、削除した商品の詳細を取得し直さない（404 になるため。管理画面の構成 第 4 節）
     onSuccess: () => {
-      navigate('/products')
+      navigate(paths.products())
       queryClient.removeQueries({ queryKey: ['get', '/products/{productId}'] })
     },
   })

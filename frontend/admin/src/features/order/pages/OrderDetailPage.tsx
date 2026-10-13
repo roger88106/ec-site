@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Link, useParams } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 import { DateTime } from '@/components/DateTime'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
@@ -25,7 +26,7 @@ export function OrderDetailPage() {
           </span>
         }
       >
-        <Button nativeButton={false} render={<Link to="/orders" />} variant="outline">
+        <Button nativeButton={false} render={<Link to={paths.orders()} />} variant="outline">
           一覧へ戻る
         </Button>
       </PageHeader>

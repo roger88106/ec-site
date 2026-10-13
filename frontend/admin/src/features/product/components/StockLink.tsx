@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Link } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 
 /**
  * バリアントの在庫数と、在庫の画面へのリンク（T710）。<br />
@@ -13,7 +14,7 @@ export function StockLink({ productId, variantId }: { productId: string; variant
     <Button
       className="tabular-nums"
       nativeButton={false}
-      render={<Link to={`/products/${productId}/variants/${variantId}/stock`} />}
+      render={<Link to={paths.stock(productId, variantId)} />}
       size="xs"
       variant="link"
     >

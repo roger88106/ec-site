@@ -11,7 +11,7 @@
 
 ## 画面の URL（DC-51）
 
-- [ ] **T6403** 管理画面の `src/app/paths.ts` を作り、`router.tsx`・`menu.ts`・`<Link to>`・`navigate()` を置き換える。
+- [x] **T6403** 管理画面の `src/app/paths.ts` を作り、`router.tsx`・`menu.ts`・`<Link to>`・`navigate()` を置き換える。
 - [ ] **T6404** 店舗画面の `typedRoutes` を試し、使えれば有効にする。使えなければ `src/lib/paths.ts` を作って置き換える。どちらにしたかを `docs/style/frontend.md` に書く。
 
 ## 入力の制約（DC-52）

@@ -1,6 +1,7 @@
 import { keepPreviousData } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 import { DateTime } from '@/components/DateTime'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -60,9 +61,9 @@ export function OrderListPage() {
                 </TableHeader>
                 <TableBody>
                   {result.items.map((item) => (
-                    <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(`/orders/${item.id}`)}>
+                    <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(paths.order(item.id))}>
                       <TableCell className="font-mono">
-                        <Link onClick={(event) => event.stopPropagation()} to={`/orders/${item.id}`}>
+                        <Link onClick={(event) => event.stopPropagation()} to={paths.order(item.id)}>
                           {item.orderNumber}
                         </Link>
                       </TableCell>

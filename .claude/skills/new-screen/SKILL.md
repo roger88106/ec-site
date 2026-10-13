@@ -126,7 +126,8 @@ export function FooForm({ fooId }: { fooId: string }) {
 |----------|------|
 | `src/features/<機能>/pages/FooPage.tsx` | 画面。取得と部品の組み立てだけ |
 | `src/features/<機能>/components/` | フォーム、表、操作のボタン |
-| `src/app/router.tsx` | ルートを足す。機能の入口なら `src/app/menu.ts` にも |
+| `src/app/paths.ts` | 画面の URL の形（`routePatterns`）と、URL を作る関数（`paths`）を足す |
+| `src/app/router.tsx` | ルートを足す（path は `routePatterns`）。機能の入口なら `src/app/menu.ts` にも |
 | `src/api/client.ts` | `$api`（openapi-react-query） |
 | `src/api/useApiMutation.ts` | 更新の操作（成功の知らせ、続きの処理、一覧の取り直し） |
 | `src/api/useMutationGroup.ts` | 1 つの場所の複数の更新の操作の、待ち状態・最初のエラー・エラーの消去 |

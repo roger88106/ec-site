@@ -5,6 +5,7 @@ import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-for
 import { Link, useNavigate } from 'react-router'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { useApiMutation } from '@/api/useApiMutation'
+import { paths } from '@/app/paths'
 import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
@@ -41,7 +42,7 @@ export function ProductCreatePage() {
   const mutation = useApiMutation('post', '/products', {
     success: '商品を登録しました',
     invalidate: ['/products'],
-    onSuccess: (created) => navigate(`/products/${created.id}`),
+    onSuccess: (created) => navigate(paths.product(created.id)),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
   const values = form.watch()
@@ -51,7 +52,7 @@ export function ProductCreatePage() {
   return (
     <>
       <PageHeader title="商品の登録">
-        <Button nativeButton={false} render={<Link to="/products" />} variant="outline">
+        <Button nativeButton={false} render={<Link to={paths.products()} />} variant="outline">
           一覧へ戻る
         </Button>
       </PageHeader>

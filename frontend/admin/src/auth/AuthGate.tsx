@@ -2,6 +2,7 @@ import { fullName } from '@ec-site/shared/lib/login'
 import { Button } from '@ec-site/shared/ui/button'
 import { type ReactNode, useEffect, useLayoutEffect, useMemo, useRef } from 'react'
 import { hasAuthParams, useAuth } from 'react-oidc-context'
+import { paths } from '@/app/paths'
 import { type Operator, OperatorProvider } from '@/auth/operator'
 import { setTokenSource } from '@/auth/token'
 
@@ -54,7 +55,7 @@ export function AuthGate({ children }: { children: ReactNode }) {
     return (
       <div className="mx-auto max-w-md space-y-4 p-8 text-sm">
         <p>ログインできませんでした。（{error.message}）</p>
-        <Button onClick={() => void signinRedirect({ state: { returnTo: '/' } })}>ログインし直す</Button>
+        <Button onClick={() => void signinRedirect({ state: { returnTo: paths.top() } })}>ログインし直す</Button>
       </div>
     )
   }

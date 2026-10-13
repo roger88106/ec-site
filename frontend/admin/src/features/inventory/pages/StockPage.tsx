@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Link, useParams } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { AdjustStockForm } from '@/features/inventory/components/AdjustStockForm'
@@ -24,7 +25,7 @@ export function StockPage() {
           </span>
         }
       >
-        <Button nativeButton={false} render={<Link to={`/products/${productId}`} />} variant="outline">
+        <Button nativeButton={false} render={<Link to={paths.product(productId)} />} variant="outline">
           商品へ戻る
         </Button>
       </PageHeader>

@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { keepPreviousData } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
@@ -51,7 +52,7 @@ export function ProductListPage() {
   return (
     <>
       <PageHeader title="商品">
-        <Button nativeButton={false} render={<Link to="/products/new" />}>
+        <Button nativeButton={false} render={<Link to={paths.productNew()} />}>
           商品を登録
         </Button>
       </PageHeader>
@@ -73,9 +74,9 @@ export function ProductListPage() {
                 </TableHeader>
                 <TableBody>
                   {result.items.map((item) => (
-                    <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(`/products/${item.id}`)}>
+                    <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(paths.product(item.id))}>
                       <TableCell className="font-mono">
-                        <Link onClick={(event) => event.stopPropagation()} to={`/products/${item.id}`}>
+                        <Link onClick={(event) => event.stopPropagation()} to={paths.product(item.id)}>
                           {item.productCode}
                         </Link>
                       </TableCell>

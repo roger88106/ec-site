@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Link, useParams } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { BasicInfoCard } from '@/features/product/components/BasicInfoCard'
@@ -26,7 +27,7 @@ export function ProductEditPage() {
               </span>
             }
           >
-            <Button nativeButton={false} render={<Link to="/products" />} variant="outline">
+            <Button nativeButton={false} render={<Link to={paths.products()} />} variant="outline">
               一覧へ戻る
             </Button>
           </PageHeader>

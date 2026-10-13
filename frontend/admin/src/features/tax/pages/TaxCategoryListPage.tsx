@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Link } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -35,7 +36,7 @@ export function TaxCategoryListPage() {
                     <TableCell className="text-right">
                       <Button
                         nativeButton={false}
-                        render={<Link to={`/tax-categories/${item.id}`} />}
+                        render={<Link to={paths.taxCategory(item.id)} />}
                         size="sm"
                         variant="outline"
                       >

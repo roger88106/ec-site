@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Link, useParams } from 'react-router'
 import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { TaxRatesEditor } from '@/features/tax/components/TaxRatesEditor'
@@ -15,7 +16,7 @@ export function TaxRatesPage() {
       {(taxCategory) => (
         <>
           <PageHeader title={`税区分「${taxCategory.name}」の税率`}>
-            <Button nativeButton={false} render={<Link to="/tax-categories" />} variant="outline">
+            <Button nativeButton={false} render={<Link to={paths.taxCategories()} />} variant="outline">
               一覧へ戻る
             </Button>
           </PageHeader>

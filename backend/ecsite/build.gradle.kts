@@ -105,6 +105,10 @@ dependencies {
     // --- モジュラーモノリス（バックエンドのアーキテクチャ 第 1 節） ---
     implementation(libs.bundles.spring.modulith)
 
+    // --- 定期ジョブの分散ロック（ShedLock。ロックは PostgreSQL のテーブルに持つ） ---
+    implementation(libs.shedlock.spring)
+    implementation(libs.shedlock.provider.jdbc.template)
+
     // --- API（OpenAPI の生成コード） ---
     implementation(libs.jackson.databind.nullable)
 

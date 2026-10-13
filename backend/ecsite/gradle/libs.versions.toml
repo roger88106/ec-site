@@ -37,6 +37,9 @@ jackson-databind-nullable = "0.2.12"
 # --- ユーティリティ ---
 jmolecules = "2025.0.2"
 
+# --- 定期ジョブの分散ロック（バックエンドのアーキテクチャ 第 5 節） ---
+shedlock = "7.10.1"
+
 # --- 画像のファイル（オブジェクトストレージ。plan 001 第 7 節） ---
 awssdk = "2.46.7"
 
@@ -70,6 +73,10 @@ spring-modulith-starter-core = { module = "org.springframework.modulith:spring-m
 spring-modulith-events-api = { module = "org.springframework.modulith:spring-modulith-events-api" }
 spring-modulith-events-jdbc = { module = "org.springframework.modulith:spring-modulith-events-jdbc" }
 spring-modulith-events-jackson = { module = "org.springframework.modulith:spring-modulith-events-jackson" }
+
+# --- 定期ジョブの分散ロック ---
+shedlock-spring = { module = "net.javacrumbs.shedlock:shedlock-spring", version.ref = "shedlock" }
+shedlock-provider-jdbc-template = { module = "net.javacrumbs.shedlock:shedlock-provider-jdbc-template", version.ref = "shedlock" }
 
 # --- オブジェクトストレージ（AWS SDK BOM 管理） ---
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }

@@ -1,1 +1,63 @@
-{}
+{
+  "app": {
+    "layout": {
+      "title": "EC Site 管理"
+    },
+    "menu": {
+      "products": "商品",
+      "categories": "カテゴリ",
+      "taxCategories": "税区分",
+      "orders": "注文"
+    },
+    "notFound": {
+      "message": "ページが見つかりません。"
+    }
+  },
+  "components": {
+    "queryState": {
+      "loading": "読み込み中…"
+    },
+    "confirmDialog": {
+      "cancel": "やめる"
+    },
+    "errorMessage": {
+      "reload": "再読み込み"
+    },
+    "optionSelect": {
+      "placeholder": "選択してください"
+    },
+    "categorySelect": {
+      "all": "すべて"
+    }
+  },
+  "api": {
+    "errors": {
+      "forbidden": "この操作を行う権限がありません。",
+      "concurrentModification": "他の人が先に更新しました。再読み込みしてください"
+    }
+  },
+  "labels": {
+    "publicationStatus": {
+      "UNPUBLISHED": "非公開",
+      "PUBLISHED": "公開",
+      "DISCONTINUED": "販売終了"
+    },
+    "stockAdjustmentReason": {
+      "ARRIVAL": "入荷",
+      "STOCKTAKE": "棚卸差異",
+      "DAMAGE_OR_LOSS": "破損・紛失",
+      "OTHER": "その他",
+      "ORDER": "注文",
+      "ORDER_CANCELLATION": "注文のキャンセル"
+    }
+  },
+  "format": {
+    "price": {
+      "exclTaxOnly": "税抜 {exclTax} 円（税込価格は計算できません）"
+    },
+    "rate": {
+      "none": "なし",
+      "value": "{rate}%"
+    }
+  }
+}

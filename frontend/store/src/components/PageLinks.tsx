@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import type { Route } from 'next'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 
 /** ページ送り（constitution 9 のレスポンスの page、totalPages、totalItems を受ける）。リンクで移る */
 export function PageLinks({
@@ -14,31 +15,31 @@ export function PageLinks({
   totalItems: number
   hrefFor: (page: number) => Route
 }) {
+  const t = useTranslations('common.pagination')
+  const tPage = useTranslations('components.pageLinks')
   if (totalPages <= 1) {
-    return <p className="text-muted-foreground text-sm">全 {totalItems} 件</p>
+    return <p className="text-muted-foreground text-sm">{t('total', { totalItems }) /* 件数 */}</p>
   }
   return (
-    <nav aria-label="ページ" className="flex items-center justify-between gap-4 text-sm">
-      <span className="text-muted-foreground">
-        全 {totalItems} 件　{page} / {totalPages} ページ
-      </span>
+    <nav aria-label={tPage('label') /* ページ */} className="flex items-center justify-between gap-4 text-sm">
+      <span className="text-muted-foreground">{t('summary', { totalItems, page, totalPages }) /* 件数とページ */}</span>
       <div className="flex gap-2">
         {page > 1 ? (
           <Button nativeButton={false} render={<Link href={hrefFor(page - 1)} />} size="sm" variant="outline">
-            前へ
+            {t('previous') /* 前へ */}
           </Button>
         ) : (
           <Button disabled size="sm" variant="outline">
-            前へ
+            {t('previous') /* 前へ */}
           </Button>
         )}
         {page < totalPages ? (
           <Button nativeButton={false} render={<Link href={hrefFor(page + 1)} />} size="sm" variant="outline">
-            次へ
+            {t('next') /* 次へ */}
           </Button>
         ) : (
           <Button disabled size="sm" variant="outline">
-            次へ
+            {t('next') /* 次へ */}
           </Button>
         )}
       </div>

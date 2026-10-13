@@ -1,14 +1,12 @@
 import { describe, expect, test } from 'vitest'
 import { cancellationRequestResultLabel, formatPostalCode, taxLabel } from '@/features/order/order'
-import { orderStatusLabels } from '@/lib/labels'
+import { orderStatusLabel } from '@/lib/labels'
 
 describe('注文の状態の表示名（BR-9）', () => {
   test('BR-9 受付、キャンセル申請中、キャンセル', () => {
-    expect(orderStatusLabels).toEqual({
-      ACCEPTED: '受付',
-      CANCELLATION_REQUESTED: 'キャンセル申請中',
-      CANCELLED: 'キャンセル',
-    })
+    expect(orderStatusLabel('ACCEPTED')).toBe('受付')
+    expect(orderStatusLabel('CANCELLATION_REQUESTED')).toBe('キャンセル申請中')
+    expect(orderStatusLabel('CANCELLED')).toBe('キャンセル')
   })
 
   test('AC-100 キャンセルの申請の結果', () => {

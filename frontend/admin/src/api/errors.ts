@@ -1,13 +1,8 @@
 import type { Problem } from '@/api/types'
+import { translate } from '@/i18n/translate'
 
 /** バージョン不一致（他の人が先に更新した）のエラーコード */
 const CONCURRENT_MODIFICATION = 'CONCURRENT_MODIFICATION'
-
-/** 権限がない（403）のときの案内。本文がエラーレスポンスでないときに使う（AC-141。バックエンドの FORBIDDEN と同じ文） */
-const FORBIDDEN_MESSAGE = 'この操作を行う権限がありません。'
-
-/** バージョン不一致のときの案内（T703） */
-export const CONCURRENT_MODIFICATION_MESSAGE = '他の人が先に更新しました。再読み込みしてください'
 
 /**
  * API がエラーを返した（管理画面の構成 第 4 節）。<br />
@@ -18,7 +13,11 @@ export class ApiError extends Error {
   readonly problem: Problem | undefined
 
   constructor(status: number, problem: Problem | undefined) {
-    super(problem?.message ?? (status === 403 ? FORBIDDEN_MESSAGE : `通信に失敗しました（HTTP ${status}）`))
+    // 本文がエラーレスポンスでないときの文。403 は権限がない案内（AC-141。バックエンドの FORBIDDEN と同じ文）
+    super(
+      problem?.message ??
+        (status === 403 ? translate('api.errors.forbidden') : translate('common.httpFailed', { status })),
+    )
     this.name = 'ApiError'
     this.status = status
     this.problem = problem
@@ -43,10 +42,11 @@ export function toApiError(status: number, body: unknown): ApiError {
 /** 画面に出すメッセージ。エラーレスポンスの message をそのまま出す */
 export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
-    return error.isConcurrentModification ? CONCURRENT_MODIFICATION_MESSAGE : error.message
+    // バージョン不一致は、再読み込みを促す案内にする
+    return error.isConcurrentModification ? translate('api.errors.concurrentModification') : error.message
   }
   // fetch 自体の失敗（バックエンドが止まっているなど）
-  return 'サーバーに接続できませんでした。'
+  return translate('common.connectionFailed')
 }
 
 /** 入力検証エラーの項目ごとのメッセージ */

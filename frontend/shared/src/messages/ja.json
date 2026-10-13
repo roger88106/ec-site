@@ -1,3 +1,21 @@
 {
-  "common": {}
+  "common": {
+    "pagination": {
+      "total": "全 {totalItems} 件",
+      "summary": "全 {totalItems} 件　{page} / {totalPages} ページ",
+      "previous": "前へ",
+      "next": "次へ"
+    },
+    "logout": "ログアウト",
+    "connectionFailed": "サーバーに接続できませんでした。",
+    "httpFailed": "通信に失敗しました（HTTP {status}）",
+    "yen": "{amount} 円",
+    "priceWithExclTax": "{inclTax} 円（税抜 {exclTax} 円）",
+    "taxAmount": "{ratePercent}% 対象 {taxableAmount}（内消費税 {taxAmount}）",
+    "orderStatus": {
+      "ACCEPTED": "受付",
+      "CANCELLATION_REQUESTED": "キャンセル申請中",
+      "CANCELLED": "キャンセル"
+    }
+  }
 }

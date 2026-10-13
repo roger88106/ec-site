@@ -1,25 +1,17 @@
 import type { OrderStatus, PublicationStatus, StockAdjustmentReason } from '@/api/types'
+import { translate } from '@/i18n/translate'
 
 /** 商品の状態の表示名（AC-32） */
-export const publicationStatusLabels: Record<PublicationStatus, string> = {
-  UNPUBLISHED: '非公開',
-  PUBLISHED: '公開',
-  DISCONTINUED: '販売終了',
+export function publicationStatusLabel(status: PublicationStatus): string {
+  return translate(`labels.publicationStatus.${status}`)
 }
 
 /** 在庫の調整の理由の表示名（AC-46、107） */
-export const stockAdjustmentReasonLabels: Record<StockAdjustmentReason, string> = {
-  ARRIVAL: '入荷',
-  STOCKTAKE: '棚卸差異',
-  DAMAGE_OR_LOSS: '破損・紛失',
-  OTHER: 'その他',
-  ORDER: '注文',
-  ORDER_CANCELLATION: '注文のキャンセル',
+export function stockAdjustmentReasonLabel(reason: StockAdjustmentReason): string {
+  return translate(`labels.stockAdjustmentReason.${reason}`)
 }
 
-/** 注文の状態の表示名（BR-9） */
-export const orderStatusLabels: Record<OrderStatus, string> = {
-  ACCEPTED: '受付',
-  CANCELLATION_REQUESTED: 'キャンセル申請中',
-  CANCELLED: 'キャンセル',
+/** 注文の状態の表示名（BR-9。店舗画面と同じ文言） */
+export function orderStatusLabel(status: OrderStatus): string {
+  return translate(`common.orderStatus.${status}`)
 }

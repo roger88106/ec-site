@@ -1,6 +1,7 @@
 import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
 import { schemas } from '@/api/generated/constraints'
 import type { Order, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
+import { translate } from '@/i18n/translate'
 
 /** 金額の書式（3 桁ごとのカンマ） */
 const yen = new Intl.NumberFormat(LOCALE)
@@ -16,21 +17,6 @@ const dateTime = new Intl.DateTimeFormat(LOCALE, {
   hourCycle: 'h23',
 })
 
-/** 購入できない理由の文言（AC-80）。数量は出さない（AC-64） */
-const UNPURCHASABLE_REASON_LABELS: Record<NonNullable<UnpurchasableReason>, string> = {
-  NOT_SHOWN: 'お取り扱いを終了しました',
-  SALES_SUSPENDED: '販売を停止しています',
-  OUT_OF_STOCK: '在庫切れです',
-  INSUFFICIENT_STOCK: '在庫が足りません。数量を減らしてください',
-}
-
-/** 注文の状態の表示名（BR-9） */
-const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
-  ACCEPTED: '受付',
-  CANCELLATION_REQUESTED: 'キャンセル申請中',
-  CANCELLED: 'キャンセル',
-}
-
 /** 1 品目の数量の選択肢（AC-75。契約の数量の下限から上限まで） */
 export const QUANTITY_OPTIONS = Array.from(
   { length: schemas.Quantity.maximum - schemas.Quantity.minimum + 1 },
@@ -44,27 +30,33 @@ export type CancellationState = 'REQUESTABLE' | 'PENDING' | 'REJECTED' | 'CANCEL
 
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {
-  return `${yen.format(amount)} 円`
+  return translate('common.yen', { amount: yen.format(amount) })
 }
 
 /** 1 つの税率の消費税額（BR-8。例：「10% 対象 11,000 円（内消費税 1,000 円）」） */
 export function taxLabel(tax: TaxAmount): string {
-  return `${tax.ratePercent}% 対象 ${formatYen(tax.taxableAmount)}（内消費税 ${formatYen(tax.taxAmount)}）`
+  return translate('common.taxAmount', {
+    ratePercent: tax.ratePercent,
+    taxableAmount: formatYen(tax.taxableAmount),
+    taxAmount: formatYen(tax.taxAmount),
+  })
 }
 
 /** 軸の名前と値（例：「色：黒　サイズ：M」） */
 export function axisValuesLabel(axisValues: { name: string; value: string }[]): string {
-  return axisValues.map((axis) => `${axis.name}：${axis.value}`).join('　')
+  return axisValues
+    .map((axis) => translate('orderDisplay.axisValues.item', axis))
+    .join(translate('orderDisplay.axisValues.separator'))
 }
 
-/** 購入できない理由の文言（AC-80） */
+/** 購入できない理由の文言（AC-80）。数量は出さない（AC-64） */
 export function unpurchasableReasonLabel(reason: NonNullable<UnpurchasableReason>): string {
-  return UNPURCHASABLE_REASON_LABELS[reason]
+  return translate(`orderDisplay.unpurchasableReason.${reason}`)
 }
 
 /** 注文の状態の表示名（BR-9） */
 export function orderStatusLabel(status: OrderStatus): string {
-  return ORDER_STATUS_LABELS[status]
+  return translate(`common.orderStatus.${status}`)
 }
 
 /**

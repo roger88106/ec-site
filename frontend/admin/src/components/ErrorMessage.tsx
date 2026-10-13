@@ -1,5 +1,6 @@
 import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
 import { Button } from '@ec-site/shared/ui/button'
+import { useTranslations } from 'use-intl'
 import { ApiError, errorMessage, fieldErrors } from '@/api/errors'
 
 /**
@@ -18,6 +19,7 @@ export function ErrorMessage({
   /** 入力欄の下にすでに出している項目 */
   shownFields?: readonly string[]
 }) {
+  const t = useTranslations('components.errorMessage')
   if (!error) {
     return null
   }
@@ -36,7 +38,7 @@ export function ErrorMessage({
         )}
         {concurrent && onReload && (
           <Button className="mt-2" onClick={onReload} size="sm" variant="outline">
-            再読み込み
+            {t('reload') /* 再読み込み */}
           </Button>
         )}
       </AlertDescription>

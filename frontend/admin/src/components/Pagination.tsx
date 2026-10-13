@@ -1,4 +1,5 @@
 import { Button } from '@ec-site/shared/ui/button'
+import { useTranslations } from 'use-intl'
 
 /** ページング（constitution 9 のレスポンスの page、totalPages、totalItems を受ける） */
 export function Pagination({
@@ -12,17 +13,18 @@ export function Pagination({
   totalItems: number
   onChange: (page: number) => void
 }) {
+  const t = useTranslations('common.pagination')
   return (
     <div className="flex items-center justify-between gap-4 text-sm">
       <span className="text-muted-foreground">
-        全 {totalItems} 件　{totalPages === 0 ? 0 : page} / {totalPages} ページ
+        {t('summary', { totalItems, page: totalPages === 0 ? 0 : page, totalPages }) /* 件数とページ */}
       </span>
       <div className="flex gap-2">
         <Button variant="outline" size="sm" disabled={page <= 1} onClick={() => onChange(page - 1)}>
-          前へ
+          {t('previous') /* 前へ */}
         </Button>
         <Button variant="outline" size="sm" disabled={page >= totalPages} onClick={() => onChange(page + 1)}>
-          次へ
+          {t('next') /* 次へ */}
         </Button>
       </div>
     </div>

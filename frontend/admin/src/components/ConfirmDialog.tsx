@@ -1,4 +1,5 @@
 import { type ReactElement, useState } from 'react'
+import { useTranslations } from 'use-intl'
 import {
   AlertDialog,
   AlertDialogAction,
@@ -29,6 +30,7 @@ export function ConfirmDialog({
   onConfirm: () => void
 }) {
   const [open, setOpen] = useState(false)
+  const t = useTranslations('components.confirmDialog')
   return (
     <AlertDialog onOpenChange={setOpen} open={open}>
       <AlertDialogTrigger render={trigger} />
@@ -38,7 +40,7 @@ export function ConfirmDialog({
           <AlertDialogDescription>{description}</AlertDialogDescription>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel>やめる</AlertDialogCancel>
+          <AlertDialogCancel>{t('cancel') /* やめる */}</AlertDialogCancel>
           <AlertDialogAction
             onClick={() => {
               setOpen(false)

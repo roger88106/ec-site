@@ -7,12 +7,12 @@ import type { OrderStatus } from '@/api/types'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
-import { orderStatusLabels } from '@/lib/labels'
+import { orderStatusLabel } from '@/lib/labels'
 
 /** 状態の選択肢（「すべて」は絞り込まない） */
 const statusOptions = [
   { value: null, label: 'すべて' },
-  ...orderStatusValues.map((status) => ({ value: status, label: orderStatusLabels[status] })),
+  ...orderStatusValues.map((status) => ({ value: status, label: orderStatusLabel(status) })),
 ]
 
 /** 絞り込みの入力（AC-98）。「絞り込む」で URL に反映し、1 ページ目に戻す */

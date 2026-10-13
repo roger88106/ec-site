@@ -7,7 +7,7 @@ import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { formatDelta } from '@/lib/delta'
-import { stockAdjustmentReasonLabels } from '@/lib/labels'
+import { stockAdjustmentReasonLabel } from '@/lib/labels'
 
 /** 調整の履歴（新しい順。AC-45） */
 export function StockHistory({ variantId }: { variantId: string }) {
@@ -45,7 +45,7 @@ export function StockHistory({ variantId }: { variantId: string }) {
                         <DateTime value={item.adjustedAt} />
                       </TableCell>
                       <TableCell className="text-right tabular-nums">{formatDelta(item.delta)}</TableCell>
-                      <TableCell>{stockAdjustmentReasonLabels[item.reason]}</TableCell>
+                      <TableCell>{stockAdjustmentReasonLabel(item.reason)}</TableCell>
                       <TableCell className="text-right tabular-nums">{item.quantityAfter}</TableCell>
                       {/* 注文に由来する調整は、メモの代わりに注文番号を出す（AC-107） */}
                       <TableCell className="whitespace-pre-wrap">

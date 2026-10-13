@@ -12,7 +12,7 @@ import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import { formatDelta } from '@/lib/delta'
-import { stockAdjustmentReasonLabels } from '@/lib/labels'
+import { stockAdjustmentReasonLabel } from '@/lib/labels'
 
 /** 入力欄の値（増減量は入力中の文字列のまま持ち、送るときに数にする） */
 type Values = { delta: string; reason: ManualStockAdjustmentReason | null; memo: string }
@@ -26,7 +26,7 @@ const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
 /** 理由の選択肢（admin.yaml の値と、画面の表示名）。注文に由来する理由は選べない（AC-107） */
 const reasonOptions = manualStockAdjustmentReasonValues.map((reason) => ({
   value: reason,
-  label: stockAdjustmentReasonLabels[reason],
+  label: stockAdjustmentReasonLabel(reason),
 }))
 
 /**

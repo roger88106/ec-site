@@ -9,12 +9,12 @@ import { CodeInput } from '@/components/CodeInput'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { EMPTY_FILTER, type ProductFilter } from '@/features/product/productFilter'
-import { publicationStatusLabels } from '@/lib/labels'
+import { publicationStatusLabel } from '@/lib/labels'
 
 /** 状態の選択肢（「すべて」は絞り込まない） */
 const statusOptions = [
   { value: null, label: 'すべて' },
-  ...publicationStatusValues.map((status) => ({ value: status, label: publicationStatusLabels[status] })),
+  ...publicationStatusValues.map((status) => ({ value: status, label: publicationStatusLabel(status) })),
 ]
 
 /** 絞り込みの入力（AC-48）。「絞り込む」で URL に反映し、1 ページ目に戻す */

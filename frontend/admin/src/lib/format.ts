@@ -1,4 +1,5 @@
 import { LOCALE } from '@ec-site/shared/lib/locale'
+import { translate } from '@/i18n/translate'
 
 /** 日本時間の UTC からのずれ（日本に夏時間はない） */
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000
@@ -8,7 +9,7 @@ const yen = new Intl.NumberFormat(LOCALE)
 
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {
-  return `${yen.format(amount)} 円`
+  return translate('common.yen', { amount: yen.format(amount) })
 }
 
 /**
@@ -17,9 +18,9 @@ export function formatYen(amount: number): string {
  */
 export function formatPrice(priceInclTax: number | null | undefined, priceExclTax: number): string {
   if (priceInclTax == null) {
-    return `税抜 ${formatYen(priceExclTax)}（税込価格は計算できません）`
+    return translate('format.price.exclTaxOnly', { exclTax: yen.format(priceExclTax) })
   }
-  return `${formatYen(priceInclTax)}（税抜 ${formatYen(priceExclTax)}）`
+  return translate('common.priceWithExclTax', { inclTax: yen.format(priceInclTax), exclTax: yen.format(priceExclTax) })
 }
 
 /** 日時の表示（BR-3）。日本時間の「yyyy/MM/dd HH:mm」。空白（null）は空文字 */

@@ -175,6 +175,19 @@ class OrderPaymentApiTest {
         }
 
         @Test
+        @DisplayName("AC-147 品目が複数の注文でも、与信が成功すると受付になり、注文した品目がすべてカートから除かれる")
+        void removesAllOrderedItems() throws Exception {
+            var other = stockedVariant("一緒に注文する商品");
+            addToCart(other);
+            var orderId = pending(1);
+
+            gateway.pay(orders.openPaymentPage(orderId));
+
+            orders.awaitStatus(orderId, "ACCEPTED");
+            assertThat(cartVariantIds()).isEmpty();
+        }
+
+        @Test
         @DisplayName("AC-151 支払の画面は、持ち主だけが開ける")
         void onlyOwnerOpensPage() throws Exception {
             var orderId = pending(1);

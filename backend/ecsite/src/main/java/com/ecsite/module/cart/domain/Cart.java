@@ -10,6 +10,7 @@ import lombok.experimental.Accessors;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -201,6 +202,19 @@ public class Cart {
         var index = isExpiredAt(now) ? -1 : indexOf(variantId);
         if (index >= 0) {
             items.remove(index);
+            touch(now);
+        }
+    }
+
+    /**
+     * 複数の品目を一度に削除する（注文した品目を除く）。カートにない品目は無視する。<br />
+     * 1 つの変更として記録し、バージョンは 1 だけ上げる（保存の楽観ロックは 1 つ前のバージョンと比べるため）。
+     *
+     * @param variantIds 削除するバリアントの ID
+     * @param now        現在時刻
+     */
+    public void removeAll(@NonNull Collection<UUID> variantIds, @NonNull Instant now) {
+        if (!isExpiredAt(now) && items.removeIf(item -> variantIds.contains(item.variantId()))) {
             touch(now);
         }
     }

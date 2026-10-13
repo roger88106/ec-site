@@ -149,7 +149,7 @@ public class CartService {
         var now = clock.instant();
         cartRepository.findById(cartId).ifPresent(cart -> {
             var version = cart.version();
-            variantIds.forEach(variantId -> cart.remove(variantId, now));
+            cart.removeAll(variantIds, now);
             saveIfChanged(cart, version, now);
         });
     }

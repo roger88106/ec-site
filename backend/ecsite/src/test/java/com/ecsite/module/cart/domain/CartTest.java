@@ -8,6 +8,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
@@ -142,6 +143,25 @@ class CartTest {
         cart.add(BLACK, 1, expired);
 
         assertThat(cart.itemsAt(expired)).extracting(CartItem::variantId).containsExactly(BLACK);
+    }
+
+    @Test
+    @DisplayName("AC-147 複数の品目を一度に除くと、バージョンは 1 だけ上がる（保存の楽観ロックは 1 つ前のバージョンと比べる）。ない品目だけなら上がらない")
+    void removesItemsAtOnce() {
+        var cart = Cart.create(UUID.randomUUID(), NOW);
+        var other = UUID.randomUUID();
+        cart.add(WHITE, 1, NOW);
+        cart.add(BLACK, 2, NOW);
+        cart.add(other, 1, NOW);
+
+        cart.removeAll(List.of(WHITE, BLACK), NOW);
+
+        assertThat(cart.itemsAt(NOW)).extracting(CartItem::variantId).containsExactly(other);
+        assertThat(cart.version()).isEqualTo(4);
+
+        cart.removeAll(List.of(WHITE, UUID.randomUUID()), NOW);
+
+        assertThat(cart.version()).isEqualTo(4);
     }
 
     @Test

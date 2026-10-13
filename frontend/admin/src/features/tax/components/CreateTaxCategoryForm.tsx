@@ -2,10 +2,8 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Input } from '@ec-site/shared/ui/input'
 import { useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
 import { setServerFieldErrors } from '@/api/formErrors'
-import { useInvalidate } from '@/api/invalidate'
+import { useApiMutation } from '@/api/useApiMutation'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 
@@ -14,14 +12,11 @@ type Values = { name: string }
 
 /** 税区分の登録（AC-1） */
 export function CreateTaxCategoryForm() {
-  const invalidate = useInvalidate()
   const form = useForm<Values>({ defaultValues: { name: '' } })
-  const mutation = $api.useMutation('post', '/tax-categories', {
-    onSuccess: async () => {
-      toast.success('税区分を登録しました')
-      form.reset()
-      await invalidate('/tax-categories')
-    },
+  const mutation = useApiMutation('post', '/tax-categories', {
+    success: '税区分を登録しました',
+    invalidate: ['/tax-categories'],
+    onSuccess: () => form.reset(),
     onError: (error) => setServerFieldErrors(error, form.setError, ['name']),
   })
 

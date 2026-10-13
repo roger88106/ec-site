@@ -1,10 +1,8 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useFieldArray } from 'react-hook-form'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
-import { useInvalidate } from '@/api/invalidate'
 import type { TaxCategory } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
 import { DateTimeInput } from '@/components/DateTimeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
@@ -45,15 +43,12 @@ export function TaxRatesEditor({
   taxCategory: TaxCategory
   refetch: () => Promise<unknown>
 }) {
-  const invalidate = useInvalidate()
   const { form, baseVersion, markSaved, reload } = useVersionedForm(taxCategory, toValues, refetch)
   const rates = useFieldArray({ control: form.control, name: 'rates' })
-  const mutation = $api.useMutation('put', '/tax-categories/{taxCategoryId}/rates', {
-    onSuccess: async () => {
-      toast.success('税率を保存しました')
-      markSaved()
-      await invalidate('/tax-categories')
-    },
+  const mutation = useApiMutation('put', '/tax-categories/{taxCategoryId}/rates', {
+    success: '税率を保存しました',
+    invalidate: ['/tax-categories'],
+    onSuccess: markSaved,
   })
   const rows = form.watch('rates')
   const incomplete = rows.length === 0 || rows.some((row) => row.ratePercent.trim() === '')

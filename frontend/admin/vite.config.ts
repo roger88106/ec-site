@@ -1,12 +1,19 @@
 /// <reference types="vitest/config" />
 import path from 'node:path'
+import { LOCALE } from '@ec-site/shared/lib/locale'
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
-import { defineConfig } from 'vite'
+import { defineConfig, type Plugin } from 'vite'
+
+/** index.html のページの言語（%LOCALE%）を、共有のロケールにする */
+const htmlLocale: Plugin = {
+  name: 'html-locale',
+  transformIndexHtml: (html) => html.replace('%LOCALE%', LOCALE),
+}
 
 // https://vite.dev/config/
 export default defineConfig({
-  plugins: [react(), tailwindcss()],
+  plugins: [react(), tailwindcss(), htmlLocale],
   resolve: {
     alias: {
       '@': path.resolve(import.meta.dirname, './src'),

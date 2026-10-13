@@ -22,7 +22,7 @@
 - 利用者の確認：spec 006 の確認 C（「next-intl・use-intl で、共通の文言を shared に置く」で了承）。
 
 - [x] **T6602** 店舗画面に道具を入れる：提供者、`messages/ja.json`、キーの型、ページの言語。
-- [ ] **T6603** 管理画面に道具を入れる：提供者、`messages/ja.json`、キーの型、`index.html` の言語。
+- [x] **T6603** 管理画面に道具を入れる：提供者、`messages/ja.json`、キーの型、`index.html` の言語。
 - [ ] **T6604** 共通の文言を共有する場合は、`frontend/shared/src/messages/ja.json` と、各画面の文言との合わせ方を作る。
 - [ ] **T6605** テストの描画の部品（admin の `renderApp`、store のテストの描画）を、日本語の文言の提供者で包む。既存のテストが通る（DC-58）。
 - [ ] **T6606** ロケールを `frontend/shared/src/locale.ts` の 1 か所にし、`Intl` を直接書いている 5 か所を、道具の整形か共有の関数に置き換える（DC-56）。

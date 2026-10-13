@@ -7,6 +7,7 @@ import { createQueryClient } from '@/app/queryClient'
 import { routes } from '@/app/router'
 import { AuthGate } from '@/auth/AuthGate'
 import { oidcSettings } from '@/auth/oidc'
+import { I18nProvider } from '@/i18n/I18nProvider'
 import { returnPath } from '@/lib/login'
 import './index.css'
 
@@ -23,16 +24,18 @@ function AuthenticatedApp() {
 // biome-ignore lint/style/noNonNullAssertion: index.html に必ずある要素
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
-    <AuthProvider
-      {...oidcSettings}
-      onSigninCallback={(user) => {
-        // IdP から戻った URL の code と state を消し、移る前の画面に戻す（管理画面の構成 第 11 節）
-        window.history.replaceState({}, document.title, returnPath(user?.state))
-      }}
-    >
-      <AuthGate>
-        <AuthenticatedApp />
-      </AuthGate>
-    </AuthProvider>
+    <I18nProvider>
+      <AuthProvider
+        {...oidcSettings}
+        onSigninCallback={(user) => {
+          // IdP から戻った URL の code と state を消し、移る前の画面に戻す（管理画面の構成 第 11 節）
+          window.history.replaceState({}, document.title, returnPath(user?.state))
+        }}
+      >
+        <AuthGate>
+          <AuthenticatedApp />
+        </AuthGate>
+      </AuthProvider>
+    </I18nProvider>
   </StrictMode>,
 )

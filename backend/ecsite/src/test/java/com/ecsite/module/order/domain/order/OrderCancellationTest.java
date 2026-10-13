@@ -109,7 +109,7 @@ class OrderCancellationTest {
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
             assertThat(order.cancellationRequest().decidedAt()).isEqualTo(LATER);
-            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, false, null, OPERATOR));
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.REQUEST_APPROVED, null, OPERATOR));
             assertThat(order.pullEvents()).singleElement().isInstanceOf(OrderCancelled.class);
         }
 
@@ -160,7 +160,7 @@ class OrderCancellationTest {
             assertThat(order.cancelByOperator("在庫の不備", OPERATOR, LATER)).isTrue();
 
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
-            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, true, "在庫の不備", OPERATOR));
+            assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, "在庫の不備", OPERATOR));
             assertThat(order.pullEvents()).singleElement().isInstanceOf(OrderCancelled.class);
         }
 

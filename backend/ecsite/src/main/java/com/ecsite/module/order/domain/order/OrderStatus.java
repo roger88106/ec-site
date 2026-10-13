@@ -6,6 +6,11 @@ package com.ecsite.module.order.domain.order;
 public enum OrderStatus {
 
     /**
+     * 支払待ち。与信の成功で受付に、支払の期限切れでキャンセルになる
+     */
+    PENDING_PAYMENT,
+
+    /**
      * 受付
      */
     ACCEPTED,

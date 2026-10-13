@@ -56,7 +56,7 @@ class AdminOrderMapper {
                 .amounts(toAmounts(order.amounts()))
                 .email(order.email())
                 .shippingAddress(toAddress(order.shippingAddress()))
-                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(), !order.isCancelled()));
+                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(), order.isCancellableByOperator()));
         if (order.cancellationRequest() != null) {
             detail.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }
@@ -150,7 +150,7 @@ class AdminOrderMapper {
     private static Cancellation toCancellation(com.ecsite.module.order.domain.order.Cancellation cancellation) {
         return new Cancellation()
                 .cancelledAt(ApiDateTimes.toOffsetDateTime(cancellation.cancelledAt()))
-                .byOperator(cancellation.byOperator())
+                .kind(com.ecsite.api.admin.model.CancellationKind.valueOf(cancellation.kind().name()))
                 .reason(cancellation.reason())
                 .cancelledBy(cancellation.cancelledBy() == null ? null : cancellation.cancelledBy().name());
     }

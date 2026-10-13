@@ -23,7 +23,8 @@ import java.util.stream.IntStream;
 
 /**
  * 注文の Aggregate Root（docs/backend/modules/order.md「注文」）。<br />
- * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/backend/modules/order.md「状態遷移」）。
+ * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/backend/modules/order.md「状態遷移」）。<br />
+ * 注文は支払待ちで作られ、決済のイベント（与信の成功、支払の期限切れ）で受付かキャンセルになる。
  */
 @Getter
 @Accessors(fluent = true)
@@ -140,7 +141,7 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 見積もりから注文を作る。状態は「受付」。
+     * 見積もりから注文を作る。状態は「支払待ち」。
      *
      * @param id              注文 ID
      * @param orderNumber     注文番号
@@ -164,13 +165,60 @@ public class Order extends AggregateRoot {
         }
         var items = quote.items();
         var lines = IntStream.range(0, items.size()).mapToObj(i -> toLine(i + 1, items.get(i))).toList();
-        var order = new Order(id, orderNumber, checkoutId, memberId, orderedAt, OrderStatus.ACCEPTED, lines, quote.amounts(),
+        var order = new Order(id, orderNumber, checkoutId, memberId, orderedAt, OrderStatus.PENDING_PAYMENT, lines, quote.amounts(),
                 email, shippingAddress, null, null, 0);
         order.registerEvent(OrderPlaced.of(orderedAt, id));
         return order;
     }
 
 // ============================== ドメインの振る舞い ==============================
+
+    /**
+     * 支払待ちかを返す。
+     *
+     * @return 「支払待ち」なら true
+     */
+    public boolean isAwaitingPayment() {
+        return status == OrderStatus.PENDING_PAYMENT;
+    }
+
+    /**
+     * 与信の成功を受けて、「支払待ち」から「受付」にする。支払待ちでなければ何もしない。
+     *
+     * @param now 現在時刻
+     * @return 受付にしたら true（呼ぶ側がカートから品目を除く）。支払待ちでなければ false
+     */
+    public boolean acceptPayment(@NonNull Instant now) {
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            return false;
+        }
+        status = OrderStatus.ACCEPTED;
+        return true;
+    }
+
+    /**
+     * 支払の期限切れを受けて、「支払待ち」からキャンセル（支払期限切れ）にする。支払待ちでなければ何もしない。
+     *
+     * @param now 現在時刻
+     * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。支払待ちでなければ false
+     */
+    public boolean expirePayment(@NonNull Instant now) {
+        if (status != OrderStatus.PENDING_PAYMENT) {
+            return false;
+        }
+        cancel(new Cancellation(now, CancellationKind.PAYMENT_EXPIRED, null, null));
+        return true;
+    }
+
+    /**
+     * 運営者がキャンセルできるかを返す。「受付」と「キャンセル申請中」だけ。
+     * 支払待ちは支払の期限で自動でキャンセルになり、キャンセル済みは何もしない（できる操作の旗に出さない）。
+     *
+     * @return キャンセルできれば true
+     */
+    public boolean isCancellableByOperator() {
+        return status == OrderStatus.ACCEPTED || status == OrderStatus.CANCELLATION_REQUESTED;
+    }
 
     /**
      * キャンセルを申請できるかを返す。「受付」で、まだ申請していない注文だけ（申請は 1 回だけ）。
@@ -233,7 +281,7 @@ public class Order extends AggregateRoot {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
         decideRequest(CancellationRequest.Result.APPROVED, operator, now);
-        cancel(new Cancellation(now, false, null, operator));
+        cancel(new Cancellation(now, CancellationKind.REQUEST_APPROVED, null, operator));
         return true;
     }
 
@@ -253,7 +301,7 @@ public class Order extends AggregateRoot {
 
     /**
      * 運営者の判断でキャンセルする。申請中なら、申請は承認されたものとする。<br />
-     * キャンセル済みなら何もせず、理由も変えない。
+     * キャンセル済みなら何もせず、理由も変えない。支払待ちはキャンセルできない（支払の期限で自動でキャンセルになる）。
      *
      * @param reason   理由（必須、500 文字まで）
      * @param operator キャンセルした運営者。申請中なら、判断した運営者にもなる
@@ -268,10 +316,13 @@ public class Order extends AggregateRoot {
         if (status == OrderStatus.CANCELLED) {
             return false;
         }
+        if (status == OrderStatus.PENDING_PAYMENT) {
+            throw BusinessException.of(OrderErrorCode.AWAITING_PAYMENT);
+        }
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
             decideRequest(CancellationRequest.Result.APPROVED, operator, now);
         }
-        cancel(new Cancellation(now, true, required, operator));
+        cancel(new Cancellation(now, CancellationKind.OPERATOR, required, operator));
         return true;
     }
 

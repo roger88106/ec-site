@@ -91,7 +91,7 @@ class StoreOrderMapper {
                 .amounts(toAmounts(order.amounts()))
                 .email(order.email())
                 .shippingAddress(toAddress(order.shippingAddress()))
-                .actions(new OrderActions(order.isCancellationRequestable()));
+                .actions(new OrderActions(order.isCancellationRequestable(), false));
         if (order.cancellationRequest() != null) {
             response.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }

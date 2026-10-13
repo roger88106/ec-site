@@ -66,6 +66,17 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
+     * 支払の画面を開く。T7307 で実装する（それまでの仮）
+     *
+     * @param orderId 注文 ID
+     * @return 支払の画面
+     */
+    @Override
+    public ResponseEntity<com.ecsite.api.store.model.PaymentPage> openOrderPaymentPage(UUID orderId) {
+        throw new UnsupportedOperationException("T7307 で実装する");
+    }
+
+    /**
      * 自分の注文の一覧。注文日時の新しい順
      *
      * @param page ページ番号

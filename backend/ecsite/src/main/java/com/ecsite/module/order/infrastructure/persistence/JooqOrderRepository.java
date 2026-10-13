@@ -4,6 +4,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
 import com.ecsite.module.order.domain.order.Cancellation;
+import com.ecsite.module.order.domain.order.CancellationKind;
 import com.ecsite.module.order.domain.order.CancellationRequest;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderLine;
@@ -196,7 +197,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setCancellationDecidedByName(decidedBy == null ? null : decidedBy.name());
         var cancellation = snapshot.cancellation();
         record.setCancelledAt(cancellation == null ? null : cancellation.cancelledAt());
-        record.setCancelledByOperator(cancellation == null ? null : cancellation.byOperator());
+        record.setCancellationKind(cancellation == null ? null : cancellation.kind().name());
         record.setCancellationReason(cancellation == null ? null : cancellation.reason());
         var cancelledBy = cancellation == null ? null : cancellation.cancelledBy();
         record.setCancelledById(cancelledBy == null ? null : cancelledBy.id());
@@ -263,7 +264,7 @@ class JooqOrderRepository implements OrderRepository {
                 record.getCancellationDecidedAt(),
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
         var cancellation = record.getCancelledAt() == null ? null : new Cancellation(record.getCancelledAt(),
-                record.getCancelledByOperator(), record.getCancellationReason(),
+                CancellationKind.valueOf(record.getCancellationKind()), record.getCancellationReason(),
                 operatorOf(record.getCancelledById(), record.getCancelledByName()));
         return Order.restore(new Order.Snapshot(
                 record.getId(),

@@ -19,6 +19,10 @@ spring:
 
 ecsite:
   payment:
+    # 期限切れを E2E で待てるよう、支払の期限を短くし（既定 30 分）、期限切れを頻繁に見る（既定 1 分）。
+    # 注文から mock の画面で支払うまでの操作は、この期限に収まる
+    deadline: PT30S
+    expiry-interval: PT2S
     # E2E の店舗画面（e2e/playwright.config.ts）
     return-url: http://localhost:3100/orders/{orderId}?payment=returned
     mock:

@@ -1,9 +1,9 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
-import { useInvalidate } from '@/api/invalidate'
+import type { ApiPathPrefix } from '@/api/invalidate'
 import type { OrderDetail } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
+import { useMutationGroup } from '@/api/useMutationGroup'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { CancelOrderDialog } from '@/features/order/components/CancelOrderDialog'
@@ -15,25 +15,22 @@ import { availableActions } from '@/features/order/order'
  * 行える操作がない（キャンセル済み）ときは何も出さない。
  */
 export function OrderActions({ order }: { order: OrderDetail }) {
-  const invalidate = useInvalidate()
   const [cancelling, setCancelling] = useState(false)
   const path = { params: { path: { orderId: order.id } } }
-  /** 操作が成功したあとの処理 */
-  const onChanged = (message: string) => async () => {
-    toast.success(message)
-    await invalidate('/orders', '/inventory')
-  }
-  const approve = $api.useMutation('put', '/orders/{orderId}/cancellation-request/approve', {
-    onSuccess: onChanged('申請を承認し、キャンセルしました'),
+  const invalidate: ApiPathPrefix[] = ['/orders', '/inventory']
+  const approve = useApiMutation('put', '/orders/{orderId}/cancellation-request/approve', {
+    success: '申請を承認し、キャンセルしました',
+    invalidate,
   })
-  const reject = $api.useMutation('put', '/orders/{orderId}/cancellation-request/reject', {
-    onSuccess: onChanged('申請を却下しました'),
+  const reject = useApiMutation('put', '/orders/{orderId}/cancellation-request/reject', {
+    success: '申請を却下しました',
+    invalidate,
   })
-  const cancel = $api.useMutation('put', '/orders/{orderId}/cancel', { onSuccess: onChanged('キャンセルしました') })
+  const cancel = useApiMutation('put', '/orders/{orderId}/cancel', { success: 'キャンセルしました', invalidate })
   const actions = availableActions(order.status)
-  const pending = approve.isPending || reject.isPending || cancel.isPending
+  const { pending } = useMutationGroup(approve, reject, cancel)
   // キャンセルの失敗はダイアログの中に出す
-  const error = approve.error ?? reject.error
+  const { error } = useMutationGroup(approve, reject)
 
   if (!actions.approve && !actions.reject && !actions.cancel) {
     return null

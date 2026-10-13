@@ -4,6 +4,7 @@ import com.ecsite.api.admin.model.Cancellation;
 import com.ecsite.api.admin.model.CancellationRequest;
 import com.ecsite.api.admin.model.OrderAmounts;
 import com.ecsite.api.admin.model.OrderAxisValue;
+import com.ecsite.api.admin.model.OrderActions;
 import com.ecsite.api.admin.model.OrderDetail;
 import com.ecsite.api.admin.model.OrderLine;
 import com.ecsite.api.admin.model.OrderStatus;
@@ -54,7 +55,8 @@ class AdminOrderMapper {
                 .lines(order.lines().stream().map(AdminOrderMapper::toLine).toList())
                 .amounts(toAmounts(order.amounts()))
                 .email(order.email())
-                .shippingAddress(toAddress(order.shippingAddress()));
+                .shippingAddress(toAddress(order.shippingAddress()))
+                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(), !order.isCancelled()));
         if (order.cancellationRequest() != null) {
             detail.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }

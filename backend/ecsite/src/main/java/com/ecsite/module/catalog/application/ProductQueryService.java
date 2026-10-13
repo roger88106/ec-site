@@ -10,6 +10,8 @@ import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
+import com.ecsite.module.catalog.domain.product.ProductActions;
+import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +43,7 @@ public class ProductQueryService {
     private final Clock clock;
 
     /**
-     * 商品の詳細を取得する。税込価格は現時点の税率で計算する。
+     * 商品の詳細を取得する。税込価格は現時点の税率で計算し、できる操作は現在時刻で決める。
      *
      * @param id 商品 ID
      * @return 商品の詳細
@@ -49,10 +51,13 @@ public class ProductQueryService {
     public ProductDetailView getProduct(UUID id) {
         var view = productQueryRepository.findDetailById(id)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
-        var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), Money.of(view.priceExclTax()), clock.instant())
+        var now = clock.instant();
+        var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), Money.of(view.priceExclTax()), now)
                 .map(Money::yen)
                 .orElse(null);
-        return view.withPriceInclTax(priceInclTax);
+        var actions = ProductActions.of(PublicationStatus.valueOf(view.status()), view.firstShownAt(), view.axes().size(),
+                view.variants().size(), now);
+        return view.withCurrentState(priceInclTax, actions);
     }
 
     /**

@@ -5,6 +5,7 @@ import com.ecsite.api.store.model.AxisValue;
 import com.ecsite.api.store.model.CancellationRequest;
 import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.Order;
+import com.ecsite.api.store.model.OrderActions;
 import com.ecsite.api.store.model.OrderLine;
 import com.ecsite.api.store.model.OrderStatus;
 import com.ecsite.api.store.model.OrderSummary;
@@ -89,7 +90,8 @@ class StoreOrderMapper {
                 .lines(order.lines().stream().map(StoreOrderMapper::toLine).toList())
                 .amounts(toAmounts(order.amounts()))
                 .email(order.email())
-                .shippingAddress(toAddress(order.shippingAddress()));
+                .shippingAddress(toAddress(order.shippingAddress()))
+                .actions(new OrderActions(order.isCancellationRequestable()));
         if (order.cancellationRequest() != null) {
             response.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }

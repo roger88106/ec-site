@@ -173,6 +173,33 @@ public class Order extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
+     * キャンセルを申請できるかを返す。「受付」で、まだ申請していない注文だけ（申請は 1 回だけ）。
+     *
+     * @return 申請できれば true
+     */
+    public boolean isCancellationRequestable() {
+        return status == OrderStatus.ACCEPTED && cancellationRequest == null;
+    }
+
+    /**
+     * キャンセルの申請が判断を待っているか（承認・却下できるか）を返す。
+     *
+     * @return 「キャンセル申請中」なら true
+     */
+    public boolean isCancellationPending() {
+        return status == OrderStatus.CANCELLATION_REQUESTED;
+    }
+
+    /**
+     * キャンセル済みかを返す。
+     *
+     * @return 「キャンセル」なら true
+     */
+    public boolean isCancelled() {
+        return status == OrderStatus.CANCELLED;
+    }
+
+    /**
      * 消費者がキャンセルを申請する。「受付」から「キャンセル申請中」にする。<br />
      * 申請中なら何もしない（冪等）。申請は 1 回だけで、却下済み・キャンセル済みの注文は申請できない。
      *
@@ -183,7 +210,7 @@ public class Order extends AggregateRoot {
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
             return;
         }
-        if (status != OrderStatus.ACCEPTED || cancellationRequest != null) {
+        if (!isCancellationRequestable()) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
         }
         cancellationRequest = new CancellationRequest(now, optionalReason(reason), CancellationRequest.Result.PENDING,
@@ -202,7 +229,7 @@ public class Order extends AggregateRoot {
         if (status == OrderStatus.CANCELLED) {
             return false;
         }
-        if (status != OrderStatus.CANCELLATION_REQUESTED) {
+        if (!isCancellationPending()) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
         decideRequest(CancellationRequest.Result.APPROVED, operator, now);
@@ -217,7 +244,7 @@ public class Order extends AggregateRoot {
      * @param now      現在時刻
      */
     public void rejectCancellation(@NonNull Operator operator, @NonNull Instant now) {
-        if (status != OrderStatus.CANCELLATION_REQUESTED) {
+        if (!isCancellationPending()) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
         decideRequest(CancellationRequest.Result.REJECTED, operator, now);

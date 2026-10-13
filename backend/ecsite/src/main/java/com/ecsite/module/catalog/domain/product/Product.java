@@ -16,6 +16,7 @@ import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
+import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -238,7 +239,7 @@ public class Product extends AggregateRoot {
      */
     public UUID addVariant(@NonNull VariantCode variantCode, @NonNull List<String> axisValues, @NonNull Instant now) {
         verifyAxisValues(axisValues);
-        if (axes.isEmpty() && !variants.isEmpty()) {
+        if (!canAddVariant(axes.size(), variants.size())) {
             throw BusinessException.of(ProductErrorCode.SINGLE_VARIANT_ONLY);
         }
         if (variants.stream().anyMatch(variant -> variant.variantCode().equals(variantCode))) {
@@ -486,7 +487,39 @@ public class Product extends AggregateRoot {
      * @return 表示されたことがあれば true
      */
     public boolean hasBeenShown(@NonNull Instant now) {
+        return hasBeenShown(firstShownAt, now);
+    }
+
+    /**
+     * 今の商品にできる操作を返す（管理画面に返す旗）。
+     *
+     * @param now 現在時刻
+     * @return できる操作
+     */
+    public ProductActions actions(@NonNull Instant now) {
+        return ProductActions.of(status, firstShownAt, axes.size(), variants.size(), now);
+    }
+
+    /**
+     * C 側に表示されたことがあるかを返す。初回表示日時が空か未来なら、まだ表示されていない。
+     *
+     * @param firstShownAt 初回表示日時。なければ null
+     * @param now          現在時刻
+     * @return 表示されたことがあれば true
+     */
+    static boolean hasBeenShown(@Nullable Instant firstShownAt, @NonNull Instant now) {
         return firstShownAt != null && !firstShownAt.isAfter(now);
+    }
+
+    /**
+     * バリアントを追加できるかを返す。軸を持たない商品のバリアントは 1 つだけ。
+     *
+     * @param axisCount    バリアント軸の数
+     * @param variantCount 今のバリアントの数
+     * @return 追加できれば true
+     */
+    static boolean canAddVariant(int axisCount, int variantCount) {
+        return axisCount > 0 || variantCount == 0;
     }
 
 // ============================== プライベートメソッド ==============================

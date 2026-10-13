@@ -181,6 +181,8 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 record.getPublishEnd(),
                 images,
                 variants,
+                // できる操作は現在時刻で決まるので、クエリサービスが決める
+                null,
                 record.getVersion(),
                 record.getCreatedAt(),
                 record.getUpdatedAt());

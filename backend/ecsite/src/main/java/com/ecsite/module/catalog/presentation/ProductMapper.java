@@ -3,6 +3,7 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.api.admin.model.AddVariantRequest;
 import com.ecsite.api.admin.model.CreateProductRequest;
 import com.ecsite.api.admin.model.ImageUpload;
+import com.ecsite.api.admin.model.ProductActions;
 import com.ecsite.api.admin.model.ProductDetail;
 import com.ecsite.api.admin.model.ProductImage;
 import com.ecsite.api.admin.model.ProductSummary;
@@ -128,6 +129,7 @@ class ProductMapper {
                 PublicationStatus.fromValue(view.status()),
                 view.images().stream().map(image -> new ProductImage(image.id(), image.url())).toList(),
                 view.variants().stream().map(ProductMapper::toVariant).toList(),
+                toActions(view.actions()),
                 view.version(),
                 ApiDateTimes.toOffsetDateTime(view.createdAt()),
                 ApiDateTimes.toOffsetDateTime(view.updatedAt()))
@@ -168,5 +170,13 @@ class ProductMapper {
     private static Variant toVariant(ProductDetailView.VariantView view) {
         return new Variant(view.id(), view.variantCode(), view.axisValues(), view.salesSuspended())
                 .imageId(view.imageId());
+    }
+
+    /**
+     * できる操作をレスポンスに変換する。
+     */
+    private static ProductActions toActions(com.ecsite.module.catalog.domain.product.ProductActions actions) {
+        return new ProductActions(actions.publish(), actions.unpublish(), actions.discontinue(), actions.delete(),
+                actions.deleteVariants(), actions.addVariant());
     }
 }

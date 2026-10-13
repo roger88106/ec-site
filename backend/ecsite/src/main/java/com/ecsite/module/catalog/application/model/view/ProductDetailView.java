@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.application.model.view;
 
+import com.ecsite.module.catalog.domain.product.ProductActions;
 import jakarta.annotation.Nullable;
 
 import java.net.URI;
@@ -25,6 +26,7 @@ import java.util.UUID;
  * @param publishEnd    公開終了日時
  * @param images        画像（表示順。先頭が代表画像）
  * @param variants      バリアント（表示順）
+ * @param actions       できる操作。リポジトリは null で作り、クエリサービスが現在時刻で決める
  * @param version       バージョン
  * @param createdAt     登録日時
  * @param updatedAt     更新日時
@@ -33,18 +35,20 @@ public record ProductDetailView(UUID id, String productCode, String name, String
                                 long priceExclTax, @Nullable Long priceInclTax, List<UUID> categoryIds,
                                 List<String> axes, String status, @Nullable Instant firstShownAt,
                                 @Nullable Instant publishStart, @Nullable Instant publishEnd,
-                                List<ImageView> images,                                 List<VariantView> variants, long version, Instant createdAt, Instant updatedAt) {
+                                List<ImageView> images, List<VariantView> variants, @Nullable ProductActions actions,
+                                long version, Instant createdAt, Instant updatedAt) {
 
     /**
-     * 税込価格を設定したビューを返す。
+     * 現時点の税込価格と、できる操作を設定したビューを返す。
      *
      * @param priceInclTax 税込価格（円）。なければ null
+     * @param actions      できる操作
      * @return ビュー
      */
-    public ProductDetailView withPriceInclTax(@Nullable Long priceInclTax) {
+    public ProductDetailView withCurrentState(@Nullable Long priceInclTax, ProductActions actions) {
         return new ProductDetailView(id, productCode, name, description, taxCategoryId, priceExclTax, priceInclTax,
-                categoryIds, axes, status, firstShownAt, publishStart, publishEnd, images, variants, version, createdAt,
-                updatedAt);
+                categoryIds, axes, status, firstShownAt, publishStart, publishEnd, images, variants, actions, version,
+                createdAt, updatedAt);
     }
 
     /**

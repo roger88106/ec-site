@@ -10,6 +10,7 @@ import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { OrderFilterForm } from '@/features/order/components/OrderFilterForm'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
+import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
 import { formatYen } from '@/lib/format'
 
@@ -59,6 +60,7 @@ export function OrderListPage() {
                     <TableHead>{t('customerName') /* 氏名 */}</TableHead>
                     <TableHead className="text-right">{t('total') /* 総額 */}</TableHead>
                     <TableHead>{t('status') /* 状態 */}</TableHead>
+                    <TableHead>{t('payment') /* 支払 */}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -78,11 +80,15 @@ export function OrderListPage() {
                       <TableCell>
                         <OrderStatusBadge status={item.status} />
                       </TableCell>
+                      <TableCell>
+                        {/* 決済を入れる前の注文は、支払の状態を持たない */}
+                        {item.paymentStatus && <PaymentStatusBadge status={item.paymentStatus} />}
+                      </TableCell>
                     </TableRow>
                   ))}
                   {result.items.length === 0 && (
                     <TableRow>
-                      <TableCell className="text-center text-muted-foreground" colSpan={5}>
+                      <TableCell className="text-center text-muted-foreground" colSpan={6}>
                         {t('empty') /* 該当なし */}
                       </TableCell>
                     </TableRow>

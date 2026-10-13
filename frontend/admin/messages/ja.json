@@ -50,6 +50,13 @@
       "OTHER": "その他",
       "ORDER": "注文",
       "ORDER_CANCELLATION": "注文のキャンセル"
+    },
+    "paymentStatus": {
+      "UNPAID": "未払い",
+      "AUTHORIZED": "与信済み",
+      "VOID_PENDING": "与信の取消待ち",
+      "VOIDED": "与信の取消済み",
+      "NOT_PAID": "支払なし"
     }
   },
   "format": {
@@ -277,6 +284,7 @@
       "customerName": "氏名",
       "total": "総額",
       "status": "状態",
+      "payment": "支払",
       "empty": "該当する注文はありません。"
     },
     "filter": {
@@ -289,6 +297,8 @@
       "titlePrefix": "注文：",
       "status": "状態",
       "orderedAt": "注文日時",
+      "payment": "支払",
+      "paymentDeadline": "支払の期限",
       "customer": "お客様とお届け先",
       "email": "メールアドレス",
       "name": "氏名",
@@ -323,6 +333,7 @@
       "trigger": "きっかけ",
       "byOperator": "運営者の判断",
       "byRequest": "お客様の申請の承認",
+      "byPaymentExpiry": "支払期限切れ",
       "cancelledBy": "キャンセルした運営者"
     },
     "requestResult": {

@@ -1,8 +1,15 @@
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { useTranslations } from 'use-intl'
-import type { Cancellation, CancellationRequest } from '@/api/types'
+import type { Cancellation, CancellationKind, CancellationRequest } from '@/api/types'
 import { DateTime } from '@/components/DateTime'
 import { cancellationRequestResultLabel } from '@/features/order/order'
+
+/** キャンセルのきっかけの文言のキー */
+const TRIGGERS = {
+  OPERATOR: 'byOperator',
+  REQUEST_APPROVED: 'byRequest',
+  PAYMENT_EXPIRED: 'byPaymentExpiry',
+} as const satisfies Record<CancellationKind, string>
 
 /**
  * キャンセルの申請と、キャンセルの内容。どちらもなければ「ありません」と出す。
@@ -62,9 +69,7 @@ export function CancellationCard({
                 <DateTime value={cancellation.cancelledAt} />
               </dd>
               <dt className="text-muted-foreground">{t('trigger') /* きっかけ */}</dt>
-              <dd>
-                {cancellation.kind === 'OPERATOR' ? t('byOperator') : t('byRequest') /* 運営者の判断か申請の承認 */}
-              </dd>
+              <dd>{t(TRIGGERS[cancellation.kind]) /* 運営者の判断、申請の承認、支払期限切れ */}</dd>
               {cancellation.kind === 'OPERATOR' && (
                 <>
                   <dt className="text-muted-foreground">{t('reason') /* 理由 */}</dt>

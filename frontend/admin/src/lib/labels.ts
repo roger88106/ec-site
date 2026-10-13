@@ -1,4 +1,4 @@
-import type { OrderStatus, PublicationStatus, StockAdjustmentReason } from '@/api/types'
+import type { OrderStatus, PaymentStatus, PublicationStatus, StockAdjustmentReason } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
 /** 商品の状態の表示名 */
@@ -14,4 +14,9 @@ export function stockAdjustmentReasonLabel(reason: StockAdjustmentReason): strin
 /** 注文の状態の表示名（店舗画面と同じ文言） */
 export function orderStatusLabel(status: OrderStatus): string {
   return translate(`common.orderStatus.${status}`)
+}
+
+/** 支払の状態の表示名 */
+export function paymentStatusLabel(status: PaymentStatus): string {
+  return translate(`labels.paymentStatus.${status}`)
 }

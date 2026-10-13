@@ -11,6 +11,7 @@ import { CancellationCard } from '@/features/order/components/CancellationCard'
 import { OrderActions } from '@/features/order/components/OrderActions'
 import { OrderLinesCard } from '@/features/order/components/OrderLinesCard'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
+import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
 import { formatPostalCode } from '@/features/order/order'
 
 /** 注文の詳細と、承認・却下・キャンセルの操作 */
@@ -54,6 +55,23 @@ export function OrderDetailPage() {
                   <DateTime value={order.orderedAt} />
                 </dd>
               </div>
+              {/* 決済を入れる前の注文は、支払を持たない */}
+              {order.payment && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <dt className="text-muted-foreground">{t('payment') /* 支払 */}</dt>
+                    <dd>
+                      <PaymentStatusBadge status={order.payment.status} />
+                    </dd>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <dt className="text-muted-foreground">{t('paymentDeadline') /* 支払の期限 */}</dt>
+                    <dd>
+                      <DateTime value={order.payment.deadline} />
+                    </dd>
+                  </div>
+                </>
+              )}
             </dl>
             <OrderActions order={order} />
             <OrderLinesCard amounts={order.amounts} lines={order.lines} />

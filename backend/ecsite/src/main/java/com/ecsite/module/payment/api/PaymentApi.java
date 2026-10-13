@@ -59,6 +59,16 @@ public class PaymentApi {
     }
 
     /**
+     * 注文のキャンセルに合わせて支払を取り消す。与信済みなら与信の取消待ちにし、決済サービスでの取消はコミットの後に行う。<br />
+     * 取消の結果を待たないので、決済サービスが応えなくても注文のキャンセルは止まらない。何度呼んでも結果は同じ。
+     *
+     * @param orderId 注文 ID
+     */
+    public void cancel(UUID orderId) {
+        commandService.cancel(orderId);
+    }
+
+    /**
      * 注文の支払の状態をまとめて返す。
      *
      * @param orderIds 注文 ID

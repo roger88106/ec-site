@@ -52,6 +52,14 @@ public interface PaymentRepository {
     Optional<Payment> lockByPageId(String pageId);
 
     /**
+     * 支払を取得する。
+     *
+     * @param id 支払 ID
+     * @return 支払。なければ空
+     */
+    Optional<Payment> findById(UUID id);
+
+    /**
      * 注文の支払を取得する。
      *
      * @param orderId 注文 ID

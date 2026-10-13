@@ -3,8 +3,10 @@ package com.ecsite.module.payment.application;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -18,6 +20,7 @@ import java.util.UUID;
  * 支払の更新のサービス。決済サービスを呼ばない、DB の中の操作だけを持つ。<br />
  * 決済サービスの呼び出しはトランザクションの外で行う（{@link PaymentPageService} など）。外部の応答を待つ間、行ロックを持たないため。
  */
+@Slf4j
 @Service
 @Transactional
 @RequiredArgsConstructor
@@ -86,6 +89,44 @@ public class PaymentCommandService {
                 .filter(payment -> !payment.isPayable(now))
                 .filter(payment -> payment.expire(now))
                 .ifPresent(paymentRepository::update);
+    }
+
+    /**
+     * 注文のキャンセルに合わせて支払を取り消す。与信済みなら与信の取消待ちにし、コミットの後に決済サービスで取り消す。<br />
+     * 呼び出し元（注文のキャンセル）のトランザクションに参加する。支払のない注文（決済を入れる前の注文）なら何もしない。
+     *
+     * @param orderId 注文 ID
+     */
+    public void cancel(UUID orderId) {
+        paymentRepository.lockByOrderId(orderId).ifPresentOrElse(payment -> {
+            payment.cancel(clock.instant());
+            paymentRepository.update(payment);
+        }, () -> log.info("支払のない注文の取消：何もしない: orderId={}", orderId));
+    }
+
+    /**
+     * 決済サービスで取り消す与信の参照を返す。
+     *
+     * @param paymentId 支払 ID
+     * @return 与信の参照。与信の取消待ちでなければ空（取消済みなど）
+     */
+    @Transactional(readOnly = true)
+    public Optional<String> findAuthorizationToVoid(UUID paymentId) {
+        return paymentRepository.findById(paymentId)
+                .filter(payment -> payment.status() == PaymentStatus.VOID_PENDING)
+                .map(Payment::authorizationRef);
+    }
+
+    /**
+     * 決済サービスで与信を取り消したことを反映する。
+     *
+     * @param paymentId 支払 ID
+     */
+    public void markVoided(UUID paymentId) {
+        paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            payment.markVoided();
+            paymentRepository.update(payment);
+        });
     }
 
     /**

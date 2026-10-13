@@ -104,6 +104,14 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     @Override
+    public Optional<Payment> findById(UUID id) {
+        return dsl.selectFrom(PAYMENT_)
+                .where(PAYMENT_.ID.eq(id))
+                .fetchOptional()
+                .map(JooqPaymentRepository::restore);
+    }
+
+    @Override
     public Optional<Payment> findByOrderId(UUID orderId) {
         return dsl.selectFrom(PAYMENT_)
                 .where(PAYMENT_.ORDER_ID.eq(orderId))

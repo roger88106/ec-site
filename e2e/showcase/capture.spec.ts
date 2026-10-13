@@ -30,7 +30,23 @@ async function shot(page: Page, name: string, ready: Locator) {
   await expect(ready).toBeVisible()
   await page.waitForLoadState('networkidle')
   await expect.poll(() => page.evaluate(() => Array.from(document.images).every((image) => image.complete))).toBe(true)
-  await page.screenshot({ path: path.join(OUT, `${name}.png`), fullPage: true })
+  // 店舗画面の開発のサーバーが出す Next.js の印（画面の左下）は、本番の画面にないので写さない
+  await page.screenshot({
+    path: path.join(OUT, `${name}.png`),
+    fullPage: true,
+    style: 'nextjs-portal { display: none; }',
+  })
+}
+
+/** 会員のカートを空にする（会員のカートは残るので、前に撮ったときの品目を消す） */
+async function emptyCart(page: Page) {
+  await page.goto(`${STORE}/cart`)
+  const remove = page.getByRole('button', { name: '削除' })
+  while ((await remove.count()) > 0) {
+    const before = await remove.count()
+    await remove.first().click()
+    await expect(remove).toHaveCount(before - 1)
+  }
 }
 
 /** 商品の詳細からカートに入れる（色があれば選ぶ） */
@@ -78,6 +94,7 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await page.goto(`${STORE}/login?returnTo=%2Fcart`)
     await submitIdpLogin(page, ACCOUNTS.member)
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+    await emptyCart(page)
     await addToCart(page, SEED.mug, '白')
     await addToCart(page, SEED.chocolate)
     await order(page)
@@ -105,9 +122,9 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
 
     await page.goto(`${ADMIN}/products`)
-    await shot(page, 'admin-products', page.getByRole('link', { name: 'マグカップ' }))
+    await shot(page, 'admin-products', page.getByRole('link', { name: 'MUG-001' }))
     await page.goto(`${ADMIN}/products/${SEED.mug}`)
-    await shot(page, 'admin-product', page.getByRole('heading', { name: /マグカップ/ }))
+    await shot(page, 'admin-product', page.getByRole('cell', { name: 'MUG-001-WH', exact: true }))
     await page.goto(`${ADMIN}/products/${SEED.mug}/variants/${SEED.mugWhite}/stock`)
     await shot(page, 'admin-stock', page.getByRole('cell', { name: '注文', exact: true }).first())
     await page.goto(`${ADMIN}/tax-categories`)

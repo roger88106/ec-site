@@ -7,5 +7,5 @@
 ## タスク
 
 - [x] **T8101** 撮影の設定（`e2e/playwright.showcase.config.ts`）と script（`e2e/showcase/capture.spec.ts`）を足す。`e2e/package.json` に `capture` を足す。E2E の `pnpm test` が撮影を流さないことを確かめる。
-- [ ] **T8102** ローカルの DB を作り直して撮り、10 枚を利用者に見せる。
+- [x] **T8102** ローカルの DB を作り直して撮り、10 枚を利用者に見せる。
 - [ ] **T8103** 撮影の手順を [開発環境の起動](../../../dev/setup.md) に足し、skill `local-dev` から案内する。

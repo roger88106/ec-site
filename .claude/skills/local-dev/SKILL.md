@@ -1,6 +1,6 @@
 ---
 name: local-dev
-description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、フロント（store・admin）の lint・型チェック・テスト・ビルドを要約だけで流すスクリプト。バックエンドやフロントを動かす、テストを流す、DB や token を見るときに使う。
+description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、フロント（store・admin）と E2E を要約だけで流すスクリプト、commit の前の CI の検査、プレビューでの画面の確かめ方。バックエンドやフロントを動かす、テストや E2E を流す、commit する、画面を確かめる、DB や token を見るときに使う。
 ---
 
 # ローカルでの起動と確認
@@ -92,6 +92,24 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 | `store` | http://localhost:3000 | バックエンド（API はサーバーから呼ぶ） |
 
 - 店舗画面の一覧は API の結果を最大 60 秒キャッシュする。管理画面での変更がすぐ出ないのは正常。
+
+### プレビューで画面を確かめる
+
+エージェントが実装の途中で表示を確かめるときの、ツールの使い方。利用者が普段の流れで画面を確かめる段階（skill `new-screen` の「画面を足し終えたら」）は別に残す。
+
+- IdP のログインの画面は、描画の前だとキーの入力やクリックが失敗する。`find` で入力欄を探し、`form_input` で local の seed のアカウント（`docs/dev/setup.md`）を入れ、`javascript_tool` で `document.querySelector('form').submit()` を呼ぶ。
+- 表示の中身は `get_page_text` で読む。スクリーンショットは描画を待って時間切れになりやすいので、見た目を見るときだけ使う。
+- 開く画面の ID は DB から引く（例：注文と支払は `ordering.sales_order` と `payment.payment` を結ぶ）。
+
+## CI の script の検査
+
+`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで流す。
+
+```bash
+for s in doc-refs spec-numbers doc-terms time-waits; do node scripts/ci/$s.mjs | tail -1; done
+```
+
+- `spec-numbers` は、本番のコードのコメントに spec の番号（AC-、T など）を書くと失敗する（コメントの書き方 第 1 節）。番号はテスト名に書く。
 
 ## 決済（mock と Stripe）
 

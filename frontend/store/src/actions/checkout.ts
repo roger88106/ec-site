@@ -2,7 +2,7 @@
 
 import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { redirect, unstable_rethrow } from 'next/navigation'
 import { withActionResult } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
 import { redirectToLogin } from '@/auth'
@@ -66,7 +66,9 @@ async function paymentPageUrl(orderId: string): Promise<string | null> {
     const api = await getMemberApi()
     const { data } = await api.POST('/orders/{orderId}/payment-page', { params: { path: { orderId } } })
     return data?.url ?? null
-  } catch {
+  } catch (error) {
+    // ログイン画面への移動などは通す（フロントの書き方 第 3.1 節）
+    unstable_rethrow(error)
     return null
   }
 }

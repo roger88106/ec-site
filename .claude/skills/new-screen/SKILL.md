@@ -41,7 +41,7 @@ import { isUuid } from '@/lib/uuid'
 /** ブラウザのタブの題名 */
 export const metadata: Metadata = { title: '〇〇' }
 
-/** 〇〇（T____。AC-__） */
+/** 〇〇 */
 export default async function FooPage({ params }: PageProps<'/foos/[fooId]'>) {
   const { fooId } = await params
   // 形の違う ID は API を呼ばずに「見つかりません」にする
@@ -66,29 +66,30 @@ export default async function FooPage({ params }: PageProps<'/foos/[fooId]'>) {
 'use server'
 
 import { revalidatePath } from 'next/cache'
+import { withActionResult } from '@/actions/withActionResult'
 import { getApi } from '@/api/client'
-import { type ActionResult, CONNECTION_FAILED, SUCCESS, toFailure } from '@/lib/actionResult'
+import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
+import { readString } from '@/lib/server/formData'
 
 /**
- * 〇〇する（AC-__）。成功したら、〇〇の画面を表示し直す。<br />
+ * 〇〇する。成功したら、〇〇の画面を表示し直す。<br />
  * フォームの項目：fooId、note。
  */
 export async function updateFoo(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
-  const fooId = String(formData.get('fooId') ?? '')
-  const note = String(formData.get('note') ?? '').trim()
-  try {
+  const fooId = readString(formData, 'fooId')
+  const note = readString(formData, 'note')
+  // 接続の失敗などの例外は、withActionResult が失敗の結果にする（catch は書かない。Biome で検査）
+  return withActionResult(async () => {
     const api = await getApi()
     const { error, response } = await api.PUT('/foos/{fooId}', { params: { path: { fooId } }, body: { note } })
     revalidatePath(`/foos/${fooId}`)
-    // 次の画面へ移るときは、成功時に redirect('/…')（try の外で呼ぶ。redirect は例外で移るため）
     return response.ok ? SUCCESS : toFailure(response.status, error)
-  } catch {
-    return { ok: false, message: CONNECTION_FAILED }
-  }
+  })
+  // 次の画面へ移るときは、結果を受けてから包みの外で redirect('/…')（redirect は例外で移るため。actions/order.ts の payOrder）
 }
 ```
 
-- 失敗は投げずに `ActionResult` で返す。入力欄ごとのメッセージは `result.fieldErrors?.<項目名>`。
+- 失敗は投げずに `ActionResult` で返す。会員の API（`getMemberApi()`）で 401 なら `redirectToLogin()`（`actions/order.ts`）。入力欄ごとのメッセージは `result.fieldErrors?.<項目名>`。
 - カートを変更するアクションは `readCartId()` で ID を読み、変更の後に `writeCartId()` で書き直す（有効期限を延ばす）。
 
 ### フォーム（`features/<機能>/components/FooForm.tsx`）
@@ -100,7 +101,7 @@ import { useActionState } from 'react'
 import { updateFoo } from '@/actions/foo'
 import { Button } from '@/components/ui/button'
 
-/** 〇〇のフォーム（AC-__） */
+/** 〇〇のフォーム */
 export function FooForm({ fooId }: { fooId: string }) {
   const [result, formAction, pending] = useActionState(updateFoo, null)
   return (
@@ -148,7 +149,7 @@ import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { type FooFilter, parseFilter, toSearchParams } from '@/features/foo/fooFilter'
 
-/** 〇〇の一覧（T____。AC-__） */
+/** 〇〇の一覧 */
 export function FooListPage() {
   const [searchParams, setSearchParams] = useSearchParams()
   const filter = parseFilter(searchParams) // 不正な値は無視する。fooFilter.test.ts を書く
@@ -190,7 +191,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Button } from '@/components/ui/button'
 
-/** 〇〇の操作（AC-__）。取り消せないので確認してから送る */
+/** 〇〇の操作。取り消せないので確認してから送る */
 export function FooActions({ fooId }: { fooId: string }) {
   const close = useApiMutation('put', '/foos/{fooId}/close', {
     success: '〇〇しました',

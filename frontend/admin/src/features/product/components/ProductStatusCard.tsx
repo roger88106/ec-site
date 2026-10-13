@@ -2,10 +2,10 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
-import { useInvalidate } from '@/api/invalidate'
+import type { ApiPathPrefix } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
+import { useMutationGroup } from '@/api/useMutationGroup'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DateTime } from '@/components/DateTime'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -16,32 +16,28 @@ import { isNeverShown } from '@/features/product/product'
 export function ProductStatusCard({ product }: { product: ProductDetail }) {
   const navigate = useNavigate()
   const queryClient = useQueryClient()
-  const invalidate = useInvalidate()
   const path = { params: { path: { productId: product.id } } }
-  /** 状態を変えたあとの処理。状態で在庫の画面の表示も変わるので、在庫も読み直す */
-  const onChanged = (message: string) => async () => {
-    toast.success(message)
-    await invalidate('/products', '/inventory')
-  }
-  const publish = $api.useMutation('put', '/products/{productId}/publish', { onSuccess: onChanged('公開しました') })
-  const unpublish = $api.useMutation('put', '/products/{productId}/unpublish', {
-    onSuccess: onChanged('非公開にしました'),
+  /** 状態で在庫の画面の表示も変わるので、在庫も読み直す */
+  const invalidate: ApiPathPrefix[] = ['/products', '/inventory']
+  const publish = useApiMutation('put', '/products/{productId}/publish', { success: '公開しました', invalidate })
+  const unpublish = useApiMutation('put', '/products/{productId}/unpublish', {
+    success: '非公開にしました',
+    invalidate,
   })
-  const discontinue = $api.useMutation('put', '/products/{productId}/discontinue', {
-    onSuccess: onChanged('販売終了にしました'),
+  const discontinue = useApiMutation('put', '/products/{productId}/discontinue', {
+    success: '販売終了にしました',
+    invalidate,
   })
-  const remove = $api.useMutation('delete', '/products/{productId}', {
+  const remove = useApiMutation('delete', '/products/{productId}', {
+    success: '商品を削除しました',
+    invalidate,
     // 先に一覧へ移り、削除した商品の詳細を取得し直さない（404 になるため。管理画面の構成 第 4 節）
-    onSuccess: async () => {
-      toast.success('商品を削除しました')
+    onSuccess: () => {
       navigate('/products')
       queryClient.removeQueries({ queryKey: ['get', '/products/{productId}'] })
-      await invalidate('/products', '/inventory')
     },
   })
-  const mutations = [publish, unpublish, discontinue, remove]
-  const pending = mutations.some((mutation) => mutation.isPending)
-  const error = mutations.find((mutation) => mutation.error)?.error
+  const { pending, error } = useMutationGroup(publish, unpublish, discontinue, remove)
   const neverShown = isNeverShown(product)
 
   return (

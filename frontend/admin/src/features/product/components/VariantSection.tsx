@@ -2,10 +2,9 @@ import { Badge } from '@ec-site/shared/ui/badge'
 import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
-import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
+import { useMutationGroup } from '@/api/useMutationGroup'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { OptionSelect } from '@/components/OptionSelect'
@@ -20,48 +19,31 @@ import { move } from '@/lib/array'
  * 並び替えと削除は、表示している一覧のバージョンで送る。
  */
 export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
-  const invalidate = useInvalidate()
-  const reorder = $api.useMutation('put', '/products/{productId}/variants/order', {
-    onSuccess: () => invalidate('/products'),
+  const reorder = useApiMutation('put', '/products/{productId}/variants/order', { invalidate: ['/products'] })
+  const remove = useApiMutation('delete', '/products/{productId}/variants/{variantId}', {
+    success: 'バリアントを削除しました',
+    invalidate: ['/products', '/inventory'],
   })
-  const remove = $api.useMutation('delete', '/products/{productId}/variants/{variantId}', {
-    onSuccess: async () => {
-      toast.success('バリアントを削除しました')
-      await invalidate('/products', '/inventory')
-    },
+  const suspend = useApiMutation('put', '/products/{productId}/variants/{variantId}/suspend', {
+    success: '販売停止にしました',
+    invalidate: ['/products'],
   })
-  const suspend = $api.useMutation('put', '/products/{productId}/variants/{variantId}/suspend', {
-    onSuccess: async () => {
-      toast.success('販売停止にしました')
-      await invalidate('/products')
-    },
+  const resume = useApiMutation('put', '/products/{productId}/variants/{variantId}/resume', {
+    success: '販売を再開しました',
+    invalidate: ['/products'],
   })
-  const resume = $api.useMutation('put', '/products/{productId}/variants/{variantId}/resume', {
-    onSuccess: async () => {
-      toast.success('販売を再開しました')
-      await invalidate('/products')
-    },
-  })
-  const setImage = $api.useMutation('put', '/products/{productId}/variants/{variantId}/image', {
-    onSuccess: async () => {
-      toast.success('バリアントの画像を変更しました')
-      await invalidate('/products')
-    },
+  const setImage = useApiMutation('put', '/products/{productId}/variants/{variantId}/image', {
+    success: 'バリアントの画像を変更しました',
+    invalidate: ['/products'],
   })
   // バリアントの画像は、その商品の画像から選ぶ。指定しなければ代表画像（AC-38）
   const imageOptions = [
     { value: null, label: '代表画像' },
     ...product.images.map((image, index) => ({ value: image.id, label: `画像 ${index + 1}` })),
   ]
-  const mutations = [reorder, remove, suspend, resume, setImage]
   const ids = product.variants.map((variant) => variant.id)
-  const pending = mutations.some((mutation) => mutation.isPending)
-  /** 別の操作を始めたら、前の操作のエラーを消す */
-  const resetErrors = () => {
-    for (const mutation of mutations) {
-      mutation.reset()
-    }
-  }
+  // 別の操作を始めたら、前の操作のエラーを消す
+  const { pending, error, resetErrors } = useMutationGroup(reorder, remove, suspend, resume, setImage)
   const neverShown = isNeverShown(product)
   // 軸を持たない商品のバリアントは 1 つだけ（AC-24）
   const canAdd = product.axes.length > 0 || product.variants.length === 0
@@ -199,7 +181,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
             </TableBody>
           </Table>
         )}
-        <ErrorMessage error={mutations.find((mutation) => mutation.error)?.error} />
+        <ErrorMessage error={error} />
         {canAdd ? (
           <AddVariantForm product={product} refetch={refetch} />
         ) : (

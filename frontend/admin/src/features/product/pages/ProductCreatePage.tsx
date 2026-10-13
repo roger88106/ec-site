@@ -3,10 +3,8 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/car
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
 import { setServerFieldErrors } from '@/api/formErrors'
-import { useInvalidate } from '@/api/invalidate'
+import { useApiMutation } from '@/api/useApiMutation'
 import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
@@ -38,15 +36,12 @@ const FIELD_NAMES = [...PRODUCT_FIELD_NAMES, 'productCode', 'axes'] as const
  */
 export function ProductCreatePage() {
   const navigate = useNavigate()
-  const invalidate = useInvalidate()
   const form = useForm<Values>({ defaultValues: { ...EMPTY_PRODUCT_FIELDS, productCode: '', axes: [] } })
   const axes = useFieldArray({ control: form.control, name: 'axes' })
-  const mutation = $api.useMutation('post', '/products', {
-    onSuccess: async (created) => {
-      toast.success('商品を登録しました')
-      await invalidate('/products')
-      navigate(`/products/${created.id}`)
-    },
+  const mutation = useApiMutation('post', '/products', {
+    success: '商品を登録しました',
+    invalidate: ['/products'],
+    onSuccess: (created) => navigate(`/products/${created.id}`),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
   const values = form.watch()

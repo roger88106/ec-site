@@ -5,9 +5,10 @@ import { useMutation } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
 import { toast } from 'sonner'
-import { $api } from '@/api/client'
 import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
+import { useMutationGroup } from '@/api/useMutationGroup'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import {
@@ -41,26 +42,19 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
     // 途中で失敗しても、それまでに登録した画像を出す
     onSettled: () => invalidate('/products'),
   })
-  const reorder = $api.useMutation('put', '/products/{productId}/images/order', {
-    onSuccess: () => invalidate('/products'),
+  const reorder = useApiMutation('put', '/products/{productId}/images/order', { invalidate: ['/products'] })
+  const remove = useApiMutation('delete', '/products/{productId}/images/{imageId}', {
+    success: '画像を削除しました',
+    invalidate: ['/products'],
   })
-  const remove = $api.useMutation('delete', '/products/{productId}/images/{imageId}', {
-    onSuccess: async () => {
-      toast.success('画像を削除しました')
-      await invalidate('/products')
-    },
-  })
-  const mutations = [upload, reorder, remove]
-  const pending = mutations.some((mutation) => mutation.isPending)
-  const error = mutations.find((mutation) => mutation.error)?.error
+  const group = useMutationGroup(upload, reorder, remove)
+  const { pending, error } = group
   // 画面で確かめた誤りと、管理 API の外での失敗は、メッセージをそのまま出す
   const localError = fileError ?? (error instanceof ImageUploadError ? error.message : null)
   /** 前の操作の誤りを消す（次の操作を始めるとき） */
   const resetErrors = () => {
     setFileError(null)
-    for (const mutation of mutations) {
-      mutation.reset()
-    }
+    group.resetErrors()
   }
 
   /** 選んだファイルを、形式・大きさ・枚数を確かめてから登録する。誤りがあれば 1 枚も送らない */

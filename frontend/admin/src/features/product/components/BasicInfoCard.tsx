@@ -1,11 +1,9 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { FormProvider } from 'react-hook-form'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
 import { setServerFieldErrors } from '@/api/formErrors'
-import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { ProductFields } from '@/features/product/components/ProductFields'
 import { isProductFieldsFilled, PRODUCT_FIELD_NAMES, toProductBody, toProductFields } from '@/features/product/product'
@@ -16,14 +14,11 @@ import { useVersionedForm } from '@/hooks/useVersionedForm'
  * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
  */
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
-  const invalidate = useInvalidate()
   const { form, baseVersion, markSaved, reload } = useVersionedForm(product, toProductFields, refetch)
-  const mutation = $api.useMutation('put', '/products/{productId}', {
-    onSuccess: async () => {
-      toast.success('基本情報を保存しました')
-      markSaved()
-      await invalidate('/products')
-    },
+  const mutation = useApiMutation('put', '/products/{productId}', {
+    success: '基本情報を保存しました',
+    invalidate: ['/products'],
+    onSuccess: markSaved,
     onError: (error) => setServerFieldErrors(error, form.setError, PRODUCT_FIELD_NAMES),
   })
 

@@ -1,11 +1,9 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller } from 'react-hook-form'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
 import { setServerFieldErrors } from '@/api/formErrors'
-import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
 import { CodeInput } from '@/components/CodeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -27,15 +25,12 @@ function emptyValues(product: ProductDetail): Values {
  * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
  */
 export function AddVariantForm({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
-  const invalidate = useInvalidate()
   const { form, baseVersion, reload } = useVersionedForm(product, emptyValues, refetch)
-  const mutation = $api.useMutation('post', '/products/{productId}/variants', {
-    onSuccess: async () => {
-      toast.success('バリアントを追加しました')
-      // 入力を空に戻す。取得し直した商品で、送るバージョンも新しくなる
-      form.reset(emptyValues(product))
-      await invalidate('/products', '/inventory')
-    },
+  const mutation = useApiMutation('post', '/products/{productId}/variants', {
+    success: 'バリアントを追加しました',
+    invalidate: ['/products', '/inventory'],
+    // 入力を空に戻す。取得し直した商品で、送るバージョンも新しくなる
+    onSuccess: () => form.reset(emptyValues(product)),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
   const values = form.watch()

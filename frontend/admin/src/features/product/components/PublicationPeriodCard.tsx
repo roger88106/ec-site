@@ -1,10 +1,8 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Controller } from 'react-hook-form'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
-import { useInvalidate } from '@/api/invalidate'
 import type { ProductDetail } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
 import { DateTimeInput } from '@/components/DateTimeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -30,14 +28,11 @@ export function PublicationPeriodCard({
   product: ProductDetail
   refetch: () => Promise<unknown>
 }) {
-  const invalidate = useInvalidate()
   const { form, baseVersion, markSaved, reload } = useVersionedForm(product, toValues, refetch)
-  const mutation = $api.useMutation('put', '/products/{productId}/publication-period', {
-    onSuccess: async () => {
-      toast.success('公開期間を保存しました')
-      markSaved()
-      await invalidate('/products')
-    },
+  const mutation = useApiMutation('put', '/products/{productId}/publication-period', {
+    success: '公開期間を保存しました',
+    invalidate: ['/products'],
+    onSuccess: markSaved,
   })
 
   return (

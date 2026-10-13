@@ -16,7 +16,7 @@
 
 ## 入力の制約（DC-52）
 
-- [ ] **T6405** [テスト] 制約の書き出しの script のテスト（`maxLength`・`minimum`・`maximum`、参照（`$ref`）、入れ子）。
+- [x] **T6405** [テスト] 制約の書き出しの script のテスト（`maxLength`・`minimum`・`maximum`、参照（`$ref`）、入れ子）。
 - [ ] **T6406** `frontend/shared/scripts/` に制約の書き出しの script を作り、admin・store の `generate:api` で定数のファイルを作る。画面の入力の属性をこの定数に置き換える。数字を直接書いた所を探す検査を `scripts/ci/` に足し、CI で流す。
 
 ## バリアントの行（P2）

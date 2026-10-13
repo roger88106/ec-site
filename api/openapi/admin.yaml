@@ -1457,7 +1457,7 @@ components:
           format: int32
     ProductDetail:
       type: object
-      required: [id, productCode, name, description, taxCategoryId, priceExclTax, priceInclTax, categoryIds, axes, status, images, variants, version, createdAt, updatedAt]
+      required: [id, productCode, name, description, taxCategoryId, priceExclTax, priceInclTax, categoryIds, axes, status, images, variants, actions, version, createdAt, updatedAt]
       properties:
         id:
           type: string
@@ -1516,6 +1516,8 @@ components:
           description: 表示順
           items:
             $ref: '#/components/schemas/Variant'
+        actions:
+          $ref: '#/components/schemas/ProductActions'
         version:
           $ref: '#/components/schemas/Version'
         createdAt:
@@ -1524,6 +1526,29 @@ components:
         updatedAt:
           type: string
           format: date-time
+    ProductActions:
+      type: object
+      description: 今の商品にできる操作。画面はこれで操作を出し分け、同じ判定を持たない
+      required: [publish, unpublish, discontinue, delete, deleteVariants, addVariant]
+      properties:
+        publish:
+          type: boolean
+          description: 公開できる（非公開のとき）
+        unpublish:
+          type: boolean
+          description: 非公開にできる（公開のとき）
+        discontinue:
+          type: boolean
+          description: 販売終了にできる（販売終了でないとき）
+        delete:
+          type: boolean
+          description: 削除できる（C 側に表示されたことがないとき。AC-71）
+        deleteVariants:
+          type: boolean
+          description: バリアントを削除できる（C 側に表示されたことがないとき。AC-71）
+        addVariant:
+          type: boolean
+          description: バリアントを追加できる（軸があるか、バリアントがないとき。AC-24）
     Variant:
       type: object
       required: [id, variantCode, axisValues, salesSuspended]
@@ -1871,7 +1896,7 @@ components:
           $ref: '#/components/schemas/OrderStatus'
     OrderDetail:
       type: object
-      required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress]
+      required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress, actions]
       properties:
         id:
           type: string
@@ -1897,6 +1922,22 @@ components:
           $ref: '#/components/schemas/CancellationRequest'
         cancellation:
           $ref: '#/components/schemas/Cancellation'
+        actions:
+          $ref: '#/components/schemas/OrderActions'
+    OrderActions:
+      type: object
+      description: 今の注文にできる操作。画面はこれで操作を出し分け、同じ判定を持たない
+      required: [approveCancellation, rejectCancellation, cancel]
+      properties:
+        approveCancellation:
+          type: boolean
+          description: キャンセルの申請を承認できる（キャンセル申請中のとき。AC-101）
+        rejectCancellation:
+          type: boolean
+          description: キャンセルの申請を却下できる（キャンセル申請中のとき。AC-102）
+        cancel:
+          type: boolean
+          description: キャンセルできる（キャンセル済みでないとき。AC-103）
     OrderLine:
       type: object
       description: 注文時点の写し（AC-92）

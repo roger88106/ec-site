@@ -1044,7 +1044,7 @@ components:
           format: int64
     Order:
       type: object
-      required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress]
+      required: [id, orderNumber, orderedAt, status, lines, amounts, email, shippingAddress, actions]
       properties:
         id:
           type: string
@@ -1069,6 +1069,16 @@ components:
           $ref: '#/components/schemas/ShippingAddress'
         cancellationRequest:
           $ref: '#/components/schemas/CancellationRequest'
+        actions:
+          $ref: '#/components/schemas/OrderActions'
+    OrderActions:
+      type: object
+      description: 今の注文に会員ができる操作。画面はこれで操作を出し分け、同じ判定を持たない
+      required: [requestCancellation]
+      properties:
+        requestCancellation:
+          type: boolean
+          description: キャンセルを申請できる（受付で、まだ申請していないとき。AC-95）
     OrderSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'

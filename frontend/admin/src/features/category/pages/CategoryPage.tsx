@@ -1,9 +1,10 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
-import { toast } from 'sonner'
 import { $api } from '@/api/client'
 import { useInvalidate } from '@/api/invalidate'
 import type { CategoryNode } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
+import { useMutationGroup } from '@/api/useMutationGroup'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
@@ -16,26 +17,22 @@ type DialogState = { kind: 'create'; parent: CategoryNode | null } | { kind: 're
 /** カテゴリの木の表示、登録、名称の変更、並び替え、削除（T707。US-2） */
 export function CategoryPage() {
   const query = $api.useQuery('get', '/categories')
-  const invalidate = useInvalidate()
   const [dialog, setDialog] = useState<DialogState>(null)
-  /** 並び替えのあと、カテゴリの木を読み直す */
-  const onSuccess = () => invalidate('/categories')
-  const reorder = $api.useMutation('put', '/categories/order', { onSuccess })
-  const remove = $api.useMutation('delete', '/categories/{categoryId}', {
-    onSuccess: async () => {
-      toast.success('カテゴリを削除しました')
-      await onSuccess()
-    },
+  const reorder = useApiMutation('put', '/categories/order', { invalidate: ['/categories'] })
+  const remove = useApiMutation('delete', '/categories/{categoryId}', {
+    success: 'カテゴリを削除しました',
+    invalidate: ['/categories'],
   })
+  const { pending, error, resetErrors } = useMutationGroup(reorder, remove)
 
   const actions: CategoryActions = {
-    pending: reorder.isPending || remove.isPending,
+    pending,
     reorder: (parentId, categoryIds) => {
-      remove.reset()
+      resetErrors()
       reorder.mutate({ body: { parentId, categoryIds } })
     },
     remove: (category) => {
-      reorder.reset()
+      resetErrors()
       remove.mutate({ params: { path: { categoryId: category.id } } })
     },
     rename: (category) => setDialog({ kind: 'rename', category }),
@@ -48,7 +45,7 @@ export function CategoryPage() {
         <Button onClick={() => setDialog({ kind: 'create', parent: null })}>最上位に追加</Button>
       </PageHeader>
       <div className="max-w-4xl space-y-4">
-        <ErrorMessage error={reorder.error ?? remove.error} />
+        <ErrorMessage error={error} />
         <QueryState query={query}>
           {({ items }) =>
             items.length === 0 ? (
@@ -67,12 +64,9 @@ export function CategoryPage() {
 
 /** カテゴリの登録（AC-8〜10） */
 function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClose: () => void }) {
-  const invalidate = useInvalidate()
-  const mutation = $api.useMutation('post', '/categories', {
-    onSuccess: async () => {
-      toast.success('カテゴリを登録しました')
-      await invalidate('/categories')
-    },
+  const mutation = useApiMutation('post', '/categories', {
+    success: 'カテゴリを登録しました',
+    invalidate: ['/categories'],
   })
   return (
     <CategoryNameDialog
@@ -89,11 +83,9 @@ function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClos
 /** カテゴリ名の変更（AC-10、11）。送るバージョンは、ダイアログを開いたときのもの */
 function RenameDialog({ category, onClose }: { category: CategoryNode; onClose: () => void }) {
   const invalidate = useInvalidate()
-  const mutation = $api.useMutation('put', '/categories/{categoryId}', {
-    onSuccess: async () => {
-      toast.success('名称を変更しました')
-      await invalidate('/categories')
-    },
+  const mutation = useApiMutation('put', '/categories/{categoryId}', {
+    success: '名称を変更しました',
+    invalidate: ['/categories'],
   })
   return (
     <CategoryNameDialog

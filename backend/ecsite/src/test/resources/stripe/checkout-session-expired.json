@@ -1,0 +1,32 @@
+{
+  "id": "evt_1UQ8mJCajA2Qja1Le09KzoFr",
+  "object": "event",
+  "api_version": "2026-09-30.endive",
+  "created": 1791909735,
+  "data": {
+    "object": {
+      "id": "cs_test_a1zewRjUghE0UY9BsbiwwxGmd9XVfiSll2NRfTbJcHbzBjHVBYFqfbZO2N",
+      "object": "checkout.session",
+      "amount_total": 100,
+      "client_reference_id": null,
+      "currency": "jpy",
+      "expires_at": 1791911594,
+      "livemode": false,
+      "metadata": {},
+      "mode": "payment",
+      "payment_intent": null,
+      "payment_status": "unpaid",
+      "status": "expired",
+      "success_url": "http://localhost:3000/x",
+      "cancel_url": null,
+      "url": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 0,
+  "request": {
+    "id": "req_ifJmH2CHsa8z0W",
+    "idempotency_key": "72081b0d-7c5d-4c8f-8ed9-45893611868e"
+  },
+  "type": "checkout.session.expired"
+}

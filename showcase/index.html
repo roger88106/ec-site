@@ -1,0 +1,323 @@
+<title>EC Site 機能紹介</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+New:wght@500;700;900&family=Noto+Sans+JP:wght@400;500;700&family=IBM+Plex+Mono:wght@500&display=swap">
+<style>
+/* Layout: 一枚の売り込み資料。左に説明、右に実際の画面。段ごとに「お客様 → 運営者 → 安心 → 作り方」と読み進める */
+:root {
+  --bg: #fbfbf9;
+  --surface: #ffffff;
+  --fg: #1d2420;
+  --muted: #5e6862;
+  --line: #e2e5e1;
+  --accent: #1f6b52;
+  --accent-soft: #e6f1ec;
+  --shot-bg: #eef0ed;
+  --display: "Zen Kaku Gothic New", "Hiragino Kaku Gothic ProN", "Yu Gothic", sans-serif;
+  --body: "Noto Sans JP", "Hiragino Sans", "Yu Gothic", "Meiryo", sans-serif;
+  --mono: "IBM Plex Mono", ui-monospace, "SFMono-Regular", Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #141816; --surface: #1b201d; --fg: #e8ece9; --muted: #9ba59f;
+    --line: #2c332f; --accent: #6cc4a1; --accent-soft: #1f2e27; --shot-bg: #232925;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #141816; --surface: #1b201d; --fg: #e8ece9; --muted: #9ba59f;
+  --line: #2c332f; --accent: #6cc4a1; --accent-soft: #1f2e27; --shot-bg: #232925;
+  color-scheme: dark;
+}
+* { box-sizing: border-box; }
+body {
+  background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 16px; line-height: 1.85;
+  padding-inline: 20px;
+}
+.wrap { max-width: 1080px; margin: 0 auto; padding-block: 56px 96px; display: grid; gap: 88px; }
+h1, h2, h3 { font-family: var(--display); text-wrap: balance; margin: 0; line-height: 1.35; }
+p { margin: 0; }
+.eyebrow { font-family: var(--display); font-weight: 700; font-size: 13px; letter-spacing: .14em; color: var(--accent); }
+
+/* Hero */
+.hero { display: grid; gap: 28px; }
+.hero h1 { font-size: clamp(32px, 5.4vw, 54px); font-weight: 900; letter-spacing: .01em; }
+.hero h1 em { font-style: normal; color: var(--accent); }
+.hero .lead { font-size: 18px; max-width: 40em; color: var(--muted); }
+.hero-shot { margin: 8px 0 0; }
+.facts { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 10px; overflow: hidden; }
+.fact { background: var(--surface); padding: 20px 22px; display: grid; gap: 4px; align-content: start; }
+.fact b { font-family: var(--display); font-size: 18px; }
+.fact span { color: var(--muted); font-size: 14px; line-height: 1.7; }
+
+/* Sections */
+section { display: grid; gap: 36px; }
+.sec-head { display: grid; gap: 10px; max-width: 44em; }
+.sec-head h2 { font-size: clamp(24px, 3.4vw, 34px); font-weight: 900; }
+.sec-head p { color: var(--muted); }
+
+.feature { display: grid; grid-template-columns: minmax(0, 5fr) minmax(0, 7fr); gap: 40px; align-items: start; padding-top: 32px; border-top: 1px solid var(--line); }
+.feature.flip { grid-template-columns: minmax(0, 7fr) minmax(0, 5fr); }
+.feature.flip .text { order: 2; }
+.text { display: grid; gap: 14px; min-width: 0; }
+.text h3 { font-size: 22px; font-weight: 700; }
+.text ul { margin: 0; padding: 0; list-style: none; display: grid; gap: 10px; }
+.text li { padding-left: 1.3em; position: relative; }
+.text li::before { content: ""; position: absolute; left: 0; top: .78em; width: 7px; height: 7px; border-radius: 50%; background: var(--accent); }
+.note { font-size: 14px; color: var(--muted); }
+
+figure { margin: 0; min-width: 0; }
+.shot { background: var(--shot-bg); border: 1px solid var(--line); border-radius: 10px; padding: 10px; }
+.shot img { display: block; width: 100%; height: auto; border-radius: 5px; border: 1px solid var(--line); }
+.shot.tall img { max-height: 560px; object-fit: cover; object-position: top; }
+figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
+
+/* Trust */
+.trust { display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px; }
+.trust article { background: var(--surface); border: 1px solid var(--line); border-radius: 10px; padding: 24px; display: grid; gap: 10px; align-content: start; }
+.trust h3 { font-size: 18px; font-weight: 700; }
+.trust p { color: var(--muted); font-size: 15px; line-height: 1.8; }
+
+/* Numbers */
+.numbers { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 20px; }
+.num { display: grid; gap: 2px; padding: 4px 0 0; border-top: 3px solid var(--accent); }
+.num b { font-family: var(--display); font-weight: 900; font-size: 40px; font-variant-numeric: tabular-nums; line-height: 1.4; }
+.num span { font-size: 14px; color: var(--muted); }
+
+/* Process */
+.flow { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 0; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); counter-reset: step; }
+.flow div { padding: 22px; display: grid; gap: 6px; align-content: start; border-right: 1px solid var(--line); counter-increment: step; }
+.flow div:last-child { border-right: 0; }
+.flow div::before { content: "STEP " counter(step); font-family: var(--mono); font-size: 12px; color: var(--accent); letter-spacing: .08em; }
+.flow b { font-family: var(--display); font-size: 17px; }
+.flow span { font-size: 14px; color: var(--muted); line-height: 1.7; }
+
+.stack { overflow-x: auto; }
+.stack table { width: 100%; border-collapse: collapse; font-size: 15px; min-width: 520px; }
+.stack th, .stack td { text-align: left; padding: 12px 14px; border-bottom: 1px solid var(--line); vertical-align: top; }
+.stack th { font-family: var(--display); font-weight: 700; white-space: nowrap; width: 9em; }
+.stack td small { display: block; color: var(--muted); font-family: var(--mono); font-size: 12.5px; }
+
+/* Roadmap */
+.road { display: grid; gap: 0; border-left: 2px solid var(--line); margin-left: 6px; }
+.road div { padding: 0 0 22px 24px; position: relative; display: grid; gap: 2px; }
+.road div::before { content: ""; position: absolute; left: -7px; top: .55em; width: 12px; height: 12px; border-radius: 50%; background: var(--bg); border: 2px solid var(--muted); }
+.road div.done::before { background: var(--accent); border-color: var(--accent); }
+.road div.now::before { background: var(--accent-soft); border-color: var(--accent); }
+.road b { font-family: var(--display); }
+.road span { color: var(--muted); font-size: 14px; }
+.tag { display: inline-block; font-size: 12px; font-family: var(--display); font-weight: 700; padding: 0 8px; border-radius: 99px; margin-left: 8px; background: var(--accent-soft); color: var(--accent); }
+
+footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 20px; }
+
+@media (max-width: 760px) {
+  .wrap { gap: 64px; padding-block: 36px 64px; }
+  .feature, .feature.flip { grid-template-columns: minmax(0, 1fr); gap: 20px; }
+  .feature.flip .text { order: 0; }
+  .flow div { border-right: 0; border-bottom: 1px solid var(--line); }
+  .flow div:last-child { border-bottom: 0; }
+}
+</style>
+
+<div class="wrap">
+
+  <header class="hero">
+    <p class="eyebrow">自社ブランドのための EC サイト</p>
+    <h1>商品を並べて、注文を受けて、<br><em>在庫と税金まで正しく</em>回す。</h1>
+    <p class="lead">お客様が買い物をする「店舗画面」と、お店の人が商品や注文を扱う「管理画面」の二つで動く、日本向けの通販サイトです。見た目だけの試作ではなく、在庫・消費税・ログイン・権限といった、実際にお店を開くときに困るところから作っています。</p>
+    <div class="facts">
+      <div class="fact"><b>店舗画面と管理画面</b><span>お客様向けとお店向けを別々の画面に分け、それぞれに合った操作にしています。</span></div>
+      <div class="fact"><b>軽減税率に対応</b><span>10% と 8% の商品を一緒に買っても、税率ごとの内訳を正しく出します。</span></div>
+      <div class="fact"><b>売り越しを起こさない</b><span>最後の 1 個に注文が同時に来ても、在庫がマイナスになりません。</span></div>
+    </div>
+    <figure class="hero-shot">
+      <div class="shot"><img src="img/store-top.png" alt="店舗画面のトップ。カテゴリと新着の商品が写真付きで並ぶ" width="1280" height="1024"></div>
+      <figcaption>店舗画面のトップ。カテゴリと新着の商品が並び、価格は税込と税抜の両方を示します。在庫のない商品には「在庫なし」と出ます。</figcaption>
+    </figure>
+  </header>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">お客様ができること</p>
+      <h2>探す、選ぶ、買う、あとで確かめる</h2>
+      <p>会員登録をしたお客様が、商品を探して注文し、注文の状況を自分で確かめられます。</p>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <h3>色やサイズを選んで、カートへ</h3>
+        <ul>
+          <li>キーワード検索とカテゴリ（衣類 → トップス → T シャツ のような階層）で探せます。</li>
+          <li>商品ページでは、色やサイズを選ぶとその組み合わせの在庫を示します。</li>
+          <li>写真は 1 商品に 20 枚まで載せられ、色ごとに見せる写真を決められます。</li>
+          <li>ログインせずにカートに入れた商品も、ログインすると引き継がれます。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot"><img src="img/store-product.png" alt="商品ページ。マグカップの写真、価格、色の選択、数量、カートに入れるボタン" width="1280" height="900" loading="lazy"></div>
+      </figure>
+    </div>
+
+    <div class="feature flip">
+      <div class="text">
+        <h3>注文の明細は、税率ごとに分けて示す</h3>
+        <ul>
+          <li>食品（8%）と衣類（10%）を一緒に買っても、税率ごとの対象額と消費税を分けて示します。インボイス（適格請求書）と同じ考え方です。</li>
+          <li>注文の履歴と状態（受付・キャンセル申請中・キャンセル）を、お客様がいつでも見られます。</li>
+          <li>キャンセルは「申請」として受け、お店が確かめてから取り消します。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot tall"><img src="img/store-order.png" alt="注文の内容。明細、送料、税率 10% と 8% の内訳、お届け先、キャンセルの申請" width="1280" height="1160" loading="lazy"></div>
+        <figcaption>T シャツ（10%）と緑茶（8%）を一緒に注文した例。</figcaption>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">お店の人ができること</p>
+      <h2>商品、在庫、税率、注文を一つの管理画面で</h2>
+      <p>専門の知識がなくても、画面の案内に沿って商品を出し、在庫を直し、注文を扱えます。</p>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <h3>商品を登録して、公開の日時を予約する</h3>
+        <ul>
+          <li>一つの商品に「白の M」「黒の L」のような組み合わせ（バリアント）を持たせ、それぞれに在庫を持てます。</li>
+          <li>公開の開始と終了の日時を決めておけば、その時間に自動で店に出て、自動で引っ込みます。セールや季節商品に使えます。</li>
+          <li>スマートフォンで撮った写真（HEIC など）もそのまま登録でき、軽い形式に変えて配信します。撮影場所などの情報は自動で消します。</li>
+          <li>一度店に出した商品は消せず、「販売終了」にします。過去の注文の記録が崩れないためです。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot tall"><img src="img/admin-product.png" alt="管理画面の商品の編集。状態、公開期間、基本情報、税区分、カテゴリ、画像、バリアント" width="1280" height="2320" loading="lazy"></div>
+        <figcaption>商品の編集画面（上の部分）。下に画像とバリアントの一覧が続きます。</figcaption>
+      </figure>
+    </div>
+
+    <div class="feature flip">
+      <div class="text">
+        <h3>在庫は、増減の理由と操作した人まで残る</h3>
+        <ul>
+          <li>入荷・棚卸差異・破損などの理由を付けて在庫を増減します。</li>
+          <li>注文で減った分も、注文番号付きで履歴に残ります。「なぜ数が合わないのか」を後から追えます。</li>
+          <li>複数の担当者が同時に在庫を直しても、どちらの操作も失われません。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot"><img src="img/admin-stock.png" alt="在庫の画面。現在の在庫数、増減の入力、調整の履歴" width="1280" height="900" loading="lazy"></div>
+      </figure>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <h3>税率が変わっても、日付を入れておくだけ</h3>
+        <ul>
+          <li>「標準 10%」「軽減 8%」のような税区分を商品に割り当てます。</li>
+          <li>税率には適用の開始と終了の日時を持たせられるので、税制が変わるときや期間限定の減税にも、その日に合わせて自動で切り替わります。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot"><img src="img/admin-tax.png" alt="税区分の画面。標準 10% と軽減 8%" width="1280" height="900" loading="lazy"></div>
+      </figure>
+    </div>
+
+    <div class="feature flip">
+      <div class="text">
+        <h3>注文を一覧で見て、必要ならキャンセル</h3>
+        <ul>
+          <li>注文の明細を品番・税抜単価・税率・税込単価まで表で確かめられます。</li>
+          <li>お客様のキャンセルの申請を受け、在庫を戻して取り消します。</li>
+          <li>担当者ごとに、できる操作を分けられます。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot"><img src="img/admin-order.png" alt="管理画面の注文の詳細。明細の表、税率ごとの内訳、お客様とお届け先" width="1280" height="900" loading="lazy"></div>
+      </figure>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">安心して任せられる理由</p>
+      <h2>お店を開いてから困ることを、先につぶしてある</h2>
+    </div>
+    <div class="trust">
+      <article>
+        <h3>売り越しと二重の注文を防ぐ</h3>
+        <p>人気商品の最後の 1 個に、同時に何人も注文した場面を自動で再現して確かめています。在庫がマイナスになることはありません。</p>
+      </article>
+      <article>
+        <h3>カード番号を預からない</h3>
+        <p>支払は外部の決済サービスの画面で入力する形にしています。サイト側がカード番号を受け取らないので、漏えいの心配がありません（決済は開発中）。</p>
+      </article>
+      <article>
+        <h3>ログインは専用の仕組みに任せる</h3>
+        <p>パスワードの管理を自前で作らず、実績のある認証の仕組みを使っています。お客様と運営者のアカウントも完全に分けています。</p>
+      </article>
+      <article>
+        <h3>直すたびに、全部を自動で確かめる</h3>
+        <p>変更を入れるたびに、約 1,000 件の自動テストが流れます。新しい機能を足して、前の機能が壊れたまま出ることを防ぎます。</p>
+      </article>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">作り方</p>
+      <h2>決めてから作る。確かめてから進む。</h2>
+      <p>一人で開発していますが、チームで本番のサービスを作るときと同じ手順を守っています。作るものを文書で決め、決めたとおりに動くことをテストで証明してから、次に進みます。</p>
+    </div>
+
+    <div class="numbers">
+      <div class="num"><b>166</b><span>文書で決めた「こう動くべき」という条件。すべてにテストを対応させています</span></div>
+      <div class="num"><b>約 1,000</b><span>自動テストの件数（画面・サーバー・ブラウザでの通し操作）</span></div>
+      <div class="num"><b>7</b><span>仕様書の数。機能を足すたび、また整理するたびに一つ書きます</span></div>
+      <div class="num"><b>2</b><span>画面の数（店舗・管理）。文言は差し替えられるように作り、多言語化に備えています</span></div>
+    </div>
+
+    <div class="flow">
+      <div><b>仕様を書く</b><span>誰が何をできるか、どうなれば完成かを、条件の一覧として書く。</span></div>
+      <div><b>設計を決める</b><span>画面とサーバーのやり取りの約束（API）を先に決め、両側がそれに合わせる。</span></div>
+      <div><b>テストを先に書く</b><span>まだ動かないことをテストで確かめてから、作り始める。</span></div>
+      <div><b>作って、見直す</b><span>テストが通るように作り、決めた書き方の規則と照らして見直す。</span></div>
+    </div>
+
+    <div class="stack">
+      <table>
+        <tbody>
+          <tr><th>サーバー</th><td>業務ごとに部品を分け、将来は別々のサービスに切り出せる形にしています。<small>Java 21 / Spring Boot / Spring Modulith / PostgreSQL / jOOQ</small></td></tr>
+          <tr><th>店舗画面</th><td>表示が速く、検索エンジンにも読まれやすい作り。<small>Next.js / TypeScript / Tailwind CSS</small></td></tr>
+          <tr><th>管理画面</th><td>表や入力の多い業務向けの作り。<small>React / TanStack Query / React Hook Form</small></td></tr>
+          <tr><th>ログイン</th><td>標準の方式（OpenID Connect）に沿った専用の認証サーバー。<small>Keycloak</small></td></tr>
+          <tr><th>品質</th><td>変更のたびに自動でテストし、ブラウザの通し操作まで確かめます。<small>JUnit / Testcontainers / Vitest / Playwright / GitHub Actions</small></td></tr>
+          <tr><th>運用</th><td>アクセスが増えたら、同じサーバーを並べて増やせる作りにしています。<small>Docker / S3 互換ストレージ / Prometheus</small></td></tr>
+        </tbody>
+      </table>
+    </div>
+  </section>
+
+  <section>
+    <div class="sec-head">
+      <p class="eyebrow">これから</p>
+      <h2>閲覧から配送まで、買い物の流れを最後まで</h2>
+      <p>目標は「商品を見る → カート → 注文 → 支払 → 出荷 → 配送状況」の流れを、省略せずに通すことです。</p>
+    </div>
+    <div class="road">
+      <div class="done"><b>商品・在庫・税率の管理</b><span>完成</span></div>
+      <div class="done"><b>カートと注文、キャンセル</b><span>完成</span></div>
+      <div class="done"><b>会員登録・ログイン・運営者の権限</b><span>完成</span></div>
+      <div class="now"><b>カード決済<span class="tag">開発中</span></b><span>注文時に与信を取り、出荷時に売上を確定する。期限までに支払われない注文は自動で取り消し、在庫を戻す。</span></div>
+      <div><b>出荷と配送状況</b><span>出荷の登録とお客様への通知、配送状況の確認。</span></div>
+      <div><b>売上の簡易レポート</b><span>注文のデータを集め、お店の人が売れ行きを見られるようにする。</span></div>
+    </div>
+  </section>
+
+  <footer>
+    画面の写真は開発中の環境で撮ったもので、商品・お客様・注文はすべて試験用のデータです。
+  </footer>
+
+</div>

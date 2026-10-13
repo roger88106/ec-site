@@ -24,4 +24,4 @@ If the user passed arguments, treat them as a description of what the next sessi
 - 新しいセッションは、利用者の指示がなければ、名前の日時が最も新しいディレクトリを読み、書かれた状態（push していない commit、次のタスク）を `git log` と tasks ファイルで確かめてから始める。
 - 古い引き継ぎの文書は利用者が消す。エージェントは消さず、消すかどうかも聞かない。
 - 主に、spec の区切りや、作業を途中でやめて新しいセッションに移るときに使う（AGENTS.md「セッションの始めと終わり」）。作業の正本は tasks ファイル（`docs/specs/NNN-*/tasks/`）と README の spec の状態なので、引き継ぎの文書には、次に着手するタスク番号と、tasks・commit に残っていないこと（未確定の判断、手動確認で気づいたこと、ローカルの DB に残したテストデータなど）だけを書く。
-- 「suggested skills」には、このリポジトリの `local-dev`、`new-screen` のうち次の作業で使うものを挙げる。
+- 「suggested skills」には、AGENTS.md の skill の表から、次の作業で使うものを挙げる。

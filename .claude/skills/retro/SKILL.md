@@ -48,7 +48,7 @@ You have access to several files in the repo:
 ## このリポジトリでの読み替え
 
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
-- `CODING_STANDARDS.md` はない。コーディングの決まりの正本は `docs/constitution.md` と `docs/frontend/apps/store.md`・`docs/frontend/apps/admin.md`。決まりの追加はそこに提案する。
-- 自動の確認は、バックエンドが `./gradlew check`、フロントが `scripts/dev/check-frontend.sh`（lint・型チェック・テスト・ビルド）。CI は `.github/workflows/`。
-- 手順の skill は `.claude/skills/local-dev`、`new-screen`。改善点がこれらの不足なら、その skill への追記として提案する。
+- `CODING_STANDARDS.md` はない。書き方の規則の正本は、constitution 第 3 節の文書の地図にある書き方の文書（`coding.md`、テストとコメントの書き方）で、見直しの手順は `docs/process/review.md`。決まりの追加はそこに提案する。
+- 自動の確認は、`.github/workflows/` の CI と、そこから呼ぶ `scripts/ci/` の script。手元で流す手順は skill `local-dev`。
+- skill は AGENTS.md の skill の表にある。改善点が skill の不足なら、その skill への追記として提案する。
 - 改善点の提案だけを行い、文書や設定は直さない（直すときは tasks に足してから。AGENTS.md）。

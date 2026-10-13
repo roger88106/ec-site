@@ -34,9 +34,9 @@ class ModulithTest {
     }
 
     @Test
-    @DisplayName("税・商品カタログ・メディア・在庫・カート・注文・店舗・会員の 8 モジュールがある")
+    @DisplayName("税・商品カタログ・メディア・在庫・カート・注文・店舗・会員・決済の 9 モジュールがある")
     void detectsAllModules() {
         assertThat(modules.stream().map(module -> module.getIdentifier().toString()))
-                .containsExactlyInAnyOrder("tax", "catalog", "media", "inventory", "cart", "order", "storefront", "member");
+                .containsExactlyInAnyOrder("tax", "catalog", "media", "inventory", "cart", "order", "storefront", "member", "payment");
     }
 }

@@ -1,0 +1,15 @@
+# ============================================================================
+# Stripe の sandbox で動かす設定（docs/dev/setup.md「Stripe で動かす」）
+#
+# local profile に重ねて使う：spring.profiles.active=local,stripe
+# 秘密の値（STRIPE_SECRET_KEY、STRIPE_WEBHOOK_SECRET）は、Git に入れない /.local/stripe.env から読む。
+# 起動の作業ディレクトリ（backend/ecsite）からの相対パス。環境変数で渡したときは、環境変数が優先する。
+# ============================================================================
+
+spring:
+  config:
+    import: optional:file:../../.local/stripe.env[.properties]
+
+ecsite:
+  payment:
+    gateway: stripe

@@ -183,6 +183,21 @@ services:
       - "1025:1025"
       - "8025:8025"
 
+  # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する
+  # （docs/dev/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
+  stripe-cli:
+    image: stripe/stripe-cli:v1.53.1
+    container_name: ec-site-stripe-cli
+    profiles: [stripe]
+    env_file:
+      - path: ../.local/stripe.env
+        required: false
+    entrypoint: ["sh", "-c"]
+    command:
+      - stripe listen --api-key "$$STRIPE_SECRET_KEY" --events checkout.session.completed,checkout.session.expired --forward-to http://host.docker.internal:8080/api/webhooks/stripe
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
 volumes:
   postgres_data:
   seaweedfs_data:

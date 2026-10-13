@@ -93,6 +93,21 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 - 店舗画面の一覧は API の結果を最大 60 秒キャッシュする。管理画面での変更がすぐ出ないのは正常。
 
+## 決済（mock と Stripe）
+
+- 既定（profile `local`）は mock。注文すると `http://localhost:8080/mock-payment/{ID}` の支払の画面に移る（「支払う」「カードを拒否させる」「やめる」）。
+- Stripe の sandbox は `docs/dev/setup.md`「Stripe で動かす」の通り。鍵は `/.local/stripe.env`（なければ利用者に頼む。鍵を会話に貼らせない）。
+
+  ```bash
+  docker compose --profile stripe up -d stripe-cli                   # ルートで。通知を :8080 に転送する
+  ./gradlew bootRun --args='--spring.profiles.active=local,stripe'     # backend/ecsite/ で
+  docker logs ec-site-stripe-cli 2>&1 | grep -- '-->' | tail           # 転送した通知（ログ全体は署名の鍵を含むので出さない）
+  ```
+
+- 期限切れを早く確かめるときは、`--args` に `--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を足す。
+- 支払は `payment.payment`（`status`、`page_id`、`authorization_ref`）、注文は `ordering.sales_order`。
+- Stripe の Checkout の画面は描くのが遅く、入力が遅れて二重に入ることがある。入力の後に拡大して確かめてから支払う。
+
 ## ローカルの画面のデータ
 
 local profile の seed（`db/seed/local/`）が、画面を確かめるためのデータを作る。注文を作るスクリプトは要らない。

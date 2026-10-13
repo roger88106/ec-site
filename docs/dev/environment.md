@@ -23,6 +23,7 @@
 | `ECSITE_PAYMENT_RETURN_URL` | 支払の画面から戻る店舗の注文の画面の URL。`{orderId}` に注文 ID が入る | 必須 |
 | `ECSITE_PAYMENT_GATEWAY`、`_DEADLINE`、`_EXPIRY_INTERVAL` | 決済サービス（`mock`・`stripe`）、支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | mock、30m、PT1M |
 | `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払の画面を出すバックエンドの URL（ブラウザーから開ける URL） | 決済サービスが mock なら必須 |
+| `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API の秘密の鍵、通知の署名の鍵。Git に入れない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md) 第 5 節） | 決済サービスが stripe なら必須 |
 | `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で動かすか | true |
 | `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE` | 未完了のイベントを再発行する間隔、再発行するイベントの発行からの時間の下限 | PT1M、5m |
 

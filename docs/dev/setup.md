@@ -79,3 +79,35 @@ docker compose up -d keycloak
 ```
 
 Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回）にだけ作られる。それより前からある volume では、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < docker/postgres/init-keycloak.sql` を流してから `docker compose up -d` する。
+
+## 5. Stripe で動かす
+
+既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確かめるときだけ、次の手順で切り替える。決済の設計は [決済モジュール](../backend/modules/payment.md)。
+
+1. Stripe のアカウントと sandbox を作り、ダッシュボードの「開発者 → API キー」のシークレットキー（`sk_test_` で始まる）を、`/.local/stripe.env` に書く。このファイルは Git に入らない。鍵を会話やコミットに貼らない。
+
+   ```bash
+   STRIPE_SECRET_KEY=sk_test_...
+   STRIPE_WEBHOOK_SECRET=
+   ```
+
+2. 通知の署名の鍵（`whsec_` で始まる）を取り、同じファイルの `STRIPE_WEBHOOK_SECRET` に書く。API キーが変わらなければ、鍵も変わらないので 1 回だけでよい。
+
+   ```bash
+   docker compose --profile stripe run --rm stripe-cli 'stripe listen --api-key "$STRIPE_SECRET_KEY" --print-secret'
+   ```
+
+3. 通知の転送と、バックエンドを起動する。
+
+   ```bash
+   # ルートで：Stripe の通知を http://localhost:8080/api/webhooks/stripe に転送する
+   docker compose --profile stripe up -d stripe-cli
+
+   # backend/ecsite/ で：profile stripe を重ねる（/.local/stripe.env を読み、決済サービスを Stripe にする）
+   ./gradlew bootRun --args='--spring.profiles.active=local,stripe'
+   ```
+
+- 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で見る。止めるときは `docker compose --profile stripe stop stripe-cli`。
+- テストのカード番号は Stripe の文書のもの（成功は `4242 4242 4242 4242`、拒否は `4000 0000 0000 0002`。有効期限は未来の日付、セキュリティコードは任意の 3 桁）。
+- 支払の画面に出る支払の方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードと、カードで払うウォレット（Apple Pay、Google Pay、Link）だけを有効にする。カード以外の方法は与信だけを取れない。
+- 期限切れを早く確かめるときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を足す。Stripe の支払の画面は作ってから 31 分で切れるが、支払の期限で期限切れのジョブが閉じる。

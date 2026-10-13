@@ -2,6 +2,7 @@ import { flattenTree } from '@ec-site/shared/lib/categoryTree'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useFormContext } from 'react-hook-form'
 import { $api } from '@/api/client'
+import { schemas } from '@/api/generated/constraints'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldLabel, FieldSet } from '@/components/ui/field'
@@ -20,12 +21,21 @@ export function ProductFields() {
     <div className="grid gap-4">
       <Field>
         <FieldLabel htmlFor="product-name">商品名</FieldLabel>
-        <Input id="product-name" maxLength={200} {...register('name', { required: true })} />
+        <Input
+          id="product-name"
+          maxLength={schemas.UpdateProductRequest.name.maxLength}
+          {...register('name', { required: true })}
+        />
         <FieldError errors={[errors.name]} />
       </Field>
       <Field>
         <FieldLabel htmlFor="product-description">説明</FieldLabel>
-        <Textarea id="product-description" maxLength={10000} rows={4} {...register('description')} />
+        <Textarea
+          id="product-description"
+          maxLength={schemas.UpdateProductRequest.description.maxLength}
+          rows={4}
+          {...register('description')}
+        />
         <FieldError errors={[errors.description]} />
       </Field>
       <div className="flex flex-wrap gap-4">
@@ -42,7 +52,13 @@ export function ProductFields() {
         </Field>
         <Field className="w-40">
           <FieldLabel htmlFor="product-price">税抜価格（円）</FieldLabel>
-          <Input id="product-price" min={1} step={1} type="number" {...register('priceExclTax', { required: true })} />
+          <Input
+            id="product-price"
+            min={schemas.UpdateProductRequest.priceExclTax.minimum}
+            step={1}
+            type="number"
+            {...register('priceExclTax', { required: true })}
+          />
           <FieldError errors={[errors.priceExclTax]} />
         </Field>
       </div>

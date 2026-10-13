@@ -3,6 +3,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import type { Metadata } from 'next'
 import { getApi } from '@/api/client'
+import { parameters } from '@/api/generated/constraints'
 import { unwrap } from '@/api/result'
 import { PageLinks } from '@/components/PageLinks'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
@@ -23,7 +24,13 @@ export default async function SearchPage({ searchParams }: PageProps<'/search'>)
         {query.q ? `「${query.q}」の検索結果` : 'キーワードで探す'}
       </h1>
       <form action="/search" className="flex max-w-md gap-2">
-        <Input aria-label="キーワード" defaultValue={query.q} maxLength={100} name="q" required />
+        <Input
+          aria-label="キーワード"
+          defaultValue={query.q}
+          maxLength={parameters.searchProducts.q.maxLength}
+          name="q"
+          required
+        />
         <Button type="submit">検索</Button>
       </form>
       {query.q ? (

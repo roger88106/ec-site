@@ -4,6 +4,7 @@ import { Input } from '@ec-site/shared/ui/input'
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
 import { Link, useNavigate } from 'react-router'
 import { setServerFieldErrors } from '@/api/formErrors'
+import { schemas } from '@/api/generated/constraints'
 import { useApiMutation } from '@/api/useApiMutation'
 import { paths } from '@/app/paths'
 import { CodeInput } from '@/components/CodeInput'
@@ -20,7 +21,7 @@ import {
 } from '@/features/product/product'
 
 /** バリアント軸の上限（AC-13） */
-const MAX_AXES = 3
+const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
 
 /** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を足したもの） */
 type Values = ProductFieldsValues & {
@@ -80,7 +81,13 @@ export function ProductCreatePage() {
                   control={form.control}
                   name="productCode"
                   render={({ field }) => (
-                    <CodeInput id="product-code" onChange={field.onChange} placeholder="ABC-001" value={field.value} />
+                    <CodeInput
+                      id="product-code"
+                      maxLength={schemas.CreateProductRequest.productCode.maxLength}
+                      onChange={field.onChange}
+                      placeholder="ABC-001"
+                      value={field.value}
+                    />
                   )}
                 />
                 <FieldDescription>半角の英大文字・数字とハイフン。英小文字は大文字にします。</FieldDescription>
@@ -106,7 +113,7 @@ export function ProductCreatePage() {
                     // 「軸を追加」で増えた欄に入力を移す（autoFocus は欄を作ったときだけ効く）
                     autoFocus
                     className="w-56"
-                    maxLength={30}
+                    maxLength={schemas.CreateProductRequest.axes.items.maxLength}
                     placeholder={['色', 'サイズ', ''][index]}
                     {...form.register(`axes.${index}.name`)}
                   />

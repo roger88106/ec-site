@@ -4,9 +4,10 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import { useActionState } from 'react'
 import { requestCancellation } from '@/actions/order'
+import { schemas } from '@/api/generated/constraints'
 
 /** 理由の長さの上限（AC-95） */
-const REASON_MAX_LENGTH = 500
+const REASON_MAX_LENGTH = schemas.RequestOrderCancellationRequest.reason.maxLength
 
 /**
  * キャンセルの申請（AC-95）。理由は任意。<br />

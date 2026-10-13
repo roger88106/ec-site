@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
 import { orderStatusValues } from '@/api/generated/admin'
+import { parameters } from '@/api/generated/constraints'
 import type { OrderStatus } from '@/api/types'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
@@ -24,7 +25,11 @@ export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onAp
     >
       <Field className="w-44">
         <FieldLabel htmlFor="filter-order-number">注文番号（前方一致）</FieldLabel>
-        <Input id="filter-order-number" maxLength={15} {...form.register('orderNumber')} />
+        <Input
+          id="filter-order-number"
+          maxLength={parameters.listOrders.orderNumber.maxLength}
+          {...form.register('orderNumber')}
+        />
       </Field>
       <Field className="w-40">
         <FieldLabel htmlFor="filter-status">状態</FieldLabel>

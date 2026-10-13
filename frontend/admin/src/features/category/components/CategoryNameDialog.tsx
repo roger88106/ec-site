@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { useForm } from 'react-hook-form'
 import { setServerFieldErrors } from '@/api/formErrors'
+import { schemas } from '@/api/generated/constraints'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -49,7 +50,12 @@ export function CategoryNameDialog({
         >
           <Field>
             <FieldLabel htmlFor="category-name">名称</FieldLabel>
-            <Input autoFocus id="category-name" maxLength={50} {...form.register('name', { required: true })} />
+            <Input
+              autoFocus
+              id="category-name"
+              maxLength={schemas.CreateCategoryRequest.name.maxLength}
+              {...form.register('name', { required: true })}
+            />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <ErrorMessage error={error} onReload={onReload} shownFields={['name']} />

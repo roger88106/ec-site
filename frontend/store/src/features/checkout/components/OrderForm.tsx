@@ -6,6 +6,7 @@ import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { type ReactNode, startTransition, useActionState } from 'react'
 import { placeOrder } from '@/actions/checkout'
+import { schemas } from '@/api/generated/constraints'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrderErrors'
 import { PREFECTURES } from '@/features/checkout/prefectures'
@@ -47,7 +48,7 @@ export function OrderForm({
         <p className="text-muted-foreground text-xs">ご注文の連絡は、会員のメールアドレスにお送りします。</p>
       </div>
       <Field error={errors.fields.name} label="氏名" name="name">
-        <Input autoComplete="name" id="name" maxLength={50} name="name" />
+        <Input autoComplete="name" id="name" maxLength={schemas.ShippingAddress.name.maxLength} name="name" />
       </Field>
       <Field error={errors.fields.postalCode} hint="例：100-0001" label="郵便番号" name="postalCode">
         <Input autoComplete="postal-code" className="w-40" id="postalCode" inputMode="numeric" name="postalCode" />
@@ -65,7 +66,12 @@ export function OrderForm({
         </NativeSelect>
       </Field>
       <Field error={errors.fields.address} hint="市区町村、番地、建物名" label="住所" name="address">
-        <Input autoComplete="street-address" id="address" maxLength={200} name="address" />
+        <Input
+          autoComplete="street-address"
+          id="address"
+          maxLength={schemas.ShippingAddress.address.maxLength}
+          name="address"
+        />
       </Field>
       <Field error={errors.fields.phone} hint="例：03-1234-5678" label="電話番号" name="phone">
         <Input autoComplete="tel" className="w-48" id="phone" inputMode="tel" name="phone" type="tel" />

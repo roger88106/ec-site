@@ -1,3 +1,4 @@
+import { schemas } from '@/api/generated/constraints'
 import type { CancellationRequest, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
 
 /** 金額の書式（3 桁ごとのカンマ） */
@@ -29,8 +30,11 @@ const ORDER_STATUS_LABELS: Record<OrderStatus, string> = {
   CANCELLED: 'キャンセル',
 }
 
-/** 1 品目の数量の選択肢（AC-75。1〜10） */
-export const QUANTITY_OPTIONS = Array.from({ length: 10 }, (_, index) => index + 1)
+/** 1 品目の数量の選択肢（AC-75。契約の数量の下限から上限まで） */
+export const QUANTITY_OPTIONS = Array.from(
+  { length: schemas.Quantity.maximum - schemas.Quantity.minimum + 1 },
+  (_, index) => schemas.Quantity.minimum + index,
+)
 
 /**
  * 注文のキャンセルの状況（AC-95、96）。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み

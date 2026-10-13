@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { useForm } from 'react-hook-form'
 import { setServerFieldErrors } from '@/api/formErrors'
+import { schemas } from '@/api/generated/constraints'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import {
   Dialog,
@@ -14,7 +15,7 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 
 /** 理由の長さの上限（AC-103） */
-const REASON_MAX_LENGTH = 500
+const REASON_MAX_LENGTH = schemas.CancelOrderRequest.reason.maxLength
 
 /** 入力欄の値 */
 type Values = { reason: string }

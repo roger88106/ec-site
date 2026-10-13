@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller } from 'react-hook-form'
 import { setServerFieldErrors } from '@/api/formErrors'
+import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { CodeInput } from '@/components/CodeInput'
@@ -57,7 +58,13 @@ export function AddVariantForm({ product, refetch }: { product: ProductDetail; r
             control={form.control}
             name="variantCode"
             render={({ field }) => (
-              <CodeInput id="variant-code" onChange={field.onChange} placeholder="ABC-001-WH-M" value={field.value} />
+              <CodeInput
+                id="variant-code"
+                maxLength={schemas.AddVariantRequest.variantCode.maxLength}
+                onChange={field.onChange}
+                placeholder="ABC-001-WH-M"
+                value={field.value}
+              />
             )}
           />
           <FieldError errors={[form.formState.errors.variantCode]} />
@@ -65,7 +72,11 @@ export function AddVariantForm({ product, refetch }: { product: ProductDetail; r
         {product.axes.map((axis, index) => (
           <Field className="w-32" key={axis}>
             <FieldLabel htmlFor={`variant-axis-${index}`}>{axis}</FieldLabel>
-            <Input id={`variant-axis-${index}`} maxLength={50} {...form.register(`axisValues.${index}.value`)} />
+            <Input
+              id={`variant-axis-${index}`}
+              maxLength={schemas.AddVariantRequest.axisValues.items.maxLength}
+              {...form.register(`axisValues.${index}.value`)}
+            />
           </Field>
         ))}
         <Button className="mt-6" disabled={mutation.isPending || !filled} type="submit">

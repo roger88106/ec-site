@@ -4,6 +4,7 @@ import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { manualStockAdjustmentReasonValues } from '@/api/generated/admin'
+import { schemas } from '@/api/generated/constraints'
 import type { ManualStockAdjustmentReason } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -89,7 +90,12 @@ export function AdjustStockForm({ variantId }: { variantId: string }) {
           </div>
           <Field>
             <FieldLabel htmlFor="stock-memo">メモ{values.reason === 'OTHER' ? '（必須）' : '（任意）'}</FieldLabel>
-            <Textarea id="stock-memo" maxLength={500} rows={2} {...form.register('memo')} />
+            <Textarea
+              id="stock-memo"
+              maxLength={schemas.AdjustStockRequest.memo.maxLength}
+              rows={2}
+              {...form.register('memo')}
+            />
             <FieldError errors={[form.formState.errors.memo]} />
           </Field>
           <ErrorMessage error={mutation.error} shownFields={FIELD_NAMES} />

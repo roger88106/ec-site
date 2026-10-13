@@ -3,6 +3,7 @@ import { SearchIcon, ShoppingCartIcon } from 'lucide-react'
 import Link from 'next/link'
 import { Suspense } from 'react'
 import { logout } from '@/actions/auth'
+import { parameters } from '@/api/generated/constraints'
 import { ACCOUNT_URL, currentMember } from '@/auth'
 import { LoginLinks } from '@/components/LoginLinks'
 
@@ -30,7 +31,7 @@ export async function SiteHeader() {
             <Input
               aria-label="キーワード"
               className="w-56"
-              maxLength={100}
+              maxLength={parameters.searchProducts.q.maxLength}
               name="q"
               placeholder="キーワードで探す"
               required

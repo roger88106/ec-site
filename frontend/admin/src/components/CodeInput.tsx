@@ -1,7 +1,7 @@
 import { Input } from '@ec-site/shared/ui/input'
 import { normalizeCode } from '@/lib/code'
 
-/** 品番の入力。半角の英小文字は、入力した時点で大文字にする（管理画面の構成 第 5 節） */
+/** 品番の入力。半角の英小文字は、入力した時点で大文字にする（管理画面の構成 第 5 節）。長さの上限は使う所で渡す */
 export function CodeInput({
   value,
   onChange,
@@ -10,7 +10,6 @@ export function CodeInput({
   return (
     <Input
       className="font-mono"
-      maxLength={32}
       onChange={(event) => onChange(normalizeCode(event.target.value))}
       value={value}
       {...props}

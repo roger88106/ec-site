@@ -2,6 +2,7 @@ import type { FlatCategory } from '@ec-site/shared/lib/categoryTree'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Label } from '@ec-site/shared/ui/label'
+import { parameters } from '@/api/generated/constraints'
 import { productSortValues } from '@/api/generated/store'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type ListQuery, sortLabels } from '@/features/catalog/listQuery'
@@ -34,7 +35,7 @@ export function ListFilterForm({ query, categories }: { query: ListQuery; catego
             className="w-28"
             defaultValue={query.minPrice ?? ''}
             id="filter-min-price"
-            min={0}
+            min={parameters.listProducts.minPrice.minimum}
             name="minPrice"
             placeholder="下限"
             type="number"
@@ -44,7 +45,7 @@ export function ListFilterForm({ query, categories }: { query: ListQuery; catego
             aria-label="上限"
             className="w-28"
             defaultValue={query.maxPrice ?? ''}
-            min={0}
+            min={parameters.listProducts.maxPrice.minimum}
             name="maxPrice"
             placeholder="上限"
             type="number"

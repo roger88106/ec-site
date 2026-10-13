@@ -3,6 +3,7 @@ import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/car
 import { Input } from '@ec-site/shared/ui/input'
 import { useForm } from 'react-hook-form'
 import { setServerFieldErrors } from '@/api/formErrors'
+import { schemas } from '@/api/generated/constraints'
 import { useApiMutation } from '@/api/useApiMutation'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -32,7 +33,11 @@ export function CreateTaxCategoryForm() {
         >
           <Field className="w-64">
             <FieldLabel htmlFor="tax-category-name">名称</FieldLabel>
-            <Input id="tax-category-name" maxLength={50} {...form.register('name', { required: true })} />
+            <Input
+              id="tax-category-name"
+              maxLength={schemas.CreateTaxCategoryRequest.name.maxLength}
+              {...form.register('name', { required: true })}
+            />
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Button className="mt-6" disabled={mutation.isPending || !form.watch('name').trim()} type="submit">

@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
 import { publicationStatusValues } from '@/api/generated/admin'
+import { parameters } from '@/api/generated/constraints'
 import type { PublicationStatus } from '@/api/types'
 import { CategorySelect } from '@/components/CategorySelect'
 import { CodeInput } from '@/components/CodeInput'
@@ -37,12 +38,19 @@ export function ProductFilterForm({
         <Controller
           control={form.control}
           name="code"
-          render={({ field }) => <CodeInput id="filter-code" onChange={field.onChange} value={field.value} />}
+          render={({ field }) => (
+            <CodeInput
+              id="filter-code"
+              maxLength={parameters.listProducts.code.maxLength}
+              onChange={field.onChange}
+              value={field.value}
+            />
+          )}
         />
       </Field>
       <Field className="w-56">
         <FieldLabel htmlFor="filter-name">商品名（部分一致）</FieldLabel>
-        <Input id="filter-name" maxLength={200} {...form.register('name')} />
+        <Input id="filter-name" maxLength={parameters.listProducts.name.maxLength} {...form.register('name')} />
       </Field>
       <Field className="w-32">
         <FieldLabel htmlFor="filter-status">状態</FieldLabel>

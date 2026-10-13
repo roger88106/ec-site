@@ -1,6 +1,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useFieldArray } from 'react-hook-form'
+import { schemas } from '@/api/generated/constraints'
 import type { TaxCategory } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { DateTimeInput } from '@/components/DateTimeInput'
@@ -16,6 +17,12 @@ type RateRow = {
   effectiveFrom: string | null
   effectiveTo: string | null
 }
+
+/** 率の刻み（小数第 2 位まで） */
+const RATE_STEP = 0.01
+
+/** 率の上限。契約の上限はその値を含まない（exclusiveMaximum）ので、1 刻み下にする */
+const RATE_MAX = schemas.RatePercent.maximum - RATE_STEP
 
 /** 入力欄の値（税率の一覧） */
 type Values = { rates: RateRow[] }
@@ -90,9 +97,9 @@ export function TaxRatesEditor({
               <TableCell>
                 <Input
                   aria-label="率（%）"
-                  max={99.99}
-                  min={0}
-                  step={0.01}
+                  max={RATE_MAX}
+                  min={schemas.RatePercent.minimum}
+                  step={RATE_STEP}
                   type="number"
                   {...form.register(`rates.${index}.ratePercent`)}
                 />

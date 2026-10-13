@@ -3,6 +3,7 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { useActionState, useId } from 'react'
 import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
@@ -15,6 +16,7 @@ import { QUANTITY_OPTIONS } from '@/lib/orderDisplay'
  * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
  */
 export function AddToCartForm({ variant }: { variant: Variant | null }) {
+  const t = useTranslations('catalog.addToCart')
   const [result, formAction, pending] = useActionState(addToCart, null)
   const selectable = variant !== null && isPurchasable(variant)
   const quantityId = useId()
@@ -23,7 +25,7 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
     <form action={formAction} className="space-y-3">
       <input name="variantId" type="hidden" value={variant?.id ?? ''} />
       <div className="flex items-center gap-3">
-        <Label htmlFor={quantityId}>数量</Label>
+        <Label htmlFor={quantityId}>{t('quantity') /* 数量 */}</Label>
         <NativeSelect className="w-20" defaultValue="1" id={quantityId} name="quantity">
           {QUANTITY_OPTIONS.map((quantity) => (
             <NativeSelectOption key={quantity} value={quantity}>
@@ -32,15 +34,15 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
           ))}
         </NativeSelect>
         <Button disabled={!selectable || pending} type="submit">
-          {pending ? '入れています…' : 'カートに入れる'}
+          {pending ? t('adding') : t('submit') /* 送信中か、カートに入れる */}
         </Button>
       </div>
       <div aria-live="polite" className="text-sm">
         {result?.ok === true && (
           <p>
-            カートに入れました。
+            {t('added') /* 入れた知らせ */}
             <Link className="ml-2 underline" href="/cart">
-              カートを見る
+              {t('viewCart') /* カートを見る */}
             </Link>
           </p>
         )}

@@ -1,6 +1,7 @@
 'use client'
 
 import { usePathname, useSearchParams } from 'next/navigation'
+import { useTranslations } from 'next-intl'
 import { loginPath } from '@/lib/login'
 
 /**
@@ -9,6 +10,7 @@ import { loginPath } from '@/lib/login'
  * /login は IdP へ移る口（ルートハンドラー）なので、Link ではなく a で移る。
  */
 export function LoginLinks() {
+  const t = useTranslations('components.loginLinks')
   const pathname = usePathname()
   const searchParams = useSearchParams()
   const query = searchParams.toString()
@@ -16,10 +18,10 @@ export function LoginLinks() {
   return (
     <>
       <a className="hover:underline" href={loginPath(returnTo)}>
-        ログイン
+        {t('login') /* ログイン */}
       </a>
       <a className="hover:underline" href={loginPath(returnTo, { register: true })}>
-        会員登録
+        {t('register') /* 会員登録 */}
       </a>
     </>
   )

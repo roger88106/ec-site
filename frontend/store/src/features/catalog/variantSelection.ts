@@ -1,4 +1,5 @@
 import type { Variant, VariantAxis } from '@/api/types'
+import { translate } from '@/i18n/translate'
 
 /** 軸ごとの選んだ値（軸と同じ並び）。null は未選択 */
 export type Selection = (string | null)[]
@@ -65,8 +66,8 @@ export function toggleValue(selection: Selection, axisIndex: number, value: stri
 }
 
 /** 在庫状況の表示（AC-64）。「在庫あり」「在庫なし」だけで、販売停止も「在庫なし」とする */
-export function stockLabel(variant: Variant): '在庫あり' | '在庫なし' {
-  return isPurchasable(variant) ? '在庫あり' : '在庫なし'
+export function stockLabel(variant: Variant): string {
+  return isPurchasable(variant) ? translate('catalog.stock.available') : translate('catalog.stock.unavailable')
 }
 
 /**

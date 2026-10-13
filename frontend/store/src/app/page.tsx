@@ -1,4 +1,5 @@
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { getApi } from '@/api/client'
 import { unwrap } from '@/api/result'
 import { CategoryList } from '@/features/catalog/components/CategoryList'
@@ -9,6 +10,7 @@ const NEW_ARRIVALS = 8
 
 /** トップ（T805）。カテゴリの一覧と、新着の商品 */
 export default async function HomePage() {
+  const t = await getTranslations('app.home')
   const api = await getApi()
   const [categories, newest] = await Promise.all([
     api.GET('/categories').then(unwrap),
@@ -17,17 +19,17 @@ export default async function HomePage() {
   return (
     <div className="space-y-10">
       <section className="space-y-4">
-        <h2 className="font-heading font-semibold text-xl">カテゴリ</h2>
+        <h2 className="font-heading font-semibold text-xl">{t('categories') /* カテゴリ */}</h2>
         <CategoryList categories={categories.items} />
       </section>
       <section className="space-y-4">
         <div className="flex items-baseline justify-between">
-          <h2 className="font-heading font-semibold text-xl">新着の商品</h2>
+          <h2 className="font-heading font-semibold text-xl">{t('newest') /* 新着の商品 */}</h2>
           <Link className="text-sm hover:underline" href="/products">
-            すべての商品を見る
+            {t('allProducts') /* すべての商品を見る */}
           </Link>
         </div>
-        <ProductGrid emptyMessage="商品はまだありません。" products={newest.items} />
+        <ProductGrid emptyMessage={t('empty') /* まだない */} products={newest.items} />
       </section>
     </div>
   )

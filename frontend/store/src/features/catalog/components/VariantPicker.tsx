@@ -2,6 +2,7 @@
 
 import { Badge } from '@ec-site/shared/ui/badge'
 import { Button } from '@ec-site/shared/ui/button'
+import { useTranslations } from 'next-intl'
 import { useState } from 'react'
 import type { Variant, VariantAxis } from '@/api/types'
 import {
@@ -28,6 +29,8 @@ export function VariantPicker({
   /** すべての軸を選んでバリアントが決まったとき（決まらなくなったときは null）に呼ぶ */
   onSelectVariant?: (variant: Variant | null) => void
 }) {
+  const tStock = useTranslations('catalog.stock')
+  const t = useTranslations('catalog.variantPicker')
   const [selection, setSelection] = useState(() => emptySelection(axes))
   const chosen = selectedVariant(axes, variants, selection)
   const soldOut = !variants.some(isPurchasable)
@@ -70,11 +73,13 @@ export function VariantPicker({
       ))}
       <div aria-live="polite" className="text-sm">
         {soldOut ? (
-          <Badge variant="secondary">在庫なし</Badge>
+          <Badge variant="secondary">{tStock('unavailable') /* 在庫なし */}</Badge>
         ) : chosen ? (
           <Badge variant={isPurchasable(chosen) ? 'default' : 'secondary'}>{stockLabel(chosen)}</Badge>
         ) : (
-          <span className="text-muted-foreground">{missingAxes.join('・')}を選ぶと、在庫状況を表示します。</span>
+          <span className="text-muted-foreground">
+            {t('chooseAxes', { axes: missingAxes.join(t('axisSeparator')) }) /* 選んでいない軸 */}
+          </span>
         )}
       </div>
     </div>

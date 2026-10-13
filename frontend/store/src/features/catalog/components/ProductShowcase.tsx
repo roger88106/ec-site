@@ -1,6 +1,7 @@
 'use client'
 
 import { ImageIcon } from 'lucide-react'
+import { useTranslations } from 'next-intl'
 import { type ReactNode, useState } from 'react'
 import type { Variant, VariantAxis } from '@/api/types'
 import { AddToCartForm } from '@/features/catalog/components/AddToCartForm'
@@ -27,6 +28,7 @@ export function ProductShowcase({
   /** 説明など、バリアントの選択の下に出すもの */
   children?: ReactNode
 }) {
+  const t = useTranslations('catalog.showcase')
   const [shown, setShown] = useState(() => imageForVariant(imageUrls, null))
   const [chosen, setChosen] = useState(() => selectedVariant(axes, variants, emptySelection(axes)))
   return (
@@ -35,7 +37,7 @@ export function ProductShowcase({
         <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
           {shown ? (
             // biome-ignore lint/performance/noImgElement: 画像は配信の側（CDN）で最適化する（plan 001 第 7.4 節）
-            <img alt="商品の画像" className="size-full object-cover" src={shown} />
+            <img alt={t('image') /* 商品の画像 */} className="size-full object-cover" src={shown} />
           ) : (
             <ImageIcon aria-hidden className="size-16 text-muted-foreground" />
           )}
@@ -45,7 +47,7 @@ export function ProductShowcase({
             {imageUrls.map((url, index) => (
               <li key={url}>
                 <button
-                  aria-label={`画像 ${index + 1}を見る`}
+                  aria-label={t('showImage', { number: index + 1 }) /* 画像を見る */}
                   aria-pressed={url === shown}
                   className="block aspect-square w-full overflow-hidden rounded-md border aria-pressed:ring-2 aria-pressed:ring-primary"
                   onClick={() => setShown(url)}

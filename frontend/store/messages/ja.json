@@ -2,6 +2,23 @@
   "components": {
     "pageLinks": {
       "label": "ページ"
+    },
+    "siteHeader": {
+      "products": "商品一覧",
+      "keyword": "キーワード",
+      "keywordPlaceholder": "キーワードで探す",
+      "cart": "カート",
+      "memberName": "{name} 様",
+      "orders": "ご注文履歴",
+      "account": "アカウント"
+    },
+    "loginLinks": {
+      "login": "ログイン",
+      "register": "会員登録"
+    },
+    "priceText": {
+      "inclTax": "{amount} 円",
+      "exclTax": "（税抜 {amount} 円）"
     }
   },
   "orderDisplay": {
@@ -14,6 +31,70 @@
     "axisValues": {
       "item": "{name}：{value}",
       "separator": "　"
+    }
+  },
+  "app": {
+    "layout": {
+      "description": "EC Site の店舗"
+    },
+    "home": {
+      "categories": "カテゴリ",
+      "newest": "新着の商品",
+      "allProducts": "すべての商品を見る",
+      "empty": "商品はまだありません。"
+    }
+  },
+  "catalog": {
+    "list": {
+      "title": "商品一覧",
+      "invalidQuery": "条件を見直してください。",
+      "empty": "条件に合う商品はありません。"
+    },
+    "search": {
+      "title": "検索結果",
+      "heading": "「{q}」の検索結果",
+      "prompt": "キーワードで探す",
+      "keyword": "キーワード",
+      "submit": "検索",
+      "help": "商品名や説明に含まれる言葉を入力してください。",
+      "invalidKeyword": "キーワードを見直してください。",
+      "empty": "キーワードに合う商品はありません。"
+    },
+    "filter": {
+      "category": "カテゴリ",
+      "all": "すべて",
+      "indent": "　",
+      "price": "価格（税込）",
+      "min": "下限",
+      "max": "上限",
+      "rangeSeparator": "〜",
+      "yen": "円",
+      "sort": "並び順",
+      "submit": "絞り込む"
+    },
+    "sort": {
+      "newest": "新着順",
+      "price_asc": "価格の安い順",
+      "price_desc": "価格の高い順"
+    },
+    "stock": {
+      "available": "在庫あり",
+      "unavailable": "在庫なし"
+    },
+    "showcase": {
+      "image": "商品の画像",
+      "showImage": "画像 {number}を見る"
+    },
+    "variantPicker": {
+      "chooseAxes": "{axes}を選ぶと、在庫状況を表示します。",
+      "axisSeparator": "・"
+    },
+    "addToCart": {
+      "quantity": "数量",
+      "adding": "入れています…",
+      "submit": "カートに入れる",
+      "added": "カートに入れました。",
+      "viewCart": "カートを見る"
     }
   }
 }

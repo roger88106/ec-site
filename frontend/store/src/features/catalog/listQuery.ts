@@ -1,6 +1,7 @@
 import type { Route } from 'next'
 import { productSortValues } from '@/api/generated/store'
 import type { ProductSort } from '@/api/types'
+import { translate } from '@/i18n/translate'
 
 /** 商品一覧の絞り込み・並び順・ページ（AC-52〜54、57）。URL のクエリに持つ（店舗画面の構成 第 3 節） */
 export type ListQuery = {
@@ -15,10 +16,8 @@ export type ListQuery = {
 export type SearchParams = Record<string, string | string[] | undefined>
 
 /** 並び順の表示名（AC-54） */
-export const sortLabels: Record<ProductSort, string> = {
-  newest: '新着順',
-  price_asc: '価格の安い順',
-  price_desc: '価格の高い順',
+export function sortLabel(sort: ProductSort): string {
+  return translate(`catalog.sort.${sort}`)
 }
 
 /** URL のクエリから読む。形の合わない値は指定なしとして扱う */

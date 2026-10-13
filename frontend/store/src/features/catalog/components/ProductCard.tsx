@@ -1,11 +1,13 @@
 import { Badge } from '@ec-site/shared/ui/badge'
 import { ImageIcon } from 'lucide-react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import type { ProductSummary } from '@/api/types'
 import { PriceText } from '@/components/PriceText'
 
 /** 一覧の商品（AC-55、56）。商品名、代表画像、価格を出し、在庫がなければ「在庫なし」と示す */
 export function ProductCard({ product }: { product: ProductSummary }) {
+  const t = useTranslations('catalog.stock')
   return (
     <Link className="group block space-y-2" href={`/products/${product.id}`}>
       <div className="relative flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
@@ -18,7 +20,7 @@ export function ProductCard({ product }: { product: ProductSummary }) {
         )}
         {!product.inStock && (
           <Badge className="absolute top-2 left-2" variant="secondary">
-            在庫なし
+            {t('unavailable') /* 在庫なし */}
           </Badge>
         )}
       </div>

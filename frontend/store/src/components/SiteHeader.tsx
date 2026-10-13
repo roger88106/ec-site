@@ -1,6 +1,7 @@
 import { Input } from '@ec-site/shared/ui/input'
 import { SearchIcon, ShoppingCartIcon } from 'lucide-react'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { Suspense } from 'react'
 import { logout } from '@/actions/auth'
 import { parameters } from '@/api/generated/constraints'
@@ -13,6 +14,8 @@ import { LoginLinks } from '@/components/LoginLinks'
  * ログインしていなければ「ログイン」「会員登録」、していれば氏名、「ご注文履歴」（AC-129）、「アカウント」（IdP のアカウントの画面）、「ログアウト」。
  */
 export async function SiteHeader() {
+  const tCommon = await getTranslations('common')
+  const t = await getTranslations('components.siteHeader')
   const member = await currentMember()
   return (
     <header className="border-b">
@@ -22,25 +25,25 @@ export async function SiteHeader() {
         </Link>
         <nav className="text-sm">
           <Link className="hover:underline" href="/products">
-            商品一覧
+            {t('products') /* 商品一覧 */}
           </Link>
         </nav>
         <search className="ml-auto">
           <form action="/search" className="flex items-center gap-2">
             <SearchIcon aria-hidden className="size-4 text-muted-foreground" />
             <Input
-              aria-label="キーワード"
+              aria-label={t('keyword') /* キーワード */}
               className="w-56"
               maxLength={parameters.searchProducts.q.maxLength}
               name="q"
-              placeholder="キーワードで探す"
+              placeholder={t('keywordPlaceholder') /* 探すことを促す */}
               required
             />
           </form>
         </search>
         <Link className="flex items-center gap-1 text-sm hover:underline" href="/cart">
           <ShoppingCartIcon aria-hidden className="size-4" />
-          カート
+          {t('cart') /* カート */}
         </Link>
         <div className="flex items-center gap-4 text-sm">
           {member === null ? (
@@ -49,16 +52,16 @@ export async function SiteHeader() {
             </Suspense>
           ) : (
             <>
-              <span>{member.name} 様</span>
+              <span>{t('memberName', { name: member.name }) /* 会員の名前 */}</span>
               <Link className="hover:underline" href="/orders">
-                ご注文履歴
+                {t('orders') /* ご注文履歴 */}
               </Link>
               <a className="hover:underline" href={ACCOUNT_URL}>
-                アカウント
+                {t('account') /* アカウント */}
               </a>
               <form action={logout}>
                 <button className="cursor-pointer hover:underline" type="submit">
-                  ログアウト
+                  {tCommon('logout') /* ログアウト */}
                 </button>
               </form>
             </>

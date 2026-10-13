@@ -5,6 +5,7 @@ import {
   formatPostalCode,
   formatYen,
   orderStatusLabel,
+  paymentDeadlineLabel,
   paymentState,
   remainingTime,
   taxLabel,
@@ -107,6 +108,18 @@ describe('支払の状況（AC-150、151）', () => {
   test('支払待ちでなければ、支払の欄は出さない（戻った直後でも）', () => {
     expect(paymentState({ status: 'ACCEPTED', actions: notPayable }, true)).toBe('NONE')
     expect(paymentState({ status: 'CANCELLED', actions: notPayable }, false)).toBe('NONE')
+  })
+})
+
+describe('注文の一覧の支払の期限（AC-159）', () => {
+  test('AC-159 支払待ちの注文は、支払の期限を示す', () => {
+    expect(paymentDeadlineLabel({ status: 'PENDING_PAYMENT', paymentDeadline: '2026-10-10T15:35:00Z' })).toBe(
+      'お支払い期限 2026/10/11 00:35',
+    )
+  })
+
+  test('支払待ちでない注文は、示さない', () => {
+    expect(paymentDeadlineLabel({ status: 'ACCEPTED' })).toBeNull()
   })
 })
 

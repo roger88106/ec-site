@@ -22,6 +22,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 | `new-screen` | 店舗画面・管理画面に画面や操作を足す、直す |
 | `handoff` | spec の区切りや作業を途中でやめるときに、引き継ぎの文書を作る（利用者が `/handoff` で呼ぶ） |
 | `retro` | セッションを振り返り、エージェントの環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
+| `docs` | 文書（docs/、README、AGENTS.md）を書く・直す・移す |
 | `writing-for-agents` | skill や AGENTS.md を作る、直す |
 
 ## 作業の進め方

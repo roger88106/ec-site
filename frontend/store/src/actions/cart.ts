@@ -13,9 +13,9 @@ import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
 import { readInt, readString } from '@/lib/server/formData'
 
 /**
- * カートに入れる（AC-72〜76）。<br />
- * ログインしていれば会員のカートに入れる（AC-121）。していなければ Cookie のカートに入れ、カートがなければ作って
- * Cookie に書く（AC-73）。フォームの項目：variantId、quantity。
+ * カートに入れる。<br />
+ * ログインしていれば会員のカートに入れる。していなければ Cookie のカートに入れ、カートがなければ作って
+ * Cookie に書く。フォームの項目：variantId、quantity。
  */
 export async function addToCart(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const variantId = readString(formData, 'variantId')
@@ -51,7 +51,7 @@ export async function addToCart(_previous: ActionResult | null, formData: FormDa
 }
 
 /**
- * 品目の数量を変える（AC-75、76、78）。フォームの項目：variantId、quantity。
+ * 品目の数量を変える。フォームの項目：variantId、quantity。
  */
 export async function changeCartItemQuantity(
   _previous: ActionResult | null,
@@ -66,7 +66,7 @@ export async function changeCartItemQuantity(
 }
 
 /**
- * 品目を削除する（AC-78）。フォームの項目：variantId。
+ * 品目を削除する。フォームの項目：variantId。
  */
 export async function removeCartItem(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const variantId = readString(formData, 'variantId')
@@ -76,9 +76,9 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
 }
 
 /**
- * 注文手続きに進む（AC-82〜84、125）。全品目を引き当て、注文手続きの画面へ移る。<br />
- * ログインしていなければ、ログインの画面へ移し、ログインの後は（カートを移して）カートに戻る（AC-125）。
- * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す（AC-82）。
+ * 注文手続きに進む。全品目を引き当て、注文手続きの画面へ移る。<br />
+ * ログインしていなければ、ログインの画面へ移し、ログインの後は（カートを移して）カートに戻る。
+ * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。
  */
 export async function startCheckout(_previous: ActionResult | null, _formData: FormData): Promise<ActionResult> {
   const checkoutId = await withActionResult(async () => {
@@ -107,7 +107,7 @@ export async function startCheckout(_previous: ActionResult | null, _formData: F
 }
 
 /**
- * カートを移した結果の知らせを消す（カートの画面で一度示した後。AC-123）。
+ * カートを移した結果の知らせを消す（カートの画面で一度示した後）。
  */
 export async function dismissCartMergeNotice(): Promise<void> {
   await deleteCartMergeNotice()
@@ -150,7 +150,7 @@ async function updateCart(request: CartRequest): Promise<ActionResult> {
 }
 
 /**
- * 会員のカートの変更を、会員の口で行う（AC-121）。401 なら、ログインの画面へ移す。
+ * 会員のカートの変更を、会員の口で行う。401 なら、ログインの画面へ移す。
  *
  * @param request API の呼び出し
  */
@@ -164,7 +164,7 @@ async function updateMemberCart(request: CartRequest): Promise<ActionResult> {
   return response.ok ? SUCCESS : toFailure(response.status, error)
 }
 
-/** カートを作り、その ID を返す（AC-73） */
+/** カートを作り、その ID を返す */
 async function createCart(): Promise<string> {
   const api = await getApi()
   const { data, response } = await api.POST('/carts')

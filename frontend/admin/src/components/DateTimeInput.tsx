@@ -2,7 +2,7 @@ import { Input } from '@ec-site/shared/ui/input'
 import { fromDateTimeInput, toDateTimeInput } from '@/lib/format'
 
 /**
- * 日時の入力（BR-3）。日本時間で入力し、オフセット付きの日時（空なら null）を返す。<br />
+ * 日時の入力。日本時間で入力し、オフセット付きの日時（空なら null）を返す。<br />
  * 値は API の日時の文字列で受け渡す。
  */
 export function DateTimeInput({

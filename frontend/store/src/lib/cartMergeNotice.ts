@@ -13,7 +13,7 @@ type NoticeItem = { label: string; quantity: number }
 /** 知らせる品目の並び。more は上限を超えて省いた品目の数 */
 type NoticeItems = { items: NoticeItem[]; more: number }
 
-/** カートを移した結果の知らせ（AC-123）。カートの画面で一度だけ示す */
+/** カートを移した結果の知らせ。カートの画面で一度だけ示す */
 export type CartMergeNotice = {
   /** 数量を 10 に切り詰めた品目（切り詰めた後の数量） */
   truncated: NoticeItems
@@ -28,7 +28,7 @@ type MergedItem = { variantId: string; quantity: number }
 type SourceItem = { variantId: string; productName: string; axisValues: { name: string; value: string }[] }
 
 /**
- * カートを移した結果（POST /me/cart/merge）から、知らせを作る（AC-123）。
+ * カートを移した結果（POST /me/cart/merge）から、知らせを作る。
  *
  * @param result      移した結果
  * @param sourceItems 移す前のカートの品目

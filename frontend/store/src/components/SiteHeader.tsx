@@ -10,8 +10,8 @@ import { LoginLinks } from '@/components/LoginLinks'
 
 /**
  * 画面の上のヘッダー。サイト名、商品一覧へのリンク、キーワード検索（フォームの GET で /search へ）、カートへのリンク、
- * ログインの状態（AC-108、113、114、119）。<br />
- * ログインしていなければ「ログイン」「会員登録」、していれば氏名、「ご注文履歴」（AC-129）、「アカウント」（IdP のアカウントの画面）、「ログアウト」。
+ * ログインの状態。<br />
+ * ログインしていなければ「ログイン」「会員登録」、していれば氏名、「ご注文履歴」、「アカウント」（IdP のアカウントの画面）、「ログアウト」。
  */
 export async function SiteHeader() {
   const tCommon = await getTranslations('common')

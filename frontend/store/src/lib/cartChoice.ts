@@ -4,11 +4,11 @@ export type CartChoice =
   | { kind: 'member' }
   /** Cookie のカート */
   | { kind: 'cookie'; cartId: string }
-  /** カートがない（「カートに入れる」のときに作る。AC-73） */
+  /** カートがない（「カートに入れる」のときに作る） */
   | { kind: 'none' }
 
 /**
- * 使うカートを選ぶ（AC-120、121）。ログインしていれば、Cookie のカートがあっても会員のカートを使う。
+ * 使うカートを選ぶ。ログインしていれば、Cookie のカートがあっても会員のカートを使う。
  *
  * @param loggedIn     ログインしているか
  * @param cookieCartId Cookie のカート ID。なければ null
@@ -21,7 +21,7 @@ export function chooseCart(loggedIn: boolean, cookieCartId: string | null): Cart
 }
 
 /**
- * ログインの直後に、Cookie のカートを会員のカートへ移すか（AC-122）。
+ * ログインの直後に、Cookie のカートを会員のカートへ移すか。
  *
  * @param cookieCartId Cookie のカート ID。なければ null
  */

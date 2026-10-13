@@ -10,7 +10,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { formatYen, QUANTITY_OPTIONS } from '@/lib/orderDisplay'
 
 /**
- * カートの品目の数量の変更と削除（AC-78）、小計（購入できない品目は打ち消し線）。<br />
+ * カートの品目の数量の変更と削除、小計（購入できない品目は打ち消し線）。<br />
  * 数量は選んだときに送る。在庫を超えるなどの拒否は、API のメッセージを品目の下に出す。
  */
 export function CartItemControls({ item }: { item: QuoteItem }) {
@@ -42,7 +42,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
           ))}
         </NativeSelect>
       </form>
-      {/* 購入できない品目は合計に含めない（AC-80）ので、小計を打ち消し線で出す */}
+      {/* 購入できない品目は合計に含めないので、小計を打ち消し線で出す */}
       <p
         className={item.purchasable ? 'font-semibold tabular-nums' : 'text-muted-foreground tabular-nums line-through'}
       >

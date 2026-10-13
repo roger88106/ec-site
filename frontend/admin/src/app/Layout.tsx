@@ -18,7 +18,7 @@ import {
   SidebarTrigger,
 } from '@/components/ui/sidebar'
 
-/** 画面の共通の枠（左のメニューと本文。上に運営者の氏名とログアウト。AC-135） */
+/** 画面の共通の枠（左のメニューと本文。上に運営者の氏名とログアウト） */
 export function Layout() {
   const { pathname } = useLocation()
   const operator = useOperator()

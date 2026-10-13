@@ -1,6 +1,6 @@
 import { isUuid } from '@/lib/uuid'
 
-/** カートの有効期限（最後の変更から 30 日。AC-81）と同じ、Cookie の有効期限（秒） */
+/** カートの有効期限（最後の変更から 30 日）と同じ、Cookie の有効期限（秒） */
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60
 
 /** カートを使う操作が、カートが見つからなかった（404）ことを知らせる値 */
@@ -26,7 +26,7 @@ export function cartCookieOptions(secure: boolean) {
 }
 
 /**
- * カートを使う操作を行う。カートがなければ作り（AC-73）、見つからなければ作り直して 1 回だけやり直す。
+ * カートを使う操作を行う。カートがなければ作り、見つからなければ作り直して 1 回だけやり直す。
  *
  * @param cartId 今のカート ID。なければ null
  * @param create カートを作り、その ID を返す

@@ -10,7 +10,7 @@ import { VariantRow, type VariantRowActions } from '@/features/product/component
 import { move } from '@/lib/array'
 
 /**
- * バリアントの一覧、登録、削除、並び替え、販売停止（T709、T1003。AC-20〜24、27、28、71）。<br />
+ * バリアントの一覧、登録、削除、並び替え、販売停止。<br />
  * 並び替えと削除は、表示している一覧のバージョンで送る。
  */
 export function VariantSection({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
@@ -33,7 +33,7 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
     success: t('imageChanged'), // 画像の変更の知らせ
     invalidate: ['/products'],
   })
-  // バリアントの画像は、その商品の画像から選ぶ。指定しなければ代表画像（AC-38）
+  // バリアントの画像は、その商品の画像から選ぶ。指定しなければ代表画像
   const imageOptions = [
     { value: null, label: tImages('representative') }, // 代表画像
     ...product.images.map((image, index) => ({ value: image.id, label: tImages('image', { number: index + 1 }) })), // 画像の番号

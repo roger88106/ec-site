@@ -4,7 +4,7 @@ import { useTranslations } from 'use-intl'
 import { ApiError, errorMessage, fieldErrors } from '@/api/errors'
 
 /**
- * 操作した場所に出すエラー（T703。管理画面の構成 第 6 節）。<br />
+ * 操作した場所に出すエラー（管理画面の構成 第 6 節）。<br />
  * エラーレスポンスの message をそのまま出し、入力欄に付けていない項目のエラーを並べる。
  * バージョン不一致（409）では、取得し直してフォームを作り直すボタンを出す（onReload）。
  */

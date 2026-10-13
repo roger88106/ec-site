@@ -20,7 +20,7 @@ export async function generateMetadata(): Promise<Metadata> {
 
 /**
  * 使うカート（店舗画面の構成 第 4.2 節）を取得する。数量がすぐ変わるので、キャッシュを使わない。
- * ログインしていれば会員のカート（AC-121）、していなければ Cookie のカート。
+ * ログインしていれば会員のカート、していなければ Cookie のカート。
  *
  * @returns カート。Cookie のカートがない、またはもうなければ null（空のカートとして出す）
  */
@@ -39,7 +39,7 @@ async function fetchCart(): Promise<Cart | null> {
   return result.response.status === 404 ? null : unwrap(result)
 }
 
-/** カート（T2504、T3406。AC-77〜80、82、88、120〜124） */
+/** カート */
 export default async function CartPage() {
   const t = await getTranslations('cart.page')
   const [cart, mergeNotice] = await Promise.all([fetchCart(), readCartMergeNotice()])

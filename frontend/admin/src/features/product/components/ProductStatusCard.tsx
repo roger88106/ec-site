@@ -13,7 +13,7 @@ import { DateTime } from '@/components/DateTime'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Price } from '@/components/Price'
 
-/** 価格・日時の表示と、公開・非公開・販売終了・削除（AC-29〜33） */
+/** 価格・日時の表示と、公開・非公開・販売終了・削除 */
 export function ProductStatusCard({ product }: { product: ProductDetail }) {
   const navigate = useNavigate()
   const t = useTranslations('product.status')

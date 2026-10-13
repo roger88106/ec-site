@@ -7,12 +7,12 @@ import { useActionState } from 'react'
 import { requestCancellation } from '@/actions/order'
 import { schemas } from '@/api/generated/constraints'
 
-/** 理由の長さの上限（AC-95） */
+/** 理由の長さの上限 */
 const REASON_MAX_LENGTH = schemas.RequestOrderCancellationRequest.reason.maxLength
 
 /**
- * キャンセルの申請（AC-95）。理由は任意。<br />
- * 申請は 1 つの注文に 1 回だけ（AC-96）なので、送る前に確かめる。
+ * キャンセルの申請。理由は任意。<br />
+ * 申請は 1 つの注文に 1 回だけなので、送る前に確かめる。
  */
 export function CancellationRequestForm({ orderId }: { orderId: string }) {
   const t = useTranslations('order.requestForm')

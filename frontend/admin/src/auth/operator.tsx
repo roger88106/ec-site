@@ -4,7 +4,7 @@ import { createContext, useContext } from 'react'
 export type Operator = {
   /** 氏名（姓 名） */
   name: string
-  /** ログアウトする（IdP のログアウトへ移る。AC-135） */
+  /** ログアウトする（IdP のログアウトへ移る） */
   logout: () => void
 }
 

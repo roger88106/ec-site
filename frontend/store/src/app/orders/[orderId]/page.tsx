@@ -19,8 +19,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 注文（T2506、T3408。AC-93〜96、130、131）。注文の直後の表示と、注文の一覧からの照会を兼ねる。<br />
- * ログインを求め、注文した会員のものでなければ「見つかりません」にする（AC-131）。
+ * 注文。注文の直後の表示と、注文の一覧からの照会を兼ねる。<br />
+ * ログインを求め、注文した会員のものでなければ「見つかりません」にする。
  */
 export default async function OrderPage({ params }: PageProps<'/orders/[orderId]'>) {
   const t = await getTranslations('order.detail')
@@ -31,7 +31,7 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
   if (!isUuid(orderId)) {
     notFound()
   }
-  // 店舗の情報（キャンセルの申請が却下されたときに示す問い合わせ先。AC-96）は設定の値なので、公開の口でキャッシュを使う
+  // 店舗の情報（キャンセルの申請が却下されたときに示す問い合わせ先）は設定の値なので、公開の口でキャッシュを使う
   const [orderResult, shopResult] = await Promise.all([
     (await getMemberApi()).GET('/orders/{orderId}', { params: { path: { orderId } } }),
     (await getApi()).GET('/shop'),

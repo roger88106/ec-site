@@ -15,7 +15,7 @@ import { type CategoryActions, CategoryTreeList } from '@/features/category/comp
 /** 開いているダイアログ。登録は親（null は最上位）、名称の変更は対象のカテゴリを持つ */
 type DialogState = { kind: 'create'; parent: CategoryNode | null } | { kind: 'rename'; category: CategoryNode } | null
 
-/** カテゴリの木の表示、登録、名称の変更、並び替え、削除（T707。US-2） */
+/** カテゴリの木の表示、登録、名称の変更、並び替え、削除 */
 export function CategoryPage() {
   const t = useTranslations('category.page')
   const query = $api.useQuery('get', '/categories')
@@ -64,7 +64,7 @@ export function CategoryPage() {
   )
 }
 
-/** カテゴリの登録（AC-8〜10） */
+/** カテゴリの登録 */
 function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClose: () => void }) {
   const t = useTranslations('category.page')
   const mutation = useApiMutation('post', '/categories', {
@@ -83,7 +83,7 @@ function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClos
   )
 }
 
-/** カテゴリ名の変更（AC-10、11）。送るバージョンは、ダイアログを開いたときのもの */
+/** カテゴリ名の変更。送るバージョンは、ダイアログを開いたときのもの */
 function RenameDialog({ category, onClose }: { category: CategoryNode; onClose: () => void }) {
   const t = useTranslations('category.page')
   const invalidate = useInvalidate()

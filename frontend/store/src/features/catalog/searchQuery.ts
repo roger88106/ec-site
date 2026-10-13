@@ -1,7 +1,7 @@
 import type { Route } from 'next'
 import type { SearchParams } from '@/features/catalog/listQuery'
 
-/** 検索のキーワードとページ（AC-58、61）。URL のクエリに持つ */
+/** 検索のキーワードとページ。URL のクエリに持つ */
 export type SearchQuery = { q: string; page: number }
 
 /** URL のクエリから読む。前後の空白は除き、形の合わないページは 1 ページ目にする */

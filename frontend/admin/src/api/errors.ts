@@ -13,7 +13,7 @@ export class ApiError extends Error {
   readonly problem: Problem | undefined
 
   constructor(status: number, problem: Problem | undefined) {
-    // 本文がエラーレスポンスでないときの文。403 は権限がない案内（AC-141。バックエンドの FORBIDDEN と同じ文）
+    // 本文がエラーレスポンスでないときの文。403 は権限がない案内（バックエンドの FORBIDDEN と同じ文）
     super(
       problem?.message ??
         (status === 403 ? translate('api.errors.forbidden') : translate('common.httpFailed', { status })),

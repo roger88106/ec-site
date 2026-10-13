@@ -18,7 +18,7 @@ export function safeReturnTo(value: string | null | undefined): string {
  * ログインの口（/login）のパス。
  *
  * @param returnTo ログインの後に戻る画面
- * @param options  register：会員登録の画面にする（AC-108）
+ * @param options  register：会員登録の画面にする
  */
 export function loginPath(returnTo: string, options: { register?: boolean } = {}): Route {
   const query = new URLSearchParams({ returnTo })

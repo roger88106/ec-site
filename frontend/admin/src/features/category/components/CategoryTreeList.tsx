@@ -55,7 +55,7 @@ export function CategoryTreeList({
             <Button onClick={() => actions.rename(node)} size="xs" variant="outline">
               {t('rename') /* 名称の変更 */}
             </Button>
-            {/* 3 階層目には子を作れない（AC-9） */}
+            {/* 3 階層目には子を作れない */}
             {node.depth < MAX_CATEGORY_DEPTH && (
               <Button onClick={() => actions.createChild(node)} size="xs" variant="outline">
                 {t('addChild') /* 子を追加 */}

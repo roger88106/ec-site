@@ -8,14 +8,14 @@ import { redirectToLogin } from '@/auth'
 import { type ActionResult, toFailure } from '@/lib/actionResult'
 import { readInt, readString } from '@/lib/server/formData'
 
-/** 確認した総額が注文の時点と違う（AC-89）ときのエラーコード */
+/** 確認した総額が注文の時点と違うときのエラーコード */
 const TOTAL_AMOUNT_CHANGED = 'TOTAL_AMOUNT_CHANGED'
 
 /**
- * 注文する（AC-85〜91）。成立したら、注文の画面へ移る。<br />
+ * 注文する。成立したら、注文の画面へ移る。<br />
  * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、name、postalCode、prefecture、address、phone。
- * 連絡先のメールアドレスは、API が会員の token から取る（AC-127）。
- * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す（AC-89）。
+ * 連絡先のメールアドレスは、API が会員の token から取る。
+ * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す。
  */
 export async function placeOrder(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const checkoutId = readString(formData, 'checkoutId')

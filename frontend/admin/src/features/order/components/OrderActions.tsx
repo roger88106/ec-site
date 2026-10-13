@@ -10,7 +10,7 @@ import { ErrorMessage } from '@/components/ErrorMessage'
 import { CancelOrderDialog } from '@/features/order/components/CancelOrderDialog'
 
 /**
- * 注文の操作（AC-101〜103、105）。申請の承認・却下と、運営者の判断によるキャンセル。<br />
+ * 注文の操作。申請の承認・却下と、運営者の判断によるキャンセル。<br />
  * どれも確認してから送る。キャンセルで在庫数と調整履歴も変わるので、成功したら在庫も取り直す。
  * 行える操作がない（キャンセル済み）ときは何も出さない。
  */

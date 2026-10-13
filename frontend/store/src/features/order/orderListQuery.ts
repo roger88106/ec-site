@@ -1,7 +1,7 @@
 import type { Route } from 'next'
 
 /**
- * 注文の一覧（/orders）のクエリの page を読む（AC-129）。
+ * 注文の一覧（/orders）のクエリの page を読む。
  *
  * @param params 画面のクエリ
  * @returns ページ（1 から）。ない・形の違う値なら 1

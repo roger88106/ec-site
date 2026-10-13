@@ -17,7 +17,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 検索結果（T807。AC-58〜61）。商品名または説明にキーワードを含む商品を、新着順で出す。<br />
+ * 検索結果。商品名または説明にキーワードを含む商品を、新着順で出す。<br />
  * キーワードが空なら API を呼ばず、入力を促す。
  */
 export default async function SearchPage({ searchParams }: PageProps<'/search'>) {

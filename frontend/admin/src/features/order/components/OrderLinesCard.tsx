@@ -6,7 +6,7 @@ import { taxLabel } from '@/features/order/order'
 import { formatYen } from '@/lib/format'
 
 /**
- * 明細と金額の内訳（AC-100。BR-7、8）。明細は注文時点の写し（AC-92）で、今の商品の内容ではない。
+ * 明細と金額の内訳。明細は注文時点の写しで、今の商品の内容ではない。
  */
 export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts: OrderAmounts }) {
   const t = useTranslations('order.lines')

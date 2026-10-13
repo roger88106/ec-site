@@ -14,7 +14,7 @@ import { loginPath, safeReturnTo } from '@/lib/login'
 
 /**
  * ログイン（店舗画面の構成 第 9 節）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
- * （ライブラリを替えるときの範囲を狭くするため。plan 003 第 4 節）。<br />
+ * （ライブラリを替えるときの範囲を狭くするため）。<br />
  * 接続先と secret は環境変数（`config.ts`。本番で値がなければ起動に失敗する）。token の取り直しは `refresh.ts`、
  * ログアウトの URL は `logout.ts`。外からは `@/auth` だけを import する。
  */
@@ -39,7 +39,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
   events: {
     async signIn({ account }) {
-      // ログインの直後に、Cookie のカートを会員のカートへ移す（AC-122）
+      // ログインの直後に、Cookie のカートを会員のカートへ移す
       if (account?.access_token) {
         await mergeCartAfterLogin(account.access_token)
       }
@@ -117,7 +117,7 @@ export async function redirectToLogin(returnTo?: string): Promise<never> {
 }
 
 /**
- * IdP のログアウト（RP-Initiated Logout。AC-115）の URL。ログアウトの後は店舗のトップに戻る。
+ * IdP のログアウト（RP-Initiated Logout）の URL。ログアウトの後は店舗のトップに戻る。
  * セッションの Cookie を消す前に呼ぶ（ID token を添えるため）。
  */
 export async function idpLogoutUrl(): Promise<string> {
@@ -127,7 +127,7 @@ export async function idpLogoutUrl(): Promise<string> {
   return logoutUrl(origin, token?.idToken)
 }
 
-/** IdP のアカウントの画面（AC-119） */
+/** IdP のアカウントの画面 */
 export const ACCOUNT_URL = `${ISSUER}/account`
 
 // ============================== プライベート ==============================

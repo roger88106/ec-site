@@ -13,7 +13,7 @@ export function formatYen(amount: number): string {
 }
 
 /**
- * 価格の表示（BR-4）。税込価格を主に、税抜価格を括弧で併記する。<br />
+ * 価格の表示。税込価格を主に、税抜価格を括弧で併記する。<br />
  * 例：「1,980 円（税抜 1,800 円）」。有効な税率がなく税込価格がなければ、税抜価格だけを出す。
  */
 export function formatPrice(priceInclTax: number | null | undefined, priceExclTax: number): string {
@@ -23,7 +23,7 @@ export function formatPrice(priceInclTax: number | null | undefined, priceExclTa
   return translate('common.priceWithExclTax', { inclTax: yen.format(priceInclTax), exclTax: yen.format(priceExclTax) })
 }
 
-/** 日時の表示（BR-3）。日本時間の「yyyy/MM/dd HH:mm」。空白（null）は空文字 */
+/** 日時の表示。日本時間の「yyyy/MM/dd HH:mm」。空白（null）は空文字 */
 export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) {
     return ''
@@ -33,7 +33,7 @@ export function formatDateTime(iso: string | null | undefined): string {
 }
 
 /**
- * 日時の入力欄（datetime-local）の値を、API に送る日時にする（BR-3）。<br />
+ * 日時の入力欄（datetime-local）の値を、API に送る日時にする。<br />
  * 入力は日本時間とみなし、+09:00 のオフセット付きにする。空の入力は空白（null）。
  */
 export function fromDateTimeInput(value: string): string | null {
@@ -43,7 +43,7 @@ export function fromDateTimeInput(value: string): string | null {
   return `${value}:00+09:00`
 }
 
-/** API の日時を、日時の入力欄（datetime-local）の日本時間の値「yyyy-MM-ddTHH:mm」にする（BR-3） */
+/** API の日時を、日時の入力欄（datetime-local）の日本時間の値「yyyy-MM-ddTHH:mm」にする */
 export function toDateTimeInput(iso: string | null | undefined): string {
   if (!iso) {
     return ''

@@ -1,6 +1,6 @@
 import type { ProductDetail } from '@/api/types'
 
-/** 商品の基本情報の入力（登録と編集で共通。AC-13、18） */
+/** 商品の基本情報の入力（登録と編集で共通） */
 export type ProductFieldsValues = {
   name: string
   description: string

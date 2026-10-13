@@ -5,7 +5,7 @@ import { DateTime } from '@/components/DateTime'
 import { cancellationRequestResultLabel } from '@/features/order/order'
 
 /**
- * キャンセルの申請と、キャンセルの内容（AC-100）。どちらもなければ「ありません」と出す。
+ * キャンセルの申請と、キャンセルの内容。どちらもなければ「ありません」と出す。
  */
 export function CancellationCard({
   request,

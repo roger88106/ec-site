@@ -8,7 +8,7 @@ import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { readString } from '@/lib/server/formData'
 
 /**
- * 注文のキャンセルを申請する（AC-95、96）。成功したら、注文の画面を表示し直す。<br />
+ * 注文のキャンセルを申請する。成功したら、注文の画面を表示し直す。<br />
  * フォームの項目：orderId、reason（任意、500 文字まで）。
  */
 export async function requestCancellation(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {

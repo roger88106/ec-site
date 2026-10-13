@@ -9,13 +9,13 @@ export function emptySelection(axes: readonly VariantAxis[]): Selection {
   return axes.map(() => null)
 }
 
-/** 買えるバリアントか。在庫があり、販売停止でない（AC-28、62） */
+/** 買えるバリアントか。在庫があり、販売停止でない */
 export function isPurchasable(variant: Variant): boolean {
   return variant.inStock && !variant.salesSuspended
 }
 
 /**
- * 軸の値が選べるか（AC-62、28）。<br />
+ * 軸の値が選べるか。<br />
  * その値と、他の軸で選んでいる値の組み合わせに、買えるバリアントが 1 つ以上あれば選べる。
  * 選ぼうとしている軸自身の選択は判断に使わない（選んだ後も、同じ軸の他の値に替えられるようにする）。
  */
@@ -38,7 +38,7 @@ export function isValueSelectable(
 }
 
 /**
- * 選んだバリアント（AC-63）。すべての軸を選んだときだけ決まる。<br />
+ * 選んだバリアント。すべての軸を選んだときだけ決まる。<br />
  * 軸のない商品は、ただ 1 つのバリアントを返す。
  */
 export function selectedVariant(
@@ -65,13 +65,13 @@ export function toggleValue(selection: Selection, axisIndex: number, value: stri
   })
 }
 
-/** 在庫状況の表示（AC-64）。「在庫あり」「在庫なし」だけで、販売停止も「在庫なし」とする */
+/** 在庫状況の表示。「在庫あり」「在庫なし」だけで、販売停止も「在庫なし」とする */
 export function stockLabel(variant: Variant): string {
   return isPurchasable(variant) ? translate('catalog.stock.available') : translate('catalog.stock.unavailable')
 }
 
 /**
- * 選んだバリアントのときに出す画像（AC-38）。バリアントに指定した画像、なければ代表画像（画像の先頭）。
+ * 選んだバリアントのときに出す画像。バリアントに指定した画像、なければ代表画像（画像の先頭）。
  *
  * @param imageUrls 商品の画像（先頭が代表画像）
  * @param variant   選んだバリアント。選んでいなければ null

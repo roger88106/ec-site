@@ -21,7 +21,7 @@ import {
   toProductBody,
 } from '@/features/product/product'
 
-/** バリアント軸の上限（AC-13） */
+/** バリアント軸の上限 */
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
 
 /** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を足したもの） */
@@ -34,7 +34,7 @@ type Values = ProductFieldsValues & {
 const FIELD_NAMES = [...PRODUCT_FIELD_NAMES, 'productCode', 'axes'] as const
 
 /**
- * 商品の登録（T709。AC-13〜17、25）。<br />
+ * 商品の登録。<br />
  * 商品品番とバリアント軸は登録後に変更できないので、この画面でだけ入力する。登録後は編集の画面に移る。
  */
 export function ProductCreatePage() {

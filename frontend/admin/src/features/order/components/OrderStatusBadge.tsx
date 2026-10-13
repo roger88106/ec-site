@@ -9,7 +9,7 @@ const variants: Record<OrderStatus, 'default' | 'destructive' | 'secondary'> = {
   CANCELLED: 'secondary',
 }
 
-/** 注文の状態（BR-9） */
+/** 注文の状態 */
 export function OrderStatusBadge({ status }: { status: OrderStatus }) {
   return <Badge variant={variants[status]}>{orderStatusLabel(status)}</Badge>
 }

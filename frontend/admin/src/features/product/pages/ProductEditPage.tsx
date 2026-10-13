@@ -12,7 +12,7 @@ import { PublicationPeriodCard } from '@/features/product/components/Publication
 import { StatusBadge } from '@/features/product/components/StatusBadge'
 import { VariantSection } from '@/features/product/components/VariantSection'
 
-/** 商品の編集（T709。US-3〜5）。状態、基本情報、バリアントのカードを並べる */
+/** 商品の編集。状態、基本情報、バリアントのカードを並べる */
 export function ProductEditPage() {
   const tCommon = useTranslations('common')
   const { productId = '' } = useParams()

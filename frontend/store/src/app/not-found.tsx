@@ -1,7 +1,7 @@
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
 
-/** 見つからない（存在しない商品と、C 側に表示されない商品を区別しない。AC-65）。注文手続き・注文の URL の誤りも同じ */
+/** 見つからない（存在しない商品と、C 側に表示されない商品を区別しない）。注文手続き・注文の URL の誤りも同じ */
 export default function NotFound() {
   const t = useTranslations('app.notFound')
   return (

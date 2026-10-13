@@ -17,14 +17,14 @@ const dateTime = new Intl.DateTimeFormat(LOCALE, {
   hourCycle: 'h23',
 })
 
-/** 1 品目の数量の選択肢（AC-75。契約の数量の下限から上限まで） */
+/** 1 品目の数量の選択肢（契約の数量の下限から上限まで） */
 export const QUANTITY_OPTIONS = Array.from(
   { length: schemas.Quantity.maximum - schemas.Quantity.minimum + 1 },
   (_, index) => schemas.Quantity.minimum + index,
 )
 
 /**
- * 注文のキャンセルの状況（AC-95、96）。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み
+ * 注文のキャンセルの状況。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み
  */
 export type CancellationState = 'REQUESTABLE' | 'PENDING' | 'REJECTED' | 'CANCELLED'
 
@@ -33,7 +33,7 @@ export function formatYen(amount: number): string {
   return translate('common.yen', { amount: yen.format(amount) })
 }
 
-/** 1 つの税率の消費税額（BR-8。例：「10% 対象 11,000 円（内消費税 1,000 円）」） */
+/** 1 つの税率の消費税額（例：「10% 対象 11,000 円（内消費税 1,000 円）」） */
 export function taxLabel(tax: TaxAmount): string {
   return translate('common.taxAmount', {
     ratePercent: tax.ratePercent,
@@ -49,18 +49,18 @@ export function axisValuesLabel(axisValues: { name: string; value: string }[]): 
     .join(translate('orderDisplay.axisValues.separator'))
 }
 
-/** 購入できない理由の文言（AC-80）。数量は出さない（AC-64） */
+/** 購入できない理由の文言。数量は出さない */
 export function unpurchasableReasonLabel(reason: NonNullable<UnpurchasableReason>): string {
   return translate(`orderDisplay.unpurchasableReason.${reason}`)
 }
 
-/** 注文の状態の表示名（BR-9） */
+/** 注文の状態の表示名 */
 export function orderStatusLabel(status: OrderStatus): string {
   return translate(`common.orderStatus.${status}`)
 }
 
 /**
- * 注文のキャンセルの状況（AC-95、96）。申請できるかは API の旗で決める。
+ * 注文のキャンセルの状況。申請できるかは API の旗で決める。
  * 申請できない「受付」の注文は、申請が却下された注文（申請は 1 つの注文に 1 回だけ）。
  */
 export function cancellationState(order: {
@@ -91,7 +91,7 @@ export function formatPostalCode(postalCode: string): string {
 }
 
 /**
- * 引当の期限までの残り時間（AC-84。例：「14:59」）。秒の端数は切り捨てる。
+ * 引当の期限までの残り時間（例：「14:59」）。秒の端数は切り捨てる。
  *
  * @param expiresAt 引当の期限
  * @param now       現在時刻

@@ -11,7 +11,7 @@ import { isProductFieldsFilled, PRODUCT_FIELD_NAMES, toProductBody, toProductFie
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 
 /**
- * 基本情報の編集（AC-18、19、25、26）。商品品番とバリアント軸は表示だけ。<br />
+ * 基本情報の編集。商品品番とバリアント軸は表示だけ。<br />
  * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
  */
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {

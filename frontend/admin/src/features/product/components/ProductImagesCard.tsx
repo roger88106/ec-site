@@ -22,8 +22,8 @@ import {
 import { move } from '@/lib/array'
 
 /**
- * 商品の画像の登録・並び替え・削除（T1021、T1039。AC-37、39、40、67、70）。先頭が代表画像。<br />
- * ファイルは署名付き URL でストレージへ直接送る（plan 001 第 7.2 節）。並び替えと削除は、表示している商品のバージョンで送る。
+ * 商品の画像の登録・並び替え・削除。先頭が代表画像。<br />
+ * ファイルは署名付き URL でストレージへ直接送る。並び替えと削除は、表示している商品のバージョンで送る。
  */
 export function ProductImagesCard({ product }: { product: ProductDetail }) {
   const invalidate = useInvalidate()

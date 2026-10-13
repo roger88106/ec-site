@@ -17,7 +17,7 @@ const withAccessToken: Middleware = {
 
 /**
  * エラーの応答を ApiError にして投げる。画面は ApiError だけを扱う（管理画面の構成 第 4 節）。<br />
- * 401（token が無効になった）なら、ログインし直す。403 は、ほかのエラーと同じく操作した場所に出す（AC-141）。
+ * 401（token が無効になった）なら、ログインし直す。403 は、ほかのエラーと同じく操作した場所に出す。
  */
 const throwOnError: Middleware = {
   async onResponse({ response }) {

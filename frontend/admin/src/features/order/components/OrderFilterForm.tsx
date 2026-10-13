@@ -17,7 +17,7 @@ const statusOptions = [
   ...orderStatusValues.map((status) => ({ value: status, label: orderStatusLabel(status) })),
 ]
 
-/** 絞り込みの入力（AC-98）。「絞り込む」で URL に反映し、1 ページ目に戻す */
+/** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */
 export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onApply: (filter: OrderFilter) => void }) {
   const t = useTranslations('order.filter')
   const tCommon = useTranslations('common')

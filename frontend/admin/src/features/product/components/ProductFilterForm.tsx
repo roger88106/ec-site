@@ -19,7 +19,7 @@ const statusOptions = [
   ...publicationStatusValues.map((status) => ({ value: status, label: publicationStatusLabel(status) })),
 ]
 
-/** 絞り込みの入力（AC-48）。「絞り込む」で URL に反映し、1 ページ目に戻す */
+/** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */
 export function ProductFilterForm({
   filter,
   onApply,

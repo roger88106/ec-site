@@ -18,7 +18,7 @@ export class ApiError extends Error {
 type FetchResult<T> = { data?: T; error?: unknown; response: Response }
 
 /**
- * 成功なら本文を返す。404 は「見つかりません」の画面にし（AC-65）、それ以外の失敗は {@link ApiError} を投げる。
+ * 成功なら本文を返す。404 は「見つかりません」の画面にし、それ以外の失敗は {@link ApiError} を投げる。
  */
 export function unwrap<T>(result: FetchResult<T>): T {
   if (result.response.ok && result.data !== undefined) {

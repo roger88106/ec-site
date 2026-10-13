@@ -24,14 +24,14 @@ const EMPTY: Values = { delta: '', reason: null, memo: '' }
 /** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
 
-/** 理由の選択肢（admin.yaml の値と、画面の表示名）。注文に由来する理由は選べない（AC-107） */
+/** 理由の選択肢（admin.yaml の値と、画面の表示名）。注文に由来する理由は選べない */
 const reasonOptions = manualStockAdjustmentReasonValues.map((reason) => ({
   value: reason,
   label: stockAdjustmentReasonLabel(reason),
 }))
 
 /**
- * 在庫の調整（AC-42、43、46）。増減量と理由で調整し、在庫数を直接上書きする欄は作らない。<br />
+ * 在庫の調整。増減量と理由で調整し、在庫数を直接上書きする欄は作らない。<br />
  * 負になる調整や、「その他」でメモがない調整の拒否は、サーバーのエラーを表示する。
  */
 export function AdjustStockForm({ variantId }: { variantId: string }) {

@@ -4,12 +4,12 @@ import type { OrderStatus } from '@/api/types'
 /** 日付の形（yyyy-MM-dd） */
 const DATE = /^\d{4}-\d{2}-\d{2}$/
 
-/** 注文一覧の絞り込み（AC-98）とページ。URL のクエリに持つ（管理画面の構成 第 3 節） */
+/** 注文一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成 第 3 節） */
 export type OrderFilter = {
   /** 注文番号（前方一致） */
   orderNumber: string
   status: OrderStatus | null
-  /** 注文日の範囲（日本時間の日付。両端を含む。BR-3） */
+  /** 注文日の範囲（日本時間の日付。両端を含む） */
   orderedFrom: string
   orderedTo: string
   page: number

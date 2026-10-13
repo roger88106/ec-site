@@ -8,7 +8,7 @@ import { PriceText } from '@/components/PriceText'
 import { axisValuesLabel, unpurchasableReasonLabel } from '@/lib/orderDisplay'
 
 /**
- * カート・注文手続きの品目（AC-77、80）。画像、商品名、軸の値、単価を出し、購入できなければ理由を示す。<br />
+ * カート・注文手続きの品目。画像、商品名、軸の値、単価を出し、購入できなければ理由を示す。<br />
  * 数量と小計は、使う画面が children に出す（カートは数量を変えられる）。
  */
 export function QuoteItemSummary({ item, children }: { item: QuoteItem; children?: ReactNode }) {
@@ -17,7 +17,7 @@ export function QuoteItemSummary({ item, children }: { item: QuoteItem; children
     <div className="flex gap-4">
       <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
         {item.imageUrl ? (
-          // biome-ignore lint/performance/noImgElement: 画像は配信の側（CDN）で最適化する（plan 001 第 7.4 節）
+          // biome-ignore lint/performance/noImgElement: 画像は配信の側（CDN）で最適化する
           <img alt="" className="size-full object-cover" src={item.imageUrl} />
         ) : (
           <ImageIcon aria-hidden className="size-8 text-muted-foreground" />

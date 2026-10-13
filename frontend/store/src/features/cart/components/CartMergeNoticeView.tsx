@@ -7,7 +7,7 @@ import { dismissCartMergeNotice } from '@/actions/cart'
 import type { CartMergeNotice } from '@/lib/cartMergeNotice'
 
 /**
- * カートを移した結果の知らせ（AC-123）。切り詰めた品目と移せなかった品目を示す。<br />
+ * カートを移した結果の知らせ。切り詰めた品目と移せなかった品目を示す。<br />
  * 一度だけ示すため、表示したら知らせの Cookie を消す。消すと画面が作り直されて知らせは null で届くので、
  * 最初に受け取った知らせを持ち続ける（画面を移ったり読み込み直したりしたら出ない）。
  */

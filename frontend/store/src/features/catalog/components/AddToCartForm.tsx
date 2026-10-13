@@ -12,7 +12,7 @@ import { isPurchasable } from '@/features/catalog/variantSelection'
 import { QUANTITY_OPTIONS } from '@/lib/orderDisplay'
 
 /**
- * 数量を選んでカートに入れる（AC-72、74〜76）。<br />
+ * 数量を選んでカートに入れる。<br />
  * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
  */
 export function AddToCartForm({ variant }: { variant: Variant | null }) {

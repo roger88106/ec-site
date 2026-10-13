@@ -15,14 +15,14 @@ import {
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 
-/** 理由の長さの上限（AC-103） */
+/** 理由の長さの上限 */
 const REASON_MAX_LENGTH = schemas.CancelOrderRequest.reason.maxLength
 
 /** 入力欄の値 */
 type Values = { reason: string }
 
 /**
- * 運営者の判断によるキャンセルの、理由（必須）を入力するダイアログ（AC-103）。<br />
+ * 運営者の判断によるキャンセルの、理由（必須）を入力するダイアログ。<br />
  * 送信は onSubmit に任せ、成功したら閉じる。
  */
 export function CancelOrderDialog({

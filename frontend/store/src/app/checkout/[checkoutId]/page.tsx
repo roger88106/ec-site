@@ -18,8 +18,8 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 注文手続き（T2505、T3407。AC-84〜89、125〜127）。注文が成立済みなら、注文の画面へ移る。<br />
- * ログインを求め、始めた会員のものでなければ「見つかりません」にする（AC-126）。
+ * 注文手続き。注文が成立済みなら、注文の画面へ移る。<br />
+ * ログインを求め、始めた会員のものでなければ「見つかりません」にする。
  */
 export default async function CheckoutPage({ params }: PageProps<'/checkout/[checkoutId]'>) {
   const t = await getTranslations('checkout.page')

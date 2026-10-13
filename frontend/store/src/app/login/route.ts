@@ -4,7 +4,7 @@ import { safeReturnTo } from '@/lib/login'
 
 /**
  * IdP のログインの画面へ移る口（店舗画面の構成 第 3、9 節）。<br />
- * クエリ：returnTo（ログインの後に戻る画面。AC-113）、register=1（会員登録の画面にする。AC-108）。
+ * クエリ：returnTo（ログインの後に戻る画面）、register=1（会員登録の画面にする）。
  */
 export async function GET(request: NextRequest) {
   const query = request.nextUrl.searchParams

@@ -1,7 +1,7 @@
 import { publicationStatusValues } from '@/api/generated/admin'
 import type { PublicationStatus } from '@/api/types'
 
-/** 商品の一覧の絞り込み（AC-48）とページ。URL のクエリに持つ（管理画面の構成 第 3 節） */
+/** 商品の一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成 第 3 節） */
 export type ProductFilter = {
   code: string
   name: string

@@ -9,7 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CreateTaxCategoryForm } from '@/features/tax/components/CreateTaxCategoryForm'
 import { formatRate } from '@/lib/rate'
 
-/** 税区分の一覧と登録（T706。US-1） */
+/** 税区分の一覧と登録 */
 export function TaxCategoryListPage() {
   const t = useTranslations('tax.list')
   const query = $api.useQuery('get', '/tax-categories')

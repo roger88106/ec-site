@@ -1,7 +1,7 @@
 import { translate } from '@/i18n/translate'
 import type { ActionResult } from '@/lib/actionResult'
 
-/** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない。AC-127） */
+/** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない） */
 export type OrderField = 'name' | 'postalCode' | 'prefecture' | 'address' | 'phone'
 
 /** 注文のフォームに出すエラー。入力欄ごとのメッセージ、フォームの下のメッセージ、カートへのリンクを添えるか */
@@ -32,7 +32,7 @@ const FIELD_MESSAGES: Record<OrderField, string> = {
   phone: translate('checkout.fieldErrors.phone'),
 }
 
-/** 業務の検証エラーのエラーコード → 入力欄（AC-86） */
+/** 業務の検証エラーのエラーコード → 入力欄 */
 const FIELD_BY_ERROR_CODE: Record<string, OrderField> = {
   INVALID_RECIPIENT_NAME: 'name',
   INVALID_POSTAL_CODE: 'postalCode',

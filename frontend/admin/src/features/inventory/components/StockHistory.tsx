@@ -10,7 +10,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { formatDelta } from '@/lib/delta'
 import { stockAdjustmentReasonLabel } from '@/lib/labels'
 
-/** 調整の履歴（新しい順。AC-45） */
+/** 調整の履歴（新しい順） */
 export function StockHistory({ variantId }: { variantId: string }) {
   const t = useTranslations('inventory.history')
   const [page, setPage] = useState(1)
@@ -49,7 +49,7 @@ export function StockHistory({ variantId }: { variantId: string }) {
                       <TableCell className="text-right tabular-nums">{formatDelta(item.delta)}</TableCell>
                       <TableCell>{stockAdjustmentReasonLabel(item.reason)}</TableCell>
                       <TableCell className="text-right tabular-nums">{item.quantityAfter}</TableCell>
-                      {/* 注文に由来する調整は、メモの代わりに注文番号を出す（AC-107） */}
+                      {/* 注文に由来する調整は、メモの代わりに注文番号を出す */}
                       <TableCell className="whitespace-pre-wrap">
                         {
                           item.orderNumber
@@ -57,7 +57,7 @@ export function StockHistory({ variantId }: { variantId: string }) {
                             : item.memo /* 注文番号かメモ */
                         }
                       </TableCell>
-                      {/* 注文に由来する調整と、記録を始める前の調整は空（AC-142） */}
+                      {/* 注文に由来する調整と、記録を始める前の調整は空 */}
                       <TableCell>{item.operatorName}</TableCell>
                     </TableRow>
                   ))}

@@ -6,7 +6,7 @@ import { deleteCartId } from '@/api/cartCookie'
 import { idpLogoutUrl, signOut } from '@/auth'
 
 /**
- * ログアウトする（AC-115、124）。セッションの Cookie と Cookie のカート ID を消し、IdP のログアウトへ移る
+ * ログアウトする。セッションの Cookie と Cookie のカート ID を消し、IdP のログアウトへ移る
  * （IdP のログインの状態も終え、パスワードなしではログインし直せないようにする）。
  */
 export async function logout(): Promise<void> {

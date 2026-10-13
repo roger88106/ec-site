@@ -9,7 +9,7 @@ import { QueryState } from '@/components/QueryState'
 import { AdjustStockForm } from '@/features/inventory/components/AdjustStockForm'
 import { StockHistory } from '@/features/inventory/components/StockHistory'
 
-/** バリアントの在庫数、調整、履歴（T710。US-8） */
+/** バリアントの在庫数、調整、履歴 */
 export function StockPage() {
   const t = useTranslations('inventory.page')
   const tCommon = useTranslations('common')

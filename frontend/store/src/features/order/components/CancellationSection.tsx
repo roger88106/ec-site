@@ -4,7 +4,7 @@ import { CancellationRequestForm } from '@/features/order/components/Cancellatio
 import { cancellationState, formatDateTime } from '@/lib/orderDisplay'
 
 /**
- * 注文のキャンセル（AC-95、96）。状況に応じて、申請のフォーム、申請中、却下（問い合わせ先）、キャンセル済みを出す。
+ * 注文のキャンセル。状況に応じて、申請のフォーム、申請中、却下（問い合わせ先）、キャンセル済みを出す。
  *
  * @param order        注文
  * @param contactEmail 問い合わせ先のメールアドレス

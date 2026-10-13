@@ -3,7 +3,7 @@ import { productSortValues } from '@/api/generated/store'
 import type { ProductSort } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
-/** 商品一覧の絞り込み・並び順・ページ（AC-52〜54、57）。URL のクエリに持つ（店舗画面の構成 第 3 節） */
+/** 商品一覧の絞り込み・並び順・ページ。URL のクエリに持つ（店舗画面の構成 第 3 節） */
 export type ListQuery = {
   categoryId: string | null
   minPrice: number | null
@@ -15,7 +15,7 @@ export type ListQuery = {
 /** Next.js の searchParams（同じ名前が複数あれば配列） */
 export type SearchParams = Record<string, string | string[] | undefined>
 
-/** 並び順の表示名（AC-54） */
+/** 並び順の表示名 */
 export function sortLabel(sort: ProductSort): string {
   return translate(`catalog.sort.${sort}`)
 }

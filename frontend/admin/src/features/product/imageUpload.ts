@@ -1,7 +1,7 @@
 import { fetchClient } from '@/api/client'
 import { translate } from '@/i18n/translate'
 
-/** 受け付ける画像の形式（AC-39、67）。登録のときに WebP に変換される（AC-68） */
+/** 受け付ける画像の形式。登録のときに WebP に変換される */
 export const IMAGE_CONTENT_TYPES = [
   'image/jpeg',
   'image/png',
@@ -32,10 +32,10 @@ export const IMAGE_ACCEPT = [
   ...Object.keys(CONTENT_TYPES_BY_EXTENSION).map((ext) => `.${ext}`),
 ].join(',')
 
-/** 1 ファイルの大きさの上限（10MB。AC-39） */
+/** 1 ファイルの大きさの上限（10MB） */
 export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
 
-/** 1 商品あたりの画像の上限（AC-40） */
+/** 1 商品あたりの画像の上限 */
 export const MAX_IMAGES = 20
 
 /** 管理 API の外（ストレージへの PUT など）で起きた、画像のアップロードの失敗。メッセージをそのまま出す */
@@ -74,7 +74,7 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
 }
 
 /**
- * 画像を 1 枚アップロードして登録する（plan 001 第 7.2 節）。<br />
+ * 画像を 1 枚アップロードして登録する。<br />
  * 受付で署名付き URL を受け取り、ファイルをストレージへ直接 PUT してから、受付 ID で登録する。
  * API のエラーは ApiError として投げる。
  *

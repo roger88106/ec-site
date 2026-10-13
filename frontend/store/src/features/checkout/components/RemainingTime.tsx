@@ -5,8 +5,8 @@ import { useEffect, useState } from 'react'
 import { remainingTime } from '@/lib/orderDisplay'
 
 /**
- * 引当の残り時間（AC-84）。1 秒ごとに数え直す。<br />
- * 期限が切れても注文はできる（AC-87）ので、操作は止めずに案内だけを替える。
+ * 引当の残り時間。1 秒ごとに数え直す。<br />
+ * 期限が切れても注文はできるので、操作は止めずに案内だけを替える。
  * サーバーとブラウザの時刻の違いで表示が食い違わないよう、ブラウザで初めて数える。
  */
 export function RemainingTime({ expiresAt }: { expiresAt: string }) {

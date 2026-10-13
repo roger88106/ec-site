@@ -18,7 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 商品一覧（T806。AC-51〜57）。カテゴリ（子孫を含む）と税込の価格帯で絞り込み、並べ替え、ページで送る。<br />
+ * 商品一覧。カテゴリ（子孫を含む）と税込の価格帯で絞り込み、並べ替え、ページで送る。<br />
  * 入力の誤り（URL のクエリの形が違うなど）は、API のエラーの message をこの画面に出す。
  */
 export default async function ProductListPage({ searchParams }: PageProps<'/products'>) {

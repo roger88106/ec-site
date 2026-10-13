@@ -6,7 +6,7 @@ import { useActionState } from 'react'
 import { startCheckout } from '@/actions/cart'
 
 /**
- * 注文手続きに進む（AC-82、88）。<br />
+ * 注文手続きに進む。<br />
  * 購入できない品目を含むカートは進めない。在庫が足りず引き当てられなければ、API のメッセージを出す
  * （カートは表示し直され、足りない品目に理由が付く）。
  */

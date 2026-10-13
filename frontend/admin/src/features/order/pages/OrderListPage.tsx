@@ -14,7 +14,7 @@ import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/
 import { formatYen } from '@/lib/format'
 
 /**
- * 注文一覧（T2601。AC-97〜99、106）。注文日時の新しい順で、キャンセル済みも含む。<br />
+ * 注文一覧。注文日時の新しい順で、キャンセル済みも含む。<br />
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  */
 export function OrderListPage() {

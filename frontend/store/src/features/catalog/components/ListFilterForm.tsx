@@ -9,7 +9,7 @@ import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type ListQuery, sortLabel } from '@/features/catalog/listQuery'
 
 /**
- * 商品一覧の絞り込みと並び順（AC-52〜54）。フォームの GET で URL のクエリに送る（1 ページ目に戻る）。<br />
+ * 商品一覧の絞り込みと並び順。フォームの GET で URL のクエリに送る（1 ページ目に戻る）。<br />
  * 画面の操作だけで完結するので、クライアントコンポーネントにしない。
  */
 export function ListFilterForm({ query, categories }: { query: ListQuery; categories: FlatCategory[] }) {

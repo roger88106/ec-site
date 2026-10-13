@@ -13,7 +13,7 @@ import { OrderLinesCard } from '@/features/order/components/OrderLinesCard'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { formatPostalCode } from '@/features/order/order'
 
-/** 注文の詳細（T2602。AC-100、106）と、承認・却下・キャンセルの操作（T2603。AC-101〜103、105） */
+/** 注文の詳細と、承認・却下・キャンセルの操作 */
 export function OrderDetailPage() {
   const t = useTranslations('order.detail')
   const tCommon = useTranslations('common')

@@ -4,7 +4,7 @@ import type { Amounts } from '@/api/types'
 import { formatYen, taxLabel } from '@/lib/orderDisplay'
 
 /**
- * 金額の内訳（AC-77、85、93。BR-7、8）。商品の合計、送料、総額、税率ごとの消費税額の順に出す。<br />
+ * 金額の内訳。商品の合計、送料、総額、税率ごとの消費税額の順に出す。<br />
  * カート・注文手続き・注文で同じ部品を使う。
  */
 export function AmountsSummary({ amounts }: { amounts: Amounts }) {

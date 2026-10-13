@@ -22,14 +22,14 @@ export type VariantRowActions = {
 }
 
 /**
- * バリアントの一覧の 1 行（AC-20〜23、27、28、38、71）。画像の選択、販売の停止・再開、並べ替え、削除。
+ * バリアントの一覧の 1 行。画像の選択、販売の停止・再開、並べ替え、削除。
  *
  * @param productId    商品の ID（在庫の画面へのリンク）
  * @param axes         商品のバリアント軸（軸の値の列）
  * @param imageOptions 選べる画像（代表画像と、商品の画像）
  * @param first        先頭の行（上へ移せない）
  * @param last         最後の行（下へ移せない）
- * @param deletable    削除できる（C 側に表示されたことのない商品。AC-71）
+ * @param deletable    削除できる（C 側に表示されたことのない商品）
  * @param pending      ほかの操作を待っている
  */
 export function VariantRow({
@@ -101,7 +101,7 @@ export function VariantRow({
         >
           <ArrowDownIcon />
         </Button>
-        {/* 販売停止のバリアントも C 側の選択肢に出るが、選べない（AC-28） */}
+        {/* 販売停止のバリアントも C 側の選択肢に出るが、選べない */}
         {variant.salesSuspended ? (
           <Button
             aria-label={t('resumeLabel', { code: variant.variantCode }) /* 販売を再開 */}
@@ -123,7 +123,7 @@ export function VariantRow({
             {t('suspend') /* 販売停止 */}
           </Button>
         )}
-        {/* C 側に表示されたことのある商品のバリアントは削除できない（AC-71） */}
+        {/* C 側に表示されたことのある商品のバリアントは削除できない */}
         {deletable && (
           <ConfirmDialog
             confirmLabel={tCommon('deleteConfirm') /* 削除する */}

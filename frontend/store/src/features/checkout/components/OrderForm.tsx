@@ -14,7 +14,7 @@ import { PREFECTURES } from '@/features/checkout/prefectures'
 import { formatYen } from '@/lib/orderDisplay'
 
 /**
- * お届け先の入力と、注文（AC-85、86、89、91）。連絡先のメールアドレスは会員のものを示すだけで、入力しない（AC-127）。<br />
+ * お届け先の入力と、注文。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />
  * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
  * フォームの action ではなく onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。
  */

@@ -8,7 +8,7 @@ import { readServerConfig } from '@/auth/config'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 
 /**
- * API の結果をキャッシュする秒数（NFR-1：変更は 1 分以内に C 側へ反映する）。<br />
+ * API の結果をキャッシュする秒数（：変更は 1 分以内に C 側へ反映する）。<br />
  * 環境変数 STORE_API_REVALIDATE_SECONDS で短くできる（E2E で、60 秒を待たずに一覧への反映を確かめるため）。
  */
 const REVALIDATE_SECONDS = Number(process.env.STORE_API_REVALIDATE_SECONDS ?? 60)

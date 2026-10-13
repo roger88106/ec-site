@@ -8,7 +8,7 @@ import { ProductGrid } from '@/features/catalog/components/ProductCard'
 /** トップに出す新着の商品の数 */
 const NEW_ARRIVALS = 8
 
-/** トップ（T805）。カテゴリの一覧と、新着の商品 */
+/** トップ。カテゴリの一覧と、新着の商品 */
 export default async function HomePage() {
   const t = await getTranslations('app.home')
   const api = await getApi()

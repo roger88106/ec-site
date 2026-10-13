@@ -12,7 +12,7 @@ import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 /** 入力欄の値 */
 type Values = { name: string }
 
-/** 税区分の登録（AC-1） */
+/** 税区分の登録 */
 export function CreateTaxCategoryForm() {
   const t = useTranslations('tax.create')
   const tCommon = useTranslations('common')

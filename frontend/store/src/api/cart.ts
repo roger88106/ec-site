@@ -8,7 +8,7 @@ import { cartMergeNotice } from '@/lib/cartMergeNotice'
 import { log } from '@/lib/server/log'
 
 /**
- * 使うカートを選ぶ（店舗画面の構成 第 4.2 節。AC-120、121）。
+ * 使うカートを選ぶ（店舗画面の構成 第 4.2 節）。
  * ログインしていれば会員のカート、していなければ Cookie のカート。
  */
 export async function currentCartChoice(): Promise<CartChoice> {
@@ -24,7 +24,7 @@ export async function memberCartId(): Promise<string> {
 }
 
 /**
- * ログインの直後に、Cookie のカートを会員のカートへ移す（AC-122、123）。Auth.js の signIn のイベントから呼ぶ。<br />
+ * ログインの直後に、Cookie のカートを会員のカートへ移す。Auth.js の signIn のイベントから呼ぶ。<br />
  * 移す前にカートの内容を取っておき、切り詰めた品目と移せなかった品目の名前を、知らせの Cookie に書く。
  * 移せなかったときも Cookie のカート ID は消す（ログインしている間は使わず、残すとログアウトの後に古いカートが見えるため）。
  *

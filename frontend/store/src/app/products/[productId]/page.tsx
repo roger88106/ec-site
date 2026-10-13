@@ -7,7 +7,7 @@ import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
 import { isUuid } from '@/lib/uuid'
 
 /**
- * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする（AC-65）。<br />
+ * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする。<br />
  * 非公開にした直後から見つからなくなるよう、キャッシュを使わない（UNCACHED）。
  */
 async function fetchProduct(productId: string) {
@@ -24,7 +24,7 @@ export async function generateMetadata({ params }: PageProps<'/products/[product
   return { title: product.name }
 }
 
-/** 商品の詳細（T808。AC-62〜66）。URL は商品 ID で、品番が変わっても変わらない */
+/** 商品の詳細。URL は商品 ID で、品番が変わっても変わらない */
 export default async function ProductDetailPage({ params }: PageProps<'/products/[productId]'>) {
   const product = await fetchProduct((await params).productId)
   return (

@@ -77,7 +77,7 @@ export function ProductFields() {
   )
 }
 
-/** 税区分の選択。現時点の率を併記する（率がない税区分は割り当てられない。AC-6） */
+/** 税区分の選択。現時点の率を併記する（率がない税区分は割り当てられない） */
 function TaxCategorySelect({
   id,
   value,

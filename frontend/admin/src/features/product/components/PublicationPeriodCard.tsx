@@ -18,8 +18,8 @@ function toValues(product: ProductDetail): Values {
 }
 
 /**
- * 公開期間の設定（T1008。AC-34〜36）。日時は日本時間で、空なら限りがない。<br />
- * 公開中でも期間の外は C 側に表示されず、その時刻で切り替わる（AC-35）。終了が開始より後であること（AC-36）はサーバーが検証する。
+ * 公開期間の設定。日時は日本時間で、空なら限りがない。<br />
+ * 公開中でも期間の外は C 側に表示されず、その時刻で切り替わる。終了が開始より後であることはサーバーが検証する。
  * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
  */
 export function PublicationPeriodCard({

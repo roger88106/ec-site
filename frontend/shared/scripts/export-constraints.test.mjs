@@ -45,7 +45,7 @@ describe('API の契約の制約の書き出し', () => {
   test('入れ子のオブジェクトと配列の要素の制約も書き出す', () => {
     const doc = openapi({
       schemas: {
-        RatePercent: { type: 'number', minimum: 0, maximum: 100 },
+        RatePercent: { type: 'number', minimum: 0, maximum: 100, exclusiveMaximum: true },
         ReplaceTaxRatesRequest: {
           type: 'object',
           properties: {
@@ -60,7 +60,7 @@ describe('API の契約の制約の書き出し', () => {
       },
     })
     expect(exportConstraints(doc).schemas.ReplaceTaxRatesRequest).toEqual({
-      rates: { maxItems: 20, items: { ratePercent: { minimum: 0, maximum: 100 } } },
+      rates: { maxItems: 20, items: { ratePercent: { minimum: 0, maximum: 100, exclusiveMaximum: true } } },
       note: { text: { maxLength: 500 } },
     })
   })

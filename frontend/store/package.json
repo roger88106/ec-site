@@ -8,7 +8,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "generate:api": "openapi-typescript ../../api/openapi/store.yaml -o src/api/generated/store.ts --enum-values",
+    "generate:api": "openapi-typescript ../../api/openapi/store.yaml -o src/api/generated/store.ts --enum-values && node ../shared/scripts/export-constraints.mjs ../../api/openapi/store.yaml src/api/generated/constraints.ts",
     "dev": "pnpm generate:api && next dev",
     "build": "pnpm generate:api && next build",
     "start": "next start",

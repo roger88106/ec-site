@@ -9,7 +9,7 @@
     "node": ">=24"
   },
   "scripts": {
-    "generate:api": "openapi-typescript ../../api/openapi/admin.yaml -o src/api/generated/admin.ts --enum-values",
+    "generate:api": "openapi-typescript ../../api/openapi/admin.yaml -o src/api/generated/admin.ts --enum-values && node ../shared/scripts/export-constraints.mjs ../../api/openapi/admin.yaml src/api/generated/constraints.ts",
     "dev": "pnpm generate:api && vite",
     "build": "pnpm generate:api && tsc -b && vite build",
     "typecheck": "pnpm generate:api && tsc -b",

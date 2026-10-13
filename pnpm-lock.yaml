@@ -326,6 +326,9 @@ importers:
       '@types/react':
         specifier: ^19.2.18
         version: 19.3.0
+      js-yaml:
+        specifier: ^4.3.2
+        version: 4.3.2
       react:
         specifier: 19.3.0
         version: 19.3.0

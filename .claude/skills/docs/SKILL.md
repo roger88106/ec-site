@@ -55,8 +55,3 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・直す
 - 適用済みのマイグレーションと seed の SQL は直さない（Flyway の checksum が変わり、既存の DB で起動に失敗する）。
 - `docs/specs/` の完了した文書は、リンクのパスだけを直す（開発の進め方 第 1.4 節）。
 - コードが多く引用している文書の名前（`管理画面の構成` など）は、見出しを変えずに残す。
-
-## 5. 落とし穴
-
-- Bash の heredoc では `\\` が `\` になり、正規表現が壊れる。script は Write で書く。
-- Windows では、`node_modules` のある worktree を消すと、パスが長すぎて失敗する。`git -c core.longpaths=true` か、PowerShell の `\\?\` 付きのパスで消す。

@@ -1,4 +1,8 @@
 import type { NextConfig } from 'next'
+import createNextIntlPlugin from 'next-intl/plugin'
+
+/** 文言の道具（next-intl）。リクエストごとの設定のファイルを渡す */
+const withNextIntl = createNextIntlPlugin('./src/i18n/request.ts')
 
 /**
  * Next.js の設定。<br />
@@ -19,4 +23,4 @@ const nextConfig: NextConfig = {
   },
 }
 
-export default nextConfig
+export default withNextIntl(nextConfig)

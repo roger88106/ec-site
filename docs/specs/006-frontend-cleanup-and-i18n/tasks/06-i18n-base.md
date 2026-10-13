@@ -21,7 +21,7 @@
 - 決定：店舗画面は `next-intl`、管理画面は `use-intl`。同じ書き方と同じ文言の形（ICU）を 2 つの画面で使える。共通の文言は `frontend/shared/src/messages/ja.json` に置き、各画面の文言と合わせて提供者に渡す。
 - 利用者の確認：spec 006 の確認 C（「next-intl・use-intl で、共通の文言を shared に置く」で了承）。
 
-- [ ] **T6602** 店舗画面に道具を入れる：提供者、`messages/ja.json`、キーの型、ページの言語。
+- [x] **T6602** 店舗画面に道具を入れる：提供者、`messages/ja.json`、キーの型、ページの言語。
 - [ ] **T6603** 管理画面に道具を入れる：提供者、`messages/ja.json`、キーの型、`index.html` の言語。
 - [ ] **T6604** 共通の文言を共有する場合は、`frontend/shared/src/messages/ja.json` と、各画面の文言との合わせ方を作る。
 - [ ] **T6605** テストの描画の部品（admin の `renderApp`、store のテストの描画）を、日本語の文言の提供者で包む。既存のテストが通る（DC-58）。

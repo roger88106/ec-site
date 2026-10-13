@@ -1,5 +1,7 @@
+import { LOCALE } from '@ec-site/shared/lib/locale'
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
+import { NextIntlClientProvider } from 'next-intl'
 import { SiteHeader } from '@/components/SiteHeader'
 import { cn } from '@/lib/utils'
 import './globals.css'
@@ -16,10 +18,13 @@ export const metadata: Metadata = {
 /** すべての画面の共通の枠（ヘッダーと本文） */
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html className={cn('font-sans', geist.variable)} lang="ja">
+    <html className={cn('font-sans', geist.variable)} lang={LOCALE}>
       <body className="min-h-svh bg-background text-foreground">
-        <SiteHeader />
-        <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
+        {/* クライアントコンポーネントに文言を渡す（ロケールと文言は request.ts の設定を引き継ぐ） */}
+        <NextIntlClientProvider>
+          <SiteHeader />
+          <main className="mx-auto w-full max-w-6xl px-4 py-8">{children}</main>
+        </NextIntlClientProvider>
       </body>
     </html>
   )

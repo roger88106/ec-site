@@ -27,30 +27,18 @@ class SchedulerLockTest {
     LockedJob job;
 
     @Test
-    @DisplayName("同じジョブを同時に 2 回起動しても、1 回だけ動き、もう 1 回は飛ばされる")
+    @DisplayName("同じジョブが動いている間にもう 1 回起動しても、飛ばされ、1 回だけ動く")
     void runsOnlyOnceAtTheSameTime() throws Exception {
-        var start = new CountDownLatch(1);
-        try (var executor = Executors.newFixedThreadPool(2)) {
-            var first = CompletableFuture.runAsync(() -> runAfter(start), executor);
-            var second = CompletableFuture.runAsync(() -> runAfter(start), executor);
-            start.countDown();
-            CompletableFuture.allOf(first, second).get(30, TimeUnit.SECONDS);
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            var first = CompletableFuture.runAsync(job::run, executor);
+            job.awaitRunning();
+
+            job.run();
+            job.finish();
+            first.get(30, TimeUnit.SECONDS);
         }
 
         assertThat(job.runs()).isEqualTo(1);
-    }
-
-    /**
-     * 合図を待ってからジョブを呼ぶ。
-     */
-    private void runAfter(CountDownLatch start) {
-        try {
-            start.await();
-        } catch (InterruptedException e) {
-            Thread.currentThread().interrupt();
-            throw new IllegalStateException(e);
-        }
-        job.run();
     }
 
     /**
@@ -66,7 +54,7 @@ class SchedulerLockTest {
     }
 
     /**
-     * 動いた回数を数え、もう一方が同時に呼ばれるよう、しばらく終わらないジョブ。
+     * 動いた回数を数え、テストが終わらせるまで終わらないジョブ（時間で待たずに、2 回目を 1 回目の最中に呼ぶ）。
      */
     static class LockedJob {
 
@@ -76,16 +64,41 @@ class SchedulerLockTest {
         private final AtomicInteger runs = new AtomicInteger();
 
         /**
+         * 1 回目が動き始めた合図
+         */
+        private final CountDownLatch running = new CountDownLatch(1);
+
+        /**
+         * 1 回目を終わらせる合図
+         */
+        private final CountDownLatch finish = new CountDownLatch(1);
+
+        /**
          * ジョブの本体
          */
         @SchedulerLock(name = "scheduler-lock-test", lockAtMostFor = "PT1M")
         public void run() {
             runs.incrementAndGet();
+            running.countDown();
             try {
-                Thread.sleep(1_000);
+                finish.await(30, TimeUnit.SECONDS);
             } catch (InterruptedException e) {
                 Thread.currentThread().interrupt();
             }
+        }
+
+        /**
+         * 1 回目が動き始めるのを待つ。
+         */
+        void awaitRunning() throws InterruptedException {
+            assertThat(running.await(30, TimeUnit.SECONDS)).isTrue();
+        }
+
+        /**
+         * 1 回目を終わらせる。
+         */
+        void finish() {
+            finish.countDown();
         }
 
         /**

@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
-import { emptyCart, fillShipping, orderCart, payOnMockPage } from '../src/store'
+import { emptyCart, expectOrderPage, fillShipping, orderCart, payOnMockPage } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
 
 /**
@@ -85,5 +85,33 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
 
   await test.step('やり直して支払うと、受付になる', async () => {
     await payOnMockPage(page)
+  })
+})
+
+test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限切れでキャンセルになる', async ({ page }) => {
+  // 支払の期限（30 秒）と、期限切れを見る間隔を待つ
+  test.setTimeout(120_000)
+  await memberCartWith(page, 'EXPIRE')
+  await orderCart(page)
+  let orderUrl = ''
+
+  await test.step('支払の画面でやめると、注文の画面に戻り、注文は支払待ちのまま', async () => {
+    await page.getByRole('button', { name: 'やめる' }).click()
+    await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
+    orderUrl = page.url().split('?')[0]
+    await page.goto(orderUrl)
+    await expect(page.getByText('支払待ち', { exact: true })).toBeVisible()
+    await expect(page.getByRole('button', { name: '支払う' })).toBeVisible()
+  })
+
+  await test.step('期限を過ぎると、支払期限切れのキャンセルになる', async () => {
+    await expectOrderPage(
+      page,
+      orderUrl,
+      page.getByText('お支払い期限までにお支払いがなかったため、このご注文はキャンセルされました。'),
+      90_000,
+    )
+    await expect(page.getByText('キャンセル', { exact: true }).first()).toBeVisible()
+    await expect(page.getByRole('button', { name: '支払う' })).toHaveCount(0)
   })
 })

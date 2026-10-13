@@ -1,0 +1,8 @@
+{
+  "files": [
+    {
+      "path": "frontend/store/src/features/checkout/prefectures.ts",
+      "reason": "都道府県の名前は、API に送る値（store.yaml の ShippingAddress.prefecture）。表示の文言ではない"
+    }
+  ]
+}

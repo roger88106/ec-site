@@ -1,0 +1,49 @@
+import assert from 'node:assert/strict'
+import { describe, test } from 'node:test'
+import { findHardcodedText, stripComments } from './hardcoded-text.mjs'
+
+describe('表示の文言を直接書いた所の検査', () => {
+  test('JSX の文字、属性、コードの文字列の日本語を見つける', () => {
+    const text = [
+      '<Button>保存</Button>',
+      '<Input aria-label="キーワード" />',
+      "toast.success('保存しました')",
+      '<Button>{t("save")}</Button>',
+    ].join('\n')
+    assert.deepEqual(
+      findHardcodedText(text).map((hit) => hit.line),
+      [1, 2, 3],
+    )
+  })
+
+  test('コメントの日本語は見ない。文字列の中の // はコメントにしない', () => {
+    const text = [
+      '/** 保存のボタン */',
+      '// 保存する',
+      '{/* 確認してから送る */}',
+      "const url = 'https://example.com' // 外のサイト",
+      "const label = 'https://example.com/保存'",
+    ].join('\n')
+    assert.deepEqual(
+      findHardcodedText(text).map((hit) => hit.line),
+      [5],
+    )
+  })
+
+  test('ログとプログラムの誤りの例外の文は見ない', () => {
+    const text = [
+      "await log.warn('カートを移せませんでした')",
+      "throw new Error('環境変数がありません')",
+      "throw new ImageUploadError('画像を送れませんでした')",
+    ].join('\n')
+    assert.deepEqual(
+      findHardcodedText(text).map((hit) => hit.line),
+      [3],
+    )
+  })
+
+  test('コメントを消しても、行の数は変わらない', () => {
+    const text = '/*\n * 説明\n */\nconst a = 1'
+    assert.equal(stripComments(text).split('\n').length, 4)
+  })
+})

@@ -1,0 +1,109 @@
+// 画面のコードに、表示の文言（日本語の文字）を直接書いた所がないことを確かめる（フロントの書き方 第 7.1 節）。
+// 文言は各画面の messages/ja.json（共通は frontend/shared/src/messages/ja.json）に置き、キーで引く。
+// コメントと、開発者だけが見る文（ログ、プログラムの誤りの例外）は見ない。テスト、生成物、shadcn/ui の部品、例外の一覧（hardcoded-text-exclusions.json）のファイルも見ない。
+// 使い方：node scripts/ci/hardcoded-text.mjs [--count]（リポジトリのルートで。--count は数だけを出し、失敗にしない）
+import { readdirSync, readFileSync } from 'node:fs'
+import { join, relative } from 'node:path'
+import { fileURLToPath } from 'node:url'
+
+/** 調べる画面のソースの置き場所 */
+const SOURCE_DIRS = ['frontend/admin/src', 'frontend/store/src', 'frontend/shared/src']
+
+/** 調べない置き場所（生成物、shadcn/ui の部品、テストの補助） */
+const EXCLUDED = [/[\\/]generated[\\/]/, /[\\/]components[\\/]ui[\\/]/, /[\\/]src[\\/]ui[\\/]/, /[\\/]src[\\/]test[\\/]/]
+
+/** 開発者だけが見る文（ログ、プログラムの誤りの例外）の行。利用者に見せる文ではないので見ない */
+const DEVELOPER_ONLY = /\b(log|console)\.(debug|info|warn|error)\(|throw new Error\(/
+
+/** 日本語の文字（ひらがな、カタカナ、漢字、全角の記号と句読点） */
+const JAPANESE = /[　-ヿ㐀-鿿＀-￯]/
+
+/**
+ * コメントを空白に置き換える（行の数は変えない）。文字列の中の // は、URL などなので消さない。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントを除いたソース
+ */
+export function stripComments(text) {
+  let result = ''
+  let index = 0
+  let quote = null
+  while (index < text.length) {
+    const char = text[index]
+    const next = text[index + 1]
+    if (quote) {
+      result += char
+      if (char === '\\') {
+        result += next ?? ''
+        index += 2
+        continue
+      }
+      if (char === quote) quote = null
+      index += 1
+      continue
+    }
+    if (char === '/' && next === '*') {
+      const end = text.indexOf('*/', index + 2)
+      const stop = end < 0 ? text.length : end + 2
+      result += text.slice(index, stop).replace(/[^\n]/g, ' ')
+      index = stop
+      continue
+    }
+    if (char === '/' && next === '/') {
+      const end = text.indexOf('\n', index)
+      const stop = end < 0 ? text.length : end
+      result += ' '.repeat(stop - index)
+      index = stop
+      continue
+    }
+    if (char === "'" || char === '"' || char === '`') quote = char
+    result += char
+    index += 1
+  }
+  return result
+}
+
+/**
+ * 表示の文言を直接書いた行を探す。
+ *
+ * @param {string} text ファイルの中身
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findHardcodedText(text) {
+  const original = text.split('\n')
+  return stripComments(text)
+    .split('\n')
+    .flatMap((line, index) =>
+      JAPANESE.test(line) && !DEVELOPER_ONLY.test(line) ? [{ line: index + 1, text: original[index].trim() }] : [],
+    )
+}
+
+/** 調べるファイル（テストを除く .ts と .tsx） */
+function sourceFiles(dir) {
+  return readdirSync(dir, { recursive: true, withFileTypes: true })
+    .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name) && !entry.name.includes('.test.'))
+    .map((entry) => join(entry.parentPath, entry.name))
+    .filter((file) => !EXCLUDED.some((pattern) => pattern.test(file)))
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const exclusions = JSON.parse(readFileSync(new URL('./hardcoded-text-exclusions.json', import.meta.url), 'utf8'))
+  const excluded = new Set(exclusions.files.map((item) => item.path))
+  const found = SOURCE_DIRS.flatMap((dir) =>
+    sourceFiles(dir)
+      .map((file) => relative('.', file).replaceAll('\\', '/'))
+      .filter((file) => !excluded.has(file))
+      .flatMap((file) => findHardcodedText(readFileSync(file, 'utf8')).map((hit) => ({ file, ...hit }))),
+  )
+  if (process.argv.includes('--count')) {
+    const byFile = Object.groupBy(found, (hit) => hit.file)
+    for (const [file, hits] of Object.entries(byFile)) console.log(`${hits.length}\t${file}`)
+    console.log(`合計 ${found.length} 行、${Object.keys(byFile).length} ファイル`)
+  } else if (found.length > 0) {
+    console.error('表示の文言を直接書いた所がある。messages/ja.json に置き、キーで引く：')
+    for (const hit of found) console.error(`  ${hit.file}:${hit.line}  ${hit.text}`)
+    process.exit(1)
+  } else {
+    console.log('表示の文言を直接書いた所はない')
+  }
+}

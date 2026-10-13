@@ -25,7 +25,12 @@ export function PageLinks({
       <span className="text-muted-foreground">{t('summary', { totalItems, page, totalPages }) /* 件数とページ */}</span>
       <div className="flex gap-2">
         {page > 1 ? (
-          <Button nativeButton={false} render={<Link href={hrefFor(page - 1)} />} size="sm" variant="outline">
+          <Button
+            nativeButton={false} /* a を描くので、button の振る舞いを外す */
+            render={<Link href={hrefFor(page - 1)} />}
+            size="sm"
+            variant="outline"
+          >
             {t('previous') /* 前へ */}
           </Button>
         ) : (
@@ -34,7 +39,12 @@ export function PageLinks({
           </Button>
         )}
         {page < totalPages ? (
-          <Button nativeButton={false} render={<Link href={hrefFor(page + 1)} />} size="sm" variant="outline">
+          <Button
+            nativeButton={false} /* a を描くので、button の振る舞いを外す */
+            render={<Link href={hrefFor(page + 1)} />}
+            size="sm"
+            variant="outline"
+          >
             {t('next') /* 次へ */}
           </Button>
         ) : (

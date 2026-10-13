@@ -36,6 +36,7 @@ export function OrderForm({
     <form
       className="space-y-4"
       noValidate
+      // action で送ると、React が送った後にフォームを空にし、誤りのときに入力が消える。onSubmit から送る
       onSubmit={(event) => {
         event.preventDefault()
         const formData = new FormData(event.currentTarget)

@@ -12,6 +12,7 @@ import { remainingTime } from '@/lib/orderDisplay'
 export function RemainingTime({ expiresAt }: { expiresAt: string }) {
   const t = useTranslations('checkout.remaining')
   const [now, setNow] = useState<Date | null>(null)
+  // 今の時刻はブラウザで決める（サーバーの描画と食い違わないよう、最初は出さない）。1 秒ごとに残りを数え直す
   useEffect(() => {
     setNow(new Date())
     const timer = setInterval(() => setNow(new Date()), 1000)

@@ -65,6 +65,7 @@ export function OrderListPage() {
                   {result.items.map((item) => (
                     <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(paths.order(item.id))}>
                       <TableCell className="font-mono">
+                        {/* 行のクリックでも同じ画面へ移るので、リンクのクリックを行に伝えない（二重に移らない） */}
                         <Link onClick={(event) => event.stopPropagation()} to={paths.order(item.id)}>
                           {item.orderNumber}
                         </Link>

@@ -29,7 +29,11 @@ export function ProductEditPage() {
               </span>
             }
           >
-            <Button nativeButton={false} render={<Link to={paths.products()} />} variant="outline">
+            <Button
+              nativeButton={false} /* a を描くので、button の振る舞いを外す */
+              render={<Link to={paths.products()} />}
+              variant="outline"
+            >
               {tCommon('backToList') /* 一覧へ戻る */}
             </Button>
           </PageHeader>

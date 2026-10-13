@@ -13,7 +13,7 @@ export function StockLink({ productId, variantId }: { productId: string; variant
   return (
     <Button
       className="tabular-nums"
-      nativeButton={false}
+      nativeButton={false} /* a を描くので、button の振る舞いを外す */
       render={<Link to={paths.stock(productId, variantId)} />}
       size="xs"
       variant="link"

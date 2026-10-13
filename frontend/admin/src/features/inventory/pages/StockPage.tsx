@@ -29,7 +29,11 @@ export function StockPage() {
           </span>
         }
       >
-        <Button nativeButton={false} render={<Link to={paths.product(productId)} />} variant="outline">
+        <Button
+          nativeButton={false} /* a を描くので、button の振る舞いを外す */
+          render={<Link to={paths.product(productId)} />}
+          variant="outline"
+        >
           {t('backToProduct') /* 商品へ戻る */}
         </Button>
       </PageHeader>

@@ -37,7 +37,7 @@ export function TaxCategoryListPage() {
                     <TableCell>{item.rates.length}</TableCell>
                     <TableCell className="text-right">
                       <Button
-                        nativeButton={false}
+                        nativeButton={false} /* a を描くので、button の振る舞いを外す */
                         render={<Link to={paths.taxCategory(item.id)} />}
                         size="sm"
                         variant="outline"

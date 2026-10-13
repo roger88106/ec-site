@@ -19,7 +19,11 @@ export function TaxRatesPage() {
       {(taxCategory) => (
         <>
           <PageHeader title={t('title', { name: taxCategory.name }) /* 税区分の税率 */}>
-            <Button nativeButton={false} render={<Link to={paths.taxCategories()} />} variant="outline">
+            <Button
+              nativeButton={false} /* a を描くので、button の振る舞いを外す */
+              render={<Link to={paths.taxCategories()} />}
+              variant="outline"
+            >
               {tCommon('backToList') /* 一覧へ戻る */}
             </Button>
           </PageHeader>

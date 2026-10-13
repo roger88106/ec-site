@@ -54,7 +54,10 @@ export function ProductListPage() {
   return (
     <>
       <PageHeader title={t('title') /* 商品 */}>
-        <Button nativeButton={false} render={<Link to={paths.productNew()} />}>
+        <Button
+          nativeButton={false} /* a を描くので、button の振る舞いを外す */
+          render={<Link to={paths.productNew()} />}
+        >
           {t('create') /* 商品を登録 */}
         </Button>
       </PageHeader>
@@ -78,6 +81,7 @@ export function ProductListPage() {
                   {result.items.map((item) => (
                     <TableRow className="cursor-pointer" key={item.id} onClick={() => navigate(paths.product(item.id))}>
                       <TableCell className="font-mono">
+                        {/* 行のクリックでも同じ画面へ移るので、リンクのクリックを行に伝えない（二重に移らない） */}
                         <Link onClick={(event) => event.stopPropagation()} to={paths.product(item.id)}>
                           {item.productCode}
                         </Link>

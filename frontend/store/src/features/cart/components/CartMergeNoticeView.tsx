@@ -13,6 +13,7 @@ import type { CartMergeNotice } from '@/lib/cartMergeNotice'
  */
 export function CartMergeNoticeView({ notice }: { notice: CartMergeNotice | null }) {
   const t = useTranslations('cart.merge')
+  // 知らせは一度だけ出す。表示は最初に受けた値で続け、Cookie の知らせは描画の後に消す
   const [shown] = useState(notice)
   useEffect(() => {
     if (notice !== null) {

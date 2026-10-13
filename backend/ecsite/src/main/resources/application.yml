@@ -26,7 +26,7 @@ spring:
         schema: common
         schema-initialization:
           enabled: false
-      # 再起動時の未完了イベントの自動再発行は無効（inventory.md の復旧手順を参照）
+      # 再起動時の再発行は使わない。未完了のイベントは定期ジョブ（EventResubmissionJob）が再発行する
       republish-outstanding-events-on-restart: false
   flyway:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（バックエンドのアーキテクチャ 第 5 節）。

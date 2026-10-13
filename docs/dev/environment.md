@@ -20,6 +20,8 @@
 | `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（標準税率） | 必須 |
 | `ECSITE_ORDER_SHIPPING_FEE`、`_RESERVATION_TTL` | 送料（税込、円）、引当の期限 | 1000、15m |
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に示す） | 必須 |
+| `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で動かすか | true |
+| `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE` | 未完了のイベントを再発行する間隔、再発行するイベントの発行からの時間の下限 | PT1M、5m |
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省いたもの（`SPRING_DATASOURCE_USERNAME` など）。
 - マイグレーションは起動時には流さず、デプロイごとに 1 回だけ実行する。

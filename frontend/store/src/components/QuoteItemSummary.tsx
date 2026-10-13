@@ -1,6 +1,7 @@
 import { Badge } from '@ec-site/shared/ui/badge'
 import { ImageIcon } from 'lucide-react'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 import type { QuoteItem } from '@/api/types'
 import { PriceText } from '@/components/PriceText'
@@ -11,6 +12,7 @@ import { axisValuesLabel, unpurchasableReasonLabel } from '@/lib/orderDisplay'
  * 数量と小計は、使う画面が children に出す（カートは数量を変えられる）。
  */
 export function QuoteItemSummary({ item, children }: { item: QuoteItem; children?: ReactNode }) {
+  const t = useTranslations('components.quoteItem')
   return (
     <div className="flex gap-4">
       <div className="flex size-20 shrink-0 items-center justify-center overflow-hidden rounded-md bg-muted">
@@ -31,7 +33,7 @@ export function QuoteItemSummary({ item, children }: { item: QuoteItem; children
         <PriceText price={item.unitPrice} />
         {!item.purchasable && item.unpurchasableReason && (
           <p className="flex items-center gap-2 text-destructive text-sm">
-            <Badge variant="destructive">購入できません</Badge>
+            <Badge variant="destructive">{t('unpurchasable') /* 購入できない */}</Badge>
             {unpurchasableReasonLabel(item.unpurchasableReason)}
           </p>
         )}

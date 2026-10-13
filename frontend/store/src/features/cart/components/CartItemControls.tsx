@@ -2,6 +2,7 @@
 
 import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
+import { useTranslations } from 'next-intl'
 import { useActionState, useId } from 'react'
 import { changeCartItemQuantity, removeCartItem } from '@/actions/cart'
 import type { QuoteItem } from '@/api/types'
@@ -13,6 +14,7 @@ import { formatYen, QUANTITY_OPTIONS } from '@/lib/orderDisplay'
  * 数量は選んだときに送る。在庫を超えるなどの拒否は、API のメッセージを品目の下に出す。
  */
 export function CartItemControls({ item }: { item: QuoteItem }) {
+  const t = useTranslations('cart.controls')
   const [changeResult, changeAction, changing] = useActionState(changeCartItemQuantity, null)
   const [removeResult, removeAction, removing] = useActionState(removeCartItem, null)
   const quantityId = useId()
@@ -22,7 +24,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
     <div className="flex flex-col items-end gap-2 text-sm">
       <form action={changeAction} className="flex items-center gap-2">
         <input name="variantId" type="hidden" value={item.variantId} />
-        <Label htmlFor={quantityId}>数量</Label>
+        <Label htmlFor={quantityId}>{t('quantity') /* 数量 */}</Label>
         <NativeSelect
           className="w-20"
           defaultValue={String(item.quantity)}
@@ -49,7 +51,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
       <form action={removeAction}>
         <input name="variantId" type="hidden" value={item.variantId} />
         <Button disabled={changing || removing} size="sm" type="submit" variant="outline">
-          {removing ? '削除しています…' : '削除'}
+          {removing ? t('removing') : t('remove') /* 削除中か、削除 */}
         </Button>
       </form>
       {failure?.ok === false && (

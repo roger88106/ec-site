@@ -1,3 +1,4 @@
+import { translate } from '@/i18n/translate'
 import type { ActionResult } from '@/lib/actionResult'
 
 /** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない。AC-127） */
@@ -24,11 +25,11 @@ const FIELD_BY_PATH: Record<string, OrderField> = {
  * API が返すメッセージは検証の部品の既定の文（正規表現など）なので、業務の検証エラーと同じ文に揃える。
  */
 const FIELD_MESSAGES: Record<OrderField, string> = {
-  name: '氏名を 50 文字以内で入力してください。',
-  postalCode: '郵便番号は数字 7 桁で入力してください。',
-  prefecture: '都道府県を選んでください。',
-  address: '住所を 200 文字以内で入力してください。',
-  phone: '電話番号は数字 10〜11 桁で入力してください。',
+  name: translate('checkout.fieldErrors.name'),
+  postalCode: translate('checkout.fieldErrors.postalCode'),
+  prefecture: translate('checkout.fieldErrors.prefecture'),
+  address: translate('checkout.fieldErrors.address'),
+  phone: translate('checkout.fieldErrors.phone'),
 }
 
 /** 業務の検証エラーのエラーコード → 入力欄（AC-86） */

@@ -1,3 +1,4 @@
+import { useTranslations } from 'next-intl'
 import type { Order } from '@/api/types'
 import { CancellationRequestForm } from '@/features/order/components/CancellationRequestForm'
 import { cancellationState, formatDateTime } from '@/lib/orderDisplay'
@@ -9,36 +10,43 @@ import { cancellationState, formatDateTime } from '@/lib/orderDisplay'
  * @param contactEmail 問い合わせ先のメールアドレス
  */
 export function CancellationSection({ order, contactEmail }: { order: Order; contactEmail: string }) {
+  const t = useTranslations('order.cancellation')
   const request = order.cancellationRequest
   switch (cancellationState(order)) {
     case 'REQUESTABLE':
       return (
         <div className="space-y-3">
-          <p className="text-sm">ご注文のキャンセルを申請できます。申請の後、当店で確認してからキャンセルします。</p>
+          <p className="text-sm">{t('requestable') /* 申請できる */}</p>
           <CancellationRequestForm orderId={order.id} />
         </div>
       )
     case 'PENDING':
       return (
         <p className="text-sm">
-          {request && `${formatDateTime(request.requestedAt)} に`}
-          キャンセルの申請を受け付けました。当店で確認してからキャンセルします。
+          {request && t('requestedAt', { date: formatDateTime(request.requestedAt) }) /* 申請の日時 */}
+          {t('pending') /* 受け付けた */}
         </p>
       )
     case 'REJECTED':
       return (
         <div className="space-y-1 text-sm">
-          <p>キャンセルの申請は承認されませんでした。</p>
+          <p>{t('rejected') /* 承認されなかった */}</p>
           <p>
-            キャンセルをご希望の場合は、
-            <a className="underline" href={`mailto:${contactEmail}`}>
-              {contactEmail}
-            </a>
-            までお問い合わせください（注文番号 {order.orderNumber}）。
+            {
+              t.rich('contact', {
+                email: contactEmail,
+                orderNumber: order.orderNumber,
+                link: (chunks) => (
+                  <a className="underline" href={`mailto:${contactEmail}`}>
+                    {chunks}
+                  </a>
+                ),
+              }) /* 問い合わせ先 */
+            }
           </p>
         </div>
       )
     case 'CANCELLED':
-      return <p className="text-sm">このご注文はキャンセルされました。</p>
+      return <p className="text-sm">{t('cancelled') /* キャンセルされた */}</p>
   }
 }

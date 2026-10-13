@@ -7,6 +7,7 @@ import { currentCartChoice, memberCartId } from '@/api/cart'
 import { deleteCartMergeNotice, writeCartId } from '@/api/cartCookie'
 import { getApi, getMemberApi } from '@/api/client'
 import { redirectToLogin } from '@/auth'
+import { translate } from '@/i18n/translate'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
 import { readInt, readString } from '@/lib/server/formData'
@@ -115,7 +116,7 @@ export async function dismissCartMergeNotice(): Promise<void> {
 // ============================== プライベート ==============================
 
 /** Cookie のカートがないときの案内 */
-const CART_MISSING = 'カートが見つかりません。商品をカートに入れ直してください。'
+const CART_MISSING = translate('cart.errors.missing') // カートがない
 
 /** カートの変更の API の呼び出し */
 type CartRequest = (

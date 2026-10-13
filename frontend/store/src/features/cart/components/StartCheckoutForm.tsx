@@ -1,6 +1,7 @@
 'use client'
 
 import { Button } from '@ec-site/shared/ui/button'
+import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { startCheckout } from '@/actions/cart'
 
@@ -10,15 +11,14 @@ import { startCheckout } from '@/actions/cart'
  * （カートは表示し直され、足りない品目に理由が付く）。
  */
 export function StartCheckoutForm({ orderable }: { orderable: boolean }) {
+  const t = useTranslations('cart.startCheckout')
   const [result, formAction, pending] = useActionState(startCheckout, null)
   return (
     <form action={formAction} className="space-y-2">
       <Button className="w-full" disabled={!orderable || pending} size="lg" type="submit">
-        {pending ? '在庫を確保しています…' : '注文手続きへ進む'}
+        {pending ? t('reserving') : t('submit') /* 確保中か、進む */}
       </Button>
-      {!orderable && (
-        <p className="text-muted-foreground text-sm">購入できない商品をカートから削除すると、注文手続きに進めます。</p>
-      )}
+      {!orderable && <p className="text-muted-foreground text-sm">{t('blocked') /* 進めない理由 */}</p>}
       {result?.ok === false && (
         <p aria-live="polite" className="text-destructive text-sm">
           {result.message}

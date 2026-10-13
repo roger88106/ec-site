@@ -19,6 +19,15 @@
     "priceText": {
       "inclTax": "{amount} 円",
       "exclTax": "（税抜 {amount} 円）"
+    },
+    "amounts": {
+      "itemsTotal": "商品の合計",
+      "shippingFee": "送料",
+      "total": "総額（税込）",
+      "taxOf": "{ratePercent}% の消費税"
+    },
+    "quoteItem": {
+      "unpurchasable": "購入できません"
     }
   },
   "orderDisplay": {
@@ -42,6 +51,16 @@
       "newest": "新着の商品",
       "allProducts": "すべての商品を見る",
       "empty": "商品はまだありません。"
+    },
+    "error": {
+      "title": "表示できませんでした",
+      "message": "時間をおいて、もう一度お試しください。",
+      "retry": "もう一度読み込む"
+    },
+    "notFound": {
+      "title": "ページが見つかりません",
+      "message": "お探しのページ（商品、ご注文など）は、販売が終わったか、URL が間違っている可能性があります。",
+      "toProducts": "商品一覧へ"
     }
   },
   "catalog": {
@@ -95,6 +114,111 @@
       "submit": "カートに入れる",
       "added": "カートに入れました。",
       "viewCart": "カートを見る"
+    }
+  },
+  "cart": {
+    "page": {
+      "title": "カート",
+      "empty": "カートに商品がありません。",
+      "findProducts": "商品を探す"
+    },
+    "controls": {
+      "quantity": "数量",
+      "removing": "削除しています…",
+      "remove": "削除"
+    },
+    "startCheckout": {
+      "reserving": "在庫を確保しています…",
+      "submit": "注文手続きへ進む",
+      "blocked": "購入できない商品をカートから削除すると、注文手続きに進めます。"
+    },
+    "merge": {
+      "title": "ログインする前のカートの商品を、会員のカートに移しました",
+      "truncated": "次の商品は、数量の上限（10 点）を超えたため、10 点にしました。",
+      "skipped": "カートに入る商品の数の上限（30 品目）を超えたため、次の商品は移せませんでした。",
+      "item": "{label}（{quantity} 点）",
+      "more": "ほか {more} 品目",
+      "unknownProduct": "商品",
+      "itemLabel": "{name}（{axes}）"
+    },
+    "errors": {
+      "missing": "カートが見つかりません。商品をカートに入れ直してください。"
+    }
+  },
+  "checkout": {
+    "page": {
+      "title": "ご注文手続き",
+      "items": "ご注文の内容",
+      "quantity": "数量 {quantity}",
+      "shippingAddress": "お届け先"
+    },
+    "form": {
+      "email": "メールアドレス",
+      "emailNote": "ご注文の連絡は、会員のメールアドレスにお送りします。",
+      "name": "氏名",
+      "postalCode": "郵便番号",
+      "postalCodeHint": "例：100-0001",
+      "prefecture": "都道府県",
+      "prefecturePlaceholder": "選んでください",
+      "address": "住所",
+      "addressHint": "市区町村、番地、建物名",
+      "phone": "電話番号",
+      "phoneHint": "例：03-1234-5678",
+      "viewCart": "カートを見る",
+      "placing": "注文しています…",
+      "submit": "注文する（{total}）"
+    },
+    "remaining": {
+      "expired": "在庫の確保の期限が切れました。このまま注文できますが、その時点で在庫が足りなければ注文できません。",
+      "reserving": "ご注文の商品の在庫を確保しています。残り <time>{remaining}</time>"
+    },
+    "fieldErrors": {
+      "name": "氏名を 50 文字以内で入力してください。",
+      "postalCode": "郵便番号は数字 7 桁で入力してください。",
+      "prefecture": "都道府県を選んでください。",
+      "address": "住所を 200 文字以内で入力してください。",
+      "phone": "電話番号は数字 10〜11 桁で入力してください。"
+    }
+  },
+  "order": {
+    "list": {
+      "title": "ご注文履歴",
+      "empty": "ご注文はまだありません。",
+      "findProducts": "商品を探す",
+      "orderNumber": "注文番号",
+      "orderedAt": "注文日時",
+      "total": "総額（税込）",
+      "status": "状態"
+    },
+    "detail": {
+      "title": "ご注文の内容",
+      "ordersHint": "ご注文の内容とキャンセルの申請は、<link>ご注文履歴</link>からいつでも確かめられます。",
+      "orderNumber": "注文番号",
+      "orderedAt": "注文日時",
+      "status": "状態",
+      "lines": "明細",
+      "quantity": "数量 {quantity}",
+      "shippingAddress": "お届け先",
+      "addressName": "{name} 様",
+      "postalAddress": "〒{postalCode} {prefecture}",
+      "phone": "電話番号 {phone}",
+      "email": "メールアドレス {email}",
+      "cancellation": "キャンセル"
+    },
+    "cancellation": {
+      "requestable": "ご注文のキャンセルを申請できます。申請の後、当店で確認してからキャンセルします。",
+      "requestedAt": "{date} に",
+      "pending": "キャンセルの申請を受け付けました。当店で確認してからキャンセルします。",
+      "rejected": "キャンセルの申請は承認されませんでした。",
+      "contact": "キャンセルをご希望の場合は、<link>{email}</link>までお問い合わせください（注文番号 {orderNumber}）。",
+      "cancelled": "このご注文はキャンセルされました。"
+    },
+    "requestForm": {
+      "confirm": "キャンセルを申請します。申請は 1 回だけできます。よろしいですか？",
+      "reason": "理由（任意）",
+      "maxLength": "{max} 文字まで",
+      "requesting": "申請しています…",
+      "submit": "キャンセルを申請する"
     }
   }
 }

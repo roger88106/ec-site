@@ -1,5 +1,6 @@
 import type { Metadata } from 'next'
 import Link from 'next/link'
+import { getTranslations } from 'next-intl/server'
 import { currentCartChoice, memberCartId } from '@/api/cart'
 import { readCartMergeNotice } from '@/api/cartCookie'
 import { getApi, getMemberApi, UNCACHED } from '@/api/client'
@@ -12,7 +13,10 @@ import { CartMergeNoticeView } from '@/features/cart/components/CartMergeNoticeV
 import { StartCheckoutForm } from '@/features/cart/components/StartCheckoutForm'
 
 /** ブラウザのタブの題名 */
-export const metadata: Metadata = { title: 'カート' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('cart.page')
+  return { title: t('title') } // カート
+}
 
 /**
  * 使うカート（店舗画面の構成 第 4.2 節）を取得する。数量がすぐ変わるので、キャッシュを使わない。
@@ -37,16 +41,17 @@ async function fetchCart(): Promise<Cart | null> {
 
 /** カート（T2504、T3406。AC-77〜80、82、88、120〜124） */
 export default async function CartPage() {
+  const t = await getTranslations('cart.page')
   const [cart, mergeNotice] = await Promise.all([fetchCart(), readCartMergeNotice()])
   return (
     <div className="space-y-6">
-      <h1 className="font-heading font-semibold text-2xl">カート</h1>
+      <h1 className="font-heading font-semibold text-2xl">{t('title') /* カート */}</h1>
       <CartMergeNoticeView notice={mergeNotice} />
       {cart === null || cart.items.length === 0 ? (
         <div className="space-y-4">
-          <p className="text-muted-foreground">カートに商品がありません。</p>
+          <p className="text-muted-foreground">{t('empty') /* 空 */}</p>
           <Link className="text-sm underline" href="/products">
-            商品を探す
+            {t('findProducts') /* 商品を探す */}
           </Link>
         </div>
       ) : (

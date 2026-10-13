@@ -1,13 +1,14 @@
 import { notFound } from 'next/navigation'
 import type { Problem } from '@/api/types'
 import { redirectToLogin } from '@/auth'
+import { translate } from '@/i18n/translate'
 
 /** API がエラーを返した（404 以外）。message はエラーレスポンスのもの（画面にそのまま出せる） */
 export class ApiError extends Error {
   readonly status: number
 
   constructor(status: number, problem: Partial<Problem> | undefined) {
-    super(problem?.message ?? `通信に失敗しました（HTTP ${status}）`)
+    super(problem?.message ?? translate('common.httpFailed', { status }))
     this.name = 'ApiError'
     this.status = status
   }

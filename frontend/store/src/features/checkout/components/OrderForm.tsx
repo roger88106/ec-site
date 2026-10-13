@@ -4,6 +4,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
+import { useTranslations } from 'next-intl'
 import { type ReactNode, startTransition, useActionState } from 'react'
 import { placeOrder } from '@/actions/checkout'
 import { schemas } from '@/api/generated/constraints'
@@ -27,6 +28,7 @@ export function OrderForm({
   /** 会員のメールアドレス（注文の連絡先） */
   email: string
 }) {
+  const t = useTranslations('checkout.form')
   const [result, formAction, pending] = useActionState(placeOrder, null)
   const errors = placeOrderErrors(result)
 
@@ -43,20 +45,25 @@ export function OrderForm({
       <input name="checkoutId" type="hidden" value={checkoutId} />
       <input name="expectedTotal" type="hidden" value={expectedTotal} />
       <div className="space-y-1.5 text-sm">
-        <p className="font-medium">メールアドレス</p>
+        <p className="font-medium">{t('email') /* メールアドレス */}</p>
         <p>{email}</p>
-        <p className="text-muted-foreground text-xs">ご注文の連絡は、会員のメールアドレスにお送りします。</p>
+        <p className="text-muted-foreground text-xs">{t('emailNote') /* 連絡の宛先 */}</p>
       </div>
-      <Field error={errors.fields.name} label="氏名" name="name">
+      <Field error={errors.fields.name} label={t('name') /* 氏名 */} name="name">
         <Input autoComplete="name" id="name" maxLength={schemas.ShippingAddress.name.maxLength} name="name" />
       </Field>
-      <Field error={errors.fields.postalCode} hint="例：100-0001" label="郵便番号" name="postalCode">
+      <Field
+        error={errors.fields.postalCode}
+        hint={t('postalCodeHint') /* 例 */}
+        label={t('postalCode') /* 郵便番号 */}
+        name="postalCode"
+      >
         <Input autoComplete="postal-code" className="w-40" id="postalCode" inputMode="numeric" name="postalCode" />
       </Field>
-      <Field error={errors.fields.prefecture} label="都道府県" name="prefecture">
+      <Field error={errors.fields.prefecture} label={t('prefecture') /* 都道府県 */} name="prefecture">
         <NativeSelect autoComplete="address-level1" defaultValue="" id="prefecture" name="prefecture">
           <NativeSelectOption disabled value="">
-            選んでください
+            {t('prefecturePlaceholder') /* 選択を促す */}
           </NativeSelectOption>
           {PREFECTURES.map((prefecture) => (
             <NativeSelectOption key={prefecture} value={prefecture}>
@@ -65,7 +72,12 @@ export function OrderForm({
           ))}
         </NativeSelect>
       </Field>
-      <Field error={errors.fields.address} hint="市区町村、番地、建物名" label="住所" name="address">
+      <Field
+        error={errors.fields.address}
+        hint={t('addressHint') /* 書くもの */}
+        label={t('address') /* 住所 */}
+        name="address"
+      >
         <Input
           autoComplete="street-address"
           id="address"
@@ -73,7 +85,7 @@ export function OrderForm({
           name="address"
         />
       </Field>
-      <Field error={errors.fields.phone} hint="例：03-1234-5678" label="電話番号" name="phone">
+      <Field error={errors.fields.phone} hint={t('phoneHint') /* 例 */} label={t('phone') /* 電話番号 */} name="phone">
         <Input autoComplete="tel" className="w-48" id="phone" inputMode="tel" name="phone" type="tel" />
       </Field>
       {errors.message && (
@@ -81,13 +93,13 @@ export function OrderForm({
           {errors.message}
           {errors.backToCart && (
             <Link className="ml-2 underline" href="/cart">
-              カートを見る
+              {t('viewCart') /* カートを見る */}
             </Link>
           )}
         </p>
       )}
       <Button className="w-full" disabled={pending} size="lg" type="submit">
-        {pending ? '注文しています…' : `注文する（${formatYen(expectedTotal)}）`}
+        {pending ? t('placing') : t('submit', { total: formatYen(expectedTotal) }) /* 注文中か、総額を添えて注文する */}
       </Button>
     </form>
   )

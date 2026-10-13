@@ -2,6 +2,7 @@ import { Badge } from '@ec-site/shared/ui/badge'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
@@ -12,13 +13,17 @@ import { axisValuesLabel, formatDateTime, formatPostalCode, formatYen, orderStat
 import { isUuid } from '@/lib/uuid'
 
 /** ブラウザのタブの題名 */
-export const metadata: Metadata = { title: 'ご注文の内容' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('order.detail')
+  return { title: t('title') } // ご注文の内容
+}
 
 /**
  * 注文（T2506、T3408。AC-93〜96、130、131）。注文の直後の表示と、注文の一覧からの照会を兼ねる。<br />
  * ログインを求め、注文した会員のものでなければ「見つかりません」にする（AC-131）。
  */
 export default async function OrderPage({ params }: PageProps<'/orders/[orderId]'>) {
+  const t = await getTranslations('order.detail')
   const { orderId } = await params
   if ((await currentMember()) === null) {
     return redirectToLogin()
@@ -38,22 +43,26 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
   return (
     <div className="space-y-8">
       <header className="space-y-2">
-        <h1 className="font-heading font-semibold text-2xl">ご注文の内容</h1>
+        <h1 className="font-heading font-semibold text-2xl">{t('title') /* ご注文の内容 */}</h1>
         <p className="text-muted-foreground text-sm">
-          ご注文の内容とキャンセルの申請は、
-          <Link className="underline" href="/orders">
-            ご注文履歴
-          </Link>
-          からいつでも確かめられます。
+          {
+            t.rich('ordersHint', {
+              link: (chunks) => (
+                <Link className="underline" href="/orders">
+                  {chunks}
+                </Link>
+              ),
+            }) /* ご注文履歴から確かめられる */
+          }
         </p>
       </header>
 
       <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[8rem_1fr]">
-        <dt className="text-muted-foreground">注文番号</dt>
+        <dt className="text-muted-foreground">{t('orderNumber') /* 注文番号 */}</dt>
         <dd className="font-semibold tabular-nums">{order.orderNumber}</dd>
-        <dt className="text-muted-foreground">注文日時</dt>
+        <dt className="text-muted-foreground">{t('orderedAt') /* 注文日時 */}</dt>
         <dd className="tabular-nums">{formatDateTime(order.orderedAt)}</dd>
-        <dt className="text-muted-foreground">状態</dt>
+        <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
         <dd>
           <Badge variant={order.status === 'ACCEPTED' ? 'default' : 'secondary'}>
             {orderStatusLabel(order.status)}
@@ -62,7 +71,7 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
       </dl>
 
       <section className="space-y-3">
-        <h2 className="font-semibold">明細</h2>
+        <h2 className="font-semibold">{t('lines') /* 明細 */}</h2>
         <ul className="divide-y rounded-lg border">
           {order.lines.map((line) => (
             <li className="flex justify-between gap-4 p-4 text-sm" key={line.variantCode}>
@@ -74,7 +83,7 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
                 <PriceText price={line.unitPrice} />
               </div>
               <div className="text-right">
-                <p>数量 {line.quantity}</p>
+                <p>{t('quantity', { quantity: line.quantity }) /* 数量 */}</p>
                 <p className="font-semibold tabular-nums">{formatYen(line.subtotal)}</p>
               </div>
             </li>
@@ -86,20 +95,25 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold">お届け先</h2>
+        <h2 className="font-semibold">{t('shippingAddress') /* お届け先 */}</h2>
         <address className="space-y-1 text-sm not-italic">
-          <p>{address.name} 様</p>
+          <p>{t('addressName', { name: address.name }) /* 宛名 */}</p>
           <p>
-            〒{formatPostalCode(address.postalCode)} {address.prefecture}
+            {
+              t('postalAddress', {
+                postalCode: formatPostalCode(address.postalCode),
+                prefecture: address.prefecture,
+              }) /* 郵便番号と都道府県 */
+            }
             {address.address}
           </p>
-          <p>電話番号 {address.phone}</p>
-          <p>メールアドレス {order.email}</p>
+          <p>{t('phone', { phone: address.phone }) /* 電話番号 */}</p>
+          <p>{t('email', { email: order.email }) /* メールアドレス */}</p>
         </address>
       </section>
 
       <section className="space-y-3">
-        <h2 className="font-semibold">キャンセル</h2>
+        <h2 className="font-semibold">{t('cancellation') /* キャンセル */}</h2>
         <CancellationSection contactEmail={shop.contactEmail} order={order} />
       </section>
     </div>

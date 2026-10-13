@@ -1,5 +1,6 @@
 'use client'
 
+import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { remainingTime } from '@/lib/orderDisplay'
 
@@ -9,6 +10,7 @@ import { remainingTime } from '@/lib/orderDisplay'
  * サーバーとブラウザの時刻の違いで表示が食い違わないよう、ブラウザで初めて数える。
  */
 export function RemainingTime({ expiresAt }: { expiresAt: string }) {
+  const t = useTranslations('checkout.remaining')
   const [now, setNow] = useState<Date | null>(null)
   useEffect(() => {
     setNow(new Date())
@@ -22,13 +24,14 @@ export function RemainingTime({ expiresAt }: { expiresAt: string }) {
   const remaining = remainingTime(expiresAt, now)
   return (
     <p aria-live="off" className="rounded-lg bg-muted px-4 py-3 text-sm">
-      {remaining === null ? (
-        '在庫の確保の期限が切れました。このまま注文できますが、その時点で在庫が足りなければ注文できません。'
-      ) : (
-        <>
-          ご注文の商品の在庫を確保しています。残り <span className="font-semibold tabular-nums">{remaining}</span>
-        </>
-      )}
+      {
+        remaining === null
+          ? t('expired') /* 期限切れ */
+          : t.rich('reserving', {
+              remaining,
+              time: (chunks) => <span className="font-semibold tabular-nums">{chunks}</span>,
+            }) /* 確保している残りの時間 */
+      }
     </p>
   )
 }

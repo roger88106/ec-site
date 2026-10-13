@@ -1,10 +1,11 @@
+import { translate } from '@/i18n/translate'
 import { axisValuesLabel } from '@/lib/orderDisplay'
 
 /** 知らせる品目の数の上限（Cookie の大きさを抑えるため。残りは数だけ示す） */
 const MAX_ITEMS = 10
 
 /** 商品名が分からない品目の名前 */
-const UNKNOWN_PRODUCT = '商品'
+const UNKNOWN_PRODUCT = translate('cart.merge.unknownProduct') // 商品
 
 /** 知らせる品目 */
 type NoticeItem = { label: string; quantity: number }
@@ -77,7 +78,9 @@ export function parseCartMergeNotice(value: string | undefined): CartMergeNotice
 
 /** 品目の名前（「商品名（軸：値）」） */
 function itemLabel(item: SourceItem): string {
-  return item.axisValues.length === 0 ? item.productName : `${item.productName}（${axisValuesLabel(item.axisValues)}）`
+  return item.axisValues.length === 0
+    ? item.productName
+    : translate('cart.merge.itemLabel', { name: item.productName, axes: axisValuesLabel(item.axisValues) })
 }
 
 /** 知らせる品目の並びの形か */

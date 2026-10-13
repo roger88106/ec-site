@@ -53,7 +53,7 @@
 
 ## ストレージと変換
 
-| 部品 | port | 実装 | 設定 |
+| 役割 | port | 実装 | 設定 |
 |------|------|------|------|
 | ストレージ | `ObjectStorage` | Amazon S3（AWS SDK v2）。ローカルと CI は SeaweedFS | `ecsite.media.storage` |
 | 画像の変換 | `ImageConverter` | 別コンテナの imgproxy を HTTP で呼ぶ | `ecsite.media.converter` |

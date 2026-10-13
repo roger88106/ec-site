@@ -19,8 +19,8 @@ description: ec-site のフロントに画面や操作を足すときの型。�
 
 | 置き場所 | 中身 |
 |----------|------|
-| `src/app/<URL>/page.tsx` | サーバーコンポーネント。取得と部品の組み立てだけ |
-| `src/features/<機能>/components/` | 画面の部品。操作のある部品だけ `'use client'` |
+| `src/app/<URL>/page.tsx` | サーバーコンポーネント。取得とコンポーネントの組み立てだけ |
+| `src/features/<機能>/components/` | 画面のコンポーネント。操作のあるコンポーネントだけ `'use client'` |
 | `src/actions/<資源>.ts` | サーバーアクション（`'use server'`）。変更系の API はここからだけ呼ぶ |
 | `src/api/client.ts` | `getApi()`、`UNCACHED` |
 | `src/api/result.ts` | `unwrap()`：404 → `notFound()`、それ以外の失敗 → `ApiError` を投げる（`error.tsx` に出る） |
@@ -124,7 +124,7 @@ export function FooForm({ fooId }: { fooId: string }) {
 
 | 置き場所 | 中身 |
 |----------|------|
-| `src/features/<機能>/pages/FooPage.tsx` | 画面。取得と部品の組み立てだけ |
+| `src/features/<機能>/pages/FooPage.tsx` | 画面。取得とコンポーネントの組み立てだけ |
 | `src/features/<機能>/components/` | フォーム、表、操作のボタン |
 | `src/app/paths.ts` | 画面の URL の形（`routePatterns`）と、URL を作る関数（`paths`）を足す |
 | `src/app/router.tsx` | ルートを足す（path は `routePatterns`）。機能の入口なら `src/app/menu.ts` にも |

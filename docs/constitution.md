@@ -64,7 +64,7 @@ C 側と B 側は別のアプリ。構成は [フロントのアーキテクチ�
 | フォーム | サーバーアクション | React Hook Form |
 | ログイン | Auth.js（`next-auth`） | `oidc-client-ts` + `react-oidc-context` |
 | 表示の文言 | `next-intl` | `use-intl` |
-| 部品のテスト | `react-dom/server` | React Testing Library、user-event、jsdom |
+| コンポーネントのテスト | `react-dom/server` | React Testing Library、user-event、jsdom |
 
 ### 後から導入する技術
 

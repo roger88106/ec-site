@@ -43,7 +43,7 @@ module/<モジュール>/
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode）
 │   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装
-    ├── persistence/    jOOQ の Repository と、その部品
+    ├── persistence/    jOOQ の Repository と、それが使うクラス
     ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
     └── <外部>/          外部の仕組み（storage、converter、cache など）
 ```
@@ -73,7 +73,7 @@ module/<モジュール>/
 
 - 他のモジュールの `api/` を呼ぶときは、口（`<相手>Directory` の interface と、相手の情報を写す自分の型）を使う層の `port/` に置き、実装は `infrastructure/directory/` に置く。
 - 相手の型を内部に持ち込まない。
-- モジュールの直下に、部品が 1 つだけのパッケージ（`<相手>dir` など）を作らない。
+- モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
 
 理由：相手の変更を、実装の 1 か所で受け止めるため。
 
@@ -83,7 +83,7 @@ module/<モジュール>/
 
 | パッケージ | 数 | 分けない理由 |
 |------------|----|--------------|
-| `catalog.infrastructure.persistence` | 13 | jOOQ の Repository と、それだけが使う package-private の部品。分けると部品を公開しなければならない |
+| `catalog.infrastructure.persistence` | 13 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
 
 ### 1.5 共通の型
 
@@ -187,7 +187,7 @@ getter・コンストラクターの注入などの定型コードは、main で
 
 ※2：1 つの集約に用途が複数あるとき、他のモジュールの呼び出しを組み合わせるとき。
 
-別のモジュールに同じ単純名のクラスがあってよい（Spring の部品の名前は完全修飾名にしている）。
+別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
 
 ## 6. 設定の値
 

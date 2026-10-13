@@ -29,20 +29,20 @@ frontend/admin/
     │   ├── client.ts       # クライアント
     │   ├── errors.ts       # エラーの変換（ApiError）
     │   └── types.ts        # 画面から使う型の別名
-    ├── components/         # 機能をまたぐ部品（価格、日時、エラー、ページングなど）。ui/ は shadcn/ui
-    ├── i18n/               # 文言の Provider、合わせ方、キーの型、部品の外で引く translate
+    ├── components/         # 機能をまたぐコンポーネント（価格、日時、エラー、ページングなど）。ui/ は shadcn/ui
+    ├── i18n/               # 文言の Provider、合わせ方、キーの型、コンポーネントの外で引く translate
     ├── hooks/              # 機能をまたぐ hook（バージョン付きのフォームなど）
     ├── lib/                # 画面に依存しない関数（単体テストを横に置く）
     ├── test/               # 結合テストの土台（画面のコードからは import しない）
     └── features/<機能>/    # tax、category、product、inventory、order
-        ├── pages/          # ルートに対応する画面（取得と部品の組み立てだけ）
-        ├── components/     # その機能だけの部品
+        ├── pages/          # ルートに対応する画面（取得とコンポーネントの組み立てだけ）
+        ├── components/     # その機能だけのコンポーネント
         └── *.ts            # その機能だけの関数・型・hook
 ```
 
 - `pages/` は薄く保ち、フォームや表は `components/` に分ける。
-- `components/ui/` は生成物のまま使う。直したいときは外側の部品で包む。
-- ファイル名は、部品が `PascalCase.tsx`、それ以外が `camelCase.ts`。テストは `*.test.ts(x)` を対象の横に置く。
+- `components/ui/` は生成物のまま使う。直したいときは外側のコンポーネントで包む。
+- ファイル名は、コンポーネントが `PascalCase.tsx`、それ以外が `camelCase.ts`。テストは `*.test.ts(x)` を対象の横に置く。
 
 ## 3. 画面の URL
 
@@ -182,7 +182,7 @@ SPA がブラウザで IdP とやり取りし（public client）、token はメ�
 | token の置き場所 | メモリー（`InMemoryWebStorage`）。sessionStorage に置かない（JavaScript から読める場所に残さない）。IdP へ移る間の `state` と PKCE の値だけは sessionStorage |
 | ログインを求める | `auth/AuthGate` がすべての画面を包み、ログインしていなければ IdP へ移り、戻ったら元の画面に戻す ※2 |
 | token の更新 | 期限が近ければ refresh token で取り直す（自動）。取り直せなければ（最後の操作から 30 分、最長 8 時間）ログインし直す |
-| ログインしている運営者 | `auth/operator` の `useOperator()` で氏名とログアウトを読む。部品は react-oidc-context を直接使わない（テストで置き換えるため） |
+| ログインしている運営者 | `auth/operator` の `useOperator()` で氏名とログアウトを読む。コンポーネントは react-oidc-context を直接使わない（テストで置き換えるため） |
 | ログアウト | IdP のログアウト（RP-Initiated Logout。ID token と画面のトップを添える）へ移る |
 
 ※2：再読み込み・新しいタブではメモリーに token がないので IdP へ移るが、IdP のログインが残っていればパスワードなしですぐ戻る。隠した iframe は使わない。

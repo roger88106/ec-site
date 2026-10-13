@@ -25,7 +25,7 @@ IdP（Keycloak）のアカウントと、EC の会員 ID の対応を管理す�
 
 ## token から会員を取り出す
 
-presentation が token から会員の情報（アカウント ID、メールアドレス、確認済みか、姓、名）を取り出す部品は `common/security` に置く（Spring Security の型をモジュールに出さないため）。
+presentation が token から会員の情報（アカウント ID、メールアドレス、確認済みか、姓、名）を取り出すクラスは `common/security` に置く（Spring Security の型をモジュールに出さないため）。
 
 | 店舗 API の操作 | token がないとき |
 |-----------------|------------------|

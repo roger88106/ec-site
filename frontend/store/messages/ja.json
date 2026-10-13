@@ -188,7 +188,8 @@
       "orderNumber": "注文番号",
       "orderedAt": "注文日時",
       "total": "総額（税込）",
-      "status": "状態"
+      "status": "状態",
+      "paymentDeadline": "お支払い期限 {deadline}"
     },
     "detail": {
       "title": "ご注文の内容",
@@ -203,7 +204,8 @@
       "postalAddress": "〒{postalCode} {prefecture}",
       "phone": "電話番号 {phone}",
       "email": "メールアドレス {email}",
-      "cancellation": "キャンセル"
+      "cancellation": "キャンセル",
+      "payment": "お支払い"
     },
     "cancellation": {
       "requestable": "ご注文のキャンセルを申請できます。申請の後、当店で確認してからキャンセルします。",
@@ -211,7 +213,8 @@
       "pending": "キャンセルの申請を受け付けました。当店で確認してからキャンセルします。",
       "rejected": "キャンセルの申請は承認されませんでした。",
       "contact": "キャンセルをご希望の場合は、<link>{email}</link>までお問い合わせください（注文番号 {orderNumber}）。",
-      "cancelled": "このご注文はキャンセルされました。"
+      "cancelled": "このご注文はキャンセルされました。",
+      "paymentExpired": "お支払い期限までにお支払いがなかったため、このご注文はキャンセルされました。"
     },
     "requestForm": {
       "confirm": "キャンセルを申請します。申請は 1 回だけできます。よろしいですか？",
@@ -219,6 +222,13 @@
       "maxLength": "{max} 文字まで",
       "requesting": "申請しています…",
       "submit": "キャンセルを申請する"
+    },
+    "payment": {
+      "payable": "お支払いを済ませてください。お支払い期限は {deadline} です。期限までにお支払いがないと、ご注文はキャンセルになります。",
+      "confirming": "お支払いを確認しています。しばらくしてから、画面を開き直してください。",
+      "closing": "お支払い期限を過ぎました。まもなくご注文はキャンセルになります。",
+      "pay": "支払う",
+      "paying": "支払の画面に移っています…"
     }
   }
 }

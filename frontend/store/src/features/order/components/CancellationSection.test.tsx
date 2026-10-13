@@ -13,7 +13,13 @@ const order = (overrides: Partial<Order>): Order => ({
   lines: [],
   amounts: { itemsTotal: 0, shippingFee: 0, total: 0, taxes: [] },
   email: 'member@example.com',
-  shippingAddress: { name: '山田 太郎', postalCode: '1000001', prefecture: '東京都', address: '千代田区', phone: '0312345678' },
+  shippingAddress: {
+    name: '山田 太郎',
+    postalCode: '1000001',
+    prefecture: '東京都',
+    address: '千代田区',
+    phone: '0312345678',
+  },
   actions: { requestCancellation: false, pay: false },
   ...overrides,
 })
@@ -23,7 +29,10 @@ describe('注文のキャンセルの欄', () => {
     const html = renderMarkup(
       <CancellationSection
         contactEmail="contact@shop.example"
-        order={order({ status: 'CANCELLED', cancellation: { cancelledAt: '2026-10-10T15:35:00Z', kind: 'PAYMENT_EXPIRED' } })}
+        order={order({
+          status: 'CANCELLED',
+          cancellation: { cancelledAt: '2026-10-10T15:35:00Z', kind: 'PAYMENT_EXPIRED' },
+        })}
       />,
     )
 

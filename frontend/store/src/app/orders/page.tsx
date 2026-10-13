@@ -7,7 +7,7 @@ import { unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
 import { PageLinks } from '@/components/PageLinks'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
-import { formatDateTime, formatYen, orderStatusLabel } from '@/lib/orderDisplay'
+import { formatDateTime, formatYen, orderStatusLabel, paymentDeadlineLabel } from '@/lib/orderDisplay'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -60,6 +60,11 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
                     <Badge variant={order.status === 'ACCEPTED' ? 'default' : 'secondary'}>
                       {orderStatusLabel(order.status)}
                     </Badge>
+                    {paymentDeadlineLabel(order) !== null && (
+                      <p className="mt-1 text-muted-foreground text-xs tabular-nums">
+                        {paymentDeadlineLabel(order) /* 支払の期限 */}
+                      </p>
+                    )}
                   </td>
                 </tr>
               ))}

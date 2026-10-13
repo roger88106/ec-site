@@ -27,3 +27,11 @@ export async function requestCancellation(_previous: ActionResult | null, formDa
     return response.ok ? SUCCESS : toFailure(response.status, error)
   })
 }
+
+/**
+ * 支払う：決済サービスの支払の画面に移る（AC-151）。T7505 で実装する。<br />
+ * フォームの項目：orderId。
+ */
+export async function payOrder(_previous: ActionResult | null, _formData: FormData): Promise<ActionResult> {
+  return { ok: false, message: 'まだ支払えません' }
+}

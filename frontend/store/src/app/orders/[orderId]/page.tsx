@@ -9,7 +9,16 @@ import { currentMember, redirectToLogin } from '@/auth'
 import { AmountsSummary } from '@/components/AmountsSummary'
 import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
-import { axisValuesLabel, formatDateTime, formatPostalCode, formatYen, orderStatusLabel } from '@/lib/orderDisplay'
+import { PaymentSection } from '@/features/order/components/PaymentSection'
+import {
+  axisValuesLabel,
+  cancellationState,
+  formatDateTime,
+  formatPostalCode,
+  formatYen,
+  orderStatusLabel,
+  paymentState,
+} from '@/lib/orderDisplay'
 import { isUuid } from '@/lib/uuid'
 
 /** ブラウザのタブの題名 */
@@ -19,12 +28,14 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 注文。注文の直後の表示と、注文の一覧からの照会を兼ねる。<br />
+ * 注文。注文の直後の表示と、注文の一覧からの照会と、支払の画面から戻る先を兼ねる。<br />
  * ログインを求め、注文した会員のものでなければ「見つかりません」にする。
+ * 支払の画面から戻るときは、クエリの `payment=returned` が付く（バックエンドの設定の戻る先）。
  */
-export default async function OrderPage({ params }: PageProps<'/orders/[orderId]'>) {
+export default async function OrderPage({ params, searchParams }: PageProps<'/orders/[orderId]'>) {
   const t = await getTranslations('order.detail')
   const { orderId } = await params
+  const returned = (await searchParams).payment === 'returned'
   if ((await currentMember()) === null) {
     return redirectToLogin()
   }
@@ -70,6 +81,13 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
         </dd>
       </dl>
 
+      {paymentState(order, returned) !== 'NONE' && (
+        <section className="space-y-3">
+          <h2 className="font-semibold">{t('payment') /* お支払い */}</h2>
+          <PaymentSection order={order} returned={returned} />
+        </section>
+      )}
+
       <section className="space-y-3">
         <h2 className="font-semibold">{t('lines') /* 明細 */}</h2>
         <ul className="divide-y rounded-lg border">
@@ -112,10 +130,12 @@ export default async function OrderPage({ params }: PageProps<'/orders/[orderId]
         </address>
       </section>
 
-      <section className="space-y-3">
-        <h2 className="font-semibold">{t('cancellation') /* キャンセル */}</h2>
-        <CancellationSection contactEmail={shop.contactEmail} order={order} />
-      </section>
+      {cancellationState(order) !== 'NOT_YET' && (
+        <section className="space-y-3">
+          <h2 className="font-semibold">{t('cancellation') /* キャンセル */}</h2>
+          <CancellationSection contactEmail={shop.contactEmail} order={order} />
+        </section>
+      )}
     </div>
   )
 }

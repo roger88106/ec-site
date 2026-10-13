@@ -1,6 +1,6 @@
 import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
 import { schemas } from '@/api/generated/constraints'
-import type { Order, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
+import type { Cancellation, Order, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
 /** 金額の書式（3 桁ごとのカンマ） */
@@ -25,9 +25,15 @@ export const QUANTITY_OPTIONS = Array.from(
 
 /**
  * 注文のキャンセルの状況。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み、
- * まだ申請できない（支払待ち。支払の期限で自動でキャンセルになる）
+ * 支払期限切れでキャンセル済み、まだ申請できない（支払待ち。支払の期限で自動でキャンセルになる）
  */
-export type CancellationState = 'REQUESTABLE' | 'PENDING' | 'REJECTED' | 'CANCELLED' | 'NOT_YET'
+export type CancellationState = 'REQUESTABLE' | 'PENDING' | 'REJECTED' | 'CANCELLED' | 'PAYMENT_EXPIRED' | 'NOT_YET'
+
+/**
+ * 注文の支払の状況。支払える、支払の確認中（支払の画面から戻った直後）、支払の期限を過ぎた（まもなくキャンセル）、
+ * 支払の欄を出さない（支払待ちでない）
+ */
+export type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
 
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {
@@ -67,6 +73,7 @@ export function orderStatusLabel(status: OrderStatus): string {
 export function cancellationState(order: {
   status: OrderStatus
   actions: Pick<Order['actions'], 'requestCancellation'>
+  cancellation?: Cancellation
 }): CancellationState {
   if (order.actions.requestCancellation) {
     return 'REQUESTABLE'
@@ -75,12 +82,40 @@ export function cancellationState(order: {
     case 'PENDING_PAYMENT':
       return 'NOT_YET'
     case 'CANCELLED':
-      return 'CANCELLED'
+      return order.cancellation?.kind === 'PAYMENT_EXPIRED' ? 'PAYMENT_EXPIRED' : 'CANCELLED'
     case 'CANCELLATION_REQUESTED':
       return 'PENDING'
     case 'ACCEPTED':
       return 'REJECTED'
   }
+}
+
+/**
+ * 注文の支払の状況。支払えるかは API の旗で決める。
+ * 支払の画面から戻った直後は、与信の結果がまだ届いていないことがあるので、支払待ちなら「確認中」とする。
+ *
+ * @param order    注文
+ * @param returned 支払の画面から戻った直後か
+ */
+export function paymentState(
+  order: { status: OrderStatus; actions: Pick<Order['actions'], 'pay'> },
+  returned: boolean,
+): PaymentState {
+  if (order.status !== 'PENDING_PAYMENT') {
+    return 'NONE'
+  }
+  if (returned) {
+    return 'CONFIRMING'
+  }
+  return order.actions.pay ? 'PAYABLE' : 'CLOSING'
+}
+
+/** 注文の一覧の支払の期限（例：「お支払い期限 2026/10/11 00:35」）。支払待ちでなければ null */
+export function paymentDeadlineLabel(order: { status: OrderStatus; paymentDeadline?: string }): string | null {
+  if (order.status !== 'PENDING_PAYMENT' || order.paymentDeadline === undefined) {
+    return null
+  }
+  return translate('order.list.paymentDeadline', { deadline: formatDateTime(order.paymentDeadline) })
 }
 
 /** 日時（日本時間の「2026/10/10 14:05」） */

@@ -2,22 +2,29 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.api.admin.model.Cancellation;
 import com.ecsite.api.admin.model.CancellationRequest;
+import com.ecsite.api.admin.model.OrderActions;
 import com.ecsite.api.admin.model.OrderAmounts;
 import com.ecsite.api.admin.model.OrderAxisValue;
-import com.ecsite.api.admin.model.OrderActions;
 import com.ecsite.api.admin.model.OrderDetail;
 import com.ecsite.api.admin.model.OrderLine;
 import com.ecsite.api.admin.model.OrderStatus;
 import com.ecsite.api.admin.model.OrderSummary;
 import com.ecsite.api.admin.model.OrderSummaryPage;
 import com.ecsite.api.admin.model.OrderTaxAmount;
+import com.ecsite.api.admin.model.Payment;
+import com.ecsite.api.admin.model.PaymentStatus;
 import com.ecsite.api.admin.model.ShippingAddress;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
+import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.quote.Amounts;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
+
+import java.util.Map;
+import java.util.UUID;
 
 /**
  * 管理 API（注文）のレスポンスと、アプリケーション層のモデルの変換
@@ -31,22 +38,23 @@ class AdminOrderMapper {
      * @param page 注文一覧のページ
      * @return 注文一覧のページのレスポンス
      */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page) {
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
                 .totalItems(page.totalItems())
                 .totalPages(page.totalPages())
-                .items(page.items().stream().map(AdminOrderMapper::toSummary).toList());
+                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()))).toList());
     }
 
     /**
-     * 注文の詳細のレスポンスに変換する。申請・キャンセルがなければ、その項目を返さない。
+     * 注文の詳細のレスポンスに変換する。申請・キャンセル・支払がなければ、その項目を返さない。
      *
-     * @param order 注文
+     * @param order   注文
+     * @param payment 注文の支払。決済を入れる前の注文は null
      * @return 注文の詳細のレスポンス
      */
-    OrderDetail toOrderDetail(Order order) {
+    OrderDetail toOrderDetail(Order order, @Nullable OrderPayment payment) {
         var detail = new OrderDetail()
                 .id(order.id())
                 .orderNumber(order.orderNumber().value())
@@ -63,22 +71,31 @@ class AdminOrderMapper {
         if (order.cancellation() != null) {
             detail.cancellation(toCancellation(order.cancellation()));
         }
+        if (payment != null) {
+            detail.payment(new Payment()
+                    .status(PaymentStatus.fromValue(payment.status().name()))
+                    .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline())));
+        }
         return detail;
     }
 
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 注文一覧の 1 件。
+     * 注文一覧の 1 件。支払のない注文（決済を入れる前の注文）は、支払の状態を返さない。
      */
-    private static OrderSummary toSummary(OrderSummaryView view) {
-        return new OrderSummary()
+    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment) {
+        var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .customerName(view.customerName())
                 .total(view.total())
                 .status(toStatus(view.status()));
+        if (payment != null) {
+            summary.paymentStatus(PaymentStatus.fromValue(payment.status().name()));
+        }
+        return summary;
     }
 
     /**

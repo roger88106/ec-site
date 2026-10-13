@@ -102,7 +102,7 @@ class PlaceOrderApiTest {
     class Place {
 
         @Test
-        @DisplayName("AC-87、90、107 成立すると在庫が減り、引当が消え、カートが空になり、注文番号が振られる")
+        @DisplayName("AC-87、107、144 成立すると在庫が減り、引当が消え、注文番号が振られ、支払待ちになる。カートは変わらない")
         void placesOrder() throws Exception {
             var checkoutId = startCheckout();
 
@@ -113,12 +113,13 @@ class PlaceOrderApiTest {
 
             var variant = shirt.variantIds.getFirst();
             assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
-            mockMvc.perform(get("/api/store/carts/" + cartId)).andExpect(jsonPath("$.items").isEmpty());
+            // 注文した品目は、与信の成功でカートから除く（spec 007 で AC-90 を変更。AC-147）
+            mockMvc.perform(get("/api/store/carts/" + cartId)).andExpect(jsonPath("$.items").isNotEmpty());
             var id = JsonPath.<String>read(orderId, "$.id");
             mockMvc.perform(get("/api/store/orders/" + id))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.orderNumber", matchesPattern("20261008-\\d{6}")))
-                    .andExpect(jsonPath("$.status").value("ACCEPTED"));
+                    .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
             // 調整履歴に、理由「注文」と注文番号が残る（AC-107）
             var orderNumber = JsonPath.<String>read(mockMvc.perform(get("/api/store/orders/" + id))
                     .andReturn().getResponse().getContentAsString(), "$.orderNumber");
@@ -265,7 +266,7 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.email").value("member@example.com"))
                     .andExpect(jsonPath("$.shippingAddress.postalCode").value("1000001"))
                     .andExpect(jsonPath("$.shippingAddress.phone").value("0312345678"))
-                    .andExpect(jsonPath("$.status").value("ACCEPTED"));
+                    .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
         }
 
         @Test

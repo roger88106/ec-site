@@ -63,14 +63,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class OrderPaymentApiTest {
 
     /**
-     * テストの現在時刻（注文日時）
+     * テストの現在時刻（商品を公開するたびに 1 分進むので、注文日時はこれより後になる）
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
-     * 支払の期限（注文日時 ＋ 30 分）
-     */
-    private static final Instant DEADLINE = NOW.plus(Duration.ofMinutes(30));
 
     /**
      * 非同期の処理を待つ時間の上限
@@ -153,7 +148,7 @@ class OrderPaymentApiTest {
 
             store(orderId)
                     .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"))
-                    .andExpect(jsonPath("$.paymentDeadline").value(DEADLINE.toString()))
+                    .andExpect(jsonPath("$.paymentDeadline").value(deadlineOf(orderId).toString()))
                     .andExpect(jsonPath("$.actions.pay").value(true))
                     .andExpect(jsonPath("$.actions.requestCancellation").value(false));
             expectQuantity(variantId, 3);
@@ -197,7 +192,7 @@ class OrderPaymentApiTest {
             var accepted = pending(1);
             orders.pay(accepted);
             var expired = pending(1);
-            clock.setInstant(DEADLINE);
+            clock.setInstant(deadlineOf(expired));
 
             openPage(accepted).andExpect(status().isConflict()).andExpect(jsonPath("$.errorCode").value("ORDER_NOT_PAYABLE"));
             openPage(expired).andExpect(status().isConflict()).andExpect(jsonPath("$.errorCode").value("ORDER_NOT_PAYABLE"));
@@ -225,12 +220,13 @@ class OrderPaymentApiTest {
         @DisplayName("AC-153、154、155 期限を過ぎるとキャンセル（支払期限切れ）になり、在庫が戻り、調整履歴の理由は「注文のキャンセル」")
         void cancelsExpiredOrder() throws Exception {
             var orderId = pending(2);
+            var deadline = deadlineOf(orderId);
 
-            clock.setInstant(DEADLINE.minusSeconds(1));
+            clock.setInstant(deadline.minusSeconds(1));
             expiryJob.expire();
             store(orderId).andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
 
-            clock.setInstant(DEADLINE);
+            clock.setInstant(deadline);
             expiryJob.expire();
 
             orders.awaitStatus(orderId, "CANCELLED");
@@ -251,7 +247,7 @@ class OrderPaymentApiTest {
         void voidsLateAuthorization() throws Exception {
             var orderId = pending(1);
             var pageId = orders.openPaymentPage(orderId);
-            clock.setInstant(DEADLINE);
+            clock.setInstant(deadlineOf(orderId));
             expiryJob.expire();
             orders.awaitStatus(orderId, "CANCELLED");
 
@@ -302,7 +298,7 @@ class OrderPaymentApiTest {
 
             admin(orderId)
                     .andExpect(jsonPath("$.payment.status").value("UNPAID"))
-                    .andExpect(jsonPath("$.payment.deadline").value(DEADLINE.toString()));
+                    .andExpect(jsonPath("$.payment.deadline").value(deadlineOf(orderId).toString()));
         }
     }
 
@@ -418,6 +414,15 @@ class OrderPaymentApiTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content("""
                         {"reason": "在庫の不備"}"""));
+    }
+
+    /**
+     * 注文の支払の期限（注文日時 ＋ 30 分。BR-16）
+     */
+    private Instant deadlineOf(UUID orderId) throws Exception {
+        String orderedAt = JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId)).andReturn().getResponse()
+                .getContentAsString(), "$.orderedAt");
+        return Instant.parse(orderedAt).plus(Duration.ofMinutes(30));
     }
 
     private String paymentStatus(UUID orderId) throws Exception {

@@ -197,7 +197,7 @@ class AdminOrderApiTest {
                     .andExpect(jsonPath("$.cancellationRequest.reason").value("サイズ違い"))
                     .andExpect(jsonPath("$.cancellationRequest.result").value("APPROVED"))
                     .andExpect(jsonPath("$.cancellationRequest.decidedAt").exists())
-                    .andExpect(jsonPath("$.cancellation.byOperator").value(true))
+                    .andExpect(jsonPath("$.cancellation.kind").value("OPERATOR"))
                     .andExpect(jsonPath("$.cancellation.reason").value("在庫の不備"))
                     .andExpect(jsonPath("$.cancellation.cancelledAt").exists());
         }

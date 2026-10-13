@@ -9,6 +9,7 @@ import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.ecsite.module.order.application.OrderPaymentService;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -61,6 +62,9 @@ class MemberOrderApiTest {
     private static final String ORDER_BODY = """
             {"expectedTotal": %d, "shippingAddress": {"name": "山田 太郎", "postalCode": "1000001",
              "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "0312345678"}}""";
+
+    @Autowired
+    OrderPaymentService orderPaymentService;
 
     @Autowired
     MockMvc mockMvc;
@@ -207,6 +211,8 @@ class MemberOrderApiTest {
         @DisplayName("AC-130、131 キャンセルの申請は、注文した会員だけができる。ほかの会員には 404、token がなければ 401")
         void onlyOwnerCanRequestCancellation() throws Exception {
             var orderId = placeOrder(owner);
+            // 申請できるのは受付の注文（与信の成功の後。ロールバックするテストなので、リスナーと同じ処理を呼ぶ）
+            orderPaymentService.accept(orderId);
 
             requestCancellation(orderId, other.bearer()).andExpect(status().isNotFound());
             requestCancellation(orderId, TestTokens.none()).andExpect(status().isUnauthorized());
@@ -237,7 +243,7 @@ class MemberOrderApiTest {
                     .andExpect(jsonPath("$.items[0].orderNumber").isNotEmpty())
                     .andExpect(jsonPath("$.items[0].orderedAt").isNotEmpty())
                     .andExpect(jsonPath("$.items[0].totalAmount").isNumber())
-                    .andExpect(jsonPath("$.items[0].status").value("ACCEPTED"))
+                    .andExpect(jsonPath("$.items[0].status").value("PENDING_PAYMENT"))
                     .andExpect(jsonPath("$.page").value(1))
                     .andExpect(jsonPath("$.size").value(2))
                     .andExpect(jsonPath("$.totalItems").value(3))

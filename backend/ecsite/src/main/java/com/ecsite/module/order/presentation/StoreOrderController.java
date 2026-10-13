@@ -3,15 +3,20 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.api.store.OrderApi;
 import com.ecsite.api.store.model.Order;
 import com.ecsite.api.store.model.OrderSummaryPage;
+import com.ecsite.api.store.model.PaymentPage;
 import com.ecsite.api.store.model.RequestOrderCancellationRequest;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.OrderCancellationService;
+import com.ecsite.module.order.application.OrderPaymentPageService;
 import com.ecsite.module.order.application.OrderQueryService;
+import com.ecsite.module.order.application.port.OrderQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.net.URI;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -32,6 +37,11 @@ class StoreOrderController implements OrderApi {
     private final OrderCancellationService orderCancellationService;
 
     /**
+     * 支払の画面のサービス
+     */
+    private final OrderPaymentPageService orderPaymentPageService;
+
+    /**
      * 店舗 API（注文手続き・注文）のマッパー
      */
     private final StoreOrderMapper mapper;
@@ -49,7 +59,8 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Order> getOrder(UUID orderId) {
-        return ResponseEntity.ok(mapper.toOrder(orderQueryService.getForMember(orderId, currentMemberIds.require())));
+        var order = orderQueryService.getForMember(orderId, currentMemberIds.require());
+        return ResponseEntity.ok(mapper.toOrder(order, orderQueryService.findPayments(List.of(orderId)).get(orderId)));
     }
 
     /**
@@ -66,14 +77,15 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 支払の画面を開く。T7307 で実装する（それまでの仮）
+     * 支払の画面を開く。開いている画面があれば同じ画面
      *
      * @param orderId 注文 ID
-     * @return 支払の画面
+     * @return Http 200 : {@link PaymentPage}
      */
     @Override
-    public ResponseEntity<com.ecsite.api.store.model.PaymentPage> openOrderPaymentPage(UUID orderId) {
-        throw new UnsupportedOperationException("T7307 で実装する");
+    public ResponseEntity<PaymentPage> openOrderPaymentPage(UUID orderId) {
+        var url = orderPaymentPageService.pageUrl(orderId, currentMemberIds.require());
+        return ResponseEntity.ok(new PaymentPage().url(URI.create(url)));
     }
 
     /**
@@ -86,6 +98,7 @@ class StoreOrderController implements OrderApi {
     @Override
     public ResponseEntity<OrderSummaryPage> listMemberOrders(Integer page, Integer size) {
         var result = orderQueryService.listForMember(currentMemberIds.require(), PageRequest.of(page, size));
-        return ResponseEntity.ok(mapper.toOrderSummaryPage(result));
+        var payments = orderQueryService.findPayments(result.items().stream().map(OrderQueryRepository.OrderSummaryView::id).toList());
+        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, payments));
     }
 }

@@ -4,7 +4,9 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
+import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -12,9 +14,13 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -39,6 +45,16 @@ public class OrderQueryService {
      * 注文の一覧のクエリリポジトリ
      */
     private final OrderQueryRepository orderQueryRepository;
+
+    /**
+     * 決済の腐敗防止層
+     */
+    private final PaymentDirectory paymentDirectory;
+
+    /**
+     * 時計（支払えるかの判定）
+     */
+    private final Clock clock;
 
     /**
      * 注文を取得する。
@@ -90,6 +106,20 @@ public class OrderQueryService {
         var filter = new OrderQueryRepository.Filter(null, orderNumberPrefix, status, startOf(orderedFrom),
                 orderedTo == null ? null : startOf(orderedTo.plusDays(1)));
         return orderQueryRepository.findOrders(filter, request);
+    }
+
+    /**
+     * 注文の支払をまとめて取得する。支払えるか（未払いで、支払の期限の前）は今の時刻で判定する。
+     *
+     * @param orderIds 注文 ID
+     * @return 注文 ID → 支払。支払のない注文（決済を入れる前の注文）は含まない
+     */
+    public Map<UUID, OrderPayment> findPayments(Collection<UUID> orderIds) {
+        var now = clock.instant();
+        var payments = new HashMap<UUID, OrderPayment>();
+        paymentDirectory.find(orderIds).forEach((orderId, payment) -> payments.put(orderId, new OrderPayment(payment.status(),
+                payment.deadline(), payment.status() == PaymentDirectory.Status.UNPAID && now.isBefore(payment.deadline()))));
+        return payments;
     }
 
     /**

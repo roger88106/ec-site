@@ -1,19 +1,21 @@
 package com.ecsite.module.order.presentation;
 
-import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.api.admin.OrderApi;
 import com.ecsite.api.admin.model.CancelOrderRequest;
 import com.ecsite.api.admin.model.OrderDetail;
 import com.ecsite.api.admin.model.OrderStatus;
 import com.ecsite.api.admin.model.OrderSummaryPage;
 import com.ecsite.common.paging.PageRequest;
+import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
+import com.ecsite.module.order.application.port.OrderQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -60,7 +62,8 @@ class AdminOrderController implements OrderApi {
         var result = orderQueryService.list(orderNumber,
                 status == null ? null : com.ecsite.module.order.domain.order.OrderStatus.valueOf(status.getValue()),
                 orderedFrom, orderedTo, PageRequest.of(page, size));
-        return ResponseEntity.ok(mapper.toOrderSummaryPage(result));
+        var payments = orderQueryService.findPayments(result.items().stream().map(OrderQueryRepository.OrderSummaryView::id).toList());
+        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, payments));
     }
 
     /**
@@ -71,7 +74,8 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<OrderDetail> getOrder(UUID orderId) {
-        return ResponseEntity.ok(mapper.toOrderDetail(orderQueryService.get(orderId)));
+        var order = orderQueryService.get(orderId);
+        return ResponseEntity.ok(mapper.toOrderDetail(order, orderQueryService.findPayments(List.of(orderId)).get(orderId)));
     }
 
     /**

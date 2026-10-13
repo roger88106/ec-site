@@ -6,6 +6,7 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.application.model.PlacementResult;
 import com.ecsite.module.order.application.port.CartDirectory;
+import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.Order;
@@ -25,7 +26,7 @@ import java.util.random.RandomGenerator;
 
 /**
  * 注文の成立のサービス（「注文の成立」）。<br />
- * 在庫の減算、注文の保存、カートを空にすることを、1 つのトランザクションで行う。
+ * 在庫の減算、注文の保存（支払待ち）、支払を作ることを、1 つのトランザクションで行う。カートは変えない（与信の成功で品目を除く）。
  */
 @Service
 @RequiredArgsConstructor
@@ -62,6 +63,11 @@ public class OrderPlacementService {
     private final StockDirectory stockDirectory;
 
     /**
+     * 決済の腐敗防止層
+     */
+    private final PaymentDirectory paymentDirectory;
+
+    /**
      * 見積もりのサービス
      */
     private final QuoteService quoteService;
@@ -73,7 +79,7 @@ public class OrderPlacementService {
 
     /**
      * 注文する。<br />
-     * 判定（カートの変更、購入できるか、総額、入力）をすべて済ませてから、在庫の減算 → 注文の保存 → カートを空にする、の順に書く。
+     * 判定（カートの変更、購入できるか、総額、入力）をすべて済ませてから、在庫の減算 → 注文の保存（支払待ち） → 支払を作る、の順に書く。
      * どこかで失敗すれば、トランザクションごと取り消される。
      * 注文できるのは注文手続きを始めた会員だけで、メールアドレスは会員の token のもの（確認済み）を写す。
      *
@@ -114,7 +120,7 @@ public class OrderPlacementService {
                 command.email(),
                 address);
 
-        // 書き込み：在庫の減算（期限切れなら引き当て直し）→ 注文 → カートを空にする
+        // 書き込み：在庫の減算（期限切れなら引き当て直し）→ 注文（支払待ち）→ 支払
         var shortages = stockDirectory.commit(checkout.id(), CheckoutService.quantities(cart.lines()), order.id(),
                 order.orderNumber().value());
         if (!shortages.isEmpty()) {
@@ -124,7 +130,7 @@ public class OrderPlacementService {
             // 番号を確かめてから保存するまでの間に、同じ番号が使われた（ごくまれ）。やり直してもらう
             throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
         }
-        cartDirectory.clear(cart.cartId());
+        paymentDirectory.create(order.id(), order.amounts().total(), order.orderedAt());
         return new PlacementResult(order.id(), true);
     }
 

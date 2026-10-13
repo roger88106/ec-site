@@ -3,6 +3,7 @@ package com.ecsite.module.order.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.Operator;
+import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -18,7 +19,7 @@ import java.util.function.Predicate;
 
 /**
  * キャンセルのサービス（docs/backend/modules/order.md「状態遷移」）。<br />
- * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻す。
+ * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻し、支払を取り消させる（与信の取消は決済がコミットの後に行う）。
  */
 @Service
 @RequiredArgsConstructor
@@ -33,6 +34,11 @@ public class OrderCancellationService {
      * 在庫の腐敗防止層
      */
     private final StockDirectory stockDirectory;
+
+    /**
+     * 決済の腐敗防止層
+     */
+    private final PaymentDirectory paymentDirectory;
 
     /**
      * 時計
@@ -92,6 +98,16 @@ public class OrderCancellationService {
         changeAndRestore(orderId, order -> order.cancelByOperator(reason, operator, clock.instant()));
     }
 
+    /**
+     * 支払の期限切れでキャンセルにする。支払待ちでなければ何もしない。キャンセルになったら在庫を戻す。
+     *
+     * @param orderId 注文 ID
+     */
+    @Transactional
+    public void expirePayment(UUID orderId) {
+        changeAndRestore(orderId, order -> order.expirePayment(clock.instant()));
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**
@@ -102,7 +118,7 @@ public class OrderCancellationService {
     }
 
     /**
-     * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻す。<br />
+     * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻し、支払を取り消させる。<br />
      * すでにキャンセルなら何もしない。在庫の戻しに失敗すれば、注文の変更ごと取り消される。
      *
      * @param orderId 注文 ID
@@ -115,6 +131,7 @@ public class OrderCancellationService {
         }
         orderRepository.update(order);
         stockDirectory.restore(quantities(order), order.id(), order.orderNumber().value());
+        paymentDirectory.cancel(order.id());
     }
 
     /**

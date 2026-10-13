@@ -2,6 +2,8 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.api.store.model.Amounts;
 import com.ecsite.api.store.model.AxisValue;
+import com.ecsite.api.store.model.Cancellation;
+import com.ecsite.api.store.model.CancellationKind;
 import com.ecsite.api.store.model.CancellationRequest;
 import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.Order;
@@ -20,12 +22,15 @@ import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.common.presentation.StorePrices;
 import com.ecsite.module.order.application.model.CheckoutView;
+import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.domain.quote.Quote;
+import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -76,12 +81,15 @@ class StoreOrderMapper {
     }
 
     /**
-     * 注文のレスポンスに変換する。キャンセルの申請がなければ、その項目を返さない。
+     * 注文のレスポンスに変換する。キャンセルの申請・キャンセルがなければ、その項目を返さない。
+     * 支払の期限は、支払待ちのときだけ返す。
      *
-     * @param order 注文
+     * @param order   注文
+     * @param payment 注文の支払。決済を入れる前の注文は null
      * @return 注文のレスポンス
      */
-    Order toOrder(com.ecsite.module.order.domain.order.Order order) {
+    Order toOrder(com.ecsite.module.order.domain.order.Order order, @Nullable OrderPayment payment) {
+        var awaitingPayment = order.isAwaitingPayment() && payment != null;
         var response = new Order()
                 .id(order.id())
                 .orderNumber(order.orderNumber().value())
@@ -91,9 +99,17 @@ class StoreOrderMapper {
                 .amounts(toAmounts(order.amounts()))
                 .email(order.email())
                 .shippingAddress(toAddress(order.shippingAddress()))
-                .actions(new OrderActions(order.isCancellationRequestable(), false));
+                .actions(new OrderActions(order.isCancellationRequestable(), awaitingPayment && payment.payable()));
+        if (awaitingPayment) {
+            response.paymentDeadline(ApiDateTimes.toOffsetDateTime(payment.deadline()));
+        }
         if (order.cancellationRequest() != null) {
             response.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
+        }
+        if (order.cancellation() != null) {
+            response.cancellation(new Cancellation()
+                    .cancelledAt(ApiDateTimes.toOffsetDateTime(order.cancellation().cancelledAt()))
+                    .kind(CancellationKind.fromValue(order.cancellation().kind().name())));
         }
         return response;
     }
@@ -210,17 +226,28 @@ class StoreOrderMapper {
      * @param page 注文の一覧
      * @return 注文の一覧のレスポンス
      */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page) {
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
                 .totalItems(page.totalItems())
                 .totalPages(page.totalPages())
-                .items(page.items().stream().map(view -> new OrderSummary()
-                        .id(view.id())
-                        .orderNumber(view.orderNumber())
-                        .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
-                        .totalAmount(view.total())
-                        .status(OrderStatus.fromValue(view.status().name()))).toList());
+                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()))).toList());
+    }
+
+    /**
+     * 自分の注文の一覧の 1 件。支払の期限は、支払待ちのときだけ返す。
+     */
+    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment) {
+        var summary = new OrderSummary()
+                .id(view.id())
+                .orderNumber(view.orderNumber())
+                .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
+                .totalAmount(view.total())
+                .status(OrderStatus.fromValue(view.status().name()));
+        if (view.status() == com.ecsite.module.order.domain.order.OrderStatus.PENDING_PAYMENT && payment != null) {
+            summary.paymentDeadline(ApiDateTimes.toOffsetDateTime(payment.deadline()));
+        }
+        return summary;
     }
 }

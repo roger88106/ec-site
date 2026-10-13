@@ -13,6 +13,8 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.core.env.Environment;
+import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 
@@ -24,7 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 支払の期限切れのジョブの統合テスト（T7209、AC-153、156、NFR-7）。<br />
+ * 支払の期限切れのジョブの統合テスト（T7209、T7308、AC-153、154、156、NFR-7）。<br />
  * ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確かめる。
  */
 @IntegrationTest
@@ -56,6 +58,9 @@ class PaymentExpiryJobTest {
 
     @Autowired
     ApplicationEvents events;
+
+    @Autowired
+    Environment environment;
 
     @BeforeEach
     void setUp() {
@@ -131,6 +136,16 @@ class PaymentExpiryJobTest {
         job.expire();
 
         assertThat(expiredEvents(orderId)).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("AC-154 期限切れのジョブは 5 分以内の間隔で動くので、期限から 5 分のうちにキャンセルされる")
+    void runsWithinFiveMinutes() throws Exception {
+        var scheduled = PaymentExpiryJob.class.getMethod("expire").getAnnotation(Scheduled.class);
+
+        var interval = Duration.parse(environment.resolvePlaceholders(scheduled.fixedDelayString()));
+
+        assertThat(interval).isLessThanOrEqualTo(Duration.ofMinutes(5));
     }
 
     // ============================== 補助 ==============================

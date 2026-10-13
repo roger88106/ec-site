@@ -72,7 +72,7 @@
   - 管理画面：`src/app/paths.ts` の `paths` の関数で作る。ルーターの定義は同じファイルの `routePatterns` を使う。`<Link>`・`navigate()` などに URL の文字列を直接書かない。URL に入る値（ID など）は関数の引数の型で確かめる。
   - 店舗画面：Next.js の型付きの URL（`typedRoutes`）を有効にする。`<Link href>`・`redirect()` の URL は、`src/app` の画面の置き場所と型で照らされる。クエリを付ける URL は、機能の `*Query.ts` の関数（戻り値は `Route`）で作る。店舗画面の外の URL（IdP など）だけを `as Route` にし、理由をコメントに書く。
 - **理由**：間違った URL を型チェックで見つけるため。店舗画面は、画面の置き場所がそのまま URL の定義になるので、別に URL の一覧を持たずに Next.js の型で照らす。
-- **確かめ方**：型チェック。人手（見直しで、管理画面は `git grep` でパスの文字列を直接書いた所を、店舗画面は `as Route` と `revalidatePath()`（`typedRoutes` の型が付かない）の URL を確かめる）。
+- **確かめ方**：型チェック。人手（見直しで、管理画面は `git grep` でパスの文字列を直接書いた所を、店舗画面は `as Route` と、`typedRoutes` の型が付かない `revalidatePath()` と `<form action>` の文字列の URL を確かめる）。
 
 ## 7. 表示の文言とロケール
 
@@ -86,6 +86,7 @@
 ### 7.2 文言のキーの形
 
 - **規則**：`<機能>.<画面か部品>.<項目>`（例：`tax.list.title`）。共通のものは `common.<項目>`。英小文字で始める `camelCase` を `.` でつなぐ。
+- **例外**：API の列挙の値やエラーコードごとの表示名は、最後の項目をその値のまま書く（例：`labels.publicationStatus.PUBLISHED`）。値からキーを組み立てて引くため。
 - **理由**：キーから表示する所を引けるようにするため。
 - **確かめ方**：人手（見直し）。
 

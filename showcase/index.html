@@ -110,6 +110,8 @@ figcaption { font-size: 13px; color: var(--muted); margin-top: 8px; }
 .tag { display: inline-block; font-size: 12px; font-family: var(--display); font-weight: 700; padding: 0 8px; border-radius: 99px; margin-left: 8px; background: var(--accent-soft); color: var(--accent); }
 
 footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line); padding-top: 20px; }
+footer p { margin: 0 0 6px; }
+footer a { color: inherit; text-decoration: underline; text-underline-offset: 2px; }
 
 @media (max-width: 760px) {
   .wrap { gap: 64px; padding-block: 36px 64px; }
@@ -132,7 +134,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
       <div class="fact"><b>売り越しを起こさない</b><span>最後の 1 個に注文が同時に来ても、在庫がマイナスになりません。</span></div>
     </div>
     <figure class="hero-shot">
-      <div class="shot"><img src="img/store-top.png" alt="店舗画面のトップ。カテゴリと新着の商品が写真付きで並ぶ" width="1280" height="1024"></div>
+      <div class="shot"><img src="img/store-top.png" alt="店舗画面のトップ。カテゴリと新着の商品が写真付きで並ぶ" width="1280" height="1035"></div>
       <figcaption>店舗画面のトップ。カテゴリと新着の商品が並び、価格は税込と税抜の両方を示します。在庫のない商品には「在庫なし」と出ます。</figcaption>
     </figure>
   </header>
@@ -155,7 +157,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
         </ul>
       </div>
       <figure>
-        <div class="shot"><img src="img/store-product.png" alt="商品ページ。マグカップの写真、価格、色の選択、数量、カートに入れるボタン" width="1280" height="900" loading="lazy"></div>
+        <div class="shot"><img src="img/store-product.png" alt="商品ページ。マグカップの写真、価格、色の選択、数量、カートに入れるボタン" width="1280" height="800" loading="lazy"></div>
       </figure>
     </div>
 
@@ -164,13 +166,29 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
         <h3>注文の明細は、税率ごとに分けて示す</h3>
         <ul>
           <li>食品（8%）と衣類（10%）を一緒に買っても、税率ごとの対象額と消費税を分けて示します。インボイス（適格請求書）と同じ考え方です。</li>
-          <li>注文の履歴と状態（受付・キャンセル申請中・キャンセル）を、お客様がいつでも見られます。</li>
+          <li>注文の履歴と状態（支払待ち・受付・キャンセル申請中・キャンセル）を、お客様がいつでも見られます。</li>
           <li>キャンセルは「申請」として受け、お店が確かめてから取り消します。</li>
         </ul>
       </div>
       <figure>
-        <div class="shot tall"><img src="img/store-order.png" alt="注文の内容。明細、送料、税率 10% と 8% の内訳、お届け先、キャンセルの申請" width="1280" height="1160" loading="lazy"></div>
-        <figcaption>T シャツ（10%）と緑茶（8%）を一緒に注文した例。</figcaption>
+        <div class="shot tall"><img src="img/store-order.png" alt="注文の内容。明細、送料、税率 10% と 8% の内訳、お届け先、キャンセルの申請" width="1280" height="1161" loading="lazy"></div>
+        <figcaption>マグカップ（10%）と板チョコレート（8%）を一緒に注文した例。</figcaption>
+      </figure>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <h3>支払はカードで。番号はサイトに残さない</h3>
+        <ul>
+          <li>注文すると決済サービスの支払の画面に移り、カードで支払います。カード番号はその画面で入力するので、サイトには届きません。</li>
+          <li>支払が済むまで、注文は「支払待ち」です。30 分の期限までに支払がなければ、自動で取り消して在庫を戻します。</li>
+          <li>支払の画面から途中で戻っても、注文の画面の「支払う」から、期限までならやり直せます。</li>
+          <li>注文のときはカードの利用枠を確保（与信）するだけで、代金は出荷のときに確定します。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot"><img src="img/store-payment.png" alt="支払待ちの注文。支払の期限と「支払う」のボタン、明細" width="1280" height="915" loading="lazy"></div>
+        <figcaption>支払の画面から支払わずに戻った注文。期限までは「支払う」からやり直せます。</figcaption>
       </figure>
     </div>
   </section>
@@ -193,7 +211,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
         </ul>
       </div>
       <figure>
-        <div class="shot tall"><img src="img/admin-product.png" alt="管理画面の商品の編集。状態、公開期間、基本情報、税区分、カテゴリ、画像、バリアント" width="1280" height="2320" loading="lazy"></div>
+        <div class="shot tall"><img src="img/admin-product.png" alt="管理画面の商品の編集。状態、公開期間、基本情報、税区分、カテゴリ、画像、バリアント" width="1280" height="2222" loading="lazy"></div>
         <figcaption>商品の編集画面（上の部分）。下に画像とバリアントの一覧が続きます。</figcaption>
       </figure>
     </div>
@@ -208,7 +226,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
         </ul>
       </div>
       <figure>
-        <div class="shot"><img src="img/admin-stock.png" alt="在庫の画面。現在の在庫数、増減の入力、調整の履歴" width="1280" height="900" loading="lazy"></div>
+        <div class="shot"><img src="img/admin-stock.png" alt="在庫の画面。現在の在庫数、増減の入力、調整の履歴" width="1280" height="1047" loading="lazy"></div>
       </figure>
     </div>
 
@@ -221,7 +239,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
         </ul>
       </div>
       <figure>
-        <div class="shot"><img src="img/admin-tax.png" alt="税区分の画面。標準 10% と軽減 8%" width="1280" height="900" loading="lazy"></div>
+        <div class="shot"><img src="img/admin-tax.png" alt="税区分の画面。標準 10% と軽減 8%" width="1280" height="800" loading="lazy"></div>
       </figure>
     </div>
 
@@ -230,12 +248,13 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
         <h3>注文を一覧で見て、必要ならキャンセル</h3>
         <ul>
           <li>注文の明細を品番・税抜単価・税率・税込単価まで表で確かめられます。</li>
-          <li>お客様のキャンセルの申請を受け、在庫を戻して取り消します。</li>
+          <li>支払の状態（未払い・与信済み・与信の取消済みなど）を、注文ごとに確かめられます。</li>
+          <li>お客様のキャンセルの申請を受け、在庫を戻して取り消します。支払済みの注文は、カードの与信も自動で取り消します。</li>
           <li>担当者ごとに、できる操作を分けられます。</li>
         </ul>
       </div>
       <figure>
-        <div class="shot"><img src="img/admin-order.png" alt="管理画面の注文の詳細。明細の表、税率ごとの内訳、お客様とお届け先" width="1280" height="900" loading="lazy"></div>
+        <div class="shot"><img src="img/admin-order.png" alt="管理画面の注文の詳細。状態と支払の状態、明細の表、税率ごとの内訳、お客様とお届け先" width="1280" height="914" loading="lazy"></div>
       </figure>
     </div>
   </section>
@@ -252,7 +271,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
       </article>
       <article>
         <h3>カード番号を預からない</h3>
-        <p>支払は外部の決済サービスの画面で入力する形にしています。サイト側がカード番号を受け取らないので、漏えいの心配がありません（決済は開発中）。</p>
+        <p>カード番号は、外部の決済サービス（Stripe）の画面で入力します。サイト側はカード番号を受け取らず、保存もしないので、サイトからカード番号が漏れることはありません。</p>
       </article>
       <article>
         <h3>ログインは専用の仕組みに任せる</h3>
@@ -260,7 +279,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
       </article>
       <article>
         <h3>直すたびに、全部を自動で確かめる</h3>
-        <p>変更を入れるたびに、約 1,000 件の自動テストが流れます。新しい機能を足して、前の機能が壊れたまま出ることを防ぎます。</p>
+        <p>変更を入れるたびに、1,100 件以上の自動テストが流れます。新しい機能を足して、前の機能が壊れたまま出ることを防ぎます。</p>
       </article>
     </div>
   </section>
@@ -274,8 +293,8 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
 
     <div class="numbers">
       <div class="num"><b>166</b><span>文書で決めた「こう動くべき」という条件。すべてにテストを対応させています</span></div>
-      <div class="num"><b>約 1,000</b><span>自動テストの件数（画面・サーバー・ブラウザでの通し操作）</span></div>
-      <div class="num"><b>7</b><span>仕様書の数。機能を足すたび、また整理するたびに一つ書きます</span></div>
+      <div class="num"><b>1,100 以上</b><span>自動テストの件数（画面・サーバー・ブラウザでの通し操作）</span></div>
+      <div class="num"><b>8</b><span>仕様書の数。機能を足すたび、また整理するたびに一つ書きます</span></div>
       <div class="num"><b>2</b><span>画面の数（店舗・管理）。文言は差し替えられるように作り、多言語化に備えています</span></div>
     </div>
 
@@ -292,6 +311,7 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
           <tr><th>サーバー</th><td>業務ごとに部品を分け、将来は別々のサービスに切り出せる形にしています。<small>Java 21 / Spring Boot / Spring Modulith / PostgreSQL / jOOQ</small></td></tr>
           <tr><th>店舗画面</th><td>表示が速く、検索エンジンにも読まれやすい作り。<small>Next.js / TypeScript / Tailwind CSS</small></td></tr>
           <tr><th>管理画面</th><td>表や入力の多い業務向けの作り。<small>React / TanStack Query / React Hook Form</small></td></tr>
+          <tr><th>決済</th><td>カード番号を扱わない、決済サービスの支払の画面を使う方式。<small>Stripe（テストモード）</small></td></tr>
           <tr><th>ログイン</th><td>標準の方式（OpenID Connect）に沿った専用の認証サーバー。<small>Keycloak</small></td></tr>
           <tr><th>品質</th><td>変更のたびに自動でテストし、ブラウザの通し操作まで確かめます。<small>JUnit / Testcontainers / Vitest / Playwright / GitHub Actions</small></td></tr>
           <tr><th>運用</th><td>アクセスが増えたら、同じサーバーを並べて増やせる作りにしています。<small>Docker / S3 互換ストレージ / Prometheus</small></td></tr>
@@ -310,14 +330,15 @@ footer { color: var(--muted); font-size: 13px; border-top: 1px solid var(--line)
       <div class="done"><b>商品・在庫・税率の管理</b><span>完成</span></div>
       <div class="done"><b>カートと注文、キャンセル</b><span>完成</span></div>
       <div class="done"><b>会員登録・ログイン・運営者の権限</b><span>完成</span></div>
-      <div class="now"><b>カード決済<span class="tag">開発中</span></b><span>注文時に与信を取り、出荷時に売上を確定する。期限までに支払われない注文は自動で取り消し、在庫を戻す。</span></div>
-      <div><b>出荷と配送状況</b><span>出荷の登録とお客様への通知、配送状況の確認。</span></div>
+      <div class="done"><b>カード決済</b><span>完成</span></div>
+      <div><b>出荷と配送状況</b><span>出荷の登録とお客様への通知、配送状況の確認。出荷のときにカードの売上を確定する。</span></div>
       <div><b>売上の簡易レポート</b><span>注文のデータを集め、お店の人が売れ行きを見られるようにする。</span></div>
     </div>
   </section>
 
   <footer>
-    画面の写真は開発中の環境で撮ったもので、商品・お客様・注文はすべて試験用のデータです。
+    <p>画面の写真は開発用の環境で撮ったもので、商品・お客様・注文はすべて試験用のデータです。決済は Stripe のテストモードで、実際の支払は発生しません。</p>
+    <p>開発の期間：2026 年 10 月〜　ソースコード：<a href="https://github.com/roger88106/ec-site">github.com/roger88106/ec-site</a></p>
   </footer>
 
 </div>

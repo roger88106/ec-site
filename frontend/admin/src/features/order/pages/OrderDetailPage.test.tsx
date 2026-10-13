@@ -55,6 +55,11 @@ async function shownStatus(label: string) {
   return screen.findByText(label, { selector: '[data-slot="badge"]' })
 }
 
+/** 支払の状態の欄（見出しの下の「支払」） */
+async function shownPayment() {
+  return (await screen.findByText('支払', { selector: 'dt' })).nextElementSibling
+}
+
 describe('注文の詳細', () => {
   it('AC-100 明細（注文時点の写し）、金額の内訳、お届け先、キャンセルの申請を出す', async () => {
     serveOrder(REQUESTED)
@@ -208,5 +213,65 @@ describe('注文の詳細', () => {
     expect(await shownStatus('キャンセル')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'キャンセルする' })).not.toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '申請を承認する' })).not.toBeInTheDocument()
+  })
+  it('AC-160 支払の状態と、支払の期限を出す', async () => {
+    serveOrder(orderDetail({ payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z' } }))
+    renderApp(URL)
+
+    expect(await shownPayment()).toHaveTextContent('与信済み')
+    expect(screen.getByText('支払の期限').nextElementSibling).toHaveTextContent('2026/10/10 10:30')
+  })
+
+  it('AC-165 与信の取消が済むまで「与信の取消待ち」と示す', async () => {
+    serveOrder(
+      orderDetail({
+        status: 'CANCELLED',
+        actions: orderActions({ cancel: false }),
+        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り' },
+        payment: { status: 'VOID_PENDING', deadline: '2026-10-10T01:30:00Z' },
+      }),
+    )
+    renderApp(URL)
+
+    expect(await shownPayment()).toHaveTextContent('与信の取消待ち')
+  })
+
+  it('AC-155 支払期限切れのキャンセルを示す', async () => {
+    serveOrder(
+      orderDetail({
+        status: 'CANCELLED',
+        actions: orderActions({ cancel: false }),
+        cancellation: { cancelledAt: '2026-10-10T01:31:00Z', kind: 'PAYMENT_EXPIRED' },
+        payment: { status: 'NOT_PAID', deadline: '2026-10-10T01:30:00Z' },
+      }),
+    )
+    renderApp(URL)
+
+    expect(await shownPayment()).toHaveTextContent('支払なし')
+    expect(screen.getByText('きっかけ').nextElementSibling).toHaveTextContent('支払期限切れ')
+    expect(screen.queryByText('理由')).not.toBeInTheDocument()
+  })
+
+  it('AC-158 支払待ちの注文には、キャンセルの操作を出さない', async () => {
+    serveOrder(
+      orderDetail({
+        status: 'PENDING_PAYMENT',
+        actions: orderActions({ cancel: false }),
+        payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z' },
+      }),
+    )
+    renderApp(URL)
+
+    expect(await shownStatus('支払待ち')).toBeInTheDocument()
+    expect(await shownPayment()).toHaveTextContent('未払い')
+    expect(screen.queryByRole('button', { name: 'キャンセルする' })).not.toBeInTheDocument()
+  })
+
+  it('決済を入れる前の注文には、支払の状態を出さない', async () => {
+    serveOrder(orderDetail())
+    renderApp(URL)
+
+    expect(await shownStatus('受付')).toBeInTheDocument()
+    expect(screen.queryByText('支払')).not.toBeInTheDocument()
   })
 })

@@ -2,12 +2,10 @@ import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
-import { toast } from 'sonner'
-import { $api } from '@/api/client'
 import { setServerFieldErrors } from '@/api/formErrors'
 import { manualStockAdjustmentReasonValues } from '@/api/generated/admin'
-import { useInvalidate } from '@/api/invalidate'
 import type { ManualStockAdjustmentReason } from '@/api/types'
+import { useApiMutation } from '@/api/useApiMutation'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -35,14 +33,12 @@ const reasonOptions = manualStockAdjustmentReasonValues.map((reason) => ({
  * 負になる調整や、「その他」でメモがない調整の拒否は、サーバーのエラーを表示する。
  */
 export function AdjustStockForm({ variantId }: { variantId: string }) {
-  const invalidate = useInvalidate()
   const form = useForm<Values>({ defaultValues: EMPTY })
-  const mutation = $api.useMutation('post', '/inventory/variants/{variantId}/adjustments', {
-    onSuccess: async (adjustment) => {
-      toast.success(`${formatDelta(adjustment.delta)} を反映し、在庫数は ${adjustment.quantityAfter} になりました`)
-      form.reset(EMPTY)
-      await invalidate('/inventory')
-    },
+  const mutation = useApiMutation('post', '/inventory/variants/{variantId}/adjustments', {
+    success: (adjustment) =>
+      `${formatDelta(adjustment.delta)} を反映し、在庫数は ${adjustment.quantityAfter} になりました`,
+    invalidate: ['/inventory'],
+    onSuccess: () => form.reset(EMPTY),
     onError: (error) => setServerFieldErrors(error, form.setError, FIELD_NAMES),
   })
   const values = form.watch()

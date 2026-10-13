@@ -33,6 +33,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | API・ストレージ・可観測性 | OpenAPI Generator、AWS SDK、Micrometer | Apache-2.0 |
 | ユーティリティ | Lombok | MIT |
 | 定期ジョブ | ShedLock | Apache-2.0 |
+| 決済サービス | stripe-java | MIT |
 | ログ | Logback | 条件付き（EPL-2.0 を選ぶ。改変しない） |
 | テスト | AssertJ | Apache-2.0 |
 | テスト | Testcontainers | MIT |

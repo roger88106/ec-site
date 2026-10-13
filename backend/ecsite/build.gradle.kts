@@ -109,6 +109,9 @@ dependencies {
     implementation(libs.shedlock.spring)
     implementation(libs.shedlock.provider.jdbc.template)
 
+    // --- 決済サービス（Stripe。mock のときも入るが、呼ばない） ---
+    implementation(libs.stripe.java)
+
     // --- API（OpenAPI の生成コード） ---
     implementation(libs.jackson.databind.nullable)
 

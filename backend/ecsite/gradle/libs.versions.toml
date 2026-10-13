@@ -40,6 +40,9 @@ jmolecules = "2025.0.2"
 # --- 定期ジョブの分散ロック（バックエンドのアーキテクチャ 第 5 節） ---
 shedlock = "7.10.1"
 
+# --- 決済サービス（Stripe。決済の設計書「Stripe」） ---
+stripe = "34.0.0"
+
 # --- 画像のファイル（オブジェクトストレージ。plan 001 第 7 節） ---
 awssdk = "2.46.7"
 
@@ -77,6 +80,9 @@ spring-modulith-events-jackson = { module = "org.springframework.modulith:spring
 # --- 定期ジョブの分散ロック ---
 shedlock-spring = { module = "net.javacrumbs.shedlock:shedlock-spring", version.ref = "shedlock" }
 shedlock-provider-jdbc-template = { module = "net.javacrumbs.shedlock:shedlock-provider-jdbc-template", version.ref = "shedlock" }
+
+# --- 決済サービス ---
+stripe-java = { module = "com.stripe:stripe-java", version.ref = "stripe" }
 
 # --- オブジェクトストレージ（AWS SDK BOM 管理） ---
 awssdk-s3 = { module = "software.amazon.awssdk:s3" }

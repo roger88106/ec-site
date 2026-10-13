@@ -1,10 +1,13 @@
 import { describe, expect, test } from 'vitest'
 import { placeOrder } from '@/actions/checkout'
-import { requestCancellation } from '@/actions/order'
+import { payOrder, requestCancellation } from '@/actions/order'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
 import { CHECKOUT_ID, form, ORDER_ID } from '@/test/fixtures'
 import { redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
 import { http, problem, server } from '@/test/server'
+
+/** 決済サービスの支払の画面の URL */
+const PAYMENT_PAGE_URL = 'https://pay.example/cs_test_1'
 
 /** 注文のフォーム（前後に空白のある入力を含む） */
 const orderForm = () =>
@@ -19,9 +22,10 @@ const orderForm = () =>
   })
 
 describe('注文する', () => {
-  test('AC-90 注文が成立したら、会員の token を付けて送り、注文の画面へ移る', async () => {
+  test('AC-143 注文が成立したら、会員の token を付けて送り、決済サービスの支払の画面へ移る', async () => {
     signInAs()
     let sent: unknown
+    let pageRequestedFor: unknown
     server.use(
       http.post('/checkouts/{checkoutId}/order', async ({ params, request, response }) => {
         sent = {
@@ -31,9 +35,14 @@ describe('注文する', () => {
         }
         return response(201).json({ id: ORDER_ID })
       }),
+      http.post('/orders/{orderId}/payment-page', ({ params, response }) => {
+        pageRequestedFor = params.orderId
+        return response(200).json({ url: PAYMENT_PAGE_URL })
+      }),
     )
 
-    expect(await redirectedTo(() => placeOrder(null, orderForm()))).toBe(`/orders/${ORDER_ID}`)
+    expect(await redirectedTo(() => placeOrder(null, orderForm()))).toBe(PAYMENT_PAGE_URL)
+    expect(pageRequestedFor).toBe(ORDER_ID)
 
     expect(sent).toEqual({
       checkoutId: CHECKOUT_ID,
@@ -49,6 +58,18 @@ describe('注文する', () => {
         expectedTotal: 4300,
       },
     })
+  })
+
+  test('AC-143 支払の画面の URL を得られなければ、注文の画面へ移る（そこから支払える）', async () => {
+    signInAs()
+    server.use(
+      http.post('/checkouts/{checkoutId}/order', ({ response }) => response(201).json({ id: ORDER_ID })),
+      http.post('/orders/{orderId}/payment-page', ({ response }) =>
+        response(500).json(problem(500, 'SYSTEM_ERROR', 'システムエラーが発生しました。')),
+      ),
+    )
+
+    expect(await redirectedTo(() => placeOrder(null, orderForm()))).toBe(`/orders/${ORDER_ID}`)
   })
 
   test('AC-86 入力の形式の誤りは、API のメッセージと欄ごとのメッセージを返す', async () => {
@@ -146,5 +167,39 @@ describe('キャンセルを申請する', () => {
       message: 'この注文はキャンセルを申請できません。キャンセルをご希望の場合は、お問い合わせください。',
       errorCode: 'CANCELLATION_NOT_REQUESTABLE',
     })
+  })
+})
+
+describe('支払う', () => {
+  test('AC-151 会員の token を付けて支払の画面の URL を求め、その画面へ移る', async () => {
+    signInAs()
+    let authorization: unknown
+    server.use(
+      http.post('/orders/{orderId}/payment-page', ({ request, response }) => {
+        authorization = request.headers.get('Authorization')
+        return response(200).json({ url: PAYMENT_PAGE_URL })
+      }),
+    )
+
+    expect(await redirectedTo(() => payOrder(null, form({ orderId: ORDER_ID })))).toBe(PAYMENT_PAGE_URL)
+    expect(authorization).toBe(`Bearer ${ACCESS_TOKEN}`)
+  })
+
+  test('AC-151 支払えない注文（支払済み、期限の後）は、API のメッセージを返し、注文の画面を表示し直す', async () => {
+    signInAs()
+    server.use(
+      http.post('/orders/{orderId}/payment-page', ({ response }) =>
+        response(409).json(
+          problem(409, 'ORDER_NOT_PAYABLE', 'この注文は支払えません。支払が済んでいるか、支払の期限を過ぎています。'),
+        ),
+      ),
+    )
+
+    expect(await payOrder(null, form({ orderId: ORDER_ID }))).toEqual({
+      ok: false,
+      message: 'この注文は支払えません。支払が済んでいるか、支払の期限を過ぎています。',
+      errorCode: 'ORDER_NOT_PAYABLE',
+    })
+    expect(revalidatedPaths).toEqual([`/orders/${ORDER_ID}`])
   })
 })

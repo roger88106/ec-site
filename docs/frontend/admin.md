@@ -15,6 +15,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | API の型 | openapi-typescript | `admin.yaml` から生成する。生成物はコミットしない（constitution 9） |
 | API の呼び出し | openapi-fetch + openapi-react-query | 取得・更新を、パスと型から呼ぶ。キャッシュのキーも自動で決まる |
 | サーバー状態 | TanStack Query | 既定の設定。ただし 4xx は繰り返さない（第 4 節） |
+| 表示の文言 | use-intl | 文言のファイル（`messages/ja.json` と共有の `common.*`）からキーで引く（[フロントの書き方](../style/frontend.md) 第 7 節） |
 | フォーム | React Hook Form | 入力の状態、変更の有無、サーバーの項目ごとのエラーの表示に使う |
 | UI | shadcn/ui、Tailwind CSS、lucide-react | レイアウトは shadcn の Sidebar、成功の通知は sonner（toast） |
 | lint・整形 | Biome | lint、整形、import の整理、Tailwind のクラスの並べ替え |
@@ -35,6 +36,7 @@ frontend/admin/src/
 ├── components/
 │   ├── ui/           # shadcn/ui が生成する部品。手で直さない
 │   └── *.tsx         # 機能をまたいで使う部品（価格、日時、エラー、ページングなど）
+├── i18n/             # 文言の Provider（I18nProvider）、文言の合わせ方（messages）、キーの型（types）、部品の外で引く translate
 ├── hooks/            # 機能をまたいで使う hook（バージョン付きのフォームなど。shadcn/ui の use-mobile もここに生成される）
 ├── lib/              # 画面に依存しない関数（表示の整形、品番の正規化など）。単体テストを横に置く
 ├── test/             # 結合テストの土台（描画の補助、API の応答の差し替え、jsdom の補い）。画面のコードからは import しない
@@ -44,6 +46,8 @@ frontend/admin/src/
         ├── components/   # その機能の中だけで使う部品
         └── *.ts          # その機能の中だけで使う関数・型・hook
 ```
+
+文言のファイルは `src` の外の `frontend/admin/messages/ja.json` に置く。
 
 - 機能（`features/<機能>`）どうしは import しない。2 つ以上の機能で使うものは、`components/` か `lib/` に置く（例：カテゴリの選択は、商品の一覧と編集で使うので `components/`）。
 - `pages/` は薄く保つ。フォームや表は `components/` に分ける。
@@ -123,7 +127,7 @@ URL は `src/app/paths.ts` の 1 か所で作り、画面のコードに文字�
 | 価格 | 「1,980 円（税抜 1,800 円）」（BR-4）。税込価格がなければ税抜価格だけを出す |
 | 日時 | 表示も入力も日本時間（BR-3）。ブラウザのタイムゾーンに依存させない。入力欄の値は日本時間とみなし、+09:00 のオフセット付きで送る |
 | 列挙（状態、理由など） | 表示名の対応表を `lib/` に置き、画面で直接文字列を書かない。選択肢は生成した列挙の値の配列から作る |
-| 操作できないもの | ボタンを出さないか、理由を添える（例：C 側に表示されたことのある商品は削除のボタンを出さず、販売終了を案内する） |
+| 操作できないもの | ボタンを出さないか、理由を添える（例：C 側に表示されたことのある商品は削除のボタンを出さず、販売終了を案内する）。できるかどうかは画面で業務の規則から判断せず、API の応答の `actions`（商品の詳細、注文の詳細）の旗で決める |
 
 ## 8. 品質
 

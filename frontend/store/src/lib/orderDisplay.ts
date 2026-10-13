@@ -66,6 +66,14 @@ export function orderStatusLabel(status: OrderStatus): string {
   return translate(`common.orderStatus.${status}`)
 }
 
+/** 注文の状態の見た目（Badge の variant）。受け付けた注文を目立たせる */
+export const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'> = {
+  PENDING_PAYMENT: 'secondary',
+  ACCEPTED: 'default',
+  CANCELLATION_REQUESTED: 'secondary',
+  CANCELLED: 'secondary',
+}
+
 /**
  * 注文のキャンセルの状況。申請できるかは API の旗で決める。
  * 申請できない「受付」の注文は、申請が却下された注文（申請は 1 つの注文に 1 回だけ）。

@@ -16,6 +16,7 @@ import {
   formatDateTime,
   formatPostalCode,
   formatYen,
+  ORDER_STATUS_VARIANTS,
   orderStatusLabel,
   paymentState,
 } from '@/lib/orderDisplay'
@@ -75,9 +76,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
         <dd className="tabular-nums">{formatDateTime(order.orderedAt)}</dd>
         <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
         <dd>
-          <Badge variant={order.status === 'ACCEPTED' ? 'default' : 'secondary'}>
-            {orderStatusLabel(order.status)}
-          </Badge>
+          <Badge variant={ORDER_STATUS_VARIANTS[order.status]}>{orderStatusLabel(order.status)}</Badge>
         </dd>
       </dl>
 

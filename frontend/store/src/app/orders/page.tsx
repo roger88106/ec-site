@@ -7,7 +7,13 @@ import { unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
 import { PageLinks } from '@/components/PageLinks'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
-import { formatDateTime, formatYen, orderStatusLabel, paymentDeadlineLabel } from '@/lib/orderDisplay'
+import {
+  formatDateTime,
+  formatYen,
+  ORDER_STATUS_VARIANTS,
+  orderStatusLabel,
+  paymentDeadlineLabel,
+} from '@/lib/orderDisplay'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -57,9 +63,7 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
                   <td className="py-3 tabular-nums">{formatDateTime(order.orderedAt)}</td>
                   <td className="py-3 text-right tabular-nums">{formatYen(order.totalAmount)}</td>
                   <td className="py-3 text-right">
-                    <Badge variant={order.status === 'ACCEPTED' ? 'default' : 'secondary'}>
-                      {orderStatusLabel(order.status)}
-                    </Badge>
+                    <Badge variant={ORDER_STATUS_VARIANTS[order.status]}>{orderStatusLabel(order.status)}</Badge>
                     {paymentDeadlineLabel(order) !== null && (
                       <p className="mt-1 text-muted-foreground text-xs tabular-nums">
                         {paymentDeadlineLabel(order) /* 支払の期限 */}

@@ -65,7 +65,7 @@ describe('注文する', () => {
     server.use(
       http.post('/checkouts/{checkoutId}/order', ({ response }) => response(201).json({ id: ORDER_ID })),
       http.post('/orders/{orderId}/payment-page', ({ response }) =>
-        response(500).json(problem(500, 'SYSTEM_ERROR', 'システムエラーが発生しました。')),
+        response(409).json(problem(409, 'ORDER_NOT_PAYABLE', 'この注文は支払えません。')),
       ),
     )
 

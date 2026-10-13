@@ -1,6 +1,8 @@
 'use server'
 
+import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
+import { redirect } from 'next/navigation'
 import { withActionResult } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
 import { redirectToLogin } from '@/auth'
@@ -29,9 +31,29 @@ export async function requestCancellation(_previous: ActionResult | null, formDa
 }
 
 /**
- * 支払う：決済サービスの支払の画面に移る（AC-151）。T7505 で実装する。<br />
+ * 支払う：決済サービスの支払の画面に移る（AC-151）。<br />
+ * 支払えなければ（支払済み、期限の後）API のメッセージを返し、注文の画面を表示し直す。
  * フォームの項目：orderId。
  */
-export async function payOrder(_previous: ActionResult | null, _formData: FormData): Promise<ActionResult> {
-  return { ok: false, message: 'まだ支払えません' }
+export async function payOrder(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
+  const orderId = readString(formData, 'orderId')
+  const url = await withActionResult(async () => {
+    const api = await getMemberApi()
+    const { data, error, response } = await api.POST('/orders/{orderId}/payment-page', {
+      params: { path: { orderId } },
+    })
+    if (response.status === 401) {
+      await redirectToLogin()
+    }
+    if (!data) {
+      revalidatePath(`/orders/${orderId}`)
+      return toFailure(response.status, error)
+    }
+    return data.url
+  })
+  if (typeof url !== 'string') {
+    return url
+  }
+  // 決済サービスの画面（外部の URL）。redirect は例外で移動を知らせるので、包みの外で呼ぶ
+  redirect(url as Route)
 }

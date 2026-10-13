@@ -1,5 +1,6 @@
 'use server'
 
+import type { Route } from 'next'
 import { redirect } from 'next/navigation'
 import { deleteCartId } from '@/api/cartCookie'
 import { idpLogoutUrl, signOut } from '@/auth'
@@ -13,5 +14,6 @@ export async function logout(): Promise<void> {
   const logoutUrl = await idpLogoutUrl()
   await signOut({ redirect: false })
   await deleteCartId()
-  redirect(logoutUrl)
+  // IdP の URL は店舗画面の外なので、画面の URL の型（typedRoutes）では確かめられない
+  redirect(logoutUrl as Route)
 }

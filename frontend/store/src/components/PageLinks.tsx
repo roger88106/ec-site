@@ -1,4 +1,5 @@
 import { Button } from '@ec-site/shared/ui/button'
+import type { Route } from 'next'
 import Link from 'next/link'
 
 /** ページ送り（constitution 9 のレスポンスの page、totalPages、totalItems を受ける）。リンクで移る */
@@ -11,7 +12,7 @@ export function PageLinks({
   page: number
   totalPages: number
   totalItems: number
-  hrefFor: (page: number) => string
+  hrefFor: (page: number) => Route
 }) {
   if (totalPages <= 1) {
     return <p className="text-muted-foreground text-sm">全 {totalItems} 件</p>

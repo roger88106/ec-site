@@ -53,7 +53,7 @@ frontend/store/src/
 
 ## 3. 画面の URL
 
-URL は 1 か所で作り、画面のコードに文字列で書かない（[フロントの書き方](../style/frontend.md) 第 6 節）。
+URL は Next.js の型付きの URL（`typedRoutes`）で、画面の置き場所と照らして確かめる（[フロントの書き方](../style/frontend.md) 第 6 節）。クエリを付ける URL は機能の `*Query.ts` の関数で作る。
 
 | URL | 画面 |
 |-----|------|

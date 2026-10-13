@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import type { SearchParams } from '@/features/catalog/listQuery'
 
 /** 検索のキーワードとページ（AC-58、61）。URL のクエリに持つ */
@@ -11,7 +12,7 @@ export function parseSearchQuery(params: SearchParams): SearchQuery {
 }
 
 /** 検索結果の URL。1 ページ目はページを書かない */
-export function searchHref(query: SearchQuery): string {
+export function searchHref(query: SearchQuery): Route {
   const params = new URLSearchParams({ q: query.q })
   if (query.page > 1) params.set('page', String(query.page))
   return `/search?${params}`

@@ -1,6 +1,6 @@
 import { flattenTree } from '@ec-site/shared/lib/categoryTree'
 import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
-import type { Metadata } from 'next'
+import type { Metadata, Route } from 'next'
 import { getApi } from '@/api/client'
 import { unwrap } from '@/api/result'
 import type { ProductSummaryPage } from '@/api/types'
@@ -52,7 +52,7 @@ export default async function ProductListPage({ searchParams }: PageProps<'/prod
 }
 
 /** 商品の並びとページ送り */
-function ProductList({ page, hrefFor }: { page: ProductSummaryPage; hrefFor: (page: number) => string }) {
+function ProductList({ page, hrefFor }: { page: ProductSummaryPage; hrefFor: (page: number) => Route }) {
   return (
     <div className="space-y-6">
       <ProductGrid emptyMessage="条件に合う商品はありません。" products={page.items} />

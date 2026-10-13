@@ -1,3 +1,5 @@
+import type { Route } from 'next'
+
 /**
  * 注文の一覧（/orders）のクエリの page を読む（AC-129）。
  *
@@ -14,6 +16,6 @@ export function parseOrderListPage(params: Record<string, string | string[] | un
  *
  * @param page ページ（1 から）
  */
-export function orderListHref(page: number): string {
+export function orderListHref(page: number): Route {
   return page > 1 ? `/orders?page=${page}` : '/orders'
 }

@@ -8,6 +8,7 @@ import type { NextConfig } from 'next'
 const nextConfig: NextConfig = {
   // 共有のパッケージは TypeScript のソースのまま使う（フロントの書き方 第 5 節）
   transpilePackages: ['@ec-site/shared'],
+  typedRoutes: true,
   turbopack: {
     rules: {
       '*.css': {

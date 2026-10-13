@@ -1,3 +1,4 @@
+import type { Route } from 'next'
 import { productSortValues } from '@/api/generated/store'
 import type { ProductSort } from '@/api/types'
 
@@ -33,7 +34,7 @@ export function parseListQuery(params: SearchParams): ListQuery {
 }
 
 /** 一覧の URL。既定の値（新着順、1 ページ目）と指定なしの条件は書かない */
-export function listHref(query: ListQuery): string {
+export function listHref(query: ListQuery): Route {
   const params = new URLSearchParams()
   if (query.categoryId) params.set('categoryId', query.categoryId)
   if (query.minPrice !== null) params.set('minPrice', String(query.minPrice))

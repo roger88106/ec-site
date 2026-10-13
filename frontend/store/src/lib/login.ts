@@ -1,7 +1,8 @@
 import { isSafeReturnPath } from '@ec-site/shared/lib/login'
+import type { Route } from 'next'
 
 /** ログインの後に戻る画面の既定（店舗のトップ） */
-const HOME = '/'
+const HOME: Route = '/'
 
 /**
  * ログインの後に戻る画面（店舗画面の構成 第 9 節）。店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。
@@ -19,7 +20,7 @@ export function safeReturnTo(value: string | null | undefined): string {
  * @param returnTo ログインの後に戻る画面
  * @param options  register：会員登録の画面にする（AC-108）
  */
-export function loginPath(returnTo: string, options: { register?: boolean } = {}): string {
+export function loginPath(returnTo: string, options: { register?: boolean } = {}): Route {
   const query = new URLSearchParams({ returnTo })
   if (options.register) {
     query.set('register', '1')

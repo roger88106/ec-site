@@ -21,4 +21,4 @@
 
 ## バリアントの行（P2）
 
-- [ ] **T6407** `VariantSection` を見直し、まだ長ければ `VariantRow` に分ける（DC-53）。
+- [x] **T6407** `VariantSection` を見直し、まだ長ければ `VariantRow` に分ける（DC-53）。

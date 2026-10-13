@@ -1,16 +1,11 @@
-import { Badge } from '@ec-site/shared/ui/badge'
-import { Button } from '@ec-site/shared/ui/button'
 import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
-import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { useMutationGroup } from '@/api/useMutationGroup'
-import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { OptionSelect } from '@/components/OptionSelect'
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Table, TableBody, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { AddVariantForm } from '@/features/product/components/AddVariantForm'
-import { StockLink } from '@/features/product/components/StockLink'
+import { VariantRow, type VariantRowActions } from '@/features/product/components/VariantRow'
 import { isNeverShown } from '@/features/product/product'
 import { move } from '@/lib/array'
 
@@ -55,6 +50,25 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
       body: { variantIds, version: product.version },
     })
   }
+  /** バリアントの 1 行の操作。どれも前の操作のエラーを消してから送る */
+  const rowActions = (variantId: string, index: number): VariantRowActions => {
+    const path = { productId: product.id, variantId }
+    const run = (action: () => void) => () => {
+      resetErrors()
+      action()
+    }
+    return {
+      moveUp: () => reorderTo(move(ids, index, index - 1)),
+      moveDown: () => reorderTo(move(ids, index, index + 1)),
+      setImage: (imageId) => {
+        resetErrors()
+        setImage.mutate({ params: { path }, body: { imageId, version: product.version } })
+      },
+      suspend: run(() => suspend.mutate({ params: { path } })),
+      resume: run(() => resume.mutate({ params: { path } })),
+      remove: run(() => remove.mutate({ params: { path, query: { version: product.version } } })),
+    }
+  }
 
   return (
     <Card>
@@ -80,103 +94,18 @@ export function VariantSection({ product, refetch }: { product: ProductDetail; r
             </TableHeader>
             <TableBody>
               {product.variants.map((variant, index) => (
-                <TableRow key={variant.id}>
-                  <TableCell className="font-mono">{variant.variantCode}</TableCell>
-                  {product.axes.map((axis, axisIndex) => (
-                    <TableCell key={axis}>{variant.axisValues[axisIndex]}</TableCell>
-                  ))}
-                  <TableCell>
-                    <OptionSelect
-                      ariaLabel={`${variant.variantCode}の画像`}
-                      className="w-28"
-                      onChange={(imageId) => {
-                        resetErrors()
-                        setImage.mutate({
-                          params: { path: { productId: product.id, variantId: variant.id } },
-                          body: { imageId, version: product.version },
-                        })
-                      }}
-                      options={imageOptions}
-                      value={variant.imageId ?? null}
-                    />
-                  </TableCell>
-                  <TableCell>
-                    {variant.salesSuspended ? <Badge variant="secondary">販売停止</Badge> : '販売中'}
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <StockLink productId={product.id} variantId={variant.id} />
-                  </TableCell>
-                  <TableCell className="space-x-1 whitespace-nowrap text-right">
-                    <Button
-                      aria-label={`${variant.variantCode}を上へ`}
-                      disabled={index === 0 || pending}
-                      onClick={() => reorderTo(move(ids, index, index - 1))}
-                      size="icon-xs"
-                      variant="ghost"
-                    >
-                      <ArrowUpIcon />
-                    </Button>
-                    <Button
-                      aria-label={`${variant.variantCode}を下へ`}
-                      disabled={index === ids.length - 1 || pending}
-                      onClick={() => reorderTo(move(ids, index, index + 1))}
-                      size="icon-xs"
-                      variant="ghost"
-                    >
-                      <ArrowDownIcon />
-                    </Button>
-                    {/* 販売停止のバリアントも C 側の選択肢に出るが、選べない（AC-28） */}
-                    {variant.salesSuspended ? (
-                      <Button
-                        aria-label={`${variant.variantCode}の販売を再開`}
-                        disabled={pending}
-                        onClick={() => {
-                          resetErrors()
-                          resume.mutate({ params: { path: { productId: product.id, variantId: variant.id } } })
-                        }}
-                        size="xs"
-                        variant="outline"
-                      >
-                        販売を再開
-                      </Button>
-                    ) : (
-                      <Button
-                        aria-label={`${variant.variantCode}を販売停止`}
-                        disabled={pending}
-                        onClick={() => {
-                          resetErrors()
-                          suspend.mutate({ params: { path: { productId: product.id, variantId: variant.id } } })
-                        }}
-                        size="xs"
-                        variant="outline"
-                      >
-                        販売停止
-                      </Button>
-                    )}
-                    {/* C 側に表示されたことのある商品のバリアントは削除できない（AC-71） */}
-                    {neverShown && (
-                      <ConfirmDialog
-                        confirmLabel="削除する"
-                        description="在庫もあわせて削除します。"
-                        onConfirm={() => {
-                          resetErrors()
-                          remove.mutate({
-                            params: {
-                              path: { productId: product.id, variantId: variant.id },
-                              query: { version: product.version },
-                            },
-                          })
-                        }}
-                        title={`バリアント「${variant.variantCode}」を削除しますか？`}
-                        trigger={
-                          <Button disabled={pending} size="xs" variant="outline">
-                            削除
-                          </Button>
-                        }
-                      />
-                    )}
-                  </TableCell>
-                </TableRow>
+                <VariantRow
+                  actions={rowActions(variant.id, index)}
+                  axes={product.axes}
+                  deletable={neverShown}
+                  first={index === 0}
+                  imageOptions={imageOptions}
+                  key={variant.id}
+                  last={index === ids.length - 1}
+                  pending={pending}
+                  productId={product.id}
+                  variant={variant}
+                />
               ))}
             </TableBody>
           </Table>

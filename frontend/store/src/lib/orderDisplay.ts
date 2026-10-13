@@ -1,12 +1,13 @@
+import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
 import { schemas } from '@/api/generated/constraints'
 import type { Order, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
 
 /** 金額の書式（3 桁ごとのカンマ） */
-const yen = new Intl.NumberFormat('ja-JP')
+const yen = new Intl.NumberFormat(LOCALE)
 
 /** 日時の書式（日本時間の「2026/10/10 14:05」） */
-const dateTime = new Intl.DateTimeFormat('ja-JP', {
-  timeZone: 'Asia/Tokyo',
+const dateTime = new Intl.DateTimeFormat(LOCALE, {
+  timeZone: TIME_ZONE,
   year: 'numeric',
   month: '2-digit',
   day: '2-digit',

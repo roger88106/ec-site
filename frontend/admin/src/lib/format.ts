@@ -1,8 +1,10 @@
+import { LOCALE } from '@ec-site/shared/lib/locale'
+
 /** 日本時間の UTC からのずれ（日本に夏時間はない） */
 const JST_OFFSET_MS = 9 * 60 * 60 * 1000
 
 /** 金額の書式（3 桁ごとのカンマ） */
-const yen = new Intl.NumberFormat('ja-JP')
+const yen = new Intl.NumberFormat(LOCALE)
 
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {

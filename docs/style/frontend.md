@@ -30,6 +30,12 @@
 - **理由**：メッセージの正本をバックエンドの 1 か所にするため（constitution 9）。
 - **確かめ方**：人手（見直し）。
 
+### 2.3 入力の制約は契約から書き出した定数を使う
+
+- **規則**：入力欄の長さと範囲（`maxLength`・`minLength`・`max`・`min`）は、`src/api/generated/constraints.ts` の定数で書く。このファイルは `generate:api` が OpenAPI のリクエストの制約から作る（`frontend/shared/scripts/export-constraints.mjs`）。スキーマの項目は `schemas.<スキーマ>.<項目>`、クエリのパラメーターは `parameters.<操作の ID>.<名前>` で引く。
+- **理由**：契約の制約を変えたときに、画面の制約も一緒に変わり、食い違わないようにするため（spec 006 の DC-52）。
+- **確かめ方**：自動（CI の `scripts/ci/input-constraints.mjs` が、これらの属性に数字を直接書いた所を探す）。
+
 ## 3. 店舗画面のサーバーアクション
 
 ### 3.1 `catch` では `unstable_rethrow` を先に呼ぶ

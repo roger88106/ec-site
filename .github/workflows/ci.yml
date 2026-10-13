@@ -4,7 +4,8 @@
 # push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
 #   backend：依存のライセンスの検査、ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
 #   admin：管理画面の lint（Biome）、型チェック、テスト、ビルド
-#   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）。フロントの依存のライセンスの検査
+#   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）。フロントの依存のライセンスの検査、
+#          共有のパッケージ（frontend/shared）の lint・型チェック・テスト、入力の制約に数字を直接書いていないことの検査
 #   ac-check：機能の spec の AC が、テスト名に出ていること
 #   e2e：バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する（Playwright）
 # ============================================================================
@@ -143,6 +144,16 @@ jobs:
       - name: 依存のライセンスの検査
         working-directory: .
         run: node scripts/ci/licenses/check-frontend.mjs
+
+      # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確かめる
+      - name: 共有のパッケージの lint・型チェック・テスト
+        working-directory: frontend/shared
+        run: pnpm lint && pnpm typecheck && pnpm test
+
+      # 画面の入力の制約は、API の契約から書き出した定数を使う（フロントの書き方 第 2.3 節）
+      - name: 入力の制約の数字の検査
+        working-directory: .
+        run: node scripts/ci/input-constraints.mjs
 
       # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認

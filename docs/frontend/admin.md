@@ -28,7 +28,7 @@ frontend/admin/src/
 ├── app/              # 入口、ルーター、Provider、レイアウト（Sidebar）
 ├── auth/             # ログイン（IdP の設定、ログインを求める枠、ログインしている運営者、API に付ける token）。第 11 節
 ├── api/
-│   ├── generated/    # admin.yaml から生成（コミットしない）
+│   ├── generated/    # admin.yaml から生成（コミットしない）。型と、入力の制約の定数（constraints.ts）
 │   ├── client.ts     # openapi-fetch と openapi-react-query のクライアント
 │   ├── errors.ts     # エラーの変換（ApiError）
 │   └── types.ts      # 画面から使うスキーマの型の別名

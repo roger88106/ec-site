@@ -31,7 +31,7 @@ frontend/store/src/
 │   └── login/        # ログイン・会員登録の画面（IdP）へ移る口（route.ts）
 ├── actions/          # サーバーアクション（'use server'）。API の変更系を呼ぶ。資源ごとに 1 ファイル（cart、checkout、order、auth）
 ├── api/
-│   ├── generated/    # store.yaml から生成（コミットしない）
+│   ├── generated/    # store.yaml から生成（コミットしない）。型と、入力の制約の定数（constraints.ts）
 │   ├── client.ts     # openapi-fetch のクライアント。公開の口と会員の口（サーバー専用）
 │   ├── cartCookie.ts # カート ID の Cookie と、カートを移した結果の知らせの Cookie の読み書き（サーバー専用）
 │   ├── cart.ts       # 使うカートを選ぶ（第 4.2 節。サーバー専用）

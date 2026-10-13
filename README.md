@@ -53,7 +53,7 @@ spec がコードに先行する。仕様の誤りに気づいたら、spec を�
 | [003](docs/specs/003-auth) | 機能 | 認証 | 完了。[段階 1（IdP と開発環境）](docs/specs/003-auth/tasks/01-idp.md)、[段階 2（バックエンドの認証の土台）](docs/specs/003-auth/tasks/02-backend-auth.md)、[段階 3（会員とカート・注文）](docs/specs/003-auth/tasks/03-member-cart-order.md) 完了。[段階 4（店舗画面）](docs/specs/003-auth/tasks/04-store-ui.md) 完了。[段階 5（管理画面）](docs/specs/003-auth/tasks/05-admin-ui.md) 完了。[段階 6（E2E と CI）](docs/specs/003-auth/tasks/06-e2e-ci.md) 完了。[段階 7（操作した運営者）](docs/specs/003-auth/tasks/07-operator-record.md)、[段階 8（見直し）](docs/specs/003-auth/tasks/08-review.md) 完了 |
 | [004](docs/specs/004-foundation) | 整理 | 開発の基盤の整理（規則の文書、CI、ライセンス、テストの網、リポジトリの構成、E2E のデータ） | 完了。[段階 1〜8](docs/specs/004-foundation/tasks/) を終えた。残りの確かめ（GitHub のライセンスの判定は main に入れた後）と、CI の所要時間を上限より少し超えて受け入れたことは [見直しの結果](docs/specs/004-foundation/tasks/08-review.md) |
 | [005](docs/specs/005-backend-cleanup) | 整理 | バックエンドの整理 | 完了 |
-| [006](docs/specs/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n | 実装中（段階 4 まで完了） |
+| [006](docs/specs/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n | 実装中（段階 5 まで完了） |
 
 ## 起動とテスト
 

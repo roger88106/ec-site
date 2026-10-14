@@ -130,7 +130,7 @@ stateDiagram-v2
 
 ## データモデル
 
-[V202610111200__ordering_create_order.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610111200__ordering_create_order.sql)、[V202610121200__ordering_add_member_id.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)
+[V202610111200__ordering_create_order.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610111200__ordering_create_order.sql)、[V202610121200__ordering_add_member_id.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)、[V202610151000__ordering_add_shipped.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151000__ordering_add_shipped.sql)
 
 - schema は `ordering`（`order` は SQL の予約語のため）。
 - カート・バリアント・会員は他のモジュールの ID なので、外部キーは張らない。

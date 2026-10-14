@@ -78,6 +78,18 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      * 支払えない注文の支払の画面（支払待ちでない、支払の期限の後）
      */
     ORDER_NOT_PAYABLE(ErrorType.CONFLICT_ERROR),
+    /**
+     * 出荷できない注文（受付でない）
+     */
+    ORDER_NOT_SHIPPABLE(ErrorType.CONFLICT_ERROR),
+    /**
+     * 配送状態が返送でない出荷済みの注文のキャンセル
+     */
+    SHIPPED_ORDER_NOT_RETURNED(ErrorType.CONFLICT_ERROR),
+    /**
+     * 出荷済みの注文のキャンセルで、在庫に戻すかの指定がない
+     */
+    RESTOCK_CHOICE_REQUIRED(ErrorType.VALIDATION_ERROR),
     ;
 
     /**

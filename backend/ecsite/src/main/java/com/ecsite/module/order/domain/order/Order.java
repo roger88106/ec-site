@@ -9,6 +9,7 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.event.OrderCancelled;
 import com.ecsite.module.order.event.OrderPlaced;
+import com.ecsite.module.order.event.OrderShipped;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
@@ -24,7 +25,7 @@ import java.util.stream.IntStream;
 /**
  * 注文の Aggregate Root（docs/backend/modules/order.md「注文」）。<br />
  * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/backend/modules/order.md「状態遷移」）。<br />
- * 注文は支払待ちで作られ、決済のイベント（与信の成功、支払の期限切れ）で受付かキャンセルになる。
+ * 注文は支払待ちで作られ、決済のイベント（与信の成功、支払の期限切れ）で受付かキャンセルになる。受付から出荷すると出荷済みになる。
  */
 @Getter
 @Accessors(fluent = true)
@@ -211,13 +212,33 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 運営者がキャンセルできるかを返す。「受付」と「キャンセル申請中」だけ。
+     * 運営者がキャンセルできるかを返す。「受付」と「キャンセル申請中」、出荷済みなら配送状態が返送のときだけ。
      * 支払待ちは支払の期限で自動でキャンセルになり、キャンセル済みは何もしない（できる操作の旗に出さない）。
      *
+     * @param returned 配送状態が返送か（出荷済みのときだけ使う）
      * @return キャンセルできれば true
      */
-    public boolean isCancellableByOperator() {
-        return status == OrderStatus.ACCEPTED || status == OrderStatus.CANCELLATION_REQUESTED;
+    public boolean isCancellableByOperator(boolean returned) {
+        return status == OrderStatus.ACCEPTED || status == OrderStatus.CANCELLATION_REQUESTED
+                || (status == OrderStatus.SHIPPED && returned);
+    }
+
+    /**
+     * 出荷できるかを返す。「受付」だけ（キャンセル申請中は、判断の後に出荷する）。
+     *
+     * @return 出荷できれば true
+     */
+    public boolean isShippable() {
+        return status == OrderStatus.ACCEPTED;
+    }
+
+    /**
+     * 出荷済みかを返す。
+     *
+     * @return 「出荷済み」なら true
+     */
+    public boolean isShipped() {
+        return status == OrderStatus.SHIPPED;
     }
 
     /**
@@ -300,15 +321,48 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 運営者の判断でキャンセルする。申請中なら、申請は承認されたものとする。<br />
-     * キャンセル済みなら何もせず、理由も変えない。支払待ちはキャンセルできない（支払の期限で自動でキャンセルになる）。
+     * 出荷する。「受付」から「出荷済み」にし、注文の出荷のイベントを登録する。売上の確定は呼ぶ側が先に済ませる。
+     *
+     * @param carrier        配送業者
+     * @param trackingNumber 送り状番号（ハイフンを除いた数字）
+     * @param now            現在時刻（出荷日時）
+     */
+    public void ship(@NonNull Carrier carrier, @NonNull String trackingNumber, @NonNull Instant now) {
+        if (!isShippable()) {
+            throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
+        }
+        status = OrderStatus.SHIPPED;
+        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, OrderShipped.Carrier.valueOf(carrier.name()),
+                trackingNumber));
+    }
+
+    /**
+     * 出荷済みでない注文を、運営者の判断でキャンセルする（在庫に戻す）。
      *
      * @param reason   理由（必須、500 文字まで）
-     * @param operator キャンセルした運営者。申請中なら、判断した運営者にもなる
+     * @param operator キャンセルした運営者
      * @param now      現在時刻
-     * @return キャンセルにしたら true（呼ぶ側が在庫を戻す）。すでにキャンセルなら false
+     * @return キャンセルにしたら true。すでにキャンセルなら false
+     * @see #cancelByOperator(String, Boolean, boolean, Operator, Instant)
      */
     public boolean cancelByOperator(String reason, @NonNull Operator operator, @NonNull Instant now) {
+        return cancelByOperator(reason, null, false, operator, now);
+    }
+
+    /**
+     * 運営者の判断でキャンセルする。申請中なら、申請は承認されたものとする。<br />
+     * キャンセル済みなら何もせず、理由も変えない。支払待ちはキャンセルできない（支払の期限で自動でキャンセルになる）。
+     * 出荷済みは、配送状態が返送のときだけキャンセルでき、在庫に戻すかの指定が要る。出荷済みでなければ、指定によらず在庫に戻す。
+     *
+     * @param reason   理由（必須、500 文字まで）
+     * @param restock  在庫に戻すか（出荷済みのときは必須。それ以外は使わない）
+     * @param returned 配送状態が返送か（出荷済みのときだけ使う）
+     * @param operator キャンセルした運営者。申請中なら、判断した運営者にもなる
+     * @param now      現在時刻
+     * @return キャンセルにしたら true（呼ぶ側は、キャンセルの記録に従って在庫を戻す）。すでにキャンセルなら false
+     */
+    public boolean cancelByOperator(String reason, @Nullable Boolean restock, boolean returned, @NonNull Operator operator,
+                                    @NonNull Instant now) {
         var required = optionalReason(reason);
         if (required == null) {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_REASON_REQUIRED);
@@ -319,10 +373,20 @@ public class Order extends AggregateRoot {
         if (status == OrderStatus.PENDING_PAYMENT) {
             throw BusinessException.of(OrderErrorCode.AWAITING_PAYMENT);
         }
+        var restocked = true;
+        if (status == OrderStatus.SHIPPED) {
+            if (!returned) {
+                throw BusinessException.of(OrderErrorCode.SHIPPED_ORDER_NOT_RETURNED);
+            }
+            if (restock == null) {
+                throw BusinessException.of(OrderErrorCode.RESTOCK_CHOICE_REQUIRED);
+            }
+            restocked = restock;
+        }
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
             decideRequest(CancellationRequest.Result.APPROVED, operator, now);
         }
-        cancel(new Cancellation(now, CancellationKind.OPERATOR, required, operator));
+        cancel(new Cancellation(now, CancellationKind.OPERATOR, required, operator, restocked));
         return true;
     }
 

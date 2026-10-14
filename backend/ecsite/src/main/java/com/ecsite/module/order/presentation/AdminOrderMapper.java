@@ -64,7 +64,7 @@ class AdminOrderMapper {
                 .amounts(toAmounts(order.amounts()))
                 .email(order.email())
                 .shippingAddress(toAddress(order.shippingAddress()))
-                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(), order.isCancellableByOperator(), false));
+                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(), order.isCancellableByOperator(false), order.isShippable()));
         if (order.cancellationRequest() != null) {
             detail.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }

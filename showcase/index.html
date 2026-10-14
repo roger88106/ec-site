@@ -203,6 +203,20 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
         <figcaption>支払の画面から支払わずに戻った注文。期限までは「支払う」からやり直せます。</figcaption>
       </figure>
     </div>
+
+    <div class="feature flip">
+      <div class="text">
+        <h3>出荷したら、届くまでの状況が見える</h3>
+        <ul>
+          <li>出荷すると、配送業者と送り状番号を書いたメールが届きます。</li>
+          <li>注文の画面と注文の履歴に、「出荷済み」「配送中」「配達完了」と配送の状況が出ます。</li>
+          <li>配送の状況は、配送業者からの知らせで自動で進みます。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot"><img src="img/store-shipping.png" alt="配送中の注文。状態は配送中で、配送業者と送り状番号、明細" width="1280" height="944" loading="lazy"></div>
+      </figure>
+    </div>
   </section>
 
   <section>
@@ -257,16 +271,17 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
 
     <div class="feature flip">
       <div class="text">
-        <h3>注文を一覧で見て、必要ならキャンセル</h3>
+        <h3>注文を一覧で見て、出荷する</h3>
         <ul>
           <li>注文の明細を品番・税抜単価・税率・税込単価まで表で確かめられます。</li>
-          <li>支払の状態（未払い・与信済み・与信の取消済みなど）を、注文ごとに確かめられます。</li>
-          <li>お客様のキャンセルの申請を受け、在庫を戻して取り消します。支払済みの注文は、カードの与信も自動で取り消します。</li>
+          <li>配送業者と送り状番号を入れて出荷を登録すると、その時にカードの代金を確定します。確定できなければ、出荷は登録されません。</li>
+          <li>カードの利用枠の確保には期限があるので、期限が近い注文に印を付け、絞り込めます。</li>
+          <li>お客様のキャンセルの申請を受け、在庫を戻して取り消します。返送された注文は、在庫に戻すかを選んで取り消し、代金を返金します。</li>
           <li>担当者ごとに、できる操作を分けられます。</li>
         </ul>
       </div>
       <figure>
-        <div class="shot"><img src="img/admin-order.png" alt="管理画面の注文の詳細。状態と支払の状態、明細の表、税率ごとの内訳、お客様とお届け先" width="1280" height="914" loading="lazy"></div>
+        <div class="shot"><img src="img/admin-order.png" alt="管理画面の注文の詳細。出荷済みで売上確定済み、配送状態・配送業者・送り状番号・出荷日時、明細の表、お客様とお届け先" width="1280" height="1044" loading="lazy"></div>
       </figure>
     </div>
   </section>
@@ -304,9 +319,9 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
     </div>
 
     <div class="numbers">
-      <div class="num"><b>166</b><span>文書で決めた「こう動くべき」という条件。すべてにテストを対応させています</span></div>
+      <div class="num"><b>196</b><span>文書で決めた「こう動くべき」という条件。すべてにテストを対応させています</span></div>
       <div class="num"><b>1,100 以上</b><span>自動テストの件数（画面・サーバー・ブラウザでの通し操作）</span></div>
-      <div class="num"><b>8</b><span>仕様書の数。機能を足すたび、また整理するたびに一つ書きます</span></div>
+      <div class="num"><b>9</b><span>仕様書の数。機能を足すたび、また整理するたびに一つ書きます</span></div>
       <div class="num"><b>2</b><span>画面の数（店舗・管理）。文言は差し替えられるように作り、多言語化に備えています</span></div>
     </div>
 
@@ -336,14 +351,14 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
     <div class="sec-head">
       <p class="eyebrow">これから</p>
       <h2>閲覧から配送まで、買い物の流れを最後まで</h2>
-      <p>目標は「商品を見る → カート → 注文 → 支払 → 出荷 → 配送状況」の流れを、省略せずに通すことです。</p>
+      <p>「商品を見る → カート → 注文 → 支払 → 出荷 → 配送状況」の流れを、省略せずに通せるようになりました。次は、売上の簡易レポートです。</p>
     </div>
     <div class="road">
       <div class="done"><b>商品・在庫・税率の管理</b><span>完成</span></div>
       <div class="done"><b>カートと注文、キャンセル</b><span>完成</span></div>
       <div class="done"><b>会員登録・ログイン・運営者の権限</b><span>完成</span></div>
       <div class="done"><b>カード決済</b><span>完成</span></div>
-      <div><b>出荷と配送状況</b><span>出荷の登録とお客様への通知、配送状況の確認。出荷のときにカードの売上を確定する。</span></div>
+      <div class="done"><b>出荷と配送状況</b><span>完成</span></div>
       <div><b>売上の簡易レポート</b><span>注文のデータを集め、お店の人が売れ行きを見られるようにする。</span></div>
     </div>
   </section>

@@ -6,6 +6,8 @@ import { ACCOUNTS, submitIdpLogin } from '../src/auth'
 const STORE = 'http://localhost:3000'
 /** ローカルの管理画面（開発のサーバー） */
 const ADMIN = 'http://localhost:5173'
+/** ローカルのバックエンド（mock の物流の画面） */
+const BACKEND = 'http://localhost:8080'
 /** 撮った画像の置き場所 */
 const OUT = path.resolve(import.meta.dirname, '../../showcase/img')
 
@@ -130,8 +132,25 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await page.goto(`${ADMIN}/tax-categories`)
     await shot(page, 'admin-tax', page.getByRole('table'))
     await page.goto(`${ADMIN}/orders`)
-    await shot(page, 'admin-orders', page.getByRole('columnheader', { name: '支払' }))
+    await shot(page, 'admin-orders', page.getByRole('columnheader', { name: '配送' }))
+  })
+
+  await test.step('管理画面で出荷を登録し、mock の物流で配送中にして、管理画面と店舗画面の注文を撮る', async () => {
     await page.goto(`${ADMIN}/orders/${paidOrderId}`)
-    await shot(page, 'admin-order', page.getByText('与信済み'))
+    await page.getByRole('combobox', { name: '配送業者' }).click()
+    await page.getByRole('option', { name: 'ヤマト運輸' }).click()
+    await page.getByLabel('送り状番号').fill('4321-0987-6543')
+    await page.getByRole('button', { name: '出荷を登録する' }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: '出荷する' }).click()
+    await expect(page.getByText('出荷を登録しました')).toBeVisible()
+
+    await page.goto(`${BACKEND}/mock-carrier`)
+    await page.getByRole('row').filter({ hasText: paidOrderId }).getByRole('button', { name: '配送中' }).click()
+    await expect(page.getByRole('row').filter({ hasText: paidOrderId }).getByRole('cell').nth(3)).toHaveText('配送中')
+
+    await page.goto(`${ADMIN}/orders/${paidOrderId}`)
+    await shot(page, 'admin-order', page.getByText('売上確定済み'))
+    await page.goto(`${STORE}/orders/${paidOrderId}`)
+    await shot(page, 'store-shipping', page.getByText('配送中', { exact: true }))
   })
 })

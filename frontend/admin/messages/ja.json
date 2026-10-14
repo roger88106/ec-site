@@ -56,7 +56,11 @@
       "AUTHORIZED": "与信済み",
       "VOID_PENDING": "与信の取消待ち",
       "VOIDED": "与信の取消済み",
-      "NOT_PAID": "支払なし"
+      "NOT_PAID": "支払なし",
+      "CAPTURED": "売上確定済み",
+      "AUTHORIZATION_EXPIRED": "与信期限切れ",
+      "REFUND_PENDING": "返金待ち",
+      "REFUNDED": "返金済み"
     }
   },
   "format": {

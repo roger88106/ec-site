@@ -8,6 +8,7 @@ const variants: Record<OrderStatus, 'default' | 'destructive' | 'secondary'> = {
   ACCEPTED: 'default',
   CANCELLATION_REQUESTED: 'destructive',
   CANCELLED: 'secondary',
+  SHIPPED: 'secondary',
 }
 
 /** 注文の状態 */

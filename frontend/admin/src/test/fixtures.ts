@@ -85,7 +85,7 @@ export const ORDER_ID = '00000000-0000-0000-0000-000000000501'
 
 /** 「受付」の注文にできる操作（API が返す旗） */
 export function orderActions(overrides: Partial<OrderActions> = {}): OrderActions {
-  return { approveCancellation: false, rejectCancellation: false, cancel: true, ...overrides }
+  return { approveCancellation: false, rejectCancellation: false, cancel: true, ship: false, ...overrides }
 }
 
 /** 一覧の「受付」の注文 1 件 */
@@ -97,6 +97,7 @@ export function orderSummary(overrides: Partial<OrderSummary> = {}): OrderSummar
     customerName: '山田 太郎',
     total: 4300,
     status: 'ACCEPTED',
+    authorizationExpiring: false,
     ...overrides,
   }
 }

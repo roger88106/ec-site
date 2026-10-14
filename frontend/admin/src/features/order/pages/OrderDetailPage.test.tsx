@@ -90,6 +90,7 @@ describe('注文の詳細', () => {
         cancellation: {
           cancelledAt: '2026-10-10T03:00:00Z',
           kind: 'REQUEST_APPROVED',
+          restocked: true,
           reason: null,
           cancelledBy: '審査 一郎',
         },
@@ -131,7 +132,12 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'CANCELLED',
         actions: orderActions({ cancel: false }),
-        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '電話で取り消しの依頼' },
+        cancellation: {
+          cancelledAt: '2026-10-10T03:00:00Z',
+          kind: 'OPERATOR',
+          reason: '電話で取り消しの依頼',
+          restocked: true,
+        },
       }),
     )
     const { user } = renderApp(URL)
@@ -205,7 +211,7 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'CANCELLED',
         actions: orderActions({ cancel: false }),
-        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り' },
+        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り', restocked: true },
       }),
     )
     renderApp(URL)
@@ -215,7 +221,11 @@ describe('注文の詳細', () => {
     expect(screen.queryByRole('button', { name: '申請を承認する' })).not.toBeInTheDocument()
   })
   it('AC-160 支払の状態と、支払の期限を出す', async () => {
-    serveOrder(orderDetail({ payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z' } }))
+    serveOrder(
+      orderDetail({
+        payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+      }),
+    )
     renderApp(URL)
 
     expect(await shownPayment()).toHaveTextContent('与信済み')
@@ -227,8 +237,8 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'CANCELLED',
         actions: orderActions({ cancel: false }),
-        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り' },
-        payment: { status: 'VOID_PENDING', deadline: '2026-10-10T01:30:00Z' },
+        cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り', restocked: true },
+        payment: { status: 'VOID_PENDING', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
     renderApp(URL)
@@ -241,8 +251,8 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'CANCELLED',
         actions: orderActions({ cancel: false }),
-        cancellation: { cancelledAt: '2026-10-10T01:31:00Z', kind: 'PAYMENT_EXPIRED' },
-        payment: { status: 'NOT_PAID', deadline: '2026-10-10T01:30:00Z' },
+        cancellation: { cancelledAt: '2026-10-10T01:31:00Z', kind: 'PAYMENT_EXPIRED', restocked: true },
+        payment: { status: 'NOT_PAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
     renderApp(URL)
@@ -257,7 +267,7 @@ describe('注文の詳細', () => {
       orderDetail({
         status: 'PENDING_PAYMENT',
         actions: orderActions({ cancel: false }),
-        payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z' },
+        payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
     renderApp(URL)

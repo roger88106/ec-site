@@ -152,7 +152,7 @@ public class Payment extends AggregateRoot {
                 this.authorizationRef = authorizationRef;
                 requestVoid(now);
             }
-            case AUTHORIZED, VOID_PENDING, VOIDED -> {
+            case AUTHORIZED, VOID_PENDING, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
                 // すでに与信がある（重ねて届いた通知）
             }
         }
@@ -186,7 +186,61 @@ public class Payment extends AggregateRoot {
             case VOID_PENDING, VOIDED, NOT_PAID -> {
                 // 取り消すものがない、または取消を始めている
             }
+            default -> {
+                // 売上確定済み以降は T9103 で扱う
+            }
         }
+    }
+
+    /**
+     * 売上を確定したことを反映する。
+     */
+    public void capture() {
+        // T9103 で実装する
+    }
+
+    /**
+     * 与信の期限切れを反映する。
+     */
+    public void expireAuthorization() {
+        // T9103 で実装する
+    }
+
+    /**
+     * 決済サービスで返金したことを反映する。
+     */
+    public void markRefunded() {
+        // T9103 で実装する
+    }
+
+    /**
+     * 与信の時刻を返す。
+     *
+     * @return 与信の時刻。与信がなければ空
+     */
+    public Optional<Instant> authorizedAt() {
+        return Optional.empty();
+    }
+
+    /**
+     * 与信期限を返す。
+     *
+     * @param term 与信の有効期間
+     * @return 与信期限。与信の時刻がなければ空
+     */
+    public Optional<Instant> authorizationDeadline(@NonNull AuthorizationTerm term) {
+        return Optional.empty();
+    }
+
+    /**
+     * 与信期限が近いかを返す。与信済みと与信期限切れの支払だけが対象で、期限を過ぎていても近いとする。
+     *
+     * @param term 与信の有効期間と、近いとする長さ
+     * @param now  現在時刻
+     * @return 近ければ true
+     */
+    public boolean isAuthorizationExpiring(@NonNull AuthorizationTerm term, @NonNull Instant now) {
+        return false;
     }
 
     /**

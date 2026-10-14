@@ -112,6 +112,9 @@ dependencies {
     // --- 決済サービス（Stripe。mock のときも入るが、呼ばない） ---
     implementation(libs.stripe.java)
 
+    // --- メール（出荷通知メール。SMTP で送る） ---
+    implementation(libs.spring.boot.starter.mail)
+
     // --- API（OpenAPI の生成コード） ---
     implementation(libs.jackson.databind.nullable)
 
@@ -320,7 +323,7 @@ tasks.check { dependsOn("checkLicense") }
 val migrationDir = layout.projectDirectory.dir("src/main/resources/db/migration")
 
 // 生成の対象にする schema（モジュールごと）。Flyway の履歴（public）は対象外
-val jooqSchemas = listOf("common", "tax", "catalog", "media", "inventory", "cart", "ordering", "member", "payment", "shipping")
+val jooqSchemas = listOf("common", "tax", "catalog", "media", "inventory", "cart", "ordering", "member", "payment", "shipping", "notification")
 
 jooq {
     version.set(libs.versions.jooq.get())

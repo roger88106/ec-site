@@ -53,5 +53,7 @@ notification/
 
 ## データモデル
 
+[V202610151020__notification_create_sent_mail.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151020__notification_create_sent_mail.sql)
+
 - schema は `notification`。注文は他のモジュールの ID なので、外部キーは張らない。
 - 送ったメールは、注文 ID、メールの種類（`SHIPMENT`）、宛先、送った日時を持つ。注文 ID とメールの種類の組で一意。

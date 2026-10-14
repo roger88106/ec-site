@@ -18,6 +18,10 @@ spring:
     enabled: true
     # 税のデータ（base）とローカル用の seed（local）も適用する（db/seed/local/README.md）
     locations: classpath:db/migration,classpath:db/seed/base,classpath:db/seed/local
+  mail:
+    # compose の Mailpit（届いたメールは http://localhost:8025 で見る）
+    host: localhost
+    port: 1025
 
 logging:
   structured:
@@ -57,6 +61,9 @@ ecsite:
   shipping:
     # 物流サービスの通知の署名の鍵：ローカル専用の試験用の値。mock の画面もこの鍵で署名して通知する
     webhook-secret: local-carrier-webhook-secret
+  notification:
+    # 出荷通知メールなどの送信元
+    from: no-reply@shop.example
   storefront:
     shop:
       # 問い合わせ先：ローカル用の例の値

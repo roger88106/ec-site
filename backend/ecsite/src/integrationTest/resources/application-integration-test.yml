@@ -14,6 +14,10 @@ spring:
   messages:
     # テスト用のメッセージを追加する（アプリのメッセージはそのまま使う）
     basename: messages,messages-test
+  mail:
+    # メールの送信を有効にする（Spring Boot は host があるときだけ送信の部品を作る）。
+    # 実際の接続先（Mailpit のホストと割り当てられたポート）は TestcontainersConfig が上書きする
+    host: localhost
   flyway:
     # Testcontainers の PostgreSQL にマイグレーションを適用する（バックエンドのアーキテクチャ 第 6.2 節）
     enabled: true
@@ -28,6 +32,9 @@ ecsite:
     mock:
       # MockMvc で開く mock の支払の画面
       base-url: http://localhost
+  notification:
+    # メールの送信元（ShipmentMailTest が確かめる）。SMTP の接続先は TestcontainersConfig が Mailpit に向ける
+    from: no-reply@shop.example
   shipping:
     # 物流サービスの通知の署名の鍵（試験用。CarrierWebhookTest が同じ鍵で署名する）
     webhook-secret: test-carrier-webhook-secret

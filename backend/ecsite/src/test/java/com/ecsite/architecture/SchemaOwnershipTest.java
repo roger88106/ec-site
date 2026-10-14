@@ -38,17 +38,18 @@ class SchemaOwnershipTest {
      * schema を持たないモジュールは空にする。
      * common の schema（イベントの永続化の表）は Spring Modulith が JDBC で使うので、どのモジュールにも割り当てない。
      */
-    private static final Map<String, Optional<String>> SCHEMA_BY_MODULE = Map.of(
-            "cart", Optional.of("cart"),
-            "catalog", Optional.of("catalog"),
-            "inventory", Optional.of("inventory"),
-            "media", Optional.of("media"),
-            "member", Optional.of("member"),
-            "order", Optional.of("ordering"),
-            "payment", Optional.of("payment"),
-            "shipping", Optional.of("shipping"),
-            "storefront", Optional.empty(),
-            "tax", Optional.of("tax"));
+    private static final Map<String, Optional<String>> SCHEMA_BY_MODULE = Map.ofEntries(
+            Map.entry("cart", Optional.of("cart")),
+            Map.entry("catalog", Optional.of("catalog")),
+            Map.entry("inventory", Optional.of("inventory")),
+            Map.entry("media", Optional.of("media")),
+            Map.entry("member", Optional.of("member")),
+            Map.entry("order", Optional.of("ordering")),
+            Map.entry("payment", Optional.of("payment")),
+            Map.entry("shipping", Optional.of("shipping")),
+            Map.entry("notification", Optional.of("notification")),
+            Map.entry("storefront", Optional.empty()),
+            Map.entry("tax", Optional.of("tax")));
 
     /**
      * モジュールのパッケージから、モジュールの名前を取り出す形

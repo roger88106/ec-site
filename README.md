@@ -32,4 +32,4 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [006](docs/specs/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n | 完了 |
 | [007](docs/specs/007-payment) | 機能 | 決済 | 完了。[段階 1〜8](docs/specs/007-payment/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/007-payment/tasks/08-review.md) |
 | [008](docs/specs/008-showcase) | 整理 | 機能紹介のページ | 完了。[ページ](https://roger88106.github.io/ec-site/)を GitHub Pages で公開した。直さずに残したことは [見直しの結果](docs/specs/008-showcase/tasks/04-review.md) |
-| [009](docs/specs/009-shipping) | 機能 | 出荷と配送状況 | spec・plan・tasks を確定した。次は [段階 1](docs/specs/009-shipping/tasks/01-payment.md) |
+| [009](docs/specs/009-shipping) | 機能 | 出荷と配送状況 | 段階 1、2 を終えた。次は [段階 3](docs/specs/009-shipping/tasks/03-order.md) |

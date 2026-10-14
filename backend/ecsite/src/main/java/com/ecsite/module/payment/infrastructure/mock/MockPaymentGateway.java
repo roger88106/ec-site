@@ -13,6 +13,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
@@ -21,7 +22,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 /**
  * mock の決済サービス（docs/backend/modules/payment.md「mock」）。<br />
  * 支払の画面はバックエンドが出し（{@link MockPaymentPageController}）、与信の成功の通知は HTTP を通さずに通知の受け口へ直接渡す。
- * テストのコードからは、公開のメソッドで、通知の遅れ・重複・順序の入れ替わりや、取消の失敗を起こせる。
+ * テストのコードからは、公開のメソッドで、通知の遅れ・重複・順序の入れ替わりや、取消・売上確定・返金の失敗を起こせる。
  * <p>
  * 支払の画面の状態はメモリに持つ。mock はローカルとテストだけで使い、1 インスタンスで動かす前提のため。
  * 再起動すると、それまでの画面は見つからなくなる（開発のデータで、支払の期限切れを待つ）。
@@ -68,6 +69,36 @@ public class MockPaymentGateway implements PaymentGateway {
      */
     private final AtomicInteger voidFailures = new AtomicInteger();
 
+    /**
+     * 与信が切れたことにした与信の参照。売上確定が与信期限切れで断られる
+     */
+    private final Set<String> expiredAuthorizations = ConcurrentHashMap.newKeySet();
+
+    /**
+     * 売上を確定した注文 ID（確定した順）
+     */
+    private final List<UUID> captured = new CopyOnWriteArrayList<>();
+
+    /**
+     * 売上確定を呼ばれた回数（失敗と重複を含む）
+     */
+    private final AtomicInteger captureCalls = new AtomicInteger();
+
+    /**
+     * これから接続できないことにする売上確定の回数
+     */
+    private final AtomicInteger captureFailures = new AtomicInteger();
+
+    /**
+     * 返金した注文 ID（返金した順）
+     */
+    private final List<UUID> refunded = new CopyOnWriteArrayList<>();
+
+    /**
+     * これから失敗させる返金の回数
+     */
+    private final AtomicInteger refundFailures = new AtomicInteger();
+
 // ============================== 決済サービス ==============================
 
     @Override
@@ -90,6 +121,33 @@ public class MockPaymentGateway implements PaymentGateway {
             throw SystemException.of("mock：与信の取消に失敗させる: " + authorizationRef, null);
         }
         voided.add(authorizationRef);
+    }
+
+    @Override
+    public CaptureResult capture(CaptureRequest request) {
+        captureCalls.incrementAndGet();
+        if (captureFailures.getAndUpdate(remaining -> Math.max(remaining - 1, 0)) > 0) {
+            return CaptureResult.UNREACHABLE;
+        }
+        if (expiredAuthorizations.contains(request.authorizationRef())) {
+            return CaptureResult.AUTHORIZATION_EXPIRED;
+        }
+        // 冪等キー（注文 ID）が同じなら、確定は 1 回だけ
+        if (!captured.contains(request.orderId())) {
+            captured.add(request.orderId());
+        }
+        return CaptureResult.CAPTURED;
+    }
+
+    @Override
+    public void refund(RefundRequest request) {
+        if (refundFailures.getAndUpdate(remaining -> Math.max(remaining - 1, 0)) > 0) {
+            throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
+        }
+        // 冪等キー（注文 ID）が同じなら、返金は 1 回だけ
+        if (!refunded.contains(request.orderId())) {
+            refunded.add(request.orderId());
+        }
     }
 
 // ============================== 支払の画面の操作（画面とテストから） ==============================
@@ -154,6 +212,54 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 与信が切れたことにする。以降、その与信の売上確定は、与信期限切れで断られる。
+     *
+     * @param authorizationRef 与信の参照
+     */
+    public void expireAuthorization(String authorizationRef) {
+        expiredAuthorizations.add(authorizationRef);
+    }
+
+    /**
+     * 次の売上確定を、指定した回数だけ、決済サービスに接続できないことにする。
+     *
+     * @param times 接続できなくする回数
+     */
+    public void failNextCaptures(int times) {
+        captureFailures.set(times);
+    }
+
+    /**
+     * 次の返金を、指定した回数だけ失敗させる。
+     *
+     * @param times 失敗させる回数
+     */
+    public void failNextRefunds(int times) {
+        refundFailures.set(times);
+    }
+
+    /**
+     * @return 売上を確定した注文 ID（確定した順。同じ注文は 1 回）
+     */
+    public List<UUID> captured() {
+        return List.copyOf(captured);
+    }
+
+    /**
+     * @return 売上確定を呼ばれた回数（失敗と重複を含む）
+     */
+    public int captureCalls() {
+        return captureCalls.get();
+    }
+
+    /**
+     * @return 返金した注文 ID（返金した順。同じ注文は 1 回）
+     */
+    public List<UUID> refunded() {
+        return List.copyOf(refunded);
+    }
+
+    /**
      * @return 取り消した与信の参照（取り消した順）
      */
     public List<String> voided() {
@@ -174,6 +280,12 @@ public class MockPaymentGateway implements PaymentGateway {
         pages.clear();
         voided.clear();
         voidFailures.set(0);
+        expiredAuthorizations.clear();
+        captured.clear();
+        captureCalls.set(0);
+        captureFailures.set(0);
+        refunded.clear();
+        refundFailures.set(0);
     }
 
     /**

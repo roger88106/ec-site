@@ -124,6 +124,16 @@ class StripePaymentGateway implements PaymentGateway {
         }
     }
 
+    @Override
+    public CaptureResult capture(CaptureRequest request) {
+        throw new UnsupportedOperationException("Stripe の売上確定は未対応です");
+    }
+
+    @Override
+    public void refund(RefundRequest request) {
+        throw new UnsupportedOperationException("Stripe の返金は未対応です");
+    }
+
 // ============================== プライベート ==============================
 
     /**

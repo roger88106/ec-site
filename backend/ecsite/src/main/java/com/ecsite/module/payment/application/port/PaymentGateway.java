@@ -8,7 +8,7 @@ import java.util.UUID;
 /**
  * 決済サービスの口（docs/backend/modules/payment.md「決済サービス」）。<br />
  * 実装は mock と Stripe で、設定 {@code ecsite.payment.gateway} で切り替える。決済サービスの型とエラーは実装の外に出さない。
- * どの操作も、決済サービスが応えなければ {@link com.ecsite.common.error.exception.SystemException} を投げる。
+ * 売上確定を除き、どの操作も、決済サービスが応えなければ {@link com.ecsite.common.error.exception.SystemException} を投げる。
  */
 public interface PaymentGateway {
 
@@ -36,6 +36,23 @@ public interface PaymentGateway {
     void voidAuthorization(String authorizationRef);
 
     /**
+     * 与信の総額の売上を確定する。同じ注文で重ねて呼ばれても、決済サービスで売上は 1 回だけ確定するようにする。<br />
+     * 与信の期限切れと、決済サービスに接続できないことは、例外にせず結果で返す。
+     *
+     * @param request 売上確定の要求
+     * @return 売上確定の結果
+     */
+    CaptureResult capture(CaptureRequest request);
+
+    /**
+     * 確定した売上を返金する。同じ注文で重ねて呼ばれても、決済サービスで返金は 1 回だけ行うようにする。
+     * すでに返金済みなら成功とする。
+     *
+     * @param request 返金の要求
+     */
+    void refund(RefundRequest request);
+
+    /**
      * 支払の画面の要求
      *
      * @param paymentId 支払 ID（決済サービスでの重複を防ぐ鍵に使う）
@@ -44,6 +61,47 @@ public interface PaymentGateway {
      * @param returnUrl 支払を終える・やめるときに戻る URL
      */
     record PageRequest(UUID paymentId, UUID orderId, Money amount, String returnUrl) {
+    }
+
+    /**
+     * 売上確定の要求
+     *
+     * @param orderId          注文 ID（決済サービスでの重複を防ぐ鍵に使う）
+     * @param authorizationRef 与信の参照
+     * @param amount           金額（確定する額）
+     */
+    record CaptureRequest(UUID orderId, String authorizationRef, Money amount) {
+    }
+
+    /**
+     * 返金の要求
+     *
+     * @param orderId          注文 ID（決済サービスでの重複を防ぐ鍵に使う）
+     * @param authorizationRef 与信の参照
+     * @param amount           金額（返金する額）
+     */
+    record RefundRequest(UUID orderId, String authorizationRef, Money amount) {
+    }
+
+    /**
+     * 売上確定の結果
+     */
+    enum CaptureResult {
+
+        /**
+         * 売上を確定した（すでに確定していた場合を含む）
+         */
+        CAPTURED,
+
+        /**
+         * 与信の期限が切れていて、売上を確定できない
+         */
+        AUTHORIZATION_EXPIRED,
+
+        /**
+         * 決済サービスに接続できない。売上を確定したかは分からないので、重ねて呼んでよい
+         */
+        UNREACHABLE,
     }
 
     /**

@@ -3,6 +3,7 @@ package com.ecsite.common.error.handler;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.ErrorDetail;
+import com.ecsite.common.error.ErrorType;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.message.MessageHelper;
@@ -107,15 +108,23 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     }
 
     /**
-     * システム例外のハンドラー
+     * システム例外のハンドラー。外部のサービスに接続できないエラーは 502 で、エラーコードとメッセージを返す（やり直せることを示す）。
      *
      * @param ex      {@link SystemException} システム例外
      * @param request リクエスト
-     * @return Http 500 + 例外明細
+     * @return Http 500（外部のサービスに接続できないときは 502） + 例外明細
      */
     @ExceptionHandler(SystemException.class)
     public ResponseEntity<Object> handleSystemException(SystemException ex, WebRequest request) {
-        return handleUnexpected(ex, request);
+        ErrorDetail errorDetail = ex.getErrorDetail();
+        if (errorDetail.errorCode().type() != ErrorType.EXTERNAL_SERVICE_ERROR) {
+            return handleUnexpected(ex, request);
+        }
+        String traceId = traceIdResolver.resolve();
+        log.warn("外部のサービスに接続できない。errorCode={}, traceId={}", errorDetail.errorCode().code(), traceId, ex);
+
+        return buildResponse(HttpStatus.BAD_GATEWAY, HttpHeaders.EMPTY, errorDetail.errorCode(),
+                messageHelper.getMessage(errorDetail), null, traceId, request);
     }
 
     /**
@@ -292,6 +301,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
             case UNAUTHENTICATED_ERROR -> HttpStatus.UNAUTHORIZED;
             case FORBIDDEN_ERROR -> HttpStatus.FORBIDDEN;
             case RESTORE_ERROR, SYSTEM_ERROR -> HttpStatus.INTERNAL_SERVER_ERROR;
+            case EXTERNAL_SERVICE_ERROR -> HttpStatus.BAD_GATEWAY;
         };
     }
 

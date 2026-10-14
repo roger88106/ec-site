@@ -18,6 +18,10 @@ public enum PaymentErrorCode implements ErrorCodeProvider {
      * 売上を確定できる状態でない（与信済みでも売上確定済みでもない）
      */
     PAYMENT_NOT_CAPTURABLE(ErrorType.CONFLICT_ERROR),
+    /**
+     * 決済サービスに接続できない（しばらくしてからやり直せる）
+     */
+    PAYMENT_GATEWAY_UNAVAILABLE(ErrorType.EXTERNAL_SERVICE_ERROR),
     ;
 
     /**

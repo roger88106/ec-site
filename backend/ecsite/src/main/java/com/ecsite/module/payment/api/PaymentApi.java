@@ -80,7 +80,7 @@ public class PaymentApi {
      *
      * @param orderId 注文 ID
      * @throws com.ecsite.common.error.exception.BusinessException 支払がない、売上を確定できる状態でない、与信の期限が切れている
-     * @throws com.ecsite.common.error.exception.SystemException   決済サービスに接続できない。支払は与信済みのまま残る
+     * @throws com.ecsite.common.error.exception.SystemException   決済サービスに接続できない（502 になるエラーコード）。支払は与信済みのまま残る
      */
     public void capture(UUID orderId) {
         captureService.capture(orderId);

@@ -75,6 +75,16 @@ public enum ErrorType {
     RESTORE_ERROR,
 
     /**
+     * 外部のサービスに接続できないエラー（502）
+     * <p>使用例：</p>
+     * <ul>
+     *     <li>決済サービスが応えず、売上を確定できない場合（しばらくしてからやり直せる）</li>
+     * </ul>
+     * {@link com.ecsite.common.error.exception.SystemException} で投げ、メッセージは利用者に見せる。
+     */
+    EXTERNAL_SERVICE_ERROR,
+
+    /**
      * システムエラー（500）
      * <p>使用例：</p>
      * <ul>

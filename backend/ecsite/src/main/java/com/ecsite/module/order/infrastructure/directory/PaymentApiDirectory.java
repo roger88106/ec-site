@@ -37,6 +37,11 @@ class PaymentApiDirectory implements PaymentDirectory {
     }
 
     @Override
+    public void capture(UUID orderId) {
+        paymentApi.capture(orderId);
+    }
+
+    @Override
     public void cancel(UUID orderId) {
         paymentApi.cancel(orderId);
     }

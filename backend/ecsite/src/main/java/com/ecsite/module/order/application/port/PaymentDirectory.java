@@ -31,6 +31,15 @@ public interface PaymentDirectory {
     Optional<String> pageUrl(UUID orderId);
 
     /**
+     * 注文の支払の売上を確定する。売上確定済みなら、決済サービスを呼ばずに成功する。決済サービスを呼ぶので、トランザクションの外で呼ぶ。
+     *
+     * @param orderId 注文 ID
+     * @throws com.ecsite.common.error.exception.BusinessException 与信の期限が切れている、売上を確定できる状態でない
+     * @throws com.ecsite.common.error.exception.SystemException   決済サービスに接続できない
+     */
+    void capture(UUID orderId);
+
+    /**
      * 注文のキャンセルに合わせて支払を取り消す。呼び出し元のトランザクションに参加し、与信の取消の結果は待たない。
      *
      * @param orderId 注文 ID

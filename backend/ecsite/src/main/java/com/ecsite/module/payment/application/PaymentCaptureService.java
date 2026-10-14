@@ -59,7 +59,8 @@ public class PaymentCaptureService {
                 commandService.markAuthorizationExpired(payment.id());
                 throw BusinessException.of(PaymentErrorCode.AUTHORIZATION_EXPIRED);
             }
-            case UNREACHABLE -> throw SystemException.of("決済サービスに接続できず、売上を確定できない: orderId=" + orderId, null);
+            case UNREACHABLE -> throw SystemException.of("決済サービスに接続できず、売上を確定できない: orderId=" + orderId, null,
+                    PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
     }
 }

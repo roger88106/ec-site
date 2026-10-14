@@ -32,9 +32,10 @@ public class ShippingApi {
      * @param carrier        配送業者
      * @param trackingNumber 送り状番号（前後の空白とハイフンは除いて保存する）
      * @param shippedAt      出荷日時
+     * @return 作った出荷
      */
-    public void create(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
-        shipmentService.create(orderId, Carrier.valueOf(carrier.name()), trackingNumber, shippedAt);
+    public ShipmentSummary create(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
+        return toSummary(shipmentService.create(orderId, Carrier.valueOf(carrier.name()), trackingNumber, shippedAt));
     }
 
     /**

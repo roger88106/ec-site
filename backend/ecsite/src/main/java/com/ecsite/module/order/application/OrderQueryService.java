@@ -7,6 +7,7 @@ import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.application.port.PaymentDirectory;
+import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -50,6 +51,11 @@ public class OrderQueryService {
      * 決済の腐敗防止層
      */
     private final PaymentDirectory paymentDirectory;
+
+    /**
+     * 出荷の腐敗防止層
+     */
+    private final ShippingDirectory shippingDirectory;
 
     /**
      * 時計（支払えるかの判定）
@@ -120,6 +126,16 @@ public class OrderQueryService {
         paymentDirectory.find(orderIds).forEach((orderId, payment) -> payments.put(orderId, new OrderPayment(payment.status(),
                 payment.deadline(), payment.status() == PaymentDirectory.Status.UNPAID && now.isBefore(payment.deadline()))));
         return payments;
+    }
+
+    /**
+     * 注文の出荷をまとめて取得する。
+     *
+     * @param orderIds 注文 ID
+     * @return 注文 ID → 出荷。出荷のない注文は含まない
+     */
+    public Map<UUID, ShippingDirectory.Shipment> findShipments(Collection<UUID> orderIds) {
+        return shippingDirectory.find(orderIds);
     }
 
     /**

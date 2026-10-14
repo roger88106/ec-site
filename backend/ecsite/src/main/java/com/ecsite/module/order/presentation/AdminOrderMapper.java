@@ -13,11 +13,14 @@ import com.ecsite.api.admin.model.OrderSummaryPage;
 import com.ecsite.api.admin.model.OrderTaxAmount;
 import com.ecsite.api.admin.model.Payment;
 import com.ecsite.api.admin.model.PaymentStatus;
+import com.ecsite.api.admin.model.Shipment;
+import com.ecsite.api.admin.model.ShipmentStatus;
 import com.ecsite.api.admin.model.ShippingAddress;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
+import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.quote.Amounts;
 import jakarta.annotation.Nullable;
@@ -48,13 +51,15 @@ class AdminOrderMapper {
     }
 
     /**
-     * 注文の詳細のレスポンスに変換する。申請・キャンセル・支払がなければ、その項目を返さない。
+     * 注文の詳細のレスポンスに変換する。申請・キャンセル・支払・出荷がなければ、その項目を返さない。
      *
-     * @param order   注文
-     * @param payment 注文の支払。決済を入れる前の注文は null
+     * @param order    注文
+     * @param payment  注文の支払。決済を入れる前の注文は null
+     * @param shipment 注文の出荷。出荷していなければ null
      * @return 注文の詳細のレスポンス
      */
-    OrderDetail toOrderDetail(Order order, @Nullable OrderPayment payment) {
+    OrderDetail toOrderDetail(Order order, @Nullable OrderPayment payment, @Nullable ShippingDirectory.Shipment shipment) {
+        var returned = shipment != null && shipment.isReturned();
         var detail = new OrderDetail()
                 .id(order.id())
                 .orderNumber(order.orderNumber().value())
@@ -64,7 +69,8 @@ class AdminOrderMapper {
                 .amounts(toAmounts(order.amounts()))
                 .email(order.email())
                 .shippingAddress(toAddress(order.shippingAddress()))
-                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(), order.isCancellableByOperator(false), order.isShippable()));
+                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(),
+                        order.isCancellableByOperator(returned), order.isShippable()));
         if (order.cancellationRequest() != null) {
             detail.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
         }
@@ -76,7 +82,24 @@ class AdminOrderMapper {
                     .status(PaymentStatus.fromValue(payment.status().name()))
                     .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline())));
         }
+        if (shipment != null) {
+            detail.shipment(toShipment(shipment));
+        }
         return detail;
+    }
+
+    /**
+     * 出荷のレスポンスに変換する。
+     *
+     * @param shipment 注文の出荷
+     * @return 出荷のレスポンス
+     */
+    Shipment toShipment(ShippingDirectory.Shipment shipment) {
+        return new Shipment()
+                .carrier(com.ecsite.api.admin.model.Carrier.fromValue(shipment.carrier().name()))
+                .trackingNumber(shipment.trackingNumber())
+                .status(ShipmentStatus.fromValue(shipment.status().name()))
+                .shippedAt(ApiDateTimes.toOffsetDateTime(shipment.shippedAt()));
     }
 
 // ============================== プライベートメソッド ==============================

@@ -12,6 +12,8 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
+import com.ecsite.module.order.application.OrderShipmentService;
+import com.ecsite.module.order.domain.order.Carrier;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -37,6 +39,11 @@ class AdminOrderController implements OrderApi {
      * 注文の照会のサービス
      */
     private final OrderQueryService orderQueryService;
+
+    /**
+     * 出荷の登録のサービス
+     */
+    private final OrderShipmentService orderShipmentService;
 
     /**
      * 管理 API（注文）のマッパー
@@ -81,7 +88,8 @@ class AdminOrderController implements OrderApi {
     @Override
     public ResponseEntity<OrderDetail> getOrder(UUID orderId) {
         var order = orderQueryService.get(orderId);
-        return ResponseEntity.ok(mapper.toOrderDetail(order, orderQueryService.findPayments(List.of(orderId)).get(orderId)));
+        return ResponseEntity.ok(mapper.toOrderDetail(order, orderQueryService.findPayments(List.of(orderId)).get(orderId),
+                orderQueryService.findShipments(List.of(orderId)).get(orderId)));
     }
 
     /**
@@ -93,7 +101,9 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Shipment> shipOrder(UUID orderId, ShipOrderRequest request) {
-        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
+        var shipment = orderShipmentService.ship(orderId, Carrier.valueOf(request.getCarrier().getValue()),
+                request.getTrackingNumber());
+        return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toShipment(shipment));
     }
 
     /**

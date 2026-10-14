@@ -1,4 +1,3 @@
-import { Badge } from '@ec-site/shared/ui/badge'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { notFound } from 'next/navigation'
@@ -9,6 +8,7 @@ import { currentMember, redirectToLogin } from '@/auth'
 import { AmountsSummary } from '@/components/AmountsSummary'
 import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
+import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
 import {
   axisValuesLabel,
@@ -17,7 +17,6 @@ import {
   formatDateTime,
   formatPostalCode,
   formatYen,
-  orderStatusBadge,
   paymentState,
 } from '@/lib/orderDisplay'
 import { isUuid } from '@/lib/uuid'
@@ -51,7 +50,6 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
   const order = await unwrapMember(orderResult)
   const shop = unwrap(shopResult)
   const address = order.shippingAddress
-  const status = orderStatusBadge({ status: order.status, shipmentStatus: order.shipment?.status })
   const cancellation = cancellationState(order)
 
   return (
@@ -78,7 +76,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
         <dd className="tabular-nums">{formatDateTime(order.orderedAt)}</dd>
         <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
         <dd>
-          <Badge variant={status.variant}>{status.label}</Badge>
+          <OrderStatusBadge shipmentStatus={order.shipment?.status} status={order.status} />
         </dd>
         {order.shipment && (
           <>

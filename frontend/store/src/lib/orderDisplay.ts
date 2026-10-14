@@ -83,7 +83,7 @@ export function orderStatusLabel(status: OrderStatus): string {
 }
 
 /** 注文の状態の見た目（Badge の variant）。受け付けた注文を目立たせる */
-export const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'> = {
+const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'> = {
   PENDING_PAYMENT: 'secondary',
   ACCEPTED: 'default',
   CANCELLATION_REQUESTED: 'secondary',

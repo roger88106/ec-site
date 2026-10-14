@@ -1,4 +1,3 @@
-import { Badge } from '@ec-site/shared/ui/badge'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
@@ -6,14 +5,9 @@ import { getMemberApi } from '@/api/client'
 import { unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
 import { PageLinks } from '@/components/PageLinks'
+import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
-import {
-  formatDateTime,
-  formatYen,
-  ORDER_STATUS_VARIANTS,
-  orderStatusLabel,
-  paymentDeadlineLabel,
-} from '@/lib/orderDisplay'
+import { formatDateTime, formatYen, paymentDeadlineLabel } from '@/lib/orderDisplay'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -63,7 +57,7 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
                   <td className="py-3 tabular-nums">{formatDateTime(order.orderedAt)}</td>
                   <td className="py-3 text-right tabular-nums">{formatYen(order.totalAmount)}</td>
                   <td className="py-3 text-right">
-                    <Badge variant={ORDER_STATUS_VARIANTS[order.status]}>{orderStatusLabel(order.status)}</Badge>
+                    <OrderStatusBadge shipmentStatus={order.shipmentStatus} status={order.status} />
                     {paymentDeadlineLabel(order) !== null && (
                       <p className="mt-1 text-muted-foreground text-xs tabular-nums">
                         {paymentDeadlineLabel(order) /* 支払の期限 */}

@@ -3,7 +3,7 @@ import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
 import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
 import { emptyCart, orderCart, payOnMockPage } from '../src/store'
-import { STORE_URL } from '../src/urls'
+import { ADMIN_URL, STORE_URL } from '../src/urls'
 
 /**
  * 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
@@ -88,4 +88,51 @@ test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock �
       await expect(row.getByText(status, { exact: true })).toBeVisible()
     })
   }
+})
+
+test('AC-189、190、191、192 返送の注文を、管理画面で絞り込んで在庫に戻してキャンセルすると、返金済みになり在庫数が戻る', async ({
+  page,
+}) => {
+  const order = await acceptedOrder(page, 'RETURN')
+  let orderNumber = ''
+
+  await test.step('管理画面で出荷を登録し、mock の物流で返送を通知する', async () => {
+    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${order.orderId}`)
+    orderNumber = await orderNumberOnAdmin(page)
+    await shipOnAdmin(page, '9876-5432-1098')
+    await notifyCarrier(page, order.orderId, '返送')
+  })
+
+  await test.step('管理画面：返送の注文で絞り込むと、その注文が出る（AC-189）', async () => {
+    await page.goto(`${ADMIN_URL}/orders?orderNumber=${orderNumber}`)
+    await page.getByRole('checkbox', { name: '返送' }).click()
+    await page.getByRole('button', { name: '絞り込む' }).click()
+    await expect(page).toHaveURL(/returned=true/)
+    await expect(page.getByRole('link', { name: orderNumber })).toBeVisible()
+  })
+
+  await test.step('管理画面：理由を入れ、在庫に戻してキャンセルすると、返金済みになる（AC-190、191、192）', async () => {
+    await page.getByRole('link', { name: orderNumber }).click()
+    await page.getByRole('button', { name: 'キャンセルする' }).click()
+    const dialog = page.getByRole('dialog')
+    await dialog.getByLabel('理由（必須）').fill('受取拒否で返送された')
+    await dialog.getByRole('radio', { name: '在庫に戻す' }).check()
+    await dialog.getByRole('button', { name: 'キャンセルする' }).click()
+    await expect(page.getByText('キャンセルしました')).toBeVisible()
+    // 返金はキャンセルのコミットの後に、裏で行う
+    await expect(async () => {
+      await page.reload()
+      await expect(page.getByText('返金済み')).toBeVisible({ timeout: 1_000 })
+    }).toPass({ timeout: 20_000, intervals: [500, 1_000] })
+  })
+
+  await test.step('管理画面：在庫数が注文の前（3）に戻る（AC-191）', async () => {
+    await page.goto(`${ADMIN_URL}/products/${order.productId}/variants/${order.variantId}/stock`)
+    await expect(page.locator('p', { hasText: /^3$/ })).toBeVisible()
+  })
+
+  await test.step('店舗画面：注文詳細がキャンセルになる', async () => {
+    await page.goto(order.orderUrl)
+    await expect(storeField(page, '状態')).toHaveText('キャンセル')
+  })
 })

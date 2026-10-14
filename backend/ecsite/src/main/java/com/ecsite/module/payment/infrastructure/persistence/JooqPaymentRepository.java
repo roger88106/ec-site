@@ -166,6 +166,7 @@ class JooqPaymentRepository implements PaymentRepository {
                 PaymentStatus.valueOf(record.getStatus()),
                 page,
                 record.getAuthorizationRef(),
+                null,
                 record.getVersion()));
     }
 }

@@ -9,7 +9,7 @@ import java.time.Instant;
  * 与信の有効期間と、期限が近いとみなす長さ（docs/backend/modules/payment.md「与信期限」）。
  *
  * @param validity 与信の有効期間（与信の時刻からの長さ）
- * @param warning  与信期限の何前から「期限が近い」とするか
+ * @param warning  与信期限のどれだけ前から「期限が近い」とするか
  */
 public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration warning) {
 
@@ -20,7 +20,7 @@ public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration wa
      * @return 与信期限
      */
     public Instant deadlineOf(@NonNull Instant authorizedAt) {
-        throw new UnsupportedOperationException();
+        return authorizedAt.plus(validity);
     }
 
     /**
@@ -31,7 +31,7 @@ public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration wa
      * @return 近ければ true
      */
     public boolean isExpiring(@NonNull Instant authorizedAt, @NonNull Instant now) {
-        throw new UnsupportedOperationException();
+        return !now.isBefore(deadlineOf(authorizedAt).minus(warning));
     }
 
     /**
@@ -41,6 +41,6 @@ public record AuthorizationTerm(@NonNull Duration validity, @NonNull Duration wa
      * @return 与信の時刻の上限
      */
     public Instant latestExpiringAuthorizedAt(@NonNull Instant now) {
-        throw new UnsupportedOperationException();
+        return now.minus(validity.minus(warning));
     }
 }

@@ -65,6 +65,13 @@ public class Payment extends AggregateRoot {
     private String authorizationRef;
 
     /**
+     * 与信の時刻（与信の成功を受けた時刻。与信期限の起点）。与信がなければ null
+     */
+    @Nullable
+    @Getter(lombok.AccessLevel.NONE)
+    private Instant authorizedAt;
+
+    /**
      * バージョン（リポジトリが保存するときに上げる）
      */
     private final long version;
@@ -75,7 +82,8 @@ public class Payment extends AggregateRoot {
      * 全属性コンストラクタ
      */
     private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
-                    @NonNull PaymentStatus status, PaymentPage page, String authorizationRef, long version) {
+                    @NonNull PaymentStatus status, PaymentPage page, String authorizationRef, Instant authorizedAt,
+                    long version) {
         this.id = id;
         this.orderId = orderId;
         this.amount = amount;
@@ -83,6 +91,7 @@ public class Payment extends AggregateRoot {
         this.status = status;
         this.page = page;
         this.authorizationRef = authorizationRef;
+        this.authorizedAt = authorizedAt;
         this.version = version;
     }
 
@@ -96,7 +105,7 @@ public class Payment extends AggregateRoot {
      * @return 支払
      */
     public static Payment create(UUID id, UUID orderId, Money amount, Instant deadline) {
-        return new Payment(id, orderId, amount, deadline, PaymentStatus.UNPAID, null, null, 0);
+        return new Payment(id, orderId, amount, deadline, PaymentStatus.UNPAID, null, null, null, 0);
     }
 
 // ============================== ドメインの振る舞い ==============================
@@ -134,7 +143,7 @@ public class Payment extends AggregateRoot {
 
     /**
      * 与信の成功の通知を反映する。<br />
-     * 未払いなら与信済みにして、与信の成功のイベントを登録する。
+     * 未払いなら与信済みにして、与信の時刻を覚え、与信の成功のイベントを登録する。
      * 支払なし（期限切れかキャンセルの後）なら、取り消すために与信の取消待ちにする。
      * それ以外（すでに与信がある）なら何もしない。
      *
@@ -145,6 +154,7 @@ public class Payment extends AggregateRoot {
         switch (status) {
             case UNPAID -> {
                 this.authorizationRef = authorizationRef;
+                this.authorizedAt = now;
                 status = PaymentStatus.AUTHORIZED;
                 registerEvent(PaymentAuthorized.of(now, orderId));
             }
@@ -153,7 +163,7 @@ public class Payment extends AggregateRoot {
                 requestVoid(now);
             }
             case AUTHORIZED, VOID_PENDING, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
-                // すでに与信がある（重ねて届いた通知）
+                // すでに与信がある（重ねて届いた通知、または順序が入れ替わった通知）
             }
         }
     }
@@ -175,7 +185,8 @@ public class Payment extends AggregateRoot {
 
     /**
      * 注文のキャンセルに合わせて取り消す。<br />
-     * 与信済みなら与信の取消待ちにする。未払いなら、取り消す与信がないので支払なしにする。それ以外なら何もしない。
+     * 与信済みなら与信の取消待ちにし、売上確定済みなら返金待ちにする。未払いなら、取り消す与信がないので支払なしにする。
+     * それ以外（与信期限切れを含む）なら何もしない。与信期限切れは、決済サービスで与信が切れていて、取り消すものがない。
      *
      * @param now 現在時刻
      */
@@ -183,34 +194,38 @@ public class Payment extends AggregateRoot {
         switch (status) {
             case AUTHORIZED -> requestVoid(now);
             case UNPAID -> status = PaymentStatus.NOT_PAID;
-            case VOID_PENDING, VOIDED, NOT_PAID -> {
-                // 取り消すものがない、または取消を始めている
-            }
-            default -> {
-                // 売上確定済み以降は T9103 で扱う
+            case CAPTURED -> requestRefund(now);
+            case VOID_PENDING, VOIDED, NOT_PAID, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
+                // 取り消すものがない、または取消か返金を始めている
             }
         }
     }
 
     /**
-     * 売上を確定したことを反映する。
+     * 売上を確定したことを反映する。与信済みでなければ何もしない。
      */
     public void capture() {
-        // T9103 で実装する
+        if (status == PaymentStatus.AUTHORIZED) {
+            status = PaymentStatus.CAPTURED;
+        }
     }
 
     /**
-     * 与信の期限切れを反映する。
+     * 売上確定が与信の期限切れで断られたことを反映する。与信済みでなければ何もしない。
      */
     public void expireAuthorization() {
-        // T9103 で実装する
+        if (status == PaymentStatus.AUTHORIZED) {
+            status = PaymentStatus.AUTHORIZATION_EXPIRED;
+        }
     }
 
     /**
-     * 決済サービスで返金したことを反映する。
+     * 決済サービスで返金したことを反映する。返金待ちでなければ何もしない。
      */
     public void markRefunded() {
-        // T9103 で実装する
+        if (status == PaymentStatus.REFUND_PENDING) {
+            status = PaymentStatus.REFUNDED;
+        }
     }
 
     /**
@@ -219,7 +234,7 @@ public class Payment extends AggregateRoot {
      * @return 与信の時刻。与信がなければ空
      */
     public Optional<Instant> authorizedAt() {
-        return Optional.empty();
+        return Optional.ofNullable(authorizedAt);
     }
 
     /**
@@ -229,7 +244,7 @@ public class Payment extends AggregateRoot {
      * @return 与信期限。与信の時刻がなければ空
      */
     public Optional<Instant> authorizationDeadline(@NonNull AuthorizationTerm term) {
-        return Optional.empty();
+        return authorizedAt().map(term::deadlineOf);
     }
 
     /**
@@ -240,7 +255,8 @@ public class Payment extends AggregateRoot {
      * @return 近ければ true
      */
     public boolean isAuthorizationExpiring(@NonNull AuthorizationTerm term, @NonNull Instant now) {
-        return false;
+        var target = status == PaymentStatus.AUTHORIZED || status == PaymentStatus.AUTHORIZATION_EXPIRED;
+        return target && authorizedAt().map(at -> term.isExpiring(at, now)).orElse(false);
     }
 
     /**
@@ -262,6 +278,14 @@ public class Payment extends AggregateRoot {
         registerEvent(VoidRequested.of(now, id));
     }
 
+    /**
+     * 返金待ちにし、返金の依頼を登録する。
+     */
+    private void requestRefund(Instant now) {
+        status = PaymentStatus.REFUND_PENDING;
+        registerEvent(RefundRequested.of(now, id));
+    }
+
 // ============================== スナップショット関連処理 ==============================
 
     /**
@@ -274,10 +298,12 @@ public class Payment extends AggregateRoot {
      * @param status           状態
      * @param page             支払の画面
      * @param authorizationRef 与信の参照
+     * @param authorizedAt     与信の時刻
      * @param version          バージョン
      */
     public record Snapshot(UUID id, UUID orderId, Money amount, Instant deadline, PaymentStatus status,
-                           @Nullable PaymentPage page, @Nullable String authorizationRef, long version) {
+                           @Nullable PaymentPage page, @Nullable String authorizationRef,
+                           @Nullable Instant authorizedAt, long version) {
     }
 
     /**
@@ -286,7 +312,7 @@ public class Payment extends AggregateRoot {
      * @return 支払のスナップショット
      */
     public Snapshot toSnapshot() {
-        return new Snapshot(id, orderId, amount, deadline, status, page, authorizationRef, version);
+        return new Snapshot(id, orderId, amount, deadline, status, page, authorizationRef, authorizedAt, version);
     }
 
     /**
@@ -297,6 +323,6 @@ public class Payment extends AggregateRoot {
      */
     public static Payment restore(Snapshot snapshot) {
         return new Payment(snapshot.id(), snapshot.orderId(), snapshot.amount(), snapshot.deadline(), snapshot.status(),
-                snapshot.page(), snapshot.authorizationRef(), snapshot.version());
+                snapshot.page(), snapshot.authorizationRef(), snapshot.authorizedAt(), snapshot.version());
     }
 }

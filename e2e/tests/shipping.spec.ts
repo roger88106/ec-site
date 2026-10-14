@@ -1,0 +1,91 @@
+import { expect, type Page, test } from '@playwright/test'
+import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
+import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
+import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
+import { emptyCart, orderCart, payOnMockPage } from '../src/store'
+import { STORE_URL } from '../src/urls'
+
+/**
+ * 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
+ * 出荷通知メールは compose の Mailpit に届く。
+ */
+
+/** 作った商品と、会員が支払って受付になった注文 */
+type AcceptedOrder = { productId: string; variantId: string; orderId: string; orderUrl: string }
+
+/**
+ * 在庫 3 の公開の商品を作り、会員として 1 つ注文して mock で支払う（受付になる）。
+ *
+ * @param code 品番の一部
+ */
+async function acceptedOrder(page: Page, code: string): Promise<AcceptedOrder> {
+  const { id: taxCategoryId } = await taxCategoryWithRate(10)
+  const productId = await createPublishedProduct({
+    code,
+    name: `出荷の商品 ${code}`,
+    taxCategoryId,
+    priceExclTax: 1000,
+    variants: [{ code: 'A', stock: 3 }],
+  })
+  const [variantId] = await variantIds(productId)
+  await loginStore(page, ACCOUNTS.member)
+  await emptyCart(page)
+  await page.goto(`${STORE_URL}/products/${productId}`)
+  await page.getByRole('button', { name: 'カートに入れる' }).click()
+  await expect(page.getByText('カートに入れました。')).toBeVisible()
+  await orderCart(page)
+  const orderUrl = await payOnMockPage(page)
+  const orderId = new URL(orderUrl).pathname.split('/').at(-1) as string
+  return { productId, variantId, orderId, orderUrl }
+}
+
+/** 管理画面の注文詳細の見出しから、注文番号を読む（読み込むまでは「…」なので、番号が出るのを待つ） */
+async function orderNumberOnAdmin(page: Page): Promise<string> {
+  const heading = page.getByRole('heading', { name: /^注文：\d{8}-\d{6}$/ })
+  await expect(heading).toBeVisible()
+  return ((await heading.textContent()) ?? '').replace('注文：', '').trim()
+}
+
+/** 店舗画面の注文詳細の欄（dt の次の dd） */
+function storeField(page: Page, label: string) {
+  return page.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
+}
+
+test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock の物流で配送中・配達完了にすると、店舗画面に配送状態が出て、出荷通知メールが届く', async ({
+  page,
+}) => {
+  const order = await acceptedOrder(page, 'SHIP')
+  const trackingNumber = '1234-5678-9012'
+  let orderNumber = ''
+
+  await test.step('管理画面：受付の注文に、配送業者と送り状番号を入れて出荷を登録する（AC-167）', async () => {
+    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${order.orderId}`)
+    orderNumber = await orderNumberOnAdmin(page)
+    await shipOnAdmin(page, trackingNumber)
+    await expect(page.getByText('出荷済み', { exact: true }).first()).toBeVisible()
+    await expect(page.getByText('売上確定済み')).toBeVisible()
+  })
+
+  await test.step('出荷通知メールが、注文のメールアドレスに、注文番号・配送業者・送り状番号を書いて届く（AC-183）', async () => {
+    const mail = await shipmentMail(orderNumber)
+    expect(mail.to).toEqual([ACCOUNTS.member.email])
+    expect(mail.text).toContain(orderNumber)
+    expect(mail.text).toContain('ヤマト運輸')
+    expect(mail.text).toContain(trackingNumber.replaceAll('-', ''))
+  })
+
+  for (const status of ['配送中', '配達完了'] as const) {
+    await test.step(`mock の物流で${status}を通知すると、店舗の注文詳細と一覧に${status}が出る（AC-174、179、180）`, async () => {
+      await notifyCarrier(page, order.orderId, status)
+
+      await page.goto(order.orderUrl)
+      await expect(storeField(page, '状態')).toHaveText(status)
+      await expect(storeField(page, '配送業者')).toHaveText('ヤマト運輸')
+      await expect(storeField(page, '送り状番号')).toHaveText(trackingNumber.replaceAll('-', ''))
+
+      await page.goto(`${STORE_URL}/orders`)
+      const row = page.getByRole('row').filter({ hasText: orderNumber })
+      await expect(row.getByText(status, { exact: true })).toBeVisible()
+    })
+  }
+})

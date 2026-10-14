@@ -30,12 +30,13 @@ pnpm dev
 | http://localhost:3000 | 店舗画面（API はサーバーから呼ぶ） |
 | http://localhost:8080/api/admin | 管理 API（[admin.yaml](../../api/openapi/admin.yaml)） |
 | http://localhost:8080/api/store | 店舗 API（[store.yaml](../../api/openapi/store.yaml)） |
+| http://localhost:8080/mock-carrier | mock の物流サービス（出荷の配送状態を、配送中・配達完了・返送に進める） |
 | http://localhost:8080/actuator/health | ヘルスチェック（`/liveness`、`/readiness`） |
 | http://localhost:9411 | Zipkin（トレース。local では全リクエストを記録） |
 | http://localhost:8333 | SeaweedFS（S3 互換。バケットは `seaweedfs-init` が作る） |
 | http://localhost:8081 | imgproxy（画像の WebP への変換。署名のない URL は拒否） |
 | http://localhost:8180 | Keycloak（管理画面は `/admin`、`admin` / `admin`） |
-| http://localhost:8025 | Mailpit（Keycloak が送ったメール。外には送らない） |
+| http://localhost:8025 | Mailpit（Keycloak とバックエンドが送ったメール。外には送らない） |
 
 - `docker compose` はルートで実行する（ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
 - 止めるときは `docker compose stop`、データを消して作り直すときは `docker compose down -v`。
@@ -55,7 +56,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 - 手動確認はこの表のアカウントを使う（誰の環境にもある）。足りなければ realm の JSON に足し、表にも書く。画面から登録した会員は、その人の環境にしかない。
 - 会員のアカウント ID は realm の JSON で固定している（`member@example.com` は `00000000-0000-0000-0000-000000009001`、`member2@example.com` は `…9002`）。ローカル用の seed の注文が、この会員のものになるため。
-- 会員登録の確認とパスワードの再設定のメールは Mailpit に届く。
+- 会員登録の確認とパスワードの再設定のメール（Keycloak）、出荷通知メール（バックエンド）は Mailpit に届く。宛先のアドレスは実在しなくてよい。
 - token の中身は `scripts/dev/keycloak.sh token <realm> <アカウント> <パスワード>` で見る。
 
 ## 4. データの作り直し

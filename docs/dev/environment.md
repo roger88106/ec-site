@@ -27,6 +27,8 @@
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API の秘密の鍵、通知の署名の鍵。Git に入れない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md) 第 5 節） | 決済サービスが stripe なら必須 |
 | `ECSITE_SHIPPING_CARRIER` | 物流サービス（今は `mock` だけ） | mock |
 | `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名の鍵。Git に入れない。ローカルと統合テストは試験用の値を設定ファイルに持つ | 必須 |
+| `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |
+| `SPRING_MAIL_HOST`、`_PORT`、`_USERNAME`、`_PASSWORD` | メールを送る SMTP サーバーの接続先と認証（Spring Boot の設定）。ローカルは compose の Mailpit（`localhost:1025`） | host は必須、port は 25 |
 | `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で動かすか | true |
 | `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE` | 未完了のイベントを再発行する間隔、再発行するイベントの発行からの時間の下限 | PT1M、5m |
 

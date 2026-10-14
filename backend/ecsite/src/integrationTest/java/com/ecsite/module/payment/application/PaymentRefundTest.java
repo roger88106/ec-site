@@ -125,6 +125,25 @@ class PaymentRefundTest {
         assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
     }
 
+    @Test
+    @DisplayName("T9314 売上確定の最中に注文がキャンセルされたら、確定の反映で返金待ちになり、返金される。与信は取り消さない")
+    void refundsWhenCancelledDuringCapture() {
+        var orderId = authorized();
+        // 決済サービスが確定した後、確定を反映する前に、注文のキャンセルで支払が与信の取消待ちになる
+        gateway.duringNextCapture(() -> paymentApi.cancel(orderId));
+
+        paymentApi.capture(orderId);
+
+        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.refunded()).containsExactly(orderId);
+
+        // 与信の取消の依頼は、再発行で何もせずに終わる
+        clock.advance(Duration.ofMinutes(6));
+        incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
+        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> gateway.voided().isEmpty());
+        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
+    }
+
     // ============================== 補助 ==============================
 
     private UUID created() {

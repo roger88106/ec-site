@@ -18,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * mock の決済サービス（docs/backend/modules/payment.md「mock」）。<br />
@@ -80,6 +81,16 @@ public class MockPaymentGateway implements PaymentGateway {
     private final List<UUID> captured = new CopyOnWriteArrayList<>();
 
     /**
+     * 売上を確定した与信の参照。確定した与信は取り消せない
+     */
+    private final Set<String> capturedAuthorizations = ConcurrentHashMap.newKeySet();
+
+    /**
+     * 次の売上確定の最中に行う処理（売上確定と注文のキャンセルが重なったときのテスト用）。なければ null
+     */
+    private final AtomicReference<Runnable> duringNextCapture = new AtomicReference<>();
+
+    /**
      * 売上確定を呼ばれた回数（失敗と重複を含む）
      */
     private final AtomicInteger captureCalls = new AtomicInteger();
@@ -120,6 +131,10 @@ public class MockPaymentGateway implements PaymentGateway {
         if (voidFailures.getAndUpdate(remaining -> Math.max(remaining - 1, 0)) > 0) {
             throw SystemException.of("mock：与信の取消に失敗させる: " + authorizationRef, null);
         }
+        // 売上を確定した与信は、決済サービスが取消を断る（返金で戻す）
+        if (capturedAuthorizations.contains(authorizationRef)) {
+            throw SystemException.of("mock：売上を確定した与信は取り消せない: " + authorizationRef, null);
+        }
         voided.add(authorizationRef);
     }
 
@@ -135,6 +150,11 @@ public class MockPaymentGateway implements PaymentGateway {
         // 冪等キー（注文 ID）が同じなら、確定は 1 回だけ
         if (!captured.contains(request.orderId())) {
             captured.add(request.orderId());
+        }
+        capturedAuthorizations.add(request.authorizationRef());
+        var during = duringNextCapture.getAndSet(null);
+        if (during != null) {
+            during.run();
         }
         return CaptureResult.CAPTURED;
     }
@@ -230,6 +250,15 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 次の売上確定で、決済サービスが確定した後、応答を返す前に処理を行う。
+     *
+     * @param action 行う処理（注文のキャンセルなど）
+     */
+    public void duringNextCapture(Runnable action) {
+        duringNextCapture.set(action);
+    }
+
+    /**
      * 次の返金を、指定した回数だけ失敗させる。
      *
      * @param times 失敗させる回数
@@ -282,6 +311,8 @@ public class MockPaymentGateway implements PaymentGateway {
         voidFailures.set(0);
         expiredAuthorizations.clear();
         captured.clear();
+        capturedAuthorizations.clear();
+        duringNextCapture.set(null);
         captureCalls.set(0);
         captureFailures.set(0);
         refunded.clear();

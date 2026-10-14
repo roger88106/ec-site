@@ -1,6 +1,14 @@
 import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
 import { schemas } from '@/api/generated/constraints'
-import type { Cancellation, Order, OrderStatus, TaxAmount, UnpurchasableReason } from '@/api/types'
+import type {
+  Cancellation,
+  Carrier,
+  Order,
+  OrderStatus,
+  ShipmentStatus,
+  TaxAmount,
+  UnpurchasableReason,
+} from '@/api/types'
 import { translate } from '@/i18n/translate'
 
 /** 金額の書式（3 桁ごとのカンマ） */
@@ -25,9 +33,17 @@ export const QUANTITY_OPTIONS = Array.from(
 
 /**
  * 注文のキャンセルの状況。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み、
- * 支払期限切れでキャンセル済み、まだ申請できない（支払待ち。支払の期限で自動でキャンセルになる）
+ * 支払期限切れでキャンセル済み、まだ申請できない（支払待ち。支払の期限で自動でキャンセルになる）、
+ * 出荷済み（もう申請できない）
  */
-export type CancellationState = 'REQUESTABLE' | 'PENDING' | 'REJECTED' | 'CANCELLED' | 'PAYMENT_EXPIRED' | 'NOT_YET'
+export type CancellationState =
+  | 'REQUESTABLE'
+  | 'PENDING'
+  | 'REJECTED'
+  | 'CANCELLED'
+  | 'PAYMENT_EXPIRED'
+  | 'NOT_YET'
+  | 'SHIPPED'
 
 /**
  * 注文の支払の状況。支払える、支払の確認中（支払の画面から戻った直後）、支払の期限を過ぎた（まもなくキャンセル）、
@@ -72,6 +88,31 @@ export const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'>
   ACCEPTED: 'default',
   CANCELLATION_REQUESTED: 'secondary',
   CANCELLED: 'secondary',
+  SHIPPED: 'secondary',
+}
+
+/** 配送状態の表示名 */
+export function shipmentStatusLabel(status: ShipmentStatus): string {
+  return translate(`common.shipmentStatus.${status}`)
+}
+
+/** 配送業者の表示名 */
+export function carrierLabel(carrier: Carrier): string {
+  return translate(`common.carrier.${carrier}`)
+}
+
+/**
+ * 注文の状態の欄に出す表示名と見た目。出荷済みの注文は、注文状態の代わりに配送状態を出す
+ * （注文状態と配送状態の「出荷済み」が並ばないようにする）。
+ */
+export function orderStatusBadge(order: { status: OrderStatus; shipmentStatus?: ShipmentStatus }): {
+  label: string
+  variant: 'default' | 'secondary'
+} {
+  if (order.status === 'SHIPPED' && order.shipmentStatus !== undefined) {
+    return { label: shipmentStatusLabel(order.shipmentStatus), variant: ORDER_STATUS_VARIANTS.SHIPPED }
+  }
+  return { label: orderStatusLabel(order.status), variant: ORDER_STATUS_VARIANTS[order.status] }
 }
 
 /**
@@ -95,6 +136,8 @@ export function cancellationState(order: {
       return 'PENDING'
     case 'ACCEPTED':
       return 'REJECTED'
+    case 'SHIPPED':
+      return 'SHIPPED'
   }
 }
 

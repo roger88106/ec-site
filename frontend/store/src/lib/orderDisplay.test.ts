@@ -1,13 +1,16 @@
 import { describe, expect, test } from 'vitest'
 import {
   cancellationState,
+  carrierLabel,
   formatDateTime,
   formatPostalCode,
   formatYen,
+  orderStatusBadge,
   orderStatusLabel,
   paymentDeadlineLabel,
   paymentState,
   remainingTime,
+  shipmentStatusLabel,
   taxLabel,
   unpurchasableReasonLabel,
 } from '@/lib/orderDisplay'
@@ -41,6 +44,31 @@ describe('注文の状態（BR-9、14）', () => {
     expect(orderStatusLabel('ACCEPTED')).toBe('受付')
     expect(orderStatusLabel('CANCELLATION_REQUESTED')).toBe('キャンセル申請中')
     expect(orderStatusLabel('CANCELLED')).toBe('キャンセル')
+  })
+})
+
+describe('出荷後の状態（AC-179、180）', () => {
+  test('BR-19 配送状態と配送業者の表示名', () => {
+    expect(shipmentStatusLabel('SHIPPED')).toBe('出荷済み')
+    expect(shipmentStatusLabel('IN_TRANSIT')).toBe('配送中')
+    expect(shipmentStatusLabel('DELIVERED')).toBe('配達完了')
+    expect(shipmentStatusLabel('RETURNED')).toBe('返送')
+    expect(carrierLabel('YAMATO')).toBe('ヤマト運輸')
+    expect(carrierLabel('SAGAWA')).toBe('佐川急便')
+    expect(carrierLabel('JAPAN_POST')).toBe('日本郵便')
+  })
+
+  test('AC-179 AC-180 出荷後は、注文状態の代わりに配送状態を示す', () => {
+    expect(orderStatusBadge({ status: 'SHIPPED', shipmentStatus: 'IN_TRANSIT' }).label).toBe('配送中')
+    expect(orderStatusBadge({ status: 'SHIPPED', shipmentStatus: 'DELIVERED' }).label).toBe('配達完了')
+  })
+
+  test('出荷前は注文状態を示す', () => {
+    expect(orderStatusBadge({ status: 'ACCEPTED' })).toEqual({ label: '受付', variant: 'default' })
+  })
+
+  test('返送の後にキャンセルされた注文は、キャンセルを示す', () => {
+    expect(orderStatusBadge({ status: 'CANCELLED', shipmentStatus: 'RETURNED' }).label).toBe('キャンセル')
   })
 })
 
@@ -80,6 +108,10 @@ describe('キャンセルの申請の状況（AC-95、96）', () => {
         cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'PAYMENT_EXPIRED' },
       }),
     ).toBe('PAYMENT_EXPIRED')
+  })
+
+  test('AC-171 出荷済みの注文は、申請できない（キャンセルの欄を出さない）', () => {
+    expect(cancellationState({ status: 'SHIPPED', actions: notRequestable })).toBe('SHIPPED')
   })
 
   test('AC-158 支払待ちの注文は、まだ申請できない（支払の期限で自動でキャンセルになる）', () => {

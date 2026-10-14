@@ -46,6 +46,7 @@ class SchemaOwnershipTest {
             "member", Optional.of("member"),
             "order", Optional.of("ordering"),
             "payment", Optional.of("payment"),
+            "shipping", Optional.of("shipping"),
             "storefront", Optional.empty(),
             "tax", Optional.of("tax"));
 

@@ -5,6 +5,7 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.Shipment;
 import com.ecsite.module.shipping.domain.TrackingNumber;
 import lombok.RequiredArgsConstructor;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -27,6 +28,11 @@ public class ShipmentService {
     private final ShipmentRepository shipmentRepository;
 
     /**
+     * イベントの発行
+     */
+    private final ApplicationEventPublisher events;
+
+    /**
      * 出荷を作る。配送状態は「出荷済み」。呼び出し元のトランザクションに参加する。
      *
      * @param orderId        注文 ID
@@ -40,6 +46,8 @@ public class ShipmentService {
     public Shipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
         var shipment = Shipment.create(UUID.randomUUID(), orderId, carrier, TrackingNumber.of(trackingNumber), shippedAt);
         shipmentRepository.insert(shipment);
+        // 物流サービスへの追跡の登録は、コミットの後に行う（失敗しても出荷を止めない）
+        events.publishEvent(new TrackingRequested(shipment.id(), carrier, shipment.trackingNumber().value()));
         return shipment;
     }
 

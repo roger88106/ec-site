@@ -77,3 +77,6 @@ ecsite:
       # Stripe の秘密の値。Git に入れず、Stripe の名前の環境変数で渡す（決済サービスが stripe のときだけ使う）
       secret-key: ${STRIPE_SECRET_KEY:}
       webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  shipping:
+    # 物流サービスの通知の署名の鍵。Git に入れず、環境変数で渡す（ローカルは application-local.yml の試験用の値）
+    webhook-secret: ${CARRIER_WEBHOOK_SECRET:}

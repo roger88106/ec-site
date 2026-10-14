@@ -54,6 +54,9 @@ ecsite:
     mock:
       # mock の支払の画面を出すバックエンド
       base-url: http://localhost:8080
+  shipping:
+    # 物流サービスの通知の署名の鍵：ローカル専用の試験用の値。mock の画面もこの鍵で署名して通知する
+    webhook-secret: local-carrier-webhook-secret
   storefront:
     shop:
       # 問い合わせ先：ローカル用の例の値

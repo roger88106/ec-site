@@ -2,13 +2,16 @@ package com.ecsite.module.shipping.api;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
+import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.ShippingErrorCode;
+import com.ecsite.module.shipping.infrastructure.mock.MockCarrierTracking;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
@@ -16,9 +19,10 @@ import java.util.UUID;
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.awaitility.Awaitility.await;
 
 /**
- * 出荷の API の統合テスト（T9206、AC-173、BR-19、23）。<br />
+ * 出荷の API の統合テスト（T9206、T9208、AC-173、BR-19、23）。<br />
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest
@@ -34,6 +38,9 @@ class ShippingApiTest {
 
     @Autowired
     ShipmentRepository repository;
+
+    @Autowired
+    MockCarrierTracking tracking;
 
     @Autowired
     DSLContext dsl;
@@ -102,6 +109,19 @@ class ShippingApiTest {
         assertThat(shippingApi.find(List.of(returned)))
                 .singleElement()
                 .satisfies(summary -> assertThat(summary.status()).isEqualTo(ShipmentSummary.Status.RETURNED));
+    }
+
+    @Test
+    @DisplayName("AC-174 出荷を作ると、コミットの後に物流サービスで追跡が始まる。出荷を作れなかったときは始まらない")
+    void startsTrackingAfterCommit() {
+        var orderId = UUID.randomUUID();
+        shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, "8881-2223", SHIPPED_AT);
+        assertBusinessError(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "8884-5556", SHIPPED_AT),
+                ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
+
+        await().during(Duration.ofMillis(500)).atMost(Duration.ofSeconds(10))
+                .until(() -> tracking.started().contains(new MockCarrierTracking.Started(Carrier.YAMATO, "88812223")));
+        assertThat(tracking.started()).doesNotContain(new MockCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
     }
 
     /**

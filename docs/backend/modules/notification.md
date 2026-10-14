@@ -34,7 +34,8 @@
 |------|------|
 | port | 「メールを送る」の 1 つ（宛先、件名、本文）。SMTP の型とエラーを `infrastructure` の外に出さない |
 | 実装 | Spring Boot のメール（`spring-boot-starter-mail`）で SMTP に送る。接続先は Spring Boot の設定 `spring.mail.*` |
-| ローカル・テスト・E2E | compose の Mailpit（SMTP は `localhost:1025`、届いたメールは `http://localhost:8025` で見る）。統合テストは Testcontainers の Mailpit |
+| 待ち時間の上限 | 接続・読み・書きをそれぞれ 10 秒（`spring.mail.properties`）。上限がないと、応えない SMTP サーバーでメールのリスナーが止まったままになる。上限で失敗したら、上の「失敗」と同じく再発行で送り直す |
+| ローカル・テスト・E2E | compose の Mailpit（SMTP は `localhost:1025`。ポートは `MAILPIT_SMTP_PORT` で変えられる。届いたメールは `http://localhost:8025` で見る）。統合テストは Testcontainers の Mailpit |
 
 ## 他のモジュールへの公開
 

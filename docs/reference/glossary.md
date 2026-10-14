@@ -122,7 +122,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 注文 | `Order` / `sales_order` | 成立した注文 |
 | 注文番号 | `OrderNumber` / `order_number` | 人が使う注文の番号（例：20261010-482915）。識別子ではなく属性 |
 | 注文明細 | `OrderLine` / `sales_order_line` | 注文時点の品番・商品名・価格・税率の写しと数量 |
-| 注文の状態 | `OrderStatus` / `status` | 支払待ち（`PENDING_PAYMENT`）、受付（`ACCEPTED`）、キャンセル申請中（`CANCELLATION_REQUESTED`）、キャンセル（`CANCELLED`） |
+| 注文の状態 | `OrderStatus` / `status` | 支払待ち（`PENDING_PAYMENT`）、受付（`ACCEPTED`）、キャンセル申請中（`CANCELLATION_REQUESTED`）、キャンセル（`CANCELLED`）、出荷済み（`SHIPPED`） |
 | キャンセルの申請 | `CancellationRequest` | 消費者によるキャンセルの申請。1 つの注文に 1 回だけ。結果は承認・却下 |
 | 運営者のキャンセル | `cancel` | 申請の承認によらない、運営者の判断によるキャンセル。理由が必須 |
 | キャンセルの種類 | `CancellationKind` / `cancellation_kind` | 申請の承認（`REQUEST_APPROVED`）、運営者の判断（`OPERATOR`）、支払期限切れ（`PAYMENT_EXPIRED`） |
@@ -143,7 +143,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 |------|--------|------|
 | 決済サービス | `PaymentGateway` | 支払の画面と与信を提供する外部のサービス（Stripe）。テストと既定は mock |
 | 支払 | `Payment` / `payment` | 1 つの注文の代金の支払。注文に 1 つ |
-| 支払の状態 | `PaymentStatus` / `status` | 未払い（`UNPAID`）、与信済み（`AUTHORIZED`）、与信の取消待ち（`VOID_PENDING`）、与信の取消済み（`VOIDED`）、支払なし（`NOT_PAID`） |
+| 支払の状態 | `PaymentStatus` / `status` | 未払い（`UNPAID`）、与信済み（`AUTHORIZED`）、与信の取消待ち（`VOID_PENDING`）、与信の取消済み（`VOIDED`）、支払なし（`NOT_PAID`）、売上確定済み（`CAPTURED`）、与信期限切れ（`AUTHORIZATION_EXPIRED`）、返金待ち（`REFUND_PENDING`）、返金済み（`REFUNDED`） |
 | 与信 | `authorization` | カードの利用枠を、総額だけ確保すること（オーソリ）。売上の確定（出荷の時）までは代金を受け取らない |
 | 与信の取消 | `void` | 確保した与信を解くこと。売上の確定の前なので、返金ではない |
 | 与信の参照 | `authorizationRef` / `authorization_ref` | 決済サービスでの与信の ID。与信を取り消すときに使う |

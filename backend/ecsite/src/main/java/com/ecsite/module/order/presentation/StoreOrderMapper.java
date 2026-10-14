@@ -14,6 +14,8 @@ import com.ecsite.api.store.model.OrderSummary;
 import com.ecsite.api.store.model.OrderSummaryPage;
 import com.ecsite.api.store.model.PlaceOrderRequest;
 import com.ecsite.api.store.model.QuoteItem;
+import com.ecsite.api.store.model.Shipment;
+import com.ecsite.api.store.model.ShipmentStatus;
 import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
@@ -25,6 +27,7 @@ import com.ecsite.module.order.application.model.CheckoutView;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
+import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.quote.Quote;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -81,14 +84,16 @@ class StoreOrderMapper {
     }
 
     /**
-     * 注文のレスポンスに変換する。キャンセルの申請・キャンセルがなければ、その項目を返さない。
-     * 支払の期限は、支払待ちのときだけ返す。
+     * 注文のレスポンスに変換する。キャンセルの申請・キャンセル・出荷がなければ、その項目を返さない。
+     * 支払の期限は、支払待ちのときだけ返す。出荷はキャンセルの後も返す（画面は注文の状態で出し分ける）。
      *
-     * @param order   注文
-     * @param payment 注文の支払。決済を入れる前の注文は null
+     * @param order    注文
+     * @param payment  注文の支払。決済を入れる前の注文は null
+     * @param shipment 注文の出荷。出荷していなければ null
      * @return 注文のレスポンス
      */
-    Order toOrder(com.ecsite.module.order.domain.order.Order order, @Nullable OrderPayment payment) {
+    Order toOrder(com.ecsite.module.order.domain.order.Order order, @Nullable OrderPayment payment,
+                  @Nullable ShippingDirectory.Shipment shipment) {
         var awaitingPayment = order.isAwaitingPayment() && payment != null;
         var response = new Order()
                 .id(order.id())
@@ -110,6 +115,12 @@ class StoreOrderMapper {
             response.cancellation(new Cancellation()
                     .cancelledAt(ApiDateTimes.toOffsetDateTime(order.cancellation().cancelledAt()))
                     .kind(CancellationKind.fromValue(order.cancellation().kind().name())));
+        }
+        if (shipment != null) {
+            response.shipment(new Shipment()
+                    .carrier(com.ecsite.api.store.model.Carrier.fromValue(shipment.carrier().name()))
+                    .trackingNumber(shipment.trackingNumber())
+                    .status(ShipmentStatus.fromValue(shipment.status().name())));
         }
         return response;
     }
@@ -223,22 +234,26 @@ class StoreOrderMapper {
     /**
      * 自分の注文の一覧のレスポンスに変換する。
      *
-     * @param page 注文の一覧
+     * @param page      注文の一覧
+     * @param payments  注文 ID → 支払
+     * @param shipments 注文 ID → 出荷
      * @return 注文の一覧のレスポンス
      */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments) {
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
+                                        Map<UUID, ShippingDirectory.Shipment> shipments) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
                 .totalItems(page.totalItems())
                 .totalPages(page.totalPages())
-                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()))).toList());
+                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
     }
 
     /**
-     * 自分の注文の一覧の 1 件。支払の期限は、支払待ちのときだけ返す。
+     * 自分の注文の一覧の 1 件。支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
      */
-    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment) {
+    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
+                                          @Nullable ShippingDirectory.Shipment shipment) {
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())
@@ -247,6 +262,9 @@ class StoreOrderMapper {
                 .status(OrderStatus.fromValue(view.status().name()));
         if (view.status() == com.ecsite.module.order.domain.order.OrderStatus.PENDING_PAYMENT && payment != null) {
             summary.paymentDeadline(ApiDateTimes.toOffsetDateTime(payment.deadline()));
+        }
+        if (shipment != null) {
+            summary.shipmentStatus(ShipmentStatus.fromValue(shipment.status().name()));
         }
         return summary;
     }

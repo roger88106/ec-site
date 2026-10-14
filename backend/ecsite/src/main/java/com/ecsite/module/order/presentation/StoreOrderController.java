@@ -60,7 +60,8 @@ class StoreOrderController implements OrderApi {
     @Override
     public ResponseEntity<Order> getOrder(UUID orderId) {
         var order = orderQueryService.getForMember(orderId, currentMemberIds.require());
-        return ResponseEntity.ok(mapper.toOrder(order, orderQueryService.findPayments(List.of(orderId)).get(orderId)));
+        return ResponseEntity.ok(mapper.toOrder(order, orderQueryService.findPayments(List.of(orderId)).get(orderId),
+                orderQueryService.findShipments(List.of(orderId)).get(orderId)));
     }
 
     /**
@@ -98,7 +99,8 @@ class StoreOrderController implements OrderApi {
     @Override
     public ResponseEntity<OrderSummaryPage> listMemberOrders(Integer page, Integer size) {
         var result = orderQueryService.listForMember(currentMemberIds.require(), PageRequest.of(page, size));
-        var payments = orderQueryService.findPayments(result.items().stream().map(OrderQueryRepository.OrderSummaryView::id).toList());
-        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, payments));
+        var orderIds = result.items().stream().map(OrderQueryRepository.OrderSummaryView::id).toList();
+        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, orderQueryService.findPayments(orderIds),
+                orderQueryService.findShipments(orderIds)));
     }
 }

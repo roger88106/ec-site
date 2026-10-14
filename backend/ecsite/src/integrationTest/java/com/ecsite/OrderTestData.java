@@ -7,6 +7,8 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.awaitility.Awaitility.await;
@@ -40,6 +42,11 @@ public class OrderTestData {
      * 注文の支払の結果のサービス
      */
     private final OrderPaymentService orderPaymentService;
+
+    /**
+     * 注文 ID → 支払った支払の画面 ID（支払の後は画面の URL を引けないため、覚えておく）
+     */
+    private final Map<UUID, String> paidPageIds = new HashMap<>();
 
     /**
      * コンストラクタ
@@ -111,8 +118,20 @@ public class OrderTestData {
      * @param orderId 注文 ID
      */
     public void pay(UUID orderId) throws Exception {
-        gateway.pay(openPaymentPage(orderId));
+        var pageId = openPaymentPage(orderId);
+        paidPageIds.put(orderId, pageId);
+        gateway.pay(pageId);
         orderPaymentService.accept(orderId);
+    }
+
+    /**
+     * 支払った注文の、支払の画面 ID を返す（mock の与信の参照を求めるのに使う）。
+     *
+     * @param orderId この補助で支払った注文の ID
+     * @return 支払の画面 ID
+     */
+    public String paidPageId(UUID orderId) {
+        return paidPageIds.get(orderId);
     }
 
     /**

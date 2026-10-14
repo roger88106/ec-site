@@ -73,7 +73,8 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     /**
-     * 支払の変更を保存する。金額と期限は変わらないので、変わりうる項目だけを更新する。
+     * 支払の変更を保存する。金額と期限は変わらないので、変わりうる項目だけを更新する。<br />
+     * 登録されたイベントはすべて発行する（与信の成功、与信の取消の依頼、返金の依頼など）。
      *
      * @param payment 変更した支払
      */
@@ -143,7 +144,7 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     /**
-     * 変わりうる項目（状態、支払の画面、与信の参照）をレコードに書く。
+     * 変わりうる項目（状態、支払の画面、与信の参照、与信の時刻）をレコードに書く。
      */
     private static void writeState(PaymentRecord record, Payment.Snapshot snapshot) {
         record.setStatus(snapshot.status().name());
@@ -151,6 +152,7 @@ class JooqPaymentRepository implements PaymentRepository {
         record.setPageId(page == null ? null : page.id());
         record.setPageUrl(page == null ? null : page.url());
         record.setAuthorizationRef(snapshot.authorizationRef());
+        record.setAuthorizedAt(snapshot.authorizedAt());
     }
 
     /**
@@ -166,7 +168,7 @@ class JooqPaymentRepository implements PaymentRepository {
                 PaymentStatus.valueOf(record.getStatus()),
                 page,
                 record.getAuthorizationRef(),
-                null,
+                record.getAuthorizedAt(),
                 record.getVersion()));
     }
 }

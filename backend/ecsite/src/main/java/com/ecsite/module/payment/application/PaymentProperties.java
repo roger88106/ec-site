@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.module.payment.domain.payment.AuthorizationTerm;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotNull;
 import org.springframework.boot.context.properties.ConfigurationProperties;
@@ -12,15 +13,19 @@ import java.util.UUID;
 /**
  * 決済の設定。環境変数で上書きする（例：ECSITE_PAYMENT_GATEWAY）。
  *
- * @param gateway   決済サービス
- * @param deadline  支払の期限（注文日時からの時間）
- * @param returnUrl 支払の画面から戻る店舗の注文の画面の URL。{@code {orderId}} に注文 ID が入る
+ * @param gateway               決済サービス
+ * @param deadline              支払の期限（注文日時からの時間）
+ * @param authorizationValidity 与信の有効期間（与信の時刻からの時間）。Stripe のカード決済の与信が切れる 7 日
+ * @param authorizationWarning  与信期限のどれだけ前から「期限が近い」とするか
+ * @param returnUrl             支払の画面から戻る店舗の注文の画面の URL。{@code {orderId}} に注文 ID が入る
  */
 @Validated
 @ConfigurationProperties("ecsite.payment")
 public record PaymentProperties(
         @DefaultValue("mock") @NotNull Gateway gateway,
         @DefaultValue("30m") @NotNull Duration deadline,
+        @DefaultValue("7d") @NotNull Duration authorizationValidity,
+        @DefaultValue("2d") @NotNull Duration authorizationWarning,
         @NotBlank String returnUrl) {
 
     /**
@@ -31,6 +36,15 @@ public record PaymentProperties(
      */
     public String returnUrlOf(UUID orderId) {
         return returnUrl.replace("{orderId}", orderId.toString());
+    }
+
+    /**
+     * 与信の有効期間と、期限が近いとする長さを返す。
+     *
+     * @return 与信の有効期間
+     */
+    public AuthorizationTerm authorizationTerm() {
+        return new AuthorizationTerm(authorizationValidity, authorizationWarning);
     }
 
     /**

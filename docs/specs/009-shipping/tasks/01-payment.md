@@ -17,7 +17,7 @@
   - 同じ遷移を重ねても変わらない
   - 与信期限と「期限が近い」の判定（期限を過ぎたものも含む）
 - [x] **T9103** 支払に状態と与信の時刻を足す。T9102 を通す。
-- [ ] **T9104** マイグレーションで、支払に与信の時刻の列を足す。設定 `ecsite.payment.authorization-validity`、`ecsite.payment.authorization-warning` を足す。
+- [x] **T9104** マイグレーションで、支払に与信の時刻の列を足す。設定 `ecsite.payment.authorization-validity`、`ecsite.payment.authorization-warning` を足す。
 
 ## 決済サービス
 

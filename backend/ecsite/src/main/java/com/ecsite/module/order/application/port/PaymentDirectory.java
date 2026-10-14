@@ -83,5 +83,25 @@ public interface PaymentDirectory {
          * 支払なし
          */
         NOT_PAID,
+
+        /**
+         * 売上確定済み
+         */
+        CAPTURED,
+
+        /**
+         * 与信期限切れ
+         */
+        AUTHORIZATION_EXPIRED,
+
+        /**
+         * 返金待ち
+         */
+        REFUND_PENDING,
+
+        /**
+         * 返金済み
+         */
+        REFUNDED,
     }
 }

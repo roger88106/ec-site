@@ -1865,8 +1865,8 @@ components:
       description: 支払待ち、受付、キャンセル申請中、キャンセル（BR-9、14）
     PaymentStatus:
       type: string
-      enum: [UNPAID, AUTHORIZED, VOID_PENDING, VOIDED, NOT_PAID]
-      description: 未払い、与信済み、与信の取消待ち、与信の取消済み、支払なし（BR-15）
+      enum: [UNPAID, AUTHORIZED, VOID_PENDING, VOIDED, NOT_PAID, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED]
+      description: 未払い、与信済み、与信の取消待ち、与信の取消済み、支払なし（BR-15）、売上確定済み、与信期限切れ、返金待ち、返金済み（BR-21）
     OrderSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'

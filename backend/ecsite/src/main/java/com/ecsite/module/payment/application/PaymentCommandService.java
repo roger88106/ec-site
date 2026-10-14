@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -160,6 +161,32 @@ public class PaymentCommandService {
     public void markVoided(UUID paymentId) {
         paymentRepository.lockById(paymentId).ifPresent(payment -> {
             payment.markVoided();
+            paymentRepository.update(payment);
+        });
+    }
+
+    /**
+     * 決済サービスに求める返金の要求を返す。
+     *
+     * @param paymentId 支払 ID
+     * @return 返金の要求。返金待ちでなければ空（返金済みなど）
+     */
+    @Transactional(readOnly = true)
+    public Optional<PaymentGateway.RefundRequest> findRefundRequest(UUID paymentId) {
+        return paymentRepository.findById(paymentId)
+                .filter(payment -> payment.status() == PaymentStatus.REFUND_PENDING)
+                .map(payment -> new PaymentGateway.RefundRequest(
+                        payment.orderId(), payment.authorizationRef(), payment.amount()));
+    }
+
+    /**
+     * 決済サービスで返金したことを反映する。
+     *
+     * @param paymentId 支払 ID
+     */
+    public void markRefunded(UUID paymentId) {
+        paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            payment.markRefunded();
             paymentRepository.update(payment);
         });
     }

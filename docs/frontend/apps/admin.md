@@ -58,7 +58,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | `/tax-categories` | 税区分の一覧と登録 |
 | `/tax-categories/:taxCategoryId` | 税率の一覧の編集 |
 | `/orders` | 注文一覧（クエリ：`orderNumber`、`status`、`orderedFrom`、`orderedTo`、`page`） |
-| `/orders/:orderId` | 注文の詳細（支払の状態と期限、明細、金額の内訳、お届け先、キャンセルの承認・却下・キャンセル） |
+| `/orders/:orderId` | 注文の詳細（支払の状態と期限、出荷の登録と配送状態、明細、金額の内訳、お届け先、キャンセルの承認・却下・キャンセル） |
 
 - 一覧の絞り込みとページは URL のクエリに持つ（戻る・再読み込みで同じ一覧を出すため）。
 - 左のメニューには、各機能の入口（一覧）だけを出す。
@@ -85,7 +85,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | カテゴリ | `/categories` |
 | 商品・バリアント | `/products`、`/inventory`（バリアントの増減で在庫も変わる） |
 | 在庫 | `/inventory` |
-| 注文（承認・却下・キャンセル） | `/orders`、`/inventory`（キャンセルで在庫が変わる） |
+| 注文（出荷の登録、承認・却下・キャンセル） | `/orders`、`/inventory`（キャンセルで在庫が変わる） |
 
 削除した対象の詳細は、先に別の画面へ移ってから取り直す（削除した詳細を取り直すと 404 になるため）。
 

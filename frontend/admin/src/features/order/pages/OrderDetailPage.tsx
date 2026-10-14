@@ -12,9 +12,10 @@ import { OrderActions } from '@/features/order/components/OrderActions'
 import { OrderLinesCard } from '@/features/order/components/OrderLinesCard'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
+import { ShipmentCard } from '@/features/order/components/ShipmentCard'
 import { formatPostalCode } from '@/features/order/order'
 
-/** 注文の詳細と、承認・却下・キャンセルの操作 */
+/** 注文の詳細と、出荷の登録、承認・却下・キャンセルの操作 */
 export function OrderDetailPage() {
   const t = useTranslations('order.detail')
   const tCommon = useTranslations('common')
@@ -74,6 +75,7 @@ export function OrderDetailPage() {
               )}
             </dl>
             <OrderActions order={order} />
+            <ShipmentCard order={order} />
             <OrderLinesCard amounts={order.amounts} lines={order.lines} />
             <Card>
               <CardHeader>

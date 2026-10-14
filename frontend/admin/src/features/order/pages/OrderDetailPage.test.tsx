@@ -1,6 +1,6 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import type { CancellationRequest, OrderDetail } from '@/api/types'
+import type { CancellationRequest, OrderDetail, Shipment } from '@/api/types'
 import { ORDER_ID, orderActions, orderDetail } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
@@ -283,5 +283,120 @@ describe('注文の詳細', () => {
 
     expect(await shownStatus('受付')).toBeInTheDocument()
     expect(screen.queryByText('支払')).not.toBeInTheDocument()
+  })
+})
+
+describe('出荷', () => {
+  /** 出荷を登録できる「受付」の注文 */
+  const SHIPPABLE = orderDetail({
+    actions: orderActions({ ship: true }),
+    payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+  })
+
+  /** 配送中の出荷 */
+  const SHIPMENT: Shipment = {
+    carrier: 'YAMATO',
+    trackingNumber: '123456789012',
+    status: 'IN_TRANSIT',
+    shippedAt: '2026-10-11T03:00:00Z',
+  }
+
+  /** 出荷済みの注文 */
+  const SHIPPED = orderDetail({
+    status: 'SHIPPED',
+    actions: orderActions({ cancel: false }),
+    payment: { status: 'CAPTURED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+    shipment: SHIPMENT,
+  })
+
+  /**
+   * 注文の詳細と出荷の登録の API に応答する。登録が成功したら、詳細は after を返す。送った内容は requests に取っておく。
+   *
+   * @param before 登録の前の注文
+   * @param after  登録の後の注文
+   */
+  function serveShipment(before: OrderDetail, after: OrderDetail = before) {
+    const state = { current: before, requests: [] as unknown[] }
+    server.use(
+      http.get('/orders/{orderId}', ({ response }) => response(200).json(state.current)),
+      http.post('/orders/{orderId}/shipment', async ({ request, response }) => {
+        state.requests.push(await request.json())
+        state.current = after
+        return response(201).json(after.shipment as never)
+      }),
+    )
+    return state
+  }
+
+  /** 配送業者と送り状番号を入れて、確認して登録する */
+  async function ship(user: ReturnType<typeof renderApp>['user'], carrier: string, trackingNumber: string) {
+    await user.click(await screen.findByRole('combobox', { name: '配送業者' }))
+    await user.click(await screen.findByRole('option', { name: carrier }))
+    await user.type(screen.getByLabelText('送り状番号'), trackingNumber)
+    await user.click(screen.getByRole('button', { name: '出荷を登録する' }))
+    await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: '出荷する' }))
+  }
+
+  it('AC-167 受付の注文で、配送業者と送り状番号を入れて出荷を登録できる', async () => {
+    const state = serveShipment(SHIPPABLE, { ...SHIPPED, shipment: { ...SHIPMENT, status: 'SHIPPED' } })
+    const { user } = renderApp(URL)
+    await shownStatus('受付')
+
+    await ship(user, 'ヤマト運輸', '1234-5678-9012')
+
+    expect(await screen.findByText('出荷を登録しました')).toBeInTheDocument()
+    expect(await shownStatus('出荷済み')).toBeInTheDocument()
+    expect(state.requests).toEqual([{ carrier: 'YAMATO', trackingNumber: '1234-5678-9012' }])
+    expect(screen.queryByRole('button', { name: '出荷を登録する' })).not.toBeInTheDocument()
+  })
+
+  it.each([
+    [409, 'AUTHORIZATION_EXPIRED', '与信の期限が切れているため、売上を確定できません。'],
+    [502, 'PAYMENT_GATEWAY_UNAVAILABLE', '決済サービスに接続できませんでした。しばらくしてから、やり直してください。'],
+  ])('AC-169 売上確定に失敗したら（%i %s）、理由を示し、注文は受付のまま', async (status, errorCode, message) => {
+    serveShipment(SHIPPABLE)
+    server.use(
+      http.post(
+        '/orders/{orderId}/shipment',
+        () => Response.json(problem(status, errorCode, message), { status }) as never,
+      ),
+    )
+    const { user } = renderApp(URL)
+    await shownStatus('受付')
+
+    await ship(user, '佐川急便', '123456789012')
+
+    expect(await screen.findByText(message)).toBeInTheDocument()
+    expect(await shownStatus('受付')).toBeInTheDocument()
+  })
+
+  it('AC-181 出荷後は、配送状態、配送業者、送り状番号、出荷日時を示す', async () => {
+    serveShipment(SHIPPED)
+    renderApp(URL)
+
+    const card = within(
+      (await screen.findByText('出荷', { selector: '[data-slot="card-title"]' })).closest(
+        '[data-slot="card"]',
+      ) as HTMLElement,
+    )
+    expect(card.getByText('配送状態').nextElementSibling).toHaveTextContent('配送中')
+    expect(card.getByText('配送業者').nextElementSibling).toHaveTextContent('ヤマト運輸')
+    expect(card.getByText('送り状番号').nextElementSibling).toHaveTextContent('123456789012')
+    expect(card.getByText('出荷日時').nextElementSibling).toHaveTextContent('2026/10/11 12:00')
+    expect(screen.queryByRole('button', { name: '出荷を登録する' })).not.toBeInTheDocument()
+  })
+
+  it('出荷できない注文（支払待ち）には、出荷の欄を出さない', async () => {
+    serveShipment(
+      orderDetail({
+        status: 'PENDING_PAYMENT',
+        actions: orderActions({ cancel: false }),
+        payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+      }),
+    )
+    renderApp(URL)
+
+    await shownStatus('支払待ち')
+    expect(screen.queryByText('出荷', { selector: '[data-slot="card-title"]' })).not.toBeInTheDocument()
   })
 })

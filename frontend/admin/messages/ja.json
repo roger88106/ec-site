@@ -359,6 +359,18 @@
       "reject": "申請を却下する",
       "cancel": "キャンセルする"
     },
+    "shipment": {
+      "title": "出荷",
+      "status": "配送状態",
+      "carrier": "配送業者",
+      "trackingNumber": "送り状番号",
+      "shippedAt": "出荷日時",
+      "submit": "出荷を登録する",
+      "confirmTitle": "注文 {orderNumber} を出荷しますか？",
+      "description": "売上を確定し、注文を「出荷済み」にします。元に戻せません。",
+      "confirm": "出荷する",
+      "registered": "出荷を登録しました"
+    },
     "cancelDialog": {
       "title": "注文 {orderNumber} をキャンセルしますか？",
       "description": "キャンセルすると、明細の数量だけ在庫数を戻します。元に戻せません。",

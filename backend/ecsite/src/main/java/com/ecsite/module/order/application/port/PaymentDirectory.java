@@ -4,6 +4,7 @@ import com.ecsite.common.model.value.Money;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -55,12 +56,36 @@ public interface PaymentDirectory {
     Map<UUID, Payment> find(Collection<UUID> orderIds);
 
     /**
+     * 注文の与信期限と、期限が近いかをまとめて返す。
+     *
+     * @param orderIds 注文 ID
+     * @return 注文 ID → 与信期限。与信を受けていない注文は含まない
+     */
+    Map<UUID, Authorization> findAuthorizations(Collection<UUID> orderIds);
+
+    /**
+     * 与信期限が近い注文 ID を返す。期限を過ぎたものを含む。売上確定の前の注文だけが対象。
+     *
+     * @return 注文 ID
+     */
+    List<UUID> findExpiringOrderIds();
+
+    /**
      * 注文の支払
      *
      * @param status   支払の状態
      * @param deadline 支払の期限
      */
     record Payment(Status status, Instant deadline) {
+    }
+
+    /**
+     * 注文の与信期限
+     *
+     * @param deadline 与信期限
+     * @param expiring 期限が近いか（期限を過ぎたものを含む。売上確定の前だけ）
+     */
+    record Authorization(Instant deadline, boolean expiring) {
     }
 
     /**

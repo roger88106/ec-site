@@ -21,11 +21,13 @@ import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 
 /**
- * 注文の照会のサービス
+ * 注文の照会のサービス。支払と出荷は、決済・出荷の API から読む。
  */
 @Service
 @RequiredArgsConstructor
@@ -97,20 +99,36 @@ public class OrderQueryService {
     }
 
     /**
-     * 注文を、注文日時の新しい順に一覧する。注文日の範囲は日本時間の日付で、両端を含む。
+     * 注文を、注文日時の新しい順に一覧する。注文日の範囲は日本時間の日付で、両端を含む。<br />
+     * 与信期限が近い・返送の絞り込みは、決済・出荷の API から注文 ID を受け取り、ID の条件にする（他のモジュールのテーブルは結合しない）。
      *
-     * @param orderNumberPrefix 注文番号の前方一致。なければ null
-     * @param status            状態。なければ null
-     * @param orderedFrom       注文日の範囲の開始。なければ null
-     * @param orderedTo         注文日の範囲の終了。なければ null
-     * @param request           ページの指定
+     * @param orderNumberPrefix     注文番号の前方一致。なければ null
+     * @param status                状態。なければ null
+     * @param orderedFrom           注文日の範囲の開始。なければ null
+     * @param orderedTo             注文日の範囲の終了。なければ null
+     * @param authorizationExpiring true なら、与信期限が近い注文だけ
+     * @param returned              true なら、配送状態が返送の注文だけ
+     * @param request               ページの指定
      * @return 注文の一覧
      */
     public PageResult<OrderQueryRepository.OrderSummaryView> list(String orderNumberPrefix, OrderStatus status,
                                                                   LocalDate orderedFrom, LocalDate orderedTo,
+                                                                  boolean authorizationExpiring, boolean returned,
                                                                   PageRequest request) {
+        Set<UUID> orderIds = null;
+        if (authorizationExpiring) {
+            orderIds = new HashSet<>(paymentDirectory.findExpiringOrderIds());
+        }
+        if (returned) {
+            var returnedIds = shippingDirectory.returnedOrderIds();
+            if (orderIds == null) {
+                orderIds = new HashSet<>(returnedIds);
+            } else {
+                orderIds.retainAll(returnedIds);
+            }
+        }
         var filter = new OrderQueryRepository.Filter(null, orderNumberPrefix, status, startOf(orderedFrom),
-                orderedTo == null ? null : startOf(orderedTo.plusDays(1)));
+                orderedTo == null ? null : startOf(orderedTo.plusDays(1)), orderIds);
         return orderQueryRepository.findOrders(filter, request);
     }
 
@@ -122,9 +140,15 @@ public class OrderQueryService {
      */
     public Map<UUID, OrderPayment> findPayments(Collection<UUID> orderIds) {
         var now = clock.instant();
+        var authorizations = paymentDirectory.findAuthorizations(orderIds);
         var payments = new HashMap<UUID, OrderPayment>();
-        paymentDirectory.find(orderIds).forEach((orderId, payment) -> payments.put(orderId, new OrderPayment(payment.status(),
-                payment.deadline(), payment.status() == PaymentDirectory.Status.UNPAID && now.isBefore(payment.deadline()))));
+        paymentDirectory.find(orderIds).forEach((orderId, payment) -> {
+            var authorization = authorizations.get(orderId);
+            payments.put(orderId, new OrderPayment(payment.status(), payment.deadline(),
+                    payment.status() == PaymentDirectory.Status.UNPAID && now.isBefore(payment.deadline()),
+                    authorization == null ? null : authorization.deadline(),
+                    authorization != null && authorization.expiring()));
+        });
         return payments;
     }
 

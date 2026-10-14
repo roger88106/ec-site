@@ -74,9 +74,11 @@ class AdminOrderController implements OrderApi {
                                                        Integer page, Integer size) {
         var result = orderQueryService.list(orderNumber,
                 status == null ? null : com.ecsite.module.order.domain.order.OrderStatus.valueOf(status.getValue()),
-                orderedFrom, orderedTo, PageRequest.of(page, size));
-        var payments = orderQueryService.findPayments(result.items().stream().map(OrderQueryRepository.OrderSummaryView::id).toList());
-        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, payments));
+                orderedFrom, orderedTo, Boolean.TRUE.equals(authorizationExpiring), Boolean.TRUE.equals(returned),
+                PageRequest.of(page, size));
+        var orderIds = result.items().stream().map(OrderQueryRepository.OrderSummaryView::id).toList();
+        return ResponseEntity.ok(mapper.toOrderSummaryPage(result, orderQueryService.findPayments(orderIds),
+                orderQueryService.findShipments(orderIds)));
     }
 
     /**

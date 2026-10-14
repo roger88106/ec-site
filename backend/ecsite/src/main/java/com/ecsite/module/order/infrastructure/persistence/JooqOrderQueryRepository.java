@@ -67,6 +67,9 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
         if (filter.orderedUntil() != null) {
             where = where.and(SALES_ORDER.ORDERED_AT.lt(filter.orderedUntil()));
         }
+        if (filter.orderIds() != null) {
+            where = where.and(filter.orderIds().isEmpty() ? DSL.falseCondition() : SALES_ORDER.ID.in(filter.orderIds()));
+        }
         return where;
     }
 }

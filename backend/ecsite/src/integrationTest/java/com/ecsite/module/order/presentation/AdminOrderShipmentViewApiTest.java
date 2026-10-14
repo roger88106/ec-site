@@ -30,8 +30,10 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -181,14 +183,14 @@ class AdminOrderShipmentViewApiTest {
     class ListOrders {
 
         @Test
-        @DisplayName("AC-182、186 各行に配送状態と「与信期限が近い」を返す。出荷していなければ配送状態を省く")
+        @DisplayName("AC-182、186 各行に配送状態と「与信期限が近い」を返す。出荷していなければ配送状態は null")
         void showsColumns() throws Exception {
             clock.setInstant(AUTHORIZATION_DEADLINE.minus(Duration.ofDays(1)));
 
             mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()))
                     .andExpect(jsonPath("$.items[?(@.id == '%s')].shipmentStatus".formatted(returned)).value("RETURNED"))
                     .andExpect(jsonPath("$.items[?(@.id == '%s')].shipmentStatus".formatted(shipped)).value("SHIPPED"))
-                    .andExpect(jsonPath("$.items[?(@.id == '%s')].shipmentStatus".formatted(accepted)).value(empty()))
+                    .andExpect(jsonPath("$.items[?(@.id == '%s')].shipmentStatus".formatted(accepted)).value(contains(nullValue())))
                     .andExpect(jsonPath("$.items[?(@.id == '%s')].authorizationExpiring".formatted(accepted)).value(true))
                     .andExpect(jsonPath("$.items[?(@.id == '%s')].authorizationExpiring".formatted(shipped)).value(false));
         }

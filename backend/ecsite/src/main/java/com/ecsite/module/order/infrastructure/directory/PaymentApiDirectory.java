@@ -2,6 +2,7 @@ package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.port.PaymentDirectory;
+import com.ecsite.module.payment.api.AuthorizationDeadline;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
 import lombok.RequiredArgsConstructor;
@@ -9,6 +10,7 @@ import org.springframework.stereotype.Component;
 
 import java.time.Instant;
 import java.util.Collection;
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
@@ -50,5 +52,16 @@ class PaymentApiDirectory implements PaymentDirectory {
     public Map<UUID, Payment> find(Collection<UUID> orderIds) {
         return paymentApi.find(orderIds).stream().collect(Collectors.toMap(PaymentSummary::orderId,
                 summary -> new Payment(Status.valueOf(summary.status().name()), summary.deadline())));
+    }
+
+    @Override
+    public Map<UUID, Authorization> findAuthorizations(Collection<UUID> orderIds) {
+        return paymentApi.findAuthorizationDeadlines(orderIds).stream().collect(Collectors.toMap(AuthorizationDeadline::orderId,
+                deadline -> new Authorization(deadline.deadline(), deadline.expiring())));
+    }
+
+    @Override
+    public List<UUID> findExpiringOrderIds() {
+        return paymentApi.findExpiringOrderIds();
     }
 }

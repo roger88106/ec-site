@@ -38,16 +38,19 @@ class AdminOrderMapper {
     /**
      * 注文一覧のページのレスポンスに変換する。
      *
-     * @param page 注文一覧のページ
+     * @param page      注文一覧のページ
+     * @param payments  注文 ID → 支払
+     * @param shipments 注文 ID → 出荷
      * @return 注文一覧のページのレスポンス
      */
-    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments) {
+    OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
+                                        Map<UUID, ShippingDirectory.Shipment> shipments) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
                 .totalItems(page.totalItems())
                 .totalPages(page.totalPages())
-                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()))).toList());
+                .items(page.items().stream().map(view -> toSummary(view, payments.get(view.id()), shipments.get(view.id()))).toList());
     }
 
     /**
@@ -80,7 +83,10 @@ class AdminOrderMapper {
         if (payment != null) {
             detail.payment(new Payment()
                     .status(PaymentStatus.fromValue(payment.status().name()))
-                    .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline())));
+                    .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline()))
+                    .authorizationDeadline(payment.authorizationDeadline() == null ? null
+                            : ApiDateTimes.toOffsetDateTime(payment.authorizationDeadline()))
+                    .authorizationExpiring(payment.authorizationExpiring()));
         }
         if (shipment != null) {
             detail.shipment(toShipment(shipment));
@@ -105,18 +111,23 @@ class AdminOrderMapper {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 注文一覧の 1 件。支払のない注文（決済を入れる前の注文）は、支払の状態を返さない。
+     * 注文一覧の 1 件。支払のない注文（決済を入れる前の注文）は支払の状態を、出荷していない注文は配送状態を返さない。
      */
-    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment) {
+    private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
+                                          @Nullable ShippingDirectory.Shipment shipment) {
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .customerName(view.customerName())
                 .total(view.total())
-                .status(toStatus(view.status()));
+                .status(toStatus(view.status()))
+                .authorizationExpiring(payment != null && payment.authorizationExpiring());
         if (payment != null) {
             summary.paymentStatus(PaymentStatus.fromValue(payment.status().name()));
+        }
+        if (shipment != null) {
+            summary.shipmentStatus(ShipmentStatus.fromValue(shipment.status().name()));
         }
         return summary;
     }

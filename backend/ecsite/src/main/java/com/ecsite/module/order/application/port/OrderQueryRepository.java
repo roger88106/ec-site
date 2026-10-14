@@ -6,6 +6,7 @@ import com.ecsite.module.order.domain.order.OrderStatus;
 import jakarta.annotation.Nullable;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.UUID;
 
 /**
@@ -30,16 +31,17 @@ public interface OrderQueryRepository {
      * @param status            状態
      * @param orderedFrom       注文日時の下限（この時刻を含む）
      * @param orderedUntil      注文日時の上限（この時刻を含まない）
+     * @param orderIds          注文 ID のどれか（他のモジュールで絞り込んだ結果）。空なら 1 件も合わない
      */
     record Filter(@Nullable UUID memberId, @Nullable String orderNumberPrefix, @Nullable OrderStatus status, @Nullable Instant orderedFrom,
-                  @Nullable Instant orderedUntil) {
+                  @Nullable Instant orderedUntil, @Nullable Collection<UUID> orderIds) {
 
         /**
          * @param memberId 会員 ID
          * @return 会員の注文だけの条件
          */
         public static Filter ofMember(UUID memberId) {
-            return new Filter(memberId, null, null, null, null);
+            return new Filter(memberId, null, null, null, null, null);
         }
     }
 

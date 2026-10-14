@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.api;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.PaymentCaptureService;
 import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentPageService;
 import com.ecsite.module.payment.application.PaymentQueryService;
@@ -31,6 +32,11 @@ public class PaymentApi {
      * 支払の画面のサービス
      */
     private final PaymentPageService pageService;
+
+    /**
+     * 売上確定のサービス
+     */
+    private final PaymentCaptureService captureService;
 
     /**
      * 支払の参照のサービス
@@ -73,9 +79,11 @@ public class PaymentApi {
      * 売上確定済みなら、決済サービスを呼ばずに成功する。
      *
      * @param orderId 注文 ID
+     * @throws com.ecsite.common.error.exception.BusinessException 支払がない、売上を確定できる状態でない、与信の期限が切れている
+     * @throws com.ecsite.common.error.exception.SystemException   決済サービスに接続できない。支払は与信済みのまま残る
      */
     public void capture(UUID orderId) {
-        // T9107 で実装する
+        captureService.capture(orderId);
     }
 
     /**

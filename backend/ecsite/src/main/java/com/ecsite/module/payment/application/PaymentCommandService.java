@@ -67,6 +67,41 @@ public class PaymentCommandService {
     }
 
     /**
+     * 注文の支払を取得する。
+     *
+     * @param orderId 注文 ID
+     * @return 支払。なければ空
+     */
+    @Transactional(readOnly = true)
+    public Optional<Payment> find(UUID orderId) {
+        return paymentRepository.findByOrderId(orderId);
+    }
+
+    /**
+     * 決済サービスで売上を確定したことを反映する。
+     *
+     * @param paymentId 支払 ID
+     */
+    public void markCaptured(UUID paymentId) {
+        paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            payment.capture();
+            paymentRepository.update(payment);
+        });
+    }
+
+    /**
+     * 売上確定が与信の期限切れで断られたことを反映する。
+     *
+     * @param paymentId 支払 ID
+     */
+    public void markAuthorizationExpired(UUID paymentId) {
+        paymentRepository.lockById(paymentId).ifPresent(payment -> {
+            payment.expireAuthorization();
+            paymentRepository.update(payment);
+        });
+    }
+
+    /**
      * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
      *
      * @param limit 取得する数の上限

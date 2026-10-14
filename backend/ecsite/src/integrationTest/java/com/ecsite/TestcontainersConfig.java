@@ -23,6 +23,7 @@ import java.util.Map;
  * PostgreSQL を使い捨てコンテナで起動し、{@code @ServiceConnection} で Spring Boot の接続設定を差し替える。
  * 画像の置き場所（S3 互換）は SeaweedFS で起動し、受付・配信のバケットを作って接続設定を与える（plan 001 第 7 節）。
  * 画像の変換は imgproxy で起動し、同じネットワークから SeaweedFS を読ませる（plan 001 第 7.5 節）。
+ * メールは Mailpit で受ける（plan 009 第 6 節）。
  * コンテナはテスト JVM 内で一度だけ起動され、全テストクラスで共有される。
  * スキーマは Flyway のマイグレーションで作る（profile {@code integration-test}）。
  */
@@ -127,6 +128,30 @@ public class TestcontainersConfig {
             registry.add("ecsite.media.storage.incoming-bucket", () -> INCOMING_BUCKET);
             registry.add("ecsite.media.storage.public-bucket", () -> PUBLIC_BUCKET);
             registry.add("ecsite.media.storage.public-base-url", () -> endpoint + "/" + PUBLIC_BUCKET);
+        };
+    }
+
+    /**
+     * メールの受け手（Mailpit）。docker/compose.yaml と同じイメージを使う。
+     *
+     * @return Mailpit
+     */
+    @Bean(destroyMethod = "close")
+    Mailpit mailpit() {
+        return new Mailpit();
+    }
+
+    /**
+     * メールの送り先（Spring Boot の設定 spring.mail.*）を、Mailpit コンテナの SMTP に向ける。
+     *
+     * @param mailpit Mailpit
+     * @return 接続設定
+     */
+    @Bean
+    DynamicPropertyRegistrar mailProperties(Mailpit mailpit) {
+        return registry -> {
+            registry.add("spring.mail.host", mailpit::smtpHost);
+            registry.add("spring.mail.port", mailpit::smtpPort);
         };
     }
 

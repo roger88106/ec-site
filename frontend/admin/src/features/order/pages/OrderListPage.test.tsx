@@ -110,3 +110,53 @@ describe('注文一覧', () => {
     expect(await screen.findByText('該当する注文はありません。')).toBeInTheDocument()
   })
 })
+
+describe('出荷と与信期限', () => {
+  it('AC-182 AC-186 配送状態と、与信期限が近いことを出す', async () => {
+    serveOrders([
+      orderSummary({ authorizationExpiring: true, paymentStatus: 'AUTHORIZED' }),
+      orderSummary({
+        id: '00000000-0000-0000-0000-000000000502',
+        orderNumber: '20261009-654321',
+        status: 'SHIPPED',
+        paymentStatus: 'CAPTURED',
+        shipmentStatus: 'RETURNED',
+      }),
+    ])
+    renderApp('/orders')
+
+    const expiring = (await screen.findByRole('link', { name: '20261010-123456' })).closest('tr') as HTMLElement
+    expect(within(expiring).getByText('期限が近い')).toBeInTheDocument()
+    const shipped = screen.getByRole('link', { name: '20261009-654321' }).closest('tr') as HTMLElement
+    expect(within(shipped).getByText('出荷済み')).toBeInTheDocument()
+    expect(within(shipped).getByText('返送')).toBeInTheDocument()
+    expect(within(shipped).queryByText('期限が近い')).not.toBeInTheDocument()
+  })
+
+  it('AC-182 状態「出荷済み」で絞り込める', async () => {
+    const queries = serveOrders()
+    const { user, router } = renderApp('/orders')
+    await screen.findByRole('link', { name: '20261010-123456' })
+
+    await user.click(screen.getByRole('combobox', { name: '状態' }))
+    await user.click(await screen.findByRole('option', { name: '出荷済み' }))
+    await user.click(screen.getByRole('button', { name: '絞り込む' }))
+
+    expect(router.state.location.search).toBe('?status=SHIPPED')
+    await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('SHIPPED'))
+  })
+
+  it('AC-187 AC-189 与信期限が近い注文と、返送の注文で絞り込める', async () => {
+    const queries = serveOrders()
+    const { user, router } = renderApp('/orders')
+    await screen.findByRole('link', { name: '20261010-123456' })
+
+    await user.click(screen.getByRole('checkbox', { name: '与信期限が近い' }))
+    await user.click(screen.getByRole('checkbox', { name: '返送' }))
+    await user.click(screen.getByRole('button', { name: '絞り込む' }))
+
+    expect(router.state.location.search).toBe('?authorizationExpiring=true&returned=true')
+    await waitFor(() => expect(queries.at(-1)?.get('authorizationExpiring')).toBe('true'))
+    expect(queries.at(-1)?.get('returned')).toBe('true')
+  })
+})

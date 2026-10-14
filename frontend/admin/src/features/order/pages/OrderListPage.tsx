@@ -8,14 +8,16 @@ import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
 import { QueryState } from '@/components/QueryState'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { AuthorizationExpiringBadge } from '@/features/order/components/AuthorizationExpiringBadge'
 import { OrderFilterForm } from '@/features/order/components/OrderFilterForm'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
 import { formatYen } from '@/lib/format'
+import { shipmentStatusLabel } from '@/lib/labels'
 
 /**
- * 注文一覧。注文日時の新しい順で、キャンセル済みも含む。<br />
+ * 注文一覧。注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。<br />
  * 絞り込みとページは URL のクエリに持ち、戻る・再読み込みで同じ一覧を出す。
  */
 export function OrderListPage() {
@@ -33,6 +35,8 @@ export function OrderListPage() {
           status: filter.status ?? undefined,
           orderedFrom: filter.orderedFrom || undefined,
           orderedTo: filter.orderedTo || undefined,
+          authorizationExpiring: filter.authorizationExpiring || undefined,
+          returned: filter.returned || undefined,
           page: filter.page,
         },
       },
@@ -61,6 +65,7 @@ export function OrderListPage() {
                     <TableHead className="text-right">{t('total') /* 総額 */}</TableHead>
                     <TableHead>{t('status') /* 状態 */}</TableHead>
                     <TableHead>{t('payment') /* 支払 */}</TableHead>
+                    <TableHead>{t('shipment') /* 配送 */}</TableHead>
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -82,13 +87,20 @@ export function OrderListPage() {
                       </TableCell>
                       <TableCell>
                         {/* 決済を入れる前の注文は、支払の状態を持たない */}
-                        {item.paymentStatus && <PaymentStatusBadge status={item.paymentStatus} />}
+                        <div className="flex flex-wrap items-center gap-1">
+                          {item.paymentStatus && <PaymentStatusBadge status={item.paymentStatus} />}
+                          {item.authorizationExpiring && <AuthorizationExpiringBadge />}
+                        </div>
+                      </TableCell>
+                      <TableCell>
+                        {/* 出荷の前は、配送状態を持たない */}
+                        {item.shipmentStatus && shipmentStatusLabel(item.shipmentStatus)}
                       </TableCell>
                     </TableRow>
                   ))}
                   {result.items.length === 0 && (
                     <TableRow>
-                      <TableCell className="text-center text-muted-foreground" colSpan={6}>
+                      <TableCell className="text-center text-muted-foreground" colSpan={7}>
                         {t('empty') /* 該当なし */}
                       </TableCell>
                     </TableRow>

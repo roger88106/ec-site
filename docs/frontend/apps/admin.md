@@ -57,7 +57,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | `/categories` | カテゴリ |
 | `/tax-categories` | 税区分の一覧と登録 |
 | `/tax-categories/:taxCategoryId` | 税率の一覧の編集 |
-| `/orders` | 注文一覧（クエリ：`orderNumber`、`status`、`orderedFrom`、`orderedTo`、`page`） |
+| `/orders` | 注文一覧（クエリ：`orderNumber`、`status`、`orderedFrom`、`orderedTo`、`authorizationExpiring`、`returned`、`page`） |
 | `/orders/:orderId` | 注文の詳細（支払の状態と期限、出荷の登録と配送状態、明細、金額の内訳、お届け先、キャンセルの承認・却下・キャンセル） |
 
 - 一覧の絞り込みとページは URL のクエリに持つ（戻る・再読み込みで同じ一覧を出すため）。

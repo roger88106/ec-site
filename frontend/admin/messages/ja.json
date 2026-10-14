@@ -290,13 +290,16 @@
       "total": "総額",
       "status": "状態",
       "payment": "支払",
+      "shipment": "配送",
       "empty": "該当する注文はありません。"
     },
     "filter": {
       "orderNumber": "注文番号（前方一致）",
       "status": "状態",
       "orderedFrom": "注文日（から）",
-      "orderedTo": "注文日（まで）"
+      "orderedTo": "注文日（まで）",
+      "authorizationExpiring": "与信期限が近い",
+      "returned": "返送"
     },
     "detail": {
       "titlePrefix": "注文：",

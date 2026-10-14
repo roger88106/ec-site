@@ -6,6 +6,7 @@ import { orderStatusValues } from '@/api/generated/admin'
 import { parameters } from '@/api/generated/constraints'
 import type { OrderStatus } from '@/api/types'
 import { OptionSelect } from '@/components/OptionSelect'
+import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
 import { translate } from '@/i18n/translate'
@@ -59,6 +60,22 @@ export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onAp
         <FieldLabel htmlFor="filter-ordered-to">{t('orderedTo') /* 注文日まで */}</FieldLabel>
         <Input id="filter-ordered-to" type="date" {...form.register('orderedTo')} />
       </Field>
+      <div className="flex h-9 items-center gap-4">
+        {(['authorizationExpiring', 'returned'] as const).map((name) => (
+          <Controller
+            control={form.control}
+            key={name}
+            name={name}
+            render={({ field }) => (
+              // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox（base-ui）はラベルの中の button 要素
+              <label className="flex items-center gap-2 text-sm">
+                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+                {t(name) /* 与信期限が近い、返送 */}
+              </label>
+            )}
+          />
+        ))}
+      </div>
       <Button type="submit">{tCommon('filter.submit') /* 絞り込む */}</Button>
       <Button onClick={() => onApply(EMPTY_FILTER)} type="button" variant="ghost">
         {tCommon('filter.clear') /* クリア */}

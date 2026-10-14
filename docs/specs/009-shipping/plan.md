@@ -239,7 +239,7 @@ spec 007 の与信の取消（決済の設計書「与信の取消」）と同�
 
 ## 11. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-payment.md)、[02](tasks/02-shipping.md)、[03](tasks/03-order.md)、[04](tasks/04-notification.md)、[05](tasks/05-stripe.md)、[06](tasks/06-admin-ui.md)、[07](tasks/07-store-ui.md)、[08](tasks/08-e2e-ci.md)、[09](tasks/09-review.md)）。タスク番号は `T9` ＋ 段階 ＋ 連番（例：T9101）。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-payment.md)、[02](tasks/02-shipping.md)、[03](tasks/03-order.md)、[04](tasks/04-notification.md)、[05](tasks/05-stripe.md)、[06](tasks/06-admin-ui.md)、[07](tasks/07-store-ui.md)、[08](tasks/08-e2e-ci.md)、[09](tasks/09-review.md)、[10](tasks/10-seed.md)）。タスク番号は `T9` ＋ 段階 ＋ 連番（例：T9101）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|

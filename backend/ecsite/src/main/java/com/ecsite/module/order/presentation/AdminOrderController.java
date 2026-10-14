@@ -5,6 +5,9 @@ import com.ecsite.api.admin.model.CancelOrderRequest;
 import com.ecsite.api.admin.model.OrderDetail;
 import com.ecsite.api.admin.model.OrderStatus;
 import com.ecsite.api.admin.model.OrderSummaryPage;
+import com.ecsite.api.admin.model.ShipOrderRequest;
+import com.ecsite.api.admin.model.Shipment;
+import org.springframework.http.HttpStatus;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationService;
@@ -52,13 +55,16 @@ class AdminOrderController implements OrderApi {
      * @param status      状態
      * @param orderedFrom 注文日の範囲の開始（日本時間）
      * @param orderedTo   注文日の範囲の終了（日本時間）
+     * @param authorizationExpiring true なら、与信期限が近い注文だけ
+     * @param returned    true なら、配送状態が返送の注文だけ
      * @param page        ページ番号
      * @param size        1 ページの件数
      * @return Http 200 : {@link OrderSummaryPage}
      */
     @Override
     public ResponseEntity<OrderSummaryPage> listOrders(String orderNumber, OrderStatus status, LocalDate orderedFrom,
-                                                       LocalDate orderedTo, Integer page, Integer size) {
+                                                       LocalDate orderedTo, Boolean authorizationExpiring, Boolean returned,
+                                                       Integer page, Integer size) {
         var result = orderQueryService.list(orderNumber,
                 status == null ? null : com.ecsite.module.order.domain.order.OrderStatus.valueOf(status.getValue()),
                 orderedFrom, orderedTo, PageRequest.of(page, size));
@@ -76,6 +82,18 @@ class AdminOrderController implements OrderApi {
     public ResponseEntity<OrderDetail> getOrder(UUID orderId) {
         var order = orderQueryService.get(orderId);
         return ResponseEntity.ok(mapper.toOrderDetail(order, orderQueryService.findPayments(List.of(orderId)).get(orderId)));
+    }
+
+    /**
+     * 出荷の登録
+     *
+     * @param orderId 注文 ID
+     * @param request 配送業者と送り状番号
+     * @return Http 201 : {@link Shipment}
+     */
+    @Override
+    public ResponseEntity<Shipment> shipOrder(UUID orderId, ShipOrderRequest request) {
+        return ResponseEntity.status(HttpStatus.NOT_IMPLEMENTED).build();
     }
 
     /**

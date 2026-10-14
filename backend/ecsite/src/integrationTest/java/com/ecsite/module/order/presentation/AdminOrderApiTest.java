@@ -158,7 +158,7 @@ class AdminOrderApiTest {
         @Test
         @DisplayName("状態が決められた値でなければ 400")
         void rejectsUnknownStatus() throws Exception {
-            mockMvc.perform(get(BASE).param("status", "SHIPPED")).andExpect(status().isBadRequest());
+            mockMvc.perform(get(BASE).param("status", "DELIVERED")).andExpect(status().isBadRequest());
         }
     }
 

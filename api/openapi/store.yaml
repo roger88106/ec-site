@@ -388,7 +388,7 @@ paths:
     get:
       tags: [order]
       operationId: listMemberOrders
-      summary: 自分の注文の一覧（AC-129）
+      summary: 自分の注文の一覧（AC-129、180）
       description: token の会員の注文を、注文日時の新しい順に返す（同じ日時なら ID の順）。
       security:
         - memberToken: []
@@ -415,7 +415,7 @@ paths:
       operationId: getOrder
       security:
         - memberToken: []
-      summary: 注文の表示（AC-93、94、96）
+      summary: 注文の表示（AC-93、94、96、179、196）
       responses:
         '200':
           description: 注文
@@ -1030,8 +1030,8 @@ components:
           description: 注文手続きの画面で表示した総額（AC-89）
     OrderStatus:
       type: string
-      enum: [PENDING_PAYMENT, ACCEPTED, CANCELLATION_REQUESTED, CANCELLED]
-      description: 支払待ち、受付、キャンセル申請中、キャンセル（BR-9、14）
+      enum: [PENDING_PAYMENT, ACCEPTED, CANCELLATION_REQUESTED, CANCELLED, SHIPPED]
+      description: 支払待ち、受付、キャンセル申請中、キャンセル（BR-9、14）、出荷済み（BR-18）
     CancellationRequest:
       type: object
       required: [requestedAt, result]
@@ -1103,8 +1103,30 @@ components:
           $ref: '#/components/schemas/CancellationRequest'
         cancellation:
           $ref: '#/components/schemas/Cancellation'
+        shipment:
+          $ref: '#/components/schemas/Shipment'
         actions:
           $ref: '#/components/schemas/OrderActions'
+    Carrier:
+      type: string
+      enum: [YAMATO, SAGAWA, JAPAN_POST]
+      description: ヤマト運輸、佐川急便、日本郵便
+    ShipmentStatus:
+      type: string
+      enum: [SHIPPED, IN_TRANSIT, DELIVERED, RETURNED]
+      description: 出荷済み、配送中、配達完了、返送（BR-19）
+    Shipment:
+      type: object
+      description: 注文の出荷（AC-179）。出荷していなければ省く。キャンセルの後も残る（画面は注文の状態で出し分ける）
+      required: [carrier, trackingNumber, status]
+      properties:
+        carrier:
+          $ref: '#/components/schemas/Carrier'
+        trackingNumber:
+          type: string
+          description: 送り状番号（ハイフンを除いた数字）
+        status:
+          $ref: '#/components/schemas/ShipmentStatus'
     Cancellation:
       type: object
       description: キャンセルした内容。キャンセルでなければ省く
@@ -1172,6 +1194,8 @@ components:
           type: string
           format: date-time
           description: 支払の期限（AC-159）。支払待ちのときだけ。それ以外は省く
+        shipmentStatus:
+          $ref: '#/components/schemas/ShipmentStatus'
     RequestOrderCancellationRequest:
       type: object
       properties:

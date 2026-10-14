@@ -28,6 +28,12 @@ spring:
           enabled: false
       # 再起動時の再発行は使わない。未完了のイベントは定期ジョブ（EventResubmissionJob）が再発行する
       republish-outstanding-events-on-restart: false
+  mail:
+    properties:
+      # SMTP の接続・読み書きの待ち時間の上限（ミリ秒）。上限がないと、応えない SMTP サーバーでメールのリスナーが止まったままになる
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
   flyway:
     # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（バックエンドのアーキテクチャ 第 5 節）。
     # 起動時の実行は local profile でだけ有効にする。

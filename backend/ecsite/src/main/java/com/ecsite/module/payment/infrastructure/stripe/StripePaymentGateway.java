@@ -4,6 +4,11 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.stripe.StripeClient;
+import com.stripe.param.RefundCreateParams;
+import com.stripe.param.PaymentIntentCaptureParams;
+import com.stripe.net.RequestOptions;
+import com.stripe.exception.ApiException;
+import com.stripe.exception.ApiConnectionException;
 import com.stripe.exception.InvalidRequestException;
 import com.stripe.exception.StripeException;
 import com.stripe.param.checkout.SessionCreateParams;
@@ -15,7 +20,8 @@ import java.time.Duration;
 
 /**
  * Stripe の決済サービス（docs/backend/modules/payment.md「Stripe」）。<br />
- * 支払の画面は Checkout Session（与信だけを取る）、与信は PaymentIntent。Stripe の型とエラーはこのクラスの外に出さない。
+ * 支払の画面は Checkout Session（与信だけを取る）、与信は PaymentIntent。売上確定は PaymentIntent の capture、返金は Refund。
+ * Stripe の型とエラーはこのクラスの外に出さない。
  */
 @Slf4j
 @RequiredArgsConstructor
@@ -47,9 +53,24 @@ class StripePaymentGateway implements PaymentGateway {
     private static final String SESSION_EXPIRED = "expired";
 
     /**
-     * PaymentIntent の状態：取消済み
+     * PaymentIntent の状態：取消済み（与信の期限切れでも、Stripe が取り消す）
      */
     private static final String INTENT_CANCELED = "canceled";
+
+    /**
+     * PaymentIntent の状態：売上確定済み
+     */
+    private static final String INTENT_SUCCEEDED = "succeeded";
+
+    /**
+     * Stripe のエラーコード：今の状態ではできない（確定済み、取消済みの PaymentIntent の売上確定など）
+     */
+    private static final String UNEXPECTED_STATE = "payment_intent_unexpected_state";
+
+    /**
+     * Stripe のエラーコード：返金済み
+     */
+    private static final String ALREADY_REFUNDED = "charge_already_refunded";
 
     /**
      * Stripe の API
@@ -126,12 +147,43 @@ class StripePaymentGateway implements PaymentGateway {
 
     @Override
     public CaptureResult capture(CaptureRequest request) {
-        throw new UnsupportedOperationException("Stripe の売上確定は未対応です");
+        var params = PaymentIntentCaptureParams.builder().setAmountToCapture(request.amount().yen()).build();
+        var options = RequestOptions.builder().setIdempotencyKey("capture-" + request.orderId()).build();
+        try {
+            client.v1().paymentIntents().capture(request.authorizationRef(), params, options);
+            return CaptureResult.CAPTURED;
+        } catch (InvalidRequestException e) {
+            // 確定済みと与信の期限切れ（Stripe が取り消している）は、同じ理由で拒否される。読み直して見分ける
+            if (!UNEXPECTED_STATE.equals(e.getCode())) {
+                throw failure("売上を確定できない: orderId=" + request.orderId(), e);
+            }
+            return capturedState(request, e);
+        } catch (ApiConnectionException | ApiException e) {
+            log.warn("Stripe に接続できず、売上を確定できない: orderId={}, requestId={}", request.orderId(), e.getRequestId(), e);
+            return CaptureResult.UNREACHABLE;
+        } catch (StripeException e) {
+            throw failure("売上を確定できない: orderId=" + request.orderId(), e);
+        }
     }
 
     @Override
     public void refund(RefundRequest request) {
-        throw new UnsupportedOperationException("Stripe の返金は未対応です");
+        var params = RefundCreateParams.builder()
+                .setPaymentIntent(request.authorizationRef())
+                .setAmount(request.amount().yen())
+                .build();
+        var options = RequestOptions.builder().setIdempotencyKey("refund-" + request.orderId()).build();
+        try {
+            client.v1().refunds().create(params, options);
+        } catch (InvalidRequestException e) {
+            // 返金済みは拒否される。重ねた返金は成功とする
+            if (!ALREADY_REFUNDED.equals(e.getCode())) {
+                throw failure("返金できない: orderId=" + request.orderId(), e);
+            }
+            log.info("返金済みの返金を、成功として扱う: orderId={}", request.orderId());
+        } catch (StripeException e) {
+            throw failure("返金できない: orderId=" + request.orderId(), e);
+        }
     }
 
 // ============================== プライベート ==============================
@@ -150,6 +202,23 @@ class StripePaymentGateway implements PaymentGateway {
             case SESSION_COMPLETE -> CloseResult.ALREADY_PAID;
             case SESSION_EXPIRED -> CloseResult.CLOSED;
             default -> throw failure("支払の画面を閉じられない: pageId=" + pageId + ", status=" + status, rejected);
+        };
+    }
+
+    /**
+     * 売上確定を拒否された PaymentIntent の状態から、確定の結果を決める。確定済みなら成功、取消済みなら与信期限切れ。
+     */
+    private CaptureResult capturedState(CaptureRequest request, InvalidRequestException rejected) {
+        String status;
+        try {
+            status = client.v1().paymentIntents().retrieve(request.authorizationRef()).getStatus();
+        } catch (StripeException e) {
+            throw failure("与信の状態を読めない: authorizationRef=" + request.authorizationRef(), e);
+        }
+        return switch (status) {
+            case INTENT_SUCCEEDED -> CaptureResult.CAPTURED;
+            case INTENT_CANCELED -> CaptureResult.AUTHORIZATION_EXPIRED;
+            default -> throw failure("売上を確定できない: orderId=" + request.orderId() + ", status=" + status, rejected);
         };
     }
 

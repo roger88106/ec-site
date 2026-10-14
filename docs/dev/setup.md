@@ -39,6 +39,7 @@ pnpm dev
 | http://localhost:8025 | Mailpit（Keycloak とバックエンドが送ったメール。外には送らない） |
 
 - `docker compose` はルートで実行する（ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
+- Mailpit の SMTP はホストの 1025 で受ける。1025 を他のプログラムが使っていると（Windows ではシステムのプログラムが使うことがある）、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いたポートを入れて、compose とバックエンドを起動する（両方が同じ値を読む）。
 - 止めるときは `docker compose stop`、データを消して作り直すときは `docker compose down -v`。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で直せる lint は `pnpm lint:fix`。

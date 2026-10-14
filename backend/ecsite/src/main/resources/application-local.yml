@@ -21,7 +21,8 @@ spring:
   mail:
     # compose の Mailpit（届いたメールは http://localhost:8025 で見る）
     host: localhost
-    port: 1025
+    # 1025 を他のプログラムが使っていれば、MAILPIT_SMTP_PORT で compose と合わせて変える（docs/dev/setup.md）
+    port: ${MAILPIT_SMTP_PORT:1025}
 
 logging:
   structured:

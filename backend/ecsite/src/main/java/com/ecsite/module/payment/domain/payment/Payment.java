@@ -202,11 +202,19 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 売上を確定したことを反映する。与信済みでなければ何もしない。
+     * 売上を確定したことを反映する。与信済みなら売上確定済みにする。<br />
+     * 与信の取消待ちなら、決済サービスが確定した後に注文がキャンセルされたので、返金待ちにして返金の依頼を登録する
+     * （確定した与信は取り消せない）。それ以外なら何もしない。
+     *
+     * @param now 現在時刻
      */
-    public void capture() {
-        if (status == PaymentStatus.AUTHORIZED) {
-            status = PaymentStatus.CAPTURED;
+    public void capture(@NonNull Instant now) {
+        switch (status) {
+            case AUTHORIZED -> status = PaymentStatus.CAPTURED;
+            case VOID_PENDING -> requestRefund(now);
+            case UNPAID, NOT_PAID, VOIDED, CAPTURED, AUTHORIZATION_EXPIRED, REFUND_PENDING, REFUNDED -> {
+                // 確定を反映するものがない
+            }
         }
     }
 

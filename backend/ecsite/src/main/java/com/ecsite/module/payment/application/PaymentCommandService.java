@@ -85,7 +85,7 @@ public class PaymentCommandService {
      */
     public void markCaptured(UUID paymentId) {
         paymentRepository.lockById(paymentId).ifPresent(payment -> {
-            payment.capture();
+            payment.capture(clock.instant());
             paymentRepository.update(payment);
         });
     }

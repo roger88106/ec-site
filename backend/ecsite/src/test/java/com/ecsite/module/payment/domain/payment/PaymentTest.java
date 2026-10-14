@@ -246,7 +246,7 @@ class PaymentTest {
         void capturesAuthorized() {
             var payment = authorized();
 
-            payment.capture();
+            payment.capture(ORDERED_AT);
 
             assertThat(payment.status()).isEqualTo(PaymentStatus.CAPTURED);
             assertThat(payment.pullEvents()).isEmpty();
@@ -257,10 +257,24 @@ class PaymentTest {
         void ignoresRepeatedCapture() {
             var payment = captured();
 
-            payment.capture();
+            payment.capture(ORDERED_AT);
 
             assertThat(payment.status()).isEqualTo(PaymentStatus.CAPTURED);
             assertThat(payment.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("T9315 与信の取消待ち（確定の最中に取り消された）なら、返金待ちにして返金の依頼を登録する")
+        void requestsRefundWhenVoidPending() {
+            var payment = authorized();
+            payment.cancel(ORDERED_AT);
+            payment.pullEvents();
+
+            payment.capture(ORDERED_AT);
+
+            assertThat(payment.status()).isEqualTo(PaymentStatus.REFUND_PENDING);
+            assertThat(payment.pullEvents()).singleElement().isInstanceOfSatisfying(RefundRequested.class,
+                    event -> assertThat(event.paymentId()).isEqualTo(payment.id()));
         }
 
         @Test
@@ -269,8 +283,8 @@ class PaymentTest {
             var unpaid = unpaid();
             var authorizationExpired = authorizationExpired();
 
-            unpaid.capture();
-            authorizationExpired.capture();
+            unpaid.capture(ORDERED_AT);
+            authorizationExpired.capture(ORDERED_AT);
 
             assertThat(unpaid.status()).isEqualTo(PaymentStatus.UNPAID);
             assertThat(authorizationExpired.status()).isEqualTo(PaymentStatus.AUTHORIZATION_EXPIRED);
@@ -473,7 +487,7 @@ class PaymentTest {
         @DisplayName("BR-20 売上確定済みの支払は、期限が近くない")
         void capturedIsNotExpiring() {
             var payment = authorizedAt(AUTHORIZED_AT);
-            payment.capture();
+            payment.capture(ORDERED_AT);
 
             assertThat(payment.isAuthorizationExpiring(term, AUTHORIZATION_DEADLINE.plusSeconds(1))).isFalse();
         }
@@ -516,7 +530,7 @@ class PaymentTest {
 
     private static Payment captured() {
         var payment = authorized();
-        payment.capture();
+        payment.capture(ORDERED_AT);
         payment.pullEvents();
         return payment;
     }

@@ -80,9 +80,10 @@ export function OrderActions({ order }: { order: OrderDetail }) {
       <ErrorMessage error={error} />
       {cancelling && (
         <CancelOrderDialog
+          askRestock={order.status === 'SHIPPED'}
           error={cancel.error}
           onClose={() => setCancelling(false)}
-          onSubmit={(reason, callbacks) => cancel.mutate({ ...path, body: { reason } }, callbacks)}
+          onSubmit={(reason, restock, callbacks) => cancel.mutate({ ...path, body: { reason, restock } }, callbacks)}
           orderNumber={order.orderNumber}
           pending={cancel.isPending}
         />

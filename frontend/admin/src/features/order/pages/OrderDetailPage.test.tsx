@@ -457,3 +457,62 @@ describe('与信期限と返金', () => {
     expect(await shownPayment()).toHaveTextContent(label)
   })
 })
+
+describe('返送の注文のキャンセル', () => {
+  /** 返送された、出荷済みの注文 */
+  const RETURNED = orderDetail({
+    status: 'SHIPPED',
+    actions: orderActions({ cancel: true }),
+    payment: { status: 'CAPTURED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+    shipment: {
+      carrier: 'YAMATO',
+      trackingNumber: '123456789012',
+      status: 'RETURNED',
+      shippedAt: '2026-10-11T03:00:00Z',
+    },
+  })
+
+  /** キャンセルの API に応答し、送った内容を取っておく */
+  function serveCancel() {
+    const bodies: unknown[] = []
+    server.use(
+      http.get('/orders/{orderId}', ({ response }) => response(200).json(RETURNED)),
+      http.put('/orders/{orderId}/cancel', async ({ request, response }) => {
+        bodies.push(await request.json())
+        return response(204).empty()
+      }),
+    )
+    return bodies
+  }
+
+  it.each([
+    ['在庫に戻す', true],
+    ['在庫に戻さない', false],
+  ] as const)('AC-190 AC-191 理由を入れ、%s を選んでキャンセルできる', async (choice, restock) => {
+    const bodies = serveCancel()
+    const { user } = renderApp(URL)
+    await shownStatus('出荷済み')
+
+    await user.click(screen.getByRole('button', { name: 'キャンセルする' }))
+    const dialog = within(await screen.findByRole('dialog'))
+    await user.type(dialog.getByLabelText('理由（必須）'), '受取拒否')
+    const submit = dialog.getByRole('button', { name: 'キャンセルする' })
+    expect(submit).toBeDisabled()
+    await user.click(dialog.getByRole('radio', { name: choice }))
+    await user.click(submit)
+
+    expect(await screen.findByText('キャンセルしました')).toBeInTheDocument()
+    expect(bodies).toEqual([{ reason: '受取拒否', restock }])
+  })
+
+  it('出荷前の注文のキャンセルでは、在庫に戻すかを聞かない', async () => {
+    serveOrder(orderDetail())
+    const { user } = renderApp(URL)
+    await shownStatus('受付')
+
+    await user.click(screen.getByRole('button', { name: 'キャンセルする' }))
+
+    const dialog = within(await screen.findByRole('dialog'))
+    expect(dialog.queryByRole('radio')).not.toBeInTheDocument()
+  })
+})

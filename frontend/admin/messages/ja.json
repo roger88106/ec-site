@@ -376,7 +376,11 @@
     "cancelDialog": {
       "title": "注文 {orderNumber} をキャンセルしますか？",
       "description": "キャンセルすると、明細の数量だけ在庫数を戻します。元に戻せません。",
+      "returnedDescription": "返送された注文をキャンセルし、代金を返金します。元に戻せません。",
       "reason": "理由（必須）",
+      "restock": "在庫",
+      "restockYes": "在庫に戻す",
+      "restockNo": "在庫に戻さない",
       "submit": "キャンセルする"
     }
   }

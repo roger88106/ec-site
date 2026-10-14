@@ -255,8 +255,8 @@ public class Payment extends AggregateRoot {
      * @return 近ければ true
      */
     public boolean isAuthorizationExpiring(@NonNull AuthorizationTerm term, @NonNull Instant now) {
-        var target = status == PaymentStatus.AUTHORIZED || status == PaymentStatus.AUTHORIZATION_EXPIRED;
-        return target && authorizedAt().map(at -> term.isExpiring(at, now)).orElse(false);
+        return status.watchesAuthorizationDeadline()
+                && authorizedAt().map(at -> term.isExpiring(at, now)).orElse(false);
     }
 
     /**

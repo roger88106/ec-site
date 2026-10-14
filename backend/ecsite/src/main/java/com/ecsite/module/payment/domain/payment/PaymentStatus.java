@@ -48,5 +48,14 @@ public enum PaymentStatus {
     /**
      * 返金済み
      */
-    REFUNDED,
+    REFUNDED;
+
+    /**
+     * 与信期限を気にする状態かを返す。売上を確定する前の、与信済みと与信期限切れ。
+     *
+     * @return 与信期限を気にする状態なら true
+     */
+    public boolean watchesAuthorizationDeadline() {
+        return this == AUTHORIZED || this == AUTHORIZATION_EXPIRED;
+    }
 }

@@ -97,6 +97,27 @@ public class PaymentApi {
     }
 
     /**
+     * 注文の与信期限と、期限が近いかをまとめて返す。
+     *
+     * @param orderIds 注文 ID
+     * @return 与信期限。与信を受けていない注文は含まない
+     */
+    public List<AuthorizationDeadline> findAuthorizationDeadlines(Collection<UUID> orderIds) {
+        return queryService.findAuthorizationDeadlines(orderIds).stream()
+                .map(view -> new AuthorizationDeadline(view.orderId(), view.deadline(), view.expiring()))
+                .toList();
+    }
+
+    /**
+     * 与信期限が近い注文 ID を返す。期限を過ぎたものを含む。売上確定の前の注文だけが対象。
+     *
+     * @return 注文 ID（与信の古い順）
+     */
+    public List<UUID> findExpiringOrderIds() {
+        return queryService.findExpiringOrderIds();
+    }
+
+    /**
      * 支払の状態を公開の型にする。
      */
     private static PaymentSummary toSummary(PaymentSummaryView view) {

@@ -69,6 +69,16 @@ public class PaymentApi {
     }
 
     /**
+     * 注文の支払の売上を確定する。決済サービスを呼ぶので、トランザクションの外で呼ぶ。<br />
+     * 売上確定済みなら、決済サービスを呼ばずに成功する。
+     *
+     * @param orderId 注文 ID
+     */
+    public void capture(UUID orderId) {
+        // T9107 で実装する
+    }
+
+    /**
      * 注文の支払の状態をまとめて返す。
      *
      * @param orderIds 注文 ID

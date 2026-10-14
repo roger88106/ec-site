@@ -13,11 +13,11 @@ import { PaymentSection } from '@/features/order/components/PaymentSection'
 import {
   axisValuesLabel,
   cancellationState,
+  carrierLabel,
   formatDateTime,
   formatPostalCode,
   formatYen,
-  ORDER_STATUS_VARIANTS,
-  orderStatusLabel,
+  orderStatusBadge,
   paymentState,
 } from '@/lib/orderDisplay'
 import { isUuid } from '@/lib/uuid'
@@ -51,6 +51,8 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
   const order = await unwrapMember(orderResult)
   const shop = unwrap(shopResult)
   const address = order.shippingAddress
+  const status = orderStatusBadge({ status: order.status, shipmentStatus: order.shipment?.status })
+  const cancellation = cancellationState(order)
 
   return (
     <div className="space-y-8">
@@ -76,8 +78,16 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
         <dd className="tabular-nums">{formatDateTime(order.orderedAt)}</dd>
         <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
         <dd>
-          <Badge variant={ORDER_STATUS_VARIANTS[order.status]}>{orderStatusLabel(order.status)}</Badge>
+          <Badge variant={status.variant}>{status.label}</Badge>
         </dd>
+        {order.shipment && (
+          <>
+            <dt className="text-muted-foreground">{t('carrier') /* 配送業者 */}</dt>
+            <dd>{carrierLabel(order.shipment.carrier)}</dd>
+            <dt className="text-muted-foreground">{t('trackingNumber') /* 送り状番号 */}</dt>
+            <dd className="tabular-nums">{order.shipment.trackingNumber}</dd>
+          </>
+        )}
       </dl>
 
       {paymentState(order, returned) !== 'NONE' && (
@@ -129,7 +139,8 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
         </address>
       </section>
 
-      {cancellationState(order) !== 'NOT_YET' && (
+      {/* 支払待ちと出荷済みの注文は、申請できず、キャンセルもされていない */}
+      {cancellation !== 'NOT_YET' && cancellation !== 'SHIPPED' && (
         <section className="space-y-3">
           <h2 className="font-semibold">{t('cancellation') /* キャンセル */}</h2>
           <CancellationSection contactEmail={shop.contactEmail} order={order} />

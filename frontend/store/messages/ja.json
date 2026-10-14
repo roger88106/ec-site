@@ -197,6 +197,8 @@
       "orderNumber": "注文番号",
       "orderedAt": "注文日時",
       "status": "状態",
+      "carrier": "配送業者",
+      "trackingNumber": "送り状番号",
       "lines": "明細",
       "quantity": "数量 {quantity}",
       "shippingAddress": "お届け先",

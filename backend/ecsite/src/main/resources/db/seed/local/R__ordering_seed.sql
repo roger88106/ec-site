@@ -2,6 +2,7 @@
 -- 会員 member@example.com（R__member_seed.sql）の注文。状態は、受付、キャンセルの申請中、申請の却下（受付のまま）、キャンセル済み（申請の承認）。
 -- 金額は、税込の単価（税抜 × (100 + 率) / 100 の切り捨て）× 数量の合計に、送料（税込 1,000 円、標準税率）を足したもの。
 -- 消費税は、率ごとの税込の合計（送料を含む）× 率 / (100 + 率) の切り捨て。在庫の出庫と戻しは R__inventory_seed.sql。
+-- キャンセル済みの注文は、在庫に戻している（cancellation_restocked）。
 -- 注文番号は注文日（東京）と 6 桁の番号。注文は画面や API で変えられるので、seed の再実行で上書きしない
 
 INSERT INTO ordering.sales_order (id, order_number, checkout_id, ordered_at, status,
@@ -9,23 +10,23 @@ INSERT INTO ordering.sales_order (id, order_number, checkout_id, ordered_at, sta
                                   cancellation_requested_at, cancellation_request_reason, cancellation_request_result, cancellation_decided_at,
                                   cancelled_at, cancellation_kind, cancellation_reason,
                                   version, created_at, updated_at, member_id, cancellation_decided_by_id, cancellation_decided_by_name,
-                                  cancelled_by_id, cancelled_by_name)
+                                  cancelled_by_id, cancelled_by_name, cancellation_restocked)
 VALUES ('00000000-0000-0000-0000-000000006101', to_char((now() - interval '6 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-107919', '00000000-0000-0000-0000-000000006201', now() - interval '6 days 0 hours', 'CANCELLED',
         2889, 1000, 3889, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
         now() - interval '5 days 0 hours', '注文を取り消したい', 'APPROVED', now() - interval '5 days -2 hours', now() - interval '5 days -2 hours', 'REQUEST_APPROVED', NULL,
-        0, now() - interval '6 days 0 hours', now() - interval '5 days -2 hours', '00000000-0000-0000-0000-000000006001', NULL, '管理 花子', NULL, '管理 花子'),
+        0, now() - interval '6 days 0 hours', now() - interval '5 days -2 hours', '00000000-0000-0000-0000-000000006001', NULL, '管理 花子', NULL, '管理 花子', true),
        ('00000000-0000-0000-0000-000000006102', to_char((now() - interval '4 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-115838', '00000000-0000-0000-0000-000000006202', now() - interval '4 days 0 hours', 'ACCEPTED',
         6886, 1000, 7886, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
         now() - interval '3 days 0 hours', '別の色にしたい', 'REJECTED', now() - interval '3 days -2 hours', NULL, NULL, NULL,
-        0, now() - interval '4 days 0 hours', now() - interval '3 days -2 hours', '00000000-0000-0000-0000-000000006001', NULL, '管理 花子', NULL, NULL),
+        0, now() - interval '4 days 0 hours', now() - interval '3 days -2 hours', '00000000-0000-0000-0000-000000006001', NULL, '管理 花子', NULL, NULL, NULL),
        ('00000000-0000-0000-0000-000000006103', to_char((now() - interval '2 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-123757', '00000000-0000-0000-0000-000000006203', now() - interval '2 days 0 hours', 'CANCELLATION_REQUESTED',
         8778, 1000, 9778, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
         now() - interval '1 days 0 hours', 'サイズを間違えて注文した', 'PENDING', NULL, NULL, NULL, NULL,
-        0, now() - interval '2 days 0 hours', now() - interval '1 days 0 hours', '00000000-0000-0000-0000-000000006001', NULL, NULL, NULL, NULL),
+        0, now() - interval '2 days 0 hours', now() - interval '1 days 0 hours', '00000000-0000-0000-0000-000000006001', NULL, NULL, NULL, NULL, NULL),
        ('00000000-0000-0000-0000-000000006104', to_char((now() - interval '1 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-131676', '00000000-0000-0000-0000-000000006204', now() - interval '1 days 0 hours', 'ACCEPTED',
         3602, 1000, 4602, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
         NULL, NULL, NULL, NULL, NULL, NULL, NULL,
-        0, now() - interval '1 days 0 hours', now() - interval '1 days 0 hours', '00000000-0000-0000-0000-000000006001', NULL, NULL, NULL, NULL)
+        0, now() - interval '1 days 0 hours', now() - interval '1 days 0 hours', '00000000-0000-0000-0000-000000006001', NULL, NULL, NULL, NULL, NULL)
 ON CONFLICT (id) DO NOTHING;
 
 INSERT INTO ordering.sales_order_line (order_id, line_no, variant_id, product_code, variant_code, product_name, axis_values,

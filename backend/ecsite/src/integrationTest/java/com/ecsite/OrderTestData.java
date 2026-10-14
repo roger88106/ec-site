@@ -1,6 +1,6 @@
 package com.ecsite;
 
-import com.ecsite.module.order.application.OrderPaymentService;
+import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;

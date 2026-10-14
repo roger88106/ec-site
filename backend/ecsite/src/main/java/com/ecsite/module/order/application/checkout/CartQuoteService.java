@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application;
+package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.module.order.api.CartQuote;
 import com.ecsite.module.order.application.port.CartDirectory;

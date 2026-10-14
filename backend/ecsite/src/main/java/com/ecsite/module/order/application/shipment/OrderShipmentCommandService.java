@@ -1,4 +1,4 @@
-package com.ecsite.module.order.application;
+package com.ecsite.module.order.application.shipment;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;

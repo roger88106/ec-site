@@ -1,6 +1,6 @@
 package com.ecsite.module.order.api;
 
-import com.ecsite.module.order.application.CartQuoteService;
+import com.ecsite.module.order.application.checkout.CartQuoteService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

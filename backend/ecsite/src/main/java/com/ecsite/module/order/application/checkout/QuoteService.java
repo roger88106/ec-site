@@ -1,7 +1,8 @@
-package com.ecsite.module.order.application;
+package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.application.port.ProductDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;

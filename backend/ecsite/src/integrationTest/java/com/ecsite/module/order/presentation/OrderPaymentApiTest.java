@@ -10,7 +10,7 @@ import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.OrderPaymentService;
+import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.application.PaymentExpiryJob;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.jayway.jsonpath.JsonPath;

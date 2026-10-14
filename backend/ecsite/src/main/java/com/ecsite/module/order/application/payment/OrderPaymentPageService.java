@@ -1,6 +1,7 @@
-package com.ecsite.module.order.application;
+package com.ecsite.module.order.application.payment;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.domain.order.OrderErrorCode;
 import lombok.RequiredArgsConstructor;

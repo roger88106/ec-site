@@ -199,6 +199,7 @@ class JooqOrderRepository implements OrderRepository {
         record.setCancelledAt(cancellation == null ? null : cancellation.cancelledAt());
         record.setCancellationKind(cancellation == null ? null : cancellation.kind().name());
         record.setCancellationReason(cancellation == null ? null : cancellation.reason());
+        record.setCancellationRestocked(cancellation == null ? null : cancellation.restocked());
         var cancelledBy = cancellation == null ? null : cancellation.cancelledBy();
         record.setCancelledById(cancelledBy == null ? null : cancelledBy.id());
         record.setCancelledByName(cancelledBy == null ? null : cancelledBy.name());
@@ -265,7 +266,7 @@ class JooqOrderRepository implements OrderRepository {
                 operatorOf(record.getCancellationDecidedById(), record.getCancellationDecidedByName()));
         var cancellation = record.getCancelledAt() == null ? null : new Cancellation(record.getCancelledAt(),
                 CancellationKind.valueOf(record.getCancellationKind()), record.getCancellationReason(),
-                operatorOf(record.getCancelledById(), record.getCancelledByName()));
+                operatorOf(record.getCancelledById(), record.getCancelledByName()), record.getCancellationRestocked());
         return Order.restore(new Order.Snapshot(
                 record.getId(),
                 OrderNumber.of(record.getOrderNumber()),

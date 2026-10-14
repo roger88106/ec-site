@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.application.port.PaymentDirectory;
+import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -13,13 +14,15 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.util.LinkedHashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
  * キャンセルのサービス（docs/backend/modules/order.md「状態遷移」）。<br />
- * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻し、支払を取り消させる（与信の取消は決済がコミットの後に行う）。
+ * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻し、支払を取り消させる（与信の取消と返金は決済がコミットの後に行う）。<br />
+ * 出荷済みの注文は、出荷の配送状態が返送のときだけキャンセルでき、在庫に戻すかは運営者の指定に従う。
  */
 @Service
 @RequiredArgsConstructor
@@ -39,6 +42,11 @@ public class OrderCancellationService {
      * 決済の腐敗防止層
      */
     private final PaymentDirectory paymentDirectory;
+
+    /**
+     * 出荷の腐敗防止層（出荷済みの注文の配送状態）
+     */
+    private final ShippingDirectory shippingDirectory;
 
     /**
      * 時計
@@ -87,15 +95,17 @@ public class OrderCancellationService {
     }
 
     /**
-     * 運営者の判断でキャンセルする。キャンセルになったら在庫を戻す。
+     * 運営者の判断でキャンセルする。キャンセルになったら在庫を戻す（出荷済みなら、在庫に戻すと指定したときだけ）。
      *
      * @param orderId  注文 ID
      * @param reason   理由（必須）
+     * @param restock  在庫に戻すか（出荷済みのときは必須。それ以外は使わない）
      * @param operator キャンセルした運営者
      */
     @Transactional
-    public void cancel(UUID orderId, String reason, Operator operator) {
-        changeAndRestore(orderId, order -> order.cancelByOperator(reason, operator, clock.instant()));
+    public void cancel(UUID orderId, String reason, Boolean restock, Operator operator) {
+        changeAndRestore(orderId,
+                order -> order.cancelByOperator(reason, restock, isReturned(order), operator, clock.instant()));
     }
 
     /**
@@ -118,7 +128,19 @@ public class OrderCancellationService {
     }
 
     /**
-     * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻し、支払を取り消させる。<br />
+     * 出荷済みの注文の配送状態が返送かを返す。出荷済みでなければ出荷を読まない。
+     */
+    private boolean isReturned(Order order) {
+        if (!order.isShipped()) {
+            return false;
+        }
+        var shipment = shippingDirectory.find(List.of(order.id())).get(order.id());
+        return shipment != null && shipment.isReturned();
+    }
+
+    /**
+     * 注文をキャンセルにする操作を行い、キャンセルになったら保存して明細の数量だけ在庫を戻し（戻さないと記録したときを除く）、
+     * 支払を取り消させる。<br />
      * すでにキャンセルなら何もしない。在庫の戻しに失敗すれば、注文の変更ごと取り消される。
      *
      * @param orderId 注文 ID
@@ -130,7 +152,9 @@ public class OrderCancellationService {
             return;
         }
         orderRepository.update(order);
-        stockDirectory.restore(quantities(order), order.id(), order.orderNumber().value());
+        if (order.cancellation().restocked()) {
+            stockDirectory.restore(quantities(order), order.id(), order.orderNumber().value());
+        }
         paymentDirectory.cancel(order.id());
     }
 

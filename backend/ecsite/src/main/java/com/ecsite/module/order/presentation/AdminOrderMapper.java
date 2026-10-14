@@ -192,6 +192,7 @@ class AdminOrderMapper {
                 .cancelledAt(ApiDateTimes.toOffsetDateTime(cancellation.cancelledAt()))
                 .kind(com.ecsite.api.admin.model.CancellationKind.valueOf(cancellation.kind().name()))
                 .reason(cancellation.reason())
+                .restocked(cancellation.restocked())
                 .cancelledBy(cancellation.cancelledBy() == null ? null : cancellation.cancelledBy().name());
     }
 

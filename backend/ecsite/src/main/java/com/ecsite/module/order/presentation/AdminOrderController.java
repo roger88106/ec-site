@@ -134,12 +134,12 @@ class AdminOrderController implements OrderApi {
      * 運営者の判断によるキャンセル。キャンセル済みなら何もしない
      *
      * @param orderId 注文 ID
-     * @param request キャンセルのリクエスト（理由は必須）
+     * @param request キャンセルのリクエスト（理由は必須。出荷済みなら在庫に戻すかも必須）
      * @return Http 204
      */
     @Override
     public ResponseEntity<Void> cancelOrder(UUID orderId, CancelOrderRequest request) {
-        orderCancellationService.cancel(orderId, request.getReason(), currentOperator.require());
+        orderCancellationService.cancel(orderId, request.getReason(), request.getRestock(), currentOperator.require());
         return ResponseEntity.noContent().build();
     }
 }

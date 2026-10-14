@@ -86,7 +86,7 @@ class AdminOrderMapper {
                     .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline()))
                     .authorizationDeadline(payment.authorizationDeadline() == null ? null
                             : ApiDateTimes.toOffsetDateTime(payment.authorizationDeadline()))
-                    .authorizationExpiring(payment.authorizationExpiring()));
+                    .authorizationExpiring(isAuthorizationExpiring(order.status(), payment)));
         }
         if (shipment != null) {
             detail.shipment(toShipment(shipment));
@@ -122,7 +122,7 @@ class AdminOrderMapper {
                 .customerName(view.customerName())
                 .total(view.total())
                 .status(toStatus(view.status()))
-                .authorizationExpiring(payment != null && payment.authorizationExpiring());
+                .authorizationExpiring(isAuthorizationExpiring(view.status(), payment));
         if (payment != null) {
             summary.paymentStatus(PaymentStatus.fromValue(payment.status().name()));
         }
@@ -214,6 +214,15 @@ class AdminOrderMapper {
         return new OrderAxisValue()
                 .name(axis.name())
                 .value(axis.value());
+    }
+
+    /**
+     * 与信期限が近い印を付けるか。「受付」の注文だけに付ける（キャンセル済みの注文は、与信期限切れのままでも付けない）。
+     */
+    private static boolean isAuthorizationExpiring(com.ecsite.module.order.domain.order.OrderStatus status,
+                                                   @Nullable OrderPayment payment) {
+        return status == com.ecsite.module.order.domain.order.OrderStatus.ACCEPTED
+                && payment != null && payment.authorizationExpiring();
     }
 
     /**

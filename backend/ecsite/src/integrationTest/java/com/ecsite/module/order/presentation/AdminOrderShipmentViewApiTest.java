@@ -87,6 +87,11 @@ class AdminOrderShipmentViewApiTest {
     DSLContext dsl;
 
     /**
+     * 注文のテストデータ
+     */
+    private OrderTestData orders;
+
+    /**
      * 受付のまま（出荷待ち）の注文
      */
     private UUID accepted;
@@ -113,7 +118,7 @@ class AdminOrderShipmentViewApiTest {
         stockItemRepository.adjust(variantId, StockAdjustment.create(10, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         // 商品の公開で時計が進むので、注文と与信の時刻をそろえる
         clock.setInstant(NOW);
-        var orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
         accepted = orders.placeOrder(variantId, 1, "受付 太郎");
         shipped = orders.placeOrder(variantId, 1, "出荷 花子");
         returned = orders.placeOrder(variantId, 1, "返送 次郎");
@@ -164,6 +169,27 @@ class AdminOrderShipmentViewApiTest {
             mockMvc.perform(get(BASE + "/" + shipped))
                     .andExpect(jsonPath("$.payment.status").value("CAPTURED"))
                     .andExpect(jsonPath("$.payment.authorizationExpiring").value(false));
+        }
+
+        @Test
+        @DisplayName("AC-186、188 与信期限切れでキャンセルした注文は、期限が近いを示さず、絞り込みにも出ない")
+        void cancelledIsNotExpiring() throws Exception {
+            clock.setInstant(AUTHORIZATION_DEADLINE.plusSeconds(1));
+            gateway.expireAuthorization(gateway.authorizationRefOf(orders.paidPageId(accepted)));
+            mockMvc.perform(post(BASE + "/" + accepted + "/shipment")
+                            .contentType(MediaType.APPLICATION_JSON).content("""
+                                    {"carrier": "YAMATO", "trackingNumber": "333333333333"}"""))
+                    .andExpect(status().isConflict());
+            mockMvc.perform(put(BASE + "/" + accepted + "/cancel")
+                            .contentType(MediaType.APPLICATION_JSON).content("""
+                                    {"reason": "与信期限切れ"}"""))
+                    .andExpect(status().isNoContent());
+
+            mockMvc.perform(get(BASE + "/" + accepted))
+                    .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"))
+                    .andExpect(jsonPath("$.payment.authorizationExpiring").value(false));
+            mockMvc.perform(get(BASE).param("authorizationExpiring", "true"))
+                    .andExpect(jsonPath("$.items", empty()));
         }
 
         @Test

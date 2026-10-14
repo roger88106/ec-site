@@ -117,7 +117,11 @@ public class OrderQueryService {
                                                                   PageRequest request) {
         Set<UUID> orderIds = null;
         if (authorizationExpiring) {
-            orderIds = new HashSet<>(paymentDirectory.findExpiringOrderIds());
+            // 与信期限が近いのは「受付」の注文だけ（キャンセル済みの注文は、与信期限切れの支払が残っても除く）
+            orderIds = status == null || status == OrderStatus.ACCEPTED
+                    ? new HashSet<>(paymentDirectory.findExpiringOrderIds())
+                    : new HashSet<>();
+            status = OrderStatus.ACCEPTED;
         }
         if (returned) {
             var returnedIds = shippingDirectory.returnedOrderIds();

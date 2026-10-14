@@ -43,6 +43,6 @@ public enum DeliveryStatus {
      * @return 進めれば true
      */
     public boolean canAdvanceTo(DeliveryStatus next) {
-        throw new UnsupportedOperationException("未実装");
+        return next.rank > rank;
     }
 }

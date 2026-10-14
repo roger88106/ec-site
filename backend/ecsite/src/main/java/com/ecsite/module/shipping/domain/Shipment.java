@@ -112,6 +112,11 @@ public class Shipment {
      * @return 進めたら true。進めなければ false
      */
     public boolean advanceTo(@NonNull DeliveryStatus next, @NonNull Instant notifiedAt) {
-        throw new UnsupportedOperationException("未実装");
+        if (!status.canAdvanceTo(next)) {
+            return false;
+        }
+        this.status = next;
+        this.lastNotifiedAt = notifiedAt;
+        return true;
     }
 }

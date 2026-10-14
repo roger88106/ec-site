@@ -34,6 +34,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | ユーティリティ | Lombok | MIT |
 | 定期ジョブ | ShedLock | Apache-2.0 |
 | 決済サービス | stripe-java | MIT |
+| メール | Spring Boot のメール（Jakarta Mail、Eclipse Angus Mail） | Apache-2.0。Jakarta Mail と Angus Mail は条件付き（EDL-1.0 を選ぶ。改変しない） |
 | ログ | Logback | 条件付き（EPL-2.0 を選ぶ。改変しない） |
 | テスト | AssertJ | Apache-2.0 |
 | テスト | Testcontainers | MIT |

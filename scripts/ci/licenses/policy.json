@@ -34,7 +34,8 @@
     ],
     "components": {
       "maven:ch.qos.logback:*": "ログの出力（Spring Boot の既定）。EPL-2.0 を選ぶ。改変しない",
-      "maven:jakarta.*:*": "Jakarta EE の API（注釈、検証、XML の結び付け）。GPL-2.0 with Classpath-exception か EPL-2.0 を選ぶ。改変しない",
+      "maven:jakarta.*:*": "Jakarta EE の API（注釈、検証、XML の結び付け、メール）。GPL-2.0 with Classpath-exception か EPL-2.0 を選ぶ。改変しない",
+      "maven:org.eclipse.angus:*": "メールの送信（Jakarta Mail の実装。Spring Boot のメールの依存）。EDL-1.0（BSD-3-Clause と同じ条件）を選ぶ。改変しない",
       "maven:org.junit*:*": "テストの実行（JUnit）。テストでだけ使い、配布しない",
       "maven:org.jacoco:*": "カバレッジの計測（JaCoCo）。テストでだけ使い、配布しない",
       "npm:lightningcss*": "Tailwind CSS がビルドのときに使う CSS の変換。配布物に入らない",

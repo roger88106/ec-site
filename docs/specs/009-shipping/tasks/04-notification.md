@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [ ] **T9401** 通知の設計書 `docs/backend/modules/notification.md` を作る。バックエンドのアーキテクチャのモジュールの表と、constitution の文書の地図に足す。依存とライセンスに `spring-boot-starter-mail` を足す。
+- [x] **T9401** 通知の設計書 `docs/backend/modules/notification.md` を作る。バックエンドのアーキテクチャのモジュールの表と、constitution の文書の地図に足す。依存とライセンスに `spring-boot-starter-mail` を足す。
 - [ ] **T9402** [テスト] 出荷通知メールの単体テスト：件名と本文に、注文番号、配送業者、送り状番号が入る。
 - [ ] **T9403** [テスト] 出荷通知メールの統合テスト（Testcontainers の Mailpit）：
   - 注文の出荷のイベントで、注文のメールアドレスに 1 通届く（AC-183）

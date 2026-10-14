@@ -166,6 +166,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 | `order` | 注文と状態遷移 |
 | `payment` | 決済 |
 | `shipping` | 出荷と配送状況 |
+| `notification` | 消費者へのメール |
 | `reporting` | データ収集と簡易レポート |
 
 ## 6. 水平スケール

@@ -337,19 +337,6 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * 出荷済みでない注文を、運営者の判断でキャンセルする（在庫に戻す）。
-     *
-     * @param reason   理由（必須、500 文字まで）
-     * @param operator キャンセルした運営者
-     * @param now      現在時刻
-     * @return キャンセルにしたら true。すでにキャンセルなら false
-     * @see #cancelByOperator(String, Boolean, boolean, Operator, Instant)
-     */
-    public boolean cancelByOperator(String reason, @NonNull Operator operator, @NonNull Instant now) {
-        return cancelByOperator(reason, null, false, operator, now);
-    }
-
-    /**
      * 運営者の判断でキャンセルする。申請中なら、申請は承認されたものとする。<br />
      * キャンセル済みなら何もせず、理由も変えない。支払待ちはキャンセルできない（支払の期限で自動でキャンセルになる）。
      * 出荷済みは、配送状態が返送のときだけキャンセルでき、在庫に戻すかの指定が要る。出荷済みでなければ、指定によらず在庫に戻す。

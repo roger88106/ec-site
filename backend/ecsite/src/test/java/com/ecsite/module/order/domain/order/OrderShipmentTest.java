@@ -70,7 +70,7 @@ class OrderShipmentTest {
             var requested = acceptedOrder();
             requested.requestCancellation(null, LATER);
             var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", OPERATOR, LATER);
+            cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
 
             for (var order : List.of(pendingOrder(), requested, cancelled, shippedOrder())) {
                 assertBusinessError(() -> order.ship(Carrier.YAMATO, "123456789012", LATER), OrderErrorCode.ORDER_NOT_SHIPPABLE);

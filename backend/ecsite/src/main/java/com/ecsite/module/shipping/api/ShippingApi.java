@@ -2,7 +2,6 @@ package com.ecsite.module.shipping.api;
 
 import com.ecsite.module.shipping.application.ShipmentService;
 import com.ecsite.module.shipping.domain.Carrier;
-import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

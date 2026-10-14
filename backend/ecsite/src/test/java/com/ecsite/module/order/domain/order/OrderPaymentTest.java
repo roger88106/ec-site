@@ -156,7 +156,7 @@ class OrderPaymentTest {
             var order = pendingOrder();
 
             assertThat(order.isCancellableByOperator(false)).isFalse();
-            assertBusinessError(() -> order.cancelByOperator("理由", OPERATOR, LATER), OrderErrorCode.AWAITING_PAYMENT);
+            assertBusinessError(() -> order.cancelByOperator("理由", true, false, OPERATOR, LATER), OrderErrorCode.AWAITING_PAYMENT);
             assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
         }
 
@@ -167,7 +167,7 @@ class OrderPaymentTest {
             var requested = acceptedOrder();
             requested.requestCancellation(null, LATER);
             var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("理由", OPERATOR, LATER);
+            cancelled.cancelByOperator("理由", true, false, OPERATOR, LATER);
 
             assertThat(accepted.isCancellableByOperator(false)).isTrue();
             assertThat(requested.isCancellableByOperator(false)).isTrue();

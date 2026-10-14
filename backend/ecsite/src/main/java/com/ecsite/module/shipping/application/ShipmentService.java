@@ -71,15 +71,4 @@ public class ShipmentService {
     public List<UUID> returnedOrderIds() {
         return shipmentRepository.findReturnedOrderIds();
     }
-
-    /**
-     * 新しい出荷から順に読む。
-     *
-     * @param limit 件数の上限
-     * @return 出荷（出荷日時の新しい順）
-     */
-    @Transactional(readOnly = true)
-    public List<Shipment> recent(int limit) {
-        return shipmentRepository.findRecent(limit);
-    }
 }

@@ -41,7 +41,7 @@ public interface PaymentDirectory {
     void capture(UUID orderId);
 
     /**
-     * 注文のキャンセルに合わせて支払を取り消す。呼び出し元のトランザクションに参加し、与信の取消の結果は待たない。
+     * 注文のキャンセルに合わせて支払を取り消す。呼び出し元のトランザクションに参加し、与信の取消・返金の結果は待たない。
      *
      * @param orderId 注文 ID
      */

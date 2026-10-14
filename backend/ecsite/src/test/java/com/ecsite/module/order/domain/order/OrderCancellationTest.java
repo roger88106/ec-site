@@ -77,7 +77,7 @@ class OrderCancellationTest {
             rejected.requestCancellation(null, LATER);
             rejected.rejectCancellation(OPERATOR, LATER);
             var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", OPERATOR, LATER);
+            cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
 
             assertBusinessError(() -> rejected.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
             assertBusinessError(() -> cancelled.requestCancellation(null, LATER), OrderErrorCode.CANCELLATION_NOT_REQUESTABLE);
@@ -157,7 +157,7 @@ class OrderCancellationTest {
         void cancelsAcceptedOrder() {
             var order = acceptedOrder();
 
-            assertThat(order.cancelByOperator("在庫の不備", OPERATOR, LATER)).isTrue();
+            assertThat(order.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER)).isTrue();
 
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.cancellation()).isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, "在庫の不備", OPERATOR));
@@ -169,7 +169,7 @@ class OrderCancellationTest {
         void cancelsRequestedOrder() {
             var order = requestedOrder();
 
-            order.cancelByOperator("お客様の申請による", OPERATOR, LATER);
+            order.cancelByOperator("お客様の申請による", true, false, OPERATOR, LATER);
 
             assertThat(order.status()).isEqualTo(OrderStatus.CANCELLED);
             assertThat(order.cancellationRequest().result()).isEqualTo(Result.APPROVED);
@@ -179,9 +179,9 @@ class OrderCancellationTest {
         @Test
         @DisplayName("AC-103 理由は必須で 500 文字まで")
         void requiresReason() {
-            assertBusinessError(() -> acceptedOrder().cancelByOperator(" ", OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
-            assertBusinessError(() -> acceptedOrder().cancelByOperator(null, OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
-            assertBusinessError(() -> acceptedOrder().cancelByOperator("あ".repeat(501), OPERATOR, LATER),
+            assertBusinessError(() -> acceptedOrder().cancelByOperator(" ", true, false, OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
+            assertBusinessError(() -> acceptedOrder().cancelByOperator(null, true, false, OPERATOR, LATER), OrderErrorCode.CANCELLATION_REASON_REQUIRED);
+            assertBusinessError(() -> acceptedOrder().cancelByOperator("あ".repeat(501), true, false, OPERATOR, LATER),
                     OrderErrorCode.INVALID_CANCELLATION_REASON);
         }
 
@@ -189,9 +189,9 @@ class OrderCancellationTest {
         @DisplayName("AC-105 キャンセル済みの注文へのキャンセルは何もせず、理由も変えない")
         void ignoresCancelledOrder() {
             var order = acceptedOrder();
-            order.cancelByOperator("最初の理由", OPERATOR, LATER);
+            order.cancelByOperator("最初の理由", true, false, OPERATOR, LATER);
 
-            assertThat(order.cancelByOperator("次の理由", OPERATOR, LATER.plusSeconds(60))).isFalse();
+            assertThat(order.cancelByOperator("次の理由", true, false, OPERATOR, LATER.plusSeconds(60))).isFalse();
 
             assertThat(order.cancellation().reason()).isEqualTo("最初の理由");
         }
@@ -209,7 +209,7 @@ class OrderCancellationTest {
             var rejected = requestedOrder();
             rejected.rejectCancellation(OPERATOR, LATER);
             var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", OPERATOR, LATER);
+            cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
 
             assertThat(accepted.isCancellationRequestable()).isTrue();
             assertThat(requested.isCancellationRequestable()).isFalse();
@@ -236,7 +236,7 @@ class OrderCancellationTest {
         @DisplayName("AC-103 運営者のキャンセルは「キャンセル」でない注文だけ（キャンセル済みは何もしないので出さない）")
         void cancellable() {
             var cancelled = acceptedOrder();
-            cancelled.cancelByOperator("在庫の不備", OPERATOR, LATER);
+            cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
 
             assertThat(acceptedOrder().isCancelled()).isFalse();
             assertThat(requestedOrder().isCancelled()).isFalse();

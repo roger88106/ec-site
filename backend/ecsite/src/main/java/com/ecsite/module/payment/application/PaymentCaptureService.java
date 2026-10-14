@@ -6,7 +6,6 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
 import lombok.RequiredArgsConstructor;
-import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.UUID;
@@ -16,7 +15,6 @@ import java.util.UUID;
  * 決済サービスの応答を待つ間、行ロックを持たないよう、決済サービスの呼び出しはトランザクションの外で行い、
  * 結果の反映だけを {@link PaymentCommandService} のトランザクションで行う。
  */
-@Slf4j
 @Service
 @RequiredArgsConstructor
 public class PaymentCaptureService {

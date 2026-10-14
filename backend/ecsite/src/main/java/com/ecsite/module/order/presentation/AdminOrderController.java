@@ -7,15 +7,15 @@ import com.ecsite.api.admin.model.OrderStatus;
 import com.ecsite.api.admin.model.OrderSummaryPage;
 import com.ecsite.api.admin.model.ShipOrderRequest;
 import com.ecsite.api.admin.model.Shipment;
-import org.springframework.http.HttpStatus;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.OrderShipmentService;
-import com.ecsite.module.order.domain.order.Carrier;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
+import com.ecsite.module.order.domain.order.Carrier;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -58,14 +58,14 @@ class AdminOrderController implements OrderApi {
     /**
      * 注文一覧。注文日時の新しい順
      *
-     * @param orderNumber 注文番号の前方一致
-     * @param status      状態
-     * @param orderedFrom 注文日の範囲の開始（日本時間）
-     * @param orderedTo   注文日の範囲の終了（日本時間）
+     * @param orderNumber           注文番号の前方一致
+     * @param status                状態
+     * @param orderedFrom           注文日の範囲の開始（日本時間）
+     * @param orderedTo             注文日の範囲の終了（日本時間）
      * @param authorizationExpiring true なら、与信期限が近い注文だけ
-     * @param returned    true なら、配送状態が返送の注文だけ
-     * @param page        ページ番号
-     * @param size        1 ページの件数
+     * @param returned              true なら、配送状態が返送の注文だけ
+     * @param page                  ページ番号
+     * @param size                  1 ページの件数
      * @return Http 200 : {@link OrderSummaryPage}
      */
     @Override

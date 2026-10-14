@@ -281,7 +281,9 @@
     }
   },
   "order": {
-    "authorizationExpiring": "期限が近い",
+    "authorizationBadge": {
+      "expiring": "期限が近い"
+    },
     "list": {
       "title": "注文",
       "orderNumber": "注文番号",

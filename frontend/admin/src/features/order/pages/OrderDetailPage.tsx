@@ -7,6 +7,7 @@ import { paths } from '@/app/paths'
 import { DateTime } from '@/components/DateTime'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
+import { AuthorizationExpiringBadge } from '@/features/order/components/AuthorizationExpiringBadge'
 import { CancellationCard } from '@/features/order/components/CancellationCard'
 import { OrderActions } from '@/features/order/components/OrderActions'
 import { OrderLinesCard } from '@/features/order/components/OrderLinesCard'
@@ -71,6 +72,16 @@ export function OrderDetailPage() {
                       <DateTime value={order.payment.deadline} />
                     </dd>
                   </div>
+                  {/* 与信を取った後だけ、与信期限がある */}
+                  {order.payment.authorizationDeadline && (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-muted-foreground">{t('authorizationDeadline') /* 与信期限 */}</dt>
+                      <dd className="flex items-center gap-2">
+                        <DateTime value={order.payment.authorizationDeadline} />
+                        {order.payment.authorizationExpiring && <AuthorizationExpiringBadge />}
+                      </dd>
+                    </div>
+                  )}
                 </>
               )}
             </dl>

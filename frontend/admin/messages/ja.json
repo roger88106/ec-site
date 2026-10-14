@@ -281,6 +281,7 @@
     }
   },
   "order": {
+    "authorizationExpiring": "期限が近い",
     "list": {
       "title": "注文",
       "orderNumber": "注文番号",
@@ -303,6 +304,7 @@
       "orderedAt": "注文日時",
       "payment": "支払",
       "paymentDeadline": "支払の期限",
+      "authorizationDeadline": "与信期限",
       "customer": "お客様とお届け先",
       "email": "メールアドレス",
       "name": "氏名",

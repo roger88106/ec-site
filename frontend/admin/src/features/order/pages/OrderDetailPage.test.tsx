@@ -400,3 +400,60 @@ describe('出荷', () => {
     expect(screen.queryByText('出荷', { selector: '[data-slot="card-title"]' })).not.toBeInTheDocument()
   })
 })
+
+describe('与信期限と返金', () => {
+  it('AC-186 与信期限を示し、期限が近ければその旨を示す', async () => {
+    serveOrder(
+      orderDetail({
+        actions: orderActions({ ship: true }),
+        payment: {
+          status: 'AUTHORIZED',
+          deadline: '2026-10-10T01:30:00Z',
+          authorizationDeadline: '2026-10-17T01:10:00Z',
+          authorizationExpiring: true,
+        },
+      }),
+    )
+    renderApp(URL)
+
+    expect((await screen.findByText('与信期限', { selector: 'dt' })).nextElementSibling).toHaveTextContent(
+      '2026/10/17 10:10期限が近い',
+    )
+  })
+
+  it('AC-186 期限が近くなければ、与信期限だけを示す', async () => {
+    serveOrder(
+      orderDetail({
+        payment: {
+          status: 'AUTHORIZED',
+          deadline: '2026-10-10T01:30:00Z',
+          authorizationDeadline: '2026-10-17T01:10:00Z',
+          authorizationExpiring: false,
+        },
+      }),
+    )
+    renderApp(URL)
+
+    expect((await screen.findByText('与信期限', { selector: 'dt' })).nextElementSibling).toHaveTextContent(
+      '2026/10/17 10:10',
+    )
+    expect(screen.queryByText('期限が近い')).not.toBeInTheDocument()
+  })
+
+  it.each([
+    ['REFUND_PENDING', '返金待ち'],
+    ['REFUNDED', '返金済み'],
+  ] as const)('AC-194 返金の状態（%s）を示す', async (status, label) => {
+    serveOrder(
+      orderDetail({
+        status: 'CANCELLED',
+        actions: orderActions({ cancel: false }),
+        cancellation: { cancelledAt: '2026-10-12T03:00:00Z', kind: 'OPERATOR', reason: '返送', restocked: true },
+        payment: { status, deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
+      }),
+    )
+    renderApp(URL)
+
+    expect(await shownPayment()).toHaveTextContent(label)
+  })
+})

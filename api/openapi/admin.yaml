@@ -2200,8 +2200,8 @@ components:
           type: string
           minLength: 1
           maxLength: 30
-          pattern: '^[0-9-]+$'
-          description: 送り状番号（半角の数字とハイフン。ハイフンは除いて保存する。AC-173）
+          pattern: '^[0-9-]*[0-9][0-9-]*$'
+          description: 送り状番号（半角の数字とハイフン。数字が 1 つ以上。ハイフンは除いて保存する。AC-173）
     Shipment:
       type: object
       description: 注文の出荷（AC-181）。出荷していなければ省く

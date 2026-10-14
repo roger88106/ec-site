@@ -219,12 +219,13 @@ class ShipmentApiTest {
     class Input {
 
         @Test
-        @DisplayName("AC-173 配送業者は一覧から選び、送り状番号は必須で、数字とハイフンの 30 文字まで。誤りは 400 で売上を確定しない")
+        @DisplayName("AC-173 配送業者は一覧から選び、送り状番号は必須で、数字とハイフンの 30 文字まで（数字が 1 つ以上）。誤りは 400 で売上を確定しない")
         void validates() throws Exception {
             ship("KURONEKO", "123456789012").andExpect(status().isBadRequest());
             ship("YAMATO", "").andExpect(status().isBadRequest());
             ship("YAMATO", "ABC-123").andExpect(status().isBadRequest());
             ship("YAMATO", "1".repeat(31)).andExpect(status().isBadRequest());
+            ship("YAMATO", "---").andExpect(status().isBadRequest());
             mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
                             .contentType(MediaType.APPLICATION_JSON).content("""
                                     {"carrier": "YAMATO"}"""))

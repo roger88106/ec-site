@@ -12,6 +12,10 @@ export const ACCOUNTS = {
   administrator: { email: 'admin@example.com', password: 'admin-pass-1' },
   /** 運営者の realm の閲覧者（:read の権限だけ） */
   viewer: { email: 'viewer@example.com', password: 'viewer-pass-1' },
+  /** 運営者の realm の管理職（参照の権限と、すべてのレポート） */
+  manager: { email: 'manager@example.com', password: 'manager-pass-1' },
+  /** 運営者の realm の営業（参照の権限と、売上の推移を除くレポート） */
+  sales: { email: 'sales@example.com', password: 'sales-pass-1' },
   /** 消費者の realm の会員 */
   member: { email: 'member@example.com', password: 'member-pass-1' },
   /** 消費者の realm の 2 人目の会員（他人のデータ、別々の会員の同時の操作） */

@@ -54,6 +54,8 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 | `ec-store`（消費者） | 店舗 | `member2@example.com` | `member2-pass-1` | 他人のデータが見えないことの確認。生年月日と性別を入れていない（レポートの「不明」の確認） |
 | `ec-admin`（運営者） | 管理画面 | `admin@example.com` | `admin-pass-1` | 管理者 |
 | `ec-admin`（運営者） | 管理画面 | `viewer@example.com` | `viewer-pass-1` | 閲覧者 |
+| `ec-admin`（運営者） | 管理画面 | `manager@example.com` | `manager-pass-1` | 管理職（すべてのレポート） |
+| `ec-admin`（運営者） | 管理画面 | `sales@example.com` | `sales-pass-1` | 営業（売上の推移を除くレポート） |
 
 - 手動確認はこの表のアカウントを使う（誰の環境にもある）。足りなければ realm の JSON に足し、表にも書く。画面から登録した会員は、その人の環境にしかない。
 - 会員のアカウント ID は realm の JSON で固定している（`member@example.com` は `00000000-0000-0000-0000-000000009001`、`member2@example.com` は `…9002`）。ローカル用の seed の注文が、この会員のものになるため。

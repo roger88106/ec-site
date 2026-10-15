@@ -42,6 +42,16 @@ class AdminRealmPermissionContractTest {
      */
     private static final String WEB_CLIENT = "ec-admin-web";
 
+    /**
+     * 権限ではなく、ログインしていればよい操作を表す値（admin.yaml の冒頭の説明）
+     */
+    private static final String AUTHENTICATED = "authenticated";
+
+    /**
+     * レポートの権限の接頭辞。閲覧者には付けず、役割ごとに決める（spec 010 BR-28）
+     */
+    private static final String REPORT_PREFIX = "report-";
+
     private static Set<String> declaredPermissions;
     private static String realm;
 
@@ -52,7 +62,8 @@ class AdminRealmPermissionContractTest {
         var paths = (Map<String, Map<String, Object>>) spec.get("paths");
         declaredPermissions = new TreeSet<>();
         paths.values().forEach(item -> item.values().forEach(value -> {
-            if (value instanceof Map<?, ?> operation && operation.get("x-required-permission") instanceof String permission) {
+            if (value instanceof Map<?, ?> operation && operation.get("x-required-permission") instanceof String permission
+                    && !permission.equals(AUTHENTICATED)) {
                 declaredPermissions.add(permission);
             }
         }));
@@ -75,12 +86,30 @@ class AdminRealmPermissionContractTest {
     }
 
     @Test
-    @DisplayName("BR-12 職務の閲覧者（viewer）は、参照（:read）の権限すべてを含み、ほかは含まない")
+    @DisplayName("BR-12 職務の閲覧者（viewer）は、レポートを除く参照（:read）の権限すべてを含み、ほかは含まない")
     void viewerHasAllReadPermissions() {
-        var readPermissions = new TreeSet<>(declaredPermissions.stream().filter(p -> p.endsWith(":read")).toList());
+        var readPermissions = readPermissionsWithoutReports();
 
         assertThat(readPermissions).isNotEmpty();
         assertThat(new TreeSet<>(compositePermissions("viewer"))).isEqualTo(readPermissions);
+    }
+
+    @Test
+    @DisplayName("spec 010 BR-28 管理職（manager）は、閲覧者の権限と、3 つのレポートの権限を含む")
+    void managerHasAllReports() {
+        var expected = readPermissionsWithoutReports();
+        expected.addAll(List.of("report-sales-trend:read", "report-variant-sales:read", "report-customer:read"));
+
+        assertThat(new TreeSet<>(compositePermissions("manager"))).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("spec 010 BR-28 営業（sales）は、閲覧者の権限と、売上の推移を除くレポートの権限を含む")
+    void salesHasReportsExceptSalesTrend() {
+        var expected = readPermissionsWithoutReports();
+        expected.addAll(List.of("report-variant-sales:read", "report-customer:read"));
+
+        assertThat(new TreeSet<>(compositePermissions("sales"))).isEqualTo(expected);
     }
 
     @Test
@@ -93,6 +122,12 @@ class AdminRealmPermissionContractTest {
 
         assertThat(mapped).hasSize(1);
         assertThat(new TreeSet<>(mapped.getFirst())).isEqualTo(declaredPermissions);
+    }
+
+    private static TreeSet<String> readPermissionsWithoutReports() {
+        return new TreeSet<>(declaredPermissions.stream()
+                .filter(p -> p.endsWith(":read") && !p.startsWith(REPORT_PREFIX))
+                .toList());
     }
 
     private static List<String> compositePermissions(String role) {

@@ -43,7 +43,8 @@
               "category:read", "category:write",
               "product:read", "product:write",
               "inventory:read", "inventory:write",
-              "order:read", "order:write"
+              "order:read", "order:write",
+              "report-sales-trend:read", "report-variant-sales:read", "report-customer:read"
             ]
           }
         }
@@ -59,6 +60,32 @@
             ]
           }
         }
+      },
+      {
+        "name": "manager",
+        "description": "管理職：参照の権限すべてと、すべてのレポート",
+        "composite": true,
+        "composites": {
+          "client": {
+            "ec-admin-api": [
+              "tax:read", "category:read", "product:read", "inventory:read", "order:read",
+              "report-sales-trend:read", "report-variant-sales:read", "report-customer:read"
+            ]
+          }
+        }
+      },
+      {
+        "name": "sales",
+        "description": "営業：参照の権限すべてと、売上の推移を除くレポート",
+        "composite": true,
+        "composites": {
+          "client": {
+            "ec-admin-api": [
+              "tax:read", "category:read", "product:read", "inventory:read", "order:read",
+              "report-variant-sales:read", "report-customer:read"
+            ]
+          }
+        }
       }
     ],
     "client": {
@@ -67,7 +94,8 @@
         { "name": "category:read" }, { "name": "category:write" },
         { "name": "product:read" }, { "name": "product:write" },
         { "name": "inventory:read" }, { "name": "inventory:write" },
-        { "name": "order:read" }, { "name": "order:write" }
+        { "name": "order:read" }, { "name": "order:write" },
+        { "name": "report-sales-trend:read" }, { "name": "report-variant-sales:read" }, { "name": "report-customer:read" }
       ]
     }
   },
@@ -121,7 +149,8 @@
           "category:read", "category:write",
           "product:read", "product:write",
           "inventory:read", "inventory:write",
-          "order:read", "order:write"
+          "order:read", "order:write",
+          "report-sales-trend:read", "report-variant-sales:read", "report-customer:read"
         ]
       }
     ]
@@ -149,6 +178,30 @@
       "realmRoles": ["viewer"],
       "credentials": [
         { "type": "password", "value": "viewer-pass-1", "temporary": false }
+      ]
+    },
+    {
+      "username": "manager@example.com",
+      "email": "manager@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "三郎",
+      "lastName": "管理職",
+      "realmRoles": ["manager"],
+      "credentials": [
+        { "type": "password", "value": "manager-pass-1", "temporary": false }
+      ]
+    },
+    {
+      "username": "sales@example.com",
+      "email": "sales@example.com",
+      "emailVerified": true,
+      "enabled": true,
+      "firstName": "四郎",
+      "lastName": "営業",
+      "realmRoles": ["sales"],
+      "credentials": [
+        { "type": "password", "value": "sales-pass-1", "temporary": false }
       ]
     }
   ]

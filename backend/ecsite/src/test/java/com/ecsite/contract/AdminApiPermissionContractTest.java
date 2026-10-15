@@ -17,7 +17,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * B 側 API の権限の記載漏れを検出する契約テスト（バックエンドのアーキテクチャ 第 7 節）。<br />
- * {@code admin.yaml} のすべての操作に {@code x-required-permission} があり、{@code resource:action} の形であることを確かめる。
+ * {@code admin.yaml} のすべての操作に {@code x-required-permission} があり、{@code resource:action} の形か、
+ * ログインしていればよい操作を表す {@code authenticated} であることを確かめる。
  * 認証の導入時に、この記載から認可を組み立てる。
  */
 class AdminApiPermissionContractTest {
@@ -38,12 +39,17 @@ class AdminApiPermissionContractTest {
     private static final Pattern PERMISSION_FORMAT = Pattern.compile("^[a-z]+(-[a-z]+)*:[a-z]+(-[a-z]+)*$");
 
     /**
+     * 権限ではなく、ログインしていればよい操作を表す値
+     */
+    private static final String AUTHENTICATED = "authenticated";
+
+    /**
      * OpenAPI で操作を表す HTTP メソッド
      */
     private static final Set<String> HTTP_METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "trace");
 
     @Test
-    @DisplayName("admin.yaml のすべての操作に、resource:action の形の権限が書かれている")
+    @DisplayName("admin.yaml のすべての操作に、resource:action の形の権限か authenticated が書かれている")
     void allAdminOperationsDeclarePermission() throws IOException {
         var spec = Files.readString(OPENAPI_DIR.resolve("admin.yaml"));
 
@@ -80,6 +86,9 @@ class AdminApiPermissionContractTest {
                       x-required-permission: Product.Read
                     put:
                       x-required-permission: product
+                  /me:
+                    get:
+                      x-required-permission: authenticated
                 """;
 
         assertThat(violations(listOperations(spec))).containsExactly(
@@ -133,7 +142,8 @@ class AdminApiPermissionContractTest {
                     var name = op.method() + " " + op.path();
                     if (op.permission() == null) {
                         sink.accept(name + ": " + PERMISSION_KEY + " がない");
-                    } else if (!PERMISSION_FORMAT.matcher(op.permission().toString()).matches()) {
+                    } else if (!AUTHENTICATED.equals(op.permission())
+                            && !PERMISSION_FORMAT.matcher(op.permission().toString()).matches()) {
                         sink.accept(name + ": 形が正しくない（" + op.permission() + "）");
                     }
                 })

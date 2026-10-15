@@ -7,7 +7,7 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
-import com.ecsite.module.order.event.OrderPlaced;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -41,8 +41,11 @@ class OrderTest {
         var order = place(quote());
 
         assertThat(order.status()).isEqualTo(OrderStatus.PENDING_PAYMENT);
-        assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderPlaced.class,
-                event -> assertThat(event.orderId()).isEqualTo(order.id()));
+        assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class, event -> {
+            assertThat(event.orderId()).isEqualTo(order.id());
+            assertThat(event.from()).isNull();
+            assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.PENDING_PAYMENT);
+        });
     }
 
     @Test

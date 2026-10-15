@@ -7,9 +7,8 @@ import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
-import com.ecsite.module.order.event.OrderCancelled;
-import com.ecsite.module.order.event.OrderPlaced;
 import com.ecsite.module.order.event.OrderShipped;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
@@ -175,7 +174,7 @@ public class Order extends AggregateRoot {
         var lines = IntStream.range(0, items.size()).mapToObj(i -> toLine(i + 1, items.get(i))).toList();
         var order = new Order(id, orderNumber, checkoutId, memberId, orderedAt, OrderStatus.PENDING_PAYMENT, lines, quote.amounts(),
                 email, shippingAddress, buyerProfile, null, null, 0);
-        order.registerEvent(OrderPlaced.of(orderedAt, id));
+        order.registerEvent(OrderStatusChanged.of(orderedAt, id, null, OrderStatusChanged.Status.PENDING_PAYMENT, null, null));
         return order;
     }
 
@@ -200,7 +199,7 @@ public class Order extends AggregateRoot {
         if (status != OrderStatus.PENDING_PAYMENT) {
             return false;
         }
-        status = OrderStatus.ACCEPTED;
+        changeStatus(OrderStatus.ACCEPTED, now);
         return true;
     }
 
@@ -291,7 +290,7 @@ public class Order extends AggregateRoot {
         }
         cancellationRequest = new CancellationRequest(now, optionalReason(reason), CancellationRequest.Result.PENDING,
                 null, null);
-        status = OrderStatus.CANCELLATION_REQUESTED;
+        changeStatus(OrderStatus.CANCELLATION_REQUESTED, now);
     }
 
     /**
@@ -324,7 +323,7 @@ public class Order extends AggregateRoot {
             throw BusinessException.of(OrderErrorCode.CANCELLATION_NOT_PENDING);
         }
         decideRequest(CancellationRequest.Result.REJECTED, operator, now);
-        status = OrderStatus.ACCEPTED;
+        changeStatus(OrderStatus.ACCEPTED, now);
     }
 
     /**
@@ -338,7 +337,7 @@ public class Order extends AggregateRoot {
         if (!isShippable()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
         }
-        status = OrderStatus.SHIPPED;
+        changeStatus(OrderStatus.SHIPPED, now);
         registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, OrderShipped.Carrier.valueOf(carrier.name()),
                 trackingNumber));
     }
@@ -395,12 +394,31 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * キャンセルにし、注文キャンセルのイベントを登録する。
+     * キャンセルにし、状態の変化のイベントにキャンセルの種類と在庫に戻したかを載せる。
      */
     private void cancel(Cancellation cancellation) {
         this.cancellation = cancellation;
+        var from = status;
         status = OrderStatus.CANCELLED;
-        registerEvent(OrderCancelled.of(cancellation.cancelledAt(), id));
+        registerEvent(OrderStatusChanged.of(cancellation.cancelledAt(), id, toEventStatus(from),
+                OrderStatusChanged.Status.CANCELLED,
+                OrderStatusChanged.CancellationKind.valueOf(cancellation.kind().name()), cancellation.restocked()));
+    }
+
+    /**
+     * 状態を変え、状態の変化のイベントを登録する（キャンセルは {@link #cancel} で行う）。
+     */
+    private void changeStatus(OrderStatus to, Instant at) {
+        var from = status;
+        status = to;
+        registerEvent(OrderStatusChanged.of(at, id, toEventStatus(from), toEventStatus(to), null, null));
+    }
+
+    /**
+     * 注文の状態を、イベントの状態にする。
+     */
+    private static OrderStatusChanged.Status toEventStatus(OrderStatus status) {
+        return OrderStatusChanged.Status.valueOf(status.name());
     }
 
     /**

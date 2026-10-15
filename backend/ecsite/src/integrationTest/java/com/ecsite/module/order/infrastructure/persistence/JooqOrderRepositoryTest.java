@@ -14,7 +14,7 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
-import com.ecsite.module.order.event.OrderPlaced;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -50,7 +50,7 @@ class JooqOrderRepositoryTest {
     ApplicationEvents events;
 
     @Test
-    @DisplayName("注文を保存し、明細・金額・お届け先・注文時の年齢と性別を含めて再構築できる。注文成立のイベントが発行される")
+    @DisplayName("注文を保存し、明細・金額・お届け先・注文時の年齢と性別を含めて再構築できる。注文の状態の変化（支払待ち）のイベントが発行される")
     void savesAndRestoresOrder() {
         var order = order(UUID.randomUUID(), "20261008-000001");
         var expected = order.toSnapshot();
@@ -59,7 +59,7 @@ class JooqOrderRepositoryTest {
 
         var restored = repository.findById(order.id()).orElseThrow();
         assertThat(restored.toSnapshot()).isEqualTo(expected);
-        assertThat(events.stream(OrderPlaced.class)).extracting(OrderPlaced::orderId).containsExactly(order.id());
+        assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(order.id());
     }
 
     @Test
@@ -71,7 +71,7 @@ class JooqOrderRepositoryTest {
         assertThat(repository.insert(duplicate)).isFalse();
 
         assertThat(repository.findById(duplicate.id())).isEmpty();
-        assertThat(events.stream(OrderPlaced.class)).hasSize(1);
+        assertThat(events.stream(OrderStatusChanged.class)).hasSize(1);
     }
 
     @Test

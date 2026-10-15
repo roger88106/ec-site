@@ -102,6 +102,8 @@ class OrderStatusChangedEventTest {
         stockItemRepository.createIfAbsent(variantId, product.id);
         stockItemRepository.adjust(variantId, StockAdjustment.create(10, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
         orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        // 商品の準備で時計が進むので、注文の前に戻す
+        clock.setInstant(NOW);
     }
 
     @Test

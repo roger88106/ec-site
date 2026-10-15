@@ -7,7 +7,7 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
-import com.ecsite.module.order.event.OrderCancelled;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -108,7 +108,8 @@ class OrderPaymentTest {
             assertThat(cancellation.cancelledAt()).isEqualTo(LATER);
             assertThat(cancellation.reason()).isNull();
             assertThat(cancellation.cancelledBy()).isNull();
-            assertThat(order.pullEvents()).singleElement().isInstanceOf(OrderCancelled.class);
+            assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
+                    event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
         }
 
         @Test

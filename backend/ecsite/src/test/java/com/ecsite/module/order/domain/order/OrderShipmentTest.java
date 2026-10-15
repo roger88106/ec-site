@@ -7,7 +7,7 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
-import com.ecsite.module.order.event.OrderCancelled;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.order.event.OrderShipped;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -54,7 +54,7 @@ class OrderShipmentTest {
             order.ship(Carrier.YAMATO, "123456789012", LATER);
 
             assertThat(order.status()).isEqualTo(OrderStatus.SHIPPED);
-            assertThat(order.pullEvents()).singleElement().isInstanceOfSatisfying(OrderShipped.class, event -> {
+            assertThat(order.pullEvents()).filteredOn(OrderShipped.class::isInstance).singleElement().isInstanceOfSatisfying(OrderShipped.class, event -> {
                 assertThat(event.orderId()).isEqualTo(order.id());
                 assertThat(event.occurredAt()).isEqualTo(LATER);
                 assertThat(event.orderNumber()).isEqualTo("20261008-000001");
@@ -95,7 +95,8 @@ class OrderShipmentTest {
             assertThat(restocked.cancellation())
                     .isEqualTo(new Cancellation(LATER, CancellationKind.OPERATOR, "返送された", OPERATOR, true));
             assertThat(notRestocked.cancellation().restocked()).isFalse();
-            assertThat(restocked.pullEvents()).singleElement().isInstanceOf(OrderCancelled.class);
+            assertThat(restocked.pullEvents()).singleElement().isInstanceOfSatisfying(OrderStatusChanged.class,
+                    event -> assertThat(event.to()).isEqualTo(OrderStatusChanged.Status.CANCELLED));
         }
 
         @Test
@@ -167,11 +168,12 @@ class OrderShipmentTest {
     }
 
     /**
-     * 「受付」の注文
+     * 「受付」の注文（状態の変化のイベントは取り出し済み）
      */
     private static Order acceptedOrder() {
         var order = pendingOrder();
         order.acceptPayment(ORDERED_AT.plusSeconds(30));
+        order.pullEvents();
         return order;
     }
 

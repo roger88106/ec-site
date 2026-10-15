@@ -10,7 +10,7 @@ import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.event.OrderPlaced;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -129,7 +129,7 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.items[0].delta").value(-2))
                     .andExpect(jsonPath("$.items[0].orderNumber").value(orderNumber))
                     .andExpect(jsonPath("$.items[0].orderId").value(id));
-            assertThat(events.stream(OrderPlaced.class)).extracting(OrderPlaced::orderId).containsExactly(UUID.fromString(id));
+            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(UUID.fromString(id));
         }
 
         @Test

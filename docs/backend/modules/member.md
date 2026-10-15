@@ -25,7 +25,10 @@ IdP（Keycloak）のアカウントと、EC の会員 ID の対応を管理す�
 
 ## token から会員を取り出す
 
-presentation が token から会員の情報（アカウント ID、メールアドレス、確認済みか、姓、名）を取り出すクラスは `common/security` に置く（Spring Security の型をモジュールに出さないため）。
+presentation が token から会員の情報（アカウント ID、メールアドレス、確認済みか、姓、名、生年月日、性別）を取り出すクラスは `common/security` に置く（Spring Security の型をモジュールに出さないため）。
+
+- 生年月日（claim `birthdate`）と性別（claim `gender`）は、会員が IdP の会員登録とアカウントの画面で入れる任意の属性。会員モジュールは持たず、注文が成立のときに token から読んで、年齢と性別を記録する（[注文モジュール](order.md)「注文時の年齢と性別」）。
+- token の値は文字列のまま渡し、形と範囲は注文が確かめる。
 
 | 店舗 API の操作 | token がないとき |
 |-----------------|------------------|

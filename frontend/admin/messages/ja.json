@@ -469,6 +469,29 @@
       "08": "茨城県",
       "09": "栃木県"
     },
-    "unknownPrefecture": "不明"
+    "unknownPrefecture": "不明",
+    "condition": {
+      "preset": "期間の選択肢",
+      "presets": {
+        "custom": "日付で指定",
+        "thisFiscalYear": "今年度",
+        "lastFiscalYear": "前年度",
+        "thisMonth": "今月",
+        "lastMonth": "先月",
+        "thisYear": "今年",
+        "lastYear": "去年"
+      },
+      "from": "期間の始まり",
+      "to": "期間の終わり",
+      "granularity": "区切り",
+      "basis": "売上の数え方",
+      "product": "商品",
+      "allProducts": "全商品",
+      "selectProduct": "商品を選んでください",
+      "excludeTax": "消費税を除く",
+      "excludeShipping": "送料を除く",
+      "submit": "表示する"
+    },
+    "csv": "CSV で取り出す"
   }
 }

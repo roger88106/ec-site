@@ -24,3 +24,32 @@ VALUES ('00000000-0000-0000-0000-000000006401', '00000000-0000-0000-0000-0000000
         'mock_auth_00000000-0000-0000-0000-000000006404', now() - interval '1 days 0 hours',
         0, now() - interval '1 days 0 hours', now() - interval '1 days 0 hours')
 ON CONFLICT (order_id) DO NOTHING;
+
+-- レポート用の注文（R__ordering_seed.sql の spec 010 の注文）の支払。注文の状態とキャンセルから作る。
+-- ID は 00000000-0000-0000-0012-<注文の番号 12 桁>。期限は注文日時の 30 分後、与信は注文日時の 3 分後（受付と同じ時刻）。
+-- 受付・キャンセルの申請中は与信済み、出荷済みは売上確定済み（出荷の時刻）、期限切れのキャンセルは支払なし、
+-- 出荷の前のキャンセルは与信の取消済み、返送でのキャンセル（キャンセルの理由で見分ける）は返金済み。
+INSERT INTO payment.payment (id, order_id, amount, deadline, status, page_id, page_url, authorization_ref, authorized_at,
+                             version, created_at, updated_at)
+SELECT ('00000000-0000-0000-0012-' || right(o.id::text, 12))::uuid,
+       o.id,
+       o.total_amount,
+       o.ordered_at + interval '30 minutes',
+       payment.status,
+       'mock_page_00000000-0000-0000-0012-' || right(o.id::text, 12),
+       'http://localhost:8080/mock-payment/mock_page_00000000-0000-0000-0012-' || right(o.id::text, 12),
+       CASE WHEN payment.status <> 'NOT_PAID' THEN 'mock_auth_00000000-0000-0000-0012-' || right(o.id::text, 12) END,
+       CASE WHEN payment.status <> 'NOT_PAID' THEN o.ordered_at + interval '3 minutes' END,
+       0,
+       o.ordered_at,
+       CASE payment.status WHEN 'AUTHORIZED' THEN o.ordered_at + interval '3 minutes'
+                           WHEN 'CAPTURED' THEN o.ordered_at + interval '1 day'
+                           ELSE o.cancelled_at END
+FROM ordering.sales_order o
+         CROSS JOIN LATERAL (SELECT CASE WHEN o.status IN ('ACCEPTED', 'CANCELLATION_REQUESTED') THEN 'AUTHORIZED'
+                                         WHEN o.status = 'SHIPPED' THEN 'CAPTURED'
+                                         WHEN o.cancellation_kind = 'PAYMENT_EXPIRED' THEN 'NOT_PAID'
+                                         WHEN o.cancellation_reason = '受取拒否により返送されたため' THEN 'REFUNDED'
+                                         ELSE 'VOIDED' END AS status) AS payment
+WHERE o.id::text LIKE '00000000-0000-0000-0010-%'
+ON CONFLICT (order_id) DO NOTHING;

@@ -222,8 +222,8 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
   <section>
     <div class="sec-head">
       <p class="eyebrow">お店の人ができること</p>
-      <h2>商品、在庫、税率、注文を一つの管理画面で</h2>
-      <p>専門の知識がなくても、画面の案内に沿って商品を出し、在庫を直し、注文を扱えます。</p>
+      <h2>商品、在庫、税率、注文、売上を一つの管理画面で</h2>
+      <p>専門の知識がなくても、画面の案内に沿って商品を出し、在庫を直し、注文を扱い、売れ行きを確かめられます。</p>
     </div>
 
     <div class="feature">
@@ -284,6 +284,49 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
         <div class="shot"><img src="img/admin-order.png" alt="管理画面の注文の詳細。出荷済みで売上確定済み、配送状態・配送業者・送り状番号・出荷日時、明細の表、お客様とお届け先" width="1280" height="1044" loading="lazy"></div>
       </figure>
     </div>
+
+    <div class="feature">
+      <div class="text">
+        <h3>売上の動きを、週・月・四半期・年で見る</h3>
+        <ul>
+          <li>期間と区切りを選ぶと、売上額と販売数量の推移をグラフと表で示します。商品を一つ選べば、その商品だけの動きも見られます。</li>
+          <li>注文した日で数えるか、出荷した日で数えるかを切り替えられます。消費税や送料を除いた額にもできます。</li>
+          <li>四半期と年は、お店の会計年度の区切りで数えます。</li>
+          <li>表はそのまま CSV で取り出し、表計算ソフトで開けます。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot tall"><img src="img/admin-report-trend.png" alt="売上の推移。2 年分の月ごとの売上額の折れ線グラフと、月ごとの売上額・販売数量の表" width="1280" height="1598" loading="lazy"></div>
+      </figure>
+    </div>
+
+    <div class="feature flip">
+      <div class="text">
+        <h3>どの色・サイズが売れているか</h3>
+        <ul>
+          <li>商品を選ぶと、色やサイズの組み合わせごとの販売数量と売上額を、売れた順に並べます。</li>
+          <li>まったく売れなかった組み合わせも 0 として示すので、仕入れを見直すきっかけになります。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot"><img src="img/admin-report-variants.png" alt="バリエーションの売れ行き。マグカップの白とグレーの販売数量の棒グラフと表" width="1280" height="809" loading="lazy"></div>
+      </figure>
+    </div>
+
+    <div class="feature">
+      <div class="text">
+        <h3>どこの、どんなお客様が買っているか</h3>
+        <ul>
+          <li>お届け先の都道府県、注文した時の年齢層、性別ごとに、売上額と注文件数を示します。</li>
+          <li>年齢と性別は、会員登録のときに任意で入れてもらいます。生年月日や氏名はレポートに出しません。</li>
+          <li>レポートを見られる人は、担当者ごとに分けられます。営業の担当には売上の推移を見せない、といったことができます。</li>
+        </ul>
+      </div>
+      <figure>
+        <div class="shot tall"><img src="img/admin-report-customers.png" alt="地域・年齢層・性別。都道府県ごとの売上額の横棒グラフと表、年齢層と性別ごとの棒グラフと表" width="1280" height="3290" loading="lazy"></div>
+        <figcaption>都道府県の下に、年齢層と性別のグラフと表が続きます。</figcaption>
+      </figure>
+    </div>
   </section>
 
   <section>
@@ -306,7 +349,7 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
       </article>
       <article>
         <h3>直すたびに、全部を自動で確かめる</h3>
-        <p>変更を入れるたびに、1,100 件以上の自動テストが流れます。新しい機能を足して、前の機能が壊れたまま出ることを防ぎます。</p>
+        <p>変更を入れるたびに、1,500 件以上の自動テストが流れます。新しい機能を足して、前の機能が壊れたまま出ることを防ぎます。</p>
       </article>
     </div>
   </section>
@@ -319,9 +362,9 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
     </div>
 
     <div class="numbers">
-      <div class="num"><b>196</b><span>文書で決めた「こう動くべき」という条件。すべてにテストを対応させています</span></div>
-      <div class="num"><b>1,100 以上</b><span>自動テストの件数（画面・サーバー・ブラウザでの通し操作）</span></div>
-      <div class="num"><b>9</b><span>仕様書の数。機能を足すたび、また整理するたびに一つ書きます</span></div>
+      <div class="num"><b>225</b><span>文書で決めた「こう動くべき」という条件。すべてにテストを対応させています</span></div>
+      <div class="num"><b>1,500 以上</b><span>自動テストの件数（画面・サーバー・ブラウザでの通し操作）</span></div>
+      <div class="num"><b>10</b><span>仕様書の数。機能を足すたび、また整理するたびに一つ書きます</span></div>
       <div class="num"><b>2</b><span>画面の数（店舗・管理）。文言は差し替えられるように作り、多言語化に備えています</span></div>
     </div>
 
@@ -349,9 +392,9 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
 
   <section>
     <div class="sec-head">
-      <p class="eyebrow">これから</p>
-      <h2>閲覧から配送まで、買い物の流れを最後まで</h2>
-      <p>「商品を見る → カート → 注文 → 支払 → 出荷 → 配送状況」の流れを、省略せずに通せるようになりました。次は、売上の簡易レポートです。</p>
+      <p class="eyebrow">ここまで</p>
+      <h2>買い物の流れから、売れ行きを見るところまで</h2>
+      <p>「商品を見る → カート → 注文 → 支払 → 出荷 → 配送状況」の流れを省略せずに通し、集まった注文から、お店の人が売れ行きを確かめられるようになりました。</p>
     </div>
     <div class="road">
       <div class="done"><b>商品・在庫・税率の管理</b><span>完成</span></div>
@@ -359,7 +402,7 @@ footer a { color: inherit; text-decoration: underline; text-underline-offset: 2p
       <div class="done"><b>会員登録・ログイン・運営者の権限</b><span>完成</span></div>
       <div class="done"><b>カード決済</b><span>完成</span></div>
       <div class="done"><b>出荷と配送状況</b><span>完成</span></div>
-      <div><b>売上の簡易レポート</b><span>注文のデータを集め、お店の人が売れ行きを見られるようにする。</span></div>
+      <div class="done"><b>売上の簡易レポート</b><span>完成</span></div>
     </div>
   </section>
 

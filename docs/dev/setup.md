@@ -124,7 +124,7 @@ Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき
 
 1. バックエンドを止め、DB を作り直す（第 4 節。画面で変えたデータと、前に撮ったときの注文を消すため）。
 2. compose、バックエンド（profile `local`。Stripe の profile は付けない）、店舗画面（:3000）、管理画面（:5173）を起動する（第 2 節）。
-3. `e2e/` で `pnpm capture`。`showcase/img/` の 11 枚を上書きする。
+3. `e2e/` で `pnpm capture`。`showcase/img/` の 14 枚を上書きする。
 
 - 撮影の中で、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面のため）。白のマグカップの在庫を 2 つ使うので、続けて撮るときも DB を作り直す。
 - 撮影は E2E ではなく、CI では流さない。撮った画像は目で確かめてから commit する。

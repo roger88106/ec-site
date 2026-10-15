@@ -21,6 +21,16 @@ const SEED = {
   chocolate: '00000000-0000-0000-0000-000000002012',
 }
 
+/** local の seed のレポート用の注文の期間（db/seed/local/README.md「レポート用の注文」） */
+const SEED_ORDERS = {
+  /** 最初の日 */
+  from: '2024-10-01',
+  /** 最後の 1 年の最初の日 */
+  lastYear: '2025-10-01',
+  /** 最後の日 */
+  to: '2026-09-30',
+}
+
 /**
  * 画面の全体を撮る。表示が落ち着く（画像が読み込まれる）のを待ってから撮る。
  *
@@ -152,5 +162,16 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await shot(page, 'admin-order', page.getByText('売上確定済み'))
     await page.goto(`${STORE}/orders/${paidOrderId}`)
     await shot(page, 'store-shipping', page.getByText('配送中', { exact: true }))
+  })
+
+  await test.step('管理画面：レポート（seed の注文の期間を指定する）', async () => {
+    await page.goto(`${ADMIN}/reports/sales-trend?from=${SEED_ORDERS.from}&to=${SEED_ORDERS.to}`)
+    await shot(page, 'admin-report-trend', page.getByRole('cell', { name: '2026 年 9 月' }))
+    await page.goto(
+      `${ADMIN}/reports/variant-sales?from=${SEED_ORDERS.lastYear}&to=${SEED_ORDERS.to}&productId=${SEED.mug}`,
+    )
+    await shot(page, 'admin-report-variants', page.getByRole('cell', { name: 'MUG-001-WH', exact: true }))
+    await page.goto(`${ADMIN}/reports/customer-breakdown?from=${SEED_ORDERS.lastYear}&to=${SEED_ORDERS.to}`)
+    await shot(page, 'admin-report-customers', page.getByRole('region', { name: '性別ごとの売上額' }))
   })
 })

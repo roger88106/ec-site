@@ -91,3 +91,23 @@ test('AC-197、205、206、209、219、221〜224 生年月日と性別を入れ�
     })
   })
 })
+
+test('AC-214、215、217 営業は、メニューに売上の推移がなく、URL で開くと「権限がない」と示され、他の 2 つは開ける', async ({
+  page,
+}) => {
+  await loginAdmin(page, ACCOUNTS.sales)
+
+  const menu = page.getByRole('navigation').or(page.locator('[data-sidebar="sidebar"]'))
+  await expect(menu.getByText('レポート', { exact: true })).toBeVisible()
+  await expect(menu.getByRole('link', { name: '売上の推移' })).toHaveCount(0)
+
+  await menu.getByRole('link', { name: 'バリエーションの売れ行き' }).click()
+  await expect(page.getByRole('heading', { name: 'バリエーションの売れ行き' })).toBeVisible()
+  await expect(page.getByText('商品を選ぶと、バリエーションごとの売れ行きを出します。')).toBeVisible()
+
+  await menu.getByRole('link', { name: '地域・年齢層・性別' }).click()
+  await expect(page.getByRole('region', { name: '都道府県ごとの売上額' })).toBeVisible()
+
+  await page.goto(`${ADMIN_URL}/reports/sales-trend`)
+  await expect(page.getByText('この画面を見る権限がありません。')).toBeVisible()
+})

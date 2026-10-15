@@ -9,6 +9,7 @@ import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
+import com.ecsite.module.order.domain.order.BuyerProfile;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderErrorCode;
 import com.ecsite.module.order.domain.order.OrderNumber;
@@ -118,7 +119,8 @@ public class OrderPlacementService {
                 command.phone());
         var order = Order.place(UUID.randomUUID(), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
                 command.email(),
-                address);
+                address,
+                BuyerProfile.of(command.birthdate(), command.gender(), now));
 
         // 書き込み：在庫の減算（期限切れなら引き当て直し）→ 注文（支払待ち）→ 支払
         var shortages = stockDirectory.commit(checkout.id(), CheckoutService.quantities(cart.lines()), order.id(),

@@ -20,6 +20,7 @@ import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.common.security.AuthenticatedMember;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.common.presentation.StorePrices;
@@ -62,25 +63,26 @@ class StoreOrderMapper {
      *
      * @param checkoutId 注文手続き ID
      * @param request    注文のリクエスト
-     * @param memberId      会員 ID
-     * @param email         連絡先のメールアドレス（会員の token のもの）
-     * @param emailVerified メールアドレスが確認済みか（token のもの）
+     * @param memberId   会員 ID
+     * @param member     token の会員（連絡先のメールアドレス、確認済みか、生年月日、性別）
      * @return 注文のコマンド
      */
-    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request, UUID memberId, String email,
-                                          boolean emailVerified) {
+    PlaceOrderCommand toPlaceOrderCommand(UUID checkoutId, PlaceOrderRequest request, UUID memberId,
+                                          AuthenticatedMember member) {
         var address = request.getShippingAddress();
         return new PlaceOrderCommand(
                 checkoutId,
                 memberId,
-                email,
-                emailVerified,
+                member.email(),
+                member.emailVerified(),
                 address.getName(),
                 address.getPostalCode(),
                 address.getPrefecture(),
                 address.getAddress(),
                 address.getPhone(),
-                Money.of(request.getExpectedTotal()));
+                Money.of(request.getExpectedTotal()),
+                member.birthdate(),
+                member.gender());
     }
 
     /**

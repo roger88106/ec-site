@@ -32,7 +32,9 @@ public class CurrentMember {
                 jwt.getClaimAsString("email"),
                 Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
                 jwt.getClaimAsString("family_name"),
-                jwt.getClaimAsString("given_name")));
+                jwt.getClaimAsString("given_name"),
+                jwt.getClaimAsString("birthdate"),
+                jwt.getClaimAsString("gender")));
     }
 
     /**

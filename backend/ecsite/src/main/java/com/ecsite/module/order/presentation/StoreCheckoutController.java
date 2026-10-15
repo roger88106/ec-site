@@ -88,7 +88,7 @@ class StoreCheckoutController implements CheckoutApi {
     public ResponseEntity<CreatedId> placeOrder(UUID checkoutId, PlaceOrderRequest request) {
         var member = currentMember.require();
         var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request,
-                currentMemberIds.require(), member.email(), member.emailVerified()));
+                currentMemberIds.require(), member));
         var body = new CreatedId(result.orderId());
         if (!result.created()) {
             return ResponseEntity.ok(body);

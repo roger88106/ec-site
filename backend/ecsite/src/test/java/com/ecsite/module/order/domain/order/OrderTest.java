@@ -84,7 +84,7 @@ class OrderTest {
     @DisplayName("AC-86 メールアドレスの形が違えば拒否される")
     void rejectsInvalidEmail(String email) {
         assertBusinessError(() -> Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
-                ORDERED_AT, quote(), email, ADDRESS), OrderErrorCode.INVALID_EMAIL);
+                ORDERED_AT, quote(), email, ADDRESS, BuyerProfile.UNKNOWN), OrderErrorCode.INVALID_EMAIL);
     }
 
     // ============================== 補助 ==============================
@@ -94,7 +94,7 @@ class OrderTest {
      */
     private static Order place(Quote quote) {
         return Order.place(UUID.randomUUID(), OrderNumber.of("20261008-482915"), UUID.randomUUID(), UUID.randomUUID(), ORDERED_AT,
-                quote, "taro@example.com", ADDRESS);
+                quote, "taro@example.com", ADDRESS, BuyerProfile.UNKNOWN);
     }
 
     /**

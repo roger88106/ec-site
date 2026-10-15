@@ -3,9 +3,11 @@ package com.ecsite.module.order.infrastructure.persistence;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.jooq.ordering.tables.records.SalesOrderRecord;
+import com.ecsite.module.order.domain.order.BuyerProfile;
 import com.ecsite.module.order.domain.order.Cancellation;
 import com.ecsite.module.order.domain.order.CancellationKind;
 import com.ecsite.module.order.domain.order.CancellationRequest;
+import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderLine;
 import com.ecsite.module.order.domain.order.OrderNumber;
@@ -93,6 +95,9 @@ class JooqOrderRepository implements OrderRepository {
         record.setPrefecture(address.prefecture());
         record.setAddress(address.address());
         record.setPhone(address.phone());
+        var buyer = snapshot.buyerProfile();
+        record.setBuyerAge(buyer.age() == null ? null : buyer.age().shortValue());
+        record.setBuyerGender(buyer.gender() == null ? null : buyer.gender().name());
         record.setVersion(snapshot.version());
         record.setCreatedAt(now);
         record.setUpdatedAt(now);
@@ -278,6 +283,8 @@ class JooqOrderRepository implements OrderRepository {
                 amounts,
                 record.getEmail(),
                 address,
+                new BuyerProfile(record.getBuyerAge() == null ? null : record.getBuyerAge().intValue(),
+                        record.getBuyerGender() == null ? null : Gender.valueOf(record.getBuyerGender())),
                 request,
                 cancellation,
                 record.getVersion()));

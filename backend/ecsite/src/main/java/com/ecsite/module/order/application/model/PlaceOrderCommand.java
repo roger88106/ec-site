@@ -1,6 +1,7 @@
 package com.ecsite.module.order.application.model;
 
 import com.ecsite.common.model.value.Money;
+import jakarta.annotation.Nullable;
 
 import java.util.UUID;
 
@@ -17,8 +18,11 @@ import java.util.UUID;
  * @param address       住所
  * @param phone         電話番号
  * @param expectedTotal 注文手続きの画面で表示した総額
+ * @param birthdate     生年月日（会員の token のもの。なければ null）
+ * @param gender        性別（会員の token のもの。なければ null）
  */
 public record PlaceOrderCommand(UUID checkoutId, UUID memberId, String email, boolean emailVerified,
                                 String name, String postalCode, String prefecture,
-                                String address, String phone, Money expectedTotal) {
+                                String address, String phone, Money expectedTotal,
+                                @Nullable String birthdate, @Nullable String gender) {
 }

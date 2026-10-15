@@ -2,6 +2,8 @@ package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.domain.order.BuyerProfile;
+import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderNumber;
 import com.ecsite.module.order.domain.order.ShippingAddress;
@@ -48,7 +50,7 @@ class JooqOrderRepositoryTest {
     ApplicationEvents events;
 
     @Test
-    @DisplayName("注文を保存し、明細・金額・お届け先を含めて再構築できる。注文成立のイベントが発行される")
+    @DisplayName("注文を保存し、明細・金額・お届け先・注文時の年齢と性別を含めて再構築できる。注文成立のイベントが発行される")
     void savesAndRestoresOrder() {
         var order = order(UUID.randomUUID(), "20261008-000001");
         var expected = order.toSnapshot();
@@ -103,6 +105,7 @@ class JooqOrderRepositoryTest {
                 new TaxAmount(new BigDecimal("8"), Money.of(1332), Money.of(98))));
         return Order.place(UUID.randomUUID(), OrderNumber.of(orderNumber), checkoutId, UUID.randomUUID(), ORDERED_AT,
                 new Quote(items, amounts, true), "taro@example.com",
-                ShippingAddress.of("山田 太郎", "100-0001", "東京都", "千代田区千代田 1-1", "03-1234-5678"));
+                ShippingAddress.of("山田 太郎", "100-0001", "東京都", "千代田区千代田 1-1", "03-1234-5678"),
+                new BuyerProfile(36, Gender.FEMALE));
     }
 }

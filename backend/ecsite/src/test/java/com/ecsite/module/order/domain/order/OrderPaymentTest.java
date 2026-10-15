@@ -188,7 +188,7 @@ class OrderPaymentTest {
         var quote = new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, true);
         var order = Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(),
                 ORDERED_AT, quote, "taro@example.com",
-                ShippingAddress.of("山田 太郎", "1000001", "東京都", "千代田区", "0312345678"));
+                ShippingAddress.of("山田 太郎", "1000001", "東京都", "千代田区", "0312345678"), BuyerProfile.UNKNOWN);
         order.pullEvents();
         return order;
     }

@@ -148,11 +148,12 @@ stateDiagram-v2
 
 ## データモデル
 
-[V202610111200__ordering_create_order.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610111200__ordering_create_order.sql)、[V202610121200__ordering_add_member_id.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)、[V202610151000__ordering_add_shipped.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151000__ordering_add_shipped.sql)、[V202610151010__ordering_add_cancellation_restocked.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151010__ordering_add_cancellation_restocked.sql)
+[V202610111200__ordering_create_order.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610111200__ordering_create_order.sql)、[V202610121200__ordering_add_member_id.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)、[V202610151000__ordering_add_shipped.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151000__ordering_add_shipped.sql)、[V202610151010__ordering_add_cancellation_restocked.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151010__ordering_add_cancellation_restocked.sql)、[V202610151100__ordering_add_buyer_profile.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151100__ordering_add_buyer_profile.sql)
 
 - schema は `ordering`（`order` は SQL の予約語のため）。
 - カート・バリアント・会員は他のモジュールの ID なので、外部キーは張らない。
 - 注文手続きと注文は会員 ID を必須で持つ（認証を入れる前の、会員のない注文と引当はマイグレーションで消した）。
 - 明細の軸の値の写しは、変わらない一覧なので JSON で持つ。
 - キャンセルの申請とキャンセルは注文に 1 回ずつなので、注文の列に持つ。在庫に戻したかは、列を足す前のキャンセルを「戻した」とする。
+- 注文時の年齢と性別は、分からなければ空。列を足す前の注文は空（不明）。
 - 金額の整合（総額 ＝ 商品の合計 ＋ 送料、小計 ＝ 税込単価 × 数量）は CHECK 制約でも守る。

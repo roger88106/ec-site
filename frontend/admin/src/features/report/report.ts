@@ -1,3 +1,4 @@
+import { LOCALE } from '@ec-site/shared/lib/locale'
 import type { AgeGroup, Granularity, ReportBasis, ReportGender, SalesTrendPoint } from '@/api/types'
 import { messages } from '@/i18n/messages'
 import { translate } from '@/i18n/translate'
@@ -44,4 +45,12 @@ export function bucketLabel(point: SalesTrendPoint, granularity: Granularity): s
     fiscalYear: point.fiscalYear ?? year,
     quarter: point.quarter ?? 0,
   })
+}
+
+/** グラフの軸の金額の書き方（万・億で短くする） */
+const COMPACT = new Intl.NumberFormat(LOCALE, { notation: 'compact', maximumFractionDigits: 1 })
+
+/** グラフの軸の金額。例：「4000万円」「341.8万円」「5000円」 */
+export function formatYenCompact(amount: number): string {
+  return `${COMPACT.format(amount)}円`
 }

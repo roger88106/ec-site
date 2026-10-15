@@ -3,6 +3,7 @@ import { ageGroupSalesAgeGroupValues, genderSalesGenderValues } from '@/api/gene
 import {
   ageGroupLabel,
   bucketLabel,
+  formatYenCompact,
   granularityLabel,
   prefectureLabel,
   reportBasisLabel,
@@ -56,5 +57,12 @@ describe('レポートの表示名', () => {
     expect(bucketLabel({ ...point, start: '2026-04-01', end: '2027-03-31', fiscalYear: 2026 }, 'YEAR')).toBe(
       '2026 年度',
     )
+  })
+
+  it('グラフの軸の金額は、万・億で短くする', () => {
+    expect(formatYenCompact(40000000)).toBe('4000万円')
+    expect(formatYenCompact(3417808)).toBe('341.8万円')
+    expect(formatYenCompact(5000)).toBe('5000円')
+    expect(formatYenCompact(0)).toBe('0円')
   })
 })

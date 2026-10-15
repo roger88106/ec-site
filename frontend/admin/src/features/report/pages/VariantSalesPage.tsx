@@ -100,7 +100,7 @@ function VariantSalesResult({ condition, report }: { condition: ReportCondition;
             <XAxis dataKey="name" tickLine={false} />
             <YAxis allowDecimals={false} tickLine={false} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Bar dataKey="quantity" fill="var(--color-quantity)" radius={4} />
+            <Bar dataKey="quantity" isAnimationActive={false} fill="var(--color-quantity)" radius={4} />
           </BarChart>
         </ChartContainer>
       </section>

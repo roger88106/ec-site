@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
 import { CALENDAR_PRESETS, presetPeriod, todayInJapan } from '@/features/report/period'
-import { ageGroupLabel, prefectureLabel, reportGenderLabel } from '@/features/report/report'
+import { ageGroupLabel, formatYenCompact, prefectureLabel, reportGenderLabel } from '@/features/report/report'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
 import { formatYen } from '@/lib/format'
@@ -110,28 +110,52 @@ function BreakdownResult({ condition, report }: { condition: ReportCondition; re
         />
       </div>
       {dimensions.map((dimension) => (
-        <SegmentSection key={dimension.key} name={dimension.name} rows={dimension.rows} />
+        <SegmentSection
+          horizontal={dimension.key === 'prefecture'}
+          key={dimension.key}
+          name={dimension.name}
+          rows={dimension.rows}
+        />
       ))}
     </div>
   )
 }
 
-/** 1 つの分け方の棒グラフと表 */
-function SegmentSection({ name, rows }: { name: string; rows: SegmentRow[] }) {
+/** 横の棒の 1 本の高さ（px） */
+const HORIZONTAL_BAR_HEIGHT = 28
+
+/** 1 つの分け方の棒グラフと表。区分の多いもの（都道府県）は、名前が重ならないよう横の棒にする */
+function SegmentSection({ name, rows, horizontal }: { name: string; rows: SegmentRow[]; horizontal: boolean }) {
   const t = useTranslations('report.customerBreakdown')
   const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-3)' } } satisfies ChartConfig
   return (
     <section aria-label={t('chart', { dimension: name }) /* 分け方ごとの売上額 */} className="space-y-4">
       <h2 className="font-heading font-semibold text-lg">{name}</h2>
-      <ChartContainer className="h-64 w-full" config={chartConfig}>
-        <BarChart data={rows} margin={{ left: 24, right: 24 }}>
-          <CartesianGrid vertical={false} />
-          <XAxis dataKey="segment" interval={0} tickLine={false} />
-          <YAxis tickFormatter={(value: number) => formatYen(value)} tickLine={false} width={96} />
-          <ChartTooltip content={<ChartTooltipContent />} />
-          <Bar dataKey="amount" fill="var(--color-amount)" radius={4} />
-        </BarChart>
-      </ChartContainer>
+      {horizontal ? (
+        <ChartContainer
+          className="aspect-auto w-full"
+          config={chartConfig}
+          style={{ height: Math.max(rows.length * HORIZONTAL_BAR_HEIGHT + 40, 120) }}
+        >
+          <BarChart data={rows} layout="vertical" margin={{ left: 24, right: 24 }}>
+            <CartesianGrid horizontal={false} />
+            <XAxis tickFormatter={formatYenCompact} tickLine={false} type="number" />
+            <YAxis dataKey="segment" interval={0} tickLine={false} type="category" width={72} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="amount" isAnimationActive={false} fill="var(--color-amount)" radius={4} />
+          </BarChart>
+        </ChartContainer>
+      ) : (
+        <ChartContainer className="h-64 w-full" config={chartConfig}>
+          <BarChart data={rows} margin={{ left: 24, right: 24 }}>
+            <CartesianGrid vertical={false} />
+            <XAxis dataKey="segment" interval={0} tickLine={false} />
+            <YAxis tickFormatter={formatYenCompact} tickLine={false} width={72} />
+            <ChartTooltip content={<ChartTooltipContent />} />
+            <Bar dataKey="amount" isAnimationActive={false} fill="var(--color-amount)" radius={4} />
+          </BarChart>
+        </ChartContainer>
+      )}
       <Table>
         <TableHeader>
           <TableRow>

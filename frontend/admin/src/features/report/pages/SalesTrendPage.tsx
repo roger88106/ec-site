@@ -11,7 +11,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
 import { FISCAL_PRESETS, presetPeriod, todayInJapan } from '@/features/report/period'
-import { bucketLabel } from '@/features/report/report'
+import { bucketLabel, formatYenCompact } from '@/features/report/report'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
 import { formatYen } from '@/lib/format'
@@ -74,7 +74,7 @@ function SalesTrend({ fiscalYearStartMonth }: { fiscalYearStartMonth: number }) 
 function SalesTrendResult({ condition, report }: { condition: ReportCondition; report: SalesTrendReport }) {
   const t = useTranslations('report.salesTrend')
   const rows = report.points.map((point) => ({ ...point, label: bucketLabel(point, condition.granularity) }))
-  const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-1)' } } satisfies ChartConfig
+  const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-4)' } } satisfies ChartConfig
   return (
     <div className="space-y-6">
       {report.shippingExcluded && (
@@ -85,9 +85,16 @@ function SalesTrendResult({ condition, report }: { condition: ReportCondition; r
           <LineChart data={rows} margin={{ left: 24, right: 24 }}>
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" tickLine={false} />
-            <YAxis tickFormatter={(value: number) => formatYen(value)} tickLine={false} width={96} />
+            <YAxis tickFormatter={formatYenCompact} tickLine={false} width={72} />
             <ChartTooltip content={<ChartTooltipContent />} />
-            <Line dataKey="amount" dot={false} stroke="var(--color-amount)" strokeWidth={2} type="monotone" />
+            <Line
+              dataKey="amount"
+              dot={false}
+              isAnimationActive={false}
+              stroke="var(--color-amount)"
+              strokeWidth={2}
+              type="monotone"
+            />
           </LineChart>
         </ChartContainer>
       </section>

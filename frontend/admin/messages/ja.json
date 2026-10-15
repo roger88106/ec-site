@@ -492,6 +492,20 @@
       "excludeShipping": "送料を除く",
       "submit": "表示する"
     },
-    "csv": "CSV で取り出す"
+    "csv": "CSV で取り出す",
+    "bucket": {
+      "WEEK": "{start}〜{end}",
+      "MONTH": "{year} 年 {month} 月",
+      "QUARTER": "{fiscalYear} 年度 第 {quarter} 四半期",
+      "YEAR": "{fiscalYear} 年度"
+    },
+    "salesTrend": {
+      "chart": "売上額の推移",
+      "bucket": "区切り",
+      "amount": "売上額",
+      "quantity": "販売数量",
+      "shippingExcluded": "送料を含めていません。",
+      "filename": "売上の推移"
+    }
   }
 }

@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { ageGroupSalesAgeGroupValues, genderSalesGenderValues } from '@/api/generated/admin'
 import {
   ageGroupLabel,
+  bucketLabel,
   granularityLabel,
   prefectureLabel,
   reportBasisLabel,
@@ -43,5 +44,17 @@ describe('レポートの表示名', () => {
     expect(prefectureLabel('47')).toBe('沖縄県')
     expect(prefectureLabel(undefined)).toBe('不明')
     expect(prefectureLabel('48')).toBe('不明')
+  })
+
+  it('BR-24 売上の推移の区切りは、週は日付、月は暦、四半期と年は会計年度で呼ぶ', () => {
+    const point = { start: '2026-04-06', end: '2026-04-12', amount: 0, quantity: 0 }
+    expect(bucketLabel(point, 'WEEK')).toBe('2026/04/06〜2026/04/12')
+    expect(bucketLabel({ ...point, start: '2026-04-01', end: '2026-04-30' }, 'MONTH')).toBe('2026 年 4 月')
+    expect(
+      bucketLabel({ ...point, start: '2027-01-01', end: '2027-03-31', fiscalYear: 2026, quarter: 4 }, 'QUARTER'),
+    ).toBe('2026 年度 第 4 四半期')
+    expect(bucketLabel({ ...point, start: '2026-04-01', end: '2027-03-31', fiscalYear: 2026 }, 'YEAR')).toBe(
+      '2026 年度',
+    )
   })
 })

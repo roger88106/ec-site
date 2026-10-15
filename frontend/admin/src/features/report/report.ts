@@ -1,4 +1,4 @@
-import type { AgeGroup, Granularity, ReportBasis, ReportGender } from '@/api/types'
+import type { AgeGroup, Granularity, ReportBasis, ReportGender, SalesTrendPoint } from '@/api/types'
 import { messages } from '@/i18n/messages'
 import { translate } from '@/i18n/translate'
 
@@ -28,4 +28,20 @@ export function prefectureLabel(code: string | undefined): string {
     return translate('report.unknownPrefecture')
   }
   return translate(`report.prefecture.${code as keyof typeof messages.report.prefecture}`)
+}
+
+/**
+ * 売上の推移の区切りの表示名。週は期間で切った始まりと終わりの日、月は暦の年と月、四半期と年は会計年度で呼ぶ。<br />
+ * 例：「2026/04/06〜2026/04/12」「2026 年 4 月」「2026 年度 第 1 四半期」「2026 年度」
+ */
+export function bucketLabel(point: SalesTrendPoint, granularity: Granularity): string {
+  const [year, month] = point.start.split('-').map(Number)
+  return translate(`report.bucket.${granularity}`, {
+    start: point.start.replaceAll('-', '/'),
+    end: point.end.replaceAll('-', '/'),
+    year,
+    month,
+    fiscalYear: point.fiscalYear ?? year,
+    quarter: point.quarter ?? 0,
+  })
 }

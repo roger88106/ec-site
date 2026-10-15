@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * レポートの権限と、自分の権限の一覧の統合テスト（T0217、AC-214、215、217、BR-28）。<br />
+ * レポートの権限と、自分の権限の一覧と、レポートの設定の統合テスト（T0217、T0411、AC-197、214、215、217、BR-28）。<br />
  * 役割ごとの token は、運営者の realm の職務と同じ権限を持つ（{@link TestTokens}）。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -91,6 +91,26 @@ class ReportPermissionApiTest {
     void reportWithoutToken() throws Exception {
         mockMvc.perform(get("/api/admin/reports/customer-breakdown?" + PERIOD).with(TestTokens.none()))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Nested
+    @DisplayName("レポートの設定")
+    class Settings {
+
+        @Test
+        @DisplayName("AC-197 会計年度の始まりの月を返す。レポートの権限がなくても、ログインしていれば使える")
+        void fiscalYearStartMonth() throws Exception {
+            mockMvc.perform(get("/api/admin/reports/settings").with(TestTokens.viewer().bearer()))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.fiscalYearStartMonth").value(4));
+        }
+
+        @Test
+        @DisplayName("token がないと 401")
+        void withoutToken() throws Exception {
+            mockMvc.perform(get("/api/admin/reports/settings").with(TestTokens.none()))
+                    .andExpect(status().isUnauthorized());
+        }
     }
 
     @Nested

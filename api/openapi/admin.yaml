@@ -1211,6 +1211,23 @@ paths:
         '403':
           $ref: '#/components/responses/Forbidden'
 
+  /reports/settings:
+    get:
+      tags: [report]
+      operationId: getReportSettings
+      summary: レポートの設定（spec 010 AC-197、BR-24）
+      description: 管理画面が、期間の選択肢（今年度・前年度）を、バックエンドと同じ会計年度で求めるのに使う。秘密ではないので、ログインしていればよい。
+      x-required-permission: authenticated
+      responses:
+        '200':
+          description: レポートの設定
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ReportSettings'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
 components:
   parameters:
     ReportFrom:
@@ -2395,6 +2412,16 @@ components:
           description: 自分の権限（`resource:action`）
           items:
             type: string
+    ReportSettings:
+      type: object
+      required: [fiscalYearStartMonth]
+      properties:
+        fiscalYearStartMonth:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 12
+          description: 会計年度の始まりの月（1〜12。年度は始まりの月の年で呼ぶ）
     ReportBasis:
       type: string
       enum: [ORDER, SHIPMENT]

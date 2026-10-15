@@ -62,7 +62,13 @@ class JooqReportQueryRepository implements ReportQueryRepository {
 
     @Override
     public List<VariantTotal> variantSales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax) {
-        throw new UnsupportedOperationException("T0212 で実装する");
+        return dsl.select(SALES_ORDER_LINE.VARIANT_ID, DSL.max(SALES_ORDER_LINE.VARIANT_CODE),
+                        DSL.sum(SALES_ORDER_LINE.QUANTITY), DSL.sum(lineAmount(excludeTax)))
+                .from(SALES_ORDER)
+                .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
+                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
+                .groupBy(SALES_ORDER_LINE.VARIANT_ID)
+                .fetch(row -> new VariantTotal(row.value1(), row.value2(), count(row.value3()), money(row.value4())));
     }
 
     @Override

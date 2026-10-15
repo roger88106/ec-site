@@ -17,6 +17,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -58,6 +59,16 @@ public class ProductQueryService {
         var actions = ProductActions.of(PublicationStatus.valueOf(view.status()), view.firstShownAt(), view.axes().size(),
                 view.variants().size(), now);
         return view.withCurrentState(priceInclTax, actions);
+    }
+
+    /**
+     * 商品の詳細を、今の状態（税込価格、できる操作）なしで探す。他のモジュールに商品とバリアントの一覧を返すときに使う。
+     *
+     * @param id 商品 ID
+     * @return 商品の詳細。なければ空
+     */
+    public Optional<ProductDetailView> findProduct(UUID id) {
+        return productQueryRepository.findDetailById(id);
     }
 
     /**

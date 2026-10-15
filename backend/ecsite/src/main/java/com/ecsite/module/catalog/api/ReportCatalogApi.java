@@ -1,13 +1,16 @@
 package com.ecsite.module.catalog.api;
 
 import com.ecsite.module.catalog.application.OrderableVariantQueryService;
+import com.ecsite.module.catalog.application.ProductQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.Collection;
 import java.util.LinkedHashMap;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
+import java.util.stream.IntStream;
 
 /**
  * レポートに公開する商品カタログの API（docs/backend/modules/catalog.md「他のモジュールへの公開」）。<br />
@@ -23,6 +26,11 @@ public class ReportCatalogApi {
     private final OrderableVariantQueryService orderableVariantQueryService;
 
     /**
+     * 商品の参照
+     */
+    private final ProductQueryService productQueryService;
+
+    /**
      * バリアントの商品 ID を返す。
      *
      * @param variantIds バリアント ID
@@ -33,5 +41,20 @@ public class ReportCatalogApi {
         orderableVariantQueryService.findVariants(variantIds)
                 .forEach((variantId, variant) -> result.put(variantId, variant.productId()));
         return result;
+    }
+
+    /**
+     * 商品とバリアントの一覧を返す。
+     *
+     * @param productId 商品 ID
+     * @return 商品。なければ空
+     */
+    public Optional<ReportProduct> findProduct(UUID productId) {
+        return productQueryService.findProduct(productId).map(product -> new ReportProduct(product.id(), product.name(),
+                product.variants().stream().map(variant -> new ReportProduct.Variant(variant.id(), variant.variantCode(),
+                        IntStream.range(0, product.axes().size())
+                                .mapToObj(i -> new ReportProduct.AxisValue(product.axes().get(i), variant.axisValues().get(i)))
+                                .toList()))
+                        .toList()));
     }
 }

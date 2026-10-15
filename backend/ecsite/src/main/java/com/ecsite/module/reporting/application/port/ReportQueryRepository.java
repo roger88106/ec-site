@@ -57,12 +57,12 @@ public interface ReportQueryRepository {
     /**
      * バリアントの売上
      *
-     * @param variantId  バリアント ID
-     * @param axisValues 軸の値の写し（最も新しい注文のもの。JSON の文字列）
-     * @param quantity   販売数量
-     * @param amount     売上額
+     * @param variantId   バリアント ID
+     * @param variantCode バリアント品番の写し
+     * @param quantity    販売数量
+     * @param amount      売上額
      */
-    record VariantTotal(UUID variantId, String axisValues, long quantity, Money amount) {
+    record VariantTotal(UUID variantId, String variantCode, long quantity, Money amount) {
     }
 
     /**

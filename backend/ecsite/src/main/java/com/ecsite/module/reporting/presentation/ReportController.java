@@ -4,10 +4,12 @@ import com.ecsite.api.admin.ReportApi;
 import com.ecsite.api.admin.model.CustomerBreakdownReport;
 import com.ecsite.api.admin.model.Granularity;
 import com.ecsite.api.admin.model.ReportBasis;
+import com.ecsite.api.admin.model.ReportSettings;
 import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSalesReport;
 import com.ecsite.module.reporting.application.CustomerBreakdownQuery;
 import com.ecsite.module.reporting.application.CustomerBreakdownQueryService;
+import com.ecsite.module.reporting.application.ReportingProperties;
 import com.ecsite.module.reporting.application.SalesTrendQuery;
 import com.ecsite.module.reporting.application.SalesTrendQueryService;
 import com.ecsite.module.reporting.application.VariantSalesQuery;
@@ -48,6 +50,11 @@ class ReportController implements ReportApi {
      * レポートマッパー
      */
     private final ReportMapper mapper;
+
+    /**
+     * レポートの設定
+     */
+    private final ReportingProperties properties;
 
 // ============================== GET ==============================
 
@@ -108,5 +115,15 @@ class ReportController implements ReportApi {
         var query = new CustomerBreakdownQuery(ReportPeriod.of(from, to), mapper.toBasis(basis), productId, excludeTax,
                 excludeShipping);
         return ResponseEntity.ok(mapper.toCustomerBreakdownReport(customerBreakdownService.breakdown(query)));
+    }
+
+    /**
+     * レポートの設定
+     *
+     * @return Http 200 : {@link ReportSettings}
+     */
+    @Override
+    public ResponseEntity<ReportSettings> getReportSettings() {
+        return ResponseEntity.ok(new ReportSettings(properties.fiscalYearStartMonth()));
     }
 }

@@ -35,7 +35,7 @@ function segmentRow(page: Page, dimension: string, segment: string) {
     .filter({ has: page.getByRole('cell', { name: segment, exact: true }) })
 }
 
-test('AC-197、205、206、209、219、221〜224 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
+test('AC-197、205、206、209、219、221、222、223、224 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
   browser,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)

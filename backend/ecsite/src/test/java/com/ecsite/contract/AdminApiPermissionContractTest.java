@@ -60,6 +60,22 @@ class AdminApiPermissionContractTest {
     }
 
     @Test
+    @DisplayName("AC-216 レポートの権限は、レポートの操作ごとに 1 つずつで、条件ごとの操作や権限はない")
+    void onePermissionPerReport() throws IOException {
+        var spec = Files.readString(OPENAPI_DIR.resolve("admin.yaml"));
+
+        var reports = listOperations(spec).stream()
+                .filter(operation -> String.valueOf(operation.permission()).startsWith("report-"))
+                .toList();
+
+        assertThat(reports).extracting(operation -> operation.method() + " " + operation.path() + " " + operation.permission())
+                .containsExactlyInAnyOrder(
+                        "GET /reports/sales-trend report-sales-trend:read",
+                        "GET /reports/variant-sales report-variant-sales:read",
+                        "GET /reports/customer-breakdown report-customer:read");
+    }
+
+    @Test
     @DisplayName("権限が書かれていない操作を検出できる")
     void detectsMissingPermission() {
         var spec = """

@@ -75,7 +75,7 @@ class VariantSalesQueryTest {
     }
 
     @Test
-    @DisplayName("AC-202〜204 バリアントごとの販売数量と売上額を、販売数量の多い順に返す。売れなかったバリアントは 0")
+    @DisplayName("AC-202、203、204 バリアントごとの販売数量と売上額を、販売数量の多い順に返す。売れなかったバリアントは 0")
     void variantsByQuantity() {
         var report = service.variants(new VariantSalesQuery(shirt.id, PERIOD, Basis.ORDER, false));
 

@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { VariantSalesReport } from '@/api/types'
-import { SHIRT_ID, serveReportBasics } from '@/features/report/pages/reportTestServer'
 import { renderApp } from '@/test/renderApp'
+import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
 /** T シャツの売れ行き（販売数量の多い順。黒の L は売れなかった） */
@@ -48,7 +48,7 @@ function serveVariantSales() {
 }
 
 describe('バリエーションの売れ行き', () => {
-  it('AC-202〜204 バリエーションごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
+  it('AC-202、203、204 バリエーションごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
     const queries = serveVariantSales()
     renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}&excludeTax=true`)
 

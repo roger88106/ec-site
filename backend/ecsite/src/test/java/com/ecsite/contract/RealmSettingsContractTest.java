@@ -109,7 +109,7 @@ class RealmSettingsContractTest {
     }
 
     @Test
-    @DisplayName("AC-209、210、221 会員の属性に、任意の生年月日（日付の形）と性別（4 つの値）がある")
+    @DisplayName("AC-209、210、211、221 会員の属性に、任意の生年月日（日付の形）と性別（4 つの値）があり、会員が後から直せる")
     void memberAttributes() {
         // user profile の設定は、JSON を文字列にして持つ
         var profile = JsonPath.parse(JsonPath.<String>read(realms.get(STORE),

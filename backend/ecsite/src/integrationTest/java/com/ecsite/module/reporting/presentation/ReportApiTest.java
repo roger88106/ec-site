@@ -149,7 +149,7 @@ class ReportApiTest {
     class Variants {
 
         @Test
-        @DisplayName("AC-202〜204 商品と、バリアントごとの販売数量と売上額を返す。売れなかったバリアントは 0")
+        @DisplayName("AC-202、203、204 商品と、バリアントごとの販売数量と売上額を返す。売れなかったバリアントは 0")
         void variants() throws Exception {
             mockMvc.perform(get(REPORTS + "/variant-sales?from=2031-04-01&to=2031-04-30&productId=" + shirt.id))
                     .andExpect(status().isOk())
@@ -186,7 +186,7 @@ class ReportApiTest {
     class Customers {
 
         @Test
-        @DisplayName("AC-205〜208、219、220 都道府県は売れたものだけ、年齢層と性別はすべての区分を返す")
+        @DisplayName("AC-205、206、207、208、219、220 都道府県は売れたものだけ、年齢層と性別はすべての区分を返す")
         void breakdown() throws Exception {
             new ReportTestData(dsl).order("ACCEPTED", "2031-04-06").prefecture(null)
                     .line(shirt.id, shirt.variantIds.get(1), 1).insert();

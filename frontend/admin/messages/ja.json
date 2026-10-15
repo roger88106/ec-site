@@ -516,6 +516,18 @@
       "selectProduct": "商品を選ぶと、バリエーションごとの売れ行きを出します。",
       "product": "商品：{name}",
       "filename": "バリエーションの売れ行き"
+    },
+    "customerBreakdown": {
+      "prefecture": "都道府県",
+      "ageGroup": "年齢層",
+      "gender": "性別",
+      "dimension": "分け方",
+      "segment": "区分",
+      "amount": "売上額",
+      "orders": "注文件数",
+      "shippingExcluded": "送料を含めていません。",
+      "chart": "{dimension}ごとの売上額",
+      "filename": "地域・年齢層・性別"
     }
   }
 }

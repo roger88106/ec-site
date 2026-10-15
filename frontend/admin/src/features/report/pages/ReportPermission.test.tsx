@@ -1,6 +1,8 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { serveReportBasics } from '@/features/report/pages/reportTestServer'
 import { renderApp } from '@/test/renderApp'
+import { http, server } from '@/test/server'
 
 /** 閲覧者の権限（参照だけ） */
 const VIEWER = ['tax:read', 'category:read', 'product:read', 'inventory:read', 'order:read']
@@ -34,6 +36,12 @@ describe('レポートの権限による出し分け', () => {
   })
 
   it('AC-214 権限があれば、メニューから画面を開ける', async () => {
+    serveReportBasics()
+    server.use(
+      http.get('/reports/customer-breakdown', ({ response }) =>
+        response(200).json({ prefectures: [], ageGroups: [], genders: [], shippingExcluded: false }),
+      ),
+    )
     const { user, router } = renderApp('/reports/sales-trend', { permissions: SALES })
 
     await user.click(await screen.findByRole('link', { name: '地域・年齢層・性別' }))

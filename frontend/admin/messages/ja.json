@@ -469,6 +469,7 @@
       "08": "茨城県",
       "09": "栃木県"
     },
+    "yenCompact": "{amount}円",
     "unknownPrefecture": "不明",
     "condition": {
       "preset": "期間の選択肢",

@@ -1,8 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SalesTrendReport } from '@/api/types'
-import { SHIRT_ID, serveReportBasics } from '@/features/report/pages/reportTestServer'
 import { renderApp } from '@/test/renderApp'
+import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
 /** 2026 年度の 4 月〜6 月の月ごとの推移（5 月は売れなかった） */

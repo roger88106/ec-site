@@ -1,8 +1,8 @@
 import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { CustomerBreakdownReport } from '@/api/types'
-import { SHIRT_ID, serveReportBasics } from '@/features/report/pages/reportTestServer'
 import { renderApp } from '@/test/renderApp'
+import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
 /** 東京都・大阪府・不明の 3 つの都道府県と、すべての年齢層と性別 */

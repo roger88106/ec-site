@@ -4,8 +4,8 @@ export type CsvValue = string | number
 /** 表計算ソフトが式として読む先頭の文字 */
 const FORMULA_START = /^[=+\-@]/
 
-/** 引用符で囲む項目（カンマ、引用符、改行を含む） */
-const NEEDS_QUOTE = /[",\r\n]/
+/** 引用符で囲む項目（カンマ、引用符、改行を含む）。引用符は \x22 と書く（文言の検査が、引用符を文字列の始まりと読むため） */
+const NEEDS_QUOTE = /[\x22,\r\n]/
 
 /**
  * 表を CSV にする。表計算ソフトで文字化けしないよう UTF-8 の BOM で始め、行は CRLF で区切る。<br />

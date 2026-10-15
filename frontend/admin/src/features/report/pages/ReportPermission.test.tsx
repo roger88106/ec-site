@@ -1,7 +1,7 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
-import { serveReportBasics } from '@/features/report/pages/reportTestServer'
 import { renderApp } from '@/test/renderApp'
+import { serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
 /** 閲覧者の権限（参照だけ） */

@@ -52,5 +52,5 @@ const COMPACT = new Intl.NumberFormat(LOCALE, { notation: 'compact', maximumFrac
 
 /** グラフの軸の金額。例：「4000万円」「341.8万円」「5000円」 */
 export function formatYenCompact(amount: number): string {
-  return `${COMPACT.format(amount)}円`
+  return translate('report.yenCompact', { amount: COMPACT.format(amount) })
 }

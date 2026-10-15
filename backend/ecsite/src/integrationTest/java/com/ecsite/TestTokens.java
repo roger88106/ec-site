@@ -15,6 +15,7 @@ import org.springframework.test.web.servlet.request.RequestPostProcessor;
 import java.security.interfaces.RSAPublicKey;
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.Date;
 import java.util.List;
 import java.util.Map;
@@ -74,7 +75,14 @@ public final class TestTokens {
             "category:read", "category:write",
             "product:read", "product:write",
             "inventory:read", "inventory:write",
-            "order:read", "order:write");
+            "order:read", "order:write",
+            "report-sales-trend:read", "report-variant-sales:read", "report-customer:read");
+
+    /**
+     * 参照の権限（運営者の realm の職務の「閲覧者」と同じ。レポートは含まない）
+     */
+    public static final List<String> READ_PERMISSIONS = List.of(
+            "tax:read", "category:read", "product:read", "inventory:read", "order:read");
 
     /**
      * 運営者の realm の署名の鍵
@@ -92,6 +100,15 @@ public final class TestTokens {
     private static final RSAKey UNKNOWN_KEY = generateKey();
 
     private TestTokens() {
+    }
+
+    /**
+     * 参照の権限に、権限を足す。
+     */
+    private static String[] withReadPermissions(String... permissions) {
+        var all = new ArrayList<>(READ_PERMISSIONS);
+        all.addAll(List.of(permissions));
+        return all.toArray(String[]::new);
     }
 
     /**
@@ -113,6 +130,33 @@ public final class TestTokens {
      */
     public static Builder administrator() {
         return operator(ALL_PERMISSIONS.toArray(String[]::new));
+    }
+
+    /**
+     * 職務の「閲覧者」の token（参照の権限だけ）。
+     *
+     * @return token の組み立て
+     */
+    public static Builder viewer() {
+        return operator(READ_PERMISSIONS.toArray(String[]::new));
+    }
+
+    /**
+     * 職務の「管理職」の token（参照の権限と、すべてのレポート。spec 010 BR-28）。
+     *
+     * @return token の組み立て
+     */
+    public static Builder manager() {
+        return operator(withReadPermissions("report-sales-trend:read", "report-variant-sales:read", "report-customer:read"));
+    }
+
+    /**
+     * 職務の「営業」の token（参照の権限と、売上の推移を除くレポート。spec 010 BR-28）。
+     *
+     * @return token の組み立て
+     */
+    public static Builder sales() {
+        return operator(withReadPermissions("report-variant-sales:read", "report-customer:read"));
     }
 
     /**

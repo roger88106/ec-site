@@ -64,6 +64,48 @@ export async function loginStore(page: Page, account: Account, returnTo = '/'): 
   await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
 }
 
+/** 会員登録で入れる、会員の任意の属性（IdP の画面の表示のとおり） */
+export type MemberProfile = {
+  /** 生年月日（yyyy-MM-dd） */
+  birthdate?: string
+  /** 性別 */
+  gender?: '男性' | '女性' | 'その他' | '回答しない'
+}
+
+/**
+ * 店舗画面から会員登録する。IdP の会員登録の画面でメールアドレス・氏名・任意の属性を入れ、確認のメールのリンクでパスワードを設定する。
+ * 同じブラウザーでリンクを開くので、ログインした状態で登録を始めた画面に戻る（AC-112）。
+ *
+ * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
+ * @param name 氏名
+ * @param profile 生年月日と性別（省けば入れない）
+ */
+export async function registerMember(
+  page: Page,
+  account: Account,
+  name: { lastName: string; firstName: string },
+  profile: MemberProfile = {},
+): Promise<void> {
+  await page.getByRole('link', { name: '会員登録' }).click()
+  await page.locator('#email').fill(account.email)
+  await page.locator('#lastName').fill(name.lastName)
+  await page.locator('#firstName').fill(name.firstName)
+  if (profile.birthdate) {
+    await page.locator('#birthdate').fill(profile.birthdate)
+  }
+  if (profile.gender) {
+    await page.locator('#gender').selectOption({ label: profile.gender })
+  }
+  await page.getByRole('button', { name: '登録' }).click()
+  await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
+
+  await page.goto(await latestIdpLink(account.email))
+  await page.locator('#password-new').fill(account.password)
+  await page.locator('#password-confirm').fill(account.password)
+  await page.getByRole('button', { name: '送信' }).click()
+  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+}
+
 /**
  * Mailpit に届いた、宛先への最新のメールから、IdP の確認・再設定のリンクを取り出す。届くまで待つ。
  *

@@ -25,6 +25,12 @@ class OrderApiDirectory implements OrderDirectory {
      */
     private final OrderReportApi orderReportApi;
 
+    /**
+     * 注文の今の写しを、注文の API で読む。
+     *
+     * @param orderId 注文 ID
+     * @return 写し。注文がなければ空
+     */
     @Override
     public Optional<ReportOrder> find(UUID orderId) {
         return orderReportApi.find(orderId).map(OrderApiDirectory::toReportOrder);

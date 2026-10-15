@@ -1,6 +1,8 @@
 package com.ecsite.module.reporting.domain;
 
 import com.ecsite.common.model.value.Money;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.time.LocalDate;
 import java.util.List;
@@ -9,10 +11,8 @@ import java.util.Map;
 /**
  * 売上の推移の、区切りへのまとめ（docs/backend/modules/reporting.md「売上の推移」）
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SalesTrend {
-
-    private SalesTrend() {
-    }
 
     /**
      * 日ごとの売上を区切りにまとめる。売れなかった区切りも 0 として並べる。

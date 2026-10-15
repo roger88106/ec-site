@@ -51,6 +51,11 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      */
     private final Clock clock;
 
+    /**
+     * 注文ごとのロックを、トランザクションの終わりまで取る。
+     *
+     * @param orderId 注文 ID
+     */
     @Override
     public void lock(UUID orderId) {
         // トランザクションの終わりで外れる、注文 ID のロック（PostgreSQL の advisory lock）
@@ -58,6 +63,12 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 DSL.val(orderId.getMostSignificantBits() ^ orderId.getLeastSignificantBits()))).fetch();
     }
 
+    /**
+     * 状態の履歴に 1 行足す。同じイベント ID の行があれば何もしない。
+     *
+     * @param entry 履歴の行
+     * @return 足したら true
+     */
     @Override
     public boolean appendHistory(StatusHistoryEntry entry) {
         return dsl.insertInto(STATUS_HISTORY)
@@ -75,6 +86,12 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .execute() > 0;
     }
 
+    /**
+     * 注文の状態の履歴を、発生日時の順に読む。同じ日時はイベント ID の順にする。
+     *
+     * @param orderId 注文 ID
+     * @return 履歴
+     */
     @Override
     public List<StatusHistoryEntry> history(UUID orderId) {
         return dsl.selectFrom(STATUS_HISTORY)
@@ -85,6 +102,12 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                         row.getRestocked()));
     }
 
+    /**
+     * 写しの明細の商品 ID を読む。
+     *
+     * @param orderId 注文 ID
+     * @return 行番号 → 商品 ID。写しがない、または商品 ID がない行は含めない
+     */
     @Override
     public Map<Integer, UUID> productIds(UUID orderId) {
         return dsl.select(SALES_ORDER_LINE.LINE_NO, SALES_ORDER_LINE.PRODUCT_ID)
@@ -95,6 +118,11 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .collect(Collectors.toMap(row -> row.value1().intValue(), row -> row.value2()));
     }
 
+    /**
+     * 写しを上書きする（なければ作る）。明細は消して入れ直す。注文日・出荷日は日本時間の日付にする。
+     *
+     * @param order 写し
+     */
     @Override
     public void save(ReportOrder order) {
         var now = clock.instant();

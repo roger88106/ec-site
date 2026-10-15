@@ -34,6 +34,16 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      */
     private final DSLContext dsl;
 
+    /**
+     * 日ごとの売上額と販売数量を求める。
+     *
+     * @param period          期間
+     * @param basis           売上の数え方
+     * @param productId       商品 ID。全商品なら null
+     * @param excludeTax      消費税を除くか
+     * @param excludeShipping 送料を除くか（商品を指定したときは使わない）
+     * @return 日 → 売上。売れなかった日は含めない
+     */
     @Override
     public Map<LocalDate, DailySales> dailySales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax,
                                                  boolean excludeShipping) {
@@ -60,6 +70,15 @@ class JooqReportQueryRepository implements ReportQueryRepository {
         return result;
     }
 
+    /**
+     * 商品のバリアントごとの販売数量と売上額を求める（送料は含めない）。
+     *
+     * @param period     期間
+     * @param basis      売上の数え方
+     * @param productId  商品 ID
+     * @param excludeTax 消費税を除くか
+     * @return 売れたバリアントの売上
+     */
     @Override
     public List<VariantTotal> variantSales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax) {
         return dsl.select(SALES_ORDER_LINE.VARIANT_ID, DSL.max(SALES_ORDER_LINE.VARIANT_CODE),
@@ -71,6 +90,16 @@ class JooqReportQueryRepository implements ReportQueryRepository {
                 .fetch(row -> new VariantTotal(row.value1(), row.value2(), count(row.value3()), money(row.value4())));
     }
 
+    /**
+     * 都道府県・年齢・性別の組ごとの売上額と注文件数を求める。
+     *
+     * @param period          期間
+     * @param basis           売上の数え方
+     * @param productId       商品 ID。全商品なら null
+     * @param excludeTax      消費税を除くか
+     * @param excludeShipping 送料を除くか（商品を指定したときは使わない）
+     * @return 組ごとの売上
+     */
     @Override
     public List<SegmentTotal> segmentSales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax,
                                            boolean excludeShipping) {

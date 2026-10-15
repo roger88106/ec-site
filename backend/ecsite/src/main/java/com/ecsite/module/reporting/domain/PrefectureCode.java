@@ -1,17 +1,21 @@
 package com.ecsite.module.reporting.domain;
 
 import jakarta.annotation.Nullable;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 import java.util.stream.IntStream;
 
 /**
  * 都道府県の名前から、全国地方公共団体コードの上 2 桁への読み替え（docs/backend/modules/reporting.md「都道府県のコード」）。<br />
  * 注文がお届け先をコードで持つようになったら、この表を除く。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PrefectureCode {
 
     /**
@@ -29,14 +33,8 @@ public final class PrefectureCode {
     /**
      * 名前 → コード（コードの順）
      */
-    private static final Map<String, String> CODES = new LinkedHashMap<>();
-
-    static {
-        IntStream.range(0, NAMES.size()).forEach(i -> CODES.put(NAMES.get(i), "%02d".formatted(i + 1)));
-    }
-
-    private PrefectureCode() {
-    }
+    private static final Map<String, String> CODES = IntStream.range(0, NAMES.size()).boxed()
+            .collect(Collectors.toMap(NAMES::get, i -> "%02d".formatted(i + 1), (a, b) -> a, LinkedHashMap::new));
 
     /**
      * 都道府県の名前をコードに読み替える。

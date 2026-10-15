@@ -88,6 +88,12 @@ public class CustomerBreakdownQueryService {
          */
         static final Total ZERO = new Total(Money.ZERO, 0);
 
+        /**
+         * 2 つの合計を足す。
+         *
+         * @param other 足す合計
+         * @return 足した合計
+         */
         Total plus(Total other) {
             return new Total(amount.plus(other.amount), orders + other.orders);
         }

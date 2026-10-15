@@ -33,4 +33,4 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [007](docs/specs/007-payment) | 機能 | 決済 | 完了。[段階 1〜8](docs/specs/007-payment/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/007-payment/tasks/08-review.md) |
 | [008](docs/specs/008-showcase) | 整理 | 機能紹介のページ | 完了。[ページ](https://roger88106.github.io/ec-site/)を GitHub Pages で公開した。直さずに残したことは [見直しの結果](docs/specs/008-showcase/tasks/04-review.md) |
 | [009](docs/specs/009-shipping) | 機能 | 出荷と配送状況 | 完了。[段階 10](docs/specs/009-shipping/tasks/10-seed.md) でローカルの seed を整理した。直さずに残したことは [見直しの結果](docs/specs/009-shipping/tasks/09-review.md) |
-| [010](docs/specs/010-sales-report) | 機能 | 売上の簡易レポート | 実装中。[段階 1〜4](docs/specs/010-sales-report/tasks/)（会員の属性と注文、レポートのモジュール、seed、管理画面）を終えた |
+| [010](docs/specs/010-sales-report) | 機能 | 売上の簡易レポート | 完了。[段階 1〜6](docs/specs/010-sales-report/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/010-sales-report/tasks/06-review.md) |

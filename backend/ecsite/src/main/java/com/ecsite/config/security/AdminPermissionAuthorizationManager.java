@@ -1,5 +1,6 @@
 package com.ecsite.config.security;
 
+import org.springframework.security.authorization.AuthenticatedAuthorizationManager;
 import org.springframework.security.authorization.AuthorityAuthorizationManager;
 import org.springframework.security.authorization.AuthorizationDecision;
 import org.springframework.security.authorization.AuthorizationManager;
@@ -11,7 +12,7 @@ import java.util.function.Supplier;
 
 /**
  * 管理 API の認可。{@code admin.yaml} の {@code x-required-permission} の権限を、token が持つかで決める。<br />
- * {@code admin.yaml} にない要求は、権限によらず拒否する。
+ * {@code admin.yaml} にない要求は、権限によらず拒否する。権限が {@code authenticated} の操作は、ログインしていれば許す。
  * 認証のない要求は拒否され、401 になる（403 にするのは、認証のある運営者だけ）。
  */
 class AdminPermissionAuthorizationManager implements AuthorizationManager<RequestAuthorizationContext> {
@@ -20,6 +21,11 @@ class AdminPermissionAuthorizationManager implements AuthorizationManager<Reques
      * 拒否
      */
     private static final AuthorizationDecision DENY = new AuthorizationDecision(false);
+
+    /**
+     * 権限ではなく、ログインしていればよい操作を表す値（admin.yaml の冒頭の説明）
+     */
+    static final String AUTHENTICATED = "authenticated";
 
     /**
      * 操作ごとに必要な権限
@@ -41,8 +47,10 @@ class AdminPermissionAuthorizationManager implements AuthorizationManager<Reques
         var request = context.getRequest();
         var path = request.getRequestURI().substring(request.getContextPath().length());
         return permissions.requiredPermission(request.getMethod(), path)
-                .map(permission -> AuthorityAuthorizationManager.<RequestAuthorizationContext>hasAuthority(permission)
-                        .authorize(authentication, context))
+                .map(permission -> permission.equals(AUTHENTICATED)
+                        ? AuthenticatedAuthorizationManager.<RequestAuthorizationContext>authenticated().authorize(authentication, context)
+                        : AuthorityAuthorizationManager.<RequestAuthorizationContext>hasAuthority(permission)
+                                .authorize(authentication, context))
                 .orElse(DENY);
     }
 }

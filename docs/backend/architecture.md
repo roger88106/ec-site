@@ -138,6 +138,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 
 - domain と application は Spring Security の型に依存しない。呼び出し元は値（会員 ID、運営者の ID と氏名の写し）で渡す。
 - 管理 API の権限は endpoint ごとに `resource:action`（例：`product:write`）で spec に書く。運営者の realm の role として token に載せ、読む処理は 1 か所にまとめる。
+- ログインしていればよい操作（自分の権限の一覧）は、権限の代わりに `authenticated` と書く。管理画面はメニューと画面を自分の権限の一覧で出し分け、token を自分で読まない。
 - `/api/admin/**` は運営者の realm、`/api/store/**` は消費者の realm の token だけを受け付ける。
 
 ### 7.3 公開ネットワークへのデプロイの前提

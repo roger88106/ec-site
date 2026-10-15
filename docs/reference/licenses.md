@@ -52,6 +52,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | ログイン | react-oidc-context | MIT |
 | 文言 | next-intl、use-intl | MIT |
 | UI | Tailwind CSS、shadcn/ui、Base UI、sonner | MIT |
+| グラフ | Recharts | MIT |
 | UI | lucide-react | ISC |
 | UI | class-variance-authority | Apache-2.0 |
 | UI | Geist（管理画面のフォント） | 条件付き（OFL-1.1。フォント単体で販売しない） |

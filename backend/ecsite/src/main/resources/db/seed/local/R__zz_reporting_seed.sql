@@ -100,3 +100,6 @@ SELECT line.order_id, line.line_no, variant.product_id, line.variant_id, line.pr
 FROM ordering.sales_order_line line
          LEFT JOIN catalog.variant variant ON variant.id = line.variant_id
 ON CONFLICT (order_id, line_no) DO NOTHING;
+
+-- 統計を取り直す。自動の取り直しより前に集計すると、統計のない表に悪い実行計画を選び、数秒かかることがある
+ANALYZE reporting.sales_order, reporting.sales_order_line, reporting.status_history;

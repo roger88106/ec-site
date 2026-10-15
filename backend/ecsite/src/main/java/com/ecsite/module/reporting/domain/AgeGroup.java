@@ -3,7 +3,7 @@ package com.ecsite.module.reporting.domain;
 import jakarta.annotation.Nullable;
 
 /**
- * 年齢層（BR-27）。注文時の年齢から、問い合わせのときに求める。並びは若い順で、不明が最後。
+ * 年齢層。注文時の年齢から、問い合わせのときに求める。並びは若い順で、不明が最後。
  */
 public enum AgeGroup {
 

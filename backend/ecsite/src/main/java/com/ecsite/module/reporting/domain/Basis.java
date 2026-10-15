@@ -3,7 +3,7 @@ package com.ecsite.module.reporting.domain;
 import java.util.List;
 
 /**
- * 売上の数え方（BR-25）
+ * 売上の数え方（注文基準・出荷基準）
  */
 public enum Basis {
 

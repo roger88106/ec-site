@@ -10,7 +10,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * レポートの期間（BR-24）。始まりと終わりの日（日本時間、両端を含む）。
+ * レポートの期間。始まりと終わりの日（日本時間、両端を含む）。
  *
  * @param from 始まりの日
  * @param to   終わりの日

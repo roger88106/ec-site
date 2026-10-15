@@ -3,7 +3,7 @@ package com.ecsite.module.reporting.domain;
 import jakarta.annotation.Nullable;
 
 /**
- * レポートの性別の区分（BR-29）。注文に記録した性別のうち、「回答しない」と記録のないものを不明にまとめる。
+ * レポートの性別の区分。注文に記録した性別のうち、「回答しない」と記録のないものを不明にまとめる。
  */
 public enum ReportGender {
 

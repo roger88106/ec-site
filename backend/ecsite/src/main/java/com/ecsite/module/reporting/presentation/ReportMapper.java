@@ -18,7 +18,7 @@ import org.springframework.stereotype.Component;
 
 /**
  * レポート API のレスポンスと、アプリケーション層のモデルの変換。<br />
- * レスポンスは集計の値だけで、会員を特定できる情報（会員 ID、氏名、住所など）を持たない（spec 010 NFR-16）。
+ * レスポンスは集計の値だけで、会員を特定できる情報（会員 ID、氏名、住所など）を持たない。
  */
 @Component
 class ReportMapper {

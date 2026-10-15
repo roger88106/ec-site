@@ -13,6 +13,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | 文言 | use-intl | — |
 | フォーム | React Hook Form | 入力の状態、変更の有無、項目ごとのエラー |
 | UI | shadcn/ui、Tailwind CSS、lucide-react | レイアウトは Sidebar、成功の通知は sonner（toast） |
+| グラフ | Recharts | shadcn/ui の chart（`components/ui/chart.tsx`）で包んで使う |
 | ログイン | oidc-client-ts + react-oidc-context | 認可コード + PKCE（public client）。token はメモリーだけ |
 | テスト | Vitest、React Testing Library、user-event、MSW（openapi-msw）、jsdom | — |
 
@@ -34,7 +35,7 @@ frontend/admin/
     ├── hooks/              # 機能をまたぐ hook（バージョン付きのフォームなど）
     ├── lib/                # 画面に依存しない関数（単体テストを横に置く）
     ├── test/               # 結合テストの土台（画面のコードからは import しない）
-    └── features/<機能>/    # tax、category、product、inventory、order
+    └── features/<機能>/    # tax、category、product、inventory、order、report
         ├── pages/          # ルートに対応する画面（取得とコンポーネントの組み立てだけ）
         ├── components/     # その機能だけのコンポーネント
         └── *.ts            # その機能だけの関数・型・hook
@@ -59,9 +60,14 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | `/tax-categories/:taxCategoryId` | 税率の一覧の編集 |
 | `/orders` | 注文一覧（クエリ：`orderNumber`、`status`、`orderedFrom`、`orderedTo`、`authorizationExpiring`、`returned`、`page`） |
 | `/orders/:orderId` | 注文の詳細（支払の状態と期限、出荷の登録と配送状態、明細、金額の内訳、お届け先、キャンセルの承認・却下・キャンセル） |
+| `/reports/sales-trend` | 売上の推移（クエリ：`from`、`to`、`granularity`、`basis`、`productId`、`excludeTax`、`excludeShipping`） |
+| `/reports/variant-sales` | バリエーションの売れ行き（クエリ：`from`、`to`、`basis`、`productId`、`excludeTax`） |
+| `/reports/customer-breakdown` | 地域・年齢層・性別（クエリ：`from`、`to`、`basis`、`productId`、`excludeTax`、`excludeShipping`） |
 
 - 一覧の絞り込みとページは URL のクエリに持つ（戻る・再読み込みで同じ一覧を出すため）。
-- 左のメニューには、各機能の入口（一覧）だけを出す。
+- 左のメニューには、各機能の入口（一覧）だけを出す。レポートは「レポート」の下に 3 つの画面を並べる。
+- レポートの条件も URL のクエリに持つ（再読み込みとリンクの共有のため）。期間がなければ、売上の推移は今年度、他は今月にする。期間の選択肢（今年度、今月など）は、レポートの設定の API の会計年度の始まりの月で求める。
+- 表示しているレポートの表は、CSV（UTF-8 の BOM 付き、CRLF）で取り出せる。= + - @ で始まる文字の項目は、表計算ソフトが式として読まないよう前に `'` を付ける。
 
 ## 4. API の呼び出し
 
@@ -159,7 +165,7 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
-| `renderApp(url)` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す |
+| `renderApp(url, { permissions })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定ですべて |
 | `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
 | `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `problem(...)` | エラーレスポンスの本文を作る |
@@ -183,9 +189,12 @@ SPA がブラウザで IdP とやり取りし（public client）、token はメ�
 | ログインを求める | `auth/AuthGate` がすべての画面を包み、ログインしていなければ IdP へ移り、戻ったら元の画面に戻す ※2 |
 | token の更新 | 期限が近ければ refresh token で取り直す（自動）。取り直せなければ（最後の操作から 30 分、最長 8 時間）ログインし直す |
 | ログインしている運営者 | `auth/operator` の `useOperator()` で氏名とログアウトを読む。コンポーネントは react-oidc-context を直接使わない（テストで置き換えるため） |
+| 権限による出し分け | `auth/permissions` の `usePermissions()` で、管理 API の自分の権限の一覧（`GET /me`）を読む ※3。権限のない画面はメニューに出さず、URL で開いたら `auth/RequirePermission` が「権限がない」を示す（API は呼ばない）。今はレポートの画面だけを出し分ける |
 | ログアウト | IdP のログアウト（RP-Initiated Logout。ID token と画面のトップを添える）へ移る |
 
 ※2：再読み込み・新しいタブではメモリーに token がないので IdP へ移るが、IdP のログインが残っていればパスワードなしですぐ戻る。隠した iframe は使わない。
+
+※3：画面が token の権限を読むと、権限を読む処理がバックエンドと 2 か所になる（バックエンドのアーキテクチャ 第 7.2 節）。権限はログインし直すまで変わらないので、取り直さない。
 
 ### 10.1 API に付ける token
 
@@ -196,4 +205,4 @@ SPA がブラウザで IdP とやり取りし（public client）、token はメ�
 - IdP へ移るのは 1 回だけ（開発時の StrictMode で effect が 2 回動いても、2 つ目の `state` を作らない）。
 - 戻る画面は、画面の中のパス（`/` で始まり、`//` と `/\` で始まらない）だけを受け付け、それ以外はトップにする。
 
-結合テストの `renderApp` は `AuthGate` を通さず、ログインしている運営者を差し替えて描画する（token は付けず、401 で IdP へ移る処理も何もしない）。
+結合テストの `renderApp` は `AuthGate` を通さず、ログインしている運営者を差し替えて描画する（token は付けず、401 で IdP へ移る処理も何もしない）。自分の権限の一覧は、既定ですべての権限を返す（`renderApp(url, { permissions })` で変える）。

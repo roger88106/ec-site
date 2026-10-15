@@ -74,7 +74,25 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     @Override
     public List<SegmentTotal> segmentSales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax,
                                            boolean excludeShipping) {
-        throw new UnsupportedOperationException("T0214 で実装する");
+        var keys = List.<Field<?>>of(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER);
+        if (productId == null) {
+            return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER,
+                            DSL.sum(orderAmount(excludeTax, excludeShipping)), DSL.count())
+                    .from(SALES_ORDER)
+                    .where(counted(period, basis))
+                    .groupBy(keys)
+                    .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), row.value3(), money(row.value4()),
+                            row.value5()));
+        }
+        // 商品を選んだら、その商品の明細を含む注文だけを数え、売上額はその明細の分だけ
+        return dsl.select(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER,
+                        DSL.sum(lineAmount(excludeTax)), DSL.countDistinct(SALES_ORDER.ORDER_ID))
+                .from(SALES_ORDER)
+                .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
+                .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
+                .groupBy(keys)
+                .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), row.value3(), money(row.value4()),
+                        row.value5()));
     }
 
 // ============================== プライベートメソッド ==============================
@@ -119,6 +137,13 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      */
     private static Money money(BigDecimal sum) {
         return sum == null ? Money.ZERO : Money.of(sum.longValueExact());
+    }
+
+    /**
+     * 年齢（記録がなければ null）
+     */
+    private static Integer age(Short age) {
+        return age == null ? null : age.intValue();
     }
 
     /**

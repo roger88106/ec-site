@@ -33,6 +33,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -277,6 +278,67 @@ class PlaceOrderApiTest {
     }
 
     // ============================== 補助 ==============================
+
+    @Nested
+    @DisplayName("AC-212、222 注文時の年齢と性別")
+    class BuyerProfile {
+
+        @Test
+        @DisplayName("AC-212、222 成立のときの token の生年月日と性別から、注文日（日本時間）の年齢と性別を記録する。後で token の値が変わっても、成立済みの注文は変わらない")
+        void recordsAgeAndGenderAtPlacement() throws Exception {
+            // NOW は日本時間の 2026-10-08 00:00。1990-10-08 生まれは、この日に 36 歳になる
+            var first = placeAs(TestTokens.member().birthdate("1990-10-08").gender("female"));
+            stock(shirt.variantIds.getFirst(), 2);
+
+            var changed = TestTokens.member().birthdate("2000-01-01").gender("male");
+            mockMvc.perform(get("/api/store/orders/" + first).with(changed.bearer())).andExpect(status().isOk());
+            var second = placeAs(changed);
+
+            assertThat(buyer(first)).containsExactly((short) 36, "FEMALE");
+            assertThat(buyer(second)).containsExactly((short) 26, "MALE");
+        }
+
+        @Test
+        @DisplayName("AC-208、222 token に生年月日と性別がなければ、年齢と性別は不明（空）")
+        void recordsUnknownWithoutClaims() throws Exception {
+            var orderId = placeAs(TestTokens.member());
+
+            assertThat(buyer(orderId)).containsExactly(null, null);
+        }
+
+        @Test
+        @DisplayName("AC-213 未来の生年月日と、一覧にない性別は、不明として記録する")
+        void recordsUnknownForInvalidClaims() throws Exception {
+            var orderId = placeAs(TestTokens.member().birthdate("2030-01-01").gender("unknown"));
+
+            assertThat(buyer(orderId)).containsExactly(null, null);
+        }
+
+        /**
+         * token を指定して、T シャツ 2 枚を注文し、注文 ID を返す
+         */
+        private UUID placeAs(TestTokens.Builder token) throws Exception {
+            var checkoutId = UUID.fromString(JsonPath.read(mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts")
+                    .with(token.bearer())).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
+            var body = mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order")
+                            .with(token.bearer())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
+                                     "postalCode": "100-0001", "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "03-1234-5678"}}"""))
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+            return UUID.fromString(JsonPath.read(body, "$.id"));
+        }
+
+        /**
+         * 注文に記録した年齢と性別
+         */
+        private List<Object> buyer(UUID orderId) {
+            var record = dsl.select(SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER).from(SALES_ORDER)
+                    .where(SALES_ORDER.ID.eq(orderId)).fetchSingle();
+            return java.util.Arrays.asList(record.value1(), record.value2());
+        }
+    }
 
     /**
      * T シャツ 2 枚を注文し、注文 ID を返す

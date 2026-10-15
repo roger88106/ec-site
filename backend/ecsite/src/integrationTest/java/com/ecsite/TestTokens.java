@@ -176,6 +176,8 @@ public final class TestTokens {
         private String givenName;
         private String email;
         private boolean emailVerified = true;
+        private String birthdate;
+        private String gender;
         private List<String> permissions = List.of();
         private Instant expiresAt = Instant.now().plus(Duration.ofMinutes(5));
 
@@ -223,6 +225,24 @@ public final class TestTokens {
          */
         public Builder emailVerified(boolean emailVerified) {
             this.emailVerified = emailVerified;
+            return this;
+        }
+
+        /**
+         * @param birthdate 生年月日（会員の任意の属性。null なら載せない）
+         * @return this
+         */
+        public Builder birthdate(String birthdate) {
+            this.birthdate = birthdate;
+            return this;
+        }
+
+        /**
+         * @param gender 性別（会員の任意の属性。null なら載せない）
+         * @return this
+         */
+        public Builder gender(String gender) {
+            this.gender = gender;
             return this;
         }
 
@@ -292,6 +312,13 @@ public final class TestTokens {
                     .claim("given_name", givenName)
                     // Keycloak の name は「名 姓」の順
                     .claim("name", givenName + " " + familyName);
+            // 会員の任意の属性は、入れていなければ Keycloak は claim を載せない
+            if (birthdate != null) {
+                claims.claim("birthdate", birthdate);
+            }
+            if (gender != null) {
+                claims.claim("gender", gender);
+            }
             if (!permissions.isEmpty()) {
                 claims.claim("resource_access", Map.of(ADMIN_AUDIENCE, Map.of("roles", permissions)));
             }

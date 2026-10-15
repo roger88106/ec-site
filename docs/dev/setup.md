@@ -69,7 +69,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 | 戻したいもの | 手順 |
 |--------------|------|
-| DB だけ（Keycloak と画像はそのまま） | バックエンドを止めてから、下の 1 つ目のコマンド。次の起動で seed が流れる |
+| DB だけ（Keycloak と画像はそのまま） | バックエンドを止めてから、下の 1 つ目のコマンド。次の起動で seed が流れる（レポート用の注文 2 万件を含め、15 秒ほど） |
 | Keycloak（realm の JSON を変えたとき） | 下の 2 つ目のコマンド（ローカルで登録した会員も消える） |
 | すべて | `docker compose down -v` |
 

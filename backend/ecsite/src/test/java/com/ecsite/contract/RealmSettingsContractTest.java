@@ -10,6 +10,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -105,6 +106,35 @@ class RealmSettingsContractTest {
     @DisplayName("AC-140 access token の有効期間は 5 分")
     void accessTokenLifespan(String realm) {
         assertThat(number(realm, "$.accessTokenLifespan")).isEqualTo(5 * MINUTE);
+    }
+
+    @Test
+    @DisplayName("AC-209、210、221 会員の属性に、任意の生年月日（日付の形）と性別（4 つの値）がある")
+    void memberAttributes() {
+        // user profile の設定は、JSON を文字列にして持つ
+        var profile = JsonPath.parse(JsonPath.<String>read(realms.get(STORE),
+                "$.components['org.keycloak.userprofile.UserProfileProvider'][0].config['kc.user.profile.config'][0]"));
+
+        assertThat(profile.<List<Object>>read("$.attributes[?(@.name == 'birthdate')].validations.iso-date"))
+                .hasSize(1);
+        assertThat(profile.<List<List<String>>>read(
+                "$.attributes[?(@.name == 'gender')].validations.options.options").getFirst())
+                .containsExactly("male", "female", "other", "undisclosed");
+        assertThat(profile.<List<Object>>read("$.attributes[?(@.name in ['birthdate', 'gender'])].required"))
+                .isEmpty();
+        assertThat(profile.<List<List<String>>>read(
+                "$.attributes[?(@.name in ['birthdate', 'gender'])].permissions.edit"))
+                .allSatisfy(edit -> assertThat(edit).contains("user"));
+    }
+
+    @Test
+    @DisplayName("AC-212、222 店舗画面の access token に、生年月日と性別を載せる")
+    void memberAttributeClaims() {
+        List<String> claims = read(STORE, "$.clients[?(@.clientId == 'ec-store-web')].protocolMappers"
+                + "[?(@.protocolMapper == 'oidc-usermodel-attribute-mapper' && @.config['access.token.claim'] == 'true')]"
+                + ".config['claim.name']");
+
+        assertThat(claims).containsExactlyInAnyOrder("birthdate", "gender");
     }
 
     private static <T> T read(String realm, String path) {

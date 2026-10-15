@@ -6,8 +6,10 @@ import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.TrackingNumber;
+import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +18,7 @@ import java.time.Clock;
 /**
  * 物流サービスの通知の反映（docs/backend/modules/shipping.md「配送状態と順位」）。<br />
  * 出荷の行をロックしてから進めるので、同じ出荷への通知が同時に届いても、順位が高い状態が残る。
+ * 進めたときだけ、配送状態の変化のイベントを出す。
  */
 @Slf4j
 @Service
@@ -32,6 +35,11 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
      */
     private final Clock clock;
 
+    /**
+     * イベントの発行
+     */
+    private final ApplicationEventPublisher events;
+
     @Override
     @Transactional
     public Result receive(Carrier carrier, String trackingNumber, DeliveryStatus status) {
@@ -46,12 +54,21 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
         var now = clock.instant();
         var result = Result.UNCHANGED;
         for (var shipment : shipments) {
+            var from = shipment.status();
             if (shipment.advanceTo(status, now)) {
                 shipmentRepository.updateProgress(shipment);
+                events.publishEvent(DeliveryStatusChanged.of(now, shipment.orderId(), toEventStatus(from), toEventStatus(status)));
                 result = Result.ADVANCED;
             }
         }
         return result;
+    }
+
+    /**
+     * 配送状態を、イベントの配送状態にする。
+     */
+    private static DeliveryStatusChanged.Status toEventStatus(DeliveryStatus status) {
+        return DeliveryStatusChanged.Status.valueOf(status.name());
     }
 
     /**

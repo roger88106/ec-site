@@ -32,7 +32,7 @@ export function todayInJapan(now: Date = new Date()): string {
 }
 
 /**
- * 選択肢の期間を求める（BR-24）。年度は会計年度の始まりの月から、月と年は暦で求める。
+ * 選択肢の期間を求める。年度は会計年度の始まりの月から、月と年は暦で求める。
  *
  * @param preset 選択肢
  * @param today 今日（日本時間の日付）

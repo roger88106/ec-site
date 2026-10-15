@@ -16,7 +16,7 @@ import { parseCondition, type ReportCondition, toSearchParams } from '@/features
 import { useReportSettings } from '@/features/report/settings'
 import { formatYen } from '@/lib/format'
 
-/** 売上の推移（AC-197〜201、218）。期間・区切り・数え方などの条件は URL に持つ */
+/** 売上の推移。期間・区切り・数え方などの条件は URL に持つ */
 export function SalesTrendPage() {
   const t = useTranslations('app.menu')
   const settings = useReportSettings()

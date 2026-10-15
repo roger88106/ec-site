@@ -15,7 +15,7 @@ import { parseCondition, type ReportCondition, toSearchParams } from '@/features
 import { useReportSettings } from '@/features/report/settings'
 import { formatYen } from '@/lib/format'
 
-/** バリエーションの売れ行き（AC-202〜204、218）。商品を選んでから出す。条件は URL に持つ */
+/** バリエーションの売れ行き。商品を選んでから出す。条件は URL に持つ */
 export function VariantSalesPage() {
   const t = useTranslations('app.menu')
   const settings = useReportSettings()

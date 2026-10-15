@@ -3,7 +3,7 @@ import { DownloadIcon } from 'lucide-react'
 import { useTranslations } from 'use-intl'
 import { type CsvValue, downloadCsv, toCsv } from '@/features/report/csv'
 
-/** 表示している表を CSV で取り出す（AC-218）。rows は見出しの行を含む */
+/** 表示している表を CSV で取り出す。rows は見出しの行を含む */
 export function CsvButton({ filename, rows }: { filename: string; rows: readonly (readonly CsvValue[])[] }) {
   const t = useTranslations('report')
   return (

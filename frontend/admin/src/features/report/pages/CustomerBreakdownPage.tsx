@@ -16,7 +16,7 @@ import { parseCondition, type ReportCondition, toSearchParams } from '@/features
 import { useReportSettings } from '@/features/report/settings'
 import { formatYen } from '@/lib/format'
 
-/** 地域・年齢層・性別（AC-205〜208、218〜220）。条件は URL に持つ */
+/** 地域・年齢層・性別。条件は URL に持つ */
 export function CustomerBreakdownPage() {
   const t = useTranslations('app.menu')
   const settings = useReportSettings()

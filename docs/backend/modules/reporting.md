@@ -134,6 +134,8 @@ reporting/
 
 ## データモデル
 
+[V202610151200__reporting_create_report.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151200__reporting_create_report.sql)
+
 - schema は `reporting`。注文・バリアント・商品・会員は他のモジュールの ID なので、外部キーは張らない。
 - 注文の写しは、注文 ID を主キーにする。注文日と出荷日（日本時間の日付）を列に持ち、索引を付ける（日で集計するため）。
 - 明細の写しは、注文 ID と行番号を主キーにする。商品 ID に索引を付ける。

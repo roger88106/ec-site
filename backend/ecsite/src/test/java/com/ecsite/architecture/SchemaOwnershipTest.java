@@ -48,6 +48,7 @@ class SchemaOwnershipTest {
             Map.entry("payment", Optional.of("payment")),
             Map.entry("shipping", Optional.of("shipping")),
             Map.entry("notification", Optional.of("notification")),
+            Map.entry("reporting", Optional.of("reporting")),
             Map.entry("storefront", Optional.empty()),
             Map.entry("tax", Optional.of("tax")));
 

@@ -506,6 +506,16 @@
       "quantity": "販売数量",
       "shippingExcluded": "送料を含めていません。",
       "filename": "売上の推移"
+    },
+    "variantSales": {
+      "chart": "バリエーションごとの販売数量",
+      "variant": "バリエーション",
+      "variantCode": "品番",
+      "quantity": "販売数量",
+      "amount": "売上額",
+      "selectProduct": "商品を選ぶと、バリエーションごとの売れ行きを出します。",
+      "product": "商品：{name}",
+      "filename": "バリエーションの売れ行き"
     }
   }
 }

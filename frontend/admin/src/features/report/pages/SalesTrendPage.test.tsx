@@ -120,7 +120,7 @@ describe('売上の推移', () => {
     const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
     const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
     expect(text).toBe(
-      '﻿区切り,売上額,販売数量\r\n2026 年 4 月,120000,40\r\n2026 年 5 月,0,0\r\n2026 年 6 月,98000,31\r\n',
+      '\uFEFF区切り,売上額,販売数量\r\n2026 年 4 月,120000,40\r\n2026 年 5 月,0,0\r\n2026 年 6 月,98000,31\r\n',
     )
     vi.unstubAllGlobals()
   })

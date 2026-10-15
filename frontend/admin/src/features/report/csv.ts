@@ -12,7 +12,7 @@ const NEEDS_QUOTE = /[",\r\n]/
  * 文字の項目が式として読まれないよう、= + - @ で始まるものは前に ' を付ける。数は付けない。
  */
 export function toCsv(rows: readonly (readonly CsvValue[])[]): string {
-  return `﻿${rows.map((row) => `${row.map(field).join(',')}\r\n`).join('')}`
+  return `\uFEFF${rows.map((row) => `${row.map(field).join(',')}\r\n`).join('')}`
 }
 
 /** 1 つの項目を CSV の形にする */

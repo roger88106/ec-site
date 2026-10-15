@@ -80,11 +80,15 @@ SELECT o.id, o.order_number, o.member_id, o.ordered_at, (o.ordered_at AT TIME ZO
        s.shipped_at, (s.shipped_at AT TIME ZONE 'Asia/Tokyo')::date, s.status,
        o.cancelled_at, o.cancellation_kind, o.cancellation_restocked, o.postal_code, prefecture.code,
        o.buyer_age, o.buyer_gender, o.total_amount, o.shipping_fee,
-       (SELECT sum(tax.tax_amount) FROM ordering.sales_order_tax tax WHERE tax.order_id = o.id),
+       tax.tax_total,
        -- 送料の消費税：送料 × 標準税率 / (100 + 標準税率) の切り捨て
        floor(o.shipping_fee * 10 / 110.0)::bigint,
-       (SELECT max(history.occurred_at) FROM seed_history history WHERE history.order_id = o.id)
+       history.refreshed_at
 FROM ordering.sales_order o
+         JOIN (SELECT order_id, sum(tax_amount) AS tax_total FROM ordering.sales_order_tax GROUP BY order_id) AS tax
+              ON tax.order_id = o.id
+         JOIN (SELECT order_id, max(occurred_at) AS refreshed_at FROM seed_history GROUP BY order_id) AS history
+              ON history.order_id = o.id
          LEFT JOIN shipping.shipment s ON s.order_id = o.id
          LEFT JOIN seed_prefecture prefecture ON prefecture.name = o.prefecture
 ON CONFLICT (order_id) DO NOTHING;

@@ -112,9 +112,10 @@ FROM (VALUES (1, '1000001', '東京都', '千代田区', '千代田', 14), (2, '
          AS a (ord, postal_code, prefecture, city, town, weight);
 
 -- 売る商品：公開中の商品のバリアント。商品ごとに売れやすさの重み（1〜5）を付ける
+-- 税率は、税区分の固定の ID（db/seed/base の標準 10%、軽減 8%）から決める。税率の seed（R__tax_seed.sql）は名前の順でこの後に流れるため
 CREATE TEMP TABLE seed_variant ON COMMIT DROP AS
 WITH variant AS (SELECT v.id AS variant_id, p.product_code, v.variant_code, p.name AS product_name, p.price_excl_tax,
-                        rate.rate_percent,
+                        CASE p.tax_category_id WHEN '00000000-0000-0000-0000-000000000002' THEN 8 ELSE 10 END::numeric(4, 2) AS rate_percent,
                         coalesce((SELECT jsonb_agg(jsonb_build_object('name', axis.name, 'value', axis_value.value)
                                                    ORDER BY axis_value.position)
                                   FROM catalog.variant_axis_value axis_value
@@ -124,7 +125,6 @@ WITH variant AS (SELECT v.id AS variant_id, p.product_code, v.variant_code, p.na
                         1 + floor(pg_temp.seed_rnd('product:' || p.product_code) * 5) AS weight
                  FROM catalog.variant v
                           JOIN catalog.product p ON p.id = v.product_id
-                          JOIN tax.tax_rate rate ON rate.tax_category_id = p.tax_category_id AND rate.effective_to IS NULL
                  WHERE p.status = 'PUBLISHED' AND p.publish_start IS NULL)
 SELECT row_number() OVER (ORDER BY variant_code) - 1 AS idx, variant.*,
        sum(weight) OVER (ORDER BY variant_code) - weight AS cum_from, sum(weight) OVER (ORDER BY variant_code) AS cum_to

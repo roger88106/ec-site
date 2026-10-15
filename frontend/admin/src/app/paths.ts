@@ -15,6 +15,9 @@ export const routePatterns = {
   taxCategory: '/tax-categories/:taxCategoryId',
   orders: '/orders',
   order: '/orders/:orderId',
+  salesTrend: '/reports/sales-trend',
+  variantSales: '/reports/variant-sales',
+  customerBreakdown: '/reports/customer-breakdown',
 } as const
 
 /**
@@ -42,4 +45,10 @@ export const paths = {
   orders: () => routePatterns.orders,
   /** 注文の詳細 */
   order: (orderId: string) => generatePath(routePatterns.order, { orderId }),
+  /** 売上の推移（条件のクエリは reportCondition.ts が作る） */
+  salesTrend: () => routePatterns.salesTrend,
+  /** バリエーションの売れ行き */
+  variantSales: () => routePatterns.variantSales,
+  /** 地域・年齢層・性別 */
+  customerBreakdown: () => routePatterns.customerBreakdown,
 }

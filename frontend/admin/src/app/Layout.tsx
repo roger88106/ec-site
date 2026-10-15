@@ -2,13 +2,15 @@ import { Button } from '@ec-site/shared/ui/button'
 import { LogOutIcon } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useTranslations } from 'use-intl'
-import { menu } from '@/app/menu'
+import { menu, reportMenu } from '@/app/menu'
 import { useOperator } from '@/auth/operator'
+import { usePermissions } from '@/auth/permissions'
 import {
   Sidebar,
   SidebarContent,
   SidebarGroup,
   SidebarGroupContent,
+  SidebarGroupLabel,
   SidebarHeader,
   SidebarInset,
   SidebarMenu,
@@ -24,6 +26,9 @@ export function Layout() {
   const operator = useOperator()
   const t = useTranslations('app')
   const tCommon = useTranslations('common')
+  const permissions = usePermissions()
+  // 権限のあるレポートだけ（権限の一覧を読み込む間は出さない）
+  const reports = reportMenu.filter((item) => permissions.has(item.permission))
   return (
     <SidebarProvider>
       <Sidebar>
@@ -45,6 +50,23 @@ export function Layout() {
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
+          {reports.length > 0 && (
+            <SidebarGroup>
+              <SidebarGroupLabel>{t('menu.reports') /* レポート */}</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {reports.map((item) => (
+                    <SidebarMenuItem key={item.to}>
+                      <SidebarMenuButton isActive={pathname.startsWith(item.to)} render={<NavLink to={item.to} />}>
+                        <item.icon />
+                        <span>{t(`menu.${item.labelKey}`) /* レポートの名前 */}</span>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          )}
         </SidebarContent>
       </Sidebar>
       <SidebarInset>

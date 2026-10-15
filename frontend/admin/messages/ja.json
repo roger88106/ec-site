@@ -7,7 +7,11 @@
       "products": "商品",
       "categories": "カテゴリ",
       "taxCategories": "税区分",
-      "orders": "注文"
+      "orders": "注文",
+      "reports": "レポート",
+      "salesTrend": "売上の推移",
+      "variantSales": "バリエーションの売れ行き",
+      "customerBreakdown": "地域・年齢層・性別"
     },
     "notFound": {
       "message": "ページが見つかりません。"
@@ -250,7 +254,8 @@
     "gate": {
       "failed": "ログインできませんでした。（{message}）",
       "retry": "ログインし直す"
-    }
+    },
+    "forbidden": "この画面を見る権限がありません。"
   },
   "inventory": {
     "page": {

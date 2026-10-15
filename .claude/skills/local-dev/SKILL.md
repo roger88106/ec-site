@@ -106,10 +106,12 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 `./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで流す。
 
 ```bash
-for s in doc-refs spec-numbers doc-terms time-waits; do node scripts/ci/$s.mjs | tail -1; done
+for s in doc-refs spec-numbers doc-terms time-waits hardcoded-text input-constraints ac-check; do node scripts/ci/$s.mjs | tail -1; done
 ```
 
 - `spec-numbers` は、本番のコードのコメントに spec の番号（AC-、T など）を書くと失敗する（コメントの書き方 第 1 節）。番号はテスト名に書く。
+- `ac-check` は、spec のすべての AC がテスト名に出ることを確かめる。テスト名の AC は 1 つずつ書く（`AC-202〜204` は読まない。`AC-202、203、204` と書く）。
+- `hardcoded-text` は、画面のコードの日本語を文言とみなす。テストの補助は `src/test/` に置く。
 
 ## 決済（mock と Stripe）
 

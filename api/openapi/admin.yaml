@@ -6,7 +6,7 @@ info:
     B 側（運営者）向けの API。
 
     - すべての操作に、運営者の realm（IdP）が発行した access token（audience `ec-admin-api`）を `Authorization: Bearer` で付ける。token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）を返す（バックエンドのアーキテクチャ 第 7 節）。
-    - 各操作に必要な権限を `x-required-permission` に記す。token の権限（`resource_access.ec-admin-api.roles`）に含まれなければ 403（`FORBIDDEN`）を返す。本書にない操作は、権限によらず拒否する（spec 003 NFR-3）。
+    - 各操作に必要な権限を `x-required-permission` に記す。token の権限（`resource_access.ec-admin-api.roles`）に含まれなければ 403（`FORBIDDEN`）を返す。本書にない操作は、権限によらず拒否する（spec 003 NFR-3）。`authenticated` は権限ではなく、ログインしていればよい操作を表す。
     - 同時に編集されうるリソースの更新では、取得時の `version` を送る。一致しなければ 409 を返す。
     - 状態の切り替え（公開・非公開・販売終了、販売停止・解除、注文のキャンセルとその申請の承認）は冪等で、`version` を送らない。すでにその状態なら何もせず 204 を返す。
     - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。API の規約）。
@@ -26,6 +26,10 @@ tags:
     description: 在庫（spec 001 US-8）
   - name: order
     description: 注文（spec 002 US-19〜21）
+  - name: me
+    description: ログインしている運営者（spec 010 US-45）
+  - name: report
+    description: 売上のレポート（spec 010 US-41〜43）
 
 paths:
   # ============================== 税 ==============================
@@ -1079,8 +1083,172 @@ paths:
         '502':
           $ref: '#/components/responses/BadGateway'
 
+  # ============================== 運営者 ==============================
+  /me:
+    get:
+      tags: [me]
+      operationId: getMe
+      summary: 自分の権限の一覧（spec 010 AC-214）
+      description: 管理画面が、メニューと画面を権限で出し分けるのに使う。権限は要らず、ログインしていればよい。
+      x-required-permission: authenticated
+      responses:
+        '200':
+          description: 自分の権限
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Me'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  # ============================== レポート ==============================
+  /reports/sales-trend:
+    get:
+      tags: [report]
+      operationId: getSalesTrend
+      summary: 売上の推移（spec 010 AC-197〜201、BR-24〜26）
+      description: |
+        期間のすべての区切りを並べ、売れなかった区切りは 0 にする。期間が区切りの途中で切れたら、その区切りは期間の中の日だけを数える。
+        商品を選ぶと、その商品の明細だけを数え、送料は含めない（`shippingExcluded` が true）。
+      x-required-permission: report-sales-trend:read
+      parameters:
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+        - name: granularity
+          in: query
+          required: true
+          schema:
+            $ref: '#/components/schemas/Granularity'
+        - $ref: '#/components/parameters/ReportBasis'
+        - name: productId
+          in: query
+          description: 商品 ID。省けば全商品
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/ExcludeTax'
+        - $ref: '#/components/parameters/ExcludeShipping'
+      responses:
+        '200':
+          description: 売上の推移
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SalesTrendReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /reports/variant-sales:
+    get:
+      tags: [report]
+      operationId: getVariantSales
+      summary: バリエーションの売れ行き（spec 010 AC-202〜204）
+      description: 商品のすべてのバリアントを、販売数量の多い順（同じなら商品の並びの順）に返す。売れなかったバリアントは 0。送料は含めない。
+      x-required-permission: report-variant-sales:read
+      parameters:
+        - name: productId
+          in: query
+          required: true
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+        - $ref: '#/components/parameters/ReportBasis'
+        - $ref: '#/components/parameters/ExcludeTax'
+      responses:
+        '200':
+          description: バリエーションの売れ行き
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/VariantSalesReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /reports/customer-breakdown:
+    get:
+      tags: [report]
+      operationId: getCustomerBreakdown
+      summary: 地域・年齢層・性別（spec 010 AC-205〜208、219、220、BR-27、29）
+      description: |
+        都道府県は売れたものだけを全国地方公共団体コードの順に、不明（コードなし）を最後に返す。年齢層と性別は、すべての区分を返す。
+        商品を選ぶと、その商品を含む注文だけを数え、売上額はその商品の明細の分だけ（`shippingExcluded` が true）。
+      x-required-permission: report-customer:read
+      parameters:
+        - $ref: '#/components/parameters/ReportFrom'
+        - $ref: '#/components/parameters/ReportTo'
+        - $ref: '#/components/parameters/ReportBasis'
+        - name: productId
+          in: query
+          description: 商品 ID。省けば全商品
+          schema:
+            type: string
+            format: uuid
+        - $ref: '#/components/parameters/ExcludeTax'
+        - $ref: '#/components/parameters/ExcludeShipping'
+      responses:
+        '200':
+          description: 地域・年齢層・性別
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CustomerBreakdownReport'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
 components:
   parameters:
+    ReportFrom:
+      name: from
+      in: query
+      required: true
+      description: 期間の始まり（日本時間の日付。この日を含む）。期間は 5 年まで
+      schema:
+        type: string
+        format: date
+    ReportTo:
+      name: to
+      in: query
+      required: true
+      description: 期間の終わり（日本時間の日付。この日を含む）
+      schema:
+        type: string
+        format: date
+    ReportBasis:
+      name: basis
+      in: query
+      description: 売上の数え方。省けば注文基準
+      schema:
+        $ref: '#/components/schemas/ReportBasis'
+    ExcludeTax:
+      name: excludeTax
+      in: query
+      description: true なら消費税を除く
+      schema:
+        type: boolean
+        default: false
+    ExcludeShipping:
+      name: excludeShipping
+      in: query
+      description: true なら送料を除く（商品を選んだときは、指定によらず除く）
+      schema:
+        type: boolean
+        default: false
     TaxCategoryId:
       name: taxCategoryId
       in: path
@@ -2218,3 +2386,165 @@ components:
           type: string
           format: date-time
           description: 出荷日時
+    Me:
+      type: object
+      required: [permissions]
+      properties:
+        permissions:
+          type: array
+          description: 自分の権限（`resource:action`）
+          items:
+            type: string
+    ReportBasis:
+      type: string
+      enum: [ORDER, SHIPMENT]
+      description: 注文基準（受付・キャンセル申請中・出荷済みを注文日で数える）、出荷基準（出荷済みを出荷日で数える）（BR-25）
+    Granularity:
+      type: string
+      enum: [WEEK, MONTH, QUARTER, YEAR]
+      description: 週（月曜始まり）、月、四半期・年（会計年度）（BR-24）
+    SalesTrendReport:
+      type: object
+      required: [points, shippingExcluded]
+      properties:
+        points:
+          type: array
+          items:
+            $ref: '#/components/schemas/SalesTrendPoint'
+        shippingExcluded:
+          type: boolean
+          description: 送料を除いたか（指定したとき、または商品を選んだとき）
+    SalesTrendPoint:
+      type: object
+      required: [start, end, amount, quantity]
+      properties:
+        start:
+          type: string
+          format: date
+          description: 区切りの始まり（期間で切った日）
+        end:
+          type: string
+          format: date
+          description: 区切りの終わり（期間で切った日）
+        fiscalYear:
+          type: integer
+          format: int32
+          description: 会計年度（始まりの月の年）。四半期と年のときだけ
+        quarter:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 4
+          description: 会計年度の四半期。四半期のときだけ
+        amount:
+          type: integer
+          format: int64
+          description: 売上額（円）
+        quantity:
+          type: integer
+          format: int64
+          description: 販売数量
+    VariantSalesReport:
+      type: object
+      required: [productId, productName, variants, shippingExcluded]
+      properties:
+        productId:
+          type: string
+          format: uuid
+        productName:
+          type: string
+        variants:
+          type: array
+          items:
+            $ref: '#/components/schemas/VariantSales'
+        shippingExcluded:
+          type: boolean
+          description: 送料を除いたか（いつも true）
+    VariantSales:
+      type: object
+      required: [variantId, variantCode, axisValues, quantity, amount]
+      properties:
+        variantId:
+          type: string
+          format: uuid
+        variantCode:
+          type: string
+        axisValues:
+          type: array
+          items:
+            $ref: '#/components/schemas/OrderAxisValue'
+        quantity:
+          type: integer
+          format: int64
+          description: 販売数量
+        amount:
+          type: integer
+          format: int64
+          description: 売上額（円）
+    CustomerBreakdownReport:
+      type: object
+      required: [prefectures, ageGroups, genders, shippingExcluded]
+      properties:
+        prefectures:
+          type: array
+          items:
+            $ref: '#/components/schemas/PrefectureSales'
+        ageGroups:
+          type: array
+          items:
+            $ref: '#/components/schemas/AgeGroupSales'
+        genders:
+          type: array
+          items:
+            $ref: '#/components/schemas/GenderSales'
+        shippingExcluded:
+          type: boolean
+          description: 送料を除いたか（指定したとき、または商品を選んだとき）
+    PrefectureSales:
+      type: object
+      required: [amount, orders]
+      properties:
+        prefectureCode:
+          type: string
+          pattern: '^[0-9]{2}$'
+          description: 全国地方公共団体コードの上 2 桁（01〜47）。不明なら省く
+        amount:
+          type: integer
+          format: int64
+          description: 売上額（円）
+        orders:
+          type: integer
+          format: int64
+          description: 注文件数
+    AgeGroupSales:
+      type: object
+      required: [ageGroup, amount, orders]
+      properties:
+        ageGroup:
+          type: string
+          enum: [TEENS_OR_YOUNGER, TWENTIES, THIRTIES, FORTIES, FIFTIES, SIXTIES_OR_OLDER, UNKNOWN]
+          description: 10 代以下、20 代、30 代、40 代、50 代、60 代以上、不明（BR-27）
+        amount:
+          type: integer
+          format: int64
+          description: 売上額（円）
+        orders:
+          type: integer
+          format: int64
+          description: 注文件数
+    GenderSales:
+      type: object
+      required: [gender, amount, orders]
+      properties:
+        gender:
+          type: string
+          enum: [MALE, FEMALE, OTHER, UNKNOWN]
+          description: 男性、女性、その他、不明（回答しないを含む）（BR-29）
+        amount:
+          type: integer
+          format: int64
+          description: 売上額（円）
+        orders:
+          type: integer
+          format: int64
+          description: 注文件数

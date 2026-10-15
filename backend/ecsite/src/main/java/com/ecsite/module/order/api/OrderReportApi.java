@@ -54,10 +54,10 @@ public class OrderReportApi {
                 order.shippingAddress().prefecture(),
                 buyer.age(),
                 buyer.gender() == null ? null : OrderReportSnapshot.Gender.valueOf(buyer.gender().name()),
-                amounts.total().yen(),
-                amounts.shippingFee().yen(),
-                amounts.taxes().stream().map(TaxAmount::taxAmount).reduce(Money.ZERO, Money::plus).yen(),
-                result.shippingTax().yen(),
+                amounts.total(),
+                amounts.shippingFee(),
+                amounts.taxes().stream().map(TaxAmount::taxAmount).reduce(Money.ZERO, Money::plus),
+                result.shippingTax(),
                 order.lines().stream().map(OrderReportApi::toLine).toList());
     }
 
@@ -76,7 +76,7 @@ public class OrderReportApi {
                         .toList(),
                 line.quantity(),
                 line.ratePercent(),
-                line.subtotal().yen(),
-                line.unitPriceExclTax().yen() * line.quantity());
+                line.subtotal(),
+                Money.of(line.unitPriceExclTax().yen() * line.quantity()));
     }
 }

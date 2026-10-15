@@ -7,6 +7,7 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -106,10 +107,10 @@ class OrderReportApiTest {
         assertThat(snapshot.buyerAge()).isNull();
         assertThat(snapshot.buyerGender()).isNull();
         // 1,100 円 × 2 ＋ 送料 1,000 円。消費税は 3,200 × 10 / 110 の切り捨て、送料の分は 1,000 × 10 / 110 の切り捨て
-        assertThat(snapshot.total()).isEqualTo(3200);
-        assertThat(snapshot.shippingFee()).isEqualTo(1000);
-        assertThat(snapshot.taxTotal()).isEqualTo(290);
-        assertThat(snapshot.shippingTax()).isEqualTo(90);
+        assertThat(snapshot.total()).isEqualTo(Money.of(3200));
+        assertThat(snapshot.shippingFee()).isEqualTo(Money.of(1000));
+        assertThat(snapshot.taxTotal()).isEqualTo(Money.of(290));
+        assertThat(snapshot.shippingTax()).isEqualTo(Money.of(90));
         assertThat(snapshot.lines()).singleElement().satisfies(line -> {
             assertThat(line.lineNo()).isEqualTo(1);
             assertThat(line.variantId()).isEqualTo(shirt.variantIds.getFirst());
@@ -117,8 +118,8 @@ class OrderReportApiTest {
             assertThat(line.axisValues()).containsExactly(new OrderReportSnapshot.AxisValue("色", "白"));
             assertThat(line.quantity()).isEqualTo(2);
             assertThat(line.ratePercent()).isEqualByComparingTo(BigDecimal.TEN);
-            assertThat(line.subtotalInclTax()).isEqualTo(2200);
-            assertThat(line.subtotalExclTax()).isEqualTo(2000);
+            assertThat(line.subtotalInclTax()).isEqualTo(Money.of(2200));
+            assertThat(line.subtotalExclTax()).isEqualTo(Money.of(2000));
         });
     }
 

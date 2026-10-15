@@ -1,5 +1,6 @@
 package com.ecsite.module.order.api;
 
+import com.ecsite.common.model.value.Money;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
@@ -9,7 +10,7 @@ import java.util.UUID;
 
 /**
  * レポート用の注文の写し（docs/backend/modules/order.md「他のモジュールへの公開」）。<br />
- * 氏名、住所、電話番号、メールアドレスは載せない。お届け先は郵便番号と都道府県だけ。金額は円。
+ * 氏名、住所、電話番号、メールアドレスは載せない。お届け先は郵便番号と都道府県だけ。
  *
  * @param orderId          注文 ID
  * @param orderNumber      注文番号
@@ -32,8 +33,8 @@ import java.util.UUID;
 public record OrderReportSnapshot(UUID orderId, String orderNumber, UUID memberId, Instant orderedAt, Status status,
                                   @Nullable Instant cancelledAt, @Nullable CancellationKind cancellationKind,
                                   @Nullable Boolean restocked, String postalCode, String prefecture,
-                                  @Nullable Integer buyerAge, @Nullable Gender buyerGender, long total, long shippingFee,
-                                  long taxTotal, long shippingTax, List<Line> lines) {
+                                  @Nullable Integer buyerAge, @Nullable Gender buyerGender, Money total, Money shippingFee,
+                                  Money taxTotal, Money shippingTax, List<Line> lines) {
 
     /**
      * 明細
@@ -50,8 +51,8 @@ public record OrderReportSnapshot(UUID orderId, String orderNumber, UUID memberI
      * @param subtotalExclTax 税抜小計（税抜単価 × 数量）
      */
     public record Line(int lineNo, UUID variantId, String productCode, String variantCode, String productName,
-                       List<AxisValue> axisValues, int quantity, BigDecimal ratePercent, long subtotalInclTax,
-                       long subtotalExclTax) {
+                       List<AxisValue> axisValues, int quantity, BigDecimal ratePercent, Money subtotalInclTax,
+                       Money subtotalExclTax) {
     }
 
     /**

@@ -1,5 +1,5 @@
 import { createHash, randomBytes } from 'node:crypto'
-import { expect, type Page } from '@playwright/test'
+import { expect, type Locator, type Page } from '@playwright/test'
 import { RUN_ID } from './data'
 import { ADMIN_URL, IDP_URL, MAILPIT_URL, STORE_URL } from './urls'
 import { MAIL_TIMEOUT } from './waits'
@@ -87,6 +87,25 @@ export async function registerMember(
   name: { lastName: string; firstName: string },
   profile: MemberProfile = {},
 ): Promise<void> {
+  await submitSignup(page, account, name, profile)
+  await setPasswordFromMail(page, account)
+  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+}
+
+/**
+ * 店舗画面のヘッダーの「会員登録」から、IdP の会員登録の画面でメールアドレス・氏名・任意の属性を入れて送る。
+ * 確認のメールを送ったと出るまで待つ（パスワードは確認のメールのリンクで決める。{@link setPasswordFromMail}）。
+ *
+ * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
+ * @param name 氏名
+ * @param profile 生年月日と性別（省けば入れない）
+ */
+export async function submitSignup(
+  page: Page,
+  account: Account,
+  name: { lastName: string; firstName: string },
+  profile: MemberProfile = {},
+): Promise<void> {
   await page.getByRole('link', { name: '会員登録' }).click()
   await page.locator('#email').fill(account.email)
   await page.locator('#lastName').fill(name.lastName)
@@ -99,12 +118,27 @@ export async function registerMember(
   }
   await page.getByRole('button', { name: '登録' }).click()
   await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
+}
 
+/**
+ * 確認のメールのリンクを開き、IdP の画面でパスワードを決めて送る。送った後の画面は確かめない（呼ぶ側が確かめる）。
+ *
+ * @param page 使うページ（登録を始めたのと同じブラウザーなら、ログインした状態で登録を始めた画面に戻る。AC-112）
+ */
+export async function setPasswordFromMail(page: Page, account: Account): Promise<void> {
   await page.goto(await latestIdpLink(account.email))
   await page.locator('#password-new').fill(account.password)
   await page.locator('#password-confirm').fill(account.password)
   await page.getByRole('button', { name: '送信' }).click()
-  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+}
+
+/**
+ * IdP のログインの画面の、パスワードの欄（ログインし直すのにパスワードが要ることを確かめる）。
+ *
+ * @param page IdP のログインの画面を開いているページ
+ */
+export function idpPasswordInput(page: Page): Locator {
+  return page.locator('#password')
 }
 
 /**

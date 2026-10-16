@@ -1,5 +1,5 @@
 import { expect, type Page, test } from '@playwright/test'
-import { latestIdpLink, memberEmail, submitIdpLogin } from '../src/auth'
+import { idpPasswordInput, memberEmail, setPasswordFromMail, submitIdpLogin, submitSignup } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { detailValue } from '../src/detail'
 import { fillShipping, payOnMockPage } from '../src/store'
@@ -29,19 +29,11 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
 
   await test.step('ログインせずにカートに入れ、会員登録する。確認のメールが届くまでログインできない（AC-108、111）', async () => {
     await addToCart(page, productId, '2')
-    await page.getByRole('link', { name: '会員登録' }).click()
-    await page.locator('#email').fill(account.email)
-    await page.locator('#lastName').fill('会員')
-    await page.locator('#firstName').fill('登録')
-    await page.getByRole('button', { name: '登録' }).click()
-    await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
+    await submitSignup(page, account, { lastName: '会員', firstName: '登録' })
   })
 
   await test.step('同じブラウザーで確認のメールのリンクを開いてパスワードを設定すると、ログインした状態で登録を始めた画面に戻る（AC-112、114）', async () => {
-    await page.goto(await latestIdpLink(account.email))
-    await page.locator('#password-new').fill(account.password)
-    await page.locator('#password-confirm').fill(account.password)
-    await page.getByRole('button', { name: '送信' }).click()
+    await setPasswordFromMail(page, account)
     await expect(page).toHaveURL(`${STORE_URL}/products/${productId}`)
     await expect(page.getByText('会員 登録 様')).toBeVisible()
   })
@@ -83,6 +75,6 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
   await test.step('ログアウトすると、パスワードなしではログインし直せない（AC-115）', async () => {
     await page.getByRole('button', { name: 'ログアウト' }).click()
     await page.getByRole('link', { name: 'ログイン' }).click()
-    await expect(page.locator('#password')).toBeVisible()
+    await expect(idpPasswordInput(page)).toBeVisible()
   })
 })

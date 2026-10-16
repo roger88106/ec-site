@@ -240,8 +240,11 @@ Keycloak の画面の要素（`#email`、`#password-new` など）を選ぶの�
 | 項目 | 決定 |
 |------|------|
 | 表示の部品 | 今の店舗画面のテスト（HTML に描画して確かめる）に合わせる |
-| 操作のある client の部品（`VariantPicker`、`CartItemControls`、`OrderForm` など） | ファイルの先頭で jsdom を選び（`@vitest-environment jsdom`）、Testing Library で操作する。店舗画面の開発の依存に `@testing-library/react`・`@testing-library/user-event`・`jsdom` を足す（管理画面と同じ版） |
+| ブラウザーの中だけで終わる操作（server action を呼ばない）のある client の部品（`VariantPicker` の選択、`RemainingTime` の残り時間 など） | ファイルの先頭で jsdom を選び（`@vitest-environment jsdom`）、Testing Library で操作する。店舗画面の開発の依存に `@testing-library/react`・`@testing-library/user-event`・`jsdom` を足す（管理画面と同じ版） |
+| server action を呼ぶ操作（`CartItemControls`、`OrderForm` の送信 など） | 今の規則のとおり結合テストを置かない。表示（初めの状態、エラーの表示）は HTML に描画して確かめ、操作は server action のテストと E2E で確かめる |
 | server action | 今の `actions/cart.test.ts`・`checkout.test.ts` に合わせる（MSW で API を差し替える） |
+
+テストの書き方 第 1 節の「店舗画面には結合テストを置かない」に、ブラウザーの中だけで終わる操作の例外を書く（利用者の判断。2026-10-16）。理由：規則の理由は「操作が server action を通り、ブラウザーの中だけでは再現できない」ことで、server action を呼ばない操作には当たらない。
 
 依存の追加は開発のときだけで、店舗画面の振る舞いは変わらない。
 

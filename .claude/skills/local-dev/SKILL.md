@@ -74,7 +74,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 lint・型チェック・テスト・ビルドは、手順ごとに 1 行の要約だけを出すスクリプトで流す。失敗した手順だけ、出力の末尾とログのパスが出る。
 
 ```bash
-scripts/dev/check-frontend.sh                       # 依存の入れ直しとライセンスの後に、両方のアプリで lint typecheck test build（CI と同じ）
+scripts/dev/check-frontend.sh                       # 依存の入れ直しとライセンスの後に、両方のアプリで lint typecheck test build、E2E のコードで lint typecheck（CI と同じ）
 scripts/dev/check-frontend.sh admin test            # 管理画面のテストだけ
 scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 ```
@@ -136,14 +136,14 @@ local profile の seed（`db/seed/local/`）が、画面を確かめるための
 - レポート用の注文 2 万件（2024-10-01〜2026-09-30、会員 300 人、出荷済みが多い）と、その支払・出荷・レポートの写し。中身は `db/seed/local/README.md`「レポート用の注文」。
 - 会員 `member@example.com` の注文 4 件：受付、キャンセルの申請中、申請の却下（受付のまま）、キャンセル済み。どれも状態に合う支払（mock の与信）を持ち、受付の注文は管理画面から出荷できる（Stripe の profile では売上確定で失敗する）。承認・却下・運営者のキャンセルは、申請中の注文で管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）から試す。
 - ID は固定（`00000000-0000-0000-0000-00000000` + 4 桁）：カテゴリ 1xxx、商品 2xxx、バリアント 3xxx、在庫 4xxx、会員 6001、注文 61xx、支払 64xx、アセット 7xxx、商品画像 8xxx。レポート用は `00000000-0000-0000-<種類 4 桁>-<番号 12 桁>`（会員 0001、注文 0010、支払 0012、出荷 0013）。
-- 画面で変えたデータは、seed を流し直しても戻らない。最初の状態に戻すときは、ローカルの DB を作り直す（`docs/dev/setup.md`）。
+- 画面で変えたデータは、seed を流し直しても戻らない。最初の状態に戻すときは、バックエンドを止めて `scripts/dev/reset.sh` で DB を作り直す（Keycloak は `keycloak`、すべては `all`。`docs/dev/setup.md` 第 4 節）。
 
 ## E2E（`e2e/`）
 
 `docs/testing/running.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を作り直し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
 
 ```bash
-scripts/dev/e2e.sh                                   # ルートで。テストごとの ok / x と失敗の要点だけを出す
+scripts/dev/e2e.sh                                   # ルートで。テストごとの ok / x と失敗の要点だけを出す。前提のコンテナが止まっていれば、名前を出して終了コード 2
 scripts/dev/e2e.sh tests/payment.spec.ts -g AC-148   # 引数は Playwright にそのまま渡す
 ```
 

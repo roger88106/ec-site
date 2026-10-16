@@ -26,6 +26,8 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `docs.yml` | 文書とコメントの検査 | `doc-refs`、`spec-numbers`、`doc-terms` | すべての push と pull request（文書だけの push でも流す） |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に出す | `develop` で `showcase/` が変わったとき、手で起動したとき |
 
+文書の検査（`doc-refs`、`spec-numbers`、`doc-terms`）は、`docs.yml` と `ci.yml` の CI の検査の script の両方で流れる。`docs.yml` は文書だけの push でも流すため、`check-all.sh` は手元と CI で同じものを流すために持つ。
+
 `ci.yml` は、次のファイルだけを変えた push では流さない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.gitignore`、`LICENSE`。pull request はいつも流す。
 
 ## 3. CI の検査の script

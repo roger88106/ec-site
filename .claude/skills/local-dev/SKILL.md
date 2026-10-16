@@ -80,7 +80,8 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 ```
 
 - 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
-- 整形と自動で直せる lint は、各アプリで `pnpm lint:fix`。
+- 整形と自動で直せる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`（ルートから流すと、設定が入れ子だというエラーになる）。
+- 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に流してから `npx vitest run <ファイル>` を流す。Vitest は型を確かめないので、テストデータの形の誤りが、テストの失敗として遠回りに見える。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出す）。
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
 - 依存を足した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を流し直す（`docs/frontend/coding.md` 第 9.1 節）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
 

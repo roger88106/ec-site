@@ -123,6 +123,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 - 撮影の中で、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面のため）。白のマグカップの在庫を 2 つ使うので、続けて撮るときも DB を作り直す。
 - 撮影は E2E ではなく、CI では流さない。撮った画像は目で確かめてから commit する。
+- ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を流して照らし、変わっていれば直す。テストの数は、Java を実行した件数（パラメーターの組ごと）で数える。
 
 ## 7. ポートが使えないとき（Windows）
 

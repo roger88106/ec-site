@@ -40,7 +40,7 @@ pnpm dev
 
 - `docker compose` はルートで実行する（ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
 - Mailpit の SMTP はホストの 1025 で受ける。1025 を他のプログラムが使っていると（Windows ではシステムのプログラムが使うことがある）、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いたポートを入れて、compose とバックエンドを起動する（両方が同じ値を読む）。
-- 止めるときは `docker compose stop`、データを消して作り直すときは `docker compose down -v`。
+- 止めるときは `docker compose stop`。データを作り直すときは第 4 節。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で直せる lint は `pnpm lint:fix`。
 - commit の前に CI の検査の script（[CI の検査](ci.md)）を流すには、`.git/hooks/pre-commit` に次の 1 行を書く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いたほかの hook と並べられるよう、`core.hooksPath` は変えない。
@@ -70,25 +70,15 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 ## 4. データの作り直し
 
-画面で変えたデータは、seed を流し直しても戻らない。
+画面で変えたデータは、seed を流し直しても戻らない。`scripts/dev/reset.sh` で、Git の正本から作り直す。
 
-| 戻したいもの | 手順 |
-|--------------|------|
-| DB だけ（Keycloak と画像はそのまま） | バックエンドを止めてから、下の 1 つ目のコマンド。次の起動で seed が流れる（レポート用の注文 2 万件を含め、15 秒ほど） |
-| Keycloak（realm の JSON を変えたとき） | 下の 2 つ目のコマンド（ローカルで登録した会員も消える） |
-| すべて | `docker compose down -v` |
+| 戻したいもの | コマンド（ルートで） | 触れないもの |
+|--------------|----------------------|--------------|
+| DB だけ | `scripts/dev/reset.sh`（`db` と同じ）。バックエンドを止めてから流す。次の起動で seed が流れる（レポート用の注文 2 万件を含め、15 秒ほど） | E2E の DB、Keycloak、画像 |
+| Keycloak（realm の JSON を変えたとき） | `scripts/dev/reset.sh keycloak`（ローカルで登録した会員も消える） | DB、E2E の Keycloak |
+| すべて | `scripts/dev/reset.sh all`（`docker compose down -v` と `up -d`） | なし |
 
-```bash
-# DB を作り直す
-docker exec ec-site-postgres psql -U ec_site -d postgres -c "drop database ec_site with (force)" -c "create database ec_site owner ec_site"
-
-# Keycloak の database を作り直して、realm を取り込み直す
-docker compose stop keycloak
-docker exec ec-site-postgres psql -U ec_site -d ec_site -c "drop database keycloak" -c "create database keycloak owner keycloak"
-docker compose up -d keycloak
-```
-
-Keycloak の database（`keycloak`）は、PostgreSQL の volume が空のとき（初回）にだけ作られる。それより前からある volume では、一度だけ `docker exec -i ec-site-postgres psql -U ec_site -d ec_site < docker/postgres/init-keycloak.sql` を流してから `docker compose up -d` する。
+正本は、DB の seed が `backend/ecsite/src/main/resources/db/seed/`、画像が `docker/seaweedfs/seed/`、Keycloak が `docker/keycloak/realms/`。seed の商品の画像の ID と、seed の注文の会員の ID は、それぞれ画像と realm の正本に合わせてある。
 
 ## 5. Stripe で動かす
 

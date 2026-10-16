@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [ ] **T011-03-01** `scripts/dev/reset.sh`（`db`・`keycloak`・`all`。plan 第 3.1 節）。`db` の後に `ec_site` が空で、`ec_site_e2e` と `keycloak` の database が残ることを確かめる。setup 第 4 節を `reset.sh` に置き換える。
+- [x] **T011-03-01** `scripts/dev/reset.sh`（`db`・`keycloak`・`all`。plan 第 3.1 節）。`db` の後に `ec_site` が空で、`ec_site_e2e` と `keycloak` の database が残ることを確かめる。setup 第 4 節を `reset.sh` に置き換える。
 - [ ] **T011-03-02** 正本のそろいの確かめ：`reset.sh all` の後にバックエンドと店舗画面を起動し、seed の商品の画像が出て、`member@example.com` で seed の注文が見えることを確かめる。合わないものは正本を直す（直すときは利用者に先に示す）。
 - [ ] **T011-03-03** `e2e.sh` の前提のコンテナの確かめ（plan 第 3.2 節）。mailpit を止めて流し、名前を示して止まることを確かめる。
 - [ ] **T011-03-04** 開発のサーバーが作るファイル（plan 第 3.3 節）：Next.js の設定で `AGENTS.md` を作らせない方法を調べ、なければ `.gitignore` に例外として書く。admin・store・backend を起動した後の `git status` に出ないことを確かめる。

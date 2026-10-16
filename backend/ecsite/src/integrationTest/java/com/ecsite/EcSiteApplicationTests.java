@@ -23,6 +23,7 @@ class EcSiteApplicationTests {
     DSLContext dsl;
 
     @Test
+    @DisplayName("Spring のコンテキストが起動する")
     void contextLoads() {
     }
 

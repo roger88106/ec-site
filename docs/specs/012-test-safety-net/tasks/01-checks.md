@@ -6,8 +6,10 @@
 
 ## タスク
 
-- [ ] **T012-01-01** [テスト] `test-names.test.mjs`：`@Test`・`@ParameterizedTest` に `@DisplayName` がないメソッドを見つけ、あるものと、テストでない注釈のメソッドは見つけない例。レッドを確かめる。
-- [ ] **T012-01-02** `scripts/ci/test-names.mjs`（plan 第 1.1 節）。`EcSiteApplicationTests.contextLoads` に名前を付ける。`check-all.sh` で流れることと、`docs/dev/ci.md` の一覧、テストの書き方の規則の一覧の確かめ方を直す。
+- [x] **T012-01-01** [テスト] `test-names.test.mjs`：`@Test`・`@ParameterizedTest` に `@DisplayName` がないメソッドを見つけ、あるものと、テストでない注釈のメソッドは見つけない例。レッドを確かめる。
+  - 確かめ：空の実装で、見つけるべき例の 2 件が失敗した（見つけない例の 2 件は通る）。
+- [x] **T012-01-02** `scripts/ci/test-names.mjs`（plan 第 1.1 節）。`EcSiteApplicationTests.contextLoads` に名前を付ける。`check-all.sh` で流れることと、`docs/dev/ci.md` の一覧、テストの書き方の規則の一覧の確かめ方を直す。
+  - 確かめ：直す前のリポジトリで `contextLoads` の 1 件だけを見つけた。
 - [ ] **T012-01-03** [テスト] `coverage-summary` の低い順の表のテスト（JaCoCo の XML と Vitest の json-summary の小さな例）。レッドを確かめる。
 - [ ] **T012-01-04** `coverage-summary.mjs` に低い順の 10 件を足す（plan 第 1.3 節）。手元のバックエンド・店舗画面・管理画面の報告で流し、表を確かめる。
 - [ ] **T012-01-05** テストの書き方：IdP の設定ファイルで確かめる AC の表（plan 第 1.2 節）と、確定させるテストの規則（plan 第 3.3 節）を書く。

@@ -45,4 +45,5 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで引く。`--count` で数だけを出す | `hardcoded-text-exclusions.json` にファイルと理由 |
 | `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |
 | `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号がない（[コメントの書き方](../process/comments.md) 第 1 節） | 番号を消し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
+| `test-names` | バックエンドのすべての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../testing/writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
 | `time-waits` | テストが時間で待っていない（[テストの書き方](../testing/writing.md) 第 5 節） | 条件で待つ | なし |

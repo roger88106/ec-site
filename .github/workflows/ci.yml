@@ -67,7 +67,7 @@ jobs:
       # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
         if: always()
-        run: node ../../scripts/ci/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
+        run: node ../../scripts/ci/report/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
 
       - name: カバレッジの報告を保存
         if: always()
@@ -116,7 +116,7 @@ jobs:
       # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
         if: always()
-        run: node ../../scripts/ci/coverage-summary.mjs 管理画面 coverage/coverage-summary.json
+        run: node ../../scripts/ci/report/coverage-summary.mjs 管理画面 coverage/coverage-summary.json
 
       - name: カバレッジの報告を保存
         if: always()
@@ -177,7 +177,7 @@ jobs:
       # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
       - name: カバレッジの合計を summary に書く
         if: always()
-        run: node ../../scripts/ci/coverage-summary.mjs 店舗画面 coverage/coverage-summary.json
+        run: node ../../scripts/ci/report/coverage-summary.mjs 店舗画面 coverage/coverage-summary.json
 
       - name: カバレッジの報告を保存
         if: always()

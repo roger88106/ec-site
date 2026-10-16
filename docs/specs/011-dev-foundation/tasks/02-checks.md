@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [ ] **T011-02-01** `coverage-summary.mjs` を `scripts/ci/report/` に移し、ci.yml の呼び出しを直す。
+- [x] **T011-02-01** `coverage-summary.mjs` を `scripts/ci/report/` に移し、ci.yml の呼び出しを直す。
 - [ ] **T011-02-02** `scripts/ci/check-all.sh`：script のテストと、`scripts/ci/` の直下の検査をすべて流し、1 つごとに 1 行を出す（plan 第 2.1 節）。仮の検査の script を足して流れることを確かめ、消す。
 - [ ] **T011-02-03** ci.yml：ジョブ「AC とテストの対応」を「CI の検査の script」にして `check-all.sh` を流す。店舗画面のジョブから入力の制約と表示の文言の手順を除く。CI で通ることを確かめる（push は利用者の許可を得てから。許可がなければ段階 4 の push で確かめる）。
 - [ ] **T011-02-04** `check-frontend.sh` の対象に `e2e`（lint、typecheck）を足す。引数なしの実行で e2e も流れることを確かめる。

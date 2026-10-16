@@ -1,7 +1,7 @@
 // ============================================================================
 // カバレッジの合計（行・分岐）を、GitHub Actions の job の summary に書く（テストの書き方 第 1 節）
 //
-//   使い方：node scripts/ci/coverage-summary.mjs <名前> <報告のファイル>
+//   使い方：node scripts/ci/report/coverage-summary.mjs <名前> <報告のファイル>
 //     報告のファイル：JaCoCo の XML（*.xml）か、Vitest の json-summary（coverage-summary.json）
 //
 // 報告だけで、基準の値では失敗させない。報告がなければ、そのことを書いて終わる。
@@ -11,7 +11,7 @@ import { appendFileSync, existsSync, readFileSync } from 'node:fs'
 
 const [name, file] = process.argv.slice(2)
 if (!name || !file) {
-  console.error('使い方：node scripts/ci/coverage-summary.mjs <名前> <報告のファイル>')
+  console.error('使い方：node scripts/ci/report/coverage-summary.mjs <名前> <報告のファイル>')
   process.exit(2)
 }
 

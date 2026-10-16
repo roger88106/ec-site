@@ -34,6 +34,7 @@ plugins {
     alias(libs.plugins.openapi.generator)
     alias(libs.plugins.dependency.license.report)
     jacoco
+    checkstyle
 }
 
 group = "com.ecsite"
@@ -180,6 +181,24 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 }
 
 tasks.check { dependsOn(integrationTest) }
+
+// -----------------------------------------------------------------------------
+// Javadoc の書き漏れ（コメントの書き方 第 2 節）
+//   Checkstyle で、本番のコード（src/main/java）の public のクラスとメソッドに Javadoc があることを確かめる。
+//   生成したコード（jOOQ、OpenAPI。build/ の下）、上書き（@Override）、テストは見ない。ほかの規則は入れない。
+//   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
+//   Checkstyle はビルドの道具で、アプリと依存のライセンスの検査の構成には入らない
+// -----------------------------------------------------------------------------
+checkstyle {
+    toolVersion = libs.versions.checkstyle.get()
+    sourceSets = listOf(project.sourceSets.main.get())
+    isIgnoreFailures = false
+    maxWarnings = 0
+}
+
+tasks.named<Checkstyle>("checkstyleMain") {
+    setSource(fileTree("src/main/java"))
+}
 
 // -----------------------------------------------------------------------------
 // カバレッジ（テストの書き方 第 1 節。報告だけで、基準の値では失敗させない）

@@ -14,6 +14,8 @@
 [versions]
 java = "21"
 jacoco = "0.8.13"
+# Javadoc の書き漏れの検査（コメントの書き方 第 2 節）
+checkstyle = "14.3.0"
 # 依存のライセンスの検査（依存とライセンス）
 dependency-license-report = "3.0.1"
 

@@ -26,7 +26,24 @@ describe('テスト名の取り出し', () => {
     assert.deepEqual(extractTestNames(source, 'java'), ['AC-43 調整後に負になる調整は拒否される', '名前に "引用符" を含む'])
   })
 
-  test('Vitest・Playwright の test・it・describe の第 1 引数（単一引用符・二重引用符・バッククォート）', () => {
+  test('Java のクラス（@Nested を含む）に付いた @DisplayName は読まない', () => {
+    const source = [
+      '@DisplayName("AC-40 在庫の調整")',
+      'class AdjustmentTest {',
+      '  @Nested',
+      '  @DisplayName("AC-41 負の調整")',
+      '  @Tag("slow")',
+      '  final class Negative {',
+      '    @Test',
+      '    @DisplayName("AC-42 拒否される")',
+      '    void rejects() {}',
+      '  }',
+      '}',
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'java'), ['AC-42 拒否される'])
+  })
+
+  test('Vitest・Playwright の test・it の第 1 引数（単一引用符・二重引用符・バッククォート）。describe は読まない', () => {
     const source = [
       "describe('AC-8 カテゴリの一覧', () => {",
       '  it("AC-9 登録できる", async () => {})',
@@ -37,9 +54,7 @@ describe('テスト名の取り出し', () => {
       "const notATest = format('AC-99 テストではない')",
     ].join('\n')
     assert.deepEqual(extractTestNames(source, 'ts'), [
-      'AC-8 カテゴリの一覧',
       'AC-9 登録できる',
-      'AC-10 名前の変更',
       'AC-11 並び順を変える',
       'AC-12 %s',
     ])

@@ -196,8 +196,9 @@ jobs:
     name: E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # 各部分のジョブが通ってから動かす（失敗の原因を、部分のジョブで先に見つけるため）
-    needs: [backend, admin, store]
+    # ほかのジョブを待たずに始める（CI の全体の時間を短くするため。plan 011 第 4.2 節）。
+    # E2E は自分でバックエンドをコンパイルし画面をビルドするので、ほかのジョブの結果は使わない。
+    # 失敗したときは、部分のジョブの結果を先に見る（docs/dev/ci.md）
 
     steps:
       - uses: actions/checkout@v7

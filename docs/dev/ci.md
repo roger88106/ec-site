@@ -11,6 +11,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | CI の検査の script | `scripts/ci/check-all.sh` | CI の検査の script、文書 |
 | E2E | `scripts/dev/e2e.sh` | E2E |
 
+- CI で失敗したら、まず各部分のジョブ（バックエンド、管理画面、店舗画面、CI の検査の script）の結果を見る。E2E はほかのジョブを待たずに始まるので、部分のジョブで分かる失敗（コンパイルの誤りなど）でも E2E が失敗する。
 - commit の前の hook は `check-all.sh` だけを流す（[開発環境の起動](setup.md)）。テストは時間がかかるので、変えた所に応じて手で流す（[テストの流し方](../testing/running.md)）。
 
 ## 2. CI のジョブ

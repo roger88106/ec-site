@@ -23,6 +23,9 @@ public enum Basis {
      */
     private final List<String> countedStatuses;
 
+    /**
+     * @param countedStatuses 数える注文の状態
+     */
     Basis(List<String> countedStatuses) {
         this.countedStatuses = countedStatuses;
     }

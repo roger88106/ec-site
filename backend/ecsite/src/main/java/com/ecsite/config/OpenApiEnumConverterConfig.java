@@ -44,6 +44,12 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
             return source -> invoke(fromValue, source);
         }
 
+        /**
+         * 生成した enum の fromValue を探す。
+         *
+         * @param targetType 変換する先の enum
+         * @return fromValue。なければ null
+         */
         private static Method findFromValue(Class<?> targetType) {
             try {
                 return targetType.getMethod("fromValue", String.class);
@@ -52,6 +58,13 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
             }
         }
 
+        /**
+         * fromValue を呼び、中で投げた実行時の例外はそのまま投げ直す。
+         *
+         * @param fromValue 生成した enum の fromValue
+         * @param source    変換する文字列
+         * @return 変換した値
+         */
         private static <T> T invoke(Method fromValue, String source) {
             try {
                 return (T) fromValue.invoke(null, source);

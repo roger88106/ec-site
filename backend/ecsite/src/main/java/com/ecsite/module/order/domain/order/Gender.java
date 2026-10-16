@@ -36,6 +36,9 @@ public enum Gender {
      */
     private final String claim;
 
+    /**
+     * @param claim IdP の属性の値
+     */
     Gender(String claim) {
         this.claim = claim;
     }

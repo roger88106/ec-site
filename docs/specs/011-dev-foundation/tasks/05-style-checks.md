@@ -14,4 +14,4 @@
 - [x] **T011-05-06** 当たったクラスを直す。
 - [x] **T011-05-07** 段階の完了の確認：`./gradlew check`、`check-all.sh` が通る。
 - [x] **T011-05-08** Javadoc の検査を private まで広げる（利用者の判断。2026-10-16）：`MissingJavadocType`・`MissingJavadocMethod` の対象を private にし、項目に `JavadocVariable` を足す。コメントの書き方 第 2 節に、private は 1 文の簡単な Javadoc でよいことを書く。
-- [ ] **T011-05-09** 広げて当たった漏れを直す。private は 1 文で書き、`@param`・`@return` は気づいたものだけ足す（漏れても検査は求めない）。`./gradlew check` と `check-all.sh` が通る。
+- [x] **T011-05-09** 広げて当たった漏れを直す。private は 1 文で書き、`@param`・`@return` は気づいたものだけ足す（漏れても検査は求めない）。`./gradlew check` と `check-all.sh` が通る。

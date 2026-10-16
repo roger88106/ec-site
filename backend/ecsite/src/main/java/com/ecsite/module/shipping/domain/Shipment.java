@@ -54,6 +54,9 @@ public class Shipment {
     @Getter(lombok.AccessLevel.NONE)
     private Instant lastNotifiedAt;
 
+    /**
+     * 項目をそのまま持つ。作るときは出荷の登録か、保存した状態からの復元を使う。
+     */
     private Shipment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Carrier carrier,
                      @NonNull TrackingNumber trackingNumber, @NonNull DeliveryStatus status,
                      @NonNull Instant shippedAt, Instant lastNotifiedAt) {

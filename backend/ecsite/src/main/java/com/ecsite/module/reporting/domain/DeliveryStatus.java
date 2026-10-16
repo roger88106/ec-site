@@ -32,6 +32,9 @@ public enum DeliveryStatus {
      */
     private final int rank;
 
+    /**
+     * @param rank 順位
+     */
     DeliveryStatus(int rank) {
         this.rank = rank;
     }

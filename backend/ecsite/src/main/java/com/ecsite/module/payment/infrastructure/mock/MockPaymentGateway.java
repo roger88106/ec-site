@@ -329,6 +329,12 @@ public class MockPaymentGateway implements PaymentGateway {
      */
     public record Page(UUID orderId, Money amount, String returnUrl, PageStatus status) {
 
+        /**
+         * 状態だけを変えた画面を返す。
+         *
+         * @param status 新しい状態
+         * @return 画面
+         */
         Page with(PageStatus status) {
             return new Page(orderId, amount, returnUrl, status);
         }

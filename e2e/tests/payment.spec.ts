@@ -3,10 +3,10 @@ import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { emptyCart, expectOrderPage, fillShipping, orderCart, payOnMockPage } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
-import { ASYNC_TIMEOUT, CHECK_TIMEOUT, RECHECK_INTERVALS } from '../src/waits'
+import { ASYNC_TIMEOUT, CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, RECHECK_INTERVALS } from '../src/waits'
 
 /**
- * 支払の E2E。E2E のバックエンドは mock の決済サービスで動き、支払の期限は 30 秒（application-e2e.yml）。
+ * 支払の E2E。E2E のバックエンドは mock の決済サービスで動き、支払の期限は 12 秒（application-e2e.yml）。
  * 会員のカートは実行をまたいで残るので、各テストはカートを空にしてから始める。
  */
 
@@ -90,8 +90,8 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
 })
 
 test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限切れでキャンセルになる', async ({ page }) => {
-  // 支払の期限（30 秒）と、期限切れを見る間隔を待つ
-  test.setTimeout(120_000)
+  // 支払の期限と、期限切れを見る間隔を待つ（注文までの操作の分を足す）
+  test.setTimeout(PAYMENT_EXPIRY_TIMEOUT + ASYNC_TIMEOUT)
   await memberCartWith(page, 'EXPIRE')
   await orderCart(page)
   let orderUrl = ''
@@ -110,7 +110,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
       page,
       orderUrl,
       page.getByText('お支払い期限までにお支払いがなかったため、このご注文はキャンセルされました。'),
-      90_000,
+      PAYMENT_EXPIRY_TIMEOUT,
     )
     await expect(page.getByText('キャンセル', { exact: true }).first()).toBeVisible()
     await expect(page.getByRole('button', { name: '支払う' })).toHaveCount(0)

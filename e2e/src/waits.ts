@@ -18,5 +18,8 @@ export const MAIL_TIMEOUT = 30_000
 /** レポートの写しは注文のイベントから少し遅れて作られる（spec 010 NFR-14）。表示に出るまでに待つ時間の上限 */
 export const REPORT_TIMEOUT = 30_000
 
+/** 支払の期限切れが注文の画面に出るまでに待つ時間の上限。支払の期限（12 秒。application-e2e.yml）と、期限切れを見る間隔と、裏の処理の分 */
+export const PAYMENT_EXPIRY_TIMEOUT = 12_000 + ASYNC_TIMEOUT
+
 /** レポートの画面を開き直す間隔（写しの遅れを待つので、ほかより長い） */
 export const REPORT_RECHECK_INTERVALS = [1_000, 2_000]

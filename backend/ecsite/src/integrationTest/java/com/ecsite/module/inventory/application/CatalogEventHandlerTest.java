@@ -82,7 +82,10 @@ class CatalogEventHandlerTest {
         var variantId = UUID.randomUUID();
         var event = VariantRegistered.of(NOW, productId, variantId);
 
+        // 1 回目を処理し終えてから 2 回目を送る。同じイベントの処理が重なると、
+        // Spring Modulith が処理中の発行を（イベント、リスナー）で取り違え、発行の記録が完了にならないことがあるため
         publish(event);
+        asyncEvents.awaitHandled(event::equals);
         publish(event);
 
         asyncEvents.awaitHandled(event::equals);

@@ -102,6 +102,8 @@ class ShipmentMailTest {
         var event = shipped();
         publish(event);
         await().atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).size() == 1);
+        // 1 回目の発行の記録が完了してから重ねる（同じイベントの処理が重なると、記録が完了にならないことがある。CatalogEventHandlerTest）
+        asyncEvents.awaitHandled(event::equals);
 
         publish(event);
         publish(OrderShipped.of(event.occurredAt(), event.orderId(), event.orderNumber(), event.email(),

@@ -22,6 +22,7 @@
 | 4.2 | 現在時刻は `Clock` から | 人手 |
 | 5.1 | Lombok は main だけ | 人手 |
 | 5.2 | 名前の形 | 人手 |
+| 5.3 | インスタンスを作らないクラス | コンストラクタは自動（ArchUnit）、`final` は人手 |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）、置き場所と接頭辞は人手 |
 
 人手のものは、各 spec の [見直し](../process/review.md) で読む。
@@ -190,6 +191,23 @@ getter・コンストラクターの注入などの定型コードは、main で
 ※2：1 つの集約に用途が複数あるとき、他のモジュールの呼び出しを組み合わせるとき。
 
 別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
+
+### 5.3 インスタンスを作らないクラス
+
+static のメンバーだけのクラス（定数や補助の関数をまとめたもの）は `final` にし、コンストラクタを `private` にする。Lombok の `@NoArgsConstructor(access = AccessLevel.PRIVATE)` でも、手で書いてもよい。
+
+```java
+/** 金額の表示の補助 */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
+public final class MoneyFormat {
+    ...
+}
+```
+
+- 対象は最上位のクラス。enum・record・interface・注釈は対象でない。
+- 確かめ方：ArchUnit（`src/test/java/com/ecsite/architecture/`）で、static でないメンバーを持たない最上位のクラスのコンストラクタがすべて `private` であることを確かめる。
+
+理由：インスタンスを作っても使い道がなく、作れると使い方を誤る。Checkstyle の `HideUtilityClassConstructor` はソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる。ArchUnit はコンパイルした後のクラスを読むので、Lombok の書き方でも手の書き方でも同じに確かめられる。
 
 ## 6. 設定の値
 

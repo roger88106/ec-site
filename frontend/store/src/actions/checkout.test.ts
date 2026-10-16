@@ -203,3 +203,23 @@ describe('支払う', () => {
     expect(revalidatedPaths).toEqual([`/orders/${ORDER_ID}`])
   })
 })
+
+describe('会員の token が無効になったとき', () => {
+  test.each([
+    ['キャンセルの申請', () => requestCancellation(null, form({ orderId: ORDER_ID }))],
+    ['支払う', () => payOrder(null, form({ orderId: ORDER_ID }))],
+  ])('%s で 401 が返ると、注文の画面に戻るようにログインの画面へ移る', async (_, run) => {
+    signInAs()
+    resetRequest({ headers: { 'x-pathname': `/orders/${ORDER_ID}` } })
+    server.use(
+      http.put('/orders/{orderId}/cancellation-request', ({ response }) =>
+        response(401).json(problem(401, 'UNAUTHORIZED', '認証が必要です。')),
+      ),
+      http.post('/orders/{orderId}/payment-page', ({ response }) =>
+        response(401).json(problem(401, 'UNAUTHORIZED', '認証が必要です。')),
+      ),
+    )
+
+    expect(await redirectedTo(run)).toBe(`/login?returnTo=${encodeURIComponent(`/orders/${ORDER_ID}`)}`)
+  })
+})

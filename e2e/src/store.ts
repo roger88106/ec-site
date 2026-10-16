@@ -1,6 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 import { STORE_URL } from './urls'
-import { ASYNC_TIMEOUT, CHECK_TIMEOUT, RECHECK_INTERVALS } from './waits'
+import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from './waits'
 
 /**
  * 店舗画面を開き直しながら、表示が期待どおりになるのを待つ。<br />
@@ -12,10 +12,7 @@ import { ASYNC_TIMEOUT, CHECK_TIMEOUT, RECHECK_INTERVALS } from './waits'
  * @param check 表示を確かめる。満たさなければ投げる
  */
 export async function expectEventually(page: Page, url: string, check: (page: Page) => Promise<void>) {
-  await expect(async () => {
-    await page.goto(url)
-    await check(page)
-  }).toPass({ timeout: ASYNC_TIMEOUT, intervals: RECHECK_INTERVALS })
+  await reopenUntil(page, url, () => check(page))
 }
 
 /** 店舗画面の一覧・検索の結果の、商品のカード（商品名で探す） */
@@ -26,9 +23,11 @@ export function productCard(page: Page, name: string): Locator {
 /**
  * ログインしている会員のカートを空にする。会員のカートは会員ごとに 1 つで実行をまたいで残るので（AC-121）、
  * 共用のアカウントで注文するテストは、前の実行の品目を消してから始める。
+ *
+ * @param storeUrl 店舗画面の URL（機能紹介の撮影は、E2E でなくローカルの環境の店舗画面を使う）
  */
-export async function emptyCart(page: Page): Promise<void> {
-  await page.goto(`${STORE_URL}/cart`)
+export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void> {
+  await page.goto(`${storeUrl}/cart`)
   const remove = page.getByRole('button', { name: '削除' })
   while ((await remove.count()) > 0) {
     const before = await remove.count()
@@ -83,8 +82,5 @@ export async function payOnMockPage(page: Page): Promise<string> {
  * @param timeout 待つ時間
  */
 export async function expectOrderPage(page: Page, orderUrl: string, shown: Locator, timeout = ASYNC_TIMEOUT) {
-  await expect(async () => {
-    await page.goto(orderUrl)
-    await expect(shown).toBeVisible({ timeout: CHECK_TIMEOUT })
-  }).toPass({ timeout, intervals: RECHECK_INTERVALS })
+  await reopenUntil(page, orderUrl, () => expect(shown).toBeVisible({ timeout: CHECK_TIMEOUT }), { timeout })
 }

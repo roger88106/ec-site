@@ -3,7 +3,7 @@ import { ACCOUNTS, loginAdmin, memberEmail, registerMember } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { orderCart, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
-import { CHECK_TIMEOUT, REPORT_RECHECK_INTERVALS, REPORT_TIMEOUT } from '../src/waits'
+import { CHECK_TIMEOUT, REPORT_RECHECK_INTERVALS, REPORT_TIMEOUT, reopenUntil } from '../src/waits'
 
 /** 今日の日本時間の年と月 */
 function thisMonthInJapan(): { year: number; month: number } {
@@ -19,10 +19,7 @@ function thisMonthInJapan(): { year: number; month: number } {
  * @param check 表示を確かめる。満たさなければ投げる
  */
 async function expectReport(page: Page, url: string, check: () => Promise<void>) {
-  await expect(async () => {
-    await page.goto(url)
-    await check()
-  }).toPass({ timeout: REPORT_TIMEOUT, intervals: REPORT_RECHECK_INTERVALS })
+  await reopenUntil(page, url, check, { timeout: REPORT_TIMEOUT, intervals: REPORT_RECHECK_INTERVALS })
 }
 
 /** 分け方の表で、区分の行 */

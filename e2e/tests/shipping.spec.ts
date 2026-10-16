@@ -5,7 +5,7 @@ import { detailValue } from '../src/detail'
 import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
 import { emptyCart, orderCart, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
-import { ASYNC_TIMEOUT, CHECK_TIMEOUT, RECHECK_INTERVALS } from '../src/waits'
+import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
 /**
  * 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
@@ -117,10 +117,7 @@ test('AC-189、190、191、192 返送の注文を、管理画面で絞り込ん�
     await dialog.getByRole('button', { name: 'キャンセルする' }).click()
     await expect(page.getByText('キャンセルしました')).toBeVisible()
     // 返金はキャンセルのコミットの後に、裏で行う
-    await expect(async () => {
-      await page.reload()
-      await expect(page.getByText('返金済み')).toBeVisible({ timeout: CHECK_TIMEOUT })
-    }).toPass({ timeout: ASYNC_TIMEOUT, intervals: RECHECK_INTERVALS })
+    await reopenUntil(page, undefined, () => expect(page.getByText('返金済み')).toBeVisible({ timeout: CHECK_TIMEOUT }))
   })
 
   await test.step('管理画面：在庫数が注文の前（3）に戻る（AC-191）', async () => {

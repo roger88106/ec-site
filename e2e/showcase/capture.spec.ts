@@ -1,7 +1,8 @@
 import path from 'node:path'
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { ACCOUNTS, submitIdpLogin } from '../src/auth'
-import { ASYNC_TIMEOUT, CHECK_TIMEOUT } from '../src/waits'
+import { emptyCart } from '../src/store'
+import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
 /** ローカルの店舗画面（開発のサーバー） */
 const STORE = 'http://localhost:3000'
@@ -51,17 +52,6 @@ async function shot(page: Page, name: string, ready: Locator) {
   })
 }
 
-/** 会員のカートを空にする（会員のカートは残るので、前に撮ったときの品目を消す） */
-async function emptyCart(page: Page) {
-  await page.goto(`${STORE}/cart`)
-  const remove = page.getByRole('button', { name: '削除' })
-  while ((await remove.count()) > 0) {
-    const before = await remove.count()
-    await remove.first().click()
-    await expect(remove).toHaveCount(before - 1)
-  }
-}
-
 /** 商品の詳細からカートに入れる（色があれば選ぶ） */
 async function addToCart(page: Page, productId: string, value?: string) {
   await page.goto(`${STORE}/products/${productId}`)
@@ -107,17 +97,17 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await page.goto(`${STORE}/login?returnTo=%2Fcart`)
     await submitIdpLogin(page, ACCOUNTS.member)
     await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
-    await emptyCart(page)
+    // 会員のカートは残るので、前に撮ったときの品目を消す
+    await emptyCart(page, STORE)
     await addToCart(page, SEED.mug, '白')
     await addToCart(page, SEED.chocolate)
     await order(page)
     const orderUrl = await finishPayment(page, '支払う')
     paidOrderId = orderUrl.split('/').at(-1) ?? ''
     // 支払の通知が反映されて「受付」になるまで開き直す
-    await expect(async () => {
-      await page.goto(orderUrl)
-      await expect(page.getByText('受付', { exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
-    }).toPass({ timeout: ASYNC_TIMEOUT })
+    await reopenUntil(page, orderUrl, () =>
+      expect(page.getByText('受付', { exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT }),
+    )
     await shot(page, 'store-order', page.getByText('受付', { exact: true }))
   })
 

@@ -10,7 +10,9 @@
   - 確かめ：空の実装で、見つけるべき例の 2 件が失敗した（見つけない例の 2 件は通る）。
 - [x] **T012-01-02** `scripts/ci/test-names.mjs`（plan 第 1.1 節）。`EcSiteApplicationTests.contextLoads` に名前を付ける。`check-all.sh` で流れることと、`docs/dev/ci.md` の一覧、テストの書き方の規則の一覧の確かめ方を直す。
   - 確かめ：直す前のリポジトリで `contextLoads` の 1 件だけを見つけた。
-- [ ] **T012-01-03** [テスト] `coverage-summary` の低い順の表のテスト（JaCoCo の XML と Vitest の json-summary の小さな例）。レッドを確かめる。
-- [ ] **T012-01-04** `coverage-summary.mjs` に低い順の 10 件を足す（plan 第 1.3 節）。手元のバックエンド・店舗画面・管理画面の報告で流し、表を確かめる。
+- [x] **T012-01-03** [テスト] `coverage-summary` の低い順の表のテスト（JaCoCo の XML と Vitest の json-summary の小さな例）。レッドを確かめる。
+  - 確かめ：`lowest` がない今の script で、読み込みの時点で失敗した。
+- [x] **T012-01-04** `coverage-summary.mjs` に低い順の 10 件を足す（plan 第 1.3 節）。手元のバックエンド・店舗画面・管理画面の報告で流し、表を確かめる。
+  - 確かめ：手元の報告で、バックエンドは stripe・mock の支払い、店舗画面は部品とページが上に出た。
 - [ ] **T012-01-05** テストの書き方：IdP の設定ファイルで確かめる AC の表（plan 第 1.2 節）と、確定させるテストの規則（plan 第 3.3 節）を書く。
 - [ ] **T012-01-06** 段階の完了の確認：`check-all.sh`、`./gradlew check` が通る。

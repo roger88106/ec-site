@@ -423,6 +423,23 @@ describe('商品画像', () => {
     expect(await screen.findByText('画像は 1 商品あたり 20 枚まで登録できます。')).toBeInTheDocument()
   })
 
+  it('ストレージへの送信に失敗したら、やり直しを促し、画像を登録しない', async () => {
+    const state = serveProduct(productDetail())
+    const calls = serveUpload(state)
+    server.use(rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 403 })))
+    const { user } = renderApp(URL)
+
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+    )
+
+    expect(
+      await screen.findByText('画像のファイルを送れませんでした。もう一度やり直してください。'),
+    ).toBeInTheDocument()
+    expect(calls.filter((call) => call.startsWith('登録'))).toEqual([])
+  })
+
   it('AC-38 バリアントの画像に、その商品の画像を選べる', async () => {
     const images = [
       { id: '00000000-0000-0000-0000-000000000951', url: 'http://cdn.test/1.png' },

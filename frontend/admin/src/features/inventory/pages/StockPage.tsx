@@ -57,7 +57,11 @@ export function StockPage() {
           </CardHeader>
           <CardContent>
             <QueryState query={stock}>
-              {(data) => <p className="font-semibold text-3xl tabular-nums">{data.quantity}</p>}
+              {(data) => (
+                <p aria-label={t('quantity')} className="font-semibold text-3xl tabular-nums" role="status">
+                  {data.quantity}
+                </p>
+              )}
             </QueryState>
           </CardContent>
         </Card>

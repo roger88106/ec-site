@@ -169,7 +169,7 @@ Stripe の側は、`HttpServer` が状態を持つ（同じキーに同じ応答
 
 | 所 | 今 | 決定 |
 |----|----|------|
-| 管理画面の詳細の項目（支払い、配送 など） | `dt` の文字 ＋ `xpath=following-sibling::dd[1]` | 画面の項目の値（`dd`）に、項目名（`dt`）を指す `aria-labelledby` を足し、`getByRole('definition', { name })` で選ぶ。詳細の項目を出す共通の部品があれば、そこで足す |
+| 管理画面の詳細の項目（支払い、配送 など） | `dt` の文字 ＋ `xpath=following-sibling::dd[1]` | 画面の項目の値（`dd`）に、項目名（`dt`）を指す `aria-labelledby` を足し、`getByRole('definition', { name })` で選ぶ。詳細の項目を出す共通の部品があれば、そこで足す。<br />→ Biome の検査（`useAriaPropsSupportedByRole`）が `dd` の `aria-labelledby` を認めないので、属性は足さない（2026-10-17 利用者）。`dt` の次の `dd` を選ぶ書き方は、E2E の補助 1 か所（`e2e/src/detail.ts`）にまとめる |
 | 数量の表示 | `locator('p', { hasText: /^3$/ })` | 数量の要素に名前を付け（`aria-label` など）、名前で選ぶ |
 | 管理画面の横のメニュー | `[data-sidebar="sidebar"]` | `getByRole('navigation', { name })`。名前がなければ `aria-label` を足す |
 | 会員の画面の項目 | `locator('dd').first()` | 上の詳細の項目と同じ |

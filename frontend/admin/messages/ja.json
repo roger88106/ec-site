@@ -1,7 +1,8 @@
 {
   "app": {
     "layout": {
-      "title": "EC Site 管理"
+      "title": "EC Site 管理",
+      "menu": "機能のメニュー"
     },
     "menu": {
       "products": "商品",

@@ -4,8 +4,8 @@
 //   使い方：node scripts/ci/ac-check.mjs
 //
 // - AC：docs/specs/*/spec.md の定義の行（- **AC-n**）
-// - テスト名：Java の @DisplayName（src/test、src/integrationTest）と、
-//   Vitest・Playwright の test・it・describe の第 1 引数（*.test.ts(x)、*.spec.ts）
+// - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
+//   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // ============================================================================
@@ -34,17 +34,21 @@ export function parseSpecAcs(markdown) {
  * テストのソースから、テスト名を取り出す。
  *
  * @param source テストのソース
- * @param kind   'java'（@DisplayName）か 'ts'（test・it・describe の第 1 引数）
+ * @param kind   'java'（メソッドの @DisplayName）か 'ts'（test・it の第 1 引数）
  * @returns テスト名
  */
 export function extractTestNames(source, kind) {
   if (kind === 'java') {
-    return [...source.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)].map((match) =>
-      match[1].replace(/\\(.)/g, '$1'),
-    )
+    // クラス（@Nested を含む）に付いたものは、テストのまとまりの名前なので読まない。
+    // 後に続く注釈と修飾子を飛ばした次の語が class かで見分ける（構文は解析しない）
+    const classAfter = /^(?:\s*@\w+(?:\([^)]*\))?)*\s*(?:(?:public|protected|private|static|final|abstract)\s+)*class\b/
+    return [...source.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]
+      .filter((match) => !classAfter.test(source.slice(match.index + match[0].length)))
+      .map((match) => match[1].replace(/\\(.)/g, '$1'))
   }
+  // describe はテストのまとまりの名前なので読まない（test.describe も同じ）
   const call =
-    /\b(?:describe|it|test)(?:\.(?:describe|serial|parallel|only|skip|fixme|concurrent|each\([^)]*\)))*\(\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
+    /\b(?:it|test)(?:\.(?:serial|parallel|only|skip|fixme|concurrent|each\([^)]*\)))*\(\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
   return [...source.matchAll(call)].map((match) => match[2].replace(/\\(.)/g, '$1'))
 }
 

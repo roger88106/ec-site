@@ -4,9 +4,11 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
+import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
+import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
-import com.stripe.StripeClient;
-import com.sun.net.httpserver.HttpServer;
+import com.ecsite.module.payment.domain.payment.PaymentPage;
+import com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.Request;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,23 +16,19 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
-import java.net.ServerSocket;
-import java.net.URLDecoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Clock;
-import java.util.ArrayList;
-import java.util.HashMap;
+import java.time.Duration;
+import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Stripe の売上確定と返金の単体テスト（T9502、docs/backend/modules/payment.md「Stripe」）。<br />
- * Stripe の API の代わりに手元の HTTP サーバーを立て、sandbox で記録した応答（T9501）を返す。
+ * Stripe の実装の単体テスト（docs/backend/modules/payment.md「Stripe」）。支払の画面の作成・閉じる、与信の取消、売上確定、返金。<br />
+ * Stripe の API の代わりに手元の HTTP サーバー（{@link StripeApiStub}）を立て、sandbox で記録した応答（T9501）の形を返す。
  */
 class StripePaymentGatewayTest {
 
@@ -38,42 +36,32 @@ class StripePaymentGatewayTest {
 
     private static final String INTENT_ID = "pi_test_capture";
 
-    /**
-     * パス（メソッドとパス）→ 返す応答
-     */
-    private final Map<String, Response> responses = new HashMap<>();
+    private static final UUID PAYMENT_ID = UUID.fromString("0c4b7f7e-2f2c-4a59-9a39-8a0b6a0f0002");
+
+    private static final String SESSION_ID = "cs_test_page";
+
+    private static final String SESSION_URL = "https://checkout.stripe.com/c/pay/cs_test_page";
+
+    private static final String RETURN_URL = "http://localhost:3000/orders/" + ORDER_ID + "?payment=returned";
 
     /**
-     * 受けた要求
+     * テストの今の時刻（支払の画面の期限の基準）
      */
-    private final List<Request> requests = new ArrayList<>();
+    private static final Instant NOW = Instant.parse("2026-10-14T01:00:00Z");
 
-    private HttpServer server;
+    private StripeApiStub stripe;
 
     private StripePaymentGateway gateway;
 
     @BeforeEach
     void setUp() throws IOException {
-        server = HttpServer.create(new InetSocketAddress("localhost", 0), 0);
-        server.createContext("/", exchange -> {
-            var key = exchange.getRequestMethod() + " " + exchange.getRequestURI().getPath();
-            var body = new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8);
-            requests.add(new Request(key, URLDecoder.decode(body, StandardCharsets.UTF_8),
-                    exchange.getRequestHeaders().getFirst("Idempotency-Key")));
-            var response = responses.getOrDefault(key, new Response(404, error("invalid_request_error", "resource_missing")));
-            var bytes = response.body().getBytes(StandardCharsets.UTF_8);
-            exchange.getResponseHeaders().add("Content-Type", "application/json");
-            exchange.sendResponseHeaders(response.status(), bytes.length);
-            exchange.getResponseBody().write(bytes);
-            exchange.close();
-        });
-        server.start();
-        gateway = new StripePaymentGateway(client("http://localhost:" + server.getAddress().getPort()), Clock.systemUTC());
+        stripe = new StripeApiStub();
+        gateway = new StripePaymentGateway(stripe.client(), Clock.fixed(NOW, ZoneOffset.UTC));
     }
 
     @AfterEach
     void tearDown() {
-        server.stop(0);
+        stripe.close();
     }
 
     @Nested
@@ -87,7 +75,7 @@ class StripePaymentGatewayTest {
 
             assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.CAPTURED);
 
-            var request = requests.getFirst();
+            var request = requests().getFirst();
             assertThat(request.body()).contains("amount_to_capture=6940");
             assertThat(request.idempotencyKey()).isEqualTo("capture-" + ORDER_ID);
         }
@@ -96,7 +84,7 @@ class StripePaymentGatewayTest {
         @DisplayName("確定済みで断られたら（状態 succeeded）、成功とする")
         void alreadyCaptured() {
             respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 400,
-                    error("invalid_request_error", "payment_intent_unexpected_state"));
+                    StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
             respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("succeeded"));
 
             assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.CAPTURED);
@@ -106,7 +94,7 @@ class StripePaymentGatewayTest {
         @DisplayName("与信が切れて断られたら（状態 canceled）、与信期限切れ")
         void authorizationExpired() {
             respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 400,
-                    error("invalid_request_error", "payment_intent_unexpected_state"));
+                    StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
             respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("canceled"));
 
             assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.AUTHORIZATION_EXPIRED);
@@ -115,7 +103,7 @@ class StripePaymentGatewayTest {
         @Test
         @DisplayName("Stripe の 5xx は、接続できない")
         void serverError() {
-            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 500, error("api_error", null));
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 500, StripeApiStub.error("api_error", null));
 
             assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.UNREACHABLE);
         }
@@ -123,7 +111,7 @@ class StripePaymentGatewayTest {
         @Test
         @DisplayName("Stripe に接続できなければ、接続できない")
         void unreachable() throws IOException {
-            var unreachable = new StripePaymentGateway(client("http://localhost:" + closedPort()), Clock.systemUTC());
+            var unreachable = new StripePaymentGateway(StripeApiStub.client("http://localhost:" + StripeApiStub.closedPort()), Clock.systemUTC());
 
             assertThat(unreachable.capture(captureRequest())).isEqualTo(CaptureResult.UNREACHABLE);
         }
@@ -132,7 +120,7 @@ class StripePaymentGatewayTest {
         @DisplayName("他の拒否は、システムのエラー")
         void otherRejection() {
             respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 400,
-                    error("invalid_request_error", "amount_too_large"));
+                    StripeApiStub.error("invalid_request_error", "amount_too_large"));
 
             assertThatThrownBy(() -> gateway.capture(captureRequest())).isInstanceOf(SystemException.class);
         }
@@ -150,7 +138,7 @@ class StripePaymentGatewayTest {
 
             gateway.refund(refundRequest());
 
-            var request = requests.getFirst();
+            var request = requests().getFirst();
             assertThat(request.body()).contains("payment_intent=" + INTENT_ID, "amount=6940");
             assertThat(request.idempotencyKey()).isEqualTo("refund-" + ORDER_ID);
         }
@@ -158,23 +146,148 @@ class StripePaymentGatewayTest {
         @Test
         @DisplayName("返金済みで断られたら（charge_already_refunded）、成功とする")
         void alreadyRefunded() {
-            respond("POST /v1/refunds", 400, error("invalid_request_error", "charge_already_refunded"));
+            respond("POST /v1/refunds", 400, StripeApiStub.error("invalid_request_error", "charge_already_refunded"));
 
             gateway.refund(refundRequest());
 
-            assertThat(requests).hasSize(1);
+            assertThat(requests()).hasSize(1);
         }
 
         @Test
         @DisplayName("他の失敗は、システムのエラー（再発行でやり直す）")
         void failure() {
-            respond("POST /v1/refunds", 500, error("api_error", null));
+            respond("POST /v1/refunds", 500, StripeApiStub.error("api_error", null));
 
             assertThatThrownBy(() -> gateway.refund(refundRequest())).isInstanceOf(SystemException.class);
         }
     }
 
+    @Nested
+    @DisplayName("支払の画面の作成")
+    class OpenPage {
+
+        @Test
+        @DisplayName("与信だけを取る Checkout Session を、総額・戻り先・31 分の期限で作り、画面の ID と URL を返す")
+        void opensAuthorizationOnlySession() {
+            respond("POST /v1/checkout/sessions", 200, session("open"));
+
+            var page = gateway.openPage(new PageRequest(PAYMENT_ID, ORDER_ID, Money.of(6940), RETURN_URL));
+
+            assertThat(page).isEqualTo(new PaymentPage(SESSION_ID, SESSION_URL));
+            var body = requests().getFirst().body();
+            assertThat(body).contains(
+                    "mode=payment",
+                    "payment_intent_data[capture_method]=manual",
+                    "line_items[0][price_data][unit_amount]=6940",
+                    "line_items[0][price_data][currency]=jpy",
+                    "line_items[0][quantity]=1",
+                    "success_url=" + RETURN_URL,
+                    "cancel_url=" + RETURN_URL,
+                    "client_reference_id=" + ORDER_ID,
+                    "metadata[paymentId]=" + PAYMENT_ID,
+                    "payment_intent_data[metadata][orderId]=" + ORDER_ID,
+                    "expires_at=" + NOW.plus(Duration.ofMinutes(31)).getEpochSecond());
+        }
+
+        @Test
+        @DisplayName("作れなければ、システムのエラー")
+        void failure() {
+            respond("POST /v1/checkout/sessions", 500, StripeApiStub.error("api_error", null));
+
+            assertThatThrownBy(() -> gateway.openPage(new PageRequest(PAYMENT_ID, ORDER_ID, Money.of(6940), RETURN_URL)))
+                    .isInstanceOf(SystemException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("支払の画面を閉じる")
+    class ClosePage {
+
+        @Test
+        @DisplayName("開いている Session を期限切れにし、閉じた")
+        void closes() {
+            respond("POST /v1/checkout/sessions/" + SESSION_ID + "/expire", 200, session("expired"));
+
+            assertThat(gateway.closePage(SESSION_ID)).isEqualTo(CloseResult.CLOSED);
+        }
+
+        @Test
+        @DisplayName("閉じられず、読み直すと支払が済んでいたら（complete）、支払済み")
+        void alreadyPaid() {
+            respond("POST /v1/checkout/sessions/" + SESSION_ID + "/expire", 400,
+                    StripeApiStub.error("invalid_request_error", "checkout_session_not_open"));
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 200, session("complete"));
+
+            assertThat(gateway.closePage(SESSION_ID)).isEqualTo(CloseResult.ALREADY_PAID);
+        }
+
+        @Test
+        @DisplayName("閉じられず、読み直すと閉じていたら（expired）、閉じた")
+        void alreadyClosed() {
+            respond("POST /v1/checkout/sessions/" + SESSION_ID + "/expire", 400,
+                    StripeApiStub.error("invalid_request_error", "checkout_session_not_open"));
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 200, session("expired"));
+
+            assertThat(gateway.closePage(SESSION_ID)).isEqualTo(CloseResult.CLOSED);
+        }
+
+        @Test
+        @DisplayName("Stripe の 5xx は、システムのエラー")
+        void failure() {
+            respond("POST /v1/checkout/sessions/" + SESSION_ID + "/expire", 500, StripeApiStub.error("api_error", null));
+
+            assertThatThrownBy(() -> gateway.closePage(SESSION_ID)).isInstanceOf(SystemException.class);
+        }
+    }
+
+    @Nested
+    @DisplayName("与信の取消")
+    class VoidAuthorization {
+
+        @Test
+        @DisplayName("PaymentIntent を取り消す")
+        void voids() {
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 200, intent("canceled"));
+
+            gateway.voidAuthorization(INTENT_ID);
+
+            assertThat(requests()).extracting(Request::key).containsExactly("POST /v1/payment_intents/" + INTENT_ID + "/cancel");
+        }
+
+        @Test
+        @DisplayName("取消済みで断られたら（状態 canceled）、成功とする")
+        void alreadyVoided() {
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 400,
+                    StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
+            respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("canceled"));
+
+            gateway.voidAuthorization(INTENT_ID);
+        }
+
+        @Test
+        @DisplayName("断られ、取消済みでなければ（売上確定済みなど）、システムのエラー")
+        void rejected() {
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 400,
+                    StripeApiStub.error("invalid_request_error", "payment_intent_unexpected_state"));
+            respond("GET /v1/payment_intents/" + INTENT_ID, 200, intent("succeeded"));
+
+            assertThatThrownBy(() -> gateway.voidAuthorization(INTENT_ID)).isInstanceOf(SystemException.class);
+        }
+
+        @Test
+        @DisplayName("Stripe の 5xx は、システムのエラー（再発行でやり直す）")
+        void failure() {
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/cancel", 500, StripeApiStub.error("api_error", null));
+
+            assertThatThrownBy(() -> gateway.voidAuthorization(INTENT_ID)).isInstanceOf(SystemException.class);
+        }
+    }
+
     // ============================== 補助 ==============================
+
+    private static String session(String status) {
+        return StripeApiStub.session(SESSION_ID, SESSION_URL, status);
+    }
 
     private static CaptureRequest captureRequest() {
         return new CaptureRequest(ORDER_ID, INTENT_ID, Money.of(6940));
@@ -185,48 +298,14 @@ class StripePaymentGatewayTest {
     }
 
     private void respond(String key, int status, String body) {
-        responses.put(key, new Response(status, body));
+        stripe.respond(key, status, body);
     }
 
-    /**
-     * 手元のサーバーを API の宛先にした Stripe の API（やり直しはしない）
-     */
-    private static StripeClient client(String apiBase) {
-        return StripeClient.builder().setApiKey("sk_test_unit").setApiBase(apiBase).setMaxNetworkRetries(0).build();
+    private List<Request> requests() {
+        return stripe.requests();
     }
 
-    /**
-     * 使われていないポート（つないでも誰も受けない）
-     */
-    private static int closedPort() throws IOException {
-        try (var socket = new ServerSocket(0)) {
-            return socket.getLocalPort();
-        }
-    }
-
-    /**
-     * sandbox で記録した PaymentIntent の応答（要る項目だけ）
-     */
     private static String intent(String status) {
-        return """
-                {"id": "%s", "object": "payment_intent", "amount": 6940, "currency": "jpy", "status": "%s"}"""
-                .formatted(INTENT_ID, status);
-    }
-
-    /**
-     * sandbox で記録したエラーの応答（要る項目だけ）
-     */
-    private static String error(String type, String code) {
-        return code == null
-                ? """
-                {"error": {"type": "%s", "message": "error"}}""".formatted(type)
-                : """
-                {"error": {"type": "%s", "code": "%s", "message": "error"}}""".formatted(type, code);
-    }
-
-    private record Response(int status, String body) {
-    }
-
-    private record Request(String key, String body, String idempotencyKey) {
+        return StripeApiStub.intent(INTENT_ID, status);
     }
 }

@@ -175,12 +175,13 @@ services:
       retries: 40
 
   # Keycloak が送るメール（確認・パスワードの再設定）を受け取って見せる。外には送らない。
-  # http://localhost:8025（画面と API）、SMTP は 1025（ホスト側は MAILPIT_SMTP_PORT で変えられる）
+  # http://localhost:8025（画面と API）。SMTP はコンテナの中で 1025、ホストで 2525（MAILPIT_SMTP_PORT で変えられる）。
+  # ホストの既定を 1025 にしないのは、Windows のシステムのプログラムが 1025 を使うことがあるため
   mailpit:
     image: axllent/mailpit:v1.31.5
     container_name: ec-site-mailpit
     ports:
-      - "${MAILPIT_SMTP_PORT:-1025}:1025"
+      - "${MAILPIT_SMTP_PORT:-2525}:1025"
       - "8025:8025"
 
   # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する

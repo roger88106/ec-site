@@ -2,10 +2,13 @@
 # ============================================================================
 # フロントの確認（依存の入れ直し、ライセンス、lint、型チェック、テスト、ビルド）を実行し、手順ごとに結果の要約だけを出す
 #
-#   使い方：scripts/dev/check-frontend.sh [store|admin|all] [手順...]
-#     例：scripts/dev/check-frontend.sh                    # install licenses の後に、両方のアプリで lint typecheck test build
+#   使い方：scripts/dev/check-frontend.sh [store|admin|e2e|all] [手順...]
+#     例：scripts/dev/check-frontend.sh                    # install licenses の後に、両方のアプリで lint typecheck test build、
+#                                                          # e2e で lint typecheck
 #         scripts/dev/check-frontend.sh admin test         # 管理画面のテストだけ
 #         scripts/dev/check-frontend.sh store lint typecheck
+#
+# e2e（E2E のコード）は lint と typecheck だけを流す。E2E のテストは scripts/dev/e2e.sh で流す。
 #
 # install（pnpm install --frozen-lockfile）と licenses（依存のライセンスの検査）は、ルートで 1 回だけ流す。
 # 手元は依存が入った後なので、CI のインストールでだけ失敗すること（allowBuilds の漏れなど）を先に見つけるため。
@@ -25,10 +28,10 @@ mkdir -p "$LOG_DIR"
 target="${1:-all}"
 [ $# -gt 0 ] && shift
 case "$target" in
-  all) apps=(store admin) ;;
-  store | admin) apps=("$target") ;;
+  all) apps=(store admin e2e) ;;
+  store | admin | e2e) apps=("$target") ;;
   *)
-    echo "対象は store、admin、all のどれか：$target" >&2
+    echo "対象は store、admin、e2e、all のどれか：$target" >&2
     exit 2
     ;;
 esac
@@ -66,8 +69,12 @@ for step in "${steps[@]}"; do
 done
 
 for app in "${apps[@]}"; do
+  dir="$ROOT/frontend/$app"
+  [ "$app" = e2e ] && dir="$ROOT/e2e"
   for step in "${app_steps[@]}"; do
-    run_step "$app $step" "$app-$step" bash -c "cd '$ROOT/frontend/$app' && pnpm '$step'"
+    # e2e は lint と typecheck だけ（テストとビルドの手順はない）
+    if [ "$app" = e2e ] && [ "$step" != lint ] && [ "$step" != typecheck ]; then continue; fi
+    run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$step'"
   done
 done
 

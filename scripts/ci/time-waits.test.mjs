@@ -16,6 +16,24 @@ describe('時間で待つテストの検査', () => {
     )
   })
 
+  test('決まった時間だけ見る・待つ書き方（Awaitility の during・pollDelay、Promise で包んだ setTimeout）を見つける', () => {
+    const text = [
+      '        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> count() == 1);',
+      '        await().pollDelay(Duration.ofSeconds(1)).until(() -> true);',
+      '    await new Promise((resolve) => setTimeout(resolve, 250))',
+      '    await new Promise((r) =>',
+      '      setTimeout(r, 250))',
+    ].join('\n')
+    assert.deepEqual(
+      findTimeWaits(text).map((hit) => `${hit.line} ${hit.call}`),
+      ['1 .during(', '2 .pollDelay(', '3 setTimeout(', '5 setTimeout('],
+    )
+  })
+
+  test('時間で待たない setTimeout（タイマーの登録だけ）は見つけない', () => {
+    assert.deepEqual(findTimeWaits('const timer = setTimeout(() => controller.abort(), 5_000)'), [])
+  })
+
   test('条件で待つ呼び出しは見つけない', () => {
     assert.deepEqual(findTimeWaits('latch.await(30, TimeUnit.SECONDS); await expect(x).toPass({ timeout: 20_000 })'), [])
   })

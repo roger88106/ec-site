@@ -30,7 +30,12 @@ test('AC-72、77、82、85、86、87、93、95、101、107 店舗画面でカー
 
     await expect(page.getByRole('heading', { name: 'カート' })).toBeVisible()
     await expect(page.getByRole('link', { name })).toBeVisible()
-    await expect(page.getByText('2,200 円', { exact: true }).first()).toBeVisible()
+    await expect(
+      page
+        .getByRole('listitem')
+        .filter({ has: page.getByRole('link', { name }) })
+        .getByText('2,200 円', { exact: true }),
+    ).toBeVisible()
     await expect(page.getByText('3,200 円', { exact: true })).toBeVisible()
     await expect(page.getByText('10% 対象 3,200 円（内消費税 290 円）')).toBeVisible()
   })
@@ -69,7 +74,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107 店舗画面でカー
     await expect(page.getByText('お客様の申請の承認')).toBeVisible()
 
     await page.goto(`${ADMIN_URL}/products/${productId}/variants/${variantId}/stock`)
-    await expect(page.locator('p', { hasText: /^3$/ })).toBeVisible()
+    await expect(page.getByRole('status', { name: '在庫数' })).toHaveText('3')
     await expect(page.getByRole('cell', { name: '注文のキャンセル' })).toBeVisible()
     await expect(page.getByRole('cell', { name: '注文', exact: true })).toBeVisible()
   })

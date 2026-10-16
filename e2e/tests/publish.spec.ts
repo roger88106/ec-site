@@ -79,6 +79,7 @@ test('AC-29、51、58、62、63、64 管理画面で商品を登録し、バリ�
     await page.getByRole('button', { name: '赤' }).click()
     await expect(page.getByText('在庫あり')).toBeVisible()
     // 在庫数は出さない（AC-64）。カートに入れる数量の選択肢（1〜10）は在庫数ではないので除く
-    await expect(page.getByText('5', { exact: true }).and(page.locator(':not(option)'))).toHaveCount(0)
+    const five = page.getByText('5', { exact: true })
+    await expect(five).toHaveCount(await five.and(page.getByRole('option')).count())
   })
 })

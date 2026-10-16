@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { latestIdpLink, memberEmail, submitIdpLogin } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
+import { detailValue } from '../src/detail'
 import { fillShipping, payOnMockPage } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
@@ -58,9 +59,9 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
     await page.getByRole('button', { name: /^注文する/ }).click()
     await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
     await payOnMockPage(page)
-    const orderNumber = (await page.locator('dd').first().textContent()) ?? ''
+    const orderNumber = (await detailValue(page, '注文番号').textContent()) ?? ''
 
-    await page.getByRole('link', { name: 'ご注文履歴' }).first().click()
+    await page.getByRole('banner').getByRole('link', { name: 'ご注文履歴' }).click()
     await expect(page.getByRole('link', { name: orderNumber })).toBeVisible()
   })
 

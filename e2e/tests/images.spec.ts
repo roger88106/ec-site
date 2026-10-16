@@ -40,9 +40,13 @@ test('AC-37、67、68 管理画面で AVIF の画像を登録すると、WebP �
 
   await test.step('店舗画面：一覧の代表画像と、詳細の画像に出る', async () => {
     await expectEventually(page, `${STORE_URL}/products?categoryId=${categoryId}`, async () => {
-      await expect(productCard(page, name).locator('img')).toHaveAttribute('src', imageUrl ?? '', {
-        timeout: CHECK_TIMEOUT,
-      })
+      await expect(productCard(page, name).getByRole('img', { name: '商品の画像' })).toHaveAttribute(
+        'src',
+        imageUrl ?? '',
+        {
+          timeout: CHECK_TIMEOUT,
+        },
+      )
     })
     await page.goto(`${STORE_URL}/products/${productId}`)
     const image = page.getByRole('img', { name: '商品の画像' })

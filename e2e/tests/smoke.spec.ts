@@ -14,7 +14,7 @@ test('E2E の土台：API で作った公開の商品が、管理画面の一覧
   })
 
   await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
-  await expect(page.getByText('公開', { exact: true }).first()).toBeVisible()
+  await expect(page.getByRole('heading', { level: 1, name: /(^|\s)公開$/ })).toBeVisible()
 
   await page.goto(`${STORE_URL}/products/${productId}`)
   await expect(page.getByRole('heading', { name: '土台の確認の商品' })).toBeVisible()

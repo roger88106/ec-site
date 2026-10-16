@@ -33,7 +33,7 @@ export async function notifyCarrier(page: Page, orderId: string, status: Carrier
   await page.goto(`${BACKEND_URL}/mock-carrier`)
   const row = page.getByRole('row').filter({ hasText: orderId })
   await row.getByRole('button', { name: status }).click()
-  await expect(page.getByRole('row').filter({ hasText: orderId }).getByRole('cell').nth(3)).toHaveText(status)
+  await expect(row.getByRole('cell', { name: status, exact: true })).toBeVisible()
 }
 
 /**

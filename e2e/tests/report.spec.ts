@@ -95,7 +95,7 @@ test('AC-214、215、217 営業は、メニューに売上の推移がなく、U
 }) => {
   await loginAdmin(page, ACCOUNTS.sales)
 
-  const menu = page.getByRole('navigation').or(page.locator('[data-sidebar="sidebar"]'))
+  const menu = page.getByRole('navigation', { name: '機能のメニュー' })
   await expect(menu.getByText('レポート', { exact: true })).toBeVisible()
   await expect(menu.getByRole('link', { name: '売上の推移' })).toHaveCount(0)
 

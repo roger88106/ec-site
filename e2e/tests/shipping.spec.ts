@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
+import { detailValue } from '../src/detail'
 import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
 import { emptyCart, orderCart, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
@@ -47,11 +48,6 @@ async function orderNumberOnAdmin(page: Page): Promise<string> {
   return ((await heading.textContent()) ?? '').replace('注文：', '').trim()
 }
 
-/** 店舗画面の注文詳細の欄（dt の次の dd） */
-function storeField(page: Page, label: string) {
-  return page.locator('dt', { hasText: label }).locator('xpath=following-sibling::dd[1]')
-}
-
 test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock の物流で配送中・配達完了にすると、店舗画面に配送状態が出て、出荷通知メールが届く', async ({
   page,
 }) => {
@@ -63,7 +59,7 @@ test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock �
     await loginAdmin(page, ACCOUNTS.administrator, `/orders/${order.orderId}`)
     orderNumber = await orderNumberOnAdmin(page)
     await shipOnAdmin(page, trackingNumber)
-    await expect(page.getByText('出荷済み', { exact: true }).first()).toBeVisible()
+    await expect(detailValue(page, '状態')).toHaveText('出荷済み')
     await expect(page.getByText('売上確定済み')).toBeVisible()
   })
 
@@ -80,9 +76,9 @@ test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock �
       await notifyCarrier(page, order.orderId, status)
 
       await page.goto(order.orderUrl)
-      await expect(storeField(page, '状態')).toHaveText(status)
-      await expect(storeField(page, '配送業者')).toHaveText('ヤマト運輸')
-      await expect(storeField(page, '送り状番号')).toHaveText(trackingNumber.replaceAll('-', ''))
+      await expect(detailValue(page, '状態')).toHaveText(status)
+      await expect(detailValue(page, '配送業者')).toHaveText('ヤマト運輸')
+      await expect(detailValue(page, '送り状番号')).toHaveText(trackingNumber.replaceAll('-', ''))
 
       await page.goto(`${STORE_URL}/orders`)
       const row = page.getByRole('row').filter({ hasText: orderNumber })
@@ -129,11 +125,11 @@ test('AC-189、190、191、192 返送の注文を、管理画面で絞り込ん�
 
   await test.step('管理画面：在庫数が注文の前（3）に戻る（AC-191）', async () => {
     await page.goto(`${ADMIN_URL}/products/${order.productId}/variants/${order.variantId}/stock`)
-    await expect(page.locator('p', { hasText: /^3$/ })).toBeVisible()
+    await expect(page.getByRole('status', { name: '在庫数' })).toHaveText('3')
   })
 
   await test.step('店舗画面：注文詳細がキャンセルになる', async () => {
     await page.goto(order.orderUrl)
-    await expect(storeField(page, '状態')).toHaveText('キャンセル')
+    await expect(detailValue(page, '状態')).toHaveText('キャンセル')
   })
 })

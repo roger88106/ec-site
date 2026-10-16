@@ -1,6 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
+import { detailValue } from '../src/detail'
 import { emptyCart, expectOrderPage, fillShipping, orderCart, payOnMockPage } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, RECHECK_INTERVALS } from '../src/waits'
@@ -66,25 +67,22 @@ test('AC-143、145、146、147、149 注文すると mock の支払の画面に�
   })
 })
 
-test('AC-148 mock でカードを拒否させても注文は支払待ちのままで、やり直して支払える', async ({ context, page }) => {
+test('AC-148 mock でカードを拒否させても注文は支払待ちのままで、やり直して支払える', async ({ page }) => {
   await memberCartWith(page, 'DECLINE')
   await orderCart(page)
 
-  await test.step('カードを拒否させると、支払の画面に拒否が出て、注文は支払待ちのまま', async () => {
+  await test.step('カードを拒否させると、支払の画面に拒否が出る。やめて注文の画面に戻ると、注文は支払待ちのまま', async () => {
     await page.getByRole('button', { name: 'カードを拒否させる' }).click()
     await expect(page.getByText('カードが拒否されました。別のカードでやり直してください。')).toBeVisible()
-    // 支払の画面を開いたまま、注文の一覧の最も新しい注文（いま注文したもの）を別のページで開く
-    const order = await context.newPage()
-    await order.goto(`${STORE_URL}/orders`)
-    await order
-      .getByRole('link', { name: /^\d{8}-\d{6}$/ })
-      .first()
-      .click()
-    await expect(order.getByText('支払待ち', { exact: true })).toBeVisible()
-    await order.close()
+    await page.getByRole('button', { name: 'やめる' }).click()
+    await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
+    await page.goto(page.url().split('?')[0])
+    await expect(detailValue(page, '状態')).toHaveText('支払待ち')
   })
 
-  await test.step('やり直して支払うと、受付になる', async () => {
+  await test.step('注文の画面から支払の画面を開き直して支払うと、受付になる', async () => {
+    await page.getByRole('button', { name: '支払う' }).click()
+    await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
     await payOnMockPage(page)
   })
 })
@@ -112,7 +110,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
       page.getByText('お支払い期限までにお支払いがなかったため、このご注文はキャンセルされました。'),
       PAYMENT_EXPIRY_TIMEOUT,
     )
-    await expect(page.getByText('キャンセル', { exact: true }).first()).toBeVisible()
+    await expect(detailValue(page, '状態')).toHaveText('キャンセル')
     await expect(page.getByRole('button', { name: '支払う' })).toHaveCount(0)
   })
 })
@@ -142,5 +140,5 @@ test('AC-162 管理画面で受付の注文をキャンセルすると、支払�
 
 /** 管理画面の注文の詳細の、支払の状態 */
 function paymentStatus(page: Page) {
-  return page.locator('dt', { hasText: /^支払$/ }).locator('xpath=following-sibling::dd[1]')
+  return detailValue(page, '支払')
 }

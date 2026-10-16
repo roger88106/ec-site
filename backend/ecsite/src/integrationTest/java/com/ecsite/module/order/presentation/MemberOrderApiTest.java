@@ -29,6 +29,8 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.OrderTestData.orderBody;
+import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -55,13 +57,6 @@ class MemberOrderApiTest {
      * テストの現在時刻
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
-     * お届け先（総額は %d）
-     */
-    private static final String ORDER_BODY = """
-            {"expectedTotal": %d, "shippingAddress": {"name": "山田 太郎", "postalCode": "1000001",
-             "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "0312345678"}}""";
 
     @Autowired
     OrderPaymentService orderPaymentService;
@@ -295,7 +290,7 @@ class MemberOrderApiTest {
     }
 
     private ResultActions startCheckout(UUID cartId, RequestPostProcessor requester) throws Exception {
-        return mockMvc.perform(post(STORE + "/carts/" + cartId + "/checkouts").with(requester));
+        return mockMvc.perform(startCheckoutRequest(cartId).with(requester));
     }
 
     /**
@@ -318,7 +313,7 @@ class MemberOrderApiTest {
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
         return mockMvc.perform(post(STORE + "/checkouts/" + checkoutId + "/order").with(requester)
                 .contentType(MediaType.APPLICATION_JSON)
-                .content(ORDER_BODY.formatted(total)));
+                .content(orderBody(total)));
     }
 
     /**
@@ -331,7 +326,7 @@ class MemberOrderApiTest {
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
         var body = mockMvc.perform(post(STORE + "/checkouts/" + checkoutId + "/order").with(member.bearer())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(ORDER_BODY.formatted(total)))
+                        .content(orderBody(total)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return UUID.fromString(JsonPath.read(body, "$.id"));

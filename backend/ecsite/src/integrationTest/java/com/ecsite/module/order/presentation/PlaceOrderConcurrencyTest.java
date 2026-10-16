@@ -36,6 +36,8 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.ecsite.OrderTestData.placeOrderRequest;
+import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -62,13 +64,6 @@ class PlaceOrderConcurrencyTest {
      * テストの現在時刻
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
-     * 注文の本文（総額は %d）
-     */
-    private static final String ORDER_BODY = """
-            {"expectedTotal": %d, "shippingAddress": {"name": "山田 太郎",
-             "postalCode": "1000001", "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "0312345678"}}""";
 
     @Autowired
     MockMvc mockMvc;
@@ -196,9 +191,7 @@ class PlaceOrderConcurrencyTest {
         var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId).with(owner.bearer()))
                 .andReturn().getResponse().getContentAsString();
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        return mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order").with(owner.bearer())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(ORDER_BODY.formatted(total)))
+        return mockMvc.perform(placeOrderRequest(checkoutId, total).with(owner.bearer()))
                 .andReturn().getResponse();
     }
 
@@ -224,7 +217,7 @@ class PlaceOrderConcurrencyTest {
      */
     private UUID startCheckout(UUID cartId) throws Exception {
         var owner = owners.get(cartId);
-        var body = mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts").with(owner.bearer()))
+        var body = mockMvc.perform(startCheckoutRequest(cartId).with(owner.bearer()))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         var checkoutId = UUID.fromString(JsonPath.read(body, "$.id"));
         checkoutOwners.put(checkoutId, owner);

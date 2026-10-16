@@ -33,6 +33,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.OrderTestData.placeOrderRequest;
+import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -318,14 +320,9 @@ class PlaceOrderApiTest {
          * token を指定して、T シャツ 2 枚を注文し、注文 ID を返す
          */
         private UUID placeAs(TestTokens.Builder token) throws Exception {
-            var checkoutId = UUID.fromString(JsonPath.read(mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts")
-                    .with(token.bearer())).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
-            var body = mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order")
-                            .with(token.bearer())
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
-                                     "postalCode": "100-0001", "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "03-1234-5678"}}"""))
+            var checkoutId = UUID.fromString(JsonPath.read(mockMvc.perform(startCheckoutRequest(cartId).with(token.bearer()))
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
+            var body = mockMvc.perform(placeOrderRequest(checkoutId, 6940).with(token.bearer()))
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
             return UUID.fromString(JsonPath.read(body, "$.id"));
         }
@@ -352,26 +349,21 @@ class PlaceOrderApiTest {
      * 確認した総額を指定して、決まったお届け先で注文する
      */
     private ResultActions place(UUID checkoutId, long expectedTotal) throws Exception {
-        return placeWith(checkoutId, """
-                {"expectedTotal": %d, "shippingAddress": {"name": "山田 太郎",
-                 "postalCode": "100-0001", "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "03-1234-5678"}}"""
-                .formatted(expectedTotal));
+        return mockMvc.perform(placeOrderRequest(checkoutId, expectedTotal));
     }
 
     /**
      * 本文を指定して注文する
      */
     private ResultActions placeWith(UUID checkoutId, String body) throws Exception {
-        return mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(body));
+        return mockMvc.perform(placeOrderRequest(checkoutId, body));
     }
 
     /**
      * 注文手続きに進み、注文手続き ID を返す
      */
     private UUID startCheckout() throws Exception {
-        var body = mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts"))
+        var body = mockMvc.perform(startCheckoutRequest(cartId))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return UUID.fromString(JsonPath.read(body, "$.id"));
     }

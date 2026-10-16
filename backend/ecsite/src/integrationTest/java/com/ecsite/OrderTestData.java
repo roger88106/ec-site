@@ -5,6 +5,7 @@ import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -152,19 +153,71 @@ public class OrderTestData {
                         .content("""
                                 {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
                 .andExpect(status().isNoContent());
-        var checkoutId = createdId(mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts"))
+        var checkoutId = createdId(mockMvc.perform(startCheckoutRequest(cartId))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
         var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId)).andReturn().getResponse().getContentAsString();
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        var order = mockMvc.perform(post("/api/store/checkouts/" + checkoutId + "/order")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"expectedTotal": %d, "shippingAddress": {"name": "%s",
-                                 "postalCode": "1000001", "prefecture": "東京都", "address": "千代田区千代田 1-1",
-                                 "phone": "0312345678"}}""".formatted(total, name)))
+        var order = mockMvc.perform(placeOrderRequest(checkoutId, orderBody(total, name)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return createdId(order);
+    }
+
+    /**
+     * 決まったお届け先で注文する本文（郵便番号は {@code 100-0001}）。<br />
+     * お届け先の項目を確かめるテストは、確かめる項目を変えた本文をテストの中で書く。
+     *
+     * @param expectedTotal 確認した総額
+     * @return 注文の要求の本文
+     */
+    public static String orderBody(long expectedTotal) {
+        return orderBody(expectedTotal, "山田 太郎");
+    }
+
+    /**
+     * 氏名を指定して、決まったお届け先で注文する本文。
+     *
+     * @param expectedTotal 確認した総額
+     * @param name          お届け先の氏名
+     * @return 注文の要求の本文
+     */
+    public static String orderBody(long expectedTotal, String name) {
+        return """
+                {"expectedTotal": %d, "shippingAddress": {"name": "%s", "postalCode": "100-0001",
+                 "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "03-1234-5678"}}"""
+                .formatted(expectedTotal, name);
+    }
+
+    /**
+     * カートから注文手続きを始める要求。token などは呼ぶ側で足す。
+     *
+     * @param cartId カート ID
+     * @return 要求
+     */
+    public static MockHttpServletRequestBuilder startCheckoutRequest(UUID cartId) {
+        return post("/api/store/carts/" + cartId + "/checkouts");
+    }
+
+    /**
+     * 決まったお届け先で注文する要求。token などは呼ぶ側で足す。
+     *
+     * @param checkoutId    注文手続き ID
+     * @param expectedTotal 確認した総額
+     * @return 要求
+     */
+    public static MockHttpServletRequestBuilder placeOrderRequest(UUID checkoutId, long expectedTotal) {
+        return placeOrderRequest(checkoutId, orderBody(expectedTotal));
+    }
+
+    /**
+     * 本文を指定して注文する要求。
+     *
+     * @param checkoutId 注文手続き ID
+     * @param body       注文の要求の本文
+     * @return 要求
+     */
+    public static MockHttpServletRequestBuilder placeOrderRequest(UUID checkoutId, String body) {
+        return post("/api/store/checkouts/" + checkoutId + "/order").contentType(MediaType.APPLICATION_JSON).content(body);
     }
 
     /**

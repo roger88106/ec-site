@@ -30,6 +30,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -213,7 +214,7 @@ class CheckoutApiTest {
      * 注文手続きに進み、201 と Location を確かめて、注文手続き ID を返す
      */
     private UUID startCheckout(UUID cart) throws Exception {
-        var body = mockMvc.perform(post("/api/store/carts/" + cart + "/checkouts"))
+        var body = mockMvc.perform(startCheckoutRequest(cart))
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andReturn().getResponse().getContentAsString();

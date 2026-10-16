@@ -41,7 +41,8 @@ export function extractTestNames(source, kind) {
   if (kind === 'java') {
     // クラス（@Nested を含む）に付いたものは、テストのまとまりの名前なので読まない。
     // 後に続く注釈と修飾子を飛ばした次の語が class かで見分ける（構文は解析しない）
-    const classAfter = /^(?:\s*@\w+(?:\([^)]*\))?)*\s*(?:(?:public|protected|private|static|final|abstract)\s+)*class\b/
+    const classAfter =
+      /^(?:\s*@[\w.]+(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/
     return [...source.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]
       .filter((match) => !classAfter.test(source.slice(match.index + match[0].length)))
       .map((match) => match[1].replace(/\\(.)/g, '$1'))

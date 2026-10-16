@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [ ] **T011-07-01** script の見直し：本 spec で足した・直した script（`check-all.sh`、`reset.sh`、`e2e.sh`、hook、`exclude-ports.ps1`、`showcase-counts.mjs`、`ac-check.mjs`、`hardcoded-text.mjs`、`spec-numbers.mjs`）と Gradle・ci.yml の差分を、書き方の規則と照らす。DN-11 のとおり、CI の検査の手順が減っていないことを確かめる。
+- [x] **T011-07-01** script の見直し：本 spec で足した・直した script（`check-all.sh`、`reset.sh`、`e2e.sh`、hook、`exclude-ports.ps1`、`showcase-counts.mjs`、`ac-check.mjs`、`hardcoded-text.mjs`、`spec-numbers.mjs`）と Gradle・ci.yml の差分を、書き方の規則と照らす。DN-11 のとおり、CI の検査の手順が減っていないことを確かめる。
 - [ ] **T011-07-02** 文書の見直し：spec・plan・notation・`docs/specs/mvp.md`・`docs/dev/ci.md`・setup・skill `local-dev` と実装の食い違いを直す。
 - [ ] **T011-07-03** CI の時間の記録：直近 3 回の全体の時間を spec の末尾に書く（DC-85）。
 - [ ] **T011-07-04** 完了確認：直したこと、直さずに残したこと（理由付き）をまとめて報告し、spec 011 を完了にする（README の進捗と `docs/specs/mvp.md` の状態を直す）。

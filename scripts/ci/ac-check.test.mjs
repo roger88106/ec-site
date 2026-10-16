@@ -43,6 +43,17 @@ describe('テスト名の取り出し', () => {
     assert.deepEqual(extractTestNames(source, 'java'), ['AC-42 拒否される'])
   })
 
+  test('クラスの @DisplayName の後の注釈の引数に括弧があっても、record・sealed のクラスでも読まない', () => {
+    const source = [
+      '@DisplayName("AC-50 まとまり")',
+      '@Tag("a)b")',
+      'sealed class Group permits A {}',
+      '@DisplayName("AC-51 record のまとまり")',
+      'record Case(int value) {}',
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'java'), [])
+  })
+
   test('Vitest・Playwright の test・it の第 1 引数（単一引用符・二重引用符・バッククォート）。describe は読まない', () => {
     const source = [
       "describe('AC-8 カテゴリの一覧', () => {",

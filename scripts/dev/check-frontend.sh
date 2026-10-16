@@ -8,7 +8,7 @@
 #         scripts/dev/check-frontend.sh admin test         # 管理画面のテストだけ
 #         scripts/dev/check-frontend.sh store lint typecheck
 #
-# e2e（E2E のコード）は lint と typecheck だけを流す。E2E のテストは scripts/dev/e2e.sh で流す。
+# e2e（E2E のコード）は lint と typecheck だけを流し、ほかの手順は飛ばす。E2E のテストは scripts/dev/e2e.sh で流す。
 #
 # install（pnpm install --frozen-lockfile）と licenses（依存のライセンスの検査）は、ルートで 1 回だけ流す。
 # 手元は依存が入った後なので、CI のインストールでだけ失敗すること（allowBuilds の漏れなど）を先に見つけるため。

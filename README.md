@@ -35,6 +35,6 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [009](docs/specs/009-shipping) | 機能 | 出荷と配送状況 | 完了。[段階 10](docs/specs/009-shipping/tasks/10-seed.md) でローカルの seed を整理した。直さずに残したことは [見直しの結果](docs/specs/009-shipping/tasks/09-review.md) |
 | [010](docs/specs/010-sales-report) | 機能 | 売上の簡易レポート | 完了。[段階 1〜6](docs/specs/010-sales-report/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/010-sales-report/tasks/06-review.md) |
 | [011](docs/specs/011-dev-foundation) | 整理 | 開発の基盤の整理 | 完了。[段階 1〜7](docs/specs/011-dev-foundation/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/011-dev-foundation/tasks/07-review.md) |
-| [012](docs/specs/012-test-safety-net) | 整理 | テストの安全網 | spec・plan・tasks を作った。段階 1 から進める |
+| [012](docs/specs/012-test-safety-net) | 整理 | テストの安全網 | 完了。[段階 1〜8](docs/specs/012-test-safety-net/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/012-test-safety-net/tasks/08-review.md) |
 
 MVP を完成させるまでの spec の順と、MVP の後に回した決定は [MVP の完成までの一覧](docs/specs/mvp.md) にある。

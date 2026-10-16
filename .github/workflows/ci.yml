@@ -5,9 +5,8 @@
 #   backend：依存のライセンスの検査、ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
 #   admin：管理画面の lint（Biome）、型チェック、テスト、ビルド
 #   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）。フロントの依存のライセンスの検査、
-#          共有のパッケージ（frontend/shared）の lint・型チェック・テスト、入力の制約に数字を直接書いていないことと、
-#          表示の文言を直接書いていないことの検査
-#   ac-check：機能の spec の AC が、テスト名に出ていること。テストが時間で待っていないこと
+#          共有のパッケージ（frontend/shared）の lint・型チェック・テスト
+#   ci-scripts：CI の検査の script（scripts/ci/check-all.sh。手元でも同じものを流す）
 #   e2e：バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する（Playwright）
 # 文書とコメントの検査は docs.yml（文書だけの push でも流す）
 # ============================================================================
@@ -154,16 +153,6 @@ jobs:
         working-directory: frontend/shared
         run: pnpm lint && pnpm typecheck && pnpm test
 
-      # 画面の入力の制約は、API の契約から書き出した定数を使う（フロントの書き方 第 2.3 節）
-      - name: 入力の制約の数字の検査
-        working-directory: .
-        run: node scripts/ci/input-constraints.mjs
-
-      # 画面の表示の文言は、文言のファイルに置いてキーで引く（フロントの書き方 第 7.1 節）
-      - name: 表示の文言の検査
-        working-directory: .
-        run: node scripts/ci/hardcoded-text.mjs
-
       # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認
         run: pnpm lint
@@ -192,8 +181,8 @@ jobs:
       - name: ビルド
         run: pnpm build
 
-  ac-check:
-    name: AC とテストの対応
+  ci-scripts:
+    name: CI の検査の script
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
@@ -204,17 +193,10 @@ jobs:
         with:
           node-version: '24'
 
-      # CI の script のテスト
-      - name: script のテスト
-        run: node --test "scripts/ci/**/*.test.mjs"
-
-      # 機能の spec のすべての AC が、テスト名に 1 つずつ出ていること（テストの書き方 第 2.1 節）
-      - name: AC とテスト名の照合
-        run: node scripts/ci/ac-check.mjs
-
-      # テストが時間で待っていないこと（テストの書き方 第 5 節）
-      - name: 時間で待つテストの検査
-        run: node scripts/ci/time-waits.mjs
+      # script のテストと、scripts/ci/ の直下の検査のすべて（AC とテスト名の照合、時間で待つテスト、
+      # 入力の制約の数字、表示の文言、文書の参照・用語、本番のコードの spec の番号）
+      - name: CI の検査の script
+        run: scripts/ci/check-all.sh
 
   e2e:
     name: E2E

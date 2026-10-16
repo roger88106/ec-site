@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -8,6 +9,7 @@ import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
 import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,6 +54,12 @@ class PaymentRefundTest {
     @Autowired
     MutableClock clock;
 
+    @Autowired
+    AsyncEvents asyncEvents;
+
+    @Autowired
+    DSLContext dsl;
+
     /**
      * 注文 ID → 支払の画面 ID
      */
@@ -82,8 +90,8 @@ class PaymentRefundTest {
 
         paymentApi.cancel(orderId);
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT)
-                .until(() -> statusOf(orderId) == PaymentSummary.Status.REFUND_PENDING);
+        asyncEvents.awaitFailed(PaymentRequests.of(dsl, orderId));
+        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUND_PENDING);
         assertThat(gateway.refunded()).isEmpty();
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
@@ -103,7 +111,8 @@ class PaymentRefundTest {
 
         paymentApi.cancel(orderId);
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> gateway.refunded().size() == 1);
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+        assertThat(gateway.refunded()).hasSize(1);
         assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
     }
 
@@ -116,8 +125,9 @@ class PaymentRefundTest {
 
         paymentApi.cancel(orderId);
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT)
-                .until(() -> gateway.refunded().isEmpty() && gateway.voided().isEmpty());
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+        assertThat(gateway.refunded()).isEmpty();
+        assertThat(gateway.voided()).isEmpty();
         assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
     }
 
@@ -136,7 +146,8 @@ class PaymentRefundTest {
         // 与信の取消の依頼は、再発行で何もせずに終わる
         clock.advance(Duration.ofMinutes(6));
         incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> gateway.voided().isEmpty());
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+        assertThat(gateway.voided()).isEmpty();
         assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
     }
 
@@ -178,5 +189,4 @@ class PaymentRefundTest {
 
     private PaymentSummary.Status statusOf(UUID orderId) {
         return paymentApi.find(List.of(orderId)).getFirst().status();
-    }
-}
+    }}

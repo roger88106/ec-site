@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -68,6 +69,9 @@ class ReportCollectionTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    AsyncEvents asyncEvents;
 
     @MockitoBean
     OrderReportApi orderReportApi;
@@ -168,7 +172,8 @@ class ReportCollectionTest {
         awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
         publish(event);
 
-        await().during(Duration.ofSeconds(1)).atMost(TIMEOUT).until(() -> history().size() == 1);
+        asyncEvents.awaitHandled(event::equals);
+        assertThat(history()).hasSize(1);
         assertThat(dsl.fetchCount(SALES_ORDER_LINE, SALES_ORDER_LINE.ORDER_ID.eq(orderId))).isEqualTo(1);
     }
 
@@ -202,9 +207,12 @@ class ReportCollectionTest {
                 .thenThrow(new IllegalStateException("注文の API が失敗した"))
                 .thenReturn(Optional.of(snapshot(OrderReportSnapshot.Status.PENDING_PAYMENT, null)));
 
-        publish(placed());
+        var event = placed();
+        publish(event);
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> order().isEmpty() && history().isEmpty());
+        asyncEvents.awaitFailed(event::equals);
+        assertThat(order()).isEmpty();
+        assertThat(history()).isEmpty();
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
         clock.advance(Duration.ofMinutes(6));

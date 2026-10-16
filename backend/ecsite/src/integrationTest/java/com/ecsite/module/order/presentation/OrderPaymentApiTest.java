@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
@@ -12,6 +13,7 @@ import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.application.PaymentExpiryJob;
+import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -88,6 +90,9 @@ class OrderPaymentApiTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    AsyncEvents asyncEvents;
 
     private OrderTestData orders;
 
@@ -349,7 +354,9 @@ class OrderPaymentApiTest {
             cancelByOperator(orderId).andExpect(status().isNoContent());
 
             store(orderId).andExpect(jsonPath("$.status").value("CANCELLED"));
-            await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> paymentStatus(orderId).equals("VOID_PENDING"));
+            var paymentId = dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchOne(PAYMENT_.ID);
+            asyncEvents.awaitFailed(event -> event instanceof VoidRequested requested && requested.paymentId().equals(paymentId));
+            assertThat(paymentStatus(orderId)).isEqualTo("VOID_PENDING");
         }
     }
 

@@ -1,6 +1,8 @@
 package com.ecsite.module.shipping.api;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
+import com.ecsite.module.shipping.application.TrackingRequested;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
@@ -11,16 +13,13 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.awaitility.Awaitility.await;
 
 /**
  * 出荷の API の統合テスト（T9206、T9208、AC-173、BR-19、23）。<br />
@@ -45,6 +44,9 @@ class ShippingApiTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    AsyncEvents asyncEvents;
 
     @Test
     @DisplayName("AC-173 配送業者と送り状番号で出荷を作ると、配送状態は出荷済みで、送り状番号はハイフンを除いて保存される")
@@ -120,9 +122,10 @@ class ShippingApiTest {
         assertBusinessError(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "8884-5556", SHIPPED_AT),
                 ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT)
-                .until(() -> tracking.started().contains(new MockCarrierTracking.Started(Carrier.YAMATO, "88812223")));
-        assertThat(tracking.started()).doesNotContain(new MockCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
+        asyncEvents.awaitHandled(event -> event instanceof TrackingRequested requested
+                && List.of("88812223", "88845556").contains(requested.trackingNumber()));
+        assertThat(tracking.started()).contains(new MockCarrierTracking.Started(Carrier.YAMATO, "88812223"))
+                .doesNotContain(new MockCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
     }
 
     /**

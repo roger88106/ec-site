@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.application;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.Mailpit;
 import com.ecsite.MutableClock;
@@ -25,6 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 
 /**
  * 出荷通知メールの統合テスト（T9403、AC-183〜185）。<br />
@@ -46,6 +49,9 @@ class ShipmentMailTest {
 
     @Autowired
     Mailpit mailpit;
+
+    @Autowired
+    AsyncEvents asyncEvents;
 
     @Autowired
     MutableClock clock;
@@ -80,7 +86,8 @@ class ShipmentMailTest {
 
         publish(shipped());
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).isEmpty());
+        verify(mailer, timeout(TIMEOUT.toMillis())).send(any());
+        assertThat(mailpit.messagesTo(email)).isEmpty();
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
         clock.advance(Duration.ofMinutes(6));
@@ -100,7 +107,8 @@ class ShipmentMailTest {
         publish(OrderShipped.of(event.occurredAt(), event.orderId(), event.orderNumber(), event.email(),
                 event.carrier(), event.trackingNumber()));
 
-        await().during(Duration.ofSeconds(1)).atMost(TIMEOUT).until(() -> mailpit.messagesTo(email).size() == 1);
+        asyncEvents.awaitHandled(published -> published instanceof OrderShipped shipped && shipped.email().equals(email));
+        assertThat(mailpit.messagesTo(email)).hasSize(1);
     }
 
     // ============================== 補助 ==============================

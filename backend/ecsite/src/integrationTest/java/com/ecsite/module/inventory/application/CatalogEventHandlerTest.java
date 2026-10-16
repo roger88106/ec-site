@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.application;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.module.catalog.event.ProductDeleted;
 import com.ecsite.module.catalog.event.VariantDeleted;
@@ -12,7 +13,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.transaction.support.TransactionTemplate;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
 import java.util.List;
@@ -45,6 +45,9 @@ class CatalogEventHandlerTest {
 
     @Autowired
     DSLContext dsl;
+
+    @Autowired
+    AsyncEvents asyncEvents;
 
     /**
      * このテストで作った商品の ID（後で在庫を消す）
@@ -81,12 +84,9 @@ class CatalogEventHandlerTest {
 
         publish(event);
         publish(event);
-        // 2 回目の処理を待つため、別の在庫ができるまで待つ
-        var marker = UUID.randomUUID();
-        publish(VariantRegistered.of(NOW, productId, marker));
 
-        await().atMost(TIMEOUT).until(() -> stockCount(marker) == 1);
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> stockCount(variantId) == 1);
+        asyncEvents.awaitHandled(event::equals);
+        assertThat(stockCount(variantId)).isEqualTo(1);
     }
 
     @Test

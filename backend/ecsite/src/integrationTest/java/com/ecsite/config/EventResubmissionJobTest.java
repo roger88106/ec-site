@@ -12,6 +12,8 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.ApplicationModuleListener;
+import org.springframework.modulith.events.core.EventPublicationRegistry;
+import org.springframework.modulith.events.core.TargetEventPublication;
 import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Duration;
@@ -22,6 +24,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
@@ -53,6 +56,9 @@ class EventResubmissionJobTest {
     @Autowired
     TransactionTemplate transactionTemplate;
 
+    @Autowired
+    EventPublicationRegistry registry;
+
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);
@@ -77,7 +83,19 @@ class EventResubmissionJobTest {
         clock.advance(Duration.ofMinutes(4));
         job.resubmit();
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> listener.attempts(event) == 1);
+        // 再発行すると、発行の記録の再発行の日時（初めは発行の日時）が変わる。リスナーは非同期で動くので、受けた回数だけでは確かめられない
+        var publication = publicationOf(event);
+        assertThat(publication.getLastResubmissionDate()).isEqualTo(publication.getPublicationDate());
+        assertThat(listener.attempts(event)).isEqualTo(1);
+    }
+
+    /**
+     * テストのイベントの、未完了の発行の記録
+     */
+    private TargetEventPublication publicationOf(FlakyEvent event) {
+        return registry.findIncompletePublications().stream()
+                .filter(publication -> publication.getEvent().equals(event))
+                .findFirst().orElseThrow();
     }
 
     /**

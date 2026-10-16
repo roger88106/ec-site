@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -7,6 +8,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -51,6 +53,12 @@ class PaymentVoidTest {
     @Autowired
     MutableClock clock;
 
+    @Autowired
+    AsyncEvents asyncEvents;
+
+    @Autowired
+    DSLContext dsl;
+
     @BeforeEach
     void setUp() {
         clock.setInstant(ORDERED_AT);
@@ -78,8 +86,8 @@ class PaymentVoidTest {
 
         paymentApi.cancel(orderId);
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT)
-                .until(() -> statusOf(orderId) == PaymentSummary.Status.VOID_PENDING);
+        asyncEvents.awaitFailed(PaymentRequests.of(dsl, orderId));
+        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOID_PENDING);
         assertThat(gateway.voided()).isEmpty();
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
@@ -100,7 +108,8 @@ class PaymentVoidTest {
 
         paymentApi.cancel(orderId);
 
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> gateway.voided().size() == 1);
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+        assertThat(gateway.voided()).hasSize(1);
         assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOIDED);
     }
 
@@ -112,7 +121,8 @@ class PaymentVoidTest {
         paymentApi.cancel(orderId);
 
         assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
-        await().during(Duration.ofMillis(500)).atMost(TIMEOUT).until(() -> gateway.voided().isEmpty());
+        asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
+        assertThat(gateway.voided()).isEmpty();
     }
 
     @Test

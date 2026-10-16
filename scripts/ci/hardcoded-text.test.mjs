@@ -48,6 +48,7 @@ describe('表示の文言を直接書いた所の検査', () => {
       'const SLASHES = /\\/\\/[a-z/]+/ // 二重の斜線',
       "if (/^'/.test(value)) return // 引用符で始まる",
       "const label = '保存'",
+      '{t.rich("at", { date: () => <DateTime value={at} /> }) /* 日時 */}',
     ].join('\n')
     assert.deepEqual(
       findHardcodedText(text).map((hit) => hit.line),

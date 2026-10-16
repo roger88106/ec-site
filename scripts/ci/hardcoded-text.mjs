@@ -56,11 +56,66 @@ export function stripComments(text) {
       index = stop
       continue
     }
+    if (char === '/' && next !== '>' && startsRegex(result)) {
+      const stop = regexEnd(text, index)
+      result += ' '.repeat(stop - index)
+      index = stop
+      continue
+    }
     if (char === "'" || char === '"' || char === '`') quote = char
     result += char
     index += 1
   }
   return result
+}
+
+/**
+ * 正規表現のリテラルの前に来る記号（この後の / は割り算でなく正規表現の始まり）。
+ * } は JSX の属性の後の /> と見分けられないので入れない（ブロックの後の正規表現は、たいてい行の始まりにある）
+ */
+const BEFORE_REGEX_CHARS = '(,=:[!&|?{;'
+
+/** 正規表現のリテラルの前に来る語 */
+const BEFORE_REGEX_WORD = /\b(?:return|typeof|case|in|of|delete|void|throw|new|instanceof|yield|await)$/
+
+/**
+ * ここまでのコードの後の / が、正規表現のリテラルの始まりかを返す。
+ *
+ * @param {string} before ここまでのコード
+ * @returns {boolean} 行の始まりか、式の始まりになる記号・語の後なら true（それ以外は割り算）
+ */
+function startsRegex(before) {
+  const trimmed = before.replace(/[ \t]+$/, '')
+  const last = trimmed.at(-1)
+  return last === undefined || last === '\n' || BEFORE_REGEX_CHARS.includes(last) || BEFORE_REGEX_WORD.test(trimmed)
+}
+
+/**
+ * 正規表現のリテラルの終わりの位置を返す。
+ *
+ * @param {string} text ファイルの中身
+ * @param {number} start 始まりの / の位置
+ * @returns {number} フラグの次の位置（行の終わりまでに閉じなければ、行の終わり）
+ */
+function regexEnd(text, start) {
+  let index = start + 1
+  let inClass = false
+  while (index < text.length && text[index] !== '\n') {
+    const char = text[index]
+    if (char === '\\') {
+      index += 2
+      continue
+    }
+    if (char === '[') inClass = true
+    else if (char === ']') inClass = false
+    else if (char === '/' && !inClass) {
+      index += 1
+      while (index < text.length && /[a-z]/.test(text[index])) index += 1
+      return index
+    }
+    index += 1
+  }
+  return index
 }
 
 /**

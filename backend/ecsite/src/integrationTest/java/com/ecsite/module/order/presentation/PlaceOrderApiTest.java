@@ -99,11 +99,11 @@ class PlaceOrderApiTest {
     }
 
     @Nested
-    @DisplayName("AC-87、88、89、90、91、92 注文の成立")
+    @DisplayName("注文の成立")
     class Place {
 
         @Test
-        @DisplayName("AC-87、107、144 成立すると在庫が減り、引当が消え、注文番号が振られ、支払待ちになる。カートは変わらない")
+        @DisplayName("AC-87、90、107、144 成立すると在庫が減り、引当が消え、注文番号が振られ、支払待ちになる。カートは変わらない")
         void placesOrder() throws Exception {
             var checkoutId = startCheckout();
 

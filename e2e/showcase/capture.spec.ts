@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { expect, type Locator, type Page, test } from '@playwright/test'
 import { ACCOUNTS, submitIdpLogin } from '../src/auth'
+import { ASYNC_TIMEOUT, CHECK_TIMEOUT } from '../src/waits'
 
 /** ローカルの店舗画面（開発のサーバー） */
 const STORE = 'http://localhost:3000'
@@ -115,8 +116,8 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     // 支払の通知が反映されて「受付」になるまで開き直す
     await expect(async () => {
       await page.goto(orderUrl)
-      await expect(page.getByText('受付', { exact: true })).toBeVisible({ timeout: 1_000 })
-    }).toPass({ timeout: 20_000 })
+      await expect(page.getByText('受付', { exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
+    }).toPass({ timeout: ASYNC_TIMEOUT })
     await shot(page, 'store-order', page.getByText('受付', { exact: true }))
   })
 

@@ -2,6 +2,7 @@ import { createHash, randomBytes } from 'node:crypto'
 import { expect, type Page } from '@playwright/test'
 import { RUN_ID } from './data'
 import { ADMIN_URL, IDP_URL, MAILPIT_URL, STORE_URL } from './urls'
+import { MAIL_TIMEOUT } from './waits'
 
 /** ログインに使うアカウント */
 export type Account = { email: string; password: string }
@@ -126,7 +127,7 @@ export async function latestIdpLink(to: string): Promise<string> {
         link = Text.match(/https?:\/\/\S+\/login-actions\/action-token\S+/)?.[0]
         return link
       },
-      { message: `${to} へのメールが Mailpit に届かない`, timeout: 20_000 },
+      { message: `${to} へのメールが Mailpit に届かない`, timeout: MAIL_TIMEOUT },
     )
     .toBeDefined()
   return link as string

@@ -1,5 +1,6 @@
 import { expect, type Page } from '@playwright/test'
 import { BACKEND_URL, MAILPIT_URL } from './urls'
+import { MAIL_TIMEOUT } from './waits'
 
 /** mock の物流の画面で通知できる配送状態（ボタンの名前） */
 export type CarrierNotification = '配送中' | '配達完了' | '返送'
@@ -61,7 +62,7 @@ export async function shipmentMail(orderNumber: string): Promise<{ subject: stri
         found = { subject: detail.Subject, to: detail.To.map((to) => to.Address), text: detail.Text }
         return found
       },
-      { message: `注文 ${orderNumber} の出荷通知メールが Mailpit に届かない`, timeout: 30_000 },
+      { message: `注文 ${orderNumber} の出荷通知メールが Mailpit に届かない`, timeout: MAIL_TIMEOUT },
     )
     .toBeDefined()
   return found as { subject: string; to: string[]; text: string }

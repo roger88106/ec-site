@@ -1,7 +1,9 @@
+import { expect } from '@playwright/test'
 import createClient from 'openapi-fetch'
 import { ACCOUNTS, operatorAccessToken } from './auth'
 import type { components, paths } from './generated/admin'
 import { BACKEND_URL } from './urls'
+import { ASYNC_TIMEOUT } from './waits'
 
 /** バリアントの登録の要求の本文 */
 type AddVariantRequest = components['schemas']['AddVariantRequest']
@@ -138,20 +140,18 @@ async function productVersion(productId: string): Promise<number> {
 
 /** 入荷する。在庫はバリアントの登録のイベントで作られるので、在庫ができるのを待ってから調整する */
 async function arrive(variantId: string, quantity: number): Promise<void> {
-  for (let attempt = 0; attempt < 20; attempt++) {
-    const stock = await api.GET('/inventory/variants/{variantId}', { params: { path: { variantId } } })
-    if (stock.response.ok) {
-      unwrap(
-        await api.POST('/inventory/variants/{variantId}/adjustments', {
-          params: { path: { variantId } },
-          body: { delta: quantity, reason: 'ARRIVAL' },
-        }),
-      )
-      return
-    }
-    await new Promise((resolve) => setTimeout(resolve, 250))
-  }
-  throw new Error(`バリアント ${variantId} の在庫が作られない`)
+  await expect
+    .poll(
+      async () => (await api.GET('/inventory/variants/{variantId}', { params: { path: { variantId } } })).response.ok,
+      { message: `バリアント ${variantId} の在庫が作られない`, timeout: ASYNC_TIMEOUT },
+    )
+    .toBe(true)
+  unwrap(
+    await api.POST('/inventory/variants/{variantId}/adjustments', {
+      params: { path: { variantId } },
+      body: { delta: quantity, reason: 'ARRIVAL' },
+    }),
+  )
 }
 
 /** 非公開にする */

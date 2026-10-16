@@ -3,9 +3,7 @@ import { ACCOUNTS, loginAdmin, memberEmail, registerMember } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { orderCart, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
-
-/** レポートの写しは注文のイベントから少し遅れて作られる（spec 010 NFR-14）。表示に出るまで待つ時間 */
-const REPORT_TIMEOUT = 30_000
+import { CHECK_TIMEOUT, REPORT_RECHECK_INTERVALS, REPORT_TIMEOUT } from '../src/waits'
 
 /** 今日の日本時間の年と月 */
 function thisMonthInJapan(): { year: number; month: number } {
@@ -24,7 +22,7 @@ async function expectReport(page: Page, url: string, check: () => Promise<void>)
   await expect(async () => {
     await page.goto(url)
     await check()
-  }).toPass({ timeout: REPORT_TIMEOUT, intervals: [1_000, 2_000] })
+  }).toPass({ timeout: REPORT_TIMEOUT, intervals: REPORT_RECHECK_INTERVALS })
 }
 
 /** 分け方の表で、区分の行 */
@@ -72,8 +70,8 @@ test('AC-197、205、206、209、219、221、222、223、224 生年月日と性�
   await test.step('管理職：売上の推移で、商品を選ぶと今月に 2 個・2,200 円が数えられる（AC-197、199、223、224）', async () => {
     await expectReport(admin, `${ADMIN_URL}/reports/sales-trend?productId=${productId}`, async () => {
       const row = admin.getByRole('row').filter({ has: admin.getByRole('cell', { name: `${year} 年 ${month} 月` }) })
-      await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: 1_000 })
-      await expect(row.getByRole('cell', { name: '2', exact: true })).toBeVisible({ timeout: 1_000 })
+      await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: CHECK_TIMEOUT })
+      await expect(row.getByRole('cell', { name: '2', exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
     })
   })
 
@@ -85,8 +83,8 @@ test('AC-197、205、206、209、219、221、222、223、224 生年月日と性�
         ['性別', '女性'],
       ]) {
         const row = segmentRow(admin, dimension, segment)
-        await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: 1_000 })
-        await expect(row.getByRole('cell', { name: '1', exact: true })).toBeVisible({ timeout: 1_000 })
+        await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: CHECK_TIMEOUT })
+        await expect(row.getByRole('cell', { name: '1', exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
       }
     })
   })

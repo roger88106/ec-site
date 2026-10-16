@@ -1,8 +1,6 @@
 import { expect, type Locator, type Page } from '@playwright/test'
 import { STORE_URL } from './urls'
-
-/** 店舗画面の API の結果のキャッシュ（E2E では 1 秒。playwright.config.ts）が切れて、表示が変わるまでに待つ時間 */
-const CACHE_TIMEOUT = 20_000
+import { ASYNC_TIMEOUT, CHECK_TIMEOUT, RECHECK_INTERVALS } from './waits'
 
 /**
  * 店舗画面を開き直しながら、表示が期待どおりになるのを待つ。<br />
@@ -17,7 +15,7 @@ export async function expectEventually(page: Page, url: string, check: (page: Pa
   await expect(async () => {
     await page.goto(url)
     await check(page)
-  }).toPass({ timeout: CACHE_TIMEOUT, intervals: [500, 1_000] })
+  }).toPass({ timeout: ASYNC_TIMEOUT, intervals: RECHECK_INTERVALS })
 }
 
 /** 店舗画面の一覧・検索の結果の、商品のカード（商品名で探す） */
@@ -47,9 +45,6 @@ export async function fillShipping(page: Page, postalCode: string) {
   await page.getByLabel('住所').fill('千代田区千代田1-1')
   await page.getByLabel('電話番号').fill('03-1234-5678')
 }
-
-/** 支払の通知が反映され、注文の画面の表示が変わるまでに待つ時間 */
-const PAYMENT_TIMEOUT = 20_000
 
 /**
  * カートから注文手続きに進み、お届け先を入れて注文する。注文すると mock の支払の画面に移る。
@@ -87,9 +82,9 @@ export async function payOnMockPage(page: Page): Promise<string> {
  * @param shown 出るのを待つ表示
  * @param timeout 待つ時間
  */
-export async function expectOrderPage(page: Page, orderUrl: string, shown: Locator, timeout = PAYMENT_TIMEOUT) {
+export async function expectOrderPage(page: Page, orderUrl: string, shown: Locator, timeout = ASYNC_TIMEOUT) {
   await expect(async () => {
     await page.goto(orderUrl)
-    await expect(shown).toBeVisible({ timeout: 1_000 })
-  }).toPass({ timeout, intervals: [500, 1_000] })
+    await expect(shown).toBeVisible({ timeout: CHECK_TIMEOUT })
+  }).toPass({ timeout, intervals: RECHECK_INTERVALS })
 }

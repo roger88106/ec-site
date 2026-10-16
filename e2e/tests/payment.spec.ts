@@ -3,6 +3,7 @@ import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { emptyCart, expectOrderPage, fillShipping, orderCart, payOnMockPage } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
+import { ASYNC_TIMEOUT, CHECK_TIMEOUT, RECHECK_INTERVALS } from '../src/waits'
 
 /**
  * 支払の E2E。E2E のバックエンドは mock の決済サービスで動き、支払の期限は 30 秒（application-e2e.yml）。
@@ -134,8 +135,8 @@ test('AC-162 管理画面で受付の注文をキャンセルすると、支払�
   await test.step('与信の取消は裏で行うので、開き直しながら与信の取消済みになるのを待つ', async () => {
     await expect(async () => {
       await page.reload()
-      await expect(paymentStatus(page)).toHaveText('与信の取消済み', { timeout: 1_000 })
-    }).toPass({ timeout: 20_000, intervals: [500, 1_000] })
+      await expect(paymentStatus(page)).toHaveText('与信の取消済み', { timeout: CHECK_TIMEOUT })
+    }).toPass({ timeout: ASYNC_TIMEOUT, intervals: RECHECK_INTERVALS })
   })
 })
 

@@ -122,15 +122,20 @@ export async function createPublishedProduct(product: PublishedProduct): Promise
     }
   }
   if (product.publishStart) {
-    unwrap(
-      await api.PUT('/products/{productId}/publication-period', {
-        params: { path: { productId: id } },
-        body: { publishStart: product.publishStart.toISOString(), version: await productVersion(id) },
-      }),
-    )
+    await changePublishStart(id, product.publishStart)
   }
   unwrap(await api.PUT('/products/{productId}/publish', { params: { path: { productId: id } } }))
   return id
+}
+
+/** 公開開始日時を変える（公開した後でも変えられる） */
+export async function changePublishStart(productId: string, publishStart: Date): Promise<void> {
+  unwrap(
+    await api.PUT('/products/{productId}/publication-period', {
+      params: { path: { productId } },
+      body: { publishStart: publishStart.toISOString(), version: await productVersion(productId) },
+    }),
+  )
 }
 
 /** 商品の今のバージョン */

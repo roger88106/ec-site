@@ -2,13 +2,7 @@
 # CI（constitution 12）
 #
 # push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
-#   backend：依存のライセンスの検査、ビルド、単体・統合テスト、OpenAPI の構文の検証（./gradlew build に含まれる）
-#   admin：管理画面の lint（Biome）、型チェック、テスト、ビルド
-#   store：店舗画面の lint（Biome）、型チェック、テスト、ビルド（ビルドはバックエンドなしで通る）。フロントの依存のライセンスの検査、
-#          共有のパッケージ（frontend/shared）の lint・型チェック・テスト
-#   ci-scripts：CI の検査の script（scripts/ci/check-all.sh。手元でも同じものを流す）
-#   e2e：バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する（Playwright）
-# 文書とコメントの検査は docs.yml（文書だけの push でも流す）
+# ジョブの一覧、手元で同じ検査を流すコマンド、CI の検査の script の中身は docs/dev/ci.md。
 # ============================================================================
 
 name: CI

@@ -124,6 +124,7 @@ ec-site/
 | [testing/running.md](testing/running.md) | テストの流し方 |
 | [dev/setup.md](dev/setup.md) | 開発環境の起動 |
 | [dev/environment.md](dev/environment.md) | 環境変数 |
+| [dev/ci.md](dev/ci.md) | CI の検査 |
 | [reference/glossary.md](reference/glossary.md) | 用語集 |
 | [reference/licenses.md](reference/licenses.md) | 依存とライセンス |
 | [specs/](specs) | spec・plan・tasks |

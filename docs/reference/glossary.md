@@ -239,7 +239,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 機能の spec | | 消費者・運営者に見える振る舞いを作る・変える spec（開発の進め方 第 1 節） |
 | 整理の spec | | 消費者・運営者に見える振る舞いを変えずに、規則・テスト・構成・コードを整える spec。利用者は開発者とエージェント（開発の進め方 第 1 節） |
 | MVP の完成までの一覧 | `docs/specs/mvp.md` | MVP を完成させるまでの spec の順と理由、MVP の後に回した決定の表 |
-| CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が流す、文書とコードの検査の script。手元では `scripts/ci/check-all.sh` でまとめて流す |
+| CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が流す、文書とコードの検査の script。手元では `scripts/ci/check-all.sh` でまとめて流す（[CI の検査](../dev/ci.md)） |
 | 書き方の規則 | `docs/*/coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確かめ方の形でまとめた文書（[書き方の規則と見直し](../process/review.md)） |
 | 引き継ぎの文書 | `/.local/handoff/` | 作業を別のセッションに引き継ぐための文書。Git に入れない（AGENTS.md） |
 | カバレッジ | | テストで実行されたコードの割合（行・分岐）。報告だけに使い、基準の値で CI を失敗させない |

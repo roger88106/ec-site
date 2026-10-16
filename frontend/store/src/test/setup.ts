@@ -1,3 +1,4 @@
+import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeEach, vi } from 'vitest'
 import { resetAuth } from '@/test/auth'
 import { resetRequest } from '@/test/next'
@@ -55,6 +56,8 @@ beforeEach(() => {
 })
 
 afterEach(() => {
+  // jsdom の上に描画した部品を外す（renderInBrowser。描画していなければ何もしない）
+  cleanup()
   // テストで差し替えた関数（console.error など）を戻す
   vi.restoreAllMocks()
   server.resetHandlers()

@@ -172,7 +172,8 @@ Next.js の `typedRoutes` で、画面の置き場所と照らす。クエリ付
 | 対象 | テスト | 置き場所 |
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
-| 表示のコンポーネント（状態を持たないもの） | `renderToStaticMarkup` で HTML にし、文字と並びを確かめる | 対象の横（`*.test.tsx`） |
+| 表示のコンポーネント（状態を持たないもの。client の部品の初めの表示を含む） | `renderToStaticMarkup` で HTML にし、文字と並びを確かめる（`src/test/render.tsx` の `renderMarkup`） | 対象の横（`*.test.tsx`） |
+| client の部品の、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確かめる | 対象の横（`*.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Node で直接呼ぶ。Next.js の口（`next/headers` など）と `@/auth` は `src/test/` で置き換え、バックエンドは MSW（`msw/node`） | 対象の横（`*.test.ts`） |
 | 画面をつないだ流れ | E2E | `e2e/tests/` |
 

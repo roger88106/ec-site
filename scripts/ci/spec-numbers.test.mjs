@@ -16,6 +16,14 @@ describe('本番のコードの spec の番号の検査', () => {
     )
   })
 
+  test('新しい形式と古い形式のタスクの番号を見つける', () => {
+    const text = ['// 割引の上限（T011-01-01）', '// 例（T1000-01-01、T11-02-03）', '// 古い形式（T3101）'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 T011-01-01', '2 T1000-01-01', '2 T11-02-03', '3 T3101'],
+    )
+  })
+
   test('番号に似た識別子は見つけない', () => {
     assert.deepEqual(findSpecNumbers('const ACTION = "X-12"; const T10 = 1; const UTF8 = true'), [])
   })

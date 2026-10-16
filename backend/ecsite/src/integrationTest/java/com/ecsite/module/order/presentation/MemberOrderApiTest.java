@@ -171,7 +171,7 @@ class MemberOrderApiTest {
             var checkoutId = checkout(owner);
 
             order(checkoutId, owner, other.bearer()).andExpect(status().isNotFound());
-            assertThat(dsl.fetchCount(SALES_ORDER)).isZero();
+            assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isZero();
         }
 
         @Test
@@ -183,7 +183,7 @@ class MemberOrderApiTest {
             order(checkoutId, unverified, unverified.bearer())
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("EMAIL_NOT_VERIFIED"));
-            assertThat(dsl.fetchCount(SALES_ORDER)).isZero();
+            assertThat(dsl.fetchCount(SALES_ORDER, SALES_ORDER.CHECKOUT_ID.eq(checkoutId))).isZero();
         }
     }
 

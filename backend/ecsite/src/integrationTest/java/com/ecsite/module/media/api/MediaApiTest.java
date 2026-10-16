@@ -192,10 +192,10 @@ class MediaApiTest {
         void rejectsUnconvertibleFile() throws Exception {
             var scope = scope();
             var upload = uploaded(scope, "image/heic", TestImages.of("broken.heic"));
-            var before = dsl.fetchCount(ASSET);
+            var before = assetIds();
 
             assertErrorCode(() -> media.confirmImage(scope, upload.uploadId()), "IMAGE_CONVERSION_FAILED");
-            assertThat(dsl.fetchCount(ASSET)).isEqualTo(before);
+            assertThat(assetIds()).isSubsetOf(before);
         }
 
         @Test
@@ -203,12 +203,12 @@ class MediaApiTest {
         void failsWhenPublishingFails() throws Exception {
             var scope = scope();
             var upload = uploaded(scope, "image/png", TestImages.png());
-            var before = dsl.fetchCount(ASSET);
+            var before = assetIds();
             doThrow(S3Exception.builder().statusCode(404).message("The specified bucket does not exist").build())
                     .when(storage).putPublished(anyString(), any(), anyString());
 
             assertThatThrownBy(() -> media.confirmImage(scope, upload.uploadId())).isInstanceOf(S3Exception.class);
-            assertThat(dsl.fetchCount(ASSET)).isEqualTo(before);
+            assertThat(assetIds()).isSubsetOf(before);
         }
 
         @Test
@@ -335,6 +335,14 @@ class MediaApiTest {
     private boolean releaseRegistered(UUID assetId) {
         return dsl.fetchExists(EVENT_PUBLICATION, EVENT_PUBLICATION.EVENT_TYPE.endsWith(".AssetReleased")
                 .and(EVENT_PUBLICATION.SERIALIZED_EVENT.contains(assetId.toString())));
+    }
+
+    /**
+     * 今あるアセットの ID。アセットは受付の範囲を持たないので、ID の集まりで、新しく作られていないことを確かめる
+     * （ほかのテストが消すことはあるので、数では比べない）
+     */
+    private Set<UUID> assetIds() {
+        return dsl.select(ASSET.ID).from(ASSET).fetchSet(ASSET.ID);
     }
 
     /**

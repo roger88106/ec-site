@@ -4,7 +4,7 @@
 
 ## 規則の一覧
 
-第 1 節の spec・plan・tasks の番号は、CI の `spec-numbers.mjs` で確かめる。第 2 節のうち、本番のコードの public のクラスとメソッドの Javadoc は、Checkstyle（`./gradlew check`）で確かめる。他は人手で確かめ、各 spec の [見直し](review.md) で読む。
+第 1 節の spec・plan・tasks の番号は、CI の `spec-numbers.mjs` で確かめる。第 2 節のうち、本番のコードのクラスとメンバーに Javadoc があることは、Checkstyle（`./gradlew check`）で確かめる。他は人手で確かめ、各 spec の [見直し](review.md) で読む。
 
 | 節 | 規則 |
 |----|------|
@@ -29,6 +29,7 @@
 ## 2. Java（Javadoc）
 
 - クラスとすべてのメンバー（private を含む）に書く。`@DisplayName` を付けたテストのクラスとメソッドには要らない。
+- private のメンバーは、何をするかの 1 文でよい。`@param`・`@return` は書けるなら書く（検査は Javadoc があるかだけを見る）。
 - 1 文目に何かを書き、補足は 1 文目の後に `<br />` を置いて続ける。
 - メソッドには `@param`・`@return`（例外の条件があれば `@throws`）、record は項目を `@param` で書く。
 

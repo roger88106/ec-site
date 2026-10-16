@@ -184,7 +184,8 @@ tasks.check { dependsOn(integrationTest) }
 
 // -----------------------------------------------------------------------------
 // Javadoc の書き漏れ（コメントの書き方 第 2 節）
-//   Checkstyle で、本番のコード（src/main/java）の public のクラスとメソッドに Javadoc があることを確かめる。
+//   Checkstyle で、本番のコード（src/main/java）のクラスとメンバー（private を含む）に Javadoc があることを確かめる。
+//   Javadoc があるかだけを見て、@param・@return は見ない。
 //   生成したコード（jOOQ、OpenAPI。build/ の下）、上書き（@Override）、テストは見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
 //   Checkstyle はビルドの道具で、アプリと依存のライセンスの検査の構成には入らない

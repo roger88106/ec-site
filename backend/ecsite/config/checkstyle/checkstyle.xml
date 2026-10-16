@@ -4,19 +4,20 @@
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <!--
   Javadoc の書き漏れだけを確かめる（コメントの書き方 第 2 節）。
-  対象は public のクラスとメソッド。上書き（@Override）は除く（MissingJavadocMethod の既定）。
-  private を含むすべてのメンバーに書く規則のうち、ここで確かめない所は見直しで読む。
+  対象は private を含むすべてのクラス・メソッド・コンストラクタ・項目。上書き（@Override）は除く（MissingJavadocMethod の既定）。
+  Javadoc があるかだけを見て、@param・@return の有無と中身は見ない（private は 1 文の簡単なものでよい）。
 -->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="error"/>
     <module name="TreeWalker">
         <module name="MissingJavadocType">
-            <property name="scope" value="public"/>
+            <property name="scope" value="private"/>
         </module>
         <module name="MissingJavadocMethod">
-            <property name="scope" value="public"/>
+            <property name="scope" value="private"/>
             <property name="allowMissingPropertyJavadoc" value="false"/>
         </module>
+        <module name="JavadocVariable"/>
     </module>
 </module>

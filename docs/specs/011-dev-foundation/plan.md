@@ -211,6 +211,8 @@
 | 既存の漏れ | 段階 5 の最初のタスクで数を測る。100 を超えたら、直し方（まとめて直す、モジュールごとに分ける）を利用者に確かめる |
 | 依存のライセンス | Checkstyle は LGPL。ビルドの道具で、アプリには入らない。`checkLicense` の対象に入るかを確かめ、入るなら方針（`scripts/ci/licenses/policy.json`）に理由を書いて許す |
 
+2026-10-16 追記：段階 5 の後、利用者の判断で対象を private を含むすべてのメンバーに広げた（T011-05-08）。private は 1 文の簡単な Javadoc でよく、`@param`・`@return` は求めない。
+
 理由：javac の `-Xdoclint:missing` は、生成したコードを除く設定が難しく、private にも当たる。Checkstyle は対象を規則ごとに絞れる。
 
 公開のメソッドの範囲は、[コメントの書き方](../../process/comments.md)の Javadoc の規則に合わせる（段階 5 で照らし、食い違えば文書を先に直す）。

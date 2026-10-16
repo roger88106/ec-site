@@ -39,7 +39,7 @@ pnpm dev
 | http://localhost:8025 | Mailpit（Keycloak とバックエンドが送ったメール。外には送らない） |
 
 - `docker compose` はルートで実行する（ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
-- Mailpit の SMTP はホストの 1025 で受ける。1025 を他のプログラムが使っていると（Windows ではシステムのプログラムが使うことがある）、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いたポートを入れて、compose とバックエンドを起動する（両方が同じ値を読む）。
+- Mailpit の SMTP はホストの 2525 で受ける（1025 は Windows のシステムのプログラムが使うことがあるので使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いたポートを入れて、compose とバックエンドを起動する（両方が同じ値を読む）。
 - 止めるときは `docker compose stop`。データを作り直すときは第 4 節。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で直せる lint は `pnpm lint:fix`。
@@ -123,3 +123,12 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 - 撮影の中で、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面のため）。白のマグカップの在庫を 2 つ使うので、続けて撮るときも DB を作り直す。
 - 撮影は E2E ではなく、CI では流さない。撮った画像は目で確かめてから commit する。
+
+## 7. ポートが使えないとき（Windows）
+
+Windows は、WinNAT（Docker や WSL が使う）などのために、ポートの範囲を動的に予約する。ローカルの環境のポートがその範囲に入ると使えなくなる。
+
+- 症状：待ち受けているプロセスがないのに、起動が `EACCES`、`bind: An attempt was made to access a socket in a way forbidden by its access permissions`、`ports are not available` で失敗する。
+- 確かめ方：`netsh interface ipv4 show excludedportrange protocol=tcp` の範囲に、そのポートが入っているか。
+- 直し方：compose・バックエンド・画面を止めてから、管理者の PowerShell で `scripts\dev\windows\exclude-ports.ps1` を流す。ローカルの環境のポートを予約の範囲と照らして示し、確かめてから WinNAT を止め、ポートを 1 つずつ予約して WinNAT を始め直す。予約は再起動の後も残る。`-WhatIf` を付けると、照らした結果だけを示す。
+- その場の対処：管理者の権限で `net stop winnat` と `net start winnat` を流す。動的な範囲が取り直されるので空くことが多いが、再起動などでまた入ることがある。

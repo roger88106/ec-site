@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
 import static com.ecsite.jooq.reporting.Tables.STATUS_HISTORY;
@@ -47,11 +48,6 @@ import static org.mockito.Mockito.when;
 @IntegrationTest
 @Import(TestClockConfig.class)
 class ReportCollectionTest {
-
-    /**
-     * 非同期の処理を待つ時間の上限
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     /**
      * 注文日時（日本時間の 2026-10-08 00:30）

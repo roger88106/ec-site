@@ -21,6 +21,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.awaitility.Awaitility.await;
 
 /**
@@ -36,11 +37,6 @@ class EventResubmissionJobTest {
      * テストの現在時刻（イベントの発行日時になる）
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
-     * 非同期の処理を待つ時間の上限
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @Autowired
     EventResubmissionJob job;

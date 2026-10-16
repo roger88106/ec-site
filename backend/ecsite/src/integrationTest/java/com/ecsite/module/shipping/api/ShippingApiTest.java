@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -119,7 +120,7 @@ class ShippingApiTest {
         assertBusinessError(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "8884-5556", SHIPPED_AT),
                 ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
 
-        await().during(Duration.ofMillis(500)).atMost(Duration.ofSeconds(10))
+        await().during(Duration.ofMillis(500)).atMost(TIMEOUT)
                 .until(() -> tracking.started().contains(new MockCarrierTracking.Started(Carrier.YAMATO, "88812223")));
         assertThat(tracking.started()).doesNotContain(new MockCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
     }

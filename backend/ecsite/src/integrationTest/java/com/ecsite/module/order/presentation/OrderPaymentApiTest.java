@@ -33,6 +33,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -66,11 +67,6 @@ class OrderPaymentApiTest {
      * テストの現在時刻（商品を公開するたびに 1 分進むので、注文日時はこれより後になる）
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
-     * 非同期の処理を待つ時間の上限
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @Autowired
     MockMvc mockMvc;

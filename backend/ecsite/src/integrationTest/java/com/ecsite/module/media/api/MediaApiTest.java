@@ -26,12 +26,12 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.nio.charset.StandardCharsets;
-import java.time.Duration;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static com.ecsite.jooq.media.Tables.ASSET;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,11 +56,6 @@ class MediaApiTest {
      * 画像の大きさの上限（10MB。AC-39）
      */
     private static final int MAX_BYTES = 10 * 1024 * 1024;
-
-    /**
-     * コミット後のイベントの処理を待つ時間の上限
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     private static final byte[] GIF = {'G', 'I', 'F', '8', '9', 'a', 1, 0, 1, 0, 0, 0};
 

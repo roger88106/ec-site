@@ -20,6 +20,7 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
@@ -33,11 +34,6 @@ import static org.mockito.Mockito.doThrow;
 @IntegrationTest
 @Import(TestClockConfig.class)
 class ShipmentMailTest {
-
-    /**
-     * 非同期の処理を待つ時間の上限
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @Autowired
     ApplicationEventPublisher events;

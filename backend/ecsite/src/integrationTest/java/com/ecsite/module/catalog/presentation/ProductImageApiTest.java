@@ -35,6 +35,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
@@ -476,7 +477,7 @@ class ProductImageApiTest {
      * 配信のファイルが、コミット後のイベントで消えるのを待つ
      */
     private void assertEventuallyGone(String url) {
-        await().atMost(Duration.ofSeconds(10)).pollInterval(Duration.ofMillis(200)).untilAsserted(() ->
+        await().atMost(TIMEOUT).pollInterval(Duration.ofMillis(200)).untilAsserted(() ->
                 assertThat(fetch(url).statusCode()).as("配信のファイルが消えない：%s", url).isNotEqualTo(200));
     }
 }

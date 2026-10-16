@@ -1,5 +1,6 @@
 package com.ecsite.module.notification.application;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.module.notification.application.port.Mailer;
 import com.ecsite.module.order.event.OrderShipped;
@@ -48,7 +49,7 @@ class SmtpTimeoutTest {
     /**
      * 送信の失敗を待つ時間の上限（設定の待ち時間の上限に、余裕を足す）
      */
-    private static final Duration TIMEOUT = Duration.ofSeconds(40);
+    private static final Duration SEND_FAILURE_TIMEOUT = Duration.ofSeconds(40);
 
     @Autowired
     ApplicationEventPublisher events;
@@ -97,8 +98,8 @@ class SmtpTimeoutTest {
         transaction.executeWithoutResult(status -> events.publishEvent(OrderShipped.of(Instant.now(), orderId,
                 "20261008-000001", "timeout-" + orderId + "@example.com", OrderShipped.Carrier.YAMATO, "123456789012")));
 
-        await().atMost(TIMEOUT).until(() -> !failures.isEmpty());
-        await().atMost(Duration.ofSeconds(5)).until(() -> dsl.fetchCount(SENT_MAIL, SENT_MAIL.ORDER_ID.eq(orderId)) == 0);
+        await().atMost(SEND_FAILURE_TIMEOUT).until(() -> !failures.isEmpty());
+        await().atMost(AsyncEvents.TIMEOUT).until(() -> dsl.fetchCount(SENT_MAIL, SENT_MAIL.ORDER_ID.eq(orderId)) == 0);
         assertThat(SILENT_SMTP.accepted()).isPositive();
     }
 

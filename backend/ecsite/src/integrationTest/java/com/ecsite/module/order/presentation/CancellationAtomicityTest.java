@@ -27,10 +27,10 @@ import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -124,7 +124,7 @@ class CancellationAtomicityTest {
      * 楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある。
      */
     private void awaitAuthorizedHandled() {
-        await().atMost(Duration.ofSeconds(10)).until(() -> publicationRegistry.findIncompletePublications().stream()
+        await().atMost(TIMEOUT).until(() -> publicationRegistry.findIncompletePublications().stream()
                 .noneMatch(publication -> publication.getEvent() instanceof PaymentAuthorized event
                         && event.orderId().equals(orderId)));
     }

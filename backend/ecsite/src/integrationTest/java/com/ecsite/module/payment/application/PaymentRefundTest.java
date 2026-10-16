@@ -22,6 +22,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
@@ -38,11 +39,6 @@ class PaymentRefundTest {
      * 注文日時
      */
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
-
-    /**
-     * 非同期の処理を待つ時間の上限
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     @Autowired
     PaymentApi paymentApi;

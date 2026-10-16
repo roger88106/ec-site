@@ -6,11 +6,11 @@ import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.time.Duration;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.awaitility.Awaitility.await;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -22,11 +22,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * 商品と在庫は、呼ぶ側が先に用意する。
  */
 public class OrderTestData {
-
-    /**
-     * 注文が指定の状態になるのを待つ時間の上限（決済のイベントはコミット後に非同期で処理される）
-     */
-    private static final Duration TIMEOUT = Duration.ofSeconds(10);
 
     /**
      * MockMvc

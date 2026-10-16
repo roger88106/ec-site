@@ -12,21 +12,28 @@ const TEST_FILES = [
   /^e2e\/(?:tests|src|showcase)\/.*\.ts$/,
 ]
 
-/** 時間で待つ呼び出し（Thread.sleep、TimeUnit の sleep、Playwright の waitForTimeout） */
-const TIME_WAIT = /\bThread\.sleep\(|\bTimeUnit\.\w+\.sleep\(|\bwaitForTimeout\(/g
+/**
+ * 時間で待つ呼び出し（Thread.sleep、TimeUnit の sleep、Playwright の waitForTimeout）と、
+ * 決まった時間だけ見る・待ってから見る Awaitility の書き方（during、pollDelay）
+ */
+const TIME_WAIT = /\bThread\.sleep\(|\bTimeUnit\.\w+\.sleep\(|\bwaitForTimeout\(|\.during\(|\.pollDelay\(/g
+
+/** Promise で包んで、決まった時間だけ待つ setTimeout（new Promise((resolve) => setTimeout(resolve, …))）。行をまたいでもよい */
+const PROMISE_TIMEOUT = /new Promise\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*(setTimeout\()\s*\1\b/g
 
 /**
  * 時間で待つ呼び出しを書いた行を探す。
  *
  * @param {string} text ソース
- * @returns {{ line: number, call: string }[]} 見つけた行と呼び出し
+ * @returns {{ line: number, call: string }[]} 見つけた行と呼び出し（行の順）
  */
 export function findTimeWaits(text) {
-  const hits = []
-  text.split('\n').forEach((line, index) => {
-    for (const match of line.matchAll(TIME_WAIT)) hits.push({ line: index + 1, call: match[0] })
-  })
-  return hits
+  const lineOf = (index) => text.slice(0, index).split('\n').length
+  const hits = [...text.matchAll(TIME_WAIT)].map((match) => ({ line: lineOf(match.index), call: match[0] }))
+  for (const match of text.matchAll(PROMISE_TIMEOUT)) {
+    hits.push({ line: lineOf(match.index + match[0].lastIndexOf(match[2])), call: match[2] })
+  }
+  return hits.sort((a, b) => a.line - b.line)
 }
 
 /**

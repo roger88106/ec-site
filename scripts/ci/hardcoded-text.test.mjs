@@ -42,6 +42,31 @@ describe('表示の文言を直接書いた所の検査', () => {
     )
   })
 
+  test('正規表現のリテラルの中の引用符は文字列の始まりにしない', () => {
+    const text = [
+      "const QUOTES = /[\"'「]/g // 引用符と鍵括弧",
+      'const SLASHES = /\\/\\/[a-z/]+/ // 二重の斜線',
+      "if (/^'/.test(value)) return // 引用符で始まる",
+      "const label = '保存'",
+    ].join('\n')
+    assert.deepEqual(
+      findHardcodedText(text).map((hit) => hit.line),
+      [4],
+    )
+  })
+
+  test('割り算は正規表現にしない', () => {
+    const text = [
+      'const half = total / 2 // 半分にする',
+      "const ratio = a / b; const label = '保存'",
+      "const per = (sum) / count / 2; const unit = '個'",
+    ].join('\n')
+    assert.deepEqual(
+      findHardcodedText(text).map((hit) => hit.line),
+      [2, 3],
+    )
+  })
+
   test('コメントを消しても、行の数は変わらない', () => {
     const text = '/*\n * 説明\n */\nconst a = 1'
     assert.equal(stripComments(text).split('\n').length, 4)

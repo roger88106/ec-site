@@ -12,7 +12,7 @@
 - [x] **T011-02-04** `check-frontend.sh` の対象に `e2e`（lint、typecheck）を足す。引数なしの実行で e2e も流れることを確かめる。
 - [x] **T011-02-05** [テスト] `ac-check.test.mjs`：`describe` だけにある AC と、`@Nested` のクラスの `@DisplayName` だけにある AC が対応とみなされない例を足し、レッドを確かめる。
 - [x] **T011-02-06** `ac-check.mjs` を直す（plan 第 2.3 節）。検査で失敗した AC を `ac-exclusions.json` に理由付きで除き、一覧を `docs/specs/mvp.md` の後に回した決定の表（spec 012）に書く。
-- [ ] **T011-02-07** [テスト] `hardcoded-text.test.mjs`：引用符を含む正規表現のリテラルが文言とみなされない例と、割り算を正規表現とみなさない例を足し、レッドを確かめる。
+- [x] **T011-02-07** [テスト] `hardcoded-text.test.mjs`：引用符を含む正規表現のリテラルが文言とみなされない例と、割り算を正規表現とみなさない例を足し、レッドを確かめる。
 - [ ] **T011-02-08** `hardcoded-text.mjs` の `stripComments` に正規表現のリテラルを足す（plan 第 2.4 節）。
 - [ ] **T011-02-09** `docs/dev/ci.md`：CI のジョブと CI の検査の script の一覧（plan 第 2.5 節）。skill `local-dev` の「CI の script の検査」と ci.yml の冒頭のコメントを、この文書を指す形にする。
 - [ ] **T011-02-10** `scripts/dev/hooks/pre-commit` と、setup に置き方の手順を書く（plan 第 2.6 節）。このマシンの `.git/hooks/pre-commit` に呼ぶ 1 行を足し、検査に当たる変更で commit が止まることを確かめる。

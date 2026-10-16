@@ -12,5 +12,5 @@
 - [x] **T011-01-03** `spec-numbers.mjs` に新しい形式を足す。T011-01-01 で見つけたほかの script・skill も、新旧の両方を読むようにする。
 - [x] **T011-01-04** notation の「tasks の番号と記号」：新しい形式、spec の番号の桁を固定しないこと、段階・連番は 2 桁、途中で足すタスクは段階のファイルの末尾に続きの番号で足すこと、spec 001〜010 は古い形式のままであることを書く。workflow の tasks の説明に同じ規則への参照があるか確かめる。
 - [x] **T011-01-05** `docs/specs/mvp.md`：spec 011〜018 の表、並べた原則、MVP の後に回した決定の表（plan 第 1.2 節）。README の進捗の表の下にリンクを置き、spec 011 の行を足す。用語集に「MVP の完成までの一覧」と「CI の検査の script」を足す。
-- [ ] **T011-01-06** 文書の言語（plan 第 6 節）：review.md と skill `docs` を直し、`中国|check-zh|混入` の grep（`docs/specs/0*` を除く）で当たりがないことを確かめる。
+- [x] **T011-01-06** 文書の言語（plan 第 6 節）：review.md と skill `docs` を直し、`中国|check-zh|混入` の grep（`docs/specs/0*` を除く）で当たりがないことを確かめる。
 - [ ] **T011-01-07** 段階の完了の確認：`doc-refs`・`doc-terms`・`spec-numbers` とその script のテストが通る。spec 001〜010 に差分がない。

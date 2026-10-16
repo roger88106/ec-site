@@ -15,5 +15,5 @@
 - [x] **T011-02-07** [テスト] `hardcoded-text.test.mjs`：引用符を含む正規表現のリテラルが文言とみなされない例と、割り算を正規表現とみなさない例を足し、レッドを確かめる。
 - [x] **T011-02-08** `hardcoded-text.mjs` の `stripComments` に正規表現のリテラルを足す（plan 第 2.4 節）。
 - [x] **T011-02-09** `docs/dev/ci.md`：CI のジョブと CI の検査の script の一覧（plan 第 2.5 節）。skill `local-dev` の「CI の script の検査」と ci.yml の冒頭のコメントを、この文書を指す形にする。
-- [ ] **T011-02-10** `scripts/dev/hooks/pre-commit` と、setup に置き方の手順を書く（plan 第 2.6 節）。このマシンの `.git/hooks/pre-commit` に呼ぶ 1 行を足し、検査に当たる変更で commit が止まることを確かめる。
+- [x] **T011-02-10** `scripts/dev/hooks/pre-commit` と、setup に置き方の手順を書く（plan 第 2.6 節）。このマシンの `.git/hooks/pre-commit` に呼ぶ 1 行を足し、検査に当たる変更で commit が止まることを確かめる。
 - [ ] **T011-02-11** 段階の完了の確認：`check-all.sh`、`check-frontend.sh` が通る。DN-10 のとおり、既存のテストを変えていない。

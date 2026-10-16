@@ -43,6 +43,11 @@ pnpm dev
 - 止めるときは `docker compose stop`、データを消して作り直すときは `docker compose down -v`。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で直せる lint は `pnpm lint:fix`。
+- commit の前に CI の検査の script（[CI の検査](ci.md)）を流すには、`.git/hooks/pre-commit` に次の 1 行を書く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いたほかの hook と並べられるよう、`core.hooksPath` は変えない。
+
+  ```sh
+  "$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" || exit 1
+  ```
 
 ## 3. アカウント
 

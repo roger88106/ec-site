@@ -6,12 +6,12 @@ import com.ecsite.api.admin.model.CreatedId;
 import com.ecsite.api.admin.model.ReplaceTaxRatesRequest;
 import com.ecsite.api.admin.model.TaxCategory;
 import com.ecsite.api.admin.model.TaxCategoryList;
+import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.tax.application.TaxCategoryCommandService;
 import com.ecsite.module.tax.application.TaxCategoryQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.UUID;
 
@@ -74,12 +74,7 @@ class TaxCategoryController implements TaxApi {
         UUID id = commandService.createTaxCategory(mapper.toCreateTaxCategoryCommand(request));
 
         // ロケーション：登録した税区分の URL
-        var location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(id)
-                .toUri();
-
-        return ResponseEntity.created(location).body(new CreatedId(id));
+        return CreatedResponses.admin(id);
     }
 
 // ============================== PUT ==============================

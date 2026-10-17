@@ -7,12 +7,12 @@ import com.ecsite.api.admin.model.CreateCategoryRequest;
 import com.ecsite.api.admin.model.CreatedId;
 import com.ecsite.api.admin.model.RenameCategoryRequest;
 import com.ecsite.api.admin.model.ReorderCategoriesRequest;
+import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.catalog.application.CategoryCommandService;
 import com.ecsite.module.catalog.application.CategoryQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.UUID;
 
@@ -75,12 +75,7 @@ class CategoryController implements CategoryApi {
         UUID id = commandService.createCategory(mapper.toCreateCategoryCommand(request));
 
         // ロケーション：登録したカテゴリの URL
-        var location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(id)
-                .toUri();
-
-        return ResponseEntity.created(location).body(new CreatedId(id));
+        return CreatedResponses.admin(id);
     }
 
 // ============================== PUT ==============================

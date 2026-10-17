@@ -16,16 +16,16 @@ import com.ecsite.api.admin.model.SetPublicationPeriodRequest;
 import com.ecsite.api.admin.model.SetVariantImageRequest;
 import com.ecsite.api.admin.model.UpdateProductRequest;
 import com.ecsite.common.paging.PageRequest;
+import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.catalog.application.ProductCommandService;
-import com.ecsite.module.catalog.application.ProductPublicationService;
-import com.ecsite.module.catalog.application.VariantCommandService;
 import com.ecsite.module.catalog.application.ProductImageService;
+import com.ecsite.module.catalog.application.ProductPublicationService;
 import com.ecsite.module.catalog.application.ProductQueryService;
+import com.ecsite.module.catalog.application.VariantCommandService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.List;
 import java.util.UUID;
@@ -113,12 +113,7 @@ class ProductController implements ProductApi {
         UUID id = commandService.createProduct(mapper.toCreateProductCommand(request));
 
         // ロケーション：登録した商品の URL
-        var location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(id)
-                .toUri();
-
-        return ResponseEntity.created(location).body(new CreatedId(id));
+        return CreatedResponses.admin(id);
     }
 
     /**
@@ -131,7 +126,7 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<CreatedId> addVariant(UUID productId, AddVariantRequest request) {
         UUID id = variantCommandService.addVariant(mapper.toAddVariantCommand(productId, request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId(id));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId().id(id));
     }
 
 // ============================== PUT ==============================
@@ -262,7 +257,7 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<CreatedId> addProductImage(UUID productId, AddProductImageRequest request) {
         var id = imageService.addImage(productId, request.getUploadId(), request.getVersion());
-        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId(id));
+        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId().id(id));
     }
 
     /**

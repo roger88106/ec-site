@@ -3,6 +3,7 @@ package com.ecsite.module.tax.presentation;
 import com.ecsite.api.admin.model.CreateTaxCategoryRequest;
 import com.ecsite.api.admin.model.ReplaceTaxRatesRequest;
 import com.ecsite.api.admin.model.TaxCategory;
+import com.ecsite.api.admin.model.TaxCategoryList;
 import com.ecsite.api.admin.model.TaxRate;
 import com.ecsite.api.admin.model.TaxRateDraft;
 import com.ecsite.common.presentation.ApiDateTimes;
@@ -11,6 +12,7 @@ import com.ecsite.module.tax.application.model.command.ReplaceTaxRatesCommand;
 import com.ecsite.module.tax.application.model.view.TaxCategoryView;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -50,12 +52,22 @@ class TaxCategoryMapper {
      * @return 税区分のレスポンス
      */
     TaxCategory toTaxCategory(TaxCategoryView view) {
-        return new TaxCategory(
-                view.id(),
-                view.name(),
-                view.rates().stream().map(TaxCategoryMapper::toTaxRate).toList(),
-                view.version())
-                .currentRatePercent(view.currentRatePercent());
+        return new TaxCategory()
+                .id(view.id())
+                .name(view.name())
+                .currentRatePercent(view.currentRatePercent())
+                .rates(view.rates().stream().map(TaxCategoryMapper::toTaxRate).toList())
+                .version(view.version());
+    }
+
+    /**
+     * 税区分の一覧のレスポンスに変換する。
+     *
+     * @param views 税区分のビューの一覧
+     * @return 税区分の一覧のレスポンス
+     */
+    TaxCategoryList toTaxCategoryList(List<TaxCategoryView> views) {
+        return new TaxCategoryList().items(views.stream().map(this::toTaxCategory).toList());
     }
 
 // ============================== プライベートメソッド ==============================
@@ -75,7 +87,9 @@ class TaxCategoryMapper {
      * 税率をレスポンスに変換する。
      */
     private static TaxRate toTaxRate(TaxCategoryView.TaxRateView view) {
-        return new TaxRate(view.id(), view.ratePercent())
+        return new TaxRate()
+                .id(view.id())
+                .ratePercent(view.ratePercent())
                 .effectiveFrom(ApiDateTimes.toOffsetDateTime(view.effectiveFrom()))
                 .effectiveTo(ApiDateTimes.toOffsetDateTime(view.effectiveTo()));
     }

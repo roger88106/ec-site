@@ -46,8 +46,7 @@ class TaxCategoryController implements TaxApi {
      */
     @Override
     public ResponseEntity<TaxCategoryList> listTaxCategories() {
-        var items = queryService.listTaxCategories().stream().map(mapper::toTaxCategory).toList();
-        return ResponseEntity.ok(new TaxCategoryList(items));
+        return ResponseEntity.ok(mapper.toTaxCategoryList(queryService.listTaxCategories()));
     }
 
     /**

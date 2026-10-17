@@ -1,7 +1,6 @@
 package com.ecsite.module.catalog.domain.product;
 
-import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 
@@ -39,15 +38,7 @@ public class ProductFactory {
      * @return 商品
      */
     public Product restore(Product.Snapshot snapshot) {
-        try {
-            return new Product(snapshot);
-        } catch (Exception e) {
-            // 復元失敗の場合、復元エラーに変換してスローする
-            String debugMessage = """
-                    product restore error.
-                    snapshot: %s
-                    """.formatted(snapshot);
-            throw SystemException.of(debugMessage, e, CommonErrorCode.RESTORE_ERROR);
-        }
+        // 復元失敗の場合、復元エラーに変換してスローする
+        return AggregateGuards.restore("product", snapshot, () -> new Product(snapshot));
     }
 }

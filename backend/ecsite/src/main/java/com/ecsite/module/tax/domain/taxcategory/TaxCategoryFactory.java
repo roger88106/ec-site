@@ -1,7 +1,6 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
-import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.base.AggregateGuards;
 
 import java.util.UUID;
 
@@ -27,15 +26,7 @@ public class TaxCategoryFactory {
      * @return 税区分
      */
     public TaxCategory restore(TaxCategory.Snapshot snapshot) {
-        try {
-            return new TaxCategory(snapshot);
-        } catch (Exception e) {
-            // 復元失敗の場合、復元エラーに変換してスローする
-            String debugMessage = """
-                    tax category restore error.
-                    snapshot: %s
-                    """.formatted(snapshot);
-            throw SystemException.of(debugMessage, e, CommonErrorCode.RESTORE_ERROR);
-        }
+        // 復元失敗の場合、復元エラーに変換してスローする
+        return AggregateGuards.restore("tax category", snapshot, () -> new TaxCategory(snapshot));
     }
 }

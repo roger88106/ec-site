@@ -60,6 +60,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 ## 3. モジュール間の連携
 
 - 同期の呼び出しは、参照か、すぐに結果が必要な場面だけ。それ以外はイベント（名前は過去形。例：`OrderPlaced`）。
+- イベントは集約が記録し（`registerEvent`）、リポジトリが保存の後に送り出す。集約を持たないレベル B のモジュールは、application の service が送り出してよい。理由：保存に失敗したときにイベントだけが出ないようにし、domain を送り出しの仕組みから切り離すため。
 - 他のモジュールのテーブルを読み書きせず、外部キーも張らない。
 - モジュールをまたぐ整合性は結果整合。強い一貫性が必要な所は spec に書き、plan で方法を決める。
 
@@ -114,6 +115,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 ### 6.2 Flyway
 
 - スキーマの正本は Flyway のマイグレーション（`backend/ecsite/src/main/resources/db/migration/`）。
+- 新しいモジュールの schema は、そのモジュールの最初のマイグレーションで作る。最初の 4 つ（common、tax、catalog、inventory）だけは、1 つのマイグレーション（`common_create_schemas`）で作った。schema の名前はモジュールの名前にする。例外は `order` の schema の `ordering`（`order` が SQL の予約語のため）。
 - コミット済みのマイグレーションは変えず、新しいバージョンを足す。バージョンはタイムスタンプ（例：`V202610081400__catalog_create_product.sql`）。
 - jOOQ のコード生成と統合テストは、Testcontainers の PostgreSQL に Flyway を流して行う。
 - 開発と E2E の seed は `db/seed/` に置き、ローカルと E2E の profile でだけ流す（[使い分け](../../backend/ecsite/src/main/resources/db/seed/local/README.md)）。

@@ -1,10 +1,12 @@
 package com.ecsite.module.inventory.presentation;
 
 import com.ecsite.api.admin.model.AdjustStockRequest;
+import com.ecsite.api.admin.model.Stock;
 import com.ecsite.api.admin.model.StockAdjustment;
 import com.ecsite.api.admin.model.StockAdjustmentPage;
 import com.ecsite.api.admin.model.StockAdjustmentReason;
 import com.ecsite.api.admin.model.StockSummary;
+import com.ecsite.api.admin.model.StockSummaryList;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.command.AdjustStockCommand;
@@ -13,6 +15,7 @@ import com.ecsite.module.inventory.application.model.view.StockSummaryView;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneOffset;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -41,8 +44,12 @@ class InventoryMapper {
      * @return 在庫調整のレスポンス
      */
     StockAdjustment toStockAdjustment(StockAdjustmentView view) {
-        return new StockAdjustment(view.id(), view.delta(), StockAdjustmentReason.fromValue(view.reason()),
-                view.quantityAfter(), view.adjustedAt().atOffset(ZoneOffset.UTC))
+        return new StockAdjustment()
+                .id(view.id())
+                .delta(view.delta())
+                .reason(StockAdjustmentReason.fromValue(view.reason()))
+                .quantityAfter(view.quantityAfter())
+                .adjustedAt(view.adjustedAt().atOffset(ZoneOffset.UTC))
                 .memo(view.memo())
                 .orderId(view.orderId())
                 .orderNumber(view.orderNumber())
@@ -56,8 +63,12 @@ class InventoryMapper {
      * @return 調整履歴のページのレスポンス
      */
     StockAdjustmentPage toStockAdjustmentPage(PageResult<StockAdjustmentView> page) {
-        return new StockAdjustmentPage(page.page(), page.size(), page.totalItems(), page.totalPages(),
-                page.items().stream().map(this::toStockAdjustment).toList());
+        return new StockAdjustmentPage()
+                .page(page.page())
+                .size(page.size())
+                .totalItems(page.totalItems())
+                .totalPages(page.totalPages())
+                .items(page.items().stream().map(this::toStockAdjustment).toList());
     }
 
     /**
@@ -67,6 +78,31 @@ class InventoryMapper {
      * @return 在庫数の合計のレスポンス
      */
     StockSummary toStockSummary(StockSummaryView view) {
-        return new StockSummary(view.productId(), view.totalQuantity());
+        return new StockSummary()
+                .productId(view.productId())
+                .totalQuantity(view.totalQuantity());
+    }
+
+    /**
+     * 在庫数の合計の一覧のレスポンスに変換する。
+     *
+     * @param views 在庫数の合計のビューの一覧
+     * @return 在庫数の合計の一覧のレスポンス
+     */
+    StockSummaryList toStockSummaryList(List<StockSummaryView> views) {
+        return new StockSummaryList().items(views.stream().map(this::toStockSummary).toList());
+    }
+
+    /**
+     * バリアントの在庫数のレスポンスに変換する。
+     *
+     * @param variantId バリアント ID
+     * @param quantity  在庫数
+     * @return 在庫数のレスポンス
+     */
+    Stock toStock(UUID variantId, int quantity) {
+        return new Stock()
+                .variantId(variantId)
+                .quantity(quantity);
     }
 }

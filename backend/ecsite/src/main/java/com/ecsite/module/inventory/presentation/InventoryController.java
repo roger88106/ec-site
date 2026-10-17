@@ -55,7 +55,7 @@ class InventoryController implements InventoryApi {
      */
     @Override
     public ResponseEntity<Stock> getStock(UUID variantId) {
-        return ResponseEntity.ok(new Stock(variantId, queryService.getQuantity(variantId)));
+        return ResponseEntity.ok(mapper.toStock(variantId, queryService.getQuantity(variantId)));
     }
 
     /**
@@ -80,8 +80,7 @@ class InventoryController implements InventoryApi {
      */
     @Override
     public ResponseEntity<StockSummaryList> listStockSummaries(List<UUID> productIds) {
-        var items = queryService.listStockSummaries(productIds).stream().map(mapper::toStockSummary).toList();
-        return ResponseEntity.ok(new StockSummaryList(items));
+        return ResponseEntity.ok(mapper.toStockSummaryList(queryService.listStockSummaries(productIds)));
     }
 
 // ============================== POST ==============================

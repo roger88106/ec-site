@@ -7,14 +7,12 @@ import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.MemberCart;
 import com.ecsite.api.store.model.MergeCartRequest;
 import com.ecsite.api.store.model.MergeCartResult;
-import com.ecsite.api.store.model.MergedCartItem;
+import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.module.cart.application.CartService;
-import com.ecsite.module.cart.domain.CartMergeResult;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.UUID;
 
@@ -38,6 +36,11 @@ class CartController implements CartApi {
     private final CurrentMemberIds currentMemberIds;
 
     /**
+     * API の型への変換
+     */
+    private final CartMapper mapper;
+
+    /**
      * カートを作る
      *
      * @return Http 201 : {@link CreatedId}
@@ -47,12 +50,7 @@ class CartController implements CartApi {
         var id = cartService.createCart();
 
         // ロケーション：作ったカートの URL
-        var location = ServletUriComponentsBuilder.fromCurrentRequest()
-                .path("/{id}")
-                .buildAndExpand(id)
-                .toUri();
-
-        return ResponseEntity.created(location).body(new CreatedId(id));
+        return CreatedResponses.store(id);
     }
 
     /**
@@ -102,7 +100,7 @@ class CartController implements CartApi {
      */
     @Override
     public ResponseEntity<MemberCart> getMemberCart() {
-        return ResponseEntity.ok(new MemberCart(cartService.memberCartId(currentMemberIds.require())));
+        return ResponseEntity.ok(mapper.toMemberCart(cartService.memberCartId(currentMemberIds.require())));
     }
 
     /**
@@ -114,18 +112,6 @@ class CartController implements CartApi {
     @Override
     public ResponseEntity<MergeCartResult> mergeCart(MergeCartRequest request) {
         var merged = cartService.merge(currentMemberIds.require(), request.getCartId());
-        return ResponseEntity.ok(new MergeCartResult(
-                merged.cartId(),
-                merged.result().truncatedItems().stream().map(CartController::toMergedItem).toList(),
-                merged.result().skippedItems().stream().map(CartController::toMergedItem).toList()));
-    }
-
-// ============================== プライベートメソッド ==============================
-
-    /**
-     * 移した結果の品目を、レスポンスの品目にする。
-     */
-    private static MergedCartItem toMergedItem(CartMergeResult.Item item) {
-        return new MergedCartItem(item.variantId(), item.quantity());
+        return ResponseEntity.ok(mapper.toMergeCartResult(merged));
     }
 }

@@ -49,4 +49,15 @@ public record Money(long yen) {
     public Money plus(Money other) {
         return new Money(Math.addExact(yen, other.yen));
     }
+
+    /**
+     * 数量を掛ける。<br />
+     * 桁あふれは {@link ArithmeticException}、負の数量は負の金額として {@link BusinessException} になる。
+     *
+     * @param quantity 数量
+     * @return 数量を掛けた金額
+     */
+    public Money times(int quantity) {
+        return new Money(Math.multiplyExact(yen, quantity));
+    }
 }

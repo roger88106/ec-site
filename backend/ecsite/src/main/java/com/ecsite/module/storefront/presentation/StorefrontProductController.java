@@ -4,10 +4,8 @@ import com.ecsite.api.store.ProductApi;
 import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
 import com.ecsite.api.store.model.ProductSummaryPage;
-import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.storefront.application.StorefrontService;
-import com.ecsite.module.storefront.application.port.ProductCondition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -45,8 +43,7 @@ class StorefrontProductController implements ProductApi {
     @Override
     public ResponseEntity<ProductSummaryPage> listProducts(UUID categoryId, Long minPrice, Long maxPrice,
                                                            ProductSort sort, Integer page, Integer size) {
-        var condition = new ProductCondition(categoryId, minPrice == null ? null : Money.of(minPrice),
-                maxPrice == null ? null : Money.of(maxPrice), mapper.toSort(sort));
+        var condition = mapper.toProductCondition(categoryId, minPrice, maxPrice, sort);
         var result = storefrontService.listProducts(condition, PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toProductSummaryPage(result));
     }

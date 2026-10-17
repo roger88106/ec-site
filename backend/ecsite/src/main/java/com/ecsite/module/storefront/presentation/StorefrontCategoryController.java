@@ -31,7 +31,6 @@ class StorefrontCategoryController implements CategoryApi {
      */
     @Override
     public ResponseEntity<CategoryTree> listCategories() {
-        var items = storefrontService.categoryTree().stream().map(mapper::toCategoryNode).toList();
-        return ResponseEntity.ok(new CategoryTree(items));
+        return ResponseEntity.ok(mapper.toCategoryTree(storefrontService.categoryTree()));
     }
 }

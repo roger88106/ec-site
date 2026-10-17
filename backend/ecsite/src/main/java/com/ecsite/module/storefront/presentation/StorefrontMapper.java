@@ -4,6 +4,7 @@ import com.ecsite.api.store.model.Amounts;
 import com.ecsite.api.store.model.AxisValue;
 import com.ecsite.api.store.model.Cart;
 import com.ecsite.api.store.model.CategoryNode;
+import com.ecsite.api.store.model.CategoryTree;
 import com.ecsite.api.store.model.Price;
 import com.ecsite.api.store.model.ProductDetail;
 import com.ecsite.api.store.model.ProductSort;
@@ -15,6 +16,7 @@ import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.api.store.model.Variant;
 import com.ecsite.api.store.model.VariantAxis;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.StorePrices;
 import com.ecsite.module.storefront.application.ProductDetailView;
@@ -24,6 +26,9 @@ import com.ecsite.module.storefront.application.port.CartView;
 import com.ecsite.module.storefront.application.port.CatalogCategory;
 import com.ecsite.module.storefront.application.port.ProductCondition;
 import org.springframework.stereotype.Component;
+
+import java.util.List;
+import java.util.UUID;
 
 /**
  * 店舗 API のリクエスト・レスポンスと、店舗のサービスのモデルの変換。
@@ -46,6 +51,30 @@ class StorefrontMapper {
             case PRICE_ASC -> ProductCondition.Sort.PRICE_ASC;
             case PRICE_DESC -> ProductCondition.Sort.PRICE_DESC;
         };
+    }
+
+    /**
+     * 商品一覧の条件を作る。
+     *
+     * @param categoryId カテゴリ ID
+     * @param minPrice   税込価格の下限（円）
+     * @param maxPrice   税込価格の上限（円）
+     * @param sort       並び順
+     * @return 商品一覧の条件
+     */
+    ProductCondition toProductCondition(UUID categoryId, Long minPrice, Long maxPrice, ProductSort sort) {
+        return new ProductCondition(categoryId, minPrice == null ? null : Money.of(minPrice),
+                maxPrice == null ? null : Money.of(maxPrice), toSort(sort));
+    }
+
+    /**
+     * カテゴリの木のレスポンスに変換する。
+     *
+     * @param categories カテゴリの木の根の節
+     * @return カテゴリの木のレスポンス
+     */
+    CategoryTree toCategoryTree(List<CatalogCategory> categories) {
+        return new CategoryTree().items(categories.stream().map(this::toCategoryNode).toList());
     }
 
     /**

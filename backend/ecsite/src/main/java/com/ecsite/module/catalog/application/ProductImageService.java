@@ -45,6 +45,7 @@ public class ProductImageService {
      * @param contentLength ファイルの大きさ（申告）
      * @return 受付
      */
+    @Transactional(readOnly = true)
     public ImageUploadView createUpload(UUID productId, String contentType, long contentLength) {
         var product = findProduct(productId);
         product.verifyCanAddImage();

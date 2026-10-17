@@ -27,6 +27,9 @@
   - 復元の失敗のデバッグ用のメッセージは、今の 3 つの factory と同じ形（`<名前> restore error.` と保存した状態）にする（DN-16）。
   - 確かめ：何もしない仮の実装で、版が合う例のほかの 3 件が失敗した。
 - [x] **T013-01-10** `common` に 2 つの補助を作る（plan 第 9 節）。T013-01-09 を通す。使う所は段階 2 で直す。
-- [ ] **T013-01-11** [テスト] ArchUnit：レベル A のモジュールの application が `ApplicationEventPublisher` に依存しない（plan 第 2.2 節）。今のコードで通るので、`break-check.mjs` で catalog の service に仮に依存を足して失敗することを確かめ、戻す。レベル A の一覧の定数に、各モジュールの設計書を指すコメントを書く。
+- [x] **T013-01-11** [テスト] ArchUnit：レベル A のモジュールの application が `ApplicationEventPublisher` に依存しない（plan 第 2.2 節）。今のコードで通るので、`break-check.mjs` で catalog の service に仮に依存を足して失敗することを確かめ、戻す。レベル A の一覧の定数に、各モジュールの設計書を指すコメントを書く。
+  - 既存の `ModuleStructureTest` を変えない（DN-15）ので、新しい `ModuleRoleTest` に置き、段階 3・5・6 の規則もここに足す。
+  - 確かめ：カテゴリーの更新の service に送り出しの仕組みの項目を仮に足すと失敗した。
+  - 気づいたこと：`ModuleStructureTest` のレベル A の一覧に payment がない（設計書はレベル A）。直すと既存のテストが変わるので、見直しの段階で利用者に確かめる。
 - [ ] **T013-01-12** spec 012 の見直しの結果の「後の spec に回したもの」の Stripe の冪等のキーの記述を、要らない理由に直す（利用者の指示。plan 第 10 節）。理由は、2026-10-17 の別のセッションの調べ（送り直しで同じ注文を 2 回与信しない）を、コードと照らして書く。
 - [ ] **T013-01-13** 段階の完了の確認：`check-all.sh`、`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る。テストの差分の検査が通る。

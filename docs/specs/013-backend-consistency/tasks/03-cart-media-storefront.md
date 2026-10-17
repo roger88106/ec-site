@@ -8,7 +8,7 @@
 
 - [x] **T013-03-01** cart の mapper を作り、Controller の変換（会員のカート、統合の結果と品目）を移す。生成したモデルを項目名のメソッドで組み立てる。作成の応答を共通の補助にする。
 - [x] **T013-03-02** [テスト] ArchUnit：`api/` の型を実装するクラスは `api/` にある（plan 第 2.2 節）。今の media の service が違反して失敗することを確かめる。
-- [ ] **T013-03-03** media の `api/` に、公開の API を実装する `@Component` を作り、application の service に委ねる。service から `implements` を外す。T013-03-02 を通す。バックエンドの書き方の規則の一覧の確かめ方を「自動（ArchUnit）」にする。
+- [x] **T013-03-03** media の `api/` に、公開の API を実装する `@Component` を作り、application の service に委ねる。service から `implements` を外す。T013-03-02 を通す。バックエンドの書き方の規則の一覧の確かめ方を「自動（ArchUnit）」にする。
 - [ ] **T013-03-04** storefront の application の view（商品の概要、商品の詳細）をなくし、port の型と在庫の有無を mapper に渡す（plan 第 5.4 節）。
 - [ ] **T013-03-05** storefront の並び順の写しを、腐敗防止層の実装の 1 か所と、presentation の mapper の 1 か所にする。一覧の条件の組み立てを Controller から mapper に移す。カテゴリーの木の生成したモデルを項目名のメソッドで組み立てる。
 - [ ] **T013-03-06** 3 つのモジュールの application で、参照だけのメソッドを探し、読み取り専用のトランザクションにする。直した所をタスクの下に書く。

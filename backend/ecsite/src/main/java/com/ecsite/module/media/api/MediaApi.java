@@ -1,5 +1,9 @@
 package com.ecsite.module.media.api;
 
+import com.ecsite.module.media.application.MediaService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
 import java.net.URI;
 import java.util.Collection;
 import java.util.Map;
@@ -7,9 +11,17 @@ import java.util.UUID;
 
 /**
  * メディアモジュールが公開する API（docs/backend/modules/media.md「他のモジュールへの公開」）。<br />
- * 使う側はアセット ID だけを持つ。配信のキーや URL の形は、このモジュールの外に出さない。
+ * 使う側はアセット ID だけを持つ。配信のキーや URL の形は、このモジュールの外に出さない。<br />
+ * 処理はメディアのサービスに委ねる（バックエンドの書き方 第 1.1 節）。
  */
-public interface MediaApi {
+@Component
+@RequiredArgsConstructor
+public class MediaApi {
+
+    /**
+     * メディアのサービス
+     */
+    private final MediaService mediaService;
 
     /**
      * 画像のアップロードを受け付ける。形式と大きさを確かめ、受付のバケットへの署名付き URL を返す。<br />
@@ -21,7 +33,9 @@ public interface MediaApi {
      * @return 受付
      * @throws com.ecsite.common.error.exception.BusinessException 形式が対象外、または大きさが範囲の外
      */
-    ImageUpload requestImageUpload(String scope, String contentType, long contentLength);
+    public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
+        return mediaService.requestImageUpload(scope, contentType, contentLength);
+    }
 
     /**
      * 受け付けた画像を確定する。<br />
@@ -33,7 +47,9 @@ public interface MediaApi {
      * @return アセット ID
      * @throws com.ecsite.common.error.exception.BusinessException 受付がない（範囲の違うものを含む）、大きさが範囲の外、中身が対象の画像でない
      */
-    UUID confirmImage(String scope, UUID uploadId);
+    public UUID confirmImage(String scope, UUID uploadId) {
+        return mediaService.confirmImage(scope, uploadId);
+    }
 
     /**
      * アセットを手放す。記録を消し、配信のファイルはコミットの後に消す。<br />
@@ -41,7 +57,9 @@ public interface MediaApi {
      *
      * @param assetIds アセット ID
      */
-    void release(Collection<UUID> assetIds);
+    public void release(Collection<UUID> assetIds) {
+        mediaService.release(assetIds);
+    }
 
     /**
      * アセットの配信の URL をまとめて返す。
@@ -49,5 +67,7 @@ public interface MediaApi {
      * @param assetIds アセット ID
      * @return アセット ID → 配信の URL。ないアセットは含まない
      */
-    Map<UUID, URI> urls(Collection<UUID> assetIds);
+    public Map<UUID, URI> urls(Collection<UUID> assetIds) {
+        return mediaService.urls(assetIds);
+    }
 }

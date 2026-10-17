@@ -2,7 +2,6 @@ package com.ecsite.module.media.application;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.media.api.ImageUpload;
-import com.ecsite.module.media.api.MediaApi;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
@@ -26,12 +25,12 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * メディアのサービス（docs/backend/modules/media.md）。{@link MediaApi} の実装。<br />
+ * メディアのサービス（docs/backend/modules/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
  * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、確定のときに中身を確かめ、WebP に変換して配信のバケットへ置く。
  */
 @Service
 @RequiredArgsConstructor
-class MediaService implements MediaApi {
+public class MediaService {
 
     /**
      * アセットのリポジトリ
@@ -66,7 +65,6 @@ class MediaService implements MediaApi {
      * @param contentLength ファイルの大きさ（バイト）
      * @return 受付の情報
      */
-    @Override
     public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
         var uploadId = UUID.randomUUID();
         var uploadKey = AssetKeys.upload(scope, uploadId);
@@ -80,11 +78,10 @@ class MediaService implements MediaApi {
     }
 
     /**
-     * {@inheritDoc}<br />
+     * 受け付けた画像を確定する（MediaApi の同じメソッドの説明を参照）。<br />
      * 中身を WebP に変換して配信のバケットへ置く。変換できなければ登録しない。<br />
      * 書き込みの後に呼んだ側の保存が失敗すると配信のファイルが残るが、だれからも参照されないだけで害はない。
      */
-    @Override
     @Transactional
     public UUID confirmImage(String scope, UUID uploadId) {
         var uploadKey = AssetKeys.upload(scope, uploadId);
@@ -105,10 +102,9 @@ class MediaService implements MediaApi {
     }
 
     /**
-     * {@inheritDoc}<br />
+     * アセットを手放す（MediaApi の同じメソッドの説明を参照）。<br />
      * イベントはコミットの後に届き、ファイルを消す（{@link AssetFileHandler}）。呼んだ側の保存が失敗すれば、イベントも取り消される。
      */
-    @Override
     @Transactional
     public void release(Collection<UUID> assetIds) {
         if (assetIds.isEmpty()) {
@@ -122,10 +118,9 @@ class MediaService implements MediaApi {
     }
 
     /**
-     * {@inheritDoc}<br />
+     * アセットの配信の URL をまとめて返す（MediaApi の同じメソッドの説明を参照）。<br />
      * URL は配信の基準 URL とキーから組み立てる（ストレージへの問い合わせはしない）。
      */
-    @Override
     @Transactional(readOnly = true)
     public Map<UUID, URI> urls(Collection<UUID> assetIds) {
         if (assetIds.isEmpty()) {

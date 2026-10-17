@@ -21,7 +21,6 @@ import com.ecsite.module.catalog.application.ProductPublicationService;
 import com.ecsite.module.catalog.application.VariantCommandService;
 import com.ecsite.module.catalog.application.ProductImageService;
 import com.ecsite.module.catalog.application.ProductQueryService;
-import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -84,7 +83,7 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<ProductSummaryPage> listProducts(String code, String name, PublicationStatus status,
                                                            UUID categoryId, Integer page, Integer size) {
-        var query = new ProductListQuery(code, name, status == null ? null : status.getValue(), categoryId);
+        var query = mapper.toProductListQuery(code, name, status, categoryId);
         var result = queryService.listProducts(query, PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toProductSummaryPage(result));
     }

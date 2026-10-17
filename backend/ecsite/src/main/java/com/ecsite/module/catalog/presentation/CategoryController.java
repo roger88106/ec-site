@@ -47,8 +47,7 @@ class CategoryController implements CategoryApi {
      */
     @Override
     public ResponseEntity<CategoryTree> listCategories() {
-        var items = queryService.getCategoryTree().stream().map(mapper::toCategoryNode).toList();
-        return ResponseEntity.ok(new CategoryTree(items));
+        return ResponseEntity.ok(mapper.toCategoryTree(queryService.getCategoryTree()));
     }
 
     /**

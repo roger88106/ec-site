@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.presentation;
 
 import com.ecsite.api.admin.model.Category;
 import com.ecsite.api.admin.model.CategoryNode;
+import com.ecsite.api.admin.model.CategoryTree;
 import com.ecsite.api.admin.model.CreateCategoryRequest;
 import com.ecsite.api.admin.model.RenameCategoryRequest;
 import com.ecsite.api.admin.model.ReorderCategoriesRequest;
@@ -60,8 +61,23 @@ class CategoryMapper {
      * @return カテゴリのレスポンス
      */
     Category toCategory(CategoryView view) {
-        return new Category(view.id(), view.name(), view.depth(), view.displayOrder(), view.version())
-                .parentId(view.parentId());
+        return new Category()
+                .id(view.id())
+                .parentId(view.parentId())
+                .name(view.name())
+                .depth(view.depth())
+                .displayOrder(view.displayOrder())
+                .version(view.version());
+    }
+
+    /**
+     * カテゴリの木のレスポンスに変換する。
+     *
+     * @param views カテゴリの木の根の節のビュー
+     * @return カテゴリの木のレスポンス
+     */
+    CategoryTree toCategoryTree(List<CategoryNodeView> views) {
+        return new CategoryTree().items(views.stream().map(this::toCategoryNode).toList());
     }
 
     /**
@@ -71,12 +87,12 @@ class CategoryMapper {
      * @return カテゴリの木の節のレスポンス
      */
     CategoryNode toCategoryNode(CategoryNodeView view) {
-        return new CategoryNode(
-                view.id(),
-                view.name(),
-                view.depth(),
-                view.displayOrder(),
-                view.version(),
-                view.children().stream().map(this::toCategoryNode).toList());
+        return new CategoryNode()
+                .id(view.id())
+                .name(view.name())
+                .depth(view.depth())
+                .displayOrder(view.displayOrder())
+                .version(view.version())
+                .children(view.children().stream().map(this::toCategoryNode).toList());
     }
 }

@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [ ] **T013-02-01** catalog の mapper（商品、カテゴリー）の生成したモデルを、項目名のメソッドで組み立てる。入れ子の型は型ごとに private メソッドに分ける。一覧の条件の組み立てを Controller から mapper に移す。
+- [x] **T013-02-01** catalog の mapper（商品、カテゴリー）の生成したモデルを、項目名のメソッドで組み立てる。入れ子の型は型ごとに private メソッドに分ける。一覧の条件の組み立てを Controller から mapper に移す。
 - [ ] **T013-02-02** tax の mapper と Controller の生成したモデルを、項目名のメソッドで組み立てる。一覧の組み立てを mapper に移す。
 - [ ] **T013-02-03** inventory の mapper と Controller の生成したモデルを、項目名のメソッドで組み立てる。一覧の組み立てを mapper に移す。
 - [ ] **T013-02-04** catalog（商品、カテゴリー）と tax の作成の応答を、共通の補助（T013-01-08）にする。商品のバリアントの追加は、Location を足さない（spec の Non-goals）。

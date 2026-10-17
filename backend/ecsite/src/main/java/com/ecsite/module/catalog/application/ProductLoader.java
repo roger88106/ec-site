@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.base.AggregateGuards;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import lombok.RequiredArgsConstructor;
@@ -41,10 +42,8 @@ class ProductLoader {
         var product = productRepository.findById(productId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
 
-        // 取得時のバージョンと一致しなければ、他の人が先に更新している
-        if (product.version() != version) {
-            throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
-        }
+        // 取得時のバージョンと一致しなければ、他の人が先に更新している（保存のときにもリポジトリが比べる）
+        AggregateGuards.requireVersion(product.version(), version);
         return product;
     }
 

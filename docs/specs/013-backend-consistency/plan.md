@@ -1,6 +1,6 @@
 # Plan 013：書き方の統一（バックエンド）
 
-ステータス：承認済み　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 前提：spec 012 が完了している。書き方の規則は [バックエンドの書き方](../../backend/coding.md) と [バックエンドのアーキテクチャ](../../backend/architecture.md)、ArchUnit のテストは `src/test/java/com/ecsite/architecture/`。
 

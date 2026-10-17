@@ -10,6 +10,8 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 
+import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
+import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
@@ -32,6 +34,16 @@ class ModuleRoleTest {
                     .should().dependOnClassesThat().areAssignableTo(ApplicationEventPublisher.class);
             rule.check(classes);
         }
+    }
+
+    @Test
+    @DisplayName("api/ の interface を実装するクラスは api/ にある（application の service が直接実装しない）")
+    void apiInterfacesAreImplementedInApi() {
+        ArchRule rule = classes().that().implement(resideInAPackage("com.ecsite.module..api.."))
+                .should().resideInAPackage("com.ecsite.module..api..")
+                // api/ に interface がない（すべて @Component のクラス）ときも通す
+                .allowEmptyShould(true);
+        rule.check(importModules());
     }
 
     /**

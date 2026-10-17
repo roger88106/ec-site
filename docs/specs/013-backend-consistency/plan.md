@@ -122,7 +122,7 @@
 
 | 今 | 決定 |
 |----|------|
-| catalog の公開の型 → 自分の port の型 → application の view → 生成したモデル | application の view をなくし、port の型と在庫の有無を mapper に渡す |
+| catalog の公開の型 → 自分の port の型 → application の view → 生成したモデル | application の view は残す。在庫の有無と軸ごとの値の一覧を組み立てる加工の結果で、加工のない写しの型（DC-125）に当たらない。参照の service は view を返す規則（バックエンドの書き方 第 1.1 節）にも合う。残す理由を店舗の設計書に書く（T013-03-04 で利用者と決めた） |
 | 並び順の列挙を 3 つ持ち、写しの switch が 2 つ | port の並び順を残し、写しは腐敗防止層の実装の 1 か所にする。presentation から port の並び順へは mapper で写す（生成した列挙からの写しは残る） |
 
 ## 6. イベントと公開の API（DS-38）

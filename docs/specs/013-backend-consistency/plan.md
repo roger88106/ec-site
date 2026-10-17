@@ -29,7 +29,7 @@
 
 | 項目 | 決定 |
 |------|------|
-| 置き場所 | 新しい `scripts/dev/test-diff.mjs` と、そのテスト（`scripts/ci/` の `*.test.mjs` と同じ書き方。`check-all.sh` が拾う場所に置く） |
+| 置き場所 | 新しい `scripts/ci/review/test-diff.mjs` と、そのテスト（引数の要る補助なので直下でなく下のディレクトリに置き、`check-all.sh` が script のテストを拾う） |
 | 入力 | 比べる元の commit と、名前の対応（`旧=新`。クラスの単純名か完全修飾名）の一覧のファイル |
 | 確かめること | テストのソース（`src/test`、`src/integrationTest`、`frontend/*/src` のテスト、`e2e/`）の差分で、`import`・`package` の行を除いた変更の行が、元の行に名前の対応を当てた結果と一致する。一致しない行があれば失敗し、その行を出す |
 | ファイルの移動 | 移動したファイルは、移動の前のパスと比べる（`git diff -M`） |

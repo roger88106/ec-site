@@ -58,3 +58,16 @@ pnpm test
 - compose の設定を変えたコミットを取り込んだら、`docker compose up -d` で反映し、`docker compose run --rm seaweedfs-init` でバケットを作る（`docker/seaweedfs/s3.json` を変えたときは `docker compose restart seaweedfs` も必要）。
 - 結果の要約だけを見るときは、ルートで `scripts/dev/e2e.sh [Playwright の引数]`（テストごとの ok / x と失敗の要点だけを出し、全体はログのファイルに残す）。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を見る。
+
+## 4. 既存のテストを変えていないことの確かめ
+
+振る舞いを変えない整理（書き方の統一など）では、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確かめる。
+
+```bash
+# ルートで：元の commit から今の作業ツリーまでを比べる
+node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファイル]
+```
+
+- 見るのは、既存のテストのファイル（バックエンドの `src/test`・`src/integrationTest`、画面の `*.test.ts(x)`、`e2e/`）の差分。新しく足したテストのファイルは見ない。
+- `import`・`package` の行を除き、消した行に名前の対応を当てた結果と、足した行が一致しなければ、その行を出して失敗する。
+- 名前の対応のファイルは、1 行に `旧=新`（クラスの単純名か完全修飾名）。名前は語の境目で当てる。

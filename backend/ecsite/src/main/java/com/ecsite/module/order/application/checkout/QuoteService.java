@@ -14,6 +14,7 @@ import com.ecsite.module.order.domain.quote.port.TaxDirectory;
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -60,6 +61,7 @@ public class QuoteService {
      * @param holderId 販売可能数から除く引当の持ち主（自分の注文手続き）。なければ null
      * @return 見積もり。存在しなくなったバリアントは品目に含めず、注文できないものとする
      */
+    @Transactional(readOnly = true)
     public Quote quote(List<CartDirectory.Line> lines, Instant at, @Nullable UUID holderId) {
         var variantIds = lines.stream().map(CartDirectory.Line::variantId).toList();
         var variants = variantIds.isEmpty() ? Map.<UUID, VariantInfo>of()

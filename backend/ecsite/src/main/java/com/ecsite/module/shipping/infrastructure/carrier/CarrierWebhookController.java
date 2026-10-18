@@ -49,7 +49,7 @@ class CarrierWebhookController {
      * @param signatureHeader ヘッダー {@code X-Carrier-Signature}
      * @return 受け付けたら 200、署名を確かめられなければ 401、署名が合っても本文が読めなければ 400
      */
-    @PostMapping("/api/webhooks/carrier")
+    @PostMapping(CarrierNotification.WEBHOOK_PATH)
     ResponseEntity<Void> receive(@RequestBody(required = false) byte[] payload,
                                  @RequestHeader(name = CarrierSignature.HEADER, required = false) String signatureHeader) {
         var body = payload == null ? new byte[0] : payload;

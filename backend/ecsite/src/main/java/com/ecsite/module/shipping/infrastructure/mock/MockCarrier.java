@@ -27,11 +27,6 @@ import java.time.Instant;
 public class MockCarrier {
 
     /**
-     * 通知の受け口のパス
-     */
-    private static final String WEBHOOK_PATH = "/api/webhooks/carrier";
-
-    /**
      * 受け口の応答を待つ時間の上限
      */
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
@@ -105,7 +100,7 @@ public class MockCarrier {
      */
     public int send(String baseUrl, SignedNotification notification) {
         return restClient.post()
-                .uri(baseUrl + WEBHOOK_PATH)
+                .uri(baseUrl + CarrierNotification.WEBHOOK_PATH)
                 .contentType(MediaType.APPLICATION_JSON)
                 .header(CarrierSignature.HEADER, notification.signature())
                 .body(notification.body())

@@ -15,6 +15,11 @@ import java.time.Instant;
 public record CarrierNotification(Carrier carrier, String trackingNumber, String status, Instant occurredAt) {
 
     /**
+     * 通知の受け口のパス（受け口と mock の物流サービスで使う）
+     */
+    public static final String WEBHOOK_PATH = "/api/webhooks/carrier";
+
+    /**
      * 項目がすべてそろっているかを返す。
      *
      * @return そろっていれば true

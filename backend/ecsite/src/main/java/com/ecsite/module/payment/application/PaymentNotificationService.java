@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
+import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -23,6 +24,11 @@ public class PaymentNotificationService implements PaymentNotificationReceiver {
      * 支払のリポジトリ
      */
     private final PaymentRepository paymentRepository;
+
+    /**
+     * 支払の更新のサービス
+     */
+    private final PaymentCommandService commandService;
 
     /**
      * 時計
@@ -51,10 +57,9 @@ public class PaymentNotificationService implements PaymentNotificationReceiver {
      */
     @Override
     public void pageExpired(String pageId) {
-        var now = clock.instant();
+        // 期限切れにする処理は、期限切れのジョブと同じ更新の service のメソッドに任せる（同じトランザクションで行ロックし直す）
         paymentRepository.lockByPageId(pageId)
-                .filter(payment -> !payment.isPayable(now))
-                .filter(payment -> payment.expire(now))
-                .ifPresent(paymentRepository::update);
+                .map(Payment::id)
+                .ifPresent(commandService::expire);
     }
 }

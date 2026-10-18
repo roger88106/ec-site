@@ -105,7 +105,9 @@ class StoreOrderMapper {
                 .amounts(toAmounts(view.amounts()))
                 .email(view.email())
                 .shippingAddress(toAddress(view.shippingAddress()))
-                .actions(new OrderActions(view.actions().cancellationRequestable(), view.actions().payable()));
+                .actions(new OrderActions()
+                        .requestCancellation(view.actions().cancellationRequestable())
+                        .pay(view.actions().payable()));
         if (view.awaitingPayment()) {
             response.paymentDeadline(ApiDateTimes.toOffsetDateTime(payment.deadline()));
         }

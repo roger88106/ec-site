@@ -4,6 +4,7 @@ import com.ecsite.api.store.CheckoutApi;
 import com.ecsite.api.store.model.Checkout;
 import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.PlaceOrderRequest;
+import com.ecsite.common.presentation.CreatedResponses;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.ecsite.module.order.application.checkout.CheckoutQueryService;
@@ -12,7 +13,6 @@ import com.ecsite.module.order.application.checkout.OrderPlacementService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
-import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.util.UUID;
 
@@ -62,14 +62,8 @@ class StoreCheckoutController implements CheckoutApi {
     @Override
     public ResponseEntity<CreatedId> startCheckout(UUID cartId) {
         var id = checkoutService.start(cartId, currentMemberIds.require());
-
         // ロケーション：作った注文手続きの URL
-        var location = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/store/checkouts/{id}")
-                .buildAndExpand(id)
-                .toUri();
-
-        return ResponseEntity.created(location).body(new CreatedId(id));
+        return CreatedResponses.storeAt("/api/store/checkouts/{id}", id);
     }
 
     /**
@@ -95,17 +89,10 @@ class StoreCheckoutController implements CheckoutApi {
         var member = currentMember.require();
         var result = orderPlacementService.place(mapper.toPlaceOrderCommand(checkoutId, request,
                 currentMemberIds.require(), member));
-        var body = new CreatedId(result.orderId());
         if (!result.created()) {
-            return ResponseEntity.ok(body);
+            return ResponseEntity.ok(CreatedResponses.storeId(result.orderId()));
         }
-
         // ロケーション：作った注文の URL
-        var location = ServletUriComponentsBuilder.fromCurrentContextPath()
-                .path("/api/store/orders/{id}")
-                .buildAndExpand(result.orderId())
-                .toUri();
-
-        return ResponseEntity.created(location).body(body);
+        return CreatedResponses.storeAt("/api/store/orders/{id}", result.orderId());
     }
 }

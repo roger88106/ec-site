@@ -1,7 +1,7 @@
 package com.ecsite.module.order.domain.order.port;
 
 import com.ecsite.module.order.domain.order.Order;
-import com.ecsite.module.order.domain.order.OrderNumber;
+import com.ecsite.module.order.domain.order.vo.OrderNumber;
 
 import java.util.Optional;
 import java.util.UUID;

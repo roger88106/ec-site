@@ -8,3 +8,11 @@
 # T013-04-07
 ProductDirectory=CatalogDirectory
 ProductApiDirectory=CatalogApiDirectory
+
+# T013-04-06
+com.ecsite.module.order.domain.order.OrderNumber=com.ecsite.module.order.domain.order.vo.OrderNumber
+com.ecsite.module.order.domain.order.ShippingAddress=com.ecsite.module.order.domain.order.vo.ShippingAddress
+com.ecsite.module.order.domain.order.BuyerProfile=com.ecsite.module.order.domain.order.vo.BuyerProfile
+com.ecsite.module.order.domain.order.OrderLine=com.ecsite.module.order.domain.order.vo.OrderLine
+com.ecsite.module.order.domain.order.Cancellation=com.ecsite.module.order.domain.order.vo.Cancellation
+com.ecsite.module.order.domain.order.CancellationRequest=com.ecsite.module.order.domain.order.vo.CancellationRequest

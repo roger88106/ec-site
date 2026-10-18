@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
+import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

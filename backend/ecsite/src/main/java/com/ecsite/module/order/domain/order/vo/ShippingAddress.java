@@ -1,7 +1,8 @@
-package com.ecsite.module.order.domain.order;
+package com.ecsite.module.order.domain.order.vo;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.BoundedText;
+import com.ecsite.module.order.domain.order.OrderErrorCode;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.List;

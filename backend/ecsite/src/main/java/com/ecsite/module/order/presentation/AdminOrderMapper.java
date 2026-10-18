@@ -135,7 +135,7 @@ class AdminOrderMapper {
     /**
      * 注文明細 1 件（注文時点の写し）。
      */
-    private static OrderLine toLine(com.ecsite.module.order.domain.order.OrderLine line) {
+    private static OrderLine toLine(com.ecsite.module.order.domain.order.vo.OrderLine line) {
         return new OrderLine()
                 .variantId(line.variantId())
                 .productCode(line.productCode())
@@ -173,7 +173,7 @@ class AdminOrderMapper {
     /**
      * お届け先。
      */
-    private static ShippingAddress toAddress(com.ecsite.module.order.domain.order.ShippingAddress address) {
+    private static ShippingAddress toAddress(com.ecsite.module.order.domain.order.vo.ShippingAddress address) {
         return new ShippingAddress()
                 .name(address.name())
                 .postalCode(address.postalCode())
@@ -186,7 +186,7 @@ class AdminOrderMapper {
      * キャンセルの申請。
      */
     private static CancellationRequest toCancellationRequest(
-            com.ecsite.module.order.domain.order.CancellationRequest request) {
+            com.ecsite.module.order.domain.order.vo.CancellationRequest request) {
         return new CancellationRequest()
                 .requestedAt(ApiDateTimes.toOffsetDateTime(request.requestedAt()))
                 .reason(request.reason())
@@ -198,7 +198,7 @@ class AdminOrderMapper {
     /**
      * キャンセル。
      */
-    private static Cancellation toCancellation(com.ecsite.module.order.domain.order.Cancellation cancellation) {
+    private static Cancellation toCancellation(com.ecsite.module.order.domain.order.vo.Cancellation cancellation) {
         return new Cancellation()
                 .cancelledAt(ApiDateTimes.toOffsetDateTime(cancellation.cancelledAt()))
                 .kind(com.ecsite.api.admin.model.CancellationKind.valueOf(cancellation.kind().name()))

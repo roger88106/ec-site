@@ -2,12 +2,12 @@ package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.order.domain.order.BuyerProfile;
 import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
-import com.ecsite.module.order.domain.order.OrderNumber;
-import com.ecsite.module.order.domain.order.ShippingAddress;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
+import com.ecsite.module.order.domain.order.vo.BuyerProfile;
+import com.ecsite.module.order.domain.order.vo.OrderNumber;
+import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.Quote;

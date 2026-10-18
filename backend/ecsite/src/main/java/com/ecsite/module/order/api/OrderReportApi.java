@@ -2,7 +2,7 @@ package com.ecsite.module.order.api;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderReportQueryService;
-import com.ecsite.module.order.domain.order.OrderLine;
+import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

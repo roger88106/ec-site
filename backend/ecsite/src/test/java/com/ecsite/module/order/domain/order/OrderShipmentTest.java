@@ -2,13 +2,17 @@ package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
+import com.ecsite.module.order.domain.order.vo.BuyerProfile;
+import com.ecsite.module.order.domain.order.vo.Cancellation;
+import com.ecsite.module.order.domain.order.vo.OrderNumber;
+import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
-import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.order.event.OrderShipped;
+import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

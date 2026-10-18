@@ -1,4 +1,4 @@
-package com.ecsite.module.order.domain.order;
+package com.ecsite.module.order.domain.order.vo;
 
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;

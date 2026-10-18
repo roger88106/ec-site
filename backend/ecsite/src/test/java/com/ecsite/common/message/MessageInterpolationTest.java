@@ -9,9 +9,9 @@ import com.ecsite.module.inventory.domain.stock.InventoryErrorCode;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import com.ecsite.module.order.domain.order.OrderErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxErrorCode;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.junit.jupiter.api.DisplayName;
 import org.springframework.context.support.ResourceBundleMessageSource;
 
 import java.util.Arrays;
@@ -51,7 +51,7 @@ class MessageInterpolationTest {
         String category = "com.ecsite.module.catalog.domain.category.Category#";
         String product = "com.ecsite.module.catalog.domain.product.Product#";
         String code = "com.ecsite.module.catalog.domain.product.vo.CodeFormat#MAX_LENGTH";
-        String address = "com.ecsite.module.order.domain.order.ShippingAddress#";
+        String address = "com.ecsite.module.order.domain.order.vo.ShippingAddress#";
         String cart = "com.ecsite.module.cart.domain.Cart#";
         return Stream.of(
                 new Case(TaxErrorCode.INVALID_RATE_PERCENT, List.of(tax + "vo.RatePercent#MAX_SCALE"),

@@ -20,10 +20,10 @@ import com.ecsite.api.store.model.ShippingAddress;
 import com.ecsite.api.store.model.TaxAmount;
 import com.ecsite.api.store.model.UnpurchasableReason;
 import com.ecsite.common.model.value.Money;
-import com.ecsite.common.security.AuthenticatedMember;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.common.presentation.StorePrices;
+import com.ecsite.common.security.AuthenticatedMember;
 import com.ecsite.module.order.application.model.CheckoutView;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;
@@ -176,7 +176,7 @@ class StoreOrderMapper {
     /**
      * 注文明細 1 件（注文時点の写し）。
      */
-    private static OrderLine toLine(com.ecsite.module.order.domain.order.OrderLine line) {
+    private static OrderLine toLine(com.ecsite.module.order.domain.order.vo.OrderLine line) {
         return new OrderLine()
                 .productCode(line.productCode())
                 .variantCode(line.variantCode())
@@ -201,7 +201,7 @@ class StoreOrderMapper {
     /**
      * お届け先。
      */
-    private static ShippingAddress toAddress(com.ecsite.module.order.domain.order.ShippingAddress address) {
+    private static ShippingAddress toAddress(com.ecsite.module.order.domain.order.vo.ShippingAddress address) {
         return new ShippingAddress()
                 .name(address.name())
                 .postalCode(address.postalCode())
@@ -214,7 +214,7 @@ class StoreOrderMapper {
      * キャンセルの申請。
      */
     private static CancellationRequest toCancellationRequest(
-            com.ecsite.module.order.domain.order.CancellationRequest request) {
+            com.ecsite.module.order.domain.order.vo.CancellationRequest request) {
         return new CancellationRequest()
                 .requestedAt(ApiDateTimes.toOffsetDateTime(request.requestedAt()))
                 .reason(request.reason())

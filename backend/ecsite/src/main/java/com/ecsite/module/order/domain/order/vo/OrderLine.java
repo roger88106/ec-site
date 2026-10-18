@@ -1,4 +1,4 @@
-package com.ecsite.module.order.domain.order;
+package com.ecsite.module.order.domain.order.vo;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.quote.AxisValue;

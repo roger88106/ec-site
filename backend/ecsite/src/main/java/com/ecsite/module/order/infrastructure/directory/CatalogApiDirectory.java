@@ -2,7 +2,7 @@ package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.module.catalog.api.OrderCatalogApi;
 import com.ecsite.module.catalog.api.OrderableVariant;
-import com.ecsite.module.order.application.port.ProductDirectory;
+import com.ecsite.module.order.application.port.CatalogDirectory;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.VariantInfo;
 import lombok.RequiredArgsConstructor;
@@ -18,7 +18,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-class ProductApiDirectory implements ProductDirectory {
+class CatalogApiDirectory implements CatalogDirectory {
 
     /**
      * カート・注文向けの商品カタログの API

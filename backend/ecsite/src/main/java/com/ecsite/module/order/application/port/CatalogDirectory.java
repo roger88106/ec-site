@@ -9,7 +9,7 @@ import java.util.UUID;
 /**
  * 商品カタログの腐敗防止層（バックエンドのアーキテクチャ 第 1 節）
  */
-public interface ProductDirectory {
+public interface CatalogDirectory {
 
     /**
      * 複数のバリアントの情報を返す。表示されない商品・販売停止のバリアントも含める。

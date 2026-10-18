@@ -4,7 +4,7 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderProperties;
 import com.ecsite.module.order.application.port.CartDirectory;
-import com.ecsite.module.order.application.port.ProductDirectory;
+import com.ecsite.module.order.application.port.CatalogDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
@@ -36,7 +36,7 @@ public class QuoteService {
     /**
      * 商品カタログの腐敗防止層
      */
-    private final ProductDirectory productDirectory;
+    private final CatalogDirectory catalogDirectory;
 
     /**
      * 在庫の腐敗防止層
@@ -65,7 +65,7 @@ public class QuoteService {
     public Quote quote(List<CartDirectory.Line> lines, Instant at, @Nullable UUID holderId) {
         var variantIds = lines.stream().map(CartDirectory.Line::variantId).toList();
         var variants = variantIds.isEmpty() ? Map.<UUID, VariantInfo>of()
-                : productDirectory.findVariants(variantIds);
+                : catalogDirectory.findVariants(variantIds);
         var sellable = variantIds.isEmpty() ? Map.<UUID, Integer>of()
                 : stockDirectory.sellableQuantities(variantIds, holderId);
         // 税区分ごとの率（同じ税区分の品目が多くても、税モジュールには 1 回だけ聞く）

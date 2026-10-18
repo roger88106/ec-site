@@ -4,3 +4,7 @@
 # 本番のクラスを移す・名前を変えるタスクで、そのタスクの番号のコメントの下に足す。
 #
 #   node scripts/ci/review/test-diff.mjs 3f7d584 docs/specs/013-backend-consistency/tasks/renames.txt
+
+# T013-04-07
+ProductDirectory=CatalogDirectory
+ProductApiDirectory=CatalogApiDirectory

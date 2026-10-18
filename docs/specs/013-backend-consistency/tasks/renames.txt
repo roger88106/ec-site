@@ -16,3 +16,6 @@ com.ecsite.module.order.domain.order.BuyerProfile=com.ecsite.module.order.domain
 com.ecsite.module.order.domain.order.OrderLine=com.ecsite.module.order.domain.order.vo.OrderLine
 com.ecsite.module.order.domain.order.Cancellation=com.ecsite.module.order.domain.order.vo.Cancellation
 com.ecsite.module.order.domain.order.CancellationRequest=com.ecsite.module.order.domain.order.vo.CancellationRequest
+
+# T013-05-09
+com.ecsite.module.shipping.application.ShippingProperties.Carrier=com.ecsite.module.shipping.application.ShippingProperties.CarrierTracking

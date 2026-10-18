@@ -15,7 +15,7 @@ import org.springframework.validation.annotation.Validated;
 @Validated
 @ConfigurationProperties("ecsite.shipping")
 public record ShippingProperties(
-        @DefaultValue("mock") @NotNull Carrier carrier,
+        @DefaultValue("mock") @NotNull CarrierTracking carrier,
         @NotBlank String webhookSecret) {
 
     @Override
@@ -25,9 +25,9 @@ public record ShippingProperties(
     }
 
     /**
-     * 物流サービス
+     * 物流サービス（用語集の名前。domain の配送業者 {@code Carrier} とは別のもの）
      */
-    public enum Carrier {
+    public enum CarrierTracking {
 
         /**
          * 内部の mock（自動テスト、CI、ローカル）

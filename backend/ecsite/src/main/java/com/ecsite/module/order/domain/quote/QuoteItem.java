@@ -34,7 +34,7 @@ public record QuoteItem(VariantInfo variant, int quantity, @Nullable BigDecimal 
     public static QuoteItem of(@NonNull VariantInfo variant, int quantity, int sellable,
                                @Nullable BigDecimal ratePercent, @Nullable Money unitPriceInclTax) {
         var unitPrice = unitPriceInclTax == null ? variant.priceExclTax() : unitPriceInclTax;
-        var subtotal = Money.of(Math.multiplyExact(unitPrice.yen(), quantity));
+        var subtotal = unitPrice.times(quantity);
         return new QuoteItem(variant, quantity, ratePercent, unitPrice, subtotal,
                 reasonOf(variant, quantity, sellable, ratePercent));
     }

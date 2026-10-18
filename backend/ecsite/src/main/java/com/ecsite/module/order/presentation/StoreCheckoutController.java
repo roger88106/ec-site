@@ -6,6 +6,7 @@ import com.ecsite.api.store.model.CreatedId;
 import com.ecsite.api.store.model.PlaceOrderRequest;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.module.member.api.CurrentMemberIds;
+import com.ecsite.module.order.application.checkout.CheckoutQueryService;
 import com.ecsite.module.order.application.checkout.CheckoutService;
 import com.ecsite.module.order.application.checkout.OrderPlacementService;
 import lombok.RequiredArgsConstructor;
@@ -26,6 +27,11 @@ class StoreCheckoutController implements CheckoutApi {
      * 注文手続きのサービス
      */
     private final CheckoutService checkoutService;
+
+    /**
+     * 注文手続きの参照のサービス
+     */
+    private final CheckoutQueryService checkoutQueryService;
 
     /**
      * 注文の成立のサービス
@@ -74,7 +80,7 @@ class StoreCheckoutController implements CheckoutApi {
      */
     @Override
     public ResponseEntity<Checkout> getCheckout(UUID checkoutId) {
-        return ResponseEntity.ok(mapper.toCheckout(checkoutService.get(checkoutId, currentMemberIds.require())));
+        return ResponseEntity.ok(mapper.toCheckout(checkoutQueryService.get(checkoutId, currentMemberIds.require())));
     }
 
     /**

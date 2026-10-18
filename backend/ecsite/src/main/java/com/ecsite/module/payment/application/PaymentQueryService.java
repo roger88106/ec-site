@@ -67,11 +67,11 @@ public class PaymentQueryService {
     public List<AuthorizationDeadlineView> findAuthorizationDeadlines(Collection<UUID> orderIds) {
         var term = properties.authorizationTerm();
         var now = clock.instant();
-        return queryRepository.findAuthorizations(orderIds).stream()
-                .map(view -> new AuthorizationDeadlineView(
-                        view.orderId(),
-                        term.deadlineOf(view.authorizedAt()),
-                        view.status().watchesAuthorizationDeadline() && term.isExpiring(view.authorizedAt(), now)))
+        // 期限と近いかの判定は、支払の集約に任せる
+        return paymentRepository.findByOrderIds(orderIds).stream()
+                .flatMap(payment -> payment.authorizationDeadline(term).stream()
+                        .map(deadline -> new AuthorizationDeadlineView(
+                                payment.orderId(), deadline, payment.isAuthorizationExpiring(term, now))))
                 .toList();
     }
 

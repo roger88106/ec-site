@@ -3,6 +3,7 @@ package com.ecsite.module.payment.domain.payment.port;
 import com.ecsite.module.payment.domain.payment.Payment;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -66,6 +67,14 @@ public interface PaymentRepository {
      * @return 支払。なければ空
      */
     Optional<Payment> findByOrderId(UUID orderId);
+
+    /**
+     * 注文の支払をまとめて取得する。
+     *
+     * @param orderIds 注文 ID
+     * @return 支払。支払のない注文は含まない
+     */
+    List<Payment> findByOrderIds(Collection<UUID> orderIds);
 
     /**
      * 期限を過ぎた未払いの支払を、期限の古い順に取得する。

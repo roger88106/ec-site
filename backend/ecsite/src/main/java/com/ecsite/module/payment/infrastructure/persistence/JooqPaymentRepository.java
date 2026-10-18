@@ -14,6 +14,7 @@ import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -118,6 +119,16 @@ class JooqPaymentRepository implements PaymentRepository {
                 .where(PAYMENT_.ORDER_ID.eq(orderId))
                 .fetchOptional()
                 .map(JooqPaymentRepository::restore);
+    }
+
+    @Override
+    public List<Payment> findByOrderIds(Collection<UUID> orderIds) {
+        if (orderIds.isEmpty()) {
+            return List.of();
+        }
+        return dsl.selectFrom(PAYMENT_)
+                .where(PAYMENT_.ORDER_ID.in(orderIds))
+                .fetch(JooqPaymentRepository::restore);
     }
 
     @Override

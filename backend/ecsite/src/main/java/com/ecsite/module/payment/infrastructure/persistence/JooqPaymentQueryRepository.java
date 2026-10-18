@@ -1,6 +1,5 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
-import com.ecsite.module.payment.application.model.view.AuthorizationView;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
 import com.ecsite.module.payment.application.port.PaymentQueryRepository;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
@@ -37,18 +36,6 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .from(PAYMENT_)
                 .where(PAYMENT_.ORDER_ID.in(orderIds))
                 .fetch(row -> new PaymentSummaryView(row.value1(), PaymentStatus.valueOf(row.value2()), row.value3()));
-    }
-
-    @Override
-    public List<AuthorizationView> findAuthorizations(Collection<UUID> orderIds) {
-        if (orderIds.isEmpty()) {
-            return List.of();
-        }
-        return dsl.select(PAYMENT_.ORDER_ID, PAYMENT_.STATUS, PAYMENT_.AUTHORIZED_AT)
-                .from(PAYMENT_)
-                .where(PAYMENT_.ORDER_ID.in(orderIds))
-                .and(PAYMENT_.AUTHORIZED_AT.isNotNull())
-                .fetch(row -> new AuthorizationView(row.value1(), PaymentStatus.valueOf(row.value2()), row.value3()));
     }
 
     @Override

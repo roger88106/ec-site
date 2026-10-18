@@ -7,7 +7,7 @@
 | 節 | 規則 | 確かめ方 |
 |----|------|----------|
 | 1.1 | 標準の構成（層とパッケージ） | 自動（ArchUnit） |
-| 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | 自動（ArchUnit。spec 013 の段階 5 で有効）、外部の呼び出しの前の読み取りの置き場所は人手 |
+| 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所は人手 |
 | 1.1 | 公開の API は `api/` のクラスが service に委ねる | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所は人手 |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |

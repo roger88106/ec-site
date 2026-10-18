@@ -4,6 +4,7 @@ import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
+import org.jmolecules.ddd.annotation.AggregateRoot;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.context.ApplicationEventPublisher;
@@ -32,6 +33,19 @@ class ModuleRoleTest {
         for (String module : LEVEL_A_MODULES) {
             ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module." + module + ".application..")
                     .should().dependOnClassesThat().areAssignableTo(ApplicationEventPublisher.class);
+            rule.check(classes);
+        }
+    }
+
+    @Test
+    @DisplayName("レベル A のモジュールの presentation は、集約に依存しない（参照の service の view を受け取る）")
+    void levelAPresentationDoesNotDependOnAggregates() {
+        var classes = importModules();
+        for (String module : LEVEL_A_MODULES) {
+            ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module." + module + ".presentation..")
+                    .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class)
+                    // presentation のないモジュール（payment）も通す
+                    .allowEmptyShould(true);
             rule.check(classes);
         }
     }

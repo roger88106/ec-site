@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.port;
 
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.domain.order.OrderStatus;
@@ -52,10 +53,10 @@ public interface OrderQueryRepository {
      * @param orderNumber  注文番号
      * @param orderedAt    注文日時
      * @param customerName お届け先の氏名
-     * @param total        総額（円）
+     * @param total        総額
      * @param status       状態
      */
-    record OrderSummaryView(UUID id, String orderNumber, Instant orderedAt, String customerName, long total,
+    record OrderSummaryView(UUID id, String orderNumber, Instant orderedAt, String customerName, Money total,
                             OrderStatus status) {
     }
 }

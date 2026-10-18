@@ -120,7 +120,7 @@ class AdminOrderMapper {
                 .orderNumber(view.orderNumber())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
                 .customerName(view.customerName())
-                .total(view.total())
+                .total(view.total().yen())
                 .status(toStatus(view.status()))
                 .authorizationExpiring(isAuthorizationExpiring(view.status(), payment));
         if (payment != null) {

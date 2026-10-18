@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
@@ -42,7 +43,7 @@ class JooqOrderQueryRepository implements OrderQueryRepository {
                 .orderBy(SALES_ORDER.ORDERED_AT.desc(), SALES_ORDER.ID)
                 .limit(request.size())
                 .offset(request.offset())
-                .fetch(row -> new OrderSummaryView(row.value1(), row.value2(), row.value3(), row.value4(), row.value5(),
+                .fetch(row -> new OrderSummaryView(row.value1(), row.value2(), row.value3(), row.value4(), Money.of(row.value5()),
                         OrderStatus.valueOf(row.value6())));
         return PageResult.of(items, request, dsl.fetchCount(SALES_ORDER, where));
     }

@@ -257,7 +257,7 @@ class StoreOrderMapper {
                 .id(view.id())
                 .orderNumber(view.orderNumber())
                 .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
-                .totalAmount(view.total())
+                .totalAmount(view.total().yen())
                 .status(OrderStatus.fromValue(view.status().name()));
         if (view.status() == com.ecsite.module.order.domain.order.OrderStatus.PENDING_PAYMENT && payment != null) {
             summary.paymentDeadline(ApiDateTimes.toOffsetDateTime(payment.deadline()));

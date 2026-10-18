@@ -79,6 +79,7 @@ public class MockCarrier {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * 署名が誤っている通知を作る（本文は正しいが、署名は別の鍵で作ったもの）。
      *
      * @param carrier        配送業者
@@ -129,13 +130,6 @@ public class MockCarrier {
      * @param signature ヘッダー {@code X-Carrier-Signature} の値
      */
     public record SignedNotification(byte[] body, String signature) {
-
-        /**
-         * @return 本文の文字列
-         */
-        public String bodyText() {
-            return new String(body, StandardCharsets.UTF_8);
-        }
     }
 
     /**

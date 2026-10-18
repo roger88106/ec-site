@@ -208,8 +208,6 @@ public class MockPaymentGateway implements PaymentGateway {
         return Optional.ofNullable(pages.get(pageId));
     }
 
-// ============================== テストからの操作 ==============================
-
     /**
      * 与信の参照を返す。支払の画面ごとに決まる。
      *
@@ -220,7 +218,10 @@ public class MockPaymentGateway implements PaymentGateway {
         return AUTHORIZATION_PREFIX + pageId.substring(PAGE_ID_PREFIX.length());
     }
 
+// ============================== テスト用の操作（main からは呼ばない） ==============================
+
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * 次の与信の取消を、指定した回数だけ失敗させる。
      *
      * @param times 失敗させる回数
@@ -230,6 +231,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * 与信が切れたことにする。以降、その与信の売上確定は、与信期限切れで断られる。
      *
      * @param authorizationRef 与信の参照
@@ -239,6 +241,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * 次の売上確定を、指定した回数だけ、決済サービスに接続できないことにする。
      *
      * @param times 接続できなくする回数
@@ -248,6 +251,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * 次の売上確定で、決済サービスが確定した後、応答を返す前に処理を行う。
      *
      * @param action 行う処理（注文のキャンセルなど）
@@ -257,6 +261,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * 次の返金を、指定した回数だけ失敗させる。
      *
      * @param times 失敗させる回数
@@ -266,6 +271,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * @return 売上を確定した注文 ID（確定した順。同じ注文は 1 回）
      */
     public List<UUID> captured() {
@@ -273,6 +279,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * @return 売上確定を呼ばれた回数（失敗と重複を含む）
      */
     public int captureCalls() {
@@ -280,6 +287,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * @return 返金した注文 ID（返金した順。同じ注文は 1 回）
      */
     public List<UUID> refunded() {
@@ -287,6 +295,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * @return 取り消した与信の参照（取り消した順）
      */
     public List<String> voided() {
@@ -294,6 +303,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * @return 作った支払の画面の数
      */
     public int openedPages() {
@@ -301,6 +311,7 @@ public class MockPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
      * 状態を最初に戻す。
      */
     public void reset() {

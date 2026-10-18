@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
+import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.http.HttpHeaders;
@@ -10,7 +11,6 @@ import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.util.HtmlUtils;
 
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
@@ -86,41 +86,16 @@ class MockPaymentPageController {
     /**
      * 画面の状態に合わせて HTML を作る。
      */
-    private ResponseEntity<String> render(String pageId, String error) {
-        var page = gateway.page(pageId);
-        if (page.isEmpty()) {
-            return html(HttpStatus.NOT_FOUND, "<p>支払の画面が見つかりません。</p>");
-        }
-        var found = page.get();
-        var back = "<p><a href=\"" + HtmlUtils.htmlEscape(found.returnUrl()) + "\">注文の画面に戻る</a></p>";
-        return switch (found.status()) {
-            case PAID -> html(HttpStatus.OK, "<p>支払は済んでいます。</p>" + back);
-            case CLOSED -> html(HttpStatus.OK, "<p>支払の期限が切れました。</p>" + back);
-            case OPEN -> {
-                var action = "/mock-payment/" + HtmlUtils.htmlEscape(pageId);
-                var body = (error == null ? "" : "<p role=\"alert\">" + HtmlUtils.htmlEscape(error) + "</p>")
-                        + "<p>お支払い金額：" + String.format("%,d", found.amount().yen()) + " 円</p>"
-                        + form(action + "/pay", "支払う")
-                        + form(action + "/decline", "カードを拒否させる")
-                        + form(action + "/cancel", "やめる");
-                yield html(HttpStatus.OK, body);
-            }
-        };
-    }
-
-    /**
-     * 1 つのボタンだけの form を作る。
-     */
-    private static String form(String action, String label) {
-        return "<form method=\"post\" action=\"" + action + "\"><button type=\"submit\">" + label + "</button></form>";
+    private ResponseEntity<String> render(String pageId, @Nullable String error) {
+        return gateway.page(pageId)
+                .map(page -> html(HttpStatus.OK, MockPaymentPageHtml.of(pageId, page, error)))
+                .orElseGet(() -> html(HttpStatus.NOT_FOUND, MockPaymentPageHtml.notFound()));
     }
 
     /**
      * HTML の応答を作る。
      */
-    private static ResponseEntity<String> html(HttpStatus status, String body) {
-        var document = "<!doctype html><html lang=\"ja\"><head><meta charset=\"utf-8\"><title>mock の支払</title></head>"
-                + "<body><h1>mock の支払</h1>" + body + "</body></html>";
+    private static ResponseEntity<String> html(HttpStatus status, String document) {
         return ResponseEntity.status(status).contentType(new MediaType(MediaType.TEXT_HTML, StandardCharsets.UTF_8))
                 .body(document);
     }

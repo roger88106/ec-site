@@ -7,7 +7,6 @@ import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import lombok.RequiredArgsConstructor;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -31,7 +30,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Component
 @ConditionalOnProperty(name = "ecsite.payment.gateway", havingValue = "mock", matchIfMissing = true)
-@EnableConfigurationProperties(MockPaymentProperties.class)
 @RequiredArgsConstructor
 public class MockPaymentGateway implements PaymentGateway {
 

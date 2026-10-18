@@ -3,7 +3,6 @@ package com.ecsite.module.notification.infrastructure.mail;
 import com.ecsite.module.notification.application.NotificationProperties;
 import com.ecsite.module.notification.application.port.Mailer;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.stereotype.Component;
@@ -13,7 +12,6 @@ import org.springframework.stereotype.Component;
  * 送れなければ Spring の MailException（実行時例外）がそのまま伝わる。
  */
 @Component
-@EnableConfigurationProperties(NotificationProperties.class)
 @RequiredArgsConstructor
 class SmtpMailer implements Mailer {
 

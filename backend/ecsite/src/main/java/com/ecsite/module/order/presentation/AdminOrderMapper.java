@@ -18,10 +18,10 @@ import com.ecsite.api.admin.model.ShipmentStatus;
 import com.ecsite.api.admin.model.ShippingAddress;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
+import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.application.port.ShippingDirectory;
-import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.quote.Amounts;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -56,37 +56,37 @@ class AdminOrderMapper {
     /**
      * 注文の詳細のレスポンスに変換する。申請・キャンセル・支払・出荷がなければ、その項目を返さない。
      *
-     * @param order    注文
-     * @param payment  注文の支払。決済を入れる前の注文は null
-     * @param shipment 注文の出荷。出荷していなければ null
+     * @param view 注文の詳細
      * @return 注文の詳細のレスポンス
      */
-    OrderDetail toOrderDetail(Order order, @Nullable OrderPayment payment, @Nullable ShippingDirectory.Shipment shipment) {
-        var returned = shipment != null && shipment.isReturned();
+    OrderDetail toOrderDetail(OrderDetailView view) {
+        var actions = view.actions();
         var detail = new OrderDetail()
-                .id(order.id())
-                .orderNumber(order.orderNumber().value())
-                .orderedAt(ApiDateTimes.toOffsetDateTime(order.orderedAt()))
-                .status(toStatus(order.status()))
-                .lines(order.lines().stream().map(AdminOrderMapper::toLine).toList())
-                .amounts(toAmounts(order.amounts()))
-                .email(order.email())
-                .shippingAddress(toAddress(order.shippingAddress()))
-                .actions(new OrderActions(order.isCancellationPending(), order.isCancellationPending(),
-                        order.isCancellableByOperator(returned), order.isShippable()));
-        if (order.cancellationRequest() != null) {
-            detail.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
+                .id(view.id())
+                .orderNumber(view.orderNumber().value())
+                .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
+                .status(toStatus(view.status()))
+                .lines(view.lines().stream().map(AdminOrderMapper::toLine).toList())
+                .amounts(toAmounts(view.amounts()))
+                .email(view.email())
+                .shippingAddress(toAddress(view.shippingAddress()))
+                .actions(new OrderActions(actions.cancellationPending(), actions.cancellationPending(),
+                        actions.cancellable(), actions.shippable()));
+        if (view.cancellationRequest() != null) {
+            detail.cancellationRequest(toCancellationRequest(view.cancellationRequest()));
         }
-        if (order.cancellation() != null) {
-            detail.cancellation(toCancellation(order.cancellation()));
+        if (view.cancellation() != null) {
+            detail.cancellation(toCancellation(view.cancellation()));
         }
+        var payment = view.payment();
+        var shipment = view.shipment();
         if (payment != null) {
             detail.payment(new Payment()
                     .status(PaymentStatus.fromValue(payment.status().name()))
                     .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline()))
                     .authorizationDeadline(payment.authorizationDeadline() == null ? null
                             : ApiDateTimes.toOffsetDateTime(payment.authorizationDeadline()))
-                    .authorizationExpiring(isAuthorizationExpiring(order.status(), payment)));
+                    .authorizationExpiring(isAuthorizationExpiring(view.status(), payment)));
         }
         if (shipment != null) {
             detail.shipment(toShipment(shipment));

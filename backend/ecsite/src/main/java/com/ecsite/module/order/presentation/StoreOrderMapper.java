@@ -25,6 +25,7 @@ import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.common.presentation.StorePrices;
 import com.ecsite.common.security.AuthenticatedMember;
 import com.ecsite.module.order.application.model.CheckoutView;
+import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
@@ -89,34 +90,32 @@ class StoreOrderMapper {
      * 注文のレスポンスに変換する。キャンセルの申請・キャンセル・出荷がなければ、その項目を返さない。
      * 支払の期限は、支払待ちのときだけ返す。出荷はキャンセルの後も返す（画面は注文の状態で出し分ける）。
      *
-     * @param order    注文
-     * @param payment  注文の支払。決済を入れる前の注文は null
-     * @param shipment 注文の出荷。出荷していなければ null
+     * @param view 注文の詳細
      * @return 注文のレスポンス
      */
-    Order toOrder(com.ecsite.module.order.domain.order.Order order, @Nullable OrderPayment payment,
-                  @Nullable ShippingDirectory.Shipment shipment) {
-        var awaitingPayment = order.isAwaitingPayment() && payment != null;
+    Order toOrder(OrderDetailView view) {
+        var payment = view.payment();
+        var shipment = view.shipment();
         var response = new Order()
-                .id(order.id())
-                .orderNumber(order.orderNumber().value())
-                .orderedAt(ApiDateTimes.toOffsetDateTime(order.orderedAt()))
-                .status(OrderStatus.fromValue(order.status().name()))
-                .lines(order.lines().stream().map(StoreOrderMapper::toLine).toList())
-                .amounts(toAmounts(order.amounts()))
-                .email(order.email())
-                .shippingAddress(toAddress(order.shippingAddress()))
-                .actions(new OrderActions(order.isCancellationRequestable(), awaitingPayment && payment.payable()));
-        if (awaitingPayment) {
+                .id(view.id())
+                .orderNumber(view.orderNumber().value())
+                .orderedAt(ApiDateTimes.toOffsetDateTime(view.orderedAt()))
+                .status(OrderStatus.fromValue(view.status().name()))
+                .lines(view.lines().stream().map(StoreOrderMapper::toLine).toList())
+                .amounts(toAmounts(view.amounts()))
+                .email(view.email())
+                .shippingAddress(toAddress(view.shippingAddress()))
+                .actions(new OrderActions(view.actions().cancellationRequestable(), view.actions().payable()));
+        if (view.awaitingPayment()) {
             response.paymentDeadline(ApiDateTimes.toOffsetDateTime(payment.deadline()));
         }
-        if (order.cancellationRequest() != null) {
-            response.cancellationRequest(toCancellationRequest(order.cancellationRequest()));
+        if (view.cancellationRequest() != null) {
+            response.cancellationRequest(toCancellationRequest(view.cancellationRequest()));
         }
-        if (order.cancellation() != null) {
+        if (view.cancellation() != null) {
             response.cancellation(new Cancellation()
-                    .cancelledAt(ApiDateTimes.toOffsetDateTime(order.cancellation().cancelledAt()))
-                    .kind(CancellationKind.fromValue(order.cancellation().kind().name())));
+                    .cancelledAt(ApiDateTimes.toOffsetDateTime(view.cancellation().cancelledAt()))
+                    .kind(CancellationKind.fromValue(view.cancellation().kind().name())));
         }
         if (shipment != null) {
             response.shipment(new Shipment()

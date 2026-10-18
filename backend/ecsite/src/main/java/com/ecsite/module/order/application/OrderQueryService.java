@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.application.port.PaymentDirectory;
@@ -22,6 +23,7 @@ import java.time.ZoneId;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -65,26 +67,27 @@ public class OrderQueryService {
     private final Clock clock;
 
     /**
-     * 注文を取得する。
+     * 注文の詳細を取得する（運営者用）。
      *
      * @param orderId 注文 ID
-     * @return 注文
+     * @return 注文の詳細
      */
-    public Order get(UUID orderId) {
-        return orderRepository.findById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+    public OrderDetailView get(UUID orderId) {
+        return toDetail(orderRepository.findById(orderId)
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
     }
 
     /**
-     * 会員の注文を取得する。注文した会員でなければ、ないときと同じく 404。
+     * 会員の注文の詳細を取得する。注文した会員でなければ、ないときと同じく 404。
      *
      * @param orderId  注文 ID
      * @param memberId 要求した会員の ID
-     * @return 注文
+     * @return 注文の詳細
      */
-    public Order getForMember(UUID orderId, UUID memberId) {
-        return orderRepository.findById(orderId)
+    public OrderDetailView getForMember(UUID orderId, UUID memberId) {
+        return toDetail(orderRepository.findById(orderId)
                 .filter(order -> order.memberId().equals(memberId))
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND)));
     }
 
     /**
@@ -164,6 +167,23 @@ public class OrderQueryService {
      */
     public Map<UUID, ShippingDirectory.Shipment> findShipments(Collection<UUID> orderIds) {
         return shippingDirectory.find(orderIds);
+    }
+
+    /**
+     * 注文を、支払と出荷を合わせた詳細の表示にする。操作の可否は注文の判定を使う。
+     */
+    private OrderDetailView toDetail(Order order) {
+        var ids = List.of(order.id());
+        var payment = findPayments(ids).get(order.id());
+        var shipment = findShipments(ids).get(order.id());
+        var awaitingPayment = order.isAwaitingPayment() && payment != null;
+        var returned = shipment != null && shipment.isReturned();
+        var actions = new OrderDetailView.Actions(order.isCancellationRequestable(),
+                awaitingPayment && payment.payable(), order.isCancellationPending(),
+                order.isCancellableByOperator(returned), order.isShippable());
+        return new OrderDetailView(order.id(), order.orderNumber(), order.orderedAt(), order.status(), order.lines(),
+                order.amounts(), order.email(), order.shippingAddress(), order.cancellationRequest(),
+                order.cancellation(), payment, shipment, awaitingPayment, actions);
     }
 
     /**

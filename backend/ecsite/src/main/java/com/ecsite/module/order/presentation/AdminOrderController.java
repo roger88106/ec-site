@@ -20,7 +20,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -89,9 +88,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<OrderDetail> getOrder(UUID orderId) {
-        var order = orderQueryService.get(orderId);
-        return ResponseEntity.ok(mapper.toOrderDetail(order, orderQueryService.findPayments(List.of(orderId)).get(orderId),
-                orderQueryService.findShipments(List.of(orderId)).get(orderId)));
+        return ResponseEntity.ok(mapper.toOrderDetail(orderQueryService.get(orderId)));
     }
 
     /**

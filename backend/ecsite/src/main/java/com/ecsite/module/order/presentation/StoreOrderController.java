@@ -16,7 +16,6 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.net.URI;
-import java.util.List;
 import java.util.UUID;
 
 /**
@@ -59,9 +58,7 @@ class StoreOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Order> getOrder(UUID orderId) {
-        var order = orderQueryService.getForMember(orderId, currentMemberIds.require());
-        return ResponseEntity.ok(mapper.toOrder(order, orderQueryService.findPayments(List.of(orderId)).get(orderId),
-                orderQueryService.findShipments(List.of(orderId)).get(orderId)));
+        return ResponseEntity.ok(mapper.toOrder(orderQueryService.getForMember(orderId, currentMemberIds.require())));
     }
 
     /**

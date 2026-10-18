@@ -37,7 +37,7 @@ public class OrderPaymentPageService {
      */
     public String pageUrl(UUID orderId, UUID memberId) {
         var order = orderQueryService.getForMember(orderId, memberId);
-        if (!order.isAwaitingPayment()) {
+        if (!order.awaitingPayment()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_PAYABLE);
         }
         return paymentDirectory.pageUrl(orderId).orElseThrow(() -> BusinessException.of(OrderErrorCode.ORDER_NOT_PAYABLE));

@@ -1,8 +1,8 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
-import com.ecsite.module.payment.domain.payment.Payment;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -31,6 +31,11 @@ public class PaymentExpiryJob {
     private final PaymentCommandService commandService;
 
     /**
+     * 支払の参照のサービス
+     */
+    private final PaymentQueryService queryService;
+
+    /**
      * 決済サービス
      */
     private final PaymentGateway gateway;
@@ -42,7 +47,7 @@ public class PaymentExpiryJob {
     @Scheduled(fixedDelayString = "${ecsite.payment.expiry-interval:PT1M}")
     @SchedulerLock(name = "payment-expiry")
     public void expire() {
-        for (var payment : commandService.findPastDeadline(BATCH_SIZE)) {
+        for (var payment : queryService.findPastDeadline(BATCH_SIZE)) {
             try {
                 expire(payment);
             } catch (SystemException e) {
@@ -55,9 +60,9 @@ public class PaymentExpiryJob {
     /**
      * 1 つの支払を期限切れにする。
      */
-    private void expire(Payment payment) {
+    private void expire(PastDeadlinePaymentView payment) {
         var page = payment.page();
-        if (page.isPresent() && gateway.closePage(page.get().id()) == PaymentGateway.CloseResult.ALREADY_PAID) {
+        if (page != null && gateway.closePage(page.id()) == PaymentGateway.CloseResult.ALREADY_PAID) {
             log.info("期限の前に支払が済んでいたので、与信の成功の通知を待つ: paymentId={}", payment.id());
             return;
         }

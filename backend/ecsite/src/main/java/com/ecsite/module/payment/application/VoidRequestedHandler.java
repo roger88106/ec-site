@@ -22,6 +22,11 @@ class VoidRequestedHandler {
     private final PaymentCommandService commandService;
 
     /**
+     * 支払の参照のサービス
+     */
+    private final PaymentQueryService queryService;
+
+    /**
      * 決済サービス
      */
     private final PaymentGateway gateway;
@@ -33,7 +38,7 @@ class VoidRequestedHandler {
      */
     @ApplicationModuleListener
     void on(VoidRequested event) {
-        commandService.findAuthorizationToVoid(event.paymentId()).ifPresent(authorizationRef -> {
+        queryService.findAuthorizationToVoid(event.paymentId()).ifPresent(authorizationRef -> {
             gateway.voidAuthorization(authorizationRef);
             commandService.markVoided(event.paymentId());
         });

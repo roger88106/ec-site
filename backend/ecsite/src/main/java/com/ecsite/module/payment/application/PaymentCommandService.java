@@ -1,10 +1,8 @@
 package com.ecsite.module.payment.application;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.Payment;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
-import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -13,7 +11,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
 import java.time.Instant;
-import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -56,29 +53,6 @@ public class PaymentCommandService {
     }
 
     /**
-     * 支払える支払を取得する（未払いで期限の前）。
-     *
-     * @param orderId 注文 ID
-     * @return 支払。支払えなければ空
-     */
-    @Transactional(readOnly = true)
-    public Optional<Payment> findPayable(UUID orderId) {
-        var now = clock.instant();
-        return paymentRepository.findByOrderId(orderId).filter(payment -> payment.isPayable(now));
-    }
-
-    /**
-     * 注文の支払を取得する。
-     *
-     * @param orderId 注文 ID
-     * @return 支払。なければ空
-     */
-    @Transactional(readOnly = true)
-    public Optional<Payment> find(UUID orderId) {
-        return paymentRepository.findByOrderId(orderId);
-    }
-
-    /**
      * 決済サービスで売上を確定したことを反映する。
      *
      * @param paymentId 支払 ID
@@ -100,17 +74,6 @@ public class PaymentCommandService {
             payment.expireAuthorization();
             paymentRepository.update(payment);
         });
-    }
-
-    /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
-     *
-     * @param limit 取得する数の上限
-     * @return 支払
-     */
-    @Transactional(readOnly = true)
-    public List<Payment> findPastDeadline(int limit) {
-        return paymentRepository.findUnpaidPastDeadline(clock.instant(), limit);
     }
 
     /**
@@ -142,19 +105,6 @@ public class PaymentCommandService {
     }
 
     /**
-     * 決済サービスで取り消す与信の参照を返す。
-     *
-     * @param paymentId 支払 ID
-     * @return 与信の参照。与信の取消待ちでなければ空（取消済みなど）
-     */
-    @Transactional(readOnly = true)
-    public Optional<String> findAuthorizationToVoid(UUID paymentId) {
-        return paymentRepository.findById(paymentId)
-                .filter(payment -> payment.status() == PaymentStatus.VOID_PENDING)
-                .map(Payment::authorizationRef);
-    }
-
-    /**
      * 決済サービスで与信を取り消したことを反映する。
      *
      * @param paymentId 支払 ID
@@ -164,20 +114,6 @@ public class PaymentCommandService {
             payment.markVoided();
             paymentRepository.update(payment);
         });
-    }
-
-    /**
-     * 決済サービスに求める返金の要求を返す。
-     *
-     * @param paymentId 支払 ID
-     * @return 返金の要求。返金待ちでなければ空（返金済みなど）
-     */
-    @Transactional(readOnly = true)
-    public Optional<PaymentGateway.RefundRequest> findRefundRequest(UUID paymentId) {
-        return paymentRepository.findById(paymentId)
-                .filter(payment -> payment.status() == PaymentStatus.REFUND_PENDING)
-                .map(payment -> new PaymentGateway.RefundRequest(
-                        payment.orderId(), payment.authorizationRef(), payment.amount()));
     }
 
     /**

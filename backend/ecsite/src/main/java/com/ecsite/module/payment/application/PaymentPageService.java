@@ -22,6 +22,11 @@ public class PaymentPageService {
     private final PaymentCommandService commandService;
 
     /**
+     * 支払の参照のサービス
+     */
+    private final PaymentQueryService queryService;
+
+    /**
      * 決済サービス
      */
     private final PaymentGateway gateway;
@@ -38,13 +43,13 @@ public class PaymentPageService {
      * @return 支払の画面の URL。支払がない、支払えない（未払いでない、期限の後）なら空
      */
     public Optional<String> pageUrl(UUID orderId) {
-        var payable = commandService.findPayable(orderId);
+        var payable = queryService.findPayable(orderId);
         if (payable.isEmpty()) {
             return Optional.empty();
         }
         var payment = payable.get();
-        if (payment.page().isPresent()) {
-            return payment.page().map(PaymentPage::url);
+        if (payment.page() != null) {
+            return Optional.of(payment.page().url());
         }
         var opened = gateway.openPage(new PaymentGateway.PageRequest(payment.id(), orderId, payment.amount(),
                 properties.returnUrlOf(orderId)));

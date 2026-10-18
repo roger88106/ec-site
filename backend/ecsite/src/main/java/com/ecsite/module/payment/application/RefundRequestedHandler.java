@@ -22,6 +22,11 @@ class RefundRequestedHandler {
     private final PaymentCommandService commandService;
 
     /**
+     * 支払の参照のサービス
+     */
+    private final PaymentQueryService queryService;
+
+    /**
      * 決済サービス
      */
     private final PaymentGateway gateway;
@@ -33,7 +38,7 @@ class RefundRequestedHandler {
      */
     @ApplicationModuleListener
     void on(RefundRequested event) {
-        commandService.findRefundRequest(event.paymentId()).ifPresent(request -> {
+        queryService.findRefundRequest(event.paymentId()).ifPresent(request -> {
             gateway.refund(request);
             commandService.markRefunded(event.paymentId());
         });

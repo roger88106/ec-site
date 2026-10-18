@@ -25,6 +25,11 @@ public class PaymentCaptureService {
     private final PaymentCommandService commandService;
 
     /**
+     * 支払の参照のサービス
+     */
+    private final PaymentQueryService queryService;
+
+    /**
      * 決済サービス
      */
     private final PaymentGateway gateway;
@@ -37,7 +42,7 @@ public class PaymentCaptureService {
      * @throws SystemException   決済サービスに接続できない（支払は与信済みのまま残る）
      */
     public void capture(UUID orderId) {
-        var payment = commandService.find(orderId)
+        var payment = queryService.findForCapture(orderId)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         switch (payment.status()) {
             case CAPTURED -> {

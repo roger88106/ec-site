@@ -4,6 +4,8 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
 import jakarta.annotation.Nullable;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.web.util.HtmlUtils;
 
 import java.util.List;
@@ -14,6 +16,7 @@ import java.util.function.Function;
  * mock の物流サービスの画面の HTML を組み立てる（{@link MockCarrierController} の補助）。<br />
  * 外から来る値（送り状番号、エラーの文）は、ここで HTML の特殊文字を置き換える。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class MockCarrierPageHtml {
 
     /**
@@ -30,9 +33,6 @@ final class MockCarrierPageHtml {
             DeliveryStatus.IN_TRANSIT, "配送中",
             DeliveryStatus.DELIVERED, "配達完了",
             DeliveryStatus.RETURNED, "返送");
-
-    private MockCarrierPageHtml() {
-    }
 
     /**
      * 出荷の一覧の HTML を返す。

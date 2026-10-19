@@ -1,16 +1,16 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
 import jakarta.annotation.Nullable;
+import lombok.AccessLevel;
+import lombok.NoArgsConstructor;
 import org.springframework.web.util.HtmlUtils;
 
 /**
  * mock の支払の画面の HTML を組み立てる（{@link MockPaymentPageController} の補助）。<br />
  * 外から来る値（支払の画面 ID、戻る先の URL、エラーの文）は、ここで HTML の特殊文字を置き換える。
  */
+@NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class MockPaymentPageHtml {
-
-    private MockPaymentPageHtml() {
-    }
 
     /**
      * 支払の画面が見つからないときの HTML を返す。

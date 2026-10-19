@@ -108,9 +108,6 @@ export async function dismissCartMergeNotice(): Promise<void> {
 
 // ============================== プライベート ==============================
 
-/** Cookie のカートがないときの案内 */
-const CART_MISSING = translate('cart.errors.missing') // カートがない
-
 /** カートの変更の API の呼び出し */
 type CartRequest = (
   api: Awaited<ReturnType<typeof getApi>>,
@@ -130,7 +127,7 @@ async function updateCart(request: CartRequest): Promise<ActionResult> {
       return await updateMemberCart(request)
     }
     if (choice.kind === 'none') {
-      return { ok: false, message: CART_MISSING }
+      return { ok: false, message: translate('cart.errors.missing') } // Cookie のカートがない
     }
     const { error, response } = await request(await getApi(), choice.cartId)
     revalidatePath('/cart')

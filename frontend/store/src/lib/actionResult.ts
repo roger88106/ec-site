@@ -1,6 +1,9 @@
 import { translate } from '@/i18n/translate'
+
 /** 通信の失敗（バックエンドが止まっているなど）のときの案内（店舗画面の構成 第 6 節） */
-export const CONNECTION_FAILED = translate('common.connectionFailed')
+export function connectionFailedMessage(): string {
+  return translate('common.connectionFailed')
+}
 
 /**
  * サーバーアクションの結果（店舗画面の構成 第 6 節）。<br />

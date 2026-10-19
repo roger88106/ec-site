@@ -7,3 +7,5 @@
 
 # T014-02-06
 @/lib/uuid=@ec-site/shared/lib/patterns
+# T014-03-06
+CONNECTION_FAILED=connectionFailedMessage()

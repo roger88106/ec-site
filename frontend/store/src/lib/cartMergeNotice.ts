@@ -4,9 +4,6 @@ import { translate } from '@/i18n/translate'
 /** 知らせる品目の数の上限（Cookie の大きさを抑えるため。残りは数だけ示す） */
 const MAX_ITEMS = 10
 
-/** 商品名が分からない品目の名前 */
-const UNKNOWN_PRODUCT = translate('cart.merge.unknownProduct') // 商品
-
 /** 知らせる品目 */
 type NoticeItem = { label: string; quantity: number }
 
@@ -44,7 +41,7 @@ export function cartMergeNotice(
   const labels = new Map(sourceItems.map((item) => [item.variantId, itemLabel(item)]))
   const toNoticeItems = (items: MergedItem[]): NoticeItems => ({
     items: items.slice(0, MAX_ITEMS).map((item) => ({
-      label: labels.get(item.variantId) ?? UNKNOWN_PRODUCT,
+      label: labels.get(item.variantId) ?? translate('cart.merge.unknownProduct'), // 商品名が分からなければ「商品」
       quantity: item.quantity,
     })),
     more: Math.max(items.length - MAX_ITEMS, 0),

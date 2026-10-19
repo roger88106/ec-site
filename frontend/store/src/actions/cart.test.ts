@@ -1,7 +1,7 @@
 import { HttpResponse, http as mswHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import { addToCart, changeCartItemQuantity, removeCartItem, startCheckout } from '@/actions/cart'
-import { CONNECTION_FAILED } from '@/lib/actionResult'
+import { connectionFailedMessage } from '@/lib/actionResult'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
 import { CHECKOUT_ID, COOKIE_CART_ID, form, MEMBER_CART_ID, NEW_CART_ID, VARIANT_ID } from '@/test/fixtures'
 import { cookieOptions, cookieValue, redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
@@ -87,7 +87,7 @@ describe('カートに入れる（ゲスト）', () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
     server.use(mswHttp.post(`${STORE_API}/carts/:cartId/items`, () => HttpResponse.error()))
 
-    expect(await addToCart(null, addForm())).toEqual({ ok: false, message: CONNECTION_FAILED })
+    expect(await addToCart(null, addForm())).toEqual({ ok: false, message: connectionFailedMessage() })
   })
 })
 

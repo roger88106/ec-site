@@ -1,8 +1,5 @@
 import { unstable_rethrow } from 'next/navigation'
-import { type ActionResult, CONNECTION_FAILED } from '@/lib/actionResult'
-
-/** 接続できなかったときの失敗の結果 */
-const CONNECTION_FAILURE: Extract<ActionResult, { ok: false }> = { ok: false, message: CONNECTION_FAILED }
+import { type ActionResult, connectionFailedMessage } from '@/lib/actionResult'
 
 /**
  * サーバーアクションの処理を包み、例外を結果にする（フロントの書き方 第 3 節）。<br />
@@ -18,6 +15,6 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
   } catch (error) {
     // 画面の移動・not found の例外は、ここで飲み込まずに Next.js へ返す
     unstable_rethrow(error)
-    return CONNECTION_FAILURE
+    return { ok: false, message: connectionFailedMessage() }
   }
 }

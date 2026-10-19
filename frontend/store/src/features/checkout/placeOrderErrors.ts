@@ -22,18 +22,6 @@ const FIELD_BY_PATH: Record<string, OrderField> = {
   'shippingAddress.phone': 'phone',
 }
 
-/**
- * 入力検証エラー（API の契約の形の検証）のときに、入力欄に出すメッセージ。<br />
- * API が返すメッセージは検証の部品の既定の文（正規表現など）なので、業務の検証エラーと同じ文に揃える。
- */
-const FIELD_MESSAGES: Record<OrderField, string> = {
-  name: translate('checkout.fieldErrors.name'),
-  postalCode: translate('checkout.fieldErrors.postalCode'),
-  prefecture: translate('checkout.fieldErrors.prefecture'),
-  address: translate('checkout.fieldErrors.address'),
-  phone: translate('checkout.fieldErrors.phone'),
-}
-
 /** 業務の検証エラーのエラーコード → 入力欄 */
 const FIELD_BY_ERROR_CODE: Record<string, OrderField> = {
   INVALID_RECIPIENT_NAME: 'name',
@@ -62,7 +50,8 @@ export function placeOrderErrors(result: ActionResult | null): PlaceOrderErrors 
   for (const path of Object.keys(result.fieldErrors ?? {})) {
     const field = FIELD_BY_PATH[path]
     if (field) {
-      fields[field] = FIELD_MESSAGES[field]
+      // API が返すメッセージは検証の部品の既定の文（正規表現など）なので、業務の検証エラーと同じ文に揃える
+      fields[field] = translate(`checkout.fieldErrors.${field}`)
     }
   }
   return {

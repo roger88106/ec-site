@@ -1,7 +1,7 @@
 import { notFound, redirect } from 'next/navigation'
 import { describe, expect, test } from 'vitest'
 import { withActionResult } from '@/actions/withActionResult'
-import { CONNECTION_FAILED } from '@/lib/actionResult'
+import { connectionFailedMessage } from '@/lib/actionResult'
 import { redirectedTo } from '@/test/next'
 
 describe('サーバーアクションの処理の包み', () => {
@@ -23,7 +23,7 @@ describe('サーバーアクションの処理の包み', () => {
       throw new TypeError('fetch failed')
     })
 
-    expect(result).toEqual({ ok: false, message: CONNECTION_FAILED })
+    expect(result).toEqual({ ok: false, message: connectionFailedMessage() })
   })
 
   test('予期しない例外も、失敗の結果にする（画面を壊さない）', async () => {
@@ -31,6 +31,6 @@ describe('サーバーアクションの処理の包み', () => {
       throw new Error('unexpected')
     })
 
-    expect(result).toEqual({ ok: false, message: CONNECTION_FAILED })
+    expect(result).toEqual({ ok: false, message: connectionFailedMessage() })
   })
 })

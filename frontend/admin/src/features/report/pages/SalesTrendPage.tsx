@@ -74,7 +74,7 @@ function SalesTrend({ fiscalYearStartMonth }: { fiscalYearStartMonth: number }) 
 function SalesTrendResult({ condition, report }: { condition: ReportCondition; report: SalesTrendReport }) {
   const t = useTranslations('report.salesTrend')
   const rows = report.points.map((point) => ({ ...point, label: bucketLabel(point, condition.granularity) }))
-  const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-4)' } } satisfies ChartConfig
+  const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-4)' } } satisfies ChartConfig // 売上額
   return (
     <div className="space-y-6">
       {report.shippingExcluded && (
@@ -100,9 +100,9 @@ function SalesTrendResult({ condition, report }: { condition: ReportCondition; r
       </section>
       <div className="flex justify-end">
         <CsvButton
-          filename={`${t('filename')}_${condition.from}_${condition.to}.csv`}
+          filename={`${t('filename')}_${condition.from}_${condition.to}.csv`} /* CSV のファイル名 */
           rows={[
-            [t('bucket'), t('amount'), t('quantity')],
+            [t('bucket'), t('amount'), t('quantity')], // 見出しの行（区切り、売上額、販売数量）
             ...rows.map((row) => [row.label, row.amount, row.quantity]),
           ]}
         />

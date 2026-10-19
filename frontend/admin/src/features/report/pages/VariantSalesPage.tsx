@@ -89,7 +89,7 @@ function variantName(variant: VariantSales): string {
 function VariantSalesResult({ condition, report }: { condition: ReportCondition; report: VariantSalesReport }) {
   const t = useTranslations('report.variantSales')
   const rows = report.variants.map((variant) => ({ ...variant, name: variantName(variant) }))
-  const chartConfig = { quantity: { label: t('quantity'), color: 'var(--chart-2)' } } satisfies ChartConfig
+  const chartConfig = { quantity: { label: t('quantity'), color: 'var(--chart-2)' } } satisfies ChartConfig // 販売数量
   return (
     <div className="space-y-6">
       <p className="font-medium">{t('product', { name: report.productName }) /* 商品名 */}</p>
@@ -106,9 +106,9 @@ function VariantSalesResult({ condition, report }: { condition: ReportCondition;
       </section>
       <div className="flex justify-end">
         <CsvButton
-          filename={`${t('filename')}_${report.productName}_${condition.from}_${condition.to}.csv`}
+          filename={`${t('filename')}_${report.productName}_${condition.from}_${condition.to}.csv`} /* CSV のファイル名 */
           rows={[
-            [t('variant'), t('variantCode'), t('quantity'), t('amount')],
+            [t('variant'), t('variantCode'), t('quantity'), t('amount')], // 見出しの行（バリエーション、品番、販売数量、売上額）
             ...rows.map((row) => [row.name, row.variantCode, row.quantity, row.amount]),
           ]}
         />

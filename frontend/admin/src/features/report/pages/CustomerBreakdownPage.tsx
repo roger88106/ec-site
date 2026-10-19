@@ -77,17 +77,17 @@ function BreakdownResult({ condition, report }: { condition: ReportCondition; re
   const dimensions = [
     {
       key: 'prefecture',
-      name: t('prefecture'),
+      name: t('prefecture'), // 都道府県
       rows: report.prefectures.map((row) => ({ ...row, segment: prefectureLabel(row.prefectureCode) })),
     },
     {
       key: 'ageGroup',
-      name: t('ageGroup'),
+      name: t('ageGroup'), // 年齢層
       rows: report.ageGroups.map((row) => ({ ...row, segment: ageGroupLabel(row.ageGroup) })),
     },
     {
       key: 'gender',
-      name: t('gender'),
+      name: t('gender'), // 性別
       rows: report.genders.map((row) => ({ ...row, segment: reportGenderLabel(row.gender) })),
     },
   ] satisfies { key: string; name: string; rows: SegmentRow[] }[]
@@ -100,9 +100,9 @@ function BreakdownResult({ condition, report }: { condition: ReportCondition; re
           <span />
         )}
         <CsvButton
-          filename={`${t('filename')}_${condition.from}_${condition.to}.csv`}
+          filename={`${t('filename')}_${condition.from}_${condition.to}.csv`} /* CSV のファイル名 */
           rows={[
-            [t('dimension'), t('segment'), t('amount'), t('orders')],
+            [t('dimension'), t('segment'), t('amount'), t('orders')], // 見出しの行（分け方、区分、売上額、注文件数）
             ...dimensions.flatMap((dimension) =>
               dimension.rows.map((row) => [dimension.name, row.segment, row.amount, row.orders]),
             ),
@@ -127,7 +127,7 @@ const HORIZONTAL_BAR_HEIGHT = 28
 /** 1 つの分け方の棒グラフと表。区分の多いもの（都道府県）は、名前が重ならないよう横の棒にする */
 function SegmentSection({ name, rows, horizontal }: { name: string; rows: SegmentRow[]; horizontal: boolean }) {
   const t = useTranslations('report.customerBreakdown')
-  const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-3)' } } satisfies ChartConfig
+  const chartConfig = { amount: { label: t('amount'), color: 'var(--chart-3)' } } satisfies ChartConfig // 売上額
   return (
     <section aria-label={t('chart', { dimension: name }) /* 分け方ごとの売上額 */} className="space-y-4">
       <h2 className="font-heading font-semibold text-lg">{name}</h2>

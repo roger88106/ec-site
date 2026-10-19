@@ -74,7 +74,7 @@ export function VariantRow({
       <TableCell>
         {
           variant.salesSuspended ? (
-            <Badge variant="secondary">{t('suspendedBadge')}</Badge>
+            <Badge variant="secondary">{t('suspendedBadge') /* 販売停止 */}</Badge>
           ) : (
             t('onSale')
           ) /* 販売停止か販売中 */

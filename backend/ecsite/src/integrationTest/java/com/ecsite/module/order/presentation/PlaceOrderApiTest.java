@@ -235,14 +235,38 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.municipalityCode"));
         }
 
+        @Test
+        @DisplayName("AC-265 郵便番号と電話番号の形の誤りは、入力の検証で見つかっても業務のエラーと同じ文を欄のエラーに返す")
+        void returnsBusinessMessagesForMalformedPostalCodeAndPhone() throws Exception {
+            var checkoutId = startCheckout();
+
+            placeWith(checkoutId, body("1000", "13", "13101"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.postalCode"))
+                    .andExpect(jsonPath("$.errors[0].message").value("郵便番号は数字 7 桁で入力してください。"));
+            placeWith(checkoutId, body("100-0001", "13", "13101", "03-12"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.phone"))
+                    .andExpect(jsonPath("$.errors[0].message").value("電話番号は数字 10〜11 桁で入力してください。"));
+        }
+
         /**
          * 郵便番号と都道府県・市区町村のコードを指定した、注文の要求の本文
          */
         private static String body(String postalCode, String prefectureCode, String municipalityCode) {
+            return body(postalCode, prefectureCode, municipalityCode, "03-1234-5678");
+        }
+
+        /**
+         * 郵便番号と都道府県・市区町村のコードと電話番号を指定した、注文の要求の本文
+         */
+        private static String body(String postalCode, String prefectureCode, String municipalityCode, String phone) {
             return """
                     {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎", "postalCode": "%s",
-                     "prefectureCode": "%s", "municipalityCode": "%s", "address": "千代田 1-1", "phone": "03-1234-5678"}}"""
-                    .formatted(postalCode, prefectureCode, municipalityCode);
+                     "prefectureCode": "%s", "municipalityCode": "%s", "address": "千代田 1-1", "phone": "%s"}}"""
+                    .formatted(postalCode, prefectureCode, municipalityCode, phone);
         }
 
         @Test

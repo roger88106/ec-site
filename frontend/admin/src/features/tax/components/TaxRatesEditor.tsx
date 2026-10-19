@@ -57,7 +57,7 @@ export function TaxRatesEditor({
 }) {
   const { form, baseVersion, markSaved, reload } = useVersionedForm(taxCategory, toValues, refetch)
   const t = useTranslations('tax.rates')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const rates = useFieldArray({ control: form.control, name: 'rates' })
   const mutation = useApiMutation('put', '/tax-categories/{taxCategoryId}/rates', {
     success: t('saved'), // 保存の知らせ
@@ -137,7 +137,7 @@ export function TaxRatesEditor({
               <TableCell className="text-muted-foreground text-sm">{rateState(rows[index])}</TableCell>
               <TableCell className="text-right">
                 <Button onClick={() => rates.remove(index)} size="sm" type="button" variant="ghost">
-                  {tCommon('delete') /* 削除 */}
+                  {tApp('delete') /* 削除 */}
                 </Button>
               </TableCell>
             </TableRow>
@@ -161,7 +161,7 @@ export function TaxRatesEditor({
           {t('add') /* 税率を追加 */}
         </Button>
         <Button disabled={mutation.isPending || incomplete} type="submit">
-          {tCommon('save') /* 保存 */}
+          {tApp('save') /* 保存 */}
         </Button>
       </div>
       <ErrorMessage

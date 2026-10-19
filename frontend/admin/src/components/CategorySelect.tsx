@@ -14,12 +14,12 @@ export function CategorySelect({
   onChange: (value: string | null) => void
 }) {
   const query = $api.useQuery('get', '/categories')
-  const t = useTranslations('components.categorySelect')
+  const t = useTranslations('common')
   const options = [
     { value: null, label: t('all') /* すべて */ },
     ...flattenTree(query.data?.items ?? []).map((category) => ({
       value: category.id,
-      label: `${t('indent').repeat(category.depth - 1)}${category.name}`, // 階層の深さだけ字下げ
+      label: `${t('categoryIndent').repeat(category.depth - 1)}${category.name}`, // 階層の深さだけ字下げ
     })),
   ]
   return <OptionSelect className="w-48" id={id} onChange={onChange} options={options} value={value} />

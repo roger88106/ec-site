@@ -31,22 +31,21 @@
       "SAGAWA": "佐川急便",
       "JAPAN_POST": "日本郵便"
     },
-    "name": "名称",
-    "save": "保存",
-    "register": "登録",
-    "delete": "削除",
-    "deleteConfirm": "削除する",
-    "backToList": "一覧へ戻る",
-    "moveUp": "{name}を上へ",
-    "moveDown": "{name}を下へ",
     "all": "すべて",
-    "none": "なし",
-    "filter": {
-      "submit": "絞り込む",
-      "clear": "クリア"
-    },
     "axisValue": "{name}：{value}",
-    "listSeparator": "、",
-    "noneParenthesized": "（なし）"
+    "order": {
+      "orderNumber": "注文番号",
+      "orderedAt": "注文日時",
+      "postalAddress": "〒{postalCode} {prefecture}",
+      "carrier": "配送業者",
+      "trackingNumber": "送り状番号"
+    },
+    "amounts": {
+      "itemsTotal": "商品の合計",
+      "shippingFee": "送料",
+      "total": "総額（税込）",
+      "taxOf": "{ratePercent}% の消費税"
+    },
+    "categoryIndent": "　"
   }
 }

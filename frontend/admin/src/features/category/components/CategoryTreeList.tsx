@@ -28,7 +28,7 @@ export function CategoryTreeList({
 }) {
   const ids = nodes.map((node) => node.id)
   const t = useTranslations('category.tree')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   return (
     <ul className={parentId === null ? 'space-y-1' : 'mt-1 space-y-1 border-l pl-6'}>
       {nodes.map((node, index) => (
@@ -36,7 +36,7 @@ export function CategoryTreeList({
           <div className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted">
             <span className="flex-1">{node.name}</span>
             <Button
-              aria-label={tCommon('moveUp', { name: node.name }) /* 上へ */}
+              aria-label={tApp('moveUp', { name: node.name }) /* 上へ */}
               disabled={index === 0 || actions.pending}
               onClick={() => actions.reorder(parentId, move(ids, index, index - 1))}
               size="icon-xs"
@@ -45,7 +45,7 @@ export function CategoryTreeList({
               <ArrowUpIcon />
             </Button>
             <Button
-              aria-label={tCommon('moveDown', { name: node.name }) /* 下へ */}
+              aria-label={tApp('moveDown', { name: node.name }) /* 下へ */}
               disabled={index === nodes.length - 1 || actions.pending}
               onClick={() => actions.reorder(parentId, move(ids, index, index + 1))}
               size="icon-xs"
@@ -63,13 +63,13 @@ export function CategoryTreeList({
               </Button>
             )}
             <ConfirmDialog
-              confirmLabel={tCommon('deleteConfirm') /* 削除する */}
+              confirmLabel={tApp('deleteConfirm') /* 削除する */}
               description={t('deleteDescription') /* 削除できないカテゴリ */}
               onConfirm={() => actions.remove(node)}
               title={t('deleteTitle', { name: node.name }) /* 削除の確認 */}
               trigger={
                 <Button disabled={actions.pending} size="xs" variant="outline">
-                  {tCommon('delete') /* 削除 */}
+                  {tApp('delete') /* 削除 */}
                 </Button>
               }
             />

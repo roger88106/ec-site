@@ -11,7 +11,7 @@ import { formatRate } from '@/lib/rate'
 /** 税率の一覧の編集 */
 export function TaxRatesPage() {
   const t = useTranslations('tax.rates')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const { taxCategoryId = '' } = useParams()
   const query = $api.useQuery('get', '/tax-categories/{taxCategoryId}', { params: { path: { taxCategoryId } } })
   return (
@@ -24,7 +24,7 @@ export function TaxRatesPage() {
               render={<Link to={paths.taxCategories()} />}
               variant="outline"
             >
-              {tCommon('backToList') /* 一覧へ戻る */}
+              {tApp('backToList') /* 一覧へ戻る */}
             </Button>
           </PageHeader>
           <div className="max-w-4xl space-y-4">

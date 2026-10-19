@@ -55,7 +55,7 @@ export function VariantRow({
   actions: VariantRowActions
 }) {
   const t = useTranslations('product.variantRow')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   return (
     <TableRow>
       <TableCell className="font-mono">{variant.variantCode}</TableCell>
@@ -85,7 +85,7 @@ export function VariantRow({
       </TableCell>
       <TableCell className="space-x-1 whitespace-nowrap text-right">
         <Button
-          aria-label={tCommon('moveUp', { name: variant.variantCode }) /* 上へ */}
+          aria-label={tApp('moveUp', { name: variant.variantCode }) /* 上へ */}
           disabled={first || pending}
           onClick={actions.moveUp}
           size="icon-xs"
@@ -94,7 +94,7 @@ export function VariantRow({
           <ArrowUpIcon />
         </Button>
         <Button
-          aria-label={tCommon('moveDown', { name: variant.variantCode }) /* 下へ */}
+          aria-label={tApp('moveDown', { name: variant.variantCode }) /* 下へ */}
           disabled={last || pending}
           onClick={actions.moveDown}
           size="icon-xs"
@@ -127,13 +127,13 @@ export function VariantRow({
         {/* C 側に表示されたことのある商品のバリアントは削除できない */}
         {deletable && (
           <ConfirmDialog
-            confirmLabel={tCommon('deleteConfirm') /* 削除する */}
+            confirmLabel={tApp('deleteConfirm') /* 削除する */}
             description={t('deleteDescription') /* あわせて消すもの */}
             onConfirm={actions.remove}
             title={t('deleteTitle', { code: variant.variantCode }) /* 削除の確認 */}
             trigger={
               <Button disabled={pending} size="xs" variant="outline">
-                {tCommon('delete') /* 削除 */}
+                {tApp('delete') /* 削除 */}
               </Button>
             }
           />

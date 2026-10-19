@@ -18,6 +18,7 @@ export async function generateMetadata(): Promise<Metadata> {
 /** 注文の一覧。ログインを求め、自分の注文を新しい順に出す */
 export default async function OrdersPage({ searchParams }: PageProps<'/orders'>) {
   const t = await getTranslations('order.list')
+  const tCommon = await getTranslations('common')
   if ((await currentMember()) === null) {
     return redirectToLogin()
   }
@@ -40,9 +41,9 @@ export default async function OrdersPage({ searchParams }: PageProps<'/orders'>)
           <table className="w-full text-sm">
             <thead className="border-b text-left text-muted-foreground">
               <tr>
-                <th className="py-2 font-normal">{t('orderNumber') /* 注文番号 */}</th>
-                <th className="py-2 font-normal">{t('orderedAt') /* 注文日時 */}</th>
-                <th className="py-2 text-right font-normal">{t('total') /* 総額 */}</th>
+                <th className="py-2 font-normal">{tCommon('order.orderNumber') /* 注文番号 */}</th>
+                <th className="py-2 font-normal">{tCommon('order.orderedAt') /* 注文日時 */}</th>
+                <th className="py-2 text-right font-normal">{tCommon('amounts.total') /* 総額 */}</th>
                 <th className="py-2 text-right font-normal">{t('status') /* 状態 */}</th>
               </tr>
             </thead>

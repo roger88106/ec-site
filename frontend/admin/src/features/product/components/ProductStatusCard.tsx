@@ -17,7 +17,7 @@ import { Price } from '@/components/Price'
 export function ProductStatusCard({ product }: { product: ProductDetail }) {
   const navigate = useNavigate()
   const t = useTranslations('product.status')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const queryClient = useQueryClient()
   const path = { params: { path: { productId: product.id } } }
   /** 状態で在庫の画面の表示も変わるので、在庫も読み直す */
@@ -95,7 +95,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
           )}
           {product.actions.delete && (
             <ConfirmDialog
-              confirmLabel={tCommon('deleteConfirm') /* 削除する */}
+              confirmLabel={tApp('deleteConfirm') /* 削除する */}
               description={t('deleteDescription') /* あわせて消すもの */}
               onConfirm={() =>
                 remove.mutate({
@@ -105,7 +105,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
               title={t('deleteTitle', { name: product.name }) /* 削除の確認 */}
               trigger={
                 <Button disabled={pending} variant="destructive">
-                  {tCommon('delete') /* 削除 */}
+                  {tApp('delete') /* 削除 */}
                 </Button>
               }
             />

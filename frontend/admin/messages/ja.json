@@ -16,6 +16,23 @@
     },
     "notFound": {
       "message": "ページが見つかりません。"
+    },
+    "common": {
+      "name": "名称",
+      "save": "保存",
+      "register": "登録",
+      "delete": "削除",
+      "deleteConfirm": "削除する",
+      "backToList": "一覧へ戻る",
+      "moveUp": "{name}を上へ",
+      "moveDown": "{name}を下へ",
+      "none": "なし",
+      "filter": {
+        "submit": "絞り込む",
+        "clear": "クリア"
+      },
+      "listSeparator": "、",
+      "noneParenthesized": "（なし）"
     }
   },
   "components": {
@@ -30,10 +47,6 @@
     },
     "optionSelect": {
       "placeholder": "選択してください"
-    },
-    "categorySelect": {
-      "all": "すべて",
-      "indent": "　"
     }
   },
   "api": {
@@ -289,8 +302,6 @@
     },
     "list": {
       "title": "注文",
-      "orderNumber": "注文番号",
-      "orderedAt": "注文日時",
       "customerName": "氏名",
       "total": "総額",
       "status": "状態",
@@ -309,7 +320,6 @@
     "detail": {
       "titlePrefix": "注文：",
       "status": "状態",
-      "orderedAt": "注文日時",
       "payment": "支払",
       "paymentDeadline": "支払の期限",
       "authorizationDeadline": "与信期限",
@@ -317,7 +327,6 @@
       "email": "メールアドレス",
       "name": "氏名",
       "address": "住所",
-      "postalAddress": "〒{postalCode} {prefecture}",
       "phone": "電話番号"
     },
     "lines": {
@@ -328,11 +337,7 @@
       "ratePercent": "税率",
       "unitPriceInclTax": "税込単価",
       "quantity": "数量",
-      "subtotal": "小計",
-      "itemsTotal": "商品の合計",
-      "shippingFee": "送料",
-      "total": "総額（税込）",
-      "taxOf": "{ratePercent}% の消費税"
+      "subtotal": "小計"
     },
     "cancellation": {
       "title": "キャンセル",
@@ -372,8 +377,6 @@
     "shipment": {
       "title": "出荷",
       "status": "配送状態",
-      "carrier": "配送業者",
-      "trackingNumber": "送り状番号",
       "shippedAt": "出荷日時",
       "submit": "出荷を登録する",
       "confirmTitle": "注文 {orderNumber} を出荷しますか？",

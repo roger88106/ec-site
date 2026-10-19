@@ -8,7 +8,7 @@ import { formatYen, taxLabel } from '@/lib/orderDisplay'
  * カート・注文手続き・注文で同じ部品を使う。
  */
 export function AmountsSummary({ amounts }: { amounts: Amounts }) {
-  const t = useTranslations('components.amounts')
+  const t = useTranslations('common.amounts')
   return (
     <dl className="space-y-2 text-sm">
       <div className="flex justify-between">

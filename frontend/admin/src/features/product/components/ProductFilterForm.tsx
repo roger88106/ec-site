@@ -28,7 +28,7 @@ export function ProductFilterForm({
   onApply: (filter: ProductFilter) => void
 }) {
   const t = useTranslations('product.filter')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const form = useForm<ProductFilter>({ defaultValues: filter })
   return (
     <form
@@ -80,9 +80,9 @@ export function ProductFilterForm({
           render={({ field }) => <CategorySelect id="filter-category" onChange={field.onChange} value={field.value} />}
         />
       </Field>
-      <Button type="submit">{tCommon('filter.submit') /* 絞り込む */}</Button>
+      <Button type="submit">{tApp('filter.submit') /* 絞り込む */}</Button>
       <Button onClick={() => onApply(EMPTY_FILTER)} type="button" variant="ghost">
-        {tCommon('filter.clear') /* クリア */}
+        {tApp('filter.clear') /* クリア */}
       </Button>
     </form>
   )

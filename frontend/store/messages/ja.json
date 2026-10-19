@@ -20,12 +20,6 @@
       "inclTax": "{amount} 円",
       "exclTax": "（税抜 {amount} 円）"
     },
-    "amounts": {
-      "itemsTotal": "商品の合計",
-      "shippingFee": "送料",
-      "total": "総額（税込）",
-      "taxOf": "{ratePercent}% の消費税"
-    },
     "quoteItem": {
       "unpurchasable": "購入できません"
     }
@@ -38,7 +32,6 @@
       "INSUFFICIENT_STOCK": "在庫が足りません。数量を減らしてください"
     },
     "axisValues": {
-      "item": "{name}：{value}",
       "separator": "　"
     }
   },
@@ -81,8 +74,6 @@
     },
     "filter": {
       "category": "カテゴリ",
-      "all": "すべて",
-      "indent": "　",
       "price": "価格（税込）",
       "min": "下限",
       "max": "上限",
@@ -185,25 +176,17 @@
       "title": "ご注文履歴",
       "empty": "ご注文はまだありません。",
       "findProducts": "商品を探す",
-      "orderNumber": "注文番号",
-      "orderedAt": "注文日時",
-      "total": "総額（税込）",
       "status": "状態",
       "paymentDeadline": "お支払い期限 {deadline}"
     },
     "detail": {
       "title": "ご注文の内容",
       "ordersHint": "ご注文の内容とキャンセルの申請は、<link>ご注文履歴</link>からいつでも確かめられます。",
-      "orderNumber": "注文番号",
-      "orderedAt": "注文日時",
       "status": "状態",
-      "carrier": "配送業者",
-      "trackingNumber": "送り状番号",
       "lines": "明細",
       "quantity": "数量 {quantity}",
       "shippingAddress": "お届け先",
       "addressName": "{name} 様",
-      "postalAddress": "〒{postalCode} {prefecture}",
       "phone": "電話番号 {phone}",
       "email": "メールアドレス {email}",
       "cancellation": "キャンセル",

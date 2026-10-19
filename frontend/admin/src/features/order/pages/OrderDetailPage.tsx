@@ -19,6 +19,7 @@ import { formatPostalCode } from '@/features/order/order'
 /** 注文の詳細と、出荷の登録、承認・却下・キャンセルの操作 */
 export function OrderDetailPage() {
   const t = useTranslations('order.detail')
+  const tApp = useTranslations('app.common')
   const tCommon = useTranslations('common')
   const { orderId = '' } = useParams()
   const query = $api.useQuery('get', '/orders/{orderId}', { params: { path: { orderId } } })
@@ -38,7 +39,7 @@ export function OrderDetailPage() {
           render={<Link to={paths.orders()} />}
           variant="outline"
         >
-          {tCommon('backToList') /* 一覧へ戻る */}
+          {tApp('backToList') /* 一覧へ戻る */}
         </Button>
       </PageHeader>
       <QueryState query={query}>
@@ -52,7 +53,7 @@ export function OrderDetailPage() {
                 </dd>
               </div>
               <div className="flex items-center gap-2">
-                <dt className="text-muted-foreground">{t('orderedAt') /* 注文日時 */}</dt>
+                <dt className="text-muted-foreground">{tCommon('order.orderedAt') /* 注文日時 */}</dt>
                 <dd>
                   <DateTime value={order.orderedAt} />
                 </dd>
@@ -101,7 +102,7 @@ export function OrderDetailPage() {
                   <dt className="text-muted-foreground">{t('address') /* 住所 */}</dt>
                   <dd>
                     {
-                      t('postalAddress', {
+                      tCommon('order.postalAddress', {
                         postalCode: formatPostalCode(order.shippingAddress.postalCode),
                         prefecture: order.shippingAddress.prefecture,
                       }) /* 郵便番号と都道府県 */

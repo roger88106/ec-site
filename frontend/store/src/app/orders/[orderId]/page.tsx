@@ -34,6 +34,7 @@ export async function generateMetadata(): Promise<Metadata> {
  */
 export default async function OrderPage({ params, searchParams }: PageProps<'/orders/[orderId]'>) {
   const t = await getTranslations('order.detail')
+  const tCommon = await getTranslations('common')
   const { orderId } = await params
   const returned = (await searchParams).payment === 'returned'
   if ((await currentMember()) === null) {
@@ -70,9 +71,9 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
       </header>
 
       <dl className="grid gap-x-6 gap-y-2 text-sm sm:grid-cols-[8rem_1fr]">
-        <dt className="text-muted-foreground">{t('orderNumber') /* 注文番号 */}</dt>
+        <dt className="text-muted-foreground">{tCommon('order.orderNumber') /* 注文番号 */}</dt>
         <dd className="font-semibold tabular-nums">{order.orderNumber}</dd>
-        <dt className="text-muted-foreground">{t('orderedAt') /* 注文日時 */}</dt>
+        <dt className="text-muted-foreground">{tCommon('order.orderedAt') /* 注文日時 */}</dt>
         <dd className="tabular-nums">{formatDateTime(order.orderedAt)}</dd>
         <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
         <dd>
@@ -80,9 +81,9 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
         </dd>
         {order.shipment && (
           <>
-            <dt className="text-muted-foreground">{t('carrier') /* 配送業者 */}</dt>
+            <dt className="text-muted-foreground">{tCommon('order.carrier') /* 配送業者 */}</dt>
             <dd>{carrierLabel(order.shipment.carrier)}</dd>
-            <dt className="text-muted-foreground">{t('trackingNumber') /* 送り状番号 */}</dt>
+            <dt className="text-muted-foreground">{tCommon('order.trackingNumber') /* 送り状番号 */}</dt>
             <dd className="tabular-nums">{order.shipment.trackingNumber}</dd>
           </>
         )}
@@ -125,7 +126,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
           <p>{t('addressName', { name: address.name }) /* 宛名 */}</p>
           <p>
             {
-              t('postalAddress', {
+              tCommon('order.postalAddress', {
                 postalCode: formatPostalCode(address.postalCode),
                 prefecture: address.prefecture,
               }) /* 郵便番号と都道府県 */

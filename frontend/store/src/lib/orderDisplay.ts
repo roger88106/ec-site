@@ -68,7 +68,7 @@ export function taxLabel(tax: TaxAmount): string {
 /** 軸の名前と値（例：「色：黒　サイズ：M」） */
 export function axisValuesLabel(axisValues: { name: string; value: string }[]): string {
   return axisValues
-    .map((axis) => translate('orderDisplay.axisValues.item', axis))
+    .map((axis) => translate('common.axisValue', axis))
     .join(translate('orderDisplay.axisValues.separator'))
 }
 

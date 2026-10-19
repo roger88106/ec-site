@@ -52,13 +52,14 @@ export function ShipmentCard({ order }: { order: OrderDetail }) {
 /** 出荷の内容 */
 function ShipmentDetail({ shipment }: { shipment: Shipment }) {
   const t = useTranslations('order.shipment')
+  const tCommon = useTranslations('common')
   return (
     <dl className="grid grid-cols-[7rem_1fr] gap-y-1 text-sm">
       <dt className="text-muted-foreground">{t('status') /* 配送状態 */}</dt>
       <dd>{shipmentStatusLabel(shipment.status)}</dd>
-      <dt className="text-muted-foreground">{t('carrier') /* 配送業者 */}</dt>
+      <dt className="text-muted-foreground">{tCommon('order.carrier') /* 配送業者 */}</dt>
       <dd>{carrierLabel(shipment.carrier)}</dd>
-      <dt className="text-muted-foreground">{t('trackingNumber') /* 送り状番号 */}</dt>
+      <dt className="text-muted-foreground">{tCommon('order.trackingNumber') /* 送り状番号 */}</dt>
       <dd className="font-mono">{shipment.trackingNumber}</dd>
       <dt className="text-muted-foreground">{t('shippedAt') /* 出荷日時 */}</dt>
       <dd>
@@ -74,6 +75,7 @@ function ShipmentDetail({ shipment }: { shipment: Shipment }) {
  */
 function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
   const t = useTranslations('order.shipment')
+  const tCommon = useTranslations('common')
   const form = useForm<Values>({ defaultValues: { carrier: null, trackingNumber: '' } })
   const mutation = useApiMutation('post', '/orders/{orderId}/shipment', {
     success: t('registered'), // 登録の知らせ
@@ -93,7 +95,7 @@ function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: stri
     <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
       <div className="flex flex-wrap items-start gap-3">
         <Field className="w-40">
-          <FieldLabel htmlFor="ship-carrier">{t('carrier') /* 配送業者 */}</FieldLabel>
+          <FieldLabel htmlFor="ship-carrier">{tCommon('order.carrier') /* 配送業者 */}</FieldLabel>
           <Controller
             control={form.control}
             name="carrier"
@@ -110,7 +112,7 @@ function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: stri
           <FieldError errors={[form.formState.errors.carrier]} />
         </Field>
         <Field className="w-60">
-          <FieldLabel htmlFor="ship-tracking-number">{t('trackingNumber') /* 送り状番号 */}</FieldLabel>
+          <FieldLabel htmlFor="ship-tracking-number">{tCommon('order.trackingNumber') /* 送り状番号 */}</FieldLabel>
           <Input
             id="ship-tracking-number"
             inputMode="numeric"

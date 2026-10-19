@@ -13,6 +13,7 @@ import { StockHistory } from '@/features/inventory/components/StockHistory'
 export function StockPage() {
   const t = useTranslations('inventory.page')
   const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const { productId = '', variantId = '' } = useParams()
   const product = $api.useQuery('get', '/products/{productId}', { params: { path: { productId } } })
   const stock = $api.useQuery('get', '/inventory/variants/{variantId}', { params: { path: { variantId } } })
@@ -46,7 +47,7 @@ export function StockPage() {
                 t('axes', {
                   values: axes
                     .map((axis, index) => tCommon('axisValue', { name: axis, value: variant.axisValues[index] }))
-                    .join(tCommon('listSeparator')),
+                    .join(tApp('listSeparator')),
                 }) /* 軸の名前と値 */
             }
           </p>

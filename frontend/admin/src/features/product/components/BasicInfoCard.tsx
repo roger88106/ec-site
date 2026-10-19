@@ -17,7 +17,7 @@ import { useVersionedForm } from '@/hooks/useVersionedForm'
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, markSaved, reload } = useVersionedForm(product, toProductFields, refetch)
   const t = useTranslations('product.basicInfo')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const mutation = useApiMutation('put', '/products/{productId}', {
     success: t('saved'), // 保存の知らせ
     invalidate: ['/products'],
@@ -49,7 +49,7 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
                 {
                   product.axes.length > 0
                     ? product.axes.join(t('axisSeparator'))
-                    : tCommon('none') /* 軸の並び、なければ「なし」 */
+                    : tApp('none') /* 軸の並び、なければ「なし」 */
                 }
               </dd>
             </dl>
@@ -64,7 +64,7 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
             />
             <div>
               <Button disabled={mutation.isPending || !isProductFieldsFilled(form.watch())} type="submit">
-                {tCommon('save') /* 保存 */}
+                {tApp('save') /* 保存 */}
               </Button>
             </div>
           </form>

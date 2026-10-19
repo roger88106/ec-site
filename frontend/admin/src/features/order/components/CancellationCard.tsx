@@ -22,7 +22,7 @@ export function CancellationCard({
   cancellation: Cancellation | undefined
 }) {
   const t = useTranslations('order.cancellation')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   return (
     <Card>
       <CardHeader>
@@ -40,7 +40,7 @@ export function CancellationCard({
               </dd>
               <dt className="text-muted-foreground">{t('reason') /* 理由 */}</dt>
               <dd className="whitespace-pre-wrap">
-                {request.reason || tCommon('noneParenthesized') /* 理由がなければ（なし） */}
+                {request.reason || tApp('noneParenthesized') /* 理由がなければ（なし） */}
               </dd>
               <dt className="text-muted-foreground">{t('result') /* 結果 */}</dt>
               <dd>

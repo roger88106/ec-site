@@ -28,7 +28,7 @@ import { move } from '@/lib/array'
 export function ProductImagesCard({ product }: { product: ProductDetail }) {
   const invalidate = useInvalidate()
   const t = useTranslations('product.images')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const fileInput = useRef<HTMLInputElement>(null)
   const [fileError, setFileError] = useState<string | null>(null)
   const images = product.images
@@ -120,7 +120,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
                       <ArrowRightIcon />
                     </Button>
                     <ConfirmDialog
-                      confirmLabel={tCommon('deleteConfirm') /* 削除する */}
+                      confirmLabel={tApp('deleteConfirm') /* 削除する */}
                       description={t('deleteDescription') /* 削除の影響 */}
                       onConfirm={() => {
                         resetErrors()
@@ -139,7 +139,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
                           size="xs"
                           variant="outline"
                         >
-                          {tCommon('delete') /* 削除 */}
+                          {tApp('delete') /* 削除 */}
                         </Button>
                       }
                     />

@@ -11,6 +11,7 @@ import { formatYen } from '@/lib/format'
 export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts: OrderAmounts }) {
   const t = useTranslations('order.lines')
   const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   return (
     <Card>
       <CardHeader>
@@ -43,7 +44,7 @@ export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts
                       {
                         line.axisValues
                           .map((axis) => tCommon('axisValue', axis))
-                          .join(tCommon('listSeparator')) /* 軸の名前と値 */
+                          .join(tApp('listSeparator')) /* 軸の名前と値 */
                       }
                     </div>
                   )}
@@ -59,20 +60,22 @@ export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts
         </Table>
         <dl className="ml-auto w-full max-w-sm space-y-1 text-sm">
           <div className="flex justify-between">
-            <dt>{t('itemsTotal') /* 商品の合計 */}</dt>
+            <dt>{tCommon('amounts.itemsTotal') /* 商品の合計 */}</dt>
             <dd className="tabular-nums">{formatYen(amounts.itemsTotal)}</dd>
           </div>
           <div className="flex justify-between">
-            <dt>{t('shippingFee') /* 送料 */}</dt>
+            <dt>{tCommon('amounts.shippingFee') /* 送料 */}</dt>
             <dd className="tabular-nums">{formatYen(amounts.shippingFee)}</dd>
           </div>
           <div className="flex justify-between border-t pt-1 font-semibold">
-            <dt>{t('total') /* 総額 */}</dt>
+            <dt>{tCommon('amounts.total') /* 総額 */}</dt>
             <dd className="tabular-nums">{formatYen(amounts.total)}</dd>
           </div>
           {amounts.taxes.map((tax) => (
             <div className="text-right text-muted-foreground tabular-nums" key={tax.ratePercent}>
-              <dt className="sr-only">{t('taxOf', { ratePercent: tax.ratePercent }) /* 税率ごとの消費税 */}</dt>
+              <dt className="sr-only">
+                {tCommon('amounts.taxOf', { ratePercent: tax.ratePercent }) /* 税率ごとの消費税 */}
+              </dt>
               <dd>{taxLabel(tax)}</dd>
             </div>
           ))}

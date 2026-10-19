@@ -39,7 +39,7 @@ const FIELD_NAMES = [...PRODUCT_FIELD_NAMES, 'productCode', 'axes'] as const
  */
 export function ProductCreatePage() {
   const t = useTranslations('product.create')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const navigate = useNavigate()
   const form = useForm<Values>({ defaultValues: { ...EMPTY_PRODUCT_FIELDS, productCode: '', axes: [] } })
   const axes = useFieldArray({ control: form.control, name: 'axes' })
@@ -61,7 +61,7 @@ export function ProductCreatePage() {
           render={<Link to={paths.products()} />}
           variant="outline"
         >
-          {tCommon('backToList') /* 一覧へ戻る */}
+          {tApp('backToList') /* 一覧へ戻る */}
         </Button>
       </PageHeader>
       <FormProvider {...form}>
@@ -122,7 +122,7 @@ export function ProductCreatePage() {
                     {...form.register(`axes.${index}.name`)}
                   />
                   <Button onClick={() => axes.remove(index)} size="sm" type="button" variant="ghost">
-                    {tCommon('delete') /* 削除 */}
+                    {tApp('delete') /* 削除 */}
                   </Button>
                 </div>
               ))}
@@ -143,7 +143,7 @@ export function ProductCreatePage() {
 
           <ErrorMessage error={mutation.error} shownFields={FIELD_NAMES} />
           <Button disabled={mutation.isPending || !filled} type="submit">
-            {tCommon('register') /* 登録 */}
+            {tApp('register') /* 登録 */}
           </Button>
         </form>
       </FormProvider>

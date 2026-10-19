@@ -22,6 +22,7 @@ import { shipmentStatusLabel } from '@/lib/labels'
  */
 export function OrderListPage() {
   const t = useTranslations('order.list')
+  const tCommon = useTranslations('common')
   const [searchParams, setSearchParams] = useSearchParams()
   const filter = parseFilter(searchParams)
   const navigate = useNavigate()
@@ -59,8 +60,8 @@ export function OrderListPage() {
               <Table>
                 <TableHeader>
                   <TableRow>
-                    <TableHead>{t('orderNumber') /* 注文番号 */}</TableHead>
-                    <TableHead>{t('orderedAt') /* 注文日時 */}</TableHead>
+                    <TableHead>{tCommon('order.orderNumber') /* 注文番号 */}</TableHead>
+                    <TableHead>{tCommon('order.orderedAt') /* 注文日時 */}</TableHead>
                     <TableHead>{t('customerName') /* 氏名 */}</TableHead>
                     <TableHead className="text-right">{t('total') /* 総額 */}</TableHead>
                     <TableHead>{t('status') /* 状態 */}</TableHead>

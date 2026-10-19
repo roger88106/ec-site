@@ -14,7 +14,7 @@ import { VariantSection } from '@/features/product/components/VariantSection'
 
 /** 商品の編集。状態、基本情報、バリアントのカードを並べる */
 export function ProductEditPage() {
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const { productId = '' } = useParams()
   const query = $api.useQuery('get', '/products/{productId}', { params: { path: { productId } } })
   return (
@@ -34,7 +34,7 @@ export function ProductEditPage() {
               render={<Link to={paths.products()} />}
               variant="outline"
             >
-              {tCommon('backToList') /* 一覧へ戻る */}
+              {tApp('backToList') /* 一覧へ戻る */}
             </Button>
           </PageHeader>
           <div className="max-w-4xl space-y-6">

@@ -33,7 +33,7 @@ export function CategoryNameDialog({
   /** バージョン不一致（409）の後の再読み込み。既定は閉じるだけ */
   onReload?: () => void
 }) {
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const form = useForm<Values>({ defaultValues: { name: initialName } })
   return (
     <Dialog onOpenChange={(open) => !open && onClose()} open>
@@ -51,7 +51,7 @@ export function CategoryNameDialog({
           )}
         >
           <Field>
-            <FieldLabel htmlFor="category-name">{tCommon('name') /* 名称 */}</FieldLabel>
+            <FieldLabel htmlFor="category-name">{tApp('name') /* 名称 */}</FieldLabel>
             <Input
               autoFocus
               id="category-name"
@@ -63,7 +63,7 @@ export function CategoryNameDialog({
           <ErrorMessage error={error} onReload={onReload} shownFields={['name']} />
           <DialogFooter>
             <Button disabled={pending || !form.watch('name').trim()} type="submit">
-              {tCommon('save') /* 保存 */}
+              {tApp('save') /* 保存 */}
             </Button>
           </DialogFooter>
         </form>

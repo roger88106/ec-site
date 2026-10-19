@@ -15,7 +15,7 @@ type Values = { name: string }
 /** 税区分の登録 */
 export function CreateTaxCategoryForm() {
   const t = useTranslations('tax.create')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const form = useForm<Values>({ defaultValues: { name: '' } })
   const mutation = useApiMutation('post', '/tax-categories', {
     success: t('registered'), // 登録の知らせ
@@ -35,7 +35,7 @@ export function CreateTaxCategoryForm() {
           onSubmit={form.handleSubmit((values) => mutation.mutate({ body: values }))}
         >
           <Field className="w-64">
-            <FieldLabel htmlFor="tax-category-name">{tCommon('name') /* 名称 */}</FieldLabel>
+            <FieldLabel htmlFor="tax-category-name">{tApp('name') /* 名称 */}</FieldLabel>
             <Input
               id="tax-category-name"
               maxLength={schemas.CreateTaxCategoryRequest.name.maxLength}
@@ -44,7 +44,7 @@ export function CreateTaxCategoryForm() {
             <FieldError errors={[form.formState.errors.name]} />
           </Field>
           <Button className="mt-6" disabled={mutation.isPending || !form.watch('name').trim()} type="submit">
-            {tCommon('register') /* 登録 */}
+            {tApp('register') /* 登録 */}
           </Button>
         </form>
         <ErrorMessage error={mutation.error} shownFields={['name']} />

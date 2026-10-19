@@ -21,7 +21,7 @@ const statusOptions = [
 /** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */
 export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onApply: (filter: OrderFilter) => void }) {
   const t = useTranslations('order.filter')
-  const tCommon = useTranslations('common')
+  const tApp = useTranslations('app.common')
   const form = useForm<OrderFilter>({ defaultValues: filter })
   return (
     <form
@@ -76,9 +76,9 @@ export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onAp
           />
         ))}
       </div>
-      <Button type="submit">{tCommon('filter.submit') /* 絞り込む */}</Button>
+      <Button type="submit">{tApp('filter.submit') /* 絞り込む */}</Button>
       <Button onClick={() => onApply(EMPTY_FILTER)} type="button" variant="ghost">
-        {tCommon('filter.clear') /* クリア */}
+        {tApp('filter.clear') /* クリア */}
       </Button>
     </form>
   )

@@ -5,11 +5,11 @@ import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
-/** 東京都・大阪府・不明の 3 つの都道府県と、すべての年齢層と性別 */
+/** 東京都・大阪府・不明の 3 つの都道府県と、すべての年齢層と性別。大阪府は、マスターデータで名前が変わった場合として別の名前にする */
 const BREAKDOWN: CustomerBreakdownReport = {
   prefectures: [
-    { prefectureCode: '13', amount: 52000, orders: 12 },
-    { prefectureCode: '27', amount: 31000, orders: 7 },
+    { prefectureCode: '13', prefectureName: '東京都', amount: 52000, orders: 12 },
+    { prefectureCode: '27', prefectureName: '大阪都', amount: 31000, orders: 7 },
     { amount: 4000, orders: 1 },
   ],
   ageGroups: [
@@ -50,13 +50,13 @@ function rowsOf(dimension: string): HTMLElement[] {
 }
 
 describe('地域・年齢層・性別', () => {
-  it('AC-205、220 都道府県ごとの売上額と注文件数を、コードの順に名前で出し、コードのないものは不明', async () => {
+  it('AC-205、220、262 都道府県ごとの売上額と注文件数を、コードの順に応答の名前で出し、コードのないものは不明', async () => {
     serveBreakdown()
     renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
 
     await screen.findByRole('region', { name: '都道府県ごとの売上額' })
     const rows = rowsOf('都道府県')
-    expect(rows.map((row) => within(row).getAllByRole('cell')[0].textContent)).toEqual(['東京都', '大阪府', '不明'])
+    expect(rows.map((row) => within(row).getAllByRole('cell')[0].textContent)).toEqual(['東京都', '大阪都', '不明'])
     expect(within(rows[0]).getByRole('cell', { name: '52,000 円' })).toBeInTheDocument()
     expect(within(rows[0]).getByRole('cell', { name: '12' })).toBeInTheDocument()
   })

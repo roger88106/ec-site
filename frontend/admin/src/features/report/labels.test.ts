@@ -38,12 +38,9 @@ describe('レポートの表示名', () => {
     expect(genderSalesGenderValues.map(reportGenderLabel)).toEqual(['男性', '女性', 'その他', '不明'])
   })
 
-  it('AC-220 都道府県は、全国地方公共団体コードから名前にする。コードがない・知らないコードは「不明」', () => {
-    expect(prefectureLabel('01')).toBe('北海道')
-    expect(prefectureLabel('13')).toBe('東京都')
-    expect(prefectureLabel('47')).toBe('沖縄県')
+  it('AC-220、262 都道府県は、応答の名前をそのまま出す。名前がなければ「不明」', () => {
+    expect(prefectureLabel('東京都')).toBe('東京都')
     expect(prefectureLabel(undefined)).toBe('不明')
-    expect(prefectureLabel('48')).toBe('不明')
   })
 
   it('BR-24 売上の推移の区切りは、週は日付、月は暦、四半期と年は会計年度で呼ぶ', () => {

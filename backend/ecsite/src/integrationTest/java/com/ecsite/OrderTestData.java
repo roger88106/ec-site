@@ -184,7 +184,7 @@ public class OrderTestData {
     public static String orderBody(long expectedTotal, String name) {
         return """
                 {"expectedTotal": %d, "shippingAddress": {"name": "%s", "postalCode": "100-0001",
-                 "prefecture": "東京都", "address": "千代田区千代田 1-1", "phone": "03-1234-5678"}}"""
+                 "prefectureCode": "13", "municipalityCode": "13101", "address": "千代田 1-1", "phone": "03-1234-5678"}}"""
                 .formatted(expectedTotal, name);
     }
 

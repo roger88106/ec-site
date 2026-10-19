@@ -193,28 +193,56 @@ class PlaceOrderApiTest {
         void rejectsInvalidInput() throws Exception {
             var checkoutId = startCheckout();
 
-            placeWith(checkoutId, """
-                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
-                     "postalCode": "100-0001", "prefecture": "東京", "address": "千代田区", "phone": "03-1234-5678"}}""")
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_PREFECTURE"));
-            placeWith(checkoutId, """
-                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
-                     "postalCode": "1000", "prefecture": "東京都", "address": "千代田区", "phone": "03-1234-5678"}}""")
+            placeWith(checkoutId, body("1000", "13", "13101"))
                     .andExpect(status().isBadRequest());
         }
 
         @Test
-        @DisplayName("都道府県が契約の長さ（4 文字）を超えれば、入力の検証で 400")
-        void rejectsTooLongPrefecture() throws Exception {
+        @DisplayName("AC-251 マスターデータにない都道府県は 400（INVALID_PREFECTURE）")
+        void rejectsUnknownPrefecture() throws Exception {
             var checkoutId = startCheckout();
 
-            placeWith(checkoutId, """
-                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎",
-                     "postalCode": "100-0001", "prefecture": "東京都千代田", "address": "千代田区", "phone": "03-1234-5678"}}""")
+            placeWith(checkoutId, body("100-0001", "48", "13101"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_PREFECTURE"));
+        }
+
+        @Test
+        @DisplayName("AC-251 マスターデータにない市区町村と、選んだ都道府県に属さない市区町村は 400（INVALID_MUNICIPALITY）")
+        void rejectsUnknownOrMismatchedMunicipality() throws Exception {
+            var checkoutId = startCheckout();
+
+            placeWith(checkoutId, body("100-0001", "13", "13999"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_MUNICIPALITY"));
+            placeWith(checkoutId, body("100-0001", "13", "01101"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_MUNICIPALITY"));
+        }
+
+        @Test
+        @DisplayName("都道府県と市区町村のコードの形が違えば、入力の検証で 400")
+        void rejectsMalformedCodes() throws Exception {
+            var checkoutId = startCheckout();
+
+            placeWith(checkoutId, body("100-0001", "東京都", "13101"))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
-                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.prefecture"));
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.prefectureCode"));
+            placeWith(checkoutId, body("100-0001", "13", "131"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("shippingAddress.municipalityCode"));
+        }
+
+        /**
+         * 郵便番号と都道府県・市区町村のコードを指定した、注文の要求の本文
+         */
+        private static String body(String postalCode, String prefectureCode, String municipalityCode) {
+            return """
+                    {"expectedTotal": 6940, "shippingAddress": {"name": "山田 太郎", "postalCode": "%s",
+                     "prefectureCode": "%s", "municipalityCode": "%s", "address": "千代田 1-1", "phone": "03-1234-5678"}}"""
+                    .formatted(postalCode, prefectureCode, municipalityCode);
         }
 
         @Test
@@ -270,6 +298,20 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.shippingAddress.postalCode").value("1000001"))
                     .andExpect(jsonPath("$.shippingAddress.phone").value("0312345678"))
                     .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
+        }
+
+        @Test
+        @DisplayName("AC-258 注文は、お届け先の都道府県と市区町村のコードと、地域のマスターデータの名前を持つ")
+        void showsCodesAndNames() throws Exception {
+            var orderId = placeOrder();
+
+            mockMvc.perform(get("/api/store/orders/" + orderId))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.shippingAddress.prefectureCode").value("13"))
+                    .andExpect(jsonPath("$.shippingAddress.prefectureName").value("東京都"))
+                    .andExpect(jsonPath("$.shippingAddress.municipalityCode").value("13101"))
+                    .andExpect(jsonPath("$.shippingAddress.municipalityName").value("千代田区"))
+                    .andExpect(jsonPath("$.shippingAddress.address").value("千代田 1-1"));
         }
 
         @Test

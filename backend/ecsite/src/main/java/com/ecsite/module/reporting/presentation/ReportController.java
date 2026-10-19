@@ -124,6 +124,6 @@ class ReportController implements ReportApi {
      */
     @Override
     public ResponseEntity<ReportSettings> getReportSettings() {
-        return ResponseEntity.ok(new ReportSettings(properties.fiscalYearStartMonth()));
+        return ResponseEntity.ok(new ReportSettings().fiscalYearStartMonth(properties.fiscalYearStartMonth()));
     }
 }

@@ -50,7 +50,9 @@ class ReportMapper {
      * @return 売上の推移のレスポンス
      */
     SalesTrendReport toSalesTrendReport(com.ecsite.module.reporting.application.model.view.SalesTrendReport report) {
-        return new SalesTrendReport(report.points().stream().map(ReportMapper::toPoint).toList(), report.shippingExcluded());
+        return new SalesTrendReport()
+                .points(report.points().stream().map(ReportMapper::toPoint).toList())
+                .shippingExcluded(report.shippingExcluded());
     }
 
     /**
@@ -61,14 +63,20 @@ class ReportMapper {
      */
     VariantSalesReport toVariantSalesReport(com.ecsite.module.reporting.application.model.view.VariantSalesReport report) {
         var variants = report.variants().stream()
-                .map(variant -> new VariantSales(
-                        variant.variantId(),
-                        variant.variantCode(),
-                        variant.axisValues().stream().map(axis -> new OrderAxisValue(axis.name(), axis.value())).toList(),
-                        variant.quantity(),
-                        variant.amount().yen()))
+                .map(variant -> new VariantSales()
+                        .variantId(variant.variantId())
+                        .variantCode(variant.variantCode())
+                        .axisValues(variant.axisValues().stream()
+                                .map(axis -> new OrderAxisValue().name(axis.name()).value(axis.value()))
+                                .toList())
+                        .quantity(variant.quantity())
+                        .amount(variant.amount().yen()))
                 .toList();
-        return new VariantSalesReport(report.productId(), report.productName(), variants, report.shippingExcluded());
+        return new VariantSalesReport()
+                .productId(report.productId())
+                .productName(report.productName())
+                .variants(variants)
+                .shippingExcluded(report.shippingExcluded());
     }
 
     /**
@@ -79,17 +87,28 @@ class ReportMapper {
      */
     CustomerBreakdownReport toCustomerBreakdownReport(com.ecsite.module.reporting.application.model.view.CustomerBreakdownReport report) {
         var prefectures = report.prefectures().stream()
-                .map(sales -> new PrefectureSales(sales.amount().yen(), sales.orders()).prefectureCode(sales.prefectureCode()))
+                .map(sales -> new PrefectureSales()
+                        .prefectureCode(sales.prefectureCode())
+                        .amount(sales.amount().yen())
+                        .orders(sales.orders()))
                 .toList();
         var ageGroups = report.ageGroups().stream()
-                .map(sales -> new AgeGroupSales(AgeGroupSales.AgeGroupEnum.fromValue(sales.ageGroup().name()),
-                        sales.amount().yen(), sales.orders()))
+                .map(sales -> new AgeGroupSales()
+                        .ageGroup(AgeGroupSales.AgeGroupEnum.fromValue(sales.ageGroup().name()))
+                        .amount(sales.amount().yen())
+                        .orders(sales.orders()))
                 .toList();
         var genders = report.genders().stream()
-                .map(sales -> new GenderSales(GenderSales.GenderEnum.fromValue(sales.gender().name()),
-                        sales.amount().yen(), sales.orders()))
+                .map(sales -> new GenderSales()
+                        .gender(GenderSales.GenderEnum.fromValue(sales.gender().name()))
+                        .amount(sales.amount().yen())
+                        .orders(sales.orders()))
                 .toList();
-        return new CustomerBreakdownReport(prefectures, ageGroups, genders, report.shippingExcluded());
+        return new CustomerBreakdownReport()
+                .prefectures(prefectures)
+                .ageGroups(ageGroups)
+                .genders(genders)
+                .shippingExcluded(report.shippingExcluded());
     }
 
     /**
@@ -97,8 +116,12 @@ class ReportMapper {
      */
     private static SalesTrendPoint toPoint(TrendPoint point) {
         var bucket = point.bucket();
-        return new SalesTrendPoint(bucket.start(), bucket.end(), point.amount().yen(), point.quantity())
+        return new SalesTrendPoint()
+                .start(bucket.start())
+                .end(bucket.end())
                 .fiscalYear(bucket.fiscalYear())
-                .quarter(bucket.quarter());
+                .quarter(bucket.quarter())
+                .amount(point.amount().yen())
+                .quantity(point.quantity());
     }
 }

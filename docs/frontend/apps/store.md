@@ -199,14 +199,17 @@ Next.js の `typedRoutes` で、画面の置き場所と照らす。クエリ付
 | 項目 | 決まり |
 |------|--------|
 | 設定 | `auth/` に Auth.js の設定を集め、外からは `@/auth` だけを import する（ライブラリを替えるときの範囲を狭くするため）。provider は Keycloak（`ec-store` realm の `ec-store-web`、confidential client）、認可コード + PKCE |
-| 環境変数 | `AUTH_KEYCLOAK_ISSUER`（既定 `http://localhost:8180/realms/ec-store`）、`AUTH_KEYCLOAK_ID`（既定 `ec-store-web`）、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`（Cookie の暗号化の鍵）※5 |
+| 環境変数 | `AUTH_KEYCLOAK_ISSUER`（既定 `http://localhost:8180/realms/ec-store`）、`AUTH_KEYCLOAK_ID`（既定 `ec-store-web`）、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`（Cookie の暗号化の鍵）、`AUTH_URL`（店舗画面を公開する URL。既定 `http://localhost:3000`）※5 |
+| 戻り先 | ログイン（IdP からの戻り先）とログアウト（IdP のログアウトの後の戻り先）の URL は `AUTH_URL` から作り、リクエストヘッダーのホストとプロトコル（`host`、`x-forwarded-*`）を使わない（ヘッダーは偽れるため）※6 |
 | セッション | 暗号化した HttpOnly の Cookie に、access・refresh・ID token、期限、氏名・メールアドレスを持つ（サーバーに状態を持たない） |
 | 画面から読める情報 | `auth()` の結果（ブラウザからも読める）には氏名とメールアドレスだけ。token は `getAccessToken()` で Cookie から直接読む（サーバー専用） |
 | 氏名 | token の姓（`family_name`）と名（`given_name`）を「姓 名」で並べる |
 | ログインの状態 | サーバー側で `currentMember()`（ログインしていれば氏名とメールアドレス、していなければ `null`）。クライアントコンポーネントでは取らず、要れば props で渡す |
 | アカウント | ヘッダーから IdP のアカウント画面（`<issuer>/account`）へ移る。変えた氏名は次のログインから反映する |
 
-※5：既定値はローカルと CI だけで使う値（realm の JSON と同じ）で、開発モードとテストでだけ使う。本番モードでは、この 4 つと `STORE_API_BASE_URL` がなければ起動時に失敗する（`src/auth/config.ts`）。E2E は `playwright.config.ts` で渡す。
+※5：既定値はローカルと CI だけで使う値（realm の JSON と同じ）で、開発モードとテストでだけ使う。本番モードでは、この 5 つと `STORE_API_BASE_URL` がなければ起動時に失敗する（`src/auth/config.ts`）。E2E は `playwright.config.ts` で渡す。
+
+※6：Auth.js は `AUTH_URL` があれば、リクエストの URL をそれに置き換える。`trustHost` は指定しない。ログインの戻り先のテストは、このファイルだけ本物の Auth.js を使う（`auth/loginRedirect.test.ts`）。
 
 ### 9.1 token の更新
 

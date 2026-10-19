@@ -41,7 +41,7 @@
 
 ## 2. 管理画面
 
-ビルド時に埋め込む。
+ビルド時に埋め込む。本番ビルドでは、`VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がなければビルドに失敗する（既定値は開発サーバーとテストでだけ使う）。
 
 | 環境変数 | 内容 | 既定 |
 |----------|------|------|
@@ -58,5 +58,6 @@
 | `AUTH_KEYCLOAK_ISSUER` | IdP（消費者の realm） | `http://localhost:8180/realms/ec-store` |
 | `AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET` | client の ID と secret | `ec-store-web`、ローカル用の値 |
 | `AUTH_SECRET` | セッションの Cookie の暗号化の鍵 | ローカル用の値 |
+| `AUTH_URL` | 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を作る | `http://localhost:3000` |
 
 ※1：既定値はローカルと CI だけで使う値で、開発モードとテストでだけ使う。本番モードでは `STORE_API_REVALIDATE_SECONDS` 以外がなければ起動に失敗する。

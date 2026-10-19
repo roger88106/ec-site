@@ -148,7 +148,7 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 ### 8.1 環境変数は起動時に確かめる
 
-本番（`NODE_ENV=production`）で、Cookie の暗号の鍵（`AUTH_SECRET`）、IdP の client の ID と secret、IdP と API の場所がなければ、起動（`instrumentation.ts` の `register()`）で足りない名前を並べて失敗させる。ローカル用の既定値は、開発モードとテストでだけ使う ※2。
+本番（`NODE_ENV=production`）で、Cookie の暗号の鍵（`AUTH_SECRET`）、IdP の client の ID と secret、IdP と API の場所、店舗画面を公開する URL がなければ、起動（`instrumentation.ts` の `register()`）で足りない名前を並べて失敗させる。ローカル用の既定値は、開発モードとテストでだけ使う ※2。任意の設定（既定値のあるもの）も、同じ所（`src/auth/config.ts` の `readServerConfig()`）で読み、各所で `process.env` を読まない。管理画面は接続先をビルドの時に埋め込むので、本番ビルドで確かめる（管理画面の構成 第 10 節）。
 
 ※2：モジュールの読み込み時には確かめない。`next build` も本番モードで動き、CI のビルドには secret がないため。
 

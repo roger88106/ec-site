@@ -188,13 +188,15 @@ SPA がブラウザで IdP とやり取りし（public client）、token はメ�
 
 | 項目 | 決まり |
 |------|--------|
-| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）と `VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。戻り先は画面のトップ |
+| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）と `VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。戻り先は画面のトップ ※1 |
 | token の置き場所 | メモリー（`InMemoryWebStorage`）。sessionStorage に置かない（JavaScript から読める場所に残さない）。IdP へ移る間の `state` と PKCE の値だけは sessionStorage |
 | ログインを求める | `auth/AuthGate` がすべての画面を包み、ログインしていなければ IdP へ移り、戻ったら元の画面に戻す ※2 |
 | token の更新 | 期限が近ければ refresh token で取り直す（自動）。取り直せなければ（最後の操作から 30 分、最長 8 時間）ログインし直す |
 | ログインしている運営者 | `auth/operator` の `useOperator()` で氏名とログアウトを読む。コンポーネントは react-oidc-context を直接使わない（テストで置き換えるため） |
 | 権限による出し分け | `auth/permissions` の `usePermissions()` で、管理 API の自分の権限の一覧（`GET /me`）を読む ※3。権限のない画面はメニューに出さず、URL で開いたら `auth/RequirePermission` が「権限がない」を示す（API は呼ばない）。今はレポートの画面だけを出し分ける |
 | ログアウト | IdP のログアウト（RP-Initiated Logout。ID token と画面のトップを添える）へ移る |
+
+※1：既定値はローカルと CI だけで使う。接続先はビルドの時に埋め込むので、本番ビルド（`vite build` の production モード）では、2 つのどちらかがなければ（空も含む）ビルドに失敗する（`config/oidcEnv.ts` を `vite.config.ts` から呼ぶ。`src/` の外に置くのは、画面のコードに入れないため）。開発サーバー、テスト、本番でないモードのビルドでは確かめない。CI のビルドと E2E は、ローカルの値を渡す。
 
 ※2：再読み込み・新しいタブではメモリーに token がないので IdP へ移るが、IdP のログインが残っていればパスワードなしですぐ戻る。隠した iframe は使わない。
 

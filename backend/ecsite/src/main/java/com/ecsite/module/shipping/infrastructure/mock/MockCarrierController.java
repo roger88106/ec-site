@@ -7,7 +7,7 @@ import com.ecsite.module.shipping.domain.DeliveryStatus;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -28,12 +28,12 @@ import java.util.UUID;
 
 /**
  * mock の物流サービスの画面（docs/backend/modules/shipping.md「mock」）。<br />
- * 外部の物流サービスの代わりで、EC の API ではない（OpenAPI に書かない）。物流サービスが mock のときだけ出す。
+ * 外部の物流サービスの代わりで、EC の API ではない（OpenAPI に書かない）。物流の mock フラグを立てたときだけ出す。
  * 出荷の一覧と、出荷ごとに「配送中」「配達完了」「返送」のボタンを持つ。ボタンを押すと、署名付きの通知を
  * HTTP で自分の通知の受け口に送る。
  */
 @Controller
-@ConditionalOnProperty(name = "ecsite.shipping.carrier", havingValue = "mock", matchIfMissing = true)
+@ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
 @RequiredArgsConstructor
 class MockCarrierController {
 

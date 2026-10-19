@@ -2,7 +2,7 @@ package com.ecsite.module.payment.infrastructure.mock;
 
 import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
@@ -17,11 +17,11 @@ import java.nio.charset.StandardCharsets;
 
 /**
  * mock の支払の画面（docs/backend/modules/payment.md「mock」）。<br />
- * 外部の決済サービスの画面の代わりで、EC の API ではない（OpenAPI に書かない）。決済サービスが mock のときだけ出す。
+ * 外部の決済サービスの画面の代わりで、EC の API ではない（OpenAPI に書かない）。決済の mock フラグを立てたときだけ出す。
  * 「支払う」「カードを拒否させる」「やめる」の操作を持ち、支払う・やめるときは店舗の注文の画面に戻す。
  */
 @Controller
-@ConditionalOnProperty(name = "ecsite.payment.gateway", havingValue = "mock", matchIfMissing = true)
+@ConditionalOnBooleanProperty(name = "ecsite.payment.mock.enabled")
 @RequiredArgsConstructor
 class MockPaymentPageController {
 

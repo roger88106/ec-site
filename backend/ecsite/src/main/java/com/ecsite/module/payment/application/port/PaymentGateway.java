@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /**
  * 決済サービスの口（docs/backend/modules/payment.md「決済サービス」）。<br />
- * 実装は mock と Stripe で、設定 {@code ecsite.payment.gateway} で切り替える。決済サービスの型とエラーは実装の外に出さない。
+ * 実装は mock と Stripe で、mock フラグ {@code ecsite.payment.mock.enabled} が立てば mock、なければ Stripe を使う。決済サービスの型とエラーは実装の外に出さない。
  * 売上確定を除き、どの操作も、決済サービスが応えなければ {@link com.ecsite.common.error.exception.SystemException} を投げる。
  */
 public interface PaymentGateway {

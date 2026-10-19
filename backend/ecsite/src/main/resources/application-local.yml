@@ -57,11 +57,16 @@ ecsite:
     # 支払の画面から戻る店舗の注文の画面（店舗画面の開発サーバー）
     return-url: http://localhost:3000/orders/{orderId}?payment=returned
     mock:
+      # 決済は mock を使う（mock フラグ）。Stripe の sandbox で動かすときは application-stripe.yml で下ろす
+      enabled: true
       # mock の支払の画面を出すバックエンド
       base-url: http://localhost:8080
   shipping:
     # 物流サービスの通知の署名の鍵：ローカル専用の試験用の値。mock の画面もこの鍵で署名して通知する
     webhook-secret: local-carrier-webhook-secret
+    mock:
+      # 物流は mock を使う（mock フラグ。本番の実装はまだない）
+      enabled: true
   notification:
     # 出荷通知メールなどの送信元
     from: no-reply@shop.example

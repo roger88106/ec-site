@@ -4,7 +4,7 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierNotification;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.http.MediaType;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -23,7 +23,7 @@ import java.time.Instant;
  * 送る順序と内容を選び、署名の誤りと合わない送り状番号は、通知を作る口で選べる。
  */
 @Component
-@ConditionalOnProperty(name = "ecsite.shipping.carrier", havingValue = "mock", matchIfMissing = true)
+@ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
 public class MockCarrier {
 
     /**

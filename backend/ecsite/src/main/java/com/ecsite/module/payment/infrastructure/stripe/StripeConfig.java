@@ -3,7 +3,7 @@ package com.ecsite.module.payment.infrastructure.stripe;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.application.port.PaymentNotificationReceiver;
 import com.stripe.StripeClient;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -11,10 +11,10 @@ import org.springframework.context.annotation.Configuration;
 import java.time.Clock;
 
 /**
- * Stripe の決済サービスの設定。設定 {@code ecsite.payment.gateway} が {@code stripe} のときだけ有効にする。
+ * Stripe の決済サービスの設定。決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てないときに有効にする。
  */
 @Configuration(proxyBeanMethods = false)
-@ConditionalOnProperty(name = "ecsite.payment.gateway", havingValue = "stripe")
+@ConditionalOnBooleanProperty(name = "ecsite.payment.mock.enabled", havingValue = false, matchIfMissing = true)
 @EnableConfigurationProperties(StripeProperties.class)
 class StripeConfig {
 

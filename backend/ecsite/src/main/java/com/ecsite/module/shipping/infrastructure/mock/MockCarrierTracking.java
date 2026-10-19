@@ -2,7 +2,7 @@ package com.ecsite.module.shipping.infrastructure.mock;
 
 import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.domain.Carrier;
-import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -14,7 +14,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
  * 覚えるのはメモリで、mock はローカルとテストだけで使い、1 インスタンスで動かす前提のため。
  */
 @Component
-@ConditionalOnProperty(name = "ecsite.shipping.carrier", havingValue = "mock", matchIfMissing = true)
+@ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
 public class MockCarrierTracking implements CarrierTracking {
 
     /**

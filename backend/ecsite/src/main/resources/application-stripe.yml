@@ -12,4 +12,6 @@ spring:
 
 ecsite:
   payment:
-    gateway: stripe
+    mock:
+      # local の mock フラグを下ろし、決済に Stripe を使う。物流は local のまま mock
+      enabled: false

@@ -1,8 +1,4 @@
 import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
-import { translate } from '@/i18n/translate'
-
-/** 金額の書式（3 桁ごとのカンマ） */
-const yen = new Intl.NumberFormat(LOCALE)
 
 /** 表示のタイムゾーンでの年月日・時分を、ゼロ埋めの数字で取り出す書式 */
 const zonedFormat = new Intl.DateTimeFormat(LOCALE, {
@@ -17,17 +13,6 @@ const zonedFormat = new Intl.DateTimeFormat(LOCALE, {
 
 /** 1 分のミリ秒 */
 const MINUTE_MS = 60 * 1000
-
-/**
- * 価格の表示。税込価格を主に、税抜価格を括弧で併記する。<br />
- * 例：「1,980 円（税抜 1,800 円）」。有効な税率がなく税込価格がなければ、税抜価格だけを出す。
- */
-export function formatPrice(priceInclTax: number | null | undefined, priceExclTax: number): string {
-  if (priceInclTax == null) {
-    return translate('common.priceExclTaxOnly', { exclTax: yen.format(priceExclTax) })
-  }
-  return translate('common.priceWithExclTax', { inclTax: yen.format(priceInclTax), exclTax: yen.format(priceExclTax) })
-}
 
 /**
  * 日時の入力欄（datetime-local）の値を、API に送る日時にする。<br />

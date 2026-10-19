@@ -100,3 +100,18 @@ describe('お届け先の表示', () => {
     expect(formatPostalCode('1000001')).toBe('100-0001')
   })
 })
+
+describe('価格の表示（BR-4）', () => {
+  test('BR-4 税込価格を主に、税抜価格を括弧で併記する', () => {
+    expect(formatPrice({ inclTax: 1980, exclTax: 1800 })).toBe('1,980 円（税抜 1,800 円）')
+  })
+
+  test('BR-4 3 桁未満と 7 桁以上も、3 桁ごとに区切る', () => {
+    expect(formatPrice({ inclTax: 110, exclTax: 100 })).toBe('110 円（税抜 100 円）')
+    expect(formatPrice({ inclTax: 1100000, exclTax: 1000000 })).toBe('1,100,000 円（税抜 1,000,000 円）')
+  })
+
+  test('有効な税率がなく税込価格がないときは、税抜価格だけを出す', () => {
+    expect(formatPrice({ inclTax: null, exclTax: 1800 })).toBe('税抜 1,800 円（税込価格は計算できません）')
+  })
+})

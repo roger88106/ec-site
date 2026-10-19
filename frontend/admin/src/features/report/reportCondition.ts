@@ -1,9 +1,7 @@
+import { isUuid } from '@ec-site/shared/lib/patterns'
 import { granularityValues, reportBasisValues } from '@/api/generated/admin'
 import type { Granularity, ReportBasis } from '@/api/types'
 import { isDate } from '@/features/report/period'
-
-/** UUID の形 */
-const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i
 
 /** レポートの条件。URL のクエリに持つ（再読込とリンクの共有のため。管理画面の構成 第 3 節） */
 export type ReportCondition = {
@@ -34,7 +32,7 @@ export function parseCondition(params: URLSearchParams, defaultPeriod: { from: s
     to: to !== null && isDate(to) ? to : defaultPeriod.to,
     granularity: granularityValues.includes(granularity as Granularity) ? (granularity as Granularity) : 'MONTH',
     basis: reportBasisValues.includes(basis as ReportBasis) ? (basis as ReportBasis) : 'ORDER',
-    productId: productId !== null && UUID.test(productId) ? productId : undefined,
+    productId: productId !== null && isUuid(productId) ? productId : undefined,
     excludeTax: params.get('excludeTax') === 'true',
     excludeShipping: params.get('excludeShipping') === 'true',
   }

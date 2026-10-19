@@ -1,3 +1,4 @@
+import { isDateString } from '@ec-site/shared/lib/patterns'
 import { toZonedDate } from '@/lib/format'
 
 /** 期間の選択肢 */
@@ -12,12 +13,9 @@ export const CALENDAR_PRESETS = ['thisMonth', 'lastMonth', 'thisYear', 'lastYear
 /** 期間（日本時間の日付。両端を含む） */
 export type Period = { from: string; to: string }
 
-/** 日付の形（yyyy-MM-dd） */
-const DATE = /^\d{4}-\d{2}-\d{2}$/
-
 /** 実在する日付（yyyy-MM-dd）か */
 export function isDate(value: string): boolean {
-  if (!DATE.test(value)) {
+  if (!isDateString(value)) {
     return false
   }
   const [year, month, day] = value.split('-').map(Number)

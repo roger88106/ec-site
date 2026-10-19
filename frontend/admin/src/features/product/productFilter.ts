@@ -1,5 +1,6 @@
 import { publicationStatusValues } from '@/api/generated/admin'
 import type { PublicationStatus } from '@/api/types'
+import { pageParam } from '@/lib/searchParams'
 
 /** 商品の一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成 第 3 節） */
 export type ProductFilter = {
@@ -21,13 +22,12 @@ export const EMPTY_FILTER: ProductFilter = { code: '', name: '', status: null, c
 /** URL のクエリから絞り込みを読む。不正な値は無視する */
 export function parseFilter(params: URLSearchParams): ProductFilter {
   const status = params.get('status')
-  const page = Number(params.get('page'))
   return {
     code: params.get('code') ?? '',
     name: params.get('name') ?? '',
     status: publicationStatusValues.includes(status as PublicationStatus) ? (status as PublicationStatus) : null,
     categoryId: params.get('categoryId'),
-    page: Number.isInteger(page) && page >= 1 ? page : 1,
+    page: pageParam(params),
   }
 }
 

@@ -46,6 +46,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで引く。`--count` で数だけを出す | `hardcoded-text-exclusions.json` にファイルと理由 |
 | `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |
 | `message-comments` | 画面のコードで、キーを文字で書いた文言の呼び出し（`t('…')`）に、表示する内容のコメントがある（[コメントの書き方](../process/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは見ない | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
+| `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）のほかの数字がない（[バックエンドの書き方](../backend/coding.md) 第 3.2 節）。除外の一覧の、要らなくなったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` にキーと理由（「1 つだけ」など数え方の言葉で、規則の値でないもの） |
 | `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号がない（[コメントの書き方](../process/comments.md) 第 1 節） | 番号を消し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
 | `test-names` | バックエンドのすべての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../testing/writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
 | `time-waits` | テストが時間で待っていない。決まった時間だけ見る書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も見る（[テストの書き方](../testing/writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |

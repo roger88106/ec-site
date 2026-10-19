@@ -8,7 +8,6 @@ import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.ResourceAccessException;
@@ -32,7 +31,6 @@ import javax.crypto.spec.SecretKeySpec;
  */
 @Slf4j
 @Component
-@EnableConfigurationProperties(ImgproxyProperties.class)
 class ImgproxyImageConverter implements ImageConverter {
 
     /**

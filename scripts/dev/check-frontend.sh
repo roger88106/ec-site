@@ -21,6 +21,10 @@ set -u
 
 ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 
+# 管理画面の本番ビルドは IdP の設定がなければ失敗するので、CI と同じローカルの値を渡す（すでにあれば、その値を使う）
+export VITE_OIDC_AUTHORITY="${VITE_OIDC_AUTHORITY:-http://localhost:8180/realms/ec-admin}"
+export VITE_OIDC_CLIENT_ID="${VITE_OIDC_CLIENT_ID:-ec-admin-web}"
+
 TAIL_LINES="${TAIL_LINES:-30}"
 LOG_DIR="${LOG_DIR:-$(mktemp -d -t check-frontend.XXXXXX)}"
 mkdir -p "$LOG_DIR"

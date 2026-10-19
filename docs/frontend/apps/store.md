@@ -25,7 +25,7 @@ frontend/store/
     ├── app/                  # ルート（取得とコンポーネントの組み立てだけ）
     │   ├── api/auth/         # Auth.js の口（IdP からの戻り先など）
     │   └── login/            # ログイン・会員登録（IdP）へ移る口
-    ├── actions/              # サーバーアクション。資源ごとに 1 ファイル（cart、checkout、order、auth）
+    ├── actions/              # サーバーアクション。資源ごとに 1 ファイル（cart、checkout、order、auth）と、包みと会員の操作の補助
     ├── auth/                 # ログイン（設定とセッション、環境変数、token の更新、ログアウト）。第 9 節
     ├── api/
     │   ├── generated/        # store.yaml から生成（型と、入力の制約の定数）
@@ -36,6 +36,10 @@ frontend/store/
     ├── components/           # 機能をまたぐコンポーネント（価格、ページング、ヘッダーなど）。ui/ は shadcn/ui
     ├── i18n/                 # next-intl の設定、合わせ方、キーの型、コンポーネントの外で引く translate
     ├── lib/                  # 画面に依存しない関数（単体テストを横に置く）
+    │   ├── labels.ts         # 2 つ以上の機能で使う列挙の表示名（1 つの機能だけなら features/<機能>/labels.ts）
+    │   ├── searchParams.ts   # URL のクエリの読み取り（配列の最初、ページ番号、型）
+    │   ├── format.ts         # 価格をコンポーネントで分けて出す書式（金額・日時などの整形は共有パッケージの lib/format.ts）
+    │   └── actionResult.ts   # サーバーアクションの結果の型と、API のエラーからの変換
     ├── test/                 # テストの土台（画面のコードからは import しない）
     └── features/<機能>/      # catalog、cart、checkout、order
         ├── components/       # その機能だけのコンポーネント

@@ -6,7 +6,18 @@
 
 ## タスク
 
-- [ ] **T014-02-01** 共有の文言の使われ方を調べ、一覧を本タスクの下に書く（plan 第 3.2 節）。キーを組み立てる所と `useTranslations('common')` の名前空間も含める。区分ごと（2 つの画面で同じ役割、片方だけで使う共有の文言、たまたま同じ文）に、移す先のキーを決める。片方だけで使う共有の文言のキーの形は、ここで決める。
+- [x] **T014-02-01** 共有の文言の使われ方を調べ、一覧を本タスクの下に書く（plan 第 3.2 節）。キーを組み立てる所と `useTranslations('common')` の名前空間も含める。区分ごと（2 つの画面で同じ役割、片方だけで使う共有の文言、たまたま同じ文）に、移す先のキーを決める。片方だけで使う共有の文言のキーの形は、ここで決める。
+  - 2 つの画面が使う共有の文言（そのまま）：ページ送り、ログアウト、接続と通信の失敗、金額・価格・税額、注文と配送の状態、配送業者。
+  - 共有パッケージの関数で 2 つの画面が使うようになる（そのまま）：`all`（カテゴリの選択肢の「すべて」）、`axisValue`（軸の値の文）。
+  - 管理画面だけが使う共有の文言 → 管理画面の `app.common.*`（キーの形は同じ）：`name`、`save`、`register`、`delete`、`deleteConfirm`、`backToList`、`moveUp`、`moveDown`、`none`、`filter.*`、`listSeparator`、`noneParenthesized`。管理画面の最上位に `common` を置くと、共有の文言と浅く合わせるときに上書きするので、`app` の下に置く。
+  - 2 つの画面で同じ役割 → 共有の文言へ：
+    - `common.order.*`：注文番号、注文日時、〒と都道府県、配送業者、送り状番号（管理画面の `order.list`・`order.detail`・`order.shipment`、店舗画面の `order.list`・`order.detail`）
+    - `common.amounts.*`：商品の合計、送料、総額（税込）、税率ごとの消費税（管理画面の `order.lines`、店舗画面の `components.amounts`・`order.list.total`）
+    - `common.categoryIndent`：カテゴリの字下げ（管理画面の `components.categorySelect.indent`、店舗画面の `catalog.filter.indent`）。「すべて」は `common.all` を使う（管理画面の `components.categorySelect.all`、店舗画面の `catalog.filter.all`）
+    - 軸の値の文：店舗画面の `orderDisplay.axisValues.item` → `common.axisValue`
+    - 税込が空白のときの価格の文：管理画面の `format.price.exclTaxOnly` → `common.priceExclTaxOnly`（T014-02-03）
+  - たまたま同じ文で動かさないもの：「状態」「商品」「カテゴリ」「数量」「氏名」「住所」「電話番号」「メールアドレス」「都道府県」「明細」「キャンセル」と、店舗画面の軸の区切り（全角の空白）。
+    - 氏名などの配送先の項目は、管理画面は注文の詳細の表示、店舗画面は入力のラベルで役割が違う。
 - [ ] **T014-02-02** [テスト] 共有パッケージの整形のテスト：金額、価格（税込が空白の場合を含む）、日時（空白は空文字、日本時間）、税額、郵便番号、軸の値の並び（区切りを渡す）。今の 2 つの画面の出力と同じ文になることを確かめる。レッドを確かめる。
   - 2 つの画面の今のテストは、段階 3・4 で関数と一緒に移すので、ここでは新しいファイルに書く。
 - [ ] **T014-02-03** 共有パッケージに、共有の文言だけの文言の関数（`lib/translate.ts`）と整形の関数（`lib/format.ts`）を作る（plan 第 3.1 節）。`use-intl` を依存に足し、`pnpm install --frozen-lockfile` とライセンス検査を流す。整形に要る文言（税込が空白のときの価格の文など）を共有の文言に移す。T014-02-02 を通す。

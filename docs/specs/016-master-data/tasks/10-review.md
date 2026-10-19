@@ -21,10 +21,11 @@
     - T016-01-02 の補足（郵便番号のデータの変換）は、T016-01-03 の commit に入った。push していないが、対話の rebase を使えないので、履歴は直さない。
     - commit の対象の名前に、`admin-api:`、`db:`、`common:` のように、既存にない名前を使った。AGENTS.md は対象の名前の一覧を決めていないので、そのままにした。
     - 地域モジュールの Javadoc の 1 行目に、句点のあるものとないものが混ざる。既存のコードも混ざっているので、規則にするかは利用者に確かめる。
-- [ ] **T016-10-04** `CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る。CI の全体の時間を測り、10 分以内か確かめる（NFR-23）。
-  - 手元の結果（2026-10-20）：`CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`（店舗画面・管理画面・E2E の検査）、`e2e.sh`（20 件、1.7 分）が通った。CI の全体の時間は push の後に測る。
+- [x] **T016-10-04** `CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る。CI の全体の時間を測り、10 分以内か確かめる（NFR-23）。
+  - 手元の結果（2026-10-20）：`CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`（店舗画面・管理画面・E2E の検査）、`e2e.sh`（20 件、1.7 分）が通った。CI（run 39329272135）は全体で約 9 分（バックエンドのジョブが最も長く 9 分）で、10 分以内だった。
 - [x] **T016-10-05** README の進捗と、MVP の完成までの一覧の状態を直す。見直しの結果（直したもの、残したものと理由、後の spec に回したもの）を本書の末尾に書く。
-- [ ] **T016-10-06** 利用者の許可を得て push し、CI が通ることを確かめる。
+- [x] **T016-10-06** 利用者の許可を得て push し、CI が通ることを確かめる。
+  - 結果（2026-10-20）：push した develop の CI が通った（run 39329272135）。
 
 ## 見直しの結果
 

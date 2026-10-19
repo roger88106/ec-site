@@ -10,18 +10,17 @@ import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { orderStatusLabel } from '@/features/order/labels'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
-import { translate } from '@/i18n/translate'
-
-/** 状態の選択肢（「すべて」は絞り込まない） */
-const statusOptions = [
-  { value: null, label: translate('common.all') }, // すべて
-  ...orderStatusValues.map((status) => ({ value: status, label: orderStatusLabel(status) })),
-]
 
 /** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */
 export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onApply: (filter: OrderFilter) => void }) {
   const t = useTranslations('order.filter')
   const tApp = useTranslations('app.common')
+  const tCommon = useTranslations('common')
+  // 状態の選択肢（「すべて」は絞り込まない）
+  const statusOptions = [
+    { value: null, label: tCommon('all') /* すべて */ },
+    ...orderStatusValues.map((status) => ({ value: status, label: orderStatusLabel(status) })),
+  ]
   const form = useForm<OrderFilter>({ defaultValues: filter })
   return (
     <form

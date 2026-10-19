@@ -24,18 +24,17 @@ const EMPTY: Values = { delta: '', reason: null, memo: '' }
 /** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['delta', 'reason', 'memo'] as const
 
-/** 理由の選択肢（admin.yaml の値と、画面の表示名）。注文に由来する理由は選べない */
-const reasonOptions = manualStockAdjustmentReasonValues.map((reason) => ({
-  value: reason,
-  label: stockAdjustmentReasonLabel(reason),
-}))
-
 /**
  * 在庫の調整。増減量と理由で調整し、在庫数を直接上書きする欄は作らない。<br />
  * 負になる調整や、「その他」でメモがない調整の拒否は、サーバーのエラーを表示する。
  */
 export function AdjustStockForm({ variantId }: { variantId: string }) {
   const t = useTranslations('inventory.adjust')
+  // 理由の選択肢（admin.yaml の値と、画面の表示名）。注文に由来する理由は選べない
+  const reasonOptions = manualStockAdjustmentReasonValues.map((reason) => ({
+    value: reason,
+    label: stockAdjustmentReasonLabel(reason),
+  }))
   const form = useForm<Values>({ defaultValues: EMPTY })
   const mutation = useApiMutation('post', '/inventory/variants/{variantId}/adjustments', {
     success: (adjustment) => t('applied', { delta: formatDelta(adjustment.delta), quantity: adjustment.quantityAfter }), // 反映の知らせ

@@ -21,9 +21,6 @@ type Values = { carrier: Carrier | null; trackingNumber: string }
 /** サーバーの入力検証のエラーを、項目の下に出す欄 */
 const FIELD_NAMES = ['carrier', 'trackingNumber'] as const
 
-/** 配送業者の選択肢 */
-const carrierOptions = carrierValues.map((carrier) => ({ value: carrier, label: carrierLabel(carrier) }))
-
 /**
  * 注文の出荷。出荷後は配送状態・配送業者・送り状番号・出荷日時を示し、出荷できる注文には登録のフォームを出す。
  * どちらでもない注文には何も出さない。
@@ -76,6 +73,8 @@ function ShipmentDetail({ shipment }: { shipment: Shipment }) {
 function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: string }) {
   const t = useTranslations('order.shipment')
   const tCommon = useTranslations('common')
+  // 配送業者の選択肢
+  const carrierOptions = carrierValues.map((carrier) => ({ value: carrier, label: carrierLabel(carrier) }))
   const form = useForm<Values>({ defaultValues: { carrier: null, trackingNumber: '' } })
   const mutation = useApiMutation('post', '/orders/{orderId}/shipment', {
     success: t('registered'), // 登録の知らせ

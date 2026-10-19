@@ -13,12 +13,6 @@ import { type PeriodPreset, presetPeriod, todayInJapan } from '@/features/report
 import type { ReportCondition } from '@/features/report/reportCondition'
 import { translate } from '@/i18n/translate'
 
-/** 粒度の選択肢 */
-const granularityOptions = granularityValues.map((value) => ({ value, label: granularityLabel(value) }))
-
-/** 売上の数え方の選択肢 */
-const basisOptions = reportBasisValues.map((value) => ({ value, label: reportBasisLabel(value) }))
-
 /** 商品の選択肢に出す商品の数（商品の一覧の API の 1 ページの上限） */
 const PRODUCT_LIMIT = 100
 
@@ -52,6 +46,9 @@ export function ReportConditionForm({
   productRequired?: boolean
 }) {
   const t = useTranslations('report.condition')
+  // 粒度と売上の数え方の選択肢
+  const granularityOptions = granularityValues.map((value) => ({ value, label: granularityLabel(value) }))
+  const basisOptions = reportBasisValues.map((value) => ({ value, label: reportBasisLabel(value) }))
   const form = useForm<ReportCondition>({ defaultValues: condition })
   const products = $api.useQuery('get', '/products', { params: { query: { size: PRODUCT_LIMIT } } })
   const productOptions = [

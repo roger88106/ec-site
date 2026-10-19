@@ -3,5 +3,6 @@
   "AC-243": "compose のファイルの書き方で決まり、テスト名を持たない。scripts/ci/compose-ports.mjs（CI の検査）で、すべてのポートの既定が 127.0.0.1 であることを確かめる",
   "AC-247": "compose のファイルの書き方で決まり、テスト名を持たない。scripts/ci/compose-ports.mjs（CI の検査）で、すべてのポートが同じ 1 つの変数（LOCAL_BIND_ADDRESS）を使うことを確かめる",
   "AC-244": "jar の作り方で決まり、テスト名を持たない。Gradle の checkBootJar（check から呼ぶ）で、本番の jar にローカル・E2E・Stripe の設定ファイルがないことを確かめる",
-  "AC-245": "本番の jar を起動して確かめるので、テスト名を持たない。jar から設定ファイルを除くこと（checkBootJar）と、物流のフラグがなければ起動に失敗すること（ExternalServiceSelectionTest）から従い、spec 015 の段階 5 で jar を起動して確かめた"
+  "AC-263": "表がないことなので、テスト名を持たない。spec 016 の T016-04-07 で、47 の一覧にしか出ない都道府県名を git grep し、地域の最初のデータのほかにないことを確かめた（確かめ方は tasks の T016-04-07）",
+  "AC-245":"本番の jar を起動して確かめるので、テスト名を持たない。jar から設定ファイルを除くこと（checkBootJar）と、物流のフラグがなければ起動に失敗すること（ExternalServiceSelectionTest）から従い、spec 015 の段階 5 で jar を起動して確かめた"
 }

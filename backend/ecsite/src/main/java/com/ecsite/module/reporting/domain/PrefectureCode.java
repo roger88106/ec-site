@@ -47,6 +47,8 @@ public final class PrefectureCode {
     }
 
     /**
+     * テスト用（main からは呼ばない。消すとテストが変わるので残す。扱いは都道府県の主データを作るときに決める）。<br />
+     *
      * @return すべてのコード（北海道から沖縄県の順）
      */
     public static List<String> codes() {

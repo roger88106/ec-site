@@ -1,5 +1,4 @@
 import type { AgeGroup, Granularity, ReportBasis, ReportGender, SalesTrendPoint } from '@/api/types'
-import { messages } from '@/i18n/messages'
 import { translate } from '@/i18n/translate'
 
 /** 集計の粒度の表示名 */
@@ -22,12 +21,9 @@ export function reportGenderLabel(gender: ReportGender): string {
   return translate(`report.gender.${gender}`)
 }
 
-/** 都道府県の表示名。コード（全国地方公共団体コードの 2 桁）がなければ、または知らないコードなら「不明」 */
-export function prefectureLabel(code: string | undefined): string {
-  if (code === undefined || !(code in messages.report.prefecture)) {
-    return translate('report.unknownPrefecture')
-  }
-  return translate(`report.prefecture.${code as keyof typeof messages.report.prefecture}`)
+/** 都道府県の表示名。応答の名前（地域のマスターデータの名前）をそのまま出し、なければ「不明」 */
+export function prefectureLabel(name: string | undefined): string {
+  return name ?? translate('report.unknownPrefecture')
 }
 
 /**

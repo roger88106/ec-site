@@ -79,7 +79,7 @@ function BreakdownResult({ condition, report }: { condition: ReportCondition; re
     {
       key: 'prefecture',
       name: t('prefecture'), // 都道府県
-      rows: report.prefectures.map((row) => ({ ...row, segment: prefectureLabel(row.prefectureCode) })),
+      rows: report.prefectures.map((row) => ({ ...row, segment: prefectureLabel(row.prefectureName) })),
     },
     {
       key: 'ageGroup',

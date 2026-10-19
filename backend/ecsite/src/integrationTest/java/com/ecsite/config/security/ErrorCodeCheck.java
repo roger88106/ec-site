@@ -30,6 +30,11 @@ import java.util.TreeSet;
 public final class ErrorCodeCheck {
 
     /**
+     * 契約のある API のパスの始まり
+     */
+    private static final List<String> API_PREFIXES = List.of("/api/admin/", "/api/store/");
+
+    /**
      * 店舗 API と管理 API の、操作ごとの返しうるエラーのコード
      */
     private final List<OpenApiOperations<Set<String>>> apis;
@@ -95,7 +100,8 @@ public final class ErrorCodeCheck {
         } catch (PathNotFoundException | IllegalArgumentException e) {
             return;
         }
-        if (errorCode == null || common.contains(errorCode)) {
+        // 契約の API の外（テストだけの endpoint など）は確かめない
+        if (errorCode == null || common.contains(errorCode) || API_PREFIXES.stream().noneMatch(path::startsWith)) {
             return;
         }
         Optional<Set<String>> listed = apis.stream()

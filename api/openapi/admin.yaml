@@ -53,6 +53,7 @@ paths:
     post:
       tags: [tax]
       operationId: createTaxCategory
+      x-error-codes: [INVALID_TAX_CATEGORY_NAME, TAX_CATEGORY_NAME_ALREADY_EXISTS]
       summary: 税区分の登録（AC-1）
       x-required-permission: tax:write
       requestBody:
@@ -101,6 +102,7 @@ paths:
     put:
       tags: [tax]
       operationId: replaceTaxRates
+      x-error-codes: [INVALID_RATE_PERCENT, INVALID_EFFECTIVE_PERIOD, TAX_RATES_REQUIRED, INVALID_TAX_RATE_ID, TAX_RATE_PERIODS_OVERLAP, TAX_RATE_PERIODS_GAP, TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED, TAX_RATE_PAST_DATETIME, TAX_RATE_STARTED_UNCHANGEABLE, TAX_RATE_ENDED_UNCHANGEABLE]
       summary: 税率の一覧を置き換える（AC-2〜5、7）
       description: |
         税区分の税率を一覧ごと置き換える。既存の税率を残す場合は `id` を指定する。
@@ -147,6 +149,7 @@ paths:
     post:
       tags: [category]
       operationId: createCategory
+      x-error-codes: [INVALID_CATEGORY_NAME, CATEGORY_DEPTH_EXCEEDED, CATEGORY_NAME_ALREADY_EXISTS]
       summary: カテゴリの登録（AC-8〜10）
       x-required-permission: category:write
       requestBody:
@@ -173,6 +176,7 @@ paths:
     put:
       tags: [category]
       operationId: reorderCategories
+      x-error-codes: [INVALID_CATEGORY_ORDER]
       summary: 兄弟カテゴリの並び順を変更する（AC-11）
       description: 同じ親を持つカテゴリを、並べたい順にすべて送る。
       x-required-permission: category:write
@@ -218,6 +222,7 @@ paths:
     put:
       tags: [category]
       operationId: renameCategory
+      x-error-codes: [INVALID_CATEGORY_NAME, CATEGORY_NAME_ALREADY_EXISTS]
       summary: カテゴリ名の変更（AC-10、11）
       x-required-permission: category:write
       requestBody:
@@ -242,6 +247,7 @@ paths:
     delete:
       tags: [category]
       operationId: deleteCategory
+      x-error-codes: [CATEGORY_HAS_CHILDREN, CATEGORY_HAS_PRODUCTS]
       summary: カテゴリの削除（AC-12）
       description: 子カテゴリを持つ、または商品が所属しているカテゴリは削除できない（400）。
       x-required-permission: category:write
@@ -305,6 +311,7 @@ paths:
     post:
       tags: [product]
       operationId: createProduct
+      x-error-codes: [INVALID_PRODUCT_CODE, INVALID_PRICE_EXCL_TAX, INVALID_PRODUCT_NAME, INVALID_PRODUCT_DESCRIPTION, INVALID_VARIANT_AXES, INVALID_CATEGORY_ID, TAX_CATEGORY_NOT_ASSIGNABLE, PRODUCT_CODE_ALREADY_EXISTS]
       summary: 商品の登録（AC-6、13〜17、25）
       x-required-permission: product:write
       requestBody:
@@ -349,6 +356,7 @@ paths:
     put:
       tags: [product]
       operationId: updateProduct
+      x-error-codes: [INVALID_PRICE_EXCL_TAX, INVALID_PRODUCT_NAME, INVALID_PRODUCT_DESCRIPTION, INVALID_CATEGORY_ID, TAX_CATEGORY_NOT_ASSIGNABLE]
       summary: 商品の編集（AC-6、18、19、25、26）
       x-required-permission: product:write
       requestBody:
@@ -373,6 +381,7 @@ paths:
     delete:
       tags: [product]
       operationId: deleteProduct
+      x-error-codes: [PRODUCT_ALREADY_SHOWN]
       summary: 商品の削除（AC-33）
       description: C 側に一度でも表示された商品は削除できない（400）。
       x-required-permission: product:write
@@ -398,6 +407,7 @@ paths:
     put:
       tags: [product]
       operationId: publishProduct
+      x-error-codes: [PRODUCT_HAS_NO_VARIANTS, PRODUCT_DISCONTINUED]
       summary: 公開する（AC-29、31）
       description: 冪等。すでに公開なら何もしない。バリアントのない商品、販売終了の商品は 400。
       x-required-permission: product:write
@@ -421,6 +431,7 @@ paths:
     put:
       tags: [product]
       operationId: unpublishProduct
+      x-error-codes: [PRODUCT_DISCONTINUED]
       summary: 非公開にする（AC-30）
       description: 冪等。すでに非公開なら何もしない。販売終了の商品は 400。
       x-required-permission: product:write
@@ -467,6 +478,7 @@ paths:
     put:
       tags: [product]
       operationId: setPublicationPeriod
+      x-error-codes: [INVALID_PUBLICATION_PERIOD]
       summary: 公開期間の設定（AC-34〜36、P2）
       x-required-permission: product:write
       requestBody:
@@ -496,6 +508,7 @@ paths:
     post:
       tags: [product]
       operationId: addVariant
+      x-error-codes: [INVALID_VARIANT_CODE, INVALID_AXIS_VALUES, SINGLE_VARIANT_ONLY, VARIANT_AXIS_VALUES_ALREADY_EXISTS, VARIANT_CODE_ALREADY_EXISTS]
       summary: バリアントの登録（AC-20〜24）
       description: 応答の `Location` は、登録したバリアントの URL（`/products/{productId}/variants/{variantId}`。AC-276）。
       x-required-permission: product:write
@@ -525,6 +538,7 @@ paths:
     put:
       tags: [product]
       operationId: reorderVariants
+      x-error-codes: [INVALID_VARIANT_ORDER]
       summary: バリアントの表示順を変更する（AC-27）
       description: 商品のすべてのバリアントを、並べたい順に送る。
       x-required-permission: product:write
@@ -555,6 +569,7 @@ paths:
     delete:
       tags: [product]
       operationId: deleteVariant
+      x-error-codes: [PRODUCT_ALREADY_SHOWN]
       summary: バリアントの削除（AC-71）
       description: C 側に一度でも表示された商品のバリアントは削除できない（400）。
       x-required-permission: product:write
@@ -629,6 +644,7 @@ paths:
     post:
       tags: [product]
       operationId: createImageUpload
+      x-error-codes: [UNSUPPORTED_IMAGE_FORMAT, IMAGE_TOO_LARGE, TOO_MANY_PRODUCT_IMAGES]
       summary: 画像のアップロードを受け付ける（AC-39、40、67、P2）
       description: |
         形式・サイズ・枚数を確かめ、受付のバケットへの署名付き URL（PUT）を返す（plan 001 第 7 節）。
@@ -663,6 +679,7 @@ paths:
     post:
       tags: [product]
       operationId: addProductImage
+      x-error-codes: [IMAGE_TOO_LARGE, IMAGE_UPLOAD_NOT_FOUND, INVALID_IMAGE_FILE, IMAGE_CONVERSION_FAILED, TOO_MANY_PRODUCT_IMAGES]
       summary: 受け付けた画像を登録する（AC-37、39、40、67〜70、P2）
       description: |
         受付のファイルの大きさと形式（先頭のバイト）を確かめ、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 第 7.5 節）。
@@ -699,6 +716,7 @@ paths:
     put:
       tags: [product]
       operationId: reorderProductImages
+      x-error-codes: [INVALID_IMAGE_ORDER]
       summary: 画像の並び順の変更（AC-37、P2）
       description: 商品のすべての画像の ID を、並べたい順に送る。過不足があれば 400。先頭が代表画像。
       x-required-permission: product:write
@@ -753,6 +771,7 @@ paths:
     put:
       tags: [product]
       operationId: setVariantImage
+      x-error-codes: [INVALID_VARIANT_IMAGE]
       summary: バリアントの画像の指定（AC-38、P2）
       description: その商品の画像を 1 枚指定する。`imageId` を null にすると指定を外す（代表画像を使う）。
       x-required-permission: product:write
@@ -805,6 +824,7 @@ paths:
     post:
       tags: [inventory]
       operationId: adjustStock
+      x-error-codes: [INVALID_STOCK_DELTA, STOCK_MEMO_REQUIRED, INVALID_STOCK_MEMO, INSUFFICIENT_STOCK, ORDER_REASON_NOT_SELECTABLE]
       summary: 在庫の調整（AC-42〜44、46）
       description: 在庫調整は履歴の 1 件で単独の URL を持たないため、`Location` は返さず、本文で結果を返す。
       x-required-permission: inventory:write
@@ -971,6 +991,7 @@ paths:
     put:
       tags: [order]
       operationId: approveOrderCancellation
+      x-error-codes: [CANCELLATION_NOT_PENDING]
       summary: キャンセルの申請の承認（AC-101、104、105）
       description: |
         キャンセルにし、同じトランザクションで明細の数量だけ在庫数を戻す。キャンセル済みなら何もせず 204（冪等）。
@@ -994,6 +1015,7 @@ paths:
     put:
       tags: [order]
       operationId: rejectOrderCancellation
+      x-error-codes: [CANCELLATION_NOT_PENDING]
       summary: キャンセルの申請の却下（AC-102、105）
       description: 「受付」に戻す。申請中でない注文（キャンセル済みを含む）は 400。
       x-required-permission: order:write
@@ -1015,6 +1037,7 @@ paths:
     put:
       tags: [order]
       operationId: cancelOrder
+      x-error-codes: [CANCELLATION_REASON_REQUIRED, INVALID_CANCELLATION_REASON, AWAITING_PAYMENT, SHIPPED_ORDER_NOT_RETURNED, RESTOCK_CHOICE_REQUIRED]
       summary: 運営者の判断によるキャンセル（AC-103〜105、171、190〜193）
       description: |
         「受付」「キャンセル申請中」の注文をキャンセルにし、在庫数を戻す。キャンセル済みなら何もせず 204（冪等。理由は変えない）。
@@ -1047,6 +1070,7 @@ paths:
     post:
       tags: [order]
       operationId: shipOrder
+      x-error-codes: [ORDER_NOT_SHIPPABLE, AUTHORIZATION_EXPIRED, PAYMENT_NOT_CAPTURABLE, PAYMENT_GATEWAY_UNAVAILABLE, TRACKING_NUMBER_INVALID, SHIPMENT_ALREADY_EXISTS]
       summary: 出荷の登録（AC-167〜173、188）
       description: |
         売上を確定してから、注文を「出荷済み」にし、出荷を作る。「受付」の注文だけ。
@@ -1102,6 +1126,7 @@ paths:
     get:
       tags: [report]
       operationId: getSalesTrend
+      x-error-codes: [INVALID_PERIOD]
       summary: 売上の推移（spec 010 AC-197〜201、BR-24〜26）
       description: |
         期間のすべての区切りを並べ、売れなかった区切りは 0 にする。期間が区切りの途中で切れたら、その区切りは期間の中の日だけを数える。
@@ -1142,6 +1167,7 @@ paths:
     get:
       tags: [report]
       operationId: getVariantSales
+      x-error-codes: [INVALID_PERIOD]
       summary: バリエーションの売れ行き（spec 010 AC-202〜204）
       description: 商品のすべてのバリアントを、販売数量の多い順（同じなら商品の並びの順）に返す。売れなかったバリアントは 0。送料は含めない。
       x-required-permission: report-variant-sales:read
@@ -1176,6 +1202,7 @@ paths:
     get:
       tags: [report]
       operationId: getCustomerBreakdown
+      x-error-codes: [INVALID_PERIOD]
       summary: 地域・年齢層・性別（spec 010 AC-205〜208、219、220、BR-27、29）
       description: |
         都道府県は売れたものだけを全国地方公共団体コードの順に、不明（コードなし）を最後に返す。年齢層と性別は、すべての区分を返す。
@@ -1391,6 +1418,84 @@ components:
 
   schemas:
     # ---------- 共通 ----------
+    ErrorCode:
+      type: string
+      description: >-
+        この API が返しうるエラーのコード（API の規約 第 4 節）。フロントが分岐に使う。
+        各操作が返しうる業務のエラーは操作の x-error-codes、すべての操作が返しうるエラーは x-common-error-codes。
+      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
+      enum:
+        - AUTHORIZATION_EXPIRED
+        - AWAITING_PAYMENT
+        - CANCELLATION_NOT_PENDING
+        - CANCELLATION_REASON_REQUIRED
+        - CATEGORY_DEPTH_EXCEEDED
+        - CATEGORY_HAS_CHILDREN
+        - CATEGORY_HAS_PRODUCTS
+        - CATEGORY_NAME_ALREADY_EXISTS
+        - CONCURRENT_MODIFICATION
+        - FORBIDDEN
+        - IMAGE_CONVERSION_FAILED
+        - IMAGE_TOO_LARGE
+        - IMAGE_UPLOAD_NOT_FOUND
+        - INSUFFICIENT_STOCK
+        - INVALID_AXIS_VALUES
+        - INVALID_CANCELLATION_REASON
+        - INVALID_CATEGORY_ID
+        - INVALID_CATEGORY_NAME
+        - INVALID_CATEGORY_ORDER
+        - INVALID_EFFECTIVE_PERIOD
+        - INVALID_IMAGE_FILE
+        - INVALID_IMAGE_ORDER
+        - INVALID_MONEY
+        - INVALID_PERIOD
+        - INVALID_PRICE_EXCL_TAX
+        - INVALID_PRODUCT_CODE
+        - INVALID_PRODUCT_DESCRIPTION
+        - INVALID_PRODUCT_NAME
+        - INVALID_PUBLICATION_PERIOD
+        - INVALID_RATE_PERCENT
+        - INVALID_REQUEST
+        - INVALID_STOCK_DELTA
+        - INVALID_STOCK_MEMO
+        - INVALID_TAX_CATEGORY_NAME
+        - INVALID_TAX_RATE_ID
+        - INVALID_VARIANT_AXES
+        - INVALID_VARIANT_CODE
+        - INVALID_VARIANT_IMAGE
+        - INVALID_VARIANT_ORDER
+        - METHOD_NOT_ALLOWED
+        - NOT_FOUND
+        - ORDER_NOT_SHIPPABLE
+        - ORDER_REASON_NOT_SELECTABLE
+        - PAYMENT_GATEWAY_UNAVAILABLE
+        - PAYMENT_NOT_CAPTURABLE
+        - PRODUCT_ALREADY_SHOWN
+        - PRODUCT_CODE_ALREADY_EXISTS
+        - PRODUCT_DISCONTINUED
+        - PRODUCT_HAS_NO_VARIANTS
+        - RESTOCK_CHOICE_REQUIRED
+        - RESTORE_ERROR
+        - SHIPMENT_ALREADY_EXISTS
+        - SHIPPED_ORDER_NOT_RETURNED
+        - SINGLE_VARIANT_ONLY
+        - STOCK_MEMO_REQUIRED
+        - SYSTEM_ERROR
+        - TAX_CATEGORY_NAME_ALREADY_EXISTS
+        - TAX_CATEGORY_NOT_ASSIGNABLE
+        - TAX_RATES_REQUIRED
+        - TAX_RATE_ENDED_UNCHANGEABLE
+        - TAX_RATE_LAST_PERIOD_NOT_OPEN_ENDED
+        - TAX_RATE_PAST_DATETIME
+        - TAX_RATE_PERIODS_GAP
+        - TAX_RATE_PERIODS_OVERLAP
+        - TAX_RATE_STARTED_UNCHANGEABLE
+        - TOO_MANY_PRODUCT_IMAGES
+        - TRACKING_NUMBER_INVALID
+        - UNAUTHENTICATED
+        - UNSUPPORTED_IMAGE_FORMAT
+        - VARIANT_AXIS_VALUES_ALREADY_EXISTS
+        - VARIANT_CODE_ALREADY_EXISTS
     Problem:
       type: object
       description: エラー（RFC 9457 に項目を追加したもの。API の規約）
@@ -1408,9 +1513,7 @@ components:
         instance:
           type: string
         errorCode:
-          type: string
-          description: フロントが分岐に使うコード
-          example: PRODUCT_CODE_ALREADY_EXISTS
+          $ref: '#/components/schemas/ErrorCode'
         message:
           type: string
           description: 画面にそのまま出せるメッセージ

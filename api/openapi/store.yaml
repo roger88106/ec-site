@@ -181,6 +181,7 @@ paths:
     post:
       tags: [cart]
       operationId: addCartItem
+      x-error-codes: [INVALID_CART_QUANTITY, TOO_MANY_CART_ITEMS, VARIANT_NOT_SELECTABLE, QUANTITY_EXCEEDS_STOCK]
       security:
         - {}
         - memberToken: []
@@ -209,6 +210,7 @@ paths:
     put:
       tags: [cart]
       operationId: changeCartItemQuantity
+      x-error-codes: [INVALID_CART_QUANTITY, VARIANT_NOT_SELECTABLE, QUANTITY_EXCEEDS_STOCK]
       security:
         - {}
         - memberToken: []
@@ -302,6 +304,7 @@ paths:
     post:
       tags: [checkout]
       operationId: startCheckout
+      x-error-codes: [CART_NOT_ORDERABLE, OUT_OF_STOCK]
       security:
         - memberToken: []
       summary: 注文手続きに進む（AC-82〜84）
@@ -353,6 +356,7 @@ paths:
     post:
       tags: [checkout]
       operationId: placeOrder
+      x-error-codes: [INVALID_EMAIL, EMAIL_NOT_VERIFIED, INVALID_RECIPIENT_NAME, INVALID_POSTAL_CODE, INVALID_PREFECTURE, INVALID_MUNICIPALITY, INVALID_ADDRESS, INVALID_PHONE_NUMBER, CART_NOT_ORDERABLE, OUT_OF_STOCK, TOTAL_AMOUNT_CHANGED, CART_CHANGED]
       security:
         - memberToken: []
       summary: 注文する（AC-86〜92、107）
@@ -436,6 +440,7 @@ paths:
     put:
       tags: [order]
       operationId: requestOrderCancellation
+      x-error-codes: [CANCELLATION_NOT_REQUESTABLE, INVALID_CANCELLATION_REASON]
       security:
         - memberToken: []
       summary: キャンセルの申請（AC-95、96）
@@ -464,6 +469,7 @@ paths:
     post:
       tags: [order]
       operationId: openOrderPaymentPage
+      x-error-codes: [ORDER_NOT_PAYABLE, PAYMENT_GATEWAY_UNAVAILABLE]
       security:
         - memberToken: []
       summary: 支払の画面を開く（AC-143、151、152）
@@ -673,6 +679,42 @@ components:
 
   schemas:
     # ---------- 共通 ----------
+    ErrorCode:
+      type: string
+      description: >-
+        この API が返しうるエラーのコード（API の規約 第 4 節）。フロントが分岐に使う。
+        各操作が返しうる業務のエラーは操作の x-error-codes、すべての操作が返しうるエラーは x-common-error-codes。
+      x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
+      enum:
+        - CANCELLATION_NOT_REQUESTABLE
+        - CART_CHANGED
+        - CART_NOT_ORDERABLE
+        - CONCURRENT_MODIFICATION
+        - EMAIL_NOT_VERIFIED
+        - FORBIDDEN
+        - INVALID_ADDRESS
+        - INVALID_CANCELLATION_REASON
+        - INVALID_CART_QUANTITY
+        - INVALID_EMAIL
+        - INVALID_MONEY
+        - INVALID_MUNICIPALITY
+        - INVALID_PHONE_NUMBER
+        - INVALID_POSTAL_CODE
+        - INVALID_PREFECTURE
+        - INVALID_RECIPIENT_NAME
+        - INVALID_REQUEST
+        - METHOD_NOT_ALLOWED
+        - NOT_FOUND
+        - ORDER_NOT_PAYABLE
+        - OUT_OF_STOCK
+        - PAYMENT_GATEWAY_UNAVAILABLE
+        - QUANTITY_EXCEEDS_STOCK
+        - RESTORE_ERROR
+        - SYSTEM_ERROR
+        - TOO_MANY_CART_ITEMS
+        - TOTAL_AMOUNT_CHANGED
+        - UNAUTHENTICATED
+        - VARIANT_NOT_SELECTABLE
     Problem:
       type: object
       description: エラー（RFC 9457 に項目を追加したもの。API の規約）
@@ -690,7 +732,7 @@ components:
         instance:
           type: string
         errorCode:
-          type: string
+          $ref: '#/components/schemas/ErrorCode'
         message:
           type: string
         traceId:

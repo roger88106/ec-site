@@ -37,6 +37,6 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [011](docs/specs/011-dev-foundation) | 整理 | 開発の基盤の整理 | 完了。[段階 1〜7](docs/specs/011-dev-foundation/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/011-dev-foundation/tasks/07-review.md) |
 | [012](docs/specs/012-test-safety-net) | 整理 | テストの安全網 | 完了。[段階 1〜8](docs/specs/012-test-safety-net/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/012-test-safety-net/tasks/08-review.md) |
 | [013](docs/specs/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） | 完了。[段階 1〜7](docs/specs/013-backend-consistency/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/013-backend-consistency/tasks/07-review.md) |
-| [014](docs/specs/014-frontend-consistency) | 整理 | 書き方の統一（フロント） | [段階 1〜2](docs/specs/014-frontend-consistency/tasks/) を終えた。次は段階 3（店舗画面） |
+| [014](docs/specs/014-frontend-consistency) | 整理 | 書き方の統一（フロント） | [段階 1〜3](docs/specs/014-frontend-consistency/tasks/) を終えた。次は段階 4（管理画面） |
 
 MVP を完成させるまでの spec の順と、MVP の後に回した決定は [MVP の完成までの一覧](docs/specs/mvp.md) にある。

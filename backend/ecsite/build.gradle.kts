@@ -75,6 +75,11 @@ sourceSets {
         compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output
         runtimeClasspath += sourceSets.main.get().output + sourceSets.test.get().output
     }
+    // src/tools : 開発で流す道具（地域の最初のデータを作る）。本番の jar に入れない
+    create("tools") {
+        compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
+        runtimeClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
+    }
 }
 
 configurations["integrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
@@ -185,6 +190,26 @@ val integrationTest = tasks.register<Test>("integrationTest") {
 }
 
 tasks.check { dependsOn(integrationTest) }
+
+// -----------------------------------------------------------------------------
+// 地域の最初のデータ（地域モジュールの設計書「最初のデータ」）
+//   ./gradlew generateRegionMigration                      → /.local/masterdata/ の郵便番号のデータから作る
+//   ./gradlew generateRegionMigration -PpostalCodeCsv=<CSV> → CSV の置き場所を指定する
+//   郵便番号のデータは Git に入れない。作ったマイグレーションは Git に入れる
+// -----------------------------------------------------------------------------
+tasks.register<JavaExec>("generateRegionMigration") {
+    description = "郵便番号のデータから、地域の最初のデータのマイグレーションを作る"
+    group = "region"
+    classpath = sourceSets["tools"].runtimeClasspath
+    mainClass.set("com.ecsite.tools.region.RegionMigrationGenerator")
+    val csv = providers.gradleProperty("postalCodeCsv")
+        .orElse(layout.projectDirectory.file("../../.local/masterdata/utf_ken_all/utf_ken_all.csv").asFile.path)
+    args(
+        csv.get(),
+        layout.projectDirectory.file("src/tools/resources/region/postal-codes.txt").asFile.path,
+        layout.projectDirectory.file("src/main/resources/db/migration/V202610200910__region_seed_master.sql").asFile.path,
+    )
+}
 
 // -----------------------------------------------------------------------------
 // Javadoc の書き漏れ（コメントの書き方 第 2 節）

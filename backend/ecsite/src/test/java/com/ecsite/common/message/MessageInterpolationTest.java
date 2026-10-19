@@ -113,7 +113,7 @@ class MessageInterpolationTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("cases")
-    @DisplayName("ドメインの定数を差し込んだ文が、整理の前の文と同じになる")
+    @DisplayName("AC-266 ドメインの定数を差し込んだ文が、整理の前の文と同じになる")
     void interpolatesDomainConstants(Case example) throws ReflectiveOperationException {
         var messageSource = new ResourceBundleMessageSource();
         messageSource.setBasename("messages");

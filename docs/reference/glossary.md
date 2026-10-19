@@ -247,5 +247,10 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 非同期の処理の待ち | `AsyncEvents` | 統合テストで、コミットの後に動くイベントのリスナーが終わる（または失敗する）のを、イベントの発行の記録で待つ補助（[テストの書き方](../testing/writing.md) 第 5 節） |
 | 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドの書き方](../backend/coding.md) 第 1.1 節） |
 | 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に写すクラス。口は使う層の `port/`、実装は `infrastructure/directory/` |
+| 参照の service | `XxxQueryService` | データを変えない application の service。読み取り専用のトランザクションで、view（または外部への要求の型）を返し、集約を返さない（[バックエンドの書き方](../backend/coding.md) 第 1.1 節） |
+| 更新の service | `XxxCommandService` など | データを変える application の service。参照だけのメソッドを持たない |
+| view | `application/model/view/` | 参照の service が返す、表示や使う側に要る項目だけの型。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
+| 作成の応答 | `CreatedResponses` | 作成の API の応答（201、作成したものの Location、作成した ID）。共通の補助で作る |
+| テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確かめる script。対応は spec の名前の対応のファイル（`renames.txt`）に書く |
 | 共通の値の型 | `common/model/value/` | 2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つ値の型（金額、文字の長さの上限など） |
 | メッセージのキー | `ecsite.<モジュール>.<名前>` | エラーの文を `messages.properties` から引くためのキー。エラーの定義（enum の定数）の名前から決まる |

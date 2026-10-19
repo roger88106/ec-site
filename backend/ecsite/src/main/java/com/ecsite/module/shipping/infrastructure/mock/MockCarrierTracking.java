@@ -35,13 +35,6 @@ public class MockCarrierTracking implements CarrierTracking {
     }
 
     /**
-     * 状態を最初に戻す。
-     */
-    public void reset() {
-        started.clear();
-    }
-
-    /**
      * 追跡を始めた送り状番号
      *
      * @param carrier        配送業者

@@ -17,7 +17,7 @@ RESTful JSON。OpenAPI を plan で書き、バックエンドは生成したイ
 | DELETE | 削除 | 204。結果を返すものは 200 | `DELETE /products/{id}` |
 | PATCH | 使わない | — | — |
 
-※1：単独の URL がないもの（集約の一部、履歴の 1 件など）は `Location` を付けず、本文で結果を返す。
+※1：操作の URL を持つもの（商品のバリアントの `/products/{productId}/variants/{variantId}` など、集約の一部でも）は、その URL を `Location` に入れる。単独の URL がないもの（商品の画像、履歴の 1 件など）は `Location` を付けず、本文で結果を返す。
 
 - 更新の競合：同時に編集されうるものの更新は `version` を送り、合わなければ 409（`CONCURRENT_MODIFICATION`）。
 - 状態の切り替え（公開・非公開、販売停止・再開など）は冪等にし、`version` を送らない。すでにその状態なら何もせず成功を返す。

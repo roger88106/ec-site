@@ -497,7 +497,7 @@ paths:
       tags: [product]
       operationId: addVariant
       summary: バリアントの登録（AC-20〜24）
-      description: バリアントは商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
+      description: 応答の `Location` は、登録したバリアントの URL（`/products/{productId}/variants/{variantId}`。AC-276）。
       x-required-permission: product:write
       requestBody:
         required: true
@@ -507,11 +507,7 @@ paths:
               $ref: '#/components/schemas/AddVariantRequest'
       responses:
         '201':
-          description: 登録した
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/CreatedId'
+          $ref: '#/components/responses/Created'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

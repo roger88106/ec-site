@@ -117,7 +117,7 @@ class ProductController implements ProductApi {
     }
 
     /**
-     * バリアントの登録。商品の一部で単独の URL を持たないので、Location は返さない
+     * バリアントの登録。Location は、登録したバリアントの URL（削除などの操作の URL）
      *
      * @param productId 商品 ID
      * @param request   バリアントの登録リクエスト
@@ -126,7 +126,7 @@ class ProductController implements ProductApi {
     @Override
     public ResponseEntity<CreatedId> addVariant(UUID productId, AddVariantRequest request) {
         UUID id = variantCommandService.addVariant(mapper.toAddVariantCommand(productId, request));
-        return ResponseEntity.status(HttpStatus.CREATED).body(new CreatedId().id(id));
+        return CreatedResponses.admin(id);
     }
 
 // ============================== PUT ==============================

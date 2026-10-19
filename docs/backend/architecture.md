@@ -152,10 +152,14 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - IdP の本番の構成：管理画面の保護、realm の設定の反映方法、client の戻り先と店舗の URL、メールの送信元
 - secret の管理：client の secret、店舗画面の Cookie の鍵（ローカル用の値を使わない）
 - HTTPS（店舗画面の Cookie は本番で `Secure`）
-- 運用の口（`/actuator/prometheus`）を外に出さない
+- 運用ポート（既定 9080。死活監視とメトリクス）を外に出さない。業務ポート（8080）だけを公開する
+- mock フラグ（`ecsite.<モジュール>.mock.enabled`）を立てない。ローカル・E2E・Stripe の sandbox の設定ファイルは本番の jar に入らない（第 8 節）
+- 店舗画面を公開する URL（`AUTH_URL`）を渡す。ログインとログアウトの戻り先は、この URL から作る（[店舗画面の構成](../frontend/apps/store.md) 第 9 節）
+- 管理画面の本番ビルドに、本番の IdP の値（`VITE_OIDC_AUTHORITY`、`VITE_OIDC_CLIENT_ID`）を渡す
 
 ## 8. 外部連携（決済・物流）
 
 - 外部サービスは port の後ろに置き、外部の型やエラーコードを domain / application に漏らさない。
 - 無料の sandbox があれば使い、なければ内部の mock にする。同じ port を実装し、mock は外部サービスごとの mock フラグ（`ecsite.<モジュール>.mock.enabled`）を立てたときだけ使う。フラグがなければ本番の実装を使い、その設定が足りなければ起動に失敗する。mock の挙動（成功、失敗、タイムアウト、遅延したコールバック）はテストから操作できるようにする。
+- ローカル・E2E・Stripe の sandbox の設定ファイル（mock フラグとローカル用の秘密情報を持つ）は、本番の jar に入れない。Gradle の `checkBootJar`（`check` から呼ぶ）で確かめる。
 - 失敗したときの振る舞い、リトライと冪等性、コールバックの検証方法は spec に書く。

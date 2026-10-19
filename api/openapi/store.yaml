@@ -1060,9 +1060,10 @@ components:
           format: uuid
           nullable: true
           description: 注文が成立済みなら、その注文 ID
-    ShippingAddress:
+    ShippingAddressInput:
       type: object
-      required: [name, postalCode, prefecture, address, phone]
+      description: 注文の確定で受けるお届け先。都道府県と市区町村はコードで受け、地域のマスターデータで確かめる（AC-251）
+      required: [name, postalCode, prefectureCode, municipalityCode, address, phone]
       properties:
         name:
           type: string
@@ -1074,20 +1075,60 @@ components:
           pattern: '^[0-9]{3}-?[0-9]{4}$'
           description: 郵便番号。保存と応答はハイフンなしの 7 桁
           example: '1000001'
-        prefecture:
+        prefectureCode:
           type: string
-          maxLength: 4
-          description: 都道府県名（47 都道府県のいずれか）
-          example: 東京都
+          pattern: '^[0-9]{2}$'
+          description: 都道府県のコード（2 桁）。ない都道府県は INVALID_PREFECTURE
+          example: '13'
+        municipalityCode:
+          type: string
+          pattern: '^[0-9]{5}$'
+          description: 市区町村のコード（地方公共団体コードの 5 桁）。ない、または都道府県に属さない市区町村は INVALID_MUNICIPALITY
+          example: '13101'
         address:
           type: string
           minLength: 1
           maxLength: 200
-          description: 市区町村以降の住所
+          description: 市区町村より下の住所
         phone:
           type: string
           pattern: '^[0-9-]{10,13}$'
           description: 電話番号。数字 10〜11 桁（ハイフンは任意）。保存と応答は数字だけ
+          example: '0312345678'
+    ShippingAddress:
+      type: object
+      description: 注文のお届け先。都道府県と市区町村の名前は注文の時点の写し（AC-258）
+      required: [name, postalCode, prefectureCode, prefectureName, municipalityCode, municipalityName, address, phone]
+      properties:
+        name:
+          type: string
+          description: 氏名
+        postalCode:
+          type: string
+          description: 郵便番号（ハイフンなしの 7 桁）
+          example: '1000001'
+        prefectureCode:
+          type: string
+          description: 都道府県のコード
+          example: '13'
+        prefectureName:
+          type: string
+          description: 都道府県名（注文の時点の写し）
+          example: 東京都
+        municipalityCode:
+          type: string
+          description: 市区町村のコード
+          example: '13101'
+        municipalityName:
+          type: string
+          description: 市区町村名（注文の時点の写し）
+          example: 千代田区
+        address:
+          type: string
+          description: 市区町村より下の住所
+        phone:
+          type: string
+          description: 電話番号（数字だけ）
           example: '0312345678'
     PlaceOrderRequest:
       type: object
@@ -1095,7 +1136,7 @@ components:
       required: [shippingAddress, expectedTotal]
       properties:
         shippingAddress:
-          $ref: '#/components/schemas/ShippingAddress'
+          $ref: '#/components/schemas/ShippingAddressInput'
         expectedTotal:
           type: integer
           format: int64

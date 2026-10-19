@@ -2292,16 +2292,28 @@ components:
           format: int64
     ShippingAddress:
       type: object
-      required: [name, postalCode, prefecture, address, phone]
+      description: 注文のお届け先。都道府県と市区町村の名前は注文の時点の写し（AC-258）
+      required: [name, postalCode, prefectureCode, prefectureName, municipalityCode, municipalityName, address, phone]
       properties:
         name:
           type: string
         postalCode:
           type: string
-        prefecture:
+        prefectureCode:
           type: string
+          description: 都道府県のコード
+        prefectureName:
+          type: string
+          description: 都道府県名（注文の時点の写し）
+        municipalityCode:
+          type: string
+          description: 市区町村のコード
+        municipalityName:
+          type: string
+          description: 市区町村名（注文の時点の写し）
         address:
           type: string
+          description: 市区町村より下の住所
         phone:
           type: string
     CancellationRequest:

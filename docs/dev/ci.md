@@ -7,7 +7,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | 検査 | コマンド（ルートで） | CI のジョブ |
 |------|----------------------|-------------|
 | バックエンド | `cd backend/ecsite && ./gradlew checkLicense build` | バックエンド |
-| 画面（管理画面・店舗画面・E2E のコード） | `scripts/dev/check-frontend.sh` | 管理画面、店舗画面、E2E の lint・型チェック |
+| 画面（共有パッケージ・管理画面・店舗画面・E2E のコード） | `scripts/dev/check-frontend.sh` | 共有パッケージ、管理画面、店舗画面、E2E の lint・型チェック |
 | CI の検査の script | `scripts/ci/check-all.sh` | CI の検査の script、文書 |
 | E2E | `scripts/dev/e2e.sh` | E2E |
 

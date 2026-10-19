@@ -2,9 +2,9 @@
 # ============================================================================
 # フロントの確認（依存の入れ直し、ライセンス、lint、型チェック、テスト、ビルド）を実行し、手順ごとに結果の要約だけを出す
 #
-#   使い方：scripts/dev/check-frontend.sh [store|admin|e2e|all] [手順...]
-#     例：scripts/dev/check-frontend.sh                    # install licenses の後に、両方のアプリで lint typecheck test build、
-#                                                          # e2e で lint typecheck
+#   使い方：scripts/dev/check-frontend.sh [shared|store|admin|e2e|all] [手順...]
+#     例：scripts/dev/check-frontend.sh                    # install licenses の後に、共有パッケージで lint typecheck test、
+#                                                          # 両方のアプリで lint typecheck test build、e2e で lint typecheck
 #         scripts/dev/check-frontend.sh admin test         # 管理画面のテストだけ
 #         scripts/dev/check-frontend.sh store lint typecheck
 #
@@ -28,10 +28,10 @@ mkdir -p "$LOG_DIR"
 target="${1:-all}"
 [ $# -gt 0 ] && shift
 case "$target" in
-  all) apps=(store admin e2e) ;;
-  store | admin | e2e) apps=("$target") ;;
+  all) apps=(shared store admin e2e) ;;
+  shared | store | admin | e2e) apps=("$target") ;;
   *)
-    echo "対象は store、admin、e2e、all のどれか：$target" >&2
+    echo "対象は shared、store、admin、e2e、all のどれか：$target" >&2
     exit 2
     ;;
 esac
@@ -72,8 +72,9 @@ for app in "${apps[@]}"; do
   dir="$ROOT/frontend/$app"
   [ "$app" = e2e ] && dir="$ROOT/e2e"
   for step in "${app_steps[@]}"; do
-    # e2e は lint と typecheck だけ（テストとビルドの手順はない）
+    # e2e は lint と typecheck だけ（テストとビルドの手順はない）。共有パッケージはビルドしない（各画面がソースを読む）
     if [ "$app" = e2e ] && [ "$step" != lint ] && [ "$step" != typecheck ]; then continue; fi
+    if [ "$app" = shared ] && [ "$step" = build ]; then continue; fi
     run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$step'"
   done
 done

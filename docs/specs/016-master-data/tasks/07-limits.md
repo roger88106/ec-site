@@ -20,4 +20,5 @@
 - [x] **T016-07-06** [テスト] バリアントの追加の統合テストに、応答の Location（作ったバリアントの URL）を足す（AC-276）。レッドを確かめる。
 - [x] **T016-07-07** バリアントの追加の応答に Location を入れる。契約の応答に Location のヘッダーを書く。T016-07-06 を通す。
   - API の規約 第 2 節 ※1 は「集約の一部は Location を付けない」だったので、操作の URL を持つもの（バリアント）は集約の一部でも Location を入れる、と直した。商品の画像は単独の URL がないので、今までどおり付けない。
-- [ ] **T016-07-08** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`check-all.sh` が通る。
+- [x] **T016-07-08** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`check-all.sh` が通る。
+  - 結果（2026-10-20）：`./gradlew check`（429 秒）、`check-frontend.sh`（店舗画面・管理画面）、`check-all.sh` が通った。

@@ -5,8 +5,8 @@ import { useTranslations } from 'use-intl'
 import { orderStatusValues } from '@/api/generated/admin'
 import { parameters } from '@/api/generated/constraints'
 import type { OrderStatus } from '@/api/types'
+import { LabeledCheckbox } from '@/components/LabeledCheckbox'
 import { OptionSelect } from '@/components/OptionSelect'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { orderStatusLabel } from '@/features/order/labels'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
@@ -67,11 +67,9 @@ export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onAp
             key={name}
             name={name}
             render={({ field }) => (
-              // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox（base-ui）はラベルの中の button 要素
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              <LabeledCheckbox checked={field.value} onCheckedChange={field.onChange}>
                 {t(name) /* 与信期限が近い、返送 */}
-              </label>
+              </LabeledCheckbox>
             )}
           />
         ))}

@@ -1,5 +1,4 @@
-import { flattenTree } from '@ec-site/shared/lib/categoryTree'
-import { useTranslations } from 'use-intl'
+import { categoryOptions, flattenTree } from '@ec-site/shared/lib/categoryTree'
 import { $api } from '@/api/client'
 import { OptionSelect } from '@/components/OptionSelect'
 
@@ -14,13 +13,6 @@ export function CategorySelect({
   onChange: (value: string | null) => void
 }) {
   const query = $api.useQuery('get', '/categories')
-  const t = useTranslations('common')
-  const options = [
-    { value: null, label: t('all') /* すべて */ },
-    ...flattenTree(query.data?.items ?? []).map((category) => ({
-      value: category.id,
-      label: `${t('categoryIndent').repeat(category.depth - 1)}${category.name}`, // 階層の深さだけ字下げ
-    })),
-  ]
+  const options = categoryOptions(flattenTree(query.data?.items ?? []))
   return <OptionSelect className="w-48" id={id} onChange={onChange} options={options} value={value} />
 }

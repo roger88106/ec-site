@@ -5,8 +5,8 @@ import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { granularityValues, reportBasisValues } from '@/api/generated/admin'
 import type { Granularity, ReportBasis } from '@/api/types'
+import { LabeledCheckbox } from '@/components/LabeledCheckbox'
 import { OptionSelect } from '@/components/OptionSelect'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { granularityLabel, reportBasisLabel } from '@/features/report/labels'
 import { type PeriodPreset, presetPeriod, todayInJapan } from '@/features/report/period'
@@ -151,11 +151,9 @@ export function ReportConditionForm({
             key={name}
             name={name}
             render={({ field }) => (
-              // biome-ignore lint/a11y/noLabelWithoutControl: Checkbox（base-ui）はラベルの中の button 要素
-              <label className="flex items-center gap-2 text-sm">
-                <Checkbox checked={field.value} onCheckedChange={field.onChange} />
+              <LabeledCheckbox checked={field.value} onCheckedChange={field.onChange}>
                 {t(name) /* 消費税を除く、送料を除く */}
-              </label>
+              </LabeledCheckbox>
             )}
           />
         ))}

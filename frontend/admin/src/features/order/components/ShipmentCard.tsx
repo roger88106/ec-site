@@ -92,6 +92,7 @@ function ShipForm({ orderId, orderNumber }: { orderId: string; orderNumber: stri
   )
 
   return (
+    // 出荷の登録は売上を確定するので、確認の画面を通してから送る。入力欄の Enter でそのまま送らないよう、フォームの送りを止める
     <form className="grid gap-4" onSubmit={(event) => event.preventDefault()}>
       <div className="flex flex-wrap items-start gap-3">
         <Field className="w-40">

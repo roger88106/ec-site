@@ -4,8 +4,8 @@ import { Controller, useFormContext } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { schemas } from '@/api/generated/constraints'
+import { LabeledCheckbox } from '@/components/LabeledCheckbox'
 import { OptionSelect } from '@/components/OptionSelect'
-import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldError, FieldLabel, FieldSet } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
 import type { ProductFieldsValues } from '@/features/product/product'
@@ -109,16 +109,14 @@ function CategoryCheckboxes({ value, onChange }: { value: string[]; onChange: (v
     <ul className="grid gap-1 rounded-md border p-3">
       {categories.map((category) => (
         <li key={category.id} style={{ paddingLeft: `${(category.depth - 1) * 1.5}rem` }}>
-          {/* biome-ignore lint/a11y/noLabelWithoutControl: Checkbox（base-ui）はラベルの中の button 要素 */}
-          <label className="flex items-center gap-2 text-sm">
-            <Checkbox
-              checked={value.includes(category.id)}
-              onCheckedChange={(checked) =>
-                onChange(checked ? [...value, category.id] : value.filter((categoryId) => categoryId !== category.id))
-              }
-            />
+          <LabeledCheckbox
+            checked={value.includes(category.id)}
+            onCheckedChange={(checked) =>
+              onChange(checked ? [...value, category.id] : value.filter((categoryId) => categoryId !== category.id))
+            }
+          >
             {category.name}
-          </label>
+          </LabeledCheckbox>
         </li>
       ))}
     </ul>

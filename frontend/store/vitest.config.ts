@@ -11,6 +11,8 @@ export default defineConfig({
   test: {
     // サーバーの処理のテストのための置き換えと、API の代わりのサーバー（店舗画面の構成 第 7 節）
     setupFiles: ['src/test/setup.ts'],
+    // next-auth は拡張子なしで next/server を読むので、Vite の解決を通す（ログインの戻り先のテストは本物の Auth.js を使う）
+    server: { deps: { inline: ['next-auth'] } },
     // カバレッジは報告だけ（テストの書き方 第 1 節）。生成物と shadcn/ui の生成物、テストの補助は数えない
     coverage: {
       provider: 'v8',

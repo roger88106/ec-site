@@ -232,7 +232,7 @@ class ReportCollectionTest {
     }
 
     /**
-     * T シャツ 2 枚（税込 1,100 円）、送料 1,000 円、東京都、36 歳の女性の注文の写し
+     * T シャツ 2 枚（税込 1,100 円）、送料 1,000 円、東京都（13）、36 歳の女性の注文の写し
      */
     private OrderReportSnapshot snapshot(OrderReportSnapshot.Status status, Instant cancelledAt) {
         var cancelled = cancelledAt != null;
@@ -240,7 +240,7 @@ class ReportCollectionTest {
                 cancelledAt,
                 cancelled ? OrderReportSnapshot.CancellationKind.PAYMENT_EXPIRED : null,
                 cancelled ? Boolean.TRUE : null,
-                "1000001", "東京都", 36, OrderReportSnapshot.Gender.FEMALE,
+                "1000001", "13", 36, OrderReportSnapshot.Gender.FEMALE,
                 Money.of(3200), Money.of(1000), Money.of(290), Money.of(90),
                 List.of(new OrderReportSnapshot.Line(1, variantId, "P-1", "P-1-W", "T シャツ",
                         List.of(new OrderReportSnapshot.AxisValue("色", "白")), 2, BigDecimal.TEN, Money.of(2200),

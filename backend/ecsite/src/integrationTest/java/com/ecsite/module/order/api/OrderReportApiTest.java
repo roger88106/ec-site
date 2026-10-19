@@ -102,7 +102,7 @@ class OrderReportApiTest {
         assertThat(snapshot.status()).isEqualTo(OrderReportSnapshot.Status.PENDING_PAYMENT);
         assertThat(snapshot.cancelledAt()).isNull();
         assertThat(snapshot.postalCode()).isEqualTo("1000001");
-        assertThat(snapshot.prefecture()).isEqualTo("東京都");
+        assertThat(snapshot.prefectureCode()).isEqualTo("13");
         // 既定の会員の token には、生年月日と性別がない
         assertThat(snapshot.buyerAge()).isNull();
         assertThat(snapshot.buyerGender()).isNull();

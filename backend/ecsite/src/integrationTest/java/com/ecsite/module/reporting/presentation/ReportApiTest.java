@@ -186,7 +186,7 @@ class ReportApiTest {
     class Customers {
 
         @Test
-        @DisplayName("AC-205、206、207、208、219、220 都道府県は売れたものだけ、年齢層と性別はすべての区分を返す")
+        @DisplayName("AC-205、206、207、208、219、220、262 都道府県は売れたものだけを地域の名前を添えて、年齢層と性別はすべての区分を返す")
         void breakdown() throws Exception {
             new ReportTestData(dsl).order("ACCEPTED", "2031-04-06").prefecture(null)
                     .line(shirt.id, shirt.variantIds.get(1), 1).insert();
@@ -195,9 +195,11 @@ class ReportApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.prefectures", hasSize(2)))
                     .andExpect(jsonPath("$.prefectures[0].prefectureCode").value("13"))
+                    .andExpect(jsonPath("$.prefectures[0].prefectureName").value("東京都"))
                     .andExpect(jsonPath("$.prefectures[0].amount").value(3200))
                     .andExpect(jsonPath("$.prefectures[0].orders").value(1))
                     .andExpect(jsonPath("$.prefectures[1].prefectureCode").doesNotExist())
+                    .andExpect(jsonPath("$.prefectures[1].prefectureName").doesNotExist())
                     .andExpect(jsonPath("$.ageGroups[*].ageGroup").value(contains(
                             "TEENS_OR_YOUNGER", "TWENTIES", "THIRTIES", "FORTIES", "FIFTIES", "SIXTIES_OR_OLDER", "UNKNOWN")))
                     .andExpect(jsonPath("$.ageGroups[2].amount").value(3200))
@@ -222,7 +224,7 @@ class ReportApiTest {
         assertThat(fields(OrderAxisValue.class)).containsExactlyInAnyOrder("name", "value");
         assertThat(fields(CustomerBreakdownReport.class))
                 .containsExactlyInAnyOrder("prefectures", "ageGroups", "genders", "shippingExcluded");
-        assertThat(fields(PrefectureSales.class)).containsExactlyInAnyOrder("prefectureCode", "amount", "orders");
+        assertThat(fields(PrefectureSales.class)).containsExactlyInAnyOrder("prefectureCode", "prefectureName", "amount", "orders");
         assertThat(fields(AgeGroupSales.class)).containsExactlyInAnyOrder("ageGroup", "amount", "orders");
         assertThat(fields(GenderSales.class)).containsExactlyInAnyOrder("gender", "amount", "orders");
     }

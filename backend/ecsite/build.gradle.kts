@@ -5,6 +5,7 @@ import org.jooq.meta.jaxb.Logging
 import org.jooq.meta.jaxb.SchemaMappingType
 import org.testcontainers.postgresql.PostgreSQLContainer
 import org.testcontainers.utility.DockerImageName
+import java.util.zip.ZipFile
 
 /*
  * EC Site バックエンド - ビルド構成定義 (Gradle Kotlin DSL)
@@ -494,6 +495,33 @@ val openApiValidateTasks = openApiSpecs.map { spec ->
 }
 
 tasks.check { dependsOn(openApiValidateTasks) }
+
+// -----------------------------------------------------------------------------
+// 本番の jar の中身
+// -----------------------------------------------------------------------------
+// ローカル・E2E・Stripe の sandbox の設定は、mock のフラグとローカル用の秘密情報を持つので、本番の jar に入れない。
+// bootRun とテストは、今どおりリソースから読む
+val localOnlyResources = listOf("application-local.yml", "application-e2e.yml", "application-stripe.yml")
+
+tasks.bootJar {
+    exclude(localOnlyResources)
+}
+
+val checkBootJar = tasks.register("checkBootJar") {
+    description = "本番の jar に、ローカル・E2E・Stripe の sandbox の設定ファイルがないことを確かめる"
+    group = "verification"
+    val jar = tasks.bootJar.flatMap { it.archiveFile }
+    inputs.file(jar)
+    doLast {
+        val names = ZipFile(jar.get().asFile).use { zip -> zip.entries().asSequence().map { it.name }.toList() }
+        val found = names.filter { name -> localOnlyResources.any { name.endsWith("/$it") } }
+        if (found.isNotEmpty()) {
+            throw GradleException("本番の jar に入れない設定ファイルがある：$found")
+        }
+    }
+}
+
+tasks.check { dependsOn(checkBootJar) }
 
 // -----------------------------------------------------------------------------
 // コンパイルオプション

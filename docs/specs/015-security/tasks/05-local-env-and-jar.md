@@ -11,7 +11,7 @@
 - [x] **T015-05-02** compose のポートの検査の script を `scripts/ci/` の直下に作り、compose のすべての `ports` を plan 第 5 節の形にする。T015-05-01 と検査を通す。CI の検査の表に足す。AC-243、247 を `ac-exclusions.json` に、確かめる script とともに書く。
 - [x] **T015-05-03** compose を作り直して起動し、手元から今までどおりつながることを確かめる。開発環境の起動に、他のマシンからつなぐ手順（`LOCAL_BIND_ADDRESS`）を書く。`docker/.env` が Git に入らないことを確かめる。
   - 結果：作り直した後、すべてのポートが 127.0.0.1 で待ち受け、手元から Keycloak（8180、8181）、Mailpit、Zipkin、imgproxy、SeaweedFS に今までどおりつながった。`docker/.env` に `LOCAL_BIND_ADDRESS=0.0.0.0` を書くと、`docker compose config` の待ち受けるアドレスが 0.0.0.0 になり、環境変数でも同じだった。`docker/.env` は `.gitignore` の `.env` で除かれる。
-- [ ] **T015-05-04** jar の中身の Gradle の検査を作り、`check` から呼ぶ。除く前に失敗することを確かめてから、`bootJar` で 3 つの設定ファイルを除く。AC-244、245 を `ac-exclusions.json` に、確かめる所とともに書く。
+- [x] **T015-05-04** jar の中身の Gradle の検査を作り、`check` から呼ぶ。除く前に失敗することを確かめてから、`bootJar` で 3 つの設定ファイルを除く。AC-244、245 を `ac-exclusions.json` に、確かめる所とともに書く。
   - 結果：除く前は、検査が 3 つのファイルを見つけて失敗した。
 - [ ] **T015-05-05** 本番の jar を `local` の profile で起動し、物流のフラグの検証で止まることを確かめる（AC-245）。結果を本タスクの下に書く。
 - [ ] **T015-05-06** 段階の完了の確認：`./gradlew check`、`check-all.sh`、`e2e.sh` が通る。

@@ -50,7 +50,11 @@ export default defineConfig({
       command: 'pnpm build && pnpm preview --port 4173 --strictPort',
       cwd: '../frontend/admin',
       url: ADMIN_URL,
-      env: { VITE_OIDC_AUTHORITY: `${IDP_URL}/realms/ec-admin`, ADMIN_API_PROXY_TARGET: BACKEND_URL },
+      env: {
+        VITE_OIDC_AUTHORITY: `${IDP_URL}/realms/ec-admin`,
+        VITE_OIDC_CLIENT_ID: 'ec-admin-web',
+        ADMIN_API_PROXY_TARGET: BACKEND_URL,
+      },
       timeout: 180_000,
       reuseExistingServer: !CI,
     },

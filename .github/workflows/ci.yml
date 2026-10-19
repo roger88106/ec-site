@@ -122,6 +122,10 @@ jobs:
 
       - name: ビルド
         run: pnpm build
+        env:
+          # 本番ビルドは IdP の設定がなければ失敗する。CI はローカルの IdP の値で確かめる（realm の JSON と同じ）
+          VITE_OIDC_AUTHORITY: http://localhost:8180/realms/ec-admin
+          VITE_OIDC_CLIENT_ID: ec-admin-web
 
   store:
     name: 店舗画面

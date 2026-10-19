@@ -1,7 +1,7 @@
 {
   "app": {
     "layout": {
-      "title": "EC Site 管理",
+      "title": "{siteName} 管理",
       "menu": "機能のメニュー"
     },
     "menu": {

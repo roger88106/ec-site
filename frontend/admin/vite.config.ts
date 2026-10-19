@@ -1,14 +1,23 @@
 /// <reference types="vitest/config" />
 import path from 'node:path'
-import { LOCALE } from '@ec-site/shared/lib/locale'
+import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
+import common from '@ec-site/shared/messages/ja.json' with { type: 'json' }
 import tailwindcss from '@tailwindcss/vite'
 import react from '@vitejs/plugin-react'
+import { createTranslator } from 'use-intl/core'
 import { defineConfig, type Plugin } from 'vite'
+import admin from './messages/ja.json' with { type: 'json' }
 
-/** index.html のページの言語（%LOCALE%）を、共有のロケールにする */
+/** 文言の関数（index.html の題名に使う。画面と同じく、共有の文言と管理画面の文言を浅く合わせる） */
+const translate = createTranslator({ locale: LOCALE, timeZone: TIME_ZONE, messages: { ...common, ...admin } })
+
+/** index.html のページの言語（%LOCALE%）と題名（%TITLE%）を、共有のロケールと文言にする */
 const htmlLocale: Plugin = {
   name: 'html-locale',
-  transformIndexHtml: (html) => html.replace('%LOCALE%', LOCALE),
+  transformIndexHtml: (html) =>
+    html
+      .replace('%LOCALE%', LOCALE)
+      .replace('%TITLE%', translate('app.layout.title', { siteName: translate('common.siteName') })),
 }
 
 // https://vite.dev/config/

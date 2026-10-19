@@ -33,7 +33,9 @@ export function Layout() {
     <SidebarProvider>
       <Sidebar aria-label={t('layout.menu') /* 機能のメニュー */} role="navigation">
         <SidebarHeader className="p-4">
-          <span className="font-heading font-semibold text-lg">{t('layout.title') /* 管理画面の名前 */}</span>
+          <span className="font-heading font-semibold text-lg">
+            {t('layout.title', { siteName: tCommon('siteName') }) /* 管理画面の名前 */}
+          </span>
         </SidebarHeader>
         <SidebarContent>
           <SidebarGroup>

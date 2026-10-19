@@ -1762,7 +1762,8 @@ components:
           nullable: true
         images:
           type: array
-          description: 表示順。先頭が代表画像（AC-37）
+          maxItems: 20
+          description: 表示順。先頭が代表画像（AC-37）。枚数の上限まで（AC-272）
           items:
             $ref: '#/components/schemas/ProductImage'
         variants:
@@ -1847,14 +1848,15 @@ components:
       properties:
         contentType:
           type: string
-          maxLength: 100
-          description: ファイルの形式。image/jpeg、image/png、image/webp、image/bmp、image/heic、image/heif、image/avif（AC-39、67）
+          enum: [image/jpeg, image/png, image/webp, image/bmp, image/heic, image/heif, image/avif]
+          description: ファイルの形式（AC-39、67、272）
           example: image/jpeg
         contentLength:
           type: integer
           format: int64
           minimum: 0
-          description: ファイルの大きさ（バイト）。10MB（10,485,760）まで（AC-39）
+          maximum: 10485760
+          description: ファイルの大きさ（バイト。AC-39、272）
     ImageUpload:
       type: object
       required: [uploadId, uploadUrl, headers, expiresAt]

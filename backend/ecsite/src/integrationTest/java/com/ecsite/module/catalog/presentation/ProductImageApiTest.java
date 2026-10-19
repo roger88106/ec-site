@@ -181,24 +181,26 @@ class ProductImageApiTest {
         }
 
         @Test
-        @DisplayName("AC-39、67 受け付ける形式以外は 400")
+        @DisplayName("AC-39、67、272 受け付ける形式以外は、契約の形式の一覧で 400")
         void rejectsUnsupportedFormat() throws Exception {
             var productId = productWithVariant();
 
             createUpload(productId, "image/gif", 100)
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("UNSUPPORTED_IMAGE_FORMAT"));
+                    // 列挙にない値は本文を読めない誤りになり、項目ごとの誤り（errors）は付かない
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }
 
         @Test
-        @DisplayName("AC-39 10MB を超えるファイルは受け付けず 400。0 バイトも 400")
+        @DisplayName("AC-39、272 10MB を超えるファイルは契約の上限で受け付けず 400。0 バイトは業務の検証で 400")
         void rejectsTooLargeFile() throws Exception {
             var productId = productWithVariant();
 
             createUpload(productId, "image/png", MAX_BYTES).andExpect(status().isCreated());
             createUpload(productId, "image/png", MAX_BYTES + 1)
                     .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("IMAGE_TOO_LARGE"));
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"))
+                    .andExpect(jsonPath("$.errors[0].field").value("contentLength"));
             createUpload(productId, "image/png", 0)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("IMAGE_TOO_LARGE"));

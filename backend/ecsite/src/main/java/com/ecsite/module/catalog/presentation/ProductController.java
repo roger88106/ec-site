@@ -243,7 +243,7 @@ class ProductController implements ProductApi {
      */
     @Override
     public ResponseEntity<ImageUpload> createImageUpload(UUID productId, CreateImageUploadRequest request) {
-        var upload = imageService.createUpload(productId, request.getContentType(), request.getContentLength());
+        var upload = imageService.createUpload(productId, request.getContentType().getValue(), request.getContentLength());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toImageUpload(upload));
     }
 

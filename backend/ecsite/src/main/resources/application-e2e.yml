@@ -10,6 +10,11 @@
 server:
   port: 8090
 
+management:
+  server:
+    # E2E の運用ポート。起動の待ち（e2e/playwright.config.ts）はここの死活監視を見る
+    port: 9090
+
 spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/ec_site_e2e

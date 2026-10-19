@@ -22,6 +22,11 @@ spring:
     # Testcontainers の PostgreSQL にマイグレーションを適用する（バックエンドのアーキテクチャ 第 6.2 節）
     enabled: true
 
+management:
+  server:
+    # 運用の口を、業務ポートと同じに置く（MockMvc で確かめるため）。運用ポートを分ける確かめは ManagementPortTest
+    port: ${server.port}
+
 ecsite:
   scheduling:
     # 定期ジョブを自動では動かさない。ジョブのテストは、テストからジョブを呼ぶ

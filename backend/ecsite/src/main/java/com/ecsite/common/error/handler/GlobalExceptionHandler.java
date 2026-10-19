@@ -93,12 +93,6 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
     @ExceptionHandler(BusinessException.class)
     public ResponseEntity<Object> handleBusinessException(BusinessException ex, WebRequest request) {
         ErrorDetail errorDetail = ex.getErrorDetail();
-
-        // 公開してはいけないエラーは、システムエラーとして返す
-        if (errorDetail.errorCode().exposure() == ErrorCode.ErrorExposure.DOWNGRADE_REQUIRED) {
-            return handleUnexpected(ex, request);
-        }
-
         HttpStatus status = resolveHttpStatus(errorDetail.errorCode());
         String traceId = traceIdResolver.resolve();
         log.debug("業務エラー。errorCode={}, traceId={}", errorDetail.errorCode().code(), traceId);

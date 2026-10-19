@@ -46,8 +46,6 @@ public class MessageHelper {
         return formatMessage(getMessageTemplate(message.code()), message.params());
     }
 
-    // ============================== プライベートメソッド ==============================
-
     /**
      * キーの文を取り出し、値を名前で差し込む。<br />
      * 整数は 3 桁ごとにカンマで区切る（例：10,000）。
@@ -74,6 +72,8 @@ public class MessageHelper {
         }
         return value == null ? "" : value.toString();
     }
+
+    // ============================== プライベートメソッド ==============================
 
     /**
      * メッセージをフォーマットする。

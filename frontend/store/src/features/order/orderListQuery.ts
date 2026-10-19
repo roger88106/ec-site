@@ -1,4 +1,5 @@
 import type { Route } from 'next'
+import { pageParam, type SearchParams } from '@/lib/searchParams'
 
 /**
  * 注文の一覧（/orders）のクエリの page を読む。
@@ -6,9 +7,8 @@ import type { Route } from 'next'
  * @param params 画面のクエリ
  * @returns ページ（1 から）。ない・形の違う値なら 1
  */
-export function parseOrderListPage(params: Record<string, string | string[] | undefined>): number {
-  const page = Number(Array.isArray(params.page) ? params.page[0] : params.page)
-  return Number.isInteger(page) && page >= 1 ? page : 1
+export function parseOrderListPage(params: SearchParams): number {
+  return pageParam(params.page)
 }
 
 /**

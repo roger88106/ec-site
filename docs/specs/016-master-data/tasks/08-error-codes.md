@@ -16,4 +16,5 @@
   - 共通のエラーは `CommonErrorCode` の 9 つ。テストだけの endpoint（`/api/test-errors`）は契約の API の外なので、確かめから外した。
 - [x] **T016-08-05** 画面のエラーのコードの比較を、生成した型の値にする（店舗画面の注文手続き、管理画面の競合など）。`check-frontend.sh` が通る。
   - テストのエラーの本文を作る関数（`problem`）の引数も生成した型にした。契約にないコードを使っていたテスト（`UNAUTHORIZED`、`VALIDATION_ERROR`、`TAX_CATEGORY_NOT_FOUND`）が型チェックで見つかったので、バックエンドが返すコード（`UNAUTHENTICATED`、`INVALID_REQUEST`、`NOT_FOUND`）に直した。
-- [ ] **T016-08-06** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`check-all.sh` が通る。
+- [x] **T016-08-06** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`check-all.sh` が通る。
+  - 結果（2026-10-20）：`./gradlew check`、`check-frontend.sh`（店舗画面・管理画面）、`check-all.sh` が通った。

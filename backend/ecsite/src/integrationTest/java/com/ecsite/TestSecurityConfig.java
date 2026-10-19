@@ -5,8 +5,12 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.boot.webmvc.test.autoconfigure.MockMvcBuilderCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
+import org.springframework.core.annotation.Order;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
+import org.springframework.security.web.SecurityFilterChain;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 
@@ -35,6 +39,23 @@ public class TestSecurityConfig {
     @Primary
     RealmKeys testRealmKeys() {
         return issuerUri -> NimbusJwtDecoder.withPublicKey(TestTokens.publicKey(issuerUri)).build();
+    }
+
+    /**
+     * テストだけの Controller（{@code /api/test-*}。エラーの応答の形などを確かめる）を、認証なしで使えるようにする。<br />
+     * 本番の filter chain は、決めていない URL を拒むため（バックエンドのアーキテクチャ 第 7.2 節）。
+     *
+     * @param http HTTP の設定
+     * @return テストだけの Controller の filter chain
+     */
+    @Bean
+    @Order(0)
+    SecurityFilterChain testControllerFilterChain(HttpSecurity http) throws Exception {
+        return http
+                .securityMatcher("/api/test-*/**")
+                .csrf(AbstractHttpConfigurer::disable)
+                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+                .build();
     }
 
     /**

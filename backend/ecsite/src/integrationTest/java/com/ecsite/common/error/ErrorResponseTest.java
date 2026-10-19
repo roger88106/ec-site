@@ -200,7 +200,7 @@ class ErrorResponseTest {
         @Test
         @DisplayName("存在しないパスは 404")
         void unknownPath() throws Exception {
-            mockMvc.perform(get("/api/does-not-exist"))
+            mockMvc.perform(get(BASE + "/does-not-exist"))
                     .andExpect(status().isNotFound())
                     .andExpectAll(problem("NOT_FOUND", NOT_FOUND));
         }

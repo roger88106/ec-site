@@ -2,6 +2,7 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.model.OrderDetailView;
@@ -18,7 +19,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -34,11 +34,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 @Transactional(readOnly = true)
 public class OrderQueryService {
-
-    /**
-     * 日本時間（注文日の範囲の解釈）
-     */
-    private static final ZoneId JAPAN = ZoneId.of("Asia/Tokyo");
 
     /**
      * 注文リポジトリ
@@ -182,6 +177,6 @@ public class OrderQueryService {
      * 日本時間の日付の始まりの時刻。
      */
     private static Instant startOf(LocalDate date) {
-        return date == null ? null : date.atStartOfDay(JAPAN).toInstant();
+        return date == null ? null : date.atStartOfDay(BusinessTime.ZONE).toInstant();
     }
 }

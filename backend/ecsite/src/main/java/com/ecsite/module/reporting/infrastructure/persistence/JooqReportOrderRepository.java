@@ -1,5 +1,6 @@
 package com.ecsite.module.reporting.infrastructure.persistence;
 
+import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
 import com.ecsite.module.reporting.domain.HistoryKind;
 import com.ecsite.module.reporting.domain.ReportOrder;
@@ -14,7 +15,6 @@ import tools.jackson.databind.json.JsonMapper;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneId;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -30,11 +30,6 @@ import static com.ecsite.jooq.reporting.Tables.STATUS_HISTORY;
 @Repository
 @RequiredArgsConstructor
 class JooqReportOrderRepository implements ReportOrderRepository {
-
-    /**
-     * 注文日・出荷日の区切り
-     */
-    private static final ZoneId JAPAN = ZoneId.of("Asia/Tokyo");
 
     /**
      * jOOQ DSL Context
@@ -174,6 +169,6 @@ class JooqReportOrderRepository implements ReportOrderRepository {
      * 日時の、日本時間の日付
      */
     private static LocalDate dateOf(Instant instant) {
-        return LocalDate.ofInstant(instant, JAPAN);
+        return LocalDate.ofInstant(instant, BusinessTime.ZONE);
     }
 }

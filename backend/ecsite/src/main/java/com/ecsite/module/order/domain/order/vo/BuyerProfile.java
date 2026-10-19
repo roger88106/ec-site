@@ -1,5 +1,6 @@
 package com.ecsite.module.order.domain.order.vo;
 
+import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.module.order.domain.order.Gender;
 import jakarta.annotation.Nullable;
 import lombok.NonNull;
@@ -8,7 +9,6 @@ import org.jmolecules.ddd.annotation.ValueObject;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Period;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
@@ -34,11 +34,6 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
     public static final BuyerProfile UNKNOWN = new BuyerProfile(null, null);
 
     /**
-     * 注文日の区切り
-     */
-    private static final ZoneId JAPAN = ZoneId.of("Asia/Tokyo");
-
-    /**
      * 生年月日の形（{@code YYYY-MM-DD}。2 月 30 日のような、ない日は拒む）
      */
     private static final DateTimeFormatter BIRTHDATE = DateTimeFormatter.ofPattern("uuuu-MM-dd")
@@ -53,7 +48,7 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
      * @return 注文時の年齢と性別
      */
     public static BuyerProfile of(@Nullable String birthdate, @Nullable String gender, @NonNull Instant orderedAt) {
-        return new BuyerProfile(ageOf(birthdate, LocalDate.ofInstant(orderedAt, JAPAN)), Gender.fromClaim(gender));
+        return new BuyerProfile(ageOf(birthdate, LocalDate.ofInstant(orderedAt, BusinessTime.ZONE)), Gender.fromClaim(gender));
     }
 
     /**

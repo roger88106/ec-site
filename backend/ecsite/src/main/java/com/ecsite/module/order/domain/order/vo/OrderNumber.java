@@ -1,10 +1,10 @@
 package com.ecsite.module.order.domain.order.vo;
 
+import com.ecsite.common.model.value.BusinessTime;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.time.Instant;
-import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.random.RandomGenerator;
 import java.util.regex.Pattern;
@@ -26,7 +26,7 @@ public record OrderNumber(String value) {
     /**
      * 注文日の書式（日本時間）
      */
-    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(ZoneId.of("Asia/Tokyo"));
+    private static final DateTimeFormatter DATE = DateTimeFormatter.ofPattern("yyyyMMdd").withZone(BusinessTime.ZONE);
 
     /**
      * ランダムな部分の値の数（000000〜999999）

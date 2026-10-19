@@ -36,7 +36,7 @@ class OrderTest {
     private static final Instant ORDERED_AT = Instant.parse("2026-10-07T15:30:00Z");
 
     private static final ShippingAddress ADDRESS =
-            ShippingAddress.of("山田 太郎", "100-0001", "東京都", "千代田区千代田 1-1", "03-1234-5678");
+            ShippingAddress.of("山田 太郎", "100-0001", TestAreas.CHIYODA, "千代田 1-1", "03-1234-5678");
 
     @Test
     @DisplayName("AC-143、BR-14 成立した注文は「支払待ち」で、注文成立のイベントが登録される")

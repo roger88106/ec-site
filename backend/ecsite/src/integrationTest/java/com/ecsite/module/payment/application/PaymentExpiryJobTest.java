@@ -8,6 +8,7 @@ import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
 import com.ecsite.module.payment.event.PaymentExpired;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -52,7 +53,7 @@ class PaymentExpiryJobTest {
     PaymentApi paymentApi;
 
     @Autowired
-    MockPaymentGateway gateway;
+    TestPaymentGateway gateway;
 
     @Autowired
     MutableClock clock;

@@ -1,7 +1,7 @@
 package com.ecsite;
 
 import com.ecsite.module.order.application.payment.OrderPaymentService;
-import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -32,7 +32,7 @@ public class OrderTestData {
     /**
      * mock の決済サービス
      */
-    private final MockPaymentGateway gateway;
+    private final TestPaymentGateway gateway;
 
     /**
      * 注文の支払の結果のサービス
@@ -51,7 +51,7 @@ public class OrderTestData {
      * @param gateway             mock の決済サービス
      * @param orderPaymentService 注文の支払の結果のサービス
      */
-    public OrderTestData(MockMvc mockMvc, MockPaymentGateway gateway, OrderPaymentService orderPaymentService) {
+    public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, OrderPaymentService orderPaymentService) {
         this.mockMvc = mockMvc;
         this.gateway = gateway;
         this.orderPaymentService = orderPaymentService;

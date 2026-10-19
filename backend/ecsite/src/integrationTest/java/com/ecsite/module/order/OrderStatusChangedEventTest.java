@@ -15,7 +15,7 @@ import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.order.event.OrderStatusChanged.CancellationKind;
 import com.ecsite.module.order.event.OrderStatusChanged.Status;
-import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
 import org.jooq.DSLContext;
@@ -67,7 +67,7 @@ class OrderStatusChangedEventTest {
     MockMvc mockMvc;
 
     @Autowired
-    MockPaymentGateway gateway;
+    TestPaymentGateway gateway;
 
     @Autowired
     MockCarrier mockCarrier;

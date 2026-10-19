@@ -14,7 +14,7 @@ import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.application.PaymentExpiryJob;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
-import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
@@ -74,7 +74,7 @@ class OrderPaymentApiTest {
     MockMvc mockMvc;
 
     @Autowired
-    MockPaymentGateway gateway;
+    TestPaymentGateway gateway;
 
     @Autowired
     OrderPaymentService orderPaymentService;

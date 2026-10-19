@@ -36,6 +36,8 @@ plugins {
     alias(libs.plugins.dependency.license.report)
     jacoco
     checkstyle
+    // mock を包むテスト用の実装など、単体テストと統合テストで共有するもの（src/testFixtures）
+    `java-test-fixtures`
 }
 
 group = "com.ecsite"
@@ -144,6 +146,7 @@ dependencies {
     testRuntimeOnly(libs.junit.platform.launcher)
 
     // --- テスト：統合 ---
+    "integrationTestImplementation"(testFixtures(project))
     "integrationTestImplementation"(libs.spring.boot.testcontainers)
     "integrationTestImplementation"(libs.testcontainers.postgresql)
     "integrationTestImplementation"(libs.spring.boot.starter.webmvc.test)
@@ -305,6 +308,7 @@ licenseReport {
         "compileClasspath", "runtimeClasspath",
         "testCompileClasspath", "testRuntimeClasspath",
         "integrationTestCompileClasspath", "integrationTestRuntimeClasspath",
+        "testFixturesCompileClasspath", "testFixturesRuntimeClasspath",
         "annotationProcessor", "jooqGenerator",
     )
     filters = arrayOf(

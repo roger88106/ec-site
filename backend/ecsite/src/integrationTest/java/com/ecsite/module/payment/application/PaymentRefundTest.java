@@ -8,7 +8,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
 import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
-import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -46,7 +46,7 @@ class PaymentRefundTest {
     PaymentApi paymentApi;
 
     @Autowired
-    MockPaymentGateway gateway;
+    TestPaymentGateway gateway;
 
     @Autowired
     IncompleteEventPublications incompletePublications;

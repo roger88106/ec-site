@@ -13,7 +13,7 @@ import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.payment.event.PaymentAuthorized;
-import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,7 +65,7 @@ class CancellationAtomicityTest {
     MockMvc mockMvc;
 
     @Autowired
-    MockPaymentGateway gateway;
+    TestPaymentGateway gateway;
 
     @Autowired
     OrderPaymentService orderPaymentService;

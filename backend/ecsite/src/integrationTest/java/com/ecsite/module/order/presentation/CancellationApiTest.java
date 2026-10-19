@@ -11,7 +11,7 @@ import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
-import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -57,7 +57,7 @@ class CancellationApiTest {
     MockMvc mockMvc;
 
     @Autowired
-    MockPaymentGateway gateway;
+    TestPaymentGateway gateway;
 
     @Autowired
     OrderPaymentService orderPaymentService;

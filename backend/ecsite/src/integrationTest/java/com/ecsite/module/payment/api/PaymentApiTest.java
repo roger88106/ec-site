@@ -5,7 +5,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.event.PaymentAuthorized;
-import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
+import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -42,7 +42,7 @@ class PaymentApiTest {
     PaymentApi paymentApi;
 
     @Autowired
-    MockPaymentGateway gateway;
+    TestPaymentGateway gateway;
 
     @Autowired
     MutableClock clock;

@@ -14,13 +14,13 @@ import static org.mockito.Mockito.mock;
 
 /**
  * mock の決済サービスが、port の振る舞い（{@link PaymentGatewayContractTest}）を守ることの検証。
- * 状態は、mock の操作で用意する。
+ * 状態は、mock の支払の画面の操作と、mock を包むテスト用の実装（{@link TestPaymentGateway}。与信を切れたことにする）で用意する。
  */
 @DisplayName("mock の決済サービス")
 class MockPaymentGatewayContractTest extends PaymentGatewayContractTest {
 
-    private final MockPaymentGateway gateway = new MockPaymentGateway(
-            mock(PaymentNotificationReceiver.class), new MockPaymentProperties("http://localhost:8080"));
+    private final TestPaymentGateway gateway = new TestPaymentGateway(new MockPaymentGateway(
+            mock(PaymentNotificationReceiver.class), new MockPaymentProperties("http://localhost:8080")));
 
     @Override
     protected PaymentGateway gateway() {

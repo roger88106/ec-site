@@ -9,7 +9,7 @@ import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { isPurchasable } from '@/features/catalog/variantSelection'
-import { QUANTITY_OPTIONS } from '@/lib/orderDisplay'
+import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
 /**
  * 数量を選んでカートに入れる。<br />

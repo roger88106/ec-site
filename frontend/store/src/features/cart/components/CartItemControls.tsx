@@ -8,7 +8,7 @@ import { useActionState, useId } from 'react'
 import { changeCartItemQuantity, removeCartItem } from '@/actions/cart'
 import type { QuoteItem } from '@/api/types'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { QUANTITY_OPTIONS } from '@/lib/orderDisplay'
+import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
 /**
  * カートの品目の数量の変更と削除、小計（購入できない品目は打ち消し線）。<br />

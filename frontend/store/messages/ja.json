@@ -24,15 +24,13 @@
       "unpurchasable": "購入できません"
     }
   },
-  "orderDisplay": {
+  "labels": {
     "unpurchasableReason": {
       "NOT_SHOWN": "お取り扱いを終了しました",
       "SALES_SUSPENDED": "販売を停止しています",
       "OUT_OF_STOCK": "在庫切れです",
       "INSUFFICIENT_STOCK": "在庫が足りません。数量を減らしてください"
-    }
-  },
-  "labels": {
+    },
     "axisSeparator": "　"
   },
   "app": {

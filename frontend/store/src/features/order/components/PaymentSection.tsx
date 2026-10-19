@@ -2,7 +2,7 @@ import { formatDateTime } from '@ec-site/shared/lib/format'
 import { useTranslations } from 'next-intl'
 import type { Order } from '@/api/types'
 import { PayForm } from '@/features/order/components/PayForm'
-import { paymentState } from '@/lib/orderDisplay'
+import { paymentState } from '@/features/order/orderState'
 
 /**
  * 注文の支払。支払待ちのときだけ出す。<br />

@@ -1,58 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import {
-  cancellationState,
-  carrierLabel,
-  orderStatusBadge,
-  orderStatusLabel,
-  paymentDeadlineLabel,
-  paymentState,
-  remainingTime,
-  shipmentStatusLabel,
-  unpurchasableReasonLabel,
-} from '@/lib/orderDisplay'
-
-describe('購入できない理由（AC-80）', () => {
-  test('AC-80 理由ごとの文言。数量は出さない', () => {
-    expect(unpurchasableReasonLabel('NOT_SHOWN')).toBe('お取り扱いを終了しました')
-    expect(unpurchasableReasonLabel('SALES_SUSPENDED')).toBe('販売を停止しています')
-    expect(unpurchasableReasonLabel('OUT_OF_STOCK')).toBe('在庫切れです')
-    expect(unpurchasableReasonLabel('INSUFFICIENT_STOCK')).toBe('在庫が足りません。数量を減らしてください')
-  })
-})
-
-describe('注文の状態（BR-9、14）', () => {
-  test('BR-9、14 支払待ち、受付、キャンセル申請中、キャンセル', () => {
-    expect(orderStatusLabel('PENDING_PAYMENT')).toBe('支払待ち')
-    expect(orderStatusLabel('ACCEPTED')).toBe('受付')
-    expect(orderStatusLabel('CANCELLATION_REQUESTED')).toBe('キャンセル申請中')
-    expect(orderStatusLabel('CANCELLED')).toBe('キャンセル')
-  })
-})
-
-describe('出荷後の状態（AC-179、180）', () => {
-  test('BR-19 配送状態と配送業者の表示名', () => {
-    expect(shipmentStatusLabel('SHIPPED')).toBe('出荷済み')
-    expect(shipmentStatusLabel('IN_TRANSIT')).toBe('配送中')
-    expect(shipmentStatusLabel('DELIVERED')).toBe('配達完了')
-    expect(shipmentStatusLabel('RETURNED')).toBe('返送')
-    expect(carrierLabel('YAMATO')).toBe('ヤマト運輸')
-    expect(carrierLabel('SAGAWA')).toBe('佐川急便')
-    expect(carrierLabel('JAPAN_POST')).toBe('日本郵便')
-  })
-
-  test('AC-179 AC-180 出荷後は、注文状態の代わりに配送状態を示す', () => {
-    expect(orderStatusBadge({ status: 'SHIPPED', shipmentStatus: 'IN_TRANSIT' }).label).toBe('配送中')
-    expect(orderStatusBadge({ status: 'SHIPPED', shipmentStatus: 'DELIVERED' }).label).toBe('配達完了')
-  })
-
-  test('出荷前は注文状態を示す', () => {
-    expect(orderStatusBadge({ status: 'ACCEPTED' })).toEqual({ label: '受付', variant: 'default' })
-  })
-
-  test('返送の後にキャンセルされた注文は、キャンセルを示す', () => {
-    expect(orderStatusBadge({ status: 'CANCELLED', shipmentStatus: 'RETURNED' }).label).toBe('キャンセル')
-  })
-})
+import { cancellationState, paymentDeadlineLabel, paymentState } from '@/features/order/orderState'
 
 describe('キャンセルの申請の状況（AC-95、96）', () => {
   /** API が返す旗 */
@@ -134,20 +81,5 @@ describe('注文の一覧の支払の期限（AC-159）', () => {
 
   test('支払待ちでない注文は、示さない', () => {
     expect(paymentDeadlineLabel({ status: 'ACCEPTED' })).toBeNull()
-  })
-})
-
-describe('引当の残り時間（AC-84）', () => {
-  /** 期限 */
-  const expiresAt = '2026-10-10T05:15:00Z'
-
-  test('期限までの残りを「分:秒」で出す（秒の端数は切り捨て）', () => {
-    expect(remainingTime(expiresAt, new Date('2026-10-10T05:00:00Z'))).toBe('15:00')
-    expect(remainingTime(expiresAt, new Date('2026-10-10T05:14:51.500Z'))).toBe('0:08')
-  })
-
-  test('期限を過ぎたら null（注文はできる。AC-87）', () => {
-    expect(remainingTime(expiresAt, new Date('2026-10-10T05:15:00Z'))).toBeNull()
-    expect(remainingTime(expiresAt, new Date('2026-10-10T06:00:00Z'))).toBeNull()
   })
 })

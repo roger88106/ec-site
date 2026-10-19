@@ -2,7 +2,7 @@
 
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
-import { remainingTime } from '@/lib/orderDisplay'
+import { remainingTime } from '@/features/checkout/remainingTime'
 
 /**
  * 引当の残り時間。1 秒ごとに数え直す。<br />

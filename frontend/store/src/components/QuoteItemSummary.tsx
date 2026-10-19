@@ -6,7 +6,7 @@ import { useTranslations } from 'next-intl'
 import type { ReactNode } from 'react'
 import type { QuoteItem } from '@/api/types'
 import { PriceText } from '@/components/PriceText'
-import { unpurchasableReasonLabel } from '@/lib/orderDisplay'
+import { unpurchasableReasonLabel } from '@/lib/labels'
 
 /**
  * カート・注文手続きの品目。画像、商品名、軸の値、単価を出し、購入できなければ理由を示す。<br />

@@ -2,7 +2,7 @@ import { formatDateTime } from '@ec-site/shared/lib/format'
 import { useTranslations } from 'next-intl'
 import type { Order } from '@/api/types'
 import { CancellationRequestForm } from '@/features/order/components/CancellationRequestForm'
-import { cancellationState } from '@/lib/orderDisplay'
+import { cancellationState } from '@/features/order/orderState'
 
 /**
  * 注文のキャンセル。状況に応じて、申請のフォーム、申請中、却下（問い合わせ先）、キャンセル済みを出す。

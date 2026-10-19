@@ -12,7 +12,8 @@ import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
-import { cancellationState, carrierLabel, paymentState } from '@/lib/orderDisplay'
+import { carrierLabel } from '@/features/order/labels'
+import { cancellationState, paymentState } from '@/features/order/orderState'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {

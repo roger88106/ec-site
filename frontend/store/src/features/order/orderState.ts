@@ -1,13 +1,6 @@
 import { formatDateTime } from '@ec-site/shared/lib/format'
-import { schemas } from '@/api/generated/constraints'
-import type { Cancellation, Carrier, Order, OrderStatus, ShipmentStatus, UnpurchasableReason } from '@/api/types'
+import type { Cancellation, Order, OrderStatus } from '@/api/types'
 import { translate } from '@/i18n/translate'
-
-/** 1 品目の数量の選択肢（契約の数量の下限から上限まで） */
-export const QUANTITY_OPTIONS = Array.from(
-  { length: schemas.Quantity.maximum - schemas.Quantity.minimum + 1 },
-  (_, index) => schemas.Quantity.minimum + index,
-)
 
 /**
  * 注文のキャンセルの状況。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み、
@@ -28,49 +21,6 @@ export type CancellationState =
  * 支払の欄を出さない（支払待ちでない）
  */
 export type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
-
-/** 購入できない理由の文言。数量は出さない */
-export function unpurchasableReasonLabel(reason: NonNullable<UnpurchasableReason>): string {
-  return translate(`orderDisplay.unpurchasableReason.${reason}`)
-}
-
-/** 注文の状態の表示名 */
-export function orderStatusLabel(status: OrderStatus): string {
-  return translate(`common.orderStatus.${status}`)
-}
-
-/** 注文の状態の見た目（Badge の variant）。受け付けた注文を目立たせる */
-const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'> = {
-  PENDING_PAYMENT: 'secondary',
-  ACCEPTED: 'default',
-  CANCELLATION_REQUESTED: 'secondary',
-  CANCELLED: 'secondary',
-  SHIPPED: 'secondary',
-}
-
-/** 配送状態の表示名 */
-export function shipmentStatusLabel(status: ShipmentStatus): string {
-  return translate(`common.shipmentStatus.${status}`)
-}
-
-/** 配送業者の表示名 */
-export function carrierLabel(carrier: Carrier): string {
-  return translate(`common.carrier.${carrier}`)
-}
-
-/**
- * 注文の状態の欄に出す表示名と見た目。出荷済みの注文は、注文状態の代わりに配送状態を出す
- * （注文状態と配送状態の「出荷済み」が並ばないようにする）。
- */
-export function orderStatusBadge(order: { status: OrderStatus; shipmentStatus?: ShipmentStatus }): {
-  label: string
-  variant: 'default' | 'secondary'
-} {
-  if (order.status === 'SHIPPED' && order.shipmentStatus !== undefined) {
-    return { label: shipmentStatusLabel(order.shipmentStatus), variant: ORDER_STATUS_VARIANTS.SHIPPED }
-  }
-  return { label: orderStatusLabel(order.status), variant: ORDER_STATUS_VARIANTS[order.status] }
-}
 
 /**
  * 注文のキャンセルの状況。申請できるかは API の旗で決める。
@@ -124,19 +74,4 @@ export function paymentDeadlineLabel(order: { status: OrderStatus; paymentDeadli
     return null
   }
   return translate('order.list.paymentDeadline', { deadline: formatDateTime(order.paymentDeadline) })
-}
-
-/**
- * 引当の期限までの残り時間（例：「14:59」）。秒の端数は切り捨てる。
- *
- * @param expiresAt 引当の期限
- * @param now       現在時刻
- * @returns 残り時間。期限を過ぎていれば null
- */
-export function remainingTime(expiresAt: string, now: Date): string | null {
-  const seconds = Math.floor((new Date(expiresAt).getTime() - now.getTime()) / 1000)
-  if (seconds <= 0) {
-    return null
-  }
-  return `${Math.floor(seconds / 60)}:${String(seconds % 60).padStart(2, '0')}`
 }

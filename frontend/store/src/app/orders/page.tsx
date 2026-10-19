@@ -8,7 +8,7 @@ import { currentMember, redirectToLogin } from '@/auth'
 import { PageLinks } from '@/components/PageLinks'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
-import { paymentDeadlineLabel } from '@/lib/orderDisplay'
+import { paymentDeadlineLabel } from '@/features/order/orderState'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {

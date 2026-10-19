@@ -53,9 +53,7 @@ public class ProductQueryService {
         var view = productQueryRepository.findDetailById(id)
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         var now = clock.instant();
-        var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), Money.of(view.priceExclTax()), now)
-                .map(Money::yen)
-                .orElse(null);
+        var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), view.priceExclTax(), now).orElse(null);
         var actions = ProductActions.of(PublicationStatus.valueOf(view.status()), view.firstShownAt(), view.axes().size(),
                 view.variants().size(), now);
         return view.withCurrentState(priceInclTax, actions);

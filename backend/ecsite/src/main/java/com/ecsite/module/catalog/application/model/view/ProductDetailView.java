@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.application.model.view;
 
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.product.ProductActions;
 import jakarta.annotation.Nullable;
 
@@ -16,8 +17,8 @@ import java.util.UUID;
  * @param name          商品名
  * @param description   説明
  * @param taxCategoryId 税区分 ID
- * @param priceExclTax  税抜価格（円）
- * @param priceInclTax  現時点の税込価格（円）。有効な税率がなければ null
+ * @param priceExclTax  税抜価格
+ * @param priceInclTax  現時点の税込価格。有効な税率がなければ null
  * @param categoryIds   所属カテゴリの ID
  * @param axes          バリアント軸の名前（並び順）
  * @param status        公開状態（{@code UNPUBLISHED} / {@code PUBLISHED} / {@code DISCONTINUED}）
@@ -32,7 +33,7 @@ import java.util.UUID;
  * @param updatedAt     更新日時
  */
 public record ProductDetailView(UUID id, String productCode, String name, String description, UUID taxCategoryId,
-                                long priceExclTax, @Nullable Long priceInclTax, List<UUID> categoryIds,
+                                Money priceExclTax, @Nullable Money priceInclTax, List<UUID> categoryIds,
                                 List<String> axes, String status, @Nullable Instant firstShownAt,
                                 @Nullable Instant publishStart, @Nullable Instant publishEnd,
                                 List<ImageView> images, List<VariantView> variants, @Nullable ProductActions actions,
@@ -41,11 +42,11 @@ public record ProductDetailView(UUID id, String productCode, String name, String
     /**
      * 現時点の税込価格と、できる操作を設定したビューを返す。
      *
-     * @param priceInclTax 税込価格（円）。なければ null
+     * @param priceInclTax 税込価格。なければ null
      * @param actions      できる操作
      * @return ビュー
      */
-    public ProductDetailView withCurrentState(@Nullable Long priceInclTax, ProductActions actions) {
+    public ProductDetailView withCurrentState(@Nullable Money priceInclTax, ProductActions actions) {
         return new ProductDetailView(id, productCode, name, description, taxCategoryId, priceExclTax, priceInclTax,
                 categoryIds, axes, status, firstShownAt, publishStart, publishEnd, images, variants, actions, version,
                 createdAt, updatedAt);

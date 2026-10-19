@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
+import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.persistence.LikePatterns;
@@ -171,7 +172,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 record.getName(),
                 record.getDescription(),
                 record.getTaxCategoryId(),
-                record.getPriceExclTax(),
+                Money.of(record.getPriceExclTax()),
                 null,
                 categoryIds,
                 axes,

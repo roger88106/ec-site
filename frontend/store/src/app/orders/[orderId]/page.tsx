@@ -123,7 +123,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
       </section>
 
       {/* 支払待ちと出荷済みの注文は、申請できず、キャンセルもされていない */}
-      {cancellation !== 'NOT_YET' && cancellation !== 'SHIPPED' && (
+      {cancellation !== 'NOT_YET' && cancellation !== 'SHIPPED' && cancellation !== 'UNAVAILABLE' && (
         <section className="space-y-3">
           <h2 className="font-semibold">{t('cancellation') /* キャンセル */}</h2>
           <CancellationSection contactEmail={shop.contactEmail} order={order} />

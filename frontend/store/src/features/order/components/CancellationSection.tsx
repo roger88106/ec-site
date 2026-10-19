@@ -53,6 +53,7 @@ export function CancellationSection({ order, contactEmail }: { order: Order; con
       return <p className="text-sm">{t('paymentExpired') /* 支払期限切れでキャンセルされた */}</p>
     case 'NOT_YET':
     case 'SHIPPED':
+    case 'UNAVAILABLE':
       return null
   }
 }

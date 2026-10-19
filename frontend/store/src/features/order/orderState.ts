@@ -1,11 +1,11 @@
 import { formatDateTime } from '@ec-site/shared/lib/format'
-import type { Cancellation, Order, OrderStatus } from '@/api/types'
+import type { Cancellation, CancellationRequest, Order, OrderStatus } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
 /**
  * 注文のキャンセルの状況。申請できる、申請中、却下された（問い合わせ先を示す）、キャンセル済み、
  * 支払期限切れでキャンセル済み、まだ申請できない（支払待ち。支払の期限で自動でキャンセルになる）、
- * 出荷済み（もう申請できない）
+ * 出荷済み（もう申請できない）、受付だが申請できず申請の結果もない（キャンセルの欄を出さない）
  */
 export type CancellationState =
   | 'REQUESTABLE'
@@ -15,6 +15,7 @@ export type CancellationState =
   | 'PAYMENT_EXPIRED'
   | 'NOT_YET'
   | 'SHIPPED'
+  | 'UNAVAILABLE'
 
 /**
  * 注文の支払の状況。支払える、支払の確認中（支払の画面から戻った直後）、支払の期限を過ぎた（まもなくキャンセル）、
@@ -23,13 +24,13 @@ export type CancellationState =
 export type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
 
 /**
- * 注文のキャンセルの状況。申請できるかは API の旗で決める。
- * 申請できない「受付」の注文は、申請が却下された注文（申請は 1 つの注文に 1 回だけ）。
+ * 注文のキャンセルの状況。申請できるかは API の旗で、却下されたかは申請の結果で決める。
  */
 export function cancellationState(order: {
   status: OrderStatus
   actions: Pick<Order['actions'], 'requestCancellation'>
   cancellation?: Cancellation
+  cancellationRequest?: CancellationRequest
 }): CancellationState {
   if (order.actions.requestCancellation) {
     return 'REQUESTABLE'
@@ -42,7 +43,7 @@ export function cancellationState(order: {
     case 'CANCELLATION_REQUESTED':
       return 'PENDING'
     case 'ACCEPTED':
-      return 'REJECTED'
+      return order.cancellationRequest?.result === 'REJECTED' ? 'REJECTED' : 'UNAVAILABLE'
     case 'SHIPPED':
       return 'SHIPPED'
   }

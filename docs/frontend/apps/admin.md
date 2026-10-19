@@ -140,6 +140,15 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | 日時 | 入力欄の値は日本時間とみなし、+09:00 のオフセット付きで送る |
 | 列挙（状態、理由など） | 表示名は `lib/` の関数で引き、選択肢は生成した列挙の値の配列から作る |
 | 操作できないもの | ボタンを出さないか、理由を添える（C 側に表示されたことのある商品は削除のボタンを出さず、販売終了を案内する） |
+| 操作の旗と理由 | 下の表の API の値で出し分け、注文・商品の状態や階層の深さから推し量らない（[フロントのアーキテクチャ](../architecture.md) 第 3 節） |
+
+| API の値 | 画面 |
+|----------|------|
+| 注文の `actions`（`approveCancellation`、`rejectCancellation`、`cancel`、`ship`） | 操作のボタンを出すか |
+| 注文の `actions.cancelAsksRestock` | キャンセルの確認で、在庫に戻すかを選ばせるか（返送の注文だけ真） |
+| 商品の `actions`（`publish`、`unpublish`、`discontinue`、`delete`、`deleteVariants`、`addVariant`） | 操作のボタンを出すか |
+| 商品の `actions.deleteBlockedReason` | 削除できない理由の文（理由の値ごとに `product.status.deleteBlocked.<値>`）。なければ出さない |
+| カテゴリの木の節の `actions.addChild` | 子を追加するボタンを出すか（いちばん深いカテゴリだけ偽） |
 
 ## 8. 画面を追加する手順
 

@@ -61,7 +61,7 @@ async function shownPayment() {
 }
 
 describe('注文の詳細', () => {
-  it('AC-100 明細（注文時点の写し）、金額の内訳、お届け先、キャンセルの申請を出す', async () => {
+  it('AC-100、252 明細（注文時点の写し）、金額の内訳、お届け先（都道府県名・市区町村名・住所の順）、キャンセルの申請を出す', async () => {
     serveOrder(REQUESTED)
     renderApp(URL)
 
@@ -70,7 +70,7 @@ describe('注文の詳細', () => {
     expect(screen.getByRole('cell', { name: '3,300 円' })).toBeInTheDocument()
     expect(screen.getByText('10% 対象 4,300 円（内消費税 390 円）')).toBeInTheDocument()
     expect(screen.getByText('taro@example.com')).toBeInTheDocument()
-    expect(screen.getByText(/〒100-0001 東京都/)).toBeInTheDocument()
+    expect(screen.getByText('〒100-0001 東京都千代田区千代田 1-1')).toBeInTheDocument()
     expect(screen.getByText('サイズを間違えた')).toBeInTheDocument()
     expect(screen.getByText('申請中')).toBeInTheDocument()
   })

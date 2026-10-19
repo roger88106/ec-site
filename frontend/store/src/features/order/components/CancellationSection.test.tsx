@@ -16,8 +16,11 @@ const order = (overrides: Partial<Order>): Order => ({
   shippingAddress: {
     name: '山田 太郎',
     postalCode: '1000001',
-    prefecture: '東京都',
-    address: '千代田区',
+    prefectureCode: '13',
+    prefectureName: '東京都',
+    municipalityCode: '13101',
+    municipalityName: '千代田区',
+    address: '千代田 1-1',
     phone: '0312345678',
   },
   actions: { requestCancellation: false, pay: false },

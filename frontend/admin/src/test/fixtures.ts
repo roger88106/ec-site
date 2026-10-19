@@ -134,8 +134,11 @@ export function orderDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
     shippingAddress: {
       name: '山田 太郎',
       postalCode: '1000001',
-      prefecture: '東京都',
-      address: '千代田区千代田1-1',
+      prefectureCode: '13',
+      prefectureName: '東京都',
+      municipalityCode: '13101',
+      municipalityName: '千代田区',
+      address: '千代田 1-1',
       phone: '0312345678',
     },
     ...overrides,

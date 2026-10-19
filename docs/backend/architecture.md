@@ -142,6 +142,8 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - 管理 API の権限は endpoint ごとに `resource:action`（例：`product:write`）で spec に書く。運営者の realm の role として token に載せ、読む処理は 1 か所にまとめる。
 - ログインしていればよい操作（自分の権限の一覧）は、権限の代わりに `authenticated` と書く。管理画面はメニューと画面を自分の権限の一覧で出し分け、token を自分で読まない。
 - `/api/admin/**` は運営者の realm、`/api/store/**` は消費者の realm の token だけを受け付ける。
+- 店舗 API の token の要否も、契約（`store.yaml` の `security`）から起動時に読む。`memberToken` だけの操作は token が要り、空の要件（`{}`）を含む操作と `security` のない操作は token なしで使える。
+- 認可は既定で拒む。契約にない店舗 API・管理 API の操作は拒み、それ以外の URL は、通知の口（`/api/webhooks/**`）、mock の口（`/mock-payment/**`、`/mock-carrier/**`）、運用の口（`/actuator/**`）だけを許す。拒むときは 401（認証のある要求は 403）。
 
 ### 7.3 公開ネットワークへのデプロイの前提
 

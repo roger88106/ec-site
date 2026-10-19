@@ -322,9 +322,6 @@ importers:
       cn:
         specifier: ^0.4.0
         version: 0.4.0
-      lucide-react:
-        specifier: ^1.53.0
-        version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
       use-intl:
         specifier: ^4.14.9
         version: 4.14.9(@types/react@19.3.0)(react@19.3.0)
@@ -350,15 +347,9 @@ importers:
 
   frontend/store:
     dependencies:
-      '@base-ui/react':
-        specifier: ^1.8.0
-        version: 1.9.0(@types/react@19.3.0)(react-dom@19.3.0(react@19.3.0))(react@19.3.0)
       '@ec-site/shared':
         specifier: workspace:*
         version: link:../shared
-      class-variance-authority:
-        specifier: ^0.7.1
-        version: 0.7.1
       cn:
         specifier: ^0.4.0
         version: 0.4.0

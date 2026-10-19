@@ -1,8 +1,10 @@
 package com.ecsite.contract;
 
+import com.ecsite.module.media.domain.ImageFormat;
 import org.jooq.Field;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.yaml.snakeyaml.Yaml;
@@ -10,6 +12,7 @@ import org.yaml.snakeyaml.Yaml;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -106,7 +109,34 @@ class FieldConstraintContractTest {
                 new Row("カートの品目の数量", List.of("store.yaml#Quantity"),
                         "com.ecsite.module.cart.domain.Cart#MAX_QUANTITY", List.of()),
                 new Row("1 ページの件数", List.of("admin.yaml#parameters/Size", "store.yaml#parameters/Size"),
-                        "com.ecsite.common.paging.PageRequest#MAX_SIZE", List.of()));
+                        "com.ecsite.common.paging.PageRequest#MAX_SIZE", List.of()),
+                new Row("画像の大きさ（バイト）", List.of("admin.yaml#CreateImageUploadRequest.contentLength"),
+                        "com.ecsite.module.media.domain.ImageFormat#MAX_BYTES", List.of()),
+                new Row("商品の画像の枚数", List.of("admin.yaml#ProductDetail.images"),
+                        "com.ecsite.module.catalog.domain.product.Product#MAX_IMAGES", List.of()),
+                new Row("カテゴリの深さ", List.of("admin.yaml#CategoryNode.depth", "admin.yaml#Category.depth"),
+                        "com.ecsite.module.catalog.domain.category.Category#MAX_DEPTH", List.of()));
+    }
+
+    @Test
+    @DisplayName("AC-272 画像の受け付けの形式の enum が、受け付ける画像の形式（MIME タイプ）と一致する")
+    void imageContentTypesAgree() throws ReflectiveOperationException {
+        Map<String, Object> document = CONTRACTS.get("admin.yaml");
+        Map<String, Object> request = map(map(map(document.get("components")).get("schemas")).get("CreateImageUploadRequest"));
+        Object contract = map(map(request.get("properties")).get("contentType")).get("enum");
+
+        var field = ImageFormat.class.getDeclaredField("contentTypes");
+        field.setAccessible(true);
+        List<String> accepted = new ArrayList<>();
+        for (ImageFormat format : ImageFormat.values()) {
+            for (Object type : (List<?>) field.get(format)) {
+                accepted.add((String) type);
+            }
+        }
+
+        assertThat(contract).as("契約の形式の enum").isInstanceOf(List.class);
+        List<Object> values = new ArrayList<>((List<?>) contract);
+        assertThat(values).containsExactlyInAnyOrderElementsOf(accepted);
     }
 
     /**
@@ -121,7 +151,7 @@ class FieldConstraintContractTest {
 
     @ParameterizedTest(name = "{0}")
     @MethodSource("fields")
-    @DisplayName("契約の上限、ドメインの上限、DB の列の長さが一致する")
+    @DisplayName("AC-272、273 契約の上限、ドメインの上限、DB の列の長さが一致する")
     void limitsAgree(Row row) throws ReflectiveOperationException {
         // 契約の場所ごとの上限（文字は maxLength、数値は maximum）
         List<Integer> contractLimits = row.contract().stream().map(FieldConstraintContractTest::contractLimit).toList();
@@ -163,7 +193,9 @@ class FieldConstraintContractTest {
                 }
             }
         }
-        Object limit = schema.containsKey("maxLength") ? schema.get("maxLength") : schema.get("maximum");
+        // 文字は maxLength、配列は maxItems、数値は maximum
+        Object limit = schema.containsKey("maxLength") ? schema.get("maxLength")
+                : schema.containsKey("maxItems") ? schema.get("maxItems") : schema.get("maximum");
         return limit == null ? null : ((Number) limit).intValue();
     }
 

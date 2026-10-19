@@ -39,6 +39,6 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [013](docs/specs/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） | 完了。[段階 1〜7](docs/specs/013-backend-consistency/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/013-backend-consistency/tasks/07-review.md) |
 | [014](docs/specs/014-frontend-consistency) | 整理 | 書き方の統一（フロント） | 完了。[段階 1〜5](docs/specs/014-frontend-consistency/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/014-frontend-consistency/tasks/05-review.md) |
 | [015](docs/specs/015-security) | 機能 | セキュリティ | 完了。[段階 1〜7](docs/specs/015-security/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/015-security/tasks/07-review.md) |
-| [016](docs/specs/016-master-data) | 機能 | マスターデータ | 実装中。[段階 1〜5](docs/specs/016-master-data/tasks/) を終えた（全 10） |
+| [016](docs/specs/016-master-data) | 機能 | マスターデータ | 実装中。[段階 1〜6](docs/specs/016-master-data/tasks/) を終えた（全 10） |
 
 MVP を完成させるまでの spec の順と、MVP の後に回した決定は [MVP の完成までの一覧](docs/specs/mvp.md) にある。

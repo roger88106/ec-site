@@ -22,4 +22,5 @@
     - 管理画面の `ProductStatusCard.tsx`：販売終了の商品に「公開に戻せない」と添える（公開のボタンは旗で出し分ける）。`CancellationCard.tsx`：キャンセルの種類で記録の表示を変える。`ShipmentCard.tsx`：配送の状態のラベル。
     - 一覧の絞り込み（`orderFilter.ts`、`productFilter.ts`、`reportCondition.ts`）は URL の組み立て。
   - 注文・商品の状態でない比較として、在庫の調整のフォームが、理由が「その他」のときメモを必須と表示する（`AdjustStockForm.tsx`）。入力の規則を画面が持つものだが、この段階の範囲（操作の可否）の外なので、変えずに見直しで挙げる。
-- [ ] **T016-06-08** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る。
+- [x] **T016-06-08** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る。
+  - 結果（2026-10-20）：`./gradlew check`、`check-frontend.sh`（店舗画面・管理画面）、`e2e.sh`（20 件）、`check-all.sh` が通った。

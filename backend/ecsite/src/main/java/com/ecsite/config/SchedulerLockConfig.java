@@ -16,8 +16,14 @@ import javax.sql.DataSource;
  * ロックは無駄な重複を減らすためのもので、業務の正しさは行ロックと冪等な状態の遷移で保つ。
  */
 @Configuration
-@EnableSchedulerLock(defaultLockAtMostFor = "PT10M")
+@EnableSchedulerLock(defaultLockAtMostFor = SchedulerLockConfig.LOCK_AT_MOST_FOR)
 class SchedulerLockConfig {
+
+    /**
+     * ロックを持つ時間の上限（インスタンスが止まってもロックが残り続けないように）。<br />
+     * ShedLock の注釈は定数しか取らないので、設定の型にせず定数にする。環境で変えることもない。
+     */
+    static final String LOCK_AT_MOST_FOR = "PT10M";
 
     /**
      * ロックの表（common.shedlock）を使うロックの provider。<br />

@@ -18,7 +18,7 @@ export function formatYen(amount: number): string {
  */
 export function formatPrice(priceInclTax: number | null | undefined, priceExclTax: number): string {
   if (priceInclTax == null) {
-    return translate('format.price.exclTaxOnly', { exclTax: yen.format(priceExclTax) })
+    return translate('common.priceExclTaxOnly', { exclTax: yen.format(priceExclTax) })
   }
   return translate('common.priceWithExclTax', { inclTax: yen.format(priceInclTax), exclTax: yen.format(priceExclTax) })
 }

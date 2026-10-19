@@ -11,6 +11,7 @@
     "httpFailed": "通信に失敗しました（HTTP {status}）",
     "yen": "{amount} 円",
     "priceWithExclTax": "{inclTax} 円（税抜 {exclTax} 円）",
+    "priceExclTaxOnly": "税抜 {exclTax} 円（税込価格は計算できません）",
     "taxAmount": "{ratePercent}% 対象 {taxableAmount}（内消費税 {taxAmount}）",
     "orderStatus": {
       "PENDING_PAYMENT": "支払待ち",

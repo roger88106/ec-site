@@ -325,6 +325,9 @@ importers:
       lucide-react:
         specifier: ^1.53.0
         version: 1.55.0(@types/react@19.3.0)(react@19.3.0)
+      use-intl:
+        specifier: ^4.14.9
+        version: 4.14.9(@types/react@19.3.0)(react@19.3.0)
     devDependencies:
       '@biomejs/biome':
         specifier: ^2.5.15

@@ -52,7 +52,7 @@ class PaymentApiDirectory implements PaymentDirectory {
     public Map<UUID, Payment> find(Collection<UUID> orderIds) {
         var payable = paymentApi.findPayableOrderIds(orderIds);
         return paymentApi.find(orderIds).stream().collect(Collectors.toMap(PaymentSummary::orderId,
-                summary -> new Payment(Status.valueOf(summary.status().name()), summary.deadline(),
+                summary -> new Payment(toStatus(summary.status()), summary.deadline(),
                         payable.contains(summary.orderId()))));
     }
 
@@ -65,5 +65,22 @@ class PaymentApiDirectory implements PaymentDirectory {
     @Override
     public List<UUID> findExpiringOrderIds() {
         return paymentApi.findExpiringOrderIds();
+    }
+
+    /**
+     * 決済モジュールの支払の状態を、注文の型にする。
+     */
+    private static Status toStatus(PaymentSummary.Status status) {
+        return switch (status) {
+            case UNPAID -> Status.UNPAID;
+            case AUTHORIZED -> Status.AUTHORIZED;
+            case VOID_PENDING -> Status.VOID_PENDING;
+            case VOIDED -> Status.VOIDED;
+            case NOT_PAID -> Status.NOT_PAID;
+            case CAPTURED -> Status.CAPTURED;
+            case AUTHORIZATION_EXPIRED -> Status.AUTHORIZATION_EXPIRED;
+            case REFUND_PENDING -> Status.REFUND_PENDING;
+            case REFUNDED -> Status.REFUNDED;
+        };
     }
 }

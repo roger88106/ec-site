@@ -1,7 +1,9 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.api.admin.model.Cancellation;
+import com.ecsite.api.admin.model.CancellationKind;
 import com.ecsite.api.admin.model.CancellationRequest;
+import com.ecsite.api.admin.model.Carrier;
 import com.ecsite.api.admin.model.OrderActions;
 import com.ecsite.api.admin.model.OrderAmounts;
 import com.ecsite.api.admin.model.OrderAxisValue;
@@ -21,6 +23,7 @@ import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
+import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.quote.Amounts;
 import jakarta.annotation.Nullable;
@@ -86,7 +89,7 @@ class AdminOrderMapper {
         var shipment = view.shipment();
         if (payment != null) {
             detail.payment(new Payment()
-                    .status(PaymentStatus.fromValue(payment.status().name()))
+                    .status(toPaymentStatus(payment.status()))
                     .deadline(ApiDateTimes.toOffsetDateTime(payment.deadline()))
                     .authorizationDeadline(payment.authorizationDeadline() == null ? null
                             : ApiDateTimes.toOffsetDateTime(payment.authorizationDeadline()))
@@ -106,10 +109,40 @@ class AdminOrderMapper {
      */
     Shipment toShipment(ShippingDirectory.Shipment shipment) {
         return new Shipment()
-                .carrier(com.ecsite.api.admin.model.Carrier.fromValue(shipment.carrier().name()))
+                .carrier(toCarrier(shipment.carrier()))
                 .trackingNumber(shipment.trackingNumber())
-                .status(ShipmentStatus.fromValue(shipment.status().name()))
+                .status(toShipmentStatus(shipment.status()))
                 .shippedAt(ApiDateTimes.toOffsetDateTime(shipment.shippedAt()));
+    }
+
+    /**
+     * 絞り込みの注文の状態を、ドメインの型にする。
+     *
+     * @param status 注文の状態
+     * @return ドメインの注文の状態
+     */
+    com.ecsite.module.order.domain.order.OrderStatus toDomainStatus(OrderStatus status) {
+        return switch (status) {
+            case PENDING_PAYMENT -> com.ecsite.module.order.domain.order.OrderStatus.PENDING_PAYMENT;
+            case ACCEPTED -> com.ecsite.module.order.domain.order.OrderStatus.ACCEPTED;
+            case CANCELLATION_REQUESTED -> com.ecsite.module.order.domain.order.OrderStatus.CANCELLATION_REQUESTED;
+            case CANCELLED -> com.ecsite.module.order.domain.order.OrderStatus.CANCELLED;
+            case SHIPPED -> com.ecsite.module.order.domain.order.OrderStatus.SHIPPED;
+        };
+    }
+
+    /**
+     * 出荷の登録の配送業者を、ドメインの型にする。
+     *
+     * @param carrier 配送業者
+     * @return ドメインの配送業者
+     */
+    com.ecsite.module.order.domain.order.Carrier toDomainCarrier(Carrier carrier) {
+        return switch (carrier) {
+            case YAMATO -> com.ecsite.module.order.domain.order.Carrier.YAMATO;
+            case SAGAWA -> com.ecsite.module.order.domain.order.Carrier.SAGAWA;
+            case JAPAN_POST -> com.ecsite.module.order.domain.order.Carrier.JAPAN_POST;
+        };
     }
 
 // ============================== プライベートメソッド ==============================
@@ -128,10 +161,10 @@ class AdminOrderMapper {
                 .status(toStatus(view.status()))
                 .authorizationExpiring(isAuthorizationExpiring(view.status(), payment));
         if (payment != null) {
-            summary.paymentStatus(PaymentStatus.fromValue(payment.status().name()));
+            summary.paymentStatus(toPaymentStatus(payment.status()));
         }
         if (shipment != null) {
-            summary.shipmentStatus(ShipmentStatus.fromValue(shipment.status().name()));
+            summary.shipmentStatus(toShipmentStatus(shipment.status()));
         }
         return summary;
     }
@@ -197,7 +230,7 @@ class AdminOrderMapper {
         return new CancellationRequest()
                 .requestedAt(ApiDateTimes.toOffsetDateTime(request.requestedAt()))
                 .reason(request.reason())
-                .result(CancellationRequest.ResultEnum.fromValue(request.result().name()))
+                .result(toResult(request.result()))
                 .decidedAt(ApiDateTimes.toOffsetDateTime(request.decidedAt()))
                 .decidedBy(request.decidedBy() == null ? null : request.decidedBy().name());
     }
@@ -208,7 +241,7 @@ class AdminOrderMapper {
     private static Cancellation toCancellation(com.ecsite.module.order.domain.order.vo.Cancellation cancellation) {
         return new Cancellation()
                 .cancelledAt(ApiDateTimes.toOffsetDateTime(cancellation.cancelledAt()))
-                .kind(com.ecsite.api.admin.model.CancellationKind.valueOf(cancellation.kind().name()))
+                .kind(toKind(cancellation.kind()))
                 .reason(cancellation.reason())
                 .restocked(cancellation.restocked())
                 .cancelledBy(cancellation.cancelledBy() == null ? null : cancellation.cancelledBy().name());
@@ -236,6 +269,75 @@ class AdminOrderMapper {
      * 注文の状態。
      */
     private static OrderStatus toStatus(com.ecsite.module.order.domain.order.OrderStatus status) {
-        return OrderStatus.fromValue(status.name());
+        return switch (status) {
+            case PENDING_PAYMENT -> OrderStatus.PENDING_PAYMENT;
+            case ACCEPTED -> OrderStatus.ACCEPTED;
+            case CANCELLATION_REQUESTED -> OrderStatus.CANCELLATION_REQUESTED;
+            case CANCELLED -> OrderStatus.CANCELLED;
+            case SHIPPED -> OrderStatus.SHIPPED;
+        };
+    }
+
+    /**
+     * 支払の状態。
+     */
+    private static PaymentStatus toPaymentStatus(PaymentDirectory.Status status) {
+        return switch (status) {
+            case UNPAID -> PaymentStatus.UNPAID;
+            case AUTHORIZED -> PaymentStatus.AUTHORIZED;
+            case VOID_PENDING -> PaymentStatus.VOID_PENDING;
+            case VOIDED -> PaymentStatus.VOIDED;
+            case NOT_PAID -> PaymentStatus.NOT_PAID;
+            case CAPTURED -> PaymentStatus.CAPTURED;
+            case AUTHORIZATION_EXPIRED -> PaymentStatus.AUTHORIZATION_EXPIRED;
+            case REFUND_PENDING -> PaymentStatus.REFUND_PENDING;
+            case REFUNDED -> PaymentStatus.REFUNDED;
+        };
+    }
+
+    /**
+     * 配送業者。
+     */
+    private static Carrier toCarrier(com.ecsite.module.order.domain.order.Carrier carrier) {
+        return switch (carrier) {
+            case YAMATO -> Carrier.YAMATO;
+            case SAGAWA -> Carrier.SAGAWA;
+            case JAPAN_POST -> Carrier.JAPAN_POST;
+        };
+    }
+
+    /**
+     * 配送状態。
+     */
+    private static ShipmentStatus toShipmentStatus(ShippingDirectory.Status status) {
+        return switch (status) {
+            case SHIPPED -> ShipmentStatus.SHIPPED;
+            case IN_TRANSIT -> ShipmentStatus.IN_TRANSIT;
+            case DELIVERED -> ShipmentStatus.DELIVERED;
+            case RETURNED -> ShipmentStatus.RETURNED;
+        };
+    }
+
+    /**
+     * キャンセルの申請の結果。
+     */
+    private static CancellationRequest.ResultEnum toResult(
+            com.ecsite.module.order.domain.order.vo.CancellationRequest.Result result) {
+        return switch (result) {
+            case PENDING -> CancellationRequest.ResultEnum.PENDING;
+            case APPROVED -> CancellationRequest.ResultEnum.APPROVED;
+            case REJECTED -> CancellationRequest.ResultEnum.REJECTED;
+        };
+    }
+
+    /**
+     * キャンセルの種類。
+     */
+    private static CancellationKind toKind(com.ecsite.module.order.domain.order.CancellationKind kind) {
+        return switch (kind) {
+            case REQUEST_APPROVED -> CancellationKind.REQUEST_APPROVED;
+            case OPERATOR -> CancellationKind.OPERATOR;
+            case PAYMENT_EXPIRED -> CancellationKind.PAYMENT_EXPIRED;
+        };
     }
 }

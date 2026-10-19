@@ -355,7 +355,7 @@ public class Order extends AggregateRoot {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
         }
         changeStatus(OrderStatus.SHIPPED, now);
-        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, OrderShipped.Carrier.valueOf(carrier.name()),
+        registerEvent(OrderShipped.of(now, id, orderNumber.value(), email, toEventCarrier(carrier),
                 trackingNumber));
     }
 
@@ -419,7 +419,7 @@ public class Order extends AggregateRoot {
         status = OrderStatus.CANCELLED;
         registerEvent(OrderStatusChanged.of(cancellation.cancelledAt(), id, toEventStatus(from),
                 OrderStatusChanged.Status.CANCELLED,
-                OrderStatusChanged.CancellationKind.valueOf(cancellation.kind().name()), cancellation.restocked()));
+                toEventKind(cancellation.kind()), cancellation.restocked()));
     }
 
     /**
@@ -435,7 +435,35 @@ public class Order extends AggregateRoot {
      * 注文の状態を、イベントの状態にする。
      */
     private static OrderStatusChanged.Status toEventStatus(OrderStatus status) {
-        return OrderStatusChanged.Status.valueOf(status.name());
+        return switch (status) {
+            case PENDING_PAYMENT -> OrderStatusChanged.Status.PENDING_PAYMENT;
+            case ACCEPTED -> OrderStatusChanged.Status.ACCEPTED;
+            case CANCELLATION_REQUESTED -> OrderStatusChanged.Status.CANCELLATION_REQUESTED;
+            case CANCELLED -> OrderStatusChanged.Status.CANCELLED;
+            case SHIPPED -> OrderStatusChanged.Status.SHIPPED;
+        };
+    }
+
+    /**
+     * キャンセルの種類を、イベントの種類にする。
+     */
+    private static OrderStatusChanged.CancellationKind toEventKind(CancellationKind kind) {
+        return switch (kind) {
+            case REQUEST_APPROVED -> OrderStatusChanged.CancellationKind.REQUEST_APPROVED;
+            case OPERATOR -> OrderStatusChanged.CancellationKind.OPERATOR;
+            case PAYMENT_EXPIRED -> OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED;
+        };
+    }
+
+    /**
+     * 配送業者を、イベントの配送業者にする。
+     */
+    private static OrderShipped.Carrier toEventCarrier(Carrier carrier) {
+        return switch (carrier) {
+            case YAMATO -> OrderShipped.Carrier.YAMATO;
+            case SAGAWA -> OrderShipped.Carrier.SAGAWA;
+            case JAPAN_POST -> OrderShipped.Carrier.JAPAN_POST;
+        };
     }
 
     /**

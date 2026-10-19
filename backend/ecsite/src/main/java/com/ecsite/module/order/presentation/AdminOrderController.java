@@ -13,7 +13,6 @@ import com.ecsite.module.order.application.OrderCancellationService;
 import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.application.shipment.OrderShipmentService;
-import com.ecsite.module.order.domain.order.Carrier;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -72,7 +71,7 @@ class AdminOrderController implements OrderApi {
                                                        LocalDate orderedTo, Boolean authorizationExpiring, Boolean returned,
                                                        Integer page, Integer size) {
         var result = orderQueryService.list(orderNumber,
-                status == null ? null : com.ecsite.module.order.domain.order.OrderStatus.valueOf(status.getValue()),
+                status == null ? null : mapper.toDomainStatus(status),
                 orderedFrom, orderedTo, Boolean.TRUE.equals(authorizationExpiring), Boolean.TRUE.equals(returned),
                 PageRequest.of(page, size));
         var orderIds = result.items().stream().map(OrderQueryRepository.OrderSummaryView::id).toList();
@@ -100,7 +99,7 @@ class AdminOrderController implements OrderApi {
      */
     @Override
     public ResponseEntity<Shipment> shipOrder(UUID orderId, ShipOrderRequest request) {
-        var shipment = orderShipmentService.ship(orderId, Carrier.valueOf(request.getCarrier().getValue()),
+        var shipment = orderShipmentService.ship(orderId, mapper.toDomainCarrier(request.getCarrier()),
                 request.getTrackingNumber());
         return ResponseEntity.status(HttpStatus.CREATED).body(mapper.toShipment(shipment));
     }

@@ -1,6 +1,8 @@
 package com.ecsite.architecture;
 
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaConstructorCall;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
@@ -48,6 +50,17 @@ class ModuleRoleTest {
                     .allowEmptyShould(true);
             rule.check(classes);
         }
+    }
+
+    @Test
+    @DisplayName("presentation は、生成したモデルを引数なしのコンストラクターと項目名のメソッドで組み立てる（位置で並べるコンストラクターを呼ばない）")
+    void presentationBuildsGeneratedModelsWithFluentSetters() {
+        var positional = DescribedPredicate.<JavaConstructorCall>describe("生成したモデルの引数を取るコンストラクター",
+                call -> call.getTargetOwner().getPackageName().startsWith("com.ecsite.api")
+                        && !call.getTarget().getRawParameterTypes().isEmpty());
+        ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module..presentation..")
+                .should().callConstructorWhere(positional);
+        rule.check(importModules());
     }
 
     @Test

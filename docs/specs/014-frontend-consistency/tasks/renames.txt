@@ -4,3 +4,6 @@
 # 本番のファイルを移す・名前を変えるタスクで、そのタスクの番号のコメントの下に足す。
 #
 #   node scripts/ci/review/test-diff.mjs 17744d8 docs/specs/014-frontend-consistency/tasks/renames.txt
+
+# T014-02-06
+@/lib/uuid=@ec-site/shared/lib/patterns

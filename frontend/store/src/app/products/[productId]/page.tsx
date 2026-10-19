@@ -1,10 +1,10 @@
+import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
 import { getApi, UNCACHED } from '@/api/client'
 import { unwrap } from '@/api/result'
 import { PriceText } from '@/components/PriceText'
 import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
-import { isUuid } from '@/lib/uuid'
 
 /**
  * 商品を取得する。表示されない商品・存在しない商品・形の違う ID は、どれも「見つかりません」にする。<br />

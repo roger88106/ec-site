@@ -1,3 +1,4 @@
+import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
@@ -9,7 +10,6 @@ import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import { RemainingTime } from '@/features/checkout/components/RemainingTime'
 import { formatYen } from '@/lib/orderDisplay'
-import { isUuid } from '@/lib/uuid'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {

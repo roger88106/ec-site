@@ -1,4 +1,4 @@
-import { isUuid } from '@/lib/uuid'
+import { isUuid } from '@ec-site/shared/lib/patterns'
 
 /** カートの有効期限（最後の変更から 30 日）と同じ、Cookie の有効期限（秒） */
 const MAX_AGE_SECONDS = 30 * 24 * 60 * 60

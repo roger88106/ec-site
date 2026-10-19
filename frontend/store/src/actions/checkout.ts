@@ -2,10 +2,9 @@
 
 import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { redirectIfUnauthenticated, redirectOnSuccess } from '@/actions/memberAction'
 import { withActionResult } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
-import { redirectToLogin } from '@/auth'
 import { type ActionResult, toFailure } from '@/lib/actionResult'
 import { readInt, readString } from '@/lib/server/formData'
 
@@ -20,7 +19,7 @@ const TOTAL_AMOUNT_CHANGED = 'TOTAL_AMOUNT_CHANGED'
  */
 export async function placeOrder(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const checkoutId = readString(formData, 'checkoutId')
-  const orderId = await withActionResult(async () => {
+  return redirectOnSuccess(async () => {
     const api = await getMemberApi()
     const { data, error, response } = await api.POST('/checkouts/{checkoutId}/order', {
       params: { path: { checkoutId } },
@@ -36,9 +35,7 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
         expectedTotal: readInt(formData, 'expectedTotal') ?? Number.NaN,
       },
     })
-    if (response.status === 401) {
-      await redirectToLogin()
-    }
+    await redirectIfUnauthenticated(response)
     if (!data) {
       const failure = toFailure(response.status, error)
       if (failure.errorCode === TOTAL_AMOUNT_CHANGED) {
@@ -46,14 +43,10 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
       }
       return failure
     }
-    return data.id
+    const pageUrl = await paymentPageUrl(data.id)
+    // 支払の画面は外部の URL
+    return pageUrl === null ? `/orders/${data.id}` : (pageUrl as Route)
   })
-  if (typeof orderId !== 'string') {
-    return orderId
-  }
-  const pageUrl = await paymentPageUrl(orderId)
-  // redirect は例外で移動を知らせるので、包みの外で呼ぶ。支払の画面は外部の URL
-  redirect(pageUrl === null ? `/orders/${orderId}` : (pageUrl as Route))
 }
 
 // ============================== プライベート ==============================

@@ -1,7 +1,7 @@
 'use server'
 
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { redirectIfUnauthenticated, redirectOnSuccess } from '@/actions/memberAction'
 import { withActionResult } from '@/actions/withActionResult'
 import { currentCartChoice, memberCartId } from '@/api/cart'
 import { deleteCartMergeNotice, writeCartId } from '@/api/cartCookie'
@@ -81,7 +81,7 @@ export async function removeCartItem(_previous: ActionResult | null, formData: F
  * 引き当てられなければ（在庫不足）、カートを表示し直して、足りない品目を示す。
  */
 export async function startCheckout(_previous: ActionResult | null, _formData: FormData): Promise<ActionResult> {
-  const checkoutId = await withActionResult(async () => {
+  return redirectOnSuccess(async () => {
     if ((await currentCartChoice()).kind !== 'member') {
       await redirectToLogin('/cart')
     }
@@ -90,20 +90,13 @@ export async function startCheckout(_previous: ActionResult | null, _formData: F
     const { data, error, response } = await api.POST('/carts/{cartId}/checkouts', {
       params: { path: { cartId } },
     })
-    if (response.status === 401) {
-      await redirectToLogin('/cart')
-    }
+    await redirectIfUnauthenticated(response, '/cart')
     if (!data) {
       revalidatePath('/cart')
       return toFailure(response.status, error)
     }
-    return data.id
+    return `/checkout/${data.id}`
   })
-  if (typeof checkoutId !== 'string') {
-    return checkoutId
-  }
-  // redirect は例外で移動を知らせるので、包みの外で呼ぶ
-  redirect(`/checkout/${checkoutId}`)
 }
 
 /**
@@ -157,9 +150,7 @@ async function updateCart(request: CartRequest): Promise<ActionResult> {
 async function updateMemberCart(request: CartRequest): Promise<ActionResult> {
   const cartId = await memberCartId()
   const { error, response } = await request(await getMemberApi(), cartId)
-  if (response.status === 401) {
-    await redirectToLogin()
-  }
+  await redirectIfUnauthenticated(response)
   revalidatePath('/cart')
   return response.ok ? SUCCESS : toFailure(response.status, error)
 }

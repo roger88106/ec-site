@@ -97,6 +97,9 @@ Next.js の `typedRoutes` で、画面の置き場所と照らす。クエリ付
 
 - 変更（カートに入れる、数量の変更・削除、注文手続きに進む、注文、支払う、キャンセルの申請）は、`actions/` のサーバーアクションから呼ぶ。
 - 成功したら、表示し直す画面を `revalidatePath` で知らせるか、次の画面へ `redirect` する。失敗は例外にせず `ActionResult` で返す（401 はログイン画面へ移す）。
+- 会員の API の 401 と成功の後の移動は、`actions/memberAction.ts` の補助で書く。
+  - `redirectIfUnauthenticated(response, returnTo?)`：応答が 401 ならログイン画面へ移す。戻り先を渡さなければ、いまの画面に戻る。
+  - `redirectOnSuccess(work)`：`withActionResult` で包み、処理が返した移動先へ移る。失敗の結果はそのまま返す（`redirect` を包みの外で呼ぶ形を 1 か所にする）。
 - フォームは `useActionState` で結果を受け、送信中はボタンを押せなくする（二重送信の防止。API も、同じ注文手続きの再送には作成済みの注文を返す）。
 
 ### 4.4 カート ID の Cookie

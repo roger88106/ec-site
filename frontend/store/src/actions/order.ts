@@ -2,10 +2,9 @@
 
 import type { Route } from 'next'
 import { revalidatePath } from 'next/cache'
-import { redirect } from 'next/navigation'
+import { redirectIfUnauthenticated, redirectOnSuccess } from '@/actions/memberAction'
 import { withActionResult } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
-import { redirectToLogin } from '@/auth'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { readString } from '@/lib/server/formData'
 
@@ -22,9 +21,7 @@ export async function requestCancellation(_previous: ActionResult | null, formDa
       params: { path: { orderId } },
       body: { reason: reason === '' ? null : reason },
     })
-    if (response.status === 401) {
-      await redirectToLogin()
-    }
+    await redirectIfUnauthenticated(response)
     revalidatePath(`/orders/${orderId}`)
     return response.ok ? SUCCESS : toFailure(response.status, error)
   })
@@ -37,23 +34,17 @@ export async function requestCancellation(_previous: ActionResult | null, formDa
  */
 export async function payOrder(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const orderId = readString(formData, 'orderId')
-  const url = await withActionResult(async () => {
+  return redirectOnSuccess(async () => {
     const api = await getMemberApi()
     const { data, error, response } = await api.POST('/orders/{orderId}/payment-page', {
       params: { path: { orderId } },
     })
-    if (response.status === 401) {
-      await redirectToLogin()
-    }
+    await redirectIfUnauthenticated(response)
     if (!data) {
       revalidatePath(`/orders/${orderId}`)
       return toFailure(response.status, error)
     }
-    return data.url
+    // 決済サービスの画面（外部の URL）
+    return data.url as Route
   })
-  if (typeof url !== 'string') {
-    return url
-  }
-  // 決済サービスの画面（外部の URL）。redirect は例外で移動を知らせるので、包みの外で呼ぶ
-  redirect(url as Route)
 }

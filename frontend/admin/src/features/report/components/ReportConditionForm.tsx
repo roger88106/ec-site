@@ -4,6 +4,7 @@ import { Controller, useForm } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { granularityValues, reportBasisValues } from '@/api/generated/admin'
+import { parameters } from '@/api/generated/constraints'
 import type { Granularity, ReportBasis } from '@/api/types'
 import { LabeledCheckbox } from '@/components/LabeledCheckbox'
 import { OptionSelect } from '@/components/OptionSelect'
@@ -14,7 +15,7 @@ import type { ReportCondition } from '@/features/report/reportCondition'
 import { translate } from '@/i18n/translate'
 
 /** 商品の選択肢に出す商品の数（商品の一覧の API の 1 ページの上限） */
-const PRODUCT_LIMIT = 100
+const PRODUCT_LIMIT = parameters.listProducts.size.maximum
 
 /**
  * レポートの条件の入力（管理画面の構成 第 3 節）。「表示する」で URL に反映する。<br />

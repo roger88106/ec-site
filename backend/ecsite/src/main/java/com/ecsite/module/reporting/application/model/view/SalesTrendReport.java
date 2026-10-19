@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.application;
+package com.ecsite.module.reporting.application.model.view;
 
 import com.ecsite.module.reporting.domain.TrendPoint;
 

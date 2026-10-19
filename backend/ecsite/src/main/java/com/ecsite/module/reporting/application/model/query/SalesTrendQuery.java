@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.application;
+package com.ecsite.module.reporting.application.model.query;
 
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.Granularity;

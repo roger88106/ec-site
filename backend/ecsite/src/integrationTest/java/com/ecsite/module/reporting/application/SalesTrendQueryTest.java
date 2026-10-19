@@ -3,6 +3,7 @@ package com.ecsite.module.reporting.application;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.ReportTestData;
+import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.Granularity;
 import com.ecsite.module.reporting.domain.ReportPeriod;

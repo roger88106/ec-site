@@ -7,6 +7,8 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.ReportTestData;
+import com.ecsite.module.reporting.application.model.query.VariantSalesQuery;
+import com.ecsite.module.reporting.application.model.view.VariantSales;
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.ReportPeriod;
 import org.jooq.DSLContext;

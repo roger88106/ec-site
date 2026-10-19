@@ -19,3 +19,15 @@ com.ecsite.module.order.domain.order.CancellationRequest=com.ecsite.module.order
 
 # T013-05-09
 com.ecsite.module.shipping.application.ShippingProperties.Carrier=com.ecsite.module.shipping.application.ShippingProperties.CarrierTracking
+
+# T013-06-01
+com.ecsite.module.reporting.application.CustomerBreakdownQuery=com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuery
+com.ecsite.module.reporting.application.SalesTrendQuery=com.ecsite.module.reporting.application.model.query.SalesTrendQuery
+com.ecsite.module.reporting.application.VariantSalesQuery=com.ecsite.module.reporting.application.model.query.VariantSalesQuery
+com.ecsite.module.reporting.application.AgeGroupSales=com.ecsite.module.reporting.application.model.view.AgeGroupSales
+com.ecsite.module.reporting.application.CustomerBreakdownReport=com.ecsite.module.reporting.application.model.view.CustomerBreakdownReport
+com.ecsite.module.reporting.application.GenderSales=com.ecsite.module.reporting.application.model.view.GenderSales
+com.ecsite.module.reporting.application.PrefectureSales=com.ecsite.module.reporting.application.model.view.PrefectureSales
+com.ecsite.module.reporting.application.SalesTrendReport=com.ecsite.module.reporting.application.model.view.SalesTrendReport
+com.ecsite.module.reporting.application.VariantSales=com.ecsite.module.reporting.application.model.view.VariantSales
+com.ecsite.module.reporting.application.VariantSalesReport=com.ecsite.module.reporting.application.model.view.VariantSalesReport

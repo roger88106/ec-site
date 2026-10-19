@@ -1,8 +1,13 @@
 package com.ecsite.module.reporting.application;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.reporting.application.port.ReportQueryRepository;
+import com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuery;
+import com.ecsite.module.reporting.application.model.view.AgeGroupSales;
+import com.ecsite.module.reporting.application.model.view.CustomerBreakdownReport;
+import com.ecsite.module.reporting.application.model.view.GenderSales;
+import com.ecsite.module.reporting.application.model.view.PrefectureSales;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository.SegmentTotal;
+import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.AgeGroup;
 import com.ecsite.module.reporting.domain.ReportGender;
 import lombok.RequiredArgsConstructor;

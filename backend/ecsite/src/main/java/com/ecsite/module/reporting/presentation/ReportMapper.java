@@ -49,7 +49,7 @@ class ReportMapper {
      * @param report 売上の推移
      * @return 売上の推移のレスポンス
      */
-    SalesTrendReport toSalesTrendReport(com.ecsite.module.reporting.application.SalesTrendReport report) {
+    SalesTrendReport toSalesTrendReport(com.ecsite.module.reporting.application.model.view.SalesTrendReport report) {
         return new SalesTrendReport(report.points().stream().map(ReportMapper::toPoint).toList(), report.shippingExcluded());
     }
 
@@ -59,7 +59,7 @@ class ReportMapper {
      * @param report バリエーションの売れ行き
      * @return バリエーションの売れ行きのレスポンス
      */
-    VariantSalesReport toVariantSalesReport(com.ecsite.module.reporting.application.VariantSalesReport report) {
+    VariantSalesReport toVariantSalesReport(com.ecsite.module.reporting.application.model.view.VariantSalesReport report) {
         var variants = report.variants().stream()
                 .map(variant -> new VariantSales(
                         variant.variantId(),
@@ -77,7 +77,7 @@ class ReportMapper {
      * @param report 地域・年齢層・性別
      * @return 地域・年齢層・性別のレスポンス
      */
-    CustomerBreakdownReport toCustomerBreakdownReport(com.ecsite.module.reporting.application.CustomerBreakdownReport report) {
+    CustomerBreakdownReport toCustomerBreakdownReport(com.ecsite.module.reporting.application.model.view.CustomerBreakdownReport report) {
         var prefectures = report.prefectures().stream()
                 .map(sales -> new PrefectureSales(sales.amount().yen(), sales.orders()).prefectureCode(sales.prefectureCode()))
                 .toList();

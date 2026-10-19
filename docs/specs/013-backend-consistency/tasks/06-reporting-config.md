@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [ ] **T013-06-01** reporting の application の直下の query と report の record 10 個を、`application/model/query/`・`application/model/view/` に移す。`renames.txt` に対応を足す。
+- [x] **T013-06-01** reporting の application の直下の query と report の record 10 個を、`application/model/query/`・`application/model/view/` に移す。`renames.txt` に対応を足す。
 - [ ] **T013-06-02** reporting の domain（15）を分けない理由を、バックエンドの書き方 第 1.4 節の表に足す。reporting の設計書の「構成」を、今のパッケージ（区切りと年齢層は domain にある）に合わせる。
 - [ ] **T013-06-03** reporting の mapper と Controller の生成したモデルを、項目名のメソッドで組み立てる。
 - [ ] **T013-06-04** テストだけが使う、都道府県のコードの一覧に、テスト用であることを Javadoc に書く（DC-141。016 で扱いを決める）。

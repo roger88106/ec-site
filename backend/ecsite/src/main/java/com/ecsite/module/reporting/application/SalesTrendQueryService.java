@@ -1,5 +1,7 @@
 package com.ecsite.module.reporting.application;
 
+import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
+import com.ecsite.module.reporting.application.model.view.SalesTrendReport;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.SalesTrend;
 import lombok.RequiredArgsConstructor;

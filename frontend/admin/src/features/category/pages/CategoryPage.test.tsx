@@ -15,9 +15,24 @@ type CreateCategoryRequest = components['schemas']['CreateCategoryRequest']
  * @param name     名称
  * @param depth    階層（最上位が 1）
  * @param children 子
+ * @param addChild 子を足せるか（API が返す旗。既定はいちばん深い 3 階層目だけ偽）
  */
-function category(id: string, name: string, depth: number, children: CategoryNode[] = []): CategoryNode {
-  return { id: `00000000-0000-0000-0000-000000000${id}`, name, depth, displayOrder: 0, version: 3, children }
+function category(
+  id: string,
+  name: string,
+  depth: number,
+  children: CategoryNode[] = [],
+  addChild = depth < 3,
+): CategoryNode {
+  return {
+    id: `00000000-0000-0000-0000-000000000${id}`,
+    name,
+    depth,
+    displayOrder: 0,
+    version: 3,
+    children,
+    actions: { addChild },
+  }
 }
 
 /** 衣類 > トップス > T シャツ と、雑貨 */
@@ -102,12 +117,20 @@ describe('カテゴリの画面', () => {
     expect(requests[0]?.body).toEqual({ name: 'ボトムス', parentId: CLOTHING.id })
   })
 
-  it('AC-9 3 階層目のカテゴリには、子を追加する操作を出さない', async () => {
+  it('AC-9、270 子を足せないカテゴリ（API の旗が偽）には、子を追加する操作を出さない', async () => {
     serveCategories([CLOTHING])
     renderApp('/categories')
 
     expect((await row('トップス')).getByRole('button', { name: '子を追加' })).toBeInTheDocument()
     expect((await row('T シャツ')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
+  })
+
+  it('AC-270 子を追加する操作は、階層の深さでなく API の旗で出し分ける', async () => {
+    serveCategories([category('301', '深い', 3, [], true), category('302', '浅い', 1, [], false)])
+    renderApp('/categories')
+
+    expect((await row('深い')).getByRole('button', { name: '子を追加' })).toBeInTheDocument()
+    expect((await row('浅い')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
   })
 
   it('AC-10 同じ親の下に同じ名称があれば、ダイアログにエラーを出し、入力を残す', async () => {

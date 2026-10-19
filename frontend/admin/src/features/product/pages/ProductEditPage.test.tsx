@@ -112,12 +112,18 @@ describe('商品の編集', () => {
     expect(state.calls).toEqual(['DELETE version=3'])
   })
 
-  it('AC-33 C 側に表示されたことのある商品には削除のボタンがなく、販売終了を案内する', async () => {
+  it('AC-33、269 削除できない商品には削除のボタンがなく、応答の削除できない理由（C 側に表示された）で販売終了を案内する', async () => {
     serveProduct(
       productDetail({
         status: 'PUBLISHED',
         firstShownAt: '2026-10-01T00:00:00+09:00',
-        actions: productActions({ publish: false, unpublish: true, delete: false, deleteVariants: false }),
+        actions: productActions({
+          publish: false,
+          unpublish: true,
+          delete: false,
+          deleteVariants: false,
+          deleteBlockedReason: 'ALREADY_SHOWN',
+        }),
       }),
     )
     renderApp(URL)
@@ -128,6 +134,14 @@ describe('商品の編集', () => {
       ),
     ).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: '削除' })).not.toBeInTheDocument()
+  })
+
+  it('AC-269 削除できない理由が応答になければ、理由を推し量って出さない', async () => {
+    serveProduct(productDetail({ actions: productActions({ delete: false }) }))
+    renderApp(URL)
+
+    expect(await screen.findByRole('button', { name: '販売終了にする' })).toBeInTheDocument()
+    expect(screen.queryByText(/店舗に表示されたことがあるため/)).not.toBeInTheDocument()
   })
   it('AC-24 軸を持たない商品は、バリアントがなければ追加の欄を出し、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))

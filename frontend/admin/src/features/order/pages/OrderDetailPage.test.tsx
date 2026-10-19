@@ -462,7 +462,7 @@ describe('返送の注文のキャンセル', () => {
   /** 返送された、出荷済みの注文 */
   const RETURNED = orderDetail({
     status: 'SHIPPED',
-    actions: orderActions({ cancel: true }),
+    actions: orderActions({ cancel: true, cancelAsksRestock: true }),
     payment: { status: 'CAPTURED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
     shipment: {
       carrier: 'YAMATO',
@@ -505,7 +505,18 @@ describe('返送の注文のキャンセル', () => {
     expect(bodies).toEqual([{ reason: '受取拒否', restock }])
   })
 
-  it('出荷前の注文のキャンセルでは、在庫に戻すかを聞かない', async () => {
+  it('AC-268 在庫に戻すかは API の旗で聞く。出荷済みの注文でも、旗が偽なら聞かない', async () => {
+    serveOrder({ ...RETURNED, actions: orderActions({ cancel: true, cancelAsksRestock: false }) })
+    const { user } = renderApp(URL)
+    await shownStatus('出荷済み')
+
+    await user.click(screen.getByRole('button', { name: 'キャンセルする' }))
+
+    const dialog = within(await screen.findByRole('dialog'))
+    expect(dialog.queryByRole('radio')).not.toBeInTheDocument()
+  })
+
+  it('AC-268 出荷前の注文のキャンセルでは、在庫に戻すかを聞かない（旗が偽）', async () => {
     serveOrder(orderDetail())
     const { user } = renderApp(URL)
     await shownStatus('受付')

@@ -40,6 +40,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | script | 確かめること | 失敗したとき | 除外の書き方 |
 |--------|--------------|--------------|--------------|
 | `ac-check` | 機能の spec のすべての AC が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ出る（[テストの書き方](../testing/writing.md) 第 2.1 節）※1 | テストを足すか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く | `ac-exclusions.json` に AC と理由 |
+| `compose-ports` | compose のすべての `ports` が、待ち受けるアドレスを `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始める（既定でこのマシンだけで待ち受け、1 つの変数で替えられる。[開発環境の起動](setup.md) 第 2 節） | ポートの前に `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` を書く | なし |
 | `doc-refs` | Markdown のリンクと、`<文書の名前> 第 N 節` の参照が切れていない | リンクか節の番号を直す（skill `docs`） | なし |
 | `doc-terms` | 文書に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も出る | `doc-terms.json` |
 | `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで引く。`--count` で数だけを出す | `hardcoded-text-exclusions.json` にファイルと理由 |

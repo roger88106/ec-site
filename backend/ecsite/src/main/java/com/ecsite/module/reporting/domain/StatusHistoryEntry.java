@@ -25,6 +25,9 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
      * @return 出荷を表す変化か（注文の状態か配送状態が出荷済みになった）
      */
     public boolean marksShipment() {
-        throw new UnsupportedOperationException();
+        return switch (kind) {
+            case ORDER_STATUS -> ReportOrderStatus.valueOf(to) == ReportOrderStatus.SHIPPED;
+            case DELIVERY_STATUS -> DeliveryStatus.valueOf(to) == DeliveryStatus.SHIPPED;
+        };
     }
 }

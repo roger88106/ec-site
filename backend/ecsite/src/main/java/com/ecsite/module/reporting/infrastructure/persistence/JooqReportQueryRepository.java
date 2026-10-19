@@ -137,7 +137,8 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      * 数える注文：売上の数え方の状態で、数える日が期間に入るもの
      */
     private static Condition counted(ReportPeriod period, Basis basis) {
-        return SALES_ORDER.STATUS.in(basis.countedStatuses()).and(dayOf(basis).between(period.from(), period.to()));
+        return SALES_ORDER.STATUS.in(basis.countedStatuses().stream().map(Enum::name).toList())
+                .and(dayOf(basis).between(period.from(), period.to()));
     }
 
     /**

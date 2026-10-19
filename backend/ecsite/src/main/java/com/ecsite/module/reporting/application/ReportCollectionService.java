@@ -91,7 +91,7 @@ public class ReportCollectionService {
      */
     private static Instant shippedAt(List<StatusHistoryEntry> history) {
         return history.stream()
-                .filter(entry -> "SHIPPED".equals(entry.to()))
+                .filter(StatusHistoryEntry::marksShipment)
                 .map(StatusHistoryEntry::occurredAt)
                 .min(Comparator.naturalOrder())
                 .orElse(null);

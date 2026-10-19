@@ -10,30 +10,30 @@ public enum Basis {
     /**
      * 注文基準：受付・キャンセル申請中・出荷済みの注文を、注文日で数える
      */
-    ORDER(List.of("ACCEPTED", "CANCELLATION_REQUESTED", "SHIPPED")),
+    ORDER(List.of(ReportOrderStatus.ACCEPTED, ReportOrderStatus.CANCELLATION_REQUESTED, ReportOrderStatus.SHIPPED)),
 
     /**
      * 出荷基準：出荷済みの注文を、出荷日で数える（出荷の後のキャンセルは返送の返金なので、状態が出荷済みでないものは除く）
      */
-    SHIPMENT(List.of("SHIPPED")),
+    SHIPMENT(List.of(ReportOrderStatus.SHIPPED)),
     ;
 
     /**
      * 数える注文の状態
      */
-    private final List<String> countedStatuses;
+    private final List<ReportOrderStatus> countedStatuses;
 
     /**
      * @param countedStatuses 数える注文の状態
      */
-    Basis(List<String> countedStatuses) {
+    Basis(List<ReportOrderStatus> countedStatuses) {
         this.countedStatuses = countedStatuses;
     }
 
     /**
-     * @return 数える注文の状態（注文の状態の名前）
+     * @return 数える注文の状態
      */
-    public List<String> countedStatuses() {
+    public List<ReportOrderStatus> countedStatuses() {
         return countedStatuses;
     }
 
@@ -42,6 +42,6 @@ public enum Basis {
      * @return その状態の注文を数えるか
      */
     public boolean counts(ReportOrderStatus status) {
-        throw new UnsupportedOperationException();
+        return countedStatuses.contains(status);
     }
 }

@@ -36,6 +36,6 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [010](docs/specs/010-sales-report) | 機能 | 売上の簡易レポート | 完了。[段階 1〜6](docs/specs/010-sales-report/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/010-sales-report/tasks/06-review.md) |
 | [011](docs/specs/011-dev-foundation) | 整理 | 開発の基盤の整理 | 完了。[段階 1〜7](docs/specs/011-dev-foundation/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/011-dev-foundation/tasks/07-review.md) |
 | [012](docs/specs/012-test-safety-net) | 整理 | テストの安全網 | 完了。[段階 1〜8](docs/specs/012-test-safety-net/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/012-test-safety-net/tasks/08-review.md) |
-| [013](docs/specs/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） | [段階 1〜5](docs/specs/013-backend-consistency/tasks/) を終えた（規則の文書、テストの差分の検査、共通の補助、catalog・tax・inventory、cart・media・storefront、order、payment・shipping・notification・member）。段階 6 の途中 |
+| [013](docs/specs/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） | [段階 1〜6](docs/specs/013-backend-consistency/tasks/) を終えた（規則の文書、テストの差分の検査、共通の補助、catalog・tax・inventory、cart・media・storefront、order、payment・shipping・notification・member、reporting・config・ArchUnit）。次は段階 7（見直し） |
 
 MVP を完成させるまでの spec の順と、MVP の後に回した決定は [MVP の完成までの一覧](docs/specs/mvp.md) にある。

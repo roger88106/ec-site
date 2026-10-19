@@ -1,4 +1,4 @@
-import { axisValuesLabel, formatDateTime, formatPostalCode, formatYen } from '@ec-site/shared/lib/format'
+import { axisValuesLabel, formatDateTime, formatYen } from '@ec-site/shared/lib/format'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -12,6 +12,7 @@ import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
+import { ShippingAddressDetails } from '@/features/order/components/ShippingAddressDetails'
 import { carrierLabel } from '@/features/order/labels'
 import { cancellationState, paymentState } from '@/features/order/orderState'
 
@@ -45,7 +46,6 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
   ])
   const order = await unwrapMember(orderResult)
   const shop = unwrap(shopResult)
-  const address = order.shippingAddress
   const cancellation = cancellationState(order)
 
   return (
@@ -119,20 +119,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
 
       <section className="space-y-3">
         <h2 className="font-semibold">{t('shippingAddress') /* お届け先 */}</h2>
-        <address className="space-y-1 text-sm not-italic">
-          <p>{t('addressName', { name: address.name }) /* 宛名 */}</p>
-          <p>
-            {
-              tCommon('order.postalAddress', {
-                postalCode: formatPostalCode(address.postalCode),
-                prefecture: address.prefecture,
-              }) /* 郵便番号と都道府県 */
-            }
-            {address.address}
-          </p>
-          <p>{t('phone', { phone: address.phone }) /* 電話番号 */}</p>
-          <p>{t('email', { email: order.email }) /* メールアドレス */}</p>
-        </address>
+        <ShippingAddressDetails address={order.shippingAddress} email={order.email} />
       </section>
 
       {/* 支払待ちと出荷済みの注文は、申請できず、キャンセルもされていない */}

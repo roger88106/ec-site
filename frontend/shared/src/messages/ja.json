@@ -37,7 +37,7 @@
     "order": {
       "orderNumber": "注文番号",
       "orderedAt": "注文日時",
-      "postalAddress": "〒{postalCode} {prefecture}",
+      "postalAddress": "〒{postalCode} {prefecture}{municipality}{address}",
       "carrier": "配送業者",
       "trackingNumber": "送り状番号"
     },

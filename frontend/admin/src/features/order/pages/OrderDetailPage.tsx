@@ -104,10 +104,11 @@ export function OrderDetailPage() {
                     {
                       tCommon('order.postalAddress', {
                         postalCode: formatPostalCode(order.shippingAddress.postalCode),
-                        prefecture: order.shippingAddress.prefecture,
-                      }) /* 郵便番号と都道府県 */
+                        prefecture: order.shippingAddress.prefectureName,
+                        municipality: order.shippingAddress.municipalityName,
+                        address: order.shippingAddress.address,
+                      }) /* 郵便番号と住所（都道府県名・市区町村名・住所の順） */
                     }
-                    {order.shippingAddress.address}
                   </dd>
                   <dt className="text-muted-foreground">{t('phone') /* 電話番号 */}</dt>
                   <dd className="tabular-nums">{order.shippingAddress.phone}</dd>

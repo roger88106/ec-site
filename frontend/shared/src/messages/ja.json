@@ -1,5 +1,6 @@
 {
   "common": {
+    "siteName": "EC Site",
     "pagination": {
       "total": "全 {totalItems} 件",
       "summary": "全 {totalItems} 件　{page} / {totalPages} ページ",

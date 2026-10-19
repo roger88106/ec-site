@@ -35,7 +35,7 @@
   },
   "app": {
     "layout": {
-      "description": "EC Site の店舗"
+      "description": "{siteName} の店舗"
     },
     "home": {
       "categories": "カテゴリ",

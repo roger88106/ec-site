@@ -13,9 +13,11 @@ const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 /** ブラウザのタブの題名（画面ごとの題名の後ろに店名を付ける）と、店舗の説明 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('app.layout')
+  const tCommon = await getTranslations('common')
+  const siteName = tCommon('siteName') // 店名
   return {
-    title: { default: 'EC Site', template: '%s | EC Site' },
-    description: t('description'), // 店舗の説明
+    title: { default: siteName, template: `%s | ${siteName}` },
+    description: t('description', { siteName }), // 店舗の説明
   }
 }
 

@@ -21,7 +21,7 @@ export async function SiteHeader() {
     <header className="border-b">
       <div className="mx-auto flex h-14 w-full max-w-6xl items-center gap-6 px-4">
         <Link className="font-heading font-semibold text-lg" href="/">
-          EC Site
+          {tCommon('siteName') /* 店名 */}
         </Link>
         <nav className="text-sm">
           <Link className="hover:underline" href="/products">

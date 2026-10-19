@@ -1,7 +1,7 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { useTranslations } from 'use-intl'
 import type { Cancellation, CancellationKind, CancellationRequest } from '@/api/types'
 import { DateTime } from '@/components/DateTime'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { cancellationRequestResultLabel } from '@/features/order/order'
 
 /** キャンセルのきっかけの文言のキー */

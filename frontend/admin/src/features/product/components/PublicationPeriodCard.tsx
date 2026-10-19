@@ -1,11 +1,11 @@
 import { Button } from '@ec-site/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Controller } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { DateTimeInput } from '@/components/DateTimeInput'
 import { ErrorMessage } from '@/components/ErrorMessage'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldLabel } from '@/components/ui/field'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
 

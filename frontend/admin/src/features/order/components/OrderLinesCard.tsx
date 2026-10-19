@@ -1,6 +1,6 @@
-import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { useTranslations } from 'use-intl'
 import type { OrderAmounts, OrderLine } from '@/api/types'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { taxLabel } from '@/features/order/order'
 import { formatYen } from '@/lib/format'

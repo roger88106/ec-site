@@ -1,6 +1,5 @@
 import { Alert, AlertDescription } from '@ec-site/shared/ui/alert'
 import { Button } from '@ec-site/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { useMutation } from '@tanstack/react-query'
 import { ArrowLeftIcon, ArrowRightIcon } from 'lucide-react'
 import { useRef, useState } from 'react'
@@ -12,6 +11,7 @@ import { useApiMutation } from '@/api/useApiMutation'
 import { useMutationGroup } from '@/api/useMutationGroup'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import {
   IMAGE_ACCEPT,
   ImageUploadError,

@@ -1,5 +1,4 @@
 import { Button } from '@ec-site/shared/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@ec-site/shared/ui/card'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
@@ -12,6 +11,7 @@ import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { DateTime } from '@/components/DateTime'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { OptionSelect } from '@/components/OptionSelect'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { carrierLabel, shipmentStatusLabel } from '@/lib/labels'
 

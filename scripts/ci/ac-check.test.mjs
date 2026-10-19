@@ -1,7 +1,7 @@
 // ac-check.mjs のテスト（node --test "scripts/ci/*.test.mjs"）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { check, extractTestNames, parseAcRefs, parseSpecAcs } from './ac-check.mjs'
+import { check, extractTestNames, isStrict, parseAcRefs, parseSpecAcs } from './ac-check.mjs'
 
 describe('spec の AC の取り出し', () => {
   test('AC の定義の行（- **AC-n**）から番号を取り出す', () => {
@@ -138,5 +138,26 @@ describe('照合', () => {
     const result = check({ specAcs: new Set([1]), tests: tests('AC-1 a'), exclusions: { 'AC-9': '理由', 'AC-1': '' } })
     assert.equal(result.ok, false)
     assert.deepEqual(result.invalidExclusions, ['AC-9', 'AC-1'])
+  })
+
+  test('手元では、テスト名に出ない AC があっても通り、その AC を警告に出す', () => {
+    const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a'), exclusions: {}, strict: false })
+    assert.equal(result.ok, true)
+    assert.deepEqual(result.missing, [2])
+  })
+
+  test('手元でも、範囲の表記と spec にない AC 番号は失敗する', () => {
+    const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1〜2 a', 'AC-200 b'), exclusions: {}, strict: false })
+    assert.equal(result.ok, false)
+  })
+})
+
+describe('手元と CI の見分け', () => {
+  test('CI（環境変数 CI が true）では、テスト名に出ない AC を失敗にする', () => {
+    assert.equal(isStrict({ CI: 'true' }), true)
+  })
+
+  test('手元（CI がない）では、テスト名に出ない AC を警告にする', () => {
+    assert.equal(isStrict({}), false)
   })
 })

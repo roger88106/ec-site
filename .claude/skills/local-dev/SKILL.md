@@ -110,6 +110,12 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 scripts/ci/check-all.sh
 ```
 
+手元では、テスト名に出ない AC は警告だけで通る。spec の最後（push の前）は、CI と同じに確かめる。
+
+```bash
+CI=true scripts/ci/check-all.sh
+```
+
 ## 決済（mock と Stripe）
 
 - 既定（profile `local`）は mock。注文すると `http://localhost:8080/mock-payment/{ID}` の支払の画面に移る（「支払う」「カードを拒否させる」「やめる」）。

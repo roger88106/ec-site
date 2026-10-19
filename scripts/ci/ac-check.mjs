@@ -8,6 +8,8 @@
 //   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
+// - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
+//   手元で CI と同じに確かめるとき：CI=true node scripts/ci/ac-check.mjs
 // ============================================================================
 import { readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
@@ -83,9 +85,10 @@ export function parseAcRefs(name) {
  * @param input.specAcs    spec の AC の番号
  * @param input.tests      テスト（ファイルと名前）
  * @param input.exclusions 除外の一覧（"AC-n" → 理由）
+ * @param input.strict     テスト名に出ない AC を失敗にするか。false なら警告にする（missing には出す）
  * @returns 照らした結果。ok が false なら失敗
  */
-export function check({ specAcs, tests, exclusions }) {
+export function check({ specAcs, tests, exclusions, strict = true }) {
   const covered = new Set()
   const ranges = []
   const unknown = []
@@ -118,12 +121,24 @@ export function check({ specAcs, tests, exclusions }) {
   const missing = sorted([...specAcs].filter((ac) => !covered.has(ac) && !excluded.has(ac)))
   const staleExclusions = sorted([...excluded].filter((ac) => covered.has(ac)))
   const ok =
-    missing.length === 0 &&
+    (!strict || missing.length === 0) &&
     ranges.length === 0 &&
     unknown.length === 0 &&
     staleExclusions.length === 0 &&
     invalidExclusions.length === 0
   return { ok, missing, ranges, unknown, staleExclusions, invalidExclusions }
+}
+
+/**
+ * テスト名に出ない AC を失敗にするかを、環境から決める。CI では失敗にし、手元では警告にする。<br />
+ * 理由：spec を書いてからテストを書くまでの間も、手元で commit できるようにするため。
+ * テストの漏れは、CI（push と pull request）で止める。
+ *
+ * @param env 環境変数
+ * @returns CI なら true
+ */
+export function isStrict(env) {
+  return env.CI === 'true'
 }
 
 /** テストを探さないディレクトリ */
@@ -165,10 +180,12 @@ function findTestFiles(dir) {
 }
 
 /** 照らした結果を、標準出力に書く */
-function report(result, root) {
+function report(result, root, strict) {
   const where = (test) => `${path.relative(root, test.file).replaceAll('\\', '/')}：${test.name}`
   if (result.missing.length > 0) {
-    console.log(`テスト名に出ない AC：${result.missing.map((ac) => `AC-${ac}`).join('、')}`)
+    // 手元では警告。check-all.sh は「警告：」で始まる行を、通ったときも出す
+    const prefix = strict ? '' : '警告：'
+    console.log(`${prefix}テスト名に出ない AC：${result.missing.map((ac) => `AC-${ac}`).join('、')}`)
     console.log('  テストを足すか、テストで確かめられない理由を scripts/ci/ac-exclusions.json に書く。')
   }
   for (const test of result.ranges) {
@@ -207,8 +224,9 @@ function main() {
   )
   const exclusions = JSON.parse(readFileSync(path.join(here, 'ac-exclusions.json'), 'utf8'))
 
-  const result = check({ specAcs, tests, exclusions })
-  report(result, root)
+  const strict = isStrict(process.env)
+  const result = check({ specAcs, tests, exclusions, strict })
+  report(result, root, strict)
   console.log(
     `${result.ok ? 'OK' : 'NG'}：AC ${specAcs.size} 件、テスト名 ${tests.length} 件、除外 ${Object.keys(exclusions).length} 件`,
   )

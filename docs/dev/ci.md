@@ -39,7 +39,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 | script | 確かめること | 失敗したとき | 除外の書き方 |
 |--------|--------------|--------------|--------------|
-| `ac-check` | 機能の spec のすべての AC が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ出る（[テストの書き方](../testing/writing.md) 第 2.1 節） | テストを足すか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く | `ac-exclusions.json` に AC と理由 |
+| `ac-check` | 機能の spec のすべての AC が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ出る（[テストの書き方](../testing/writing.md) 第 2.1 節）※1 | テストを足すか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く | `ac-exclusions.json` に AC と理由 |
 | `doc-refs` | Markdown のリンクと、`<文書の名前> 第 N 節` の参照が切れていない | リンクか節の番号を直す（skill `docs`） | なし |
 | `doc-terms` | 文書に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も出る | `doc-terms.json` |
 | `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで引く。`--count` で数だけを出す | `hardcoded-text-exclusions.json` にファイルと理由 |
@@ -48,3 +48,5 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号がない（[コメントの書き方](../process/comments.md) 第 1 節） | 番号を消し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
 | `test-names` | バックエンドのすべての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../testing/writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
 | `time-waits` | テストが時間で待っていない。決まった時間だけ見る書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も見る（[テストの書き方](../testing/writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
+
+※1：テスト名に出ない AC は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、通った検査の警告（`警告：` で始まる行）も出す。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で止めるため。手元で CI と同じに確かめるときは `CI=true scripts/ci/check-all.sh`。他の誤り（範囲の表記、spec にない AC 番号、除外の一覧の誤り）は、手元でも失敗にする。

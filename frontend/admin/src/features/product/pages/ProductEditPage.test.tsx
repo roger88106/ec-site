@@ -1,6 +1,7 @@
 import { fireEvent, screen, within } from '@testing-library/react'
 import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, it } from 'vitest'
+import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
 import { PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
@@ -8,6 +9,12 @@ import { http, problem, server } from '@/test/server'
 
 /** 商品の編集の画面の URL */
 const URL = `/products/${PRODUCT_ID}`
+
+/** 契約の画像の大きさの上限（バイト） */
+const MAX_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
+
+/** 契約の商品の画像の枚数の上限 */
+const MAX_IMAGES = schemas.ProductDetail.images.maxItems
 
 /**
  * 商品の編集の画面が使う API に応答する。<br />
@@ -406,8 +413,20 @@ describe('商品画像', () => {
     expect(screen.queryByRole('img', { name: '画像 1' })).not.toBeInTheDocument()
   })
 
-  it('AC-40 20 枚ある商品は、画像を追加できない', async () => {
-    const images = Array.from({ length: 20 }, (_, index) => ({
+  it('AC-272 画像の説明に、契約の形式・大きさ・枚数の上限を差し込む', async () => {
+    serveProduct(productDetail())
+    renderApp(URL)
+
+    expect(
+      await screen.findByText(
+        `JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF で 1 ファイル ${MAX_BYTES / (1024 * 1024)}MB まで、${MAX_IMAGES} 枚まで`,
+        { exact: false },
+      ),
+    ).toBeInTheDocument()
+  })
+
+  it('AC-40、272 契約の上限の枚数がある商品は、画像を追加できない', async () => {
+    const images = Array.from({ length: MAX_IMAGES }, (_, index) => ({
       id: `00000000-0000-0000-0000-0000000009${String(index).padStart(2, '0')}`,
       url: `http://cdn.test/${index}.png`,
     }))

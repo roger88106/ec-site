@@ -1,20 +1,20 @@
 import { describe, expect, it } from 'vitest'
-import { imageContentType, imageFileError, MAX_IMAGE_BYTES } from '@/features/product/imageUpload'
+import { createImageUploadRequestContentTypeValues } from '@/api/generated/admin'
+import { schemas } from '@/api/generated/constraints'
+import { imageContentType, imageFileError, imageFormatsLabel } from '@/features/product/imageUpload'
+
+/** 契約の画像の大きさの上限（バイト） */
+const MAX_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 
 /** 形式の誤りのメッセージ */
 const FORMAT_ERROR = '画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。'
 
+/** 大きさの誤りのメッセージ */
+const SIZE_ERROR = `画像は 1 ファイル ${MAX_BYTES / (1024 * 1024)}MB までです。`
+
 describe('imageContentType', () => {
-  it('AC-39、67 受け付ける形式は、ブラウザの形式をそのまま使う', () => {
-    for (const type of [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-      'image/bmp',
-      'image/heic',
-      'image/heif',
-      'image/avif',
-    ]) {
+  it('AC-39、67、272 受け付ける形式（契約の形式の一覧）は、ブラウザの形式をそのまま使う', () => {
+    for (const type of createImageUploadRequestContentTypeValues) {
       expect(imageContentType({ type, name: 'a' })).toBe(type)
     }
   })
@@ -34,23 +34,27 @@ describe('imageContentType', () => {
   })
 })
 
+describe('imageFormatsLabel', () => {
+  it('AC-272 契約の形式の一覧を、表示の名前の一覧にする（HEIC と HEIF は 1 つにまとめる）', () => {
+    expect(imageFormatsLabel()).toBe('JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF')
+  })
+})
+
 describe('imageFileError', () => {
-  it('AC-39、67 受け付ける形式で 10MB までなら誤りはない', () => {
-    for (const type of ['image/jpeg', 'image/png', 'image/webp', 'image/bmp', 'image/heic', 'image/avif']) {
-      expect(imageFileError({ type, name: 'a', size: MAX_IMAGE_BYTES })).toBeNull()
+  it('AC-39、67、272 受け付ける形式で、契約の大きさの上限までなら誤りはない', () => {
+    for (const type of createImageUploadRequestContentTypeValues) {
+      expect(imageFileError({ type, name: 'a', size: MAX_BYTES })).toBeNull()
     }
     expect(imageFileError({ type: '', name: 'IMG_0001.heic', size: 100 })).toBeNull()
   })
 
-  it('AC-39 ほかの形式は誤り', () => {
+  it('AC-39、272 ほかの形式は誤りで、文に契約の形式の一覧を差し込む', () => {
     expect(imageFileError({ type: 'image/gif', name: 'a.gif', size: 100 })).toBe(FORMAT_ERROR)
     expect(imageFileError({ type: '', name: 'a', size: 100 })).toBe(FORMAT_ERROR)
   })
 
-  it('AC-39 10MB を超えるか、0 バイトなら誤り', () => {
-    expect(imageFileError({ type: 'image/png', name: 'a.png', size: MAX_IMAGE_BYTES + 1 })).toBe(
-      '画像は 1 ファイル 10MB までです。',
-    )
-    expect(imageFileError({ type: 'image/png', name: 'a.png', size: 0 })).toBe('画像は 1 ファイル 10MB までです。')
+  it('AC-39、272 契約の大きさの上限を超えるか、0 バイトなら誤りで、文に上限を差し込む', () => {
+    expect(imageFileError({ type: 'image/png', name: 'a.png', size: MAX_BYTES + 1 })).toBe(SIZE_ERROR)
+    expect(imageFileError({ type: 'image/png', name: 'a.png', size: 0 })).toBe(SIZE_ERROR)
   })
 })

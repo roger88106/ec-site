@@ -16,8 +16,9 @@ const orderForm = () =>
     expectedTotal: '4300',
     name: ' 山田 太郎 ',
     postalCode: '1000001',
-    prefecture: '東京都',
-    address: '千代田区千代田 1-1',
+    prefectureCode: '13',
+    municipalityCode: '13101',
+    address: '千代田 1-1',
     phone: '0312345678',
   })
 
@@ -51,8 +52,9 @@ describe('注文する', () => {
         shippingAddress: {
           name: '山田 太郎',
           postalCode: '1000001',
-          prefecture: '東京都',
-          address: '千代田区千代田 1-1',
+          prefectureCode: '13',
+          municipalityCode: '13101',
+          address: '千代田 1-1',
           phone: '0312345678',
         },
         expectedTotal: 4300,

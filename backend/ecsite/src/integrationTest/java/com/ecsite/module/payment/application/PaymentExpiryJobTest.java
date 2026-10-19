@@ -12,8 +12,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.config.BeanExpressionContext;
+import org.springframework.beans.factory.config.ConfigurableListableBeanFactory;
 import org.springframework.context.annotation.Import;
-import org.springframework.core.env.Environment;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
@@ -60,7 +61,7 @@ class PaymentExpiryJobTest {
     ApplicationEvents events;
 
     @Autowired
-    Environment environment;
+    ConfigurableListableBeanFactory beanFactory;
 
     @BeforeEach
     void setUp() {
@@ -143,7 +144,7 @@ class PaymentExpiryJobTest {
     void runsWithinFiveMinutes() throws Exception {
         var scheduled = PaymentExpiryJob.class.getMethod("expire").getAnnotation(Scheduled.class);
 
-        var interval = Duration.parse(environment.resolvePlaceholders(scheduled.fixedDelayString()));
+        var interval = Duration.parse(String.valueOf(beanFactory.getBeanExpressionResolver().evaluate(beanFactory.resolveEmbeddedValue(scheduled.fixedDelayString()), new BeanExpressionContext(beanFactory, null))));
 
         assertThat(interval).isLessThanOrEqualTo(Duration.ofMinutes(5));
     }

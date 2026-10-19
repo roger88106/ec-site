@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  * 支払の期限切れのジョブ（docs/backend/modules/payment.md「支払の期限」）。<br />
  * 期限を過ぎた未払いの支払について、決済サービスの支払の画面を閉じてから、支払なしにする。
  * 閉じられなかった（その前に支払が済んでいた）支払は、与信の成功の通知を待つ。
- * 間隔は {@code ecsite.payment.expiry-interval}（既定 1 分）で変えられる。
+ * 間隔は決済の設定 {@code ecsite.payment.expiry-interval}（既定 1 分）で変えられる。
  */
 @Slf4j
 @Component
@@ -44,7 +44,9 @@ public class PaymentExpiryJob {
      * 期限を過ぎた未払いの支払を、支払なしにする。<br />
      * 決済サービスの呼び出しはトランザクションの外で行い、1 つの支払の失敗で、ほかの支払を止めない。
      */
-    @Scheduled(fixedDelayString = "${ecsite.payment.expiry-interval:PT1M}")
+    // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
+    @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
+            + ".expiryInterval()}")
     @SchedulerLock(name = "payment-expiry")
     public void expire() {
         for (var payment : queryService.findPastDeadline(BATCH_SIZE)) {

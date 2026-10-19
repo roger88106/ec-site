@@ -31,3 +31,7 @@ com.ecsite.module.reporting.application.PrefectureSales=com.ecsite.module.report
 com.ecsite.module.reporting.application.SalesTrendReport=com.ecsite.module.reporting.application.model.view.SalesTrendReport
 com.ecsite.module.reporting.application.VariantSales=com.ecsite.module.reporting.application.model.view.VariantSales
 com.ecsite.module.reporting.application.VariantSalesReport=com.ecsite.module.reporting.application.model.view.VariantSalesReport
+
+# T013-05-05（DN-15 の特例：AC-154 のテストが、@Scheduled の間隔を Spring の予定の処理と同じく ${} と #{} の両方で解く）
+Environment environment=ConfigurableListableBeanFactory beanFactory
+environment.resolvePlaceholders(scheduled.fixedDelayString())=String.valueOf(beanFactory.getBeanExpressionResolver().evaluate(beanFactory.resolveEmbeddedValue(scheduled.fixedDelayString()), new BeanExpressionContext(beanFactory, null)))

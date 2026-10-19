@@ -15,6 +15,7 @@ import java.util.UUID;
  *
  * @param gateway               決済サービス
  * @param deadline              支払の期限（注文日時からの時間）
+ * @param expiryInterval        支払の期限切れのジョブの間隔
  * @param authorizationValidity 与信の有効期間（与信の時刻からの時間）。Stripe のカード決済の与信が切れる 7 日
  * @param authorizationWarning  与信期限のどれだけ前から「期限が近い」とするか
  * @param returnUrl             支払の画面から戻る店舗の注文の画面の URL。{@code {orderId}} に注文 ID が入る
@@ -24,6 +25,7 @@ import java.util.UUID;
 public record PaymentProperties(
         @DefaultValue("mock") @NotNull Gateway gateway,
         @DefaultValue("30m") @NotNull Duration deadline,
+        @DefaultValue("1m") @NotNull Duration expiryInterval,
         @DefaultValue("7d") @NotNull Duration authorizationValidity,
         @DefaultValue("2d") @NotNull Duration authorizationWarning,
         @NotBlank String returnUrl) {

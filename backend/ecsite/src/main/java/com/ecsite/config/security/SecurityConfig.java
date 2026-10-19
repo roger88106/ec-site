@@ -1,5 +1,6 @@
 package com.ecsite.config.security;
 
+import jakarta.servlet.DispatcherType;
 import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
@@ -30,9 +31,10 @@ import java.util.List;
  * パスのプレフィックスごとに filter chain を分け、それぞれの realm の token だけを受け付ける。
  * <ul>
  *     <li>{@code /api/admin/**}：運営者の realm の token が必須。権限は {@code admin.yaml} で決める</li>
- *     <li>{@code /api/store/**}：消費者の realm の token。認証の要らない endpoint は今までどおり使える</li>
- *     <li>そのほか（{@code /actuator/**} など）：今までどおり</li>
+ *     <li>{@code /api/store/**}：消費者の realm の token。token の要否は {@code store.yaml} で決める</li>
+ *     <li>そのほか：既定で拒み、通知の口・mock の口・運用の口だけを許す</li>
  * </ul>
+ * 契約にない操作と、決めていない URL は拒む（認証がなければ 401）。
  * token はステートレスに検証する。Cookie を使わない（token をヘッダーで受ける）ので、CSRF の対策は無効にする。
  */
 @Configuration(proxyBeanMethods = false)
@@ -61,8 +63,6 @@ class SecurityConfig {
     }
 
     /**
-     * 認証・認可の失敗を Problem Details で返す。
-    /**
      * 店舗 API の操作ごとの token の要否。ビルドのときにリソースに写した {@code store.yaml} を、起動時に読む。
      *
      * @param storeApi {@code store.yaml}
@@ -73,6 +73,8 @@ class SecurityConfig {
         return StoreOperationSecurity.load(storeApi);
     }
 
+    /**
+     * 認証・認可の失敗を Problem Details で返す。
      *
      * @param resolver Spring MVC の例外の解決
      * @return 401・403 の応答
@@ -127,13 +129,18 @@ class SecurityConfig {
     }
 
     /**
-     * そのほか（運用の口など）：今までどおり。
+     * そのほか：既定で拒み、決めた口だけを許す。<br />
+     * 通知の口は署名で、mock の口は mock フラグ（フラグがなければ Controller がなく 404）で守る。
+     * 運用の口は運用ポートで出す。エラーの画面への転送を許さないと、許した口の 404 が 401 に変わる。
      */
     @Bean
     @Order(3)
     SecurityFilterChain defaultFilterChain(HttpSecurity http, SecurityProblemResponder responder) throws Exception {
         return stateless(http, responder)
-                .authorizeHttpRequests(authorize -> authorize.anyRequest().permitAll())
+                .authorizeHttpRequests(authorize -> authorize
+                        .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
+                        .requestMatchers("/api/webhooks/**", "/mock-payment/**", "/mock-carrier/**", "/actuator/**").permitAll()
+                        .anyRequest().denyAll())
                 .build();
     }
 

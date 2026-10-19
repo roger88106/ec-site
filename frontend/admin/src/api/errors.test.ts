@@ -42,7 +42,7 @@ describe('API のエラー', () => {
 
   test('入力検証エラーは、項目ごとのメッセージを取り出せる', () => {
     const error = toApiError(400, {
-      ...problem(400, 'VALIDATION_ERROR', '入力に誤りがあります。'),
+      ...problem(400, 'INVALID_REQUEST', '入力に誤りがあります。'),
       errors: [{ field: 'name', message: '商品名を入力してください。' }],
     })
     expect(fieldErrors(error)).toEqual([{ field: 'name', message: '商品名を入力してください。' }])

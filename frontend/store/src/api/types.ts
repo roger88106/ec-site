@@ -4,6 +4,8 @@ import type { components } from '@/api/generated/store'
 type Schemas = components['schemas']
 
 export type Problem = Schemas['Problem']
+/** 店舗 API が返しうるエラーのコード（契約の全体の列挙） */
+export type ErrorCode = Schemas['ErrorCode']
 export type Price = Schemas['Price']
 export type ProductSort = Schemas['ProductSort']
 export type ProductSummary = Schemas['ProductSummary']

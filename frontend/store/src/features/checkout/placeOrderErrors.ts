@@ -1,3 +1,4 @@
+import type { ErrorCode } from '@/api/types'
 import type { ActionResult } from '@/lib/actionResult'
 
 /** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない） */
@@ -23,7 +24,7 @@ const FIELD_BY_PATH: Record<string, OrderField> = {
 }
 
 /** 業務の検証エラーのエラーコード → 入力欄 */
-const FIELD_BY_ERROR_CODE: Record<string, OrderField> = {
+const FIELD_BY_ERROR_CODE: Partial<Record<ErrorCode, OrderField>> = {
   INVALID_RECIPIENT_NAME: 'name',
   INVALID_POSTAL_CODE: 'postalCode',
   INVALID_PREFECTURE: 'prefecture',
@@ -33,7 +34,7 @@ const FIELD_BY_ERROR_CODE: Record<string, OrderField> = {
 }
 
 /** 次にすべきことがカートの画面にあるエラーコード（在庫不足、注文手続きの後のカートの変更） */
-const BACK_TO_CART_ERROR_CODES = new Set(['OUT_OF_STOCK', 'CART_CHANGED'])
+const BACK_TO_CART_ERROR_CODES = new Set<ErrorCode>(['OUT_OF_STOCK', 'CART_CHANGED'])
 
 /**
  * 注文のサーバーアクションの結果を、フォームに出すエラーにする（店舗画面の構成 第 6 節）。<br />

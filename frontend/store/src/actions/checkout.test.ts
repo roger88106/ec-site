@@ -215,10 +215,10 @@ describe('会員の token が無効になったとき', () => {
     resetRequest({ headers: { 'x-pathname': `/orders/${ORDER_ID}` } })
     server.use(
       http.put('/orders/{orderId}/cancellation-request', ({ response }) =>
-        response(401).json(problem(401, 'UNAUTHORIZED', '認証が必要です。')),
+        response(401).json(problem(401, 'UNAUTHENTICATED', '認証が必要です。')),
       ),
       http.post('/orders/{orderId}/payment-page', ({ response }) =>
-        response(401).json(problem(401, 'UNAUTHORIZED', '認証が必要です。')),
+        response(401).json(problem(401, 'UNAUTHENTICATED', '認証が必要です。')),
       ),
     )
 

@@ -5,11 +5,12 @@ import { revalidatePath } from 'next/cache'
 import { redirectIfUnauthenticated, redirectOnSuccess } from '@/actions/memberAction'
 import { withActionResult } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
+import type { ErrorCode } from '@/api/types'
 import { type ActionResult, toFailure } from '@/lib/actionResult'
 import { readInt, readString } from '@/lib/server/formData'
 
 /** 確認した総額が注文の時点と違うときのエラーコード */
-const TOTAL_AMOUNT_CHANGED = 'TOTAL_AMOUNT_CHANGED'
+const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
 
 /**
  * 注文する。成立したら、決済サービスの支払の画面へ移る。支払の画面の URL を得られなければ、注文の画面へ移る（そこから支払える）。<br />

@@ -15,7 +15,7 @@ describe('結合テストの土台', () => {
         }),
       ),
       http.get('/tax-categories/{taxCategoryId}', ({ response }) =>
-        response(404).json(problem(404, 'TAX_CATEGORY_NOT_FOUND', '税区分が見つかりません。')),
+        response(404).json(problem(404, 'NOT_FOUND', '税区分が見つかりません。')),
       ),
     )
     const { user, router } = renderApp('/tax-categories')

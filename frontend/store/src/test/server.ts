@@ -1,7 +1,7 @@
 import { setupServer } from 'msw/node'
 import { createOpenApiHttp } from 'openapi-msw'
 import type { paths } from '@/api/generated/store'
-import type { Problem } from '@/api/types'
+import type { ErrorCode, Problem } from '@/api/types'
 
 /** テストで呼ぶ店舗 API の接続先（client.ts の既定） */
 export const STORE_API = 'http://localhost:8080/api/store'
@@ -31,6 +31,6 @@ export const server = setupServer()
  * @param message   画面にそのまま出すメッセージ
  * @param errors    入力検証エラーの項目ごとのメッセージ
  */
-export function problem(status: number, errorCode: string, message: string, errors?: Problem['errors']): Problem {
+export function problem(status: number, errorCode: ErrorCode, message: string, errors?: Problem['errors']): Problem {
   return { type: 'about:blank', status, errorCode, message, traceId: 'test-trace', errors }
 }

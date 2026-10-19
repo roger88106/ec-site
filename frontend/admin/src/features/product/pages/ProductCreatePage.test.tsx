@@ -90,7 +90,7 @@ describe('商品の登録', () => {
   it('AC-15 サーバーの入力検証エラーは、その項目の入力欄の下に出て、画面は移らない', async () => {
     serveCreate(() =>
       Response.json(
-        problem(400, 'VALIDATION_ERROR', '入力に誤りがあります。', [
+        problem(400, 'INVALID_REQUEST', '入力に誤りがあります。', [
           { field: 'productCode', message: '商品品番の形式が正しくありません。' },
         ]),
         { status: 400 },

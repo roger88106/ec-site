@@ -1,7 +1,7 @@
 import { setupServer } from 'msw/node'
 import { createOpenApiHttp } from 'openapi-msw'
 import type { paths } from '@/api/generated/admin'
-import type { Problem } from '@/api/types'
+import type { ErrorCode, Problem } from '@/api/types'
 
 /**
  * 管理 API の応答を差し替えるハンドラーを作る（管理画面の構成 第 9 節）。<br />
@@ -25,6 +25,6 @@ export const server = setupServer()
  * @param message 画面にそのまま出すメッセージ
  * @param errors 入力検証エラーの項目ごとのメッセージ
  */
-export function problem(status: number, errorCode: string, message: string, errors?: Problem['errors']): Problem {
+export function problem(status: number, errorCode: ErrorCode, message: string, errors?: Problem['errors']): Problem {
   return { type: 'about:blank', status, errorCode, message, traceId: 'test-trace', errors }
 }

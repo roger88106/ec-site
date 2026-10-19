@@ -1,8 +1,8 @@
-import type { Problem } from '@/api/types'
+import type { ErrorCode, Problem } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
 /** バージョン不一致（他の人が先に更新した）のエラーコード */
-const CONCURRENT_MODIFICATION = 'CONCURRENT_MODIFICATION'
+const CONCURRENT_MODIFICATION: ErrorCode = 'CONCURRENT_MODIFICATION'
 
 /**
  * API がエラーを返した（管理画面の構成 第 4 節）。<br />

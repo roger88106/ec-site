@@ -4,6 +4,8 @@ import type { components } from '@/api/generated/admin'
 type Schemas = components['schemas']
 
 export type Problem = Schemas['Problem']
+/** 管理 API が返しうるエラーのコード（契約の全体の列挙） */
+export type ErrorCode = Schemas['ErrorCode']
 export type TaxCategory = Schemas['TaxCategory']
 export type TaxRate = Schemas['TaxRate']
 export type CategoryNode = Schemas['CategoryNode']

@@ -8,7 +8,7 @@ type Form = { name: string; priceExclTax: string }
 describe('サーバーの入力検証エラーの表示', () => {
   const error = toApiError(400, {
     status: 400,
-    errorCode: 'VALIDATION_ERROR',
+    errorCode: 'INVALID_REQUEST',
     message: '入力に誤りがあります。',
     traceId: 'trace',
     errors: [

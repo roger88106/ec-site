@@ -1,3 +1,4 @@
+import type { ErrorCode } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
 /** 通信の失敗（バックエンドが止まっているなど）のときの案内（店舗画面の構成 第 6 節） */
@@ -11,7 +12,7 @@ export function connectionFailedMessage(): string {
  */
 export type ActionResult =
   | { ok: true }
-  | { ok: false; message: string; errorCode?: string; fieldErrors?: Record<string, string> }
+  | { ok: false; message: string; errorCode?: ErrorCode; fieldErrors?: Record<string, string> }
 
 /** 成功 */
 export const SUCCESS: ActionResult = { ok: true }
@@ -26,7 +27,7 @@ export function toFailure(status: number, body: unknown): Extract<ActionResult, 
   if (typeof body !== 'object' || body === null || !('message' in body) || typeof body.message !== 'string') {
     return { ok: false, message: translate('common.httpFailed', { status }) }
   }
-  const problem = body as { message: string; errorCode?: string; errors?: { field: string; message: string }[] }
+  const problem = body as { message: string; errorCode?: ErrorCode; errors?: { field: string; message: string }[] }
   const fieldErrors = Object.fromEntries((problem.errors ?? []).map((error) => [error.field, error.message]))
   return {
     ok: false,

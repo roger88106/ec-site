@@ -72,7 +72,7 @@ describe('商品の一覧', () => {
 
   it('AC-49 在庫の集計の取得に失敗しても、一覧は出し、在庫数の合計は取得できないと出す', async () => {
     // 4xx にする。5xx は取得を繰り返すので、失敗を表示するまでに時間がかかる
-    serveList([SHIRT], () => Response.json(problem(400, 'VALIDATION_ERROR', '入力に誤りがあります。'), { status: 400 }))
+    serveList([SHIRT], () => Response.json(problem(400, 'INVALID_REQUEST', '入力に誤りがあります。'), { status: 400 }))
     renderApp('/products')
 
     expect(await screen.findByRole('cell', { name: 'T シャツ' })).toBeInTheDocument()

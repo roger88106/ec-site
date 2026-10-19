@@ -353,22 +353,25 @@ describe('出荷', () => {
   it.each([
     [409, 'AUTHORIZATION_EXPIRED', '与信の期限が切れているため、売上を確定できません。'],
     [502, 'PAYMENT_GATEWAY_UNAVAILABLE', '決済サービスに接続できませんでした。しばらくしてから、やり直してください。'],
-  ])('AC-169 売上確定に失敗したら（%i %s）、理由を示し、注文は受付のまま', async (status, errorCode, message) => {
-    serveShipment(SHIPPABLE)
-    server.use(
-      http.post(
-        '/orders/{orderId}/shipment',
-        () => Response.json(problem(status, errorCode, message), { status }) as never,
-      ),
-    )
-    const { user } = renderApp(URL)
-    await shownStatus('受付')
+  ] as const)(
+    'AC-169 売上確定に失敗したら（%i %s）、理由を示し、注文は受付のまま',
+    async (status, errorCode, message) => {
+      serveShipment(SHIPPABLE)
+      server.use(
+        http.post(
+          '/orders/{orderId}/shipment',
+          () => Response.json(problem(status, errorCode, message), { status }) as never,
+        ),
+      )
+      const { user } = renderApp(URL)
+      await shownStatus('受付')
 
-    await ship(user, '佐川急便', '123456789012')
+      await ship(user, '佐川急便', '123456789012')
 
-    expect(await screen.findByText(message)).toBeInTheDocument()
-    expect(await shownStatus('受付')).toBeInTheDocument()
-  })
+      expect(await screen.findByText(message)).toBeInTheDocument()
+      expect(await shownStatus('受付')).toBeInTheDocument()
+    },
+  )
 
   it('AC-181 出荷後は、配送状態、配送業者、送り状番号、出荷日時を示す', async () => {
     serveShipment(SHIPPED)

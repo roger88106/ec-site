@@ -15,7 +15,7 @@ describe('API のエラーの応答を、サーバーアクションの失敗に
   test('入力検証エラーは、項目名ごとのメッセージにする', () => {
     const body = {
       status: 400,
-      errorCode: 'VALIDATION_ERROR',
+      errorCode: 'INVALID_REQUEST',
       message: '入力内容に誤りがあります。',
       traceId: 't',
       errors: [{ field: 'shippingAddress.postalCode', message: '形が違います' }],

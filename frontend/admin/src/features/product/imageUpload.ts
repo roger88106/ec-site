@@ -1,21 +1,29 @@
 import { fetchClient } from '@/api/client'
+import { createImageUploadRequestContentTypeValues } from '@/api/generated/admin'
+import { schemas } from '@/api/generated/constraints'
 import { translate } from '@/i18n/translate'
 
-/** 受け付ける画像の形式。登録のときに WebP に変換される */
-export const IMAGE_CONTENT_TYPES = [
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/bmp',
-  'image/heic',
-  'image/heif',
-  'image/avif',
-] as const
+/** 受け付ける画像の形式（契約の形式の一覧）。登録のときに WebP に変換される */
+export const IMAGE_CONTENT_TYPES = createImageUploadRequestContentTypeValues
+
+/** 受け付ける画像の形式 */
+type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number]
+
+/** 形式の表示の名前（HEIC と HEIF は同じ名前にまとめる） */
+const FORMAT_LABELS: Readonly<Record<ImageContentType, string>> = {
+  'image/jpeg': 'JPEG',
+  'image/png': 'PNG',
+  'image/webp': 'WebP',
+  'image/bmp': 'BMP',
+  'image/heic': 'HEIC / HEIF',
+  'image/heif': 'HEIC / HEIF',
+  'image/avif': 'AVIF',
+}
 
 /**
  * 拡張子からの形式。ブラウザが HEIC などの形式を空で渡すことがあるため（Windows の Chrome など）、拡張子で補う
  */
-const CONTENT_TYPES_BY_EXTENSION: Readonly<Record<string, (typeof IMAGE_CONTENT_TYPES)[number]>> = {
+const CONTENT_TYPES_BY_EXTENSION: Readonly<Record<string, ImageContentType>> = {
   jpg: 'image/jpeg',
   jpeg: 'image/jpeg',
   png: 'image/png',
@@ -32,11 +40,25 @@ export const IMAGE_ACCEPT = [
   ...Object.keys(CONTENT_TYPES_BY_EXTENSION).map((ext) => `.${ext}`),
 ].join(',')
 
-/** 1 ファイルの大きさの上限（10MB） */
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024
+/** 1 ファイルの大きさの上限（バイト。契約の値） */
+export const MAX_IMAGE_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 
-/** 1 商品あたりの画像の上限 */
-export const MAX_IMAGES = 20
+/** 1 ファイルの大きさの上限（MB。文に差し込む） */
+export const MAX_IMAGE_MEGABYTES = MAX_IMAGE_BYTES / (1024 * 1024)
+
+/** 1 商品あたりの画像の上限（契約の値） */
+export const MAX_IMAGES = schemas.ProductDetail.images.maxItems
+
+/**
+ * 受け付ける形式の表示の名前の一覧（文に差し込む）。
+ *
+ * @returns 例：「JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF」
+ */
+export function imageFormatsLabel(): string {
+  return [...new Set(IMAGE_CONTENT_TYPES.map((type) => FORMAT_LABELS[type]))].join(
+    translate('product.images.formatSeparator'), // 形式の区切り（、）
+  )
+}
 
 /** 管理 API の外（ストレージへの PUT など）で起きた、画像のアップロードの失敗。メッセージをそのまま出す */
 export class ImageUploadError extends Error {}
@@ -46,10 +68,11 @@ export class ImageUploadError extends Error {}
  *
  * @returns 形式。受け付けない形式なら null
  */
-export function imageContentType(file: Pick<File, 'type' | 'name'>): string | null {
+export function imageContentType(file: Pick<File, 'type' | 'name'>): ImageContentType | null {
   const type = file.type.toLowerCase()
-  if ((IMAGE_CONTENT_TYPES as readonly string[]).includes(type)) {
-    return type
+  const listed = IMAGE_CONTENT_TYPES.find((contentType) => contentType === type)
+  if (listed) {
+    return listed
   }
   if (type !== '' && type !== 'application/octet-stream') {
     return null
@@ -65,10 +88,10 @@ export function imageContentType(file: Pick<File, 'type' | 'name'>): string | nu
  */
 export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): string | null {
   if (imageContentType(file) === null) {
-    return translate('product.images.invalidType') // 形式の誤り
+    return translate('product.images.invalidType', { formats: imageFormatsLabel() }) // 形式の誤り
   }
   if (file.size === 0 || file.size > MAX_IMAGE_BYTES) {
-    return translate('product.images.tooLarge') // 大きさの誤り
+    return translate('product.images.tooLarge', { max: MAX_IMAGE_MEGABYTES }) // 大きさの誤り
   }
   return null
 }
@@ -83,10 +106,14 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
  * @param version   登録のときに送る商品のバージョン
  */
 export async function uploadProductImage(productId: string, file: File, version: number): Promise<void> {
+  // 形式は imageFileError で確かめてから呼ぶ（受け付けない形式は送らない）
+  const contentType = imageContentType(file)
+  if (contentType === null) {
+    throw new ImageUploadError(translate('product.images.invalidType', { formats: imageFormatsLabel() })) // 形式の誤り
+  }
   const { data: upload } = await fetchClient.POST('/products/{productId}/image-uploads', {
     params: { path: { productId } },
-    // 形式は imageFileError で確かめてから呼ぶ
-    body: { contentType: imageContentType(file) ?? file.type, contentLength: file.size },
+    body: { contentType, contentLength: file.size },
   })
   if (!upload) {
     throw new ImageUploadError(translate('product.images.uploadRejected')) // 受付の失敗

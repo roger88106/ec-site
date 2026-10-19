@@ -16,6 +16,8 @@ import {
   IMAGE_ACCEPT,
   ImageUploadError,
   imageFileError,
+  imageFormatsLabel,
+  MAX_IMAGE_MEGABYTES,
   MAX_IMAGES,
   uploadProductImage,
 } from '@/features/product/imageUpload'
@@ -84,7 +86,15 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
         <CardTitle>{t('title') /* 画像 */}</CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
-        <p className="text-muted-foreground text-sm">{t('help', { max: MAX_IMAGES }) /* 形式・大きさ・枚数と変換 */}</p>
+        <p className="text-muted-foreground text-sm">
+          {
+            t('help', {
+              formats: imageFormatsLabel(),
+              maxMegabytes: MAX_IMAGE_MEGABYTES,
+              max: MAX_IMAGES,
+            }) /* 形式・大きさ・枚数と変換 */
+          }
+        </p>
         {images.length === 0 ? (
           <p className="text-muted-foreground text-sm">{t('empty') /* まだない */}</p>
         ) : (

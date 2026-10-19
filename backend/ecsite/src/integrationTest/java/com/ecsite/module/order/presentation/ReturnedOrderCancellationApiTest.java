@@ -102,13 +102,14 @@ class ReturnedOrderCancellationApiTest {
     }
 
     @Test
-    @DisplayName("AC-190、192 返送の注文をキャンセルすると、キャンセルになり、支払は返金待ちになる。キャンセルできる旗が立つ")
+    @DisplayName("AC-190、192、268 返送の注文をキャンセルすると、キャンセルになり、支払は返金待ちになる。キャンセルできる旗と、在庫に戻すかを聞く旗が立つ")
     void cancelsReturnedOrder() throws Exception {
         notifyStatus("配達中");
         notifyStatus("返品");
         mockMvc.perform(get("/api/admin/orders/" + orderId))
                 .andExpect(jsonPath("$.shipment.status").value("RETURNED"))
-                .andExpect(jsonPath("$.actions.cancel").value(true));
+                .andExpect(jsonPath("$.actions.cancel").value(true))
+                .andExpect(jsonPath("$.actions.cancelAsksRestock").value(true));
 
         cancel("返送された", true).andExpect(status().isNoContent());
 
@@ -159,12 +160,14 @@ class ReturnedOrderCancellationApiTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "配達中", "配達完了"})
-    @DisplayName("AC-171 返送でない出荷済みの注文（出荷済み・配送中・配達完了）は 409 で、キャンセルできる旗は立たない")
+    @DisplayName("AC-171、268 返送でない出荷済みの注文（出荷済み・配送中・配達完了）は 409 で、キャンセルできる旗も在庫に戻すかを聞く旗も立たない")
     void rejectsNotReturned(String statusName) throws Exception {
         if (!statusName.isEmpty()) {
             notifyStatus(statusName);
         }
-        mockMvc.perform(get("/api/admin/orders/" + orderId)).andExpect(jsonPath("$.actions.cancel").value(false));
+        mockMvc.perform(get("/api/admin/orders/" + orderId))
+                .andExpect(jsonPath("$.actions.cancel").value(false))
+                .andExpect(jsonPath("$.actions.cancelAsksRestock").value(false));
 
         cancel("理由", true).andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("SHIPPED_ORDER_NOT_RETURNED"));

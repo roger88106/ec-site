@@ -113,10 +113,12 @@ class ShipmentApiTest {
         }
 
         @Test
-        @DisplayName("AC-167 「受付」の注文の詳細は、出荷を登録できる")
+        @DisplayName("AC-167、268 「受付」の注文の詳細は、出荷を登録できる。キャンセルの時に在庫に戻すかは聞かない")
         void shippableAction() throws Exception {
             mockMvc.perform(get("/api/admin/orders/" + orderId))
-                    .andExpect(jsonPath("$.actions.ship").value(true));
+                    .andExpect(jsonPath("$.actions.ship").value(true))
+                    .andExpect(jsonPath("$.actions.cancel").value(true))
+                    .andExpect(jsonPath("$.actions.cancelAsksRestock").value(false));
         }
     }
 

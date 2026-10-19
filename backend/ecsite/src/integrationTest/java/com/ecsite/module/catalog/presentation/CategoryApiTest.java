@@ -190,6 +190,20 @@ class CategoryApiTest {
                     .andExpect(jsonPath("$.items[1].children[1].children[*].name", contains("T シャツ", "シャツ")))
                     .andExpect(jsonPath("$.items[1].children[1].children[0].depth").value(3));
         }
+
+        @Test
+        @DisplayName("AC-270 木の節は子のカテゴリを足せるかを持ち、いちばん深いカテゴリだけ足せない")
+        void listsAddChildAction() throws Exception {
+            var clothing = createdId("衣類", null);
+            var tops = createdId("トップス", clothing);
+            createdId("T シャツ", tops);
+
+            mockMvc.perform(get(BASE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[0].actions.addChild").value(true))
+                    .andExpect(jsonPath("$.items[0].children[0].actions.addChild").value(true))
+                    .andExpect(jsonPath("$.items[0].children[0].children[0].actions.addChild").value(false));
+        }
     }
 
     @Nested

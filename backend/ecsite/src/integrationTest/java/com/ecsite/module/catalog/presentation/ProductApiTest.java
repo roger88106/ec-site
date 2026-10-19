@@ -392,6 +392,22 @@ class ProductApiTest {
         }
 
         @Test
+        @DisplayName("AC-269 削除できない商品は削除できない理由（C 側に表示されたこと）を返し、削除できる商品は理由を省く")
+        void returnsDeleteBlockedReason() throws Exception {
+            var id = productId("ABC-001", "色");
+            variantId(id, "V-WH", 0, "白");
+
+            getProduct(id)
+                    .andExpect(jsonPath("$.actions.delete").value(true))
+                    .andExpect(jsonPath("$.actions.deleteBlockedReason").doesNotExist());
+
+            publish(id).andExpect(status().isNoContent());
+            getProduct(id)
+                    .andExpect(jsonPath("$.actions.delete").value(false))
+                    .andExpect(jsonPath("$.actions.deleteBlockedReason").value("ALREADY_SHOWN"));
+        }
+
+        @Test
         @DisplayName("AC-71 C 側に表示されていない商品のバリアントは削除できる")
         void deletesVariantOfNeverShownProduct() throws Exception {
             var id = productId("ABC-001", "色");

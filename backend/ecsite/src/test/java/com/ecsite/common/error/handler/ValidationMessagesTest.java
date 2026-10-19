@@ -1,5 +1,8 @@
 package com.ecsite.common.error.handler;
 
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.ErrorDetail;
+import com.ecsite.common.error.ValidationErrorMapping;
 import com.ecsite.common.message.MessageHelper;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
@@ -31,8 +34,10 @@ import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 入力の検証のメッセージの単体テスト（docs/backend/coding.md 第 3.3 節、spec 005 DC-37）。<br />
@@ -73,6 +78,11 @@ class ValidationMessagesTest {
     private ValidationMessages messages;
 
     /**
+     * メッセージの取り出し
+     */
+    private MessageHelper helper;
+
+    /**
      * JVM と要求のロケールを英語にし、メッセージのファイルを読む部品を作る
      */
     @BeforeEach
@@ -85,7 +95,8 @@ class ValidationMessagesTest {
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setFallbackToSystemLocale(false);
-        messages = new ValidationMessages(new MessageHelper(messageSource));
+        helper = new MessageHelper(messageSource);
+        messages = new ValidationMessages(helper, List.of());
     }
 
     /**
@@ -158,6 +169,29 @@ class ValidationMessagesTest {
         new SpringValidatorAdapter(validator).validate(target, errors);
 
         assertThat(messages.of(errors.getFieldError("notNull"))).isEqualTo("入力してください。");
+    }
+
+    @Test
+    @DisplayName("業務のエラーに対応づけた項目は、制約の種類の文の代わりに業務のエラーの文になる。ほかの項目は種類の文のまま")
+    void mappedField() {
+        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode()));
+        var mapped = new ValidationMessages(helper, List.of(mapping));
+        var target = new Sample("x", "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "abc", "x", null);
+        var errors = new BeanPropertyBindingResult(target, "sample");
+        new SpringValidatorAdapter(validator).validate(target, errors);
+
+        assertThat(mapped.of(errors.getFieldError("pattern"))).isEqualTo("金額は 0 円以上にしてください。");
+        assertThat(mapped.of(errors.getFieldError("email"))).isEqualTo("メールアドレスの形式が正しくありません。");
+    }
+
+    @Test
+    @DisplayName("同じ項目のパスを複数の対応が対応づけていれば、作るときに失敗する")
+    void duplicateMapping() {
+        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode()));
+
+        assertThatThrownBy(() -> new ValidationMessages(helper, List.of(mapping, mapping)))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("pattern");
     }
 
     /**

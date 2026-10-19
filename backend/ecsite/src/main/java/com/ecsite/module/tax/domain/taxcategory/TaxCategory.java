@@ -3,6 +3,7 @@ package com.ecsite.module.tax.domain.taxcategory;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
+import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
@@ -102,7 +103,7 @@ public class TaxCategory extends AggregateRoot {
      * @return その時点を含む税率。なければ空
      */
     public Optional<TaxRate> rateAt(Instant instant) {
-        return rates.stream().filter(rate -> rate.period().contains(instant)).findFirst();
+        return EffectivePeriod.findAt(rates, TaxRate::period, instant);
     }
 
     /**

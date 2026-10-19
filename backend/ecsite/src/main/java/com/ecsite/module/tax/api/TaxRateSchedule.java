@@ -25,7 +25,7 @@ public record TaxRateSchedule(UUID taxCategoryId, List<Rate> rates) {
      * @return その時点を含む税率の率（%）。なければ空
      */
     public Optional<BigDecimal> rateAt(Instant instant) {
-        return rates.stream().filter(rate -> rate.contains(instant)).findFirst().map(Rate::ratePercent);
+        return EffectivePeriod.findAt(rates, Rate::period, instant).map(Rate::ratePercent);
     }
 
     /**
@@ -38,13 +38,10 @@ public record TaxRateSchedule(UUID taxCategoryId, List<Rate> rates) {
     public record Rate(BigDecimal ratePercent, @Nullable Instant effectiveFrom, @Nullable Instant effectiveTo) {
 
         /**
-         * 指定した時点を含むか。
-         *
-         * @param instant 時点
-         * @return 含むなら true
+         * @return 適用期間
          */
-        public boolean contains(Instant instant) {
-            return EffectivePeriod.of(effectiveFrom, effectiveTo).contains(instant);
+        EffectivePeriod period() {
+            return EffectivePeriod.of(effectiveFrom, effectiveTo);
         }
     }
 }

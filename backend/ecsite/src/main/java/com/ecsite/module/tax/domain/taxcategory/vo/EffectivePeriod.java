@@ -6,6 +6,9 @@ import jakarta.annotation.Nullable;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.time.Instant;
+import java.util.Collection;
+import java.util.Optional;
+import java.util.function.Function;
 
 /**
  * 適用期間。開始を含み、終了を含まない。空白（null）は無限を意味する。
@@ -48,6 +51,20 @@ public record EffectivePeriod(@Nullable Instant effectiveFrom, @Nullable Instant
      */
     public boolean contains(Instant instant) {
         return hasStarted(instant) && !hasEnded(instant);
+    }
+
+    /**
+     * 指定した時点を期間に含むものを返す（時点の税率の判定。税区分、税区分の照会、税率の予定が使う）。
+     * 税区分の税率の期間は重複しないので、該当は 0 件か 1 件。
+     *
+     * @param items   期間を持つもの（税率など）
+     * @param period  期間の取り出し方
+     * @param instant 時点
+     * @param <T>     期間を持つものの型
+     * @return その時点を含むもの。なければ空
+     */
+    public static <T> Optional<T> findAt(Collection<T> items, Function<T, EffectivePeriod> period, Instant instant) {
+        return items.stream().filter(item -> period.apply(item).contains(instant)).findFirst();
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ecsite.module.tax.application.model.view;
 
+import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import jakarta.annotation.Nullable;
 
 import java.math.BigDecimal;
@@ -29,5 +30,12 @@ public record TaxCategoryView(UUID id, String name, @Nullable BigDecimal current
      */
     public record TaxRateView(UUID id, BigDecimal ratePercent,
                               @Nullable Instant effectiveFrom, @Nullable Instant effectiveTo) {
+
+        /**
+         * @return 適用期間
+         */
+        public EffectivePeriod period() {
+            return EffectivePeriod.of(effectiveFrom, effectiveTo);
+        }
     }
 }

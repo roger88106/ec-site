@@ -76,9 +76,7 @@ public class TaxCategoryQueryService {
      * @return 現時点の率を設定したビュー
      */
     private static TaxCategoryView withCurrentRate(TaxCategoryView view, Instant now) {
-        var current = view.rates().stream()
-                .filter(rate -> EffectivePeriod.of(rate.effectiveFrom(), rate.effectiveTo()).contains(now))
-                .findFirst()
+        var current = EffectivePeriod.findAt(view.rates(), TaxCategoryView.TaxRateView::period, now)
                 .map(TaxCategoryView.TaxRateView::ratePercent)
                 .orElse(null);
         return new TaxCategoryView(view.id(), view.name(), current, view.rates(), view.version());

@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.presentation;
 
 import com.ecsite.api.admin.model.Category;
+import com.ecsite.api.admin.model.CategoryActions;
 import com.ecsite.api.admin.model.CategoryNode;
 import com.ecsite.api.admin.model.CategoryTree;
 import com.ecsite.api.admin.model.CreateCategoryRequest;
@@ -93,6 +94,7 @@ class CategoryMapper {
                 .depth(view.depth())
                 .displayOrder(view.displayOrder())
                 .version(view.version())
-                .children(view.children().stream().map(this::toCategoryNode).toList());
+                .children(view.children().stream().map(this::toCategoryNode).toList())
+                .actions(new CategoryActions().addChild(view.addChild()));
     }
 }

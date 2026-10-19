@@ -46,8 +46,9 @@ public record OrderDetailView(UUID id, OrderNumber orderNumber, Instant orderedA
      * @param cancellationPending     キャンセルの申請を承認・却下できる
      * @param cancellable             運営者がキャンセルできる
      * @param shippable               出荷を登録できる
+     * @param cancelAsksRestock       運営者のキャンセルで、在庫に戻すかを聞く
      */
     public record Actions(boolean cancellationRequestable, boolean payable, boolean cancellationPending,
-                          boolean cancellable, boolean shippable) {
+                          boolean cancellable, boolean shippable, boolean cancelAsksRestock) {
     }
 }

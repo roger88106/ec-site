@@ -16,9 +16,10 @@ import java.time.Instant;
  * @param delete         削除できる
  * @param deleteVariants バリアントを削除できる
  * @param addVariant     バリアントを追加できる
+ * @param deleteBlockedReason 削除できない理由。削除できるなら null
  */
 public record ProductActions(boolean publish, boolean unpublish, boolean discontinue, boolean delete,
-                             boolean deleteVariants, boolean addVariant) {
+                             boolean deleteVariants, boolean addVariant, @Nullable DeleteBlockedReason deleteBlockedReason) {
 
     /**
      * 商品の状態から、できる操作を決める。商品（集約）を読み込まないクエリでも使う。
@@ -39,6 +40,7 @@ public record ProductActions(boolean publish, boolean unpublish, boolean discont
                 status != PublicationStatus.DISCONTINUED,
                 neverShown,
                 neverShown,
-                Product.canAddVariant(axisCount, variantCount));
+                Product.canAddVariant(axisCount, variantCount),
+                neverShown ? null : DeleteBlockedReason.ALREADY_SHOWN);
     }
 }

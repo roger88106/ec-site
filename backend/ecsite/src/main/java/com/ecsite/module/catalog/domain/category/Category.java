@@ -120,6 +120,16 @@ public class Category extends AggregateRoot {
     }
 
     /**
+     * その深さのカテゴリの下に、子のカテゴリを足せるかを返す。カテゴリ（集約）を読み込まないクエリでも使う。
+     *
+     * @param depth 階層の深さ（最上位が 1）
+     * @return いちばん深い階層でなければ true
+     */
+    public static boolean canHaveChildren(int depth) {
+        return depth < MAX_DEPTH;
+    }
+
+    /**
      * 兄弟の並び順を変更する。<br />
      * 送られた順に 1 から表示順を振り直す。兄弟と過不足なく一致しなければ、何も変えずに業務のエラーを投げる。
      *

@@ -74,7 +74,8 @@ class AdminOrderMapper {
                         .approveCancellation(actions.cancellationPending())
                         .rejectCancellation(actions.cancellationPending())
                         .cancel(actions.cancellable())
-                        .ship(actions.shippable()));
+                        .ship(actions.shippable())
+                        .cancelAsksRestock(actions.cancelAsksRestock()));
         if (view.cancellationRequest() != null) {
             detail.cancellationRequest(toCancellationRequest(view.cancellationRequest()));
         }

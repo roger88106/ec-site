@@ -236,6 +236,17 @@ public class Order extends AggregateRoot {
     }
 
     /**
+     * 運営者のキャンセルで、在庫に戻すかを聞くかを返す。出荷済みで返送の注文だけ（商品が戻るので、戻すかを選ぶ）。
+     * 出荷の前の注文は、在庫に必ず戻す。
+     *
+     * @param returned 配送状態が返送か（出荷済みのときだけ使う）
+     * @return 在庫に戻すかを聞くなら true
+     */
+    public boolean asksRestockOnCancel(boolean returned) {
+        return status == OrderStatus.SHIPPED && returned;
+    }
+
+    /**
      * 出荷できるかを返す。「受付」だけ（キャンセル申請中は、判断の後に出荷する）。
      *
      * @return 出荷できれば true

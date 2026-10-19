@@ -1568,7 +1568,7 @@ components:
             $ref: '#/components/schemas/CategoryNode'
     CategoryNode:
       type: object
-      required: [id, name, depth, displayOrder, version, children]
+      required: [id, name, depth, displayOrder, version, children, actions]
       properties:
         id:
           type: string
@@ -1589,6 +1589,16 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/CategoryNode'
+        actions:
+          $ref: '#/components/schemas/CategoryActions'
+    CategoryActions:
+      type: object
+      description: 今のカテゴリにできる操作。画面はこれで操作を出し分け、同じ判定を持たない
+      required: [addChild]
+      properties:
+        addChild:
+          type: boolean
+          description: 子のカテゴリを足せる（いちばん深い階層でないとき。AC-9、270）
     Category:
       type: object
       required: [id, name, depth, displayOrder, version]
@@ -1793,6 +1803,12 @@ components:
         addVariant:
           type: boolean
           description: バリアントを追加できる（軸があるか、バリアントがないとき。AC-24）
+        deleteBlockedReason:
+          $ref: '#/components/schemas/ProductDeleteBlockedReason'
+    ProductDeleteBlockedReason:
+      type: string
+      enum: [ALREADY_SHOWN]
+      description: 商品を削除できない理由（AC-269）。ALREADY_SHOWN：C 側に表示されたことがある（AC-71）。削除できるときは省く
     Variant:
       type: object
       required: [id, variantCode, axisValues, salesSuspended]
@@ -2204,7 +2220,7 @@ components:
     OrderActions:
       type: object
       description: 今の注文にできる操作。画面はこれで操作を出し分け、同じ判定を持たない
-      required: [approveCancellation, rejectCancellation, cancel, ship]
+      required: [approveCancellation, rejectCancellation, cancel, cancelAsksRestock, ship]
       properties:
         approveCancellation:
           type: boolean
@@ -2215,6 +2231,9 @@ components:
         cancel:
           type: boolean
           description: キャンセルできる（受付・キャンセル申請中か、出荷済みで配送状態が返送のとき。AC-103、158、171、190）
+        cancelAsksRestock:
+          type: boolean
+          description: キャンセルの時に、在庫に戻すかを聞く（出荷済みで配送状態が返送のとき。AC-191、268）。偽なら在庫に必ず戻すので、restock を送らない
         ship:
           type: boolean
           description: 出荷を登録できる（受付のとき。AC-167、170）

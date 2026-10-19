@@ -4,6 +4,7 @@ import com.ecsite.api.admin.model.AddVariantRequest;
 import com.ecsite.api.admin.model.CreateProductRequest;
 import com.ecsite.api.admin.model.ImageUpload;
 import com.ecsite.api.admin.model.ProductActions;
+import com.ecsite.api.admin.model.ProductDeleteBlockedReason;
 import com.ecsite.api.admin.model.ProductDetail;
 import com.ecsite.api.admin.model.ProductImage;
 import com.ecsite.api.admin.model.ProductSummary;
@@ -226,6 +227,8 @@ class ProductMapper {
                 .discontinue(actions.discontinue())
                 .delete(actions.delete())
                 .deleteVariants(actions.deleteVariants())
-                .addVariant(actions.addVariant());
+                .addVariant(actions.addVariant())
+                .deleteBlockedReason(actions.deleteBlockedReason() == null
+                        ? null : ProductDeleteBlockedReason.fromValue(actions.deleteBlockedReason().name()));
     }
 }

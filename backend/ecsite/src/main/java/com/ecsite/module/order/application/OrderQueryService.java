@@ -172,7 +172,7 @@ public class OrderQueryService {
         var returned = shipment != null && shipment.isReturned();
         var actions = new OrderDetailView.Actions(order.isCancellationRequestable(),
                 awaitingPayment && payment.payable(), order.isCancellationPending(),
-                order.isCancellableByOperator(returned), order.isShippable());
+                order.isCancellableByOperator(returned), order.isShippable(), order.asksRestockOnCancel(returned));
         return new OrderDetailView(order.id(), order.orderNumber(), order.orderedAt(), order.status(), order.lines(),
                 order.amounts(), order.email(), order.shippingAddress(), order.cancellationRequest(),
                 order.cancellation(), payment, shipment, awaitingPayment, actions);

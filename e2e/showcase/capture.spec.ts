@@ -67,9 +67,10 @@ async function order(page: Page) {
   await page.goto(`${STORE}/cart`)
   await page.getByRole('button', { name: '注文手続きへ進む' }).click()
   await page.getByLabel('氏名').fill('山田 花子')
+  // 郵便番号で都道府県・市区町村・町域が補われてから、番地を足す
   await page.getByLabel('郵便番号').fill('100-0001')
-  await page.getByLabel('都道府県').selectOption('東京都')
-  await page.getByLabel('住所').fill('千代田区千代田1-1')
+  await expect(page.getByLabel('住所')).toHaveValue('千代田')
+  await page.getByLabel('住所').fill('千代田 1-1')
   await page.getByLabel('電話番号').fill('03-1234-5678')
   await page.getByRole('button', { name: /^注文する/ }).click()
   await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()

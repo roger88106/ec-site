@@ -6,25 +6,26 @@
 -- 注文番号は注文日（東京）と 6 桁の番号。注文は画面や API で変えられるので、seed の再実行で上書きしない
 
 INSERT INTO ordering.sales_order (id, order_number, checkout_id, ordered_at, status,
-                                  items_total, shipping_fee, total_amount, email, recipient_name, postal_code, prefecture, address, phone,
+                                  items_total, shipping_fee, total_amount, email, recipient_name, postal_code, prefecture_code, prefecture_name,
+                                  municipality_code, municipality_name, address, phone,
                                   cancellation_requested_at, cancellation_request_reason, cancellation_request_result, cancellation_decided_at,
                                   cancelled_at, cancellation_kind, cancellation_reason,
                                   version, created_at, updated_at, member_id, cancellation_decided_by_id, cancellation_decided_by_name,
                                   cancelled_by_id, cancelled_by_name, cancellation_restocked)
 VALUES ('00000000-0000-0000-0000-000000006101', to_char((now() - interval '6 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-107919', '00000000-0000-0000-0000-000000006201', now() - interval '6 days 0 hours', 'CANCELLED',
-        2889, 1000, 3889, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
+        2889, 1000, 3889, 'member@example.com', '会員 太郎', '1500001', '13', '東京都', '13113', '渋谷区', '神宮前 1-2-3', '0312345678',
         now() - interval '5 days 0 hours', '注文を取り消したい', 'APPROVED', now() - interval '5 days -2 hours', now() - interval '5 days -2 hours', 'REQUEST_APPROVED', NULL,
         0, now() - interval '6 days 0 hours', now() - interval '5 days -2 hours', '00000000-0000-0000-0000-000000006001', NULL, '管理 花子', NULL, '管理 花子', true),
        ('00000000-0000-0000-0000-000000006102', to_char((now() - interval '4 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-115838', '00000000-0000-0000-0000-000000006202', now() - interval '4 days 0 hours', 'ACCEPTED',
-        6886, 1000, 7886, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
+        6886, 1000, 7886, 'member@example.com', '会員 太郎', '1500001', '13', '東京都', '13113', '渋谷区', '神宮前 1-2-3', '0312345678',
         now() - interval '3 days 0 hours', '別の色にしたい', 'REJECTED', now() - interval '3 days -2 hours', NULL, NULL, NULL,
         0, now() - interval '4 days 0 hours', now() - interval '3 days -2 hours', '00000000-0000-0000-0000-000000006001', NULL, '管理 花子', NULL, NULL, NULL),
        ('00000000-0000-0000-0000-000000006103', to_char((now() - interval '2 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-123757', '00000000-0000-0000-0000-000000006203', now() - interval '2 days 0 hours', 'CANCELLATION_REQUESTED',
-        8778, 1000, 9778, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
+        8778, 1000, 9778, 'member@example.com', '会員 太郎', '1500001', '13', '東京都', '13113', '渋谷区', '神宮前 1-2-3', '0312345678',
         now() - interval '1 days 0 hours', 'サイズを間違えて注文した', 'PENDING', NULL, NULL, NULL, NULL,
         0, now() - interval '2 days 0 hours', now() - interval '1 days 0 hours', '00000000-0000-0000-0000-000000006001', NULL, NULL, NULL, NULL, NULL),
        ('00000000-0000-0000-0000-000000006104', to_char((now() - interval '1 days 0 hours') AT TIME ZONE 'Asia/Tokyo', 'YYYYMMDD') || '-131676', '00000000-0000-0000-0000-000000006204', now() - interval '1 days 0 hours', 'ACCEPTED',
-        3602, 1000, 4602, 'member@example.com', '会員 太郎', '1500001', '東京都', '渋谷区神宮前 1-2-3', '0312345678',
+        3602, 1000, 4602, 'member@example.com', '会員 太郎', '1500001', '13', '東京都', '13113', '渋谷区', '神宮前 1-2-3', '0312345678',
         NULL, NULL, NULL, NULL, NULL, NULL, NULL,
         0, now() - interval '1 days 0 hours', now() - interval '1 days 0 hours', '00000000-0000-0000-0000-000000006001', NULL, NULL, NULL, NULL, NULL)
 ON CONFLICT (id) DO NOTHING;
@@ -76,9 +77,11 @@ CREATE FUNCTION pg_temp.seed_rnd(key text) RETURNS double precision
 AS $$ SELECT ('x' || substr(md5(key), 1, 8))::bit(32)::bigint / 4294967296.0 $$;
 
 -- お届け先：実在する郵便番号・都道府県・市区町村（README の「お届け先」）と、重み
+-- 都道府県と市区町村のコードは、地域のマスターデータ（region）を名前で引く。引けない行があれば、結合で落ちずに NOT NULL の制約で止まる
 CREATE TEMP TABLE seed_address ON COMMIT DROP AS
-SELECT ord, postal_code, prefecture, city, town, weight,
-       sum(weight) OVER (ORDER BY ord) - weight AS cum_from, sum(weight) OVER (ORDER BY ord) AS cum_to
+SELECT a.ord, a.postal_code, p.code AS prefecture_code, a.prefecture AS prefecture_name, m.code AS municipality_code,
+       a.city AS municipality_name, a.town, a.weight,
+       sum(a.weight) OVER (ORDER BY a.ord) - a.weight AS cum_from, sum(a.weight) OVER (ORDER BY a.ord) AS cum_to
 FROM (VALUES (1, '1000001', '東京都', '千代田区', '千代田', 14), (2, '1500001', '東京都', '渋谷区', '神宮前', 14),
              (3, '1600022', '東京都', '新宿区', '新宿', 14), (4, '1700013', '東京都', '豊島区', '東池袋', 14),
              (5, '1350091', '東京都', '港区', '台場', 14), (6, '1080075', '東京都', '港区', '港南', 14),
@@ -109,7 +112,9 @@ FROM (VALUES (1, '1000001', '東京都', '千代田区', '千代田', 14), (2, '
              (50, '3800824', '長野県', '長野市', '南石堂町', 20), (51, '5100075', '三重県', '四日市市', '安島', 17),
              (52, '8900053', '鹿児島県', '鹿児島市', '中央町', 15), (53, '9200858', '石川県', '金沢市', '木ノ新保町', 11),
              (54, '7900001', '愛媛県', '松山市', '一番町', 13), (55, '5200044', '滋賀県', '大津市', '京町', 14))
-         AS a (ord, postal_code, prefecture, city, town, weight);
+         AS a (ord, postal_code, prefecture, city, town, weight)
+         LEFT JOIN region.prefecture p ON p.name = a.prefecture
+         LEFT JOIN region.municipality m ON m.prefecture_code = p.code AND m.name = a.city;
 
 -- 売る商品：公開中の商品のバリアント。商品ごとに売れやすさの重み（1〜5）を付ける
 -- 税率は、税区分の固定の ID（db/seed/base の標準 10%、軽減 8%）から決める。税率の seed（R__tax_seed.sql）は名前の順でこの後に流れるため
@@ -158,8 +163,9 @@ SELECT base.n, base.t, base.m,
                 THEN extract(YEAR FROM age((base.t AT TIME ZONE 'Asia/Tokyo')::date, member.birthdate))::smallint END AS buyer_age,
        CASE WHEN member.g < 0.42 THEN 'MALE' WHEN member.g < 0.84 THEN 'FEMALE' WHEN member.g < 0.88 THEN 'OTHER'
             WHEN member.g < 0.94 THEN 'UNDISCLOSED' END AS buyer_gender,
-       address.postal_code, address.prefecture,
-       address.city || address.town || ' ' || (base.m % 9 + 1) || '-' || (base.m % 17 + 1) || '-' || (base.m % 23 + 1) AS address
+       address.postal_code, address.prefecture_code, address.prefecture_name, address.municipality_code,
+       address.municipality_name,
+       address.town || ' ' || (base.m % 9 + 1) || '-' || (base.m % 17 + 1) || '-' || (base.m % 23 + 1) AS address
 FROM base
          JOIN member ON member.m = base.m
          JOIN seed_address address ON member.a >= address.cum_from AND member.a < address.cum_to;
@@ -195,7 +201,8 @@ FROM (SELECT n, rate_percent, sum(subtotal) + CASE WHEN rate_percent = 10 THEN 1
       GROUP BY n, rate_percent) AS taxable;
 
 INSERT INTO ordering.sales_order (id, order_number, checkout_id, ordered_at, status,
-                                  items_total, shipping_fee, total_amount, email, recipient_name, postal_code, prefecture, address, phone,
+                                  items_total, shipping_fee, total_amount, email, recipient_name, postal_code, prefecture_code, prefecture_name,
+                                  municipality_code, municipality_name, address, phone,
                                   cancellation_requested_at, cancellation_request_reason, cancellation_request_result, cancellation_decided_at,
                                   cancelled_at, cancellation_kind, cancellation_reason,
                                   version, created_at, updated_at, member_id, cancellation_decided_by_id, cancellation_decided_by_name,
@@ -207,7 +214,8 @@ SELECT o.id,
        CASE o.plan WHEN 'ACCEPTED' THEN 'ACCEPTED' WHEN 'REQUESTED' THEN 'CANCELLATION_REQUESTED'
                    WHEN 'REJECTED' THEN 'SHIPPED' WHEN 'SHIPPED' THEN 'SHIPPED' ELSE 'CANCELLED' END,
        items.total, 1000, items.total + 1000,
-       'report-member-' || o.m || '@example.com', 'レポート 会員' || o.m, o.postal_code, o.prefecture, o.address,
+       'report-member-' || o.m || '@example.com', 'レポート 会員' || o.m, o.postal_code, o.prefecture_code, o.prefecture_name,
+       o.municipality_code, o.municipality_name, o.address,
        '090' || lpad(o.m::text, 8, '0'),
        CASE WHEN o.plan IN ('REQUESTED', 'APPROVED', 'REJECTED') THEN o.t + interval '2 hours' END,
        CASE WHEN o.plan IN ('REQUESTED', 'APPROVED', 'REJECTED') THEN 'サイズを間違えて注文した' END,

@@ -90,7 +90,7 @@ FROM ordering.sales_order o
          JOIN (SELECT order_id, max(occurred_at) AS refreshed_at FROM seed_history GROUP BY order_id) AS history
               ON history.order_id = o.id
          LEFT JOIN shipping.shipment s ON s.order_id = o.id
-         LEFT JOIN seed_prefecture prefecture ON prefecture.name = o.prefecture
+         LEFT JOIN seed_prefecture prefecture ON prefecture.name = o.prefecture_name
 ON CONFLICT (order_id) DO NOTHING;
 
 INSERT INTO reporting.sales_order_line (order_id, line_no, product_id, variant_id, product_code, variant_code, product_name,

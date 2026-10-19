@@ -42,7 +42,6 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: SECRET,
   session: { strategy: 'jwt' },
   useSecureCookies: SECURE_COOKIE,
-  trustHost: true,
   events: {
     async signIn({ account }) {
       // ログインの直後に、Cookie のカートを会員のカートへ移す

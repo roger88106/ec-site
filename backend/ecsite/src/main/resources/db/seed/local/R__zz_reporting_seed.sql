@@ -58,15 +58,6 @@ SELECT md5(id || ':' || step)::uuid AS event_id, id AS order_id, kind, from_stat
        restocked
 FROM history;
 
--- 都道府県の名前から全国地方公共団体コード（reporting の PrefectureCode と同じ）
-CREATE TEMP TABLE seed_prefecture ON COMMIT DROP AS
-SELECT name, lpad(code::text, 2, '0') AS code
-FROM unnest(ARRAY ['北海道', '青森県', '岩手県', '宮城県', '秋田県', '山形県', '福島県', '茨城県', '栃木県', '群馬県',
-                   '埼玉県', '千葉県', '東京都', '神奈川県', '新潟県', '富山県', '石川県', '福井県', '山梨県', '長野県',
-                   '岐阜県', '静岡県', '愛知県', '三重県', '滋賀県', '京都府', '大阪府', '兵庫県', '奈良県', '和歌山県',
-                   '鳥取県', '島根県', '岡山県', '広島県', '山口県', '徳島県', '香川県', '愛媛県', '高知県', '福岡県',
-                   '佐賀県', '長崎県', '熊本県', '大分県', '宮崎県', '鹿児島県', '沖縄県']) WITH ORDINALITY AS p (name, code);
-
 INSERT INTO reporting.status_history (event_id, order_id, kind, from_status, to_status, occurred_at, cancellation_kind, restocked,
                                       recorded_at)
 SELECT event_id, order_id, kind, from_status, to_status, occurred_at, cancellation_kind, restocked, occurred_at
@@ -78,7 +69,7 @@ INSERT INTO reporting.sales_order (order_id, order_number, member_id, ordered_at
                                    buyer_age, buyer_gender, total_amount, shipping_fee, tax_total, shipping_tax, refreshed_at)
 SELECT o.id, o.order_number, o.member_id, o.ordered_at, (o.ordered_at AT TIME ZONE 'Asia/Tokyo')::date, o.status,
        s.shipped_at, (s.shipped_at AT TIME ZONE 'Asia/Tokyo')::date, s.status,
-       o.cancelled_at, o.cancellation_kind, o.cancellation_restocked, o.postal_code, prefecture.code,
+       o.cancelled_at, o.cancellation_kind, o.cancellation_restocked, o.postal_code, o.prefecture_code,
        o.buyer_age, o.buyer_gender, o.total_amount, o.shipping_fee,
        tax.tax_total,
        -- 送料の消費税：送料 × 標準税率 / (100 + 標準税率) の切り捨て
@@ -90,7 +81,6 @@ FROM ordering.sales_order o
          JOIN (SELECT order_id, max(occurred_at) AS refreshed_at FROM seed_history GROUP BY order_id) AS history
               ON history.order_id = o.id
          LEFT JOIN shipping.shipment s ON s.order_id = o.id
-         LEFT JOIN seed_prefecture prefecture ON prefecture.name = o.prefecture_name
 ON CONFLICT (order_id) DO NOTHING;
 
 INSERT INTO reporting.sales_order_line (order_id, line_no, product_id, variant_id, product_code, variant_code, product_name,

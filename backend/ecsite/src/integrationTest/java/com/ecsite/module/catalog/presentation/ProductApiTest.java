@@ -22,6 +22,7 @@ import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.stream.Collectors;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
@@ -302,15 +303,16 @@ class ProductApiTest {
     class Variants {
 
         @Test
-        @DisplayName("AC-20 品番と軸の値で登録でき、本文で ID が返る（Location は返さない）")
+        @DisplayName("AC-20、276 品番と軸の値で登録でき、本文で ID が返る。Location は作ったバリアントの URL")
         void addsVariant() throws Exception {
             var id = productId("ABC-001", "色", "サイズ");
 
             var result = addVariant(id, "ABC-001-WH-M", 0, "白", "M")
                     .andExpect(status().isCreated())
-                    .andExpect(header().doesNotExist(HttpHeaders.LOCATION))
                     .andReturn();
             String variantId = JsonPath.read(result.getResponse().getContentAsString(), "$.id");
+            assertThat(result.getResponse().getHeader(HttpHeaders.LOCATION))
+                    .endsWith("/api/admin/products/" + id + "/variants/" + variantId);
 
             getProduct(id)
                     .andExpect(jsonPath("$.variants[0].id").value(variantId))

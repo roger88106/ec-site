@@ -11,8 +11,9 @@ import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } f
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
+import { ageGroupLabel, prefectureLabel, reportGenderLabel } from '@/features/report/labels'
 import { CALENDAR_PRESETS, presetPeriod, todayInJapan } from '@/features/report/period'
-import { ageGroupLabel, formatYenCompact, prefectureLabel, reportGenderLabel } from '@/features/report/report'
+import { formatYenCompact } from '@/features/report/report'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
 

@@ -13,8 +13,8 @@ import { AuthorizationExpiringBadge } from '@/features/order/components/Authoriz
 import { OrderFilterForm } from '@/features/order/components/OrderFilterForm'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
+import { shipmentStatusLabel } from '@/features/order/labels'
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
-import { shipmentStatusLabel } from '@/lib/labels'
 
 /**
  * 注文一覧。注文日時の新しい順で、キャンセル済みも含む。与信期限が近い注文には印を付ける。<br />

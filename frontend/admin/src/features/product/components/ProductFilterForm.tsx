@@ -9,9 +9,9 @@ import { CategorySelect } from '@/components/CategorySelect'
 import { CodeInput } from '@/components/CodeInput'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
+import { publicationStatusLabel } from '@/features/product/labels'
 import { EMPTY_FILTER, type ProductFilter } from '@/features/product/productFilter'
 import { translate } from '@/i18n/translate'
-import { publicationStatusLabel } from '@/lib/labels'
 
 /** 状態の選択肢（「すべて」は絞り込まない） */
 const statusOptions = [

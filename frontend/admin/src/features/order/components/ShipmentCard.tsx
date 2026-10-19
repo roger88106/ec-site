@@ -13,7 +13,7 @@ import { ErrorMessage } from '@/components/ErrorMessage'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { carrierLabel, shipmentStatusLabel } from '@/lib/labels'
+import { carrierLabel, shipmentStatusLabel } from '@/features/order/labels'
 
 /** 入力欄の値 */
 type Values = { carrier: Carrier | null; trackingNumber: string }

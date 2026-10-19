@@ -2,7 +2,7 @@ import { useTranslations } from 'use-intl'
 import type { Cancellation, CancellationKind, CancellationRequest } from '@/api/types'
 import { DateTime } from '@/components/DateTime'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
-import { cancellationRequestResultLabel } from '@/features/order/order'
+import { cancellationRequestResultLabel } from '@/features/order/labels'
 
 /** キャンセルのきっかけの文言のキー */
 const TRIGGERS = {

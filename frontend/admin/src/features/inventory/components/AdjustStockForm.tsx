@@ -12,8 +12,8 @@ import { OptionSelect } from '@/components/OptionSelect'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
 import { Textarea } from '@/components/ui/textarea'
+import { stockAdjustmentReasonLabel } from '@/features/inventory/labels'
 import { formatDelta } from '@/lib/delta'
-import { stockAdjustmentReasonLabel } from '@/lib/labels'
 
 /** 入力欄の値（増減量は入力中の文字列のまま持ち、送るときに数にする） */
 type Values = { delta: string; reason: ManualStockAdjustmentReason | null; memo: string }

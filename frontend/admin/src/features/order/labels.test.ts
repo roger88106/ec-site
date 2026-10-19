@@ -1,6 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { cancellationRequestResultLabel } from '@/features/order/order'
-import { carrierLabel, orderStatusLabel, paymentStatusLabel, shipmentStatusLabel } from '@/lib/labels'
+import {
+  cancellationRequestResultLabel,
+  carrierLabel,
+  orderStatusLabel,
+  paymentStatusLabel,
+  shipmentStatusLabel,
+} from '@/features/order/labels'
 
 describe('注文の状態の表示名（BR-9）', () => {
   test('BR-9 受付、キャンセル申請中、キャンセル', () => {

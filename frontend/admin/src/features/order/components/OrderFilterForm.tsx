@@ -8,9 +8,9 @@ import type { OrderStatus } from '@/api/types'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Checkbox } from '@/components/ui/checkbox'
 import { Field, FieldLabel } from '@/components/ui/field'
+import { orderStatusLabel } from '@/features/order/labels'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
 import { translate } from '@/i18n/translate'
-import { orderStatusLabel } from '@/lib/labels'
 
 /** 状態の選択肢（「すべて」は絞り込まない） */
 const statusOptions = [

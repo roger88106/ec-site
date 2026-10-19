@@ -1,4 +1,4 @@
-import { TIME_ZONE } from '@ec-site/shared/lib/locale'
+import { toZonedDate } from '@/lib/format'
 
 /** 期間の選択肢 */
 export type PeriodPreset = 'thisFiscalYear' | 'lastFiscalYear' | 'thisMonth' | 'lastMonth' | 'thisYear' | 'lastYear'
@@ -27,8 +27,7 @@ export function isDate(value: string): boolean {
 
 /** いまの日本時間の日付（yyyy-MM-dd） */
 export function todayInJapan(now: Date = new Date()): string {
-  // sv-SE は yyyy-MM-dd の形で日付を出す
-  return now.toLocaleDateString('sv-SE', { timeZone: TIME_ZONE })
+  return toZonedDate(now)
 }
 
 /**

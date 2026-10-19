@@ -16,7 +16,7 @@ import java.util.UUID;
  * @param orderNumber      注文番号
  * @param memberId         会員 ID
  * @param orderedAt        注文日時
- * @param status           注文の状態（注文の状態の名前）
+ * @param status           注文の状態
  * @param shippedAt        出荷日時。出荷していなければ null
  * @param deliveryStatus   配送状態。出荷していなければ null
  * @param cancelledAt      キャンセル日時。キャンセルでなければ null
@@ -32,7 +32,7 @@ import java.util.UUID;
  * @param shippingTax      送料の消費税
  * @param lines            明細
  */
-public record ReportOrder(UUID orderId, String orderNumber, UUID memberId, Instant orderedAt, String status,
+public record ReportOrder(UUID orderId, String orderNumber, UUID memberId, Instant orderedAt, ReportOrderStatus status,
                           @Nullable Instant shippedAt, @Nullable DeliveryStatus deliveryStatus,
                           @Nullable Instant cancelledAt, @Nullable String cancellationKind, @Nullable Boolean restocked,
                           String postalCode, @Nullable String prefectureCode, @Nullable Integer buyerAge,

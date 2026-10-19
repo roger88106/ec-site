@@ -132,7 +132,7 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         record.setMemberId(order.memberId());
         record.setOrderedAt(order.orderedAt());
         record.setOrderedOn(dateOf(order.orderedAt()));
-        record.setStatus(order.status());
+        record.setStatus(order.status().name());
         record.setShippedAt(order.shippedAt());
         record.setShippedOn(order.shippedAt() == null ? null : dateOf(order.shippedAt()));
         record.setDeliveryStatus(order.deliveryStatus() == null ? null : order.deliveryStatus().name());

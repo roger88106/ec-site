@@ -6,6 +6,7 @@ import com.ecsite.module.payment.application.PaymentCommandService;
 import com.ecsite.module.payment.application.PaymentPageService;
 import com.ecsite.module.payment.application.PaymentQueryService;
 import com.ecsite.module.payment.application.model.view.PaymentSummaryView;
+import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -133,6 +134,23 @@ public class PaymentApi {
      * 支払の状態を公開の型にする。
      */
     private static PaymentSummary toSummary(PaymentSummaryView view) {
-        return new PaymentSummary(view.orderId(), PaymentSummary.Status.valueOf(view.status().name()), view.deadline());
+        return new PaymentSummary(view.orderId(), toStatus(view.status()), view.deadline());
+    }
+
+    /**
+     * 支払の状態を公開の型にする。
+     */
+    private static PaymentSummary.Status toStatus(PaymentStatus status) {
+        return switch (status) {
+            case UNPAID -> PaymentSummary.Status.UNPAID;
+            case AUTHORIZED -> PaymentSummary.Status.AUTHORIZED;
+            case VOID_PENDING -> PaymentSummary.Status.VOID_PENDING;
+            case VOIDED -> PaymentSummary.Status.VOIDED;
+            case NOT_PAID -> PaymentSummary.Status.NOT_PAID;
+            case CAPTURED -> PaymentSummary.Status.CAPTURED;
+            case AUTHORIZATION_EXPIRED -> PaymentSummary.Status.AUTHORIZATION_EXPIRED;
+            case REFUND_PENDING -> PaymentSummary.Status.REFUND_PENDING;
+            case REFUNDED -> PaymentSummary.Status.REFUNDED;
+        };
     }
 }

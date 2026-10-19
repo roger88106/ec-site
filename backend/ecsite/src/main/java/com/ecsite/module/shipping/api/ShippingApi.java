@@ -2,6 +2,7 @@ package com.ecsite.module.shipping.api;
 
 import com.ecsite.module.shipping.application.ShipmentService;
 import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
@@ -34,7 +35,7 @@ public class ShippingApi {
      * @return 作った出荷
      */
     public ShipmentSummary create(UUID orderId, ShipmentSummary.Carrier carrier, String trackingNumber, Instant shippedAt) {
-        return toSummary(shipmentService.create(orderId, Carrier.valueOf(carrier.name()), trackingNumber, shippedAt));
+        return toSummary(shipmentService.create(orderId, toCarrier(carrier), trackingNumber, shippedAt));
     }
 
     /**
@@ -62,9 +63,43 @@ public class ShippingApi {
     private static ShipmentSummary toSummary(Shipment shipment) {
         return new ShipmentSummary(
                 shipment.orderId(),
-                ShipmentSummary.Carrier.valueOf(shipment.carrier().name()),
+                toSummaryCarrier(shipment.carrier()),
                 shipment.trackingNumber().value(),
-                ShipmentSummary.Status.valueOf(shipment.status().name()),
+                toSummaryStatus(shipment.status()),
                 shipment.shippedAt());
+    }
+
+    /**
+     * 公開の型の配送業者を、ドメインの型にする。
+     */
+    private static Carrier toCarrier(ShipmentSummary.Carrier carrier) {
+        return switch (carrier) {
+            case YAMATO -> Carrier.YAMATO;
+            case SAGAWA -> Carrier.SAGAWA;
+            case JAPAN_POST -> Carrier.JAPAN_POST;
+        };
+    }
+
+    /**
+     * 配送業者を公開の型にする。
+     */
+    private static ShipmentSummary.Carrier toSummaryCarrier(Carrier carrier) {
+        return switch (carrier) {
+            case YAMATO -> ShipmentSummary.Carrier.YAMATO;
+            case SAGAWA -> ShipmentSummary.Carrier.SAGAWA;
+            case JAPAN_POST -> ShipmentSummary.Carrier.JAPAN_POST;
+        };
+    }
+
+    /**
+     * 配送状態を公開の型にする。
+     */
+    private static ShipmentSummary.Status toSummaryStatus(DeliveryStatus status) {
+        return switch (status) {
+            case SHIPPED -> ShipmentSummary.Status.SHIPPED;
+            case IN_TRANSIT -> ShipmentSummary.Status.IN_TRANSIT;
+            case DELIVERED -> ShipmentSummary.Status.DELIVERED;
+            case RETURNED -> ShipmentSummary.Status.RETURNED;
+        };
     }
 }

@@ -11,7 +11,9 @@ import com.ecsite.api.admin.model.SalesTrendPoint;
 import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSales;
 import com.ecsite.api.admin.model.VariantSalesReport;
+import com.ecsite.module.reporting.domain.AgeGroup;
 import com.ecsite.module.reporting.domain.Basis;
+import com.ecsite.module.reporting.domain.ReportGender;
 import com.ecsite.module.reporting.domain.TrendPoint;
 import jakarta.annotation.Nullable;
 import org.springframework.stereotype.Component;
@@ -30,7 +32,13 @@ class ReportMapper {
      * @return 売上の数え方
      */
     Basis toBasis(@Nullable ReportBasis basis) {
-        return basis == null ? Basis.ORDER : Basis.valueOf(basis.getValue());
+        if (basis == null) {
+            return Basis.ORDER;
+        }
+        return switch (basis) {
+            case ORDER -> Basis.ORDER;
+            case SHIPMENT -> Basis.SHIPMENT;
+        };
     }
 
     /**
@@ -40,7 +48,12 @@ class ReportMapper {
      * @return 集計の粒度
      */
     com.ecsite.module.reporting.domain.Granularity toGranularity(Granularity granularity) {
-        return com.ecsite.module.reporting.domain.Granularity.valueOf(granularity.getValue());
+        return switch (granularity) {
+            case WEEK -> com.ecsite.module.reporting.domain.Granularity.WEEK;
+            case MONTH -> com.ecsite.module.reporting.domain.Granularity.MONTH;
+            case QUARTER -> com.ecsite.module.reporting.domain.Granularity.QUARTER;
+            case YEAR -> com.ecsite.module.reporting.domain.Granularity.YEAR;
+        };
     }
 
     /**
@@ -95,13 +108,13 @@ class ReportMapper {
                 .toList();
         var ageGroups = report.ageGroups().stream()
                 .map(sales -> new AgeGroupSales()
-                        .ageGroup(AgeGroupSales.AgeGroupEnum.fromValue(sales.ageGroup().name()))
+                        .ageGroup(toAgeGroup(sales.ageGroup()))
                         .amount(sales.amount().yen())
                         .orders(sales.orders()))
                 .toList();
         var genders = report.genders().stream()
                 .map(sales -> new GenderSales()
-                        .gender(GenderSales.GenderEnum.fromValue(sales.gender().name()))
+                        .gender(toGender(sales.gender()))
                         .amount(sales.amount().yen())
                         .orders(sales.orders()))
                 .toList();
@@ -124,5 +137,32 @@ class ReportMapper {
                 .quarter(bucket.quarter())
                 .amount(point.amount().yen())
                 .quantity(point.quantity());
+    }
+
+    /**
+     * 年齢層。
+     */
+    private static AgeGroupSales.AgeGroupEnum toAgeGroup(AgeGroup ageGroup) {
+        return switch (ageGroup) {
+            case TEENS_OR_YOUNGER -> AgeGroupSales.AgeGroupEnum.TEENS_OR_YOUNGER;
+            case TWENTIES -> AgeGroupSales.AgeGroupEnum.TWENTIES;
+            case THIRTIES -> AgeGroupSales.AgeGroupEnum.THIRTIES;
+            case FORTIES -> AgeGroupSales.AgeGroupEnum.FORTIES;
+            case FIFTIES -> AgeGroupSales.AgeGroupEnum.FIFTIES;
+            case SIXTIES_OR_OLDER -> AgeGroupSales.AgeGroupEnum.SIXTIES_OR_OLDER;
+            case UNKNOWN -> AgeGroupSales.AgeGroupEnum.UNKNOWN;
+        };
+    }
+
+    /**
+     * 性別の区分。
+     */
+    private static GenderSales.GenderEnum toGender(ReportGender gender) {
+        return switch (gender) {
+            case MALE -> GenderSales.GenderEnum.MALE;
+            case FEMALE -> GenderSales.GenderEnum.FEMALE;
+            case OTHER -> GenderSales.GenderEnum.OTHER;
+            case UNKNOWN -> GenderSales.GenderEnum.UNKNOWN;
+        };
     }
 }

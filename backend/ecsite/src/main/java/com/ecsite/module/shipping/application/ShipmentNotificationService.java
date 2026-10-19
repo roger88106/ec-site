@@ -68,7 +68,12 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
      * 配送状態を、イベントの配送状態にする。
      */
     private static DeliveryStatusChanged.Status toEventStatus(DeliveryStatus status) {
-        return DeliveryStatusChanged.Status.valueOf(status.name());
+        return switch (status) {
+            case SHIPPED -> DeliveryStatusChanged.Status.SHIPPED;
+            case IN_TRANSIT -> DeliveryStatusChanged.Status.IN_TRANSIT;
+            case DELIVERED -> DeliveryStatusChanged.Status.DELIVERED;
+            case RETURNED -> DeliveryStatusChanged.Status.RETURNED;
+        };
     }
 
     /**

@@ -4,6 +4,7 @@ import com.ecsite.module.order.api.OrderReportApi;
 import com.ecsite.module.order.api.OrderReportSnapshot;
 import com.ecsite.module.reporting.application.port.OrderDirectory;
 import com.ecsite.module.reporting.domain.ReportOrder;
+import com.ecsite.module.reporting.domain.ReportOrderStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -42,7 +43,7 @@ class OrderApiDirectory implements OrderDirectory {
                 snapshot.orderNumber(),
                 snapshot.memberId(),
                 snapshot.orderedAt(),
-                snapshot.status().name(),
+                toStatus(snapshot.status()),
                 null,
                 null,
                 snapshot.cancelledAt(),
@@ -69,5 +70,18 @@ class OrderApiDirectory implements OrderDirectory {
                         line.ratePercent(),
                         line.subtotalInclTax(),
                         line.subtotalExclTax())).toList());
+    }
+
+    /**
+     * 注文の API の注文の状態を、レポートの型にする。
+     */
+    private static ReportOrderStatus toStatus(OrderReportSnapshot.Status status) {
+        return switch (status) {
+            case PENDING_PAYMENT -> ReportOrderStatus.PENDING_PAYMENT;
+            case ACCEPTED -> ReportOrderStatus.ACCEPTED;
+            case CANCELLATION_REQUESTED -> ReportOrderStatus.CANCELLATION_REQUESTED;
+            case CANCELLED -> ReportOrderStatus.CANCELLED;
+            case SHIPPED -> ReportOrderStatus.SHIPPED;
+        };
     }
 }

@@ -229,6 +229,16 @@ class ProductMapper {
                 .deleteVariants(actions.deleteVariants())
                 .addVariant(actions.addVariant())
                 .deleteBlockedReason(actions.deleteBlockedReason() == null
-                        ? null : ProductDeleteBlockedReason.fromValue(actions.deleteBlockedReason().name()));
+                        ? null : toDeleteBlockedReason(actions.deleteBlockedReason()));
+    }
+
+    /**
+     * 削除できない理由をレスポンスに変換する。
+     */
+    private static ProductDeleteBlockedReason toDeleteBlockedReason(
+            com.ecsite.module.catalog.domain.product.DeleteBlockedReason reason) {
+        return switch (reason) {
+            case ALREADY_SHOWN -> ProductDeleteBlockedReason.ALREADY_SHOWN;
+        };
     }
 }

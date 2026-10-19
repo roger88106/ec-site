@@ -42,7 +42,7 @@ spec の番号（`NNN`）は、種類によらず 1 つの並びで振る。task
 | 文書 | ステータス | 意味 |
 |------|------------|------|
 | spec | 草案 | 議論中。Open questions が残っていてよい |
-| spec | 確定 | Open questions が空。plan に進める |
+| spec | 確定 | Open questions が空で、利用者が確定した。plan を書き始められる |
 | plan | 承認済み（tasks 作成済み） | 利用者が承認し、tasks に分けた |
 
 spec の進み具合（どの段階まで完了したか）は、README の spec の表に書く。

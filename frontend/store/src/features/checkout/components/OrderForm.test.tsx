@@ -88,8 +88,8 @@ describe('お届け先の入力と注文', () => {
       html.indexOf(`name="${name}"`),
     )
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(html).toMatch(/<option value="13">東京都<\/option>/)
-    expect(html).toMatch(/<option value="14">神奈川県<\/option>/)
+    expect(html).toMatch(/<option[^>]* value="13"[^>]*>東京都<\/option>/)
+    expect(html).toMatch(/<option[^>]* value="14"[^>]*>神奈川県<\/option>/)
     expect(html).toMatch(/<option[^>]* disabled="" value="" selected="">選んでください<\/option>/)
   })
 
@@ -127,7 +127,8 @@ describe('都道府県と市区町村を選ぶ', () => {
     const { user } = renderInBrowser(form())
 
     await user.selectOptions(screen.getByLabelText('都道府県'), '13')
-    await user.selectOptions(await screen.findByRole('option', { name: '中央区' }), '13102')
+    await screen.findByRole('option', { name: '中央区' })
+    await user.selectOptions(screen.getByLabelText('市区町村'), '13102')
     expect(listMunicipalities).toHaveBeenCalledWith('13')
     expect(screen.queryByRole('option', { name: '横浜市中区' })).toBeNull()
     expect(selected('市区町村')).toBe('13102')

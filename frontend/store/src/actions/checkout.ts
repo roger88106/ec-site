@@ -13,7 +13,7 @@ const TOTAL_AMOUNT_CHANGED = 'TOTAL_AMOUNT_CHANGED'
 
 /**
  * 注文する。成立したら、決済サービスの支払の画面へ移る。支払の画面の URL を得られなければ、注文の画面へ移る（そこから支払える）。<br />
- * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、name、postalCode、prefecture、address、phone。
+ * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、name、postalCode、prefectureCode、municipalityCode、address、phone。
  * 連絡先のメールアドレスは、API が会員の token から取る。
  * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す。
  */
@@ -27,7 +27,8 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
         shippingAddress: {
           name: readString(formData, 'name'),
           postalCode: readString(formData, 'postalCode'),
-          prefecture: readString(formData, 'prefecture'),
+          prefectureCode: readString(formData, 'prefectureCode'),
+          municipalityCode: readString(formData, 'municipalityCode'),
           address: readString(formData, 'address'),
           phone: readString(formData, 'phone'),
         },

@@ -3,8 +3,8 @@ import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
 import { getTranslations } from 'next-intl/server'
-import { getMemberApi } from '@/api/client'
-import { unwrapMember } from '@/api/result'
+import { getApi, getMemberApi } from '@/api/client'
+import { unwrap, unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
 import { AmountsSummary } from '@/components/AmountsSummary'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
@@ -36,6 +36,8 @@ export default async function CheckoutPage({ params }: PageProps<'/checkout/[che
   if (checkout.orderId) {
     redirect(`/orders/${checkout.orderId}`)
   }
+  // 都道府県は公開のマスターデータなので、キャッシュを使う口で取る（店舗画面の構成 第 4.8 節）
+  const prefectures = unwrap(await (await getApi()).GET('/prefectures')).items
 
   return (
     <div className="space-y-6">
@@ -62,7 +64,12 @@ export default async function CheckoutPage({ params }: PageProps<'/checkout/[che
         </section>
         <section className="space-y-4">
           <h2 className="font-semibold">{t('shippingAddress') /* お届け先 */}</h2>
-          <OrderForm checkoutId={checkout.id} email={member.email} expectedTotal={checkout.amounts.total} />
+          <OrderForm
+            checkoutId={checkout.id}
+            email={member.email}
+            expectedTotal={checkout.amounts.total}
+            prefectures={prefectures}
+          />
         </section>
       </div>
     </div>

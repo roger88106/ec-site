@@ -2,7 +2,7 @@ import { translate } from '@/i18n/translate'
 import type { ActionResult } from '@/lib/actionResult'
 
 /** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない） */
-export type OrderField = 'name' | 'postalCode' | 'prefecture' | 'address' | 'phone'
+export type OrderField = 'name' | 'postalCode' | 'prefecture' | 'municipality' | 'address' | 'phone'
 
 /** 注文のフォームに出すエラー。入力欄ごとのメッセージ、フォームの下のメッセージ、カートへのリンクを添えるか */
 export type PlaceOrderErrors = {
@@ -17,7 +17,8 @@ export type PlaceOrderErrors = {
 const FIELD_BY_PATH: Record<string, OrderField> = {
   'shippingAddress.name': 'name',
   'shippingAddress.postalCode': 'postalCode',
-  'shippingAddress.prefecture': 'prefecture',
+  'shippingAddress.prefectureCode': 'prefecture',
+  'shippingAddress.municipalityCode': 'municipality',
   'shippingAddress.address': 'address',
   'shippingAddress.phone': 'phone',
 }
@@ -27,6 +28,7 @@ const FIELD_BY_ERROR_CODE: Record<string, OrderField> = {
   INVALID_RECIPIENT_NAME: 'name',
   INVALID_POSTAL_CODE: 'postalCode',
   INVALID_PREFECTURE: 'prefecture',
+  INVALID_MUNICIPALITY: 'municipality',
   INVALID_ADDRESS: 'address',
   INVALID_PHONE_NUMBER: 'phone',
 }

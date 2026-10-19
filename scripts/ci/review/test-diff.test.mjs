@@ -104,3 +104,61 @@ describe('テストの差分の検査', () => {
     assert.equal(findViolations(`${e2e}\n${store}`, []).length, 2)
   })
 })
+
+describe('ファイルをまたぐテストの移動（spec 014 の DN-18）', () => {
+  const FROM = 'frontend/store/src/lib/orderDisplay.test.ts'
+  const TO = 'frontend/store/src/lib/labels.test.ts'
+  const MOVED = ["  test('注文の状態の表示名', () => {", "    expect(orderStatusLabel('ACCEPTED')).toBe('受付')", '  })']
+
+  test('中身を変えずに既存のファイルへ移したテストは通る', () => {
+    const diff = [fileDiff({ from: FROM, removed: MOVED }), fileDiff({ from: TO, added: MOVED })].join('\n')
+    assert.deepEqual(findViolations(diff, []), [])
+  })
+
+  test('中身を変えずに新しいファイルへ移したテストは通る', () => {
+    const diff = [
+      fileDiff({ from: FROM, removed: MOVED }),
+      fileDiff({ from: TO, newFile: true, added: ["describe('表示名', () => {", ...MOVED, '})'] }),
+    ].join('\n')
+    assert.deepEqual(findViolations(diff, []), [])
+  })
+
+  test('移した行を変えると、元の消した行を出して失敗する', () => {
+    const changed = [MOVED[0], "    expect(orderStatusLabel('ACCEPTED')).toBe('受付済み')", MOVED[2]]
+    const diff = [
+      fileDiff({ from: FROM, removed: MOVED }),
+      fileDiff({ from: TO, newFile: true, added: changed }),
+    ].join('\n')
+    assert.deepEqual(findViolations(diff, []), [{ file: FROM, kind: 'removed', line: MOVED[1] }])
+  })
+
+  test('字下げだけが変わった行は通る', () => {
+    const diff = [
+      fileDiff({ from: FROM, removed: MOVED }),
+      fileDiff({ from: TO, added: MOVED.map((line) => `  ${line}`) }),
+    ].join('\n')
+    assert.deepEqual(findViolations(diff, []), [])
+  })
+
+  test('複数行の import の中の行の変更は通る', () => {
+    const diff = fileDiff({
+      from: FROM,
+      removed: ['import {', '  formatYen,', "} from '@/lib/orderDisplay'"],
+      added: ['import {', '  formatYen,', '  taxLabel,', "} from '@ec-site/shared/lib/format'"],
+    })
+    assert.deepEqual(findViolations(diff, []), [])
+  })
+
+  test('消したファイルの行が、どこにも移っていなければ失敗する', () => {
+    const diff = `diff --git a/${FROM} b/${FROM}\ndeleted file mode 100644\n--- a/${FROM}\n+++ /dev/null\n@@ -1,3 +0,0 @@\n${MOVED.map((l) => `-${l}`).join('\n')}`
+    assert.equal(findViolations(diff, []).length, 3)
+  })
+
+  test('新しく足したファイルの、照らして残った行は出さない', () => {
+    const diff = [
+      fileDiff({ from: FROM, removed: MOVED }),
+      fileDiff({ from: TO, newFile: true, added: [...MOVED, "  test('新しいテスト', () => {})"] }),
+    ].join('\n')
+    assert.deepEqual(findViolations(diff, []), [])
+  })
+})

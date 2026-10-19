@@ -104,6 +104,19 @@ describe('お届け先の入力と注文', () => {
     expect(html).not.toContain('カートを見る')
   })
 
+  test('AC-264 入力の検証の誤り（400）は、欄ごとに API の文をそのまま出す', () => {
+    const html = renderMarkup(
+      form({
+        ok: false,
+        message: '入力内容に誤りがあります。',
+        errorCode: 'INVALID_REQUEST',
+        fieldErrors: { 'shippingAddress.phone': 'API が決めた電話番号の文' },
+      }),
+    )
+
+    expect(html).toMatch(/name="phone"[^>]*\/>.*<p class="text-destructive text-sm">API が決めた電話番号の文<\/p>/)
+  })
+
   test('AC-251 市区町村の誤りは、市区町村の欄の下に出す', () => {
     const html = renderMarkup(
       form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }),

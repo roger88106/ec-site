@@ -2,11 +2,11 @@ import { describe, expect, test } from 'vitest'
 import { placeOrderErrors } from '@/features/checkout/placeOrderErrors'
 
 describe('注文のエラーの出し方（店舗画面の構成 第 6 節）', () => {
-  test('AC-86 入力検証エラーは、API の項目名を入力欄に対応させ、業務の検証エラーと同じ文を出す', () => {
+  test('AC-86、264 入力検証エラーは、API の項目名を入力欄に対応させ、API の文をそのまま出す', () => {
     const errors = placeOrderErrors({
       ok: false,
       message: '入力内容に誤りがあります。',
-      errorCode: 'VALIDATION_ERROR',
+      errorCode: 'INVALID_REQUEST',
       fieldErrors: {
         'shippingAddress.name': '氏名の長さ',
         'shippingAddress.postalCode': '郵便番号の形',
@@ -15,8 +15,8 @@ describe('注文のエラーの出し方（店舗画面の構成 第 6 節）', 
     })
 
     expect(errors.fields).toEqual({
-      name: '氏名を 50 文字以内で入力してください。',
-      postalCode: '郵便番号は数字 7 桁で入力してください。',
+      name: '氏名の長さ',
+      postalCode: '郵便番号の形',
     })
     expect(errors.message).toBe('入力内容に誤りがあります。')
   })

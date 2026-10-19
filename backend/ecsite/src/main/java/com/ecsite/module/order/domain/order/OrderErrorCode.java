@@ -27,9 +27,13 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     INVALID_POSTAL_CODE(ErrorType.VALIDATION_ERROR),
     /**
-     * 47 都道府県のいずれでもない
+     * 都道府県のコードが地域のマスターデータにない
      */
     INVALID_PREFECTURE(ErrorType.VALIDATION_ERROR),
+    /**
+     * 市区町村のコードが地域のマスターデータにない、または選んだ都道府県に属さない
+     */
+    INVALID_MUNICIPALITY(ErrorType.VALIDATION_ERROR),
     /**
      * 住所が空白、または 200 文字を超える
      */

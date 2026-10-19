@@ -7,11 +7,13 @@ import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.application.model.PlacementResult;
 import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.application.port.PaymentDirectory;
+import com.ecsite.module.order.application.port.RegionDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderErrorCode;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
+import com.ecsite.module.order.domain.order.vo.AddressArea;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
@@ -69,6 +71,11 @@ public class OrderPlacementService {
     private final PaymentDirectory paymentDirectory;
 
     /**
+     * 地域の腐敗防止層
+     */
+    private final RegionDirectory regionDirectory;
+
+    /**
      * 見積もりのサービス
      */
     private final QuoteService quoteService;
@@ -115,8 +122,8 @@ public class OrderPlacementService {
         if (!quote.amounts().total().equals(command.expectedTotal())) {
             throw BusinessException.of(OrderErrorCode.TOTAL_AMOUNT_CHANGED);
         }
-        var address = ShippingAddress.of(command.name(), command.postalCode(), command.prefecture(), command.address(),
-                command.phone());
+        var address = ShippingAddress.of(command.name(), command.postalCode(),
+                addressArea(command.prefectureCode(), command.municipalityCode()), command.address(), command.phone());
         var order = Order.place(UUID.randomUUID(), unusedOrderNumber(now), checkout.id(), checkout.memberId(), now, quote,
                 command.email(),
                 address,
@@ -134,6 +141,22 @@ public class OrderPlacementService {
         }
         paymentDirectory.create(order.id(), order.amounts().total(), order.orderedAt());
         return new PlacementResult(order.id(), true);
+    }
+
+    /**
+     * お届け先の都道府県と市区町村を、地域のマスターデータで確かめ、名前を写す。
+     *
+     * @param prefectureCode   都道府県のコード
+     * @param municipalityCode 市区町村のコード
+     * @return 都道府県と市区町村
+     */
+    private AddressArea addressArea(String prefectureCode, String municipalityCode) {
+        var prefectureName = regionDirectory.findPrefectureName(prefectureCode)
+                .orElseThrow(() -> BusinessException.of(OrderErrorCode.INVALID_PREFECTURE));
+        var municipality = regionDirectory.findMunicipality(municipalityCode)
+                .filter(found -> found.prefectureCode().equals(prefectureCode))
+                .orElseThrow(() -> BusinessException.of(OrderErrorCode.INVALID_MUNICIPALITY));
+        return new AddressArea(prefectureCode, prefectureName, municipality.code(), municipality.name());
     }
 
     /**

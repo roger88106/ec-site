@@ -78,7 +78,8 @@ class StoreOrderMapper {
                 member.emailVerified(),
                 address.getName(),
                 address.getPostalCode(),
-                address.getPrefecture(),
+                address.getPrefectureCode(),
+                address.getMunicipalityCode(),
                 address.getAddress(),
                 address.getPhone(),
                 Money.of(request.getExpectedTotal()),
@@ -206,7 +207,10 @@ class StoreOrderMapper {
         return new ShippingAddress()
                 .name(address.name())
                 .postalCode(address.postalCode())
-                .prefecture(address.prefecture())
+                .prefectureCode(address.area().prefectureCode())
+                .prefectureName(address.area().prefectureName())
+                .municipalityCode(address.area().municipalityCode())
+                .municipalityName(address.area().municipalityName())
                 .address(address.address())
                 .phone(address.phone());
     }

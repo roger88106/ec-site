@@ -8,6 +8,7 @@ import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
+import com.ecsite.module.order.domain.order.vo.AddressArea;
 import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
@@ -92,7 +93,10 @@ class JooqOrderRepository implements OrderRepository {
         var address = snapshot.shippingAddress();
         record.setRecipientName(address.name());
         record.setPostalCode(address.postalCode());
-        record.setPrefecture(address.prefecture());
+        record.setPrefectureCode(address.area().prefectureCode());
+        record.setPrefectureName(address.area().prefectureName());
+        record.setMunicipalityCode(address.area().municipalityCode());
+        record.setMunicipalityName(address.area().municipalityName());
         record.setAddress(address.address());
         record.setPhone(address.phone());
         var buyer = snapshot.buyerProfile();
@@ -262,8 +266,10 @@ class JooqOrderRepository implements OrderRepository {
                         Money.of(tax.getTaxAmount())));
         var amounts = new Amounts(Money.of(record.getItemsTotal()), Money.of(record.getShippingFee()),
                 Money.of(record.getTotalAmount()), taxes);
-        var address = new ShippingAddress(record.getRecipientName(), record.getPostalCode(), record.getPrefecture(),
-                record.getAddress(), record.getPhone());
+        var area = new AddressArea(record.getPrefectureCode(), record.getPrefectureName(), record.getMunicipalityCode(),
+                record.getMunicipalityName());
+        var address = new ShippingAddress(record.getRecipientName(), record.getPostalCode(), area, record.getAddress(),
+                record.getPhone());
         var request = record.getCancellationRequestedAt() == null ? null : new CancellationRequest(
                 record.getCancellationRequestedAt(), record.getCancellationRequestReason(),
                 CancellationRequest.Result.valueOf(record.getCancellationRequestResult()),

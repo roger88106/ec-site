@@ -51,7 +51,7 @@ public class OrderReportApi {
                 cancellation == null ? null : OrderReportSnapshot.CancellationKind.valueOf(cancellation.kind().name()),
                 cancellation == null ? null : cancellation.restocked(),
                 order.shippingAddress().postalCode(),
-                order.shippingAddress().prefecture(),
+                order.shippingAddress().area().prefectureName(),
                 buyer.age(),
                 buyer.gender() == null ? null : OrderReportSnapshot.Gender.valueOf(buyer.gender().name()),
                 amounts.total(),

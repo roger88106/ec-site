@@ -180,7 +180,10 @@ class AdminOrderMapper {
         return new ShippingAddress()
                 .name(address.name())
                 .postalCode(address.postalCode())
-                .prefecture(address.prefecture())
+                .prefectureCode(address.area().prefectureCode())
+                .prefectureName(address.area().prefectureName())
+                .municipalityCode(address.area().municipalityCode())
+                .municipalityName(address.area().municipalityName())
                 .address(address.address())
                 .phone(address.phone());
     }

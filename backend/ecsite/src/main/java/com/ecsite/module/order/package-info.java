@@ -6,5 +6,5 @@
  */
 @org.springframework.modulith.ApplicationModule(id = "order",
         allowedDependencies = {"cart::api", "cart::event", "catalog::api", "inventory::api", "tax::api", "member::api",
-                "payment::api", "payment::event", "shipping::api"})
+                "payment::api", "payment::event", "shipping::api", "region::api"})
 package com.ecsite.module.order;

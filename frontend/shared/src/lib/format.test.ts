@@ -70,3 +70,33 @@ describe('価格の表示（BR-4）', () => {
     expect(formatPrice({ inclTax: 1100000, exclTax: 1000000 })).toBe('1,100,000 円（税抜 1,000,000 円）')
   })
 })
+
+describe('日時の表示（BR-3）', () => {
+  test('BR-3 日本時間で表示する', () => {
+    expect(formatDateTime('2027-03-31T15:00:00Z')).toBe('2027/04/01 00:00')
+  })
+
+  test('BR-3 オフセットが日本時間以外でも、日本時間に直して表示する', () => {
+    expect(formatDateTime('2027-04-01T09:30:00+09:00')).toBe('2027/04/01 09:30')
+    expect(formatDateTime('2027-03-31T20:30:00-05:00')).toBe('2027/04/01 10:30')
+  })
+
+  test('空白（null）は空文字にする', () => {
+    expect(formatDateTime(null)).toBe('')
+    expect(formatDateTime(undefined)).toBe('')
+  })
+})
+
+describe('税率ごとの消費税額（BR-8）', () => {
+  test('BR-8 対象額と消費税額を並べる', () => {
+    expect(taxLabel({ ratePercent: 10, taxableAmount: 11000, taxAmount: 1000 })).toBe(
+      '10% 対象 11,000 円（内消費税 1,000 円）',
+    )
+  })
+})
+
+describe('お届け先の表示', () => {
+  test('郵便番号は 3 桁と 4 桁の間にハイフンを入れる', () => {
+    expect(formatPostalCode('1000001')).toBe('100-0001')
+  })
+})

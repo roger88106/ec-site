@@ -1,9 +1,8 @@
+import { axisValuesLabel, formatYen, taxLabel } from '@ec-site/shared/lib/format'
 import { useTranslations } from 'use-intl'
 import type { OrderAmounts, OrderLine } from '@/api/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
-import { taxLabel } from '@/features/order/order'
-import { formatYen } from '@/lib/format'
 
 /**
  * 明細と金額の内訳。明細は注文時点の写しで、今の商品の内容ではない。
@@ -41,11 +40,7 @@ export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts
                   <div>{line.productName}</div>
                   {line.axisValues.length > 0 && (
                     <div className="text-muted-foreground">
-                      {
-                        line.axisValues
-                          .map((axis) => tCommon('axisValue', axis))
-                          .join(tApp('listSeparator')) /* 軸の名前と値 */
-                      }
+                      {axisValuesLabel(line.axisValues, tApp('listSeparator') /* 軸の区切り */)}
                     </div>
                   )}
                 </TableCell>

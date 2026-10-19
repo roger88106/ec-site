@@ -7,11 +7,6 @@ const JST_OFFSET_MS = 9 * 60 * 60 * 1000
 /** 金額の書式（3 桁ごとのカンマ） */
 const yen = new Intl.NumberFormat(LOCALE)
 
-/** 金額（例：「1,000 円」） */
-export function formatYen(amount: number): string {
-  return translate('common.yen', { amount: yen.format(amount) })
-}
-
 /**
  * 価格の表示。税込価格を主に、税抜価格を括弧で併記する。<br />
  * 例：「1,980 円（税抜 1,800 円）」。有効な税率がなく税込価格がなければ、税抜価格だけを出す。
@@ -21,15 +16,6 @@ export function formatPrice(priceInclTax: number | null | undefined, priceExclTa
     return translate('common.priceExclTaxOnly', { exclTax: yen.format(priceExclTax) })
   }
   return translate('common.priceWithExclTax', { inclTax: yen.format(priceInclTax), exclTax: yen.format(priceExclTax) })
-}
-
-/** 日時の表示。日本時間の「yyyy/MM/dd HH:mm」。空白（null）は空文字 */
-export function formatDateTime(iso: string | null | undefined): string {
-  if (!iso) {
-    return ''
-  }
-  const parts = jstParts(iso)
-  return `${parts.year}/${parts.month}/${parts.day} ${parts.hour}:${parts.minute}`
 }
 
 /**

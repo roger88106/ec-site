@@ -1,3 +1,4 @@
+import { formatYen } from '@ec-site/shared/lib/format'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
@@ -14,7 +15,6 @@ import { CALENDAR_PRESETS, presetPeriod, todayInJapan } from '@/features/report/
 import { ageGroupLabel, formatYenCompact, prefectureLabel, reportGenderLabel } from '@/features/report/report'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
-import { formatYen } from '@/lib/format'
 
 /** 地域・年齢層・性別。条件は URL に持つ */
 export function CustomerBreakdownPage() {

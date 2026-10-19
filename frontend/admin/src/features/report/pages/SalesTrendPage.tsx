@@ -1,3 +1,4 @@
+import { formatYen } from '@ec-site/shared/lib/format'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
@@ -14,7 +15,6 @@ import { FISCAL_PRESETS, presetPeriod, todayInJapan } from '@/features/report/pe
 import { bucketLabel, formatYenCompact } from '@/features/report/report'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
-import { formatYen } from '@/lib/format'
 
 /** 売上の推移。期間・区切り・数え方などの条件は URL に持つ */
 export function SalesTrendPage() {

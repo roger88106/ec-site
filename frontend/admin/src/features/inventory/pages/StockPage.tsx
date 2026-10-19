@@ -1,3 +1,4 @@
+import { axisValuesLabel } from '@ec-site/shared/lib/format'
 import { Button } from '@ec-site/shared/ui/button'
 import { Link, useParams } from 'react-router'
 import { useTranslations } from 'use-intl'
@@ -12,7 +13,6 @@ import { StockHistory } from '@/features/inventory/components/StockHistory'
 /** バリアントの在庫数、調整、履歴 */
 export function StockPage() {
   const t = useTranslations('inventory.page')
-  const tCommon = useTranslations('common')
   const tApp = useTranslations('app.common')
   const { productId = '', variantId = '' } = useParams()
   const product = $api.useQuery('get', '/products/{productId}', { params: { path: { productId } } })
@@ -45,9 +45,10 @@ export function StockPage() {
             {
               axes.length > 0 &&
                 t('axes', {
-                  values: axes
-                    .map((axis, index) => tCommon('axisValue', { name: axis, value: variant.axisValues[index] }))
-                    .join(tApp('listSeparator')),
+                  values: axisValuesLabel(
+                    axes.map((name, index) => ({ name, value: variant.axisValues[index] })),
+                    tApp('listSeparator'),
+                  ),
                 }) /* 軸の名前と値 */
             }
           </p>

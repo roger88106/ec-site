@@ -1,3 +1,4 @@
+import { formatPostalCode } from '@ec-site/shared/lib/format'
 import { Button } from '@ec-site/shared/ui/button'
 import { Link, useParams } from 'react-router'
 import { useTranslations } from 'use-intl'
@@ -14,7 +15,6 @@ import { OrderLinesCard } from '@/features/order/components/OrderLinesCard'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
 import { ShipmentCard } from '@/features/order/components/ShipmentCard'
-import { formatPostalCode } from '@/features/order/order'
 
 /** 注文の詳細と、出荷の登録、承認・却下・キャンセルの操作 */
 export function OrderDetailPage() {

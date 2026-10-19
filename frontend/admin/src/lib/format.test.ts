@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { formatDateTime, formatPrice, fromDateTimeInput, toDateTimeInput } from '@/lib/format'
+import { formatPrice, fromDateTimeInput, toDateTimeInput } from '@/lib/format'
 
 describe('価格の表示（BR-4）', () => {
   test('BR-4 税込価格を主に、税抜価格を括弧で併記する', () => {
@@ -13,22 +13,6 @@ describe('価格の表示（BR-4）', () => {
 
   test('有効な税率がなく税込価格がないときは、税抜価格だけを出す', () => {
     expect(formatPrice(null, 1800)).toBe('税抜 1,800 円（税込価格は計算できません）')
-  })
-})
-
-describe('日時の表示（BR-3）', () => {
-  test('BR-3 日本時間で表示する', () => {
-    expect(formatDateTime('2027-03-31T15:00:00Z')).toBe('2027/04/01 00:00')
-  })
-
-  test('BR-3 オフセットが日本時間以外でも、日本時間に直して表示する', () => {
-    expect(formatDateTime('2027-04-01T09:30:00+09:00')).toBe('2027/04/01 09:30')
-    expect(formatDateTime('2027-03-31T20:30:00-05:00')).toBe('2027/04/01 10:30')
-  })
-
-  test('空白（null）は空文字にする', () => {
-    expect(formatDateTime(null)).toBe('')
-    expect(formatDateTime(undefined)).toBe('')
   })
 })
 

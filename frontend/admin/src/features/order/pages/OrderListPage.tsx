@@ -1,3 +1,4 @@
+import { formatYen } from '@ec-site/shared/lib/format'
 import { keepPreviousData } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useTranslations } from 'use-intl'
@@ -13,7 +14,6 @@ import { OrderFilterForm } from '@/features/order/components/OrderFilterForm'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
-import { formatYen } from '@/lib/format'
 import { shipmentStatusLabel } from '@/lib/labels'
 
 /**

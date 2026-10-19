@@ -13,6 +13,7 @@ import java.time.Instant;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 /**
@@ -95,6 +96,16 @@ public class PaymentApi {
      */
     public List<PaymentSummary> find(Collection<UUID> orderIds) {
         return queryService.findSummaries(orderIds).stream().map(PaymentApi::toSummary).toList();
+    }
+
+    /**
+     * 支払える（未払いで支払の期限の前の）注文 ID をまとめて返す。判定は支払の集約が行う。
+     *
+     * @param orderIds 注文 ID
+     * @return 支払える注文 ID
+     */
+    public Set<UUID> findPayableOrderIds(Collection<UUID> orderIds) {
+        return queryService.findPayableOrderIds(orderIds);
     }
 
     /**

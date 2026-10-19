@@ -16,7 +16,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -60,11 +59,6 @@ public class OrderQueryService {
      * 出荷の腐敗防止層
      */
     private final ShippingDirectory shippingDirectory;
-
-    /**
-     * 時計（支払えるかの判定）
-     */
-    private final Clock clock;
 
     /**
      * 注文の詳細を取得する（運営者用）。
@@ -140,19 +134,17 @@ public class OrderQueryService {
     }
 
     /**
-     * 注文の支払をまとめて取得する。支払えるか（未払いで、支払の期限の前）は今の時刻で判定する。
+     * 注文の支払をまとめて取得する。支払えるか（未払いで、支払の期限の前）は決済が判定する。
      *
      * @param orderIds 注文 ID
      * @return 注文 ID → 支払。支払のない注文（決済を入れる前の注文）は含まない
      */
     public Map<UUID, OrderPayment> findPayments(Collection<UUID> orderIds) {
-        var now = clock.instant();
         var authorizations = paymentDirectory.findAuthorizations(orderIds);
         var payments = new HashMap<UUID, OrderPayment>();
         paymentDirectory.find(orderIds).forEach((orderId, payment) -> {
             var authorization = authorizations.get(orderId);
-            payments.put(orderId, new OrderPayment(payment.status(), payment.deadline(),
-                    payment.status() == PaymentDirectory.Status.UNPAID && now.isBefore(payment.deadline()),
+            payments.put(orderId, new OrderPayment(payment.status(), payment.deadline(), payment.payable(),
                     authorization == null ? null : authorization.deadline(),
                     authorization != null && authorization.expiring()));
         });

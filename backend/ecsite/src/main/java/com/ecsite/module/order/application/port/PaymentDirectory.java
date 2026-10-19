@@ -75,8 +75,9 @@ public interface PaymentDirectory {
      *
      * @param status   支払の状態
      * @param deadline 支払の期限
+     * @param payable  支払えるか（未払いで、支払の期限の前。決済が判定する）
      */
-    record Payment(Status status, Instant deadline) {
+    record Payment(Status status, Instant deadline, boolean payable) {
     }
 
     /**

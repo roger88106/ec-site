@@ -50,8 +50,10 @@ class PaymentApiDirectory implements PaymentDirectory {
 
     @Override
     public Map<UUID, Payment> find(Collection<UUID> orderIds) {
+        var payable = paymentApi.findPayableOrderIds(orderIds);
         return paymentApi.find(orderIds).stream().collect(Collectors.toMap(PaymentSummary::orderId,
-                summary -> new Payment(Status.valueOf(summary.status().name()), summary.deadline())));
+                summary -> new Payment(Status.valueOf(summary.status().name()), summary.deadline(),
+                        payable.contains(summary.orderId()))));
     }
 
     @Override

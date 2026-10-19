@@ -18,7 +18,9 @@ import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * 支払の参照のサービス
@@ -96,6 +98,20 @@ public class PaymentQueryService {
         return paymentRepository.findByOrderId(orderId)
                 .filter(payment -> payment.isPayable(now))
                 .map(payment -> new PayablePaymentView(payment.id(), payment.amount(), payment.page().orElse(null)));
+    }
+
+    /**
+     * 支払える（未払いで期限の前の）支払の注文 ID をまとめて取得する。
+     *
+     * @param orderIds 注文 ID
+     * @return 支払える注文 ID
+     */
+    public Set<UUID> findPayableOrderIds(Collection<UUID> orderIds) {
+        var now = clock.instant();
+        return paymentRepository.findByOrderIds(orderIds).stream()
+                .filter(payment -> payment.isPayable(now))
+                .map(Payment::orderId)
+                .collect(Collectors.toSet());
     }
 
     /**

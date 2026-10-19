@@ -26,7 +26,7 @@
 | 5.1 | Lombok は main だけ | 人手 |
 | 5.2 | 名前の形 | 人手 |
 | 5.3 | インスタンスを作らないクラス | コンストラクタは自動（ArchUnit）、`final` は人手 |
-| 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所は自動（ArchUnit。spec 013 の段階 6 で有効）、型の置き場所と接頭辞は人手 |
+| 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所は自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることは人手 |
 
 人手のものは、各 spec の [見直し](../process/review.md) で読む。
 

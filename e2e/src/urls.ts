@@ -1,5 +1,7 @@
 /** E2E で起動するサーバーの URL（playwright.config.ts）。ローカルの開発のサーバーとはポートを分ける（plan 004 第 6.1 節） */
 export const BACKEND_URL = 'http://localhost:8090'
+/** E2E のバックエンドの運用ポート（死活監視。application-e2e.yml） */
+export const BACKEND_MANAGEMENT_URL = 'http://localhost:9090'
 /** 管理画面（vite preview）の URL */
 export const ADMIN_URL = 'http://localhost:4173'
 /** 店舗画面（next start）の URL */

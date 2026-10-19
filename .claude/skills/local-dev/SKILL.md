@@ -52,9 +52,10 @@ cd backend/ecsite && ./gradlew bootRun --args='--spring.profiles.active=local' >
 起動を待つのは sleep ではなく curl の再試行で行う（初回のコンパイル込みで 1〜2 分）。
 
 ```bash
-curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{http_code}\n' localhost:8080/actuator/health
+curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{http_code}\n' localhost:9080/actuator/health
 ```
 
+- 死活監視は運用ポート（9080）で出す。業務ポート（8080）では出さない。
 - 200 が出たら起動済み。すでに起動しているかは同じ curl を `--retry` なしで確かめる。
 - 起動に失敗したら `bootrun.log` を `grep -n "ERROR\|Caused by" ` で見る。全体を読まない。
 - local profile では、起動時にマイグレーションと seed（`db/seed/base`、`db/seed/local`）が適用される。使い分けは `db/seed/local/README.md`。

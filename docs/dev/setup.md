@@ -31,7 +31,7 @@ pnpm dev
 | http://localhost:8080/api/admin | 管理 API（[admin.yaml](../../api/openapi/admin.yaml)） |
 | http://localhost:8080/api/store | 店舗 API（[store.yaml](../../api/openapi/store.yaml)） |
 | http://localhost:8080/mock-carrier | mock の物流サービス（出荷の配送状態を、配送中・配達完了・返送に進める） |
-| http://localhost:8080/actuator/health | ヘルスチェック（`/liveness`、`/readiness`） |
+| http://localhost:9080/actuator/health | ヘルスチェック（`/liveness`、`/readiness`）。運用ポート（9080）で出し、業務ポート（8080）では出さない |
 | http://localhost:9411 | Zipkin（トレース。local では全リクエストを記録） |
 | http://localhost:8333 | SeaweedFS（S3 互換。バケットは `seaweedfs-init` が作る） |
 | http://localhost:8081 | imgproxy（画像の WebP への変換。署名のない URL は拒否） |

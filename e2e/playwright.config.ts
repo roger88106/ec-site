@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
-import { ADMIN_URL, BACKEND_URL, IDP_URL, STORE_URL } from './src/urls'
+import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, STORE_URL } from './src/urls'
 
 /** CI で動いているか（test.only を禁止し、HTML のレポートを残し、起動済みの画面のサーバーを使い回さない） */
 const CI = Boolean(process.env.CI)
@@ -34,12 +34,12 @@ export default defineConfig({
   },
   webServer: [
     {
-      // E2E 用の設定（application-e2e.yml。8090、ec_site_e2e、E2E 用の IdP）。
+      // E2E 用の設定（application-e2e.yml。8090、運用ポート 9090、ec_site_e2e、E2E 用の IdP）。
       // 作り直した DB につなぐため、手元でも毎回起動する（使い回さない）
       name: 'backend',
       command: `"${GRADLEW}" bootRun --args=--spring.profiles.active=local,e2e`,
       cwd: BACKEND_DIR,
-      url: `${BACKEND_URL}/actuator/health/readiness`,
+      url: `${BACKEND_MANAGEMENT_URL}/actuator/health/readiness`,
       timeout: 300_000,
       reuseExistingServer: false,
     },

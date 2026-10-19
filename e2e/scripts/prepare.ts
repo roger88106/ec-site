@@ -12,7 +12,7 @@
 import { execFileSync } from 'node:child_process'
 import { createServer } from 'node:net'
 import path from 'node:path'
-import { ADMIN_URL, BACKEND_URL, STORE_URL } from '../src/urls.ts'
+import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, STORE_URL } from '../src/urls.ts'
 
 /** リポジトリのルート。ルートの .env の COMPOSE_FILE が docker/compose.yaml を指す */
 const ROOT = path.resolve(import.meta.dirname, '../..')
@@ -58,7 +58,7 @@ async function assertListenable(url: string): Promise<void> {
 
 const started = Date.now()
 
-for (const url of [BACKEND_URL, ADMIN_URL, STORE_URL]) {
+for (const url of [BACKEND_URL, BACKEND_MANAGEMENT_URL, ADMIN_URL, STORE_URL]) {
   await assertListenable(url)
 }
 

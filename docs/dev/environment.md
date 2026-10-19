@@ -7,6 +7,7 @@
 | 環境変数 | 内容 | 既定 |
 |----------|------|------|
 | `SPRING_DATASOURCE_URL`、`_USERNAME`、`_PASSWORD` | DB の接続先 | — |
+| `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外に出さない | 9080（E2E は 9090） |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | トレースの送信先 | `http://localhost:9411/api/v2/spans` |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |
 | `ECSITE_SECURITY_ADMIN_ISSUER_URI`、`_AUDIENCE` | 管理 API が受け付ける token の issuer（運営者の realm）と audience | 必須 |

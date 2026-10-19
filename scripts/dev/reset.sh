@@ -19,9 +19,9 @@ cd "$ROOT"
 
 target="${1:-db}"
 
-# バックエンド（:8080）が動いているか
+# バックエンドが動いているか（死活監視は運用ポートの :9080）
 backend_running() {
-  curl -s -o /dev/null --max-time 2 http://localhost:8080/actuator/health
+  curl -s -o /dev/null --max-time 2 http://localhost:9080/actuator/health
 }
 
 psql_postgres() {

@@ -15,6 +15,7 @@
   - 合っている：Lombok は main だけ（testFixtures の包む実装は Lombok を使わない）。統合テストは土台（`@IntegrationTest`）を使い、包む実装もそこで登録する。新しいテストの名前は振る舞いを書いている。画面に `console.*` の直書きはない。
   - 残した：業務ポートの既定の filter chain は、`/actuator/**` を許したままにした。運用ポートにも同じ filter chain が掛かるため（plan 第 2 節 ※4）。業務ポートでは Controller がないので 404 になる。
   - 文書・コメント・コミットメッセージの日本語：検査（中国語の混入、使わない語）を通し、読んで直す所はなかった。
-- [ ] **T015-07-04** `CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る。
+- [x] **T015-07-04** `CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る。
+  - 結果：4 つとも通った（`CI=true` の AC の検査は、テスト名に出ない AC がなかった）。
 - [ ] **T015-07-05** README の進捗と、MVP の完成までの一覧の状態を直す。見直しの結果（直したもの、残したものと理由、後の spec に回したもの）を本書の末尾に書く。
 - [ ] **T015-07-06** 利用者の許可を得て push し、CI が通ることを確かめる。

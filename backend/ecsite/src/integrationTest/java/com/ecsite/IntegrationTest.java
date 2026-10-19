@@ -1,5 +1,6 @@
 package com.ecsite;
 
+import com.ecsite.config.security.ErrorCodeCheck;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
@@ -15,13 +16,15 @@ import java.lang.annotation.Target;
  * Spring コンテキストを起動し、Testcontainers の PostgreSQL に Flyway のマイグレーションを適用する。<br />
  * 認証は、IdP を起動せずにテストの鍵で確かめる（{@link TestTokens}）。<br />
  * 非同期の処理を待つ補助（{@link AsyncEvents}）を登録する。<br />
- * 決済の mock は、テスト用の操作を足した実装で包む（{@link TestPaymentGatewayConfig}）。
+ * 決済の mock は、テスト用の操作を足した実装で包む（{@link TestPaymentGatewayConfig}）。<br />
+ * MockMvc のエラーの応答のコードが、契約のその操作の一覧か共通のエラーにあることを、毎回確かめる（{@link ErrorCodeCheck}）。
  */
 @Target(ElementType.TYPE)
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
 @SpringBootTest
-@Import({TestcontainersConfig.class, TestSecurityConfig.class, AsyncEvents.class, TestPaymentGatewayConfig.class})
+@Import({TestcontainersConfig.class, TestSecurityConfig.class, AsyncEvents.class, TestPaymentGatewayConfig.class,
+        ErrorCodeCheck.Config.class})
 @ActiveProfiles("integration-test")
 public @interface IntegrationTest {
 }

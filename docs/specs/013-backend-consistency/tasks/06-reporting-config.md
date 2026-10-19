@@ -7,7 +7,7 @@
 ## タスク
 
 - [x] **T013-06-01** reporting の application の直下の query と report の record 10 個を、`application/model/query/`・`application/model/view/` に移す。`renames.txt` に対応を足す。
-- [ ] **T013-06-02** reporting の domain（15）を分けない理由を、バックエンドの書き方 第 1.4 節の表に足す。reporting の設計書の「構成」を、今のパッケージ（区切りと年齢層は domain にある）に合わせる。
+- [x] **T013-06-02** reporting の domain（15）を分けない理由を、バックエンドの書き方 第 1.4 節の表に足す。reporting の設計書の「構成」を、今のパッケージ（区切りと年齢層は domain にある）に合わせる。
 - [ ] **T013-06-03** reporting の mapper と Controller の生成したモデルを、項目名のメソッドで組み立てる。
 - [ ] **T013-06-04** テストだけが使う、都道府県のコードの一覧に、テスト用であることを Javadoc に書く（DC-141。016 で扱いを決める）。
 - [ ] **T013-06-05** イベントの再送の間隔を、イベントの再送の設定の型の `Duration` の項目にする。キーと既定値（1 分）は今と同じ。`@Scheduled` は SpEL で設定の型の Bean を参照する。設定の型を有効にする宣言を設定のクラスに移す。

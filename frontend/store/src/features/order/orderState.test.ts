@@ -14,8 +14,18 @@ describe('キャンセルの申請の状況（AC-95、96）', () => {
     expect(cancellationState({ status: 'CANCELLATION_REQUESTED', actions: notRequestable })).toBe('PENDING')
   })
 
-  test('AC-96 申請できない「受付」の注文は、却下された注文（問い合わせ先を示す）', () => {
-    expect(cancellationState({ status: 'ACCEPTED', actions: notRequestable })).toBe('REJECTED')
+  test('AC-96、267 申請の結果が却下の注文は、却下された注文（問い合わせ先を示す）', () => {
+    expect(
+      cancellationState({
+        status: 'ACCEPTED',
+        actions: notRequestable,
+        cancellationRequest: { requestedAt: '2026-10-10T03:00:00Z', result: 'REJECTED' },
+      }),
+    ).toBe('REJECTED')
+  })
+
+  test('AC-267 申請できない「受付」の注文でも、申請の結果がなければ却下にしない（キャンセルの欄を出さない）', () => {
+    expect(cancellationState({ status: 'ACCEPTED', actions: notRequestable })).toBe('UNAVAILABLE')
   })
 
   test('キャンセル済み（申請の承認、運営者の判断のどちらでも）', () => {

@@ -34,10 +34,13 @@ frontend/admin/
     ├── i18n/               # 文言の Provider、合わせ方、キーの型、コンポーネントの外で引く translate
     ├── hooks/              # 機能をまたぐ hook（バージョン付きのフォームなど）
     ├── lib/                # 画面に依存しない関数（単体テストを横に置く）
+    │   ├── format.ts       # 価格の表示と、日時の入力欄との変換（金額・日時などの整形は共有パッケージの lib/format.ts）
+    │   └── searchParams.ts # URL のクエリのページ番号の読み取り
     ├── test/               # 結合テストの土台（画面のコードからは import しない）
     └── features/<機能>/    # tax、category、product、inventory、order、report
         ├── pages/          # ルートに対応する画面（取得とコンポーネントの組み立てだけ）
         ├── components/     # その機能だけのコンポーネント
+        ├── labels.ts       # その機能だけで使う列挙の表示名と Badge の見た目（2 つ以上の機能で使うなら lib/labels.ts）
         └── *.ts            # その機能だけの関数・型・hook
 ```
 

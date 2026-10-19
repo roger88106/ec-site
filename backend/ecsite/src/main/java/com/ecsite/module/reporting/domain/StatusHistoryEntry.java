@@ -20,4 +20,11 @@ import java.util.UUID;
  */
 public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @Nullable String from, String to,
                                  Instant occurredAt, @Nullable String cancellationKind, @Nullable Boolean restocked) {
+
+    /**
+     * @return 出荷を表す変化か（注文の状態か配送状態が出荷済みになった）
+     */
+    public boolean marksShipment() {
+        throw new UnsupportedOperationException();
+    }
 }

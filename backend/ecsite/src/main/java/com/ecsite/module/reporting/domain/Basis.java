@@ -36,4 +36,12 @@ public enum Basis {
     public List<String> countedStatuses() {
         return countedStatuses;
     }
+
+    /**
+     * @param status 注文の状態
+     * @return その状態の注文を数えるか
+     */
+    public boolean counts(ReportOrderStatus status) {
+        throw new UnsupportedOperationException();
+    }
 }

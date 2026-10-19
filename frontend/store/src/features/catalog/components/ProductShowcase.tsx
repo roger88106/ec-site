@@ -1,9 +1,9 @@
 'use client'
 
-import { ImageIcon } from 'lucide-react'
 import { useTranslations } from 'next-intl'
 import { type ReactNode, useState } from 'react'
 import type { Variant, VariantAxis } from '@/api/types'
+import { ProductImage } from '@/components/ProductImage'
 import { AddToCartForm } from '@/features/catalog/components/AddToCartForm'
 import { VariantPicker } from '@/features/catalog/components/VariantPicker'
 import { emptySelection, imageForVariant, selectedVariant } from '@/features/catalog/variantSelection'
@@ -35,12 +35,7 @@ export function ProductShowcase({
     <article className="grid gap-8 md:grid-cols-2">
       <div className="space-y-3">
         <div className="flex aspect-square items-center justify-center overflow-hidden rounded-lg bg-muted">
-          {shown ? (
-            // biome-ignore lint/performance/noImgElement: 画像は配信の側（CDN）で最適化する
-            <img alt={t('image') /* 商品の画像 */} className="size-full object-cover" src={shown} />
-          ) : (
-            <ImageIcon aria-hidden className="size-16 text-muted-foreground" />
-          )}
+          <ProductImage alt={t('image') /* 商品の画像 */} iconSize="lg" src={shown} />
         </div>
         {imageUrls.length > 1 && (
           <ul className="grid grid-cols-5 gap-2">

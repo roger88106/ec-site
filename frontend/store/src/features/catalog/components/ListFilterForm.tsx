@@ -1,4 +1,4 @@
-import type { FlatCategory } from '@ec-site/shared/lib/categoryTree'
+import { categoryOptions, type FlatCategory } from '@ec-site/shared/lib/categoryTree'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Label } from '@ec-site/shared/ui/label'
@@ -14,18 +14,15 @@ import { type ListQuery, sortLabel } from '@/features/catalog/listQuery'
  */
 export function ListFilterForm({ query, categories }: { query: ListQuery; categories: FlatCategory[] }) {
   const t = useTranslations('catalog.filter')
-  const tCommon = useTranslations('common')
   return (
     <form action="/products" className="flex flex-wrap items-end gap-3">
       <div className="grid gap-1.5">
         <Label htmlFor="filter-category">{t('category') /* カテゴリ */}</Label>
         <NativeSelect defaultValue={query.categoryId ?? ''} id="filter-category" name="categoryId">
-          <NativeSelectOption value="">{tCommon('all') /* すべて */}</NativeSelectOption>
-          {categories.map((category) => (
-            <NativeSelectOption key={category.id} value={category.id}>
-              {/* 階層を全角の空白で字下げする */}
-              {tCommon('categoryIndent').repeat(category.depth - 1) /* 階層の深さだけ字下げ */}
-              {category.name}
+          {/* 先頭は「すべて」（値は空）、階層は字下げで示す */}
+          {categoryOptions(categories).map((option) => (
+            <NativeSelectOption key={option.value ?? ''} value={option.value ?? ''}>
+              {option.label}
             </NativeSelectOption>
           ))}
         </NativeSelect>

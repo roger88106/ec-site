@@ -1,3 +1,4 @@
+import { formatDateTime, formatYen } from '@ec-site/shared/lib/format'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
@@ -7,7 +8,7 @@ import { currentMember, redirectToLogin } from '@/auth'
 import { PageLinks } from '@/components/PageLinks'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
-import { formatDateTime, formatYen, paymentDeadlineLabel } from '@/lib/orderDisplay'
+import { paymentDeadlineLabel } from '@/lib/orderDisplay'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {

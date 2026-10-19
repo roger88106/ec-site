@@ -1,8 +1,8 @@
 import { useTranslations } from 'next-intl'
 import type { Price } from '@/api/types'
-import { yenParts } from '@/lib/price'
+import { yenParts } from '@/lib/format'
 
-/** 価格。税込価格を大きく、税抜価格を括弧で小さく出す（文字は formatPrice と同じ） */
+/** 価格。税込価格を大きく、税抜価格を括弧で小さく出す（文字は共有パッケージの formatPrice と同じ） */
 export function PriceText({ price, size = 'md' }: { price: Price; size?: 'md' | 'lg' }) {
   const t = useTranslations('components.priceText')
   const { inclTax, exclTax } = yenParts(price)

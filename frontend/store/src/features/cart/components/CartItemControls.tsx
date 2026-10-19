@@ -1,5 +1,6 @@
 'use client'
 
+import { formatYen } from '@ec-site/shared/lib/format'
 import { Button } from '@ec-site/shared/ui/button'
 import { Label } from '@ec-site/shared/ui/label'
 import { useTranslations } from 'next-intl'
@@ -7,7 +8,7 @@ import { useActionState, useId } from 'react'
 import { changeCartItemQuantity, removeCartItem } from '@/actions/cart'
 import type { QuoteItem } from '@/api/types'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
-import { formatYen, QUANTITY_OPTIONS } from '@/lib/orderDisplay'
+import { QUANTITY_OPTIONS } from '@/lib/orderDisplay'
 
 /**
  * カートの品目の数量の変更と削除、小計（購入できない品目は打ち消し線）。<br />

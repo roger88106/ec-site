@@ -1,29 +1,7 @@
-import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
+import { formatDateTime } from '@ec-site/shared/lib/format'
 import { schemas } from '@/api/generated/constraints'
-import type {
-  Cancellation,
-  Carrier,
-  Order,
-  OrderStatus,
-  ShipmentStatus,
-  TaxAmount,
-  UnpurchasableReason,
-} from '@/api/types'
+import type { Cancellation, Carrier, Order, OrderStatus, ShipmentStatus, UnpurchasableReason } from '@/api/types'
 import { translate } from '@/i18n/translate'
-
-/** 金額の書式（3 桁ごとのカンマ） */
-const yen = new Intl.NumberFormat(LOCALE)
-
-/** 日時の書式（日本時間の「2026/10/10 14:05」） */
-const dateTime = new Intl.DateTimeFormat(LOCALE, {
-  timeZone: TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
 
 /** 1 品目の数量の選択肢（契約の数量の下限から上限まで） */
 export const QUANTITY_OPTIONS = Array.from(
@@ -50,27 +28,6 @@ export type CancellationState =
  * 支払の欄を出さない（支払待ちでない）
  */
 export type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
-
-/** 金額（例：「1,000 円」） */
-export function formatYen(amount: number): string {
-  return translate('common.yen', { amount: yen.format(amount) })
-}
-
-/** 1 つの税率の消費税額（例：「10% 対象 11,000 円（内消費税 1,000 円）」） */
-export function taxLabel(tax: TaxAmount): string {
-  return translate('common.taxAmount', {
-    ratePercent: tax.ratePercent,
-    taxableAmount: formatYen(tax.taxableAmount),
-    taxAmount: formatYen(tax.taxAmount),
-  })
-}
-
-/** 軸の名前と値（例：「色：黒　サイズ：M」） */
-export function axisValuesLabel(axisValues: { name: string; value: string }[]): string {
-  return axisValues
-    .map((axis) => translate('common.axisValue', axis))
-    .join(translate('orderDisplay.axisValues.separator'))
-}
 
 /** 購入できない理由の文言。数量は出さない */
 export function unpurchasableReasonLabel(reason: NonNullable<UnpurchasableReason>): string {
@@ -167,16 +124,6 @@ export function paymentDeadlineLabel(order: { status: OrderStatus; paymentDeadli
     return null
   }
   return translate('order.list.paymentDeadline', { deadline: formatDateTime(order.paymentDeadline) })
-}
-
-/** 日時（日本時間の「2026/10/10 14:05」） */
-export function formatDateTime(iso: string): string {
-  return dateTime.format(new Date(iso))
-}
-
-/** 郵便番号（API はハイフンなしの 7 桁を返す。例：「100-0001」） */
-export function formatPostalCode(postalCode: string): string {
-  return `${postalCode.slice(0, 3)}-${postalCode.slice(3)}`
 }
 
 /**

@@ -1,3 +1,4 @@
+import { formatYen } from '@ec-site/shared/lib/format'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import { notFound, redirect } from 'next/navigation'
@@ -9,7 +10,6 @@ import { AmountsSummary } from '@/components/AmountsSummary'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import { RemainingTime } from '@/features/checkout/components/RemainingTime'
-import { formatYen } from '@/lib/orderDisplay'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {

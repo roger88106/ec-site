@@ -1,5 +1,6 @@
 'use client'
 
+import { formatYen } from '@ec-site/shared/lib/format'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Label } from '@ec-site/shared/ui/label'
@@ -11,7 +12,6 @@ import { schemas } from '@/api/generated/constraints'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrderErrors'
 import { PREFECTURES } from '@/features/checkout/prefectures'
-import { formatYen } from '@/lib/orderDisplay'
 
 /**
  * お届け先の入力と、注文。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />

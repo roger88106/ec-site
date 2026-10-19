@@ -1,7 +1,7 @@
+import { formatYen, taxLabel } from '@ec-site/shared/lib/format'
 import { Separator } from '@ec-site/shared/ui/separator'
 import { useTranslations } from 'next-intl'
 import type { Amounts } from '@/api/types'
-import { formatYen, taxLabel } from '@/lib/orderDisplay'
 
 /**
  * 金額の内訳。商品の合計、送料、総額、税率ごとの消費税額の順に出す。<br />

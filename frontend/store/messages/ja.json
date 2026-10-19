@@ -30,10 +30,10 @@
       "SALES_SUSPENDED": "販売を停止しています",
       "OUT_OF_STOCK": "在庫切れです",
       "INSUFFICIENT_STOCK": "在庫が足りません。数量を減らしてください"
-    },
-    "axisValues": {
-      "separator": "　"
     }
+  },
+  "labels": {
+    "axisSeparator": "　"
   },
   "app": {
     "layout": {

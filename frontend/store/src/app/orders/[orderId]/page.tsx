@@ -1,3 +1,4 @@
+import { axisValuesLabel, formatDateTime, formatPostalCode, formatYen } from '@ec-site/shared/lib/format'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -11,15 +12,7 @@ import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
-import {
-  axisValuesLabel,
-  cancellationState,
-  carrierLabel,
-  formatDateTime,
-  formatPostalCode,
-  formatYen,
-  paymentState,
-} from '@/lib/orderDisplay'
+import { cancellationState, carrierLabel, paymentState } from '@/lib/orderDisplay'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -35,6 +28,7 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function OrderPage({ params, searchParams }: PageProps<'/orders/[orderId]'>) {
   const t = await getTranslations('order.detail')
   const tCommon = await getTranslations('common')
+  const tLabels = await getTranslations('labels')
   const { orderId } = await params
   const returned = (await searchParams).payment === 'returned'
   if ((await currentMember()) === null) {
@@ -104,7 +98,9 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
               <div className="space-y-1">
                 <p className="font-medium">{line.productName}</p>
                 {line.axisValues.length > 0 && (
-                  <p className="text-muted-foreground">{axisValuesLabel(line.axisValues)}</p>
+                  <p className="text-muted-foreground">
+                    {axisValuesLabel(line.axisValues, tLabels('axisSeparator') /* 軸の区切り */)}
+                  </p>
                 )}
                 <PriceText price={line.unitPrice} />
               </div>

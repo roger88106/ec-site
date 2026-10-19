@@ -31,6 +31,8 @@ tags:
     description: 注文の表示とキャンセルの申請、自分の注文の一覧（spec 002 US-17、18、spec 003 US-27）
   - name: shop
     description: 店舗の情報（spec 002 AC-96 の問い合わせ先。店舗モジュール）
+  - name: region
+    description: 都道府県・市区町村・郵便番号のマスターデータ（spec 016 US-54、55。地域モジュール）
 
 paths:
   /products:
@@ -498,8 +500,79 @@ paths:
               schema:
                 $ref: '#/components/schemas/Shop'
 
+  # ============================== 地域 ==============================
+  /prefectures:
+    get:
+      tags: [region]
+      operationId: listPrefectures
+      summary: 都道府県の一覧（AC-250）
+      description: コードの順。マスターデータの更新でしか変わらない
+      responses:
+        '200':
+          description: 都道府県の一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PrefectureList'
+
+  /prefectures/{prefectureCode}/municipalities:
+    get:
+      tags: [region]
+      operationId: listMunicipalities
+      summary: 都道府県の市区町村の一覧（AC-249、250）
+      description: コードの順。政令指定都市は区を 1 つの市区町村とし、市そのものは含めない
+      parameters:
+        - $ref: '#/components/parameters/PrefectureCode'
+      responses:
+        '200':
+          description: 市区町村の一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MunicipalityList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /postal-codes/{postalCode}:
+    get:
+      tags: [region]
+      operationId: findPostalCodeAddresses
+      summary: 郵便番号の住所（AC-253、254、256）
+      description: |
+        郵便番号に対応する住所（都道府県、市区町村、町域）を、並び順で返す。1 つの郵便番号に複数の住所があれば、すべてを返す。
+        マスターデータにない郵便番号は、200 で空の一覧を返す（誤りではなく、補えるものがない）。郵便番号は一部だけを持つ（spec 016 AC-260）。
+      parameters:
+        - name: postalCode
+          in: path
+          required: true
+          description: 郵便番号（ハイフンなしの 7 桁）
+          schema:
+            type: string
+            pattern: '^[0-9]{7}$'
+            example: '1000001'
+      responses:
+        '200':
+          description: 郵便番号の住所の一覧
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PostalCodeAddressList'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+
 components:
   parameters:
+    PrefectureCode:
+      name: prefectureCode
+      in: path
+      required: true
+      description: 都道府県のコード（2 桁）
+      schema:
+        type: string
+        pattern: '^[0-9]{2}$'
+        example: '13'
     Page:
       name: page
       in: query
@@ -1214,3 +1287,63 @@ components:
           format: email
           description: 問い合わせ先のメールアドレス。キャンセルの申請が却下された注文に示す（AC-96）
           example: support@example.com
+    Prefecture:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          description: 都道府県のコード（地方公共団体コードの先頭 2 桁）
+          example: '13'
+        name:
+          type: string
+          description: 都道府県名
+          example: 東京都
+    PrefectureList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Prefecture'
+    Municipality:
+      type: object
+      required: [code, name]
+      properties:
+        code:
+          type: string
+          description: 市区町村のコード（地方公共団体コードの 5 桁。検査数字を除く）
+          example: '13101'
+        name:
+          type: string
+          description: 市区町村名（郡を含む町村は郡を含む）
+          example: 千代田区
+    MunicipalityList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/Municipality'
+    PostalCodeAddress:
+      type: object
+      required: [prefecture, municipality, townName]
+      properties:
+        prefecture:
+          $ref: '#/components/schemas/Prefecture'
+        municipality:
+          $ref: '#/components/schemas/Municipality'
+        townName:
+          type: string
+          description: 町域名。住所でない注記を除く。注記だけのときは空（AC-283）
+          example: 千代田
+    PostalCodeAddressList:
+      type: object
+      required: [items]
+      properties:
+        items:
+          type: array
+          items:
+            $ref: '#/components/schemas/PostalCodeAddress'

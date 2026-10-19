@@ -40,7 +40,7 @@
 | 都道府県の市区町村の一覧 | `GET /api/store/prefectures/{prefectureCode}/municipalities` | コードの順の、コードと名前。都道府県がなければ 404 |
 | 郵便番号で引く | `GET /api/store/postal-codes/{postalCode}` | 住所の一覧（都道府県、市区町村、町域）。ないときは 200 で空の一覧 ※2 |
 
-- 3 つとも token なしで使える（契約の `security` に空の要件を書く）。タグは `region`。
+- 3 つとも token なしで使える（店舗の情報と同じく、契約に `security` を書かない）。タグは `region`。
 - 実装は `region` の presentation に置く（`storefront` を通さない）。理由：切り出すときに、店舗 API の中の地域の操作を、そのまま移せるため。
 - `/api/store` は C 側の契約（`store.yaml`）の URL の範囲で、`storefront` モジュールではない。契約を店舗 API に置くのは、C 側と B 側を API の範囲で分け、認可を契約から決めるため（[バックエンドのアーキテクチャ](../../backend/architecture.md) 第 4、7.2 節）。切り出した後も、この 3 つの操作の契約を変えなければ、店舗画面は変わらない。
 - 応答はマスターデータの更新でしか変わらないので、店舗画面は API の応答を取り直す間隔の設定で取る（[フロントの書き方](../../frontend/coding.md) 第 8.1 節）。

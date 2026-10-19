@@ -1,0 +1,6 @@
+# spec 014 の名前の対応（テストの差分の検査が使う。テストの流し方 第 4 節）
+#
+# 1 行に「旧=新」。関数・コンポーネントの名前か、モジュールのパス（@/lib/… など）で書く。名前は語の境目で当てる。
+# 本番のファイルを移す・名前を変えるタスクで、そのタスクの番号のコメントの下に足す。
+#
+#   node scripts/ci/review/test-diff.mjs 17744d8 docs/specs/014-frontend-consistency/tasks/renames.txt

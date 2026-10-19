@@ -174,7 +174,7 @@ class ValidationMessagesTest {
     @Test
     @DisplayName("業務のエラーに対応づけた項目は、制約の種類の文の代わりに業務のエラーの文になる。ほかの項目は種類の文のまま")
     void mappedField() {
-        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode()));
+        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
         var mapped = new ValidationMessages(helper, List.of(mapping));
         var target = new Sample("x", "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "abc", "x", null);
         var errors = new BeanPropertyBindingResult(target, "sample");
@@ -187,7 +187,7 @@ class ValidationMessagesTest {
     @Test
     @DisplayName("同じ項目のパスを複数の対応が対応づけていれば、作るときに失敗する")
     void duplicateMapping() {
-        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode()));
+        ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
 
         assertThatThrownBy(() -> new ValidationMessages(helper, List.of(mapping, mapping)))
                 .isInstanceOf(IllegalStateException.class)

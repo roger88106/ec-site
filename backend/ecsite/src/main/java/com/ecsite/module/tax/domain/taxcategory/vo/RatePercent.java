@@ -18,6 +18,11 @@ import java.util.List;
 public record RatePercent(BigDecimal value) {
 
     /**
+     * 下限（この値を含む）
+     */
+    private static final BigDecimal LOWER_BOUND = BigDecimal.ZERO;
+
+    /**
      * 上限（この値を含まない）
      */
     private static final BigDecimal UPPER_BOUND = BigDecimal.valueOf(100);
@@ -35,8 +40,8 @@ public record RatePercent(BigDecimal value) {
     public RatePercent(@NonNull BigDecimal value) {
         var normalized = normalize(value);
         // 率は 0 以上 100 未満で、小数の桁が上限以内
-        if (normalized.signum() < 0 || normalized.compareTo(UPPER_BOUND) >= 0 || normalized.scale() > MAX_SCALE) {
-            throw BusinessException.of(TaxErrorCode.INVALID_RATE_PERCENT, List.of(MAX_SCALE));
+        if (normalized.compareTo(LOWER_BOUND) < 0 || normalized.compareTo(UPPER_BOUND) >= 0 || normalized.scale() > MAX_SCALE) {
+            throw BusinessException.of(TaxErrorCode.INVALID_RATE_PERCENT, List.of(LOWER_BOUND, UPPER_BOUND, MAX_SCALE));
         }
         this.value = normalized;
     }

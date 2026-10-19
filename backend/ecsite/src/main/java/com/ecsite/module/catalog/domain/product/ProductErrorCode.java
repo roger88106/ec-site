@@ -21,7 +21,7 @@ public enum ProductErrorCode implements ErrorCodeProvider {
     /**
      * 税抜価格が 1 円未満
      */
-    INVALID_PRICE_EXCL_TAX(ErrorType.VALIDATION_ERROR),
+    INVALID_PRICE_EXCL_TAX(ErrorType.VALIDATION_ERROR, "min"),
     /**
      * 商品名が 1 文字以上 200 文字以内でない
      */

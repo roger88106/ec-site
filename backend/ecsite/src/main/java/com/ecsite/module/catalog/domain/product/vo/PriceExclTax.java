@@ -5,6 +5,8 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import org.jmolecules.ddd.annotation.ValueObject;
 
+import java.util.List;
+
 /**
  * 税抜価格。1 円以上の整数。全バリアント共通。
  *
@@ -14,13 +16,18 @@ import org.jmolecules.ddd.annotation.ValueObject;
 public record PriceExclTax(long yen) {
 
     /**
+     * 税抜価格の下限（円）
+     */
+    private static final long MIN_YEN = 1;
+
+    /**
      * コンストラクタ。
      *
      * @param yen 税抜価格（円）
      */
     public PriceExclTax {
-        if (yen < 1) {
-            throw BusinessException.of(ProductErrorCode.INVALID_PRICE_EXCL_TAX);
+        if (yen < MIN_YEN) {
+            throw BusinessException.of(ProductErrorCode.INVALID_PRICE_EXCL_TAX, List.of(MIN_YEN));
         }
     }
 

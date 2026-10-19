@@ -25,7 +25,7 @@ public enum OrderErrorCode implements ErrorCodeProvider {
     /**
      * 郵便番号が数字 7 桁でない
      */
-    INVALID_POSTAL_CODE(ErrorType.VALIDATION_ERROR),
+    INVALID_POSTAL_CODE(ErrorType.VALIDATION_ERROR, "digits"),
     /**
      * 都道府県のコードが地域のマスターデータにない
      */
@@ -41,7 +41,7 @@ public enum OrderErrorCode implements ErrorCodeProvider {
     /**
      * 電話番号が数字 10〜11 桁でない
      */
-    INVALID_PHONE_NUMBER(ErrorType.VALIDATION_ERROR),
+    INVALID_PHONE_NUMBER(ErrorType.VALIDATION_ERROR, "minDigits", "maxDigits"),
     /**
      * 空のカート、または購入できない品目を含むカート
      */

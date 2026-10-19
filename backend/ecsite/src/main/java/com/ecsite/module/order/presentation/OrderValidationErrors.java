@@ -3,8 +3,10 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.common.error.ErrorDetail;
 import com.ecsite.common.error.ValidationErrorMapping;
 import com.ecsite.module.order.domain.order.OrderErrorCode;
+import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import org.springframework.stereotype.Component;
 
+import java.util.List;
 import java.util.Map;
 
 /**
@@ -17,7 +19,9 @@ class OrderValidationErrors implements ValidationErrorMapping {
     @Override
     public Map<String, ErrorDetail> errorsByField() {
         return Map.of(
-                "shippingAddress.postalCode", ErrorDetail.of(OrderErrorCode.INVALID_POSTAL_CODE.getCode()),
-                "shippingAddress.phone", ErrorDetail.of(OrderErrorCode.INVALID_PHONE_NUMBER.getCode()));
+                "shippingAddress.postalCode", ErrorDetail.of(OrderErrorCode.INVALID_POSTAL_CODE.getCode(),
+                        List.of(ShippingAddress.POSTAL_CODE_DIGITS)),
+                "shippingAddress.phone", ErrorDetail.of(OrderErrorCode.INVALID_PHONE_NUMBER.getCode(),
+                        List.of(ShippingAddress.PHONE_MIN_DIGITS, ShippingAddress.PHONE_MAX_DIGITS)));
     }
 }

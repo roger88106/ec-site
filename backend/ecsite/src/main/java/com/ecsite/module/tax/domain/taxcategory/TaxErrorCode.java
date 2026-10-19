@@ -13,7 +13,7 @@ public enum TaxErrorCode implements ErrorCodeProvider {
     /**
      * 率が 0 以上 100 未満、小数第 2 位まででない
      */
-    INVALID_RATE_PERCENT(ErrorType.VALIDATION_ERROR, "scale"),
+    INVALID_RATE_PERCENT(ErrorType.VALIDATION_ERROR, "min", "max", "scale"),
     /**
      * 適用期間の開始が終了より前でない
      */

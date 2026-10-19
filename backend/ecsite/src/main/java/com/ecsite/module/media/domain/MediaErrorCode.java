@@ -14,7 +14,7 @@ public enum MediaErrorCode implements ErrorCodeProvider {
     /**
      * 画像の形式が対象外
      */
-    UNSUPPORTED_IMAGE_FORMAT(ErrorType.VALIDATION_ERROR),
+    UNSUPPORTED_IMAGE_FORMAT(ErrorType.VALIDATION_ERROR, "formats"),
     /**
      * 画像の大きさが範囲の外（0 バイト、または 10MB を超える）
      */
@@ -26,7 +26,7 @@ public enum MediaErrorCode implements ErrorCodeProvider {
     /**
      * ファイルの中身が対象の画像でない
      */
-    INVALID_IMAGE_FILE(ErrorType.VALIDATION_ERROR),
+    INVALID_IMAGE_FILE(ErrorType.VALIDATION_ERROR, "formats"),
     /**
      * 画像を変換できなかった（壊れたファイル、時間切れ）
      */

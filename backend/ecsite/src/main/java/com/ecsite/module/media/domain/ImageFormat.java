@@ -9,6 +9,7 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * 受け付ける画像の形式。ファイルの先頭のバイト（マジックナンバー）で判定する。<br />
@@ -19,27 +20,27 @@ public enum ImageFormat {
     /**
      * JPEG（FF D8 FF で始まる）
      */
-    JPEG("jpg", "image/jpeg"),
+    JPEG("JPEG", "jpg", "image/jpeg"),
     /**
      * PNG（89 50 4E 47 0D 0A 1A 0A で始まる）
      */
-    PNG("png", "image/png"),
+    PNG("PNG", "png", "image/png"),
     /**
      * WebP（"RIFF" + 4 バイトの長さ + "WEBP" で始まる）
      */
-    WEBP("webp", "image/webp"),
+    WEBP("WebP", "webp", "image/webp"),
     /**
      * BMP（"BM" + 4 バイトの大きさ + 0 の予約の 4 バイトで始まる）
      */
-    BMP("bmp", "image/bmp"),
+    BMP("BMP", "bmp", "image/bmp"),
     /**
      * HEIC / HEIF（ftyp の箱のブランドが HEIC の系統。スマートフォンの写真）
      */
-    HEIF("heic", "image/heic", "image/heif"),
+    HEIF("HEIC / HEIF", "heic", "image/heic", "image/heif"),
     /**
      * AVIF（ftyp の箱のブランドが avif・avis）
      */
-    AVIF("avif", "image/avif");
+    AVIF("AVIF", "avif", "image/avif");
 
     /**
      * 1 ファイルの大きさの上限（10MB）
@@ -102,6 +103,11 @@ public enum ImageFormat {
     private static final Set<String> GENERIC_BRANDS = Set.of("mif1", "msf1");
 
     /**
+     * 文に出す形式の名前
+     */
+    private final String displayName;
+
+    /**
      * ファイルの拡張子
      */
     @Getter
@@ -116,12 +122,23 @@ public enum ImageFormat {
     /**
      * コンストラクタ
      *
+     * @param displayName  文に出す形式の名前
      * @param extension    ファイルの拡張子
      * @param contentTypes MIME タイプ（先頭が代表）
      */
-    ImageFormat(String extension, String... contentTypes) {
+    ImageFormat(String displayName, String extension, String... contentTypes) {
+        this.displayName = displayName;
         this.extension = extension;
         this.contentTypes = List.of(contentTypes);
+    }
+
+    /**
+     * エラーの文に差し込む、受け付ける形式の一覧。
+     *
+     * @return 形式の名前を読点で区切ったもの（例：JPEG、PNG）
+     */
+    public static String displayNames() {
+        return Arrays.stream(values()).map(format -> format.displayName).collect(Collectors.joining("、"));
     }
 
     /**

@@ -34,7 +34,7 @@ public enum CommonErrorCode implements ErrorCodeProvider {
     /**
      * 金額が負
      */
-    INVALID_MONEY(ErrorType.VALIDATION_ERROR),
+    INVALID_MONEY(ErrorType.VALIDATION_ERROR, "min"),
     /**
      * リポジトリ復元エラー
      */

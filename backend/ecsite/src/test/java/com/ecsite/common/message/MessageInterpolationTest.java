@@ -1,5 +1,6 @@
 package com.ecsite.common.message;
 
+import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.ErrorDetail;
 import com.ecsite.module.cart.domain.CartErrorCode;
@@ -53,9 +54,24 @@ class MessageInterpolationTest {
         String code = "com.ecsite.module.catalog.domain.product.vo.CodeFormat#MAX_LENGTH";
         String address = "com.ecsite.module.order.domain.order.vo.ShippingAddress#";
         String cart = "com.ecsite.module.cart.domain.Cart#";
+        String formats = "com.ecsite.module.media.domain.ImageFormat#displayNames()";
         return Stream.of(
-                new Case(TaxErrorCode.INVALID_RATE_PERCENT, List.of(tax + "vo.RatePercent#MAX_SCALE"),
+                new Case(CommonErrorCode.INVALID_MONEY, List.of("com.ecsite.common.model.value.Money#MIN_YEN"),
+                        "金額は 0 円以上にしてください。"),
+                new Case(TaxErrorCode.INVALID_RATE_PERCENT,
+                        List.of(tax + "vo.RatePercent#LOWER_BOUND", tax + "vo.RatePercent#UPPER_BOUND", tax + "vo.RatePercent#MAX_SCALE"),
                         "税率は 0% 以上 100% 未満、小数第 2 位までにしてください。"),
+                new Case(ProductErrorCode.INVALID_PRICE_EXCL_TAX,
+                        List.of("com.ecsite.module.catalog.domain.product.vo.PriceExclTax#MIN_YEN"),
+                        "税抜価格は 1 円以上にしてください。"),
+                new Case(MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT, List.of(formats),
+                        "画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。"),
+                new Case(MediaErrorCode.INVALID_IMAGE_FILE, List.of(formats),
+                        "ファイルの中身が対応している形式（JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF）の画像ではありません。"),
+                new Case(OrderErrorCode.INVALID_POSTAL_CODE, List.of(address + "POSTAL_CODE_DIGITS"),
+                        "郵便番号は数字 7 桁で入力してください。"),
+                new Case(OrderErrorCode.INVALID_PHONE_NUMBER, List.of(address + "PHONE_MIN_DIGITS", address + "PHONE_MAX_DIGITS"),
+                        "電話番号は数字 10〜11 桁で入力してください。"),
                 new Case(TaxErrorCode.INVALID_TAX_CATEGORY_NAME, List.of(tax + "TaxCategory#NAME_MAX_LENGTH"),
                         "税区分の名称は 1 文字以上 50 文字以内にしてください。"),
                 new Case(CategoryErrorCode.INVALID_CATEGORY_NAME, List.of(category + "NAME_MAX_LENGTH"),
@@ -112,13 +128,17 @@ class MessageInterpolationTest {
     /**
      * 値の出どころから、ドメインの定数の値を読む（package-private の定数を読むため反射を使う）。
      *
-     * @param location {@code クラスの完全修飾名#定数名}。末尾が {@code /MB} なら、バイトを MB にする
+     * @param location {@code クラスの完全修飾名#定数名}。末尾が {@code /MB} なら、バイトを MB にする。
+     *                 末尾が {@code ()} なら、引数のない static メソッドの戻り値
      * @return 定数の値
      */
     private static Object valueOf(String location) {
         boolean megabytes = location.endsWith("/MB");
         String[] classAndField = location.replace("/MB", "").split("#");
         try {
+            if (classAndField[1].endsWith("()")) {
+                return Class.forName(classAndField[0]).getMethod(classAndField[1].replace("()", "")).invoke(null);
+            }
             var field = Class.forName(classAndField[0]).getDeclaredField(classAndField[1]);
             field.setAccessible(true);
             long value = ((Number) field.get(null)).longValue();

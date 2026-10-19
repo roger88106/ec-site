@@ -4,6 +4,8 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import org.jmolecules.ddd.annotation.ValueObject;
 
+import java.util.List;
+
 /**
  * 金額（円）。<br />
  * 通貨は日本円だけなので、円単位の整数で表す（constitution 1、7.3）。小数を含む計算（税込価格など）は
@@ -20,13 +22,18 @@ public record Money(long yen) {
     public static final Money ZERO = new Money(0);
 
     /**
+     * 金額の下限（円）
+     */
+    private static final long MIN_YEN = 0;
+
+    /**
      * コンストラクタ。
      *
      * @param yen 金額（円）
      */
     public Money {
-        if (yen < 0) {
-            throw BusinessException.of(CommonErrorCode.INVALID_MONEY);
+        if (yen < MIN_YEN) {
+            throw BusinessException.of(CommonErrorCode.INVALID_MONEY, List.of(MIN_YEN));
         }
     }
 

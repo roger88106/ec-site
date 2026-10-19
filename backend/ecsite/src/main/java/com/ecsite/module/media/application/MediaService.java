@@ -69,7 +69,7 @@ public class MediaService {
         var uploadId = UUID.randomUUID();
         var uploadKey = AssetKeys.upload(scope, uploadId);
         ImageFormat.ofContentType(contentType)
-                .orElseThrow(() -> BusinessException.of(MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT));
+                .orElseThrow(() -> BusinessException.of(MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT, List.of(ImageFormat.displayNames())));
         verifySize(contentLength);
 
         // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザが付ける Content-Type と合う）
@@ -90,7 +90,7 @@ public class MediaService {
         verifySize(size);
         // 変換の前に、受け付ける形式であることを確かめる（判定できないものは変換に回さない）
         ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH))
-                .orElseThrow(() -> BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE));
+                .orElseThrow(() -> BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE, List.of(ImageFormat.displayNames())));
         var webp = imageConverter.convertToWebp(uploadKey);
 
         var assetId = UUID.randomUUID();

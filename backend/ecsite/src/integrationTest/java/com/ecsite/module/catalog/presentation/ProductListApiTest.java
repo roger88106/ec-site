@@ -3,6 +3,7 @@ package com.ecsite.module.catalog.presentation;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import com.ecsite.module.catalog.domain.category.Category;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -159,6 +160,23 @@ class ProductListApiTest {
                 .andExpect(jsonPath("$.items[*].id", contains(inTShirts, inClothing)));
         mockMvc.perform(get(BASE).param("categoryId", tops))
                 .andExpect(jsonPath("$.items[*].id", contains(inTShirts)));
+    }
+
+    @Test
+    @DisplayName("AC-282 ドメインの上限の深さまでつないだカテゴリの、いちばん深いカテゴリの商品が、いちばん上のカテゴリの絞り込みで出る")
+    void filtersByTopCategoryAtMaxDepth() throws Exception {
+        var field = Category.class.getDeclaredField("MAX_DEPTH");
+        field.setAccessible(true);
+        int maxDepth = field.getInt(null);
+        var top = createCategory("深さ 1", null);
+        var deepest = top;
+        for (int depth = 2; depth <= maxDepth; depth++) {
+            deepest = createCategory("深さ " + depth, deepest);
+        }
+        var product = createProduct("A-001", "いちばん深いカテゴリの商品", deepest);
+
+        mockMvc.perform(get(BASE).param("categoryId", top))
+                .andExpect(jsonPath("$.items[*].id", contains(product)));
     }
 
     @Test

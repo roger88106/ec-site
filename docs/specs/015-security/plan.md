@@ -1,6 +1,6 @@
 # Plan 015：セキュリティ
 
-ステータス：草案　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 本 spec で変える設計は、各設計書に書く。本書には、モジュールと画面をまたぐ決定と、作り方の段取りだけを書く。
 
@@ -165,7 +165,7 @@ ecsite:
 
 ## 11. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-mock-flags.md)、[02](tasks/02-authorization.md)、[03](tasks/03-management-port.md)、[04](tasks/04-frontend-config.md)、[05](tasks/05-local-env-and-jar.md)、[06](tasks/06-mock-test-hooks.md)、[07](tasks/07-review.md)）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|

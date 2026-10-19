@@ -9,6 +9,7 @@ const ALL_SET = {
   AUTH_KEYCLOAK_ISSUER: 'https://idp.example/realms/ec-store',
   AUTH_KEYCLOAK_ID: 'ec-store-web',
   STORE_API_BASE_URL: 'https://api.example/api/store',
+  AUTH_URL: 'https://shop.example',
 }
 
 describe('店舗画面のサーバーの設定', () => {
@@ -30,6 +31,7 @@ describe('店舗画面のサーバーの設定', () => {
     expect(config.clientSecret).toBe(ALL_SET.AUTH_KEYCLOAK_SECRET)
     expect(config.secret).toBe(ALL_SET.AUTH_SECRET)
     expect(config.apiBaseUrl).toBe(ALL_SET.STORE_API_BASE_URL)
+    expect(config.publicUrl).toBe(ALL_SET.AUTH_URL)
   })
 
   test('開発のモードとテストでは、値がなければローカル用の既定の値を使う', () => {
@@ -40,13 +42,14 @@ describe('店舗画面のサーバーの設定', () => {
     expect(loadServerConfig({ NODE_ENV: 'test' }).clientId).toBe('ec-store-web')
   })
 
-  test('必須の値は 5 つ', () => {
+  test('必須の値は 6 つ', () => {
     expect([...REQUIRED_IN_PRODUCTION]).toEqual([
       'AUTH_SECRET',
       'AUTH_KEYCLOAK_SECRET',
       'AUTH_KEYCLOAK_ISSUER',
       'AUTH_KEYCLOAK_ID',
       'STORE_API_BASE_URL',
+      'AUTH_URL',
     ])
   })
 })

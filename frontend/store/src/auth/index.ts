@@ -20,7 +20,13 @@ import { loginPath, safeReturnTo } from '@/lib/login'
  */
 
 /** 接続先と secret */
-const { issuer: ISSUER, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET, secret: SECRET } = readServerConfig()
+const {
+  issuer: ISSUER,
+  clientId: CLIENT_ID,
+  clientSecret: CLIENT_SECRET,
+  secret: SECRET,
+  publicUrl: PUBLIC_URL,
+} = readServerConfig()
 
 /** セッションの Cookie を HTTPS だけで送るか（カート ID の Cookie と同じく、本番の起動で true） */
 const SECURE_COOKIE = process.env.NODE_ENV === 'production'
@@ -122,9 +128,8 @@ export async function redirectToLogin(returnTo?: string): Promise<never> {
  */
 export async function idpLogoutUrl(): Promise<string> {
   const token = await readToken()
-  const requestHeaders = await headers()
-  const origin = `${requestHeaders.get('x-forwarded-proto') ?? 'http'}://${requestHeaders.get('host')}`
-  return logoutUrl(origin, token?.idToken)
+  // 戻り先は公開する URL から作る。リクエストヘッダーのホストは偽れるので使わない
+  return logoutUrl(PUBLIC_URL, token?.idToken)
 }
 
 /** IdP のアカウントの画面 */

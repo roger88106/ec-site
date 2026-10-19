@@ -72,6 +72,7 @@ export default defineConfig({
         AUTH_KEYCLOAK_ID: 'ec-store-web',
         AUTH_KEYCLOAK_SECRET: 'ec-store-web-local-secret',
         AUTH_SECRET: 'ec-store-local-auth-secret-only-for-local-and-ci',
+        AUTH_URL: STORE_URL,
       },
       timeout: 180_000,
       reuseExistingServer: !CI,

@@ -4,6 +4,7 @@ import { describe, expect, test } from 'vitest'
 import { logout } from '@/actions/auth'
 import { GET as login } from '@/app/login/route'
 import { currentMember, getAccessToken, redirectToLogin } from '@/auth'
+import { readServerConfig } from '@/auth/config'
 import { ACCESS_TOKEN, authState, signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { cookieValue, redirectedTo, resetRequest } from '@/test/next'
@@ -115,14 +116,14 @@ describe('ログイン', () => {
 describe('ログアウト', () => {
   test('AC-115 セッションと Cookie のカート ID を消し、ID token を添えて IdP のログアウトへ移る', async () => {
     signInAs({ idToken: 'member-id-token' })
-    resetRequest({ cookies: { cart_id: COOKIE_CART_ID }, headers: { host: 'shop.test', 'x-forwarded-proto': 'https' } })
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
 
     const url = new URL(await redirectedTo(() => logout()))
 
     expect(`${url.origin}${url.pathname}`).toBe(`${IDP}/protocol/openid-connect/logout`)
     expect(Object.fromEntries(url.searchParams)).toEqual({
       client_id: 'ec-store-web',
-      post_logout_redirect_uri: 'https://shop.test/',
+      post_logout_redirect_uri: `${readServerConfig().publicUrl}/`,
       id_token_hint: 'member-id-token',
     })
     expect(authState.signOut).toHaveBeenCalledWith({ redirect: false })

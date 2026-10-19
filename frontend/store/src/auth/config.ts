@@ -11,6 +11,7 @@ export const REQUIRED_IN_PRODUCTION = [
   'AUTH_KEYCLOAK_ISSUER',
   'AUTH_KEYCLOAK_ID',
   'STORE_API_BASE_URL',
+  'AUTH_URL',
 ] as const
 
 /** 開発のモードとテストで使う、ローカル用の既定の値 */
@@ -20,7 +21,11 @@ const LOCAL_DEFAULTS: Record<(typeof REQUIRED_IN_PRODUCTION)[number], string> = 
   AUTH_KEYCLOAK_ISSUER: 'http://localhost:8180/realms/ec-store',
   AUTH_KEYCLOAK_ID: 'ec-store-web',
   STORE_API_BASE_URL: 'http://localhost:8080/api/store',
+  AUTH_URL: 'http://localhost:3000',
 }
+
+/** 店舗 API の公開の口の結果をキャッシュする秒数の既定（変更は 1 分以内に店舗画面へ反映する） */
+const DEFAULT_REVALIDATE_SECONDS = 60
 
 /** 店舗画面のサーバーの設定 */
 export type ServerConfig = {
@@ -34,6 +39,10 @@ export type ServerConfig = {
   secret: string
   /** 店舗 API の場所（`/api/store` まで） */
   apiBaseUrl: string
+  /** 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を作る（Auth.js も同じ環境変数 AUTH_URL を読む） */
+  publicUrl: string
+  /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定 60） */
+  apiRevalidateSeconds: number
 }
 
 /**
@@ -67,5 +76,7 @@ export function readServerConfig(env: Record<string, string | undefined> = proce
     clientSecret: value('AUTH_KEYCLOAK_SECRET'),
     secret: value('AUTH_SECRET'),
     apiBaseUrl: value('STORE_API_BASE_URL'),
+    publicUrl: value('AUTH_URL'),
+    apiRevalidateSeconds: Number(env.STORE_API_REVALIDATE_SECONDS || DEFAULT_REVALIDATE_SECONDS),
   }
 }

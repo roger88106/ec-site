@@ -8,13 +8,10 @@ import { readServerConfig } from '@/auth/config'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 
 /**
- * API の結果をキャッシュする秒数（：変更は 1 分以内に C 側へ反映する）。<br />
- * 環境変数 STORE_API_REVALIDATE_SECONDS で短くできる（E2E で、60 秒を待たずに一覧への反映を確かめるため）。
+ * 店舗 API の接続先と、結果をキャッシュする秒数。<br />
+ * 秒数は環境変数 STORE_API_REVALIDATE_SECONDS で短くできる（E2E で、60 秒を待たずに一覧への反映を確かめるため）。
  */
-const REVALIDATE_SECONDS = Number(process.env.STORE_API_REVALIDATE_SECONDS ?? 60)
-
-/** 店舗 API の接続先 */
-const BASE_URL = readServerConfig().apiBaseUrl
+const { apiBaseUrl: BASE_URL, apiRevalidateSeconds: REVALIDATE_SECONDS } = readServerConfig()
 
 /**
  * 店舗 API（store.yaml）の公開の口（店舗画面の構成 第 4 節）。token を付けない。<br />

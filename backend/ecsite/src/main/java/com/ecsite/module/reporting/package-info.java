@@ -4,5 +4,5 @@
  * 写しは、イベントを受けるたびに注文の API から読み直して上書きする。他のモジュールはレポートに依存しない。
  */
 @org.springframework.modulith.ApplicationModule(id = "reporting",
-        allowedDependencies = {"order::api", "order::event", "shipping::event", "catalog::api"})
+        allowedDependencies = {"order::api", "order::event", "shipping::event", "catalog::api", "region::api"})
 package com.ecsite.module.reporting;

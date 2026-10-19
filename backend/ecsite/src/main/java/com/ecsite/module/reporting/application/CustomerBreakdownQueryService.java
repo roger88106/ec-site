@@ -6,6 +6,7 @@ import com.ecsite.module.reporting.application.model.view.AgeGroupSales;
 import com.ecsite.module.reporting.application.model.view.CustomerBreakdownReport;
 import com.ecsite.module.reporting.application.model.view.GenderSales;
 import com.ecsite.module.reporting.application.model.view.PrefectureSales;
+import com.ecsite.module.reporting.application.port.RegionDirectory;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository.SegmentTotal;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
 import com.ecsite.module.reporting.domain.AgeGroup;
@@ -37,6 +38,11 @@ public class CustomerBreakdownQueryService {
     private final ReportQueryRepository queryRepository;
 
     /**
+     * 地域の腐敗防止層
+     */
+    private final RegionDirectory regionDirectory;
+
+    /**
      * 地域・年齢層・性別を求める。
      *
      * @param query 条件
@@ -47,12 +53,13 @@ public class CustomerBreakdownQueryService {
         var segments = queryRepository.segmentSales(query.period(), query.basis(), query.productId(), query.excludeTax(),
                 query.excludeShipping());
 
-        // 都道府県：売れた都道府県だけを、コードの順に。不明は最後
+        // 都道府県：売れた都道府県だけを、コードの順に。不明は最後。名前は地域から引く
+        var names = regionDirectory.prefectureNames();
         var prefectures = group(segments, segment -> Objects.requireNonNullElse(segment.prefectureCode(), "")).entrySet()
                 .stream()
                 .sorted(Comparator.comparing(entry -> entry.getKey().isEmpty() ? "99" : entry.getKey()))
                 .map(entry -> new PrefectureSales(entry.getKey().isEmpty() ? null : entry.getKey(),
-                        entry.getValue().amount(), entry.getValue().orders()))
+                        names.get(entry.getKey()), entry.getValue().amount(), entry.getValue().orders()))
                 .toList();
 
         // 年齢層と性別：すべての区分を、売れなかったものも 0 として

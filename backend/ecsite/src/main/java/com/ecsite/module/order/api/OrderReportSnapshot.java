@@ -21,7 +21,7 @@ import java.util.UUID;
  * @param cancellationKind キャンセルの種類。キャンセルでなければ null
  * @param restocked        キャンセルで在庫に戻したか。キャンセルでなければ null
  * @param postalCode       お届け先の郵便番号
- * @param prefecture       お届け先の都道府県（名前）
+ * @param prefectureCode   お届け先の都道府県のコード
  * @param buyerAge         注文時の年齢。分からなければ null
  * @param buyerGender      注文時の性別。分からなければ null
  * @param total            総額（税込。商品の合計 ＋ 送料）
@@ -32,7 +32,7 @@ import java.util.UUID;
  */
 public record OrderReportSnapshot(UUID orderId, String orderNumber, UUID memberId, Instant orderedAt, Status status,
                                   @Nullable Instant cancelledAt, @Nullable CancellationKind cancellationKind,
-                                  @Nullable Boolean restocked, String postalCode, String prefecture,
+                                  @Nullable Boolean restocked, String postalCode, String prefectureCode,
                                   @Nullable Integer buyerAge, @Nullable Gender buyerGender, Money total, Money shippingFee,
                                   Money taxTotal, Money shippingTax, List<Line> lines) {
 

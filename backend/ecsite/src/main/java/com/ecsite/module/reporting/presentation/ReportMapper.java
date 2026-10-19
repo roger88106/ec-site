@@ -89,6 +89,7 @@ class ReportMapper {
         var prefectures = report.prefectures().stream()
                 .map(sales -> new PrefectureSales()
                         .prefectureCode(sales.prefectureCode())
+                        .prefectureName(sales.prefectureName())
                         .amount(sales.amount().yen())
                         .orders(sales.orders()))
                 .toList();

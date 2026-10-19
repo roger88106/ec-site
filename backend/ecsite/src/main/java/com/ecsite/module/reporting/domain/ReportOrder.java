@@ -23,7 +23,7 @@ import java.util.UUID;
  * @param cancellationKind キャンセルの種類。キャンセルでなければ null
  * @param restocked        キャンセルで在庫に戻したか。キャンセルでなければ null
  * @param postalCode       郵便番号
- * @param prefectureCode   全国地方公共団体コードの上 2 桁。読み替えられなければ null
+ * @param prefectureCode   全国地方公共団体コードの上 2 桁（注文の写しのまま）。注文がコードを持つ前に、名前を読み替えられなかった写しは null
  * @param buyerAge         注文時の年齢。分からなければ null
  * @param buyerGender      注文時の性別。分からなければ null
  * @param total            総額

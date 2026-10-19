@@ -7,7 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.annotation.Order;
 import org.springframework.core.io.Resource;
-import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -63,6 +62,17 @@ class SecurityConfig {
 
     /**
      * 認証・認可の失敗を Problem Details で返す。
+    /**
+     * 店舗 API の操作ごとの token の要否。ビルドのときにリソースに写した {@code store.yaml} を、起動時に読む。
+     *
+     * @param storeApi {@code store.yaml}
+     * @return 操作ごとの token の要否
+     */
+    @Bean
+    StoreOperationSecurity storeOperationSecurity(@Value("classpath:openapi/store.yaml") Resource storeApi) {
+        return StoreOperationSecurity.load(storeApi);
+    }
+
      *
      * @param resolver Spring MVC の例外の解決
      * @return 401・403 の応答
@@ -95,12 +105,12 @@ class SecurityConfig {
     }
 
     /**
-     * 店舗 API：消費者の realm の token を受け付ける。会員の token には権限を載せない。
+     * 店舗 API：消費者の realm の token を受け付ける。会員の token には権限を載せない。token の要否は {@code store.yaml} で決める。
      */
     @Bean
     @Order(2)
     SecurityFilterChain storeFilterChain(HttpSecurity http, SecurityProperties properties, RealmKeys keys,
-                                         SecurityProblemResponder responder) throws Exception {
+                                         StoreOperationSecurity security, SecurityProblemResponder responder) throws Exception {
         var authenticationConverter = new JwtAuthenticationConverter();
         authenticationConverter.setJwtGrantedAuthoritiesConverter(jwt -> List.<GrantedAuthority>of());
         return stateless(http, responder)
@@ -112,11 +122,7 @@ class SecurityConfig {
                         .authenticationEntryPoint(responder)
                         .accessDeniedHandler(responder))
                 .authorizeHttpRequests(authorize -> authorize
-                        // 会員の操作。token がなければ 401
-                        .requestMatchers("/api/store/me/**", "/api/store/checkouts/**", "/api/store/orders/**").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/store/carts/*/checkouts").authenticated()
-                        // 認証が不要・任意の操作
-                        .anyRequest().permitAll())
+                        .anyRequest().access(new StoreTokenAuthorizationManager(security)))
                 .build();
     }
 

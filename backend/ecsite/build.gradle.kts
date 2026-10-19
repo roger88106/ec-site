@@ -473,9 +473,13 @@ sourceSets.main {
 tasks.named("compileJava") { dependsOn(openApiGenerateTasks) }
 
 // 管理 API の権限の判定は、起動時に admin.yaml の x-required-permission を読む。
-// 生成と同じファイルをリソースに写す（classpath:openapi/admin.yaml）
+// 店舗 API の token の要否は、起動時に store.yaml の security を読む。
+// 生成と同じファイルをリソースに写す（classpath:openapi/admin.yaml、classpath:openapi/store.yaml）
 tasks.processResources {
-    from(openApiDir.file("admin.yaml")) { into("openapi") }
+    from(openApiDir) {
+        include("admin.yaml", "store.yaml")
+        into("openapi")
+    }
 }
 
 // OpenAPI の構文の検証。check に含めるので、ローカルと CI で同じ検証が走る

@@ -21,11 +21,12 @@
 | `ECSITE_ORDER_SHIPPING_FEE`、`_RESERVATION_TTL` | 送料（税込、円）、引当の期限 | 1000、15m |
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に示す） | 必須 |
 | `ECSITE_PAYMENT_RETURN_URL` | 支払の画面から戻る店舗の注文の画面の URL。`{orderId}` に注文 ID が入る | 必須 |
-| `ECSITE_PAYMENT_GATEWAY`、`_DEADLINE`、`_EXPIRY_INTERVAL` | 決済サービス（`mock`・`stripe`）、支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | mock、30m、PT1M |
+| `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では立てない | false |
+| `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | 30m、PT1M |
 | `ECSITE_PAYMENT_AUTHORIZATION_VALIDITY`、`_AUTHORIZATION_WARNING` | 与信の有効期間（与信の時刻からの時間）、与信期限のどれだけ前から「期限が近い」とするか | 7d、2d |
-| `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払の画面を出すバックエンドの URL（ブラウザーから開ける URL） | 決済サービスが mock なら必須 |
-| `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API の秘密の鍵、通知の署名の鍵。Git に入れない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md) 第 5 節） | 決済サービスが stripe なら必須 |
-| `ECSITE_SHIPPING_CARRIER` | 物流サービス（今は `mock` だけ） | mock |
+| `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払の画面を出すバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを立てたら必須 |
+| `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API の秘密の鍵、通知の署名の鍵。Git に入れない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md) 第 5 節） | 決済の mock フラグを立てなければ必須 |
+| `ECSITE_SHIPPING_MOCK_ENABLED` | 物流の mock フラグ。本番の実装がまだないので、`true` でなければ起動に失敗する。本番では立てない | false |
 | `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名の鍵。Git に入れない。ローカルと統合テストは試験用の値を設定ファイルに持つ | 必須 |
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |
 | `SPRING_MAIL_HOST`、`_PORT`、`_USERNAME`、`_PASSWORD` | メールを送る SMTP サーバーの接続先と認証（Spring Boot の設定）。ローカルは compose の Mailpit（`localhost:2525`。ポートは `MAILPIT_SMTP_PORT` で変える） | host は必須、port は 25 |

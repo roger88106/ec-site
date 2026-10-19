@@ -118,7 +118,7 @@ CI=true scripts/ci/check-all.sh
 
 ## 決済（mock と Stripe）
 
-- 既定（profile `local`）は mock。注文すると `http://localhost:8080/mock-payment/{ID}` の支払の画面に移る（「支払う」「カードを拒否させる」「やめる」）。
+- profile `local` は mock（`application-local.yml` の mock フラグ。物流も mock）。注文すると `http://localhost:8080/mock-payment/{ID}` の支払の画面に移る（「支払う」「カードを拒否させる」「やめる」）。
 - Stripe の sandbox は `docs/dev/setup.md`「Stripe で動かす」の通り。鍵は `/.local/stripe.env`（なければ利用者に頼む。鍵を会話に貼らせない）。
 
   ```bash

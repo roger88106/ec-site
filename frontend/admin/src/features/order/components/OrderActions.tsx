@@ -80,7 +80,7 @@ export function OrderActions({ order }: { order: OrderDetail }) {
       <ErrorMessage error={error} />
       {cancelling && (
         <CancelOrderDialog
-          askRestock={order.status === 'SHIPPED'}
+          askRestock={order.actions.cancelAsksRestock}
           error={cancel.error}
           onClose={() => setCancelling(false)}
           onSubmit={(reason, restock, callbacks) => cancel.mutate({ ...path, body: { reason, restock } }, callbacks)}

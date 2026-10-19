@@ -1,7 +1,6 @@
 import { Button } from '@ec-site/shared/ui/button'
 import { ArrowDownIcon, ArrowUpIcon } from 'lucide-react'
 import { useTranslations } from 'use-intl'
-import { schemas } from '@/api/generated/constraints'
 import type { CategoryNode } from '@/api/types'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { move } from '@/lib/array'
@@ -56,8 +55,7 @@ export function CategoryTreeList({
             <Button onClick={() => actions.rename(node)} size="xs" variant="outline">
               {t('rename') /* 名称の変更 */}
             </Button>
-            {/* 階層の上限（3 階層目）には子を作れない */}
-            {node.depth < schemas.CategoryNode.depth.maximum && (
+            {node.actions.addChild && (
               <Button onClick={() => actions.createChild(node)} size="xs" variant="outline">
                 {t('addChild') /* 子を追加 */}
               </Button>

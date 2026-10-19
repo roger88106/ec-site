@@ -202,7 +202,9 @@
       "deleteDescription": "バリアントと在庫もあわせて削除します。",
       "deleteTitle": "商品「{name}」を削除しますか？",
       "discontinuedNote": "販売終了の商品は、公開に戻せません。",
-      "shownNote": "店舗に表示されたことがあるため、削除できません。取り扱いをやめるときは販売終了にしてください。"
+      "deleteBlocked": {
+        "ALREADY_SHOWN": "店舗に表示されたことがあるため、削除できません。取り扱いをやめるときは販売終了にしてください。"
+      }
     },
     "period": {
       "title": "公開期間",

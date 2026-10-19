@@ -114,8 +114,8 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
         {product.status === 'DISCONTINUED' && (
           <p className="text-muted-foreground text-sm">{t('discontinuedNote') /* 公開に戻せない */}</p>
         )}
-        {!product.actions.delete && (
-          <p className="text-muted-foreground text-sm">{t('shownNote') /* 削除できない理由 */}</p>
+        {product.actions.deleteBlockedReason && (
+          <p className="text-muted-foreground text-sm">{t(`deleteBlocked.${product.actions.deleteBlockedReason}`)}</p>
         )}
         <ErrorMessage error={error} />
       </CardContent>

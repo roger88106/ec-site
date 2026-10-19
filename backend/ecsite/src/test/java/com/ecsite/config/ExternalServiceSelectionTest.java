@@ -46,11 +46,10 @@ class ExternalServiceSelectionTest {
             "ecsite.payment.stripe.secret-key=sk_test_dummy", "ecsite.payment.stripe.webhook-secret=whsec_test_dummy"};
 
     /**
-     * 決済と物流の実装の置き場所を読み込む。依存する Bean は代わりの物を渡す
+     * 依存する Bean の代わりの物と、決済の mock の設定だけを持つ。読み込む実装の置き場所は、テストごとに足す
      */
-    private final ApplicationContextRunner runner = new ApplicationContextRunner()
+    private final ApplicationContextRunner base = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
-            .withUserConfiguration(ExternalServices.class)
             .withPropertyValues("ecsite.payment.mock.base-url=http://localhost:8080")
             .withBean(PaymentNotificationReceiver.class, () -> mock(PaymentNotificationReceiver.class))
             .withBean(Clock.class, Clock::systemUTC)
@@ -59,6 +58,11 @@ class ExternalServiceSelectionTest {
             .withBean(RestClient.Builder.class, RestClient::builder)
             .withBean(ShipmentRepository.class, () -> mock(ShipmentRepository.class))
             .withBean(MessageHelper.class, () -> mock(MessageHelper.class));
+
+    /**
+     * 決済と物流の実装の置き場所を読み込む
+     */
+    private final ApplicationContextRunner runner = base.withUserConfiguration(ExternalServices.class);
 
     @Test
     @DisplayName("AC-226 決済のフラグを立てると、決済は mock を使う")
@@ -108,6 +112,15 @@ class ExternalServiceSelectionTest {
     }
 
     @Test
+    @DisplayName("AC-228 物流のフラグを立てなければ、追跡を使う Bean が先に作られても、フラグの名前が知らされる")
+    void failsWithFlagNameEvenIfTrackingIsRequiredFirst() {
+        base.withUserConfiguration(TrackingUser.class, ExternalServices.class).withPropertyValues(PAYMENT_MOCK).run(context -> {
+            assertThat(context).hasFailed();
+            assertThat(context.getStartupFailure()).rootCause().hasMessageContaining("ecsite.shipping.mock.enabled");
+        });
+    }
+
+    @Test
     @DisplayName("AC-229 決済のフラグを立てなければ、mock の支払の画面がない")
     void noMockPaymentPageWithoutFlag() {
         runner.withPropertyValues(SHIPPING_MOCK).withPropertyValues(STRIPE_KEYS).run(context -> {
@@ -143,5 +156,13 @@ class ExternalServiceSelectionTest {
             "com.ecsite.module.payment.infrastructure.stripe",
             "com.ecsite.module.shipping.infrastructure.mock"})
     static class ExternalServices {
+    }
+
+    /**
+     * 追跡を使う Bean（本番では、出荷のアプリケーション層が実装の置き場所より先に作られる）
+     *
+     * @param tracking 追跡
+     */
+    record TrackingUser(CarrierTracking tracking) {
     }
 }

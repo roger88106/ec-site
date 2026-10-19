@@ -1,4 +1,3 @@
-import { translate } from '@/i18n/translate'
 import type { ActionResult } from '@/lib/actionResult'
 
 /** 注文のフォームの入力欄（メールアドレスは会員のものを使い、入力しない） */
@@ -49,11 +48,10 @@ export function placeOrderErrors(result: ActionResult | null): PlaceOrderErrors 
     return { fields: { [codeField]: result.message }, message: null, backToCart: false }
   }
   const fields: PlaceOrderErrors['fields'] = {}
-  for (const path of Object.keys(result.fieldErrors ?? {})) {
+  for (const [path, message] of Object.entries(result.fieldErrors ?? {})) {
     const field = FIELD_BY_PATH[path]
     if (field) {
-      // API が返すメッセージは検証の部品の既定の文（正規表現など）なので、業務の検証エラーと同じ文に揃える
-      fields[field] = translate(`checkout.fieldErrors.${field}`)
+      fields[field] = message
     }
   }
   return {

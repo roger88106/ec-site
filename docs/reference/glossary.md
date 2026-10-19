@@ -254,3 +254,8 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確かめる script。対応は spec の名前の対応のファイル（`renames.txt`）に書く |
 | 共通の値の型 | `common/model/value/` | 2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つ値の型（金額、文字の長さの上限など） |
 | メッセージのキー | `ecsite.<モジュール>.<名前>` | エラーの文を `messages.properties` から引くためのキー。エラーの定義（enum の定数）の名前から決まる |
+| 共有パッケージ | `frontend/shared`（`@ec-site/shared`） | 店舗画面と管理画面の両方で使う、UI のコンポーネント・関数・文言を置くパッケージ（[フロントの書き方](../frontend/coding.md) 第 5.1 節） |
+| 共有の文言 | `common.*` | 共有パッケージの文言。2 つの画面で同じ役割の文を置き、各画面の文言と浅く合わせて使う（[フロントの書き方](../frontend/coding.md) 第 7.1 節） |
+| 整形の関数 | `@ec-site/shared/lib/format` | 金額・価格・日時・税額・郵便番号・軸の値を、画面に出す文にする関数。2 つの画面で共有する |
+| 表示名 | `labels.ts` | API の列挙の値を画面に出す名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`（[フロントの書き方](../frontend/coding.md) 第 1.1 節） |
+| 文言のキーのコメントの検査 | `scripts/ci/message-comments.mjs` | 画面のコードで文言を引く `t('…')` の呼び出しに、出る文を示すコメントがあることを確かめる script（[コメントの書き方](../process/comments.md) 第 6.1 節） |

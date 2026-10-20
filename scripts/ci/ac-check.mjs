@@ -10,8 +10,11 @@
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確かめるとき：CI=true node scripts/ci/ac-check.mjs
+// - AC 一覧（docs/design/acceptance-criteria.md）を読む。廃止の AC はテストが要らず、テストが参照すると失敗する。
+//   spec と AC 一覧の AC が食い違うとき、状態が有効・変更・廃止でないとき、表が古いときに失敗する。
+//   表の要約・元の spec・テストの列は作り直す列で、--write で書き直す（状態・変えた spec・今の内容は残す）
 // ============================================================================
-import { readdirSync, readFileSync } from 'node:fs'
+import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
@@ -88,20 +91,23 @@ export function parseAcRefs(name) {
  * @param input.strict     テスト名に出ない AC を失敗にするか。false なら警告にする（missing には出す）
  * @returns 照らした結果。ok が false なら失敗
  */
-export function check({ specAcs, tests, exclusions, strict = true }) {
+export function check({ specAcs, tests, exclusions, deprecated = new Set(), strict = true }) {
   const covered = new Set()
   const ranges = []
   const unknown = []
+  const deprecatedRefs = []
   for (const test of tests) {
     const refs = parseAcRefs(test.name)
     if (refs.ranges.length > 0) {
       ranges.push(test)
     }
     for (const ac of refs.acs) {
-      if (specAcs.has(ac)) {
-        covered.add(ac)
-      } else {
+      if (!specAcs.has(ac)) {
         unknown.push({ ...test, ac })
+      } else if (deprecated.has(ac)) {
+        deprecatedRefs.push({ ...test, ac })
+      } else {
+        covered.add(ac)
       }
     }
   }
@@ -118,15 +124,125 @@ export function check({ specAcs, tests, exclusions, strict = true }) {
   }
 
   const sorted = (values) => [...values].sort((a, b) => a - b)
-  const missing = sorted([...specAcs].filter((ac) => !covered.has(ac) && !excluded.has(ac)))
+  const missing = sorted([...specAcs].filter((ac) => !covered.has(ac) && !excluded.has(ac) && !deprecated.has(ac)))
   const staleExclusions = sorted([...excluded].filter((ac) => covered.has(ac)))
   const ok =
     (!strict || missing.length === 0) &&
     ranges.length === 0 &&
     unknown.length === 0 &&
+    deprecatedRefs.length === 0 &&
     staleExclusions.length === 0 &&
     invalidExclusions.length === 0
-  return { ok, missing, ranges, unknown, staleExclusions, invalidExclusions }
+  return { ok, missing, ranges, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
+}
+
+/** AC 一覧の状態 */
+const STATUSES = ['有効', '変更', '廃止']
+
+/** AC 一覧の要約の長さの上限（字） */
+const SUMMARY_LENGTH = 40
+
+/** AC 一覧のテストの列に書くファイルの数の上限 */
+const TEST_FILES_SHOWN = 3
+
+/**
+ * spec の本文から、AC の定義の番号と要約（最初の文）を取り出す。
+ *
+ * @param markdown spec.md の本文
+ * @param spec     spec のディレクトリの名前（`001-catalog-and-inventory` など）
+ * @returns AC の定義（spec の順）
+ */
+export function parseSpecAcDefinitions(markdown, spec) {
+  return [...markdown.matchAll(/^- \*\*AC-([0-9]+)\*\*\s*(.*)$/gm)].map(([, number, text]) => {
+    // 最初の文：括弧の外の最初の句点まで
+    let depth = 0
+    let end = text.length
+    for (let i = 0; i < text.length; i++) {
+      if (text[i] === '（' || text[i] === '(') depth++
+      else if (text[i] === '）' || text[i] === ')') depth = Math.max(0, depth - 1)
+      else if (text[i] === '。' && depth === 0) {
+        end = i + 1
+        break
+      }
+    }
+    const chars = [...text.slice(0, end).replaceAll('|', '｜')]
+    const summary = chars.length > SUMMARY_LENGTH ? `${chars.slice(0, SUMMARY_LENGTH).join('')}…` : chars.join('')
+    return { ac: Number(number), spec, summary }
+  })
+}
+
+/** AC 一覧の文書（リポジトリのルートから） */
+const AC_LIST = 'docs/design/acceptance-criteria.md'
+
+/** AC 一覧の生成の範囲の印 */
+const LIST_START = '<!-- generated:ac-list -->'
+const LIST_END = '<!-- /generated:ac-list -->'
+
+/**
+ * AC 一覧の表を作る。状態・変えた spec・今の内容は手で書く列なので、前の一覧の値を残す。
+ *
+ * @param input.definitions spec の AC の定義
+ * @param input.previous    前の一覧（AC → 手で書く列）
+ * @param input.testFiles   AC → その AC をテスト名に持つテストのファイル（リポジトリのルートからのパス）
+ * @param input.exclusions  除外の一覧（"AC-n" → 理由）
+ * @returns 表の Markdown
+ */
+export function renderAcList({ definitions, previous, testFiles, exclusions }) {
+  const lines = ['| AC | 要約 | 状態 | 元の spec | 変えた spec | 今の内容 | テスト |', '|----|------|------|-----------|-------------|----------|--------|']
+  for (const { ac, spec, summary } of [...definitions].sort((a, b) => a.ac - b.ac)) {
+    const kept = previous.get(ac) ?? { status: '有効', changedBy: '—', location: 'spec' }
+    // ファイルを探す順は OS で違うので、名前の順にする
+    const files = [...new Set((testFiles.get(ac) ?? []).map((file) => path.basename(file).replace(/\.java$/, '')))].sort()
+    let test = 'なし'
+    if (files.length > 0) {
+      const shown = files.slice(0, TEST_FILES_SHOWN).map((file) => `\`${file}\``).join('、')
+      test = files.length > TEST_FILES_SHOWN ? `${shown} ほか ${files.length - TEST_FILES_SHOWN}` : shown
+    } else if (exclusions[`AC-${ac}`]) {
+      test = '除外'
+    }
+    const origin = `[${spec.slice(0, 3)}](../specs/${spec}/spec.md)`
+    lines.push(`| AC-${ac} | ${summary} | ${kept.status} | ${origin} | ${kept.changedBy} | ${kept.location} | ${test} |`)
+  }
+  return `${lines.join('\n')}\n`
+}
+
+/**
+ * AC 一覧の表から、手で書く列を読む。
+ *
+ * @param markdown AC 一覧（文書の全体か表）
+ * @returns AC → 状態・変えた spec・今の内容
+ */
+export function parseAcList(markdown) {
+  const list = new Map()
+  for (const line of markdown.split('\n')) {
+    const cells = line.split('|').map((cell) => cell.trim())
+    const match = /^AC-([0-9]+)$/.exec(cells[1] ?? '')
+    if (match && cells.length >= 9) {
+      list.set(Number(match[1]), { status: cells[3], changedBy: cells[5], location: cells[6] })
+    }
+  }
+  return list
+}
+
+/**
+ * spec の AC と AC 一覧を照らす。
+ *
+ * @param input.definitions spec の AC の定義
+ * @param input.list        AC 一覧（AC → 手で書く列）
+ * @returns 食い違い（なければ空）
+ */
+export function checkAcList({ definitions, list }) {
+  const problems = []
+  const specAcs = new Set(definitions.map((definition) => definition.ac))
+  const missing = [...specAcs].filter((ac) => !list.has(ac)).sort((a, b) => a - b)
+  if (missing.length > 0) problems.push(`AC 一覧にない AC：${missing.map((ac) => `AC-${ac}`).join('、')}`)
+  const extra = [...list.keys()].filter((ac) => !specAcs.has(ac)).sort((a, b) => a - b)
+  if (extra.length > 0) problems.push(`spec にない AC が AC 一覧にある：${extra.map((ac) => `AC-${ac}`).join('、')}`)
+  const invalid = [...list].filter(([, row]) => !STATUSES.includes(row.status)).sort(([a], [b]) => a - b)
+  if (invalid.length > 0) {
+    problems.push(`AC 一覧の状態が有効・変更・廃止でない：${invalid.map(([ac, row]) => `AC-${ac}（${row.status}）`).join('、')}`)
+  }
+  return problems
 }
 
 /**
@@ -194,6 +310,9 @@ function report(result, root, strict) {
   for (const test of result.unknown) {
     console.log(`spec にない AC-${test.ac}：${where(test)}`)
   }
+  for (const test of result.deprecatedRefs) {
+    console.log(`廃止した AC-${test.ac} を参照するテスト（AC 番号を消すか、AC 一覧の状態を直す）：${where(test)}`)
+  }
   if (result.staleExclusions.length > 0) {
     console.log(`テストがあるのに除外されている AC：${result.staleExclusions.map((ac) => `AC-${ac}`).join('、')}`)
   }
@@ -207,30 +326,65 @@ function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
   const root = path.resolve(here, '../..')
   const specsDir = path.join(root, 'docs/specs')
-  const specAcs = new Set()
+  const definitions = []
   for (const entry of readdirSync(specsDir, { withFileTypes: true })) {
     if (entry.isDirectory()) {
       try {
-        for (const ac of parseSpecAcs(readFileSync(path.join(specsDir, entry.name, 'spec.md'), 'utf8'))) {
-          specAcs.add(ac)
-        }
+        definitions.push(...parseSpecAcDefinitions(readFileSync(path.join(specsDir, entry.name, 'spec.md'), 'utf8'), entry.name))
       } catch (error) {
         if (error.code !== 'ENOENT') throw error
       }
     }
   }
+  const specAcs = new Set(definitions.map((definition) => definition.ac))
   const tests = findTestFiles(root).flatMap(({ file, kind }) =>
     extractTestNames(readFileSync(file, 'utf8'), kind).map((name) => ({ file, name })),
   )
   const exclusions = JSON.parse(readFileSync(path.join(here, 'ac-exclusions.json'), 'utf8'))
 
+  // AC 一覧：手で書く列（状態など）を読み、テストの列を作り直して比べる
+  const listFile = path.join(root, AC_LIST)
+  const document = existsSync(listFile) ? readFileSync(listFile, 'utf8') : null
+  const from = document?.indexOf(LIST_START) ?? -1
+  const to = document?.indexOf(LIST_END) ?? -1
+  const current = from >= 0 && to > from ? document.slice(from + LIST_START.length, to).trim() : null
+  const previous = parseAcList(current ?? '')
+  const testFiles = new Map()
+  for (const test of tests) {
+    for (const ac of parseAcRefs(test.name).acs) {
+      testFiles.set(ac, [...(testFiles.get(ac) ?? []), test.file])
+    }
+  }
+  const rendered = renderAcList({ definitions, previous, testFiles, exclusions })
+  if (process.argv.includes('--write')) {
+    if (current === null) {
+      console.log(`${AC_LIST} に ${LIST_START} と ${LIST_END} の範囲がない`)
+      process.exit(1)
+    }
+    writeFileSync(listFile, `${document.slice(0, from + LIST_START.length)}\n${rendered}${document.slice(to)}`)
+    console.log(`書き直した：${AC_LIST}`)
+    process.exit(0)
+  }
+  const listProblems = []
+  if (current === null) {
+    listProblems.push(`${AC_LIST} に ${LIST_START} と ${LIST_END} の範囲がない`)
+  } else {
+    listProblems.push(...checkAcList({ definitions, list: previous }))
+    if (`${current}\n` !== rendered) {
+      listProblems.push(`AC 一覧が古い（テストか spec が変わった）。node scripts/ci/ac-check.mjs --write で書き直し、差分を確かめる`)
+    }
+  }
+  const deprecated = new Set([...previous].filter(([, row]) => row.status === '廃止').map(([ac]) => ac))
+
   const strict = isStrict(process.env)
-  const result = check({ specAcs, tests, exclusions, strict })
+  const result = check({ specAcs, tests, exclusions, deprecated, strict })
   report(result, root, strict)
+  for (const problem of listProblems) console.log(problem)
+  const ok = result.ok && listProblems.length === 0
   console.log(
-    `${result.ok ? 'OK' : 'NG'}：AC ${specAcs.size} 件、テスト名 ${tests.length} 件、除外 ${Object.keys(exclusions).length} 件`,
+    `${ok ? 'OK' : 'NG'}：AC ${specAcs.size} 件（廃止 ${deprecated.size} 件）、テスト名 ${tests.length} 件、除外 ${Object.keys(exclusions).length} 件`,
   )
-  process.exit(result.ok ? 0 : 1)
+  process.exit(ok ? 0 : 1)
 }
 
 if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {

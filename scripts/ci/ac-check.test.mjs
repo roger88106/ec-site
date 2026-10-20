@@ -1,7 +1,17 @@
 // ac-check.mjs のテスト（node --test "scripts/ci/*.test.mjs"）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { check, extractTestNames, isStrict, parseAcRefs, parseSpecAcs } from './ac-check.mjs'
+import {
+  check,
+  checkAcList,
+  extractTestNames,
+  isStrict,
+  parseAcList,
+  parseAcRefs,
+  parseSpecAcDefinitions,
+  parseSpecAcs,
+  renderAcList,
+} from './ac-check.mjs'
 
 describe('spec の AC の取り出し', () => {
   test('AC の定義の行（- **AC-n**）から番号を取り出す', () => {
@@ -149,6 +159,82 @@ describe('照合', () => {
   test('手元でも、範囲の表記と spec にない AC 番号は失敗する', () => {
     const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1〜2 a', 'AC-200 b'), exclusions: {}, strict: false })
     assert.equal(result.ok, false)
+  })
+})
+
+describe('廃止した AC', () => {
+  const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
+
+  test('廃止した AC は、テストがなくてよい', () => {
+    const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a'), exclusions: {}, deprecated: new Set([2]) })
+    assert.equal(result.ok, true)
+    assert.deepEqual(result.missing, [])
+  })
+
+  test('廃止した AC をテストが参照していれば、手元でも失敗する', () => {
+    const result = check({
+      specAcs: new Set([1, 2]),
+      tests: tests('AC-1、2 a'),
+      exclusions: {},
+      deprecated: new Set([2]),
+      strict: false,
+    })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.deprecatedRefs, [{ file: 'X.test.ts', name: 'AC-1、2 a', ac: 2 }])
+  })
+})
+
+describe('AC 一覧', () => {
+  const spec001 = [
+    '- **AC-1** 税区分を名称で登録できる。名称は重複できない。',
+    '- **AC-2** 税率は、率（%）、適用開始日時、適用終了日時を持つ。開始が空白なら「過去すべて」を意味する。',
+  ].join('\n')
+
+  test('spec の AC の定義から、番号と要約（最初の文、40 字まで）を取り出す', () => {
+    assert.deepEqual(parseSpecAcDefinitions(spec001, '001-catalog-and-inventory'), [
+      { ac: 1, spec: '001-catalog-and-inventory', summary: '税区分を名称で登録できる。' },
+      { ac: 2, spec: '001-catalog-and-inventory', summary: '税率は、率（%）、適用開始日時、適用終了日時を持つ。' },
+    ])
+    assert.equal(
+      parseSpecAcDefinitions(`- **AC-3** ${'あ'.repeat(50)}。`, '001-x')[0].summary,
+      `${'あ'.repeat(40)}…`,
+    )
+  })
+
+  const definitions = parseSpecAcDefinitions(spec001, '001-catalog-and-inventory')
+
+  test('一覧を作る。前の一覧の状態・変えた spec・今の内容は残し、ない AC は有効・spec の定義にする', () => {
+    const previous = new Map([[2, { status: '変更', changedBy: '[016](../specs/016-master-data)', location: '[税モジュール](../backend/modules/tax.md)' }]])
+    const testFiles = new Map([[1, ['backend/a/TaxApiTest.java', 'e2e/tests/tax.spec.ts']]])
+    const markdown = renderAcList({ definitions, previous, testFiles, exclusions: { 'AC-2': '手で確かめる' } })
+    assert.match(markdown, /^\| AC \| 要約 \| 状態 \| 元の spec \| 変えた spec \| 今の内容 \| テスト \|$/m)
+    assert.match(
+      markdown,
+      /^\| AC-1 \| 税区分を名称で登録できる。 \| 有効 \| \[001\]\(\.\.\/specs\/001-catalog-and-inventory\/spec\.md\) \| — \| spec \| `TaxApiTest`、`tax\.spec\.ts` \|$/m,
+    )
+    assert.match(markdown, /^\| AC-2 \| .* \| 変更 \| .* \| \[016\]\(\.\.\/specs\/016-master-data\) \| \[税モジュール\]\(\.\.\/backend\/modules\/tax\.md\) \| 除外 \|$/m)
+  })
+
+  test('テストのファイルは 3 つまで書き、残りは数を書く。テストも除外もなければ「なし」', () => {
+    const testFiles = new Map([[1, ['a/A.java', 'b/B.java', 'c/C.java', 'd/D.java', 'e/E.java']]])
+    const markdown = renderAcList({ definitions, previous: new Map(), testFiles, exclusions: {} })
+    assert.match(markdown, /\| `A`、`B`、`C` ほか 2 \|$/m)
+    assert.match(markdown, /^\| AC-2 \| .* \| なし \|$/m)
+  })
+
+  test('一覧の行から、手で書く列（状態、変えた spec、今の内容）を読む', () => {
+    const markdown = renderAcList({ definitions, previous: new Map(), testFiles: new Map(), exclusions: {} })
+    assert.deepEqual(parseAcList(markdown).get(1), { status: '有効', changedBy: '—', location: 'spec' })
+  })
+
+  test('spec にあって一覧にない AC、一覧にあって spec にない AC、決まっていない状態を見つける', () => {
+    const list = new Map([
+      [1, { status: '有効', changedBy: '—', location: 'spec' }],
+      [9, { status: '有効', changedBy: '—', location: 'spec' }],
+    ])
+    const extra = parseSpecAcDefinitions('- **AC-3** 三つ目。', '001-x')
+    const problems = checkAcList({ definitions: [...definitions, ...extra], list: new Map([...list, [3, { status: '保留', changedBy: '—', location: 'spec' }]]) })
+    assert.deepEqual(problems, ['AC 一覧にない AC：AC-2', 'spec にない AC が AC 一覧にある：AC-9', 'AC 一覧の状態が有効・変更・廃止でない：AC-3（保留）'])
   })
 })
 

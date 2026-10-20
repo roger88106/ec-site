@@ -27,6 +27,15 @@ const LOCAL_DEFAULTS: Record<(typeof REQUIRED_IN_PRODUCTION)[number], string> = 
 /** 店舗 API の公開の口の結果をキャッシュする秒数の既定（変更は 1 分以内に店舗画面へ反映する） */
 const DEFAULT_REVALIDATE_SECONDS = 60
 
+/** 店舗 API の応答を待つ秒数の既定（バックエンドで最も長く待つ支払画面を開く操作より長くする） */
+const DEFAULT_API_TIMEOUT_SECONDS = 30
+
+/** IdP の応答を待つ秒数の既定 */
+const DEFAULT_IDP_TIMEOUT_SECONDS = 10
+
+/** 待つ時間の上限の環境変数（正の数でなければ起動に失敗させる） */
+const TIMEOUT_SETTINGS = ['STORE_API_TIMEOUT_SECONDS', 'AUTH_KEYCLOAK_TIMEOUT_SECONDS'] as const
+
 /** 店舗画面のサーバーの設定 */
 export type ServerConfig = {
   /** 消費者の realm の issuer */
@@ -43,10 +52,15 @@ export type ServerConfig = {
   publicUrl: string
   /** 店舗 API の公開の口の結果をキャッシュする秒数（任意。既定 60） */
   apiRevalidateSeconds: number
+  /** 店舗 API の応答を待つ秒数（任意。既定 30） */
+  apiTimeoutSeconds: number
+  /** IdP（ログイン、token の更新）の応答を待つ秒数（任意。既定 10） */
+  idpTimeoutSeconds: number
 }
 
 /**
  * 環境変数から設定を読む。本番のモードで必須の値がなければ（空も含む）、足りない名前を並べた例外を投げる。
+ * 待つ時間の上限が正の数でなければ、モードによらず、その名前を並べた例外を投げる。
  *
  * @param env 環境変数
  * @returns 設定
@@ -56,6 +70,10 @@ export function loadServerConfig(env: Record<string, string | undefined> = proce
   const missing = REQUIRED_IN_PRODUCTION.filter((name) => !env[name])
   if (production && missing.length > 0) {
     throw new Error(`店舗画面の起動に必要な環境変数がありません：${missing.join(', ')}`)
+  }
+  const invalid = TIMEOUT_SETTINGS.filter((name) => env[name] && !(Number(env[name]) > 0))
+  if (invalid.length > 0) {
+    throw new Error(`待つ時間の上限は正の数にしてください：${invalid.join(', ')}`)
   }
   return readServerConfig(env)
 }
@@ -78,5 +96,7 @@ export function readServerConfig(env: Record<string, string | undefined> = proce
     apiBaseUrl: value('STORE_API_BASE_URL'),
     publicUrl: value('AUTH_URL'),
     apiRevalidateSeconds: Number(env.STORE_API_REVALIDATE_SECONDS || DEFAULT_REVALIDATE_SECONDS),
+    apiTimeoutSeconds: Number(env.STORE_API_TIMEOUT_SECONDS || DEFAULT_API_TIMEOUT_SECONDS),
+    idpTimeoutSeconds: Number(env.AUTH_KEYCLOAK_TIMEOUT_SECONDS || DEFAULT_IDP_TIMEOUT_SECONDS),
   }
 }

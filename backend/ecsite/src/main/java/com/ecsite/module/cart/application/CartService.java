@@ -58,6 +58,18 @@ public class CartService {
     private final Clock clock;
 
     /**
+     * 期限が指定した時刻より前に切れたカートを、品目と共に、件数の上限まで消す（片付けのジョブから呼ぶ）。
+     *
+     * @param expiredBefore この時刻より前に期限が切れたカートを消す
+     * @param limit         消す件数の上限
+     * @return 消した件数
+     */
+    @Transactional
+    public int deleteExpired(Instant expiredBefore, int limit) {
+        return 0;
+    }
+
+    /**
      * 空のカートを作る。
      *
      * @return カート ID

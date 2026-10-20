@@ -10,6 +10,7 @@ import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -103,5 +104,21 @@ class JooqCartRepository implements CartRepository {
             items.forEach(item -> insert.values(cart.id(), item.variantId(), item.quantity(), item.addedAt()));
             insert.execute();
         }
+    }
+
+    /**
+     * 最後の変更が指定した時刻より前のカートを、件数の上限まで消す。品目は外部キーの連鎖で消える。<br />
+     * 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行は飛ばす（次の回で消す）。
+     */
+    @Override
+    public int deleteUpdatedBefore(Instant updatedBefore, int limit) {
+        return dsl.deleteFrom(CART_)
+                .where(CART_.ID.in(dsl.select(CART_.ID)
+                        .from(CART_)
+                        .where(CART_.UPDATED_AT.lt(updatedBefore))
+                        .limit(limit)
+                        .forUpdate()
+                        .skipLocked()))
+                .execute();
     }
 }

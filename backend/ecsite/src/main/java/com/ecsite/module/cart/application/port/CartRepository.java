@@ -2,6 +2,7 @@ package com.ecsite.module.cart.application.port;
 
 import com.ecsite.module.cart.domain.Cart;
 
+import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -41,4 +42,13 @@ public interface CartRepository {
      * @param cart 変更したカート
      */
     void save(Cart cart);
+
+    /**
+     * 最後の変更が指定した時刻より前のカートを、品目と共に、件数の上限まで消す（片付け）。
+     *
+     * @param updatedBefore 最後の変更の時刻の上限
+     * @param limit         消す件数の上限
+     * @return 消した件数
+     */
+    int deleteUpdatedBefore(Instant updatedBefore, int limit);
 }

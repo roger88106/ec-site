@@ -30,6 +30,14 @@ class CartTest {
     private static final UUID BLACK = UUID.randomUUID();
 
     @Test
+    @DisplayName("AC-284 期限がある時刻より前に切れたカートは、最後の変更がその時刻の 30 日前より前のもの")
+    void findsLastUpdateOfCartsExpiredBefore() {
+        var expiredBefore = NOW.plus(Duration.ofDays(30));
+
+        assertThat(Cart.lastUpdateExpiredBefore(expiredBefore)).isEqualTo(NOW);
+    }
+
+    @Test
     @DisplayName("AC-73 作った直後のカートは空で、バージョンは 0")
     void createsEmptyCart() {
         var cart = Cart.create(UUID.randomUUID(), NOW);

@@ -66,7 +66,7 @@ public class CartService {
      */
     @Transactional
     public int deleteExpired(Instant expiredBefore, int limit) {
-        return 0;
+        return cartRepository.deleteUpdatedBefore(Cart.lastUpdateExpiredBefore(expiredBefore), limit);
     }
 
     /**

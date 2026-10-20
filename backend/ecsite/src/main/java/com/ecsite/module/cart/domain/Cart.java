@@ -267,6 +267,17 @@ public class Cart {
         touch(now);
     }
 
+    /**
+     * 期限が指定した時刻より前に切れたカートの、最後の変更の時刻の上限（片付けで、消すカートを探すため）。<br />
+     * 最後の変更がこの時刻より前のカートは、指定した時刻より前に期限が切れている。
+     *
+     * @param expiredBefore 期限が切れた時刻の上限
+     * @return 最後の変更の時刻の上限
+     */
+    public static Instant lastUpdateExpiredBefore(@NonNull Instant expiredBefore) {
+        return expiredBefore.minus(LIFETIME);
+    }
+
 // ============================== プライベートメソッド ==============================
 
     /**

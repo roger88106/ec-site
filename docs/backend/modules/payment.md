@@ -126,6 +126,7 @@ stateDiagram-v2
 | 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、カードだけを有効にする。カードで払うウォレット（Apple Pay、Google Pay、Link）も与信だけを取れるが、MVP の後に見直す |
 | 通知の受け口 | `POST /api/webhooks/stripe`。認証は付けず、署名（ヘッダー `Stripe-Signature`、鍵 `STRIPE_WEBHOOK_SECRET`）で確かめる。署名が合わない・古い通知は 400 で拒否する |
 | 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../../dev/environment.md)） |
+| 待つ時間の上限 | 接続 5 秒、応答 20 秒（1 回の要求ごと）。通信の失敗は SDK が同じ冪等キーで 2 回までやり直す |
 
 通知の種類と、支払への反映：
 
@@ -138,7 +139,7 @@ stateDiagram-v2
 - 消費者が支払の画面を離れても、通知は来ない。Session は期限まで開いたまま。カードの拒否は画面に出るだけで、Session の通知は来ない。
 - 支払の画面を閉じる（Session を期限切れにする）とき、`open` でない Session は Stripe が拒否する。拒否されたら Session を読み、`complete` なら「支払が済んでいた」、`expired` なら「閉じた」とする。
 - 与信を取り消す（PaymentIntent の取消）とき、取消済みは Stripe が拒否する（`payment_intent_unexpected_state`）。拒否されたら PaymentIntent を読み、`canceled` なら成功とする。
-- Stripe が応えない、上の他の拒否は、システムのエラーにする。
+- Stripe に接続できない・時間内に応答がない、Stripe の 5xx、回数の制限（429）は、外部サービスのエラー（`PAYMENT_GATEWAY_UNAVAILABLE`、502）にする。認証・権限・要求の誤りなど上の他の拒否は、システムのエラーにする。
 
 売上確定と返金（sandbox で確かめた応答）：
 
@@ -150,7 +151,7 @@ stateDiagram-v2
 | 返金 | Refund（PaymentIntent の総額。冪等キー `refund-<注文 ID>`） | 成功なら Refund は `succeeded`。同じ冪等キーで重ねると、最初と同じ応答 |
 | 返金済みの返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
 
-- Stripe に接続できない、Stripe の 5xx は、売上確定では「接続できない」にする（与信済みのまま残り、やり直せる）。返金ではシステムのエラーにし、再発行でやり直す。
+- Stripe に接続できない、Stripe の 5xx、回数の制限は、売上確定では「接続できない」の結果にする（与信済みのまま残り、やり直せる）。返金では外部サービスのエラーにし、再発行でやり直す。
 - 上の他の拒否は、システムのエラーにする。
 
 ※4：与信は 7 日待たないと切れないので、sandbox では与信を取り消した PaymentIntent で、同じ応答（400 `payment_intent_unexpected_state`、状態 `canceled`）になることを確かめた。

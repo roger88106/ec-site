@@ -30,7 +30,7 @@
    - 変換は imgproxy で同期に行い、向きを画素に反映してメタデータを除く ※1。
 3. 確定しなかったファイルは、受付バケットのライフサイクル規則で 1 日後に消える。
 
-※1：imgproxy のエラー、時間切れ、応答が WebP でない（先頭のバイトで判定）ときは、その場でエラーにしてアセットを記録しない。
+※1：変換・保存に失敗したら、その場でエラーにしてアセットを記録しない。imgproxy が応答した失敗（4xx と 500）と、応答が WebP でない（先頭のバイトで判定）ときは、画像を変換できないエラー（400）。imgproxy・ストレージに届かない、時間内に応答がない、その側の故障（imgproxy の 502・503・504、ストレージの 5xx）は、外部サービスのエラー（`IMAGE_SERVICE_UNAVAILABLE`、502）にする（[バックエンドのアーキテクチャ](../architecture.md) 第 8 節）。受付は署名付き URL を手元で作り、ストレージを呼ばない。
 
 ### 受け付ける画像
 
@@ -57,8 +57,8 @@
 
 | 役割 | port | 実装 | 設定 |
 |------|------|------|------|
-| ストレージ | `ObjectStorage` | Amazon S3（AWS SDK v2）。ローカルと CI は SeaweedFS | `ecsite.media.storage` |
-| 画像の変換 | `ImageConverter` | 別コンテナの imgproxy を HTTP で呼ぶ | `ecsite.media.converter` |
+| ストレージ | `ObjectStorage` | Amazon S3（AWS SDK v2）。ローカルと CI は SeaweedFS。待つ時間の上限は 1 回の試行 10 秒、やり直しを含めた全体 30 秒 | `ecsite.media.storage` |
+| 画像の変換 | `ImageConverter` | 別コンテナの imgproxy を HTTP で呼ぶ。待つ時間の上限は接続 5 秒、応答 30 秒 | `ecsite.media.converter` |
 
 ストレージの操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする（署名付き PUT の URL、ファイルの情報、先頭の読み取り、書き込み、削除）。
 

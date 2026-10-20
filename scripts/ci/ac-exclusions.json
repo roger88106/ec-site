@@ -8,5 +8,6 @@
   "AC-277": "コードの書き方で決まり、テスト名を持たない。列挙の写しを switch 式で書くので、値を足して写し忘れるとコンパイルに失敗する（docs/backend/coding.md 第 1.3 節）。spec 016 の T016-09-05 で、valueOf・fromValue に name()・getValue() を渡す写しが main にないことを git grep で確かめた",
   "AC-280": "置き場所の 1 か所で決まり、テスト名を持たない。業務の時間帯は common の BusinessTime.ZONE にあり、注文番号・年齢の基準日・注文の一覧の日付の範囲・レポートの日はそこから取る。spec 016 の T016-09-08 で、main に Asia/Tokyo の文字がほかにないことを git grep で確かめ、既存のテストが通ることを確かめた",
   "AC-281": "時点の税率の判定が 1 か所にあることは、置き場所で決まり、テスト名を持たない。税区分・税区分の照会・税率の予定は EffectivePeriod.findAt で選ぶ（spec 016 の T016-09-09）。税込価格の SQL と Java の一致は、既存の PriceInclTaxFieldTest と StoreCatalogApiTest（BR-1）で確かめる",
-  "AC-245":"本番の jar を起動して確かめるので、テスト名を持たない。jar から設定ファイルを除くこと（checkBootJar）と、物流のフラグがなければ起動に失敗すること（ExternalServiceSelectionTest）から従い、spec 015 の段階 5 で jar を起動して確かめた"
+  "AC-245":"本番の jar を起動して確かめるので、テスト名を持たない。jar から設定ファイルを除くこと（checkBootJar）と、物流のフラグがなければ起動に失敗すること（ExternalServiceSelectionTest）から従い、spec 015 の段階 5 で jar を起動して確かめた",
+  "AC-300": "文書と契約の書き方で決まり、テスト名を持たない。API の規約 第 3 節（外部サービスのエラーの定義と、OpenAPI の外のエンドポイントの表）を見直しで読む。OpenAPI の 502 は、外部サービスを呼ぶ操作の統合テスト（AC-295、296、298）が、返したエラーコードが契約の操作の一覧にあることを毎回確かめる（ErrorCodeCheck）"
 }

@@ -12,7 +12,9 @@
   - 結果：`CurrentTimeTest`。日時の型（`Instant`、`LocalDate`、`LocalDateTime`、`LocalTime`、`OffsetDateTime`、`ZonedDateTime`）の引数なしの `now()` を呼ぶクラスに当たる。違反の確認は、`StaticOnlyClassTest` と同じく、例のクラス（引数なしの `now()` を呼ぶもの、時計を渡すもの）に規則を当てるテストで常に行う。本番のクラスに違反はなかった。
 - [x] **T018-03-02** ArchUnit：インスタンスを作らないクラスが `final` である検査を足す。違反があれば直す（DC-167）。
   - 結果：`StaticOnlyClassTest` に、final の規則と、その規則を例のクラスに当てるテストを足した。本番のクラスに違反はなかった。
-- [ ] **T018-03-03** ArchUnit：名前の形（リポジトリの port、jOOQ の実装、腐敗防止層の窓口と実装）の検査を足す。違反があれば直す（DC-167）。
+- [x] **T018-03-03** ArchUnit：名前の形（リポジトリの port、jOOQ の実装、腐敗防止層の窓口と実装）の検査を足す。違反があれば直す（DC-167）。
+  - 結果：`NamingTest`。リポジトリの port は `domain` か `application` の `port` に置き、参照用（`QueryRepository`）は `application` に置く。実装は `infrastructure.persistence` の `Jooq<port の名前>`。腐敗防止層の窓口は `port` に置き、実装は `infrastructure.directory` の `<相手>ApiDirectory`。本番のリポジトリ 24、腐敗防止層 17 に違反はなかった。
+  - レベル B のモジュールは、参照用でないリポジトリの port も `application/port/` に置く（domain の層がないため）。規則は、参照用を domain に置かないことだけを確かめる。
 - [ ] **T018-03-04** ArchUnit：レベル A の一覧に payment を足し、金額型の検査に表示用の型を足す。失敗した所を直す（DC-176）。
 - [ ] **T018-03-05** [テスト] テストで Lombok を使わない検査と、列挙型の変換に `name()` を渡さない検査の script のテストを書く（DC-167）。
 - [ ] **T018-03-06** T018-03-05 の script を作る。

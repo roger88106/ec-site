@@ -81,4 +81,6 @@
 - [x] **T018-03-26** CI の検査の文書に、有効にした機能、結果の場所、対応の手順の節を足す（DC-181）。
   - TODO 一覧に、Dependabot の version updates・security updates と main の保護を足す。1→10 のブランチと CD の決定と合わせる項目とする。
   - 結果：CI の検査の文書に第 4 節「GitHub のセキュリティの機能」を足した（3 つの機能の、見るもの、結果の場所、対応）。TODO 一覧の 2 つの項目は、段階 1（T018-01-04）で載せてあった。設定を有効にするのは T018-03-25。
-- [ ] **T018-03-27** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る（同時に実行しない）。
+- [x] **T018-03-27** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る（同時に実行しない）。
+  - 結果：4 つとも通った。`./gradlew check` は 9 分 48 秒（本番の jar の起動の統合テストを含む）、`check-frontend.sh` は 15 の手順、E2E は 20 件（終わった後に実行中を示すファイルが消えた）、`check-all.sh` は 18 の検査（段階 3 で 6 つ増えた）。
+  - GitHub の機能の有効化と CodeQL の初回の結果（T018-03-25）は、利用者の操作を待っている。

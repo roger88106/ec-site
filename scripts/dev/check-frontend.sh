@@ -63,6 +63,12 @@ run_step() {
   fi
 }
 
+# E2E（scripts/dev/e2e.sh）が実行中か。実行中を示すファイルがあり、その中のプロセスが動いていれば実行中
+e2e_running() {
+  local running="$ROOT/.local/e2e-running"
+  [ -f "$running" ] && kill -0 "$(cat "$running")" 2>/dev/null
+}
+
 app_steps=()
 for step in "${steps[@]}"; do
   case "$step" in
@@ -79,6 +85,12 @@ for app in "${apps[@]}"; do
     # e2e は lint と typecheck だけ（テストとビルドの手順はない）。共有パッケージはビルドしない（各画面がソースを読む）
     if [ "$app" = e2e ] && [ "$step" != lint ] && [ "$step" != typecheck ]; then continue; fi
     if [ "$app" = shared ] && [ "$step" = build ]; then continue; fi
+    # E2E の実行中は、画面をビルドし直さない（E2E が配っている dist が入れ替わり、E2E が失敗するため）
+    if [ "$step" = build ] && e2e_running; then
+      failed=1
+      echo "FAIL $app build：E2E の実行中（.local/e2e-running）なので、ビルドしない。E2E が終わってから流し直す"
+      continue
+    fi
     run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$step'"
   done
 done

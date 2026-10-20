@@ -32,6 +32,13 @@ if [ ${#stopped[@]} -gt 0 ]; then
   exit 2
 fi
 
+# 実行中を示すファイル。E2E は管理画面のビルドの結果（dist）を配るので、実行中に check-frontend.sh がビルドし直さないよう、
+# そちらがこのファイルを見て止まる。中身はこの script のプロセス ID（異常終了で残っても、プロセスがなければ無視される）
+running="$ROOT/.local/e2e-running"
+mkdir -p "$ROOT/.local"
+echo $$ >"$running"
+trap 'rm -f "$running"' EXIT
+
 start=$SECONDS
 (cd "$ROOT/e2e" && pnpm test "$@") >"$log" 2>&1
 status=$?

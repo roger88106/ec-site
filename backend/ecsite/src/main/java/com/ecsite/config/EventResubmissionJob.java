@@ -1,6 +1,7 @@
 package com.ecsite.config;
 
 import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -11,6 +12,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.validation.annotation.Validated;
 
+import java.time.Clock;
 import java.time.Duration;
 
 /**
@@ -35,6 +37,11 @@ class EventResubmissionJob {
     private final Properties properties;
 
     /**
+     * 時計
+     */
+    private final Clock clock;
+
+    /**
      * 発行から一定時間（既定 5 分）より前の、未完了のイベントを再発行する。<br />
      * 発行の直後のイベントは、まだ処理中のことがあるので除く。
      */
@@ -50,11 +57,13 @@ class EventResubmissionJob {
     /**
      * 再発行の設定。環境変数で上書きする（例：ECSITE_SCHEDULING_EVENT_RESUBMISSION_MIN_AGE）。
      *
-     * @param interval 再発行のジョブの間隔
-     * @param minAge   再発行するイベントの、発行からの時間の下限
+     * @param interval    再発行のジョブの間隔
+     * @param minAge      再発行するイベントの、発行からの時間の下限
+     * @param maxAttempts 処理の回数（発行の時の 1 回と再発行の回数）の上限
      */
     @Validated
     @ConfigurationProperties("ecsite.scheduling.event-resubmission")
-    record Properties(@DefaultValue("1m") @NotNull Duration interval, @DefaultValue("5m") @NotNull Duration minAge) {
+    record Properties(@DefaultValue("1m") @NotNull Duration interval, @DefaultValue("5m") @NotNull Duration minAge,
+                      @DefaultValue("60") @Positive int maxAttempts) {
     }
 }

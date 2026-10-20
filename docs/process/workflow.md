@@ -1,7 +1,7 @@
 # 開発の進め方
 
 [constitution](../constitution.md) 第 4、13 節の細則。仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。
-番号と記号の意味は [文書の記号と番号](notation.md)、エージェントの作業の手順は [AGENTS.md](../../AGENTS.md) にある。
+番号と記号の意味は [文書の記号と番号](notation.md)、エージェントの作業の手順は [AGENTS.md](../../AGENTS.md)、サブエージェントへの任せ方は [エージェントの作業フロー](subagents.md) にある。
 
 ## 1. 仕様駆動開発（SDD）
 

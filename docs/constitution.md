@@ -1,4 +1,4 @@
- | | |# EC Site Constitution
+# EC Site Constitution
 
 プロジェクト全体の長期ルール。spec、plan、tasks、コードはすべてこれに従う。
 ルールを変えるときは、先に本書を更新してから他を変更する。

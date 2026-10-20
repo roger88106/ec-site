@@ -2,11 +2,13 @@ package com.ecsite.module.payment.infrastructure.stripe;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentGateway;
+import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.stripe.StripeClient;
 import com.stripe.exception.ApiConnectionException;
 import com.stripe.exception.ApiException;
 import com.stripe.exception.InvalidRequestException;
+import com.stripe.exception.RateLimitException;
 import com.stripe.exception.StripeException;
 import com.stripe.net.RequestOptions;
 import com.stripe.param.PaymentIntentCaptureParams;
@@ -158,7 +160,7 @@ class StripePaymentGateway implements PaymentGateway {
                 throw failure("売上を確定できない: orderId=" + request.orderId(), e);
             }
             return capturedState(request, e);
-        } catch (ApiConnectionException | ApiException e) {
+        } catch (ApiConnectionException | ApiException | RateLimitException e) {
             log.warn("Stripe に接続できず、売上を確定できない: orderId={}, requestId={}", request.orderId(), e.getRequestId(), e);
             return CaptureResult.UNREACHABLE;
         } catch (StripeException e) {
@@ -234,9 +236,22 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * Stripe の失敗をシステムのエラーにする。Stripe の要求の ID を残し、ダッシュボードの記録と照らせるようにする。
+     * Stripe の失敗をシステムのエラーにする。Stripe の要求の ID を残し、ダッシュボードの記録と照らせるようにする。<br />
+     * 接続できない・Stripe の側の故障・回数の制限は、外部サービスのエラー（やり直せば成功しうる）にする。
+     * 認証・権限・要求の誤りは、設定かコードの誤りなので、予期しないエラーのままにする。
      */
     private static SystemException failure(String message, StripeException e) {
-        return SystemException.of("Stripe：" + message + ", requestId=" + e.getRequestId(), e);
+        var debugMessage = "Stripe：" + message + ", requestId=" + e.getRequestId();
+        if (isUnavailable(e)) {
+            return SystemException.of(debugMessage, e, PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        }
+        return SystemException.of(debugMessage, e);
+    }
+
+    /**
+     * Stripe が使えない（接続できない・Stripe の側の故障・回数の制限）失敗か。
+     */
+    private static boolean isUnavailable(StripeException e) {
+        return e instanceof ApiConnectionException || e instanceof ApiException || e instanceof RateLimitException;
     }
 }

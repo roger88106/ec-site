@@ -115,7 +115,8 @@ class MockCarrierTest {
     void testHooksSendInvalidSignatureAndUnknownTrackingNumber() {
         var shipment = shipped(ShipmentSummary.Carrier.YAMATO);
 
-        var invalid = mockCarrier.notificationWithInvalidSignature(Carrier.YAMATO, shipment.trackingNumber(), "配達完了");
+        var invalid = TestCarrierNotifications.withInvalidSignature(
+                mockCarrier.notification(Carrier.YAMATO, shipment.trackingNumber(), "配達完了"));
         var unknown = mockCarrier.notification(Carrier.YAMATO, number(), "配達完了");
 
         assertThat(mockCarrier.send(baseUrl(), invalid)).isEqualTo(401);

@@ -79,20 +79,6 @@ public class MockCarrier {
     }
 
     /**
-     * テスト用（main からは呼ばない。消すとテストが変わるので残す）。<br />
-     * 署名が誤っている通知を作る（本文は正しいが、署名は別の鍵で作ったもの）。
-     *
-     * @param carrier        配送業者
-     * @param trackingNumber 送り状番号
-     * @param statusName     物流サービスの状態の名前
-     * @return 署名を確かめられない通知
-     */
-    public SignedNotification notificationWithInvalidSignature(Carrier carrier, String trackingNumber, String statusName) {
-        var valid = notification(carrier, trackingNumber, statusName);
-        return new SignedNotification(valid.body(), new CarrierSignature("mock-carrier-wrong-secret").sign(valid.body()));
-    }
-
-    /**
      * 通知を、HTTP で通知の受け口に送る。
      *
      * @param baseUrl      バックエンドの URL（受け口を持つサーバー）

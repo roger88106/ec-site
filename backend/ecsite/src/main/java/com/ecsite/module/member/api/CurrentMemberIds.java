@@ -1,7 +1,8 @@
 package com.ecsite.module.member.api;
 
 import com.ecsite.common.security.CurrentMember;
-import com.ecsite.module.member.application.MemberService;
+import com.ecsite.module.member.application.MemberCommandService;
+import com.ecsite.module.member.application.MemberQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -22,9 +23,14 @@ public class CurrentMemberIds {
     private final CurrentMember currentMember;
 
     /**
-     * 会員のサービス
+     * 会員の参照のサービス
      */
-    private final MemberService memberService;
+    private final MemberQueryService queryService;
+
+    /**
+     * 会員の更新のサービス
+     */
+    private final MemberCommandService commandService;
 
     /**
      * ログインが要る操作の、会員 ID を返す（初めてなら会員を作る）。
@@ -33,7 +39,7 @@ public class CurrentMemberIds {
      * @throws com.ecsite.common.error.exception.BusinessException ログインしていない（401）
      */
     public UUID require() {
-        return memberService.memberIdOf(currentMember.require().subject());
+        return memberIdOf(currentMember.require().subject());
     }
 
     /**
@@ -42,6 +48,14 @@ public class CurrentMemberIds {
      * @return 会員 ID。ログインしていなければ空
      */
     public Optional<UUID> find() {
-        return currentMember.find().map(member -> memberService.memberIdOf(member.subject()));
+        return currentMember.find().map(member -> memberIdOf(member.subject()));
+    }
+
+    /**
+     * IdP のアカウントの ID から会員 ID を求める。<br />
+     * ログインしたすべての要求で動くので、まず読み取り専用で探し、いなければ（初めての要求）作る。
+     */
+    private UUID memberIdOf(String idpSubject) {
+        return queryService.findMemberId(idpSubject).orElseGet(() -> commandService.create(idpSubject));
     }
 }

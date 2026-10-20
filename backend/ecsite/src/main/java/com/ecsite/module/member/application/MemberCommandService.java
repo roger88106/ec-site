@@ -11,12 +11,13 @@ import java.time.Clock;
 import java.util.UUID;
 
 /**
- * 会員のサービス（docs/backend/modules/member.md）。<br />
+ * 会員の更新のサービス（docs/backend/modules/member.md）。<br />
  * 会員は、会員の token で初めて EC の API を呼んだときに作る。
  */
 @Service
 @RequiredArgsConstructor
-public class MemberService {
+@Transactional
+public class MemberCommandService {
 
     /**
      * 会員のリポジトリ
@@ -29,19 +30,14 @@ public class MemberService {
     private final Clock clock;
 
     /**
-     * IdP のアカウントの ID から会員 ID を求める。いなければ作る。<br />
+     * IdP のアカウントの会員を作り、会員 ID を返す。<br />
      * 同じアカウントの初回の要求が同時に来たら、IdP のアカウントの ID の一意制約で 1 人だけ作られ、
      * 作れなかった要求は、先に作られた会員を読み直す。
      *
      * @param idpSubject IdP のアカウントの ID
      * @return 会員 ID
      */
-    @Transactional
-    public UUID memberIdOf(String idpSubject) {
-        var existing = memberRepository.findIdByIdpSubject(idpSubject);
-        if (existing.isPresent()) {
-            return existing.get();
-        }
+    public UUID create(String idpSubject) {
         memberRepository.insertIfAbsent(new Member(UUID.randomUUID(), idpSubject, clock.instant()));
         return memberRepository.findIdByIdpSubject(idpSubject)
                 .orElseThrow(() -> SystemException.of("会員を作れない：" + idpSubject, null));

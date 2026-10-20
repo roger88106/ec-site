@@ -2,7 +2,8 @@ package com.ecsite.module.member.api;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.security.CurrentMember;
-import com.ecsite.module.member.application.MemberService;
+import com.ecsite.module.member.application.MemberCommandService;
+import com.ecsite.module.member.application.MemberQueryService;
 import com.ecsite.module.member.application.port.MemberRepository;
 import com.ecsite.module.member.domain.Member;
 import org.junit.jupiter.api.AfterEach;
@@ -33,20 +34,25 @@ class CurrentMemberIdsTest {
     private final Map<String, UUID> members = new HashMap<>();
 
     /**
+     * 会員の記録を読み書きするリポジトリ
+     */
+    private final MemberRepository repository = new MemberRepository() {
+        @Override
+        public Optional<UUID> findIdByIdpSubject(String idpSubject) {
+            return Optional.ofNullable(members.get(idpSubject));
+        }
+
+        @Override
+        public void insertIfAbsent(Member member) {
+            members.putIfAbsent(member.idpSubject(), member.id());
+        }
+    };
+
+    /**
      * テストの対象
      */
     private final CurrentMemberIds currentMemberIds = new CurrentMemberIds(new CurrentMember(),
-            new MemberService(new MemberRepository() {
-                @Override
-                public Optional<UUID> findIdByIdpSubject(String idpSubject) {
-                    return Optional.ofNullable(members.get(idpSubject));
-                }
-
-                @Override
-                public void insertIfAbsent(Member member) {
-                    members.putIfAbsent(member.idpSubject(), member.id());
-                }
-            }, Clock.systemUTC()));
+            new MemberQueryService(repository), new MemberCommandService(repository, Clock.systemUTC()));
 
     /**
      * ログインの状態を消す

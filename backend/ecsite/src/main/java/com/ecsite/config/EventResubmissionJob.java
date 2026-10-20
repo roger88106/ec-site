@@ -47,6 +47,11 @@ class EventResubmissionJob {
     private final EventPublicationRecords publicationRecords;
 
     /**
+     * 未完了と止めたイベントの件数のメトリクス
+     */
+    private final EventPublicationMetrics publicationMetrics;
+
+    /**
      * 発行から一定時間（既定 5 分）より前の、未完了のイベントを再発行する。<br />
      * 発行の直後のイベントは、まだ処理中のことがあるので除く。
      * 処理の回数（発行の時の 1 回と再発行の回数）が上限（既定 60）に達したイベントは、再発行しない。

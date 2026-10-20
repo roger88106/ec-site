@@ -3,6 +3,7 @@ package com.ecsite.config;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import io.micrometer.core.instrument.MeterRegistry;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.Table;
@@ -37,7 +38,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 未完了のイベントの再発行と、止めたイベントの統合テスト（T7104、T017-02-01、03、バックエンドのアーキテクチャ 第 5 節）。<br />
+ * 未完了のイベントの再発行と、止めたイベントの統合テスト（T7104、T017-02-01、03、05、バックエンドのアーキテクチャ 第 5 節）。<br />
  * 1 回目だけ失敗するリスナーと、いつも失敗するリスナーで未完了のイベントを作り、時計を進めてから再発行のジョブを呼ぶ。
  * イベントはコミット後に非同期で処理されるので、処理を待つ。
  */
@@ -66,6 +67,16 @@ class EventResubmissionJobTest {
      */
     private static final Field<String> STATUS = DSL.field(DSL.name("status"), String.class);
 
+    /**
+     * 処理の回数
+     */
+    private static final Field<Integer> COMPLETION_ATTEMPTS = DSL.field(DSL.name("completion_attempts"), Integer.class);
+
+    /**
+     * 処理を終えた時刻
+     */
+    private static final Field<Instant> COMPLETION_DATE = DSL.field(DSL.name("completion_date"), Instant.class);
+
     @Autowired
     EventResubmissionJob job;
 
@@ -92,6 +103,12 @@ class EventResubmissionJobTest {
 
     @Autowired
     EventPublicationRecords publicationRecords;
+
+    @Autowired
+    EventPublicationMetrics publicationMetrics;
+
+    @Autowired
+    MeterRegistry meterRegistry;
 
     @Autowired
     EventCleanupJob cleanupJob;
@@ -210,13 +227,47 @@ class EventResubmissionJobTest {
         await().atMost(TIMEOUT).until(() -> listener.attempts(event) == 2 && listener.succeeded(event));
     }
 
+    @Test
+    @DisplayName("AC-292 再発行のジョブの後、未完了のイベントの件数と止めたイベントの件数をメトリクスに出す")
+    void publishesCountsAsMetrics() {
+        var job = jobWithMaxAttempts(2);
+        failedUntil(job, 2);
+        clock.advance(Duration.ofMinutes(1));
+        job.resubmit();
+        // 何も再発行しないジョブ（発行からの時間の下限が長い）で、件数が動かない状態で数える
+        var quietJob = jobWith(Duration.ofDays(365), 2);
+
+        await().atMost(TIMEOUT).untilAsserted(() -> {
+            quietJob.resubmit();
+            assertThat(gauge("ecsite.events.stopped"))
+                    .isEqualTo(dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull().and(COMPLETION_ATTEMPTS.gt(2))))
+                    .isPositive();
+            assertThat(gauge("ecsite.events.incomplete"))
+                    .isEqualTo(dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull()));
+        });
+    }
+
+    /**
+     * メトリクスの値
+     */
+    private int gauge(String name) {
+        return (int) meterRegistry.get(name).gauge().value();
+    }
+
     /**
      * 処理の回数の上限を変えた再発行のジョブ（間隔と発行からの時間の下限は既定と同じ）
      */
     private EventResubmissionJob jobWithMaxAttempts(int maxAttempts) {
+        return jobWith(Duration.ofMinutes(5), maxAttempts);
+    }
+
+    /**
+     * 発行からの時間の下限と処理の回数の上限を変えた再発行のジョブ
+     */
+    private EventResubmissionJob jobWith(Duration minAge, int maxAttempts) {
         return new EventResubmissionJob(incompletePublications,
-                new EventResubmissionJob.Properties(Duration.ofMinutes(1), Duration.ofMinutes(5), maxAttempts), clock,
-                publicationRecords);
+                new EventResubmissionJob.Properties(Duration.ofMinutes(1), minAge, maxAttempts), clock,
+                publicationRecords, publicationMetrics);
     }
 
     /**

@@ -29,10 +29,19 @@ class StripeConfig {
      */
     @Bean
     StripeClient stripeClient(StripeProperties properties) {
+        return clientBuilder(properties).build();
+    }
+
+    /**
+     * Stripe の API のビルダー（テストが、設定の渡り方を確かめるため）。
+     *
+     * @param properties Stripe の設定
+     * @return Stripe の API のビルダー
+     */
+    static StripeClient.StripeClientBuilder clientBuilder(StripeProperties properties) {
         return StripeClient.builder()
                 .setApiKey(properties.secretKey())
-                .setMaxNetworkRetries(MAX_NETWORK_RETRIES)
-                .build();
+                .setMaxNetworkRetries(MAX_NETWORK_RETRIES);
     }
 
     /**

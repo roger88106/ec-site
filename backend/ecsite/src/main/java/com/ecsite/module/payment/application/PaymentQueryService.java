@@ -127,7 +127,18 @@ public class PaymentQueryService {
     }
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
+     * 与信の通知を長く待つ未払いの支払の数を返す。待ち始めてから決済の設定
+     * {@code ecsite.payment.awaiting-authorization-warning}（既定 1 時間）を過ぎたものを数える。
+     *
+     * @return 支払の数
+     */
+    public long countLongAwaitingAuthorization() {
+        return queryRepository.countUnpaidAwaitingAuthorizationUntil(
+                clock.instant().minus(properties.awaitingAuthorizationWarning()));
+    }
+
+    /**
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の通知を待つ支払は除く。
      *
      * @param limit 取得する数の上限
      * @return 支払

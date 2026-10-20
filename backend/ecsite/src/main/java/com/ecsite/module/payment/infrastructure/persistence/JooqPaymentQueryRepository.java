@@ -52,4 +52,10 @@ class JooqPaymentQueryRepository implements PaymentQueryRepository {
                 .orderBy(PAYMENT_.AUTHORIZED_AT)
                 .fetch(PAYMENT_.ORDER_ID);
     }
+
+    @Override
+    public long countUnpaidAwaitingAuthorizationUntil(Instant latestAwaitingSince) {
+        return dsl.fetchCount(PAYMENT_, PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name())
+                .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.le(latestAwaitingSince)));
+    }
 }

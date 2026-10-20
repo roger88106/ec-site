@@ -136,6 +136,7 @@ class JooqPaymentRepository implements PaymentRepository {
         return dsl.selectFrom(PAYMENT_)
                 .where(PAYMENT_.STATUS.eq(PaymentStatus.UNPAID.name()))
                 .and(PAYMENT_.DEADLINE.le(now))
+                .and(PAYMENT_.AWAITING_AUTHORIZATION_SINCE.isNull())
                 .orderBy(PAYMENT_.DEADLINE)
                 .limit(limit)
                 .fetch(JooqPaymentRepository::restore);

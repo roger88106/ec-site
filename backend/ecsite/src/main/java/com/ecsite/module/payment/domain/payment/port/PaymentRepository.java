@@ -77,7 +77,8 @@ public interface PaymentRepository {
     List<Payment> findByOrderIds(Collection<UUID> orderIds);
 
     /**
-     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。
+     * 期限を過ぎた未払いの支払を、期限の古い順に取得する。与信の通知を待つ支払は除く
+     * （たまっても、それより新しい支払を処理できるようにするため）。
      *
      * @param now   現在時刻
      * @param limit 取得する数の上限

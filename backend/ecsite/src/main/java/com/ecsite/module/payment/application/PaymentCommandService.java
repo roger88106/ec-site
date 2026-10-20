@@ -91,6 +91,19 @@ public class PaymentCommandService {
     }
 
     /**
+     * 期限を過ぎたが決済サービスで支払が済んでいた支払を、与信の通知を待つ支払にする。期限切れのジョブから呼ぶ。<br />
+     * 行ロックの後に確かめ直すので、その間に通知が届いて与信済みになった支払は変えない。
+     *
+     * @param paymentId 支払 ID
+     */
+    public void awaitAuthorization(UUID paymentId) {
+        var now = clock.instant();
+        paymentRepository.lockById(paymentId)
+                .filter(payment -> payment.awaitAuthorization(now))
+                .ifPresent(paymentRepository::update);
+    }
+
+    /**
      * 注文のキャンセルに合わせて支払を取り消す。与信済みなら与信の取消待ちに、売上確定済みなら返金待ちにし、
      * コミットの後に決済サービスで取り消す・返金する。与信期限切れなら何もしない。<br />
      * 呼び出し元（注文のキャンセル）のトランザクションに参加する。支払のない注文（決済を入れる前の注文）なら何もしない。

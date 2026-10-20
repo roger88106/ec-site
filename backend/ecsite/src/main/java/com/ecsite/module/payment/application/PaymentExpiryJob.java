@@ -12,7 +12,8 @@ import org.springframework.stereotype.Component;
 /**
  * 支払の期限切れのジョブ（docs/backend/modules/payment.md「支払の期限」）。<br />
  * 期限を過ぎた未払いの支払について、決済サービスの支払の画面を閉じてから、支払なしにする。
- * 閉じられなかった（その前に支払が済んでいた）支払は、与信の成功の通知を待つ。
+ * 閉じられなかった（その前に支払が済んでいた）支払は、与信の成功の通知を待つ支払にし、次の回から探さない。
+ * 通知を長く待つ支払があれば、毎回 warn のログに件数を出す（人が扱うまで知らせ続ける）。
  * 間隔は決済の設定 {@code ecsite.payment.expiry-interval}（既定 1 分）で変えられる。
  */
 @Slf4j
@@ -42,7 +43,7 @@ public class PaymentExpiryJob {
 
     /**
      * 期限を過ぎた未払いの支払を、支払なしにする。<br />
-     * 決済サービスの呼び出しはトランザクションの外で行い、1 つの支払の失敗で、ほかの支払を止めない。
+     * 決済サービスの呼び出しはトランザクションの外で行い、1 つの支払の失敗（例外の種類を問わない）で、ほかの支払を止めない。
      */
     // 決済の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.payment-com.ecsite.module.payment.application.PaymentProperties'"
@@ -55,8 +56,12 @@ public class PaymentExpiryJob {
             } catch (SystemException e) {
                 // 決済サービスが応えない。次の回でやり直す
                 log.warn("支払の期限切れを次の回に回す: paymentId={}", payment.id(), e);
+            } catch (RuntimeException e) {
+                // 予期しない例外（決済サービスの応答、保存の失敗など）。次の回でやり直す
+                log.warn("支払の期限切れに失敗したので、次の回に回す: paymentId={}", payment.id(), e);
             }
         }
+        warnLongAwaitingAuthorization();
     }
 
     /**
@@ -66,8 +71,19 @@ public class PaymentExpiryJob {
         var page = payment.page();
         if (page != null && gateway.closePage(page.id()) == PaymentGateway.CloseResult.ALREADY_PAID) {
             log.info("期限の前に支払が済んでいたので、与信の成功の通知を待つ: paymentId={}", payment.id());
+            commandService.awaitAuthorization(payment.id());
             return;
         }
         commandService.expire(payment.id());
+    }
+
+    /**
+     * 与信の通知を長く待つ未払いの支払があれば、warn のログに件数を出す。
+     */
+    private void warnLongAwaitingAuthorization() {
+        long count = queryService.countLongAwaitingAuthorization();
+        if (count > 0) {
+            log.warn("与信の通知を長く待つ支払があります: count={}", count);
+        }
     }
 }

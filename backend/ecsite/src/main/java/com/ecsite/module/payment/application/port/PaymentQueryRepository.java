@@ -27,4 +27,12 @@ public interface PaymentQueryRepository {
      * @return 注文 ID。与信済みと与信期限切れの支払だけ
      */
     List<UUID> findOrderIdsAuthorizedUntil(Instant latestAuthorizedAt);
+
+    /**
+     * 与信の通知を待つ未払いの支払のうち、決めた時刻までに待ち始めたものを数える。
+     *
+     * @param latestAwaitingSince 待ち始めた時刻の上限。この時刻以前に待ち始めたものが対象
+     * @return 支払の数
+     */
+    long countUnpaidAwaitingAuthorizationUntil(Instant latestAwaitingSince);
 }

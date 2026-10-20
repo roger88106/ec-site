@@ -5,6 +5,7 @@ import createClient, { type Middleware } from 'openapi-fetch'
 import type { paths } from '@/api/generated/store'
 import { getAccessToken } from '@/auth'
 import { readServerConfig } from '@/auth/config'
+import { log } from '@/lib/server/log'
 import { timeoutSignal } from '@/lib/server/timeout'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 
@@ -29,6 +30,42 @@ const timeout: Middleware = {
 }
 
 /**
+ * 店舗 API の 5xx の応答を、warn のログに出す（店舗画面の構成 第 4.2 節）。<br />
+ * 出すのは状態コード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）だけ。
+ * token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出さない。
+ */
+const serverErrorLog: Middleware = {
+  async onResponse({ request, response, schemaPath }) {
+    if (response.status >= 500) {
+      await log.warn('店舗 API がサーバーのエラーを返しました', {
+        status: response.status,
+        errorCode: await errorCodeOf(response),
+        method: request.method,
+        path: schemaPath,
+      })
+    }
+    return response
+  },
+}
+
+/**
+ * 応答の本文のエラーコード。呼んだ側が本文を読めるよう、複製して読む。
+ *
+ * @param response 応答
+ * @returns エラーコード。本文がエラーレスポンスでなければ null
+ */
+async function errorCodeOf(response: Response): Promise<string | null> {
+  try {
+    const body: unknown = await response.clone().json()
+    return typeof body === 'object' && body !== null && 'errorCode' in body && typeof body.errorCode === 'string'
+      ? body.errorCode
+      : null
+  } catch {
+    return null
+  }
+}
+
+/**
  * 店舗 API（store.yaml）の公開の口（店舗画面の構成 第 4 節）。token を付けない。<br />
  * 接続先は環境変数 STORE_API_BASE_URL。結果は Next.js の fetch のキャッシュで最大 60 秒（REVALIDATE_SECONDS）使い回す。
  */
@@ -36,7 +73,7 @@ const api = createClient<paths>({
   baseUrl: BASE_URL,
   requestInitExt: { next: { revalidate: REVALIDATE_SECONDS } },
 })
-api.use(timeout)
+api.use(timeout, serverErrorLog)
 
 /**
  * 店舗 API の会員の口（店舗画面の構成 第 4.6 節）。会員の access token を付け、キャッシュを使わない
@@ -46,7 +83,7 @@ const memberApi = createClient<paths>({
   baseUrl: BASE_URL,
   fetch: (request: Request) => fetch(request, { cache: 'no-store' }),
 })
-memberApi.use(timeout)
+memberApi.use(timeout, serverErrorLog)
 memberApi.use({
   async onRequest({ request }) {
     // 呼ぶ側が token を付けたとき（ログインの直後で、セッションの Cookie がまだないとき）は、そのまま使う

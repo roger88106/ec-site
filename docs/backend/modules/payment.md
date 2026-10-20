@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（支払の状態遷移、外部からの通知の重複と順序の入れ替わり、期限切れとの競合） |
 | 依存 | なし（注文が決済の API を呼び、決済は結果をイベントで伝える ※1） |
-| 関連 spec | [007](../../specs/007-payment)、[009](../../specs/009-shipping)、[013](../../specs/013-backend-consistency)、[015](../../specs/015-security)、[017](../../specs/017-stability) |
+| 関連 spec | [007](../../specs/007-payment)、[009](../../specs/009-shipping)、[013](../../specs/013-backend-consistency)、[015](../../specs/015-security)、[017](../../specs/017-stability)、[018](../../specs/018-docs-and-tools) |
 
 ※1：決済が注文のイベントを受けると、モジュールが循環する。
 
@@ -159,6 +159,23 @@ stateDiagram-v2
 - 上の他の拒否は、システムのエラーにする。
 
 ※4：与信は 7 日待たないと切れないので、sandbox では与信を取り消した PaymentIntent で、同じ応答（400 `payment_intent_unexpected_state`、状態 `canceled`）になることを確かめた。
+
+## 構成
+
+```
+payment/
+├── api/                    # 支払の参照、与信の期限
+├── event/                  # 与信の成功、支払の画面の期限切れ
+├── application/            # 支払の作成と参照、決済サービスの通知の反映、売上確定、支払の画面、期限切れのジョブ、返金・与信取消の依頼のリスナー
+│   ├── model/              # 表示の型（view）
+│   └── port/               # 決済サービス、通知の受け口、参照用リポジトリ
+├── domain/
+│   └── payment/            # 支払（集約）、状態、与信の有効期間、支払の画面、返金・与信取消の依頼、エラー。port/ はリポジトリ
+└── infrastructure/
+    ├── persistence/        # リポジトリと参照用リポジトリの実装
+    ├── mock/               # mock の決済サービス、mock の支払の画面
+    └── stripe/             # Stripe の決済サービス（腐敗防止層）、通知の受け口（Webhook）と署名の検証
+```
 
 ## 他のモジュールへの公開
 

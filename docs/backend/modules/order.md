@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（状態遷移、注文時点の写し、在庫との強い一貫性） |
 | 依存 | カート（API、イベント）、決済（API、イベント）、出荷・商品カタログ・在庫・税・地域（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../../specs/002-cart-and-order)、[003](../../specs/003-auth)、[007](../../specs/007-payment)、[009](../../specs/009-shipping)、[010](../../specs/010-sales-report)、[013](../../specs/013-backend-consistency)、[016](../../specs/016-master-data)、[017](../../specs/017-stability) |
+| 関連 spec | [002](../../specs/002-cart-and-order)、[003](../../specs/003-auth)、[007](../../specs/007-payment)、[009](../../specs/009-shipping)、[010](../../specs/010-sales-report)、[013](../../specs/013-backend-consistency)、[016](../../specs/016-master-data)、[017](../../specs/017-stability)、[018](../../specs/018-docs-and-tools) |
 
 ## 見積もり
 
@@ -150,18 +150,18 @@ order/
 ├── event/                  # 注文の状態の変化、出荷済み
 ├── presentation/           # store.yaml・admin.yaml から生成したインターフェースを実装
 ├── application/            # 注文の参照（詳細は view を返す）、キャンセル、帳票の参照
-│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、カート変更のリスナー
+│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの掃除、カート変更のリスナー
 │   ├── payment/            # 支払の結果の反映、支払の画面
 │   ├── shipment/           # 出荷の登録
 │   ├── model/              # 表示の型（注文手続き、注文の詳細、支払）と注文の成立の入出力
-│   └── port/               # 注文の一覧の検索と、腐敗防止層の口（カート、商品カタログ、在庫、決済、出荷）
+│   └── port/               # 注文の一覧の検索と、腐敗防止層の口（カート、商品カタログ、在庫、地域、決済、出荷）
 ├── domain/
 │   ├── quote/              # 見積もり、明細、金額の内訳。port/ は税の口
 │   ├── checkout/           # 注文手続き。port/ はリポジトリ
 │   └── order/              # 注文（集約）、状態などの列挙、エラー。vo/ は値、port/ はリポジトリ
 └── infrastructure/
     ├── persistence/        # リポジトリと一覧の検索の実装
-    └── directory/          # カート・商品カタログ・在庫・税・決済・出荷の腐敗防止層
+    └── directory/          # カート・商品カタログ・在庫・地域・税・決済・出荷の腐敗防止層
 ```
 
 ## 他のモジュールへの公開

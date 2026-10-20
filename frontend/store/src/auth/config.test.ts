@@ -42,6 +42,29 @@ describe('店舗画面のサーバーの設定', () => {
     expect(loadServerConfig({ NODE_ENV: 'test' }).clientId).toBe('ec-store-web')
   })
 
+  test('AC-302 待つ時間の上限は、店舗 API が既定 30 秒、IdP が既定 10 秒で、環境変数で変えられる', () => {
+    const defaults = loadServerConfig({ NODE_ENV: 'development' })
+    expect(defaults.apiTimeoutSeconds).toBe(30)
+    expect(defaults.idpTimeoutSeconds).toBe(10)
+
+    const config = loadServerConfig({
+      ...ALL_SET,
+      STORE_API_TIMEOUT_SECONDS: '45',
+      AUTH_KEYCLOAK_TIMEOUT_SECONDS: '5',
+    })
+    expect(config.apiTimeoutSeconds).toBe(45)
+    expect(config.idpTimeoutSeconds).toBe(5)
+  })
+
+  test.each(['0', '-1', 'abc'])('AC-302 待つ時間の上限が正の数でなければ（%s）、名前を出して失敗する', (value) => {
+    expect(() => loadServerConfig({ NODE_ENV: 'development', STORE_API_TIMEOUT_SECONDS: value })).toThrow(
+      /STORE_API_TIMEOUT_SECONDS/,
+    )
+    expect(() => loadServerConfig({ ...ALL_SET, AUTH_KEYCLOAK_TIMEOUT_SECONDS: value })).toThrow(
+      /AUTH_KEYCLOAK_TIMEOUT_SECONDS/,
+    )
+  })
+
   test('必須の値は 6 つ', () => {
     expect([...REQUIRED_IN_PRODUCTION]).toEqual([
       'AUTH_SECRET',

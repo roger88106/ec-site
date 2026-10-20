@@ -204,6 +204,27 @@ describe('支払う', () => {
     })
     expect(revalidatedPaths).toEqual([`/orders/${ORDER_ID}`])
   })
+
+  test('AC-299 決済サービスのエラー（502）なら、やり直せることを示す API のメッセージを返す', async () => {
+    signInAs()
+    server.use(
+      http.post('/orders/{orderId}/payment-page', ({ response }) =>
+        response(502).json(
+          problem(
+            502,
+            'PAYMENT_GATEWAY_UNAVAILABLE',
+            '決済サービスに接続できませんでした。しばらくしてから、やり直してください。',
+          ),
+        ),
+      ),
+    )
+
+    expect(await payOrder(null, form({ orderId: ORDER_ID }))).toEqual({
+      ok: false,
+      message: '決済サービスに接続できませんでした。しばらくしてから、やり直してください。',
+      errorCode: 'PAYMENT_GATEWAY_UNAVAILABLE',
+    })
+  })
 })
 
 describe('会員の token が無効になったとき', () => {

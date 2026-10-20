@@ -413,6 +413,34 @@ describe('商品画像', () => {
     expect(screen.queryByRole('img', { name: '画像 1' })).not.toBeInTheDocument()
   })
 
+  it('AC-299 画像のサービスのエラー（502）なら、やり直せることを示す応答のメッセージを出す', async () => {
+    const state = serveProduct(productDetail())
+    serveUpload(state)
+    server.use(
+      http.post('/products/{productId}/images', () =>
+        Response.json(
+          problem(
+            502,
+            'IMAGE_SERVICE_UNAVAILABLE',
+            '画像のサービスに接続できませんでした。しばらくしてから、やり直してください。',
+          ),
+          { status: 502 },
+        ),
+      ),
+    )
+    const { user } = renderApp(URL)
+
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File([new Uint8Array([0x89, 0x50])], 'a.png', { type: 'image/png' }),
+    )
+
+    expect(
+      await screen.findByText('画像のサービスに接続できませんでした。しばらくしてから、やり直してください。'),
+    ).toBeInTheDocument()
+    expect(screen.queryByRole('img', { name: '画像 1' })).not.toBeInTheDocument()
+  })
+
   it('AC-272 画像の説明に、契約の形式・大きさ・枚数の上限を差し込む', async () => {
     serveProduct(productDetail())
     renderApp(URL)

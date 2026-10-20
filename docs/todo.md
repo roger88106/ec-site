@@ -25,6 +25,7 @@ MVP の後に行う作業と未決事項。追加と完了の規則は [AGENTS.m
 | AC のテストの漏れを、どの CI で失敗にするか決める（pull request 運用に移ったら、pull request と `develop`・`main` への push だけを失敗にし、作業ブランチの push は警告にする） | 1→10 | MVP の完成までの一覧（spec 011） |
 | Dependabot の version updates と security updates を有効にする。1→10 のブランチと CD の決定と合わせて決める | 1→10 | spec 004 Non-goals、spec 011 Non-goals、MVP の完成までの一覧（spec 011）、spec 018 plan 第 4 節 |
 | `main` を保護する。1→10 のブランチと CD の決定と合わせて決める | 1→10 | spec 018 plan 第 4 節、spec 019 Non-goals |
+| ArchUnit のテストが本番のクラスを読み込む所を 1 か所にまとめ、テストのクラスごとに読み込まないようにする（今は単体テストの heap を 1GB にしている） | 1→10 | spec 018 段階 3 |
 | テストのコードを書き方の規則にそろえる（spec 012〜014 で触った所を除く） | 1→10 | spec 012 Non-goals、spec 013 Non-goals、spec 014 Non-goals |
 | カバレッジの基準の値を、前回を下回らない形で置く | 1→10 | 外部レビューの意見（2026-10-20）、spec 004 Non-goals |
 | mutation testing を導入する（domain に限り、基準は前回を下回らない形） | 1→10 | 外部レビューの意見（2026-10-20） |

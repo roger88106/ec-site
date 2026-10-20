@@ -16,7 +16,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 金額を整数で持つ項目の検査（docs/backend/coding.md 第 1.5 節、spec 005 DC-34）。<br />
- * モジュールの間の公開の型（api・event）と、command の型の金額は {@code Money} にする。
+ * モジュールの間の公開の型（api・event）と、command・表示用（view）の型の金額は {@code Money} にする。
  * 整数で持つのは presentation（API の型との変換）と infrastructure（DB）だけ。
  */
 class MoneyTypeTest {
@@ -32,7 +32,7 @@ class MoneyTypeTest {
     private static final Set<String> INTEGER_TYPES = Set.of("long", "int", "java.lang.Long", "java.lang.Integer");
 
     /**
-     * 調べるパッケージ（モジュールの api・event と、command）の形
+     * 調べるパッケージ（モジュールの api・event と、command・view）の形
      */
     private static final Pattern CHECKED_PACKAGE =
             Pattern.compile("com\\.ecsite\\.module\\.[^.]+\\.(api|event|application\\.model(\\.command)?)(\\..*)?");
@@ -45,12 +45,13 @@ class MoneyTypeTest {
             .importPackages("com.ecsite.module");
 
     @Test
-    @DisplayName("api・event の型と command に、金額を整数で持つ項目がない")
+    @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない")
     void moneyIsNotAnInteger() {
         List<String> violations = CLASSES.stream()
                 .filter(javaClass -> CHECKED_PACKAGE.matcher(javaClass.getPackageName()).matches())
                 .filter(javaClass -> javaClass.getPackageName().contains(".api")
                         || javaClass.getPackageName().contains(".event")
+                        || javaClass.getPackageName().contains(".application.model.view")
                         || javaClass.getSimpleName().endsWith("Command"))
                 .flatMap(javaClass -> javaClass.getFields().stream())
                 .filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))

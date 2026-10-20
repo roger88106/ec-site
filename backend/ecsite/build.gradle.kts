@@ -168,6 +168,8 @@ dependencies {
 // -----------------------------------------------------------------------------
 tasks.named<Test>("test") {
     useJUnitPlatform()
+    // ArchUnit のテスト（src/test/.../architecture）は、テストのクラスごとに本番のクラスを読み込むので、既定（512MB）では足りない
+    maxHeapSize = "1g"
     // 契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
     systemProperty("openapi.dir", file("../../api/openapi").absolutePath)
     inputs.dir("../../api/openapi")

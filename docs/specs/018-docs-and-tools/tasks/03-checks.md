@@ -15,7 +15,9 @@
 - [x] **T018-03-03** ArchUnit：名前の形（リポジトリの port、jOOQ の実装、腐敗防止層の窓口と実装）の検査を足す。違反があれば直す（DC-167）。
   - 結果：`NamingTest`。リポジトリの port は `domain` か `application` の `port` に置き、参照用（`QueryRepository`）は `application` に置く。実装は `infrastructure.persistence` の `Jooq<port の名前>`。腐敗防止層の窓口は `port` に置き、実装は `infrastructure.directory` の `<相手>ApiDirectory`。本番のリポジトリ 24、腐敗防止層 17 に違反はなかった。
   - レベル B のモジュールは、参照用でないリポジトリの port も `application/port/` に置く（domain の層がないため）。規則は、参照用を domain に置かないことだけを確かめる。
-- [ ] **T018-03-04** ArchUnit：レベル A の一覧に payment を足し、金額型の検査に表示用の型を足す。失敗した所を直す（DC-176）。
+- [x] **T018-03-04** ArchUnit：レベル A の一覧に payment を足し、金額型の検査に表示用の型を足す。失敗した所を直す（DC-176）。
+  - 結果：`ModuleStructureTest` のレベル A の一覧に payment を、`MoneyTypeTest` の対象に `application.model.view` を足した。どちらも違反はなかった。
+  - ArchUnit のテストをまとめて実行すると、単体テストのプロセスが `Java heap space` で止まった。T018-03-01・03 でテストのクラスが 2 つ増え、クラスごとに本番のクラスを読み込むため。単体テストの heap の上限を 1GB にした。読み込みを 1 か所にまとめる案は、既存のテストのコードを変えるので、TODO 一覧に載せた。
 - [ ] **T018-03-05** [テスト] テストで Lombok を使わない検査と、列挙型の変換に `name()` を渡さない検査の script のテストを書く（DC-167）。
 - [ ] **T018-03-06** T018-03-05 の script を作る。
 - [ ] **T018-03-07** [テスト] フロントの検査の script のテストを書く（DC-167）。対象は、機能の間の import、`Intl.` の直書き、店舗画面と管理画面の同じファイル。

@@ -44,7 +44,7 @@ class ModuleStructureTest {
     /**
      * レベル A のモジュール（バックエンドのアーキテクチャ 第 2 節。docs/backend/modules の各設計書の「レベル」と合わせる）
      */
-    private static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order");
+    private static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order", "payment");
 
     /**
      * 1 つのパッケージの直下に置けるクラスの数の上限

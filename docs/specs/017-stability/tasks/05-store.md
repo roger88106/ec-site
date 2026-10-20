@@ -23,4 +23,5 @@
   - ログに token、Cookie、要求の本文、クエリが出ない（AC-309）。
 - [x] **T017-05-07** サーバーアクションの共通の関数と、API の client の応答の middleware に、ログを足す。T017-05-06 を通す。
 - [x] **T017-05-08** 文書を直す：店舗画面の構成 第 4.2 節に上限と 5xx のログ、第 4.3 節にサーバーアクションの失敗のログ、第 9.1 節に IdP の上限。環境変数に 2 つの上限を足す。
-- [ ] **T017-05-09** 段階の完了の確認：`check-frontend.sh`、`check-all.sh`、`e2e.sh` が通る。
+- [x] **T017-05-09** 段階の完了の確認：`check-frontend.sh`、`check-all.sh`、`e2e.sh` が通る。
+  - `check-frontend.sh`、`check-all.sh`、`e2e.sh`（20 件。Keycloak でログインする流れを含み、差し替えた fetch で本物の Auth.js がログインできる）が通った。

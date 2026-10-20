@@ -12,7 +12,6 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
-import org.springframework.transaction.annotation.Transactional;
 import org.springframework.validation.annotation.Validated;
 
 import java.time.Clock;
@@ -72,7 +71,6 @@ class EventCleanupJob {
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"
             + "com.ecsite.config.EventCleanupJob$Properties'.interval()}")
     @SchedulerLock(name = "event-cleanup")
-    @Transactional
     void cleanUp() {
         // Spring Modulith の「処理を終えた時刻で消す」操作と同じ条件。消した件数をログに出すため、自分で消す
         int deleted = dsl.deleteFrom(EVENT_PUBLICATION)

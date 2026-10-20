@@ -41,5 +41,7 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [015](docs/specs/015-security) | 機能 | セキュリティ | 完了。[段階 1〜7](docs/specs/015-security/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/015-security/tasks/07-review.md) |
 | [016](docs/specs/016-master-data) | 機能 | マスターデータ | 完了。[段階 1〜10](docs/specs/016-master-data/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/016-master-data/tasks/10-review.md) |
 | [017](docs/specs/017-stability) | 機能 | 安定性 | 完了。[段階 1〜8](docs/specs/017-stability/tasks/) を終えた。直さずに残したことは [見直しの結果](docs/specs/017-stability/tasks/08-review.md) |
+| [018](docs/specs/018-docs-and-tools) | 整理 | 文書とツールの整理 | 進行中 |
+| [019](docs/specs/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 | 未着手 |
 
 MVP を完成させるまでの spec の順と、MVP の後に回した決定は [MVP の完成までの一覧](docs/specs/mvp.md) にある。

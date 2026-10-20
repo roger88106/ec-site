@@ -190,6 +190,10 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照らす）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
+    // 本番の jar の起動の統合テスト（ProductionJarStartupTest）が別のプロセスで起動する jar
+    val bootJarFile = tasks.bootJar.flatMap { it.archiveFile }
+    inputs.file(bootJarFile)
+    doFirst { systemProperty("ecsite.boot-jar", bootJarFile.get().asFile.absolutePath) }
     shouldRunAfter(tasks.test)
 }
 

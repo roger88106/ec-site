@@ -1,7 +1,7 @@
 # 段階 3：機械の検査、過去の spec の残り、GitHub の機能
 
 - 前提：段階 2
-- 完了条件：plan 第 2〜4 節の検査がすべて動き、わざと違反を入れると失敗する。AC-245 が除外の一覧にない。既存のテストが、期待値を変えずに通る（DS-48 の呼び出しの変更を除く）。CodeQL の初回の結果に対応した。`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る。
+- 完了条件：plan 第 2〜4 節の検査がすべて動き、わざと違反を入れると失敗する。AC-245 が除外の一覧にない。既存のテストが、期待値を変えずに通る（DS-48 の呼び出しの変更を除く）。GitHub のセキュリティの機能が有効である（CodeQL の初回の結果の確認は spec 019 の DC-219 に移した）。`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る。
 - 参照：[plan](../plan.md) 第 2〜4 節、spec の DS-47〜49、[バックエンドの書き方](../../../backend/coding.md)、[フロントの書き方](../../../frontend/coding.md)、[テストの書き方](../../../testing/writing.md)、[CI の検査](../../../dev/ci.md)
 
 ## タスク
@@ -76,8 +76,9 @@
   - 補足（T018-02-05 で分かったこと）：発生日時を指定する `notification` は、本番のコードの `notification`（引数 3 つ）から呼ばれていて、テストだけの操作ではない。移すのは `notificationWithInvalidSignature` だけ。
   - [出荷モジュール](../../../backend/modules/shipping.md)の設計書の mock の節を直す。
   - 結果：`notificationWithInvalidSignature` を本番の mock から消し、テストで共有するソースの `TestCarrierNotifications.withInvalidSignature`（正しい通知の署名を別の鍵で作り直す）にした。plan の「mock を包む実装」と違い、static の補助にした。移すのが 1 つの作り方だけで、mock の状態を持たないため。呼び出し元の統合テスト（`MockCarrierTest`、7 件）は、期待値を変えずに通った。出荷モジュールの設計書の mock の節と関連 spec を直した。
-- [ ] **T018-03-25** 利用者が GitHub の設定で、Dependabot alerts、secret scanning、push protection、CodeQL（既定の設定）を有効にする（DC-178〜180）。
+- [x] **T018-03-25** 利用者が GitHub の設定で、Dependabot alerts、secret scanning、push protection、CodeQL（既定の設定）を有効にする（DC-178〜180）。
   - CodeQL の初回の結果を読み、直すか、理由を付けて閉じる。結果をこのタスクの下に書く。
+  - 結果：利用者の指示で、エージェントが `gh api` で 4 つとも有効にした（`vulnerability-alerts`、`security_and_analysis`、`code-scanning/default-setup`）。secret scanning の警告は 0 件。CodeQL と Dependabot alerts は既定のブランチ（`main`）だけを見るが、`main` は最初の commit（`.gitignore` だけ）のままで、GitHub が言語を認識せず、CodeQL が動かなかった。利用者と相談し、初回の結果の確認を spec 019 の DC-219（マージの後、tag の前）に移し、spec 018 の DC-180 を直した。develop を見る CodeQL の workflow（advanced setup）は、push ごとに CI の時間が増えるので置かない。
 - [x] **T018-03-26** CI の検査の文書に、有効にした機能、結果の場所、対応の手順の節を足す（DC-181）。
   - TODO 一覧に、Dependabot の version updates・security updates と main の保護を足す。1→10 のブランチと CD の決定と合わせる項目とする。
   - 結果：CI の検査の文書に第 4 節「GitHub のセキュリティの機能」を足した（3 つの機能の、見るもの、結果の場所、対応）。TODO 一覧の 2 つの項目は、段階 1（T018-01-04）で載せてあった。設定を有効にするのは T018-03-25。

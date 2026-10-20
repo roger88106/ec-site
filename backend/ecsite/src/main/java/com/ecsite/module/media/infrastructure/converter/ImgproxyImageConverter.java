@@ -21,6 +21,7 @@ import java.security.GeneralSecurityException;
 import java.time.Duration;
 import java.util.Base64;
 import java.util.HexFormat;
+import java.util.Set;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
@@ -37,6 +38,11 @@ class ImgproxyImageConverter implements ImageConverter {
      * imgproxy への接続を待つ時間の上限（変換を待つ時間とは別）
      */
     private static final Duration CONNECT_TIMEOUT = Duration.ofSeconds(5);
+
+    /**
+     * imgproxy に届いていないことを示す HTTP の状態（imgproxy の手前の代理が返す）
+     */
+    private static final Set<Integer> UNREACHABLE_STATUSES = Set.of(502, 503, 504);
 
     /**
      * URL に入れる base64（URL セーフ、パディングなし。imgproxy の決まり）
@@ -76,8 +82,9 @@ class ImgproxyImageConverter implements ImageConverter {
     }
 
     /**
-     * imgproxy に変換させる。imgproxy がエラーを返したとき（壊れたファイルには 500 を返すこともある）と、時間切れは、
-     * 変換の失敗にする。応答だけではストレージの不具合と区別できないため、応答をログに残す。<br />
+     * imgproxy に変換させる。imgproxy が応答したエラー（4xx と、壊れたファイルに返す 500）は、変換の失敗にする。
+     * imgproxy の中の故障（受付のバケットを読めないなど）も 500 なので区別できないため、応答をログに残す。
+     * imgproxy に届かない・応えない（接続できない、時間切れ、手前の代理の 502・503・504）は、外部サービスのエラーにする。<br />
      * 配信する画像はすべて WebP にするので、応答の本文が WebP でなければ（先頭のバイトで判定し、Content-Type には
      * 頼らない）、変換の失敗にする。
      */
@@ -92,15 +99,19 @@ class ImgproxyImageConverter implements ImageConverter {
             }
             return body;
         } catch (RestClientResponseException e) {
+            int status = e.getStatusCode().value();
+            if (UNREACHABLE_STATUSES.contains(status)) {
+                throw SystemException.of("imgproxy に届かない：uploadKey=" + uploadKey + ", status=" + status, e,
+                        MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
+            }
             log.warn("imgproxy が画像を変換できなかった：uploadKey={}, status={}, body={}",
-                    uploadKey, e.getStatusCode().value(), e.getResponseBodyAsString());
+                    uploadKey, status, e.getResponseBodyAsString());
             throw BusinessException.of(MediaErrorCode.IMAGE_CONVERSION_FAILED);
         } catch (ResourceAccessException e) {
-            if (e.getCause() instanceof HttpTimeoutException) {
-                log.warn("imgproxy の変換が時間の上限を超えた：uploadKey={}, timeout={}", uploadKey, properties.timeout());
-                throw BusinessException.of(MediaErrorCode.IMAGE_CONVERSION_FAILED);
-            }
-            throw SystemException.of("imgproxy に接続できない", e, CommonErrorCode.SYSTEM_ERROR);
+            var reason = e.getCause() instanceof HttpTimeoutException
+                    ? "imgproxy の変換が時間の上限（" + properties.timeout() + "）を超えた"
+                    : "imgproxy に接続できない";
+            throw SystemException.of(reason + "：uploadKey=" + uploadKey, e, MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
         }
     }
 

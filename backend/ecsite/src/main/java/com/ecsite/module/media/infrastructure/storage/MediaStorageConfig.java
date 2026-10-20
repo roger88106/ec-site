@@ -23,6 +23,7 @@ class MediaStorageConfig {
 
     /**
      * S3 のクライアント。<br />
+     * 1 回の試行と、やり直しを含む呼び出しの全体に、待つ時間の上限を置く。
      * チェックサムは、必須の操作でだけ計算・検証する。S3 互換のストレージ（エミュレーター、GCS）が、
      * SDK の既定で付くチェックサムのヘッダーに対応していないことがあるため。
      *
@@ -45,6 +46,10 @@ class MediaStorageConfig {
                 .region(Region.of(properties.region()))
                 .credentialsProvider(credentials(properties))
                 .forcePathStyle(properties.pathStyleAccess())
+                // 応えない S3 で、利用者の要求とリスナーが止まったままにならないよう、試行と全体に上限を置く
+                .overrideConfiguration(config -> config
+                        .apiCallAttemptTimeout(properties.attemptTimeout())
+                        .apiCallTimeout(properties.callTimeout()))
                 .requestChecksumCalculation(RequestChecksumCalculation.WHEN_REQUIRED)
                 .responseChecksumValidation(ResponseChecksumValidation.WHEN_REQUIRED);
         if (properties.endpoint() != null) {

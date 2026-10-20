@@ -28,9 +28,13 @@ public enum MediaErrorCode implements ErrorCodeProvider {
      */
     INVALID_IMAGE_FILE(ErrorType.VALIDATION_ERROR, "formats"),
     /**
-     * 画像を変換できなかった（壊れたファイル、時間切れ）
+     * 画像を変換できなかった（変換のサービスがファイルを読めない）
      */
     IMAGE_CONVERSION_FAILED(ErrorType.VALIDATION_ERROR),
+    /**
+     * 画像の変換かファイルの保存のサービスに接続できない（しばらくしてからやり直せる）
+     */
+    IMAGE_SERVICE_UNAVAILABLE(ErrorType.EXTERNAL_SERVICE_ERROR),
     ;
 
     /**

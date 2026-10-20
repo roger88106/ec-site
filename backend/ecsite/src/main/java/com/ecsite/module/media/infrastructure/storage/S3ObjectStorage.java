@@ -1,9 +1,12 @@
 package com.ecsite.module.media.infrastructure.storage;
 
+import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ObjectStorage;
+import com.ecsite.module.media.domain.MediaErrorCode;
 import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
@@ -13,6 +16,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import java.net.URI;
 import java.util.Map;
 import java.util.Optional;
+import java.util.function.Supplier;
 
 /**
  * ファイルの置き場所の S3 の実装。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
@@ -30,6 +34,11 @@ class S3ObjectStorage implements ObjectStorage {
      * ファイルがないときの HTTP ステータス
      */
     private static final int NOT_FOUND = 404;
+
+    /**
+     * S3 の側の故障の HTTP ステータスの下限
+     */
+    private static final int SERVER_ERROR = 500;
 
     /**
      * S3 のクライアント
@@ -71,7 +80,8 @@ class S3ObjectStorage implements ObjectStorage {
     @Override
     public Optional<Long> findUploadSize(String uploadKey) {
         try {
-            return Optional.of(s3.headObject(request -> request.bucket(properties.incomingBucket()).key(uploadKey))
+            return Optional.of(call("受付の大きさを読めない：" + uploadKey,
+                    () -> s3.headObject(request -> request.bucket(properties.incomingBucket()).key(uploadKey)))
                     .contentLength());
         } catch (NoSuchKeyException e) {
             return Optional.empty();
@@ -93,10 +103,10 @@ class S3ObjectStorage implements ObjectStorage {
      */
     @Override
     public byte[] readUploadHead(String uploadKey, int length) {
-        return s3.getObjectAsBytes(request -> request
+        return call("受付の先頭を読めない：" + uploadKey, () -> s3.getObjectAsBytes(request -> request
                 .bucket(properties.incomingBucket())
                 .key(uploadKey)
-                .range("bytes=0-" + (length - 1))).asByteArray();
+                .range("bytes=0-" + (length - 1)))).asByteArray();
     }
 
     /**
@@ -108,12 +118,12 @@ class S3ObjectStorage implements ObjectStorage {
      */
     @Override
     public void putPublished(String publicKey, byte[] content, String contentType) {
-        s3.putObject(request -> request
+        call("配信のバケットに書けない：" + publicKey, () -> s3.putObject(request -> request
                         .bucket(properties.publicBucket())
                         .key(publicKey)
                         .contentType(contentType)
                         .cacheControl(PUBLIC_CACHE_CONTROL),
-                RequestBody.fromBytes(content));
+                RequestBody.fromBytes(content)));
     }
 
     /**
@@ -124,7 +134,8 @@ class S3ObjectStorage implements ObjectStorage {
     @Override
     public void deletePublished(String publicKey) {
         // S3 の削除は、ファイルがなくても成功する
-        s3.deleteObject(request -> request.bucket(properties.publicBucket()).key(publicKey));
+        call("配信のファイルを消せない：" + publicKey,
+                () -> s3.deleteObject(request -> request.bucket(properties.publicBucket()).key(publicKey)));
     }
 
     /**
@@ -136,5 +147,23 @@ class S3ObjectStorage implements ObjectStorage {
     @Override
     public URI publicUrl(String publicKey) {
         return URI.create(properties.publicBaseUrl() + "/" + publicKey);
+    }
+
+    /**
+     * S3 を呼ぶ。接続できない・時間内に応答がない（SDK の例外）と、S3 の側の故障（5xx）は、外部サービスのエラーにする。
+     * 5xx でない S3 の失敗（権限がない、ファイルがないなど）は、そのまま投げる（呼ぶ側が扱うか、予期しないエラー）。
+     */
+    private <T> T call(String failure, Supplier<T> operation) {
+        try {
+            return operation.get();
+        } catch (S3Exception e) {
+            if (e.statusCode() >= SERVER_ERROR) {
+                throw SystemException.of("S3：" + failure + ", status=" + e.statusCode(), e,
+                        MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
+            }
+            throw e;
+        } catch (SdkClientException e) {
+            throw SystemException.of("S3：" + failure, e, MediaErrorCode.IMAGE_SERVICE_UNAVAILABLE);
+        }
     }
 }

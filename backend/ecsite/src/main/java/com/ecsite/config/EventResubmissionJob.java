@@ -42,6 +42,11 @@ class EventResubmissionJob {
     private final Clock clock;
 
     /**
+     * イベントの記録
+     */
+    private final EventPublicationRecords publicationRecords;
+
+    /**
      * 発行から一定時間（既定 5 分）より前の、未完了のイベントを再発行する。<br />
      * 発行の直後のイベントは、まだ処理中のことがあるので除く。
      * 処理の回数（発行の時の 1 回と再発行の回数）が上限（既定 60）に達したイベントは、再発行しない。
@@ -51,6 +56,10 @@ class EventResubmissionJob {
             + "com.ecsite.config.EventResubmissionJob$Properties'.interval()}")
     @SchedulerLock(name = "event-resubmission")
     void resubmit() {
+        for (var stopped : publicationRecords.markStopped(properties.maxAttempts())) {
+            log.error("処理の回数が上限に達したイベントの再発行を止めた：種類 {}、イベント ID {}、リスナー {}、処理の回数 {}",
+                    stopped.eventType(), stopped.id(), stopped.listenerId(), stopped.completionAttempts());
+        }
         log.debug("未完了のイベントを再発行する（発行から {} より前で、処理の回数が {} より少ないもの）",
                 properties.minAge(), properties.maxAttempts());
         var publishedBefore = clock.instant().minus(properties.minAge());

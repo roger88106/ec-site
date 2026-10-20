@@ -2,6 +2,7 @@ package com.ecsite.module.order.domain.checkout.port;
 
 import com.ecsite.module.order.domain.checkout.Checkout;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -49,4 +50,13 @@ public interface CheckoutRepository {
      * @return 注文手続き ID。なければ空
      */
     Optional<UUID> findLatestIdByCartId(UUID cartId);
+
+    /**
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す（片付け）。注文になったものも消す。
+     *
+     * @param expiredBefore この時刻より前に期限が切れた注文手続きを消す
+     * @param limit         消す件数の上限
+     * @return 消した件数
+     */
+    int deleteExpiredBefore(Instant expiredBefore, int limit);
 }

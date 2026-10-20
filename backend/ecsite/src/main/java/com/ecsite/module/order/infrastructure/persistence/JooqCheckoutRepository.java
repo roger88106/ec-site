@@ -7,6 +7,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -76,6 +77,22 @@ class JooqCheckoutRepository implements CheckoutRepository {
                 .orderBy(CHECKOUT.CREATED_AT.desc(), CHECKOUT.ID)
                 .limit(1)
                 .fetchOptional(CHECKOUT.ID);
+    }
+
+    /**
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す。<br />
+     * 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行（注文の途中）は飛ばす（次の回で消す）。
+     */
+    @Override
+    public int deleteExpiredBefore(Instant expiredBefore, int limit) {
+        return dsl.deleteFrom(CHECKOUT)
+                .where(CHECKOUT.ID.in(dsl.select(CHECKOUT.ID)
+                        .from(CHECKOUT)
+                        .where(CHECKOUT.EXPIRES_AT.lt(expiredBefore))
+                        .limit(limit)
+                        .forUpdate()
+                        .skipLocked()))
+                .execute();
     }
 
     /**

@@ -106,7 +106,7 @@ public class CheckoutService {
      */
     @Transactional
     public int deleteExpired(Instant expiredBefore, int limit) {
-        return 0;
+        return checkoutRepository.deleteExpiredBefore(expiredBefore, limit);
     }
 
     /**

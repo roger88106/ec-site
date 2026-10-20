@@ -58,3 +58,15 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `time-waits` | テストが時間で待っていない。決まった時間だけ見る書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も見る（[テストの書き方](../testing/writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
 
 ※1：テスト名に出ない AC は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、通った検査の警告（`警告：` で始まる行）も出す。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で止めるため。手元で CI と同じに確かめるときは `CI=true scripts/ci/check-all.sh`。他の誤り（範囲の表記、spec にない AC 番号、除外の一覧の誤り）は、手元でも失敗にする。
+
+## 4. GitHub のセキュリティの機能
+
+リポジトリの設定（Settings の Code security）で有効にする。CI のジョブではないので、CI の時間に入らない。
+
+| 機能 | 見るもの | 結果の場所 | 対応 |
+|------|----------|------------|------|
+| Dependabot alerts | 依存ライブラリ（Gradle、pnpm、GitHub Actions）の既知の脆弱性 | Security のタブの Dependabot | 直った版に上げる（バックエンドは `libs.versions.toml`、画面は `pnpm`）。上げられないときは、影響がない理由を書いて閉じる |
+| secret scanning、push protection | リポジトリに入った秘密情報（API キー、token など）。push protection は、秘密情報を含む push を拒否する | Security のタブの Secret scanning | 秘密情報を無効にして作り直し、履歴から消す。テスト用の値など誤検出なら、理由を付けて閉じる |
+| CodeQL（default setup） | Java と JavaScript・TypeScript のコードの、セキュリティの問題（注入、パスの操作など） | Security のタブの Code scanning | 直すか、誤検出・影響がない理由を付けて閉じる |
+
+- 依存の版を自動で上げる pull request（Dependabot の version updates と security updates）は使っていない。ブランチの運用と CD を決めるときに合わせて決める（[TODO 一覧](../todo.md)）。

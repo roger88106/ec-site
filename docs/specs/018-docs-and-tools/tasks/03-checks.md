@@ -78,6 +78,7 @@
   - 結果：`notificationWithInvalidSignature` を本番の mock から消し、テストで共有するソースの `TestCarrierNotifications.withInvalidSignature`（正しい通知の署名を別の鍵で作り直す）にした。plan の「mock を包む実装」と違い、static の補助にした。移すのが 1 つの作り方だけで、mock の状態を持たないため。呼び出し元の統合テスト（`MockCarrierTest`、7 件）は、期待値を変えずに通った。出荷モジュールの設計書の mock の節と関連 spec を直した。
 - [ ] **T018-03-25** 利用者が GitHub の設定で、Dependabot alerts、secret scanning、push protection、CodeQL（既定の設定）を有効にする（DC-178〜180）。
   - CodeQL の初回の結果を読み、直すか、理由を付けて閉じる。結果をこのタスクの下に書く。
-- [ ] **T018-03-26** CI の検査の文書に、有効にした機能、結果の場所、対応の手順の節を足す（DC-181）。
+- [x] **T018-03-26** CI の検査の文書に、有効にした機能、結果の場所、対応の手順の節を足す（DC-181）。
   - TODO 一覧に、Dependabot の version updates・security updates と main の保護を足す。1→10 のブランチと CD の決定と合わせる項目とする。
+  - 結果：CI の検査の文書に第 4 節「GitHub のセキュリティの機能」を足した（3 つの機能の、見るもの、結果の場所、対応）。TODO 一覧の 2 つの項目は、段階 1（T018-01-04）で載せてあった。設定を有効にするのは T018-03-25。
 - [ ] **T018-03-27** 段階の完了の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る（同時に実行しない）。

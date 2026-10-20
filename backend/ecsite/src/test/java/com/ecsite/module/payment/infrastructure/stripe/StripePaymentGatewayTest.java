@@ -1,5 +1,7 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
+import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
@@ -7,13 +9,18 @@ import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
+import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.Request;
+import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
 import java.io.IOException;
 import java.time.Clock;
@@ -22,6 +29,8 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -283,7 +292,95 @@ class StripePaymentGatewayTest {
         }
     }
 
+    @Nested
+    @DisplayName("失敗の分類")
+    class FailureClassification {
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.ecsite.module.payment.infrastructure.stripe.StripePaymentGatewayTest#operations")
+        @DisplayName("AC-294 Stripe の側の故障（5xx）は、外部サービスのエラー")
+        void serverErrorIsUnavailable(String name, String key, Consumer<StripePaymentGateway> operation) {
+            respond(key, 500, StripeApiStub.error("api_error", null));
+
+            assertFailure(() -> operation.accept(gateway), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE.getCode());
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.ecsite.module.payment.infrastructure.stripe.StripePaymentGatewayTest#operations")
+        @DisplayName("AC-294 回数の制限（429）は、外部サービスのエラー")
+        void rateLimitIsUnavailable(String name, String key, Consumer<StripePaymentGateway> operation) {
+            respond(key, 429, StripeApiStub.error("invalid_request_error", "rate_limit"));
+
+            assertFailure(() -> operation.accept(gateway), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE.getCode());
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("com.ecsite.module.payment.infrastructure.stripe.StripePaymentGatewayTest#operations")
+        @DisplayName("AC-294 認証の誤り（401）は、予期しないエラー（設定の誤り）")
+        void authenticationErrorIsSystemError(String name, String key, Consumer<StripePaymentGateway> operation) {
+            respond(key, 401, StripeApiStub.error("invalid_request_error", null));
+
+            assertFailure(() -> operation.accept(gateway), CommonErrorCode.SYSTEM_ERROR.getCode());
+        }
+
+        @Test
+        @DisplayName("AC-295 Stripe に接続できなければ、支払の画面を作る・閉じる、返金、取消は外部サービスのエラー")
+        void unreachableIsUnavailable() throws IOException {
+            var unreachable = new StripePaymentGateway(
+                    StripeApiStub.client("http://localhost:" + StripeApiStub.closedPort()), Clock.fixed(NOW, ZoneOffset.UTC));
+            var code = PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE.getCode();
+
+            assertFailure(() -> unreachable.openPage(pageRequest()), code);
+            assertFailure(() -> unreachable.closePage(SESSION_ID), code);
+            assertFailure(() -> unreachable.refund(refundRequest()), code);
+            assertFailure(() -> unreachable.voidAuthorization(INTENT_ID), code);
+        }
+
+        @Test
+        @DisplayName("AC-294 状態の読み取り（閉じられなかった画面の読み直し）で Stripe の側が故障していれば、外部サービスのエラー")
+        void retrieveServerErrorIsUnavailable() {
+            respond("POST /v1/checkout/sessions/" + SESSION_ID + "/expire", 400,
+                    StripeApiStub.error("invalid_request_error", "checkout_session_not_open"));
+            respond("GET /v1/checkout/sessions/" + SESSION_ID, 503, StripeApiStub.error("api_error", null));
+
+            assertFailure(() -> gateway.closePage(SESSION_ID), PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE.getCode());
+        }
+
+        @Test
+        @DisplayName("売上確定の回数の制限は、今の接続できないと同じく、接続できないという結果を返す")
+        void captureRateLimitIsUnreachable() {
+            respond("POST /v1/payment_intents/" + INTENT_ID + "/capture", 429,
+                    StripeApiStub.error("invalid_request_error", "rate_limit"));
+
+            assertThat(gateway.capture(captureRequest())).isEqualTo(CaptureResult.UNREACHABLE);
+        }
+
+        private void assertFailure(ThrowingCallable call, ErrorCode errorCode) {
+            assertThatThrownBy(call).isInstanceOfSatisfying(SystemException.class,
+                    e -> assertThat(e.getErrorDetail().errorCode()).isEqualTo(errorCode));
+        }
+    }
+
+    /**
+     * 失敗の分類を確かめる操作（名前、Stripe の要求、呼び出し）。売上確定は結果で返すので除く
+     */
+    static Stream<Arguments> operations() {
+        return Stream.of(
+                Arguments.of("支払の画面を作る", "POST /v1/checkout/sessions",
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.openPage(pageRequest())),
+                Arguments.of("支払の画面を閉じる", "POST /v1/checkout/sessions/" + SESSION_ID + "/expire",
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.closePage(SESSION_ID)),
+                Arguments.of("返金", "POST /v1/refunds",
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.refund(refundRequest())),
+                Arguments.of("与信の取消", "POST /v1/payment_intents/" + INTENT_ID + "/cancel",
+                        (Consumer<StripePaymentGateway>) gateway -> gateway.voidAuthorization(INTENT_ID)));
+    }
+
     // ============================== 補助 ==============================
+
+    private static PageRequest pageRequest() {
+        return new PageRequest(PAYMENT_ID, ORDER_ID, Money.of(6940), RETURN_URL);
+    }
 
     private static String session(String status) {
         return StripeApiStub.session(SESSION_ID, SESSION_URL, status);

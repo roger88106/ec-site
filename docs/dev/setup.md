@@ -42,6 +42,7 @@ pnpm dev
 - Mailpit の SMTP はホストの 2525 で受ける（1025 は Windows のシステムのプログラムが使うことがあるので使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いたポートを入れて、compose とバックエンドを起動する（両方が同じ値を読む）。
 - compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）からつなぐときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を付けて、`docker compose up -d` で作り直す。終わったら消して作り直す。バックエンドと画面の開発サーバーは、この設定と別に待ち受ける。
 - 止めるときは `docker compose stop`。データを作り直すときは第 4 節。
+- E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に入らない。E2E の準備が起動する（[テストの流し方](../testing/running.md)）。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で直せる lint は `pnpm lint:fix`。
 - commit の前に CI の検査の script（[CI の検査](ci.md)）を流すには、`.git/hooks/pre-commit` に次の 1 行を書く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いたほかの hook と並べられるよう、`core.hooksPath` は変えない。

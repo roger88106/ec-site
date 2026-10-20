@@ -70,7 +70,7 @@ CI のライセンス検査の対象外なので、足すときに手で確か�
 |------|------------|
 | PostgreSQL | PostgreSQL License |
 | Keycloak | Apache-2.0（コミュニティ版） |
-| SeaweedFS、Zipkin、AWS CLI | Apache-2.0 |
+| SeaweedFS、Zipkin、AWS CLI、Stripe CLI（profile `stripe` だけ） | Apache-2.0 |
 | imgproxy | MIT（OSS 版。第 4 節） |
 | Mailpit | MIT |
 

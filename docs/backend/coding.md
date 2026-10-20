@@ -212,7 +212,7 @@ getter・コンストラクターの注入などの定型コードは、main で
 | service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` か用途の名前 ※2 | `OrderQueryService`、`OrderPlacementService` |
 | 腐敗防止層の口 | `<相手>Directory`（使う層の `port/`） | `OrderDirectory` |
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `OrderApiDirectory` |
-| イベント | 過去形 | `OrderPlaced` |
+| イベント | 過去形 | `OrderShipped` |
 
 ※2：1 つの集約に用途が複数あるとき、他のモジュールの呼び出しを組み合わせるとき。データを変えずに他のモジュールの結果を組み合わせる service（注文の手続きの見積もりなど）も用途の名前にし、読み取り専用のトランザクションにする。
 

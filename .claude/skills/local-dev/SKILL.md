@@ -17,7 +17,7 @@ docker compose stop           # 止める（データは残る）
 ```
 
 - Keycloak は起動に 20 秒ほどかかる。`docker inspect -f '{{.State.Health.Status}}' ec-site-keycloak` が `healthy` になるまで待つ。
-- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`docs/dev/setup.md`「ローカルで起動する」の手順で一度だけ作る。
+- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で作り直す（`docs/dev/setup.md` 第 4 節。database は compose の PostgreSQL を初めて作ったときだけ自動で作られる）。
 
 - DB：`localhost:5432`、DB `ec_site`、ユーザー `ec_site`、パスワード `ec_site`。
 - SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で引く。注文は `ordering`）。
@@ -28,7 +28,7 @@ docker compose stop           # 止める（データは残る）
 
 ## 認証（Keycloak、Mailpit）
 
-realm の設定は `docker/keycloak/realms/` の JSON。アカウントと、JSON を変えたときの取り込み直しは `docs/dev/setup.md`「認証（Keycloak）」。
+realm の設定は `docker/keycloak/realms/` の JSON。アカウントと、JSON を変えたときの取り込み直しは、`docs/dev/setup.md` 第 3 節（アカウント）と `docs/dev/setup.md` 第 4 節（取り込み直し）。
 
 ```bash
 scripts/dev/keycloak.sh token ec-admin admin@example.com admin-pass-1   # access token の payload を出す（権限・audience の確認）

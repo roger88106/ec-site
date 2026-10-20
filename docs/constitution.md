@@ -36,10 +36,14 @@
 | モジュール化 | Spring Modulith、jMolecules |
 | DB・データアクセス | PostgreSQL 18、jOOQ、Flyway |
 | ファイル保存 | Amazon S3 互換オブジェクトストレージ（AWS SDK）、SeaweedFS（ローカル・CI） |
+| 画像の変換 | imgproxy |
+| 決済 | Stripe（stripe-java。ローカルの既定は mock） |
+| メール | SMTP（Spring の mail。ローカルは Mailpit） |
+| 定期ジョブの分散ロック | ShedLock |
 | ビルド | Gradle Kotlin DSL、version catalog |
 | 定型コードの生成 | Lombok |
 | テスト | JUnit 5、AssertJ、Testcontainers、MockMvc |
-| 可観測性 | Actuator、Micrometer（Prometheus）、分散トレーシング、構造化ログ |
+| 可観測性 | Actuator、Micrometer（Prometheus）、分散トレーシング（Zipkin）、構造化ログ |
 
 ### フロントエンド
 

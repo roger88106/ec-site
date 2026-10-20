@@ -2,6 +2,14 @@
 
 本番相当の環境では profile を付けずに起動し、環境に依存する値を環境変数で渡す。ローカルの既定値は `application-local.yml` にある。
 
+profile の設定ファイルは本番の jar に入らない（[バックエンドのアーキテクチャ](../backend/architecture.md) 第 8 節）。
+
+| profile | 使う場面 | 重ね方 |
+|---------|----------|--------|
+| `local` | ローカルの開発。compose のサービスにつなぎ、決済と物流は mock、起動のときに seed を流す | 単独（`local`） |
+| `e2e` | E2E。DB・IdP・画像のバケット・ポートを E2E 用に分け、ローカルのデータを変えない（[テストの流し方](../testing/running.md)） | `local,e2e` |
+| `stripe` | Stripe の sandbox での確認。決済サービスを Stripe にし、秘密の値を `/.local/stripe.env` から読む（[開発環境の起動](setup.md) 第 5 節） | `local,stripe` |
+
 ## 1. バックエンド
 
 | 環境変数 | 内容 | 既定 |

@@ -51,7 +51,8 @@
   - 結果：`glossary-ids.mjs`。用語集の 240 の識別子を、コードの語とファイルのパスに照合する。省略形（`cancelled_by_id`・`_name`）は補い、名前の形の例（`Xxx`、`<…>`、`*`）は見ない。設定の名前の kebab-case は camelCase の語でもよい。
   - コードにない識別子 6 つを、今の名前に直した：会員 ID（`memberId`）、運営者 ID（`Operator` の `id`）、在庫と引当（クラスがないので表とリポジトリの名前）、画像の確定（spec 017 で分けた `prepareImage`・`registerImage`）、状態の履歴（`StatusHistoryEntry`）。
   - 引き継ぎの文書の置き場所（`/.local/handoff/`）は Git の外なので、除外の一覧（`glossary-ids-exclusions.json`）に置いた。
-- [ ] **T018-03-18** 同じ完全修飾名のテストクラスを見つける Gradle の task を作り、`check` から呼ぶ。一時的に同名のクラスを置いて、失敗を確認する（DC-171）。
+- [x] **T018-03-18** 同じ完全修飾名のテストクラスを見つける Gradle の task を作り、`check` から呼ぶ。一時的に同名のクラスを置いて、失敗を確認する（DC-171）。
+  - 結果：`checkTestClassNames`。`src/test`・`src/integrationTest`・`src/testFixtures` の `java` の下の、パッケージとファイルの名前を比べる。今のコードに重なりはなかった。統合テストに `com.ecsite.architecture.NamingTest` を一時的に置くと、名前と 2 つのソースセットを示して失敗することを確認し、ファイルを消した。
 - [ ] **T018-03-19** [テスト] 本番の jar を必須の設定なしで起動すると失敗し、設定名が出る統合テストを書く。テスト名に AC-245 を書く（DC-172）。
   - 既にある振る舞いなので、最初から通る。メッセージの期待値を一時的に変えて、失敗しうることを確認する。
 - [ ] **T018-03-20** AC-245 を除外の一覧から外す。`ac-check` が通る（DC-172）。

@@ -557,6 +557,38 @@ val checkBootJar = tasks.register("checkBootJar") {
 tasks.check { dependsOn(checkBootJar) }
 
 // -----------------------------------------------------------------------------
+// テストのクラスの名前の重なり
+// -----------------------------------------------------------------------------
+// 単体テスト・統合テスト・テスト用の共通コードの間で、同じパッケージに同じ名前のクラスを置くと、
+// クラスパスで片方が隠れ、テストが流れないか、別のクラスを読む
+val testSourceSetNames = listOf("test", "integrationTest", "testFixtures")
+
+val checkTestClassNames = tasks.register("checkTestClassNames") {
+    description = "テストのソースセットの間に、同じ完全修飾名のクラスがないことを確かめる"
+    group = "verification"
+    val roots = testSourceSetNames.associateWith { name -> layout.projectDirectory.dir("src/$name/java") }
+    roots.values.forEach { root -> inputs.dir(root).optional() }
+    doLast {
+        val owners = mutableMapOf<String, MutableList<String>>()
+        roots.forEach { (name, root) ->
+            val dir = root.asFile
+            if (!dir.isDirectory) return@forEach
+            dir.walkTopDown().filter { it.isFile && it.extension == "java" }.forEach { file ->
+                val fqn = file.relativeTo(dir).invariantSeparatorsPath.removeSuffix(".java").replace('/', '.')
+                owners.getOrPut(fqn) { mutableListOf() }.add(name)
+            }
+        }
+        val duplicated = owners.filterValues { it.size > 1 }
+        if (duplicated.isNotEmpty()) {
+            throw GradleException("同じ完全修飾名のテストのクラスがある：" +
+                    duplicated.entries.joinToString { (fqn, sets) -> "$fqn（${sets.joinToString("、")}）" })
+        }
+    }
+}
+
+tasks.check { dependsOn(checkTestClassNames) }
+
+// -----------------------------------------------------------------------------
 // コンパイルオプション
 // -----------------------------------------------------------------------------
 tasks.withType<JavaCompile> {

@@ -49,4 +49,13 @@ public interface StockReservationRepository {
      * @param holderId 持ち主 ID
      */
     void deleteByHolder(UUID holderId);
+
+    /**
+     * 期限が指定した時刻より前の引当を、件数の上限まで消す（片付け）。
+     *
+     * @param expiredBefore この時刻より前に期限が切れた引当を消す
+     * @param limit         消す件数の上限
+     * @return 消した件数
+     */
+    int deleteExpiredBefore(Instant expiredBefore, int limit);
 }

@@ -62,7 +62,7 @@ public class StockReservationService {
      */
     @Transactional
     public int deleteExpired(Instant expiredBefore, int limit) {
-        return 0;
+        return reservationRepository.deleteExpiredBefore(expiredBefore, limit);
     }
 
     /**

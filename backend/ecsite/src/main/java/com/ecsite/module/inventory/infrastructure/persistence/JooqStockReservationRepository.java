@@ -93,4 +93,24 @@ class JooqStockReservationRepository implements StockReservationRepository {
     public void deleteByHolder(UUID holderId) {
         dsl.deleteFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.HOLDER_ID.eq(holderId)).execute();
     }
+
+    /**
+     * 期限が指定した時刻より前の引当を、件数の上限まで消す。<br />
+     * 選ぶのと消すのを 1 文にする。他のトランザクションがロックしている行は飛ばす（次の回で消す）。
+     *
+     * @param expiredBefore この時刻
+     * @param limit         件数の上限
+     * @return 消した件数
+     */
+    @Override
+    public int deleteExpiredBefore(Instant expiredBefore, int limit) {
+        return dsl.deleteFrom(STOCK_RESERVATION)
+                .where(STOCK_RESERVATION.ID.in(dsl.select(STOCK_RESERVATION.ID)
+                        .from(STOCK_RESERVATION)
+                        .where(STOCK_RESERVATION.EXPIRES_AT.lt(expiredBefore))
+                        .limit(limit)
+                        .forUpdate()
+                        .skipLocked()))
+                .execute();
+    }
 }

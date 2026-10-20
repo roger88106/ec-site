@@ -45,6 +45,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `doc-terms` | 文書に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も出る | `doc-terms.json` |
 | `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで引く。`--count` で数だけを出す | `hardcoded-text-exclusions.json` にファイルと理由 |
 | `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |
+| `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../backend/coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（[バックエンドの書き方](../backend/coding.md) 第 1.3 節） | テストでは定型コードを手で書く。列挙型は `switch` 式で写す | なし |
 | `message-comments` | 画面のコードで、キーを文字で書いた文言の呼び出し（`t('…')`）に、表示する内容のコメントがある（[コメントの書き方](../process/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは見ない | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
 | `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）のほかの数字がない（[バックエンドの書き方](../backend/coding.md) 第 3.2 節）。除外の一覧の、要らなくなったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` にキーと理由（「1 つだけ」など数え方の言葉で、規則の値でないもの） |
 | `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号がない（[コメントの書き方](../process/comments.md) 第 1 節） | 番号を消し、規則を言葉で書く。spec との対応はテスト名に書く | なし |

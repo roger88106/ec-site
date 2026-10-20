@@ -43,6 +43,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `compose-ports` | compose のすべての `ports` が、待ち受けるアドレスを `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始める（既定でこのマシンだけで待ち受け、1 つの変数で替えられる。[開発環境の起動](setup.md) 第 2 節） | ポートの前に `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` を書く | なし |
 | `doc-refs` | Markdown のリンクと、`<文書の名前> 第 N 節` の参照が切れていない | リンクか節の番号を直す（skill `docs`） | なし |
 | `doc-terms` | 文書に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も出る | `doc-terms.json` |
+| `env-defaults` | [環境変数](environment.md) の表の「既定」が、設定の型（`@ConfigurationProperties` の record）の `@DefaultValue` と一致する。コードの既定値は文書にあり、文書に書いた既定値（時間、数、真偽）はコードにもある（[バックエンドの書き方](../backend/coding.md) 第 6.1 節）。時間は書き方によらず長さで比べる | 文書の表の行か値を直す。省略形（`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えた名前として読む | なし |
 | `frontend-rules` | 機能（`features/<機能>/`）が、ほかの機能を import しない（[フロントの書き方](../frontend/coding.md) 第 1.2 節）。ロケールとタイムゾーンを `frontend/shared/src/lib/locale.ts` のほかに直接書かない（[フロントの書き方](../frontend/coding.md) 第 7.3 節）。店舗画面と管理画面に、同じ相対パスで同じ内容のファイルがない（[フロントの書き方](../frontend/coding.md) 第 5.1 節） | 2 つの機能で使うものは `components/` か `lib/` に置く。ロケールは `LOCALE`・`TIME_ZONE` を使う。同じファイルは共有パッケージに移す | `frontend-rules-exclusions.json` に src からの相対パスと理由 |
 | `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで引く。`--count` で数だけを出す | `hardcoded-text-exclusions.json` にファイルと理由 |
 | `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |

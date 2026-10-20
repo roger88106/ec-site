@@ -14,7 +14,7 @@
 | `ECSITE_SECURITY_STORE_ISSUER_URI`、`_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience | 必須 |
 | `ECSITE_MEDIA_STORAGE_INCOMING_BUCKET`、`_PUBLIC_BUCKET` | 画像の受付（非公開）・配信（公開）のバケット | 必須 |
 | `ECSITE_MEDIA_STORAGE_REGION`、`_PUBLIC_BASE_URL` | バケットのリージョン、配信の基準 URL（CDN） | 必須 |
-| `ECSITE_MEDIA_STORAGE_ENDPOINT`、`_PATH_STYLE_ACCESS` | S3 互換ストレージを使うときだけ（AWS では設定せず、資格情報は IAM ロール） | — |
+| `ECSITE_MEDIA_STORAGE_ENDPOINT`、`_PATH_STYLE_ACCESS` | S3 互換ストレージを使うときだけ（AWS では設定せず、資格情報は IAM ロール） | —、false |
 | `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | アップロードの署名付き URL の有効期間 | 5m |
 | `ECSITE_MEDIA_STORAGE_ATTEMPT_TIMEOUT`、`_CALL_TIMEOUT` | ストレージの呼び出しを待つ時間の上限（1 回の試行、SDK のやり直しを含めた全体） | 10s、30s |
 | `ECSITE_MEDIA_CONVERTER_BASE_URL`、`_KEY`、`_SALT` | imgproxy の URL と、URL の署名の鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値） | 必須 |
@@ -22,6 +22,7 @@
 | `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（標準税率） | 必須 |
 | `ECSITE_ORDER_SHIPPING_FEE`、`_RESERVATION_TTL` | 送料（税込、円）、引当の期限 | 1000、15m |
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に示す） | 必須 |
+| `ECSITE_REPORTING_FISCAL_YEAR_START_MONTH` | 会計年度の始まりの月（1〜12）。売上の推移の四半期と年の区切りに使う | 4 |
 | `ECSITE_PAYMENT_RETURN_URL` | 支払の画面から戻る店舗の注文の画面の URL。`{orderId}` に注文 ID が入る | 必須 |
 | `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では立てない | false |
 | `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | 30m、1m |

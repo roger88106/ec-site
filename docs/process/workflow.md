@@ -36,6 +36,7 @@
 | API の項目 | `api/openapi/` |
 | テーブルの定義 | Flyway のマイグレーション（できるまでは `docs/backend/modules/` に草案） |
 | 用語と識別子の対応 | `docs/reference/glossary.md` |
+| AC の今の状態とテスト | `docs/design/acceptance-criteria.md`（AC 一覧） |
 | コードの書き方 | `docs/backend/coding.md`、`docs/frontend/coding.md`、`docs/testing/writing.md`、`docs/process/comments.md` |
 | 起動・テストの手順 | `docs/dev/` |
 | spec の進み具合 | README の進捗の表 |
@@ -60,6 +61,14 @@
 - 今の設計は、モジュールの設計書と `docs/frontend/` に書くので、古い spec を今の形に書き直す必要はない。
 
 理由：spec と plan は、利用者が承認の前に読み、実装の間にエージェントが何度も読むので、決定と条件を一目で拾えるようにするため。
+
+### 1.5 コードと文書の食い違い
+
+- 今の振る舞いは、コードを唯一の正とする。文書は、コードの今の振る舞いと設計の理由を説明するもの。
+- 文書とコードの食い違いに気づいたら、文書を直す。コードが spec の意図と違うとき（不具合）は、文書に合わせてコードを直さず、不具合として tasks に足す。
+- spec で AC を足す・変えるときは、同じ commit で [AC 一覧](../design/acceptance-criteria.md)を直す。足した AC は `node scripts/ci/ac-check.mjs --write` で行ができる。前の spec の AC を変えた・廃止したときは、その行の状態、変えた spec、今の内容を手で直す。
+
+理由：文書を正にすると、コードと違うまま文書を信じて作業し、誤りが広がるため。食い違いは、コードを読めば今の振る舞いが分かり、文書を直せば解ける。
 
 ## 2. テスト駆動開発（TDD）
 

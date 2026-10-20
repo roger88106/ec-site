@@ -5,6 +5,9 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.jooq.DSLContext;
+import org.jooq.Field;
+import org.jooq.Table;
+import org.jooq.impl.DSL;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.bind.DefaultValue;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -14,6 +17,7 @@ import org.springframework.validation.annotation.Validated;
 
 import java.time.Clock;
 import java.time.Duration;
+import java.time.Instant;
 
 /**
  * 処理の済んだイベントの片付けのジョブ（バックエンドのアーキテクチャ 第 5 節）。<br />
@@ -25,6 +29,26 @@ import java.time.Duration;
 @Component
 @RequiredArgsConstructor
 class EventCleanupJob {
+
+    /**
+     * イベントの記録のテーブル（Spring Modulith の表。モジュールの外なので、jOOQ の生成クラスでなく名前で指す）
+     */
+    private static final Table<?> EVENT_PUBLICATION = DSL.table(DSL.name("common", "event_publication"));
+
+    /**
+     * 処理を終えた時刻
+     */
+    private static final Field<Instant> COMPLETION_DATE = DSL.field(DSL.name("completion_date"), Instant.class);
+
+    /**
+     * 処理の状態
+     */
+    private static final Field<String> STATUS = DSL.field(DSL.name("status"), String.class);
+
+    /**
+     * 処理を終えた状態
+     */
+    private static final String COMPLETED = "COMPLETED";
 
     /**
      * jOOQ DSL Context
@@ -50,7 +74,11 @@ class EventCleanupJob {
     @SchedulerLock(name = "event-cleanup")
     @Transactional
     void cleanUp() {
-        int deleted = 0;
+        // Spring Modulith の「処理を終えた時刻で消す」操作と同じ条件。消した件数をログに出すため、自分で消す
+        int deleted = dsl.deleteFrom(EVENT_PUBLICATION)
+                .where(COMPLETION_DATE.lt(clock.instant().minus(properties.retention())))
+                .and(STATUS.eq(COMPLETED).or(STATUS.isNull()))
+                .execute();
         if (deleted > 0) {
             log.info("処理の済んだイベントを消した：{} 件", deleted);
         } else {

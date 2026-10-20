@@ -9,6 +9,8 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
@@ -26,7 +28,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 /**
  * 画像の変換の imgproxy の実装の、失敗のときの振る舞いのテスト（docs/backend/modules/media.md「アップロードの流れ」）。<br />
  * imgproxy の代わりに、テストの中の小さな HTTP サーバーが応答する。
- * imgproxy が変換を断った・時間の上限を超えたときは業務のエラー（変換の失敗）、imgproxy につながらないときはシステムのエラーになる。
+ * imgproxy が応答した（4xx と 500）ときは業務のエラー（変換の失敗）、imgproxy に届かない・時間の上限を超えたときは
+ * 外部サービスのエラーになる（T017-03-04）。
  */
 class ImgproxyImageConverterFailureTest {
 
@@ -64,11 +67,20 @@ class ImgproxyImageConverterFailureTest {
     }
 
     @Test
-    @DisplayName("imgproxy がサーバーのエラー（5xx）を返したら、変換の失敗になる")
-    void failsOnServerError() {
-        responder.set(exchange -> send(exchange, 500, "internal error"));
+    @DisplayName("AC-297 imgproxy が 500 を返したら（壊れたファイルに 500 を返す）、変換の失敗になる")
+    void failsOnInternalError() {
+        responder.set(exchange -> send(exchange, 500, "Internal error"));
 
         assertConversionFailed(converter(baseUrl()));
+    }
+
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(ints = {502, 503, 504})
+    @DisplayName("AC-296 imgproxy に届かない（手前の代理が 502・503・504 を返す）なら、外部サービスのエラーになる")
+    void unavailableOnGatewayError(int status) {
+        responder.set(exchange -> send(exchange, status, "unavailable"));
+
+        assertServiceUnavailable(converter(baseUrl()));
     }
 
     @Test
@@ -90,7 +102,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     @Test
-    @DisplayName("imgproxy が要求を断った（4xx）ら、変換の失敗になる")
+    @DisplayName("AC-297 imgproxy が要求を断った（4xx）ら、変換の失敗になる")
     void failsOnClientError() {
         responder.set(exchange -> send(exchange, 422, "unprocessable"));
 
@@ -98,28 +110,27 @@ class ImgproxyImageConverterFailureTest {
     }
 
     @Test
-    @DisplayName("imgproxy の応答が時間の上限を超えたら、変換の失敗になる")
-    void failsOnTimeout() {
+    @DisplayName("AC-296 imgproxy の応答が時間の上限を超えたら、外部サービスのエラーになる")
+    void unavailableOnTimeout() {
         responder.set(exchange -> {
             // テストが終わるまで応答しない
             awaitRelease();
             send(exchange, 200, "late");
         });
 
-        assertConversionFailed(converter(baseUrl()));
+        assertServiceUnavailable(converter(baseUrl()));
     }
 
     @Test
-    @DisplayName("imgproxy につながらなければ、システムのエラーになる")
-    void failsWhenUnreachable() throws IOException {
+    @DisplayName("AC-296 imgproxy につながらなければ、外部サービスのエラーになる")
+    void unavailableWhenUnreachable() throws IOException {
         URI unreachable;
         try (var socket = new ServerSocket(0)) {
             // 使っていないポート（閉じた後は、だれも待ち受けていない）
             unreachable = URI.create("http://127.0.0.1:" + socket.getLocalPort());
         }
 
-        assertThatThrownBy(() -> converter(unreachable).convertToWebp("scope/upload"))
-                .isInstanceOf(SystemException.class);
+        assertServiceUnavailable(converter(unreachable));
     }
 
     // ============================== 補助 ==============================
@@ -160,6 +171,17 @@ class ImgproxyImageConverterFailureTest {
         assertThatThrownBy(() -> converter.convertToWebp("scope/upload"))
                 .isInstanceOfSatisfying(BusinessException.class, ex ->
                         assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_CONVERSION_FAILED"));
+    }
+
+    /**
+     * 変換が、外部サービスのエラー（画像のサービスが使えない）になることを確かめる
+     *
+     * @param converter 変換の実装
+     */
+    private static void assertServiceUnavailable(ImgproxyImageConverter converter) {
+        assertThatThrownBy(() -> converter.convertToWebp("scope/upload"))
+                .isInstanceOfSatisfying(SystemException.class, ex ->
+                        assertThat(ex.getErrorDetail().errorCode().code()).isEqualTo("IMAGE_SERVICE_UNAVAILABLE"));
     }
 
     /**

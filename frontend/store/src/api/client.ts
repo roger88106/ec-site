@@ -1,17 +1,32 @@
 import 'server-only'
 import { headers } from 'next/headers'
 import { connection } from 'next/server'
-import createClient from 'openapi-fetch'
+import createClient, { type Middleware } from 'openapi-fetch'
 import type { paths } from '@/api/generated/store'
 import { getAccessToken } from '@/auth'
 import { readServerConfig } from '@/auth/config'
+import { timeoutSignal } from '@/lib/server/timeout'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 
 /**
  * 店舗 API の接続先と、結果をキャッシュする秒数。<br />
  * 秒数は環境変数 STORE_API_REVALIDATE_SECONDS で短くできる（E2E で、60 秒を待たずに一覧への反映を確かめるため）。
  */
-const { apiBaseUrl: BASE_URL, apiRevalidateSeconds: REVALIDATE_SECONDS } = readServerConfig()
+const {
+  apiBaseUrl: BASE_URL,
+  apiRevalidateSeconds: REVALIDATE_SECONDS,
+  apiTimeoutSeconds: TIMEOUT_SECONDS,
+} = readServerConfig()
+
+/**
+ * 店舗 API の応答を待つ時間の上限を、要求に付ける（店舗画面の構成 第 4.2 節）。上限を過ぎた要求は例外で失敗し、
+ * サーバーアクションでは「接続できない」の結果になる。呼ぶときに fetch を替えても（{@link UNCACHED}）効く。
+ */
+const timeout: Middleware = {
+  onRequest({ request }) {
+    return new Request(request, { signal: timeoutSignal(TIMEOUT_SECONDS, request.signal) })
+  },
+}
 
 /**
  * 店舗 API（store.yaml）の公開の口（店舗画面の構成 第 4 節）。token を付けない。<br />
@@ -21,6 +36,7 @@ const api = createClient<paths>({
   baseUrl: BASE_URL,
   requestInitExt: { next: { revalidate: REVALIDATE_SECONDS } },
 })
+api.use(timeout)
 
 /**
  * 店舗 API の会員の口（店舗画面の構成 第 4.6 節）。会員の access token を付け、キャッシュを使わない
@@ -30,6 +46,7 @@ const memberApi = createClient<paths>({
   baseUrl: BASE_URL,
   fetch: (request: Request) => fetch(request, { cache: 'no-store' }),
 })
+memberApi.use(timeout)
 memberApi.use({
   async onRequest({ request }) {
     // 呼ぶ側が token を付けたとき（ログインの直後で、セッションの Cookie がまだないとき）は、そのまま使う

@@ -2,7 +2,7 @@ import 'server-only'
 import { fullName } from '@ec-site/shared/lib/login'
 import { headers } from 'next/headers'
 import { redirect } from 'next/navigation'
-import NextAuth from 'next-auth'
+import NextAuth, { customFetch } from 'next-auth'
 import { getToken } from 'next-auth/jwt'
 import Keycloak from 'next-auth/providers/keycloak'
 import { cache } from 'react'
@@ -11,6 +11,7 @@ import { readServerConfig } from '@/auth/config'
 import { logoutUrl } from '@/auth/logout'
 import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
 import { loginPath, safeReturnTo } from '@/lib/login'
+import { fetchWithTimeout } from '@/lib/server/timeout'
 
 /**
  * ログイン（店舗画面の構成 第 9 節）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
@@ -26,6 +27,7 @@ const {
   clientSecret: CLIENT_SECRET,
   secret: SECRET,
   publicUrl: PUBLIC_URL,
+  idpTimeoutSeconds: IDP_TIMEOUT_SECONDS,
 } = readServerConfig()
 
 /** セッションの Cookie を HTTPS だけで送るか（カート ID の Cookie と同じく、本番の起動で true） */
@@ -38,7 +40,15 @@ const REFRESH_MARGIN_SECONDS = 60
 export const PATHNAME_HEADER = 'x-pathname'
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
-  providers: [Keycloak({ issuer: ISSUER, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET })],
+  providers: [
+    Keycloak({
+      issuer: ISSUER,
+      clientId: CLIENT_ID,
+      clientSecret: CLIENT_SECRET,
+      // IdP への呼び出し（discovery、token の交換、userinfo）に、待つ時間の上限を付ける（店舗画面の構成 第 9.1 節）
+      [customFetch]: fetchWithTimeout(IDP_TIMEOUT_SECONDS),
+    }),
+  ],
   secret: SECRET,
   session: { strategy: 'jwt' },
   useSecureCookies: SECURE_COOKIE,

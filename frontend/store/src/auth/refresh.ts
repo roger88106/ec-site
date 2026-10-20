@@ -1,6 +1,7 @@
 import type { JWT } from 'next-auth/jwt'
 import { readServerConfig } from '@/auth/config'
 import { needsTokenRefresh } from '@/lib/login'
+import { timeoutSignal } from '@/lib/server/timeout'
 
 /** セッションの Cookie に持つ値（token はサーバーだけで扱い、画面から読める session には入れない） */
 export type MemberJwt = JWT & {
@@ -12,7 +13,12 @@ export type MemberJwt = JWT & {
 }
 
 /** 接続先と client */
-const { issuer: ISSUER, clientId: CLIENT_ID, clientSecret: CLIENT_SECRET } = readServerConfig()
+const {
+  issuer: ISSUER,
+  clientId: CLIENT_ID,
+  clientSecret: CLIENT_SECRET,
+  idpTimeoutSeconds: IDP_TIMEOUT_SECONDS,
+} = readServerConfig()
 
 /**
  * access token の期限が近ければ、refresh token で取り直す。
@@ -38,6 +44,8 @@ export async function refreshIfNeeded(token: MemberJwt, marginSeconds: number): 
         refresh_token: token.refreshToken,
       }),
       cache: 'no-store',
+      // 上限を過ぎたら、IdP に届かなかったときと同じに扱う（下の catch）
+      signal: timeoutSignal(IDP_TIMEOUT_SECONDS),
     })
     if (!response.ok) {
       return null

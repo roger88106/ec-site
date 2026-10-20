@@ -108,7 +108,7 @@
 | DC | 決定 | 確認方法 |
 |----|------|----------|
 | 176 | `ModuleStructureTest` のレベル A の一覧に payment を足す（`ModuleRoleTest` と同じ）。`MoneyTypeTest` の対象のパッケージに `application.model.view` を足す。足して失敗した所があれば、本 spec で直す | ArchUnit が通る |
-| 177 | 物流の mock の `notificationWithInvalidSignature` と、発生日時を指定する `notification` を、テスト用の共通コード（`src/testFixtures`）の mock を包む実装に移す。統合テストの呼び出しを直し、期待値は変えない | 統合テストが、期待値を変えずに通る |
+| 177 | 物流の mock の `notificationWithInvalidSignature` を、テスト用の共通コード（`src/testFixtures`）の mock を包む実装に移す。統合テストの呼び出しを直し、期待値は変えない | 統合テストが、期待値を変えずに通る |
 
 - DC-177 の形は、spec 015 の決済の mock と同じにする（[決済モジュール](../../backend/modules/payment.md) の mock の節）。
 - [出荷モジュール](../../backend/modules/shipping.md)の mock の節を、移した形に直す。

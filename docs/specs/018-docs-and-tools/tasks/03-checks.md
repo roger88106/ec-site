@@ -37,6 +37,7 @@
 - [ ] **T018-03-23** 書き方の規則の各文書の「規則の一覧」で、確認方法の列を、自動にしたものだけ直す（DC-167）。
 - [ ] **T018-03-24** 物流の mock のテスト用の操作を、テスト用の共通コードの mock を包む実装に移す（DC-177）。
   - 統合テストの呼び出しを直し、期待値は変えない。
+  - 補足（T018-02-05 で分かったこと）：発生日時を指定する `notification` は、本番のコードの `notification`（引数 3 つ）から呼ばれていて、テストだけの操作ではない。移すのは `notificationWithInvalidSignature` だけ。
   - [出荷モジュール](../../../backend/modules/shipping.md)の設計書の mock の節を直す。
 - [ ] **T018-03-25** 利用者が GitHub の設定で、Dependabot alerts、secret scanning、push protection、CodeQL（既定の設定）を有効にする（DC-178〜180）。
   - CodeQL の初回の結果を読み、直すか、理由を付けて閉じる。結果をこのタスクの下に書く。

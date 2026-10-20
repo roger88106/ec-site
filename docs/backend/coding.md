@@ -11,7 +11,7 @@
 | 1.1 | 公開の API は `api/` のクラスが service に委ねる | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所は人手 |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
-| 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で写す | 置き場所は自動（ArchUnit）、写し忘れは自動（コンパイル）、口と実装の分け方と `valueOf(name())` を使わないことは人手 |
+| 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で写す | 置き場所は自動（ArchUnit）、写し忘れは自動（コンパイル）、`valueOf(name())` を使わないことは自動（`scripts/ci/java-rules.mjs`）、口と実装の分け方は人手 |
 | 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）、目安は人手 |
 | 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算は人手 |
 | 2.1 | 生成した interface を実装する | 自動（コンパイル）、契約にない endpoint は人手 |
@@ -22,10 +22,10 @@
 | 3.4 | DB の制約の違反は業務のエラーに変えるか、重複を吸収する | 自動（リポジトリの統合テスト）、扱い方の選び方は人手 |
 | 3.5 | 更新の競合は `version` | 自動（API の統合テスト） |
 | 4.1 | トランザクションは application。外部サービスはトランザクションの外で呼ぶ | 自動（ArchUnit）、infrastructure の例外の理由と外部サービスの呼び出しは人手 |
-| 4.2 | 現在時刻は `Clock` から | 人手 |
-| 5.1 | Lombok は main だけ | 人手 |
-| 5.2 | 名前の形 | 人手 |
-| 5.3 | インスタンスを作らないクラス | コンストラクタは自動（ArchUnit）、`final` は人手 |
+| 4.2 | 現在時刻は `Clock` から | 自動（ArchUnit） |
+| 5.1 | Lombok は main だけ | 自動（`scripts/ci/java-rules.mjs`） |
+| 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントは人手 |
+| 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所は自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることは人手 |
 
 人手のものは、各 spec の [見直し](../process/review.md) で読む。
@@ -231,7 +231,7 @@ public final class MoneyFormat {
 ```
 
 - 対象は最上位のクラス。enum・record・interface・注釈は対象でない。
-- 確かめ方：ArchUnit（`src/test/java/com/ecsite/architecture/`）で、static でないメンバーを持たない最上位のクラスのコンストラクタがすべて `private` であることを確かめる。
+- 確かめ方：ArchUnit（`src/test/java/com/ecsite/architecture/`）で、static でないメンバーを持たない最上位のクラスが `final` で、コンストラクタがすべて `private` であることを確かめる。
 
 理由：インスタンスを作っても使い道がなく、作れると使い方を誤る。Checkstyle の `HideUtilityClassConstructor` はソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる。ArchUnit はコンパイルした後のクラスを読むので、Lombok の書き方でも手の書き方でも同じに確かめられる。
 

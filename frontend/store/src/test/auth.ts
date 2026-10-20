@@ -57,6 +57,8 @@ export function resetAuth() {
 
 /** next-auth の代わり。NextAuth に渡した設定を取っておき、auth() はいまの状態を返す */
 export const nextAuthMock = {
+  /** provider の fetch を差し替える印（本物は @auth/core の Symbol。auth.ts もテストもこれを使う） */
+  customFetch: Symbol('custom-fetch'),
   default: (config: NextAuthConfig) => {
     authState.config = config
     return {

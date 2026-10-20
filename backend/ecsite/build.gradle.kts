@@ -176,6 +176,13 @@ tasks.named<Test>("test") {
     // 契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
     systemProperty("keycloak.realms.dir", file("../../docker/keycloak/realms").absolutePath)
     inputs.dir("../../docker/keycloak/realms")
+    // 図をコードと比べる文書（ModuleDiagramTest）。-PupdateDocs を付けると、比べずに文書の図を書き直す
+    systemProperty("design.overview", file("../../docs/design/overview.md").absolutePath)
+    inputs.files(fileTree("../../docs/design") { include("overview.md") })
+    if (project.hasProperty("updateDocs")) {
+        systemProperty("ecsite.update-docs", "true")
+        outputs.upToDateWhen { false }
+    }
 }
 
 val integrationTest = tasks.register<Test>("integrationTest") {

@@ -21,7 +21,7 @@ class ModulithTest {
      * テストは準備のために他のモジュールの内部（リポジトリなど）を直接使うことがあるので、境界の検証から除く。
      * 検証するのは本番のコードの境界。
      */
-    private static final DescribedPredicate<JavaClass> TEST_CLASSES = DescribedPredicate.describe(
+    static final DescribedPredicate<JavaClass> TEST_CLASSES = DescribedPredicate.describe(
             "test classes", javaClass -> javaClass.getName().matches(".*Test(\\$.*)?"));
 
     private final ApplicationModules modules = ApplicationModules.of(EcSiteApplication.class, TEST_CLASSES);

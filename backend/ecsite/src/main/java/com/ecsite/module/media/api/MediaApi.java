@@ -52,6 +52,43 @@ public class MediaApi {
     }
 
     /**
+     * 受け付けた画像を用意する。<br />
+     * 受付のファイルの大きさと、先頭のバイトで判定した形式を確かめ（申告は信用しない）、WebP に変換して配信のバケットへ置く。
+     * アセットは記録しない。トランザクションの外で呼ぶ（変換と保存の間、DB の接続を持たない）。<br />
+     * 用意の後は、{@link #registerImage} で登録するか、使わなければ {@link #discardImage} で破棄する。
+     *
+     * @param scope    受付のときの範囲
+     * @param uploadId 受付 ID
+     * @return 用意した画像
+     * @throws com.ecsite.common.error.exception.BusinessException 受付がない（範囲の違うものを含む）、大きさが範囲の外、中身が対象の画像でない
+     */
+    public PreparedImage prepareImage(String scope, UUID uploadId) {
+        return mediaService.prepareImage(scope, uploadId);
+    }
+
+    /**
+     * 用意した画像をアセットとして記録する。<br />
+     * 呼んだ側のトランザクションの中で呼ぶ。呼んだ側の保存が失敗すると、アセットの記録も取り消される（そのときは破棄する）。
+     *
+     * @param prepared 用意した画像
+     * @return アセット ID
+     * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
+     */
+    public UUID registerImage(PreparedImage prepared) {
+        return mediaService.registerImage(prepared);
+    }
+
+    /**
+     * 用意した画像の配信のファイルを消す。登録しなかったときに呼ぶ。<br />
+     * 消すのに失敗しても例外を投げない（警告のログに保存先のキーを出す）。呼んだ側の元の失敗を隠さないため。
+     *
+     * @param prepared 用意した画像
+     */
+    public void discardImage(PreparedImage prepared) {
+        mediaService.discardImage(prepared);
+    }
+
+    /**
      * アセットを手放す。記録を消し、配信のファイルはコミットの後に消す。<br />
      * 呼んだ側のトランザクションの中で呼ぶ。すでにないアセットは無視する（何度行っても同じ結果）。
      *

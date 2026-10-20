@@ -74,4 +74,5 @@ SDD と TDD の流れは [開発の進め方](docs/process/workflow.md)。エー
 ## 環境
 
 - JDK 21。統合テストと jOOQ のコード生成には Docker が要る。
+- Gradle のプロジェクトは `backend/ecsite/` にある（`./gradlew` もそこで実行する）。リポジトリのルートと `backend/` には Gradle の設定がない。
 - 起動・テストの手順は [開発環境の起動](docs/dev/setup.md) と [テストの流し方](docs/testing/running.md)。エージェントは skill `local-dev` を使う。

@@ -79,6 +79,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 - 1 つの場所に複数の更新があるときは、`useMutationGroup(...)` で待ち状態・最初のエラー・エラーの消去をまとめる。
 - エラーの応答はクライアントの middleware で `ApiError` にして投げ、画面は `ApiError` だけを扱う。
 - access token はクライアントの middleware で `Authorization` に付ける（第 10 節）。
+- バックエンドへの呼び出しに、タイムアウトを置かない。ブラウザーの fetch で呼ぶので、画面は止まらず、利用者が操作できるため。
 
 | 応答 | 扱い |
 |------|------|

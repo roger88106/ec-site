@@ -61,9 +61,11 @@
 |----------|------|---------|
 | `STORE_API_BASE_URL` | 店舗 API の接続先 | `http://localhost:8080/api/store` |
 | `STORE_API_REVALIDATE_SECONDS` | API の結果のキャッシュの秒数（E2E で短くする。本番相当では設定しない） | 60 |
+| `STORE_API_TIMEOUT_SECONDS` | 店舗 API の応答を待つ秒数の上限（正の数。でなければ起動に失敗する） | 30 |
+| `AUTH_KEYCLOAK_TIMEOUT_SECONDS` | IdP（ログイン、token の更新）の応答を待つ秒数の上限（正の数。でなければ起動に失敗する） | 10 |
 | `AUTH_KEYCLOAK_ISSUER` | IdP（消費者の realm） | `http://localhost:8180/realms/ec-store` |
 | `AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET` | client の ID と secret | `ec-store-web`、ローカル用の値 |
 | `AUTH_SECRET` | セッションの Cookie の暗号化の鍵 | ローカル用の値 |
 | `AUTH_URL` | 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を作る | `http://localhost:3000` |
 
-※1：既定値はローカルと CI だけで使う値で、開発モードとテストでだけ使う。本番モードでは `STORE_API_REVALIDATE_SECONDS` 以外がなければ起動に失敗する。
+※1：既定値はローカルと CI だけで使う値で、開発モードとテストでだけ使う。本番モードでは `STORE_API_REVALIDATE_SECONDS` と待つ秒数の上限の 2 つ以外がなければ起動に失敗する。

@@ -97,6 +97,9 @@ Next.js の `typedRoutes` で、画面の置き場所と照らす。クエリ付
 | 401 | ログイン画面へ移す（第 9 節） |
 | それ以外 | エラーの画面（`error.tsx`） |
 
+- 待つ時間の上限：店舗 API の口（公開の口と会員の口）は、要求の middleware で上限の signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。上限を過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を出す）。
+- 5xx のログ：店舗 API が 5xx を返したら、応答の middleware で warn のログに状態コード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出す。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出さない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
+
 ### 4.3 サーバーアクション
 
 - 変更（カートに入れる、数量の変更・削除、注文手続きに進む、注文、支払う、キャンセルの申請）は、`actions/` のサーバーアクションから呼ぶ。
@@ -104,6 +107,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照らす。クエリ付
 - 会員の API の 401 と成功の後の移動は、`actions/memberAction.ts` の補助で書く。
   - `redirectIfUnauthenticated(response, returnTo?)`：応答が 401 ならログイン画面へ移す。戻り先を渡さなければ、いまの画面に戻る。
   - `redirectOnSuccess(work)`：`withActionResult` で包み、処理が返した移動先へ移る。失敗の結果はそのまま返す（`redirect` を包みの外で呼ぶ形を 1 か所にする）。
+- `withActionResult` が例外を結果にするときは、画面の移動・not found を通した後、error のログに例外の名前とメッセージを出す（要求の本文や token は出さない）。
 - フォームは `useActionState` で結果を受け、送信中はボタンを押せなくする（二重送信の防止。API も、同じ注文手続きの再送には作成済みの注文を返す）。
 
 ### 4.4 カート ID の Cookie
@@ -242,6 +246,8 @@ access token の期限（5 分）が 1 分を切っていたら、refresh token 
 - `proxy.ts` が要求ごとにセッションを確かめ、取り直した token を Cookie に書く（サーバーコンポーネントは Cookie を書けないため）。
 - 同じ要求の中では画面は古い Cookie を読むので、`getAccessToken()` は期限切れなら自分でも取り直して使う（Cookie には次の要求で `proxy.ts` が書く）。
 - 取り直せなければ（IdP のログインが切れた）、ログインしていないものとして扱う。
+- IdP に届かない・上限（`AUTH_KEYCLOAK_TIMEOUT_SECONDS`、既定 10 秒）を過ぎたときは、ログインの状態を残す（期限が切れていれば、API が 401 を返してログイン画面へ移る）。
+- ログインの IdP への呼び出し（discovery、token の交換、userinfo）にも、Auth.js の provider の fetch を差し替える仕組み（`customFetch`）で同じ上限を付ける。
 
 ### 9.2 ログイン画面へ移す
 

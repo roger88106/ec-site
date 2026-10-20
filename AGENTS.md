@@ -24,6 +24,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 | `retro` | セッションを振り返り、エージェントの環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
 | `docs` | 文書（docs/、README、AGENTS.md）を書く・直す・移す |
 | `writing-for-agents` | skill や AGENTS.md を作る、直す |
+| `review` | 段階・spec の最後のレビュー、plan の照合、文書のレビュー、全体のレビュー（受け入れ確認） |
 
 ## 作業の進め方
 

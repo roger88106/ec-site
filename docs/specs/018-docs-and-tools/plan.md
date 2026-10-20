@@ -1,6 +1,6 @@
 # Plan 018：文書とツールの整理
 
-ステータス：草案　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 前提：spec 017 が完了している。書き方の規則は [バックエンドの書き方](../../backend/coding.md)、[フロントの書き方](../../frontend/coding.md)、[テストの書き方](../../testing/writing.md)。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../process/workflow.md)、番号と記号は[文書の記号と番号](../../process/notation.md)。
 

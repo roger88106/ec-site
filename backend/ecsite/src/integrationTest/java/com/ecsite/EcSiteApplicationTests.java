@@ -4,7 +4,9 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.scheduling.annotation.ScheduledAnnotationBeanPostProcessor;
 
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -22,9 +24,19 @@ class EcSiteApplicationTests {
     @Autowired
     DSLContext dsl;
 
+    @Autowired
+    ApplicationContext context;
+
     @Test
     @DisplayName("Spring のコンテキストが起動する")
     void contextLoads() {
+    }
+
+    @Test
+    @DisplayName("定期ジョブの切り替え（ecsite.scheduling.enabled）が false なら、定期ジョブを自動では動かさない")
+    void schedulingIsDisabled() {
+        // @EnableScheduling が 1 つでも有効だと、@Scheduled のジョブがテストと並んで動き、テストが呼ぶジョブを分散ロックで飛ばす
+        assertThat(context.getBeanNamesForType(ScheduledAnnotationBeanPostProcessor.class)).isEmpty();
     }
 
     @Test

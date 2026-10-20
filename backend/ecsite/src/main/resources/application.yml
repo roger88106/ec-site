@@ -28,6 +28,10 @@ spring:
           enabled: false
       # 再起動時の再発行は使わない。未完了のイベントは定期ジョブ（EventResubmissionJob）が再発行する
       republish-outstanding-events-on-restart: false
+    moments:
+      # 時の経過のイベント（Moments）は使わない。有効だと @EnableScheduling を付けるので、
+      # 定期ジョブの切り替え（ecsite.scheduling.enabled）を false にしても、定期ジョブが動いてしまう
+      enabled: false
   mail:
     properties:
       # SMTP の接続・読み書きの待ち時間の上限（ミリ秒）。上限がないと、応えない SMTP サーバーでメールのリスナーが止まったままになる

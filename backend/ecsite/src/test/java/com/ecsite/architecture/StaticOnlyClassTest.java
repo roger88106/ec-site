@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * インスタンスを作らないクラスの検査（docs/backend/coding.md 第 5.3 節）。<br />
- * static でないメンバーを持たない最上位のクラスは、コンストラクタをすべて private にする。
+ * static でないメンバーを持たない最上位のクラスは、final にし、コンストラクタをすべて private にする。
  * コンパイルした後のクラスを読むので、Lombok で作ったコンストラクタも見える。
  */
 class StaticOnlyClassTest {
@@ -31,6 +31,24 @@ class StaticOnlyClassTest {
     @DisplayName("static のメンバーだけの最上位のクラスは、コンストラクタがすべて private")
     void staticOnlyClassesHavePrivateConstructors() {
         assertThat(violations(CLASSES)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("static のメンバーだけの最上位のクラスは final")
+    void staticOnlyClassesAreFinal() {
+        assertThat(nonFinal(CLASSES)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("final の規則は、final でない static のメンバーだけのクラスに当たり、ほかには当たらない")
+    void finalRuleMatchesOnlyNonFinalStaticOnlyClasses() {
+        var examples = new ClassFileImporter().importClasses(
+                StaticOnlyNotFinal.class,
+                StaticOnlyWithPrivateConstructor.class,
+                WithInstanceMethod.class,
+                ExampleException.class);
+
+        assertThat(nonFinal(examples)).containsExactly(StaticOnlyNotFinal.class.getName());
     }
 
     @Test
@@ -61,6 +79,23 @@ class StaticOnlyClassTest {
                 .filter(javaClass -> !isManagedBySpring(javaClass))
                 .filter(javaClass -> javaClass.getConstructors().stream()
                         .anyMatch(constructor -> !constructor.getModifiers().contains(JavaModifier.PRIVATE)))
+                .map(JavaClass::getName)
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * final でない、static のメンバーだけのクラスの名前を返す。
+     *
+     * @param classes 調べるクラス
+     * @return static のメンバーだけで final でない最上位のクラスの名前（名前の順）
+     */
+    private static List<String> nonFinal(JavaClasses classes) {
+        return classes.stream()
+                .filter(StaticOnlyClassTest::isTopLevelClass)
+                .filter(StaticOnlyClassTest::hasOnlyStaticMembers)
+                .filter(javaClass -> !isManagedBySpring(javaClass))
+                .filter(javaClass -> !javaClass.getModifiers().contains(JavaModifier.FINAL))
                 .map(JavaClass::getName)
                 .sorted()
                 .toList();
@@ -152,6 +187,27 @@ final class StaticOnlyWithPrivateConstructor {
      */
     static int one() {
         return 1;
+    }
+}
+
+/**
+ * final の規則に当たる例：static のメンバーだけで、コンストラクタは private だが final でない
+ */
+class StaticOnlyNotFinal {
+
+    /**
+     * 作らせない
+     */
+    private StaticOnlyNotFinal() {
+    }
+
+    /**
+     * 例の関数。
+     *
+     * @return 2
+     */
+    static int two() {
+        return 2;
     }
 }
 

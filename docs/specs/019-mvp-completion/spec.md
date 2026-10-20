@@ -45,7 +45,7 @@ MVP の完成条件は、本 spec の完了条件とする。機能は spec 010 
 
 ### DS-55 spec をアーカイブし、MVP の完成を main と tag に記録する（D / P1）
 
-- **DC-215** spec 001〜019 を、spec 018 で決めたアーカイブの置き場所に移す。移動後も、文書のリンクと CI の検査が通る。
+- **DC-215** spec 001〜019 を、spec 018 で決めたアーカイブの置き場所に移す。移動後も、文書のリンクと CI の検査が通る。文書の検査（使わない語など）の対象から外すのはアーカイブだけとし、進行中の spec は検査する。
 - **DC-216** `develop` を pull request で `main` にマージする。merge commit を使い、commit を書き換えない。理由：tasks・文書・メモに書いた commit ID とタスク番号を追跡できるようにするため。
 - **DC-217** `main` の MVP 完成の commit に tag があり、GitHub の Release に短い説明がある。
 - **DC-218** 機能紹介のページの公開、CI、AGENTS.md の Git の規則が `main` を基準にする。`develop` という名前を解放し、Git の履歴は失わない。

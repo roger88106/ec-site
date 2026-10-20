@@ -113,6 +113,7 @@ ec-site/
 | [process/notation.md](process/notation.md) | spec・tasks の記号と番号 |
 | [process/comments.md](process/comments.md) | コメントの書き方 |
 | [process/review.md](process/review.md) | 書き方の規則の書き方と見直し |
+| [design/overview.md](design/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
 | [backend/architecture.md](backend/architecture.md) | バックエンドのアーキテクチャ |
 | [backend/coding.md](backend/coding.md) | バックエンドの書き方 |
 | [backend/modules/](backend/modules) | モジュールごとの設計 |

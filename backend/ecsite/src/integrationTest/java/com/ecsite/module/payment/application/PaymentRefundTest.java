@@ -16,6 +16,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.IncompleteEventPublications;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -23,6 +24,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
@@ -80,6 +82,19 @@ class PaymentRefundTest {
 
         await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
         assertThat(gateway.refunded()).containsExactly(orderId);
+    }
+
+    @Test
+    @DisplayName("AC-306 返金のリスナーは、データベースのトランザクションの外で決済サービスを呼ぶ")
+    void refundsOutsideTransaction() {
+        var orderId = captured();
+        var transactionActive = new CopyOnWriteArrayList<Boolean>();
+        gateway.onRefundOrVoid(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
+
+        paymentApi.cancel(orderId);
+
+        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        assertThat(transactionActive).containsExactly(false);
     }
 
     @Test

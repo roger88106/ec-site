@@ -15,11 +15,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.IncompleteEventPublications;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -75,6 +77,20 @@ class PaymentVoidTest {
 
         await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.VOIDED);
         assertThat(gateway.voided()).containsExactly(gateway.authorizationRefOf(pageId));
+    }
+
+    @Test
+    @DisplayName("AC-306 与信の取消のリスナーは、データベースのトランザクションの外で決済サービスを呼ぶ")
+    void voidsOutsideTransaction() {
+        var orderId = created();
+        paid(orderId);
+        var transactionActive = new CopyOnWriteArrayList<Boolean>();
+        gateway.onRefundOrVoid(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
+
+        paymentApi.cancel(orderId);
+
+        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.VOIDED);
+        assertThat(transactionActive).containsExactly(false);
     }
 
     @Test

@@ -82,6 +82,11 @@ public class TestPaymentGateway implements PaymentGateway {
     private final AtomicInteger refundFailures = new AtomicInteger();
 
     /**
+     * 返金と与信の取消を呼ばれた時点で行う処理（呼ばれた時点の状態を記録するテスト用）。なければ null
+     */
+    private final AtomicReference<Runnable> onRefundOrVoid = new AtomicReference<>();
+
+    /**
      * 本番の mock を包む。
      *
      * @param mock 包む mock
@@ -109,6 +114,7 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public void voidAuthorization(String authorizationRef) {
+        runOnRefundOrVoid();
         if (consume(voidFailures)) {
             throw SystemException.of("mock：与信の取消に失敗させる: " + authorizationRef, null);
         }
@@ -139,6 +145,7 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public void refund(RefundRequest request) {
+        runOnRefundOrVoid();
         if (consume(refundFailures)) {
             throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
         }
@@ -255,6 +262,15 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * これからの返金と与信の取消で、呼ばれた時点に処理を行う（呼ばれた時点のトランザクションの有無の記録など）。
+     *
+     * @param action 行う処理
+     */
+    public void onRefundOrVoid(Runnable action) {
+        onRefundOrVoid.set(action);
+    }
+
+    /**
      * 売上を確定した注文 ID を返す。
      *
      * @return 売上を確定した注文 ID（確定した順。同じ注文は 1 回）
@@ -314,6 +330,17 @@ public class TestPaymentGateway implements PaymentGateway {
         captureFailures.set(0);
         refunded.clear();
         refundFailures.set(0);
+        onRefundOrVoid.set(null);
+    }
+
+    /**
+     * 返金と与信の取消で、呼ばれた時点の処理があれば行う。
+     */
+    private void runOnRefundOrVoid() {
+        var action = onRefundOrVoid.get();
+        if (action != null) {
+            action.run();
+        }
     }
 
     /**

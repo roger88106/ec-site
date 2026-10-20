@@ -25,6 +25,7 @@
 | `ECSITE_PAYMENT_RETURN_URL` | 支払の画面から戻る店舗の注文の画面の URL。`{orderId}` に注文 ID が入る | 必須 |
 | `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では立てない | false |
 | `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | 30m、PT1M |
+| `ECSITE_PAYMENT_AWAITING_AUTHORIZATION_WARNING` | 与信の通知を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに件数を出すか | 1h |
 | `ECSITE_PAYMENT_AUTHORIZATION_VALIDITY`、`_AUTHORIZATION_WARNING` | 与信の有効期間（与信の時刻からの時間）、与信期限のどれだけ前から「期限が近い」とするか | 7d、2d |
 | `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払の画面を出すバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを立てたら必須 |
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API の秘密の鍵、通知の署名の鍵。Git に入れない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md) 第 5 節） | 決済の mock フラグを立てなければ必須 |

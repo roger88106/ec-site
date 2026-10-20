@@ -6,7 +6,8 @@
 
 ## タスク
 
-- [ ] **T017-05-01** Auth.js の provider の fetch を差し替える仕組み（`customFetch`）が、使う版で IdP への呼び出し（discovery、token の交換）に効くかを確かめる（plan 第 4 節 ※9）。結果をタスクの下に書く。効かなければ止めて報告する。
+- [x] **T017-05-01** Auth.js の provider の fetch を差し替える仕組み（`customFetch`）が、使う版で IdP への呼び出し（discovery、token の交換）に効くかを確かめる（plan 第 4 節 ※9）。結果をタスクの下に書く。効かなければ止めて報告する。
+  - 効く。next-auth 5.0.0-beta.32 は @auth/core 0.41.3 を使い、`customFetch` を export する。@auth/core は provider の `customFetch` を、ログインの開始の discovery、callback の discovery・token の交換・userinfo の要求に渡す（`lib/actions/signin/authorization-url.js`、`lib/actions/callback/oauth/callback.js`）。下の oauth4webapi（3.8.8）は、`signal` を渡されなければ付けないので、差し替えた fetch で上限の signal を付けられる。
 - [ ] **T017-05-02** [テスト] 店舗画面の設定の単体テスト：バックエンドへの上限（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）と IdP への上限（`AUTH_KEYCLOAK_TIMEOUT_SECONDS`、既定 10 秒）を、設定の 1 か所で読み、値が正の数でなければ失敗する（AC-302）。レッドを確かめる。
 - [ ] **T017-05-03** 店舗画面の設定に上限を足す。T017-05-02 を通す。
 - [ ] **T017-05-04** [テスト] 上限の単体テストを書く。レッドを確かめる。

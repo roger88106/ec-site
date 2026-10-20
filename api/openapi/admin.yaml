@@ -679,11 +679,12 @@ paths:
     post:
       tags: [product]
       operationId: addProductImage
-      x-error-codes: [IMAGE_TOO_LARGE, IMAGE_UPLOAD_NOT_FOUND, INVALID_IMAGE_FILE, IMAGE_CONVERSION_FAILED, TOO_MANY_PRODUCT_IMAGES]
-      summary: 受け付けた画像を登録する（AC-37、39、40、67〜70、P2）
+      x-error-codes: [IMAGE_TOO_LARGE, IMAGE_UPLOAD_NOT_FOUND, INVALID_IMAGE_FILE, IMAGE_CONVERSION_FAILED, TOO_MANY_PRODUCT_IMAGES, IMAGE_SERVICE_UNAVAILABLE]
+      summary: 受け付けた画像を登録する（AC-37、39、40、67〜70、296〜298、P2）
       description: |
         受付のファイルの大きさと形式（先頭のバイト）を確かめ、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 第 7.5 節）。
-        変換に失敗した画像は登録せず、400（`IMAGE_CONVERSION_FAILED`）を返す（AC-70）。
+        変換のサービスがファイルを読めない画像は登録せず、400（`IMAGE_CONVERSION_FAILED`）を返す（AC-70、297）。
+        変換のサービスやファイル保存のサービスに届かない・時間内に応答がない・その側の故障のときは、502（`IMAGE_SERVICE_UNAVAILABLE`）を返す。しばらくしてからやり直せる（AC-296、298）。
         バリアントと同じく商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
       x-required-permission: product:write
       requestBody:
@@ -709,6 +710,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '409':
           $ref: '#/components/responses/Conflict'
+        '502':
+          $ref: '#/components/responses/BadGateway'
 
   /products/{productId}/images/order:
     parameters:
@@ -1391,7 +1394,7 @@ components:
           schema:
             $ref: '#/components/schemas/Problem'
     BadGateway:
-      description: 外部のサービス（決済サービスなど）に接続できない。しばらくしてからやり直せる
+      description: 外部のサービス（決済サービス、画像の変換・ファイル保存のサービス）に届かない、時間内に応答がない、またはその側の故障。しばらくしてからやり直せる
       content:
         application/problem+json:
           schema:
@@ -1436,6 +1439,7 @@ components:
         - CONCURRENT_MODIFICATION
         - FORBIDDEN
         - IMAGE_CONVERSION_FAILED
+        - IMAGE_SERVICE_UNAVAILABLE
         - IMAGE_TOO_LARGE
         - IMAGE_UPLOAD_NOT_FOUND
         - INSUFFICIENT_STOCK

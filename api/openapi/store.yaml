@@ -477,6 +477,7 @@ paths:
         決済サービスの支払の画面の URL を返す。店舗画面はこの URL に移す。
         開いている画面があれば同じ URL を返し、決済サービスに作り直させない（AC-152）。
         支払待ちで支払の期限の前の注文だけ。それ以外は 409（`errorCode`：`ORDER_NOT_PAYABLE`）。
+        決済サービスに届かない・時間内に応答がない・その側の故障のときは 502（`errorCode`：`PAYMENT_GATEWAY_UNAVAILABLE`）。しばらくしてからやり直せる（AC-295）。
       responses:
         '200':
           description: 支払の画面
@@ -490,6 +491,8 @@ paths:
           $ref: '#/components/responses/NotFoundForOthers'
         '409':
           $ref: '#/components/responses/Conflict'
+        '502':
+          $ref: '#/components/responses/BadGateway'
 
   # ============================== 店舗の情報 ==============================
   /shop:
@@ -659,6 +662,12 @@ components:
             $ref: '#/components/schemas/Problem'
     Unauthorized:
       description: 会員の認証がない、または token が無効（`errorCode` は `UNAUTHENTICATED`）
+      content:
+        application/problem+json:
+          schema:
+            $ref: '#/components/schemas/Problem'
+    BadGateway:
+      description: 外部のサービス（決済サービス）に届かない、時間内に応答がない、またはその側の故障。しばらくしてからやり直せる
       content:
         application/problem+json:
           schema:

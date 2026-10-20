@@ -1,6 +1,6 @@
 # Plan 017：安定性
 
-ステータス：承認済み　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 本 spec で変える設計は、各設計書に書く。本書には、モジュールと画面をまたぐ決定と、作り方の段取りだけを書く。
 
@@ -248,7 +248,7 @@ ecsite:
 
 ## 13. 実装の順序
 
-tasks は段階ごとに `tasks/` の 1 ファイルにする。
+tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-cleanup.md)、[02](tasks/02-stopped-events.md)、[03](tasks/03-external-errors.md)、[04](tasks/04-outside-transaction.md)、[05](tasks/05-store.md)、[06](tasks/06-payment-expiry.md)、[07](tasks/07-member.md)、[08](tasks/08-review.md)）。
 
 | # | 段階 | 完了条件 |
 |---|------|----------|

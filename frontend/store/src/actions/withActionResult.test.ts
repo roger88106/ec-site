@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { describe, expect, test } from 'vitest'
+import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
 import { withActionResult } from '@/actions/withActionResult'
 import { connectionFailedMessage } from '@/lib/actionResult'
 import { redirectedTo } from '@/test/next'
@@ -32,5 +32,38 @@ describe('サーバーアクションの処理の包み', () => {
     })
 
     expect(result).toEqual({ ok: false, message: connectionFailedMessage() })
+  })
+})
+
+describe('サーバーアクションの失敗のログ', () => {
+  let stderr: MockInstance
+
+  beforeEach(() => {
+    stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+  })
+
+  afterEach(() => {
+    vi.restoreAllMocks()
+  })
+
+  test('AC-307 例外で失敗したら、error のログに例外の名前とメッセージを出し、「接続できない」の結果を返す', async () => {
+    const result = await withActionResult(async () => {
+      throw new TypeError('fetch failed')
+    })
+
+    expect(result).toEqual({ ok: false, message: connectionFailedMessage() })
+    expect(stderr).toHaveBeenCalledTimes(1)
+    expect(JSON.parse(String(stderr.mock.calls[0]?.[0]))).toMatchObject({
+      level: 'error',
+      errorName: 'TypeError',
+      errorMessage: 'fetch failed',
+    })
+  })
+
+  test('AC-307 画面の移動・not found の例外は、ログに出さずに通す', async () => {
+    await redirectedTo(() => withActionResult(async () => redirect('/login')))
+    await expect(withActionResult(async () => notFound())).rejects.toThrow()
+
+    expect(stderr).not.toHaveBeenCalled()
   })
 })

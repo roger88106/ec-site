@@ -44,4 +44,4 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [018](docs/specs/018-docs-and-tools) | 整理 | 文書とツールの整理 | 進行中 |
 | [019](docs/specs/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 | 未着手 |
 
-MVP を完成させるまでの spec の順と、MVP の後に回した決定は [MVP の完成までの一覧](docs/specs/mvp.md) にある。
+MVP を完成させるまでの spec の順は [MVP の完成までの一覧](docs/specs/mvp.md)、MVP の後に行う作業と未決事項は [TODO 一覧](docs/todo.md) にある。

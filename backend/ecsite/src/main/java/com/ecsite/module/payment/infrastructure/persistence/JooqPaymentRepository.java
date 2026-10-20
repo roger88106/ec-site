@@ -155,7 +155,7 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     /**
-     * 変わりうる項目（状態、支払の画面、与信の参照、与信の時刻）をレコードに書く。
+     * 変わりうる項目（状態、支払の画面、与信の参照、与信の時刻、通知を待ち始めた時刻）をレコードに書く。
      */
     private static void writeState(PaymentRecord record, Payment.Snapshot snapshot) {
         record.setStatus(snapshot.status().name());
@@ -164,6 +164,7 @@ class JooqPaymentRepository implements PaymentRepository {
         record.setPageUrl(page == null ? null : page.url());
         record.setAuthorizationRef(snapshot.authorizationRef());
         record.setAuthorizedAt(snapshot.authorizedAt());
+        record.setAwaitingAuthorizationSince(snapshot.awaitingAuthorizationSince());
     }
 
     /**
@@ -180,6 +181,7 @@ class JooqPaymentRepository implements PaymentRepository {
                 page,
                 record.getAuthorizationRef(),
                 record.getAuthorizedAt(),
+                record.getAwaitingAuthorizationSince(),
                 record.getVersion()));
     }
 }

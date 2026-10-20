@@ -72,6 +72,13 @@ public class Payment extends AggregateRoot {
     private Instant authorizedAt;
 
     /**
+     * 与信の通知を待ち始めた時刻（期限切れにしようとして、決済サービスで支払済みと知った時刻）。待っていなければ null
+     */
+    @Nullable
+    @Getter(lombok.AccessLevel.NONE)
+    private Instant awaitingAuthorizationSince;
+
+    /**
      * バージョン（リポジトリが保存するときに上げる）
      */
     private final long version;
@@ -83,7 +90,7 @@ public class Payment extends AggregateRoot {
      */
     private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
                     @NonNull PaymentStatus status, PaymentPage page, String authorizationRef, Instant authorizedAt,
-                    long version) {
+                    Instant awaitingAuthorizationSince, long version) {
         this.id = id;
         this.orderId = orderId;
         this.amount = amount;
@@ -92,6 +99,7 @@ public class Payment extends AggregateRoot {
         this.page = page;
         this.authorizationRef = authorizationRef;
         this.authorizedAt = authorizedAt;
+        this.awaitingAuthorizationSince = awaitingAuthorizationSince;
         this.version = version;
     }
 
@@ -105,7 +113,7 @@ public class Payment extends AggregateRoot {
      * @return 支払
      */
     public static Payment create(UUID id, UUID orderId, Money amount, Instant deadline) {
-        return new Payment(id, orderId, amount, deadline, PaymentStatus.UNPAID, null, null, null, 0);
+        return new Payment(id, orderId, amount, deadline, PaymentStatus.UNPAID, null, null, null, null, 0);
     }
 
 // ============================== ドメインの振る舞い ==============================
@@ -181,6 +189,31 @@ public class Payment extends AggregateRoot {
         status = PaymentStatus.NOT_PAID;
         registerEvent(PaymentExpired.of(now, orderId));
         return true;
+    }
+
+    /**
+     * 与信の通知を待つ。期限を過ぎたが、決済サービスで支払が済んでいて画面を閉じられなかったとき。<br />
+     * 状態は未払いのまま、待ち始めた時刻を覚える（期限切れのジョブが、次から探さないため）。
+     * 未払いでない（通知が先に届いた）か、すでに待っていれば何もしない。
+     *
+     * @param now 現在時刻
+     * @return 待ち始めたら true
+     */
+    public boolean awaitAuthorization(@NonNull Instant now) {
+        if (status != PaymentStatus.UNPAID || awaitingAuthorizationSince != null) {
+            return false;
+        }
+        awaitingAuthorizationSince = now;
+        return true;
+    }
+
+    /**
+     * 与信の通知を待ち始めた時刻を返す。
+     *
+     * @return 待ち始めた時刻。待っていなければ空
+     */
+    public Optional<Instant> awaitingAuthorizationSince() {
+        return Optional.ofNullable(awaitingAuthorizationSince);
     }
 
     /**
@@ -306,12 +339,14 @@ public class Payment extends AggregateRoot {
      * @param status           状態
      * @param page             支払の画面
      * @param authorizationRef 与信の参照
-     * @param authorizedAt     与信の時刻
-     * @param version          バージョン
+     * @param authorizedAt               与信の時刻
+     * @param awaitingAuthorizationSince 与信の通知を待ち始めた時刻
+     * @param version                    バージョン
      */
     public record Snapshot(UUID id, UUID orderId, Money amount, Instant deadline, PaymentStatus status,
                            @Nullable PaymentPage page, @Nullable String authorizationRef,
-                           @Nullable Instant authorizedAt, long version) {
+                           @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince,
+                           long version) {
     }
 
     /**
@@ -320,7 +355,8 @@ public class Payment extends AggregateRoot {
      * @return 支払のスナップショット
      */
     public Snapshot toSnapshot() {
-        return new Snapshot(id, orderId, amount, deadline, status, page, authorizationRef, authorizedAt, version);
+        return new Snapshot(id, orderId, amount, deadline, status, page, authorizationRef, authorizedAt,
+                awaitingAuthorizationSince, version);
     }
 
     /**
@@ -331,6 +367,7 @@ public class Payment extends AggregateRoot {
      */
     public static Payment restore(Snapshot snapshot) {
         return new Payment(snapshot.id(), snapshot.orderId(), snapshot.amount(), snapshot.deadline(), snapshot.status(),
-                snapshot.page(), snapshot.authorizationRef(), snapshot.authorizedAt(), snapshot.version());
+                snapshot.page(), snapshot.authorizationRef(), snapshot.authorizedAt(), snapshot.awaitingAuthorizationSince(),
+                snapshot.version());
     }
 }

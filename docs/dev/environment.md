@@ -24,7 +24,7 @@
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に示す） | 必須 |
 | `ECSITE_PAYMENT_RETURN_URL` | 支払の画面から戻る店舗の注文の画面の URL。`{orderId}` に注文 ID が入る | 必須 |
 | `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では立てない | false |
-| `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | 30m、PT1M |
+| `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | 30m、1m |
 | `ECSITE_PAYMENT_AWAITING_AUTHORIZATION_WARNING` | 与信の通知を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに件数を出すか | 1h |
 | `ECSITE_PAYMENT_AUTHORIZATION_VALIDITY`、`_AUTHORIZATION_WARNING` | 与信の有効期間（与信の時刻からの時間）、与信期限のどれだけ前から「期限が近い」とするか | 7d、2d |
 | `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払の画面を出すバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを立てたら必須 |
@@ -35,7 +35,7 @@
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |
 | `SPRING_MAIL_HOST`、`_PORT`、`_USERNAME`、`_PASSWORD` | メールを送る SMTP サーバーの接続先と認証（Spring Boot の設定）。ローカルは compose の Mailpit（`localhost:2525`。ポートは `MAILPIT_SMTP_PORT` で変える） | host は必須、port は 25 |
 | `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で動かすか | true |
-| `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE`、`_MAX_ATTEMPTS` | 未完了のイベントを再発行する間隔、再発行するイベントの発行からの時間の下限、処理の回数（発行の時の 1 回と再発行の回数）の上限 | PT1M、5m、60 |
+| `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE`、`_MAX_ATTEMPTS` | 未完了のイベントを再発行する間隔、再発行するイベントの発行からの時間の下限、処理の回数（発行の時の 1 回と再発行の回数）の上限 | 1m、5m、60 |
 | `ECSITE_SCHEDULING_EVENT_CLEANUP_INTERVAL`、`_RETENTION` | 処理の済んだイベントを片付ける間隔、保存期間（処理を終えた時刻から） | 1h、7d |
 | `ECSITE_INVENTORY_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの引当を片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、1d、1000 |
 | `ECSITE_ORDER_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの注文手続きを片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、1d、1000 |

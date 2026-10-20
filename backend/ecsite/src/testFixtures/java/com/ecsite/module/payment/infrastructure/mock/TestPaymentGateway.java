@@ -2,6 +2,7 @@ package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentGateway;
+import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 
 import java.util.List;
@@ -29,6 +30,11 @@ public class TestPaymentGateway implements PaymentGateway {
      * 作った支払の画面の数
      */
     private final AtomicInteger openedPages = new AtomicInteger();
+
+    /**
+     * これから接続できないことにする支払の画面の作成の回数
+     */
+    private final AtomicInteger openFailures = new AtomicInteger();
 
     /**
      * 取り消した与信の参照（取り消した順）
@@ -88,6 +94,10 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public PaymentPage openPage(PageRequest request) {
+        if (consume(openFailures)) {
+            throw SystemException.of("mock：支払の画面を作れなくする: " + request.paymentId(), null,
+                    PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
+        }
         openedPages.incrementAndGet();
         return mock.openPage(request);
     }
@@ -200,6 +210,15 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 次の支払の画面の作成を、指定した回数だけ、決済サービスに接続できないこと（外部サービスのエラー）にする。
+     *
+     * @param times 接続できなくする回数
+     */
+    public void failNextOpens(int times) {
+        openFailures.set(times);
+    }
+
+    /**
      * 与信が切れたことにする。以降、その与信の売上確定は、与信期限切れで断られる。
      *
      * @param authorizationRef 与信の参照
@@ -285,6 +304,7 @@ public class TestPaymentGateway implements PaymentGateway {
      */
     public void reset() {
         openedPages.set(0);
+        openFailures.set(0);
         voided.clear();
         voidFailures.set(0);
         expiredAuthorizations.clear();

@@ -45,6 +45,7 @@ import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.containsString;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.hasItem;
 import static org.hamcrest.Matchers.not;
@@ -211,6 +212,19 @@ class OrderPaymentApiTest {
             openPage(accepted).andExpect(status().isConflict()).andExpect(jsonPath("$.errorCode").value("ORDER_NOT_PAYABLE"));
             openPage(expired).andExpect(status().isConflict()).andExpect(jsonPath("$.errorCode").value("ORDER_NOT_PAYABLE"));
             store(expired).andExpect(jsonPath("$.actions.pay").value(false));
+        }
+
+        @Test
+        @DisplayName("AC-295 決済サービスに接続できなければ、502 と、やり直せることを示すメッセージを返し、やり直せば開ける")
+        void gatewayUnavailable() throws Exception {
+            var orderId = pending(1);
+            gateway.failNextOpens(1);
+
+            openPage(orderId)
+                    .andExpect(status().isBadGateway())
+                    .andExpect(jsonPath("$.errorCode").value("PAYMENT_GATEWAY_UNAVAILABLE"))
+                    .andExpect(jsonPath("$.message").value(containsString("やり直して")));
+            openPage(orderId).andExpect(status().isOk());
         }
 
         @Test

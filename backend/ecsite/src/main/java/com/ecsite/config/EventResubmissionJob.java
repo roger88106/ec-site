@@ -55,6 +55,8 @@ class EventResubmissionJob {
      * 発行から一定時間（既定 5 分）より前の、未完了のイベントを再発行する。<br />
      * 発行の直後のイベントは、まだ処理中のことがあるので除く。
      * 処理の回数（発行の時の 1 回と再発行の回数）が上限（既定 60）に達したイベントは、再発行しない。
+     * 上限に達して最後の処理に失敗したイベントには止めた印を付けてエラーのログに出し、
+     * 終わりに未完了と止めたイベントの件数をメトリクスに置く。
      */
     // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-resubmission-"
@@ -73,6 +75,8 @@ class EventResubmissionJob {
         incompletePublications.resubmitIncompletePublications(publication ->
                 publication.getPublicationDate().isBefore(publishedBefore)
                         && publication.getCompletionAttempts() < properties.maxAttempts());
+        publicationMetrics.record(publicationRecords.countIncomplete(),
+                publicationRecords.countStopped(properties.maxAttempts()));
     }
 
     /**

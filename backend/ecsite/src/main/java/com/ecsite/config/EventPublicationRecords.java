@@ -84,6 +84,25 @@ class EventPublicationRecords {
     }
 
     /**
+     * 未完了のイベントの件数（止めたイベントを含む）
+     *
+     * @return 件数
+     */
+    int countIncomplete() {
+        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull());
+    }
+
+    /**
+     * 止めたイベントの件数
+     *
+     * @param maxAttempts 処理の回数の上限
+     * @return 件数
+     */
+    int countStopped(int maxAttempts) {
+        return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull().and(COMPLETION_ATTEMPTS.gt(maxAttempts)));
+    }
+
+    /**
      * 止めたイベント（ログに出す項目だけ。イベントの中身は持たない）
      *
      * @param id                 イベントの記録の ID

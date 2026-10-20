@@ -22,13 +22,14 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 支払の期限切れのジョブの統合テスト（T7209、T7308、AC-153、154、156、NFR-7）。<br />
+ * 支払の期限切れのジョブの統合テスト（T7209、T7308、T017-06-03、AC-153、154、156、311、NFR-7）。<br />
  * ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確かめる。
  */
 @IntegrationTest
@@ -125,6 +126,34 @@ class PaymentExpiryJobTest {
         gateway.notifyAuthorized(pageId);
 
         assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+    }
+
+    @Test
+    @DisplayName("AC-311 与信の通知を待つ支払が 1 回の件数（100 件）を超えてたまっても、それより新しい期限切れの支払を処理する")
+    void expiresNewerPaymentBehindAwaitingPayments() {
+        // 期限の前に支払が済み、通知が届かない支払を、1 回の件数より多く作る
+        var awaiting = new ArrayList<UUID>();
+        for (int i = 0; i < 101; i++) {
+            var orderId = created();
+            gateway.markPaid(openPage(orderId));
+            awaiting.add(orderId);
+        }
+        clock.setInstant(DEADLINE);
+        // 通知を待つ支払にする（ほかのテストが残した期限切れの支払も含めて、すべてを一度は処理する）
+        job.expire();
+        job.expire();
+        job.expire();
+
+        // それより新しい支払が、期限を過ぎる
+        var newerOrderedAt = ORDERED_AT.plus(Duration.ofHours(1));
+        var newer = UUID.randomUUID();
+        paymentApi.create(newer, Money.of(6940), newerOrderedAt);
+        clock.setInstant(newerOrderedAt.plus(Duration.ofMinutes(30)));
+        job.expire();
+
+        assertThat(statusOf(newer)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+        assertThat(paymentApi.find(awaiting)).extracting(PaymentSummary::status)
+                .containsOnly(PaymentSummary.Status.UNPAID);
     }
 
     @Test

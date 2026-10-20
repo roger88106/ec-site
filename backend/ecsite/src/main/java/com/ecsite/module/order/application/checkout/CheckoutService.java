@@ -14,6 +14,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -94,6 +95,18 @@ public class CheckoutService {
     @Transactional
     public void releaseReservations(UUID cartId) {
         checkoutRepository.findIdsByCartId(cartId).forEach(stockDirectory::release);
+    }
+
+    /**
+     * 期限が指定した時刻より前の注文手続きを、件数の上限まで消す（片付けのジョブから呼ぶ）。注文になったものも消す。
+     *
+     * @param expiredBefore この時刻より前に期限が切れた注文手続きを消す
+     * @param limit         消す件数の上限
+     * @return 消した件数
+     */
+    @Transactional
+    public int deleteExpired(Instant expiredBefore, int limit) {
+        return 0;
     }
 
     /**

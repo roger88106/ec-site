@@ -33,6 +33,10 @@
 | `SPRING_MAIL_HOST`、`_PORT`、`_USERNAME`、`_PASSWORD` | メールを送る SMTP サーバーの接続先と認証（Spring Boot の設定）。ローカルは compose の Mailpit（`localhost:2525`。ポートは `MAILPIT_SMTP_PORT` で変える） | host は必須、port は 25 |
 | `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で動かすか | true |
 | `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE` | 未完了のイベントを再発行する間隔、再発行するイベントの発行からの時間の下限 | PT1M、5m |
+| `ECSITE_SCHEDULING_EVENT_CLEANUP_INTERVAL`、`_RETENTION` | 処理の済んだイベントを片付ける間隔、保存期間（処理を終えた時刻から） | 1h、7d |
+| `ECSITE_INVENTORY_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの引当を片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、1d、1000 |
+| `ECSITE_ORDER_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの注文手続きを片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、1d、1000 |
+| `ECSITE_CART_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れのカートを片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、0d、1000 |
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省いたもの（`SPRING_DATASOURCE_USERNAME` など）。
 - マイグレーションは起動時には流さず、デプロイごとに 1 回だけ実行する。

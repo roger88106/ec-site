@@ -23,6 +23,6 @@
     - テストに Lombok を使っていない。統合テストは `@IntegrationTest` の土台を使う。
     - 店舗画面は `console.*` を直接書かず、サーバーログの関数（1 行 1 件の JSON）を使う。サーバーアクションの結果は `ActionResult`。
   - 残した：なし。
-- [ ] **T017-08-05** `CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る（`./gradlew check` と `check-frontend.sh` は続けて流す）。
+- [x] **T017-08-05** `CI=true scripts/ci/check-all.sh`、`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る（`./gradlew check` と `check-frontend.sh` は続けて流す）。
 - [ ] **T017-08-06** README の進捗と、MVP の完成までの一覧の状態を直す。見直しの結果（直したもの、残したものと理由、後の spec に回したもの）を本書の末尾に書く。
 - [ ] **T017-08-07** 利用者の許可を得て push し、CI が通ることと、全体の時間（10 分以内）を確かめて記録する（NFR-28）。

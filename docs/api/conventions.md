@@ -6,7 +6,20 @@
 
 RESTful JSON。OpenAPI を plan で書き、バックエンドは生成したインターフェース（OpenAPI Generator の `spring`）を実装し、フロントは生成した型（`openapi-typescript`）を使う。生成物はコミットしない。
 
-## 2. HTTP メソッド
+## 2. URL
+
+| 項目 | 規則 | 例 |
+|------|------|----|
+| 接頭辞 | EC の API はすべて `/api` で始まる | `/api/store/products` |
+| 契約の範囲 | 2 番目のセグメントは契約の範囲で、モジュールではない。`/api/store`（店舗 API、`store.yaml`、消費者が使う）と `/api/admin`（管理 API、`admin.yaml`、運営者が使う）。1 つの契約の操作を、複数のモジュールが実装する | 店舗 API の `/carts` はカート、`/orders` は注文のモジュール |
+| `servers.url` と `paths` | 契約の `servers.url` が接頭辞（`/api/store`、`/api/admin`）で、`paths` は接頭辞の後ろだけを書く。生成したインターフェースのパスは `servers.url` を含まないので、バックエンドの `ApiPathConfig` が、生成元の契約に応じた接頭辞を Controller に付ける | `paths` の `/products` は、管理 API では `/api/admin/products` |
+| 契約の外の URL | 外部のサービスが呼ぶ通知の口は `/api/webhooks/<相手>`。mock の画面は `/api` の外。死活監視とメトリクスは運用ポート（既定 9080）の `/actuator`。応答は [第 4.1 節](#41-openapi-の外のエンドポイント) | `/api/webhooks/stripe`、`/mock-payment`、`/mock-carrier` |
+| リソースの名前 | 小文字の kebab-case の複数形。1 つしかないものは単数形。ログインしている本人は `/me` | `tax-categories`、`image-uploads`、`/shop`、`/me/cart`、`/me/orders`、`/orders/{orderId}/shipment` |
+| パスのパラメータ | camelCase で、何の ID かを名前に書く。`{id}` にしない | `{productId}`、`{variantId}` |
+| ネストの深さ | 親の ID は 2 つまで。集約の一部（バリアント、画像）は集約の下に置く。別の集約は親の下に置かず、上の階層に置く。まとまりの名前を前に置くことがある | `/products/{productId}/variants/{variantId}/image`、`/inventory/variants/{variantId}`、`/reports/...` |
+| 操作を表す URL | 作成・取得・更新・削除で表せない操作は、リソースの下に動詞か状態の名前のセグメントを置く。並び順の変更は `.../order`。メソッドの選び方は [第 3 節](#3-http-メソッド) | `PUT /products/{productId}/publish`、`PUT /orders/{orderId}/cancellation-request/approve`、`POST /me/cart/merge`、`PUT /categories/order` |
+
+## 3. HTTP メソッド
 
 | メソッド | 使う場面 | 成功の応答 | 例 |
 |----------|----------|------------|----|
@@ -23,7 +36,7 @@ RESTful JSON。OpenAPI を plan で書き、バックエンドは生成したイ
 - 状態の切り替え（公開・非公開、販売停止・再開など）は冪等にし、`version` を送らない。すでにその状態なら何もせず成功を返す。
 - 日時は ISO 8601 のオフセット付き文字列。
 
-## 3. HTTP ステータス
+## 4. HTTP ステータス
 
 | コード | 場面 |
 |--------|------|
@@ -42,7 +55,7 @@ RESTful JSON。OpenAPI を plan で書き、バックエンドは生成したイ
 
 ※3：外部サービスごとの分け方（どの失敗を 502 にし、どれを 400・500 にするか）は、[バックエンドのアーキテクチャ](../backend/architecture.md) 第 8 節。`SystemException` に、種類が外部サービスのエラーのエラーコードを付けて投げる。他のシステムの誤りと違い、エラーコードとメッセージを返す（画面がやり直しを促せるように）。メッセージは、どのサービスに接続できないかを示す。OpenAPI では、外部サービスを呼ぶ操作に 502（`BadGateway`）とそのエラーコードを書く。
 
-### 3.1 OpenAPI の外のエンドポイント
+### 4.1 OpenAPI の外のエンドポイント
 
 外部のサービスが呼ぶ口と、外部のサービスの代わりの mock の画面は、EC の API ではないので OpenAPI に書かない。応答は次のとおり。
 
@@ -56,7 +69,7 @@ RESTful JSON。OpenAPI を plan で書き、バックエンドは生成したイ
 - どれも認証を付けない。通知は署名で確かめ、mock の画面は本番で出さない（[バックエンドのアーキテクチャ](../backend/architecture.md) 第 8 節）。
 - 本文は、エラーのときも Problem の形にしない（呼ぶ側は状態のコードだけを見る）。処理の失敗（5xx）だけは、全体の例外の処理が Problem で返す。
 
-## 4. エラーの本文
+## 5. エラーの本文
 
 Problem Details（RFC 9457）に、`errorCode`（フロントが分岐に使う）、`message`（画面にそのまま出せる日本語）、`traceId`（すべてのエラー）、`errors`（入力検証のときだけ。`[{ "field", "message" }]`）を加える。
 
@@ -76,7 +89,7 @@ Problem Details（RFC 9457）に、`errorCode`（フロントが分岐に使う�
 - 統合テストのエラーの応答の `errorCode` は、その操作の一覧か共通のエラーにあることを、テストの設定ですべての統合テストで確かめる。操作の実装に新しいエラーを足したら、その操作の一覧に足す。
 - 画面の型は全体の列挙から作る（openapi-typescript は拡張の項目から型を作らないため）。
 
-## 5. ページング
+## 6. ページング
 
 - リクエスト：`page`（1 始まり）、`size`（既定 20、最大 100）、`sort`（endpoint ごとの値。例：`newest`。DB の列名は出さない）。
 - レスポンス：`{ "items", "page", "size", "totalItems", "totalPages" }`。

@@ -691,7 +691,7 @@ components:
     ErrorCode:
       type: string
       description: >-
-        この API が返しうるエラーのコード（API の規約 第 4 節）。フロントが分岐に使う。
+        この API が返しうるエラーのコード（API の規約 第 5 節）。フロントが分岐に使う。
         各操作が返しうる業務のエラーは操作の x-error-codes、すべての操作が返しうるエラーは x-common-error-codes。
       x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
       enum:

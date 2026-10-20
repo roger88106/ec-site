@@ -23,7 +23,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * 統合テストのエラーの応答の確かめ（docs/api/conventions.md 第 4 節）。<br />
+ * 統合テストのエラーの応答の確かめ（docs/api/conventions.md 第 5 節）。<br />
  * MockMvc のすべての結果で、エラーの本文の {@code errorCode} が、その操作の一覧（{@code x-error-codes}）か
  * 共通のエラー（{@code x-common-error-codes}）にあることを確かめる。操作は、認可と同じく契約から照らす。
  */

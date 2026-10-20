@@ -7,7 +7,7 @@
 |------|------|
 | レベル | B（業務の不変条件はなく、ストレージとの連携が中心） |
 | 依存 | なし（使う側から API で呼ばれる） |
-| 関連 spec | [001](../../specs/001-catalog-and-inventory) |
+| 関連 spec | [001](../../specs/001-catalog-and-inventory)、[017](../../specs/017-stability) |
 | 範囲外 | サイトの静的ファイル（ロゴ、CSS、JavaScript）。フロントのビルド成果物として、フロントの配信（CDN）が出す |
 
 ## アセット

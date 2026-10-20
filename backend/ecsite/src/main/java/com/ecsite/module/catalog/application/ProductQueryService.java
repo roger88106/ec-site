@@ -44,6 +44,22 @@ public class ProductQueryService {
     private final Clock clock;
 
     /**
+     * 商品の取り出し（版の確かめを含む）
+     */
+    private final ProductLoader productLoader;
+
+    /**
+     * 画像を加えられることを確かめる（商品がある、版が一致する、枚数が上限に達していない）。<br />
+     * 画像の追加で、画像を用意する（外部サービスを呼ぶ）前に読む。
+     *
+     * @param productId 商品 ID
+     * @param version   取得時の商品のバージョン
+     */
+    public void verifyCanAddImage(UUID productId, long version) {
+        productLoader.get(productId, version).verifyCanAddImage();
+    }
+
+    /**
      * 商品の詳細を取得する。税込価格は現時点の税率で計算し、できる操作は現在時刻で決める。
      *
      * @param id 商品 ID

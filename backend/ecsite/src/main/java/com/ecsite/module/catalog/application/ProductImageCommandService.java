@@ -10,9 +10,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * 商品画像の追加の、トランザクションの中の処理。<br />
- * 画像の用意（変換と保存）はトランザクションの外で行うので、その前の確かめと、その後の保存を、それぞれ 1 つのトランザクションにする。
- * 流れは {@link ProductImageService#addImage} が持つ。
+ * 商品画像の追加の、画像を用意した後の保存。<br />
+ * 画像の用意（変換と保存）はトランザクションの外で行うので、その前の確かめ（{@link ProductQueryService#verifyCanAddImage}）と、
+ * その後の保存を、それぞれ 1 つのトランザクションにする。流れは {@link ProductImageService#addImage} が持つ。
  */
 @Service
 @RequiredArgsConstructor
@@ -32,17 +32,6 @@ public class ProductImageCommandService {
      * 商品の取り出しと状態の切り替え
      */
     private final ProductLoader productLoader;
-
-    /**
-     * 画像を加えられることを確かめる（商品がある、版が一致する、枚数が上限に達していない）。
-     *
-     * @param productId 商品 ID
-     * @param version   取得時の商品のバージョン
-     */
-    @Transactional(readOnly = true)
-    public void verifyCanAddImage(UUID productId, long version) {
-        productLoader.get(productId, version).verifyCanAddImage();
-    }
 
     /**
      * 用意した画像をアセットとして登録し、商品の画像の最後に加える。<br />

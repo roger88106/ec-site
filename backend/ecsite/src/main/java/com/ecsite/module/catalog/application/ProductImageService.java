@@ -37,6 +37,11 @@ public class ProductImageService {
     private final ProductLoader productLoader;
 
     /**
+     * 商品の参照のサービス（画像を加えられることの確かめ）
+     */
+    private final ProductQueryService queryService;
+
+    /**
      * 商品画像の追加の、トランザクションの中の処理
      */
     private final ProductImageCommandService commandService;
@@ -71,7 +76,7 @@ public class ProductImageService {
      * @return 画像 ID
      */
     public UUID addImage(UUID productId, UUID uploadId, long version) {
-        commandService.verifyCanAddImage(productId, version);
+        queryService.verifyCanAddImage(productId, version);
 
         var prepared = mediaDirectory.prepareImage(productId, uploadId);
         try {

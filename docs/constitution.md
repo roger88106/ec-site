@@ -120,6 +120,7 @@ ec-site/
 | [design/overview.md](design/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
 | [design/role-permissions.md](design/role-permissions.md) | ロールと権限の対応表 |
 | [design/common.md](design/common.md) | 共通コード・ログ・可観測性 |
+| [design/acceptance-criteria.md](design/acceptance-criteria.md) | AC 一覧（状態とテスト） |
 | [backend/architecture.md](backend/architecture.md) | バックエンドのアーキテクチャ |
 | [backend/coding.md](backend/coding.md) | バックエンドの書き方 |
 | [backend/modules/](backend/modules) | モジュールごとの設計 |

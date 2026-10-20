@@ -12,17 +12,23 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static com.ecsite.jooq.shipping.Tables.SHIPMENT;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 
 /**
- * 出荷の API の統合テスト（T9206、T9208、AC-173、BR-19、23）。<br />
+ * 出荷の API の統合テスト（T9206、T9208、T017-04-10、AC-173、BR-19、23）。<br />
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest
@@ -39,7 +45,10 @@ class ShippingApiTest {
     @Autowired
     ShipmentRepository repository;
 
-    @Autowired
+    /**
+     * mock の物流サービスの追跡（呼ばれた時点のトランザクションの有無を記録するため、包む）
+     */
+    @MockitoSpyBean
     MockCarrierTracking tracking;
 
     @Autowired
@@ -126,6 +135,22 @@ class ShippingApiTest {
                 && List.of("88812223", "88845556").contains(requested.trackingNumber()));
         assertThat(tracking.started()).contains(new MockCarrierTracking.Started(Carrier.YAMATO, "88812223"))
                 .doesNotContain(new MockCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
+    }
+
+    @Test
+    @DisplayName("AC-306 追跡の開始のリスナーは、データベースのトランザクションの外で物流サービスを呼ぶ")
+    void startsTrackingOutsideTransaction() {
+        var transactionActive = new CopyOnWriteArrayList<Boolean>();
+        doAnswer(invocation -> {
+            transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
+            return invocation.callRealMethod();
+        }).when(tracking).startTracking(any(), anyString());
+
+        shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, "8891-2223", SHIPPED_AT);
+
+        asyncEvents.awaitHandled(event -> event instanceof TrackingRequested requested
+                && requested.trackingNumber().equals("88912223"));
+        assertThat(transactionActive).containsExactly(false);
     }
 
     /**

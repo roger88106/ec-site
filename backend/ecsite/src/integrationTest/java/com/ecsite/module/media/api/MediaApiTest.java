@@ -19,6 +19,7 @@ import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.IllegalTransactionStateException;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 import org.springframework.transaction.support.TransactionTemplate;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
@@ -35,6 +36,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.common.Tables.EVENT_PUBLICATION;
@@ -45,10 +47,11 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.doAnswer;
 import static org.mockito.Mockito.doThrow;
 
 /**
- * メディアモジュールの API の統合テスト（T1028、T1037、T017-04-01。docs/backend/modules/media.md）。<br />
+ * メディアモジュールの API の統合テスト（T1028、T1037、T017-04-01、T017-04-10。docs/backend/modules/media.md）。<br />
  * 用意では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
  * ファイルは、受付の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
  * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったアセットを消す。
@@ -337,6 +340,22 @@ class MediaApiTest {
             assertThat(media.urls(List.of(assetId))).isEmpty();
             assertThat(releaseRegistered(assetId)).isTrue();
             await().atMost(TIMEOUT).untilAsserted(() -> assertThat(get(url).statusCode()).isEqualTo(404));
+        }
+
+        @Test
+        @DisplayName("AC-306 ファイルを消すリスナーは、データベースのトランザクションの外でファイル保存を呼ぶ")
+        void deletesOutsideTransaction() throws Exception {
+            var assetId = confirmed();
+            var transactionActive = new CopyOnWriteArrayList<Boolean>();
+            doAnswer(invocation -> {
+                transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive());
+                return invocation.callRealMethod();
+            }).when(storage).deletePublished(anyString());
+
+            transactionTemplate.executeWithoutResult(status -> media.release(List.of(assetId)));
+
+            await().atMost(TIMEOUT).until(() -> !transactionActive.isEmpty());
+            assertThat(transactionActive).containsExactly(false);
         }
 
         @Test

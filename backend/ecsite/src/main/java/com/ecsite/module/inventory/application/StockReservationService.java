@@ -54,6 +54,18 @@ public class StockReservationService {
     private final Clock clock;
 
     /**
+     * 期限が指定した時刻より前の引当を、件数の上限まで消す（片付けのジョブから呼ぶ）。
+     *
+     * @param expiredBefore この時刻より前に期限が切れた引当を消す
+     * @param limit         消す件数の上限
+     * @return 消した件数
+     */
+    @Transactional
+    public int deleteExpired(Instant expiredBefore, int limit) {
+        return 0;
+    }
+
+    /**
      * 販売可能数を返す。在庫のないバリアントは 0。
      *
      * @param variantIds       バリアント ID

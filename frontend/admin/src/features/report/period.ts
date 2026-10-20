@@ -7,7 +7,7 @@ export type PeriodPreset = 'thisFiscalYear' | 'lastFiscalYear' | 'thisMonth' | '
 /** 売上の推移の期間の選択肢（会計年度） */
 export const FISCAL_PRESETS = ['thisFiscalYear', 'lastFiscalYear'] as const satisfies PeriodPreset[]
 
-/** バリエーションの売れ行き、地域・年齢層・性別の期間の選択肢（暦） */
+/** バリアントの売れ行き、地域・年齢層・性別の期間の選択肢（暦） */
 export const CALENDAR_PRESETS = ['thisMonth', 'lastMonth', 'thisYear', 'lastYear'] as const satisfies PeriodPreset[]
 
 /** 期間（日本時間の日付。両端を含む） */

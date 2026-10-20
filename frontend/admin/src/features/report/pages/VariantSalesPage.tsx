@@ -15,13 +15,13 @@ import { CALENDAR_PRESETS, presetPeriod, todayInJapan } from '@/features/report/
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
 
-/** バリエーションの売れ行き。商品を選んでから出す。条件は URL に持つ */
+/** バリアントの売れ行き。商品を選んでから出す。条件は URL に持つ */
 export function VariantSalesPage() {
   const t = useTranslations('app.menu')
   const settings = useReportSettings()
   return (
     <>
-      <PageHeader title={t('variantSales') /* バリエーションの売れ行き */} />
+      <PageHeader title={t('variantSales') /* バリアントの売れ行き */} />
       <QueryState query={settings}>
         {({ fiscalYearStartMonth }) => <VariantSalesView fiscalYearStartMonth={fiscalYearStartMonth} />}
       </QueryState>
@@ -57,7 +57,7 @@ function VariantSalesView({ fiscalYearStartMonth }: { fiscalYearStartMonth: numb
   )
 }
 
-/** 選んだ商品のバリエーションの売れ行きを取得して出す */
+/** 選んだ商品のバリアントの売れ行きを取得して出す */
 function VariantSalesQuery({ condition, productId }: { condition: ReportCondition; productId: string }) {
   const query = $api.useQuery(
     'get',
@@ -80,12 +80,12 @@ function VariantSalesQuery({ condition, productId }: { condition: ReportConditio
   )
 }
 
-/** バリエーションの名前（軸の値を「 / 」でつなぐ。軸がなければ品番） */
+/** バリアントの名前（軸の値を「 / 」でつなぐ。軸がなければ品番） */
 function variantName(variant: VariantSales): string {
   return variant.axisValues.length > 0 ? variant.axisValues.map((axis) => axis.value).join(' / ') : variant.variantCode
 }
 
-/** バリエーションごとの棒グラフと表（販売数量の多い順） */
+/** バリアントごとの棒グラフと表（販売数量の多い順） */
 function VariantSalesResult({ condition, report }: { condition: ReportCondition; report: VariantSalesReport }) {
   const t = useTranslations('report.variantSales')
   const rows = report.variants.map((variant) => ({ ...variant, name: variantName(variant) }))
@@ -93,7 +93,7 @@ function VariantSalesResult({ condition, report }: { condition: ReportCondition;
   return (
     <div className="space-y-6">
       <p className="font-medium">{t('product', { name: report.productName }) /* 商品名 */}</p>
-      <section aria-label={t('chart') /* バリエーションごとの販売数量 */}>
+      <section aria-label={t('chart') /* バリアントごとの販売数量 */}>
         <ChartContainer className="h-72 w-full" config={chartConfig}>
           <BarChart data={rows} margin={{ left: 24, right: 24 }}>
             <CartesianGrid vertical={false} />
@@ -108,7 +108,7 @@ function VariantSalesResult({ condition, report }: { condition: ReportCondition;
         <CsvButton
           filename={`${t('filename')}_${report.productName}_${condition.from}_${condition.to}.csv`} /* CSV のファイル名 */
           rows={[
-            [t('variant'), t('variantCode'), t('quantity'), t('amount')], // 見出しの行（バリエーション、品番、販売数量、売上額）
+            [t('variant'), t('variantCode'), t('quantity'), t('amount')], // 見出しの行（バリアント、品番、販売数量、売上額）
             ...rows.map((row) => [row.name, row.variantCode, row.quantity, row.amount]),
           ]}
         />
@@ -116,7 +116,7 @@ function VariantSalesResult({ condition, report }: { condition: ReportCondition;
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead>{t('variant') /* バリエーション */}</TableHead>
+            <TableHead>{t('variant') /* バリアント */}</TableHead>
             <TableHead>{t('variantCode') /* 品番 */}</TableHead>
             <TableHead className="text-right">{t('quantity') /* 販売数量 */}</TableHead>
             <TableHead className="text-right">{t('amount') /* 売上額 */}</TableHead>

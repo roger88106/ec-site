@@ -81,7 +81,7 @@ services:
       - ./seaweedfs/seed/assets:/seed/assets:ro
 
   # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 第 7.5 節）。http://localhost:8081
-  # 受付のバケット（ローカル用と E2E 用）だけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
+  # アップロードのバケット（ローカル用と E2E 用）だけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
   imgproxy:
     image: darthsim/imgproxy:v4.0.17
     container_name: ec-site-imgproxy

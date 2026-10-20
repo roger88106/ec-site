@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 /**
  * メディアのサービス（docs/backend/modules/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
- * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、用意のときに中身を確かめ、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
+ * ファイルは署名付き URL でブラウザからアップロードのバケットへ直接送られ、用意のときに中身を確かめ、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
  */
 @Slf4j
 @Service
@@ -62,7 +62,7 @@ public class MediaService {
     private final Clock clock;
 
     /**
-     * 画像の受付を始める。形式と大きさを確かめ、受付のバケットへの署名付き URL を発行する。
+     * 画像のアップロードの受付を始める。形式と大きさを確かめ、アップロードのバケットへの署名付き URL を発行する。
      *
      * @param scope         受付の範囲（呼ぶ側が決める。例：商品ごと）
      * @param contentType   ファイルの形式

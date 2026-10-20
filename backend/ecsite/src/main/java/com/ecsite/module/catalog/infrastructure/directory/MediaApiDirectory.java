@@ -23,7 +23,7 @@ class MediaApiDirectory implements MediaDirectory {
     private final MediaApi mediaApi;
 
     /**
-     * 商品の画像の受付を、メディアモジュールに頼む。範囲は商品ごとにする。
+     * 商品の画像のアップロードの受付を、メディアモジュールに頼む。範囲は商品ごとにする。
      *
      * @param productId     商品 ID
      * @param contentType   ファイルの形式

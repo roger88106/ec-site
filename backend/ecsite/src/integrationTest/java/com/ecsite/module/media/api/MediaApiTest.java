@@ -226,7 +226,7 @@ class MediaApiTest {
         }
 
         @Test
-        @DisplayName("AC-39 受付のファイルが 10MB を超えていれば拒否する（署名付き URL を通さずに置かれたもの）")
+        @DisplayName("AC-39 アップロードしたファイルが 10MB を超えていれば拒否する（署名付き URL を通さずに置かれたもの）")
         void rejectsOversizedFile() {
             var scope = scope();
             var uploadId = UUID.randomUUID();
@@ -240,7 +240,7 @@ class MediaApiTest {
         }
 
         @Test
-        @DisplayName("受付のない uploadId、別の範囲の受付は拒否する")
+        @DisplayName("アップロードのない uploadId、別の範囲のアップロードは拒否する")
         void rejectsMissingUpload() throws Exception {
             var upload = uploaded(scope(), "image/png", TestImages.png());
 
@@ -426,7 +426,7 @@ class MediaApiTest {
     }
 
     /**
-     * テストごとに別の範囲（受付の持ち主）を作る
+     * テストごとに別の範囲（アップロードの持ち主）を作る
      */
     private static String scope() {
         return UUID.randomUUID().toString();

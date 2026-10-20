@@ -207,7 +207,7 @@ class ProductImageApiTest {
         }
 
         @Test
-        @DisplayName("AC-39 受付のファイルが 10MB を超えていれば、登録のときに大きさを確かめて 400")
+        @DisplayName("AC-39 アップロードしたファイルが 10MB を超えていれば、登録のときに大きさを確かめて 400")
         void rejectsOversizedUploadOnRegister() throws Exception {
             var productId = productWithVariant();
             var body = createUpload(productId, "image/png", PNG.length)

@@ -63,7 +63,7 @@
 | `POST /orders/{orderId}/shipment` | 出荷の登録 | `order:write` | ○ |  |  |  |
 | `GET /me` | 自分の権限の一覧 | ログインだけ | ○ | ○ | ○ | ○ |
 | `GET /reports/sales-trend` | 売上の推移 | `report-sales-trend:read` | ○ |  | ○ |  |
-| `GET /reports/variant-sales` | バリエーションの売れ行き | `report-variant-sales:read` | ○ |  | ○ | ○ |
+| `GET /reports/variant-sales` | バリアントの売れ行き | `report-variant-sales:read` | ○ |  | ○ | ○ |
 | `GET /reports/customer-breakdown` | 地域・年齢層・性別 | `report-customer:read` | ○ |  | ○ | ○ |
 | `GET /reports/settings` | レポートの設定 | ログインだけ | ○ | ○ | ○ | ○ |
 

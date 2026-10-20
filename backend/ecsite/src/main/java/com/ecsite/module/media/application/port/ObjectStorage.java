@@ -7,15 +7,15 @@ import java.util.Optional;
 
 /**
  * ファイルの置き場所（オブジェクトストレージ）。<br />
- * 受付のバケット（非公開。アップロードされたままのファイル）と、配信のバケット（公開）を扱う。
+ * アップロードのバケット（非公開。アップロードされたままのファイル）と、配信のバケット（公開）を扱う。
  * AWS（S3）と GCP（GCS）の両方にある機能だけを使えるよう、操作を絞る。
  */
 public interface ObjectStorage {
 
     /**
-     * 受付のバケットへファイルを PUT する署名付き URL を発行する。
+     * アップロードのバケットへファイルを PUT する署名付き URL を発行する。
      *
-     * @param uploadKey     受付のバケットのキー
+     * @param uploadKey     アップロードのバケットのキー
      * @param contentType   ファイルの形式。PUT のときに同じ Content-Type を付ける
      * @param contentLength ファイルの大きさ（バイト）
      * @return 署名付き URL と、PUT に付けるヘッダー、期限
@@ -23,17 +23,17 @@ public interface ObjectStorage {
     PresignedUpload presignUpload(String uploadKey, String contentType, long contentLength);
 
     /**
-     * 受付のバケットのファイルの大きさを返す。
+     * アップロードのバケットのファイルの大きさを返す。
      *
-     * @param uploadKey 受付のバケットのキー
+     * @param uploadKey アップロードのバケットのキー
      * @return ファイルの大きさ（バイト）。ファイルがなければ空
      */
     Optional<Long> findUploadSize(String uploadKey);
 
     /**
-     * 受付のバケットのファイルの先頭を読む（形式の判定に使う）。
+     * アップロードのバケットのファイルの先頭を読む（形式の判定に使う）。
      *
-     * @param uploadKey 受付のバケットのキー
+     * @param uploadKey アップロードのバケットのキー
      * @param length    読む長さ（バイト）
      * @return 先頭のバイト。ファイルが length より短ければ、ファイルの全体
      */

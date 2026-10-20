@@ -56,7 +56,7 @@ class S3ObjectStorage implements ObjectStorage {
     private final MediaStorageProperties properties;
 
     /**
-     * 受付のバケットへの署名付き URL を発行する。形式と大きさを署名に含める（AWS は、違う形式・大きさの PUT を拒否する）。
+     * アップロードのバケットへの署名付き URL を発行する。形式と大きさを署名に含める（AWS は、違う形式・大きさの PUT を拒否する）。
      */
     @Override
     public PresignedUpload presignUpload(String uploadKey, String contentType, long contentLength) {
@@ -72,9 +72,9 @@ class S3ObjectStorage implements ObjectStorage {
     }
 
     /**
-     * 受付のバケットのファイルの大きさを返す。
+     * アップロードのバケットのファイルの大きさを返す。
      *
-     * @param uploadKey 受付のキー
+     * @param uploadKey アップロードのキー
      * @return 大きさ（バイト）。ファイルがなければ空
      */
     @Override
@@ -95,9 +95,9 @@ class S3ObjectStorage implements ObjectStorage {
     }
 
     /**
-     * 受付のバケットのファイルの先頭を読む（形式の判定に使う）。
+     * アップロードのバケットのファイルの先頭を読む（形式の判定に使う）。
      *
-     * @param uploadKey 受付のキー
+     * @param uploadKey アップロードのキー
      * @param length    読む長さ（バイト）
      * @return 先頭のバイト。ファイルが length より短ければ、ファイルの全体
      */

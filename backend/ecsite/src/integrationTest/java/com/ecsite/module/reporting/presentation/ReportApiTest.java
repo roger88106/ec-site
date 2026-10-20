@@ -145,7 +145,7 @@ class ReportApiTest {
     }
 
     @Nested
-    @DisplayName("バリエーションの売れ行き")
+    @DisplayName("バリアントの売れ行き")
     class Variants {
 
         @Test

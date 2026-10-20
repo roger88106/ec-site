@@ -19,7 +19,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * バリエーションの売れ行き（docs/backend/modules/reporting.md「バリエーションの売れ行き」）。<br />
+ * バリアントの売れ行き（docs/backend/modules/reporting.md「バリアントの売れ行き」）。<br />
  * 商品カタログのバリアントの一覧に、売れた数を合わせる。売れなかったバリアントも 0 として返す。
  */
 @Service
@@ -37,7 +37,7 @@ public class VariantSalesQueryService {
     private final CatalogDirectory catalogDirectory;
 
     /**
-     * バリエーションの売れ行きを求める。
+     * バリアントの売れ行きを求める。
      *
      * @param query 条件
      * @return バリアントごとの売れ行き

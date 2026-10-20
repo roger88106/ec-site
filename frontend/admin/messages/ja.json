@@ -11,7 +11,7 @@
       "orders": "注文",
       "reports": "レポート",
       "salesTrend": "売上の推移",
-      "variantSales": "バリエーションの売れ行き",
+      "variantSales": "バリアントの売れ行き",
       "customerBreakdown": "地域・年齢層・性別"
     },
     "notFound": {
@@ -464,14 +464,14 @@
       "filename": "売上の推移"
     },
     "variantSales": {
-      "chart": "バリエーションごとの販売数量",
-      "variant": "バリエーション",
+      "chart": "バリアントごとの販売数量",
+      "variant": "バリアント",
       "variantCode": "品番",
       "quantity": "販売数量",
       "amount": "売上額",
-      "selectProduct": "商品を選ぶと、バリエーションごとの売れ行きを出します。",
+      "selectProduct": "商品を選ぶと、バリアントごとの売れ行きを出します。",
       "product": "商品：{name}",
-      "filename": "バリエーションの売れ行き"
+      "filename": "バリアントの売れ行き"
     },
     "customerBreakdown": {
       "prefecture": "都道府県",

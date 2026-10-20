@@ -308,7 +308,7 @@ describe('公開期間', () => {
 describe('商品画像', () => {
   const UPLOAD_URL = 'http://storage.test/images-incoming/upload-1?X-Amz-Signature=test'
 
-  /** 画像の受付・ストレージへの PUT・登録に応答する。登録すると、商品の画像の最後に加える */
+  /** 画像のアップロードの受付・ストレージへの PUT・登録に応答する。登録すると、商品の画像の最後に加える */
   function serveUpload(state: ReturnType<typeof serveProduct>) {
     const calls: string[] = []
     server.use(

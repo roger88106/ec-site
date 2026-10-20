@@ -104,7 +104,7 @@ class S3ObjectStorageFailureTest {
     }
 
     @Test
-    @DisplayName("受付のファイルがなければ（404）、今どおり大きさが空になる")
+    @DisplayName("アップロードしたファイルがなければ（404）、今どおり大きさが空になる")
     void notFoundIsEmpty() {
         status.set(404);
 

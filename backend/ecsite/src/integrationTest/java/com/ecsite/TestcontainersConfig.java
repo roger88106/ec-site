@@ -31,7 +31,7 @@ import java.util.Map;
 public class TestcontainersConfig {
 
     /**
-     * 受付のバケット
+     * アップロードのバケット
      */
     public static final String INCOMING_BUCKET = "images-incoming";
 
@@ -167,7 +167,7 @@ public class TestcontainersConfig {
 
     /**
      * imgproxy コンテナ（画像の変換。plan 001 第 7.5 節）。docker/compose.yaml と同じイメージと設定を使う。<br />
-     * 受付のバケットを、読むだけの資格情報で、SeaweedFS のネットワークの中の名前で読む。
+     * アップロードのバケットを、読むだけの資格情報で、SeaweedFS のネットワークの中の名前で読む。
      *
      * @param network   コンテナ同士のネットワーク
      * @param seaweedfs SeaweedFS コンテナ（先に起動しておく）

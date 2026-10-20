@@ -22,7 +22,7 @@ export const menu = [
 /** 左のメニューの「レポート」の下の画面。権限のない画面は出さない（権限がなければ「レポート」ごと出さない） */
 export const reportMenu = [
   { to: paths.salesTrend(), labelKey: 'salesTrend', icon: ChartLineIcon, permission: 'report-sales-trend:read' }, // 売上の推移
-  { to: paths.variantSales(), labelKey: 'variantSales', icon: ChartBarIcon, permission: 'report-variant-sales:read' }, // バリエーションの売れ行き
+  { to: paths.variantSales(), labelKey: 'variantSales', icon: ChartBarIcon, permission: 'report-variant-sales:read' }, // バリアントの売れ行き
   {
     to: paths.customerBreakdown(),
     labelKey: 'customerBreakdown',

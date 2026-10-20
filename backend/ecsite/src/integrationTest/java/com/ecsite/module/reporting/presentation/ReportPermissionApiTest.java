@@ -51,7 +51,7 @@ class ReportPermissionApiTest {
     MutableClock clock;
 
     /**
-     * バリエーションの売れ行きで選ぶ商品
+     * バリアントの売れ行きで選ぶ商品
      */
     private UUID productId;
 

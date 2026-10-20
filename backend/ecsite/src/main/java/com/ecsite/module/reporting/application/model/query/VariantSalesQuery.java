@@ -6,7 +6,7 @@ import com.ecsite.module.reporting.domain.ReportPeriod;
 import java.util.UUID;
 
 /**
- * バリエーションの売れ行きの条件
+ * バリアントの売れ行きの条件
  *
  * @param productId  商品 ID
  * @param period     期間

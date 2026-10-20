@@ -37,7 +37,7 @@ class ReportController implements ReportApi {
     private final SalesTrendQueryService salesTrendService;
 
     /**
-     * バリエーションの売れ行きのクエリサービス
+     * バリアントの売れ行きのクエリサービス
      */
     private final VariantSalesQueryService variantSalesService;
 
@@ -80,7 +80,7 @@ class ReportController implements ReportApi {
     }
 
     /**
-     * バリエーションの売れ行き
+     * バリアントの売れ行き
      *
      * @param productId  商品 ID
      * @param from       期間の始まり

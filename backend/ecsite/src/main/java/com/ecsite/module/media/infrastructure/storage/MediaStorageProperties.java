@@ -17,7 +17,7 @@ import java.time.Duration;
  * @param pathStyleAccess パス形式のアドレス（エミュレーターのときに true）
  * @param accessKeyId     アクセスキー。ローカル専用で、本番は空にして既定の資格情報の連鎖（IAM ロール）を使う
  * @param secretAccessKey シークレットキー。accessKeyId と一緒に指定する
- * @param incomingBucket  受付のバケット（非公開）
+ * @param incomingBucket  アップロードのバケット（非公開）
  * @param publicBucket    配信のバケット（公開）
  * @param publicBaseUrl   配信の基準 URL（本番は CDN）。ファイルの URL は「基準 URL/キー」
  * @param uploadUrlTtl    署名付き URL の有効期間

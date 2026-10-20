@@ -56,7 +56,7 @@ class S3ObjectStorageTest {
     MediaStorageProperties properties;
 
     @Test
-    @DisplayName("署名付き URL で受付のバケットへ PUT でき、大きさと先頭のバイトを読める")
+    @DisplayName("署名付き URL でアップロードのバケットへ PUT でき、大きさと先頭のバイトを読める")
     void uploadsWithPresignedUrl() throws Exception {
         var key = uploadKey();
         var upload = storage.presignUpload(key, "image/png", PNG.length);
@@ -70,7 +70,7 @@ class S3ObjectStorageTest {
     }
 
     @Test
-    @DisplayName("受付のないキーは、大きさが空になる")
+    @DisplayName("アップロードのないキーは、大きさが空になる")
     void returnsEmptyForMissingUpload() {
         assertThat(storage.findUploadSize(uploadKey())).isEmpty();
     }
@@ -135,7 +135,7 @@ class S3ObjectStorageTest {
     @Test
     @DisplayName("配信のバケットに書けなければ（書く権限がない）、例外になる")
     void failsWhenPublicBucketIsNotWritable() {
-        // imgproxy の資格情報は、受付のバケットを読む権限だけを持つ（seaweedfs/s3.json）
+        // imgproxy の資格情報は、アップロードのバケットを読む権限だけを持つ（seaweedfs/s3.json）
         try (var readOnly = S3Client.builder()
                 .endpointOverride(properties.endpoint())
                 .region(Region.of(properties.region()))
@@ -153,11 +153,11 @@ class S3ObjectStorageTest {
     // ============================== 補助 ==============================
 
     /**
-     * 受付のバケットへの PUT の署名付き URL（有効期間 1 分）を、指定の時計の時刻で署名して作り、PUT する。<br />
+     * アップロードのバケットへの PUT の署名付き URL（有効期間 1 分）を、指定の時計の時刻で署名して作り、PUT する。<br />
      * アプリの署名者は署名の時刻を変えられないので、同じ方式（SigV4、クエリに署名）の署名者を直接使う。
      *
      * @param clock     署名の時刻を取る時計
-     * @param uploadKey 受付のキー
+     * @param uploadKey アップロードのキー
      * @return HTTP ステータス
      */
     private int putSignedAt(Clock clock, String uploadKey) throws IOException, InterruptedException {
@@ -182,7 +182,7 @@ class S3ObjectStorageTest {
     }
 
     /**
-     * テストごとに別の、受付のバケットのキー（{範囲}/{受付 ID} の形）
+     * テストごとに別の、アップロードのバケットのキー（{範囲}/{受付 ID} の形）
      */
     private static String uploadKey() {
         return UUID.randomUUID() + "/" + UUID.randomUUID();

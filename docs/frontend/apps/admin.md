@@ -64,7 +64,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | `/orders` | 注文一覧（クエリ：`orderNumber`、`status`、`orderedFrom`、`orderedTo`、`authorizationExpiring`、`returned`、`page`） |
 | `/orders/:orderId` | 注文の詳細（支払の状態と期限、出荷の登録と配送状態、明細、金額の内訳、お届け先、キャンセルの承認・却下・キャンセル） |
 | `/reports/sales-trend` | 売上の推移（クエリ：`from`、`to`、`granularity`、`basis`、`productId`、`excludeTax`、`excludeShipping`） |
-| `/reports/variant-sales` | バリエーションの売れ行き（クエリ：`from`、`to`、`basis`、`productId`、`excludeTax`） |
+| `/reports/variant-sales` | バリアントの売れ行き（クエリ：`from`、`to`、`basis`、`productId`、`excludeTax`） |
 | `/reports/customer-breakdown` | 地域・年齢層・性別（クエリ：`from`、`to`、`basis`、`productId`、`excludeTax`、`excludeShipping`） |
 
 - 一覧の絞り込みとページは URL のクエリに持つ（戻る・再読み込みで同じ一覧を出すため）。
@@ -101,7 +101,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 
 ### 4.1 画像のアップロード
 
-受付 → ストレージへの直接の PUT（署名付き URL、受付の応答のヘッダーを付ける）→ 登録、の順に送る。
+アップロードの受付 → ストレージへの直接の PUT（署名付き URL、アップロードの受付の応答のヘッダーを付ける）→ 登録、の順に送る。
 
 - 送る前に形式・大きさ・枚数を画面でも確かめ、誤りがあれば 1 枚も送らない。
 - ブラウザが形式を空で渡すことがある（Windows の HEIC など）ので、拡張子で補って申告する。

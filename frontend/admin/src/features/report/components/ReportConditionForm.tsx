@@ -26,8 +26,8 @@ const PRODUCT_LIMIT = parameters.listProducts.size.maximum
  * @param presets 期間の選択肢（売上の推移は会計年度、他は暦）
  * @param fiscalYearStartMonth 会計年度の始まりの月（レポートの設定）
  * @param granularity 区切りを選ぶか（売上の推移だけ）
- * @param excludeShipping 送料を除くかを選ぶか（バリエーションの売れ行きは送料を含めないので選ばない）
- * @param productRequired 商品を必ず選ぶか（バリエーションの売れ行き）
+ * @param excludeShipping 送料を除くかを選ぶか（バリアントの売れ行きは送料を含めないので選ばない）
+ * @param productRequired 商品を必ず選ぶか（バリアントの売れ行き）
  */
 export function ReportConditionForm({
   condition,

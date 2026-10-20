@@ -34,7 +34,7 @@ const SHIRT_SALES: VariantSalesReport = {
   shippingExcluded: true,
 }
 
-/** バリエーションの売れ行きの API に応答する。受け取ったクエリは queries に取っておく */
+/** バリアントの売れ行きの API に応答する。受け取ったクエリは queries に取っておく */
 function serveVariantSales() {
   serveReportBasics()
   const queries: URLSearchParams[] = []
@@ -47,8 +47,8 @@ function serveVariantSales() {
   return queries
 }
 
-describe('バリエーションの売れ行き', () => {
-  it('AC-202、203、204 バリエーションごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
+describe('バリアントの売れ行き', () => {
+  it('AC-202、203、204 バリアントごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
     const queries = serveVariantSales()
     renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}&excludeTax=true`)
 
@@ -67,7 +67,7 @@ describe('バリエーションの売れ行き', () => {
     const queries = serveVariantSales()
     const { user, router } = renderApp('/reports/variant-sales?from=2026-09-01&to=2026-09-30')
 
-    expect(await screen.findByText('商品を選ぶと、バリエーションごとの売れ行きを出します。')).toBeInTheDocument()
+    expect(await screen.findByText('商品を選ぶと、バリアントごとの売れ行きを出します。')).toBeInTheDocument()
     expect(screen.queryByRole('checkbox', { name: '送料を除く' })).not.toBeInTheDocument()
     await user.click(screen.getByRole('combobox', { name: '商品' }))
     await user.click(await screen.findByRole('option', { name: 'ベーシック T シャツ' }))

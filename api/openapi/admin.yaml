@@ -647,7 +647,7 @@ paths:
       x-error-codes: [UNSUPPORTED_IMAGE_FORMAT, IMAGE_TOO_LARGE, TOO_MANY_PRODUCT_IMAGES]
       summary: 画像のアップロードを受け付ける（AC-39、40、67、P2）
       description: |
-        形式・サイズ・枚数を確かめ、受付のバケットへの署名付き URL（PUT）を返す（plan 001 第 7 節）。
+        形式・サイズ・枚数を確かめ、アップロードのバケットへの署名付き URL（PUT）を返す（plan 001 第 7 節）。
         ブラウザは `uploadUrl` に `headers` を付けてファイルを PUT し、その後 `POST /products/{productId}/images` で登録する。
         受付だけで登録しなかったファイルは、1 日で消える。
       x-required-permission: product:write
@@ -682,7 +682,7 @@ paths:
       x-error-codes: [IMAGE_TOO_LARGE, IMAGE_UPLOAD_NOT_FOUND, INVALID_IMAGE_FILE, IMAGE_CONVERSION_FAILED, TOO_MANY_PRODUCT_IMAGES, IMAGE_SERVICE_UNAVAILABLE]
       summary: 受け付けた画像を登録する（AC-37、39、40、67〜70、296〜298、P2）
       description: |
-        受付のファイルの大きさと形式（先頭のバイト）を確かめ、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 第 7.5 節）。
+        アップロードしたファイルの大きさと形式（先頭のバイト）を確かめ、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 第 7.5 節）。
         変換のサービスがファイルを読めない画像は登録せず、400（`IMAGE_CONVERSION_FAILED`）を返す（AC-70、297）。
         変換のサービスやファイル保存のサービスに届かない・時間内に応答がない・その側の故障のときは、502（`IMAGE_SERVICE_UNAVAILABLE`）を返す。しばらくしてからやり直せる（AC-296、298）。
         バリアントと同じく商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
@@ -1171,7 +1171,7 @@ paths:
       tags: [report]
       operationId: getVariantSales
       x-error-codes: [INVALID_PERIOD]
-      summary: バリエーションの売れ行き（spec 010 AC-202〜204）
+      summary: バリアントの売れ行き（spec 010 AC-202〜204）
       description: 商品のすべてのバリアントを、販売数量の多い順（同じなら商品の並びの順）に返す。売れなかったバリアントは 0。送料は含めない。
       x-required-permission: report-variant-sales:read
       parameters:
@@ -1187,7 +1187,7 @@ paths:
         - $ref: '#/components/parameters/ExcludeTax'
       responses:
         '200':
-          description: バリエーションの売れ行き
+          description: バリアントの売れ行き
           content:
             application/json:
               schema:

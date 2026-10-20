@@ -16,7 +16,7 @@ describe('レポートの権限による出し分け', () => {
 
     const reports = await screen.findByText('レポート')
     expect(reports).toBeInTheDocument()
-    expect(screen.getByRole('link', { name: 'バリエーションの売れ行き' })).toBeInTheDocument()
+    expect(screen.getByRole('link', { name: 'バリアントの売れ行き' })).toBeInTheDocument()
     expect(screen.getByRole('link', { name: '地域・年齢層・性別' })).toBeInTheDocument()
     expect(screen.queryByRole('link', { name: '売上の推移' })).not.toBeInTheDocument()
   })

@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
  * 画像の変換の imgproxy の実装の統合テスト（T1035。AC-68〜70。plan 001 第 7.5 節）。<br />
- * Testcontainers の imgproxy に、SeaweedFS の受付のバケットのファイルを変換させる。
+ * Testcontainers の imgproxy に、SeaweedFS のアップロードのバケットのファイルを変換させる。
  * テスト用の画像は {@code resources/images}（作り方は {@code generate.sh}）。左が赤、右が青の 64x32 で、
  * JPEG・HEIC・AVIF には向き（時計回りに 90 度）、位置情報、撮影機器（TestCam）が付いている。
  */
@@ -103,7 +103,7 @@ class ImgproxyImageConverterTest {
     // ============================== 補助 ==============================
 
     /**
-     * テスト用の画像を受付のバケットに置き、そのキーを返す
+     * テスト用の画像をアップロードのバケットに置き、そのキーを返す
      */
     private String uploaded(String file) {
         var key = UUID.randomUUID() + "/" + UUID.randomUUID();

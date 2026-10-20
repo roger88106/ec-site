@@ -69,10 +69,10 @@ class ReportMapper {
     }
 
     /**
-     * バリエーションの売れ行きのレスポンスに変換する。
+     * バリアントの売れ行きのレスポンスに変換する。
      *
-     * @param report バリエーションの売れ行き
-     * @return バリエーションの売れ行きのレスポンス
+     * @param report バリアントの売れ行き
+     * @return バリアントの売れ行きのレスポンス
      */
     VariantSalesReport toVariantSalesReport(com.ecsite.module.reporting.application.model.view.VariantSalesReport report) {
         var variants = report.variants().stream()

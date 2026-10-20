@@ -96,9 +96,9 @@ test('AC-214、215、217 営業は、メニューに売上の推移がなく、U
   await expect(menu.getByText('レポート', { exact: true })).toBeVisible()
   await expect(menu.getByRole('link', { name: '売上の推移' })).toHaveCount(0)
 
-  await menu.getByRole('link', { name: 'バリエーションの売れ行き' }).click()
-  await expect(page.getByRole('heading', { name: 'バリエーションの売れ行き' })).toBeVisible()
-  await expect(page.getByText('商品を選ぶと、バリエーションごとの売れ行きを出します。')).toBeVisible()
+  await menu.getByRole('link', { name: 'バリアントの売れ行き' }).click()
+  await expect(page.getByRole('heading', { name: 'バリアントの売れ行き' })).toBeVisible()
+  await expect(page.getByText('商品を選ぶと、バリアントごとの売れ行きを出します。')).toBeVisible()
 
   await menu.getByRole('link', { name: '地域・年齢層・性別' }).click()
   await expect(page.getByRole('region', { name: '都道府県ごとの売上額' })).toBeVisible()

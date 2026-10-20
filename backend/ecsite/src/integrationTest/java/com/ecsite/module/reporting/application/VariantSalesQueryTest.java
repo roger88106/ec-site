@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * バリエーションの売れ行きの統合テスト（T0211、AC-202〜204）。<br />
+ * バリアントの売れ行きの統合テスト（T0211、AC-202〜204）。<br />
  * 商品とバリアントは商品カタログの API で作り、写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -131,7 +131,7 @@ class VariantSalesQueryTest {
     }
 
     @Test
-    @DisplayName("BR-26 バリエーションの売れ行きは送料を含めない（送料を除いた印を返す）")
+    @DisplayName("BR-26 バリアントの売れ行きは送料を含めない（送料を除いた印を返す）")
     void shippingExcluded() {
         assertThat(service.variants(new VariantSalesQuery(shirt.id, PERIOD, Basis.ORDER, false)).shippingExcluded()).isTrue();
         assertThat(List.of(service.variants(new VariantSalesQuery(shirt.id, PERIOD, Basis.ORDER, false)).productName()))

@@ -49,9 +49,9 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | realm | `ec-store` / `ec-admin` | IdP の中で、アカウントと設定を分ける単位。消費者の realm と運営者の realm がある |
 | IdP のアカウントの ID | `subject` / `idp_subject` | IdP がアカウントに振る ID。token の subject（`sub`） |
 | 会員 | `Member` / `member` | 消費者の realm のアカウントを持ち、EC で買い物をする人 |
-| 会員 ID | `MemberId` / `member_id` | EC が会員に振る ID。カート・注文手続き・注文が持つ。IdP のアカウントの ID とは別 |
+| 会員 ID | `memberId` / `member_id` | EC が会員に振る ID。カート・注文手続き・注文が持つ。IdP のアカウントの ID とは別 |
 | 運営者 | `Operator` | 運営者の realm のアカウントを持ち、管理画面を使う人。EC に表は持たない |
-| 運営者 ID | `operatorId` | 運営者の IdP のアカウントの ID |
+| 運営者 ID | `Operator` の `id` | 運営者の IdP のアカウントの ID |
 | 権限 | `permission` | 管理 API の操作に必要な許可。`resource:action` の形（例：`product:write`）。運営者の realm の `ec-admin-api` の client role |
 | 職務 | `role` | 運営者に割り当てる権限の組。管理者（`administrator`）、管理職（`manager`）、営業（`sales`）、閲覧者（`viewer`）。管理職と営業は、閲覧者の権限にレポートの権限を足したもの |
 | 会員のカート | | 会員に結び付いたカート。会員ごとに 1 つで、どの端末からでも同じ |
@@ -103,13 +103,13 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 
 | 用語 | 識別子 | 意味 |
 |------|--------|------|
-| 在庫 | `StockItem` / `stock_item` | バリアントごとの在庫 |
+| 在庫 | `stock_item`（`StockItemRepository`） | バリアントごとの在庫 |
 | 在庫数 | `quantity` | 販売可能な数量 |
 | 在庫調整 | `StockAdjustment` / `stock_adjustment` | 増減量と理由による在庫数の変更。履歴として残す |
 | 増減量 | `delta` | 在庫調整で加える量（0 以外） |
 | 調整理由 | `reason` | 入荷（`ARRIVAL`）、棚卸差異（`STOCKTAKE`）、破損・紛失（`DAMAGE_OR_LOSS`）、その他（`OTHER`）。注文に由来する、注文（`ORDER`）、注文のキャンセル（`ORDER_CANCELLATION`）は運営者が選べない |
 | 連番 | `sequence_no` | 同じ日時の在庫調整の順序を決める番号 |
-| 引当 | `StockReservation` / `stock_reservation` | 注文手続きの間、在庫を期限付きで確保したもの。在庫数は変えない |
+| 引当 | `stock_reservation`（`StockReservationRepository`） | 注文手続きの間、在庫を期限付きで確保したもの。在庫数は変えない |
 | 持ち主 | `holderId` / `holder_id` | 引当を持つ注文手続き |
 | 販売可能数 | `sellableQuantity` | 在庫数から、有効な引当の数量を引いた数 |
 | 調整後の在庫数 | `quantity_after` | 履歴に残す、調整した直後の在庫数 |
@@ -173,7 +173,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 受付のバケット | `incoming-bucket` | アップロードされたままのファイルを置く、非公開のバケット |
 | 配信のバケット | `public-bucket` | 確定したアセットを置く、公開のバケット（本番は CDN の後ろ） |
 | 配信のキー | `storage_key` | 配信のバケットの中のファイルの場所。上書きしない |
-| 確定 | `confirmImage` | 受付のファイルを確かめ、変換して配信のバケットへ置き、アセットを記録すること |
+| 確定 | `prepareImage`・`registerImage` | 受付のファイルを確かめ、変換して配信のバケットへ置き、アセットを記録すること |
 | 変換 | `ImageConverter` | 受け付けた画像を WebP にし、向きを画素に反映してメタデータを除くこと（imgproxy が行う） |
 
 ## 出荷
@@ -209,7 +209,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 |------|--------|------|
 | レポート | `report` | 運営者が管理画面で見る売上の集計（売上の推移、バリエーションの売れ行き、地域・年齢層・性別）。グラフと表で示す |
 | 注文の写し（レポート） | `ReportOrder` / `reporting.sales_order`・`sales_order_line` | レポートが集計のために持つ、注文と明細の今の値の写し。状態によらず、すべての注文を持つ |
-| 状態の履歴 | `StatusHistory` / `status_history` | 注文の状態と配送状態が、いつ・どの状態からどの状態に変わったかの記録。受けたイベントごとに 1 行 |
+| 状態の履歴 | `StatusHistoryEntry` / `status_history` | 注文の状態と配送状態が、いつ・どの状態からどの状態に変わったかの記録。受けたイベントごとに 1 行 |
 | 売上の数え方 | `basis` | 注文基準（`ORDER`。受付・キャンセル申請中・出荷済みの注文を注文日で数える）と、出荷基準（`SHIPMENT`。出荷済みの注文を出荷日で数える） |
 | 集計の粒度 | `granularity` | 売上の推移の区切り。週（`WEEK`。月曜始まり）、月（`MONTH`）、四半期（`QUARTER`）、年（`YEAR`） |
 | 会計年度 | `fiscal-year-start-month` | 四半期と年の区切りの基準。始まりの月は設定で持ち、既定は 4 月。年度は始まりの月の年で呼ぶ |

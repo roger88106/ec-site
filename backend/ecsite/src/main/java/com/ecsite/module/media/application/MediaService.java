@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 /**
  * メディアのサービス（docs/backend/modules/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
- * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、確定のときに中身を確かめ、WebP に変換して配信のバケットへ置く。
+ * ファイルは署名付き URL でブラウザから受付のバケットへ直接送られ、用意のときに中身を確かめ、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
  */
 @Slf4j
 @Service
@@ -79,30 +79,6 @@ public class MediaService {
         // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザが付ける Content-Type と合う）
         var presigned = storage.presignUpload(uploadKey, contentType.toLowerCase(Locale.ROOT), contentLength);
         return new ImageUpload(uploadId, presigned.url(), presigned.headers(), presigned.expiresAt());
-    }
-
-    /**
-     * 受け付けた画像を確定する（MediaApi の同じメソッドの説明を参照）。<br />
-     * 中身を WebP に変換して配信のバケットへ置く。変換できなければ登録しない。<br />
-     * 書き込みの後に呼んだ側の保存が失敗すると配信のファイルが残るが、だれからも参照されないだけで害はない。
-     */
-    @Transactional
-    public UUID confirmImage(String scope, UUID uploadId) {
-        var uploadKey = AssetKeys.upload(scope, uploadId);
-        var size = storage.findUploadSize(uploadKey)
-                .orElseThrow(() -> BusinessException.of(MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND));
-        verifySize(size);
-        // 変換の前に、受け付ける形式であることを確かめる（判定できないものは変換に回さない）
-        ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH))
-                .orElseThrow(() -> BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE, List.of(ImageFormat.displayNames())));
-        var webp = imageConverter.convertToWebp(uploadKey);
-
-        var assetId = UUID.randomUUID();
-        var storageKey = AssetKeys.published(assetId, ImageFormat.WEBP);
-        storage.putPublished(storageKey, webp, ImageFormat.WEBP.contentType());
-
-        assetRepository.insert(new Asset(assetId, ImageFormat.WEBP, storageKey, clock.instant()));
-        return assetId;
     }
 
     /**

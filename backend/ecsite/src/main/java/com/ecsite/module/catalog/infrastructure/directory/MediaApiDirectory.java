@@ -37,15 +37,36 @@ class MediaApiDirectory implements MediaDirectory {
     }
 
     /**
-     * 受け付けた画像を、メディアモジュールで確定する。
+     * 受け付けた画像を、メディアモジュールで用意する。
      *
      * @param productId 商品 ID
      * @param uploadId  受付の ID
+     * @return 用意した画像
+     */
+    @Override
+    public PreparedImage prepareImage(UUID productId, UUID uploadId) {
+        return new PreparedImage(mediaApi.prepareImage(scope(productId), uploadId).assetId());
+    }
+
+    /**
+     * 用意した画像を、メディアモジュールで登録する。
+     *
+     * @param prepared 用意した画像
      * @return アセット ID
      */
     @Override
-    public UUID confirmImage(UUID productId, UUID uploadId) {
-        return mediaApi.confirmImage(scope(productId), uploadId);
+    public UUID registerImage(PreparedImage prepared) {
+        return mediaApi.registerImage(toMedia(prepared));
+    }
+
+    /**
+     * 用意した画像を、メディアモジュールで破棄する。
+     *
+     * @param prepared 用意した画像
+     */
+    @Override
+    public void discardImage(PreparedImage prepared) {
+        mediaApi.discardImage(toMedia(prepared));
     }
 
     /**
@@ -76,5 +97,12 @@ class MediaApiDirectory implements MediaDirectory {
      */
     private static String scope(UUID productId) {
         return productId.toString();
+    }
+
+    /**
+     * 用意した画像を、メディアモジュールの型にする
+     */
+    private static com.ecsite.module.media.api.PreparedImage toMedia(PreparedImage prepared) {
+        return new com.ecsite.module.media.api.PreparedImage(prepared.assetId());
     }
 }

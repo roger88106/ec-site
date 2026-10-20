@@ -37,6 +37,11 @@ public class ProductImageService {
     private final ProductLoader productLoader;
 
     /**
+     * 商品画像の追加の、トランザクションの中の処理
+     */
+    private final ProductImageCommandService commandService;
+
+    /**
      * 画像のアップロードを受け付ける。枚数を確かめ、形式と大きさはメディアモジュールが確かめる。<br />
      * 受付は DB に記録しない（受付の範囲を商品 ID にする。登録されなかったファイルはライフサイクル規則で消える）。
      *
@@ -56,24 +61,25 @@ public class ProductImageService {
 
     /**
      * 受け付けた画像を登録する。<br />
-     * 同じトランザクションの中で、メディアモジュールにアセットを確定させ（ファイルの中身を確かめる）、商品の画像の最後に加える。
+     * 画像の変換と保存の間に DB の接続を持たないよう、トランザクションを分ける：
+     * 加えられることを確かめる → 画像を用意する（トランザクションの外）→ アセットの登録と商品への追加（1 つのトランザクション）。
+     * 保存が失敗したら、用意した配信のファイルを消し、元の失敗を投げ直す。
      *
      * @param productId 商品 ID
      * @param uploadId  受付 ID
      * @param version   取得時の商品のバージョン
      * @return 画像 ID
      */
-    @Transactional
     public UUID addImage(UUID productId, UUID uploadId, long version) {
-        var product = productLoader.get(productId, version);
-        product.verifyCanAddImage();
+        commandService.verifyCanAddImage(productId, version);
 
-        var assetId = mediaDirectory.confirmImage(productId, uploadId);
-
-        var imageId = UUID.randomUUID();
-        product.addImage(imageId, assetId);
-        productRepository.save(product);
-        return imageId;
+        var prepared = mediaDirectory.prepareImage(productId, uploadId);
+        try {
+            return commandService.saveAddedImage(productId, version, prepared);
+        } catch (RuntimeException ex) {
+            mediaDirectory.discardImage(prepared);
+            throw ex;
+        }
     }
 
     /**

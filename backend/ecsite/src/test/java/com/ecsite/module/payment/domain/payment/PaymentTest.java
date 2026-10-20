@@ -172,6 +172,82 @@ class PaymentTest {
     }
 
     @Nested
+    @DisplayName("与信の通知を待つ")
+    class AwaitAuthorization {
+
+        /**
+         * 期限切れのジョブが、決済サービスで支払済みと知った時刻
+         */
+        private static final Instant AWAITING_SINCE = DEADLINE.plus(Duration.ofMinutes(1));
+
+        @Test
+        @DisplayName("AC-311 未払いの支払を通知を待つ状態にすると、待ち始めた時刻を持ち、状態は未払いのまま")
+        void awaitsUnpaid() {
+            var payment = unpaid();
+
+            var changed = payment.awaitAuthorization(AWAITING_SINCE);
+
+            assertThat(changed).isTrue();
+            assertThat(payment.status()).isEqualTo(PaymentStatus.UNPAID);
+            assertThat(payment.awaitingAuthorizationSince()).contains(AWAITING_SINCE);
+            assertThat(payment.pullEvents()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-311 待ち始めた時刻は、重ねて待っても最初の時刻のまま")
+        void keepsFirstAwaitingSince() {
+            var payment = unpaid();
+            payment.awaitAuthorization(AWAITING_SINCE);
+
+            var changed = payment.awaitAuthorization(AWAITING_SINCE.plus(Duration.ofMinutes(1)));
+
+            assertThat(changed).isFalse();
+            assertThat(payment.awaitingAuthorizationSince()).contains(AWAITING_SINCE);
+        }
+
+        @Test
+        @DisplayName("AC-311 未払いでない支払（通知が先に届いた）は、待つ状態にしない")
+        void doesNotAwaitAuthorized() {
+            var payment = authorized();
+
+            var changed = payment.awaitAuthorization(AWAITING_SINCE);
+
+            assertThat(changed).isFalse();
+            assertThat(payment.awaitingAuthorizationSince()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("AC-311 通知を待つ支払に与信の通知が届いたら、与信済みにする")
+        void authorizesAwaiting() {
+            var payment = unpaid();
+            payment.awaitAuthorization(AWAITING_SINCE);
+
+            payment.authorize(AUTHORIZATION_REF, AWAITING_SINCE.plus(Duration.ofMinutes(1)));
+
+            assertThat(payment.status()).isEqualTo(PaymentStatus.AUTHORIZED);
+            assertThat(payment.authorizationRef()).isEqualTo(AUTHORIZATION_REF);
+            assertThat(payment.pullEvents()).singleElement().isInstanceOf(PaymentAuthorized.class);
+        }
+
+        @Test
+        @DisplayName("AC-311 待ち始めた時刻は、スナップショットから復元できる")
+        void restoresAwaitingSince() {
+            var payment = unpaid();
+            payment.awaitAuthorization(AWAITING_SINCE);
+
+            var restored = Payment.restore(payment.toSnapshot());
+
+            assertThat(restored.awaitingAuthorizationSince()).contains(AWAITING_SINCE);
+        }
+
+        @Test
+        @DisplayName("AC-311 作ったばかりの支払は、通知を待っていない")
+        void notAwaitingWhenCreated() {
+            assertThat(unpaid().awaitingAuthorizationSince()).isEmpty();
+        }
+    }
+
+    @Nested
     @DisplayName("取消（注文のキャンセル）")
     class Cancel {
 

@@ -158,7 +158,8 @@ class ImgproxyImageConverterFailureTest {
     private static ImgproxyImageConverter converter(URI baseUrl) {
         var properties = new ImgproxyProperties(baseUrl, "0123456789abcdef", "fedcba9876543210", 82, TIMEOUT);
         var storage = new MediaStorageProperties(null, "us-east-1", true, null, null,
-                "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5));
+                "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
+                Duration.ofSeconds(10), Duration.ofSeconds(30));
         return new ImgproxyImageConverter(RestClient.builder(), properties, storage);
     }
 

@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（集約の不変条件がなく、写しと集計だけ。理由は後述） |
 | 依存 | 注文（API、イベント）、出荷（イベント）、商品カタログ・地域（API）。他のモジュールはレポートに依存しない |
-| 関連 spec | [010](../../specs/010-sales-report)、[016](../../specs/016-master-data) |
+| 関連 spec | [010](../../specs/010-sales-report)、[013](../../specs/013-backend-consistency)、[016](../../specs/016-master-data) |
 
 ## レベルを B とした理由
 

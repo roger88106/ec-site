@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（軸の組み合わせの一意性、公開の条件など、不変条件が多い） |
 | 依存 | 税（API）、メディア（API。商品画像のファイル） |
-| 関連 spec | [001](../../specs/001-catalog-and-inventory)、[002](../../specs/002-cart-and-order)、[017](../../specs/017-stability) |
+| 関連 spec | [001](../../specs/001-catalog-and-inventory)、[002](../../specs/002-cart-and-order)、[013](../../specs/013-backend-consistency)、[017](../../specs/017-stability) |
 
 ## 商品（集約）
 

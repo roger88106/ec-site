@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（状態遷移、注文時点の写し、在庫との強い一貫性） |
 | 依存 | カート（API、イベント）、決済（API、イベント）、出荷・商品カタログ・在庫・税・地域（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../../specs/002-cart-and-order)、[003](../../specs/003-auth)、[007](../../specs/007-payment)、[009](../../specs/009-shipping)、[010](../../specs/010-sales-report)、[016](../../specs/016-master-data)、[017](../../specs/017-stability) |
+| 関連 spec | [002](../../specs/002-cart-and-order)、[003](../../specs/003-auth)、[007](../../specs/007-payment)、[009](../../specs/009-shipping)、[010](../../specs/010-sales-report)、[013](../../specs/013-backend-consistency)、[016](../../specs/016-master-data)、[017](../../specs/017-stability) |
 
 ## 見積もり
 

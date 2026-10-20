@@ -186,6 +186,9 @@ jobs:
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          # 設計の文書の関連 spec の検査（related-specs）が commit の履歴を読む
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:

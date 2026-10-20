@@ -11,11 +11,16 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionTemplate;
+import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.S3Exception;
@@ -43,13 +48,14 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doThrow;
 
 /**
- * メディアモジュールの API の統合テスト（T1028、T1037。docs/backend/modules/media.md）。<br />
- * 確定では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
+ * メディアモジュールの API の統合テスト（T1028、T1037、T017-04-01。docs/backend/modules/media.md）。<br />
+ * 用意では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
  * ファイルは、受付の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
  * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったアセットを消す。
  * エラーコードは、商品画像 API の契約と同じ文字列であることを確かめる。
  */
 @IntegrationTest
+@ExtendWith(OutputCaptureExtension.class)
 class MediaApiTest {
 
     /**
@@ -74,13 +80,13 @@ class MediaApiTest {
     S3Client s3;
 
     /**
-     * ファイルの置き場所（配信のバケットへの書き込みの失敗を起こすため、本物を包む）
+     * ファイルの置き場所（配信のバケットへの書き込み・削除の失敗を起こすため、本物を包む）
      */
     @MockitoSpyBean
     ObjectStorage storage;
 
     /**
-     * このテストで確定したアセットの ID（後で記録を消す）
+     * このテストで登録したアセットの ID（後で記録を消す）
      */
     private final List<UUID> assetIds = new ArrayList<>();
 
@@ -134,25 +140,23 @@ class MediaApiTest {
     }
 
     @Nested
-    @DisplayName("確定")
-    class Confirm {
+    @DisplayName("用意")
+    class Prepare {
 
         @Test
-        @DisplayName("AC-37、68 確定すると WebP に変換してアセットが記録され、配信の URL で取得できる")
-        void confirms() throws Exception {
+        @DisplayName("AC-304 用意は WebP に変換して配信のバケットに置き、アセットを記録しない")
+        void preparesWithoutRecord() throws Exception {
             var scope = scope();
             var upload = uploaded(scope, "image/png", TestImages.png());
 
-            var assetId = confirm(scope, upload.uploadId());
+            var prepared = media.prepareImage(scope, upload.uploadId());
 
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isTrue();
-            assertThat(dsl.fetchValue(ASSET.FORMAT, ASSET.ID.eq(assetId))).isEqualTo("WEBP");
-            var url = media.urls(List.of(assetId)).get(assetId);
-            assertThat(url.toString()).endsWith("/assets/" + assetId + ".webp");
-            var response = get(url);
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            var response = getPublished(prepared);
             assertThat(response.statusCode()).isEqualTo(200);
             assertThat(new String(response.body(), 8, 4, StandardCharsets.US_ASCII)).isEqualTo("WEBP");
             assertThat(response.headers().firstValue("Content-Type")).contains("image/webp");
+            media.discardImage(prepared);
         }
 
         @ParameterizedTest(name = "{0}（{1}）")
@@ -194,21 +198,19 @@ class MediaApiTest {
             var upload = uploaded(scope, "image/heic", TestImages.of("broken.heic"));
             var before = assetIds();
 
-            assertErrorCode(() -> media.confirmImage(scope, upload.uploadId()), "IMAGE_CONVERSION_FAILED");
+            assertErrorCode(() -> media.prepareImage(scope, upload.uploadId()), "IMAGE_CONVERSION_FAILED");
             assertThat(assetIds()).isSubsetOf(before);
         }
 
         @Test
-        @DisplayName("配信のバケットに書けなければ、確定は失敗し、アセットを記録しない")
+        @DisplayName("配信のバケットに書けなければ、用意は失敗する")
         void failsWhenPublishingFails() throws Exception {
             var scope = scope();
             var upload = uploaded(scope, "image/png", TestImages.png());
-            var before = assetIds();
             doThrow(S3Exception.builder().statusCode(404).message("The specified bucket does not exist").build())
                     .when(storage).putPublished(anyString(), any(), anyString());
 
-            assertThatThrownBy(() -> media.confirmImage(scope, upload.uploadId())).isInstanceOf(S3Exception.class);
-            assertThat(assetIds()).isSubsetOf(before);
+            assertThatThrownBy(() -> media.prepareImage(scope, upload.uploadId())).isInstanceOf(S3Exception.class);
         }
 
         @Test
@@ -217,7 +219,7 @@ class MediaApiTest {
             var scope = scope();
             var upload = uploaded(scope, "image/png", GIF);
 
-            assertErrorCode(() -> media.confirmImage(scope, upload.uploadId()), "INVALID_IMAGE_FILE");
+            assertErrorCode(() -> media.prepareImage(scope, upload.uploadId()), "INVALID_IMAGE_FILE");
         }
 
         @Test
@@ -231,7 +233,7 @@ class MediaApiTest {
             s3.putObject(request -> request.bucket(TestcontainersConfig.INCOMING_BUCKET).key(scope + "/" + uploadId),
                     RequestBody.fromBytes(body));
 
-            assertErrorCode(() -> media.confirmImage(scope, uploadId), "IMAGE_TOO_LARGE");
+            assertErrorCode(() -> media.prepareImage(scope, uploadId), "IMAGE_TOO_LARGE");
         }
 
         @Test
@@ -239,24 +241,83 @@ class MediaApiTest {
         void rejectsMissingUpload() throws Exception {
             var upload = uploaded(scope(), "image/png", TestImages.png());
 
-            assertErrorCode(() -> media.confirmImage(scope(), UUID.randomUUID()), "IMAGE_UPLOAD_NOT_FOUND");
-            assertErrorCode(() -> media.confirmImage(scope(), upload.uploadId()), "IMAGE_UPLOAD_NOT_FOUND");
+            assertErrorCode(() -> media.prepareImage(scope(), UUID.randomUUID()), "IMAGE_UPLOAD_NOT_FOUND");
+            assertErrorCode(() -> media.prepareImage(scope(), upload.uploadId()), "IMAGE_UPLOAD_NOT_FOUND");
+        }
+    }
+
+    @Nested
+    @DisplayName("登録")
+    class Register {
+
+        @Test
+        @DisplayName("AC-37、68 用意した画像を登録すると、アセットが記録され、配信の URL で取得できる")
+        void registers() throws Exception {
+            var scope = scope();
+            var upload = uploaded(scope, "image/png", TestImages.png());
+
+            var assetId = confirm(scope, upload.uploadId());
+
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isTrue();
+            assertThat(dsl.fetchValue(ASSET.FORMAT, ASSET.ID.eq(assetId))).isEqualTo("WEBP");
+            var url = media.urls(List.of(assetId)).get(assetId);
+            assertThat(url.toString()).endsWith("/assets/" + assetId + ".webp");
+            assertThat(get(url).statusCode()).isEqualTo(200);
+        }
+
+        @Test
+        @DisplayName("AC-304 登録は呼んだ側のトランザクションの中で行い、トランザクションがなければ失敗する")
+        void requiresTransaction() throws Exception {
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
+
+            assertThatThrownBy(() -> media.registerImage(prepared)).isInstanceOf(IllegalTransactionStateException.class);
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            media.discardImage(prepared);
         }
 
         @Test
         @DisplayName("呼んだ側のトランザクションが取り消されると、アセットの記録も残らない")
         void rollsBackWithCaller() throws Exception {
             var scope = scope();
-            var upload = uploaded(scope, "image/png", TestImages.png());
+            var prepared = media.prepareImage(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
 
-            var assetId = transactionTemplate.execute(status -> {
-                var id = media.confirmImage(scope, upload.uploadId());
+            transactionTemplate.executeWithoutResult(status -> {
+                media.registerImage(prepared);
                 status.setRollbackOnly();
-                return id;
             });
 
-            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isFalse();
-            assertThat(media.urls(List.of(assetId))).isEmpty();
+            assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(prepared.assetId()))).isFalse();
+            assertThat(media.urls(List.of(prepared.assetId()))).isEmpty();
+            media.discardImage(prepared);
+        }
+    }
+
+    @Nested
+    @DisplayName("破棄")
+    class Discard {
+
+        @Test
+        @DisplayName("AC-305 破棄すると、用意で置いた配信のファイルが消える")
+        void discards() throws Exception {
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
+
+            media.discardImage(prepared);
+
+            assertThat(getPublished(prepared).statusCode()).isEqualTo(404);
+        }
+
+        @Test
+        @DisplayName("AC-305 消すのに失敗しても例外を投げず、警告のログに保存先のキーを出す")
+        void logsWhenDeleteFails(CapturedOutput output) throws Exception {
+            var scope = scope();
+            var prepared = media.prepareImage(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
+            doThrow(SdkClientException.create("connection refused")).when(storage).deletePublished(anyString());
+
+            assertThatCode(() -> media.discardImage(prepared)).doesNotThrowAnyException();
+
+            assertThat(output).containsPattern("WARN.*assets/" + prepared.assetId() + "\\.webp");
         }
     }
 
@@ -362,16 +423,17 @@ class MediaApiTest {
     }
 
     /**
-     * 受け付けた画像を確定し、テストの後に消すためにアセット ID を覚えておく
+     * 受け付けた画像を用意し、トランザクションの中で登録する。テストの後に消すためにアセット ID を覚えておく
      */
     private UUID confirm(String scope, UUID uploadId) {
-        var assetId = media.confirmImage(scope, uploadId);
+        var prepared = media.prepareImage(scope, uploadId);
+        var assetId = transactionTemplate.execute(status -> media.registerImage(prepared));
         assetIds.add(assetId);
         return assetId;
     }
 
     /**
-     * PNG を受け付けて確定し、アセット ID を返す
+     * PNG を受け付けて用意・登録し、アセット ID を返す
      */
     private UUID confirmed() throws Exception {
         var scope = scope();
@@ -400,5 +462,12 @@ class MediaApiTest {
      */
     private HttpResponse<byte[]> get(URI url) throws IOException, InterruptedException {
         return http.send(HttpRequest.newBuilder(url).GET().build(), HttpResponse.BodyHandlers.ofByteArray());
+    }
+
+    /**
+     * 用意した画像の配信のファイルを、記録を通さずに取得する（登録の前は配信の URL を引けない）
+     */
+    private HttpResponse<byte[]> getPublished(PreparedImage prepared) throws IOException, InterruptedException {
+        return get(storage.publicUrl("assets/" + prepared.assetId() + ".webp"));
     }
 }

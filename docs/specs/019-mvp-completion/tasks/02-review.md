@@ -72,4 +72,5 @@
 - [ ] **T019-02-17** テスト名の AC を、テストが確認するようにする：E2E の AC-37（複数の画像の並べ替え）、AC-223・224、バックエンドの AC-225。確認する内容を AC の文と照合してから修正する。
 - [x] **T019-02-18** skill `new-screen` の例を、今のコードに合わせる（`isUuid` の import 先、文言は文言ファイルのキーで引く）。
   - 結果：店舗の取得・フォームと、管理画面の一覧・操作の例を、今のコード（`app/orders/[orderId]/page.tsx`、`CancellationRequestForm.tsx`、`OrderActions.tsx`）に合わせた。`isUuid` と `Button` は共有パッケージから import し、文言は `getTranslations`・`useTranslations` のキーで引いて後ろにコメントを書く。前提の箇条書きに、文言ファイルに置く規則を追加した。
-- [ ] **T019-02-19** 全体構成の文書だけを変えた push でも、`ModuleDiagramTest` に当たる検査が CI で実行されるようにする（`ci.yml` の対象か、`docs.yml` の検査）。
+- [x] **T019-02-19** 全体構成の文書だけを変えた push でも、`ModuleDiagramTest` に当たる検査が CI で実行されるようにする（`ci.yml` の対象か、`docs.yml` の検査）。
+  - 結果：`ci.yml` の push の条件を `paths-ignore` から `paths`（全て → 除外 → 全体構成の文書を再度含める）に変えた。GitHub の文書（Context7 で確認）のとおり、`paths` は上から順に当て、除いたものを後の行で再度含められる。CI の検査の文書の説明も修正した。push の後に、全体構成の文書だけを変えた push で CI が流れることは、段階 5 の push で確認する。

@@ -9,16 +9,19 @@ name: CI
 
 on:
   # CI の結果に関わらないファイルだけを変えた push では流さない（constitution 12）。
-  # 1 つでも他のファイルが含まれていれば、すべての job を流す
+  # 1 つでも他のファイルが含まれていれば、すべての job を流す。
+  # paths は上から順に当てる（! で除いたものも、後の行で再度含められる）
   push:
-    paths-ignore:
-      - '**.md'           # 文書、skill の本文
-      - '.claude/**'      # エージェントの設定と、ローカルの画面の確認の設定
-      - 'scripts/dev/**'  # ローカル用の script（CI で使う script は scripts/ci/ に置く）
-      - 'showcase/**'     # 機能紹介のページ（pages.yml で公開する）
-      - '.github/workflows/pages.yml'
-      - '.gitignore'
-      - 'LICENSE'
+    paths:
+      - '**'
+      - '!**.md'          # 文書、skill の本文
+      - '!.claude/**'     # エージェントの設定と、ローカルの画面の確認の設定
+      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く）
+      - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
+      - '!.github/workflows/pages.yml'
+      - '!.gitignore'
+      - '!LICENSE'
+      - 'docs/design/overview.md' # 全体構成の文書。バックエンドの単体テスト（ModuleDiagramTest）が図と照合する
   # pull request は、変えたファイルによらずいつも流す（main に入る前に必ず確認する）
   pull_request:
 

@@ -27,7 +27,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 CI の検査の script は、文書だけの変更でも結果が変わる（文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec など）ので、文書だけの push でも実行する `docs.yml` で実行する。
 
-`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.gitignore`、`LICENSE`。pull request はいつも実行する。
+`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.gitignore`、`LICENSE`。ただし、全体構成の文書（`docs/design/overview.md`）は、バックエンドの単体テストが図と照合するので、Markdown でも実行する。pull request はいつも実行する。
 
 ## 3. CI の検査の script
 

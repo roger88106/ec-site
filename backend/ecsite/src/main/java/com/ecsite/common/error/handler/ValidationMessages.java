@@ -10,6 +10,7 @@ import org.springframework.validation.FieldError;
 import org.springframework.validation.ObjectError;
 import org.springframework.validation.method.ParameterValidationResult;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -76,7 +77,8 @@ public class ValidationMessages {
      */
     public String of(ConstraintViolation<?> violation) {
         var descriptor = violation.getConstraintDescriptor();
-        return of(descriptor.getAnnotation().annotationType().getSimpleName(), descriptor.getAttributes());
+        return of(descriptor.getAnnotation().annotationType().getSimpleName(), descriptor.getAttributes(),
+                isItems(violation.getInvalidValue()));
     }
 
     /**
@@ -117,14 +119,40 @@ public class ValidationMessages {
      * @return 文
      */
     public String of(String constraint, Map<String, Object> attributes) {
+        return of(constraint, attributes, false);
+    }
+
+    /**
+     * 制約の種類と属性から文を作る。配列・一覧の長さは、文字数ではなく件数の文にする。
+     *
+     * @param constraint 制約の種類（注釈の単純名。例：Size）
+     * @param attributes 制約の属性（min、max、value など）
+     * @param items      値が配列・一覧か
+     * @return 文
+     */
+    private String of(String constraint, Map<String, Object> attributes, boolean items) {
         String type = constraint.toLowerCase(Locale.ROOT);
         if (!KNOWN.contains(type)) {
             return messageHelper.getMessage(PREFIX + INVALID, Map.of());
         }
-        // 長さの下限が 0 なら、上限だけの文にする
-        if (type.equals("size") && attributes.get("min") instanceof Integer min && min == 0) {
-            return messageHelper.getMessage(PREFIX + "size_max", attributes);
+        if (type.equals("size")) {
+            String key = items ? "size_items" : "size";
+            // 下限が 0 なら上限だけの文、上限がなければ（件数のとき）下限だけの文にする
+            if (attributes.get("min") instanceof Integer min && min == 0) {
+                return messageHelper.getMessage(PREFIX + key + "_max", attributes);
+            }
+            if (items && attributes.get("max") instanceof Integer max && max == Integer.MAX_VALUE) {
+                return messageHelper.getMessage(PREFIX + key + "_min", attributes);
+            }
+            return messageHelper.getMessage(PREFIX + key, attributes);
         }
         return messageHelper.getMessage(PREFIX + type, attributes);
+    }
+
+    /**
+     * 値が配列・一覧（件数を数えるもの）か。
+     */
+    private static boolean isItems(Object value) {
+        return value instanceof Collection<?> || value instanceof Map<?, ?> || (value != null && value.getClass().isArray());
     }
 }

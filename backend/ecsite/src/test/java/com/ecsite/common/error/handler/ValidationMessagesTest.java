@@ -59,7 +59,10 @@ class ValidationMessagesTest {
             @DecimalMax("99.9") BigDecimal decimalMax,
             @Pattern(regexp = "^[A-Z]+$") String pattern,
             @Email String email,
-            @Future LocalDate future) {
+            @Future LocalDate future,
+            @Size(min = 1) List<String> items,
+            @Size(max = 3) List<String> fewItems,
+            @Size(min = 1, max = 3) String[] someItems) {
     }
 
     /**
@@ -123,6 +126,14 @@ class ValidationMessagesTest {
     }
 
     @Test
+    @DisplayName("配列・一覧の長さは、文字数ではなく件数の文にする")
+    void sizeOfItems() {
+        assertThat(messageOf("items", List.of())).isEqualTo("1 件以上にしてください。");
+        assertThat(messageOf("fewItems", List.of("a", "b", "c", "d"))).isEqualTo("3 件以内にしてください。");
+        assertThat(messageOf("someItems", new String[0])).isEqualTo("1 件以上 3 件以内にしてください。");
+    }
+
+    @Test
     @DisplayName("範囲は、下限・上限の値を差し込む")
     void range() {
         assertThat(messageOf("min", -1L)).isEqualTo("0 以上にしてください。");
@@ -164,7 +175,7 @@ class ValidationMessagesTest {
     @Test
     @DisplayName("Bean Validation の違反から作った検証エラーは、制約の種類の文になる")
     void fromSpringValidator() {
-        var target = new Sample(null, "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "A", "a@b.jp", null);
+        var target = new Sample(null, "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "A", "a@b.jp", null, List.of("x"), List.of(), new String[]{"x"});
         var errors = new BeanPropertyBindingResult(target, "sample");
         new SpringValidatorAdapter(validator).validate(target, errors);
 
@@ -176,7 +187,7 @@ class ValidationMessagesTest {
     void mappedField() {
         ValidationErrorMapping mapping = () -> Map.of("pattern", ErrorDetail.of(CommonErrorCode.INVALID_MONEY.getCode(), List.of(0)));
         var mapped = new ValidationMessages(helper, List.of(mapping));
-        var target = new Sample("x", "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "abc", "x", null);
+        var target = new Sample("x", "x", "x", "x", 0L, 0, BigDecimal.ONE, BigDecimal.ONE, "abc", "x", null, List.of("x"), List.of(), new String[]{"x"});
         var errors = new BeanPropertyBindingResult(target, "sample");
         new SpringValidatorAdapter(validator).validate(target, errors);
 

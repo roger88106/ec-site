@@ -87,10 +87,10 @@
 | AC-67 | BMP、HEIC / HEIF など一般的な画像形式も受け付ける（対応形式は p… | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImageFormatTest`、`MediaApiTest`、`ProductEditPage.test.tsx` ほか 3 |
 | AC-68 | すべての画像を WebP に変換して配信する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ImgproxyImageConverterTest`、`MediaApiTest` ほか 1 |
 | AC-69 | 変換時に位置情報などのメタデータを除去する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterTest` |
-| AC-70 | 変換に失敗した画像は登録されず、運営者にその旨が表示される。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterTest`、`MediaApiTest`、`ProductEditPage.test.tsx` |
+| AC-70 | 変換に失敗した画像は登録されず、運営者にその旨が表示される。 | 変更 | [001](../specs/001-catalog-and-inventory/spec.md) | [017](../specs/017-stability) | [メディアモジュール](../backend/modules/media.md)（アップロードの流れ ※1）、[API の規約](../api/conventions.md) 第 4 節 | `ImgproxyImageConverterTest`、`MediaApiTest`、`ProductEditPage.test.tsx` |
 | AC-71 | C 側に一度も表示されていない商品のバリアントは削除できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductTest` |
 | AC-72 | C 側に表示される商品（BR-2）の、選べるバリアント（販売停止でなく、在庫あり… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`order.spec.ts` |
-| AC-73 | カートを持っていなければ、最初に商品を入れたときに作られる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest`、`cart.test.ts` ほか 2 |
+| AC-73 | カートを持っていなければ、最初に商品を入れたときに作られる。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [003](../specs/003-auth) | [カートモジュール](../backend/modules/cart.md)（会員のカート）、[店舗画面](../frontend/apps/store.md) 第 4.5 節 | `CartApiTest`、`CartTest`、`cart.test.ts` ほか 2 |
 | AC-74 | カートにあるバリアントをもう一度入れると、数量を合算する。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest` |
 | AC-75 | 1 品目の数量は 1〜10。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest`、`cart.test.ts` |
 | AC-76 | 入れた後の数量が、その時点の販売可能数（BR-11）を超える場合は拒否される。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest` |
@@ -98,29 +98,29 @@
 | AC-78 | 品目の数量を変更（AC-75、76 の範囲で）・削除できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartItemControls.test.tsx`、`CartTest` ほか 1 |
 | AC-79 | 単価は常に現在の価格で表示する。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `StorefrontCartTest` |
 | AC-80 | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartItemControls.test.tsx`、`OrderCatalogApiTest`、`QuoteItemSummary.test.tsx` ほか 4 |
-| AC-81 | 最後に変更してから 30 日たったカートは、空のカートとして扱う。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartMergeTest`、`CartTest` ほか 1 |
+| AC-81 | 最後に変更してから 30 日たったカートは、空のカートとして扱う。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [017](../specs/017-stability) | [カートモジュール](../backend/modules/cart.md)（期限） | `CartApiTest`、`CartMergeTest`、`CartTest` ほか 1 |
 | AC-82 | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる（B… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`StockReservationApiTest`、`cart.test.ts` ほか 2 |
 | AC-83 | 同じ在庫に同時に引当が来ても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`reservation-race.spec.ts` |
-| AC-84 | 引当は次のときに解かれる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`StockReservationApiTest` |
-| AC-85 | 注文手続きでは、カートの内容、送料、総額、税率ごとの消費税額を確認し、メールアド… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`order.spec.ts` |
-| AC-86 | 入力の形式。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `OrderForm.test.tsx`、`OrderTest`、`PlaceOrderApiTest` ほか 4 |
-| AC-87 | 注文が成立すると、全品目の在庫数を注文数だけ減らし、引当を解く。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `OrderForm.test.tsx`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` ほか 3 |
+| AC-84 | 引当は次のときに解かれる。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [007](../specs/007-payment) | [注文モジュール](../backend/modules/order.md)（注文の成立）、[在庫モジュール](../backend/modules/inventory.md)（引当） | `CheckoutApiTest`、`StockReservationApiTest` |
+| AC-85 | 注文手続きでは、カートの内容、送料、総額、税率ごとの消費税額を確認し、メールアド… | 変更 | [002](../specs/002-cart-and-order/spec.md) | [003](../specs/003-auth)、[016](../specs/016-master-data) | [注文モジュール](../backend/modules/order.md)（注文（集約））、[店舗画面](../frontend/apps/store.md) 第 4.8 節 | `CheckoutApiTest`、`order.spec.ts` |
+| AC-86 | 入力の形式。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [016](../specs/016-master-data) | [注文モジュール](../backend/modules/order.md)（注文の成立）、[地域モジュール](../backend/modules/region.md) | `OrderForm.test.tsx`、`OrderTest`、`PlaceOrderApiTest` ほか 4 |
+| AC-87 | 注文が成立すると、全品目の在庫数を注文数だけ減らし、引当を解く。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [007](../specs/007-payment) | [注文モジュール](../backend/modules/order.md)（注文の成立）、[在庫モジュール](../backend/modules/inventory.md)（操作） | `OrderForm.test.tsx`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` ほか 3 |
 | AC-88 | 空のカート、または購入できない品目（AC-80）を含むカートは注文できない。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`OrderTest` |
 | AC-89 | 確認した総額と、注文時点で計算した総額が異なる場合（その間に価格や税率が変わった… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `PlaceOrderApiTest`、`checkout.test.ts`、`placeOrderErrors.test.ts` |
-| AC-90 | 注文が成立すると注文番号を振り、カートを空にする。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `PlaceOrderApiTest` |
+| AC-90 | 注文が成立すると注文番号を振り、カートを空にする。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [007](../specs/007-payment) | [注文モジュール](../backend/modules/order.md)（状態遷移の後の箇条）、[カートモジュール](../backend/modules/cart.md)（カート） | `PlaceOrderApiTest` |
 | AC-91 | 同じ注文の送信が繰り返されても（二度押し、通信の再送）、注文は 1 件だけ作られ… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `JooqOrderRepositoryTest`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` |
 | AC-92 | 注文には、注文時点の商品品番、バリアント品番、商品名、軸の値、税抜単価、税率、税… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `OrderCatalogApiTest`、`OrderTest`、`PlaceOrderApiTest` |
-| AC-93 | 注文の直後に、注文番号、注文日時、明細、金額の内訳（BR-7、8）、お届け先、状… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `PlaceOrderApiTest`、`order.spec.ts` |
-| AC-94 | 注文の URL を知っていれば、後から同じ内容を見られる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `PlaceOrderApiTest` |
-| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`checkout.test.ts` ほか 2 |
+| AC-93 | 注文の直後に、注文番号、注文日時、明細、金額の内訳（BR-7、8）、お届け先、状… | 変更 | [002](../specs/002-cart-and-order/spec.md) | [007](../specs/007-payment) | [店舗画面](../frontend/apps/store.md) 第 4.7 節 | `PlaceOrderApiTest`、`order.spec.ts` |
+| AC-94 | 注文の URL を知っていれば、後から同じ内容を見られる。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [003](../specs/003-auth) | [注文モジュール](../backend/modules/order.md)（注文（集約）の操作の表） | `PlaceOrderApiTest` |
+| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [003](../specs/003-auth) | [注文モジュール](../backend/modules/order.md)（注文（集約）の操作の表、状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`checkout.test.ts` ほか 2 |
 | AC-96 | キャンセルの申請は、1 つの注文につき 1 回だけ。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`StorefrontShopTest` ほか 2 |
 | AC-97 | すべての注文を、注文日時の新しい順に一覧できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx` |
 | AC-98 | 注文番号の前方一致、状態、注文日の範囲（BR-3）で絞り込める。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx`、`orderFilter.test.ts` |
 | AC-99 | ページ単位で取得できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest` |
 | AC-100 | 注文番号、注文日時、状態、明細（AC-92 の写しと数量、小計）、金額の内訳（B… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderDetailPage.test.tsx`、`labels.test.ts` |
-| AC-101 | 「キャンセル申請中」の注文の申請を承認すると、キャンセルになり、明細の数量だけ在… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` ほか 1 |
+| AC-101 | 「キャンセル申請中」の注文の申請を承認すると、キャンセルになり、明細の数量だけ在… | 変更 | [002](../specs/002-cart-and-order/spec.md) | [007](../specs/007-payment)、[009](../specs/009-shipping) | [注文モジュール](../backend/modules/order.md)（状態遷移）、[決済モジュール](../backend/modules/payment.md)（与信の取消） | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` ほか 1 |
 | AC-102 | 申請を却下すると「受付」に戻る。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
-| AC-103 | 運営者の判断で、「受付」または「キャンセル申請中」の注文を、申請の承認によらずに… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
+| AC-103 | 運営者の判断で、「受付」または「キャンセル申請中」の注文を、申請の承認によらずに… | 変更 | [002](../specs/002-cart-and-order/spec.md) | [007](../specs/007-payment)、[009](../specs/009-shipping) | [注文モジュール](../backend/modules/order.md)（状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
 | AC-104 | キャンセルと在庫の戻しは、両方が行われるか、どちらも行われないかのどちらか。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationAtomicityTest` |
 | AC-105 | キャンセル済みの注文へのキャンセル・承認は、成功し、在庫は戻さない（consti… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
 | AC-106 | キャンセル済みの注文も、一覧・詳細に表示される。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest` |
@@ -148,7 +148,7 @@
 | AC-128 | 注文は、注文した会員に結び付く。 | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`member.spec.ts` |
 | AC-130 | 一覧から注文の詳細（AC-93 と同じ内容）に移り、キャンセルを申請できる（AC… | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
+| AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 変更 | [003](../specs/003-auth/spec.md) | [015](../specs/015-security) | [注文モジュール](../backend/modules/order.md)（注文（集約）の操作の表：ログインしていなければ 401） | `MemberOrderApiTest` |
 | AC-132 | 管理画面は、ログインしなければ何も表示しない。 | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `AuthGate.test.tsx`、`login.test.ts` |
 | AC-133 | 運営者のアカウントは、会員のアカウントとは別にある（constitution 1… | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest` |
 | AC-134 | 運営者は自分で登録できない。 | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |

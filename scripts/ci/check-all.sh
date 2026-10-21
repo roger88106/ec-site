@@ -5,7 +5,7 @@
 #   使い方：scripts/ci/check-all.sh（どこから流してもよい）
 #
 # 流すもの：
-#   1. script のテスト（scripts/ci/ の下のすべての *.test.mjs）
+#   1. script のテスト（scripts/ci/ の下のすべての *.test.mjs と、skill（.claude/skills/）の下のすべての *.test.cjs）
 #   2. scripts/ci/ の直下の *.mjs のうち、*.test.mjs 以外のすべて（検査）
 # 直下には引数なしで流せる検査だけを置く。引数が必要な補助は report/ などの下のディレクトリに置く。
 # 検査を追加するときは、直下に置けばここを直さずに流れる。
@@ -44,7 +44,7 @@ run_check() {
   fi
 }
 
-run_check "script のテスト" node --test "scripts/ci/**/*.test.mjs"
+run_check "script のテスト" node --test "scripts/ci/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
 
 for script in scripts/ci/*.mjs; do
   case "$script" in

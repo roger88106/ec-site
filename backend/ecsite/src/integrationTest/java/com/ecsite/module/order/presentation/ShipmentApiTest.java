@@ -7,6 +7,7 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -28,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -110,6 +112,19 @@ class ShipmentApiTest {
                     .andExpect(jsonPath("$.actions.ship").value(false))
                     .andExpect(jsonPath("$.actions.cancel").value(false));
             assertThat(gateway.captured()).containsExactly(orderId);
+        }
+
+        @Test
+        @DisplayName("AC-168 出荷を登録すると、決済サービスに、注文の総額（送料を含む）を売上確定の額として渡す")
+        void capturesOrderTotal() throws Exception {
+            ship("YAMATO", "1234-5678-9012").andExpect(status().isCreated());
+
+            var total = dsl.select(SALES_ORDER.TOTAL_AMOUNT).from(SALES_ORDER).where(SALES_ORDER.ID.eq(orderId))
+                    .fetchOne(SALES_ORDER.TOTAL_AMOUNT);
+            // 商品 1,000 円（税抜）× 2 個の税込 2,200 円に、送料が加わる
+            assertThat(total).isGreaterThan(2200L);
+            assertThat(gateway.amountsOf(TestPaymentGateway.Operation.CAPTURE, orderId))
+                    .containsExactly(Money.of(total));
         }
 
         @Test

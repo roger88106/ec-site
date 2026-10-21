@@ -85,6 +85,19 @@ class PaymentRefundTest {
     }
 
     @Test
+    @DisplayName("AC-192 返金で決済サービスに渡す額は、その注文の売上確定の額（総額）と同じ")
+    void refundsCapturedAmount() {
+        var orderId = captured();
+
+        paymentApi.cancel(orderId);
+
+        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.amountsOf(TestPaymentGateway.Operation.CAPTURE, orderId)).containsExactly(Money.of(6940));
+        assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId))
+                .isEqualTo(gateway.amountsOf(TestPaymentGateway.Operation.CAPTURE, orderId));
+    }
+
+    @Test
     @DisplayName("AC-306 返金のリスナーは、データベースのトランザクションの外で決済サービスを呼ぶ")
     void refundsOutsideTransaction() {
         var orderId = captured();

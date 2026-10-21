@@ -1,6 +1,7 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
 import com.ecsite.common.error.exception.SystemException;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.application.port.PaymentGateway;
 import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
@@ -25,6 +26,11 @@ public class TestPaymentGateway implements PaymentGateway {
      * 包む mock
      */
     private final MockPaymentGateway mock;
+
+    /**
+     * 呼ばれた金額のある操作（呼ばれた順。失敗と重複を含む）
+     */
+    private final List<AmountCall> amountCalls = new CopyOnWriteArrayList<>();
 
     /**
      * 作った支払画面の数
@@ -99,6 +105,7 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public PaymentPage openPage(PageRequest request) {
+        amountCalls.add(new AmountCall(Operation.OPEN_PAGE, request.orderId(), request.amount()));
         if (consume(openFailures)) {
             throw SystemException.of("mock：支払画面を作れなくする: " + request.paymentId(), null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
@@ -125,6 +132,7 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public CaptureResult capture(CaptureRequest request) {
         captureCalls.incrementAndGet();
+        amountCalls.add(new AmountCall(Operation.CAPTURE, request.orderId(), request.amount()));
         if (consume(captureFailures)) {
             return CaptureResult.UNREACHABLE;
         }
@@ -145,6 +153,7 @@ public class TestPaymentGateway implements PaymentGateway {
 
     @Override
     public void refund(RefundRequest request) {
+        amountCalls.add(new AmountCall(Operation.REFUND, request.orderId(), request.amount()));
         runOnRefundOrVoid();
         if (consume(refundFailures)) {
             throw SystemException.of("mock：返金に失敗させる: " + request.orderId(), null);
@@ -307,6 +316,20 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
+     * 注文について、決済サービスに渡した金額を、呼ばれた順に返す。
+     *
+     * @param operation 操作（支払画面を開く、売上確定、返金）
+     * @param orderId   注文 ID
+     * @return 渡した金額（呼ばれた順。失敗と重複を含む）
+     */
+    public List<Money> amountsOf(Operation operation, UUID orderId) {
+        return amountCalls.stream()
+                .filter(call -> call.operation() == operation && call.orderId().equals(orderId))
+                .map(AmountCall::amount)
+                .toList();
+    }
+
+    /**
      * 作った支払画面の数を返す。
      *
      * @return 作った支払画面の数（最後に状態を消してから）
@@ -319,6 +342,7 @@ public class TestPaymentGateway implements PaymentGateway {
      * テストだけで使う状態を最初に戻す。本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
      */
     public void reset() {
+        amountCalls.clear();
         openedPages.set(0);
         openFailures.set(0);
         voided.clear();
@@ -331,6 +355,37 @@ public class TestPaymentGateway implements PaymentGateway {
         refunded.clear();
         refundFailures.set(0);
         onRefundOrVoid.set(null);
+    }
+
+    /**
+     * 金額を渡す決済サービスの操作
+     */
+    public enum Operation {
+
+        /**
+         * 支払画面を開く（与信を取る額）
+         */
+        OPEN_PAGE,
+
+        /**
+         * 売上確定（確定する額）
+         */
+        CAPTURE,
+
+        /**
+         * 返金（返金する額）
+         */
+        REFUND
+    }
+
+    /**
+     * 呼ばれた金額のある操作
+     *
+     * @param operation 操作
+     * @param orderId   注文 ID
+     * @param amount    渡された金額
+     */
+    private record AmountCall(Operation operation, UUID orderId, Money amount) {
     }
 
     /**

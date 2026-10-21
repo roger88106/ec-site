@@ -14,6 +14,7 @@ import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.application.PaymentExpiryJob;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
+import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -225,6 +226,21 @@ class OrderPaymentApiTest {
                     .andExpect(jsonPath("$.errorCode").value("PAYMENT_GATEWAY_UNAVAILABLE"))
                     .andExpect(jsonPath("$.message").value(containsString("やり直して")));
             openPage(orderId).andExpect(status().isOk());
+        }
+
+        @Test
+        @DisplayName("AC-143 支払画面を開くと、決済サービスに、注文の総額（送料を含む）を与信の額として渡す")
+        void opensPageWithOrderTotal() throws Exception {
+            var orderId = pending(2);
+
+            orders.openPaymentPage(orderId);
+
+            var total = dsl.select(SALES_ORDER.TOTAL_AMOUNT).from(SALES_ORDER).where(SALES_ORDER.ID.eq(orderId))
+                    .fetchOne(SALES_ORDER.TOTAL_AMOUNT);
+            // 商品 1,000 円（税抜）× 2 個の税込 2,200 円に、送料が加わる
+            assertThat(total).isGreaterThan(2200L);
+            assertThat(gateway.amountsOf(TestPaymentGateway.Operation.OPEN_PAGE, orderId))
+                    .containsExactly(Money.of(total));
         }
 
         @Test

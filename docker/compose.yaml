@@ -1,0 +1,204 @@
+# ============================================================================
+# ローカル開発用のミドルウェア
+#
+#   起動：docker compose up -d（リポジトリのルートで。ルートの .env の COMPOSE_FILE がこのファイルを指す）
+#   停止：docker compose stop
+#   E2E 用の Keycloak（profile e2e）は、E2E の準備の script が起動する（docs/guides/running-tests.md）
+#
+# スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
+# ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）、画像の変換（imgproxy）、
+# 認証（Keycloak）と、Keycloak が送るメールの受け取り（Mailpit）を用意するだけ。
+# ============================================================================
+
+name: ec-site
+
+services:
+  postgres:
+    image: postgres:18-alpine
+    container_name: ec-site-postgres
+    environment:
+      POSTGRES_DB: ec_site
+      POSTGRES_USER: ec_site
+      POSTGRES_PASSWORD: ec_site
+    ports:
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/18/data
+      # Keycloak の database を作る。volume が空のとき（初回の起動）だけ走る
+      - ./postgres/init-keycloak.sql:/docker-entrypoint-initdb.d/init-keycloak.sql:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ec_site -d ec_site"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  # 分散トレーシングの収集と表示（http://localhost:9411）
+  zipkin:
+    image: openzipkin/zipkin:3
+    container_name: ec-site-zipkin
+    ports:
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:9411:9411"
+
+  # 画像のファイルの置き場所（S3 互換。plan 001 第 7 節）。http://localhost:8333
+  seaweedfs:
+    image: chrislusf/seaweedfs:4.48
+    container_name: ec-site-seaweedfs
+    # ボリュームの数の上限は「空きの容量 ÷ ボリュームの大きさ（既定 30GB）」。空きの少ない環境（CI）でも
+    # 両方のバケットにボリュームを割り当てられるよう、ボリュームを小さくする
+    command: server -dir=/data -s3 -s3.port=8333 -s3.config=/etc/seaweedfs/s3.json -master.volumeSizeLimitMB=100
+    ports:
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8333:8333"
+    volumes:
+      - ./seaweedfs/s3.json:/etc/seaweedfs/s3.json:ro
+      - seaweedfs_data:/data
+    healthcheck:
+      # S3 の口が応答すれば準備完了（認証なしの要求は 403 だが、応答があればよい）。localhost は IPv6 になるので使わない
+      test: ["CMD-SHELL", "curl -s -o /dev/null http://127.0.0.1:8333/"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # 画像のバケット、CORS、公開の設定、ライフサイクル規則を作り、seed の商品画像を写して終わる
+  seaweedfs-init:
+    image: amazon/aws-cli:2.31.13
+    container_name: ec-site-seaweedfs-init
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    entrypoint: ["sh", "/init.sh"]
+    environment:
+      AWS_ACCESS_KEY_ID: ec-site-local
+      AWS_SECRET_ACCESS_KEY: ec-site-local-secret
+      AWS_DEFAULT_REGION: us-east-1
+      INCOMING_BUCKET: ec-site-images-incoming
+      PUBLIC_BUCKET: ec-site-images
+      # E2E 用（plan 004 第 6.1 節）。ローカルの画像と混ざらないよう、別のバケットにする
+      E2E_INCOMING_BUCKET: ec-site-e2e-images-incoming
+      E2E_PUBLIC_BUCKET: ec-site-e2e-images
+    volumes:
+      - ./seaweedfs/init.sh:/init.sh:ro
+      # ローカル用の seed の商品画像（db/seed/local/R__media_seed.sql のアセット）
+      - ./seaweedfs/seed/assets:/seed/assets:ro
+
+  # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 第 7.5 節）。http://localhost:8081
+  # アップロードのバケット（ローカル用と E2E 用）だけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
+  imgproxy:
+    image: darthsim/imgproxy:v4.0.17
+    container_name: ec-site-imgproxy
+    depends_on:
+      seaweedfs:
+        condition: service_healthy
+    ports:
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8081:8080"
+    environment:
+      IMGPROXY_KEY: 6563736974652d6c6f63616c2d696d6770726f78792d6b6579
+      IMGPROXY_SALT: 6563736974652d6c6f63616c2d696d6770726f78792d73616c74
+      IMGPROXY_USE_S3: "true"
+      IMGPROXY_S3_ENDPOINT: http://seaweedfs:8333
+      IMGPROXY_S3_ENDPOINT_USE_PATH_STYLE: "true"
+      IMGPROXY_S3_REGION: us-east-1
+      AWS_ACCESS_KEY_ID: ec-site-imgproxy
+      AWS_SECRET_ACCESS_KEY: ec-site-imgproxy-secret
+      IMGPROXY_ALLOWED_SOURCES: s3://ec-site-images-incoming/,s3://ec-site-e2e-images-incoming/
+      IMGPROXY_MAX_SRC_FILE_SIZE: "10485760"
+      IMGPROXY_MAX_SRC_RESOLUTION: "60"
+      IMGPROXY_TIMEOUT: "30"
+      IMGPROXY_WORKERS: "2"
+      IMGPROXY_AUTO_ROTATE: "true"
+      IMGPROXY_STRIP_METADATA: "true"
+    healthcheck:
+      test: ["CMD", "imgproxy", "health"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # 認証（IdP。plan 003 第 2 節）。http://localhost:8180（管理の画面は /admin、admin / admin）
+  # 起動時に keycloak/realms/ の realm を取り込む。すでにある realm は取り込み直さない
+  keycloak:
+    image: quay.io/keycloak/keycloak:26.8.0
+    container_name: ec-site-keycloak
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: start-dev --import-realm --http-port=8180
+    ports:
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8180:8180"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      # token の issuer を、ブラウザー・バックエンド・店舗画面のどこから見ても同じ URL にする
+      KC_HOSTNAME: http://localhost:8180
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realms:/opt/keycloak/data/import:ro
+      - ./keycloak/themes/ec-site:/opt/keycloak/themes/ec-site:ro
+    healthcheck:
+      # イメージに curl がないので、bash で管理用のポート（9000）の readiness を読む
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+  # E2E 用の IdP（plan 004 第 6.1 節）。http://localhost:8181。profile e2e でだけ起動する
+  # E2E の準備の script（e2e/scripts/prepare.ts）が、database keycloak_e2e を再作成してから起動するので、
+  # 毎回、realm の JSON の状態から始まる。E2E で登録した会員は、ローカルの Keycloak に残らない
+  keycloak-e2e:
+    image: quay.io/keycloak/keycloak:26.8.0
+    container_name: ec-site-keycloak-e2e
+    profiles: [e2e]
+    depends_on:
+      postgres:
+        condition: service_healthy
+    command: start-dev --import-realm --http-port=8181
+    ports:
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8181:8181"
+    environment:
+      KC_DB: postgres
+      KC_DB_URL: jdbc:postgresql://postgres:5432/keycloak_e2e
+      KC_DB_USERNAME: keycloak
+      KC_DB_PASSWORD: keycloak
+      KC_HOSTNAME: http://localhost:8181
+      KC_HEALTH_ENABLED: "true"
+      KC_BOOTSTRAP_ADMIN_USERNAME: admin
+      KC_BOOTSTRAP_ADMIN_PASSWORD: admin
+    volumes:
+      - ./keycloak/realms:/opt/keycloak/data/import:ro
+      - ./keycloak/themes/ec-site:/opt/keycloak/themes/ec-site:ro
+    healthcheck:
+      test: ["CMD-SHELL", "exec 3<>/dev/tcp/127.0.0.1/9000 && printf 'GET /health/ready HTTP/1.1\\r\\nHost: localhost\\r\\nConnection: close\\r\\n\\r\\n' >&3 && grep -q '\"UP\"' <&3"]
+      interval: 5s
+      timeout: 3s
+      retries: 40
+
+  # Keycloak が送るメール（確認・パスワードの再設定）を受け取って見せる。外には送らない。
+  # http://localhost:8025（画面と API）。SMTP はコンテナの中で 1025、ホストで 2525（MAILPIT_SMTP_PORT で変えられる）。
+  # ホストの既定を 1025 にしないのは、Windows のシステムのプログラムが 1025 を使うことがあるため
+  mailpit:
+    image: axllent/mailpit:v1.31.5
+    container_name: ec-site-mailpit
+    ports:
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"
+      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8025:8025"
+
+  # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する
+  # （docs/guides/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
+  stripe-cli:
+    image: stripe/stripe-cli:v1.53.1
+    container_name: ec-site-stripe-cli
+    profiles: [stripe]
+    env_file:
+      - path: ../.local/stripe.env
+        required: false
+    entrypoint: ["sh", "-c"]
+    command:
+      - stripe listen --api-key "$$STRIPE_SECRET_KEY" --events checkout.session.completed,checkout.session.expired --forward-to http://host.docker.internal:8080/api/webhooks/stripe
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+
+volumes:
+  postgres_data:
+  seaweedfs_data:

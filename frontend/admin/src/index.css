@@ -1,0 +1,12 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+@import "shadcn/tailwind.css";
+@import "@fontsource-variable/geist";
+@import "@ec-site/shared/theme.css";
+/* 共有のパッケージの部品のクラスも、Tailwind に読ませる（node_modules の先は自動では読まない） */
+@source "../../shared/src";
+
+/* 文字の書体は、画面ごとの読み込み方に合わせる */
+@theme inline {
+  --font-sans: "Geist Variable", sans-serif;
+}

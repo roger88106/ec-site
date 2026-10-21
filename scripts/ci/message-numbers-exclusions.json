@@ -1,0 +1,15 @@
+{
+  "ecsite.tax.invalid_tax_category_name": "「1 文字以上」は空白でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
+  "ecsite.tax.tax_rates_required": "「1 件以上」は税率が必要なことの言い換えで、変わる規則の値ではない",
+  "ecsite.catalog.invalid_category_name": "「1 文字以上」は空白でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
+  "ecsite.catalog.invalid_product_code": "「1〜」は空でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
+  "ecsite.catalog.invalid_variant_code": "「1〜」は空でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
+  "ecsite.catalog.invalid_product_name": "「1 文字以上」は空白でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
+  "ecsite.catalog.invalid_variant_axes": "「1 文字以上」は空白でないことの言い換えで、変わる規則の値ではない（上限は {maxAxes}、{max} で差し込む）",
+  "ecsite.catalog.invalid_axis_values": "「1 文字以上」は空白でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
+  "ecsite.catalog.too_many_product_images": "「1 商品あたり」は数え方の言葉で、規則の値ではない（上限は {max} で差し込む）",
+  "ecsite.catalog.single_variant_only": "「1 つだけ」は軸のない商品の決まりそのもので、変わる規則の値ではない",
+  "ecsite.media.image_too_large": "「1 ファイル」は数え方の言葉で、規則の値ではない（上限は {maxMegabytes} で差し込む）",
+  "ecsite.inventory.invalid_stock_delta": "「0 以外」は増減があることの言い換えで、変わる規則の値ではない",
+  "ecsite.cart.invalid_cart_quantity": "「1 品目」は数え方の言葉、「1〜」は数量があることの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）"
+}

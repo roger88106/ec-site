@@ -1,0 +1,16 @@
+{
+  "name": "ec-site",
+  "private": true,
+  "license": "MIT",
+  "packageManager": "pnpm@12.10.1",
+  "engines": {
+    "node": ">=24"
+  },
+  "scripts": {
+    "lint": "pnpm -r --filter ./frontend/* --filter ./e2e run lint",
+    "typecheck": "pnpm -r --filter ./frontend/* --filter ./e2e run typecheck",
+    "test": "pnpm -r --filter ./frontend/* run test",
+    "build": "pnpm -r --filter ./frontend/* run build",
+    "e2e": "pnpm --filter ./e2e run test"
+  }
+}

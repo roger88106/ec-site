@@ -1,0 +1,37 @@
+# spec 013 の名前の対応（テストの差分の検査が使う。テストの実行方法 第 4 節）
+#
+# 1 行に「旧=新」。クラスの単純名か完全修飾名で書く。名前は語の境目で当てる。
+# 本番のクラスを移す・名前を変えるタスクで、そのタスクの番号のコメントの下に追加する。
+#
+#   node scripts/ci/review/test-diff.mjs 3f7d584 docs/specs/013-backend-consistency/tasks/renames.txt
+
+# T013-04-07
+ProductDirectory=CatalogDirectory
+ProductApiDirectory=CatalogApiDirectory
+
+# T013-04-06
+com.ecsite.module.order.domain.order.OrderNumber=com.ecsite.module.order.domain.order.vo.OrderNumber
+com.ecsite.module.order.domain.order.ShippingAddress=com.ecsite.module.order.domain.order.vo.ShippingAddress
+com.ecsite.module.order.domain.order.BuyerProfile=com.ecsite.module.order.domain.order.vo.BuyerProfile
+com.ecsite.module.order.domain.order.OrderLine=com.ecsite.module.order.domain.order.vo.OrderLine
+com.ecsite.module.order.domain.order.Cancellation=com.ecsite.module.order.domain.order.vo.Cancellation
+com.ecsite.module.order.domain.order.CancellationRequest=com.ecsite.module.order.domain.order.vo.CancellationRequest
+
+# T013-05-09
+com.ecsite.module.shipping.application.ShippingProperties.Carrier=com.ecsite.module.shipping.application.ShippingProperties.CarrierTracking
+
+# T013-06-01
+com.ecsite.module.reporting.application.CustomerBreakdownQuery=com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuery
+com.ecsite.module.reporting.application.SalesTrendQuery=com.ecsite.module.reporting.application.model.query.SalesTrendQuery
+com.ecsite.module.reporting.application.VariantSalesQuery=com.ecsite.module.reporting.application.model.query.VariantSalesQuery
+com.ecsite.module.reporting.application.AgeGroupSales=com.ecsite.module.reporting.application.model.view.AgeGroupSales
+com.ecsite.module.reporting.application.CustomerBreakdownReport=com.ecsite.module.reporting.application.model.view.CustomerBreakdownReport
+com.ecsite.module.reporting.application.GenderSales=com.ecsite.module.reporting.application.model.view.GenderSales
+com.ecsite.module.reporting.application.PrefectureSales=com.ecsite.module.reporting.application.model.view.PrefectureSales
+com.ecsite.module.reporting.application.SalesTrendReport=com.ecsite.module.reporting.application.model.view.SalesTrendReport
+com.ecsite.module.reporting.application.VariantSales=com.ecsite.module.reporting.application.model.view.VariantSales
+com.ecsite.module.reporting.application.VariantSalesReport=com.ecsite.module.reporting.application.model.view.VariantSalesReport
+
+# T013-05-05（DN-15 の特例：AC-154 のテストが、@Scheduled の間隔を Spring の予定の処理と同じく ${} と #{} の両方で解く）
+Environment environment=ConfigurableListableBeanFactory beanFactory
+environment.resolvePlaceholders(scheduled.fixedDelayString())=String.valueOf(beanFactory.getBeanExpressionResolver().evaluate(beanFactory.resolveEmbeddedValue(scheduled.fixedDelayString()), new BeanExpressionContext(beanFactory, null)))

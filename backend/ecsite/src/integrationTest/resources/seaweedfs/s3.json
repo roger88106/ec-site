@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "integration-test",
+      "credentials": [{ "accessKey": "integration-test", "secretKey": "integration-test-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    },
+    {
+      "name": "integration-test-imgproxy",
+      "credentials": [{ "accessKey": "integration-test-imgproxy", "secretKey": "integration-test-imgproxy-secret" }],
+      "actions": ["Read:images-incoming"]
+    }
+  ]
+}

@@ -1,0 +1,17 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "root": true,
+  // 共通の設定（整形、lint の規則）
+  "extends": ["../frontend/biome.base.jsonc"],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    // .gitignore はリポジトリのルートにある
+    "root": "..",
+    "useIgnoreFile": true
+  },
+  "files": {
+    // 生成物（admin.yaml の型）は対象にしない
+    "includes": ["**", "!src/generated"]
+  }
+}

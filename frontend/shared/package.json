@@ -1,0 +1,35 @@
+{
+  "name": "@ec-site/shared",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "description": "管理画面と店舗画面で共有する処理・部品・テーマ。TypeScript のソースのまま使い、ビルドしない（フロントの書き方 第 5 節）",
+  "exports": {
+    "./lib/*": "./src/lib/*.ts",
+    "./ui/*": "./src/ui/*.tsx",
+    "./messages/*": "./src/messages/*",
+    "./theme.css": "./src/theme.css"
+  },
+  "scripts": {
+    "lint": "biome check .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run --passWithNoTests"
+  },
+  "dependencies": {
+    "@base-ui/react": "^1.8.0",
+    "class-variance-authority": "^0.7.1",
+    "cn": "^0.4.0",
+    "use-intl": "^4.14.9"
+  },
+  "peerDependencies": {
+    "react": "^19.3.0"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.5.15",
+    "@types/react": "^19.2.18",
+    "js-yaml": "^4.3.2",
+    "react": "19.3.0",
+    "typescript": "~6.0.3",
+    "vitest": "^5.0.3"
+  }
+}

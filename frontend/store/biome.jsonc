@@ -1,0 +1,29 @@
+{
+  "$schema": "./node_modules/@biomejs/biome/configuration_schema.json",
+  "root": true,
+  // 共通の設定（整形、lint の規則、shadcn/ui の生成物の扱い）
+  "extends": ["../biome.base.jsonc"],
+  "vcs": {
+    "enabled": true,
+    "clientKind": "git",
+    // .gitignore はリポジトリのルートにある
+    "root": "../..",
+    "useIgnoreFile": true
+  },
+  "files": {
+    // 生成物（store.yaml の型）、静的なファイル、Next.js の生成物は対象にしない
+    "includes": ["**", "!src/api/generated", "!public", "!.next", "!next-env.d.ts"]
+  },
+  "overrides": [
+    {
+      // サーバーアクションでは catch を書かず、withActionResult で包む（フロントの書き方 第 3.1 節）
+      "includes": ["src/actions/**", "!src/actions/withActionResult.ts", "!**/*.test.ts"],
+      "plugins": ["./biome-plugins/no-catch-in-actions.grit"]
+    },
+    {
+      // ログは console.* を直接呼ばず、src/lib/server/log.ts で 1 行 1 件の JSON にする（フロントの書き方 第 8.2 節）
+      "includes": ["src/**", "!src/lib/server/log.ts", "!**/*.test.ts", "!**/*.test.tsx", "!src/test/**"],
+      "linter": { "rules": { "suspicious": { "noConsole": "error" } } }
+    }
+  ]
+}

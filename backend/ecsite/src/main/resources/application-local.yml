@@ -1,0 +1,101 @@
+# ============================================================================
+# ローカル開発用の設定
+#
+# 有効化：起動時に spring.profiles.active=local を指定する
+#   - IntelliJ：実行構成 → Active profiles に local
+#   - Gradle  ：./gradlew bootRun --args='--spring.profiles.active=local'
+#
+# 接続先はdocker/compose.yaml に合わせている。
+# ============================================================================
+
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/ec_site
+    username: ec_site
+    password: ec_site
+  flyway:
+    # ローカルでは起動時にマイグレーションを適用する
+    enabled: true
+    # 税のデータ（base）とローカル用の seed（local）も適用する（db/seed/local/README.md）
+    locations: classpath:db/migration,classpath:db/seed/base,classpath:db/seed/local
+  mail:
+    # compose の Mailpit（届いたメールは http://localhost:8025 で見る）
+    host: localhost
+    # 2525 を他のプログラムが使っていれば、MAILPIT_SMTP_PORT で compose と合わせて変える（docs/guides/setup.md）
+    port: ${MAILPIT_SMTP_PORT:2525}
+
+logging:
+  structured:
+    format:
+      # ローカルでは読みやすさを優先して、JSON ではなく通常のテキストで出す（トレース ID は行に入る）
+      console: ""
+  level:
+    com.ecsite: DEBUG
+    # SQL とバインドパラメータ
+    org.jooq.tools.LoggerListener: DEBUG
+
+management:
+  endpoints:
+    web:
+      exposure:
+        # 開発用：Bean 一覧 / 自動構成の判定結果 / 環境変数 / マッピング一覧 / モジュール構成
+        include: health,prometheus,beans,conditions,env,mappings,modulith
+  endpoint:
+    health:
+      # 開発中は DB などの個別の状態も見たい
+      show-details: always
+  tracing:
+    sampling:
+      # ローカルでは全リクエストを記録し、compose の Zipkin（http://localhost:9411）で見る
+      probability: 1.0
+
+ecsite:
+  order:
+    # 送料に適用する税区分：seed の「標準」（10%）
+    shipping-tax-category-id: 00000000-0000-0000-0000-000000000001
+  payment:
+    # 支払画面から戻る店舗の注文の画面（店舗画面の開発サーバー）
+    return-url: http://localhost:3000/orders/{orderId}?payment=returned
+    mock:
+      # 決済は mock を使う（mock フラグ）。Stripe の sandbox で動かすときは application-stripe.yml で下ろす
+      enabled: true
+      # mock の支払画面を出すバックエンド
+      base-url: http://localhost:8080
+  shipping:
+    # 物流サービスの通知の署名の鍵：ローカル専用の試験用の値。mock の画面もこの鍵で署名して通知する
+    webhook-secret: local-carrier-webhook-secret
+    mock:
+      # 物流は mock を使う（mock フラグ。本番の実装はまだない）
+      enabled: true
+  notification:
+    # 出荷通知メールなどの送信元
+    from: no-reply@shop.example
+  storefront:
+    shop:
+      # 問い合わせ先：ローカル用の例の値
+      contact-email: support@example.com
+  media:
+    storage:
+      # compose の SeaweedFS（S3 互換）。バケットは compose の seaweedfs-init が作る
+      endpoint: http://localhost:8333
+      region: us-east-1
+      path-style-access: true
+      # docker/seaweedfs/s3.json のローカル専用の資格情報。本番は設定せず、IAM ロールを使う
+      access-key-id: ec-site-local
+      secret-access-key: ec-site-local-secret
+      incoming-bucket: ec-site-images-incoming
+      public-bucket: ec-site-images
+      public-base-url: http://localhost:8333/ec-site-images
+    converter:
+      # compose の imgproxy（画像の変換）。鍵とソルトは docker/compose.yaml と同じローカル専用の値
+      base-url: http://localhost:8081
+      key: 6563736974652d6c6f63616c2d696d6770726f78792d6b6579
+      salt: 6563736974652d6c6f63616c2d696d6770726f78792d73616c74
+  security:
+    # compose の Keycloak。audience は realm の API の client（docker/keycloak/realms/）
+    admin:
+      issuer-uri: http://localhost:8180/realms/ec-admin
+      audience: ec-admin-api
+    store:
+      issuer-uri: http://localhost:8180/realms/ec-store
+      audience: ec-store-api

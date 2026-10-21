@@ -1,0 +1,49 @@
+# ============================================================================
+# 機能紹介のページ（showcase/）を GitHub Pages に出す（spec 008）
+#
+# showcase/ をそのまま出す（ビルドしない）。main で showcase/ が変わったときと、手で起動したときに流す。
+# 前提（利用者が設定する）：Settings → Pages の Source が「GitHub Actions」、
+#   Settings → Environments → github-pages の Deployment branches に main がある。
+# URL：https://roger88106.github.io/ec-site/
+# ============================================================================
+
+name: 機能紹介のページ
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - 'showcase/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+# 公開は 1 つずつ行い、途中の公開は止めない
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    name: 公開
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v4
+        with:
+          path: showcase
+
+      - id: deployment
+        uses: actions/deploy-pages@v4

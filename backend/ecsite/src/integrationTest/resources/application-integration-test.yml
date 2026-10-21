@@ -1,0 +1,66 @@
+# ============================================================================
+# 統合テスト用の設定（@IntegrationTest で有効になる）
+#
+# 接続先は TestcontainersConfig の @ServiceConnection が与える。
+# ============================================================================
+
+logging:
+  structured:
+    format:
+      # テストの出力は読みやすさを優先して、通常のテキストにする
+      console: ""
+
+spring:
+  messages:
+    # テスト用のメッセージを追加する（アプリのメッセージはそのまま使う）
+    basename: messages,messages-test
+  mail:
+    # メールの送信を有効にする（Spring Boot は host があるときだけ送信の部品を作る）。
+    # 実際の接続先（Mailpit のホストと割り当てられたポート）は TestcontainersConfig が上書きする
+    host: localhost
+  flyway:
+    # Testcontainers の PostgreSQL にマイグレーションを適用する（バックエンドのアーキテクチャ 第 6.2 節）
+    enabled: true
+
+management:
+  server:
+    # 運用の口を、業務ポートと同じに置く（MockMvc で確認するため）。運用ポートを分ける確認は ManagementPortTest
+    port: ${server.port}
+
+ecsite:
+  scheduling:
+    # 定期ジョブを自動では動かさない。ジョブのテストは、テストからジョブを呼ぶ
+    enabled: false
+  payment:
+    # 支払画面から戻る先（テストでは開かない）
+    return-url: http://store.example/orders/{orderId}?payment=returned
+    mock:
+      # 統合テストは決済の mock を使う（mock フラグ）
+      enabled: true
+      # MockMvc で開く mock の支払画面
+      base-url: http://localhost
+  notification:
+    # メールの送信元（ShipmentMailTest が確認する）。SMTP の接続先は TestcontainersConfig が Mailpit に向ける
+    from: no-reply@shop.example
+  shipping:
+    # 物流サービスの通知の署名の鍵（試験用。CarrierWebhookTest が同じ鍵で署名する）
+    webhook-secret: test-carrier-webhook-secret
+    mock:
+      # 統合テストは物流の mock を使う（mock フラグ）
+      enabled: true
+  order:
+    # 送料に適用する税区分。テストの補助（CatalogTestData#shippingTaxCategory）がこの ID で作る
+    shipping-tax-category-id: 00000000-0000-0000-0000-00000000f001
+  storefront:
+    shop:
+      # 問い合わせ先（StorefrontShopTest が確認する）
+      contact-email: contact@shop.example
+  security:
+    # IdP は起動せず、テストの鍵で署名した token を使う（TestTokens、TestSecurityConfig）。
+    # issuer は TestTokens と同じ値にする
+    admin:
+      issuer-uri: http://idp.test/realms/ec-admin
+      audience: ec-admin-api
+    store:
+      issuer-uri: http://idp.test/realms/ec-store
+      audience: ec-store-api

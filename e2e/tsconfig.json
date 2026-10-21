@@ -1,0 +1,16 @@
+{
+  "extends": "../frontend/tsconfig.base.json",
+  "compilerOptions": {
+    "target": "es2023",
+    "lib": ["ES2023", "DOM"],
+    "types": ["node"],
+    "strict": true,
+    "verbatimModuleSyntax": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    // 準備の script（node で直接流す）が src/ の .ts を拡張子つきで読むため。E2E は出力しない
+    "allowImportingTsExtensions": true,
+    "noEmit": true
+  },
+  "include": ["src", "tests", "scripts", "showcase", "playwright.config.ts", "playwright.showcase.config.ts"]
+}

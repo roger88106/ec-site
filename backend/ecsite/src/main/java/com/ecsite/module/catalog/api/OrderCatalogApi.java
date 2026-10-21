@@ -1,0 +1,33 @@
+package com.ecsite.module.catalog.api;
+
+import com.ecsite.module.catalog.application.OrderableVariantQueryService;
+import lombok.RequiredArgsConstructor;
+import org.springframework.stereotype.Component;
+
+import java.util.Collection;
+import java.util.Map;
+import java.util.UUID;
+
+/**
+ * カートと注文に公開する商品カタログの API（docs/design/modules/catalog.md「他のモジュールへの公開」）。<br />
+ * 表示されない商品・販売停止のバリアントも返し、判定は呼ぶ側が行う（カートの表示で理由を示すため）。
+ */
+@Component
+@RequiredArgsConstructor
+public class OrderCatalogApi {
+
+    /**
+     * 注文に使うバリアントの情報の参照
+     */
+    private final OrderableVariantQueryService queryService;
+
+    /**
+     * 複数のバリアントについて、注文に使う情報を返す。
+     *
+     * @param variantIds バリアント ID
+     * @return バリアント ID → 情報。存在しないバリアントは含めない
+     */
+    public Map<UUID, OrderableVariant> findVariants(Collection<UUID> variantIds) {
+        return queryService.findVariants(variantIds);
+    }
+}

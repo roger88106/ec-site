@@ -1,0 +1,52 @@
+{
+  "common": {
+    "siteName": "EC Site",
+    "pagination": {
+      "total": "全 {totalItems} 件",
+      "summary": "全 {totalItems} 件　{page} / {totalPages} ページ",
+      "previous": "前へ",
+      "next": "次へ"
+    },
+    "logout": "ログアウト",
+    "connectionFailed": "サーバーに接続できませんでした。",
+    "httpFailed": "通信に失敗しました（HTTP {status}）",
+    "yen": "{amount} 円",
+    "priceWithExclTax": "{inclTax} 円（税抜 {exclTax} 円）",
+    "priceExclTaxOnly": "税抜 {exclTax} 円（税込価格は計算できません）",
+    "taxAmount": "{ratePercent}% 対象 {taxableAmount}（内消費税 {taxAmount}）",
+    "orderStatus": {
+      "PENDING_PAYMENT": "支払待ち",
+      "ACCEPTED": "受付",
+      "CANCELLATION_REQUESTED": "キャンセル申請中",
+      "CANCELLED": "キャンセル",
+      "SHIPPED": "出荷済み"
+    },
+    "shipmentStatus": {
+      "SHIPPED": "出荷済み",
+      "IN_TRANSIT": "配送中",
+      "DELIVERED": "配達完了",
+      "RETURNED": "返送"
+    },
+    "carrier": {
+      "YAMATO": "ヤマト運輸",
+      "SAGAWA": "佐川急便",
+      "JAPAN_POST": "日本郵便"
+    },
+    "all": "すべて",
+    "axisValue": "{name}：{value}",
+    "order": {
+      "orderNumber": "注文番号",
+      "orderedAt": "注文日時",
+      "postalAddress": "〒{postalCode} {prefecture}{municipality}{address}",
+      "carrier": "配送業者",
+      "trackingNumber": "送り状番号"
+    },
+    "amounts": {
+      "itemsTotal": "商品の合計",
+      "shippingFee": "送料",
+      "total": "総額（税込）",
+      "taxOf": "{ratePercent}% の消費税"
+    },
+    "categoryIndent": "　"
+  }
+}

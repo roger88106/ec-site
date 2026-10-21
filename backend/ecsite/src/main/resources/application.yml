@@ -1,0 +1,97 @@
+# ============================================================================
+# 全環境共通の設定
+#
+# 環境依存の値（DB の接続先、開発用ログレベル等）はここに書かない。
+# ローカル開発は application-local.yml、それ以外は環境変数で与える。
+#
+# すべての値は環境変数で上書きできる（Spring Boot の緩い束縛）。
+#   例：spring.datasource.url → SPRING_DATASOURCE_URL、server.port → SERVER_PORT
+# ============================================================================
+
+spring:
+  application:
+    name: ecsite
+  web:
+    # 対象市場は日本だけなので、メッセージ（入力検証を含む）は常に日本語にする（constitution 1、14）。
+    # リクエストの Accept-Language や、実行環境の既定のロケールに左右されないよう固定する。
+    locale: ja
+    locale-resolver: fixed
+  modulith:
+    # package-info.java に @ApplicationModule を付けたパッケージだけをモジュールとする
+    # （common、config、生成コードはモジュールではない）
+    detection-strategy: explicitly-annotated
+    events:
+      jdbc:
+        # イベント発行記録のテーブルは common schema に置く（Flyway のマイグレーションで作る）
+        schema: common
+        schema-initialization:
+          enabled: false
+      # 再起動時の再発行は使わない。未完了のイベントは定期ジョブ（EventResubmissionJob）が再発行する
+      republish-outstanding-events-on-restart: false
+    moments:
+      # 時の経過のイベント（Moments）は使わない。有効だと @EnableScheduling を付けるので、
+      # 定期ジョブの切り替え（ecsite.scheduling.enabled）を false にしても、定期ジョブが動いてしまう
+      enabled: false
+  mail:
+    properties:
+      # SMTP の接続・読み書きの待ち時間の上限（ミリ秒）。上限がないと、応えない SMTP サーバーでメールのリスナーが止まったままになる
+      mail.smtp.connectiontimeout: 10000
+      mail.smtp.timeout: 10000
+      mail.smtp.writetimeout: 10000
+  flyway:
+    # マイグレーションはアプリの起動とは分け、デプロイごとに 1 回だけ実行する（バックエンドのアーキテクチャ 第 5 節）。
+    # 起動時の実行は local profile でだけ有効にする。
+    enabled: false
+  lifecycle:
+    # graceful shutdown で、処理中のリクエストの完了を待つ上限
+    timeout-per-shutdown-phase: 30s
+
+server:
+  port: 8080
+  # 停止時に新しいリクエストの受付を止め、処理中のリクエストを終えてから止める（バックエンドのアーキテクチャ 第 5 節）
+  shutdown: graceful
+
+# ============================== 運用（バックエンドのアーキテクチャ 第 5 節） ==============================
+
+management:
+  server:
+    # 運用ポート。死活監視とメトリクスは、業務ポート（server.port）でなくここで出し、外に出さない（バックエンドのアーキテクチャ 第 7.3 節）
+    port: ${MANAGEMENT_SERVER_PORT:9080}
+  endpoints:
+    web:
+      exposure:
+        # 死活監視（health）とメトリクスの収集（prometheus）だけを公開する。開発用の追加公開は application-local.yml
+        include: health,prometheus
+  endpoint:
+    health:
+      # liveness（/actuator/health/liveness）と readiness（/actuator/health/readiness）を有効にする
+      probes:
+        enabled: true
+      # 外部には UP / DOWN のみ返す（DB などの個別の状態は出さない）
+      show-details: never
+  tracing:
+    sampling:
+      # 記録するリクエストの割合。環境に合わせて MANAGEMENT_TRACING_SAMPLING_PROBABILITY で変える
+      probability: 0.1
+    export:
+      zipkin:
+        # 送信先。環境に合わせて MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT で変える
+        endpoint: http://localhost:9411/api/v2/spans
+
+logging:
+  structured:
+    format:
+      # ログは標準出力に JSON で出す（Elastic Common Schema）。トレース ID・span ID も入る
+      console: ecs
+
+ecsite:
+  payment:
+    stripe:
+      # Stripe の秘密の値。Git に入れず、Stripe の名前の環境変数で渡す（決済サービスが stripe のときだけ使う）
+      secret-key: ${STRIPE_SECRET_KEY:}
+      webhook-secret: ${STRIPE_WEBHOOK_SECRET:}
+  shipping:
+    # 物流サービスの通知の署名の鍵。Git に入れず、環境変数で渡す（ローカルは application-local.yml の試験用の値）
+    webhook-secret: ${CARRIER_WEBHOOK_SECRET:}
+  # メールの送信元は環境変数 ECSITE_NOTIFICATION_FROM で、SMTP の接続先は SPRING_MAIL_HOST・SPRING_MAIL_PORT で渡す
+  # （ローカルは application-local.yml の Mailpit）

@@ -1,0 +1,8 @@
+// サーバーアクションでは catch を書かず、withActionResult で包む（フロントの書き方 第 3.1 節）。
+// catch で Next.js の redirect・notFound を飲み込むと、ログイン画面への移動などが通信の失敗に見えてしまう。
+// biome.jsonc の overrides で、src/actions/ だけに当てる（withActionResult.ts は除く）。
+language js
+
+JsCatchClause() as $catch where {
+  register_diagnostic(span=$catch, message="サーバーアクションでは catch を書かず、withActionResult で包む（フロントの書き方 第 3.1 節）。", severity="error")
+}

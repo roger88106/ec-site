@@ -1,0 +1,24 @@
+import { Button } from '@ec-site/shared/ui/button'
+import { Link } from 'react-router'
+import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
+
+/**
+ * バリアントの在庫数と、在庫の画面へのリンク。<br />
+ * 在庫はバリアントの登録のイベントで作られるので、登録の直後はまだないことがある（「—」を出す）。
+ */
+export function StockLink({ productId, variantId }: { productId: string; variantId: string }) {
+  const query = $api.useQuery('get', '/inventory/variants/{variantId}', { params: { path: { variantId } } })
+  const label = query.isSuccess ? String(query.data.quantity) : query.isError ? '—' : '…'
+  return (
+    <Button
+      className="tabular-nums"
+      nativeButton={false} /* a を描くので、button の振る舞いを外す */
+      render={<Link to={paths.stock(productId, variantId)} />}
+      size="xs"
+      variant="link"
+    >
+      {label}
+    </Button>
+  )
+}

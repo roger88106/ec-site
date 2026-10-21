@@ -1,16 +1,23 @@
-# Compiled class file
+### ローカル専用 ###
+.local
+.env
+.env.*
+!.env.example
+# ルートの .env は compose の設定のファイルの場所だけを持つ（秘密の値は置かない）
+!/.env
+
+### AI ###
+# 共有するルールは AGENTS.md に置く。
+# CLAUDE.md や CLAUDE.local.md を置くと、Claude Code は AGENTS.md を読まなくなるので置かない
+CLAUDE.md
+CLAUDE.local.md
+# .claude はチームで共有する（skill、プレビューの開発サーバーの設定など）。マシン固有のパスや個人の習慣は書かない。
+# Git に入れないものは /.local に置く（エージェント向けは /.local/agent）。置き場所をツールが決めているものだけを、ここに例外として書く
+.claude/settings.local.json
+
+### Java / Gradle ###
 *.class
-
-# Log file
 *.log
-
-# BlueJ files
-*.ctxt
-
-# Mobile Tools for Java (J2ME)
-.mtj.tmp/
-
-# Package Files #
 *.jar
 *.war
 *.nar
@@ -18,7 +25,61 @@
 *.zip
 *.tar.gz
 *.rar
-
-# virtual machine crash logs, see http://www.java.com/en/download/help/error_hotspot.xml
 hs_err_pid*
 replay_pid*
+HELP.md
+.gradle
+build/
+# Gradle wrapper は実行に必要なのでコミットする（backend/ecsite/ 配下にあるため ** を付ける）
+!**/gradle/wrapper/gradle-wrapper.jar
+!**/src/main/**/build/
+!**/src/test/**/build/
+.kotlin
+
+### フロントエンド（Node.js / Next.js / Vite） ###
+node_modules/
+.next/
+next-env.d.ts
+dist/
+dist-ssr/
+coverage/
+*.tsbuildinfo
+.pnpm-store/
+npm-debug.log*
+pnpm-debug.log*
+.vercel
+# openapi-typescript の生成物（ビルド前に生成する。API の規約）
+frontend/*/src/api/generated/
+e2e/src/generated/
+# Playwright の結果とレポート
+e2e/test-results/
+e2e/playwright-report/
+e2e/blob-report/
+
+### IntelliJ IDEA ###
+.idea
+*.iws
+*.iml
+*.ipr
+out/
+!**/src/main/**/out/
+!**/src/test/**/out/
+
+### STS ###
+.apt_generated
+.classpath
+.factorypath
+.project
+.settings
+.springBeans
+.sts4-cache
+bin/
+!**/src/main/**/bin/
+!**/src/test/**/bin/
+
+### VS Code ###
+.vscode/
+
+### OS ###
+.DS_Store
+Thumbs.db

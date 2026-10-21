@@ -1,0 +1,42 @@
+# ============================================================================
+# 文書と CI の検査の script（constitution 第 12 節）
+#
+# 文書だけを変えた push でも実行する（ci.yml は文書だけの push では実行しないため、別のワークフローにする）。
+# 文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec などは、
+# 文書だけの変更で崩れるので、CI の検査の script の全て（scripts/ci/check-all.sh）をここで実行する。
+# ============================================================================
+
+name: 文書
+
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: docs-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  docs:
+    name: 文書と CI の検査の script
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # 設計の文書の関連 spec の検査（related-specs）が commit の履歴を読む
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version: '24'
+
+      # script のテストと、scripts/ci/ の直下の検査の全て（CI では、テスト名に出ない AC も失敗にする）
+      - name: CI の検査の script
+        run: scripts/ci/check-all.sh
+        env:
+          CI: 'true'

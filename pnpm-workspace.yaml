@@ -1,0 +1,14 @@
+# フロントのプロジェクト（管理画面、店舗画面）と E2E。依存はリポジトリのルートで 1 回だけ入れる
+packages:
+  - frontend/*
+  - e2e
+
+# 依存のインストール時のスクリプトの実行（pnpm は、ここに書いていないものがあるとエラーにする）
+allowBuilds:
+  # Service Worker を public に写すだけ。テストは Node の MSW（msw/node）を使うので要らない
+  msw: false
+  # next-intl の依存。文言をコードから抜き出す機能でだけ使い、ここでは使わない（@swc/core は環境ごとの部品が別の依存で入る）
+  '@parcel/watcher': false
+  '@swc/core': false
+  sharp: false
+  unrs-resolver: false

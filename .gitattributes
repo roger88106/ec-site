@@ -1,0 +1,16 @@
+# 改行は LF に揃える（core.autocrlf の設定に関わらず）。
+# gradlew などのシェルスクリプトが CRLF になると、Linux（CI）で実行できないため。
+* text=auto eol=lf
+
+# Windows のバッチファイルは CRLF
+*.bat text eol=crlf
+*.cmd text eol=crlf
+
+# バイナリ
+*.jar binary
+*.png binary
+*.jpg binary
+*.jpeg binary
+*.webp binary
+*.gif binary
+*.ico binary

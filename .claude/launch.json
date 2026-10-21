@@ -1,0 +1,29 @@
+{
+  "version": "0.0.1",
+  "configurations": [
+    {
+      "name": "admin",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "frontend/admin/node_modules/vite/bin/vite.js",
+        "frontend/admin",
+        "--port",
+        "5173",
+        "--strictPort"
+      ],
+      "port": 5173
+    },
+    {
+      "name": "store",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "node_modules/next/dist/bin/next",
+        "dev",
+        "--port",
+        "3000"
+      ],
+      "port": 3000,
+      "cwd": "frontend/store"
+    }
+  ]
+}

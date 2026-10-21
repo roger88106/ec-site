@@ -1,0 +1,261 @@
+# ============================================================================
+# CI（constitution 12）
+#
+# push と pull request で実行する。CI が失敗している状態で、次の spec の実装に進まない。
+# ジョブの一覧、手元で同じ検査を流すコマンド、CI の検査の script の中身は docs/guides/ci.md。
+# ============================================================================
+
+name: CI
+
+on:
+  # CI の結果に関わらないファイルだけを変えた push では流さない（constitution 12）。
+  # 1 つでも他のファイルが含まれていれば、すべての job を流す。
+  # paths は上から順に当てる（! で除いたものも、後の行で再度含められる）
+  push:
+    paths:
+      - '**'
+      - '!**.md'          # 文書、skill の本文
+      - '!.claude/**'     # エージェントの設定と、ローカルの画面の確認の設定
+      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く）
+      - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
+      - '!.github/workflows/pages.yml'
+      - '!.gitignore'
+      - '!LICENSE'
+      - 'docs/design/overview.md' # 全体構成の文書。バックエンドの単体テスト（ModuleDiagramTest）が図と照合する
+  # pull request は、変えたファイルによらずいつも流す（main に入る前に必ず確認する）
+  pull_request:
+
+permissions:
+  contents: read
+
+# 同じブランチで新しい実行が始まったら、古い実行は止める
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  backend:
+    name: バックエンド
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    defaults:
+      run:
+        working-directory: backend/ecsite
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # Gradle のキャッシュと、wrapper の検証
+      - uses: gradle/actions/setup-gradle@v6
+
+      # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照合する（依存とライセンス）。
+      # 別の手順にすると Gradle の起動と依存の解決が 2 回になり、1 分ほど延びるので、ビルドと同じ呼び出しで流す。
+      # 失敗したときは、ログの「Some library licenses are not allowed」と build/reports/dependency-license/ を見る。
+      # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
+      - name: ライセンスの検査、ビルドとテスト
+        run: ./gradlew checkLicense build
+
+      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
+      - name: カバレッジの合計を summary に書く
+        if: always()
+        run: node ../../scripts/ci/report/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
+
+      - name: カバレッジの報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-backend
+          path: backend/ecsite/build/reports/jacoco/coverageReport/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: テストレポートを保存（失敗時）
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports
+          path: |
+            backend/ecsite/build/reports/tests/
+            backend/ecsite/build/test-results/
+            backend/ecsite/build/reports/dependency-license/dependencies-without-allowed-license.json
+          retention-days: 7
+
+  admin:
+    name: 管理画面
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend/admin
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # pnpm と Node の準備、workspace の依存のインストール
+      - uses: ./.github/actions/setup-frontend
+
+      # 型チェックとビルドは、admin.yaml から型を生成してから行う（生成物はコミットしない）
+      - name: lint と整形の確認
+        run: pnpm lint
+
+      - name: 型チェック
+        run: pnpm typecheck
+
+      - name: テスト
+        run: pnpm test
+
+      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
+      - name: カバレッジの合計を summary に書く
+        if: always()
+        run: node ../../scripts/ci/report/coverage-summary.mjs 管理画面 coverage/coverage-summary.json
+
+      - name: カバレッジの報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-admin
+          path: frontend/admin/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      - name: ビルド
+        run: pnpm build
+        env:
+          # 本番ビルドは IdP の設定がなければ失敗する。CI はローカルの IdP の値で確認する（realm の JSON と同じ）
+          VITE_OIDC_AUTHORITY: http://localhost:8180/realms/ec-admin
+          VITE_OIDC_CLIENT_ID: ec-admin-web
+
+  store:
+    name: 店舗画面
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: frontend/store
+
+    steps:
+      - uses: actions/checkout@v7
+
+      # pnpm と Node の準備、workspace の依存のインストール
+      - uses: ./.github/actions/setup-frontend
+
+      # workspace のすべての依存（開発用を含む）のライセンスを、方針と照合する（依存とライセンス）
+      - name: 依存のライセンスの検査
+        working-directory: .
+        run: node scripts/ci/licenses/check-frontend.mjs
+
+      # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確認する
+      - name: 共有のパッケージの lint・型チェック・テスト
+        working-directory: frontend/shared
+        run: pnpm lint && pnpm typecheck && pnpm test
+
+      # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
+      - name: lint と整形の確認
+        run: pnpm lint
+
+      - name: 型チェック
+        run: pnpm typecheck
+
+      - name: テスト
+        run: pnpm test
+
+      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
+      - name: カバレッジの合計を summary に書く
+        if: always()
+        run: node ../../scripts/ci/report/coverage-summary.mjs 店舗画面 coverage/coverage-summary.json
+
+      - name: カバレッジの報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-store
+          path: frontend/store/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # 画面はリクエストのたびに作るので、ビルドにバックエンドは必要ない
+      - name: ビルド
+        run: pnpm build
+
+  # CI の検査の script（scripts/ci/check-all.sh）は、文書だけの push でも実行するため docs.yml で実行する
+
+  e2e:
+    name: E2E
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    # ほかのジョブを待たずに始める（CI の全体の時間を短くするため。plan 011 第 4.2 節）。
+    # E2E は自分でバックエンドをコンパイルし画面をビルドするので、ほかのジョブの結果は使わない。
+    # 失敗したときは、部分のジョブの結果を先に見る（docs/guides/ci.md）
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # pnpm と Node の準備、workspace の依存のインストール
+      - uses: ./.github/actions/setup-frontend
+
+      # E2E 用の DB と IdP の置き場所（PostgreSQL）と、IdP が送るメールの受け手（Mailpit）。
+      # docker/compose.yaml（ルートの .env が指す）をそのまま使う。E2E 用の DB・Keycloak（profile e2e）の再作成と起動は、
+      # pnpm test の準備の script（e2e/scripts/prepare.ts）が手元と同じように行う（plan 004 第 6.1 節）
+      - name: DB・メールの起動
+        run: docker compose up -d --wait postgres mailpit
+
+      # 画像の置き場所（S3 互換）と変換（imgproxy）。バケット、CORS、公開の設定は、compose の初期化のコンテナで作る（plan 001 第 7 節）
+      - name: 画像の置き場所（SeaweedFS）と変換（imgproxy）の起動
+        run: |
+          docker compose up -d --wait seaweedfs imgproxy
+          docker compose run --rm seaweedfs-init
+
+      - name: lint と整形の確認、型チェック
+        working-directory: e2e
+        run: pnpm lint && pnpm typecheck
+
+      # Playwright のブラウザーはキャッシュする（キーは Playwright の版）。当たったときは OS の依存だけを入れる
+      - name: Playwright の版
+        id: playwright
+        working-directory: e2e
+        run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"
+
+      - name: ブラウザーのキャッシュ
+        id: browsers
+        uses: actions/cache@v4
+        with:
+          path: ~/.cache/ms-playwright
+          key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
+
+      - name: ブラウザーのインストール
+        if: steps.browsers.outputs.cache-hit != 'true'
+        working-directory: e2e
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: ブラウザーの OS の依存のインストール（キャッシュが当たったとき）
+        if: steps.browsers.outputs.cache-hit == 'true'
+        working-directory: e2e
+        run: pnpm exec playwright install-deps chromium
+
+      # E2E の準備（DB と IdP の再作成）の後に、バックエンド（local,e2e profile）、管理画面、店舗画面を
+      # playwright.config.ts が起動する
+      - name: E2E
+        working-directory: e2e
+        run: pnpm test
+
+      - name: Playwright のレポートを保存（失敗時）
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: playwright-report
+          path: |
+            e2e/playwright-report/
+            e2e/test-results/
+          retention-days: 7

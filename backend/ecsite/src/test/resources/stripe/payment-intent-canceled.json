@@ -1,0 +1,26 @@
+{
+  "id": "evt_3UQ8lrCajA2Qja1L0cB4bQbl",
+  "object": "event",
+  "api_version": "2026-09-30.endive",
+  "created": 1791909733,
+  "data": {
+    "object": {
+      "id": "pi_3UQ8lrCajA2Qja1L0sDl4sX9",
+      "object": "payment_intent",
+      "amount": 6478,
+      "amount_capturable": 0,
+      "capture_method": "manual",
+      "currency": "jpy",
+      "livemode": false,
+      "status": "canceled",
+      "cancellation_reason": null
+    }
+  },
+  "livemode": false,
+  "pending_webhooks": 0,
+  "request": {
+    "id": "req_vmNDRDvS39PiOb",
+    "idempotency_key": "2fff98ea-f125-4820-8539-3b4043387e44"
+  },
+  "type": "payment_intent.canceled"
+}

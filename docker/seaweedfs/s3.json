@@ -1,0 +1,14 @@
+{
+  "identities": [
+    {
+      "name": "ec-site-local",
+      "credentials": [{ "accessKey": "ec-site-local", "secretKey": "ec-site-local-secret" }],
+      "actions": ["Admin", "Read", "Write", "List", "Tagging"]
+    },
+    {
+      "name": "ec-site-imgproxy",
+      "credentials": [{ "accessKey": "ec-site-imgproxy", "secretKey": "ec-site-imgproxy-secret" }],
+      "actions": ["Read:ec-site-images-incoming", "Read:ec-site-e2e-images-incoming"]
+    }
+  ]
+}

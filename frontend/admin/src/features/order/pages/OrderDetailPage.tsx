@@ -1,0 +1,124 @@
+import { formatPostalCode } from '@ec-site/shared/lib/format'
+import { Button } from '@ec-site/shared/ui/button'
+import { Link, useParams } from 'react-router'
+import { useTranslations } from 'use-intl'
+import { $api } from '@/api/client'
+import { paths } from '@/app/paths'
+import { DateTime } from '@/components/DateTime'
+import { PageHeader } from '@/components/PageHeader'
+import { QueryState } from '@/components/QueryState'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { AuthorizationExpiringBadge } from '@/features/order/components/AuthorizationExpiringBadge'
+import { CancellationCard } from '@/features/order/components/CancellationCard'
+import { OrderActions } from '@/features/order/components/OrderActions'
+import { OrderLinesCard } from '@/features/order/components/OrderLinesCard'
+import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
+import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
+import { ShipmentCard } from '@/features/order/components/ShipmentCard'
+
+/** 注文の詳細と、出荷の登録、承認・却下・キャンセルの操作 */
+export function OrderDetailPage() {
+  const t = useTranslations('order.detail')
+  const tApp = useTranslations('app.common')
+  const tCommon = useTranslations('common')
+  const { orderId = '' } = useParams()
+  const query = $api.useQuery('get', '/orders/{orderId}', { params: { path: { orderId } } })
+
+  return (
+    <>
+      <PageHeader
+        title={
+          <span>
+            {t('titlePrefix') /* 注文 */}
+            <span className="font-mono">{query.data?.orderNumber ?? '…'}</span>
+          </span>
+        }
+      >
+        <Button
+          nativeButton={false} /* a を描くので、button の振る舞いを外す */
+          render={<Link to={paths.orders()} />}
+          variant="outline"
+        >
+          {tApp('backToList') /* 一覧へ戻る */}
+        </Button>
+      </PageHeader>
+      <QueryState query={query}>
+        {(order) => (
+          <div className="max-w-5xl space-y-6">
+            <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
+              <div className="flex items-center gap-2">
+                <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
+                <dd>
+                  <OrderStatusBadge status={order.status} />
+                </dd>
+              </div>
+              <div className="flex items-center gap-2">
+                <dt className="text-muted-foreground">{tCommon('order.orderedAt') /* 注文日時 */}</dt>
+                <dd>
+                  <DateTime value={order.orderedAt} />
+                </dd>
+              </div>
+              {/* 決済を入れる前の注文は、支払を持たない */}
+              {order.payment && (
+                <>
+                  <div className="flex items-center gap-2">
+                    <dt className="text-muted-foreground">{t('payment') /* 支払 */}</dt>
+                    <dd>
+                      <PaymentStatusBadge status={order.payment.status} />
+                    </dd>
+                  </div>
+                  <div className="flex items-center gap-2">
+                    <dt className="text-muted-foreground">{t('paymentDeadline') /* 支払の期限 */}</dt>
+                    <dd>
+                      <DateTime value={order.payment.deadline} />
+                    </dd>
+                  </div>
+                  {/* 与信を取った後だけ、与信期限がある */}
+                  {order.payment.authorizationDeadline && (
+                    <div className="flex items-center gap-2">
+                      <dt className="text-muted-foreground">{t('authorizationDeadline') /* 与信期限 */}</dt>
+                      <dd className="flex items-center gap-2">
+                        <DateTime value={order.payment.authorizationDeadline} />
+                        {order.payment.authorizationExpiring && <AuthorizationExpiringBadge />}
+                      </dd>
+                    </div>
+                  )}
+                </>
+              )}
+            </dl>
+            <OrderActions order={order} />
+            <ShipmentCard order={order} />
+            <OrderLinesCard amounts={order.amounts} lines={order.lines} />
+            <Card>
+              <CardHeader>
+                <CardTitle>{t('customer') /* お客様とお届け先 */}</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <dl className="grid grid-cols-[7rem_1fr] gap-y-1 text-sm">
+                  <dt className="text-muted-foreground">{t('email') /* メールアドレス */}</dt>
+                  <dd>{order.email}</dd>
+                  <dt className="text-muted-foreground">{t('name') /* 氏名 */}</dt>
+                  <dd>{order.shippingAddress.name}</dd>
+                  <dt className="text-muted-foreground">{t('address') /* 住所 */}</dt>
+                  <dd>
+                    {
+                      tCommon('order.postalAddress', {
+                        postalCode: formatPostalCode(order.shippingAddress.postalCode),
+                        prefecture: order.shippingAddress.prefectureName,
+                        municipality: order.shippingAddress.municipalityName,
+                        address: order.shippingAddress.address,
+                      }) /* 郵便番号と住所（都道府県名・市区町村名・住所の順） */
+                    }
+                  </dd>
+                  <dt className="text-muted-foreground">{t('phone') /* 電話番号 */}</dt>
+                  <dd className="tabular-nums">{order.shippingAddress.phone}</dd>
+                </dl>
+              </CardContent>
+            </Card>
+            <CancellationCard cancellation={order.cancellation} request={order.cancellationRequest} />
+          </div>
+        )}
+      </QueryState>
+    </>
+  )
+}

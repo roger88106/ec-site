@@ -45,7 +45,8 @@
   - 結果：候補 12 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、02-page、04-review。
 - [x] **T018-05-15** spec 009（出荷と配送状況）の spec・plan・tasks。
   - 結果：候補 50 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-payment、02-shipping、03-order、04-notification ほか 2。
-- [ ] **T018-05-16** spec 010（売上の簡易レポート）の spec・plan・tasks。
+- [x] **T018-05-16** spec 010（売上の簡易レポート）の spec・plan・tasks。
+  - 結果：候補 38 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-member-and-order、02-reporting、03-seed、04-admin-ui ほか 2。
 - [ ] **T018-05-17** spec 011（開発の基盤の整理）の spec・plan・tasks。
 - [ ] **T018-05-18** spec 012（テストの安全網）の spec・plan・tasks。
 - [ ] **T018-05-19** spec 013（書き方の統一（バックエンド））の spec・plan・tasks。

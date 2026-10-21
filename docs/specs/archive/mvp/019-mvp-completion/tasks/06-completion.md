@@ -34,7 +34,11 @@
   - 結果：spec の第 9 節に書いた。9 分 52 秒、10 分 9 秒、9 分 43 秒で、pull request の 1 回が 10 分を 9 秒超えた（バックエンドのジョブ）。本 spec では短くせず、TODO 一覧に追加した（利用者の決定）。
 - [x] **T019-06-08** 段階の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` を順に実行し、全て通る。README と一覧の状態は「段階 6（tag の前）」にする（tasks に残りがあるので「完了」にしない）。
   - 結果：`./gradlew check`（全て再実行、10 分）、`check-frontend.sh`、E2E 20 件、`CI=true check-all.sh` が全て通った。
-- [ ] **T019-06-09** 作業ブランチを push し、pull request（2 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする（DC-216）。
-- [ ] **T019-06-10** 2 回目のマージの commit に tag `v0.1.0` を付け、GitHub の Release に短い説明を書く（利用者の許可を得る）（DC-217）。
-- [ ] **T019-06-11** `develop` の先頭が main から到達できることを確認してから、`develop` と `spec`（リモートとローカル）、ローカルの `backup/stage7-admin-ui` を削除する（利用者の許可を得る）（DC-218）。
-- [ ] **T019-06-12** 短期の作業ブランチで、T019-06-10、T019-06-11 と本タスクのチェックボックスと結果、README と MVP の完成までの一覧の「完了」を書く。この変更を push し、pull request（3 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする。マージの後、CI 全体が通り、`progress.mjs` が通ることを確認する（DC-214。[plan](../plan.md) 第 6 節の表の下）。
+- [x] **T019-06-09** 作業ブランチを push し、pull request（2 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする（DC-216）。
+  - 結果：[pull request 2](https://github.com/roger88106/ec-site/pull/2) を作り、CI の 13 件が通った後、merge commit でマージした（`93710e20`）。
+- [x] **T019-06-10** 2 回目のマージの commit に tag `v0.1.0` を付け、GitHub の Release に短い説明を書く（利用者の許可を得る）（DC-217）。
+  - 結果：`93710e20` に注釈付きの tag `v0.1.0` を付けて push し、[Release](https://github.com/roger88106/ec-site/releases/tag/v0.1.0) に MVP の機能、機能紹介のページ、文書の入口を書いた。
+- [x] **T019-06-11** `develop` の先頭が main から到達できることを確認してから、`develop` と `spec`（リモートとローカル）、ローカルの `backup/stage7-admin-ui` を削除する（利用者の許可を得る）（DC-218）。
+  - 結果：`develop` と `spec` が main から到達できることを確認し、リモートとローカルから削除した。ローカルの `backup/stage7-admin-ui`（main にない 14 の commit。使わない、と利用者）と、マージした作業ブランチ `spec-019-completion` も削除した（利用者の決定）。GitHub の Environment の `develop` は、後で `develop` を作り直すので残す。
+- [x] **T019-06-12** 短期の作業ブランチで、T019-06-10、T019-06-11 と本タスクのチェックボックスと結果、README と MVP の完成までの一覧の「完了」を書く。この変更を push し、pull request（3 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする。マージの後、CI 全体が通り、`progress.mjs` が通ることを確認する（DC-214。[plan](../plan.md) 第 6 節の表の下）。
+  - 結果：作業ブランチ `spec-019-records` で記録を書き、pull request 3 でマージする。

@@ -55,7 +55,8 @@
   - 結果：候補 28 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-rules、02-catalog、05-payment-shipping、06-reporting-config ほか 1。
 - [x] **T018-05-20** spec 014（書き方の統一（フロント））の spec・plan・tasks。
   - 結果：候補 50 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-rules、02-shared、03-store、04-admin ほか 1。
-- [ ] **T018-05-21** spec 015（セキュリティ）の spec・plan・tasks。
+- [x] **T018-05-21** spec 015（セキュリティ）の spec・plan・tasks。
+  - 結果：候補 23 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-mock-flags、02-authorization、04-frontend-config、05-local-env-and-jar ほか 2。
 - [ ] **T018-05-22** spec 016（マスターデータ）の spec・plan・tasks。
 - [ ] **T018-05-23** spec 017（安定性）の spec・plan・tasks。
 - [x] **T018-05-24** [MVP の完成までの一覧](../../mvp.md)と、spec 018・019 の文書。

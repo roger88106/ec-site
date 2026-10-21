@@ -27,7 +27,8 @@
   - 結果：候補 108 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：ci、environment、setup、running。
 - [x] **T018-05-06** README、AGENTS.md、自作の skill。
   - 結果：候補 20 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：SKILL、SKILL、SKILL、SKILL、SKILL、prompts ほか 2。
-- [ ] **T018-05-07** spec 001（商品カタログと在庫）の spec・plan・tasks。
+- [x] **T018-05-07** spec 001（商品カタログと在庫）の spec・plan・tasks。
+  - 結果：候補 29 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、00-foundation、03-product、04-inventory、06-storefront ほか 2。
 - [ ] **T018-05-08** spec 002（カートと注文）の spec・plan・tasks。
 - [ ] **T018-05-09** spec 003（認証）の spec・plan・tasks。
 - [ ] **T018-05-10** spec 004（開発の基盤の整理）の spec・plan・tasks。

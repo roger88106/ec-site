@@ -13,7 +13,7 @@
   - MyIAM から除く依存：Spring Security と OAuth2（constitution 10）、Thymeleaf、Redis（constitution 2）。Guava を使う場合は `-android` ではなく `-jre` 版にする。
   - `.gitattributes` で改行を LF に揃える（Windows の `.bat` は CRLF）。`gradlew` が CRLF になると、Linux の CI で実行できないため。
   - 完了：空のアプリが `./gradlew bootRun` で起動する。
-- [x] **T002** ソースセットを MyIAM と同じく `src/test`（単体）と `src/integrationTest`（統合）に分け、`./gradlew check` で両方が走るようにする。
+- [x] **T002** ソースセットを MyIAM と同じく `src/test`（単体）と `src/integrationTest`（統合）に分け、`./gradlew check` で両方が実行されるようにする。
 - [x] **T003** ルートに `compose.yaml` を作る（PostgreSQL 18、Zipkin）。
 - [x] **T004** 設定ファイルを分ける。
   - `application.yml`：環境に依存しない設定。値は環境変数で上書きできるようにする。
@@ -43,13 +43,13 @@
 ## 共通部品（`common`）
 
 - [x] **T010** [テスト] 例外とエラーレスポンスの統合テスト。
-  - 入力検証エラー：400、`errors` にフィールドごとのエラーが入る。
+  - 入力検証エラー：400、`errors` にフィールドごとのエラーが含まれる。
   - 業務ルール違反：400。見つからない：404。バージョン不一致：409（`CONCURRENT_MODIFICATION`）。想定外の例外：500。業務例外ではなくシステム例外：500。
   - Spring MVC が投げる標準の例外も、同じ形のエラーになる。
     - パスの UUID の形式誤り、必須パラメータの欠落、型の不一致、JSON の構文誤り：400
     - メソッド引数の検証エラー（生成インターフェースの `size` の上限超えなど）：400、`errors` 付き
     - 存在しないパス：404。許可されていないメソッド：405
-  - 全てのエラー（500 を含む）で `errorCode`、`message`、`traceId` が入り、Content-Type が `application/problem+json`。
+  - 全てのエラー（500 を含む）で `errorCode`、`message`、`traceId` が含まれ、Content-Type が `application/problem+json`。
     - `message` は画面にそのまま出せる日本語の文字列（メッセージのキーやパラメータの構造ではない）。
     - トレースの span がない状態（サンプリングされない場合など）でも、`traceId` を返し、例外ハンドラー自体が失敗しない。
 - [x] **T011** 例外体系を MyIAM から移植する（`ErrorCode`、`ErrorType`、`BusinessException`、`SystemException`、`GlobalExceptionHandler`、i18n メッセージ）。T010 を通す。
@@ -62,13 +62,13 @@
     - Spring Security への依存：MyIAM は認可例外を扱うために依存している。MVP では認証を入れないので（constitution 10）、その処理は移植しない。
     - エラー画面（`ErrorControllerImpl`、Thymeleaf）：API だけなので移植しない。
     - メッセージのキーの接頭辞：`myiam.` を `ecsite.` にする。
-  - DB の制約違反は、各リポジトリで業務のエラーに変換する（constitution 9）。ここでは変換に使う共通の部品（制約名から業務のエラーを引く仕組みなど）を用意する。
+  - DB の制約違反は、各リポジトリで業務のエラーに変換する（constitution 9）。ここでは変換に使う共通の部品（制約名を業務のエラーに対応づける仕組みなど）を用意する。
 - [x] **T012** [テスト] 金額（`Money`）の単体テスト：円単位の整数、負数の拒否、加算。
 - [x] **T013** 金額を実装する。T012 を通す。
 - [x] **T014** [テスト] ページングの単体テスト：`page` は 1 始まり、`size` は既定 20・最大 100、総件数からの総ページ数の計算。並びの最後に ID を加えて順序を確定させる仕組み（constitution 9）。
 - [x] **T015** ページングの共通部品を実装する（リクエストの変換と、レスポンスの組み立て）。T014 を通す。
 - [x] **T016** `Clock` を Bean として定義する。統合テストでは固定の `Clock` に差し替えられるようにする。
-  - MyIAM のリポジトリは更新日時に現在時刻を直接取っている。移植するコードでは、現在時刻は必ず `Clock` から取る（constitution 5-6）。
+  - MyIAM のリポジトリは更新日時に現在時刻を直接取っている。移植するコードでは、現在時刻は必ず `Clock` から取得する（constitution 5-6）。
 
 ## モジュール
 

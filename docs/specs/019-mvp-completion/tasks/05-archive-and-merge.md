@@ -22,6 +22,7 @@
   - 結果：機能紹介のページの公開を `main` の push にし、CI のバッジと CI の検査の文書の行を `main` にした。AGENTS.md は、`main` から作業ブランチを切って pull request で入れる形にし、※2 にブランチの運用の未決事項を示した。TODO 一覧のブランチの運用の項目は、決めたことと残ることに分けた。
 - [x] **T019-05-08** 利用者に、GitHub の Environment（`github-pages`）の Deployment branches に `main` を追加するよう依頼し、追加されたことを確認する（DC-218）。
   - 結果：GitHub の API（`environments/github-pages/deployment-branch-policies`）で、`develop` と `main` があることを確認した（利用者が追加済み）。
-- [ ] **T019-05-09** 段階の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` を順に実行し、全て通る。README と一覧の進捗を更新する。
+- [x] **T019-05-09** 段階の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` を順に実行し、全て通る。README と一覧の進捗を更新する。
+  - 結果：`./gradlew check`（再実行の指定で全て実行、10 分）、`check-frontend.sh`、E2E 20 件、`CI=true check-all.sh` が全て通った。
 - [ ] **T019-05-10** `develop` を push し、`develop` から main への pull request（1 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする（commit を書き換えない）（DC-216）。
 - [ ] **T019-05-11** マージの後、Pages の公開の実行が成功し、ページが表示されることを確認する（DC-218）。

@@ -56,10 +56,10 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 ```
 
 - 死活監視は運用ポート（9080）で公開する。業務ポート（8080）では公開しない。
-- 200 が返ったら起動済み。すでに起動しているかは同じ curl を `--retry` なしで確認する。
+- 200 が返ったら起動済み。すでに起動しているかは同じ curl を `--retry` なしで確認する。バックグラウンドの起動のコマンドが、ツールの時間の上限で「停止」と通知されても、プロセスは動き続けていることがある。起動したかはこの curl で判断する。
 - 起動に失敗したら `bootrun.log` を `grep -n "ERROR\|Caused by" ` で見る。全体を読まない。
 - local profile では、起動時にマイグレーションと seed（`db/seed/base`、`db/seed/local`）が適用される。使い分けは `db/seed/local/README.md`。
-- 停止するときは、ポート 8080 で待ち受けているプロセスを停止する。
+- 停止するときは、ポート 8080 で待ち受けているプロセスを停止する。Windows では PowerShell の `Stop-Process -Id (Get-NetTCPConnection -LocalPort 8080 -State Listen).OwningProcess`（Git Bash には `pkill` がない）。画面の開発サーバーも、ポート（3000、5173）で同じく停止する。
 
 テスト（`backend/ecsite/` で。Docker が必要）：
 
@@ -69,7 +69,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 
 - `check` は単体・統合テストと OpenAPI の検証を含む（AGENTS.md の完了の基準）。一部だけなら `test`（単体）、`integrationTest`（統合）、`--tests '<クラス名>'`。
 - `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。書き誤りが、テストや E2E の途中まで検出されないため。
-- 長い検査は、最初からバックグラウンドで実行する（Bash の上限 10 分を超えて途中でバックグラウンドに移ると、結果の読み方が変わるため）。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check` と `check-frontend.sh` は続けて実行し、同時に実行しない（CPU が足りずに管理画面のテストがタイムアウトする）。
+- 長い検査は、最初からバックグラウンドで実行する（Bash の上限 10 分を超えて途中でバックグラウンドに移ると、結果の読み方が変わるため）。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、`e2e.sh` は続けて実行し、同時に実行しない（CPU が足りずに、時間の上限のあるテストと管理画面のテストがタイムアウトする）。
 - 失敗の詳細は `build/test-results/**/TEST-*.xml` を、失敗したクラスだけ grep する。
 
 ## フロント（`frontend/store`、`frontend/admin`）
@@ -88,7 +88,7 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
 - 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（`docs/rules/frontend-coding.md` 第 9.1 節）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
 
-開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で `.claude/launch.json` の名前を指定して起動する。
+開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で `.claude/launch.json` の名前を指定して起動する。プレビューのツールがないとき（コマンドラインの実行など）は、各アプリのディレクトリで `pnpm dev` をバックグラウンドで実行し、URL に curl して 200 を確認する。
 
 | 名前 | URL | 前提 |
 |------|-----|------|

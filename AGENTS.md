@@ -8,9 +8,9 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 1. [constitution](docs/constitution.md)：大綱と文書の地図
 2. [開発の進め方](docs/rules/workflow.md)：SDD と TDD
 3. 着手する段階の tasks ファイル（`docs/specs/NNN-*/tasks/`）と、冒頭の「参照」の文書
-4. コードを書く・レビューする前に、関わる書き方の文書（constitution 第 14 節）
+4. コードを書く・レビューする前に、関わる書き方の文書（constitution 第 14 節）。バックエンドは [バックエンドの書き方](docs/rules/backend-coding.md)、フロントは [フロントの書き方](docs/rules/frontend-coding.md)、どちらも [テストの書き方](docs/rules/test-writing.md) と [コメントの書き方](docs/rules/comments.md)
 
-マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。
+マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。Git に入らないので、新しい clone にはない。ないときは、本書と `docs/` だけで進める。
 
 ## skill
 

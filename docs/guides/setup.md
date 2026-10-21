@@ -6,6 +6,8 @@
 
 JDK 21、Docker、Node.js 24 以上、pnpm（版は `package.json` の `packageManager`）。
 
+- `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に JDK 21 のパスを設定してから実行する（例：`export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21…"`）。コンパイルとテストに使う JDK 21 は、Gradle の toolchain がインストール済みの JDK から探す。
+
 IntelliJ IDEA でルートを開いたら、`backend/ecsite/build.gradle.kts` を Gradle プロジェクトとしてリンクし、Gradle JVM を 21 にする。
 
 ## 2. 起動
@@ -41,7 +43,8 @@ pnpm dev
 - `docker compose` はルートで実行する（ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
 - Mailpit の SMTP はホストの 2525 番ポートで待ち受ける（1025 は Windows のシステムプロセスが使うことがあるため使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いているポートを設定して、compose とバックエンドを起動する（両方が同じ値を読む）。
 - compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理者のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）から接続するときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を設定して、`docker compose up -d` で再作成する。終わったら設定を削除して再作成する。バックエンドと画面の開発サーバーは、この設定の対象外である。
-- 停止するときは `docker compose stop`。データを再作成するときは第 4 節。
+- 停止するときは `docker compose stop`。E2E を実行した後は、E2E 用の Keycloak（profile `e2e`）も止めるために `docker compose --profile e2e stop` にする。データを再作成するときは第 4 節。
+- 店舗画面の開発サーバーのログに、Edge Runtime で使えない API（`instrumentation.ts` の `process.exit`）の警告が出る。Node.js の実行環境でだけ呼ぶので、起動と表示に影響しない。
 - compose のプロジェクトの名前（`ec-site`）とコンテナの名前は固定なので、同じマシンに 2 つ目の clone を置くと、volume（DB と画像のデータ）を共有する。2 つ目の clone を別のデータで動かすときは、1 つ目の compose を停止して（`docker compose down`。volume は残る）、環境変数 `COMPOSE_PROJECT_NAME` に別の名前を設定してから起動する。
 - E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に含まれない。E2E の準備の script（`e2e/scripts/prepare.ts`）が起動する（[テストの実行方法](running-tests.md)）。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。

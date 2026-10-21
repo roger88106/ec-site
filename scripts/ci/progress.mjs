@@ -113,9 +113,14 @@ export function readTasks(specsDir) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const specsDir = 'docs/specs'
+  const mvpList = findMvpList(specsDir)
+  if (!mvpList) {
+    console.log('MVP の完成までの一覧（mvp.md）が、docs/specs/ の直下にもアーカイブの下にもない')
+    process.exit(1)
+  }
   const problems = checkProgress(
     parseStatusTable(readFileSync('README.md', 'utf8')),
-    parseStatusTable(readFileSync(findMvpList(specsDir), 'utf8')),
+    parseStatusTable(readFileSync(mvpList, 'utf8')),
     readTasks(specsDir),
     FIRST_SPEC,
   )

@@ -30,6 +30,35 @@ describe('spec のディレクトリ', () => {
     assert.equal(listSpecDirs(specsDir)[0].dir, path.join(specsDir, 'archive/mvp/001-catalog'))
   })
 
+  test('アーカイブがなければ直下だけを返し、MVP の完成までの一覧がどこにもなければ null を返す', () => {
+    const bare = mkdtempSync(path.join(tmpdir(), 'spec-dirs-bare-'))
+    try {
+      mkdirSync(path.join(bare, '001-catalog'))
+      assert.deepEqual(
+        listSpecDirs(bare).map(({ rel }) => rel),
+        ['001-catalog'],
+      )
+      assert.equal(findMvpList(bare), null)
+    } finally {
+      rmSync(bare, { recursive: true, force: true })
+    }
+  })
+
+  test('アーカイブのまとまりが複数あれば、全てのまとまりの spec を番号の順に返す', () => {
+    const multi = mkdtempSync(path.join(tmpdir(), 'spec-dirs-multi-'))
+    try {
+      for (const dir of ['archive/mvp/001-catalog', 'archive/v2/020-coupon', '021-wishlist']) {
+        mkdirSync(path.join(multi, dir), { recursive: true })
+      }
+      assert.deepEqual(
+        listSpecDirs(multi).map(({ rel }) => rel),
+        ['archive/mvp/001-catalog', 'archive/v2/020-coupon', '021-wishlist'],
+      )
+    } finally {
+      rmSync(multi, { recursive: true, force: true })
+    }
+  })
+
   test('MVP の完成までの一覧は、直下になければアーカイブから探す', () => {
     assert.equal(findMvpList(specsDir), path.join(specsDir, 'archive/mvp/mvp.md'))
     writeFileSync(path.join(specsDir, 'mvp.md'), '')

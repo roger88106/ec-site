@@ -6,7 +6,7 @@
 
 ## タスク
 
-`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（検査の script のテストは commit の前の hook が実行するため。[開発の進め方](../../../rules/workflow.md) 第 2.1 節）。
+`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（検査の script のテストは commit の前の hook が実行するため。[開発の進め方](../../../../../rules/workflow.md) 第 2.1 節）。
 
 - [x] **T019-05-01** [テスト] `ac-check.mjs`、`progress.mjs`、`showcase-counts.mjs` が、`docs/specs/` の直下とアーカイブの両方の spec を参照するテストを書く（DC-215）。`showcase-counts.mjs` にテストがなければ、関数を分けてテストを書く。
 - [x] **T019-05-02** T019-05-01 の script を修正する（DC-215）。
@@ -24,5 +24,7 @@
   - 結果：GitHub の API（`environments/github-pages/deployment-branch-policies`）で、`develop` と `main` があることを確認した（利用者が追加済み）。
 - [x] **T019-05-09** 段階の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` を順に実行し、全て通る。README と一覧の進捗を更新する。
   - 結果：`./gradlew check`（再実行の指定で全て実行、10 分）、`check-frontend.sh`、E2E 20 件、`CI=true check-all.sh` が全て通った。
-- [ ] **T019-05-10** `develop` を push し、`develop` から main への pull request（1 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする（commit を書き換えない）（DC-216）。
-- [ ] **T019-05-11** マージの後、Pages の公開の実行が成功し、ページが表示されることを確認する（DC-218）。
+- [x] **T019-05-10** `develop` を push し、`develop` から main への pull request（1 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする（commit を書き換えない）（DC-216）。
+  - 結果：[pull request 1](https://github.com/roger88106/ec-site/pull/1) を作り、CI の 10 件が通った後、merge commit でマージした（`bad9f7b8`）。`develop` の先頭は main から到達できる。
+- [x] **T019-05-11** マージの後、Pages の公開の実行が成功し、ページが表示されることを確認する（DC-218）。
+  - 結果：main の push で機能紹介のページの公開が成功し、ページに今の数字（条件 312）と追加した文が出ることを確認した。

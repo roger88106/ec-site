@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 018 が完了している。書き方の規則は [バックエンドの書き方](../../rules/backend-coding.md)、[フロントの書き方](../../rules/frontend-coding.md)、[テストの書き方](../../rules/test-writing.md)。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../.claude/skills/review/SKILL.md)）。
+前提：spec 018 が完了している。書き方の規則は [バックエンドの書き方](../../../../rules/backend-coding.md)、[フロントの書き方](../../../../rules/frontend-coding.md)、[テストの書き方](../../../../rules/test-writing.md)。文書の書き方は skill `docs`（[SKILL.md](../../../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../../../.claude/skills/review/SKILL.md)）。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|
@@ -21,7 +21,7 @@
 - 全体のレビューと、その「高」の修正を、新しい環境の確認と機能紹介のページより前に行う。理由：修正の後の状態で、起動の確認と画面・数値の更新を 1 回で行うため。
 - main へのマージは 3 回に分ける。3 回目は、tag の後の記録だけにする（第 6 節）。
 - 1 タスクを 1 commit にする。API、画面、DB を変えるのは DC-209 の「高」の修正だけ（DN-25）。
-- 進捗の行（[README](../../../README.md)、[MVP の完成までの一覧](../mvp.md)）は、段階 1 で spec 019 を「段階 1 から」にし、最後の段階で「完了」にする。
+- 進捗の行（[README](../../../../../README.md)、[MVP の完成までの一覧](../mvp.md)）は、段階 1 で spec 019 を「段階 1 から」にし、最後の段階で「完了」にする。
 
 ## 1. 作業のツールと手順（DS-56：DC-220〜227）
 
@@ -31,11 +31,11 @@
 | 220 | script のテストは隣に置き（`replace-paths.test.cjs`）、`check-all.sh` の「script のテスト」で `.claude/skills/` の下のテストも実行する | `check-all.sh` の出力 |
 | 221 | `scripts/dev/hooks/pre-commit` で、ステージした内容（index）を一時ディレクトリに取り出し（`git checkout-index`）、そこで検査する。git の操作は元のリポジトリを使い、作業ツリーだけを取り出した先にする。作業ツリーは変えない。ファイルの冒頭のコメントの「作業ツリーを読む」を修正する ※1 | 手動で確認する：未追跡の壊れたファイルがあっても、ステージした内容が正しければ commit できる。ステージした内容が壊れていれば止まる。どちらの後も作業ツリーが変わらない。`git commit -a` でも同じ。結果を tasks に書く |
 | 222 | pre-commit の時点では commit のメッセージがないので、関連 spec の照合は commit-msg の hook で行う。`scripts/dev/hooks/commit-msg` を追加し、`related-specs.mjs` に「ステージした差分を次の commit として照合する」モード（メッセージのファイルを引数で渡す）を追加する。ステージした設計の文書について、メッセージの 1 行目の spec が関連 spec にあるかを照合する。pre-commit の検査（履歴の照合）はそのまま | `related-specs.test.mjs` に、ステージした差分のモードのテストを先に追加し、レッドを確認する |
-| 221、222 | [開発環境の起動](../../guides/setup.md) 第 2 節の hook の説明を、pre-commit と commit-msg の 2 つの置き方に修正する。[CI の検査](../../guides/ci.md)に hook の記述があれば合わせる | 文書の差分を読む |
+| 221、222 | [開発環境の起動](../../../../guides/setup.md) 第 2 節の hook の説明を、pre-commit と commit-msg の 2 つの置き方に修正する。[CI の検査](../../../../guides/ci.md)に hook の記述があれば合わせる | 文書の差分を読む |
 | 223 | skill `docs` に、語の一括の置き換えの手順（節）を追加する。活用の対応表で置き換えた後に、置き換えた語の後に元の活用の語尾が残る崩れ（例：「確認直す」「確認きれない」「確認方は」）を grep で探す手順を入れる | skill の差分を読む |
 | 224 | skill `review` の `prompts.md` の 3 つのひな形（観点ごと、plan の照合、文書のレビュー）と、skill `docs` 第 3 節の手順 2（サブエージェントに本文を書かせる指示）に、「理由と根拠には出典（ファイル:行）を書く。出典のない理由は書かない」を追加する | 差分を読む |
 | 225 | skill `review` の手順 7（plan の照合）と `prompts.md` の plan の照合のひな形を、tasks を書き終えたときにも使う形にする。tasks の各タスクの完了の条件を、spec の DC・AC・DN と照合し、spec より厳しい・緩い条件を見つける | 差分を読む。本 spec の tasks で最初に使う |
-| 226 | [エージェントの作業フロー](../../rules/subagents.md) 第 3 節の「実績」に、spec 018 の段階 5 の安定度の測定の行を追加し、「運用の規則」に次を追加する：語ごとの規則（和語の言い換えなど）は語ごとに 1 回決め、機械か文脈のサブエージェントで全体に適用する。文脈の候補は、同じ範囲を Sonnet で 2 回実行した和集合を取り、高性能なモデルが採否を判断する | 差分を読む |
+| 226 | [エージェントの作業フロー](../../../../rules/subagents.md) 第 3 節の「実績」に、spec 018 の段階 5 の安定度の測定の行を追加し、「運用の規則」に次を追加する：語ごとの規則（和語の言い換えなど）は語ごとに 1 回決め、機械か文脈のサブエージェントで全体に適用する。文脈の候補は、同じ範囲を Sonnet で 2 回実行した和集合を取り、高性能なモデルが採否を判断する | 差分を読む |
 | 227 | 同じ「運用の規則」と `prompts.md` の観点ごとのひな形に、「並行して動かすサブエージェントの一時ファイルには、担当の範囲の名前を付ける」を追加する | 差分を読む |
 
 ※1：はじめは、ステージしていない変更と未追跡のファイルを stash に退避して戻す方法にした。手動の確認で、一部だけをステージしたファイルを戻すときに衝突したので、作業ツリーを変えない方法に変えた（T019-01-05）。
@@ -54,8 +54,8 @@
 | DC | 決定 | 確認方法 |
 |----|------|----------|
 | 208 | skill `review` の「全体のレビュー」（手順 1〜6）で行う。範囲と観点の割り当ては下の表。3 回に分けて実行し、回ごとに結果を利用者に報告する | 結果のファイル（`/.local/review/<日時>-mvp/`）と、tasks の結果の表 |
-| 208 | モデル：一般の観点は Sonnet、セキュリティと金額の観点は Opus（[エージェントの作業フロー](../../rules/subagents.md) 第 3 節） | tasks の結果の表にモデルを書く |
-| 209 | 指摘の重要度は、spec の「高」（セキュリティ、データの破損、金額の誤りなど）と、それ以外に分ける。skill の「必須・推奨」とは別に、全体のレビューでは「高」かどうかで扱いを決める。「高」は本 spec で修正する。振る舞いを変える修正は、テストを先に書き（レッドを確認し）、AC 一覧に反映する（DN-25）。機能の追加に相当する規模なら修正せず、[TODO 一覧](../../todo.md)に載せて利用者と扱いを決める | tasks の結果の表。修正のテスト |
+| 208 | モデル：一般の観点は Sonnet、セキュリティと金額の観点は Opus（[エージェントの作業フロー](../../../../rules/subagents.md) 第 3 節） | tasks の結果の表にモデルを書く |
+| 209 | 指摘の重要度は、spec の「高」（セキュリティ、データの破損、金額の誤りなど）と、それ以外に分ける。skill の「必須・推奨」とは別に、全体のレビューでは「高」かどうかで扱いを決める。「高」は本 spec で修正する。振る舞いを変える修正は、テストを先に書き（レッドを確認し）、AC 一覧に反映する（DN-25）。機能の追加に相当する規模なら修正せず、[TODO 一覧](../../../../todo.md)に載せて利用者と扱いを決める | tasks の結果の表。修正のテスト |
 | 209 | 「高」以外の指摘は TODO 一覧に、出典「spec 019 の全体のレビュー」を付けて追加する。利用者が修正を指定したものは、tasks に追加して修正する | TODO 一覧の差分 |
 | 213 | AC の除外一覧（`scripts/ci/ac-exclusions.json`、10 件）の各理由を、今のコードと検査で確認する。全体のレビューの「テスト」の観点のサブエージェントに含める | tasks の結果の表に、除外ごとの判断を書く |
 
@@ -95,7 +95,7 @@
 
 | DC | 決定 | 確認方法 |
 |----|------|----------|
-| 212 | [開発環境の起動](../../guides/setup.md) 第 6 節の手順で、スクリーンショットを再撮影する（DB の再作成、`pnpm capture`） | 画像を目視で確認する |
+| 212 | [開発環境の起動](../../../../guides/setup.md) 第 6 節の手順で、スクリーンショットを再撮影する（DB の再作成、`pnpm capture`） | 画像を目視で確認する |
 | 212 | 数字（条件、テスト、仕様書の数）は `./gradlew check` の後に `scripts/dev/showcase-counts.mjs` で数え、ページを修正する。spec の数はアーカイブの後も数えられるよう、script を第 5 節で修正する | script の出力とページの照合 |
 | 212 | ページの文章で、spec 010 の後に変わった機能・画面の説明を修正する | レビューで読む |
 
@@ -107,7 +107,7 @@
 | 215 | リンクは `fix-links.cjs`、リンクでないパスは DC-220 の script で修正する。適用済みのマイグレーションは変えない | `doc-refs.mjs`、CI の検査 `migrations` |
 | 215 | spec の場所を参照する script を、`docs/specs/` の直下と `docs/specs/archive/<まとまり>/` の両方を参照するように修正する：`ac-check.mjs`（AC の定義の読み込みと、AC 一覧の出典のリンク）、`progress.mjs`（tasks と MVP の完成までの一覧の場所）、`scripts/dev/showcase-counts.mjs`（spec の数）。各テストを先に修正し、レッドを確認する | 各 script のテスト、`check-all.sh` |
 | 215 | 文書の検査の対象から外すのをアーカイブだけにする：`doc-terms.mjs` と `doc-refs.mjs` の除外を `docs/specs/` から `docs/specs/archive/` に変える。進行中の spec（019）で見つかった語とリンクは修正する | 両 script のテストと実行 |
-| 215 | README の進捗の表、[constitution](../../constitution.md)、skill（`handoff`、`review`、`docs`）、用語集の spec のパスの記述を、移した後のパスに合わせる | `doc-refs.mjs`、`git grep` で旧パスが残らない |
+| 215 | README の進捗の表、[constitution](../../../../constitution.md)、skill（`handoff`、`review`、`docs`）、用語集の spec のパスの記述を、移した後のパスに合わせる | `doc-refs.mjs`、`git grep` で旧パスが残らない |
 
 ## 6. main への記録（DS-55：DC-214、216〜219）
 
@@ -125,9 +125,9 @@
 
 | DC | 決定 | 確認方法 |
 |----|------|----------|
-| 216 | pull request の作成と push は、そのたびに利用者の許可を得る（[AGENTS.md](../../../AGENTS.md) の Git の規則） | GitHub の pull request の画面 |
+| 216 | pull request の作成と push は、そのたびに利用者の許可を得る（[AGENTS.md](../../../../../AGENTS.md) の Git の規則） | GitHub の pull request の画面 |
 | 218 | `pages.yml` の公開のブランチを `main` にする。GitHub の Environment（`github-pages`）の Deployment branches に `main` を追加するのは利用者の操作（GitHub の画面） | 1 回目のマージの後、Pages の公開の実行が成功する |
-| 218 | README の CI のバッジを `branch=main` にする。[CI の検査](../../guides/ci.md)の `pages.yml` の行を修正する | 差分を読む |
+| 218 | README の CI のバッジを `branch=main` にする。[CI の検査](../../../../guides/ci.md)の `pages.yml` の行を修正する | 差分を読む |
 | 218 | AGENTS.md の Git の表を main 基準にする：作業は main から切った短期の作業ブランチで行い、pull request で main に入れる。main には直接 commit しない。※2 の「develop から」の記述を修正する。ブランチの運用の全体（保護、CD など）は TODO 一覧のまま（spec の Non-goals）。skill `writing-for-agents` に従う | 差分を読む |
 | 218 | TODO 一覧の `develop` を含む項目の記述を、main 基準に修正する | 差分を読む |
 | 218 | `develop` の削除で Git の履歴は失われない（1 回目のマージの merge commit から全ての commit をたどれる）。削除の前に、`develop` の先頭が main から到達できることを確認する | `git merge-base --is-ancestor` |
@@ -139,7 +139,7 @@
 
 ## 7. 用語集
 
-- 「受け入れ確認」を[用語集](../../design/glossary.md)の「開発」の節に追加する（skill `review` の「全体のレビュー」と同じ意味）。
+- 「受け入れ確認」を[用語集](../../../../design/glossary.md)の「開発」の節に追加する（skill `review` の「全体のレビュー」と同じ意味）。
 - 「事前知識なしのエージェント」は本 spec の中だけで使うので、追加しない。
 - 「アーカイブ」は既にある。パスの記述を確認するだけ。
 

@@ -25,7 +25,8 @@
   - 結果：候補 81 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：admin、store、architecture、glossary、licenses。
 - [x] **T018-05-05** 手順：開発環境の起動、環境変数、CI の検査、テストの実行方法とテストの書き方以外の testing の文書。
   - 結果：候補 108 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：ci、environment、setup、running。
-- [ ] **T018-05-06** README、AGENTS.md、自作の skill。
+- [x] **T018-05-06** README、AGENTS.md、自作の skill。
+  - 結果：候補 20 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：SKILL、SKILL、SKILL、SKILL、SKILL、prompts ほか 2。
 - [ ] **T018-05-07** spec 001（商品カタログと在庫）の spec・plan・tasks。
 - [ ] **T018-05-08** spec 002（カートと注文）の spec・plan・tasks。
 - [ ] **T018-05-09** spec 003（認証）の spec・plan・tasks。

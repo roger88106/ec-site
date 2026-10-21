@@ -30,17 +30,17 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [004](docs/specs/004-foundation) | 整理 | 開発基盤の整理 | 完了 |
 | [005](docs/specs/005-backend-cleanup) | 整理 | バックエンドの整理 | 完了 |
 | [006](docs/specs/006-frontend-cleanup-and-i18n) | 整理 | フロントの整理と i18n | 完了 |
-| [007](docs/specs/007-payment) | 機能 | 決済 | 完了。[段階 1〜8](docs/specs/007-payment/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/007-payment/tasks/08-review.md) |
-| [008](docs/specs/008-showcase) | 整理 | 機能紹介のページ | 完了。[ページ](https://roger88106.github.io/ec-site/)を GitHub Pages で公開した。修正せずに残したことは [レビューの結果](docs/specs/008-showcase/tasks/04-review.md) |
-| [009](docs/specs/009-shipping) | 機能 | 出荷と配送状況 | 完了。[段階 10](docs/specs/009-shipping/tasks/10-seed.md) でローカルの seed を整理した。修正せずに残したことは [レビューの結果](docs/specs/009-shipping/tasks/09-review.md) |
-| [010](docs/specs/010-sales-report) | 機能 | 売上の簡易レポート | 完了。[段階 1〜6](docs/specs/010-sales-report/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/010-sales-report/tasks/06-review.md) |
-| [011](docs/specs/011-dev-foundation) | 整理 | 開発の基盤の整理 | 完了。[段階 1〜7](docs/specs/011-dev-foundation/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/011-dev-foundation/tasks/07-review.md) |
-| [012](docs/specs/012-test-safety-net) | 整理 | テストの安全網 | 完了。[段階 1〜8](docs/specs/012-test-safety-net/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/012-test-safety-net/tasks/08-review.md) |
-| [013](docs/specs/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） | 完了。[段階 1〜7](docs/specs/013-backend-consistency/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/013-backend-consistency/tasks/07-review.md) |
-| [014](docs/specs/014-frontend-consistency) | 整理 | 書き方の統一（フロント） | 完了。[段階 1〜5](docs/specs/014-frontend-consistency/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/014-frontend-consistency/tasks/05-review.md) |
-| [015](docs/specs/015-security) | 機能 | セキュリティ | 完了。[段階 1〜7](docs/specs/015-security/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/015-security/tasks/07-review.md) |
-| [016](docs/specs/016-master-data) | 機能 | マスターデータ | 完了。[段階 1〜10](docs/specs/016-master-data/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/016-master-data/tasks/10-review.md) |
-| [017](docs/specs/017-stability) | 機能 | 安定性 | 完了。[段階 1〜8](docs/specs/017-stability/tasks/) を終えた。修正せずに残したことは [レビューの結果](docs/specs/017-stability/tasks/08-review.md) |
+| [007](docs/specs/007-payment) | 機能 | 決済 | 完了。[段階 1〜8](docs/specs/007-payment/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/007-payment/tasks/08-review.md) |
+| [008](docs/specs/008-showcase) | 整理 | 機能紹介のページ | 完了。[ページ](https://roger88106.github.io/ec-site/)を GitHub Pages で公開した。修正せずに残した項目は [レビューの結果](docs/specs/008-showcase/tasks/04-review.md) |
+| [009](docs/specs/009-shipping) | 機能 | 出荷と配送状況 | 完了。[段階 10](docs/specs/009-shipping/tasks/10-seed.md) でローカルの seed を整理した。修正せずに残した項目は [レビューの結果](docs/specs/009-shipping/tasks/09-review.md) |
+| [010](docs/specs/010-sales-report) | 機能 | 売上の簡易レポート | 完了。[段階 1〜6](docs/specs/010-sales-report/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/010-sales-report/tasks/06-review.md) |
+| [011](docs/specs/011-dev-foundation) | 整理 | 開発の基盤の整理 | 完了。[段階 1〜7](docs/specs/011-dev-foundation/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/011-dev-foundation/tasks/07-review.md) |
+| [012](docs/specs/012-test-safety-net) | 整理 | テストの安全網 | 完了。[段階 1〜8](docs/specs/012-test-safety-net/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/012-test-safety-net/tasks/08-review.md) |
+| [013](docs/specs/013-backend-consistency) | 整理 | 書き方の統一（バックエンド） | 完了。[段階 1〜7](docs/specs/013-backend-consistency/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/013-backend-consistency/tasks/07-review.md) |
+| [014](docs/specs/014-frontend-consistency) | 整理 | 書き方の統一（フロント） | 完了。[段階 1〜5](docs/specs/014-frontend-consistency/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/014-frontend-consistency/tasks/05-review.md) |
+| [015](docs/specs/015-security) | 機能 | セキュリティ | 完了。[段階 1〜7](docs/specs/015-security/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/015-security/tasks/07-review.md) |
+| [016](docs/specs/016-master-data) | 機能 | マスターデータ | 完了。[段階 1〜10](docs/specs/016-master-data/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/016-master-data/tasks/10-review.md) |
+| [017](docs/specs/017-stability) | 機能 | 安定性 | 完了。[段階 1〜8](docs/specs/017-stability/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/017-stability/tasks/08-review.md) |
 | [018](docs/specs/018-docs-and-tools) | 整理 | 文書とツールの整理 | 進行中 |
 | [019](docs/specs/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 | 未着手 |
 

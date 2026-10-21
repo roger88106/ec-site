@@ -19,7 +19,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
 | `README.md` | 概要、起動とテストへの案内、進捗だけ。文書は constitution へ案内する |
 | `AGENTS.md`・skill | エージェントに固有の手順だけ。規則は docs/ を指す |
 
-- `docs/` の直下には constitution と フォルダーだけを置く。文書を追加したら constitution の文書の地図にも追加する。
+- `docs/` の直下には constitution とフォルダーだけを置く。文書を追加したら constitution の文書の地図にも追加する。
 - 同じ意味は 1 か所に書き、ほかは指す。
 
 ## 2. 書き方

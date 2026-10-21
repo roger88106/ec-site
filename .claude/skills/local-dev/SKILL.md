@@ -20,7 +20,7 @@ docker compose stop           # 止める（データは残る）
 - Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で再作成する（`docs/dev/setup.md` 第 4 節。database は compose の PostgreSQL を初めて作ったときだけ自動で作られる）。
 
 - DB：`localhost:5432`、DB `ec_site`、ユーザー `ec_site`、パスワード `ec_site`。
-- SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で引く。注文は `ordering`）。
+- SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で一覧にする。注文は `ordering`）。
 
   ```bash
   docker exec ec-site-postgres psql -U ec_site -d ec_site -c "select order_number, status from ordering.sales_order order by ordered_at desc limit 5"
@@ -43,7 +43,7 @@ curl -s http://localhost:8025/api/v1/messages | head -c 500              # Mailp
 
 ## バックエンド（`backend/ecsite/`）
 
-起動はバックグラウンドで行い、出力はファイルに捨てる（ログが多いため）。
+起動はバックグラウンドで行い、出力先をファイルにする（ログが多いため）。
 
 ```bash
 cd backend/ecsite && ./gradlew bootRun --args='--spring.profiles.active=local' > <作業用のディレクトリ>/bootrun.log 2>&1
@@ -68,13 +68,13 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 ```
 
 - `check` は単体・統合テストと OpenAPI の検証を含む（AGENTS.md の完了の基準）。一部だけなら `test`（単体）、`integrationTest`（統合）、`--tests '<クラス名>'`。
-- `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。書き誤りが、テストや E2E の途中まで見えないため。
-- 長い検査は、最初からバックグラウンドで実行する（Bash の上限 10 分を超えて途中で背景に回ると、結果の読み方が変わるため）。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check` と `check-frontend.sh` は続けて実行し、同時に実行しない（CPU が足りずに管理画面のテストが時間切れになる）。
+- `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。書き誤りが、テストや E2E の途中まで検出されないため。
+- 長い検査は、最初からバックグラウンドで実行する（Bash の上限 10 分を超えて途中でバックグラウンドに移ると、結果の読み方が変わるため）。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check` と `check-frontend.sh` は続けて実行し、同時に実行しない（CPU が足りずに管理画面のテストがタイムアウトする）。
 - 失敗の詳細は `build/test-results/**/TEST-*.xml` を、失敗したクラスだけ grep する。
 
 ## フロント（`frontend/store`、`frontend/admin`）
 
-lint・型チェック・テスト・ビルドは、手順ごとに 1 行の要約だけを出力するスクリプトで実行する。失敗した手順だけ、出力の末尾とログのパスが表示される。
+lint・型チェック・テスト・ビルドは、手順ごとに 1 行の要約だけを出力する script で実行する。失敗した手順だけ、出力の末尾とログのパスが表示される。
 
 ```bash
 scripts/dev/check-frontend.sh                       # 依存の再インストールとライセンスの後に、共有パッケージで lint typecheck test、両方のアプリで lint typecheck test build、E2E のコードで lint typecheck（CI と同じ）
@@ -84,7 +84,7 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 - 末尾の行数は `TAIL_LINES`（既定 30）、ログの置き場所は `LOG_DIR`（既定は一時ディレクトリ）。
 - 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`（ルートから実行すると、設定が入れ子だというエラーになる）。
-- 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないので、テストデータの形の誤りが、テストの失敗として遠回りに見える。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
+- 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため、テストデータの形の誤りが、テストの失敗として間接的に表れる。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
 - 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（`docs/frontend/coding.md` 第 9.1 節）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
 
@@ -99,11 +99,11 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 ### プレビューで画面を確認する
 
-エージェントが実装の途中で表示を確認するときの、ツールの使い方。利用者が普段の流れで画面を確認する段階（skill `new-screen` の「画面を追加し終えたら」）は別に残す。
+エージェントが実装の途中で表示を確認するときの、ツールの使い方。利用者が画面を確認する手順は、skill `new-screen` の「画面を追加し終えたら」にある。
 
 - IdP のログインの画面は、描画の前だとキーの入力やクリックが失敗する。`find` で入力欄を探し、`form_input` で local の seed のアカウント（`docs/dev/setup.md`）を入れ、`javascript_tool` で `document.querySelector('form').submit()` を呼ぶ。
-- 表示の中身は `get_page_text` で読む。スクリーンショットは描画を待って時間切れになりやすいので、見た目を見るときだけ使う。
-- 開く画面の ID は DB から引く（例：注文と支払は `ordering.sales_order` と `payment.payment` を結ぶ）。
+- 表示の中身は `get_page_text` で読む。スクリーンショットは描画を待ってタイムアウトしやすいため、見た目を見るときだけ使う。
+- 開く画面の ID は DB から取得する（例：注文と支払は `ordering.sales_order` と `payment.payment` を結ぶ）。
 
 ## CI の検査の script
 
@@ -132,7 +132,7 @@ CI=true scripts/ci/check-all.sh
 
 - 期限切れを早く確認するときは、`--args` に `--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する。
 - 支払は `payment.payment`（`status`、`page_id`、`authorization_ref`）、注文は `ordering.sales_order`。
-- Stripe の Checkout の画面は描くのが遅く、入力が遅れて二重に入ることがある。入力の後に拡大して確認してから支払う。
+- Stripe の Checkout の画面は描画が遅く、入力が遅れて二重に入ることがある。入力の後に拡大して確認してから支払う。
 
 ## 機能紹介のページのスクリーンショット
 

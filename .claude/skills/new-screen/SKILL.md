@@ -224,7 +224,7 @@ export function FooActions({ fooId }: { fooId: string }) {
 
 ## 画面を追加し終えたら
 
-- 利用者に、確認する URL を全部挙げて伝える（店舗画面は `http://localhost:3000/...`、管理画面は `http://localhost:5173/...`。動的な部分は実際に開ける ID にする）。新しい画面は、メニューやヘッダーにリンクを追加しない限りどこからも辿れないので、辿り方（メニューのどれか、どの画面のどのリンクか）も添える。
+- 利用者に、確認する URL を全て挙げて伝える（店舗画面は `http://localhost:3000/...`、管理画面は `http://localhost:5173/...`。動的な部分は実際に開ける ID にする）。新しい画面は、メニューやヘッダーにリンクを追加しない限りどこからも到達できないため、到達する経路（メニューのどれか、どの画面のどのリンクか）も添える。
 - あわせて、何を追加したか（ルート、メニュー・ヘッダーのリンク、API の呼び出し）を短く書く。リンクを追加していない画面は、追加するかを利用者に確認する。
 
 出典：この節は [Ginz9013/t3-flare](https://github.com/Ginz9013/t3-flare) の site-builder（`references/build-features.md` の「Report the routes to the user」）を、このリポジトリ向けに書き換えたもの（MIT。`../LICENSE-t3-flare`）。

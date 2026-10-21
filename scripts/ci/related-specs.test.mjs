@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMissingSpecs, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
+import { findMissingInStaged, findMissingSpecs, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
 
 describe('設計の文書の関連 spec の検査', () => {
   test('概要の表の「関連 spec」の行から、spec の番号を読む', () => {
@@ -27,5 +27,16 @@ describe('設計の文書の関連 spec の検査', () => {
     const subjects = ['payment: 期限切れを直す（T017-06-01）', 'payment: 支払を追加する（T0701）', 'docs: 言い回し（T018-05-03）', 'payment: 構成を追加する（T018-04-04）']
     assert.deepEqual(findMissingSpecs(['007', '017'], subjects, ['T018-05']), ['018'])
     assert.deepEqual(findMissingSpecs(['007', '017', '018'], subjects, ['T018-05']), [])
+  })
+
+  test('ステージした設計の文書を、次の commit のメッセージの 1 行目と照合する', () => {
+    const payment = { file: 'docs/design/modules/payment.md', markdown: '| 関連 spec | [007](../../specs/007-payment)、[017](../../specs/017-stability) |' }
+    const guide = { file: 'docs/guides/setup.md', markdown: '# 開発環境の起動' }
+    assert.deepEqual(findMissingInStaged([payment, guide], 'payment: 構成を追加する（T019-01-07）', []), [
+      { file: 'docs/design/modules/payment.md', spec: '019' },
+    ])
+    assert.deepEqual(findMissingInStaged([payment], 'payment: 期限切れを直す（T017-06-01）', []), [])
+    assert.deepEqual(findMissingInStaged([payment], 'docs: 言い回し（T019-05-03）', ['T019-05']), [])
+    assert.deepEqual(findMissingInStaged([payment], 'docs: 用語をそろえる', []), [])
   })
 })

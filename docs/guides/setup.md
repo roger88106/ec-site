@@ -45,11 +45,12 @@ pnpm dev
 - E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に含まれない。E2E の準備の script（`e2e/scripts/prepare.ts`）が起動する（[テストの実行方法](running-tests.md)）。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で修正できる lint は `pnpm lint:fix`。
-- commit の前に CI の検査の script（[CI の検査](ci.md)）を実行するには、`.git/hooks/pre-commit` に次の 1 行を書く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いた他の hook と併用できるよう、`core.hooksPath` は変えない。
+- commit のときに CI の検査の script（[CI の検査](ci.md)）を実行するには、次の 2 つの hook を置く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いた他の hook と併用できるよう、`core.hooksPath` は変えない。
 
-  ```sh
-  "$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" || exit 1
-  ```
+  | hook | 書く 1 行 | 実行するもの |
+  |------|-----------|--------------|
+  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh`。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない |
+  | `.git/hooks/commit-msg` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/commit-msg" "$1" \|\| exit 1` | 関連 spec の検査を、ステージした設計の文書と commit のメッセージの 1 行目で実行する（メッセージは pre-commit の時点ではないため） |
 
 ## 3. アカウント
 

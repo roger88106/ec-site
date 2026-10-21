@@ -70,5 +70,6 @@
 - [x] **T019-02-16** [テスト] 配列に付く `@Size` の検証の文が、件数の文になるテストを書き、検証の文の作り方を修正する。
   - 結果：`ValidationMessagesTest` に、一覧と配列の `@Size`（下限だけ、上限だけ、両方）が件数の文になるテストを追加し、レッドを確認した。違反した値が一覧・Map・配列なら、件数の文（`ecsite.validation.size_items*`）を使う。空の配列（税率、カテゴリ、バリアント、商品の ID）は「1 件以上にしてください。」、軸は「3 件以内にしてください。」になる。
 - [ ] **T019-02-17** テスト名の AC を、テストが確認するようにする：E2E の AC-37（複数の画像の並べ替え）、AC-223・224、バックエンドの AC-225。確認する内容を AC の文と照合してから修正する。
-- [ ] **T019-02-18** skill `new-screen` の例を、今のコードに合わせる（`isUuid` の import 先、文言は文言ファイルのキーで引く）。
+- [x] **T019-02-18** skill `new-screen` の例を、今のコードに合わせる（`isUuid` の import 先、文言は文言ファイルのキーで引く）。
+  - 結果：店舗の取得・フォームと、管理画面の一覧・操作の例を、今のコード（`app/orders/[orderId]/page.tsx`、`CancellationRequestForm.tsx`、`OrderActions.tsx`）に合わせた。`isUuid` と `Button` は共有パッケージから import し、文言は `getTranslations`・`useTranslations` のキーで引いて後ろにコメントを書く。前提の箇条書きに、文言ファイルに置く規則を追加した。
 - [ ] **T019-02-19** 全体構成の文書だけを変えた push でも、`ModuleDiagramTest` に当たる検査が CI で実行されるようにする（`ci.yml` の対象か、`docs.yml` の検査）。

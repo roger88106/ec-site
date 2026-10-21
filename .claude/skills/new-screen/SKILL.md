@@ -12,6 +12,7 @@ description: ec-site のフロントに画面や操作を追加するときの�
 
 - 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に修正する（開発の進め方 第 1 節）。
 - 画面の文言・コメントは日本語。コメントは何をするかを書き、決定の経緯はコミットメッセージに書く。
+- 表示の文言は、コードに直接書かず文言ファイル（`messages/ja.json`）に置き、`t('キー')` で引いて、後ろに表示する内容をコメントで書く（フロントの書き方 第 7 節）。下の例の `foo.*` のキーは、文言ファイルに追加する。
 - 表示の決まり（列挙の表示名、金額の整形など）は関数にして `lib/` か `features/<機能>/` に置き、単体テストを横に置く。
 - 終わったら `scripts/dev/check-frontend.sh <store|admin>` を通し、プレビューで表示を確認する（skill `local-dev`）。
 
@@ -32,17 +33,22 @@ description: ec-site のフロントに画面や操作を追加するときの�
 ### 取得（`app/<URL>/page.tsx`）
 
 ```tsx
+import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import { notFound } from 'next/navigation'
+import { getTranslations } from 'next-intl/server'
 import { getApi, UNCACHED } from '@/api/client'
 import { unwrap } from '@/api/result'
-import { isUuid } from '@/lib/uuid'
 
 /** ブラウザのタブの題名 */
-export const metadata: Metadata = { title: '〇〇' }
+export async function generateMetadata(): Promise<Metadata> {
+  const t = await getTranslations('foo.detail')
+  return { title: t('title') } // 〇〇
+}
 
 /** 〇〇 */
 export default async function FooPage({ params }: PageProps<'/foos/[fooId]'>) {
+  const t = await getTranslations('foo.detail')
   const { fooId } = await params
   // 形の違う ID は API を呼ばずに「見つかりません」にする
   if (!isUuid(fooId)) {
@@ -53,7 +59,7 @@ export default async function FooPage({ params }: PageProps<'/foos/[fooId]'>) {
   const foo = unwrap(await api.GET('/foos/{fooId}', { params: { path: { fooId } }, ...UNCACHED }))
   return (
     <div className="space-y-8">
-      <h1 className="font-heading font-semibold text-2xl">〇〇</h1>
+      <h1 className="font-heading font-semibold text-2xl">{t('title') /* 〇〇 */}</h1>
       <FooForm fooId={foo.id} />
     </div>
   )
@@ -97,19 +103,21 @@ export async function updateFoo(_previous: ActionResult | null, formData: FormDa
 ```tsx
 'use client'
 
+import { Button } from '@ec-site/shared/ui/button'
+import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { updateFoo } from '@/actions/foo'
-import { Button } from '@/components/ui/button'
 
 /** 〇〇のフォーム */
 export function FooForm({ fooId }: { fooId: string }) {
+  const t = useTranslations('foo.form')
   const [result, formAction, pending] = useActionState(updateFoo, null)
   return (
     <form action={formAction} className="space-y-3">
       <input name="fooId" type="hidden" value={fooId} />
       {/* 入力欄。誤りは result?.ok === false && result.fieldErrors?.note を欄の下に出す */}
       <Button disabled={pending} type="submit">
-        {pending ? '送信しています…' : '〇〇する'}
+        {pending ? t('submitting') : t('submit') /* 送信中か、〇〇する */}
       </Button>
       {result?.ok === false && (
         <p aria-live="polite" className="text-destructive text-sm">
@@ -143,6 +151,7 @@ export function FooForm({ fooId }: { fooId: string }) {
 ```tsx
 import { keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
+import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import { PageHeader } from '@/components/PageHeader'
 import { Pagination } from '@/components/Pagination'
@@ -151,6 +160,7 @@ import { type FooFilter, parseFilter, toSearchParams } from '@/features/foo/fooF
 
 /** 〇〇の一覧 */
 export function FooListPage() {
+  const t = useTranslations('foo.list')
   const [searchParams, setSearchParams] = useSearchParams()
   const filter = parseFilter(searchParams) // 不正な値は無視する。fooFilter.test.ts を書く
   const query = $api.useQuery(
@@ -163,7 +173,7 @@ export function FooListPage() {
   const apply = (next: FooFilter) => setSearchParams(toSearchParams(next))
   return (
     <>
-      <PageHeader title="〇〇" />
+      <PageHeader title={t('title') /* 〇〇 */} />
       {/* 絞り込みのフォームは key={searchParams.toString()} で、URL が変わったら再作成する */}
       <QueryState query={query}>
         {(result) => (
@@ -186,25 +196,27 @@ export function FooListPage() {
 ### 操作（更新、再取得、toast、確認）
 
 ```tsx
+import { Button } from '@ec-site/shared/ui/button'
+import { useTranslations } from 'use-intl'
 import { useApiMutation } from '@/api/useApiMutation'
 import { ConfirmDialog } from '@/components/ConfirmDialog'
 import { ErrorMessage } from '@/components/ErrorMessage'
-import { Button } from '@/components/ui/button'
 
 /** 〇〇の操作。取り消せないので確認してから送る */
 export function FooActions({ fooId }: { fooId: string }) {
+  const t = useTranslations('foo.actions')
   const close = useApiMutation('put', '/foos/{fooId}/close', {
-    success: '〇〇しました',
+    success: t('closed'), // 〇〇の知らせ
     invalidate: ['/foos'], // 影響する取得をパスの前方一致で再取得する（admin.md 第 4 節の表）
   })
   return (
     <div className="space-y-3">
       <ConfirmDialog
-        confirmLabel="〇〇する"
-        description="元に戻せません。"
+        confirmLabel={t('closeConfirm') /* 〇〇する */}
+        description={t('closeDescription') /* 元に戻せないこと */}
         onConfirm={() => close.mutate({ params: { path: { fooId } } })}
-        title="〇〇しますか？"
-        trigger={<Button disabled={close.isPending}>〇〇する</Button>}
+        title={t('closeTitle') /* 〇〇の確認 */}
+        trigger={<Button disabled={close.isPending}>{t('close') /* 〇〇する */}</Button>}
       />
       {/* 失敗は toast ではなく操作した場所に出す */}
       <ErrorMessage error={close.error} />

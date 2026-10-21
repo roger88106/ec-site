@@ -10,8 +10,10 @@ import org.jooq.DSLContext;
 import org.springframework.stereotype.Repository;
 
 import java.time.Clock;
+import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
-import java.util.function.BooleanSupplier;
+import java.util.function.Supplier;
 
 import static com.ecsite.jooq.inventory.Tables.STOCK_ADJUSTMENT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -56,7 +58,7 @@ class JooqStockItemRepository implements StockItemRepository {
 
     /**
      * 在庫数に増減量を加え、調整履歴を記録する（docs/design/modules/inventory.md）。<br />
-     * 更新されなかったら、「負になる」か「在庫がない」のどちらかなので、増減量と在庫の有無でエラーを分ける。
+     * 更新されなかったら、「負になる」「運営者の調整で上限を超える」「在庫がない」のどれかなので、増減量と今の在庫数でエラーを分ける。
      *
      * @param variantId  バリアント ID
      * @param adjustment 在庫調整
@@ -65,16 +67,23 @@ class JooqStockItemRepository implements StockItemRepository {
     @Override
     public int adjust(UUID variantId, StockAdjustment adjustment) {
         var delta = adjustment.delta();
+        var limited = adjustment.operator() != null;
 
-        // 差分の加算 ※調整後に負にならない場合だけ更新する
+        // 差分の加算 ※調整後に負にならず、運営者の調整なら上限を超えない場合だけ更新する
+        var condition = STOCK_ITEM.VARIANT_ID.eq(variantId).and(STOCK_ITEM.QUANTITY.plus(delta).ge(0));
+        if (limited) {
+            condition = condition.and(STOCK_ITEM.QUANTITY.plus(delta).le(StockAdjustment.MAX_MANUAL_QUANTITY));
+        }
         var updated = dsl.update(STOCK_ITEM)
                 .set(STOCK_ITEM.QUANTITY, STOCK_ITEM.QUANTITY.plus(delta))
                 .set(STOCK_ITEM.UPDATED_AT, adjustment.adjustedAt())
-                .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
-                .and(STOCK_ITEM.QUANTITY.plus(delta).ge(0))
+                .where(condition)
                 .returningResult(STOCK_ITEM.ID, STOCK_ITEM.QUANTITY)
                 .fetchOptional()
-                .orElseThrow(() -> failureOf(delta, () -> dsl.fetchExists(STOCK_ITEM, STOCK_ITEM.VARIANT_ID.eq(variantId))));
+                .orElseThrow(() -> failureOf(delta, limited, () -> dsl.select(STOCK_ITEM.QUANTITY)
+                        .from(STOCK_ITEM)
+                        .where(STOCK_ITEM.VARIANT_ID.eq(variantId))
+                        .fetchOptional(STOCK_ITEM.QUANTITY)));
         int quantityAfter = updated.value2();
 
         // 調整履歴の記録
@@ -97,18 +106,24 @@ class JooqStockItemRepository implements StockItemRepository {
 
     /**
      * 調整が更新されなかったときのエラーを選ぶ（docs/design/modules/inventory.md）。<br />
-     * 増やす調整は在庫があれば必ず更新されるので、更新の時点で在庫がなかったことになる。
-     * 在庫の有無を確認すると、更新の後に作られた在庫が見えて「負になる」と誤るため、確認せずに「見つからない」とする。
+     * 増やす調整は、上限を超えるときのほかは在庫があれば必ず更新されるので、上限を超えないなら更新の時点で在庫がなかったことになる。
+     * 更新の後に作られた在庫は在庫数 0 なので、上限を超えない（運営者の 1 回の増減量は上限以下）。「負になる」「上限を超える」と誤らない。
      *
-     * @param delta       増減量
-     * @param stockExists 在庫の有無（減らす調整のときだけ確認する）
+     * @param delta    増減量
+     * @param limited  運営者の調整で、在庫数の上限を当てるか
+     * @param quantity 今の在庫数。在庫がなければ空（増やす調整で上限を当てないときは読まない）
      * @return 業務のエラー
      */
-    static BusinessException failureOf(int delta, BooleanSupplier stockExists) {
+    static BusinessException failureOf(int delta, boolean limited, Supplier<Optional<Integer>> quantity) {
         if (delta > 0) {
-            return BusinessException.of(CommonErrorCode.NOT_FOUND);
+            if (!limited) {
+                return BusinessException.of(CommonErrorCode.NOT_FOUND);
+            }
+            return quantity.get().filter(current -> current + delta > StockAdjustment.MAX_MANUAL_QUANTITY).isPresent()
+                    ? BusinessException.of(InventoryErrorCode.STOCK_QUANTITY_EXCEEDED, List.of(StockAdjustment.MAX_MANUAL_QUANTITY))
+                    : BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
-        return stockExists.getAsBoolean()
+        return quantity.get().isPresent()
                 ? BusinessException.of(InventoryErrorCode.INSUFFICIENT_STOCK)
                 : BusinessException.of(CommonErrorCode.NOT_FOUND);
     }

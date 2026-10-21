@@ -11,9 +11,9 @@ import lombok.Getter;
 public enum InventoryErrorCode implements ErrorCodeProvider {
 
     /**
-     * 増減量が 0
+     * 増減量が 0、または ±1,000,000 を超える
      */
-    INVALID_STOCK_DELTA(ErrorType.VALIDATION_ERROR),
+    INVALID_STOCK_DELTA(ErrorType.VALIDATION_ERROR, "max"),
     /**
      * 理由が「その他」なのにメモがない
      */
@@ -30,6 +30,10 @@ public enum InventoryErrorCode implements ErrorCodeProvider {
      * 運営者の調整で、注文に由来する理由を選んだ
      */
     ORDER_REASON_NOT_SELECTABLE(ErrorType.BUSINESS_RULE_ERROR),
+    /**
+     * 運営者の調整の後の在庫数が 1,000,000 を超える
+     */
+    STOCK_QUANTITY_EXCEEDED(ErrorType.BUSINESS_RULE_ERROR, "max"),
     ;
 
     /**

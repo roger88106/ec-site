@@ -827,7 +827,7 @@ paths:
     post:
       tags: [inventory]
       operationId: adjustStock
-      x-error-codes: [INVALID_STOCK_DELTA, STOCK_MEMO_REQUIRED, INVALID_STOCK_MEMO, INSUFFICIENT_STOCK, ORDER_REASON_NOT_SELECTABLE]
+      x-error-codes: [INVALID_STOCK_DELTA, STOCK_MEMO_REQUIRED, INVALID_STOCK_MEMO, INSUFFICIENT_STOCK, STOCK_QUANTITY_EXCEEDED, ORDER_REASON_NOT_SELECTABLE]
       summary: 在庫の調整（AC-42〜44、46）
       description: 在庫調整は履歴の 1 件で単独の URL を持たないため、`Location` は返さず、本文で結果を返す。
       x-required-permission: inventory:write
@@ -1484,6 +1484,7 @@ components:
         - SHIPPED_ORDER_NOT_RETURNED
         - SINGLE_VARIANT_ONLY
         - STOCK_MEMO_REQUIRED
+        - STOCK_QUANTITY_EXCEEDED
         - SYSTEM_ERROR
         - TAX_CATEGORY_NAME_ALREADY_EXISTS
         - TAX_CATEGORY_NOT_ASSIGNABLE
@@ -2033,6 +2034,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 9999999
           description: 税抜価格（円）。全バリアント共通
         categoryIds:
           type: array
@@ -2069,6 +2071,7 @@ components:
           type: integer
           format: int64
           minimum: 1
+          maximum: 9999999
           description: 税抜価格（円）。全バリアント共通
         categoryIds:
           type: array
@@ -2149,9 +2152,9 @@ components:
         delta:
           type: integer
           format: int32
-          minimum: -2147483648
-          maximum: 2147483647
-          description: 増減量。0 は不可
+          minimum: -1000000
+          maximum: 1000000
+          description: 増減量。0 は不可。運営者の調整の後の在庫数は 1,000,000 まで
         reason:
           $ref: '#/components/schemas/ManualStockAdjustmentReason'
         memo:

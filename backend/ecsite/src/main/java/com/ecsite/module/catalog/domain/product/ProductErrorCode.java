@@ -19,9 +19,9 @@ public enum ProductErrorCode implements ErrorCodeProvider {
      */
     INVALID_VARIANT_CODE(ErrorType.VALIDATION_ERROR, "max"),
     /**
-     * 税抜価格が 1 円未満
+     * 税抜価格が 1 円以上 9,999,999 円以下でない
      */
-    INVALID_PRICE_EXCL_TAX(ErrorType.VALIDATION_ERROR, "min"),
+    INVALID_PRICE_EXCL_TAX(ErrorType.VALIDATION_ERROR, "min", "max"),
     /**
      * 商品名が 1 文字以上 200 文字以内でない
      */

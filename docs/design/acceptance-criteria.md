@@ -47,7 +47,7 @@
 | AC-22 | 商品に軸があれば、バリアントは全ての軸の値を持つ。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-23 | 同じ商品の中で、軸の値の組み合わせは重複できない。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-24 | 軸を持たない商品のバリアントは 1 つだけ。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
-| AC-25 | 税抜価格は 1 円以上の整数。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `PriceExclTaxTest`、`ProductApiTest`、`ProductTest` |
+| AC-25 | 税抜価格は 1 円以上の整数。 | 変更 | [001](../specs/001-catalog-and-inventory/spec.md) | [019](../specs/019-mvp-completion) | [商品モジュール](modules/catalog.md)（商品（集約）。上限 9,999,999 円） | `PriceExclTaxTest`、`ProductApiTest`、`ProductTest` |
 | AC-26 | 価格の変更は C 側に反映される（NFR-1）。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`StorefrontFreshnessTest` |
 | AC-27 | バリアントの表示順を変更できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-28 | バリアントを販売停止・解除できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 3 |
@@ -64,7 +64,7 @@
 | AC-39 | 形式は JPEG、PNG、WebP（US-13 で、AC-67 の形式を追加する… | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `MediaApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 1 |
 | AC-40 | 1 商品あたり最大 20 枚。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductEditPage.test.tsx`、`ProductImageApiTest`、`ProductTest` |
 | AC-41 | 新しいバリアントの在庫数は 0。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `CatalogEventHandlerTest`、`InventoryApiTest` |
-| AC-42 | 在庫数は、増減量（例：+10、-3）と理由で調整する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest`、`StockAdjustmentTest` ほか 1 |
+| AC-42 | 在庫数は、増減量（例：+10、-3）と理由で調整する。 | 変更 | [001](../specs/001-catalog-and-inventory/spec.md) | [019](../specs/019-mvp-completion) | [在庫モジュール](modules/inventory.md)（運営者の調整の上限） | `InventoryApiTest`、`JooqStockItemRepositoryFailureTest`、`JooqStockItemRepositoryTest` ほか 2 |
 | AC-43 | 調整後に負になる調整は拒否される。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryFailureTest`、`JooqStockItemRepositoryTest` ほか 1 |
 | AC-44 | 同じバリアントへの調整が同時に実行されても、全て反映される。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest` |
 | AC-45 | 調整履歴（日時、増減量、理由、調整後の在庫数）を新しい順に参照できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest` |

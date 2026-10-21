@@ -34,9 +34,19 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
     static final int MEMO_MAX_LENGTH = 500;
 
     /**
+     * 運営者の 1 回の増減量の上限（絶対値）
+     */
+    static final int MAX_MANUAL_DELTA = 1_000_000;
+
+    /**
+     * 運営者の調整の後の在庫数の上限。注文のキャンセルで戻す調整には当てない（引き当てた分を戻すだけなので）
+     */
+    public static final int MAX_MANUAL_QUANTITY = 1_000_000;
+
+    /**
      * 運営者の在庫調整を作る。空白だけのメモは、メモなしとして扱う。注文に由来する理由は選べない。
      *
-     * @param delta  増減量（0 以外）
+     * @param delta  増減量（0 以外、±1,000,000 以内）
      * @param reason 調整理由
      * @param memo     メモ。理由が「その他」なら必須
      * @param operator 調整した運営者
@@ -45,8 +55,8 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      */
     public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
-        if (delta == 0) {
-            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA);
+        if (delta == 0 || delta > MAX_MANUAL_DELTA || delta < -MAX_MANUAL_DELTA) {
+            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));
         }
         if (reason.isFromOrder()) {
             throw BusinessException.of(InventoryErrorCode.ORDER_REASON_NOT_SELECTABLE);
@@ -74,7 +84,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
     public static StockAdjustment forOrder(int delta, @NonNull StockAdjustmentReason reason, @NonNull UUID orderId,
                                            @NonNull String orderNumber, @NonNull Instant now) {
         if (delta == 0) {
-            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA);
+            throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));
         }
         if (!reason.isFromOrder()) {
             throw new IllegalArgumentException("注文に由来する理由ではありません: " + reason);

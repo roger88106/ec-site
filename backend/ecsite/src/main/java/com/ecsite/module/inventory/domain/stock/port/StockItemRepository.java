@@ -35,7 +35,8 @@ public interface StockItemRepository {
     /**
      * 在庫数に増減量を加え、調整履歴を記録する。<br />
      * 「調整後に負にならない場合だけ加える」を 1 回の更新で行うので、同時の調整もすべて反映される。
-     * 調整後に負になるなら {@code INSUFFICIENT_STOCK}、在庫がなければ {@code NOT_FOUND} の業務のエラーを投げる。
+     * 調整後に負になるなら {@code INSUFFICIENT_STOCK}、運営者の調整で在庫数が上限を超えるなら {@code STOCK_QUANTITY_EXCEEDED}、
+     * 在庫がなければ {@code NOT_FOUND} の業務のエラーを投げる。
      *
      * @param variantId  バリアント ID
      * @param adjustment 在庫調整

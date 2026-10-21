@@ -80,7 +80,7 @@ public class OrderReportApi {
                 line.quantity(),
                 line.ratePercent(),
                 line.subtotal(),
-                Money.of(line.unitPriceExclTax().yen() * line.quantity()));
+                line.unitPriceExclTax().times(line.quantity()));
     }
 
     /**

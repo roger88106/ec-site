@@ -15,8 +15,9 @@
   - 結果：179 ファイルを移し、リンクを 843 か所修正した。リンクでないパスの置き換えは、script の使い方の例だけに当たったので戻した（例として旧パスを書く）。旧パスが残るのは、script のテストのデータだけ。マイグレーションと seed は変わっていない。
 - [x] **T019-05-04** README の進捗の表、constitution、skill（`handoff`、`review`、`docs`）、用語集の spec のパスの記述を修正する（DC-215）。
   - 結果：README の進捗の表と、skill `review` の見本のリンクは T019-05-03 で修正済み。constitution の開発記録の表と、skill `docs` の置き場所の表・完了した文書の行を、直下（進行中）とアーカイブ（完了）に分けて書いた。skill `handoff`・AGENTS.md の `docs/specs/NNN-*/tasks/` は進行中の spec を指すので変えない。用語集の MVP の完成までの一覧のパスは、段階 6 で一覧を移すときに修正する。
-- [ ] **T019-05-05** [テスト] `doc-terms.mjs` と `doc-refs.mjs` が、アーカイブだけを除外し、進行中の spec を検査するテストを書く（DC-215）。T019-05-03 の移動の後に行う。理由：移動の前に除外を変えると、完了した spec が検査の対象になるため。
-- [ ] **T019-05-06** T019-05-05 の script を修正し、進行中の spec（019）で見つかった語とリンクを修正する（DC-215）。
+- [x] **T019-05-05** [テスト] `doc-terms.mjs` と `doc-refs.mjs` が、アーカイブだけを除外し、進行中の spec を検査するテストを書く（DC-215）。T019-05-03 の移動の後に行う。理由：移動の前に除外を変えると、完了した spec が検査の対象になるため。
+- [x] **T019-05-06** T019-05-05 の script を修正し、進行中の spec（019）で見つかった語とリンクを修正する（DC-215）。
+  - 結果：使わない語 4 件（spec 019 の tasks の 2 件、MVP の完成までの一覧の用語の表の例 2 件）と、切れた節の参照 7 件（文書の名前のない「第 N 節」）を修正した。文脈で言い換える語（caution）は失敗にならないので修正していない。
 - [ ] **T019-05-07** Git の規則と CI を main 基準にする：`pages.yml` の公開のブランチ、README の CI のバッジ、CI の検査の文書の `pages.yml` の行、AGENTS.md の Git の表と ※2（skill `writing-for-agents` に従う）、TODO 一覧の `develop` を含む項目（DC-218）。
 - [ ] **T019-05-08** 利用者に、GitHub の Environment（`github-pages`）の Deployment branches に `main` を追加するよう依頼し、追加されたことを確認する（DC-218）。
 - [ ] **T019-05-09** 段階の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` を順に実行し、全て通る。README と一覧の進捗を更新する。

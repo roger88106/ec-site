@@ -2,7 +2,7 @@
 //   - Markdown のリンク：先のファイルと #見出し があるか（見出しの slug は GitHub と同じ作り方）
 //   - 節の参照（`店舗画面の構成 第 4.5 節` など）：文書の名前・リンク・パスが指す文書に、その番号の見出しがあるか
 // 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。名前のない「第 N 節」は、Markdown ではその文書自身を指す。
-// spec・plan の節（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
+// アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -10,7 +10,17 @@ import { basename, dirname, join, normalize } from 'node:path/posix'
 import { fileURLToPath } from 'node:url'
 
 /** 見ないファイル（当時の記録、直せないもの、この検査のテストの例） */
-const EXCLUDED = [/^docs\/specs\//, /\/db\/migration\//, /^\.local\//, /^scripts\/ci\/doc-refs\.test\.mjs$/]
+const EXCLUDED = [/^docs\/specs\/archive\//, /\/db\/migration\//, /^\.local\//, /^scripts\/ci\/doc-refs\.test\.mjs$/]
+
+/**
+ * 見ないファイルか。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 見ないなら true
+ */
+export function isExcluded(file) {
+  return EXCLUDED.some((pattern) => pattern.test(file))
+}
 
 /** 節の参照を探すファイル */
 const TEXT_FILE = /\.(md|java|ts|tsx|mjs|cjs|js|yml|yaml|sh|toml|properties)$/
@@ -191,7 +201,7 @@ export function checkReferences(files, read, exists) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
     .split('\n')
-    .filter((file) => file && TEXT_FILE.test(file) && !EXCLUDED.some((pattern) => pattern.test(file)) && existsSync(file))
+    .filter((file) => file && TEXT_FILE.test(file) && !isExcluded(file) && existsSync(file))
   const problems = checkReferences(files, (file) => readFileSync(file, 'utf8'), existsSync)
   for (const problem of problems) console.log(problem)
   console.log(`切れた参照：${problems.length}`)

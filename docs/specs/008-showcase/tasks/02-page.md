@@ -18,4 +18,4 @@
 | 自動のテスト | バックエンドの単体 455、統合 444。管理画面 117、店舗画面 155、共有のパッケージ 9（Vitest）。E2E 16（Playwright） | 1,196 | 1,100 件以上 |
 | 受け入れ条件 | 機能の spec（001〜003、007）の AC（重複を除く） | 166 | 166 |
 
-- バックエンドは `./gradlew check` の後の `build/test-results/{test,integrationTest}` の XML の `testcase` の数（飛ばしたものは 0）。
+- バックエンドは `./gradlew check` の後の `build/test-results/{test,integrationTest}` の XML の `testcase` の数（スキップしたものは 0）。

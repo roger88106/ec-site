@@ -4,6 +4,7 @@ import { Alert, AlertDescription, AlertTitle } from '@ec-site/shared/ui/alert'
 import { useTranslations } from 'next-intl'
 import { useEffect, useState } from 'react'
 import { dismissCartMergeNotice } from '@/actions/cart'
+import { schemas } from '@/api/generated/constraints'
 import type { CartMergeNotice } from '@/lib/cartMergeNotice'
 
 /**
@@ -30,7 +31,7 @@ export function CartMergeNoticeView({ notice }: { notice: CartMergeNotice | null
       <AlertDescription className="space-y-3">
         {(shown.truncated.items.length > 0 || shown.truncated.more > 0) && (
           <div>
-            <p>{t('truncated') /* 数量を減らした */}</p>
+            <p>{t('truncated', { max: schemas.Quantity.maximum }) /* 数量を減らした */}</p>
             <NoticeList items={shown.truncated.items} more={shown.truncated.more} />
           </div>
         )}

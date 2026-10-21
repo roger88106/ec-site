@@ -12,7 +12,7 @@ type NoticeItems = { items: NoticeItem[]; more: number }
 
 /** カートを移した結果の知らせ。カートの画面で一度だけ示す */
 export type CartMergeNotice = {
-  /** 数量を 10 に切り詰めた品目（切り詰めた後の数量） */
+  /** 数量を上限に切り詰めた品目（切り詰めた後の数量） */
   truncated: NoticeItems
   /** 品目の上限を超えたので移さなかった品目（移す元の数量） */
   skipped: NoticeItems

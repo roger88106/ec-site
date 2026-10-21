@@ -1,7 +1,7 @@
 # 段階 4：キャンセルと B 側の注文（US-18〜21）
 
 - 前提：段階 3
-- 完了条件：AC-95〜106 のテストが通る。B 側 endpoint の権限名の記載漏れの検出が通る。
+- 完了条件：AC-95〜106 のテストが通る。B 側のエンドポイントで権限名の記載漏れを検出する検査が通る。
 - 参照：spec US-18〜21、BR-9、[order.md](../../../backend/modules/order.md)「状態遷移」、`store.yaml`（tag: order）、`admin.yaml`（tag: order）
 
 ## タスク

@@ -1,13 +1,13 @@
 # 段階 2：CI の検査を手元で実行する
 
 - 前提：段階 1
-- 完了条件：`scripts/ci/check-all.sh` が手元と CI で CI の検査の script をすべて実行する。E2E のコードの lint・型チェックが手元でも実行される。AC とテストの対応の検査と表示の文言の検査の漏れが修正され、そのテストがある。CI の検査の文書があり、skill がそこを指す。commit の前の hook が `check-all.sh` を実行する。
+- 完了条件：`scripts/ci/check-all.sh` が手元と CI で CI の検査の script を全て実行する。E2E のコードの lint・型チェックが手元でも実行される。AC とテストの対応の検査と表示の文言の検査の漏れが修正され、そのテストがある。CI の検査の文書があり、skill がそこを指す。commit の前の hook が `check-all.sh` を実行する。
 - 参照：[plan](../plan.md) 第 2 節
 
 ## タスク
 
 - [x] **T011-02-01** `coverage-summary.mjs` を `scripts/ci/report/` に移し、ci.yml の呼び出しを修正する。
-- [x] **T011-02-02** `scripts/ci/check-all.sh`：script のテストと、`scripts/ci/` の直下の検査をすべて実行し、1 つごとに 1 行を出力する（plan 第 2.1 節）。仮の検査の script を追加して実行されることを確認し、削除する。
+- [x] **T011-02-02** `scripts/ci/check-all.sh`：script のテストと、`scripts/ci/` の直下の検査を全て実行し、1 つごとに 1 行を出力する（plan 第 2.1 節）。仮の検査の script を追加して実行されることを確認し、削除する。
 - [x] **T011-02-03** ci.yml：ジョブ「AC とテストの対応」を「CI の検査の script」にして `check-all.sh` を実行する。店舗画面のジョブから入力の制約と表示の文言の手順を除く。CI で通ることを確認する（push は利用者の許可を得てから。許可がなければ段階 4 の push で確認する）。
 - [x] **T011-02-04** `check-frontend.sh` の対象に `e2e`（lint、typecheck）を追加する。引数なしの実行で e2e も実行されることを確認する。
 - [x] **T011-02-05** [テスト] `ac-check.test.mjs`：`describe` だけにある AC と、`@Nested` のクラスの `@DisplayName` だけにある AC が対応とみなされない例を追加し、レッドを確認する。

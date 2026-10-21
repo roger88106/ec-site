@@ -23,7 +23,7 @@
   - ローカル用の会員 1 人（メールアドレス確認済み）
 - [x] **T3105** 運営者の realm（`ec-admin`）の設定を作り、JSON に書き出す（plan 第 2.1〜2.3 節）。
   - client：`ec-admin-web`（public、PKCE、戻り先は管理画面）、`ec-admin-api`（audience 用と、権限の role の置き場所）。`ec-admin-web` の access token の audience に `ec-admin-api` を入れる
-  - `ec-admin-api` の client role に、`admin.yaml` の権限（10 個）をそのままの名前で作る。職務の composite role：`administrator`（すべて）、`viewer`（`:read` すべて）
+  - `ec-admin-api` の client role に、`admin.yaml` の権限（10 個）をそのままの名前で作る。職務の composite role：`administrator`（全て）、`viewer`（`:read` 全て）
   - 会員登録は無効、「ログインしたままにする」は無効、メールアドレスの確認は不要
   - パスワードの条件、ログインの失敗による一時的な停止、SSO セッションの時間、access token の有効期間
   - ローカル用の管理者 1 人、閲覧者 1 人

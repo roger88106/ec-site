@@ -508,7 +508,7 @@ describe('返送の注文のキャンセル', () => {
     expect(bodies).toEqual([{ reason: '受取拒否', restock }])
   })
 
-  it('AC-268 在庫に戻すかは API の旗で聞く。出荷済みの注文でも、旗が偽なら聞かない', async () => {
+  it('AC-268 在庫に戻すかは API のフラグで聞く。出荷済みの注文でも、フラグが偽なら聞かない', async () => {
     serveOrder({ ...RETURNED, actions: orderActions({ cancel: true, cancelAsksRestock: false }) })
     const { user } = renderApp(URL)
     await shownStatus('出荷済み')
@@ -519,7 +519,7 @@ describe('返送の注文のキャンセル', () => {
     expect(dialog.queryByRole('radio')).not.toBeInTheDocument()
   })
 
-  it('AC-268 出荷前の注文のキャンセルでは、在庫に戻すかを聞かない（旗が偽）', async () => {
+  it('AC-268 出荷前の注文のキャンセルでは、在庫に戻すかを聞かない（フラグが偽）', async () => {
     serveOrder(orderDetail())
     const { user } = renderApp(URL)
     await shownStatus('受付')

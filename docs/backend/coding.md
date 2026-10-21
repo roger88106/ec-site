@@ -63,7 +63,7 @@ module/<モジュール>/
 | レベル | 中身の違い |
 |--------|------------|
 | A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS） |
-| B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port はすべて `application/port/`。CQRS なし。`application/model/` は必要なときだけ |
+| B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port は全て `application/port/`。CQRS なし。`application/model/` は必要なときだけ |
 
 層の中の役割：
 
@@ -87,7 +87,7 @@ module/<モジュール>/
 - モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
 - 列挙を別の列挙に変換するとき（相手の型と自分の型、ドメインとイベント、ドメインと生成したモデル）は、`switch` 式で値ごとに書く。`valueOf(x.name())`、`fromValue(x.name())` は使わない。
 
-理由：相手の変更を、実装の 1 か所で受け止めるため。`switch` 式は列挙のすべての値を書かないとコンパイルに失敗するので、片方に値を追加して変換を書き忘れると気づける（名前で変換すると、実行するまで気づけない）。
+理由：相手の変更を、実装の 1 か所で受け止めるため。`switch` 式は列挙の全ての値を書かないとコンパイルに失敗するので、片方に値を追加して変換を書き忘れると気づける（名前で変換すると、実行するまで気づけない）。
 
 ### 1.4 パッケージの大きさ
 
@@ -231,7 +231,7 @@ public final class MoneyFormat {
 ```
 
 - 対象は最上位のクラス。enum・record・interface・注釈は対象でない。
-- 確認方法：ArchUnit（`src/test/java/com/ecsite/architecture/`）で、static でないメンバーを持たない最上位のクラスが `final` で、コンストラクタがすべて `private` であることを確認する。
+- 確認方法：ArchUnit（`src/test/java/com/ecsite/architecture/`）で、static でないメンバーを持たない最上位のクラスが `final` で、コンストラクタが全て `private` であることを確認する。
 
 理由：インスタンスを作っても使い道がなく、作れると使い方を誤る。Checkstyle の `HideUtilityClassConstructor` はソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる。ArchUnit はコンパイルした後のクラスを読むので、Lombok で書いても手動で書いても同じに確認できる。
 

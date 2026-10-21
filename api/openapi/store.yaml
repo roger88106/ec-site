@@ -550,7 +550,7 @@ paths:
       operationId: findPostalCodeAddresses
       summary: 郵便番号の住所（AC-253、254、256）
       description: |
-        郵便番号に対応する住所（都道府県、市区町村、町域）を、並び順で返す。1 つの郵便番号に複数の住所があれば、すべてを返す。
+        郵便番号に対応する住所（都道府県、市区町村、町域）を、並び順で返す。1 つの郵便番号に複数の住所があれば、全てを返す。
         マスターデータにない郵便番号は、200 で空の一覧を返す（誤りではなく、補えるものがない）。郵便番号は一部だけを持つ（spec 016 AC-260）。
       parameters:
         - name: postalCode
@@ -692,7 +692,7 @@ components:
       type: string
       description: >-
         この API が返しうるエラーのコード（API の規約 第 5 節）。フロントが分岐に使う。
-        各操作が返しうる業務のエラーは操作の x-error-codes、すべての操作が返しうるエラーは x-common-error-codes。
+        各操作が返しうる業務のエラーは操作の x-error-codes、全ての操作が返しうるエラーは x-common-error-codes。
       x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
       enum:
         - CANCELLATION_NOT_REQUESTABLE
@@ -844,13 +844,13 @@ components:
             type: string
         axes:
           type: array
-          description: バリアント軸と、その値のすべて（在庫切れ・販売停止で選べない値も含む。AC-62）
+          description: バリアント軸と、その値の全て（在庫切れ・販売停止で選べない値も含む。AC-62）
           items:
             $ref: '#/components/schemas/VariantAxis'
         variants:
           type: array
           description: |
-            すべてのバリアント（表示順）。販売停止中や在庫切れのものも含む。
+            全てのバリアント（表示順）。販売停止中や在庫切れのものも含む。
             画面では、`salesSuspended` が true または `inStock` が false のバリアントを、選べない状態（グレーなど）で表示する。
           items:
             $ref: '#/components/schemas/Variant'
@@ -1014,7 +1014,7 @@ components:
           $ref: '#/components/schemas/Amounts'
         orderable:
           type: boolean
-          description: 品目が 1 つ以上あり、すべて購入できる。false なら注文手続きに進めない（AC-88）
+          description: 品目が 1 つ以上あり、全て購入できる。false なら注文手続きに進めない（AC-88）
     QuoteItem:
       type: object
       required: [variantId, productId, productName, axisValues, unitPrice, quantity, subtotal, purchasable]

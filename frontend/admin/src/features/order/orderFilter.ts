@@ -45,7 +45,7 @@ export function parseFilter(params: URLSearchParams): OrderFilter {
   }
 }
 
-/** 絞り込みを URL のクエリにする。空の条件、立っていない旗、1 ページ目は書かない */
+/** 絞り込みを URL のクエリにする。空の条件、立っていないフラグ、1 ページ目は書かない */
 export function toSearchParams(filter: OrderFilter): URLSearchParams {
   const params = new URLSearchParams()
   if (filter.orderNumber) params.set('orderNumber', filter.orderNumber)

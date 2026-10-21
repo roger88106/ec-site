@@ -101,7 +101,7 @@ constitution 新 17 節に原則、`scripts/ci/licenses/policy.json` に一覧�
 | 条件付き | EPL-1.0・2.0、MPL-2.0、LGPL-2.1・3.0、CDDL、CC-BY-4.0（データ）、OFL-1.1（字体）、GPL-2.0 with Classpath-exception | 改変せずに依存として使う場合だけ。**部品ごとに**理由を書いて一覧に載せる（新しい部品は CI が失敗にする） |
 | 禁止 | GPL（例外なし）、AGPL、SSPL、BUSL、Commons Clause、非商用限定、ライセンスが分からないもの | 使わない |
 
-- 複数のライセンスから選べるもの（`A OR B`）は、許可のものが 1 つあればよい。`A AND B` はすべてが許可か条件付きの一覧にあること。
+- 複数のライセンスから選べるもの（`A OR B`）は、許可のものが 1 つあればよい。`A AND B` は全てが許可か条件付きの一覧にあること。
 - 有料の版がある製品（jOOQ：オープンソースの DB でだけ無料、Flyway：Community の機能だけ、imgproxy：OSS 版の機能だけ、Keycloak：上流のコミュニティ版）は、constitution 17 節に使う範囲を書く。
 
 ### 3.3 検査（DC-10）
@@ -109,7 +109,7 @@ constitution 新 17 節に原則、`scripts/ci/licenses/policy.json` に一覧�
 | 対象 | 道具 | 範囲 |
 |------|------|------|
 | バックエンド | `com.github.jk1.dependency-license-report`（`checkLicense` の task、`allowedLicensesFile` と表記の正規化） | 実行時、コンパイル時、テスト（単体・統合）、注釈の処理、jOOQ のコード生成の設定 |
-| フロント | `scripts/ci/licenses/check-frontend.mjs`（`pnpm licenses list --json` を方針と照合する） | workspace のすべて（開発用を含む） |
+| フロント | `scripts/ci/licenses/check-frontend.mjs`（`pnpm licenses list --json` を方針と照合する） | workspace の全て（開発用を含む） |
 | Gradle のプラグイン | 一覧を `policy.json` に手動で書き、レビューで確認する（openapi-generator、jOOQ のプラグイン、jk1 自身） | プラグインは依存の構成に出ないため |
 
 - CI：バックエンドの job で `./gradlew checkLicense`、フロントの job（store）で script を実行する。
@@ -251,10 +251,10 @@ flowchart LR
 | 11 | CI の artifact と summary |
 | 12 | `ac-check.mjs` が CI で通る。範囲の表記と、足りない AC で失敗することを script のテストで確認する |
 | 13〜17 | 各テストが通る。`Thread.sleep` がテストに無い（`git grep`） |
-| 18〜21 | 移した後に CI がすべて通る。`docs/dev/` の手順で手元で起動できる。volume のデータが残る |
+| 18〜21 | 移した後に CI が全て通る。`docs/dev/` の手順で手元で起動できる。volume のデータが残る |
 | 22〜25 | E2E を 2 回続けて実行して、どちらも通る。実行する前後でローカルの DB の行数と Keycloak の会員の数が変わらない |
 | 26 | 手元で画面を見て確認する（レビュー） |
-| DN-1 | すべてのテストが通る。API の契約に変更がない（`api/` の差分が無い） |
+| DN-1 | 全てのテストが通る。API の契約に変更がない（`api/` の差分が無い） |
 | DN-2 | `git log --stat` で移動の commit を確認する |
 | DN-3 | 直近の CI（2026-10-12、全体 9 分 39 秒：バックエンド 4 分 29 秒、E2E 5 分 5 秒）と比べて 1 割以内（10 分 37 秒まで） |
 
@@ -267,7 +267,7 @@ tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-do
 | 1 | 規則の文書（第 1 節：constitution、AGENTS.md、skill、`docs/style/`、`docs/dev/`、README、notation、用語集、LICENSE） | DC-1〜6、8、9、63 の文書がある |
 | 2 | CI を実行しない変更（第 2.1 節） | MD だけの push で CI が実行されない。`948afe9` を含めて push し、CI が通る |
 | 3 | テストの網（第 4 節） | DC-11〜17 のテストと script が CI で通る |
-| 4 | リポジトリの構成と workspace（第 5 節、第 2.2 節） | 移した後に CI がすべて通り、手元で起動できる。DN-3 の時間に収まる |
+| 4 | リポジトリの構成と workspace（第 5 節、第 2.2 節） | 移した後に CI が全て通り、手元で起動できる。DN-3 の時間に収まる |
 | 5 | ライセンスの検査（第 3.3 節） | 方針に合わない部品で CI が失敗し、今の依存では通る |
 | 6 | E2E とデータの分離（第 6.1、6.2 節） | E2E を実行してもローカルのデータが変わらない |
 | 7 | ローカルの画面のデータ（第 6.3 節、P2） | DC-26 を画面で確認する |

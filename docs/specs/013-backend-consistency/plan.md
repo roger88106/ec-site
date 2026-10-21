@@ -15,7 +15,7 @@
 | パッケージと名前 | 第 7 節 | DS-39 |
 | 設定の値 | 第 8 節 | DS-40 |
 | 重複と使われないコード | 第 9 節 | DS-41 |
-| 段階と確認方法 | 第 10 節、第 11 節 | すべて |
+| 段階と確認方法 | 第 10 節、第 11 節 | 全て |
 
 共通の決定：
 
@@ -72,11 +72,11 @@
 
 | 規則 | 対象 | 有効にする段階 |
 |------|------|----------------|
-| presentation は、生成したモデル（`com.ecsite.api..`）の引数を取るコンストラクターを呼ばない | すべてのモジュール | 6 |
+| presentation は、生成したモデル（`com.ecsite.api..`）の引数を取るコンストラクターを呼ばない | 全てのモジュール | 6 |
 | レベル A のモジュールの application は、`ApplicationEventPublisher` に依存しない | catalog、inventory、order、payment、tax | 1（今も守っている） |
 | レベル A のモジュールの presentation は、集約（jMolecules の `@AggregateRoot`）に依存しない | 同上 | 5 |
-| `api/` の型を実装するクラスは `api/` にある | すべてのモジュール | 3 |
-| `@EnableConfigurationProperties` を付けるクラスは `@Configuration` | すべて | 6 |
+| `api/` の型を実装するクラスは `api/` にある | 全てのモジュール | 3 |
+| `@EnableConfigurationProperties` を付けるクラスは `@Configuration` | 全て | 6 |
 
 レベル A のモジュールの一覧は、ArchUnit のテストに定数で持ち、各モジュールの設計書のレベルと合わせる（コメントで設計書を指す）。
 
@@ -129,7 +129,7 @@
 
 | 項目 | 決定 |
 |------|------|
-| レベル A のイベント | 今すべてリポジトリから送り出している（調べた結果）。規則と ArchUnit を追加するだけで、コードは変えない |
+| レベル A のイベント | 今全てリポジトリから送り出している（調べた結果）。規則と ArchUnit を追加するだけで、コードは変えない |
 | レベル B のイベント | cart、media、shipping は service から送り出す今の形を残す。shipping のモジュールの中だけのイベントは application に置いたまま |
 | payment のモジュールの中だけのイベント | 集約のパッケージに置いたまま（規則と合う） |
 | media の公開の API | `api/` に `@Component` を作って application の service に委ね、service から `implements` を外す |
@@ -190,7 +190,7 @@
 | 4 | order | 118、120、121、123、124、130〜133 |
 | 5 | payment、shipping、notification、member | 123、124、132、135、136、138、139、140 |
 | 6 | reporting、config、残りの ArchUnit の規則 | 118、130、133、135、136 |
-| 7 | レビュー（書き方の規則とレビュー、テストの差分の検査、CI の時間、README・mvp.md の進捗） | すべて |
+| 7 | レビュー（書き方の規則とレビュー、テストの差分の検査、CI の時間、README・mvp.md の進捗） | 全て |
 
 - 各段階の最後に、`./gradlew check`、`check-frontend.sh`、`e2e.sh` と、テストの差分の検査（第 1.1 節）を実行する。フロントと E2E は変えないが、API の応答が変わらないことの確認に実行する。
 - 012 のレビューの結果の Stripe の記述は、完了した spec の中身を変えないという規則（開発の進め方 第 1.4 節）の例外として、利用者の指示で修正する。修正したことをコミットメッセージに書く。

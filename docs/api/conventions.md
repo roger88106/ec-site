@@ -10,7 +10,7 @@ RESTful JSON。OpenAPI を plan で書き、バックエンドは生成したイ
 
 | 項目 | 規則 | 例 |
 |------|------|----|
-| 接頭辞 | EC の API はすべて `/api` で始まる | `/api/store/products` |
+| 接頭辞 | EC の API は全て `/api` で始まる | `/api/store/products` |
 | 契約の範囲 | 2 番目のセグメントは契約の範囲で、モジュールではない。`/api/store`（店舗 API、`store.yaml`、消費者が使う）と `/api/admin`（管理 API、`admin.yaml`、運営者が使う）。1 つの契約の操作を、複数のモジュールが実装する | 店舗 API の `/carts` はカート、`/orders` は注文のモジュール |
 | `servers.url` と `paths` | 契約の `servers.url` が接頭辞（`/api/store`、`/api/admin`）で、`paths` は接頭辞の後ろだけを書く。生成したインターフェースのパスは `servers.url` を含まないので、バックエンドの `ApiPathConfig` が、生成元の契約に応じた接頭辞を Controller に付ける | `paths` の `/products` は、管理 API では `/api/admin/products` |
 | 契約の外の URL | 外部のサービスが呼ぶ通知のエンドポイントは `/api/webhooks/<相手>`。mock の画面は `/api` の外。死活監視とメトリクスは運用ポート（既定 9080）の `/actuator`。応答は [第 4.1 節](#41-openapi-の外のエンドポイント) | `/api/webhooks/stripe`、`/mock-payment`、`/mock-carrier` |
@@ -71,7 +71,7 @@ RESTful JSON。OpenAPI を plan で書き、バックエンドは生成したイ
 
 ## 5. エラーの本文
 
-Problem Details（RFC 9457）に、`errorCode`（フロントが分岐に使う）、`message`（画面にそのまま表示できる日本語）、`traceId`（すべてのエラー）、`errors`（入力検証のときだけ。`[{ "field", "message" }]`）を加える。
+Problem Details（RFC 9457）に、`errorCode`（フロントが分岐に使う）、`message`（画面にそのまま表示できる日本語）、`traceId`（全てのエラー）、`errors`（入力検証のときだけ。`[{ "field", "message" }]`）を加える。
 
 - 入力の形は presentation（Bean Validation）、業務ルールは domain で検証する。
 - 業務のエラーはドメインごとの `XxxErrorCode` と `BusinessException` / `SystemException` で投げ、`GlobalExceptionHandler` で変換する。
@@ -81,12 +81,12 @@ Problem Details（RFC 9457）に、`errorCode`（フロントが分岐に使う�
 
 | 書くもの | 置き場所 | 中身 |
 |----------|----------|------|
-| 全体の列挙 | 各 API の `components.schemas.ErrorCode`。エラーの本文の `errorCode` はこの型 | その API が返しうるすべてのエラーのコード |
+| 全体の列挙 | 各 API の `components.schemas.ErrorCode`。エラーの本文の `errorCode` はこの型 | その API が返しうる全てのエラーのコード |
 | 操作ごとの一覧 | 各操作の `x-error-codes`（コードの配列） | その操作の実装が投げうる業務のエラーのコード。共通のエラーは書かない |
-| 共通のエラー | 各 API の `components.schemas.ErrorCode` の `x-common-error-codes` | すべての操作が返しうるエラー。バックエンドの共通のエラー（`CommonErrorCode`）の定数と同じ（認証、権限、入力の検証、見つからない、更新の競合、許可されていないメソッド、金額の誤り、復元の失敗、システムの失敗） |
+| 共通のエラー | 各 API の `components.schemas.ErrorCode` の `x-common-error-codes` | 全ての操作が返しうるエラー。バックエンドの共通のエラー（`CommonErrorCode`）の定数と同じ（認証、権限、入力の検証、見つからない、更新の競合、許可されていないメソッド、金額の誤り、復元の失敗、システムの失敗） |
 
-- 全体の列挙は、操作ごとの一覧と共通のエラーの和と一致させる。バックエンドのすべての `XxxErrorCode` の定数は、どちらかの API の全体の列挙にあり、列挙のすべての値はバックエンドにある（単体テストで確認する）。
-- 統合テストのエラーの応答の `errorCode` は、その操作の一覧か共通のエラーにあることを、テストの設定ですべての統合テストで確認する。操作の実装に新しいエラーを追加したら、その操作の一覧に追加する。
+- 全体の列挙は、操作ごとの一覧と共通のエラーの和と一致させる。バックエンドの全ての `XxxErrorCode` の定数は、どちらかの API の全体の列挙にあり、列挙の全ての値はバックエンドにある（単体テストで確認する）。
+- 統合テストのエラーの応答の `errorCode` は、その操作の一覧か共通のエラーにあることを、テストの設定で全ての統合テストで確認する。操作の実装に新しいエラーを追加したら、その操作の一覧に追加する。
 - 画面の型は全体の列挙から作る（openapi-typescript は拡張の項目から型を作らないため）。
 
 ## 6. ページング

@@ -6,11 +6,11 @@
 
 ## タスク
 
-- [x] **T015-05-01** [テスト] compose のポートの検査の script のテスト：`ports` の既定が 127.0.0.1 でないもの、変数を使わないものを見つける。すべてが同じ 1 つの変数を使う（AC-243、247）。レッドを確認する。
-  - 結果：見つける処理は script と一緒に書いたので、レッドはリポジトリの compose を読むテストで確認した（修正する前の 8 件のポートをすべて見つけて失敗した）。
-- [x] **T015-05-02** compose のポートの検査の script を `scripts/ci/` の直下に作り、compose のすべての `ports` を plan 第 5 節の形にする。T015-05-01 と検査を通す。CI の検査の表に追加する。AC-243、247 を `ac-exclusions.json` に、確認する script とともに書く。
+- [x] **T015-05-01** [テスト] compose のポートの検査の script のテスト：`ports` の既定が 127.0.0.1 でないもの、変数を使わないものを見つける。全てが同じ 1 つの変数を使う（AC-243、247）。レッドを確認する。
+  - 結果：見つける処理は script と一緒に書いたので、レッドはリポジトリの compose を読むテストで確認した（修正する前の 8 件のポートを全て見つけて失敗した）。
+- [x] **T015-05-02** compose のポートの検査の script を `scripts/ci/` の直下に作り、compose の全ての `ports` を plan 第 5 節の形にする。T015-05-01 と検査を通す。CI の検査の表に追加する。AC-243、247 を `ac-exclusions.json` に、確認する script とともに書く。
 - [x] **T015-05-03** compose を再作成して起動し、手元から今までどおりつながることを確認する。開発環境の起動に、他のマシンからつなぐ手順（`LOCAL_BIND_ADDRESS`）を書く。`docker/.env` が Git に入らないことを確認する。
-  - 結果：再作成した後、すべてのポートが 127.0.0.1 で待ち受け、手元から Keycloak（8180、8181）、Mailpit、Zipkin、imgproxy、SeaweedFS に今までどおりつながった。`docker/.env` に `LOCAL_BIND_ADDRESS=0.0.0.0` を書くと、`docker compose config` の待ち受けるアドレスが 0.0.0.0 になり、環境変数でも同じだった。`docker/.env` は `.gitignore` の `.env` で除かれる。
+  - 結果：再作成した後、全てのポートが 127.0.0.1 で待ち受け、手元から Keycloak（8180、8181）、Mailpit、Zipkin、imgproxy、SeaweedFS に今までどおりつながった。`docker/.env` に `LOCAL_BIND_ADDRESS=0.0.0.0` を書くと、`docker compose config` の待ち受けるアドレスが 0.0.0.0 になり、環境変数でも同じだった。`docker/.env` は `.gitignore` の `.env` で除かれる。
 - [x] **T015-05-04** jar の中身の Gradle の検査を作り、`check` から呼ぶ。除く前に失敗することを確認してから、`bootJar` で 3 つの設定ファイルを除く。AC-244、245 を `ac-exclusions.json` に、確認する所とともに書く。
   - 結果：除く前は、検査が 3 つのファイルを見つけて失敗した。
 - [x] **T015-05-05** 本番の jar を `local` の profile で起動し、物流のフラグの検証で起動に失敗することを確認する（AC-245）。結果を本タスクの下に書く。

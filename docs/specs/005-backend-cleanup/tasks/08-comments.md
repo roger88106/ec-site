@@ -12,7 +12,7 @@
 
 ## 複雑な処理の一覧（T5801）
 
-2026-10-13 に `.local/scripts/complex.cjs`（Git に入れない）で作った。基準は `docs/style/comments.md` 第 5 節。直前の行にコメントがあるものは除いた（4 か所）。plan の「stream は約 120 か所」は `.stream()` のすべての数で、基準に当たる 2 段以上の変換はこのうちの一部である。
+2026-10-13 に `.local/scripts/complex.cjs`（Git に入れない）で作った。基準は `docs/style/comments.md` 第 5 節。直前の行にコメントがあるものは除いた（4 か所）。plan の「stream は約 120 か所」は `.stream()` の全ての数で、基準に当たる 2 段以上の変換はこのうちの一部である。
 
 1 行のメソッドで、メソッドの Javadoc が何の結果を得るかをすでに書いているもの（例：`BoundedText.isFilledWithin`）は、T5802 で読んで「説明がある」と判断したら書かない。
 

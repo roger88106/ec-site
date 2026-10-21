@@ -102,7 +102,7 @@ class ReturnedOrderCancellationApiTest {
     }
 
     @Test
-    @DisplayName("AC-190、192、268 返送の注文をキャンセルすると、キャンセルになり、支払は返金待ちになる。キャンセルできる旗と、在庫に戻すかを聞く旗が立つ")
+    @DisplayName("AC-190、192、268 返送の注文をキャンセルすると、キャンセルになり、支払は返金待ちになる。キャンセルできるフラグと、在庫に戻すかを聞くフラグが立つ")
     void cancelsReturnedOrder() throws Exception {
         notifyStatus("配達中");
         notifyStatus("返品");
@@ -160,7 +160,7 @@ class ReturnedOrderCancellationApiTest {
 
     @ParameterizedTest
     @ValueSource(strings = {"", "配達中", "配達完了"})
-    @DisplayName("AC-171、268 返送でない出荷済みの注文（出荷済み・配送中・配達完了）は 409 で、キャンセルできる旗も在庫に戻すかを聞く旗も立たない")
+    @DisplayName("AC-171、268 返送でない出荷済みの注文（出荷済み・配送中・配達完了）は 409 で、キャンセルできるフラグも在庫に戻すかを聞くフラグも立たない")
     void rejectsNotReturned(String statusName) throws Exception {
         if (!statusName.isEmpty()) {
             notifyStatus(statusName);

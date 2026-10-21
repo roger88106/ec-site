@@ -1,7 +1,7 @@
 # 段階 7：レビュー
 
 - 前提：段階 1〜6（段階 6 を Non-goals に移したときは、段階 1〜5）
-- 完了条件：spec のすべての DC を plan 第 10 節の方法で確認し、満たさないものは修正するか、理由を報告している。CI の直近 3 回の時間を記録している。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、E2E が手元と CI で通る。
+- 完了条件：spec の全ての DC を plan 第 10 節の方法で確認し、満たさないものは修正するか、理由を報告している。CI の直近 3 回の時間を記録している。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、E2E が手元と CI で通る。
 - 参照：[plan](../plan.md) 第 10 節、[書き方の規則とレビュー](../../../process/review.md)
 
 ## タスク

@@ -67,7 +67,7 @@ flowchart LR
 ### 2.2 権限と職務（BR-12）
 
 - **権限**は、`ec-admin-api` の client role にする。名前は `resource:action` そのもの（例：`product:write`）。一覧は `admin.yaml` に現れる権限と同じにする（第 3.3 節の契約テストで確認する）。
-- **職務**は、運営者の realm の composite role にする。管理者（`administrator`）はすべての権限を、閲覧者（`viewer`）は `:read` の権限を含む。職務を追加するのは realm の設定だけで行う。
+- **職務**は、運営者の realm の composite role にする。管理者（`administrator`）は全ての権限を、閲覧者（`viewer`）は `:read` の権限を含む。職務を追加するのは realm の設定だけで行う。
 - Keycloak は composite role を展開して、access token の `resource_access.ec-admin-api.roles` に載せる。バックエンドはここだけを読む（第 3.2 節）。
 - token の大きさ：MVP の権限は 10 個（tax、category、product、inventory、order の read・write）。ヘッダーの上限（8KB）には遠い（constitution 10.2）。
 
@@ -118,7 +118,7 @@ flowchart LR
 
   | パス | 受け付ける token | 認証のない要求 |
   |------|------------------|----------------|
-  | `/api/admin/**` | 運営者の realm の issuer、audience `ec-admin-api` | すべて 401 |
+  | `/api/admin/**` | 運営者の realm の issuer、audience `ec-admin-api` | 全て 401 |
   | `/api/store/**` | 消費者の realm の issuer、audience `ec-store-api` | 第 5.1 節で「会員」とした endpoint だけ 401。ほかは今までどおり使える |
   | `/actuator/**` | | 今までどおり |
 
@@ -213,7 +213,7 @@ flowchart LR
 
 ### 5.2 B 側（`/api/admin`）
 
-- すべての操作で、運営者の token と、`x-required-permission` の権限を必須にする（AC-136〜138、NFR-3）。endpoint と権限は変えない。
+- 全ての操作で、運営者の token と、`x-required-permission` の権限を必須にする（AC-136〜138、NFR-3）。endpoint と権限は変えない。
 - `admin.yaml` の説明（「認証は MVP では実装しない」）を、認証の方式と 401・403 の説明に書き換え、全操作に 401・403 の応答を追加する。
 - P2（US-30）：在庫の調整履歴と注文の詳細に、操作した運営者の氏名を追加する。
 
@@ -222,7 +222,7 @@ flowchart LR
 | | store（C 側） | admin（B 側） |
 |---|---|---|
 | 画面 | ヘッダーにログイン・会員登録、またはログイン中の氏名・アカウント（IdP のアカウントの画面へ）・ログアウト。注文の一覧（新規）。注文手続きからメールアドレスの入力を除く | 起動したらログインを求める。ヘッダーに運営者の氏名とログアウト |
-| ログインを求める場面 | 注文手続きに進む、注文の一覧・詳細を開く。ログインした後は元の画面（注文手続きならカート）に戻る（AC-113、125） | すべての画面 |
+| ログインを求める場面 | 注文手続きに進む、注文の一覧・詳細を開く。ログインした後は元の画面（注文手続きならカート）に戻る（AC-113、125） | 全ての画面 |
 | エラー | 401 はログインの画面へ | 401 は再ログインし、403 は「権限がない」と示す（AC-141） |
 
 - **店舗画面のカート ID**：ログインしていないときは今までどおり Cookie のカート ID を使う。ログインしているときは `/me/cart` の ID を使い、Cookie のカート ID は使わない。ログインの直後に、Cookie にカート ID があれば `/me/cart/merge` を呼び、Cookie から消す。
@@ -253,7 +253,7 @@ tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-id
 | # | 段階 | 完了条件 |
 |---|------|----------|
 | 1 | IdP と開発環境（Keycloak・Mailpit を compose に、realm の JSON、constitution 9・用語集・README・skill `local-dev` の更新） | ローカルで両 realm にログインでき、会員登録の確認のメールが Mailpit に届く |
-| 2 | バックエンドの認証の土台（token の検証、権限の変換、`admin.yaml` による判定、401・403、既存の統合テストへの token） | AC-136〜138、NFR-3 のテストと IdP の設定の統合テストが通る。既存のテストがすべて通る |
+| 2 | バックエンドの認証の土台（token の検証、権限の変換、`admin.yaml` による判定、401・403、既存の統合テストへの token） | AC-136〜138、NFR-3 のテストと IdP の設定の統合テストが通る。既存のテストが全て通る |
 | 3 | 会員モジュールと、カート・注文の会員化（US-25〜27 のバックエンド、マイグレーション、`store.yaml` の変更） | AC-120〜131 のバックエンドのテストが通る。会員の同時の初回の要求で 1 人だけ作られる |
 | 4 | 店舗画面（ログイン・ログアウト、カートを移す、注文手続き、注文の一覧） | 画面から会員登録・ログイン・注文・注文の照会ができる |
 | 5 | 管理画面（ログイン、token の付与、401・403） | 管理者で全操作ができ、閲覧者は更新で「権限がない」と示される |

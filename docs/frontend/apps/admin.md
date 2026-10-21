@@ -141,7 +141,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | 日時 | 入力欄の値は日本時間とみなし、+09:00 のオフセット付きで送る |
 | 列挙（状態、理由など） | 表示名は `lib/` の関数で引き、選択肢は生成した列挙の値の配列から作る |
 | 操作できないもの | ボタンを表示しないか、理由を添える（C 側に表示されたことのある商品は削除のボタンを表示せず、販売終了を案内する） |
-| 操作の旗と理由 | 下の表の API の値で出し分け、注文・商品の状態や階層の深さから推し量らない（[フロントのアーキテクチャ](../architecture.md) 第 3 節） |
+| 操作のフラグと理由 | 下の表の API の値で出し分け、注文・商品の状態や階層の深さから推し量らない（[フロントのアーキテクチャ](../architecture.md) 第 3 節） |
 
 | API の値 | 画面 |
 |----------|------|
@@ -179,7 +179,7 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
-| `renderApp(url, { permissions })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定ですべて |
+| `renderApp(url, { permissions })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て |
 | `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
 | `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `problem(...)` | エラーレスポンスの本文を作る |
@@ -200,7 +200,7 @@ SPA がブラウザで IdP とやり取りし（public client）、token はメ�
 |------|--------|
 | 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）と `VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。戻り先は画面のトップ ※1 |
 | token の置き場所 | メモリー（`InMemoryWebStorage`）。sessionStorage に置かない（JavaScript から読める場所に残さない）。IdP へ移る間の `state` と PKCE の値だけは sessionStorage |
-| ログインを求める | `auth/AuthGate` がすべての画面を包み、ログインしていなければ IdP へ移り、戻ったら元の画面に戻す ※2 |
+| ログインを求める | `auth/AuthGate` が全ての画面を包み、ログインしていなければ IdP へ移り、戻ったら元の画面に戻す ※2 |
 | token の更新 | 期限が近ければ refresh token で再取得する（自動）。再取得できなければ（最後の操作から 30 分、最長 8 時間）再ログインする |
 | ログインしている運営者 | `auth/operator` の `useOperator()` で氏名とログアウトを読む。コンポーネントは react-oidc-context を直接使わない（テストで置き換えるため） |
 | 権限による出し分け | `auth/permissions` の `usePermissions()` で、管理 API の自分の権限の一覧（`GET /me`）を読む ※3。権限のない画面はメニューに表示せず、URL で開いたら `auth/RequirePermission` が「権限がない」を示す（API は呼ばない）。今はレポートの画面だけを出し分ける |
@@ -221,4 +221,4 @@ SPA がブラウザで IdP とやり取りし（public client）、token はメ�
 - IdP へ移るのは 1 回だけ（開発時の StrictMode で effect が 2 回動いても、2 つ目の `state` を作らない）。
 - 戻る画面は、画面の中のパス（`/` で始まり、`//` と `/\` で始まらない）だけを受け付け、それ以外はトップにする。
 
-結合テストの `renderApp` は `AuthGate` を通さず、ログインしている運営者を差し替えて描画する（token は付けず、401 で IdP へ移る処理も何もしない）。自分の権限の一覧は、既定ですべての権限を返す（`renderApp(url, { permissions })` で変える）。
+結合テストの `renderApp` は `AuthGate` を通さず、ログインしている運営者を差し替えて描画する（token は付けず、401 で IdP へ移る処理も何もしない）。自分の権限の一覧は、既定で全ての権限を返す（`renderApp(url, { permissions })` で変える）。

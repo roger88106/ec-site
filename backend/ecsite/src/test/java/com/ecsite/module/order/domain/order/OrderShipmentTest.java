@@ -129,7 +129,7 @@ class OrderShipmentTest {
     }
 
     @Nested
-    @DisplayName("できる操作（画面に返す旗）")
+    @DisplayName("できる操作（画面に返すフラグ）")
     class Actions {
 
         @Test

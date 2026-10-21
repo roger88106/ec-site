@@ -24,7 +24,7 @@ export type CancellationState =
 export type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
 
 /**
- * 注文のキャンセルの状況。申請できるかは API の旗で、却下されたかは申請の結果で決める。
+ * 注文のキャンセルの状況。申請できるかは API のフラグで、却下されたかは申請の結果で決める。
  */
 export function cancellationState(order: {
   status: OrderStatus
@@ -50,7 +50,7 @@ export function cancellationState(order: {
 }
 
 /**
- * 注文の支払の状況。支払えるかは API の旗で決める。
+ * 注文の支払の状況。支払えるかは API のフラグで決める。
  * 支払画面から戻った直後は、与信の結果がまだ届いていないことがあるので、支払待ちなら「確認中」とする。
  *
  * @param order    注文

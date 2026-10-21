@@ -1,6 +1,6 @@
 # AC 一覧
 
-すべての spec の受け入れ基準（AC）の、今の状態とテストの一覧。AC の本文は各 spec にあり、後の spec で変えた AC は、今の内容の所在を「今の内容」の列に書く。
+全ての spec の受け入れ基準（AC）の、今の状態とテストの一覧。AC の本文は各 spec にあり、後の spec で変えた AC は、今の内容の所在を「今の内容」の列に書く。
 
 | 列 | 内容 | 書き方 |
 |----|------|--------|
@@ -21,7 +21,7 @@
 | AC-1 | 税区分を名称で登録できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `JooqTaxCategoryRepositoryTest`、`TaxCategoryApiTest`、`TaxCategoryListPage.test.tsx` ほか 1 |
 | AC-2 | 税率は、率（%）、適用開始日時、適用終了日時を持つ。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `EffectivePeriodTest`、`TaxCategoryApiTest` |
 | AC-3 | 税区分の税率は、一覧としてまとめて登録・更新する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `TaxCategoryApiTest`、`TaxCategoryTest`、`TaxRatesPage.test.tsx` |
-| AC-4 | 期間限定の税率に切り替え、元に戻せる（日時はすべて日本時間。BR-3）。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `TaxCategoryApiTest`、`TaxCategoryTest`、`TaxRateApiTest` ほか 1 |
+| AC-4 | 期間限定の税率に切り替え、元に戻せる（日時は全て日本時間。BR-3）。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `TaxCategoryApiTest`、`TaxCategoryTest`、`TaxRateApiTest` ほか 1 |
 | AC-5 | 過去の根拠を変えない。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `EffectivePeriodTest`、`TaxCategoryApiTest`、`TaxCategoryTest` ほか 1 |
 | AC-6 | 現時点で有効な税率を持たない税区分は、商品に割り当てられない。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`TaxRateApiTest` |
 | AC-7 | 税率は 0% 以上 100% 未満。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `RatePercentTest`、`TaxCategoryApiTest` |
@@ -39,7 +39,7 @@
 | AC-19 | 税区分を変更すると、税込価格が変更後の税率で計算される。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest` |
 | AC-20 | バリアント品番と軸の値（例：色＝白、サイズ＝M）を指定してバリアントを登録できる… | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-21 | バリアント品番は全バリアントで一意。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `JooqProductRepositoryTest`、`ProductApiTest`、`ProductTest` ほか 1 |
-| AC-22 | 商品に軸があれば、バリアントはすべての軸の値を持つ。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
+| AC-22 | 商品に軸があれば、バリアントは全ての軸の値を持つ。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-23 | 同じ商品の中で、軸の値の組み合わせは重複できない。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-24 | 軸を持たない商品のバリアントは 1 つだけ。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
 | AC-25 | 税抜価格は 1 円以上の整数。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `PriceExclTaxTest`、`ProductApiTest`、`ProductTest` |
@@ -61,10 +61,10 @@
 | AC-41 | 新しいバリアントの在庫数は 0。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `CatalogEventHandlerTest`、`InventoryApiTest` |
 | AC-42 | 在庫数は、増減量（例：+10、-3）と理由で調整する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest`、`StockAdjustmentTest` ほか 1 |
 | AC-43 | 調整後に負になる調整は拒否される。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryFailureTest`、`JooqStockItemRepositoryTest` ほか 1 |
-| AC-44 | 同じバリアントへの調整が同時に行われても、すべて反映される。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest` |
+| AC-44 | 同じバリアントへの調整が同時に行われても、全て反映される。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest` |
 | AC-45 | 調整履歴（日時、増減量、理由、調整後の在庫数）を新しい順に参照できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest` |
 | AC-46 | 理由は「入荷」「棚卸差異」「破損・紛失」「その他」。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`StockAdjustmentTest`、`StockPage.test.tsx` |
-| AC-47 | 状態に関係なく、すべての商品を一覧できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest` |
+| AC-47 | 状態に関係なく、全ての商品を一覧できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest` |
 | AC-48 | 商品品番・バリアント品番の前方一致、商品名の部分一致、状態、カテゴリで絞り込める… | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest`、`ProductListPage.test.tsx`、`productFilter.test.ts` |
 | AC-49 | 商品品番、商品名、状態、バリアント数、在庫数の合計を表示する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest`、`ProductListPage.test.tsx` |
 | AC-50 | ページ単位で取得できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest` |
@@ -85,7 +85,7 @@
 | AC-65 | C 側に表示されない商品は、存在しない商品と同じ結果になる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
 | AC-66 | URL は品番が変わっても変わらない。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
 | AC-67 | BMP、HEIC / HEIF など一般的な画像形式も受け付ける（対応形式は p… | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImageFormatTest`、`MediaApiTest`、`ProductEditPage.test.tsx` ほか 3 |
-| AC-68 | すべての画像を WebP に変換して配信する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ImgproxyImageConverterTest`、`MediaApiTest` ほか 1 |
+| AC-68 | 全ての画像を WebP に変換して配信する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ImgproxyImageConverterTest`、`MediaApiTest` ほか 1 |
 | AC-69 | 変換時に位置情報などのメタデータを除去する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterTest` |
 | AC-70 | 変換に失敗した画像は登録されず、運営者にその旨が表示される。 | 変更 | [001](../specs/001-catalog-and-inventory/spec.md) | [017](../specs/017-stability) | [メディアモジュール](../backend/modules/media.md)（アップロードの流れ ※1）、[API の規約](../api/conventions.md) 第 4 節 | `ImgproxyImageConverterTest`、`MediaApiTest`、`ProductEditPage.test.tsx` |
 | AC-71 | C 側に一度も表示されていない商品のバリアントは削除できる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductTest` |
@@ -114,7 +114,7 @@
 | AC-94 | 注文の URL を知っていれば、後から同じ内容を見られる。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [003](../specs/003-auth) | [注文モジュール](../backend/modules/order.md)（注文（集約）の操作の表） | `PlaceOrderApiTest` |
 | AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [003](../specs/003-auth) | [注文モジュール](../backend/modules/order.md)（注文（集約）の操作の表、状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`checkout.test.ts` ほか 2 |
 | AC-96 | キャンセルの申請は、1 つの注文につき 1 回だけ。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`StorefrontShopTest` ほか 2 |
-| AC-97 | すべての注文を、注文日時の新しい順に一覧できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx` |
+| AC-97 | 全ての注文を、注文日時の新しい順に一覧できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx` |
 | AC-98 | 注文番号の前方一致、状態、注文日の範囲（BR-3）で絞り込める。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx`、`orderFilter.test.ts` |
 | AC-99 | ページ単位で取得できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest` |
 | AC-100 | 注文番号、注文日時、状態、明細（AC-92 の写しと数量、小計）、金額の内訳（B… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderDetailPage.test.tsx`、`labels.test.ts` |
@@ -240,7 +240,7 @@
 | AC-220 | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-221 | IdP の会員登録の画面で性別（BR-29）を選べる。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
 | AC-222 | 注文の成立のときに、その時点の性別を注文に記録する。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest`、`RealmSettingsContractTest` ほか 1 |
-| AC-223 | 状態によらず、すべての注文をレポートのデータに集める（支払待ち、支払の期限切れ、… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest`、`report.spec.ts` |
+| AC-223 | 状態によらず、全ての注文をレポートのデータに集める（支払待ち、支払の期限切れ、キ… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest`、`report.spec.ts` |
 | AC-224 | 注文の状態と配送状態が変わるたびに、何が・いつ・どの状態からどの状態に変わったか… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest`、`report.spec.ts` |
 | AC-225 | 集めたデータのうち、どの注文を数えるかは、レポートごとに決める（BR-25 など… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest` |
 | AC-226 | 決済と物流に、それぞれ mock フラグがある。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
@@ -249,7 +249,7 @@
 | AC-229 | mock の支払画面と、mock の配送業者の画面（通知の操作を含む）は、そのサ… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
 | AC-230 | 決済・物流のサービスを選ぶ今の設定（mock か Stripe かの選択）をなく… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
 | AC-231 | ローカルの設定は、決済と物流のフラグを立てる。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ProfileFlagsTest` |
-| AC-232 | 店舗 API の契約で会員の token が必要な操作は、すべて token な… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest`、`StoreOperationSecurityTest` |
+| AC-232 | 店舗 API の契約で会員の token が必要な操作は、全て token なし… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest`、`StoreOperationSecurityTest` |
 | AC-233 | 契約で token が必要ない操作（商品の閲覧、匿名のカートなど）は、token… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest`、`StoreOperationSecurityTest` |
 | AC-234 | 契約と認可の設定が食い違う（契約で token が必要なのに、token なしで… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest` |
 | AC-235 | 業務ポートは、店舗 API・管理 API・決済と物流の通知のエンドポイント・mo… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `BusinessPortAccessTest` |
@@ -264,14 +264,14 @@
 | AC-244 | バックエンドの本番の jarに、ローカル・E2E・Stripe の sandbo… | 有効 | [015](../specs/015-security/spec.md) | — | spec | 除外 |
 | AC-245 | 本番の jarを、ローカルの profile を指定して起動しても、mock フ… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ProductionJarStartupTest` |
 | AC-246 | mock の決済の、テストだけで使う操作（次の操作を失敗させる、状態を削除するな… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `MockPaymentGatewayOperationsTest` |
-| AC-247 | 1 つの設定を変えるだけで、compose のすべてのサービスのポートを、同じネ… | 有効 | [015](../specs/015-security/spec.md) | — | spec | 除外 |
+| AC-247 | 1 つの設定を変えるだけで、compose の全てのサービスのポートを、同じネッ… | 有効 | [015](../specs/015-security/spec.md) | — | spec | 除外 |
 | AC-248 | 注文手続きの画面のお届け先は、都道府県・市区町村・それより下の住所を、別の欄で入… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-249 | 市区町村の一覧は、選んだ都道府県の市区町村だけを表示する。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`region.test.ts` |
 | AC-250 | 都道府県と市区町村の一覧は、店舗 API のマスターデータから得る。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`StoreRegionApiTest` |
 | AC-251 | 注文の確定は、選んだ都道府県に属さない市区町村、またはマスターデータにないコード… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`PlaceOrderApiTest` |
 | AC-252 | 注文の詳細（店舗画面・管理画面）は、お届け先を、都道府県名・市区町村名・それより… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`ShippingAddressDetails.test.tsx`、`order.spec.ts` |
 | AC-253 | 店舗 API は、郵便番号から、都道府県・市区町村・町域を返す。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `RegionApiTest`、`StoreRegionApiTest` |
-| AC-254 | 1 つの郵便番号に複数の町域があるときは、すべてを返す。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `RegionApiTest`、`StoreRegionApiTest`、`region.test.ts` |
+| AC-254 | 1 つの郵便番号に複数の町域があるときは、全てを返す。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `RegionApiTest`、`StoreRegionApiTest`、`region.test.ts` |
 | AC-255 | 注文手続きの画面で郵便番号（7 桁）を入れると、都道府県と市区町村を選んだ状態に… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`order.spec.ts`、`postalCodeFill.test.ts` |
 | AC-256 | マスターデータにない郵便番号は、何も補わず、消費者がそのまま入力を続けられる。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`RegionApiTest`、`StoreRegionApiTest` ほか 2 |
 | AC-257 | 補った後も、消費者は都道府県・市区町村・住所を変えられる。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx` |
@@ -294,9 +294,9 @@
 | AC-274 | 店舗 API と管理 API の契約は、操作ごとに、返しうるエラーのコードの一覧… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ErrorCodeCheckTest`、`ErrorCodeContractTest` |
 | AC-275 | バックエンドのエラーのコードと、契約のエラーのコードの一覧が食い違うと、CI で… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ErrorCodeContractTest` |
 | AC-276 | 管理 API の商品のバリアントの追加は、作ったバリアントの URL を応答の … | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ProductApiTest` |
-| AC-277 | モジュールの間で列挙を写すときは、すべての値の対応を、コンパイルかテストで確認す… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
+| AC-277 | モジュールの間で列挙を写すときは、全ての値の対応を、コンパイルかテストで確認する… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `BasisTest`、`StatusHistoryEntryTest` |
-| AC-279 | 列挙を文字列で持つデータベースの列は、すべて取りうる値を制約で限る。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `EnumColumnConstraintTest` |
+| AC-279 | 列挙を文字列で持つデータベースの列は、全て取りうる値を制約で限る。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `EnumColumnConstraintTest` |
 | AC-280 | 業務の日付を切る時間帯（日本時間）は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-281 | 時点の税率の判定は 1 か所で決める。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-282 | 分類の深さの上限は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ProductListApiTest` |

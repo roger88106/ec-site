@@ -14,7 +14,7 @@
 | 文書の言語 | 第 6 節 | DS-26 |
 | ポートの予約 | 第 7 節 | DS-27 |
 | 手元の待ち時間と手間 | 第 8 節 | DS-28 |
-| 段階と確認方法 | 第 9 節、第 10 節 | すべて |
+| 段階と確認方法 | 第 9 節、第 10 節 | 全て |
 
 ## 1. 番号と、MVP の完成までの一覧（DS-21）
 
@@ -75,7 +75,7 @@
 | 項目 | 決定 |
 |------|------|
 | コマンド | `scripts/ci/check-all.sh`（新しい script） |
-| 実行するもの | ① `node --test "scripts/ci/**/*.test.mjs"`（script のテスト）。② `scripts/ci/` の直下の `*.mjs` のうち `*.test.mjs` 以外のすべて |
+| 実行するもの | ① `node --test "scripts/ci/**/*.test.mjs"`（script のテスト）。② `scripts/ci/` の直下の `*.mjs` のうち `*.test.mjs` 以外の全て |
 | 規則 | `scripts/ci/` の直下の `.mjs` は、引数なしで実行できる検査だけを置く。引数が必要な補助（`coverage-summary.mjs`）は `scripts/ci/report/` に移す。`licenses/` はすでに下のディレクトリにある |
 | 出力 | 1 つの検査ごとに 1 行（OK / FAIL と名前）。失敗したものだけ末尾の出力を表示する。全体の終了コードは、1 つでも失敗すれば 1 |
 | CI | ジョブ「AC とテストの対応」を「CI の検査の script」に改め、`check-all.sh` を実行する。店舗画面のジョブにある `input-constraints.mjs`・`hardcoded-text.mjs` の手順は、こちらに移す。`docs.yml` の文書の検査は、文書だけの push でも実行するため残す |
@@ -92,7 +92,7 @@
 | 対象 | 今 | 修正した後 |
 |------|----|----------|
 | Vitest・Playwright | `describe`・`test`・`it` の第 1 引数を読む | `test`・`it` だけ読む。`describe` は読まない |
-| Java | すべての `@DisplayName` を読む | メソッドに付いた `@DisplayName` だけ読む。クラス（`@Nested` を含む）に付いたものは読まない |
+| Java | 全ての `@DisplayName` を読む | メソッドに付いた `@DisplayName` だけ読む。クラス（`@Nested` を含む）に付いたものは読まない |
 
 - Java は、`@DisplayName(...)` の後に続く宣言（注釈を飛ばした次の語）が `class` かどうかで見分ける。構文の解析はしない。
 - テスト：`ac-check.test.mjs` に、`describe` だけ・`@Nested` のクラスだけにある AC が対応とみなされない例を追加する（修正する前に失敗することを確認する）。
@@ -211,7 +211,7 @@
 | 既存の漏れ | 段階 5 の最初のタスクで数を測る。100 を超えたら、修正方法（まとめて修正する、モジュールごとに分ける）を利用者に確認する |
 | 依存のライセンス | Checkstyle は LGPL。ビルドの道具で、アプリには入らない。`checkLicense` の対象に入るかを確認し、入るなら方針（`scripts/ci/licenses/policy.json`）に理由を書いて許す |
 
-2026-10-16 追記：段階 5 の後、利用者の判断で対象を private を含むすべてのメンバーに広げた（T011-05-08）。private は 1 文の簡単な Javadoc でよく、`@param`・`@return` は求めない。
+2026-10-16 追記：段階 5 の後、利用者の判断で対象を private を含む全てのメンバーに広げた（T011-05-08）。private は 1 文の簡単な Javadoc でよく、`@param`・`@return` は求めない。
 
 理由：javac の `-Xdoclint:missing` は、生成したコードを除く設定が難しく、private にも当たる。Checkstyle は対象を規則ごとに絞れる。
 
@@ -223,7 +223,7 @@
 |------|------|
 | 書き方 | static のメンバーだけのクラスは `final` にし、コンストラクタを `private` にする（Lombok の `@NoArgsConstructor(access = AccessLevel.PRIVATE)` か、手動で書く。どちらでもよい） |
 | 書く場所 | バックエンドの書き方の文書（`docs/backend/coding.md`）の第 5 節 |
-| 確認方法 | ArchUnit の規則（`src/test/java/com/ecsite/architecture/`）：static でないメンバーを持たない最上位のクラス（enum・record・interface・注釈を除く）は、コンストラクタがすべて private |
+| 確認方法 | ArchUnit の規則（`src/test/java/com/ecsite/architecture/`）：static でないメンバーを持たない最上位のクラス（enum・record・interface・注釈を除く）は、コンストラクタが全て private |
 
 理由：Checkstyle の `HideUtilityClassConstructor` はソースを読むので、Lombok の注釈で作るコンストラクタが見えず、誤って当たる。ArchUnit はコンパイルの後のクラスを読む。
 
@@ -294,9 +294,9 @@
 
 | 測ったもの | 時間 |
 |------------|------|
-| 変更のないときの `check` | 3.6〜4.0 秒（すべて up-to-date） |
+| 変更のないときの `check` | 3.6〜4.0 秒（全て up-to-date） |
 | 1 ファイル（private のメソッドを追加する）を修正した後の `compileJava` | 6.3 秒 |
-| 同じ変更の後の `check` | 6 分 54 秒（単体・統合テストをすべて再実行する） |
+| 同じ変更の後の `check` | 6 分 54 秒（単体・統合テストを全て再実行する） |
 | 統合テスト（`integrationTest --rerun`） | 6 分 14 秒 |
 
 | 候補 | 結果 | 決定 |
@@ -323,7 +323,7 @@
 | 4 | `04-ci-time.md` | E2E の `needs`、統合テストとサーバーの起動の測定 | 85、86、95 |
 | 5 | `05-style-checks.md` | Checkstyle の Javadoc、既存の漏れの修正、インスタンスを作らないクラス | 87、88 |
 | 6 | `06-local-time.md`（P2） | 手元の時間の測定と短縮、機能紹介の数字 | 91、92 |
-| 7 | `07-review.md` | レビュー（[書き方の規則とレビュー](../../process/review.md)）、CI の時間の記録、spec の完了 | すべて |
+| 7 | `07-review.md` | レビュー（[書き方の規則とレビュー](../../process/review.md)）、CI の時間の記録、spec の完了 | 全て |
 
 - 段階 1 を最初にする：段階 2 以降の tasks のタスク番号が新しい形式を使うため（tasks は始めから新しい形式で書き、段階 1 で規則と script を追いつかせる）。
 - 段階 2 を段階 3 より先にする：hook と `check-all.sh` を、以降の commit で使うため。

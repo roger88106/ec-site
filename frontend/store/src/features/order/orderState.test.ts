@@ -2,11 +2,11 @@ import { describe, expect, test } from 'vitest'
 import { cancellationState, paymentDeadlineLabel, paymentState } from '@/features/order/orderState'
 
 describe('キャンセルの申請の状況（AC-95、96）', () => {
-  /** API が返す旗 */
+  /** API が返すフラグ */
   const requestable = { requestCancellation: true }
   const notRequestable = { requestCancellation: false }
 
-  test('AC-95 申請できる（API の旗）「受付」の注文は、申請できる', () => {
+  test('AC-95 申請できる（API のフラグ）「受付」の注文は、申請できる', () => {
     expect(cancellationState({ status: 'ACCEPTED', actions: requestable })).toBe('REQUESTABLE')
   })
 
@@ -59,11 +59,11 @@ describe('キャンセルの申請の状況（AC-95、96）', () => {
 })
 
 describe('支払の状況（AC-150、151）', () => {
-  /** API が返す旗 */
+  /** API が返すフラグ */
   const payable = { pay: true }
   const notPayable = { pay: false }
 
-  test('AC-151 支払待ちで支払える（API の旗）なら、支払える', () => {
+  test('AC-151 支払待ちで支払える（API のフラグ）なら、支払える', () => {
     expect(paymentState({ status: 'PENDING_PAYMENT', actions: payable }, false)).toBe('PAYABLE')
   })
 

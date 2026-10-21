@@ -1,7 +1,7 @@
 # 段階 1：税（US-1）
 
 - 前提：段階 0
-- 完了条件：US-1 の AC（AC-1〜7）のテストがすべて通る。CI が通る。
+- 完了条件：US-1 の AC（AC-1〜7）のテストが全て通る。CI が通る。
 - 参照：spec US-1、[tax.md](../../../backend/modules/tax.md)、`admin.yaml`（tag: tax）
 
 ## タスク

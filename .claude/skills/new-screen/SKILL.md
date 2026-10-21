@@ -220,7 +220,7 @@ export function FooActions({ fooId }: { fooId: string }) {
 
 ### 結合テスト（`pages/FooPage.test.tsx`）
 
-書き方は admin.md 第 9 節。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API はすべてハンドラーを渡す、テスト名に AC 番号。
+書き方は admin.md 第 9 節。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API は全てハンドラーを渡す、テスト名に AC 番号。
 
 ## 画面を追加し終えたら
 

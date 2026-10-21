@@ -1,7 +1,7 @@
 # 段階 2：バックエンドの認証の土台
 
 - 前提：段階 1
-- 完了条件：AC-136〜138（管理 API の側）、NFR-3 のテストと、IdP の設定の統合テストが通る。既存のテストがすべて通る（`./gradlew check`）。
+- 完了条件：AC-136〜138（管理 API の側）、NFR-3 のテストと、IdP の設定の統合テストが通る。既存のテストが全て通る（`./gradlew check`）。
 - 参照：[plan](../plan.md) 第 3.1〜3.3 節、第 5.2 節、constitution 10.2、`admin.yaml`
 
 ## API の契約
@@ -23,7 +23,7 @@
   - `admin.yaml` をビルドのときにリソースにコピーし、起動時に読んで、要求ごとに必要な権限を判定する。対応にない要求は拒否する
   - 401・403 の Problem Details
 - [x] **T3206** 既存の統合テストのうち、管理 API を呼ぶものに、必要な権限の token を付ける。テストの意図は変えない。
-- [x] **T3207** [テスト] `admin.yaml` の権限と、運営者の realm の JSON の `ec-admin-api` の client role が一致し、`administrator` がすべての権限を、`viewer` が `:read` の権限すべてを含むことを確認する契約テスト（Keycloak は起動しない）。
+- [x] **T3207** [テスト] `admin.yaml` の権限と、運営者の realm の JSON の `ec-admin-api` の client role が一致し、`administrator` が全ての権限を、`viewer` が `:read` の権限全てを含むことを確認する契約テスト（Keycloak は起動しない）。
 - [x] **T3208** [テスト] IdP の設定の統合テスト（Keycloak を Testcontainers で起動し、両 realm の JSON を取り込む）。token は、テストの中で web の client のパスワードによる取得（Direct Access Grant）を有効にして取る（realm の JSON には入れない。画面と同じ client の token で確認するため）。
   - 運営者の token で、管理 API を職務どおりに使える：管理者は更新でき、閲覧者は参照だけで、更新は 403（AC-136、139）
   - 会員の token では、管理 API は 401（AC-138）

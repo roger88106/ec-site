@@ -491,7 +491,7 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 今の商品にできる操作を返す（管理画面に返す旗）。
+     * 今の商品にできる操作を返す（管理画面に返すフラグ）。
      *
      * @param now 現在時刻
      * @return できる操作

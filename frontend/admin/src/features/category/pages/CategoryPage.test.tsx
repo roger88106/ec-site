@@ -15,7 +15,7 @@ type CreateCategoryRequest = components['schemas']['CreateCategoryRequest']
  * @param name     名称
  * @param depth    階層（最上位が 1）
  * @param children 子
- * @param addChild 子を足せるか（API が返す旗。既定はいちばん深い 3 階層目だけ偽）
+ * @param addChild 子を足せるか（API が返すフラグ。既定はいちばん深い 3 階層目だけ偽）
  */
 function category(
   id: string,
@@ -117,7 +117,7 @@ describe('カテゴリの画面', () => {
     expect(requests[0]?.body).toEqual({ name: 'ボトムス', parentId: CLOTHING.id })
   })
 
-  it('AC-9、270 子を足せないカテゴリ（API の旗が偽）には、子を追加する操作を出さない', async () => {
+  it('AC-9、270 子を足せないカテゴリ（API のフラグが偽）には、子を追加する操作を出さない', async () => {
     serveCategories([CLOTHING])
     renderApp('/categories')
 
@@ -125,7 +125,7 @@ describe('カテゴリの画面', () => {
     expect((await row('T シャツ')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
   })
 
-  it('AC-270 子を追加する操作は、階層の深さでなく API の旗で出し分ける', async () => {
+  it('AC-270 子を追加する操作は、階層の深さでなく API のフラグで出し分ける', async () => {
     serveCategories([category('301', '深い', 3, [], true), category('302', '浅い', 1, [], false)])
     renderApp('/categories')
 

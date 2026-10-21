@@ -56,7 +56,7 @@ export function productDetail(overrides: Partial<ProductDetail> = {}): ProductDe
   }
 }
 
-/** 非公開で、C 側に表示されたことのない商品にできる操作（API が返す旗） */
+/** 非公開で、C 側に表示されたことのない商品にできる操作（API が返すフラグ） */
 export function productActions(overrides: Partial<ProductActions> = {}): ProductActions {
   return {
     publish: true,
@@ -83,7 +83,7 @@ export function variant(overrides: Partial<Variant> = {}): Variant {
 /** テストのデータの注文の ID */
 export const ORDER_ID = '00000000-0000-0000-0000-000000000501'
 
-/** 「受付」の注文にできる操作（API が返す旗） */
+/** 「受付」の注文にできる操作（API が返すフラグ） */
 export function orderActions(overrides: Partial<OrderActions> = {}): OrderActions {
   return {
     approveCancellation: false,

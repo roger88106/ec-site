@@ -146,7 +146,7 @@ local profile の seed（`db/seed/local/`）が、画面を確認するための
 - レポート用の注文 2 万件（2024-10-01〜2026-09-30、会員 300 人、出荷済みが多い）と、その支払・出荷・レポートの写し。中身は `db/seed/local/README.md`「レポート用の注文」。
 - 会員 `member@example.com` の注文 4 件：受付、キャンセルの申請中、申請の却下（受付のまま）、キャンセル済み。どれも状態に合う支払（mock の与信）を持ち、受付の注文は管理画面から出荷できる（Stripe の profile では売上確定で失敗する）。承認・却下・運営者のキャンセルは、申請中の注文で管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）から試す。
 - ID は固定（`00000000-0000-0000-0000-00000000` + 4 桁）：カテゴリ 1xxx、商品 2xxx、バリアント 3xxx、在庫 4xxx、会員 6001、注文 61xx、支払 64xx、アセット 7xxx、商品画像 8xxx。レポート用は `00000000-0000-0000-<種類 4 桁>-<番号 12 桁>`（会員 0001、注文 0010、支払 0012、出荷 0013）。
-- 画面で変えたデータは、seed を再適用しても戻らない。最初の状態に戻すときは、バックエンドを停止して `scripts/dev/reset.sh` で DB を再作成する（Keycloak は `keycloak`、すべては `all`。`docs/dev/setup.md` 第 4 節）。
+- 画面で変えたデータは、seed を再適用しても戻らない。最初の状態に戻すときは、バックエンドを停止して `scripts/dev/reset.sh` で DB を再作成する（Keycloak は `keycloak`、全ては `all`。`docs/dev/setup.md` 第 4 節）。
 
 ## E2E（`e2e/`）
 

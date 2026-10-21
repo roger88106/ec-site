@@ -13,7 +13,7 @@ Java・Spring Boot のモジュラーモノリスと、Next.js（店舗画面）
 
 ## 文書
 
-[constitution](docs/constitution.md) から読む。プロジェクトの大綱と、すべての文書の地図がある。
+[constitution](docs/constitution.md) から読む。プロジェクトの大綱と、全ての文書の地図がある。
 AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 
 ## 起動とテスト

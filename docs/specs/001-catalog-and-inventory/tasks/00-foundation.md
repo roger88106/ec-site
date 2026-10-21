@@ -38,7 +38,7 @@
     - 結果：jackson-databind-nullable 0.2.12 は Jackson 3 用のモジュールを含み、自動で登録される。`openApiNullable=true` のままにする。null を送った場合と送らなかった場合を区別できることを、統合テスト（`OpenApiModelJsonTest`）で確認している。
     - あわせて分かったこと：受け取った日時は UTC に揃えて出力される（`+09:00` → `Z`）。同じ時点で、ISO 8601 のオフセット付き文字列でもあるので、constitution 9 に合う。
   - 完了：生成コードを含めてコンパイルが通る。
-- [x] **T009** 権限の記載漏れを検出するテストを作る：`admin.yaml` のすべての操作に `x-required-permission` があり、`resource:action` の形であること（constitution 10）。
+- [x] **T009** 権限の記載漏れを検出するテストを作る：`admin.yaml` の全ての操作に `x-required-permission` があり、`resource:action` の形であること（constitution 10）。
 
 ## 共通部品（`common`）
 
@@ -49,16 +49,16 @@
     - パスの UUID の形式誤り、必須パラメータの欠落、型の不一致、JSON の構文誤り：400
     - メソッド引数の検証エラー（生成インターフェースの `size` の上限超えなど）：400、`errors` 付き
     - 存在しないパス：404。許可されていないメソッド：405
-  - すべてのエラー（500 を含む）で `errorCode`、`message`、`traceId` が入り、Content-Type が `application/problem+json`。
+  - 全てのエラー（500 を含む）で `errorCode`、`message`、`traceId` が入り、Content-Type が `application/problem+json`。
     - `message` は画面にそのまま出せる日本語の文字列（メッセージのキーやパラメータの構造ではない）。
     - トレースの span がない状態（サンプリングされない場合など）でも、`traceId` を返し、例外ハンドラー自体が失敗しない。
 - [x] **T011** 例外体系を MyIAM から移植する（`ErrorCode`、`ErrorType`、`BusinessException`、`SystemException`、`GlobalExceptionHandler`、i18n メッセージ）。T010 を通す。
   - MyIAM のままコピーすると constitution 9 に合わない箇所があるので、次を修正する。
     - `message`：MyIAM はメッセージのキーとパラメータの構造を入れていて、日本語の文字列は `detail` に入っている。`message` に日本語の文字列を入れる。
-    - `traceId`：MyIAM は 500 のときだけ返す。すべてのエラーで返す。
+    - `traceId`：MyIAM は 500 のときだけ返す。全てのエラーで返す。
     - 500：MyIAM は `errorCode` と `message` を返さない。`SYSTEM_ERROR` とその文言を返す。
     - トレース情報の取得：MyIAM は span がないと null を返し、呼び出し側で NullPointerException になる。span がない場合も扱う。
-    - Spring MVC の標準の例外：MyIAM は入力検証エラー以外を既定の処理に任せていて、追加の項目が付かない。すべて同じ形に変換する。
+    - Spring MVC の標準の例外：MyIAM は入力検証エラー以外を既定の処理に任せていて、追加の項目が付かない。全て同じ形に変換する。
     - Spring Security への依存：MyIAM は認可例外を扱うために依存している。MVP では認証を入れないので（constitution 10）、その処理は移植しない。
     - エラー画面（`ErrorControllerImpl`、Thymeleaf）：API だけなので移植しない。
     - メッセージのキーの接頭辞：`myiam.` を `ecsite.` にする。

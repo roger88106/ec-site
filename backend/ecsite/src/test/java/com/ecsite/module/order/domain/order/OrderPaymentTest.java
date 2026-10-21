@@ -165,7 +165,7 @@ class OrderPaymentTest {
         }
 
         @Test
-        @DisplayName("受付・キャンセル申請中は、運営者がキャンセルできる。キャンセル済みはできない旗にする")
+        @DisplayName("受付・キャンセル申請中は、運営者がキャンセルできる。キャンセル済みはできないフラグにする")
         void operatorCancellableStates() {
             var accepted = acceptedOrder();
             var requested = acceptedOrder();

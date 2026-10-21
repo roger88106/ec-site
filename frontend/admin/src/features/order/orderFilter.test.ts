@@ -23,7 +23,7 @@ describe('注文一覧の絞り込みと URL', () => {
     expect(toSearchParams(EMPTY_FILTER).toString()).toBe('')
   })
 
-  test('不正な状態・日付・旗・ページは無視する', () => {
+  test('不正な状態・日付・フラグ・ページは無視する', () => {
     expect(
       parseFilter(
         new URLSearchParams(

@@ -26,9 +26,10 @@
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
+- 管理画面の `pnpm build`（本番ビルド）は、環境変数 `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がないと失敗する（[環境変数](environment.md)）。ローカルの値で確認するときは、`VITE_OIDC_AUTHORITY=http://localhost:8180/realms/ec-admin VITE_OIDC_CLIENT_ID=ec-admin-web pnpm build`。
 - `pnpm test` はカバレッジのレポートを `coverage/index.html` に生成する。
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
-- 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる。
+- 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる（管理画面のビルドの環境変数は、未設定ならローカルの値を使う）。
 
 ## 3. E2E（`e2e/`）
 

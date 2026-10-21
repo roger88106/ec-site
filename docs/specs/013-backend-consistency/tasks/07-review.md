@@ -9,7 +9,7 @@
 - [x] **T013-07-01** 変えたコードを、書き方の規則とレビューに照合する。plan 第 11 節の grep と読む確認を行い、結果をタスクの下に書く。
   - 変えた main のファイル 112（`R100` を除く）の差分を読んだ。
   - grep：更新の service に `readOnly = true` はない（DC-124）。Controller に生成したモデルの組み立てはない（DC-119）。`@Scheduled` に `${` はない（DC-135、136）。テストだけが使うコードは plan 第 9 節の表のとおり（DC-140、141）。
-  - application と domain の金額の整数を grep し、catalog の商品の詳細の view の価格が `long` だったので `Money` に修正した（DC-120。第 1.5 節）。金額の型の ArchUnit（`MoneyTypeTest`）は view のパッケージを見ていないので、見つけられなかった。既存のテストなので本 spec では広げない（レビューの結果に書く）。
+  - application と domain の金額の整数を grep し、catalog の商品の詳細の view の価格が `long` だったので `Money` に修正した（DC-120。第 1.5 節）。金額の型の ArchUnit（`MoneyTypeTest`）は view のパッケージを見ていないので、検出できなかった。既存のテストなので本 spec では広げない（レビューの結果に書く）。
   - catalog の商品のバリアントと画像の追加は、作成の応答の補助を使わない（Location を追加しないのは spec の Non-goals）。
   - order の参照の service の支払える判定の重複は、利用者と決めて T013-07-06 で修正した。
 - [x] **T013-07-02** spec の最初の commit の 1 つ前（`3f7d584`）を元に、テストの差分の検査を実行する。plan 第 1.2 節の変えないもの（OpenAPI、DB、設定のファイル、ログの文）に差分がないことを確認する（DN-15、DN-16）。
@@ -37,7 +37,7 @@
 
 | 項目 | 理由 |
 |------|------|
-| AC-154 のテストの、間隔の文字列の解き方を変えた | 間隔を設定の型から SpEL で取ると、`${}` だけで解くテストが通らない。利用者と決めて DN-15 の特例にした（spec 第 6 節）。確認する中身は変えていない |
+| AC-154 のテストの、間隔の文字列の解決方法を変えた | 間隔を設定の型から SpEL で取ると、`${}` だけで解決するテストが通らない。利用者と決めて DN-15 の特例にした（spec 第 6 節）。確認する中身は変えていない |
 | catalog の商品のバリアントと画像の追加の応答に Location がない | spec の Non-goals。作成の応答の補助を使わず、状態と本文だけを返す |
 | `@Scheduled` の SpEL が、設定の型の Bean の長い名前を書く | `@EnableConfigurationProperties` で登録した Bean の名前は「接頭辞-完全修飾名」に決まっている。コメントに書いた |
 
@@ -46,4 +46,4 @@
 既存のテストを広げると DN-15 を超えるので、テストを変えてよい spec で扱う。
 
 - `ModuleStructureTest` のレベル A の一覧に payment がない（`ModuleRoleTest` にはある）。
-- 金額の型の ArchUnit（`MoneyTypeTest`）が `application/model/view/` を見ていない。今回の catalog の view の価格は、レビューの grep で見つけた。
+- 金額の型の ArchUnit（`MoneyTypeTest`）が `application/model/view/` を見ていない。今回の catalog の view の価格は、レビューの grep で検出した。

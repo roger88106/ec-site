@@ -4,11 +4,11 @@
 
 ## 1. モジュールの依存とイベント
 
-- 図は `ModuleDiagramTest`（`backend/ecsite/src/test/java/com/ecsite/modulith/ModuleDiagramTest.java`）がコードから作る。手で直さない。
+- 図は `ModuleDiagramTest`（`backend/ecsite/src/test/java/com/ecsite/modulith/ModuleDiagramTest.java`）がコードから作る。手動で修正しない。
 - 実線は、モジュールが相手の API を呼ぶ（矢印の向きが依存の向き）。点線は、イベントを発行するモジュールから受けるモジュールへ向かい、線の上にイベントの名前を書く。
 - 他のモジュールが受けるイベントだけを書く。受け手のない公開イベントは図に出ない。
 - 依存は package-info の `allowedDependencies` で宣言し、`ModulithTest` が守らせる（[バックエンドのアーキテクチャ](../backend/architecture.md) 第 1 節）。
-- モジュールの依存かイベントが変わると、テストが失敗する。`backend/ecsite` で `./gradlew test --tests ModuleDiagramTest -PupdateDocs` を実行すると図を書き直すので、差分を確認して commit する。
+- モジュールの依存かイベントが変わると、テストが失敗する。`backend/ecsite` で `./gradlew test --tests ModuleDiagramTest -PupdateDocs` を実行すると図を再生成するので、差分を確認して commit する。
 
 <!-- generated:modules -->
 ```mermaid
@@ -59,7 +59,7 @@ flowchart LR
 
 ## 2. 外部システムとの境目
 
-図は手で書く。`ModuleDiagramTest` が比べるのはモジュールの名前の一覧だけで、モジュールを足す・消すとテストが失敗する。外部システムとの線は比べないので、境目を変えたらこの図も直す。
+図は手動で書く。`ModuleDiagramTest` が比べるのはモジュールの名前の一覧だけで、モジュールを追加する・削除するとテストが失敗する。外部システムとの線は比べないので、境目を変えたらこの図も修正する。
 
 <!-- external-systems -->
 ```mermaid
@@ -95,7 +95,7 @@ flowchart LR
     admin_app -->|管理 API| backend
     admin_app -->|画像のアップロード（署名付き URL）| storage
     backend -->|token の検証の鍵| idp
-    module_payment -->|支払の画面、与信、売上の確定、取消、返金| payment_service
+    module_payment -->|支払画面、与信、売上の確定、取消、返金| payment_service
     payment_service -->|通知| module_payment
     module_shipping -->|追跡を始める| carrier
     carrier -->|通知| module_shipping

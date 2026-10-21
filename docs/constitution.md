@@ -94,7 +94,7 @@ ec-site/
 │   ├── backend/          # バックエンドの設計と書き方
 │   ├── frontend/         # フロントの設計と書き方
 │   ├── api/              # API の規約
-│   ├── testing/          # テストの書き方と流し方
+│   ├── testing/          # テストの書き方と実行方法
 │   ├── dev/              # 開発環境の起動と設定
 │   ├── reference/        # 用語集、ライセンス
 │   └── specs/            # spec・plan・tasks
@@ -116,7 +116,7 @@ ec-site/
 | [process/workflow.md](process/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方 |
 | [process/notation.md](process/notation.md) | spec・tasks の記号と番号 |
 | [process/comments.md](process/comments.md) | コメントの書き方 |
-| [process/review.md](process/review.md) | 書き方の規則の書き方と見直し |
+| [process/review.md](process/review.md) | 書き方の規則の書き方とレビュー |
 | [design/overview.md](design/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
 | [design/role-permissions.md](design/role-permissions.md) | ロールと権限の対応表 |
 | [design/common.md](design/common.md) | 共通コード・ログ・可観測性 |
@@ -129,7 +129,7 @@ ec-site/
 | [frontend/apps/](frontend/apps) | アプリごとの構成（管理画面、店舗画面） |
 | [api/conventions.md](api/conventions.md) | API の規約 |
 | [testing/writing.md](testing/writing.md) | テストの書き方 |
-| [testing/running.md](testing/running.md) | テストの流し方 |
+| [testing/running.md](testing/running.md) | テストの実行方法 |
 | [dev/setup.md](dev/setup.md) | 開発環境の起動 |
 | [dev/environment.md](dev/environment.md) | 環境変数 |
 | [dev/ci.md](dev/ci.md) | CI の検査 |
@@ -145,7 +145,7 @@ ec-site/
 
 spec（何を・なぜ）→ plan（どう作るか）→ tasks（作業の手順）→ 実装。
 
-- spec がコードに先行する。誤りに気づいたら、spec から直す。
+- spec がコードに先行する。誤りに気づいたら、spec から修正する。
 - spec は「機能」と「整理」の 2 種類（[文書の記号と番号](process/notation.md)）。
 
 ### 4.2 テスト駆動開発（TDD：Test-Driven Development）
@@ -161,7 +161,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 - モジュールが外に公開するのは `api/`（同期の呼び出し）と `event/`（非同期の通知）だけ。他のモジュールのテーブルは読み書きしない。
 - モジュールごとに、複雑さに応じて構成のレベル（フル・簡略・イベントストア）を選ぶ。
-- C 側と B 側は同じモジュールを共有し、API の口（`/api/store/**`、`/api/admin/**`）で分ける。
+- C 側と B 側は同じモジュールを共有し、API のエンドポイント（`/api/store/**`、`/api/admin/**`）で分ける。
 
 | モジュール | 責務 |
 |------------|------|
@@ -181,7 +181,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 6. 水平スケール
 
-同じアプリを複数インスタンス並べて動かせるように作る。細則は [バックエンドのアーキテクチャ](backend/architecture.md) 第 5 節。
+同じアプリを複数のインスタンスで並行して動かせるように作る。細則は [バックエンドのアーキテクチャ](backend/architecture.md) 第 5 節。
 
 - リクエストをまたぐ状態をメモリやローカルディスクに持たない。
 - 業務上の排他は DB で行う（JVM の中のロックを使わない）。
@@ -200,7 +200,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 細則は [API の規約](api/conventions.md)。
 
 - 契約先行：OpenAPI（`api/openapi/`）を plan で書き、バックエンドもフロントもそこから生成した型を使う。
-- RESTful JSON。エラーは Problem Details（RFC 9457）に、分岐用のコードと画面に出せる文を加える。
+- RESTful JSON。エラーは Problem Details（RFC 9457）に、分岐用のコードと画面に表示できる文を加える。
 
 ## 9. 認証・認可
 
@@ -220,15 +220,15 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 11. テスト
 
-細則は [テストの書き方](testing/writing.md)、流し方は [テストの流し方](testing/running.md)。
+細則は [テストの書き方](testing/writing.md)、実行方法は [テストの実行方法](testing/running.md)。
 
 - すべての AC にテストを対応させ、テスト名に AC 番号を入れる。
 - バックエンドは単体テストと統合テスト（Testcontainers）、フロントは単体テストと結合テスト、つないだ流れは E2E（Playwright）。
-- 画面のテストは、画面に見えるもの（文字、ラベル、ボタンの名前）で確かめる。見た目は手で確かめる。
+- 画面のテストは、画面に見えるもの（文字、ラベル、ボタンの名前）で確認する。見た目は目視で確認する。
 
 ## 12. CI/CD
 
-- CI：push と pull request で、バックエンド、フロント、E2E を流す。文書だけを変えた push では流さない（文書の参照の検査だけは流す）。
+- CI：push と pull request で、バックエンド、フロント、E2E を実行する。文書だけを変えた push では実行しない（文書の参照の検査だけは実行する）。
 - CI が失敗している状態で、次の spec の実装に進まない。
 - CD：まだない（デプロイ先は未定。第 16 節）。
 
@@ -242,14 +242,14 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 14. コードの書き方
 
-書き方は [バックエンド](backend/coding.md)、[フロント](frontend/coding.md)、[テスト](testing/writing.md)、[コメント](process/comments.md) の各文書にある。コードを書く前と、[見直し](process/review.md)のときに読む。
+書き方は [バックエンド](backend/coding.md)、[フロント](frontend/coding.md)、[テスト](testing/writing.md)、[コメント](process/comments.md) の各文書にある。コードを書く前と、[レビュー](process/review.md)のときに読む。
 
 ## 15. 依存とライセンス
 
 細則は [依存とライセンス](reference/licenses.md)。
 
 - プロジェクトのライセンスは MIT。
-- 依存は、無料で商用に使えて、伝染しない（使う側のコードの公開を求めない）ものだけを使う。CI で確かめる。
+- 依存は、無料で商用に使えて、伝染しない（使う側のコードの公開を求めない）ものだけを使う。CI で確認する。
 
 | 区分 | 当てはまるもの |
 |------|----------------|

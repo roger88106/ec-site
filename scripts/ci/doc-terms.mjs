@@ -10,8 +10,8 @@ import { fileURLToPath } from 'node:url'
 /** 調べる文書 */
 const DOCS = /^(docs\/.*|README|AGENTS|\.claude\/skills\/.*)\.md$/
 
-/** 見ない文書（当時の記録） */
-const EXCLUDED = /^docs\/specs\//
+/** 見ない文書（当時の記録と、言い換える前の語を例に挙げる言い回しの規則） */
+const EXCLUDED = /^(docs\/specs\/|\.claude\/skills\/docs\/tech-writing\.md$)/
 
 /**
  * 一覧の語を書いた行を探す。

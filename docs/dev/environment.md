@@ -6,8 +6,8 @@ profile の設定ファイルは本番の jar に入らない（[バックエン
 
 | profile | 使う場面 | 重ね方 |
 |---------|----------|--------|
-| `local` | ローカルの開発。compose のサービスにつなぎ、決済と物流は mock、起動のときに seed を流す | 単独（`local`） |
-| `e2e` | E2E。DB・IdP・画像のバケット・ポートを E2E 用に分け、ローカルのデータを変えない（[テストの流し方](../testing/running.md)） | `local,e2e` |
+| `local` | ローカルの開発。compose のサービスにつなぎ、決済と物流は mock、起動のときに seed を適用する | 単独（`local`） |
+| `e2e` | E2E。DB・IdP・画像のバケット・ポートを E2E 用に分け、ローカルのデータを変えない（[テストの実行方法](../testing/running.md)） | `local,e2e` |
 | `stripe` | Stripe の sandbox での確認。決済サービスを Stripe にし、秘密の値を `/.local/stripe.env` から読む（[開発環境の起動](setup.md) 第 5 節） | `local,stripe` |
 
 ## 1. バックエンド
@@ -15,7 +15,7 @@ profile の設定ファイルは本番の jar に入らない（[バックエン
 | 環境変数 | 内容 | 既定 |
 |----------|------|------|
 | `SPRING_DATASOURCE_URL`、`_USERNAME`、`_PASSWORD` | DB の接続先 | — |
-| `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外に出さない | 9080（E2E は 9090） |
+| `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外部に公開しない | 9080（E2E は 9090） |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | トレースの送信先 | `http://localhost:9411/api/v2/spans` |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |
 | `ECSITE_SECURITY_ADMIN_ISSUER_URI`、`_AUDIENCE` | 管理 API が受け付ける token の issuer（運営者の realm）と audience | 必須 |
@@ -24,21 +24,21 @@ profile の設定ファイルは本番の jar に入らない（[バックエン
 | `ECSITE_MEDIA_STORAGE_REGION`、`_PUBLIC_BASE_URL` | バケットのリージョン、配信の基準 URL（CDN） | 必須 |
 | `ECSITE_MEDIA_STORAGE_ENDPOINT`、`_PATH_STYLE_ACCESS` | S3 互換ストレージを使うときだけ（AWS では設定せず、資格情報は IAM ロール） | —、false |
 | `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | アップロードの署名付き URL の有効期間 | 5m |
-| `ECSITE_MEDIA_STORAGE_ATTEMPT_TIMEOUT`、`_CALL_TIMEOUT` | ストレージの呼び出しを待つ時間の上限（1 回の試行、SDK のやり直しを含めた全体） | 10s、30s |
+| `ECSITE_MEDIA_STORAGE_ATTEMPT_TIMEOUT`、`_CALL_TIMEOUT` | ストレージの呼び出しを待つ時間の上限（1 回の試行、SDK の再試行を含めた全体） | 10s、30s |
 | `ECSITE_MEDIA_CONVERTER_BASE_URL`、`_KEY`、`_SALT` | imgproxy の URL と、URL の署名の鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値） | 必須 |
 | `ECSITE_MEDIA_CONVERTER_QUALITY`、`_TIMEOUT` | WebP の品質、変換を待つ時間の上限 | 82、30s |
 | `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（標準税率） | 必須 |
 | `ECSITE_ORDER_SHIPPING_FEE`、`_RESERVATION_TTL` | 送料（税込、円）、引当の期限 | 1000、15m |
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に示す） | 必須 |
 | `ECSITE_REPORTING_FISCAL_YEAR_START_MONTH` | 会計年度の始まりの月（1〜12）。売上の推移の四半期と年の区切りに使う | 4 |
-| `ECSITE_PAYMENT_RETURN_URL` | 支払の画面から戻る店舗の注文の画面の URL。`{orderId}` に注文 ID が入る | 必須 |
+| `ECSITE_PAYMENT_RETURN_URL` | 支払画面から戻る店舗の注文の画面の URL。`{orderId}` に注文 ID が入る | 必須 |
 | `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では立てない | false |
 | `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | 30m、1m |
-| `ECSITE_PAYMENT_AWAITING_AUTHORIZATION_WARNING` | 与信の通知を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに件数を出すか | 1h |
+| `ECSITE_PAYMENT_AWAITING_AUTHORIZATION_WARNING` | 与信の通知を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに件数を出力するか | 1h |
 | `ECSITE_PAYMENT_AUTHORIZATION_VALIDITY`、`_AUTHORIZATION_WARNING` | 与信の有効期間（与信の時刻からの時間）、与信期限のどれだけ前から「期限が近い」とするか | 7d、2d |
-| `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払の画面を出すバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを立てたら必須 |
+| `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払画面を表示するバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを立てたら必須 |
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API の秘密の鍵、通知の署名の鍵。Git に入れない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md) 第 5 節） | 決済の mock フラグを立てなければ必須 |
-| `ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT`、`_READ_TIMEOUT` | Stripe の API への接続、応答を待つ時間の上限（応答は 1 回の要求ごと。SDK の自動のやり直しは別に数える） | 5s、20s |
+| `ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT`、`_READ_TIMEOUT` | Stripe の API への接続、応答を待つ時間の上限（応答は 1 回の要求ごと。SDK の自動の再試行は別に数える） | 5s、20s |
 | `ECSITE_SHIPPING_MOCK_ENABLED` | 物流の mock フラグ。本番の実装がまだないので、`true` でなければ起動に失敗する。本番では立てない | false |
 | `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名の鍵。Git に入れない。ローカルと統合テストは試験用の値を設定ファイルに持つ | 必須 |
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |
@@ -46,13 +46,13 @@ profile の設定ファイルは本番の jar に入らない（[バックエン
 | `ECSITE_SCHEDULING_ENABLED` | 定期ジョブを自動で動かすか | true |
 | `ECSITE_SCHEDULING_EVENT_RESUBMISSION_INTERVAL`、`_MIN_AGE`、`_MAX_ATTEMPTS` | 未完了のイベントを再発行する間隔、再発行するイベントの発行からの時間の下限、処理の回数（発行の時の 1 回と再発行の回数）の上限 | 1m、5m、60 |
 | `ECSITE_SCHEDULING_EVENT_CLEANUP_INTERVAL`、`_RETENTION` | 処理の済んだイベントを片付ける間隔、保存期間（処理を終えた時刻から） | 1h、7d |
-| `ECSITE_INVENTORY_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの引当を片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、1d、1000 |
-| `ECSITE_ORDER_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの注文手続きを片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、1d、1000 |
-| `ECSITE_CART_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れのカートを片付ける間隔、保存期間（期限から）、1 回に消す件数の上限 | 1h、0d、1000 |
+| `ECSITE_INVENTORY_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの引当を片付ける間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、1d、1000 |
+| `ECSITE_ORDER_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れの注文手続きを片付ける間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、1d、1000 |
+| `ECSITE_CART_CLEANUP_INTERVAL`、`_RETENTION`、`_BATCH_SIZE` | 期限切れのカートを片付ける間隔、保存期間（期限から）、1 回に削除する件数の上限 | 1h、0d、1000 |
 
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省いたもの（`SPRING_DATASOURCE_USERNAME` など）。
-- マイグレーションは起動時には流さず、デプロイごとに 1 回だけ実行する。
-- ログは標準出力に JSON（Elastic Common Schema）で出る。
+- マイグレーションは起動時には適用せず、デプロイごとに 1 回だけ適用する。
+- ログは標準出力に JSON（Elastic Common Schema）で出力される。
 - 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](../backend/architecture.md) 第 7.3 節）を決めてから行う。
 
 ## 2. 管理画面
@@ -62,7 +62,7 @@ profile の設定ファイルは本番の jar に入らない（[バックエン
 | 環境変数 | 内容 | 既定 |
 |----------|------|------|
 | `VITE_OIDC_AUTHORITY` | IdP（運営者の realm） | `http://localhost:8180/realms/ec-admin` |
-| `VITE_OIDC_CLIENT_ID` | client の ID | `ec-admin-web` |
+| `VITE_OIDC_CLIENT_ID` | client ID | `ec-admin-web` |
 | `ADMIN_API_PROXY_TARGET` | 開発サーバーと `vite preview` の `/api` の転送先（E2E は 8090） | `http://localhost:8080` |
 
 ## 3. 店舗画面
@@ -74,7 +74,7 @@ profile の設定ファイルは本番の jar に入らない（[バックエン
 | `STORE_API_TIMEOUT_SECONDS` | 店舗 API の応答を待つ秒数の上限（正の数。でなければ起動に失敗する） | 30 |
 | `AUTH_KEYCLOAK_TIMEOUT_SECONDS` | IdP（ログイン、token の更新）の応答を待つ秒数の上限（正の数。でなければ起動に失敗する） | 10 |
 | `AUTH_KEYCLOAK_ISSUER` | IdP（消費者の realm） | `http://localhost:8180/realms/ec-store` |
-| `AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET` | client の ID と secret | `ec-store-web`、ローカル用の値 |
+| `AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET` | client ID と secret | `ec-store-web`、ローカル用の値 |
 | `AUTH_SECRET` | セッションの Cookie の暗号化の鍵 | ローカル用の値 |
 | `AUTH_URL` | 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を作る | `http://localhost:3000` |
 

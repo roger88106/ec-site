@@ -1,19 +1,19 @@
 ---
 name: new-screen
-description: ec-site のフロントに画面や操作を足すときの型。店舗画面（frontend/store、Next.js のサーバーコンポーネントとサーバーアクション）と管理画面（frontend/admin、TanStack Query の $api）の最小の例と、読むべき既存のファイル。画面・フォーム・ボタンの操作を作る、直すときに使う。
+description: ec-site のフロントに画面や操作を追加するときの型。店舗画面（frontend/store、Next.js のサーバーコンポーネントとサーバーアクション）と管理画面（frontend/admin、TanStack Query の $api）の最小の例と、読むべき既存のファイル。画面・フォーム・ボタンの操作を作る、修正するときに使う。
 ---
 
-# 画面を足すときの型
+# 画面を追加するときの型
 
 決まりの正本は [店舗画面の構成](../../../docs/frontend/apps/store.md) と [管理画面の構成](../../../docs/frontend/apps/admin.md)。
-本書はその要点と、そのまま写せる最小の例。迷ったら正本を読む（store.md 第 4〜6・8 節、admin.md 第 4〜6・8・9 節）。
+本書はその要点と、そのままコピーできる最小の例。迷ったら正本を読む（store.md 第 4〜6・8 節、admin.md 第 4〜6・8・9 節）。
 
 共通の前提：
 
-- 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に直す（開発の進め方 第 1 節）。
+- 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に修正する（開発の進め方 第 1 節）。
 - 画面の文言・コメントは日本語。コメントは何をするかを書き、決定の経緯はコミットメッセージに書く。
 - 表示の決まり（列挙の表示名、金額の整形など）は関数にして `lib/` か `features/<機能>/` に置き、単体テストを横に置く。
-- 終わったら `scripts/dev/check-frontend.sh <store|admin>` を通し、プレビューで表示を確かめる（skill `local-dev`）。
+- 終わったら `scripts/dev/check-frontend.sh <store|admin>` を通し、プレビューで表示を確認する（skill `local-dev`）。
 
 ## 店舗画面（`frontend/store`）
 
@@ -23,11 +23,11 @@ description: ec-site のフロントに画面や操作を足すときの型。�
 | `src/features/<機能>/components/` | 画面のコンポーネント。操作のあるコンポーネントだけ `'use client'` |
 | `src/actions/<資源>.ts` | サーバーアクション（`'use server'`）。変更系の API はここからだけ呼ぶ |
 | `src/api/client.ts` | `getApi()`、`UNCACHED` |
-| `src/api/result.ts` | `unwrap()`：404 → `notFound()`、それ以外の失敗 → `ApiError` を投げる（`error.tsx` に出る） |
+| `src/api/result.ts` | `unwrap()`：404 → `notFound()`、それ以外の失敗 → `ApiError` を投げる（`error.tsx` に表示される） |
 | `src/api/cartCookie.ts` | `readCartId()`（コンポーネントとアクション）、`writeCartId()`（アクションだけ） |
 | `src/lib/actionResult.ts` | `ActionResult`、`SUCCESS`、`toFailure()`、`CONNECTION_FAILED` |
 
-似た既存の例：取得の画面は `app/orders/[orderId]/page.tsx`、操作は `actions/order.ts` と `features/order/components/CancellationRequestForm.tsx`、カートの Cookie を使う操作は `actions/cart.ts`（404 で作り直す `withCart`）。
+似た既存の例：取得の画面は `app/orders/[orderId]/page.tsx`、操作は `actions/order.ts` と `features/order/components/CancellationRequestForm.tsx`、カートの Cookie を使う操作は `actions/cart.ts`（404 で再作成する `withCart`）。
 
 ### 取得（`app/<URL>/page.tsx`）
 
@@ -72,7 +72,7 @@ import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { readString } from '@/lib/server/formData'
 
 /**
- * 〇〇する。成功したら、〇〇の画面を表示し直す。<br />
+ * 〇〇する。成功したら、〇〇の画面を再表示する。<br />
  * フォームの項目：fooId、note。
  */
 export async function updateFoo(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
@@ -90,7 +90,7 @@ export async function updateFoo(_previous: ActionResult | null, formData: FormDa
 ```
 
 - 失敗は投げずに `ActionResult` で返す。会員の API（`getMemberApi()`）で 401 なら `redirectToLogin()`（`actions/order.ts`）。入力欄ごとのメッセージは `result.fieldErrors?.<項目名>`。
-- カートを変更するアクションは `readCartId()` で ID を読み、変更の後に `writeCartId()` で書き直す（有効期限を延ばす）。
+- カートを変更するアクションは `readCartId()` で ID を読み、変更の後に `writeCartId()` で再度書き込む（有効期限を延ばす）。
 
 ### フォーム（`features/<機能>/components/FooForm.tsx`）
 
@@ -127,12 +127,12 @@ export function FooForm({ fooId }: { fooId: string }) {
 |----------|------|
 | `src/features/<機能>/pages/FooPage.tsx` | 画面。取得とコンポーネントの組み立てだけ |
 | `src/features/<機能>/components/` | フォーム、表、操作のボタン |
-| `src/app/paths.ts` | 画面の URL の形（`routePatterns`）と、URL を作る関数（`paths`）を足す |
-| `src/app/router.tsx` | ルートを足す（path は `routePatterns`）。機能の入口なら `src/app/menu.ts` にも |
+| `src/app/paths.ts` | 画面の URL の形（`routePatterns`）と、URL を作る関数（`paths`）を追加する |
+| `src/app/router.tsx` | ルートを追加する（path は `routePatterns`）。機能の入口なら `src/app/menu.ts` にも |
 | `src/api/client.ts` | `$api`（openapi-react-query） |
-| `src/api/useApiMutation.ts` | 更新の操作（成功の知らせ、続きの処理、一覧の取り直し） |
+| `src/api/useApiMutation.ts` | 更新の操作（成功の知らせ、続きの処理、一覧の再取得） |
 | `src/api/useMutationGroup.ts` | 1 つの場所の複数の更新の操作の、待ち状態・最初のエラー・エラーの消去 |
-| `src/api/invalidate.ts` | 取り直すパスの前方一致 `ApiPathPrefix`。新しいパスは admin.md 第 4 節の表にも足す |
+| `src/api/invalidate.ts` | 再取得するパスの前方一致 `ApiPathPrefix`。新しいパスは admin.md 第 4 節の表にも追加する |
 | `src/components/` | `PageHeader`、`QueryState`、`ErrorMessage`、`ConfirmDialog`、`Pagination`、`DateTime`、`Price` |
 | `src/hooks/useVersionedForm.ts` | バージョンを持つリソースのフォーム（409 の扱い。admin.md 第 5 節） |
 
@@ -164,7 +164,7 @@ export function FooListPage() {
   return (
     <>
       <PageHeader title="〇〇" />
-      {/* 絞り込みのフォームは key={searchParams.toString()} で、URL が変わったら作り直す */}
+      {/* 絞り込みのフォームは key={searchParams.toString()} で、URL が変わったら再作成する */}
       <QueryState query={query}>
         {(result) => (
           <>
@@ -183,7 +183,7 @@ export function FooListPage() {
 }
 ```
 
-### 操作（更新、取り直し、toast、確認）
+### 操作（更新、再取得、toast、確認）
 
 ```tsx
 import { useApiMutation } from '@/api/useApiMutation'
@@ -195,7 +195,7 @@ import { Button } from '@/components/ui/button'
 export function FooActions({ fooId }: { fooId: string }) {
   const close = useApiMutation('put', '/foos/{fooId}/close', {
     success: '〇〇しました',
-    invalidate: ['/foos'], // 影響する取得をパスの前方一致で取り直す（admin.md 第 4 節の表）
+    invalidate: ['/foos'], // 影響する取得をパスの前方一致で再取得する（admin.md 第 4 節の表）
   })
   return (
     <div className="space-y-3">
@@ -215,16 +215,16 @@ export function FooActions({ fooId }: { fooId: string }) {
 
 - 操作が複数あれば `const { pending, error, resetErrors } = useMutationGroup(close, reopen)`。例は `features/product/components/VariantSection.tsx`。
 - 詳細の画面は `const { fooId = '' } = useParams()` と `$api.useQuery('get', '/foos/{fooId}', { params: { path: { fooId } } })`。
-- フォームは React Hook Form。サーバーの `errors[]` を欄に出すのは `api/formErrors.ts` の `setServerFieldErrors`。画面での検証は必須の未入力だけ。
+- フォームは React Hook Form。サーバーの `errors[]` を欄に表示するのは `api/formErrors.ts` の `setServerFieldErrors`。画面での検証は必須の未入力だけ。
 - 列挙の表示名は `lib/labels.ts`（または機能の `*.ts`）に置き、画面に文字列を直接書かない。
 
 ### 結合テスト（`pages/FooPage.test.tsx`）
 
 書き方は admin.md 第 9 節。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API はすべてハンドラーを渡す、テスト名に AC 番号。
 
-## 画面を足し終えたら
+## 画面を追加し終えたら
 
-- 利用者に、確かめる URL を全部挙げて伝える（店舗画面は `http://localhost:3000/...`、管理画面は `http://localhost:5173/...`。動的な部分は実際に開ける ID にする）。新しい画面は、メニューやヘッダーにリンクを足さない限りどこからも辿れないので、辿り方（メニューのどれか、どの画面のどのリンクか）も添える。
-- あわせて、何を足したか（ルート、メニュー・ヘッダーのリンク、API の呼び出し）を短く書く。リンクを足していない画面は、足すかを利用者に確かめる。
+- 利用者に、確認する URL を全部挙げて伝える（店舗画面は `http://localhost:3000/...`、管理画面は `http://localhost:5173/...`。動的な部分は実際に開ける ID にする）。新しい画面は、メニューやヘッダーにリンクを追加しない限りどこからも辿れないので、辿り方（メニューのどれか、どの画面のどのリンクか）も添える。
+- あわせて、何を追加したか（ルート、メニュー・ヘッダーのリンク、API の呼び出し）を短く書く。リンクを追加していない画面は、追加するかを利用者に確認する。
 
-出典：この節は [Ginz9013/t3-flare](https://github.com/Ginz9013/t3-flare) の site-builder（`references/build-features.md` の「Report the routes to the user」）を、このリポジトリ向けに書き直したもの（MIT。`../LICENSE-t3-flare`）。
+出典：この節は [Ginz9013/t3-flare](https://github.com/Ginz9013/t3-flare) の site-builder（`references/build-features.md` の「Report the routes to the user」）を、このリポジトリ向けに書き換えたもの（MIT。`../LICENSE-t3-flare`）。

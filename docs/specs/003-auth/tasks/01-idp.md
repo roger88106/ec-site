@@ -7,13 +7,13 @@
 
 ## 文書
 
-- [x] **T3101** constitution 9 のエラーレスポンスのステータスに、401（認証がない・無効）と 403（権限がない）を足す。`errorCode` は `UNAUTHENTICATED`、`FORBIDDEN`（plan 第 3.3 節）。
-- [x] **T3102** 用語集に、会員、会員 ID、IdP のアカウントの ID、運営者、運営者 ID、職務、権限、IdP、realm を足す。職務と権限（BR-12）の識別子（`administrator`、`viewer`、`resource:action`）も書く。
+- [x] **T3101** constitution 9 のエラーレスポンスのステータスに、401（認証がない・無効）と 403（権限がない）を追加する。`errorCode` は `UNAUTHENTICATED`、`FORBIDDEN`（plan 第 3.3 節）。
+- [x] **T3102** 用語集に、会員、会員 ID、IdP のアカウントの ID、運営者、運営者 ID、職務、権限、IdP、realm を追加する。職務と権限（BR-12）の識別子（`administrator`、`viewer`、`resource:action`）も書く。
 
 ## 開発環境
 
-- [x] **T3103** compose に Keycloak（ポート 8180。イメージのタグは着手の時点の最新の安定版に固定）と Mailpit（1025、8025）を足す。
-  - Keycloak の DB は、既存の PostgreSQL の別の database（`keycloak`）にし、初期化のスクリプトで作る。既存の DB の volume では初期化のスクリプトが走らないので、作り直す手順を README に書く。
+- [x] **T3103** compose に Keycloak（ポート 8180。イメージのタグは着手の時点の最新の安定版に固定）と Mailpit（1025、8025）を追加する。
+  - Keycloak の DB は、既存の PostgreSQL の別の database（`keycloak`）にし、初期化のスクリプトで作る。既存の DB の volume では初期化のスクリプトが走らないので、再作成する手順を README に書く。
   - Keycloak は起動時に `keycloak/realms/` の realm を取り込む。
 - [x] **T3104** 消費者の realm（`ec-store`）の設定を作り、JSON に書き出す（plan 第 2.1、2.3 節）。
   - client：`ec-store-web`（confidential、認可コード + PKCE、戻り先は店舗画面）、`ec-store-api`（audience 用）。`ec-store-web` の access token の audience に `ec-store-api` を入れる
@@ -28,7 +28,7 @@
   - パスワードの条件、ログインの失敗による一時的な停止、SSO セッションの時間、access token の有効期間
   - ローカル用の管理者 1 人、閲覧者 1 人
 - [x] **T3106** ログインの画面に、店舗のロゴと色だけを合わせる（既定のテーマを元にした最小のテーマ。spec の Non-goals）。
-- [x] **T3107** README の「起動とテスト」を直す：Keycloak と Mailpit の URL、ローカル用のアカウント、realm の設定を変えたときの取り込み直し方。skill `local-dev` に、Keycloak・Mailpit の起動と確認の手順を足す。
+- [x] **T3107** README の「起動とテスト」を修正する：Keycloak と Mailpit の URL、ローカル用のアカウント、realm の設定を変えたときの再取り込みの方法。skill `local-dev` に、Keycloak・Mailpit の起動と確認の手順を追加する。
 - [x] **T3108** 手動確認（Keycloak のアカウントの画面で行う）。
   - 消費者：会員登録（メールアドレスと氏名）→ 確認のメールが Mailpit に届く → リンクを開いてパスワードを設定する → ログインできる。登録済みのメールアドレスと、条件を満たさないパスワードは拒否される（AC-109、110）。パスワードの再設定のメールが届き、登録されていないメールアドレスでも同じ表示になる（AC-118）。5 回の失敗で一時的に止まる（AC-116）
   - 運営者：会員登録の入口がない（AC-134）。管理者・閲覧者でログインできる。会員のアカウントでは運営者の realm にログインできない（逆も。AC-133）

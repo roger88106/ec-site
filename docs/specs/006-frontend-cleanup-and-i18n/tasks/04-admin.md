@@ -6,7 +6,7 @@
 
 ## 更新の操作（DC-50）
 
-- [x] **T6401** [テスト] `useApiMutation`（成功の知らせ、一覧の取り直し）と `useMutationGroup`（待ち状態、最初のエラー、エラーの消去）の単体テスト。
+- [x] **T6401** [テスト] `useApiMutation`（成功の知らせ、一覧の再取得）と `useMutationGroup`（待ち状態、最初のエラー、エラーの消去）の単体テスト。
 - [x] **T6402** 2 つの hook を作り、26 か所を機能ごとに置き換える（税、カテゴリ、商品、在庫、注文の順。機能ごとに commit）。T6401 と既存の結合テストが通る。
 
 ## 画面の URL（DC-51）
@@ -17,8 +17,8 @@
 ## 入力の制約（DC-52）
 
 - [x] **T6405** [テスト] 制約の書き出しの script のテスト（`maxLength`・`minimum`・`maximum`、参照（`$ref`）、入れ子）。
-- [x] **T6406** `frontend/shared/scripts/` に制約の書き出しの script を作り、admin・store の `generate:api` で定数のファイルを作る。画面の入力の属性をこの定数に置き換える。数字を直接書いた所を探す検査を `scripts/ci/` に足し、CI で流す。
+- [x] **T6406** `frontend/shared/scripts/` に制約の書き出しの script を作り、admin・store の `generate:api` で定数のファイルを作る。画面の入力の属性をこの定数に置き換える。数字を直接書いた所を探す検査を `scripts/ci/` に追加し、CI で実行する。
 
 ## バリアントの行（P2）
 
-- [x] **T6407** `VariantSection` を見直し、まだ長ければ `VariantRow` に分ける（DC-53）。
+- [x] **T6407** `VariantSection` をレビューし、まだ長ければ `VariantRow` に分ける（DC-53）。

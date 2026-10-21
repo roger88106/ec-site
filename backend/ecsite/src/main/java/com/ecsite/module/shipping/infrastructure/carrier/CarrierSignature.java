@@ -11,7 +11,7 @@ import java.util.HexFormat;
 import java.util.Locale;
 
 /**
- * 物流サービスの通知の署名（docs/backend/modules/shipping.md「通知の受け口」）。<br />
+ * 物流サービスの通知の署名（docs/backend/modules/shipping.md「通知のエンドポイント」）。<br />
  * ヘッダーの値は {@code sha256=} と、本文のバイト列の HMAC-SHA256（16 進、小文字）。
  */
 public final class CarrierSignature {

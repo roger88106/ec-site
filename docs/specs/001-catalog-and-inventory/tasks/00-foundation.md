@@ -1,6 +1,6 @@
 # 段階 0：基盤
 
-空のアプリケーションが起動し、CI が通る状態を作る。以降の段階は、この上に機能を足すだけにする。
+空のアプリケーションが起動し、CI が通る状態を作る。以降の段階は、この上に機能を追加するだけにする。
 
 - 完了条件：ローカル用 profile でアプリが起動する。`./gradlew build`（単体・統合テスト）が通る。CI が通る。
 - 参照：constitution 2、5、7、9、12〜14、[plan](../plan.md) 第 4 節、MyIAM（`build.gradle.kts`、`libs.versions.toml`、`common/error`）
@@ -9,7 +9,7 @@
 
 - [x] **T001** `backend/` に Gradle（Kotlin DSL）のプロジェクトを作る。
   - `gradle/libs.versions.toml` は MyIAM を起点に、着手時点の最新安定版にする（Spring Boot 4.1.x、Spring Modulith、jOOQ、Testcontainers、Flyway、OpenAPI Generator 7.16 以降）。
-  - `lombok.config` は MyIAM から写す。ルートパッケージは `com.ecsite`。
+  - `lombok.config` は MyIAM からコピーする。ルートパッケージは `com.ecsite`。
   - MyIAM から除く依存：Spring Security と OAuth2（constitution 10）、Thymeleaf、Redis（constitution 2）。Guava を使う場合は `-android` ではなく `-jre` 版にする。
   - `.gitattributes` で改行を LF に揃える（Windows の `.bat` は CRLF）。`gradlew` が CRLF になると、Linux の CI で実行できないため。
   - 完了：空のアプリが `./gradlew bootRun` で起動する。
@@ -27,7 +27,7 @@
   - Spring Modulith のイベント発行記録のテーブルを、使用バージョンの公式 DDL から `common` schema に作る。
   - 完了：ローカルで起動するとマイグレーションが適用される。
 - [x] **T006** jOOQ のコード生成を、Gradle で「Testcontainers の PostgreSQL を起動 → Flyway を適用 → 生成」の順で行うようにする（MyIAM の `generateJooq` を Flyway 適用に置き換える）。生成物はコミットしない。
-- [x] **T007** ローカル用の seed の仕組みを作る（ローカル用 profile でだけ適用される別の場所のマイグレーション）。中身は各段階で足す。
+- [x] **T007** ローカル用の seed の仕組みを作る（ローカル用 profile でだけ適用される別の場所のマイグレーション）。中身は各段階で追加する。
 
 ## API の生成
 
@@ -53,7 +53,7 @@
     - `message` は画面にそのまま出せる日本語の文字列（メッセージのキーやパラメータの構造ではない）。
     - トレースの span がない状態（サンプリングされない場合など）でも、`traceId` を返し、例外ハンドラー自体が失敗しない。
 - [x] **T011** 例外体系を MyIAM から移植する（`ErrorCode`、`ErrorType`、`BusinessException`、`SystemException`、`GlobalExceptionHandler`、i18n メッセージ）。T010 を通す。
-  - MyIAM のまま写すと constitution 9 に合わない箇所があるので、次を直す。
+  - MyIAM のままコピーすると constitution 9 に合わない箇所があるので、次を修正する。
     - `message`：MyIAM はメッセージのキーとパラメータの構造を入れていて、日本語の文字列は `detail` に入っている。`message` に日本語の文字列を入れる。
     - `traceId`：MyIAM は 500 のときだけ返す。すべてのエラーで返す。
     - 500：MyIAM は `errorCode` と `message` を返さない。`SYSTEM_ERROR` とその文言を返す。
@@ -85,7 +85,7 @@
 - [x] **T019** 可観測性を設定する。
   - liveness / readiness、Prometheus のエンドポイントを公開する。
   - トレーシングを Zipkin へ送る。
-  - ログを JSON の構造化ログで標準出力に出し、トレース ID を含める。
+  - ログを JSON の構造化ログで標準出力に出力し、トレース ID を含める。
   - graceful shutdown を有効にする。
   - 完了：統合テストで liveness / readiness が 200 を返す。
 

@@ -2,11 +2,11 @@
 
 どのロールが、どの API の操作を実行できるかの一覧。認証と認可の方式は [バックエンドのアーキテクチャ](../backend/architecture.md) 第 7 節、ロールと権限の名前の意味は [用語集](../reference/glossary.md)にある。
 
-- 表は `scripts/ci/role-permissions.mjs` が、管理 API の契約（各操作の `x-required-permission`）、運営者の realm の設定（`docker/keycloak/realms/ec-admin-realm.json` のロール）、店舗 API の契約（各操作の `security`）から作る。手で直さない。
-- 契約か realm の設定を変えると、CI の検査が失敗する。ルートで `node scripts/ci/role-permissions.mjs --write` を流して表を書き直し、差分を確かめて commit する。
-- 管理画面は、権限のない画面のうちレポートの画面だけをメニューから外す（[管理画面](../frontend/apps/admin.md)）。ほかの操作は画面に出るが、権限がなければ API が 403 を返す。
+- 表は `scripts/ci/role-permissions.mjs` が、管理 API の契約（各操作の `x-required-permission`）、運営者の realm の設定（`docker/keycloak/realms/ec-admin-realm.json` のロール）、店舗 API の契約（各操作の `security`）から作る。手動で修正しない。
+- 契約か realm の設定を変えると、CI の検査が失敗する。ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認して commit する。
+- 管理画面は、権限のない画面のうちレポートの画面だけをメニューから外す（[管理画面](../frontend/apps/admin.md)）。ほかの操作は画面に表示されるが、権限がなければ API が 403 を返す。
 - 操作のパスは、契約の `servers.url`（管理 API は `/api/admin`、店舗 API は `/api/store`）の後ろの部分。
-- 管理 API の「ログインだけ」は、権限によらず、運営者としてログインしていればよい操作。店舗 API の「会員」はログインが要る操作、「任意」はログインしていれば会員として扱う操作（カート）、「不要」はログインの要らない操作。
+- 管理 API の「ログインだけ」は、権限によらず、運営者としてログインしていればよい操作。店舗 API の「会員」はログインが必要な操作、「任意」はログインしていれば会員として扱う操作（カート）、「不要」はログインが必要ない操作。
 
 <!-- generated:role-permissions -->
 ### ロールと権限
@@ -88,7 +88,7 @@
 | `GET /me/orders` | 自分の注文の一覧 | 会員 |
 | `GET /orders/{orderId}` | 注文の表示 | 会員 |
 | `PUT /orders/{orderId}/cancellation-request` | キャンセルの申請 | 会員 |
-| `POST /orders/{orderId}/payment-page` | 支払の画面を開く | 会員 |
+| `POST /orders/{orderId}/payment-page` | 支払画面を開く | 会員 |
 | `GET /shop` | 店舗の情報 | 不要 |
 | `GET /prefectures` | 都道府県の一覧 | 不要 |
 | `GET /prefectures/{prefectureCode}/municipalities` | 都道府県の市区町村の一覧 | 不要 |

@@ -3,7 +3,7 @@ name: writing-for-agents
 description: Writing documents for agents. Use when creating or editing skills, or modifying AGENTS.md or CLAUDE.md.
 ---
 
-<!-- 説明（日本語）：エージェントが読む文書（skill、AGENTS.md など）の書き方の手引き。skill や AGENTS.md を作る・直すときに使う。retro もこれを参照する。詳しい決まり（frontmatter、呼び出し方の選び方）は同じフォルダーの SKILL-MECHANICS.md。出典は mattpocock/skills（MIT）で、本文は原文のまま。末尾にこのリポジトリ向けの追記がある。 -->
+<!-- 説明（日本語）：エージェントが読む文書（skill、AGENTS.md など）の書き方の手引き。skill や AGENTS.md を作る・修正するときに使う。retro もこれを参照する。詳しい決まり（frontmatter、呼び出し方の選び方）は同じフォルダーの SKILL-MECHANICS.md。出典は mattpocock/skills（MIT）で、本文は原文のまま。末尾にこのリポジトリ向けの追記がある。 -->
 
 Reference for writing any document an agent consumes: a skill, an `AGENTS.md` / `CLAUDE.md`, a doc reached by a pointer. The packaging differs; the writing does not: the same levers make each one predictable, since the agent takes the same _process_ every run rather than producing the same output.
 
@@ -85,5 +85,5 @@ You win twice: fewer tokens, and a sharper hook for the agent to hang its thinki
 ## このリポジトリでの使い方
 
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
-- skill を足す・消す・役割を変えるときは、同じ commit で AGENTS.md「skill の一覧」も直す。一覧には名前と、いつ使うかを 1 行で書き、`description` を写さない。
+- skill を追加する・削除する・役割を変えるときは、同じ commit で AGENTS.md の skill の表も修正する。表には名前と、いつ使うかを 1 行で書き、`description` をそのまま転記しない。
 - 外から取り込んだ skill は原文の言語のまま置き、frontmatter の直後に日本語の説明をコメントで書く（開発の進め方 第 3 節）。

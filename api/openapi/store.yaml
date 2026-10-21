@@ -472,15 +472,15 @@ paths:
       x-error-codes: [ORDER_NOT_PAYABLE, PAYMENT_GATEWAY_UNAVAILABLE]
       security:
         - memberToken: []
-      summary: 支払の画面を開く（AC-143、151、152）
+      summary: 支払画面を開く（AC-143、151、152）
       description: |
-        決済サービスの支払の画面の URL を返す。店舗画面はこの URL に移す。
+        決済サービスの支払画面の URL を返す。店舗画面はこの URL に移す。
         開いている画面があれば同じ URL を返し、決済サービスに作り直させない（AC-152）。
         支払待ちで支払の期限の前の注文だけ。それ以外は 409（`errorCode`：`ORDER_NOT_PAYABLE`）。
         決済サービスに届かない・時間内に応答がない・その側の故障のときは 502（`errorCode`：`PAYMENT_GATEWAY_UNAVAILABLE`）。しばらくしてからやり直せる（AC-295）。
       responses:
         '200':
-          description: 支払の画面
+          description: 支払画面
           content:
             application/json:
               schema:
@@ -1316,7 +1316,7 @@ components:
           description: キャンセルを申請できる（受付で、まだ申請していないとき。AC-95）
         pay:
           type: boolean
-          description: 支払の画面に移れる（支払待ちで、支払の期限の前のとき。AC-151）
+          description: 支払画面に移れる（支払待ちで、支払の期限の前のとき。AC-151）
     PaymentPage:
       type: object
       required: [url]
@@ -1324,7 +1324,7 @@ components:
         url:
           type: string
           format: uri
-          description: 決済サービスの支払の画面の URL
+          description: 決済サービスの支払画面の URL
     OrderSummaryPage:
       allOf:
         - $ref: '#/components/schemas/PageMeta'

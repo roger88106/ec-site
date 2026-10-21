@@ -4,16 +4,16 @@
 
 | 列 | 内容 | 書き方 |
 |----|------|--------|
-| 要約 | spec の AC の定義の最初の文（40 字まで） | 作り直す |
-| 状態 | 有効（spec のとおり）、変更（後の spec か設計の文書で内容が変わった）、廃止（今は成り立たない） | 手で書く |
-| 元の spec | AC を定義した spec | 作り直す |
-| 変えた spec | 変更・廃止にした spec。有効なら「—」 | 手で書く |
-| 今の内容 | 今の内容が書いてある所。有効なら「spec」、変更なら設計の文書か後の spec へのリンク | 手で書く |
-| テスト | AC をテスト名に持つテストのファイル（3 つまで）。テストがなく除外の一覧にあれば「除外」、どちらもなければ「なし」 | 作り直す |
+| 要約 | spec の AC の定義の最初の文（40 字まで） | 再生成する |
+| 状態 | 有効（spec のとおり）、変更（後の spec か設計の文書で内容が変わった）、廃止（今は成り立たない） | 手動で書く |
+| 元の spec | AC を定義した spec | 再生成する |
+| 変えた spec | 変更・廃止にした spec。有効なら「—」 | 手動で書く |
+| 今の内容 | 今の内容が書いてある所。有効なら「spec」、変更なら設計の文書か後の spec へのリンク | 手動で書く |
+| テスト | AC をテスト名に持つテストのファイル（3 つまで）。テストがなく除外の一覧にあれば「除外」、どちらもなければ「なし」 | 再生成する |
 
 - CI の検査 `ac-check`（[CI の検査](../dev/ci.md)）がこの一覧を読む。spec と一覧の AC が食い違うとき、状態が有効・変更・廃止でないとき、表が古いとき、廃止の AC をテストが参照しているときに失敗する。有効・変更の AC にテストも除外もないときは、CI でだけ失敗する（手元は警告）。
-- テストや spec を変えて表が古くなったら、ルートで `node scripts/ci/ac-check.mjs --write` を流して書き直し、差分を確かめる。手で書く列は残る。
-- spec で AC を足す・変えるときは、同じ commit でこの一覧の状態を直す（[開発の進め方](../process/workflow.md)）。
+- テストや spec を変えて表が古くなったら、ルートで `node scripts/ci/ac-check.mjs --write` を実行して再生成し、差分を確認する。手動で書く列は残る。
+- spec で AC を追加する・変えるときは、同じ commit でこの一覧の状態を修正する（[開発の進め方](../process/workflow.md)）。
 
 <!-- generated:ac-list -->
 | AC | 要約 | 状態 | 元の spec | 変えた spec | 今の内容 | テスト |
@@ -56,7 +56,7 @@
 | AC-36 | 終了日時は開始日時より後。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-37 | 商品に画像を複数登録し、並び順を変えられる。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `MediaApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 3 |
 | AC-38 | バリアントに画像を 1 枚指定できる（任意）。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `OrderCatalogApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 3 |
-| AC-39 | 形式は JPEG、PNG、WebP（US-13 で、AC-67 の形式を足す）。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `MediaApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 1 |
+| AC-39 | 形式は JPEG、PNG、WebP（US-13 で、AC-67 の形式を追加する… | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `MediaApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 1 |
 | AC-40 | 1 商品あたり最大 20 枚。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `ProductEditPage.test.tsx`、`ProductImageApiTest`、`ProductTest` |
 | AC-41 | 新しいバリアントの在庫数は 0。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `CatalogEventHandlerTest`、`InventoryApiTest` |
 | AC-42 | 在庫数は、増減量（例：+10、-3）と理由で調整する。 | 有効 | [001](../specs/001-catalog-and-inventory/spec.md) | — | spec | `InventoryApiTest`、`JooqStockItemRepositoryTest`、`StockAdjustmentTest` ほか 1 |
@@ -160,16 +160,16 @@
 | AC-140 | 職務の付け外しと、アカウントの無効化は、一定時間（plan で決める）のうちに管… | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest`、`RealmSettingsContractTest` |
 | AC-141 | 管理画面で権限のない操作をすると、「権限がない」と示す。 | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `StockPage.test.tsx`、`errors.test.ts`、`permission.spec.ts` |
 | AC-142 | 在庫の調整（AC-45 の履歴）、注文のキャンセルの申請の承認・却下、運営者の判… | 有効 | [003](../specs/003-auth/spec.md) | — | spec | `CancellationApiTest`、`InventoryApiTest`、`StockPage.test.tsx` |
-| AC-143 | 注文手続きで注文すると、注文は「支払待ち」で作られ、決済サービスの支払の画面に移… | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`OrderTest` ほか 2 |
+| AC-143 | 注文手続きで注文すると、注文は「支払待ち」で作られ、決済サービスの支払画面に移る… | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`OrderTest` ほか 2 |
 | AC-144 | 「支払待ち」の注文を作ると、全品目の在庫数を減らす。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PlaceOrderApiTest` |
 | AC-145 | カード番号は決済サービスの画面で入力する。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-146 | 決済サービスで総額の与信が成功すると、注文は「受付」になる。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`PaymentApiTest` ほか 2 |
 | AC-147 | 与信が成功すると、注文した品目（バリアント）をカートから除く。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `CartTest`、`OrderPaymentApiTest`、`payment.spec.ts` |
-| AC-148 | カードが拒否されたときは、決済サービスの画面で別のカードを入力してやり直せる。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `payment.spec.ts` |
+| AC-148 | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-149 | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-150 | 戻った時点で与信の結果が EC に届いていなければ、注文の画面に「支払の確認中」… | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
-| AC-151 | 支払の期限の前なら、「支払待ち」の注文の画面から、支払の画面に移り直して支払える… | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 1 |
-| AC-152 | 同じ注文で支払の画面に何度移っても、与信は 1 回だけ取られる。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentApiTest` |
+| AC-151 | 支払の期限の前なら、「支払待ち」の注文の画面から、支払画面に移り直して支払える。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 1 |
+| AC-152 | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentApiTest` |
 | AC-153 | 支払の期限（BR-16）までに与信が成功しなかった注文は、キャンセルになり、明細… | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`PaymentExpiryJobTest` ほか 2 |
 | AC-154 | 期限切れのキャンセルは、期限から一定時間（plan で決める）のうちに行われる。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentExpiryJobTest` |
 | AC-155 | 期限切れのキャンセルの理由は「支払期限切れ」とし、注文の詳細（店舗・管理画面）に… | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `CancellationSection.test.tsx`、`OrderDetailPage.test.tsx`、`OrderPaymentApiTest` ほか 3 |
@@ -181,7 +181,7 @@
 | AC-161 | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderListPage.test.tsx`、`OrderPaymentApiTest` |
 | AC-162 | 与信済みの注文がキャンセルになると、与信を取り消す。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` ほか 1 |
 | AC-163 | キャンセルは、与信の取消の結果を待たずに成立する。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderPaymentApiTest` |
-| AC-164 | 与信の取消に失敗したら、取り消せるまでやり直す。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `PaymentVoidTest` |
+| AC-164 | 与信の取消に失敗したら、取り消せるまで再試行する。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `PaymentVoidTest` |
 | AC-165 | 与信の取消が済むまで、管理画面の注文の詳細に「与信の取消待ち」と示す。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderPaymentApiTest`、`PaymentVoidTest` |
 | AC-166 | 同じ与信の取消が重ねて行われても、成功し、何も変わらない。 | 有効 | [007](../specs/007-payment/spec.md) | — | spec | `PaymentTest`、`PaymentVoidTest` |
 | AC-167 | 運営者は、「受付」の注文詳細で、配送業者と送り状番号を入れて出荷を登録できる。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderShipmentTest`、`ShipmentApiTest` ほか 1 |
@@ -195,14 +195,14 @@
 | AC-175 | 同じ通知が重ねて届いても、1 回だけ反映する。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`ShipmentTest` |
 | AC-176 | 通知の順序が入れ替わっても、配送状態は戻らない（例：「配達完了」の後に「配送中」… | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`ShipmentTest` |
 | AC-177 | 途中の状態の通知が届かなくても、後の状態に進む（例：「出荷済み」から「配達完了」… | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`ShipmentTest` |
-| AC-178 | 署名を確かめられない通知と、登録済みのどの出荷とも合わない通知は、処理しない。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`MockCarrierTest` |
+| AC-178 | 署名を確認できない通知と、登録済みのどの出荷とも合わない通知は、処理しない。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`MockCarrierTest` |
 | AC-179 | 店舗の注文詳細に、配送状態、配送業者、送り状番号を示す。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `ShippingApiTest`、`StoreOrderShipmentApiTest`、`labels.test.ts` ほか 1 |
 | AC-180 | 店舗の注文一覧で、出荷後の注文は、注文状態の代わりに配送状態を示す。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest`、`labels.test.ts`、`shipping.spec.ts` |
 | AC-181 | 管理画面の注文詳細に、配送状態、配送業者、送り状番号、出荷日時を示す。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx` |
 | AC-182 | 管理画面の注文一覧で、状態「出荷済み」で絞り込める。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderListPage.test.tsx` |
 | AC-183 | 出荷を登録すると、注文のメールアドレスに、注文番号、配送業者、送り状番号を書いた… | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `ShipmentMailTest`、`shipping.spec.ts` |
 | AC-184 | 出荷登録は、メール送信の結果を待たない。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `ShipmentMailTest` |
-| AC-185 | やり直しても、1 つの出荷につき出荷通知メールは 1 通だけ届く。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `ShipmentMailTest` |
+| AC-185 | 再試行しても、1 つの出荷につき出荷通知メールは 1 通だけ届く。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `ShipmentMailTest` |
 | AC-186 | 管理画面の注文一覧と注文詳細で、与信期限（BR-20）が近い「受付」の注文に、そ… | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx`、`OrderListPage.test.tsx` ほか 1 |
 | AC-187 | 管理画面の注文一覧で、与信期限が近い注文を絞り込める。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderListPage.test.tsx`、`PaymentAuthorizationDeadlineTest` ほか 1 |
 | AC-188 | 与信期限を過ぎた注文を出荷すると、売上確定に失敗する（AC-169）。 | 有効 | [009](../specs/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`PaymentAuthorizationDeadlineTest`、`PaymentRefundTest` ほか 1 |
@@ -228,7 +228,7 @@
 | AC-208 | 生年月日の分からない会員の注文は、年齢層「不明」として数える。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `AgeGroupTest`、`CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest` ほか 2 |
 | AC-209 | IdP の会員登録の画面で、生年月日を入れられる。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
 | AC-210 | 生年月日は任意とする。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest` |
-| AC-211 | 会員は、IdP のアカウントの画面で、後から生年月日を入れる・直すことができる。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest` |
+| AC-211 | 会員は、IdP のアカウントの画面で、後から生年月日を入れる・修正することができ… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest` |
 | AC-212 | 注文の成立のときに、その時点の年齢を注文に記録する。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest`、`RealmSettingsContractTest` |
 | AC-213 | 未来の日付と、明らかにありえない日付（120 年より前など）は受け付けない。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest` |
 | AC-214 | 運営者は、権限を持つレポートだけを管理画面のメニューに見て、開ける。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportPermission.test.tsx`、`ReportPermissionApiTest`、`report.spec.ts` |
@@ -246,27 +246,27 @@
 | AC-226 | 決済と物流に、それぞれ mock フラグがある。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
 | AC-227 | 決済のフラグを立てず、Stripe の設定（鍵）が足りなければ、バックエンドは起… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
 | AC-228 | 物流のフラグを立てなければ、バックエンドは起動に失敗する。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
-| AC-229 | mock の支払の画面と、mock の配送業者の画面（通知の操作を含む）は、その… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
+| AC-229 | mock の支払画面と、mock の配送業者の画面（通知の操作を含む）は、そのサ… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
 | AC-230 | 決済・物流のサービスを選ぶ今の設定（mock か Stripe かの選択）をなく… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
 | AC-231 | ローカルの設定は、決済と物流のフラグを立てる。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ProfileFlagsTest` |
-| AC-232 | 店舗 API の契約で会員の token が要る操作は、すべて token なし… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest`、`StoreOperationSecurityTest` |
-| AC-233 | 契約で token が要らない操作（商品の閲覧、匿名のカートなど）は、token… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest`、`StoreOperationSecurityTest` |
-| AC-234 | 契約と認可の設定が食い違う（契約で token が要るのに、token なしで通… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest` |
-| AC-235 | 業務ポートは、店舗 API・管理 API・決済と物流の通知の口・mock の口（… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `BusinessPortAccessTest` |
+| AC-232 | 店舗 API の契約で会員の token が必要な操作は、すべて token な… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest`、`StoreOperationSecurityTest` |
+| AC-233 | 契約で token が必要ない操作（商品の閲覧、匿名のカートなど）は、token… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest`、`StoreOperationSecurityTest` |
+| AC-234 | 契約と認可の設定が食い違う（契約で token が必要なのに、token なしで… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `StoreApiTokenContractTest` |
+| AC-235 | 業務ポートは、店舗 API・管理 API・決済と物流の通知のエンドポイント・mo… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `BusinessPortAccessTest` |
 | AC-236 | 死活監視とメトリクスは、運用ポートだけで出す。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ManagementPortTest` |
 | AC-237 | 運用ポートの番号は設定で変えられ、ローカルの既定は業務ポートとぶつからない。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ManagementPortConfigTest` |
-| AC-238 | 管理画面を本番モードでビルドするとき、IdP の接続先と client の ID… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `oidcEnv.test.ts` |
+| AC-238 | 管理画面を本番モードでビルドするとき、IdP の接続先と client ID が… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `oidcEnv.test.ts` |
 | AC-239 | 管理画面の開発モードとテストは、今までどおりローカルの IdP の既定値で動く。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `oidcEnv.test.ts` |
 | AC-240 | 店舗画面は、公開する URL（origin）を環境変数で受け取る。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `publicUrl.test.ts` |
 | AC-241 | 店舗画面のログインの戻り先と、ログアウトの後の戻り先は、公開する URL から作… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `loginRedirect.test.ts`、`publicUrl.test.ts` |
-| AC-242 | 店舗画面の任意の設定（API の応答を取り直す間隔など）も、必須の設定と同じ 1… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `publicUrl.test.ts` |
+| AC-242 | 店舗画面の任意の設定（API の応答を再取得する間隔など）も、必須の設定と同じ … | 有効 | [015](../specs/015-security/spec.md) | — | spec | `publicUrl.test.ts` |
 | AC-243 | ローカル環境（compose）のサービスのポートは、既定では手元のマシン（127… | 有効 | [015](../specs/015-security/spec.md) | — | spec | 除外 |
 | AC-244 | バックエンドの本番の jarに、ローカル・E2E・Stripe の sandbo… | 有効 | [015](../specs/015-security/spec.md) | — | spec | 除外 |
 | AC-245 | 本番の jarを、ローカルの profile を指定して起動しても、mock フ… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ProductionJarStartupTest` |
-| AC-246 | mock の決済の、テストだけで使う操作（次の操作を失敗させる、状態を消すなど）… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `MockPaymentGatewayOperationsTest` |
+| AC-246 | mock の決済の、テストだけで使う操作（次の操作を失敗させる、状態を削除するな… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `MockPaymentGatewayOperationsTest` |
 | AC-247 | 1 つの設定を変えるだけで、compose のすべてのサービスのポートを、同じネ… | 有効 | [015](../specs/015-security/spec.md) | — | spec | 除外 |
 | AC-248 | 注文手続きの画面のお届け先は、都道府県・市区町村・それより下の住所を、別の欄で入… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx` |
-| AC-249 | 市区町村の一覧は、選んだ都道府県の市区町村だけを出す。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`region.test.ts` |
+| AC-249 | 市区町村の一覧は、選んだ都道府県の市区町村だけを表示する。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`region.test.ts` |
 | AC-250 | 都道府県と市区町村の一覧は、店舗 API のマスターデータから得る。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`StoreRegionApiTest` |
 | AC-251 | 注文の確定は、選んだ都道府県に属さない市区町村、またはマスターデータにないコード… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`PlaceOrderApiTest` |
 | AC-252 | 注文の詳細（店舗画面・管理画面）は、お届け先を、都道府県名・市区町村名・それより… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`ShippingAddressDetails.test.tsx`、`order.spec.ts` |
@@ -278,45 +278,45 @@
 | AC-258 | 注文は、お届け先の都道府県と市区町村をコードで持つ。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `PlaceOrderApiTest`、`ShippingAddressTest` |
 | AC-259 | 都道府県と市区町村のマスターデータは、全国の都道府県（47）と市区町村を、最初の… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `RegionApiTest` |
 | AC-260 | 郵便番号のマスターデータは、構造と、開発とテストに使う一部の郵便番号だけを、最初… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `RegionApiTest` |
-| AC-261 | 既にある注文は、都道府県名をコードに直し、住所の先頭をマスターデータの市区町村名… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ShippingAreaMigrationTest` |
-| AC-262 | 売上レポートの都道府県別の集計は、注文の都道府県のコードを使い、都道府県名から引… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`ReportApiTest`、`labels.test.ts` |
+| AC-261 | 既にある注文は、都道府県名をコードに変換し、住所の先頭をマスターデータの市区町村… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ShippingAreaMigrationTest` |
+| AC-262 | 売上レポートの都道府県別の集計は、注文の都道府県のコードを使い、都道府県名から再… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`ReportApiTest`、`labels.test.ts` |
 | AC-263 | 都道府県・市区町村・郵便番号の表は、マスターデータのほかに持たない（バックエンド… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-264 | 注文手続きの画面は、入力の誤り（400）の欄ごとの文を、API の応答の文のまま… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`placeOrderErrors.test.ts` |
-| AC-265 | 店舗 API の入力の誤りの文は、消費者が読んで直せる文にする。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `PlaceOrderApiTest` |
+| AC-265 | 店舗 API の入力の誤りの文は、消費者が読んで修正できる文にする。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `PlaceOrderApiTest` |
 | AC-266 | エラーの文に上限・桁数などの値を入れるときは、数字を文に書かず、正となる所から差… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `MessageInterpolationTest` |
 | AC-267 | 店舗 API の注文の応答は、キャンセルの申請の結果（申請していない、申請中、承… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `orderState.test.ts` |
 | AC-268 | 管理 API の注文の応答は、キャンセルの時に在庫を戻すかを運営者に聞くかを返す… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`ReturnedOrderCancellationApiTest`、`ShipmentApiTest` |
 | AC-269 | 管理 API の商品の応答は、商品を削除できないときの理由を返す。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx` |
-| AC-270 | 管理 API の分類の応答は、子の分類を足せるかを返す。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `CategoryApiTest`、`CategoryPage.test.tsx` |
+| AC-270 | 管理 API の分類の応答は、子の分類を追加できるかを返す。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `CategoryApiTest`、`CategoryPage.test.tsx` |
 | AC-271 | 店舗画面と管理画面は、API の応答の操作の可否と理由のほかに、注文の状態や商品… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-272 | 管理 API の契約は、商品の画像の形式・大きさの上限・枚数の上限を、型の制約で… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `FieldConstraintContractTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 1 |
 | AC-273 | 管理 API の契約は、分類の深さの上限を示し、バックエンドの上限と一致する。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `FieldConstraintContractTest` |
 | AC-274 | 店舗 API と管理 API の契約は、操作ごとに、返しうるエラーのコードの一覧… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ErrorCodeCheckTest`、`ErrorCodeContractTest` |
 | AC-275 | バックエンドのエラーのコードと、契約のエラーのコードの一覧が食い違うと、CI で… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ErrorCodeContractTest` |
 | AC-276 | 管理 API の商品のバリアントの追加は、作ったバリアントの URL を応答の … | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ProductApiTest` |
-| AC-277 | モジュールの間で列挙を写すときは、すべての値の対応を、コンパイルかテストで確かめ… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
+| AC-277 | モジュールの間で列挙を写すときは、すべての値の対応を、コンパイルかテストで確認す… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `BasisTest`、`StatusHistoryEntryTest` |
 | AC-279 | 列挙を文字列で持つデータベースの列は、すべて取りうる値を制約で限る。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `EnumColumnConstraintTest` |
 | AC-280 | 業務の日付を切る時間帯（日本時間）は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-281 | 時点の税率の判定は 1 か所で決める。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | 除外 |
 | AC-282 | 分類の深さの上限は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `ProductListApiTest` |
 | AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`RegionApiTest`、`postalCodeFill.test.ts` |
-| AC-284 | 片付けの定期ジョブが、次のデータを保存期間を過ぎたら消す。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CartTest`、`CheckoutCleanupJobTest` ほか 2 |
+| AC-284 | 片付けの定期ジョブが、次のデータを保存期間を過ぎたら削除する。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CartTest`、`CheckoutCleanupJobTest` ほか 2 |
 | AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変えられる。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
-| AC-286 | 片付けは、注文・支払・出荷と、未完了のイベント・止めたイベントを消さない。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CheckoutCleanupJobTest`、`EventCleanupJobTest` |
+| AC-286 | 片付けは、注文・支払・出荷と、未完了のイベント・止めたイベントを削除しない。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CheckoutCleanupJobTest`、`EventCleanupJobTest` |
 | AC-287 | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バッ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
-| AC-288 | 片付けのジョブは、データごとに消した件数をログに出す。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest`、`EventCleanupJobTest` ほか 1 |
-| AC-289 | 期限切れのカート・注文手続きを消した後に、そのカート・注文手続きを使う操作は、今… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest` |
+| AC-288 | 片付けのジョブは、データごとに削除した件数をログに出力する。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest`、`EventCleanupJobTest` ほか 1 |
+| AC-289 | 期限切れのカート・注文手続きを削除した後に、そのカート・注文手続きを使う操作は、… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest` |
 | AC-290 | 再発行しても処理に失敗し続けるイベントは、決めた回数（設定で変えられる）を超えた… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `EventResubmissionJobTest`、`EventResubmissionSettingsTest` |
-| AC-291 | イベントを止めたとき、イベントの種類と ID をエラーのログに出す。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `EventResubmissionJobTest` |
-| AC-292 | 未完了のイベントの件数と止めたイベントの件数を、運用ポートのメトリクスで出す。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `EventResubmissionJobTest` |
-| AC-293 | 止めたイベントは、片付けで消さずに残す。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `EventResubmissionJobTest` |
-| AC-294 | 外部サービスのエラーは、どのモジュールでも 502 と、やり直せることを示すメッ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `StripePaymentGatewayTest` |
+| AC-291 | イベントを止めたとき、イベントの種類と ID をエラーのログに出力する。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `EventResubmissionJobTest` |
+| AC-292 | 未完了のイベントの件数と止めたイベントの件数を、運用ポートのメトリクスで公開する… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `EventResubmissionJobTest` |
+| AC-293 | 止めたイベントは、片付けで削除せずに残す。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `EventResubmissionJobTest` |
+| AC-294 | 外部サービスのエラーは、どのモジュールでも 502 と、再試行できることを示すメ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `StripePaymentGatewayTest` |
 | AC-295 | 支払画面を作るとき、決済サービスのエラーなら 502 を返す。 | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `OrderPaymentApiTest`、`StripePaymentGatewayTest` |
 | AC-296 | 画像の確定で、画像の変換のサービスに接続できない、時間内に応答がない、変換のサー… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ProductImageServiceErrorApiTest` |
 | AC-297 | 画像の確定で、変換のサービスがファイルを読めない（ファイルの側の問題）ときだけ、… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `ImgproxyImageConverterFailureTest` |
 | AC-298 | 画像の確定で、ファイル保存のサービスのエラーなら 502 を返す（受付は署名付き… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `ProductImageServiceErrorApiTest`、`S3ObjectStorageFailureTest` |
-| AC-299 | 店舗画面と管理画面は、外部サービスのエラーを受けたら、やり直せることを示すメッセ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `ProductEditPage.test.tsx`、`checkout.test.ts` |
+| AC-299 | 店舗画面と管理画面は、外部サービスのエラーを受けたら、再試行できることを示すメッ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `ProductEditPage.test.tsx`、`checkout.test.ts` |
 | AC-300 | API の規約に、外部サービスのエラーの扱いと、OpenAPI の外のエンドポイ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | 除外 |
 | AC-301 | バックエンドから決済サービスとファイル保存のサービスへの呼び出しに、接続と応答の… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `S3ObjectStorageFailureTest`、`StripeConfigTest` |
 | AC-302 | 店舗画面のサーバー側から、バックエンドと IdP への呼び出しに、待つ時間の上限… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `config.test.ts`、`timeout.test.ts` |
@@ -324,9 +324,9 @@
 | AC-304 | 画像の確定は、画像の変換と保存のサービスを、データベースのトランザクションの外で… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-305 | 画像を公開の保存先に置いた後に、画像の登録か商品への追加が失敗したら、置いたファ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-306 | 他のモジュールの、外部サービスを呼ぶ処理も、データベースのトランザクションの外で… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `MediaApiTest`、`PaymentRefundTest`、`PaymentVoidTest` ほか 1 |
-| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出して… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `withActionResult.test.ts` |
+| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力し… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `withActionResult.test.ts` |
 | AC-308 | 店舗画面のサーバー側で、バックエンドから 5xx を受けたら、警告のログに状態コ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `client.test.ts` |
-| AC-309 | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照らせる（[フロン… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `client.test.ts` |
+| AC-309 | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[フロ… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `client.test.ts` |
 | AC-310 | 支払の期限切れのジョブは、1 件の支払で例外（種類を問わない）が起きても、その支… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest` |
 | AC-311 | 決済サービスで支払済みのまま与信の通知を待つ支払が 1 回の処理の件数を超えてた… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest`、`PaymentExpiryJobTest`、`PaymentTest` |
 | AC-312 | 与信の通知を待つ支払が、待ち始めてから決めた時間（設定で変えられる）を過ぎても残… | 有効 | [017](../specs/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest` |

@@ -35,11 +35,11 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | イベント発行記録 | `event_publication` | 発行したイベントと、リスナーごとの処理の完了を記録する表 |
 | 定期ジョブのロック | `shedlock` | 同じ定期ジョブを、同時に 1 インスタンスだけで動かすためのロック（ShedLock）の表 |
 | 片付け | `cleanup`（`XxxCleanupJob`） | 不要になったデータ（期限切れ、処理の済んだもの）を、保存期間を過ぎたら消す定期ジョブ。データを持つモジュールに置く |
-| 保存期間 | `retention` | 片付けで消すまでに、データを残す期間。起点（期限、処理を終えた時刻）はデータごとに決める |
+| 保存期間 | `retention` | 片付けで削除するまでに、データを残す期間。起点（期限、処理を終えた時刻）はデータごとに決める |
 | 止めたイベント | `completion_attempts` が上限を超えた記録 | 再発行の上限まで処理に失敗し、再発行を止めたイベント。処理を終えていないので、片付けで消えない |
-| 外部サービスのエラー | `ErrorType.EXTERNAL_SERVICE_ERROR` | 外部サービス（決済、画像の変換、ファイルの保存）が応えない・失敗したこと。やり直せるエラーとして 502 で返す |
+| 外部サービスのエラー | `ErrorType.EXTERNAL_SERVICE_ERROR` | 外部サービス（決済、画像の変換、ファイルの保存）が応えない・失敗したこと。再試行できるエラーとして 502 で返す |
 | マスターデータ | - | デプロイせずに運営者や外部のデータで変わる、業務が参照するデータ（税率、都道府県、市区町村、郵便番号）。データベースに持つ（バックエンドのアーキテクチャ 第 6.4 節） |
-| 正となる所 | - | ある値を決めている、ただ 1 つの場所（データベース、設定、domain の定数）。ほかの所（画面、契約）は、そこから得るか、一致をテストで確かめる |
+| 正となる所 | - | ある値を決めている、ただ 1 つの場所（データベース、設定、domain の定数）。ほかの所（画面、契約）は、そこから得るか、一致をテストで確認する |
 | 業務の時間帯 | `BusinessTime.ZONE` | 業務の日付を切る時間帯（日本時間）。時刻は UTC で持ち、日付にするときだけ使う |
 
 ## 認証
@@ -54,7 +54,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 運営者 | `Operator` | 運営者の realm のアカウントを持ち、管理画面を使う人。EC に表は持たない |
 | 運営者 ID | `Operator` の `id` | 運営者の IdP のアカウントの ID |
 | 権限 | `permission` | 管理 API の操作に必要な許可。`resource:action` の形（例：`product:write`）。運営者の realm の `ec-admin-api` の client role |
-| 職務 | `role` | 運営者に割り当てる権限の組。管理者（`administrator`）、管理職（`manager`）、営業（`sales`）、閲覧者（`viewer`）。管理職と営業は、閲覧者の権限にレポートの権限を足したもの |
+| 職務 | `role` | 運営者に割り当てる権限の組。管理者（`administrator`）、管理職（`manager`）、営業（`sales`）、閲覧者（`viewer`）。管理職と営業は、閲覧者の権限にレポートの権限を追加したもの |
 | 会員のカート | | 会員に結び付いたカート。会員ごとに 1 つで、どの端末からでも同じ |
 | カートを移す | `merge` | ログインせずに使っていたカートの品目を、会員のカートへ移すこと |
 
@@ -96,7 +96,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 表示条件 | `isVisibleAt` | C 側に表示される条件（公開状態が「公開」で、公開期間内） |
 | 販売停止 | `salesSuspended` / `sales_suspended` | バリアントを C 側で選べなくする |
 | 商品画像 | `ProductImage` / `product_image` | 商品の画像。メディアモジュールのアセット ID と並び順を持つ |
-| 代表画像 | `representativeImage` | 商品の画像の並びの先頭。一覧に出す |
+| 代表画像 | `representativeImage` | 商品の画像の並びの先頭。一覧に表示する |
 | 商品検索 | `ProductSearch` | キーワード検索の窓口 |
 | 商品照会 | `ProductQueryRepository` | カテゴリ・価格帯などの条件による一覧 |
 
@@ -154,13 +154,13 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 
 | 用語 | 識別子 | 意味 |
 |------|--------|------|
-| 決済サービス | `PaymentGateway` | 支払の画面と与信を提供する外部のサービス（Stripe）。テストと既定は mock |
+| 決済サービス | `PaymentGateway` | 支払画面と与信を提供する外部のサービス（Stripe）。テストと既定は mock |
 | 支払 | `Payment` / `payment` | 1 つの注文の代金の支払。注文に 1 つ |
 | 支払の状態 | `PaymentStatus` / `status` | 未払い（`UNPAID`）、与信済み（`AUTHORIZED`）、与信の取消待ち（`VOID_PENDING`）、与信の取消済み（`VOIDED`）、支払なし（`NOT_PAID`）、売上確定済み（`CAPTURED`）、与信期限切れ（`AUTHORIZATION_EXPIRED`）、返金待ち（`REFUND_PENDING`）、返金済み（`REFUNDED`） |
 | 与信 | `authorization` | カードの利用枠を、総額だけ確保すること（オーソリ）。売上の確定（出荷の時）までは代金を受け取らない |
 | 与信の取消 | `void` | 確保した与信を解くこと。売上の確定の前なので、返金ではない |
 | 与信の参照 | `authorizationRef` / `authorization_ref` | 決済サービスでの与信の ID。与信を取り消すときに使う |
-| 支払の画面 | `PaymentPage` / `page_id`・`page_url` | 消費者がカード番号を入力する、決済サービスの画面（Stripe Checkout） |
+| 支払画面 | `PaymentPage` / `page_id`・`page_url` | 消費者がカード番号を入力する、決済サービスの画面（Stripe Checkout） |
 | 支払の期限 | `deadline` | 注文日時 ＋ 30 分。過ぎても与信がなければ、注文はキャンセル（支払期限切れ）になる |
 | 通知を待つ支払 | `awaiting_authorization_since` | 期限を過ぎたが、決済サービスで支払が済んでいて期限切れにできなかった未払いの支払。与信の成功の通知を待つ。識別子は待ち始めた時刻 |
 
@@ -174,7 +174,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | アップロードのバケット | `incoming-bucket` | アップロードされたままのファイルを置く、非公開のバケット |
 | 配信のバケット | `public-bucket` | 確定したアセットを置く、公開のバケット（本番は CDN の後ろ） |
 | 配信のキー | `storage_key` | 配信のバケットの中のファイルの場所。上書きしない |
-| 確定 | `prepareImage`・`registerImage` | アップロードしたファイルを確かめ、変換して配信のバケットへ置き、アセットを記録すること |
+| 確定 | `prepareImage`・`registerImage` | アップロードしたファイルを確認し、変換して配信のバケットへ置き、アセットを記録すること |
 | 変換 | `ImageConverter` | 受け付けた画像を WebP にし、向きを画素に反映してメタデータを除くこと（imgproxy が行う） |
 
 ## 出荷
@@ -202,7 +202,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 日本郵便 | 未確認 | 未確認 | 未確認 |
 
 - ヤマト運輸は、mock が通知する名前。
-- 佐川急便と日本郵便の追跡の表示は確かめていない。実在の物流サービスにつなぐときに確かめて、表に足す。それまでは、この 2 社の通知は何も変えない。
+- 佐川急便と日本郵便の追跡の表示は確認していない。実在の物流サービスにつなぐときに確認して、表に追加する。それまでは、この 2 社の通知は何も変えない。
 
 ## 店舗と通知
 
@@ -269,28 +269,28 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 整理の spec | | 消費者・運営者に見える振る舞いを変えずに、規則・テスト・構成・コードを整える spec。利用者は開発者とエージェント（開発の進め方 第 1 節） |
 | MVP の完成までの一覧 | `docs/specs/mvp.md` | MVP を完成させるまでの spec の順と理由 |
 | TODO 一覧 | `docs/todo.md` | MVP の後に行う作業と未決事項の一覧。アーカイブしない |
-| CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が流す、文書とコードの検査の script。手元では `scripts/ci/check-all.sh` でまとめて流す（[CI の検査](../dev/ci.md)） |
-| 書き方の規則 | `docs/*/coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確かめ方の形でまとめた文書（[書き方の規則と見直し](../process/review.md)） |
+| CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。手元では `scripts/ci/check-all.sh` でまとめて実行する（[CI の検査](../dev/ci.md)） |
+| 書き方の規則 | `docs/*/coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確認方法の形でまとめた文書（[書き方の規則とレビュー](../process/review.md)） |
 | 引き継ぎの文書 | `/.local/handoff/` | 作業を別のセッションに引き継ぐための文書。Git に入れない（AGENTS.md） |
 | カバレッジ | | テストで実行されたコードの割合（行・分岐）。報告だけに使い、基準の値で CI を失敗させない |
 | mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使い、立てなければ本番の実装を使う。ローカルと E2E の設定だけで立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
-| テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock を包み、失敗を起こす・呼ばれた操作を記録する操作を足した実装。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
-| 業務ポート | `server.port` | API と mock の画面を出すポート（ローカル 8080、E2E 8090）。公開するのはこのポートだけ |
-| 運用ポート | `management.server.port` | 死活監視とメトリクス（`/actuator/*`）を出すポート（ローカル 9080、E2E 9090）。外に出さない |
-| 契約テスト | `*ContractTest` | 外部のものとの約束を確かめるテスト。外部連携の port の実装（mock と本物）が同じ振る舞いを守ることを、同じテストで確かめるもの（`PaymentGatewayContractTest`）と、IdP の設定ファイルの値を確かめるもの（`RealmSettingsContractTest`）がある |
+| テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock を包み、失敗を起こす・呼ばれた操作を記録する操作を追加した実装。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
+| 業務ポート | `server.port` | API と mock の画面を提供するポート（ローカル 8080、E2E 8090）。公開するのはこのポートだけ |
+| 運用ポート | `management.server.port` | 死活監視とメトリクス（`/actuator/*`）を提供するポート（ローカル 9080、E2E 9090）。外部に公開しない |
+| 契約テスト | `*ContractTest` | 外部のものとの約束を確認するテスト。外部連携の port の実装（mock と本物）が同じ振る舞いを守ることを、同じテストで確認するもの（`PaymentGatewayContractTest`）と、IdP の設定ファイルの値を確認するもの（`RealmSettingsContractTest`）がある |
 | 非同期の処理の待ち | `AsyncEvents` | 統合テストで、コミットの後に動くイベントのリスナーが終わる（または失敗する）のを、イベントの発行の記録で待つ補助（[テストの書き方](../testing/writing.md) 第 5 節） |
 | 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドの書き方](../backend/coding.md) 第 1.1 節） |
-| 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に写すクラス。口は使う層の `port/`、実装は `infrastructure/directory/` |
+| 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に変換するクラス。インターフェースは使う層の `port/`、実装は `infrastructure/directory/` |
 | 参照の service | `XxxQueryService` | データを変えない application の service。読み取り専用のトランザクションで、view（または外部への要求の型）を返し、集約を返さない（[バックエンドの書き方](../backend/coding.md) 第 1.1 節） |
 | 更新の service | `XxxCommandService` など | データを変える application の service。参照だけのメソッドを持たない |
-| view | `application/model/view/` | 参照の service が返す、表示や使う側に要る項目だけの型。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
+| view | `application/model/view/` | 参照の service が返す、表示や使う側に必要な項目だけの型。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
 | 作成の応答 | `CreatedResponses` | 作成の API の応答（201、作成したものの Location、作成した ID）。共通の補助で作る |
-| テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確かめる script。対応は spec の名前の対応のファイル（`renames.txt`）に書く |
+| テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確認する script。対応は spec の名前の対応のファイル（`renames.txt`）に書く |
 | 共通の値の型 | `common/model/value/` | 2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つ値の型（金額、文字の長さの上限など） |
 | メッセージのキー | `ecsite.<モジュール>.<名前>` | エラーの文を `messages.properties` から引くためのキー。エラーの定義（enum の定数）の名前から決まる |
 | 共有パッケージ | `frontend/shared`（`@ec-site/shared`） | 店舗画面と管理画面の両方で使う、UI のコンポーネント・関数・文言を置くパッケージ（[フロントの書き方](../frontend/coding.md) 第 5.1 節） |
 | 共有の文言 | `common.*` | 共有パッケージの文言。2 つの画面で同じ役割の文を置き、各画面の文言と浅く合わせて使う（[フロントの書き方](../frontend/coding.md) 第 7.1 節） |
-| 整形の関数 | `@ec-site/shared/lib/format` | 金額・価格・日時・税額・郵便番号・軸の値を、画面に出す文にする関数。2 つの画面で共有する |
-| 表示名 | `labels.ts` | API の列挙の値を画面に出す名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`（[フロントの書き方](../frontend/coding.md) 第 1.1 節） |
-| 文言のキーのコメントの検査 | `scripts/ci/message-comments.mjs` | 画面のコードで文言を引く `t('…')` の呼び出しに、出る文を示すコメントがあることを確かめる script（[コメントの書き方](../process/comments.md) 第 6.1 節） |
+| 整形の関数 | `@ec-site/shared/lib/format` | 金額・価格・日時・税額・郵便番号・軸の値を、画面に表示する文にする関数。2 つの画面で共有する |
+| 表示名 | `labels.ts` | API の列挙の値を画面に表示する名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`（[フロントの書き方](../frontend/coding.md) 第 1.1 節） |
+| 文言のキーのコメントの検査 | `scripts/ci/message-comments.mjs` | 画面のコードで文言を引く `t('…')` の呼び出しに、出る文を示すコメントがあることを確認する script（[コメントの書き方](../process/comments.md) 第 6.1 節） |

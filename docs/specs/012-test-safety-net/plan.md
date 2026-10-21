@@ -13,12 +13,12 @@
 | E2E の要素の選び方と補助 | 第 5 節 | DS-30、DC-109 |
 | 管理画面のテスト | 第 6 節 | DC-107、DC-113、DC-115 |
 | 店舗画面のテスト | 第 7 節 | DC-114 |
-| 段階と確かめ方 | 第 8 節、第 9 節 | すべて |
+| 段階と確認方法 | 第 8 節、第 9 節 | すべて |
 
 共通の決定：
 
-- 足す・直すテストは、今のコードで通ることを確かめた後、確かめる所のコードを仮に壊して失敗することを確かめ、戻す（DN-12）。壊した所と結果は、tasks のタスクの下に 1 行で書く。
-- 本 spec ではテストを足す・直すだけで、テストのために本番のコードを変えない。例外は DC-102 の属性と、第 2.3 節の E2E の設定の値。
+- 追加する・修正するテストは、今のコードで通ることを確認した後、確認する所のコードを仮に壊して失敗することを確認し、戻す（DN-12）。壊した所と結果は、tasks のタスクの下に 1 行で書く。
+- 本 spec ではテストを追加する・修正するだけで、テストのために本番のコードを変えない。例外は DC-102 の属性と、第 2.3 節の E2E の設定の値。
 
 ## 1. テスト名とカバレッジの検査
 
@@ -27,21 +27,21 @@
 | 項目 | 決定 |
 |------|------|
 | 置き場所 | 新しい `scripts/ci/test-names.mjs`（`check-all.sh` が拾う）と、そのテスト |
-| 確かめること | `src/test`・`src/integrationTest` の `@Test`・`@ParameterizedTest` のメソッドに `@DisplayName` がある |
+| 確認すること | `src/test`・`src/integrationTest` の `@Test`・`@ParameterizedTest` のメソッドに `@DisplayName` がある |
 | 今の漏れ | `EcSiteApplicationTests.contextLoads` に名前を付ける |
-| 文書 | テストの書き方の規則の一覧で、第 2.2 節の確かめ方を「人手」から検査に直す。CI の検査の一覧（`docs/dev/ci.md`）に足す |
+| 文書 | テストの書き方の規則の一覧で、第 2.2 節の確認方法を「人手」から検査に修正する。CI の検査の一覧（`docs/dev/ci.md`）に追加する |
 
-理由：AC とテストの対応の検査と同じく、テストのソースを読むだけで確かめられる。`ac-check` は AC を照らす検査なので、別の script にして、失敗したときの意味を分ける。
+理由：AC とテストの対応の検査と同じく、テストのソースを読むだけで確認できる。`ac-check` は AC を照合する検査なので、別の script にして、失敗したときの意味を分ける。
 
-### 1.2 IdP の設定ファイルで確かめる AC（DC-106）
+### 1.2 IdP の設定ファイルで確認する AC（DC-106）
 
-テストの書き方の第 1 節に、IdP（Keycloak）の振る舞いは realm の設定ファイルの契約テスト（`RealmSettingsContractTest`）で確かめる、と書き、対象の AC（AC-109、110、116、118、134、210、211）と理由を表にする。
+テストの書き方の第 1 節に、IdP（Keycloak）の振る舞いは realm の設定ファイルの契約テスト（`RealmSettingsContractTest`）で確認する、と書き、対象の AC（AC-109、110、116、118、134、210、211）と理由を表にする。
 
 理由：IdP は自分たちで作っていない。設定が正しければ IdP が振る舞いを守る前提で、実機のテストは IdP の取り替えのときの E2E（会員の登録・ログイン）に任せる。
 
 ### 1.3 カバレッジの薄い所（DC-117）
 
-`scripts/ci/report/coverage-summary.mjs` に、行のカバレッジが低い順の 10 件を足す。
+`scripts/ci/report/coverage-summary.mjs` に、行のカバレッジが低い順の 10 件を追加する。
 
 | 報告 | 単位 | 除くもの |
 |------|------|----------|
@@ -52,26 +52,26 @@
 
 ## 2. 時間で待たない（DS-29）
 
-### 2.1 「起きないこと」の確かめ（DC-97）
+### 2.1 「起きないこと」の確認（DC-97）
 
-今、`await().during(…)` で固定の時間（0.5〜1 秒）を見るテストが 15 か所ある。どれも、裏で動く事象の受け手（Spring Modulith の非同期の listener）が「何もしない」ことを確かめている。
+今、`await().during(…)` で固定の時間（0.5〜1 秒）を見るテストが 15 か所ある。どれも、裏で動く事象の受け手（Spring Modulith の非同期の listener）が「何もしない」ことを確認している。
 
 | 項目 | 決定 |
 |------|------|
 | 待つ条件 | Modulith の事象の発行の記録で、テストで発行した事象の受け渡しがすべて完了した（未完了がない） |
-| 補助 | `src/integrationTest` の共通の補助（名前は tasks で決める）に、「発行の記録の未完了がなくなるまで待つ」を置く。各テストは待った後に、起きた数を `assertThat` で確かめる |
+| 補助 | `src/integrationTest` の共通の補助（名前は tasks で決める）に、「発行の記録の未完了がなくなるまで待つ」を置く。各テストは待った後に、起きた数を `assertThat` で確認する |
 | 条件で待てない所 | 事象を通らない処理（なければ置かない）。共通の補助 `Eventually.stays` 相当で固定の時間を見て、使う所に理由のコメントを書く |
 
 理由：受け手が終わったことが分かれば、遅い環境でも早く見終わって誤って通ることがなく、速い環境で無駄に待たない。
 
 ### 2.2 時間で待つことの検査（DC-98）
 
-`scripts/ci/time-waits.mjs` の対象に足す。
+`scripts/ci/time-waits.mjs` の対象に追加する。
 
 | 書き方 | 例 |
 |--------|-----|
 | Awaitility の固定の時間 | `.during(`、`.pollDelay(` |
-| 決まった時間の後に見直す | `setTimeout(` を `Promise` で待つ（`new Promise((resolve) => setTimeout(resolve, …))`） |
+| 決まった時間の後にレビューする | `setTimeout(` を `Promise` で待つ（`new Promise((resolve) => setTimeout(resolve, …))`） |
 
 DC-97 の共通の補助のファイルは除く（除く理由を script のコメントに書く）。
 
@@ -79,8 +79,8 @@ DC-97 の共通の補助のファイルは除く（除く理由を script のコ
 
 | テスト | 今 | 決定 |
 |--------|----|------|
-| 公開の開始（`reservation.spec.ts`、AC-35） | 商品を作る前に「今から 8 秒後」を決める。準備が 8 秒を超えると失敗する | 商品を作って開始前の表示を確かめた**後に**、開始日時を「今から数秒後」に変える（公開の期間を変える API）。開始前の確かめが、準備の時間によらない |
-| 支払いの期限（`payment.spec.ts`、AC-153、155） | 期限 30 秒、見る間隔 2 秒、最大で 120 秒 | `application-e2e.yml` の期限を 12 秒、間隔を 1 秒にする。ほかの支払いの E2E（注文から mock の画面で支払うまで）が期限に収まることを、CI で 3 回流して確かめる。収まらなければ 15 秒にする |
+| 公開の開始（`reservation.spec.ts`、AC-35） | 商品を作る前に「今から 8 秒後」を決める。準備が 8 秒を超えると失敗する | 商品を作って開始前の表示を確認した**後に**、開始日時を「今から数秒後」に変える（公開の期間を変える API）。開始前の確認が、準備の時間によらない |
+| 支払いの期限（`payment.spec.ts`、AC-153、155） | 期限 30 秒、見る間隔 2 秒、最大で 120 秒 | `application-e2e.yml` の期限を 12 秒、間隔を 1 秒にする。ほかの支払いの E2E（注文から mock の画面で支払うまで）が期限に収まることを、CI で 3 回実行して確認する。収まらなければ 15 秒にする |
 
 期限は E2E のバックエンドの設定の値で、画面と API の振る舞いは変わらない（DN-13）。
 
@@ -98,34 +98,34 @@ DC-97 の共通の補助のファイルは除く（除く理由を script のコ
 
 | 項目 | 決定 |
 |------|------|
-| spec 002 | AC-90 の行に「カートを空にする所は spec 007 の AC-147 で置き換えた」と書き足す。ほかは変えない |
-| テスト | `PlaceOrderApiTest` に、注文が成立すると注文番号（形式）が振られることを確かめるテストを、名前に AC-90 を入れて足す |
+| spec 002 | AC-90 の行に「カートを空にする所は spec 007 の AC-147 で置き換えた」と書き加える。ほかは変えない |
+| テスト | `PlaceOrderApiTest` に、注文が成立すると注文番号（形式）が振られることを確認するテストを、名前に AC-90 を入れて追加する |
 | 入れ子のクラスの名前 | 「AC-87、88、89、90、91、92 注文の成立」から AC 番号を除く（まとまりの名前には AC を書かない。spec 011 の検査の修正に合わせる） |
-| 除外の一覧 | `ac-exclusions.json` から AC-90 を消す |
+| 除外の一覧 | `ac-exclusions.json` から AC-90 を削除する |
 
 ### 3.2 補助をまとめる（DC-108）
 
 | 補助 | 今 | 決定 |
 |------|----|------|
-| 商品の作成 | `CatalogTestData` を 23 のクラスが使い、`ProductApiTest`・`ProductListApiTest` は自分の `createProduct`・`addVariant` を持つ | `CatalogTestData` を使う。応答そのものを確かめる所（登録の API のテスト）は残し、理由をコメントに書く |
+| 商品の作成 | `CatalogTestData` を 23 のクラスが使い、`ProductApiTest`・`ProductListApiTest` は自分の `createProduct`・`addVariant` を持つ | `CatalogTestData` を使う。応答そのものを確認する所（登録の API のテスト）は残し、理由をコメントに書く |
 | 注文までの準備 | カート、注文の手続きの開始、注文の HTTP の呼び出しを、5 つのクラスがそれぞれ書く | `OrderTestData` に置く |
-| 配送先 | 配送先の JSON を 8 か所で書く。郵便番号は `"100-0001"` と `"1000001"` が混ざる | `OrderTestData` に置き、郵便番号は `"100-0001"` にそろえる。ハイフンのない形を確かめるテストは、そのテストの中で値を書く |
+| 配送先 | 配送先の JSON を 8 か所で書く。郵便番号は `"100-0001"` と `"1000001"` が混ざる | `OrderTestData` に置き、郵便番号は `"100-0001"` にそろえる。ハイフンのない形を確認するテストは、そのテストの中で値を書く |
 
 ### 3.3 確定させるテストの片付け（DC-110）
 
-テストの書き方 第 3.1 節に足す：
+テストの書き方 第 3.1 節に追加する：
 
 - `@Transactional` で巻き戻せないテスト（非同期の受け手、並行、別のトランザクション）は、テストごとに作る値（UUID、実行の印）でデータを分ける。
-- そのテストは、自分のデータだけを確かめる。表の全体の数や、一覧の全体を確かめない。
-- 片付け（`@AfterEach` で消す）は要らない。DB はテストの実行ごとに作る（Testcontainers）。今ある片付けは残してよい。
+- そのテストは、自分のデータだけを確認する。表の全体の数や、一覧の全体を確認しない。
+- 片付け（`@AfterEach` で削除する）は必要ない。DB はテストの実行ごとに作る（Testcontainers）。今ある片付けは残してよい。
 
-該当するテスト（`PaymentExpiryJobTest`、`ReportCollectionTest` など）を読み、全体を確かめている所があれば直す。
+該当するテスト（`PaymentExpiryJobTest`、`ReportCollectionTest` など）を読み、全体を確認している所があれば修正する。
 
-理由：消す処理は、消し漏れと、消す順序（外部キー）の手間がある。実行ごとに DB を作るので、分けて確かめれば十分。
+理由：削除する処理は、削除漏れと、削除する順序（外部キー）の手間がある。実行ごとに DB を作るので、分けて確認すれば十分。
 
 ### 3.4 税込価格の Java と SQL（DC-116）
 
-`TaxCalculator`（Java、1 円未満を切り捨て）と `PriceInclTaxField`（SQL の `floor`）を、同じ入力の表で照らす統合テストを、catalog の persistence に置く。
+`TaxCalculator`（Java、1 円未満を切り捨て）と `PriceInclTaxField`（SQL の `floor`）を、同じ入力の表で照合する統合テストを、catalog の persistence に置く。
 
 | 入力 | 例 |
 |------|-----|
@@ -139,18 +139,18 @@ SQL は、テストの中で `PriceInclTaxField` の式を DB で評価する。
 
 ### 4.1 Stripe の実装
 
-今の `StripePaymentGatewayTest`（JDK の `HttpServer` で Stripe の代わりをする、Spring を起動しない）に足す。
+今の `StripePaymentGatewayTest`（JDK の `HttpServer` で Stripe の代わりをする、Spring を起動しない）に追加する。
 
-| 対象 | 確かめること |
+| 対象 | 確認すること |
 |------|--------------|
 | 支払いの画面の作成 | 求める内容（与信だけのモード、期限、戻り先の URL、冪等のキー）と、応答から画面の URL を返すこと |
 | 画面を閉じる | 閉じる要求を送る。閉じ済みを成功とみなす |
 | 与信の取り消し | 取り消しの要求を送る。取り消し済みを成功とみなす。ほかの失敗は例外 |
-| 通知の受け口 | `StripeWebhookController` を MockMvc の slice で呼び、署名が正しければ受け手に渡し、正しくなければ 400 を返して渡さない |
+| 通知のエンドポイント | `StripeWebhookController` を MockMvc の slice で呼び、署名が正しければ受け手に渡し、正しくなければ 400 を返して渡さない |
 
 ### 4.2 mock と Stripe の共通の振る舞い
 
-`PaymentGateway` の共通の振る舞いを、抽象のテストのクラスにまとめ、mock と Stripe（`HttpServer`）の 2 つの子のクラスで流す。
+`PaymentGateway` の共通の振る舞いを、抽象のテストのクラスにまとめ、mock と Stripe（`HttpServer`）の 2 つの子のクラスで実行する。
 
 | 振る舞い | 例 |
 |----------|-----|
@@ -161,23 +161,23 @@ Stripe の側は、`HttpServer` が状態を持つ（同じキーに同じ応答
 
 ### 4.3 mock の支払いの画面
 
-`MockPaymentPageController`（今 0%）を MockMvc で呼び、画面を出す、支払う、やめるで、戻り先と mock の支払いの状態が変わることを確かめる。
+`MockPaymentPageController`（今 0%）を MockMvc で呼び、画面を表示する、支払う、やめるで、戻り先と mock の支払いの状態が変わることを確認する。
 
 ## 5. E2E の要素の選び方と補助（DS-30、DC-109）
 
-### 5.1 選び方を直す所（DC-101、DC-102）
+### 5.1 選び方を修正する所（DC-101、DC-102）
 
 | 所 | 今 | 決定 |
 |----|----|------|
-| 管理画面の詳細の項目（支払い、配送 など） | `dt` の文字 ＋ `xpath=following-sibling::dd[1]` | 画面の項目の値（`dd`）に、項目名（`dt`）を指す `aria-labelledby` を足し、`getByRole('definition', { name })` で選ぶ。詳細の項目を出す共通の部品があれば、そこで足す。<br />→ Biome の検査（`useAriaPropsSupportedByRole`）が `dd` の `aria-labelledby` を認めないので、属性は足さない（2026-10-17 利用者）。`dt` の次の `dd` を選ぶ書き方は、E2E の補助 1 か所（`e2e/src/detail.ts`）にまとめる |
+| 管理画面の詳細の項目（支払い、配送 など） | `dt` の文字 ＋ `xpath=following-sibling::dd[1]` | 画面の項目の値（`dd`）に、項目名（`dt`）を指す `aria-labelledby` を追加し、`getByRole('definition', { name })` で選ぶ。詳細の項目を表示する共通の部品があれば、そこで追加する。<br />→ Biome の検査（`useAriaPropsSupportedByRole`）が `dd` の `aria-labelledby` を認めないので、属性は追加しない（2026-10-17 利用者）。`dt` の次の `dd` を選ぶ書き方は、E2E の補助 1 か所（`e2e/src/detail.ts`）にまとめる |
 | 数量の表示 | `locator('p', { hasText: /^3$/ })` | 数量の要素に名前を付け（`aria-label` など）、名前で選ぶ |
-| 管理画面の横のメニュー | `[data-sidebar="sidebar"]` | `getByRole('navigation', { name })`。名前がなければ `aria-label` を足す |
+| 管理画面の横のメニュー | `[data-sidebar="sidebar"]` | `getByRole('navigation', { name })`。名前がなければ `aria-label` を追加する |
 | 会員の画面の項目 | `locator('dd').first()` | 上の詳細の項目と同じ |
 | 商品の公開の選択 | `:not(option)` | 役割と名前で選ぶ |
 | 画像 | `locator('img')` | `getByRole('img', { name })`（代替の文字） |
 | 並びの 1 つ目（`.first()`） | 3 か所 | 名前で 1 つに絞る。同じ名前が並ぶ所は、行（`getByRole('row', { name })`）で絞る |
 
-足す属性の文言は、画面のメッセージのファイル（`messages/ja.json`）に置く（表示の文言の検査に合わせる）。画面のテストは変えずに通る（DC-102）。
+追加する属性の文言は、画面のメッセージのファイル（`messages/ja.json`）に置く（表示の文言の検査に合わせる）。画面のテストは変えずに通る（DC-102）。
 
 ### 5.2 IdP の画面（DC-103）
 
@@ -187,26 +187,26 @@ Keycloak の画面の要素（`#email`、`#password-new` など）を選ぶの�
 
 | 補助 | 決定 |
 |------|------|
-| 会員の登録 | `registerMember` を「登録の画面に入れて送る」と「メールのリンクでパスワードを決める」の 2 つに分け、`member.spec.ts` は途中を確かめながらそれを使う |
+| 会員の登録 | `registerMember` を「登録の画面に入れて送る」と「メールのリンクでパスワードを決める」の 2 つに分け、`member.spec.ts` は途中を確認しながらそれを使う |
 | カートを空にする | 機能紹介の撮影（`showcase/capture.spec.ts`）も `e2e/src/store.ts` の `emptyCart` を使う |
-| 読み直して条件を待つ | `reload` して `expect` を `toPass` で繰り返す処理を、共通の補助 1 つにする（第 2.4 節の定数を使う） |
+| 再読み込みして条件を待つ | `reload` して `expect` を `toPass` で繰り返す処理を、共通の補助 1 つにする（第 2.4 節の定数を使う） |
 
 ## 6. 管理画面のテスト
 
 ### 6.1 時間切れで落ちるテスト（DC-107）
 
-`ProductCreatePage.test.tsx` の AC-15 の時間を測り、遅い所（入力の数、`user-event` の待ち、MSW の応答）を直す。直した後、店舗画面と管理画面のテストを続けて 5 回流し、落ちないことを確かめる。既定の時間切れ（5 秒）は延ばさない。
+`ProductCreatePage.test.tsx` の AC-15 の時間を測り、遅い所（入力の数、`user-event` の待ち、MSW の応答）を修正する。修正した後、店舗画面と管理画面のテストを続けて 5 回実行し、落ちないことを確認する。既定の時間切れ（5 秒）は延ばさない。
 
 ### 6.2 ログインの門（DC-113）
 
 `AuthGate` のテストを、`react-oidc-context` の `useAuth` を差し替えて書く。
 
-| 確かめること | AC |
+| 確認すること | AC |
 |--------------|-----|
 | ログインしていなければ、子を出さず、IdP へ移る（今の画面を戻り先にする） | AC-132 |
 | effect が 2 回動いても、IdP へ移るのは 1 回 | |
-| ログインしていれば、子と運営者の名前を出し、API に token を渡す | |
-| 401 で IdP へ移り、ログインし直した直後の 401 では繰り返さない | |
+| ログインしていれば、子と運営者の名前を表示し、API に token を渡す | |
+| 401 で IdP へ移り、再ログインした直後の 401 では繰り返さない | |
 
 今の AC-132 のテスト（`returnPath` の関数）は残す。
 
@@ -214,10 +214,10 @@ Keycloak の画面の要素（`#email`、`#password-new` など）を選ぶの�
 
 | 対象 | 今 | 決定 |
 |------|----|------|
-| 税区分の一覧と登録（`TaxCategoryListPage`、`CreateTaxCategoryForm`） | 直接のテストがない | 一覧、登録、名前の重複のエラーのページのテストを足す |
+| 税区分の一覧と登録（`TaxCategoryListPage`、`CreateTaxCategoryForm`） | 直接のテストがない | 一覧、登録、名前の重複のエラーのページのテストを追加する |
 | カバレッジが 0% のファイル | `AuthGate`、`oidc.ts`、`main.tsx`、`NotFoundPage` | `AuthGate` は第 6.2 節。`NotFoundPage` は表示のテスト。`main.tsx`・`oidc.ts`（起動の入り口と設定の値）は対象外 |
 
-段階の始めにカバレッジを取り直し、ロジックを持つのにページのテストでしか通らない部品（`TaxRatesEditor`、`OrderActions` など）で、分岐が通っていない所があれば足す。
+段階の始めにカバレッジを再取得し、ロジックを持つのにページのテストでしか通らない部品（`TaxRatesEditor`、`OrderActions` など）で、分岐が通っていない所があれば追加する。
 
 ## 7. 店舗画面のテスト（DC-114）
 
@@ -233,15 +233,15 @@ Keycloak の画面の要素（`#email`、`#password-new` など）を選ぶの�
 | 注文 | `OrderStatusBadge`、`CancellationRequestForm`（今 29%） |
 | 共通 | `LoginLinks`、`PageLinks`、`api/result.ts`（今 36%）、`actions/order.ts`、`actions/auth.ts`、`auth/logout.ts` |
 
-対象外（E2E で確かめる。Next.js が呼ぶ入り口）：`app/` の下のページ・`layout`・`error`・`not-found`・route、`instrumentation.ts`、`i18n/request.ts`。
+対象外（E2E で確認する。Next.js が呼ぶ入り口）：`app/` の下のページ・`layout`・`error`・`not-found`・route、`instrumentation.ts`、`i18n/request.ts`。
 
 ### 7.2 書き方
 
 | 項目 | 決定 |
 |------|------|
-| 表示の部品 | 今の店舗画面のテスト（HTML に描画して確かめる）に合わせる |
-| ブラウザーの中だけで終わる操作（server action を呼ばない）のある client の部品（`VariantPicker` の選択、`RemainingTime` の残り時間 など） | ファイルの先頭で jsdom を選び（`@vitest-environment jsdom`）、Testing Library で操作する。店舗画面の開発の依存に `@testing-library/react`・`@testing-library/user-event`・`jsdom` を足す（管理画面と同じ版） |
-| server action を呼ぶ操作（`CartItemControls`、`OrderForm` の送信 など） | 今の規則のとおり結合テストを置かない。表示（初めの状態、エラーの表示）は HTML に描画して確かめ、操作は server action のテストと E2E で確かめる |
+| 表示の部品 | 今の店舗画面のテスト（HTML に描画して確認する）に合わせる |
+| ブラウザーの中だけで終わる操作（server action を呼ばない）のある client の部品（`VariantPicker` の選択、`RemainingTime` の残り時間 など） | ファイルの先頭で jsdom を選び（`@vitest-environment jsdom`）、Testing Library で操作する。店舗画面の開発の依存に `@testing-library/react`・`@testing-library/user-event`・`jsdom` を追加する（管理画面と同じ版） |
+| server action を呼ぶ操作（`CartItemControls`、`OrderForm` の送信 など） | 今の規則のとおり結合テストを置かない。表示（初めの状態、エラーの表示）は HTML に描画して確認し、操作は server action のテストと E2E で確認する |
 | server action | 今の `actions/cart.test.ts`・`checkout.test.ts` に合わせる（MSW で API を差し替える） |
 
 テストの書き方 第 1 節の「店舗画面には結合テストを置かない」に、ブラウザーの中だけで終わる操作の例外を書く（利用者の判断。2026-10-16）。理由：規則の理由は「操作が server action を通り、ブラウザーの中だけでは再現できない」ことで、server action を呼ばない操作には当たらない。
@@ -254,35 +254,35 @@ Keycloak の画面の要素（`#email`、`#password-new` など）を選ぶの�
 |------|------|-----|
 | 1 | テスト名とカバレッジの検査、IdP の AC、片付けの規則（文書） | 105、106、110（規則）、117 |
 | 2 | 時間で待たない（バックエンド、E2E の時計と在庫の待ち、上限の定数、検査） | 97、98、99、100 |
-| 3 | バックエンドの補助、AC-90、確定させるテストの見直し、税込価格 | 104、108、110、116 |
+| 3 | バックエンドの補助、AC-90、確定させるテストのレビュー、税込価格 | 104、108、110、116 |
 | 4 | 支払いの実装のテスト | 111、112 |
 | 5 | E2E の要素の選び方と補助 | 101、102、103、109 |
 | 6 | 管理画面のテスト | 107、113、115 |
 | 7 | 店舗画面のテスト | 114 |
-| 8 | 見直し（書き方の規則と見直し、CI の時間、README・mvp.md の進捗） | すべて |
+| 8 | レビュー（書き方の規則とレビュー、CI の時間、README・mvp.md の進捗） | すべて |
 
-- 段階 2 の検査（DC-98）は、段階の最後に足す（先に足すと、直す前の所で検査が落ちる）。
+- 段階 2 の検査（DC-98）は、段階の最後に追加する（先に追加すると、修正する前の所で検査が落ちる）。
 - 段階 1 は P2 の DC-117 を含むが、小さいので先に行い、後の段階で薄い所を見るのに使う。
-- 各段階の最後に、既存のテスト（`./gradlew check`、`check-frontend.sh`、`e2e.sh`）を流す。E2E を変えない段階（1、3、4、6、7）でも、段階の最後には流す。
+- 各段階の最後に、既存のテスト（`./gradlew check`、`check-frontend.sh`、`e2e.sh`）を実行する。E2E を変えない段階（1、3、4、6、7）でも、段階の最後には実行する。
 
-## 9. 確かめ方
+## 9. 確認方法
 
-| DC | 確かめ方 |
+| DC | 確認方法 |
 |----|----------|
-| 97 | `during(` が補助の外にない（DC-98 の検査）。直したテストごとに、受け手を仮に「起きてはいけない処理を行う」形に壊して失敗することを確かめる |
-| 98 | `time-waits.test.mjs` の新しい例（レッドを確かめてから直す） |
-| 99 | CI の E2E を 3 回流して通る。支払いの期限のテストの時間を、前と後で記録する |
+| 97 | `during(` が補助の外にない（DC-98 の検査）。修正したテストごとに、受け手を仮に「起きてはいけない処理を行う」形に壊して失敗することを確認する |
+| 98 | `time-waits.test.mjs` の新しい例（レッドを確認してから修正する） |
+| 99 | CI の E2E を 3 回実行して通る。支払いの期限のテストの時間を、前と後で記録する |
 | 100 | `Duration.ofSeconds(10)` と E2E の数字の `timeout:` を grep し、定数の外にない |
 | 101、103 | 第 5.1 節の書き方を grep し、`e2e/tests` にない（`#` の id は `e2e/src/auth.ts` だけ） |
 | 102 | 画面の差分が属性とメッセージのファイルだけ。管理画面・店舗画面のテストを変えずに通る |
 | 104 | `ac-check` が除外の AC-90 なしで通る |
-| 105 | `test-names.test.mjs`。`@DisplayName` を仮に消して検査が落ちる |
-| 106、110 | 見直しで読む（テストの書き方） |
+| 105 | `test-names.test.mjs`。`@DisplayName` を仮に削除して検査が落ちる |
+| 106、110 | レビューで読む（テストの書き方） |
 | 107 | 第 6.1 節の 5 回の結果 |
 | 108、109 | 第 3.2 節・第 5.3 節の重なりを grep し、補助の外にない |
-| 111、112、113、116 | 各テスト（DN-12 の壊しての確かめを含む） |
+| 111、112、113、116 | 各テスト（DN-12 の壊しての確認を含む） |
 | 114、115 | 段階の最後のカバレッジで、対象のファイルがすべて 0% でない |
-| 117 | 手元で `coverage-summary.mjs` を流し、低い順の表が出る。CI の summary に出る |
+| 117 | 手元で `coverage-summary.mjs` を実行し、低い順の表が表示される。CI の summary に表示される |
 | DN-12 | tasks の各タスクの下の記録 |
-| DN-13 | 見直しで `git diff` の `src/main`・画面のコードを読み、属性と設定の値だけ |
+| DN-13 | レビューで `git diff` の `src/main`・画面のコードを読み、属性と設定の値だけ |
 | DN-14 | CI の直近 3 回の時間（spec の末尾） |

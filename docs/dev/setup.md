@@ -1,6 +1,6 @@
 # 開発環境の起動
 
-ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの流し方](../testing/running.md)、環境変数は [環境変数](environment.md)。エージェントは skill `local-dev` を使う。
+ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](../testing/running.md)、環境変数は [環境変数](environment.md)。エージェントは skill `local-dev` を使う。
 
 ## 1. 前提
 
@@ -17,7 +17,7 @@ docker compose up -d
 # ルートで：フロントの依存を入れる（管理画面・店舗画面・E2E をまとめて）
 pnpm install
 
-# backend/ecsite/ で：local profile で起動する（マイグレーションとローカル用の seed も流れる）
+# backend/ecsite/ で：local profile で起動する（マイグレーションとローカル用の seed も適用される）
 ./gradlew bootRun --args='--spring.profiles.active=local'
 
 # frontend/admin/ と frontend/store/ で：開発サーバー
@@ -40,12 +40,12 @@ pnpm dev
 
 - `docker compose` はルートで実行する（ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
 - Mailpit の SMTP はホストの 2525 で受ける（1025 は Windows のシステムのプログラムが使うことがあるので使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いたポートを入れて、compose とバックエンドを起動する（両方が同じ値を読む）。
-- compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）からつなぐときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を付けて、`docker compose up -d` で作り直す。終わったら消して作り直す。バックエンドと画面の開発サーバーは、この設定と別に待ち受ける。
-- 止めるときは `docker compose stop`。データを作り直すときは第 4 節。
-- E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に入らない。E2E の準備が起動する（[テストの流し方](../testing/running.md)）。
+- compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）からつなぐときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を付けて、`docker compose up -d` で再作成する。終わったら設定を削除して再作成する。バックエンドと画面の開発サーバーは、この設定と別に待ち受ける。
+- 停止するときは `docker compose stop`。データを再作成するときは第 4 節。
+- E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に入らない。E2E の準備が起動する（[テストの実行方法](../testing/running.md)）。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
-- フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で直せる lint は `pnpm lint:fix`。
-- commit の前に CI の検査の script（[CI の検査](ci.md)）を流すには、`.git/hooks/pre-commit` に次の 1 行を書く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いたほかの hook と並べられるよう、`core.hooksPath` は変えない。
+- フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で修正できる lint は `pnpm lint:fix`。
+- commit の前に CI の検査の script（[CI の検査](ci.md)）を実行するには、`.git/hooks/pre-commit` に次の 1 行を書く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いたほかの hook と併用できるよう、`core.hooksPath` は変えない。
 
   ```sh
   "$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" || exit 1
@@ -64,27 +64,27 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 | `ec-admin`（運営者） | 管理画面 | `manager@example.com` | `manager-pass-1` | 管理職（すべてのレポート） |
 | `ec-admin`（運営者） | 管理画面 | `sales@example.com` | `sales-pass-1` | 営業（売上の推移を除くレポート） |
 
-- 手動確認はこの表のアカウントを使う（誰の環境にもある）。足りなければ realm の JSON に足し、表にも書く。画面から登録した会員は、その人の環境にしかない。
+- 手動確認はこの表のアカウントを使う（誰の環境にもある）。足りなければ realm の JSON に追加し、表にも書く。画面から登録した会員は、その人の環境にしかない。
 - 会員のアカウント ID は realm の JSON で固定している（`member@example.com` は `00000000-0000-0000-0000-000000009001`、`member2@example.com` は `…9002`）。ローカル用の seed の注文が、この会員のものになるため。
-- 会員の生年月日と性別（任意の属性）は、会員登録とアカウントの画面（`http://localhost:8180/realms/ec-store/account`）で入れる・直す。表示の文言は realm の JSON の `localizationTexts` に置く。
+- 会員の生年月日と性別（任意の属性）は、会員登録とアカウントの画面（`http://localhost:8180/realms/ec-store/account`）で入力・修正する。表示の文言は realm の JSON の `localizationTexts` に置く。
 - 会員登録の確認とパスワードの再設定のメール（Keycloak）、出荷通知メール（バックエンド）は Mailpit に届く。宛先のアドレスは実在しなくてよい。
 - token の中身は `scripts/dev/keycloak.sh token <realm> <アカウント> <パスワード>` で見る。
 
-## 4. データの作り直し
+## 4. データの再作成
 
-画面で変えたデータは、seed を流し直しても戻らない。`scripts/dev/reset.sh` で、Git の正本から作り直す。
+画面で変えたデータは、seed を再適用しても戻らない。`scripts/dev/reset.sh` で、Git の正本から再作成する。
 
 | 戻したいもの | コマンド（ルートで） | 触れないもの |
 |--------------|----------------------|--------------|
-| DB だけ | `scripts/dev/reset.sh`（`db` と同じ）。バックエンドを止めてから流す。次の起動で seed が流れる（レポート用の注文 2 万件を含め、15 秒ほど） | E2E の DB、Keycloak、画像 |
-| Keycloak（realm の JSON を変えたとき） | `scripts/dev/reset.sh keycloak`（ローカルで登録した会員も消える） | DB、E2E の Keycloak |
+| DB だけ | `scripts/dev/reset.sh`（`db` と同じ）。バックエンドを停止してから実行する。次の起動で seed が適用される（レポート用の注文 2 万件を含め、15 秒ほど） | E2E の DB、Keycloak、画像 |
+| Keycloak（realm の JSON を変えたとき） | `scripts/dev/reset.sh keycloak`（ローカルで登録した会員も削除される） | DB、E2E の Keycloak |
 | すべて | `scripts/dev/reset.sh all`（`docker compose down -v` と `up -d`） | なし |
 
 正本は、DB の seed が `backend/ecsite/src/main/resources/db/seed/`、画像が `docker/seaweedfs/seed/`、Keycloak が `docker/keycloak/realms/`。seed の商品の画像の ID と、seed の注文の会員の ID は、それぞれ画像と realm の正本に合わせてある。
 
 ## 5. Stripe で動かす
 
-既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確かめるときだけ、次の手順で切り替える。決済の設計は [決済モジュール](../backend/modules/payment.md)。
+既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済の設計は [決済モジュール](../backend/modules/payment.md)。
 
 1. Stripe のアカウントと sandbox を作り、ダッシュボードの「開発者 → API キー」のシークレットキー（`sk_test_` で始まる）を、`/.local/stripe.env` に書く。このファイルは Git に入らない。鍵を会話やコミットに貼らない。
 
@@ -109,32 +109,32 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
    ./gradlew bootRun --args='--spring.profiles.active=local,stripe'
    ```
 
-- 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で見る。止めるときは `docker compose --profile stripe stop stripe-cli`。
+- 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で見る。停止するときは `docker compose --profile stripe stop stripe-cli`。
 - テストのカード番号は Stripe の文書のもの（成功は `4242 4242 4242 4242`、拒否は `4000 0000 0000 0002`。有効期限は未来の日付、セキュリティコードは任意の 3 桁）。
-- 支払の画面に出る支払の方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードだけを有効にする。カード以外の方法（コンビニ、銀行振込など）は与信だけを取れない。カードで払うウォレット（Apple Pay、Google Pay、Link）は MVP の後に見直す。
-- 期限切れを早く確かめるときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を足す。Stripe の支払の画面は作ってから 31 分で切れるが、支払の期限で期限切れのジョブが閉じる。
-- seed の注文（`db/seed/local/`）の与信は mock のもので、Stripe には無い。Stripe で動かすときは、seed の注文を出荷すると売上確定で失敗する。出荷は、Stripe で支払った注文で確かめる。
+- 支払画面に出る支払の方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードだけを有効にする。カード以外の方法（コンビニ、銀行振込など）は与信だけを取れない。カードで払うウォレット（Apple Pay、Google Pay、Link）は MVP の後に再検討する。
+- 期限切れを早く確認するときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する。Stripe の支払画面は作ってから 31 分で切れるが、支払の期限で期限切れのジョブが閉じる。
+- seed の注文（`db/seed/local/`）の与信は mock のもので、Stripe には無い。Stripe で動かすときは、seed の注文を出荷すると売上確定で失敗する。出荷は、Stripe で支払った注文で確認する。
 
 ## 6. 機能紹介のページのスクリーンショット
 
-機能紹介のページ（`showcase/`）の画像を、ローカルの環境の画面で撮り直す。機能を足して画面が変わったときに使う。
+機能紹介のページ（`showcase/`）の画像を、ローカルの環境の画面で再撮影する。機能を追加して画面が変わったときに使う。
 
-1. バックエンドを止め、DB を作り直す（第 4 節。画面で変えたデータと、前に撮ったときの注文を消すため）。
+1. バックエンドを停止し、DB を再作成する（第 4 節。画面で変えたデータと、前に撮ったときの注文を削除するため）。
 2. compose、バックエンド（profile `local`。Stripe の profile は付けない）、店舗画面（:3000）、管理画面（:5173）を起動する（第 2 節）。
 3. `e2e/` で `pnpm capture`。`showcase/img/` の 14 枚を上書きする。
 
-- 撮影の中で、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面のため）。白のマグカップの在庫を 2 つ使うので、続けて撮るときも DB を作り直す。
-- 撮影は E2E ではなく、CI では流さない。撮った画像は目で確かめてから commit する。
-- ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を流して照らし、変わっていれば直す。テストの数は、Java を実行した件数（パラメーターの組ごと）で数える。
+- 撮影の中で、会員として注文して支払い、もう 1 つ注文して支払わずに戻る（支払待ちの画面のため）。白のマグカップの在庫を 2 つ使うので、続けて撮るときも DB を再作成する。
+- 撮影は E2E ではなく、CI では実行しない。撮った画像は目視で確認してから commit する。
+- ページの数字（条件・テスト・仕様書の数）は、`./gradlew check` の後にルートで `node scripts/dev/showcase-counts.mjs` を実行して照合し、変わっていれば修正する。テストの数は、Java を実行した件数（パラメーターの組ごと）で数える。
 
 ## 7. ポートが使えないとき（Windows）
 
 Windows は、WinNAT（Docker や WSL が使う）などのために、ポートの範囲を動的に予約する。ローカルの環境のポートがその範囲に入ると使えなくなる。
 
 - 症状：待ち受けているプロセスがないのに、起動が `EACCES`、`bind: An attempt was made to access a socket in a way forbidden by its access permissions`、`ports are not available` で失敗する。
-- 確かめ方：`netsh interface ipv4 show excludedportrange protocol=tcp` の範囲に、そのポートが入っているか。
-- 直し方：compose・バックエンド・画面を止めてから、管理者の PowerShell で `scripts\dev\windows\exclude-ports.ps1` を流す。ローカルの環境のポートを予約の範囲と照らして示し、確かめてから WinNAT を止め、ポートを 1 つずつ予約して WinNAT を始め直す。予約は再起動の後も残る。`-WhatIf` を付けると、照らした結果だけを示す。
-- その場の対処：管理者の権限で `net stop winnat` と `net start winnat` を流す。動的な範囲が取り直されるので空くことが多いが、再起動などでまた入ることがある。
+- 確認方法：`netsh interface ipv4 show excludedportrange protocol=tcp` の範囲に、そのポートが入っているか。
+- 解決方法：compose・バックエンド・画面を停止してから、管理者の PowerShell で `scripts\dev\windows\exclude-ports.ps1` を実行する。ローカルの環境のポートを予約の範囲と照合して示し、確認してから WinNAT を停止し、ポートを 1 つずつ予約して WinNAT を再開する。予約は再起動の後も残る。`-WhatIf` を付けると、照合した結果だけを示す。
+- その場の対処：管理者の権限で `net stop winnat` と `net start winnat` を実行する。動的な範囲が再割り当てされるので空くことが多いが、再起動などでまた入ることがある。
 
 ## 8. エージェントの MCP サーバー（任意）
 

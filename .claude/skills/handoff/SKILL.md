@@ -21,7 +21,7 @@ If the user passed arguments, treat them as a description of what the next sessi
 
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
 - 文書は OS の一時ディレクトリではなく、リポジトリの `/.local/handoff/yyyyMMddHHmmss-<名前>/`（例：`/.local/handoff/20261012152403-003-done/`。`/.local/` は Git に入れないものの置き場所。AGENTS.md）に置く。上の原文の置き場所より、こちらを優先する。日時は作った時刻。中の MD は 1 つでも、内容ごとに複数に分けてもよい。
-- 新しいセッションは、利用者の指示がなければ、名前の日時が最も新しいディレクトリを読み、書かれた状態（push していない commit、次のタスク）を `git log` と tasks ファイルで確かめてから始める。
-- 古い引き継ぎの文書は利用者が消す。エージェントは消さず、消すかどうかも聞かない。
+- 新しいセッションは、利用者の指示がなければ、名前の日時が最も新しいディレクトリを読み、書かれた状態（push していない commit、次のタスク）を `git log` と tasks ファイルで確認してから始める。
+- 古い引き継ぎの文書は利用者が削除する。エージェントは削除せず、削除するかどうかも聞かない。
 - 主に、spec の区切りや、作業を途中でやめて新しいセッションに移るときに使う（AGENTS.md「セッションの始めと終わり」）。作業の正本は tasks ファイル（`docs/specs/NNN-*/tasks/`）と README の spec の状態なので、引き継ぎの文書には、次に着手するタスク番号と、tasks・commit に残っていないこと（未確定の判断、手動確認で気づいたこと、ローカルの DB に残したテストデータなど）だけを書く。
 - 「suggested skills」には、AGENTS.md の skill の表から、次の作業で使うものを挙げる。

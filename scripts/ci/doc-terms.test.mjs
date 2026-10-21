@@ -20,4 +20,8 @@ describe('文書の用語の検査', () => {
     assert.equal(isTargetDoc('docs/specs/002-cart-and-order/spec.md'), false)
     assert.equal(isTargetDoc('frontend/store/README.md'), false)
   })
+
+  test('言い換える前の語を例に挙げる、言い回しの規則の文書は見ない', () => {
+    assert.equal(isTargetDoc('.claude/skills/docs/tech-writing.md'), false)
+  })
 })

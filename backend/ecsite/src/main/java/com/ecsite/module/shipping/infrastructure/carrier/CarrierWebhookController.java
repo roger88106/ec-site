@@ -12,7 +12,7 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 物流サービスの通知の受け口（docs/backend/modules/shipping.md「通知の受け口」）。<br />
+ * 物流サービスの通知の受け口（docs/backend/modules/shipping.md「通知のエンドポイント」）。<br />
  * 物流サービスが呼ぶ口で、EC の API ではない（OpenAPI に書かず、presentation にも置かない）。認証は付けず、署名で確かめる。
  * 登録済みのどの出荷とも合わない通知と、対応の表にない状態の名前は、再送されても合うようにならないので、
  * 記録して 200 を返す。処理に失敗したら 5xx を返し、物流サービスの再送で処理し直す。

@@ -1,6 +1,6 @@
 import { useQueryClient } from '@tanstack/react-query'
 
-/** 更新の後に取り直すパスの前方一致（管理画面の構成 第 4 節の表） */
+/** 更新の後に再取得するパスの前方一致（管理画面の構成 第 4 節の表） */
 export type ApiPathPrefix = '/tax-categories' | '/categories' | '/products' | '/inventory' | '/orders'
 
 /**

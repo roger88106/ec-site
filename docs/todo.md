@@ -136,6 +136,42 @@ MVP の後に行う作業と未決事項。追加と完了の規則は [AGENTS.m
 | 2 つ目の言語と、言語を切り替える操作を追加する（画面は入口だけ作ってある） | 1→10 | spec 006 Non-goals |
 | バックエンドのメッセージの言語を切り替える。2 つ目の言語のメッセージを用意する | 1→10 | spec 005 Non-goals、spec 006 Non-goals |
 
+## 全体のレビュー（spec 019）
+
+spec 019 の全体のレビューの指摘のうち、本 spec で修正しないもの。必須は 1 件ずつ、推奨は領域ごとにまとめる。
+
+| 項目 | 対応時期 | 出典 |
+|------|----------|------|
+| メディアの内部イベント `AssetReleased` を `domain/` から `application/` に移し、メディアの設計書の構成の説明を修正する（レベル B の内部イベントは application に置く規則） | 1→10 | spec 019 の全体のレビュー |
+| `config` の直下の `.java`（12）と `config/security`（11）が、パッケージの大きさの目安（10）を超えている。イベントの再発行と片付けの 6 ファイルを `config/event/` に分ける。`config/security` は分けるか、バックエンドの書き方 第 1.4 節の表に理由を書く（分けるときは、設定の型の名前を指す式も修正する） | 1→10 | spec 019 の全体のレビュー |
+| `DisplayOrders` を、共通コード（`common`）から catalog のドメインに移し、共通コードの設計書の表と本文を修正する（使うのは catalog だけ） | 1→10 | spec 019 の全体のレビュー |
+| 用語集の「決済サービス」「物流サービス」の「テストと既定は mock」を削除する。決済は mock フラグを立てたときだけ mock で、立てなければ Stripe を使う。物流は現在の実装が mock だけで、フラグを立てなければ起動に失敗すると書く | 1→10 | spec 019 の全体のレビュー |
+| 注文の `CartQuoteService`（application）が、`api/` の `CartQuote` を import して変換している。application は `application/model/` の view を返し、`OrderQuoteApi` が `CartQuote` に変換する（`OrderReportApi` と作り方をそろえる） | 1→10 | spec 019 の全体のレビュー |
+| 注文の `OrderReportQueryService` が集約 `Order` をそのまま api に返し、`OrderReportApi` が集約の中を読んで写しを作っている。レポート用の view を `application/model/` に作り、api は view から変換する | 1→10 | spec 019 の全体のレビュー |
+| 決済の Stripe の支払画面の期限（31 分の定数）と、設定 `ecsite.payment.deadline`（既定 30 分）を結ぶ検証がない。31 分より長く設定すると、消費者が期限切れの画面に着く。`PaymentProperties` に上限の検証を追加するか、画面の期限を `deadline` から求める。決済の設計書の設定の表にも制約を書く | 1→10 | spec 019 の全体のレビュー |
+| カートの `CartRepository.create` が、`ON CONFLICT DO NOTHING` の挿入なのに結果を返さない。`boolean` を返す形にし、`memberCartId` は挿入できたときだけ、引き直さずに ID を返す（`OrderRepository.insert` と書き方をそろえる） | 1→10 | spec 019 の全体のレビュー |
+| `ShippingProperties` と `NotificationProperties` を、使う infrastructure のパッケージ（出荷は `ShippingConfig` と同じ、通知は `infrastructure/mail/` など）に移す（application の service は使わない） | 1→10 | spec 019 の全体のレビュー |
+| 出荷の `MockCarrierTracking` にあるテスト専用の `started()` と記録のリストを削除し、確認用の記録を testFixtures の包む実装に移す（`ShippingApiTest` が使う） | 1→10 | spec 019 の全体のレビュー |
+| AC-84 のテスト（`CheckoutApiTest`）が `releaseReservations` を直接呼び、`CartChanged` のリスナーを通らない。カートの変更の API を呼び、イベントの処理が終わるのを待ってから、引当の解除を確認する形にする | 1→10 | spec 019 の全体のレビュー |
+| AC-128 のテスト（`MemberOrderApiTest`）が、会員 ID の `isNotNull()` だけを確認している。注文した会員の ID と等しいことを確認する | 1→10 | spec 019 の全体のレビュー |
+| AC-123 のテスト（`MemberCartApiTest`）が、`skippedItems` の空だけを確認している。会員のカートを 30 品目にしてから移し、`skippedItems` の変数 ID と数量を確認する | 1→10 | spec 019 の全体のレビュー |
+| 共有パッケージの `isDateString` と `DATE` を、使う管理画面の `lib/`（レポートの期間の `isDate` の近く）に移し、テストも移す | 1→10 | spec 019 の全体のレビュー |
+| 管理画面のバリアントの売れ行きの表示名の組み立て（`variantName`）を `features/report/labels.ts` に移し、区切りを文言にして単体テストを追加する（他の画面と同じ `axisValuesLabel` にそろえる案もある） | 1→10 | spec 019 の全体のレビュー |
+| 管理画面で `GET /me` が失敗（5xx、通信の失敗）すると、権限がないと表示され、メニューからレポートが消える。`usePermissions` がエラーを返し、`RequirePermission` が失敗の表示を返す形にして、`/me` が 500 のテストを追加する | 1→10 | spec 019 の全体のレビュー |
+| 管理画面の `ReportConditionForm` が、コンポーネントの外用の `translate` を直接呼んでいる。`useTranslations` の `t` にそろえる | 1→10 | spec 019 の全体のレビュー |
+| 管理画面の `ProductEditPage.test.tsx` に、公開・非公開、基本情報の保存の成功、軸のあるバリアントの追加の結合テストを追加し、AC の欄に反映する | 1→10 | spec 019 の全体のレビュー |
+| 店舗画面の `CategoryList` が、クエリ付きの URL を文字列で組み立てている。`listQuery.ts` の `listHref` を使う | 1→10 | spec 019 の全体のレビュー |
+| 店舗画面で `traceparent` を付けるのが会員用の API クライアントだけで、公開用の API クライアント（カート、郵便番号、商品の取得）には付かない。両方に付く処理にしてテストで確認する（付けない方針なら、店舗画面の構成に書く） | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】バックエンドの構成と置き場所：他のモジュールの `api/` の呼び出しを `infrastructure/directory/` に限る ArchUnit の検査の追加、腐敗防止層の実装を package-private にそろえる、catalog の application が `api/` の型を返している、`catalog/application` の直下が 11 クラスで表に理由がない、期限切れの片付けのジョブのループが 3 モジュールで複製、ほか 36 件 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】使われていないコード：本番から呼ばれずテストだけが使う操作（`Order.isCancelled()`、`Basis.counts` など）、`src/main` にあるが `src/tools` とテストだけが使う郵便番号の CSV の読み込み、管理画面と店舗画面の使われていない型の別名、使われていない依存 `cn`、ほか 4 件 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】バックエンドのテスト：AC-158 の消費者側の API のテストがない、AC-85 の税額を確認しない、AC-173 が状態コード 400 だけ、AC 番号と内容の不一致（AC-44、188、198・199、207 など）、`PaymentExpiryJobTest` が他のテストの残した支払に依存、ほか 22 件 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】店舗画面：郵便番号の判定がフォームとサーバーアクションで二重、サーバーアクションの失敗の表示が 6 か所に複製、ログインを求める画面で ID とログインの確認の順が逆、バリアントの選択の状態が二重、カートの移行の warn ログに `cartId` を出力、ほか 10 件 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】管理画面と共有のパッケージ：管理画面と店舗画面で同じ整形と表示（ラベル、金額の内訳、日時）が 2 つずつある、リンクの見た目のボタンが 8 か所に複製、409 後の再読み込みが 4 か所に複製、バリアントと画像の並べ替え・削除の結合テストがない、`isSafeReturnPath` が TAB を含む入力で約束を破る、ほか 12 件 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】E2E：テスト名の AC と内容の不一致（AC-28、129、252 など）、`payment.spec.ts` の時間切れの設定が既定より短い、注文までの操作を 6 つのテストが重複して書いている、`showcase` が補助を使わず重複して書いている、`e2e/flow/` を `.git/info/exclude` で除外している、ほか 10 件 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】セキュリティと設定：`security` を書き忘れた店舗の操作が公開になる、秘密の値を持つ設定の record の `toString` が値を伏せない、復元の失敗で集約の内容を `error` のログに出力、`zipkin` の接続先の既定値が共通の設定にある、`Location` が `forward-headers-strategy` の設定に依存 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】文書：設計書の公開 API の一覧の抜け（決済、地域、カート）、できる操作のフラグの表の抜け（注文、商品）、在庫の設計書が実在しない集約を書いている、記号の規則が constitution にない記号を案内している、`mvp.md` に完了済みの記録が残っている、ほか 20 件 | 1→10 | spec 019 の全体のレビュー |
+| 【推奨】script と CI：`src/tools` が CI でコンパイルされない、コンテナのイメージの版が compose、Gradle、統合テストに重複、`openzipkin/zipkin:3` が浮動タグ、Gradle の配布物のハッシュを検証しない、`actions/cache` の版が他の action と離れている、ほか 3 件 | 1→10 | spec 019 の全体のレビュー |
+
 ## 条件付き
 
 | 項目 | 対応時期 | 出典 |

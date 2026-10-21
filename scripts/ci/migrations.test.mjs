@@ -18,6 +18,13 @@ describe('適用済みのマイグレーションの検査', () => {
     )
   })
 
+  test('まだ commit していないマイグレーション（追加した commit がない）は見ない', () => {
+    assert.deepEqual(
+      findChangedMigrations(['V1__a.sql', 'V2__new.sql'], (file) => (file === 'V1__a.sql' ? 'create table a;\n' : null), () => 'create table a;\n'),
+      [],
+    )
+  })
+
   test('改行の違い（CRLF と LF）は変更とみなさない', () => {
     assert.deepEqual(
       findChangedMigrations(['V1__a.sql'], () => 'create table a;\n', () => 'create table a;\r\n'),

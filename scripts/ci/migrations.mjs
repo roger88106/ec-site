@@ -24,13 +24,16 @@ export function isVersionedMigration(file) {
  * 追加した時と今で中身が違うマイグレーションを返す。改行の違いは無視する。
  *
  * @param {string[]} files マイグレーション
- * @param {(file: string) => string} readAdded 追加した commit の中身
+ * @param {(file: string) => string | null} readAdded 追加した commit の中身。まだ commit していなければ null（変わりようがないので見ない）
  * @param {(file: string) => string} readNow 今の中身
  * @returns {string[]} 変わったマイグレーション
  */
 export function findChangedMigrations(files, readAdded, readNow) {
   const normalize = (text) => text.replace(/\r\n/g, '\n')
-  return files.filter((file) => normalize(readAdded(file)) !== normalize(readNow(file)))
+  return files.filter((file) => {
+    const added = readAdded(file)
+    return added !== null && normalize(added) !== normalize(readNow(file))
+  })
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
@@ -49,7 +52,9 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     if (/^[0-9a-f]{40}$/.test(line)) commit = line
     else if (line) addedIn.set(line, commit)
   }
+  // commit の前の hook では、ステージした新しいマイグレーションはまだ履歴にない
   const readAdded = (file) =>
+    !addedIn.has(file) ? null :
     execSync(`git show ${addedIn.get(file)}:"${file}"`, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
   const changed = findChangedMigrations(files, readAdded, (file) => readFileSync(file, 'utf8'))
   for (const file of changed) {

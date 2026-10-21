@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * API の契約のリクエストの制約の漏れを検出する契約テスト（docs/rules/backend-coding.md 第 3.1 節、spec 005 DC-33）。<br />
- * リクエスト（パス・クエリの引数と本文）の数値の項目に範囲（下限か上限）があり、
+ * リクエスト（パス・クエリの引数と本文）の数値の項目に範囲（下限と上限。上限を求めない項目は理由を付けて除く）があり、
  * 文字の項目に長さか形式（{@code maxLength}・{@code pattern}・{@code format}・{@code enum}）があることを確認する。
  */
 class OpenApiRequestConstraintTest {
@@ -33,9 +33,20 @@ class OpenApiRequestConstraintTest {
      */
     private static final Set<String> METHODS = Set.of("get", "put", "post", "delete", "patch");
 
+    /**
+     * 数値の項目のうち、上限を求めないもの（項目の名前と理由）。<br />
+     * 上限を求めるのは、値を計算に使うと桁あふれや DB の範囲の超過で 500 になるため。計算に使わない項目だけをここに置く
+     */
+    private static final Map<String, String> NO_MAXIMUM = Map.of(
+            "version", "楽観ロックの版。サーバーが返した値を送り返すだけで、合わなければ 409 になる",
+            "page", "ページ番号。読み飛ばす件数は long で計算するので、大きくても空のページになるだけ",
+            "minPrice", "絞り込みの値。税込価格と比べるだけで計算に使わない",
+            "maxPrice", "絞り込みの値。税込価格と比べるだけで計算に使わない",
+            "expectedTotal", "画面に表示した総額。サーバーが計算した総額と比べるだけで計算に使わない");
+
     @ParameterizedTest
     @ValueSource(strings = {"admin.yaml", "store.yaml"})
-    @DisplayName("リクエストの数値の項目に範囲、文字の項目に長さか形式がある")
+    @DisplayName("リクエストの数値の項目に下限と上限、文字の項目に長さか形式がある")
     void requestFieldsAreConstrained(String file) throws IOException {
         Map<String, Object> document = new Yaml().load(Files.readString(OPENAPI_DIR.resolve(file)));
         List<String> missing = new ArrayList<>();
@@ -98,8 +109,9 @@ class OpenApiRequestConstraintTest {
                     walk(document, property, where + "." + name, new HashSet<>(visited), missing));
             case "array" -> walk(document, s.get("items"), where + "[]", visited, missing);
             case "integer", "number" -> {
-                if (!s.containsKey("minimum") && !s.containsKey("maximum")) {
-                    missing.add(where + "（" + type + "：範囲がない）");
+                String name = where.substring(Math.max(where.lastIndexOf('.'), where.lastIndexOf(':')) + 1);
+                if (!s.containsKey("minimum") || (!s.containsKey("maximum") && !NO_MAXIMUM.containsKey(name))) {
+                    missing.add(where + "（" + type + "：下限か上限がない）");
                 }
             }
             case "string" -> {

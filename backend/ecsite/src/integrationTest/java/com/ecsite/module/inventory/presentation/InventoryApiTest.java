@@ -165,6 +165,29 @@ class InventoryApiTest {
         }
 
         @Test
+        @DisplayName("AC-42 1 回の増減量が ±1,000,000 を超えれば 400 で、在庫数は変わらない")
+        void rejectsDeltaOverOneMillion() throws Exception {
+            adjust(variantId, 1_000_001, "ARRIVAL", null)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+            adjust(variantId, Integer.MAX_VALUE, "ARRIVAL", null).andExpect(status().isBadRequest());
+
+            mockMvc.perform(get(BASE + "/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(0));
+        }
+
+        @Test
+        @DisplayName("AC-42 運営者の調整で在庫数が 1,000,000 を超えれば 400 で、在庫数は変わらない。1,000,000 ちょうどは調整できる")
+        void rejectsQuantityOverOneMillion() throws Exception {
+            adjust(variantId, 1_000_000, "ARRIVAL", null).andExpect(jsonPath("$.quantityAfter").value(1_000_000));
+
+            adjust(variantId, 1, "ARRIVAL", null)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("STOCK_QUANTITY_EXCEEDED"));
+
+            mockMvc.perform(get(BASE + "/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(1_000_000));
+        }
+
+        @Test
         @DisplayName("増減量が 0 なら 400")
         void rejectsZeroDelta() throws Exception {
             adjust(variantId, 0, "ARRIVAL", null)

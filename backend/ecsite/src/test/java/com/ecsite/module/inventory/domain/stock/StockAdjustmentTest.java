@@ -57,6 +57,21 @@ class StockAdjustmentTest {
     }
 
     @ParameterizedTest
+    @ValueSource(ints = {1_000_000, -1_000_000})
+    @DisplayName("AC-42 運営者の 1 回の増減量は ±1,000,000 まで")
+    void acceptsDeltaUpToOneMillion(int delta) {
+        assertThat(StockAdjustment.create(delta, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW).delta()).isEqualTo(delta);
+    }
+
+    @ParameterizedTest
+    @ValueSource(ints = {1_000_001, -1_000_001, Integer.MAX_VALUE, Integer.MIN_VALUE})
+    @DisplayName("AC-42 運営者の 1 回の増減量が ±1,000,000 を超えれば拒否される")
+    void rejectsDeltaOverOneMillion(int delta) {
+        assertBusinessError(() -> StockAdjustment.create(delta, StockAdjustmentReason.ARRIVAL, null, OPERATOR, NOW),
+                InventoryErrorCode.INVALID_STOCK_DELTA);
+    }
+
+    @ParameterizedTest
     @EnumSource(value = StockAdjustmentReason.class, names = {"OTHER", "ORDER", "ORDER_CANCELLATION"},
             mode = EnumSource.Mode.EXCLUDE)
     @DisplayName("AC-46 その他以外の理由では、メモは省略できる")

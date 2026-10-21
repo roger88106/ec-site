@@ -28,4 +28,17 @@ class PriceExclTaxTest {
     void rejectsLessThanOneYen(long yen) {
         assertBusinessError(() -> PriceExclTax.of(yen), ProductErrorCode.INVALID_PRICE_EXCL_TAX);
     }
+
+    @Test
+    @DisplayName("AC-25 9,999,999 円までなら受け付ける")
+    void acceptsUpToMaximum() {
+        assertThat(PriceExclTax.of(9_999_999).yen()).isEqualTo(9_999_999);
+    }
+
+    @ParameterizedTest
+    @ValueSource(longs = {10_000_000, Long.MAX_VALUE})
+    @DisplayName("AC-25 9,999,999 円を超えれば拒否される")
+    void rejectsOverMaximum(long yen) {
+        assertBusinessError(() -> PriceExclTax.of(yen), ProductErrorCode.INVALID_PRICE_EXCL_TAX);
+    }
 }

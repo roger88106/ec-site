@@ -190,6 +190,17 @@ class ProductApiTest {
         }
 
         @Test
+        @DisplayName("AC-25 税抜価格が 9,999,999 円を超えれば 400。9,999,999 円は登録できる")
+        void rejectsPriceOverMaximum() throws Exception {
+            createProduct(productJson("ABC-001", standard, 10_000_000))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+            createProduct(productJson("ABC-002", standard, Long.MAX_VALUE)).andExpect(status().isBadRequest());
+
+            createProduct(productJson("ABC-003", standard, 9_999_999)).andExpect(status().isCreated());
+        }
+
+        @Test
         @DisplayName("AC-13 軸が 4 つ以上なら 400")
         void rejectsFourAxes() throws Exception {
             createProduct("""
@@ -274,6 +285,16 @@ class ProductApiTest {
             var id = productId("ABC-001");
 
             updateProduct(id, updateJson(standard, 0, 0))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        }
+
+        @Test
+        @DisplayName("AC-25 税抜価格が 9,999,999 円を超えれば 400")
+        void rejectsPriceOverMaximum() throws Exception {
+            var id = productId("ABC-001");
+
+            updateProduct(id, updateJson(standard, 10_000_000, 0))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
         }

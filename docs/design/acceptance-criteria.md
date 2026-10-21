@@ -97,7 +97,7 @@
 | AC-72 | C 側に表示される商品（BR-2）の、選べるバリアント（販売停止でなく、在庫あり… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`order.spec.ts` |
 | AC-73 | カートを持っていなければ、最初に商品を入れたときに作られる。 | 変更 | [002](../specs/002-cart-and-order/spec.md) | [003](../specs/003-auth) | [カートモジュール](modules/cart.md)（会員のカート）、[店舗画面](apps/store.md) 第 4.5 節 | `CartApiTest`、`CartTest`、`cart.test.ts` ほか 2 |
 | AC-74 | カートにあるバリアントをもう一度入れると、数量を合算する。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest` |
-| AC-75 | 1 品目の数量は 1〜10。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest`、`cart.test.ts` |
+| AC-75 | 1 品目の数量は 1〜10。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest`、`PlaceOrderApiTest` ほか 1 |
 | AC-76 | 入れた後の数量が、その時点の販売可能数（BR-11）を超える場合は拒否される。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest` |
 | AC-77 | 品目ごとに商品名、軸の値、画像、単価（BR-4）、数量、小計を表示し、あわせて商… | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `AmountsSummary.test.tsx`、`QuoteItemSummary.test.tsx`、`StorefrontCartTest` ほか 1 |
 | AC-78 | 品目の数量を変更（AC-75、76 の範囲で）・削除できる。 | 有効 | [002](../specs/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartItemControls.test.tsx`、`CartTest` ほか 1 |

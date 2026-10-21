@@ -289,6 +289,40 @@ class PlaceOrderApiTest {
         void rejectsUnknownCheckout() throws Exception {
             place(UUID.randomUUID(), 6940).andExpect(status().isNotFound());
         }
+
+        @Test
+        @DisplayName("AC-75 カートの 1 品目を上限の数量にして注文を確定でき、注文の明細の数量はその値になる（カートの上限と注文の明細の数量の制約は同じ値）")
+        void placesOrderWithMaxQuantity() throws Exception {
+            var variant = shirt.variantIds.getFirst();
+            var max = maxCartQuantity();
+            stock(variant, max + 5);
+            mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + variant)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"quantity": %d}""".formatted(max)))
+                    .andExpect(status().isNoContent());
+            var checkoutId = startCheckout();
+            var shown = mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+            long total = ((Number) JsonPath.read(shown, "$.amounts.total")).longValue();
+
+            var body = place(checkoutId, total).andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString();
+
+            mockMvc.perform(get("/api/store/orders/" + JsonPath.<String>read(body, "$.id")))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.lines[0].quantity").value(max));
+        }
+
+        /**
+         * カートの 1 品目の数量の上限（{@code Cart.MAX_QUANTITY}）。値を直書きせず、カートの定数から取る。
+         * 定数はカートのモジュールの中だけに公開しているので、リフレクションで読む（FieldConstraintContractTest と同じ）
+         */
+        private static int maxCartQuantity() throws Exception {
+            var field = Class.forName("com.ecsite.module.cart.domain.Cart").getDeclaredField("MAX_QUANTITY");
+            field.setAccessible(true);
+            return field.getInt(null);
+        }
     }
 
     @Nested

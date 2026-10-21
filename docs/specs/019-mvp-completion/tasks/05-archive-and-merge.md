@@ -8,8 +8,9 @@
 
 `[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（検査の script のテストは commit の前の hook が実行するため。[開発の進め方](../../../rules/workflow.md) 第 2.1 節）。
 
-- [ ] **T019-05-01** [テスト] `ac-check.mjs`、`progress.mjs`、`showcase-counts.mjs` が、`docs/specs/` の直下とアーカイブの両方の spec を参照するテストを書く（DC-215）。`showcase-counts.mjs` にテストがなければ、関数を分けてテストを書く。
-- [ ] **T019-05-02** T019-05-01 の script を修正する（DC-215）。
+- [x] **T019-05-01** [テスト] `ac-check.mjs`、`progress.mjs`、`showcase-counts.mjs` が、`docs/specs/` の直下とアーカイブの両方の spec を参照するテストを書く（DC-215）。`showcase-counts.mjs` にテストがなければ、関数を分けてテストを書く。
+- [x] **T019-05-02** T019-05-01 の script を修正する（DC-215）。
+  - 結果：spec のディレクトリを探す関数を `scripts/ci/lib/spec-dirs.mjs` に分け、3 つの script が使う。`showcase-counts.mjs` の spec の数え方は、この関数のテストで確認する。MVP の完成までの一覧は、直下になければアーカイブから探す（段階 6 で移すため）。
 - [ ] **T019-05-03** spec 001〜018 を `git mv` でアーカイブに移す。リンクは `fix-links.cjs`、リンクでないパスは段階 1 の script で修正する。旧パスが残らないことを `git grep` で確認する。適用済みのマイグレーションが変わっていないことを確認する（DC-215）。移動だけの commit が関連 spec の検査に当たるときは、除外の一覧（`related-specs-exclusions.json`）にタスク番号の前置きと理由を追加する。
 - [ ] **T019-05-04** README の進捗の表、constitution、skill（`handoff`、`review`、`docs`）、用語集の spec のパスの記述を修正する（DC-215）。
 - [ ] **T019-05-05** [テスト] `doc-terms.mjs` と `doc-refs.mjs` が、アーカイブだけを除外し、進行中の spec を検査するテストを書く（DC-215）。T019-05-03 の移動の後に行う。理由：移動の前に除外を変えると、完了した spec が検査の対象になるため。

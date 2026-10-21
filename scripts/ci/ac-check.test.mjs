@@ -192,8 +192,8 @@ describe('AC 一覧', () => {
 
   test('spec の AC の定義から、番号と要約（最初の文、40 字まで）を取り出す', () => {
     assert.deepEqual(parseSpecAcDefinitions(spec001, '001-catalog-and-inventory'), [
-      { ac: 1, spec: '001-catalog-and-inventory', summary: '税区分を名称で登録できる。' },
-      { ac: 2, spec: '001-catalog-and-inventory', summary: '税率は、率（%）、適用開始日時、適用終了日時を持つ。' },
+      { ac: 1, spec: '001-catalog-and-inventory', specPath: '001-catalog-and-inventory', summary: '税区分を名称で登録できる。' },
+      { ac: 2, spec: '001-catalog-and-inventory', specPath: '001-catalog-and-inventory', summary: '税率は、率（%）、適用開始日時、適用終了日時を持つ。' },
     ])
     assert.equal(
       parseSpecAcDefinitions(`- **AC-3** ${'あ'.repeat(50)}。`, '001-x')[0].summary,
@@ -213,6 +213,12 @@ describe('AC 一覧', () => {
       /^\| AC-1 \| 税区分を名称で登録できる。 \| 有効 \| \[001\]\(\.\.\/specs\/001-catalog-and-inventory\/spec\.md\) \| — \| spec \| `TaxApiTest`、`tax\.spec\.ts` \|$/m,
     )
     assert.match(markdown, /^\| AC-2 \| .* \| 変更 \| .* \| \[016\]\(\.\.\/specs\/016-master-data\) \| \[税モジュール\]\(\.\.\/backend\/modules\/tax\.md\) \| 除外 \|$/m)
+  })
+
+  test('アーカイブの spec の AC は、元の spec のリンクをアーカイブのパスにする', () => {
+    const archived = parseSpecAcDefinitions('- **AC-1** 一つ目。', '001-catalog-and-inventory', 'archive/mvp/001-catalog-and-inventory')
+    const markdown = renderAcList({ definitions: archived, previous: new Map(), testFiles: new Map(), exclusions: {} })
+    assert.match(markdown, /\| \[001\]\(\.\.\/specs\/archive\/mvp\/001-catalog-and-inventory\/spec\.md\) \|/)
   })
 
   test('テストのファイルは 3 つまで書き、残りは数を書く。テストも除外もなければ「なし」', () => {

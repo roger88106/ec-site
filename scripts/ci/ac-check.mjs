@@ -3,7 +3,7 @@
 //
 //   使い方：node scripts/ci/ac-check.mjs
 //
-// - AC：docs/specs/*/spec.md の定義の行（- **AC-n**）
+// - AC：spec.md（docs/specs/ の直下とアーカイブの下の spec）の定義の行（- **AC-n**）
 // - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
 //   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
@@ -17,6 +17,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { listSpecDirs } from './lib/spec-dirs.mjs'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
 const RANGE = '[〜～~]'
@@ -150,9 +151,10 @@ const TEST_FILES_SHOWN = 3
  *
  * @param markdown spec.md の本文
  * @param spec     spec のディレクトリの名前（`001-catalog-and-inventory` など）
+ * @param specPath docs/specs からの spec のディレクトリのパス（アーカイブの spec は `archive/mvp/001-…`）。省略すると名前
  * @returns AC の定義（spec の順）
  */
-export function parseSpecAcDefinitions(markdown, spec) {
+export function parseSpecAcDefinitions(markdown, spec, specPath = spec) {
   return [...markdown.matchAll(/^- \*\*AC-([0-9]+)\*\*\s*(.*)$/gm)].map(([, number, text]) => {
     // 最初の文：括弧の外の最初の句点まで
     let depth = 0
@@ -167,7 +169,7 @@ export function parseSpecAcDefinitions(markdown, spec) {
     }
     const chars = [...text.slice(0, end).replaceAll('|', '｜')]
     const summary = chars.length > SUMMARY_LENGTH ? `${chars.slice(0, SUMMARY_LENGTH).join('')}…` : chars.join('')
-    return { ac: Number(number), spec, summary }
+    return { ac: Number(number), spec, specPath, summary }
   })
 }
 
@@ -189,7 +191,7 @@ const LIST_END = '<!-- /generated:ac-list -->'
  */
 export function renderAcList({ definitions, previous, testFiles, exclusions }) {
   const lines = ['| AC | 要約 | 状態 | 元の spec | 変えた spec | 今の内容 | テスト |', '|----|------|------|-----------|-------------|----------|--------|']
-  for (const { ac, spec, summary } of [...definitions].sort((a, b) => a.ac - b.ac)) {
+  for (const { ac, spec, specPath, summary } of [...definitions].sort((a, b) => a.ac - b.ac)) {
     const kept = previous.get(ac) ?? { status: '有効', changedBy: '—', location: 'spec' }
     // ファイルを探す順は OS で違うので、名前の順にする
     const files = [...new Set((testFiles.get(ac) ?? []).map((file) => path.basename(file).replace(/\.java$/, '')))].sort()
@@ -200,7 +202,7 @@ export function renderAcList({ definitions, previous, testFiles, exclusions }) {
     } else if (exclusions[`AC-${ac}`]) {
       test = '除外'
     }
-    const origin = `[${spec.slice(0, 3)}](../specs/${spec}/spec.md)`
+    const origin = `[${spec.slice(0, 3)}](../specs/${specPath ?? spec}/spec.md)`
     lines.push(`| AC-${ac} | ${summary} | ${kept.status} | ${origin} | ${kept.changedBy} | ${kept.location} | ${test} |`)
   }
   return `${lines.join('\n')}\n`
@@ -327,13 +329,11 @@ function main() {
   const root = path.resolve(here, '../..')
   const specsDir = path.join(root, 'docs/specs')
   const definitions = []
-  for (const entry of readdirSync(specsDir, { withFileTypes: true })) {
-    if (entry.isDirectory()) {
-      try {
-        definitions.push(...parseSpecAcDefinitions(readFileSync(path.join(specsDir, entry.name, 'spec.md'), 'utf8'), entry.name))
-      } catch (error) {
-        if (error.code !== 'ENOENT') throw error
-      }
+  for (const { name, rel, dir } of listSpecDirs(specsDir)) {
+    try {
+      definitions.push(...parseSpecAcDefinitions(readFileSync(path.join(dir, 'spec.md'), 'utf8'), name, rel))
+    } catch (error) {
+      if (error.code !== 'ENOENT') throw error
     }
   }
   const specAcs = new Set(definitions.map((definition) => definition.ac))

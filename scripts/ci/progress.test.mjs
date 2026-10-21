@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
 import { describe, test } from 'node:test'
-import { checkProgress, countTasks, parseStatusTable } from './progress.mjs'
+import { checkProgress, countTasks, parseStatusTable, readTasks } from './progress.mjs'
 
 const README = [
   '| spec | 種類 | 内容 | 状態 |',
@@ -52,5 +55,27 @@ describe('進捗の一致の検査', () => {
   test('対象より前の spec は見ない', () => {
     const readme = new Map([['010', '完了']])
     assert.deepEqual(checkProgress(readme, new Map(), new Map([['010', { total: 2, done: 1 }]]), 11), [])
+  })
+
+  test('直下とアーカイブの spec の tasks を読む', () => {
+    const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      for (const [dir, text] of [
+        ['archive/mvp/018-docs/tasks', '- [x] **T018-01-01** a'],
+        ['019-mvp/tasks', '- [x] **T019-01-01** a\n- [ ] **T019-01-02** b'],
+      ]) {
+        mkdirSync(path.join(specsDir, dir), { recursive: true })
+        writeFileSync(path.join(specsDir, dir, '01.md'), text)
+      }
+      assert.deepEqual(
+        readTasks(specsDir),
+        new Map([
+          ['018', { total: 1, done: 1 }],
+          ['019', { total: 2, done: 1 }],
+        ]),
+      )
+    } finally {
+      rmSync(specsDir, { recursive: true, force: true })
+    }
   })
 })

@@ -6,6 +6,7 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { findMvpList, listSpecDirs } from './lib/spec-dirs.mjs'
 
 /** 対象の最初の spec の番号 */
 const FIRST_SPEC = 11
@@ -91,22 +92,31 @@ export function checkProgress(readme, mvp, tasks, firstSpec) {
   return problems
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const specsDir = 'docs/specs'
+/**
+ * spec（直下とアーカイブ）の tasks のチェックボックスを数える。
+ *
+ * @param {string} specsDir docs/specs のパス
+ * @returns {Map<string, { total: number, done: number }>} spec の番号 → タスクの数
+ */
+export function readTasks(specsDir) {
   const tasks = new Map()
-  for (const dir of readdirSync(specsDir, { withFileTypes: true }).filter((entry) => entry.isDirectory())) {
-    const match = dir.name.match(/^(\d{3,})-/)
-    const tasksDir = path.join(specsDir, dir.name, 'tasks')
-    if (!match || !existsSync(tasksDir)) continue
+  for (const { name, dir } of listSpecDirs(specsDir)) {
+    const tasksDir = path.join(dir, 'tasks')
+    if (!existsSync(tasksDir)) continue
     const texts = readdirSync(tasksDir)
       .filter((file) => file.endsWith('.md'))
       .map((file) => readFileSync(path.join(tasksDir, file), 'utf8'))
-    tasks.set(match[1], countTasks(texts))
+    tasks.set(name.match(/^(\d{3,})-/)[1], countTasks(texts))
   }
+  return tasks
+}
+
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
+  const specsDir = 'docs/specs'
   const problems = checkProgress(
     parseStatusTable(readFileSync('README.md', 'utf8')),
-    parseStatusTable(readFileSync(path.join(specsDir, 'mvp.md'), 'utf8')),
-    tasks,
+    parseStatusTable(readFileSync(findMvpList(specsDir), 'utf8')),
+    readTasks(specsDir),
     FIRST_SPEC,
   )
   for (const problem of problems) console.log(problem)

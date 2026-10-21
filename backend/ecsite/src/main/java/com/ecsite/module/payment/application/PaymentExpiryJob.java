@@ -10,7 +10,7 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 
 /**
- * 支払の期限切れのジョブ（docs/backend/modules/payment.md「支払の期限」）。<br />
+ * 支払の期限切れのジョブ（docs/design/modules/payment.md「支払の期限」）。<br />
  * 期限を過ぎた未払いの支払について、決済サービスの支払画面を閉じてから、支払なしにする。
  * 閉じられなかった（その前に支払が済んでいた）支払は、与信の成功の通知を待つ支払にし、次の回から探さない。
  * 通知を長く待つ支払があれば、毎回 warn のログに件数を出す（人が扱うまで知らせ続ける）。

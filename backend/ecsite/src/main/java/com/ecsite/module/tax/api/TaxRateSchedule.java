@@ -11,7 +11,7 @@ import java.util.UUID;
 
 /**
  * 税区分ごとの税率の一覧（予定を含む）。<br />
- * 商品カタログが、表示時刻で有効な率を決めて SQL に埋め込むために使う（docs/backend/modules/catalog.md）。
+ * 商品カタログが、表示時刻で有効な率を決めて SQL に埋め込むために使う（docs/design/modules/catalog.md）。
  *
  * @param taxCategoryId 税区分 ID
  * @param rates         税率の一覧（適用開始日時の古い順）

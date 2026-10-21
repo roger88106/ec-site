@@ -2,7 +2,7 @@
 
 - 前提：段階 6（分類のフラグ）
 - 完了条件：管理 API の契約が、画像の形式・大きさの上限・枚数の上限と分類の深さの上限を型の制約で示し、バックエンドの値と一致する。管理画面はそれを契約から得る。分類の深さを変えて追従しなければテストが失敗する。バリアントの追加が Location を返す。AC-272、273、276、282 のテストが通る。`./gradlew check`、`check-frontend.sh` が通る。
-- 参照：[plan](../plan.md) 第 6 節、spec の US-59、BR-33、[バックエンドの書き方](../../../backend/coding.md) 第 3.1 節、[フロントの書き方](../../../frontend/coding.md) 第 2.3 節、[API の規約](../../../api/conventions.md) 第 2 節
+- 参照：[plan](../plan.md) 第 6 節、spec の US-59、BR-33、[バックエンドの書き方](../../../rules/backend-coding.md) 第 3.1 節、[フロントの書き方](../../../rules/frontend-coding.md) 第 2.3 節、[API の規約](../../../rules/api-conventions.md) 第 2 節
 
 ## タスク
 

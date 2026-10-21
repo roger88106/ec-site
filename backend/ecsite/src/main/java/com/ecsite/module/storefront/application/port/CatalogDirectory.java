@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 商品カタログの腐敗防止層の口（バックエンドのアーキテクチャ 第 1 節、docs/backend/modules/storefront.md）。<br />
+ * 商品カタログの腐敗防止層の口（バックエンドのアーキテクチャ 第 1 節、docs/design/modules/storefront.md）。<br />
  * 商品とカテゴリを、店舗の型で返す。
  */
 public interface CatalogDirectory {

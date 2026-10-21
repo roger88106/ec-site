@@ -8,10 +8,10 @@
 |------|--------|----------|
 | 出荷（新規） | shipping.md（段階 2 で作る） | 出荷と配送状態（BR-19、22、23）、物流サービスの mock、NFR-9 |
 | 通知（新規） | notification.md（段階 4 で作る） | 出荷通知メール（US-38、NFR-11） |
-| 決済（変更） | [payment.md](../../backend/modules/payment.md) | 売上確定、与信期限、返金（BR-20、21、NFR-10） |
-| 注文（変更） | [order.md](../../backend/modules/order.md) | 出荷の登録、返送された注文のキャンセル、絞り込み（BR-18、US-35、39、40） |
+| 決済（変更） | [payment.md](../../design/modules/payment.md) | 売上確定、与信期限、返金（BR-20、21、NFR-10） |
+| 注文（変更） | [order.md](../../design/modules/order.md) | 出荷の登録、返送された注文のキャンセル、絞り込み（BR-18、US-35、39、40） |
 
-用語と識別子の対応は[用語集](../../reference/glossary.md)。
+用語と識別子の対応は[用語集](../../design/glossary.md)。
 
 ## 1. 全体の構成
 
@@ -218,7 +218,7 @@ spec 007 の与信の取消（決済の設計書「与信の取消」）と同�
 |------|------|
 | 配送状態（BR-19） | 出荷済み（`SHIPPED`）、配送中（`IN_TRANSIT`）、配達完了（`DELIVERED`）、返送（`RETURNED`） |
 | 用語集 | 出荷、配送業者、送り状番号、配送状態、売上確定、与信期限、返金を追加する。配送業者ごとの表示と配送状態の対応の表を追加する（ヤマト運輸は mock で使う名前、他の 2 社は分かる範囲で） |
-| 依存とライセンス | `spring-boot-starter-mail`（Apache License 2.0）。[依存とライセンス](../../reference/licenses.md) に追加する |
+| 依存とライセンス | `spring-boot-starter-mail`（Apache License 2.0）。[依存とライセンス](../../design/licenses.md) に追加する |
 | 秘密の値 | 物流サービスの通知の鍵 `CARRIER_WEBHOOK_SECRET`。ローカルとテストは設定の既定値（テスト用）を使う |
 | 機能紹介のページ | レビューの段階で、出荷の画面を再撮影するかを決める |
 

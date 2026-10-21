@@ -2,7 +2,7 @@
 
 - 前提：段階 1〜5（B 側 API）
 - 完了条件：B 側の操作が画面からひととおりでき、下記の手動確認が全て通る。CI でフロントのジョブが通る。
-- 参照：constitution 2（フロントエンド）、[plan](../plan.md) 第 3 節、[管理画面の構成](../../../frontend/apps/admin.md)、`admin.yaml`
+- 参照：constitution 2（フロントエンド）、[plan](../plan.md) 第 3 節、[管理画面の構成](../../../design/apps/admin.md)、`admin.yaml`
 - 画面は、管理画面の構成の第 9 節（画面を追加する手順）に沿って作る。
 
 ## 骨格

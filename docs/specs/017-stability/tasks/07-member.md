@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：NFR-25 のテストが通る。会員が登録済みのときの確認は読み取り専用のトランザクションで行う。既存の会員のテスト（同時の初回の要求を含む）が全て通る（`./gradlew check`）。
-- 参照：[plan](../plan.md) 第 8 節、spec の NFR-25、[会員モジュール](../../../backend/modules/member.md)、[バックエンドの書き方](../../../backend/coding.md) 第 1.1、4.1 節
+- 参照：[plan](../plan.md) 第 8 節、spec の NFR-25、[会員モジュール](../../../design/modules/member.md)、[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.1、4.1 節
 
 ## タスク
 

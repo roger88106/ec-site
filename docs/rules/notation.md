@@ -1,6 +1,6 @@
 # 文書の記号と番号
 
-spec・plan・tasks・constitution・モジュール設計書で使う番号と記号の意味。業務の用語と識別子（クラス名、テーブル名など）は[用語集](../reference/glossary.md)で引く。
+spec・plan・tasks・constitution・モジュール設計書で使う番号と記号の意味。業務の用語と識別子（クラス名、テーブル名など）は[用語集](../design/glossary.md)で引く。
 
 ## spec の種類
 
@@ -68,4 +68,4 @@ spec の進み具合（どの段階まで完了したか）は、README の spec
 | アーキテクチャのレベル `B` | 簡略：3 層（バックエンドのアーキテクチャ 第 2 節） |
 | アーキテクチャのレベル `C` | イベントストア（バックエンドのアーキテクチャ 第 2 節） |
 
-モジュールごとのレベルと選んだ理由は、`docs/backend/modules/<module>.md` の冒頭に書く。
+モジュールごとのレベルと選んだ理由は、`docs/design/modules/<module>.md` の冒頭に書く。

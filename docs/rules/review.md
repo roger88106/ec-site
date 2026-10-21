@@ -1,6 +1,6 @@
 # 書き方の規則とレビュー
 
-書き方の規則（[バックエンド](../backend/coding.md)、[フロント](../frontend/coding.md)、[テスト](../testing/writing.md)、[コメント](comments.md)）の書き方と、spec のレビューでの使い方。
+書き方の規則（[バックエンド](backend-coding.md)、[フロント](frontend-coding.md)、[テスト](test-writing.md)、[コメント](comments.md)）の書き方と、spec のレビューでの使い方。
 
 ## 1. 規則の書き方
 

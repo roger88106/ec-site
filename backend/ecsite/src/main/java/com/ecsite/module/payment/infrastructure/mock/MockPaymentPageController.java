@@ -16,7 +16,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 /**
- * mock の支払画面（docs/backend/modules/payment.md「mock」）。<br />
+ * mock の支払画面（docs/design/modules/payment.md「mock」）。<br />
  * 外部の決済サービスの画面の代わりで、EC の API ではない（OpenAPI に書かない）。決済の mock フラグを立てたときだけ出す。
  * 「支払う」「カードを拒否させる」「やめる」の操作を持ち、支払う・やめるときは店舗の注文の画面に戻す。
  */

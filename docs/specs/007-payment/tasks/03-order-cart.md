@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：AC-143〜166 のバックエンドのテストが通る。既存のテストが全て通る（`./gradlew check`）。
-- 参照：[plan](../plan.md) 第 1 節、第 4 節、第 5 節、spec の BR-14、第 9 節、[注文](../../../backend/modules/order.md)、[カート](../../../backend/modules/cart.md)
+- 参照：[plan](../plan.md) 第 1 節、第 4 節、第 5 節、spec の BR-14、第 9 節、[注文](../../../design/modules/order.md)、[カート](../../../design/modules/cart.md)
 
 ## 文書と API の契約
 

@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 013 が完了している。書き方の規則は [フロントの書き方](../../frontend/coding.md)、[フロントのアーキテクチャ](../../frontend/architecture.md)、[コメントの書き方](../../process/comments.md) 第 6 節、アプリごとの構成は [管理画面](../../frontend/apps/admin.md) と [店舗画面](../../frontend/apps/store.md)。
+前提：spec 013 が完了している。書き方の規則は [フロントの書き方](../../rules/frontend-coding.md)、[フロントのアーキテクチャ](../../design/frontend-architecture.md)、[コメントの書き方](../../rules/comments.md) 第 6 節、アプリごとの構成は [管理画面](../../design/apps/admin.md) と [店舗画面](../../design/apps/store.md)。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|

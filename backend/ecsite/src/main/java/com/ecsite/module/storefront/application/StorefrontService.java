@@ -21,7 +21,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * 店舗のサービス。商品カタログと在庫の結果を組み合わせる（docs/backend/modules/storefront.md）。<br />
+ * 店舗のサービス。商品カタログと在庫の結果を組み合わせる（docs/design/modules/storefront.md）。<br />
  * 商品・価格・公開状態・在庫はキャッシュしない。
  */
 @Service

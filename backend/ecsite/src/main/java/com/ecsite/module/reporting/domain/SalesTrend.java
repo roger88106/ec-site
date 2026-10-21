@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * 売上の推移の、区切りへのまとめ（docs/backend/modules/reporting.md「売上の推移」）
+ * 売上の推移の、区切りへのまとめ（docs/design/modules/reporting.md「売上の推移」）
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class SalesTrend {

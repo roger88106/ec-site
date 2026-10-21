@@ -2,7 +2,7 @@
 
 - 前提：段階 3（画像のサービスのエラーの分類）
 - 完了条件：US-65 のテストが通る。画像の変換と保存をトランザクションの外で行い、保存に失敗したら配信のファイルを削除する。返金・取消、配信のファイルの削除、追跡の開始のリスナーが、トランザクションの外で外部サービスを呼ぶ。既存のテストが全て通る（`./gradlew check`、`e2e.sh`）。
-- 参照：[plan](../plan.md) 第 5 節、spec の US-65、BR-40、[メディアモジュール](../../../backend/modules/media.md)、[商品カタログモジュール](../../../backend/modules/catalog.md)、[決済モジュール](../../../backend/modules/payment.md)、[通知モジュール](../../../backend/modules/notification.md)、[バックエンドの書き方](../../../backend/coding.md) 第 1.1、4.1 節
+- 参照：[plan](../plan.md) 第 5 節、spec の US-65、BR-40、[メディアモジュール](../../../design/modules/media.md)、[商品カタログモジュール](../../../design/modules/catalog.md)、[決済モジュール](../../../design/modules/payment.md)、[通知モジュール](../../../design/modules/notification.md)、[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.1、4.1 節
 
 ## タスク
 

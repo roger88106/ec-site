@@ -24,7 +24,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 地域・年齢層・性別（docs/backend/modules/reporting.md「地域・年齢層・性別」）。<br />
+ * 地域・年齢層・性別（docs/design/modules/reporting.md「地域・年齢層・性別」）。<br />
  * 都道府県・年齢・性別の組ごとに SQL で集計し、3 つの分け方へのまとめは Java で行う。
  * 注文は 1 つの組にだけ入るので、組の注文件数を合算しても、同じ注文を 2 回数えない。
  */

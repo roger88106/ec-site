@@ -9,12 +9,12 @@
 | IdP（新規。Keycloak の設定） | 本書 第 2 節 | US-22〜24、28、AC-139、140 |
 | 認証の土台（新規。モジュールではない） | 本書 第 3 節 | AC-136〜138、NFR-3、4 |
 | 会員（新規） | member.md（段階 3 で作る） | 会員の識別（BR-13） |
-| カート（変更） | [cart.md](../../backend/modules/cart.md) | US-25 |
-| 注文（変更） | [order.md](../../backend/modules/order.md) | US-26、27 |
-| 店舗（変更） | [storefront.md](../../backend/modules/storefront.md) | カートの表示の本人確認（AC-121） |
-| 在庫・注文（変更、P2） | [inventory.md](../../backend/modules/inventory.md)、[order.md](../../backend/modules/order.md) | US-30 |
+| カート（変更） | [cart.md](../../design/modules/cart.md) | US-25 |
+| 注文（変更） | [order.md](../../design/modules/order.md) | US-26、27 |
+| 店舗（変更） | [storefront.md](../../design/modules/storefront.md) | カートの表示の本人確認（AC-121） |
+| 在庫・注文（変更、P2） | [inventory.md](../../design/modules/inventory.md)、[order.md](../../design/modules/order.md) | US-30 |
 
-用語と識別子の対応は[用語集](../../reference/glossary.md)。
+用語と識別子の対応は[用語集](../../design/glossary.md)。
 
 ## 1. 全体の構成
 
@@ -42,7 +42,7 @@ flowchart LR
     storeRealm -- "確認・再設定のメール" --> mail
 ```
 
-- **店舗画面**は、サーバー（Next.js）が IdP とやり取りし、token をサーバー側だけで扱う（BFF）。ブラウザーには暗号化した HttpOnly の Cookie だけを渡し、JavaScript から token を読めないようにする。店舗画面はもともとブラウザーから API を呼ばない（[店舗画面の構成](../../frontend/apps/store.md)）ので、この形に合う。
+- **店舗画面**は、サーバー（Next.js）が IdP とやり取りし、token をサーバー側だけで扱う（BFF）。ブラウザーには暗号化した HttpOnly の Cookie だけを渡し、JavaScript から token を読めないようにする。店舗画面はもともとブラウザーから API を呼ばない（[店舗画面の構成](../../design/apps/store.md)）ので、この形に合う。
 - **管理画面**は SPA なので、ブラウザーで IdP とやり取りし（public client）、token をメモリーにだけ持つ。ログインの状態は IdP が自分のドメインの Cookie（SSO セッション）で持つ。
   - 再読み込み、新しいタブ、タブを閉じて再度開いたとき：SPA は token を持たないので IdP のログインにリダイレクトされるが、IdP がログインの状態を確認して、パスワードを求めずにすぐ SPA にリダイレクトする（一瞬のリダイレクトだけ）。
   - IdP のログインの状態が切れたとき（最後の操作から 30 分、最長 8 時間。第 2.3 節）と、ブラウザーを閉じたとき（運営者の realm では「ログインしたままにする」を無効にし、IdP の Cookie をブラウザーを閉じるまでにする）：再ログインする。
@@ -232,7 +232,7 @@ flowchart LR
 - **店舗画面のカート ID**：ログインしていないときは従来どおり Cookie のカート ID を使う。ログインしているときは `/me/cart` の ID を使い、Cookie のカート ID は使わない。ログインの直後に、Cookie にカート ID があれば `/me/cart/merge` を呼び、Cookie から消す。
 - **会員の注文**：注文の URL（注文 ID）の画面はそのまま使い、ログインと持ち主の確認を追加する。
 - **管理画面の API の呼び出し**：`openapi-fetch` の middleware で、token を `Authorization` ヘッダーに付ける。テストでは token のない状態で MSW に通す。
-- 店舗画面・管理画面の構成の文書（[store.md](../../frontend/apps/store.md)、[admin.md](../../frontend/apps/admin.md)）に、ログインの状態の取り方と、API に token を付ける場所を書く。
+- 店舗画面・管理画面の構成の文書（[store.md](../../design/apps/store.md)、[admin.md](../../design/apps/admin.md)）に、ログインの状態の取り方と、API に token を付ける場所を書く。
 
 ## 7. テスト
 

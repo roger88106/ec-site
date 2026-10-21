@@ -19,7 +19,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * バリアントの売れ行き（docs/backend/modules/reporting.md「バリアントの売れ行き」）。<br />
+ * バリアントの売れ行き（docs/design/modules/reporting.md「バリアントの売れ行き」）。<br />
  * 商品カタログのバリアントの一覧に、売れた数を合わせる。売れなかったバリアントも 0 として返す。
  */
 @Service

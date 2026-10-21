@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：US-48 のテストが通る。決済・物流を選ぶ今の設定がない。ローカル（`local`、`local,stripe`）と E2E が今と同じコマンドで起動する。既存のテストが全て通る（`./gradlew check`、`e2e.sh`）。
-- 参照：[plan](../plan.md) 第 1 節、spec の US-48、BR-30、NFR-17〜19、[決済モジュール](../../../backend/modules/payment.md)、[出荷モジュール](../../../backend/modules/shipping.md)、[バックエンドの書き方](../../../backend/coding.md) 第 6.1 節
+- 参照：[plan](../plan.md) 第 1 節、spec の US-48、BR-30、NFR-17〜19、[決済モジュール](../../../design/modules/payment.md)、[出荷モジュール](../../../design/modules/shipping.md)、[バックエンドの書き方](../../../rules/backend-coding.md) 第 6.1 節
 
 ## タスク
 

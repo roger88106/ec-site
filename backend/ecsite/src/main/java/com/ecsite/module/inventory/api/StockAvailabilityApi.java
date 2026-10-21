@@ -11,7 +11,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 店舗向けの在庫の API。複数のバリアントについて、在庫の有無を返す（docs/backend/modules/inventory.md）。<br />
+ * 店舗向けの在庫の API。複数のバリアントについて、在庫の有無を返す（docs/design/modules/inventory.md）。<br />
  * 在庫数そのものは返さない。C 側では有無だけを表示するため。
  */
 @Component

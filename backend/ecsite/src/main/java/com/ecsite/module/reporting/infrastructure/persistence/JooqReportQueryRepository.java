@@ -23,7 +23,7 @@ import static com.ecsite.jooq.reporting.Tables.SALES_ORDER;
 import static com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
 
 /**
- * 写しを集計する問い合わせの jOOQ の実装（docs/backend/modules/reporting.md「集計」）
+ * 写しを集計する問い合わせの jOOQ の実装（docs/design/modules/reporting.md「集計」）
  */
 @Repository
 @RequiredArgsConstructor

@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 会員（docs/backend/modules/member.md）。IdP のアカウントと、EC の会員 ID の対応。
+ * 会員（docs/design/modules/member.md）。IdP のアカウントと、EC の会員 ID の対応。
  *
  * @param id         会員 ID
  * @param idpSubject IdP のアカウントの ID（token の subject）

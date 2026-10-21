@@ -9,7 +9,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 商品カタログのイベントのリスナー。バリアントの登録・削除に合わせて、在庫を作る・消す（docs/backend/modules/inventory.md）。<br />
+ * 商品カタログのイベントのリスナー。バリアントの登録・削除に合わせて、在庫を作る・消す（docs/design/modules/inventory.md）。<br />
  * コミット後に非同期で、別のトランザクションで動く。同じイベントが複数回届いても結果が変わらないように作る（バックエンドのアーキテクチャ 第 5 節）。
  */
 @Component

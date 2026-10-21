@@ -1,6 +1,6 @@
 # フロントのアーキテクチャ
 
-[constitution](../constitution.md) 第 2 節の細則。書き方は [フロントの書き方](coding.md)、アプリごとの構成は [管理画面](apps/admin.md) と [店舗画面](apps/store.md)。
+[constitution](../constitution.md) 第 2 節の細則。書き方は [フロントの書き方](../rules/frontend-coding.md)、アプリごとの構成は [管理画面](apps/admin.md) と [店舗画面](apps/store.md)。
 
 ## 1. 全体の構成
 
@@ -50,4 +50,4 @@ frontend/
 
 ## 4. 共有パッケージ
 
-`frontend/shared`（`@ec-site/shared`）には、2 つのアプリで使い、フレームワーク（Vite・Next.js）と API の接続に依存しないものだけを置く。今置いているのは、カテゴリの木、ログインの戻り先の検証、クラス名の結合、数・日付・金額の整形、同じ表示のコンポーネントとテーマ、共通の文言。入れるもの・入れないものの基準は [フロントの書き方](coding.md) 第 5 節。
+`frontend/shared`（`@ec-site/shared`）には、2 つのアプリで使い、フレームワーク（Vite・Next.js）と API の接続に依存しないものだけを置く。今置いているのは、カテゴリの木、ログインの戻り先の検証、クラス名の結合、数・日付・金額の整形、同じ表示のコンポーネントとテーマ、共通の文言。入れるもの・入れないものの基準は [フロントの書き方](../rules/frontend-coding.md) 第 5 節。

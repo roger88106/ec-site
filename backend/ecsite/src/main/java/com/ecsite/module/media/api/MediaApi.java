@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * メディアモジュールが公開する API（docs/backend/modules/media.md「他のモジュールへの公開」）。<br />
+ * メディアモジュールが公開する API（docs/design/modules/media.md「他のモジュールへの公開」）。<br />
  * 使う側はアセット ID だけを持つ。配信のキーや URL の形は、このモジュールの外に出さない。<br />
  * 処理はメディアのサービスに委ねる（バックエンドの書き方 第 1.1 節）。
  */

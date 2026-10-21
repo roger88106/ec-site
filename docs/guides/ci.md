@@ -12,7 +12,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | E2E | `scripts/dev/e2e.sh` | E2E |
 
 - CI で失敗したら、まず個別のジョブ（バックエンド、管理画面、店舗画面、CI の検査の script）の結果を確認する。E2E は他のジョブを待たずに始まるため、個別のジョブで分かる失敗（コンパイルの誤りなど）でも E2E が失敗する。
-- commit の前の hook は `check-all.sh` だけを実行する（[開発環境の起動](setup.md)）。テストは時間がかかるため、変更した箇所に応じて手動で実行する（[テストの実行方法](../testing/running.md)）。
+- commit の前の hook は `check-all.sh` だけを実行する（[開発環境の起動](setup.md)）。テストは時間がかかるため、変更した箇所に応じて手動で実行する（[テストの実行方法](running-tests.md)）。
 
 ## 2. CI のジョブ
 
@@ -39,24 +39,24 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 | script | 確認すること | 失敗したとき | 除外の書き方 |
 |--------|--------------|--------------|--------------|
-| `ac-check` | 機能の spec の全ての AC が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ含まれる（[テストの書き方](../testing/writing.md) 第 2.1 節）※1。[AC 一覧](../design/acceptance-criteria.md)を読み、廃止の AC はテストを求めず、テストが参照すると失敗にする。spec と一覧の AC の食い違い、決まっていない状態、古い表も失敗にする | テストを追加するか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く。表が古いときは `node scripts/ci/ac-check.mjs --write` で再生成する | `ac-exclusions.json` に AC と理由 |
+| `ac-check` | 機能の spec の全ての AC が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ含まれる（[テストの書き方](../rules/test-writing.md) 第 2.1 節）※1。[AC 一覧](../design/acceptance-criteria.md)を読み、廃止の AC はテストを求めず、テストが参照すると失敗にする。spec と一覧の AC の食い違い、決まっていない状態、古い表も失敗にする | テストを追加するか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く。表が古いときは `node scripts/ci/ac-check.mjs --write` で再生成する | `ac-exclusions.json` に AC と理由 |
 | `compose-ports` | compose の全ての `ports` が、待ち受けるアドレスを `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始める（既定でこのマシンだけで待ち受け、1 つの変数で変更できる。[開発環境の起動](setup.md) 第 2 節） | ポートの前に `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` を書く | なし |
 | `doc-refs` | Markdown のリンク先と、`<文書の名前> 第 N 節` の参照先が存在する | リンクか節の番号を修正する（skill `docs`） | なし |
 | `doc-terms` | 文書に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も表示する | `doc-terms.json` |
-| `env-defaults` | [環境変数](environment.md) の表の「既定」が、設定の型（`@ConfigurationProperties` の record）の `@DefaultValue` と一致する。コードの既定値は文書にあり、文書に書いた既定値（時間、数、真偽）はコードにもある（[バックエンドの書き方](../backend/coding.md) 第 6.1 節）。時間は書き方によらず長さで比較する | 文書の表の行か値を修正する。省略形（`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えた名前として読む | なし |
-| `frontend-rules` | 機能（`features/<機能>/`）が、他の機能を import しない（[フロントの書き方](../frontend/coding.md) 第 1.2 節）。ロケールとタイムゾーンを `frontend/shared/src/lib/locale.ts` 以外に直接書かない（[フロントの書き方](../frontend/coding.md) 第 7.3 節）。店舗画面と管理画面に、同じ相対パスで同じ内容のファイルがない（[フロントの書き方](../frontend/coding.md) 第 5.1 節） | 2 つの機能で使うものは `components/` か `lib/` に置く。ロケールは `LOCALE`・`TIME_ZONE` を使う。同じファイルは共有パッケージに移す | `frontend-rules-exclusions.json` に src からの相対パスと理由 |
-| `glossary-ids` | [用語集](../reference/glossary.md) の識別子の列の名前が、コード（`backend/`、`frontend/`、`api/`、`docker/`、`e2e/`、`scripts/`）かファイルのパスにある。kebab-case の設定の名前は camelCase の語でもよい。名前の形の例（`Xxx`、`<…>`、`*`）は検査の対象外 | 用語集の識別子を、今のコードの名前に修正する | `glossary-ids-exclusions.json` に名前と理由 |
-| `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで取得する。`--count` で数だけを出力する | `hardcoded-text-exclusions.json` にファイルと理由 |
-| `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../frontend/coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |
-| `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../backend/coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（[バックエンドの書き方](../backend/coding.md) 第 1.3 節） | テストでは定型コードを手動で書く。列挙型は `switch` 式で変換する | なし |
-| `message-comments` | 画面のコードで、キーを文字列リテラルで書いた文言の呼び出し（`t('…')`）に、表示する内容のコメントがある（[コメントの書き方](../process/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは検査の対象外 | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
-| `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）以外の数字がない（[バックエンドの書き方](../backend/coding.md) 第 3.2 節）。除外の一覧の、不要になったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` にキーと理由（「1 つだけ」など数え方の言葉で、規則の値でないもの） |
+| `env-defaults` | [環境変数](environment.md) の表の「既定」が、設定の型（`@ConfigurationProperties` の record）の `@DefaultValue` と一致する。コードの既定値は文書にあり、文書に書いた既定値（時間、数、真偽）はコードにもある（[バックエンドの書き方](../rules/backend-coding.md) 第 6.1 節）。時間は書き方によらず長さで比較する | 文書の表の行か値を修正する。省略形（`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えた名前として読む | なし |
+| `frontend-rules` | 機能（`features/<機能>/`）が、他の機能を import しない（[フロントの書き方](../rules/frontend-coding.md) 第 1.2 節）。ロケールとタイムゾーンを `frontend/shared/src/lib/locale.ts` 以外に直接書かない（[フロントの書き方](../rules/frontend-coding.md) 第 7.3 節）。店舗画面と管理画面に、同じ相対パスで同じ内容のファイルがない（[フロントの書き方](../rules/frontend-coding.md) 第 5.1 節） | 2 つの機能で使うものは `components/` か `lib/` に置く。ロケールは `LOCALE`・`TIME_ZONE` を使う。同じファイルは共有パッケージに移す | `frontend-rules-exclusions.json` に src からの相対パスと理由 |
+| `glossary-ids` | [用語集](../design/glossary.md) の識別子の列の名前が、コード（`backend/`、`frontend/`、`api/`、`docker/`、`e2e/`、`scripts/`）かファイルのパスにある。kebab-case の設定の名前は camelCase の語でもよい。名前の形の例（`Xxx`、`<…>`、`*`）は検査の対象外 | 用語集の識別子を、今のコードの名前に修正する | `glossary-ids-exclusions.json` に名前と理由 |
+| `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../rules/frontend-coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで取得する。`--count` で数だけを出力する | `hardcoded-text-exclusions.json` にファイルと理由 |
+| `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../rules/frontend-coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |
+| `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../rules/backend-coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.3 節） | テストでは定型コードを手動で書く。列挙型は `switch` 式で変換する | なし |
+| `message-comments` | 画面のコードで、キーを文字列リテラルで書いた文言の呼び出し（`t('…')`）に、表示する内容のコメントがある（[コメントの書き方](../rules/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは検査の対象外 | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
+| `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）以外の数字がない（[バックエンドの書き方](../rules/backend-coding.md) 第 3.2 節）。除外の一覧の、不要になったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` にキーと理由（「1 つだけ」など数え方の言葉で、規則の値でないもの） |
 | `progress` | spec 011 以降の進捗が、README の進捗の表、MVP の完成までの一覧、tasks のチェックボックスで一致する（tasks が全て完了した spec だけが「完了」。2 つの表の状態が同じ） | 最後のタスクを完了する commit で、2 つの表の状態を「完了」にする | なし |
 | `related-specs` | 設計の文書（概要の表に「関連 spec」の行を持つもの）を変えた commit の spec（1 行目の `（T0NN-…）`）が、その行にある。commit の履歴を読むので、shallow clone では失敗する | 概要の表の「関連 spec」に、その spec のリンクを追加する | `related-specs-exclusions.json` に、設計を変えない段階のタスク番号の前置き（`T018-05` など）と理由 |
 | `role-permissions` | [ロールと権限の対応表](../design/role-permissions.md)が、管理 API の契約の `x-required-permission`、運営者の realm のロール、店舗 API の契約の `security` から再生成した表と一致する。管理 API の操作に権限がない、realm にない権限を使う、も失敗にする | ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認する | なし |
-| `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号がない（[コメントの書き方](../process/comments.md) 第 1 節） | 番号を削除し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
-| `test-names` | バックエンドの全ての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../testing/writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
-| `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する（[テストの書き方](../testing/writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
+| `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号がない（[コメントの書き方](../rules/comments.md) 第 1 節） | 番号を削除し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
+| `test-names` | バックエンドの全ての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../rules/test-writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
+| `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する（[テストの書き方](../rules/test-writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
 
 ※1：テスト名に含まれない AC は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、成功した検査の警告（`警告：` で始まる行）も出力する。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。手元で CI と同じに確認するときは `CI=true scripts/ci/check-all.sh`。他の誤り（範囲の表記、spec にない AC 番号、除外の一覧の誤り）は、手元でも失敗にする。
 

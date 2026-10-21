@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 会員の参照のサービス（docs/backend/modules/member.md）。<br />
+ * 会員の参照のサービス（docs/design/modules/member.md）。<br />
  * 会員の確認はログインしたすべての要求で動くので、会員がいるときは読み取り専用のトランザクションで済ませる。
  */
 @Service

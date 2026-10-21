@@ -2,14 +2,14 @@
 
 - 前提：段階 1
 - 完了条件：調査の結果とサブエージェントの表が文書にある。文書の作成方法を決めた。レビュー skill がある。MCP サーバーの採否を決めた。`check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 8 節、spec の DS-53、[開発の進め方](../../../process/workflow.md)、[AGENTS.md](../../../../AGENTS.md)、skill `writing-for-agents`
+- 参照：[plan](../plan.md) 第 8 節、spec の DS-53、[開発の進め方](../../../rules/workflow.md)、[AGENTS.md](../../../../AGENTS.md)、skill `writing-for-agents`
 
 ## タスク
 
 - [x] **T018-02-01** SDD の仕組み（cc-sdd、Spec Kit、OpenSpec、ほかに見つかったもの）のサブエージェントの使い方を、その時点の最新版で調査する（DC-200）。
   - 結果は、開発の進め方の細則となる新しい文書に書く。置き場所は `docs/process/` の下とし、段階 6 で移す。
   - 取り入れるもの、取り入れないもの、理由を表にする。
-  - 結果：[エージェントの作業フロー](../../../process/subagents.md) に書いた。調べたのは cc-sdd、superpowers の subagent-driven-development、Spec Kit、OpenSpec。サブエージェントを使うのは前の 2 つだけだった。開発の進め方の冒頭からリンクした。
+  - 結果：[エージェントの作業フロー](../../../rules/subagents.md) に書いた。調べたのは cc-sdd、superpowers の subagent-driven-development、Spec Kit、OpenSpec。サブエージェントを使うのは前の 2 つだけだった。開発の進め方の冒頭からリンクした。
   - ファイル名は `subagents.md` にした。`agents.md` にすると、大文字と小文字を区別しない Windows で `AGENTS.md` と同じ名前になり、Claude Code がその置き場所の指示として読み込むため。
   - 本文は、日本語の要点から日本語だけの文脈のサブエージェントが書いた（文書の作成方法の試行の 3 回目）。
 - [x] **T018-02-02** 同じ文書に、サブエージェントに任せる作業とモデルの表を書く（DC-201）。
@@ -45,7 +45,7 @@
 - [x] **T018-02-05** MCP サーバーを試す（DC-206）。
   - 候補：IntelliJ の MCP（任意）、Serena、Claude Code の LSP のプラグイン、context7。
   - 同じ作業で、使うときと使わないときの token とツールの呼び出し回数を比較する。
-  - 導入するものは、設定の手順を[開発環境の起動](../../../dev/setup.md)に書く。有料の機能を含むものは任意とする。
+  - 導入するものは、設定の手順を[開発環境の起動](../../../guides/setup.md)に書く。有料の機能を含むものは任意とする。
   - 結果（IntelliJ の MCP）：物流の mock の 2 つのメソッドの呼び出し元を調べた。IDE の呼び出しの階層は 3 回（同じ名前のメソッドが 2 つあり、1 回は型の指定を求められた）、テキスト検索は 2 回で、出力の量はどちらも小さく、token の差はほとんどなかった。一方、テキスト検索は、発生日時を指定する `notification` をテストだけの操作と誤って判断していた（本番のコードの別の `notification` から呼ばれている）。IDE は型で区別したので正しかった。plan 第 3 節と T018-03-24 を修正した。
   - 決めたこと：IntelliJ の MCP は任意とし、同じ名前のメソッドの呼び出し元と、移動・削除の前の確認に使う（開発環境の起動 第 8 節）。
   - Serena は Python の実行環境が必要で、Claude Code の LSP のプラグインと context7 はエージェントの設定の追加が必要なので、本 spec では試さなかった。TODO 一覧に、条件付きの項目として載せた。

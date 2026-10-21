@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 要求した会員の会員 ID を求める（docs/backend/modules/member.md）。<br />
+ * 要求した会員の会員 ID を求める（docs/design/modules/member.md）。<br />
  * API の入口が使う。IdP のアカウント（token の subject）から会員 ID を求める処理は、会員モジュールの中に閉じる。
  */
 @Component

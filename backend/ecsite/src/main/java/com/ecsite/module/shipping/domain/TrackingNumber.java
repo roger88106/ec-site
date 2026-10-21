@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.regex.Pattern;
 
 /**
- * 送り状番号（docs/backend/modules/shipping.md「送り状番号」）。ハイフンを除いた数字だけを持つ。
+ * 送り状番号（docs/design/modules/shipping.md「送り状番号」）。ハイフンを除いた数字だけを持つ。
  *
  * @param value 数字だけの送り状番号
  */

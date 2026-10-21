@@ -2,7 +2,7 @@
 
 - 前提：段階 3（mock で動く）
 - 完了条件：店舗画面のテストが通る（`scripts/dev/check-frontend.sh`）。mock で、注文から支払、期限切れまでを画面で確認している。
-- 参照：[plan](../plan.md) 第 6 節、[店舗画面の構成](../../../frontend/apps/store.md)、skill `new-screen`
+- 参照：[plan](../plan.md) 第 6 節、[店舗画面の構成](../../../design/apps/store.md)、skill `new-screen`
 
 ## タスク
 

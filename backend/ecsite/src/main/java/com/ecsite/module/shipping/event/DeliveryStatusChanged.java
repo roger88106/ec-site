@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 配送状態の変化（docs/backend/modules/shipping.md「配送状態と順位」）。<br />
+ * 配送状態の変化（docs/design/modules/shipping.md「配送状態と順位」）。<br />
  * 出荷を作ったとき（出荷済み）と、通知で配送状態が進んだときに 1 つ出る。反映しなかった通知では出ない。
  * レポートが、注文の写しの配送状態と、状態の履歴に使う。
  *

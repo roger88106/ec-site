@@ -2,7 +2,7 @@
 
 - 前提：spec 001 の完了
 - 完了条件：BR-8、BR-11、AC-83、107 のテストが通る。C 側の在庫の有無が販売可能数で判定される。`./gradlew check`、管理画面のテストが通る。
-- 参照：[plan](../plan.md) 第 2 節、[tax.md](../../../backend/modules/tax.md)「税率ごとの消費税額」、[inventory.md](../../../backend/modules/inventory.md)「引当」、`admin.yaml`（tag: inventory）
+- 参照：[plan](../plan.md) 第 2 節、[tax.md](../../../design/modules/tax.md)「税率ごとの消費税額」、[inventory.md](../../../design/modules/inventory.md)「引当」、`admin.yaml`（tag: inventory）
 - タスク番号は `T2` ＋ 段階 ＋ 連番（spec 001 の番号と重ならないようにするため）。
 
 ## 税
@@ -27,4 +27,4 @@
 - [x] **T2108** 減算への置き換えと戻しを実装する。調整履歴の応答に注文 ID・注文番号を追加する。T2107 を通す。
 - [x] **T2109** 店舗向けの在庫の有無を、販売可能数で判定するように変える（BR-11）。既存の店舗の統合テストに、引当で在庫なしになるケースを追加する。
 - [x] **T2110** 管理画面：調整履歴に注文の理由と注文番号を表示し、調整の入力では注文の理由を選べないようにする。テストを修正する。
-- [x] **T2111** [inventory.md](../../../backend/modules/inventory.md) の草案を、マイグレーションへのリンクに置き換える。
+- [x] **T2111** [inventory.md](../../../design/modules/inventory.md) の草案を、マイグレーションへのリンクに置き換える。

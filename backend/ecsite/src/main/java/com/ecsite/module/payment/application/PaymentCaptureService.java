@@ -11,7 +11,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * 売上確定のサービス（docs/backend/modules/payment.md「売上確定」）。<br />
+ * 売上確定のサービス（docs/design/modules/payment.md「売上確定」）。<br />
  * 決済サービスの応答を待つ間、行ロックを持たないよう、決済サービスの呼び出しはトランザクションの外で行い、
  * 結果の反映だけを {@link PaymentCommandService} のトランザクションで行う。
  */

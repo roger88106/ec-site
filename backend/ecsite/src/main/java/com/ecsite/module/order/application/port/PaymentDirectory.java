@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 決済の腐敗防止層（docs/backend/modules/order.md「支払」）
+ * 決済の腐敗防止層（docs/design/modules/order.md「支払」）
  */
 public interface PaymentDirectory {
 
@@ -90,7 +90,7 @@ public interface PaymentDirectory {
     }
 
     /**
-     * 支払の状態（docs/backend/modules/payment.md「状態遷移」）
+     * 支払の状態（docs/design/modules/payment.md「状態遷移」）
      */
     enum Status {
 

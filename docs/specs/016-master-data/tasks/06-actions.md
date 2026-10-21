@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：店舗画面はキャンセルの申請の却下を申請の結果だけで決める。管理 API が、キャンセルの時に在庫に戻すかを聞くか、商品を削除できない理由、子の分類を追加できるかを返し、管理画面はそれで表示を切り替える。画面に、状態から操作の可否を決める判定がない。US-58 のテストが通る。`./gradlew check`、`check-frontend.sh`、`e2e.sh` が通る。
-- 参照：[plan](../plan.md) 第 5 節、spec の US-58、[フロントのアーキテクチャ](../../../frontend/architecture.md) 第 3 節、[店舗画面の構成](../../../frontend/apps/store.md)、[管理画面の構成](../../../frontend/apps/admin.md)
+- 参照：[plan](../plan.md) 第 5 節、spec の US-58、[フロントのアーキテクチャ](../../../design/frontend-architecture.md) 第 3 節、[店舗画面の構成](../../../design/apps/store.md)、[管理画面の構成](../../../design/apps/admin.md)
 
 ## タスク
 

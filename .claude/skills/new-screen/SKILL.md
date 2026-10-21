@@ -5,7 +5,7 @@ description: ec-site のフロントに画面や操作を追加するときの�
 
 # 画面を追加するときの型
 
-決まりの正本は [店舗画面の構成](../../../docs/frontend/apps/store.md) と [管理画面の構成](../../../docs/frontend/apps/admin.md)。
+決まりの正本は [店舗画面の構成](../../../docs/design/apps/store.md) と [管理画面の構成](../../../docs/design/apps/admin.md)。
 本書はその要点と、そのままコピーできる最小の例。迷ったら正本を読む（store.md 第 4〜6・8 節、admin.md 第 4〜6・8・9 節）。
 
 共通の前提：

@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 状態の履歴の 1 行（docs/backend/modules/reporting.md「集めるデータ」）。受けたイベントごとに 1 行。<br />
+ * 状態の履歴の 1 行（docs/design/modules/reporting.md「集めるデータ」）。受けたイベントごとに 1 行。<br />
  * 状態は、出来事に応じて注文の状態か配送状態の名前をそのまま持つ（後から出来事を追加しても表を変えずに済むため）。
  *
  * @param eventId          元のイベント ID

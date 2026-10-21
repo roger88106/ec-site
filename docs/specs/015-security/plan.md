@@ -6,14 +6,14 @@
 
 | 対象 | 設計書 | 主な担当 |
 |------|--------|----------|
-| 決済（変更） | [payment.md](../../backend/modules/payment.md) | 決済の mock フラグ、mock のテスト用の操作（US-48、53） |
-| 出荷（変更） | [shipping.md](../../backend/modules/shipping.md) | 物流の mock フラグ（US-48） |
-| 認可・運用ポート | [バックエンドのアーキテクチャ](../../backend/architecture.md) 第 7、8 節 | 店舗 API の認可、既定で拒む、運用ポート、デプロイの前提（US-49、50、BR-32） |
-| 管理画面 | [管理画面の構成](../../frontend/apps/admin.md) 第 10 節 | 本番ビルドの IdP の設定（AC-238、239） |
-| 店舗画面 | [店舗画面の構成](../../frontend/apps/store.md) 第 9 節、[フロントの書き方](../../frontend/coding.md) 第 8.1 節 | 公開する URL、任意の設定（AC-240〜242） |
-| 環境と設定 | [環境変数](../../dev/environment.md)、[開発環境の起動](../../dev/setup.md) | compose のポート、設定ファイル、運用ポート（US-52、AC-237） |
+| 決済（変更） | [payment.md](../../design/modules/payment.md) | 決済の mock フラグ、mock のテスト用の操作（US-48、53） |
+| 出荷（変更） | [shipping.md](../../design/modules/shipping.md) | 物流の mock フラグ（US-48） |
+| 認可・運用ポート | [バックエンドのアーキテクチャ](../../design/backend-architecture.md) 第 7、8 節 | 店舗 API の認可、既定で拒む、運用ポート、デプロイの前提（US-49、50、BR-32） |
+| 管理画面 | [管理画面の構成](../../design/apps/admin.md) 第 10 節 | 本番ビルドの IdP の設定（AC-238、239） |
+| 店舗画面 | [店舗画面の構成](../../design/apps/store.md) 第 9 節、[フロントの書き方](../../rules/frontend-coding.md) 第 8.1 節 | 公開する URL、任意の設定（AC-240〜242） |
+| 環境と設定 | [環境変数](../../guides/environment.md)、[開発環境の起動](../../guides/setup.md) | compose のポート、設定ファイル、運用ポート（US-52、AC-237） |
 
-用語と識別子の対応は[用語集](../../reference/glossary.md)。
+用語と識別子の対応は[用語集](../../design/glossary.md)。
 
 ## 1. 外部サービスの mock フラグ（US-48）
 
@@ -129,11 +129,11 @@ ecsite:
 
 | 文書 | 修正すること |
 |------|----------|
-| [バックエンドのアーキテクチャ](../../backend/architecture.md) | 第 7.2 節に店舗 API の契約と既定で拒むこと、第 7.3 節にフラグを立てない・運用ポートを外に出さない、第 8 節の切り替えをフラグに |
-| [payment.md](../../backend/modules/payment.md)、[shipping.md](../../backend/modules/shipping.md) | 実装の選び方、mock の節 |
-| [環境変数](../../dev/environment.md) | フラグ、運用ポート、`AUTH_URL`、`VITE_OIDC_CLIENT_ID` の本番の扱い。選択の設定を削除する |
-| [開発環境の起動](../../dev/setup.md) | 死活監視の URL、他のマシンからつなぐ手順 |
-| [管理画面の構成](../../frontend/apps/admin.md) 第 10 節、[店舗画面の構成](../../frontend/apps/store.md) 第 9 節 | 本番ビルドの確認、公開する URL |
+| [バックエンドのアーキテクチャ](../../design/backend-architecture.md) | 第 7.2 節に店舗 API の契約と既定で拒むこと、第 7.3 節にフラグを立てない・運用ポートを外に出さない、第 8 節の切り替えをフラグに |
+| [payment.md](../../design/modules/payment.md)、[shipping.md](../../design/modules/shipping.md) | 実装の選び方、mock の節 |
+| [環境変数](../../guides/environment.md) | フラグ、運用ポート、`AUTH_URL`、`VITE_OIDC_CLIENT_ID` の本番の扱い。選択の設定を削除する |
+| [開発環境の起動](../../guides/setup.md) | 死活監視の URL、他のマシンからつなぐ手順 |
+| [管理画面の構成](../../design/apps/admin.md) 第 10 節、[店舗画面の構成](../../design/apps/store.md) 第 9 節 | 本番ビルドの確認、公開する URL |
 | skill `local-dev` | 起動待ちの URL、決済の mock とフラグ |
 
 ## 8. 決めたこと

@@ -20,7 +20,7 @@ import java.util.UUID;
 import java.util.function.Predicate;
 
 /**
- * キャンセルのサービス（docs/backend/modules/order.md「状態遷移」）。<br />
+ * キャンセルのサービス（docs/design/modules/order.md「状態遷移」）。<br />
  * 注文を行ロックしてから状態を変え、キャンセルになったら同じトランザクションで在庫を戻し、支払を取り消させる（与信の取消と返金は決済がコミットの後に行う）。<br />
  * 出荷済みの注文は、出荷の配送状態が返送のときだけキャンセルでき、在庫に戻すかは運営者の指定に従う。
  */

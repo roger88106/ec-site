@@ -28,8 +28,8 @@ import java.util.regex.Pattern;
 import java.util.stream.IntStream;
 
 /**
- * 注文の Aggregate Root（docs/backend/modules/order.md「注文」）。<br />
- * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/backend/modules/order.md「状態遷移」）。<br />
+ * 注文の Aggregate Root（docs/design/modules/order.md「注文」）。<br />
+ * 明細と金額は注文時点の写しで、成立の後は変わらない。変わるのは状態とキャンセルの記録だけ（docs/design/modules/order.md「状態遷移」）。<br />
  * 注文は支払待ちで作られ、決済のイベント（与信の成功、支払の期限切れ）で受付かキャンセルになる。受付から出荷すると出荷済みになる。
  */
 @Getter

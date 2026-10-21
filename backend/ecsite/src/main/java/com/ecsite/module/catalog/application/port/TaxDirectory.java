@@ -35,7 +35,7 @@ public interface TaxDirectory {
 
     /**
      * すべての税区分について、指定した時点で有効な率を返す。C 側の一覧の SQL に埋め込むために使う。<br />
-     * 税率の一覧はインスタンス内で 30 秒キャッシュする（docs/backend/modules/catalog.md）。
+     * 税率の一覧はインスタンス内で 30 秒キャッシュする（docs/design/modules/catalog.md）。
      *
      * @param instant 時点
      * @return 税区分 ID → 率（%）。有効な税率のない税区分は含まない

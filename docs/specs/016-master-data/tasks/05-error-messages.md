@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：注文手続きの画面は、入力の誤りの欄ごとの文を API の文のまま表示する。お届け先の郵便番号と電話番号の形の誤りは、業務のエラーと同じ文を返す。エラーの文に数字を直接書かない。US-57 のテストが通る。`./gradlew check`、`check-frontend.sh`、`check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 4 節、spec の US-57、[バックエンドの書き方](../../../backend/coding.md) 第 3.2、3.3 節、[フロントの書き方](../../../frontend/coding.md) 第 2.2 節
+- 参照：[plan](../plan.md) 第 4 節、spec の US-57、[バックエンドの書き方](../../../rules/backend-coding.md) 第 3.2、3.3 節、[フロントの書き方](../../../rules/frontend-coding.md) 第 2.2 節
 
 ## タスク
 

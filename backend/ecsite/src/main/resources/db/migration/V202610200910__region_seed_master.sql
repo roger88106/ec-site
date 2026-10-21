@@ -1,4 +1,4 @@
--- 地域の最初のデータ（docs/backend/modules/region.md「最初のデータ」、spec 016 AC-259、260）
+-- 地域の最初のデータ（docs/design/modules/region.md「最初のデータ」、spec 016 AC-259、260）
 -- 日本郵便の郵便番号のデータ（utf_ken_all.csv）から、Gradle の generateRegionMigration で作った。手で直さない
 -- 都道府県と市区町村は全件、郵便番号は src/tools/resources/region/postal-codes.txt の分だけ
 

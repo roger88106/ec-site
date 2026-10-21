@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：US-61 のテストが通る。引当・注文手続き・カート・処理の済んだイベントを片付けるジョブが、保存期間と間隔の設定を持って動く。既存のテストが全て通る（`./gradlew check`、`e2e.sh`）。
-- 参照：[plan](../plan.md) 第 1 節、spec の US-61、BR-38、NFR-24、[バックエンドのアーキテクチャ](../../../backend/architecture.md) 第 5 節、[在庫モジュール](../../../backend/modules/inventory.md)、[注文モジュール](../../../backend/modules/order.md)、[カートモジュール](../../../backend/modules/cart.md)、[バックエンドの書き方](../../../backend/coding.md) 第 6.1 節
+- 参照：[plan](../plan.md) 第 1 節、spec の US-61、BR-38、NFR-24、[バックエンドのアーキテクチャ](../../../design/backend-architecture.md) 第 5 節、[在庫モジュール](../../../design/modules/inventory.md)、[注文モジュール](../../../design/modules/order.md)、[カートモジュール](../../../design/modules/cart.md)、[バックエンドの書き方](../../../rules/backend-coding.md) 第 6.1 節
 
 ## タスク
 

@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：決済の単体テストと統合テストが通る（mock）。既存のテストが全て通る（`./gradlew check`）。
-- 参照：[plan](../plan.md) 第 3 節、spec の BR-20、21、NFR-10、[決済モジュール](../../../backend/modules/payment.md)
+- 参照：[plan](../plan.md) 第 3 節、spec の BR-20、21、NFR-10、[決済モジュール](../../../design/modules/payment.md)
 
 ## 文書
 

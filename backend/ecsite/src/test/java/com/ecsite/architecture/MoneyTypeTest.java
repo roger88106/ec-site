@@ -15,7 +15,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 金額を整数で持つ項目の検査（docs/backend/coding.md 第 1.5 節、spec 005 DC-34）。<br />
+ * 金額を整数で持つ項目の検査（docs/rules/backend-coding.md 第 1.5 節、spec 005 DC-34）。<br />
  * モジュールの間の公開の型（api・event）と、command・表示用（view）の型の金額は {@code Money} にする。
  * 整数で持つのは presentation（API の型との変換）と infrastructure（DB）だけ。
  */

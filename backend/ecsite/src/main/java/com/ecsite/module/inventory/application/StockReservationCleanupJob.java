@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 
 /**
- * 引当の片付けのジョブ（docs/backend/modules/inventory.md「引当」）。<br />
+ * 引当の片付けのジョブ（docs/design/modules/inventory.md「引当」）。<br />
  * 期限から保存期間を過ぎた引当を、件数の上限ずつ、残りがなくなるまで消す（1 回ごとに別のトランザクション）。
  * 間隔と保存期間は引当の片付けの設定 {@code ecsite.inventory.cleanup}（既定 1 時間、1 日）で変えられる。
  */

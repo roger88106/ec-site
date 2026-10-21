@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 
 /**
- * 手放したアセットの配信のファイルを、コミットの後に消す（docs/backend/modules/media.md「アセットを手放す」）。<br />
+ * 手放したアセットの配信のファイルを、コミットの後に消す（docs/design/modules/media.md「アセットを手放す」）。<br />
  * イベントは重ねて届くことがある（バックエンドのアーキテクチャ 第 5 節）。削除は何度行っても同じ結果になる。
  * DB を使わないので、トランザクションを始めない（ファイル保存を待つ間に DB の接続を持たない）。
  */

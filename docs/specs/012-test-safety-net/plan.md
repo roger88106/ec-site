@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 011 が完了している。CI の検査の script は `scripts/ci/`（手元では `scripts/ci/check-all.sh`）、テストの規則は [テストの書き方](../../testing/writing.md)。
+前提：spec 011 が完了している。CI の検査の script は `scripts/ci/`（手元では `scripts/ci/check-all.sh`）、テストの規則は [テストの書き方](../../rules/test-writing.md)。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|

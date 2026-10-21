@@ -6,7 +6,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 ## 最初に読むもの
 
 1. [constitution](docs/constitution.md)：大綱と文書の地図
-2. [開発の進め方](docs/process/workflow.md)：SDD と TDD
+2. [開発の進め方](docs/rules/workflow.md)：SDD と TDD
 3. 着手する段階の tasks ファイル（`docs/specs/NNN-*/tasks/`）と、冒頭の「参照」の文書
 4. コードを書く・レビューする前に、関わる書き方の文書（constitution 第 14 節）
 
@@ -28,7 +28,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 
 ## 作業の進め方
 
-SDD と TDD の流れは [開発の進め方](docs/process/workflow.md)。エージェントは次も守る。
+SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エージェントは次も守る。
 
 - 作業の単位は tasks の 1 タスク。tasks にない作業は始めず、先に tasks への追加を提案する。
 - spec・plan・設計書・OpenAPI の誤りや不足に気づいたら、コードで回避せずに作業を止めて報告する。修正するときは文書が先。
@@ -43,7 +43,7 @@ SDD と TDD の流れは [開発の進め方](docs/process/workflow.md)。エー
 - tasks の「完了」の条件を満たし、対応する AC のテストが通り、既存のテストを壊していない（`./gradlew check` など）。
 - 文書を更新するタスク（用語集への追加など）を終え、チェックボックスを `[x]` にする。
 - 段階の最後のタスクの後は、段階の完了条件を確認して報告し、README の進捗を更新する。
-- spec の最後のレビューの段階では、変えたコードを [書き方の規則とレビュー](docs/process/review.md) と照合する。
+- spec の最後のレビューの段階では、変えたコードを [書き方の規則とレビュー](docs/rules/review.md) と照合する。
 
 ### 規則と指示の食い違い
 
@@ -62,7 +62,7 @@ SDD と TDD の流れは [開発の進め方](docs/process/workflow.md)。エー
 |------|--------|
 | ブランチ | MVP の間は `develop` で作業する。`main` には直接コミットしない ※2 |
 | メッセージ | 日本語。1 行目は `<対象>: <要約>`（例：`tax: 税率の一覧の置き換えを実装する`）、決定の理由は本文 |
-| 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/process/workflow.md) 第 2.1 節） |
+| 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/rules/workflow.md) 第 2.1 節） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push | 利用者の許可を得てから。許可は push のたびに求める |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く ※1 |
@@ -75,4 +75,4 @@ SDD と TDD の流れは [開発の進め方](docs/process/workflow.md)。エー
 
 - JDK 21。統合テストと jOOQ のコード生成には Docker が必要。
 - Gradle のプロジェクトは `backend/ecsite/` にある（`./gradlew` もそこで実行する）。リポジトリのルートと `backend/` には Gradle の設定がない。
-- 起動・テストの手順は [開発環境の起動](docs/dev/setup.md) と [テストの実行方法](docs/testing/running.md)。エージェントは skill `local-dev` を使う。
+- 起動・テストの手順は [開発環境の起動](docs/guides/setup.md) と [テストの実行方法](docs/guides/running-tests.md)。エージェントは skill `local-dev` を使う。

@@ -1,4 +1,4 @@
-// 用語集（docs/reference/glossary.md）の識別子の列の名前が、コードか DB のマイグレーションにあることを確認する（skill docs 第 2 節「事実」）。
+// 用語集（docs/design/glossary.md）の識別子の列の名前が、コードか DB のマイグレーションにあることを確認する（skill docs 第 2 節「事実」）。
 // 調べる場所は backend/、frontend/、api/、docker/、e2e/、scripts/ の Git のファイル（生成物を除く）。
 // 名前の形の例（XxxRepository など、Xxx を含むもの）は調べない。コードにない語でよいものは glossary-ids-exclusions.json に名前と理由を書く。
 // 使い方：node scripts/ci/glossary-ids.mjs（リポジトリのルートで）
@@ -8,7 +8,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 
 /** 用語集 */
-const GLOSSARY = 'docs/reference/glossary.md'
+const GLOSSARY = 'docs/design/glossary.md'
 
 /** 調べる場所 */
 const SEARCH_ROOTS = ['backend', 'frontend', 'api', 'docker', 'e2e', 'scripts']

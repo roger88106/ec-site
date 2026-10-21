@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 支払の Aggregate Root（docs/backend/modules/payment.md「支払（集約）」）。<br />
+ * 支払の Aggregate Root（docs/design/modules/payment.md「支払（集約）」）。<br />
  * どの操作も冪等で、遷移できないときは何もしない。決済サービスの通知は重ねて届き、順序が入れ替わるため。
  */
 @Getter

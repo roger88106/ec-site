@@ -10,7 +10,7 @@
 | 段階 | 文書 | 書くこと |
 |------|------|----------|
 | spec | `spec.md` | 何を、なぜ作るかと、受け入れ条件（整理の spec は完了の条件）。実装（クラス名、カラム、フレームワーク）は書かない |
-| plan | `plan.md` | 今回の変更について、モジュールをまたぐ決定、API と AC の対応、テストの割り当て、実装の順序。あわせて OpenAPI を書き、モジュールの設計が変わるなら `docs/backend/modules/` を更新する |
+| plan | `plan.md` | 今回の変更について、モジュールをまたぐ決定、API と AC の対応、テストの割り当て、実装の順序。あわせて OpenAPI を書き、モジュールの設計が変わるなら `docs/design/modules/` を更新する |
 | tasks | `tasks/` | plan を検証可能な小さなタスクに分け、対応する AC を記す。段階ごとに 1 ファイル |
 | 実装 | コード | tasks に沿って、TDD（第 2 節）で進める |
 
@@ -31,14 +31,14 @@
 | 内容 | 置き場所 |
 |------|----------|
 | 今回の変更（何を・どう・手順） | `docs/specs/NNN-*/` の spec・plan・tasks |
-| モジュールの今の設計<br/>（集約、不変条件、公開する api・event、設計の理由） | `docs/backend/modules/<module>.md` |
-| フロントの各アプリの構成 | `docs/frontend/` |
+| モジュールの今の設計<br/>（集約、不変条件、公開する api・event、設計の理由） | `docs/design/modules/<module>.md` |
+| フロントの各アプリの構成 | `docs/design/apps/`、`docs/design/frontend-architecture.md` |
 | API の項目 | `api/openapi/` |
-| テーブルの定義 | Flyway のマイグレーション（できるまでは `docs/backend/modules/` に草案） |
-| 用語と識別子の対応 | `docs/reference/glossary.md` |
+| テーブルの定義 | Flyway のマイグレーション（できるまでは `docs/design/modules/` に草案） |
+| 用語と識別子の対応 | `docs/design/glossary.md` |
 | AC の今の状態とテスト | `docs/design/acceptance-criteria.md`（AC 一覧） |
-| コードの書き方 | `docs/backend/coding.md`、`docs/frontend/coding.md`、`docs/testing/writing.md`、`docs/process/comments.md` |
-| 起動・テストの手順 | `docs/dev/` |
+| コードの書き方 | `docs/rules/backend-coding.md`、`docs/rules/frontend-coding.md`、`docs/rules/test-writing.md`、`docs/rules/comments.md` |
+| 起動・テストの手順 | `docs/guides/` |
 | spec の進み具合 | README の進捗の表 |
 | 決定の経緯 | コミットメッセージ |
 
@@ -58,7 +58,7 @@
 
 - plan で操作やクラスを移す・削除すると決める前に、テスト（`src/test`、`src/integrationTest`、画面のテスト、E2E）を含む全ての呼び出し元を検索し、plan に挙げる。同じ名前のメソッドが複数あるときは、型で区別できる方法（IDE の呼び出しの階層など）で調べる。理由：テストだけが使う呼び出しを plan で見落とすと、実装の段階で決定し直すことになるため。
 - 完了した spec・plan・tasks は当時の記録として、内容と節の番号を変えない。修正するのは、文書を移して切れたリンクのパスだけ。
-- 今の設計は、モジュールの設計書と `docs/frontend/` に書くので、古い spec を今の形に書き換える必要はない。
+- 今の設計は、モジュールの設計書と `docs/design/` に書くので、古い spec を今の形に書き換える必要はない。
 
 理由：spec と plan は、利用者が承認の前に読み、実装の間にエージェントが何度も読むので、決定と条件を一目で読み取れるようにするため。
 
@@ -107,6 +107,6 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 ### 3.2 論理名と物理名
 
 - spec・plan・モジュール設計書の本文は、業務の用語（論理名）で書く。
-- 識別子（物理名）を書くのは、[用語集](../reference/glossary.md)、表の識別子の列、コードブロックだけにする。
+- 識別子（物理名）を書くのは、[用語集](../design/glossary.md)、表の識別子の列、コードブロックだけにする。
 - 新しい用語や識別子を作ったら、用語集に追加する。
 - 実装の細部（SQL の句、アノテーション名など）は本文に書かず、意図だけを書く。

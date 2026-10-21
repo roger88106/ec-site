@@ -47,7 +47,7 @@
 
 ### フロントエンド
 
-C 側と B 側は別のアプリ。構成は [フロントのアーキテクチャ](frontend/architecture.md)。
+C 側と B 側は別のアプリ。構成は [フロントのアーキテクチャ](design/frontend-architecture.md)。
 
 両方で共通：
 
@@ -113,40 +113,40 @@ ec-site/
 
 | 文書 | 内容 |
 |------|------|
-| [process/workflow.md](process/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方 |
-| [process/notation.md](process/notation.md) | spec・tasks の記号と番号 |
-| [process/comments.md](process/comments.md) | コメントの書き方 |
-| [process/review.md](process/review.md) | 書き方の規則の書き方とレビュー |
+| [process/workflow.md](rules/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方 |
+| [process/notation.md](rules/notation.md) | spec・tasks の記号と番号 |
+| [process/comments.md](rules/comments.md) | コメントの書き方 |
+| [process/review.md](rules/review.md) | 書き方の規則の書き方とレビュー |
 | [design/overview.md](design/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
 | [design/role-permissions.md](design/role-permissions.md) | ロールと権限の対応表 |
 | [design/common.md](design/common.md) | 共通コード・ログ・可観測性 |
 | [design/acceptance-criteria.md](design/acceptance-criteria.md) | AC 一覧（状態とテスト） |
-| [backend/architecture.md](backend/architecture.md) | バックエンドのアーキテクチャ |
-| [backend/coding.md](backend/coding.md) | バックエンドの書き方 |
-| [backend/modules/](backend/modules) | モジュールごとの設計 |
-| [frontend/architecture.md](frontend/architecture.md) | フロントのアーキテクチャ |
-| [frontend/coding.md](frontend/coding.md) | フロントの書き方 |
-| [frontend/apps/](frontend/apps) | アプリごとの構成（管理画面、店舗画面） |
-| [api/conventions.md](api/conventions.md) | API の規約 |
-| [testing/writing.md](testing/writing.md) | テストの書き方 |
-| [testing/running.md](testing/running.md) | テストの実行方法 |
-| [dev/setup.md](dev/setup.md) | 開発環境の起動 |
-| [dev/environment.md](dev/environment.md) | 環境変数 |
-| [dev/ci.md](dev/ci.md) | CI の検査 |
-| [reference/glossary.md](reference/glossary.md) | 用語集 |
-| [reference/licenses.md](reference/licenses.md) | 依存とライセンス |
+| [backend/architecture.md](design/backend-architecture.md) | バックエンドのアーキテクチャ |
+| [backend/coding.md](rules/backend-coding.md) | バックエンドの書き方 |
+| [backend/modules/](design/modules) | モジュールごとの設計 |
+| [frontend/architecture.md](design/frontend-architecture.md) | フロントのアーキテクチャ |
+| [frontend/coding.md](rules/frontend-coding.md) | フロントの書き方 |
+| [frontend/apps/](design/apps) | アプリごとの構成（管理画面、店舗画面） |
+| [api/conventions.md](rules/api-conventions.md) | API の規約 |
+| [testing/writing.md](rules/test-writing.md) | テストの書き方 |
+| [testing/running.md](guides/running-tests.md) | テストの実行方法 |
+| [dev/setup.md](guides/setup.md) | 開発環境の起動 |
+| [dev/environment.md](guides/environment.md) | 環境変数 |
+| [dev/ci.md](guides/ci.md) | CI の検査 |
+| [reference/glossary.md](design/glossary.md) | 用語集 |
+| [reference/licenses.md](design/licenses.md) | 依存とライセンス |
 | [specs/](specs) | spec・plan・tasks |
 
 ## 4. 開発の進め方
 
-仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。細則は [開発の進め方](process/workflow.md)。
+仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。細則は [開発の進め方](rules/workflow.md)。
 
 ### 4.1 仕様駆動開発（SDD：Spec-Driven Development）
 
 spec（何を・なぜ）→ plan（どう作るか）→ tasks（作業の手順）→ 実装。
 
 - spec がコードに先行する。誤りに気づいたら、spec から修正する。
-- spec は「機能」と「整理」の 2 種類（[文書の記号と番号](process/notation.md)）。
+- spec は「機能」と「整理」の 2 種類（[文書の記号と番号](rules/notation.md)）。
 
 ### 4.2 テスト駆動開発（TDD：Test-Driven Development）
 
@@ -157,7 +157,7 @@ spec（何を・なぜ）→ plan（どう作るか）→ tasks（作業の手�
 
 ## 5. バックエンドのアーキテクチャ
 
-Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。細則は [バックエンドのアーキテクチャ](backend/architecture.md)。
+Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。細則は [バックエンドのアーキテクチャ](design/backend-architecture.md)。
 
 - モジュールが外に公開するのは `api/`（同期の呼び出し）と `event/`（非同期の通知）だけ。他のモジュールのテーブルは読み書きしない。
 - モジュールごとに、複雑さに応じて構成のレベル（フル・簡略・イベントストア）を選ぶ。
@@ -181,7 +181,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 6. 水平スケール
 
-同じアプリを複数のインスタンスで並行して動かせるように作る。細則は [バックエンドのアーキテクチャ](backend/architecture.md) 第 5 節。
+同じアプリを複数のインスタンスで並行して動かせるように作る。細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 5 節。
 
 - リクエストをまたぐ状態をメモリやローカルディスクに持たない。
 - 業務上の排他は DB で制御する（JVM の中のロックを使わない）。
@@ -189,7 +189,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 7. データとファイル
 
-細則は [バックエンドのアーキテクチャ](backend/architecture.md) 第 6 節。
+細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 6 節。
 
 - PostgreSQL と jOOQ。スキーマの正本は Flyway のマイグレーション。
 - 品番・注文番号など人が使う番号と、識別子（UUID）を分ける。金額は円単位の整数（`Money`）。
@@ -197,14 +197,14 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 8. API
 
-細則は [API の規約](api/conventions.md)。
+細則は [API の規約](rules/api-conventions.md)。
 
 - 契約先行：OpenAPI（`api/openapi/`）を plan で書き、バックエンドもフロントもそこから生成した型を使う。
 - RESTful JSON。エラーは Problem Details（RFC 9457）に、分岐用のコードと画面に表示できる文を加える。
 
 ## 9. 認証・認可
 
-細則は [バックエンドのアーキテクチャ](backend/architecture.md) 第 7 節。
+細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 7 節。
 
 - 認証は IdP（Keycloak）に任せ、自前で作らない。ログインは OIDC、API は OAuth 2.0 の Resource Server として token を検証するだけ。
 - 消費者と運営者は IdP の別の realm に分ける。
@@ -213,14 +213,14 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 10. 外部連携（決済・物流）
 
-細則は [バックエンドのアーキテクチャ](backend/architecture.md) 第 8 節。
+細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 8 節。
 
 - 外部サービスは port 経由で呼び、外部の型を業務のコードに持ち込まない。
 - sandbox があれば使い、なければ内部の mock にする。設定で切り替える。
 
 ## 11. テスト
 
-細則は [テストの書き方](testing/writing.md)、実行方法は [テストの実行方法](testing/running.md)。
+細則は [テストの書き方](rules/test-writing.md)、実行方法は [テストの実行方法](guides/running-tests.md)。
 
 - 全ての AC にテストを対応させ、テスト名に AC 番号を入れる。
 - バックエンドは単体テストと統合テスト（Testcontainers）、フロントは単体テストと結合テスト、つないだ流れは E2E（Playwright）。
@@ -234,19 +234,19 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 13. 書く言語（日本語と英語の使い分け）
 
-細則は [開発の進め方](process/workflow.md) 第 3 節。
+細則は [開発の進め方](rules/workflow.md) 第 3 節。
 
 - Git に入るものは全て日本語で書く（文書、コメント、テスト名、コミットメッセージ、エラーメッセージなど）。
 - 識別子（クラス名、API のパス、テーブル名など）は英語。
-- 文書の本文は業務の用語（論理名）で書き、識別子（物理名）との対応は [用語集](reference/glossary.md) に置く。
+- 文書の本文は業務の用語（論理名）で書き、識別子（物理名）との対応は [用語集](design/glossary.md) に置く。
 
 ## 14. コードの書き方
 
-書き方は [バックエンド](backend/coding.md)、[フロント](frontend/coding.md)、[テスト](testing/writing.md)、[コメント](process/comments.md) の各文書にある。コードを書く前と、[レビュー](process/review.md)のときに読む。
+書き方は [バックエンド](rules/backend-coding.md)、[フロント](rules/frontend-coding.md)、[テスト](rules/test-writing.md)、[コメント](rules/comments.md) の各文書にある。コードを書く前と、[レビュー](rules/review.md)のときに読む。
 
 ## 15. 依存とライセンス
 
-細則は [依存とライセンス](reference/licenses.md)。
+細則は [依存とライセンス](design/licenses.md)。
 
 - プロジェクトのライセンスは MIT。
 - 依存は、無料で商用に使えて、コピーレフトでない（使う側のコードの公開を求めない）ものだけを使う。CI で確認する。

@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 
 /**
- * 注文手続きの片付けのジョブ（docs/backend/modules/order.md「注文手続き」）。<br />
+ * 注文手続きの片付けのジョブ（docs/design/modules/order.md「注文手続き」）。<br />
  * 期限から保存期間を過ぎた注文手続きを、件数の上限ずつ、残りがなくなるまで消す（1 回ごとに別のトランザクション）。
  * 注文になった注文手続きも消す。注文の表示と操作は、注文手続きを読まない。
  * 間隔と保存期間は注文手続きの片付けの設定 {@code ecsite.order.cleanup}（既定 1 時間、1 日）で変えられる。

@@ -13,7 +13,7 @@ import lombok.extern.slf4j.Slf4j;
 import java.time.Clock;
 
 /**
- * Stripe の通知の受け取り（docs/backend/modules/payment.md「Stripe」）。<br />
+ * Stripe の通知の受け取り（docs/design/modules/payment.md「Stripe」）。<br />
  * 署名を確認してから、通知を決済サービスの型から直して、port へ渡す。
  * 扱う種類は、与信の成功（Checkout Session の完了）と、支払画面の期限切れ（Checkout Session の期限切れ）だけ。
  */

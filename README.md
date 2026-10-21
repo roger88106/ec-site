@@ -18,7 +18,7 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 
 ## 起動とテスト
 
-前提は JDK 21、Docker、Node.js 24 以上、pnpm。起動は [開発環境の起動](docs/dev/setup.md)、テストは [テストの実行方法](docs/testing/running.md)。
+前提は JDK 21、Docker、Node.js 24 以上、pnpm。起動は [開発環境の起動](docs/guides/setup.md)、テストは [テストの実行方法](docs/guides/running-tests.md)。
 
 ## 進捗
 

@@ -2,7 +2,7 @@
 
 - 前提：なし（段階 1〜3 と独立）
 - 完了条件：US-51 のテストが通る。管理画面の本番ビルドが、IdP の設定がなければ失敗する。店舗画面に `trustHost: true` がない。CI のビルドと E2E が通る。
-- 参照：[plan](../plan.md) 第 4 節、spec の US-51、BR-31、[管理画面の構成](../../../frontend/apps/admin.md) 第 10 節、[店舗画面の構成](../../../frontend/apps/store.md) 第 9 節、[フロントの書き方](../../../frontend/coding.md) 第 8.1 節
+- 参照：[plan](../plan.md) 第 4 節、spec の US-51、BR-31、[管理画面の構成](../../../design/apps/admin.md) 第 10 節、[店舗画面の構成](../../../design/apps/store.md) 第 9 節、[フロントの書き方](../../../rules/frontend-coding.md) 第 8.1 節
 
 ## 管理画面
 

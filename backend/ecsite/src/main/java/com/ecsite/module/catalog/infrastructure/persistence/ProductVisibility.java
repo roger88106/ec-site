@@ -11,7 +11,7 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 
 /**
  * C 側に表示される条件の SQL。<br />
- * 一覧と検索の両方で、この部品だけを使う。検索だけに非公開の商品が出る事故を防ぐため（docs/backend/modules/catalog.md）。
+ * 一覧と検索の両方で、この部品だけを使う。検索だけに非公開の商品が出る事故を防ぐため（docs/design/modules/catalog.md）。
  * ドメインの {@code Product#isVisibleAt} と同じ条件で、両者の一致は統合テストで確認する。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

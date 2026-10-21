@@ -24,7 +24,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 class ModuleRoleTest {
 
     /**
-     * レベル A のモジュール（docs/backend/modules の各設計書の「レベル」と合わせる）
+     * レベル A のモジュール（docs/design/modules の各設計書の「レベル」と合わせる）
      */
     private static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order", "payment");
 

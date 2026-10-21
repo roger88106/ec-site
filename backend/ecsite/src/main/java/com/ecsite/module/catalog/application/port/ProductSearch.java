@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 商品検索：キーワード検索の窓口（商品カタログモジュールの設計「キーワード検索」、docs/backend/modules/catalog.md）。<br />
+ * 商品検索：キーワード検索の窓口（商品カタログモジュールの設計「キーワード検索」、docs/design/modules/catalog.md）。<br />
  * 通常の商品照会とはコードを分け、検索エンジンを入れるときはこの実装を差し替える。
  * 対象は C 側に表示される商品だけ。並びは新着順で固定。精度は問わない。
  */

@@ -7,7 +7,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 決済のイベントのリスナー（docs/backend/modules/order.md「支払」）。<br />
+ * 決済のイベントのリスナー（docs/design/modules/order.md「支払」）。<br />
  * コミット後に非同期で、別のトランザクションで動く。何度届いても結果は同じ。
  * 処理に失敗したら、未完了のイベントの再発行でやり直す。
  */

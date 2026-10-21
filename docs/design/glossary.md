@@ -261,7 +261,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 
 ## 開発
 
-文書の番号と記号（AC・DC、`[テスト]` など）は [文書の記号と番号](../process/notation.md) で参照する。
+文書の番号と記号（AC・DC、`[テスト]` など）は [文書の記号と番号](../rules/notation.md) で参照する。
 
 | 用語 | 識別子 | 意味 |
 |------|--------|------|
@@ -269,8 +269,8 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 整理の spec | | 消費者・運営者に見える振る舞いを変えずに、規則・テスト・構成・コードを整える spec。利用者は開発者とエージェント（開発の進め方 第 1 節） |
 | MVP の完成までの一覧 | `docs/specs/mvp.md` | MVP を完成させるまでの spec の順と理由 |
 | TODO 一覧 | `docs/todo.md` | MVP の後に行う作業と未決事項の一覧。アーカイブしない |
-| CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。手元では `scripts/ci/check-all.sh` でまとめて実行する（[CI の検査](../dev/ci.md)） |
-| 書き方の規則 | `docs/*/coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確認方法の形でまとめた文書（[書き方の規則とレビュー](../process/review.md)） |
+| CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。手元では `scripts/ci/check-all.sh` でまとめて実行する（[CI の検査](../guides/ci.md)） |
+| 書き方の規則 | `docs/*/coding.md` など | コードの書き方とプロジェクトの習慣を、規則・理由・確認方法の形でまとめた文書（[書き方の規則とレビュー](../rules/review.md)） |
 | 引き継ぎの文書 | `/.local/handoff/` | 作業を別のセッションに引き継ぐための文書。Git に入れない（AGENTS.md） |
 | カバレッジ | | テストで実行されたコードの割合（行・分岐）。報告だけに使い、基準の値で CI を失敗させない |
 | mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使い、立てなければ本番の実装を使う。ローカルと E2E の設定だけで立てる |
@@ -279,18 +279,18 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 業務ポート | `server.port` | API と mock の画面を提供するポート（ローカル 8080、E2E 8090）。公開するのはこのポートだけ |
 | 運用ポート | `management.server.port` | 死活監視とメトリクス（`/actuator/*`）を提供するポート（ローカル 9080、E2E 9090）。外部に公開しない |
 | 契約テスト | `*ContractTest` | 外部との契約を確認するテスト。外部連携の port の実装（mock と本物）が同じ振る舞いを守ることを、同じテストで確認するもの（`PaymentGatewayContractTest`）と、IdP の設定ファイルの値を確認するもの（`RealmSettingsContractTest`）がある |
-| 非同期の処理の待ち | `AsyncEvents` | 統合テストで、コミットの後に動くイベントのリスナーが終わる（または失敗する）のを、イベントの発行の記録で待つ補助（[テストの書き方](../testing/writing.md) 第 5 節） |
-| 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドの書き方](../backend/coding.md) 第 1.1 節） |
+| 非同期の処理の待ち | `AsyncEvents` | 統合テストで、コミットの後に動くイベントのリスナーが終わる（または失敗する）のを、イベントの発行の記録で待つ補助（[テストの書き方](../rules/test-writing.md) 第 5 節） |
+| 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドの書き方](../rules/backend-coding.md) 第 1.1 節） |
 | 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に変換するクラス。インターフェースは使う層の `port/`、実装は `infrastructure/directory/` |
-| 参照の service | `XxxQueryService` | データを更新しない application の service。読み取り専用のトランザクションで、view（または外部への要求の型）を返し、集約を返さない（[バックエンドの書き方](../backend/coding.md) 第 1.1 節） |
+| 参照の service | `XxxQueryService` | データを更新しない application の service。読み取り専用のトランザクションで、view（または外部への要求の型）を返し、集約を返さない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.1 節） |
 | 更新の service | `XxxCommandService` など | データを更新する application の service。参照だけのメソッドを持たない |
 | view | `application/model/view/` | 参照の service が返す、表示や使う側に必要な項目だけの型。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
 | 作成の応答 | `CreatedResponses` | 作成の API の応答（201、作成したものの Location、作成した ID）。共通の補助で作る |
 | テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確認する script。対応は spec の名前の対応のファイル（`renames.txt`）に書く |
 | 共通の値の型 | `common/model/value/` | 2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つ値の型（金額、文字の長さの上限など） |
 | メッセージのキー | `ecsite.<モジュール>.<名前>` | エラーの文を `messages.properties` から取得するためのキー。エラーの定義（enum の定数）の名前から決まる |
-| 共有パッケージ | `frontend/shared`（`@ec-site/shared`） | 店舗画面と管理画面の両方で使う、UI のコンポーネント・関数・文言を置くパッケージ（[フロントの書き方](../frontend/coding.md) 第 5.1 節） |
-| 共有の文言 | `common.*` | 共有パッケージの文言。2 つの画面で同じ役割の文を置き、各画面の文言と浅く合わせて使う（[フロントの書き方](../frontend/coding.md) 第 7.1 節） |
+| 共有パッケージ | `frontend/shared`（`@ec-site/shared`） | 店舗画面と管理画面の両方で使う、UI のコンポーネント・関数・文言を置くパッケージ（[フロントの書き方](../rules/frontend-coding.md) 第 5.1 節） |
+| 共有の文言 | `common.*` | 共有パッケージの文言。2 つの画面で同じ役割の文を置き、各画面の文言と浅く合わせて使う（[フロントの書き方](../rules/frontend-coding.md) 第 7.1 節） |
 | 整形の関数 | `@ec-site/shared/lib/format` | 金額・価格・日時・税額・郵便番号・軸の値を、画面に表示する文にする関数。2 つの画面で共有する |
-| 表示名 | `labels.ts` | API の列挙の値を画面に表示する名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`（[フロントの書き方](../frontend/coding.md) 第 1.1 節） |
-| 文言のキーのコメントの検査 | `scripts/ci/message-comments.mjs` | 画面のコードで文言を取得する `t('…')` の呼び出しに、出る文を示すコメントがあることを確認する script（[コメントの書き方](../process/comments.md) 第 6.1 節） |
+| 表示名 | `labels.ts` | API の列挙の値を画面に表示する名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`（[フロントの書き方](../rules/frontend-coding.md) 第 1.1 節） |
+| 文言のキーのコメントの検査 | `scripts/ci/message-comments.mjs` | 画面のコードで文言を取得する `t('…')` の呼び出しに、出る文を示すコメントがあることを確認する script（[コメントの書き方](../rules/comments.md) 第 6.1 節） |

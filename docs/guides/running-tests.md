@@ -1,6 +1,6 @@
 # テストの実行方法
 
-テストの書き方は [テストの書き方](writing.md)、起動の準備は [開発環境の起動](../dev/setup.md)。エージェントは skill `local-dev` を使う。
+テストの書き方は [テストの書き方](../rules/test-writing.md)、起動の準備は [開発環境の起動](setup.md)。エージェントは skill `local-dev` を使う。
 
 ## 1. バックエンド
 

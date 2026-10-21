@@ -130,7 +130,7 @@ export function findReferences(file, text, names, basenames) {
  * @returns {string | null} 文書のパス。見ない参照（spec・plan の節、決められないもの）なら null
  */
 function resolveTarget(file, rawBefore, names, basenames, isMarkdown) {
-  // `docs/frontend/coding.md` 第 9.1 節、「店舗画面の構成」第 4 節 のように、名前を印で囲んだもの
+  // `docs/rules/frontend-coding.md` 第 9.1 節、「店舗画面の構成」第 4 節 のように、名前を印で囲んだもの
   const before = rawBefore.replace(/[`」]+$/, '').trimEnd()
   // spec・plan の節は、当時の記録で番号が変わらないので見ない
   if (/(spec|plan|\d{3})(\s*の)?$/.test(before)) return null

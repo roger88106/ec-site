@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 同じ項目の制約が、API の契約・ドメインの上限・DB の列の長さで一致することを確認する契約テスト
- * （docs/backend/coding.md 第 3.1 節、spec 005 DC-32）。<br />
+ * （docs/rules/backend-coding.md 第 3.1 節、spec 005 DC-32）。<br />
  * 項目の表はこのクラスの {@link #fields()} に書く。上限のある項目を追加したら、表にも追加する。
  */
 class FieldConstraintContractTest {

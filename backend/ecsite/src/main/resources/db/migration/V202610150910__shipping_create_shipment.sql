@@ -1,4 +1,4 @@
--- 出荷（docs/backend/modules/shipping.md）
+-- 出荷（docs/design/modules/shipping.md）
 -- 注文は他モジュールの ID なので、外部キーは張らない（バックエンドのアーキテクチャ 第 3 節）
 CREATE SCHEMA IF NOT EXISTS shipping;
 

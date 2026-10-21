@@ -18,7 +18,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 注文に公開する、支払の API（docs/backend/modules/payment.md「他のモジュールへの公開」）。<br />
+ * 注文に公開する、支払の API（docs/design/modules/payment.md「他のモジュールへの公開」）。<br />
  * 支払の作成と取消は、呼び出し元（注文）のトランザクションに参加し、決済サービスを呼ばない。
  */
 @Component

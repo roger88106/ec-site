@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：売上レポートは注文の写しの都道府県のコードで集計し、都道府県別の売上に名前を返す。管理画面は名前を応答から表示する。都道府県・市区町村・郵便番号の表が、地域モジュールのほかにない（テストのデータを除く）。AC-262、263 のテストが通る。`./gradlew check`、`check-frontend.sh` が通る。
-- 参照：[plan](../plan.md) 第 2.4 節、spec の US-56、[レポートモジュール](../../../backend/modules/reporting.md)、[管理画面の構成](../../../frontend/apps/admin.md)
+- 参照：[plan](../plan.md) 第 2.4 節、spec の US-56、[レポートモジュール](../../../design/modules/reporting.md)、[管理画面の構成](../../../design/apps/admin.md)
 
 ## タスク
 

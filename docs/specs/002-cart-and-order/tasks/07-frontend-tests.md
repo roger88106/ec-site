@@ -2,7 +2,7 @@
 
 - 前提：段階 5、6
 - 完了条件：主な操作の流れに結合テストがあり、注文の E2E があり、どちらも CI で通る。段階 5・6 の手動確認のうち、E2E にしたものを手動で行わなくてよくなる。
-- 参照：constitution 12・13、[管理画面の構成](../../../frontend/apps/admin.md)、[店舗画面の構成](../../../frontend/apps/store.md)
+- 参照：constitution 12・13、[管理画面の構成](../../../design/apps/admin.md)、[店舗画面の構成](../../../design/apps/store.md)
 
 ## タスク
 

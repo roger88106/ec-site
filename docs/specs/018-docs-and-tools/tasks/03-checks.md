@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：plan 第 2〜4 節の検査が全て動き、わざと違反を入れると失敗する。AC-245 が除外の一覧にない。既存のテストが、期待値を変えずに通る（DS-48 の呼び出しの変更を除く）。GitHub のセキュリティの機能が有効である（CodeQL の初回の結果の確認は spec 019 の DC-219 に移した）。`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 2〜4 節、spec の DS-47〜49、[バックエンドの書き方](../../../backend/coding.md)、[フロントの書き方](../../../frontend/coding.md)、[テストの書き方](../../../testing/writing.md)、[CI の検査](../../../dev/ci.md)
+- 参照：[plan](../plan.md) 第 2〜4 節、spec の DS-47〜49、[バックエンドの書き方](../../../rules/backend-coding.md)、[フロントの書き方](../../../rules/frontend-coding.md)、[テストの書き方](../../../rules/test-writing.md)、[CI の検査](../../../guides/ci.md)
 
 ## タスク
 
@@ -65,7 +65,7 @@
   - 動いているプロセスの ID を書いたファイルで、管理画面のビルドが停止することと、ないプロセスの ID は実行中とみなさないことを確認した。
 - [x] **T018-03-22** 手順の文書を修正する（DC-175）。
   - skill `local-dev`：ビルドスクリプトを変えた後の確認、長い検査のバックグラウンドでの実行、目安の時間。
-  - [開発の進め方](../../../process/workflow.md)：移動・削除を含む plan の前に、呼び出し元を検索する。
+  - [開発の進め方](../../../rules/workflow.md)：移動・削除を含む plan の前に、呼び出し元を検索する。
   - [AGENTS.md](../../../../AGENTS.md)：Gradle のプロジェクトの場所。
   - 結果：3 つとも書いた。skill `local-dev` には、`./gradlew check` と `check-frontend.sh` を同時に実行しないことも追加した（spec 016 で管理画面のテストがタイムアウトした）。開発の進め方には、同じ名前のメソッドが複数あるときは型で区別できる方法で調べることも追加した（T018-02-05 で、テキスト検索が呼び出し元を誤った）。
 - [x] **T018-03-23** 書き方の規則の各文書にある「規則の一覧」の確認方法の列を、自動にしたものだけ修正する（DC-167）。
@@ -74,7 +74,7 @@
 - [x] **T018-03-24** 物流の mock のテスト用の操作を、テスト用の共通コードの mock を包む実装に移す（DC-177）。
   - 統合テストの呼び出しを修正し、期待値は変えない。
   - 補足（T018-02-05 で分かったこと）：発生日時を指定する `notification` は、本番のコードの `notification`（引数 3 つ）から呼ばれていて、テストだけの操作ではない。移すのは `notificationWithInvalidSignature` だけ。
-  - [出荷モジュール](../../../backend/modules/shipping.md)の設計書の mock の節を修正する。
+  - [出荷モジュール](../../../design/modules/shipping.md)の設計書の mock の節を修正する。
   - 結果：`notificationWithInvalidSignature` を本番の mock から削除し、テストで共有するソースの `TestCarrierNotifications.withInvalidSignature`（正しい通知の署名を別の鍵で再生成する）にした。plan の「mock を包む実装」と違い、static の補助にした。移すのが 1 つの作り方だけで、mock の状態を持たないため。呼び出し元の統合テスト（`MockCarrierTest`、7 件）は、期待値を変えずに通った。出荷モジュールの設計書の mock の節と関連 spec を修正した。
 - [x] **T018-03-25** 利用者が GitHub の設定で、Dependabot alerts、secret scanning、push protection、CodeQL（既定の設定）を有効にする（DC-178〜180）。
   - CodeQL の初回の結果を読み、修正するか、理由を付けて閉じる。結果をこのタスクの下に書く。
@@ -87,4 +87,4 @@
   - GitHub の機能の有効化と CodeQL の初回の結果（T018-03-25）は、利用者の操作を待っている。
 - [x] **T018-03-28** CI の検査の script の `[テスト]` のタスクを、実装と同じ commit に入れる進め方を、開発の進め方に書く。
   - 段階 3 で分かったこと：commit の前の hook が script のテストを実行するので、レッドのテストだけでは commit できない。
-  - 結果：[開発の進め方](../../../process/workflow.md)第 2.1 節に、手元でレッドを確認し、実装のタスクと同じ commit に入れる例外を書いた。
+  - 結果：[開発の進め方](../../../rules/workflow.md)第 2.1 節に、手元でレッドを確認し、実装のタスクと同じ commit に入れる例外を書いた。

@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 
 /**
- * 設定の値の型を有効にする所の検査（docs/backend/coding.md 第 6.1 節）。
+ * 設定の値の型を有効にする所の検査（docs/rules/backend-coding.md 第 6.1 節）。
  */
 class ConfigurationPropertiesTest {
 

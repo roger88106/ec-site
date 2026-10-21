@@ -13,7 +13,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * 出荷の登録のサービス（docs/backend/modules/order.md「出荷の登録」）。<br />
+ * 出荷の登録のサービス（docs/design/modules/order.md「出荷の登録」）。<br />
  * 売上確定は決済サービスを呼ぶので、トランザクションを持たずに先に行い、注文と出荷の変更だけを
  * {@link OrderShipmentCommandService} のトランザクションで行う（決済サービスの応答を待つ間、注文の行ロックを持たない）。
  */

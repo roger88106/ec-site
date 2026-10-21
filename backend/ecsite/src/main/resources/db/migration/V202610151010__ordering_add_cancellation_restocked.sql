@@ -1,4 +1,4 @@
--- キャンセルで在庫に戻したか（docs/backend/modules/order.md「状態遷移」、spec 009 AC-191）
+-- キャンセルで在庫に戻したか（docs/design/modules/order.md「状態遷移」、spec 009 AC-191）
 -- 返送された注文のキャンセルでは、運営者が在庫に戻すかを選ぶ。それより前のキャンセルは、すべて在庫に戻している。
 
 ALTER TABLE ordering.sales_order ADD COLUMN cancellation_restocked boolean;

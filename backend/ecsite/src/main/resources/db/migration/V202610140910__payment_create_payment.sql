@@ -1,4 +1,4 @@
--- 支払（docs/backend/modules/payment.md、spec 007 BR-15、16）
+-- 支払（docs/design/modules/payment.md、spec 007 BR-15、16）
 -- 注文は他モジュールの ID なので、外部キーは張らない（バックエンドのアーキテクチャ 第 3 節）
 CREATE SCHEMA IF NOT EXISTS payment;
 

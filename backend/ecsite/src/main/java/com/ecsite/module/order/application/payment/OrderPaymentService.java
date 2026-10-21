@@ -12,7 +12,7 @@ import java.time.Clock;
 import java.util.UUID;
 
 /**
- * 注文の支払の結果のサービス（docs/backend/modules/order.md「支払」）。<br />
+ * 注文の支払の結果のサービス（docs/design/modules/order.md「支払」）。<br />
  * 決済のイベント（与信の成功、支払の期限切れ）を注文に反映する。注文を行ロックしてから変えるので、何度呼んでも結果は同じ。
  */
 @Service

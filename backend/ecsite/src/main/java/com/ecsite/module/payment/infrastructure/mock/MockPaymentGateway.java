@@ -16,7 +16,7 @@ import java.util.UUID;
 import java.util.concurrent.ConcurrentHashMap;
 
 /**
- * mock の決済サービス（docs/backend/modules/payment.md「mock」）。<br />
+ * mock の決済サービス（docs/design/modules/payment.md「mock」）。<br />
  * 支払画面はバックエンドが出し（{@link MockPaymentPageController}）、与信の成功の通知は HTTP を通さずに port へ直接渡す。
  * port と支払画面の操作だけを持つ。失敗を起こす操作や呼ばれた操作の記録など、テストだけで使う操作は、
  * テストで共有するソースの、mock を包む実装が持つ（本番の jar に入れないため）。

@@ -13,7 +13,7 @@ import java.util.UUID;
 import java.util.stream.IntStream;
 
 /**
- * レポートに公開する商品カタログの API（docs/backend/modules/catalog.md「他のモジュールへの公開」）。<br />
+ * レポートに公開する商品カタログの API（docs/design/modules/catalog.md「他のモジュールへの公開」）。<br />
  * 注文の明細は商品 ID を持たないので、レポートはバリアントから商品を求める。
  */
 @Component

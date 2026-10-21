@@ -13,7 +13,7 @@ import java.util.UUID;
 public record PaymentSummary(UUID orderId, Status status, Instant deadline) {
 
     /**
-     * 支払の状態（docs/backend/modules/payment.md「状態遷移」）
+     * 支払の状態（docs/design/modules/payment.md「状態遷移」）
      */
     public enum Status {
 

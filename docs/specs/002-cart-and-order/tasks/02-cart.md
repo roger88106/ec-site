@@ -2,7 +2,7 @@
 
 - 前提：段階 1
 - 完了条件：AC-72〜76、78、81 のテストが通る。モジュール境界の検証が通る。
-- 参照：spec US-14、15、[cart.md](../../../backend/modules/cart.md)、[catalog.md](../../../backend/modules/catalog.md)「他モジュールへの公開」、`store.yaml`（tag: cart）
+- 参照：spec US-14、15、[cart.md](../../../design/modules/cart.md)、[catalog.md](../../../design/modules/catalog.md)「他モジュールへの公開」、`store.yaml`（tag: cart）
 
 ## タスク
 
@@ -19,4 +19,4 @@
   - 期限切れのカートへの追加で、古い品目が削除される（AC-81）
   - 変更でカート変更のイベントが発行される
 - [x] **T2208** アプリケーション層と Controller を実装する。T2207 を通す。
-- [x] **T2209** [cart.md](../../../backend/modules/cart.md) の草案を、マイグレーションへのリンクに置き換える。
+- [x] **T2209** [cart.md](../../../design/modules/cart.md) の草案を、マイグレーションへのリンクに置き換える。

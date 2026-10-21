@@ -16,7 +16,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 出荷のサービス（docs/backend/modules/shipping.md）。<br />
+ * 出荷のサービス（docs/design/modules/shipping.md）。<br />
  * 出荷を作ることと、出荷を読むことを受け持つ。物流サービスの通知の反映は、通知のサービスが受け持つ。
  */
 @Service

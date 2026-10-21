@@ -8,7 +8,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * カートの見積もり（docs/backend/modules/order.md「他のモジュールへの公開」）。店舗モジュールがカートの表示に使う。
+ * カートの見積もり（docs/design/modules/order.md「他のモジュールへの公開」）。店舗モジュールがカートの表示に使う。
  *
  * @param cartId    カート ID
  * @param items     品目（入れた順）

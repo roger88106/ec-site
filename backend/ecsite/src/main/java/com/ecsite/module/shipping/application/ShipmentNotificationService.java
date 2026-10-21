@@ -16,7 +16,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 
 /**
- * 物流サービスの通知の反映（docs/backend/modules/shipping.md「配送状態と順位」）。<br />
+ * 物流サービスの通知の反映（docs/design/modules/shipping.md「配送状態と順位」）。<br />
  * 出荷の行をロックしてから進めるので、同じ出荷への通知が同時に届いても、順位が高い状態が残る。
  * 進めたときだけ、配送状態の変化のイベントを出す。
  */

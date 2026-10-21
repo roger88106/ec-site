@@ -6,13 +6,13 @@
 
 | モジュール | 設計書 | 主な担当 |
 |------------|--------|----------|
-| 税 | [tax.md](../../backend/modules/tax.md) | US-1 |
-| 商品カタログ | [catalog.md](../../backend/modules/catalog.md) | US-2〜7、9、11 |
-| 在庫 | [inventory.md](../../backend/modules/inventory.md) | US-8 |
-| 店舗 | [storefront.md](../../backend/modules/storefront.md) | US-10〜12 |
-| メディア | [media.md](../../backend/modules/media.md) | US-7、13（画像のファイルの受け付け、検証、保存、配信） |
+| 税 | [tax.md](../../design/modules/tax.md) | US-1 |
+| 商品カタログ | [catalog.md](../../design/modules/catalog.md) | US-2〜7、9、11 |
+| 在庫 | [inventory.md](../../design/modules/inventory.md) | US-8 |
+| 店舗 | [storefront.md](../../design/modules/storefront.md) | US-10〜12 |
+| メディア | [media.md](../../design/modules/media.md) | US-7、13（画像のファイルの受け付け、検証、保存、配信） |
 
-用語と識別子の対応は[用語集](../../reference/glossary.md)。
+用語と識別子の対応は[用語集](../../design/glossary.md)。
 
 ## 1. モジュール間の関係
 
@@ -37,7 +37,7 @@ flowchart LR
 - 画像のファイルの扱い（受け付け、検証、変換、配信）は、商品の規則と関係がなく、ほかの用途（カテゴリの画像など）でも使うので、メディアモジュールに分ける。商品カタログはアセット ID と並び順だけを持つ。
 - 在庫は、商品カタログのイベントでバリアントの登録・削除を知る。そのため商品カタログは在庫を呼べず（依存が循環する）、C 側での組み合わせは店舗モジュールが行う。
 - B 側の在庫数の合計（AC-49）は、管理画面が商品一覧 API と在庫集計 API を呼んで組み合わせる。
-- 税込価格で並べ替えるため（AC-53、54）、商品カタログは税モジュールから税率の一覧を受け取り、SQL で税込価格を計算する（[catalog.md](../../backend/modules/catalog.md)）。
+- 税込価格で並べ替えるため（AC-53、54）、商品カタログは税モジュールから税率の一覧を受け取り、SQL で税込価格を計算する（[catalog.md](../../design/modules/catalog.md)）。
 
 パッケージのルートは `com.ecsite`。例外体系、i18n、金額、ページングなどの共通クラスは `common` に置く。
 
@@ -103,7 +103,7 @@ URL には内部 ID を使い、品番を使わない（AC-66）。
 
 価格表示（BR-4）と日本時間への変換（BR-3）は、それぞれのアプリの中で共通のコンポーネントと関数にする（2 つのアプリで共有するパッケージは作らない。店舗は日時を表示しないので、日本時間の関数は管理画面だけ）。
 
-admin のディレクトリ、API の呼び出し方、フォーム、画面の追加手順は [管理画面の構成](../../frontend/apps/admin.md)、store は [店舗画面の構成](../../frontend/apps/store.md) に従う。
+admin のディレクトリ、API の呼び出し方、フォーム、画面の追加手順は [管理画面の構成](../../design/apps/admin.md)、store は [店舗画面の構成](../../design/apps/store.md) に従う。
 
 ## 4. 基盤
 
@@ -112,7 +112,7 @@ admin のディレクトリ、API の呼び出し方、フォーム、画面の�
 | 依存バージョン | MyIAM の `libs.versions.toml` を起点に、着手時点の最新安定版にする |
 | Flyway | Spring Boot 4 では `spring-boot-starter-flyway` が必要 |
 | イベント発行記録 | Spring Modulith の公式 DDL を `common` schema のマイグレーションに含める（自動作成は使わない） |
-| イベント購読 | Spring Modulith のモジュール間リスナー（コミット後・非同期）。再起動時の未完了イベントの自動再発行は無効のまま。失敗時のリスクと手動の復旧手順は [inventory.md](../../backend/modules/inventory.md) |
+| イベント購読 | Spring Modulith のモジュール間リスナー（コミット後・非同期）。再起動時の未完了イベントの自動再発行は無効のまま。失敗時のリスクと手動の復旧手順は [inventory.md](../../design/modules/inventory.md) |
 | トレーシング | Micrometer Tracing。Zipkin 形式から始める |
 | ローカル環境 | `compose.yaml` に PostgreSQL 18、Zipkin、SeaweedFS（S3 互換。画像） |
 | Seed | 税区分（標準 10%、軽減 8%）、カテゴリ、商品のサンプル |
@@ -154,7 +154,7 @@ tasks は段階ごとに `tasks/` の 1 ファイルにする（[00](tasks/00-fo
 
 画像のファイルはオブジェクトストレージ（S3 API）に置き、DB には置き場所（キー）だけを持つ（constitution 5-1：ローカルディスクにファイルを置かない）。AWS を本番の前提にし、GCP（GCS）でも同じ構成で動作するように、ストレージの機能は両方にあるものだけを使う。
 
-ファイルの受け付け・検証・配信・削除はメディアモジュール（[media.md](../../backend/modules/media.md)）、商品の画像の規則（枚数、並び順、バリアントの画像）は商品カタログ（[catalog.md](../../backend/modules/catalog.md)）が持つ。
+ファイルの受け付け・検証・配信・削除はメディアモジュール（[media.md](../../design/modules/media.md)）、商品の画像の規則（枚数、並び順、バリアントの画像）は商品カタログ（[catalog.md](../../design/modules/catalog.md)）が持つ。
 
 ### 7.1 置き場所
 

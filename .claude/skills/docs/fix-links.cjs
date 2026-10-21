@@ -1,6 +1,6 @@
 // 文書を移して切れた Markdown のリンクを、移した先に直す。切れていないリンクは変えない
 // 使い方：node .claude/skills/docs/fix-links.cjs 旧パス=新パス ...（リポジトリのルートからのパス。フォルダーも可）
-// 例：node .claude/skills/docs/fix-links.cjs docs/style/backend.md=docs/backend/coding.md docs/modules=docs/backend/modules
+// 例：node .claude/skills/docs/fix-links.cjs docs/style/backend.md=docs/rules/backend-coding.md docs/modules=docs/design/modules
 // 移す（git mv）のを先に済ませてから流す
 const fs = require('fs'), path = require('path'), { execSync } = require('child_process')
 const MAP = process.argv.slice(2).map((a) => a.split('=').map((p) => p.replace(/\/$/, '')))

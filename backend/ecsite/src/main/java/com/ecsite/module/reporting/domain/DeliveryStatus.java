@@ -1,7 +1,7 @@
 package com.ecsite.module.reporting.domain;
 
 /**
- * 配送状態（docs/backend/modules/shipping.md「配送状態と順位」の写し）。<br />
+ * 配送状態（docs/design/modules/shipping.md「配送状態と順位」の写し）。<br />
  * 写しの配送状態は、状態の履歴のうち順位の最も高いものにする（イベントの届く順によらないため）。
  */
 public enum DeliveryStatus {

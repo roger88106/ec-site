@@ -19,7 +19,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 現在時刻の取り方の検査（docs/backend/coding.md 第 4.2 節）。<br />
+ * 現在時刻の取り方の検査（docs/rules/backend-coding.md 第 4.2 節）。<br />
  * 本番のクラスは、日時の型の引数なしの {@code now()} を呼ばず、注入した {@link Clock} から現在時刻を取る。
  * {@code now(clock)} のように時計を渡す呼び出しは当たらない。
  */
@@ -43,7 +43,7 @@ class CurrentTimeTest {
             .orShould().callMethod(LocalTime.class, "now")
             .orShould().callMethod(OffsetDateTime.class, "now")
             .orShould().callMethod(ZonedDateTime.class, "now")
-            .because("現在時刻は注入した Clock から取る（docs/backend/coding.md 第 4.2 節）");
+            .because("現在時刻は注入した Clock から取る（docs/rules/backend-coding.md 第 4.2 節）");
 
     @Test
     @DisplayName("本番のクラスは、日時の型の引数なしの now() を呼ばない")

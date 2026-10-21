@@ -86,7 +86,7 @@ Playwright で、手元で起動しているローカルの環境の画面を撮
 
 - README の先頭（概要の下）に、ページへのリンクと `showcase/img/store-top.png` を置く。
 - constitution のリポジトリの構成の図に `showcase/` を追加する。
-- 撮影の手順を、[テストの実行方法](../../testing/running.md) ではなく [開発環境の起動](../../dev/setup.md) に追加する（テストではないため）。skill `local-dev` に 1 行で案内する。
+- 撮影の手順を、[テストの実行方法](../../guides/running-tests.md) ではなく [開発環境の起動](../../guides/setup.md) に追加する（テストではないため）。skill `local-dev` に 1 行で案内する。
 
 ## 6. 確認方法
 

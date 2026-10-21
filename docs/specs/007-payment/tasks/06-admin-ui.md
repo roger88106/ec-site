@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：管理画面のテストが通る（`scripts/dev/check-frontend.sh`）。支払の状態と支払待ちの絞り込みを画面で確認している。
-- 参照：[plan](../plan.md) 第 6 節、[管理画面の構成](../../../frontend/apps/admin.md)、skill `new-screen`
+- 参照：[plan](../plan.md) 第 6 節、[管理画面の構成](../../../design/apps/admin.md)、skill `new-screen`
 
 ## タスク
 

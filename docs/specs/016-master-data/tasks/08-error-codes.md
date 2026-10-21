@@ -2,7 +2,7 @@
 
 - 前提：段階 1〜7（エラーのコードを追加し終えてから）
 - 完了条件：店舗 API と管理 API の契約に、エラーのコードの全体の列挙と、操作ごとの一覧がある。バックエンドのエラーのコードと契約が一致し、全ての統合テストのエラーの応答が、その操作の一覧か共通のエラーにある。画面はエラーのコードを生成した型で比べる。AC-274、275 のテストが通る。`./gradlew check`、`check-frontend.sh` が通る。
-- 参照：[plan](../plan.md) 第 7 節、spec の US-59、[API の規約](../../../api/conventions.md) 第 4 節、[バックエンドの書き方](../../../backend/coding.md) 第 3.2 節、[フロントの書き方](../../../frontend/coding.md) 第 2 節
+- 参照：[plan](../plan.md) 第 7 節、spec の US-59、[API の規約](../../../rules/api-conventions.md) 第 4 節、[バックエンドの書き方](../../../rules/backend-coding.md) 第 3.2 節、[フロントの書き方](../../../rules/frontend-coding.md) 第 2 節
 
 ## タスク
 

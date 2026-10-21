@@ -2,7 +2,7 @@
 
 - 前提：段階 1、2
 - 完了条件：US-3〜5 の AC と AC-71、AC-12（商品が所属しているカテゴリ）のテストが通る。C 側での見え方（AC-29、30、32 の表示）は段階 6 で確認する。
-- 参照：spec US-3〜5、[catalog.md](../../../backend/modules/catalog.md)、`admin.yaml`（tag: product）
+- 参照：spec US-3〜5、[catalog.md](../../../design/modules/catalog.md)、`admin.yaml`（tag: product）
 
 ## タスク
 
@@ -32,4 +32,4 @@
 - [x] **T310** アプリケーション層と Controller を実装する。T309 を通す。
 - [x] **T311** [テスト] 商品が所属しているカテゴリの削除の拒否（AC-12）。カテゴリの削除と商品への割り当てが同時に起きて外部キーの違反になっても 400 になる（500 にならない）。テストが通るよう実装する。
 - [x] **T312** seed：サンプルの商品（軸なし・軸 1 つ・軸 2 つ、標準と軽減の税区分を含む）。
-- [x] **T313** [catalog.md](../../../backend/modules/catalog.md) の商品のテーブルを、マイグレーションへのリンクに置き換える。
+- [x] **T313** [catalog.md](../../../design/modules/catalog.md) の商品のテーブルを、マイグレーションへのリンクに置き換える。

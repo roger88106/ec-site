@@ -1,4 +1,4 @@
--- レポートの写しと状態の履歴（docs/backend/modules/reporting.md「集めるデータ」、spec 010 AC-223〜225）
+-- レポートの写しと状態の履歴（docs/design/modules/reporting.md「集めるデータ」、spec 010 AC-223〜225）
 -- 注文・バリアント・商品・会員は他モジュールの ID なので、外部キーは張らない（バックエンドのアーキテクチャ 第 3 節）
 -- 写しはイベントを受けるたびに注文の API から読み直して上書きする。状態によらず、すべての注文を持つ。
 CREATE SCHEMA IF NOT EXISTS reporting;

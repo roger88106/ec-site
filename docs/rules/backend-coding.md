@@ -1,6 +1,6 @@
 # バックエンドの書き方
 
-今のコードで守っている書き方。構成の考え方は [バックエンドのアーキテクチャ](architecture.md)、API の規約は [API の規約](../api/conventions.md)。
+今のコードで守っている書き方。構成の考え方は [バックエンドのアーキテクチャ](../design/backend-architecture.md)、API の規約は [API の規約](api-conventions.md)。
 
 ## 規則の一覧
 
@@ -28,7 +28,7 @@
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所は自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 
-確認方法が「レビュー」のものは、各 spec の [レビュー](../process/review.md) で読む。
+確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
 
 ## 1. 層とパッケージ
 
@@ -69,7 +69,7 @@ module/<モジュール>/
 
 - **参照と更新（レベル A）**：参照の service は、`application/model/` の view を返し、集約を返さない。presentation は集約を受け取らない。画面の操作の可否は、view を作る所で集約のメソッドを呼んで view に入れる。
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
-- **イベント**：送り出し方は [バックエンドのアーキテクチャ](architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
+- **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
 - **公開の API**：`api/` の interface は、`api/` の `@Component` が実装し、application の service に委ねる。service は `api/` の interface を実装しない。
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
@@ -113,7 +113,7 @@ module/<モジュール>/
 
 Controller は OpenAPI から生成した interface（`XxxApi`）を実装する。パスと入力の形は interface に任せ、`@RequestMapping` を書かない。
 
-例外：外部のサービスとのやり取りのエンドポイント（mock の支払画面、Stripe の通知のエンドポイント）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](modules/payment.md)）。
+例外：外部のサービスとのやり取りのエンドポイント（mock の支払画面、Stripe の通知のエンドポイント）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](../design/modules/payment.md)）。
 
 理由：契約（`api/openapi/`）を正本にし、実装とずれないようにするため。
 
@@ -184,7 +184,7 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 - `@Transactional` は application の service のクラスに付ける。参照だけなら `readOnly = true`。api と presentation には付けない。
 - 例外：infrastructure で、別のトランザクションが必要なもの（呼び出し元と別に確定させる記録など）。付けた所に理由を書く。
 - 外部サービス（決済、画像の変換、ファイル保存、物流、メールなど）は、トランザクションの外で呼び、タイムアウトを設定する。呼ぶ前の読み取りと呼んだ後の更新を、それぞれのトランザクションにする（第 1.1 節「外部の呼び出しの前の読み取り」）。イベントのリスナーで呼ぶときは、リスナーをトランザクションなし（`@ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)`）にする。
-- 外で呼べないものは、呼ぶ所と設計書に理由を書く（出荷のメール：[通知モジュール](modules/notification.md)）。
+- 外で呼べないものは、呼ぶ所と設計書に理由を書く（出荷のメール：[通知モジュール](../design/modules/notification.md)）。
 
 理由：1 つの操作を 1 つのトランザクションにし、境界を層で決めるため。外部サービスを待つ間に DB の接続を持つと、外部サービスが遅いときに接続が尽き、関係のない操作まで止まるため。
 

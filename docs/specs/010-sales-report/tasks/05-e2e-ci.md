@@ -2,7 +2,7 @@
 
 - 前提：段階 1、4
 - 完了条件：E2E がローカルと CI で通る。
-- 参照：[plan](../plan.md) 第 11 節、[テストの実行方法](../../../testing/running.md)
+- 参照：[plan](../plan.md) 第 11 節、[テストの実行方法](../../../guides/running-tests.md)
 
 ## タスク
 

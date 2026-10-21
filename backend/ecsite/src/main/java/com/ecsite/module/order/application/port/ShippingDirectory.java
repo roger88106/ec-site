@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 出荷の腐敗防止層（docs/backend/modules/order.md「出荷の登録」）
+ * 出荷の腐敗防止層（docs/design/modules/order.md「出荷の登録」）
  */
 public interface ShippingDirectory {
 
@@ -60,7 +60,7 @@ public interface ShippingDirectory {
     }
 
     /**
-     * 配送状態（docs/backend/modules/shipping.md）
+     * 配送状態（docs/design/modules/shipping.md）
      */
     enum Status {
 

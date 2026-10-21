@@ -17,7 +17,7 @@ import java.util.Map;
 import java.util.Set;
 
 /**
- * 入力の検証のエラーの文を作る（docs/backend/coding.md 第 3.3 節）。<br />
+ * 入力の検証のエラーの文を作る（docs/rules/backend-coding.md 第 3.3 節）。<br />
  * フレームワークの既定の文（JVM のロケールで言語が変わる）を使わず、制約の種類から決めたキー
  * {@code ecsite.validation.<種類の小文字>} の文を messages.properties から取り、制約の値を差し込む。<br />
  * 業務のエラーに対応づけた項目（{@link ValidationErrorMapping}）は、その業務のエラーの文にする。

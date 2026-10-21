@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：注文手続きの画面で、都道府県と市区町村を一覧から選び、郵便番号から補える。注文の詳細（店舗画面・管理画面）が、都道府県名・市区町村名・住所の順に表示される。店舗画面に都道府県の表がない。US-54、55、AC-252 のテストと E2E が通る（`check-frontend.sh`、`e2e.sh`）。
-- 参照：[plan](../plan.md) 第 3 節、spec の US-54、55、[店舗画面の構成](../../../frontend/apps/store.md)、[管理画面の構成](../../../frontend/apps/admin.md)、[フロントの書き方](../../../frontend/coding.md)、skill `new-screen`
+- 参照：[plan](../plan.md) 第 3 節、spec の US-54、55、[店舗画面の構成](../../../design/apps/store.md)、[管理画面の構成](../../../design/apps/admin.md)、[フロントの書き方](../../../rules/frontend-coding.md)、skill `new-screen`
 
 ## タスク
 

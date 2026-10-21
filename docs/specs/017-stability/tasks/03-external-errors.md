@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：US-63 と AC-301、303 のテストが通る。決済・画像の変換・ファイル保存の外部サービスのエラーが 502 になり、ファイルを読めないときだけ 400 になる。Stripe と S3 の client にタイムアウトがある。OpenAPI と API の規約が修正されている。既存のテスト（バックエンド、店舗画面、管理画面）が全て通る。
-- 参照：[plan](../plan.md) 第 3、4 節、spec の US-63、64、BR-39、[API の規約](../../../api/conventions.md) 第 3 節、[バックエンドのアーキテクチャ](../../../backend/architecture.md) 第 8 節、[決済モジュール](../../../backend/modules/payment.md)、[メディアモジュール](../../../backend/modules/media.md)、[バックエンドの書き方](../../../backend/coding.md) 第 3.2、6.1 節
+- 参照：[plan](../plan.md) 第 3、4 節、spec の US-63、64、BR-39、[API の規約](../../../rules/api-conventions.md) 第 3 節、[バックエンドのアーキテクチャ](../../../design/backend-architecture.md) 第 8 節、[決済モジュール](../../../design/modules/payment.md)、[メディアモジュール](../../../design/modules/media.md)、[バックエンドの書き方](../../../rules/backend-coding.md) 第 3.2、6.1 節
 
 ## タスク
 

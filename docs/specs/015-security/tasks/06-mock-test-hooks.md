@@ -2,7 +2,7 @@
 
 - 前提：段階 1
 - 完了条件：AC-246 のテストが通る。本番の mock に、テストだけで使う操作がない。既存の統合テストが、期待値を変えずに通る。
-- 参照：[plan](../plan.md) 第 6 節、spec の US-53、NFR-18、[決済モジュール](../../../backend/modules/payment.md)、[出荷モジュール](../../../backend/modules/shipping.md)
+- 参照：[plan](../plan.md) 第 6 節、spec の US-53、NFR-18、[決済モジュール](../../../design/modules/payment.md)、[出荷モジュール](../../../design/modules/shipping.md)
 
 ## タスク
 

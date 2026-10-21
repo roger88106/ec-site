@@ -1,7 +1,7 @@
 package com.ecsite.module.notification.application.port;
 
 /**
- * メールを送る port（docs/backend/modules/notification.md「メールの送信」）。<br />
+ * メールを送る port（docs/design/modules/notification.md「メールの送信」）。<br />
  * SMTP の型とエラーは実装の中に閉じ、送れなければ実行時例外を投げる。
  */
 public interface Mailer {

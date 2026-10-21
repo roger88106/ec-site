@@ -2,7 +2,7 @@
 
 - 前提：段階 1
 - 完了条件：US-49 と AC-235 のテストが通る。店舗 API の認可に、手動で並べたパスがない。管理 API の既存のテストが変えずに通る。
-- 参照：[plan](../plan.md) 第 2 節、spec の US-49、US-50、BR-32、[バックエンドのアーキテクチャ](../../../backend/architecture.md) 第 7 節、[API の規約](../../../api/conventions.md)
+- 参照：[plan](../plan.md) 第 2 節、spec の US-49、US-50、BR-32、[バックエンドのアーキテクチャ](../../../design/backend-architecture.md) 第 7 節、[API の規約](../../../rules/api-conventions.md)
 
 ## タスク
 

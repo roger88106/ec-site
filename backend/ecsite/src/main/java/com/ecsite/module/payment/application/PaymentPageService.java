@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 支払画面のサービス（docs/backend/modules/payment.md「支払（集約）」）。<br />
+ * 支払画面のサービス（docs/design/modules/payment.md「支払（集約）」）。<br />
  * 支払画面は同時に 1 つだけ開く。決済サービスの呼び出しはトランザクションの外で行う。
  */
 @Service

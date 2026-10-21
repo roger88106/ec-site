@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * 税区分ごとの税率の一覧（予定を含む）の、インスタンス内のキャッシュ（docs/backend/modules/catalog.md）。<br />
+ * 税区分ごとの税率の一覧（予定を含む）の、インスタンス内のキャッシュ（docs/design/modules/catalog.md）。<br />
  * 有効期間は 30 秒。予定を含む一覧を持つので、税率の切り替えは表示時刻で判定でき、
  * キャッシュの影響は税率の登録・変更の反映が最大 30 秒遅れることだけ（バックエンドのアーキテクチャ 第 5 節）。
  * 有効期間は注入した時計で測る。

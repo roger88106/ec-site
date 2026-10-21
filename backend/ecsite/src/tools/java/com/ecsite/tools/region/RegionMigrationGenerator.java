@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
 
 /**
  * 地域の最初のデータを入れる Flyway のマイグレーションを、郵便番号のデータから作る
- * （docs/backend/modules/region.md「最初のデータ」）。<br />
+ * （docs/design/modules/region.md「最初のデータ」）。<br />
  * Gradle のタスク {@code generateRegionMigration} から呼ぶ。本番の jar には入らない。
  */
 public final class RegionMigrationGenerator {
@@ -87,7 +87,7 @@ public final class RegionMigrationGenerator {
      */
     private static String sql(PostalCodeData data, String source) {
         var out = new StringBuilder();
-        out.append("-- 地域の最初のデータ（docs/backend/modules/region.md「最初のデータ」、spec 016 AC-259、260）\n");
+        out.append("-- 地域の最初のデータ（docs/design/modules/region.md「最初のデータ」、spec 016 AC-259、260）\n");
         out.append("-- 日本郵便の郵便番号のデータ（").append(source).append("）から、Gradle の generateRegionMigration で作った。手で直さない\n");
         out.append("-- 都道府県と市区町村は全件、郵便番号は src/tools/resources/region/postal-codes.txt の分だけ\n\n");
         insert(out, "region.prefecture (code, name)",

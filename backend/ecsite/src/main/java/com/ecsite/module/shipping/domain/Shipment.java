@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 出荷（docs/backend/modules/shipping.md「出荷（集約）」）。<br />
+ * 出荷（docs/design/modules/shipping.md「出荷（集約）」）。<br />
  * 配送状態は、物流サービスの通知で、今より高い順位にだけ進む。
  */
 @Getter

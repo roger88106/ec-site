@@ -5,7 +5,7 @@ description: ec-site をローカルで起動・確認する手順。DB・Keyclo
 
 # ローカルでの起動と確認
 
-`docs/dev/`（起動とテストの手順）を、エージェントがそのまま実行できる形にしたもの。改めて調べずにこの通りに実行する。
+`docs/guides/`（起動とテストの手順）を、エージェントがそのまま実行できる形にしたもの。改めて調べずにこの通りに実行する。
 
 前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う（AGENTS.md「環境」）。
 
@@ -17,7 +17,7 @@ docker compose stop           # 止める（データは残る）
 ```
 
 - Keycloak は起動に 20 秒ほどかかる。`docker inspect -f '{{.State.Health.Status}}' ec-site-keycloak` が `healthy` になるまで待つ。
-- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で再作成する（`docs/dev/setup.md` 第 4 節。database は compose の PostgreSQL を初めて作ったときだけ自動で作られる）。
+- Keycloak の起動に失敗し、ログに database `keycloak` がないと出たら、`scripts/dev/reset.sh keycloak` で再作成する（`docs/guides/setup.md` 第 4 節。database は compose の PostgreSQL を初めて作ったときだけ自動で作られる）。
 
 - DB：`localhost:5432`、DB `ec_site`、ユーザー `ec_site`、パスワード `ec_site`。
 - SQL を見るときはコンテナの psql を使う（ローカルに psql はない）。スキーマはモジュールごと（`\dn`、`\dt <スキーマ>.*` で一覧にする。注文は `ordering`）。
@@ -28,7 +28,7 @@ docker compose stop           # 止める（データは残る）
 
 ## 認証（Keycloak、Mailpit）
 
-realm の設定は `docker/keycloak/realms/` の JSON。アカウントと、JSON を変えたときの再インポートは、`docs/dev/setup.md` 第 3 節（アカウント）と `docs/dev/setup.md` 第 4 節（再インポート）。
+realm の設定は `docker/keycloak/realms/` の JSON。アカウントと、JSON を変えたときの再インポートは、`docs/guides/setup.md` 第 3 節（アカウント）と `docs/guides/setup.md` 第 4 節（再インポート）。
 
 ```bash
 scripts/dev/keycloak.sh token ec-admin admin@example.com admin-pass-1   # access token の payload を出す（権限・audience の確認）
@@ -86,7 +86,7 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 - 整形と自動で修正できる lint は、各アプリで `pnpm lint:fix`。1 つのファイルだけなら、そのアプリのディレクトリで `npx biome check --write <ファイル>`（ルートから実行すると、設定が入れ子だというエラーになる）。
 - 1 つのテストのファイルを書いている間は、アプリのディレクトリで `npx tsc --noEmit` を先に実行してから `npx vitest run <ファイル>` を実行する。Vitest は型を確認しないため、テストデータの形の誤りが、テストの失敗として間接的に表れる。出力は `| grep -E "^\s+×|Tests|AssertionError" | head` で要約だけを読む（失敗した toContain は HTML の全体を出力する）。
 - 型（`src/api/generated/`）は `typecheck`・`build`・`dev` の前に OpenAPI から生成される。
-- 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（`docs/frontend/coding.md` 第 9.1 節）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
+- 依存を追加した・上げたときは、ルートで `pnpm install --frozen-lockfile` とライセンスの検査を再実行する（`docs/rules/frontend-coding.md` 第 9.1 節）。手元は依存が入った後なので、テストが通っても CI のインストールで失敗することがある。
 
 開発サーバーは Bash ではなく、プレビューのツール（`preview_start`）で `.claude/launch.json` の名前を指定して起動する。
 
@@ -101,13 +101,13 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 
 エージェントが実装の途中で表示を確認するときの、ツールの使い方。利用者が画面を確認する手順は、skill `new-screen` の「画面を追加し終えたら」にある。
 
-- IdP のログインの画面は、描画の前だとキーの入力やクリックが失敗する。`find` で入力欄を探し、`form_input` で local の seed のアカウント（`docs/dev/setup.md`）を入れ、`javascript_tool` で `document.querySelector('form').submit()` を呼ぶ。
+- IdP のログインの画面は、描画の前だとキーの入力やクリックが失敗する。`find` で入力欄を探し、`form_input` で local の seed のアカウント（`docs/guides/setup.md`）を入れ、`javascript_tool` で `document.querySelector('form').submit()` を呼ぶ。
 - 表示の中身は `get_page_text` で読む。スクリーンショットは描画を待ってタイムアウトしやすいため、見た目を見るときだけ使う。
 - 開く画面の ID は DB から取得する（例：注文と支払は `ordering.sales_order` と `payment.payment` を結ぶ）。
 
 ## CI の検査の script
 
-`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで実行する（hook を置いていれば commit のときに実行される）。各検査の中身、失敗したときの修正方法、除外の書き方は [CI の検査](../../../docs/dev/ci.md)。
+`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで実行する（hook を置いていれば commit のときに実行される）。各検査の中身、失敗したときの修正方法、除外の書き方は [CI の検査](../../../docs/guides/ci.md)。
 
 ```bash
 scripts/ci/check-all.sh
@@ -122,7 +122,7 @@ CI=true scripts/ci/check-all.sh
 ## 決済（mock と Stripe）
 
 - profile `local` は mock（`application-local.yml` の mock フラグ。物流も mock）。注文すると `http://localhost:8080/mock-payment/{ID}` の支払画面に移る（「支払う」「カードを拒否させる」「やめる」）。
-- Stripe の sandbox は `docs/dev/setup.md`「Stripe で動かす」の通り。鍵は `/.local/stripe.env`（なければ利用者に頼む。鍵を会話に貼らせない）。
+- Stripe の sandbox は `docs/guides/setup.md`「Stripe で動かす」の通り。鍵は `/.local/stripe.env`（なければ利用者に頼む。鍵を会話に貼らせない）。
 
   ```bash
   docker compose --profile stripe up -d stripe-cli                   # ルートで。通知を :8080 に転送する
@@ -136,7 +136,7 @@ CI=true scripts/ci/check-all.sh
 
 ## 機能紹介のページのスクリーンショット
 
-`docs/dev/setup.md`「機能紹介のページのスクリーンショット」の通り。DB を再作成してから、`e2e/` で `pnpm capture`。
+`docs/guides/setup.md`「機能紹介のページのスクリーンショット」の通り。DB を再作成してから、`e2e/` で `pnpm capture`。
 
 ## ローカルの画面のデータ
 
@@ -146,11 +146,11 @@ local profile の seed（`db/seed/local/`）が、画面を確認するための
 - レポート用の注文 2 万件（2024-10-01〜2026-09-30、会員 300 人、出荷済みが多い）と、その支払・出荷・レポートの写し。中身は `db/seed/local/README.md`「レポート用の注文」。
 - 会員 `member@example.com` の注文 4 件：受付、キャンセルの申請中、申請の却下（受付のまま）、キャンセル済み。どれも状態に合う支払（mock の与信）を持ち、受付の注文は管理画面から出荷できる（Stripe の profile では売上確定で失敗する）。承認・却下・運営者のキャンセルは、申請中の注文で管理画面か管理 API（`PUT /api/admin/orders/{orderId}/cancellation-request/approve` など）から試す。
 - ID は固定（`00000000-0000-0000-0000-00000000` + 4 桁）：カテゴリ 1xxx、商品 2xxx、バリアント 3xxx、在庫 4xxx、会員 6001、注文 61xx、支払 64xx、アセット 7xxx、商品画像 8xxx。レポート用は `00000000-0000-0000-<種類 4 桁>-<番号 12 桁>`（会員 0001、注文 0010、支払 0012、出荷 0013）。
-- 画面で変えたデータは、seed を再適用しても戻らない。最初の状態に戻すときは、バックエンドを停止して `scripts/dev/reset.sh` で DB を再作成する（Keycloak は `keycloak`、全ては `all`。`docs/dev/setup.md` 第 4 節）。
+- 画面で変えたデータは、seed を再適用しても戻らない。最初の状態に戻すときは、バックエンドを停止して `scripts/dev/reset.sh` で DB を再作成する（Keycloak は `keycloak`、全ては `all`。`docs/guides/setup.md` 第 4 節）。
 
 ## E2E（`e2e/`）
 
-`docs/testing/running.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を再作成し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
+`docs/guides/running-tests.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を再作成し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
 
 ```bash
 scripts/dev/e2e.sh                                   # ルートで。テストごとの ok / x と失敗の要点だけを出す。前提のコンテナが止まっていれば、名前を出して終了コード 2

@@ -2,7 +2,7 @@
 
 - 前提：段階 5、6
 - 完了条件：E2E がローカルと CI で通る。CI は外部の決済サービスに接続しない。
-- 参照：[plan](../plan.md) 第 7 節、[テストの実行方法](../../../testing/running.md)
+- 参照：[plan](../plan.md) 第 7 節、[テストの実行方法](../../../guides/running-tests.md)
 
 ## タスク
 

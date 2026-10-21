@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：US-44 のバックエンドのテストが通る。IdP の会員登録とアカウントの画面で、生年月日と性別を入れられる。既存のテストが全て通る（`./gradlew check`）。
-- 参照：[plan](../plan.md) 第 2〜4 節、spec の US-44、BR-29、NFR-16、[注文モジュール](../../../backend/modules/order.md)、[出荷モジュール](../../../backend/modules/shipping.md)、[会員モジュール](../../../backend/modules/member.md)
+- 参照：[plan](../plan.md) 第 2〜4 節、spec の US-44、BR-29、NFR-16、[注文モジュール](../../../design/modules/order.md)、[出荷モジュール](../../../design/modules/shipping.md)、[会員モジュール](../../../design/modules/member.md)
 
 ## 文書
 

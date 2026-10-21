@@ -1,4 +1,4 @@
--- 地域のマスターデータ（docs/backend/modules/region.md、spec 016 US-56）
+-- 地域のマスターデータ（docs/design/modules/region.md、spec 016 US-56）
 -- 都道府県・市区町村は地方公共団体コードで識別する。他のモジュールの表から外部キーを張らない
 CREATE SCHEMA IF NOT EXISTS region;
 

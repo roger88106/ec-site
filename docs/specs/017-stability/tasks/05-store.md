@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：AC-302 と US-66 のテストが通る。店舗画面のサーバー側から、バックエンドと IdP への呼び出しにタイムアウトがある。サーバーアクションの失敗と、バックエンドの 5xx がログに出力される。既存のテストが全て通る（`check-frontend.sh`、`e2e.sh`）。
-- 参照：[plan](../plan.md) 第 4、6 節、spec の US-64、66、[店舗画面の構成](../../../frontend/apps/store.md) 第 4、9 節、[フロントの書き方](../../../frontend/coding.md) 第 3、8 節
+- 参照：[plan](../plan.md) 第 4、6 節、spec の US-64、66、[店舗画面の構成](../../../design/apps/store.md) 第 4、9 節、[フロントの書き方](../../../rules/frontend-coding.md) 第 3、8 節
 
 ## タスク
 

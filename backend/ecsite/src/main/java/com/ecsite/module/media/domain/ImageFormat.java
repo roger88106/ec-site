@@ -13,7 +13,7 @@ import java.util.stream.Collectors;
 
 /**
  * 受け付ける画像の形式。ファイルの先頭のバイト（マジックナンバー）で判定する。<br />
- * ブラウザが申告した形式は信用せず、確定のときに先頭のバイトで確認する（docs/backend/modules/media.md）。
+ * ブラウザが申告した形式は信用せず、確定のときに先頭のバイトで確認する（docs/design/modules/media.md）。
  */
 public enum ImageFormat {
 

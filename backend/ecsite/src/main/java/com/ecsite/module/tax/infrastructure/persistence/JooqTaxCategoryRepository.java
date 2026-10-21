@@ -190,7 +190,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
 
     /**
      * 遅らせていた排他制約（適用期間の重複）を、この時点で検査させる。<br />
-     * コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため（docs/backend/modules/tax.md）。
+     * コミット時まで遅らせると、違反がリポジトリの外で起き、業務のエラーに変換できないため（docs/design/modules/tax.md）。
      * 検査の後は遅らせる設定に戻し、同じトランザクションの後続の書き込みでも途中の重なりを許す。
      */
     private void checkDeferredConstraints() {

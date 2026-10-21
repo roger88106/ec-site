@@ -2,7 +2,7 @@
 
 - 前提：段階 4（新しい文書も対象に含めるため）。段階 2 の T018-02-03 で決めた方法を使う。
 - 完了条件：全ての対象の文書で候補を提示し、利用者が判断し、採ったものを修正した。言い換えの一覧と skill `docs` 第 2 節が更新されている。番号と節の見出しが変わっていない（DN-22）。`check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 6 節、spec の DS-51、[開発の進め方](../../../process/workflow.md) 第 1.4 節、skill `docs`（[SKILL.md](../../../../.claude/skills/docs/SKILL.md)）
+- 参照：[plan](../plan.md) 第 6 節、spec の DS-51、[開発の進め方](../../../rules/workflow.md) 第 1.4 節、skill `docs`（[SKILL.md](../../../../.claude/skills/docs/SKILL.md)）
 
 ## 方針
 

@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：order の参照の service が view を返し、presentation が集約を受け取らない。注文の手続きの参照が参照の service にある。金額が application と domain で `Money`。値の型が `vo/` にあり、商品の portが `CatalogDirectory`。presentation に生成したモデルの引数を取るコンストラクターの呼び出しがない。既存のテストが、名前の変更のほかは変えずに通る。
-- 参照：[plan](../plan.md) 第 4 節、第 5.1 節、第 5.3 節、第 7 節、[注文モジュール](../../../backend/modules/order.md)
+- 参照：[plan](../plan.md) 第 4 節、第 5.1 節、第 5.3 節、第 7 節、[注文モジュール](../../../design/modules/order.md)
 
 ## タスク
 

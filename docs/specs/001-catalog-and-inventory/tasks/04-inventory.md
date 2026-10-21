@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：US-8 の AC（AC-41〜46）のテストが通る。並行調整のテスト（AC-44）を含む。
-- 参照：spec US-8、[inventory.md](../../../backend/modules/inventory.md)、`admin.yaml`（tag: inventory）
+- 参照：spec US-8、[inventory.md](../../../design/modules/inventory.md)、`admin.yaml`（tag: inventory）
 
 ## タスク
 
@@ -17,7 +17,7 @@
   - 調整後に負になる調整の拒否（AC-43）
   - **並行調整**：同じバリアントに複数のスレッドから同時に調整し、最終の在庫数が増減量の合計と一致する（AC-44）
   - 履歴が新しい順で、調整後の在庫数が記録される（AC-45）
-- [x] **T407** 差分の加算による調整と、履歴の記録を実装する（[inventory.md](../../../backend/modules/inventory.md)）。T406 を通す。
+- [x] **T407** 差分の加算による調整と、履歴の記録を実装する（[inventory.md](../../../design/modules/inventory.md)）。T406 を通す。
 - [x] **T408** [テスト] 受け入れテスト（MockMvc）。
   - 在庫数の取得。在庫がまだないバリアントは 404
   - 調整（AC-42〜44、46）と、履歴のページング（AC-45）
@@ -26,4 +26,4 @@
 - [x] **T410** [テスト] 店舗向けの API の統合テスト：複数のバリアントの在庫の有無。在庫がないバリアントは「在庫なし」。
 - [x] **T411** 店舗向けの API を実装する。T410 を通す。
 - [x] **T412** seed：サンプルの商品の在庫（在庫あり・在庫なしを含む）。
-- [x] **T413** [inventory.md](../../../backend/modules/inventory.md) のテーブルを、マイグレーションへのリンクに置き換える。
+- [x] **T413** [inventory.md](../../../design/modules/inventory.md) のテーブルを、マイグレーションへのリンクに置き換える。

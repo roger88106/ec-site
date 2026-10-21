@@ -1,6 +1,6 @@
 # 開発環境の起動
 
-ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](../testing/running.md)、環境変数は [環境変数](environment.md)。エージェントは skill `local-dev` を使う。
+ローカルで compose・バックエンド・管理画面・店舗画面を起動する手順と、使うアカウント。テストは [テストの実行方法](running-tests.md)、環境変数は [環境変数](environment.md)。エージェントは skill `local-dev` を使う。
 
 ## 1. 前提
 
@@ -42,7 +42,7 @@ pnpm dev
 - Mailpit の SMTP はホストの 2525 番ポートで待ち受ける（1025 は Windows のシステムプロセスが使うことがあるため使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いているポートを設定して、compose とバックエンドを起動する（両方が同じ値を読む）。
 - compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理者のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）から接続するときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を設定して、`docker compose up -d` で再作成する。終わったら設定を削除して再作成する。バックエンドと画面の開発サーバーは、この設定の対象外である。
 - 停止するときは `docker compose stop`。データを再作成するときは第 4 節。
-- E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に含まれない。E2E の準備の script（`e2e/scripts/prepare.ts`）が起動する（[テストの実行方法](../testing/running.md)）。
+- E2E 用の Keycloak（:8181、compose の profile `e2e`）は、この一覧に含まれない。E2E の準備の script（`e2e/scripts/prepare.ts`）が起動する（[テストの実行方法](running-tests.md)）。
 - 店舗画面は API の結果を最大 60 秒キャッシュするので、管理画面での変更は 1 分以内に反映される。
 - フロントの API の型は、`dev`・`typecheck`・`build` の前に OpenAPI から生成される（コミットしない）。整形と自動で修正できる lint は `pnpm lint:fix`。
 - commit の前に CI の検査の script（[CI の検査](ci.md)）を実行するには、`.git/hooks/pre-commit` に次の 1 行を書く（ファイルがなければ、1 行目に `#!/bin/sh` を書いて作る）。`.git/hooks/` に置いた他の hook と併用できるよう、`core.hooksPath` は変えない。
@@ -84,7 +84,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 ## 5. Stripe で動かす
 
-既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済の設計は [決済モジュール](../backend/modules/payment.md)。
+既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済の設計は [決済モジュール](../design/modules/payment.md)。
 
 1. Stripe のアカウントと sandbox を作り、ダッシュボードの「開発者 → API キー」のシークレットキー（`sk_test_` で始まる）を、`/.local/stripe.env` に書く。このファイルは Git に入らない。鍵を会話やコミットに含めない。
 

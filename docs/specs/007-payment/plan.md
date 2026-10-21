@@ -6,12 +6,12 @@
 
 | 対象 | 設計書 | 主な担当 |
 |------|--------|----------|
-| 定期ジョブとイベントの再発行（新規。モジュールではない） | 本書 第 2 節、[バックエンドのアーキテクチャ](../../backend/architecture.md) 第 5 節 | AC-154、164、NFR-7 |
+| 定期ジョブとイベントの再発行（新規。モジュールではない） | 本書 第 2 節、[バックエンドのアーキテクチャ](../../design/backend-architecture.md) 第 5 節 | AC-154、164、NFR-7 |
 | 決済（新規） | payment.md（段階 2 で作る） | US-31〜34 の支払と与信、BR-15〜17、NFR-5、6、8 |
-| 注文（変更） | [order.md](../../backend/modules/order.md) | 状態の遷移（BR-14）、期限切れのキャンセル、画面の表示 |
-| カート（変更） | [cart.md](../../backend/modules/cart.md) | 注文した品目を除く（AC-147） |
+| 注文（変更） | [order.md](../../design/modules/order.md) | 状態の遷移（BR-14）、期限切れのキャンセル、画面の表示 |
+| カート（変更） | [cart.md](../../design/modules/cart.md) | 注文した品目を除く（AC-147） |
 
-用語と識別子の対応は[用語集](../../reference/glossary.md)。
+用語と識別子の対応は[用語集](../../design/glossary.md)。
 
 ## 1. 全体の構成
 
@@ -106,7 +106,7 @@ constitution の未定事項「定期ジョブの分散ロック方式」と「�
 
 - compose に `stripe-cli`（公式のイメージ `stripe/stripe-cli`）を、profile `stripe` で追加する。`stripe listen --forward-to` で、通知をローカルのバックエンドに送る。
 - 既定の起動（profile なし）、自動テスト、CI、E2E は mock を使い、外部に接続しない。
-- 手順は [開発環境の起動](../../dev/setup.md) と [環境変数](../../dev/environment.md) に書く。
+- 手順は [開発環境の起動](../../guides/setup.md) と [環境変数](../../guides/environment.md) に書く。
 
 ## 4. 決めたこと
 
@@ -122,7 +122,7 @@ constitution の未定事項「定期ジョブの分散ロック方式」と「�
 | 支払画面の URL を取得する API | 支払待ちで期限の前の注文だけ。それ以外は 409 |
 | カートから除く品目（AC-147） | 注文の明細のバリアントを、数量によらず行ごと除く。カートの版が上がり、注文手続き中の引当は今までどおり解除される |
 | 管理画面の一覧の支払の状態 | 一覧の 1 ページ分の注文 ID で、決済の API からまとめて読む |
-| 依存とライセンス | `stripe-java`（MIT）、`shedlock-spring`・`shedlock-provider-jdbc-template`（Apache License 2.0）。[依存とライセンス](../../reference/licenses.md) に追加する |
+| 依存とライセンス | `stripe-java`（MIT）、`shedlock-spring`・`shedlock-provider-jdbc-template`（Apache License 2.0）。[依存とライセンス](../../design/licenses.md) に追加する |
 
 ## 5. API
 
@@ -153,7 +153,7 @@ constitution の未定事項「定期ジョブの分散ロック方式」と「�
 | 注文の詳細 | 支払待ちなら、支払の期限と「支払う」。戻った直後で支払待ちなら「支払の確認中」。期限切れのキャンセルを示す | 支払の状態。与信の取消待ちを示す。期限切れのキャンセルを示す |
 | 注文の一覧 | 支払待ちの支払の期限 | 支払の状態の列、状態の絞り込みに「支払待ち」 |
 
-- 画面の文言は、店舗画面・管理画面の文言のファイルに追加する（[店舗画面の構成](../../frontend/apps/store.md)、[管理画面の構成](../../frontend/apps/admin.md)）。
+- 画面の文言は、店舗画面・管理画面の文言のファイルに追加する（[店舗画面の構成](../../design/apps/store.md)、[管理画面の構成](../../design/apps/admin.md)）。
 
 ## 7. テスト
 

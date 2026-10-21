@@ -9,7 +9,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 
 /**
- * カートの片付けのジョブ（docs/backend/modules/cart.md「期限」）。<br />
+ * カートの片付けのジョブ（docs/design/modules/cart.md「期限」）。<br />
  * 期限から保存期間を過ぎたカートを、品目と共に、件数の上限ずつ、残りがなくなるまで消す（1 回ごとに別のトランザクション）。
  * 間隔と保存期間はカートの片付けの設定 {@code ecsite.cart.cleanup}（既定 1 時間、0）で変えられる。
  */

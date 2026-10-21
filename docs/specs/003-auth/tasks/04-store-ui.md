@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：画面から会員登録・ログイン・ログアウト・カートの引き継ぎ・注文・注文の照会ができ、下記の手動確認が通る。店舗画面の lint・型チェック・テスト・ビルドが通る。
-- 参照：[plan](../plan.md) 第 1、4、6 節、[店舗画面の構成](../../../frontend/apps/store.md)、`store.yaml`、skill `new-screen`
+- 参照：[plan](../plan.md) 第 1、4、6 節、[店舗画面の構成](../../../design/apps/store.md)、`store.yaml`、skill `new-screen`
 
 ## タスク
 

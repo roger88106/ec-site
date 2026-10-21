@@ -15,7 +15,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 注文手続きの参照のサービス（docs/backend/modules/order.md「注文手続き」）
+ * 注文手続きの参照のサービス（docs/design/modules/order.md「注文手続き」）
  */
 @Service
 @RequiredArgsConstructor

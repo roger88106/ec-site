@@ -9,7 +9,7 @@ import org.springframework.modulith.events.ApplicationModuleListener;
 import org.springframework.stereotype.Component;
 
 /**
- * 注文と出荷のイベントのリスナー（docs/backend/modules/reporting.md「写しの作り方」）。<br />
+ * 注文と出荷のイベントのリスナー（docs/design/modules/reporting.md「写しの作り方」）。<br />
  * コミットの後に非同期で、別のトランザクションで動く。何度・どの順で届いても結果は同じ。
  * 処理に失敗したら、未完了のイベントの再発行でやり直す。
  */

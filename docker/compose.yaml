@@ -3,7 +3,7 @@
 #
 #   起動：docker compose up -d（リポジトリのルートで。ルートの .env の COMPOSE_FILE がこのファイルを指す）
 #   停止：docker compose stop
-#   E2E 用の Keycloak（profile e2e）は、E2E の準備の script が起動する（docs/testing/running.md）
+#   E2E 用の Keycloak（profile e2e）は、E2E の準備の script が起動する（docs/guides/running-tests.md）
 #
 # スキーマは Flyway のマイグレーションで作る（アプリの local profile が起動時に適用する）。
 # ここでは空のデータベースと、画像のバケット（seaweedfs-init が作る）、画像の変換（imgproxy）、
@@ -185,7 +185,7 @@ services:
       - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:8025:8025"
 
   # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する
-  # （docs/dev/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
+  # （docs/guides/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
   stripe-cli:
     image: stripe/stripe-cli:v1.53.1
     container_name: ec-site-stripe-cli

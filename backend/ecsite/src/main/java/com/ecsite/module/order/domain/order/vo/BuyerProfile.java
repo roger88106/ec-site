@@ -14,7 +14,7 @@ import java.time.format.DateTimeParseException;
 import java.time.format.ResolverStyle;
 
 /**
- * 注文時の年齢と性別（docs/backend/modules/order.md「注文時の年齢と性別」）。<br />
+ * 注文時の年齢と性別（docs/design/modules/order.md「注文時の年齢と性別」）。<br />
  * 注文の成立のときに、会員の token の生年月日と性別から求める。生年月日は持たない（レポートに個人を特定できる情報を出さないため）。
  *
  * @param age    注文日（日本時間）の時点の満年齢。分からなければ null

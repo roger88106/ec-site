@@ -2,7 +2,7 @@
 
 - 前提：spec 006 の完了、CI が通っている
 - 完了条件：分散ロックと未完了イベントの再発行の統合テストが通る。既存のテストが全て通る（`./gradlew check`）。constitution の未定事項から 2 つを外している。
-- 参照：[plan](../plan.md) 第 2 節、[バックエンドのアーキテクチャ](../../../backend/architecture.md) 第 5 節、[在庫](../../../backend/modules/inventory.md)「イベントの処理に失敗したとき」、[依存とライセンス](../../../reference/licenses.md)
+- 参照：[plan](../plan.md) 第 2 節、[バックエンドのアーキテクチャ](../../../design/backend-architecture.md) 第 5 節、[在庫](../../../design/modules/inventory.md)「イベントの処理に失敗したとき」、[依存とライセンス](../../../design/licenses.md)
 
 ## 文書
 

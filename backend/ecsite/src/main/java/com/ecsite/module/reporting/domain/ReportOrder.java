@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 注文の写し（レポート）。集計のために持つ、注文と明細の今の値（docs/backend/modules/reporting.md「集めるデータ」）。
+ * 注文の写し（レポート）。集計のために持つ、注文と明細の今の値（docs/design/modules/reporting.md「集めるデータ」）。
  *
  * @param orderId          注文 ID
  * @param orderNumber      注文番号

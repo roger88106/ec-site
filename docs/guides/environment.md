@@ -2,12 +2,12 @@
 
 本番相当の環境では profile を付けずに起動し、環境に依存する値を環境変数で渡す。ローカルの既定値は `application-local.yml` にある。
 
-profile の設定ファイルは本番の jar に含まれない（[バックエンドのアーキテクチャ](../backend/architecture.md) 第 8 節）。
+profile の設定ファイルは本番の jar に含まれない（[バックエンドのアーキテクチャ](../design/backend-architecture.md) 第 8 節）。
 
 | profile | 使う場面 | 指定する profile |
 |---------|----------|--------|
 | `local` | ローカルの開発。compose のサービスに接続し、決済と物流は mock、起動のときに seed を適用する | 単独（`local`） |
-| `e2e` | E2E。DB・IdP・画像のバケット・ポートを E2E 用に分離し、ローカルのデータを変えない（[テストの実行方法](../testing/running.md)） | `local,e2e` |
+| `e2e` | E2E。DB・IdP・画像のバケット・ポートを E2E 用に分離し、ローカルのデータを変えない（[テストの実行方法](running-tests.md)） | `local,e2e` |
 | `stripe` | Stripe の sandbox での確認。決済サービスを Stripe にし、秘密情報を `/.local/stripe.env` から読む（[開発環境の起動](setup.md) 第 5 節） | `local,stripe` |
 
 ## 1. バックエンド
@@ -53,7 +53,7 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 - `_USERNAME` などは、同じ行の 1 つ目の名前の接頭辞を省略したもの（`SPRING_DATASOURCE_USERNAME` など）。
 - マイグレーションは起動時には適用せず、デプロイごとに 1 回だけ適用する。
 - ログは標準出力に JSON（Elastic Common Schema）で出力される。
-- 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](../backend/architecture.md) 第 7.3 節）を決めてから行う。
+- 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](../design/backend-architecture.md) 第 7.3 節）を決めてから行う。
 
 ## 2. 管理画面
 

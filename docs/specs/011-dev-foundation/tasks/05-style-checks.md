@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：公開のクラスとメソッドの Javadoc の書き漏れが `check` で見つかり、既存の漏れが直っている。インスタンスを作らないクラスの書き方が文書にあり、ArchUnit のテストで確認する。
-- 参照：[plan](../plan.md) 第 5 節、[コメントの書き方](../../../process/comments.md)、[バックエンドの書き方](../../../backend/coding.md)
+- 参照：[plan](../plan.md) 第 5 節、[コメントの書き方](../../../rules/comments.md)、[バックエンドの書き方](../../../rules/backend-coding.md)
 
 ## タスク
 

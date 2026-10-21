@@ -59,7 +59,8 @@
   - 結果：候補 23 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-mock-flags、02-authorization、04-frontend-config、05-local-env-and-jar ほか 2。
 - [x] **T018-05-22** spec 016（マスターデータ）の spec・plan・tasks。
   - 結果：候補 52 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-region、02-order-address、03-address-screens、04-reporting ほか 6。
-- [ ] **T018-05-23** spec 017（安定性）の spec・plan・tasks。
+- [x] **T018-05-23** spec 017（安定性）の spec・plan・tasks。
+  - 結果：候補 56 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-cleanup、02-stopped-events、03-external-errors、04-outside-transaction ほか 4。
 - [x] **T018-05-24** [MVP の完成までの一覧](../../mvp.md)と、spec 018・019 の文書。
   - 結果：候補 27 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：spec、01-todo、02-agent-flow、03-checks、06-structure、spec ほか 1。
 - [x] **T018-05-25** 言い換えの一覧（ng と caution）と skill `docs` 第 2 節に、採った言い換えと書き方を追加する（DC-194）。

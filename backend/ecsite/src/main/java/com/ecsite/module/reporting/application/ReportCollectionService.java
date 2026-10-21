@@ -103,7 +103,7 @@ public class ReportCollectionService {
     private static DeliveryStatus deliveryStatus(List<StatusHistoryEntry> history) {
         return history.stream()
                 .filter(entry -> entry.kind() == HistoryKind.DELIVERY_STATUS)
-                .map(entry -> DeliveryStatus.valueOf(entry.to()))
+                .map(StatusHistoryEntry::deliveryStatus)
                 .max(Comparator.comparingInt(DeliveryStatus::rank))
                 .orElse(null);
     }

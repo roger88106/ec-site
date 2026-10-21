@@ -195,7 +195,19 @@ class StorefrontMapper {
                 .quantity(item.quantity())
                 .subtotal(item.subtotal().yen())
                 .purchasable(purchasable)
-                .unpurchasableReason(purchasable ? null : UnpurchasableReason.fromValue(item.unpurchasableReason()));
+                .unpurchasableReason(purchasable ? null : toUnpurchasableReason(item.unpurchasableReason()));
+    }
+
+    /**
+     * 購入できない理由のレスポンスに変換する。
+     */
+    static UnpurchasableReason toUnpurchasableReason(CartView.UnpurchasableReason reason) {
+        return switch (reason) {
+            case NOT_SHOWN -> UnpurchasableReason.NOT_SHOWN;
+            case SALES_SUSPENDED -> UnpurchasableReason.SALES_SUSPENDED;
+            case OUT_OF_STOCK -> UnpurchasableReason.OUT_OF_STOCK;
+            case INSUFFICIENT_STOCK -> UnpurchasableReason.INSUFFICIENT_STOCK;
+        };
     }
 
     /**

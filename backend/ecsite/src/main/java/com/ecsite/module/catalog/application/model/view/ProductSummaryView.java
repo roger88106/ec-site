@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.application.model.view;
 
+import com.ecsite.module.catalog.domain.product.PublicationStatus;
+
 import java.util.UUID;
 
 /**
@@ -11,5 +13,6 @@ import java.util.UUID;
  * @param status       公開状態
  * @param variantCount バリアント数
  */
-public record ProductSummaryView(UUID id, String productCode, String name, String status, int variantCount) {
+public record ProductSummaryView(UUID id, String productCode, String name, PublicationStatus status,
+                                 int variantCount) {
 }

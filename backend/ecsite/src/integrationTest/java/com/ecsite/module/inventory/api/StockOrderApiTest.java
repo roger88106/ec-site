@@ -96,7 +96,7 @@ class StockOrderApiTest {
         assertThat(api.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
         assertThat(latestAdjustment(variant)).satisfies(adjustment -> {
             assertThat(adjustment.delta()).isEqualTo(-2);
-            assertThat(adjustment.reason()).isEqualTo("ORDER");
+            assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER);
             assertThat(adjustment.orderId()).isEqualTo(orderId);
             assertThat(adjustment.orderNumber()).isEqualTo(ORDER_NUMBER);
             assertThat(adjustment.quantityAfter()).isEqualTo(3);
@@ -130,7 +130,7 @@ class StockOrderApiTest {
         assertThat(shortages).containsExactly(scarce);
         assertThat(stockQueryRepository.findQuantity(plenty)).contains(5);
         assertThat(stockQueryRepository.findQuantity(scarce)).contains(1);
-        assertThat(latestAdjustment(plenty).reason()).isEqualTo("ARRIVAL");
+        assertThat(latestAdjustment(plenty).reason()).isEqualTo(StockAdjustmentReason.ARRIVAL);
     }
 
     @Test
@@ -143,7 +143,7 @@ class StockOrderApiTest {
         assertThat(stockQueryRepository.findQuantity(variant)).contains(5);
         assertThat(latestAdjustment(variant)).satisfies(adjustment -> {
             assertThat(adjustment.delta()).isEqualTo(2);
-            assertThat(adjustment.reason()).isEqualTo("ORDER_CANCELLATION");
+            assertThat(adjustment.reason()).isEqualTo(StockAdjustmentReason.ORDER_CANCELLATION);
             assertThat(adjustment.orderNumber()).isEqualTo(ORDER_NUMBER);
         });
     }

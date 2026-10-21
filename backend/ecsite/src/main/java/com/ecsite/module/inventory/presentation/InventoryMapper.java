@@ -1,10 +1,10 @@
 package com.ecsite.module.inventory.presentation;
 
 import com.ecsite.api.admin.model.AdjustStockRequest;
+import com.ecsite.api.admin.model.ManualStockAdjustmentReason;
 import com.ecsite.api.admin.model.Stock;
 import com.ecsite.api.admin.model.StockAdjustment;
 import com.ecsite.api.admin.model.StockAdjustmentPage;
-import com.ecsite.api.admin.model.StockAdjustmentReason;
 import com.ecsite.api.admin.model.StockSummary;
 import com.ecsite.api.admin.model.StockSummaryList;
 import com.ecsite.common.model.value.Operator;
@@ -12,6 +12,7 @@ import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.command.AdjustStockCommand;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.model.view.StockSummaryView;
+import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import org.springframework.stereotype.Component;
 
 import java.time.ZoneOffset;
@@ -33,8 +34,40 @@ class InventoryMapper {
      * @return 在庫の調整コマンド
      */
     AdjustStockCommand toAdjustStockCommand(UUID variantId, AdjustStockRequest request, Operator operator) {
-        return new AdjustStockCommand(variantId, request.getDelta(), request.getReason().getValue(),
+        return new AdjustStockCommand(variantId, request.getDelta(), toDomainReason(request.getReason()),
                 request.getMemo().orElse(null), operator);
+    }
+
+    /**
+     * リクエストの調整理由（運営者が選べるもの）を、ドメインの調整理由に変換する。
+     *
+     * @param reason リクエストの調整理由
+     * @return ドメインの調整理由
+     */
+    static StockAdjustmentReason toDomainReason(ManualStockAdjustmentReason reason) {
+        return switch (reason) {
+            case ARRIVAL -> StockAdjustmentReason.ARRIVAL;
+            case STOCKTAKE -> StockAdjustmentReason.STOCKTAKE;
+            case DAMAGE_OR_LOSS -> StockAdjustmentReason.DAMAGE_OR_LOSS;
+            case OTHER -> StockAdjustmentReason.OTHER;
+        };
+    }
+
+    /**
+     * ドメインの調整理由を、レスポンスの調整理由に変換する。
+     *
+     * @param reason ドメインの調整理由
+     * @return レスポンスの調整理由
+     */
+    static com.ecsite.api.admin.model.StockAdjustmentReason toResponseReason(StockAdjustmentReason reason) {
+        return switch (reason) {
+            case ARRIVAL -> com.ecsite.api.admin.model.StockAdjustmentReason.ARRIVAL;
+            case STOCKTAKE -> com.ecsite.api.admin.model.StockAdjustmentReason.STOCKTAKE;
+            case DAMAGE_OR_LOSS -> com.ecsite.api.admin.model.StockAdjustmentReason.DAMAGE_OR_LOSS;
+            case OTHER -> com.ecsite.api.admin.model.StockAdjustmentReason.OTHER;
+            case ORDER -> com.ecsite.api.admin.model.StockAdjustmentReason.ORDER;
+            case ORDER_CANCELLATION -> com.ecsite.api.admin.model.StockAdjustmentReason.ORDER_CANCELLATION;
+        };
     }
 
     /**
@@ -47,7 +80,7 @@ class InventoryMapper {
         return new StockAdjustment()
                 .id(view.id())
                 .delta(view.delta())
-                .reason(StockAdjustmentReason.fromValue(view.reason()))
+                .reason(toResponseReason(view.reason()))
                 .quantityAfter(view.quantityAfter())
                 .adjustedAt(view.adjustedAt().atOffset(ZoneOffset.UTC))
                 .memo(view.memo())

@@ -159,7 +159,7 @@ class JooqStockItemRepositoryTest {
         assertThat(page.totalItems()).isEqualTo(3);
         assertThat(page.items()).extracting(StockAdjustmentView::delta).containsExactly(1, -2, 10);
         assertThat(page.items()).extracting(StockAdjustmentView::quantityAfter).containsExactly(9, 8, 10);
-        assertThat(page.items().getFirst().reason()).isEqualTo("OTHER");
+        assertThat(page.items().getFirst().reason()).isEqualTo(StockAdjustmentReason.OTHER);
         assertThat(page.items().getFirst().memo()).isEqualTo("メモ");
         assertThat(page.items().getFirst().adjustedAt()).isEqualTo(NOW);
     }

@@ -4,6 +4,7 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.port.StockQueryRepository;
+import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
@@ -70,7 +71,7 @@ class JooqStockQueryRepository implements StockQueryRepository {
                             .fetch(record -> new StockAdjustmentView(
                                     record.getId(),
                                     record.getDelta(),
-                                    record.getReason(),
+                                    StockAdjustmentReason.valueOf(record.getReason()),
                                     record.getMemo(),
                                     record.getOrderId(),
                                     record.getOrderNumber(),

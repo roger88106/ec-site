@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.application.model.view;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.product.ProductActions;
+import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import jakarta.annotation.Nullable;
 
 import java.net.URI;
@@ -21,7 +22,7 @@ import java.util.UUID;
  * @param priceInclTax  現時点の税込価格。有効な税率がなければ null
  * @param categoryIds   所属カテゴリの ID
  * @param axes          バリアント軸の名前（並び順）
- * @param status        公開状態（{@code UNPUBLISHED} / {@code PUBLISHED} / {@code DISCONTINUED}）
+ * @param status        公開状態
  * @param firstShownAt  初回表示日時
  * @param publishStart  公開開始日時
  * @param publishEnd    公開終了日時
@@ -34,7 +35,7 @@ import java.util.UUID;
  */
 public record ProductDetailView(UUID id, String productCode, String name, String description, UUID taxCategoryId,
                                 Money priceExclTax, @Nullable Money priceInclTax, List<UUID> categoryIds,
-                                List<String> axes, String status, @Nullable Instant firstShownAt,
+                                List<String> axes, PublicationStatus status, @Nullable Instant firstShownAt,
                                 @Nullable Instant publishStart, @Nullable Instant publishEnd,
                                 List<ImageView> images, List<VariantView> variants, @Nullable ProductActions actions,
                                 long version, Instant createdAt, Instant updatedAt) {

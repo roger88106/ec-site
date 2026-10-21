@@ -11,6 +11,7 @@ import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
+import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -84,7 +85,8 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 .limit(request.size())
                 .offset(request.offset())
                 .fetch(record -> new ProductSummaryView(
-                        record.value1(), record.value2(), record.value3(), record.value4(), record.value5()));
+                        record.value1(), record.value2(), record.value3(), PublicationStatus.valueOf(record.value4()),
+                        record.value5()));
 
         return PageResult.of(items, request, dsl.fetchCount(PRODUCT, condition));
     }
@@ -112,7 +114,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
             condition = condition.and(PRODUCT.NAME.likeIgnoreCase(LikePatterns.contains(query.name()), LikePatterns.ESCAPE));
         }
         if (query.status() != null) {
-            condition = condition.and(PRODUCT.STATUS.eq(query.status()));
+            condition = condition.and(PRODUCT.STATUS.eq(query.status().name()));
         }
         if (query.categoryId() != null) {
             condition = condition.and(CategoryConditions.productInCategory(query.categoryId()));
@@ -176,7 +178,7 @@ class JooqProductQueryRepository implements ProductQueryRepository {
                 null,
                 categoryIds,
                 axes,
-                record.getStatus(),
+                PublicationStatus.valueOf(record.getStatus()),
                 record.getFirstShownAt(),
                 record.getPublishStart(),
                 record.getPublishEnd(),

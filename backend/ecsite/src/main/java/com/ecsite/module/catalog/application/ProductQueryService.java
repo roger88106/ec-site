@@ -11,7 +11,6 @@ import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import com.ecsite.module.catalog.application.port.ProductQueryRepository;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.catalog.domain.product.ProductActions;
-import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -70,7 +69,7 @@ public class ProductQueryService {
                 .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         var now = clock.instant();
         var priceInclTax = taxDirectory.priceInclTaxAt(view.taxCategoryId(), view.priceExclTax(), now).orElse(null);
-        var actions = ProductActions.of(PublicationStatus.valueOf(view.status()), view.firstShownAt(), view.axes().size(),
+        var actions = ProductActions.of(view.status(), view.firstShownAt(), view.axes().size(),
                 view.variants().size(), now);
         return view.withCurrentState(priceInclTax, actions);
     }

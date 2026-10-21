@@ -60,7 +60,19 @@ public class OrderApiDirectory implements OrderDirectory {
                 item.unitPriceInclTax(),
                 item.quantity(),
                 item.subtotal(),
-                item.unpurchasableReason());
+                item.unpurchasableReason() == null ? null : toReason(item.unpurchasableReason()));
+    }
+
+    /**
+     * 購入できない理由を変換する。
+     */
+    static CartView.UnpurchasableReason toReason(CartQuote.UnpurchasableReason reason) {
+        return switch (reason) {
+            case NOT_SHOWN -> CartView.UnpurchasableReason.NOT_SHOWN;
+            case SALES_SUSPENDED -> CartView.UnpurchasableReason.SALES_SUSPENDED;
+            case OUT_OF_STOCK -> CartView.UnpurchasableReason.OUT_OF_STOCK;
+            case INSUFFICIENT_STOCK -> CartView.UnpurchasableReason.INSUFFICIENT_STOCK;
+        };
     }
 
     /**

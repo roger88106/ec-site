@@ -29,11 +29,11 @@ public record CartQuote(UUID cartId, List<Item> items, Amounts amounts, boolean 
      * @param unitPriceInclTax    税込単価
      * @param quantity            数量
      * @param subtotal            小計
-     * @param unpurchasableReason 購入できない理由（{@code NOT_SHOWN} など）。購入できれば null
+     * @param unpurchasableReason 購入できない理由。購入できれば null
      */
     public record Item(UUID variantId, UUID productId, String productName, List<AxisValue> axisValues,
                        @Nullable String imageUrl, Money unitPriceExclTax, Money unitPriceInclTax, int quantity,
-                       Money subtotal, @Nullable String unpurchasableReason) {
+                       Money subtotal, @Nullable UnpurchasableReason unpurchasableReason) {
     }
 
     /**
@@ -64,5 +64,31 @@ public record CartQuote(UUID cartId, List<Item> items, Amounts amounts, boolean 
      * @param taxAmount     消費税額
      */
     public record TaxAmount(BigDecimal ratePercent, Money taxableAmount, Money taxAmount) {
+    }
+
+    /**
+     * 購入できない理由
+     */
+    public enum UnpurchasableReason {
+
+        /**
+         * 商品が C 側に表示されない。有効な税率がない場合も含む
+         */
+        NOT_SHOWN,
+
+        /**
+         * バリアントが販売停止
+         */
+        SALES_SUSPENDED,
+
+        /**
+         * 販売可能数がない
+         */
+        OUT_OF_STOCK,
+
+        /**
+         * 販売可能数が数量より少ない
+         */
+        INSUFFICIENT_STOCK,
     }
 }

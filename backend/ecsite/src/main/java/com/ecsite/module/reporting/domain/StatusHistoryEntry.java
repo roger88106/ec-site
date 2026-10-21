@@ -22,6 +22,13 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
                                  Instant occurredAt, @Nullable String cancellationKind, @Nullable Boolean restocked) {
 
     /**
+     * @return 後の状態を配送状態の列挙にしたもの（出来事が配送状態の変化のときだけ使う）
+     */
+    public DeliveryStatus deliveryStatus() {
+        return DeliveryStatus.valueOf(to);
+    }
+
+    /**
      * @return 出荷を表す変化か（注文の状態か配送状態が出荷済みになった）
      */
     public boolean marksShipment() {

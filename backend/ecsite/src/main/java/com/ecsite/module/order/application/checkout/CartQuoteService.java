@@ -7,6 +7,7 @@ import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
+import com.ecsite.module.order.domain.quote.UnpurchasableReason;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -86,7 +87,19 @@ public class CartQuoteService {
                 item.unitPriceInclTax(),
                 item.quantity(),
                 item.subtotal(),
-                item.purchasable() ? null : item.unpurchasableReason().name());
+                item.purchasable() ? null : toReason(item.unpurchasableReason()));
+    }
+
+    /**
+     * 購入できない理由を、公開する型に変換する。
+     */
+    static CartQuote.UnpurchasableReason toReason(UnpurchasableReason reason) {
+        return switch (reason) {
+            case NOT_SHOWN -> CartQuote.UnpurchasableReason.NOT_SHOWN;
+            case SALES_SUSPENDED -> CartQuote.UnpurchasableReason.SALES_SUSPENDED;
+            case OUT_OF_STOCK -> CartQuote.UnpurchasableReason.OUT_OF_STOCK;
+            case INSUFFICIENT_STOCK -> CartQuote.UnpurchasableReason.INSUFFICIENT_STOCK;
+        };
     }
 
     /**

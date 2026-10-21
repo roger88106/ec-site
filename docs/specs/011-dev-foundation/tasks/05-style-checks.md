@@ -10,8 +10,8 @@
 - [x] **T011-05-02** Checkstyle を追加する（`MissingJavadocMethod`、`MissingJavadocType`。生成したコードとテストを除く）。依存のライセンスの検査に入るかを確認する。今の漏れの数を測り、利用者に報告する（100 を超えたら修正方法を確認する）。
 - [x] **T011-05-03** 既存の Javadoc の漏れを修正する（数によっては、モジュールごとにタスクを末尾に追加して分ける）。Javadoc のない public のメソッドを仮に作って `check` が失敗することを確認し、戻す。
 - [x] **T011-05-04** バックエンドの書き方の第 5 節：インスタンスを作らないクラスの書き方（plan 第 5.2 節）。
-- [x] **T011-05-05** [テスト] ArchUnit の規則：static でないメンバーを持たない最上位のクラスは、コンストラクタが全て private。今のコードで当たるクラスがあればレッドを確認する。なければ、テストの中の例のクラスで規則が当たることを確認する。
-- [x] **T011-05-06** 当たったクラスを修正する。
+- [x] **T011-05-05** [テスト] ArchUnit の規則：static でないメンバーを持たない最上位のクラスは、コンストラクタが全て private。今のコードで規則に違反するクラスがあればレッドを確認する。なければ、テストの中の例のクラスで規則が検出することを確認する。
+- [x] **T011-05-06** 検出されたクラスを修正する。
 - [x] **T011-05-07** 段階の完了の確認：`./gradlew check`、`check-all.sh` が通る。
-- [x] **T011-05-08** Javadoc の検査を private まで広げる（利用者の判断。2026-10-16）：`MissingJavadocType`・`MissingJavadocMethod` の対象を private にし、項目に `JavadocVariable` を追加する。コメントの書き方 第 2 節に、private は 1 文の簡単な Javadoc でよいことを書く。
-- [x] **T011-05-09** 広げて当たった漏れを修正する。private は 1 文で書き、`@param`・`@return` は気づいたものだけ追加する（漏れても検査は求めない）。`./gradlew check` と `check-all.sh` が通る。
+- [x] **T011-05-08** Javadoc の検査を private まで拡大する（利用者の判断。2026-10-16）：`MissingJavadocType`・`MissingJavadocMethod` の対象を private にし、項目に `JavadocVariable` を追加する。コメントの書き方 第 2 節に、private は 1 文の簡単な Javadoc でよいことを書く。
+- [x] **T011-05-09** 拡大して検出された漏れを修正する。private は 1 文で書き、`@param`・`@return` は気づいたものだけ追加する（漏れても検査は失敗しない）。`./gradlew check` と `check-all.sh` が通る。

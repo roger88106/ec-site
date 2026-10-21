@@ -15,7 +15,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
 | `docs/rules/` | 規範：開発の進め方、記号と番号、レビュー、コメントの書き方、エージェントの作業フロー、バックエンド・フロント・テストの書き方、API の規約 |
 | `docs/design/` | 今の設計：全体構成、バックエンド・フロントのアーキテクチャ、`modules/<モジュール>.md`・`apps/<アプリ>.md`、共通コード、ロールと権限、AC 一覧、用語集、ライセンス |
 | `docs/guides/` | 手順：開発環境の起動、環境変数、CI の検査、テストの実行方法 |
-| `docs/specs/` | spec・plan・tasks（当時の記録）と MVP の完成までの一覧。書き方は [開発の進め方](../../../docs/rules/workflow.md) 第 1.4 節 |
+| `docs/specs/` | spec・plan・tasks と MVP の完成までの一覧。進行中の spec は直下、完了した spec は `archive/<まとまり>/`（当時の記録）。書き方は [開発の進め方](../../../docs/rules/workflow.md) 第 1.4 節 |
 | `docs/todo.md` | TODO 一覧（後回しにする作業と未決事項） |
 | `README.md` | 概要、起動とテストへの案内、進捗だけ。文書は constitution へ案内する |
 | `AGENTS.md`・skill | エージェントに固有の手順だけ。規則は docs/ を指す |
@@ -59,7 +59,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
 | 見出しの名前（`「他のモジュールへの公開」` など） | 見出しを変えたら、`git grep` で引用を探して修正する |
 
 - 適用済みのマイグレーションと seed の SQL は修正しない（Flyway の checksum が変わり、既存の DB で起動に失敗する）。
-- `docs/specs/` の完了した文書は、リンクのパスだけを修正する（開発の進め方 第 1.4 節）。
+- 完了した spec の文書（`docs/specs/archive/` の下）は、リンクのパスだけを修正する（開発の進め方 第 1.4 節）。
 - コードが多く引用している文書の名前（`管理画面の構成` など）は、見出しを変えずに残す。
 
 ## 5. 語の一括の置き換え

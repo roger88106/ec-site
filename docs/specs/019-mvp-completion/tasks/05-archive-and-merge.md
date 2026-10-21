@@ -13,7 +13,8 @@
   - 結果：spec のディレクトリを探す関数を `scripts/ci/lib/spec-dirs.mjs` に分け、3 つの script が使う。`showcase-counts.mjs` の spec の数え方は、この関数のテストで確認する。MVP の完成までの一覧は、直下になければアーカイブから探す（段階 6 で移すため）。
 - [x] **T019-05-03** spec 001〜018 を `git mv` でアーカイブに移す。リンクは `fix-links.cjs`、リンクでないパスは段階 1 の script で修正する。旧パスが残らないことを `git grep` で確認する。適用済みのマイグレーションが変わっていないことを確認する（DC-215）。移動だけの commit が関連 spec の検査に当たるときは、除外の一覧（`related-specs-exclusions.json`）にタスク番号の前置きと理由を追加する。
   - 結果：179 ファイルを移し、リンクを 843 か所修正した。リンクでないパスの置き換えは、script の使い方の例だけに当たったので戻した（例として旧パスを書く）。旧パスが残るのは、script のテストのデータだけ。マイグレーションと seed は変わっていない。
-- [ ] **T019-05-04** README の進捗の表、constitution、skill（`handoff`、`review`、`docs`）、用語集の spec のパスの記述を修正する（DC-215）。
+- [x] **T019-05-04** README の進捗の表、constitution、skill（`handoff`、`review`、`docs`）、用語集の spec のパスの記述を修正する（DC-215）。
+  - 結果：README の進捗の表と、skill `review` の見本のリンクは T019-05-03 で修正済み。constitution の開発記録の表と、skill `docs` の置き場所の表・完了した文書の行を、直下（進行中）とアーカイブ（完了）に分けて書いた。skill `handoff`・AGENTS.md の `docs/specs/NNN-*/tasks/` は進行中の spec を指すので変えない。用語集の MVP の完成までの一覧のパスは、段階 6 で一覧を移すときに修正する。
 - [ ] **T019-05-05** [テスト] `doc-terms.mjs` と `doc-refs.mjs` が、アーカイブだけを除外し、進行中の spec を検査するテストを書く（DC-215）。T019-05-03 の移動の後に行う。理由：移動の前に除外を変えると、完了した spec が検査の対象になるため。
 - [ ] **T019-05-06** T019-05-05 の script を修正し、進行中の spec（019）で見つかった語とリンクを修正する（DC-215）。
 - [ ] **T019-05-07** Git の規則と CI を main 基準にする：`pages.yml` の公開のブランチ、README の CI のバッジ、CI の検査の文書の `pages.yml` の行、AGENTS.md の Git の表と ※2（skill `writing-for-agents` に従う）、TODO 一覧の `develop` を含む項目（DC-218）。

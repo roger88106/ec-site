@@ -154,7 +154,7 @@ ec-site/
 
 | 文書 | 内容 |
 |------|------|
-| [specs/](specs) | spec・plan・tasks。完了した spec は、MVP のまとまりごとに `specs/archive/<まとまり>/` に移す。MVP の spec は `specs/archive/mvp/` に移し、移動は spec 019 で行う |
+| [specs/](specs) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `specs/archive/<まとまり>/` に移す。MVP の spec は [specs/archive/mvp/](specs/archive/mvp) にある |
 | [mvp.md](specs/mvp.md) | MVP の完成までの一覧 |
 | [todo.md](todo.md) | TODO 一覧 |
 

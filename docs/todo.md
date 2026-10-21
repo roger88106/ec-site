@@ -26,6 +26,7 @@ MVP の後に行う作業と未決事項。追加と完了の規則は [AGENTS.m
 | Dependabot の version updates と security updates を有効にする。1→10 のブランチと CD の決定と合わせて決める | 1→10 | spec 004 Non-goals、spec 011 Non-goals、MVP の完成までの一覧（spec 011）、spec 018 plan 第 4 節 |
 | `main` を保護する。1→10 のブランチと CD の決定と合わせて決める | 1→10 | spec 018 plan 第 4 節、spec 019 Non-goals |
 | ArchUnit のテストが本番のクラスを読み込む所を 1 か所にまとめ、テストのクラスごとに読み込まないようにする（今は単体テストの heap を 1GB にしている） | 1→10 | spec 018 段階 3 |
+| CI のバックエンドの job を、ビルドと単体テスト、統合テストの 2 つの並行な job に分ける（カバレッジの報告をまとめる手順を含む）。spec 018 の後、10 分までの余裕が少ない（9 分 08 秒〜9 分 59 秒） | 1→10 | spec 018 の CI の時間の記録 |
 | CI の検査の script の見逃しを減らす：`ac-check` が `skip`・`fixme` のテストと `.test(` の呼び出しを数える、`java-rules` が改行した `valueOf(x.name())` を見ない、`frontend-rules` が相対パスの import を見ない・不要になった除外を見つけない、`checklist.cjs` にテストがない、`e2e.sh` の実行中の印が PID の再利用で誤る | 1→10 | spec 018 段階 7 のレビュー |
 | テストのコードを書き方の規則にそろえる（spec 012〜014 で触った所を除く） | 1→10 | spec 012 Non-goals、spec 013 Non-goals、spec 014 Non-goals |
 | カバレッジの基準の値を、前回を下回らない形で置く | 1→10 | 外部レビューの意見（2026-10-20）、spec 004 Non-goals |

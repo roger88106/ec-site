@@ -21,12 +21,12 @@
 - [x] **T5207** storefront を標準の構成に（`catalogdir`・`orderdir`・`stockdir` を `application/port/` と `infrastructure/directory/` に）。
 - [x] **T5208** catalog：`infrastructure/` を `persistence/`・`directory/`・`cache/` に、application の参照の Repository の portを `application/port/` に。
 - [x] **T5209** order、tax、inventory：application の portを `application/port/` に、order の `domain/port/` の Directory を使う層の port に。
-- [x] **T5211** レベル A の domain の Factory（`TaxCategoryFactory`、`CategoryFactory`、`ProductFactory`）から Spring の注釈（`@Component`）を外す。T5203 で見つかった（domain は何にも依存しない。constitution 4.2）。Factory は、モジュールの infrastructure の設定（`TaxDomainConfig`、`CatalogDomainConfig`）で Spring の部品として登録し、受け取る側は変えない。
+- [x] **T5211** レベル A の domain の Factory（`TaxCategoryFactory`、`CategoryFactory`、`ProductFactory`）から Spring の注釈（`@Component`）を外す。T5203 で見つかった（domain は何にも依存しない。constitution 4.2）。Factory は、モジュールの infrastructure の設定（`TaxDomainConfig`、`CatalogDomainConfig`）で Spring の Bean として登録し、受け取る側は変えない。
 - [x] **T5210** 各モジュールの設計書と `package-info.java` の説明を新しい構成に合わせる。T5203 が通る（DC-27〜30）。
 
 ## 移し先の表（T5201）
 
-2026-10-13 に作った。利用者の review の前に、この表で進める（利用者の指示）。`…/` は `module/` の下。表にないファイルは動かさない。`<モジュール>Message` は段階 4 で削除するので、置き場所だけ移す。
+2026-10-13 に作った。利用者のレビューの前に、この表で進める（利用者の指示）。`…/` は `module/` の下。表にないファイルは動かさない。`<モジュール>Message` は段階 4 で削除するので、置き場所だけ移す。
 
 | モジュール | 今 | 移し先 |
 |------------|----|--------|
@@ -50,8 +50,8 @@
 | catalog | `application/CategoryQueryRepository`、`OrderableVariantQueryRepository`、`ProductQueryRepository`、`StoreProductQueryRepository`、`ProductSearch` | `application/port/` |
 | catalog | `domain/product/port/MediaDirectory`、`TaxDirectory`（application と infrastructure だけが使う） | `application/port/` |
 | catalog | `api/OrderCatalogApi` の `@Transactional` と処理 | `application/OrderableVariantQueryService` を作って移し、`OrderCatalogApi` はほかの api と同じく application に任せる |
-| catalog | `infrastructure/Jooq*`（6）、`PostgresProductSearch`、`CategoryConditions`、`PriceInclTaxField`、`ProductVisibility`、`SellableVariants`、`StoreImageUrls`、`StoreProductSummaries` | `infrastructure/persistence/`（13。目安を超えるが分けない：jOOQ の Repository と、それらだけが使う package-private の部品で、分けると公開しなければならない） |
-| catalog | `infrastructure/MediaApiDirectory`、`TaxApiDirectory`、`TaxRateScheduleCache` | `infrastructure/directory/`（キャッシュは `TaxApiDirectory` だけが使う package-private の部品なので、plan の `cache/` ではなく同じパッケージに置く） |
+| catalog | `infrastructure/Jooq*`（6）、`PostgresProductSearch`、`CategoryConditions`、`PriceInclTaxField`、`ProductVisibility`、`SellableVariants`、`StoreImageUrls`、`StoreProductSummaries` | `infrastructure/persistence/`（13。目安を超えるが分けない：jOOQ の Repository と、それらだけが使う package-private のクラスで、分けると公開しなければならない） |
+| catalog | `infrastructure/MediaApiDirectory`、`TaxApiDirectory`、`TaxRateScheduleCache` | `infrastructure/directory/`（キャッシュは `TaxApiDirectory` だけが使う package-private のクラスなので、plan の `cache/` ではなく同じパッケージに置く） |
 | order | `application/CheckoutView`、`PlaceOrderCommand`、`PlacementResult` | `application/model/` |
 | order | `application/OrderQueryRepository` | `application/port/` |
 | order | `domain/port/CartDirectory`、`ProductDirectory`、`StockDirectory`（application が使う） | `application/port/` |

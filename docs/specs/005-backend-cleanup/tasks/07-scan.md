@@ -11,7 +11,7 @@
 
 ## 見つけたもの
 
-（T5701 で追加する。初めから決まっているもの：）
+（T5701 で追加する。最初から決まっているもの：）
 
 - [x] カートと注文の両方にある `isAccessibleBy`：修正しない（モジュールの境界を越えて型を共有しない。constitution 6）。
 - [x] 手動で書いた型の変換：修正しない（spec の Non-goals）。
@@ -23,6 +23,6 @@
 - [x] 税率の正規化（末尾の 0 を除く）が、税の `RatePercent` と注文の `JooqOrderRepository` にある：修正しない（注文は税の domain の型を使わない。モジュールの境界を越えて型を共有しない。constitution 6）。
 - [x] 規則の文書（第 5.2 節）は、レベル A の service の名前を `XxxCommandService`・`XxxQueryService` としている。order（`CheckoutService`、`OrderPlacementService` など）と、段階 5 で分けた catalog の service は、用途の名前を使っている。規則を、用途の名前も認める形に修正した。
 - [x] `StorefrontService` に `@Transactional` がない：修正しない（自分の DB を持たず、ほかのモジュールの api を組み合わせるだけ。各 api の application が取引を持つ）。
-- [x] 3 つの Factory の復元で `catch (Exception e)`：修正しない（DB の行から集約を作れない理由は何でも、復元のエラーとして記録する。意図した広さ）。
+- [x] 3 つの Factory の復元で `catch (Exception e)`：修正しない（DB の行から集約を作れない理由は何でも、復元のエラーとして記録する。意図した範囲）。
 - [x] `Product.isVisibleAt`・`representativeImage` がテストだけから使われる：修正しない（表示の条件と代表画像の業務の規則を集約に持ち、参照の SQL（`ProductVisibility` など）と同じ結果になることをテストで確認している）。
 - [x] `TaxRateScheduleCache.evict`、`MediaStorageProperties.withUploadUrlTtl` がテストだけから使われる：修正しない（テストで時刻と期限を動かすための窓口。Javadoc に理由がある）。

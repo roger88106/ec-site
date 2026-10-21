@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [x] **T5501** [テスト] `CurrentMemberIds` の単体テスト：`require()` はログインがなければ 401 の例外、`find()` は空、会員の ID の求め方。
+- [x] **T5501** [テスト] `CurrentMemberIds` の単体テスト：`require()` はログインがなければ 401 の例外、`find()` は空、会員の ID の取得方法。
 - [x] **T5502** `member/api/CurrentMemberIds` を作り、4 つの Controller の `requester()`・`memberId()` を置き換える。T5501 と既存のテストが通る（DC-39）。
 - [x] **T5503** [テスト] 並び順の再採番の部品の単体テスト（移動、末尾への追加、存在しない ID）。
 - [x] **T5504** 並び順の部品を `common/model/value/` に作り、商品（バリアント、画像）とカテゴリで使う。T5503 と既存のテストが通る。
@@ -15,4 +15,4 @@
 ## 結果（T5505）
 
 - `ProductCommandService`（312 行）を、商品（登録・更新・削除、169 行）、`VariantCommandService`（100 行）、`ProductPublicationService`（74 行）に分けた。画像は今の `ProductImageService`。商品の取り出し（版の確認）と状態の切り替えは、4 つで共通の `ProductLoader` にまとめた。
-- `Product` は 669 行で、目安の 400 行を超える。集約は分けない（spec の Non-goals）。文字の判定と並び順は共通の部品に移した。残りは集約の不変条件（軸、バリアント、画像、公開）で、段階 7 の走査でさらに減らせる所を探す。
+- `Product` は 669 行で、目安の 400 行を超える。集約は分けない（spec の Non-goals）。文字の判定と並び順は共通の部品に移した。残りは集約の不変条件（軸、バリアント、画像、公開）で、段階 7 の走査でさらに減らせる箇所を探す。

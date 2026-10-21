@@ -52,7 +52,7 @@ module/<モジュール>/
 | media（B） | `service/` 11 | `application/`（`MediaService`、`AssetFileHandler`）、`application/port/`（`AssetRepository`、`ObjectStorage`、`ImageConverter`）、`domain/`（`Asset`、`AssetKeys`、`ImageFormat`、`AssetReleased`、`MediaErrorCode`）、`infrastructure/storage/`・`infrastructure/converter/`・`infrastructure/persistence/` |
 | member（B） | `service/` 3 | `application/`（`MemberService`）、`application/port/`（`MemberRepository`）、`domain/`（`Member`） |
 | storefront（B、参照だけ） | `controller/`、`service/`、`catalogdir/`、`orderdir/`、`stockdir/` | `presentation/`（Controller、`StorefrontMapper`）、`application/`（`StorefrontService`、view、`ShopProperties`）、`application/port/`（Directory の portと、その型）、`infrastructure/directory/` |
-| catalog（A） | `infrastructure/` 16 | `infrastructure/persistence/`（jOOQ の Repository と部品）、`infrastructure/directory/`（`MediaApiDirectory`、`TaxApiDirectory`）、`infrastructure/cache/`（`TaxRateScheduleCache`）。application の参照の Repository の port 4 つは `application/port/` |
+| catalog（A） | `infrastructure/` 16 | `infrastructure/persistence/`（jOOQ の Repository と補助クラス）、`infrastructure/directory/`（`MediaApiDirectory`、`TaxApiDirectory`）、`infrastructure/cache/`（`TaxRateScheduleCache`）。application の参照の Repository の port 4 つは `application/port/` |
 | order（A） | `application/` 12、`domain/port/` | application の portを `application/port/`、`domain/port/` の Directory は使う集約の `port/` か `application/port/`（呼ぶ層で決める） |
 | tax・inventory（A） | ほぼ標準 | application の参照の Repository の portを `application/port/` |
 
@@ -61,7 +61,7 @@ module/<モジュール>/
 ### 1.3 パッケージの大きさ（DC-29）
 
 - パッケージの直下の `.java`（`package-info.java` を除く）は、目安 10、上限 20。テストは数えない。
-- 今の目安超え：catalog/infrastructure 16（1.2 で分ける）、order/application 12、catalog/application 11、media/service 11（1.2 で分ける）。order と catalog の application は、use case のまとまり（第 4.2 節の商品の更新の分割）で分ける。分けないと判断したものは、理由を `docs/style/backend.md` の例外の表に書く。
+- 現時点で目安を超えているもの：catalog/infrastructure 16（1.2 で分ける）、order/application 12、catalog/application 11、media/service 11（1.2 で分ける）。order と catalog の application は、use case のまとまり（第 4.2 節の商品の更新の分割）で分ける。分けないと判断したものは、理由を `docs/style/backend.md` の例外の表に書く。
 
 ### 1.4 自動の検査（DC-30）
 
@@ -77,15 +77,15 @@ module/<モジュール>/
 
 ### 2.1 文字の検証（DC-31）
 
-- `common/model/value/BoundedText`：「空白でない」「長さの上限を code point で数える」の判定を 1 か所にする（静的な判定の関数）。各ドメインは上限の定数とエラーの種類だけを持ち、判定をこの部品に任せる。
-- 置き換える所：`TaxCategory`、`Category`、`Product`（名前、説明、軸の名前・値）、`ShippingAddress`、`StockAdjustment`、`Order`（理由）。
+- `common/model/value/BoundedText`：「空白でない」「長さの上限を code point で数える」の判定を 1 か所にする（判定の static メソッド）。各ドメインは上限の定数とエラーの種類だけを持ち、判定をこのクラスに任せる。
+- 置き換える箇所：`TaxCategory`、`Category`、`Product`（名前、説明、軸の名前・値）、`ShippingAddress`、`StockAdjustment`、`Order`（理由）。
 
 ### 2.2 制約の一致（DC-32、DC-33）
 
 - `FieldConstraintContractTest`（`src/test/…/contract/`）：同じ項目の、API の契約の `maxLength`・`minimum`・`maximum`、ドメインの上限の定数、データベースの列の長さ（jOOQ の生成した型の長さ）を表にして照合する。表はテストの中に書く（項目を追加したら表も追加する）。
   - 食い違いが見つかったら、修正する前に利用者に確認する（DN-6）。
-- `OpenApiRequestConstraintTest`：`admin.yaml`・`store.yaml` のリクエスト（本文、クエリ、パス）の数値の項目に範囲、文字の項目に長さか形式（`pattern`・`format`・`enum`）があることを確認する。
-  - 今の漏れ（2026-10-12）：`version` 8 か所（`minimum: 0`）、画像の受付の `contentLength`（`maximum` は 10MB）・`contentType`、在庫の調整の `delta`、店舗の `expectedTotal`（`minimum: 0`）、お届け先の都道府県（`maxLength`）。値は spec の AC と DB の列に合わせ、plan の段階 3 の最初のタスクで一覧にして確認する。
+- `OpenApiRequestConstraintTest`：`admin.yaml`・`store.yaml` のリクエスト（本文、クエリ、パス）の数値の項目に範囲、文字列の項目に長さか形式（`pattern`・`format`・`enum`）があることを確認する。
+  - 2026-10-12 時点の漏れ：`version` 8 か所（`minimum: 0`）、画像の受付の `contentLength`（`maximum` は 10MB）・`contentType`、在庫の調整の `delta`、店舗の `expectedTotal`（`minimum: 0`）、お届け先の都道府県（`maxLength`）。値は spec の AC と DB の列に合わせ、plan の段階 3 の最初のタスクで一覧にして確認する。
 - 統合テストに「長すぎる・形式の誤り → 400」のテストがある項目を数え、無い種類（長さ、範囲、形式）だけ代表を追加する。
 
 ### 2.3 金額（DC-34）
@@ -99,7 +99,7 @@ module/<モジュール>/
 | `common/model/base/` | `AggregateRoot`、`DomainEvent` |
 | `common/model/value/` | `Money`、`BoundedText`、`Operator`（操作した運営者の写し） |
 
-共通の値の型にする基準（`docs/style/backend.md`）：2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つもの。1 つのモジュールだけのものは、そのモジュールの `vo/`。
+共通の値の型にする基準（`docs/style/backend.md`）：2 つ以上のモジュールで使い、規則（範囲、丸め、比較方法）を持つもの。1 つのモジュールだけのものは、そのモジュールの `vo/`。
 
 ## 3. エラーとメッセージ（DS-10）
 
@@ -107,14 +107,14 @@ module/<モジュール>/
 
 - 残すもの：`<モジュール>ErrorCode`（enum）。種類（`ErrorType`）と、Javadoc（いつ起きるか）を持つ。
 - 削除するもの：`<モジュール>Message` と、その `Code`（7 クラス、約 1,100 行）。
-- メッセージのキーは enum から決める：`ecsite.<モジュール>.<enum の名前の小文字>`。`ErrorCodeProvider` に、モジュールの名前を返すメソッドだけを各 enum に書かせ、キーは共通の既定のメソッドで作る。
+- メッセージのキーは enum から決める：`ecsite.<モジュール>.<enum の名前の小文字>`。`ErrorCodeProvider` に、モジュールの名前を返すメソッドだけを各 enum で実装し、キーは共通の既定のメソッドで作る。
 - `MessageContractTest`：全ての `ErrorCodeProvider` の enum の定数に `messages.properties` のキーがあり、`messages.properties` の `ecsite.<モジュール>.*` のキーに enum の定数があることを確認する（検証のキー `ecsite.validation.*` と共通の `ecsite.common.*` は別の表で確認する）。
 - エラーではないメッセージ（`CommonMessage` など）があれば、移す前に一覧にして扱いを決める。2026-10-13 に調べた結果：`CommonMessage` も全てエラーのメッセージで、ほかの `<モジュール>Message` と同じく削除する。削除するのは Java の定数のクラスだけで、`messages.properties` の文は残り、エラーの応答は今と同じく文を返す。
 - `CommonErrorCode.RESTORE_ERROR` は `SYSTEM_ERROR` の文を共有している。キーを規則で決めるため、`ecsite.common.restore_error` に同じ文を追加する（キーを個別に指定する例外の仕組みは作らない。2026-10-13 に利用者が確認した）。
 
 ### 3.2 入力の検証のメッセージ（DC-37）
 
-- `GlobalExceptionHandler` で、制約の種類（`NotNull`、`Size`、`Min`、`Max`、`Pattern`、`Email`、`DecimalMin` など）からキー `ecsite.validation.<種類>` を選び、制約の値（上限・下限）を差し込んでメッセージを作る。知らない種類は `ecsite.validation.invalid`。
+- `GlobalExceptionHandler` で、制約の種類（`NotNull`、`Size`、`Min`、`Max`、`Pattern`、`Email`、`DecimalMin` など）からキー `ecsite.validation.<種類>` を選び、制約の値（上限・下限）を差し込んでメッセージを作る。未知の種類は `ecsite.validation.invalid`。
 - フレームワークの既定のメッセージ（JVM のロケールで言語が変わる）を使わない。項目の名前は今のまま（API の項目名）。
 - 新しい文（2026-10-13 に利用者が確認した）。今の業務のメッセージの言い方に合わせる：
 
@@ -128,7 +128,7 @@ module/<モジュール>/
 | `ecsite.validation.email` | メールアドレスの形式が正しくありません。 |
 | `ecsite.validation.invalid` | 値が正しくありません。 |
 
-- 段階 4 の最初のタスクで、今の既定の文（ローカルと CI の JVM のロケールで）と、管理画面の表示が変わる所を一覧にする（spec DN-4 の例外）。
+- 段階 4 の最初のタスクで、今の既定の文（ローカルと CI の JVM のロケールで）と、管理画面の表示が変わる箇所を一覧にする（spec DN-4 の例外）。
 
 ### 3.3 差し込み（DC-38）
 
@@ -141,20 +141,20 @@ module/<モジュール>/
 
 ### 3.4 画像の変換の結果の確認（DC-64）
 
-- `ImgproxyImageConverter` は、imgproxy の応答の本文の先頭のバイト（`RIFF` と `WEBP`）で WebP であることを確認する。違えば、今の変換の失敗と同じエラー（`IMAGE_CONVERSION_FAILED`）にする。`Content-Type` には頼らない（受け付けのときの形式の判定と同じく、中身で決める）。
-- テストは今の `ImgproxyImageConverterFailureTest`（JDK の HttpServer で imgproxy の代わりをする）に、WebP でない本文を返す場合を追加する。
+- `ImgproxyImageConverter` は、imgproxy の応答の本文の先頭のバイト（`RIFF` と `WEBP`）で WebP であることを確認する。違えば、今の変換の失敗と同じエラー（`IMAGE_CONVERSION_FAILED`）にする。`Content-Type` に依存しない（受け付けのときの形式の判定と同じく、中身で決める）。
+- テストは今の `ImgproxyImageConverterFailureTest`（JDK の HttpServer で imgproxy のスタブを実装する）に、WebP でない本文を返す場合を追加する。
 
 ## 4. 重複と大きいクラス（DS-11）
 
 ### 4.1 現在の会員（DC-39）
 
-- `member/api/CurrentMemberIds`：`require()`（ログインが必要だ。なければ 401）、`find()`（任意）。会員の識別（IdP の subject → 会員 ID）は会員モジュールの中に閉じる。
+- `member/api/CurrentMemberIds`：`require()`（ログインが必要だ。なければ 401）、`find()`（任意）。会員の識別（IdP の subject → 会員 ID）は会員モジュールの中だけで行う。
 - `CartController`、`StoreCheckoutController`、`StoreOrderController`、`StorefrontCartController` の `requester()`・`memberId()` を置き換える。
 
 ### 4.2 商品（DC-40）
 
-- 並び順の再採番（`reorder`、`nextDisplayOrder`）を `common/model/value/` の部品にし、商品のバリアント・画像、カテゴリで使う。
-- 文字の検証は第 2.1 節の部品へ。
+- 並び順の再採番（`reorder`、`nextDisplayOrder`）を `common/model/value/` のクラスにし、商品のバリアント・画像、カテゴリで使う。
+- 文字列の検証は第 2.1 節のクラスへ。
 - 商品の更新の処理（`ProductCommandService`、312 行）を、商品、バリアント、公開、画像（既存の `ProductImageService`）に分ける。取引の境界（1 つの操作 = 1 つのトランザクション）は今のまま。
 - `Product` の行数は目安 400（規則にはしない）。
 
@@ -180,7 +180,7 @@ module/<モジュール>/
 
 ### 5.2 jOOQ のコード生成（DC-43）
 
-- 今は `generateJooq` が `Task.upToDateWhen is false` で毎回走る（約 6 秒。うちコンテナの起動 2 秒。2026-10-12 に計測）。プラグインの `allInputsDeclared` を true にし、入力（マイグレーションのディレクトリと生成の設定）が変わらなければ省かれるようにする。
+- 今は `generateJooq` が `Task.upToDateWhen is false` で毎回実行される（約 6 秒。うちコンテナの起動 2 秒。2026-10-12 に計測）。プラグインの `allInputsDeclared` を true にし、入力（マイグレーションのディレクトリと生成の設定）が変わらなければ省かれるようにする。
 - 確認方法：続けて 2 回ビルドし、2 回目に `generateJooq UP-TO-DATE`。マイグレーションを追加すると再生成する。CI（キャッシュなし）は毎回生成する。
 
 ## 6. コメント（DS-13）
@@ -188,8 +188,8 @@ module/<モジュール>/
 - `docs/style/comments.md` に「複雑な処理」の基準と書き方を追加する（段階 1）：
   - 基準：stream の 2 段以上の変換、`groupingBy`・`flatMap`・`reduce`、入れ子の繰り返し、`&&`・`||` が 3 つ以上の条件、3 つ以上の分岐。
   - 書き方：何の結果を得るか・なぜそうするかを 1 行。規則は番号ではなく言葉で書く。
-- 段階 8 で、基準に当たる所を一覧にし（stream は約 120 か所。直前の行にコメントがあるのは 2 か所）、読んで意味を確認してから追加する。分からない所は一覧にして利用者に聞く。
-- spec・plan・tasks の番号を、規則の言葉に書き換える（DC-65。`docs/style/comments.md` 第 1 節）。今は約 570 か所（AC 約 440、BR・US・NFR 約 70、spec・plan の節 約 60）。コメントがすでに規則を言葉で書いていれば、番号を削除するだけにする。番号の指す規則が分からない所は、spec を読んで書く。モジュールごとに commit。
+- 段階 8 で、基準に当たる箇所を一覧にし（stream は約 120 か所。直前の行にコメントがあるのは 2 か所）、読んで意味を確認してから追加する。分からない箇所は一覧にして利用者に聞く。
+- spec・plan・tasks の番号を、規則の言葉に書き換える（DC-65。`docs/style/comments.md` 第 1 節）。今は約 570 か所（AC 約 440、BR・US・NFR 約 70、spec・plan の節 約 60）。コメントがすでに規則を言葉で書いていれば、番号を削除するだけにする。番号の指す規則が分からない箇所は、spec を読んで書く。モジュールごとに commit。
 - コメントだけの commit にする（DN-5）。
 
 ## 7. 確認方法

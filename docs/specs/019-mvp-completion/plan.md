@@ -1,6 +1,6 @@
 # Plan 019：受け入れ確認と MVP の完成
 
-ステータス：承認済み　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 前提：spec 018 が完了している。書き方の規則は [バックエンドの書き方](../../rules/backend-coding.md)、[フロントの書き方](../../rules/frontend-coding.md)、[テストの書き方](../../rules/test-writing.md)。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../.claude/skills/review/SKILL.md)）。
 

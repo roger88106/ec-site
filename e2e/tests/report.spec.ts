@@ -30,7 +30,7 @@ function segmentRow(page: Page, dimension: string, segment: string) {
     .filter({ has: page.getByRole('cell', { name: segment, exact: true }) })
 }
 
-test('AC-197、205、206、209、219、221、222、223、224 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
+test('AC-197、205、206、209、219、221、222 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
   browser,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
@@ -64,7 +64,7 @@ test('AC-197、205、206、209、219、221、222、223、224 生年月日と性�
   const admin = await browser.newPage()
   await loginAdmin(admin, ACCOUNTS.manager)
 
-  await test.step('管理職：売上の推移で、商品を選ぶと今月に 2 個・2,200 円が数えられる（AC-197、199、223、224）', async () => {
+  await test.step('管理職：売上の推移で、商品を選ぶと今月に 2 個・2,200 円が数えられる（AC-197、199）', async () => {
     await expectReport(admin, `${ADMIN_URL}/reports/sales-trend?productId=${productId}`, async () => {
       const row = admin.getByRole('row').filter({ has: admin.getByRole('cell', { name: `${year} 年 ${month} 月` }) })
       await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: CHECK_TIMEOUT })

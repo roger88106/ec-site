@@ -9,6 +9,11 @@ import com.ecsite.module.catalog.api.ReportCatalogApi;
 import com.ecsite.module.order.api.OrderReportApi;
 import com.ecsite.module.order.api.OrderReportSnapshot;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
+import com.ecsite.module.reporting.domain.Basis;
+import com.ecsite.module.reporting.domain.Granularity;
+import com.ecsite.module.reporting.domain.ReportPeriod;
+import com.ecsite.module.reporting.domain.TrendPoint;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import org.jooq.DSLContext;
 import org.jooq.Record;
@@ -72,6 +77,9 @@ class ReportCollectionTest {
 
     @Autowired
     AsyncEvents asyncEvents;
+
+    @Autowired
+    SalesTrendQueryService salesTrend;
 
     @MockitoBean
     OrderReportApi orderReportApi;
@@ -146,7 +154,7 @@ class ReportCollectionTest {
     }
 
     @Test
-    @DisplayName("AC-225 キャンセルが受付より先に届いても、注文の今の写し（キャンセル）になる。履歴は発生日時の順に読める")
+    @DisplayName("AC-224 キャンセルが受付より先に届いても、注文の今の写し（キャンセル）になる。履歴は発生日時の順に読める")
     void sameSnapshotRegardlessOfOrder() {
         var cancelledAt = ORDERED_AT.plus(Duration.ofHours(1));
         orderIs(snapshot(OrderReportSnapshot.Status.CANCELLED, cancelledAt));
@@ -160,6 +168,30 @@ class ReportCollectionTest {
 
         assertThat(awaitOrder(OrderReportSnapshot.Status.CANCELLED).get(SALES_ORDER.CANCELLED_AT)).isEqualTo(cancelledAt);
         assertThat(history()).extracting(row -> row.get(STATUS_HISTORY.TO_STATUS)).containsExactly("ACCEPTED", "CANCELLED");
+    }
+
+    @Test
+    @DisplayName("AC-225 集めるときは注文の状態で絞らず、支払待ち・受付・キャンセルの注文を全て写しに入れる。どれを数えるかは、集計の数え方で決まる")
+    void collectsAllOrdersAndCountsByReport() {
+        var pendingId = collectOrder(OrderReportSnapshot.Status.PENDING_PAYMENT, null, ORDERED_AT, null,
+                OrderStatusChanged.Status.PENDING_PAYMENT, null, null);
+        var acceptedId = collectOrder(OrderReportSnapshot.Status.ACCEPTED, null, ORDERED_AT.plusSeconds(30),
+                OrderStatusChanged.Status.PENDING_PAYMENT, OrderStatusChanged.Status.ACCEPTED, null, null);
+        var cancelledAt = ORDERED_AT.plus(Duration.ofMinutes(30));
+        var cancelledId = collectOrder(OrderReportSnapshot.Status.CANCELLED, cancelledAt, cancelledAt,
+                OrderStatusChanged.Status.PENDING_PAYMENT, OrderStatusChanged.Status.CANCELLED,
+                OrderStatusChanged.CancellationKind.PAYMENT_EXPIRED, true);
+
+        // 集めるときは絞らない：3 件とも、その状態のまま写しに入る
+        assertThat(dsl.selectFrom(SALES_ORDER).where(SALES_ORDER.ORDER_ID.in(pendingId, acceptedId, cancelledId)).fetch())
+                .extracting(row -> row.getOrderId(), row -> row.getStatus())
+                .containsExactlyInAnyOrder(tuple(pendingId, "PENDING_PAYMENT"), tuple(acceptedId, "ACCEPTED"),
+                        tuple(cancelledId, "CANCELLED"));
+        // どれを数えるかは集計で決まる：注文基準の売上の推移は、受付の 1 件（2 個、2,200 円）だけを数える
+        var october = ReportPeriod.of(LocalDate.parse("2026-10-01"), LocalDate.parse("2026-10-31"));
+        var report = salesTrend.trend(new SalesTrendQuery(october, Granularity.MONTH, Basis.ORDER, productId, false, false));
+        assertThat(report.points()).extracting(TrendPoint::amount, TrendPoint::quantity)
+                .containsExactly(tuple(Money.of(2200), 2L));
     }
 
     @Test
@@ -252,6 +284,21 @@ class ReportCollectionTest {
      */
     private OrderStatusChanged placed() {
         return OrderStatusChanged.of(ORDERED_AT, orderId, null, OrderStatusChanged.Status.PENDING_PAYMENT, null, null);
+    }
+
+    /**
+     * 新しい注文 ID で、指定の状態の写しを決め、状態の変化のイベントを発行し、写しが指定の状態になるのを待つ。
+     *
+     * @return 注文 ID
+     */
+    private UUID collectOrder(OrderReportSnapshot.Status status, Instant cancelledAt, Instant occurredAt,
+                              OrderStatusChanged.Status from, OrderStatusChanged.Status to,
+                              OrderStatusChanged.CancellationKind kind, Boolean restocked) {
+        orderId = UUID.randomUUID();
+        orderIs(snapshot(status, cancelledAt));
+        publish(OrderStatusChanged.of(occurredAt, orderId, from, to, kind, restocked));
+        awaitOrder(status);
+        return orderId;
     }
 
     /**

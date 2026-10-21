@@ -245,8 +245,8 @@
 | AC-220 | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-221 | IdP の会員登録の画面で性別（BR-29）を選べる。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
 | AC-222 | 注文の成立のときに、その時点の性別を注文に記録する。 | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest`、`RealmSettingsContractTest` ほか 1 |
-| AC-223 | 状態によらず、全ての注文をレポートのデータに集める（支払待ち、支払の期限切れ、キ… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest`、`report.spec.ts` |
-| AC-224 | 注文の状態と配送状態が変わるたびに、何が・いつ・どの状態からどの状態に変わったか… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest`、`report.spec.ts` |
+| AC-223 | 状態によらず、全ての注文をレポートのデータに集める（支払待ち、支払の期限切れ、キ… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest` |
+| AC-224 | 注文の状態と配送状態が変わるたびに、何が・いつ・どの状態からどの状態に変わったか… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest` |
 | AC-225 | 集めたデータのうち、どの注文を数えるかは、レポートごとに決める（BR-25 など… | 有効 | [010](../specs/010-sales-report/spec.md) | — | spec | `ReportCollectionTest` |
 | AC-226 | 決済と物流に、それぞれ mock フラグがある。 | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |
 | AC-227 | 決済のフラグを立てず、Stripe の設定（鍵）が足りなければ、バックエンドは起… | 有効 | [015](../specs/015-security/spec.md) | — | spec | `ExternalServiceSelectionTest` |

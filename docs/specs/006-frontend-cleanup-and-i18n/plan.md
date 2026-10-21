@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 004 が完了している（フロントの 3 つは pnpm の workspace、規則の文書は `docs/style/`、店舗画面のサーバーの処理に Node のテストがある）。DC-61 だけはバックエンドを変えるので、spec 005 の段階 2（構成の移動）の後に行う（同じファイルを同時に触らないため）。
+前提：spec 004 が完了している（フロントの 3 つは pnpm の workspace、規則の文書は `docs/style/`、店舗画面のサーバーの処理に Node のテストがある）。DC-61 だけはバックエンドを変えるので、spec 005 の段階 2（構成の移動）の後に行う（同じファイルを同時に変更しないため）。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|
@@ -24,35 +24,35 @@
 ### 1.2 サーバーアクションの部品（DC-46）
 
 - `src/lib/server/formData.ts`：`readString(formData, name)`、`readInt(formData, name)`（整数でなければ `null`）。単体テストを付ける。
-- `src/actions/withActionResult.ts`：処理を受け取り、`unstable_rethrow`（画面の移動・not found の例外を通す）、接続の失敗（`CONNECTION_FAILED`）、予期しない例外を結果の型に変える高階関数。今の 8 か所の try/catch を置き換える。
+- `src/actions/withActionResult.ts`：処理を受け取り、`unstable_rethrow`（リダイレクト・not found の例外を通す）、接続の失敗（`CONNECTION_FAILED`）、予期しない例外を結果の型に変える高階関数。今の 8 か所の try/catch を置き換える。
 - テストは spec 004 の店舗画面のサーバーの処理のテストを使う（置き換えの前後で通る）。
 
 ### 1.3 認証の処理の分割（DC-47、P2）
 
-`src/auth/`：`config.ts`（第 1.1 節）、`refresh.ts`（token の再取得）、`logout.ts`（IdP のログアウトの URL）、`index.ts`（Auth.js の設定と、今の `auth.ts` が公開している関数）。外から使う形（`@/auth` の import）は変えない。
+`src/auth/`：`config.ts`（第 1.1 節）、`refresh.ts`（token の再取得）、`logout.ts`（IdP のログアウトの URL）、`index.ts`（Auth.js の設定と、今の `auth.ts` が公開している関数）。公開インターフェース（`@/auth` の import）は変えない。
 
 ### 1.4 サーバー側のログ（DC-62、P2）
 
-- `src/lib/server/log.ts`：1 行 1 件の JSON（時刻、レベル、メッセージ、追跡の ID、項目）。今の `console.error` 2 か所（カートの引き継ぎ）を置き換える。
-- 追跡の ID：バックエンドへの要求に W3C の `traceparent` を付け、同じ ID をログに出力する（バックエンドのログと Zipkin で同じ要求を辿れる）。道具を追加するか（OpenTelemetry の SDK など）は、段階 2 の最初のタスクで調べて決める。追加しない場合は、`traceparent` を自分で作る小さな部品にする。
+- `src/lib/server/log.ts`：1 行 1 件の JSON（時刻、レベル、メッセージ、トレース ID、項目）。今の `console.error` 2 か所（カートの引き継ぎ）を置き換える。
+- トレース ID：バックエンドへの要求に W3C の `traceparent` を付け、同じ ID をログに出力する（バックエンドのログと Zipkin で同じ要求を追跡できる）。道具を追加するか（OpenTelemetry の SDK など）は、段階 2 の最初のタスクで調べて決める。追加しない場合は、`traceparent` を自前で生成する小さな関数にする。
 - 規則（形式、レベルの使い分け）は `docs/style/frontend.md` に書く。
 
 ## 2. 共有のパッケージ（DS-15）
 
 ### 2.1 置き場所と形（DC-48）
 
-- `frontend/shared/`（パッケージ名 `@ec-site/shared`、workspace の一員）。TypeScript のソースのまま使い、ビルドしない。store は `next.config` の `transpilePackages` に入れる。
+- `frontend/shared/`（パッケージ名 `@ec-site/shared`、workspace のパッケージ）。TypeScript のソースのまま使い、ビルドしない。store は `next.config` の `transpilePackages` に入れる。
 - 中身：
 
 | 置き場所 | 中身 | 今の場所 |
 |----------|------|----------|
 | `src/lib/` | カテゴリの木（`categoryTree`）、ログインの戻り先（`login`）、クラス名の結合（`cn`）、UUID の判定、数・日付・金額の整形（第 4.4 節のロケールを使う） | admin・store の `lib/` |
-| `src/ui/` | shadcn/ui の部品のうち、2 つで同じもの（7 つ） | admin・store の `components/ui/` |
+| `src/ui/` | shadcn/ui のコンポーネントのうち、2 つで同じもの（7 つ） | admin・store の `components/ui/` |
 | `src/theme.css` | テーマ（CSS 変数、`@theme`） | admin の `index.css`、store の `globals.css` の同じ部分 |
 | `src/messages/` | 共通の文言（第 4.2 節で決めたら） | — |
 
-- `select.tsx` は 2 つで違うので共有しない（違いを見て、揃えられれば共有する）。
-- shadcn/ui の部品は、店舗画面がサーバーコンポーネントを使う（`rsc: true`）。`'use client'` の付け方が 2 つで同じかを確認してから移す。shadcn の CLI で部品を追加するときの置き場所（共有か各画面か）を `components.json` で決める。
+- `select.tsx` は 2 つで違うので共有しない（違いを見て、統一できれば共有する）。
+- shadcn/ui のコンポーネントは、店舗画面がサーバーコンポーネントを使う（`rsc: true`）。`'use client'` の付け方が 2 つで同じかを確認してから移す。shadcn の CLI でコンポーネントを追加するときの置き場所（共有か各画面か）を `components.json` で決める。
 
 ### 2.2 共有の基準（DC-49）
 
@@ -66,9 +66,9 @@
 
 ### 3.1 更新の操作（DC-50）
 
-- `src/api/useApiMutation.ts`：`$api.useMutation` を包み、成功の知らせ（文言のキー）と、再取得する一覧（`ApiPathPrefix`）を引数で受ける。
+- `src/api/useApiMutation.ts`：`$api.useMutation` をラップし、成功の通知（文言のキー）と、再取得する一覧（`ApiPathPrefix`）を引数で受ける。
 - `src/api/useMutationGroup.ts`：複数の操作の `pending`・`error`・`resetErrors` をまとめる。
-- 今の 26 か所を置き換える。知らせの文言は第 4 節でキーになるので、i18n の前に置き換え、文言の引数の形を揃えておく。
+- 今の 26 か所を置き換える。通知の文言は第 4 節でキーになるので、i18n の前に置き換え、文言の引数の形を揃えておく。
 
 ### 3.2 画面の URL（DC-51）
 
@@ -78,12 +78,12 @@
 
 ### 3.3 入力の制約（DC-52）
 
-- API の型の生成（`generate:api`）と一緒に、`admin.yaml`・`store.yaml` のリクエストの制約（`maxLength`・`minimum`・`maximum`）を定数のファイルに書き出す小さな script を `frontend/shared/scripts/` に置く。画面の入力の属性（`maxLength={…}` など）は、この定数だけを使う。
+- API の型の生成（`generate:api`）と一緒に、`admin.yaml`・`store.yaml` のリクエストの制約（`maxLength`・`minimum`・`maximum`）を定数ファイルに書き出す小さな script を `frontend/shared/scripts/` に置く。画面の入力の属性（`maxLength={…}` など）は、この定数だけを使う。
 - 契約を変えると定数が変わり、画面の値も変わるので、食い違いが起きない。数字を直接書いた所がないことを、script（`scripts/ci/` の検査）で確認する。
 
 ### 3.4 バリアントの行（DC-53、P2）
 
-`VariantRow` に分け、操作は props の関数で受ける。第 3.1 節の後に、まだ必要かを見て行う。
+`VariantRow` に分け、操作は props の関数で受ける。第 3.1 節の後に、まだ必要かを判断してから行う。
 
 ### 3.5 業務の出し分けを API のフラグに（DC-61）
 
@@ -96,7 +96,7 @@
 
 ### 4.1 道具の選定（段階 6 の最初のタスク）
 
-- 調べる候補：店舗画面は `next-intl`、管理画面は `use-intl`（`next-intl` の土台。React だけで使える）か `react-i18next`。
+- 調べる候補：店舗画面は `next-intl`、管理画面は `use-intl`（`next-intl` の基盤のライブラリ。React だけで使える）か `react-i18next`。
 - 基準：サーバーコンポーネントとクライアントコンポーネントの両方で使える（店舗画面）、キーの型の検査ができる（DC-55）、値の差し込みと数・日付の整形がある、2 つの画面で同じ形の文言のファイルを使える、ライセンスが方針に合う（spec 004）。
 - 推奨の仮説：`next-intl`（店舗画面）と `use-intl`（管理画面）。同じ書き方と同じ文言の形（ICU）を 2 つの画面で使えるため。調べた結果を利用者に確認してから決める。
 
@@ -111,7 +111,7 @@
 
 ### 4.3 テスト（DC-58）
 
-- テストの描画の部品（admin の `src/test/renderApp.tsx`、store のテストの描画）で、日本語の文言で i18n の提供者を包む。テストは今の日本語の文字で要素を探したまま通す。
+- テストの描画の関数（admin の `src/test/renderApp.tsx`、store のテストの描画）で、日本語の文言で i18n の Provider を包む。テストは今の日本語の文字で要素を探したまま通す。
 - E2E は変えない。
 
 ### 4.4 ロケール（DC-56）
@@ -121,14 +121,14 @@
 
 ### 4.5 置き換えの段取り（DN-8）
 
-仕組み（道具、提供者、型、ロケール）→ 共通の部品（レイアウト、`QueryState`、確認、ページ送り）→ 管理画面の機能ごと（税、カテゴリ、商品、在庫、注文）→ 店舗画面の機能ごと（一覧、詳細、カート、注文手続き、注文の照会、ヘッダー）。機能ごとに 1 commit。
+仕組み（道具、Provider、型、ロケール）→ 共通のコンポーネント（レイアウト、`QueryState`、確認、ページ送り）→ 管理画面の機能ごと（税、カテゴリ、商品、在庫、注文）→ 店舗画面の機能ごと（一覧、詳細、カート、注文手続き、注文の照会、ヘッダー）。機能ごとに 1 commit。
 
 ## 5. コメント（DS-18）
 
 - `docs/style/comments.md` に追加する（段階 1）：
   - 文言をキーに置き換えた所：何が表示されるかを短く（`{/* 税区分 */}`、`title={t('tax.list.title')} // 税区分`）。全文は転記しない。
   - 型の項目（TSDoc）：1 文目に論理名、続けて特別な値・単位・範囲・理由。名前と型で分かる項目には書かない。
-  - 一目で意図が分からない処理（イベントの処理、`render`・`nativeButton` などの部品の差し替え、`unstable_rethrow` などのフレームワークの決まり）と、複雑な処理（spec 005 と同じ基準）の前に、何のためかを 1 行。
+  - 一目で意図が分からない処理（イベントの処理、`render`・`nativeButton` などのコンポーネントの差し替え、`unstable_rethrow` などのフレームワークの決まり）と、複雑な処理（spec 005 と同じ基準）の前に、何のためかを 1 行。
 - spec・plan・tasks の番号を、規則の言葉に書き換える（DC-66。`docs/style/comments.md` 第 1 節）。今は約 200 か所（AC 約 150、BR・US・NFR 約 25、タスク番号 約 14、plan の節 約 7）。段階 8 で、コメントだけの commit にする。
 - 文言のコメントは、第 4.5 節の置き換えと同じ commit で書く（置き換えた人が意味を知っているため）。型と処理のコメントは段階 8 でまとめて、コメントだけの commit にする。
 
@@ -149,7 +149,7 @@
 | 66 | spec 005 の DC-65 と同じ `git grep` を admin・store の `src`（テストを除く）で見る |
 | 58 | 既存のテストが、探し方を変えずに通る |
 | 61 | フラグの値のバックエンドのテストと、画面の結合テストが通る。画面に判定の関数がない |
-| 62 | ログの部品の単体テスト。手元でバックエンドのログと追跡の ID が揃うことを確認する |
+| 62 | ログの部品の単体テスト。手元でバックエンドのログとトレース ID が揃うことを確認する |
 | DN-7 | 全てのテストと E2E が通る。画面を目視で確認して、見た目と文言が変わっていないこと |
 | DN-8 | `git log` |
 

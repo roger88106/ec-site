@@ -12,18 +12,18 @@
 | 基準 | `next-intl`（店舗画面） | `use-intl`（管理画面） | `react-i18next`（管理画面の別案） |
 |------|------------------------|-----------------------|-----------------------------------|
 | サーバーとクライアントのコンポーネント | 両方（`getTranslations`・`useTranslations`） | クライアント（React だけ） | クライアント |
-| キーの型 | `AppConfig` の拡張で、存在しないキーが型の誤り | 同じ（next-intl の土台） | 型の拡張があるが、書き方が別 |
+| キーの型 | `AppConfig` の拡張で、存在しないキーが型エラー | 同じ（next-intl の土台） | 型の拡張があるが、書き方が別 |
 | 差し込み・数・日付 | ICU の形（`{max}`、`{count, plural, ...}`）と `useFormatter` | 同じ | i18next の形（`{{max}}`）。整形は別に書く |
 | 2 つの画面で同じ文言の形 | ○（同じ ICU の JSON） | ○ | ✕（形が違う） |
 | ライセンス | MIT | MIT | MIT |
 | 版 | 4.14.9（Next.js 16 を peerDependencies に含む） | 4.14.9 | 17.0.16 |
 
-- 決定：店舗画面は `next-intl`、管理画面は `use-intl`。同じ書き方と同じ文言の形（ICU）を 2 つの画面で使える。共通の文言は `frontend/shared/src/messages/ja.json` に置き、各画面の文言と合わせて提供者に渡す。
+- 決定：店舗画面は `next-intl`、管理画面は `use-intl`。同じ書き方と同じ文言の形（ICU）を 2 つの画面で使える。共通の文言は `frontend/shared/src/messages/ja.json` に置き、各画面の文言と合わせて Provider に渡す。
 - 利用者の確認：spec 006 の確認 C（「next-intl・use-intl で、共通の文言を shared に置く」で了承）。
 
-- [x] **T6602** 店舗画面に道具を入れる：提供者、`messages/ja.json`、キーの型、ページの言語。
-- [x] **T6603** 管理画面に道具を入れる：提供者、`messages/ja.json`、キーの型、`index.html` の言語。
+- [x] **T6602** 店舗画面に道具を入れる：Provider、`messages/ja.json`、キーの型、ページの言語。
+- [x] **T6603** 管理画面に道具を入れる：Provider、`messages/ja.json`、キーの型、`index.html` の言語。
 - [x] **T6604** 共通の文言を共有する場合は、`frontend/shared/src/messages/ja.json` と、各画面の文言との合わせ方を作る。
-- [x] **T6605** テストの描画の部品（admin の `renderApp`、store のテストの描画）を、日本語の文言の提供者で包む。既存のテストが通る（DC-58）。
+- [x] **T6605** テストの描画の関数（admin の `renderApp`、store のテストの描画）を、日本語の文言の Provider で包む。既存のテストが通る（DC-58）。
 - [x] **T6606** ロケールを `frontend/shared/src/locale.ts` の 1 か所にし、`Intl` を直接書いている 5 か所を、道具の整形か共有の関数に置き換える（DC-56）。
 - [x] **T6607** 存在しないキーで型チェックが失敗することを確認する（一時的に書いて確認し、commit しない）（DC-55）。

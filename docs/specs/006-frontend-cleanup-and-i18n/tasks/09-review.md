@@ -10,7 +10,7 @@
 - [x] **T6902** 文書のレビュー：`check-zh.mjs --all` が通る。`docs/frontend/`・`docs/style/`・用語集と実装の食い違いを修正する。
 - [x] **T6903** plan 第 6 節の確認方法で、DC-45〜62 と DN-7、8 を確認して表にする。画面を目視で見て、見た目と文言が spec の前と変わっていないことを確認し、画面のスクリーンショットを利用者に見せる。
 - [x] **T6904** 完了確認：修正したこと、修正せずに残したこと（理由付き）を報告し、spec 006 を完了にする。README の spec の状態を修正する。引き継ぎの文書を作る。
-- [x] **T6905** CI の失敗を修正する：T6602 で入れた next-intl の依存（`@parcel/watcher`、`@swc/core`）のインストール時のスクリプトを `pnpm-workspace.yaml` の `allowBuilds` に書いておらず、CI の `pnpm install` が `ERR_PNPM_IGNORED_BUILDS` で失敗した。どちらも文言をコードから抜き出す機能でだけ使うので、実行しない（`false`）と書く。
+- [x] **T6905** CI の失敗を修正する：CI の `pnpm install` が `ERR_PNPM_IGNORED_BUILDS` で失敗した。原因は、T6602 で入れた next-intl の依存（`@parcel/watcher`、`@swc/core`）のインストール時のスクリプトを `pnpm-workspace.yaml` の `allowBuilds` に書いていなかったこと。どちらも文言をコードから抜き出す機能でだけ使うので、実行しない（`false`）と書く。
 
 ### T6901 の結果：レビューで読む規則との照合
 
@@ -32,9 +32,9 @@
 | DC-45 | 満たす | `instrumentation` のテストが通る。値のない `next start` の失敗は T6202 で手元で確認した。E2E が通る |
 | DC-46 | 満たす | サーバーの処理のテストが通る。`unstable_rethrow` は `actions/withActionResult.ts` の 1 か所だけ |
 | DC-47 | 満たす | 認証は `auth/` の config・refresh・logout に分かれ、`auth/index.ts` の外から使う形は変わっていない。テストと E2E が通る |
-| DC-48 | 満たす | admin・store の `lib/`・`components/` に同じ内容のファイルはない（`lib/utils.ts` は共有の `cn` を再エクスポートするだけで、shadcn/ui の生成の決まりで置く） |
+| DC-48 | 満たす | admin・store の `lib/`・`components/` に同じ内容のファイルはない（`lib/utils.ts` は共有の `cn` を再エクスポートするだけで、shadcn/ui の生成の規約で置く） |
 | DC-49 | 満たす | フロントの書き方 第 5.1 節 |
-| DC-50 | 満たす | 更新の操作は `useApiMutation` で書く。`onSuccess` で知らせを直接書くのは商品の画像の登録の 1 か所で、生成した API のクライアントを使わない multipart の送信で、登録した枚数を知らせ、失敗しても再取得するため（`onSettled`） |
+| DC-50 | 満たす | 更新の操作は `useApiMutation` で書く。例外は商品の画像の登録の 1 か所で、`onSuccess` で通知を直接書く。理由：生成した API のクライアントを使わない multipart の送信で、登録した枚数を通知し、失敗しても再取得するため（`onSettled`） |
 | DC-51 | 満たす | 管理画面に URL の文字列を直接書いた所はない（`git grep`）。店舗画面は `typedRoutes` で照合する（`<form action>` と `revalidatePath()` はレビューで確認する。T6901） |
 | DC-52 | 満たす | `scripts/ci/input-constraints.mjs` が通る |
 | DC-53 | 満たす | `VariantRow.tsx` に分かれている |
@@ -46,9 +46,9 @@
 | DC-59 | 満たす | T6801 |
 | DC-60 | 満たす | T6802 |
 | DC-61 | 満たす | フラグのバックエンドのテストと画面の結合テストが通る。画面に削除・バリアントの追加・キャンセルの判定の関数はない（状態の比較は、表示の色と、販売終了の案内の文だけ） |
-| DC-62 | 満たす | ログの部品の単体テストが通る。追跡の ID が揃うことは T6208 で手元で確認した |
+| DC-62 | 満たす | ログの部品の単体テストが通る。トレース ID が揃うことは T6208 で手元で確認した |
 | DC-66 | 満たす | レビューで、T6803 で削除し忘れたタスク番号 3 か所を見つけ、T6803 の commit に入れて修正した。今は `git grep` で 0 件 |
-| DN-7 | 満たす | バックエンドの `./gradlew check`、フロントの lint・型チェック・テスト（shared 9、admin 110、store 138）、E2E 12 件が通る。主な 17 画面のスクリーンショットで、本文の文字は spec の前と全て同じ。画素の違いは 11 画面で、どれも字の描画の位置のずれ（1 行の中の数十〜千画素）。段階 7 の後と今のスクリーンショットは画素まで同じ |
+| DN-7 | 満たす | バックエンドの `./gradlew check`、フロントの lint・型チェック・テスト（shared 9、admin 110、store 138）、E2E 12 件が通る。主な 17 画面のスクリーンショットで、本文の文字は spec の前と全て同じ。画素の違いは 11 画面で、どれも文字の描画位置のずれ（1 行の中の数十〜千画素）。段階 7 の後と今のスクリーンショットは画素まで同じ |
 | DN-8 | 満たす | 文言の置き換えは、仕組み（段階 6）、共通の部品と機能ごと（段階 7 の T6702〜T6707）の commit に分かれ、コメントだけの変更（段階 8）はコードの変更と別の commit |
 
 ### T6904 の結果：完了の確認
@@ -64,5 +64,5 @@
 
 修正せずに残したこと：
 
-- 商品の画像の登録は、`useApiMutation` を使わず、`onSuccess` で知らせを直接書く。生成した API のクライアントを使わない multipart の送信で、知らせに登録した枚数を入れ、途中で失敗しても再取得するため。
+- 商品の画像の登録は、`useApiMutation` を使わず、`onSuccess` で通知を直接書く。生成した API のクライアントを使わない multipart の送信で、通知に登録した枚数を入れ、途中で失敗しても再取得するため。
 - 店舗画面の `<form action>` と `revalidatePath()` の URL は型で照合されない。Next.js の `typedRoutes` が型を付けないため、レビューで確認する。

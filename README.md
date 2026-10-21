@@ -1,6 +1,6 @@
 # EC Site
 
-[![CI](https://github.com/roger88106/ec-site/actions/workflows/ci.yml/badge.svg?branch=develop)](https://github.com/roger88106/ec-site/actions/workflows/ci.yml)
+[![CI](https://github.com/roger88106/ec-site/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/roger88106/ec-site/actions/workflows/ci.yml)
 
 自社 B2C の EC サイト。個人のポートフォリオとして、本番相当のやり方を模擬する。
 閲覧 → カート → 注文 → 決済 → 出荷 → 配送状況のコアフローを、省略せずに作る。

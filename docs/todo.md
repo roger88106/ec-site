@@ -19,10 +19,10 @@ MVP の後に行う作業と未決事項。追加と完了の規則は [AGENTS.m
 
 | 項目 | 対応時期 | 出典 |
 |------|----------|------|
-| ブランチの運用（作業ブランチと pull request）と CD の方式を決める | 1→10 | constitution の未定事項、MVP の完成までの一覧（spec 011）、spec 011 Non-goals、spec 018 Non-goals、spec 019 Non-goals |
+| ブランチの運用（`main` の保護、作業ブランチの名前と寿命、リリース）と CD の方式を決める。`main` から作業ブランチを切り、pull request で入れることは spec 019 で決めた | 1→10 | constitution の未定事項、MVP の完成までの一覧（spec 011）、spec 011 Non-goals、spec 018 Non-goals、spec 019 Non-goals |
 | 仕様の管理単位を決める（現在の仕様の単位、変更の単位、起票の方法）。変更単位（`specs/NNN/`）から、業務領域ごとの現行仕様と変更の差分に移すかも決め、完了した spec を現行仕様の文書に書き換える | 1→10 | constitution の未定事項、MVP の完成までの一覧（spec 011）、spec 011 Non-goals、spec 018 Non-goals |
 | spec が 999 を超えたときの、spec とタスクの番号の付け方を決める（**必ず決める**）。タスクの番号は桁を固定しないが、spec のディレクトリの番号は 3 桁で、並び順が崩れる | 1→10 | MVP の完成までの一覧（spec 011）、spec 011 Non-goals |
-| AC のテストの漏れを、どの CI で失敗にするか決める（pull request 運用に移ったら、pull request と `develop`・`main` への push だけを失敗にし、作業ブランチの push は警告にする） | 1→10 | MVP の完成までの一覧（spec 011） |
+| AC のテストの漏れを、どの CI で失敗にするか決める（pull request 運用に移ったら、pull request と `main` への push だけを失敗にし、作業ブランチの push は警告にする） | 1→10 | MVP の完成までの一覧（spec 011） |
 | Dependabot の version updates と security updates を有効にする。1→10 のブランチと CD の決定と合わせて決める | 1→10 | spec 004 Non-goals、spec 011 Non-goals、MVP の完成までの一覧（spec 011）、spec 018 plan 第 4 節 |
 | `main` を保護する。1→10 のブランチと CD の決定と合わせて決める | 1→10 | spec 018 plan 第 4 節、spec 019 Non-goals |
 | ArchUnit のテストが本番のクラスを読み込む所を 1 か所にまとめ、テストのクラスごとに読み込まないようにする（今は単体テストの heap を 1GB にしている） | 1→10 | spec 018 段階 3 |

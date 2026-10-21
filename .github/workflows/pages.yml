@@ -1,9 +1,9 @@
 # ============================================================================
 # 機能紹介のページ（showcase/）を GitHub Pages に出す（spec 008）
 #
-# showcase/ をそのまま出す（ビルドしない）。develop で showcase/ が変わったときと、手で起動したときに流す。
+# showcase/ をそのまま出す（ビルドしない）。main で showcase/ が変わったときと、手で起動したときに流す。
 # 前提（利用者が設定する）：Settings → Pages の Source が「GitHub Actions」、
-#   Settings → Environments → github-pages の Deployment branches に develop がある。
+#   Settings → Environments → github-pages の Deployment branches に main がある。
 # URL：https://roger88106.github.io/ec-site/
 # ============================================================================
 
@@ -11,7 +11,7 @@ name: 機能紹介のページ
 
 on:
   push:
-    branches: [develop]
+    branches: [main]
     paths:
       - 'showcase/**'
       - '.github/workflows/pages.yml'

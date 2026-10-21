@@ -49,6 +49,8 @@ class ProductionJarStartupTest {
                     "--spring.datasource.url=" + postgres.getJdbcUrl(),
                     "--spring.datasource.username=" + postgres.getUsername(),
                     "--spring.datasource.password=" + postgres.getPassword(),
+                    // 確認したいのは設定の不足による失敗なので、マイグレーションと seed は適用しない（起動の時間を短くするため）
+                    "--spring.flyway.enabled=false",
                     "--server.port=0",
                     "--management.server.port=0"));
             var process = new ProcessBuilder(command).redirectErrorStream(true).redirectOutput(log.toFile()).start();

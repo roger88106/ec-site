@@ -61,7 +61,7 @@ sequenceDiagram
     participant G as 決済サービス
     participant S as 出荷
     A->>O: 出荷を登録（配送業者、送り状番号）
-    O->>O: 行ロックなしで確かめる（受付か）
+    O->>O: 行ロックなしで確認する（受付か）
     O->>P: 売上確定（注文 ID）
     P->>G: 売上確定（冪等キー：注文 ID）
     G-->>P: 成功 / 与信期限切れ / 接続できない

@@ -67,7 +67,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 ### 3.1 統合テストの土台
 
-- 統合テストは `@IntegrationTest` を付ける。Spring と、Testcontainers の PostgreSQL・SeaweedFS・imgproxy が起動する ※3。
+- 統合テストは `@IntegrationTest` を付ける。Spring と、Testcontainers の PostgreSQL・SeaweedFS・imgproxy が起動する ※3。例外は、本番の jar を別のプロセスで起動するテスト（`ProductionJarStartupTest`）で、Spring の外で動くので、必要な PostgreSQL を自分で起動する。
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
 - データを残さないテストは `@Transactional` で巻き戻す。
 - 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID、実行ごとの印）でデータを分け、自分のデータだけを確認する。表の全体の数や、一覧の全体を確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要 ※4。

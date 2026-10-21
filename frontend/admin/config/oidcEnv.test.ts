@@ -5,7 +5,7 @@ import { checkOidcEnv } from './oidcEnv.ts'
 const FULL = { VITE_OIDC_AUTHORITY: 'https://idp.example/realms/ec-admin', VITE_OIDC_CLIENT_ID: 'ec-admin-web' }
 
 describe('本番ビルドの IdP の設定', () => {
-  test('AC-238 本番モードのビルドで、IdP の接続先と client の ID がなければ、足りない名前を並べて失敗する', () => {
+  test('AC-238 本番モードのビルドで、IdP の接続先と client ID がなければ、足りない名前を並べて失敗する', () => {
     expect(() => checkOidcEnv('build', 'production', {})).toThrow('VITE_OIDC_AUTHORITY, VITE_OIDC_CLIENT_ID')
   })
 

@@ -26,8 +26,8 @@ RESTful JSON。OpenAPI を plan に記述し、バックエンドは生成した
 | GET | 取得（一覧・詳細） | 200 | `GET /products` |
 | POST | 作成 | 201 + `Location` + 作成した ID ※1 | `POST /products` |
 | POST | 作成でない処理（カートの引き継ぎなど） | 200 で結果、結果がなければ 204 | `POST /me/cart/merge` |
-| PUT | 更新（項目の置き換え、並び順、状態の切り替え） | 204。結果を返すものは 200 | `PUT /products/{id}`、`PUT /products/{id}/publish` |
-| DELETE | 削除 | 204。結果を返すものは 200 | `DELETE /products/{id}` |
+| PUT | 更新（項目の置き換え、並び順、状態の切り替え） | 204。結果を返すものは 200 | `PUT /products/{productId}`、`PUT /products/{productId}/publish` |
+| DELETE | 削除 | 204。結果を返すものは 200 | `DELETE /products/{productId}` |
 | PATCH | 使わない | — | — |
 
 ※1：操作の URL を持つもの（商品のバリアントの `/products/{productId}/variants/{variantId}` など、集約の一部でも）は、その URL を `Location` に入れる。単独の URL がないもの（商品の画像、履歴の 1 件など）は `Location` を付けず、本文で結果を返す。

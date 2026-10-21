@@ -179,25 +179,7 @@ jobs:
       - name: ビルド
         run: pnpm build
 
-  ci-scripts:
-    name: CI の検査の script
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-
-    steps:
-      - uses: actions/checkout@v7
-        with:
-          # 設計の文書の関連 spec の検査（related-specs）が commit の履歴を読む
-          fetch-depth: 0
-
-      - uses: actions/setup-node@v7
-        with:
-          node-version: '24'
-
-      # script のテストと、scripts/ci/ の直下の検査のすべて（AC とテスト名の照合、時間で待つテスト、
-      # 入力の制約の数字、表示の文言、文書の参照・用語、本番のコードの spec の番号）
-      - name: CI の検査の script
-        run: scripts/ci/check-all.sh
+  # CI の検査の script（scripts/ci/check-all.sh）は、文書だけの push でも実行するため docs.yml で実行する
 
   e2e:
     name: E2E

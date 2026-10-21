@@ -1,4 +1,4 @@
--- 送ったメール（docs/design/modules/notification.md「1 通だけ送る」）
+-- 送ったメール（docs/backend/modules/notification.md「1 通だけ送る」）
 -- 注文は他モジュールの ID なので、外部キーは張らない（バックエンドのアーキテクチャ 第 3 節）
 CREATE SCHEMA IF NOT EXISTS notification;
 

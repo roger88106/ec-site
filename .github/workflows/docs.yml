@@ -1,11 +1,9 @@
 # ============================================================================
-# 文書とコメントの検査（constitution 第 12 節）
+# 文書と CI の検査の script（constitution 第 12 節）
 #
-# 文書だけを変えた push でも流す（ci.yml は文書だけの push では流さないため、別のワークフローにする）。
-#   参照：Markdown のリンクと、節の参照（`店舗画面の構成 第 4.5 節` など）が切れていないこと
-#   spec の番号：本番のコードのコメントに、spec・plan・tasks の番号を書いていないこと
-#   用語：文書に使わない語を書いていないこと
-# script のテストは ci.yml の ci-scripts（CI の検査の script）で流す。
+# 文書だけを変えた push でも実行する（ci.yml は文書だけの push では実行しないため、別のワークフローにする）。
+# 文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec などは、
+# 文書だけの変更で崩れるので、CI の検査の script の全て（scripts/ci/check-all.sh）をここで実行する。
 # ============================================================================
 
 name: 文書
@@ -23,24 +21,22 @@ concurrency:
 
 jobs:
   docs:
-    name: 文書とコメントの検査
+    name: 文書と CI の検査の script
     runs-on: ubuntu-latest
     timeout-minutes: 5
 
     steps:
       - uses: actions/checkout@v7
+        with:
+          # 設計の文書の関連 spec の検査（related-specs）が commit の履歴を読む
+          fetch-depth: 0
 
       - uses: actions/setup-node@v7
         with:
           node-version: '24'
 
-      - name: 参照の検査
-        run: node scripts/ci/doc-refs.mjs
-
-      # 本番のコードに spec・plan・tasks の番号を書いていないこと（コメントの書き方 第 1 節）
-      - name: 本番のコードの spec の番号の検査
-        run: node scripts/ci/spec-numbers.mjs
-
-      # 文書に使わない語（scripts/ci/doc-terms.json の ng）を書いていないこと
-      - name: 用語の検査
-        run: node scripts/ci/doc-terms.mjs
+      # script のテストと、scripts/ci/ の直下の検査の全て（CI では、テスト名に出ない AC も失敗にする）
+      - name: CI の検査の script
+        run: scripts/ci/check-all.sh
+        env:
+          CI: 'true'

@@ -256,6 +256,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 与信の成功 | `PaymentAuthorized` | 決済 |
 | 支払の期限切れ | `PaymentExpired` | 決済 |
 | 与信の取消の依頼 | `VoidRequested` | 決済（モジュールの中だけで使う） |
+| 追跡の開始の依頼 | `TrackingRequested` | 出荷（モジュールの中だけで使う） |
 | 返金の依頼 | `RefundRequested` | 決済（モジュールの中だけで使う） |
 | アセット解放 | `AssetReleased` | メディア（モジュールの中だけで使う） |
 

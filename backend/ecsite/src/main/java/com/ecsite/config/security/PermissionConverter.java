@@ -33,7 +33,7 @@ class PermissionConverter implements Converter<Jwt, Collection<GrantedAuthority>
     private final String clientId;
 
     /**
-     * @param clientId 権限の role を持つ client の ID
+     * @param clientId 権限の role を持つ client ID
      */
     PermissionConverter(String clientId) {
         this.clientId = clientId;

@@ -23,7 +23,7 @@ public record SecurityProperties(
      * realm の設定
      *
      * @param issuerUri issuer（token の {@code iss}）。署名の鍵は、この URL の OpenID Connect の設定から取る
-     * @param audience  audience（token の {@code aud} に含まれるべき値。API の client の ID）
+     * @param audience  audience（token の {@code aud} に含まれるべき値。API の client ID）
      */
     public record Realm(
             @NotBlank String issuerUri,

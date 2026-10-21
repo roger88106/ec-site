@@ -8,10 +8,10 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 |------|----------------------|-------------|
 | バックエンド | `cd backend/ecsite && ./gradlew checkLicense build` | バックエンド |
 | 画面（共有パッケージ・管理画面・店舗画面・E2E のコード） | `scripts/dev/check-frontend.sh` | 共有パッケージ、管理画面、店舗画面、E2E の lint・型チェック |
-| CI の検査の script | `scripts/ci/check-all.sh` | CI の検査の script、文書 |
+| CI の検査の script | `scripts/ci/check-all.sh` | 文書と CI の検査の script |
 | E2E | `scripts/dev/e2e.sh` | E2E |
 
-- CI で失敗したら、まず個別のジョブ（バックエンド、管理画面、店舗画面、CI の検査の script）の結果を確認する。E2E は他のジョブを待たずに始まるため、個別のジョブで分かる失敗（コンパイルの誤りなど）でも E2E が失敗する。
+- CI で失敗したら、まず個別のジョブ（バックエンド、管理画面、店舗画面、文書と CI の検査の script）の結果を確認する。E2E は他のジョブを待たずに始まるため、個別のジョブで分かる失敗（コンパイルの誤りなど）でも E2E が失敗する。
 - commit の前の hook は `check-all.sh` だけを実行する（[開発環境の起動](setup.md)）。テストは時間がかかるため、変更した箇所に応じて手動で実行する（[テストの実行方法](running-tests.md)）。
 
 ## 2. CI のジョブ
@@ -21,12 +21,11 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `ci.yml` | バックエンド | 依存のライセンスの検査、ビルド、Javadoc の記述漏れの検査（Checkstyle。private を含む）、単体・統合テスト、OpenAPI の構文の検証、カバレッジの要約 | push（下の除外のファイルだけの push を除く）と pull request |
 | `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの要約 | 同上 |
 | `ci.yml` | 店舗画面 | 画面の依存のライセンスの検査、共有パッケージの lint・型チェック・テスト、店舗画面の lint、型チェック、テスト、ビルド、カバレッジの要約 | 同上 |
-| `ci.yml` | CI の検査の script | `scripts/ci/check-all.sh`（第 3 節） | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェック、バックエンド・管理画面・店舗画面を起動してブラウザで操作する | 同上 |
-| `docs.yml` | 文書とコメントの検査 | `doc-refs`、`spec-numbers`、`doc-terms` | 全ての push と pull request（文書だけの push でも実行する） |
+| `docs.yml` | 文書と CI の検査の script | `scripts/ci/check-all.sh`（第 3 節） | 全ての push と pull request（文書だけの push でも実行する） |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する | `develop` で `showcase/` が変わったとき、手動で起動したとき |
 
-文書の検査（`doc-refs`、`spec-numbers`、`doc-terms`）は、`docs.yml` と `ci.yml` の CI の検査の script の両方で実行される。`docs.yml` は文書だけの push でも実行する。`check-all.sh` にも入れるのは、手元と CI で同じ検査を実行するため。
+CI の検査の script は、文書だけの変更でも結果が変わる（文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec など）ので、文書だけの push でも実行する `docs.yml` で実行する。
 
 `ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.gitignore`、`LICENSE`。pull request はいつも実行する。
 
@@ -51,6 +50,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../rules/backend-coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.3 節） | テストでは定型コードを手動で書く。列挙型は `switch` 式で変換する | なし |
 | `message-comments` | 画面のコードで、キーを文字列リテラルで書いた文言の呼び出し（`t('…')`）に、表示する内容のコメントがある（[コメントの書き方](../rules/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは検査の対象外 | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
 | `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）以外の数字がない（[バックエンドの書き方](../rules/backend-coding.md) 第 3.2 節）。除外の一覧の、不要になったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` にキーと理由（「1 つだけ」など数え方の言葉で、規則の値でないもの） |
+| `migrations` | バージョン付きのマイグレーション（`V*.sql`）が、追加した後に変わっていない（コメントだけの変更も含む。Flyway が適用済みの DB で checksum の不一致にする）。commit の履歴を読むので、shallow clone では失敗する | 元に戻し、変更は新しいマイグレーションで行う | なし |
 | `progress` | spec 011 以降の進捗が、README の進捗の表、MVP の完成までの一覧、tasks のチェックボックスで一致する（tasks が全て完了した spec だけが「完了」。2 つの表の状態が同じ） | 最後のタスクを完了する commit で、2 つの表の状態を「完了」にする | なし |
 | `related-specs` | 設計の文書（概要の表に「関連 spec」の行を持つもの）を変えた commit の spec（1 行目の `（T0NN-…）`）が、その行にある。commit の履歴を読むので、shallow clone では失敗する | 概要の表の「関連 spec」に、その spec のリンクを追加する | `related-specs-exclusions.json` に、設計を変えない段階のタスク番号の前置き（`T018-05` など）と理由 |
 | `role-permissions` | [ロールと権限の対応表](../design/role-permissions.md)が、管理 API の契約の `x-required-permission`、運営者の realm のロール、店舗 API の契約の `security` から再生成した表と一致する。管理 API の操作に権限がない、realm にない権限を使う、も失敗にする | ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認する | なし |

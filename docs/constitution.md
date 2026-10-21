@@ -110,7 +110,7 @@ ec-site/
 
 ### 文書の地図
 
-`docs/` は、規範（rules）、今の設計（design）、手順（guides）、開発記録（specs）に分ける。今の振る舞いはコードが正で、design の文書はそれを説明する（[開発の進め方](rules/workflow.md) 第 1.5 節）。
+`docs/` は、規範（rules）、今の設計（design）、手順（guides）、開発記録（specs）に分ける。現在の振る舞いはコードを正とし、design の文書はコードを説明する（[開発の進め方](rules/workflow.md) 第 1.5 節）。
 
 規範（`docs/rules/`）：
 
@@ -154,7 +154,7 @@ ec-site/
 
 | 文書 | 内容 |
 |------|------|
-| [specs/](specs) | spec・plan・tasks。完了した spec は、MVP のまとまりごとに `specs/archive/<まとまり>/` に移す（MVP は `specs/archive/mvp/`。spec 019 で移す） |
+| [specs/](specs) | spec・plan・tasks。完了した spec は、MVP のまとまりごとに `specs/archive/<まとまり>/` に移す。MVP の spec は `specs/archive/mvp/` に移し、移動は spec 019 で行う |
 | [mvp.md](specs/mvp.md) | MVP の完成までの一覧 |
 | [todo.md](todo.md) | TODO 一覧 |
 

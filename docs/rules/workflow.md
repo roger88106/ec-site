@@ -34,7 +34,7 @@
 | モジュールの今の設計<br/>（集約、不変条件、公開する api・event、設計の理由） | `docs/design/modules/<module>.md` |
 | フロントの各アプリの構成 | `docs/design/apps/`、`docs/design/frontend-architecture.md` |
 | API の項目 | `api/openapi/` |
-| テーブルの定義 | Flyway のマイグレーション（できるまでは `docs/design/modules/` に草案） |
+| テーブルの定義 | Flyway のマイグレーション（作成するまでは `docs/design/modules/` に草案を置く） |
 | 用語と識別子の対応 | `docs/design/glossary.md` |
 | AC の今の状態とテスト | `docs/design/acceptance-criteria.md`（AC 一覧） |
 | コードの書き方 | `docs/rules/backend-coding.md`、`docs/rules/frontend-coding.md`、`docs/rules/test-writing.md`、`docs/rules/comments.md` |
@@ -64,11 +64,11 @@
 
 ### 1.5 コードと文書の食い違い
 
-- 今の振る舞いは、コードを唯一の正とする。文書は、コードの今の振る舞いと設計の理由を説明するもの。
-- 文書とコードの食い違いに気づいたら、文書を修正する。コードが spec の意図と違うとき（不具合）は、文書に合わせてコードを修正せず、不具合として tasks に追加する。
-- spec で AC を追加する・変えるときは、同じ commit で [AC 一覧](../design/acceptance-criteria.md)を修正する。追加した AC は `node scripts/ci/ac-check.mjs --write` で行ができる。前の spec の AC を変えた・廃止したときは、その行の状態、変えた spec、今の内容を手動で修正する。
+- 現在の振る舞いは、コードを唯一の正とする。文書は、その振る舞いと設計の理由を説明する。
+- 文書とコードの食い違いに気づいたら、どちらが誤っているかで扱いを分ける。コードが正しく文書が古いときは、文書を修正する。コードが spec の意図と異なるとき（不具合）は、その場ではコードも文書も変えず、不具合として tasks に追加し、tasks に沿ってテストから修正する。
+- spec で AC を追加する・変えるときは、同じ commit で [AC 一覧](../design/acceptance-criteria.md)を修正する。追加した AC は `node scripts/ci/ac-check.mjs --write` で行が追加される。前の spec の AC を変えた・廃止したときは、その行の状態、変えた spec、今の内容を手動で修正する。
 
-理由：文書を正にすると、コードと違うまま文書を信じて作業し、誤りが広がるため。食い違いは、コードを読めば今の振る舞いが分かり、文書を修正すれば解ける。
+理由：文書を正とすると、コードと異なる文書に従って作業し、誤りが広がるため。食い違いは、コードで現在の振る舞いを確認し、文書を修正すれば解消できる。
 
 ## 2. テスト駆動開発（TDD）
 

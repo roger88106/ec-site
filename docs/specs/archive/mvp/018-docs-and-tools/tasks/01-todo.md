@@ -2,7 +2,7 @@
 
 - 前提：なし
 - 完了条件：TODO 一覧（`docs/todo.md`）があり、MVP の完成までの一覧 第 3 節と constitution 第 16 節がそこを指す。AGENTS.md に運用の規則がある。README と MVP の完成までの一覧に spec 018・019 の行がある。`check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 1 節、spec の DS-46、[MVP の完成までの一覧](../../../../mvp.md)、[constitution](../../../../../constitution.md)、[AGENTS.md](../../../../../../AGENTS.md)
+- 参照：[plan](../plan.md) 第 1 節、spec の DS-46、[MVP の完成までの一覧](../../mvp.md)、[constitution](../../../../../constitution.md)、[AGENTS.md](../../../../../../AGENTS.md)
 
 ## タスク
 

@@ -61,7 +61,7 @@
   - 結果：候補 52 件を適用した（口語の言い回しを書面語に、冗長な表現と「の」の連続を減らし、意味を明確にした）。修正したファイル：plan、spec、01-region、02-order-address、03-address-screens、04-reporting 他 6。
 - [x] **T018-05-23** spec 017（安定性）の spec・plan・tasks。
   - 結果：候補 56 件を適用した（口語の言い回しを書面語に、冗長な表現と「の」の連続を減らし、意味を明確にした）。修正したファイル：plan、spec、01-cleanup、02-stopped-events、03-external-errors、04-outside-transaction 他 4。
-- [x] **T018-05-24** [MVP の完成までの一覧](../../../../mvp.md)と、spec 018・019 の文書。
+- [x] **T018-05-24** [MVP の完成までの一覧](../../mvp.md)と、spec 018・019 の文書。
   - 結果：候補 27 件を適用した（口語の言い回しを書面語に、冗長な表現と「の」の連続を減らし、意味を明確にした）。修正したファイル：018 の spec、01-todo、02-agent-flow、03-checks、06-structure、019 の spec、mvp。
 - [x] **T018-05-25** 言い換えの一覧（ng と caution）と skill `docs` 第 2 節に、採った言い換えと書き方を追加する（DC-194）。
   - MVP の完成までの一覧 第 4 節の 3 つを含める。

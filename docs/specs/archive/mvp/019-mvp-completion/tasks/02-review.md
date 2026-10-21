@@ -2,7 +2,7 @@
 
 - 前提：段階 1
 - 完了条件：plan 第 2 節の 3 回のレビューが終わり、全ての指摘の扱いが決まっている。「高」を修正し、それ以外を TODO 一覧に追加した。AC の除外一覧の各項目の判断が書かれている。`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 2 節、spec の DS-54（DC-208、209、213）、DN-25、skill `review`（[SKILL.md](../../../../.claude/skills/review/SKILL.md)）
+- 参照：[plan](../plan.md) 第 2 節、spec の DS-54（DC-208、209、213）、DN-25、skill `review`（[SKILL.md](../../../../../../.claude/skills/review/SKILL.md)）
 
 ## タスク
 

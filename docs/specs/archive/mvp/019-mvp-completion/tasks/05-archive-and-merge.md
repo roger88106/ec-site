@@ -6,7 +6,7 @@
 
 ## タスク
 
-`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（検査の script のテストは commit の前の hook が実行するため。[開発の進め方](../../../rules/workflow.md) 第 2.1 節）。
+`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（検査の script のテストは commit の前の hook が実行するため。[開発の進め方](../../../../../rules/workflow.md) 第 2.1 節）。
 
 - [x] **T019-05-01** [テスト] `ac-check.mjs`、`progress.mjs`、`showcase-counts.mjs` が、`docs/specs/` の直下とアーカイブの両方の spec を参照するテストを書く（DC-215）。`showcase-counts.mjs` にテストがなければ、関数を分けてテストを書く。
 - [x] **T019-05-02** T019-05-01 の script を修正する（DC-215）。

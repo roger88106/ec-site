@@ -7,6 +7,7 @@ import com.ecsite.module.shipping.domain.DeliveryStatus;
 import jakarta.annotation.Nullable;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
@@ -32,6 +33,7 @@ import java.util.UUID;
  * 出荷の一覧と、出荷ごとに「配送中」「配達完了」「返送」のボタンを持つ。ボタンを押すと、署名付きの通知を
  * HTTP で自分の通知のエンドポイントに送る。
  */
+@Slf4j
 @Controller
 @ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
 @RequiredArgsConstructor
@@ -93,7 +95,9 @@ class MockCarrierController {
                 return render("通知が受け付けられませんでした（HTTP " + result + "）。");
             }
         } catch (RestClientException e) {
-            return render("通知を送れませんでした：" + e.getMessage());
+            // 例外の文（接続先など）は画面に出さず、ログに残す
+            log.warn("配送業者の mock の通知を送れない：orderId={}", orderId, e);
+            return render("通知を送れませんでした。バックエンドのログを確認してください。");
         }
         return ResponseEntity.status(HttpStatus.SEE_OTHER).header(HttpHeaders.LOCATION, "/mock-carrier").build();
     }

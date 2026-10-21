@@ -130,7 +130,7 @@ stateDiagram-v2
 | 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、カードだけを有効にする。カードで払うウォレット（Apple Pay、Google Pay、Link）も与信だけを取れるが、MVP の後に再検討する |
 | 通知のエンドポイント | `POST /api/webhooks/stripe`。認証は付けず、署名（ヘッダー `Stripe-Signature`、鍵 `STRIPE_WEBHOOK_SECRET`）で確認する。署名が合わない・古い通知は 400 で拒否する |
 | 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../../guides/environment.md)） |
-| 待つ時間の上限 | 接続 5 秒、応答 20 秒（1 回の要求ごと）。通信の失敗は SDK が同じ冪等キーで 2 回まで再試行する |
+| タイムアウト | 接続 5 秒、応答 20 秒（1 回の要求ごと）。通信の失敗は SDK が同じ冪等キーで 2 回まで再試行する |
 
 通知の種類と、支払への反映：
 

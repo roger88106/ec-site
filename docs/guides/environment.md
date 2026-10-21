@@ -24,9 +24,9 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `ECSITE_MEDIA_STORAGE_REGION`、`_PUBLIC_BASE_URL` | バケットのリージョン、配信の基準 URL（CDN） | 必須 |
 | `ECSITE_MEDIA_STORAGE_ENDPOINT`、`_PATH_STYLE_ACCESS` | S3 互換ストレージを使うときだけ（AWS では設定せず、資格情報は IAM ロール） | —、false |
 | `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | アップロードの署名付き URL の有効期間 | 5m |
-| `ECSITE_MEDIA_STORAGE_ATTEMPT_TIMEOUT`、`_CALL_TIMEOUT` | ストレージの呼び出しを待つ時間の上限（1 回の試行、SDK の再試行を含めた全体） | 10s、30s |
+| `ECSITE_MEDIA_STORAGE_ATTEMPT_TIMEOUT`、`_CALL_TIMEOUT` | ストレージの呼び出しのタイムアウト（1 回の試行、SDK の再試行を含めた全体） | 10s、30s |
 | `ECSITE_MEDIA_CONVERTER_BASE_URL`、`_KEY`、`_SALT` | imgproxy の URL と、URL の署名鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値） | 必須 |
-| `ECSITE_MEDIA_CONVERTER_QUALITY`、`_TIMEOUT` | WebP の品質、変換を待つ時間の上限 | 82、30s |
+| `ECSITE_MEDIA_CONVERTER_QUALITY`、`_TIMEOUT` | WebP の品質、変換のタイムアウト | 82、30s |
 | `ECSITE_ORDER_SHIPPING_TAX_CATEGORY_ID` | 送料に適用する税区分の ID（標準税率） | 必須 |
 | `ECSITE_ORDER_SHIPPING_FEE`、`_RESERVATION_TTL` | 送料（税込、円）、引当の期限 | 1000、15m |
 | `ECSITE_STOREFRONT_SHOP_CONTACT_EMAIL` | 問い合わせ先のメールアドレス（却下された注文に表示する） | 必須 |
@@ -38,7 +38,7 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `ECSITE_PAYMENT_AUTHORIZATION_VALIDITY`、`_AUTHORIZATION_WARNING` | 与信の有効期間（与信の時刻からの時間）、「期限が近い」とする期間（与信期限までの残り時間） | 7d、2d |
 | `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払画面を表示するバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを有効にしたら必須 |
 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET` | Stripe の API のシークレットキー、通知の署名鍵。Git にコミットしない。ローカルは `/.local/stripe.env`（[開発環境の起動](setup.md) 第 5 節） | 決済の mock フラグを有効にしなければ必須 |
-| `ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT`、`_READ_TIMEOUT` | Stripe の API への接続、応答を待つ時間の上限（応答は 1 回の要求ごと。SDK の自動の再試行は別に数える） | 5s、20s |
+| `ECSITE_PAYMENT_STRIPE_CONNECT_TIMEOUT`、`_READ_TIMEOUT` | Stripe の API への接続、応答のタイムアウト（応答は 1 回の要求ごと。SDK の自動の再試行は別に数える） | 5s、20s |
 | `ECSITE_SHIPPING_MOCK_ENABLED` | 物流の mock フラグ。本番の実装がまだないため、`true` でなければ起動に失敗する。本番では有効にしない | false |
 | `CARRIER_WEBHOOK_SECRET` | 物流サービスの通知の署名鍵。Git にコミットしない。ローカルと統合テストでは、テスト用の値を設定ファイルに書く | 必須 |
 | `ECSITE_NOTIFICATION_FROM` | 消費者へのメール（出荷通知メール）の送信元のアドレス | 必須 |

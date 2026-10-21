@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-整理の spec なので、モジュールの設計書は変えない。本書には、決めたことと段取りを書く。
+整理の spec なので、モジュールの設計書は変えない。本書には、決めたことと実装の順序を書く。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|
@@ -56,8 +56,8 @@ docs/
 |----|------|----|
 | 15 | spec の 2 つの種類（機能・整理）と、それぞれの書き方。整理の spec は DS・DC・DN、「目的」「完了の条件」、対象 D。「1 つの spec は機能の縦切り 1 つ」は機能の spec の規則にする | DC-6 |
 | 13 | CI の結果に関わらないファイルだけの push では CI を実行しない（原則だけ。一覧は CI の設定）。pull request はいつも実行する | DC-7 |
-| 12.1 | 店舗画面のサーバーの処理は、Node の上でテストする（第 4.3 節）。「結合テストを置かない」を、表示の部品とサーバーの処理に分けて書き換える。テスト名の AC 番号は 1 つずつ書く。カバレッジは報告だけ | DC-11、12、14 |
-| 新 17 | 依存とライセンス：プロジェクトのライセンス（MIT）、依存のライセンスの方針（第 3 節）、有料の版がある製品の使う範囲 | DC-8、9 |
+| 12.1 | 店舗画面のサーバーの処理は、Node でテストする（第 4.3 節）。「結合テストを置かない」を、表示のコンポーネントとサーバーの処理に分けて書き換える。テスト名の AC 番号は 1 つずつ書く。カバレッジは報告だけ | DC-11、12、14 |
+| 新 17 | 依存とライセンス：プロジェクトのライセンス（MIT）、依存のライセンスの方針（第 3 節）、有料版がある製品の使う範囲 | DC-8、9 |
 | 4・9・その他 | パスの記述（`backend/`、`frontend/e2e/`、`compose.yaml`）を新しい置き場所に（第 5 節） | DC-21 |
 
 ## 2. CI（DS-2）
@@ -81,8 +81,8 @@ docs/
 ### 2.2 フロントの準備の共通化（DN-3 の範囲で）
 
 - `.github/actions/setup-frontend/`（composite action）：pnpm と Node の準備、workspace の `pnpm install --frozen-lockfile`。admin・store・e2e の job が使う。
-- Playwright のブラウザーを `~/.cache/ms-playwright` でキャッシュする（キーは Playwright の版）。キャッシュが当たったときは `install-deps` だけを行う。
-- 依存の更新の提案（Dependabot）と脆弱性の検査は入れない（spec の Non-goals）。
+- Playwright のブラウザーを `~/.cache/ms-playwright` でキャッシュする（キーは Playwright のバージョン）。キャッシュがヒットしたときは `install-deps` だけを実行する。
+- 依存の更新の提案（Dependabot）と脆弱性の検査は導入しない（spec の Non-goals）。
 
 ## 3. ライセンス（DS-3）
 
@@ -98,46 +98,46 @@ constitution 新 17 節に原則、`scripts/ci/licenses/policy.json` に一覧�
 | 区分 | ライセンス | 扱い |
 |------|------------|------|
 | 許可 | MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、0BSD、BlueOak-1.0.0、CC0-1.0、Zlib、PostgreSQL、Unlicense、Python-2.0 | そのまま使える |
-| 条件付き | EPL-1.0・2.0、MPL-2.0、LGPL-2.1・3.0、CDDL、CC-BY-4.0（データ）、OFL-1.1（字体）、GPL-2.0 with Classpath-exception | 改変せずに依存として使う場合だけ。**部品ごとに**理由を書いて一覧に載せる（新しい部品は CI が失敗にする） |
-| 禁止 | GPL（例外なし）、AGPL、SSPL、BUSL、Commons Clause、非商用限定、ライセンスが分からないもの | 使わない |
+| 条件付き | EPL-1.0・2.0、MPL-2.0、LGPL-2.1・3.0、CDDL、CC-BY-4.0（データ）、OFL-1.1（字体）、GPL-2.0 with Classpath-exception | 改変せずに依存として使う場合だけ。**依存ごとに**理由を書いて一覧に載せる（新しい部品は CI が失敗にする） |
+| 禁止 | GPL（例外なし）、AGPL、SSPL、BUSL、Commons Clause、非商用限定、ライセンスが不明なもの | 使わない |
 
 - 複数のライセンスから選べるもの（`A OR B`）は、許可のものが 1 つあればよい。`A AND B` は全てが許可か条件付きの一覧にあること。
-- 有料の版がある製品（jOOQ：オープンソースの DB でだけ無料、Flyway：Community の機能だけ、imgproxy：OSS 版の機能だけ、Keycloak：上流のコミュニティ版）は、constitution 17 節に使う範囲を書く。
+- 有料版がある製品（jOOQ：オープンソースの DB でだけ無料、Flyway：Community の機能だけ、imgproxy：OSS 版の機能だけ、Keycloak：上流のコミュニティ版）は、constitution 17 節に使う範囲を書く。
 
 ### 3.3 検査（DC-10）
 
 | 対象 | 道具 | 範囲 |
 |------|------|------|
-| バックエンド | `com.github.jk1.dependency-license-report`（`checkLicense` の task、`allowedLicensesFile` と表記の正規化） | 実行時、コンパイル時、テスト（単体・統合）、注釈の処理、jOOQ のコード生成の設定 |
+| バックエンド | `com.github.jk1.dependency-license-report`（`checkLicense` の task、`allowedLicensesFile` と表記の正規化） | 実行時、コンパイル時、テスト（単体・統合）、アノテーション処理、jOOQ のコード生成の設定 |
 | フロント | `scripts/ci/licenses/check-frontend.mjs`（`pnpm licenses list --json` を方針と照合する） | workspace の全て（開発用を含む） |
 | Gradle のプラグイン | 一覧を `policy.json` に手動で書き、レビューで確認する（openapi-generator、jOOQ のプラグイン、jk1 自身） | プラグインは依存の構成に出ないため |
 
 - CI：バックエンドの job で `./gradlew checkLicense`、フロントの job（store）で script を実行する。
-- 調べ残し（`/.local/memo/licenses.md` の要確認）を最初に片付ける：jOOQ の POM の表記、テスト・ビルド用の依存、`.claude/skills/` の LICENSE のコピー（原文の著作権表示が保たれているか）、Keycloak のテーマの CSS。
+- 未調査の項目（`/.local/memo/licenses.md` の要確認）を最初に解消する：jOOQ の POM の表記、テスト・ビルド用の依存、`.claude/skills/` の LICENSE のコピー（原文の著作権表示が保たれているか）、Keycloak のテーマの CSS。
 - 第三者の告知のファイルと SBOM は作らない（spec の Non-goals）。
 
 ## 4. テストの網（DS-4）
 
 ### 4.1 カバレッジ（DC-11）
 
-- バックエンド：Gradle の `jacoco` のプラグイン。`test` と `integrationTest` の実行データを合わせた報告の task を `check` の後に実行する。生成したコード（jOOQ、OpenAPI）は除く。
+- バックエンド：Gradle の `jacoco` のプラグイン。`test` と `integrationTest` の実行データを統合した報告の task を `check` の後に実行する。生成したコード（jOOQ、OpenAPI）は除く。
 - フロント：`@vitest/coverage-v8`。admin と store の `test` に `--coverage` を付ける（報告は `coverage/`）。
 - CI：報告を artifact に保存し、合計（行・分岐）を job の summary に書く。基準の値による失敗はさせない。
 - 測った基準（2026-10-12、手元）：バックエンド 行 97.9%・分岐 83.4%、admin 行 79.0%、store 行 26.4%。
 
 ### 4.2 AC とテストの対応（DC-12、DC-13）
 
-- `scripts/ci/ac-check.mjs`：機能の spec（`docs/specs/*/spec.md` で `AC-n` を持つもの）の AC を取り出し、テスト名（Java の `@DisplayName`、Vitest・Playwright の `test`・`it`・`describe` の第 1 引数）にある `AC-n` と照合する。足りなければ失敗する。
+- `scripts/ci/ac-check.mjs`：機能の spec（`docs/specs/*/spec.md` で `AC-n` を持つもの）の AC を取り出し、テスト名（Java の `@DisplayName`、Vitest・Playwright の `test`・`it`・`describe` の第 1 引数）にある `AC-n` と照合する。テスト名にない AC があれば失敗する。
   - テスト名の `AC-n〜m` の範囲の表記は、失敗にする（DC-12）。今の 17 件は、確認している AC を 1 つずつ並べる形に修正する（テストを変えるのは名前だけ）。
   - 除外の一覧：`scripts/ci/ac-exclusions.json`（AC と理由）。
   - CI：軽い job（Node だけ）で実行する。
-- AC-119（DC-13）：店舗画面のヘッダーの表示の部品のテストで、ログインしている会員に「アカウント」のリンク（IdP のアカウントの画面）が出ることを確認する。
+- AC-119（DC-13）：店舗画面のヘッダーの表示のコンポーネントのテストで、ログインしている会員に「アカウント」のリンク（IdP のアカウントの画面）が出ることを確認する。
 
 ### 4.3 店舗画面のサーバーの処理（DC-14）
 
 - Vitest（Node）で、サーバーアクション、`api/cart.ts`、`auth.ts` のコールバック、`proxy.ts` を呼ぶ。
-  - 置き換えるもの：`next/headers`（Cookie とヘッダーの入れ物）、`next/navigation`（`redirect` は例外を投げる。`unstable_rethrow` で通ることを確認する）、`next/cache`、`@/auth` の現在の会員と token。バックエンドは MSW（`msw/node`）で置き換える。
-  - 置き換えの部品は `src/test/` に置く（admin の `src/test/` と同じ形）。
+  - モックに置き換えるもの：`next/headers`（Cookie とヘッダーを読み書きする関数）、`next/navigation`（`redirect` は例外を投げる。`unstable_rethrow` で通ることを確認する）、`next/cache`、`@/auth` の現在の会員と token。バックエンドは MSW（`msw/node`）で置き換える。
+  - テスト用のモックは `src/test/` に置く（admin の `src/test/` と同じ形）。
 - 確認する流れ：カートに入れる・数量・削除（ゲスト、会員）、ログインの後のカートの引き継ぎ（成功、上限の切り詰め、失敗のときに Cookie を削除する）、注文手続き（入力のエラー、確定、401 で再ログインへ）、ログイン・ログアウト（戻り先、IdP のログアウトの URL）、token の再取得。
 - constitution 12.1 と `docs/frontend/store.md` 第 7 節を先に修正する（文書が先）。
 
@@ -147,7 +147,7 @@ constitution 新 17 節に原則、`scripts/ci/licenses/policy.json` に一覧�
 
 ### 4.5 画像の失敗（DC-16）と待ち方（DC-17）
 
-- 画像の変換：imgproxy が 4xx・5xx を返す、応答が遅い（時間切れ）、形式の違う応答。保存：配信のバケットに書けない、受付のファイルがない。期待する振る舞い（エラーの種類、アセットを記録しない）は今の実装のとおり（media.md）。統合テストで、変換は HTTP の差し替え（テスト用の小さな HTTP サーバー）、保存は停止したコンテナか存在しないバケットで起こす。
+- 画像の変換：imgproxy が 4xx・5xx を返す、応答が遅い（タイムアウト）、形式の違う応答。保存：配信のバケットに書けない、受付のファイルがない。期待する振る舞い（エラーの種類、アセットを記録しない）は今の実装のとおり（media.md）。統合テストで、変換は HTTP の差し替え（テスト用の小さな HTTP サーバー）、保存は停止したコンテナか存在しないバケットで起こす。
 - `Thread.sleep` の 2 か所：
   - `MediaApiTest`（取り消されたときにファイルが消えない）：イベントの登録表（`event_publication`）に解放のイベントが無いことを確認する（取り消されたトランザクションでは登録されない）。待たない。
   - `S3ObjectStorageTest`（期限の切れた URL）：署名の時計を過去にずらした署名者で URL を作り、作った時点で期限が切れている URL で確認する。
@@ -166,7 +166,7 @@ constitution 新 17 節に原則、`scripts/ci/licenses/policy.json` に一覧�
 | `scripts/check-frontend.sh` | `scripts/dev/check-frontend.sh` |
 
 - 1 つ目の commit は `git mv` だけ（DN-2）。2 つ目で参照を修正する。
-- compose の起動の指令：ルートに `.env`（`COMPOSE_FILE=docker/compose.yaml` だけ）を置き、今の `docker compose up -d` をそのまま使えるようにする。compose の中の相対パスは `docker/` を基準に修正する。
+- compose の起動コマンド：ルートに `.env`（`COMPOSE_FILE=docker/compose.yaml` だけ）を置き、今の `docker compose up -d` をそのまま使えるようにする。compose の中の相対パスは `docker/` を基準に修正する。
 - volume（DC-19）：`name: ec-site` で project の名前を今と同じにし、volume の名前（`ec-site_postgres_data` など）を変えない。移す前後でローカルの DB・画像・Keycloak のデータが残ることを手動で確認する。
 
 ### 5.2 参照の修正（DC-19、DC-21）
@@ -186,8 +186,8 @@ spec・plan・tasks（001〜003）の中のパスは記録なので修正しな�
 ### 5.3 フロントの workspace（DC-20）
 
 - ルートに `package.json`（`private`、`license: MIT`、`packageManager`、全体の `lint`・`typecheck`・`test` の script）、`pnpm-workspace.yaml`（`frontend/*`、`e2e`。006 で共有のパッケージ `frontend/shared` を追加する）、`pnpm-lock.yaml` を置く。各プロジェクトの lock と `pnpm-workspace.yaml` は削除する（`allowBuilds` はルートに集める）。
-- 共通の設定：`frontend/biome.base.jsonc`、`frontend/tsconfig.base.json` を作り、admin・store・e2e が `extends` で読む。各プロジェクトには違う所（store の `.next` の除外、JSX の設定など）だけを残す。
-- 依存の版を揃える（`@biomejs/biome` の書き方の違いなど）。`pnpm install` の後に、admin・store・e2e の lint・型チェック・テスト・ビルドが通ることを確認する。
+- 共通の設定：`frontend/biome.base.jsonc`、`frontend/tsconfig.base.json` を作り、admin・store・e2e が `extends` で読む。各プロジェクトには差分（store の `.next` の除外、JSX の設定など）だけを残す。
+- 依存のバージョンを揃える（`@biomejs/biome` の書き方の違いなど）。`pnpm install` の後に、admin・store・e2e の lint・型チェック・テスト・ビルドが通ることを確認する。
 - shadcn の CLI（`components.json`）が workspace で動くことを確認する。
 
 ## 6. E2E とデータ（DS-6、DS-7）
@@ -217,7 +217,7 @@ flowchart LR
 - **画像**：E2E 用のバケット（受付・配信）を `seaweedfs-init` で作り、imgproxy の読める範囲に追加する。
 - **画面**：admin は `VITE_OIDC_AUTHORITY`（8181）と、API の転送先（`vite.config.ts` の転送先を環境変数で変えられるようにする）を渡してビルドする。store は `STORE_API_BASE_URL`（8090）、`AUTH_KEYCLOAK_ISSUER`（8181）を渡す。
 - `pnpm test`（e2e）＝準備の script → Playwright。CI も同じ。
-- 実行ごとの印（`RUN_ID`）は残す（同じ実行の中のテストどうしで、データが混ざらないため）。
+- 実行ごとの識別子（`RUN_ID`）は残す（同じ実行の中のテストどうしで、データが混ざらないため）。
 
 ### 6.2 seed の分け方（DC-25、DC-26）
 
@@ -241,13 +241,13 @@ flowchart LR
 
 | DC | 確認方法 |
 |----|----------|
-| 1、2、5、63 | レビューで読む（文書がある、AGENTS.md から引ける） |
+| 1、2、5、63 | レビューで読む（文書がある、AGENTS.md から参照できる） |
 | 3 | 段階の区切りで引き継ぎの文書を作り、新しいセッションで読めることを確認する（レビュー） |
 | 4 | 本 spec のレビューの段階を、`docs/style/review.md` を使って行う |
 | 6、9 | レビューで読む |
 | 7 | MD だけの commit を push して CI が実行されないこと、pull request で実行されることを確認する |
 | 8 | GitHub のリポジトリの画面で MIT と判定される。`package.json` に `license` |
-| 10 | 禁止のライセンスの部品を追加すると CI が失敗することを、一度だけ手元で確認する |
+| 10 | 禁止のライセンスの依存を追加すると CI が失敗することを、一度だけローカルで確認する |
 | 11 | CI の artifact と summary |
 | 12 | `ac-check.mjs` が CI で通る。範囲の表記と、足りない AC で失敗することを script のテストで確認する |
 | 13〜17 | 各テストが通る。`Thread.sleep` がテストに無い（`git grep`） |
@@ -268,7 +268,7 @@ tasks は段階ごとに `tasks/` の 1 ファイルにする（[01](tasks/01-do
 | 2 | CI を実行しない変更（第 2.1 節） | MD だけの push で CI が実行されない。`948afe9` を含めて push し、CI が通る |
 | 3 | テストの網（第 4 節） | DC-11〜17 のテストと script が CI で通る |
 | 4 | リポジトリの構成と workspace（第 5 節、第 2.2 節） | 移した後に CI が全て通り、手元で起動できる。DN-3 の時間に収まる |
-| 5 | ライセンスの検査（第 3.3 節） | 方針に合わない部品で CI が失敗し、今の依存では通る |
+| 5 | ライセンスの検査（第 3.3 節） | 方針に合わない依存で CI が失敗し、今の依存では通る |
 | 6 | E2E とデータの分離（第 6.1、6.2 節） | E2E を実行してもローカルのデータが変わらない |
 | 7 | ローカルの画面のデータ（第 6.3 節、P2） | DC-26 を画面で確認する |
 | 8 | レビュー | `docs/style/review.md` で確認し、`.local/agent/check-zh.mjs --all` が通り、文書の中国語の言い回しを読んで修正する。README の spec の状態を修正する |

@@ -6,7 +6,7 @@ IdP（Keycloak）のアカウントと、EC の会員 ID の対応を管理す�
 |------|------|
 | レベル | B（不変条件は「1 つのアカウントに 1 人の会員」だけ） |
 | 依存 | なし（カート・注文・店舗の presentation から API で呼ばれる） |
-| 関連 spec | [003](../../specs/003-auth)、[017](../../specs/017-stability) |
+| 関連 spec | [003](../../specs/archive/mvp/003-auth)、[017](../../specs/archive/mvp/017-stability) |
 
 ## 会員
 

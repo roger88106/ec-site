@@ -7,7 +7,7 @@
 |------|------|
 | レベル | B（業務の不変条件はなく、ストレージとの連携が中心） |
 | 依存 | なし（使う側から API で呼ばれる） |
-| 関連 spec | [001](../../specs/001-catalog-and-inventory)、[016](../../specs/016-master-data)、[017](../../specs/017-stability)、[018](../../specs/018-docs-and-tools) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools) |
 | 範囲外 | サイトの静的ファイル（ロゴ、CSS、JavaScript）。フロントのビルド成果物として、フロントの配信（CDN）が配信する |
 
 ## アセット

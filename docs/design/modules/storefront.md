@@ -6,7 +6,7 @@ C 側 API。複数のモジュールの結果を組み合わせて返す。
 |------|------|
 | レベル | B（ドメインもテーブルも持たない参照専用の層） |
 | 依存 | 商品カタログ・在庫・注文（API）、会員（API。presentation だけ） |
-| 関連 spec | [001](../../specs/001-catalog-and-inventory)、[002](../../specs/002-cart-and-order)、[003](../../specs/003-auth)、[013](../../specs/013-backend-consistency) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[013](../../specs/archive/mvp/013-backend-consistency) |
 
 ## 置く理由
 

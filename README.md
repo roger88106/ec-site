@@ -42,6 +42,6 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [016](docs/specs/016-master-data) | 機能 | マスターデータ | 完了。[段階 1〜10](docs/specs/016-master-data/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/016-master-data/tasks/10-review.md) |
 | [017](docs/specs/017-stability) | 機能 | 安定性 | 完了。[段階 1〜8](docs/specs/017-stability/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/017-stability/tasks/08-review.md) |
 | [018](docs/specs/018-docs-and-tools) | 整理 | 文書とツールの整理 | 完了。[段階 1〜7](docs/specs/018-docs-and-tools/tasks/) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/018-docs-and-tools/tasks/07-review.md) |
-| [019](docs/specs/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 | 段階 1 を終えた。次は段階 2（全体のレビュー） |
+| [019](docs/specs/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 | 段階 1〜2 を終えた。次は段階 3（新しい環境と事前知識なしのエージェント） |
 
 MVP を完成させるまでの spec の順は [MVP の完成までの一覧](docs/specs/mvp.md)、MVP の後に行う作業と未決事項は [TODO 一覧](docs/todo.md) にある。

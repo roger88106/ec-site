@@ -87,17 +87,16 @@ MVP では入れない。導入するときは本節を更新してから spec �
 ```
 ec-site/
 ├── .github/workflows/
+├── .claude/              # エージェントの skill とプレビューの設定（Git に入れて共有する）
+├── .local/               # Git に入れないもの（作業用の script、引き継ぎの文書、マシンに固有の設定）
 ├── api/openapi/          # API 契約の正本
 ├── docs/
 │   ├── constitution.md   # 大綱と文書の地図
-│   ├── process/          # 開発の進め方
-│   ├── backend/          # バックエンドの設計と書き方
-│   ├── frontend/         # フロントの設計と書き方
-│   ├── api/              # API の規約
-│   ├── testing/          # テストの書き方と実行方法
-│   ├── dev/              # 開発環境の起動と設定
-│   ├── reference/        # 用語集、ライセンス
-│   └── specs/            # spec・plan・tasks
+│   ├── todo.md           # TODO 一覧（後回しにする作業と未決事項）
+│   ├── rules/            # 規範：開発の進め方、書き方の規則
+│   ├── design/           # 今の設計：全体構成、アーキテクチャ、モジュール、画面、用語集
+│   ├── guides/           # 手順：開発環境の起動、環境変数、CI、テストの実行方法
+│   └── specs/            # 開発記録：spec・plan・tasks（完了した spec は specs/archive/ に移す）
 ├── backend/ecsite/       # バックエンド
 ├── frontend/
 │   ├── store/            # C 側（店舗画面）
@@ -111,31 +110,53 @@ ec-site/
 
 ### 文書の地図
 
+`docs/` は、規範（rules）、今の設計（design）、手順（guides）、開発記録（specs）に分ける。今の振る舞いはコードが正で、design の文書はそれを説明する（[開発の進め方](rules/workflow.md) 第 1.5 節）。
+
+規範（`docs/rules/`）：
+
 | 文書 | 内容 |
 |------|------|
-| [process/workflow.md](rules/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方 |
-| [process/notation.md](rules/notation.md) | spec・tasks の記号と番号 |
-| [process/comments.md](rules/comments.md) | コメントの書き方 |
-| [process/review.md](rules/review.md) | 書き方の規則の書き方とレビュー |
-| [design/overview.md](design/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
-| [design/role-permissions.md](design/role-permissions.md) | ロールと権限の対応表 |
-| [design/common.md](design/common.md) | 共通コード・ログ・可観測性 |
-| [design/acceptance-criteria.md](design/acceptance-criteria.md) | AC 一覧（状態とテスト） |
-| [backend/architecture.md](design/backend-architecture.md) | バックエンドのアーキテクチャ |
-| [backend/coding.md](rules/backend-coding.md) | バックエンドの書き方 |
-| [backend/modules/](design/modules) | モジュールごとの設計 |
-| [frontend/architecture.md](design/frontend-architecture.md) | フロントのアーキテクチャ |
-| [frontend/coding.md](rules/frontend-coding.md) | フロントの書き方 |
-| [frontend/apps/](design/apps) | アプリごとの構成（管理画面、店舗画面） |
-| [api/conventions.md](rules/api-conventions.md) | API の規約 |
-| [testing/writing.md](rules/test-writing.md) | テストの書き方 |
-| [testing/running.md](guides/running-tests.md) | テストの実行方法 |
-| [dev/setup.md](guides/setup.md) | 開発環境の起動 |
-| [dev/environment.md](guides/environment.md) | 環境変数 |
-| [dev/ci.md](guides/ci.md) | CI の検査 |
-| [reference/glossary.md](design/glossary.md) | 用語集 |
-| [reference/licenses.md](design/licenses.md) | 依存とライセンス |
-| [specs/](specs) | spec・plan・tasks |
+| [workflow.md](rules/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方、コードと文書の食い違い |
+| [notation.md](rules/notation.md) | spec・tasks の記号と番号 |
+| [review.md](rules/review.md) | 書き方の規則の書き方とレビュー |
+| [comments.md](rules/comments.md) | コメントの書き方 |
+| [subagents.md](rules/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |
+| [backend-coding.md](rules/backend-coding.md) | バックエンドの書き方 |
+| [frontend-coding.md](rules/frontend-coding.md) | フロントの書き方 |
+| [test-writing.md](rules/test-writing.md) | テストの書き方 |
+| [api-conventions.md](rules/api-conventions.md) | API の規約 |
+
+今の設計（`docs/design/`）：
+
+| 文書 | 内容 |
+|------|------|
+| [overview.md](design/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
+| [backend-architecture.md](design/backend-architecture.md) | バックエンドのアーキテクチャ |
+| [modules/](design/modules) | モジュールごとの設計 |
+| [frontend-architecture.md](design/frontend-architecture.md) | フロントのアーキテクチャ |
+| [apps/](design/apps) | アプリごとの構成（管理画面、店舗画面） |
+| [common.md](design/common.md) | 共通コード・ログ・可観測性 |
+| [role-permissions.md](design/role-permissions.md) | ロールと権限の対応表 |
+| [acceptance-criteria.md](design/acceptance-criteria.md) | AC 一覧（状態とテスト） |
+| [glossary.md](design/glossary.md) | 用語集 |
+| [licenses.md](design/licenses.md) | 依存とライセンス |
+
+手順（`docs/guides/`）：
+
+| 文書 | 内容 |
+|------|------|
+| [setup.md](guides/setup.md) | 開発環境の起動 |
+| [environment.md](guides/environment.md) | 環境変数 |
+| [ci.md](guides/ci.md) | CI の検査 |
+| [running-tests.md](guides/running-tests.md) | テストの実行方法 |
+
+開発記録（`docs/specs/`）：
+
+| 文書 | 内容 |
+|------|------|
+| [specs/](specs) | spec・plan・tasks。完了した spec は、MVP のまとまりごとに `specs/archive/<まとまり>/` に移す（MVP は `specs/archive/mvp/`。spec 019 で移す） |
+| [mvp.md](specs/mvp.md) | MVP の完成までの一覧 |
+| [todo.md](todo.md) | TODO 一覧 |
 
 ## 4. 開発の進め方
 

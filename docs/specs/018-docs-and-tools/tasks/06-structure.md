@@ -15,7 +15,8 @@
     - `docs/design/`：overview、backend-architecture、frontend-architecture、modules/、apps/、common、role-permissions、acceptance-criteria、glossary、licenses
     - `docs/guides/`：setup、environment、ci、running-tests
   - リンク 554 か所を `fix-links.cjs` で直し、リンクでないパスの文字（コードのコメント、skill、CI、検査の script、文書）を 225 ファイルで置き換えた。完了した spec（001〜017）は、リンクだけを直した。検査の script のテストのデータ（架空のパス）は変えていない。
-- [ ] **T018-06-02** constitution の文書の地図とリポジトリ構成の図を、新しい構成に合わせて書き換える。アーカイブの置き場所（`docs/specs/archive/mvp/`）を書く（DC-196）。
+- [x] **T018-06-02** constitution の文書の地図とリポジトリ構成の図を、新しい構成に合わせて書き換える。アーカイブの置き場所（`docs/specs/archive/mvp/`）を書く（DC-196）。
+  - 結果：constitution 第 3 節の構成の図を、rules・design・guides・specs と TODO 一覧に書き換え、`.claude/` と `.local/` を足した（全体レビューの DOC-17）。文書の地図を、規範・今の設計・手順・開発記録の 4 つの表に分け、design の文書はコードを説明するもの（コードが正）と書いた。アーカイブの置き場所は `docs/specs/archive/<まとまり>/`（MVP は `archive/mvp/`）とした。
 - [x] **T018-06-03** spec 001〜017 の AC を抜き出す script で、AC 一覧の雛形を作り、テストの所在を埋める（DC-197）。
   - 結果：[AC 一覧](../../../design/acceptance-criteria.md)（312 件）。抜き出しと表の作成は、別の script を作らず `ac-check` の `--write` にした（T018-06-06）。要約・元の spec・テストの列は再生成する列、状態・変えた spec・今の内容は手動で書く列で、再生成しても残る。テストの列は、AC をテスト名に持つテストのファイル（3 つまで）、除外、なし。今は 302 件にテストがあり、10 件が除外。状態は全て有効で、T018-06-04 で決める。
   - 利用者の確認待ち：テストの列を `ac-check` が比べるので、テストを追加する・名前を変えると、AC 一覧の再生成が必要になる（hook と CI で失敗する）。文書が古くならない代わりに、手間が増える。

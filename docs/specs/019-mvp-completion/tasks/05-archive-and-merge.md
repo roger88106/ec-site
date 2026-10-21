@@ -20,7 +20,8 @@
   - 結果：使わない語 4 件（spec 019 の tasks の 2 件、MVP の完成までの一覧の用語の表の例 2 件）と、切れた節の参照 7 件（文書の名前のない「第 N 節」）を修正した。文脈で言い換える語（caution）は失敗にならないので修正していない。
 - [x] **T019-05-07** Git の規則と CI を main 基準にする：`pages.yml` の公開のブランチ、README の CI のバッジ、CI の検査の文書の `pages.yml` の行、AGENTS.md の Git の表と ※2（skill `writing-for-agents` に従う）、TODO 一覧の `develop` を含む項目（DC-218）。
   - 結果：機能紹介のページの公開を `main` の push にし、CI のバッジと CI の検査の文書の行を `main` にした。AGENTS.md は、`main` から作業ブランチを切って pull request で入れる形にし、※2 にブランチの運用の未決事項を示した。TODO 一覧のブランチの運用の項目は、決めたことと残ることに分けた。
-- [ ] **T019-05-08** 利用者に、GitHub の Environment（`github-pages`）の Deployment branches に `main` を追加するよう依頼し、追加されたことを確認する（DC-218）。
+- [x] **T019-05-08** 利用者に、GitHub の Environment（`github-pages`）の Deployment branches に `main` を追加するよう依頼し、追加されたことを確認する（DC-218）。
+  - 結果：GitHub の API（`environments/github-pages/deployment-branch-policies`）で、`develop` と `main` があることを確認した（利用者が追加済み）。
 - [ ] **T019-05-09** 段階の確認：`./gradlew check`、`check-frontend.sh`、`e2e.sh`、`check-all.sh` を順に実行し、全て通る。README と一覧の進捗を更新する。
 - [ ] **T019-05-10** `develop` を push し、`develop` から main への pull request（1 回目）を作る（それぞれ利用者の許可を得る）。CI が通ったら、merge commit でマージする（commit を書き換えない）（DC-216）。
 - [ ] **T019-05-11** マージの後、Pages の公開の実行が成功し、ページが表示されることを確認する（DC-218）。

@@ -53,7 +53,8 @@
   - 結果：候補 54 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-checks、02-waits、03-backend、04-payment ほか 4。
 - [x] **T018-05-19** spec 013（書き方の統一（バックエンド））の spec・plan・tasks。
   - 結果：候補 28 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-rules、02-catalog、05-payment-shipping、06-reporting-config ほか 1。
-- [ ] **T018-05-20** spec 014（書き方の統一（フロント））の spec・plan・tasks。
+- [x] **T018-05-20** spec 014（書き方の統一（フロント））の spec・plan・tasks。
+  - 結果：候補 50 件を当てた（口語の言い回しを書面語に、冗長と「の」の連続を減らし、意味を明確にした）。直したファイル：plan、spec、01-rules、02-shared、03-store、04-admin ほか 1。
 - [ ] **T018-05-21** spec 015（セキュリティ）の spec・plan・tasks。
 - [ ] **T018-05-22** spec 016（マスターデータ）の spec・plan・tasks。
 - [ ] **T018-05-23** spec 017（安定性）の spec・plan・tasks。

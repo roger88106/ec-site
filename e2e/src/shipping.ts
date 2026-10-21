@@ -23,7 +23,7 @@ export async function shipOnAdmin(page: Page, trackingNumber: string): Promise<v
 
 /**
  * mock の物流の画面（E2E のバックエンド）で、注文の出荷の配送状態を通知し、一覧に反映されるのを待つ。<br />
- * mock は画面を出したバックエンドの受け口に通知するので、E2E の設定は要らない。
+ * mock は画面を出したバックエンドのエンドポイントに通知するので、E2E の設定は必要ない。
  *
  * @param page 使うページ（mock の物流の画面に移る）
  * @param orderId 注文 ID

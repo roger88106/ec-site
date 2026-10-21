@@ -46,8 +46,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Keycloak が発行した token で管理 API を呼ぶ。バックエンドは本番と同じく、issuer の OpenID Connect の設定から公開鍵を取る
  * （テストの鍵に差し替える {@code TestSecurityConfig} は使わないので、{@code @IntegrationTest} とは別の設定で起動する）。<br />
  * token は、パスワードで取る（Direct Access Grant）。realm の JSON では web の client でこれを無効にしているので、
- * テストの中で有効にする（{@code scripts/dev/keycloak.sh} と同じ）。画面と同じ client の token（audience・scope の対応）で確かめるため。
- * 期限切れの token の拒否は、検証の処理が同じなので、テストの鍵の token で確かめる（AuthorizationTest）。
+ * テストの中で有効にする（{@code scripts/dev/keycloak.sh} と同じ）。画面と同じ client の token（audience・scope の対応）で確認するため。
+ * 期限切れの token の拒否は、検証の処理が同じなので、テストの鍵の token で確認する（AuthorizationTest）。
  */
 @SpringBootTest
 @AutoConfigureMockMvc

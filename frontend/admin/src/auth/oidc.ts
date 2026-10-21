@@ -16,6 +16,6 @@ export const oidcSettings: UserManagerSettings = {
   stateStore: new WebStorageStateStore({ store: window.sessionStorage }),
   // access token の期限が近ければ、refresh token で取り直す
   automaticSilentRenew: true,
-  // IdP のログインの状態を、隠した iframe で確かめない（第三者の Cookie になり、ブラウザーに止められることがある）
+  // IdP のログインの状態を、隠した iframe で確認しない（第三者の Cookie になり、ブラウザーに止められることがある）
   monitorSession: false,
 }

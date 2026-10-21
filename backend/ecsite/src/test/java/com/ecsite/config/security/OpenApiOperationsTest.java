@@ -41,21 +41,21 @@ class OpenApiOperationsTest {
             new ByteArrayResource(SPEC.getBytes(StandardCharsets.UTF_8)), (name, operation) -> (String) operation.get("operationId"));
 
     @Test
-    @DisplayName("パスは servers の URL を前に付けて照らす")
+    @DisplayName("パスは servers の URL を前に付けて照合する")
     void prefixesServerUrl() {
         assertThat(operations.find("GET", "/api/admin/categories/order")).hasValue("getCategoryOrder");
         assertThat(operations.find("GET", "/categories/order")).isEmpty();
     }
 
     @Test
-    @DisplayName("具体的なパスを、変数を含むパスより先に照らす")
+    @DisplayName("具体的なパスを、変数を含むパスより先に照合する")
     void matchesSpecificPathFirst() {
         assertThat(operations.find("GET", "/api/admin/categories/order")).hasValue("getCategoryOrder");
         assertThat(operations.find("GET", "/api/admin/categories/c1")).hasValue("getCategory");
     }
 
     @Test
-    @DisplayName("メソッドも照らし、パス共通の parameters は操作として読まない")
+    @DisplayName("メソッドも照合し、パス共通の parameters は操作として読まない")
     void matchesMethod() {
         assertThat(operations.find("PUT", "/api/admin/categories/order")).hasValue("putCategoryOrder");
         assertThat(operations.find("DELETE", "/api/admin/categories/order")).isEmpty();

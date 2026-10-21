@@ -33,7 +33,7 @@ public class CurrentMemberIds {
     private final MemberCommandService commandService;
 
     /**
-     * ログインが要る操作の、会員 ID を返す（初めてなら会員を作る）。
+     * ログインが必要な操作の、会員 ID を返す（初めてなら会員を作る）。
      *
      * @return 会員 ID
      * @throws com.ecsite.common.error.exception.BusinessException ログインしていない（401）

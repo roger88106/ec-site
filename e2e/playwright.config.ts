@@ -12,7 +12,7 @@ const GRADLEW = path.join(BACKEND_DIR, process.platform === 'win32' ? 'gradlew.b
 /**
  * E2E（テストの書き方）。バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する。<br />
  * E2E 用の DB・IdP・画像のバケットを使い、ローカルのデータを変えない（plan 004 第 6.1 節）。DB と IdP は、
- * 準備の script（scripts/prepare.ts）が毎回作り直す。
+ * 準備の script（scripts/prepare.ts）が毎回再作成する。
  * どのテストも同じ DB を使うので、1 つずつ順に動かす。テストのデータは実行ごとの印を付けて作る（src/data.ts）。
  * 手元では、すでに起動している画面のサーバーがあればそれを使う。
  */
@@ -35,7 +35,7 @@ export default defineConfig({
   webServer: [
     {
       // E2E 用の設定（application-e2e.yml。8090、運用ポート 9090、ec_site_e2e、E2E 用の IdP）。
-      // 作り直した DB につなぐため、手元でも毎回起動する（使い回さない）
+      // 再作成した DB につなぐため、手元でも毎回起動する（使い回さない）
       name: 'backend',
       command: `"${GRADLEW}" bootRun --args=--spring.profiles.active=local,e2e`,
       cwd: BACKEND_DIR,
@@ -59,7 +59,7 @@ export default defineConfig({
       reuseExistingServer: !CI,
     },
     {
-      // API の結果のキャッシュを 1 秒にし、NFR-1 の 60 秒を待たずに一覧への反映を確かめる
+      // API の結果のキャッシュを 1 秒にし、NFR-1 の 60 秒を待たずに一覧への反映を確認する
       name: 'store',
       command: 'pnpm build && pnpm start --port 3100',
       cwd: '../frontend/store',

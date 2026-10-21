@@ -1,11 +1,11 @@
 /**
  * E2E の準備（plan 004 第 6.1 節）。`pnpm test` が Playwright の前に流す。<br />
- * E2E 用の DB（ec_site_e2e）と IdP の database（keycloak_e2e）を作り直し、E2E 用の Keycloak を起動し直す。
+ * E2E 用の DB（ec_site_e2e）と IdP の database（keycloak_e2e）を再作成し、E2E 用の Keycloak を起動し直す。
  * 毎回、マイグレーションと seed/base だけの DB と、realm の JSON の状態の IdP から始まる。
  * ローカルの DB（ec_site）と Keycloak（keycloak、8180）には触れない。
  *
  * 前提：compose の PostgreSQL が起動している（docs/testing/running.md の「E2E」）。
- * 初めに、E2E のサーバーのポートで待ち受けられるかを確かめる（Windows の予約範囲に入ったポートは、起動の後まで分からないため）。
+ * 初めに、E2E のサーバーのポートで待ち受けられるかを確認する（Windows の予約範囲に入ったポートは、起動の後まで分からないため）。
  *
  * 使い方：node scripts/prepare.ts（e2e/ で）
  */
@@ -17,7 +17,7 @@ import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, STORE_URL } from '../sr
 /** リポジトリのルート。ルートの .env の COMPOSE_FILE が docker/compose.yaml を指す */
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
-/** 作り直す database と、その持ち主 */
+/** 再作成する database と、その持ち主 */
 const DATABASES = [
   { name: 'ec_site_e2e', owner: 'ec_site' },
   { name: 'keycloak_e2e', owner: 'keycloak' },
@@ -35,7 +35,7 @@ function psql(...statements: string[]): void {
 }
 
 /**
- * ポートで待ち受けられるかを、画面のサーバーと同じく localhost の IPv4・IPv6 の両方で確かめる。
+ * ポートで待ち受けられるかを、画面のサーバーと同じく localhost の IPv4・IPv6 の両方で確認する。
  * OS が拒んだ（EACCES）ときだけ投げる。使用中（起動済みのサーバー）や、IPv6 のない環境はよいとする。
  * Windows では、WinNAT などの予約範囲（netsh interface ipv4 show excludedportrange protocol=tcp）に入ったポートが EACCES になる。
  */
@@ -49,7 +49,7 @@ async function assertListenable(url: string): Promise<void> {
     })
     if (code === 'EACCES') {
       throw new Error(
-        `ポート ${port}（${url}）で待ち受けられない（${host}、EACCES）。Windows なら予約範囲に入っていないかを確かめる：` +
+        `ポート ${port}（${url}）で待ち受けられない（${host}、EACCES）。Windows なら予約範囲に入っていないかを確認する：` +
           'netsh interface ipv4 show excludedportrange protocol=tcp',
       )
     }

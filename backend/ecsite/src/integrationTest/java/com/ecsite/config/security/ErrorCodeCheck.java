@@ -23,9 +23,9 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * 統合テストのエラーの応答の確かめ（docs/api/conventions.md 第 5 節）。<br />
+ * 統合テストのエラーの応答の確認（docs/api/conventions.md 第 5 節）。<br />
  * MockMvc のすべての結果で、エラーの本文の {@code errorCode} が、その操作の一覧（{@code x-error-codes}）か
- * 共通のエラー（{@code x-common-error-codes}）にあることを確かめる。操作は、認可と同じく契約から照らす。
+ * 共通のエラー（{@code x-common-error-codes}）にあることを確認する。操作は、認可と同じく契約から照合する。
  */
 public final class ErrorCodeCheck {
 
@@ -56,7 +56,7 @@ public final class ErrorCodeCheck {
     /**
      * クラスパスの契約（{@code openapi/admin.yaml}、{@code openapi/store.yaml}）を読む。
      *
-     * @return 確かめ
+     * @return 確認
      */
     public static ErrorCodeCheck load() {
         var resources = List.<Resource>of(new ClassPathResource("openapi/admin.yaml"), new ClassPathResource("openapi/store.yaml"));
@@ -71,7 +71,7 @@ public final class ErrorCodeCheck {
     }
 
     /**
-     * MockMvc の結果を確かめる。エラーの本文でなければ何もしない。
+     * MockMvc の結果を確認する。エラーの本文でなければ何もしない。
      *
      * @param result MockMvc の結果
      */
@@ -86,7 +86,7 @@ public final class ErrorCodeCheck {
     }
 
     /**
-     * エラーの本文の {@code errorCode} が、操作の一覧か共通のエラーにあることを確かめる。
+     * エラーの本文の {@code errorCode} が、操作の一覧か共通のエラーにあることを確認する。
      *
      * @param method HTTP メソッド
      * @param path   アプリの中のパス（{@code /api/admin/...}）
@@ -100,7 +100,7 @@ public final class ErrorCodeCheck {
         } catch (PathNotFoundException | IllegalArgumentException e) {
             return;
         }
-        // 契約の API の外（テストだけの endpoint など）は確かめない
+        // 契約の API の外（テストだけの endpoint など）は確認しない
         if (errorCode == null || common.contains(errorCode) || API_PREFIXES.stream().noneMatch(path::startsWith)) {
             return;
         }
@@ -138,13 +138,13 @@ public final class ErrorCodeCheck {
     }
 
     /**
-     * MockMvc のすべての結果を確かめる設定
+     * MockMvc のすべての結果を確認する設定
      */
     @TestConfiguration(proxyBeanMethods = false)
     public static class Config {
 
         /**
-         * MockMvc に、すべての結果の確かめを足す
+         * MockMvc に、すべての結果の確認を追加する
          *
          * @return MockMvc の設定
          */

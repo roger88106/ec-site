@@ -13,7 +13,7 @@ import java.util.UUID;
 public interface MediaDirectory {
 
     /**
-     * 商品の画像のアップロードを受け付ける。形式と大きさはメディアモジュールが確かめる。
+     * 商品の画像のアップロードを受け付ける。形式と大きさはメディアモジュールが確認する。
      *
      * @param productId     商品 ID
      * @param contentType   ファイルの形式（申告）
@@ -23,7 +23,7 @@ public interface MediaDirectory {
     ImageUpload requestImageUpload(UUID productId, String contentType, long contentLength);
 
     /**
-     * 受け付けた画像を用意する（中身を確かめ、変換して配信の置き場所へ置く。アセットは記録しない）。
+     * 受け付けた画像を用意する（中身を確認し、変換して配信の置き場所へ置く。アセットは記録しない）。
      * トランザクションの外で呼ぶ。
      *
      * @param productId 商品 ID

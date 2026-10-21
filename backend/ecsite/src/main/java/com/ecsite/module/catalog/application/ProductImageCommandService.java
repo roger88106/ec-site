@@ -11,7 +11,7 @@ import java.util.UUID;
 
 /**
  * 商品画像の追加の、画像を用意した後の保存。<br />
- * 画像の用意（変換と保存）はトランザクションの外で行うので、その前の確かめ（{@link ProductQueryService#verifyCanAddImage}）と、
+ * 画像の用意（変換と保存）はトランザクションの外で行うので、その前の確認（{@link ProductQueryService#verifyCanAddImage}）と、
  * その後の保存を、それぞれ 1 つのトランザクションにする。流れは {@link ProductImageService#addImage} が持つ。
  */
 @Service

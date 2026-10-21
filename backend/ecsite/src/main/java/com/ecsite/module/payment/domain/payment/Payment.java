@@ -52,7 +52,7 @@ public class Payment extends AggregateRoot {
     private PaymentStatus status;
 
     /**
-     * 開いている支払の画面。まだ開いていなければ null
+     * 開いている支払画面。まだ開いていなければ null
      */
     @Nullable
     @Getter(lombok.AccessLevel.NONE)
@@ -119,16 +119,16 @@ public class Payment extends AggregateRoot {
 // ============================== ドメインの振る舞い ==============================
 
     /**
-     * 開いている支払の画面を返す。
+     * 開いている支払画面を返す。
      *
-     * @return 支払の画面。まだ開いていなければ空
+     * @return 支払画面。まだ開いていなければ空
      */
     public Optional<PaymentPage> page() {
         return Optional.ofNullable(page);
     }
 
     /**
-     * 支払えるか（支払の画面に移れるか）を返す。未払いで、期限の前だけ。
+     * 支払えるか（支払画面に移れるか）を返す。未払いで、期限の前だけ。
      *
      * @param now 現在時刻
      * @return 支払えれば true
@@ -138,13 +138,13 @@ public class Payment extends AggregateRoot {
     }
 
     /**
-     * 開いた支払の画面を覚える。次からは同じ画面を使う。
+     * 開いた支払画面を覚える。次からは同じ画面を使う。
      *
-     * @param page 支払の画面
+     * @param page 支払画面
      */
     public void openPage(@NonNull PaymentPage page) {
         if (status != PaymentStatus.UNPAID) {
-            throw new IllegalStateException("未払いでない支払の画面は開けません: " + status);
+            throw new IllegalStateException("未払いでない支払画面は開けません: " + status);
         }
         this.page = page;
     }
@@ -337,7 +337,7 @@ public class Payment extends AggregateRoot {
      * @param amount           金額
      * @param deadline         支払の期限
      * @param status           状態
-     * @param page             支払の画面
+     * @param page             支払画面
      * @param authorizationRef 与信の参照
      * @param authorizedAt               与信の時刻
      * @param awaitingAuthorizationSince 与信の通知を待ち始めた時刻

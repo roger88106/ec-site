@@ -35,7 +35,7 @@ import static org.mockito.Mockito.doAnswer;
 /**
  * SMTP サーバーが応えないときの統合テスト（T9406）。<br />
  * 接続を受けても何も返さない SMTP サーバーに向け、送信が待ち時間の上限で失敗し（止まったままにならない）、
- * 送ったメールの記録が巻き戻ることを確かめる。失敗したイベントは、未完了のイベントの再発行で送り直される。
+ * 送ったメールの記録が巻き戻ることを確認する。失敗したイベントは、未完了のイベントの再発行で送り直される。
  */
 @IntegrationTest
 @DirtiesContext
@@ -47,7 +47,7 @@ class SmtpTimeoutTest {
     private static final SilentServer SILENT_SMTP = new SilentServer();
 
     /**
-     * 送信の失敗を待つ時間の上限（設定の待ち時間の上限に、余裕を足す）
+     * 送信の失敗を待つ時間の上限（設定の待ち時間の上限に、余裕を加える）
      */
     private static final Duration SEND_FAILURE_TIMEOUT = Duration.ofSeconds(40);
 

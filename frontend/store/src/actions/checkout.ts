@@ -13,7 +13,7 @@ import { readInt, readString } from '@/lib/server/formData'
 const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
 
 /**
- * 注文する。成立したら、決済サービスの支払の画面へ移る。支払の画面の URL を得られなければ、注文の画面へ移る（そこから支払える）。<br />
+ * 注文する。成立したら、決済サービスの支払画面へ移る。支払画面の URL を得られなければ、注文の画面へ移る（そこから支払える）。<br />
  * フォームの項目：checkoutId、expectedTotal（画面で表示した総額）、name、postalCode、prefectureCode、municipalityCode、address、phone。
  * 連絡先のメールアドレスは、API が会員の token から取る。
  * 総額が変わっていたら、注文手続きの画面を新しい金額で表示し直す。
@@ -46,7 +46,7 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
       return failure
     }
     const pageUrl = await paymentPageUrl(data.id)
-    // 支払の画面は外部の URL
+    // 支払画面は外部の URL
     return pageUrl === null ? `/orders/${data.id}` : (pageUrl as Route)
   })
 }
@@ -54,7 +54,7 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
 // ============================== プライベート ==============================
 
 /**
- * 注文の支払の画面の URL を求める。得られなければ（決済サービスが応えないなど）null。
+ * 注文の支払画面の URL を求める。得られなければ（決済サービスが応えないなど）null。
  */
 async function paymentPageUrl(orderId: string): Promise<string | null> {
   const url = await withActionResult(async () => {

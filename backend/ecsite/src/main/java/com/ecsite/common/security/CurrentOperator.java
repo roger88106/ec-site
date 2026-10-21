@@ -24,7 +24,7 @@ public class CurrentOperator {
      * token の運営者を返す。氏名は、token の姓と名を「姓 名」の順に並べる（管理画面の表示と同じ）。
      *
      * @return 運営者
-     * @throws BusinessException token がない（401。filter で認証を必須にしているが、念のため確かめる）
+     * @throws BusinessException token がない（401。filter で認証を必須にしているが、念のため確認する）
      */
     public Operator require() {
         if (!(SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken token)) {

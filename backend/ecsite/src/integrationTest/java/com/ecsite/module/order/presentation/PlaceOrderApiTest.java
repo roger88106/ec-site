@@ -48,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文の成立と注文の表示の受け入れテスト（T2313、AC-86〜94、107）。<br />
- * 同時の注文と二重送信は、コミットが必要なので {@code PlaceOrderConcurrencyTest} で確かめる。テストごとにロールバックする。
+ * 同時の注文と二重送信は、コミットが必要なので {@code PlaceOrderConcurrencyTest} で確認する。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -176,7 +176,7 @@ class PlaceOrderApiTest {
         @DisplayName("注文手続きの後にカートが変われば 409")
         void rejectsChangedCart() throws Exception {
             var checkoutId = startCheckout();
-            // 減らす変更は販売可能数を確かめないので、注文手続き中でもできる
+            // 減らす変更は販売可能数を確認しないので、注文手続き中でもできる
             mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + shirt.variantIds.getFirst())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
@@ -443,7 +443,7 @@ class PlaceOrderApiTest {
     }
 
     /**
-     * カートに入れ、204 を確かめる
+     * カートに入れ、204 を確認する
      */
     private void add(UUID variantId, int quantity) throws Exception {
         mockMvc.perform(post("/api/store/carts/" + cartId + "/items")

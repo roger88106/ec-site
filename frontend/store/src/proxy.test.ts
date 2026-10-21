@@ -2,13 +2,13 @@ import { NextRequest } from 'next/server'
 import { describe, expect, test } from 'vitest'
 import { config, proxy } from '@/proxy'
 
-/** proxy を呼ぶ（Auth.js のセッションの確かめは、テストでは置き換えてある） */
+/** proxy を呼ぶ（Auth.js のセッションの確認は、テストでは置き換えてある） */
 async function runProxy(url: string): Promise<Response> {
   const handler = proxy as unknown as (request: NextRequest) => Response | Promise<Response>
   return handler(new NextRequest(url))
 }
 
-describe('要求ごとの確かめ（proxy）', () => {
+describe('要求ごとの確認（proxy）', () => {
   test('いまの画面のパスとクエリを、要求のヘッダーで画面に知らせる（ログインの後にその画面へ戻すため）', async () => {
     const response = await runProxy('http://localhost:3000/products?category=abc&page=2')
 

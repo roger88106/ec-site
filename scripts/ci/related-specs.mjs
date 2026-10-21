@@ -1,8 +1,8 @@
-// 設計の文書（概要の表に「関連 spec」の行を持つ文書）を変えた spec が、その行にあることを確かめる（skill docs 第 2 節）。
+// 設計の文書（概要の表に「関連 spec」の行を持つ文書）を変えた spec が、その行にあることを確認する（skill docs 第 2 節）。
 // spec は、文書を変えた commit のメッセージの 1 行目のタスク番号（T011-01-01 の形）から読む。古い形式のタスク番号（T3101 など）は
 // spec を一意に決められないので見ない。文書の移動は git log --follow で追う。
 // 設計を変えない作業（言い回しの修正、文書の移動など）の段階は、related-specs-exclusions.json に、タスク番号の前置き（T018-05）と理由を書く。
-// 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が要るので、shallow clone では失敗にする）
+// 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
 import { execFileSync, execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'

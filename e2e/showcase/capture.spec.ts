@@ -62,12 +62,12 @@ async function addToCart(page: Page, productId: string, value?: string) {
   await expect(page.getByText('カートに入れました。')).toBeVisible()
 }
 
-/** カートから注文し、mock の支払の画面に移る */
+/** カートから注文し、mock の支払画面に移る */
 async function order(page: Page) {
   await page.goto(`${STORE}/cart`)
   await page.getByRole('button', { name: '注文手続きへ進む' }).click()
   await page.getByLabel('氏名').fill('山田 花子')
-  // 郵便番号で都道府県・市区町村・町域が補われてから、番地を足す
+  // 郵便番号で都道府県・市区町村・町域が補われてから、番地を追加する
   await page.getByLabel('郵便番号').fill('100-0001')
   await expect(page.getByLabel('住所')).toHaveValue('千代田')
   await page.getByLabel('住所').fill('千代田 1-1')
@@ -76,7 +76,7 @@ async function order(page: Page) {
   await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
 }
 
-/** 支払の画面で操作して注文の画面に戻り、注文の画面の URL（クエリなし）を返す */
+/** 支払画面で操作して注文の画面に戻り、注文の画面の URL（クエリなし）を返す */
 async function finishPayment(page: Page, button: '支払う' | 'やめる'): Promise<string> {
   await page.getByRole('button', { name: button }).click()
   await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)

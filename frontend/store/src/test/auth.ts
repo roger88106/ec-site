@@ -5,7 +5,7 @@ import { type Mock, vi } from 'vitest'
 /**
  * サーバーの処理のテストで、Auth.js（next-auth）の代わりに使うログインの状態（店舗画面の構成 第 7 節）。<br />
  * setup.ts が next-auth・next-auth/jwt をこれに置き換える。auth.ts は本物を使うので、auth.ts が Auth.js に渡した設定
- * （コールバック、イベント）は config から呼んで確かめる。
+ * （コールバック、イベント）は config から呼んで確認する。
  */
 
 /** テストの会員の access token */
@@ -63,7 +63,7 @@ export const nextAuthMock = {
     authState.config = config
     return {
       handlers: {},
-      // proxy.ts の auth(処理) は、セッションを確かめずに処理をそのまま返す
+      // proxy.ts の auth(処理) は、セッションを確認しずに処理をそのまま返す
       auth: (handler?: unknown) => (typeof handler === 'function' ? handler : Promise.resolve(authState.session)),
       signIn: (...args: unknown[]) => authState.signIn(...args),
       signOut: (...args: unknown[]) => authState.signOut(...args),

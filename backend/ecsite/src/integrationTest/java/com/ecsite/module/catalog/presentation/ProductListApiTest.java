@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * B 側の商品一覧の受け入れテスト（T501、US-9）。<br />
- * 登録日時の新しい順を確かめるため、商品を 1 つ登録するごとに時計を 1 分進める。テストごとにロールバックする。
+ * 登録日時の新しい順を確認するため、商品を 1 つ登録するごとに時計を 1 分進める。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -216,10 +216,10 @@ class ProductListApiTest {
     }
 
     // ============================== 補助 ==============================
-    // 品番・名称・カテゴリで探すことを確かめるので、CatalogTestData（品番は決まった形）を使わず、品番と名称をここで決める
+    // 品番・名称・カテゴリで探すことを確認するので、CatalogTestData（品番は決まった形）を使わず、品番と名称をここで決める
 
     /**
-     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     * 要求を送って 201 を確認し、応答の本文の ID を返す
      */
     private String createdId(RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
@@ -248,7 +248,7 @@ class ProductListApiTest {
     }
 
     /**
-     * 軸のない商品にバリアントを登録し、201 を確かめる
+     * 軸のない商品にバリアントを登録し、201 を確認する
      */
     private void addVariant(String productId, String code, long version) throws Exception {
         mockMvc.perform(post(BASE + "/" + productId + "/variants")

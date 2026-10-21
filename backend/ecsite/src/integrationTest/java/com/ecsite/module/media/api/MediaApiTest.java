@@ -55,7 +55,7 @@ import static org.mockito.Mockito.doThrow;
  * 用意では imgproxy で WebP に変換するので、本物の画像（{@link TestImages}）を使う。
  * ファイルは、受付の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。
  * 解放したファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったアセットを消す。
- * エラーコードは、商品画像 API の契約と同じ文字列であることを確かめる。
+ * エラーコードは、商品画像 API の契約と同じ文字列であることを確認する。
  */
 @IntegrationTest
 @ExtendWith(OutputCaptureExtension.class)
@@ -370,7 +370,7 @@ class MediaApiTest {
             });
 
             assertThat(dsl.fetchExists(ASSET, ASSET.ID.eq(assetId))).isTrue();
-            // 取り消されたトランザクションでは、ファイルを消すイベントが登録されない（待たずに確かめられる）
+            // 取り消されたトランザクションでは、ファイルを消すイベントが登録されない（待たずに確認できる）
             assertThat(releaseRegistered(assetId)).isFalse();
             assertThat(get(url).statusCode()).isEqualTo(200);
         }
@@ -418,7 +418,7 @@ class MediaApiTest {
     }
 
     /**
-     * 今あるアセットの ID。アセットは受付の範囲を持たないので、ID の集まりで、新しく作られていないことを確かめる
+     * 今あるアセットの ID。アセットは受付の範囲を持たないので、ID の集まりで、新しく作られていないことを確認する
      * （ほかのテストが消すことはあるので、数では比べない）
      */
     private Set<UUID> assetIds() {
@@ -460,7 +460,7 @@ class MediaApiTest {
     }
 
     /**
-     * 処理が、指定したエラーコード（文字列）の業務のエラーで失敗することを確かめる
+     * 処理が、指定したエラーコード（文字列）の業務のエラーで失敗することを確認する
      */
     private static void assertErrorCode(ThrowingCallable callable, String errorCode) {
         assertThatThrownBy(callable).isInstanceOfSatisfying(BusinessException.class, ex ->

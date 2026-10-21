@@ -1,5 +1,5 @@
 // ============================================================================
-// 機能の spec の AC と、テスト名の AC 番号を照らす（テストの書き方 第 2.1 節）
+// 機能の spec の AC と、テスト名の AC 番号を照合する（テストの書き方 第 2.1 節）
 //
 //   使い方：node scripts/ci/ac-check.mjs
 //
@@ -9,10 +9,10 @@
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
-//   手元で CI と同じに確かめるとき：CI=true node scripts/ci/ac-check.mjs
-// - AC 一覧（docs/design/acceptance-criteria.md）を読む。廃止の AC はテストが要らず、テストが参照すると失敗する。
+//   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
+// - AC 一覧（docs/design/acceptance-criteria.md）を読む。廃止の AC はテストが必要なく、テストが参照すると失敗する。
 //   spec と AC 一覧の AC が食い違うとき、状態が有効・変更・廃止でないとき、表が古いときに失敗する。
-//   表の要約・元の spec・テストの列は作り直す列で、--write で書き直す（状態・変えた spec・今の内容は残す）
+//   表の要約・元の spec・テストの列は再作成する列で、--write で書き直す（状態・変えた spec・今の内容は残す）
 // ============================================================================
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
@@ -83,13 +83,13 @@ export function parseAcRefs(name) {
 }
 
 /**
- * AC とテスト名を照らす。
+ * AC とテスト名を照合する。
  *
  * @param input.specAcs    spec の AC の番号
  * @param input.tests      テスト（ファイルと名前）
  * @param input.exclusions 除外の一覧（"AC-n" → 理由）
  * @param input.strict     テスト名に出ない AC を失敗にするか。false なら警告にする（missing には出す）
- * @returns 照らした結果。ok が false なら失敗
+ * @returns 照合した結果。ok が false なら失敗
  */
 export function check({ specAcs, tests, exclusions, deprecated = new Set(), strict = true }) {
   const covered = new Set()
@@ -225,7 +225,7 @@ export function parseAcList(markdown) {
 }
 
 /**
- * spec の AC と AC 一覧を照らす。
+ * spec の AC と AC 一覧を照合する。
  *
  * @param input.definitions spec の AC の定義
  * @param input.list        AC 一覧（AC → 手で書く列）
@@ -295,14 +295,14 @@ function findTestFiles(dir) {
   return files
 }
 
-/** 照らした結果を、標準出力に書く */
+/** 照合した結果を、標準出力に書く */
 function report(result, root, strict) {
   const where = (test) => `${path.relative(root, test.file).replaceAll('\\', '/')}：${test.name}`
   if (result.missing.length > 0) {
     // 手元では警告。check-all.sh は「警告：」で始まる行を、通ったときも出す
     const prefix = strict ? '' : '警告：'
     console.log(`${prefix}テスト名に出ない AC：${result.missing.map((ac) => `AC-${ac}`).join('、')}`)
-    console.log('  テストを足すか、テストで確かめられない理由を scripts/ci/ac-exclusions.json に書く。')
+    console.log('  テストを追加するか、テストで確認できない理由を scripts/ci/ac-exclusions.json に書く。')
   }
   for (const test of result.ranges) {
     console.log(`範囲の表記（AC 番号を 1 つずつ書く）：${where(test)}`)
@@ -321,7 +321,7 @@ function report(result, root, strict) {
   }
 }
 
-/** spec とテストを読んで照らす */
+/** spec とテストを読んで照合する */
 function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
   const root = path.resolve(here, '../..')
@@ -342,7 +342,7 @@ function main() {
   )
   const exclusions = JSON.parse(readFileSync(path.join(here, 'ac-exclusions.json'), 'utf8'))
 
-  // AC 一覧：手で書く列（状態など）を読み、テストの列を作り直して比べる
+  // AC 一覧：手で書く列（状態など）を読み、テストの列を再作成して比べる
   const listFile = path.join(root, AC_LIST)
   const document = existsSync(listFile) ? readFileSync(listFile, 'utf8') : null
   const from = document?.indexOf(LIST_START) ?? -1
@@ -371,7 +371,7 @@ function main() {
   } else {
     listProblems.push(...checkAcList({ definitions, list: previous }))
     if (`${current}\n` !== rendered) {
-      listProblems.push(`AC 一覧が古い（テストか spec が変わった）。node scripts/ci/ac-check.mjs --write で書き直し、差分を確かめる`)
+      listProblems.push(`AC 一覧が古い（テストか spec が変わった）。node scripts/ci/ac-check.mjs --write で書き直し、差分を確認する`)
     }
   }
   const deprecated = new Set([...previous].filter(([, row]) => row.status === '廃止').map(([ac]) => ac))

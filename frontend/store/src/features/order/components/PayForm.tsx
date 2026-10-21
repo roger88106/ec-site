@@ -5,7 +5,7 @@ import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { payOrder } from '@/actions/order'
 
-/** 「支払う」。決済サービスの支払の画面に移る */
+/** 「支払う」。決済サービスの支払画面に移る */
 export function PayForm({ orderId }: { orderId: string }) {
   const t = useTranslations('order.payment')
   const [result, formAction, pending] = useActionState(payOrder, null)

@@ -31,7 +31,7 @@ public class PaymentApi {
     private final PaymentCommandService commandService;
 
     /**
-     * 支払の画面のサービス
+     * 支払画面のサービス
      */
     private final PaymentPageService pageService;
 
@@ -46,7 +46,7 @@ public class PaymentApi {
     private final PaymentQueryService queryService;
 
     /**
-     * 注文の支払を未払いで作る。支払の期限は、注文日時に設定の時間を足した時刻。同じ注文で重ねて呼んでも 1 つ。
+     * 注文の支払を未払いで作る。支払の期限は、注文日時に設定の時間を加えた時刻。同じ注文で重ねて呼んでも 1 つ。
      *
      * @param orderId   注文 ID
      * @param amount    金額（注文の総額）
@@ -57,10 +57,10 @@ public class PaymentApi {
     }
 
     /**
-     * 支払の画面の URL を返す。開いている画面があれば同じ画面を返す。決済サービスを呼ぶので、トランザクションの外で呼ぶ。
+     * 支払画面の URL を返す。開いている画面があれば同じ画面を返す。決済サービスを呼ぶので、トランザクションの外で呼ぶ。
      *
      * @param orderId 注文 ID
-     * @return 支払の画面の URL。支払がない、未払いでない、期限の後なら空
+     * @return 支払画面の URL。支払がない、未払いでない、期限の後なら空
      */
     public Optional<String> pageUrl(UUID orderId) {
         return pageService.pageUrl(orderId);

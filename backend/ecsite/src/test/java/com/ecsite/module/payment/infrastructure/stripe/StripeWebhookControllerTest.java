@@ -15,8 +15,8 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Stripe の通知の受け口の単体テスト。署名の確かめは受け取り（{@link StripeNotificationHandler}）のテストで確かめ、
- * ここでは本文と署名を受け取りに渡すことと、確かめられないときに 400 を返すことを確かめる。
+ * Stripe の通知のエンドポイントの単体テスト。署名の確認は受け取り（{@link StripeNotificationHandler}）のテストで確認し、
+ * ここでは本文と署名を受け取りに渡すことと、確認できないときに 400 を返すことを確認する。
  */
 class StripeWebhookControllerTest {
 
@@ -43,7 +43,7 @@ class StripeWebhookControllerTest {
     }
 
     @Test
-    @DisplayName("署名を確かめられなければ、400 を返す")
+    @DisplayName("署名を確認できなければ、400 を返す")
     void rejectsInvalidSignature() throws Exception {
         doThrow(new InvalidStripeNotificationException("署名が合わない", null)).when(handler).handle(anyString(), anyString());
 
@@ -51,7 +51,7 @@ class StripeWebhookControllerTest {
     }
 
     @Test
-    @DisplayName("署名のヘッダーがなくても受け取りに渡し、受け取りが確かめる")
+    @DisplayName("署名のヘッダーがなくても受け取りに渡し、受け取りが確認する")
     void passesMissingSignature() throws Exception {
         mockMvc.perform(post("/api/webhooks/stripe").contentType(MediaType.APPLICATION_JSON).content(PAYLOAD))
                 .andExpect(status().isOk());

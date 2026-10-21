@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * API の契約のリクエストの制約の漏れを検出する契約テスト（docs/backend/coding.md 第 3.1 節、spec 005 DC-33）。<br />
  * リクエスト（パス・クエリの引数と本文）の数値の項目に範囲（下限か上限）があり、
- * 文字の項目に長さか形式（{@code maxLength}・{@code pattern}・{@code format}・{@code enum}）があることを確かめる。
+ * 文字の項目に長さか形式（{@code maxLength}・{@code pattern}・{@code format}・{@code enum}）があることを確認する。
  */
 class OpenApiRequestConstraintTest {
 
@@ -75,7 +75,7 @@ class OpenApiRequestConstraintTest {
      * @param schema   スキーマ
      * @param where    項目の場所（報告に使う）
      * @param visited  たどった $ref（再帰する型で止めるため）
-     * @param missing  制約のない項目を足す先
+     * @param missing  制約のない項目を追加する先
      */
     private static void walk(Map<String, Object> document, Object schema, String where, Set<String> visited,
             List<String> missing) {

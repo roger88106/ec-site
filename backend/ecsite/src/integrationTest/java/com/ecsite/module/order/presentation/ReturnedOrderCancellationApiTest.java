@@ -39,8 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 返送された注文のキャンセルの受け入れテスト（T9307、AC-171、190〜193）。<br />
- * 配送状態は、mock の物流サービスの署名付きの通知を受け口に送って進める。返金はコミットの後に行うので、
- * ロールバックするこのテストでは「返金待ち」までを確かめる（返金済みになるのは決済の統合テストと E2E）。
+ * 配送状態は、mock の物流サービスの署名付きの通知をエンドポイントに送って進める。返金はコミットの後に行うので、
+ * ロールバックするこのテストでは「返金待ち」までを確認する（返金済みになるのは決済の統合テストと E2E）。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -192,7 +192,7 @@ class ReturnedOrderCancellationApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * mock の物流サービスから、配送状態の通知を受け口へ送る
+     * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
      */
     private void notifyStatus(String statusName) throws Exception {
         var notification = mockCarrier.notification(Carrier.YAMATO, TRACKING_NUMBER, statusName);
@@ -214,7 +214,7 @@ class ReturnedOrderCancellationApiTest {
     }
 
     /**
-     * 在庫数を確かめる
+     * 在庫数を確認する
      */
     private void expectQuantity(int quantity) throws Exception {
         mockMvc.perform(get("/api/admin/inventory/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(quantity));

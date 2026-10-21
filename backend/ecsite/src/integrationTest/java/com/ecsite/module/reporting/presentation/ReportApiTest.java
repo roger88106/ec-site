@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * レポートの API の形の統合テスト（T0218、AC-197〜208、219、220、NFR-16）。<br />
- * 集計の規則は application 層のテスト（{@code SalesTrendQueryTest} など）で確かめ、ここは要求の受け取りと応答の形を確かめる。
+ * 集計の規則は application 層のテスト（{@code SalesTrendQueryTest} など）で確認し、ここは要求の受け取りと応答の形を確認する。
  * 写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  */
 @IntegrationTest

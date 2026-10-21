@@ -117,7 +117,7 @@ class CartCleanupJobTest {
     }
 
     @Test
-    @DisplayName("AC-289 会員のカートを消した後は、会員のカートを求めると作り直される")
+    @DisplayName("AC-289 会員のカートを消した後は、会員のカートを求めると再作成される")
     void recreatesMemberCartAfterDeleted() throws Exception {
         var member = TestTokens.member().subject(UUID.randomUUID()).email("cleanup@example.com");
         var before = memberCartId(member);
@@ -175,7 +175,7 @@ class CartCleanupJobTest {
     }
 
     /**
-     * 指定した時刻に 1 品目を入れたカートを、直接保存する（商品カタログと在庫は確かめない）。
+     * 指定した時刻に 1 品目を入れたカートを、直接保存する（商品カタログと在庫は確認しない）。
      *
      * @return カート ID
      */

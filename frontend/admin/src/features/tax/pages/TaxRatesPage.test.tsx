@@ -5,7 +5,7 @@ import type { TaxCategory } from '@/api/types'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
-/** 税率の一覧の置き換えの要求の本文（送った内容を確かめる） */
+/** 税率の一覧の置き換えの要求の本文（送った内容を確認する） */
 type ReplaceTaxRatesRequest = components['schemas']['ReplaceTaxRatesRequest']
 
 /** テストで使う税区分の ID */
@@ -128,7 +128,7 @@ describe('税率の一覧の編集', () => {
     expect(screen.queryByText('税率を保存しました')).not.toBeInTheDocument()
   })
 
-  it('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の一覧に作り直してから保存できる', async () => {
+  it('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の一覧に再作成してから保存できる', async () => {
     const state = serveTaxCategory(standard(), (body) =>
       body.version === state.current.version
         ? undefined

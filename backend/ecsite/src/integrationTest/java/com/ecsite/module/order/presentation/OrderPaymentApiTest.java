@@ -59,7 +59,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 注文と支払の受け入れテスト（T7305、AC-143〜166）。<br />
  * 決済のイベントはコミットの後に非同期で届くので、コミットして処理を待ち、作ったデータを後で消す。
- * 決済サービスは mock。支払の期限は、時計を進めて期限切れのジョブを呼んで確かめる。
+ * 決済サービスは mock。支払の期限は、時計を進めて期限切れのジョブを呼んで確認する。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -129,7 +129,7 @@ class OrderPaymentApiTest {
         dsl.deleteFrom(PAYMENT_).where(PAYMENT_.ORDER_ID.in(orderIds)).execute();
         dsl.deleteFrom(SALES_ORDER).where(SALES_ORDER.ID.in(orderIds)).execute();
         dsl.deleteFrom(CHECKOUT).where(CHECKOUT.ID.in(checkoutIds)).execute();
-        // 会員のカートは、支払待ちの注文の品目が残るので消す（次に使うときに作り直される）
+        // 会員のカートは、支払待ちの注文の品目が残るので消す（次に使うときに再作成される）
         dsl.deleteFrom(CART_).where(CART_.ID.in(cartIds)).execute();
         products.forEach(product -> {
             dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(product.id)).execute();
@@ -162,7 +162,7 @@ class OrderPaymentApiTest {
         @DisplayName("AC-146、147 与信が成功すると受付になり、注文した品目だけがカートから除かれる")
         void acceptsOnAuthorization() throws Exception {
             var orderId = pending(2);
-            var addedLater = stockedVariant("後から足した商品");
+            var addedLater = stockedVariant("後から追加した商品");
             addToCart(addedLater);
 
             gateway.pay(orders.openPaymentPage(orderId));
@@ -190,7 +190,7 @@ class OrderPaymentApiTest {
         }
 
         @Test
-        @DisplayName("AC-151 支払の画面は、持ち主だけが開ける")
+        @DisplayName("AC-151 支払画面は、持ち主だけが開ける")
         void onlyOwnerOpensPage() throws Exception {
             var orderId = pending(1);
             var other = TestTokens.member().subject(UUID.randomUUID()).email("other@example.com");
@@ -202,7 +202,7 @@ class OrderPaymentApiTest {
         }
 
         @Test
-        @DisplayName("AC-151 受付の注文と、支払の期限の後の注文は、支払の画面を開けない")
+        @DisplayName("AC-151 受付の注文と、支払の期限の後の注文は、支払画面を開けない")
         void notPayable() throws Exception {
             var accepted = pending(1);
             orders.pay(accepted);
@@ -228,7 +228,7 @@ class OrderPaymentApiTest {
         }
 
         @Test
-        @DisplayName("AC-152 支払の画面を何度開いても、同じ画面になる")
+        @DisplayName("AC-152 支払画面を何度開いても、同じ画面になる")
         void reusesPage() throws Exception {
             var orderId = pending(1);
 

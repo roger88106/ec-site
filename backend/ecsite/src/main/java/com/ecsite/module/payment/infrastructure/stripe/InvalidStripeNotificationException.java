@@ -1,7 +1,7 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
 /**
- * 署名を確かめられない Stripe の通知。受け口が 400 で拒否する。
+ * 署名を確認できない Stripe の通知。エンドポイントが 400 で拒否する。
  */
 class InvalidStripeNotificationException extends RuntimeException {
 

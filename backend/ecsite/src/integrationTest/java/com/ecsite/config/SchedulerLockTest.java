@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 定期ジョブの分散ロックの統合テスト（T7103、バックエンドのアーキテクチャ 第 5 節）。<br />
- * 別々のインスタンスの代わりに 2 つのスレッドから同じジョブを同時に呼び、DB のロックで 1 回だけ動くことを確かめる。
+ * 別々のインスタンスの代わりに 2 つのスレッドから同じジョブを同時に呼び、DB のロックで 1 回だけ動くことを確認する。
  */
 @IntegrationTest
 class SchedulerLockTest {

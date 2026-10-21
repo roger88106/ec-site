@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * C 側に表示される条件の統合テスト（T601、BR-2）。<br />
  * 条件はドメイン（{@link Product#isVisibleAt}）と SQL（{@link ProductVisibility}）の 2 か所にあるので、
- * 公開状態と公開期間のすべての組み合わせで、両者が一致することを確かめる。テストごとにロールバックする。
+ * 公開状態と公開期間のすべての組み合わせで、両者が一致することを確認する。テストごとにロールバックする。
  */
 @IntegrationTest
 @Transactional

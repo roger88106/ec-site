@@ -62,7 +62,7 @@ export function ProductListPage() {
         </Button>
       </PageHeader>
       <div className="space-y-4">
-        {/* 絞り込みを変えたら（URL が変わったら）入力欄を作り直す */}
+        {/* 絞り込みを変えたら（URL が変わったら）入力欄を再作成する */}
         <ProductFilterForm filter={filter} key={searchParams.toString()} onApply={apply} />
         <QueryState query={query}>
           {(result) => (

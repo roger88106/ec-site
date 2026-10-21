@@ -136,7 +136,7 @@ public class OrderPlacementService {
             throw BusinessException.of(OrderErrorCode.OUT_OF_STOCK);
         }
         if (!orderRepository.insert(order)) {
-            // 番号を確かめてから保存するまでの間に、同じ番号が使われた（ごくまれ）。やり直してもらう
+            // 番号を確認してから保存するまでの間に、同じ番号が使われた（ごくまれ）。やり直してもらう
             throw BusinessException.of(CommonErrorCode.CONCURRENT_MODIFICATION);
         }
         paymentDirectory.create(order.id(), order.amounts().total(), order.orderedAt());
@@ -144,7 +144,7 @@ public class OrderPlacementService {
     }
 
     /**
-     * お届け先の都道府県と市区町村を、地域のマスターデータで確かめ、名前を写す。
+     * お届け先の都道府県と市区町村を、地域のマスターデータで確認し、名前を写す。
      *
      * @param prefectureCode   都道府県のコード
      * @param municipalityCode 市区町村のコード

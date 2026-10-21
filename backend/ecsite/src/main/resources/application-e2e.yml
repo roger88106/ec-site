@@ -4,7 +4,7 @@
 # local profile に重ねて使う：spring.profiles.active=local,e2e
 # ローカルとの違いだけを書く。DB・IdP・画像のバケットを E2E 用に分け、ローカルのデータを変えない。
 # ポートも分けるので、手元の開発のバックエンド（8080）と並べて動かせる。
-# DB（ec_site_e2e）と IdP の database は、E2E の準備の script（e2e/scripts/prepare.ts）が毎回作り直す。
+# DB（ec_site_e2e）と IdP の database は、E2E の準備の script（e2e/scripts/prepare.ts）が毎回再作成する。
 # ============================================================================
 
 server:
@@ -19,7 +19,7 @@ spring:
   datasource:
     url: jdbc:postgresql://localhost:5432/ec_site_e2e
   flyway:
-    # 画面で見るためのデータ（seed/local）は入れない。E2E は要るデータを API で作る（db/seed/local/README.md）
+    # 画面で見るためのデータ（seed/local）は入れない。E2E は必要なデータを API で作る（db/seed/local/README.md）
     locations: classpath:db/migration,classpath:db/seed/base
 
 ecsite:
@@ -31,7 +31,7 @@ ecsite:
     # E2E の店舗画面（e2e/playwright.config.ts）
     return-url: http://localhost:3100/orders/{orderId}?payment=returned
     mock:
-      # mock の支払の画面を出す E2E のバックエンド
+      # mock の支払画面を出す E2E のバックエンド
       base-url: http://localhost:8090
   media:
     storage:

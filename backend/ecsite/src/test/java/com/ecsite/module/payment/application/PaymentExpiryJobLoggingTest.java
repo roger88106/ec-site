@@ -29,19 +29,19 @@ import static org.mockito.Mockito.when;
 
 /**
  * 支払の期限切れのジョブの、例外とログの単体テスト（T017-06-03、AC-310、312）。<br />
- * 支払の参照・更新のサービスと決済サービスは mock にする。通知を待つ支払の検索は、統合テスト（PaymentExpiryJobTest）で確かめる。
+ * 支払の参照・更新のサービスと決済サービスは mock にする。通知を待つ支払の検索は、統合テスト（PaymentExpiryJobTest）で確認する。
  */
 @ExtendWith(OutputCaptureExtension.class)
 class PaymentExpiryJobLoggingTest {
 
     /**
-     * 支払の画面を開いた、期限を過ぎた支払
+     * 支払画面を開いた、期限を過ぎた支払
      */
     private static final PastDeadlinePaymentView FIRST = new PastDeadlinePaymentView(UUID.randomUUID(),
             new PaymentPage("page-first", "https://payment.example.com/page-first"));
 
     /**
-     * 支払の画面を開いた、期限を過ぎたもう 1 つの支払
+     * 支払画面を開いた、期限を過ぎたもう 1 つの支払
      */
     private static final PastDeadlinePaymentView SECOND = new PastDeadlinePaymentView(UUID.randomUUID(),
             new PaymentPage("page-second", "https://payment.example.com/page-second"));

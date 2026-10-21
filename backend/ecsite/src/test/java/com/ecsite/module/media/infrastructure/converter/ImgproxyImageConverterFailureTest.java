@@ -164,7 +164,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     /**
-     * 変換が、業務のエラー（変換の失敗）になることを確かめる
+     * 変換が、業務のエラー（変換の失敗）になることを確認する
      *
      * @param converter 変換の実装
      */
@@ -175,7 +175,7 @@ class ImgproxyImageConverterFailureTest {
     }
 
     /**
-     * 変換が、外部サービスのエラー（画像のサービスが使えない）になることを確かめる
+     * 変換が、外部サービスのエラー（画像のサービスが使えない）になることを確認する
      *
      * @param converter 変換の実装
      */

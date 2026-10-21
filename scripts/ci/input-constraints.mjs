@@ -1,4 +1,4 @@
-// 画面の入力の制約（長さ・範囲）に、数字を直接書いた所がないことを確かめる（フロントの書き方 第 2.3 節）。
+// 画面の入力の制約（長さ・範囲）に、数字を直接書いた所がないことを確認する（フロントの書き方 第 2.3 節）。
 // 制約は API の契約から書き出した定数（src/api/generated/constraints.ts）を使う。
 // 使い方：node scripts/ci/input-constraints.mjs（リポジトリのルートで）
 import { readdirSync, readFileSync } from 'node:fs'

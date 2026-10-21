@@ -67,7 +67,7 @@ describe('支払の状況（AC-150、151）', () => {
     expect(paymentState({ status: 'PENDING_PAYMENT', actions: payable }, false)).toBe('PAYABLE')
   })
 
-  test('AC-150 支払の画面から戻った直後に、まだ支払待ちなら、支払の確認中', () => {
+  test('AC-150 支払画面から戻った直後に、まだ支払待ちなら、支払の確認中', () => {
     expect(paymentState({ status: 'PENDING_PAYMENT', actions: payable }, true)).toBe('CONFIRMING')
     expect(paymentState({ status: 'PENDING_PAYMENT', actions: notPayable }, true)).toBe('CONFIRMING')
   })

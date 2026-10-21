@@ -22,7 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * mock の物流サービスの統合テスト（T9209、NFR-9、AC-174〜178）。<br />
- * 実際の HTTP（ランダムなポート）で、画面のボタンと、テストから送る通知が、署名の検証を含む通知の受け口を通ることを確かめる。
+ * 実際の HTTP（ランダムなポート）で、画面のボタンと、テストから送る通知が、署名の検証を含む通知のエンドポイントを通ることを確認する。
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */
 @IntegrationTest
@@ -64,7 +64,7 @@ class MockCarrierTest {
     }
 
     @Test
-    @DisplayName("AC-174 画面のボタンを押すと、署名付きの通知が受け口に送られ、配送状態が進む。戻る通知では戻らない")
+    @DisplayName("AC-174 画面のボタンを押すと、署名付きの通知がエンドポイントに送られ、配送状態が進む。戻る通知では戻らない")
     void buttonsAdvanceThroughWebhook() {
         var shipment = shipped(ShipmentSummary.Carrier.YAMATO);
 

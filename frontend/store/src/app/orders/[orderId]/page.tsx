@@ -23,9 +23,9 @@ export async function generateMetadata(): Promise<Metadata> {
 }
 
 /**
- * 注文。注文の直後の表示と、注文の一覧からの照会と、支払の画面から戻る先を兼ねる。<br />
+ * 注文。注文の直後の表示と、注文の一覧からの照会と、支払画面から戻る先を兼ねる。<br />
  * ログインを求め、注文した会員のものでなければ「見つかりません」にする。
- * 支払の画面から戻るときは、クエリの `payment=returned` が付く（バックエンドの設定の戻る先）。
+ * 支払画面から戻るときは、クエリの `payment=returned` が付く（バックエンドの設定の戻る先）。
  */
 export default async function OrderPage({ params, searchParams }: PageProps<'/orders/[orderId]'>) {
   const t = await getTranslations('order.detail')
@@ -60,7 +60,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
                   {chunks}
                 </Link>
               ),
-            }) /* ご注文履歴から確かめられる */
+            }) /* ご注文履歴から確認できる */
           }
         </p>
       </header>

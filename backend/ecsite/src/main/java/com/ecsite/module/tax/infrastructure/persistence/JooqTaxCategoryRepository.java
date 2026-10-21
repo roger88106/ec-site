@@ -38,7 +38,7 @@ class JooqTaxCategoryRepository implements TaxCategoryRepository {
     /**
      * 適用期間の重複を防ぐ排他制約（検査を遅らせる設定）。<br />
      * jOOQ は排他制約のコードを生成せず、SET CONSTRAINTS の DSL もないため、名前で指す。
-     * マイグレーションとの一致は統合テストで確かめる（JooqTaxCategoryRepositoryTest）。
+     * マイグレーションとの一致は統合テストで確認する（JooqTaxCategoryRepositoryTest）。
      */
     static final Name PERIOD_NO_OVERLAP = DSL.name("tax", "tax_rate_period_no_overlap");
 

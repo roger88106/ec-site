@@ -8,7 +8,7 @@ import { useOperator } from '@/auth/operator'
 import { currentAccessToken, handleUnauthorized } from '@/auth/token'
 import { I18nProvider } from '@/i18n/I18nProvider'
 
-/** 差し替えた useAuth が返す値（テストごとに作り直す） */
+/** 差し替えた useAuth が返す値（テストごとに再作成する） */
 let auth: Partial<AuthContextProps>
 
 vi.mock('react-oidc-context', () => ({

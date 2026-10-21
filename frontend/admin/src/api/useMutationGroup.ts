@@ -1,4 +1,4 @@
-/** まとめる操作に要る状態（TanStack Query の useMutation の戻り値の一部） */
+/** まとめる操作に必要な状態（TanStack Query の useMutation の戻り値の一部） */
 type MutationState = {
   isPending: boolean
   error: unknown

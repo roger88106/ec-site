@@ -82,7 +82,7 @@ export function imageContentType(file: Pick<File, 'type' | 'name'>): ImageConten
 }
 
 /**
- * 送る前に確かめられる、画像のファイルの誤り（形式と大きさ）。サーバーも同じ検証をする。
+ * 送る前に確認できる、画像のファイルの誤り（形式と大きさ）。サーバーも同じ検証をする。
  *
  * @returns 誤りのメッセージ。なければ null
  */
@@ -106,7 +106,7 @@ export function imageFileError(file: Pick<File, 'type' | 'name' | 'size'>): stri
  * @param version   登録のときに送る商品のバージョン
  */
 export async function uploadProductImage(productId: string, file: File, version: number): Promise<void> {
-  // 形式は imageFileError で確かめてから呼ぶ（受け付けない形式は送らない）
+  // 形式は imageFileError で確認してから呼ぶ（受け付けない形式は送らない）
   const contentType = imageContentType(file)
   if (contentType === null) {
     throw new ImageUploadError(translate('product.images.invalidType', { formats: imageFormatsLabel() })) // 形式の誤り

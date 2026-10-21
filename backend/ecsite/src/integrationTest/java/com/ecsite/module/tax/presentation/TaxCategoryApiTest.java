@@ -395,7 +395,7 @@ class TaxCategoryApiTest {
     }
 
     /**
-     * 時計を指定した時刻にして、その時点の税率が期待どおりかを確かめる
+     * 時計を指定した時刻にして、その時点の税率が期待どおりかを確認する
      */
     private void assertCurrentRateAt(String id, String at, int expectedRatePercent) throws Exception {
         clock.setInstant(OffsetDateTime.parse(at).toInstant());

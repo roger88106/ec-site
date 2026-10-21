@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文手続きの受け入れテスト（T2311、AC-82、84、85、88）。<br />
- * カート変更のイベントはコミット後に非同期で届くので、ここではリスナーが呼ぶ引当の解除を直接呼んで確かめる。テストごとにロールバックする。
+ * カート変更のイベントはコミット後に非同期で届くので、ここではリスナーが呼ぶ引当の解除を直接呼んで確認する。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -211,7 +211,7 @@ class CheckoutApiTest {
     }
 
     /**
-     * 注文手続きに進み、201 と Location を確かめて、注文手続き ID を返す
+     * 注文手続きに進み、201 と Location を確認して、注文手続き ID を返す
      */
     private UUID startCheckout(UUID cart) throws Exception {
         var body = mockMvc.perform(startCheckoutRequest(cart))
@@ -222,7 +222,7 @@ class CheckoutApiTest {
     }
 
     /**
-     * カートに入れ、204 を確かめる
+     * カートに入れ、204 を確認する
      */
     private ResultActions add(UUID cart, UUID variantId, int quantity) throws Exception {
         return mockMvc.perform(post("/api/store/carts/" + cart + "/items")

@@ -161,7 +161,7 @@ class StorefrontFreshnessTest {
     // ============================== 補助 ==============================
 
     /**
-     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     * 要求を送って 201 を確認し、応答の本文の ID を返す
      */
     private String createdId(RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

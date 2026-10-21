@@ -21,7 +21,7 @@ export const routePatterns = {
 } as const
 
 /**
- * 画面の URL を作る。ID などの値は、URL の形のパラメーターの名前と型で確かめる（generatePath）。<br />
+ * 画面の URL を作る。ID などの値は、URL の形のパラメーターの名前と型で確認する（generatePath）。<br />
  * 一覧の絞り込みのクエリは、各機能の *Filter.ts が作る。
  */
 export const paths = {

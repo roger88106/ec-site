@@ -203,7 +203,7 @@ public class Product extends AggregateRoot {
 
     /**
      * 商品を編集する。税抜価格が変わったら、商品価格変更のイベントを登録する。<br />
-     * 税区分に有効な税率があることは、税モジュールに確かめる必要があるため、アプリケーション層で検証する。
+     * 税区分に有効な税率があることは、税モジュールに確認する必要があるため、アプリケーション層で検証する。
      *
      * @param name          商品名
      * @param description   説明
@@ -314,8 +314,8 @@ public class Product extends AggregateRoot {
     }
 
     /**
-     * 画像を加えられるか（上限の 20 枚に達していないか）を確かめる。<br />
-     * アップロードの受付の前に呼ぶ。登録のときも {@link #addImage} が確かめ直す。
+     * 画像を加えられるか（上限の 20 枚に達していないか）を確認する。<br />
+     * アップロードの受付の前に呼ぶ。登録のときも {@link #addImage} が確認直す。
      */
     public void verifyCanAddImage() {
         if (images.size() >= MAX_IMAGES) {

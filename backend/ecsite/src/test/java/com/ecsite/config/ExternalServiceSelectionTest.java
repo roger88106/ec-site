@@ -25,7 +25,7 @@ import static org.mockito.Mockito.mock;
 
 /**
  * 外部サービス（決済、物流）の実装を、mock フラグで選ぶことの検査。<br />
- * 決済と物流の実装の置き場所だけを読み込み、フラグの有無で、使われる実装と起動の成否を確かめる。
+ * 決済と物流の実装の置き場所だけを読み込み、フラグの有無で、使われる実装と起動の成否を確認する。
  */
 class ExternalServiceSelectionTest {
 
@@ -46,7 +46,7 @@ class ExternalServiceSelectionTest {
             "ecsite.payment.stripe.secret-key=sk_test_dummy", "ecsite.payment.stripe.webhook-secret=whsec_test_dummy"};
 
     /**
-     * 依存する Bean の代わりの物と、決済の mock の設定だけを持つ。読み込む実装の置き場所は、テストごとに足す
+     * 依存する Bean の代わりの物と、決済の mock の設定だけを持つ。読み込む実装の置き場所は、テストごとに追加する
      */
     private final ApplicationContextRunner base = new ApplicationContextRunner()
             .withConfiguration(AutoConfigurations.of(ValidationAutoConfiguration.class))
@@ -121,7 +121,7 @@ class ExternalServiceSelectionTest {
     }
 
     @Test
-    @DisplayName("AC-229 決済のフラグを立てなければ、mock の支払の画面がない")
+    @DisplayName("AC-229 決済のフラグを立てなければ、mock の支払画面がない")
     void noMockPaymentPageWithoutFlag() {
         runner.withPropertyValues(SHIPPING_MOCK).withPropertyValues(STRIPE_KEYS).run(context -> {
             assertThat(context).hasNotFailed();

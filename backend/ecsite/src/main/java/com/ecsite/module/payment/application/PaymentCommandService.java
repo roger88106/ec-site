@@ -77,8 +77,8 @@ public class PaymentCommandService {
     }
 
     /**
-     * 期限を過ぎた未払いの支払を、支払なしにする。期限切れのジョブと、支払の画面の期限切れの通知から呼ぶ。<br />
-     * 行ロックの後に確かめ直すので、その間に与信済みになった支払や、期限の前の支払は変えない。
+     * 期限を過ぎた未払いの支払を、支払なしにする。期限切れのジョブと、支払画面の期限切れの通知から呼ぶ。<br />
+     * 行ロックの後に確認直すので、その間に与信済みになった支払や、期限の前の支払は変えない。
      *
      * @param paymentId 支払 ID
      */
@@ -92,7 +92,7 @@ public class PaymentCommandService {
 
     /**
      * 期限を過ぎたが決済サービスで支払が済んでいた支払を、与信の通知を待つ支払にする。期限切れのジョブから呼ぶ。<br />
-     * 行ロックの後に確かめ直すので、その間に通知が届いて与信済みになった支払は変えない。
+     * 行ロックの後に確認直すので、その間に通知が届いて与信済みになった支払は変えない。
      *
      * @param paymentId 支払 ID
      */
@@ -142,12 +142,12 @@ public class PaymentCommandService {
     }
 
     /**
-     * 決済サービスで開いた支払の画面を覚える。<br />
+     * 決済サービスで開いた支払画面を覚える。<br />
      * ほかの要求が先に画面を覚えていれば、その画面を返す。支払えなくなっていれば空を返す（呼ぶ側が開いた画面を閉じる）。
      *
      * @param orderId 注文 ID
-     * @param opened  開いた支払の画面
-     * @return 使う支払の画面。支払えなければ空
+     * @param opened  開いた支払画面
+     * @return 使う支払画面。支払えなければ空
      */
     public Optional<PaymentPage> recordPage(UUID orderId, PaymentPage opened) {
         var now = clock.instant();

@@ -10,10 +10,10 @@ const DOCS = {
 }
 
 /**
- * 文書の組に 1 つのファイルを足して、切れた参照を探す。
+ * 文書の組に 1 つのファイルを追加して、切れた参照を探す。
  *
- * @param {string} file 足すファイルのパス
- * @param {string} text 足すファイルの中身
+ * @param {string} file 追加するファイルのパス
+ * @param {string} text 追加するファイルの中身
  * @returns {string[]} 切れた参照の説明
  */
 function check(file, text) {
@@ -37,18 +37,18 @@ describe('文書の参照の検査', () => {
     assert.equal(referenceName('店舗画面（`frontend/store`）の構成'), '店舗画面の構成')
   })
 
-  test('範囲と並びは、両端と各番号を確かめる', () => {
+  test('範囲と並びは、両端と各番号を確認する', () => {
     assert.deepEqual(splitSectionNumbers('4〜6・8'), ['4', '6', '8'])
     assert.deepEqual(splitSectionNumbers('4、13'), ['4', '13'])
   })
 
-  test('文書の名前で書いた節を確かめる（コードのコメントも）', () => {
+  test('文書の名前で書いた節を確認する（コードのコメントも）', () => {
     const problems = check('backend/Foo.java', '// （店舗画面の構成 第 4.5 節）\n// （店舗画面の構成 第 4.2 節）')
     assert.equal(problems.length, 1)
     assert.match(problems[0], /第 4\.2 節/)
   })
 
-  test('リンク、パス、ファイル名で書いた節を確かめる', () => {
+  test('リンク、パス、ファイル名で書いた節を確認する', () => {
     const text = [
       '[開発の進め方](../process/workflow.md) 第 1.4 節',
       '[開発の進め方](../process/workflow.md) 第 3 節',
@@ -71,7 +71,7 @@ describe('文書の参照の検査', () => {
     assert.deepEqual(check('backend/Foo.java', '// plan 001 第 7 節、spec 003 の第 9 節'), [])
   })
 
-  test('リンクの先のファイルと見出しを確かめる', () => {
+  test('リンクの先のファイルと見出しを確認する', () => {
     const text = [
       '[a](../process/workflow.md#14-spec-と-plan-の書き方)',
       '[b](../process/workflow.md#2-tdd)',

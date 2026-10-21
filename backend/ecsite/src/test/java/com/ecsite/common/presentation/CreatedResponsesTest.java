@@ -35,7 +35,7 @@ class CreatedResponsesTest {
     }
 
     @Test
-    @DisplayName("管理 API：201 で、今のリクエストの URI に ID を足した Location と、作成した ID を返す")
+    @DisplayName("管理 API：201 で、今のリクエストの URI に ID を追加した Location と、作成した ID を返す")
     void createsAdminResponse() {
         var response = CreatedResponses.admin(ID);
 
@@ -47,7 +47,7 @@ class CreatedResponsesTest {
     }
 
     @Test
-    @DisplayName("店舗の API：201 で、今のリクエストの URI に ID を足した Location と、作成した ID を返す")
+    @DisplayName("店舗の API：201 で、今のリクエストの URI に ID を追加した Location と、作成した ID を返す")
     void createsStoreResponse() {
         var response = CreatedResponses.store(ID);
 
@@ -59,7 +59,7 @@ class CreatedResponsesTest {
     }
 
     @Test
-    @DisplayName("店舗の API：別のパスを指すときは、アプリの起点にパスと ID を足した Location を返す")
+    @DisplayName("店舗の API：別のパスを指すときは、アプリの起点にパスと ID を追加した Location を返す")
     void createsStoreResponseAtPath() {
         var response = CreatedResponses.storeAt("/api/store/orders/{id}", ID);
 

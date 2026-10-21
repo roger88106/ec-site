@@ -26,8 +26,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * モジュールの標準の構成の検査（docs/backend/coding.md 第 1 節、spec 005 DC-27〜30）。<br />
- * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確かめる。
- * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確かめる。
+ * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
+ * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
 class ModuleStructureTest {
 

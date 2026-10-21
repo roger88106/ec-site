@@ -207,13 +207,13 @@ class ProductImageApiTest {
         }
 
         @Test
-        @DisplayName("AC-39 アップロードしたファイルが 10MB を超えていれば、登録のときに大きさを確かめて 400")
+        @DisplayName("AC-39 アップロードしたファイルが 10MB を超えていれば、登録のときに大きさを確認して 400")
         void rejectsOversizedUploadOnRegister() throws Exception {
             var productId = productWithVariant();
             var body = createUpload(productId, "image/png", PNG.length)
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
             var uploadId = JsonPath.<String>read(body, "$.uploadId");
-            // 署名付き URL は大きさを含むので、ストレージが大きさを検証しない場合に備えた確認を、直接置いて確かめる
+            // 署名付き URL は大きさを含むので、ストレージが大きさを検証しない場合に備えた確認を、直接置いて確認する
             s3.putObject(request -> request.bucket(TestcontainersConfig.INCOMING_BUCKET).key(productId + "/" + uploadId),
                     RequestBody.fromBytes(Arrays.copyOf(PNG, MAX_BYTES + 1)));
 
@@ -223,7 +223,7 @@ class ProductImageApiTest {
         }
 
         @Test
-        @DisplayName("形式を偽ったファイル（中身が画像でない）は、登録のときに先頭のバイトで確かめて 400")
+        @DisplayName("形式を偽ったファイル（中身が画像でない）は、登録のときに先頭のバイトで確認して 400")
         void rejectsDisguisedFile() throws Exception {
             var productId = productWithVariant();
             var uploadId = upload(productId, "image/png", "これは画像ではない".getBytes());
@@ -274,7 +274,7 @@ class ProductImageApiTest {
             String pending = null;
             for (int i = 1; i <= 20; i++) {
                 if (i == 20) {
-                    // 20 枚目を登録する前に受け付けておいたものは、登録のときに確かめ直す
+                    // 20 枚目を登録する前に受け付けておいたものは、登録のときに確認し直す
                     pending = upload(productId, "image/png", PNG);
                 }
                 addImage(productId, upload(productId, "image/png", PNG), i).andExpect(status().isCreated());
@@ -453,7 +453,7 @@ class ProductImageApiTest {
     }
 
     /**
-     * 商品の詳細を取得し、200 を確かめて本文を返す
+     * 商品の詳細を取得し、200 を確認して本文を返す
      */
     private String detail(String productId) throws Exception {
         return mockMvc.perform(get(BASE + "/" + productId)).andExpect(status().isOk())
@@ -461,7 +461,7 @@ class ProductImageApiTest {
     }
 
     /**
-     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     * 要求を送って 201 を確認し、応答の本文の ID を返す
      */
     private String createdId(org.springframework.test.web.servlet.RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
@@ -469,7 +469,7 @@ class ProductImageApiTest {
     }
 
     /**
-     * 配信の URL を、認証なしで取得する（だれでも読めることを確かめる）
+     * 配信の URL を、認証なしで取得する（だれでも読めることを確認する）
      */
     private HttpResponse<byte[]> fetch(String url) throws IOException, InterruptedException {
         return http.send(HttpRequest.newBuilder(URI.create(url)).GET().build(), HttpResponse.BodyHandlers.ofByteArray());

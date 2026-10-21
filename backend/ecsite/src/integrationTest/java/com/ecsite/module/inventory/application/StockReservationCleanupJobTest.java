@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 引当の片付けのジョブの統合テスト（T017-01-01、AC-284、288、NFR-24）。<br />
- * ジョブはテストから呼ぶ。ほかのテストの引当も消えるので、自分の持ち主の引当だけを確かめる。
+ * ジョブはテストから呼ぶ。ほかのテストの引当も消えるので、自分の持ち主の引当だけを確認する。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)

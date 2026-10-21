@@ -50,7 +50,7 @@ public record Money(long yen) {
     /**
      * 加算する。
      *
-     * @param other 足す金額
+     * @param other 加える金額
      * @return 合計の金額
      */
     public Money plus(Money other) {

@@ -64,7 +64,7 @@ class JooqStockReservationRepository implements StockReservationRepository {
     }
 
     /**
-     * 持ち主の引当を消してから、指定した内容で作り直す。
+     * 持ち主の引当を消してから、指定した内容で再作成する。
      *
      * @param holderId              持ち主 ID
      * @param quantitiesByStockItem 在庫 ID → 数量

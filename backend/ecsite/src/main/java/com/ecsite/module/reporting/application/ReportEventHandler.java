@@ -23,7 +23,7 @@ class ReportEventHandler {
     private final ReportCollectionService reportCollectionService;
 
     /**
-     * 注文の状態の変化：履歴に足し、注文の写しを作り直す。
+     * 注文の状態の変化：履歴に追加し、注文の写しを再作成する。
      *
      * @param event 注文の状態の変化
      */
@@ -35,7 +35,7 @@ class ReportEventHandler {
     }
 
     /**
-     * 配送状態の変化：履歴に足し、注文の写しを作り直す。
+     * 配送状態の変化：履歴に追加し、注文の写しを再作成する。
      *
      * @param event 配送状態の変化
      */

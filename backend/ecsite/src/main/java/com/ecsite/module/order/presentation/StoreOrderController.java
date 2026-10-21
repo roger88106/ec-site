@@ -36,7 +36,7 @@ class StoreOrderController implements OrderApi {
     private final OrderCancellationService orderCancellationService;
 
     /**
-     * 支払の画面のサービス
+     * 支払画面のサービス
      */
     private final OrderPaymentPageService orderPaymentPageService;
 
@@ -75,7 +75,7 @@ class StoreOrderController implements OrderApi {
     }
 
     /**
-     * 支払の画面を開く。開いている画面があれば同じ画面
+     * 支払画面を開く。開いている画面があれば同じ画面
      *
      * @param orderId 注文 ID
      * @return Http 200 : {@link PaymentPage}

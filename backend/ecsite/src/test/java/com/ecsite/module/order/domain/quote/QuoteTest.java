@@ -31,7 +31,7 @@ class QuoteTest {
     private static final Shipping SHIPPING = new Shipping(Money.of(1000), STANDARD);
 
     @Test
-    @DisplayName("BR-7 小計は税込単価 × 数量。商品の合計に送料を足して総額になる")
+    @DisplayName("BR-7 小計は税込単価 × 数量。商品の合計に送料を加えて総額になる")
     void calculatesAmounts() {
         var shirt = item(variant(1800, true, false), 2, 10, STANDARD);
         var tea = item(variant(1234, true, false), 1, 10, REDUCED);

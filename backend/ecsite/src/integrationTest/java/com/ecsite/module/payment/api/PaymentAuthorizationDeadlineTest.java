@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 与信期限の統合テスト（T9110、AC-186、187、188、BR-20）。<br />
  * 与信の有効期間は 7 日、期限が近いとする長さは 2 日（既定）。支払は保存されて他のテストと共有されるので、
- * 注文 ID の一覧は、自分の注文を含むか・含まないかで確かめる。
+ * 注文 ID の一覧は、自分の注文を含むか・含まないかで確認する。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)
@@ -51,7 +51,7 @@ class PaymentAuthorizationDeadlineTest {
     MutableClock clock;
 
     /**
-     * 注文 ID → 支払の画面 ID（支払の後は画面の URL を引けないため、覚えておく）
+     * 注文 ID → 支払画面 ID（支払の後は画面の URL を引けないため、覚えておく）
      */
     private final Map<UUID, String> pageIds = new HashMap<>();
 
@@ -130,7 +130,7 @@ class PaymentAuthorizationDeadlineTest {
     }
 
     /**
-     * 支払の画面を開いて支払い、与信済みにする。
+     * 支払画面を開いて支払い、与信済みにする。
      */
     private UUID authorized() {
         var orderId = created();

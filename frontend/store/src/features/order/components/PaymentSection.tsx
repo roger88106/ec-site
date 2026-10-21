@@ -6,10 +6,10 @@ import { paymentState } from '@/features/order/orderState'
 
 /**
  * 注文の支払。支払待ちのときだけ出す。<br />
- * 支払えるなら支払の期限と「支払う」を、支払の画面から戻った直後なら「確認中」を、期限を過ぎたらまもなくキャンセルになることを示す。
+ * 支払えるなら支払の期限と「支払う」を、支払画面から戻った直後なら「確認中」を、期限を過ぎたらまもなくキャンセルになることを示す。
  *
  * @param order    注文
- * @param returned 支払の画面から戻った直後か
+ * @param returned 支払画面から戻った直後か
  */
 export function PaymentSection({
   order,

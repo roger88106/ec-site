@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 支払の期限切れのジョブの統合テスト（T7209、T7308、T017-06-03、AC-153、154、156、311、NFR-7）。<br />
- * ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確かめる。
+ * ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確認する。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)
@@ -72,7 +72,7 @@ class PaymentExpiryJobTest {
     }
 
     @Test
-    @DisplayName("AC-153 期限を過ぎた未払いの支払は、支払の画面を閉じて支払なしになり、期限切れのイベントが出る")
+    @DisplayName("AC-153 期限を過ぎた未払いの支払は、支払画面を閉じて支払なしになり、期限切れのイベントが出る")
     void expiresUnpaidPastDeadline() {
         var orderId = created();
         var pageId = openPage(orderId);
@@ -86,7 +86,7 @@ class PaymentExpiryJobTest {
     }
 
     @Test
-    @DisplayName("AC-153 支払の画面を開かなかった支払も、期限を過ぎたら支払なしになる")
+    @DisplayName("AC-153 支払画面を開かなかった支払も、期限を過ぎたら支払なしになる")
     void expiresWithoutPage() {
         var orderId = created();
 

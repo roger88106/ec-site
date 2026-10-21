@@ -1,8 +1,8 @@
 -- 支払のローカル用 seed
 -- R__ordering_seed.sql の注文の支払。金額は注文の総額、支払の期限は注文日時の 30 分後（既定）、与信の時刻は注文日時。
 -- 状態は、キャンセル済みの注文が与信の取消済み、受付とキャンセルの申請中の注文が与信済み。
--- 支払の画面 ID と与信の参照は mock の形。売上確定（出荷）は mock でだけ通り、Stripe では与信がないので失敗する。
--- 与信の時刻は seed を流した時刻から数えるので、DB を数日使い続けると与信期限が近い印が出る（DB を作り直せば戻る）。
+-- 支払画面 ID と与信の参照は mock の形。売上確定（出荷）は mock でだけ通り、Stripe では与信がないので失敗する。
+-- 与信の時刻は seed を流した時刻から数えるので、DB を数日使い続けると与信期限が近い印が出る（DB を再作成すれば戻る）。
 -- 支払は出荷やキャンセルで変わるので、seed の再実行で上書きしない
 
 INSERT INTO payment.payment (id, order_id, amount, deadline, status, page_id, page_url, authorization_ref, authorized_at,

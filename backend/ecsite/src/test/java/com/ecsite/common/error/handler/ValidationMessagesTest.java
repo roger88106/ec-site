@@ -88,7 +88,7 @@ class ValidationMessagesTest {
     @BeforeEach
     void setUp() {
         originalLocale = Locale.getDefault();
-        // 実行環境のロケールと要求のロケールが日本語でなくても、日本語になることを確かめる
+        // 実行環境のロケールと要求のロケールが日本語でなくても、日本語になることを確認する
         Locale.setDefault(Locale.US);
         LocaleContextHolder.setLocale(Locale.US);
         var messageSource = new ResourceBundleMessageSource();

@@ -79,7 +79,7 @@ export function loadServerConfig(env: Record<string, string | undefined> = proce
 }
 
 /**
- * 環境変数から設定を読む。確かめはせず、値がなければローカル用の既定の値にする。<br />
+ * 環境変数から設定を読む。確認はせず、値がなければローカル用の既定の値にする。<br />
  * モジュールの読み込みで使う（`next build` でも読まれるため）。本番で値がないときは、起動のとき
  * （{@link loadServerConfig}）にすでに失敗しているので、既定の値で動くことはない。
  *

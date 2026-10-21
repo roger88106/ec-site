@@ -15,17 +15,17 @@ import java.util.UUID;
 public interface PaymentGateway {
 
     /**
-     * 与信だけを取る支払の画面を作る。同じ要求で重ねて呼ばれても、決済サービスで支払は 1 つになるようにする。
+     * 与信だけを取る支払画面を作る。同じ要求で重ねて呼ばれても、決済サービスで支払は 1 つになるようにする。
      *
-     * @param request 支払の画面の要求
-     * @return 作った支払の画面
+     * @param request 支払画面の要求
+     * @return 作った支払画面
      */
     PaymentPage openPage(PageRequest request);
 
     /**
-     * 支払の画面を閉じ、それ以降は支払えないようにする。すでに閉じていれば成功とする。
+     * 支払画面を閉じ、それ以降は支払えないようにする。すでに閉じていれば成功とする。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 閉じた結果
      */
     CloseResult closePage(String pageId);
@@ -55,7 +55,7 @@ public interface PaymentGateway {
     void refund(RefundRequest request);
 
     /**
-     * 支払の画面の要求
+     * 支払画面の要求
      *
      * @param paymentId 支払 ID（決済サービスでの重複を防ぐ鍵に使う）
      * @param orderId   注文 ID
@@ -107,7 +107,7 @@ public interface PaymentGateway {
     }
 
     /**
-     * 支払の画面を閉じた結果
+     * 支払画面を閉じた結果
      */
     enum CloseResult {
 

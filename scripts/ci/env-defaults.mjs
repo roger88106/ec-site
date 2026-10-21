@@ -1,4 +1,4 @@
-// 環境変数の文書（docs/dev/environment.md）の既定値が、コードの設定の型の既定値と一致することを確かめる（バックエンドの書き方 第 6.1 節）。
+// 環境変数の文書（docs/dev/environment.md）の既定値が、コードの設定の型の既定値と一致することを確認する（バックエンドの書き方 第 6.1 節）。
 // - コードの既定値（@ConfigurationProperties の record の @DefaultValue）は、文書に同じ値である
 // - 文書に既定値（時間、数、真偽）を書いた設定は、コードも既定値を持つ
 // 環境変数の名前は、接頭辞と項目の名前から作る（ecsite.payment の expiryInterval → ECSITE_PAYMENT_EXPIRY_INTERVAL）。

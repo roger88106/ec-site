@@ -56,7 +56,7 @@ class PriceInclTaxFieldTest {
         dsl.insertInto(PRODUCT)
                 .set(PRODUCT.ID, id)
                 .set(PRODUCT.PRODUCT_CODE, "PIT-" + id.toString().substring(0, 8))
-                .set(PRODUCT.NAME, "税込価格の確かめ")
+                .set(PRODUCT.NAME, "税込価格の確認")
                 .set(PRODUCT.DESCRIPTION, "")
                 .set(PRODUCT.TAX_CATEGORY_ID, taxCategoryId)
                 .set(PRODUCT.PRICE_EXCL_TAX, priceExclTax)

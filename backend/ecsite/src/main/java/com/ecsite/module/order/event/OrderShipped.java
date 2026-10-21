@@ -6,7 +6,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文の出荷。出荷通知メールに要る値を載せる（通知は注文の API を呼ばない）。
+ * 注文の出荷。出荷通知メールに必要な値を載せる（通知は注文の API を呼ばない）。
  *
  * @param eventId        イベント ID
  * @param occurredAt     発生時刻（出荷日時）

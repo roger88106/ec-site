@@ -24,7 +24,7 @@ public final class TestCarrierNotifications {
      * 署名が誤っている通知を作る（本文は正しいが、署名は別の鍵で作ったもの）。
      *
      * @param valid 正しい署名の通知（{@link MockCarrier#notification} で作ったもの）
-     * @return 本文が同じで、署名を確かめられない通知
+     * @return 本文が同じで、署名を確認できない通知
      */
     public static SignedNotification withInvalidSignature(SignedNotification valid) {
         return new SignedNotification(valid.body(), new CarrierSignature(WRONG_SECRET).sign(valid.body()));

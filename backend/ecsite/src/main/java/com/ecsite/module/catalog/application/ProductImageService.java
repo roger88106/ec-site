@@ -37,7 +37,7 @@ public class ProductImageService {
     private final ProductLoader productLoader;
 
     /**
-     * 商品の参照のサービス（画像を加えられることの確かめ）
+     * 商品の参照のサービス（画像を加えられることの確認）
      */
     private final ProductQueryService queryService;
 
@@ -47,7 +47,7 @@ public class ProductImageService {
     private final ProductImageCommandService commandService;
 
     /**
-     * 画像のアップロードを受け付ける。枚数を確かめ、形式と大きさはメディアモジュールが確かめる。<br />
+     * 画像のアップロードを受け付ける。枚数を確認し、形式と大きさはメディアモジュールが確認する。<br />
      * 受付は DB に記録しない（受付の範囲を商品 ID にする。登録されなかったファイルはライフサイクル規則で消える）。
      *
      * @param productId     商品 ID
@@ -67,7 +67,7 @@ public class ProductImageService {
     /**
      * 受け付けた画像を登録する。<br />
      * 画像の変換と保存の間に DB の接続を持たないよう、トランザクションを分ける：
-     * 加えられることを確かめる → 画像を用意する（トランザクションの外）→ アセットの登録と商品への追加（1 つのトランザクション）。
+     * 加えられることを確認する → 画像を用意する（トランザクションの外）→ アセットの登録と商品への追加（1 つのトランザクション）。
      * 保存が失敗したら、用意した配信のファイルを消し、元の失敗を投げ直す。
      *
      * @param productId 商品 ID

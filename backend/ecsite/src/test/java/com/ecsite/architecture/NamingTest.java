@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * リポジトリと腐敗防止層の名前の形の検査（docs/backend/coding.md 第 5.2 節）。<br />
- * service とイベントの名前は、用途や時制の判断が要るので、レビューで確かめる。
+ * service とイベントの名前は、用途や時制の判断が必要なので、レビューで確認する。
  */
 class NamingTest {
 
@@ -52,7 +52,7 @@ class NamingTest {
     }
 
     @Test
-    @DisplayName("名前の規則は、置き場所と名前の合わない例に当たる（合う例は本番のクラスで確かめる）")
+    @DisplayName("名前の規則は、置き場所と名前の合わない例に当たる（合う例は本番のクラスで確認する）")
     void rulesMatchMisplacedAndMisnamedExamples() {
         var examples = new ClassFileImporter().importClasses(
                 ExampleRepository.class, ExampleQueryRepository.class, ExampleDirectory.class,

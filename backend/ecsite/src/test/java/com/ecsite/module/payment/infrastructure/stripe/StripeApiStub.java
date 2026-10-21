@@ -14,7 +14,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
- * Stripe の API の代わりに立てる、手元の HTTP サーバー。sandbox で記録した応答の形（要る項目だけ）を返す。<br />
+ * Stripe の API の代わりに立てる、手元の HTTP サーバー。sandbox で記録した応答の形（必要な項目だけ）を返す。<br />
  * 返す応答はテストが決め、決めていない要求には 404（resource_missing）を返す。
  */
 final class StripeApiStub implements AutoCloseable {
@@ -123,7 +123,7 @@ final class StripeApiStub implements AutoCloseable {
      * Checkout Session の応答。
      *
      * @param id     Session の ID
-     * @param url    支払の画面の URL
+     * @param url    支払画面の URL
      * @param status 状態
      * @return 本文
      */

@@ -15,7 +15,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
- * テストで使う決済サービス。本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を足す。<br />
+ * テストで使う決済サービス。本番の mock（{@link MockPaymentGateway}）を包み、テストだけで使う操作を追加する。<br />
  * 通知の遅れ・重複・順序の入れ替わりや、取消・売上確定・返金の失敗を起こし、呼ばれた操作を記録する。
  * 本番の jar に入れないため、テストで共有するソースに置く。
  */
@@ -27,12 +27,12 @@ public class TestPaymentGateway implements PaymentGateway {
     private final MockPaymentGateway mock;
 
     /**
-     * 作った支払の画面の数
+     * 作った支払画面の数
      */
     private final AtomicInteger openedPages = new AtomicInteger();
 
     /**
-     * これから接続できないことにする支払の画面の作成の回数
+     * これから接続できないことにする支払画面の作成の回数
      */
     private final AtomicInteger openFailures = new AtomicInteger();
 
@@ -100,7 +100,7 @@ public class TestPaymentGateway implements PaymentGateway {
     @Override
     public PaymentPage openPage(PageRequest request) {
         if (consume(openFailures)) {
-            throw SystemException.of("mock：支払の画面を作れなくする: " + request.paymentId(), null,
+            throw SystemException.of("mock：支払画面を作れなくする: " + request.paymentId(), null,
                     PaymentErrorCode.PAYMENT_GATEWAY_UNAVAILABLE);
         }
         openedPages.incrementAndGet();
@@ -156,12 +156,12 @@ public class TestPaymentGateway implements PaymentGateway {
         }
     }
 
-// ============================== 支払の画面の操作（本番の mock に渡す） ==============================
+// ============================== 支払画面の操作（本番の mock に渡す） ==============================
 
     /**
      * 支払う：決済サービスで支払を済ませ、与信の成功を通知する。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      */
     public void pay(String pageId) {
         mock.pay(pageId);
@@ -170,7 +170,7 @@ public class TestPaymentGateway implements PaymentGateway {
     /**
      * 決済サービスで支払を済ませるが、まだ通知しない（通知の遅れ）。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      */
     public void markPaid(String pageId) {
         mock.markPaid(pageId);
@@ -179,16 +179,16 @@ public class TestPaymentGateway implements PaymentGateway {
     /**
      * 与信の成功を通知する。重ねて呼ぶと、重ねて届いた通知になる。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      */
     public void notifyAuthorized(String pageId) {
         mock.notifyAuthorized(pageId);
     }
 
     /**
-     * 支払の画面を返す。
+     * 支払画面を返す。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 画面。知らない画面なら空
      */
     public Optional<MockPaymentGateway.Page> page(String pageId) {
@@ -196,9 +196,9 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 与信の参照を返す。支払の画面ごとに決まる。
+     * 与信の参照を返す。支払画面ごとに決まる。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 与信の参照
      */
     public String authorizationRefOf(String pageId) {
@@ -217,7 +217,7 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 次の支払の画面の作成を、指定した回数だけ、決済サービスに接続できないこと（外部サービスのエラー）にする。
+     * 次の支払画面の作成を、指定した回数だけ、決済サービスに接続できないこと（外部サービスのエラー）にする。
      *
      * @param times 接続できなくする回数
      */
@@ -307,16 +307,16 @@ public class TestPaymentGateway implements PaymentGateway {
     }
 
     /**
-     * 作った支払の画面の数を返す。
+     * 作った支払画面の数を返す。
      *
-     * @return 作った支払の画面の数（最後に状態を消してから）
+     * @return 作った支払画面の数（最後に状態を消してから）
      */
     public int openedPages() {
         return openedPages.get();
     }
 
     /**
-     * テストだけで使う状態を最初に戻す。本番の mock の支払の画面は残す（ID が毎回違うので、他のテストに影響しない）。
+     * テストだけで使う状態を最初に戻す。本番の mock の支払画面は残す（ID が毎回違うので、他のテストに影響しない）。
      */
     public void reset() {
         openedPages.set(0);

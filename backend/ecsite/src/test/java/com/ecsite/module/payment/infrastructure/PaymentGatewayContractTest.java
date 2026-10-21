@@ -34,7 +34,7 @@ public abstract class PaymentGatewayContractTest {
     protected static final Money AMOUNT = Money.of(6940);
 
     /**
-     * @return 確かめる実装
+     * @return 確認する実装
      */
     protected abstract PaymentGateway gateway();
 
@@ -74,16 +74,16 @@ public abstract class PaymentGatewayContractTest {
     protected abstract void givenRefunded(String authorizationRef);
 
     /**
-     * 支払の済んだ支払の画面を用意する。
+     * 支払の済んだ支払画面を用意する。
      *
-     * @return 支払の画面 ID
+     * @return 支払画面 ID
      */
     protected abstract String paidPage();
 
     /**
-     * 閉じた支払の画面を用意する。
+     * 閉じた支払画面を用意する。
      *
-     * @return 支払の画面 ID
+     * @return 支払画面 ID
      */
     protected abstract String closedPage();
 

@@ -1,4 +1,4 @@
-// ロールと権限の対応表（docs/design/role-permissions.md）が、API の契約と運営者の realm の設定と一致することを確かめる。
+// ロールと権限の対応表（docs/design/role-permissions.md）が、API の契約と運営者の realm の設定と一致することを確認する。
 // 表は、管理 API の各操作の x-required-permission、運営者の realm のロール、店舗 API の各操作の security から作る。
 // 使い方：node scripts/ci/role-permissions.mjs（リポジトリのルートで。--write で文書の表を書き直す）
 import { readFileSync, writeFileSync } from 'node:fs'
@@ -163,10 +163,10 @@ export function renderTables({ admin, store, realm }) {
 }
 
 /**
- * 文書の生成の範囲と、作り直した表を比べる。
+ * 文書の生成の範囲と、再作成した表を比べる。
  *
  * @param {string} document 文書
- * @param {string} markdown 作り直した表
+ * @param {string} markdown 再作成した表
  * @returns {string[]} 食い違い（なければ空）
  */
 export function checkDocument(document, markdown) {
@@ -176,15 +176,15 @@ export function checkDocument(document, markdown) {
   const current = `${document.slice(from + START.length, to).trim()}\n`
   if (current === markdown) return []
   return [
-    '文書の対応表が、契約と realm の設定から作った表と違う。node scripts/ci/role-permissions.mjs --write で書き直し、差分を確かめる',
+    '文書の対応表が、契約と realm の設定から作った表と違う。node scripts/ci/role-permissions.mjs --write で書き直し、差分を確認する',
   ]
 }
 
 /**
- * 文書の生成の範囲を、作り直した表に置き換える。
+ * 文書の生成の範囲を、再作成した表に置き換える。
  *
  * @param {string} document 文書
- * @param {string} markdown 作り直した表
+ * @param {string} markdown 再作成した表
  * @returns {string} 置き換えた文書
  */
 export function replaceGenerated(document, markdown) {

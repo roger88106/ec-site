@@ -40,7 +40,7 @@ export async function addToCart(_previous: ActionResult | null, formData: FormDa
         return result.response.status === 404 ? CART_NOT_FOUND : result
       },
     )
-    // 作り直したときは新しい ID を、そうでなくても有効期限を延ばすために書く
+    // 再作成したときは新しい ID を、そうでなくても有効期限を延ばすために書く
     await writeCartId(cartId)
     if (!value.response.ok) {
       return toFailure(value.response.status, value.error)

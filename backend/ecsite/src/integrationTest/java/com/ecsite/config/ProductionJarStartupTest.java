@@ -20,8 +20,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 本番の jar の起動の失敗の統合テスト（docs/backend/architecture.md 第 7.3 節）。<br />
  * 本番の jar には、ローカルの設定ファイルが入らない。ローカルの設定から物流の mock フラグだけを除いて渡し、
- * 本番の jar を別のプロセスで起動して、フラグの名前を出して止まることを確かめる。
- * Spring のコンテキストを 1 つのテストの中で作るテストでは、Bean を作る順が本番の jar と違い、確かめられないため。
+ * 本番の jar を別のプロセスで起動して、フラグの名前を出して止まることを確認する。
+ * Spring のコンテキストを 1 つのテストの中で作るテストでは、Bean を作る順が本番の jar と違い、確認できないため。
  */
 class ProductionJarStartupTest {
 

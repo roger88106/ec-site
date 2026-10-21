@@ -34,7 +34,7 @@ class PaymentTest {
     private static final String AUTHORIZATION_REF = "pi_test_1";
 
     @Test
-    @DisplayName("BR-15 支払は「未払い」で作られ、支払の画面はまだない")
+    @DisplayName("BR-15 支払は「未払い」で作られ、支払画面はまだない")
     void createsUnpaid() {
         var orderId = UUID.randomUUID();
 
@@ -49,7 +49,7 @@ class PaymentTest {
     }
 
     @Nested
-    @DisplayName("支払の画面")
+    @DisplayName("支払画面")
     class Page {
 
         @Test

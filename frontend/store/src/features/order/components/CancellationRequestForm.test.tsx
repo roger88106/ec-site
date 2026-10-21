@@ -6,11 +6,11 @@ import { CancellationRequestForm } from '@/features/order/components/Cancellatio
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { renderInBrowser, renderMarkup } from '@/test/render'
 
-// 申請はサーバーアクションを通るので、送る前の確かめ（ブラウザーの中だけで終わる操作）だけを確かめる（テストの書き方 第 1 節）
+// 申請はサーバーアクションを通るので、送る前の確認（ブラウザーの中だけで終わる操作）だけを確認する（テストの書き方 第 1 節）
 vi.mock('@/actions/order', () => ({ requestCancellation: vi.fn(async () => ({ ok: true })) }))
 
 describe('キャンセルの申請', () => {
-  test('理由の欄と上限を出し、送る前に確かめて、やめると申請しない', async () => {
+  test('理由の欄と上限を出し、送る前に確認して、やめると申請しない', async () => {
     const confirm = vi.spyOn(window, 'confirm').mockReturnValue(false)
     const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
 

@@ -24,7 +24,7 @@ import {
 /** バリアント軸の上限 */
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
 
-/** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を足したもの） */
+/** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を追加したもの） */
 type Values = ProductFieldsValues & {
   productCode: string
   axes: { name: string }[]

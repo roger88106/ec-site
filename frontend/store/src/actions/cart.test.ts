@@ -46,7 +46,7 @@ describe('カートに入れる（ゲスト）', () => {
     expect(cookieOptions('cart_id')).toMatchObject({ maxAge: 30 * 24 * 60 * 60 })
   })
 
-  test('Cookie のカートがもうなければ、カートを作り直して 1 回だけやり直す', async () => {
+  test('Cookie のカートがもうなければ、カートを再作成して 1 回だけやり直す', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
     server.use(
       http.post('/carts', ({ response }) => response(201).json({ id: NEW_CART_ID })),

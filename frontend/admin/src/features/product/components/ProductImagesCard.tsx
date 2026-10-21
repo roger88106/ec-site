@@ -54,7 +54,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
   })
   const group = useMutationGroup(upload, reorder, remove)
   const { pending, error } = group
-  // 画面で確かめた誤りと、管理 API の外での失敗は、メッセージをそのまま出す
+  // 画面で確認した誤りと、管理 API の外での失敗は、メッセージをそのまま出す
   const localError = fileError ?? (error instanceof ImageUploadError ? error.message : null)
   /** 前の操作の誤りを消す（次の操作を始めるとき） */
   const resetErrors = () => {
@@ -62,7 +62,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
     group.resetErrors()
   }
 
-  /** 選んだファイルを、形式・大きさ・枚数を確かめてから登録する。誤りがあれば 1 枚も送らない */
+  /** 選んだファイルを、形式・大きさ・枚数を確認してから登録する。誤りがあれば 1 枚も送らない */
   const selectFiles = (files: File[]) => {
     resetErrors()
     const invalid = files.map(imageFileError).find((error) => error !== null)

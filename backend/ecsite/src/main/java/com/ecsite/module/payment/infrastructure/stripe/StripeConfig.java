@@ -33,7 +33,7 @@ class StripeConfig {
     }
 
     /**
-     * Stripe の API のビルダー（テストが、設定の渡り方を確かめるため）。
+     * Stripe の API のビルダー（テストが、設定の渡り方を確認するため）。
      *
      * @param properties Stripe の設定
      * @return Stripe の API のビルダー
@@ -58,7 +58,7 @@ class StripeConfig {
     }
 
     /**
-     * @param receiver   通知の受け口
+     * @param receiver   通知の port
      * @param properties Stripe の設定
      * @param clock      時計
      * @return Stripe の通知の受け取り

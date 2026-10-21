@@ -22,7 +22,7 @@ import java.util.function.BiFunction;
 
 /**
  * OpenAPI の契約の操作（メソッドとパス）ごとの値。管理 API の権限と、店舗 API の token の要否に使う。<br />
- * パスは {@code servers.url} を前に付け、具体的なパスを変数を含むパスより先に照らす
+ * パスは {@code servers.url} を前に付け、具体的なパスを変数を含むパスより先に照合する
  * （{@code /categories/order} を {@code /categories/{categoryId}} より先）。
  *
  * @param <T> 操作ごとの値

@@ -170,7 +170,7 @@ class JooqTaxCategoryRepositoryTest {
     @Test
     @DisplayName("リポジトリが名前で指す排他制約が、マイグレーションに、検査を遅らせる設定で存在する")
     void periodNoOverlapConstraintExists() {
-        // jOOQ は排他制約のコードを生成しないので、名前のずれをコンパイルで検出できない。ここで確かめる
+        // jOOQ は排他制約のコードを生成しないので、名前のずれをコンパイルで検出できない。ここで確認する
         var constraint = dsl.fetchOne("""
                         SELECT c.contype, c.condeferrable, c.condeferred
                         FROM pg_constraint c

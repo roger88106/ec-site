@@ -79,7 +79,7 @@ public enum OrderErrorCode implements ErrorCodeProvider {
      */
     AWAITING_PAYMENT(ErrorType.BUSINESS_RULE_ERROR),
     /**
-     * 支払えない注文の支払の画面（支払待ちでない、支払の期限の後）
+     * 支払えない注文の支払画面（支払待ちでない、支払の期限の後）
      */
     ORDER_NOT_PAYABLE(ErrorType.CONFLICT_ERROR),
     /**

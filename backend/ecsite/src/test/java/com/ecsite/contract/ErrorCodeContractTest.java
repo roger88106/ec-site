@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * エラーのコードの契約テスト（docs/api/conventions.md 第 5 節）。<br />
  * API ごとに、全体の列挙（{@code ErrorCode}）が、操作ごとの一覧（{@code x-error-codes}）と共通のエラー
- * （{@code x-common-error-codes}）の和と一致し、バックエンドのエラーのコードと過不足なく一致することを確かめる。
+ * （{@code x-common-error-codes}）の和と一致し、バックエンドのエラーのコードと過不足なく一致することを確認する。
  */
 class ErrorCodeContractTest {
 

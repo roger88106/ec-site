@@ -38,7 +38,7 @@ export const TEST_OPERATOR_NAME = '管理 花子'
  *
  * @param url 開く画面の URL（例：/tax-categories）
  * @param options.permissions 運営者の権限（既定は {@link ALL_PERMISSIONS}）
- * @returns 操作に使う user（user-event）、URL を確かめるための router、ログアウトの操作（呼ばれたかを確かめる）
+ * @returns 操作に使う user（user-event）、URL を確認するための router、ログアウトの操作（呼ばれたかを確認する）
  */
 export function renderApp(url: string, { permissions = ALL_PERMISSIONS }: { permissions?: readonly string[] } = {}) {
   server.use(http.get('/me', ({ response }) => response(200).json({ permissions: [...permissions] })))

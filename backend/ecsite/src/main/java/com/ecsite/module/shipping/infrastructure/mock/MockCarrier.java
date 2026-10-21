@@ -18,7 +18,7 @@ import java.time.Instant;
 
 /**
  * mock の物流サービス（docs/backend/modules/shipping.md「mock」）。<br />
- * 署名付きの通知を作り、HTTP で通知の受け口に送る。本物の物流サービスと同じ道（署名の検証を含む）を通す。
+ * 署名付きの通知を作り、HTTP で通知のエンドポイントに送る。本物の物流サービスと同じ道（署名の検証を含む）を通す。
  * mock の画面のボタンと、テストのコードが使う。通知の重複は同じ通知を重ねて送り、順序の入れ替わりと途中の欠けは
  * 送る順序と内容を選び、署名の誤りと合わない送り状番号は、通知を作る口で選べる。
  */
@@ -27,7 +27,7 @@ import java.time.Instant;
 public class MockCarrier {
 
     /**
-     * 受け口の応答を待つ時間の上限
+     * エンドポイントの応答を待つ時間の上限
      */
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
@@ -79,11 +79,11 @@ public class MockCarrier {
     }
 
     /**
-     * 通知を、HTTP で通知の受け口に送る。
+     * 通知を、HTTP で通知のエンドポイントに送る。
      *
-     * @param baseUrl      バックエンドの URL（受け口を持つサーバー）
+     * @param baseUrl      バックエンドの URL（エンドポイントを持つサーバー）
      * @param notification 署名付きの通知
-     * @return 受け口の応答のステータス
+     * @return エンドポイントの応答のステータス
      */
     public int send(String baseUrl, SignedNotification notification) {
         return restClient.post()

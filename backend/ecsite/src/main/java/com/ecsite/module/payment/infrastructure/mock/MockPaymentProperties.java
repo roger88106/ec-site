@@ -7,7 +7,7 @@ import org.springframework.validation.annotation.Validated;
 /**
  * mock の決済サービスの設定。決済の mock フラグ（{@code ecsite.payment.mock.enabled}）を立てたときだけ使う。
  *
- * @param baseUrl mock の支払の画面を出すバックエンドの URL（ブラウザーから開ける URL）
+ * @param baseUrl mock の支払画面を出すバックエンドの URL（ブラウザーから開ける URL）
  */
 @Validated
 @ConfigurationProperties("ecsite.payment.mock")

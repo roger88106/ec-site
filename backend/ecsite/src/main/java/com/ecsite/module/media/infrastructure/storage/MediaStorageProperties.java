@@ -40,7 +40,7 @@ public record MediaStorageProperties(
         @DefaultValue("30s") Duration callTimeout) {
 
     /**
-     * 署名付き URL の有効期間を変えた設定を返す（テストで期限切れを確かめるため）。
+     * 署名付き URL の有効期間を変えた設定を返す（テストで期限切れを確認するため）。
      *
      * @param uploadUrlTtl 署名付き URL の有効期間
      * @return 設定
@@ -51,7 +51,7 @@ public record MediaStorageProperties(
     }
 
     /**
-     * S3 の宛先と待つ時間の上限を変えた設定を返す（テストで、応答しない S3 を確かめるため）。
+     * S3 の宛先と待つ時間の上限を変えた設定を返す（テストで、応答しない S3 を確認するため）。
      *
      * @param endpoint       S3 のエンドポイント
      * @param attemptTimeout 1 回の試行を待つ時間の上限

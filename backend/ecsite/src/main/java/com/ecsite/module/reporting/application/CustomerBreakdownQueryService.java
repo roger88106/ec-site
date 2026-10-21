@@ -26,7 +26,7 @@ import java.util.stream.Collectors;
 /**
  * 地域・年齢層・性別（docs/backend/modules/reporting.md「地域・年齢層・性別」）。<br />
  * 都道府県・年齢・性別の組ごとに SQL で集計し、3 つの分け方へのまとめは Java で行う。
- * 注文は 1 つの組にだけ入るので、組の注文件数を足し合わせても、同じ注文を 2 回数えない。
+ * 注文は 1 つの組にだけ入るので、組の注文件数を合算しても、同じ注文を 2 回数えない。
  */
 @Service
 @RequiredArgsConstructor
@@ -101,10 +101,10 @@ public class CustomerBreakdownQueryService {
         static final Total ZERO = new Total(Money.ZERO, 0);
 
         /**
-         * 2 つの合計を足す。
+         * 2 つの合計を加える。
          *
-         * @param other 足す合計
-         * @return 足した合計
+         * @param other 加える合計
+         * @return 加えた合計
          */
         Total plus(Total other) {
             return new Total(amount.plus(other.amount), orders + other.orders);

@@ -40,13 +40,13 @@ async function memberCartWith(page: Page, code: string, count = 1) {
   }
 }
 
-test('AC-143、145、146、147、149 注文すると mock の支払の画面に移り、支払うと注文の画面に戻って受付になり、注文した品目がカートから除かれる', async ({
+test('AC-143、145、146、147、149 注文すると mock の支払画面に移り、支払うと注文の画面に戻って受付になり、注文した品目がカートから除かれる', async ({
   page,
 }) => {
   // 品目が複数の注文でも、与信の後にカートから除ける（T7407）
   await memberCartWith(page, 'PAY', 2)
 
-  await test.step('注文手続き：カードの入力はなく、注文すると mock の支払の画面に移る（AC-143、145）', async () => {
+  await test.step('注文手続き：カードの入力はなく、注文すると mock の支払画面に移る（AC-143、145）', async () => {
     await page.goto(`${STORE_URL}/cart`)
     await page.getByRole('button', { name: '注文手続きへ進む' }).click()
     await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
@@ -71,7 +71,7 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
   await memberCartWith(page, 'DECLINE')
   await orderCart(page)
 
-  await test.step('カードを拒否させると、支払の画面に拒否が出る。やめて注文の画面に戻ると、注文は支払待ちのまま', async () => {
+  await test.step('カードを拒否させると、支払画面に拒否が出る。やめて注文の画面に戻ると、注文は支払待ちのまま', async () => {
     await page.getByRole('button', { name: 'カードを拒否させる' }).click()
     await expect(page.getByText('カードが拒否されました。別のカードでやり直してください。')).toBeVisible()
     await page.getByRole('button', { name: 'やめる' }).click()
@@ -80,7 +80,7 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
     await expect(detailValue(page, '状態')).toHaveText('支払待ち')
   })
 
-  await test.step('注文の画面から支払の画面を開き直して支払うと、受付になる', async () => {
+  await test.step('注文の画面から支払画面を開き直して支払うと、受付になる', async () => {
     await page.getByRole('button', { name: '支払う' }).click()
     await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
     await payOnMockPage(page)
@@ -88,13 +88,13 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
 })
 
 test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限切れでキャンセルになる', async ({ page }) => {
-  // 支払の期限と、期限切れを見る間隔を待つ（注文までの操作の分を足す）
+  // 支払の期限と、期限切れを見る間隔を待つ（注文までの操作の分を追加する）
   test.setTimeout(PAYMENT_EXPIRY_TIMEOUT + ASYNC_TIMEOUT)
   await memberCartWith(page, 'EXPIRE')
   await orderCart(page)
   let orderUrl = ''
 
-  await test.step('支払の画面でやめると、注文の画面に戻り、注文は支払待ちのまま', async () => {
+  await test.step('支払画面でやめると、注文の画面に戻り、注文は支払待ちのまま', async () => {
     await page.getByRole('button', { name: 'やめる' }).click()
     await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
     orderUrl = page.url().split('?')[0]

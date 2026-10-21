@@ -44,7 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * カートの変更の受け入れテスト（T2207、US-14、15）。<br />
  * 商品は B 側の API で作る。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
- * 在庫モジュールのリポジトリで直接作る。カートの中身は、表示の API（段階 3）の代わりに DB で確かめる。テストごとにロールバックする。
+ * 在庫モジュールのリポジトリで直接作る。カートの中身は、表示の API（段階 3）の代わりに DB で確認する。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -184,7 +184,7 @@ class CartApiTest {
     class ChangeItem {
 
         @Test
-        @DisplayName("AC-78 数量を変更できる。増やすときは販売可能数を超えると 400、減らすときは確かめない")
+        @DisplayName("AC-78 数量を変更できる。増やすときは販売可能数を超えると 400、減らすときは確認しない")
         void changesQuantity() throws Exception {
             var variant = stockedVariant(3);
             add(cartId, variant, 3).andExpect(status().isNoContent());

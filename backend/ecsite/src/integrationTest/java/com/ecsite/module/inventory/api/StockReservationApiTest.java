@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 引当の統合テスト（T2105、BR-11、AC-83）。<br />
- * 同時の引当を確かめるため、操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
+ * 同時の引当を確認するため、操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest
 @Import(TestClockConfig.class)

@@ -86,7 +86,7 @@ public class TestcontainersConfig {
     }
 
     /**
-     * SeaweedFS コンテナ。docker/compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確かめるため）。<br />
+     * SeaweedFS コンテナ。docker/compose.yaml と同じイメージを使い、資格情報を検証させる（署名付き URL の署名・期限を確認するため）。<br />
      * 起動したら、受付・配信のバケットを作り、配信のバケットをだれでも読めるようにする。
      *
      * @param network コンテナ同士のネットワーク

@@ -194,7 +194,7 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     // IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
     systemProperty("keycloak.realms.dir", file("../../docker/keycloak/realms").absolutePath)
     systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
-    // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照らす）
+    // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照合する）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
     // 本番の jar の起動の統合テスト（ProductionJarStartupTest）が別のプロセスで起動する jar
@@ -228,7 +228,7 @@ tasks.register<JavaExec>("generateRegionMigration") {
 
 // -----------------------------------------------------------------------------
 // Javadoc の書き漏れ（コメントの書き方 第 2 節）
-//   Checkstyle で、本番のコード（src/main/java）のクラスとメンバー（private を含む）に Javadoc があることを確かめる。
+//   Checkstyle で、本番のコード（src/main/java）のクラスとメンバー（private を含む）に Javadoc があることを確認する。
 //   Javadoc があるかだけを見て、@param・@return は見ない。
 //   生成したコード（jOOQ、OpenAPI。build/ の下）、上書き（@Override）、テストは見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
@@ -371,7 +371,7 @@ val licensePolicyTask = tasks.register("licensePolicy") {
 
 tasks.named("checkLicense") {
     dependsOn(licensePolicyTask)
-    // 依存の名前の正規化は設定のときに読むので、方針が変わったら報告も作り直す
+    // 依存の名前の正規化は設定のときに読むので、方針が変わったら報告も再作成する
     inputs.file(licensePolicyFile)
 }
 tasks.named("generateLicenseReport") { inputs.file(licensePolicyFile) }
@@ -552,7 +552,7 @@ tasks.bootJar {
 }
 
 val checkBootJar = tasks.register("checkBootJar") {
-    description = "本番の jar に、ローカル・E2E・Stripe の sandbox の設定ファイルがないことを確かめる"
+    description = "本番の jar に、ローカル・E2E・Stripe の sandbox の設定ファイルがないことを確認する"
     group = "verification"
     val jar = tasks.bootJar.flatMap { it.archiveFile }
     inputs.file(jar)
@@ -575,7 +575,7 @@ tasks.check { dependsOn(checkBootJar) }
 val testSourceSetNames = listOf("test", "integrationTest", "testFixtures")
 
 val checkTestClassNames = tasks.register("checkTestClassNames") {
-    description = "テストのソースセットの間に、同じ完全修飾名のクラスがないことを確かめる"
+    description = "テストのソースセットの間に、同じ完全修飾名のクラスがないことを確認する"
     group = "verification"
     val roots = testSourceSetNames.associateWith { name -> layout.projectDirectory.dir("src/$name/java") }
     roots.values.forEach { root -> inputs.dir(root).optional() }

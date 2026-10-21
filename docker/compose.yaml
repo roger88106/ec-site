@@ -144,7 +144,7 @@ services:
       retries: 40
 
   # E2E 用の IdP（plan 004 第 6.1 節）。http://localhost:8181。profile e2e でだけ起動する
-  # E2E の準備の script（e2e/scripts/prepare.ts）が、database keycloak_e2e を作り直してから起動するので、
+  # E2E の準備の script（e2e/scripts/prepare.ts）が、database keycloak_e2e を再作成してから起動するので、
   # 毎回、realm の JSON の状態から始まる。E2E で登録した会員は、ローカルの Keycloak に残らない
   keycloak-e2e:
     image: quay.io/keycloak/keycloak:26.8.0

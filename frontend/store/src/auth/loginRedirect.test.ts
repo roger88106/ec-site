@@ -3,7 +3,7 @@ import { NextRequest } from 'next/server'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { IDP, server } from '@/test/server'
 
-// Auth.js の本物のリクエストの処理で、IdP への移動の戻り先を確かめる（ほかのテストは Auth.js を置き換えている）
+// Auth.js の本物のリクエストの処理で、IdP への移動の戻り先を確認する（ほかのテストは Auth.js を置き換えている）
 vi.unmock('next-auth')
 vi.unmock('next-auth/providers/keycloak')
 

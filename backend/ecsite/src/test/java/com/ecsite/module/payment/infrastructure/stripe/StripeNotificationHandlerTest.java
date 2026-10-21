@@ -36,7 +36,7 @@ class StripeNotificationHandlerTest {
     private static final Instant NOW = Instant.parse("2026-10-14T01:00:00Z");
 
     /**
-     * 記録した与信の成功の通知の、支払の画面 ID（Checkout Session の ID）
+     * 記録した与信の成功の通知の、支払画面 ID（Checkout Session の ID）
      */
     private static final String SESSION_ID = "cs_test_a1l1Todxlu6jrshMOHxtmijZ8KZp5kS23b1vuEz7n2yUXPUxhfh3irtv9o";
 
@@ -46,7 +46,7 @@ class StripeNotificationHandlerTest {
     private static final String PAYMENT_INTENT_ID = "pi_3UQ8lrCajA2Qja1L0sDl4sX9";
 
     /**
-     * 記録した期限切れの通知の、支払の画面 ID
+     * 記録した期限切れの通知の、支払画面 ID
      */
     private static final String EXPIRED_SESSION_ID = "cs_test_a1zewRjUghE0UY9BsbiwwxGmd9XVfiSll2NRfTbJcHbzBjHVBYFqfbZO2N";
 
@@ -62,7 +62,7 @@ class StripeNotificationHandlerTest {
             new StripeNotificationHandler(receiver, WEBHOOK_SECRET, Clock.fixed(NOW, ZoneOffset.UTC));
 
     @Test
-    @DisplayName("BR-17 署名の合う与信の成功の通知を、支払の画面 ID と与信の参照に直して渡す")
+    @DisplayName("BR-17 署名の合う与信の成功の通知を、支払画面 ID と与信の参照に直して渡す")
     void passesAuthorization() {
         var payload = recorded("checkout-session-completed.json");
 
@@ -72,7 +72,7 @@ class StripeNotificationHandlerTest {
     }
 
     @Test
-    @DisplayName("BR-17 署名の合う期限切れの通知を、支払の画面の期限切れとして渡す")
+    @DisplayName("BR-17 署名の合う期限切れの通知を、支払画面の期限切れとして渡す")
     void passesPageExpiry() {
         var payload = recorded("checkout-session-expired.json");
 
@@ -174,7 +174,7 @@ class StripeNotificationHandlerTest {
     }
 
     /**
-     * 受け取った通知を記録する受け口
+     * 受け取った通知を記録する port
      */
     private static final class RecordingReceiver implements PaymentNotificationReceiver {
 

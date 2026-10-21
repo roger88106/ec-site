@@ -33,7 +33,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 在庫の調整の統合テスト（T406）。<br />
- * 並行調整（AC-44）を確かめるため、調整ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
+ * 並行調整（AC-44）を確認するため、調整ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest
 class JooqStockItemRepositoryTest {
@@ -72,7 +72,7 @@ class JooqStockItemRepositoryTest {
     }
 
     @Test
-    @DisplayName("AC-42 増減量を足し、調整後の在庫数を返す")
+    @DisplayName("AC-42 増減量を加え、調整後の在庫数を返す")
     void adjusts() {
         assertThat(adjust(10, StockAdjustmentReason.ARRIVAL)).isEqualTo(10);
         assertThat(adjust(-3, StockAdjustmentReason.DAMAGE_OR_LOSS)).isEqualTo(7);

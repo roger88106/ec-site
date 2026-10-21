@@ -59,10 +59,10 @@ class JooqReportOrderRepository implements ReportOrderRepository {
     }
 
     /**
-     * 状態の履歴に 1 行足す。同じイベント ID の行があれば何もしない。
+     * 状態の履歴に 1 行追加する。同じイベント ID の行があれば何もしない。
      *
      * @param entry 履歴の行
-     * @return 足したら true
+     * @return 追加したら true
      */
     @Override
     public boolean appendHistory(StatusHistoryEntry entry) {

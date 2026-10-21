@@ -10,7 +10,7 @@ import java.util.regex.Pattern;
 
 /**
  * お届け先。郵便番号と電話番号はハイフンを除いた数字で持つ。<br />
- * 都道府県と市区町村がマスターデータにあるかは、作る前に注文の確定で確かめる（地域の API）。
+ * 都道府県と市区町村がマスターデータにあるかは、作る前に注文の確定で確認する（地域の API）。
  *
  * @param name       氏名（50 文字まで）
  * @param postalCode 郵便番号（数字 7 桁）
@@ -67,7 +67,7 @@ public record ShippingAddress(String name, String postalCode, AddressArea area, 
      *
      * @param name       氏名
      * @param postalCode 郵便番号（ハイフンは任意）
-     * @param area       都道府県と市区町村（マスターデータで確かめたもの）
+     * @param area       都道府県と市区町村（マスターデータで確認したもの）
      * @param address    市区町村より下の住所
      * @param phone      電話番号（ハイフンは任意）
      * @return お届け先

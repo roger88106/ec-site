@@ -9,7 +9,7 @@ import java.util.UUID;
  * 期限を過ぎた未払いの支払
  *
  * @param id   支払 ID
- * @param page 開いている支払の画面。なければ null
+ * @param page 開いている支払画面。なければ null
  */
 public record PastDeadlinePaymentView(UUID id, @Nullable PaymentPage page) {
 }

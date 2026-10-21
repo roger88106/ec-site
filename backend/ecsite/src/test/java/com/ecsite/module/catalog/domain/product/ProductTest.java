@@ -561,7 +561,7 @@ class ProductTest {
         }
 
         @Test
-        @DisplayName("AC-40 枚数の上限に達しているかを、受付の前に確かめられる")
+        @DisplayName("AC-40 枚数の上限に達しているかを、受付の前に確認できる")
         void verifiesCapacityBeforeUpload() {
             assertThatCode(() -> productWithImages(19).verifyCanAddImage()).doesNotThrowAnyException();
             assertBusinessError(() -> productWithImages(20).verifyCanAddImage(), ProductErrorCode.TOO_MANY_PRODUCT_IMAGES);

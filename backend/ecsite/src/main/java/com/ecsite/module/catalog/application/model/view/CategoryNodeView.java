@@ -12,7 +12,7 @@ import java.util.UUID;
  * @param displayOrder 兄弟の中の表示順
  * @param version      バージョン
  * @param children     子カテゴリ（並び順）
- * @param addChild     子のカテゴリを足せる
+ * @param addChild     子のカテゴリを追加できる
  */
 public record CategoryNodeView(UUID id, String name, int depth, int displayOrder, long version,
                                List<CategoryNodeView> children, boolean addChild) {

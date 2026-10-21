@@ -180,7 +180,7 @@ class StorefrontCartTest {
     // ============================== 補助 ==============================
 
     /**
-     * カートに入れ、204 を確かめる
+     * カートに入れ、204 を確認する
      */
     private void add(UUID variantId, int quantity) throws Exception {
         mockMvc.perform(post("/api/store/carts/" + cartId + "/items")

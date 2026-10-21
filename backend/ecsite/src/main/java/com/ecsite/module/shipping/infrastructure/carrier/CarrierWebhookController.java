@@ -12,8 +12,8 @@ import tools.jackson.core.JacksonException;
 import tools.jackson.databind.json.JsonMapper;
 
 /**
- * 物流サービスの通知の受け口（docs/backend/modules/shipping.md「通知のエンドポイント」）。<br />
- * 物流サービスが呼ぶ口で、EC の API ではない（OpenAPI に書かず、presentation にも置かない）。認証は付けず、署名で確かめる。
+ * 物流サービスの通知のエンドポイント（docs/backend/modules/shipping.md「通知のエンドポイント」）。<br />
+ * 物流サービスが呼ぶ口で、EC の API ではない（OpenAPI に書かず、presentation にも置かない）。認証は付けず、署名で確認する。
  * 登録済みのどの出荷とも合わない通知と、対応の表にない状態の名前は、再送されても合うようにならないので、
  * 記録して 200 を返す。処理に失敗したら 5xx を返し、物流サービスの再送で処理し直す。
  */
@@ -33,7 +33,7 @@ class CarrierWebhookController {
     private final CarrierStatusMapping statusMapping;
 
     /**
-     * 通知の受け口
+     * 通知のエンドポイント
      */
     private final ShipmentNotificationReceiver receiver;
 
@@ -45,16 +45,16 @@ class CarrierWebhookController {
     /**
      * 通知を受け取る。
      *
-     * @param payload         本文（署名を確かめるため、受け取ったままのバイト列で受け取る）
+     * @param payload         本文（署名を確認するため、受け取ったままのバイト列で受け取る）
      * @param signatureHeader ヘッダー {@code X-Carrier-Signature}
-     * @return 受け付けたら 200、署名を確かめられなければ 401、署名が合っても本文が読めなければ 400
+     * @return 受け付けたら 200、署名を確認できなければ 401、署名が合っても本文が読めなければ 400
      */
     @PostMapping(CarrierNotification.WEBHOOK_PATH)
     ResponseEntity<Void> receive(@RequestBody(required = false) byte[] payload,
                                  @RequestHeader(name = CarrierSignature.HEADER, required = false) String signatureHeader) {
         var body = payload == null ? new byte[0] : payload;
         if (!signature.verify(body, signatureHeader)) {
-            log.warn("署名を確かめられない物流サービスの通知を拒否した");
+            log.warn("署名を確認できない物流サービスの通知を拒否した");
             return ResponseEntity.status(401).build();
         }
         var notification = read(body);

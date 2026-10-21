@@ -19,7 +19,7 @@ describe('注文の支払', () => {
     expect(html).toContain('支払う</button>')
   })
 
-  test('AC-150 支払の画面から戻った直後で支払待ちなら、「支払の確認中」と示す', () => {
+  test('AC-150 支払画面から戻った直後で支払待ちなら、「支払の確認中」と示す', () => {
     const html = renderMarkup(<PaymentSection order={pending} returned={true} />)
 
     expect(html).toContain('お支払いを確認しています')

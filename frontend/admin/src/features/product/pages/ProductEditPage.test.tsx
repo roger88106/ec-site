@@ -61,7 +61,7 @@ function serveProduct(initial: ProductDetail) {
 }
 
 describe('商品の編集', () => {
-  it('入力中に他の人が基本情報を更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の値に作り直してから保存できる', async () => {
+  it('入力中に他の人が基本情報を更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の値に再作成してから保存できる', async () => {
     const state = serveProduct(productDetail())
     const { user } = renderApp(URL)
     const name = await screen.findByLabelText('商品名')
@@ -282,7 +282,7 @@ describe('公開期間', () => {
     expect(await screen.findByText('公開終了日時は、公開開始日時より後にしてください。')).toBeInTheDocument()
   })
 
-  it('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の期間に作り直す', async () => {
+  it('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の期間に再作成する', async () => {
     const state = serveProduct(productDetail())
     const requests = servePeriod(state)
     const { user } = renderApp(URL)

@@ -42,7 +42,7 @@ public final class DisplayOrders {
     }
 
     /**
-     * 末尾に足す要素の表示順を返す。
+     * 末尾に追加する要素の表示順を返す。
      *
      * @param currentOrders 今の要素の表示順
      * @return 最大の次。要素がなければ 1

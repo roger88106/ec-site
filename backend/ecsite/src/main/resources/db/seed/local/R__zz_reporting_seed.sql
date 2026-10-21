@@ -6,7 +6,7 @@
 --   支払待ち 注文日時 → 受付 与信の時刻 → キャンセルの申請 申請の日時 → 却下で受付 判断の日時 → 出荷済み 出荷の日時
 --   → キャンセル キャンセルの日時（直前の状態は、期限切れなら支払待ち、申請の承認ならキャンセルの申請、出荷があれば出荷済み、ほかは受付）
 --   配送状態：出荷済み 出荷の日時 → 配送中 出荷の 6 時間後 → 配達完了・返送 最後の通知の日時（R__shipping_seed.sql の筋）
--- イベント ID は、注文 ID と履歴の種類の md5 から作る。写しはイベントで作り直されるので、seed の再実行で上書きしない
+-- イベント ID は、注文 ID と履歴の種類の md5 から作る。写しはイベントで再作成されるので、seed の再実行で上書きしない
 
 CREATE TEMP TABLE seed_history ON COMMIT DROP AS
 WITH source AS (SELECT o.*, p.authorized_at, s.shipped_at, s.status AS delivery_status, s.last_notified_at

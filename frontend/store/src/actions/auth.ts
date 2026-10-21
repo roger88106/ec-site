@@ -14,6 +14,6 @@ export async function logout(): Promise<void> {
   const logoutUrl = await idpLogoutUrl()
   await signOut({ redirect: false })
   await deleteCartId()
-  // IdP の URL は店舗画面の外なので、画面の URL の型（typedRoutes）では確かめられない
+  // IdP の URL は店舗画面の外なので、画面の URL の型（typedRoutes）では確認できない
   redirect(logoutUrl as Route)
 }

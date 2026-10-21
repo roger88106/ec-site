@@ -133,7 +133,7 @@ public class StockReservationService {
         if (!shortages.isEmpty()) {
             return shortages;
         }
-        // 行ロックの中で足りることを確かめたので、減算は必ず成功する
+        // 行ロックの中で足りることを確認したので、減算は必ず成功する
         locked.keySet().forEach(variantId -> stockItemRepository.adjust(variantId, StockAdjustment.forOrder(
                 -quantities.get(variantId), StockAdjustmentReason.ORDER, orderId, orderNumber, now)));
         reservationRepository.deleteByHolder(holderId);

@@ -18,7 +18,7 @@ export type CancellationState =
   | 'UNAVAILABLE'
 
 /**
- * 注文の支払の状況。支払える、支払の確認中（支払の画面から戻った直後）、支払の期限を過ぎた（まもなくキャンセル）、
+ * 注文の支払の状況。支払える、支払の確認中（支払画面から戻った直後）、支払の期限を過ぎた（まもなくキャンセル）、
  * 支払の欄を出さない（支払待ちでない）
  */
 export type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
@@ -51,10 +51,10 @@ export function cancellationState(order: {
 
 /**
  * 注文の支払の状況。支払えるかは API の旗で決める。
- * 支払の画面から戻った直後は、与信の結果がまだ届いていないことがあるので、支払待ちなら「確認中」とする。
+ * 支払画面から戻った直後は、与信の結果がまだ届いていないことがあるので、支払待ちなら「確認中」とする。
  *
  * @param order    注文
- * @param returned 支払の画面から戻った直後か
+ * @param returned 支払画面から戻った直後か
  */
 export function paymentState(
   order: { status: OrderStatus; actions: Pick<Order['actions'], 'pay'> },

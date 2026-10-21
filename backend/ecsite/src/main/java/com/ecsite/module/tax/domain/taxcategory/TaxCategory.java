@@ -120,7 +120,7 @@ public class TaxCategory extends AggregateRoot {
         var currentById = rates.stream().collect(Collectors.toMap(TaxRate::id, Function.identity()));
         var draftsById = verifyReferences(drafts, currentById);
 
-        // 既存の税率と照らし合わせて、変更できるかを判定する
+        // 既存の税率と照合して、変更できるかを判定する
         rates.forEach(current -> verifyChangeable(current, draftsById.get(current.id()), now));
         drafts.forEach(draft -> verifyNoPastDateTime(draft, currentById.get(draft.id()), now));
 

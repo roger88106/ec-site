@@ -134,12 +134,12 @@ describe('照合', () => {
   })
 
   test('除外の一覧にある AC は、テストがなくてよい', () => {
-    const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a'), exclusions: { 'AC-2': '手で確かめる' } })
+    const result = check({ specAcs: new Set([1, 2]), tests: tests('AC-1 a'), exclusions: { 'AC-2': '手で確認する' } })
     assert.equal(result.ok, true)
   })
 
   test('除外の一覧の AC にテストがあれば失敗する（除外が古い）', () => {
-    const result = check({ specAcs: new Set([1]), tests: tests('AC-1 a'), exclusions: { 'AC-1': '手で確かめる' } })
+    const result = check({ specAcs: new Set([1]), tests: tests('AC-1 a'), exclusions: { 'AC-1': '手で確認する' } })
     assert.equal(result.ok, false)
     assert.deepEqual(result.staleExclusions, [1])
   })
@@ -206,7 +206,7 @@ describe('AC 一覧', () => {
   test('一覧を作る。前の一覧の状態・変えた spec・今の内容は残し、ない AC は有効・spec の定義にする', () => {
     const previous = new Map([[2, { status: '変更', changedBy: '[016](../specs/016-master-data)', location: '[税モジュール](../backend/modules/tax.md)' }]])
     const testFiles = new Map([[1, ['backend/a/TaxApiTest.java', 'e2e/tests/tax.spec.ts']]])
-    const markdown = renderAcList({ definitions, previous, testFiles, exclusions: { 'AC-2': '手で確かめる' } })
+    const markdown = renderAcList({ definitions, previous, testFiles, exclusions: { 'AC-2': '手で確認する' } })
     assert.match(markdown, /^\| AC \| 要約 \| 状態 \| 元の spec \| 変えた spec \| 今の内容 \| テスト \|$/m)
     assert.match(
       markdown,

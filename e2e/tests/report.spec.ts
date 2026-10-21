@@ -16,7 +16,7 @@ function thisMonthInJapan(): { year: number; month: number } {
  *
  * @param page 管理画面のページ
  * @param url 開く URL
- * @param check 表示を確かめる。満たさなければ投げる
+ * @param check 表示を確認する。満たさなければ投げる
  */
 async function expectReport(page: Page, url: string, check: () => Promise<void>) {
   await reopenUntil(page, url, check, { timeout: REPORT_TIMEOUT, intervals: REPORT_RECHECK_INTERVALS })

@@ -24,7 +24,7 @@ import java.util.UUID;
 /**
  * テスト用の access token（plan 003 第 3.1 節）。<br />
  * IdP（Keycloak）を起動せず、realm ごとのテストの鍵で署名した token を作る。バックエンドは、
- * {@link TestSecurityConfig} が差し替えた公開鍵で署名を確かめ、本番と同じ issuer・audience・有効期限・権限の処理を通す。
+ * {@link TestSecurityConfig} が差し替えた公開鍵で署名を確認し、本番と同じ issuer・audience・有効期限・権限の処理を通す。
  * token の中身は Keycloak が発行するものに合わせる（権限は {@code resource_access.ec-admin-api.roles}）。
  * <pre>{@code
  * mockMvc.perform(get("/api/admin/products").with(TestTokens.operator("product:read").bearer()))
@@ -95,7 +95,7 @@ public final class TestTokens {
     private static final RSAKey STORE_KEY = generateKey();
 
     /**
-     * どの realm のものでもない鍵（署名の不正を確かめるため）
+     * どの realm のものでもない鍵（署名の不正を確認するため）
      */
     private static final RSAKey UNKNOWN_KEY = generateKey();
 
@@ -103,7 +103,7 @@ public final class TestTokens {
     }
 
     /**
-     * 参照の権限に、権限を足す。
+     * 参照の権限に、権限を追加する。
      */
     private static String[] withReadPermissions(String... permissions) {
         var all = new ArrayList<>(READ_PERMISSIONS);

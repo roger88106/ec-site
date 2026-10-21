@@ -56,7 +56,7 @@ public record OrderNumber(String value) {
     }
 
     /**
-     * 注文日時から注文番号を作る。重複したら、呼ぶ側が作り直す。
+     * 注文日時から注文番号を作る。重複したら、呼ぶ側が再作成する。
      *
      * @param orderedAt 注文日時
      * @param random    乱数

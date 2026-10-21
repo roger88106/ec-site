@@ -89,7 +89,7 @@ class ImageFormatTest {
             assertThat(ImageFormat.detect(ftyp("mif1", "mif1", "heic"))).contains(ImageFormat.HEIF);
             assertThat(ImageFormat.detect(ftyp("mif1", "mif1", "miaf", "avif"))).contains(ImageFormat.AVIF);
             assertThat(ImageFormat.detect(ftyp("msf1", "msf1", "avis"))).contains(ImageFormat.AVIF);
-            // 汎用のブランドだけで、どちらとも分からないものは HEIF として扱う（変換で中身を確かめる）
+            // 汎用のブランドだけで、どちらとも分からないものは HEIF として扱う（変換で中身を確認する）
             assertThat(ImageFormat.detect(ftyp("mif1", "mif1"))).contains(ImageFormat.HEIF);
         }
 

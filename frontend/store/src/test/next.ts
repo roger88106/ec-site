@@ -3,7 +3,7 @@ import { expect } from 'vitest'
 /**
  * サーバーの処理のテストで、Next.js の要求の口（next/headers、next/cache）の代わりに使う入れ物（店舗画面の構成 第 7 節）。<br />
  * setup.ts が next/headers・next/cache をこれに置き換える。next/navigation（redirect、notFound、unstable_rethrow）は
- * 置き換えず、本物を使う（redirect が例外で移動を知らせ、unstable_rethrow がそれを通すことまで確かめるため）。
+ * 置き換えず、本物を使う（redirect が例外で移動を知らせ、unstable_rethrow がそれを通すことまで確認するため）。
  */
 
 /** Cookie に書いた値と属性 */
@@ -39,7 +39,7 @@ export function currentHeaders(): Headers {
 }
 
 /**
- * 要求の状態を作り直す（各テストの前に setup.ts が呼ぶ）。
+ * 要求の状態を再作成する（各テストの前に setup.ts が呼ぶ）。
  *
  * @param init.cookies Cookie（名前 → 値）
  * @param init.headers ヘッダー
@@ -54,7 +54,7 @@ export function resetRequest(init: { cookies?: Record<string, string>; headers?:
 }
 
 /**
- * Cookie の値（テストで確かめる）。
+ * Cookie の値（テストで確認する）。
  *
  * @param name Cookie の名前
  * @returns 値。なければ undefined
@@ -64,7 +64,7 @@ export function cookieValue(name: string): string | undefined {
 }
 
 /**
- * Cookie の属性（テストで確かめる）。
+ * Cookie の属性（テストで確認する）。
  *
  * @param name Cookie の名前
  */
@@ -73,7 +73,7 @@ export function cookieOptions(name: string): Record<string, unknown> | undefined
 }
 
 /**
- * 処理が redirect したことを確かめ、移動先を返す。<br />
+ * 処理が redirect したことを確認し、移動先を返す。<br />
  * Next.js の redirect は、移動先を digest（`NEXT_REDIRECT;<種類>;<URL>;<状態>;`）に持つ例外を投げる。
  *
  * @param run 処理

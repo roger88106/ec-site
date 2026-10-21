@@ -1,6 +1,6 @@
-// バックエンドの書き方の規則のうち、ソースの文字で確かめられるものを確かめる（バックエンドの書き方 第 1.3 節、第 5.1 節）。
+// バックエンドの書き方の規則のうち、ソースの文字で確認できるものを確認する（バックエンドの書き方 第 1.3 節、第 5.1 節）。
 // - テストのソース（test、integrationTest、testFixtures）で Lombok を使わない。Lombok の注釈はクラスファイルに残らず、ArchUnit で見えないため
-// - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())）。値を足したときの写し忘れをコンパイルで見つけられないため
+// - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())）。値を追加したときの写し忘れをコンパイルで見つけられないため
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'

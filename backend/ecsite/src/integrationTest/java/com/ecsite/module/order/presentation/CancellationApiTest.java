@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * キャンセルの受け入れテスト（T2403、AC-95、96、101〜103、105、107）。<br />
- * 在庫の戻しと注文の取り消しが一緒に起きること（AC-104）は、コミットが必要なので {@code CancellationAtomicityTest} で確かめる。
+ * 在庫の戻しと注文の取り消しが一緒に起きること（AC-104）は、コミットが必要なので {@code CancellationAtomicityTest} で確認する。
  * テストごとにロールバックする。
  */
 @IntegrationTest
@@ -282,7 +282,7 @@ class CancellationApiTest {
         }
 
         /**
-         * 注文に残った、判断した運営者 ID とキャンセルした運営者 ID を確かめる
+         * 注文に残った、判断した運営者 ID とキャンセルした運営者 ID を確認する
          */
         private void expectOperatorIds(UUID decidedBy, UUID cancelledBy) {
             var order = dsl.select(SALES_ORDER.CANCELLATION_DECIDED_BY_ID, SALES_ORDER.CANCELLED_BY_ID)
@@ -324,7 +324,7 @@ class CancellationApiTest {
     }
 
     /**
-     * 在庫数を確かめる
+     * 在庫数を確認する
      */
     private void expectQuantity(int quantity) throws Exception {
         mockMvc.perform(get("/api/admin/inventory/variants/" + variantId)).andExpect(jsonPath("$.quantity").value(quantity));

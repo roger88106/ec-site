@@ -56,7 +56,7 @@ export async function taxCategoryWithRate(ratePercent: number): Promise<TaxCateg
   const { items } = unwrap(await api.GET('/tax-categories'))
   const found = items.find((item) => item.currentRatePercent === ratePercent)
   if (!found) {
-    throw new Error(`現時点の率が ${ratePercent}% の税区分がない（E2E の DB に db/seed/base が入っているか確かめる）`)
+    throw new Error(`現時点の率が ${ratePercent}% の税区分がない（E2E の DB に db/seed/base が入っているか確認する）`)
   }
   return { id: found.id, name: found.name }
 }

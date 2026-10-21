@@ -19,7 +19,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   const [variantId] = await variantIds(productId)
   let orderUrl = ''
 
-  await test.step('店舗画面：会員としてログインし、商品の詳細から 2 つカートに入れ、カートで金額の内訳を確かめる', async () => {
+  await test.step('店舗画面：会員としてログインし、商品の詳細から 2 つカートに入れ、カートで金額の内訳を確認する', async () => {
     await loginStore(page, ACCOUNTS.member)
     await emptyCart(page)
     await page.goto(`${STORE_URL}/products/${productId}`)

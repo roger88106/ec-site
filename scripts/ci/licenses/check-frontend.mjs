@@ -1,10 +1,10 @@
 // ============================================================================
-// フロントの依存のライセンスを、方針（policy.json。依存とライセンス 第 2 節）と照らす
+// フロントの依存のライセンスを、方針（policy.json。依存とライセンス 第 2 節）と照合する
 //
 //   使い方：node scripts/ci/licenses/check-frontend.mjs
 //
 // リポジトリのルートで pnpm licenses list --json --recursive を流し、workspace のすべての部品
-// （開発用を含む）を照らす。方針に合わない部品があれば、一覧を出して失敗する。
+// （開発用を含む）を照合する。方針に合わない部品があれば、一覧を出して失敗する。
 // ============================================================================
 import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
@@ -70,7 +70,7 @@ export function evaluate(expression, name, policy) {
 }
 
 /**
- * pnpm licenses list --json の結果を照らす。
+ * pnpm licenses list --json の結果を照合する。
  *
  * @param report ライセンス → 部品（name、versions）の一覧
  * @param policy 方針
@@ -89,7 +89,7 @@ export function check(report, policy) {
   return failures
 }
 
-/** workspace の依存を照らし、合わない部品があれば失敗する */
+/** workspace の依存を照合し、合わない部品があれば失敗する */
 function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
   const root = path.resolve(here, '../../..')
@@ -108,7 +108,7 @@ function main() {
   const count = Object.values(report).reduce((sum, packages) => sum + packages.length, 0)
   console.log(`${failures.length === 0 ? 'OK' : 'NG'}：部品 ${count} 件、方針に合わない部品 ${failures.length} 件`)
   if (failures.length > 0) {
-    console.log('  方針に合う部品に替えるか、条件付きなら理由を scripts/ci/licenses/policy.json に足す（依存とライセンス）。')
+    console.log('  方針に合う部品に替えるか、条件付きなら理由を scripts/ci/licenses/policy.json に追加する（依存とライセンス）。')
   }
   process.exit(failures.length === 0 ? 0 : 1)
 }

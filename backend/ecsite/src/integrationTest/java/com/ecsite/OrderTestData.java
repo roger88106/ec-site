@@ -40,7 +40,7 @@ public class OrderTestData {
     private final OrderPaymentService orderPaymentService;
 
     /**
-     * 注文 ID → 支払った支払の画面 ID（支払の後は画面の URL を引けないため、覚えておく）
+     * 注文 ID → 支払った支払画面 ID（支払の後は画面の URL を引けないため、覚えておく）
      */
     private final Map<UUID, String> paidPageIds = new HashMap<>();
 
@@ -94,10 +94,10 @@ public class OrderTestData {
     }
 
     /**
-     * 注文の支払の画面を開く。
+     * 注文の支払画面を開く。
      *
      * @param orderId 注文 ID
-     * @return 支払の画面 ID
+     * @return 支払画面 ID
      */
     public String openPaymentPage(UUID orderId) throws Exception {
         var body = mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page"))
@@ -107,7 +107,7 @@ public class OrderTestData {
     }
 
     /**
-     * 支払の画面を開いて支払い、注文を「受付」にする。<br />
+     * 支払画面を開いて支払い、注文を「受付」にする。<br />
      * 与信の成功のイベントはコミットの後に届くので、ロールバックするテストでは届かない。
      * そのため、リスナーと同じ処理をここで呼ぶ（冪等なので、コミットするテストで後からイベントが届いても変わらない）。
      *
@@ -121,10 +121,10 @@ public class OrderTestData {
     }
 
     /**
-     * 支払った注文の、支払の画面 ID を返す（mock の与信の参照を求めるのに使う）。
+     * 支払った注文の、支払画面 ID を返す（mock の与信の参照を求めるのに使う）。
      *
      * @param orderId この補助で支払った注文の ID
-     * @return 支払の画面 ID
+     * @return 支払画面 ID
      */
     public String paidPageId(UUID orderId) {
         return paidPageIds.get(orderId);
@@ -165,7 +165,7 @@ public class OrderTestData {
 
     /**
      * 決まったお届け先で注文する本文（郵便番号は {@code 100-0001}）。<br />
-     * お届け先の項目を確かめるテストは、確かめる項目を変えた本文をテストの中で書く。
+     * お届け先の項目を確認するテストは、確認する項目を変えた本文をテストの中で書く。
      *
      * @param expectedTotal 確認した総額
      * @return 注文の要求の本文
@@ -189,7 +189,7 @@ public class OrderTestData {
     }
 
     /**
-     * カートから注文手続きを始める要求。token などは呼ぶ側で足す。
+     * カートから注文手続きを始める要求。token などは呼ぶ側で追加する。
      *
      * @param cartId カート ID
      * @return 要求
@@ -199,7 +199,7 @@ public class OrderTestData {
     }
 
     /**
-     * 決まったお届け先で注文する要求。token などは呼ぶ側で足す。
+     * 決まったお届け先で注文する要求。token などは呼ぶ側で追加する。
      *
      * @param checkoutId    注文手続き ID
      * @param expectedTotal 確認した総額

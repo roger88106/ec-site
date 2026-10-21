@@ -34,7 +34,7 @@ export type ApiMutationOptions<TData, TInit> = {
 }
 
 /**
- * 管理 API の更新の操作（管理画面の構成 第 4 節）。$api.useMutation に、更新の定型を足す。<br />
+ * 管理 API の更新の操作（管理画面の構成 第 4 節）。$api.useMutation に、更新の定型を追加する。<br />
  * 成功したら、知らせを出し、続きの処理を行い、関係する一覧を取り直す。失敗のエラーは、戻り値の error で画面に出す。
  *
  * @param method HTTP のメソッド

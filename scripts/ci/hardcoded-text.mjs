@@ -1,4 +1,4 @@
-// 画面のコードに、表示の文言（日本語の文字）を直接書いた所がないことを確かめる（フロントの書き方 第 7.1 節）。
+// 画面のコードに、表示の文言（日本語の文字）を直接書いた所がないことを確認する（フロントの書き方 第 7.1 節）。
 // 文言は各画面の messages/ja.json（共通は frontend/shared/src/messages/ja.json）に置き、キーで引く。
 // コメントと、開発者だけが見る文（ログ、プログラムの誤りの例外）は見ない。テスト、生成物、shadcn/ui の部品、例外の一覧（hardcoded-text-exclusions.json）のファイルも見ない。
 // 使い方：node scripts/ci/hardcoded-text.mjs [--count]（リポジトリのルートで。--count は数だけを出し、失敗にしない）

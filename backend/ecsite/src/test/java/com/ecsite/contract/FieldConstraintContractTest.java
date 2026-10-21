@@ -30,9 +30,9 @@ import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 同じ項目の制約が、API の契約・ドメインの上限・DB の列の長さで一致することを確かめる契約テスト
+ * 同じ項目の制約が、API の契約・ドメインの上限・DB の列の長さで一致することを確認する契約テスト
  * （docs/backend/coding.md 第 3.1 節、spec 005 DC-32）。<br />
- * 項目の表はこのクラスの {@link #fields()} に書く。上限のある項目を足したら、表にも足す。
+ * 項目の表はこのクラスの {@link #fields()} に書く。上限のある項目を追加したら、表にも追加する。
  */
 class FieldConstraintContractTest {
 
@@ -47,7 +47,7 @@ class FieldConstraintContractTest {
     private static final Map<String, Map<String, Object>> CONTRACTS = new HashMap<>();
 
     /**
-     * 照らす項目の 1 行。
+     * 照合する項目の 1 行。
      *
      * @param label    項目の論理名
      * @param contract 契約の場所（{@code admin.yaml#CreateProductRequest.name} など。配列の要素は {@code []}、
@@ -64,7 +64,7 @@ class FieldConstraintContractTest {
     }
 
     /**
-     * 照らす項目の表を返す。
+     * 照合する項目の表を返す。
      *
      * @return 項目の表
      */

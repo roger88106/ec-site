@@ -36,7 +36,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * Stripe の実装の単体テスト（docs/backend/modules/payment.md「Stripe」）。支払の画面の作成・閉じる、与信の取消、売上確定、返金。<br />
+ * Stripe の実装の単体テスト（docs/backend/modules/payment.md「Stripe」）。支払画面の作成・閉じる、与信の取消、売上確定、返金。<br />
  * Stripe の API の代わりに手元の HTTP サーバー（{@link StripeApiStub}）を立て、sandbox で記録した応答（T9501）の形を返す。
  */
 class StripePaymentGatewayTest {
@@ -54,7 +54,7 @@ class StripePaymentGatewayTest {
     private static final String RETURN_URL = "http://localhost:3000/orders/" + ORDER_ID + "?payment=returned";
 
     /**
-     * テストの今の時刻（支払の画面の期限の基準）
+     * テストの今の時刻（支払画面の期限の基準）
      */
     private static final Instant NOW = Instant.parse("2026-10-14T01:00:00Z");
 
@@ -172,7 +172,7 @@ class StripePaymentGatewayTest {
     }
 
     @Nested
-    @DisplayName("支払の画面の作成")
+    @DisplayName("支払画面の作成")
     class OpenPage {
 
         @Test
@@ -209,7 +209,7 @@ class StripePaymentGatewayTest {
     }
 
     @Nested
-    @DisplayName("支払の画面を閉じる")
+    @DisplayName("支払画面を閉じる")
     class ClosePage {
 
         @Test
@@ -324,7 +324,7 @@ class StripePaymentGatewayTest {
         }
 
         @Test
-        @DisplayName("AC-295 Stripe に接続できなければ、支払の画面を作る・閉じる、返金、取消は外部サービスのエラー")
+        @DisplayName("AC-295 Stripe に接続できなければ、支払画面を作る・閉じる、返金、取消は外部サービスのエラー")
         void unreachableIsUnavailable() throws IOException {
             var unreachable = new StripePaymentGateway(
                     StripeApiStub.client("http://localhost:" + StripeApiStub.closedPort()), Clock.fixed(NOW, ZoneOffset.UTC));
@@ -362,13 +362,13 @@ class StripePaymentGatewayTest {
     }
 
     /**
-     * 失敗の分類を確かめる操作（名前、Stripe の要求、呼び出し）。売上確定は結果で返すので除く
+     * 失敗の分類を確認する操作（名前、Stripe の要求、呼び出し）。売上確定は結果で返すので除く
      */
     static Stream<Arguments> operations() {
         return Stream.of(
-                Arguments.of("支払の画面を作る", "POST /v1/checkout/sessions",
+                Arguments.of("支払画面を作る", "POST /v1/checkout/sessions",
                         (Consumer<StripePaymentGateway>) gateway -> gateway.openPage(pageRequest())),
-                Arguments.of("支払の画面を閉じる", "POST /v1/checkout/sessions/" + SESSION_ID + "/expire",
+                Arguments.of("支払画面を閉じる", "POST /v1/checkout/sessions/" + SESSION_ID + "/expire",
                         (Consumer<StripePaymentGateway>) gateway -> gateway.closePage(SESSION_ID)),
                 Arguments.of("返金", "POST /v1/refunds",
                         (Consumer<StripePaymentGateway>) gateway -> gateway.refund(refundRequest())),

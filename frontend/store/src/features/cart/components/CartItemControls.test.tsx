@@ -3,7 +3,7 @@ import { CartItemControls } from '@/features/cart/components/CartItemControls'
 import { quoteItem } from '@/test/fixtures'
 import { renderMarkup } from '@/test/render'
 
-// 数量の変更と削除はサーバーアクションを通るので、サーバーアクションのテストと E2E で確かめる（テストの書き方 第 1 節）
+// 数量の変更と削除はサーバーアクションを通るので、サーバーアクションのテストと E2E で確認する（テストの書き方 第 1 節）
 
 describe('カートの品目の操作', () => {
   test('AC-78 今の数量を選んだ数量の選択と、小計と、削除を出す', () => {

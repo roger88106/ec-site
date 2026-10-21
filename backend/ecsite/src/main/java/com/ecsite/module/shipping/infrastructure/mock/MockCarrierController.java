@@ -30,7 +30,7 @@ import java.util.UUID;
  * mock の物流サービスの画面（docs/backend/modules/shipping.md「mock」）。<br />
  * 外部の物流サービスの代わりで、EC の API ではない（OpenAPI に書かない）。物流の mock フラグを立てたときだけ出す。
  * 出荷の一覧と、出荷ごとに「配送中」「配達完了」「返送」のボタンを持つ。ボタンを押すと、署名付きの通知を
- * HTTP で自分の通知の受け口に送る。
+ * HTTP で自分の通知のエンドポイントに送る。
  */
 @Controller
 @ConditionalOnBooleanProperty(name = "ecsite.shipping.mock.enabled")
@@ -68,11 +68,11 @@ class MockCarrierController {
     }
 
     /**
-     * 出荷の配送状態を通知する。署名付きの通知を、この画面を出したサーバーの受け口に HTTP で送り、一覧に戻る。
+     * 出荷の配送状態を通知する。署名付きの通知を、この画面を出したサーバーのエンドポイントに HTTP で送り、一覧に戻る。
      *
      * @param orderId 注文 ID
      * @param status  通知する配送状態（配送中、配達完了、返送）
-     * @param request 要求（受け口の URL を求めるため）
+     * @param request 要求（エンドポイントの URL を求めるため）
      * @return 一覧への移動。通知が受け付けられなかったときは、その旨を示した一覧
      */
     @PostMapping("/mock-carrier/orders/{orderId}/notify")
@@ -101,7 +101,7 @@ class MockCarrierController {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * 受け口を持つ、このサーバーの URL（要求と同じ接続先）を求める。
+     * エンドポイントを持つ、このサーバーの URL（要求と同じ接続先）を求める。
      */
     private static String baseUrl(HttpServletRequest request) {
         return ServletUriComponentsBuilder.fromContextPath(request).build().toUriString();

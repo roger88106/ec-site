@@ -31,7 +31,7 @@ import static org.mockito.Mockito.verify;
 
 /**
  * 出荷通知メールの統合テスト（T9403、AC-183〜185）。<br />
- * イベント「注文の出荷」をコミットして通知に届け、Testcontainers の Mailpit で受けたメールを確かめる。
+ * イベント「注文の出荷」をコミットして通知に届け、Testcontainers の Mailpit で受けたメールを確認する。
  * 送信はコミットの後に非同期で行われるので、結果を待つ。宛先をテストごとに変えて、他のテストのメールと混ぜない。
  */
 @IntegrationTest

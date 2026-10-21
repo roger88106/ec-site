@@ -10,13 +10,13 @@ import { renderInBrowser, renderMarkup } from '@/test/render'
 /** 注文のサーバーアクションの結果として、フォームに渡す値（null は送る前） */
 let actionResult: ActionResult | null = null
 
-// 注文の送信はサーバーアクションを通るので、送った結果の表示だけを、結果を差し替えて HTML で確かめる（テストの書き方 第 1 節）
+// 注文の送信はサーバーアクションを通るので、送った結果の表示だけを、結果を差し替えて HTML で確認する（テストの書き方 第 1 節）
 vi.mock('react', async (importOriginal) => {
   const react = await importOriginal<typeof import('react')>()
   return { ...react, useActionState: () => [actionResult, () => {}, false] }
 })
 
-// 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確かめる（店舗画面の構成 第 7 節 ※7）
+// 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確認する（店舗画面の構成 第 7 節 ※7）
 vi.mock('@/actions/region', () => ({ listMunicipalities: vi.fn(), findPostalCodeAddresses: vi.fn() }))
 
 /** API から取った都道府県の一覧（テストでは 3 つ） */

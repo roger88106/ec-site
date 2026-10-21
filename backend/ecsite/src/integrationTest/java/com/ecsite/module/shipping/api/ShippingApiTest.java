@@ -154,7 +154,7 @@ class ShippingApiTest {
     }
 
     /**
-     * 出荷の配送状態を進める（通知の受け口を通さない、準備のための操作）。
+     * 出荷の配送状態を進める（通知のエンドポイントを通さない、準備のための操作）。
      */
     private void advance(UUID orderId, DeliveryStatus status) {
         var shipment = repository.findAllByOrderIds(List.of(orderId)).getFirst();

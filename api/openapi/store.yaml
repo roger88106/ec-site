@@ -12,7 +12,7 @@ info:
     - 認証は、消費者の realm（IdP）が発行した会員の access token（audience `ec-store-api`）を `Authorization: Bearer` で付ける（spec 003、plan 003 第 5.1 節）。
       - 会員の操作（`security` が `memberToken` だけ）：token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）。
       - 任意の操作（カート）：token があれば会員として扱い、なければログインしていない人として扱う。token が無効なら 401。
-      - そのほか（商品・カテゴリ・店舗の情報）：認証は要らない。
+      - そのほか（商品・カテゴリ・店舗の情報）：認証は必要ない。
     - ログインせずに作ったカートは、推測できないカート ID を知っていることが使える条件になる（plan 002 第 3 節）。会員のカート・注文手続き・注文は、持ち主の会員だけが使える。ほかの人には、ないときと同じく 404 を返す（存在を推測させない。AC-121、126、131）。
 servers:
   - url: /api/store
@@ -274,7 +274,7 @@ paths:
       description: |
         ログインせずに使っていたカートの品目を、token の会員のカートへ移し、移したカートを空にする。
         同じバリアントは数量を合算し、10 を超えたら 10 に切り詰める。品目が 30 に達したら、移すカートの後ろの品目から移さない。
-        商品・在庫は確かめない（カートの表示で示す）。空のカート（移し終えたカートを含む）を指定しても、何も変わらない。
+        商品・在庫は確認しない（カートの表示で示す）。空のカート（移し終えたカートを含む）を指定しても、何も変わらない。
         移す元に指定できるのは、会員を持たないカートだけ（会員のカートは 404）。
       security:
         - memberToken: []
@@ -475,7 +475,7 @@ paths:
       summary: 支払画面を開く（AC-143、151、152）
       description: |
         決済サービスの支払画面の URL を返す。店舗画面はこの URL に移す。
-        開いている画面があれば同じ URL を返し、決済サービスに作り直させない（AC-152）。
+        開いている画面があれば同じ URL を返し、決済サービスに再作成させない（AC-152）。
         支払待ちで支払の期限の前の注文だけ。それ以外は 409（`errorCode`：`ORDER_NOT_PAYABLE`）。
         決済サービスに届かない・時間内に応答がない・その側の故障のときは 502（`errorCode`：`PAYMENT_GATEWAY_UNAVAILABLE`）。しばらくしてからやり直せる（AC-295）。
       responses:
@@ -1113,7 +1113,7 @@ components:
           description: 注文が成立済みなら、その注文 ID
     ShippingAddressInput:
       type: object
-      description: 注文の確定で受けるお届け先。都道府県と市区町村はコードで受け、地域のマスターデータで確かめる（AC-251）
+      description: 注文の確定で受けるお届け先。都道府県と市区町村はコードで受け、地域のマスターデータで確認する（AC-251）
       required: [name, postalCode, prefectureCode, municipalityCode, address, phone]
       properties:
         name:

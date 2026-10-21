@@ -101,7 +101,7 @@ public class CartService {
     }
 
     /**
-     * 品目の数量を変える。増やすときだけ販売可能数を確かめる。
+     * 品目の数量を変える。増やすときだけ販売可能数を確認する。
      *
      * @param cartId    カート ID
      * @param requester 要求した会員の ID（ログインしていなければ null）
@@ -111,7 +111,7 @@ public class CartService {
     @Transactional
     public void changeQuantity(UUID cartId, UUID requester, UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
-            // 今の数量より増やすときだけ、在庫を確かめる（減らす操作は、在庫が減っていても受け付ける）
+            // 今の数量より増やすときだけ、在庫を確認する（減らす操作は、在庫が減っていても受け付ける）
             var current = cart.itemsAt(now).stream()
                     .filter(item -> item.variantId().equals(variantId))
                     .mapToInt(CartItem::quantity)
@@ -150,7 +150,7 @@ public class CartService {
 
     /**
      * 注文した品目（バリアント）を、数量によらず行ごとカートから除く（注文の与信の成功）。<br />
-     * 注文の後に足した品目は残る。カートがなければ何もしない。
+     * 注文の後に追加した品目は残る。カートがなければ何もしない。
      *
      * @param cartId     カート ID
      * @param variantIds 除くバリアントの ID
@@ -186,7 +186,7 @@ public class CartService {
 
     /**
      * ログインせずに使っていたカートの品目を、会員のカートへ移す。移したカートは空になる。<br />
-     * 移す元に指定できるのは、会員を持たないカートだけ（会員のカートは 404）。商品カタログ・在庫は確かめない。
+     * 移す元に指定できるのは、会員を持たないカートだけ（会員のカートは 404）。商品カタログ・在庫は確認しない。
      * 変わったカートごとに、カート変更のイベントを発行する（その注文手続きの引当を解く）。
      *
      * @param memberId     会員 ID
@@ -256,7 +256,7 @@ public class CartService {
     }
 
     /**
-     * 数量が販売可能数を超えないことを確かめる。
+     * 数量が販売可能数を超えないことを確認する。
      */
     private void verifyStock(UUID variantId, int quantity) {
         if (quantity > stockDirectory.sellableQuantity(variantId)) {

@@ -17,7 +17,7 @@ import java.util.TreeSet;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 管理 API の権限と、運営者の realm の設定が一致することを確かめる契約テスト（T3207、plan 003 第 2.2 節、BR-12）。<br />
+ * 管理 API の権限と、運営者の realm の設定が一致することを確認する契約テスト（T3207、plan 003 第 2.2 節、BR-12）。<br />
  * Keycloak は起動せず、{@code admin.yaml} と realm の JSON（{@code docker/keycloak/realms/ec-admin-realm.json}）を読む。
  */
 class AdminRealmPermissionContractTest {

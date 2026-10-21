@@ -138,7 +138,7 @@ class ProductImageServiceErrorApiTest {
     }
 
     /**
-     * 受け付けた画像を登録する（商品はバリアントを 1 つ足した後なので、バージョンは 1）
+     * 受け付けた画像を登録する（商品はバリアントを 1 つ追加した後なので、バージョンは 1）
      */
     private ResultActions addImage(String uploadId) throws Exception {
         return mockMvc.perform(post("/api/admin/products/" + product.id + "/images")

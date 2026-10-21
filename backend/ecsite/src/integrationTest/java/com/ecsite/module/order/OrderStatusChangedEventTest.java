@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * イベント「注文の状態の変化」の統合テスト（T0110、plan 010 第 2 節）。<br />
- * 注文の状態が変わるたびに 1 つ出て、変わらない操作（重ねて届いた支払の結果など）では出ないことを確かめる。
+ * 注文の状態が変わるたびに 1 つ出て、変わらない操作（重ねて届いた支払の結果など）では出ないことを確認する。
  * イベントの記録は発行の時点なので、コミットを待たない。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -226,7 +226,7 @@ class OrderStatusChangedEventTest {
     }
 
     /**
-     * mock の物流サービスから、配送状態の通知を受け口へ送る
+     * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
      */
     private void notifyStatus(String statusName) throws Exception {
         var notification = mockCarrier.notification(Carrier.YAMATO, TRACKING_NUMBER, statusName);

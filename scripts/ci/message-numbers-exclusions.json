@@ -1,6 +1,6 @@
 {
   "ecsite.tax.invalid_tax_category_name": "「1 文字以上」は空白でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
-  "ecsite.tax.tax_rates_required": "「1 件以上」は税率が要ることの言い換えで、変わる規則の値ではない",
+  "ecsite.tax.tax_rates_required": "「1 件以上」は税率が必要なことの言い換えで、変わる規則の値ではない",
   "ecsite.catalog.invalid_category_name": "「1 文字以上」は空白でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
   "ecsite.catalog.invalid_product_code": "「1〜」は空でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",
   "ecsite.catalog.invalid_variant_code": "「1〜」は空でないことの言い換えで、変わる規則の値ではない（上限は {max} で差し込む）",

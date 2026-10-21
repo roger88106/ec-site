@@ -14,7 +14,7 @@ import java.util.UUID;
 import java.util.function.BiPredicate;
 
 /**
- * 商品の更新の処理（と、更新の前の確かめ）で共通の、商品の取り出しと状態の切り替え。<br />
+ * 商品の更新の処理（と、更新の前の確認）で共通の、商品の取り出しと状態の切り替え。<br />
  * 取引の境界は、呼ぶ側の service が持つ。
  */
 @Component
@@ -32,7 +32,7 @@ class ProductLoader {
     private final Clock clock;
 
     /**
-     * 商品を取得し、取得時のバージョンと一致することを確かめる。
+     * 商品を取得し、取得時のバージョンと一致することを確認する。
      *
      * @param productId 商品 ID
      * @param version   取得時のバージョン

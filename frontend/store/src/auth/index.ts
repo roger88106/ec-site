@@ -33,7 +33,7 @@ const {
 /** セッションの Cookie を HTTPS だけで送るか（カート ID の Cookie と同じく、本番の起動で true） */
 const SECURE_COOKIE = process.env.NODE_ENV === 'production'
 
-/** access token の期限までの残りがこれ以下なら、要求のたびの確かめ（proxy）で取り直す（秒） */
+/** access token の期限までの残りがこれ以下なら、要求のたびの確認（proxy）で取り直す（秒） */
 const REFRESH_MARGIN_SECONDS = 60
 
 /** proxy が、いまの画面のパス（クエリを含む）を知らせる要求のヘッダー */

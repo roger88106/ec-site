@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { checkOidcEnv } from './oidcEnv.ts'
 
-/** 本番ビルドに要る値がそろった環境変数 */
+/** 本番ビルドに必要な値がそろった環境変数 */
 const FULL = { VITE_OIDC_AUTHORITY: 'https://idp.example/realms/ec-admin', VITE_OIDC_CLIENT_ID: 'ec-admin-web' }
 
 describe('本番ビルドの IdP の設定', () => {

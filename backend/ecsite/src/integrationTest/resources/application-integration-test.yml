@@ -24,7 +24,7 @@ spring:
 
 management:
   server:
-    # 運用の口を、業務ポートと同じに置く（MockMvc で確かめるため）。運用ポートを分ける確かめは ManagementPortTest
+    # 運用の口を、業務ポートと同じに置く（MockMvc で確認するため）。運用ポートを分ける確認は ManagementPortTest
     port: ${server.port}
 
 ecsite:
@@ -32,15 +32,15 @@ ecsite:
     # 定期ジョブを自動では動かさない。ジョブのテストは、テストからジョブを呼ぶ
     enabled: false
   payment:
-    # 支払の画面から戻る先（テストでは開かない）
+    # 支払画面から戻る先（テストでは開かない）
     return-url: http://store.example/orders/{orderId}?payment=returned
     mock:
       # 統合テストは決済の mock を使う（mock フラグ）
       enabled: true
-      # MockMvc で開く mock の支払の画面
+      # MockMvc で開く mock の支払画面
       base-url: http://localhost
   notification:
-    # メールの送信元（ShipmentMailTest が確かめる）。SMTP の接続先は TestcontainersConfig が Mailpit に向ける
+    # メールの送信元（ShipmentMailTest が確認する）。SMTP の接続先は TestcontainersConfig が Mailpit に向ける
     from: no-reply@shop.example
   shipping:
     # 物流サービスの通知の署名の鍵（試験用。CarrierWebhookTest が同じ鍵で署名する）
@@ -53,7 +53,7 @@ ecsite:
     shipping-tax-category-id: 00000000-0000-0000-0000-00000000f001
   storefront:
     shop:
-      # 問い合わせ先（StorefrontShopTest が確かめる）
+      # 問い合わせ先（StorefrontShopTest が確認する）
       contact-email: contact@shop.example
   security:
     # IdP は起動せず、テストの鍵で署名した token を使う（TestTokens、TestSecurityConfig）。

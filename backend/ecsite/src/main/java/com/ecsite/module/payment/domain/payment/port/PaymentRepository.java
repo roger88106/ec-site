@@ -22,7 +22,7 @@ public interface PaymentRepository {
     boolean insertIfAbsent(Payment payment);
 
     /**
-     * 支払の変更（状態、支払の画面、与信の参照）を保存し、登録されたイベントを発行する。バージョンを上げる。
+     * 支払の変更（状態、支払画面、与信の参照）を保存し、登録されたイベントを発行する。バージョンを上げる。
      *
      * @param payment 変更した支払
      */
@@ -45,9 +45,9 @@ public interface PaymentRepository {
     Optional<Payment> lockByOrderId(UUID orderId);
 
     /**
-     * 支払の画面の支払を行ロックして取得する。決済サービスの通知は画面の ID で届く。トランザクションの中で呼ぶ。
+     * 支払画面の支払を行ロックして取得する。決済サービスの通知は画面の ID で届く。トランザクションの中で呼ぶ。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 支払。なければ空
      */
     Optional<Payment> lockByPageId(String pageId);

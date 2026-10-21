@@ -36,9 +36,9 @@ public class PaymentNotificationService implements PaymentNotificationReceiver {
     private final Clock clock;
 
     /**
-     * 与信の成功を反映する。知らない支払の画面なら、記録して無視する。
+     * 与信の成功を反映する。知らない支払画面なら、記録して無視する。
      *
-     * @param pageId           支払の画面 ID
+     * @param pageId           支払画面 ID
      * @param authorizationRef 与信の参照
      */
     @Override
@@ -46,14 +46,14 @@ public class PaymentNotificationService implements PaymentNotificationReceiver {
         paymentRepository.lockByPageId(pageId).ifPresentOrElse(payment -> {
             payment.authorize(authorizationRef, clock.instant());
             paymentRepository.update(payment);
-        }, () -> log.warn("知らない支払の画面の与信の成功を無視する: pageId={}", pageId));
+        }, () -> log.warn("知らない支払画面の与信の成功を無視する: pageId={}", pageId));
     }
 
     /**
-     * 支払の画面の期限切れを反映する。支払の期限の後で未払いなら、支払なしにする。<br />
+     * 支払画面の期限切れを反映する。支払の期限の後で未払いなら、支払なしにする。<br />
      * 期限の前の通知（起こらないはず）は無視し、期限切れのジョブに任せる。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      */
     @Override
     public void pageExpired(String pageId) {

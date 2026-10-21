@@ -19,7 +19,7 @@ on:
       - '.github/workflows/pages.yml'
       - '.gitignore'
       - 'LICENSE'
-  # pull request は、変えたファイルによらずいつも流す（main に入る前に必ず確かめる）
+  # pull request は、変えたファイルによらずいつも流す（main に入る前に必ず確認する）
   pull_request:
 
 permissions:
@@ -50,7 +50,7 @@ jobs:
       # Gradle のキャッシュと、wrapper の検証
       - uses: gradle/actions/setup-gradle@v6
 
-      # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照らす（依存とライセンス）。
+      # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照合する（依存とライセンス）。
       # 別の手順にすると Gradle の起動と依存の解決が 2 回になり、1 分ほど延びるので、ビルドと同じ呼び出しで流す。
       # 失敗したときは、ログの「Some library licenses are not allowed」と build/reports/dependency-license/ を見る。
       # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
@@ -123,7 +123,7 @@ jobs:
       - name: ビルド
         run: pnpm build
         env:
-          # 本番ビルドは IdP の設定がなければ失敗する。CI はローカルの IdP の値で確かめる（realm の JSON と同じ）
+          # 本番ビルドは IdP の設定がなければ失敗する。CI はローカルの IdP の値で確認する（realm の JSON と同じ）
           VITE_OIDC_AUTHORITY: http://localhost:8180/realms/ec-admin
           VITE_OIDC_CLIENT_ID: ec-admin-web
 
@@ -141,12 +141,12 @@ jobs:
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
 
-      # workspace のすべての依存（開発用を含む）のライセンスを、方針と照らす（依存とライセンス）
+      # workspace のすべての依存（開発用を含む）のライセンスを、方針と照合する（依存とライセンス）
       - name: 依存のライセンスの検査
         working-directory: .
         run: node scripts/ci/licenses/check-frontend.mjs
 
-      # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確かめる
+      # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確認する
       - name: 共有のパッケージの lint・型チェック・テスト
         working-directory: frontend/shared
         run: pnpm lint && pnpm typecheck && pnpm test
@@ -175,7 +175,7 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # 画面はリクエストのたびに作るので、ビルドにバックエンドは要らない
+      # 画面はリクエストのたびに作るので、ビルドにバックエンドは必要ない
       - name: ビルド
         run: pnpm build
 
@@ -221,7 +221,7 @@ jobs:
       - uses: ./.github/actions/setup-frontend
 
       # E2E 用の DB と IdP の置き場所（PostgreSQL）と、IdP が送るメールの受け手（Mailpit）。
-      # docker/compose.yaml（ルートの .env が指す）をそのまま使う。E2E 用の DB・Keycloak（profile e2e）の作り直しと起動は、
+      # docker/compose.yaml（ルートの .env が指す）をそのまま使う。E2E 用の DB・Keycloak（profile e2e）の再作成と起動は、
       # pnpm test の準備の script（e2e/scripts/prepare.ts）が手元と同じように行う（plan 004 第 6.1 節）
       - name: DB・メールの起動
         run: docker compose up -d --wait postgres mailpit
@@ -259,7 +259,7 @@ jobs:
         working-directory: e2e
         run: pnpm exec playwright install-deps chromium
 
-      # E2E の準備（DB と IdP の作り直し）の後に、バックエンド（local,e2e profile）、管理画面、店舗画面を
+      # E2E の準備（DB と IdP の再作成）の後に、バックエンド（local,e2e profile）、管理画面、店舗画面を
       # playwright.config.ts が起動する
       - name: E2E
         working-directory: e2e

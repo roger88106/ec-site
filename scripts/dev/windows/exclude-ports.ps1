@@ -2,17 +2,17 @@
 # ローカルの環境のポートを、Windows のポートの予約（WinNAT などが動的に取る範囲）から外す（開発環境の起動）
 #
 #   使い方（管理者の PowerShell で）：powershell -ExecutionPolicy Bypass -File scripts\dev\windows\exclude-ports.ps1
-#     -WhatIf を付けると、照らした結果を示すだけで何も変えない
+#     -WhatIf を付けると、照合した結果を示すだけで何も変えない
 #
 # 先に compose（docker compose stop）、バックエンド、画面を止める。使っているポートは予約できない。
-# 管理者の権限が要る。管理者でなければ、照らした結果を示して何も変えずに終わる。
+# 管理者の権限が必要だ。管理者でなければ、照合した結果を示して何も変えずに終わる。
 # すること：
-#   1. 今の予約の範囲と、下の表のポートを照らして示す
-#   2. 変えること（WinNAT を止める → 各ポートを 1 つずつ予約する → WinNAT を始める）を示し、確かめを求める
-#   3. 確かめたら変える。予約したポートは、ほかのプログラムが動的に取る範囲に入らなくなる（再起動の後も残る）
+#   1. 今の予約の範囲と、下の表のポートを照合して示す
+#   2. 変えること（WinNAT を止める → 各ポートを 1 つずつ予約する → WinNAT を始める）を示し、確認を求める
+#   3. 確認したら変える。予約したポートは、ほかのプログラムが動的に取る範囲に入らなくなる（再起動の後も残る）
 # 予約を消すとき：netsh int ipv4 delete excludedportrange protocol=tcp startport=<ポート> numberofports=1
 #
-# ポートを足したら（compose、バックエンド、画面、E2E）、この表も直す。
+# ポートを追加したら（compose、バックエンド、画面、E2E）、この表も直す。
 # ============================================================================
 param([switch]$WhatIf)
 
@@ -37,7 +37,7 @@ $ports = [ordered]@{
   3100 = '店舗画面（E2E）'
 }
 
-# 今の予約の範囲（netsh の出力の、数字の 2 列の行）。末尾の * は管理者が足した予約
+# 今の予約の範囲（netsh の出力の、数字の 2 列の行）。末尾の * は管理者が追加した予約
 function Get-ExcludedRanges {
   netsh interface ipv4 show excludedportrange protocol=tcp |
     ForEach-Object {

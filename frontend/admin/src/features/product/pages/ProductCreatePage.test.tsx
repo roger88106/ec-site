@@ -6,7 +6,7 @@ import { PRODUCT_ID, productDetail, taxCategory } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
-/** 商品の登録の要求の本文（送った内容を確かめる） */
+/** 商品の登録の要求の本文（送った内容を確認する） */
 type CreateProductRequest = components['schemas']['CreateProductRequest']
 
 /** 商品の登録の画面が使う API に応答する。登録の要求は requests に取っておく */
@@ -26,7 +26,7 @@ function serveCreate(reply: (body: CreateProductRequest) => Response) {
 
 /**
  * 入力欄に文字を貼り付ける。1 文字ずつ打つと、打つたびにフォームを描き直して遅く、
- * 並べて流すと既定の時間切れを超えることがあるため（打った時点の変換を確かめるテストだけは打つ）
+ * 並べて流すと既定の時間切れを超えることがあるため（打った時点の変換を確認するテストだけは打つ）
  */
 async function paste(user: UserEvent, input: HTMLElement, text: string) {
   await user.click(input)

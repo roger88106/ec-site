@@ -26,7 +26,7 @@ export function cartCookieOptions(secure: boolean) {
 }
 
 /**
- * カートを使う操作を行う。カートがなければ作り、見つからなければ作り直して 1 回だけやり直す。
+ * カートを使う操作を行う。カートがなければ作り、見つからなければ再作成して 1 回だけやり直す。
  *
  * @param cartId 今のカート ID。なければ null
  * @param create カートを作り、その ID を返す

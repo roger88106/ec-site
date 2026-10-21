@@ -140,7 +140,7 @@ class EventResubmissionJobTest {
         clock.advance(Duration.ofMinutes(4));
         job.resubmit();
 
-        // 再発行すると、発行の記録の再発行の日時（初めは発行の日時）が変わる。リスナーは非同期で動くので、受けた回数だけでは確かめられない
+        // 再発行すると、発行の記録の再発行の日時（初めは発行の日時）が変わる。リスナーは非同期で動くので、受けた回数だけでは確認できない
         var publication = publicationOf(event);
         assertThat(publication.getLastResubmissionDate()).isEqualTo(publication.getPublicationDate());
         assertThat(listener.attempts(event)).isEqualTo(1);
@@ -158,7 +158,7 @@ class EventResubmissionJobTest {
         clock.advance(Duration.ofMinutes(1));
         job.resubmit();
 
-        // 再発行すると、再発行の日時と回数が変わる（リスナーは非同期で動くので、受けた回数だけでは確かめられない）
+        // 再発行すると、再発行の日時と回数が変わる（リスナーは非同期で動くので、受けた回数だけでは確認できない）
         var publication = publicationOf(event);
         assertThat(publication.getLastResubmissionDate()).isEqualTo(lastResubmission);
         assertThat(failingListener.attempts(event)).isEqualTo(3);
@@ -327,7 +327,7 @@ class EventResubmissionJobTest {
      * 処理に失敗し続けるテストのイベント
      *
      * @param id    イベントを見分ける ID
-     * @param email ログに出ないことを確かめる中身
+     * @param email ログに出ないことを確認する中身
      */
     record FailingEvent(UUID id, String email) {
     }

@@ -1,4 +1,4 @@
-// バックエンドのすべてのテストに、表示の名前（@DisplayName）があることを確かめる（テストの書き方 第 2.2 節）。
+// バックエンドのすべてのテストに、表示の名前（@DisplayName）があることを確認する（テストの書き方 第 2.2 節）。
 // テストのメソッド（@Test・@ParameterizedTest）の注釈のまとまりに @DisplayName がなければ失敗する。構文は解析しない。
 // 使い方：node scripts/ci/test-names.mjs（リポジトリのルートで）
 import { execSync } from 'node:child_process'

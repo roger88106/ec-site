@@ -48,7 +48,7 @@ export default async function ProductListPage({ searchParams }: PageProps<'/prod
       <ListFilterForm categories={flatCategories} query={query} />
       {result.response.status === 400 ? (
         <Alert variant="destructive">
-          <AlertDescription>{result.error?.message ?? t('invalidQuery') /* 条件の見直し */}</AlertDescription>
+          <AlertDescription>{result.error?.message ?? t('invalidQuery') /* 条件の再検討 */}</AlertDescription>
         </Alert>
       ) : (
         <ProductList hrefFor={(page) => listHref({ ...query, page })} page={unwrap(result)} />

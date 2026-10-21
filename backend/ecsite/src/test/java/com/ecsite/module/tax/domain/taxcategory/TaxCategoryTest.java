@@ -175,7 +175,7 @@ class TaxCategoryTest {
             var base = rate("10", null, null);
             var category = restore(base);
 
-            // When：基本の税率に終了を入れ、期間限定の税率と戻りの税率を足す
+            // When：基本の税率に終了を入れ、期間限定の税率と戻りの税率を追加する
             category.replaceRates(List.of(
                     draft(base.id(), "10", null, APR_2027),
                     newDraft("8", APR_2027, APR_2028),

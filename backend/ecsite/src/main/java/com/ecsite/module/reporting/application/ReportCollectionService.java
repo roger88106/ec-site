@@ -20,7 +20,7 @@ import java.util.UUID;
 
 /**
  * 写しと状態の履歴を集めるサービス（docs/backend/modules/reporting.md「写しの作り方」）。<br />
- * イベントを受けるたびに、履歴に 1 行足し、注文の API から今の写しを読み直して上書きする。
+ * イベントを受けるたびに、履歴に 1 行追加し、注文の API から今の写しを読み直して上書きする。
  * イベントの中身で写しを差分で直さないので、イベントが何度・どの順で届いても、写しは同じになる。
  */
 @Slf4j
@@ -44,7 +44,7 @@ public class ReportCollectionService {
     private final CatalogDirectory catalogDirectory;
 
     /**
-     * 履歴に 1 行足し、注文の写しを作り直す。同じ注文のイベントは、注文ごとのロックで 1 つずつ処理する
+     * 履歴に 1 行追加し、注文の写しを再作成する。同じ注文のイベントは、注文ごとのロックで 1 つずつ処理する
      * （同時に処理すると、互いの履歴が見えないまま写しを上書きするため）。
      *
      * @param entry 受けたイベントの履歴の行
@@ -57,7 +57,7 @@ public class ReportCollectionService {
     }
 
     /**
-     * 注文の写しを作り直す。
+     * 注文の写しを再作成する。
      */
     private void refresh(UUID orderId) {
         var found = orderDirectory.find(orderId);

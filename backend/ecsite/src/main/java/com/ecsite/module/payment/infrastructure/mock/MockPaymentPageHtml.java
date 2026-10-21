@@ -6,14 +6,14 @@ import lombok.NoArgsConstructor;
 import org.springframework.web.util.HtmlUtils;
 
 /**
- * mock の支払の画面の HTML を組み立てる（{@link MockPaymentPageController} の補助）。<br />
- * 外から来る値（支払の画面 ID、戻る先の URL、エラーの文）は、ここで HTML の特殊文字を置き換える。
+ * mock の支払画面の HTML を組み立てる（{@link MockPaymentPageController} の補助）。<br />
+ * 外から来る値（支払画面 ID、戻る先の URL、エラーの文）は、ここで HTML の特殊文字を置き換える。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 final class MockPaymentPageHtml {
 
     /**
-     * 支払の画面が見つからないときの HTML を返す。
+     * 支払画面が見つからないときの HTML を返す。
      *
      * @return HTML
      */
@@ -24,8 +24,8 @@ final class MockPaymentPageHtml {
     /**
      * 画面の状態に合わせた HTML を返す。
      *
-     * @param pageId 支払の画面 ID
-     * @param page   支払の画面
+     * @param pageId 支払画面 ID
+     * @param page   支払画面
      * @param error  示すエラーの文。なければ null
      * @return HTML
      */

@@ -158,7 +158,7 @@ class SecurityConfig {
     }
 
     /**
-     * realm の token の decoder。署名に加え、issuer・audience・有効期限を確かめる。<br />
+     * realm の token の decoder。署名に加え、issuer・audience・有効期限を確認する。<br />
      * 鍵は最初の検証のときに取る（起動のときに IdP が動いていなくてもよい）。
      *
      * @param realm realm の設定

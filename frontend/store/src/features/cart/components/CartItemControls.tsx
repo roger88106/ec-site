@@ -31,7 +31,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
           defaultValue={String(item.quantity)}
           disabled={changing || removing}
           id={quantityId}
-          // 送信の後に表示し直した数量を初期値にするため、数量が変わったら作り直す
+          // 送信の後に表示し直した数量を初期値にするため、数量が変わったら再作成する
           key={item.quantity}
           name="quantity"
           onChange={(event) => event.currentTarget.form?.requestSubmit()}

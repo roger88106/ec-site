@@ -29,7 +29,7 @@ import java.util.stream.Collectors;
 
 /**
  * メディアのサービス（docs/backend/modules/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
- * ファイルは署名付き URL でブラウザからアップロードのバケットへ直接送られ、用意のときに中身を確かめ、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
+ * ファイルは署名付き URL でブラウザからアップロードのバケットへ直接送られ、用意のときに中身を確認し、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
  */
 @Slf4j
 @Service
@@ -62,7 +62,7 @@ public class MediaService {
     private final Clock clock;
 
     /**
-     * 画像のアップロードの受付を始める。形式と大きさを確かめ、アップロードのバケットへの署名付き URL を発行する。
+     * 画像のアップロードの受付を始める。形式と大きさを確認し、アップロードのバケットへの署名付き URL を発行する。
      *
      * @param scope         受付の範囲（呼ぶ側が決める。例：商品ごと）
      * @param contentType   ファイルの形式
@@ -90,7 +90,7 @@ public class MediaService {
         var size = storage.findUploadSize(uploadKey)
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND));
         verifySize(size);
-        // 変換の前に、受け付ける形式であることを確かめる（判定できないものは変換に回さない）
+        // 変換の前に、受け付ける形式であることを確認する（判定できないものは変換に回さない）
         ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH))
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE, List.of(ImageFormat.displayNames())));
         var webp = imageConverter.convertToWebp(uploadKey);
@@ -161,7 +161,7 @@ public class MediaService {
     }
 
     /**
-     * 大きさが 1 バイト以上、上限（10MB）以下であることを確かめる。
+     * 大きさが 1 バイト以上、上限（10MB）以下であることを確認する。
      */
     private static void verifySize(long size) {
         if (size <= 0 || size > ImageFormat.MAX_BYTES) {

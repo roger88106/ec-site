@@ -10,7 +10,7 @@ import jakarta.annotation.Nullable;
  * @param emailVerified メールアドレスが確認済みか
  * @param familyName    姓
  * @param givenName     名
- * @param birthdate     生年月日（IdP の任意の属性。token の値のまま。形と範囲は使う側が確かめる）。なければ null
+ * @param birthdate     生年月日（IdP の任意の属性。token の値のまま。形と範囲は使う側が確認する）。なければ null
  * @param gender        性別（IdP の任意の属性。token の値のまま）。なければ null
  */
 public record AuthenticatedMember(String subject, String email, boolean emailVerified, String familyName, String givenName,

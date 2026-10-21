@@ -13,7 +13,7 @@ export function readString(formData: FormData, name: string): string {
 }
 
 /**
- * フォームの整数の項目を取り出す。範囲は確かめない（API の契約が確かめる）。
+ * フォームの整数の項目を取り出す。範囲は確認しない（API の契約が確認する）。
  *
  * @param formData フォーム
  * @param name     項目の名前

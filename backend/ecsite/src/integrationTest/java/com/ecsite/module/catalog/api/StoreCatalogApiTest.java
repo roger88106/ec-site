@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * C 側向けの商品照会の統合テスト（T603、AC-52〜54）。<br />
- * 商品は B 側の API で作って公開する。新着順を確かめるため、公開するごとに時計を 1 分進める。
+ * 商品は B 側の API で作って公開する。新着順を確認するため、公開するごとに時計を 1 分進める。
  * 税率の一覧のキャッシュは、前のテストのものが残らないよう、テストごとに捨てる。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -228,7 +228,7 @@ class StoreCatalogApiTest {
     }
 
     /**
-     * 要求を送って 201 を確かめ、応答の本文の ID を返す
+     * 要求を送って 201 を確認し、応答の本文の ID を返す
      */
     private String createdId(RequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();

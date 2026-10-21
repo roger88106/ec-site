@@ -1,4 +1,4 @@
-// バックエンドのエラーの文に、数字を直接書いていないことを確かめる（バックエンドの書き方 第 3.2 節）。
+// バックエンドのエラーの文に、数字を直接書いていないことを確認する（バックエンドの書き方 第 3.2 節）。
 // 上限・桁数などの値を文に書くと、規則の値が変わったときに文が取り残される。値はドメインの定数から {名前} で差し込む。
 // 差し込み（{max} など）を除いた文に数字があれば失敗にする。数え方の言葉（「1 つだけ」など）で規則の値でないものは、
 // 理由を添えて message-numbers-exclusions.json に書く。メールの文（ecsite.notification.*）はエラーの文でないので見ない。
@@ -66,7 +66,7 @@ export function findNumbers(text, exclusions) {
  *
  * @param {string} text       properties のファイルの中身
  * @param {Record<string, string>} exclusions 例外の一覧（キー → 理由）
- * @returns {string[]} 要らない例外のキー
+ * @returns {string[]} 不要な例外のキー
  */
 export function findStaleExclusions(text, exclusions) {
   const values = new Map(parseProperties(text).map(({ key, value }) => [key, value]))
@@ -82,8 +82,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   }
   const stale = findStaleExclusions(text, exclusions)
   for (const key of stale) {
-    console.log(`${EXCLUSIONS}：要らない例外 ${key}`)
+    console.log(`${EXCLUSIONS}：不要な例外 ${key}`)
   }
-  console.log(`数字を書いたエラーの文：${hits.length}、要らない例外：${stale.length}`)
+  console.log(`数字を書いたエラーの文：${hits.length}、不要な例外：${stale.length}`)
   process.exit(hits.length || stale.length ? 1 : 0)
 }

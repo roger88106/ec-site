@@ -6,7 +6,7 @@ const README = [
   '| spec | 種類 | 内容 | 状態 |',
   '|------|------|------|------|',
   '| [010](docs/specs/010-sales-report) | 機能 | 売上 | 完了。[段階 1〜6](docs/specs/010-sales-report/tasks/) を終えた |',
-  '| [017](docs/specs/017-stability) | 機能 | 安定性 | 完了。直さずに残したことは [見直しの結果](x.md) |',
+  '| [017](docs/specs/017-stability) | 機能 | 安定性 | 完了。直さずに残したことは [レビューの結果](x.md) |',
   '| [018](docs/specs/018-docs-and-tools) | 整理 | 文書とツールの整理 | 進行中 |',
 ].join('\n')
 

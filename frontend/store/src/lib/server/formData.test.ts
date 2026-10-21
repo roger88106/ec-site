@@ -16,7 +16,7 @@ describe('フォームの項目の取り出し', () => {
     expect(readString(form({}), 'name')).toBe('')
   })
 
-  test('整数はその値を返す。負の数も整数として返す（範囲は API が確かめる）', () => {
+  test('整数はその値を返す。負の数も整数として返す（範囲は API が確認する）', () => {
     expect(readInt(form({ quantity: '3' }), 'quantity')).toBe(3)
     expect(readInt(form({ quantity: ' 10 ' }), 'quantity')).toBe(10)
     expect(readInt(form({ quantity: '-1' }), 'quantity')).toBe(-1)

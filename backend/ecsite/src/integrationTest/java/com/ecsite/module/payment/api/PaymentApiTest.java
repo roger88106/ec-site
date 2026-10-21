@@ -73,7 +73,7 @@ class PaymentApiTest {
     }
 
     @Test
-    @DisplayName("AC-152 支払の画面の URL を何度求めても、開いている同じ画面を返し、決済サービスに作り直させない")
+    @DisplayName("AC-152 支払画面の URL を何度求めても、開いている同じ画面を返し、決済サービスに再作成させない")
     void reusesOpenPage() {
         var orderId = created();
 
@@ -86,7 +86,7 @@ class PaymentApiTest {
     }
 
     @Test
-    @DisplayName("BR-16 支払の期限の後は、支払の画面の URL を返さない")
+    @DisplayName("BR-16 支払の期限の後は、支払画面の URL を返さない")
     void noPageAfterDeadline() {
         var orderId = created();
 
@@ -97,7 +97,7 @@ class PaymentApiTest {
     }
 
     @Test
-    @DisplayName("支払のない注文には、支払の画面の URL を返さない")
+    @DisplayName("支払のない注文には、支払画面の URL を返さない")
     void noPageForUnknownOrder() {
         assertThat(paymentApi.pageUrl(UUID.randomUUID())).isEmpty();
     }
@@ -153,7 +153,7 @@ class PaymentApiTest {
     }
 
     /**
-     * mock の支払の画面の URL から、画面の ID を取り出す。
+     * mock の支払画面の URL から、画面の ID を取り出す。
      */
     private static String pageIdOf(String url) {
         return url.substring(url.lastIndexOf('/') + 1);

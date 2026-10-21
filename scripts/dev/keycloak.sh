@@ -1,5 +1,5 @@
 #!/usr/bin/env bash
-# ローカルの Keycloak（compose。http://localhost:8180）を確かめるための補助。
+# ローカルの Keycloak（compose。http://localhost:8180）を確認するための補助。
 #
 #   scripts/dev/keycloak.sh admin GET /admin/realms/ec-store            管理 API を呼ぶ（master の admin / admin で）
 #   scripts/dev/keycloak.sh admin PUT /admin/realms/ec-store -d '{...}'  curl の引数をそのまま渡せる

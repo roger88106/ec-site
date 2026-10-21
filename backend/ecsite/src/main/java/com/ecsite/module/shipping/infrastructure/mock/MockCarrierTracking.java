@@ -10,7 +10,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 /**
  * mock の物流サービスの追跡（docs/backend/modules/shipping.md「mock」）。<br />
- * 追跡を始めても、物流サービスには何も送らない。テストのコードが、追跡を始めた送り状番号を確かめられるように覚える。
+ * 追跡を始めても、物流サービスには何も送らない。テストのコードが、追跡を始めた送り状番号を確認できるように覚える。
  * 覚えるのはメモリで、mock はローカルとテストだけで使い、1 インスタンスで動かす前提のため。
  */
 @Component

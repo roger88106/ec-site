@@ -19,7 +19,7 @@ import java.util.UUID;
  * @param awaitingAuthorizationWarning 与信の通知を待ち始めてから、どれだけ過ぎたら長く待つ支払として warn のログに出すか
  * @param authorizationValidity        与信の有効期間（与信の時刻からの時間）。Stripe のカード決済の与信が切れる 7 日
  * @param authorizationWarning         与信期限のどれだけ前から「期限が近い」とするか
- * @param returnUrl                    支払の画面から戻る店舗の注文の画面の URL。{@code {orderId}} に注文 ID が入る
+ * @param returnUrl                    支払画面から戻る店舗の注文の画面の URL。{@code {orderId}} に注文 ID が入る
  */
 @Validated
 @ConfigurationProperties("ecsite.payment")

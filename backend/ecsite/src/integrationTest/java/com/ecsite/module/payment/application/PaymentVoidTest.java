@@ -167,7 +167,7 @@ class PaymentVoidTest {
     }
 
     /**
-     * 支払の画面を開いて支払い、与信済みにする。
+     * 支払画面を開いて支払い、与信済みにする。
      */
     private String paid(UUID orderId) {
         var url = paymentApi.pageUrl(orderId).orElseThrow();

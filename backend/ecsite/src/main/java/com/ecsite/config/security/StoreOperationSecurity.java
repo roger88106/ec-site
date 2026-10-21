@@ -10,7 +10,7 @@ import java.util.Optional;
  * 店舗 API の操作ごとの、会員の token の要否。<br />
  * {@code store.yaml} の各操作（メソッドとパス）の {@code security} を読み込む。{@code memberToken} だけの操作は token が要り、
  * 空の要件（{@code {}}）を含む操作と {@code security} のない操作は token なしで使える。
- * 認可の設定にパスを並べないので、操作を足しても契約と食い違わない。対応にない要求には要否を返さない（呼び出し側が拒否する）。
+ * 認可の設定にパスを並べないので、操作を追加しても契約と食い違わない。対応にない要求には要否を返さない（呼び出し側が拒否する）。
  */
 class StoreOperationSecurity {
 
@@ -41,7 +41,7 @@ class StoreOperationSecurity {
     }
 
     /**
-     * 要求に会員の token が要るかを求める。
+     * 要求に会員の token が必要かを求める。
      *
      * @param method HTTP メソッド
      * @param path   アプリの中のパス（{@code /api/store/...}）

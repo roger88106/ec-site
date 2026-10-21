@@ -1,4 +1,4 @@
-// 本番のコードに、spec・plan・tasks の番号を書いた所がないことを確かめる（コメントの書き方 第 1 節）。
+// 本番のコードに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方 第 1 節）。
 // 規則は言葉で書き、spec との対応はテストの名前に書く。テスト、生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
 import { execSync } from 'node:child_process'

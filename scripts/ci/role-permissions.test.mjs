@@ -132,7 +132,7 @@ describe('ロールと権限の対応表', () => {
     const doc = '# 表\n\n<!-- generated:role-permissions -->\n古い表\n<!-- /generated:role-permissions -->\n'
     assert.deepEqual(checkDocument(doc, '古い表\n'), [])
     assert.deepEqual(checkDocument(doc, '新しい表\n'), [
-      '文書の対応表が、契約と realm の設定から作った表と違う。node scripts/ci/role-permissions.mjs --write で書き直し、差分を確かめる',
+      '文書の対応表が、契約と realm の設定から作った表と違う。node scripts/ci/role-permissions.mjs --write で書き直し、差分を確認する',
     ])
     assert.deepEqual(checkDocument('# 表\n', 'x\n'), ['文書に <!-- generated:role-permissions --> の範囲がない'])
     assert.equal(

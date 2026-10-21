@@ -98,7 +98,7 @@ public final class PostalCodeCsv {
                 }
                 var fields = split(line);
                 if (fields.size() != COLUMNS) {
-                    throw new IllegalArgumentException("%d 行目の列の数が %d です（%d が要る）".formatted(lineNo, fields.size(), COLUMNS));
+                    throw new IllegalArgumentException("%d 行目の列の数が %d です（%d が必要だ）".formatted(lineNo, fields.size(), COLUMNS));
                 }
                 var code = fields.get(CODE);
                 var prefectureCode = code.substring(0, 2);

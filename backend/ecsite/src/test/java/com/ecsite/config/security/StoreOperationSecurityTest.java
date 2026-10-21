@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class StoreOperationSecurityTest {
 
     /**
-     * token が要る操作、任意の操作、要らない操作
+     * token が必要な操作、任意の操作、不要な操作
      */
     private static final String SPEC = """
             servers:
@@ -41,13 +41,13 @@ class StoreOperationSecurityTest {
             StoreOperationSecurity.load(new ByteArrayResource(SPEC.getBytes(StandardCharsets.UTF_8)));
 
     @Test
-    @DisplayName("AC-232 security が会員の token だけの操作は、token が要る")
+    @DisplayName("AC-232 security が会員の token だけの操作は、token が必要だ")
     void memberTokenOnlyRequiresToken() {
         assertThat(security.requiresToken("GET", "/api/store/me/orders")).hasValue(true);
     }
 
     @Test
-    @DisplayName("AC-233 security に空の要件を含む操作と、security のない操作は、token が要らない")
+    @DisplayName("AC-233 security に空の要件を含む操作と、security のない操作は、token が必要ない")
     void optionalOrPublicDoesNotRequireToken() {
         assertThat(security.requiresToken("GET", "/api/store/carts/c1")).hasValue(false);
         assertThat(security.requiresToken("GET", "/api/store/products")).hasValue(false);

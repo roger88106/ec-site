@@ -1,4 +1,4 @@
-// compose のポートが、既定でこのマシンだけ（127.0.0.1）で待ち受けることを確かめる（開発環境の起動 第 2 節）。
+// compose のポートが、既定でこのマシンだけ（127.0.0.1）で待ち受けることを確認する（開発環境の起動 第 2 節）。
 // 他のマシンからつなぐときは、すべてのポートを 1 つの変数（LOCAL_BIND_ADDRESS）で替える。
 // 使い方：node scripts/ci/compose-ports.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'

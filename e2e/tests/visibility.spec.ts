@@ -12,7 +12,7 @@ import { expectEventually, productCard } from '../src/store'
 import { STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT } from '../src/waits'
 
-/** 店舗画面の詳細が「見つかりません」であることを確かめる（AC-65） */
+/** 店舗画面の詳細が「見つかりません」であることを確認する（AC-65） */
 async function expectNotFound(page: Page, productId: string) {
   const response = await page.goto(`${STORE_URL}/products/${productId}`)
   expect(response?.status()).toBe(404)

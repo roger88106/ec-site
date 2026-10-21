@@ -11,7 +11,7 @@ import java.util.UUID;
  *
  * @param id     支払 ID
  * @param amount 金額
- * @param page   開いている支払の画面。なければ null
+ * @param page   開いている支払画面。なければ null
  */
 public record PayablePaymentView(UUID id, Money amount, @Nullable PaymentPage page) {
 }

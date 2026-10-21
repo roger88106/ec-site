@@ -9,8 +9,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 支払の画面のサービス（docs/backend/modules/payment.md「支払（集約）」）。<br />
- * 支払の画面は同時に 1 つだけ開く。決済サービスの呼び出しはトランザクションの外で行う。
+ * 支払画面のサービス（docs/backend/modules/payment.md「支払（集約）」）。<br />
+ * 支払画面は同時に 1 つだけ開く。決済サービスの呼び出しはトランザクションの外で行う。
  */
 @Service
 @RequiredArgsConstructor
@@ -37,10 +37,10 @@ public class PaymentPageService {
     private final PaymentProperties properties;
 
     /**
-     * 支払の画面の URL を返す。開いている画面があればそれを、なければ決済サービスに作らせる。
+     * 支払画面の URL を返す。開いている画面があればそれを、なければ決済サービスに作らせる。
      *
      * @param orderId 注文 ID
-     * @return 支払の画面の URL。支払がない、支払えない（未払いでない、期限の後）なら空
+     * @return 支払画面の URL。支払がない、支払えない（未払いでない、期限の後）なら空
      */
     public Optional<String> pageUrl(UUID orderId) {
         var payable = queryService.findPayable(orderId);

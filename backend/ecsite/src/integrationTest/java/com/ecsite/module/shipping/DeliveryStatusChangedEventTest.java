@@ -32,7 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * イベント「配送状態の変化」の統合テスト（T0113、plan 010 第 3 節）。<br />
- * 出荷を作ったときと、通知で配送状態が進んだときだけ出て、重ねて届いた通知・戻る通知では出ないことを確かめる。
+ * 出荷を作ったときと、通知で配送状態が進んだときだけ出て、重ねて届いた通知・戻る通知では出ないことを確認する。
  * テストごとにロールバックする。
  */
 @IntegrationTest
@@ -125,7 +125,7 @@ class DeliveryStatusChangedEventTest {
     }
 
     /**
-     * mock の物流サービスから、配送状態の通知を受け口へ送る
+     * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
      */
     private void notifyStatus(String statusName) throws Exception {
         var notification = mockCarrier.notification(Carrier.YAMATO, TRACKING_NUMBER, statusName);

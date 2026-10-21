@@ -9,7 +9,7 @@ import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from './waits'
  *
  * @param page 店舗画面のページ
  * @param url 開く URL
- * @param check 表示を確かめる。満たさなければ投げる
+ * @param check 表示を確認する。満たさなければ投げる
  */
 export async function expectEventually(page: Page, url: string, check: (page: Page) => Promise<void>) {
   await reopenUntil(page, url, () => check(page))
@@ -38,7 +38,7 @@ export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void>
 
 /**
  * お届け先の入力（郵便番号だけを差し替えられる）。メールアドレスは会員のものを使い、入力しない（AC-127）。<br />
- * 郵便番号が 7 桁なら、補われた都道府県（東京都）・市区町村（千代田区）・町域（千代田）を確かめて、番地を足す（AC-255）。
+ * 郵便番号が 7 桁なら、補われた都道府県（東京都）・市区町村（千代田区）・町域（千代田）を確認して、番地を追加する（AC-255）。
  * 7 桁でなければ補われないので、一覧から選ぶ。
  */
 export async function fillShipping(page: Page, postalCode: string) {
@@ -58,7 +58,7 @@ export async function fillShipping(page: Page, postalCode: string) {
 }
 
 /**
- * カートから注文手続きに進み、お届け先を入れて注文する。注文すると mock の支払の画面に移る。
+ * カートから注文手続きに進み、お届け先を入れて注文する。注文すると mock の支払画面に移る。
  *
  * @param page カートに商品のある店舗画面のページ
  */
@@ -71,10 +71,10 @@ export async function orderCart(page: Page) {
 }
 
 /**
- * mock の支払の画面で支払い、注文の画面に戻って、注文が「受付」になるのを待つ。<br />
+ * mock の支払画面で支払い、注文の画面に戻って、注文が「受付」になるのを待つ。<br />
  * 戻った直後は通知の反映の前で「お支払いを確認しています」と出ることがあるので、開き直しながら待つ。
  *
- * @param page mock の支払の画面を開いているページ
+ * @param page mock の支払画面を開いているページ
  * @return 注文の画面の URL（クエリなし）
  */
 export async function payOnMockPage(page: Page): Promise<string> {

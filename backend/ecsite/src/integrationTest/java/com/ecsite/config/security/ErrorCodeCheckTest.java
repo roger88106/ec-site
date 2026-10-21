@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 統合テストのエラーの応答の確かめ（{@link ErrorCodeCheck}）のテスト。
+ * 統合テストのエラーの応答の確認（{@link ErrorCodeCheck}）のテスト。
  */
 class ErrorCodeCheckTest {
 
@@ -37,7 +37,7 @@ class ErrorCodeCheckTest {
     }
 
     @Test
-    @DisplayName("errorCode のない本文は確かめない")
+    @DisplayName("errorCode のない本文は確認しない")
     void ignoresBodyWithoutErrorCode() {
         assertThatCode(() -> check.verify("GET", "/api/admin/products", "{}")).doesNotThrowAnyException();
     }

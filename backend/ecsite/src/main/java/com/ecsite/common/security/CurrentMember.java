@@ -38,7 +38,7 @@ public class CurrentMember {
     }
 
     /**
-     * token の会員を返す。会員の操作で使う（filter で認証を必須にしているが、念のため確かめる）。
+     * token の会員を返す。会員の操作で使う（filter で認証を必須にしているが、念のため確認する）。
      *
      * @return 会員
      * @throws BusinessException token がない（401）

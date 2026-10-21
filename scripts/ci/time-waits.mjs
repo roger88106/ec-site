@@ -1,4 +1,4 @@
-// テストが時間で待っていないことを確かめる（テストの書き方 第 5 節）。
+// テストが時間で待っていないことを確認する（テストの書き方 第 5 節）。
 // 時間で待つテストは、遅い環境で失敗し、速い環境で時間を無駄にする。条件で待つ（latch、Playwright の expect の再試行など）。
 // 使い方：node scripts/ci/time-waits.mjs（リポジトリのルートで）
 import { execSync } from 'node:child_process'

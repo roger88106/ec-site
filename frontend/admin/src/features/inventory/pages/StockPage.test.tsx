@@ -5,7 +5,7 @@ import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
-/** 在庫の調整の要求の本文（送った内容を確かめる） */
+/** 在庫の調整の要求の本文（送った内容を確認する） */
 type AdjustStockRequest = components['schemas']['AdjustStockRequest']
 /** 調整履歴の 1 件 */
 type StockAdjustment = components['schemas']['StockAdjustment']

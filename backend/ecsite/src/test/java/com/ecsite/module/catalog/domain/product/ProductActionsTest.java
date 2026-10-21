@@ -20,7 +20,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
  * 商品にできる操作（画面に返す旗）の単体テスト。<br />
- * 旗の値が、集約の規則（操作を受け付けるか、拒むか）と同じになることを確かめる。
+ * 旗の値が、集約の規則（操作を受け付けるか、拒むか）と同じになることを確認する。
  */
 class ProductActionsTest {
 

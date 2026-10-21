@@ -6,13 +6,13 @@ import { ASYNC_TIMEOUT, RECHECK_INTERVALS } from '../src/waits'
 /** 準備の間に開始日時にならないよう、初めに予約しておく先の時間 */
 const FAR_FUTURE_MILLIS = 60 * 60_000
 
-/** 開始前の表示を確かめた後、開始日時を何ミリ秒後に変えるか */
+/** 開始前の表示を確認した後、開始日時を何ミリ秒後に変えるか */
 const RESERVATION_MILLIS = 3_000
 
 test('AC-35 公開開始日時を予約して公開すると、開始前は店舗画面に出ず、開始日時になると出る', async ({ page }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const name = `E2E 予約 ${RUN_ID}`
-  // 準備（在庫ができるのを待つ など）にかかる時間によらないよう、先の日時で予約して作り、開始前を確かめてから近づける
+  // 準備（在庫ができるのを待つ など）にかかる時間によらないよう、先の日時で予約して作り、開始前を確認してから近づける
   const productId = await createPublishedProduct({
     code: 'RESERVE',
     name,

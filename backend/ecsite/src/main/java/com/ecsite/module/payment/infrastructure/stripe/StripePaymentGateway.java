@@ -22,7 +22,7 @@ import java.time.Duration;
 
 /**
  * Stripe の決済サービス（docs/backend/modules/payment.md「Stripe」）。<br />
- * 支払の画面は Checkout Session（与信だけを取る）、与信は PaymentIntent。売上確定は PaymentIntent の capture、返金は Refund。
+ * 支払画面は Checkout Session（与信だけを取る）、与信は PaymentIntent。売上確定は PaymentIntent の capture、返金は Refund。
  * Stripe の型とエラーはこのクラスの外に出さない。
  */
 @Slf4j
@@ -30,7 +30,7 @@ import java.time.Duration;
 class StripePaymentGateway implements PaymentGateway {
 
     /**
-     * 支払の画面の期限（作ってから）。Stripe の最短の 30 分に、時計のずれの余裕を足す
+     * 支払画面の期限（作ってから）。Stripe の最短の 30 分に、時計のずれの余裕を追加する
      */
     private static final Duration PAGE_LIFETIME = Duration.ofMinutes(31);
 
@@ -40,7 +40,7 @@ class StripePaymentGateway implements PaymentGateway {
     private static final String CURRENCY = "jpy";
 
     /**
-     * 支払の画面の明細の名前（金額は注文の総額の 1 行にする）
+     * 支払画面の明細の名前（金額は注文の総額の 1 行にする）
      */
     private static final String LINE_ITEM_NAME = "ご注文";
 
@@ -115,7 +115,7 @@ class StripePaymentGateway implements PaymentGateway {
             var session = client.v1().checkout().sessions().create(params);
             return new PaymentPage(session.getId(), session.getUrl());
         } catch (StripeException e) {
-            throw failure("支払の画面を作れない: paymentId=" + request.paymentId(), e);
+            throw failure("支払画面を作れない: paymentId=" + request.paymentId(), e);
         }
     }
 
@@ -128,7 +128,7 @@ class StripePaymentGateway implements PaymentGateway {
             // 開いていない Session は閉じられない。読み直して、支払が済んでいたか、もう閉じていたかを決める
             return closedState(pageId, e);
         } catch (StripeException e) {
-            throw failure("支払の画面を閉じられない: pageId=" + pageId, e);
+            throw failure("支払画面を閉じられない: pageId=" + pageId, e);
         }
     }
 
@@ -198,12 +198,12 @@ class StripePaymentGateway implements PaymentGateway {
         try {
             status = client.v1().checkout().sessions().retrieve(pageId).getStatus();
         } catch (StripeException e) {
-            throw failure("支払の画面の状態を読めない: pageId=" + pageId, e);
+            throw failure("支払画面の状態を読めない: pageId=" + pageId, e);
         }
         return switch (status) {
             case SESSION_COMPLETE -> CloseResult.ALREADY_PAID;
             case SESSION_EXPIRED -> CloseResult.CLOSED;
-            default -> throw failure("支払の画面を閉じられない: pageId=" + pageId + ", status=" + status, rejected);
+            default -> throw failure("支払画面を閉じられない: pageId=" + pageId + ", status=" + status, rejected);
         };
     }
 
@@ -236,7 +236,7 @@ class StripePaymentGateway implements PaymentGateway {
     }
 
     /**
-     * Stripe の失敗をシステムのエラーにする。Stripe の要求の ID を残し、ダッシュボードの記録と照らせるようにする。<br />
+     * Stripe の失敗をシステムのエラーにする。Stripe の要求の ID を残し、ダッシュボードの記録と照合できるようにする。<br />
      * 接続できない・Stripe の側の故障・回数の制限は、外部サービスのエラー（やり直せば成功しうる）にする。
      * 認証・権限・要求の誤りは、設定かコードの誤りなので、予期しないエラーのままにする。
      */

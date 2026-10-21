@@ -6,7 +6,7 @@ export function orderStatusLabel(status: OrderStatus): string {
   return translate(`common.orderStatus.${status}`)
 }
 
-/** 注文の状態ごとの見た目（Badge の variant）。対応が要る「キャンセル申請中」を目立たせる */
+/** 注文の状態ごとの見た目（Badge の variant）。対応が必要な「キャンセル申請中」を目立たせる */
 export const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'destructive' | 'secondary'> = {
   PENDING_PAYMENT: 'secondary',
   ACCEPTED: 'default',
@@ -20,7 +20,7 @@ export function paymentStatusLabel(status: PaymentStatus): string {
   return translate(`labels.paymentStatus.${status}`)
 }
 
-/** 支払の状態ごとの見た目（Badge の variant）。対応が要る「与信の取消待ち」「与信期限切れ」「返金待ち」を目立たせる */
+/** 支払の状態ごとの見た目（Badge の variant）。対応が必要な「与信の取消待ち」「与信期限切れ」「返金待ち」を目立たせる */
 export const PAYMENT_STATUS_VARIANTS: Record<PaymentStatus, 'destructive' | 'outline' | 'secondary'> = {
   UNPAID: 'secondary',
   AUTHORIZED: 'outline',

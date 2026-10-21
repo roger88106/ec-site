@@ -6,7 +6,7 @@ import { ApiError, errorMessage, fieldErrors } from '@/api/errors'
 /**
  * 操作した場所に出すエラー（管理画面の構成 第 6 節）。<br />
  * エラーレスポンスの message をそのまま出し、入力欄に付けていない項目のエラーを並べる。
- * バージョン不一致（409）では、取得し直してフォームを作り直すボタンを出す（onReload）。
+ * バージョン不一致（409）では、取得し直してフォームを再作成するボタンを出す（onReload）。
  */
 export function ErrorMessage({
   error,
@@ -14,7 +14,7 @@ export function ErrorMessage({
   shownFields = [],
 }: {
   error: unknown
-  /** 再読み込みのボタンで呼ぶ。取得し直しとフォームの作り直しを行う */
+  /** 再読み込みのボタンで呼ぶ。取得し直しとフォームの再作成を行う */
   onReload?: () => void
   /** 入力欄の下にすでに出している項目 */
   shownFields?: readonly string[]

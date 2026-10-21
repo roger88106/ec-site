@@ -8,7 +8,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 業務のエラーを確かめるための補助。
+ * 業務のエラーを確認するための補助。
  */
 public final class BusinessErrorAssertions {
 
@@ -16,7 +16,7 @@ public final class BusinessErrorAssertions {
     }
 
     /**
-     * 処理が、指定したエラーコードの業務のエラーで失敗することを確かめる。
+     * 処理が、指定したエラーコードの業務のエラーで失敗することを確認する。
      *
      * @param callable  処理
      * @param errorCode 期待するエラーコード

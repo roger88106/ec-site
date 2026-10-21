@@ -58,7 +58,7 @@ public class VariantSalesQueryService {
                     variant.axisValues().stream().map(axis -> new VariantSales.AxisValue(axis.name(), axis.value())).toList(),
                     total == null ? 0 : total.quantity(), total == null ? Money.ZERO : total.amount()));
         }
-        // 商品カタログにないバリアント（注文されたバリアントは削除できないので、通常はない）は、品番の写しで後ろに足す
+        // 商品カタログにないバリアント（注文されたバリアントは削除できないので、通常はない）は、品番の写しで後ろに追加する
         totals.values().forEach(total -> rows.add(new VariantSales(total.variantId(), total.variantCode(), List.of(),
                 total.quantity(), total.amount())));
         // 安定な並べ替えなので、販売数量が同じなら商品カタログの並びの順のまま

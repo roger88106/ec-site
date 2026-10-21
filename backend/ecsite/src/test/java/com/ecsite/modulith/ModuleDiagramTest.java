@@ -59,7 +59,7 @@ class ModuleDiagramTest {
         assertThat(between(document, GENERATED_START, GENERATED_END))
                 .as("モジュールの依存かイベントが変わった。backend/ecsite で "
                         + "./gradlew test --tests ModuleDiagramTest -PupdateDocs を流して文書の図を書き直し、"
-                        + "差分を確かめて commit する")
+                        + "差分を確認して commit する")
                 .isEqualTo(expected);
     }
 

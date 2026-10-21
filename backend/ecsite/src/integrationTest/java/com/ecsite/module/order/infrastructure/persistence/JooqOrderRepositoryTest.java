@@ -64,7 +64,7 @@ class JooqOrderRepositoryTest {
     }
 
     @Test
-    @DisplayName("BR-10 注文番号が重複したら保存せずに false を返す（呼ぶ側が番号を作り直す）")
+    @DisplayName("BR-10 注文番号が重複したら保存せずに false を返す（呼ぶ側が番号を再生成する）")
     void returnsFalseForDuplicateOrderNumber() {
         repository.insert(order(UUID.randomUUID(), "20261008-000002"));
         var duplicate = order(UUID.randomUUID(), "20261008-000002");

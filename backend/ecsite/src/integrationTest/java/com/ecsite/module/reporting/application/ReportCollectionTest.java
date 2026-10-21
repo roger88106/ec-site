@@ -43,7 +43,7 @@ import static org.mockito.Mockito.when;
 
 /**
  * 写しと状態の履歴を集める統合テスト（T0205、AC-223〜225、plan 010 第 1 節）。<br />
- * 注文と出荷のイベントをコミットしてレポートに届け、写しと履歴を DB で確かめる。注文と商品カタログの API は mock にし、
+ * 注文と出荷のイベントをコミットしてレポートに届け、写しと履歴を DB で確認する。注文と商品カタログの API は mock にし、
  * 注文の今の写しをテストで決める。受けるのはコミットの後で非同期なので、結果を待つ。注文 ID はテストごとに変える。
  */
 @IntegrationTest
@@ -201,7 +201,7 @@ class ReportCollectionTest {
     }
 
     @Test
-    @DisplayName("NFR-14 注文の API が失敗したら写しを作らず、未完了のイベントの再発行で作り直す")
+    @DisplayName("NFR-14 注文の API が失敗したら写しを作らず、未完了のイベントの再発行で再作成する")
     void retriesFailedEvent() {
         when(orderReportApi.find(orderId))
                 .thenThrow(new IllegalStateException("注文の API が失敗した"))

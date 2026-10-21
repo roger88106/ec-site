@@ -230,7 +230,7 @@ class MemberCartApiTest {
         }
 
         @Test
-        @DisplayName("AC-123 商品・在庫は確かめずに移し、切り詰めた品目を返す")
+        @DisplayName("AC-123 商品・在庫は確認せずに移し、切り詰めた品目を返す")
         void doesNotVerifyCatalogOrStock() throws Exception {
             var memberCartId = memberCart(owner);
             var unknown = UUID.randomUUID();

@@ -5,8 +5,8 @@
 export const REQUIRED_IN_PRODUCTION_BUILD = ['VITE_OIDC_AUTHORITY', 'VITE_OIDC_CLIENT_ID'] as const
 
 /**
- * 本番ビルドのときに、IdP の環境変数を確かめる。足りなければ（空も含む）、足りない名前を並べた例外を投げる。<br />
- * 開発のサーバー、テスト、本番でないモードのビルドでは確かめない（ローカルの IdP の既定値を使う）。
+ * 本番ビルドのときに、IdP の環境変数を確認する。足りなければ（空も含む）、足りない名前を並べた例外を投げる。<br />
+ * 開発のサーバー、テスト、本番でないモードのビルドでは確認しない（ローカルの IdP の既定値を使う）。
  *
  * @param command Vite のコマンド（`build` か `serve`）
  * @param mode    Vite のモード

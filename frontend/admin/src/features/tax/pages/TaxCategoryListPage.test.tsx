@@ -6,7 +6,7 @@ import { taxCategory } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
-/** 税区分の登録の要求の本文（送った内容を確かめる） */
+/** 税区分の登録の要求の本文（送った内容を確認する） */
 type CreateTaxCategoryRequest = components['schemas']['CreateTaxCategoryRequest']
 
 /** 税区分の画面の URL */
@@ -22,7 +22,7 @@ const REDUCED = taxCategory({
 
 /**
  * 税区分の一覧と登録に応答する。登録の要求は requests に取っておく。<br />
- * 登録の応答は reply で決める。省略すると成功（201）にし、一覧に足す。
+ * 登録の応答は reply で決める。省略すると成功（201）にし、一覧に追加する。
  */
 function serveTaxCategories(initial: TaxCategory[], reply?: (body: CreateTaxCategoryRequest) => Response) {
   const state = { items: initial, requests: [] as CreateTaxCategoryRequest[] }
@@ -69,7 +69,7 @@ describe('税区分の一覧', () => {
 })
 
 describe('税区分の登録', () => {
-  it('AC-1 名称を入れて登録すると、知らせを出し、入力を空にして一覧に足す', async () => {
+  it('AC-1 名称を入れて登録すると、知らせを出し、入力を空にして一覧に追加する', async () => {
     const state = serveTaxCategories([taxCategory()])
     const { user } = renderApp(URL)
 

@@ -17,7 +17,7 @@ import static com.ecsite.jooq.reporting.Tables.SALES_ORDER_LINE;
 
 /**
  * レポートの集計のテストで、写し（注文と明細）を DB に直接入れる補助。<br />
- * 写しの作り方（イベント）は ReportCollectionTest で確かめるので、集計のテストは写しから始める。
+ * 写しの作り方（イベント）は ReportCollectionTest で確認するので、集計のテストは写しから始める。
  * 明細は税込単価 1,100 円（税抜 1,000 円、税率 10%）。送料は 1,000 円（消費税 90 円）。
  */
 public class ReportTestData {
@@ -109,7 +109,7 @@ public class ReportTestData {
         }
 
         /**
-         * 明細を足す（税込単価 1,100 円、税抜単価 1,000 円）。
+         * 明細を追加する（税込単価 1,100 円、税抜単価 1,000 円）。
          *
          * @param productId 商品 ID
          * @param variantId バリアント ID

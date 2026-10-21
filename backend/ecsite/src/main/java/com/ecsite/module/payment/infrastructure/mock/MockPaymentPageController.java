@@ -16,7 +16,7 @@ import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
 /**
- * mock の支払の画面（docs/backend/modules/payment.md「mock」）。<br />
+ * mock の支払画面（docs/backend/modules/payment.md「mock」）。<br />
  * 外部の決済サービスの画面の代わりで、EC の API ではない（OpenAPI に書かない）。決済の mock フラグを立てたときだけ出す。
  * 「支払う」「カードを拒否させる」「やめる」の操作を持ち、支払う・やめるときは店舗の注文の画面に戻す。
  */
@@ -31,9 +31,9 @@ class MockPaymentPageController {
     private final MockPaymentGateway gateway;
 
     /**
-     * 支払の画面を出す。
+     * 支払画面を出す。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 画面
      */
     @GetMapping("/mock-payment/{pageId}")
@@ -44,7 +44,7 @@ class MockPaymentPageController {
     /**
      * 支払う。与信の成功を通知してから、店舗の注文の画面に戻す。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 戻る先への移動。開いていない画面なら、その旨の画面
      */
     @PostMapping("/mock-payment/{pageId}/pay")
@@ -60,7 +60,7 @@ class MockPaymentPageController {
     /**
      * カードを拒否させる。状態は変えず、拒否を示して同じ画面を出す。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 画面
      */
     @PostMapping("/mock-payment/{pageId}/decline")
@@ -71,7 +71,7 @@ class MockPaymentPageController {
     /**
      * やめる。支払わずに、店舗の注文の画面に戻す。
      *
-     * @param pageId 支払の画面 ID
+     * @param pageId 支払画面 ID
      * @return 戻る先への移動
      */
     @PostMapping("/mock-payment/{pageId}/cancel")

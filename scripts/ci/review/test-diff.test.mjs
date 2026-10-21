@@ -77,14 +77,14 @@ describe('テストの差分の検査', () => {
     ])
   })
 
-  test('行を足すだけ・消すだけの変更も失敗する', () => {
+  test('行を追加するだけ・消すだけの変更も失敗する', () => {
     const diff = fileDiff({ from: TEST, added: ['        verify(mock).call();'] })
     assert.deepEqual(findViolations(diff, []), [
       { file: TEST, kind: 'added', line: '        verify(mock).call();' },
     ])
   })
 
-  test('新しく足したテストのファイルは見ない', () => {
+  test('新しく追加したテストのファイルは見ない', () => {
     const diff = fileDiff({ from: TEST, newFile: true, added: ['class FooTest {', '}'] })
     assert.deepEqual(findViolations(diff, []), [])
   })
@@ -154,7 +154,7 @@ describe('ファイルをまたぐテストの移動（spec 014 の DN-18）', (
     assert.equal(findViolations(diff, []).length, 3)
   })
 
-  test('新しく足したファイルの、照らして残った行は出さない', () => {
+  test('新しく追加したファイルの、照合して残った行は出さない', () => {
     const diff = [
       fileDiff({ from: FROM, removed: MOVED }),
       fileDiff({ from: TO, newFile: true, added: [...MOVED, "  test('新しいテスト', () => {})"] }),

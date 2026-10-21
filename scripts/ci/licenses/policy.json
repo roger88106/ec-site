@@ -90,7 +90,7 @@
     "https://www.jooq.org/inc/LICENSE.txt": "Apache-2.0"
   },
   "gradlePlugins": {
-    "$comment": "Gradle のプラグインは依存の構成に出ないので、手で書いて見直しで確かめる（版は gradle/libs.versions.toml）",
+    "$comment": "Gradle のプラグインは依存の構成に出ないので、手で書いてレビューで確認する（版は gradle/libs.versions.toml）",
     "org.springframework.boot": "Apache-2.0",
     "io.spring.dependency-management": "Apache-2.0",
     "nu.studer.jooq": "Apache-2.0",

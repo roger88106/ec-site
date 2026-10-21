@@ -28,7 +28,7 @@ describe('カート ID の Cookie の値', () => {
   })
 })
 
-describe('カートを使う操作（カートがない・見つからないときに作り直す）', () => {
+describe('カートを使う操作（カートがない・見つからないときに再作成する）', () => {
   test('AC-73 カートがなければ作ってから操作する', async () => {
     const create = vi.fn().mockResolvedValue(NEW_ID)
     const run = vi.fn().mockResolvedValue('done')
@@ -49,7 +49,7 @@ describe('カートを使う操作（カートがない・見つからないと�
     expect(create).not.toHaveBeenCalled()
   })
 
-  test('カートが見つからなければ、作り直して 1 回だけやり直す', async () => {
+  test('カートが見つからなければ、再作成して 1 回だけやり直す', async () => {
     const create = vi.fn().mockResolvedValue(NEW_ID)
     const run = vi.fn().mockResolvedValueOnce(CART_NOT_FOUND).mockResolvedValueOnce('done')
 

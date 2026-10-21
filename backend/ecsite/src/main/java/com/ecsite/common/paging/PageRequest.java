@@ -30,7 +30,7 @@ public record PageRequest(int page, int size) {
 
     /**
      * コンストラクタ。<br />
-     * 範囲は API の入力検証でも確かめるが、ここでも守る。
+     * 範囲は API の入力検証でも確認するが、ここでも守る。
      *
      * @param page ページ番号（1 始まり）
      * @param size 1 ページの件数

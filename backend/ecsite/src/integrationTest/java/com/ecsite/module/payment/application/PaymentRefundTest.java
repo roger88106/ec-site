@@ -63,7 +63,7 @@ class PaymentRefundTest {
     DSLContext dsl;
 
     /**
-     * 注文 ID → 支払の画面 ID
+     * 注文 ID → 支払画面 ID
      */
     private final Map<UUID, String> pageIds = new HashMap<>();
 
@@ -175,7 +175,7 @@ class PaymentRefundTest {
     }
 
     /**
-     * 支払の画面を開いて支払い、与信済みにする。
+     * 支払画面を開いて支払い、与信済みにする。
      */
     private UUID authorized() {
         var orderId = created();
@@ -196,7 +196,7 @@ class PaymentRefundTest {
     }
 
     /**
-     * 与信済みにした注文の、支払の画面 ID を返す（支払の後は画面の URL を引けないため、覚えておく）。
+     * 与信済みにした注文の、支払画面 ID を返す（支払の後は画面の URL を引けないため、覚えておく）。
      */
     private String pageIdOf(UUID orderId) {
         return pageIds.get(orderId);

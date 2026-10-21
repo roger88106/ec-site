@@ -24,10 +24,10 @@ public interface PaymentDirectory {
     void create(UUID orderId, Money amount, Instant orderedAt);
 
     /**
-     * 支払の画面の URL を返す。決済サービスを呼ぶので、トランザクションの外で呼ぶ。
+     * 支払画面の URL を返す。決済サービスを呼ぶので、トランザクションの外で呼ぶ。
      *
      * @param orderId 注文 ID
-     * @return 支払の画面の URL。支払えなければ空
+     * @return 支払画面の URL。支払えなければ空
      */
     Optional<String> pageUrl(UUID orderId);
 

@@ -6,7 +6,7 @@ import { CHECKOUT_ID, form, ORDER_ID } from '@/test/fixtures'
 import { redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
 import { http, problem, server } from '@/test/server'
 
-/** 決済サービスの支払の画面の URL */
+/** 決済サービスの支払画面の URL */
 const PAYMENT_PAGE_URL = 'https://pay.example/cs_test_1'
 
 /** 注文のフォーム（前後に空白のある入力を含む） */
@@ -23,7 +23,7 @@ const orderForm = () =>
   })
 
 describe('注文する', () => {
-  test('AC-143 注文が成立したら、会員の token を付けて送り、決済サービスの支払の画面へ移る', async () => {
+  test('AC-143 注文が成立したら、会員の token を付けて送り、決済サービスの支払画面へ移る', async () => {
     signInAs()
     let sent: unknown
     let pageRequestedFor: unknown
@@ -62,7 +62,7 @@ describe('注文する', () => {
     })
   })
 
-  test('AC-143 支払の画面の URL を得られなければ、注文の画面へ移る（そこから支払える）', async () => {
+  test('AC-143 支払画面の URL を得られなければ、注文の画面へ移る（そこから支払える）', async () => {
     signInAs()
     server.use(
       http.post('/checkouts/{checkoutId}/order', ({ response }) => response(201).json({ id: ORDER_ID })),
@@ -173,7 +173,7 @@ describe('キャンセルを申請する', () => {
 })
 
 describe('支払う', () => {
-  test('AC-151 会員の token を付けて支払の画面の URL を求め、その画面へ移る', async () => {
+  test('AC-151 会員の token を付けて支払画面の URL を求め、その画面へ移る', async () => {
     signInAs()
     let authorization: unknown
     server.use(

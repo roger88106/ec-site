@@ -52,7 +52,7 @@ export function OrderListPage() {
     <>
       <PageHeader title={t('title') /* 注文 */} />
       <div className="space-y-4">
-        {/* 絞り込みを変えたら（URL が変わったら）入力欄を作り直す */}
+        {/* 絞り込みを変えたら（URL が変わったら）入力欄を再作成する */}
         <OrderFilterForm filter={filter} key={searchParams.toString()} onApply={apply} />
         <QueryState query={query}>
           {(result) => (

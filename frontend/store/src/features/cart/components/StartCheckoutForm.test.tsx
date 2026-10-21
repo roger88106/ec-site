@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { StartCheckoutForm } from '@/features/cart/components/StartCheckoutForm'
 import { renderMarkup } from '@/test/render'
 
-// 注文手続きに進む操作はサーバーアクションを通るので、サーバーアクションのテストと E2E で確かめる（テストの書き方 第 1 節）
+// 注文手続きに進む操作はサーバーアクションを通るので、サーバーアクションのテストと E2E で確認する（テストの書き方 第 1 節）
 
 describe('注文手続きに進む', () => {
   test('購入できる品目だけのカートは、進める', () => {

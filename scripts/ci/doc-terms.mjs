@@ -1,4 +1,4 @@
-// 文書の用語を確かめる。言い換えの一覧は doc-terms.json。
+// 文書の用語を確認する。言い換えの一覧は doc-terms.json。
 //   ng：使わない語。見つけたら失敗にする
 //   caution：文脈で言い換えるかを決める語。--caution を付けたときだけ示し、失敗にしない（文書を書くときに見る）
 // 見るのは docs/（spec・plan・tasks を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown。

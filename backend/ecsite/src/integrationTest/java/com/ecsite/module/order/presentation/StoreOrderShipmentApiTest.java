@@ -161,7 +161,7 @@ class StoreOrderShipmentApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * mock の物流サービスから、配送状態の通知を受け口へ送る
+     * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
      */
     private void notifyStatus(Carrier carrier, String statusName) throws Exception {
         var notification = mockCarrier.notification(carrier, TRACKING_NUMBER, statusName);

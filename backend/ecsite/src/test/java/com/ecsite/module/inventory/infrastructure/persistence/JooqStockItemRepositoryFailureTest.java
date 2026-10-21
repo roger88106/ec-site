@@ -9,7 +9,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 
 /**
  * 在庫の調整が更新されなかったときの、エラーの選び方の単体テスト。<br />
- * 更新の後に在庫が作られる並びは統合テストで再現しにくいので、選び方だけを確かめる。
+ * 更新の後に在庫が作られる並びは統合テストで再現しにくいので、選び方だけを確認する。
  */
 class JooqStockItemRepositoryFailureTest {
 

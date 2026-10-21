@@ -14,8 +14,8 @@ import java.time.Clock;
 
 /**
  * Stripe の通知の受け取り（docs/backend/modules/payment.md「Stripe」）。<br />
- * 署名を確かめてから、通知を決済サービスの型から直して、通知の受け口へ渡す。
- * 扱う種類は、与信の成功（Checkout Session の完了）と、支払の画面の期限切れ（Checkout Session の期限切れ）だけ。
+ * 署名を確認してから、通知を決済サービスの型から直して、port へ渡す。
+ * 扱う種類は、与信の成功（Checkout Session の完了）と、支払画面の期限切れ（Checkout Session の期限切れ）だけ。
  */
 @Slf4j
 class StripeNotificationHandler {
@@ -31,12 +31,12 @@ class StripeNotificationHandler {
     private static final String SESSION_COMPLETED = "checkout.session.completed";
 
     /**
-     * 支払の画面の期限切れの通知の種類
+     * 支払画面の期限切れの通知の種類
      */
     private static final String SESSION_EXPIRED = "checkout.session.expired";
 
     /**
-     * 通知の受け口
+     * 通知の port
      */
     private final PaymentNotificationReceiver receiver;
 
@@ -51,7 +51,7 @@ class StripeNotificationHandler {
     private final Clock clock;
 
     /**
-     * @param receiver      通知の受け口
+     * @param receiver      通知の port
      * @param webhookSecret 通知の署名の鍵
      * @param clock         時計
      */
@@ -83,7 +83,7 @@ class StripeNotificationHandler {
 // ============================== プライベート ==============================
 
     /**
-     * 署名を確かめて、通知を読む。
+     * 署名を確認して、通知を読む。
      */
     private Event verify(String payload, String signatureHeader) {
         if (signatureHeader == null || signatureHeader.isBlank()) {
@@ -92,7 +92,7 @@ class StripeNotificationHandler {
         try {
             return Webhook.constructEvent(payload, signatureHeader, webhookSecret, TOLERANCE_SECONDS, clock);
         } catch (SignatureVerificationException e) {
-            throw new InvalidStripeNotificationException("署名を確かめられない Stripe の通知: " + e.getMessage(), e);
+            throw new InvalidStripeNotificationException("署名を確認できない Stripe の通知: " + e.getMessage(), e);
         }
     }
 

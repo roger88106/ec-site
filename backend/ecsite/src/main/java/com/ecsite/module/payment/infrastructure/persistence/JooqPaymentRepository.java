@@ -156,7 +156,7 @@ class JooqPaymentRepository implements PaymentRepository {
     }
 
     /**
-     * 変わりうる項目（状態、支払の画面、与信の参照、与信の時刻、通知を待ち始めた時刻）をレコードに書く。
+     * 変わりうる項目（状態、支払画面、与信の参照、与信の時刻、通知を待ち始めた時刻）をレコードに書く。
      */
     private static void writeState(PaymentRecord record, Payment.Snapshot snapshot) {
         record.setStatus(snapshot.status().name());

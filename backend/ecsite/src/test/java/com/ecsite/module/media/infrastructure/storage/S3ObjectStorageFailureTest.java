@@ -121,7 +121,7 @@ class S3ObjectStorageFailureTest {
     }
 
     /**
-     * 失敗の分類を確かめる操作（名前、呼び出し）。署名付き URL の発行は S3 を呼ばないので除く
+     * 失敗の分類を確認する操作（名前、呼び出し）。署名付き URL の発行は S3 を呼ばないので除く
      */
     static Stream<Arguments> operations() {
         return Stream.of(
@@ -147,7 +147,7 @@ class S3ObjectStorageFailureTest {
     }
 
     /**
-     * 外部サービスのエラー（画像のサービスが使えない）になることを確かめる。
+     * 外部サービスのエラー（画像のサービスが使えない）になることを確認する。
      */
     private static void assertServiceUnavailable(ThrowingCallable call) {
         assertThatThrownBy(call).isInstanceOfSatisfying(SystemException.class, ex ->

@@ -55,7 +55,7 @@ async function SearchResult({ q, page }: { q: string; page: number }) {
   if (result.response.status === 400) {
     return (
       <Alert variant="destructive">
-        <AlertDescription>{result.error?.message ?? t('invalidKeyword') /* キーワードの見直し */}</AlertDescription>
+        <AlertDescription>{result.error?.message ?? t('invalidKeyword') /* キーワードの再検討 */}</AlertDescription>
       </Alert>
     )
   }

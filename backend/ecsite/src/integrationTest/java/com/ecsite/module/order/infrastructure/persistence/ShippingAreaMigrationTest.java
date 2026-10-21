@@ -77,7 +77,7 @@ class ShippingAreaMigrationTest {
     }
 
     @Test
-    @DisplayName("AC-261 市区町村と照らせない注文があれば、その注文番号を示して移行が失敗する")
+    @DisplayName("AC-261 市区町村と照合できない注文があれば、その注文番号を示して移行が失敗する")
     void failsWhenNotMatched() {
         insertOrder("20261001-000001", "東京都", "千代田区千代田 1-1");
         insertOrder("20261001-000009", "東京都", "横浜市中区山下町 1");

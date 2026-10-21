@@ -35,7 +35,7 @@ class SecurityProblemResponder implements AuthenticationEntryPoint, AccessDenied
      */
     @Override
     public void commence(HttpServletRequest request, HttpServletResponse response, AuthenticationException authException) {
-        // RFC 6750：Bearer の token が要ることを示す
+        // RFC 6750：Bearer の token が必要なことを示す
         response.setHeader(HttpHeaders.WWW_AUTHENTICATE, "Bearer");
         resolver.resolveException(request, response, null, BusinessException.of(CommonErrorCode.UNAUTHENTICATED));
     }

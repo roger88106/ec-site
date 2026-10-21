@@ -17,7 +17,7 @@ import java.util.UUID;
 public final class CreatedResponses {
 
     /**
-     * 管理 API の作成の応答を作る。Location は、今のリクエストの URI に ID を足したもの。
+     * 管理 API の作成の応答を作る。Location は、今のリクエストの URI に ID を追加したもの。
      *
      * @param id 作成した ID
      * @return 作成の応答
@@ -27,7 +27,7 @@ public final class CreatedResponses {
     }
 
     /**
-     * 店舗の API の作成の応答を作る。Location は、今のリクエストの URI に ID を足したもの。
+     * 店舗の API の作成の応答を作る。Location は、今のリクエストの URI に ID を追加したもの。
      *
      * @param id 作成した ID
      * @return 作成の応答
@@ -37,7 +37,7 @@ public final class CreatedResponses {
     }
 
     /**
-     * 店舗の API の作成の応答を、別のパスを指して作る。Location は、アプリの起点にパスを足したもの。
+     * 店舗の API の作成の応答を、別のパスを指して作る。Location は、アプリの起点にパスを追加したもの。
      *
      * @param path パス（`{id}` に ID を入れる。例：`/api/store/orders/{id}`）
      * @param id   作成した ID
@@ -62,7 +62,7 @@ public final class CreatedResponses {
     }
 
     /**
-     * 今のリクエストの URI に ID を足す。
+     * 今のリクエストの URI に ID を追加する。
      *
      * @param id 作成した ID
      * @return 作成したものの URI

@@ -11,7 +11,7 @@ import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 
 /**
  * 店舗 API の接続先と、結果をキャッシュする秒数。<br />
- * 秒数は環境変数 STORE_API_REVALIDATE_SECONDS で短くできる（E2E で、60 秒を待たずに一覧への反映を確かめるため）。
+ * 秒数は環境変数 STORE_API_REVALIDATE_SECONDS で短くできる（E2E で、60 秒を待たずに一覧への反映を確認するため）。
  */
 const {
   apiBaseUrl: BASE_URL,
@@ -112,7 +112,7 @@ export const UNCACHED = {
 /**
  * サーバーコンポーネントから API を呼ぶときに使う。<br />
  * 画面をリクエストのたびに作るようにしてから（connection）、クライアントを返す。
- * ビルドのときに画面を作って API を呼ぶ（バックエンドが要る）のを避けるため。API の結果のキャッシュは別に効く。
+ * ビルドのときに画面を作って API を呼ぶ（バックエンドが必要だ）のを避けるため。API の結果のキャッシュは別に効く。
  */
 export async function getApi() {
   await connection()

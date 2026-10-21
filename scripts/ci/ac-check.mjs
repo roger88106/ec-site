@@ -202,7 +202,7 @@ export function renderAcList({ definitions, previous, testFiles, exclusions }) {
     } else if (exclusions[`AC-${ac}`]) {
       test = '除外'
     }
-    const origin = `[${spec.slice(0, 3)}](../specs/${specPath ?? spec}/spec.md)`
+    const origin = `[${spec.slice(0, 3)}](../specs/${specPath}/spec.md)`
     lines.push(`| AC-${ac} | ${summary} | ${kept.status} | ${origin} | ${kept.changedBy} | ${kept.location} | ${test} |`)
   }
   return `${lines.join('\n')}\n`

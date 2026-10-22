@@ -1,3 +1,4 @@
+import { withAllOption } from '@ec-site/shared/lib/options'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
@@ -22,12 +23,10 @@ export function ProductFilterForm({
 }) {
   const t = useTranslations('product.filter')
   const tApp = useTranslations('app.common')
-  const tCommon = useTranslations('common')
   // 状態の選択肢（「すべて」は絞り込まない）
-  const statusOptions = [
-    { value: null, label: tCommon('all') /* すべて */ },
-    ...publicationStatusValues.map((status) => ({ value: status, label: publicationStatusLabel(status) })),
-  ]
+  const statusOptions = withAllOption(
+    publicationStatusValues.map((status) => ({ value: status, label: publicationStatusLabel(status) })),
+  )
   const form = useForm<ProductFilter>({ defaultValues: filter })
   return (
     <form

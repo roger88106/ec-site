@@ -1,3 +1,4 @@
+import { withAllOption } from './options'
 import { translate } from './translate'
 
 /** カテゴリの木の節（管理 API と店舗 API のカテゴリの木の、共通の形） */
@@ -24,11 +25,10 @@ export function flattenTree(nodes: readonly CategoryTreeNode[], depth = 1): Flat
  * @returns 選択肢の値と表示
  */
 export function categoryOptions(categories: readonly FlatCategory[]): { value: string | null; label: string }[] {
-  return [
-    { value: null, label: translate('common.all') }, // すべて
-    ...categories.map((category) => ({
+  return withAllOption(
+    categories.map((category) => ({
       value: category.id,
       label: `${translate('common.categoryIndent').repeat(category.depth - 1)}${category.name}`, // 階層の深さだけ字下げ
     })),
-  ]
+  )
 }

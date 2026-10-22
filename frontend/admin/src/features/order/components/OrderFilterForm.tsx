@@ -1,3 +1,4 @@
+import { withAllOption } from '@ec-site/shared/lib/options'
 import { orderStatusLabel } from '@ec-site/shared/lib/orderLabels'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
@@ -15,12 +16,10 @@ import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
 export function OrderFilterForm({ filter, onApply }: { filter: OrderFilter; onApply: (filter: OrderFilter) => void }) {
   const t = useTranslations('order.filter')
   const tApp = useTranslations('app.common')
-  const tCommon = useTranslations('common')
   // 状態の選択肢（「すべて」は絞り込まない）
-  const statusOptions = [
-    { value: null, label: tCommon('all') /* すべて */ },
-    ...orderStatusValues.map((status) => ({ value: status, label: orderStatusLabel(status) })),
-  ]
+  const statusOptions = withAllOption(
+    orderStatusValues.map((status) => ({ value: status, label: orderStatusLabel(status) })),
+  )
   const form = useForm<OrderFilter>({ defaultValues: filter })
   return (
     <form

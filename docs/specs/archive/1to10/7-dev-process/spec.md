@@ -17,7 +17,7 @@ MVP（spec 001〜019）が完成し、tag `v0.1.0` を付けた。1→10 の段�
 
 本 spec の進め方は、2026-10-22 に利用者とエージェントが検討して決めた。決定の記録は本 spec と plan に置く。追跡の issue は [#7](https://github.com/roger88106/ec-site/issues/7)、作業ブランチは `7-dev-process` である。
 
-本 spec は整理の spec である（[文書の記号と番号](../../rules/notation.md)）。番号の形は本 spec から新しくする。spec の番号は追跡の issue の番号（#7）とする。DS・DC・DN は、spec の番号と spec の中の連番を組み合わせた形にする。例：DS-7-1。MVP の DS-1〜56、DC-1〜227、DN-1〜26 の連番の続きにはしない。変えないものと特例は、6 節の DN-7-1〜3 に書く。
+本 spec は整理の spec である（[文書の記号と番号](../../../../rules/notation.md)）。番号の形は本 spec から新しくする。spec の番号は追跡の issue の番号（#7）とする。DS・DC・DN は、spec の番号と spec の中の連番を組み合わせた形にする。例：DS-7-1。MVP の DS-1〜56、DC-1〜227、DN-1〜26 の連番の続きにはしない。変えないものと特例は、6 節の DN-7-1〜3 に書く。
 
 ## 2. 用語
 

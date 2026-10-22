@@ -38,9 +38,9 @@
 - [x] **T7-01-08** constitution を修正する。
   - 修正する箇所：
     - 文書の地図：ブランチの文書を追加する。TODO 一覧の行は段階 5 で削除する。
-    - [constitution](../../../constitution.md) 第 4 節：規模の区分の一文と開発の進め方への参照。
-    - [constitution](../../../constitution.md) 第 12 節：ブランチと CI。
-    - [constitution](../../../constitution.md) 第 16 節：未定事項は issue で管理する。段階 5 で TODO 一覧の参照を置き換える。
+    - [constitution](../../../../../constitution.md) 第 4 節：規模の区分の一文と開発の進め方への参照。
+    - [constitution](../../../../../constitution.md) 第 12 節：ブランチと CI。
+    - [constitution](../../../../../constitution.md) 第 16 節：未定事項は issue で管理する。段階 5 で TODO 一覧の参照を置き換える。
   - 依存：T7-01-02、T7-01-04
   - 範囲：`docs/constitution.md`
 - [x] **T7-01-09** マシンと利用者ごとの環境の文書（Git に入らない）：profile を「厚め」にする行を追加し、「文書の境目で止まる」の項目を、新しい確認の対象に合わせて修正する。この文書は Git に入らないので commit しない。

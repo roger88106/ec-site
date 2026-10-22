@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 7 が確定した。spec 019 が完了し、tag `v0.1.0` がある。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../.claude/skills/review/SKILL.md)）。
+前提：spec 7 が確定した。spec 019 が完了し、tag `v0.1.0` がある。文書の書き方は skill `docs`（[SKILL.md](../../../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../../../.claude/skills/review/SKILL.md)）。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|
@@ -30,7 +30,7 @@ DC の列は「7-1」の形で書く。spec の番号 7 を付けた DC-7-1 の�
 - script は実装役のサブエージェントに書かせる。
 - 理由：上の 2 つは、DC-7-64 を本 spec から適用するため。
 - 1 タスクを 1 commit にする。
-- 例外は `[テスト]` と実装の組で、2 つのタスクを 1 commit にする（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
+- 例外は `[テスト]` と実装の組で、2 つのタスクを 1 commit にする（[開発の進め方](../../../../rules/workflow.md) 第 2.1 節）。
 
 ## 1. 起票と TODO 一覧（DS-7-1：DC-7-1〜13）
 
@@ -172,7 +172,7 @@ GitHub の設定で変えるもの（plan と tasks の確認で利用者が許�
 
 | DC | 決定 | 確認方法 |
 |----|------|----------|
-| 7-63〜7-66 | 役割と、判定を spec 担当のセッションが行うことを、エージェントの作業フロー（[subagents.md](../../rules/subagents.md)）に書く | 差分を読む |
+| 7-63〜7-66 | 役割と、判定を spec 担当のセッションが行うことを、エージェントの作業フロー（[subagents.md](../../../../rules/subagents.md)）に書く | 差分を読む |
 | 7-63〜7-66 | spec 担当のセッションがコードを書かないことを、エージェントの作業フローに書く | 差分を読む |
 | 7-63〜7-66 | AGENTS.md からは、エージェントの作業フローの要点と節を指す | 差分を読む |
 | 7-63 | issue 担当のセッションと spec 担当のセッションのやり取りを、エージェントの作業フローに書く（下の箇条書き） | 差分を読む |
@@ -238,7 +238,7 @@ profile ごとのレビューの組み合わせ（判定は spec 担当のセッ
 
 ## 6. 用語集
 
-[用語集](../../design/glossary.md)の「開発」の節に、次の語を追加する。
+[用語集](../../../../design/glossary.md)の「開発」の節に、次の語を追加する。
 
 - 追跡の issue
 - issue 担当のセッション

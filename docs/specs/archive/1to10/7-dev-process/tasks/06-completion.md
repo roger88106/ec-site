@@ -11,7 +11,7 @@ pull request を作った後の作業は、tasks に書かない（plan 第 5 �
 - マージ
 - #7 への完了のコメント
 - release の前のレビュー
-- `main` の元のブランチの検査を必須にする設定
+- `main` の元のブランチの検査を必須にする設定と、別の名前のブランチ（作業ブランチ）から `main` への pull request で検査が失敗することの確認（確認した後、その pull request は閉じる）
 - `release-0.2.0`、`main` への pull request、マージ、tag `v0.2.0`、GitHub の Release
 
 理由：マージの後に tasks を更新するには、もう 1 つの pull request が必要になるため。
@@ -33,9 +33,12 @@ pull request を作った後の作業は、tasks に書かない（plan 第 5 �
     | 緊急の修正の `main` へのマージの担当と、`develop` に戻す方法がなかった | spec の DC-7-85、plan、ブランチと release の文書に書いた |
     | 規模 M の 1 つのファイルの spec を、検査の script が読まなかった | 置き場所をディレクトリの spec.md に変え、進捗の検査を直した（T7-06-01） |
     | spec の最後に tasks を更新すると、マージの後はもう 1 つの pull request が必要になる | マージと release を tasks の外にし、追跡の issue に記録する形にした（plan 第 5 節） |
-- [ ] **T7-06-03** 本 spec（spec、plan、tasks）を `docs/specs/archive/1to10/` に移し、参照を修正する。移した後に `check-all.sh` が通る（DC-7-31）。
+- [x] **T7-06-03** 本 spec（spec、plan、tasks）を `docs/specs/archive/1to10/` に移し、参照を修正する。移した後に `check-all.sh` が通る（DC-7-31）。
   - 依存：T7-06-01、T7-06-02
-- [ ] **T7-06-04** pull request の前のレビュー（Opus と `/code-review`）。
-  - 依存：T7-06-03
-- [ ] **T7-06-05** 作業ブランチを push し、テンプレートで `develop` への pull request を作る。本文には、受け入れの確認、推奨の扱い、起票する issue の案を書く（DC-7-91）。
+  - 結果：T7-06-04 の後、T7-06-05 の pull request を作る直前の commit で移した。理由：アーカイブした spec は、進捗の検査が全てのタスクの済みを求めるので、T7-06-04、05 より先に移すと commit の前の検査で止まるため。進め方の不備として、起票する issue の案に入れた。
+- [x] **T7-06-04** pull request の前のレビュー（Opus と `/code-review`）。
+  - 依存：T7-06-02
+  - 結果：Opus は、満たさない DC が 0、必須 2（上の順序の問題、`main` の元のブランチの検査の失敗の確認がどこにもない）。失敗の確認は tasks の外の作業に入れた。`/code-review`（high）は 7 件。アーカイブした spec に tasks がないときに黙って通す、`spec 3.1` のような版の番号を spec の番号と読む、base を `main` に変えた pull request で元のブランチの検査が走らない、の 3 件を直した。残りの 4 件（上の順序の問題、spec のディレクトリの読み方の重複、AC の並びの正規表現の重複、関連 spec の行の脚注の読み違い）は起票する issue の案に入れた。
+- [x] **T7-06-05** 作業ブランチを push し、テンプレートで `develop` への pull request を作る。本文には、受け入れの確認、推奨の扱い、起票する issue の案を書く（DC-7-91）。
   - 依存：T7-06-04
+  - 結果：pull request の番号は #7 のコメントに書く（この commit の後に作るため）。

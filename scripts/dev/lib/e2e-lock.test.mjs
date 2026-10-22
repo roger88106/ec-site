@@ -1,7 +1,7 @@
 // e2e-lock.mjs のテスト（node --test scripts/dev/lib/e2e-lock.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { decideLock, formatLock, parseLock } from './e2e-lock.mjs'
+import { decideLock, decideTakeover, formatLock, parseLock } from './e2e-lock.mjs'
 
 const owner = { worktree: '/work/a', pid: 4321, startedAt: '2026-10-22T10:00:00.000Z' }
 
@@ -35,5 +35,20 @@ describe('ロックの判定', () => {
   test('壊れたロックは古いロックとして取得し直す', () => {
     const decision = decideLock({ content: 'broken', isRunning: () => true })
     assert.deepEqual(decision, { action: 'acquire', stale: null })
+  })
+})
+
+describe('古いロックの取り直し', () => {
+  test('退かしたファイルの内容が判定に使った内容と同じなら、取り直す', () => {
+    const content = formatLock(owner)
+    assert.equal(decideTakeover({ judged: content, moved: content }), 'take')
+  })
+
+  test('退かしたファイルの内容が判定に使った内容と違えば、元に戻す', () => {
+    assert.equal(decideTakeover({ judged: formatLock(owner), moved: formatLock({ ...owner, pid: 9999 }) }), 'restore')
+  })
+
+  test('判定に使ったロックが壊れた中身でも、同じ内容なら取り直す', () => {
+    assert.equal(decideTakeover({ judged: 'broken', moved: 'broken' }), 'take')
   })
 })

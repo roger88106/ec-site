@@ -50,3 +50,13 @@ export function decideLock({ content, isRunning }) {
   }
   return { action: 'acquire', stale: owner }
 }
+
+/**
+ * 古いロックを退かしたあとの扱いを判定する。
+ * 退かしたファイルの内容が判定に使った内容と同じなら取り直す。違えば、判定の後に他方が取り直した新しいロックを退かしたので、元に戻す。
+ * @param {{ judged: string, moved: string }} input judged は古いと判定した内容、moved は退かしたファイルの内容
+ * @returns {'take' | 'restore'}
+ */
+export function decideTakeover({ judged, moved }) {
+  return judged === moved ? 'take' : 'restore'
+}

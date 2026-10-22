@@ -4,4 +4,5 @@ export type LockDecision = { action: 'acquire'; stale?: LockOwner | null } | { a
 
 export function formatLock(owner: LockOwner): string
 export function parseLock(content: string): LockOwner | null
+export function decideTakeover(input: { judged: string; moved: string }): 'take' | 'restore'
 export function decideLock(input: { content: string | null; isRunning: (pid: number) => boolean }): LockDecision

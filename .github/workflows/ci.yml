@@ -16,7 +16,8 @@ on:
       - '**'
       - '!**.md'          # 文書、skill の本文
       - '!.claude/**'     # エージェントの設定と、ローカルの画面の確認の設定
-      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く）
+      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く。E2E の script から使う scripts/dev/lib/ は次の行で含め直す）
+      - 'scripts/dev/lib/**' # CI の E2E の script から使う script の置き場所
       - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
       - '!.github/workflows/pages.yml'
       - '!.gitignore'
@@ -34,10 +35,14 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  backend:
-    name: バックエンド
+  # バックエンドは 4 つのジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、2 つに分けて同時に流す。
+  # 3 つのジョブは同時に始まり、それぞれコンパイルする（結果を渡すと、統合テストがビルドを待って全体が長くなる）。
+  # 変わっていない部分（jOOQ のコード、コンパイル）は、setup-gradle が develop のビルドのキャッシュから読む。
+  # 手元は分けずに ./gradlew checkLicense build で全て流す（docs/guides/ci.md）。
+  backend-build:
+    name: バックエンド（ビルドと単体テスト）
     runs-on: ubuntu-latest
-    timeout-minutes: 20
+    timeout-minutes: 15
     defaults:
       run:
         working-directory: backend/ecsite
@@ -56,33 +61,158 @@ jobs:
       # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照合する（依存とライセンス）。
       # 別の手順にすると Gradle の起動と依存の解決が 2 回になり、1 分ほど延びるので、ビルドと同じ呼び出しで流す。
       # 失敗したときは、ログの「Some library licenses are not allowed」と build/reports/dependency-license/ を見る。
-      # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
-      - name: ライセンスの検査、ビルドとテスト
-        run: ./gradlew checkLicense build
+      # 統合テストは別のジョブで流す。カバレッジの報告も、合わせるジョブ（backend）で作る。
+      # jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
+      - name: ライセンスの検査、ビルドと単体テスト
+        run: ./gradlew checkLicense build -x integrationTest -x coverageReport
 
-      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
-      - name: カバレッジの合計を summary に書く
-        if: always()
-        run: node ../../scripts/ci/report/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
-
-      - name: カバレッジの報告を保存
-        if: always()
+      # 合わせるジョブ（backend）が、コンパイルなしでカバレッジの報告を作るために使う。
+      # クラスは、各ジョブが別々にコンパイルしたものと中身が同じ（JaCoCo のクラスの ID が一致する）
+      - name: カバレッジの実行データ（単体テスト）を保存
         uses: actions/upload-artifact@v7
         with:
-          name: coverage-backend
-          path: backend/ecsite/build/reports/jacoco/coverageReport/
-          if-no-files-found: ignore
-          retention-days: 7
+          name: backend-exec-unit
+          path: backend/ecsite/build/jacoco/test.exec
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: コンパイルしたクラスを保存
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-classes
+          path: backend/ecsite/build/classes/java/main/
+          if-no-files-found: error
+          retention-days: 1
 
       - name: テストレポートを保存（失敗時）
         if: failure()
         uses: actions/upload-artifact@v7
         with:
-          name: test-reports
+          name: test-reports-build
           path: |
             backend/ecsite/build/reports/tests/
             backend/ecsite/build/test-results/
             backend/ecsite/build/reports/dependency-license/dependencies-without-allowed-license.json
+          retention-days: 7
+
+  # 統合テストをテストクラスの名前で 2 つに分け、2 つのジョブで同時に流す（分け方は build.gradle.kts の integrationTestShards）。
+  # 片方が失敗しても、もう片方は最後まで流す（失敗の全体を一度に見るため）
+  backend-integration:
+    name: バックエンド（統合テスト ${{ matrix.shard }}/2）
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2]
+    defaults:
+      run:
+        working-directory: backend/ecsite
+
+    steps:
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      - uses: gradle/actions/setup-gradle@v6
+
+      # 統合テストに必要な task だけが流れる（ライセンスの検査と Checkstyle は、ビルドと単体テストのジョブで流す）。
+      # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
+      - name: 統合テスト（${{ matrix.shard }}/2）
+        run: ./gradlew integrationTest -PintegrationTestShard=${{ matrix.shard }}/2
+
+      - name: カバレッジの実行データ（統合テスト）を保存
+        uses: actions/upload-artifact@v7
+        with:
+          name: backend-exec-integration-${{ matrix.shard }}
+          path: backend/ecsite/build/jacoco/integrationTest.exec
+          if-no-files-found: error
+          retention-days: 1
+
+      - name: テストレポートを保存（失敗時）
+        if: failure()
+        uses: actions/upload-artifact@v7
+        with:
+          name: test-reports-integration-${{ matrix.shard }}
+          path: |
+            backend/ecsite/build/reports/tests/
+            backend/ecsite/build/test-results/
+          retention-days: 7
+
+  # ruleset の必須の検査の名前は「バックエンド」なので、この名前を残す（変えると ruleset の変更が要る）。
+  # 上の 3 つのジョブの後に、カバレッジの実行データを合わせて報告を作る。
+  # 上のジョブが失敗・スキップしたときも、このジョブを実行して失敗にする。
+  # needs のジョブが失敗するとこのジョブはスキップされ、必須の検査としては成功と同じに扱われるので、
+  # if で必ず実行し、最初の手順で結果を調べる。
+  # always() でなく !cancelled() にするのは、ワークフローが中止されたとき（concurrency の cancel-in-progress）に、
+  # このジョブも中止にするため（古い commit に失敗を残さない）。中止も成功ではないので、必須の検査としては通らない
+  backend:
+    name: バックエンド
+    needs: [backend-build, backend-integration]
+    if: ${{ !cancelled() }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    defaults:
+      run:
+        working-directory: backend/ecsite
+
+    steps:
+      # checkout の前に走るので、defaults の working-directory（まだ存在しない）を使わない
+      - name: ビルドと単体テスト、統合テストの結果を確認
+        working-directory: .
+        env:
+          BUILD_RESULT: ${{ needs.backend-build.result }}
+          INTEGRATION_RESULT: ${{ needs.backend-integration.result }}
+        run: |
+          echo "ビルドと単体テスト: $BUILD_RESULT"
+          echo "統合テスト: $INTEGRATION_RESULT"
+          if [ "$BUILD_RESULT" != "success" ] || [ "$INTEGRATION_RESULT" != "success" ]; then
+            echo "::error::成功しなかったジョブがある。それぞれのジョブのログを見る"
+            exit 1
+          fi
+
+      - uses: actions/checkout@v7
+
+      - uses: actions/setup-java@v6
+        with:
+          distribution: temurin
+          java-version: '21'
+
+      # 報告を作る Gradle の呼び出しだけに使う（テストもコンパイルも流さない）
+      - uses: gradle/actions/setup-gradle@v6
+
+      - name: 実行データとクラスを取得
+        uses: actions/download-artifact@v8
+        with:
+          pattern: backend-*
+          path: ${{ runner.temp }}/backend
+
+      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない。
+      # 実行データ（単体 1 つと統合 2 つ）を 1 つの報告にする。クラスは、ビルドのジョブがコンパイルしたもの
+      # JaCoCo は、実行データとクラスが一致しないと警告を出す（各ジョブが別々にコンパイルしたクラスが違うとき）。
+      # 失敗にはせず、注釈に出す。pipefail で Gradle の失敗は隠さない
+      - name: カバレッジの報告を作る
+        run: |
+          set -o pipefail
+          ./gradlew coverageReport \
+            -PcoverageExecDir=${{ runner.temp }}/backend \
+            -PcoverageClassesDir=${{ runner.temp }}/backend/backend-classes 2>&1 | tee "$RUNNER_TEMP/coverage-report.log"
+          if grep -q 'does not match' "$RUNNER_TEMP/coverage-report.log"; then
+            echo "::warning::JaCoCo のクラスの不一致の警告がある。各ジョブがコンパイルしたクラスが違うため、カバレッジが正しくない可能性がある"
+          fi
+
+      - name: カバレッジの合計を summary に書く
+        run: node ../../scripts/ci/report/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
+
+      - name: カバレッジの報告を保存
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-backend
+          path: backend/ecsite/build/reports/jacoco/coverageReport/
+          if-no-files-found: ignore
           retention-days: 7
 
   admin:
@@ -221,7 +351,7 @@ jobs:
         working-directory: e2e
         run: pnpm lint && pnpm typecheck
 
-      # Playwright のブラウザーはキャッシュする（キーは Playwright の版）。当たったときは OS の依存だけを入れる
+      # Playwright のブラウザーはキャッシュする（キーは Playwright の版）
       - name: Playwright の版
         id: playwright
         working-directory: e2e
@@ -234,15 +364,15 @@ jobs:
           path: ~/.cache/ms-playwright
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
+      # OS の依存（--with-deps、install-deps）は入れない。Chromium が使うライブラリは、ランナーのイメージに入っている。
+      # 依存の導入が足すのはフォントなどで、CI で流す e2e/tests の結果に影響しない（画面の撮影は CI で流さない）。
+      # 一方、apt の取得は外部のミラーが遅いと数分から 30 分かかり、E2E のジョブ全体を止めることがある。
+      # 失敗時の画面の撮影（screenshot: 'only-on-failure'）では、日本語のフォントがなく文字が四角になることがある。
+      # 読めないときは、手元の scripts/dev/e2e.sh で再現する
       - name: ブラウザーのインストール
         if: steps.browsers.outputs.cache-hit != 'true'
         working-directory: e2e
-        run: pnpm exec playwright install --with-deps chromium
-
-      - name: ブラウザーの OS の依存のインストール（キャッシュが当たったとき）
-        if: steps.browsers.outputs.cache-hit == 'true'
-        working-directory: e2e
-        run: pnpm exec playwright install-deps chromium
+        run: pnpm exec playwright install chromium
 
       # E2E の準備（DB と IdP の再作成）の後に、バックエンド（local,e2e profile）、管理画面、店舗画面を
       # playwright.config.ts が起動する

@@ -8,7 +8,6 @@ import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.AssetKeys;
-import com.ecsite.module.media.domain.AssetReleased;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import lombok.RequiredArgsConstructor;

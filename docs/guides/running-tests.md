@@ -10,8 +10,11 @@
 |----------|------|--------|
 | `./gradlew test` | 単体テスト（Spring を起動しない） | 不要 ※1 |
 | `./gradlew integrationTest` | 統合テスト（Spring + Testcontainers の PostgreSQL など） | 必要 |
-| `./gradlew build`（`check`） | 単体・統合テスト、OpenAPI の構文の検証（CI と同じ） | 必要 |
-| `./gradlew coverageReport` | 単体テストと統合テストを合算したカバレッジ（`build/reports/jacoco/coverageReport/`。`check` の後にも実行できる） | 必要 |
+| `./gradlew build`（`check`） | 単体・統合テスト、OpenAPI の構文の検証（CI はジョブに分けて同じものを実行する） | 必要 |
+| `./gradlew integrationTest -PintegrationTestShard=<番号>/<総数>` | 統合テストの一部だけ（クラスの名前の hash で分ける。例 `1/2`）。CI が 2 つのジョブに分けるために使う。手元では通常は使わない | 必要 |
+| `./gradlew integrationTest -PintegrationTestForks=<数>` | 統合テストを実行するフォークの数（既定 1。CI も 1）。手元では通常は使わない | 必要 |
+| `./gradlew integrationTestShards` | 統合テストのジョブ（1/2・2/2）に入るクラスの一覧（`-PintegrationTestShardCount=<数>` で分ける数を変える。既定 2） | 不要 |
+| `./gradlew coverageReport` | 単体テストと統合テストを合算したカバレッジ（`build/reports/jacoco/coverageReport/`。`check` の後にも実行できる）。`-PcoverageExecDir=<ディレクトリ>` と `-PcoverageClassesDir=<ディレクトリ>` で、別のディレクトリの実行データ（`*.exec`）とクラスから作る（CI が、ジョブごとに保存したものを集めるために使う。手元では通常は使わない） | 必要 |
 
 ※1：jOOQ のコード生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うため、マイグレーションか生成の設定が変わったときだけ Docker が必要（変わらなければ `generateJooq UP-TO-DATE` でスキップされる）。
 
@@ -48,15 +51,17 @@ pnpm test
 | 段階 | 内容 |
 |------|------|
 | 準備（`e2e/scripts/prepare.ts`） | E2E のサーバーのポート（:8090、:4173、:3100）で待ち受けられるかを確認する（Windows の予約範囲に含まれるポートは EACCES で失敗する）。E2E 用の DB と Keycloak の database を再作成し、E2E 用の Keycloak（compose の profile `e2e`）を再起動する。毎回、マイグレーションと税のデータ（`db/seed/base`）だけの DB、realm の JSON の状態の IdP から始まる |
-| 起動 | バックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）と店舗画面（:3100）は、未起動なら起動する |
+| 起動 | バックエンド（:8090、profile `local,e2e`）、管理画面（:4173）、店舗画面（:3100）を毎回起動する。画面のサーバーは手元でも再利用しないので、ポートが使われていれば Playwright が停止する |
 | データ | 管理 API で作り、品番・名称に実行ごとの識別子（`E2E-<印>-…`）を付ける |
 
 - バックエンドの起動に JDK 21 を使うため、`JAVA_HOME` に JDK 21 のパスを設定しておく。
-- 手元の開発のバックエンド（:8080）と並行して実行できる。
-- 起動済みの管理画面・店舗画面を修正したときは、停止してから E2E を再実行する（再ビルドするため）。
+- 手元の開発のバックエンド（:8080）と、スロットのバックエンド（[開発環境の起動](setup.md) 第 9 節）と並行して実行できる。
+- メインの作業ツリーでも、作業ツリーでも、`pnpm test`（`e2e/scripts/run.ts`）を実行できる。E2E は DB（`ec_site_e2e`）、IdP、ポートを共有するので、全ての作業ツリーで 1 つずつ実行する。実行中は git の共通のディレクトリに `ec-site-e2e.lock`（作業ツリーのパス、PID、開始の時刻）を置き、他の作業ツリーで実行中なら、所有者の作業ツリーのパスと開始の時刻を示して終了コード 1 で終了する。所有者のプロセスがなければ、古いロックとして再取得する。PID が別のプロセスに再利用されて終了し続けるときは、示されたロックのファイルを削除してよい。
+- E2E は常にスロット 0 の固定の環境で実行する。スロットの環境変数（`node scripts/dev/slot.mjs env` の出力など）を shell に設定していても、E2E のエントリポイントが取り除いてから実行する。
+- 管理画面・店舗画面を、E2E のポート（:4173、:3100）で起動したままにしない。E2E は起動済みのサーバーを使わず、ポートが使われていれば停止する。別の作業ツリーのコードに対して実行することを防ぐため。
 - 店舗画面の API のキャッシュは、E2E では 1 秒（`STORE_API_REVALIDATE_SECONDS`）。
 - 決済は mock で、外部の決済サービスに接続しない。支払の期限は、期限切れを待つテストのため 12 秒（`application-e2e.yml`）。注文から mock の画面で支払うまでの操作は、この期限内に完了する（CI で 2 秒ほど）。
-- compose の設定を変えたコミットを取り込んだら、`docker compose up -d` で反映し、`docker compose run --rm seaweedfs-init` でバケットを作る（`docker/seaweedfs/s3.json` を変えたときは `docker compose restart seaweedfs` も必要）。
+- compose の設定を変えたコミットを取り込んだら、メインの作業ツリーで [開発環境の起動](setup.md) 第 9 節の手順（共有の基盤の設定を変える変更をマージしたとき）で反映する。作業ツリーでは `docker compose up -d` を実行しない。
 - 結果の要約だけを見るときは、ルートで `scripts/dev/e2e.sh [Playwright の引数]`（テストごとの ok / x と失敗の要点だけを出力し、全体はログのファイルに残す）。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を確認する。
 

@@ -115,12 +115,14 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
 - 完了条件：DC-135-1〜13、25〜27 を満たし、店舗画面のテストと CI が通る。
 - 参照：第 3 節の DS-135-1、DS-135-2、[フロントの書き方](../../rules/frontend-coding.md)、[テストの書き方](../../rules/test-writing.md)、skill `new-screen`
 
-- [ ] **T135-01-01** [テスト] 公開の API クライアントのリクエストに `traceparent` が付くテストを書き、レッドを確認する（DC-135-4）。
+- [x] **T135-01-01** [テスト] 公開の API クライアントのリクエストに `traceparent` が付くテストを書き、レッドを確認する（DC-135-4）。
   - 依存：なし
   - 範囲：`frontend/store/src/api/client.test.ts`
-- [ ] **T135-01-02** T135-01-01 のテストが通るように、`traceparent` を付ける処理を両方の API クライアントで使う。呼び出し元にリクエストの外のものがないかを確認する。店舗画面の Next.js 16.4.2 でも、キャッシュの鍵から `traceparent` を除くことを確認する。店舗画面の構成に DC-135-5 を書く（DC-135-3、5）。
+  - 結果：公開の口の要求に traceparent が付くテストと、付かないときに付けないテストを足した。実装の前は公開の口のテストが失敗した（レッド）。
+- [x] **T135-01-02** T135-01-01 のテストが通るように、`traceparent` を付ける処理を両方の API クライアントで使う。呼び出し元にリクエストの外のものがないかを確認する。店舗画面の Next.js 16.4.2 でも、キャッシュの鍵から `traceparent` を除くことを確認する。店舗画面の構成に DC-135-5 を書く（DC-135-3、5）。
   - 依存：T135-01-01
   - 範囲：`frontend/store/src/api/client.ts`、`docs/design/apps/store.md`
+  - 結果：付ける処理を 1 つの middleware にまとめ、両方の口で使った。呼び出し元は全て画面・サーバーアクション・`api/cart.ts` で、`"use cache"` や `generateStaticParams` はなく、`getApi` は `connection()` の後に返すので要求の外はない。分ける必要はなかった。Next.js 16.4.2 も、キャッシュの鍵から traceparent を除く（`incremental-cache/index.js` 277 行）。店舗画面の構成 第 4.2 節に書いた。
 - [ ] **T135-01-03** カテゴリの一覧のリンクの URL のテストを書いてから、商品一覧の URL を作る関数で組み立てる（DC-135-1、2）。テストは今の URL で通る。一時的に URL を変えて、テストが失敗することを確認し、戻す。
   - 依存：なし
   - 範囲：`frontend/store/src/features/catalog/listQuery.ts`（`listHref`）、`frontend/store/src/features/catalog/components/CategoryList.tsx`

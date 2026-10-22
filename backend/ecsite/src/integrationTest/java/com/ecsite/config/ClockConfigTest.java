@@ -34,7 +34,6 @@ class ClockConfigTest {
         @DisplayName("UTC のシステム時計が注入される")
         void systemClockInUtc() {
             assertThat(clock.getZone()).isEqualTo(ZoneOffset.UTC);
-            assertThat(1).isEqualTo(2);
             assertThat(clock.instant()).isCloseTo(Instant.now(), within(Duration.ofSeconds(5)));
         }
     }

@@ -1,11 +1,11 @@
 import { describe, expect, test, vi } from 'vitest'
-import { deleteCartId, readCartId, writeCartId, writeCartMergeNotice } from '@/api/cartCookie'
 import { authState } from '@/test/auth'
 import { cookieValue, resetRequest } from '@/test/next'
 
-/** 接頭辞を指定した店舗画面。環境変数を読むのは auth.ts を読み込むときなので、決めてから読み込む（置き換えは読み直さない） */
+/** 接頭辞を指定した店舗画面。環境変数を読むのは auth.ts と cartCookie.ts を読み込むときなので、決めてから読み込む（置き換えは読み直さない） */
 vi.stubEnv('STORE_COOKIE_PREFIX', 's1-')
 const { getAccessToken } = await import('@/auth')
+const { deleteCartId, readCartId, writeCartId, writeCartMergeNotice } = await import('@/api/cartCookie')
 
 describe('店舗画面の Cookie の接頭辞（STORE_COOKIE_PREFIX）', () => {
   test('DC-104-12 Auth.js の Cookie の名前に接頭辞が付き、セッションも同じ名前で読む', async () => {

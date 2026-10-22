@@ -229,6 +229,18 @@ export function checkShared(running, mainPath) {
 }
 
 /**
+ * 死活監視の fetch の誤りから、バックエンドが止まっているかを判定する。<br />
+ * 待ち受けがない（接続が拒まれた：ECONNREFUSED）ときだけ止まっているとし、タイムアウトなどは動いているとみなす（安全な側）。
+ *
+ * @param {unknown} error fetch が投げた誤り（Node の undici では `cause.code` に原因が入る）
+ * @returns {boolean} 止まっていれば true
+ */
+export function isBackendDown(error) {
+  const cause = error instanceof Error ? error.cause : null
+  return typeof cause === 'object' && cause !== null && cause.code === 'ECONNREFUSED'
+}
+
+/**
  * バックエンドが動いているときの案内を決める。動いている間にデータベースを削除すると、起動中の処理が失敗する。
  *
  * @param {{ slot: number, running: boolean, action: string }} input action は止めた後にする操作（「流し直す」「解く」）

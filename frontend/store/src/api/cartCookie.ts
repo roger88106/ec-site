@@ -5,8 +5,11 @@ import { cookieName } from '@/auth/cookieNames'
 import { cartCookieOptions, parseCartId } from '@/lib/cartId'
 import { type CartMergeNotice, parseCartMergeNotice, serializeCartMergeNotice } from '@/lib/cartMergeNotice'
 
+/** Cookie の名前の接頭辞（環境変数 `STORE_COOKIE_PREFIX`。モジュールの読み込み時に 1 回だけ読む） */
+const { cookiePrefix: COOKIE_PREFIX } = readServerConfig()
+
 /** カート ID を持つ Cookie の名前（接頭辞は環境変数 `STORE_COOKIE_PREFIX`。空なら `cart_id` のまま） */
-const cartCookie = () => cookieName(readServerConfig().cookiePrefix, 'cart_id')
+const cartCookie = () => cookieName(COOKIE_PREFIX, 'cart_id')
 
 /**
  * Cookie のカート ID を読む（店舗画面の構成 第 4.4 節）。サーバーコンポーネントとサーバーアクションから呼ぶ。
@@ -35,7 +38,7 @@ export async function deleteCartId(): Promise<void> {
 }
 
 /** カートを移した結果の知らせを持つ Cookie の名前（店舗画面の構成 第 4.5 節。接頭辞は {@link cartCookie} と同じ） */
-const cartMergeNoticeCookie = () => cookieName(readServerConfig().cookiePrefix, 'cart_merge_notice')
+const cartMergeNoticeCookie = () => cookieName(COOKIE_PREFIX, 'cart_merge_notice')
 
 /**
  * カートを移した結果の知らせを読む。サーバーコンポーネントから呼ぶ。

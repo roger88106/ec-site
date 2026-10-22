@@ -14,6 +14,7 @@ import {
   dropBucketsScript,
   generateApiDir,
   formatSlotRecord,
+  isBackendDown,
   isMainWorktree,
   parseSlotRecord,
   parseWorktrees,
@@ -545,5 +546,26 @@ describe('スロットの値を書き写したファイル', () => {
         assert.ok(entry.label.includes(`スロット ${slot}`), `${port} の名前にスロット ${slot} がない`)
       }
     }
+  })
+})
+
+describe('バックエンドが止まっているかの判定（fetch の誤りから）', () => {
+  /** undici の接続拒否の誤りの形（localhost が IPv4 と IPv6 に引ける場合は AggregateError） */
+  const failed = (cause) => Object.assign(new TypeError('fetch failed'), { cause })
+
+  test('接続が拒まれたときだけ止まっている', () => {
+    assert.equal(isBackendDown(failed(Object.assign(new Error('x'), { code: 'ECONNREFUSED' }))), true)
+    assert.equal(isBackendDown(failed(Object.assign(new AggregateError([]), { code: 'ECONNREFUSED' }))), true)
+  })
+
+  test('タイムアウトは動いているとみなす（安全な側）', () => {
+    assert.equal(isBackendDown(new DOMException('timed out', 'TimeoutError')), false)
+  })
+
+  test('その他の誤りや形の違う値も動いているとみなす', () => {
+    assert.equal(isBackendDown(failed(Object.assign(new Error('x'), { code: 'ECONNRESET' }))), false)
+    assert.equal(isBackendDown(new TypeError('fetch failed')), false)
+    assert.equal(isBackendDown(null), false)
+    assert.equal(isBackendDown('x'), false)
   })
 })

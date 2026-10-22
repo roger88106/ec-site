@@ -25,6 +25,7 @@ import {
   dropBucketsScript,
   formatSlotRecord,
   generateApiDir,
+  isBackendDown,
   isMainWorktree,
   parseSlotRecord,
   parseWorktrees,
@@ -373,7 +374,7 @@ async function release(ctx) {
  * スロットのバックエンドが動いているか。運用ポートの死活監視に応答があるかで見る。
  *
  * @param {number} slot スロットの番号
- * @returns {Promise<boolean>} 応答があれば true
+ * @returns {Promise<boolean>} 接続が拒まれた（待ち受けがない）とき以外は true（タイムアウトも動いているとみなす）
  */
 async function backendRunning(slot) {
   try {
@@ -381,8 +382,8 @@ async function backendRunning(slot) {
       signal: AbortSignal.timeout(2000),
     })
     return true
-  } catch {
-    return false
+  } catch (error) {
+    return !isBackendDown(error)
   }
 }
 

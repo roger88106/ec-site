@@ -14,7 +14,7 @@ description: ec-site をローカルで起動・確認する手順。DB・Keyclo
 ## ミドルウェア（compose）
 
 ```bash
-docker compose up -d          # リポジトリのルートで。PostgreSQL、Zipkin、SeaweedFS、imgproxy、Keycloak、Mailpit
+docker compose up -d          # メインの作業ツリーのルートで。PostgreSQL、Zipkin、SeaweedFS、imgproxy、Keycloak、Mailpit
 docker compose stop           # 止める（データは残る）
 ```
 

@@ -1,3 +1,4 @@
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
@@ -56,13 +57,9 @@ export function ProductCreatePage() {
   return (
     <>
       <PageHeader title={t('title') /* 商品の登録 */}>
-        <Button
-          nativeButton={false} /* a を描くので、button の振る舞いを外す */
-          render={<Link to={paths.products()} />}
-          variant="outline"
-        >
+        <LinkButton link={<Link to={paths.products()} />} variant="outline">
           {tApp('backToList') /* 一覧へ戻る */}
-        </Button>
+        </LinkButton>
       </PageHeader>
       <FormProvider {...form}>
         <form

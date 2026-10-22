@@ -1,4 +1,4 @@
-import { Button } from '@ec-site/shared/ui/button'
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { Link } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
@@ -36,14 +36,9 @@ export function TaxCategoryListPage() {
                     <TableCell>{formatRate(item.currentRatePercent)}</TableCell>
                     <TableCell>{item.rates.length}</TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        nativeButton={false} /* a を描くので、button の振る舞いを外す */
-                        render={<Link to={paths.taxCategory(item.id)} />}
-                        size="sm"
-                        variant="outline"
-                      >
+                      <LinkButton link={<Link to={paths.taxCategory(item.id)} />} size="sm" variant="outline">
                         {t('editRates') /* 税率を編集 */}
-                      </Button>
+                      </LinkButton>
                     </TableCell>
                   </TableRow>
                 ))}

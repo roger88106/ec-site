@@ -265,6 +265,58 @@ describe('商品の編集', () => {
     expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
     expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
   })
+  it('バリアントの追加の入力中に他の人が商品を更新すると、取得し直しても入力は消えず、追加は 409 になり、再読み込みで最新のバージョンの空のフォームに再作成してから追加できる', async () => {
+    const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
+    const versions: number[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 0 }),
+      ),
+      http.post('/products/{productId}/variants', async ({ request, response }) => {
+        const body = await request.json()
+        versions.push(body.version)
+        if (body.version !== state.current.version) {
+          return Response.json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。'), {
+            status: 409,
+          }) as never
+        }
+        state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
+        return response(201).json({ id: variant().id })
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
+    await user.type(screen.getByLabelText('色'), '赤')
+    // 入力中に、他の人が価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
+    state.current = productDetail({
+      axes: ['色'],
+      variants: [],
+      priceExclTax: 1200,
+      priceInclTax: 1320,
+      version: 1,
+    })
+    fireEvent(window, new Event('visibilitychange'))
+    expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+    expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+    expect(screen.getByLabelText('色')).toHaveValue('赤')
+    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+
+    expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
+    expect(versions).toEqual([0])
+    expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+
+    await user.click(screen.getByRole('button', { name: '再読み込み' }))
+    await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
+    expect(screen.getByLabelText('色')).toHaveValue('')
+    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('バリアント品番'), 'abc-001-red')
+    await user.type(screen.getByLabelText('色'), '赤')
+    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+    expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+    expect(versions).toEqual([0, 1])
+  })
   it('AC-28 バリアントを販売停止にすると「販売停止」と出て、販売を再開できる', async () => {
     const state = serveProduct(productDetail({ variants: [variant()] }))
     const calls: string[] = []

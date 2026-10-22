@@ -11,10 +11,17 @@ import java.util.List;
  * @param code メッセージコード
  * @param paramKeys メッセージパラメータキー
  */
-// paramKeys は List.copyOf で作る変更できない一覧（of）。Error Prone は List の型だけを見て変更できると判断するので抑える
+// コンストラクターで List.copyOf にするので変更できない。Error Prone は List の型だけを見て判断するので抑える
 @SuppressWarnings("Immutable")
 @Immutable
 public record I18nMessage(@NonNull String code, @NonNull List<String> paramKeys) {
+
+    /**
+     * 正規のコンストラクター。paramKeys を変更できない一覧にする
+     */
+    public I18nMessage {
+        paramKeys = List.copyOf(paramKeys);
+    }
 
     /**
      * I18nメッセージを生成する

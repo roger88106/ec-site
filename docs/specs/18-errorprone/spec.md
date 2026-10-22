@@ -131,9 +131,10 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
   - 依存：T18-01-02、T18-01-03
   - 範囲：`backend/ecsite/build.gradle.kts`、`docs/specs/18-errorprone/spec.md`
   - 結果：2026-10-23 に、`-Werror` を入れた状態で手動で確認し、戻した（`git diff` は空）。main（`MessageHelper.formatValue` に `Optional.of(1).orElseThrow();`）は `compileJava` が失敗し、エラーは ReturnValueIgnored と OptionalOfRedundantMethod。integrationTest（`CatalogTestData.taxCategory` に同じ行）は `compileIntegrationTestJava` が失敗し、エラーは同じ 2 つ。警告も失敗になることは、main に `"A".toLowerCase()` の未使用の変数を入れ、StringCaseLocaleUsage と UnusedVariable の警告が「warnings found and -Werror specified」で `compileJava` を失敗させることで確認した。javac 自身の警告は 0 件だった
-- [ ] **T18-01-05** 段階の最後のレビュー（profile「厚め」）。
+- [x] **T18-01-05** 段階の最後のレビュー（profile「厚め」）。
   - 依存：T18-01-04
   - 範囲：なし（読むだけ）
+  - 結果：profile は「標準」で行った（Pro のプランで、使用量を抑えるため。一般の観点を汎用で 1 回、重要な観点を高性能で 1 回）。高 0、必須 3（重複を除く）。外部サービスの失敗のテスト 2 つで、待ち受けと接続先のアドレスが別の所から決まるようになっていたのを直した。`I18nMessage` の抑える理由のコメントが事実と合わなかったので、コンストラクターで List.copyOf にして直した。
 
 ### 段階 2：NullAway
 

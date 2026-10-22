@@ -62,7 +62,7 @@ class ImgproxyImageConverterFailureTest {
 
     @BeforeEach
     void startServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
+        server = HttpServer.create(new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
         server.createContext("/", exchange -> responder.get().respond(exchange));
         server.start();
     }

@@ -17,7 +17,7 @@ jacoco = "0.8.13"
 # Javadoc の書き漏れの検査（コメントの書き方 第 2 節）
 checkstyle = "14.3.0"
 # 依存のライセンスの検査（依存とライセンス）
-dependency-license-report = "3.0.1"
+dependency-license-report = "3.1.4"
 
 # --- フレームワーク ---
 spring-boot = "4.1.1"
@@ -28,8 +28,8 @@ spring-modulith = "2.1.1"
 jooq = "3.21.9"
 jooqPlugin = "10.2.1"
 # jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM の版になるので、Boot の管理する版に合わせる
-flyway = "12.4.0"
-postgresql = "42.7.13"
+flyway = "13.7.0"
+postgresql = "42.7.14"
 
 # --- API ---
 openapi-generator = "7.26.0"
@@ -46,7 +46,7 @@ shedlock = "7.10.1"
 stripe = "34.0.0"
 
 # --- 画像のファイル（オブジェクトストレージ。plan 001 第 7 節） ---
-awssdk = "2.46.7"
+awssdk = "2.56.0"
 
 # --- テスト ---
 testcontainers = "2.0.5"

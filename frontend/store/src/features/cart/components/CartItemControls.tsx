@@ -54,7 +54,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
           {removing ? t('removing') : t('remove') /* 削除中か、削除 */}
         </Button>
       </form>
-      <ActionError message={failure?.ok === false ? failure.message : null} />
+      <ActionError result={failure} />
     </div>
   )
 }

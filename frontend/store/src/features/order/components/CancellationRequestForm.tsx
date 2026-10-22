@@ -42,7 +42,7 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
       <Button disabled={pending} type="submit" variant="outline">
         {pending ? t('requesting') : t('submit') /* 申請中か、申請する */}
       </Button>
-      <ActionError message={result?.ok === false ? result.message : null} />
+      <ActionError result={result} />
     </form>
   )
 }

@@ -48,7 +48,7 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
             </Link>
           </p>
         )}
-        <ActionError inLiveRegion message={result?.ok === false ? result.message : null} />
+        <ActionError inLiveRegion result={result} />
       </div>
     </form>
   )

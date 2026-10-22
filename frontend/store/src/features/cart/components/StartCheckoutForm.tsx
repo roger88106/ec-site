@@ -20,7 +20,7 @@ export function StartCheckoutForm({ orderable }: { orderable: boolean }) {
         {pending ? t('reserving') : t('submit') /* 確保中か、進む */}
       </Button>
       {!orderable && <p className="text-muted-foreground text-sm">{t('blocked') /* 進めない理由 */}</p>}
-      <ActionError message={result?.ok === false ? result.message : null} />
+      <ActionError result={result} />
     </form>
   )
 }

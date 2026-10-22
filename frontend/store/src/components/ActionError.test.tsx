@@ -26,6 +26,19 @@ describe('サーバーアクションの失敗の表示', () => {
     expect(html).toContain('在庫が足りません。')
   })
 
+  test('サーバーアクションの結果が失敗なら、その message を出す', () => {
+    const html = renderMarkup(<ActionError result={{ ok: false, message: '在庫が足りません。' }} />)
+
+    expect(html).toMatch(/<p aria-live="polite"[^>]*>在庫が足りません。<\/p>/)
+  })
+
+  test.each([{ ok: true } as const, null, undefined])(
+    'サーバーアクションの結果が成功か、まだない（%j）なら何も出さない',
+    (result) => {
+      expect(renderMarkup(<ActionError result={result} />)).toBe('')
+    },
+  )
+
   test.each([null, undefined, ''])('文がなければ（%j）何も出さない', (message) => {
     expect(renderMarkup(<ActionError message={message}>子</ActionError>)).toBe('')
   })

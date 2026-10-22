@@ -16,7 +16,7 @@ export function PayForm({ orderId }: { orderId: string }) {
       <Button disabled={pending} type="submit">
         {pending ? t('paying') /* 移っています */ : t('pay') /* 支払う */}
       </Button>
-      <ActionError message={result?.ok === false ? result.message : null} />
+      <ActionError result={result} />
     </form>
   )
 }

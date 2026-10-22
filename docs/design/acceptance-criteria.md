@@ -40,8 +40,8 @@
 | AC-15 | 商品品番は半角の英大文字・数字とハイフンで 1〜32 文字。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductCodeTest`、`ProductCreatePage.test.tsx` ほか 1 |
 | AC-16 | 税区分は必須。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest` |
 | AC-17 | 登録直後の商品は非公開。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
-| AC-18 | 商品名、説明、税区分、税抜価格、所属カテゴリは変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
-| AC-19 | 税区分を変更すると、税込価格が変更後の税率で計算される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest` |
+| AC-18 | 商品名、説明、税区分、税抜価格、所属カテゴリは変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
+| AC-19 | 税区分を変更すると、税込価格が変更後の税率で計算される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx` |
 | AC-20 | バリアント品番と軸の値（例：色＝白、サイズ＝M）を指定してバリアントを登録できる… | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-21 | バリアント品番は全バリアントで一意。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `JooqProductRepositoryTest`、`ProductApiTest`、`ProductTest` ほか 1 |
 | AC-22 | 商品に軸があれば、バリアントは全ての軸の値を持つ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |

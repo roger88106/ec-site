@@ -86,6 +86,70 @@ describe('商品の編集', () => {
     expect(state.versions).toEqual([0, 1])
   })
 
+  it('AC-18、19 税区分を変えて基本情報を保存すると、入力した値とバージョンを送り、保存を知らせ、変更後の税率の税込価格を出す', async () => {
+    const REDUCED_ID = '00000000-0000-0000-0000-000000000002'
+    const CATEGORY_ID = '00000000-0000-0000-0000-000000000031'
+    const state = serveProduct(productDetail())
+    const requests: unknown[] = []
+    server.use(
+      http.get('/tax-categories', ({ response }) =>
+        response(200).json({
+          items: [taxCategory(), taxCategory({ id: REDUCED_ID, name: '軽減', currentRatePercent: 8 })],
+        }),
+      ),
+      http.get('/categories', ({ response }) =>
+        response(200).json({
+          items: [
+            {
+              id: CATEGORY_ID,
+              name: '衣類',
+              depth: 1,
+              displayOrder: 1,
+              version: 0,
+              children: [],
+              actions: { addChild: true },
+            },
+          ],
+        }),
+      ),
+      http.put('/products/{productId}', async ({ request }) => {
+        const body = await request.json()
+        requests.push(body)
+        // 保存の応答は、変更後の税率（8%）で計算した税込価格を返す
+        state.current = productDetail({ ...body, priceInclTax: 1296, version: body.version + 1 })
+        return Response.json(state.current) as never
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    const name = await screen.findByLabelText('商品名')
+    await user.clear(name)
+    await user.type(name, 'T シャツ（改）')
+    const description = screen.getByLabelText('説明')
+    await user.clear(description)
+    await user.type(description, '綿 100%')
+    await user.click(screen.getByRole('combobox', { name: '税区分' }))
+    await user.click(await screen.findByRole('option', { name: '軽減（現時点の率：8%）' }))
+    const price = screen.getByLabelText('税抜価格（円）')
+    await user.clear(price)
+    await user.type(price, '1200')
+    await user.click(await screen.findByRole('checkbox', { name: '衣類' }))
+    await user.click(screen.getByRole('button', { name: '保存' }))
+
+    expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
+    expect(requests).toEqual([
+      {
+        name: 'T シャツ（改）',
+        description: '綿 100%',
+        taxCategoryId: REDUCED_ID,
+        priceExclTax: 1200,
+        categoryIds: [CATEGORY_ID],
+        version: 0,
+      },
+    ])
+    expect(await screen.findByText('1,296 円（税抜 1,200 円）')).toBeInTheDocument()
+  })
+
   it('販売終了は確認のダイアログで確定したときだけ行い、やめれば何もしない', async () => {
     const state = serveProduct(
       productDetail({ status: 'PUBLISHED', actions: productActions({ publish: false, unpublish: true }) }),

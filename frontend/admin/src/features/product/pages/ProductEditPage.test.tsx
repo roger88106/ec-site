@@ -239,6 +239,29 @@ describe('商品の編集', () => {
     expect(screen.getByRole('cell', { name: 'ABC-001-RED' })).toBeInTheDocument()
     expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
   })
+  it('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
+    const state = serveProduct(productDetail({ axes: ['色', 'サイズ'], variants: [] }))
+    const requests: unknown[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 0 }),
+      ),
+      http.post('/products/{productId}/variants', async ({ request, response }) => {
+        requests.push(await request.json())
+        state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
+        return response(201).json({ id: variant().id })
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-wh-m')
+    await user.type(screen.getByLabelText('色'), ' 白 ')
+    await user.type(screen.getByLabelText('サイズ'), 'M')
+    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+
+    expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+    expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
+  })
   it('AC-28 バリアントを販売停止にすると「販売停止」と出て、販売を再開できる', async () => {
     const state = serveProduct(productDetail({ variants: [variant()] }))
     const calls: string[] = []

@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { schemas } from '@/api/generated/constraints'
@@ -309,6 +309,64 @@ describe('商品の編集', () => {
     expect(await screen.findByText('販売を再開しました')).toBeInTheDocument()
     expect(await within(row()).findByText('販売中')).toBeInTheDocument()
     expect(calls).toEqual([`suspend ${variant().id}`, `resume ${variant().id}`])
+  })
+
+  it('AC-27 バリアントを下へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
+    const SECOND_ID = '00000000-0000-0000-0000-000000000202'
+    const state = serveProduct(
+      productDetail({
+        version: 5,
+        variants: [variant(), variant({ id: SECOND_ID, variantCode: 'ABC-001-BLUE', axisValues: ['青'] })],
+      }),
+    )
+    const requests: unknown[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 3 }),
+      ),
+      http.put('/products/{productId}/variants/order', async ({ request, response }) => {
+        requests.push(await request.json())
+        state.current = {
+          ...state.current,
+          variants: [...state.current.variants].reverse(),
+          version: state.current.version + 1,
+        }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを下へ' }))
+
+    await waitFor(() => expect(requests).toHaveLength(1))
+    expect(requests).toEqual([{ variantIds: [SECOND_ID, variant().id], version: 5 }])
+  })
+
+  it('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
+    const state = serveProduct(productDetail({ version: 5, variants: [variant()] }))
+    const calls: string[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 3 }),
+      ),
+      http.delete('/products/{productId}/variants/{variantId}', ({ params, query, response }) => {
+        calls.push(`DELETE ${params.variantId} version=${query.get('version')}`)
+        state.current = { ...state.current, variants: [], version: state.current.version + 1 }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    const row = (await screen.findByRole('cell', { name: 'ABC-001-RED' })).closest('tr')
+    if (!row) {
+      throw new Error('ABC-001-RED の行がない')
+    }
+    await user.click(within(row).getByRole('button', { name: '削除' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'バリアント「ABC-001-RED」を削除しますか？' })
+    await user.click(within(dialog).getByRole('button', { name: '削除する' }))
+
+    expect(await screen.findByText('バリアントを削除しました')).toBeInTheDocument()
+    expect(calls).toEqual([`DELETE ${variant().id} version=5`])
   })
 
   it('AC-29、30 公開すると公開中の表示と知らせに変わり、非公開にすると非公開の表示と知らせに戻る', async () => {

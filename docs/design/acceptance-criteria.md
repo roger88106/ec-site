@@ -49,7 +49,7 @@
 | AC-24 | 軸を持たない商品のバリアントは 1 つだけ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
 | AC-25 | 税抜価格は 1 円以上の整数。 | 変更 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | [019](../specs/archive/mvp/019-mvp-completion) | [商品モジュール](modules/catalog.md)（商品（集約）。上限 9,999,999 円） | `PriceExclTaxTest`、`ProductApiTest`、`ProductTest` |
 | AC-26 | 価格の変更は C 側に反映される（NFR-1）。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`StorefrontFreshnessTest` |
-| AC-27 | バリアントの表示順を変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
+| AC-27 | バリアントの表示順を変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-28 | バリアントを販売停止・解除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 3 |
 | AC-29 | 公開にすると、C 側の一覧・検索・詳細に表示される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 3 |
 | AC-30 | 非公開にすると、C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 2 |
@@ -93,7 +93,7 @@
 | AC-68 | 全ての画像を WebP に変換して配信する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ImgproxyImageConverterTest`、`MediaApiTest` ほか 1 |
 | AC-69 | 変換時に位置情報などのメタデータを除去する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterTest` |
 | AC-70 | 変換に失敗した画像は登録されず、運営者にその旨が表示される。 | 変更 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | [017](../specs/archive/mvp/017-stability) | [メディアモジュール](modules/media.md)（アップロードの流れ ※1）、[API の規約](../rules/api-conventions.md) 第 4 節 | `ImgproxyImageConverterTest`、`MediaApiTest`、`ProductEditPage.test.tsx` |
-| AC-71 | C 側に一度も表示されていない商品のバリアントは削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductTest` |
+| AC-71 | C 側に一度も表示されていない商品のバリアントは削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
 | AC-72 | C 側に表示される商品（BR-2）の、選べるバリアント（販売停止でなく、在庫あり… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`order.spec.ts` |
 | AC-73 | カートを持っていなければ、最初に商品を入れたときに作られる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth) | [カートモジュール](modules/cart.md)（会員のカート）、[店舗画面](apps/store.md) 第 4.5 節 | `CartApiTest`、`CartTest`、`cart.test.ts` ほか 2 |
 | AC-74 | カートにあるバリアントをもう一度入れると、数量を合算する。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest` |

@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { useState } from 'react'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
+import { schemas } from '@/api/generated/constraints'
 import { useInvalidate } from '@/api/invalidate'
 import type { CategoryNode } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
@@ -75,6 +76,7 @@ function CreateDialog({ parent, onClose }: { parent: CategoryNode | null; onClos
     <CategoryNameDialog
       error={mutation.error}
       initialName=""
+      nameMaxLength={schemas.CreateCategoryRequest.name.maxLength}
       onClose={onClose}
       onSubmit={(name, callbacks) => mutation.mutate({ body: { name, parentId: parent?.id ?? null } }, callbacks)}
       pending={mutation.isPending}
@@ -95,6 +97,7 @@ function RenameDialog({ category, onClose }: { category: CategoryNode; onClose: 
     <CategoryNameDialog
       error={mutation.error}
       initialName={category.name}
+      nameMaxLength={schemas.RenameCategoryRequest.name.maxLength}
       onClose={onClose}
       onReload={async () => {
         await invalidate('/categories')

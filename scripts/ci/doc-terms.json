@@ -14,7 +14,8 @@
     { "word": "受け口", "use": "エンドポイント・port" },
     { "word": "旗", "use": "フラグ" },
     { "word": "支払の画面", "use": "支払画面" },
-    { "word": "client の ID", "use": "client ID" }
+    { "word": "client の ID", "use": "client ID" },
+    { "word": "NNN", "use": "<番号>（spec のパスは docs/specs/<番号>-*/）" }
   ],
   "caution": [
     { "word": "部品", "use": "React はコンポーネント、Java はクラス、外のものはライブラリ" },

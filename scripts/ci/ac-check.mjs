@@ -3,10 +3,12 @@
 //
 //   使い方：node scripts/ci/ac-check.mjs
 //
-// - AC：spec.md（docs/specs/ の直下とアーカイブの下の spec）の定義の行（- **AC-n**）
+// - AC：spec.md（docs/specs/ の直下とアーカイブの下の spec）の定義の行（MVP の - **AC-n** と、1→10 の - **AC-7-1**）。
+//   2 つの形は別の AC として扱う（テスト名の AC-7-1 を AC-7 と読まない）
 // - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
 //   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
+//   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
@@ -22,6 +24,34 @@ import { listSpecDirs } from './lib/spec-dirs.mjs'
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
 const RANGE = '[〜～~]'
 
+/** AC の番号の書き方。MVP の `12` と、1→10 の `7-1`（spec の番号 ＋ 連番）の 2 つの形 */
+const AC_NUMBER = '[0-9]+(?:-[0-9]+)?'
+
+/**
+ * AC の番号の文字列を、照合に使う値にする。MVP の `12` は数、1→10 の `7-1` は文字列のまま。
+ * 形で型を分けるので、`AC-7` と `AC-7-1` は別の AC になる。
+ *
+ * @param text AC- の後の番号（`12`、`7-1`）
+ * @returns 数（MVP）か文字列（1→10）
+ */
+export function toAcKey(text) {
+  return text.includes('-') ? text : Number(text)
+}
+
+/** AC の値を並べるための組。MVP は番号の順、その後に 1→10 の spec の番号、連番の順 */
+function acOrder(ac) {
+  if (typeof ac === 'number') return [0, ac, 0]
+  const [spec, seq] = ac.split('-').map(Number)
+  return [1, spec, seq]
+}
+
+/** AC の値の比較（並べ替え用） */
+export function compareAc(a, b) {
+  const left = acOrder(a)
+  const right = acOrder(b)
+  return left[0] - right[0] || left[1] - right[1] || left[2] - right[2]
+}
+
 /**
  * spec の本文から、AC の定義の番号を取り出す。
  *
@@ -30,8 +60,8 @@ const RANGE = '[〜～~]'
  */
 export function parseSpecAcs(markdown) {
   const acs = new Set()
-  for (const match of markdown.matchAll(/^- \*\*AC-([0-9]+)\*\*/gm)) {
-    acs.add(Number(match[1]))
+  for (const match of markdown.matchAll(/^- \*\*AC-([0-9]+(?:-[0-9]+)?)\*\*/gm)) {
+    acs.add(toAcKey(match[1]))
   }
   return acs
 }
@@ -68,19 +98,40 @@ export function extractTestNames(source, kind) {
 export function parseAcRefs(name) {
   const acs = []
   const ranges = []
-  const list = new RegExp(`AC-([0-9]+(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)[0-9]+)*)`, 'g')
-  const item = new RegExp(`([0-9]+)\\s*(${RANGE})\\s*([0-9]+)|([0-9]+)`, 'g')
+  const list = new RegExp(`AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`, 'g')
+  const item = new RegExp(`(${AC_NUMBER})\\s*(${RANGE})\\s*(${AC_NUMBER})|(${AC_NUMBER})`, 'g')
   for (const [, numbers] of name.matchAll(list)) {
     for (const [, from, sign, to, single] of numbers.matchAll(item)) {
       if (single !== undefined) {
-        acs.push(Number(single))
+        acs.push(toAcKey(single))
       } else {
-        acs.push(Number(from), Number(to))
+        // 新しい形の範囲は終わりの連番だけでもよい（AC-7-1〜3 は AC-7-1 と AC-7-3）
+        const end = from.includes('-') && !to.includes('-') ? `${from.split('-')[0]}-${to}` : to
+        acs.push(toAcKey(from), toAcKey(end))
         ranges.push(`${from}${sign}${to}`)
       }
     }
   }
   return { acs, ranges }
+}
+
+/**
+ * テスト名から、曖昧な AC の並べ方を取り出す。新しい形（AC-7-1）の後に、読点・カンマと数字だけの番号（AC-7-1、2）が続く書き方。<br />
+ * 理由：MVP の AC-2 と読め、MVP 側の抜けを隠すため。新しい形は AC-7-1、AC-7-2 と書く。
+ *
+ * @param name テスト名
+ * @returns 曖昧な並べ方の文字列
+ */
+export function findAmbiguousAcLists(name) {
+  const list = new RegExp(`AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`, 'g')
+  const found = []
+  for (const match of name.matchAll(list)) {
+    // 範囲を含まない並びの区切りで分け、AC- が付かない数字だけの項目が、新しい形の直後にあるかを見る
+    const items = match[0].split(/\s*[、,]\s*/)
+    const bad = items.some((item, i) => i > 0 && /^[0-9]+(?!\d|-)/.test(item) && /^(?:AC-)?[0-9]+-[0-9]+/.test(items[i - 1]))
+    if (bad) found.push(match[0])
+  }
+  return found
 }
 
 /**
@@ -95,12 +146,16 @@ export function parseAcRefs(name) {
 export function check({ specAcs, tests, exclusions, deprecated = new Set(), strict = true }) {
   const covered = new Set()
   const ranges = []
+  const ambiguous = []
   const unknown = []
   const deprecatedRefs = []
   for (const test of tests) {
     const refs = parseAcRefs(test.name)
     if (refs.ranges.length > 0) {
       ranges.push(test)
+    }
+    if (findAmbiguousAcLists(test.name).length > 0) {
+      ambiguous.push(test)
     }
     for (const ac of refs.acs) {
       if (!specAcs.has(ac)) {
@@ -116,25 +171,26 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
   const excluded = new Set()
   const invalidExclusions = []
   for (const [key, reason] of Object.entries(exclusions)) {
-    const match = /^AC-([0-9]+)$/.exec(key)
-    if (!match || !specAcs.has(Number(match[1])) || typeof reason !== 'string' || reason.trim() === '') {
+    const match = /^AC-([0-9]+(?:-[0-9]+)?)$/.exec(key)
+    if (!match || !specAcs.has(toAcKey(match[1])) || typeof reason !== 'string' || reason.trim() === '') {
       invalidExclusions.push(key)
     } else {
-      excluded.add(Number(match[1]))
+      excluded.add(toAcKey(match[1]))
     }
   }
 
-  const sorted = (values) => [...values].sort((a, b) => a - b)
+  const sorted = (values) => [...values].sort(compareAc)
   const missing = sorted([...specAcs].filter((ac) => !covered.has(ac) && !excluded.has(ac) && !deprecated.has(ac)))
   const staleExclusions = sorted([...excluded].filter((ac) => covered.has(ac)))
   const ok =
     (!strict || missing.length === 0) &&
     ranges.length === 0 &&
+    ambiguous.length === 0 &&
     unknown.length === 0 &&
     deprecatedRefs.length === 0 &&
     staleExclusions.length === 0 &&
     invalidExclusions.length === 0
-  return { ok, missing, ranges, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
+  return { ok, missing, ranges, ambiguous, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
 }
 
 /** AC 一覧の状態 */
@@ -155,7 +211,7 @@ const TEST_FILES_SHOWN = 3
  * @returns AC の定義（spec の順）
  */
 export function parseSpecAcDefinitions(markdown, spec, specPath = spec) {
-  return [...markdown.matchAll(/^- \*\*AC-([0-9]+)\*\*\s*(.*)$/gm)].map(([, number, text]) => {
+  return [...markdown.matchAll(/^- \*\*AC-([0-9]+(?:-[0-9]+)?)\*\*\s*(.*)$/gm)].map(([, number, text]) => {
     // 最初の文：括弧の外の最初の句点まで
     let depth = 0
     let end = text.length
@@ -169,7 +225,7 @@ export function parseSpecAcDefinitions(markdown, spec, specPath = spec) {
     }
     const chars = [...text.slice(0, end).replaceAll('|', '｜')]
     const summary = chars.length > SUMMARY_LENGTH ? `${chars.slice(0, SUMMARY_LENGTH).join('')}…` : chars.join('')
-    return { ac: Number(number), spec, specPath, summary }
+    return { ac: toAcKey(number), spec, specPath, summary }
   })
 }
 
@@ -191,7 +247,7 @@ const LIST_END = '<!-- /generated:ac-list -->'
  */
 export function renderAcList({ definitions, previous, testFiles, exclusions }) {
   const lines = ['| AC | 要約 | 状態 | 元の spec | 変えた spec | 今の内容 | テスト |', '|----|------|------|-----------|-------------|----------|--------|']
-  for (const { ac, spec, specPath, summary } of [...definitions].sort((a, b) => a.ac - b.ac)) {
+  for (const { ac, spec, specPath, summary } of [...definitions].sort((a, b) => compareAc(a.ac, b.ac))) {
     const kept = previous.get(ac) ?? { status: '有効', changedBy: '—', location: 'spec' }
     // ファイルを探す順は OS で違うので、名前の順にする
     const files = [...new Set((testFiles.get(ac) ?? []).map((file) => path.basename(file).replace(/\.java$/, '')))].sort()
@@ -202,7 +258,7 @@ export function renderAcList({ definitions, previous, testFiles, exclusions }) {
     } else if (exclusions[`AC-${ac}`]) {
       test = '除外'
     }
-    const origin = `[${spec.slice(0, 3)}](../specs/${specPath}/spec.md)`
+    const origin = `[${/^[0-9]+/.exec(spec)?.[0] ?? spec}](../specs/${specPath}/spec.md)`
     lines.push(`| AC-${ac} | ${summary} | ${kept.status} | ${origin} | ${kept.changedBy} | ${kept.location} | ${test} |`)
   }
   return `${lines.join('\n')}\n`
@@ -218,9 +274,9 @@ export function parseAcList(markdown) {
   const list = new Map()
   for (const line of markdown.split('\n')) {
     const cells = line.split('|').map((cell) => cell.trim())
-    const match = /^AC-([0-9]+)$/.exec(cells[1] ?? '')
+    const match = /^AC-([0-9]+(?:-[0-9]+)?)$/.exec(cells[1] ?? '')
     if (match && cells.length >= 9) {
-      list.set(Number(match[1]), { status: cells[3], changedBy: cells[5], location: cells[6] })
+      list.set(toAcKey(match[1]), { status: cells[3], changedBy: cells[5], location: cells[6] })
     }
   }
   return list
@@ -236,11 +292,11 @@ export function parseAcList(markdown) {
 export function checkAcList({ definitions, list }) {
   const problems = []
   const specAcs = new Set(definitions.map((definition) => definition.ac))
-  const missing = [...specAcs].filter((ac) => !list.has(ac)).sort((a, b) => a - b)
+  const missing = [...specAcs].filter((ac) => !list.has(ac)).sort(compareAc)
   if (missing.length > 0) problems.push(`AC 一覧にない AC：${missing.map((ac) => `AC-${ac}`).join('、')}`)
-  const extra = [...list.keys()].filter((ac) => !specAcs.has(ac)).sort((a, b) => a - b)
+  const extra = [...list.keys()].filter((ac) => !specAcs.has(ac)).sort(compareAc)
   if (extra.length > 0) problems.push(`spec にない AC が AC 一覧にある：${extra.map((ac) => `AC-${ac}`).join('、')}`)
-  const invalid = [...list].filter(([, row]) => !STATUSES.includes(row.status)).sort(([a], [b]) => a - b)
+  const invalid = [...list].filter(([, row]) => !STATUSES.includes(row.status)).sort(([a], [b]) => compareAc(a, b))
   if (invalid.length > 0) {
     problems.push(`AC 一覧の状態が有効・変更・廃止でない：${invalid.map(([ac, row]) => `AC-${ac}（${row.status}）`).join('、')}`)
   }
@@ -308,6 +364,9 @@ function report(result, root, strict) {
   }
   for (const test of result.ranges) {
     console.log(`範囲の表記（AC 番号を 1 つずつ書く）：${where(test)}`)
+  }
+  for (const test of result.ambiguous) {
+    console.log(`曖昧な AC の並べ方（新しい形は AC-7-1、AC-7-2 と書く）：${where(test)}`)
   }
   for (const test of result.unknown) {
     console.log(`spec にない AC-${test.ac}：${where(test)}`)

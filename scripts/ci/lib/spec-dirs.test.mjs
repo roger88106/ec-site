@@ -15,7 +15,7 @@ writeFileSync(path.join(specsDir, 'archive/mvp/mvp.md'), '')
 after(() => rmSync(specsDir, { recursive: true, force: true }))
 
 describe('spec のディレクトリ', () => {
-  test('直下とアーカイブのまとまりの下の spec（NNN-名前）を、番号の順に返す', () => {
+  test('直下とアーカイブのまとまりの下の spec（<番号>-名前）を、番号の順に返す', () => {
     assert.deepEqual(
       listSpecDirs(specsDir).map(({ name, rel }) => [name, rel]),
       [
@@ -24,6 +24,21 @@ describe('spec のディレクトリ', () => {
         ['019-mvp-completion', '019-mvp-completion'],
       ],
     )
+  })
+
+  test('0 埋めなしの番号（1→10 の spec）と 3 桁の 0 埋めの番号（MVP）の両方を、番号の順に返す', () => {
+    const mixed = mkdtempSync(path.join(tmpdir(), 'spec-dirs-mixed-'))
+    try {
+      for (const dir of ['7-dev-process', '12-next', 'archive/mvp/011-dev-foundation', 'archive/mvp/019-mvp-completion', 'x-notes']) {
+        mkdirSync(path.join(mixed, dir), { recursive: true })
+      }
+      assert.deepEqual(
+        listSpecDirs(mixed).map(({ name }) => name),
+        ['7-dev-process', '011-dev-foundation', '12-next', '019-mvp-completion'],
+      )
+    } finally {
+      rmSync(mixed, { recursive: true, force: true })
+    }
   })
 
   test('spec のディレクトリの絶対パスを返す', () => {

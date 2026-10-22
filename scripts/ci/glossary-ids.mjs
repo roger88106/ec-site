@@ -73,7 +73,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const files = execSync(`git ls-files ${SEARCH_ROOTS.join(' ')}`, { encoding: 'utf8' })
     .split('\n')
     .filter((file) => file && !SKIPPED.test(file) && existsSync(file))
-  // パスの形の識別子（docs/todo.md など）は、リポジトリのすべてのファイルのパスにも当たる
+  // パスの形の識別子（docs/constitution.md など）は、リポジトリのすべてのファイルのパスにも当たる
   const allPaths = execSync('git ls-files', { encoding: 'utf8' })
   const contents = [allPaths, ...files.map((file) => readFileSync(file, 'utf8'))]
   const tokens = new Set(contents.flatMap((text) => text.match(/\w+/g) ?? []))

@@ -23,6 +23,30 @@ describe('設計の文書の関連 spec の検査', () => {
     assert.deepEqual(specsOfCommit('docs: spec 017 を書く', []), [])
   })
 
+  test('関連 spec の行の [011] と [7] を、別の spec として読む', () => {
+    const markdown = '| 関連 spec | [011](../../specs/archive/mvp/011-dev-foundation)、[7](../../specs/7-dev-process) |'
+    assert.deepEqual(parseRelatedSpecs(markdown), ['011', '7'])
+  })
+
+  test('タスク番号を 0 埋めなしでも読み、T011- は MVP の 011、T7- は 1→10 の 7 として区別する', () => {
+    assert.deepEqual(specsOfCommit('scripts: 検査を直す（T7-02-01、T7-02-02）', []), ['7'])
+    assert.deepEqual(specsOfCommit('scripts: 検査を直す（T011-02-01、T7-02-02）', []), ['011', '7'])
+    assert.deepEqual(specsOfCommit('scripts: 検査を直す（T12-01-01）', []), ['12'])
+    assert.notDeepEqual(specsOfCommit('x（T7-01-01）', []), specsOfCommit('x（T007-01-01）', []))
+  })
+
+  test('除外の前置きは、新しい形（T7-01）も扱い、0 埋めの有無を区別する', () => {
+    assert.deepEqual(specsOfCommit('docs: 言い回し（T7-01-03）', ['T7-01']), [])
+    assert.deepEqual(specsOfCommit('docs: 言い回し（T7-01-03）', ['T007-01']), ['7'])
+    assert.deepEqual(specsOfCommit('docs: 言い回し（T7-02-03）', ['T7-01']), ['7'])
+  })
+
+  test('関連 spec の [7] は T7- の commit に合い、[007] には合わない', () => {
+    assert.deepEqual(findMissingSpecs(['7'], ['docs: 追加（T7-03-01）'], []), [])
+    assert.deepEqual(findMissingSpecs(['007'], ['docs: 追加（T7-03-01）'], []), ['7'])
+    assert.deepEqual(findMissingSpecs(['7'], ['payment: 追加（T007-03-01）'], []), ['007'])
+  })
+
   test('文書を変えた commit の spec のうち、関連 spec にないものを返す', () => {
     const subjects = ['payment: 期限切れを直す（T017-06-01）', 'payment: 支払を追加する（T0701）', 'docs: 言い回し（T018-05-03）', 'payment: 構成を追加する（T018-04-04）']
     assert.deepEqual(findMissingSpecs(['007', '017'], subjects, ['T018-05']), ['018'])

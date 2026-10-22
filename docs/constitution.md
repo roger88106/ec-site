@@ -92,11 +92,10 @@ ec-site/
 ├── api/openapi/          # API 契約の正本
 ├── docs/
 │   ├── constitution.md   # 大綱と文書の地図
-│   ├── todo.md           # TODO 一覧（後回しにする作業と未決事項）
 │   ├── rules/            # 規範：開発の進め方、書き方の規則
 │   ├── design/           # 今の設計：全体構成、アーキテクチャ、モジュール、画面、用語集
 │   ├── guides/           # 手順：開発環境の起動、環境変数、CI、テストの実行方法
-│   └── specs/            # 開発記録：spec・plan・tasks（完了した spec は specs/archive/ に移す）
+│   └── specs/            # 開発記録：spec・plan・tasks（完了した spec は、MVP と 1→10 のまとまりごとに specs/archive/ に移す）
 ├── backend/ecsite/       # バックエンド
 ├── frontend/
 │   ├── store/            # C 側（店舗画面）
@@ -149,6 +148,7 @@ ec-site/
 | [environment.md](guides/environment.md) | 環境変数 |
 | [ci.md](guides/ci.md) | CI の検査 |
 | [running-tests.md](guides/running-tests.md) | テストの実行方法 |
+| [branches.md](guides/branches.md) | ブランチとリリース |
 
 開発記録（`docs/specs/`）：
 
@@ -156,11 +156,12 @@ ec-site/
 |------|------|
 | [specs/](specs) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `specs/archive/<まとまり>/` に移す。MVP の spec は [specs/archive/mvp/](specs/archive/mvp) にある |
 | [mvp.md](specs/archive/mvp/mvp.md) | MVP の完成までの一覧 |
-| [todo.md](todo.md) | TODO 一覧 |
 
 ## 4. 開発の進め方
 
 仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。細則は [開発の進め方](rules/workflow.md)。
+
+全ての変更は issue から始まる。変更の大きさで規模（S・M・L）を分け、規模ごとに書く文書が違う（[開発の進め方](rules/workflow.md) 第 4 節）。
 
 ### 4.1 仕様駆動開発（SDD：Spec-Driven Development）
 
@@ -251,6 +252,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 - CI：push と pull request で、バックエンド、フロント、E2E を実行する。文書だけを変えた push では実行しない（文書の参照の検査だけは実行する）。
 - CI が失敗している状態で、次の spec の実装に進まない。
+- ブランチ：作業ブランチを `develop` に、リリースを `main` に pull request で入れる。細則は [ブランチとリリース](guides/branches.md)。
 - CD：まだない（デプロイ先は未定。第 16 節）。
 
 ## 13. 書く言語（日本語と英語の使い分け）
@@ -282,4 +284,4 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 16. 未定事項
 
-[TODO 一覧](todo.md) にまとめる。後回しにする作業と、まだ決めていない事項を 1 か所で管理するため。
+未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [milestone `1→10` の issue](https://github.com/roger88106/ec-site/milestone/1)、全ての issue は [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。起票の規則は [開発の進め方](rules/workflow.md) 第 4.1 節。

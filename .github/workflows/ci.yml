@@ -17,6 +17,7 @@ on:
       - '!**.md'          # 文書、skill の本文
       - '!.claude/**'     # エージェントの設定と、ローカルの画面の確認の設定
       - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く）
+      - 'scripts/dev/lib/**' # CI の E2E（e2e/scripts/run.ts）が使う script
       - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
       - '!.github/workflows/pages.yml'
       - '!.gitignore'

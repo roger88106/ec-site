@@ -13,11 +13,15 @@
 - [x] **T7-04-02** 既定のブランチを `develop` にする。
   - 依存：T7-04-01
   - 結果：T7-04-01 と同時に行った。手元の `origin/HEAD` も `develop` にした（`git remote set-head origin develop`）。
-- [ ] **T7-04-03** [P] マージの方式（merge commit だけ）と、ブランチの自動の削除を設定する。Dependabot のセキュリティの更新を有効にする（DC-7-57）。
+- [x] **T7-04-03** [P] マージの方式（merge commit だけ）と、ブランチの自動の削除を設定する。Dependabot のセキュリティの更新を有効にする（DC-7-57）。
   - 依存：T7-04-01
-- [ ] **T7-04-04** [P] [リスク] ruleset（`develop`、`main`）を作る。理由：誤ると `develop` と `main` を保護できないため。workflow がまだ GitHub にないので、`main` の元のブランチの検査を `main` の必須の検査にする設定は、workflow が `develop` に入った後に、issue 担当のセッションが release の前に行う（plan 第 5 節）。
+  - 結果：merge commit だけを許し、マージしたブランチを自動で削除する。脆弱性の通知と Dependabot のセキュリティの更新を有効にした。
+- [x] **T7-04-04** [P] [リスク] ruleset（`develop`、`main`）を作る。理由：誤ると `develop` と `main` を保護できないため。workflow がまだ GitHub にないので、`main` の元のブランチの検査を `main` の必須の検査にする設定は、workflow が `develop` に入った後に、issue 担当のセッションが release の前に行う（plan 第 5 節）。
   - 依存：T7-04-01
-- [ ] **T7-04-05** [P] label を作成して既定の label を削除し、milestone `1→10` を作成する。
+  - 結果：ruleset の develop（25616507）と main（25616508）を作った。必須の検査はバックエンド、管理画面、店舗画面、E2E、文書と CI の検査の script で、GitHub Actions（integration_id 15368）に限った。Opus のレビューの必須 2 件で、帰属のない変更への追加の approve を無効にし、緊急の修正を develop に戻す手順をブランチと release の文書に書いた。
+- [x] **T7-04-05** [P] label を作成して既定の label を削除し、milestone `1→10` を作成する。
   - 依存：なし
-- [ ] **T7-04-06** 段階の確認：`gh` の出力を plan と照合する。
+  - 結果：label を 28 作り、GitHub の既定の 9 を削除した（既定でない accessibility は残した）。milestone `1→10`（番号 1）を作った。
+- [x] **T7-04-06** 段階の確認：`gh` の出力を plan と照合する。
   - 依存：T7-04-02〜05
+  - 結果：`gh api` の出力が plan 第 3 節と一致した。

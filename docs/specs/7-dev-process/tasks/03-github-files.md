@@ -6,17 +6,17 @@
 
 ## タスク
 
-- [ ] **T7-03-01** [P] issue のテンプレート（`feature.yml`、`cleanup.yml`、`bug.yml`）と `config.yml` を作る（DC-7-1、7-2）。
+- [x] **T7-03-01** [P] issue のテンプレート（`feature.yml`、`cleanup.yml`、`bug.yml`）と `config.yml` を作る（DC-7-1、7-2）。
   - 依存：なし
   - 範囲：`.github/ISSUE_TEMPLATE/`
-- [ ] **T7-03-02** [P] pull request のテンプレートを作る（DC-7-82、7-83）。
+- [x] **T7-03-02** [P] pull request のテンプレートを作る（DC-7-82、7-83）。
   - 依存：なし
   - 範囲：`.github/pull_request_template.md`
-- [ ] **T7-03-03** [P] Dependabot の設定を、plan 第 3 節の表のとおりに作る（DC-7-51〜57）。
+- [x] **T7-03-03** [P] Dependabot の設定を、plan 第 3 節の表のとおりに作る（DC-7-51〜57）。
   - 依存：なし
   - 範囲：`.github/dependabot.yml`
-- [ ] **T7-03-04** [P] `main` の元のブランチの検査の workflow を作る。`release-` と `hotfix-` 以外のブランチで失敗する（DC-7-39、7-40）。
+- [x] **T7-03-04** [P] `main` の元のブランチの検査の workflow を作る。`release-` と `hotfix-` 以外のブランチで失敗する（DC-7-39、7-40）。
   - 依存：なし
   - 範囲：`.github/workflows/main-source.yml`
-- [ ] **T7-03-05** 段階の完了の確認：`check-all.sh` が通る。
+- [x] **T7-03-05** 段階の完了の確認：`check-all.sh` が通る。
   - 依存：T7-03-01〜04

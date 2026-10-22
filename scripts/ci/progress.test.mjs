@@ -128,6 +128,10 @@ describe('進捗の一致の検査', () => {
     }
   })
 
+  test('1→10 の spec に tasks が 1 つもなければ、「tasks がない」の食い違いとして返す', () => {
+    assert.deepEqual(checkArchivedTasks(new Map([['9-none', { total: 0, done: 0 }]])), ['1→10 の spec 9-none：tasks がない'])
+  })
+
   test('アーカイブの 1→10 の spec で tasks のディレクトリがなければ（規模 M）、spec.md の中のタスクの行を数える', () => {
     const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
     try {
@@ -140,7 +144,16 @@ describe('進捗の一致の検査', () => {
       const noTasks = path.join(specsDir, 'archive/1to10/9-none')
       mkdirSync(noTasks, { recursive: true })
       writeFileSync(path.join(noTasks, 'spec.md'), '# spec\n')
-      assert.deepEqual(readArchivedTasks(specsDir), new Map([['8-medium', { total: 2, done: 1 }]]))
+      // spec.md もない spec も、tasks がないものとして含める
+      mkdirSync(path.join(specsDir, 'archive/1to10/10-empty'), { recursive: true })
+      assert.deepEqual(
+        readArchivedTasks(specsDir),
+        new Map([
+          ['10-empty', { total: 0, done: 0 }],
+          ['8-medium', { total: 2, done: 1 }],
+          ['9-none', { total: 0, done: 0 }],
+        ]),
+      )
     } finally {
       rmSync(specsDir, { recursive: true, force: true })
     }

@@ -10,6 +10,8 @@ name: main の元のブランチ
 
 on:
   pull_request:
+    # base を main に変えたとき（edited）にも検査する
+    types: [opened, synchronize, reopened, edited]
     branches: [main]
 
 permissions:

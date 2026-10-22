@@ -134,7 +134,7 @@ function readTaskTexts(specDir) {
  * 1→10 の spec（アーカイブ）の tasks のチェックボックスを数える。
  *
  * @param {string} specsDir docs/specs のパス
- * @returns {Map<string, { total: number, done: number }>} spec のディレクトリの名前 → タスクの数。tasks のない spec は含めない
+ * @returns {Map<string, { total: number, done: number }>} spec のディレクトリの名前 → タスクの数。tasks のない spec は total が 0
  */
 export function readArchivedTasks(specsDir) {
   const tasks = new Map()
@@ -150,9 +150,8 @@ export function readArchivedTasks(specsDir) {
     }
     // 規模 M は tasks のディレクトリがなく、spec.md の中にタスクの行がある
     const specFile = path.join(specDir, 'spec.md')
-    if (!existsSync(specFile)) continue
-    const count = countTasks([readFileSync(specFile, 'utf8')])
-    if (count.total > 0) tasks.set(entry.name, count)
+    // どちらにもなければ total が 0 のまま入れ、黙って飛ばさずに報告させる
+    tasks.set(entry.name, existsSync(specFile) ? countTasks([readFileSync(specFile, 'utf8')]) : { total: 0, done: 0 })
   }
   return tasks
 }
@@ -166,8 +165,12 @@ export function readArchivedTasks(specsDir) {
 export function checkArchivedTasks(tasks) {
   return [...tasks.keys()]
     .sort()
-    .filter((name) => tasks.get(name).done < tasks.get(name).total)
-    .map((name) => `1→10 の spec ${name}：tasks に残りが ${tasks.get(name).total - tasks.get(name).done} ある`)
+    .filter((name) => tasks.get(name).total === 0 || tasks.get(name).done < tasks.get(name).total)
+    .map((name) =>
+      tasks.get(name).total === 0
+        ? `1→10 の spec ${name}：tasks がない`
+        : `1→10 の spec ${name}：tasks に残りが ${tasks.get(name).total - tasks.get(name).done} ある`,
+    )
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

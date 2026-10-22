@@ -244,6 +244,111 @@ describe('AC 一覧', () => {
   })
 })
 
+describe('1→10 の AC（AC-n-m）', () => {
+  const tests = (...names) => names.map((name) => ({ file: 'X.test.ts', name }))
+
+  test('spec の定義の行から、MVP の AC-n と新しい形の AC-n-m の両方を取り出す。別の AC として数える', () => {
+    const spec = [
+      '- **AC-12** MVP の AC。',
+      '- **AC-7-1** 新しい形の AC。',
+      '- **AC-7-2** 二つ目。',
+      '- **DC-7-3** 整理の番号は数えない。',
+    ].join('\n')
+    assert.deepEqual([...parseSpecAcs(spec)], [12, '7-1', '7-2'])
+    assert.deepEqual(
+      parseSpecAcDefinitions(spec, '7-dev-process').map(({ ac, summary }) => ({ ac, summary })),
+      [
+        { ac: 12, summary: 'MVP の AC。' },
+        { ac: '7-1', summary: '新しい形の AC。' },
+        { ac: '7-2', summary: '二つ目。' },
+      ],
+    )
+  })
+
+  test('テスト名の AC-7-1 を AC-7 と読まない。MVP の AC-12 を新しい形の一部と読まない', () => {
+    assert.deepEqual(parseAcRefs('AC-7-1 注文できる'), { acs: ['7-1'], ranges: [] })
+    assert.deepEqual(parseAcRefs('AC-12 注文できる'), { acs: [12], ranges: [] })
+    assert.deepEqual(parseAcRefs('AC-7 と AC-7-1 の両方').acs, [7, '7-1'])
+  })
+
+  test('読点・カンマで、2 つの形を並べられる', () => {
+    assert.deepEqual(parseAcRefs('AC-7-1、AC-7-2, 12 並べる'), { acs: ['7-1', '7-2', 12], ranges: [] })
+  })
+
+  test('新しい形の範囲（AC-7-1〜3、AC-7-1〜7-3）は、範囲として返す', () => {
+    assert.deepEqual(parseAcRefs('AC-7-1〜3 注文'), { acs: ['7-1', '7-3'], ranges: ['7-1〜3'] })
+    assert.deepEqual(parseAcRefs('AC-7-1~7-3 注文'), { acs: ['7-1', '7-3'], ranges: ['7-1~7-3'] })
+  })
+
+  test('AC 番号の後の数字（本文の数量など）は AC にしない', () => {
+    assert.deepEqual(parseAcRefs('AC-7-1 数量を 10 にする').acs, ['7-1'])
+  })
+
+  test('両方の形がすべてテスト名に出れば通る。AC-7 のテストは AC-7-1 のテストにならない', () => {
+    const specAcs = new Set([7, '7-1'])
+    assert.equal(check({ specAcs, tests: tests('AC-7 a', 'AC-7-1 b'), exclusions: {} }).ok, true)
+    const result = check({ specAcs, tests: tests('AC-7 a'), exclusions: {} })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.missing, ['7-1'])
+  })
+
+  test('新しい形のテスト名に出ない AC は、手元では警告、CI では失敗。並びは MVP の後に spec の番号、連番の順', () => {
+    const specAcs = new Set(['7-10', '7-2', 3, '8-1'])
+    const loose = check({ specAcs, tests: [], exclusions: {}, strict: false })
+    assert.equal(loose.ok, true)
+    assert.deepEqual(loose.missing, [3, '7-2', '7-10', '8-1'])
+    assert.equal(check({ specAcs, tests: [], exclusions: {} }).ok, false)
+  })
+
+  test('新しい形の範囲の表記があれば失敗する（手元でも）', () => {
+    const specAcs = new Set(['7-1', '7-2', '7-3'])
+    const result = check({ specAcs, tests: tests('AC-7-1〜3 a'), exclusions: {}, strict: false })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.ranges, [{ file: 'X.test.ts', name: 'AC-7-1〜3 a' }])
+  })
+
+  test('spec にない新しい形の AC 番号がテスト名にあれば失敗する。MVP の AC-7 があっても AC-7-9 は通らない', () => {
+    const result = check({ specAcs: new Set([7, '7-1']), tests: tests('AC-7-1 a', 'AC-7-9 b'), exclusions: {}, strict: false })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.unknown, [{ file: 'X.test.ts', name: 'AC-7-9 b', ac: '7-9' }])
+  })
+
+  test('除外の一覧は新しい形の AC も扱う', () => {
+    const specAcs = new Set(['7-1', '7-2'])
+    assert.equal(check({ specAcs, tests: tests('AC-7-1 a'), exclusions: { 'AC-7-2': '手で確認する' } }).ok, true)
+    const stale = check({ specAcs, tests: tests('AC-7-1 a', 'AC-7-2 b'), exclusions: { 'AC-7-2': '手で確認する' } })
+    assert.deepEqual(stale.staleExclusions, ['7-2'])
+    const invalid = check({ specAcs, tests: tests('AC-7-1 a', 'AC-7-2 b'), exclusions: { 'AC-7-9': '理由' } })
+    assert.deepEqual(invalid.invalidExclusions, ['AC-7-9'])
+  })
+
+  test('廃止した新しい形の AC は、テストがなくてよく、参照すると失敗する', () => {
+    const specAcs = new Set(['7-1', '7-2'])
+    assert.equal(check({ specAcs, tests: tests('AC-7-1 a'), exclusions: {}, deprecated: new Set(['7-2']) }).ok, true)
+    const result = check({ specAcs, tests: tests('AC-7-1、7-2 a'), exclusions: {}, deprecated: new Set(['7-2']) })
+    assert.deepEqual(result.deprecatedRefs, [{ file: 'X.test.ts', name: 'AC-7-1、7-2 a', ac: '7-2' }])
+  })
+
+  test('AC 一覧：新しい形の行を作り、元の spec のリンクは 0 埋めのない番号でも書ける。手で書く列を読み戻せる', () => {
+    const definitions = parseSpecAcDefinitions('- **AC-12** 一つ目。\n- **AC-7-2** 三つ目。\n- **AC-7-1** 二つ目。', '7-dev-process')
+    const markdown = renderAcList({ definitions, previous: new Map(), testFiles: new Map([['7-1', ['a/A.java']]]), exclusions: {} })
+    assert.match(markdown, /^\| AC-7-1 \| 二つ目。 \| 有効 \| \[7\]\(\.\.\/specs\/7-dev-process\/spec\.md\) \| — \| spec \| `A` \|$/m)
+    assert.ok(markdown.indexOf('| AC-12 |') < markdown.indexOf('| AC-7-1 |'))
+    assert.ok(markdown.indexOf('| AC-7-1 |') < markdown.indexOf('| AC-7-2 |'))
+    assert.deepEqual(parseAcList(markdown).get('7-1'), { status: '有効', changedBy: '—', location: 'spec' })
+    assert.equal(parseAcList(markdown).has(12), true)
+  })
+
+  test('AC 一覧との食い違いも、新しい形の AC で見つける', () => {
+    const definitions = parseSpecAcDefinitions('- **AC-7-1** 一つ目。\n- **AC-7-2** 二つ目。', '7-dev-process')
+    const list = new Map([
+      ['7-1', { status: '有効', changedBy: '—', location: 'spec' }],
+      ['7-9', { status: '有効', changedBy: '—', location: 'spec' }],
+    ])
+    assert.deepEqual(checkAcList({ definitions, list }), ['AC 一覧にない AC：AC-7-2', 'spec にない AC が AC 一覧にある：AC-7-9'])
+  })
+})
+
 describe('手元と CI の見分け', () => {
   test('CI（環境変数 CI が true）では、テスト名に出ない AC を失敗にする', () => {
     assert.equal(isStrict({ CI: 'true' }), true)

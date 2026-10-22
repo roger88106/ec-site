@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { VariantSalesReport } from '@/api/types'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
@@ -47,6 +47,10 @@ function serveVariantSales() {
   return queries
 }
 
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe('バリアントの売れ行き', () => {
   it('AC-202、203、204 バリアントごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
     const queries = serveVariantSales()
@@ -78,5 +82,20 @@ describe('バリアントの売れ行き', () => {
     )
     expect(await screen.findByRole('cell', { name: '白 / M' })).toBeInTheDocument()
     expect(queries).toHaveLength(1)
+  })
+
+  it('AC-218 表を CSV で取り出せる', async () => {
+    serveVariantSales()
+    const createObjectURL = vi.fn(() => 'blob:report')
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
+    const { user } = renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}`)
+    await screen.findByRole('cell', { name: '白 / M' })
+
+    await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
+
+    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
+    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
+    expect(text).toBe('﻿バリアント,品番,販売数量,売上額\r\n白 / M,TEE-001-WH-M,12,39336\r\n黒 / L,TEE-001-BK-L,0,0\r\n')
   })
 })

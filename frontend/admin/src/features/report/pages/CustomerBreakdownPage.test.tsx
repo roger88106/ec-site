@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { CustomerBreakdownReport } from '@/api/types'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
@@ -49,6 +49,10 @@ function rowsOf(dimension: string): HTMLElement[] {
   return within(section).getAllByRole('row').slice(1)
 }
 
+afterEach(() => {
+  vi.unstubAllGlobals()
+})
+
 describe('地域・年齢層・性別', () => {
   it('AC-205、220、262 都道府県ごとの売上額と注文件数を、コードの順に応答の名前で出し、コードのないものは不明', async () => {
     serveBreakdown()
@@ -90,5 +94,39 @@ describe('地域・年齢層・性別', () => {
     expect(await screen.findByText('送料を含めていません。')).toBeInTheDocument()
     expect(queries[0].get('productId')).toBe(SHIRT_ID)
     expect(queries[0].get('basis')).toBe('SHIPMENT')
+  })
+
+  it('AC-218 3 つの表を 1 つにまとめた CSV で取り出せる', async () => {
+    serveBreakdown()
+    const createObjectURL = vi.fn(() => 'blob:report')
+    const revokeObjectURL = vi.fn()
+    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
+    const { user } = renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
+    await screen.findByRole('region', { name: '都道府県ごとの売上額' })
+
+    await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
+
+    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
+    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
+    expect(text).toBe(
+      [
+        '﻿分け方,区分,売上額,注文件数',
+        '都道府県,東京都,52000,12',
+        '都道府県,大阪都,31000,7',
+        '都道府県,不明,4000,1',
+        '年齢層,10 代以下,0,0',
+        '年齢層,20 代,21000,5',
+        '年齢層,30 代,30000,6',
+        '年齢層,40 代,18000,4',
+        '年齢層,50 代,9000,2',
+        '年齢層,60 代以上,5000,1',
+        '年齢層,不明,4000,2',
+        '性別,男性,40000,9',
+        '性別,女性,41000,9',
+        '性別,その他,2000,1',
+        '性別,不明,4000,1',
+        '',
+      ].join('\r\n'),
+    )
   })
 })

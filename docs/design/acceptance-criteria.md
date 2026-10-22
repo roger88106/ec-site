@@ -240,7 +240,7 @@
 | AC-215 | 権限のないレポートの API を呼ぶと 403 になる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
 | AC-216 | 権限はレポートごとに分ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AdminApiPermissionContractTest` |
 | AC-217 | 役割ごとの権限は BR-28 のとおり。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
-| AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`csv.test.ts` |
+| AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx` ほか 1 |
 | AC-219 | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-220 | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-221 | IdP の会員登録の画面で性別（BR-29）を選べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |

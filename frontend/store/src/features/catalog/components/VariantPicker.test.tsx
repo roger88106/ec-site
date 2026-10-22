@@ -1,8 +1,10 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 import type { Variant, VariantAxis } from '@/api/types'
 import { VariantPicker } from '@/features/catalog/components/VariantPicker'
+import { emptySelection, type Selection, selectedVariant } from '@/features/catalog/variantSelection'
 import { renderInBrowser } from '@/test/render'
 
 /** 色とサイズの軸 */
@@ -36,9 +38,26 @@ function button(name: string): HTMLButtonElement {
   return screen.getByRole('button', { name }) as HTMLButtonElement
 }
 
+/** 選択を親として持ち、変わるたびに onChange を呼んで知らせる。選択の状態は VariantPicker でなく親が持つ */
+function Controlled({ variants, onChange }: { variants: Variant[]; onChange?: (selection: Selection) => void }) {
+  const [selection, setSelection] = useState(() => emptySelection(AXES))
+  return (
+    <VariantPicker
+      axes={AXES}
+      chosen={selectedVariant(AXES, variants, selection)}
+      onChange={(next) => {
+        setSelection(next)
+        onChange?.(next)
+      }}
+      selection={selection}
+      variants={variants}
+    />
+  )
+}
+
 describe('バリアントの選択', () => {
   test('AC-62 選んでいない軸を示し、在庫切れ・販売停止のバリアントにしかならない値は選べない', () => {
-    renderInBrowser(<VariantPicker axes={AXES} variants={VARIANTS} />)
+    renderInBrowser(<Controlled variants={VARIANTS} />)
 
     expect(screen.getByText('色・サイズを選ぶと、在庫状況を表示します。')).toBeTruthy()
     expect(button('赤').disabled).toBe(false)
@@ -46,10 +65,8 @@ describe('バリアントの選択', () => {
   })
 
   test('すべての軸を選ぶと、そのバリアントの在庫状況を出して知らせ、選んだ値を押すと外す', async () => {
-    const onSelectVariant = vi.fn()
-    const { user } = renderInBrowser(
-      <VariantPicker axes={AXES} onSelectVariant={onSelectVariant} variants={VARIANTS} />,
-    )
+    const onChange = vi.fn()
+    const { user } = renderInBrowser(<Controlled onChange={onChange} variants={VARIANTS} />)
 
     await user.click(button('赤'))
     expect(screen.getByText('サイズを選ぶと、在庫状況を表示します。')).toBeTruthy()
@@ -59,11 +76,11 @@ describe('バリアントの選択', () => {
 
     await user.click(button('L'))
     expect(screen.getByText('サイズを選ぶと、在庫状況を表示します。')).toBeTruthy()
-    expect(onSelectVariant.mock.calls).toEqual([[null], [VARIANTS[1]], [null]])
+    expect(onChange.mock.calls).toEqual([[['赤', null]], [['赤', 'L']], [['赤', null]]])
   })
 
   test('AC-56 すべてのバリアントが買えなければ、選ぶ前から「在庫なし」と出す', () => {
-    renderInBrowser(<VariantPicker axes={AXES} variants={[VARIANTS[2], VARIANTS[3]]} />)
+    renderInBrowser(<Controlled variants={[VARIANTS[2], VARIANTS[3]]} />)
 
     expect(screen.getByText('在庫なし')).toBeTruthy()
   })

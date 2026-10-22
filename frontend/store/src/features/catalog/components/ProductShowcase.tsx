@@ -30,7 +30,8 @@ export function ProductShowcase({
 }) {
   const t = useTranslations('catalog.showcase')
   const [shown, setShown] = useState(() => imageForVariant(imageUrls, null))
-  const [chosen, setChosen] = useState(() => selectedVariant(axes, variants, emptySelection(axes)))
+  const [selection, setSelection] = useState(() => emptySelection(axes))
+  const chosen = selectedVariant(axes, variants, selection)
   return (
     <article className="grid gap-8 md:grid-cols-2">
       <div className="space-y-3">
@@ -60,10 +61,12 @@ export function ProductShowcase({
         {header}
         <VariantPicker
           axes={axes}
-          onSelectVariant={(variant) => {
-            setShown(imageForVariant(imageUrls, variant))
-            setChosen(variant)
+          chosen={chosen}
+          onChange={(next) => {
+            setSelection(next)
+            setShown(imageForVariant(imageUrls, selectedVariant(axes, variants, next)))
           }}
+          selection={selection}
           variants={variants}
         />
         <AddToCartForm variant={chosen} />

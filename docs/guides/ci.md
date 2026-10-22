@@ -71,4 +71,4 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | secret scanning、push protection | リポジトリに入った秘密情報（API キー、token など）。push protection は、秘密情報を含む push を拒否する | Security のタブの Secret scanning | 秘密情報を無効にして再発行し、履歴から削除する。テスト用の値など誤検出なら、理由を付けて閉じる |
 | CodeQL（default setup） | Java と JavaScript・TypeScript のコードの、セキュリティの問題（注入、パスの操作など） | Security のタブの Code scanning | 修正するか、誤検出・影響がない理由を付けて閉じる |
 
-- 依存の版を自動で更新する pull request（Dependabot の version updates と security updates）は使っていない。ブランチの運用と CD を決めるときに、あわせて決定する（[TODO 一覧](../todo.md)）。
+- Dependabot の設定は [ブランチと release](branches.md) 第 6 節。

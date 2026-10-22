@@ -33,7 +33,7 @@
 
 | 内容 | 置き場所 |
 |------|----------|
-| 今回の変更（何を・どう・手順） | `docs/specs/NNN-*/` の spec・plan・tasks |
+| 今回の変更（何を・どう・手順） | `docs/specs/<番号>-*/` の spec・plan・tasks（1→10 の番号は 0 で埋めない。MVP は archive の下） |
 | モジュールの今の設計<br/>（集約、不変条件、公開する api・event、設計の理由） | `docs/design/modules/<module>.md` |
 | フロントの各アプリの構成 | `docs/design/apps/`、`docs/design/frontend-architecture.md` |
 | API の項目 | `api/openapi/` |
@@ -186,7 +186,7 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 
 - spec・plan の誤り
 - 文書にない設計の判断
-- 重要度「高」の指摘のうち、修正が機能の追加に相当するもの
+- 重要度「高」（定義は skill `review` の prompts.md の「重要度」）の指摘のうち、修正が機能の追加に相当するもの
 - 調査役でも原因を特定できない失敗
 
 ### 5.4 まとめて質問する

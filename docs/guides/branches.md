@@ -8,7 +8,7 @@
 |----------|------|------|
 | `develop` | 開発。既定のブランチ | 作業ブランチは `develop` から切り、pull request で `develop` に入れる |
 | `main` | 本番 | `release-` と `hotfix-` で始まるブランチからの pull request だけを受け付ける（第 3.2 節） |
-| 作業ブランチ | 1 つの issue の作業 | 名前は第 2.1 節。マージした後は自動で削除される |
+| 作業ブランチ | 1 つの spec の作業（規模 S は 1 つの issue） | 名前は第 2.1 節。マージした後は自動で削除される |
 
 ## 2. 作業ブランチ
 
@@ -74,6 +74,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 - `hotfix-<issue の番号>-<短い名前>` のブランチを `main` から切り、pull request で `main` に入れる。
 - `main` に入れた後に、`develop` に戻す。
+- `hotfix-` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
 - tag と GitHub の Release は、第 4 節の手順 3、4 と同じ。
 
 ## 6. Dependabot

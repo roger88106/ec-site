@@ -286,4 +286,4 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 16. 未定事項
 
-未定事項と後回しにする作業は、GitHub の issue（milestone `1→10`）で管理する。現在の一覧は [TODO 一覧](todo.md)。
+未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [TODO 一覧](todo.md)。

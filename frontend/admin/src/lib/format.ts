@@ -1,15 +1,4 @@
-import { LOCALE, TIME_ZONE } from '@ec-site/shared/lib/locale'
-
-/** 表示のタイムゾーンでの年月日・時分を、ゼロ埋めの数字で取り出す書式 */
-const zonedFormat = new Intl.DateTimeFormat(LOCALE, {
-  timeZone: TIME_ZONE,
-  year: 'numeric',
-  month: '2-digit',
-  day: '2-digit',
-  hour: '2-digit',
-  minute: '2-digit',
-  hourCycle: 'h23',
-})
+import { japanDateTimeFormat } from '@ec-site/shared/lib/format'
 
 /** 1 分のミリ秒 */
 const MINUTE_MS = 60 * 1000
@@ -47,7 +36,7 @@ export function toZonedDate(date: Date): string {
 
 /** 表示のタイムゾーンでの年月日・時分（ゼロ埋め）。ブラウザのタイムゾーンに依存しない */
 function zonedParts(date: Date) {
-  const parts = Object.fromEntries(zonedFormat.formatToParts(date).map((part) => [part.type, part.value]))
+  const parts = Object.fromEntries(japanDateTimeFormat.formatToParts(date).map((part) => [part.type, part.value]))
   return { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute }
 }
 

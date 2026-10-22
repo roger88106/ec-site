@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'vitest'
-import { axisValuesLabel, formatDateTime, formatPostalCode, formatPrice, formatYen, taxLabel } from './format'
+import {
+  axisValuesLabel,
+  formatDateTime,
+  formatPostalCode,
+  formatPrice,
+  formatYen,
+  japanDateTimeFormat,
+  taxLabel,
+} from './format'
 
 describe('共有の整形', () => {
   test('金額は 3 桁ごとに区切って「円」を付ける', () => {
@@ -14,6 +22,13 @@ describe('共有の整形', () => {
   test('日時は日本時間の「yyyy/MM/dd HH:mm」。空白は空文字', () => {
     expect(formatDateTime('2027-03-31T15:00:00Z')).toBe('2027/04/01 00:00')
     expect(formatDateTime(null)).toBe('')
+  })
+
+  test('日本時間の書式は、年・月・日・時・分をゼロ埋めの部品で取り出せる', () => {
+    const parts = Object.fromEntries(
+      japanDateTimeFormat.formatToParts(new Date('2027-03-31T15:05:00Z')).map((part) => [part.type, part.value]),
+    )
+    expect(parts).toMatchObject({ year: '2027', month: '04', day: '01', hour: '00', minute: '05' })
   })
 
   test('税率ごとの消費税額は、対象額と消費税額を並べる', () => {

@@ -1,6 +1,7 @@
 package com.ecsite.config;
 
 import org.jspecify.annotations.NonNull;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.core.convert.converter.Converter;
 import org.springframework.core.convert.converter.ConverterFactory;
@@ -37,7 +38,7 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
 
         @Override
         public <T extends Enum> @NonNull Converter<String, T> getConverter(@NonNull Class<T> targetType) {
-            Method fromValue = findFromValue(targetType);
+            @Nullable Method fromValue = findFromValue(targetType);
             if (fromValue == null) {
                 return source -> (T) Enum.valueOf(targetType, source.trim());
             }
@@ -50,7 +51,7 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
          * @param targetType 変換する先の enum
          * @return fromValue。なければ null
          */
-        private static Method findFromValue(Class<?> targetType) {
+        private static @Nullable Method findFromValue(Class<?> targetType) {
             try {
                 return targetType.getMethod("fromValue", String.class);
             } catch (NoSuchMethodException e) {

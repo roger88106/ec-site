@@ -13,6 +13,7 @@ import org.jspecify.annotations.Nullable;
  * @param birthdate     生年月日（IdP の任意の属性。token の値のまま。形と範囲は使う側が確認する）。なければ null
  * @param gender        性別（IdP の任意の属性。token の値のまま）。なければ null
  */
-public record AuthenticatedMember(String subject, String email, boolean emailVerified, String familyName, String givenName,
+public record AuthenticatedMember(@Nullable String subject, @Nullable String email, boolean emailVerified,
+                                  @Nullable String familyName, @Nullable String givenName,
                                   @Nullable String birthdate, @Nullable String gender) {
 }

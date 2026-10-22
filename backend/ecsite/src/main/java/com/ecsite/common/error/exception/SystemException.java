@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.ErrorDetail;
 import lombok.NonNull;
+import org.jspecify.annotations.Nullable;
 
 /**
  * システム上予期せぬエラー。 ※HTTP 500系
@@ -23,7 +24,7 @@ public class SystemException extends BaseException {
      * @param errorCodeProvider エラーコードプロバイダー
      * @return 指定されたパラメータで初期化された新しい{@code SystemException}インスタンス
      */
-    public static SystemException of(String debugMessage, Throwable cause, @NonNull ErrorCodeProvider errorCodeProvider) {
+    public static SystemException of(String debugMessage, @Nullable Throwable cause, @NonNull ErrorCodeProvider errorCodeProvider) {
         return new SystemException(debugMessage, cause, ErrorDetail.of(errorCodeProvider.getCode()));
     }
 
@@ -34,7 +35,7 @@ public class SystemException extends BaseException {
      * @param cause        原因となった例外
      * @return 指定されたパラメータで初期化された新しい{@code SystemException}インスタンス
      */
-    public static SystemException of(String debugMessage, Throwable cause) {
+    public static SystemException of(String debugMessage, @Nullable Throwable cause) {
         return new SystemException(debugMessage, cause, SYSTEM_ERROR_DETAIL);
     }
 
@@ -45,7 +46,7 @@ public class SystemException extends BaseException {
      * @param cause        原因となった例外
      * @param detail       エラー詳細
      */
-    private SystemException(String debugMessage, Throwable cause, ErrorDetail detail) {
+    private SystemException(String debugMessage, @Nullable Throwable cause, ErrorDetail detail) {
         super(debugMessage, cause, detail);
     }
 }

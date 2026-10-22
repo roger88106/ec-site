@@ -1,6 +1,6 @@
-# ブランチと release
+# ブランチとリリース
 
-ブランチの構成、作業ブランチの作り方、保護、release と緊急の修正の手順、Dependabot の設定。CI/CD の決まりは [constitution](../constitution.md) 第 12 節。CI のジョブは [CI の検査](ci.md)。設定のフラグ、完了の定義、マージの許可と担当は [開発の進め方](../rules/workflow.md) と [AGENTS.md](../../AGENTS.md)。
+ブランチの構成、作業ブランチの作り方、保護、リリースと緊急の修正の手順、Dependabot の設定。CI/CD の決まりは [constitution](../constitution.md) 第 12 節。CI のジョブは [CI の検査](ci.md)。設定のフラグ、完了の定義、マージの許可と担当は [開発の進め方](../rules/workflow.md) と [AGENTS.md](../../AGENTS.md)。
 
 ## 1. ブランチの構成
 
@@ -43,7 +43,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 ### 3.2 `main` の元のブランチの制限
 
-`main` は、`release-` と `hotfix-` で始まるブランチからの pull request だけを受け付ける。理由：release するのは確認した commit で、`develop` の最新とは限らないため（第 4 節）。
+`main` は、`release-` と `hotfix-` で始まるブランチからの pull request だけを受け付ける。理由：リリースするのは確認した commit で、`develop` の最新とは限らないため（第 4 節）。
 
 - 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request の元のブランチの名前が `release-` か `hotfix-` で始まらなければ失敗する。
 - この検査を `main` の ruleset の必須の検査にする。
@@ -51,25 +51,25 @@ GitHub の ruleset を `develop` と `main` に作る。
 ### 3.3 マージの方式
 
 - マージは merge commit で実行する。リポジトリの設定で、squash と rebase は無効にしている。
-- `develop` から `main` へは squash しない。理由：履歴が分かれ、次の release で衝突するため。
+- `develop` から `main` へは squash しない。理由：履歴が分かれ、次のリリースで衝突するため。
 
 ### 3.4 自動の削除
 
 マージした作業ブランチは、リポジトリの設定で自動で削除される。
 
-## 4. release
+## 4. リリース
 
 | 手順 | 内容 |
 |------|------|
-| 1 | 確認した commit から `release-<版>` のブランチを作成する。確認した commit は `develop` の最新とは限らない |
+| 1 | 確認した commit から `release-<バージョン>` のブランチを作成する。確認した commit は `develop` の最新とは限らない |
 | 2 | pull request で `main` にマージする |
-| 3 | tag `v<版>` を付ける |
+| 3 | tag `v<バージョン>` を付ける |
 | 4 | `gh release create` で GitHub の Release を作成する |
 
-- 版は SemVer（`MAJOR.MINOR.PATCH`）。1→10 の間は、release ごとに minor を上げる。
-- release の内容は、issue 担当のセッションがまとめる（[開発の進め方](../rules/workflow.md)）。
+- バージョンは SemVer（`MAJOR.MINOR.PATCH`）。1→10 の間は、リリースごとに minor を上げる。
+- リリースの内容は、issue 担当のセッションがまとめる（[開発の進め方](../rules/workflow.md)）。
 - `release-` のブランチの `main` へのマージと tag は、issue 担当のセッションが利用者の許可を得て行う。
-- デプロイの spec で決めるまでの release は、`main` へのマージと tag までとし、デプロイしない（第 7 節）。
+- デプロイの spec で決めるまでのリリースは、`main` へのマージと tag までとし、デプロイしない（第 7 節）。
 
 ## 5. 緊急の修正
 
@@ -88,7 +88,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 | 対象 | `gradle`（`/backend/ecsite`）、`npm`（`/`。pnpm の workspace）、`github-actions`（`/`）、`docker-compose`（`/docker`） |
 | 頻度 | 週 1 回（月曜、日本時間） |
 | group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする |
-| cooldown | 新しい版がリリースされてから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は、GitHub の文書の cooldown の対応表で SemVer の日数（major・minor・patch）に対応しないため、7 日（`default-days`）にする |
+| cooldown | 新しいバージョンがリリースされてから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は、GitHub の文書の cooldown の対応表で SemVer の日数（major・minor・patch）に対応しないため、7 日（`default-days`）にする |
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 
@@ -104,4 +104,4 @@ CD、staging、preview の環境の方式は、デプロイの spec で決める
 | 項目 | 扱い |
 |------|------|
 | 手動の確認 | 手元の環境で、作業ブランチに対して実行する（[開発環境の起動](setup.md)、[テストの実行方法](running-tests.md)） |
-| release | `main` へのマージと tag までとし、デプロイしない |
+| リリース | `main` へのマージと tag までとし、デプロイしない |

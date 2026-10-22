@@ -4,7 +4,7 @@
 # - 頻度は週 1 回、月曜の朝（日本時間）。
 # - group：minor と patch は ecosystem ごとに 1 つの pull request にまとめる。
 #   major は group に入れず、1 つずつ pull request にする（影響を個別に見るため）。
-# - cooldown：リリースから待つ日数。major 30、minor 7、patch 3。公開直後の版の不具合や
+# - cooldown：リリースから待つ日数。major 30、minor 7、patch 3。公開直後のバージョンの不具合や
 #   供給網の攻撃を避ける。セキュリティの更新は cooldown を待たずに作成される。
 #   github-actions と docker-compose は、GitHub の文書の cooldown の対応表で、
 #   SemVer の日数に対応しないため、default-days だけを指定する。

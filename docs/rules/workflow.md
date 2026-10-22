@@ -2,7 +2,7 @@
 
 [constitution](../constitution.md) 第 4、13 節の細則。仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。
 番号と記号の意味は [文書の記号と番号](notation.md)、エージェントの作業の手順は [AGENTS.md](../../AGENTS.md)、サブエージェントへの任せ方は [エージェントの作業フロー](subagents.md) にある。
-ブランチと release の手順は `docs/guides/branches.md`（題名「ブランチと release」）にある。
+ブランチとリリースの手順は `docs/guides/branches.md`（題名「ブランチとリリース」）にある。
 
 ## 1. 仕様駆動開発（SDD）
 
@@ -40,7 +40,7 @@
 | テーブルの定義 | Flyway のマイグレーション（作成するまでは `docs/design/modules/` に草案を置く） |
 | 後回しの作業と未決事項 | issue（milestone `1→10`。第 4.1 節） |
 | 規模 M の spec | `docs/specs/<番号>-<名前>/spec.md`（第 4.2 節） |
-| ブランチと release の手順 | `docs/guides/branches.md` |
+| ブランチとリリースの手順 | `docs/guides/branches.md` |
 | 用語と識別子の対応 | `docs/design/glossary.md` |
 | AC の今の状態とテスト | `docs/design/acceptance-criteria.md`（AC 一覧） |
 | コードの書き方 | `docs/rules/backend-coding.md`、`docs/rules/frontend-coding.md`、`docs/rules/test-writing.md`、`docs/rules/comments.md` |

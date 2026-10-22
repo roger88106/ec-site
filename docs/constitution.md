@@ -148,7 +148,7 @@ ec-site/
 | [environment.md](guides/environment.md) | 環境変数 |
 | [ci.md](guides/ci.md) | CI の検査 |
 | [running-tests.md](guides/running-tests.md) | テストの実行方法 |
-| [branches.md](guides/branches.md) | ブランチと release |
+| [branches.md](guides/branches.md) | ブランチとリリース |
 
 開発記録（`docs/specs/`）：
 
@@ -252,7 +252,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 - CI：push と pull request で、バックエンド、フロント、E2E を実行する。文書だけを変えた push では実行しない（文書の参照の検査だけは実行する）。
 - CI が失敗している状態で、次の spec の実装に進まない。
-- ブランチ：作業ブランチを `develop` に、release を `main` に pull request で入れる。細則は [ブランチと release](guides/branches.md)。
+- ブランチ：作業ブランチを `develop` に、リリースを `main` に pull request で入れる。細則は [ブランチとリリース](guides/branches.md)。
 - CD：まだない（デプロイ先は未定。第 16 節）。
 
 ## 13. 書く言語（日本語と英語の使い分け）

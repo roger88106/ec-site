@@ -28,7 +28,8 @@ for container in ec-site-postgres ec-site-mailpit ec-site-seaweedfs ec-site-imgp
 done
 if [ ${#stopped[@]} -gt 0 ]; then
   echo "動いていないコンテナ：${stopped[*]}" >&2
-  echo "ルートで起動してから流し直す：docker compose up -d ${stopped[*]//ec-site-/}" >&2
+  main_tree="$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -1)"
+  echo "メインの作業ツリーで起動してから流し直す：cd \"$main_tree\" && docker compose up -d ${stopped[*]//ec-site-/}" >&2
   exit 2
 fi
 

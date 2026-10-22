@@ -1,9 +1,9 @@
 // スロット（作業ツリーごとの手元の環境）の割り当てと、スロットの環境での起動。
 //
 // 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい）
-//   assign                          空いている最小のスロットを割り当て、データベースを作る。割り当て済みなら番号を示すだけ
-//   release                         データベースを削除し、割り当てを解く
-//   reset                           割り当てを変えずに、データベースを作り直す（バックエンドを止めてから）
+//   assign                          空いている最小のスロットを割り当て、データベースとバケットを作る。割り当て済みなら番号を示すだけ
+//   release                         データベースとバケットを削除し、割り当てを解く
+//   reset                           割り当てを変えずに、データベースとバケットを作り直す（バックエンドを止めてから）
 //   show                            スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
 //   env                             スロットの環境変数を `export NAME='value'` の形で出す
 //   run <backend|store|admin> [番号]  スロットの環境変数を付けて起動する。番号を渡したときは、作業ツリーのスロットと同じときだけ起動する
@@ -33,9 +33,9 @@ const LOCK_WAIT_MS = 90_000
 const LOCK_STALE_MS = 60_000
 
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
-  assign                            空いている最小のスロットを割り当て、データベースを作る
-  release                           データベースを削除し、割り当てを解く
-  reset                             割り当てを変えずに、データベースを作り直す
+  assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
+  release                           データベースとバケットを削除し、割り当てを解く
+  reset                             割り当てを変えずに、データベースとバケットを作り直す
   show                              スロットのポート・URL・名前と、作業ツリーの一覧を示す
   env                               スロットの環境変数を export の形で出す
   run <backend|store|admin> [番号]  スロットの環境変数を付けて起動する`
@@ -180,21 +180,73 @@ function recreateDatabase(slot) {
 }
 
 /**
- * スロットのデータを作り直す。assign と reset が使う。
+ * 一時のコンテナとして seaweedfs-init を流す。共有のコンテナは作り直さない。
  *
- * @param {number} slot スロットの番号
+ * @param {string} root 作業ツリーのルート（compose の定義を読む場所）
+ * @param {string[]} args `docker compose run` の引数（サービス名の前）
+ * @param {string[]} [command] サービスの後ろに渡す引数
  */
-function recreateData(slot) {
-  recreateDatabase(slot)
+function runInit(root, args, command = []) {
+  execFileSync(
+    'docker',
+    ['compose', '-f', path.join(root, 'docker', 'compose.yaml'), 'run', '--rm', '--no-deps', '-T', ...args, 'seaweedfs-init', ...command],
+    { cwd: root, stdio: ['ignore', 'ignore', 'inherit'] },
+  )
 }
 
 /**
- * スロットのデータを消す。release が使う。
+ * スロットの 2 つのバケットを削除する。ないバケットは無視する。
  *
+ * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
  */
-function dropData(slot) {
+function dropBuckets(root, slot) {
+  const { incomingBucket, publicBucket } = slotValues(slot)
+  const script = [incomingBucket, publicBucket]
+    .map((bucket) => `aws --endpoint-url http://seaweedfs:8333 s3 rb --force s3://${bucket} 2>/dev/null || true`)
+    .join('; ')
+  runInit(root, ['--entrypoint', 'sh'], ['-c', script])
+}
+
+/**
+ * スロットの 2 つのバケットを削除してから作り直し、seed の画像を配信のバケットの assets/ に写す。
+ *
+ * @param {string} root 作業ツリーのルート
+ * @param {number} slot スロットの番号
+ */
+function recreateBuckets(root, slot) {
+  dropBuckets(root, slot)
+  const { incomingBucket, publicBucket, adminPort } = slotValues(slot)
+  runInit(root, [
+    '-e',
+    `SLOT_INCOMING_BUCKET=${incomingBucket}`,
+    '-e',
+    `SLOT_PUBLIC_BUCKET=${publicBucket}`,
+    '-e',
+    `SLOT_ADMIN_ORIGIN=http://localhost:${adminPort}`,
+  ])
+}
+
+/**
+ * スロットのデータ（データベースとバケット）を作り直す。assign と reset が使う。
+ *
+ * @param {string} root 作業ツリーのルート
+ * @param {number} slot スロットの番号
+ */
+function recreateData(root, slot) {
+  recreateDatabase(slot)
+  recreateBuckets(root, slot)
+}
+
+/**
+ * スロットのデータ（データベースとバケット）を消す。release が使う。
+ *
+ * @param {string} root 作業ツリーのルート
+ * @param {number} slot スロットの番号
+ */
+function dropData(root, slot) {
   dropDatabase(slot)
+  dropBuckets(root, slot)
 }
 
 /**
@@ -277,10 +329,10 @@ async function assign(ctx) {
           '使い終えた作業ツリーで release するか、消えた作業ツリーなら git worktree prune を流す',
       )
     }
-    recreateData(picked.slot)
+    recreateData(ctx.root, picked.slot)
     mkdirSync(path.dirname(recordFile(ctx.root)), { recursive: true })
     writeFileSync(recordFile(ctx.root), `${picked.slot}\n`)
-    console.log(`スロット ${picked.slot} を割り当てた（データベース ${slotValues(picked.slot).database}）`)
+    console.log(`スロット ${picked.slot} を割り当てた（データベース ${slotValues(picked.slot).database}、バケット ${slotValues(picked.slot).publicBucket} と ${slotValues(picked.slot).incomingBucket}）`)
   })
 }
 
@@ -294,7 +346,7 @@ function release(ctx) {
   requireShared(ctx)
   const slot = parseSlotRecord(readRecord(ctx.root))
   if (slot === null) return console.log('スロットは割り当てられていない')
-  dropData(slot)
+  dropData(ctx.root, slot)
   rmSync(recordFile(ctx.root), { force: true })
   console.log(`スロット ${slot} を解いた`)
 }
@@ -333,8 +385,8 @@ async function reset(ctx) {
       `スロット ${slot} のバックエンド（:${values.backendPort}）が動いている。止めてから流し直す（接続を持ったまま消すと、起動中の処理が失敗する）`,
     )
   }
-  recreateData(slot)
-  console.log(`スロット ${slot} のデータベース ${values.database} を作り直した。次のバックエンドの起動で seed が入る`)
+  recreateData(ctx.root, slot)
+  console.log(`スロット ${slot} のデータベース ${values.database} とバケットを作り直した。次のバックエンドの起動で seed が入る`)
 }
 
 /**

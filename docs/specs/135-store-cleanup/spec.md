@@ -151,9 +151,10 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 依存：T135-01-08
   - 範囲：`frontend/store/src/features/catalog/components/`
   - 結果：選択（`selection`）を `ProductShowcase` だけが持ち、選んだバリアントはそこから 1 か所で計算して、`VariantPicker` には `selection`・`chosen`・`onChange` を渡す制御コンポーネントにした。`onSelectVariant` による同期は消した。`VariantPicker.test.tsx` は、選択を持つ親の部品をテスト内に置いて同じ内容を確認し、通知の期待は「バリアント」から「新しい選択」に書き換えた（確認の内容は減らしていない）。
-- [ ] **T135-01-10** フォームの値を整数か NaN で読む関数を作り、3 か所で使う。関数の単体テストを書く（DC-135-13）。振る舞いを変えない関数の共通化なので、テストを実装と同じタスクで書く（[開発の進め方](../../rules/workflow.md) 第 2.2 節）。
+- [x] **T135-01-10** フォームの値を整数か NaN で読む関数を作り、3 か所で使う。関数の単体テストを書く（DC-135-13）。振る舞いを変えない関数の共通化なので、テストを実装と同じタスクで書く（[開発の進め方](../../rules/workflow.md) 第 2.2 節）。
   - 依存：なし
   - 範囲：`frontend/store/src/lib/server/formData.ts`、`frontend/store/src/actions/`
+  - 結果：`readIntOrNaN` を `lib/server/formData.ts` に置き、NaN で API に断らせる理由のコメントを関数の側に 1 回だけ書いた。`cart.ts` の 2 か所と `checkout.ts` の 1 か所はそれを使う。単体テストは先に書いてレッドを確認した。
 - [ ] **T135-01-11** 段階の最後のレビュー（profile「厚め」：一般の観点を汎用で 2 回、重要な観点を高性能と汎用で）。
   - 依存：T135-01-01〜10
 

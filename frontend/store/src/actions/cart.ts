@@ -10,7 +10,7 @@ import { redirectToLogin } from '@/auth'
 import { translate } from '@/i18n/translate'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
 import { CART_NOT_FOUND, withCart } from '@/lib/cartId'
-import { readInt, readString } from '@/lib/server/formData'
+import { readIntOrNaN, readString } from '@/lib/server/formData'
 
 /**
  * カートに入れる。<br />
@@ -19,8 +19,7 @@ import { readInt, readString } from '@/lib/server/formData'
  */
 export async function addToCart(_previous: ActionResult | null, formData: FormData): Promise<ActionResult> {
   const variantId = readString(formData, 'variantId')
-  // 数でなければ API が断る（入力の検証の 400）
-  const quantity = readInt(formData, 'quantity') ?? Number.NaN
+  const quantity = readIntOrNaN(formData, 'quantity')
   return withActionResult(async () => {
     const choice = await currentCartChoice()
     if (choice.kind === 'member') {
@@ -58,8 +57,7 @@ export async function changeCartItemQuantity(
   formData: FormData,
 ): Promise<ActionResult> {
   const variantId = readString(formData, 'variantId')
-  // 数でなければ API が断る（入力の検証の 400）
-  const quantity = readInt(formData, 'quantity') ?? Number.NaN
+  const quantity = readIntOrNaN(formData, 'quantity')
   return updateCart(async (api, cartId) =>
     api.PUT('/carts/{cartId}/items/{variantId}', { params: { path: { cartId, variantId } }, body: { quantity } }),
   )

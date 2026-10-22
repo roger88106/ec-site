@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { readInt, readString } from '@/lib/server/formData'
+import { readInt, readIntOrNaN, readString } from '@/lib/server/formData'
 
 /** 項目を入れたフォーム */
 function form(entries: Record<string, string>): FormData {
@@ -28,5 +28,14 @@ describe('フォームの項目の取り出し', () => {
     expect(readInt(form({ quantity: 'abc' }), 'quantity')).toBeNull()
     expect(readInt(form({ quantity: '1.5' }), 'quantity')).toBeNull()
     expect(readInt(form({ quantity: '1e3' }), 'quantity')).toBeNull()
+  })
+
+  test('整数か NaN で読む関数は、整数ならその値、空・数でない・小数なら NaN を返す', () => {
+    expect(readIntOrNaN(form({ quantity: '3' }), 'quantity')).toBe(3)
+    expect(readIntOrNaN(form({ quantity: '-1' }), 'quantity')).toBe(-1)
+    expect(readIntOrNaN(form({}), 'quantity')).toBeNaN()
+    expect(readIntOrNaN(form({ quantity: '' }), 'quantity')).toBeNaN()
+    expect(readIntOrNaN(form({ quantity: 'abc' }), 'quantity')).toBeNaN()
+    expect(readIntOrNaN(form({ quantity: '1.5' }), 'quantity')).toBeNaN()
   })
 })

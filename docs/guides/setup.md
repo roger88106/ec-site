@@ -181,7 +181,7 @@ node scripts/dev/slot.mjs release
 | コマンド | 内容 |
 |----------|------|
 | `assign` | 空いている最小のスロットを割り当てる。割り当て済みなら番号を示すだけ。スロット 1〜3 が全て使われていれば、使っている作業ツリーのパスを示して終了する。メインの作業ツリーでは何もせずに知らせる |
-| `run backend`、`run store`、`run admin` | スロットの環境変数を付けて起動する。バックエンドは profile `local` |
+| `run backend`、`run store`、`run admin` | スロットの環境変数を付けて起動する。バックエンドは profile `local`。`run store` と `run admin` は、起動の前に `pnpm generate:api` で API の型を生成する（失敗したら起動しない） |
 | `show` | 今のスロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧 |
 | `reset` | 割り当てを変えずに、データベースと 2 つのバケットを再作成する（バックエンドを停止してから）。`scripts/dev/reset.sh` からも実行できる（第 4 節） |
 | `env` | スロットの環境変数を `export` の形で出力する |

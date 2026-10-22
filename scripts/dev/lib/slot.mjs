@@ -129,6 +129,16 @@ export function pickSlot(porcelain, records) {
 }
 
 /**
+ * 起動の前に API の型（`pnpm generate:api`）を生成するディレクトリ。各アプリの `dev` の script と同じく、生成してから起動する。
+ *
+ * @param {'backend' | 'store' | 'admin'} target 起動する対象
+ * @returns {string | null} リポジトリのルートからの相対のパス。生成が要らない対象は null
+ */
+export function generateApiDir(target) {
+  return target === 'store' || target === 'admin' ? `frontend/${target}` : null
+}
+
+/**
  * 対象に付ける環境変数を組み立てる。スロット 0 は何も上書きしない。
  *
  * @param {number} slot スロットの番号

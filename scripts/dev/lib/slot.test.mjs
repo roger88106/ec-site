@@ -9,6 +9,7 @@ import {
   assignSlot,
   checkShared,
   currentSlotOf,
+  generateApiDir,
   formatSlotRecord,
   isMainWorktree,
   parseSlotRecord,
@@ -421,5 +422,16 @@ describe('環境変数の組み立て', () => {
 
   test('知らない対象は拒む', () => {
     assert.throws(() => slotEnv(1, 'db'))
+  })
+})
+
+describe('generateApiDir', () => {
+  test('画面は起動の前に API の型を生成するディレクトリを返す', () => {
+    assert.equal(generateApiDir('store'), 'frontend/store')
+    assert.equal(generateApiDir('admin'), 'frontend/admin')
+  })
+
+  test('バックエンドは生成しない', () => {
+    assert.equal(generateApiDir('backend'), null)
   })
 })

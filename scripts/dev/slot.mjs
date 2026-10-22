@@ -12,7 +12,7 @@
 // 割り当ては `<作業ツリー>/.local/slot` に番号だけで書く。
 // 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、2 共有の基盤が動いていない。
 // 共有の基盤（compose）は、メインの作業ツリーで起動する。この script は起動しない。
-import { execFileSync, spawn } from 'node:child_process'
+import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { existsSync, linkSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
@@ -22,6 +22,7 @@ import {
   checkShared,
   currentSlotOf,
   formatSlotRecord,
+  generateApiDir,
   isMainWorktree,
   parseSlotRecord,
   parseWorktrees,
@@ -574,6 +575,16 @@ async function run(ctx, args) {
     commandArgs = ['frontend/admin/node_modules/vite/bin/vite.js', 'frontend/admin', '--port', String(values.adminPort), '--strictPort']
   }
   const options = { cwd, stdio: 'inherit', env: { ...process.env, ...slotEnv(slot, target) } }
+  // 画面は、起動の前に API の型を生成する（新しい作業ツリーには src/api/generated がない）。失敗したら起動せず、その終了コードで終わる
+  const generateDir = generateApiDir(target)
+  if (generateDir !== null) {
+    // pnpm は Windows では .cmd なので shell 経由で流す
+    const generated = spawnSync('pnpm generate:api', { ...options, cwd: path.join(ctx.root, generateDir), shell: true })
+    if (generated.status !== 0) {
+      console.error(`API の型の生成に失敗したので起動しない（${generateDir}）`)
+      return generated.status ?? 1
+    }
+  }
   // Windows の .bat は shell を通さないと起動できない
   const child =
     process.platform === 'win32' && command.endsWith('.bat')

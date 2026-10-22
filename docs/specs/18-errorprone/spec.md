@@ -62,7 +62,7 @@
 ### 共通（D / P1）
 
 - **DC-18-12** 依存のライセンスを、次のとおり扱う。
-  - Error Prone（Apache-2.0）、NullAway（MIT）、JSpecify（Apache-2.0）、Gradle のプラグイン（Apache-2.0）と、それらの間接の依存を、依存のライセンスの検査（`checkLicense`）の構成に入れる。`errorprone` の構成を `licenseReport` の configurations に追加する。Gradle のプラグインは `errorprone` の構成を 1 つだけ作り、全てのソースセットで使う（試しで確認）。
+  - Error Prone（Apache-2.0）、NullAway（MIT）、JSpecify（Apache-2.0）、Gradle のプラグイン（Apache-2.0）と、それらの間接の依存を、依存のライセンスの検査（`checkLicense`）の構成に入れる。Gradle のプラグインは `errorprone` の構成を 1 つだけ作り、全てのソースセットで使う（試しで確認）。`errorprone` の構成は解決できない構成なので `licenseReport` に直接は入れられず、それを継承する `annotationProcessor`（既に検査の構成にある）で検査に入る（T18-01-01 で確認）。
   - 間接の依存の Checker Framework の dataflow（`dataflow-errorprone`、`dataflow-nullaway`。POM のライセンスは GPL-2.0 with Classpath-exception）は、条件付きの一覧（`scripts/ci/licenses/policy.json`）に理由を書いて載せる。
   - [依存とライセンス](../../design/licenses.md) の 3.1 の表に追加する。
 - **DC-18-13** [バックエンドの書き方](../../rules/backend-coding.md) に、null の扱いの節（JSpecify の `@Nullable`、main では注釈のないものを null でないとみなす、`Optional` を使う場面（今のコードの書き方）、jOOQ の null を取りうる列、`@SuppressWarnings` の書き方と理由のコメント）と、Error Prone の検査を抑えるときの書き方を追加し、規則の一覧の表に行を追加する（確認方法：自動（Error Prone・NullAway）など）。
@@ -118,7 +118,7 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
 - 完了条件：DC-18-1〜4 と、DC-18-12・16 のうち Error Prone の分を満たし、CI が通る。
 - 参照：第 3 節の DS-18-1
 
-- [x] **T18-01-01** Error Prone のプラグインと依存をカタログと `build.gradle.kts` に入れ、全てのソースセットで動かす。生成したコードを除き、`StringConcatToTextBlock` を理由のコメントと一緒に無効にする。`errorprone` の構成をライセンスの検査に入れ、`policy.json` に `dataflow-errorprone` を理由と一緒に載せる。既存のエラー（main の 8 件）を、振る舞いを変えずに修正する（DN-18-1）。警告の失敗はまだ入れない（DC-18-1〜3、12、16）。
+- [x] **T18-01-01** Error Prone のプラグインと依存をカタログと `build.gradle.kts` に入れ、全てのソースセットで動かす。生成したコードを除き、`StringConcatToTextBlock` を理由のコメントと一緒に無効にする。`errorprone` の構成の依存がライセンスの検査に入ることを確認し、`policy.json` に `dataflow-errorprone` を理由と一緒に載せる。既存のエラー（main の 8 件）を、振る舞いを変えずに修正する（DN-18-1）。警告の失敗はまだ入れない（DC-18-1〜3、12、16）。
   - 依存：なし
   - 範囲：`backend/ecsite/gradle/libs.versions.toml`、`backend/ecsite/build.gradle.kts`、`scripts/ci/licenses/policy.json`、`backend/ecsite/src/main/java/` の該当のクラス
 - [x] **T18-01-02** [P] main の警告を、振る舞いを変えずに修正する（DC-18-2）。

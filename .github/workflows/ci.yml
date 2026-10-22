@@ -121,7 +121,7 @@ jobs:
       # 統合テストに必要な task だけが流れる（ライセンスの検査と Checkstyle は、ビルドと単体テストのジョブで流す）。
       # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
       - name: 統合テスト（${{ matrix.shard }}/2）
-        run: ./gradlew integrationTest -PintegrationTestShard=${{ matrix.shard }}/2 -PintegrationTestForks=2
+        run: ./gradlew integrationTest -PintegrationTestShard=${{ matrix.shard }}/2
 
       - name: カバレッジの実行データ（統合テスト）を保存
         uses: actions/upload-artifact@v7

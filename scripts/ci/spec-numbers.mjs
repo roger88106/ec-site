@@ -11,8 +11,8 @@ const SOURCE_DIRS = ['backend/ecsite/src/main/', 'frontend/admin/src/', 'fronten
 /** 本番のコードでないもの（テスト、テストの補助、生成物、適用済みのマイグレーション） */
 const EXCLUDED = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/db\/migration\//]
 
-/** spec の番号（AC-12 など）、タスクの番号（T011-01-01、古い形式の T6803 など）、spec・plan の番号（plan 001 など） */
-const SPEC_NUMBER = /\b(?:AC|DC|BR|NFR|US|DS|DN)-\d+\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d{3}\b/g
+/** spec の番号（AC-12、1→10 の spec の AC-7-1 など）、タスクの番号（T011-01-01、T7-01-01、古い形式の T6803 など）、spec・plan の番号（plan 001、spec 7 など） */
+const SPEC_NUMBER = /\b(?:AC|DC|BR|NFR|US|DS|DN)-\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b/g
 
 /**
  * spec・plan・tasks の番号を書いた行を探す。

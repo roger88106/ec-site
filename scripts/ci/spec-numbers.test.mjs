@@ -24,6 +24,19 @@ describe('本番のコードの spec の番号の検査', () => {
     )
   })
 
+  test('1→10 の spec の番号（AC-7-1 など）、タスクの番号（T7-01-01）、spec 7・plan 7 を見つける', () => {
+    const text = [
+      '// 共有の基準（AC-7-1、DC-7-14、US-12-3）',
+      '// 規則（BR-7-2、NFR-7-1、DS-7-1、DN-7-4）',
+      '// 段階（T7-01-01、T12-02-03）',
+      '// spec 7 と plan 12 第 2 節',
+    ].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-7-1', '1 DC-7-14', '1 US-12-3', '2 BR-7-2', '2 NFR-7-1', '2 DS-7-1', '2 DN-7-4', '3 T7-01-01', '3 T12-02-03', '4 spec 7', '4 plan 12'],
+    )
+  })
+
   test('番号に似た識別子は見つけない', () => {
     assert.deepEqual(findSpecNumbers('const ACTION = "X-12"; const T10 = 1; const UTF8 = true'), [])
   })

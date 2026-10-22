@@ -3,8 +3,8 @@
 import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 
-/** spec のディレクトリの名前（NNN-名前） */
-const SPEC_DIR = /^\d{3,}-/
+/** spec のディレクトリの名前（<番号>-名前）。1→10 の spec は 0 で埋めない番号（7-dev-process）、MVP は 3 桁の 0 埋め（011-dev-foundation） */
+const SPEC_DIR = /^\d+-/
 
 /** アーカイブのディレクトリ（docs/specs/ から） */
 const ARCHIVE = 'archive'
@@ -13,7 +13,7 @@ const ARCHIVE = 'archive'
  * spec のディレクトリを、直下とアーカイブのまとまりの下から探す。
  *
  * @param {string} specsDir docs/specs のパス
- * @returns {{ name: string, rel: string, dir: string }[]} 名前、docs/specs からの相対パス（/ 区切り）、絶対パス。名前の順
+ * @returns {{ name: string, rel: string, dir: string }[]} 名前、docs/specs からの相対パス（/ 区切り）、絶対パス。番号の順
  */
 export function listSpecDirs(specsDir) {
   const parents = ['']
@@ -32,7 +32,7 @@ export function listSpecDirs(specsDir) {
           return { name: entry.name, rel, dir: path.join(specsDir, rel) }
         }),
     )
-    .sort((a, b) => a.name.localeCompare(b.name))
+    .sort((a, b) => a.name.localeCompare(b.name, 'en', { numeric: true }))
 }
 
 /**

@@ -1,4 +1,4 @@
-import { isDateString } from '@ec-site/shared/lib/patterns'
+import { isDateString } from '@/lib/date'
 import { toZonedDate } from '@/lib/format'
 
 /** 期間の選択肢 */

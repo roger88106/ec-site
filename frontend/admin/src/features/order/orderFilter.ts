@@ -1,6 +1,6 @@
-import { isDateString } from '@ec-site/shared/lib/patterns'
 import { orderStatusValues } from '@/api/generated/admin'
 import type { OrderStatus } from '@/api/types'
+import { isDateString } from '@/lib/date'
 import { pageParam } from '@/lib/searchParams'
 
 /** 注文一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成 第 3 節） */

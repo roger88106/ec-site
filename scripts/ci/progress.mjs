@@ -169,7 +169,7 @@ export function checkArchivedTasks(tasks) {
     .map((name) =>
       tasks.get(name).total === 0
         ? `1→10 の spec ${name}：tasks がない`
-        : `1→10 の spec ${name}：tasks に残りが ${tasks.get(name).total - tasks.get(name).done} ある（アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクを \`[x]\` にする。開発の進め方 第 4.2 節）`,
+        : `1→10 の spec ${name}：tasks に残りが ${tasks.get(name).total - tasks.get(name).done} ある（アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクを \`[x]\` にする。アーカイブの後に追加するタスクは \`[x]\` の行で追加する。開発の進め方 第 4.2 節）`,
     )
 }
 

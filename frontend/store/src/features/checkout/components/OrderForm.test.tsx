@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import type { PostalCodeAddress, Prefecture } from '@/api/types'
@@ -56,13 +56,18 @@ function selected(label: string): string {
   return (screen.getByLabelText(label) as HTMLSelectElement).value
 }
 
-/** 欄の見出しと入力をまとめる枠（誤りの文がその欄の下に出ることを確認するため） */
-function fieldOf(label: string): HTMLElement {
-  const container = screen.getByText(label, { selector: 'label' }).parentElement
-  if (!container) {
-    throw new Error(`欄の枠がない：${label}`)
+/**
+ * 欄の見出しの後から、次の欄の見出し（または注文のボタン）の前までの HTML（誤りの文がその欄の下に出ることを確認するため）。
+ *
+ * @param html  フォームの HTML
+ * @param label 欄の見出し
+ */
+function fieldOf(html: string, label: string): string {
+  const matched = new RegExp(`<label[^>]*>${label}</label>(.*?)(?=<label|<button)`, 's').exec(html)
+  if (!matched) {
+    throw new Error(`欄がない：${label}`)
   }
-  return container
+  return matched[1]
 }
 
 /** 住所の欄の値 */
@@ -113,16 +118,17 @@ describe('お届け先の入力と注文', () => {
   })
 
   test('AC-86 入力の誤りは、その欄の下に出す', () => {
-    renderInBrowser(
+    const html = renderMarkup(
       form({ ok: false, message: '郵便番号は 7 桁で入力してください。', errorCode: 'INVALID_POSTAL_CODE' }),
     )
 
-    expect(within(fieldOf('郵便番号')).getByText('郵便番号は 7 桁で入力してください。')).toBeDefined()
-    expect(screen.queryByRole('link', { name: 'カートを見る' })).toBeNull()
+    expect(fieldOf(html, '郵便番号')).toContain('郵便番号は 7 桁で入力してください。')
+    expect(fieldOf(html, '氏名')).not.toContain('郵便番号は 7 桁で入力してください。')
+    expect(html).not.toContain('カートを見る')
   })
 
   test('AC-264 入力の検証の誤り（400）は、欄ごとに API の文をそのまま出す', () => {
-    renderInBrowser(
+    const html = renderMarkup(
       form({
         ok: false,
         message: '入力内容に誤りがあります。',
@@ -131,24 +137,26 @@ describe('お届け先の入力と注文', () => {
       }),
     )
 
-    expect(within(fieldOf('電話番号')).getByText('API が決めた電話番号の文')).toBeDefined()
-    expect(within(fieldOf('氏名')).queryByText('API が決めた電話番号の文')).toBeNull()
+    expect(fieldOf(html, '電話番号')).toContain('API が決めた電話番号の文')
+    expect(fieldOf(html, '氏名')).not.toContain('API が決めた電話番号の文')
   })
 
   test('AC-251 市区町村の誤りは、市区町村の欄の下に出す', () => {
-    renderInBrowser(form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }))
+    const html = renderMarkup(
+      form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }),
+    )
 
-    expect(within(fieldOf('市区町村')).getByText('市区町村を選んでください。')).toBeDefined()
-    expect(within(fieldOf('都道府県')).queryByText('市区町村を選んでください。')).toBeNull()
-    expect(within(fieldOf('住所')).queryByText('市区町村を選んでください。')).toBeNull()
+    expect(fieldOf(html, '市区町村')).toContain('市区町村を選んでください。')
+    expect(fieldOf(html, '都道府県')).not.toContain('市区町村を選んでください。')
+    expect(fieldOf(html, '住所')).not.toContain('市区町村を選んでください。')
   })
 
   test('AC-87 在庫が足りなければ、フォームの下にメッセージとカートへのリンクを出す', () => {
-    renderInBrowser(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
+    const html = renderMarkup(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
-    const message = screen.getByText('在庫が足りない商品があります。', { exact: false })
-    expect(message.getAttribute('aria-live')).toBe('polite')
-    expect(within(message).getByRole('link', { name: 'カートを見る' }).getAttribute('href')).toBe('/cart')
+    expect(html).toMatch(
+      /<p aria-live="polite"[^>]*>在庫が足りない商品があります。<a [^>]*href="\/cart">カートを見る<\/a><\/p>/,
+    )
   })
 })
 

@@ -1,11 +1,9 @@
-// @vitest-environment jsdom
-import { screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { Order } from '@/api/types'
 import OrderPage from '@/app/orders/[orderId]/page'
 import { signInAs } from '@/test/auth'
 import { ORDER_ID } from '@/test/fixtures'
-import { renderInBrowser } from '@/test/render'
+import { renderMarkup } from '@/test/render'
 import { http, server } from '@/test/server'
 
 /** 受付済みの注文（キャンセルを申請できる。支払の欄は出さない） */
@@ -42,11 +40,12 @@ const PENDING_PAYMENT: Order = {
 const SHIPPED: Order = { ...ACCEPTED, status: 'SHIPPED', actions: { requestCancellation: false, pay: false } }
 
 /**
- * 注文の画面を描く（会員がログインしている）。
+ * 注文の画面を HTML にする（会員がログインしている）。
  *
  * @param order 注文の API が返す注文
+ * @returns HTML の文字
  */
-async function renderOrderPage(order: Order) {
+async function renderOrderPage(order: Order): Promise<string> {
   signInAs()
   server.use(
     http.get('/orders/{orderId}', ({ response }) => response(200).json(order)),
@@ -56,44 +55,49 @@ async function renderOrderPage(order: Order) {
     params: Promise.resolve({ orderId: ORDER_ID }),
     searchParams: Promise.resolve({}),
   } as Parameters<typeof OrderPage>[0])
-  renderInBrowser(page)
+  return renderMarkup(page)
 }
 
-/** 見出し（欄の題名） */
-function heading(name: string) {
-  return screen.queryByRole('heading', { name })
+/** 見出し（欄の題名）が HTML にあるか */
+function hasHeading(html: string, name: string): boolean {
+  return new RegExp(`<h[1-6][^>]*>${name}</h[1-6]>`).test(html)
+}
+
+/** 「支払う」のボタンが HTML にあるか */
+function hasPayButton(html: string): boolean {
+  return /<button[^>]*>支払う<\/button>/.test(html)
 }
 
 describe('注文の画面の欄の出し分け', () => {
   test('AC-151 支払待ちの注文は、支払の欄を出し、「支払う」を示す', async () => {
-    await renderOrderPage(PENDING_PAYMENT)
+    const html = await renderOrderPage(PENDING_PAYMENT)
 
-    expect(heading('お支払い')).not.toBeNull()
-    expect(screen.getByRole('button', { name: '支払う' })).not.toBeNull()
+    expect(hasHeading(html, 'お支払い')).toBe(true)
+    expect(hasPayButton(html)).toBe(true)
   })
 
   test('支払待ちでない注文は、支払の欄を出さない', async () => {
-    await renderOrderPage(ACCEPTED)
+    const html = await renderOrderPage(ACCEPTED)
 
-    expect(heading('お支払い')).toBeNull()
-    expect(screen.queryByRole('button', { name: '支払う' })).toBeNull()
+    expect(hasHeading(html, 'お支払い')).toBe(false)
+    expect(hasPayButton(html)).toBe(false)
   })
 
   test('AC-158 支払待ちの注文は、キャンセルの欄を出さない', async () => {
-    await renderOrderPage(PENDING_PAYMENT)
+    const html = await renderOrderPage(PENDING_PAYMENT)
 
-    expect(heading('キャンセル')).toBeNull()
+    expect(hasHeading(html, 'キャンセル')).toBe(false)
   })
 
   test('AC-171 出荷済みの注文は、キャンセルの欄を出さない', async () => {
-    await renderOrderPage(SHIPPED)
+    const html = await renderOrderPage(SHIPPED)
 
-    expect(heading('キャンセル')).toBeNull()
+    expect(hasHeading(html, 'キャンセル')).toBe(false)
   })
 
   test('キャンセルを申請できる注文は、キャンセルの欄を出す', async () => {
-    await renderOrderPage(ACCEPTED)
+    const html = await renderOrderPage(ACCEPTED)
 
-    expect(heading('キャンセル')).not.toBeNull()
+    expect(hasHeading(html, 'キャンセル')).toBe(true)
   })
 })

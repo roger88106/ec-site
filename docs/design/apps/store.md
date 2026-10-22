@@ -45,13 +45,14 @@ frontend/store/
     │   ├── cartId.ts         # カート ID の Cookie の属性と、カートが見つからなかったことを示す値
     │   ├── cartMergeNotice.ts # カートを移した知らせの内容（品目の数の上限を持つ）
     │   ├── login.ts          # ログイン後の戻り先を、店舗画面の中のパスに限る（第 9 節）
+    │   ├── postalCode.ts     # 郵便番号の形の判定
     │   ├── quantity.ts       # 数量の選択肢（契約の下限から上限まで）
     │   ├── utils.ts          # shadcn/ui が読む `cn`（共有パッケージのもの）
     │   └── server/           # サーバー専用の関数。formData（フォームの項目の読み取り）、log（JSON のログ）、timeout（待つ時間の上限）、trace（追跡 ID）
     ├── test/                 # テストの土台（Next.js と Auth.js の置き換え、API の応答のデータ、MSW、描画。画面のコードからは import しない）
     └── features/<機能>/      # catalog、cart、checkout、order
         ├── components/       # その機能だけのコンポーネント
-        └── *.ts              # その機能だけの関数・型（クエリの組み立て、郵便番号の判定、注文の状態の判定など）
+        └── *.ts              # その機能だけの関数・型（クエリの組み立て、注文の状態の判定など）
 ```
 
 - 画面のコンポーネントは `features/` に置き、`page.tsx` は薄く保つ（`app/` の置き場所は Next.js が決めるため）。
@@ -220,8 +221,9 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
 | 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderToStaticMarkup` で HTML にし、文字と並びを確認する（`src/test/render.tsx` の `renderMarkup`） | 対象の横（`*.test.tsx`） |
+| サーバーアクションの結果に応じた表示（失敗の文の出し方など） | `useActionState` を差し替えて結果を与え、`renderMarkup` で HTML にして確認する（`OrderForm.test.tsx`、`AddToCartForm.test.tsx` の形）。サーバーアクションそのものは呼ばないので、送る内容の確認はサーバーアクションのテストと E2E で行う | 対象の横（`*.test.tsx`） |
 | クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※7 | 対象の横（`*.test.tsx`） |
-| ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ファイルの先頭で jsdom を選び、ページの関数を呼んで `renderInBrowser` で描く。ログインの状態は `signInAs`、店舗 API は MSW で差し替える | ページの横（`app/**/page.test.tsx`） |
+| ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ファイルの先頭で jsdom を選び、ページの関数を呼んで `renderInBrowser` で描く。ログインの状態は `signInAs`、店舗 API は MSW で差し替える。表示でなく確認の順（ログイン、ID の形）を確認するテストは、jsdom を使わずに Node でページの関数を呼び、移る先（`src/test/next.ts` の `redirectedTo`）と「見つからない」（例外の digest）で確認する（`app/checkout/[checkoutId]/page.test.tsx`） | ページの横（`app/**/page.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Node で直接呼ぶ。Next.js のモジュール（`next/headers` など）と `@/auth` は `src/test/` で置き換え、バックエンドは MSW（`msw/node`） | 対象の横（`*.test.ts`） |
 | 画面をつないだ流れ | E2E | `e2e/tests/` |
 

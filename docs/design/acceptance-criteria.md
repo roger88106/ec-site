@@ -180,7 +180,7 @@
 | AC-155 | 期限切れのキャンセルの理由は「支払期限切れ」とし、注文の詳細（店舗・管理画面）に… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `CancellationSection.test.tsx`、`OrderDetailPage.test.tsx`、`OrderPaymentApiTest` ほか 3 |
 | AC-156 | 期限の直前に与信が成功した注文は、期限切れでキャンセルしない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentExpiryJobTest`、`PaymentTest` |
 | AC-157 | 期限切れでキャンセルした後に与信の成功を受信したら、その与信を取り消す。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` |
-| AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `CancellationSection.test.tsx`、`OrderDetailPage.test.tsx`、`OrderPaymentApiTest` ほか 1 |
+| AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderPaymentApiTest`、`orderState.test.ts` |
 | AC-159 | 店舗の注文一覧と注文詳細に、「支払待ち」の注文の支払の期限を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
 | AC-160 | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderListPage.test.tsx`、`OrderPaymentApiTest` |
 | AC-161 | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderListPage.test.tsx`、`OrderPaymentApiTest` |

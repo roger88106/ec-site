@@ -139,9 +139,10 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 依存：T135-01-05（両方が注文のフォームを変えるため）
   - 範囲：`frontend/store/src/` の下の `components/`（新しい部品）、`features/cart/components/CartItemControls.tsx`、`features/cart/components/StartCheckoutForm.tsx`、`features/catalog/components/AddToCartForm.tsx`、`features/order/components/PayForm.tsx`、`features/order/components/CancellationRequestForm.tsx`、`features/checkout/components/OrderForm.tsx` とそれぞれのテスト
   - 結果：`components/ActionError.tsx`（`message` と子の要素を受け、文がなければ何も描かない。読み上げの設定と文字の大きさを 1 か所に持つ）を作り、6 か所で使った。カートに入れる操作は、成功の知らせの領域（常にある `aria-live`）を残し、失敗は領域の外の部品で出すので、失敗の領域は他の 5 か所と同じく失敗のときだけ描かれる。注文のフォームの欄ごとの誤り（`Field`）は別の表示なので変えず、そのテストも変えなかった。
-- [ ] **T135-01-07** 注文の画面の支払の欄とキャンセルの欄を出す判定を、それぞれ 1 か所にまとめる（DC-135-11）。
+- [x] **T135-01-07** 注文の画面の支払の欄とキャンセルの欄を出す判定を、それぞれ 1 か所にまとめる（DC-135-11）。
   - 依存：なし
   - 範囲：`frontend/store/src/app/orders/[orderId]/page.tsx`、`frontend/store/src/features/order/components/PaymentSection.tsx`、`frontend/store/src/features/order/components/CancellationSection.tsx`、判定の関数の置き場所（`frontend/store/src/features/order/`。ただし `features/order/labels.ts` は変えない）
+  - 結果：`orderState.ts` に `showsPaymentSection`、`showsCancellationSection` を作り（単体テストを先に書いてレッドを確認）、ページだけが使う形にした。部品の側の null を返す判定は消し、部品のテストの「何も出さない」2 件は同じ内容を関数の単体テストに移した。`CancellationSection` の欄を出さない 3 状態は、型の網羅のために残し、使い方の誤りとして例外にした。
 - [ ] **T135-01-08** 商品の詳細の操作の jsdom のテストを書く（DC-135-25、26、27）。今の実装で通る。一時的に実装を変えて、テストが失敗することを確認し、戻す。
   - 依存：なし
   - 範囲：`frontend/store/src/features/catalog/components/`

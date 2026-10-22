@@ -33,15 +33,4 @@ describe('注文の支払', () => {
     expect(html).not.toContain('支払う</button>')
     expect(html).toContain('まもなくご注文はキャンセルになります')
   })
-
-  test('支払待ちでなければ、何も出さない', () => {
-    const html = renderMarkup(
-      <PaymentSection
-        order={{ id: ORDER_ID, status: 'ACCEPTED', actions: { requestCancellation: true, pay: false } }}
-        returned={true}
-      />,
-    )
-
-    expect(html).toBe('')
-  })
 })

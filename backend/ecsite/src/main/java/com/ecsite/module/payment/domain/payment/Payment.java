@@ -89,8 +89,8 @@ public class Payment extends AggregateRoot {
      * 全属性コンストラクタ
      */
     private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
-                    @NonNull PaymentStatus status, PaymentPage page, String authorizationRef, Instant authorizedAt,
-                    Instant awaitingAuthorizationSince, long version) {
+                    @NonNull PaymentStatus status, @Nullable PaymentPage page, @Nullable String authorizationRef,
+                    @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince, long version) {
         this.id = id;
         this.orderId = orderId;
         this.amount = amount;

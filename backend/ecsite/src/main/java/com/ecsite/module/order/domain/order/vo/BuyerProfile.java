@@ -55,7 +55,7 @@ public record BuyerProfile(@Nullable Integer age, @Nullable Gender gender) {
      * 注文日の満年齢を求める。生年月日がない、形が正しくない、注文日より後、上限の年齢より前なら null。<br />
      * 2 月 29 日生まれは、うるう年でない年は 3 月 1 日に年を取る（{@link Period} の数え方）。
      */
-    private static Integer ageOf(String birthdate, LocalDate orderDate) {
+    private static @Nullable Integer ageOf(@Nullable String birthdate, LocalDate orderDate) {
         if (birthdate == null) {
             return null;
         }

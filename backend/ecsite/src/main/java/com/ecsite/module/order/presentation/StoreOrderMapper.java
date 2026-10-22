@@ -110,7 +110,7 @@ class StoreOrderMapper {
                 .actions(new OrderActions()
                         .requestCancellation(view.actions().cancellationRequestable())
                         .pay(view.actions().payable()));
-        if (view.awaitingPayment()) {
+        if (view.awaitingPayment() && payment != null) {
             response.paymentDeadline(ApiDateTimes.toOffsetDateTime(payment.deadline()));
         }
         if (view.cancellationRequest() != null) {
@@ -171,9 +171,7 @@ class StoreOrderMapper {
                 .quantity(item.quantity())
                 .subtotal(item.subtotal().yen())
                 .purchasable(item.purchasable())
-                .unpurchasableReason(item.purchasable()
-                        ? null
-                        : toReason(item.unpurchasableReason()));
+                .unpurchasableReason(item.unpurchasableReason() == null ? null : toReason(item.unpurchasableReason()));
     }
 
     /**

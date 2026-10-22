@@ -53,7 +53,8 @@ public record QuoteItem(VariantInfo variant, int quantity, @Nullable BigDecimal 
      *
      * @return 理由。購入できれば null
      */
-    private static UnpurchasableReason reasonOf(VariantInfo variant, int quantity, int sellable, BigDecimal ratePercent) {
+    private static @Nullable UnpurchasableReason reasonOf(VariantInfo variant, int quantity, int sellable,
+                                                          @Nullable BigDecimal ratePercent) {
         if (!variant.visible() || ratePercent == null) {
             return UnpurchasableReason.NOT_SHOWN;
         }

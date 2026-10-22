@@ -21,6 +21,7 @@ import com.ecsite.module.order.domain.quote.TaxAmount;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.JSONB;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Repository;
 import tools.jackson.core.type.TypeReference;
@@ -311,7 +312,7 @@ class JooqOrderRepository implements OrderRepository {
     /**
      * 操作した運営者。記録を始める前の行は空なので null。
      */
-    private static Operator operatorOf(UUID id, String name) {
+    private static @Nullable Operator operatorOf(@Nullable UUID id, String name) {
         return id == null ? null : new Operator(id, name);
     }
 }

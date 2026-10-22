@@ -16,6 +16,7 @@ import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -152,7 +153,7 @@ public class OrderCancellationService {
             return;
         }
         orderRepository.update(order);
-        if (order.cancellation().restocked()) {
+        if (Objects.requireNonNull(order.cancellation(), "キャンセルした注文にはキャンセルの記録がある").restocked()) {
             stockDirectory.restore(quantities(order), order.id(), order.orderNumber().value());
         }
         paymentDirectory.cancel(order.id());

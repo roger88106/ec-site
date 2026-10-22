@@ -23,6 +23,7 @@ import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.regex.Pattern;
 import java.util.stream.IntStream;
@@ -135,7 +136,8 @@ public class Order extends AggregateRoot {
     private Order(@NonNull UUID id, @NonNull OrderNumber orderNumber, @NonNull UUID checkoutId, @NonNull UUID memberId,
                   @NonNull Instant orderedAt, @NonNull OrderStatus status, @NonNull List<OrderLine> lines,
                   @NonNull Amounts amounts, @NonNull String email, @NonNull ShippingAddress shippingAddress,
-                  @NonNull BuyerProfile buyerProfile, CancellationRequest cancellationRequest, Cancellation cancellation, long version) {
+                  @NonNull BuyerProfile buyerProfile, @Nullable CancellationRequest cancellationRequest,
+                  @Nullable Cancellation cancellation, long version) {
         this.id = id;
         this.orderNumber = orderNumber;
         this.checkoutId = checkoutId;
@@ -168,7 +170,7 @@ public class Order extends AggregateRoot {
      */
     public static Order place(UUID id, OrderNumber orderNumber, UUID checkoutId, UUID memberId, Instant orderedAt,
                               @NonNull Quote quote,
-                              String email, ShippingAddress shippingAddress, BuyerProfile buyerProfile) {
+                              @Nullable String email, ShippingAddress shippingAddress, BuyerProfile buyerProfile) {
         if (!quote.orderable()) {
             throw new IllegalArgumentException("注文できない見積もりからは注文を作れません");
         }
@@ -298,7 +300,7 @@ public class Order extends AggregateRoot {
      * @param reason 理由（任意、500 文字まで）。空白だけなら理由なし
      * @param now    現在時刻
      */
-    public void requestCancellation(String reason, @NonNull Instant now) {
+    public void requestCancellation(@Nullable String reason, @NonNull Instant now) {
         if (status == OrderStatus.CANCELLATION_REQUESTED) {
             return;
         }
@@ -371,7 +373,7 @@ public class Order extends AggregateRoot {
      * @param now      現在時刻
      * @return キャンセルにしたら true（呼ぶ側は、キャンセルの記録に従って在庫を戻す）。すでにキャンセルなら false
      */
-    public boolean cancelByOperator(String reason, @Nullable Boolean restock, boolean returned, @NonNull Operator operator,
+    public boolean cancelByOperator(@Nullable String reason, @Nullable Boolean restock, boolean returned, @NonNull Operator operator,
                                     @NonNull Instant now) {
         var required = optionalReason(reason);
         if (required == null) {
@@ -406,8 +408,8 @@ public class Order extends AggregateRoot {
      * 申請に結果を記録する。
      */
     private void decideRequest(CancellationRequest.Result result, Operator operator, Instant now) {
-        cancellationRequest = new CancellationRequest(cancellationRequest.requestedAt(), cancellationRequest.reason(),
-                result, now, operator);
+        var request = Objects.requireNonNull(cancellationRequest, "申請中の注文には申請がある");
+        cancellationRequest = new CancellationRequest(request.requestedAt(), request.reason(), result, now, operator);
     }
 
     /**
@@ -469,7 +471,7 @@ public class Order extends AggregateRoot {
     /**
      * 理由を検証する。空白だけなら理由なし（null）とし、500 文字を超えれば拒否する。
      */
-    private static String optionalReason(String reason) {
+    private static @Nullable String optionalReason(@Nullable String reason) {
         if (reason == null || reason.isBlank()) {
             return null;
         }
@@ -492,7 +494,7 @@ public class Order extends AggregateRoot {
                 variant.productName(),
                 variant.axisValues(),
                 variant.priceExclTax(),
-                item.ratePercent(),
+                Objects.requireNonNull(item.ratePercent(), "注文できる見積もりの品目には率がある"),
                 item.unitPriceInclTax(),
                 item.quantity(),
                 item.subtotal());

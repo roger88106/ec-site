@@ -77,6 +77,7 @@ public class CartQuoteService {
      */
     private static CartQuote.Item toItem(QuoteItem item) {
         var variant = item.variant();
+        var reason = item.unpurchasableReason();
         return new CartQuote.Item(
                 variant.variantId(),
                 variant.productId(),
@@ -87,7 +88,7 @@ public class CartQuoteService {
                 item.unitPriceInclTax(),
                 item.quantity(),
                 item.subtotal(),
-                item.purchasable() ? null : toReason(item.unpurchasableReason()));
+                reason == null ? null : toReason(reason));
     }
 
     /**

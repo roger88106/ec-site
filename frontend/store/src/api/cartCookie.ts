@@ -1,10 +1,12 @@
 import 'server-only'
 import { cookies } from 'next/headers'
+import { readServerConfig } from '@/auth/config'
+import { cookieName } from '@/auth/cookieNames'
 import { cartCookieOptions, parseCartId } from '@/lib/cartId'
 import { type CartMergeNotice, parseCartMergeNotice, serializeCartMergeNotice } from '@/lib/cartMergeNotice'
 
-/** カート ID を持つ Cookie の名前 */
-const CART_COOKIE = 'cart_id'
+/** カート ID を持つ Cookie の名前（接頭辞は環境変数 `STORE_COOKIE_PREFIX`。空なら `cart_id` のまま） */
+const cartCookie = () => cookieName(readServerConfig().cookiePrefix, 'cart_id')
 
 /**
  * Cookie のカート ID を読む（店舗画面の構成 第 4.4 節）。サーバーコンポーネントとサーバーアクションから呼ぶ。
@@ -12,7 +14,7 @@ const CART_COOKIE = 'cart_id'
  * @returns カート ID。Cookie がない・形の違う値なら null
  */
 export async function readCartId(): Promise<string | null> {
-  return parseCartId((await cookies()).get(CART_COOKIE)?.value)
+  return parseCartId((await cookies()).get(cartCookie())?.value)
 }
 
 /**
@@ -21,7 +23,7 @@ export async function readCartId(): Promise<string | null> {
  * @param cartId カート ID
  */
 export async function writeCartId(cartId: string): Promise<void> {
-  ;(await cookies()).set(CART_COOKIE, cartId, cartCookieOptions(process.env.NODE_ENV === 'production'))
+  ;(await cookies()).set(cartCookie(), cartId, cartCookieOptions(process.env.NODE_ENV === 'production'))
 }
 
 /**
@@ -29,11 +31,11 @@ export async function writeCartId(cartId: string): Promise<void> {
  * ルートハンドラーからだけ呼べる。
  */
 export async function deleteCartId(): Promise<void> {
-  ;(await cookies()).delete(CART_COOKIE)
+  ;(await cookies()).delete(cartCookie())
 }
 
-/** カートを移した結果の知らせを持つ Cookie の名前（店舗画面の構成 第 4.5 節） */
-const CART_MERGE_NOTICE_COOKIE = 'cart_merge_notice'
+/** カートを移した結果の知らせを持つ Cookie の名前（店舗画面の構成 第 4.5 節。接頭辞は {@link cartCookie} と同じ） */
+const cartMergeNoticeCookie = () => cookieName(readServerConfig().cookiePrefix, 'cart_merge_notice')
 
 /**
  * カートを移した結果の知らせを読む。サーバーコンポーネントから呼ぶ。
@@ -41,7 +43,7 @@ const CART_MERGE_NOTICE_COOKIE = 'cart_merge_notice'
  * @returns 知らせ。なければ null
  */
 export async function readCartMergeNotice(): Promise<CartMergeNotice | null> {
-  return parseCartMergeNotice((await cookies()).get(CART_MERGE_NOTICE_COOKIE)?.value)
+  return parseCartMergeNotice((await cookies()).get(cartMergeNoticeCookie())?.value)
 }
 
 /**
@@ -51,10 +53,10 @@ export async function readCartMergeNotice(): Promise<CartMergeNotice | null> {
  */
 export async function writeCartMergeNotice(notice: CartMergeNotice): Promise<void> {
   const { maxAge: _maxAge, ...options } = cartCookieOptions(process.env.NODE_ENV === 'production')
-  ;(await cookies()).set(CART_MERGE_NOTICE_COOKIE, serializeCartMergeNotice(notice), options)
+  ;(await cookies()).set(cartMergeNoticeCookie(), serializeCartMergeNotice(notice), options)
 }
 
 /** カートを移した結果の知らせを消す（表示した後）。サーバーアクションからだけ呼べる */
 export async function deleteCartMergeNotice(): Promise<void> {
-  ;(await cookies()).delete(CART_MERGE_NOTICE_COOKIE)
+  ;(await cookies()).delete(cartMergeNoticeCookie())
 }

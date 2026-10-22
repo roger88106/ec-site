@@ -44,6 +44,15 @@ describe('ログイン', () => {
     expect(authState.signIn).toHaveBeenCalledWith('keycloak', { redirectTo: '/cart' }, { prompt: 'create' })
   })
 
+  test('DC-104-12 接頭辞を指定しなければ、Auth.js に Cookie の設定を渡さず、既定の名前でセッションを読む', async () => {
+    signInAs()
+
+    await getAccessToken()
+
+    expect(authState.config?.cookies).toBeUndefined()
+    expect(authState.tokenParams?.cookieName).toBe('authjs.session-token')
+  })
+
   test('ログインの画面へ移すときは、指定がなければいまの画面に戻る', async () => {
     resetRequest({ headers: { 'x-pathname': '/orders?page=2' } })
 

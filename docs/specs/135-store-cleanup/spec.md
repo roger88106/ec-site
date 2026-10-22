@@ -178,6 +178,7 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
 - [ ] **T135-02-08** 必須の設定の定数の一覧のテストを削除し、定数の export が不要かを確認する（DC-135-21、22）。
   - 依存：T135-02-03（同じテストのファイルを変えるため）
   - 範囲：`frontend/store/src/auth/config.test.ts`、`frontend/store/src/auth/config.ts`
+  - 補足：spec 104 が、Cookie の接頭辞が必須の値でないことを、同じ定数で確認するテストを足した（実装の前の照合で確認）。export を外すなら、このテストを振る舞い（本番のモードで接頭辞がなくても起動できる）の確認に替える。
 - [ ] **T135-02-09** テストが CSS のクラスで確認しないようにし、取り消し線は取り消しを表す HTML の要素にする（DC-135-28）。
   - 依存：T135-01-06（注文のフォームのテストを両方が変えるため）、T135-02-07（`PageLinks.test.tsx` を両方が変えるため）
   - 範囲：`frontend/store/src/components/PageLinks.test.tsx`、`frontend/store/src/components/SiteHeader.test.tsx`、`frontend/store/src/features/cart/components/CartItemControls.test.tsx`、`frontend/store/src/features/catalog/components/ProductCard.test.tsx`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx` と、取り消し線を示す部品。`components/PageLinks.tsx` は変えない（DN-135-6）
@@ -190,12 +191,12 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
 ### 段階 3：完了
 
 - 前提：段階 1、2
-- 完了条件：spec の最後のレビューの指摘に対応し、spec をアーカイブに移し、pull request を作っている。
+- 完了条件：spec の最後のレビューの指摘に対応し、spec をアーカイブに移している。
 - 参照：[エージェントの作業フロー](../../rules/subagents.md) 第 4 節
 
 - [ ] **T135-03-01** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）を行い、指摘に対応する。
   - 依存：T135-02-11
-- [ ] **T135-03-02** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移し、pull request を作る。
+- [ ] **T135-03-02** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。
   - 依存：T135-03-01
   - 範囲：`docs/specs/`
 

@@ -127,12 +127,14 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 依存：なし
   - 範囲：`frontend/store/src/features/catalog/listQuery.ts`（`listHref`）、`frontend/store/src/features/catalog/components/CategoryList.tsx`
   - 結果：リンクの href を役割と名前で確認するテストを書き、今の URL で通ること、子のリンクの URL を変えると失敗することを確認した。5 項目を毎回書かずに済むよう、`listQuery.ts` にカテゴリだけを受ける `categoryHref` を足して（単体テストはレッドを確認）、最上位と子の両方をこれで作るようにした。
-- [ ] **T135-01-04** [テスト] 郵便番号の判定の関数の単体テストを書き、レッドを確認する。受け付ける形は今の 2 か所の処理と同じにする（DC-135-6、7）。
+- [x] **T135-01-04** [テスト] 郵便番号の判定の関数の単体テストを書き、レッドを確認する。受け付ける形は今の 2 か所の処理と同じにする（DC-135-6、7）。
   - 依存：なし
   - 範囲：`frontend/store/src/features/checkout/`（郵便番号の補完の `postalCodeFill.ts` と同じ所）
-- [ ] **T135-01-05** T135-01-04 の関数を作り、注文のフォームと郵便番号のサーバーアクションで使う（DC-135-6、7）。
+  - 結果：判定は補完とは役割が違うので、新しいファイル `postalCode.ts` の `normalizePostalCode`（7 桁の数字か null）にして、単体テストを書き、関数がなくて失敗するレッドを確認した。最初のハイフン 1 つだけを除く今の形を保ち、`123-45-67` と `123--4567` は通らない境界をテストに入れた。
+- [x] **T135-01-05** T135-01-04 の関数を作り、注文のフォームと郵便番号のサーバーアクションで使う（DC-135-6、7）。
   - 依存：T135-01-04
   - 範囲：`frontend/store/src/features/checkout/`、`frontend/store/src/actions/region.ts`
+  - 結果：注文のフォームとサーバーアクションの正規表現とハイフンの除去を `normalizePostalCode` に置き換えた。依存の向きの検査（`frontend-rules.mjs`）は機能の間だけを禁じ、`actions/` から `features/` の import は許されるので、置き場所は spec のとおり `features/checkout/`。
 - [ ] **T135-01-06** サーバーアクションの失敗の表示の部品を作り、6 か所で使う。部品のテストを書く。変わる期待の分だけ、注文のフォームのテストを直す（DC-135-8、9、10）。振る舞いを変えない部品の共通化なので、テストを実装と同じタスクで書く（[開発の進め方](../../rules/workflow.md) 第 2.2 節）。
   - 依存：T135-01-05（両方が注文のフォームを変えるため）
   - 範囲：`frontend/store/src/` の下の `components/`（新しい部品）、`features/cart/components/CartItemControls.tsx`、`features/cart/components/StartCheckoutForm.tsx`、`features/catalog/components/AddToCartForm.tsx`、`features/order/components/PayForm.tsx`、`features/order/components/CancellationRequestForm.tsx`、`features/checkout/components/OrderForm.tsx` とそれぞれのテスト

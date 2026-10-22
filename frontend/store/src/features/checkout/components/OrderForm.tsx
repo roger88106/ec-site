@@ -13,10 +13,8 @@ import { schemas } from '@/api/generated/constraints'
 import type { Municipality, Prefecture } from '@/api/types'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrderErrors'
+import { normalizePostalCode } from '@/features/checkout/postalCode'
 import { postalCodeFill } from '@/features/checkout/postalCodeFill'
-
-/** 郵便番号の形（ハイフンを除いて数字 7 桁） */
-const POSTAL_CODE_DIGITS = /^[0-9]{7}$/
 
 /**
  * お届け先の入力と、注文。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />
@@ -195,8 +193,8 @@ function useAddressArea() {
 
   /** 郵便番号が 7 桁になったら引いて補う。補えなければ何もしない */
   const changePostalCode = async (value: string) => {
-    const digits = value.replace('-', '')
-    if (!POSTAL_CODE_DIGITS.test(digits)) {
+    const digits = normalizePostalCode(value)
+    if (digits === null) {
       lookedUpPostalCode.current = ''
       ++postalCodeRequest.current
       return

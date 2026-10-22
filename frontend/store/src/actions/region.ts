@@ -3,9 +3,7 @@
 import { withActionResult } from '@/actions/withActionResult'
 import { getApi } from '@/api/client'
 import type { Municipality, PostalCodeAddress } from '@/api/types'
-
-/** 郵便番号の形（ハイフンを除いて数字 7 桁） */
-const POSTAL_CODE = /^[0-9]{7}$/
+import { normalizePostalCode } from '@/features/checkout/postalCode'
 
 /**
  * 都道府県の市区町村の一覧を取る（店舗画面の構成 第 4.8 節）。読むだけなので、失敗は投げずに null で返す
@@ -33,8 +31,8 @@ export async function listMunicipalities(prefectureCode: string): Promise<Munici
  * @returns 並び順の住所。形が違う、ない、通信の失敗なら空
  */
 export async function findPostalCodeAddresses(postalCode: string): Promise<PostalCodeAddress[]> {
-  const digits = postalCode.replace('-', '')
-  if (!POSTAL_CODE.test(digits)) {
+  const digits = normalizePostalCode(postalCode)
+  if (digits === null) {
     return []
   }
   const items = await withActionResult(async () => {

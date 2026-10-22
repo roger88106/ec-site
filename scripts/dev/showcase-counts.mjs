@@ -1,6 +1,6 @@
 // 機能紹介のページ（showcase/index.html）の数字を数える（開発環境の起動 第 6 節）。
 //   spec：docs/specs/ の直下とアーカイブの下の spec のディレクトリ（NNN-名前）の数
-//   AC：機能の spec の定義の行（- **AC-n**）の数
+//   AC：機能の spec の定義の行（- **AC-n**、1→10 の - **AC-n-m**）の数
 //   テスト：Java は、./gradlew check の結果（build/test-results/ の XML）があれば実行した件数（パラメーターの組ごと）、
 //          なければソースの @Test・@ParameterizedTest の数。Vitest・Playwright は、ソースの test・it の数
 //          （*.test.ts(x)、*.spec.ts。test.describe などのまとまりは数えない）。ページの数字は実行した件数で書く
@@ -42,7 +42,7 @@ const specDirs = listSpecDirs(path.join(ROOT, 'docs/specs'))
 let acs = 0
 for (const { dir } of specDirs) {
   try {
-    acs += [...readFileSync(path.join(dir, 'spec.md'), 'utf8').matchAll(/^- \*\*AC-[0-9]+\*\*/gm)].length
+    acs += [...readFileSync(path.join(dir, 'spec.md'), 'utf8').matchAll(/^- \*\*AC-[0-9]+(?:-[0-9]+)?\*\*/gm)].length
   } catch (error) {
     if (error.code !== 'ENOENT') throw error
   }

@@ -8,6 +8,7 @@
 // - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
 //   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
+//   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
@@ -115,6 +116,25 @@ export function parseAcRefs(name) {
 }
 
 /**
+ * テスト名から、曖昧な AC の並べ方を取り出す。新しい形（AC-7-1）の後に、読点・カンマと数字だけの番号（AC-7-1、2）が続く書き方。<br />
+ * 理由：MVP の AC-2 と読め、MVP 側の抜けを隠すため。新しい形は AC-7-1、AC-7-2 と書く。
+ *
+ * @param name テスト名
+ * @returns 曖昧な並べ方の文字列
+ */
+export function findAmbiguousAcLists(name) {
+  const list = new RegExp(`AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`, 'g')
+  const found = []
+  for (const match of name.matchAll(list)) {
+    // 範囲を含まない並びの区切りで分け、AC- が付かない数字だけの項目が、新しい形の直後にあるかを見る
+    const items = match[0].split(/\s*[、,]\s*/)
+    const bad = items.some((item, i) => i > 0 && /^[0-9]+(?!\d|-)/.test(item) && /^(?:AC-)?[0-9]+-[0-9]+/.test(items[i - 1]))
+    if (bad) found.push(match[0])
+  }
+  return found
+}
+
+/**
  * AC とテスト名を照合する。
  *
  * @param input.specAcs    spec の AC の番号
@@ -126,12 +146,16 @@ export function parseAcRefs(name) {
 export function check({ specAcs, tests, exclusions, deprecated = new Set(), strict = true }) {
   const covered = new Set()
   const ranges = []
+  const ambiguous = []
   const unknown = []
   const deprecatedRefs = []
   for (const test of tests) {
     const refs = parseAcRefs(test.name)
     if (refs.ranges.length > 0) {
       ranges.push(test)
+    }
+    if (findAmbiguousAcLists(test.name).length > 0) {
+      ambiguous.push(test)
     }
     for (const ac of refs.acs) {
       if (!specAcs.has(ac)) {
@@ -161,11 +185,12 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
   const ok =
     (!strict || missing.length === 0) &&
     ranges.length === 0 &&
+    ambiguous.length === 0 &&
     unknown.length === 0 &&
     deprecatedRefs.length === 0 &&
     staleExclusions.length === 0 &&
     invalidExclusions.length === 0
-  return { ok, missing, ranges, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
+  return { ok, missing, ranges, ambiguous, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
 }
 
 /** AC 一覧の状態 */
@@ -339,6 +364,9 @@ function report(result, root, strict) {
   }
   for (const test of result.ranges) {
     console.log(`範囲の表記（AC 番号を 1 つずつ書く）：${where(test)}`)
+  }
+  for (const test of result.ambiguous) {
+    console.log(`曖昧な AC の並べ方（新しい形は AC-7-1、AC-7-2 と書く）：${where(test)}`)
   }
   for (const test of result.unknown) {
     console.log(`spec にない AC-${test.ac}：${where(test)}`)

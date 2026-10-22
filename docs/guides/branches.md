@@ -87,7 +87,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 | 対象 | `gradle`（`/backend/ecsite`）、`npm`（`/`。pnpm の workspace）、`github-actions`（`/`）、`docker-compose`（`/docker`） |
 | 頻度 | 週 1 回（月曜、日本時間） |
 | group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする |
-| cooldown | 新しい版がリリースされてから待つ日数。major 30、minor 7、patch 3 |
+| cooldown | 新しい版がリリースされてから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は、GitHub の文書の cooldown の対応表で SemVer の日数（major・minor・patch）に対応しないため、7 日（`default-days`）にする |
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 

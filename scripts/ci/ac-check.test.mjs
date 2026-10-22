@@ -8,6 +8,7 @@ import {
   isStrict,
   parseAcList,
   parseAcRefs,
+  findAmbiguousAcLists,
   parseSpecAcDefinitions,
   parseSpecAcs,
   renderAcList,
@@ -272,7 +273,26 @@ describe('1→10 の AC（AC-n-m）', () => {
   })
 
   test('読点・カンマで、2 つの形を並べられる', () => {
-    assert.deepEqual(parseAcRefs('AC-7-1、AC-7-2, 12 並べる'), { acs: ['7-1', '7-2', 12], ranges: [] })
+    assert.deepEqual(parseAcRefs('AC-7-1、AC-7-2, AC-12 並べる'), { acs: ['7-1', '7-2', 12], ranges: [] })
+  })
+
+  test('新しい形の後に続く読点と数字だけの番号（AC-7-1、2）は、曖昧な書き方として見つける', () => {
+    assert.deepEqual(findAmbiguousAcLists('AC-7-1、2 注文'), ['AC-7-1、2'])
+    assert.deepEqual(findAmbiguousAcLists('AC-7-1、2、3 注文'), ['AC-7-1、2、3'])
+    assert.deepEqual(findAmbiguousAcLists('AC-7-1、AC-7-2, 12 並べる'), ['AC-7-1、AC-7-2, 12'])
+  })
+
+  test('曖昧でない書き方は見つけない。MVP の AC-1、2 は今のまま', () => {
+    assert.deepEqual(findAmbiguousAcLists('AC-7-1、AC-7-2 注文'), [])
+    assert.deepEqual(findAmbiguousAcLists('AC-7-1、7-2 注文'), [])
+    assert.deepEqual(findAmbiguousAcLists('AC-1、2 注文'), [])
+    assert.deepEqual(findAmbiguousAcLists('AC-7-1 数量を 10 にする'), [])
+  })
+
+  test('曖昧な書き方のテスト名があれば、check は失敗する（手元でも）', () => {
+    const result = check({ specAcs: new Set(['7-1', '7-2', 2]), tests: tests('AC-7-1、2 a', 'AC-7-2 b'), exclusions: {}, strict: false })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.ambiguous, [{ file: 'X.test.ts', name: 'AC-7-1、2 a' }])
   })
 
   test('新しい形の範囲（AC-7-1〜3、AC-7-1〜7-3）は、範囲として返す', () => {

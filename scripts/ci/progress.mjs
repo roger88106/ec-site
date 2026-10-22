@@ -12,11 +12,11 @@ import { findMvpList, listSpecDirs } from './lib/spec-dirs.mjs'
 /** 対象の最初の spec の番号 */
 const FIRST_SPEC = 11
 
-/** MVP の spec の番号（0 埋めの 3 桁） */
-const MVP_SPEC = /^\d{3}$/
+/** MVP の spec の番号（0 で始まる 3 桁。123-xxx のような 1→10 の spec は含めない） */
+const MVP_SPEC = /^0\d{2}$/
 
 /** 表の 1 行目のセルの spec の番号（リンクの文字） */
-const SPEC_CELL = /^\[(\d{3})\]/
+const SPEC_CELL = /^\[(0\d{2})\]/
 
 /** 1→10 の spec をアーカイブしたディレクトリ（docs/specs/ から） */
 const ARCHIVE_1TO10 = 'archive/1to10'
@@ -108,7 +108,7 @@ export function checkProgress(readme, mvp, tasks, firstSpec) {
 export function readTasks(specsDir) {
   const tasks = new Map()
   for (const { name, dir } of listSpecDirs(specsDir)) {
-    const number = name.match(/^(\d{3})-/)?.[1]
+    const number = name.match(/^(0\d{2})-/)?.[1]
     if (!number) continue
     const texts = readTaskTexts(dir)
     if (texts) tasks.set(number, countTasks(texts))

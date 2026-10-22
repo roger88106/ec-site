@@ -75,6 +75,25 @@ describe('進捗の一致の検査', () => {
     assert.deepEqual(parseStatusTable('| [7](docs/specs/7-x) | 機能 | 完了 |'), new Map())
   })
 
+  test('0 で始まらない 3 桁の番号（123-xxx の 1→10 の spec）は MVP の対象に入れない', () => {
+    const readme = new Map([['123', '完了']])
+    assert.deepEqual(checkProgress(readme, new Map(), new Map([['123', { total: 2, done: 1 }]]), 11), [])
+    assert.deepEqual(parseStatusTable('| [123](docs/specs/123-x) | 機能 | 完了 |'), new Map())
+  })
+
+  test('tasks を読むとき、123-xxx は MVP の番号にしない', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      for (const name of ['123-x', '012-y']) {
+        mkdirSync(path.join(dir, name, 'tasks'), { recursive: true })
+        writeFileSync(path.join(dir, name, 'tasks', 'a.md'), '- [ ] **T1** x\n')
+      }
+      assert.deepEqual([...readTasks(dir).keys()], ['012'])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
   test('1→10 の spec の tasks に残りがあれば、食い違いとして返す', () => {
     const tasks = new Map([
       ['5-done', { total: 2, done: 2 }],

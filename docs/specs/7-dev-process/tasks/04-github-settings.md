@@ -6,11 +6,13 @@
 
 ## タスク
 
-- [ ] **T7-04-01** `develop` を push する（本 spec の作業ブランチは push しない）。
+- [x] **T7-04-01** `develop` を push する（本 spec の作業ブランチは push しない）。
   - 依存：なし
   - 範囲：GitHub の `develop`
-- [ ] **T7-04-02** 既定のブランチを `develop` にする。
+  - 結果：利用者の指示で、段階 1 の途中に前倒しした（2026-10-22）。サブエージェントの作業ツリーが既定のブランチ（`main`）から作られ、spec 7 の文書がなかったため。
+- [x] **T7-04-02** 既定のブランチを `develop` にする。
   - 依存：T7-04-01
+  - 結果：T7-04-01 と同時に行った。手元の `origin/HEAD` も `develop` にした（`git remote set-head origin develop`）。
 - [ ] **T7-04-03** [P] マージの方式（merge commit だけ）と、ブランチの自動の削除を設定する。Dependabot のセキュリティの更新を有効にする（DC-7-57）。
   - 依存：T7-04-01
 - [ ] **T7-04-04** [P] [リスク] ruleset（`develop`、`main`）を作る。理由：誤ると `develop` と `main` を保護できないため。workflow がまだ GitHub にないので、`main` の元のブランチの検査を `main` の必須の検査にする設定は、workflow が `develop` に入った後に、issue 担当のセッションが release の前に行う（plan 第 5 節）。

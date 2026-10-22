@@ -1,6 +1,6 @@
 # Spec 7：1→10 の開発の進め方への切り替え
 
-ステータス：草案
+ステータス：確定
 
 ## 1. 背景と目的
 
@@ -138,7 +138,7 @@ MVP（spec 001〜019）が完成し、tag `v0.1.0` を付けた。1→10 の段�
 - **DC-7-51** Dependabot が `develop` に対して更新の pull request を作成する。
 - **DC-7-52** Dependabot の更新の頻度は、週 1 回である。
 - **DC-7-53** Dependabot の更新の対象は、gradle、npm（pnpm）、GitHub Actions、Docker Compose である。
-- **DC-7-54** Dependabot は、minor と patch の更新を、種類ごとに 1 つの pull request にまとめる。
+- **DC-7-54** Dependabot は、minor と patch の更新を、ecosystem（gradle、npm など）ごとに 1 つの pull request にまとめる。
 - **DC-7-55** Dependabot は、major の更新を 1 つずつ pull request にする。
 - **DC-7-56** Dependabot は、新しい版がリリースされてから、次の表の日数を待って更新の pull request を作成する。
 

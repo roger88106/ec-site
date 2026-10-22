@@ -1,9 +1,7 @@
-// @vitest-environment jsdom
-import { screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { CategoryNode } from '@/api/types'
 import { CategoryList } from '@/features/catalog/components/CategoryList'
-import { renderInBrowser } from '@/test/render'
+import { renderMarkup } from '@/test/render'
 
 /** 最上位の「食器」と、その子の「マグカップ」 */
 const CATEGORIES: CategoryNode[] = [
@@ -14,16 +12,11 @@ const CATEGORIES: CategoryNode[] = [
   },
 ]
 
-/** リンクの href */
-function hrefOf(name: string): string | null {
-  return screen.getByRole('link', { name }).getAttribute('href')
-}
-
 describe('カテゴリの一覧', () => {
   test('最上位のカテゴリと子のカテゴリを、カテゴリで絞り込んだ商品一覧へのリンクにする', () => {
-    renderInBrowser(<CategoryList categories={CATEGORIES} />)
+    const html = renderMarkup(<CategoryList categories={CATEGORIES} />)
 
-    expect(hrefOf('食器')).toBe('/products?categoryId=c-tableware')
-    expect(hrefOf('マグカップ')).toBe('/products?categoryId=c-mug')
+    expect(html).toMatch(/<a [^>]*href="\/products\?categoryId=c-tableware"[^>]*>食器<\/a>/)
+    expect(html).toMatch(/<a [^>]*href="\/products\?categoryId=c-mug"[^>]*>マグカップ<\/a>/)
   })
 })

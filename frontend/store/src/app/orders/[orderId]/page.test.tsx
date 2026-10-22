@@ -65,7 +65,7 @@ function heading(name: string) {
 }
 
 describe('注文の画面の欄の出し分け', () => {
-  test('AC-150、151 支払待ちの注文は、支払の欄を出し、「支払う」を示す', async () => {
+  test('AC-151 支払待ちの注文は、支払の欄を出し、「支払う」を示す', async () => {
     await renderOrderPage(PENDING_PAYMENT)
 
     expect(heading('お支払い')).not.toBeNull()

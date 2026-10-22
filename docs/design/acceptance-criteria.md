@@ -172,7 +172,7 @@
 | AC-147 | 与信が成功すると、注文した品目（バリアント）をカートから除く。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `CartTest`、`OrderPaymentApiTest`、`payment.spec.ts` |
 | AC-148 | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-149 | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
-| AC-150 | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts`、`page.test.tsx` |
+| AC-150 | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
 | AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 2 |
 | AC-152 | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentApiTest` |
 | AC-153 | 支払の期限（BR-16）までに与信が成功しなかった注文は、キャンセルになり、明細… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`PaymentExpiryJobTest` ほか 2 |

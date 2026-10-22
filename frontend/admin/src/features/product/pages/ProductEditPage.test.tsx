@@ -715,4 +715,51 @@ describe('商品画像', () => {
     expect(requests).toEqual([{ imageId: images[1].id, version: 0 }])
     expect(screen.getByRole('combobox', { name: 'ABC-001-REDの画像' })).toHaveTextContent('画像 2')
   })
+
+  const TWO_IMAGES = [
+    { id: '00000000-0000-0000-0000-000000000951', url: 'http://cdn.test/1.png' },
+    { id: '00000000-0000-0000-0000-000000000952', url: 'http://cdn.test/2.png' },
+  ]
+
+  it('AC-37 画像を後へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
+    const state = serveProduct(productDetail({ version: 5, images: TWO_IMAGES }))
+    const requests: unknown[] = []
+    server.use(
+      http.put('/products/{productId}/images/order', async ({ request, response }) => {
+        requests.push(await request.json())
+        state.current = {
+          ...state.current,
+          images: [...state.current.images].reverse(),
+          version: state.current.version + 1,
+        }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.click(await screen.findByRole('button', { name: '画像 1を後へ' }))
+
+    await waitFor(() => expect(requests).toHaveLength(1))
+    expect(requests).toEqual([{ imageIds: [TWO_IMAGES[1].id, TWO_IMAGES[0].id], version: 5 }])
+  })
+
+  it('確認のダイアログで確定すると、商品のバージョンを添えて画像を削除する', async () => {
+    const state = serveProduct(productDetail({ version: 5, images: TWO_IMAGES }))
+    const calls: string[] = []
+    server.use(
+      http.delete('/products/{productId}/images/{imageId}', ({ params, query, response }) => {
+        calls.push(`DELETE ${params.imageId} version=${query.get('version')}`)
+        state.current = { ...state.current, images: [TWO_IMAGES[1]], version: state.current.version + 1 }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.click(await screen.findByRole('button', { name: '画像 1を削除' }))
+    const dialog = await screen.findByRole('alertdialog', { name: '画像 1を削除しますか？' })
+    await user.click(within(dialog).getByRole('button', { name: '削除する' }))
+
+    expect(await screen.findByText('画像を削除しました')).toBeInTheDocument()
+    expect(calls).toEqual([`DELETE ${TWO_IMAGES[0].id} version=5`])
+  })
 })

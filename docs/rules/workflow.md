@@ -143,6 +143,15 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 | 不具合 | 起きたこと\*、再現の手順\*、期待した振る舞い\*、発生した場所、関係する AC、関連 |
 
 - spec ごとに追跡の issue を 1 つ作り、その番号を spec の番号とする（[文書の記号と番号](notation.md)）。spec が扱う全ての issue は、追跡の issue の sub-issue として結ぶ。結ぶ手順は、`gh api graphql` の `addSubIssue` を使う。
+- issue と spec の対応は、次のとおりにする。
+
+| 対応 | 追跡の issue | 結び方 |
+|------|--------------|--------|
+| 1 つの issue を 1 つの spec で扱う | その issue を追跡の issue にする | なし |
+| 複数の issue を 1 つの spec で扱う | 新しく作る | 扱う issue を、追跡の issue の sub-issue にする |
+| 1 つの issue を複数の spec に分ける | spec ごとに新しく作る。元の issue は追跡の issue にしない | 追跡の issue を、元の issue の sub-issue にする |
+
+- GitHub の sub-issue は、親を 1 つしか持てない。上の結び方で親が 2 つ必要になるときは、片方を本文の「関連」に `#番号` で書く。
 - Dependabot の pull request は、次の 2 点をプロジェクトの規則の例外とする。issue を必要としない。commit のメッセージは英語でよい。
 
 ### 4.2 規模

@@ -60,12 +60,16 @@ export type ServerConfig = {
   cookiePrefix: string
 }
 
+/** 0 以上の整数（再取得の間隔に使える値） */
+const NON_NEGATIVE_INTEGER_PATTERN = /^\d+$/
+
 /** Cookie の接頭辞に使える文字（英数字と `-`、`_`） */
 const COOKIE_PREFIX_PATTERN = /^[A-Za-z0-9_-]*$/
 
 /**
  * 環境変数から設定を読む。本番のモードで必須の値がなければ（空も含む）、足りない名前を並べた例外を投げる。
  * 待つ時間の上限が正の数でなければ、モードによらず、その名前を並べた例外を投げる。
+ * 再取得の間隔が 0 以上の整数でなければ、同じくモードによらず例外を投げる。
  *
  * @param env 環境変数
  * @returns 設定
@@ -79,6 +83,10 @@ export function loadServerConfig(env: Record<string, string | undefined> = proce
   const invalid = TIMEOUT_SETTINGS.filter((name) => env[name] && !(Number(env[name]) > 0))
   if (invalid.length > 0) {
     throw new Error(`待つ時間の上限は正の数にしてください：${invalid.join(', ')}`)
+  }
+  const revalidate = env.STORE_API_REVALIDATE_SECONDS
+  if (revalidate && !NON_NEGATIVE_INTEGER_PATTERN.test(revalidate)) {
+    throw new Error('再取得の間隔は 0 以上の整数にしてください（0 はキャッシュしない）：STORE_API_REVALIDATE_SECONDS')
   }
   if (!COOKIE_PREFIX_PATTERN.test(env.STORE_COOKIE_PREFIX ?? '')) {
     throw new Error('Cookie の接頭辞は英数字と - _ だけにしてください：STORE_COOKIE_PREFIX')

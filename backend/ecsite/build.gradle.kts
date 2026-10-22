@@ -694,6 +694,8 @@ tasks.withType<JavaCompile> {
     // リフレクション用にメソッド引数名を保持
     options.compilerArgs.add("-parameters")
     options.encoding = "UTF-8"
+    // 警告も失敗にする（Error Prone の警告も、javac の -Werror で失敗になる）
+    options.compilerArgs.add("-Werror")
     options.errorprone {
         // 生成したコード（jOOQ、OpenAPI。build/generated の下）は検査しない
         excludedPaths.set(".*[/\\\\]build[/\\\\]generated.*")

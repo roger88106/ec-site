@@ -118,18 +118,19 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
 - 完了条件：DC-18-1〜4 と、DC-18-12・16 のうち Error Prone の分を満たし、CI が通る。
 - 参照：第 3 節の DS-18-1
 
-- [ ] **T18-01-01** Error Prone のプラグインと依存をカタログと `build.gradle.kts` に入れ、全てのソースセットで動かす。生成したコードを除き、`StringConcatToTextBlock` を理由のコメントと一緒に無効にする。`errorprone` の構成をライセンスの検査に入れ、`policy.json` に `dataflow-errorprone` を理由と一緒に載せる。既存のエラー（main の 8 件）を、振る舞いを変えずに修正する（DN-18-1）。警告の失敗はまだ入れない（DC-18-1〜3、12、16）。
+- [x] **T18-01-01** Error Prone のプラグインと依存をカタログと `build.gradle.kts` に入れ、全てのソースセットで動かす。生成したコードを除き、`StringConcatToTextBlock` を理由のコメントと一緒に無効にする。`errorprone` の構成をライセンスの検査に入れ、`policy.json` に `dataflow-errorprone` を理由と一緒に載せる。既存のエラー（main の 8 件）を、振る舞いを変えずに修正する（DN-18-1）。警告の失敗はまだ入れない（DC-18-1〜3、12、16）。
   - 依存：なし
   - 範囲：`backend/ecsite/gradle/libs.versions.toml`、`backend/ecsite/build.gradle.kts`、`scripts/ci/licenses/policy.json`、`backend/ecsite/src/main/java/` の該当のクラス
-- [ ] **T18-01-02** [P] main の警告を、振る舞いを変えずに修正する（DC-18-2）。
+- [x] **T18-01-02** [P] main の警告を、振る舞いを変えずに修正する（DC-18-2）。
   - 依存：T18-01-01
   - 範囲：`backend/ecsite/src/main/java/`
-- [ ] **T18-01-03** [P] テストのソースセット（test、integrationTest）の警告を修正する。テストの数と確認する内容を減らさない（DN-18-2）（DC-18-2）。
+- [x] **T18-01-03** [P] テストのソースセット（test、integrationTest）の警告を修正する。テストの数と確認する内容を減らさない（DN-18-2）（DC-18-2）。
   - 依存：T18-01-01
   - 範囲：`backend/ecsite/src/test/java/`、`backend/ecsite/src/integrationTest/java/`
-- [ ] **T18-01-04** 警告も失敗にする（`-Werror`）。javac 自身の警告が出たら、修正するか、作業を中断して報告する（生成したコードの警告は、生成の設定を変えずに報告する。DN-18-3）。わざと誤りを main と integrationTest に入れてコンパイルの失敗を確認し、戻す。結果をこのタスクの下に書く（DC-18-1、4）。
+- [x] **T18-01-04** 警告も失敗にする（`-Werror`）。javac 自身の警告が出たら、修正するか、作業を中断して報告する（生成したコードの警告は、生成の設定を変えずに報告する。DN-18-3）。わざと誤りを main と integrationTest に入れてコンパイルの失敗を確認し、戻す。結果をこのタスクの下に書く（DC-18-1、4）。
   - 依存：T18-01-02、T18-01-03
   - 範囲：`backend/ecsite/build.gradle.kts`、`docs/specs/18-errorprone/spec.md`
+  - 結果：2026-10-23 に、`-Werror` を入れた状態で手動で確認し、戻した（`git diff` は空）。main（`MessageHelper.formatValue` に `Optional.of(1).orElseThrow();`）は `compileJava` が失敗し、エラーは ReturnValueIgnored と OptionalOfRedundantMethod。integrationTest（`CatalogTestData.taxCategory` に同じ行）は `compileIntegrationTestJava` が失敗し、エラーは同じ 2 つ。警告も失敗になることは、main に `"A".toLowerCase()` の未使用の変数を入れ、StringCaseLocaleUsage と UnusedVariable の警告が「warnings found and -Werror specified」で `compileJava` を失敗させることで確認した。javac 自身の警告は 0 件だった
 - [ ] **T18-01-05** 段階の最後のレビュー（profile「厚め」）。
   - 依存：T18-01-04
   - 範囲：なし（読むだけ）

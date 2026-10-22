@@ -12,7 +12,6 @@ import { Field, FieldLabel } from '@/components/ui/field'
 import { granularityLabel, reportBasisLabel } from '@/features/report/labels'
 import { type PeriodPreset, presetPeriod, todayInJapan } from '@/features/report/period'
 import type { ReportCondition } from '@/features/report/reportCondition'
-import { translate } from '@/i18n/translate'
 
 /** 商品の選択肢に出す商品の数（商品の一覧の API の 1 ページの上限） */
 const PRODUCT_LIMIT = parameters.listProducts.size.maximum
@@ -58,7 +57,7 @@ export function ReportConditionForm({
   ]
   const presetOptions = [
     { value: null, label: t('presets.custom') /* 日付で指定 */ },
-    ...presets.map((preset) => ({ value: preset, label: translate(`report.condition.presets.${preset}`) })),
+    ...presets.map((preset) => ({ value: preset, label: t(`presets.${preset}`) /* 期間の選択肢の名前 */ })),
   ]
 
   /** 期間の選択肢を選んだら、始まりと終わりの日を埋める */

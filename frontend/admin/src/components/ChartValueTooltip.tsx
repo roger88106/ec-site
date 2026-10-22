@@ -1,6 +1,7 @@
 import type { ComponentProps } from 'react'
 import { ChartTooltipContent } from '@/components/ui/chart'
 
+/** ChartTooltipContent の props に、値の整形を足したもの */
 type Props = ComponentProps<typeof ChartTooltipContent> & {
   /** 値の整形。金額は formatYen、数量は formatNumber */
   formatValue: (value: number) => string

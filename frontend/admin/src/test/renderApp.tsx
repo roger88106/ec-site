@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { HttpResponse } from 'msw'
+import { delay, HttpResponse } from 'msw'
 import { createMemoryRouter } from 'react-router'
 import { vi } from 'vitest'
 import { App } from '@/app/App'
@@ -40,7 +40,7 @@ export const TEST_OPERATOR_NAME = '管理 花子'
  *
  * @param url                 開く画面の URL（例：/tax-categories）
  * @param options.permissions 運営者の権限（既定は {@link ALL_PERMISSIONS}）
- * @param options.me          自分の権限の一覧の応答（既定は成功。serverError は 500 の応答、networkError は通信の失敗）
+ * @param options.me          自分の権限の一覧の応答（既定は成功。serverError は 500 の応答、networkError は通信の失敗、pending は応答しない）
  * @returns 操作に使う user（user-event）、URL を確認するための router、ログアウトの操作（呼ばれたかを確認する）
  */
 export function renderApp(
@@ -48,10 +48,13 @@ export function renderApp(
   {
     permissions = ALL_PERMISSIONS,
     me = 'ok',
-  }: { permissions?: readonly string[]; me?: 'ok' | 'serverError' | 'networkError' } = {},
+  }: { permissions?: readonly string[]; me?: 'ok' | 'serverError' | 'networkError' | 'pending' } = {},
 ) {
   server.use(
-    http.get('/me', ({ response }) => {
+    http.get('/me', async ({ response }) => {
+      if (me === 'pending') {
+        await delay('infinite')
+      }
       if (me === 'serverError') {
         return HttpResponse.json(problem(500, 'SYSTEM_ERROR', 'システムエラーが発生しました。'), { status: 500 })
       }

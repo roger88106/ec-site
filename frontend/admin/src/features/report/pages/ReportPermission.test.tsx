@@ -1,4 +1,5 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
+import { delay } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { renderApp } from '@/test/renderApp'
 import { serveReportBasics } from '@/test/reportServer'
@@ -78,6 +79,33 @@ describe('レポートの権限による出し分け', () => {
       expect(screen.queryByText(message)).not.toBeInTheDocument()
     },
   )
+
+  it('DC-134-12 自分の権限の一覧の取得中は、レポートの画面は何も表示せず、メニューにレポートを表示しない', async () => {
+    renderApp('/reports/customer-breakdown', { me: 'pending' })
+
+    expect(await screen.findByRole('navigation')).toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '地域・年齢層・性別' })).not.toBeInTheDocument()
+    expect(screen.queryByText('この画面を見る権限がありません。')).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: '再試行' })).not.toBeInTheDocument()
+    expect(screen.queryByText('レポート')).not.toBeInTheDocument()
+    expect(screen.queryByRole('link', { name: '地域・年齢層・性別' })).not.toBeInTheDocument()
+  })
+
+  it('DC-134-12 再試行の間（取得し直している間）は、「再試行」のボタンを押せない', async () => {
+    const { user } = renderApp('/reports/customer-breakdown', { me: 'serverError' })
+    const retry = await screen.findByRole('button', { name: '再試行' })
+    expect(retry).toBeEnabled()
+
+    server.use(
+      http.get('/me', async ({ response }) => {
+        await delay('infinite')
+        return response(200).json({ permissions: SALES })
+      }),
+    )
+    await user.click(retry)
+
+    await waitFor(() => expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled())
+  })
 
   it.each(ME_FAILURES)(
     '自分の権限の一覧の取得に失敗すると、メニューにレポートの入口を全て表示する（%s）',

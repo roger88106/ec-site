@@ -1,3 +1,4 @@
+import { useRef } from 'react'
 import { $api } from '@/api/client'
 
 /** 管理 API の権限（admin.yaml の x-required-permission）のうち、画面で出し分けに使うもの */
@@ -12,6 +13,8 @@ export type Permissions = {
   status: PermissionsStatus
   /** 取得の失敗（status が failed のとき） */
   error: unknown
+  /** 取得中か（失敗の後の取り直しの間も true） */
+  isFetching: boolean
   /** 取得をやり直す（失敗のときの再試行に使う） */
   retry: () => void
   /** その権限を持つか（取得済みでなければ持たないとみなす） */
@@ -25,10 +28,20 @@ export type Permissions = {
 export function usePermissions(): Permissions {
   const query = $api.useQuery('get', '/me', {}, { staleTime: Number.POSITIVE_INFINITY })
   const granted = new Set(query.data?.permissions ?? [])
-  const status: PermissionsStatus = query.isError ? 'failed' : query.isPending ? 'loading' : 'ready'
+  // 失敗の後の取り直しの間、TanStack Query は状態を取得中に戻し、error も空にする。
+  // 失敗の表示を残したまま再試行のボタンだけ押せなくするため、直近の失敗を持つ
+  const lastError = useRef<unknown>(undefined)
+  if (query.isError) {
+    lastError.current = query.error
+  } else if (query.isSuccess) {
+    lastError.current = undefined
+  }
+  const retrying = query.isPending && query.isFetching && lastError.current !== undefined
+  const status: PermissionsStatus = query.isError || retrying ? 'failed' : query.isPending ? 'loading' : 'ready'
   return {
     status,
-    error: query.error,
+    error: query.isError ? query.error : lastError.current,
+    isFetching: query.isFetching,
     retry: () => {
       void query.refetch()
     },

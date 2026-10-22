@@ -12,13 +12,13 @@ import { useReportSettings } from '@/features/report/settings'
  * レポートの画面の共通の骨格。見出し、レポートの設定の取得、条件の入力と URL の読み書きを受け持つ。
  * 条件は URL に持つ（URL が正本）。取得と表示は、条件を受け取る関数 `children` で渡す。
  *
- * @param menuKey 見出しにするメニューの名前の鍵
- * @param defaultPreset URL に期間がないときの期間
- * @param presets 期間の選択肢（売上の推移は会計年度、他は暦）
- * @param granularity 区切りを選ぶか（売上の推移だけ）
+ * @param menuKey         見出しにするメニューの名前のキー
+ * @param defaultPreset   URL に期間がないときの期間
+ * @param presets         期間の選択肢（売上の推移は会計年度、他は暦）
+ * @param granularity     区切りを選ぶか（売上の推移だけ）
  * @param excludeShipping 送料を除くかを選ぶか
  * @param productRequired 商品を必ず選ぶか（バリアントの売れ行き）
- * @param children 条件から、取得と表示を作る関数
+ * @param children        条件から、取得と表示を作る関数
  */
 export function ReportPage({
   menuKey,

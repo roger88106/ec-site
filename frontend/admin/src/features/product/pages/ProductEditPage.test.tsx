@@ -214,13 +214,15 @@ describe('商品の編集', () => {
     expect(await screen.findByRole('button', { name: '販売終了にする' })).toBeInTheDocument()
     expect(screen.queryByText(/店舗に表示されたことがあるため/)).not.toBeInTheDocument()
   })
-  it('AC-24 軸を持たない商品は、バリアントがなければ追加の欄を出し、1 つあれば追加の欄を出さない', async () => {
+  it('AC-21、AC-24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))
+    const requests: unknown[] = []
     server.use(
       http.get('/inventory/variants/{variantId}', ({ params, response }) =>
         response(200).json({ variantId: params.variantId, quantity: 0 }),
       ),
-      http.post('/products/{productId}/variants', ({ response }) => {
+      http.post('/products/{productId}/variants', async ({ request, response }) => {
+        requests.push(await request.json())
         state.current = {
           ...state.current,
           variants: [variant({ axisValues: [] })],
@@ -238,6 +240,7 @@ describe('商品の編集', () => {
     expect(await screen.findByText('軸を持たない商品のバリアントは 1 つだけです。')).toBeInTheDocument()
     expect(screen.getByRole('cell', { name: 'ABC-001-RED' })).toBeInTheDocument()
     expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
+    expect(requests).toEqual([expect.objectContaining({ variantCode: 'ABC-001-X' })])
   })
   it('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
     const state = serveProduct(productDetail({ axes: ['色', 'サイズ'], variants: [] }))

@@ -43,7 +43,7 @@
 | AC-18 | 商品名、説明、税区分、税抜価格、所属カテゴリは変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-19 | 税区分を変更すると、税込価格が変更後の税率で計算される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx` |
 | AC-20 | バリアント品番と軸の値（例：色＝白、サイズ＝M）を指定してバリアントを登録できる… | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
-| AC-21 | バリアント品番は全バリアントで一意。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `JooqProductRepositoryTest`、`ProductApiTest`、`ProductTest` ほか 1 |
+| AC-21 | バリアント品番は全バリアントで一意。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `JooqProductRepositoryTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 2 |
 | AC-22 | 商品に軸があれば、バリアントは全ての軸の値を持つ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-23 | 同じ商品の中で、軸の値の組み合わせは重複できない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-24 | 軸を持たない商品のバリアントは 1 つだけ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |

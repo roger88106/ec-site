@@ -180,7 +180,7 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
-| `renderApp(url, { permissions })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て |
+| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）か通信の失敗（`networkError`）に替えられる。キャッシュの再試行の回数は本番と同じで、間隔は 0 |
 | `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
 | `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `problem(...)` | エラーレスポンスの本文を作る |
@@ -204,7 +204,7 @@ SPA がブラウザーで IdP とやり取りし（public client）、token は�
 | ログインを求める | `auth/AuthGate` が全ての画面をラップし、ログインしていなければ IdP へリダイレクトし、戻ったら元の画面を表示する ※2 |
 | token の更新 | 期限が近ければ refresh token で再取得する（自動）。再取得できなければ（最後の操作から 30 分、またはログインから 8 時間を過ぎたとき）再ログインする |
 | ログインしている運営者 | `auth/operator` の `useOperator()` で氏名とログアウトを読む。コンポーネントは react-oidc-context を直接使わない（テストで置き換えるため） |
-| 権限による出し分け | `auth/permissions` の `usePermissions()` で、管理 API の自分の権限の一覧（`GET /me`）を読む ※3。権限のない画面はメニューに表示せず、URL で開いたら `auth/RequirePermission` が「権限がない」を示す（API は呼ばない）。今はレポートの画面だけを出し分ける |
+| 権限による出し分け | `auth/permissions` の `usePermissions()` で、管理 API の自分の権限の一覧（`GET /me`）を読む ※3。権限のない画面はメニューに表示せず、URL で開いたら `auth/RequirePermission` が「権限がない」を示す（API は呼ばない）。今はレポートの画面だけを出し分ける。自分の権限の一覧の取得に失敗したら（5xx、通信の失敗）、権限が必要な画面は取得の失敗の文と「再試行」を示し、メニューはレポートの入口を全て表示する（権限の有無が分からないので隠さない） |
 | ログアウト | IdP のログアウト（RP-Initiated Logout。ID token と画面のトップを添える）へ移る |
 
 ※1：既定値はローカルと CI だけで使う。接続先はビルドの時に埋め込むので、本番ビルド（`vite build` の production モード）では、2 つのどちらかがなければ（空も含む）ビルドに失敗する（`config/oidcEnv.ts` を `vite.config.ts` から呼ぶ。`src/` の外に置くのは、画面のコードに入れないため）。開発サーバー、テスト、本番でないモードのビルドでは確認しない。CI のビルドと E2E は、ローカルの値を渡す。

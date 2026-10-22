@@ -4,6 +4,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { startCheckout } from '@/actions/cart'
+import { ActionError } from '@/components/ActionError'
 
 /**
  * 注文手続きに進む。<br />
@@ -19,11 +20,7 @@ export function StartCheckoutForm({ orderable }: { orderable: boolean }) {
         {pending ? t('reserving') : t('submit') /* 確保中か、進む */}
       </Button>
       {!orderable && <p className="text-muted-foreground text-sm">{t('blocked') /* 進めない理由 */}</p>}
-      {result?.ok === false && (
-        <p aria-live="polite" className="text-destructive text-sm">
-          {result.message}
-        </p>
-      )}
+      <ActionError message={result?.ok === false ? result.message : null} />
     </form>
   )
 }

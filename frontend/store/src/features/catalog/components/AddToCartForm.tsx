@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useActionState, useId } from 'react'
 import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
+import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { isPurchasable } from '@/features/catalog/variantSelection'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
@@ -37,6 +38,7 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
           {pending ? t('adding') : t('submit') /* 送信中か、カートに入れる */}
         </Button>
       </div>
+      {/* 成功の知らせは、常にある領域に入れて確実に読み上げる。失敗は他の画面と同じ部品で出す */}
       <div aria-live="polite" className="text-sm">
         {result?.ok === true && (
           <p>
@@ -46,8 +48,8 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
             </Link>
           </p>
         )}
-        {result?.ok === false && <p className="text-destructive">{result.message}</p>}
       </div>
+      <ActionError message={result?.ok === false ? result.message : null} />
     </form>
   )
 }

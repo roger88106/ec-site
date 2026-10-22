@@ -6,6 +6,7 @@ import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { requestCancellation } from '@/actions/order'
 import { schemas } from '@/api/generated/constraints'
+import { ActionError } from '@/components/ActionError'
 
 /** 理由の長さの上限 */
 const REASON_MAX_LENGTH = schemas.RequestOrderCancellationRequest.reason.maxLength
@@ -41,11 +42,7 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
       <Button disabled={pending} type="submit" variant="outline">
         {pending ? t('requesting') : t('submit') /* 申請中か、申請する */}
       </Button>
-      {result?.ok === false && (
-        <p aria-live="polite" className="text-destructive text-sm">
-          {result.message}
-        </p>
-      )}
+      <ActionError message={result?.ok === false ? result.message : null} />
     </form>
   )
 }

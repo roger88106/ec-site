@@ -11,6 +11,7 @@ import { placeOrder } from '@/actions/checkout'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { schemas } from '@/api/generated/constraints'
 import type { Municipality, Prefecture } from '@/api/types'
+import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrderErrors'
 import { normalizePostalCode } from '@/features/checkout/postalCode'
@@ -135,16 +136,13 @@ export function OrderForm({
       <Field error={errors.fields.phone} hint={t('phoneHint') /* 例 */} label={t('phone') /* 電話番号 */} name="phone">
         <Input autoComplete="tel" className="w-48" id="phone" inputMode="tel" name="phone" type="tel" />
       </Field>
-      {errors.message && (
-        <p aria-live="polite" className="text-destructive text-sm">
-          {errors.message}
-          {errors.backToCart && (
-            <Link className="ml-2 underline" href="/cart">
-              {t('viewCart') /* カートを見る */}
-            </Link>
-          )}
-        </p>
-      )}
+      <ActionError message={errors.message}>
+        {errors.backToCart && (
+          <Link className="ml-2 underline" href="/cart">
+            {t('viewCart') /* カートを見る */}
+          </Link>
+        )}
+      </ActionError>
       <Button className="w-full" disabled={pending} size="lg" type="submit">
         {pending ? t('placing') : t('submit', { total: formatYen(expectedTotal) }) /* 注文中か、総額を添えて注文する */}
       </Button>

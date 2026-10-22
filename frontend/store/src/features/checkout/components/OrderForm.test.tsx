@@ -131,7 +131,9 @@ describe('お届け先の入力と注文', () => {
     const html = renderMarkup(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
     expect(html).toContain('在庫が足りない商品があります。')
-    expect(html).toContain('href="/cart">カートを見る</a>')
+    expect(html).toMatch(
+      /<p aria-live="polite"[^>]*>在庫が足りない商品があります。<a [^>]*href="\/cart">カートを見る<\/a><\/p>/,
+    )
   })
 })
 

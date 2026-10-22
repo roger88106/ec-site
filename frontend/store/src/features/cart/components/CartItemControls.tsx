@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useActionState, useId } from 'react'
 import { changeCartItemQuantity, removeCartItem } from '@/actions/cart'
 import type { QuoteItem } from '@/api/types'
+import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
@@ -55,11 +56,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
           {removing ? t('removing') : t('remove') /* 削除中か、削除 */}
         </Button>
       </form>
-      {failure?.ok === false && (
-        <p aria-live="polite" className="text-destructive">
-          {failure.message}
-        </p>
-      )}
+      <ActionError message={failure?.ok === false ? failure.message : null} />
     </div>
   )
 }

@@ -32,7 +32,7 @@
 - [x] **T134-04-08** 段階のレビュー（profile「厚め」：一般の観点は汎用 2 回、重要な観点（ファイルをまたぐ影響）は高性能と汎用、合否の判定は spec 担当のセッションが行う）と完了の確認：`scripts/dev/check-frontend.sh all` と `scripts/ci/check-all.sh` が通る。
   - 依存：T134-04-01〜07
   - 結果：4 つのレビュー役（汎用 3、高性能 1）で、高 0、必須 7（重複を含め 3 件）。全て採用し、T134-04-09 で直す：商品の登録の画面で、軸の上限の定数の説明のコメントが新しい定数の前に離れた（4 つのレビュー役）、テスト名に DC の番号を入れた（テストの書き方 第 2.1 節は AC の番号だけを定める。段階 1〜3 のテストは入れていない）、数の整形を共有に置いたが管理画面だけが使う（フロントの書き方 第 5.1 節。plan の誤りで、plan 第 4 節を先に直した）。店舗画面への影響、吹き出しのラッパーが値だけを変えること、表示名を表・グラフ・CSV が共有すること、表示の変更が DN-134-1 の 2 件だけであることには指摘がなかった。`check-frontend.sh all` と `check-all.sh` は通った。
-- [ ] **T134-04-09** 段階のレビューの指摘を直す。(1) 商品の登録の画面で、軸の上限の定数の説明のコメントを、その定数の直前に戻す。(2) 段階 4 で足したテストの名前から DC の番号を外す。(3) 数の整形を共有の `lib/format.ts` から管理画面の `lib/format.ts` に移し、テストも移す（plan 第 4 節）。
+- [x] **T134-04-09** 段階のレビューの指摘を直す。(1) 商品の登録の画面で、軸の上限の定数の説明のコメントを、その定数の直前に戻す。(2) 段階 4 で足したテストの名前から DC の番号を外す。(3) 数の整形を共有の `lib/format.ts` から管理画面の `lib/format.ts` に移し、テストも移す（plan 第 4 節）。
   - 依存：T134-04-08
   - 範囲：`frontend/admin/src/features/product/pages/ProductCreatePage.tsx`、`frontend/admin/src/features/report/labels.test.ts`、`frontend/admin/src/features/report/pages/VariantSalesPage.test.tsx`、`frontend/admin/src/components/ChartValueTooltip.test.tsx`、`frontend/shared/src/lib/format.ts`、`frontend/shared/src/lib/format.test.ts`、`frontend/admin/src/lib/format.ts`、`frontend/admin/src/lib/format.test.ts`、数の整形を使う 3 つのレポートの画面
 

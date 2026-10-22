@@ -26,7 +26,7 @@ final class PaymentRequests {
      */
     static Predicate<Object> of(DSLContext dsl, UUID orderId) {
         var paymentId = dsl.select(PAYMENT_.ID).from(PAYMENT_).where(PAYMENT_.ORDER_ID.eq(orderId)).fetchOne(PAYMENT_.ID);
-        return event -> event instanceof RefundRequested refund && refund.paymentId().equals(paymentId)
-                || event instanceof VoidRequested requested && requested.paymentId().equals(paymentId);
+        return event -> (event instanceof RefundRequested refund && refund.paymentId().equals(paymentId))
+                || (event instanceof VoidRequested requested && requested.paymentId().equals(paymentId));
     }
 }

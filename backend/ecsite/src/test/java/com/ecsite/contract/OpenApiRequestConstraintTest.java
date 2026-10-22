@@ -11,6 +11,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
@@ -59,7 +60,7 @@ class OpenApiRequestConstraintTest {
                     continue;
                 }
                 Map<String, Object> op = map(operation.getValue());
-                String where = operation.getKey().toUpperCase() + " " + path.getKey();
+                String where = operation.getKey().toUpperCase(Locale.ROOT) + " " + path.getKey();
                 List<Object> parameters = new ArrayList<>(list(pathItem.get("parameters")));
                 parameters.addAll(list(op.get("parameters")));
                 for (Object parameter : parameters) {
@@ -140,7 +141,7 @@ class OpenApiRequestConstraintTest {
         Map<String, Object> current = node;
         while (current.get("$ref") instanceof String ref) {
             Object target = document;
-            for (String key : ref.substring(2).split("/")) {
+            for (String key : ref.substring(2).split("/", -1)) {
                 target = map(target).get(key);
             }
             current = map(target);

@@ -28,6 +28,7 @@ import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -166,7 +167,7 @@ class OrderReportApiTest {
     @DisplayName("NFR-16 写しに、氏名・住所・電話番号・メールアドレスの項目を持たない")
     void excludesPersonalInformation() {
         var components = List.of(OrderReportSnapshot.class.getRecordComponents()).stream()
-                .map(component -> component.getName().toLowerCase())
+                .map(component -> component.getName().toLowerCase(Locale.ROOT))
                 .toList();
 
         assertThat(components).noneMatch(name -> name.contains("name") || name.equals("address")

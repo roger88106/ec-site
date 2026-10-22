@@ -13,6 +13,7 @@ import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Properties;
 import java.util.Set;
 import java.util.TreeSet;
@@ -148,6 +149,6 @@ class MessageContractTest {
     private static String expectedKey(Enum<?> constant) {
         Matcher matcher = MODULE_PACKAGE.matcher(constant.getDeclaringClass().getName());
         String module = matcher.matches() ? matcher.group(1) : "common";
-        return "ecsite.%s.%s".formatted(module, constant.name().toLowerCase());
+        return "ecsite.%s.%s".formatted(module, constant.name().toLowerCase(Locale.ROOT));
     }
 }

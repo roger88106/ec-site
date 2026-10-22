@@ -48,6 +48,8 @@ class ValidationMessagesTest {
     /**
      * 検証する型（項目ごとに 1 つの制約）
      */
+    // 配列に付けた @Size の検証も確かめるので、配列の成分が要る
+    @SuppressWarnings("ArrayRecordComponent")
     record Sample(
             @NotNull String notNull,
             @NotBlank String notBlank,

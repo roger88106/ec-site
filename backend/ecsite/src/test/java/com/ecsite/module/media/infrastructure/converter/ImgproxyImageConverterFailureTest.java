@@ -14,6 +14,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -61,7 +62,7 @@ class ImgproxyImageConverterFailureTest {
 
     @BeforeEach
     void startServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server = HttpServer.create(new InetSocketAddress(InetAddress.getLoopbackAddress(), 0), 0);
         server.createContext("/", exchange -> responder.get().respond(exchange));
         server.start();
     }

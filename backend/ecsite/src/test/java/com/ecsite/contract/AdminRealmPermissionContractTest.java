@@ -124,7 +124,7 @@ class AdminRealmPermissionContractTest {
         assertThat(new TreeSet<>(mapped.getFirst())).isEqualTo(declaredPermissions);
     }
 
-    private static TreeSet<String> readPermissionsWithoutReports() {
+    private static Set<String> readPermissionsWithoutReports() {
         return new TreeSet<>(declaredPermissions.stream()
                 .filter(p -> p.endsWith(":read") && !p.startsWith(REPORT_PREFIX))
                 .toList());
@@ -136,6 +136,8 @@ class AdminRealmPermissionContractTest {
         return composites.getFirst();
     }
 
+    // JsonPath.read と同じく、呼び出し側が受ける型で T が決まる道具
+    @SuppressWarnings("TypeParameterUnusedInFormals")
     private static <T> T read(String path) {
         return JsonPath.read(realm, path);
     }

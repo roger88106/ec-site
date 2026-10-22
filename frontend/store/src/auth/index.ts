@@ -8,6 +8,7 @@ import Keycloak from 'next-auth/providers/keycloak'
 import { cache } from 'react'
 import { mergeCartAfterLogin } from '@/api/cart'
 import { readServerConfig } from '@/auth/config'
+import { authCookies, sessionCookieName } from '@/auth/cookieNames'
 import { logoutUrl } from '@/auth/logout'
 import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
 import { loginPath, safeReturnTo } from '@/lib/login'
@@ -28,6 +29,7 @@ const {
   secret: SECRET,
   publicUrl: PUBLIC_URL,
   idpTimeoutSeconds: IDP_TIMEOUT_SECONDS,
+  cookiePrefix: COOKIE_PREFIX,
 } = readServerConfig()
 
 /** セッションの Cookie を HTTPS だけで送るか（カート ID の Cookie と同じく、本番の起動で true） */
@@ -52,6 +54,8 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
   secret: SECRET,
   session: { strategy: 'jwt' },
   useSecureCookies: SECURE_COOKIE,
+  // 接頭辞が空なら undefined で、Auth.js の既定の名前・属性のまま
+  cookies: authCookies(COOKIE_PREFIX, SECURE_COOKIE),
   events: {
     async signIn({ account }) {
       // ログインの直後に、Cookie のカートを会員のカートへ移す
@@ -152,5 +156,7 @@ async function readToken(): Promise<MemberJwt | null> {
     req: { headers: await headers() },
     secret: SECRET,
     secureCookie: SECURE_COOKIE,
+    // 名前は JWT の salt にもなるので、書いた名前と同じ名前で読む
+    cookieName: sessionCookieName(COOKIE_PREFIX, SECURE_COOKIE),
   })) as MemberJwt | null
 }

@@ -48,7 +48,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 
 ## 3. CI の検査の script
 
-`scripts/ci/check-all.sh` は、`scripts/ci/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。
+`scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。
 
 - 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
 - 引数が必要な補助の script（`report/coverage-summary.mjs`）と、画面の依存が必要な検査（`licenses/`）は、下のディレクトリに置く。

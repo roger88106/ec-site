@@ -56,7 +56,12 @@ export type ServerConfig = {
   apiTimeoutSeconds: number
   /** IdP（ログイン、token の更新）の応答を待つ秒数（任意。既定 10） */
   idpTimeoutSeconds: number
+  /** 店舗画面の全ての Cookie の名前の前に付ける接頭辞（任意。既定は空で、今の名前のまま） */
+  cookiePrefix: string
 }
+
+/** Cookie の接頭辞に使える文字（英数字と `-`、`_`） */
+const COOKIE_PREFIX_PATTERN = /^[A-Za-z0-9_-]*$/
 
 /**
  * 環境変数から設定を読む。本番のモードで必須の値がなければ（空も含む）、足りない名前を並べた例外を投げる。
@@ -74,6 +79,9 @@ export function loadServerConfig(env: Record<string, string | undefined> = proce
   const invalid = TIMEOUT_SETTINGS.filter((name) => env[name] && !(Number(env[name]) > 0))
   if (invalid.length > 0) {
     throw new Error(`待つ時間の上限は正の数にしてください：${invalid.join(', ')}`)
+  }
+  if (!COOKIE_PREFIX_PATTERN.test(env.STORE_COOKIE_PREFIX ?? '')) {
+    throw new Error('Cookie の接頭辞は英数字と - _ だけにしてください：STORE_COOKIE_PREFIX')
   }
   return readServerConfig(env)
 }
@@ -98,5 +106,6 @@ export function readServerConfig(env: Record<string, string | undefined> = proce
     apiRevalidateSeconds: Number(env.STORE_API_REVALIDATE_SECONDS || DEFAULT_REVALIDATE_SECONDS),
     apiTimeoutSeconds: Number(env.STORE_API_TIMEOUT_SECONDS || DEFAULT_API_TIMEOUT_SECONDS),
     idpTimeoutSeconds: Number(env.AUTH_KEYCLOAK_TIMEOUT_SECONDS || DEFAULT_IDP_TIMEOUT_SECONDS),
+    cookiePrefix: env.STORE_COOKIE_PREFIX ?? '',
   }
 }

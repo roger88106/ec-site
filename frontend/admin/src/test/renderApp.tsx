@@ -36,12 +36,11 @@ export const TEST_OPERATOR_NAME = '管理 花子'
  * API の応答は、先に {@code server.use(...)} で与えておく。
  * ログインは置き換え、運営者（{@link TEST_OPERATOR_NAME}）がログインしている状態にする。token は付けない。
  * 運営者の権限（自分の権限の一覧の API の応答）は、既定ですべての権限にする。
- *
- * @param url 開く画面の URL（例：/tax-categories）
  * 結合テストのキャッシュは、失敗した取得を繰り返す間隔を 0 にする（回数は本番と同じ）。
  *
+ * @param url                 開く画面の URL（例：/tax-categories）
  * @param options.permissions 運営者の権限（既定は {@link ALL_PERMISSIONS}）
- * @param options.me 自分の権限の一覧の応答（既定は成功。serverError は 500 の応答、networkError は通信の失敗）
+ * @param options.me          自分の権限の一覧の応答（既定は成功。serverError は 500 の応答、networkError は通信の失敗）
  * @returns 操作に使う user（user-event）、URL を確認するための router、ログアウトの操作（呼ばれたかを確認する）
  */
 export function renderApp(

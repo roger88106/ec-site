@@ -9,6 +9,7 @@ import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +63,7 @@ public class OrderCancellationService {
      * @param reason   理由（任意）
      */
     @Transactional
-    public void request(UUID orderId, UUID memberId, String reason) {
+    public void request(UUID orderId, UUID memberId, @Nullable String reason) {
         var order = lock(orderId);
         if (!order.memberId().equals(memberId)) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);

@@ -51,8 +51,8 @@ class CarrierWebhookController {
      * @return 受け付けたら 200、署名を確認できなければ 401、署名が合っても本文が読めなければ 400
      */
     @PostMapping(CarrierNotification.WEBHOOK_PATH)
-    ResponseEntity<Void> receive(@RequestBody(required = false) byte[] payload,
-                                 @RequestHeader(name = CarrierSignature.HEADER, required = false) String signatureHeader) {
+    ResponseEntity<Void> receive(@RequestBody(required = false) byte @Nullable [] payload,
+                                 @RequestHeader(name = CarrierSignature.HEADER, required = false) @Nullable String signatureHeader) {
         var body = payload == null ? new byte[0] : payload;
         if (!signature.verify(body, signatureHeader)) {
             log.warn("署名を確認できない物流サービスの通知を拒否した");

@@ -25,6 +25,7 @@ import com.ecsite.module.storefront.application.ShopProperties;
 import com.ecsite.module.storefront.application.port.CartView;
 import com.ecsite.module.storefront.application.port.CatalogCategory;
 import com.ecsite.module.storefront.application.port.ProductCondition;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -62,7 +63,8 @@ class StorefrontMapper {
      * @param sort       並び順
      * @return 商品一覧の条件
      */
-    ProductCondition toProductCondition(UUID categoryId, Long minPrice, Long maxPrice, ProductSort sort) {
+    ProductCondition toProductCondition(@Nullable UUID categoryId, @Nullable Long minPrice, @Nullable Long maxPrice,
+                                          ProductSort sort) {
         return new ProductCondition(categoryId, minPrice == null ? null : Money.of(minPrice),
                 maxPrice == null ? null : Money.of(maxPrice), toSort(sort));
     }

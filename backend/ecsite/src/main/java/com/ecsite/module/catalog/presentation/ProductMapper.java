@@ -26,6 +26,7 @@ import com.ecsite.module.catalog.application.model.query.ProductListQuery;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.model.view.ProductDetailView;
 import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -179,7 +180,8 @@ class ProductMapper {
      * @param categoryId カテゴリ ID（子孫のカテゴリを含む）
      * @return 商品一覧の条件
      */
-    ProductListQuery toProductListQuery(String code, String name, PublicationStatus status, UUID categoryId) {
+    ProductListQuery toProductListQuery(@Nullable String code, @Nullable String name, @Nullable PublicationStatus status,
+                                      @Nullable UUID categoryId) {
         return new ProductListQuery(code, name, status == null ? null : toDomainStatus(status), categoryId);
     }
 

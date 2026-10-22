@@ -262,7 +262,9 @@ public final class MoneyFormat {
 - 選び方：
   - 今の振る舞いで null が正しい値（API の応答の省略できる項目、DB の null を取りうる列など）には `@Nullable` を付ける。
   - null を渡す必要がない所は、null を作らない書き方にする。
-  - 値がないことを返す参照のメソッド（`findXxx`）は、今のコードのとおり `Optional` を返す。集約が null を取りうるフィールドを持つときは、フィールドを `@Nullable` にし、getter で `Optional` にして返す（`Cart.memberId()`）。
+  - 値がないことを返す参照のメソッド（`findXxx`）は、今のコードのとおり `Optional` を返す。集約が null を取りうるフィールドを持つときは、フィールドを `@Nullable` にする。getter は、今のコードでは次の 2 通りがある。
+    - `Cart.memberId()` のように `Optional` を返す。
+    - Lombok の getter が `@Nullable` の値を返す（`Order.cancellation()`、`Payment.authorizationRef()` など）。状態から null でないと分かる所は、呼び出し側で `Objects.requireNonNull` に理由を付けて受ける。
 - jOOQ のレコードの getter は注釈がないので、NullAway は null を確認しない。null を取りうる列の値は、リポジトリの実装で `@Nullable` を付けたローカル変数か `Optional` で受ける。
 - `lombok.NonNull` は実行時の確認として使ってよい（外さない）。
 

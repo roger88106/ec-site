@@ -2,6 +2,7 @@ package com.ecsite.module.payment.infrastructure.stripe;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProperty;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
@@ -34,7 +35,7 @@ class StripeWebhookController {
      */
     @PostMapping("/api/webhooks/stripe")
     ResponseEntity<Void> receive(@RequestBody String payload,
-                                 @RequestHeader(name = "Stripe-Signature", required = false) String signature) {
+                                 @RequestHeader(name = "Stripe-Signature", required = false) @Nullable String signature) {
         try {
             handler.handle(payload, signature);
             return ResponseEntity.ok().build();

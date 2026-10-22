@@ -375,7 +375,7 @@ public class Product extends AggregateRoot {
      * @param variantId バリアント ID
      * @param imageId   画像 ID。null で指定を外す（代表画像を使う）
      */
-    public void setVariantImage(@NonNull UUID variantId, UUID imageId) {
+    public void setVariantImage(@NonNull UUID variantId, @Nullable UUID imageId) {
         if (variants.stream().noneMatch(variant -> variant.id().equals(variantId))) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }

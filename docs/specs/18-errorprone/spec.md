@@ -172,9 +172,10 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
   - 依存：T18-02-06、T18-02-07、T18-02-08
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/src/main/java/`、`docs/specs/18-errorprone/spec.md`
   - 結果：`-Pnullaway` とその分岐、`-Xmaxwarns` をなくし、main の compileJava で NullAway を常にエラーとして動かす（`-Werror` は戻した。test、integrationTest、testFixtures、tools では無効）。範囲の外のパッケージの報告はなかった（全て T18-02-05〜08 の範囲）。`@SuppressWarnings("NullAway")` は 0 件（`grep -rn 'SuppressWarnings("NullAway")' backend/ecsite/src/main | wc -l`）。確認：Cart.memberId() に `@Nullable` のフィールドの参照を外す行を入れると、compileJava が `[NullAway] dereferenced expression 'memberId' is @Nullable` のエラーで失敗した。その行は戻した（git diff が空）。5 つのソースセットのコンパイル、checkstyleMain、単体テストが通る。
-- [ ] **T18-02-10** 段階の最後のレビュー（profile「厚め」）。
+- [x] **T18-02-10** 段階の最後のレビュー（profile「厚め」）。
   - 依存：T18-02-09
   - 範囲：なし（読むだけ）
+  - 結果：profile は「標準」（一般の観点を汎用で 1 回、重要な観点を高性能で 1 回。Pro のプランで使用量を抑えるため）。高 0、必須 5。NullAway が確認できない所（生成した interface の任意の引数、`JsonNullable#orElse(null)`、`required = false` の要求の部分）から null が入る引数に `@Nullable` を付けた（31 か所）。バックエンドの書き方の `Optional` の記述を、今のコードの書き分けに合わせた。CI の検査の文書の java-rules の行は T18-03-01 で直す。機械の検査（NullAway の `AcknowledgeRestrictiveAnnotations`、`required = false` の検査）に移すかは、spec の最後の起票の案で扱う。
 
 common の型（`BusinessException` など）の引数に `@Nullable` を付けると、他のモジュールの報告が変わる。そのため T18-02-05 を先に行い、T18-02-06〜08 を同時に行う。
 

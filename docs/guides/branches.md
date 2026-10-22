@@ -73,7 +73,8 @@ GitHub の ruleset を `develop` と `main` に作る。
 ## 5. 緊急の修正
 
 - `hotfix-<issue の番号>-<短い名前>` のブランチを `main` から切り、pull request で `main` に入れる。
-- `main` に入れた後に、`develop` に戻す。
+- `main` に入れた後に、`develop` に戻す。`main` から `<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`develop` は、マージの前に最新の `develop` を含むことを必須にしているので、`main` を直接 `develop` に入れる pull request はマージできないため。
+- 必須の検査が GitHub の障害などで動かず、マージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。
 - `hotfix-` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
 - tag と GitHub の Release は、第 4 節の手順 3、4 と同じ。
 
@@ -91,6 +92,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 | commit のメッセージの前置き | `deps` |
 
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
+- `develop` が進んで Dependabot の pull request が最新でなくなったときは、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
 - 注意：GitHub の文書（2026-10-22 の時点）では、Dependabot の pnpm の対応は v10 まで。このリポジトリは pnpm 12 である。`npm` の更新が失敗したときは、issue を起票し、その issue で Renovate への切り替えを検討する。
 

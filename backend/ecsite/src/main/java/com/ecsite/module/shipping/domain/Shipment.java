@@ -59,7 +59,7 @@ public class Shipment {
      */
     private Shipment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Carrier carrier,
                      @NonNull TrackingNumber trackingNumber, @NonNull DeliveryStatus status,
-                     @NonNull Instant shippedAt, Instant lastNotifiedAt) {
+                     @NonNull Instant shippedAt, @Nullable Instant lastNotifiedAt) {
         this.id = id;
         this.orderId = orderId;
         this.carrier = carrier;

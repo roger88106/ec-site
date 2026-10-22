@@ -3,6 +3,7 @@ package com.ecsite.module.shipping.infrastructure.carrier;
 import com.ecsite.module.shipping.application.port.ShipmentNotificationReceiver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -77,7 +78,7 @@ class CarrierWebhookController {
      *
      * @return 通知。読めない、または項目が足りなければ null
      */
-    private CarrierNotification read(byte[] body) {
+    private @Nullable CarrierNotification read(byte[] body) {
         try {
             var notification = jsonMapper.readValue(body, CarrierNotification.class);
             if (notification == null || !notification.isComplete()) {

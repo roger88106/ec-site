@@ -10,6 +10,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -45,7 +46,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      * @return 日 → 売上。売れなかった日は含めない
      */
     @Override
-    public Map<LocalDate, DailySales> dailySales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax,
+    public Map<LocalDate, DailySales> dailySales(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
                                                  boolean excludeShipping) {
         var day = dayOf(basis);
         var result = new LinkedHashMap<LocalDate, DailySales>();
@@ -101,7 +102,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
      * @return 組ごとの売上
      */
     @Override
-    public List<SegmentTotal> segmentSales(ReportPeriod period, Basis basis, UUID productId, boolean excludeTax,
+    public List<SegmentTotal> segmentSales(ReportPeriod period, Basis basis, @Nullable UUID productId, boolean excludeTax,
                                            boolean excludeShipping) {
         var keys = List.<Field<?>>of(SALES_ORDER.PREFECTURE_CODE, SALES_ORDER.BUYER_AGE, SALES_ORDER.BUYER_GENDER);
         if (productId == null) {
@@ -172,7 +173,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
     /**
      * 年齢（記録がなければ null）
      */
-    private static Integer age(Short age) {
+    private static @Nullable Integer age(@Nullable Short age) {
         return age == null ? null : age.intValue();
     }
 

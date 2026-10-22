@@ -184,7 +184,8 @@ class StorefrontMapper {
      * カートの品目のレスポンスに変換する。画像と購入できない理由は、null でも項目として返す。
      */
     private static QuoteItem toQuoteItem(CartView.Item item) {
-        var purchasable = item.unpurchasableReason() == null;
+        var reason = item.unpurchasableReason();
+        var purchasable = reason == null;
         return new QuoteItem()
                 .variantId(item.variantId())
                 .productId(item.productId())
@@ -195,7 +196,7 @@ class StorefrontMapper {
                 .quantity(item.quantity())
                 .subtotal(item.subtotal().yen())
                 .purchasable(purchasable)
-                .unpurchasableReason(purchasable ? null : toUnpurchasableReason(item.unpurchasableReason()));
+                .unpurchasableReason(reason == null ? null : toUnpurchasableReason(reason));
     }
 
     /**

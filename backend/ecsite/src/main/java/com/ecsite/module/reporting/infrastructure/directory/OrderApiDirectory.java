@@ -8,6 +8,7 @@ import com.ecsite.module.reporting.domain.ReportGender;
 import com.ecsite.module.reporting.domain.ReportOrder;
 import com.ecsite.module.reporting.domain.ReportOrderStatus;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -93,7 +94,7 @@ class OrderApiDirectory implements OrderDirectory {
      * @param kind キャンセルの種類。キャンセルでなければ null
      * @return レポートのキャンセルの種類の名前。キャンセルでなければ null
      */
-    static String toCancellationKind(OrderReportSnapshot.CancellationKind kind) {
+    static @Nullable String toCancellationKind(OrderReportSnapshot.@Nullable CancellationKind kind) {
         if (kind == null) {
             return null;
         }
@@ -113,7 +114,7 @@ class OrderApiDirectory implements OrderDirectory {
      * @param gender 注文時の性別。分からなければ null
      * @return 写しの性別の名前。分からなければ null
      */
-    static String toBuyerGender(OrderReportSnapshot.Gender gender) {
+    static @Nullable String toBuyerGender(OrderReportSnapshot.@Nullable Gender gender) {
         if (gender == null) {
             return null;
         }

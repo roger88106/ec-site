@@ -19,6 +19,13 @@ describe('サーバーアクションの失敗の表示', () => {
     expect(html).toMatch(/>在庫が足りません。<a href="\/cart">カートを見る<\/a><\/p>/)
   })
 
+  test('親が読み上げの領域を持つとき（inLiveRegion）は、自分では領域にしない', () => {
+    const html = renderMarkup(<ActionError inLiveRegion message="在庫が足りません。" />)
+
+    expect(html).not.toContain('aria-live')
+    expect(html).toContain('在庫が足りません。')
+  })
+
   test.each([null, undefined, ''])('文がなければ（%j）何も出さない', (message) => {
     expect(renderMarkup(<ActionError message={message}>子</ActionError>)).toBe('')
   })

@@ -89,7 +89,7 @@ describe('支払の状況（AC-150、151）', () => {
 })
 
 describe('注文の画面の欄を出すか', () => {
-  test('AC-158 支払の欄は、支払待ちのとき（支払える、確認中、期限切れ）だけ出す', () => {
+  test('AC-150、151 支払の欄は、支払待ちのとき（支払える、確認中、期限切れ）だけ出す', () => {
     expect(showsPaymentSection('PAYABLE')).toBe(true)
     expect(showsPaymentSection('CONFIRMING')).toBe(true)
     expect(showsPaymentSection('CLOSING')).toBe(true)

@@ -198,9 +198,10 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 範囲：`frontend/store/src/auth/config.test.ts`、`frontend/store/src/auth/config.ts`
   - 補足：spec 104 が、Cookie の接頭辞が必須の値でないことを、同じ定数で確認するテストを足した（実装の前の照合で確認）。export を外すなら、このテストを振る舞い（本番のモードで接頭辞がなくても起動できる）の確認に替える。
   - 結果：「必須の値は 6 つ」のテストを削除し、定数の export を外した（使い手はテストだけだった）。接頭辞のテストは、本番のモードで接頭辞がなくても `loadServerConfig` が失敗しない確認に替えた。
-- [ ] **T135-02-09** テストが CSS のクラスで確認しないようにし、取り消し線は取り消しを表す HTML の要素にする（DC-135-28）。
+- [x] **T135-02-09** テストが CSS のクラスで確認しないようにし、取り消し線は取り消しを表す HTML の要素にする（DC-135-28）。
   - 依存：T135-01-06（注文のフォームのテストを両方が変えるため）、T135-02-07（`PageLinks.test.tsx` を両方が変えるため）
   - 範囲：`frontend/store/src/components/PageLinks.test.tsx`、`frontend/store/src/components/SiteHeader.test.tsx`、`frontend/store/src/features/cart/components/CartItemControls.test.tsx`、`frontend/store/src/features/catalog/components/ProductCard.test.tsx`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx` と、取り消し線を示す部品。`components/PageLinks.tsx` は変えない（DN-135-6）
+  - 結果：購入できない品目の小計を `<s>` で示し（見た目は既定の取り消し線で同じ）、テストは `<s>` で確認する。ヘッダーのアカウントのリンク・商品の画像・ページ送りの件数のみの表示・注文のフォームの欄ごとの誤りを、役割と名前、欄の枠の中の文で確認する形に替え、ホバーの下線の確認は振る舞いでないのでリンク先の確認にとどめた。`ActionError.test.tsx` と注文のフォームの HTML の文字列への正規表現も、jsdom で属性と親子を見る形に替えた。今の実装に欄と誤りを結ぶ `aria-describedby` や `aria-invalid` はないため、欄の誤りは見出しを含む枠の中にあることで確認した。
 - [ ] **T135-02-10** 店舗画面の構成 第 2 節のディレクトリの説明を、今の構成に合わせる。新しい識別子を用語集に追加するかを判断する（DC-135-19、第 6 節 6）。
   - 依存：段階 1、T135-02-01〜09（作ったファイルを含めるため）
   - 範囲：`docs/design/apps/store.md`、`docs/design/glossary.md`

@@ -29,6 +29,7 @@ describe('ページ送り', () => {
   test('1 ページに収まれば、件数だけを出す', () => {
     const html = renderMarkup(<PageLinks hrefFor={hrefFor} page={1} totalItems={5} totalPages={1} />)
 
-    expect(html).toBe('<p class="text-muted-foreground text-sm">全 5 件</p>')
+    expect(html).toContain('全 5 件')
+    expect(html).not.toContain('<nav')
   })
 })

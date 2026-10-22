@@ -1,7 +1,9 @@
+// @vitest-environment jsdom
+import { screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { ProductSummary } from '@/api/types'
 import { ProductCard, ProductGrid } from '@/features/catalog/components/ProductCard'
-import { renderMarkup } from '@/test/render'
+import { renderInBrowser } from '@/test/render'
 
 /** 画像があり、在庫のある商品 */
 function product(overrides: Partial<ProductSummary> = {}): ProductSummary {
@@ -17,49 +19,49 @@ function product(overrides: Partial<ProductSummary> = {}): ProductSummary {
 
 describe('一覧の商品', () => {
   test('AC-55 商品名、代表画像、価格（税込と税抜）を出し、商品の詳細へのリンクにする', () => {
-    const html = renderMarkup(<ProductCard product={product()} />)
+    renderInBrowser(<ProductCard product={product()} />)
 
-    expect(html).toContain('マグカップ')
-    expect(html).toContain('<img alt="商品の画像" class="size-full object-cover" src="http://cdn.test/mug.webp"/>')
-    expect(html).toContain('1,100 円')
-    expect(html).toContain('税抜 1,000 円')
-    expect(html).toContain('href="/products/00000000-0000-0000-0000-000000000101"')
-    expect(html).not.toContain('在庫なし')
+    expect(screen.getByText('マグカップ')).toBeDefined()
+    expect(screen.getByRole('img', { name: '商品の画像' }).getAttribute('src')).toBe('http://cdn.test/mug.webp')
+    expect(screen.getByText('1,100 円')).toBeDefined()
+    expect(screen.getByText('（税抜 1,000 円）')).toBeDefined()
+    expect(screen.getByRole('link').getAttribute('href')).toBe('/products/00000000-0000-0000-0000-000000000101')
+    expect(screen.queryByText('在庫なし')).toBeNull()
   })
 
   test('AC-56 すべてのバリアントが在庫切れの商品も出し、「在庫なし」と示す', () => {
-    const html = renderMarkup(<ProductCard product={product({ inStock: false })} />)
+    renderInBrowser(<ProductCard product={product({ inStock: false })} />)
 
-    expect(html).toContain('マグカップ')
-    expect(html).toContain('在庫なし')
+    expect(screen.getByText('マグカップ')).toBeDefined()
+    expect(screen.getByText('在庫なし')).toBeDefined()
   })
 
   test('画像がなければ、代わりの図を出す', () => {
-    const html = renderMarkup(<ProductCard product={product({ imageUrl: null })} />)
+    renderInBrowser(<ProductCard product={product({ imageUrl: null })} />)
 
-    expect(html).not.toContain('<img')
-    expect(html).toContain('<svg')
+    expect(screen.queryByRole('img')).toBeNull()
+    expect(document.querySelector('svg')).not.toBeNull()
   })
 })
 
 describe('商品の並び', () => {
   test('商品を並べる', () => {
-    const html = renderMarkup(
+    renderInBrowser(
       <ProductGrid
         emptyMessage="ありません"
         products={[product(), product({ id: '00000000-0000-0000-0000-000000000102', name: '皿' })]}
       />,
     )
 
-    expect(html.match(/<li>/g)).toHaveLength(2)
-    expect(html).toContain('皿')
-    expect(html).not.toContain('ありません')
+    expect(screen.getAllByRole('listitem')).toHaveLength(2)
+    expect(screen.getByText('皿')).toBeDefined()
+    expect(screen.queryByText('ありません')).toBeNull()
   })
 
   test('商品がなければ、渡したメッセージを出す', () => {
-    const html = renderMarkup(<ProductGrid emptyMessage="条件に合う商品はありません。" products={[]} />)
+    renderInBrowser(<ProductGrid emptyMessage="条件に合う商品はありません。" products={[]} />)
 
-    expect(html).toContain('条件に合う商品はありません。')
-    expect(html).not.toContain('<ul')
+    expect(screen.getByText('条件に合う商品はありません。')).toBeDefined()
+    expect(screen.queryByRole('list')).toBeNull()
   })
 })

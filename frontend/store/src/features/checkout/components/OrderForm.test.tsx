@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import type { PostalCodeAddress, Prefecture } from '@/api/types'
@@ -56,6 +56,15 @@ function selected(label: string): string {
   return (screen.getByLabelText(label) as HTMLSelectElement).value
 }
 
+/** 欄の見出しと入力をまとめる枠（誤りの文がその欄の下に出ることを確認するため） */
+function fieldOf(label: string): HTMLElement {
+  const container = screen.getByText(label, { selector: 'label' }).parentElement
+  if (!container) {
+    throw new Error(`欄の枠がない：${label}`)
+  }
+  return container
+}
+
 /** 住所の欄の値 */
 function addressValue(): string {
   return (screen.getByLabelText('住所') as HTMLInputElement).value
@@ -78,7 +87,7 @@ describe('お届け先の入力と注文', () => {
       expect(html).toContain(`name="${name}"`)
     }
     expect(html).toContain('>注文する（3,200 円）</button>')
-    expect(html).not.toContain('text-destructive')
+    expect(html).not.toContain('aria-live')
   })
 
   test('AC-248、250 欄は郵便番号・都道府県・市区町村・住所の順で、都道府県は API の一覧から選び、初めは選んでいない', () => {
@@ -94,18 +103,16 @@ describe('お届け先の入力と注文', () => {
   })
 
   test('AC-86 入力の誤りは、その欄の下に出す', () => {
-    const html = renderMarkup(
+    renderInBrowser(
       form({ ok: false, message: '郵便番号は 7 桁で入力してください。', errorCode: 'INVALID_POSTAL_CODE' }),
     )
 
-    expect(html).toMatch(
-      /name="postalCode"[^>]*\/>.*<p class="text-destructive text-sm">郵便番号は 7 桁で入力してください。<\/p>/,
-    )
-    expect(html).not.toContain('カートを見る')
+    expect(within(fieldOf('郵便番号')).getByText('郵便番号は 7 桁で入力してください。')).toBeDefined()
+    expect(screen.queryByRole('link', { name: 'カートを見る' })).toBeNull()
   })
 
   test('AC-264 入力の検証の誤り（400）は、欄ごとに API の文をそのまま出す', () => {
-    const html = renderMarkup(
+    renderInBrowser(
       form({
         ok: false,
         message: '入力内容に誤りがあります。',
@@ -114,26 +121,24 @@ describe('お届け先の入力と注文', () => {
       }),
     )
 
-    expect(html).toMatch(/name="phone"[^>]*\/>.*<p class="text-destructive text-sm">API が決めた電話番号の文<\/p>/)
+    expect(within(fieldOf('電話番号')).getByText('API が決めた電話番号の文')).toBeDefined()
+    expect(within(fieldOf('氏名')).queryByText('API が決めた電話番号の文')).toBeNull()
   })
 
   test('AC-251 市区町村の誤りは、市区町村の欄の下に出す', () => {
-    const html = renderMarkup(
-      form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }),
-    )
+    renderInBrowser(form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }))
 
-    expect(html).toMatch(
-      /name="municipalityCode".*<\/select>.*<p class="text-destructive text-sm">市区町村を選んでください。<\/p>.*name="address"/,
-    )
+    expect(within(fieldOf('市区町村')).getByText('市区町村を選んでください。')).toBeDefined()
+    expect(within(fieldOf('都道府県')).queryByText('市区町村を選んでください。')).toBeNull()
+    expect(within(fieldOf('住所')).queryByText('市区町村を選んでください。')).toBeNull()
   })
 
   test('AC-87 在庫が足りなければ、フォームの下にメッセージとカートへのリンクを出す', () => {
-    const html = renderMarkup(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
+    renderInBrowser(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
-    expect(html).toContain('在庫が足りない商品があります。')
-    expect(html).toMatch(
-      /<p aria-live="polite"[^>]*>在庫が足りない商品があります。<a [^>]*href="\/cart">カートを見る<\/a><\/p>/,
-    )
+    const message = screen.getByText('在庫が足りない商品があります。', { exact: false })
+    expect(message.getAttribute('aria-live')).toBe('polite')
+    expect(within(message).getByRole('link', { name: 'カートを見る' }).getAttribute('href')).toBe('/cart')
   })
 })
 
@@ -199,13 +204,14 @@ describe('郵便番号で補う', () => {
 
   test('AC-256 結果がなければ（通信の失敗も空で届く）何も補わず、メッセージも出さない', async () => {
     const { user } = renderInBrowser(form())
+    const textBefore = document.body.textContent
 
     await user.type(screen.getByLabelText('郵便番号'), '9999999')
 
     await waitFor(() => expect(findPostalCodeAddresses).toHaveBeenCalledWith('9999999'))
     expect(selected('都道府県')).toBe('')
     expect(addressValue()).toBe('')
-    expect(document.querySelector('.text-destructive')).toBeNull()
+    expect(document.body.textContent).toBe(textBefore)
   })
 
   test('AC-257 補った後も、どの欄も変えられる', async () => {

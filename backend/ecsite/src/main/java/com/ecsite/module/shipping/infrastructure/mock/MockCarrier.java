@@ -115,7 +115,7 @@ public class MockCarrier {
      * @param body      本文（署名の対象のバイト列）
      * @param signature ヘッダー {@code X-Carrier-Signature} の値
      */
-    // body は HTTP の本文として送るだけで、record の equals・hashCode・toString は使わないので、配列の成分を許す
+    // 本番で動かない mock。body は HTTP の本文として送るだけで equals・hashCode・toString は使わず、直す手間に見合わないので、配列の成分を許す
     @SuppressWarnings("ArrayRecordComponent")
     public record SignedNotification(byte[] body, String signature) {
     }

@@ -145,7 +145,7 @@ public class Category extends AggregateRoot {
                 CategoryErrorCode.INVALID_CATEGORY_ORDER);
         var changed = new ArrayList<Category>();
         for (var category : siblings) {
-            int displayOrder = Objects.requireNonNull(orders.get(category.id), "並び順は同じ親のすべてのカテゴリに付く");
+            int displayOrder = Objects.requireNonNull(orders.get(category.id), "並び順は同じ親の全てのカテゴリに付く");
             if (category.displayOrder != displayOrder) {
                 category.displayOrder = displayOrder;
                 changed.add(category);

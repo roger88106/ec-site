@@ -33,7 +33,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | API・ストレージ・可観測性 | OpenAPI Generator、AWS SDK、Micrometer | Apache-2.0 |
 | ユーティリティ | Lombok | MIT |
 | 静的解析・注釈 | Error Prone、NullAway、JSpecify | Apache-2.0（Error Prone、JSpecify）、MIT（NullAway） |
-| 静的解析 | Checker Framework の dataflow（NullAway が使う） | 条件付き（GPL-2.0 with Classpath-exception。コンパイルのときだけ動き、配布物に入らない。改変しない） |
+| 静的解析 | Checker Framework の dataflow（Error Prone と NullAway が使う。`dataflow-errorprone`、`dataflow-nullaway`） | 条件付き（GPL-2.0 with Classpath-exception。コンパイルのときだけ動き、配布物に入らない。改変しない） |
 | 定期ジョブ | ShedLock | Apache-2.0 |
 | 決済サービス | stripe-java | MIT |
 | メール | Spring Boot のメール（Jakarta Mail、Eclipse Angus Mail） | Apache-2.0。Jakarta Mail と Angus Mail は条件付き（EDL-1.0 を選ぶ。改変しない） |

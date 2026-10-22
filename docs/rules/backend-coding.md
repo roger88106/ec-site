@@ -265,7 +265,7 @@ public final class MoneyFormat {
   - 値がないことを返す参照のメソッド（`findXxx`）は、今のコードのとおり `Optional` を返す。集約が null を取りうるフィールドを持つときは、フィールドを `@Nullable` にする。getter は、今のコードでは次の 2 通りがある。
     - `Cart.memberId()` のように `Optional` を返す。
     - Lombok の getter が `@Nullable` の値を返す（`Order.cancellation()`、`Payment.authorizationRef()` など）。状態から null でないと分かる所は、呼び出し側で `Objects.requireNonNull` に理由を付けて受ける。
-- jOOQ のレコードの getter は注釈がないので、NullAway は null を確認しない。null を取りうる列の値は、リポジトリの実装で `@Nullable` を付けたローカル変数か `Optional` で受ける。
+- jOOQ のレコードの getter は注釈がないので、NullAway は null を確認しない。null を取りうる列の値は、`@Nullable` を付けたローカル変数・引数か `Optional` で受ける（null を取りうる列を、注釈のない引数に渡さない）。
 - `lombok.NonNull` は実行時の確認として使ってよい（外さない）。
 
 ```java
@@ -282,7 +282,7 @@ public Optional<UUID> memberId() {
 
 ### 7.2 検査を抑えるとき
 
-- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）や、修正すると振る舞いが変わるものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。
+- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、テストと mock（本番で動かないコード）で修正するとテストが確認する内容が変わるもの（例：配列の `@Size` を確認する record の成分）か修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。
 - 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。今無効なのは `StringConcatToTextBlock` だけ（理由は `build.gradle.kts` のコメント）。
 - 生成したコード（`build/generated` の下）は検査しない。
 

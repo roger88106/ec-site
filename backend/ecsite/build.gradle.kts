@@ -1,3 +1,4 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
 import net.ltgt.gradle.errorprone.errorprone
 import nu.studer.gradle.jooq.JooqGenerate
 import org.flywaydb.core.Flyway
@@ -149,7 +150,7 @@ dependencies {
     errorprone(libs.nullaway)
     compileOnly(libs.errorprone.annotations)
     // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
-    // test などの classpath にも要るので、compileOnly でなく implementation にする
+    // test などの classpath にも必要なので、compileOnly でなく implementation にする
     implementation(libs.jspecify)
 
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
@@ -692,9 +693,9 @@ val checkTestClassNames = tasks.register("checkTestClassNames") {
 tasks.check { dependsOn(checkTestClassNames) }
 
 // -----------------------------------------------------------------------------
-// コンパイルオプション
+// コンパイルオプション（Error Prone と NullAway を含む）
 // -----------------------------------------------------------------------------
-tasks.withType<JavaCompile> {
+tasks.withType<JavaCompile>().configureEach {
     // リフレクション用にメソッド引数名を保持
     options.compilerArgs.add("-parameters")
     options.encoding = "UTF-8"
@@ -706,24 +707,19 @@ tasks.withType<JavaCompile> {
         disableWarningsInGeneratedCode.set(true)
         // Lombok の @NonNull の引数を持つクラスで Error Prone が例外を投げ、コンパイルが失敗するので無効にする
         disable("StringConcatToTextBlock")
-    }
-}
-
-// -----------------------------------------------------------------------------
-// NullAway（main のコンパイルだけ。報告はエラー）
-// -----------------------------------------------------------------------------
-// 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
-// （docs/rules/backend-coding.md 第 7 節）。test、integrationTest、testFixtures、tools は検査しない。
-tasks.withType<JavaCompile>().configureEach {
-    options.errorprone {
+        // NullAway は main のコンパイルだけ動かし、報告はエラーにする。
+        // 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
+        // （docs/rules/backend-coding.md 第 7 節）。
         if (name == "compileJava") {
-            check("NullAway", net.ltgt.gradle.errorprone.CheckSeverity.ERROR)
+            check("NullAway", CheckSeverity.ERROR)
             // com.ecsite.jooq（jOOQ の生成）と com.ecsite.api（OpenAPI の生成）は、注釈のない生成コードとして扱う
             option("NullAway:AnnotatedPackages", "com.ecsite")
             option("NullAway:UnannotatedSubPackages", "com.ecsite.jooq,com.ecsite.api")
             option("NullAway:CustomContractAnnotations", "org.springframework.lang.Contract")
-            // JSpecifyMode は付けない（JDK 22 以上が要る。ここは JDK 21）
+            // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
         } else {
+            // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
+            // 意図して null を渡す（spec 18 第 5 節）
             disable("NullAway")
         }
     }

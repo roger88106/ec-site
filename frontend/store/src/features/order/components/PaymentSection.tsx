@@ -20,6 +20,10 @@ export function PaymentSection({
 }) {
   const t = useTranslations('order.payment')
   const state = paymentState(order, returned)
+  if (state === 'NONE') {
+    // 欄ごと出さない注文は、呼び出し側が `showsPaymentSection` で除く。ここに来るのは使い方の誤り
+    throw new Error(`支払の欄を出さない状況で描かれた：${order.status}`)
+  }
   const deadline = order.paymentDeadline === undefined ? '' : formatDateTime(order.paymentDeadline)
   return (
     <div className="space-y-3 text-sm">

@@ -40,7 +40,7 @@ pnpm dev
 | http://localhost:8180 | Keycloak（管理画面は `/admin`、`admin` / `admin`） |
 | http://localhost:8025 | Mailpit（Keycloak とバックエンドが送ったメール。外部には送信しない） |
 
-- `docker compose` はルートで実行する（ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
+- `docker compose` はメインの作業ツリーのルートで実行する（作業ツリーでは実行しない。第 9 節。ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
 - Mailpit の SMTP はホストの 2525 番ポートで待ち受ける（1025 は Windows のシステムプロセスが使うことがあるため使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いているポートを設定して、compose とバックエンドを起動する（両方が同じ値を読む）。
 - compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理者のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）から接続するときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を設定して、`docker compose up -d` で再作成する。終わったら設定を削除して再作成する。バックエンドと画面の開発サーバーは、この設定の対象外である。
 - 停止するときは `docker compose stop`。E2E を実行した後は、E2E 用の Keycloak（profile `e2e`）も止めるために `docker compose --profile e2e stop` にする。データを再作成するときは第 4 節。作業ツリーごとに環境を分けるときは第 9 節。
@@ -83,9 +83,11 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 |--------------|----------------------|--------------|
 | DB だけ | `scripts/dev/reset.sh`（`db` と同じ）。バックエンドを停止してから実行する。次の起動で seed が適用される（レポート用の注文 2 万件を含め、15 秒ほど） | E2E の DB、Keycloak、画像 |
 | Keycloak（realm の JSON を変えたとき） | `scripts/dev/reset.sh keycloak`（ローカルで登録した会員も削除される） | DB、E2E の Keycloak |
-| 全て | `scripts/dev/reset.sh all`（`docker compose down -v` と `up -d`） | なし |
+| 全て | `scripts/dev/reset.sh all`（`docker compose down -v` と `up -d`）。全スロットのデータベースとバケットも削除される | なし |
 
-作業ツリー（第 9 節）で `scripts/dev/reset.sh` を実行すると、`db`（既定）はそのスロットのデータベースと 2 つのバケットだけを再作成する（`node scripts/dev/slot.mjs reset` と同じ。バックエンドを停止してから実行する）。`keycloak` と `all` は共有のコンテナに触れるので、メインの作業ツリーで実行するよう示して終了する。
+作業ツリー（第 9 節）で `scripts/dev/reset.sh` を実行すると、`db`（既定）はそのスロットのデータベースと 2 つのバケットだけを再作成する（`node scripts/dev/slot.mjs reset` と同じ。バックエンドを停止してから実行する）。`keycloak` と `all` は共有のコンテナを再作成するので、メインの作業ツリーで実行するよう示して終了する。
+
+メインの作業ツリーで `all` を実行した後は、各作業ツリーで `node scripts/dev/slot.mjs reset` を実行して、スロットのデータベースとバケットを再作成する。
 
 正本は、DB の seed が `backend/ecsite/src/main/resources/db/seed/`、画像が `docker/seaweedfs/seed/`、Keycloak が `docker/keycloak/realms/`。seed の商品画像の ID と、seed の注文の会員 ID は、それぞれ画像と realm の正本に合わせてある。
 
@@ -163,6 +165,9 @@ Windows は、WinNAT（Docker や WSL が使う）などのために、ポート
 - 共有の基盤は、メインの作業ツリーで `docker compose up -d` を実行して起動する。作業ツリーの script は compose を起動しない。止まっていると、script はメインの作業ツリーのパスと `docker compose up -d` を示して終了する。
 
 ```bash
+# 新しい作業ツリーのルートで：始めに依存を入れる
+pnpm install --frozen-lockfile
+
 # 作業ツリーのルートで：空いている最小のスロットを割り当てる（データベースと 2 つのバケットを作り、seed の画像をコピーする）
 node scripts/dev/slot.mjs assign
 
@@ -174,7 +179,7 @@ node scripts/dev/slot.mjs run admin
 # スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧を示す
 node scripts/dev/slot.mjs show
 
-# 作業ツリーを消す前に：データベースとバケットを削除し、割り当てを解く
+# 作業ツリーを削除する前に：データベースとバケットを削除し、割り当てを解く
 node scripts/dev/slot.mjs release
 ```
 
@@ -197,8 +202,16 @@ node scripts/dev/slot.mjs release
 | 3 | 38080 | 39080 | 33000 | 35173 | `ec_site_3` | `ec-site-images-3` | `ec-site-images-incoming-3` | `s3-` |
 
 - 作業ツリーを `release` せずに消しても、作業ツリーの一覧から消えるので、そのスロットは次の `assign` で空きになる。データベースとバケットは共有の基盤に残るが、`assign` が再作成する。
-- 店舗画面の Cookie はポートで分かれない。そのため、スロットごとに環境変数 `STORE_COOKIE_PREFIX` で接頭辞を変え、同じ localhost の店舗画面が互いのログインを読み合わないようにする（[環境変数](environment.md) 第 3 節）。Keycloak のログインの状態は共有される。
+- 店舗画面の Cookie はポートで分かれない。そのため、スロットごとに環境変数 `STORE_COOKIE_PREFIX` で接頭辞を変え、同じ localhost の店舗画面が、他のスロットのセッションの Cookie を参照しないようにする（[環境変数](environment.md) 第 3 節）。Keycloak のログインの状態は共有される。
+- `env` の出力は、`bootRun` などを手動で実行するときだけ使い、subshell の中で使う（`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)`）。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
 - E2E のポート（8090、9090、4173、3100）、データベース、バケットは、どのスロットとも重ならない。E2E は作業ツリーからも流せる（[テストの実行方法](running-tests.md) 第 3 節）。
+
+### スロットで使えないもの
+
+| 機能 | 扱い |
+|------|------|
+| Stripe の通知の転送（`stripe-cli`）、機能紹介のスクリーンショット（`pnpm capture`） | スロット 0（メインの作業ツリー）だけで対応する |
+| Mailpit、Zipkin | 全スロットで共有する（スロットごとには分けない） |
 
 ### 共有の基盤の設定を変える変更をマージしたとき
 
@@ -209,3 +222,5 @@ node scripts/dev/slot.mjs release
 | imgproxy の許可、SeaweedFS の権限（`docker/compose.yaml`、`docker/seaweedfs/s3.json`） | `docker compose up -d --force-recreate seaweedfs imgproxy`（bind mount した設定ファイルの中身だけの変更では、compose がコンテナを再作成しないため） |
 | realm の JSON（`docker/keycloak/realms/`） | `scripts/dev/reset.sh keycloak` |
 | ポートの追加（`scripts/dev/windows/exclude-ports.ps1`） | 管理者の PowerShell で予約の script を実行する（第 7 節） |
+
+realm を再度取り込む前は、スロットの画面のログインがリダイレクト先のエラー（Invalid redirect uri）で失敗する。

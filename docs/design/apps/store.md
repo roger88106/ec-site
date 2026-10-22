@@ -113,6 +113,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 ### 4.4 カート ID の Cookie
 
 - カート ID は Cookie `cart_id`（`HttpOnly`、`SameSite=Lax`、`Path=/`、本番は `Secure`）。有効期限 30 日で、変更のたびに延ばす。
+- 環境変数 `STORE_COOKIE_PREFIX` があれば、Cookie の名前の先頭に付く（`cart_merge_notice` も同じ。既定は空で、名前は変わらない。[環境変数](../../guides/environment.md)）。
 - 読み書きは `api/cartCookie.ts` だけ。読むのはサーバーコンポーネントとサーバーアクション、書くのはサーバーアクションだけ（サーバーコンポーネントは Cookie を書けないため）。
 - Cookie がない・形が違うなら、カートがないものとする。「カートに入れる」のときにカートを作って Cookie に書く。
 - 変更の API が 404（カートがもうない）なら、カートを再作成して 1 回だけ再試行する。

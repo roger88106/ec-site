@@ -15,6 +15,11 @@ export const japanDateTimeFormat = new Intl.DateTimeFormat(LOCALE, {
   hourCycle: 'h23',
 })
 
+/** 数（例：「1,234」）。単位は付けない */
+export function formatNumber(value: number): string {
+  return yen.format(value)
+}
+
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {
   return translate('common.yen', { amount: yen.format(amount) })

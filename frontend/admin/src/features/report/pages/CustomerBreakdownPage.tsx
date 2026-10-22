@@ -5,9 +5,10 @@ import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import type { CustomerBreakdownReport } from '@/api/types'
+import { ChartValueTooltip } from '@/components/ChartValueTooltip'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { type ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
@@ -142,7 +143,7 @@ function SegmentSection({ name, rows, horizontal }: { name: string; rows: Segmen
             <CartesianGrid horizontal={false} />
             <XAxis tickFormatter={formatYenCompact} tickLine={false} type="number" />
             <YAxis dataKey="segment" interval={0} tickLine={false} type="category" width={72} />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip content={<ChartValueTooltip formatValue={formatYen} />} />
             <Bar dataKey="amount" isAnimationActive={false} fill="var(--color-amount)" radius={4} />
           </BarChart>
         </ChartContainer>
@@ -152,7 +153,7 @@ function SegmentSection({ name, rows, horizontal }: { name: string; rows: Segmen
             <CartesianGrid vertical={false} />
             <XAxis dataKey="segment" interval={0} tickLine={false} />
             <YAxis tickFormatter={formatYenCompact} tickLine={false} width={72} />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip content={<ChartValueTooltip formatValue={formatYen} />} />
             <Bar dataKey="amount" isAnimationActive={false} fill="var(--color-amount)" radius={4} />
           </BarChart>
         </ChartContainer>

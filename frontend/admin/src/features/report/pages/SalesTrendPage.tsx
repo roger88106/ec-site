@@ -5,9 +5,10 @@ import { CartesianGrid, Line, LineChart, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import type { SalesTrendReport } from '@/api/types'
+import { ChartValueTooltip } from '@/components/ChartValueTooltip'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { type ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
@@ -87,7 +88,7 @@ function SalesTrendResult({ condition, report }: { condition: ReportCondition; r
             <CartesianGrid vertical={false} />
             <XAxis dataKey="label" tickLine={false} />
             <YAxis tickFormatter={formatYenCompact} tickLine={false} width={72} />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip content={<ChartValueTooltip formatValue={formatYen} />} />
             <Line
               dataKey="amount"
               dot={false}

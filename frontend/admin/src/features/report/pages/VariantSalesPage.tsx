@@ -1,13 +1,14 @@
-import { formatYen } from '@ec-site/shared/lib/format'
+import { formatNumber, formatYen } from '@ec-site/shared/lib/format'
 import { keepPreviousData } from '@tanstack/react-query'
 import { useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import type { VariantSalesReport } from '@/api/types'
+import { ChartValueTooltip } from '@/components/ChartValueTooltip'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
-import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
+import { type ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
@@ -95,7 +96,7 @@ function VariantSalesResult({ condition, report }: { condition: ReportCondition;
             <CartesianGrid vertical={false} />
             <XAxis dataKey="name" tickLine={false} />
             <YAxis allowDecimals={false} tickLine={false} />
-            <ChartTooltip content={<ChartTooltipContent />} />
+            <ChartTooltip content={<ChartValueTooltip formatValue={formatNumber} />} />
             <Bar dataKey="quantity" isAnimationActive={false} fill="var(--color-quantity)" radius={4} />
           </BarChart>
         </ChartContainer>

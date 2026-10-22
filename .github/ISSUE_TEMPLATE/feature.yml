@@ -1,0 +1,34 @@
+name: 機能
+description: 新しい機能を作る作業を起票する
+labels:
+  - "種類:機能"
+body:
+  - type: textarea
+    id: background_and_purpose
+    attributes:
+      label: 背景と目的
+      description: なぜこの機能が必要かを書く。
+    validations:
+      required: true
+  - type: textarea
+    id: what_to_do
+    attributes:
+      label: やりたいこと
+      description: 何をできるようにするかを書く。
+    validations:
+      required: true
+  - type: textarea
+    id: condition
+    attributes:
+      label: 条件付きの条件
+      description: 条件付きの作業のとき、着手する条件を書く（label `保留:条件付き` を付ける）。
+  - type: textarea
+    id: source
+    attributes:
+      label: 出典
+      description: この作業の元になった文書、pull request、会話などを書く。
+  - type: textarea
+    id: related
+    attributes:
+      label: 関連
+      description: 関連する issue、pull request、spec を書く。

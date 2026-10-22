@@ -3,7 +3,14 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { checkProgress, countTasks, parseStatusTable, readTasks } from './progress.mjs'
+import {
+  checkArchivedTasks,
+  checkProgress,
+  countTasks,
+  parseStatusTable,
+  readArchivedTasks,
+  readTasks,
+} from './progress.mjs'
 
 const README = [
   '| spec | 種類 | 内容 | 状態 |',
@@ -55,6 +62,101 @@ describe('進捗の一致の検査', () => {
   test('対象より前の spec は見ない', () => {
     const readme = new Map([['010', '完了']])
     assert.deepEqual(checkProgress(readme, new Map(), new Map([['010', { total: 2, done: 1 }]]), 11), [])
+  })
+
+  test('README の表が節の下に移っても、リンクの行から読む', () => {
+    const readme = ['## MVP', '', '### 進捗', '', README, '', '## 1→10', '', '| issue | 内容 |', '|---|---|', '| [#12](x) | 7 |'].join('\n')
+    assert.deepEqual(parseStatusTable(readme), new Map([['010', '完了'], ['017', '完了'], ['018', '進行中']]))
+  })
+
+  test('0 で埋めない番号は MVP の対象に入れない', () => {
+    const readme = new Map([['7', '完了']])
+    assert.deepEqual(checkProgress(readme, new Map(), new Map([['7', { total: 2, done: 1 }]]), 11), [])
+    assert.deepEqual(parseStatusTable('| [7](docs/specs/7-x) | 機能 | 完了 |'), new Map())
+  })
+
+  test('0 で始まらない 3 桁の番号（123-xxx の 1→10 の spec）は MVP の対象に入れない', () => {
+    const readme = new Map([['123', '完了']])
+    assert.deepEqual(checkProgress(readme, new Map(), new Map([['123', { total: 2, done: 1 }]]), 11), [])
+    assert.deepEqual(parseStatusTable('| [123](docs/specs/123-x) | 機能 | 完了 |'), new Map())
+  })
+
+  test('tasks を読むとき、123-xxx は MVP の番号にしない', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      for (const name of ['123-x', '012-y']) {
+        mkdirSync(path.join(dir, name, 'tasks'), { recursive: true })
+        writeFileSync(path.join(dir, name, 'tasks', 'a.md'), '- [ ] **T1** x\n')
+      }
+      assert.deepEqual([...readTasks(dir).keys()], ['012'])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('1→10 の spec の tasks に残りがあれば、食い違いとして返す', () => {
+    const tasks = new Map([
+      ['5-done', { total: 2, done: 2 }],
+      ['7-open', { total: 3, done: 1 }],
+    ])
+    assert.deepEqual(checkArchivedTasks(tasks), ['1→10 の spec 7-open：tasks に残りが 2 ある'])
+    assert.deepEqual(checkArchivedTasks(new Map([['5-done', { total: 2, done: 2 }]])), [])
+  })
+
+  test('アーカイブの 1→10 の下の spec の tasks を読み、直下の進行中の spec と MVP は含めない', () => {
+    const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      for (const [dir, text] of [
+        ['archive/1to10/3-cart/tasks', '- [x] **T3-01-01** a'],
+        ['archive/1to10/4-order/tasks', '- [x] **T4-01-01** a\n- [ ] **T4-01-02** b'],
+        ['archive/mvp/018-docs/tasks', '- [ ] **T018-01-01** a'],
+        ['7-dev-process/tasks', '- [ ] **T7-01-01** a'],
+      ]) {
+        mkdirSync(path.join(specsDir, dir), { recursive: true })
+        writeFileSync(path.join(specsDir, dir, '01.md'), text)
+      }
+      assert.deepEqual(
+        readArchivedTasks(specsDir),
+        new Map([
+          ['3-cart', { total: 1, done: 1 }],
+          ['4-order', { total: 2, done: 1 }],
+        ]),
+      )
+      assert.deepEqual(readTasks(specsDir), new Map([['018', { total: 1, done: 0 }]]))
+    } finally {
+      rmSync(specsDir, { recursive: true, force: true })
+    }
+  })
+
+  test('1→10 の spec に tasks が 1 つもなければ、「tasks がない」の食い違いとして返す', () => {
+    assert.deepEqual(checkArchivedTasks(new Map([['9-none', { total: 0, done: 0 }]])), ['1→10 の spec 9-none：tasks がない'])
+  })
+
+  test('アーカイブの 1→10 の spec で tasks のディレクトリがなければ（規模 M）、spec.md の中のタスクの行を数える', () => {
+    const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      const medium = path.join(specsDir, 'archive/1to10/8-medium')
+      mkdirSync(medium, { recursive: true })
+      writeFileSync(
+        path.join(medium, 'spec.md'),
+        '# spec\n\n## tasks\n\n- [x] **T8-01** a\n- [ ] **T8-02** b\n  - [ ] 補足は数えない\n',
+      )
+      const noTasks = path.join(specsDir, 'archive/1to10/9-none')
+      mkdirSync(noTasks, { recursive: true })
+      writeFileSync(path.join(noTasks, 'spec.md'), '# spec\n')
+      // spec.md もない spec も、tasks がないものとして含める
+      mkdirSync(path.join(specsDir, 'archive/1to10/10-empty'), { recursive: true })
+      assert.deepEqual(
+        readArchivedTasks(specsDir),
+        new Map([
+          ['10-empty', { total: 0, done: 0 }],
+          ['8-medium', { total: 2, done: 1 }],
+          ['9-none', { total: 0, done: 0 }],
+        ]),
+      )
+    } finally {
+      rmSync(specsDir, { recursive: true, force: true })
+    }
   })
 
   test('直下とアーカイブの spec の tasks を読む', () => {

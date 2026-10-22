@@ -1,0 +1,27 @@
+# 段階 4：GitHub の設定
+
+- 前提：段階 1〜3。plan 第 3 節の「GitHub の設定で変えるもの」の一覧は、plan と tasks の確認で利用者が許可した（2026-10-22）。
+- 完了条件：`gh` の出力で、既定のブランチ、マージの方式、自動の削除、ruleset、label、milestone が plan のとおりである。結果の要点を各タスクの下に書く。リポジトリのファイルは変えないので、`check-all.sh` は実行しない。
+- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 3 節、[spec](../spec.md) の DS-7-1、DS-7-3 と DC-7-4〜6、7-32、7-37、7-38、7-41〜43、7-57
+
+## タスク
+
+- [x] **T7-04-01** `develop` を push する（本 spec の作業ブランチは push しない）。
+  - 依存：なし
+  - 範囲：GitHub の `develop`
+  - 結果：利用者の指示で、段階 1 の途中に前倒しした（2026-10-22）。サブエージェントの作業ツリーが既定のブランチ（`main`）から作られ、spec 7 の文書がなかったため。
+- [x] **T7-04-02** 既定のブランチを `develop` にする。
+  - 依存：T7-04-01
+  - 結果：T7-04-01 と同時に行った。手元の `origin/HEAD` も `develop` にした（`git remote set-head origin develop`）。
+- [x] **T7-04-03** [P] マージの方式（merge commit だけ）と、ブランチの自動の削除を設定する。Dependabot のセキュリティの更新を有効にする（DC-7-57）。
+  - 依存：T7-04-01
+  - 結果：merge commit だけを許し、マージしたブランチを自動で削除する。脆弱性の通知と Dependabot のセキュリティの更新を有効にした。
+- [x] **T7-04-04** [P] [リスク] ruleset（`develop`、`main`）を作る。理由：誤ると `develop` と `main` を保護できないため。workflow がまだ GitHub にないので、`main` の元のブランチの検査を `main` の必須の検査にする設定は、workflow が `develop` に入った後に、issue 担当のセッションが release の前に行う（plan 第 5 節）。
+  - 依存：T7-04-01
+  - 結果：ruleset の develop（25616507）と main（25616508）を作った。必須の検査はバックエンド、管理画面、店舗画面、E2E、文書と CI の検査の script で、GitHub Actions（integration_id 15368）に限った。Opus のレビューの必須 2 件で、帰属のない変更への追加の approve を無効にし、緊急の修正を develop に戻す手順をブランチと release の文書に書いた。
+- [x] **T7-04-05** [P] label を作成して既定の label を削除し、milestone `1→10` を作成する。
+  - 依存：なし
+  - 結果：label を 28 作り、GitHub の既定の 9 を削除した（既定でない accessibility は残した）。milestone `1→10`（番号 1）を作った。
+- [x] **T7-04-06** 段階の確認：`gh` の出力を plan と照合する。
+  - 依存：T7-04-02〜05
+  - 結果：`gh api` の出力が plan 第 3 節と一致した。

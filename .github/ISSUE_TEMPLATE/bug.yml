@@ -1,0 +1,41 @@
+name: 不具合
+description: 期待と違う振る舞いを起票する
+labels:
+  - "種類:不具合"
+body:
+  - type: textarea
+    id: what_happened
+    attributes:
+      label: 起きたこと
+      description: 実際に起きたことを書く。
+    validations:
+      required: true
+  - type: textarea
+    id: steps_to_reproduce
+    attributes:
+      label: 再現の手順
+      description: 起きたことを再現する手順を書く。
+    validations:
+      required: true
+  - type: textarea
+    id: expected_behavior
+    attributes:
+      label: 期待した振る舞い
+      description: 本来どう動くべきかを書く。
+    validations:
+      required: true
+  - type: input
+    id: where_occurred
+    attributes:
+      label: 発生した場所
+      description: 画面、API、モジュール、環境などを書く。
+  - type: input
+    id: related_ac
+    attributes:
+      label: 関係する AC
+      description: 関係する受け入れ条件の番号を書く（例：AC-1-1）。
+  - type: textarea
+    id: related
+    attributes:
+      label: 関連
+      description: 関連する issue、pull request、spec を書く。

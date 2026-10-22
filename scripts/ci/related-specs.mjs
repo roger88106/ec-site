@@ -1,5 +1,5 @@
 // 設計の文書（概要の表に「関連 spec」の行を持つ文書）を変えた spec が、その行にあることを確認する（skill docs 第 2 節）。
-// spec は、文書を変えた commit のメッセージの 1 行目のタスク番号（T011-01-01 の形）から読む。古い形式のタスク番号（T3101 など）は
+// spec は、文書を変えた commit のメッセージの 1 行目のタスク番号（T011-01-01、T7-01-01 の形）から読む。古い形式のタスク番号（T3101 など）は
 // spec を一意に決められないので見ない。文書の移動は git log --follow で追う。
 // 設計を変えない作業（言い回しの修正、文書の移動など）の段階は、related-specs-exclusions.json に、タスク番号の前置き（T018-05）と理由を書く。
 // 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
@@ -12,8 +12,8 @@ import { fileURLToPath } from 'node:url'
 /** 概要の表の「関連 spec」の行 */
 const RELATED_ROW = /^\|\s*関連 spec\s*\|(.*)\|\s*$/m
 
-/** 新しい形式のタスク番号 */
-const TASK_ID = /T(\d{3,})-\d{2}-\d{2}/g
+/** 新しい形式のタスク番号。spec の番号は文字列のまま使い、0 で始まる 3 桁（T011-）は MVP、0 で始めない番号（T7-）は 1→10 の spec として区別する */
+const TASK_ID = /(?<![A-Za-z0-9])T(\d+)-\d{2}-\d{2}/g
 
 /**
  * 概要の表の「関連 spec」の行から、spec の番号を読む。
@@ -23,7 +23,7 @@ const TASK_ID = /T(\d{3,})-\d{2}-\d{2}/g
  */
 export function parseRelatedSpecs(markdown) {
   const row = markdown.match(RELATED_ROW)
-  return row ? [...row[1].matchAll(/\[(\d{3,})\]/g)].map((match) => match[1]) : null
+  return row ? [...row[1].matchAll(/\[(\d+)\]/g)].map((match) => match[1]) : null
 }
 
 /**

@@ -51,6 +51,7 @@ function rowsOf(dimension: string): HTMLElement[] {
 
 afterEach(() => {
   vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('地域・年齢層・性別', () => {
@@ -101,16 +102,22 @@ describe('地域・年齢層・性別', () => {
     const createObjectURL = vi.fn(() => 'blob:report')
     const revokeObjectURL = vi.fn()
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
+    const downloads: string[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloads.push(this.download)
+    })
     const { user } = renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
     await screen.findByRole('region', { name: '都道府県ごとの売上額' })
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
+    expect(downloads).toEqual(['地域・年齢層・性別_2026-09-01_2026-09-30.csv'])
+
     const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
     const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
     expect(text).toBe(
       [
-        '﻿分け方,区分,売上額,注文件数',
+        '\uFEFF分け方,区分,売上額,注文件数',
         '都道府県,東京都,52000,12',
         '都道府県,大阪都,31000,7',
         '都道府県,不明,4000,1',

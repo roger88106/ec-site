@@ -185,7 +185,7 @@ common の型（`BusinessException` など）の引数に `@Nullable` を付け�
 - 完了条件：DC-18-12（文書の分）、14、15 を満たし、CI が通る。
 - 参照：第 3 節の共通
 
-- [ ] **T18-03-01** [P] constitution の技術スタック、依存とライセンスの表、CI の検査、テストの実行方法を修正する（DC-18-12、14）。
+- [x] **T18-03-01** [P] constitution の技術スタック、依存とライセンスの表、CI の検査、テストの実行方法を修正する（DC-18-12、14）。
   - 依存：なし
   - 範囲：`docs/constitution.md`、`docs/design/licenses.md`、`docs/guides/ci.md`、`docs/guides/running-tests.md`
 - [ ] **T18-03-02** [P] 時間を測る。作業ブランチの最終のコードで、CI のテストを全て実行する実行を 3 回行い、導入の前の `develop` の直近 3 回と比べる。手元の compileJava と compileIntegrationTestJava の `--rerun` は、他のセッションが Gradle を動かしていないときに測る。結果をこのタスクの下に書く（DC-18-15）。

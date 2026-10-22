@@ -68,7 +68,7 @@ public class MessageHelper {
      */
     public static String formatValue(Object value) {
         if (value instanceof Long || value instanceof Integer || value instanceof Short) {
-            return "%,d".formatted(value);
+            return "%,d".formatted(((Number) value).longValue());
         }
         return value == null ? "" : value.toString();
     }

@@ -223,18 +223,22 @@ class JooqOrderRepository implements OrderRepository {
                 SALES_ORDER_LINE.PRODUCT_NAME, SALES_ORDER_LINE.AXIS_VALUES, SALES_ORDER_LINE.UNIT_PRICE_EXCL_TAX,
                 SALES_ORDER_LINE.RATE_PERCENT, SALES_ORDER_LINE.UNIT_PRICE_INCL_TAX, SALES_ORDER_LINE.QUANTITY,
                 SALES_ORDER_LINE.SUBTOTAL);
-        snapshot.lines().forEach(line -> lines.values(snapshot.id(), (short) line.lineNo(), line.variantId(),
-                line.productCode(), line.variantCode(), line.productName(),
-                JSONB.valueOf(jsonMapper.writeValueAsString(line.axisValues())), line.unitPriceExclTax().yen(),
-                line.ratePercent(), line.unitPriceInclTax().yen(), line.quantity(), line.subtotal().yen()));
+        for (var line : snapshot.lines()) {
+            lines = lines.values(snapshot.id(), (short) line.lineNo(), line.variantId(),
+                    line.productCode(), line.variantCode(), line.productName(),
+                    JSONB.valueOf(jsonMapper.writeValueAsString(line.axisValues())), line.unitPriceExclTax().yen(),
+                    line.ratePercent(), line.unitPriceInclTax().yen(), line.quantity(), line.subtotal().yen());
+        }
         lines.execute();
 
         var taxes = snapshot.amounts().taxes();
         if (!taxes.isEmpty()) {
             var insert = dsl.insertInto(SALES_ORDER_TAX, SALES_ORDER_TAX.ORDER_ID, SALES_ORDER_TAX.RATE_PERCENT,
                     SALES_ORDER_TAX.TAXABLE_AMOUNT, SALES_ORDER_TAX.TAX_AMOUNT);
-            taxes.forEach(tax -> insert.values(snapshot.id(), tax.ratePercent(), tax.taxableAmount().yen(),
-                    tax.taxAmount().yen()));
+            for (var tax : taxes) {
+                insert = insert.values(snapshot.id(), tax.ratePercent(), tax.taxableAmount().yen(),
+                        tax.taxAmount().yen());
+            }
             insert.execute();
         }
     }

@@ -18,6 +18,9 @@ jacoco = "0.8.13"
 checkstyle = "14.3.0"
 # 依存のライセンスの検査（依存とライセンス）
 dependency-license-report = "3.1.4"
+# コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体で版が別
+errorprone-plugin = "5.1.1"
+errorprone = "2.50.0"
 
 # --- フレームワーク ---
 spring-boot = "4.1.1"
@@ -105,6 +108,8 @@ jackson-databind-nullable = { module = "org.openapitools:jackson-databind-nullab
 
 # --- ユーティリティ ---
 lombok = { module = "org.projectlombok:lombok" }
+# コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
+errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 
@@ -141,3 +146,4 @@ spring-dependency-management = { id = "io.spring.dependency-management", version
 jooq = { id = "nu.studer.jooq", version.ref = "jooqPlugin" }
 openapi-generator = { id = "org.openapi.generator", version.ref = "openapi-generator" }
 dependency-license-report = { id = "com.github.jk1.dependency-license-report", version.ref = "dependency-license-report" }
+errorprone = { id = "net.ltgt.errorprone", version.ref = "errorprone-plugin" }

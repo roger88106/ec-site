@@ -99,7 +99,7 @@ describe('進捗の一致の検査', () => {
       ['5-done', { total: 2, done: 2 }],
       ['7-open', { total: 3, done: 1 }],
     ])
-    assert.deepEqual(checkArchivedTasks(tasks), ['1→10 の spec 7-open：tasks に残りが 2 ある'])
+    assert.deepEqual(checkArchivedTasks(tasks), ['1→10 の spec 7-open：tasks に残りが 2 ある（アーカイブは tasks の最後のタスク。開発の進め方 第 4.2 節）'])
     assert.deepEqual(checkArchivedTasks(new Map([['5-done', { total: 2, done: 2 }]])), [])
   })
 

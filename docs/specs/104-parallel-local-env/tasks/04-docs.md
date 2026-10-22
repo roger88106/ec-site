@@ -8,13 +8,13 @@
 
 文書の書き方は skill `docs`（[SKILL.md](../../../../.claude/skills/docs/SKILL.md)）に従う。
 
-- [ ] **T104-04-01** [P] skill `local-dev` に、スロットの節を加え、負荷の制限の文を修正する（DC-104-21、104-23）。
+- [x] **T104-04-01** [P] skill `local-dev` に、スロットの節を加え、負荷の制限の文を修正する（DC-104-21、104-23）。
   - 依存：なし
   - 範囲：`.claude/skills/local-dev/SKILL.md`
-- [ ] **T104-04-02** [P] 開発環境の起動、テストの実行方法、環境変数の文書に、スロットの使い方と追加した環境変数を書く（DC-104-24、104-25）。
+- [x] **T104-04-02** [P] 開発環境の起動、テストの実行方法、環境変数の文書に、スロットの使い方と追加した環境変数を書く（DC-104-24、104-25）。
   - 依存：なし
   - 範囲：`docs/guides/setup.md`、`docs/guides/running-tests.md`、`docs/guides/environment.md`
-- [ ] **T104-04-03** [P] 用語集に語と識別子を加え、AGENTS.md の skill の表の `local-dev` の説明を修正する。
+- [x] **T104-04-03** [P] 用語集に語と識別子を加え、AGENTS.md の skill の表の `local-dev` の説明を修正する。
   - 依存：なし
   - 範囲：`docs/design/glossary.md`、`AGENTS.md`
 - [ ] **T104-04-04** plan 第 7 節の手動の確認（DC-104-2〜19、DN-104-4）を行い、結果を本ファイルに書く。手動の確認の前に、共有の Keycloak の client に、スロットのリダイレクト先を管理 API で一時的に加える（plan 第 3 節、plan 第 9 節）。実施の前に、plan 第 9 節に従って、並行する spec 131 のセッションに compose と E2E を使わないよう知らせる。確認の後に、メインの作業ツリーで `docker compose up -d` を実行して元の状態に戻す。

@@ -80,6 +80,7 @@ describe('商品の編集', () => {
 
     await user.click(screen.getByRole('button', { name: '再読み込み' }))
     expect(await screen.findByDisplayValue('T シャツ（新）')).toBe(screen.getByLabelText('商品名'))
+    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '保存' }))
     expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
@@ -214,7 +215,7 @@ describe('商品の編集', () => {
     expect(await screen.findByRole('button', { name: '販売終了にする' })).toBeInTheDocument()
     expect(screen.queryByText(/店舗に表示されたことがあるため/)).not.toBeInTheDocument()
   })
-  it('AC-21、AC-24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
+  it('AC-21、24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))
     const requests: unknown[] = []
     server.use(
@@ -441,18 +442,20 @@ describe('商品の編集', () => {
     )
     const { user } = renderApp(URL)
 
-    expect(await screen.findByText('非公開')).toBeInTheDocument()
+    // 状態の表示は、画面の見出し（商品コードと状態）の中にある
+    const header = await screen.findByRole('heading', { level: 1 })
+    expect(await within(header).findByText('非公開')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: '公開する' }))
 
     expect(await screen.findByText('公開しました')).toBeInTheDocument()
-    expect(await screen.findByText('公開')).toBeInTheDocument()
-    expect(screen.queryByText('非公開')).not.toBeInTheDocument()
+    expect(await within(header).findByText('公開')).toBeInTheDocument()
+    expect(within(header).queryByText('非公開')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '非公開にする' }))
 
     expect(await screen.findByText('非公開にしました')).toBeInTheDocument()
-    expect(await screen.findByText('非公開')).toBeInTheDocument()
-    expect(screen.queryByText('公開')).not.toBeInTheDocument()
+    expect(await within(header).findByText('非公開')).toBeInTheDocument()
+    expect(within(header).queryByText('公開')).not.toBeInTheDocument()
     expect(calls).toEqual(['PUT publish', 'PUT unpublish'])
   })
 })
@@ -536,7 +539,12 @@ describe('公開期間', () => {
       screen.getByLabelText('公開終了（この日時は含まない）'),
     )
     expect(screen.getByLabelText('公開開始')).toHaveValue('')
-    expect(requests.map((request) => request.version)).toEqual([0])
+    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
+    await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+    expect(await screen.findByText('公開期間を保存しました')).toBeInTheDocument()
+    expect(requests.map((request) => request.version)).toEqual([0, 1])
   })
 })
 

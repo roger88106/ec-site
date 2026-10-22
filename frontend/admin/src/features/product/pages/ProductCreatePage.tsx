@@ -23,6 +23,13 @@ import {
 } from '@/features/product/product'
 
 /** バリアント軸の上限 */
+/** 商品の項目の入力の制約（登録のリクエストの制約） */
+const PRODUCT_FIELD_CONSTRAINTS = {
+  nameMaxLength: schemas.CreateProductRequest.name.maxLength,
+  descriptionMaxLength: schemas.CreateProductRequest.description.maxLength,
+  priceMinimum: schemas.CreateProductRequest.priceExclTax.minimum,
+}
+
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
 
 /** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を追加したもの） */
@@ -97,7 +104,7 @@ export function ProductCreatePage() {
                 <FieldDescription>{t('productCodeHelp') /* 品番の形 */}</FieldDescription>
                 <FieldError errors={[form.formState.errors.productCode]} />
               </Field>
-              <ProductFields />
+              <ProductFields constraints={PRODUCT_FIELD_CONSTRAINTS} />
             </CardContent>
           </Card>
 

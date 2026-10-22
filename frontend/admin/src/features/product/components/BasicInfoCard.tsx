@@ -2,6 +2,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { FormProvider } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
+import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
 import { useApiMutation } from '@/api/useApiMutation'
 import { ErrorMessage } from '@/components/ErrorMessage'
@@ -9,6 +10,13 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { ProductFields } from '@/features/product/components/ProductFields'
 import { isProductFieldsFilled, PRODUCT_FIELD_NAMES, toProductBody, toProductFields } from '@/features/product/product'
 import { useVersionedForm } from '@/hooks/useVersionedForm'
+
+/** 商品の項目の入力の制約（更新のリクエストの制約） */
+const PRODUCT_FIELD_CONSTRAINTS = {
+  nameMaxLength: schemas.UpdateProductRequest.name.maxLength,
+  descriptionMaxLength: schemas.UpdateProductRequest.description.maxLength,
+  priceMinimum: schemas.UpdateProductRequest.priceExclTax.minimum,
+}
 
 /**
  * 基本情報の編集。商品品番とバリアント軸は表示だけ。<br />
@@ -53,7 +61,7 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
                 }
               </dd>
             </dl>
-            <ProductFields />
+            <ProductFields constraints={PRODUCT_FIELD_CONSTRAINTS} />
             <ErrorMessage
               error={mutation.error}
               onReload={async () => {

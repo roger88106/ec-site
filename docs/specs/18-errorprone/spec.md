@@ -168,9 +168,10 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
 - [x] **T18-02-08** [P] reporting、tax、shipping、member、storefront の報告を修正する。OpenAPI の生成した interface との不一致は、生成の設定を変えずに実装の側で合わせる（DN-18-3）。他のモジュールの型の注釈を変えたら、呼び出し側の報告も同じタスクで修正する（DC-18-7）。
   - 依存：T18-02-05
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/reporting/`、`backend/ecsite/src/main/java/com/ecsite/module/tax/`、`backend/ecsite/src/main/java/com/ecsite/module/shipping/`、`backend/ecsite/src/main/java/com/ecsite/module/member/`、`backend/ecsite/src/main/java/com/ecsite/module/storefront/`
-- [ ] **T18-02-09** NullAway をプロパティなしで常に動かし、報告をエラーにする（プロパティをなくす）。T18-02-05〜08 の範囲の外のパッケージや、他の修正で増えた報告が残っていれば修正する。わざと null の誤りを main に入れて失敗を確認し、戻す。`@SuppressWarnings("NullAway")` の数と、確認の結果をこのタスクの下に書く（DC-18-5、7、8）。
+- [x] **T18-02-09** NullAway をプロパティなしで常に動かし、報告をエラーにする（プロパティをなくす）。T18-02-05〜08 の範囲の外のパッケージや、他の修正で増えた報告が残っていれば修正する。わざと null の誤りを main に入れて失敗を確認し、戻す。`@SuppressWarnings("NullAway")` の数と、確認の結果をこのタスクの下に書く（DC-18-5、7、8）。
   - 依存：T18-02-06、T18-02-07、T18-02-08
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/src/main/java/`、`docs/specs/18-errorprone/spec.md`
+  - 結果：`-Pnullaway` とその分岐、`-Xmaxwarns` をなくし、main の compileJava で NullAway を常にエラーとして動かす（`-Werror` は戻した。test、integrationTest、testFixtures、tools では無効）。範囲の外のパッケージの報告はなかった（全て T18-02-05〜08 の範囲）。`@SuppressWarnings("NullAway")` は 0 件（`grep -rn 'SuppressWarnings("NullAway")' backend/ecsite/src/main | wc -l`）。確認：Cart.memberId() に `@Nullable` のフィールドの参照を外す行を入れると、compileJava が `[NullAway] dereferenced expression 'memberId' is @Nullable` のエラーで失敗した。その行は戻した（git diff が空）。5 つのソースセットのコンパイル、checkstyleMain、単体テストが通る。
 - [ ] **T18-02-10** 段階の最後のレビュー（profile「厚め」）。
   - 依存：T18-02-09
   - 範囲：なし（読むだけ）

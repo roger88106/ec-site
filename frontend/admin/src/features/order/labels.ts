@@ -1,10 +1,5 @@
-import type { CancellationRequest, Carrier, OrderStatus, PaymentStatus, ShipmentStatus } from '@/api/types'
+import type { CancellationRequest, OrderStatus, PaymentStatus } from '@/api/types'
 import { translate } from '@/i18n/translate'
-
-/** 注文の状態の表示名（店舗画面と同じ文言） */
-export function orderStatusLabel(status: OrderStatus): string {
-  return translate(`common.orderStatus.${status}`)
-}
 
 /** 注文の状態ごとの見た目（Badge の variant）。対応が必要な「キャンセル申請中」を目立たせる */
 export const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'destructive' | 'secondary'> = {
@@ -31,16 +26,6 @@ export const PAYMENT_STATUS_VARIANTS: Record<PaymentStatus, 'destructive' | 'out
   AUTHORIZATION_EXPIRED: 'destructive',
   REFUND_PENDING: 'destructive',
   REFUNDED: 'secondary',
-}
-
-/** 配送状態の表示名（店舗画面と同じ文言） */
-export function shipmentStatusLabel(status: ShipmentStatus): string {
-  return translate(`common.shipmentStatus.${status}`)
-}
-
-/** 配送業者の表示名（店舗画面と同じ文言） */
-export function carrierLabel(carrier: Carrier): string {
-  return translate(`common.carrier.${carrier}`)
 }
 
 /** キャンセルの申請の結果の表示名 */

@@ -1,10 +1,5 @@
-import type { Carrier, OrderStatus, ShipmentStatus } from '@/api/types'
-import { translate } from '@/i18n/translate'
-
-/** 注文の状態の表示名 */
-export function orderStatusLabel(status: OrderStatus): string {
-  return translate(`common.orderStatus.${status}`)
-}
+import { orderStatusLabel, shipmentStatusLabel } from '@ec-site/shared/lib/orderLabels'
+import type { OrderStatus, ShipmentStatus } from '@/api/types'
 
 /** 注文の状態の見た目（Badge の variant）。受け付けた注文を目立たせる */
 const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'> = {
@@ -13,16 +8,6 @@ const ORDER_STATUS_VARIANTS: Record<OrderStatus, 'default' | 'secondary'> = {
   CANCELLATION_REQUESTED: 'secondary',
   CANCELLED: 'secondary',
   SHIPPED: 'secondary',
-}
-
-/** 配送状態の表示名 */
-export function shipmentStatusLabel(status: ShipmentStatus): string {
-  return translate(`common.shipmentStatus.${status}`)
-}
-
-/** 配送業者の表示名 */
-export function carrierLabel(carrier: Carrier): string {
-  return translate(`common.carrier.${carrier}`)
 }
 
 /**

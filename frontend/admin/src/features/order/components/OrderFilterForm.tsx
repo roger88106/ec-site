@@ -1,3 +1,4 @@
+import { orderStatusLabel } from '@ec-site/shared/lib/orderLabels'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
@@ -8,7 +9,6 @@ import type { OrderStatus } from '@/api/types'
 import { LabeledCheckbox } from '@/components/LabeledCheckbox'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldLabel } from '@/components/ui/field'
-import { orderStatusLabel } from '@/features/order/labels'
 import { EMPTY_FILTER, type OrderFilter } from '@/features/order/orderFilter'
 
 /** 絞り込みの入力。「絞り込む」で URL に反映し、1 ページ目に戻す */

@@ -1,4 +1,5 @@
 import { axisValuesLabel, formatDateTime, formatYen } from '@ec-site/shared/lib/format'
+import { carrierLabel } from '@ec-site/shared/lib/orderLabels'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -13,7 +14,6 @@ import { CancellationSection } from '@/features/order/components/CancellationSec
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
 import { ShippingAddressDetails } from '@/features/order/components/ShippingAddressDetails'
-import { carrierLabel } from '@/features/order/labels'
 import { cancellationState, paymentState } from '@/features/order/orderState'
 
 /** ブラウザのタブの題名 */

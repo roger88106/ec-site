@@ -13,12 +13,23 @@
 // 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、2 共有の基盤が動いていない。
 // 共有の基盤（compose）は、メインの作業ツリーで起動する。この script は起動しない。
 import { execFileSync, spawn } from 'node:child_process'
-import { existsSync, mkdirSync, readFileSync, rmSync, rmdirSync, statSync, writeFileSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { existsSync, linkSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { parseSlotRecord, parseWorktrees, pickSlot, slotEnv, slotValues, SLOT_COUNT } from './lib/slot.mjs'
-
-/** 共有の基盤のうち、確認するコンテナ */
-const SHARED_CONTAINERS = ['ec-site-postgres', 'ec-site-seaweedfs']
+import { acquireLock, ownsLock } from './lib/slot-lock.mjs'
+import {
+  assignSlot,
+  checkShared,
+  currentSlotOf,
+  formatSlotRecord,
+  isMainWorktree,
+  parseSlotRecord,
+  parseWorktrees,
+  slotEnv,
+  slotValues,
+  SHARED_CONTAINERS,
+  SLOT_COUNT,
+} from './lib/slot.mjs'
 
 /** 共有の PostgreSQL のコンテナ */
 const POSTGRES = 'ec-site-postgres'
@@ -26,11 +37,8 @@ const POSTGRES = 'ec-site-postgres'
 /** 起動できる対象 */
 const TARGETS = ['backend', 'store', 'admin']
 
-/** ロックを待つ上限（ミリ秒） */
+/** ロックを待つ上限（ミリ秒）。ロックの中は空きの選択と記録の書き込みだけなので、長く待つのは持ち主が止まっているとき */
 const LOCK_WAIT_MS = 90_000
-
-/** これより古いロックは、持ち主が死んだものとして消す（ミリ秒） */
-const LOCK_STALE_MS = 60_000
 
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
   assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
@@ -78,7 +86,7 @@ function context() {
   return {
     root,
     commonDir,
-    main: path.resolve(gitDir) === path.resolve(commonDir),
+    main: isMainWorktree(gitDir, commonDir),
     porcelain,
     mainPath: parseWorktrees(porcelain)[0].path,
   }
@@ -106,13 +114,24 @@ function readRecord(root) {
 }
 
 /**
+ * 作業ツリーの記録を書く。
+ *
+ * @param {string} root 作業ツリーのルート
+ * @param {number} slot スロットの番号
+ */
+function writeRecord(root, slot) {
+  mkdirSync(path.dirname(recordFile(root)), { recursive: true })
+  writeFileSync(recordFile(root), formatSlotRecord(slot))
+}
+
+/**
  * 今の作業ツリーのスロットを返す。メインの作業ツリーは 0。
  *
  * @param {{ root: string, main: boolean }} ctx 作業ツリーの状態
  * @returns {number | null} スロットの番号。割り当てがなければ null
  */
 function currentSlot(ctx) {
-  return ctx.main ? 0 : parseSlotRecord(readRecord(ctx.root))
+  return currentSlotOf({ main: ctx.main, record: ctx.main ? null : readRecord(ctx.root) })
 }
 
 /**
@@ -140,13 +159,9 @@ function containerRunning(name) {
  * @param {{ mainPath: string }} ctx 作業ツリーの状態
  */
 function requireShared(ctx) {
-  const stopped = SHARED_CONTAINERS.filter((name) => !containerRunning(name))
-  if (stopped.length === 0) return
-  throw new Exit(
-    2,
-    `共有の基盤が動いていない（${stopped.join('、')}）。メインの作業ツリーで起動する：\n` +
-      `  cd ${ctx.mainPath}\n  docker compose up -d\nこの script は docker compose up を流さない`,
-  )
+  const running = Object.fromEntries(SHARED_CONTAINERS.map((name) => [name, containerRunning(name)]))
+  const problem = checkShared(running, ctx.mainPath)
+  if (problem !== null) throw new Exit(problem.code, problem.message)
 }
 
 /**
@@ -260,80 +275,147 @@ function sleep(ms) {
 }
 
 /**
- * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
- * mkdir が、ディレクトリがあれば原子的に失敗することを使う。
- * 2 つのセッションが同時に assign しても、空きの選択から記録の書き込みまでが重ならない。
+ * PID のプロセスが動いているか。権限がなくて信号を送れない（EPERM）プロセスも動いているとみなす。
  *
- * @template T
- * @param {string} commonDir git の共通のディレクトリ
- * @param {() => T} action ロックを持って流す処理
- * @returns {Promise<T>} action の結果
+ * @param {number} pid プロセスの ID
+ * @returns {boolean}
  */
-async function withLock(commonDir, action) {
-  const lock = path.join(commonDir, 'ec-site-slot.lock')
-  const deadline = Date.now() + LOCK_WAIT_MS
-  for (;;) {
-    try {
-      mkdirSync(lock)
-      break
-    } catch (e) {
-      if (e.code !== 'EEXIST') throw e
-      try {
-        if (Date.now() - statSync(lock).mtimeMs > LOCK_STALE_MS) {
-          rmSync(lock, { recursive: true, force: true })
-          continue
-        }
-      } catch {
-        // 調べている間に持ち主が消した。取り直す
-        continue
-      }
-      if (Date.now() > deadline) throw new Exit(1, `スロットのロック（${lock}）を取れなかった`)
-      await sleep(200)
-    }
-  }
+function isRunning(pid) {
   try {
-    return action()
-  } finally {
-    try {
-      rmdirSync(lock)
-    } catch {
-      // すでに消えていればよい
-    }
+    process.kill(pid, 0)
+    return true
+  } catch (e) {
+    return e.code === 'EPERM'
   }
 }
 
 /**
- * assign：スロットを割り当てる。
+ * ロックのファイルの操作（lib/slot-lock.mjs の LockIo）。
+ *
+ * @param {string} lock ロックのファイルのパス
+ * @returns {import('./lib/slot-lock.mjs').LockIo}
+ */
+function lockIo(lock) {
+  /** 退かしたロックのパス */
+  let aside = null
+  const unique = () => `${lock}.${process.pid}.${randomUUID()}`
+  return {
+    create(content) {
+      // 一時のファイルに書いてから link するので、中身の書きかけのロックは見えない。link は、あれば原子的に失敗する
+      const temp = `${unique()}.tmp`
+      writeFileSync(temp, content, { flag: 'wx' })
+      try {
+        linkSync(temp, lock)
+        return true
+      } catch (e) {
+        if (e.code === 'EEXIST') return false
+        throw e
+      } finally {
+        rmSync(temp, { force: true })
+      }
+    },
+    read() {
+      try {
+        return readFileSync(lock, 'utf8')
+      } catch (e) {
+        if (e.code === 'ENOENT') return null
+        throw e
+      }
+    },
+    moveAside() {
+      aside = `${unique()}.stale`
+      try {
+        renameSync(lock, aside)
+      } catch (e) {
+        aside = null
+        // ない（他方が先に退かした）か、Windows で他方が読んでいる間は退かせない。判定からやり直す
+        if (['ENOENT', 'EPERM', 'EBUSY', 'EACCES'].includes(e.code)) return null
+        throw e
+      }
+      return readFileSync(aside, 'utf8')
+    },
+    restore() {
+      try {
+        linkSync(aside, lock)
+      } catch (e) {
+        if (e.code !== 'EEXIST') throw e
+      } finally {
+        rmSync(aside, { force: true })
+        aside = null
+      }
+    },
+    discard() {
+      rmSync(aside, { force: true })
+      aside = null
+    },
+  }
+}
+
+/**
+ * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
+ * ロックは git の共通のディレクトリの ec-site-slot-assign.lock（作業ツリーのパス、PID、開始の時刻）。
+ * 持ち主の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
+ * 2 つのセッションが同時に assign しても、空きの選択から記録の書き込みまでが重ならない。
+ *
+ * @template T
+ * @param {{ root: string, commonDir: string }} ctx 作業ツリーの状態
+ * @param {() => T} action ロックを持って流す処理（短いものだけ）
+ * @returns {Promise<T>} action の結果
+ */
+async function withLock(ctx, action) {
+  const lock = path.join(ctx.commonDir, 'ec-site-slot-assign.lock')
+  const io = lockIo(lock)
+  const owner = { worktree: ctx.root, pid: process.pid, startedAt: new Date().toISOString() }
+  const result = await acquireLock({ io, owner, isRunning, waitMs: LOCK_WAIT_MS, sleep })
+  if (!result.acquired) {
+    const holder = result.owner
+    throw new Exit(
+      1,
+      `スロットのロック（${lock}）を取れなかった。持ち主：${holder.worktree}（PID ${holder.pid}、開始 ${holder.startedAt}）`,
+    )
+  }
+  try {
+    return action()
+  } finally {
+    if (ownsLock(io.read(), owner)) rmSync(lock, { force: true })
+  }
+}
+
+/**
+ * assign：スロットを割り当てる。記録を書いてロックを放してから、データベースとバケットを作り直す。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */
 async function assign(ctx) {
-  if (ctx.main) return console.log('メインの作業ツリーはスロット 0。割り当ては要らない')
-  requireShared(ctx)
-  const existing = parseSlotRecord(readRecord(ctx.root))
-  if (existing !== null) return console.log(`すでにスロット ${existing} が割り当て済み`)
-  await withLock(ctx.commonDir, () => {
-    // ロックを取る間に別のセッションが同じ作業ツリーへ割り当てていないかを見直す
-    const again = parseSlotRecord(readRecord(ctx.root))
-    if (again !== null) return console.log(`すでにスロット ${again} が割り当て済み`)
-    const records = {}
-    for (const worktree of parseWorktrees(ctx.porcelain)) {
-      if (!worktree.main) records[worktree.path] = readRecord(worktree.path)
-    }
-    const picked = pickSlot(ctx.porcelain, records)
-    if ('full' in picked) {
-      const lines = picked.users.map((user) => `  スロット ${user.slot}：${user.path}`)
-      throw new Exit(
-        1,
-        `空いているスロットがない（1〜${SLOT_COUNT - 1} が使用中）。使っている作業ツリー：\n${lines.join('\n')}\n` +
-          '使い終えた作業ツリーで release するか、消えた作業ツリーなら git worktree prune を流す',
-      )
-    }
-    recreateData(ctx.root, picked.slot)
-    mkdirSync(path.dirname(recordFile(ctx.root)), { recursive: true })
-    writeFileSync(recordFile(ctx.root), `${picked.slot}\n`)
-    console.log(`スロット ${picked.slot} を割り当てた（データベース ${slotValues(picked.slot).database}、バケット ${slotValues(picked.slot).publicBucket} と ${slotValues(picked.slot).incomingBucket}）`)
+  if (!ctx.main) requireShared(ctx)
+  const result = await assignSlot({
+    main: ctx.main,
+    readOwnRecord: () => readRecord(ctx.root),
+    listWorktrees: () => git(['worktree', 'list', '--porcelain']),
+    readRecord,
+    withLock: (action) => withLock(ctx, action),
+    writeRecord: (slot) => writeRecord(ctx.root, slot),
+    recreate: (slot) => recreateData(ctx.root, slot),
   })
+  if (result.kind === 'main') return console.log('メインの作業ツリーはスロット 0。割り当ては要らない')
+  if (result.kind === 'already') return console.log(`すでにスロット ${result.slot} が割り当て済み`)
+  if (result.kind === 'full') {
+    const lines = result.users.map((user) => `  スロット ${user.slot}：${user.path}`)
+    throw new Exit(
+      1,
+      `空いているスロットがない（1〜${SLOT_COUNT - 1} が使用中）。使っている作業ツリー：\n${lines.join('\n')}\n` +
+        '使い終えた作業ツリーで release するか、消えた作業ツリーなら git worktree prune を流す',
+    )
+  }
+  const values = slotValues(result.slot)
+  if (result.kind === 'recreateFailed') {
+    throw new Exit(
+      1,
+      `スロット ${result.slot} を割り当てたが、データベースとバケットを作れなかった（${result.error?.message ?? result.error}）。\n` +
+        '割り当ては残している。原因を直してから node scripts/dev/slot.mjs reset で作り直す',
+    )
+  }
+  console.log(`スロット ${result.slot} を割り当てた（データベース ${values.database}、バケット ${values.publicBucket} と ${values.incomingBucket}）`)
 }
 
 /**

@@ -1,5 +1,7 @@
 // スロット（作業ツリーごとの手元の環境）の値、空きの選び方、環境変数の組み立て。
-// docker と git を呼ばない純粋な関数だけを置く。呼ぶのは scripts/dev/slot.mjs。
+// docker と git を呼ばない純粋な関数だけを置く（割り当ての手順は、ロック・git・ファイル・docker の操作を引数で受ける）。
+// 呼ぶのは scripts/dev/slot.mjs。
+import path from 'node:path'
 
 /** スロットの数。0 がメインの作業ツリー、1〜3 が作業ツリー */
 export const SLOT_COUNT = 4
@@ -158,4 +160,101 @@ export function slotEnv(slot, target) {
     }
   }
   return { ADMIN_API_PROXY_TARGET: backendOrigin }
+}
+
+/** 共有の基盤のうち、動いていることを確かめるコンテナ */
+export const SHARED_CONTAINERS = ['ec-site-postgres', 'ec-site-seaweedfs']
+
+/**
+ * メインの作業ツリーかを判定する。git-dir と git-common-dir が同じならメイン（追加の作業ツリーの git-dir は worktrees/ の下）。
+ *
+ * @param {string} gitDir `git rev-parse --path-format=absolute --git-dir` の出力
+ * @param {string} commonDir `git rev-parse --path-format=absolute --git-common-dir` の出力
+ * @returns {boolean}
+ */
+export function isMainWorktree(gitDir, commonDir) {
+  return path.resolve(gitDir) === path.resolve(commonDir)
+}
+
+/**
+ * 作業ツリーのスロットを返す。メインの作業ツリーは記録によらず 0。
+ *
+ * @param {{ main: boolean, record: string | null | undefined }} input record は `.local/slot` の内容
+ * @returns {number | null} 番号。割り当てがなければ null
+ */
+export function currentSlotOf({ main, record }) {
+  return main ? 0 : parseSlotRecord(record)
+}
+
+/**
+ * 作業ツリーの記録（`.local/slot`）に書く内容。
+ *
+ * @param {number} slot スロットの番号（1〜3）
+ * @returns {string} 番号と改行
+ */
+export function formatSlotRecord(slot) {
+  if (!Number.isInteger(slot) || slot < 1 || slot >= SLOT_COUNT) {
+    throw new RangeError(`記録するスロットの番号は 1〜${SLOT_COUNT - 1} の整数: ${slot}`)
+  }
+  return `${slot}\n`
+}
+
+/**
+ * 共有の基盤のコンテナの状態から、止まっているものと案内を決める。
+ *
+ * @param {Record<string, boolean>} running コンテナの名前 → 動いているか。ないものは止まっているとする
+ * @param {string} mainPath メインの作業ツリーのパス
+ * @returns {{ code: 2, stopped: string[], message: string } | null} 全て動いていれば null
+ */
+export function checkShared(running, mainPath) {
+  const stopped = SHARED_CONTAINERS.filter((name) => running[name] !== true)
+  if (stopped.length === 0) return null
+  return {
+    code: 2,
+    stopped,
+    message:
+      `共有の基盤が動いていない（${stopped.join('、')}）。メインの作業ツリーで起動する：\n` +
+      `  cd ${mainPath}\n  docker compose up -d\nこの script は docker compose up を流さない`,
+  }
+}
+
+/**
+ * スロットを割り当てる手順。<br />
+ * ロックの中では、作業ツリーの一覧を読み、空きを選び、記録を書くだけにする。
+ * データベースとバケットの作り直しは長くかかるので、ロックを放した後に流す。
+ * 記録を先に書くので、作り直しの間に他の作業ツリーが同じ番号を選ばない。作り直しに失敗しても記録は残す（reset で作り直す）。
+ *
+ * @param {{ main: boolean, readOwnRecord: () => string | null, listWorktrees: () => string,
+ *   readRecord: (worktreePath: string) => string | null, withLock: <T>(action: () => T) => Promise<T>,
+ *   writeRecord: (slot: number) => void, recreate: (slot: number) => void }} deps
+ *   listWorktrees は `git worktree list --porcelain` の出力、readRecord は作業ツリーの `.local/slot` の内容
+ * @returns {Promise<{ kind: 'main' } | { kind: 'already', slot: number } | { kind: 'assigned', slot: number }
+ *   | { kind: 'full', users: { slot: number, path: string }[] } | { kind: 'recreateFailed', slot: number, error: unknown }>}
+ */
+export async function assignSlot(deps) {
+  if (deps.main) return { kind: 'main' }
+  const existing = parseSlotRecord(deps.readOwnRecord())
+  if (existing !== null) return { kind: 'already', slot: existing }
+  const picked = await deps.withLock(() => {
+    // ロックを待つ間に、同じ作業ツリーの別のセッションが割り当てていないかを見直す
+    const again = parseSlotRecord(deps.readOwnRecord())
+    if (again !== null) return { kind: 'already', slot: again }
+    // 一覧もロックの中で読む。待つ間に作られた作業ツリーの割り当ても数えるため
+    const porcelain = deps.listWorktrees()
+    const records = {}
+    for (const worktree of parseWorktrees(porcelain)) {
+      if (!worktree.main) records[worktree.path] = deps.readRecord(worktree.path)
+    }
+    const choice = pickSlot(porcelain, records)
+    if ('full' in choice) return { kind: 'full', users: choice.users }
+    deps.writeRecord(choice.slot)
+    return { kind: 'picked', slot: choice.slot }
+  })
+  if (picked.kind !== 'picked') return picked
+  try {
+    deps.recreate(picked.slot)
+  } catch (error) {
+    return { kind: 'recreateFailed', slot: picked.slot, error }
+  }
+  return { kind: 'assigned', slot: picked.slot }
 }

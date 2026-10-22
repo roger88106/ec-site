@@ -148,6 +148,8 @@ MVP（spec 001〜019）が完成し、tag `v0.1.0` を付けた。1→10 の段�
   | minor | 7 日 |
   | patch | 3 日 |
 
+  ※ GitHub Actions と Docker Compose は SemVer の日数に対応しないので、7 日（default-days）とする。
+
 - **DC-7-57** Dependabot は、セキュリティの更新を待たずに作成する。
 - **DC-7-58** Dependabot の pull request は、issue を必要としない。プロジェクトの規則の例外とする。
 - **DC-7-59** Dependabot の pull request の commit のメッセージは、英語でよい。プロジェクトの規則の例外とする。

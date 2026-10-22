@@ -7,7 +7,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 
 1. [constitution](docs/constitution.md)：大綱と文書の地図
 2. [開発の進め方](docs/rules/workflow.md)：SDD と TDD、起票と規模、利用者の確認と中断、完了の定義
-3. 着手する段階の tasks ファイル（`docs/specs/NNN-*/tasks/`）と、冒頭の「参照」の文書
+3. 着手する段階の tasks と、冒頭の「参照」の文書（`docs/specs/<番号>-*/`。規模 L は `tasks/`、規模 M は spec.md の中の tasks、規模 S は issue）
 4. コードを書く・レビューする前に、関わる書き方の文書（constitution 第 14 節）。バックエンドは [バックエンドの書き方](docs/rules/backend-coding.md)、フロントは [フロントの書き方](docs/rules/frontend-coding.md)、どちらも [テストの書き方](docs/rules/test-writing.md) と [コメントの書き方](docs/rules/comments.md)
 
 マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。Git に入らないので、新しい clone にはない。ないときは、本書と `docs/` だけで進める。
@@ -56,7 +56,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 
 ### セッションの始めと終わり
 
-- 始めに直近の CI を確認する（`gh run list -b develop -L 1`）。失敗していれば tasks に追加して先に修正する。
+- 始めに直近の CI を確認する（`gh run list -b develop -L 1`）。`develop` の CI が失敗していれば、すぐに起票し（[開発の進め方](docs/rules/workflow.md) 第 4.1 節の急ぐ作業）、spec の作業の前に修正する。
 - 1 つの spec は 1 つの spec 担当のセッションで進め、長くなったら文脈の圧縮で続ける。issue 担当のセッションとのやり取りは [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。
 - 引き継ぎの文書（skill `handoff`）は、spec 担当のセッションを替えるときに作る。置き場所は `/.local/handoff/yyyyMMddHHmmss-<名前>/` に置く。指示がなければ最も新しいものを読む。古いものは利用者が削除する。
 

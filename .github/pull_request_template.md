@@ -14,7 +14,7 @@
 
 ## spec
 
-<!-- L と M は spec へのリンク。S は spec がないので、元の issue へのリンクを書く。 -->
+<!-- L と M は spec へのリンク。S は issue の本文を spec とするので、その issue へのリンクを書く（issue を書く）。 -->
 
 ## 関連の issue
 

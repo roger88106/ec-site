@@ -58,9 +58,9 @@ MVP の spec（001〜019）は、下の表の `n` だけの形で、spec をま�
 |------|------------|------|
 | spec | 草案 | 議論中。Open questions が残っていてよい |
 | spec | 確定 | Open questions が空で、利用者が確定した。plan を書き始められる |
-| plan | 承認済み（tasks 作成済み） | 利用者が承認し、tasks に分けた |
+| plan | 承認済み（tasks 作成済み） | 利用者が plan と tasks を一緒に承認した（規模 L） |
 
-spec の進み具合（どの段階まで完了したか）は、README の spec の表に書く。
+spec の進み具合（どの段階まで完了したか）は、MVP の spec は README の進捗の表、1→10 の spec は追跡の issue と milestone に書く。
 
 ## tasks の番号と記号
 

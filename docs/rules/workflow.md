@@ -39,13 +39,13 @@
 | API の項目 | `api/openapi/` |
 | テーブルの定義 | Flyway のマイグレーション（作成するまでは `docs/design/modules/` に草案を置く） |
 | 後回しの作業と未決事項 | issue（milestone `1→10`。第 4.1 節） |
-| 規模 M の spec | `docs/specs/<番号>-<名前>.md`（第 4.2 節） |
+| 規模 M の spec | `docs/specs/<番号>-<名前>/spec.md`（第 4.2 節） |
 | ブランチと release の手順 | `docs/guides/branches.md` |
 | 用語と識別子の対応 | `docs/design/glossary.md` |
 | AC の今の状態とテスト | `docs/design/acceptance-criteria.md`（AC 一覧） |
 | コードの書き方 | `docs/rules/backend-coding.md`、`docs/rules/frontend-coding.md`、`docs/rules/test-writing.md`、`docs/rules/comments.md` |
 | 起動・テストの手順 | `docs/guides/` |
-| spec の進み具合 | README の進捗の表 |
+| spec の進み具合 | MVP の spec は README の進捗の表、1→10 の spec は追跡の issue と milestone |
 | 決定の経緯 | コミットメッセージ |
 | 完了した 1→10 の spec | `docs/specs/archive/1to10/`（第 4.2 節） |
 
@@ -72,7 +72,7 @@
 ### 1.5 コードと文書の食い違い
 
 - 現在の振る舞いは、コードを唯一の正とする。文書は、その振る舞いと設計の理由を説明する。
-- 文書とコードの食い違いに気づいたら、どちらが誤っているかで扱いを分ける。コードが正しく文書が古いときは、文書を修正する。コードが spec の意図と異なるとき（不具合）は、その場ではコードも文書も変えず、不具合として tasks に追加し、tasks に沿ってテストから修正する。
+- 文書とコードの食い違いに気づいたら、どちらが誤っているかで扱いを分ける。コードが正しく文書が古いときは、文書を修正する。コードが spec の意図と異なるとき（不具合）は、その場ではコードも文書も変えない。自分の spec の範囲の不具合は、tasks に追加してテストから修正する。spec の範囲の外の不具合は、issue に起票する（第 4.1 節）。
 - 完了した spec の AC を変える振る舞いの変更（上限の値を変える、など）は、新しい機能の spec で行い、AC 一覧の行で示す。整理の spec で行うのは、レビューで見つけた不具合の修正（その spec の非機能要件で例外にしたもの）だけ。
 - 値（上限、件数、期限など）を変えるときは、AC の番号によらず、旧い値をテスト（バックエンド、画面、E2E）と文言の全体で検索する。境界の値（上限と上限 ＋ 1）は、別の AC のテストにもある。
 - spec で AC を追加する・変えるときは、同じ commit で [AC 一覧](../design/acceptance-criteria.md)を修正する。追加した AC は `node scripts/ci/ac-check.mjs --write` で行が追加される。前の spec の AC を変えた・廃止したときは、その行の状態、変えた spec、今の内容を手動で修正する。
@@ -161,7 +161,7 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 | 規模 | 文書 |
 |------|------|
 | S | issue だけ。issue の本文を spec とする |
-| M | 1 つのファイル。目的、完了の条件か AC、tasks |
+| M | `spec.md` の 1 つのファイル。目的、完了の条件か AC、tasks の節 |
 | L | spec・plan・tasks |
 
 判定の基準は次のとおり。
@@ -172,7 +172,7 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 | AC を追加する・変える | M 以上 |
 | 振る舞いを変えず、範囲が小さい | S |
 
-- 規模 M の spec は、`docs/specs/<番号>-<名前>.md` に置く。
+- 規模 M の spec は、`docs/specs/<番号>-<名前>/spec.md` の 1 つのファイルに置く。理由：検査の script（ac-check、progress、spec-dirs）が、spec のディレクトリの spec.md を読むため。
 - 完了した 1→10 の spec は、MVP と同じくまとまりごとにアーカイブし、`docs/specs/archive/1to10/` に置く。ファイルが 1 つの M の spec も同じ。spec の最後のタスクで移し、同じ pull request に含める。理由：マージの後に移すと、移すための pull request がもう 1 つ必要になるため。
 
 ## 5. 利用者の確認と中断

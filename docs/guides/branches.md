@@ -68,6 +68,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 - 版は SemVer（`MAJOR.MINOR.PATCH`）。1→10 の間は、release ごとに minor を上げる。
 - release の内容は、issue 担当のセッションがまとめる（[開発の進め方](../rules/workflow.md)）。
+- `release-` のブランチの `main` へのマージと tag は、issue 担当のセッションが利用者の許可を得て行う。
 - デプロイの spec で決めるまでの release は、`main` へのマージと tag までとし、デプロイしない（第 7 節）。
 
 ## 5. 緊急の修正

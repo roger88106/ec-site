@@ -7,7 +7,7 @@ body:
     id: background_and_purpose
     attributes:
       label: 背景と目的
-      description: なぜこの機能が要るかを書く。
+      description: なぜこの機能が必要かを書く。
     validations:
       required: true
   - type: textarea

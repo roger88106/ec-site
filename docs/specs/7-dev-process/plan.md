@@ -95,7 +95,7 @@ milestone は `1→10` を作る。対応時期が「未定」の項目には付
 | 7-20、7-21 | 範囲の書き方（AC-8〜10）をエラーにする規則は、`AC-n` と `AC-n-m` の両方に適用する | script のテスト（先に書き、レッドを確認する） |
 | 7-14〜7-19 | 他の script を新しい番号に対応させる（下の箇条書き） | script のテスト（先に書き、レッドを確認する） |
 | 7-22〜7-26 | 規模の区分と判定の基準、文書、利用者の承認を、開発の進め方に書く | 差分を読む |
-| 7-22〜7-26 | M の spec は 1 つのファイルにまとめ、`docs/specs/<番号>-<名前>.md` に置く | 差分を読む |
+| 7-22〜7-26 | M の spec は 1 つのファイルにまとめ、`docs/specs/<番号>-<名前>/spec.md` に置く（目的、完了の条件か AC、tasks の節）。理由：検査の script（ac-check、progress、spec-dirs）が、spec のディレクトリの spec.md を読むため。spec の最後のレビューで、`<番号>-<名前>.md` から変えた | 差分を読む |
 | 7-27 | 追跡の issue と、扱う issue を sub-issue として関連付ける手順を、開発の進め方か skill に書く（`gh api` の GraphQL `addSubIssue`） | 差分を読む |
 | 7-27 | 本 spec では #7 に、移行した issue のうち本 spec で扱うものを関連付ける | `gh api` で #7 の sub-issue を読む |
 | 7-28、7-29 | README の進捗を、MVP の節（今の表）と、1→10 の節に分ける | `progress.mjs` のテスト |
@@ -103,7 +103,7 @@ milestone は `1→10` を作る。対応時期が「未定」の項目には付
 | 7-28、7-29 | `progress.mjs` は、MVP の表と「MVP の完成までの一覧」の照合を続ける | `progress.mjs` のテスト |
 | 7-28、7-29 | `progress.mjs` は、1→10 の spec について「アーカイブにある spec の tasks が全て済んでいる」ことを確認する形に変える | `progress.mjs` のテスト |
 | 7-30、7-31 | 完了した 1→10 の spec は `docs/specs/archive/1to10/` に置く | 本 spec の最後の段階で、本 spec を移す |
-| 7-30、7-31 | ファイルが 1 つの M の spec も同じ場所に移す | 本 spec の最後の段階で、本 spec を移す |
+| 7-30、7-31 | M の spec は、ディレクトリごと（`<番号>-<名前>/spec.md`）同じ場所に移す。spec の最後のレビューで、1 つのファイルの形から変えた | 本 spec の最後の段階で、本 spec を移す |
 | 7-30、7-31 | spec の最後のタスクで移し、同じ pull request に含めることを、開発の進め方に書く | 差分を読む |
 
 他の script の合わせ方（DC-7-14〜19）：
@@ -146,7 +146,7 @@ milestone は `1→10` を作る。対応時期が「未定」の項目には付
 | 対象 | `gradle`（`/backend/ecsite`）、`npm`（`/`。pnpm の workspace）、`github-actions`（`/`）、`docker-compose`（`/docker`） |
 | 頻度 | 週 1 回（月曜、日本時間） |
 | group | minor と patch を ecosystem ごとにまとめる |
-| cooldown | major 30、minor 7、patch 3 |
+| cooldown | major 30、minor 7、patch 3。GitHub Actions と Docker Compose は SemVer の日数に対応しないので、7 日（default-days）とする |
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 

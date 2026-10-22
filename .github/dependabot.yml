@@ -6,8 +6,8 @@
 #   major は group に入れず、1 つずつ pull request にする（影響を個別に見るため）。
 # - cooldown：リリースから待つ日数。major 30、minor 7、patch 3。公開直後の版の不具合や
 #   供給網の攻撃を避ける。セキュリティの更新は cooldown を待たずに作成される。
-#   github-actions と docker-compose は SemVer ごとの日数を使えるか確かでないため、
-#   default-days だけを指定する。
+#   github-actions と docker-compose は、GitHub の文書の cooldown の対応表で、
+#   SemVer の日数に対応しないため、default-days だけを指定する。
 # - label：種類:整理、領域:ci、依存の更新。commit のメッセージの前置きは deps。
 # - Dependabot の pull request は、issue が不要で、commit のメッセージは英語でよい（規則の例外）。
 # - 注意：Dependabot の pnpm の対応は v10 まで（2026-10-22 の時点）。このリポジトリは pnpm 12 で、

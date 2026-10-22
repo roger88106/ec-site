@@ -26,7 +26,7 @@ jobs:
     timeout-minutes: 5
 
     steps:
-      - name: 元のブランチの名前を確かめる
+      - name: 元のブランチの名前を確認する
         # ブランチの名前は信頼できない入力なので、run の中に直接展開せず、環境変数を経由する
         env:
           HEAD_REF: ${{ github.head_ref }}

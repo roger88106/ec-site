@@ -142,7 +142,7 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
 - 参照：第 3 節の DS-18-2
 - [P] のタスクは、作業ツリーを分けて同時に編集してよい。ただし Gradle の実行は同時に 1 つだけにする（DN-18-4）。
 
-- [ ] **T18-02-01** [バックエンドの書き方](../../rules/backend-coding.md) に、null の扱いの節（JSpecify の `@Nullable`、main では注釈のないものを null でないとみなす、`Optional` を使う場面、jOOQ の null を取りうる列の受け方、`@SuppressWarnings("NullAway")` の書き方と理由のコメント、修正の選び方の基準）と、Error Prone の検査を抑えるときの書き方を追加し、規則の一覧の表に行を追加する。文書が先なので、修正のタスクより先に書く（DC-18-11、13）。
+- [x] **T18-02-01** [バックエンドの書き方](../../rules/backend-coding.md) に、null の扱いの節（JSpecify の `@Nullable`、main では注釈のないものを null でないとみなす、`Optional` を使う場面、jOOQ の null を取りうる列の受け方、`@SuppressWarnings("NullAway")` の書き方と理由のコメント、修正の選び方の基準）と、Error Prone の検査を抑えるときの書き方を追加し、規則の一覧の表に行を追加する。文書が先なので、修正のタスクより先に書く（DC-18-11、13）。
   - 依存：なし
   - 範囲：`docs/rules/backend-coding.md`
 - [ ] **T18-02-02** [テスト] java-rules に、他の `Nullable` の import の禁止のテストを書き、レッドを確認する（DC-18-9）。

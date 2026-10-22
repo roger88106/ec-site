@@ -27,6 +27,8 @@
 | 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所は自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
+| 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
+| 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントはレビュー |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
 
@@ -250,3 +252,42 @@ public final class MoneyFormat {
 ※3：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番の動き（path style を使わない）を既定値にする。
 
 理由：設定を忘れたまま、別の環境の値で動き出さないようにするため（足りなければ起動に失敗する）。
+
+## 7. 静的解析
+
+### 7.1 null の扱い
+
+- main では、`com.ecsite` の下の全てのパッケージ（生成したコードの `com.ecsite.jooq`、`com.ecsite.api` を除く）で、注釈のない引数・戻り値・フィールドを null でないとみなす。NullAway がコンパイルのときに確認する（テストのソースセットと tools は対象外）。
+- null を取りうる所には JSpecify の `org.jspecify.annotations.Nullable` を付ける。他の `Nullable`（`jakarta.annotation`、`javax.annotation`、`org.springframework.lang`）は使わない（確認方法：`scripts/ci/java-rules.mjs`）。型の注釈なので、配列や修飾した型では型の直前に付け、迷ったら JSpecify の位置にする（`String @Nullable []` など）。
+- 選び方：
+  - 今の振る舞いで null が正しい値（API の応答の省略できる項目、DB の null を取りうる列など）には `@Nullable` を付ける。
+  - null を渡す必要がない所は、null を作らない書き方にする。
+  - 値がないことを返す参照のメソッド（`findXxx`）は、今のコードのとおり `Optional` を返す。集約が null を取りうるフィールドを持つときは、フィールドを `@Nullable` にし、getter で `Optional` にして返す（`Cart.memberId()`）。
+- jOOQ のレコードの getter は注釈がないので、NullAway は null を確認しない。null を取りうる列の値は、リポジトリの実装で `@Nullable` を付けたローカル変数か `Optional` で受ける。
+- `lombok.NonNull` は実行時の確認として使ってよい（外さない）。
+
+```java
+public Optional<Cart> findById(UUID id) {
+    ...
+}
+
+public Optional<UUID> memberId() {
+    return Optional.ofNullable(memberId);
+}
+```
+
+理由：null の誤りを、実行より前のコンパイルで見つけるため。Spring Framework 7 と同じ JSpecify の注釈なので、Spring の API の null の注釈も NullAway が読む。
+
+### 7.2 検査を抑えるとき
+
+- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）や、修正すると振る舞いが変わるものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。
+- 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。今無効なのは `StringConcatToTextBlock` だけ（理由は `build.gradle.kts` のコメント）。
+- 生成したコード（`build/generated` の下）は検査しない。
+
+```java
+// List.of で作る変更できない一覧。Error Prone は List の型だけを見て変更できると判断するので抑える
+@SuppressWarnings("ImmutableEnumChecker")
+private final List<String> contentTypes;
+```
+
+理由：検査を抑える範囲と理由が見えれば、後で外せるかをレビューで判断できるため。

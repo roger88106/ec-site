@@ -61,7 +61,9 @@ describe('商品の詳細の画像', () => {
     await user.click(button('L'))
     expect(shownImage()).toBe('http://cdn.test/red-l.webp')
 
-    await user.click(button('L'))
+    // 小さな画像で別の画像を出した後に、画像のない赤 M を選ぶと、代表画像に戻る
+    await user.click(button('画像 2を見る'))
+    expect(shownImage()).toBe('http://cdn.test/2.webp')
     await user.click(button('M'))
     expect(shownImage()).toBe('http://cdn.test/1.webp')
   })
@@ -110,7 +112,7 @@ describe('商品の詳細のカートに入れる操作', () => {
     ['在庫切れ', { inStock: false }],
     ['販売停止', { salesSuspended: true }],
   ])('DC-135-27 買えないバリアント（%s）のときは、「カートに入れる」を押せない', (_name, overrides) => {
-    // 軸のある商品は、買えない値を選べないので、バリアントが決まる軸のない商品で確かめる
+    // 軸のある商品は、買えない値を選べないので、バリアントが決まる軸のない商品で確認する
     renderInBrowser(
       <ProductShowcase
         axes={[]}

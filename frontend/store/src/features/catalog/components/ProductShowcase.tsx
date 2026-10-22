@@ -63,6 +63,7 @@ export function ProductShowcase({
           axes={axes}
           chosen={chosen}
           onChange={(next) => {
+            // 再描画の前に、次の選択で決まるバリアントの画像に替えるため、ここでも計算する
             setSelection(next)
             setShown(imageForVariant(imageUrls, selectedVariant(axes, variants, next)))
           }}

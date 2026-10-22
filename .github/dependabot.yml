@@ -1,0 +1,119 @@
+# Dependabot の設定。手順と理由は docs/guides/branches.md 第 6 節。
+#
+# - 更新の pull request は、既定のブランチ（develop）に対して作成される（target-branch は書かない）。
+# - 頻度は週 1 回、月曜の朝（日本時間）。
+# - group：minor と patch は ecosystem ごとに 1 つの pull request にまとめる。
+#   major は group に入れず、1 つずつ pull request にする（影響を個別に見るため）。
+# - cooldown：リリースから待つ日数。major 30、minor 7、patch 3。公開直後の版の不具合や
+#   供給網の攻撃を避ける。セキュリティの更新は cooldown を待たずに作成される。
+#   github-actions と docker-compose は SemVer ごとの日数を使えるか確かでないため、
+#   default-days だけを指定する。
+# - label：種類:整理、領域:ci、依存の更新。commit のメッセージの前置きは deps。
+# - Dependabot の pull request は、issue が不要で、commit のメッセージは英語でよい（規則の例外）。
+# - 注意：Dependabot の pnpm の対応は v10 まで（2026-10-22 の時点）。このリポジトリは pnpm 12 で、
+#   npm の更新が失敗したら issue を起票し、Renovate への切り替えを検討する。
+
+version: 2
+
+updates:
+  - package-ecosystem: gradle
+    directory: /backend/ecsite
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    groups:
+      gradle-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    cooldown:
+      default-days: 3
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+    labels:
+      - "種類:整理"
+      - "領域:ci"
+      - "依存の更新"
+    commit-message:
+      prefix: deps
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: npm
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    groups:
+      npm-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    cooldown:
+      default-days: 3
+      semver-major-days: 30
+      semver-minor-days: 7
+      semver-patch-days: 3
+    labels:
+      - "種類:整理"
+      - "領域:ci"
+      - "依存の更新"
+    commit-message:
+      prefix: deps
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    groups:
+      github-actions-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    cooldown:
+      default-days: 7
+    labels:
+      - "種類:整理"
+      - "領域:ci"
+      - "依存の更新"
+    commit-message:
+      prefix: deps
+    open-pull-requests-limit: 5
+
+  - package-ecosystem: docker-compose
+    directory: /docker
+    schedule:
+      interval: weekly
+      day: monday
+      time: "09:00"
+      timezone: Asia/Tokyo
+    groups:
+      docker-compose-minor-patch:
+        patterns:
+          - "*"
+        update-types:
+          - minor
+          - patch
+    cooldown:
+      default-days: 7
+    labels:
+      - "種類:整理"
+      - "領域:ci"
+      - "依存の更新"
+    commit-message:
+      prefix: deps
+    open-pull-requests-limit: 5

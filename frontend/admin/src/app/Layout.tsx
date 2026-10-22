@@ -1,5 +1,5 @@
 import { Button } from '@ec-site/shared/ui/button'
-import { LogOutIcon } from 'lucide-react'
+import { LogOutIcon, type LucideIcon } from 'lucide-react'
 import { NavLink, Outlet, useLocation } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { menu, reportMenu } from '@/app/menu'
@@ -43,12 +43,7 @@ export function Layout() {
             <SidebarGroupContent>
               <SidebarMenu>
                 {menu.map((item) => (
-                  <SidebarMenuItem key={item.to}>
-                    <SidebarMenuButton isActive={pathname.startsWith(item.to)} render={<NavLink to={item.to} />}>
-                      <item.icon />
-                      <span>{t(`menu.${item.labelKey}`) /* 機能の名前 */}</span>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
+                  <MenuItem item={item} key={item.to} pathname={pathname} />
                 ))}
               </SidebarMenu>
             </SidebarGroupContent>
@@ -59,12 +54,7 @@ export function Layout() {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {reports.map((item) => (
-                    <SidebarMenuItem key={item.to}>
-                      <SidebarMenuButton isActive={pathname.startsWith(item.to)} render={<NavLink to={item.to} />}>
-                        <item.icon />
-                        <span>{t(`menu.${item.labelKey}`) /* レポートの名前 */}</span>
-                      </SidebarMenuButton>
-                    </SidebarMenuItem>
+                    <MenuItem item={item} key={item.to} pathname={pathname} />
                   ))}
                 </SidebarMenu>
               </SidebarGroupContent>
@@ -86,5 +76,24 @@ export function Layout() {
         </div>
       </SidebarInset>
     </SidebarProvider>
+  )
+}
+
+/** メニューの項目 1 つ（機能の群とレポートの群で共通） */
+function MenuItem({
+  item,
+  pathname,
+}: {
+  item: { to: string; icon: LucideIcon; labelKey: (typeof menu | typeof reportMenu)[number]['labelKey'] }
+  pathname: string
+}) {
+  const t = useTranslations('app')
+  return (
+    <SidebarMenuItem>
+      <SidebarMenuButton isActive={pathname.startsWith(item.to)} render={<NavLink to={item.to} />}>
+        <item.icon />
+        <span>{t(`menu.${item.labelKey}`) /* 機能・レポートの名前 */}</span>
+      </SidebarMenuButton>
+    </SidebarMenuItem>
   )
 }

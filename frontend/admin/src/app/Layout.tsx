@@ -27,8 +27,9 @@ export function Layout() {
   const t = useTranslations('app')
   const tCommon = useTranslations('common')
   const permissions = usePermissions()
-  // 権限のあるレポートだけ（権限の一覧を読み込む間は出さない）
-  const reports = reportMenu.filter((item) => permissions.has(item.permission))
+  // 権限のあるレポートだけ（権限の一覧を読み込む間は出さない。取得に失敗したときは、権限が分からないので全て出す）
+  const reports =
+    permissions.status === 'failed' ? reportMenu : reportMenu.filter((item) => permissions.has(item.permission))
   return (
     <SidebarProvider>
       <Sidebar aria-label={t('layout.menu') /* 機能のメニュー */} role="navigation">

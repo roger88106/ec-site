@@ -86,7 +86,7 @@ DC の列は「104-1」の形で書く。spec の番号 104 を付けた DC-104-
 | DC | 決定 | 確認方法 |
 |----|------|----------|
 | 104-8、104-13 | 実装役は、上の環境変数がバックエンドの設定の名前と一致するかを、`application.yml` と `application-local.yml` を読んで確認する。足りない設定（例：別のポートを含む URL）があれば報告する | 差分を読む、手動で確認する |
-| 104-12 | 新しい環境変数 `STORE_COOKIE_PREFIX`（既定は空）を、店舗画面の全ての Cookie の名前の前に付ける。対象は Auth.js のセッション・CSRF・PKCE などの Cookie（Auth.js の `cookies` の設定）と、カートの Cookie（`cart_id`、`cart_merge_notice`）。空なら今の名前のまま（DN-104-1）。実装役は、Auth.js の現在の版の文書（context7）で Cookie の名前の設定方法を確認する | 画面のテスト（設定の読み込み `frontend/store/src/auth/config.ts` など）、手動で確認する |
+| 104-12 | 新しい環境変数 `STORE_COOKIE_PREFIX`（既定は空）を、店舗画面の全ての Cookie の名前の前に付ける。Auth.js が HTTPS で付ける `__Secure-` と `__Host-` があるときは、その後ろに付ける。理由：ブラウザーがこれらを名前の先頭で判定するため。対象は Auth.js のセッション・CSRF・PKCE などの Cookie（Auth.js の `cookies` の設定）と、カートの Cookie（`cart_id`、`cart_merge_notice`）。空なら今の名前のまま（DN-104-1）。実装役は、Auth.js の現在の版の文書（context7）で Cookie の名前の設定方法を確認する | 画面のテスト（設定の読み込み `frontend/store/src/auth/config.ts` など）、手動で確認する |
 | 104-12 | 管理画面は、ログインの状態をブラウザーの origin ごとのストレージに保存するので、変えない。実装役が `frontend/admin/src/auth/oidc.ts` を読んで確認する | 差分を読む、手動で確認する |
 | 104-11 | `docker/keycloak/realms/ec-store-realm.json` の店舗画面の client の `redirectUris`、`webOrigins`、`post.logout.redirect.uris` に 13000、23000、33000 を加える。`ec-admin-realm.json` の管理画面の client に 15173、25173、35173 を加える（DN-104-3） | 差分を読む、統合テスト |
 | 104-11 | 共有の Keycloak への反映は、マージの後にメインの作業ツリー で `scripts/dev/reset.sh keycloak`（realm の再取り込み）。実装の途中の確認では、管理 API で client の設定を一時的に変えてよい（設定は JSON が正） | 手動で確認する |

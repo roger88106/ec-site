@@ -29,7 +29,7 @@ export function PublicationPeriodCard({
   product: ProductDetail
   refetch: () => Promise<unknown>
 }) {
-  const { form, baseVersion, markSaved, reload } = useVersionedForm(product, toValues, refetch)
+  const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(product, toValues, refetch)
   const t = useTranslations('product.period')
   const mutation = useApiMutation('put', '/products/{productId}/publication-period', {
     success: t('saved'), // 保存の知らせ
@@ -73,13 +73,7 @@ export function PublicationPeriodCard({
               />
             </Field>
           </div>
-          <ErrorMessage
-            error={mutation.error}
-            onReload={async () => {
-              mutation.reset()
-              await reload()
-            }}
-          />
+          <ErrorMessage error={mutation.error} onReload={() => reloadAfter(mutation)} />
           <div>
             <Button disabled={mutation.isPending} type="submit">
               {t('save') /* 公開期間を保存 */}

@@ -23,7 +23,7 @@ const PRODUCT_FIELD_CONSTRAINTS = {
  * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
  */
 export function BasicInfoCard({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
-  const { form, baseVersion, markSaved, reload } = useVersionedForm(product, toProductFields, refetch)
+  const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(product, toProductFields, refetch)
   const t = useTranslations('product.basicInfo')
   const tApp = useTranslations('app.common')
   const mutation = useApiMutation('put', '/products/{productId}', {
@@ -64,10 +64,7 @@ export function BasicInfoCard({ product, refetch }: { product: ProductDetail; re
             <ProductFields constraints={PRODUCT_FIELD_CONSTRAINTS} />
             <ErrorMessage
               error={mutation.error}
-              onReload={async () => {
-                mutation.reset()
-                await reload()
-              }}
+              onReload={() => reloadAfter(mutation)}
               shownFields={PRODUCT_FIELD_NAMES}
             />
             <div>

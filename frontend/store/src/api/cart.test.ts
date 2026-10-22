@@ -73,6 +73,36 @@ describe('ログインの直後にカートを移す', () => {
     expect(cookieValue('cart_merge_notice')).toBeUndefined()
   })
 
+  test('DC-135-18 移せなかったときの警告のログに、カートの ID（Cookie の値）を出力しない', async () => {
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    server.use(
+      http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
+      http.post('/me/cart/merge', ({ response }) =>
+        response(404).json(problem(404, 'NOT_FOUND', '見つかりませんでした。')),
+      ),
+    )
+
+    await mergeCartAfterLogin(LOGIN_TOKEN)
+
+    const logged = stderr.mock.calls.map(([line]) => String(line)).join('')
+    expect(logged).toContain('カートを移せませんでした')
+    expect(logged).not.toContain(COOKIE_CART_ID)
+  })
+
+  test('DC-135-18 通信が失敗したときの警告のログにも、カートの ID を出力しない', async () => {
+    resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
+    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    // 例外のメッセージに URL（カートの ID）が入る場合
+    vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError(`fetch failed: /carts/${COOKIE_CART_ID}`))
+
+    await mergeCartAfterLogin(LOGIN_TOKEN)
+
+    const logged = stderr.mock.calls.map(([line]) => String(line)).join('')
+    expect(logged).toContain('カートを移せませんでした')
+    expect(logged).not.toContain(COOKIE_CART_ID)
+  })
+
   test('Cookie のカートがなければ、API を呼ばない', async () => {
     // ハンドラーを渡さないので、API を呼べばテストが失敗する（setup.ts）
     await mergeCartAfterLogin(LOGIN_TOKEN)

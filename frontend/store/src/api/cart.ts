@@ -39,17 +39,19 @@ export async function mergeCartAfterLogin(accessToken: string): Promise<void> {
     const api = await getMemberApi()
     const headers = { Authorization: `Bearer ${accessToken}` }
     const source = await api.GET('/carts/{cartId}', { params: { path: { cartId } }, headers })
-    const { data } = await api.POST('/me/cart/merge', { body: { cartId }, headers })
+    const { data, response } = await api.POST('/me/cart/merge', { body: { cartId }, headers })
     if (data) {
       const notice = cartMergeNotice(data, source.data?.items ?? [])
       if (notice !== null) {
         await writeCartMergeNotice(notice)
       }
     } else {
-      await log.warn('カートを移せませんでした', { cartId })
+      // カートの ID は Cookie の値で、ゲストのカートは ID を知れば操作できるため、ログに出力しない
+      await log.warn('カートを移せませんでした', { status: response.status })
     }
   } catch (error) {
-    await log.warn('カートを移せませんでした', { cartId, error: String(error) })
+    // 例外のメッセージに URL（カートの ID）が入りうるため、例外の名前だけを残す
+    await log.warn('カートを移せませんでした', { error: error instanceof Error ? error.name : typeof error })
   }
   await deleteCartId()
 }

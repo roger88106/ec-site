@@ -57,6 +57,11 @@ updates:
         update-types:
           - minor
           - patch
+    # @types/node の major は、実行の環境（package.json の engines の Node）のバージョンに合わせて手で上げる
+    ignore:
+      - dependency-name: "@types/node"
+        update-types:
+          - version-update:semver-major
     cooldown:
       default-days: 3
       semver-major-days: 30

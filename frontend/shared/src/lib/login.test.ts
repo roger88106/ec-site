@@ -14,6 +14,16 @@ describe('ログインの後に戻ってよいパス', () => {
     expect(isSafeReturnPath(undefined)).toBe(false)
     expect(isSafeReturnPath(42)).toBe(false)
   })
+
+  test('制御文字を含むと戻らない（URL の解析で TAB・改行が除かれ、外のサイトになりうるため）', () => {
+    expect(isSafeReturnPath('/\t/evil.example')).toBe(false)
+    expect(isSafeReturnPath('/\n/evil.example')).toBe(false)
+    expect(isSafeReturnPath('/\r/evil.example')).toBe(false)
+    expect(isSafeReturnPath('/a\tb')).toBe(false)
+    expect(isSafeReturnPath('/a\u0000b')).toBe(false)
+    expect(isSafeReturnPath('/a\u001fb')).toBe(false)
+    expect(isSafeReturnPath('/a\u007fb')).toBe(false)
+  })
 })
 
 describe('氏名', () => {

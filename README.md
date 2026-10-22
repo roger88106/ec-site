@@ -22,6 +22,8 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 
 ## 進捗
 
+### MVP
+
 | spec | 種類 | 内容 | 状態 |
 |------|------|------|------|
 | [001](docs/specs/archive/mvp/001-catalog-and-inventory) | 機能 | 商品カタログと在庫 | 完了 |
@@ -45,3 +47,7 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [019](docs/specs/archive/mvp/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 | 完了。[段階 1〜6](docs/specs/archive/mvp/019-mvp-completion/tasks/) を終え、tag `v0.1.0` を付けた |
 
 MVP を完成させるまでの spec の順は [MVP の完成までの一覧](docs/specs/archive/mvp/mvp.md)、MVP の後に行う作業と未決事項は GitHub の [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。
+
+### 1→10
+
+MVP の後の作業は、milestone `1→10` の [issue の一覧](https://github.com/roger88106/ec-site/milestone/1) にある。進行中の spec は、label `spec` の [追跡の issue の一覧](https://github.com/roger88106/ec-site/issues?q=label%3Aspec) で見る。

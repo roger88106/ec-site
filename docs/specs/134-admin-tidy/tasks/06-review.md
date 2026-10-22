@@ -6,12 +6,15 @@
 
 ## タスク
 
-- [ ] **T134-06-01** spec の最後のレビュー：profile「厚め」で行い、組み合わせは[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節の表に従う。ファイルをまたぐ影響の観点を必ず含める。推奨は、自動の検査に移せるかを付けてまとめる。
+- [x] **T134-06-01** spec の最後のレビュー：profile「厚め」で行い、組み合わせは[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節の表に従う。ファイルをまたぐ影響の観点を必ず含める。推奨は、自動の検査に移せるかを付けてまとめる。
   - 依存：段階 1〜5
-- [ ] **T134-06-02** E2E を実行し（`scripts/dev/e2e.sh`）、通ることを確認する。注文、出荷、レポート、権限のシナリオが、共有の変更の影響を受けるため。
+  - 結果：4 つのレビュー役（汎用 3、高性能 1）で、高 0、必須 9（重複を除き 4 件）、推奨 28（重複を含む）。DC-134-1〜36 と DN-134-1〜7 を満たさないものはなかった。必須は全て採用し、T134-06-08、09 で直す：管理画面の構成の日時の整形の説明が数の整形の移動を反映していない（plan の文書の表の説明も同じ）、結合テストの注意がリンクの見た目のボタンを共有のコンポーネントでなく前の書き方で書く、新しい型とコンポーネントの説明のコメントが足りず引数の説明の位置がそろっていない、plan の spec 135 と同じファイルの一覧に店舗画面の構成と AC 一覧が抜けている。推奨のうち、この spec の範囲で小さく直せる 8 件を採用した：権限の取得の失敗の表示を他のエラーの表示（Alert）にそろえ、再試行の間はボタンを押せなくする、取得中の振る舞いのテストを追加する、リンクの見た目のボタンの `"use client"` の理由のコメント、hook の説明のコメントの誤字、戻り先の条件の制御文字の範囲を文書に書く、フロントの書き方の文言の引き方の hook の文と共有のパッケージの `"use client"` の基準、管理画面の構成の再読み込みの関数の渡し方、plan のテストの表の「新規」の書き漏れ。残りの推奨（機械の検査の追加：共有のコンポーネントを使わずに書くことの検出、shadcn/ui の吹き出しの直接の使用の検出、説明のコメントの漏れの検出。テストの共通化、型の書き方、数の整形の重複（店舗画面の分は spec 135）、skill `new-screen` への共有のコンポーネントの追記）は、起票のまとめの案（T134-06-05）に入れる。結果のファイルは `/.local/review/s6/`。
+- [x] **T134-06-02** E2E を実行し（`scripts/dev/e2e.sh`）、通ることを確認する。注文、出荷、レポート、権限のシナリオが、共有の変更の影響を受けるため。
   - 依存：T134-06-01
-- [ ] **T134-06-03** 画面を目視で確認する（skill `local-dev`）。管理画面と店舗画面を起動し、注文の詳細（金額の内訳）、商品の一覧（リンクの見た目のボタン）、レポート（表示名、吹き出し）、権限の取得を失敗させたとき（失敗の表示）を確認する。
+  - 結果：20 件が全て通った（スロット 1）。
+- [x] **T134-06-03** 画面を目視で確認する（skill `local-dev`）。管理画面と店舗画面を起動し、注文の詳細（金額の内訳）、商品の一覧（リンクの見た目のボタン）、レポート（表示名、吹き出し）、権限の取得を失敗させたとき（失敗の表示）を確認する。
   - 依存：T134-06-01
+  - 結果：スロット 1 で管理画面を起動し、バリアントの売れ行きの表示名（「色：白、サイズ：L」など）、注文の詳細の金額の内訳（要素のクラスが変更の前と同じ）、リンクの見た目のボタン（`a` の要素で役割は `button`）を確認した。アプリのウィンドウが隠れていて画面の撮影ができなかったため、グラフの吹き出しと権限の取得の失敗の表示は、結合テスト（`ChartValueTooltip.test.tsx`、`ReportPermission.test.tsx`）で確認した。店舗画面は E2E（T134-06-02。注文の画面の税額の表示を含む）で確認した。
 - [ ] **T134-06-04** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書（用語集、フロントの書き方、フロントのアーキテクチャ、管理画面の構成、店舗画面の構成）を、skill `docs` の言い回しと論理の規則に照合する。
   - 依存：T134-06-01
   - 範囲：`docs/design/glossary.md`、`docs/rules/frontend-coding.md`、`docs/design/frontend-architecture.md`、`docs/design/apps/admin.md`、`docs/design/apps/store.md`
@@ -20,9 +23,15 @@
 - [ ] **T134-06-06** pull request の前のレビュー：profile「厚め」のとおり、高性能のレビュー役が spec との一致と完了の定義を確認し、組み込みのコードレビュー（`/code-review`）も行う。指摘の扱いを決め、修正する（[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節）。
   - 依存：T134-06-05
 - [ ] **T134-06-07** 本 spec（spec、plan、tasks）を `docs/specs/archive/1to10/134-admin-tidy/` に移し、参照を修正する。移した後に `scripts/ci/check-all.sh` が通る（[開発の進め方](../../../rules/workflow.md) 第 4.2 節）。
-  - 依存：T134-06-06
+  - 依存：T134-06-06、T134-06-08、T134-06-09
+- [ ] **T134-06-08** spec の最後のレビューの指摘（コード）を直す。(1) 注文の表示名の 3 つの型、グラフの吹き出しのラッパーの props、レポートの共通のコンポーネントに説明のコメント（TSDoc）を追加し、引数の説明の位置をそろえる。(2) リンクの見た目のボタンの `"use client"` の理由のコメントを事実に合わせる。(3) バージョン付きのフォームの hook の説明のコメントの誤字を直す。(4) 権限の取得の失敗の表示を、他のエラーの表示（Alert）にそろえ、再試行の間はボタンを押せなくする。(5) 取得中は権限が必要な画面が何も表示せず、メニューにレポートを表示しないことの結合テストを追加する（DC-134-12）。
+  - 依存：T134-06-01
+  - 範囲：`frontend/shared/src/lib/orderLabels.ts`、`frontend/shared/src/components/LinkButton.tsx`、`frontend/admin/src/components/ChartValueTooltip.tsx`、`frontend/admin/src/features/report/components/ReportPage.tsx`、`frontend/admin/src/hooks/useVersionedForm.ts`、`frontend/admin/src/auth/RequirePermission.tsx`、`frontend/admin/src/auth/permissions.ts`、`frontend/admin/src/features/report/pages/ReportPermission.test.tsx`
+- [ ] **T134-06-09** spec の最後のレビューの指摘（文書）を直す。[管理画面の構成](../../../design/apps/admin.md) 第 2 節の日時の整形の説明、[管理画面の構成](../../../design/apps/admin.md) 第 5.1 節の再読み込みの関数の渡し方、[管理画面の構成](../../../design/apps/admin.md) 第 9 節のリンクの見た目のボタンの注意、[管理画面の構成](../../../design/apps/admin.md) 第 10.1 節と[店舗画面の構成](../../../design/apps/store.md) 第 9.2 節の制御文字の範囲、[フロントの書き方](../../../rules/frontend-coding.md) 第 5.1 節の `"use client"` の基準、[フロントの書き方](../../../rules/frontend-coding.md) 第 7.1 節の hook の文、[plan](../plan.md) 第 6 節の「新規」、[plan](../plan.md) 第 7 節の数の整形の説明、[plan](../plan.md) 第 8 節の spec 135 と同じファイルの一覧。
+  - 依存：T134-06-01
+  - 範囲：`docs/design/apps/admin.md`、`docs/design/apps/store.md`、`docs/rules/frontend-coding.md`、`docs/specs/134-admin-tidy/plan.md`
 
-T134-06-07 は tasks の最後のタスクで、pull request を作る直前の commit で行う。理由：アーカイブした spec は、進捗の検査が全てのタスクの済みを求めるため（[spec 7 の段階 6](../../archive/1to10/7-dev-process/tasks/06-completion.md) の結果と同じ）。
+T134-06-08、09 は spec の最後のレビューの後に追加した。T134-06-07 は、番号は前だが、T134-06-08、09 の後に行う。T134-06-07 は tasks の最後に行うタスクで、pull request を作る直前の commit で行う。理由：アーカイブした spec は、進捗の検査が全てのタスクの済みを求めるため（[spec 7 の段階 6](../../archive/1to10/7-dev-process/tasks/06-completion.md) の結果と同じ）。
 
 ## tasks の外の作業
 

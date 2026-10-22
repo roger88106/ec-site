@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { formatLock } from './e2e-lock.mjs'
-import { acquireLock, acquireOnce, ownsLock } from './slot-lock.mjs'
+import { acquireLock, acquireOnce, busyLockMessage, ownsLock } from './slot-lock.mjs'
 
 const me = { worktree: '/wt/me', pid: 100, startedAt: '2026-10-22T10:00:00.000Z' }
 const other = { worktree: '/wt/other', pid: 200, startedAt: '2026-10-22T09:00:00.000Z' }
@@ -56,14 +56,14 @@ describe('スロットのロックの 1 回の取得', () => {
     assert.equal(lock.lock, formatLock(me))
   })
 
-  test('持ち主の PID のプロセスがあれば、時間が経っていても取らず、持ち主を返す', () => {
+  test('所有者の PID のプロセスがあれば、時間が経っていても取らず、所有者を返す', () => {
     const lock = fakeLock(formatLock(other))
     assert.deepEqual(acquireOnce({ io: lock.io, owner: me, isRunning: alive(200) }), { action: 'busy', owner: other })
     assert.equal(lock.lock, formatLock(other))
     assert.deepEqual(lock.events, [])
   })
 
-  test('持ち主の PID のプロセスがなければ、退かして捨て、取り直す', () => {
+  test('所有者の PID のプロセスがなければ、退かして捨て、取り直す', () => {
     const lock = fakeLock(formatLock(other))
     assert.deepEqual(acquireOnce({ io: lock.io, owner: me, isRunning: alive() }), { action: 'retry' })
     assert.deepEqual(lock.events, ['move', 'discard'])
@@ -113,16 +113,16 @@ describe('スロットのロックの取得（待つ）', () => {
     assert.equal(lock.lock, formatLock(me))
   })
 
-  test('持ち主が動いている間は待ち、上限を過ぎたら持ち主を返す', async () => {
+  test('所有者が動いている間は待ち、上限を過ぎたら所有者を返す', async () => {
     const lock = fakeLock(formatLock(other))
     const c = clock()
     const result = await acquireLock({ io: lock.io, owner: me, isRunning: alive(200), waitMs: 1000, now: () => c.now, sleep: c.sleep })
     assert.deepEqual(result, { acquired: false, owner: other })
-    assert.ok(c.now > 1000)
+    assert.ok(c.now >= 1000)
     assert.equal(lock.lock, formatLock(other))
   })
 
-  test('持ち主が放せば、待っている側が取る', async () => {
+  test('所有者が放せば、待っている側が取る', async () => {
     const lock = fakeLock(formatLock(other))
     const c = clock()
     const sleep = async (ms) => {
@@ -134,12 +134,70 @@ describe('スロットのロックの取得（待つ）', () => {
   })
 })
 
-describe('スロットのロックの持ち主', () => {
+describe('スロットのロックの所有者', () => {
   test('自分の PID と開始の時刻のロックだけを自分のものとする', () => {
     assert.equal(ownsLock(formatLock(me), me), true)
     assert.equal(ownsLock(formatLock(other), me), false)
     assert.equal(ownsLock(formatLock({ ...me, startedAt: other.startedAt }), me), false)
     assert.equal(ownsLock(null, me), false)
     assert.equal(ownsLock('broken', me), false)
+  })
+})
+
+describe('ロックを取れないときの待ちと案内', () => {
+  /** 古いロックをいつまでも退かせない io（Windows で他方が読み続けているときなど） */
+  const stuckIo = () => ({
+    create: () => false,
+    read: () => formatLock(other),
+    moveAside: () => null,
+    restore: () => {},
+    discard: () => {},
+  })
+
+  test('古いロックを退かせない状態が続いても、間を置いて待ち、上限を過ぎたら所有者なしで終わる', async () => {
+    const c = { now: 0 }
+    const sleep = async (ms) => {
+      c.now += ms
+    }
+    const result = await acquireLock({ io: stuckIo(), owner: me, isRunning: alive(), waitMs: 1000, now: () => c.now, sleep })
+    assert.deepEqual(result, { acquired: false, owner: null })
+    assert.ok(c.now >= 1000)
+  })
+
+  test('上限が 0 でも、古いロックを取り除いた直後の取り直しはできる', async () => {
+    const lock = fakeLock(formatLock(other))
+    const sleep = async () => assert.fail('待ってはいけない')
+    const result = await acquireLock({ io: lock.io, owner: me, isRunning: alive(), waitMs: 0, now: () => 0, sleep })
+    assert.deepEqual(result, { acquired: true })
+  })
+
+  test('上限が 0 で古いロックを退かせない状態が続くときも、終わる', async () => {
+    const c = { now: 0 }
+    const sleep = async (ms) => {
+      c.now += ms
+    }
+    const result = await acquireLock({ io: stuckIo(), owner: me, isRunning: alive(), waitMs: 0, now: () => c.now, sleep })
+    assert.deepEqual(result, { acquired: false, owner: null })
+  })
+
+  test('上限が 0 なら、所有者が動いているとき待たずに所有者を返す', async () => {
+    const lock = fakeLock(formatLock(other))
+    const sleep = async () => assert.fail('待ってはいけない')
+    const result = await acquireLock({ io: lock.io, owner: me, isRunning: alive(200), waitMs: 0, now: () => 0, sleep })
+    assert.deepEqual(result, { acquired: false, owner: other })
+  })
+
+  test('案内は、所有者、ロックのファイルのパス、所有者のプロセスがなければ削除してよいことを示す', () => {
+    const message = busyLockMessage({ lock: '/repo/.git/x.lock', owner: other })
+    assert.match(message, /\/wt\/other/)
+    assert.match(message, /PID 200/)
+    assert.match(message, /\/repo\/\.git\/x\.lock/)
+    assert.match(message, /プロセスがなければ削除してよい/)
+  })
+
+  test('所有者が分からないときも、ロックのファイルのパスと削除の案内を示す', () => {
+    const message = busyLockMessage({ lock: '/repo/.git/x.lock', owner: null })
+    assert.match(message, /\/repo\/\.git\/x\.lock/)
+    assert.match(message, /削除してよい/)
   })
 })

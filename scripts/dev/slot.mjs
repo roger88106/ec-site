@@ -13,14 +13,16 @@
 // 終了コード：0 成功、1 実行できない（満杯、未割り当て、バックエンドが動いているなど）、2 共有の基盤が動いていない。
 // 共有の基盤（compose）は、メインの作業ツリーで起動する。この script は起動しない。
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
-import { randomUUID } from 'node:crypto'
-import { existsSync, linkSync, mkdirSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { acquireLock, ownsLock } from './lib/slot-lock.mjs'
+import { createLockIo } from './lib/lock-io.mjs'
+import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
 import {
   assignSlot,
+  checkBackendStopped,
   checkShared,
   currentSlotOf,
+  dropBucketsScript,
   formatSlotRecord,
   generateApiDir,
   isMainWorktree,
@@ -38,7 +40,7 @@ const POSTGRES = 'ec-site-postgres'
 /** 起動できる対象 */
 const TARGETS = ['backend', 'store', 'admin']
 
-/** ロックを待つ上限（ミリ秒）。ロックの中は空きの選択と記録の書き込みだけなので、長く待つのは持ち主が止まっているとき */
+/** ロックを待つ上限（ミリ秒）。ロックの中は空きの選択と記録の書き込みだけなので、長く待つのは所有者が止まっているとき */
 const LOCK_WAIT_MS = 90_000
 
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
@@ -211,17 +213,14 @@ function runInit(root, args, command = []) {
 }
 
 /**
- * スロットの 2 つのバケットを削除する。ないバケットは無視する。
+ * スロットの 2 つのバケットを削除する。ないバケット（NoSuchBucket）は無視し、他の誤りは失敗にする。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
  */
 function dropBuckets(root, slot) {
   const { incomingBucket, publicBucket } = slotValues(slot)
-  const script = [incomingBucket, publicBucket]
-    .map((bucket) => `aws --endpoint-url http://seaweedfs:8333 s3 rb --force s3://${bucket} 2>/dev/null || true`)
-    .join('; ')
-  runInit(root, ['--entrypoint', 'sh'], ['-c', script])
+  runInit(root, ['--entrypoint', 'sh'], ['-c', dropBucketsScript([incomingBucket, publicBucket])])
 }
 
 /**
@@ -291,71 +290,9 @@ function isRunning(pid) {
 }
 
 /**
- * ロックのファイルの操作（lib/slot-lock.mjs の LockIo）。
- *
- * @param {string} lock ロックのファイルのパス
- * @returns {import('./lib/slot-lock.mjs').LockIo}
- */
-function lockIo(lock) {
-  /** 退かしたロックのパス */
-  let aside = null
-  const unique = () => `${lock}.${process.pid}.${randomUUID()}`
-  return {
-    create(content) {
-      // 一時のファイルに書いてから link するので、中身の書きかけのロックは見えない。link は、あれば原子的に失敗する
-      const temp = `${unique()}.tmp`
-      writeFileSync(temp, content, { flag: 'wx' })
-      try {
-        linkSync(temp, lock)
-        return true
-      } catch (e) {
-        if (e.code === 'EEXIST') return false
-        throw e
-      } finally {
-        rmSync(temp, { force: true })
-      }
-    },
-    read() {
-      try {
-        return readFileSync(lock, 'utf8')
-      } catch (e) {
-        if (e.code === 'ENOENT') return null
-        throw e
-      }
-    },
-    moveAside() {
-      aside = `${unique()}.stale`
-      try {
-        renameSync(lock, aside)
-      } catch (e) {
-        aside = null
-        // ない（他方が先に退かした）か、Windows で他方が読んでいる間は退かせない。判定からやり直す
-        if (['ENOENT', 'EPERM', 'EBUSY', 'EACCES'].includes(e.code)) return null
-        throw e
-      }
-      return readFileSync(aside, 'utf8')
-    },
-    restore() {
-      try {
-        linkSync(aside, lock)
-      } catch (e) {
-        if (e.code !== 'EEXIST') throw e
-      } finally {
-        rmSync(aside, { force: true })
-        aside = null
-      }
-    },
-    discard() {
-      rmSync(aside, { force: true })
-      aside = null
-    },
-  }
-}
-
-/**
  * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
  * ロックは git の共通のディレクトリの ec-site-slot-assign.lock（作業ツリーのパス、PID、開始の時刻）。
- * 持ち主の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
+ * 所有者の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
  * 2 つのセッションが同時に assign しても、空きの選択から記録の書き込みまでが重ならない。
  *
  * @template T
@@ -365,15 +302,11 @@ function lockIo(lock) {
  */
 async function withLock(ctx, action) {
   const lock = path.join(ctx.commonDir, 'ec-site-slot-assign.lock')
-  const io = lockIo(lock)
+  const io = createLockIo(lock)
   const owner = { worktree: ctx.root, pid: process.pid, startedAt: new Date().toISOString() }
   const result = await acquireLock({ io, owner, isRunning, waitMs: LOCK_WAIT_MS, sleep })
   if (!result.acquired) {
-    const holder = result.owner
-    throw new Exit(
-      1,
-      `スロットのロック（${lock}）を取れなかった。持ち主：${holder.worktree}（PID ${holder.pid}、開始 ${holder.startedAt}）`,
-    )
+    throw new Exit(1, `スロットのロックを取れなかった。${busyLockMessage({ lock, owner: result.owner })}`)
   }
   try {
     return action()
@@ -424,11 +357,13 @@ async function assign(ctx) {
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */
-function release(ctx) {
+async function release(ctx) {
   if (ctx.main) return console.log('メインの作業ツリーはスロット 0。解くものはない')
   requireShared(ctx)
   const slot = parseSlotRecord(readRecord(ctx.root))
   if (slot === null) return console.log('スロットは割り当てられていない')
+  const problem = checkBackendStopped({ slot, running: await backendRunning(slot), action: '解く' })
+  if (problem !== null) throw new Exit(problem.code, problem.message)
   dropData(ctx.root, slot)
   rmSync(recordFile(ctx.root), { force: true })
   console.log(`スロット ${slot} を解いた`)
@@ -462,12 +397,8 @@ async function reset(ctx) {
   const slot = parseSlotRecord(readRecord(ctx.root))
   if (slot === null) throw new Exit(1, 'スロットが割り当てられていない。先に node scripts/dev/slot.mjs assign を流す')
   const values = slotValues(slot)
-  if (await backendRunning(slot)) {
-    throw new Exit(
-      1,
-      `スロット ${slot} のバックエンド（:${values.backendPort}）が動いている。止めてから流し直す（接続を持ったまま消すと、起動中の処理が失敗する）`,
-    )
-  }
+  const problem = checkBackendStopped({ slot, running: await backendRunning(slot), action: '流し直す' })
+  if (problem !== null) throw new Exit(problem.code, problem.message)
   recreateData(ctx.root, slot)
   console.log(`スロット ${slot} のデータベース ${values.database} とバケットを作り直した。次のバックエンドの起動で seed が入る`)
 }
@@ -585,10 +516,10 @@ async function run(ctx, args) {
       return generated.status ?? 1
     }
   }
-  // Windows の .bat は shell を通さないと起動できない
+  // Windows の .bat は shell を通さないと起動できない（引数のない 1 つの文字列にして、引数を連結する警告を避ける）
   const child =
     process.platform === 'win32' && command.endsWith('.bat')
-      ? spawn(`"${command}"`, commandArgs, { ...options, shell: true })
+      ? spawn([`"${command}"`, ...commandArgs].join(' '), { ...options, shell: true })
       : spawn(command, commandArgs, options)
   for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => killChild(child, signal))
   return new Promise((resolve) => {
@@ -620,7 +551,7 @@ async function main(argv) {
     throw new Exit(1, 'git の作業ツリーの中で流す')
   }
   if (command === 'assign') await assign(ctx)
-  else if (command === 'release') release(ctx)
+  else if (command === 'release') await release(ctx)
   else if (command === 'reset') await reset(ctx)
   else if (command === 'show') show(ctx)
   else if (command === 'env') env(ctx)

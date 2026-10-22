@@ -22,7 +22,7 @@ describe('ロックの判定', () => {
     assert.deepEqual(decideLock({ content: null, isRunning: () => true }), { action: 'acquire' })
   })
 
-  test('PID のプロセスが実行中なら、持ち主を示して取得できない', () => {
+  test('PID のプロセスが実行中なら、所有者を示して取得できない', () => {
     const decision = decideLock({ content: formatLock(owner), isRunning: (pid) => pid === 4321 })
     assert.deepEqual(decision, { action: 'busy', owner })
   })

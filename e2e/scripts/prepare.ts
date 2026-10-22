@@ -1,5 +1,5 @@
 /**
- * E2E の準備（plan 004 第 6.1 節）。`pnpm test` が Playwright の前に流す。<br />
+ * E2E の準備。`pnpm test` が Playwright の前に流す。<br />
  * E2E 用の DB（ec_site_e2e）と IdP の database（keycloak_e2e）を再作成し、E2E 用の Keycloak だけを起動し直す（共有の基盤のコンテナは作り直さない）。
  * 毎回、マイグレーションと seed/base だけの DB と、realm の JSON の状態の IdP から始まる。
  * ローカルの DB（ec_site）と Keycloak（keycloak、8180）には触れない。

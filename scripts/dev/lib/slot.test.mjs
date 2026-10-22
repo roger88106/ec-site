@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import {
@@ -7,8 +8,10 @@ import {
   SHARED_PORTS,
   SLOT_COUNT,
   assignSlot,
+  checkBackendStopped,
   checkShared,
   currentSlotOf,
+  dropBucketsScript,
   generateApiDir,
   formatSlotRecord,
   isMainWorktree,
@@ -149,8 +152,8 @@ describe('ポートと名前が重ならないこと', () => {
     assert.deepEqual(sorted(E2E.ports), sorted(e2e.filter((port) => !shared.includes(port))))
   })
 
-  test('スロットは 4 つのポートを持つ', () => {
-    assert.deepEqual(slotPorts(1), [18080, 19080, 13000, 15173])
+  test('スロットのポートは、バックエンド、運用、店舗画面、管理画面の順に返す', () => {
+    assert.deepEqual(slotPorts(2), [28080, 29080, 23000, 25173])
   })
 
   test('全スロットのポートは、Windows の動的なポートの範囲（49152〜）より下に収まる', () => {
@@ -425,7 +428,7 @@ describe('環境変数の組み立て', () => {
   })
 })
 
-describe('generateApiDir', () => {
+describe('起動の前の API の型の生成', () => {
   test('画面は起動の前に API の型を生成するディレクトリを返す', () => {
     assert.equal(generateApiDir('store'), 'frontend/store')
     assert.equal(generateApiDir('admin'), 'frontend/admin')
@@ -433,5 +436,114 @@ describe('generateApiDir', () => {
 
   test('バックエンドは生成しない', () => {
     assert.equal(generateApiDir('backend'), null)
+  })
+})
+
+describe('バックエンドの稼働の確認', () => {
+  test('動いていれば、スロットとバックエンドのポートと操作の名前を示して、終了コード 1', () => {
+    const problem = checkBackendStopped({ slot: 2, running: true, action: '解く' })
+    assert.equal(problem.code, 1)
+    assert.match(problem.message, /スロット 2/)
+    assert.match(problem.message, /:28080/)
+    assert.match(problem.message, /止めてから解く/)
+  })
+
+  test('動いていなければ、何も示さない', () => {
+    assert.equal(checkBackendStopped({ slot: 2, running: false, action: '解く' }), null)
+  })
+})
+
+describe('バケットの削除の script', () => {
+  /** 偽の aws を定義して script を流す。aws は与えた出力を標準エラー出力へ書き、与えた終了コードで終わる */
+  function runScript(buckets, awsStderr, awsStatus) {
+    const fake = `aws() { echo '${awsStderr}' >&2; return ${awsStatus}; }\n`
+    return spawnSync('sh', ['-c', fake + dropBucketsScript(buckets)], { encoding: 'utf8' })
+  }
+
+  test('削除に成功すれば、終了コード 0', () => {
+    assert.equal(runScript(['b1', 'b2'], '', 0).status, 0)
+  })
+
+  test('バケットがない誤り（NoSuchBucket）だけは無視して、終了コード 0', () => {
+    const result = runScript(['b1', 'b2'], 'An error occurred (NoSuchBucket) when calling the ListObjectsV2 operation', 255)
+    assert.equal(result.status, 0)
+  })
+
+  test('他の誤り（権限や接続）は、出力して失敗にする', () => {
+    const result = runScript(['b1', 'b2'], 'An error occurred (AccessDenied) when calling the DeleteBucket operation', 255)
+    assert.notEqual(result.status, 0)
+    assert.match(result.stderr, /AccessDenied/)
+  })
+
+  test('指定のバケットをそれぞれ削除する', () => {
+    const script = dropBucketsScript(['b1', 'b2'])
+    assert.match(script, /s3:\/\/b1\b/)
+    assert.match(script, /s3:\/\/b2\b/)
+  })
+})
+
+describe('スロットの値を書き写したファイル', () => {
+  const slots = [1, 2, 3]
+  const readJson = (relative) => JSON.parse(repoFile(relative))
+
+  /** realm の中で、スロット 0 の画面の origin を許す client */
+  const clientAllowing = (relative, origin) => {
+    const client = readJson(relative).clients.find((c) => c.redirectUris?.includes(`${origin}/*`))
+    assert.ok(client, `${relative} に ${origin} を許す client がない`)
+    return client
+  }
+
+  for (const [label, relative, origin, port] of [
+    ['店舗画面', 'docker/keycloak/realms/ec-store-realm.json', 'http://localhost:3000', 'storePort'],
+    ['管理画面', 'docker/keycloak/realms/ec-admin-realm.json', 'http://localhost:5173', 'adminPort'],
+  ]) {
+    test(`${label}の realm は、スロット 1〜3 の origin を redirectUris、webOrigins、post.logout.redirect.uris に含む`, () => {
+      const client = clientAllowing(relative, origin)
+      for (const slot of slots) {
+        const o = `http://localhost:${slotValues(slot)[port]}`
+        assert.ok(client.redirectUris.includes(`${o}/*`), `redirectUris に ${o}/* がない`)
+        assert.ok(client.webOrigins.includes(o), `webOrigins に ${o} がない`)
+        assert.ok(client.attributes['post.logout.redirect.uris'].split('##').includes(`${o}/*`), `post.logout.redirect.uris に ${o}/* がない`)
+      }
+    })
+  }
+
+  test('.claude/launch.json は、スロットごとの画面の起動に、スロットのポートと番号を渡す', () => {
+    const configs = readJson('.claude/launch.json').configurations
+    for (const slot of slots) {
+      for (const [target, port] of [
+        ['admin', 'adminPort'],
+        ['store', 'storePort'],
+      ]) {
+        const config = configs.find((c) => c.name === `${target}-${slot}`)
+        assert.ok(config, `${target}-${slot} がない`)
+        assert.equal(config.port, slotValues(slot)[port])
+        assert.deepEqual(config.runtimeArgs, ['scripts/dev/slot.mjs', 'run', target, String(slot)])
+      }
+    }
+  })
+
+  test('compose の imgproxy は、全スロットの受付のバケットを読み元として許す', () => {
+    const line = /IMGPROXY_ALLOWED_SOURCES:\s*(\S+)/.exec(repoFile('docker/compose.yaml'))
+    assert.ok(line, 'IMGPROXY_ALLOWED_SOURCES がない')
+    const sources = line[1].split(',')
+    for (const slot of [0, ...slots]) assert.ok(sources.includes(`s3://${slotValues(slot).incomingBucket}/`), `スロット ${slot}`)
+  })
+
+  test('SeaweedFS の imgproxy の identity は、全スロットの受付のバケットを読める', () => {
+    const identity = readJson('docker/seaweedfs/s3.json').identities.find((i) => i.name === 'ec-site-imgproxy')
+    for (const slot of [0, ...slots]) assert.ok(identity.actions.includes(`Read:${slotValues(slot).incomingBucket}`), `スロット ${slot}`)
+  })
+
+  test('Windows のポートの予約の表は、全スロットのポートを、スロットの名前を付けて含む', () => {
+    const script = repoFile('scripts/dev/windows/exclude-ports.ps1')
+    const listed = [...script.matchAll(/^\s+(\d+) = '([^']*)'/gm)].map((m) => ({ port: Number(m[1]), label: m[2] }))
+    for (const slot of slots) {
+      for (const port of slotPorts(slot)) {
+        const entry = listed.find((e) => e.port === port)
+        assert.ok(entry, `${port} がない`)
+        assert.ok(entry.label.includes(`スロット ${slot}`), `${port} の名前にスロット ${slot} がない`)
+      }
+    }
   })
 })

@@ -229,6 +229,36 @@ export function checkShared(running, mainPath) {
 }
 
 /**
+ * バックエンドが動いているときの案内を決める。動いている間にデータベースを削除すると、起動中の処理が失敗する。
+ *
+ * @param {{ slot: number, running: boolean, action: string }} input action は止めた後にする操作（「流し直す」「解く」）
+ * @returns {{ code: 1, message: string } | null} 動いていなければ null
+ */
+export function checkBackendStopped({ slot, running, action }) {
+  if (!running) return null
+  return {
+    code: 1,
+    message: `スロット ${slot} のバックエンド（:${slotValues(slot).backendPort}）が動いている。止めてから${action}（接続を持ったまま削除すると、起動中の処理が失敗する）`,
+  }
+}
+
+/**
+ * バケットを削除する sh の script（SeaweedFS の aws cli のコンテナで流す）。<br />
+ * バケットがない誤り（NoSuchBucket）だけを無視し、権限や接続の誤りは出力して失敗にする。
+ *
+ * @param {string[]} buckets バケットの名前
+ * @returns {string}
+ */
+export function dropBucketsScript(buckets) {
+  return buckets
+    .map(
+      (bucket) =>
+        `out=$(aws --endpoint-url http://seaweedfs:8333 s3 rb --force s3://${bucket} 2>&1) || case "$out" in *NoSuchBucket*) ;; *) echo "$out" >&2; exit 1 ;; esac`,
+    )
+    .join('\n')
+}
+
+/**
  * スロットを割り当てる手順。<br />
  * ロックの中では、作業ツリーの一覧を読み、空きを選び、記録を書くだけにする。
  * データベースとバケットの作り直しは長くかかるので、ロックを放した後に流す。

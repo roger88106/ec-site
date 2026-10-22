@@ -80,7 +80,7 @@ describe('レポートの権限による出し分け', () => {
     },
   )
 
-  it('DC-134-12 自分の権限の一覧の取得中は、レポートの画面は何も表示せず、メニューにレポートを表示しない', async () => {
+  it('自分の権限の一覧の取得中は、レポートの画面は何も表示せず、メニューにレポートを表示しない', async () => {
     renderApp('/reports/customer-breakdown', { me: 'pending' })
 
     expect(await screen.findByRole('navigation')).toBeInTheDocument()
@@ -91,7 +91,7 @@ describe('レポートの権限による出し分け', () => {
     expect(screen.queryByRole('link', { name: '地域・年齢層・性別' })).not.toBeInTheDocument()
   })
 
-  it('DC-134-12 再試行の間（取得し直している間）は、「再試行」のボタンを押せない', async () => {
+  it('再試行の間（取得し直している間）は、「再試行」のボタンを押せない', async () => {
     const { user } = renderApp('/reports/customer-breakdown', { me: 'serverError' })
     const retry = await screen.findByRole('button', { name: '再試行' })
     expect(retry).toBeEnabled()
@@ -106,6 +106,34 @@ describe('レポートの権限による出し分け', () => {
 
     await waitFor(() => expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled())
   })
+
+  it.each(ME_FAILURES)(
+    '再試行の間に別のレポートの画面へ移っても、取得の失敗を示し、「再試行」のボタンを押せない（%s）',
+    async (_name, me, message) => {
+      const { user, router } = renderApp('/reports/customer-breakdown', { me })
+      expect(await screen.findByText(message)).toBeInTheDocument()
+
+      server.use(
+        http.get('/me', async ({ response }) => {
+          await delay('infinite')
+          return response(200).json({ permissions: SALES })
+        }),
+      )
+      await user.click(screen.getByRole('button', { name: '再試行' }))
+      await waitFor(() => expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled())
+
+      // 権限を確かめない画面（税区分）を経て別のレポートを開く。画面の部品が新しく作られる
+      server.use(http.get('/tax-categories', ({ response }) => response(200).json({ items: [] })))
+      await user.click(screen.getByRole('link', { name: '税区分' }))
+      await waitFor(() => expect(router.state.location.pathname).toBe('/tax-categories'))
+      expect(screen.queryByRole('button', { name: '再試行' })).not.toBeInTheDocument()
+      await user.click(screen.getByRole('link', { name: 'バリアントの売れ行き' }))
+
+      expect(router.state.location.pathname).toBe('/reports/variant-sales')
+      expect(await screen.findByText(message)).toBeInTheDocument()
+      expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled()
+    },
+  )
 
   it.each(ME_FAILURES)(
     '自分の権限の一覧の取得に失敗すると、メニューにレポートの入口を全て表示する（%s）',

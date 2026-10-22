@@ -16,7 +16,7 @@ on:
       - '**'
       - '!**.md'          # 文書、skill の本文
       - '!.claude/**'     # エージェントの設定と、ローカルの画面の確認の設定
-      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く）
+      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く。E2E の script から使う scripts/dev/lib/ は次の行で含め直す）
       - 'scripts/dev/lib/**' # CI の E2E の script から使う script の置き場所
       - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
       - '!.github/workflows/pages.yml'
@@ -144,13 +144,15 @@ jobs:
 
   # ruleset の必須の検査の名前は「バックエンド」なので、この名前を残す（変えると ruleset の変更が要る）。
   # 上の 3 つのジョブの後に、カバレッジの実行データを合わせて報告を作る。
-  # 上のジョブが失敗・中止・スキップしたときは、このジョブも失敗させる。
-  # needs のジョブがスキップされると、このジョブもスキップされ、必須の検査としては成功と同じに扱われるので、
-  # if: always() で必ず実行し、最初の手順で結果を調べる
+  # 上のジョブが失敗・スキップしたときも、このジョブを実行して失敗にする。
+  # needs のジョブが失敗するとこのジョブはスキップされ、必須の検査としては成功と同じに扱われるので、
+  # if で必ず実行し、最初の手順で結果を調べる。
+  # always() でなく !cancelled() にするのは、ワークフローが中止されたとき（concurrency の cancel-in-progress）に、
+  # このジョブも中止にするため（古い commit に失敗を残さない）。中止も成功ではないので、必須の検査としては通らない
   backend:
     name: バックエンド
     needs: [backend-build, backend-integration]
-    if: always()
+    if: ${{ !cancelled() }}
     runs-on: ubuntu-latest
     timeout-minutes: 10
     defaults:
@@ -190,11 +192,17 @@ jobs:
 
       # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない。
       # 実行データ（単体 1 つと統合 2 つ）を 1 つの報告にする。クラスは、ビルドのジョブがコンパイルしたもの
+      # JaCoCo は、実行データとクラスが一致しないと警告を出す（各ジョブが別々にコンパイルしたクラスが違うとき）。
+      # 失敗にはせず、注釈に出す。pipefail で Gradle の失敗は隠さない
       - name: カバレッジの報告を作る
-        run: >
-          ./gradlew coverageReport
-          -PcoverageExecDir=${{ runner.temp }}/backend
-          -PcoverageClassesDir=${{ runner.temp }}/backend/backend-classes
+        run: |
+          set -o pipefail
+          ./gradlew coverageReport \
+            -PcoverageExecDir=${{ runner.temp }}/backend \
+            -PcoverageClassesDir=${{ runner.temp }}/backend/backend-classes 2>&1 | tee "$RUNNER_TEMP/coverage-report.log"
+          if grep -q 'does not match' "$RUNNER_TEMP/coverage-report.log"; then
+            echo "::warning::JaCoCo のクラスの不一致の警告がある。各ジョブがコンパイルしたクラスが違うため、カバレッジが正しくない可能性がある"
+          fi
 
       - name: カバレッジの合計を summary に書く
         run: node ../../scripts/ci/report/coverage-summary.mjs バックエンド build/reports/jacoco/coverageReport/coverageReport.xml
@@ -358,7 +366,9 @@ jobs:
 
       # OS の依存（--with-deps、install-deps）は入れない。Chromium が使うライブラリは、ランナーのイメージに入っている。
       # 依存の導入が足すのはフォントなどで、CI で流す e2e/tests の結果に影響しない（画面の撮影は CI で流さない）。
-      # 一方、apt の取得は外部のミラーが遅いと数分から 30 分かかり、E2E のジョブ全体を止めることがある
+      # 一方、apt の取得は外部のミラーが遅いと数分から 30 分かかり、E2E のジョブ全体を止めることがある。
+      # 失敗時の画面の撮影（screenshot: 'only-on-failure'）では、日本語のフォントがなく文字が四角になることがある。
+      # 読めないときは、手元の scripts/dev/e2e.sh で再現する
       - name: ブラウザーのインストール
         if: steps.browsers.outputs.cache-hit != 'true'
         working-directory: e2e

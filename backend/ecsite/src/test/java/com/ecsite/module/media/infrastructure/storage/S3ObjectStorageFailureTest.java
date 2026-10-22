@@ -148,6 +148,9 @@ class S3ObjectStorageFailureTest {
 
     /**
      * 指定の S3 を呼ぶ実装を、アプリと同じ設定のクライアントで作る（署名付き URL は使わない）。
+     *
+     * @param endpoint S3 の URL
+     * @return S3 を呼ぶ実装
      */
     private static S3ObjectStorage storage(URI endpoint) {
         return storage(endpoint, ATTEMPT_TIMEOUT, CALL_TIMEOUT);
@@ -155,6 +158,11 @@ class S3ObjectStorageFailureTest {
 
     /**
      * 待つ時間の上限を指定して、指定の S3 を呼ぶ実装を作る。
+     *
+     * @param endpoint       S3 の URL
+     * @param attemptTimeout 1 回の試行を待つ時間の上限
+     * @param callTimeout    呼び出し全体を待つ時間の上限
+     * @return S3 を呼ぶ実装
      */
     private static S3ObjectStorage storage(URI endpoint, Duration attemptTimeout, Duration callTimeout) {
         var properties = new MediaStorageProperties(null, "us-east-1", true, "test-key", "test-secret",

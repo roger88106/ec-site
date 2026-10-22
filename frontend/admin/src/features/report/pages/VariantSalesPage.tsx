@@ -1,62 +1,42 @@
 import { formatYen } from '@ec-site/shared/lib/format'
 import { keepPreviousData } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import type { VariantSalesReport } from '@/api/types'
 import { ChartValueTooltip } from '@/components/ChartValueTooltip'
-import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { type ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CsvButton } from '@/features/report/components/CsvButton'
-import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
+import { ReportPage } from '@/features/report/components/ReportPage'
 import { variantSalesLabel } from '@/features/report/labels'
-import { CALENDAR_PRESETS, presetPeriod, todayInJapan } from '@/features/report/period'
-import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
-import { useReportSettings } from '@/features/report/settings'
+import { CALENDAR_PRESETS } from '@/features/report/period'
+import type { ReportCondition } from '@/features/report/reportCondition'
 import { formatNumber } from '@/lib/format'
 
 /** バリアントの売れ行き。商品を選んでから出す。条件は URL に持つ */
 export function VariantSalesPage() {
-  const t = useTranslations('app.menu')
-  const settings = useReportSettings()
   return (
-    <>
-      <PageHeader title={t('variantSales') /* バリアントの売れ行き */} />
-      <QueryState query={settings}>
-        {({ fiscalYearStartMonth }) => <VariantSalesView fiscalYearStartMonth={fiscalYearStartMonth} />}
-      </QueryState>
-    </>
+    <ReportPage
+      defaultPreset="thisMonth"
+      excludeShipping={false}
+      menuKey="variantSales"
+      presets={CALENDAR_PRESETS}
+      productRequired
+    >
+      {(condition) => <VariantSalesView condition={condition} />}
+    </ReportPage>
   )
 }
 
-/** 条件の入力と、商品を選んでいればグラフと表 */
-function VariantSalesView({ fiscalYearStartMonth }: { fiscalYearStartMonth: number }) {
+/** 商品を選んでいればグラフと表、まだなら選ぶ案内 */
+function VariantSalesView({ condition }: { condition: ReportCondition }) {
   const t = useTranslations('report.variantSales')
-  const [searchParams, setSearchParams] = useSearchParams()
-  // URL に期間がなければ今月
-  const condition = parseCondition(searchParams, presetPeriod('thisMonth', todayInJapan(), fiscalYearStartMonth))
-  /** 条件を URL に反映する（URL が条件の正本） */
-  const apply = (next: ReportCondition) => setSearchParams(toSearchParams(next))
-  return (
-    <div className="space-y-6">
-      <ReportConditionForm
-        condition={condition}
-        excludeShipping={false}
-        fiscalYearStartMonth={fiscalYearStartMonth}
-        key={searchParams.toString()}
-        onApply={apply}
-        presets={CALENDAR_PRESETS}
-        productRequired
-      />
-      {condition.productId === undefined ? (
-        <p className="text-muted-foreground text-sm">{t('selectProduct') /* 商品を選ぶ */}</p>
-      ) : (
-        <VariantSalesQuery condition={condition} productId={condition.productId} />
-      )}
-    </div>
+  return condition.productId === undefined ? (
+    <p className="text-muted-foreground text-sm">{t('selectProduct') /* 商品を選ぶ */}</p>
+  ) : (
+    <VariantSalesQuery condition={condition} productId={condition.productId} />
   )
 }
 

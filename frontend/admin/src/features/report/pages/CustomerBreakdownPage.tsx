@@ -1,42 +1,31 @@
 import { formatYen } from '@ec-site/shared/lib/format'
 import { keepPreviousData } from '@tanstack/react-query'
-import { useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
 import type { CustomerBreakdownReport } from '@/api/types'
 import { ChartValueTooltip } from '@/components/ChartValueTooltip'
-import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { type ChartConfig, ChartContainer, ChartTooltip } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CsvButton } from '@/features/report/components/CsvButton'
-import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
+import { ReportPage } from '@/features/report/components/ReportPage'
 import { ageGroupLabel, prefectureLabel, reportGenderLabel } from '@/features/report/labels'
-import { CALENDAR_PRESETS, presetPeriod, todayInJapan } from '@/features/report/period'
+import { CALENDAR_PRESETS } from '@/features/report/period'
 import { formatYenCompact } from '@/features/report/report'
-import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
-import { useReportSettings } from '@/features/report/settings'
+import type { ReportCondition } from '@/features/report/reportCondition'
 
 /** 地域・年齢層・性別。条件は URL に持つ */
 export function CustomerBreakdownPage() {
-  const t = useTranslations('app.menu')
-  const settings = useReportSettings()
   return (
-    <>
-      <PageHeader title={t('customerBreakdown') /* 地域・年齢層・性別 */} />
-      <QueryState query={settings}>
-        {({ fiscalYearStartMonth }) => <CustomerBreakdown fiscalYearStartMonth={fiscalYearStartMonth} />}
-      </QueryState>
-    </>
+    <ReportPage defaultPreset="thisMonth" menuKey="customerBreakdown" presets={CALENDAR_PRESETS}>
+      {(condition) => <CustomerBreakdown condition={condition} />}
+    </ReportPage>
   )
 }
 
-/** 条件の入力と、3 つの分け方のグラフと表 */
-function CustomerBreakdown({ fiscalYearStartMonth }: { fiscalYearStartMonth: number }) {
-  const [searchParams, setSearchParams] = useSearchParams()
-  // URL に期間がなければ今月
-  const condition = parseCondition(searchParams, presetPeriod('thisMonth', todayInJapan(), fiscalYearStartMonth))
+/** 条件で取得して、3 つの分け方のグラフと表を出す */
+function CustomerBreakdown({ condition }: { condition: ReportCondition }) {
   const query = $api.useQuery(
     'get',
     '/reports/customer-breakdown',
@@ -54,20 +43,7 @@ function CustomerBreakdown({ fiscalYearStartMonth }: { fiscalYearStartMonth: num
     },
     { placeholderData: keepPreviousData },
   )
-  /** 条件を URL に反映する（URL が条件の正本） */
-  const apply = (next: ReportCondition) => setSearchParams(toSearchParams(next))
-  return (
-    <div className="space-y-6">
-      <ReportConditionForm
-        condition={condition}
-        fiscalYearStartMonth={fiscalYearStartMonth}
-        key={searchParams.toString()}
-        onApply={apply}
-        presets={CALENDAR_PRESETS}
-      />
-      <QueryState query={query}>{(report) => <BreakdownResult condition={condition} report={report} />}</QueryState>
-    </div>
-  )
+  return <QueryState query={query}>{(report) => <BreakdownResult condition={condition} report={report} />}</QueryState>
 }
 
 /** 1 つの分け方の行 */

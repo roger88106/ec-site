@@ -2,7 +2,7 @@
 
 - 前提：なし（spec 134 が確定し、plan が承認された）
 - 完了条件：DC-134-27〜36 のテストがあり、今のコードで通る。各テストについて、一時的にコードか期待値を変えて、失敗することを確認した。AC 一覧のテストの列が再生成されている。`scripts/dev/check-frontend.sh all` と `scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-134-6 と DC-134-27〜36、[開発の進め方](../../../rules/workflow.md) 第 2.1 節、[テストの書き方](../../../rules/test-writing.md) 第 2 節
+- 参照：[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-134-6 と DC-134-27〜36、[開発の進め方](../../../../../rules/workflow.md) 第 2.1 節、[テストの書き方](../../../../../rules/test-writing.md) 第 2 節
 
 ## タスク
 

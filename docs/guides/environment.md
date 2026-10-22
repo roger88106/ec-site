@@ -15,6 +15,7 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | 環境変数 | 内容 | 既定 |
 |----------|------|------|
 | `SPRING_DATASOURCE_URL`、`_USERNAME`、`_PASSWORD` | DB の接続先 | — |
+| `SERVER_PORT` | 業務ポート（Spring Boot の `server.port`）。手元のスロットが設定する（[開発環境の起動](setup.md) 第 9 節） | 8080（E2E は 8090） |
 | `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外部に公開しない | 9080（E2E は 9090） |
 | `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | トレースの送信先 | `http://localhost:9411/api/v2/spans` |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |
@@ -77,5 +78,6 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `AUTH_KEYCLOAK_ID`、`AUTH_KEYCLOAK_SECRET` | client ID と secret | `ec-store-web`、ローカル用の値 |
 | `AUTH_SECRET` | セッションの Cookie の暗号化キー | ローカル用の値 |
 | `AUTH_URL` | 店舗画面を公開する URL（origin）。ログイン・ログアウトの戻り先を生成する | `http://localhost:3000` |
+| `STORE_COOKIE_PREFIX` | 店舗画面の Cookie（Auth.js のセッション・CSRF・PKCE など、カート）の名前の前に付ける接頭辞。HTTPS の `__Secure-`・`__Host-` があれば、その後ろに付ける。英数字と `-`、`_` だけ（それ以外は起動に失敗する）。任意。手元のスロットが設定する（[開発環境の起動](setup.md) 第 9 節） | 空（今の名前のまま） |
 
 ※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS` 以外がなければ起動に失敗する。

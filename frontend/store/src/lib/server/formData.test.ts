@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { readInt, readIntOrNaN, readString } from '@/lib/server/formData'
+import { readIntOrNaN, readString } from '@/lib/server/formData'
 
 /** 項目を入れたフォーム */
 function form(entries: Record<string, string>): FormData {
@@ -16,26 +16,17 @@ describe('フォームの項目の取り出し', () => {
     expect(readString(form({}), 'name')).toBe('')
   })
 
-  test('整数はその値を返す。負の数も整数として返す（範囲は API が確認する）', () => {
-    expect(readInt(form({ quantity: '3' }), 'quantity')).toBe(3)
-    expect(readInt(form({ quantity: ' 10 ' }), 'quantity')).toBe(10)
-    expect(readInt(form({ quantity: '-1' }), 'quantity')).toBe(-1)
-  })
-
-  test('空、数でない、小数は null', () => {
-    expect(readInt(form({}), 'quantity')).toBeNull()
-    expect(readInt(form({ quantity: '' }), 'quantity')).toBeNull()
-    expect(readInt(form({ quantity: 'abc' }), 'quantity')).toBeNull()
-    expect(readInt(form({ quantity: '1.5' }), 'quantity')).toBeNull()
-    expect(readInt(form({ quantity: '1e3' }), 'quantity')).toBeNull()
-  })
-
-  test('整数か NaN で読む関数は、整数ならその値、空・数でない・小数なら NaN を返す', () => {
+  test('整数はその値を返す。前後の空白は除き、負の数も整数として返す（範囲は API が確認する）', () => {
     expect(readIntOrNaN(form({ quantity: '3' }), 'quantity')).toBe(3)
+    expect(readIntOrNaN(form({ quantity: ' 10 ' }), 'quantity')).toBe(10)
     expect(readIntOrNaN(form({ quantity: '-1' }), 'quantity')).toBe(-1)
+  })
+
+  test('空、数でない、小数、指数の書き方は NaN を返す', () => {
     expect(readIntOrNaN(form({}), 'quantity')).toBeNaN()
     expect(readIntOrNaN(form({ quantity: '' }), 'quantity')).toBeNaN()
     expect(readIntOrNaN(form({ quantity: 'abc' }), 'quantity')).toBeNaN()
     expect(readIntOrNaN(form({ quantity: '1.5' }), 'quantity')).toBeNaN()
+    expect(readIntOrNaN(form({ quantity: '1e3' }), 'quantity')).toBeNaN()
   })
 })

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { loadServerConfig, REQUIRED_IN_PRODUCTION, readServerConfig } from '@/auth/config'
+import { loadServerConfig, readServerConfig } from '@/auth/config'
 
 /** 本番で渡す値のすべて */
 const ALL_SET = {
@@ -91,25 +91,14 @@ describe('店舗画面のサーバーの設定', () => {
       )
     },
   )
-
-  test('必須の値は 6 つ', () => {
-    expect([...REQUIRED_IN_PRODUCTION]).toEqual([
-      'AUTH_SECRET',
-      'AUTH_KEYCLOAK_SECRET',
-      'AUTH_KEYCLOAK_ISSUER',
-      'AUTH_KEYCLOAK_ID',
-      'STORE_API_BASE_URL',
-      'AUTH_URL',
-    ])
-  })
 })
 
 describe('店舗画面の Cookie の接頭辞の設定', () => {
   test('DC-104-12 STORE_COOKIE_PREFIX は任意で、なければ空（今の名前のまま）。本番でも必須にしない', () => {
+    expect(() => loadServerConfig(ALL_SET)).not.toThrow()
     expect(loadServerConfig(ALL_SET).cookiePrefix).toBe('')
     expect(loadServerConfig({ NODE_ENV: 'development' }).cookiePrefix).toBe('')
     expect(readServerConfig({}).cookiePrefix).toBe('')
-    expect([...REQUIRED_IN_PRODUCTION]).not.toContain('STORE_COOKIE_PREFIX')
   })
 
   test('DC-104-12 STORE_COOKIE_PREFIX の値を使う', () => {

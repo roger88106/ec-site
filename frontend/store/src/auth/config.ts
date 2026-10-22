@@ -5,7 +5,7 @@
  */
 
 /** 本番で必須の環境変数 */
-export const REQUIRED_IN_PRODUCTION = [
+const REQUIRED_IN_PRODUCTION = [
   'AUTH_SECRET',
   'AUTH_KEYCLOAK_SECRET',
   'AUTH_KEYCLOAK_ISSUER',

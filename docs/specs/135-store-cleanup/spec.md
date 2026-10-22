@@ -190,10 +190,11 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
 - [ ] **T135-02-07** ログインのリンクの部品のテストを、`components/LoginLinks.test.tsx` に移す（DC-135-20）。
   - 依存：なし
   - 範囲：`frontend/store/src/components/LoginLinks.test.tsx`、`frontend/store/src/components/PageLinks.test.tsx`。`components/PageLinks.tsx` は変えない（DN-135-6）
-- [ ] **T135-02-08** 必須の設定の定数の一覧のテストを削除し、定数の export が不要かを確認する（DC-135-21、22）。
+- [x] **T135-02-08** 必須の設定の定数の一覧のテストを削除し、定数の export が不要かを確認する（DC-135-21、22）。
   - 依存：T135-02-03（同じテストのファイルを変えるため）
   - 範囲：`frontend/store/src/auth/config.test.ts`、`frontend/store/src/auth/config.ts`
   - 補足：spec 104 が、Cookie の接頭辞が必須の値でないことを、同じ定数で確認するテストを足した（実装の前の照合で確認）。export を外すなら、このテストを振る舞い（本番のモードで接頭辞がなくても起動できる）の確認に替える。
+  - 結果：「必須の値は 6 つ」のテストを削除し、定数の export を外した（使い手はテストだけだった）。接頭辞のテストは、本番のモードで接頭辞がなくても `loadServerConfig` が失敗しない確認に替えた。
 - [ ] **T135-02-09** テストが CSS のクラスで確認しないようにし、取り消し線は取り消しを表す HTML の要素にする（DC-135-28）。
   - 依存：T135-01-06（注文のフォームのテストを両方が変えるため）、T135-02-07（`PageLinks.test.tsx` を両方が変えるため）
   - 範囲：`frontend/store/src/components/PageLinks.test.tsx`、`frontend/store/src/components/SiteHeader.test.tsx`、`frontend/store/src/features/cart/components/CartItemControls.test.tsx`、`frontend/store/src/features/catalog/components/ProductCard.test.tsx`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx` と、取り消し線を示す部品。`components/PageLinks.tsx` は変えない（DN-135-6）

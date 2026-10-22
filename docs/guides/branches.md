@@ -66,7 +66,13 @@ GitHub の ruleset を `develop` と `main` に作る。
 | 3 | tag `v<バージョン>` を付ける |
 | 4 | `gh release create` で GitHub の Release を作成する |
 
-- バージョンは SemVer（`MAJOR.MINOR.PATCH`）。1→10 の間は、リリースごとに minor を上げる。
+- バージョンは SemVer（`MAJOR.MINOR.PATCH`）。上げる位置は、リリースの内容で決める。
+
+| リリースの内容 | 上げる位置 |
+|----------------|------------|
+| 機能の spec（消費者・運営者に見える振る舞いの追加・変更）を含む | MINOR |
+| 不具合の修正、整理、進め方、依存の更新だけ | PATCH |
+| 正式な公開 | MAJOR（`1.0.0`。それまでは上げない） |
 - リリースの内容は、issue 担当のセッションがまとめる（[開発の進め方](../rules/workflow.md)）。
 - `release-` のブランチの `main` へのマージと tag は、issue 担当のセッションが利用者の許可を得て行う。
 - デプロイの spec で決めるまでのリリースは、`main` へのマージと tag までとし、デプロイしない（第 7 節）。

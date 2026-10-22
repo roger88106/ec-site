@@ -4,13 +4,14 @@ import { useSearchParams } from 'react-router'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
-import type { VariantSales, VariantSalesReport } from '@/api/types'
+import type { VariantSalesReport } from '@/api/types'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
 import { type ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
 import { CsvButton } from '@/features/report/components/CsvButton'
 import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
+import { variantSalesLabel } from '@/features/report/labels'
 import { CALENDAR_PRESETS, presetPeriod, todayInJapan } from '@/features/report/period'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
@@ -80,15 +81,10 @@ function VariantSalesQuery({ condition, productId }: { condition: ReportConditio
   )
 }
 
-/** バリアントの名前（軸の値を「 / 」でつなぐ。軸がなければ品番） */
-function variantName(variant: VariantSales): string {
-  return variant.axisValues.length > 0 ? variant.axisValues.map((axis) => axis.value).join(' / ') : variant.variantCode
-}
-
 /** バリアントごとの棒グラフと表（販売数量の多い順） */
 function VariantSalesResult({ condition, report }: { condition: ReportCondition; report: VariantSalesReport }) {
   const t = useTranslations('report.variantSales')
-  const rows = report.variants.map((variant) => ({ ...variant, name: variantName(variant) }))
+  const rows = report.variants.map((variant) => ({ ...variant, name: variantSalesLabel(variant) }))
   const chartConfig = { quantity: { label: t('quantity'), color: 'var(--chart-2)' } } satisfies ChartConfig // 販売数量
   return (
     <div className="space-y-6">

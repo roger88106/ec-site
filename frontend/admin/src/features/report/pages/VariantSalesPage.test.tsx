@@ -58,10 +58,10 @@ describe('バリアントの売れ行き', () => {
     renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}&excludeTax=true`)
 
     const rows = (await screen.findAllByRole('row')).slice(1)
-    expect(within(rows[0]).getByRole('cell', { name: '白 / M' })).toBeInTheDocument()
+    expect(within(rows[0]).getByRole('cell', { name: '色：白、サイズ：M' })).toBeInTheDocument()
     expect(within(rows[0]).getByRole('cell', { name: '12' })).toBeInTheDocument()
     expect(within(rows[0]).getByRole('cell', { name: '39,336 円' })).toBeInTheDocument()
-    expect(within(rows[1]).getByRole('cell', { name: '黒 / L' })).toBeInTheDocument()
+    expect(within(rows[1]).getByRole('cell', { name: '色：黒、サイズ：L' })).toBeInTheDocument()
     expect(within(rows[1]).getByRole('cell', { name: '0 円' })).toBeInTheDocument()
     expect(screen.getByText('商品：ベーシック T シャツ')).toBeInTheDocument()
     expect(queries[0].get('productId')).toBe(SHIRT_ID)
@@ -81,7 +81,7 @@ describe('バリアントの売れ行き', () => {
     await waitFor(() =>
       expect(router.state.location.search).toBe(`?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}`),
     )
-    expect(await screen.findByRole('cell', { name: '白 / M' })).toBeInTheDocument()
+    expect(await screen.findByRole('cell', { name: '色：白、サイズ：M' })).toBeInTheDocument()
     expect(queries).toHaveLength(1)
   })
 
@@ -95,7 +95,7 @@ describe('バリアントの売れ行き', () => {
       downloads.push(this.download)
     })
     const { user } = renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}`)
-    await screen.findByRole('cell', { name: '白 / M' })
+    await screen.findByRole('cell', { name: '色：白、サイズ：M' })
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
@@ -104,7 +104,7 @@ describe('バリアントの売れ行き', () => {
     const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
     const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
     expect(text).toBe(
-      '\uFEFFバリアント,品番,販売数量,売上額\r\n白 / M,TEE-001-WH-M,12,39336\r\n黒 / L,TEE-001-BK-L,0,0\r\n',
+      '\uFEFFバリアント,品番,販売数量,売上額\r\n色：白、サイズ：M,TEE-001-WH-M,12,39336\r\n色：黒、サイズ：L,TEE-001-BK-L,0,0\r\n',
     )
   })
 })

@@ -1,4 +1,5 @@
-import type { AgeGroup, Granularity, ReportBasis, ReportGender, SalesTrendPoint } from '@/api/types'
+import { axisValuesLabel } from '@ec-site/shared/lib/format'
+import type { AgeGroup, Granularity, ReportBasis, ReportGender, SalesTrendPoint, VariantSales } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
 /** 集計の粒度の表示名 */
@@ -40,4 +41,11 @@ export function bucketLabel(point: SalesTrendPoint, granularity: Granularity): s
     fiscalYear: point.fiscalYear ?? year,
     quarter: point.quarter ?? 0,
   })
+}
+
+/** バリアントの売れ行きの表示名。軸があれば「名前：値」を区切りの文言で並べ（例：「色：白、サイズ：M」）、軸がなければ品番 */
+export function variantSalesLabel(variant: VariantSales): string {
+  return variant.axisValues.length > 0
+    ? axisValuesLabel(variant.axisValues, translate('app.common.listSeparator'))
+    : variant.variantCode
 }

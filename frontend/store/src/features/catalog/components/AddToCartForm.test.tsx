@@ -1,35 +1,45 @@
-// @vitest-environment jsdom
-import { screen } from '@testing-library/react'
-import { describe, expect, test } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { Variant } from '@/api/types'
 import { AddToCartForm } from '@/features/catalog/components/AddToCartForm'
+import type { ActionResult } from '@/lib/actionResult'
 import { VARIANT_ID } from '@/test/fixtures'
-import { renderInBrowser } from '@/test/render'
-import { http, problem, server } from '@/test/server'
+import { renderMarkup } from '@/test/render'
+
+/** カートに入れるサーバーアクションの結果として、フォームに渡す値（null は送る前） */
+let actionResult: ActionResult | null = null
+
+// カートに入れる操作はサーバーアクションを通るので、送った結果の表示だけを、結果を差し替えて HTML で確認する（テストの書き方 第 1 節）
+vi.mock('react', async (importOriginal) => {
+  const react = await importOriginal<typeof import('react')>()
+  return { ...react, useActionState: () => [actionResult, () => {}, false] }
+})
 
 /** 買えるバリアント */
 const VARIANT: Variant = { id: VARIANT_ID, axisValues: [], inStock: true, salesSuspended: false, imageUrl: null }
 
+/** 常にある読み上げの領域（aria-live を持つ要素）の中身 */
+function liveRegionOf(html: string): string {
+  const match = html.match(/<div aria-live="polite"[^>]*>(.*?)<\/div>/)
+  if (!match) {
+    throw new Error('読み上げの領域がない')
+  }
+  return match[1] ?? ''
+}
+
 describe('カートに入れる操作の失敗', () => {
-  test('DC-135-10 失敗の文は、常にある読み上げの領域の中に出す（領域を入れ子にしない）', async () => {
-    server.use(
-      http.post('/carts', ({ response }) => response(201).json({ id: '00000000-0000-0000-0000-0000000000c2' })),
-      http.post('/carts/{cartId}/items', ({ response }) =>
-        response(400).json(problem(400, 'INVALID_REQUEST', '入力内容に誤りがあります。')),
-      ),
-    )
-    const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)
-    // 失敗の前から、領域は DOM にある
-    const regionBefore = document.querySelector('[aria-live="polite"]')
-    expect(regionBefore).not.toBeNull()
+  test('DC-135-10 失敗の文は、常にある読み上げの領域の中に出す（領域を入れ子にしない）', () => {
+    actionResult = null
+    const before = renderMarkup(<AddToCartForm variant={VARIANT} />)
+    // 失敗の前から、領域はある
+    expect(before.match(/aria-live/g)).toHaveLength(1)
+    expect(liveRegionOf(before)).toBe('')
 
-    await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
+    actionResult = { ok: false, message: '入力内容に誤りがあります。', errorCode: 'INVALID_REQUEST' }
+    const html = renderMarkup(<AddToCartForm variant={VARIANT} />)
 
-    const message = await screen.findByText('入力内容に誤りがあります。')
-    const regions = document.querySelectorAll('[aria-live]')
-    expect(regions).toHaveLength(1)
-    expect(regions[0]).toBe(regionBefore)
-    expect(regions[0]?.contains(message)).toBe(true)
-    expect(message.hasAttribute('aria-live')).toBe(false)
+    expect(html.match(/aria-live/g)).toHaveLength(1)
+    expect(liveRegionOf(html)).toContain('入力内容に誤りがあります。')
+    expect(html).toMatch(/<p [^>]*>入力内容に誤りがあります。<\/p>/)
+    expect(html).not.toMatch(/<p [^>]*aria-live[^>]*>入力内容に誤りがあります。/)
   })
 })

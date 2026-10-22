@@ -87,7 +87,17 @@ describe('お届け先の入力と注文', () => {
       expect(html).toContain(`name="${name}"`)
     }
     expect(html).toContain('>注文する（3,200 円）</button>')
+    // 初期表示には、失敗の文も欄ごとの誤りもない（段落は、メールアドレスの見出しと案内と、欄のヒントだけ）
     expect(html).not.toContain('aria-live')
+    const paragraphs = [...html.matchAll(/<p[ >][^<]*<\/p>/g)].map((match) => match[0].replace(/<[^>]*>/g, ''))
+    expect(paragraphs).toEqual([
+      'メールアドレス',
+      'member@example.com',
+      'ご注文の連絡は、会員のメールアドレスにお送りします。',
+      '例：100-0001',
+      '町名、番地、建物名',
+      '例：03-1234-5678',
+    ])
   })
 
   test('AC-248、250 欄は郵便番号・都道府県・市区町村・住所の順で、都道府県は API の一覧から選び、初めは選んでいない', () => {

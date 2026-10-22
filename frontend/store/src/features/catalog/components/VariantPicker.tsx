@@ -51,11 +51,11 @@ export function VariantPicker({
             {axis.values.map((value) => {
               const selected = selection[axisIndex] === value
               const selectable = isValueSelectable(axes, variants, selection, axisIndex, value)
-              // 選べない値は取り消し線で出す。選んでいる値は、選べなくなっても外せるよう押せるままにする
+              // 選べない値は取り消し（s）で出す（取り消し線は s の既定の見た目）。
+              // 選んでいる値は、選べなくなっても外せるよう押せるままにする
               return (
                 <Button
                   aria-pressed={selected}
-                  className={selectable ? undefined : 'line-through'}
                   disabled={!selectable && !selected}
                   key={value}
                   onClick={() => onChange(toggleValue(selection, axisIndex, value))}
@@ -63,7 +63,7 @@ export function VariantPicker({
                   type="button"
                   variant={selected ? 'default' : 'outline'}
                 >
-                  {value}
+                  {selectable ? value : <s>{value}</s>}
                 </Button>
               )
             })}

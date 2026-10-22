@@ -206,8 +206,9 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 依存：段階 1、T135-02-01〜09（作ったファイルを含めるため）
   - 範囲：`docs/design/apps/store.md`、`docs/design/glossary.md`
   - 結果：第 2 節を `git ls-files` の一覧と照合し、載っていなかった `region`・`memberAction`・`withActionResult`・`api/result`・`lib` の各ファイルと `server/`・`auth` の Cookie の名前・`test/` の中身・`ActionError`・`page.test.tsx` を足した。第 6 節に失敗の文を `ActionError` で出すこと（読み上げの領域の中では `inLiveRegion`）、第 7 節にページのテストの行を足した。用語集は、フロントの識別子を `labels.ts` などの横断の決まりだけ載せ、部品や関数は載せない書き方なので、新しい識別子（`ActionError`、郵便番号の判定など）は足さない（構成は店舗画面の構成が持つ）。
-- [ ] **T135-02-11** 段階の最後のレビュー（profile「厚め」）。
+- [x] **T135-02-11** 段階の最後のレビュー（profile「厚め」）。
   - 依存：T135-02-10
+  - 結果：一般の観点を汎用で 2 回、重要な観点を高性能と汎用で行った。高 0、必須 4（重複をまとめた後）：表示の部品のテストを jsdom に替えたこと（規則と食い違う）、注文のフォームの初期表示の確認が狭まったこと、選べないバリアントの取り消し線がクラスのままだったこと。あわせて、カートに入れるのテストを規則に合う形にした。推奨にあたる指摘は spec の最後のレビューで扱う。直した内容：`ActionError`、`SiteHeader`、`CartItemControls`、`ProductCard` のテストを HTML への描画に戻し（クラスでなく要素・属性・文字で確認）、`AddToCartForm` のテストは `useActionState` を差し替えた HTML で、失敗の文が常にある領域の中にあり文自体に `aria-live` がないことを確認する形にした。注文のフォームの初期表示は、段落の文が見出しとヒントだけであることで欄の誤りの不在を確認する。`VariantPicker` の選べない値は `<s>` で示し、クラスを外した（店舗画面に `line-through` は残っていない）。
 
 ### 段階 3：完了
 

@@ -1,8 +1,6 @@
-// @vitest-environment jsdom
-import { screen } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { SiteHeader } from '@/components/SiteHeader'
-import { renderInBrowser } from '@/test/render'
+import { renderMarkup } from '@/test/render'
 
 /** IdP のアカウントの画面（テストの値） */
 const ACCOUNT_URL = 'http://idp.test/realms/ec-store/account'
@@ -16,9 +14,9 @@ vi.mock('@/auth', () => ({
 vi.mock('@/actions/auth', () => ({ logout: async () => {} }))
 vi.mock('@/components/LoginLinks', () => ({ LoginLinks: () => <a href="/login">ログイン</a> }))
 
-/** ヘッダーを描画する（サーバーコンポーネントなので、関数として呼んでから描画する） */
+/** ヘッダーを HTML にする（サーバーコンポーネントなので、関数として呼んでから描画する） */
 async function renderHeader() {
-  renderInBrowser(await SiteHeader())
+  return renderMarkup(await SiteHeader())
 }
 
 describe('ヘッダーのログインの状態', () => {
@@ -29,18 +27,18 @@ describe('ヘッダーのログインの状態', () => {
   test('AC-119 ログインしている会員には、IdP のアカウントの画面へのリンクが出る', async () => {
     currentMember.mockResolvedValue({ name: '山田 太郎' })
 
-    await renderHeader()
+    const html = await renderHeader()
 
-    expect(screen.getByRole('link', { name: 'アカウント' }).getAttribute('href')).toBe(ACCOUNT_URL)
-    expect(screen.getByText('山田 太郎 様')).toBeDefined()
+    expect(html).toContain(`href="${ACCOUNT_URL}">アカウント</a>`)
+    expect(html).toContain('山田 太郎 様')
   })
 
   test('ログインしていなければ、アカウントの画面へのリンクは出ない', async () => {
     currentMember.mockResolvedValue(null)
 
-    await renderHeader()
+    const html = await renderHeader()
 
-    expect(screen.queryByRole('link', { name: 'アカウント' })).toBeNull()
-    expect(screen.getByRole('link', { name: 'ログイン' })).toBeDefined()
+    expect(html).not.toContain('アカウント')
+    expect(html).toContain('ログイン')
   })
 })

@@ -64,6 +64,13 @@ describe('バリアントの選択', () => {
     expect(button('青').disabled).toBe(true)
   })
 
+  test('選べない値は取り消しの要素（s）で出し、選べる値は出さない。ボタンの名前は値のまま', () => {
+    renderInBrowser(<Controlled variants={VARIANTS} />)
+
+    expect(button('青').querySelector('s')?.textContent).toBe('青')
+    expect(button('赤').querySelector('s')).toBeNull()
+  })
+
   test('すべての軸を選ぶと、そのバリアントの在庫状況を出して知らせ、選んだ値を押すと外す', async () => {
     const onChange = vi.fn()
     const { user } = renderInBrowser(<Controlled onChange={onChange} variants={VARIANTS} />)

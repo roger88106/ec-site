@@ -64,6 +64,8 @@ public record MediaStorageProperties(
     }
 
     /**
+     * 資格情報を設定で与えているかを返す。
+     *
      * @return 資格情報を設定で与えているか（ローカル）
      */
     boolean hasStaticCredentials() {

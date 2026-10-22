@@ -1,6 +1,7 @@
 package com.ecsite.common.error;
 
 import com.ecsite.common.message.I18nMessage;
+import com.google.errorprone.annotations.Immutable;
 import lombok.NonNull;
 
 /**
@@ -10,6 +11,7 @@ import lombok.NonNull;
  * @param type    エラータイプ
  * @param message メッセージ
  */
+@Immutable
 public record ErrorCode(@NonNull String code, @NonNull ErrorType type, @NonNull I18nMessage message) {
 
     // ============================== ファクトリー ==============================

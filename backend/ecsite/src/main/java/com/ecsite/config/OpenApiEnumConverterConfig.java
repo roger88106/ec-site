@@ -41,7 +41,7 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
             if (fromValue == null) {
                 return source -> (T) Enum.valueOf(targetType, source.trim());
             }
-            return source -> invoke(fromValue, source);
+            return source -> (T) invoke(fromValue, source);
         }
 
         /**
@@ -65,9 +65,9 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
          * @param source    変換する文字列
          * @return 変換した値
          */
-        private static <T> T invoke(Method fromValue, String source) {
+        private static Object invoke(Method fromValue, String source) {
             try {
-                return (T) fromValue.invoke(null, source);
+                return fromValue.invoke(null, source);
             } catch (InvocationTargetException e) {
                 if (e.getCause() instanceof RuntimeException runtimeException) {
                     throw runtimeException;

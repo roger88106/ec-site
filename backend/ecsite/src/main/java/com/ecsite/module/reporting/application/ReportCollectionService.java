@@ -16,6 +16,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -74,7 +75,7 @@ public class ReportCollectionService {
     /**
      * 明細の商品 ID を、商品カタログの API で求める。求められなければ、前の写しの商品 ID を残す。
      */
-    private HashMap<Integer, UUID> productIds(ReportOrder order) {
+    private Map<Integer, UUID> productIds(ReportOrder order) {
         var byVariant = catalogDirectory.productIdsOf(order.lines().stream().map(ReportOrder.Line::variantId).toList());
         var result = new HashMap<>(repository.productIds(order.orderId()));
         order.lines().forEach(line -> {

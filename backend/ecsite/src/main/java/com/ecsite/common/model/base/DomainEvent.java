@@ -14,11 +14,15 @@ import java.util.UUID;
 public interface DomainEvent extends org.jmolecules.event.types.DomainEvent {
 
     /**
+     * イベントの ID を返す。
+     *
      * @return イベント ID
      */
     UUID eventId();
 
     /**
+     * イベントの発生時刻を返す。
+     *
      * @return イベント発生時刻
      */
     Instant occurredAt();

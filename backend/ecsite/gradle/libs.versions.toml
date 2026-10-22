@@ -110,6 +110,8 @@ jackson-databind-nullable = { module = "org.openapitools:jackson-databind-nullab
 lombok = { module = "org.projectlombok:lombok" }
 # コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
+# @Immutable などの注釈（コンパイルのときだけ使う）
+errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "errorprone" }
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 

@@ -109,6 +109,8 @@ public class Cart {
     }
 
     /**
+     * カートの持ち主の会員 ID を返す。
+     *
      * @return 会員 ID。ログインせずに作ったカートは空
      */
     public Optional<UUID> memberId() {

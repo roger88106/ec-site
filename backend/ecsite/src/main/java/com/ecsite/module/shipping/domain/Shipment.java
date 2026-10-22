@@ -101,6 +101,8 @@ public class Shipment {
     }
 
     /**
+     * 最後に通知を反映した日時を返す。
+     *
      * @return 最後に通知を反映した日時。まだ通知を反映していなければ空
      */
     public Optional<Instant> lastNotifiedAt() {

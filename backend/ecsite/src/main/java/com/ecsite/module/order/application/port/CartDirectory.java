@@ -47,6 +47,8 @@ public interface CartDirectory {
         }
 
         /**
+         * 会員のカートで、その会員が持ち主かを返す。
+         *
          * @param memberId 会員 ID
          * @return 会員のカートで、その会員が持ち主なら true（注文手続きを始められるカート）
          */

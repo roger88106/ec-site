@@ -117,6 +117,8 @@ public enum ImageFormat {
     /**
      * MIME タイプ（先頭が代表）
      */
+    // List.of で作る変更できない一覧。Error Prone は List の型だけを見て変更できると判断するので抑える
+    @SuppressWarnings("ImmutableEnumChecker")
     private final List<String> contentTypes;
 
     /**
@@ -142,6 +144,8 @@ public enum ImageFormat {
     }
 
     /**
+     * この形式の MIME タイプを返す。
+     *
      * @return MIME タイプ（例：image/jpeg）。いくつかあるときは代表のもの
      */
     public String contentType() {

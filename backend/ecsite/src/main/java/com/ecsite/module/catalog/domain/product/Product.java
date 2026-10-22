@@ -193,6 +193,8 @@ public class Product extends AggregateRoot {
 // ============================== Getter（ほかのフィールドの Getter は Lombok で作る） ==============================
 
     /**
+     * 代表画像を返す。
+     *
      * @return 代表画像（画像の並びの先頭）。画像がなければ空
      */
     public Optional<ProductImage> representativeImage() {

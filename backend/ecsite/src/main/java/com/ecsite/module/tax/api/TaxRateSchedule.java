@@ -38,6 +38,8 @@ public record TaxRateSchedule(UUID taxCategoryId, List<Rate> rates) {
     public record Rate(BigDecimal ratePercent, @Nullable Instant effectiveFrom, @Nullable Instant effectiveTo) {
 
         /**
+         * 税率の適用期間を返す。
+         *
          * @return 適用期間
          */
         EffectivePeriod period() {

@@ -47,6 +47,8 @@ public record PriceExclTax(long yen) {
     }
 
     /**
+     * 金額の型（Money）にする。
+     *
      * @return 金額
      */
     public Money toMoney() {

@@ -38,6 +38,8 @@ public interface OrderQueryRepository {
                   @Nullable Instant orderedUntil, @Nullable Collection<UUID> orderIds) {
 
         /**
+         * 会員の注文だけの条件を作る。
+         *
          * @param memberId 会員 ID
          * @return 会員の注文だけの条件
          */

@@ -28,6 +28,8 @@ public class MockCarrierTracking implements CarrierTracking {
     }
 
     /**
+     * 追跡を始めた送り状番号を返す。
+     *
      * @return 追跡を始めた送り状番号（始めた順）
      */
     public List<Started> started() {

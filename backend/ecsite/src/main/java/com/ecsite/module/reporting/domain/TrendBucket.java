@@ -15,6 +15,8 @@ import java.time.LocalDate;
 public record TrendBucket(LocalDate start, LocalDate end, @Nullable Integer fiscalYear, @Nullable Integer quarter) {
 
     /**
+     * 日がこの区切りに入るかを返す。
+     *
      * @param date 日
      * @return 日がこの区切りに入れば true
      */

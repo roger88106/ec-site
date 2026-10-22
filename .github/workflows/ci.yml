@@ -34,7 +34,7 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # バックエンドは 4 つのジョブに分ける（spec 131）。統合テストが全体の約 3 分の 2 を占めるので、2 つに分けて同時に流す。
+  # バックエンドは 4 つのジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、2 つに分けて同時に流す。
   # 3 つのジョブは同時に始まり、それぞれコンパイルする（結果を渡すと、統合テストがビルドを待って全体が長くなる）。
   # 変わっていない部分（jOOQ のコード、コンパイル）は、setup-gradle が develop のビルドのキャッシュから読む。
   # 手元は分けずに ./gradlew checkLicense build で全て流す（docs/guides/ci.md）。
@@ -157,7 +157,9 @@ jobs:
         working-directory: backend/ecsite
 
     steps:
+      # checkout の前に走るので、defaults の working-directory（まだ存在しない）を使わない
       - name: ビルドと単体テスト、統合テストの結果を確認
+        working-directory: .
         env:
           BUILD_RESULT: ${{ needs.backend-build.result }}
           INTEGRATION_RESULT: ${{ needs.backend-integration.result }}

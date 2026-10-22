@@ -146,10 +146,10 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
 - [x] **T18-02-01** [バックエンドの書き方](../../rules/backend-coding.md) に、null の扱いの節（JSpecify の `@Nullable`、main では注釈のないものを null でないとみなす、`Optional` を使う場面、jOOQ の null を取りうる列の受け方、`@SuppressWarnings("NullAway")` の書き方と理由のコメント、修正の選び方の基準）と、Error Prone の検査を抑えるときの書き方を追加し、規則の一覧の表に行を追加する。文書が先なので、修正のタスクより先に書く（DC-18-11、13）。
   - 依存：なし
   - 範囲：`docs/rules/backend-coding.md`
-- [ ] **T18-02-02** [テスト] java-rules に、他の `Nullable` の import の禁止のテストを書き、レッドを確認する（DC-18-9）。
+- [x] **T18-02-02** [テスト] java-rules に、他の `Nullable` の import の禁止のテストを書き、レッドを確認する（DC-18-9）。
   - 依存：なし
   - 範囲：`scripts/ci/java-rules.test.mjs`
-- [ ] **T18-02-03** T18-02-02 のテストが通る実装を書く。JSpecify の依存を追加し、`jakarta.annotation.Nullable` を JSpecify に置き換える（機械的）（DC-18-9、12、16）。
+- [x] **T18-02-03** T18-02-02 のテストが通る実装を書く。JSpecify の依存を追加し、`jakarta.annotation.Nullable` を JSpecify に置き換える（機械的）（DC-18-9、12、16）。
   - 依存：T18-02-02
   - 範囲：`scripts/ci/java-rules.mjs`、`backend/ecsite/src/`、`backend/ecsite/gradle/libs.versions.toml`、`backend/ecsite/build.gradle.kts`
 - [ ] **T18-02-04** NullAway を main に入れる。全ての報告を修正するまでは、Gradle のプロパティ（例：`-Pnullaway`）を付けたときだけ動かし、そのときは報告を警告にして `-Werror` を外す（既定のビルドと CI は通ったままにする）。`CustomContractAnnotations` を付ける。NullAway の依存をカタログとライセンスの検査に入れ、`policy.json` に `dataflow-nullaway` を載せる。Lombok の注釈の引き継ぎを確認する（DC-18-5、6、10、12、16）。

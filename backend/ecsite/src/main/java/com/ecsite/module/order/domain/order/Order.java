@@ -15,11 +15,11 @@ import com.ecsite.module.order.domain.quote.Quote;
 import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.order.event.OrderStatusChanged;
-import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;

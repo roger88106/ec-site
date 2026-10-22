@@ -2,7 +2,7 @@ package com.ecsite.module.reporting.application.model.query;
 
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.ReportPeriod;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 

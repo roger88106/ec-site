@@ -147,6 +147,9 @@ dependencies {
     // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
     errorprone(libs.errorprone.core)
     compileOnly(libs.errorprone.annotations)
+    // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
+    // test などの classpath にも要るので、compileOnly でなく implementation にする
+    implementation(libs.jspecify)
 
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
     implementation(libs.bundles.jmolecules)

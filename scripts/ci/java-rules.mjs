@@ -2,6 +2,7 @@
 // - テストのソース（test、integrationTest、testFixtures）で Lombok を使わない。Lombok の注釈はクラスファイルに残らず、ArchUnit で見えないため
 // - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())）。値を追加したときの写し忘れをコンパイルで見つけられないため
 // - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない（valueOf(文字列リテラル以外)、fromValue(文字列リテラル以外)）。モジュールやレイヤーの間の列挙を文字列で受け渡すと、相手に値を追加したときにコンパイルでもテストでも気づけないため
+// - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
@@ -18,6 +19,12 @@ const LOMBOK = /^\s*import\s+(?:static\s+)?lombok\.|@lombok\./
 
 /** 列挙型の変換に name() を渡す呼び出し */
 const ENUM_NAME = /\b(?:valueOf|fromValue)\(\s*[\w.()]*\.name\(\)\s*\)/
+
+/** 他の Nullable：JSpecify 以外の Nullable の import（static import も）と、完全修飾名で書いた注釈 */
+const OTHER_NULLABLE = /^\s*import\s+(?:static\s+)?(?!org\.jspecify\.annotations\.)[\w.]+\.Nullable\b|@(?!org\.jspecify\.annotations\.)(?:[a-z]\w*\.)+Nullable\b/
+
+/** 他の Nullable を検査するソース：本番、テスト、tools（生成したコードは含まない） */
+const NULLABLE_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFixtures|tools)\/.*\.java$/
 
 /** 検査から除く型：列挙でない値の型と、型を実行時に受ける汎用の Enum.valueOf（型ごとの switch 式は書けない） */
 const NON_ENUM_TYPES = 'String|Integer|Long|Boolean|BigDecimal|BigInteger|Double|Float|Short|Byte|Character|Enum'
@@ -73,6 +80,26 @@ export function findEnumStringConversions(text) {
 }
 
 /**
+ * JSpecify 以外の Nullable を使う行を探す。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findOtherNullable(text) {
+  return findLines(text, OTHER_NULLABLE)
+}
+
+/**
+ * 他の Nullable を禁じる場所か。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 本番、テスト、tools のソースなら true
+ */
+export function isNullableTarget(file) {
+  return NULLABLE_SOURCE.test(file)
+}
+
+/**
  * 名前の文字列からの変換を禁じる場所か。
  *
  * @param {string} file リポジトリのルートからのパス
@@ -97,12 +124,19 @@ export function ruleFor(file) {
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
     .split('\n')
-    .filter((file) => file && ruleFor(file) && existsSync(file))
+    .filter((file) => file && (ruleFor(file) || isNullableTarget(file)) && existsSync(file))
   const messages = { lombok: 'テストで Lombok を使う', 'enum-name': '列挙型の変換に name() を渡す' }
   let count = 0
   for (const file of files) {
     const rule = ruleFor(file)
     const text = readFileSync(file, 'utf8')
+    if (isNullableTarget(file)) {
+      for (const hit of findOtherNullable(text)) {
+        console.log(`${file}:${hit.line} JSpecify 以外の Nullable を使う（org.jspecify.annotations.Nullable を使う）：${hit.text}`)
+        count += 1
+      }
+    }
+    if (!rule) continue
     const hits = rule === 'lombok' ? findLombok(text) : findEnumNameConversions(text)
     for (const hit of hits) {
       console.log(`${file}:${hit.line} ${messages[rule]}：${hit.text}`)

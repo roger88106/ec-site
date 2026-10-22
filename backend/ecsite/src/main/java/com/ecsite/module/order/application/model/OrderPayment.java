@@ -1,7 +1,7 @@
 package com.ecsite.module.order.application.model;
 
 import com.ecsite.module.order.application.port.PaymentDirectory;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 

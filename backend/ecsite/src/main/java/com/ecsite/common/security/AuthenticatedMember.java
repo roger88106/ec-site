@@ -1,6 +1,6 @@
 package com.ecsite.common.security;
 
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 /**
  * token の会員（消費者の realm のアカウント）。IdP が正本の情報で、EC では写しを持たない（docs/design/modules/member.md）。

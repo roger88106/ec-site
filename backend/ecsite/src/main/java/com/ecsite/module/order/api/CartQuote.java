@@ -1,7 +1,7 @@
 package com.ecsite.module.order.api;
 
 import com.ecsite.common.model.value.Money;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.util.List;

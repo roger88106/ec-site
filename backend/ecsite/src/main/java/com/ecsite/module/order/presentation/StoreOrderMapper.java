@@ -32,7 +32,7 @@ import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.quote.Quote;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -258,7 +258,7 @@ class StoreOrderMapper {
      * 自分の注文の一覧の 1 件。支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
      */
     private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
-                                          @Nullable ShippingDirectory.Shipment shipment) {
+                                          ShippingDirectory.@Nullable Shipment shipment) {
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())

@@ -1,6 +1,6 @@
 package com.ecsite.module.reporting.domain;
 
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 

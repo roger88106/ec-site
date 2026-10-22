@@ -1,7 +1,7 @@
 package com.ecsite.module.shipping.event;
 
 import com.ecsite.common.model.base.DomainEvent;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;

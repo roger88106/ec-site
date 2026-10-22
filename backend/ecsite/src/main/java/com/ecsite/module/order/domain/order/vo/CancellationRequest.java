@@ -1,8 +1,8 @@
 package com.ecsite.module.order.domain.order.vo;
 
 import com.ecsite.common.model.value.Operator;
-import jakarta.annotation.Nullable;
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 

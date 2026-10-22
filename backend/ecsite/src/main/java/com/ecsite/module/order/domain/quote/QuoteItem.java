@@ -1,9 +1,9 @@
 package com.ecsite.module.order.domain.quote;
 
 import com.ecsite.common.model.value.Money;
-import jakarta.annotation.Nullable;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 

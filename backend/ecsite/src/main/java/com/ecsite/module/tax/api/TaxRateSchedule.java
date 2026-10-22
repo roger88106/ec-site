@@ -1,7 +1,7 @@
 package com.ecsite.module.tax.api;
 
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.Instant;

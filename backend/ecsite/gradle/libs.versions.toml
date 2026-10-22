@@ -21,6 +21,8 @@ dependency-license-report = "3.1.4"
 # コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体で版が別
 errorprone-plugin = "5.1.1"
 errorprone = "2.50.0"
+# null を許す型の注釈（Nullable）。NullAway が見る。Spring Boot が間接で持つ版と同じ
+jspecify = "1.0.1"
 
 # --- フレームワーク ---
 spring-boot = "4.1.1"
@@ -112,6 +114,7 @@ lombok = { module = "org.projectlombok:lombok" }
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
 # @Immutable などの注釈（コンパイルのときだけ使う）
 errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "errorprone" }
+jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 

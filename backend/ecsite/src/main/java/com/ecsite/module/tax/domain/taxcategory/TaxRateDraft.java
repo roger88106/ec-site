@@ -2,9 +2,9 @@ package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
-import jakarta.annotation.Nullable;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 

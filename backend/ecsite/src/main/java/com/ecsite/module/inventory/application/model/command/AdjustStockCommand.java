@@ -2,7 +2,7 @@ package com.ecsite.module.inventory.application.model.command;
 
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 

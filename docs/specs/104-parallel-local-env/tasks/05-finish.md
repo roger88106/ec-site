@@ -15,6 +15,6 @@
 - [ ] **T104-05-03** spec を `docs/specs/archive/1to10/` に移し、pull request の前のレビュー（高性能と組み込みのコードレビュー）を行う。
   - 依存：T104-05-02
   - 範囲：`docs/specs/104-parallel-local-env/`、`docs/specs/archive/1to10/`
-- [ ] **T104-05-04** pull request を作る。本文に、マージの後に利用者がメインの作業ツリー で行う手順（`git pull`、`docker compose up -d --force-recreate seaweedfs imgproxy`、`scripts/dev/reset.sh keycloak`、管理者の PowerShell で `exclude-ports.ps1`）と、起票のまとめ方の案を書く。
+- [ ] **T104-05-04** pull request を作る。本文に、マージの後に利用者がメインの作業ツリーで行う手順（`git pull`、`docker compose up -d --force-recreate seaweedfs imgproxy`、`scripts/dev/reset.sh keycloak`、管理者の PowerShell で `exclude-ports.ps1`）と、起票のまとめ方の案を書く。
   - 依存：T104-05-03
   - 範囲：pull request

@@ -98,7 +98,7 @@ spec の確認で、利用者が 2 つとも案 A に決めた（2026-10-22）�
   - 依存：T140-01-01（参照する節）
   - 範囲：`scripts/ci/progress.mjs`、`scripts/ci/progress.test.mjs`、`docs/guides/ci.md`
   - 結果：検査の条件は変えず、「tasks に残りが N ある」の表示にだけ規則を足した。「tasks がない」の表示は変えていない。
-- [ ] **T140-01-04** skill `review` の tasks の照合に、共有する部品の依存の観点を加える（DC-140-14）。
+- [x] **T140-01-04** skill `review` の tasks の照合に、共有する部品の依存の観点を加える（DC-140-14）。
   - 依存：なし
   - 範囲：`.claude/skills/review/SKILL.md`、`.claude/skills/review/prompts.md`
 - [ ] **T140-01-05** 段階の最後のレビュー（profile「厚め」）。

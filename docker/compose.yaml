@@ -60,7 +60,7 @@ services:
 
   # 画像のバケット、CORS、公開の設定、ライフサイクル規則を作り、seed の商品画像を写して終わる
   seaweedfs-init:
-    image: amazon/aws-cli:2.31.13
+    image: amazon/aws-cli:2.38.1
     container_name: ec-site-seaweedfs-init
     depends_on:
       seaweedfs:
@@ -83,7 +83,7 @@ services:
   # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 第 7.5 節）。http://localhost:8081
   # アップロードのバケット（ローカル用と E2E 用）だけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
   imgproxy:
-    image: darthsim/imgproxy:v4.0.17
+    image: darthsim/imgproxy:v4.0.18
     container_name: ec-site-imgproxy
     depends_on:
       seaweedfs:
@@ -115,7 +115,7 @@ services:
   # 認証（IdP。plan 003 第 2 節）。http://localhost:8180（管理の画面は /admin、admin / admin）
   # 起動時に keycloak/realms/ の realm を取り込む。すでにある realm は取り込み直さない
   keycloak:
-    image: quay.io/keycloak/keycloak:26.8.0
+    image: quay.io/keycloak/keycloak:26.8.1
     container_name: ec-site-keycloak
     depends_on:
       postgres:
@@ -147,7 +147,7 @@ services:
   # E2E の準備の script（e2e/scripts/prepare.ts）が、database keycloak_e2e を再作成してから起動するので、
   # 毎回、realm の JSON の状態から始まる。E2E で登録した会員は、ローカルの Keycloak に残らない
   keycloak-e2e:
-    image: quay.io/keycloak/keycloak:26.8.0
+    image: quay.io/keycloak/keycloak:26.8.1
     container_name: ec-site-keycloak-e2e
     profiles: [e2e]
     depends_on:
@@ -178,7 +178,7 @@ services:
   # http://localhost:8025（画面と API）。SMTP はコンテナの中で 1025、ホストで 2525（MAILPIT_SMTP_PORT で変えられる）。
   # ホストの既定を 1025 にしないのは、Windows のシステムのプログラムが 1025 を使うことがあるため
   mailpit:
-    image: axllent/mailpit:v1.31.5
+    image: axllent/mailpit:v1.31.6
     container_name: ec-site-mailpit
     ports:
       - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"

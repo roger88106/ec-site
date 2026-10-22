@@ -1,6 +1,6 @@
 /**
  * E2E の準備（plan 004 第 6.1 節）。`pnpm test` が Playwright の前に流す。<br />
- * E2E 用の DB（ec_site_e2e）と IdP の database（keycloak_e2e）を再作成し、E2E 用の Keycloak を起動し直す。
+ * E2E 用の DB（ec_site_e2e）と IdP の database（keycloak_e2e）を再作成し、E2E 用の Keycloak だけを起動し直す（共有の基盤のコンテナは作り直さない）。
  * 毎回、マイグレーションと seed/base だけの DB と、realm の JSON の状態の IdP から始まる。
  * ローカルの DB（ec_site）と Keycloak（keycloak、8180）には触れない。
  *
@@ -70,7 +70,8 @@ psql(
     `CREATE DATABASE ${name} OWNER ${owner}`,
   ]),
 )
-// 空の database に realm の JSON を取り込んで起動する。準備ができるまで待つ
-compose('--profile', 'e2e', 'up', '-d', '--wait', 'keycloak-e2e')
+// 空の database に realm の JSON を取り込んで起動する。準備ができるまで待つ。
+// --no-deps で、他の作業ツリーと共有する基盤（postgres など）を作り直さない
+compose('--profile', 'e2e', 'up', '-d', '--wait', '--no-deps', 'keycloak-e2e')
 
 console.log(`E2E の準備ができた（${Math.round((Date.now() - started) / 1000)} 秒）`)

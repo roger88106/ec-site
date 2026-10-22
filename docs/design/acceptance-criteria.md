@@ -51,8 +51,8 @@
 | AC-26 | 価格の変更は C 側に反映される（NFR-1）。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`StorefrontFreshnessTest` |
 | AC-27 | バリアントの表示順を変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-28 | バリアントを販売停止・解除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 3 |
-| AC-29 | 公開にすると、C 側の一覧・検索・詳細に表示される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` ほか 2 |
-| AC-30 | 非公開にすると、C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` ほか 1 |
+| AC-29 | 公開にすると、C 側の一覧・検索・詳細に表示される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 3 |
+| AC-30 | 非公開にすると、C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 2 |
 | AC-31 | バリアントのない商品は公開できない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-32 | 状態は「非公開」「公開」「販売終了」。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` |
 | AC-33 | C 側に一度も表示されていない商品は削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |

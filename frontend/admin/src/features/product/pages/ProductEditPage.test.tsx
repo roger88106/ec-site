@@ -220,6 +220,41 @@ describe('商品の編集', () => {
     expect(await within(row()).findByText('販売中')).toBeInTheDocument()
     expect(calls).toEqual([`suspend ${variant().id}`, `resume ${variant().id}`])
   })
+
+  it('AC-29、30 公開すると公開中の表示と知らせに変わり、非公開にすると非公開の表示と知らせに戻る', async () => {
+    const state = serveProduct(productDetail())
+    const calls: string[] = []
+    const change = (status: ProductDetail['status'], actions: ProductDetail['actions']) => {
+      state.current = { ...state.current, status, actions, version: state.current.version + 1 }
+    }
+    server.use(
+      http.put('/products/{productId}/publish', ({ response }) => {
+        calls.push('PUT publish')
+        change('PUBLISHED', productActions({ publish: false, unpublish: true }))
+        return response(204).empty()
+      }),
+      http.put('/products/{productId}/unpublish', ({ response }) => {
+        calls.push('PUT unpublish')
+        change('UNPUBLISHED', productActions())
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    expect(await screen.findByText('非公開')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '公開する' }))
+
+    expect(await screen.findByText('公開しました')).toBeInTheDocument()
+    expect(await screen.findByText('公開')).toBeInTheDocument()
+    expect(screen.queryByText('非公開')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '非公開にする' }))
+
+    expect(await screen.findByText('非公開にしました')).toBeInTheDocument()
+    expect(await screen.findByText('非公開')).toBeInTheDocument()
+    expect(screen.queryByText('公開')).not.toBeInTheDocument()
+    expect(calls).toEqual(['PUT publish', 'PUT unpublish'])
+  })
 })
 
 describe('公開期間', () => {

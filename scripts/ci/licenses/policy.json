@@ -39,6 +39,7 @@
       "maven:org.junit*:*": "テストの実行（JUnit）。テストでだけ使い、配布しない",
       "maven:org.jacoco:*": "カバレッジの計測（JaCoCo）。テストでだけ使い、配布しない",
       "maven:io.github.eisop:dataflow-errorprone": "Error Prone が静的解析のときに使う Checker Framework の dataflow（GPL-2.0 with Classpath-exception）。コンパイルのときだけ動く道具で、配布物に入らず、改変しない",
+      "maven:org.checkerframework:dataflow-nullaway": "NullAway が静的解析のときに使う Checker Framework の dataflow（GPL-2.0 with Classpath-exception）。コンパイルのときだけ動く道具で、配布物に入らず、改変しない",
       "npm:lightningcss*": "Tailwind CSS がビルドのときに使う CSS の変換。配布物に入らない",
       "npm:caniuse-lite": "ビルドの道具が使うブラウザーの対応のデータ（CC-BY-4.0）。配布物に入らない",
       "npm:@fontsource-variable/*": "管理画面の字体（OFL-1.1）。字体を単独で販売しない",

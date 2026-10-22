@@ -152,9 +152,10 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
 - [x] **T18-02-03** T18-02-02 のテストが通る実装を書く。JSpecify の依存を追加し、`jakarta.annotation.Nullable` を JSpecify に置き換える（機械的）（DC-18-9、12、16）。
   - 依存：T18-02-02
   - 範囲：`scripts/ci/java-rules.mjs`、`backend/ecsite/src/`、`backend/ecsite/gradle/libs.versions.toml`、`backend/ecsite/build.gradle.kts`
-- [ ] **T18-02-04** NullAway を main に入れる。全ての報告を修正するまでは、Gradle のプロパティ（例：`-Pnullaway`）を付けたときだけ動かし、そのときは報告を警告にして `-Werror` を外す（既定のビルドと CI は通ったままにする）。`CustomContractAnnotations` を付ける。NullAway の依存をカタログとライセンスの検査に入れ、`policy.json` に `dataflow-nullaway` を載せる。Lombok の注釈の引き継ぎを確認する（DC-18-5、6、10、12、16）。
+- [x] **T18-02-04** NullAway を main に入れる。全ての報告を修正するまでは、Gradle のプロパティ（例：`-Pnullaway`）を付けたときだけ動かし、そのときは報告を警告にして `-Werror` を外す（既定のビルドと CI は通ったままにする）。`CustomContractAnnotations` を付ける。NullAway の依存をカタログとライセンスの検査に入れ、`policy.json` に `dataflow-nullaway` を載せる。Lombok の注釈の引き継ぎを確認する（DC-18-5、6、10、12、16）。
   - 依存：T18-02-01、T18-02-03
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、`scripts/ci/licenses/policy.json`、`backend/ecsite/lombok.config`
+  - 結果：`-Pnullaway` で compileJava を流すと報告は 110 件（common 10、config 3、catalog 19、order 28、payment 13、inventory 9、reporting 9、cart 6、tax 6、shipping 4、storefront 2、member 1）。javac は警告を 100 件で打ち切るので、`-Pnullaway` のときは `-Xmaxwarns` を上げた。`dataflow-nullaway` は groupId が `org.checkerframework` で、`policy.json` に載せた。Lombok は `lombok.config` を変えずに引き継ぐ：`Order`（`@Getter` と `@Accessors(fluent = true)`）の `@Nullable` のフィールド `cancellation` から作られる getter の戻り値に、`org.jspecify.annotations.Nullable` が付く（クラスファイルで確認した）。そのため `OrderCancellationService` の `order.cancellation().restocked()` が、null の可能性のある参照として正しく報告される。
 - [ ] **T18-02-05** common、config の報告を修正する（DC-18-7）。
   - 依存：T18-02-04
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/common/`、`backend/ecsite/src/main/java/com/ecsite/config/`

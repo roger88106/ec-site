@@ -23,6 +23,8 @@ errorprone-plugin = "5.1.1"
 errorprone = "2.50.0"
 # null を許す型の注釈（Nullable）。NullAway が見る。Spring Boot が間接で持つ版と同じ
 jspecify = "1.0.1"
+# null の検査（Error Prone の検査として動く）
+nullaway = "0.14.2"
 
 # --- フレームワーク ---
 spring-boot = "4.1.1"
@@ -115,6 +117,8 @@ errorprone-core = { module = "com.google.errorprone:error_prone_core", version.r
 # @Immutable などの注釈（コンパイルのときだけ使う）
 errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "errorprone" }
 jspecify = { module = "org.jspecify:jspecify", version.ref = "jspecify" }
+# null の検査（errorprone の構成に入れる）
+nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }
 jmolecules-ddd = { module = "org.jmolecules:jmolecules-ddd" }
 jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 

@@ -146,6 +146,7 @@ dependencies {
 
     // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
     errorprone(libs.errorprone.core)
+    errorprone(libs.nullaway)
     compileOnly(libs.errorprone.annotations)
     // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
     // test などの classpath にも要るので、compileOnly でなく implementation にする
@@ -705,5 +706,34 @@ tasks.withType<JavaCompile> {
         disableWarningsInGeneratedCode.set(true)
         // Lombok の @NonNull の引数を持つクラスで Error Prone が例外を投げ、コンパイルが失敗するので無効にする
         disable("StringConcatToTextBlock")
+    }
+}
+
+// -----------------------------------------------------------------------------
+// NullAway（main のコンパイルだけ）
+// -----------------------------------------------------------------------------
+// 全ての報告を直すまでの一時の形：Gradle のプロパティ -Pnullaway を付けたときだけ compileJava で動かし、
+// 報告を警告にして -Werror を外す（既定のビルドと CI は今のまま通る）。
+// T18-02-09 で、プロパティなしで常に動かし、報告をエラーにする。
+val nullawayEnabled = providers.gradleProperty("nullaway").isPresent
+
+tasks.withType<JavaCompile>().configureEach {
+    options.errorprone {
+        if (name == "compileJava" && nullawayEnabled) {
+            check("NullAway", net.ltgt.gradle.errorprone.CheckSeverity.WARN)
+            // com.ecsite.jooq（jOOQ の生成）と com.ecsite.api（OpenAPI の生成）は、注釈のない生成コードとして扱う
+            option("NullAway:AnnotatedPackages", "com.ecsite")
+            option("NullAway:UnannotatedSubPackages", "com.ecsite.jooq,com.ecsite.api")
+            option("NullAway:CustomContractAnnotations", "org.springframework.lang.Contract")
+            // JSpecifyMode は付けない（JDK 22 以上が要る。ここは JDK 21）
+        } else {
+            // test、integrationTest、testFixtures、tools は検査しない
+            disable("NullAway")
+        }
+    }
+    if (name == "compileJava" && nullawayEnabled) {
+        options.compilerArgs.remove("-Werror")
+        // javac は警告を 100 件で打ち切るので、全ての報告を出す
+        options.compilerArgs.addAll(listOf("-Xmaxwarns", "100000"))
     }
 }

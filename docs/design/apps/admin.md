@@ -34,6 +34,7 @@ frontend/admin/
     ├── i18n/               # 文言の Provider、合わせ方、キーの型、コンポーネントの外で引く translate
     ├── hooks/              # 機能をまたぐ hook（バージョン付きのフォームなど）
     ├── lib/                # 画面に依存しない関数（単体テストを横に置く）
+    │   ├── date.ts         # 日付の形（yyyy-MM-dd）の判定
     │   ├── format.ts       # 日時の入力欄との変換と、日本時間の日付（金額・価格・日時などの整形は共有パッケージの lib/format.ts）
     │   └── searchParams.ts # URL のクエリのページ番号の読み取り
     ├── test/               # 結合テストの土台（画面のコードからは import しない）

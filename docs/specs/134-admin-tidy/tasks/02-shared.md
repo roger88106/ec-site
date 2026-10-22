@@ -48,7 +48,7 @@
 - [ ] **T134-02-13** ログインの戻り先の条件の記述に「制御文字を含まない」を追加し、判定のコードと照合する（DC-134-16）。
   - 依存：T134-02-11
   - 範囲：`docs/design/apps/admin.md`（[管理画面の構成](../../../design/apps/admin.md) 第 10.1 節）、`docs/design/apps/store.md`（[店舗画面の構成](../../../design/apps/store.md) 第 9.2 節）
-- [ ] **T134-02-14** 用語集と設計の文書を、共有に移した内容に合わせる。[plan](../plan.md) 第 7 節の表のとおり、用語集に「リンクの見た目のボタン」「金額の内訳」「注文の表示名」の行を追加し、「表示名」の行を修正する。[フロントの書き方](../../../rules/frontend-coding.md) 第 1.1 節と[フロントの書き方](../../../rules/frontend-coding.md) 第 5.1 節、[フロントのアーキテクチャ](../../../design/frontend-architecture.md) 第 4 節（選択肢の「すべて」は段階 5 で書く）、[管理画面の構成](../../../design/apps/admin.md) 第 2 節を修正する。`glossary-ids.mjs` が通ることを確認する。
+- [x] **T134-02-14** 用語集と設計の文書を、共有に移した内容に合わせる。[plan](../plan.md) 第 7 節の表のとおり、用語集に「リンクの見た目のボタン」「金額の内訳」「注文の表示名」の行を追加し、「表示名」の行を修正する。[フロントの書き方](../../../rules/frontend-coding.md) 第 1.1 節と[フロントの書き方](../../../rules/frontend-coding.md) 第 5.1 節、[フロントのアーキテクチャ](../../../design/frontend-architecture.md) 第 4 節（選択肢の「すべて」は段階 5 で書く）、[管理画面の構成](../../../design/apps/admin.md) 第 2 節を修正する。`glossary-ids.mjs` が通ることを確認する。
   - 依存：T134-02-01、03、05、06、07、09、13（管理画面の構成を T134-02-13 と同じファイルで変えるため）
   - 範囲：`docs/design/glossary.md`、`docs/rules/frontend-coding.md`、`docs/design/frontend-architecture.md`、`docs/design/apps/admin.md`
 - [ ] **T134-02-15** 段階のレビュー（profile「厚め」：一般の観点は汎用 2 回、重要な観点（ファイルをまたぐ影響、セキュリティ）は高性能と汎用、合否の判定は spec 担当のセッションが行う）と完了の確認：店舗画面のテストとビルドを含めて `scripts/dev/check-frontend.sh all` と `scripts/ci/check-all.sh` が通る。

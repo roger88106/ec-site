@@ -103,7 +103,7 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 - 共有のものは、各画面の機能を import しない。
 - テーマの CSS は shadcn/ui の生成のまま 1 つにし、片方の画面だけで使う値（サイドバー、グラフ）も含める。テーマは再生成することがあり、分けると、生成のたびに 2 つのファイルを更新する必要があるため。
-- shadcn/ui のコンポーネントは各画面の `components/ui/` に追加し、2 つの画面で同じ内容になったら `frontend/shared/src/ui/` に移す。`src/ui/` の共有コンポーネントは、店舗画面のサーバーコンポーネントからも使えるよう `"use client"` を付けたままにする。
+- shadcn/ui のコンポーネントは各画面の `components/ui/` に追加し、2 つの画面で同じ内容になったら `frontend/shared/src/ui/` に移す。`src/ui/` の共有コンポーネントは shadcn/ui の生成物のまま置き、`"use client"` の有無も生成物に従う（生成物が付けているもの（`label`、`separator` など）は、店舗画面のサーバーコンポーネントからも使えるよう付けたままにする）。
 - 共有のコンポーネントのうち shadcn/ui の生成物でないものは `frontend/shared/src/components/` に置き、生成物は `src/ui/` に置く。
 - `src/components/` の共有コンポーネントは、hook かブラウザーの API を使うものだけに `"use client"` を付ける。使わないもの（金額の内訳など）には付けず、店舗画面のサーバーコンポーネントのまま描画できる。
 - 共有コンポーネントのクラス名は、各画面の CSS の `@source` で Tailwind に読ませる（`node_modules` の先は自動で読まないため）。

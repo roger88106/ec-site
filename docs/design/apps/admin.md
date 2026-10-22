@@ -180,7 +180,7 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
-| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）か通信の失敗（`networkError`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
+| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
 | `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
 | `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `problem(...)` | エラーレスポンスの本文を作る |

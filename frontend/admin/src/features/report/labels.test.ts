@@ -56,7 +56,7 @@ describe('レポートの表示名', () => {
     )
   })
 
-  it('DC-134-17、DC-134-18 バリアントの売れ行きの表示名は、軸があれば「名前：値」を「、」で並べ、軸がなければ品番にする', () => {
+  it('バリアントの売れ行きの表示名は、軸があれば「名前：値」を「、」で並べ、軸がなければ品番にする', () => {
     const variant = { variantId: 'v1', variantCode: 'TEE-001-WH-M', quantity: 0, amount: 0 }
     expect(
       variantSalesLabel({

@@ -22,7 +22,6 @@ import {
   toProductBody,
 } from '@/features/product/product'
 
-/** バリアント軸の上限 */
 /** 商品の項目の入力の制約（登録のリクエストの制約） */
 const PRODUCT_FIELD_CONSTRAINTS = {
   nameMaxLength: schemas.CreateProductRequest.name.maxLength,
@@ -30,6 +29,7 @@ const PRODUCT_FIELD_CONSTRAINTS = {
   priceMinimum: schemas.CreateProductRequest.priceExclTax.minimum,
 }
 
+/** バリアント軸の上限 */
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
 
 /** 入力欄の値（基本情報に、登録のときだけ入れる品番と軸を追加したもの） */

@@ -1,8 +1,9 @@
-import { formatNumber, formatYen } from '@ec-site/shared/lib/format'
+import { formatYen } from '@ec-site/shared/lib/format'
 import { render, screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { ChartValueTooltip } from '@/components/ChartValueTooltip'
 import { type ChartConfig, ChartContainer } from '@/components/ui/chart'
+import { formatNumber } from '@/lib/format'
 
 const chartConfig = {
   amount: { label: '売上金額', color: 'var(--chart-1)' },
@@ -22,14 +23,14 @@ function renderTooltip(dataKey: 'amount' | 'quantity', formatValue: (value: numb
 }
 
 describe('グラフの吹き出し', () => {
-  it('DC-134-21 金額の整形を渡すと、値が「1,234 円」で出て、系列の名前もそのまま出る', () => {
+  it('金額の整形を渡すと、値が「1,234 円」で出て、系列の名前もそのまま出る', () => {
     renderTooltip('amount', formatYen)
 
     expect(screen.getByText('1,234 円')).toBeInTheDocument()
     expect(screen.getAllByText('売上金額').length).toBeGreaterThan(0) // 見出しと系列の行の両方に出る
   })
 
-  it('DC-134-21 数の整形を渡すと、値が「1,234」で出て、系列の名前もそのまま出る', () => {
+  it('数の整形を渡すと、値が「1,234」で出て、系列の名前もそのまま出る', () => {
     renderTooltip('quantity', formatNumber)
 
     expect(screen.getByText('1,234')).toBeInTheDocument()

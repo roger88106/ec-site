@@ -1,3 +1,4 @@
+import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
 import { axisValuesLabel, formatDateTime, formatYen } from '@ec-site/shared/lib/format'
 import { carrierLabel } from '@ec-site/shared/lib/orderLabels'
 import { isUuid } from '@ec-site/shared/lib/patterns'
@@ -8,7 +9,6 @@ import { getTranslations } from 'next-intl/server'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
-import { AmountsSummary } from '@/components/AmountsSummary'
 import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
@@ -113,7 +113,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
           ))}
         </ul>
         <div className="rounded-lg border p-4 md:ml-auto md:w-96">
-          <AmountsSummary amounts={order.amounts} />
+          <AmountsSummary amounts={order.amounts} variant="page" />
         </div>
       </section>
 

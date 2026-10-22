@@ -24,6 +24,72 @@
       ],
       "port": 3000,
       "cwd": "frontend/store"
+    },
+    {
+      "name": "admin-1",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev/slot.mjs",
+        "run",
+        "admin",
+        "1"
+      ],
+      "port": 15173
+    },
+    {
+      "name": "admin-2",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev/slot.mjs",
+        "run",
+        "admin",
+        "2"
+      ],
+      "port": 25173
+    },
+    {
+      "name": "admin-3",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev/slot.mjs",
+        "run",
+        "admin",
+        "3"
+      ],
+      "port": 35173
+    },
+    {
+      "name": "store-1",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev/slot.mjs",
+        "run",
+        "store",
+        "1"
+      ],
+      "port": 13000
+    },
+    {
+      "name": "store-2",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev/slot.mjs",
+        "run",
+        "store",
+        "2"
+      ],
+      "port": 23000
+    },
+    {
+      "name": "store-3",
+      "runtimeExecutable": "node",
+      "runtimeArgs": [
+        "scripts/dev/slot.mjs",
+        "run",
+        "store",
+        "3"
+      ],
+      "port": 33000
     }
   ]
 }

@@ -34,14 +34,25 @@ import static org.junit.jupiter.api.Assertions.assertTimeoutPreemptively;
 class S3ObjectStorageFailureTest {
 
     /**
-     * 1 回の試行を待つ時間の上限（テストでは短くする）
+     * 正常に応答するサーバーを使うテストの、1 回の試行を待つ時間の上限。
+     * 負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
      */
-    private static final Duration ATTEMPT_TIMEOUT = Duration.ofMillis(300);
+    private static final Duration ATTEMPT_TIMEOUT = Duration.ofSeconds(5);
 
     /**
-     * 呼び出しの全体を待つ時間の上限（テストでは短くする）
+     * 正常に応答するサーバーを使うテストの、呼び出しの全体を待つ時間の上限
      */
-    private static final Duration CALL_TIMEOUT = Duration.ofSeconds(1);
+    private static final Duration CALL_TIMEOUT = Duration.ofSeconds(15);
+
+    /**
+     * 時間の上限を確かめるテストの、1 回の試行を待つ時間の上限（応答しないサーバーを待つので短くする）
+     */
+    private static final Duration SHORT_ATTEMPT_TIMEOUT = Duration.ofMillis(300);
+
+    /**
+     * 時間の上限を確かめるテストの、呼び出しの全体を待つ時間の上限（短くする）
+     */
+    private static final Duration SHORT_CALL_TIMEOUT = Duration.ofSeconds(1);
 
     /**
      * S3 の代わりの HTTP サーバー
@@ -96,7 +107,8 @@ class S3ObjectStorageFailureTest {
     void silentServerTimesOut(String name, Consumer<S3ObjectStorage> operation) throws IOException {
         // 接続は受け付けるが、何も返さない（受け付けの待ち行列に入るだけ）
         try (var silent = new ServerSocket(0)) {
-            var storage = storage(URI.create("http://127.0.0.1:" + silent.getLocalPort()));
+            var storage = storage(URI.create("http://127.0.0.1:" + silent.getLocalPort()),
+                    SHORT_ATTEMPT_TIMEOUT, SHORT_CALL_TIMEOUT);
 
             assertTimeoutPreemptively(Duration.ofSeconds(10),
                     () -> assertServiceUnavailable(() -> operation.accept(storage)));
@@ -136,12 +148,27 @@ class S3ObjectStorageFailureTest {
 
     /**
      * 指定の S3 を呼ぶ実装を、アプリと同じ設定のクライアントで作る（署名付き URL は使わない）。
+     *
+     * @param endpoint S3 の URL
+     * @return S3 を呼ぶ実装
      */
     private static S3ObjectStorage storage(URI endpoint) {
+        return storage(endpoint, ATTEMPT_TIMEOUT, CALL_TIMEOUT);
+    }
+
+    /**
+     * 待つ時間の上限を指定して、指定の S3 を呼ぶ実装を作る。
+     *
+     * @param endpoint       S3 の URL
+     * @param attemptTimeout 1 回の試行を待つ時間の上限
+     * @param callTimeout    呼び出し全体を待つ時間の上限
+     * @return S3 を呼ぶ実装
+     */
+    private static S3ObjectStorage storage(URI endpoint, Duration attemptTimeout, Duration callTimeout) {
         var properties = new MediaStorageProperties(null, "us-east-1", true, "test-key", "test-secret",
                 "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
                 Duration.ofSeconds(10), Duration.ofSeconds(30))
-                .withEndpoint(endpoint, ATTEMPT_TIMEOUT, CALL_TIMEOUT);
+                .withEndpoint(endpoint, attemptTimeout, callTimeout);
         S3Client client = MediaStorageConfig.s3Client(properties);
         return new S3ObjectStorage(client, null, properties);
     }

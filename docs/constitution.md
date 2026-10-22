@@ -92,7 +92,6 @@ ec-site/
 ├── api/openapi/          # API 契約の正本
 ├── docs/
 │   ├── constitution.md   # 大綱と文書の地図
-│   ├── todo.md           # TODO 一覧（後回しにする作業と未決事項）
 │   ├── rules/            # 規範：開発の進め方、書き方の規則
 │   ├── design/           # 今の設計：全体構成、アーキテクチャ、モジュール、画面、用語集
 │   ├── guides/           # 手順：開発環境の起動、環境変数、CI、テストの実行方法
@@ -157,7 +156,6 @@ ec-site/
 |------|------|
 | [specs/](specs) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `specs/archive/<まとまり>/` に移す。MVP の spec は [specs/archive/mvp/](specs/archive/mvp) にある |
 | [mvp.md](specs/archive/mvp/mvp.md) | MVP の完成までの一覧 |
-| [todo.md](todo.md) | TODO 一覧 |
 
 ## 4. 開発の進め方
 
@@ -286,4 +284,4 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 16. 未定事項
 
-未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [TODO 一覧](todo.md)。
+未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [milestone `1→10` の issue](https://github.com/roger88106/ec-site/milestone/1)、全ての issue は [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。起票の規則は [開発の進め方](rules/workflow.md) 第 4.1 節。

@@ -44,4 +44,4 @@ AI エージェントの作業の手順は [AGENTS.md](AGENTS.md)。
 | [018](docs/specs/archive/mvp/018-docs-and-tools) | 整理 | 文書とツールの整理 | 完了。[段階 1〜7](docs/specs/archive/mvp/018-docs-and-tools/tasks) を終えた。修正せずに残した項目は [レビューの結果](docs/specs/archive/mvp/018-docs-and-tools/tasks/07-review.md) |
 | [019](docs/specs/archive/mvp/019-mvp-completion) | 整理 | 受け入れ確認と MVP の完成 | 完了。[段階 1〜6](docs/specs/archive/mvp/019-mvp-completion/tasks/) を終え、tag `v0.1.0` を付けた |
 
-MVP を完成させるまでの spec の順は [MVP の完成までの一覧](docs/specs/archive/mvp/mvp.md)、MVP の後に行う作業と未決事項は [TODO 一覧](docs/todo.md) にある。
+MVP を完成させるまでの spec の順は [MVP の完成までの一覧](docs/specs/archive/mvp/mvp.md)、MVP の後に行う作業と未決事項は GitHub の [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。

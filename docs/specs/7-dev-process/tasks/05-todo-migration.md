@@ -147,7 +147,7 @@
 - [x] **T7-05-03** 本 spec で扱う issue を、#7 の sub-issue にする（DC-7-27）。
   - 依存：T7-05-02
   - 結果：本 spec で扱う issue は、移した issue の中にない。#7 の sub-issue はない。
-- [ ] **T7-05-04** TODO 一覧を削除し、参照を issue に置き換える。対象は plan 第 1 節の箇条書きで、constitution の文書の地図と、[constitution](../../../constitution.md) 第 16 節を含む（DC-7-10、7-11）。
+- [x] **T7-05-04** TODO 一覧を削除し、参照を issue に置き換える。対象は plan 第 1 節の箇条書きで、constitution の文書の地図と、[constitution](../../../constitution.md) 第 16 節を含む（DC-7-10、7-11）。
   - 依存：T7-05-02
   - 範囲：`docs/todo.md` と参照するファイル
 - [ ] **T7-05-05** README の進捗を MVP と 1→10 の節に分ける（DC-7-28、7-29）。

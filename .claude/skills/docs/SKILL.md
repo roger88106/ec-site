@@ -16,11 +16,10 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
 | `docs/design/` | 今の設計：全体構成、バックエンド・フロントのアーキテクチャ、`modules/<モジュール>.md`・`apps/<アプリ>.md`、共通コード、ロールと権限、AC 一覧、用語集、ライセンス |
 | `docs/guides/` | 手順：開発環境の起動、環境変数、CI の検査、テストの実行方法 |
 | `docs/specs/` | spec・plan・tasks と MVP の完成までの一覧。進行中の spec は直下、完了した spec は `archive/<まとまり>/`（当時の記録）。書き方は [開発の進め方](../../../docs/rules/workflow.md) 第 1.4 節 |
-| `docs/todo.md` | TODO 一覧（後回しにする作業と未決事項） |
 | `README.md` | 概要、起動とテストへの案内、進捗だけ。文書は constitution へ案内する |
 | `AGENTS.md`・skill | エージェントに固有の手順だけ。規則は docs/ を指す |
 
-- `docs/` の直下には constitution、TODO 一覧とフォルダーだけを置く。文書を追加したら constitution の文書の地図にも記載する。
+- `docs/` の直下には constitution とフォルダーだけを置く。文書を追加したら constitution の文書の地図にも記載する。
 - 同じ意味は 1 か所に書き、ほかは指す。
 
 ## 2. 書き方

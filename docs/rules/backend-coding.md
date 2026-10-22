@@ -26,6 +26,7 @@
 | 5.1 | Lombok は main だけ | 自動（`scripts/ci/java-rules.mjs`） |
 | 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
+| 5.4 | 書式は IntelliJ の整形を推奨する（強制しない） | なし（強制しない） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所は自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
@@ -235,6 +236,16 @@ public final class MoneyFormat {
 - 確認方法：ArchUnit（`src/test/java/com/ecsite/architecture/`）で、static でないメンバーを持たない最上位のクラスが `final` で、コンストラクタが全て `private` であることを確認する。
 
 理由：インスタンスを作っても使い道がなく、作れると使い方を誤る。Checkstyle の `HideUtilityClassConstructor` はソースを読むので、Lombok で作るコンストラクタが見えずに誤って当たる。ArchUnit はコンパイルした後のクラスを読むので、Lombok で書いても手動で書いても同じに確認できる。
+
+### 5.4 書式
+
+Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。強制しない（CI と commit の前の hook では検査しない）。
+
+- エージェントは、IntelliJ の MCP（`reformat_file`）を使えるとき、変えた Java のファイルを整形してよい。
+- `reformat_file` が整形できるのは、IntelliJ で開いているプロジェクトのファイルだけ。`.claude/worktrees/` の下の作業ツリーのファイルは、その作業ツリーを IntelliJ で開いていなければ、MCP が「ok」を返しても整形しない。整形の後に `git diff` で変わったかを確認する。
+- 既存のファイルの書式だけを直す変更は、他の変更と同じ commit に混ぜない。理由：差分のレビューと `git blame` を読みやすく保つため。
+
+理由：今のコードは IntelliJ の書式でほぼそろっている。Spotless で強制する案は、今の書式に最も近い設定でも、読みやすさが下がる変更が出た（測定の記録は [issue #19 のコメント](https://github.com/roger88106/ec-site/issues/19)）。
 
 ## 6. 設定の値
 

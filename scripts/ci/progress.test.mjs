@@ -128,6 +128,24 @@ describe('進捗の一致の検査', () => {
     }
   })
 
+  test('アーカイブの 1→10 の spec で tasks のディレクトリがなければ（規模 M）、spec.md の中のタスクの行を数える', () => {
+    const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      const medium = path.join(specsDir, 'archive/1to10/8-medium')
+      mkdirSync(medium, { recursive: true })
+      writeFileSync(
+        path.join(medium, 'spec.md'),
+        '# spec\n\n## tasks\n\n- [x] **T8-01** a\n- [ ] **T8-02** b\n  - [ ] 補足は数えない\n',
+      )
+      const noTasks = path.join(specsDir, 'archive/1to10/9-none')
+      mkdirSync(noTasks, { recursive: true })
+      writeFileSync(path.join(noTasks, 'spec.md'), '# spec\n')
+      assert.deepEqual(readArchivedTasks(specsDir), new Map([['8-medium', { total: 2, done: 1 }]]))
+    } finally {
+      rmSync(specsDir, { recursive: true, force: true })
+    }
+  })
+
   test('直下とアーカイブの spec の tasks を読む', () => {
     const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
     try {

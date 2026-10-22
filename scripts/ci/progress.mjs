@@ -142,8 +142,17 @@ export function readArchivedTasks(specsDir) {
   if (!existsSync(groupDir)) return tasks
   for (const entry of readdirSync(groupDir, { withFileTypes: true })) {
     if (!entry.isDirectory() || !/^\d+-/.test(entry.name)) continue
-    const texts = readTaskTexts(path.join(groupDir, entry.name))
-    if (texts) tasks.set(entry.name, countTasks(texts))
+    const specDir = path.join(groupDir, entry.name)
+    const texts = readTaskTexts(specDir)
+    if (texts) {
+      tasks.set(entry.name, countTasks(texts))
+      continue
+    }
+    // 規模 M は tasks のディレクトリがなく、spec.md の中にタスクの行がある
+    const specFile = path.join(specDir, 'spec.md')
+    if (!existsSync(specFile)) continue
+    const count = countTasks([readFileSync(specFile, 'utf8')])
+    if (count.total > 0) tasks.set(entry.name, count)
   }
   return tasks
 }

@@ -15,7 +15,7 @@ writeFileSync(path.join(specsDir, 'archive/mvp/mvp.md'), '')
 after(() => rmSync(specsDir, { recursive: true, force: true }))
 
 describe('spec のディレクトリ', () => {
-  test('直下とアーカイブのまとまりの下の spec（NNN-名前）を、番号の順に返す', () => {
+  test('直下とアーカイブのまとまりの下の spec（<番号>-名前）を、番号の順に返す', () => {
     assert.deepEqual(
       listSpecDirs(specsDir).map(({ name, rel }) => [name, rel]),
       [

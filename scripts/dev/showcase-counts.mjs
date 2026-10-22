@@ -1,5 +1,5 @@
 // 機能紹介のページ（showcase/index.html）の数字を数える（開発環境の起動 第 6 節）。
-//   spec：docs/specs/ の直下とアーカイブの下の spec のディレクトリ（NNN-名前）の数
+//   spec：docs/specs/ の直下とアーカイブの下の spec のディレクトリ（<番号>-名前）の数
 //   AC：機能の spec の定義の行（- **AC-n**、1→10 の - **AC-n-m**）の数
 //   テスト：Java は、./gradlew check の結果（build/test-results/ の XML）があれば実行した件数（パラメーターの組ごと）、
 //          なければソースの @Test・@ParameterizedTest の数。Vitest・Playwright は、ソースの test・it の数

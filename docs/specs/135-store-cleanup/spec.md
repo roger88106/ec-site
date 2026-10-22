@@ -143,9 +143,10 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 依存：なし
   - 範囲：`frontend/store/src/app/orders/[orderId]/page.tsx`、`frontend/store/src/features/order/components/PaymentSection.tsx`、`frontend/store/src/features/order/components/CancellationSection.tsx`、判定の関数の置き場所（`frontend/store/src/features/order/`。ただし `features/order/labels.ts` は変えない）
   - 結果：`orderState.ts` に `showsPaymentSection`、`showsCancellationSection` を作り（単体テストを先に書いてレッドを確認）、ページだけが使う形にした。部品の側の null を返す判定は消し、部品のテストの「何も出さない」2 件は同じ内容を関数の単体テストに移した。`CancellationSection` の欄を出さない 3 状態は、型の網羅のために残し、使い方の誤りとして例外にした。
-- [ ] **T135-01-08** 商品の詳細の操作の jsdom のテストを書く（DC-135-25、26、27）。今の実装で通る。一時的に実装を変えて、テストが失敗することを確認し、戻す。
+- [x] **T135-01-08** 商品の詳細の操作の jsdom のテストを書く（DC-135-25、26、27）。今の実装で通る。一時的に実装を変えて、テストが失敗することを確認し、戻す。
   - 依存：なし
   - 範囲：`frontend/store/src/features/catalog/components/`
+  - 結果：`ProductShowcase.test.tsx` を作り、`VariantPicker.test.tsx` にあった商品の詳細のテストを移して、バリアントの画像（指定がなければ代表画像）、小さな画像、カートに入れる操作を役割と名前で確認しるテストに分けた。一時的に実装を変え、画像の選び方、小さな画像の押下、押せる判定のそれぞれで失敗することを確認して戻した。軸のある商品では買えない値が選べず買えないバリアントに行き着かないので、「買えないバリアント」のテストは軸のない商品で書いた。
 - [ ] **T135-01-09** 選んだバリアントの状態を 1 つの部品に持たせる。T135-01-08 のテストが通ったままにする（DC-135-12）。
   - 依存：T135-01-08
   - 範囲：`frontend/store/src/features/catalog/components/`

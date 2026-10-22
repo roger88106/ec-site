@@ -141,7 +141,7 @@ DC の列は「134-1」の形で書く。spec の番号 134 を付けた DC-134-
 | 134-32 | 画像の並べ替えと削除は、商品のバージョンを添えて送る | 同上 | 並べ替えは AC-37。削除は AC がないので付けない |
 | 134-33 | カテゴリの名称の変更で 409 になったら、再読み込みでダイアログを閉じて最新の一覧を表示する | `CategoryPage.test.tsx` | なし |
 | 134-34 | バリアントの売れ行きと、地域・年齢層・性別の CSV の見出しと行 | `VariantSalesPage.test.tsx`、`CustomerBreakdownPage.test.tsx` | AC-218 |
-| 134-35 | 税率の表示の整形と、URL のページ番号の読み取り（0、1.5、空、負の数、文字）の単体テスト | 管理画面 `lib/rate.test.ts`、`lib/searchParams.test.ts`（新規） | なし |
+| 134-35 | 税率の表示の整形と、URL のページ番号の読み取り（0、1.5、空、負の数、文字）の単体テスト | 管理画面 `lib/rate.test.ts`、`lib/searchParams.test.ts`（どちらも新規） | なし |
 | 134-36 | テスト名に AC を入れた後に、AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成する | `docs/design/acceptance-criteria.md` | ac-check |
 
 段階 5 の整理を守るための追加。spec の DC にはない：バリアントの追加のフォームで 409 になった後の再読み込みで、最新の値にフォームを再作成し、入力が消えず、送るバージョンが変わらないことを確認するテストを、`ProductEditPage.test.tsx` に追加する（AC の番号は付けない）。理由：409 の後の再読み込みの 4 か所のうち、バリアントの追加のフォームだけ、今の 409 のテストがないため。
@@ -177,7 +177,7 @@ DC の列は「134-1」の形で書く。spec の番号 134 を付けた DC-134-
 | [店舗画面の構成](../../design/apps/store.md) 第 9.2 節 | 戻り先の条件を修正する | 2 |
 
 - 設計の文書の全体の図と一覧の再検討は Non-goals（#91）である。本 spec で移す・追加するものだけを書く。
-- 次のものは文書に追加しない。数の整形は、[フロントのアーキテクチャ](../../design/frontend-architecture.md) 第 4 節の「数・日付・金額の整形」に含まれる。吹き出しのラッパーのコンポーネントとレポートの共通のコンポーネントは、構成の文書が個々のコンポーネントを列挙しない。
+- 管理画面に移した数の整形は、[管理画面の構成](../../design/apps/admin.md) 第 2 節の `lib/format.ts` の説明に追加する（段階 6）。次のものは文書に追加しない。吹き出しのラッパーのコンポーネントとレポートの共通のコンポーネントは、構成の文書が個々のコンポーネントを列挙しない。
 
 ## 8. 並行する spec 135 と同じファイル
 
@@ -188,6 +188,8 @@ DC の列は「134-1」の形で書く。spec の番号 134 を付けた DC-134-
 | `frontend/store/src/app/cart/page.tsx`、`app/checkout/[checkoutId]/page.tsx`、`app/orders/[orderId]/page.tsx` | 金額の内訳と表示名の import 先を変更する |
 | `frontend/store/src/components/PageLinks.tsx` | リンクの見た目のボタンを共有に変更する |
 | `frontend/shared/` の全体 | 第 1 節、第 2 節、第 5 節 |
+| `docs/design/apps/store.md` | ログインの戻り先の条件（[店舗画面の構成](../../design/apps/store.md) 第 9.2 節） |
+| `docs/design/acceptance-criteria.md` | テストの列（`node scripts/ci/ac-check.mjs --write` で再生成する列なので、衝突したら再生成する） |
 
 後でマージする側が `develop` を取り込んで衝突を解消する（[エージェントの作業フロー](../../rules/subagents.md) 第 4 節）。spec 135 には共有の作業メモで知らせた（2026-10-22）。
 

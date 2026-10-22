@@ -189,9 +189,10 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 依存：なし
   - 範囲：`frontend/store/src/instrumentation.test.ts`
   - 結果：本番のモードで必須の値がない（名前を標準エラー出力に書いて終了）、そろっている（終了しない）、`edge`（何もしない）の 3 つのテストを書いた。実行環境の判定・終了・書き込み・設定の読み込みをそれぞれ外すと、該当のテストが失敗することを確認し、戻した。
-- [ ] **T135-02-07** ログインのリンクの部品のテストを、`components/LoginLinks.test.tsx` に移す（DC-135-20）。
+- [x] **T135-02-07** ログインのリンクの部品のテストを、`components/LoginLinks.test.tsx` に移す（DC-135-20）。
   - 依存：なし
   - 範囲：`frontend/store/src/components/LoginLinks.test.tsx`、`frontend/store/src/components/PageLinks.test.tsx`。`components/PageLinks.tsx` は変えない（DN-135-6）
+  - 結果：`LoginLinks` のテスト 1 件を内容を変えずに `LoginLinks.test.tsx` へ移し、`next/navigation` の差し替えも一緒に移した。`PageLinks.test.tsx` からは差し替えと不要な import を外した。
 - [x] **T135-02-08** 必須の設定の定数の一覧のテストを削除し、定数の export が不要かを確認する（DC-135-21、22）。
   - 依存：T135-02-03（同じテストのファイルを変えるため）
   - 範囲：`frontend/store/src/auth/config.test.ts`、`frontend/store/src/auth/config.ts`

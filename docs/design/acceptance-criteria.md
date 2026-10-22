@@ -135,7 +135,7 @@
 | AC-110 | パスワードの条件（長さなど）を満たさない登録は拒否される。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
 | AC-111 | 登録すると確認メールが届く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
 | AC-112 | メールアドレスの確認が済むと、ログインした状態で店舗（会員登録を始めた画面）に戻… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
-| AC-113 | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `PageLinks.test.tsx`、`index.test.ts`、`login.test.ts` ほか 1 |
+| AC-113 | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `LoginLinks.test.tsx`、`index.test.ts`、`login.test.ts` ほか 1 |
 | AC-114 | ログインしている間、店舗の画面に会員の氏名とログアウトの操作を表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`login.test.ts`、`member.spec.ts` |
 | AC-115 | ログアウトすると、店舗でも IdP でもログインしていない状態になる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`member.spec.ts` |
 | AC-116 | パスワードを続けて間違えると、そのアカウントは一定時間ログインできなくなる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |

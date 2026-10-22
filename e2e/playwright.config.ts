@@ -2,7 +2,7 @@ import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, STORE_URL } from './src/urls'
 
-/** CI で動いているか（test.only を禁止し、HTML のレポートを残し、起動済みの画面のサーバーを使い回さない） */
+/** CI で動いているか（test.only を禁止し、HTML のレポートを残す） */
 const CI = Boolean(process.env.CI)
 /** バックエンドの Gradle プロジェクト。Windows の cmd は作業ディレクトリのスクリプトを名前だけでは探さないので、絶対パスで呼ぶ */
 const BACKEND_DIR = path.resolve(import.meta.dirname, '../backend/ecsite')
@@ -14,7 +14,8 @@ const GRADLEW = path.join(BACKEND_DIR, process.platform === 'win32' ? 'gradlew.b
  * E2E 用の DB・IdP・画像のバケットを使い、ローカルのデータを変えない（plan 004 第 6.1 節）。DB と IdP は、
  * 準備の script（scripts/prepare.ts）が毎回再作成する。
  * どのテストも同じ DB を使うので、1 つずつ順に動かす。テストのデータは実行ごとの印を付けて作る（src/data.ts）。
- * 手元では、すでに起動している画面のサーバーがあればそれを使う。
+ * 画面のサーバーは、手元でも CI でも毎回起動し、起動済みのサーバーを使い回さない（ポートが使われていれば Playwright が止まる）。
+ * 別の作業ツリーで起動したサーバーを使うと、その作業ツリーのコードを試すことになるため。
  */
 export default defineConfig({
   testDir: 'tests',
@@ -56,7 +57,7 @@ export default defineConfig({
         ADMIN_API_PROXY_TARGET: BACKEND_URL,
       },
       timeout: 180_000,
-      reuseExistingServer: !CI,
+      reuseExistingServer: false,
     },
     {
       // API の結果のキャッシュを 1 秒にし、NFR-1 の 60 秒を待たずに一覧への反映を確認する
@@ -75,7 +76,7 @@ export default defineConfig({
         AUTH_URL: STORE_URL,
       },
       timeout: 180_000,
-      reuseExistingServer: !CI,
+      reuseExistingServer: false,
     },
   ],
 })

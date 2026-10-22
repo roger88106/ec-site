@@ -1,6 +1,6 @@
 ---
 name: local-dev
-description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、フロント（store・admin）と E2E を要約だけで実行するスクリプト、commit の前の CI の検査、プレビューでの画面の確認方法。バックエンドやフロントを動かす、テストや E2E を実行する、commit する、画面を確認する、DB や token を見るときに使う。
+description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、スロット（作業ツリーごとの環境）、フロント（store・admin）と E2E を要約だけで実行するスクリプト、commit の前の CI の検査、プレビューでの画面の確認方法。バックエンドやフロントを動かす、テストや E2E を実行する、commit する、画面を確認する、DB や token を見るときに使う。
 ---
 
 # ローカルでの起動と確認
@@ -9,10 +9,12 @@ description: ec-site をローカルで起動・確認する手順。DB・Keyclo
 
 前提：JDK 21、Node.js と pnpm、Docker が使えること。マシンに固有のこと（JDK の場所、PATH、OS の癖）は、`/.local/agent/environment.md` があればそれに従う（AGENTS.md「環境」）。
 
+以下の 8080、9080、3000、5173 と DB `ec_site` などの固定の値は、メインの作業ツリー（スロット 0）の値。追加の作業ツリーは、「スロット」の節の表の値を使う。
+
 ## ミドルウェア（compose）
 
 ```bash
-docker compose up -d          # リポジトリのルートで。PostgreSQL、Zipkin、SeaweedFS、imgproxy、Keycloak、Mailpit
+docker compose up -d          # メインの作業ツリーのルートで。PostgreSQL、Zipkin、SeaweedFS、imgproxy、Keycloak、Mailpit
 docker compose stop           # 止める（データは残る）
 ```
 
@@ -70,7 +72,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 - `check` は単体・統合テストと OpenAPI の検証を含む（AGENTS.md の完了の基準）。一部だけなら `test`（単体）、`integrationTest`（統合）、`--tests '<クラス名>'`。
 - `build.gradle.kts` を変えたら、テストの前に `./gradlew help -q` でビルドの設定を評価する。書き誤りが、テストや E2E の途中まで検出されないため。
 - 長い検査は、最初からバックグラウンドで実行する（Bash の上限 10 分を超えて途中でバックグラウンドに移ると、結果の読み方が変わるため）。目安：`./gradlew check` 約 10 分、`check-frontend.sh` 約 1.5 分、`e2e.sh` 約 2 分、push の後の CI 約 8 分（`gh run watch --exit-status`）。`./gradlew check`、`check-frontend.sh`、`check-all.sh`、`e2e.sh` は続けて実行し、同時に実行しない（CPU が足りずに、時間の上限のあるテストと管理画面のテストがタイムアウトする）。
-- 並行して作業できる手元の環境ができるまでは、負荷の高い作業（compose、バックエンドの起動、E2E、バックエンドの全テスト）を、同時に 1 つのセッションだけで行う。他のセッションが実行中なら、終わるのを待つ。
+- バックエンドと画面は、スロットごとに同時に起動してよい（「スロット」の節）。E2E はロックで 1 つずつ実行される。バックエンドの全テスト、フロントの検査の script、E2E は、同時に実行すると、タイムアウトを設定したテストが失敗しうるので、他のセッションが実行しているときは待つ。
 - 失敗の詳細は `build/test-results/**/TEST-*.xml` を、失敗したクラスだけ grep する。
 
 ## フロント（`frontend/store`、`frontend/admin`）
@@ -105,6 +107,50 @@ scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 - IdP のログインの画面は、描画の前だとキーの入力やクリックが失敗する。`find` で入力欄を探し、`form_input` で local の seed のアカウント（`docs/guides/setup.md`）を入れ、`javascript_tool` で `document.querySelector('form').submit()` を呼ぶ。
 - 表示の中身は `get_page_text` で読む。スクリーンショットは描画を待ってタイムアウトしやすいため、見た目を見るときだけ使う。
 - 開く画面の ID は DB から取得する（例：注文と支払は `ordering.sales_order` と `payment.payment` を結ぶ）。
+
+## スロット（作業ツリーごとの環境）
+
+追加の作業ツリー（`git worktree add` で作ったもの）は、スロット 1〜3 を 1 つ割り当てて、バックエンド・画面・DB・画像のバケットを他の作業ツリーと分ける。メインの作業ツリーはいつもスロット 0（上の固定の値）。見分け方は、`node scripts/dev/slot.mjs show` を実行する。
+
+- 共有の基盤（compose）はメインの作業ツリーで起動する。追加の作業ツリーで `docker compose up` を実行しない。基盤が動いていないと slot.mjs は終了コード 2 で終わる。
+- slot.mjs は作業ツリーのどこから実行してもよい。
+- 新しい作業ツリーは、始めにルートで `pnpm install --frozen-lockfile` を実行する（`run store`・`run admin` は `node_modules` を直接起動する）。
+- スロットで使えないもの：Stripe の通知の転送（`stripe-cli`）と機能紹介のスクリーンショット（`pnpm capture`）はスロット 0 だけで対応する。Mailpit と Zipkin は全スロットで共有する。
+
+```bash
+node scripts/dev/slot.mjs assign   # 空いている最小のスロットを割り当て、DB と 2 つのバケットを作る（割り当て済みなら番号を示すだけ）
+node scripts/dev/slot.mjs show     # 自分のスロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
+node scripts/dev/slot.mjs env      # スロットの環境変数を export の形で出す（Gradle を直接実行するときなど）
+node scripts/dev/slot.mjs reset    # 割り当てを変えずに DB とバケットを再作成する（バックエンドを止めてから）
+node scripts/dev/slot.mjs release  # DB とバケットを削除し、割り当てを解く
+```
+
+- 作業ツリーを削除する前に `release` する。`release` せずに削除しても、残った DB とバケットは次の `assign` が再作成するので、手動で削除しない。
+- `env` の出力は、`bootRun` などを手動で実行するときだけ使い、`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)` のように subshell の中で使う。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
+- メインの作業ツリーで `scripts/dev/reset.sh all` を実行すると、全スロットの DB とバケットも削除される。各作業ツリーで `node scripts/dev/slot.mjs reset` を実行して再作成する。
+- マージの直後（共有の Keycloak に realm を再度取り込む前）は、スロットの画面のログインがリダイレクト先のエラー（Invalid redirect uri）で失敗する。メインの作業ツリーで `scripts/dev/reset.sh keycloak` を実行する。
+- 割り当ては `<作業ツリー>/.local/slot` に番号だけで書く。メインの作業ツリーでは assign・release・reset は何もしない。
+
+| スロット | バックエンド | 運用ポート | 店舗画面 | 管理画面 | DB |
+|---|---|---|---|---|---|
+| 0（メイン） | 8080 | 9080 | 3000 | 5173 | `ec_site` |
+| 1 | 18080 | 19080 | 13000 | 15173 | `ec_site_1` |
+| 2 | 28080 | 29080 | 23000 | 25173 | `ec_site_2` |
+| 3 | 38080 | 39080 | 33000 | 35173 | `ec_site_3` |
+
+バックエンドは、`run backend` でスロットの環境変数を付けて起動する（出力先をファイルにして、バックグラウンドで実行する）。
+
+```bash
+node scripts/dev/slot.mjs run backend > <作業用のディレクトリ>/bootrun.log 2>&1
+curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{http_code}\n' localhost:19080/actuator/health   # スロット 1 の運用ポート
+```
+
+- 待つ先は自分のスロットの運用ポート。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
+- 店舗画面と管理画面のプレビューは、`.claude/launch.json` の `store-<n>`・`admin-<n>`（`store-1`、`admin-2` など。`<n>` は自分のスロット）を `preview_start` で指定する。`admin`・`store` はスロット 0。プレビューのツールがないときは、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>` をバックグラウンドで実行する。番号が自分のスロットと違うと起動しない。
+- 停止は、自分のスロットのポートで待ち受けているプロセスだけを停止する。Windows の PowerShell では `Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess`（スロット 1 のバックエンド）。他のスロットのポートのプロセスを停止しない。
+- DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
+- データの再作成は、作業ツリーでは `scripts/dev/reset.sh`（`db`）だけが使え、自分のスロットの DB とバケットだけを再作成する（`slot.mjs reset` と同じ）。`keycloak` と `all` は共有のコンテナを再作成するので、メインの作業ツリーで実行する。
+- E2E は、どの作業ツリーからでも実行できる。ロックで 1 つずつ実行され、他が実行中なら所有者を示して終了コード 1 で終わるので、待ってから再実行する。PID が再利用されて終了し続けるときは、示されたロックのファイルを削除してよい。E2E は常にスロット 0 の固定の環境で実行され、E2E のエントリポイント（`e2e/scripts/run.ts`）がスロットの環境変数を削除する。
 
 ## CI の検査の script
 
@@ -151,7 +197,7 @@ local profile の seed（`db/seed/local/`）が、画面を確認するための
 
 ## E2E（`e2e/`）
 
-`docs/guides/running-tests.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を再作成し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）は、起動していなければ起動する。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
+`docs/guides/running-tests.md` の「E2E」の通り。準備の script が E2E 用の DB と Keycloak（:8181）を再作成し、Playwright がバックエンド（:8090、profile `local,e2e`）を毎回起動する。管理画面（:4173）、店舗画面（:3100）も毎回起動する（起動済みのサーバーは使い回さず、ポートが使われていれば停止する）。ローカルのデータ（:8080 の DB、:8180 の Keycloak）は変わらない。
 
 ```bash
 scripts/dev/e2e.sh                                   # ルートで。テストごとの ok / x と失敗の要点だけを出す。前提のコンテナが止まっていれば、名前を出して終了コード 2

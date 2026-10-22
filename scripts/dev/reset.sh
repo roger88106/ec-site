@@ -3,6 +3,10 @@
 # ローカルのデータを Git の正本から再作成する（開発環境の起動 第 4 節）
 #
 #   使い方：scripts/dev/reset.sh [db|keycloak|all]（どこから流してもよい）
+#   作業ツリーでの振る舞い：メインの作業ツリーは下の通り。追加の作業ツリーでは、db（既定）だけを流せる。
+#     `node scripts/dev/slot.mjs reset` を呼び、そのスロットのデータベースと 2 つのバケットを再作成する
+#     （バックエンドが動いているか、スロットの割り当てがあるかの判定は slot.mjs が行う）。
+#     keycloak と all は共有のコンテナに触れるので、メインの作業ツリーで流すよう示して終了コード 1 で終わる
 #     db（既定）：DB ec_site を消して作る。seed は次のバックエンドの起動で流れる。
 #                 バックエンドが動いていれば、止めるよう求めて何もせずに終わる。
 #                 E2E の DB（ec_site_e2e）、IdP（keycloak の database）、画像には触れない
@@ -18,6 +22,31 @@ ROOT="$(cd "$(dirname "$0")/../.." && pwd)"
 cd "$ROOT"
 
 target="${1:-db}"
+
+# メインの作業ツリーか（slot.mjs と同じく、--git-dir と --git-common-dir の絶対パスの比較）
+is_main_tree() {
+  local git_dir common_dir
+  git_dir="$(cd "$(git rev-parse --git-dir)" && pwd -P)"
+  common_dir="$(cd "$(git rev-parse --git-common-dir)" && pwd -P)"
+  [ "$git_dir" = "$common_dir" ]
+}
+
+if ! is_main_tree; then
+  case "$target" in
+    db)
+      exec node scripts/dev/slot.mjs reset
+      ;;
+    keycloak|all)
+      main_tree="$(git worktree list --porcelain | sed -n 's/^worktree //p' | head -1)"
+      echo "$target は共有のコンテナに触れる。メインの作業ツリーで流す：cd \"$main_tree\" && scripts/dev/reset.sh $target" >&2
+      exit 1
+      ;;
+    *)
+      echo "対象は db、keycloak、all のどれか：$target" >&2
+      exit 2
+      ;;
+  esac
+fi
 
 # バックエンドが動いているか（死活監視は運用ポートの :9080）
 backend_running() {

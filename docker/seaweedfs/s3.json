@@ -8,7 +8,7 @@
     {
       "name": "ec-site-imgproxy",
       "credentials": [{ "accessKey": "ec-site-imgproxy", "secretKey": "ec-site-imgproxy-secret" }],
-      "actions": ["Read:ec-site-images-incoming", "Read:ec-site-e2e-images-incoming"]
+      "actions": ["Read:ec-site-images-incoming", "Read:ec-site-e2e-images-incoming", "Read:ec-site-images-incoming-1", "Read:ec-site-images-incoming-2", "Read:ec-site-images-incoming-3"]
     }
   ]
 }

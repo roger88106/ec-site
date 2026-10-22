@@ -17,13 +17,15 @@ export const authState: {
   session: Session | null
   /** セッションの Cookie を復号した token（getToken が返す）。ログインしていなければ null */
   token: JWT | null
+  /** getToken に渡された引数（最後の呼び出し） */
+  tokenParams: Record<string, unknown> | undefined
   /** auth.ts が NextAuth に渡した設定 */
   config: NextAuthConfig | undefined
   /** signIn の呼び出し */
   signIn: Mock<(...args: unknown[]) => unknown>
   /** signOut の呼び出し */
   signOut: Mock<(...args: unknown[]) => unknown>
-} = { session: null, token: null, config: undefined, signIn: vi.fn(), signOut: vi.fn() }
+} = { session: null, token: null, tokenParams: undefined, config: undefined, signIn: vi.fn(), signOut: vi.fn() }
 
 /**
  * 会員がログインしている状態にする。
@@ -73,5 +75,8 @@ export const nextAuthMock = {
 
 /** next-auth/jwt の代わり。セッションの Cookie を復号した token として、いまの状態を返す */
 export const nextAuthJwtMock = {
-  getToken: async () => authState.token,
+  getToken: async (params: Record<string, unknown>) => {
+    authState.tokenParams = params
+    return authState.token
+  },
 }

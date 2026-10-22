@@ -1,7 +1,7 @@
 # 段階 6：完了
 
 - 前提：段階 1〜5
-- 完了条件：spec の最後のレビューの採否を決め、反映した。E2E が通る。画面の目視を終えた。起票のまとめの案がある。本 spec を `docs/specs/archive/1to10/134-admin-tidy/` に移した。`develop` への pull request がある。
+- 完了条件：spec の最後のレビューの採否を決め、反映した。E2E が通る。画面の目視を終えた。起票のまとめの案がある。本 spec を `docs/specs/archive/1to10/134-admin-tidy/` に移した。
 - 参照：[plan](../plan.md) 第 9 節、[plan](../plan.md) 第 10 節、[spec](../spec.md)、[開発の進め方](../../../rules/workflow.md) 第 4.1 節、[開発の進め方](../../../rules/workflow.md) 第 4.2 節、[開発の進め方](../../../rules/workflow.md) 第 6 節、[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節
 
 ## タスク
@@ -21,11 +21,9 @@
   - 依存：T134-06-05
 - [ ] **T134-06-07** 本 spec（spec、plan、tasks）を `docs/specs/archive/1to10/134-admin-tidy/` に移し、参照を修正する。移した後に `scripts/ci/check-all.sh` が通る（[開発の進め方](../../../rules/workflow.md) 第 4.2 節）。
   - 依存：T134-06-06
-- [ ] **T134-06-08** 作業ブランチを push し、テンプレートで `develop` への pull request を作る。本文には、受け入れの確認、推奨の扱い、起票する issue の案を書く。追跡の issue（#134）に pull request の作成をコメントする。
-  - 依存：T134-06-07
 
-T134-06-07 は、T134-06-08 の直前の commit で行う。理由：アーカイブした spec は、進捗の検査が全てのタスクの済みを求めるため（[spec 7 の段階 6](../../archive/1to10/7-dev-process/tasks/06-completion.md) の結果と同じ）。
+T134-06-07 は tasks の最後のタスクで、pull request を作る直前の commit で行う。理由：アーカイブした spec は、進捗の検査が全てのタスクの済みを求めるため（[spec 7 の段階 6](../../archive/1to10/7-dev-process/tasks/06-completion.md) の結果と同じ）。
 
 ## tasks の外の作業
 
-pull request を作った後の作業（`develop` へのマージ）は、tasks に書かない。マージは spec 担当のセッションが利用者の許可を得てから行い、#134 のコメントに記録する（[AGENTS.md](../../../../AGENTS.md) の Git の節）。
+pull request の作成と、その後の `develop` へのマージと後片付けは、tasks に書かない（[開発の進め方](../../../rules/workflow.md) 第 4.2 節、[開発の進め方](../../../rules/workflow.md) 第 5.7 節）。pull request はテンプレートで作り、本文に受け入れの確認、推奨の扱い、起票する issue の案を書き、#134 にコメントする。マージは spec 担当のセッションが利用者の許可を得てから行う。

@@ -10,7 +10,7 @@
 |----------|------|--------|
 | `./gradlew test` | 単体テスト（Spring を起動しない） | 不要 ※1 |
 | `./gradlew integrationTest` | 統合テスト（Spring + Testcontainers の PostgreSQL など） | 必要 |
-| `./gradlew build`（`check`） | 単体・統合テスト、OpenAPI の構文の検証（CI と同じ） | 必要 |
+| `./gradlew build`（`check`） | 単体・統合テスト、OpenAPI の構文の検証（CI はジョブに分けて同じものを流す） | 必要 |
 | `./gradlew integrationTest -PintegrationTestShard=<番号>/<総数>` | 統合テストの一部だけ（クラスの名前の hash で分ける。例 `1/2`）。CI が 2 つのジョブに分けるために使う。手元では普通は使わない | 必要 |
 | `./gradlew integrationTest -PintegrationTestForks=<数>` | 統合テストを流すフォークの数（既定 1。CI も 1）。手元では普通は使わない | 必要 |
 | `./gradlew integrationTestShards` | 各側に入る統合テストのクラスの一覧（`-PintegrationTestShardCount=<数>` で分ける数を変える。既定 2） | 不要 |

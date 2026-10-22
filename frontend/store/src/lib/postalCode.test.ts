@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { normalizePostalCode } from '@/features/checkout/postalCode'
+import { normalizePostalCode } from '@/lib/postalCode'
 
 describe('郵便番号の正規化', () => {
   test('DC-135-6 ハイフンのない 7 桁の数字は、そのまま返す', () => {
@@ -24,6 +24,9 @@ describe('郵便番号の正規化', () => {
   test('DC-135-7 除くのは最初のハイフン 1 つだけで、2 つ以上あると null を返す', () => {
     expect(normalizePostalCode('123-45-67')).toBeNull()
     expect(normalizePostalCode('123--4567')).toBeNull()
+  })
+
+  test('DC-135-7 先頭のハイフン 1 つも除かれる今の振る舞いを保つ', () => {
     expect(normalizePostalCode('-1234567')).toBe('1234567')
   })
 })

@@ -3,7 +3,7 @@
 import { withActionResult } from '@/actions/withActionResult'
 import { getApi } from '@/api/client'
 import type { Municipality, PostalCodeAddress } from '@/api/types'
-import { normalizePostalCode } from '@/features/checkout/postalCode'
+import { normalizePostalCode } from '@/lib/postalCode'
 
 /**
  * 都道府県の市区町村の一覧を取る（店舗画面の構成 第 4.8 節）。読むだけなので、失敗は投げずに null で返す

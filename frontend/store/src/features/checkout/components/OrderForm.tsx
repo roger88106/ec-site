@@ -14,8 +14,8 @@ import type { Municipality, Prefecture } from '@/api/types'
 import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrderErrors'
-import { normalizePostalCode } from '@/features/checkout/postalCode'
 import { postalCodeFill } from '@/features/checkout/postalCodeFill'
+import { normalizePostalCode } from '@/lib/postalCode'
 
 /**
  * お届け先の入力と、注文。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />

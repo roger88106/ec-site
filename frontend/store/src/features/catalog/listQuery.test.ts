@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import { listHref, parseListQuery } from '@/features/catalog/listQuery'
+import { categoryHref, listHref, parseListQuery } from '@/features/catalog/listQuery'
 
 describe('商品一覧の URL のクエリ', () => {
   test('AC-52、53、54、57 絞り込み・並び順・ページを読む', () => {
@@ -33,5 +33,9 @@ describe('商品一覧の URL のクエリ', () => {
     expect(listHref({ categoryId: 'c1', minPrice: 0, maxPrice: null, sort: 'price_desc', page: 2 })).toBe(
       '/products?categoryId=c1&minPrice=0&sort=price_desc&page=2',
     )
+  })
+
+  test('カテゴリだけで絞り込む一覧の URL は、ほかの条件を書かない', () => {
+    expect(categoryHref('c1')).toBe('/products?categoryId=c1')
   })
 })

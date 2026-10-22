@@ -46,6 +46,11 @@ export function listHref(query: ListQuery): Route {
   return search ? `/products?${search}` : '/products'
 }
 
+/** カテゴリだけで絞り込んだ一覧の URL */
+export function categoryHref(categoryId: string): Route {
+  return listHref({ categoryId, minPrice: null, maxPrice: null, sort: 'newest', page: 1 })
+}
+
 /** 0 以上の整数だけを価格として扱う */
 function toPrice(value: string | undefined): number | null {
   if (!value || !/^\d+$/.test(value)) {

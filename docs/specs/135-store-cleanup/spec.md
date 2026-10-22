@@ -123,9 +123,10 @@ MVP 019 の全体のレビュー（2026-10-21）で、店舗画面（`frontend/s
   - 依存：T135-01-01
   - 範囲：`frontend/store/src/api/client.ts`、`docs/design/apps/store.md`
   - 結果：付ける処理を 1 つの middleware にまとめ、両方の口で使った。呼び出し元は全て画面・サーバーアクション・`api/cart.ts` で、`"use cache"` や `generateStaticParams` はなく、`getApi` は `connection()` の後に返すので要求の外はない。分ける必要はなかった。Next.js 16.4.2 も、キャッシュの鍵から traceparent を除く（`incremental-cache/index.js` 277 行）。店舗画面の構成 第 4.2 節に書いた。
-- [ ] **T135-01-03** カテゴリの一覧のリンクの URL のテストを書いてから、商品一覧の URL を作る関数で組み立てる（DC-135-1、2）。テストは今の URL で通る。一時的に URL を変えて、テストが失敗することを確認し、戻す。
+- [x] **T135-01-03** カテゴリの一覧のリンクの URL のテストを書いてから、商品一覧の URL を作る関数で組み立てる（DC-135-1、2）。テストは今の URL で通る。一時的に URL を変えて、テストが失敗することを確認し、戻す。
   - 依存：なし
   - 範囲：`frontend/store/src/features/catalog/listQuery.ts`（`listHref`）、`frontend/store/src/features/catalog/components/CategoryList.tsx`
+  - 結果：リンクの href を役割と名前で確認するテストを書き、今の URL で通ること、子のリンクの URL を変えると失敗することを確認した。5 項目を毎回書かずに済むよう、`listQuery.ts` にカテゴリだけを受ける `categoryHref` を足して（単体テストはレッドを確認）、最上位と子の両方をこれで作るようにした。
 - [ ] **T135-01-04** [テスト] 郵便番号の判定の関数の単体テストを書き、レッドを確認する。受け付ける形は今の 2 か所の処理と同じにする（DC-135-6、7）。
   - 依存：なし
   - 範囲：`frontend/store/src/features/checkout/`（郵便番号の補完の `postalCodeFill.ts` と同じ所）

@@ -1,5 +1,7 @@
 package com.ecsite.module.order.application.port;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -34,7 +36,7 @@ public interface CartDirectory {
      * @param version  バージョン（注文手続きの後の変更を見つけるため）
      * @param lines    品目（入れた順）
      */
-    record CartSnapshot(UUID cartId, UUID memberId, long version, List<Line> lines) {
+    record CartSnapshot(UUID cartId, @Nullable UUID memberId, long version, List<Line> lines) {
 
         /**
          * 要求した会員がカートを使えるか。会員のカートは持ち主の会員だけ、会員を持たないカートはだれでも。
@@ -42,7 +44,7 @@ public interface CartDirectory {
          * @param requester 要求した会員の ID（ログインしていなければ null）
          * @return 使えれば true
          */
-        public boolean isAccessibleBy(UUID requester) {
+        public boolean isAccessibleBy(@Nullable UUID requester) {
             return memberId == null || memberId.equals(requester);
         }
 

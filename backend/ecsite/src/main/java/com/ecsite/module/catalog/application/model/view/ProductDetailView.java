@@ -72,6 +72,6 @@ public record ProductDetailView(UUID id, String productCode, String name, String
      * @param id  画像 ID
      * @param url 配信の URL
      */
-    public record ImageView(UUID id, URI url) {
+    public record ImageView(UUID id, @Nullable URI url) {
     }
 }

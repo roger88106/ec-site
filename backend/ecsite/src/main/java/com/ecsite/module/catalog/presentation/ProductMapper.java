@@ -29,6 +29,7 @@ import com.ecsite.module.catalog.application.model.view.ProductSummaryView;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -131,7 +132,7 @@ class ProductMapper {
                 .status(toResponseStatus(view.status()))
                 .images(view.images().stream().map(ProductMapper::toImage).toList())
                 .variants(view.variants().stream().map(ProductMapper::toVariant).toList())
-                .actions(toActions(view.actions()))
+                .actions(toActions(Objects.requireNonNull(view.actions(), "クエリサービスが操作の可否を決めている")))
                 .version(view.version())
                 .createdAt(ApiDateTimes.toOffsetDateTime(view.createdAt()))
                 .updatedAt(ApiDateTimes.toOffsetDateTime(view.updatedAt()))

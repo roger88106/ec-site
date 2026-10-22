@@ -9,6 +9,7 @@ import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -19,6 +20,7 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
@@ -73,7 +75,7 @@ public class StockReservationService {
      * @return バリアント ID → 販売可能数（指定したすべてのバリアントを含む）
      */
     @Transactional(readOnly = true)
-    public Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, UUID excludedHolderId) {
+    public Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId) {
         if (variantIds.isEmpty()) {
             return Map.of();
         }
@@ -135,7 +137,8 @@ public class StockReservationService {
         }
         // 行ロックの中で足りることを確認したので、減算は必ず成功する
         locked.keySet().forEach(variantId -> stockItemRepository.adjust(variantId, StockAdjustment.forOrder(
-                -quantities.get(variantId), StockAdjustmentReason.ORDER, orderId, orderNumber, now)));
+                -Objects.requireNonNull(quantities.get(variantId), "ロックした在庫は数量を指定したバリアントのもの"),
+                StockAdjustmentReason.ORDER, orderId, orderNumber, now)));
         reservationRepository.deleteByHolder(holderId);
         return shortages;
     }

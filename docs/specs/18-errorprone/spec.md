@@ -162,7 +162,7 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
 - [x] **T18-02-06** [P] order、payment の報告を修正する。OpenAPI の生成した interface との不一致は、生成の設定を変えずに実装の側で合わせる（DN-18-3）。他のモジュールの型の注釈を変えたら、呼び出し側の報告も同じタスクで修正する（DC-18-7）。
   - 依存：T18-02-05
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/order/`、`backend/ecsite/src/main/java/com/ecsite/module/payment/`
-- [ ] **T18-02-07** [P] catalog、inventory、cart の報告を修正する。OpenAPI の生成した interface との不一致は、生成の設定を変えずに実装の側で合わせる（DN-18-3）。他のモジュールの型の注釈を変えたら、呼び出し側の報告も同じタスクで修正する（DC-18-7）。
+- [x] **T18-02-07** [P] catalog、inventory、cart の報告を修正する。OpenAPI の生成した interface との不一致は、生成の設定を変えずに実装の側で合わせる（DN-18-3）。他のモジュールの型の注釈を変えたら、呼び出し側の報告も同じタスクで修正する（DC-18-7）。
   - 依存：T18-02-05
   - 範囲：`backend/ecsite/src/main/java/com/ecsite/module/catalog/`、`backend/ecsite/src/main/java/com/ecsite/module/inventory/`、`backend/ecsite/src/main/java/com/ecsite/module/cart/`
 - [ ] **T18-02-08** [P] reporting、tax、shipping、member、storefront の報告を修正する。OpenAPI の生成した interface との不一致は、生成の設定を変えずに実装の側で合わせる（DN-18-3）。他のモジュールの型の注釈を変えたら、呼び出し側の報告も同じタスクで修正する（DC-18-7）。

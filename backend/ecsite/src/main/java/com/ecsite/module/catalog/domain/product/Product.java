@@ -124,6 +124,7 @@ public class Product extends AggregateRoot {
     /**
      * 初回表示日時。null は一度も表示されていない（表示の予定もない）
      */
+    @Nullable
     private Instant firstShownAt;
 
     /**
@@ -553,7 +554,7 @@ public class Product extends AggregateRoot {
      * @param now 現在時刻
      * @return 初回表示日時
      */
-    private Instant calculateFirstShownAt(Instant now) {
+    private @Nullable Instant calculateFirstShownAt(Instant now) {
         if (hasBeenShown(now)) {
             return firstShownAt;
         }
@@ -689,7 +690,7 @@ public class Product extends AggregateRoot {
      */
     public record Snapshot(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
                            PriceExclTax priceExclTax, Set<UUID> categoryIds, List<String> axes,
-                           PublicationStatus status, Instant firstShownAt, PublicationPeriod publicationPeriod,
+                           PublicationStatus status, @Nullable Instant firstShownAt, PublicationPeriod publicationPeriod,
                            List<ProductImage> images, List<Variant> variants, long version) {
     }
 

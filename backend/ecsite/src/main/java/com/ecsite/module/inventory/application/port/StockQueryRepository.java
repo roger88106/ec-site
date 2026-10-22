@@ -3,6 +3,7 @@ package com.ecsite.module.inventory.application.port;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -50,5 +51,5 @@ public interface StockQueryRepository {
      * @param now              現在時刻
      * @return バリアント ID → 販売可能数。在庫のないバリアントは含まない
      */
-    Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, UUID excludedHolderId, Instant now);
+    Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId, Instant now);
 }

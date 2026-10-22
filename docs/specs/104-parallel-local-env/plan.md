@@ -1,0 +1,194 @@
+# Plan 104：手元の環境の並行化
+
+ステータス：草案　対象：[spec.md](spec.md)
+
+前提：spec 104 が確定した。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../.claude/skills/review/SKILL.md)）。
+
+| 対象 | 本書 | 主な担当 |
+|------|------|----------|
+| 全体の決定 | 第 0 節 | 全て |
+| スロットの値 | 第 1 節 | DS-104-1（DC-104-1、104-10） |
+| スロットの割り当てと解除 | 第 2 節 | DS-104-1（DC-104-2〜7、104-9、104-14、104-15） |
+| スロットの環境変数と認証 | 第 3 節 | DS-104-1（DC-104-8、104-11〜13） |
+| データの再作成の script | 第 4 節 | DS-104-1（DC-104-16） |
+| E2E | 第 5 節 | DS-104-2（DC-104-17〜20） |
+| エージェントの手順と文書 | 第 6 節 | DS-104-3（DC-104-21〜25） |
+| DC と確認方法の一覧 | 第 7 節 | 全て |
+| 段階と実装の順序 | 第 8 節 | 全て |
+| 実装の間の手元の環境の使い方 | 第 9 節 | 全て |
+
+DC の列は「104-1」の形で書く。spec の番号 104 を付けた DC-104-1 の略である。
+
+## 0. 全体の決定
+
+| 決定 | 確認方法 |
+|------|----------|
+| バックエンドのコードと設定ファイル（`application-local.yml` など）は変えない。スロットの値は環境変数で渡す | 差分を読む |
+| スロットの処理は、コマンドのエントリポイントの script `scripts/dev/slot.mjs` と、テストできる純粋な関数の `scripts/dev/lib/slot.mjs`（ポートと名前の計算、空きの選び方、環境変数の組み立て）に分ける。テストは `scripts/dev/lib/slot.test.mjs`（`node:test`） | script のテスト |
+| script のテストを commit の前と CI で実行するため、`scripts/ci/check-all.sh` の「script のテスト」の対象に `scripts/dev/**/*.test.mjs` を加える。CI の定義のファイル（`.github/workflows/ci.yml`）は変えない（DN-104-2）。CI が `check-all.sh` を呼んでいるかは実装役が確認、呼んでいなければ報告する | 差分を読む、`check-all.sh` |
+| 共有の基盤の設定（compose の imgproxy の許可、SeaweedFS の権限、バケットの初期化の script）は CI の E2E も使う。変えるのは、スロット 1〜3 の受付のバケットの許可を加えることと、初期化の script が環境変数で対象を受けられるようにすることだけで、既定の動き（スロット 0 と E2E のバケット）は変えない | 差分を読む、CI の E2E が通る |
+
+理由：
+
+- 環境変数で渡すのは、本番と CI の値を変えず（DN-104-1）、スロット 0 を今のままにする（DC-104-1）ため。Spring の設定は全て環境変数で上書きできる。
+- Node の script にするのは、Windows の Git Bash と PowerShell のどちらからも同じに動き、既存の検査の script と同じ形でテストできるため。
+
+## 1. スロットの値（DC-104-1、104-10）
+
+ポートは「スロット 0 の値 + 10000 × スロットの番号」とする。データベースと画像のバケットは、名前の末尾にスロットの番号を付ける。
+
+| スロット | バックエンド | 運用ポート | 店舗画面 | 管理画面 | データベース | 配信のバケット | 受付のバケット | 店舗画面の Cookie の接頭辞 |
+|---|---|---|---|---|---|---|---|---|
+| 0（主の checkout） | 8080 | 9080 | 3000 | 5173 | `ec_site` | `ec-site-images` | `ec-site-images-incoming` | なし |
+| 1 | 18080 | 19080 | 13000 | 15173 | `ec_site_1` | `ec-site-images-1` | `ec-site-images-incoming-1` | `s1-` |
+| 2 | 28080 | 29080 | 23000 | 25173 | `ec_site_2` | `ec-site-images-2` | `ec-site-images-incoming-2` | `s2-` |
+| 3 | 38080 | 39080 | 33000 | 35173 | `ec_site_3` | `ec-site-images-3` | `ec-site-images-incoming-3` | `s3-` |
+
+| DC | 決定 | 確認方法 |
+|----|------|----------|
+| 104-10 | 全スロットのポートは、互いに、共有の基盤のポート（5432、9411、8333、8081、8180、8181、2525、8025）と、E2E のポート（8090、9090、4173、3100）に重ならない。テストで確認する | script のテスト |
+| 104-10 | Windows のポートの予約の script `scripts/dev/windows/exclude-ports.ps1` の表に、スロット 1〜3 の 12 のポートを加える。利用者が、マージの後に管理者の PowerShell で流し直す | 差分を読む |
+
+理由：番号の頭の桁でスロットが分かり、49152 より下（Windows の動的なポートの範囲の外）に収まるため。
+
+## 2. スロットの割り当てと解除（DC-104-2〜7、104-9、104-14、104-15）
+
+| コマンド | すること |
+|---|---|
+| `node scripts/dev/slot.mjs assign` | 作業ツリーで、空いている最小のスロットを割り当て、`<作業ツリー>/.local/slot` に番号を書く。データベースと 2 つのバケットを再作成し、seed の画像をコピーする。すでに割り当て済みなら、その番号を示して何もしない |
+| `node scripts/dev/slot.mjs release` | データベースと 2 つのバケットを削除し、`.local/slot` を削除する |
+| `node scripts/dev/slot.mjs reset` | 割り当てを変えずに、そのスロットのデータベースと 2 つのバケットを再作成し、seed の画像をコピーする。`assign` の再作成と同じ処理を使う。主の checkout では何もせずに知らせる |
+| `node scripts/dev/slot.mjs show` | 今の作業ツリーのスロットとポート・URL、全ての作業ツリーのスロットの一覧を示す |
+| `node scripts/dev/slot.mjs env` | スロットの環境変数を、Bash の `export` の形で出力する |
+| `node scripts/dev/slot.mjs run <backend\|store\|admin> [番号]` | スロットの環境変数を付けて、バックエンド（`./gradlew bootRun`、profile `local`）、店舗画面（`next dev`）、管理画面（`vite`）を起動する。番号を渡したときは、作業ツリーのスロットと違えば終了する（プレビューの設定から呼ぶため） |
+
+| DC | 決定 | 確認方法 |
+|----|------|----------|
+| 104-1、104-3 | 主の checkout は、作業ツリーの一覧の最初の項目（`git rev-parse --git-dir` と `--git-common-dir` が同じ）で判定する。主の checkout はいつもスロット 0 で、`assign` と `release` は何もせずに知らせる。`run` と `show` はスロット 0 の値で動く。`.local/` は Git に入らず、作業ツリーごとにある | script のテスト、差分を読む |
+| 104-2、104-4、104-7 | 空きの判定は、`git worktree list --porcelain` の作業ツリー（主の checkout と、prunable のものを除く）の `.local/slot` を読み、使われていない最小の番号を選ぶ。消えた作業ツリーは一覧にないので、そのスロットは空きになる。全て使われていれば、使っている作業ツリーのパスを示して終了コード 1 で終了する | script のテスト、手動で確認する（第 7 節） |
+| 104-5 | データベースは、共有の PostgreSQL のコンテナ（`ec-site-postgres`）で `drop database if exists ec_site_<n> with (force)` と `create database ec_site_<n> owner ec_site` を実行して再作成する（`docker exec`）。マイグレーションと seed は、次のバックエンドの起動（profile `local`）で適用される | 手動で確認する |
+| 104-6、104-9 | `docker/seaweedfs/init.sh` を、環境変数で対象のバケットと CORS の許可元を受ける形に直す。`docker compose run --rm --no-deps` で、そのスロットの 2 つのバケットだけを作り、作業ツリーの seed の画像をコピーする。CORS の許可元はそのスロットの管理画面の origin。削除するときは、同じく一時のコンテナで `aws s3 rb --force` を実行する。スロット 0 と E2E のバケットの作り方は変えない | 差分を読む、手動で確認する |
+| 104-9 | imgproxy が読める受付のバケット（`docker/compose.yaml` の `IMGPROXY_ALLOWED_SOURCES`）と、SeaweedFS の imgproxy の資格情報の権限（`docker/seaweedfs/s3.json`）に、スロット 1〜3 の受付のバケットを加える。共有の基盤の設定の変更なので、マージの後に主の checkout で `docker compose up -d --force-recreate seaweedfs imgproxy` を実行して反映する。理由：bind mount した設定ファイルの中身だけの変更では、compose がコンテナを再作成しないため。実装役は、この手順で反映されることを確認する | 差分を読む |
+| 104-14、104-15 | 共有の基盤が動いているかは、`ec-site-postgres` と `ec-site-seaweedfs` のコンテナの状態で判定する。止まっていれば、主の checkout のパスと `docker compose up -d` を示して終了コード 2 で終了する。作業ツリーの script は `docker compose up` を流さない | script のテスト、手動で確認する |
+
+理由：割り当てのたびにデータベースを再作成するのは、ブランチごとにマイグレーションが違い、前の作業ツリーのデータベースでは Flyway の検証に失敗しうるため（DC-104-5）。
+
+## 3. スロットの環境変数と認証（DC-104-8、104-11〜13）
+
+`run` と `env` が付ける環境変数。値は全て第 1 節の表から作る。
+
+| 対象 | 環境変数 |
+|------|----------|
+| バックエンド | `SERVER_PORT`、`MANAGEMENT_SERVER_PORT`、`SPRING_DATASOURCE_URL`、`ECSITE_MEDIA_STORAGE_INCOMING_BUCKET`、`ECSITE_MEDIA_STORAGE_PUBLIC_BUCKET`、`ECSITE_MEDIA_STORAGE_PUBLIC_BASE_URL`、`ECSITE_PAYMENT_RETURN_URL`、`ECSITE_PAYMENT_MOCK_BASE_URL` |
+| 店舗画面 | `STORE_API_BASE_URL`、`AUTH_URL`、`STORE_COOKIE_PREFIX`（新規） |
+| 管理画面 | `ADMIN_API_PROXY_TARGET`（既存）。ポートは `vite --port <管理画面のポート> --strictPort` |
+
+| DC | 決定 | 確認方法 |
+|----|------|----------|
+| 104-8、104-13 | 実装役は、上の環境変数がバックエンドの設定の名前と一致するかを、`application.yml` と `application-local.yml` を読んで確認する。足りない設定（例：別のポートを含む URL）があれば報告する | 差分を読む、手動で確認する |
+| 104-12 | 新しい環境変数 `STORE_COOKIE_PREFIX`（既定は空）を、店舗画面の全ての Cookie の名前の前に付ける。対象は Auth.js のセッション・CSRF・PKCE などの Cookie（Auth.js の `cookies` の設定）と、カートの Cookie（`cart_id`、`cart_merge_notice`）。空なら今の名前のまま（DN-104-1）。実装役は、Auth.js の現在の版の文書（context7）で Cookie の名前の設定方法を確認する | 画面のテスト（設定の読み込み `frontend/store/src/auth/config.ts` など）、手動で確認する |
+| 104-12 | 管理画面は、ログインの状態をブラウザーの origin ごとのストレージに保存するので、変えない。実装役が `frontend/admin/src/auth/oidc.ts` を読んで確認する | 差分を読む、手動で確認する |
+| 104-11 | `docker/keycloak/realms/ec-store-realm.json` の店舗画面の client の `redirectUris`、`webOrigins`、`post.logout.redirect.uris` に 13000、23000、33000 を加える。`ec-admin-realm.json` の管理画面の client に 15173、25173、35173 を加える（DN-104-3） | 差分を読む、統合テスト |
+| 104-11 | 共有の Keycloak への反映は、マージの後に主の checkout で `scripts/dev/reset.sh keycloak`（realm の再取り込み）。実装の途中の確認では、管理 API で client の設定を一時的に変えてよい（設定は JSON が正） | 手動で確認する |
+| 104-11 | realm の JSON を統合テスト（`KeycloakIntegrationTest`）が読むので、`./gradlew integrationTest --tests '*KeycloakIntegrationTest'` が通ることを確認する | 統合テスト |
+
+理由：Cookie の名前に接頭辞を付けるのは、Cookie がポートで分かれないので、同じ localhost の 2 つの店舗画面が同じ名前の Cookie を読み合うため。
+
+| 決定 | 確認方法 |
+|------|----------|
+| local の seed の支払（`R__payment_seed.sql`）は、支払画面の URL にスロット 0 のバックエンド（8080）を固定で持つ。スロット 1〜3 でも変えない。スロットで新しく作った注文の支払画面は、環境変数 `ECSITE_PAYMENT_MOCK_BASE_URL` でそのスロットのバックエンドを指す | 差分を読む（seed を変えない） |
+
+理由：seed の支払はどれも与信の後か出荷の後の状態で、支払画面を開く操作の対象にならないため。
+
+## 4. データの再作成の script（DC-104-16）
+
+| DC | 決定 | 確認方法 |
+|----|------|----------|
+| 104-16 | `scripts/dev/reset.sh` を作業ツリーで流し、`db` を指定すると、そのスロットのデータベースと 2 つのバケットを再作成する（`slot.mjs reset` を呼ぶ）。バックエンドが動いているかは、そのスロットの運用ポートで判定する | 手動で確認する |
+| 104-16 | 作業ツリーで `keycloak` と `all` を流すと、主の checkout で流すよう示して終了する | 手動で確認する |
+| 104-16 | 作業ツリーでスロットが割り当てられていなければ、`slot.mjs assign` を示して終了する | 手動で確認する |
+| 104-16 | 主の checkout での振る舞いは今のままにする | 差分を読む |
+
+## 5. E2E（DS-104-2：DC-104-17〜20）
+
+| DC | 決定 | 確認方法 |
+|----|------|----------|
+| 104-18 | E2E のエントリポイント（`e2e/` の `pnpm test`）を Node の script `e2e/scripts/run.ts`（新規）にし、API の型の生成、準備、Playwright を順に実行する。この script が、全ての作業ツリーで共有するロックのファイル（`<git の共通のディレクトリ>/ec-site-e2e.lock`、中身は作業ツリーのパスと PID と開始の時刻）を最初に取得し、終了時に削除する | ロックの判定の単体テスト、手動で確認する ※1 |
+| 104-18 | ロックのファイルがあり、その PID のプロセスが実行中なら、ロックを持つ作業ツリーのパスと開始の時刻を示して終了コード 1 で終了する。プロセスがなければ古いロックとして再取得する | 単体テスト |
+| 104-18 | `scripts/dev/e2e.sh` の作業ツリーごとの実行中のファイル（`.local/e2e-running`。フロントの検査の script がビルドを止めるために見る）は残す | 差分を読む |
+| 104-19 | E2E の準備（`e2e/scripts/prepare.ts`）の E2E 用の Keycloak の起動に `--no-deps` を付け、共有の基盤のコンテナを再作成しない | 差分を読む、手動で確認する |
+| 104-17 | 管理画面と店舗画面の E2E のサーバーを、手元でも再利用しない（Playwright の `reuseExistingServer: false`）。ポートが使われていれば Playwright が停止する。`e2e/playwright.config.ts` の冒頭の説明（手元では起動しているサーバーを使う、の旨）も、使い回さない形に修正する | 差分を読む |
+| 104-17 | `e2e.sh` の前提のコンテナが止まっているときの案内を、作業ツリーでは主の checkout で起動する形にする | 差分を読む |
+| 104-20 | E2E のポート、データベース（`ec_site_e2e`）、バケット（`ec-site-e2e-images*`）は、第 1 節のスロットの値と重ならない。変えない | T104-01-01 の script のテスト |
+
+※1：ロックの判定の単体テストは、`e2e/scripts/` か `e2e/src/` に置く。e2e のパッケージにテストの仕組みがなければ、純粋な関数を `scripts/dev/lib/` に置いて `node:test` で書く。実装役が選び、報告する。
+
+- 理由（サーバーを使い回さない）：別の作業ツリーで起動したサーバーを使うと、その作業ツリーのコードを試すことになるため。
+- CI では E2E は 1 つしか流れないので、ロックがあっても害がない。CI の定義は変えない。
+
+## 6. エージェントの手順と文書（DS-104-3：DC-104-21〜25）
+
+| DC | 決定 | 確認方法 |
+|----|------|----------|
+| 104-21 | skill `local-dev`（`.claude/skills/local-dev/SKILL.md`）に「スロット」の節を加える。内容は次のとおり：主の checkout と作業ツリーの見分け、`assign`・`release`・`show`、作業ツリーを消す前の `release`、`run backend` での起動と、スロットの運用ポートでの起動の待ち方、停止（スロットのポートで待ち受けるプロセスを停止する）、データベースを見る psql の `-d ec_site_<n>`、共有の基盤は主の checkout で起動すること | 差分を読む（skill `writing-for-agents` の規則） |
+| 104-22 | `.claude/launch.json` に、`admin-1`〜`admin-3` と `store-1`〜`store-3` を加える。`node scripts/dev/slot.mjs run admin 1` のように番号を渡し、`port` はそのスロットのポートに設定する。既存の `admin` と `store` はスロット 0 として残す | 作業ツリーで `preview_start` を使って開く |
+| 104-23 | skill `local-dev` の負荷の制限の文を修正する。バックエンドと画面は、スロットごとに同時に起動してよい。E2E はロックで 1 つずつ実行する。バックエンドの全テスト、フロントの検査の script、E2E は、同時に実行すると時間の上限のあるテストがタイムアウトしうるので、他のセッションが流しているときは待つ | 差分を読む |
+| 104-24 | 開発環境の起動（`docs/guides/setup.md`）に、スロットの節を加える（割り当て、起動、解除、ポートの表、マージの後に共有の基盤へ反映する手順）。テストの実行方法（`docs/guides/running-tests.md`）の E2E に、作業ツリーから流せることと、1 つずつ流すことを書く | 差分を読む、`doc-refs.mjs` |
+| 104-25 | 環境変数（`docs/guides/environment.md`）の店舗画面の表に `STORE_COOKIE_PREFIX` を加える。`SERVER_PORT` など既存の Spring の設定を使うものは、表にない行だけ加える | `env-defaults` の検査、差分を読む |
+
+- 用語集（`docs/design/glossary.md`）に「共有の基盤」「主の checkout」「スロット」「スロットの環境」を加え、識別子（`.local/slot`、`scripts/dev/slot.mjs`、`STORE_COOKIE_PREFIX`）を書く。`glossary-ids.mjs` の検査を通す。
+- AGENTS.md の skill の表の `local-dev` の説明に、「スロット（作業ツリーごとの環境）」を加える。
+
+## 7. DC と確認方法の一覧
+
+| DC | 節 | 確認方法 |
+|----|----|----------|
+| 104-1 | 第 1 節、第 2 節 | script のテスト |
+| 104-2〜104-4 | 第 2 節 | script のテスト、手動で確認する |
+| 104-5、104-6 | 第 2 節 | 差分を読む、手動で確認する |
+| 104-7 | 第 2 節 | script のテスト、手動で確認する |
+| 104-8 | 第 3 節 | 手動で確認する |
+| 104-9 | 第 2 節 | 差分を読む、手動で確認する |
+| 104-10 | 第 1 節 | script のテスト |
+| 104-11 | 第 3 節 | 統合テスト、手動で確認する |
+| 104-12 | 第 3 節 | 画面のテスト、手動で確認する |
+| 104-13 | 第 3 節 | 手動で確認する |
+| 104-14、104-15 | 第 2 節 | script のテスト、手動で確認する |
+| 104-16 | 第 4 節 | 手動で確認する |
+| 104-17 | 第 5 節 | 差分を読む |
+| 104-18 | 第 5 節 | 単体テスト、手動で確認する |
+| 104-19 | 第 5 節 | 差分を読む、手動で確認する |
+| 104-20 | 第 5 節 | script のテスト |
+| 104-21〜104-25 | 第 6 節 | 差分を読む、`preview_start`、検査の script |
+
+手動で確認するもの（段階 4 で行う）：
+
+| DC | 手動での確認方法 |
+|----|----------------|
+| 104-2〜104-7 | 2 つの作業ツリーで `assign` し、1 と 2 が割り当たる。4 つ目で終了する（試しの作業ツリーを追加して確認し、後で削除する）。作業ツリーを `release` せずに消し、そのスロットが空きになる |
+| 104-8、104-9、104-13 | 2 つのスロットのバックエンドと画面を同時に起動し、片方で注文と商品の画像を変え、もう片方で表示されない |
+| 104-11、104-12 | スロット 1 の店舗画面でログインした後、スロット 2 の店舗画面がログインしていない状態で表示される。スロット 2 でログインしてからログアウトしても、スロット 1 の店舗画面のログインが続く。各スロットの管理画面でログインとログアウトができる。理由：Keycloak のログインの状態は共有されるので、別の会員でのログインは確認の条件にしない |
+| DN-104-4 | スロット 2 つのバックエンドと画面を動かしている間の共有の基盤のコンテナのメモリを `docker stats --no-stream` で測り、tasks に記録する。スロット 3 つ分の見込みが 16 GB に収まる |
+| 104-14、104-19 | 作業ツリーで割り当て・起動・E2E の準備を実行した後も、共有のコンテナの作成の時刻とマウント元が変わらない（`docker inspect`） |
+| 104-18 | 1 つの作業ツリーで E2E を流している間に、もう 1 つで実行すると終了する |
+
+## 8. 実装の順序と段階
+
+段階ごとに tasks を 1 ファイルにする。タスクの番号は `T104-<段階>-<連番>`。
+
+| 段階 | 内容 | tasks | 依存 |
+|------|------|-------|------|
+| 1 | スロットの計算と割り当て | [01-slot.md](tasks/01-slot.md) | なし |
+| 2 | 画面と IdP | [02-apps.md](tasks/02-apps.md) | 段階 1 |
+| 3 | E2E | [03-e2e.md](tasks/03-e2e.md) | なし |
+| 4 | 文書と手での確認 | [04-docs.md](tasks/04-docs.md) | 段階 1〜3 |
+| 5 | spec の最後 | [05-finish.md](tasks/05-finish.md) | 段階 4 |
+
+- 段階 3 は段階 1・2 に依存しない。段階 1 と並行に進めてよい（別の作業ツリーの実装役）。
+- 各段階の冒頭に、前提・完了条件・参照（plan の節、spec の DS と DC）を書く。
+- 各段階の最後に、段階の最後のレビュー（profile 厚め）を置く。
+
+## 9. 実装の間の手元の環境の使い方
+
+- 段階 4 の手動の確認は、主の checkout がまだ新しい compose の設定を持たないので、例外として本 spec の作業ツリーから `docker compose up -d` を実行して、共有の基盤を再作成してよい。手動の確認の前に、共有の Keycloak の client に、スロットのリダイレクト先を管理 API で一時的に加える（第 3 節）。理由：作業ツリーではデータの再作成の script の IdP の再作成が使えないため（第 4 節）。確認の後に、主の checkout で `docker compose up -d` を実行して元の状態に戻す。並行する spec 131 のセッションに、その間 compose と E2E を使わないよう先に知らせる。
+- 負荷の高い作業（compose、バックエンドの起動、E2E、バックエンドの全テスト）は、本 spec が完了するまで、今の決まり（同時に 1 つのセッション）に従う。

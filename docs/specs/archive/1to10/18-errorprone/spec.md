@@ -46,7 +46,7 @@
 
 - **DC-18-1** Error Prone を全てのソースセット（main、test、integrationTest、testFixtures、tools）のコンパイルで動かす。既定の検査を使い、エラーと警告のどちらでもコンパイルが失敗する（警告を失敗にするのは javac の `-Werror`）。生成したコード（`build/generated*` の下の jOOQ、OpenAPI）は検査しない。
 - **DC-18-2** 既存のコードの報告（試しで 72 件）を全て修正し、`./gradlew checkLicense build` が通る。修正するときに振る舞いを変えない（DN-18-1）。
-- **DC-18-3** 無効にする検査は `StringConcatToTextBlock` だけである（Lombok の生成したコードで Error Prone が例外を投げるため）。無効にする検査は、`build.gradle.kts` に理由のコメントと一緒に書く。他の検査の無効化・重大度の変更は、先にこの spec の第 6 節に追加し、利用者の確認を受けてから行う。
+- **DC-18-3** 無効にする検査は、全てのソースセットで `StringConcatToTextBlock`（Lombok の生成したコードで Error Prone が例外を投げるため）と `ImmutableEnumChecker`（第 6 節の 8）、テストのソースセット（test、integrationTest、testFixtures）で `ArrayRecordComponent` と `TypeParameterUnusedInFormals`（第 6 節の 8）である。無効にする検査は、`build.gradle.kts` に理由のコメントと一緒に書く。他の検査の無効化・重大度の変更は、先にこの spec の第 6 節に追加し、利用者の確認を受けてから行う。
 - **DC-18-4** わざと誤り（`Optional.orElseThrow()` の戻り値の無視など）を main と integrationTest に入れると、コンパイルが失敗する。手動で入れて確認し、戻す。結果をタスクに書く。
 
 ### DS-18-2 NullAway（D / P1）
@@ -110,6 +110,11 @@ spec の確認で、利用者が 6 つとも案 A に決めた（2026-10-22）�
    - 案 A（推奨。採用）：`errorprone` の構成を `checkLicense` に入れる。注釈の処理（Lombok の annotationProcessor）と同じく、コンパイルのときに動く依存なので、[依存とライセンス](../../design/licenses.md) 第 2 節の方針の「ビルド時の依存」に当たる。
    - 案 B：Checkstyle と同じく構成に入れず、手動で確認して文書に書く。
 7. **DC-18-15 の比べる先**（実装の途中で追加。2026-10-23。pull request で利用者の確認を受ける）：DC-18-15 は「導入の前の `develop` の直近 3 回」と比べると決めたが、ジョブの分割（spec 131）の後に `develop` でテストを全て実行した実行は 1 回（23a121ff）しかない。その実行を 2 回再実行すると、Gradle のキャッシュでテストを飛ばし、バックエンドの各ジョブが 42〜54 秒で終わったので、比べる先にならない。そこで、同じジョブの構成で、コードを変えてテストを全て実行した spec 131 の作業ブランチの最後の 3 回と比べた（T18-03-02 の結果）。
+8. **意味のない注釈を検査の設定に移す**（pull request のレビューで追加。2026-10-23。利用者の指摘：record はすでに変更不可なのに `@Immutable` を付けるなど、意味のない注釈は、ツールのポリシーの変更で対応したい）：
+   - `ImmutableEnumChecker` を全てのソースセットで無効にする。enum のフィールドは `List.of` で作る一覧で、Error Prone は `List` の型を変更できると判断するので、誤った報告を消すための注釈（`@Immutable`、`@SuppressWarnings`）しか生まない。`@Immutable` のために足した依存 `errorprone-annotations` も外す。`I18nMessage` のコンストラクターの `List.copyOf` は、実際に変更できない一覧にするので残す。
+   - テストのソースセット（test、integrationTest、testFixtures）では `ArrayRecordComponent` と `TypeParameterUnusedInFormals` を無効にする。テストの record（検証の確認のための配列の成分）と、テストの道具（`JsonPath.read` と同じ形の `read`）で、本番の誤りにつながらないため。main の `MockCarrier.SignedNotification` の `@SuppressWarnings("ArrayRecordComponent")` は、main の他の record では意味のある検査なので、全体では無効にせず残す。
+   - 失うもの：enum に変更できるフィールド（配列や ArrayList）を置いても報告されなくなる。テストの record の配列の成分と、テストの型の引数の誤りも報告されなくなる。
+   - 他の注釈（`@Nullable`、`ApiDateTimes` の `@Contract`）は意味があるので残す。
 
 ## 7. tasks
 
@@ -212,6 +217,10 @@ common の型（`BusinessException` など）の引数に `@Nullable` を付け�
   - 依存：T18-04-01
   - 範囲：`docs/specs/`
   - 結果：第 8 節に書き、この commit でアーカイブに移した。
+- [x] **T18-04-03** pull request のレビューの指摘で、意味のない注釈を検査の設定に移す（第 6 節の 8）。
+  - 依存：T18-04-02（アーカイブの後に追加するタスクなので、アーカイブのタスクの後に置く。開発の進め方 第 4.2 節）
+  - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、注釈を外す main・test のファイル、`docs/rules/backend-coding.md`
+  - 結果：注釈を 8 個外した（`ErrorCode` の `@Immutable`、`I18nMessage` の `@Immutable` と `@SuppressWarnings("Immutable")`、`ImageFormat`・`Basis` の `@SuppressWarnings("ImmutableEnumChecker")`、`ValidationMessagesTest`・`AdminRealmPermissionContractTest`・`RealmSettingsContractTest` の `@SuppressWarnings`）。依存 `errorprone-annotations` も外した。
 
 ## 8. 後回しにする作業と起票の案
 

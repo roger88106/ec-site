@@ -282,14 +282,15 @@ public Optional<UUID> memberId() {
 
 ### 7.2 検査を抑えるとき
 
-- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、テストと mock（本番で動かないコード）で修正するとテストが確認する内容が変わるもの（例：配列の `@Size` を確認する record の成分）か修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。
-- 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。今無効なのは `StringConcatToTextBlock` だけ（理由は `build.gradle.kts` のコメント）。
+- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。
+- 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。今無効なのは、全てのソースセットで `StringConcatToTextBlock` と `ImmutableEnumChecker`、テストのソースセット（test、integrationTest、testFixtures）で `ArrayRecordComponent` と `TypeParameterUnusedInFormals`（理由は `build.gradle.kts` のコメント）。
 - 生成したコード（`build/generated` の下）は検査しない。
 
 ```java
-// List.of で作る変更できない一覧。Error Prone は List の型だけを見て変更できると判断するので抑える
-@SuppressWarnings("ImmutableEnumChecker")
-private final List<String> contentTypes;
+// 本番で動かない mock。body は HTTP の本文として送るだけなので、配列の成分を許す
+@SuppressWarnings("ArrayRecordComponent")
+public record SignedNotification(byte[] body, String signature) {
+}
 ```
 
 理由：検査を抑える範囲と理由が見えれば、後で外せるかをレビューで判断できるため。

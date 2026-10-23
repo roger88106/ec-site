@@ -10,16 +10,16 @@
 
 - [ ] **T184-02-01** [P] 共通の部品のテストを書き換える（DC-184-1、3）。
   - 依存：なし
-  - 範囲：`frontend/store/src/components/ActionError.test.tsx`、`LoginLinks.test.tsx`、`PageLinks.test.tsx`、`QuoteItemSummary.test.tsx`、`SiteHeader.test.tsx`。名前を追加するときは、対象の部品
+  - 範囲：`frontend/store/src/components/ActionError.test.tsx`、`LoginLinks.test.tsx`、`PageLinks.test.tsx`、`QuoteItemSummary.test.tsx`、`SiteHeader.test.tsx`。名前を追加するときは、範囲のテストが対象とする部品（plan 第 7 節）
 - [ ] **T184-02-02** [P] カートのテストを書き換える。購入できない品目の小計のテストは、購入できる品目との違いを確認する名前と確認にする（DC-184-1、3、22）。
   - 依存：なし
-  - 範囲：`frontend/store/src/features/cart/components/CartItemControls.test.tsx`、`CartMergeNoticeView.test.tsx`、`StartCheckoutForm.test.tsx`。名前を追加するときは、対象の部品
-- [ ] **T184-02-03** [P] 商品と注文手続きのテストを書き換える。jsdom のテストの `.disabled`、`getAttribute` の比較を jest-dom にする（DC-184-1、3、7）。
+  - 範囲：`frontend/store/src/features/cart/components/CartItemControls.test.tsx`、`CartMergeNoticeView.test.tsx`、`StartCheckoutForm.test.tsx`。名前を追加するときは、範囲のテストが対象とする部品（plan 第 7 節）
+- [ ] **T184-02-03** [P] 商品のテストを書き換える。jsdom のテストの `.disabled`、`getAttribute` の比較を jest-dom にする（DC-184-1、3、7）。
   - 依存：なし
-  - 範囲：`frontend/store/src/features/catalog/components/CategoryList.test.tsx`、`ListFilterForm.test.tsx`、`ProductCard.test.tsx`、`ProductShowcase.test.tsx`、`VariantPicker.test.tsx`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx`。名前を追加するときは、対象の部品
+  - 範囲：`frontend/store/src/features/catalog/components/CategoryList.test.tsx`、`ListFilterForm.test.tsx`、`ProductCard.test.tsx`、`ProductShowcase.test.tsx`、`VariantPicker.test.tsx`。名前を追加するときは、範囲のテストが対象とする部品（plan 第 7 節）
 - [ ] **T184-02-04** [P] 注文のテストを書き換える。jsdom のテストの `getAttribute` の比較を jest-dom にする（DC-184-1、3、7）。
   - 依存：なし
-  - 範囲：`frontend/store/src/features/order/components/CancellationRequestForm.test.tsx`、`CancellationSection.test.tsx`、`OrderStatusBadge.test.tsx`、`PaymentSection.test.tsx`、`ShippingAddressDetails.test.tsx`、`frontend/store/src/app/orders/[orderId]/page.test.tsx`。名前を追加するときは、対象の部品
+  - 範囲：`frontend/store/src/features/order/components/CancellationRequestForm.test.tsx`、`CancellationSection.test.tsx`、`OrderStatusBadge.test.tsx`、`PaymentSection.test.tsx`、`ShippingAddressDetails.test.tsx`、`frontend/store/src/app/orders/[orderId]/page.test.tsx`。名前を追加するときは、範囲のテストが対象とする部品（plan 第 7 節）
 - [ ] **T184-02-05** [P] 共有のパッケージの金額の内訳のテストを、DOM に読み込んで確認する形にする（plan 第 1 節 ※2）。2 つの見た目の種類のテストの名前に、種類ごとに見える違いを書き、`expectInOrder` を見つからない文言が分かる確認にする（DC-184-1、22）。
   - 依存：なし
   - 範囲：`frontend/shared/src/components/AmountsSummary.test.tsx`

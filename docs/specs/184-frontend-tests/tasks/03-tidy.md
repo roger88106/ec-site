@@ -1,6 +1,6 @@
 # 段階 3：テストの構成、書き方、補助とデータ
 
-- 前提：段階 2（同じテストのファイルを触るため）
+- 前提：段階 2（テストの実行とカバレッジの確認が重ならないため）
 - 完了条件：管理画面と店舗画面のテストが DC-184-11〜21 を満たす。補助の単体テストは先に書き、レッドを確認した。AC 一覧を再生成した。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
 - 参照：[plan](../plan.md) 第 4 節、[plan](../plan.md) 第 5 節、[spec](../spec.md) の DS-184-4、5、[テストの書き方](../../../rules/test-writing.md) 第 4.5 節、[管理画面の構成](../../../design/apps/admin.md) 第 9 節、レビューの結果（`/.local/review/202610231200-157-frontend-tests/admin-1.md`、`admin-2.md`、`/.local/review/202610232100-157-final/general-2.md`）
 
@@ -13,7 +13,7 @@
   - 範囲：`frontend/store/src/test/setup.ts`、`frontend/admin/src/test/setup.ts`、`frontend/admin/src/features/report/pages/SalesTrendPage.test.tsx`、`frontend/store/src/features/checkout/components/RemainingTime.test.tsx`、`frontend/store/src/lib/server/timeout.test.ts`
 - [ ] **T184-03-02** [テスト] 管理画面の日時の入力の補助と、店舗画面の現在の秒の補助のテストを書き、レッドを確認する。管理画面の一覧のセルの補助（行の見出しのセル、入れ子の表）と、ダウンロードの記録の補助（`download` の属性のないリンク）の想定外の使い方のテストを加え、レッドを確認する（DC-184-15、16、20）。
   - 依存：T184-03-01
-  - 範囲：`frontend/admin/src/test/inputs.test.ts`（新規）、`queries.test.tsx`、`download.test.ts`、`frontend/store/src/test/auth.test.ts`（新規）
+  - 範囲：`frontend/admin/src/test/inputs.test.tsx`（新規）、`queries.test.tsx`、`download.test.ts`、`frontend/store/src/test/auth.test.ts`（新規）
 - [ ] **T184-03-03** T184-03-02 のテストが通る補助を書く。店舗画面の現在の秒の計算を、補助を使う形にする（DC-184-15、16、20）。
   - 依存：T184-03-02
   - 範囲：`frontend/admin/src/test/inputs.ts`（新規）、`queries.ts`、`download.ts`、`frontend/store/src/test/auth.ts`、`frontend/store/src/auth/index.test.ts`、`frontend/store/src/lib/server/timeout.test.ts`
@@ -25,7 +25,7 @@
   - 範囲：`frontend/admin/src/features/tax/pages/TaxRatesPage.test.tsx`、`TaxCategoryListPage.test.tsx`、`frontend/admin/src/features/inventory/pages/StockPage.test.tsx`、`frontend/admin/src/features/order/pages/OrderDetailPage.test.tsx`
 - [ ] **T184-03-06** [P] 管理画面の hook、ログイン、レポートの条件のテストを整える。変更をまとめる hook を `renderHook` で呼び、ログインの戻り先のテストから共有のテストとの重複を削除し、レポートの条件の商品 ID は補助を使う（DC-184-14、18、19）。
   - 依存：T184-03-03
-  - 範囲：`frontend/admin/src/api/useMutationGroup.test.ts`、`frontend/admin/src/lib/login.test.ts`、`frontend/shared/src/lib/login.test.ts`（網羅に漏れがあるときだけ）、`frontend/admin/src/features/report/reportCondition.test.ts`、`frontend/admin/src/test/fixtures.ts`、`reportServer.ts`
+  - 範囲：`frontend/admin/src/api/useMutationGroup.test.ts`、`frontend/admin/src/lib/login.test.ts`、`frontend/shared/src/lib/login.test.ts`（網羅に漏れがあるときだけ）、`frontend/admin/src/features/report/reportCondition.test.ts`
 - [ ] **T184-03-07** [P] 店舗画面の地域のデータを補助に移す。地域のサーバーアクションと注文のフォームのテストは、補助を使う（DC-184-18）。
   - 依存：T184-03-03
   - 範囲：`frontend/store/src/test/fixtures.ts`、`frontend/store/src/actions/region.test.ts`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx`

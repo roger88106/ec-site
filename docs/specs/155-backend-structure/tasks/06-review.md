@@ -9,7 +9,7 @@
 - [x] **T155-06-01** 各モジュールの設計書の「構成」の節を、全てのコードと照合して修正する（skill `review` の plan・tasks の照合の手順に準じる）。対象は 13 モジュールである。片付けのジョブ、設定の型と設定のクラス、決済の view のパッケージ、カートと税の公開の API の利用者の記述が、コードと一致することを確認する（DC-155-44、45）。
   - 依存：段階 1〜5
   - 範囲：`docs/design/modules/{cart,catalog,inventory,media,member,notification,order,payment,region,reporting,shipping,storefront,tax}.md`
-- [ ] **T155-06-02** [バックエンドの書き方](../../../rules/backend-coding.md) 第 1 節（標準の構成、パッケージの大きさの表）と[バックエンドの書き方](../../../rules/backend-coding.md) 第 6 節（設定の値の型）を、本 spec の決定と照合して修正する。バックエンドのアーキテクチャと共通コードの設計書の、構成とテスト専用の操作の記述も照合する。パッケージの大きさの表は、現在の 10 を超えるパッケージの一覧と一致させる（DC-155-46）。
+- [x] **T155-06-02** [バックエンドの書き方](../../../rules/backend-coding.md) 第 1 節（標準の構成、パッケージの大きさの表）と[バックエンドの書き方](../../../rules/backend-coding.md) 第 6 節（設定の値の型）を、本 spec の決定と照合して修正する。バックエンドのアーキテクチャと共通コードの設計書の、構成とテスト専用の操作の記述も照合する。パッケージの大きさの表は、現在の 10 を超えるパッケージの一覧と一致させる（DC-155-46）。
   - 依存：段階 1〜5
   - 範囲：`docs/rules/backend-coding.md`、`docs/design/backend-architecture.md`、`docs/design/common.md`
 - [ ] **T155-06-03** 全体の検査：`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` を実行する。mutation とカバレッジが基準（line 98.09、branch 85.26、domain の mutation 90.2）を下回らないことを確認する。

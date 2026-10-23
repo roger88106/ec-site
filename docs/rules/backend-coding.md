@@ -52,6 +52,7 @@ module/<モジュール>/
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
 │   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装
+    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。第 6.1 節）
     ├── persistence/    jOOQ の Repository と、それが使うクラス
     ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
     └── <外部>/          外部の仕組み（storage、converter、cache など）
@@ -61,9 +62,9 @@ module/<モジュール>/
 |----|----------------|
 | api・event | application、domain、common |
 | presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
-| application | domain、common |
-| domain | common（レベル A は Spring・jOOQ にも依存しない） |
-| infrastructure | application の port、domain、common |
+| application | domain、common、event（自分のモジュールのイベントを送り出す。他のモジュールのイベントを受ける） |
+| domain | common、自分のモジュールの event（レベル A は Spring・jOOQ にも依存しない） |
+| infrastructure | application の port と model（port が返す view）、設定の値の型（設定のクラスが有効にする）、domain、common |
 | common | モジュールに依存しない |
 | config | common。モジュールに依存しない |
 
@@ -80,7 +81,7 @@ module/<モジュール>/
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
 - **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
 - **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
-- **domain の直下**：モジュールの domain の直下には、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。
+- **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
 
@@ -116,7 +117,7 @@ module/<モジュール>/
 ### 1.5 共通の型
 
 - 共通コード（`common/`）には、2 つ以上のモジュールが使うものだけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。
-- モジュールに共通の型は `common/model/` に置く。`base/`：集約の土台（`AggregateRoot`、`DomainEvent`）、`value/`：値（`Money`、`BoundedText`、`Operator`）。
+- モジュールに共通の型は `common/model/` に置く。`base/`：集約の土台（`AggregateRoot`、`DomainEvent`、`AggregateGuards`）、`value/`：値（`Money`、`BoundedText`、`BusinessTime`、`Operator`）。
 - 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものは、そのモジュールの domain に置く。置き場所（集約の `vo/` か domain の直下）は第 1.1 節のとおり。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけ。設定の値の金額は、使う所で `Money` にする。
 - 金額の掛け算・割り算は、`Money` の操作と税の計算（`TaxCalculator`）の中だけで行う。端数が出る計算は、端数の扱い（切り捨て など）をメソッドで明示する。

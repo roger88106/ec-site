@@ -32,7 +32,7 @@
 - [x] **T157-03-08** T157-03-07 のテストが通る補助を書く。店舗画面の 4 ファイルの `restoreAllMocks` の `afterEach` を削除する。理由：setup で実行するため（DC-157-34）。
   - 依存：T157-03-07
   - 範囲：`frontend/store/src/test/stderr.ts`、`frontend/store/src/test/next.ts`、`frontend/store/src/test/server.ts`、`frontend/store/src/actions/withActionResult.test.ts`、`frontend/store/src/api/client.test.ts`、`frontend/store/src/lib/server/log.test.ts`、`frontend/store/src/instrumentation.test.ts`（`afterEach` だけ）
-- [ ] **T157-03-09** 管理画面の構成の結合テストの補助の表に、追加した補助を書く。
+- [x] **T157-03-09** 管理画面の構成の結合テストの補助の表に、追加した補助を書く。
   - 依存：T157-03-03〜05
   - 範囲：`docs/design/apps/admin.md` 第 9 節
 - [ ] **T157-03-10** 段階のレビュー（profile「厚め」）と全体の検査を行う。結果をこのファイルの末尾に書く。

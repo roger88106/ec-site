@@ -42,8 +42,12 @@ export function OrderDetailPage() {
         {(order) => (
           <div className="max-w-5xl space-y-6">
             <dl className="flex flex-wrap items-center gap-x-6 gap-y-2 text-sm">
-              <div className="flex items-center gap-2">
-                <dt className="text-muted-foreground">{t('status') /* 状態 */}</dt>
+              {/* 状態のバッジに「状態」の名前を付ける（支援技術向け。見た目は変えない） */}
+              {/* biome-ignore lint/a11y/useSemanticElements: dl の中に fieldset は置けないので、div に role を付ける */}
+              <div aria-labelledby="order-status-term" className="flex items-center gap-2" role="group">
+                <dt className="text-muted-foreground" id="order-status-term">
+                  {t('status') /* 状態 */}
+                </dt>
                 <dd>
                   <OrderStatusBadge status={order.status} />
                 </dd>

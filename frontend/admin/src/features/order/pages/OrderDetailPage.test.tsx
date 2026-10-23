@@ -52,7 +52,7 @@ function serveOrder(before: OrderDetail, after: OrderDetail = before) {
 
 /** 状態のバッジ（見出しの下の「状態」） */
 async function shownStatus(label: string) {
-  return screen.findByText(label, { selector: '[data-slot="badge"]' })
+  return within(await screen.findByRole('group', { name: '状態' })).findByText(label)
 }
 
 /** 支払の状態の欄（見出しの下の「支払」） */
@@ -377,11 +377,7 @@ describe('出荷', () => {
     serveShipment(SHIPPED)
     renderApp(URL)
 
-    const card = within(
-      (await screen.findByText('出荷', { selector: '[data-slot="card-title"]' })).closest(
-        '[data-slot="card"]',
-      ) as HTMLElement,
-    )
+    const card = within(await screen.findByRole('region', { name: '出荷' }))
     expect(card.getByText('配送状態').nextElementSibling).toHaveTextContent('配送中')
     expect(card.getByText('配送業者').nextElementSibling).toHaveTextContent('ヤマト運輸')
     expect(card.getByText('送り状番号').nextElementSibling).toHaveTextContent('123456789012')
@@ -400,7 +396,7 @@ describe('出荷', () => {
     renderApp(URL)
 
     await shownStatus('支払待ち')
-    expect(screen.queryByText('出荷', { selector: '[data-slot="card-title"]' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('region', { name: '出荷' })).not.toBeInTheDocument()
   })
 })
 
@@ -491,7 +487,7 @@ describe('返送の注文のキャンセル', () => {
   it.each([
     ['在庫に戻す', true],
     ['在庫に戻さない', false],
-  ] as const)('AC-190 AC-191 理由を入れ、%s を選んでキャンセルできる', async (choice, restock) => {
+  ] as const)('AC-190、191 理由を入れ、%s を選んでキャンセルできる', async (choice, restock) => {
     const bodies = serveCancel()
     const { user } = renderApp(URL)
     await shownStatus('出荷済み')

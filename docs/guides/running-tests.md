@@ -48,7 +48,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 docker compose up -d
 pnpm install
 
-# e2e/ で：初回だけブラウザを入れ、E2E を実行する
+# e2e/ で：初回だけブラウザーを入れ、E2E を実行する
 pnpm exec playwright install chromium
 pnpm test
 ```

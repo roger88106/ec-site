@@ -7,7 +7,7 @@
 |------|------|
 | レベル | B（業務の不変条件はなく、ストレージとの連携が中心） |
 | 依存 | なし（使う側から API で呼ばれる） |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[131](../../specs/archive/1to10/131-ci-tidy/spec.md) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[131](../../specs/archive/1to10/131-ci-tidy) |
 | 範囲外 | サイトの静的ファイル（ロゴ、CSS、JavaScript）。フロントのビルド成果物として、フロントの配信（CDN）が配信する |
 
 ## アセット
@@ -20,7 +20,7 @@
 
 ## アップロードの流れ
 
-ファイルはブラウザからアップロードのバケットへ直接送る（署名付き URL）。バックエンドは中継しない。
+ファイルはブラウザーからアップロードのバケットへ直接送る（署名付き URL）。バックエンドは中継しない。
 
 1. **アップロードの受付**（`requestImageUpload`）：形式とサイズを確認し、アップロードのバケットへの署名付き URL を返す。DB には記録しない。
    - 使う側は持ち主を表す範囲（商品 ID など）を渡す。アップロードのキーは `{範囲}/{uploadId}` で、別の範囲のアップロードを用意できない。
@@ -42,9 +42,9 @@
 | サイズ | 1 バイト以上、10MB まで |
 | 配信の形式 | 全て WebP ※2 |
 
-※2：WebP 変換を入れる前に記録したアセットは、受け付けた形式のまま。
+※2：用意で作るアセットが WebP で、配信キーは `assets/{アセット ID}.webp`。配信は、アセットに記録した形式と配信キーのままで行うので、WebP でない形式のアセットもある。
 
-管理 API の画像の「アップロードの受付」は、申告の形式（MIME タイプ）とサイズの上限を契約にも書く。契約の外の申告は入力の検証のエラー（`INVALID_REQUEST`）になり、受付まで届かない。契約の値と上の決まりの一致は、契約のテスト（`FieldConstraintContractTest`）で確認する（spec 016）。
+管理 API の画像の「アップロードの受付」は、申告の形式（MIME タイプ）とサイズの上限を契約にも書く。契約の外の申告は入力の検証のエラー（`INVALID_REQUEST`）になり、受付まで届かない。契約の値と上の決まりの一致は、契約のテスト（`FieldConstraintContractTest`）で確認する。
 
 使う側で決まりの変更が必要になったら、アップロードの受付・用意に決まりを渡せるようにする。
 
@@ -92,4 +92,4 @@ media/
 [V202610101100__media_create_asset.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101100__media_create_asset.sql)
 
 - 使う側からの外部キーは受けない。
-- メディアモジュールに移す前に登録した商品画像のアセットは、もとの配信キー（`products/{productId}/{imageId}.{拡張子}`）を使う。
+- 配信キーは、アセットごとに記録する。用意で作るアセットは `assets/{アセット ID}.webp`、商品カタログから移したアセットは `products/{productId}/{imageId}.{拡張子}`（拡張子は記録した形式）。

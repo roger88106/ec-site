@@ -40,7 +40,7 @@ import { getTranslations } from 'next-intl/server'
 import { getApi, UNCACHED } from '@/api/client'
 import { unwrap } from '@/api/result'
 
-/** ブラウザのタブの題名 */
+/** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('foo.detail')
   return { title: t('title') } // 〇〇

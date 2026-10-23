@@ -24,6 +24,7 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `ECSITE_MEDIA_STORAGE_INCOMING_BUCKET`、`_PUBLIC_BUCKET` | 画像のアップロード（非公開）・配信（公開）のバケット | 必須 |
 | `ECSITE_MEDIA_STORAGE_REGION`、`_PUBLIC_BASE_URL` | バケットのリージョン、配信の基準 URL（CDN） | 必須 |
 | `ECSITE_MEDIA_STORAGE_ENDPOINT`、`_PATH_STYLE_ACCESS` | S3 互換ストレージを使うときだけ（AWS では設定せず、資格情報は IAM ロール） | —、false |
+| `ECSITE_MEDIA_STORAGE_ACCESS_KEY_ID`、`_SECRET_ACCESS_KEY` | ストレージの資格情報（アクセスキー ID とシークレット）。ローカル専用で、2 つを一緒に指定する。本番は空にして IAM ロールを使う | — |
 | `ECSITE_MEDIA_STORAGE_UPLOAD_URL_TTL` | アップロードの署名付き URL の有効期間 | 5m |
 | `ECSITE_MEDIA_STORAGE_ATTEMPT_TIMEOUT`、`_CALL_TIMEOUT` | ストレージの呼び出しのタイムアウト（1 回の試行、SDK の再試行を含めた全体） | 10s、30s |
 | `ECSITE_MEDIA_CONVERTER_BASE_URL`、`_KEY`、`_SALT` | imgproxy の URL と、URL の署名鍵・ソルト（16 進。imgproxy の `IMGPROXY_KEY`・`IMGPROXY_SALT` と同じ値） | 必須 |

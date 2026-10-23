@@ -2,6 +2,11 @@
 
 C 側（消費者）の画面。Next.js（App Router）で、店舗 API（`store.yaml`）をサーバーコンポーネントとサーバーアクションから呼ぶ（ブラウザーから API は呼ばない）。管理画面との違いと共通の決まりは [フロントのアーキテクチャ](../frontend-architecture.md)。新しい画面は第 8 節の手順で作る。
 
+| 項目 | 内容 |
+|------|------|
+| 依存 | 店舗 API（`store.yaml`）、消費者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[012](../../specs/archive/mvp/012-test-safety-net)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[104](../../specs/archive/1to10/104-parallel-local-env)、[134](../../specs/archive/1to10/134-admin-tidy)、[135](../../specs/archive/1to10/135-store-cleanup) |
+
 ## 1. 技術
 
 | 用途 | 採用 | 補足 |
@@ -106,9 +111,9 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | 401 | ログイン画面へリダイレクトする（第 9 節） |
 | それ以外 | エラーの画面（`error.tsx`） |
 
-- タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求の ミドルウェア でタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
-- 追跡 ID：店舗 API のクライアント（公開用と会員用）は、要求の ミドルウェア で、画面の要求の `traceparent` を付ける。バックエンドのログを画面の要求から辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュする要求に付けてもキャッシュは使われる。
-- 5xx のログ：店舗 API が 5xx を返したら、応答の ミドルウェア で warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
+- タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアでタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
+- 追跡 ID：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアで、画面の要求の `traceparent` を付ける。バックエンドのログを画面の要求から辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュする要求に付けてもキャッシュは使われる。
+- 5xx のログ：店舗 API が 5xx を返したら、応答のミドルウェアで warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
 
 ### 4.3 サーバーアクション
 
@@ -157,9 +162,9 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 |------|------|
 | 注文の成立 | 支払画面の URL を API で取得し、決済サービスの画面（外部の URL）へ `redirect` する。得られなければ注文の画面へ遷移する |
 | 注文の画面の「支払う」 | 同じ API で URL を取得し、リダイレクトする。支払えなければ（支払済み、期限の後）メッセージを示す |
-| 支払画面から戻る | 戻る先はバックエンドの設定（`ECSITE_PAYMENT_RETURN_URL`）で、注文の画面に `payment=returned` を付ける。まだ支払待ちなら「確認中」と示す ※2 |
+| 支払画面から戻る | 戻る先はバックエンドの設定（`ECSITE_PAYMENT_RETURN_URL`）で、注文の画面に `payment=returned` を付ける。まだ支払待ちなら「確認中」と示す ※4 |
 
-※2：与信の結果は、決済サービスからバックエンドへの通知だけで届くので、戻った時点ではまだ届いていないことがある。画面は決済サービスに問い合わせない。
+※4：与信の結果は、決済サービスからバックエンドへの通知だけで届くので、戻った時点ではまだ届いていないことがある。画面は決済サービスに問い合わせない。
 
 ### 4.8 お届け先の都道府県と市区町村
 
@@ -203,13 +208,13 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 | 操作の失敗 | 出し方 |
 |------------|--------|
-| 入力の誤り（400） | 入力欄に対応するものはその欄の下、それ以外はフォームの下に `message`。入力は削除しない ※4 |
+| 入力の誤り（400） | 入力欄に対応するものはその欄の下、それ以外はフォームの下に `message`。入力は削除しない ※5 |
 | 業務のエラー（400、409） | フォームの下に `message`。次にすべきことが別の画面にあるもの（在庫不足、カートの変更）はそこへのリンクを添える。総額が変わったら新しい金額で再表示する |
 | 通信の失敗 | 「サーバーに接続できませんでした。」 |
 
 エラーメッセージは、共通の部品 `components/ActionError.tsx` で出す（メッセージがなければ何も出さない）。親が常にある読み上げの領域（`aria-live`）を持ち、その中で出すとき（カートに入れる）は `inLiveRegion` を付け、部品に領域を付けさせない（領域を入れ子にしない）。
 
-※4：欄の下には、API の応答の項目ごとの文（`errors[].message`）をそのまま表示し、画面で文を作らない（`features/checkout/placeOrderErrors.ts`）。契約の形の検証で見つかった誤りも、API が業務の検証エラーと同じ文を返す（[バックエンドの書き方](../../rules/backend-coding.md) 第 3.3 節）。
+※5：欄の下には、API の応答の項目ごとの文（`errors[].message`）をそのまま表示し、画面で文を作らない（`features/checkout/placeOrderErrors.ts`）。契約の形の検証で見つかった誤りも、API が業務の検証エラーと同じ文を返す（[バックエンドの書き方](../../rules/backend-coding.md) 第 3.3 節）。
 
 キャンセルの申請が却下された注文には、問い合わせ先（`GET /shop` の店舗の情報。値はバックエンドの設定）を示す。
 
@@ -222,12 +227,12 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
 | 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderToStaticMarkup` で HTML にし、文字と並びを確認する（`src/test/render.tsx` の `renderMarkup`） | 対象の横（`*.test.tsx`） |
 | サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | `useActionState` を差し替えて結果を与え、`renderMarkup` で HTML にして確認する（`OrderForm.test.tsx`、`AddToCartForm.test.tsx` の形）。サーバーアクションそのものは呼ばないので、送る内容の確認はサーバーアクションのテストと E2E で行う | 対象の横（`*.test.tsx`） |
-| クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※7 | 対象の横（`*.test.tsx`） |
+| クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※6 | 対象の横（`*.test.tsx`） |
 | ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ページの関数を呼び、`renderMarkup` で HTML にする。ログインの状態は `signInAs`、店舗 API は MSW で差し替える。表示でなく確認の順（ログイン、ID の形）を確認するテストは、jsdom を使わずに Node でページの関数を呼び、移る先（`src/test/next.ts` の `redirectedTo`）と「見つからない」（例外の digest）で確認する（`app/checkout/[checkoutId]/page.test.tsx`） | ページの横（`app/**/page.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Node で直接呼ぶ。Next.js のモジュール（`next/headers` など）と `@/auth` は `src/test/` で置き換え、バックエンドは MSW（`msw/node`） | 対象の横（`*.test.ts`） |
 | 画面をつないだ流れ | E2E | `e2e/tests/` |
 
-※7：補い方の組み合わせ（1 件、複数、ない、通信の失敗、住所の欄の入力の有無）が多く、E2E では確認しきれないため。読むだけなので、差し替えても、送る内容の確認に漏れが生じない。サーバーアクションそのものは、サーバーの処理のテストで確認する。
+※6：補い方の組み合わせ（1 件、複数、ない、通信の失敗、住所の欄の入力の有無）が多く、E2E では確認しきれないため。読むだけなので、差し替えても、送る内容の確認に漏れが生じない。サーバーアクションそのものは、サーバーの処理のテストで確認する。
 
 ## 8. 画面を追加する手順
 
@@ -244,17 +249,17 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | 項目 | 決まり |
 |------|--------|
 | 設定 | `auth/` に Auth.js の設定を集め、外からは `@/auth` だけを import する（ライブラリを替えるときの範囲を狭くするため）。provider は Keycloak（`ec-store` realm の `ec-store-web`、confidential client）、認可コード + PKCE |
-| 環境変数 | `AUTH_KEYCLOAK_ISSUER`（既定 `http://localhost:8180/realms/ec-store`）、`AUTH_KEYCLOAK_ID`（既定 `ec-store-web`）、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`（Cookie の暗号化の鍵）、`AUTH_URL`（店舗画面を公開する URL。既定 `http://localhost:3000`）※5 |
-| 戻り先 | ログイン（IdP からの戻り先）とログアウト（IdP のログアウトの後の戻り先）の URL は `AUTH_URL` から作り、リクエストヘッダーのホストとプロトコル（`host`、`x-forwarded-*`）を使わない（ヘッダーは偽装できるため）※6 |
+| 環境変数 | `AUTH_KEYCLOAK_ISSUER`（既定 `http://localhost:8180/realms/ec-store`）、`AUTH_KEYCLOAK_ID`（既定 `ec-store-web`）、`AUTH_KEYCLOAK_SECRET`、`AUTH_SECRET`（Cookie の暗号化の鍵）、`AUTH_URL`（店舗画面を公開する URL。既定 `http://localhost:3000`）※7 |
+| 戻り先 | ログイン（IdP からの戻り先）とログアウト（IdP のログアウトの後の戻り先）の URL は `AUTH_URL` から作り、リクエストヘッダーのホストとプロトコル（`host`、`x-forwarded-*`）を使わない（ヘッダーは偽装できるため）※8 |
 | セッション | 暗号化した HttpOnly の Cookie に、access・refresh・ID token、期限、氏名・メールアドレスを保持する（サーバーに状態を保持しない） |
 | 画面から読める情報 | `auth()` の結果（ブラウザーからも読める）には氏名とメールアドレスだけ。token は `getAccessToken()` で Cookie から直接読む（サーバー専用） |
 | 氏名 | token の姓（`family_name`）と名（`given_name`）を「姓 名」で並べる |
 | ログインの状態 | サーバー側で `currentMember()`（ログインしていれば氏名とメールアドレス、していなければ `null`）。クライアントコンポーネントでは取らず、必要なら props で渡す |
 | アカウント | ヘッダーから IdP のアカウント画面（`<issuer>/account`）へ遷移する。変えた氏名は次のログインから反映する |
 
-※5：既定値はローカルと CI だけで使う値（realm の JSON と同じ）で、開発モードとテストでだけ使う。本番モードでは、この 5 つと `STORE_API_BASE_URL` がなければ起動時に失敗する（`src/auth/config.ts`）。E2E は `playwright.config.ts` で渡す。
+※7：既定値はローカルと CI だけで使う値（realm の JSON と同じ）で、開発モードとテストでだけ使う。本番モードでは、この 5 つと `STORE_API_BASE_URL` がなければ起動時に失敗する（`src/auth/config.ts`）。E2E は `playwright.config.ts` で渡す。
 
-※6：Auth.js は `AUTH_URL` があれば、リクエストの URL をそれに置き換える。`trustHost` は指定しない。ログインの戻り先のテストは、このファイルだけ実際の Auth.js を使う（`auth/loginRedirect.test.ts`）。
+※8：Auth.js は `AUTH_URL` があれば、リクエストの URL をそれに置き換える。`trustHost` は指定しない。ログインの戻り先のテストは、このファイルだけ実際の Auth.js を使う（`auth/loginRedirect.test.ts`）。
 
 ### 9.1 token の更新
 

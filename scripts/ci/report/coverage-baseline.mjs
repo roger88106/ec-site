@@ -179,7 +179,12 @@ function main() {
   /** 生き残った変異が多いクラス（PIT のとき）*/
   let survivors = []
   if (pit) {
-    const result = readMutations(text)
+    let result
+    try {
+      result = readMutations(text)
+    } catch (error) {
+      fail(name, `${error.message}（${file}）。`)
+    }
     // 変異が 0 の報告は、中身がない・壊れているので、100% とみなさず失敗にする
     if (result.total === 0) fail(name, `報告に変異がない（${file}）。PIT が対象のクラスを見つけているか確認する。`)
     actual = { mutation: percent2(result.detected, result.total) }

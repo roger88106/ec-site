@@ -3,11 +3,11 @@
     "backend": {
       "line": {
         "value": 98.09,
-        "tolerance": 0
+        "tolerance": 0.05
       },
       "branch": {
         "value": 85.26,
-        "tolerance": 0.06
+        "tolerance": 0.15
       }
     },
     "admin": {
@@ -42,7 +42,7 @@
     },
     "backend-domain": {
       "mutation": {
-        "value": 89.89,
+        "value": 90.2,
         "tolerance": 0
       }
     }

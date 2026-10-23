@@ -323,7 +323,9 @@ tasks.named<Checkstyle>("checkstyleMain") {
 //   ./gradlew pitest で、domain のクラスに小さな変異を入れ、単体テストが失敗するか（変異を検出するか）を見る。
 //   報告：build/reports/pitest/（html、xml。タイムスタンプのディレクトリを作らず、CI が決まったパスで読む）
 //   単体テスト（src/test）だけを使う（統合テストは Docker が要り、domain のテストもない）。
-//   テストは src/test 全体を渡す。PIT はカバレッジで、対象のクラスを実行するテストだけを変異ごとに流すので、絞らない。
+//   テストは targetTests で src/test の全ての単体テスト（com.ecsite.*）を渡す。省くと targetClasses（domain）と同じ範囲になり、
+//   domain のクラスと同じパッケージのテストしか使われず、ほかのパッケージ（architecture、contract など）のテストが変異を検出できない。
+//   PIT はカバレッジで、対象のクラスを実行するテストだけを変異ごとに流すので、全てを渡しても無関係なテストは流れない。
 //   PIT は遅いので、check には入れない（CI は専用の手順で流す）。
 //   PIT はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない
 // -----------------------------------------------------------------------------
@@ -331,6 +333,11 @@ pitest {
     pitestVersion = libs.versions.pitest.engine.get()
     junit5PluginVersion = libs.versions.pitest.junit5.plugin.get()
     targetClasses = listOf("com.ecsite.module.*.domain.*")
+    targetTests = listOf("com.ecsite.*")
+    // テストの JVM の設定（systemProperty、ヒープ）を、test の task と同じにする。ないと、設定を読むテスト（ModuleDiagramTest など）が失敗し、PIT が止まる
+    jvmArgs = tasks.test.map { test ->
+        test.systemProperties.map { (key, value) -> "-D$key=$value" } + listOfNotNull(test.maxHeapSize?.let { "-Xmx$it" })
+    }
     // 4 コア（GitHub の ubuntu-latest）と手元で動く値
     threads = 4
     outputFormats = listOf("HTML", "XML")
@@ -338,7 +345,7 @@ pitest {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの書き方 第 1 節。報告だけで、基準の値では失敗させない）
+// カバレッジ（テストの書き方 第 1 節。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
 //   報告：build/reports/jacoco/coverageReport/（html、xml）
 //   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：

@@ -1,4 +1,4 @@
-import type { Cart, QuoteItem } from '@/api/types'
+import type { Cart, Order, QuoteItem, ShippingAddress, Variant, VariantAxis } from '@/api/types'
 
 /**
  * サーバーの処理のテストで API の応答に使うデータ（店舗画面の構成 第 7 節）。<br />
@@ -30,6 +30,58 @@ export function quoteItem(overrides: Partial<QuoteItem> = {}): QuoteItem {
     quantity: 1,
     subtotal: 1100,
     purchasable: true,
+    ...overrides,
+  }
+}
+
+/** お届け先 */
+export const SHIPPING_ADDRESS: ShippingAddress = {
+  name: '山田 太郎',
+  postalCode: '1000001',
+  prefectureCode: '13',
+  prefectureName: '東京都',
+  municipalityCode: '13101',
+  municipalityName: '千代田区',
+  address: '千代田 1-1',
+  phone: '0312345678',
+}
+
+/** 受付済みの注文（キャンセルを申請できる。商品の行はない） */
+export function order(overrides: Partial<Order> = {}): Order {
+  return {
+    id: ORDER_ID,
+    orderNumber: '20261010-482915',
+    orderedAt: '2026-10-10T03:00:00Z',
+    status: 'ACCEPTED',
+    lines: [],
+    amounts: { itemsTotal: 0, shippingFee: 0, total: 0, taxes: [] },
+    email: 'member@example.com',
+    shippingAddress: SHIPPING_ADDRESS,
+    actions: { requestCancellation: true, pay: false },
+    ...overrides,
+  }
+}
+
+/** 色とサイズの軸 */
+export const VARIANT_AXES: VariantAxis[] = [
+  { name: '色', values: ['赤', '青'] },
+  { name: 'サイズ', values: ['M', 'L'] },
+]
+
+/**
+ * 色とサイズの値を持つバリアント。既定は在庫があり、販売停止でない。
+ *
+ * @param color     色の値
+ * @param size      サイズの値
+ * @param overrides 上書きする項目
+ */
+export function variant(color: string, size: string, overrides: Partial<Variant> = {}): Variant {
+  return {
+    id: `variant-${color}-${size}`,
+    axisValues: [color, size],
+    inStock: true,
+    salesSuspended: false,
+    imageUrl: null,
     ...overrides,
   }
 }

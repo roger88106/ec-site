@@ -1,14 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { readIntOrNaN, readString } from '@/lib/server/formData'
-
-/** 項目を入れたフォーム */
-function form(entries: Record<string, string>): FormData {
-  const data = new FormData()
-  for (const [name, value] of Object.entries(entries)) {
-    data.set(name, value)
-  }
-  return data
-}
+import { form } from '@/test/fixtures'
 
 describe('フォームの項目の取り出し', () => {
   test('文字は前後の空白を除いて返す。項目がなければ空文字', () => {

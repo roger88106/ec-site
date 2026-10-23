@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import type { UserEvent } from '@testing-library/user-event'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { components } from '@/api/generated/admin'
@@ -31,15 +31,6 @@ function serveCreate(reply: (body: CreateProductRequest) => Response) {
 async function paste(user: UserEvent, input: HTMLElement, text: string) {
   await user.click(input)
   await user.paste(text)
-}
-
-/** 入力欄を囲む欄（ラベル・説明・エラーを含む） */
-function fieldOf(input: HTMLElement): HTMLElement {
-  const field = input.closest<HTMLElement>('[data-slot="field"]')
-  if (!field) {
-    throw new Error('入力欄を囲む欄がない')
-  }
-  return field
 }
 
 describe('商品の登録', () => {
@@ -105,8 +96,11 @@ describe('商品の登録', () => {
     await paste(user, screen.getByLabelText('税抜価格（円）'), '1000')
     await user.click(screen.getByRole('button', { name: '登録' }))
 
-    const codeField = fieldOf(screen.getByLabelText('商品品番（登録後は変更できません）'))
-    expect(await within(codeField).findByText('商品品番の形式が正しくありません。')).toBeInTheDocument()
+    // エラーの文は入力欄の説明（aria-describedby）として関連付いている
+    const codeInput = screen.getByLabelText('商品品番（登録後は変更できません）')
+    await waitFor(() =>
+      expect(codeInput).toHaveAccessibleDescription(expect.stringContaining('商品品番の形式が正しくありません。')),
+    )
     // 入力欄の下に出したエラーは、フォームの下に繰り返さない
     expect(screen.getAllByText('商品品番の形式が正しくありません。')).toHaveLength(1)
     expect(router.state.location.pathname).toBe('/products/new')

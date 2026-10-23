@@ -95,6 +95,7 @@ module/<モジュール>/
 - 他のモジュールの `api/` を呼ぶときは、port（`<相手>Directory` の interface と、相手の情報を変換して持つ自分の型）を使う層の `port/` に置き、実装は `infrastructure/directory/` に置く。
 - 他のモジュールの `api/` を使うのは `infrastructure/directory/` だけにする。例外は 1 件で、`member.api.CurrentMemberIds` を presentation から使う ※1。
 - 相手の型を内部で使わない。
+- 腐敗防止層の実装（`<相手>ApiDirectory`）は public にしない。理由：使う側は port の interface を通して使うため。
 - モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
 - 列挙を別の列挙に変換するとき（相手の型と自分の型、ドメインとイベント、ドメインと生成したモデル）は、`switch` 式で値ごとに書く。`valueOf(x.name())`、`fromValue(x.name())` は使わない。
 - モジュールの間とレイヤーの間で、列挙を名前の文字列で受け渡さない。command・query・view・api の型は列挙で持つ。名前の文字列から列挙にするのは、DB の文字列を読む `infrastructure/persistence/` と、ドメインの中だけ（`java-rules` が、それ以外の `valueOf`・`fromValue` を見つける）。

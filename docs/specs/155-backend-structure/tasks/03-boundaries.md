@@ -39,3 +39,9 @@ T155-03-01〜04 と T155-03-06 は、変えるファイルが重ならないの�
   - 範囲：`docs/design/modules/shipping.md`（`:127-139`）、`docs/design/modules/notification.md`（`:45-53`）、`docs/design/modules/storefront.md`（`:15-22,40-42`）、`docs/design/modules/reporting.md`（`:126-139`）
 - [ ] **T155-03-10** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check` と `scripts/ci/check-all.sh` が通る。
   - 依存：T155-03-01〜09
+- [x] **T155-03-11** 段階 3 のレビューの指摘を修正する。バックエンドの書き方の ※ の番号を付け替えたことで古くなった spec の DC-155-42 の参照（バックエンドの書き方 第 5.2 節 ※2）を ※3 に修正する。バックエンドの書き方 第 1.3 節の本文に、腐敗防止層の実装を public にしない規則を追加する（DC-155-19）。
+  - 依存：T155-03-10
+  - 範囲：`docs/specs/155-backend-structure/spec.md`、`docs/rules/backend-coding.md`
+- [ ] **T155-03-12** AC-84 の新しいテストに、作ったデータの後処理（`@AfterEach` で削除する）を戻す。理由：コミットした公開の商品が残ると、店舗の商品の一覧の件数を確認する統合テストが失敗するため（[plan](../plan.md) 第 6 節）。クラスの説明のコメントに理由を書く。`./gradlew check` の全体で、店舗の統合テストが通ることを確認する。
+  - 依存：T155-03-11
+  - 範囲：`it/module/order/presentation/CheckoutCartChangeApiTest.java`

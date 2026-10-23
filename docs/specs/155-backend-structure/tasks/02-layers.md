@@ -88,4 +88,4 @@
   - 依存：T155-02-22
   - 範囲：`main/module/order/application/model/OrderReportView.java`、`main/module/order/application/OrderReportQueryService.java`、`main/module/order/api/OrderReportApi.java`、`main/module/cart/api/CartContentsApi.java`
 
-気づき（段階 2）：手元で `./gradlew check` の全体を流すと、店舗の統合テスト（`StorefrontApiTest` の商品一覧、`StorefrontFreshnessTest`）が失敗することがある。店舗の統合テストだけを流すと通り、CI（16291481）は全体が通った。段階 2 の前のコード（433bb27f）でも、商品カタログ・カートの統合テストと同じ実行に混ぜると同じく失敗した。テストの間の干渉とみられ、本 spec の変更が原因ではない。spec の最後の起票の案に含める。
+気づき（段階 2）：手元で `./gradlew check` の全体を流すと、店舗の統合テスト（`StorefrontApiTest` の商品一覧、`StorefrontFreshnessTest`）が失敗することがある。段階 2 ではテストの間の干渉とみたが、段階 3 で原因を特定した。T155-01-12 で AC-84 の新しいテスト（コミットする）から後処理を外したため、公開した商品が残り、商品の一覧の件数を確認するテストが失敗していた。CI が通ったのは、テストの実行の順による。T155-03-12 で後処理を戻した。

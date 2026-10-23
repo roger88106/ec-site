@@ -56,7 +56,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 
 | script | 確認すること | 失敗したとき | 除外の書き方 |
 |--------|--------------|--------------|--------------|
-| `ac-check` | 機能の spec の全ての AC（MVP の `AC-n` と、1→10 の spec の `AC-n-m`。番号は [表記の規則](../rules/notation.md) 「spec の番号」）が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ含まれる（[テストの書き方](../rules/test-writing.md) 第 2.1 節）※1。[AC 一覧](../design/acceptance-criteria.md)を読み、廃止の AC はテストを求めず、テストが参照すると失敗にする。spec と一覧の AC の食い違い、決まっていない状態、古い表も失敗にする | テストを追加するか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く。表が古いときは `node scripts/ci/ac-check.mjs --write` で再生成する | `ac-exclusions.json` に AC と理由 |
+| `ac-check` | 機能の spec の全ての AC（MVP の `AC-n` と、1→10 の spec の `AC-n-m`。番号は [文書の記号と番号](../rules/notation.md) 「spec の番号」）が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ含まれる（[テストの書き方](../rules/test-writing.md) 第 2.1 節）※1。[AC 一覧](../design/acceptance-criteria.md)を読み、廃止の AC はテストを求めず、テストが参照すると失敗にする。spec と一覧の AC の食い違い、決まっていない状態、古い表も失敗にする | テストを追加するか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く。表が古いときは `node scripts/ci/ac-check.mjs --write` で再生成する | `ac-exclusions.json` に AC と理由 |
 | `compose-ports` | compose の全ての `ports` が、待ち受けるアドレスを `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始める（既定でこのマシンだけで待ち受け、1 つの変数で変更できる。[開発環境の起動](setup.md) 第 2 節） | ポートの前に `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` を書く | なし |
 | `doc-refs` | Markdown のリンク先と、`<文書の名前> 第 N 節` の参照先が存在する | リンクか節の番号を修正する（skill `docs`） | なし |
 | `doc-terms` | 文書に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も表示する | `doc-terms.json` |

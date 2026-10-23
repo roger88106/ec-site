@@ -40,7 +40,7 @@
 | テーブルの定義 | Flyway のマイグレーション（作成するまでは `docs/design/modules/` に草案を置く） |
 | 後回しの作業と未決事項 | issue（milestone `1→10`。第 4.1 節） |
 | 規模 M の spec | `docs/specs/<番号>-<名前>/spec.md`（第 4.2 節） |
-| ブランチとリリースの手順 | [ブランチとリリース](../guides/branches.md) |
+| ブランチとリリースの手順 | `docs/guides/branches.md` |
 | 用語と識別子の対応 | `docs/design/glossary.md` |
 | AC の今の状態とテスト | `docs/design/acceptance-criteria.md`（AC 一覧） |
 | コードの書き方 | `docs/rules/backend-coding.md`、`docs/rules/frontend-coding.md`、`docs/rules/test-writing.md`、`docs/rules/comments.md` |

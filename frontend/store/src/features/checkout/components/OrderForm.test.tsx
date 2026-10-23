@@ -5,6 +5,8 @@ import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import type { PostalCodeAddress, Prefecture } from '@/api/types'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
+import { input, select } from '@/test/elements'
+import { findTag } from '@/test/markup'
 import { renderInBrowser, renderMarkup } from '@/test/render'
 
 /** 注文のサーバーアクションの結果として、フォームに渡す値（null は送る前） */
@@ -53,11 +55,7 @@ function form(result: ActionResult | null = null) {
 
 /** 選んでいる値 */
 function selected(label: string): string {
-  const select = screen.getByLabelText(label)
-  if (!(select instanceof HTMLSelectElement)) {
-    throw new Error(`選択欄ではない：${label}`)
-  }
-  return select.value
+  return select(label).value
 }
 
 /**
@@ -76,11 +74,7 @@ function fieldOf(html: string, label: string): string {
 
 /** 住所の欄の値 */
 function addressValue(): string {
-  const input = screen.getByLabelText('住所')
-  if (!(input instanceof HTMLInputElement)) {
-    throw new Error('入力欄ではない：住所')
-  }
-  return input.value
+  return input('住所').value
 }
 
 beforeEach(() => {
@@ -94,8 +88,8 @@ describe('お届け先の入力と注文', () => {
 
     expect(html).toContain('member@example.com')
     expect(html).toContain('ご注文の連絡は、会員のメールアドレスにお送りします。')
-    expect(html).toMatch(/<input [^>]*name="checkoutId"[^>]*value="checkout-1"/)
-    expect(html).toMatch(/<input [^>]*name="expectedTotal"[^>]*value="3200"/)
+    expect(findTag(html, 'input', { name: 'checkoutId' }).value).toBe('checkout-1')
+    expect(findTag(html, 'input', { name: 'expectedTotal' }).value).toBe('3200')
     for (const name of ['name', 'postalCode', 'prefectureCode', 'municipalityCode', 'address', 'phone']) {
       expect(html).toContain(`name="${name}"`)
     }
@@ -122,7 +116,9 @@ describe('お届け先の入力と注文', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(html).toMatch(/<option[^>]* value="13"[^>]*>東京都<\/option>/)
     expect(html).toMatch(/<option[^>]* value="14"[^>]*>神奈川県<\/option>/)
-    expect(html).toMatch(/<option[^>]* disabled="" value="" selected="">選んでください<\/option>/)
+    // 先頭の「選んでください」は、選んでいて、選べない
+    expect(findTag(html, 'option', { value: '' })).toMatchObject({ disabled: '', selected: '' })
+    expect(html).toContain('>選んでください</option>')
   })
 
   test('AC-86 入力の誤りは、その欄の下に出す', () => {

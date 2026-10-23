@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
+import { beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
 import { register } from '@/instrumentation'
 import { PRODUCTION_ENV } from '@/test/env'
 import { recordStderr, type StderrRecord } from '@/test/stderr'
@@ -20,10 +20,6 @@ describe('起動時の設定の確認', () => {
     for (const [name, value] of Object.entries(PRODUCTION_ENV)) {
       vi.stubEnv(name, value)
     }
-  })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
   })
 
   test('DC-135-23 本番のモードで必須の値がなければ、足りない設定の名前を標準エラー出力に書いて終了する', () => {

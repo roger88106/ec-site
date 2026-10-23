@@ -1,6 +1,6 @@
 import { HttpResponse, http as mswHttp } from 'msw'
 import { NextRequest } from 'next/server'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { IDP, server } from '@/test/server'
 
 // Auth.js の本物のリクエストの処理で、IdP への移動の戻り先を確認する（ほかのテストは Auth.js を置き換えている）
@@ -51,10 +51,6 @@ function csrfTokenOf(body: unknown): string {
   }
   throw new Error('Auth.js の /csrf の応答に csrfToken がない')
 }
-
-afterEach(() => {
-  vi.unstubAllEnvs()
-})
 
 describe('ログインの戻り先', () => {
   test('AC-241 ログインで IdP へ移るときの戻り先は公開する URL から作り、リクエストヘッダーのホストを使わない', async () => {

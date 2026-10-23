@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { carrierLabel, orderStatusLabel, shipmentStatusLabel } from './orderLabels'
 
-describe('orderStatusLabel（BR-9、14、18）', () => {
+describe('注文の状態の表示名（BR-9、14、18）', () => {
   test('BR-9、14 支払待ち、受付、キャンセル申請中、キャンセルの状態を表示名にする', () => {
     expect(orderStatusLabel('PENDING_PAYMENT')).toBe('支払待ち')
     expect(orderStatusLabel('ACCEPTED')).toBe('受付')
@@ -14,7 +14,7 @@ describe('orderStatusLabel（BR-9、14、18）', () => {
   })
 })
 
-describe('shipmentStatusLabel / carrierLabel', () => {
+describe('出荷の状態と配送業者の表示名', () => {
   test('BR-19 出荷の配送状態を表示名にする', () => {
     expect(shipmentStatusLabel('SHIPPED')).toBe('出荷済み')
     expect(shipmentStatusLabel('IN_TRANSIT')).toBe('配送中')

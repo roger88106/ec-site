@@ -49,12 +49,13 @@ function serveTaxCategory(
   return state
 }
 
-/** n 行目（0 始まり）の入力欄 */
+/** n 行目（0 始まり）の入力欄。行の名前で行を探し、その中で入力欄を探す */
 function rowInputs(index: number) {
+  const row = within(screen.getByRole('row', { name: `${index + 1} 行目の税率` }))
   return {
-    rate: screen.getAllByLabelText<HTMLInputElement>('率（%）')[index],
-    from: screen.getAllByLabelText<HTMLInputElement>('適用開始')[index],
-    to: screen.getAllByLabelText<HTMLInputElement>('適用終了')[index],
+    rate: row.getByLabelText<HTMLInputElement>('率（%）'),
+    from: row.getByLabelText<HTMLInputElement>('適用開始'),
+    to: row.getByLabelText<HTMLInputElement>('適用終了'),
   }
 }
 

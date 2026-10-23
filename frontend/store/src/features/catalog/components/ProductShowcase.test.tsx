@@ -3,6 +3,7 @@ import { screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { Variant } from '@/api/types'
 import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
+import { button } from '@/test/elements'
 import { VARIANT_AXES, variant } from '@/test/fixtures'
 import { renderInBrowser } from '@/test/render'
 
@@ -32,15 +33,6 @@ function onlyVariant(overrides: Partial<Variant> = {}): Variant {
 /** 軸のない商品を描く */
 function renderWithoutAxes(variants: Variant[]) {
   return renderInBrowser(<ProductShowcase axes={[]} header={<h1>マグカップ</h1>} imageUrls={[]} variants={variants} />)
-}
-
-/** 押せるかどうかと、押している状態を見るボタン */
-function button(name: string): HTMLButtonElement {
-  const element = screen.getByRole('button', { name })
-  if (!(element instanceof HTMLButtonElement)) {
-    throw new Error(`button でない要素です: ${name}`)
-  }
-  return element
 }
 
 /** 大きな画像の URL */

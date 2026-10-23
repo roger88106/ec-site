@@ -560,6 +560,7 @@ describe('商品画像', () => {
           expiresAt: '2026-10-10T10:05:00Z',
         })
       }),
+      // ストレージへの送信は admin.yaml にない（署名付き URL への PUT）ので、型のない msw のハンドラーで作る
       rawHttp.put(UPLOAD_URL.split('?')[0], ({ request }) => {
         calls.push(`PUT ${request.headers.get('Content-Type')}`)
         return new HttpResponse(null, { status: 200 })
@@ -720,6 +721,7 @@ describe('商品画像', () => {
   test('ストレージへの送信に失敗したら、やり直しを促し、画像を登録しない', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
+    // ストレージの拒否（403）は admin.yaml にない応答なので、型のない msw のハンドラーで作る
     server.use(rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 403 })))
     const { user } = renderApp(URL)
 

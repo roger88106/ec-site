@@ -10,7 +10,7 @@ import {
   taxLabel,
 } from './format'
 
-describe('formatNumber', () => {
+describe('数の表示', () => {
   test('数は 3 桁ごとに区切る。単位は付けない', () => {
     expect(formatNumber(1234)).toBe('1,234')
     expect(formatNumber(1234567)).toBe('1,234,567')
@@ -18,7 +18,7 @@ describe('formatNumber', () => {
   })
 })
 
-describe('formatYen（BR-7）', () => {
+describe('金額の表示（BR-7）', () => {
   test('BR-7 金額は 3 桁ごとに区切って「円」を付ける', () => {
     expect(formatYen(1980)).toBe('1,980 円')
     expect(formatYen(1000)).toBe('1,000 円')
@@ -26,7 +26,7 @@ describe('formatYen（BR-7）', () => {
   })
 })
 
-describe('formatPrice（BR-4）', () => {
+describe('価格の表示（BR-4）', () => {
   test('BR-4 税込価格を主に、税抜価格を括弧で併記する', () => {
     expect(formatPrice({ inclTax: 1980, exclTax: 1800 })).toBe('1,980 円（税抜 1,800 円）')
   })
@@ -42,7 +42,7 @@ describe('formatPrice（BR-4）', () => {
   })
 })
 
-describe('formatDateTime（BR-3）', () => {
+describe('日時の表示（BR-3）', () => {
   test('BR-3 日本時間の「yyyy/MM/dd HH:mm」で表示する', () => {
     expect(formatDateTime('2027-03-31T15:00:00Z')).toBe('2027/04/01 00:00')
     expect(formatDateTime('2026-10-10T15:05:00Z')).toBe('2026/10/11 00:05')
@@ -59,7 +59,7 @@ describe('formatDateTime（BR-3）', () => {
   })
 })
 
-describe('japanDateTimeFormat', () => {
+describe('日本時間の日時の整形', () => {
   test('日本時間の書式は、年・月・日・時・分をゼロ埋めの部品で取り出せる', () => {
     const parts = Object.fromEntries(
       japanDateTimeFormat.formatToParts(new Date('2027-03-31T15:05:00Z')).map((part) => [part.type, part.value]),
@@ -68,7 +68,7 @@ describe('japanDateTimeFormat', () => {
   })
 })
 
-describe('taxLabel（BR-8）', () => {
+describe('税の表示名（BR-8）', () => {
   test('BR-8 税率ごとの消費税額は、対象額と消費税額を並べる', () => {
     expect(taxLabel({ ratePercent: 10, taxableAmount: 11000, taxAmount: 1000 })).toBe(
       '10% 対象 11,000 円（内消費税 1,000 円）',
@@ -77,13 +77,13 @@ describe('taxLabel（BR-8）', () => {
   })
 })
 
-describe('formatPostalCode', () => {
+describe('郵便番号の表示', () => {
   test('郵便番号は 3 桁と 4 桁の間にハイフンを入れる', () => {
     expect(formatPostalCode('1000001')).toBe('100-0001')
   })
 })
 
-describe('axisValuesLabel', () => {
+describe('軸の値の表示', () => {
   test('軸の名前と値を、渡した区切りで並べる', () => {
     const axes = [
       { name: '色', value: '黒' },

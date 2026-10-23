@@ -5,6 +5,7 @@ import { describe, expect, test, vi } from 'vitest'
 import type { Variant } from '@/api/types'
 import { VariantPicker } from '@/features/catalog/components/VariantPicker'
 import { emptySelection, type Selection, selectedVariant } from '@/features/catalog/variantSelection'
+import { button } from '@/test/elements'
 import { VARIANT_AXES, variant } from '@/test/fixtures'
 import { renderInBrowser } from '@/test/render'
 
@@ -15,15 +16,6 @@ const VARIANTS = [
   variant('青', 'M', { inStock: false }),
   variant('青', 'L', { salesSuspended: true }),
 ]
-
-/** 押せるかどうかと、押している状態を見るボタン */
-function button(name: string): HTMLButtonElement {
-  const element = screen.getByRole('button', { name })
-  if (!(element instanceof HTMLButtonElement)) {
-    throw new Error(`button でない要素です: ${name}`)
-  }
-  return element
-}
 
 /** 選択を親として持ち、変わるたびに onChange を呼んで知らせる。選択の状態は VariantPicker でなく親が持つ */
 function Controlled({ variants, onChange }: { variants: Variant[]; onChange?: (selection: Selection) => void }) {

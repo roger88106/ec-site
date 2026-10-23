@@ -1,7 +1,7 @@
 import 'next-auth'
 import 'next-auth/jwt'
 import 'next/headers'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { parseCartMergeNotice } from '@/lib/cartMergeNotice'
 import { authState, signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, NEW_CART_ID } from '@/test/fixtures'
@@ -19,10 +19,6 @@ async function loadWithPrefix(prefix: string) {
   vi.stubEnv('STORE_COOKIE_PREFIX', prefix)
   return { auth: await import('@/auth'), cartCookie: await import('@/api/cartCookie') }
 }
-
-afterEach(() => {
-  vi.unstubAllEnvs()
-})
 
 describe('店舗画面の Cookie の接頭辞（STORE_COOKIE_PREFIX）', () => {
   test('DC-104-12 Auth.js の Cookie の名前に接頭辞が付き、セッションも同じ名前で読む', async () => {

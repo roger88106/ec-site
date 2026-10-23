@@ -60,6 +60,8 @@ afterEach(() => {
   cleanup()
   // テストで差し替えた関数（console.error など）を戻す
   vi.restoreAllMocks()
+  // テストで差し替えた環境変数を戻す
+  vi.unstubAllEnvs()
   server.resetHandlers()
   const requests = unhandledRequests.splice(0)
   if (requests.length > 0) {

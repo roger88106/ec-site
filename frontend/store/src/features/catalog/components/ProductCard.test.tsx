@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import type { ProductSummary } from '@/api/types'
 import { ProductCard, ProductGrid } from '@/features/catalog/components/ProductCard'
+import { findTag } from '@/test/markup'
 import { renderMarkup } from '@/test/render'
 
 /** 画像があり、在庫のある商品 */
@@ -20,7 +21,7 @@ describe('一覧の商品のカード', () => {
     const html = renderMarkup(<ProductCard product={product()} />)
 
     expect(html).toContain('マグカップ')
-    expect(html).toMatch(/<img alt="商品の画像"[^>]* src="http:\/\/cdn\.test\/mug\.webp"/)
+    expect(findTag(html, 'img', { alt: '商品の画像' }).src).toBe('http://cdn.test/mug.webp')
     expect(html).toContain('1,100 円')
     expect(html).toContain('税抜 1,000 円')
     expect(html).toContain('href="/products/00000000-0000-0000-0000-000000000101"')

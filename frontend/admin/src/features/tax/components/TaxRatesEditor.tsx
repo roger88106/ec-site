@@ -97,7 +97,7 @@ export function TaxRatesEditor({
         </TableHeader>
         <TableBody>
           {rates.fields.map((field, index) => (
-            <TableRow key={field.id}>
+            <TableRow aria-label={t('row', { number: index + 1 }) /* 行の名前 */} key={field.id}>
               <TableCell>
                 <Input
                   aria-label={t('ratePercent') /* 率 */}

@@ -1,3 +1,4 @@
+import { HttpResponse, http as mswHttp } from 'msw'
 import { setupServer } from 'msw/node'
 import { createOpenApiHttp, type HttpMethod, type ResponseResolver, type ResponseResolverInfo } from 'openapi-msw'
 import type { paths } from '@/api/generated/admin'
@@ -10,6 +11,33 @@ import { stock } from '@/test/fixtures'
  * 例：`http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))`
  */
 export const http = createOpenApiHttp<paths>({ baseUrl: `${window.location.origin}/api/admin` })
+
+/** 型のないハンドラーで、管理 API の GET に応答するときのパスの接頭辞 */
+const ADMIN_API = `${window.location.origin}/api/admin`
+
+/**
+ * 管理 API の GET を通信の失敗（接続できない）にするハンドラーを作る。
+ *
+ * @param path admin.yaml のパス（例：/me）
+ * @returns 通信の失敗にするハンドラー
+ */
+export function getNetworkError(path: string) {
+  // 通信の失敗は admin.yaml にない応答なので、型付きの http でなく、型のない msw のハンドラーで作る
+  return mswHttp.get(`${ADMIN_API}${path}`, () => HttpResponse.error())
+}
+
+/**
+ * 管理 API の GET を、システムエラー（500）にするハンドラーを作る。
+ *
+ * @param path admin.yaml のパス（例：/me）
+ * @returns 500 の Problem を返すハンドラー
+ */
+export function getServerError(path: string) {
+  // 500 は admin.yaml にない応答なので、型付きの http でなく、型のない msw のハンドラーで作る
+  return mswHttp.get(`${ADMIN_API}${path}`, () =>
+    HttpResponse.json(problem(500, 'SYSTEM_ERROR', 'システムエラーが発生しました。'), { status: 500 }),
+  )
+}
 
 /**
  * 結合テストで API の代わりに応答するサーバー。<br />

@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { CartItemControls } from '@/features/cart/components/CartItemControls'
 import { quoteItem } from '@/test/fixtures'
+import { findTag } from '@/test/markup'
 import { renderMarkup } from '@/test/render'
 
 // 数量の変更と削除はサーバーアクションを通るので、サーバーアクションのテストと E2E で確認する（テストの書き方 第 1 節）
@@ -9,7 +10,7 @@ describe('カートの品目の操作', () => {
   test('AC-78 今の数量を選んだ数量の選択と、小計と、削除を出す', () => {
     const html = renderMarkup(<CartItemControls item={quoteItem({ quantity: 3, subtotal: 3300 })} />)
 
-    expect(html).toMatch(/<option[^>]* value="3" selected="">3<\/option>/)
+    expect(findTag(html, 'option', { value: '3' })).toHaveProperty('selected', '')
     expect(html).toContain('3,300 円')
     expect(html).toContain('>削除</button>')
   })

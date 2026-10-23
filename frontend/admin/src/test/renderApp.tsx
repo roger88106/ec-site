@@ -1,6 +1,6 @@
 import { render } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { delay, HttpResponse } from 'msw'
+import { delay } from 'msw'
 import { createMemoryRouter } from 'react-router'
 import { vi } from 'vitest'
 import { App } from '@/app/App'
@@ -8,7 +8,7 @@ import { createQueryClient } from '@/app/queryClient'
 import { routes } from '@/app/router'
 import { type Operator, OperatorProvider } from '@/auth/operator'
 import { I18nProvider } from '@/i18n/I18nProvider'
-import { http, problem, server } from '@/test/server'
+import { getNetworkError, getServerError, http, server } from '@/test/server'
 
 /** 運営者の realm の職務「管理者」と同じ、すべての権限 */
 export const ALL_PERMISSIONS = [
@@ -51,18 +51,16 @@ export function renderApp(
   }: { permissions?: readonly string[]; me?: 'ok' | 'serverError' | 'networkError' | 'pending' } = {},
 ) {
   server.use(
-    http.get('/me', async ({ response }) => {
-      if (me === 'pending') {
-        await delay('infinite')
-      }
-      if (me === 'serverError') {
-        return HttpResponse.json(problem(500, 'SYSTEM_ERROR', 'システムエラーが発生しました。'), { status: 500 })
-      }
-      if (me === 'networkError') {
-        return HttpResponse.error()
-      }
-      return response(200).json({ permissions: [...permissions] })
-    }),
+    me === 'serverError'
+      ? getServerError('/me')
+      : me === 'networkError'
+        ? getNetworkError('/me')
+        : http.get('/me', async ({ response }) => {
+            if (me === 'pending') {
+              await delay('infinite')
+            }
+            return response(200).json({ permissions: [...permissions] })
+          }),
   )
   const router = createMemoryRouter(routes, { initialEntries: [url] })
   const user = userEvent.setup()

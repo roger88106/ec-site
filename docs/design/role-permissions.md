@@ -13,10 +13,10 @@
 
 | ロール | 説明 | tax:read | tax:write | category:read | category:write | product:read | product:write | inventory:read | inventory:write | order:read | order:write | report-sales-trend:read | report-variant-sales:read | report-customer:read |
 |--------|------|---|---|---|---|---|---|---|---|---|---|---|---|---|
-| `administrator` | 管理者：すべての権限 | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
-| `viewer` | 閲覧者：参照の権限すべて | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  |  |  |  |
-| `manager` | 管理職：参照の権限すべてと、すべてのレポート | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  | ○ | ○ | ○ |
-| `sales` | 営業：参照の権限すべてと、売上の推移を除くレポート | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  |  | ○ | ○ |
+| `administrator` | 管理者：全ての権限 | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ | ○ |
+| `viewer` | 閲覧者：参照の権限全て | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  |  |  |  |
+| `manager` | 管理職：参照の権限全てと、全てのレポート | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  | ○ | ○ | ○ |
+| `sales` | 営業：参照の権限全てと、売上の推移を除くレポート | ○ |  | ○ |  | ○ |  | ○ |  | ○ |  |  | ○ | ○ |
 
 ### 管理 API
 

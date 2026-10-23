@@ -1,4 +1,4 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, it } from 'vitest'
 import { schemas } from '@/api/generated/constraints'
@@ -80,10 +80,75 @@ describe('商品の編集', () => {
 
     await user.click(screen.getByRole('button', { name: '再読み込み' }))
     expect(await screen.findByDisplayValue('T シャツ（新）')).toBe(screen.getByLabelText('商品名'))
+    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
 
     await user.click(screen.getByRole('button', { name: '保存' }))
     expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
     expect(state.versions).toEqual([0, 1])
+  })
+
+  it('AC-18、19 税区分を変えて基本情報を保存すると、入力した値とバージョンを送り、保存を知らせ、変更後の税率の税込価格を出す', async () => {
+    const REDUCED_ID = '00000000-0000-0000-0000-000000000002'
+    const CATEGORY_ID = '00000000-0000-0000-0000-000000000031'
+    const state = serveProduct(productDetail())
+    const requests: unknown[] = []
+    server.use(
+      http.get('/tax-categories', ({ response }) =>
+        response(200).json({
+          items: [taxCategory(), taxCategory({ id: REDUCED_ID, name: '軽減', currentRatePercent: 8 })],
+        }),
+      ),
+      http.get('/categories', ({ response }) =>
+        response(200).json({
+          items: [
+            {
+              id: CATEGORY_ID,
+              name: '衣類',
+              depth: 1,
+              displayOrder: 1,
+              version: 0,
+              children: [],
+              actions: { addChild: true },
+            },
+          ],
+        }),
+      ),
+      http.put('/products/{productId}', async ({ request }) => {
+        const body = await request.json()
+        requests.push(body)
+        // 保存の応答は、変更後の税率（8%）で計算した税込価格を返す
+        state.current = productDetail({ ...body, priceInclTax: 1296, version: body.version + 1 })
+        return Response.json(state.current) as never
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    const name = await screen.findByLabelText('商品名')
+    await user.clear(name)
+    await user.type(name, 'T シャツ（改）')
+    const description = screen.getByLabelText('説明')
+    await user.clear(description)
+    await user.type(description, '綿 100%')
+    await user.click(screen.getByRole('combobox', { name: '税区分' }))
+    await user.click(await screen.findByRole('option', { name: '軽減（現時点の率：8%）' }))
+    const price = screen.getByLabelText('税抜価格（円）')
+    await user.clear(price)
+    await user.type(price, '1200')
+    await user.click(await screen.findByRole('checkbox', { name: '衣類' }))
+    await user.click(screen.getByRole('button', { name: '保存' }))
+
+    expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
+    expect(requests).toEqual([
+      {
+        name: 'T シャツ（改）',
+        description: '綿 100%',
+        taxCategoryId: REDUCED_ID,
+        priceExclTax: 1200,
+        categoryIds: [CATEGORY_ID],
+        version: 0,
+      },
+    ])
+    expect(await screen.findByText('1,296 円（税抜 1,200 円）')).toBeInTheDocument()
   })
 
   it('販売終了は確認のダイアログで確定したときだけ行い、やめれば何もしない', async () => {
@@ -150,13 +215,15 @@ describe('商品の編集', () => {
     expect(await screen.findByRole('button', { name: '販売終了にする' })).toBeInTheDocument()
     expect(screen.queryByText(/店舗に表示されたことがあるため/)).not.toBeInTheDocument()
   })
-  it('AC-24 軸を持たない商品は、バリアントがなければ追加の欄を出し、1 つあれば追加の欄を出さない', async () => {
+  it('AC-21、24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))
+    const requests: unknown[] = []
     server.use(
       http.get('/inventory/variants/{variantId}', ({ params, response }) =>
         response(200).json({ variantId: params.variantId, quantity: 0 }),
       ),
-      http.post('/products/{productId}/variants', ({ response }) => {
+      http.post('/products/{productId}/variants', async ({ request, response }) => {
+        requests.push(await request.json())
         state.current = {
           ...state.current,
           variants: [variant({ axisValues: [] })],
@@ -174,6 +241,82 @@ describe('商品の編集', () => {
     expect(await screen.findByText('軸を持たない商品のバリアントは 1 つだけです。')).toBeInTheDocument()
     expect(screen.getByRole('cell', { name: 'ABC-001-RED' })).toBeInTheDocument()
     expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
+    expect(requests).toEqual([expect.objectContaining({ variantCode: 'ABC-001-X' })])
+  })
+  it('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
+    const state = serveProduct(productDetail({ axes: ['色', 'サイズ'], variants: [] }))
+    const requests: unknown[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 0 }),
+      ),
+      http.post('/products/{productId}/variants', async ({ request, response }) => {
+        requests.push(await request.json())
+        state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
+        return response(201).json({ id: variant().id })
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-wh-m')
+    await user.type(screen.getByLabelText('色'), ' 白 ')
+    await user.type(screen.getByLabelText('サイズ'), 'M')
+    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+
+    expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+    expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
+  })
+  it('バリアントの追加の入力中に他の人が商品を更新すると、取得し直しても入力は消えず、追加は 409 になり、再読み込みで最新のバージョンの空のフォームに再作成してから追加できる', async () => {
+    const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
+    const versions: number[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 0 }),
+      ),
+      http.post('/products/{productId}/variants', async ({ request, response }) => {
+        const body = await request.json()
+        versions.push(body.version)
+        if (body.version !== state.current.version) {
+          return Response.json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。'), {
+            status: 409,
+          }) as never
+        }
+        state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
+        return response(201).json({ id: variant().id })
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
+    await user.type(screen.getByLabelText('色'), '赤')
+    // 入力中に、他の人が価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
+    state.current = productDetail({
+      axes: ['色'],
+      variants: [],
+      priceExclTax: 1200,
+      priceInclTax: 1320,
+      version: 1,
+    })
+    fireEvent(window, new Event('visibilitychange'))
+    expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+    expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+    expect(screen.getByLabelText('色')).toHaveValue('赤')
+    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+
+    expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
+    expect(versions).toEqual([0])
+    expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+
+    await user.click(screen.getByRole('button', { name: '再読み込み' }))
+    await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
+    expect(screen.getByLabelText('色')).toHaveValue('')
+    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
+
+    await user.type(screen.getByLabelText('バリアント品番'), 'abc-001-red')
+    await user.type(screen.getByLabelText('色'), '赤')
+    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+    expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+    expect(versions).toEqual([0, 1])
   })
   it('AC-28 バリアントを販売停止にすると「販売停止」と出て、販売を再開できる', async () => {
     const state = serveProduct(productDetail({ variants: [variant()] }))
@@ -219,6 +362,101 @@ describe('商品の編集', () => {
     expect(await screen.findByText('販売を再開しました')).toBeInTheDocument()
     expect(await within(row()).findByText('販売中')).toBeInTheDocument()
     expect(calls).toEqual([`suspend ${variant().id}`, `resume ${variant().id}`])
+  })
+
+  it('AC-27 バリアントを下へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
+    const SECOND_ID = '00000000-0000-0000-0000-000000000202'
+    const state = serveProduct(
+      productDetail({
+        version: 5,
+        variants: [variant(), variant({ id: SECOND_ID, variantCode: 'ABC-001-BLUE', axisValues: ['青'] })],
+      }),
+    )
+    const requests: unknown[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 3 }),
+      ),
+      http.put('/products/{productId}/variants/order', async ({ request, response }) => {
+        requests.push(await request.json())
+        state.current = {
+          ...state.current,
+          variants: [...state.current.variants].reverse(),
+          version: state.current.version + 1,
+        }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを下へ' }))
+
+    await waitFor(() => expect(requests).toHaveLength(1))
+    expect(requests).toEqual([{ variantIds: [SECOND_ID, variant().id], version: 5 }])
+  })
+
+  it('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
+    const state = serveProduct(productDetail({ version: 5, variants: [variant()] }))
+    const calls: string[] = []
+    server.use(
+      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+        response(200).json({ variantId: params.variantId, quantity: 3 }),
+      ),
+      http.delete('/products/{productId}/variants/{variantId}', ({ params, query, response }) => {
+        calls.push(`DELETE ${params.variantId} version=${query.get('version')}`)
+        state.current = { ...state.current, variants: [], version: state.current.version + 1 }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    const row = (await screen.findByRole('cell', { name: 'ABC-001-RED' })).closest('tr')
+    if (!row) {
+      throw new Error('ABC-001-RED の行がない')
+    }
+    await user.click(within(row).getByRole('button', { name: '削除' }))
+    const dialog = await screen.findByRole('alertdialog', { name: 'バリアント「ABC-001-RED」を削除しますか？' })
+    await user.click(within(dialog).getByRole('button', { name: '削除する' }))
+
+    expect(await screen.findByText('バリアントを削除しました')).toBeInTheDocument()
+    expect(calls).toEqual([`DELETE ${variant().id} version=5`])
+  })
+
+  it('AC-29、30 公開すると公開中の表示と知らせに変わり、非公開にすると非公開の表示と知らせに戻る', async () => {
+    const state = serveProduct(productDetail())
+    const calls: string[] = []
+    const change = (status: ProductDetail['status'], actions: ProductDetail['actions']) => {
+      state.current = { ...state.current, status, actions, version: state.current.version + 1 }
+    }
+    server.use(
+      http.put('/products/{productId}/publish', ({ response }) => {
+        calls.push('PUT publish')
+        change('PUBLISHED', productActions({ publish: false, unpublish: true }))
+        return response(204).empty()
+      }),
+      http.put('/products/{productId}/unpublish', ({ response }) => {
+        calls.push('PUT unpublish')
+        change('UNPUBLISHED', productActions())
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    // 状態の表示は、画面の見出し（商品コードと状態）の中にある
+    const header = await screen.findByRole('heading', { level: 1 })
+    expect(await within(header).findByText('非公開')).toBeInTheDocument()
+    await user.click(screen.getByRole('button', { name: '公開する' }))
+
+    expect(await screen.findByText('公開しました')).toBeInTheDocument()
+    expect(await within(header).findByText('公開')).toBeInTheDocument()
+    expect(within(header).queryByText('非公開')).not.toBeInTheDocument()
+
+    await user.click(screen.getByRole('button', { name: '非公開にする' }))
+
+    expect(await screen.findByText('非公開にしました')).toBeInTheDocument()
+    expect(await within(header).findByText('非公開')).toBeInTheDocument()
+    expect(within(header).queryByText('公開')).not.toBeInTheDocument()
+    expect(calls).toEqual(['PUT publish', 'PUT unpublish'])
   })
 })
 
@@ -301,7 +539,12 @@ describe('公開期間', () => {
       screen.getByLabelText('公開終了（この日時は含まない）'),
     )
     expect(screen.getByLabelText('公開開始')).toHaveValue('')
-    expect(requests.map((request) => request.version)).toEqual([0])
+    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
+
+    fireEvent.change(screen.getByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
+    await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+    expect(await screen.findByText('公開期間を保存しました')).toBeInTheDocument()
+    expect(requests.map((request) => request.version)).toEqual([0, 1])
   })
 })
 
@@ -531,5 +774,52 @@ describe('商品画像', () => {
     expect(await screen.findByText('バリアントの画像を変更しました')).toBeInTheDocument()
     expect(requests).toEqual([{ imageId: images[1].id, version: 0 }])
     expect(screen.getByRole('combobox', { name: 'ABC-001-REDの画像' })).toHaveTextContent('画像 2')
+  })
+
+  const TWO_IMAGES = [
+    { id: '00000000-0000-0000-0000-000000000951', url: 'http://cdn.test/1.png' },
+    { id: '00000000-0000-0000-0000-000000000952', url: 'http://cdn.test/2.png' },
+  ]
+
+  it('AC-37 画像を後へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
+    const state = serveProduct(productDetail({ version: 5, images: TWO_IMAGES }))
+    const requests: unknown[] = []
+    server.use(
+      http.put('/products/{productId}/images/order', async ({ request, response }) => {
+        requests.push(await request.json())
+        state.current = {
+          ...state.current,
+          images: [...state.current.images].reverse(),
+          version: state.current.version + 1,
+        }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.click(await screen.findByRole('button', { name: '画像 1を後へ' }))
+
+    await waitFor(() => expect(requests).toHaveLength(1))
+    expect(requests).toEqual([{ imageIds: [TWO_IMAGES[1].id, TWO_IMAGES[0].id], version: 5 }])
+  })
+
+  it('確認のダイアログで確定すると、商品のバージョンを添えて画像を削除する', async () => {
+    const state = serveProduct(productDetail({ version: 5, images: TWO_IMAGES }))
+    const calls: string[] = []
+    server.use(
+      http.delete('/products/{productId}/images/{imageId}', ({ params, query, response }) => {
+        calls.push(`DELETE ${params.imageId} version=${query.get('version')}`)
+        state.current = { ...state.current, images: [TWO_IMAGES[1]], version: state.current.version + 1 }
+        return response(204).empty()
+      }),
+    )
+    const { user } = renderApp(URL)
+
+    await user.click(await screen.findByRole('button', { name: '画像 1を削除' }))
+    const dialog = await screen.findByRole('alertdialog', { name: '画像 1を削除しますか？' })
+    await user.click(within(dialog).getByRole('button', { name: '削除する' }))
+
+    expect(await screen.findByText('画像を削除しました')).toBeInTheDocument()
+    expect(calls).toEqual([`DELETE ${TWO_IMAGES[0].id} version=5`])
   })
 })

@@ -169,6 +169,32 @@ describe('カテゴリの画面', () => {
     ])
   })
 
+  it('名称の変更が 409 になると、再読み込みでダイアログを閉じて最新の一覧を表示する', async () => {
+    // 他の人が名称を変えた後の木。409 を返した後の取得から、これを返す
+    let tree = [GOODS]
+    server.use(
+      http.get('/categories', ({ response }) => response(200).json({ items: tree })),
+      http.put('/categories/{categoryId}', () => {
+        tree = [{ ...GOODS, name: '暮らしの雑貨', version: 4 }]
+        return Response.json(problem(409, 'CONCURRENT_MODIFICATION', '他の人が先に更新しました。'), {
+          status: 409,
+        }) as never
+      }),
+    )
+    const { user } = renderApp('/categories')
+
+    await user.click((await row('雑貨')).getByRole('button', { name: '名称の変更' }))
+    const dialog = await screen.findByRole('dialog', { name: '名称の変更' })
+    await user.clear(within(dialog).getByLabelText('名称'))
+    await user.type(within(dialog).getByLabelText('名称'), '生活雑貨')
+    await user.click(within(dialog).getByRole('button', { name: '保存' }))
+    await user.click(await within(dialog).findByRole('button', { name: '再読み込み' }))
+
+    await waitFor(() => expect(screen.queryByRole('dialog')).not.toBeInTheDocument())
+    expect(await screen.findByText('暮らしの雑貨', { selector: 'span' })).toBeInTheDocument()
+    expect(screen.queryByText('雑貨', { selector: 'span' })).not.toBeInTheDocument()
+  })
+
   it('AC-11 並び順を変えると、兄弟の並びを送る。先頭は上へ、末尾は下へ動かせない', async () => {
     const requests = serveCategories([CLOTHING, GOODS])
     const { user } = renderApp('/categories')

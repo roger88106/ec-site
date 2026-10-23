@@ -55,7 +55,7 @@ export function TaxRatesEditor({
   taxCategory: TaxCategory
   refetch: () => Promise<unknown>
 }) {
-  const { form, baseVersion, markSaved, reload } = useVersionedForm(taxCategory, toValues, refetch)
+  const { form, baseVersion, markSaved, reloadAfter } = useVersionedForm(taxCategory, toValues, refetch)
   const t = useTranslations('tax.rates')
   const tApp = useTranslations('app.common')
   const rates = useFieldArray({ control: form.control, name: 'rates' })
@@ -164,13 +164,7 @@ export function TaxRatesEditor({
           {tApp('save') /* 保存 */}
         </Button>
       </div>
-      <ErrorMessage
-        error={mutation.error}
-        onReload={async () => {
-          mutation.reset()
-          await reload()
-        }}
-      />
+      <ErrorMessage error={mutation.error} onReload={() => reloadAfter(mutation)} />
     </form>
   )
 }

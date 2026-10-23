@@ -34,6 +34,8 @@ function serveTrend(report: SalesTrendReport = QUARTER_BY_MONTH) {
 
 afterEach(() => {
   vi.useRealTimers()
+  vi.unstubAllGlobals()
+  vi.restoreAllMocks()
 })
 
 describe('売上の推移', () => {
@@ -112,16 +114,21 @@ describe('売上の推移', () => {
     const createObjectURL = vi.fn(() => 'blob:report')
     const revokeObjectURL = vi.fn()
     vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
+    const downloads: string[] = []
+    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+      downloads.push(this.download)
+    })
     const { user } = renderApp('/reports/sales-trend?from=2026-04-01&to=2026-06-30')
     await screen.findByRole('cell', { name: '2026 年 4 月' })
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
+
+    expect(downloads).toEqual(['売上の推移_2026-04-01_2026-06-30.csv'])
 
     const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
     const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
     expect(text).toBe(
       '\uFEFF区切り,売上額,販売数量\r\n2026 年 4 月,120000,40\r\n2026 年 5 月,0,0\r\n2026 年 6 月,98000,31\r\n',
     )
-    vi.unstubAllGlobals()
   })
 })

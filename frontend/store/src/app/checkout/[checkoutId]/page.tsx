@@ -1,3 +1,4 @@
+import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
 import { formatYen } from '@ec-site/shared/lib/format'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
@@ -6,7 +7,6 @@ import { getTranslations } from 'next-intl/server'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
-import { AmountsSummary } from '@/components/AmountsSummary'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import { RemainingTime } from '@/features/checkout/components/RemainingTime'
@@ -59,7 +59,7 @@ export default async function CheckoutPage({ params }: PageProps<'/checkout/[che
             ))}
           </ul>
           <div className="rounded-lg border p-4">
-            <AmountsSummary amounts={checkout.amounts} />
+            <AmountsSummary amounts={checkout.amounts} variant="page" />
           </div>
         </section>
         <section className="space-y-4">

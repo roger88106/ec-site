@@ -269,7 +269,10 @@
       "failed": "ログインできませんでした。（{message}）",
       "retry": "ログインし直す"
     },
-    "forbidden": "この画面を見る権限がありません。"
+    "forbidden": "この画面を見る権限がありません。",
+    "permissionsFailed": {
+      "retry": "再試行"
+    }
   },
   "inventory": {
     "page": {

@@ -117,7 +117,7 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
 
 ### 段階 1：カバレッジの基準
 
-- 前提：spec の確定、spec 131 のマージ
+- 前提：spec の確定、spec 131 のマージ（済み。2026-10-23 の照合で確認）
 - 完了条件：DC-17-1〜7 を満たし、CI が通る。
 - 参照：第 3 節の DS-17-1
 
@@ -141,7 +141,7 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
 
 - [ ] **T17-02-01** PIT を導入し、手元で実行して時間と mutation score を記録する。ライセンスを確認し、`checkLicense` の対象に入るかを確認して、結果を書く。`check` の依存に PIT を入れない（第 7 節の 7）（DC-17-9、12）。
   - 依存：なし
-  - 範囲：`backend/ecsite/build.gradle.kts`、`gradle/libs.versions.toml`、`docs/design/licenses.md`
+  - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、`docs/design/licenses.md`、`scripts/ci/licenses/policy.json`
 - [ ] **T17-02-02** [テスト] 検査の script が PIT の XML の mutation score を読むテストを書き、レッドを確認する。テストのデータは、T17-02-01 で作った実際の PIT の XML に合わせる（DC-17-10）。
   - 依存：T17-02-01
   - 範囲：`scripts/ci/report/`
@@ -165,6 +165,8 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
   - 範囲：`docs/rules/test-writing.md`、`docs/guides/ci.md`、`docs/guides/running-tests.md`、`.github/workflows/ci.yml`、`scripts/ci/report/coverage-summary.mjs`
 - [ ] **T17-03-02** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）を行い、指摘に対応する。DN-17-2（除外を増やさない）を観点に含める。
   - 依存：T17-03-01
-- [ ] **T17-03-03** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。
+- [ ] **T17-03-03** pull request の前のレビュー（profile「厚め」：高性能で spec との一致と完了の定義、使うツールの組み込みのコードレビュー）を行い、指摘に対応する。
   - 依存：T17-03-02
+- [ ] **T17-03-04** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。この commit で、全てのタスクのチェックボックスを `[x]` にする（開発の進め方 第 4.2 節）。pull request の作成はタスクにせず、URL を追跡の issue に記録する。
+  - 依存：T17-03-03
   - 範囲：`docs/specs/`

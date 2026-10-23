@@ -4,6 +4,7 @@ import { parseCartMergeNotice } from '@/lib/cartMergeNotice'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID, quoteItem } from '@/test/fixtures'
 import { cookieValue, resetRequest } from '@/test/next'
 import { http, problem, server } from '@/test/server'
+import { recordStderr } from '@/test/stderr'
 
 /** ログインで得た access token（セッションの Cookie はまだない） */
 const LOGIN_TOKEN = 'login-access-token'
@@ -59,7 +60,7 @@ describe('ログインの直後にカートを移す', () => {
 
   test('AC-124 移せなかったときも、Cookie のカート ID を消す', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
-    vi.spyOn(console, 'error').mockImplementation(() => {})
+    recordStderr()
     server.use(
       http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
       http.post('/me/cart/merge', ({ response }) =>
@@ -75,7 +76,7 @@ describe('ログインの直後にカートを移す', () => {
 
   test('DC-135-18 移せなかったときの警告のログに、カートの ID（Cookie の値）を出力しない', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
-    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const stderr = recordStderr()
     server.use(
       http.get('/carts/{cartId}', ({ response }) => response(200).json(cart([RED]))),
       http.post('/me/cart/merge', ({ response }) =>
@@ -85,20 +86,20 @@ describe('ログインの直後にカートを移す', () => {
 
     await mergeCartAfterLogin(LOGIN_TOKEN)
 
-    const logged = stderr.mock.calls.map(([line]) => String(line)).join('')
+    const logged = stderr.text()
     expect(logged).toContain('カートを移せませんでした')
     expect(logged).not.toContain(COOKIE_CART_ID)
   })
 
   test('DC-135-18 通信が失敗したときの警告のログにも、カートの ID を出力しない', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
-    const stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    const stderr = recordStderr()
     // 例外のメッセージに URL（カートの ID）が入る場合
     vi.spyOn(globalThis, 'fetch').mockRejectedValue(new TypeError(`fetch failed: /carts/${COOKIE_CART_ID}`))
 
     await mergeCartAfterLogin(LOGIN_TOKEN)
 
-    const logged = stderr.mock.calls.map(([line]) => String(line)).join('')
+    const logged = stderr.text()
     expect(logged).toContain('カートを移せませんでした')
     expect(logged).not.toContain(COOKIE_CART_ID)
   })

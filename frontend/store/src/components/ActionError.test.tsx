@@ -1,12 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { ActionError } from '@/components/ActionError'
+import { findTag } from '@/test/markup'
 import { renderMarkup } from '@/test/render'
 
 describe('サーバーアクションの失敗の表示', () => {
   test('失敗の文を、読み上げの対象として出す', () => {
     const html = renderMarkup(<ActionError message="在庫が足りません。" />)
 
-    expect(html).toMatch(/<p aria-live="polite"[^>]*>在庫が足りません。<\/p>/)
+    expect(findTag(html, 'p', { 'aria-live': 'polite' })).toBeDefined()
+    expect(html).toMatch(/>在庫が足りません。<\/p>/)
   })
 
   test('文のあとに、子の要素を添えられる', () => {
@@ -29,7 +31,8 @@ describe('サーバーアクションの失敗の表示', () => {
   test('サーバーアクションの結果が失敗なら、その message を出す', () => {
     const html = renderMarkup(<ActionError result={{ ok: false, message: '在庫が足りません。' }} />)
 
-    expect(html).toMatch(/<p aria-live="polite"[^>]*>在庫が足りません。<\/p>/)
+    expect(findTag(html, 'p', { 'aria-live': 'polite' })).toBeDefined()
+    expect(html).toMatch(/>在庫が足りません。<\/p>/)
   })
 
   test.each([{ ok: true } as const, null, undefined])(

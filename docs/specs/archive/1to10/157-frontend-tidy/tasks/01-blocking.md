@@ -1,8 +1,8 @@
 # 段階 1：spec 158 が待つ違反の修正
 
-- 前提：plan と tasks の承認、実装を始める前の照合（[開発の進め方](../../../rules/workflow.md) 第 5.6 節）
+- 前提：plan と tasks の承認、実装を始める前の照合（[開発の進め方](../../../../../rules/workflow.md) 第 5.6 節）
 - 完了条件：テストのファイルに、内部の属性（`data-slot`）と `querySelector` で探す箇所がない。テストの名前に、空白で区切った AC の番号がない。AC 一覧を再生成した。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 11 節、[spec](../spec.md) の DC-157-10、11、14、20、[テストの書き方](../../../rules/test-writing.md) 第 2.1 節、[テストの書き方](../../../rules/test-writing.md) 第 4.1 節
+- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 11 節、[spec](../spec.md) の DC-157-10、11、14、20、[テストの書き方](../../../../../rules/test-writing.md) 第 2.1 節、[テストの書き方](../../../../../rules/test-writing.md) 第 4.1 節
 
 ## タスク
 

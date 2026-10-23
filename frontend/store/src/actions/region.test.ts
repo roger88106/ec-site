@@ -1,7 +1,6 @@
-import { HttpResponse, http as mswHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
-import { http, problem, STORE_API, server } from '@/test/server'
+import { http, networkError, problem, STORE_API, server } from '@/test/server'
 
 /** 東京都 */
 const TOKYO = { code: '13', name: '東京都' }
@@ -31,7 +30,7 @@ describe('都道府県の市区町村の一覧を取る', () => {
     )
     expect(await listMunicipalities('48')).toBeNull()
 
-    server.use(mswHttp.get(`${STORE_API}/prefectures/:prefectureCode/municipalities`, () => HttpResponse.error()))
+    server.use(networkError('get', `${STORE_API}/prefectures/:prefectureCode/municipalities`))
     expect(await listMunicipalities('13')).toBeNull()
   })
 })
@@ -59,7 +58,7 @@ describe('郵便番号で住所を引く', () => {
   })
 
   test('AC-256 通信に失敗したら空の一覧を返す', async () => {
-    server.use(mswHttp.get(`${STORE_API}/postal-codes/:postalCode`, () => HttpResponse.error()))
+    server.use(networkError('get', `${STORE_API}/postal-codes/:postalCode`))
 
     expect(await findPostalCodeAddresses('1000001')).toEqual([])
   })

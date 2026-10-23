@@ -7,11 +7,8 @@ describe('ログインの後に戻る画面', () => {
     expect(safeReturnTo('/products?page=2&sort=NEWEST')).toBe('/products?page=2&sort=NEWEST')
   })
 
-  test('外のサイトへは戻さず、トップにする', () => {
+  test('戻ってよいパスでなければ（外のサイトなど）、トップにする。判定そのものは共有のパッケージのテストで確認する', () => {
     expect(safeReturnTo('https://evil.example.com/')).toBe('/')
-    expect(safeReturnTo('//evil.example.com/')).toBe('/')
-    expect(safeReturnTo('/\\evil.example.com/')).toBe('/')
-    expect(safeReturnTo('orders')).toBe('/')
   })
 
   test('指定がなければトップにする', () => {

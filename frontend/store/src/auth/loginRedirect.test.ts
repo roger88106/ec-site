@@ -1,6 +1,6 @@
 import { HttpResponse, http as mswHttp } from 'msw'
 import { NextRequest } from 'next/server'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { IDP, server } from '@/test/server'
 
 // Auth.js の本物のリクエストの処理で、IdP への移動の戻り先を確認する（ほかのテストは Auth.js を置き換えている）
@@ -44,9 +44,13 @@ function forgedRequest(path: string, init: { method?: string; body?: string; coo
   })
 }
 
-afterEach(() => {
-  vi.unstubAllEnvs()
-})
+/** Auth.js の /csrf の応答の本文から、CSRF token を取り出す */
+function csrfTokenOf(body: unknown): string {
+  if (typeof body === 'object' && body !== null && 'csrfToken' in body && typeof body.csrfToken === 'string') {
+    return body.csrfToken
+  }
+  throw new Error('Auth.js の /csrf の応答に csrfToken がない')
+}
 
 describe('ログインの戻り先', () => {
   test('AC-241 ログインで IdP へ移るときの戻り先は公開する URL から作り、リクエストヘッダーのホストを使わない', async () => {
@@ -55,7 +59,7 @@ describe('ログインの戻り先', () => {
     const { handlers } = await import('@/auth')
 
     const csrf = await handlers.GET(forgedRequest('/csrf'))
-    const { csrfToken } = (await csrf.json()) as { csrfToken: string }
+    const csrfToken = csrfTokenOf(await csrf.json())
     const cookie = csrf.headers
       .getSetCookie()
       .map((value) => value.split(';')[0])

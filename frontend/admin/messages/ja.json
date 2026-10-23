@@ -108,7 +108,8 @@
       "effectiveFrom": "適用開始",
       "effectiveTo": "適用終了",
       "state": "状態",
-      "add": "税率を追加"
+      "add": "税率を追加",
+      "row": "{number} 行目の税率"
     },
     "rateState": {
       "NEW": "新規",

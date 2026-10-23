@@ -1,11 +1,16 @@
 // @vitest-environment jsdom
-import { act, screen } from '@testing-library/react'
+import { act } from '@testing-library/react'
 import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { RemainingTime } from '@/features/checkout/components/RemainingTime'
 import { renderInBrowser } from '@/test/render'
 
 /** テストの現在時刻 */
 const NOW = new Date('2026-10-16T10:00:00Z')
+
+/** 画面に出ている文字の全て（探し方に左右されず、表示そのものを確認する） */
+function shownText() {
+  return document.body.textContent
+}
 
 describe('引当の残り時間', () => {
   beforeEach(() => {
@@ -20,12 +25,13 @@ describe('引当の残り時間', () => {
   test('残り時間を出し、1 秒ごとに数え直して、期限を過ぎると案内を替える', () => {
     renderInBrowser(<RemainingTime expiresAt="2026-10-16T10:00:02Z" />)
 
-    expect(screen.getByText('0:02')).toBeTruthy()
+    expect(shownText()).toBe('ご注文の商品の在庫を確保しています。残り 0:02')
 
     act(() => vi.advanceTimersByTime(1000))
-    expect(screen.getByText('0:01')).toBeTruthy()
+    expect(shownText()).toBe('ご注文の商品の在庫を確保しています。残り 0:01')
 
     act(() => vi.advanceTimersByTime(1000))
-    expect(screen.getByText(/在庫の確保の期限が切れました。/)).toBeTruthy()
+    expect(shownText()).toContain('在庫の確保の期限が切れました。')
+    expect(shownText()).not.toContain('残り')
   })
 })

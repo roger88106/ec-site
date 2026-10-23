@@ -18,6 +18,24 @@ export type ProductFieldConstraints = {
 }
 
 /**
+ * 操作の契約のスキーマ（登録・更新の要求）から、商品の項目の入力の制約を作る。
+ *
+ * @param schema 商品名・説明・税抜価格の制約を持つ要求のスキーマ
+ * @returns 商品名・説明の最大の長さと、税抜価格の最小の値
+ */
+export function productFieldConstraints(schema: {
+  name: { maxLength: number }
+  description: { maxLength: number }
+  priceExclTax: { minimum: number }
+}): ProductFieldConstraints {
+  return {
+    nameMaxLength: schema.name.maxLength,
+    descriptionMaxLength: schema.description.maxLength,
+    priceMinimum: schema.priceExclTax.minimum,
+  }
+}
+
+/**
  * 商品名、説明、税区分、税抜価格、所属カテゴリの入力欄（登録と編集で共通）。<br />
  * 外側の FormProvider のフォームに、これらの項目を持たせる。
  */

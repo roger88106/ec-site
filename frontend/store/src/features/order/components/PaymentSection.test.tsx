@@ -1,15 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
-import { ORDER_ID } from '@/test/fixtures'
+import { order } from '@/test/fixtures'
 import { renderMarkup } from '@/test/render'
 
-/** 支払待ちの注文 */
-const pending = {
-  id: ORDER_ID,
-  status: 'PENDING_PAYMENT' as const,
+/** 支払待ちの注文（支払える） */
+const pending = order({
+  status: 'PENDING_PAYMENT',
   paymentDeadline: '2026-10-10T15:35:00Z',
   actions: { requestCancellation: false, pay: true },
-}
+})
 
 describe('注文の支払', () => {
   test('AC-151、159 支払待ちなら、支払の期限と「支払う」を示す', () => {
@@ -26,7 +25,7 @@ describe('注文の支払', () => {
   })
 
   test('支払待ちでない注文で描くと、使い方の誤りとして例外にする', () => {
-    expect(() => renderMarkup(<PaymentSection order={{ ...pending, status: 'ACCEPTED' }} returned={false} />)).toThrow(
+    expect(() => renderMarkup(<PaymentSection order={order({ status: 'ACCEPTED' })} returned={false} />)).toThrow(
       '支払の欄を出さない状況で描かれた：ACCEPTED',
     )
   })

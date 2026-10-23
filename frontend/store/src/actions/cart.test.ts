@@ -1,11 +1,10 @@
-import { HttpResponse, http as mswHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import { addToCart, changeCartItemQuantity, removeCartItem, startCheckout } from '@/actions/cart'
 import { connectionFailedMessage } from '@/lib/actionResult'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
 import { CHECKOUT_ID, COOKIE_CART_ID, form, MEMBER_CART_ID, NEW_CART_ID, VARIANT_ID } from '@/test/fixtures'
 import { cookieOptions, cookieValue, redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
-import { http, problem, STORE_API, server } from '@/test/server'
+import { http, networkError, problem, STORE_API, server } from '@/test/server'
 
 /** カートに入れるフォーム */
 const addForm = () => form({ variantId: VARIANT_ID, quantity: '2' })
@@ -85,7 +84,7 @@ describe('カートに入れる（ゲスト）', () => {
 
   test('バックエンドにつながらなければ、通信の失敗を返す', async () => {
     resetRequest({ cookies: { cart_id: COOKIE_CART_ID } })
-    server.use(mswHttp.post(`${STORE_API}/carts/:cartId/items`, () => HttpResponse.error()))
+    server.use(networkError('post', `${STORE_API}/carts/:cartId/items`))
 
     expect(await addToCart(null, addForm())).toEqual({ ok: false, message: connectionFailedMessage() })
   })
@@ -131,7 +130,7 @@ describe('数量の変更と削除', () => {
     let body: unknown
     server.use(
       http.put('/carts/{cartId}/items/{variantId}', async ({ params, request, response }) => {
-        body = { ...params, ...((await request.json()) as object) }
+        body = { ...params, ...(await request.json()) }
         return response(204).empty()
       }),
     )

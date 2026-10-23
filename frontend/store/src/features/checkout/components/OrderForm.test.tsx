@@ -1,10 +1,12 @@
 // @vitest-environment jsdom
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import type { PostalCodeAddress, Prefecture } from '@/api/types'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
+import { input, select } from '@/test/elements'
+import { findTag } from '@/test/markup'
 import { renderInBrowser, renderMarkup } from '@/test/render'
 
 /** 注文のサーバーアクションの結果として、フォームに渡す値（null は送る前） */
@@ -53,7 +55,7 @@ function form(result: ActionResult | null = null) {
 
 /** 選んでいる値 */
 function selected(label: string): string {
-  return (screen.getByLabelText(label) as HTMLSelectElement).value
+  return select(label).value
 }
 
 /**
@@ -72,7 +74,7 @@ function fieldOf(html: string, label: string): string {
 
 /** 住所の欄の値 */
 function addressValue(): string {
-  return (screen.getByLabelText('住所') as HTMLInputElement).value
+  return input('住所').value
 }
 
 beforeEach(() => {
@@ -86,8 +88,8 @@ describe('お届け先の入力と注文', () => {
 
     expect(html).toContain('member@example.com')
     expect(html).toContain('ご注文の連絡は、会員のメールアドレスにお送りします。')
-    expect(html).toMatch(/<input [^>]*name="checkoutId"[^>]*value="checkout-1"/)
-    expect(html).toMatch(/<input [^>]*name="expectedTotal"[^>]*value="3200"/)
+    expect(findTag(html, 'input', { name: 'checkoutId' }).value).toBe('checkout-1')
+    expect(findTag(html, 'input', { name: 'expectedTotal' }).value).toBe('3200')
     for (const name of ['name', 'postalCode', 'prefectureCode', 'municipalityCode', 'address', 'phone']) {
       expect(html).toContain(`name="${name}"`)
     }
@@ -114,7 +116,9 @@ describe('お届け先の入力と注文', () => {
     expect(positions).toEqual([...positions].sort((a, b) => a - b))
     expect(html).toMatch(/<option[^>]* value="13"[^>]*>東京都<\/option>/)
     expect(html).toMatch(/<option[^>]* value="14"[^>]*>神奈川県<\/option>/)
-    expect(html).toMatch(/<option[^>]* disabled="" value="" selected="">選んでください<\/option>/)
+    // 先頭の「選んでください」は、選んでいて、選べない
+    expect(findTag(html, 'option', { value: '' })).toMatchObject({ disabled: '', selected: '' })
+    expect(html).toContain('>選んでください</option>')
   })
 
   test('AC-86 入力の誤りは、その欄の下に出す', () => {
@@ -227,6 +231,9 @@ describe('郵便番号で補う', () => {
     await user.type(screen.getByLabelText('郵便番号'), '9999999')
 
     await waitFor(() => expect(findPostalCodeAddresses).toHaveBeenCalledWith('9999999'))
+    // 結果（空の配列）の処理が終わってから、変わらないことを確認する
+    await vi.mocked(findPostalCodeAddresses).mock.results[0]?.value
+    await act(async () => {})
     expect(selected('都道府県')).toBe('')
     expect(addressValue()).toBe('')
     expect(document.body.textContent).toBe(textBefore)

@@ -1,16 +1,17 @@
 import type { Route } from 'next'
 import { describe, expect, test } from 'vitest'
 import { PageLinks } from '@/components/PageLinks'
+import { findTag } from '@/test/markup'
 import { renderMarkup } from '@/test/render'
 
-/** ページの URL */
+/** ページの URL（typedRoutes の Route は、実行時に作った文字を型で受け付けないため、型を合わせる） */
 const hrefFor = (page: number) => `/orders?page=${page}` as Route
 
 describe('ページ送り', () => {
   test('中のページでは、件数とページと、前後のページへのリンクを出す', () => {
     const html = renderMarkup(<PageLinks hrefFor={hrefFor} page={2} totalItems={45} totalPages={3} />)
 
-    expect(html).toContain('<nav aria-label="ページ"')
+    expect(findTag(html, 'nav', { 'aria-label': 'ページ' })).toBeDefined()
     expect(html).toContain('全 45 件　2 / 3 ページ')
     expect(html).toContain('href="/orders?page=1"')
     expect(html).toContain('href="/orders?page=3"')

@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（軸の組み合わせの一意性、公開の条件など、不変条件が多い） |
 | 依存 | 税（API）、メディア（API。商品画像のファイル） |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[013](../../specs/archive/mvp/013-backend-consistency)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[019](../../specs/archive/mvp/019-mvp-completion) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[013](../../specs/archive/mvp/013-backend-consistency)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[019](../../specs/archive/mvp/019-mvp-completion)、[155](../../specs/155-backend-structure) |
 
 ## 商品（集約）
 
@@ -150,11 +150,11 @@ catalog/
 ├── application/            # 商品・カテゴリ・バリアント・画像の操作、公開の切り替え、管理画面と店舗画面の参照
 │   ├── model/              # コマンド（command）、一覧の条件（query）、表示の型（view）
 │   └── port/               # 参照用リポジトリ、キーワード検索の窓口、税とメディアの腐敗防止層の port
-├── domain/
+├── domain/                 # 直下に、商品とカテゴリが使う表示順の再採番（DisplayOrders）
 │   ├── product/            # 商品（集約）、バリアント、画像、公開の状態、できる操作、エラー。vo/ はコードと価格と公開期間、port/ はリポジトリ
 │   └── category/           # カテゴリ（集約）、エラー。port/ はリポジトリ
 └── infrastructure/
-    ├── persistence/        # リポジトリと参照用リポジトリの実装、キーワード検索の実装（PostgreSQL）
+    ├── persistence/        # リポジトリと参照用リポジトリの実装、キーワード検索の実装（PostgreSQL）、LIKE の検索の文字の扱い（LikePatterns）
     └── directory/          # 税・メディアの腐敗防止層。税率の一覧のキャッシュ
 ```
 

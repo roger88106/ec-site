@@ -12,23 +12,22 @@
 
 ## 1. 共通コード（common/）
 
-`common/` と `config/` はモジュールではない（`application.yml` の `spring.modulith.detection-strategy: explicitly-annotated` により、`package-info.java` に `@ApplicationModule` を付けたパッケージだけがモジュールになる）。どのモジュールからも使える。
+`common/` と `config/` はモジュールではない（`application.yml` の `spring.modulith.detection-strategy: explicitly-annotated` により、`package-info.java` に `@ApplicationModule` を付けたパッケージだけがモジュールになる）。どのモジュールからも使える。`common/` と `config/` はモジュールに依存せず、モジュールも `config/` に依存しない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.1 節）。
 
 | パッケージ | 置くもの | 使う場面 |
 |------------|----------|----------|
-| `common/error/` | エラーの定義の基底。`ErrorCodeProvider`（各モジュールの `XxxErrorCode` が実装する）、`ErrorCode`、`ErrorType`（HTTP ステータスを決める種類）、全モジュール共通の `CommonErrorCode`、形の検証の誤りを業務のエラーに対応づける `ValidationErrorMapping` | モジュールのエラーの定義を作る。メッセージのキーは `ErrorCodeProvider.errorCode` が作る |
+| `common/error/` | エラーの定義の基底。`ErrorCodeProvider`（各モジュールの `XxxErrorCode` が実装する）、`ErrorCode`、`ErrorType`（HTTP ステータスを決める種類）、全モジュール共通の `CommonErrorCode`、エラーのコードとメッセージを組にした `ErrorDetail`、形の検証の誤りを業務のエラーに対応づける `ValidationErrorMapping` | モジュールのエラーの定義を作る。メッセージのキーは `ErrorCodeProvider.errorCode` が作る |
 | `common/error/exception/` | 例外の基底 `BaseException`、業務の例外 `BusinessException`、システムの例外 `SystemException` | 業務の規則の違反は `BusinessException.of(...)` で投げる |
 | `common/error/handler/` | `GlobalExceptionHandler`（例外を Problem Details に変換する唯一の場所）、`TraceIdResolver`、`ValidationMessages`（入力の検証の文を作る） | 業務のコードは直接使わない。第 3 節 |
 | `common/message/` | `MessageHelper`（メッセージのコードとパラメータから日本語の文を作る）、`I18nMessage`、`ErrorMessage` | エラーの定義と例外が持つ。エラー以外の文（メールの文面など）は `MessageHelper` で作る |
 | `common/model/base/` | 集約の基底 `AggregateRoot`、`DomainEvent`、集約の版の比較と復元の失敗の扱い `AggregateGuards` | 集約とイベントを定義する |
-| `common/model/value/` | 規則を持つ共通の値。`Money`（円）、`BoundedText`（長さの判定。code point で数える）、`BusinessTime`（業務の日付に切る時間帯）、`DisplayOrders`（表示順の再採番）、`Operator`（操作した運営者の写し） | 金額、文字の項目、業務の日付、操作の記録 |
+| `common/model/value/` | 規則を持つ共通の値。`Money`（円）、`BoundedText`（長さの判定。code point で数える）、`BusinessTime`（業務の日付に切る時間帯）、`Operator`（操作した運営者の写し） | 金額、文字の項目、業務の日付、操作の記録 |
 | `common/paging/` | `PageRequest`（ページは 1 始まり、件数は既定 20・最大 100）、`PageResult` | 一覧の API。応答の型への変換は presentation で行う |
-| `common/persistence/` | `ConstraintViolationTranslator`（DB の制約の違反を業務のエラーに変える）、`LikePatterns`（`LIKE` のワイルドカードのエスケープ） | リポジトリの実装 |
+| `common/persistence/` | `ConstraintViolationTranslator`（DB の制約の違反を業務のエラーに変える） | リポジトリの実装 |
 | `common/presentation/` | `ApiDateTimes`（API の日時と `Instant` の変換）、`CreatedResponses`（作成の応答 201）、`StorePrices`（店舗 API の税込・税抜の価格） | Controller と応答への変換 |
 | `common/security/` | `CurrentMember`（店舗 API の token の会員）、`CurrentOperator`（管理 API の token の運営者）、`AuthenticatedMember` | presentation 層で呼び出し元を取り出す。Spring Security の型は application・domain に出さない（[バックエンドのアーキテクチャ](backend-architecture.md) 第 7.2 節） |
 
-- common に置く基準は、コードに書かれていない（`common/` と `config/` に `package-info.java` もない）。書き方の文書にある規則は、共通の値（`common/model/value/`）にするのは 2 つ以上のモジュールで使い、規則を持つものだけ、という 1 つだけ（[バックエンドの書き方](../rules/backend-coding.md) 第 1.5 節）。そのほかのパッケージは、2 つ以上のモジュールが使うものを置く。
-- 現状では、`LikePatterns` と `DisplayOrders` を使うのは `catalog` だけ（`module/` の参照を調べた）。
+- common に置く基準は、2 つ以上のモジュールが使うものだけ（[バックエンドの書き方](../rules/backend-coding.md) 第 1.5 節）。
 
 ## 2. 設定（config/）
 
@@ -38,10 +37,10 @@
 | `ApiPathConfig` | 生成したインターフェースの実装に付ける API のパスのプレフィックス（管理 API は `/api/admin`、店舗 API は `/api/store`） |
 | `ValidationConfig` | Bean Validation のバリデーター。制約のメッセージを `messages.properties` から解決する |
 | `OpenApiEnumConverterConfig` | クエリパラメータの文字列を、OpenAPI から生成した列挙型の `fromValue` で変換する |
-| `EventResubmissionConfig`、`EventResubmissionJob`、`EventPublicationRecords`、`EventPublicationMetrics` | 未完了のイベントを定期ジョブで再発行し、止めたイベントに印を付け、件数をメトリクスとして公開する |
-| `EventCleanupConfig`、`EventCleanupJob` | 処理の済んだイベントの記録を、保存期間を過ぎたら削除する |
+| `event/` の `EventResubmissionConfig`、`EventResubmissionJob`、`EventPublicationRecords`、`EventPublicationMetrics` | 未完了のイベントを定期ジョブで再発行し、止めたイベントに印を付け、件数をメトリクスとして公開する |
+| `event/` の `EventCleanupConfig`、`EventCleanupJob` | 処理の済んだイベントの記録を、保存期間を過ぎたら削除する |
 | `SchedulingConfig`、`SchedulerLockConfig` | 定期ジョブの起動（`ecsite.scheduling.enabled`）と、同じジョブを 1 インスタンスだけで動かす分散ロック |
-| `security/` | 認証・認可。filter chain（`SecurityConfig`）、token の検証（`RealmKeys`）、権限の変換（`PermissionConverter`）、管理 API の権限（`AdminOperationPermissions`、`AdminPermissionAuthorizationManager`）、店舗 API の token の要否（`StoreOperationSecurity`、`StoreTokenAuthorizationManager`）、認証・認可の失敗の応答（`SecurityProblemResponder`）、`GET /me`（`MeController`） |
+| `security/` | 認証・認可。filter chain（`SecurityConfig`）、token の検証（`RealmKeys`）、権限の変換（`PermissionConverter`）、管理 API の権限（`AdminOperationPermissions`、`AdminPermissionAuthorizationManager`）、店舗 API の token の要否（`StoreOperationSecurity`、`StoreTokenAuthorizationManager`）、認証・認可の失敗の応答（`SecurityProblemResponder`）、認証の設定の値の型（`SecurityProperties`）、契約の操作ごとの値の一覧（`OpenApiOperations`）、`GET /me`（`MeController`） |
 
 - イベント・ジョブ・分散ロックの動きと設定の値は [バックエンドのアーキテクチャ](backend-architecture.md) 第 5 節に書く。
 - 認証・認可の方式は [バックエンドのアーキテクチャ](backend-architecture.md) 第 7 節に、ロールと権限の対応は [ロールと権限の対応表](role-permissions.md) に書く。

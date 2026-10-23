@@ -24,7 +24,7 @@ function callbacks() {
   if (!config?.callbacks?.jwt || !config.callbacks.session) {
     throw new Error('auth.ts が Auth.js にコールバックを渡していない')
   }
-  return config.callbacks as Required<typeof config.callbacks>
+  return { jwt: config.callbacks.jwt, session: config.callbacks.session }
 }
 
 /** jwt コールバックの引数 */
@@ -197,7 +197,7 @@ describe('token の取り直し', () => {
       refresh_token: 'old-refresh',
     })
     expect(token).toMatchObject({ accessToken: 'new-access', refreshToken: 'new-refresh', idToken: 'id' })
-    expect((token as { expiresAt: number }).expiresAt).toBeGreaterThanOrEqual(now() + 299)
+    expect(token?.expiresAt).toBeGreaterThanOrEqual(now() + 299)
   })
 
   test('期限まで十分あれば、取り直さない', async () => {

@@ -187,7 +187,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 server.use(
   http.get('/tax-categories', ({ response }) => response(200).json({ items: [...] })),
   http.put('/tax-categories/{taxCategoryId}/rates', ({ response }) =>
-    response(409).json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。')),
+    conflict(response),
   ),
 )
 const { user } = renderApp('/tax-categories/<ID>')
@@ -198,12 +198,15 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
 | `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
+| `renderApp.tsx` の `ALL_PERMISSIONS`、`TEST_OPERATOR_NAME` | `ALL_PERMISSIONS` は運営者の権限の既定（全て）。`TEST_OPERATOR_NAME` はログインしている運営者の名前で、画面の表示の確認に使う |
 | `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
 | `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `problem(...)` | エラーレスポンスの本文を作る |
 | `getServerError(path)`、`getNetworkError(path)` | 契約にない応答（サーバーのエラー、通信の失敗）を返す、型のない MSW のハンドラーを作る（テストの書き方 第 4.2 節） |
 | `stockHandler(quantity)` | バリアントの在庫数の取得に、バリアントによらず同じ数で応答する。関数を渡すと、取得のたびに関数の戻り値で応答する |
 | `conflict(response)`、`Reply` | 更新の競合（409）の応答を返す。`Reply` は、条件で応答を変える関数の型で、その関数が返す応答は契約にあるものに限られる |
+| `reportServer.ts` の `serveReportBasics`、`SHIRT_ID` | レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する。会計年度は 4 月始まり、商品は T シャツ 1 つ（ID は `SHIRT_ID`）。結合テストだけで使う |
+| `setup.ts` | 全てのテストに共通の後始末。各テストの後に、`vi.restoreAllMocks()`（`vi.spyOn` で差し替えたものを戻す）、toast の消去、描画した部品の撤去、ハンドラーの初期化を行い、ハンドラーのない API が呼ばれていればテストを失敗させる |
 | `fixtures.ts` | 応答に使うデータ。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す |
 | `queries.ts` | 詳細の項目の値、一覧の行、一覧のセル（`getCell`）を、名前で探す。名前は、項目の値では項目名、行では行の名前、セルでは行の名前と列の見出し。テストのファイルでは DOM の位置を指定しない |
 | `download.ts` | ファイルのダウンロード（URL の作成とリンクのクリック）を差し替え、保存名と本文を返す。差し替えはテストの後に元の実装に戻される |

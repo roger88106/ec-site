@@ -31,6 +31,7 @@ vi.mock('next-intl/server', async () => {
   const { messages } = await import('@/i18n/messages')
   return {
     getTranslations: async (namespace?: string) =>
+      // 名前空間は文字だが、型は messages にある名前空間だけを受け付けるため、型を合わせる
       createTranslator({ locale: LOCALE, messages, namespace: namespace as never }),
   }
 })

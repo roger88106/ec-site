@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import { PageLinks } from '@/components/PageLinks'
 import { renderMarkup } from '@/test/render'
 
-/** ページの URL */
+/** ページの URL（typedRoutes の Route は、実行時に作った文字を型で受け付けないため、型を合わせる） */
 const hrefFor = (page: number) => `/orders?page=${page}` as Route
 
 describe('ページ送り', () => {

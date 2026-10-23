@@ -42,7 +42,7 @@ description: ec-site のフロントに画面や操作を追加するときの�
 | `messages/ja.json` | 共有の文言（`common`） | 2 つの画面で同じ文言。列挙の表示名、「すべて」、接続の失敗など |
 | `scripts/export-constraints.mjs` | OpenAPI の入力の制約を、画面が使う定数のファイルに書き出す。各画面の API の生成で使う | 画面の入力欄の制約。直接は実行せず、各画面の API 生成の script から実行する |
 
-※1：既定と違う書式（符号付き、率など）は使う画面の `lib/` に置き、ロケールは `lib/locale` から取る。
+※1：既定と違う書式（符号付き、率など）は使う画面の `lib/` に置き（1 つの機能だけで使うなら、その機能のディレクトリに置く。[フロントの書き方](../../../docs/rules/frontend-coding.md) 第 1.1 節）、ロケールは `lib/locale` から取る。
 
 ## 店舗画面（`frontend/store`）
 

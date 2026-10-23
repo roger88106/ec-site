@@ -36,8 +36,7 @@ describe('API の結果の取り出し', () => {
   test('エラーレスポンスにメッセージがなければ、状態を添えた決まりの文にする', () => {
     const error = thrown(() => unwrap(result(500)))
 
-    expect(error).toMatchObject({ status: 500 })
-    expect((error as Error).message).toContain('500')
+    expect(error).toMatchObject({ status: 500, message: expect.stringContaining('500') })
   })
 })
 

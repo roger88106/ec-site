@@ -49,6 +49,7 @@ describe('待つ時間の上限（店舗画面のサーバー → バックエ�
 
   test('AC-302 ログインの IdP への呼び出し（Auth.js の provider）は、上限を過ぎたら待つのをやめて失敗する', async () => {
     server.use(mswHttp.get(`${IDP}/.well-known/openid-configuration`, hang))
+    // Auth.js の provider の型は、options の customFetch（Symbol の鍵）を持たないため、型を合わせる
     const provider = authState.config?.providers?.[0] as { options: Record<symbol, typeof fetch> }
     const fetchWithLimit = provider.options[customFetch]
 

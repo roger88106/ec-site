@@ -169,9 +169,10 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
   - 依存：なし
   - 範囲：`docs/constitution.md`、`docs/rules/notation.md`、`.claude/skills/docs/SKILL.md`
   - 結果：constitution の「プロジェクトの位置づけ」「認証・認可」「CI/CD」の節を要点 3 つにまとめ（全体構成と、CI とブランチの文書への案内を付けた）、CI の要点を「文書だけの push では CI の検査の script の全てを実行する」に直した。店舗画面のテスト、`guides/` の説明、公開ネットワークの前提の参照（バックエンドのアーキテクチャの前提の一覧）も直し、使われていない【提案】を constitution と文書の記号と番号から除いた。文書の記号と番号の節は「モジュールの設計書の記号」にし、レベルはバックエンドのアーキテクチャの第 2 節へのリンクにした。skill `docs` の置き場所の表にもブランチとリリースを足した。
-- [ ] **T156-02-04** 書き方の規則と API の規約を修正する（DC-156-16〜18、21、23、38）。
+- [x] **T156-02-04** 書き方の規則と API の規約を修正する（DC-156-16〜18、21、23、38）。
   - 依存：なし
   - 範囲：`docs/rules/backend-coding.md`、`api-conventions.md`、`comments.md`、`test-writing.md`
+  - 結果：メッセージのキーの例を実在する `TOO_MANY_CART_ITEMS` に直し、OpenAPI に書かない例外に物流の通知と mock の物流の画面を加えた。mock の支払画面に拒否の操作の応答を足し、コメントの規則の一覧を 3 列（確認方法あり）にした。契約テストの「対象の AC」は、AC 一覧の「テスト」の列を正とし、表は例だと示して、「（spec 012）」を除いた。
 - [ ] **T156-02-05** 環境変数と CI の検査の文書、フロントのアーキテクチャを修正する（DC-156-15、19、20）。
   - 依存：T156-02-03（constitution の CI の要点と食い違わないようにするため。DC-156-14）
   - 範囲：`docs/guides/environment.md`、`docs/guides/ci.md`、`docs/design/frontend-architecture.md`

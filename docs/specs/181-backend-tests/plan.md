@@ -1,6 +1,6 @@
 # Plan 181：バックエンドのテストを強める
 
-ステータス：承認待ち（tasks 作成済み）　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 前提：spec 181 が確定した。文書の書き方は skill `docs` と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`。
 

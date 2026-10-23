@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMissing, isExclusionNeeded, parseGlossaryIds } from './glossary-ids.mjs'
+import { findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryIds } from './glossary-ids.mjs'
 
 const GLOSSARY = [
   '| 用語 | 識別子 | 意味 |',
@@ -43,5 +43,16 @@ describe('用語集の識別子の検査', () => {
     const ids = ['develop', 'Order']
     assert.equal(isExclusionNeeded('develop', ids), true)
     assert.equal(isExclusionNeeded('removed-name', ids), false)
+  })
+
+  test('検査の script のテストと例の文字、使わない語の一覧、除外の一覧は、コードの根拠にしない', () => {
+    assert.equal(isSearchedFile('scripts/ci/glossary-ids.test.mjs'), false)
+    assert.equal(isSearchedFile('scripts/ci/report/testdata/pit-mutations.xml'), false)
+    assert.equal(isSearchedFile('scripts/ci/doc-terms.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/glossary-ids-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/glossary-ids.mjs'), true)
+    assert.equal(isSearchedFile('scripts/dev/lib/slot.test.mjs'), true)
+    assert.equal(isSearchedFile('backend/ecsite/src/Foo.java'), true)
+    assert.equal(isSearchedFile('frontend/store/logo.png'), false)
   })
 })

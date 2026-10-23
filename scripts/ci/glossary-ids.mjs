@@ -14,11 +14,25 @@ const GLOSSARY = 'docs/design/glossary.md'
 /** 調べる場所 */
 const SEARCH_ROOTS = ['backend', 'frontend', 'api', 'docker', 'e2e', 'scripts']
 
-/** 除外の一覧。除外の名前が自分に当たって見つかったことにならないよう、調べない */
-const EXCLUSIONS_FILE = 'scripts/ci/glossary-ids-exclusions.json'
+/**
+ * 検査の script 自身のファイル（テスト、テストのデータ、除外の一覧、使わない語の一覧）。
+ * 検査の script のテストと例の文字を根拠にすると、コードにない識別子が通るため、調べない。
+ * scripts/ci/ の本番の script（.mjs）と scripts/dev/ は、調べる。
+ */
+const SELF_FILES = /^scripts\/ci\/(?:.*\.test\.mjs$|(?:.*\/)?testdata\/|glossary-ids-exclusions\.json$|doc-terms\.json$)/
 
 /** 調べないファイル（生成物、画像など） */
 const SKIPPED = /\/(?:node_modules|build|dist|\.next|generated)\/|\.(?:png|jpe?g|webp|gif|ico|svg|woff2?|jar|lock)$|pnpm-lock\.yaml$/
+
+/**
+ * 識別子の根拠として調べるファイルかを返す。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 調べるなら true
+ */
+export function isSearchedFile(file) {
+  return !SKIPPED.test(file) && !SELF_FILES.test(file)
+}
 
 /**
  * 用語集の表の識別子の列から、バッククォートの中の名前を読む。
@@ -84,11 +98,11 @@ export function isExclusionNeeded(id, ids) {
   return ids.includes(id)
 }
 
-if (process.argv[1] ===fileURLToPath(import.meta.url)) {
+if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json'))
   const files = execSync(`git ls-files ${SEARCH_ROOTS.join(' ')}`, { encoding: 'utf8' })
     .split('\n')
-    .filter((file) => file && !SKIPPED.test(file) && file !== EXCLUSIONS_FILE && existsSync(file))
+    .filter((file) => file && isSearchedFile(file) && existsSync(file))
   // パスの形の識別子（docs/constitution.md など）は、リポジトリのすべてのファイルのパスにも当たる
   const allPaths = execSync('git ls-files', { encoding: 'utf8' })
   const contents = [allPaths, ...files.map((file) => readFileSync(file, 'utf8'))]

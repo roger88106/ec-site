@@ -2,7 +2,7 @@
 // テストのメソッド（@Test・@ParameterizedTest）の注釈のまとまりに @DisplayName がなければ失敗する。構文は解析しない。
 // 使い方：node scripts/ci/test-names.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** テストのコードの置き場所 */
@@ -50,6 +50,7 @@ export function findUnnamedTests(source) {
 
 if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => TEST_FILE.test(file))
+  exitIfNoFiles(files, 'テストのファイル')
   let count = 0
   for (const file of files) {
     for (const hit of findUnnamedTests(readFileSync(file, 'utf8'))) {

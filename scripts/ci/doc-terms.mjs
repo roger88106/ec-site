@@ -4,7 +4,7 @@
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown と、.github/ の yml・yaml と Markdown。
 // 使い方：node scripts/ci/doc-terms.mjs [--caution]（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** 調べる文書 */
@@ -74,6 +74,7 @@ if (isMain(import.meta.url)) {
   const list = JSON.parse(readFileSync(new URL('./doc-terms.json', import.meta.url), 'utf8'))
   const terms = caution ? list.caution : list.ng
   const files = listGitFiles().filter((file) => isTargetDoc(file))
+  exitIfNoFiles(files, '語を調べる文書')
   let count = 0
   for (const file of files) {
     for (const hit of findTerms(readFileSync(file, 'utf8'), terms)) {

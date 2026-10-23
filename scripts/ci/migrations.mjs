@@ -54,10 +54,45 @@ export function findEmptyReason(files, dir) {
  * --no-renames がないと、改名したファイルが追加として現れず、見落とす。
  *
  * @param {string} dir マイグレーションの置き場所
+ * @param {string} [revision] 履歴を読む起点。なければ HEAD
  * @returns {string[]} git に渡す引数
  */
-export function gitLogArgs(dir) {
-  return ['log', '--no-renames', '--diff-filter=A', '--name-only', '--format=%H', '--', dir]
+export function gitLogArgs(dir, revision = 'HEAD') {
+  return ['log', '--no-renames', '--diff-filter=A', '--name-only', '--format=%H', revision, '--', dir]
+}
+
+/**
+ * 改名・削除と中身の変更を判定する履歴の起点を決める。<br />
+ * まだ develop にも main にも入っていない自分のブランチのマイグレーションは、どの DB にも適用されていないので、振り直してよい。
+ * main に入ったもの（hotfix を含む）は、リリースに出るので、develop に入っていなくても守る。
+ * そのため、develop と main のそれぞれ（手元になければ CI の origin/ の方）との merge-base までの履歴で判定する。
+ * CI は fetch-depth: 0 で checkout し、origin/develop と origin/main も取得する。
+ * 片方の ref しかないときは、ある方で判定する。どちらもない、または merge-base を求められないとき（取得していない、履歴が繋がらない）は、
+ * 判定を弱めないために全ての履歴（HEAD）で判定する。
+ *
+ * @param {string} [cwd] 実行する場所（リポジトリの中）。なければ今のディレクトリ
+ * @returns {{ revisions: string[], bases: string[] }} 履歴の起点（commit。なければ HEAD だけ）と、使った ref（なければ空）
+ */
+export function resolveHistoryRevisions(cwd = process.cwd()) {
+  const revisions = []
+  const bases = []
+  for (const branch of ['develop', 'main']) {
+    for (const base of [`origin/${branch}`, branch]) {
+      try {
+        const ref = (base.includes('/') ? 'refs/remotes/' : 'refs/heads/') + base
+        execFileSync('git', ['rev-parse', '--verify', '-q', ref], { cwd, stdio: 'ignore' })
+        const revision = execFileSync('git', ['merge-base', 'HEAD', ref], { cwd, encoding: 'utf8' }).trim()
+        if (revision) {
+          revisions.push(revision)
+          bases.push(base)
+          break
+        }
+      } catch {
+        // この ref がない、または merge-base がない。次の候補を試す
+      }
+    }
+  }
+  return revisions.length === 0 ? { revisions: ['HEAD'], bases } : { revisions, bases }
 }
 
 /**
@@ -98,13 +133,24 @@ if (isMain(import.meta.url)) {
     process.exit(1)
   }
   // 各ファイルを追加した commit（1 回の git log で読む）
-  const addedIn = parseAddedLog(execFileSync('git', gitLogArgs(MIGRATIONS), { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }))
-  // 履歴にあって今ないバージョン付きのマイグレーション。ステージした削除と改名は、hook でも今の index に無いので見つかる
+  const history = resolveHistoryRevisions()
+  if (history.bases.length === 0) {
+    console.log('警告：develop と main（と origin/ の方）がどれもない（または履歴が繋がらない）ので、全ての履歴で判定する。自分のブランチで追加したマイグレーションの振り直しも失敗になる')
+  }
+  // どちらの履歴にもあるファイルは、先に読んだ方の commit を使う
+  const addedIn = new Map()
+  for (const revision of history.revisions) {
+    const log = execFileSync('git', gitLogArgs(MIGRATIONS, revision), { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+    for (const [file, commit] of parseAddedLog(log)) {
+      if (!addedIn.has(file)) addedIn.set(file, commit)
+    }
+  }
+  // 履歴（develop と main との分岐点まで）にあって今ないバージョン付きのマイグレーション。ステージした削除と改名は、hook でも今の index に無いので見つかる
   const removed = findRemovedMigrations([...addedIn.keys()].filter(isVersionedMigration), files)
   for (const file of removed) {
     console.log(`追加した後に削除か改名された（元に戻す）：${file}`)
   }
-  // commit の前の hook では、ステージした新しいマイグレーションはまだ履歴にない
+  // 分岐の後に追加したもの（commit の前の hook でステージしたものを含む）は、履歴にないので中身を見ない
   const readAdded = (file) =>
     !addedIn.has(file) ? null :
     execSync(`git show ${addedIn.get(file)}:"${file}"`, { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })

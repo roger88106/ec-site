@@ -2,7 +2,7 @@
 // 規則は言葉で書き、spec との対応はテストの名前に書く。テスト、生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /**
@@ -43,6 +43,7 @@ export function isProductionFile(file) {
 
 if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => isProductionFile(file))
+  exitIfNoFiles(files, '本番のコードのファイル')
   let count = 0
   for (const file of files) {
     for (const hit of findSpecNumbers(readFileSync(file, 'utf8'))) {

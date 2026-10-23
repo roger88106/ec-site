@@ -5,7 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
 import { isMain } from './lib/is-main.mjs'
@@ -50,6 +50,7 @@ export function scanSources(files, read) {
 if (isMain(import.meta.url)) {
   const exclusions = readExclusions(fileURLToPath(new URL('./hardcoded-text-exclusions.json', import.meta.url)))
   const files = listGitFiles(['frontend']).filter(isScreenSource)
+  exitIfNoFiles(files, '画面のソース')
   // 除外のファイルも読む。除外が要るのは、文言を直接書いた行があるファイルだけ
   const hitsByFile = scanSources(files, (file) => readFileSync(file, 'utf8'))
   const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))

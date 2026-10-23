@@ -23,7 +23,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { extractTestNames, findTestFiles } from './lib/test-files.mjs'
 import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
 import { isMain } from './lib/is-main.mjs'
 
@@ -369,7 +369,9 @@ function main() {
     }
   }
   const specAcs = new Set(definitions.map((definition) => definition.ac))
-  const tests = findTestFiles(root, listGitFiles([], root)).flatMap(({ file, kind }) =>
+  const gitFiles = listGitFiles([], root)
+  exitIfNoFiles(gitFiles, 'Git のファイル')
+  const tests = findTestFiles(root, gitFiles).flatMap(({ file, kind }) =>
     extractTestNames(readFileSync(file, 'utf8'), kind).map((name) => ({ file, name })),
   )
   const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))

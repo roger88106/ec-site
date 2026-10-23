@@ -4,7 +4,7 @@
 // 使い方：node scripts/ci/message-comments.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { closingParen } from './lib/closing-paren.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
@@ -120,6 +120,7 @@ export function isTargetFile(file) {
 
 if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => isTargetFile(file))
+  exitIfNoFiles(files, '文言を読むファイル')
   let count = 0
   for (const file of files) {
     for (const hit of findMissingComments(readFileSync(file, 'utf8'))) {

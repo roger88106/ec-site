@@ -6,7 +6,7 @@
 // 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
 // 次の commit の照合：node scripts/ci/related-specs.mjs --staged <メッセージのファイル>（commit-msg の hook から呼ぶ。ステージした文書とメッセージの 1 行目を照合する）
 import { execFileSync, spawnSync } from 'node:child_process'
-import { splitNulList } from './lib/git-files.mjs'
+import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -131,12 +131,13 @@ if (isMain(import.meta.url)) {
   const excludedPrefixes = Object.keys(exclusions)
   if (process.argv[2] === '--staged') checkStaged(process.argv[3], excludedPrefixes)
   exitIfShallow()
+  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'docs/*.md'], { encoding: 'utf8' }))
+  exitIfNoFiles(files, '文書')
   // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
   const merging = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { encoding: 'utf8' }).status === 0
   const allSubjects = execFileSync('git', historyLogArgs(merging), { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean)
   const { failures: exclusionProblems, warnings } = checkRelatedExclusions(exclusions, (prefix) => isPrefixUsed(prefix, allSubjects), process.env.CI === 'true')
   for (const line of [...exclusionProblems, ...warnings]) console.log(line)
-  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'docs/*.md'], { encoding: 'utf8' }))
   let count = 0
   for (const file of files) {
     const related = parseRelatedSpecs(readFileSync(file, 'utf8'))

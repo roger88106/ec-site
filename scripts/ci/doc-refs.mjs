@@ -6,7 +6,7 @@
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** 見ないファイル（当時の記録、直せないもの、この検査のテストの例） */
@@ -200,6 +200,7 @@ export function checkReferences(files, read, exists) {
 
 if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => TEXT_FILE.test(file) && !isExcluded(file))
+  exitIfNoFiles(files, '参照を調べる文書')
   const problems = checkReferences(files, (file) => readFileSync(file, 'utf8'), existsSync)
   for (const problem of problems) console.log(problem)
   console.log(`切れた参照：${problems.length}`)

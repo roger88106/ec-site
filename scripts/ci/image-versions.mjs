@@ -3,7 +3,7 @@
 // 版がずれると、手元（compose）と CI（Testcontainers）で別のイメージを動かすことになり、片方だけで起きる不具合を見逃す。
 // 使い方：node scripts/ci/image-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** compose のファイル */
@@ -152,10 +152,12 @@ export function findUnpinned(images) {
 /** Git の対象のファイルのうち、`SOURCE_PATHS` の下のものを読む */
 function readSourceFiles() {
   const paths = listGitFiles(SOURCE_PATHS).filter((path) => /\.(java|kts)$/.test(path))
+  exitIfNoFiles(paths, 'イメージのバージョンを書くファイル')
   return paths.map((path) => ({ path, text: readFileSync(path, 'utf8') }))
 }
 
 if (isMain(import.meta.url)) {
+  const files = readSourceFiles()
   let images
   try {
     images = readComposeImages(readFileSync(COMPOSE_FILE, 'utf8'))
@@ -163,7 +165,6 @@ if (isMain(import.meta.url)) {
     console.log(error.message)
     process.exit(1)
   }
-  const files = readSourceFiles()
   const { mismatches, unknown } = findImageProblems(images, files)
   const unpinned = findUnpinned(images)
   for (const item of mismatches) {

@@ -12,7 +12,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
 import { isMain } from './lib/is-main.mjs'
@@ -322,6 +322,7 @@ const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 if (isMain(import.meta.url)) {
   // E2E（e2e/）は、CSS のクラスの確認だけを見る。ほかの規則は frontend/ のファイルだけに当てる
   const files = listGitFiles(['frontend', 'e2e'])
+  exitIfNoFiles(files, 'フロントのファイル')
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'frontend-rules-exclusions.json'))
   let count = 0
   const report = (message) => {

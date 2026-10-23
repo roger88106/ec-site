@@ -4,7 +4,7 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 
@@ -74,6 +74,7 @@ export function scanTestFiles(files, read) {
 if (isMain(import.meta.url)) {
   const exclusions = readExclusions(fileURLToPath(new URL('./time-waits-exclusions.json', import.meta.url)))
   const files = listGitFiles().filter((file) => isTestFile(file))
+  exitIfNoFiles(files, 'テストのファイル')
   // 除外のファイルも読む。除外が要るのは、時間で待つ行があるファイルだけ
   const hitsByFile = scanTestFiles(files, (file) => readFileSync(file, 'utf8'))
   const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))

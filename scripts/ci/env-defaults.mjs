@@ -6,7 +6,7 @@
 // 時間は、書き方によらず同じ長さなら同じ値とみなす（1m と PT1M）。
 // 使い方：node scripts/ci/env-defaults.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
-import { splitNulList } from './lib/git-files.mjs'
+import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
 import { stripJavaComments } from './lib/strip-comments.mjs'
@@ -244,7 +244,9 @@ export function compareDefaults(code, doc) {
 }
 
 if (isMain(import.meta.url)) {
-  const entries = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'backend/ecsite/src/main/java/*.java'], { encoding: 'utf8' }))
+  const javaFiles = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'backend/ecsite/src/main/java/*.java'], { encoding: 'utf8' }))
+  exitIfNoFiles(javaFiles, '設定を読む Java のファイル')
+  const entries = javaFiles
     .map((file) => ({ file, source: readFileSync(file, 'utf8') }))
     .filter(({ source }) => stripJavaComments(source).includes('@ConfigurationProperties('))
   const { code, problems: unreadable } = readAllProperties(entries)

@@ -6,7 +6,7 @@
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { closingParen } from './lib/closing-paren.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 import { stripJavaComments } from './lib/strip-comments.mjs'
@@ -143,6 +143,7 @@ export function ruleFor(file) {
 
 if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => ruleFor(file) || isNullableTarget(file))
+  exitIfNoFiles(files, 'Java の規則の対象のファイル')
   const messages = { lombok: 'テストで Lombok を使う', 'enum-name': '列挙型の変換に name() を渡す' }
   let count = 0
   for (const file of files) {

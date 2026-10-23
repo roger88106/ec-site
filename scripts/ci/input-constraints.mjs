@@ -2,7 +2,7 @@
 // 制約は API の契約から書き出した定数（src/api/generated/constraints.ts）を使う。
 // 使い方：node scripts/ci/input-constraints.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource, SCREEN_APPS } from './lib/screen-sources.mjs'
 import { isMain } from './lib/is-main.mjs'
 
@@ -35,8 +35,9 @@ export function findLiterals(text) {
 }
 
 if (isMain(import.meta.url)) {
-  const found = listGitFiles(['frontend'])
-    .filter(isTarget)
+  const targets = listGitFiles(['frontend']).filter(isTarget)
+  exitIfNoFiles(targets, '入力の制約を調べるファイル')
+  const found = targets
     .flatMap((file) => findLiterals(readFileSync(file, 'utf8')).map((hit) => `${file}:${hit.line}  ${hit.text}`))
   // 他の検査と同じ形：違反を標準出力に出し、最後の行に要約を出す。直すときは src/api/generated/constraints.ts の定数を使う
   for (const line of found) console.log(line)

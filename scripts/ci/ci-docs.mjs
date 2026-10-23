@@ -4,7 +4,7 @@
 // 表にない検査と、検査のない表の行の両方を失敗にする。
 // 使い方：node scripts/ci/ci-docs.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** CI の検査の文書 */
@@ -66,7 +66,9 @@ export function compareChecks(tableNames, checkNames) {
 }
 
 if (isMain(import.meta.url)) {
-  const problems = compareChecks(readTableChecks(readFileSync(DOC, 'utf8')), listChecks(listGitFiles([CHECK_DIR])))
+  const checkFiles = listGitFiles([CHECK_DIR])
+  exitIfNoFiles(checkFiles, `検査（${CHECK_DIR}）`)
+  const problems = compareChecks(readTableChecks(readFileSync(DOC, 'utf8')), listChecks(checkFiles))
   for (const problem of problems) console.log(problem)
   console.log(`食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

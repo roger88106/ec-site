@@ -188,9 +188,10 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：`scripts/ci/time-waits.mjs`、`scripts/ci/hardcoded-text.mjs`、`scripts/ci/lib/strip-comments.mjs`、テスト
   - 結果：`time-waits` が E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助も読む。対象を広げて見つかった `e2e/scripts/run.ts` の sleep（ロックの待ち時間が 0 で実際には待たない）は、理由付きの除外の一覧（`time-waits-exclusions.json`）に置いた。`hardcoded-text` は既に共通の `stripComments` を使っていたので実装は変えず、行番号の回帰テストを加えた。今のリポジトリで 0 件で通り、ci.md の行を合わせた。
-- [ ] **T183-02-05** [テスト] マイグレーションの検査の改名・削除の判定を、`develop` との分岐点までの履歴に絞る。Git の一覧を読む全ての検査が、対象が 0 件のときに失敗にする（DC-183-18、19）。
+- [x] **T183-02-05** [テスト] マイグレーションの検査の改名・削除の判定を、`develop` との分岐点までの履歴に絞る。Git の一覧を読む全ての検査が、対象が 0 件のときに失敗にする（DC-183-18、19）。
   - 依存：T183-01-01、T183-02-04（同じ検査のファイルを変える）
   - 範囲：`scripts/ci/migrations.mjs`、`scripts/ci/lib/git-files.mjs`、Git の一覧を読む検査、テスト
+  - 結果：`migrations` が、`develop` と `main`（それぞれ `origin/` を先に見る）との merge-base までの履歴で判定し、どちらにも入っていない分岐の後のものの振り直しと中身の変更を通す。main にだけあるもの（hotfix）は守る（片方の ref だけならある方、どちらもなければ全ての履歴で判定して警告）。共通の `exitIfNoFiles` を 15 の検査に置き、一時リポジトリのテストを加えた。CI（docs.yml）は fetch-depth: 0 で origin/develop があるので workflow は変えていない。
 - [ ] **T183-02-06** [テスト] 実行環境のバージョンの検査が新しい job のバージョンの直書きを見つける。閉じ括弧の探し方とコメントの除去が、正規表現のリテラルを扱う（DC-183-20、21）。
   - 依存：T183-02-04（同じコメントの除去の関数）
   - 範囲：`scripts/ci/runtime-versions.mjs`、`scripts/ci/lib/strip-comments.mjs`、閉じ括弧を探す関数、テスト

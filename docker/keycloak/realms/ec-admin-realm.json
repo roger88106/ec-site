@@ -34,7 +34,7 @@
     "realm": [
       {
         "name": "administrator",
-        "description": "管理者：すべての権限",
+        "description": "管理者：全ての権限",
         "composite": true,
         "composites": {
           "client": {
@@ -51,7 +51,7 @@
       },
       {
         "name": "viewer",
-        "description": "閲覧者：参照の権限すべて",
+        "description": "閲覧者：参照の権限全て",
         "composite": true,
         "composites": {
           "client": {
@@ -63,7 +63,7 @@
       },
       {
         "name": "manager",
-        "description": "管理職：参照の権限すべてと、すべてのレポート",
+        "description": "管理職：参照の権限全てと、全てのレポート",
         "composite": true,
         "composites": {
           "client": {
@@ -76,7 +76,7 @@
       },
       {
         "name": "sales",
-        "description": "営業：参照の権限すべてと、売上の推移を除くレポート",
+        "description": "営業：参照の権限全てと、売上の推移を除くレポート",
         "composite": true,
         "composites": {
           "client": {

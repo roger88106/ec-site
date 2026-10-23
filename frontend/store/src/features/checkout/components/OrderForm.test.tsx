@@ -16,7 +16,7 @@ vi.mock('react', async (importOriginal) => {
   return { ...react, useActionState: () => [actionResult, () => {}, false] }
 })
 
-// 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確認する（店舗画面の構成 第 7 節 ※7）
+// 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確認する（店舗画面の構成 第 7 節 ※6）
 vi.mock('@/actions/region', () => ({ listMunicipalities: vi.fn(), findPostalCodeAddresses: vi.fn() }))
 
 /** API から取った都道府県の一覧（テストでは 3 つ） */

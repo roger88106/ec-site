@@ -106,7 +106,7 @@ stateDiagram-v2
 | port | 支払画面を作る、支払画面を閉じる、与信を取り消す、売上を確定する、返金する。売上確定の結果は、成功・与信期限切れ・接続できない、の 3 つに変換する。決済サービスの型とエラーは `infrastructure` の外に出さない |
 | 実装 | mock と Stripe。mock フラグ（`ecsite.payment.mock.enabled`）が有効なら mock、そうでなければ Stripe を使う。フラグが有効でなく、Stripe の鍵が不足していれば、起動に失敗する ※5 |
 | 支払画面から戻る先 | 店舗の注文の画面。URL は設定の雛形に注文 ID を入れて作る。要求から受け取らない ※3 |
-| 通知 | 決済サービスからの通知を受けて、与信の成功・支払画面の期限切れを支払に反映する。結果は通知だけで受け取り、支払画面から戻ったときに決済サービスに問い合わせない |
+| 通知 | 決済サービスからの通知（与信の成功、支払画面の期限切れ）を受けて、与信の成功と支払の期限切れを支払に反映する。結果は通知だけで受け取り、支払画面から戻ったときに決済サービスに問い合わせない |
 
 ※3：戻る先を要求から受け取ると、任意のサイトへ移す踏み台（オープンリダイレクト）にされるため。
 
@@ -127,7 +127,7 @@ stateDiagram-v2
 | ライブラリ | `stripe-java`。API のバージョンはライブラリのものに固定される |
 | 支払画面 | Checkout Session（`mode=payment`、`capture_method=manual`、通貨 JPY、金額は総額の 1 行）。支払画面 ID は Session の ID |
 | 画面の期限 | 作ってから 31 分（Stripe の最短の 30 分に、時計のずれの余裕を加える） |
-| 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、カードだけを有効にする。カードで払うウォレット（Apple Pay、Google Pay、Link）も与信だけを取れるが、MVP の後に再検討する |
+| 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、カードだけを有効にする（カードで払うウォレット（Apple Pay、Google Pay、Link）は有効にしない） |
 | 通知のエンドポイント | `POST /api/webhooks/stripe`。認証は付けず、署名（ヘッダー `Stripe-Signature`、鍵 `STRIPE_WEBHOOK_SECRET`）で確認する。署名が合わない・古い通知は 400 で拒否する |
 | 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../../guides/environment.md)） |
 | タイムアウト | 接続 5 秒、応答 20 秒（1 回の要求ごと）。通信の失敗は SDK が同じ冪等キーで 2 回まで再試行する |
@@ -137,7 +137,7 @@ stateDiagram-v2
 | 通知の種類 | 中身 | 反映 |
 |------------|------|------|
 | `checkout.session.completed` | Session の `status` は `complete`、`payment_status` は `unpaid`（与信だけで売上はまだ）。`payment_intent` が与信の ID | 与信の成功。与信の参照は `payment_intent` |
-| `checkout.session.expired` | 期限切れ、または画面を閉じた Session | 支払画面の期限切れ |
+| `checkout.session.expired` | 期限切れ、または画面を閉じた Session | 支払の期限切れ（支払の期限の後で未払いのときだけ。期限の前は無視し、期限切れのジョブに任せる） |
 | その他 | `payment_intent.*`、`charge.*` など | 受け付けて（200）、何もしない |
 
 - 消費者が支払画面を離れても、通知は送られない。Session は期限まで開いたまま。カードの拒否は画面に表示されるだけで、Session の通知は送られない。
@@ -165,7 +165,7 @@ stateDiagram-v2
 ```
 payment/
 ├── api/                    # 支払の作成・取消・売上確定、支払画面の URL、支払の参照、与信の期限
-├── event/                  # 与信の成功、支払画面の期限切れ
+├── event/                  # 与信の成功、支払の期限切れ
 ├── application/            # 支払の作成と参照、決済サービスの通知の反映、売上確定、支払画面、期限切れのジョブ、返金・与信取消の依頼のリスナー
 │   ├── model/              # 表示の型（view）
 │   └── port/               # 決済サービス、通知の受信、参照用リポジトリ
@@ -181,10 +181,12 @@ payment/
 
 | 種類 | 内容 | 利用者 |
 |------|------|--------|
-| API | 支払を作る、支払画面の URL を得る、取消、売上確定、支払の状態（注文 ID でまとめて）、与信期限と「期限が近い」（注文 ID でまとめて）、期限が近い注文 ID の一覧 | 注文 |
+| API | 支払を作る、支払画面の URL を得る、取消、売上確定、支払の状態（注文 ID でまとめて）、与信期限と「期限が近い」（注文 ID でまとめて）、期限が近い注文 ID の一覧、支払える（未払いで支払の期限の前の）注文 ID（注文 ID でまとめて） | 注文 |
 | イベント | 与信の成功、支払の期限切れ | 注文 |
 
 ## データモデル
+
+[V202610140910__payment_create_payment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610140910__payment_create_payment.sql)、[V202610150900__payment_add_authorized_at.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610150900__payment_add_authorized_at.sql)、[V202610201200__payment_add_awaiting_authorization_since.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201200__payment_add_awaiting_authorization_since.sql)
 
 - schema は `payment`。
 - 注文 ID は他のモジュールの ID なので、外部キーは張らない。注文 ID に一意制約を付ける。

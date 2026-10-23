@@ -11,7 +11,7 @@
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
 //   空白で区切った AC の並びがある（AC-1 AC-2。AC-1、AC-2 と書く）、
-//   テスト名を読めない test・it の呼び出し（名前が文字列でない、each の括弧が閉じない）がある、
+//   テスト名を読めない test・it の呼び出し（名前が文字列でない、each の括弧が閉じない、知らない修飾が付いている）がある、テストのファイルが 0 件、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
@@ -372,7 +372,12 @@ export function describeUnreadableTests(source, rel) {
 /** spec とテストを読んで照合する */
 function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
-  const root = path.resolve(here, '../..')
+  // 他の検査と同じく、リポジトリのルートで実行する（今のディレクトリを、読む対象のルートにする）
+  const root = process.cwd()
+  const gitFiles = listGitFiles([], root)
+  exitIfNoFiles(gitFiles, 'Git のファイル')
+  const testSources = findTestFiles(root, gitFiles)
+  exitIfNoFiles(testSources, 'テストのファイル')
   const specsDir = path.join(root, 'docs/specs')
   const definitions = []
   for (const { name, rel, dir } of listSpecDirs(specsDir)) {
@@ -383,10 +388,8 @@ function main() {
     }
   }
   const specAcs = new Set(definitions.map((definition) => definition.ac))
-  const gitFiles = listGitFiles([], root)
-  exitIfNoFiles(gitFiles, 'Git のファイル')
   const unreadable = []
-  const tests = findTestFiles(root, gitFiles).flatMap(({ file, kind }) => {
+  const tests = testSources.flatMap(({ file, kind }) => {
     const source = readFileSync(file, 'utf8')
     if (kind === 'ts') unreadable.push(...describeUnreadableTests(source, path.relative(root, file).replaceAll('\\', '/')))
     return extractTestNames(source, kind).map((name) => ({ file, name }))

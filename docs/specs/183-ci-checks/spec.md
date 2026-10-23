@@ -201,9 +201,11 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 範囲：`scripts/ci/ac-check.mjs`、テスト
   - 変更の前後で AC 一覧が変わらないか、変わる理由（今まで読めずに除かれていたテストが加わる）を結果に書く
   - 結果：テストの関数の読み方（lib/test-files）を、each の表を括弧の対応（closingParen）とテンプレートの表で読む形にし、読めない呼び出しを `ファイル:行：理由` で失敗にした。変更の前後で ac-check（テスト名 1825 件、AC 312 件、警告なし）と showcase-counts（1825 件）は同じで、今のリポジトリに読めない呼び出しはない。
-- [ ] **T183-02-08** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+- [x] **T183-02-08** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-02-01〜07
   - 結果（高）：閉じ括弧の探し方に正規表現を読まない指定を加えて Java（java-rules）で使い、TypeScript の正規表現の判定を直前の意味のある字で決める形にした。migrations は履歴の commit でなく、develop・main との分岐点の tree（分岐点が HEAD なら HEAD とその親）と今の index を比べる形にし、merge commit の後の改名で失敗しないことをテストで確認した。role-permissions は security の中の字下げ 8 以外の項目と項目のない `security:` を失敗にした。4 つの検査の今のリポジトリの結果は 0 件のまま。
+  - 結果：一般の観点を汎用で 2 回（高 0・1、必須 3・1）、重要な観点を高性能と汎用で（高 1・2、必須 1・0）レビューした。重複を除いて高 3 件、必須 5 件を修正した。
+  - 結果（必須）：テストの関数の読み方（lib/test-files）が test.for と skipIf・runIf・sequential・fails・todo を読み、知らない修飾の付いた test・it を読めない呼び出しとして失敗にした。互換の関数 parseProperties・parseOperations を削除し、テストを readProperties・readOperations に替えた。docs/guides/ci.md の lib の行と、5 つの検査（migrations、compose-ports、role-permissions、env-defaults、time-waits）と ac-check の先頭のコメントを今の振る舞いに合わせた。ac-check は script の場所をルートにしていたので、他の検査と同じく今のディレクトリをルートにし、テストのファイルが 0 件なら失敗にして、0 件の検査のテストの一覧に加えた。ac-check の結果（AC 312、テスト名 1825）は変わらない。
 
 ### 段階 3：CI と package の書き方、ローカルのポートの一覧
 

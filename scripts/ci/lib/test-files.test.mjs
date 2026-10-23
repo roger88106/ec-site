@@ -100,6 +100,39 @@ describe('テストの関数の読み方', () => {
     assert.match(problems[3].reason, /テスト名/)
   })
 
+  test('readTsTests は、test.for と skipIf・runIf・sequential・fails・todo の付いた呼び出しを読む', () => {
+    const source = [
+      "test.for([[1, 2]])('AC-1 表', () => {})",
+      "test.skipIf(isCi)('AC-2 条件で飛ばす', () => {})",
+      "test.runIf(isCi)('AC-3 条件で実行', () => {})",
+      "test.sequential('AC-4 順に', () => {})",
+      "test.fails('AC-5 失敗する', () => {})",
+      "it.todo('AC-6 後で')",
+    ].join('\n')
+    assert.deepEqual(
+      readTsTests(source).map(({ name, skipped }) => [name, skipped]),
+      [
+        ['AC-1 表', false],
+        ['AC-2 条件で飛ばす', false],
+        ['AC-3 条件で実行', false],
+        ['AC-4 順に', false],
+        ['AC-5 失敗する', false],
+        ['AC-6 後で', true],
+      ],
+    )
+    assert.deepEqual(findUnreadableTsTests(source), [])
+  })
+
+  test('findUnreadableTsTests は、知らない修飾の付いた test・it の呼び出しを失敗にする', () => {
+    const source = "test.shuffle('AC-1 知らない', () => {})\nit.unknown.only('AC-2 知らない', () => {})"
+    const problems = findUnreadableTsTests(source)
+    assert.deepEqual(
+      problems.map(({ index }) => index),
+      [0, source.indexOf('it.unknown')],
+    )
+    assert.match(problems[0].reason, /修飾/)
+  })
+
   test('findUnreadableTsTests は、テストの宣言でない呼び出しを失敗にしない', () => {
     const source = [
       "test.describe('まとまり', () => {})",

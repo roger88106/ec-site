@@ -1,7 +1,10 @@
 // 適用済みのマイグレーション（バージョン付きの V*.sql）を、追加した後に変えていないことを確認する。
 // Flyway は適用済みのマイグレーションの checksum を確認するので、コメントだけの変更でも、
 // 既に適用した DB で起動に失敗する（バックエンドの書き方、コメントの書き方 第 1 節）。
-// 新しい DB で動くテストと CI では見つからないので、ここで確認する。develop・main との分岐点を求めるので、shallow clone では失敗する。
+// 新しい DB で動くテストと CI では見つからないので、ここで確認する。
+// 基準は、HEAD と develop・main（origin/ の方を先に見る）のそれぞれとの分岐点の tree。基準にあるものが今の index にない（削除、改名）か、中身が違えば失敗にする。
+// まだ develop にも main にも入っていない自分のブランチで追加したものは、振り直してよい。
+// マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
 import { splitNulList } from './lib/git-files.mjs'

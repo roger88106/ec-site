@@ -1,5 +1,6 @@
 // ロールと権限の対応表（docs/design/role-permissions.md）が、API の契約と運営者の realm の設定と一致することを確認する。
 // 表は、管理 API の各操作の x-required-permission、運営者の realm のロール、店舗 API の各操作の security から作る。
+// 権限のない管理 API の操作、realm にない権限、契約の知らない書き方の行（読み飛ばさずに）、文書の表の食い違いで失敗にする。
 // 使い方：node scripts/ci/role-permissions.mjs（リポジトリのルートで。--write で文書の表を書き直す）
 import { readFileSync, writeFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
@@ -131,16 +132,6 @@ export function readOperations(text) {
 }
 
 /**
- * OpenAPI の契約から操作を読む（知らない書き方の行は読まない）。
- *
- * @param {string} text OpenAPI の契約
- * @returns {ReturnType<typeof readOperations>['operations']} 操作（契約の順）
- */
-export function parseOperations(text) {
-  return readOperations(text).operations
-}
-
-/**
  * 運営者の realm から、管理 API の権限を持つロールを読む。
  *
  * @param {object} realm realm の設定
@@ -174,7 +165,7 @@ function storeLogin(operation) {
 /**
  * 対応表の Markdown を作る。
  *
- * @param {{ admin: ReturnType<typeof parseOperations>, store: ReturnType<typeof parseOperations>,
+ * @param {{ admin: ReturnType<typeof readOperations>, store: ReturnType<typeof readOperations>,
  *   realm: ReturnType<typeof parseRealmRoles> }} input
  * @returns {{ markdown: string, problems: string[] }} 表と、契約と設定の食い違い
  */

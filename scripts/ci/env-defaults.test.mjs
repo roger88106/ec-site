@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { compareDefaults, normalizeValue, parseEnvTable, parseProperties, readAllProperties, readProperties } from './env-defaults.mjs'
+import { compareDefaults, normalizeValue, parseEnvTable, readAllProperties, readProperties } from './env-defaults.mjs'
 
 const JAVA = `
 @ConfigurationProperties("ecsite.payment")
@@ -26,7 +26,7 @@ const DOC = [
 
 describe('環境変数の文書と既定値の検査', () => {
   test('設定の型の record から、環境変数の名前と既定値を作る（入れ子の record を含む）', () => {
-    assert.deepEqual(parseProperties(JAVA), [
+    assert.deepEqual(readProperties(JAVA).properties, [
       { env: 'ECSITE_PAYMENT_DEADLINE', value: '30m' },
       { env: 'ECSITE_PAYMENT_EXPIRY_INTERVAL', value: '1m' },
       { env: 'ECSITE_PAYMENT_RETURN_URL', value: null },

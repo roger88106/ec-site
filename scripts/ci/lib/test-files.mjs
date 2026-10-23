@@ -34,7 +34,29 @@ export function findTestFiles(root, gitFiles) {
 }
 
 /** テストの呼び出しの連鎖に付けられる修飾（each は表を伴うので別に読む） */
-const TS_MODIFIERS = new Set(['serial', 'parallel', 'only', 'concurrent', 'skip', 'fixme'])
+const TS_MODIFIERS = new Set(['serial', 'parallel', 'only', 'concurrent', 'sequential', 'fails', 'skip', 'fixme', 'todo'])
+
+/** 条件を引数に取り、続けて名前を書く修飾（test.skipIf(条件)('名前', ...)） */
+const TS_CONDITIONS = new Set(['skipIf', 'runIf'])
+
+/** テストの宣言でない test・it の呼び出し（まとまり、フック、設定）。これ以外の知らない修飾は、読めない呼び出しにする */
+const TS_NON_DECLARATIONS = new Set([
+  'describe',
+  'step',
+  'use',
+  'extend',
+  'expect',
+  'info',
+  'setTimeout',
+  'slow',
+  'configure',
+  'beforeEach',
+  'afterEach',
+  'beforeAll',
+  'afterAll',
+  'onTestFinished',
+  'onTestFailed',
+])
 
 /** テストの呼び出しの始まり。前が . や語の文字のもの（/re/.test(...) など）は読まない */
 const TS_CALL_START = /(?<![.\w$])(?:it|test)(?![\w$])/g
@@ -120,10 +142,16 @@ function readTsCall(source, start, nameLength) {
     if (!modifier) return null
     pos += modifier[0].length
     if (TS_MODIFIERS.has(modifier[1])) {
-      skipped ||= modifier[1] === 'skip' || modifier[1] === 'fixme'
+      skipped ||= modifier[1] === 'skip' || modifier[1] === 'fixme' || modifier[1] === 'todo'
       last = modifier[1]
-    } else if (modifier[1] === 'each') {
-      last = 'each'
+    } else if (TS_CONDITIONS.has(modifier[1])) {
+      last = modifier[1]
+      if (source[pos] !== '(') return { reason: `${modifier[1]} の条件の括弧がない` }
+      const close = closingParen(source, pos)
+      if (close >= source.length) return { reason: `${modifier[1]} の条件の括弧が閉じない` }
+      pos = close + 1
+    } else if (modifier[1] === 'each' || modifier[1] === 'for') {
+      last = modifier[1]
       if (source[pos] === '(') {
         const close = closingParen(source, pos)
         if (close >= source.length) return { reason: 'each の表の括弧が閉じない' }
@@ -135,8 +163,9 @@ function readTsCall(source, start, nameLength) {
         return null
       }
     } else {
-      // describe、step、use、beforeEach などは、テストの宣言でない
-      return null
+      // describe、step、use、beforeEach などは、テストの宣言でない。知らない修飾は、数えずに消えないよう読めない呼び出しにする
+      if (TS_NON_DECLARATIONS.has(modifier[1])) return null
+      return { reason: `知らない修飾 .${modifier[1]} が付いている（読み方を足すか、テストの宣言でない呼び出しに加える）` }
     }
   }
   TS_NAME.lastIndex = pos + 1 + /^\s*/.exec(source.slice(pos + 1))[0].length

@@ -4,6 +4,8 @@
 // 環境変数の名前は、接頭辞と項目の名前から作る（ecsite.payment の expiryInterval → ECSITE_PAYMENT_EXPIRY_INTERVAL）。
 // 文書の省略形（`ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えて、コードにある名前に合わせる。
 // 時間は、書き方によらず同じ長さなら同じ値とみなす（1m と PT1M）。
+// Java のコメントの中の注釈は読まない。設定の値のクラスを 1 つも読めないとき、読めないクラス（record でない、引数やプロパティが 0 件など）があるとき、
+// Java のファイルが 0 件のときも失敗にする。
 // 使い方：node scripts/ci/env-defaults.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
 import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
@@ -123,16 +125,6 @@ export function readProperties(source) {
     if (properties.length === before) problems.push(`record ${recordName} から、プロパティが 0 件しか読めなかった`)
   }
   return { properties, problems }
-}
-
-/**
- * 設定の型の record から、環境変数の名前と既定値を作る。
- *
- * @param {string} source Java のソース
- * @returns {{ env: string, value: string | null }[]} 環境変数の名前と既定値（既定値がなければ null）
- */
-export function parseProperties(source) {
-  return readProperties(source).properties
 }
 
 /**

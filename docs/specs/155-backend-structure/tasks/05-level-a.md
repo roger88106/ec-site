@@ -34,7 +34,7 @@ T155-05-01、02、04、08、09 は、変えるファイルが重ならないの�
 - [x] **T155-05-08** [P] reporting の domain を分ける。`domain/snapshot/` に ReportOrder、ReportOrderStatus、ReportCancellationKind、DeliveryStatus、HistoryKind、StatusHistoryEntry、ReportBuyerGender、HistoryStatus（8）を、`domain/sales/` に AgeGroup、Basis、DailySales、Granularity、ReportPeriod、SalesTrend、TrendBucket、TrendPoint、ReportGender（9）を置く。`ReportingErrorCode` は直下に残す。依存の向きが `sales` から `snapshot` への一方向であることを確認する。参照する 37 ファイルの import と、動かすクラスの単体テストの package 行を修正する（DC-155-41）。
   - 依存：なし
   - 範囲：`main/module/reporting/domain/`（17 クラス）、`main/module/reporting/application/`、`main/module/reporting/application/port/`、`main/module/reporting/infrastructure/`、`main/module/reporting/presentation/` の import、`test/module/reporting/domain/{AgeGroupTest,BasisTest,ReportPeriodTest,StatusHistoryEntryTest,ReportGenderTest}.java`、`it/module/reporting/` の import。`scripts/ci/report/testdata/pit-mutations.xml` は固定のテスト用データなので変えない。
-- [ ] **T155-05-09** [P] [リスク] 店舗の service に、クラス全体の `@Transactional(readOnly = true)` を付ける。理由：他のモジュールの結果を組み合わせる service は読み取り専用のトランザクションにするため（バックエンドの書き方 第 5.2 節）。外部サービスを呼ばないことと、全ての経路（商品の一覧、検索、詳細、カテゴリ、在庫の有無、カートの見積もり、店舗の情報）が既に読み取り専用であることを確認する（DC-155-42）。
+- [x] **T155-05-09** [P] [リスク] 店舗の service に、クラス全体の `@Transactional(readOnly = true)` を付ける。理由：他のモジュールの結果を組み合わせる service は読み取り専用のトランザクションにするため（バックエンドの書き方 第 5.2 節）。外部サービスを呼ばないことと、全ての経路（商品の一覧、検索、詳細、カテゴリ、在庫の有無、カートの見積もり、店舗の情報）が既に読み取り専用であることを確認する（DC-155-42）。
   - 依存：なし
   - 範囲：`main/module/storefront/application/StorefrontService.java`。統合テスト（`it/module/storefront/presentation/`）は、変更せず、テストが通ることを確認する。
 - [ ] **T155-05-10** [リスク] T155-05-09 の後のレビュー（profile「厚め」：高性能）。トランザクションの伝播（内側の読み取り専用が外側に加わる）、書き込みの経路がないこと、リクエストの間に接続を持つ影響を確認する。

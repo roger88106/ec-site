@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import {
+  blankComments,
   findEnumNameConversions,
   findEnumStringConversions,
   findLombok,
@@ -34,6 +35,36 @@ describe('バックエンドの書き方の検査', () => {
       '        return Status.valueOf(text);',
     ].join('\n')
     assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [1, 2])
+  })
+
+  test('改行を挟んだ valueOf(x.name()) も、呼び出しの始まりの行で見つける', () => {
+    const text = [
+      'class A {',
+      '    Status f() {',
+      '        return Status.valueOf(',
+      '            order.status().name());',
+      '    }',
+      '    Status g() {',
+      '        return PaymentStatus.fromValue(status.name()',
+      '        );',
+      '    }',
+      '}',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [3, 7])
+  })
+
+  test('valueOf の閉じ括弧より後ろの name() は、引数でないので見つけない', () => {
+    const text = [
+      'BigDecimal.valueOf(amount)',
+      '    .setScale(2)',
+      '    .add(of(status.name()));',
+      'Status.valueOf(x).name();',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text), [])
+  })
+
+  test('引数の途中に括弧があっても、引数が name() で終わる valueOf は見つける', () => {
+    assert.deepEqual(findEnumNameConversions('Status.valueOf(order.items().get(0).status().name());').map((hit) => hit.line), [1])
   })
 
   test('name() を渡さない valueOf は見つけない', () => {
@@ -120,5 +151,40 @@ describe('バックエンドの書き方の検査', () => {
     assert.equal(isNullableTarget('backend/ecsite/build/generated/openapi/src/main/java/com/ecsite/api/Foo.java'), false)
     assert.equal(isNullableTarget(`${base}/main/resources/application.yml`), false)
     assert.equal(isNullableTarget('frontend/admin/src/lib/foo.ts'), false)
+  })
+})
+
+describe('name() の変換の検査の境界', () => {
+  test('引数の途中の空白・改行・コメントを挟んだ呼び出しも見つけ、始まりの行を返す', () => {
+    const text = [
+      'Status.valueOf(order.status()',
+      '    .name());',
+      'Status.valueOf(order',
+      '  .status()',
+      '  .name());',
+      'Status.valueOf(',
+      '  // c',
+      '  order.status().name());',
+      'valueOf(/* c */ a.name());',
+      'Status.valueOf(order.status());',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [1, 3, 6, 9])
+  })
+
+  test('コメントの中だけにある呼び出しは見つけない。文字列の中の // はコメントにしない', () => {
+    const text = [
+      '// Status.valueOf(a.name());',
+      '/* Status.valueOf(a.name()); */',
+      'String url = "http://x"; Status.valueOf(a.name());',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [3])
+  })
+
+  test('コメントを同じ長さの空白に置き換え、行番号を保つ', () => {
+    const text = ['a /* x', 'y */ b // z', '"//w" \'"\' c'].join('\n')
+    const blanked = blankComments(text)
+    assert.equal(blanked.length, text.length)
+    assert.equal(blanked.split('\n').length, 3)
+    assert.equal(blanked, ['a     ', '     b     ', '"//w" \'"\' c'].join('\n'))
   })
 })

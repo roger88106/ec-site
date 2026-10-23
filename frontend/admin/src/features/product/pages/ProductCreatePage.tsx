@@ -93,6 +93,7 @@ export function ProductCreatePage() {
                   name="productCode"
                   render={({ field }) => (
                     <CodeInput
+                      aria-describedby="product-code-help product-code-error"
                       id="product-code"
                       maxLength={schemas.CreateProductRequest.productCode.maxLength}
                       onChange={field.onChange}
@@ -101,8 +102,8 @@ export function ProductCreatePage() {
                     />
                   )}
                 />
-                <FieldDescription>{t('productCodeHelp') /* 品番の形 */}</FieldDescription>
-                <FieldError errors={[form.formState.errors.productCode]} />
+                <FieldDescription id="product-code-help">{t('productCodeHelp') /* 品番の形 */}</FieldDescription>
+                <FieldError errors={[form.formState.errors.productCode]} id="product-code-error" />
               </Field>
               <ProductFields constraints={PRODUCT_FIELD_CONSTRAINTS} />
             </CardContent>

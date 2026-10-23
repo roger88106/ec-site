@@ -1,40 +1,15 @@
 // 文言をキーで引く所に、表示する内容のコメントがあることを確認する（コメントの書き方 第 6.1 節）。
-// キーだけでは画面に何が出るかを読めないため、`t('…')` の呼び出しの始めから、閉じ括弧のある行の終わりまでに、
+// キーだけでは画面に何が出るかを読めないため、`t('…')`・`translate('…')` の呼び出しの始めから、閉じ括弧のある行の終わりまでに、
 // コメント（/* */ か //）を求める。キーを組み立てる呼び出し（t(`…${x}`)）は、表示が値で変わるので見ない。
 // 使い方：node scripts/ci/message-comments.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { closingParen } from './lib/closing-paren.mjs'
+import { listGitFiles } from './lib/git-files.mjs'
+import { isScreenSource } from './lib/screen-sources.mjs'
 
-/** 文言の関数（t、tCommon など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
-const MESSAGE_CALL = /(?<![\w.$])t(?:[A-Z]\w*)?\(\s*(['"])([^'"]+)\1/g
-
-/**
- * 呼び出しの閉じ括弧の位置を返す。文字列の中の括弧は数えない。
- *
- * @param {string} text  ソース
- * @param {number} open  開き括弧の位置
- * @returns {number} 閉じ括弧の位置。見つからなければソースの終わり
- */
-function closingParen(text, open) {
-  let depth = 0
-  let quote = null
-  for (let i = open; i < text.length; i += 1) {
-    const ch = text[i]
-    if (quote) {
-      if (ch === '\\') i += 1
-      else if (ch === quote) quote = null
-    } else if (ch === "'" || ch === '"' || ch === '`') {
-      quote = ch
-    } else if (ch === '(') {
-      depth += 1
-    } else if (ch === ')') {
-      depth -= 1
-      if (depth === 0) return i
-    }
-  }
-  return text.length
-}
+/** 文言の関数（t、tCommon、translate など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
+const MESSAGE_CALL = /(?<![\w.$])(?:t(?:[A-Z]\w*)?|translate)\(\s*(['"])([^'"]+)\1/g
 
 /**
  * 呼び出しを含む JSX の式（{…}）が閉じ、後ろに別の JSX（式、要素、属性）が続く位置を返す。<br />
@@ -127,24 +102,23 @@ export function findMissingComments(text) {
   return missing
 }
 
+/** 2 つの画面の src の .tsx（テストと shadcn/ui の部品を除く）。src/test/ のテストの補助と generated/ の .tsx を含む */
+const SCREEN_TSX = /^frontend\/(?:admin|store)\/src\/.*\.tsx$/
+
 /**
- * 調べるファイルかを返す。
+ * 調べるファイルかを返す。画面の本番のソースの定義（lib/screen-sources.mjs）に加えて、
+ * 2 つの画面の src/test/ のテストの補助と generated/ の .tsx も見る。
+ * 理由：テストの補助や生成物にも画面の文言を書けるので、共通の定義に合わせて対象を狭めない。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 2 つの画面の src の .tsx（テストと shadcn/ui の生成物を除く）なら true
+ * @returns {boolean} 調べるなら true
  */
 export function isTargetFile(file) {
-  return (
-    /^frontend\/(?:admin|store)\/src\/.*\.tsx$/.test(file) &&
-    !/\.test\.tsx$/.test(file) &&
-    !file.includes('/components/ui/')
-  )
+  return isScreenSource(file) || (SCREEN_TSX.test(file) && !file.endsWith('.test.tsx') && !file.includes('/components/ui/'))
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && isTargetFile(file) && existsSync(file))
+  const files = listGitFiles().filter((file) => isTargetFile(file))
   let count = 0
   for (const file of files) {
     for (const hit of findMissingComments(readFileSync(file, 'utf8'))) {

@@ -71,3 +71,71 @@ describe('pnpm licenses list --json の結果の判定', () => {
     )
   })
 })
+
+describe('括弧と AND・OR を組み合わせた式の判定', () => {
+  const ok = (expression, name = 'some-package') => evaluate(expression, name, policy).ok
+
+  test('AND は OR より強く結ぶ', () => {
+    assert.equal(ok('MIT OR GPL-3.0-only AND AGPL-3.0-only'), true)
+    assert.equal(ok('GPL-3.0-only AND AGPL-3.0-only OR MIT'), true)
+    assert.equal(ok('GPL-3.0-only OR MIT AND AGPL-3.0-only'), false)
+  })
+
+  test('(A OR B) AND C は、C も通るときだけ通る', () => {
+    assert.equal(ok('(MIT OR GPL-3.0-only) AND ISC'), true)
+    assert.equal(ok('(MIT OR GPL-3.0-only) AND AGPL-3.0-only'), false)
+    assert.equal(ok('(GPL-3.0-only OR AGPL-3.0-only) AND (MIT)'), false)
+  })
+
+  test('A AND (B OR C) は、A が通り B か C が通るときだけ通る', () => {
+    assert.equal(ok('MIT AND (GPL-3.0-only OR ISC)'), true)
+    assert.equal(ok('GPL-3.0-only AND (MIT OR ISC)'), false)
+    assert.equal(ok('MIT AND (GPL-3.0-only OR AGPL-3.0-only)'), false)
+  })
+
+  test('入れ子と余分な空白を扱う', () => {
+    assert.equal(ok('  ( (MIT)  OR ( GPL-3.0-only AND ISC ) )  '), true)
+    assert.equal(ok('((GPL-3.0-only OR AGPL-3.0-only) AND MIT) OR GPL-3.0-only'), false)
+    assert.equal(ok('((GPL-3.0-only OR ISC) AND MIT) OR GPL-3.0-only'), true)
+  })
+
+  test('今の依存に多い式は、今と同じ結果になる', () => {
+    assert.equal(ok('MIT'), true)
+    assert.equal(ok('(MIT OR Apache-2.0)'), true)
+    assert.equal(ok('Apache-2.0 AND MIT'), true)
+    assert.equal(ok('(MIT AND Zlib)'), false)
+    assert.equal(ok('MPL-2.0 OR MIT'), true)
+  })
+
+  test('WITH を含む識別子は、1 つのライセンスとして扱う', () => {
+    const withException = { ...policy, allowed: [...policy.allowed, 'GPL-2.0 WITH Classpath-exception-2.0'] }
+    assert.equal(evaluate('(GPL-2.0 WITH Classpath-exception-2.0 OR GPL-3.0-only)', 'x', withException).ok, true)
+    assert.equal(evaluate('GPL-2.0 WITH Classpath-exception-2.0', 'x', policy).ok, false)
+  })
+})
+
+describe('解析できない式', () => {
+  const invalid = [
+    '(MIT',
+    'MIT)',
+    '((MIT)',
+    'MIT OR',
+    'OR MIT',
+    'MIT AND AND ISC',
+    'MIT OR OR ISC',
+    'MIT AND OR ISC',
+    '()',
+    'MIT ()',
+    '(MIT) (ISC)',
+    '   ',
+    '',
+  ]
+  for (const expression of invalid) {
+    test(`「${expression}」は理由つきで失敗にする`, () => {
+      const result = evaluate(expression, 'some-package', policy)
+      assert.equal(result.ok, false)
+      assert.equal(typeof result.reason, 'string')
+      assert.notEqual(result.reason, '')
+    })
+  }
+})

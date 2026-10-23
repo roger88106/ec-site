@@ -67,7 +67,9 @@ export function toggleValue(selection: Selection, axisIndex: number, value: stri
 
 /** 在庫状況の表示。「在庫あり」「在庫なし」だけで、販売停止も「在庫なし」とする */
 export function stockLabel(variant: Variant): string {
-  return isPurchasable(variant) ? translate('catalog.stock.available') : translate('catalog.stock.unavailable')
+  return isPurchasable(variant)
+    ? translate('catalog.stock.available') // 在庫あり
+    : translate('catalog.stock.unavailable') // 在庫なし
 }
 
 /**

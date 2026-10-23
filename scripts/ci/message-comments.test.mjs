@@ -90,16 +90,46 @@ describe('文言のキーのコメントの検査', () => {
   })
 })
 
-describe('調べるファイル', () => {
-  test('2 つの画面の src の .tsx を見る', () => {
-    assert.equal(isTargetFile('frontend/admin/src/features/tax/pages/TaxListPage.tsx'), true)
-    assert.equal(isTargetFile('frontend/store/src/app/page.tsx'), true)
+describe('translate の呼び出し', () => {
+  test("translate('…') のコメントのない呼び出しは出す", () => {
+    assert.deepEqual(findMissingComments("const label = translate('common.save')"), [{ line: 1, key: 'common.save' }])
   })
 
-  test('テストのファイル、components/ui/、.ts、共有パッケージは見ない', () => {
+  test("translate('…') のコメントのある呼び出しは通る", () => {
+    assert.deepEqual(findMissingComments("const label = translate('common.save') // 保存"), [])
+  })
+
+  test('キーを組み立てる translate と、名前の途中の translate( は見ない', () => {
+    // biome-ignore lint/suspicious/noTemplateCurlyInString: 検査の対象のソースの例
+    assert.deepEqual(findMissingComments('translate(`status.${s}`)'), [])
+    assert.deepEqual(findMissingComments("i18n.translate('a')"), [])
+  })
+})
+
+describe('調べるファイル', () => {
+  test('画面の本番のソース（2 つの画面と共有パッケージの .ts と .tsx）を見る', () => {
+    assert.equal(isTargetFile('frontend/admin/src/features/tax/pages/TaxListPage.tsx'), true)
+    assert.equal(isTargetFile('frontend/store/src/app/page.tsx'), true)
+    assert.equal(isTargetFile('frontend/store/src/lib/labels.ts'), true)
+    assert.equal(isTargetFile('frontend/shared/src/format.ts'), true)
+  })
+
+  test('テスト、components/ui/、共有の ui、generated/、src の外は見ない', () => {
     assert.equal(isTargetFile('frontend/admin/src/features/tax/pages/TaxListPage.test.tsx'), false)
     assert.equal(isTargetFile('frontend/admin/src/components/ui/sidebar.tsx'), false)
-    assert.equal(isTargetFile('frontend/store/src/lib/labels.ts'), false)
     assert.equal(isTargetFile('frontend/shared/src/ui/button.tsx'), false)
+    assert.equal(isTargetFile('frontend/admin/src/generated/api.ts'), false)
+    assert.equal(isTargetFile('frontend/admin/vite.config.ts'), false)
+  })
+})
+
+describe('調べるファイル（共通の定義より広い部分）', () => {
+  test('src/test/ のテストの補助と generated/ の .tsx も見る', () => {
+    assert.equal(isTargetFile('frontend/admin/src/test/renderApp.tsx'), true)
+    assert.equal(isTargetFile('frontend/store/src/test/render.tsx'), true)
+    assert.equal(isTargetFile('frontend/admin/src/generated/Foo.tsx'), true)
+    assert.equal(isTargetFile('frontend/admin/src/test/helper.ts'), false)
+    assert.equal(isTargetFile('frontend/admin/src/components/ui/sidebar.tsx'), false)
+    assert.equal(isTargetFile('frontend/admin/src/a.test.tsx'), false)
   })
 })

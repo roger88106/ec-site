@@ -138,20 +138,17 @@ function readTaskTexts(specDir) {
  */
 export function readArchivedTasks(specsDir) {
   const tasks = new Map()
-  const groupDir = path.join(specsDir, ARCHIVE_1TO10)
-  if (!existsSync(groupDir)) return tasks
-  for (const entry of readdirSync(groupDir, { withFileTypes: true })) {
-    if (!entry.isDirectory() || !/^\d+-/.test(entry.name)) continue
-    const specDir = path.join(groupDir, entry.name)
+  for (const { name, rel, dir: specDir } of listSpecDirs(specsDir)) {
+    if (!rel.startsWith(`${ARCHIVE_1TO10}/`)) continue
     const texts = readTaskTexts(specDir)
     if (texts) {
-      tasks.set(entry.name, countTasks(texts))
+      tasks.set(name, countTasks(texts))
       continue
     }
     // 規模 M は tasks のディレクトリがなく、spec.md の中にタスクの行がある
     const specFile = path.join(specDir, 'spec.md')
     // どちらにもなければ total が 0 のまま入れ、黙って飛ばさずに報告させる
-    tasks.set(entry.name, existsSync(specFile) ? countTasks([readFileSync(specFile, 'utf8')]) : { total: 0, done: 0 })
+    tasks.set(name, existsSync(specFile) ? countTasks([readFileSync(specFile, 'utf8')]) : { total: 0, done: 0 })
   }
   return tasks
 }
@@ -164,7 +161,7 @@ export function readArchivedTasks(specsDir) {
  */
 export function checkArchivedTasks(tasks) {
   return [...tasks.keys()]
-    .sort()
+    .sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
     .filter((name) => tasks.get(name).total === 0 || tasks.get(name).done < tasks.get(name).total)
     .map((name) =>
       tasks.get(name).total === 0

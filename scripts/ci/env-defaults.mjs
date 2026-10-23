@@ -5,7 +5,8 @@
 // 文書の省略形（`ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えて、コードにある名前に合わせる。
 // 時間は、書き方によらず同じ長さなら同じ値とみなす（1m と PT1M）。
 // 使い方：node scripts/ci/env-defaults.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
+import { splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -193,9 +194,7 @@ export function compareDefaults(code, doc) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const sources = execSync('git ls-files "backend/ecsite/src/main/java/*.java"', { encoding: 'utf8' })
-    .split('\n')
-    .filter(Boolean)
+  const sources = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'backend/ecsite/src/main/java/*.java'], { encoding: 'utf8' }))
     .map((file) => readFileSync(file, 'utf8'))
     .filter((source) => source.includes('@ConfigurationProperties('))
   const code = sources.flatMap(parseProperties)

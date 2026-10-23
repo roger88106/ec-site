@@ -48,7 +48,35 @@ function evaluateOne(license, name, policy) {
 }
 
 /**
- * ライセンスの式（SPDX の OR・AND と括弧）を判定する。OR はどれか 1 つ、AND はすべてが通れば通る。
+ * ライセンスの式を、丸括弧・AND・OR・識別子の並びに分ける。WITH などの演算子でない語は識別子の一部になる。
+ *
+ * @param expression ライセンスの式
+ * @returns 並び（括弧と演算子は文字列、識別子は { id }）
+ */
+function tokenize(expression) {
+  const tokens = []
+  let words = []
+  const flush = () => {
+    if (words.length > 0) {
+      tokens.push({ id: words.join(' ') })
+      words = []
+    }
+  }
+  for (const word of expression.replace(/([()])/g, ' $1 ').split(/\s+/).filter((w) => w !== '')) {
+    if (word === '(' || word === ')' || word === 'AND' || word === 'OR') {
+      flush()
+      tokens.push(word)
+    } else {
+      words.push(word)
+    }
+  }
+  flush()
+  return tokens
+}
+
+/**
+ * ライセンスの式（SPDX の OR・AND と括弧）を判定する。AND は OR より強く結ぶ。
+ * OR はどれか 1 つ、AND はすべてが通れば通る。解析できない式は通らない。
  *
  * @param expression ライセンスの式
  * @param name       部品の名前
@@ -56,17 +84,66 @@ function evaluateOne(license, name, policy) {
  * @returns 通るか、通らない理由
  */
 export function evaluate(expression, name, policy) {
-  const text = expression.trim().replace(/^\((.*)\)$/, '$1').trim()
-  const alternatives = text.split(/\s+OR\s+/)
-  if (alternatives.length > 1) {
-    const results = alternatives.map((alternative) => evaluate(alternative, name, policy))
+  const tokens = tokenize(expression)
+  let position = 0
+  const syntaxError = (message) => {
+    throw new SyntaxError(message)
+  }
+
+  const parseOr = () => {
+    const results = [parseAnd()]
+    while (tokens[position] === 'OR') {
+      position++
+      results.push(parseAnd())
+    }
     return results.find((result) => result.ok) ?? results[0]
   }
-  const parts = text.split(/\s+AND\s+/)
-  if (parts.length > 1) {
-    return parts.map((part) => evaluate(part, name, policy)).find((result) => !result.ok) ?? { ok: true }
+
+  const parseAnd = () => {
+    const results = [parsePrimary()]
+    while (tokens[position] === 'AND') {
+      position++
+      results.push(parsePrimary())
+    }
+    return results.find((result) => !result.ok) ?? { ok: true }
   }
-  return evaluateOne(text, name, policy)
+
+  const parsePrimary = () => {
+    const token = tokens[position]
+    if (token === undefined) {
+      return syntaxError('式が途中で終わっている')
+    }
+    if (token === '(') {
+      position++
+      const result = parseOr()
+      if (tokens[position] !== ')') {
+        return syntaxError('括弧が閉じていない')
+      }
+      position++
+      return result
+    }
+    if (typeof token === 'string') {
+      return syntaxError(`${token} の位置が正しくない`)
+    }
+    position++
+    return evaluateOne(token.id, name, policy)
+  }
+
+  try {
+    if (tokens.length === 0) {
+      return syntaxError('式が空')
+    }
+    const result = parseOr()
+    if (position < tokens.length) {
+      return syntaxError(`${tokens[position]?.id ?? tokens[position]} の位置が正しくない`)
+    }
+    return result
+  } catch (error) {
+    if (error instanceof SyntaxError) {
+      return { ok: false, reason: `解析できないライセンスの式（${expression.trim() || '空'}）：${error.message}` }
+    }
+    throw error
+  }
 }
 
 /**

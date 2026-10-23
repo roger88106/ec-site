@@ -6,9 +6,11 @@
 // - AC：spec.md（docs/specs/ の直下とアーカイブの下の spec）の定義の行（MVP の - **AC-n** と、1→10 の - **AC-7-1**）。
 //   2 つの形は別の AC として扱う（テスト名の AC-7-1 を AC-7 と読まない）
 // - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
-//   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない
+//   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない。
+//   skip・fixme のテストと、skip・fixme のまとまりの中のテストは数えない。Git の対象のファイルだけを読む
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
+//   空白で区切った AC の並びがある（AC-1 AC-2。AC-1、AC-2 と書く）、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
@@ -16,9 +18,12 @@
 //   spec と AC 一覧の AC が食い違うとき、状態が有効・変更・廃止でないとき、表が古いときに失敗する。
 //   表の要約・元の spec・テストの列は再作成する列で、--write で書き直す（状態・変えた spec・今の内容は残す）
 // ============================================================================
-import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
+import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { closingParen } from './lib/closing-paren.mjs'
+import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
+import { listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
@@ -26,6 +31,12 @@ const RANGE = '[〜～~]'
 
 /** AC の番号の書き方。MVP の `12` と、1→10 の `7-1`（spec の番号 ＋ 連番）の 2 つの形 */
 const AC_NUMBER = '[0-9]+(?:-[0-9]+)?'
+
+/** テスト名の中の AC の並び（`AC-1、2`、`AC-8〜10` など）に合う正規表現の元。1 つ目の括弧が、`AC-` の後の並び全体 */
+const AC_LIST_SOURCE = `AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`
+
+/** AC の番号だけに合う正規表現（`AC-` の後の全体） */
+const AC_NUMBER_ONLY = new RegExp(`^(${AC_NUMBER})$`)
 
 /**
  * AC の番号の文字列を、照合に使う値にする。MVP の `12` は数、1→10 の `7-1` は文字列のまま。
@@ -60,7 +71,7 @@ export function compareAc(a, b) {
  */
 export function parseSpecAcs(markdown) {
   const acs = new Set()
-  for (const match of markdown.matchAll(/^- \*\*AC-([0-9]+(?:-[0-9]+)?)\*\*/gm)) {
+  for (const match of markdown.matchAll(new RegExp(`^- \\*\\*AC-(${AC_NUMBER})\\*\\*`, 'gm'))) {
     acs.add(toAcKey(match[1]))
   }
   return acs
@@ -84,10 +95,22 @@ export function extractTestNames(source, kind) {
       .map((match) => match[1].replace(/\\(.)/g, '$1'))
   }
   // describe はテストのまとまりの名前なので読まない（test.describe も同じ）
+  // skip・fixme は実行されないので数えない（連鎖に入れない）。前が . や語の文字のもの（/re/.test(...) など）も数えない
   const call =
-    /\b(?:it|test)(?:\.(?:serial|parallel|only|skip|fixme|concurrent|each\([^)]*\)))*\(\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
-  return [...source.matchAll(call)].map((match) => match[2].replace(/\\(.)/g, '$1'))
+    /(?<![.\w$])(?:it|test)(?:\.(?:serial|parallel|only|concurrent|each\([^)]*\)))*\(\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
+  // 実行されないまとまり（describe.skip、describe.fixme、test.describe.skip、test.describe.fixme、xdescribe）の中は数えない。
+  // まとまりの範囲は、呼び出しの括弧の対応で求める
+  const skippedRanges = [...source.matchAll(SKIPPED_GROUP)].map((match) => {
+    const open = match.index + match[0].length - 1
+    return [open, closingParen(source, open)]
+  })
+  return [...source.matchAll(call)]
+    .filter((match) => !skippedRanges.some(([from, to]) => match.index > from && match.index < to))
+    .map((match) => match[2].replace(/\\(.)/g, '$1'))
 }
+
+/** 実行されないテストのまとまりの呼び出し。末尾の ( が、まとまりの範囲の始まり */
+const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescribe)\(/g
 
 /**
  * テスト名から AC 番号を取り出す。AC- の後に読点・カンマで並べた番号（AC- は先頭だけでもよい）を読む。
@@ -98,7 +121,7 @@ export function extractTestNames(source, kind) {
 export function parseAcRefs(name) {
   const acs = []
   const ranges = []
-  const list = new RegExp(`AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`, 'g')
+  const list = new RegExp(AC_LIST_SOURCE, 'g')
   const item = new RegExp(`(${AC_NUMBER})\\s*(${RANGE})\\s*(${AC_NUMBER})|(${AC_NUMBER})`, 'g')
   for (const [, numbers] of name.matchAll(list)) {
     for (const [, from, sign, to, single] of numbers.matchAll(item)) {
@@ -123,7 +146,7 @@ export function parseAcRefs(name) {
  * @returns 曖昧な並べ方の文字列
  */
 export function findAmbiguousAcLists(name) {
-  const list = new RegExp(`AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`, 'g')
+  const list = new RegExp(AC_LIST_SOURCE, 'g')
   const found = []
   for (const match of name.matchAll(list)) {
     // 範囲を含まない並びの区切りで分け、AC- が付かない数字だけの項目が、新しい形の直後にあるかを見る
@@ -132,6 +155,18 @@ export function findAmbiguousAcLists(name) {
     if (bad) found.push(match[0])
   }
   return found
+}
+
+/**
+ * テスト名から、空白（半角・全角）で区切った AC の並び（AC-1 AC-2）を取り出す。<br />
+ * 理由：複数の AC は読点で 1 つずつ並べる決まりで（AC-1、AC-2）、空白の並びは読み方が人によって分かれるため。
+ *
+ * @param name テスト名
+ * @returns 空白で区切った並びの文字列
+ */
+export function findSpacedAcLists(name) {
+  const list = new RegExp(`AC-${AC_NUMBER}(?:[\\s\\u3000]+AC-${AC_NUMBER})+`, 'g')
+  return [...name.matchAll(list)].map((match) => match[0])
 }
 
 /**
@@ -147,6 +182,7 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
   const covered = new Set()
   const ranges = []
   const ambiguous = []
+  const spaced = []
   const unknown = []
   const deprecatedRefs = []
   for (const test of tests) {
@@ -156,6 +192,9 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
     }
     if (findAmbiguousAcLists(test.name).length > 0) {
       ambiguous.push(test)
+    }
+    if (findSpacedAcLists(test.name).length > 0) {
+      spaced.push(test)
     }
     for (const ac of refs.acs) {
       if (!specAcs.has(ac)) {
@@ -170,9 +209,10 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
 
   const excluded = new Set()
   const invalidExclusions = []
-  for (const [key, reason] of Object.entries(exclusions)) {
-    const match = /^AC-([0-9]+(?:-[0-9]+)?)$/.exec(key)
-    if (!match || !specAcs.has(toAcKey(match[1])) || typeof reason !== 'string' || reason.trim() === '') {
+  const emptyReasons = new Set(findEmptyReasons(exclusions))
+  for (const key of Object.keys(exclusions)) {
+    const match = key.startsWith('AC-') ? AC_NUMBER_ONLY.exec(key.slice(3)) : null
+    if (!match || !specAcs.has(toAcKey(match[1])) || emptyReasons.has(key)) {
       invalidExclusions.push(key)
     } else {
       excluded.add(toAcKey(match[1]))
@@ -186,11 +226,12 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
     (!strict || missing.length === 0) &&
     ranges.length === 0 &&
     ambiguous.length === 0 &&
+    spaced.length === 0 &&
     unknown.length === 0 &&
     deprecatedRefs.length === 0 &&
     staleExclusions.length === 0 &&
     invalidExclusions.length === 0
-  return { ok, missing, ranges, ambiguous, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
+  return { ok, missing, ranges, ambiguous, spaced, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
 }
 
 /** AC 一覧の状態 */
@@ -211,7 +252,7 @@ const TEST_FILES_SHOWN = 3
  * @returns AC の定義（spec の順）
  */
 export function parseSpecAcDefinitions(markdown, spec, specPath = spec) {
-  return [...markdown.matchAll(/^- \*\*AC-([0-9]+(?:-[0-9]+)?)\*\*\s*(.*)$/gm)].map(([, number, text]) => {
+  return [...markdown.matchAll(new RegExp(`^- \\*\\*AC-(${AC_NUMBER})\\*\\*\\s*(.*)$`, 'gm'))].map(([, number, text]) => {
     // 最初の文：括弧の外の最初の句点まで
     let depth = 0
     let end = text.length
@@ -274,7 +315,8 @@ export function parseAcList(markdown) {
   const list = new Map()
   for (const line of markdown.split('\n')) {
     const cells = line.split('|').map((cell) => cell.trim())
-    const match = /^AC-([0-9]+(?:-[0-9]+)?)$/.exec(cells[1] ?? '')
+    const cell = cells[1] ?? ''
+    const match = cell.startsWith('AC-') ? AC_NUMBER_ONLY.exec(cell.slice(3)) : null
     if (match && cells.length >= 9) {
       list.set(toAcKey(match[1]), { status: cells[3], changedBy: cells[5], location: cells[6] })
     }
@@ -315,38 +357,20 @@ export function isStrict(env) {
   return env.CI === 'true'
 }
 
-/** テストを探さないディレクトリ */
-const SKIPPED_DIRS = new Set([
-  '.git',
-  '.gradle',
-  '.idea',
-  '.local',
-  '.next',
-  'build',
-  'coverage',
-  'dist',
-  'generated',
-  'node_modules',
-  'test-results',
-])
-
 /**
- * リポジトリの中のテストのファイルを探す。
+ * Git の対象のファイルから、テストのファイルを選ぶ。
  *
- * @param dir 探すディレクトリ
- * @returns テストのファイルと、その種類
+ * @param root     リポジトリのルート
+ * @param gitFiles Git の対象のファイル（ルートからの相対パス、/ 区切り）
+ * @returns テストのファイル（絶対パス）と、その種類
  */
-function findTestFiles(dir) {
+export function findTestFiles(root, gitFiles) {
   const files = []
-  for (const entry of readdirSync(dir, { withFileTypes: true })) {
-    const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) {
-      if (!SKIPPED_DIRS.has(entry.name)) {
-        files.push(...findTestFiles(full))
-      }
-    } else if (entry.name.endsWith('.java') && /[\\/]src[\\/](test|integrationTest)[\\/]/.test(full)) {
+  for (const rel of gitFiles) {
+    const full = path.join(root, rel)
+    if (rel.endsWith('.java') && /(^|\/)src\/(test|integrationTest)\//.test(rel)) {
       files.push({ file: full, kind: 'java' })
-    } else if (/\.test\.tsx?$|\.spec\.ts$/.test(entry.name)) {
+    } else if (/\.test\.tsx?$|\.spec\.ts$/.test(rel)) {
       files.push({ file: full, kind: 'ts' })
     }
   }
@@ -367,6 +391,9 @@ function report(result, root, strict) {
   }
   for (const test of result.ambiguous) {
     console.log(`曖昧な AC の並べ方（新しい形は AC-7-1、AC-7-2 と書く）：${where(test)}`)
+  }
+  for (const test of result.spaced) {
+    console.log(`空白で区切った AC の並び（AC-1、AC-2 と読点で 1 つずつ書く）：${where(test)}`)
   }
   for (const test of result.unknown) {
     console.log(`spec にない AC-${test.ac}：${where(test)}`)
@@ -396,10 +423,10 @@ function main() {
     }
   }
   const specAcs = new Set(definitions.map((definition) => definition.ac))
-  const tests = findTestFiles(root).flatMap(({ file, kind }) =>
+  const tests = findTestFiles(root, listGitFiles([], root)).flatMap(({ file, kind }) =>
     extractTestNames(readFileSync(file, 'utf8'), kind).map((name) => ({ file, name })),
   )
-  const exclusions = JSON.parse(readFileSync(path.join(here, 'ac-exclusions.json'), 'utf8'))
+  const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))
 
   // AC 一覧：手で書く列（状態など）を読み、テストの列を再作成して比べる
   const listFile = path.join(root, AC_LIST)

@@ -1,3 +1,5 @@
 {
-  "lib/utils.ts": "shadcn/ui の生成物が読む置き場所。中身は共有パッケージの cn を出し直す 1 行（spec 014 のレビュー結果）"
+  "lib/utils.ts": "shadcn/ui の生成物が読む置き場所。中身は共有パッケージの cn を出し直す 1 行",
+  "store:translate": "店舗画面の文言を渡す定義。共有の translate は共有の文言（common）だけを引くため、画面の文言と合わせたこちらを画面のコードが使う",
+  "admin:translate": "管理画面の文言を渡す定義。共有の translate は共有の文言（common）だけを引くため、画面の文言と合わせたこちらを画面のコードが使う"
 }

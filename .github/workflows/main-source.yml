@@ -28,17 +28,11 @@ jobs:
     timeout-minutes: 5
 
     steps:
+      # 判定の script を取り出す（pull request の merge commit。script を使うだけで、他のコードは実行しない）
+      - uses: actions/checkout@v7
+
       - name: 元のブランチの名前を確認する
         # ブランチの名前は信頼できない入力なので、run の中に直接展開せず、環境変数を経由する
         env:
           HEAD_REF: ${{ github.head_ref }}
-        run: |
-          case "$HEAD_REF" in
-            release-* | hotfix-*)
-              echo "元のブランチ ${HEAD_REF} は main に入れられる。"
-              ;;
-            *)
-              echo "::error::main に入れられるのは release- か hotfix- で始まるブランチだけ。元のブランチ「${HEAD_REF}」は入れられない。"
-              exit 1
-              ;;
-          esac
+        run: node scripts/ci/workflow/main-source.mjs "$HEAD_REF"

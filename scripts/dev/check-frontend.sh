@@ -63,10 +63,10 @@ run_step() {
   fi
 }
 
-# E2E（scripts/dev/e2e.sh）が実行中か。実行中を示すファイルがあり、その中のプロセスが動いていれば実行中
+# この作業ツリーの E2E が実行中か。E2E の入口（e2e/scripts/run.ts）のロックの所有者が、この作業ツリーで動いていれば実行中
+# （E2E は画面のビルドの結果を配るので、e2e.sh でも e2e/ の pnpm test でも、同じロックで守る）
 e2e_running() {
-  local running="$ROOT/.local/e2e-running"
-  [ -f "$running" ] && kill -0 "$(cat "$running")" 2>/dev/null
+  node "$ROOT/scripts/dev/lib/e2e-running.mjs"
 }
 
 app_steps=()
@@ -88,7 +88,7 @@ for app in "${apps[@]}"; do
     # E2E の実行中は、画面をビルドし直さない（E2E が配っている dist が入れ替わり、E2E が失敗するため）
     if [ "$step" = build ] && e2e_running; then
       failed=1
-      echo "FAIL $app build：E2E の実行中（.local/e2e-running）なので、ビルドしない。E2E が終わってから流し直す"
+      echo "FAIL $app build：E2E の実行中（E2E のロック）なので、ビルドしない。E2E が終わってから流し直す"
       continue
     fi
     run_step "$app $step" "$app-$step" bash -c "cd '$dir' && pnpm '$step'"

@@ -281,7 +281,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | カバレッジ | | テストで実行されたコードの割合（行・分岐）。基準の値から許容の幅を引いた値を下回ると CI が失敗する（[テストの書き方](../rules/test-writing.md) 第 1.2 節） |
 | mutation score | `backend-domain` | PIT で測る、テストが検出できた変異の割合（検出した変異 ÷ 全変異）。バックエンドの domain が対象（[テストの書き方](../rules/test-writing.md) 第 1.2 節） |
 | カバレッジの基準 | `scripts/ci/report/quality-baseline.json` | カバレッジと mutation score の、対象ごとの値と許容の幅（`tolerance`）。CI が今回の値と比べる（[CI の検査](../guides/ci.md) 第 3.1 節） |
-| mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使い、立てなければ本番の実装を使う。ローカルと E2E の設定だけで立てる |
+| mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使い、立てなければ本番の実装を使う（本番の実装がない物流は、起動に失敗する）。ローカルと E2E の設定だけで立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
 | テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗を起こす・呼ばれた操作を記録する操作を追加した実装。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
 | 業務ポート | `server.port` | API と mock の画面を提供するポート（ローカル 8080、E2E 8090）。公開するのはこのポートだけ |

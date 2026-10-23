@@ -113,7 +113,7 @@ ec-site/
 | 文書 | 内容 |
 |------|------|
 | [workflow.md](rules/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方、コードと文書の食い違い |
-| [notation.md](rules/notation.md) | spec・tasks の記号と番号 |
+| [notation.md](rules/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
 | [review.md](rules/review.md) | 書き方の規則の書き方とレビュー |
 | [comments.md](rules/comments.md) | コメントの書き方 |
 | [subagents.md](rules/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |

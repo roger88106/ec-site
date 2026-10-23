@@ -3,8 +3,9 @@ import { describe, expect, it } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { TaxCategory } from '@/api/types'
 import { taxCategory } from '@/test/fixtures'
+import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { http, problem, server } from '@/test/server'
+import { http, problem, type Reply, server } from '@/test/server'
 
 /** 税区分の登録の要求の本文（送った内容を確認する） */
 type CreateTaxCategoryRequest = components['schemas']['CreateTaxCategoryRequest']
@@ -24,15 +25,18 @@ const REDUCED = taxCategory({
  * 税区分の一覧と登録に応答する。登録の要求は requests に取っておく。<br />
  * 登録の応答は reply で決める。省略すると成功（201）にし、一覧に追加する。
  */
-function serveTaxCategories(initial: TaxCategory[], reply?: (body: CreateTaxCategoryRequest) => Response) {
+function serveTaxCategories(
+  initial: TaxCategory[],
+  reply?: Reply<'/tax-categories', 'post', CreateTaxCategoryRequest>,
+) {
   const state = { items: initial, requests: [] as CreateTaxCategoryRequest[] }
   server.use(
     http.get('/tax-categories', ({ response }) => response(200).json({ items: state.items })),
-    http.post('/tax-categories', async ({ request }) => {
+    http.post('/tax-categories', async ({ request, response }) => {
       const body = await request.json()
       state.requests.push(body)
       if (reply) {
-        return reply(body) as never
+        return reply(body, response)
       }
       const created = taxCategory({
         id: '00000000-0000-0000-0000-000000000003',
@@ -41,15 +45,10 @@ function serveTaxCategories(initial: TaxCategory[], reply?: (body: CreateTaxCate
         rates: [],
       })
       state.items = [...state.items, created]
-      return Response.json(created, { status: 201 }) as never
+      return response(201).json(created)
     }),
   )
   return state
-}
-
-/** 一覧の、名称で選んだ行 */
-function rowOf(name: string): HTMLElement {
-  return screen.getByRole('row', { name: new RegExp(`^${name} `) })
 }
 
 describe('税区分の一覧', () => {
@@ -57,14 +56,14 @@ describe('税区分の一覧', () => {
     serveTaxCategories([taxCategory(), REDUCED])
     renderApp(URL)
 
-    expect(await screen.findByRole('cell', { name: '標準' })).toBeInTheDocument()
-    expect(within(rowOf('標準')).getByRole('cell', { name: '10%' })).toBeInTheDocument()
-    expect(within(rowOf('標準')).getByRole('cell', { name: '1' })).toBeInTheDocument()
-    expect(within(rowOf('標準')).getByRole('button', { name: '税率を編集' })).toHaveAttribute(
+    const standardRow = within(await findRow('標準'))
+    expect(standardRow.getByRole('cell', { name: '10%' })).toBeInTheDocument()
+    expect(standardRow.getByRole('cell', { name: '1' })).toBeInTheDocument()
+    expect(standardRow.getByRole('button', { name: '税率を編集' })).toHaveAttribute(
       'href',
       `/tax-categories/${taxCategory().id}`,
     )
-    expect(within(rowOf('軽減')).getByRole('cell', { name: '0' })).toBeInTheDocument()
+    expect(within(getRow('軽減')).getByRole('cell', { name: '0' })).toBeInTheDocument()
   })
 })
 
@@ -85,10 +84,8 @@ describe('税区分の登録', () => {
   })
 
   it('AC-1 名称が重複していると、サーバーのエラーを出し、入力を残す', async () => {
-    serveTaxCategories([taxCategory()], () =>
-      Response.json(problem(409, 'TAX_CATEGORY_NAME_ALREADY_EXISTS', 'この名称の税区分はすでにあります。'), {
-        status: 409,
-      }),
+    serveTaxCategories([taxCategory()], (_, response) =>
+      response(409).json(problem(409, 'TAX_CATEGORY_NAME_ALREADY_EXISTS', 'この名称の税区分はすでにあります。')),
     )
     const { user } = renderApp(URL)
 

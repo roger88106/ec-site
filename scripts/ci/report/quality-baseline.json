@@ -6,7 +6,7 @@
         "tolerance": 0.1
       },
       "branch": {
-        "value": 85.53,
+        "value": 85.59,
         "tolerance": 0.3
       }
     },
@@ -42,7 +42,7 @@
     },
     "backend-domain": {
       "mutation": {
-        "value": 90.95,
+        "value": 91.02,
         "tolerance": 0
       }
     }

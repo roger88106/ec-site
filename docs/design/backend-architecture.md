@@ -59,6 +59,9 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - 依存の向き：presentation → application → domain ← infrastructure（domain は何にも依存しない）。
 - ドメインオブジェクトは jMolecules で明示し（`@AggregateRoot`、`@ValueObject`、`@Identity`）、状態は集約のメソッドで変更し、ドメインイベントを登録する。
 - 永続化は `toSnapshot()` で書き出し、Factory で再構築する。application が投げる例外は `BusinessException` / `SystemException` だけ。
+- 例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい ※3。今は在庫だけ。
+
+※3：在庫数の並行の更新を、集約を読んで書き戻さずに、DB の差分の加算と条件で守るため。この場合、状態を集約のメソッドで変える規則と、集約を jMolecules で明示する規則は当てはまらない。詳細は [在庫モジュール](modules/inventory.md)。
 
 ## 3. モジュール間の連携
 

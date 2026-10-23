@@ -22,7 +22,7 @@ T155-05-01、02、04、08、09 は、変えるファイルが重ならないの�
 - [x] **T155-05-04** [P] 商品カタログのイベントのリスナーが、Repository を直接使わない形にする。在庫の作成と削除を持つ用途の名前の service `StockRegistrationService`（`inventory/application/`）を作り、リスナーはそれに委譲する。冪等の作成（既にあれば何もしない）は変えない（DC-155-37）。
   - 依存：なし
   - 範囲：`main/module/inventory/application/CatalogEventHandler.java`（`:22,31,40,50`）、`main/module/inventory/application/StockRegistrationService.java`（新規）。`it/module/inventory/application/CatalogEventHandlerTest.java` は、変更せず、テストが通ることを確認する。
-- [ ] **T155-05-05** 在庫の設計書を今のコードに合わせる（DC-155-34。利用者が推奨の案を選んだ）。「在庫（集約）」の記述を、在庫数を DB の差分の加算で更新し、集約で読み書きしないことに修正する。バックエンドのアーキテクチャ 第 2 節とバックエンドの書き方 第 1.1 節のレベル A の定義に、「整合性を DB の更新の条件で保つモジュールは、集約のクラスを持たなくてよい」の例外と理由を書く。
+- [x] **T155-05-05** 在庫の設計書を今のコードに合わせる（DC-155-34。利用者が推奨の案を選んだ）。「在庫（集約）」の記述を、在庫数を DB の差分の加算で更新し、集約で読み書きしないことに修正する。バックエンドのアーキテクチャ 第 2 節とバックエンドの書き方 第 1.1 節のレベル A の定義に、「整合性を DB の更新の条件で保つモジュールは、集約のクラスを持たなくてよい」の例外と理由を書く。
   - 依存：なし（段階 4 の T155-04-04 の後に行う）
   - 範囲：`docs/design/modules/inventory.md`（`:7,11,13,16,40,105-106`）、`docs/design/backend-architecture.md`（バックエンドのアーキテクチャ 第 2 節）、`docs/rules/backend-coding.md`（バックエンドの書き方 第 1.1 節、`:68`）
 - [ ] **T155-05-06** エラーの定義を全て `domain/` の直下に置く。`CategoryErrorCode`、`ProductErrorCode`（catalog）、`InventoryErrorCode`、`OrderErrorCode`、`PaymentErrorCode`、`TaxErrorCode` を移し、参照する main、test、integrationTest、testFixtures の import と package 行を修正する。同じパッケージの package-private の参照は、移動後に import が必要になる。エラーのメッセージのキーが変わらないことを確認する（DC-155-38、39）。

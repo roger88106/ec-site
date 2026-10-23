@@ -71,7 +71,7 @@ module/<モジュール>/
 
 | レベル | 中身の違い |
 |--------|------------|
-| A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS） |
+| A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS）。例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい（今は在庫だけ。在庫数の並行の更新を、集約を読んで書き戻さずに、DB の差分の加算と条件で守るため） |
 | B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port は全て `application/port/`。CQRS なし。`application/model/` は必要なときだけ |
 
 層の中の役割：

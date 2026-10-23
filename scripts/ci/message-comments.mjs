@@ -4,38 +4,12 @@
 // 使い方：node scripts/ci/message-comments.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { closingParen } from './lib/closing-paren.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 
 /** 文言の関数（t、tCommon、translate など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
 const MESSAGE_CALL = /(?<![\w.$])(?:t(?:[A-Z]\w*)?|translate)\(\s*(['"])([^'"]+)\1/g
-
-/**
- * 呼び出しの閉じ括弧の位置を返す。文字列の中の括弧は数えない。
- *
- * @param {string} text  ソース
- * @param {number} open  開き括弧の位置
- * @returns {number} 閉じ括弧の位置。見つからなければソースの終わり
- */
-function closingParen(text, open) {
-  let depth = 0
-  let quote = null
-  for (let i = open; i < text.length; i += 1) {
-    const ch = text[i]
-    if (quote) {
-      if (ch === '\\') i += 1
-      else if (ch === quote) quote = null
-    } else if (ch === "'" || ch === '"' || ch === '`') {
-      quote = ch
-    } else if (ch === '(') {
-      depth += 1
-    } else if (ch === ')') {
-      depth -= 1
-      if (depth === 0) return i
-    }
-  }
-  return text.length
-}
 
 /**
  * 呼び出しを含む JSX の式（{…}）が閉じ、後ろに別の JSX（式、要素、属性）が続く位置を返す。<br />

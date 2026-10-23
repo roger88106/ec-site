@@ -73,3 +73,24 @@ describe('フロントの書き方の検査', () => {
     assert.deepEqual(duplicatedFiles(Object.keys(files), (file) => files[file], []), ['lib/utils.ts'])
   })
 })
+
+describe('ほかの機能の import の境界', () => {
+  test('括弧の後ろの改行、from と指定子の間の改行を挟んだ import も、始まりの行で見つける', () => {
+    const text = [
+      'const a = await import(',
+      "  '@/features/cart/x')",
+      'import {',
+      '  X,',
+      '} from',
+      "  '@/features/order/y'",
+      "import { Z } from '@/features/order/z'",
+    ].join('\n')
+    assert.deepEqual(findCrossFeatureImports(text, 'order').map((hit) => hit.line), [1])
+    assert.deepEqual(findCrossFeatureImports(text, 'cart').map((hit) => hit.line), [5, 7])
+  })
+
+  test('テンプレート文字列の動的 import は、${ を含まない固定の文字列だけを見る', () => {
+    const text = ['import(`@/features/cart/x`)', 'import(`@/features/${name}/x`)'].join('\n')
+    assert.deepEqual(findCrossFeatureImports(text, 'order').map((hit) => hit.line), [1])
+  })
+})

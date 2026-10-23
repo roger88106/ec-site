@@ -3,7 +3,7 @@
 // 既に適用した DB で起動に失敗する（バックエンドの書き方、コメントの書き方 第 1 節）。
 // 新しい DB で動くテストと CI では見つからないので、ここで確認する。commit の履歴を読むので、shallow clone では失敗する。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
+import { execFileSync, execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -34,6 +34,28 @@ export function findChangedMigrations(files, readAdded, readNow) {
     const added = readAdded(file)
     return added !== null && normalize(added) !== normalize(readNow(file))
   })
+}
+
+/**
+ * マイグレーションが 1 件もないときの失敗の理由を返す。置き場所の変更で、検査が空振りするのを防ぐ。
+ *
+ * @param {string[]} files 今あるバージョン付きのマイグレーション
+ * @param {string} dir マイグレーションの置き場所
+ * @returns {string | null} 0 件なら失敗の理由、あれば null
+ */
+export function findEmptyReason(files, dir) {
+  return files.length === 0 ? `マイグレーションが 1 件も見つからない（検査の対象の置き場所が変わっていないか確認する）：${dir}` : null
+}
+
+/**
+ * 各ファイルを追加した commit を読む git log の引数を返す。<br />
+ * --no-renames がないと、改名したファイルが追加として現れず、見落とす。
+ *
+ * @param {string} dir マイグレーションの置き場所
+ * @returns {string[]} git に渡す引数
+ */
+export function gitLogArgs(dir) {
+  return ['log', '--no-renames', '--diff-filter=A', '--name-only', '--format=%H', '--', dir]
 }
 
 /**
@@ -71,17 +93,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(1)
   }
   const files = execSync(`git ls-files "${MIGRATIONS}"`, { encoding: 'utf8' }).split('\n').filter(isVersionedMigration)
-  if (files.length === 0) {
-    console.log(`マイグレーションが 1 件も見つからない（検査の対象の置き場所が変わっていないか確認する）：${MIGRATIONS}`)
+  const emptyReason = findEmptyReason(files, MIGRATIONS)
+  if (emptyReason) {
+    console.log(emptyReason)
     process.exit(1)
   }
-  // 各ファイルを追加した commit（1 回の git log で読む）。--no-renames がないと、改名したファイルが追加として現れず、見落とす
-  const addedIn = parseAddedLog(
-    execSync(`git log --no-renames --diff-filter=A --name-only --format=%H -- "${MIGRATIONS}"`, {
-      encoding: 'utf8',
-      maxBuffer: 64 * 1024 * 1024,
-    }),
-  )
+  // 各ファイルを追加した commit（1 回の git log で読む）
+  const addedIn = parseAddedLog(execFileSync('git', gitLogArgs(MIGRATIONS), { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }))
   // 履歴にあって今ないバージョン付きのマイグレーション。ステージした削除と改名は、hook でも今の index に無いので見つかる
   const removed = findRemovedMigrations([...addedIn.keys()].filter(isVersionedMigration), files)
   for (const file of removed) {

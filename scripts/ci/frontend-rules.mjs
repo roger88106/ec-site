@@ -24,8 +24,11 @@ const TEST = /\.test\.tsx?$/
 /** 機能のファイル */
 const FEATURE_FILE = /^frontend\/(store|admin)\/src\/features\/([^/]+)\//
 
-/** import のパス（import … from、export … from、import(…)、import '…'） */
-const IMPORT_SPECIFIER = /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)['"]([^'"]+)['"]/g
+/**
+ * import のパス（import … from、export … from、import(…)、import '…'）。from・( と指定子の間の改行を許す。
+ * テンプレート文字列は ${ を含まない固定の文字列だけを対象にする。変数を含むパスは、どの機能か解決できないため
+ */
+const IMPORT_SPECIFIER = /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)(['"`])([^'"`$]+)\1/g
 
 /** 別名 @/ で書いた機能の import */
 const ALIAS_FEATURE = /^@\/features\/([^/]+)/
@@ -79,12 +82,16 @@ export function findCrossFeatureImports(text, feature, file) {
     }
     return null
   }
-  return findLines(text, (line) =>
-    [...line.matchAll(IMPORT_SPECIFIER)].some((match) => {
-      const imported = featureOfSpecifier(match[1])
-      return imported !== null && imported !== feature
-    }),
-  )
+  // 全文に当て、一致の位置から行番号を求める（import が複数の行にまたがってもよい）
+  const lines = text.split('\n')
+  const hits = []
+  for (const match of text.matchAll(IMPORT_SPECIFIER)) {
+    const imported = featureOfSpecifier(match[2])
+    if (imported === null || imported === feature) continue
+    const line = text.slice(0, match.index).split('\n').length
+    if (!hits.some((hit) => hit.line === line)) hits.push({ line, text: lines[line - 1].trim() })
+  }
+  return hits
 }
 
 /**

@@ -19,6 +19,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { closingParen } from './lib/closing-paren.mjs'
 import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
@@ -92,8 +93,19 @@ export function extractTestNames(source, kind) {
   // skip・fixme は実行されないので数えない（連鎖に入れない）。前が . や語の文字のもの（/re/.test(...) など）も数えない
   const call =
     /(?<![.\w$])(?:it|test)(?:\.(?:serial|parallel|only|concurrent|each\([^)]*\)))*\(\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
-  return [...source.matchAll(call)].map((match) => match[2].replace(/\\(.)/g, '$1'))
+  // 実行されないまとまり（describe.skip、describe.fixme、test.describe.skip、test.describe.fixme、xdescribe）の中は数えない。
+  // まとまりの範囲は、呼び出しの括弧の対応で求める
+  const skippedRanges = [...source.matchAll(SKIPPED_GROUP)].map((match) => {
+    const open = match.index + match[0].length - 1
+    return [open, closingParen(source, open)]
+  })
+  return [...source.matchAll(call)]
+    .filter((match) => !skippedRanges.some(([from, to]) => match.index > from && match.index < to))
+    .map((match) => match[2].replace(/\\(.)/g, '$1'))
 }
+
+/** 実行されないテストのまとまりの呼び出し。末尾の ( が、まとまりの範囲の始まり */
+const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescribe)\(/g
 
 /**
  * テスト名から AC 番号を取り出す。AC- の後に読点・カンマで並べた番号（AC- は先頭だけでもよい）を読む。
@@ -326,12 +338,13 @@ export function isStrict(env) {
 /**
  * Git の対象のファイルから、テストのファイルを選ぶ。
  *
- * @param root リポジトリのルート
+ * @param root     リポジトリのルート
+ * @param gitFiles Git の対象のファイル（ルートからの相対パス、/ 区切り）
  * @returns テストのファイル（絶対パス）と、その種類
  */
-function findTestFiles(root) {
+export function findTestFiles(root, gitFiles) {
   const files = []
-  for (const rel of listGitFiles([], root)) {
+  for (const rel of gitFiles) {
     const full = path.join(root, rel)
     if (rel.endsWith('.java') && /(^|\/)src\/(test|integrationTest)\//.test(rel)) {
       files.push({ file: full, kind: 'java' })
@@ -385,7 +398,7 @@ function main() {
     }
   }
   const specAcs = new Set(definitions.map((definition) => definition.ac))
-  const tests = findTestFiles(root).flatMap(({ file, kind }) =>
+  const tests = findTestFiles(root, listGitFiles([], root)).flatMap(({ file, kind }) =>
     extractTestNames(readFileSync(file, 'utf8'), kind).map((name) => ({ file, name })),
   )
   const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))

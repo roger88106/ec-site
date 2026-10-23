@@ -1,5 +1,6 @@
 // ac-check.mjs のテスト（node --test scripts/ci/ac-check.test.mjs）
 import assert from 'node:assert/strict'
+import path from 'node:path'
 import { describe, test } from 'node:test'
 import {
   check,
@@ -12,6 +13,7 @@ import {
   parseSpecAcDefinitions,
   parseSpecAcs,
   renderAcList,
+  findTestFiles,
 } from './ac-check.mjs'
 
 describe('spec の AC の取り出し', () => {
@@ -396,5 +398,50 @@ describe('手元と CI の見分け', () => {
 
   test('手元（CI がない）では、テスト名に出ない AC を警告にする', () => {
     assert.equal(isStrict({}), false)
+  })
+})
+
+describe('スキップしたまとまりの中のテスト', () => {
+  test('describe.skip・describe.fixme・test.describe.skip・test.describe.fixme・xdescribe の中のテストは数えない', () => {
+    const source = [
+      "describe.skip('まとまり', () => {",
+      "  it('AC-1 数えない', () => { expect(f('x)')).toBe(1) })",
+      '})',
+      "test.describe.fixme('まとまり', () => {",
+      "  test('AC-2 数えない', async () => {})",
+      '})',
+      "test.describe.skip('まとまり', () => { test('AC-3 数えない', () => {}) })",
+      "describe.fixme('まとまり', () => { it('AC-4 数えない', () => {}) })",
+      "xdescribe('まとまり', () => { it('AC-5 数えない', () => {}) })",
+      "describe('生きている', () => { it('AC-6 数える', () => {}) })",
+      "it('AC-7 数える', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-6 数える', 'AC-7 数える'])
+  })
+})
+
+describe('テストのファイルの選び方', () => {
+  test('Java の src/test・src/integrationTest と .test.ts(x)・.spec.ts を選び、他のファイルを選ばない', () => {
+    const files = [
+      'backend/ecsite/src/test/java/a/ATest.java',
+      'backend/ecsite/src/integrationTest/java/a/BIT.java',
+      'backend/ecsite/src/main/java/a/Main.java',
+      'backend/ecsite/src/test/resources/x.sql',
+      'frontend/store/src/a.test.ts',
+      'frontend/store/src/b.test.tsx',
+      'frontend/store/e2e/c.spec.ts',
+      'frontend/store/src/d.spec.tsx',
+      'frontend/store/src/e.ts',
+    ]
+    assert.deepEqual(
+      findTestFiles('/r', files).map((entry) => [path.relative('/r', entry.file).split(path.sep).join('/'), entry.kind]),
+      [
+        ['backend/ecsite/src/test/java/a/ATest.java', 'java'],
+        ['backend/ecsite/src/integrationTest/java/a/BIT.java', 'java'],
+        ['frontend/store/src/a.test.ts', 'ts'],
+        ['frontend/store/src/b.test.tsx', 'ts'],
+        ['frontend/store/e2e/c.spec.ts', 'ts'],
+      ],
+    )
   })
 })

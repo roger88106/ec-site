@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findChangedMigrations, findRemovedMigrations, isVersionedMigration, parseAddedLog } from './migrations.mjs'
+import { findChangedMigrations, findEmptyReason, gitLogArgs, findRemovedMigrations, isVersionedMigration, parseAddedLog } from './migrations.mjs'
 
 describe('適用済みのマイグレーションの検査', () => {
   test('バージョン付きのマイグレーション（V*.sql）だけを見る。繰り返しのもの（R__*.sql）は見ない', () => {
@@ -53,5 +53,19 @@ describe('適用済みのマイグレーションの検査', () => {
     assert.equal(added.get('V1__a.sql'), c1)
     assert.equal(added.get('V2__b.sql'), c2)
     assert.equal(added.size, 2)
+  })
+})
+
+describe('マイグレーションの検査の判定', () => {
+  test('マイグレーションが 0 件のときは失敗の理由を返し、あるときは null', () => {
+    assert.match(findEmptyReason([], 'db/migration/'), /1 件も見つからない.*db\/migration\//)
+    assert.equal(findEmptyReason(['V1__a.sql'], 'db/migration/'), null)
+  })
+
+  test('履歴を読む git log は改名を追加として扱う（--no-renames）', () => {
+    const args = gitLogArgs('db/migration/')
+    assert.ok(args.includes('--no-renames'))
+    assert.ok(args.includes('--diff-filter=A'))
+    assert.deepEqual(args.slice(-2), ['--', 'db/migration/'])
   })
 })

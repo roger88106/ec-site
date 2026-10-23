@@ -219,16 +219,16 @@
 | AC-194 | 返金が済むまで、管理画面の注文詳細に「返金待ち」と表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx`、`PaymentRefundTest` ほか 1 |
 | AC-195 | 同じ注文の返金が重複して実行されても、返金は 1 回だけ。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentRefundTest` |
 | AC-196 | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest` |
-| AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 2 |
+| AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 3 |
 | AC-198 | 同じ数字を、粒度ごとの行の表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest` |
 | AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
-| AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
+| AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest`、`labels.test.ts` |
 | AC-201 | 売れなかった区切りも、0 の行として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
-| AC-202 | 運営者は、商品を 1 つと期間を選び、バリエーション（軸の値の組み合わせ）ごとの… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
+| AC-202 | 運営者は、商品を 1 つと期間を選び、バリエーション（軸の値の組み合わせ）ごとの… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` ほか 1 |
 | AC-203 | 同じ数字を表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
 | AC-204 | 期間に売れなかったバリエーションも、0 として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
 | AC-205 | 運営者は、期間を選び、お届け先の都道府県ごとの売上額と注文件数を、グラフと表で見… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
-| AC-206 | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
+| AC-206 | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 2 |
 | AC-207 | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` |
 | AC-208 | 生年月日の分からない会員の注文は、年齢層「不明」として数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AgeGroupTest`、`CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest` ほか 2 |
 | AC-209 | IdP の会員登録の画面で、生年月日を入れられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
@@ -241,7 +241,7 @@
 | AC-216 | 権限はレポートごとに分ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AdminApiPermissionContractTest` |
 | AC-217 | 役割ごとの権限は BR-28 のとおり。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
 | AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx` ほか 1 |
-| AC-219 | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
+| AC-219 | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 2 |
 | AC-220 | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-221 | IdP の会員登録の画面で性別（BR-29）を選べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
 | AC-222 | 注文の成立のときに、その時点の性別を注文に記録する。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest`、`RealmSettingsContractTest` ほか 1 |

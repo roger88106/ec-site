@@ -2,6 +2,7 @@ import { screen, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { CustomerBreakdownReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
+import { getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
@@ -44,10 +45,15 @@ function serveBreakdown(report: CustomerBreakdownReport = BREAKDOWN) {
   return queries
 }
 
-/** 分け方の表の、データの行 */
-function rowsOf(dimension: string): HTMLElement[] {
-  const section = screen.getByRole('region', { name: `${dimension}ごとの売上額` })
-  return within(section).getAllByRole('row').slice(1)
+/** 分け方の表の範囲 */
+function sectionOf(dimension: string) {
+  return within(screen.getByRole('region', { name: `${dimension}ごとの売上額` }))
+}
+
+/** 分け方の表のデータの行が、指定した区分の行の順に並んでいる */
+function expectSegmentsInOrder(dimension: string, segments: string[]) {
+  const section = sectionOf(dimension)
+  expect(section.getAllByRole('row').slice(1)).toEqual(segments.map((segment) => getRow(segment, section)))
 }
 
 describe('地域・年齢層・性別', () => {
@@ -56,10 +62,10 @@ describe('地域・年齢層・性別', () => {
     renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
 
     await screen.findByRole('region', { name: '都道府県ごとの売上額' })
-    const rows = rowsOf('都道府県')
-    expect(rows.map((row) => within(row).getAllByRole('cell')[0].textContent)).toEqual(['東京都', '大阪都', '不明'])
-    expect(within(rows[0]).getByRole('cell', { name: '52,000 円' })).toBeInTheDocument()
-    expect(within(rows[0]).getByRole('cell', { name: '12' })).toBeInTheDocument()
+    expectSegmentsInOrder('都道府県', ['東京都', '大阪都', '不明'])
+    const tokyo = getRow('東京都', sectionOf('都道府県'))
+    expect(within(tokyo).getByRole('cell', { name: '52,000 円' })).toBeInTheDocument()
+    expect(within(tokyo).getByRole('cell', { name: '12' })).toBeInTheDocument()
   })
 
   it('AC-206、208、219 年齢層と性別は、すべての区分（不明を含む）を出す', async () => {
@@ -67,21 +73,8 @@ describe('地域・年齢層・性別', () => {
     renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
 
     await screen.findByRole('region', { name: '年齢層ごとの売上額' })
-    expect(rowsOf('年齢層').map((row) => within(row).getAllByRole('cell')[0].textContent)).toEqual([
-      '10 代以下',
-      '20 代',
-      '30 代',
-      '40 代',
-      '50 代',
-      '60 代以上',
-      '不明',
-    ])
-    expect(rowsOf('性別').map((row) => within(row).getAllByRole('cell')[0].textContent)).toEqual([
-      '男性',
-      '女性',
-      'その他',
-      '不明',
-    ])
+    expectSegmentsInOrder('年齢層', ['10 代以下', '20 代', '30 代', '40 代', '50 代', '60 代以上', '不明'])
+    expectSegmentsInOrder('性別', ['男性', '女性', 'その他', '不明'])
   })
 
   it('AC-207 商品を選ぶと、その商品で取り直し、送料を含めていないことを示す', async () => {
@@ -89,8 +82,10 @@ describe('地域・年齢層・性別', () => {
     renderApp(`/reports/customer-breakdown?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}&basis=SHIPMENT`)
 
     expect(await screen.findByText('送料を含めていません。')).toBeInTheDocument()
-    expect(queries[0].get('productId')).toBe(SHIRT_ID)
-    expect(queries[0].get('basis')).toBe('SHIPMENT')
+    expect(queries).toHaveLength(1)
+    const [query] = queries
+    expect(query.get('productId')).toBe(SHIRT_ID)
+    expect(query.get('basis')).toBe('SHIPMENT')
   })
 
   it('AC-218 3 つの表を 1 つにまとめた CSV で取り出せる', async () => {

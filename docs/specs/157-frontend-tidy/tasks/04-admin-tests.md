@@ -20,7 +20,7 @@
 - [x] **T157-04-04** [P] 税のテストを修正する。`as never` を型付きの応答に、税区分の再定義と 409 の応答を補助にする（DC-157-15、31、32）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/tax/pages/TaxCategoryListPage.test.tsx`、`TaxRatesPage.test.tsx`
-- [ ] **T157-04-05** [P] レポートのテストを修正する。行と要求を並びのインデックスで選ぶ所を補助と件数の確認に、重ねた `expect` と同じハンドラーの重複をまとめる。名前を振る舞いの文にする（DC-157-12、19、24、32）。
+- [x] **T157-04-05** [P] レポートのテストを修正する。行と要求を並びのインデックスで選ぶ所を補助と件数の確認に、重ねた `expect` と同じハンドラーの重複をまとめる。名前を振る舞いの文にする（DC-157-12、19、24、32）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/report/pages/SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx`、`CustomerBreakdownPage.test.tsx`、`ReportPermission.test.tsx`、`frontend/admin/src/features/report/report.test.ts`、`frontend/admin/src/features/report/labels.test.ts`
 - [x] **T157-04-06** [P] その他のテストを修正する。吹き出しの件数の確認と、ログインの利用者の型の変換を修正する（DC-157-18、24）。

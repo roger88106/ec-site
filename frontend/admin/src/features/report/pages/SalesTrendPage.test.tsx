@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import { afterEach, describe, expect, it, vi } from 'vitest'
 import type { SalesTrendReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
+import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
@@ -42,11 +43,11 @@ describe('売上の推移', () => {
     serveTrend()
     renderApp('/reports/sales-trend?from=2026-04-01&to=2026-06-30')
 
-    const row = (await screen.findByRole('cell', { name: '2026 年 5 月' })).closest('tr') as HTMLElement
-    expect(within(row).getByText('0 円')).toBeInTheDocument()
-    expect(screen.getByRole('cell', { name: '2026 年 4 月' })).toBeInTheDocument()
-    expect(screen.getByRole('cell', { name: '120,000 円' })).toBeInTheDocument()
-    expect(screen.getByRole('cell', { name: '40' })).toBeInTheDocument()
+    const unsold = await findRow('2026 年 5 月')
+    expect(within(unsold).getByRole('cell', { name: '0 円' })).toBeInTheDocument()
+    const sold = getRow('2026 年 4 月')
+    expect(within(sold).getByRole('cell', { name: '120,000 円' })).toBeInTheDocument()
+    expect(within(sold).getByRole('cell', { name: '40' })).toBeInTheDocument()
     expect(screen.getByRole('region', { name: '売上額の推移' })).toBeInTheDocument()
   })
 
@@ -57,10 +58,12 @@ describe('売上の推移', () => {
     renderApp('/reports/sales-trend')
 
     await screen.findByRole('cell', { name: '2026 年 4 月' })
-    expect(queries[0].get('from')).toBe('2026-04-01')
-    expect(queries[0].get('to')).toBe('2027-03-31')
-    expect(queries[0].get('granularity')).toBe('MONTH')
-    expect(queries[0].get('basis')).toBe('ORDER')
+    expect(queries).toHaveLength(1)
+    const [query] = queries
+    expect(query.get('from')).toBe('2026-04-01')
+    expect(query.get('to')).toBe('2027-03-31')
+    expect(query.get('granularity')).toBe('MONTH')
+    expect(query.get('basis')).toBe('ORDER')
   })
 
   it('AC-197、200 区切りと売上の数え方を変えて表示すると、条件を URL に書き、その条件で取り直す', async () => {
@@ -85,7 +88,7 @@ describe('売上の推移', () => {
     expect(queries.at(-1)?.get('excludeTax')).toBe('true')
   })
 
-  it('BR-24 期間の選択肢の前年度を選ぶと、始まりと終わりの日を埋める', async () => {
+  it('AC-197 期間の選択肢の前年度を選ぶと、始まりと終わりの日を埋める', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-10-15T03:00:00Z'))
     serveTrend()
@@ -104,7 +107,9 @@ describe('売上の推移', () => {
     renderApp(`/reports/sales-trend?from=2026-04-01&to=2026-06-30&productId=${SHIRT_ID}`)
 
     expect(await screen.findByText('送料を含めていません。')).toBeInTheDocument()
-    expect(queries[0].get('productId')).toBe(SHIRT_ID)
+    expect(queries).toHaveLength(1)
+    const [query] = queries
+    expect(query.get('productId')).toBe(SHIRT_ID)
     expect(screen.getByRole('combobox', { name: '商品' })).toHaveTextContent('ベーシック T シャツ')
   })
 

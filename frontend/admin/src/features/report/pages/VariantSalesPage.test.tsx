@@ -2,6 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { VariantSalesReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
+import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
@@ -53,15 +54,17 @@ describe('バリアントの売れ行き', () => {
     const queries = serveVariantSales()
     renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}&excludeTax=true`)
 
-    const rows = (await screen.findAllByRole('row')).slice(1)
-    expect(within(rows[0]).getByRole('cell', { name: '色：白、サイズ：M' })).toBeInTheDocument()
-    expect(within(rows[0]).getByRole('cell', { name: '12' })).toBeInTheDocument()
-    expect(within(rows[0]).getByRole('cell', { name: '39,336 円' })).toBeInTheDocument()
-    expect(within(rows[1]).getByRole('cell', { name: '色：黒、サイズ：L' })).toBeInTheDocument()
-    expect(within(rows[1]).getByRole('cell', { name: '0 円' })).toBeInTheDocument()
+    const white = await findRow('色：白、サイズ：M')
+    const black = getRow('色：黒、サイズ：L')
+    expect(within(white).getByRole('cell', { name: '12' })).toBeInTheDocument()
+    expect(within(white).getByRole('cell', { name: '39,336 円' })).toBeInTheDocument()
+    expect(within(black).getByRole('cell', { name: '0 円' })).toBeInTheDocument()
+    expect(screen.getAllByRole('row').slice(1)).toEqual([white, black])
     expect(screen.getByText('商品：ベーシック T シャツ')).toBeInTheDocument()
-    expect(queries[0].get('productId')).toBe(SHIRT_ID)
-    expect(queries[0].get('excludeTax')).toBe('true')
+    expect(queries).toHaveLength(1)
+    const [query] = queries
+    expect(query.get('productId')).toBe(SHIRT_ID)
+    expect(query.get('excludeTax')).toBe('true')
   })
 
   it('AC-202 商品を選ぶまでは API を呼ばず、選ぶと URL に書いて出す', async () => {

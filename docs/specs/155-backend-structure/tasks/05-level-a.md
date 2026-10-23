@@ -19,7 +19,7 @@ T155-05-01、02、04、08、09 は、変えるファイルが重ならないの�
 - [x] **T155-05-03** 商品画像の追加の確認を参照の service の 1 か所にする。商品の参照の service に、バージョンなしで画像を加えられるか確認する操作を追加し、商品の取り出しにバージョンなしの取り出しを追加する。画像のアップロードの要求は、それを使い、集約を直接読まない。アップロードの要求から読み取り専用のトランザクションの注釈と、使われなくなった import を削除する。404（商品なし）と 400（20 枚）の応答が変わらないことを確認する（DC-155-36）。
   - 依存：T155-05-01
   - 範囲：`main/module/catalog/application/product/{ProductImageService,ProductQueryService,ProductLoader}.java`（`ProductImageService.java:59-66,79-89,146-149`、`ProductQueryService.java:57-59`、`ProductLoader.java:41-48`）。`it/module/catalog/presentation/ProductImageApiTest.java`（`:176-408`）は、変更せず、テストが通ることを確認する。
-- [ ] **T155-05-04** [P] 商品カタログのイベントのリスナーが、Repository を直接使わない形にする。在庫の作成と削除を持つ用途の名前の service `StockRegistrationService`（`inventory/application/`）を作り、リスナーはそれに委譲する。冪等の作成（既にあれば何もしない）は変えない（DC-155-37）。
+- [x] **T155-05-04** [P] 商品カタログのイベントのリスナーが、Repository を直接使わない形にする。在庫の作成と削除を持つ用途の名前の service `StockRegistrationService`（`inventory/application/`）を作り、リスナーはそれに委譲する。冪等の作成（既にあれば何もしない）は変えない（DC-155-37）。
   - 依存：なし
   - 範囲：`main/module/inventory/application/CatalogEventHandler.java`（`:22,31,40,50`）、`main/module/inventory/application/StockRegistrationService.java`（新規）。`it/module/inventory/application/CatalogEventHandlerTest.java` は、変更せず、テストが通ることを確認する。
 - [ ] **T155-05-05** 在庫の設計書を今のコードに合わせる（DC-155-34。利用者が推奨の案を選んだ）。「在庫（集約）」の記述を、在庫数を DB の差分の加算で更新し、集約で読み書きしないことに修正する。バックエンドのアーキテクチャ 第 2 節とバックエンドの書き方 第 1.1 節のレベル A の定義に、「整合性を DB の更新の条件で保つモジュールは、集約のクラスを持たなくてよい」の例外と理由を書く。

@@ -41,7 +41,7 @@ T155-01-01〜06 は、変えるファイルが重ならないので、互いに 
   - バックエンドのアーキテクチャの「処理の済んだイベント」の持ち主の記述が、移動後のパッケージと合うか確認する。
   - 依存：T155-01-08
   - 範囲：`docs/design/common.md`（`:3,15,19,24,26,30,31,41,42,44,72`）、`docs/design/modules/catalog.md`（`:140-156`）、`docs/design/backend-architecture.md`（`:107`）
-- [ ] **T155-01-10** AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成し、`ac-check.mjs` が通ることを確認する。AC の内容は変えない（DN-155-3）。
+- [x] **T155-01-10** AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成し、`ac-check.mjs` が通ることを確認する。AC の内容は変えない（DN-155-3）。
   - 依存：T155-01-01、T155-01-02、T155-01-03、T155-01-04
   - 範囲：`docs/design/acceptance-criteria.md`（AC-84、AC-128）
 - [ ] **T155-01-11** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。pitest は、表示順の再採番が domain に入ったため実行し、基準（90.2、許容 0）と比べる。下回るときは、表示順の再採番の単体テストを追加する。

@@ -19,11 +19,11 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 | ワークフロー | ジョブ | 実行するもの | 実行する時 |
 |--------------|--------|----------|----------|
-| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Error Prone と NullAway（コンパイルの時の静的解析）、Javadoc の記述漏れの検査（Checkstyle。private を含む）、単体テスト、OpenAPI の構文の検証 | push（下の除外のファイルだけの push を除く）と pull request |
+| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Error Prone と NullAway（コンパイルの時の静的解析）、Javadoc の記述漏れの検査（Checkstyle。private を含む）、単体テスト、OpenAPI の構文の検証、domain の mutation testing（PIT）と mutation score の基準の検査 | push（下の除外のファイルだけの push を除く）と pull request |
 | `ci.yml` | バックエンド（統合テスト 1/2・2/2） | 統合テストの半分ずつ（2 つのジョブ。統合テストのコンパイルでも Error Prone が動く） | 同上 |
-| `ci.yml` | バックエンド | 上の 3 つのジョブの結果の確認、カバレッジの報告（要約） | 同上 |
-| `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの要約 | 同上 |
-| `ci.yml` | 店舗画面 | 画面の依存のライセンスの検査、共有パッケージの lint・型チェック・テスト、店舗画面の lint、型チェック、テスト、ビルド、カバレッジの要約 | 同上 |
+| `ci.yml` | バックエンド | 上の 3 つのジョブの結果の確認、カバレッジの報告（要約）、カバレッジの基準の検査 | 同上 |
+| `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの要約、カバレッジの基準の検査 | 同上 |
+| `ci.yml` | 店舗画面 | 画面の依存のライセンスの検査、共有パッケージ（lint、型チェック、テスト、カバレッジの要約）、店舗画面（lint、型チェック、テスト、ビルド、カバレッジの要約）、店舗画面と共有パッケージのカバレッジの基準の検査 | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェック、バックエンド・管理画面・店舗画面を起動してブラウザで操作する | 同上 |
 | `docs.yml` | 文書と CI の検査の script | `scripts/ci/check-all.sh`（第 3 節） | 全ての push と pull request（文書だけの push でも実行する） |
 | `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチが `release-` か `hotfix-` で始まる。`main` の ruleset の必須の検査（[ブランチとリリース](branches.md) 第 3.2 節） | `main` への pull request |
@@ -51,7 +51,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 `scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。
 
 - 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
-- 引数が必要な補助の script（`report/coverage-summary.mjs`）と、画面の依存が必要な検査（`licenses/`）は、下のディレクトリに置く。
+- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）は、下のディレクトリに置く。
 - 複数の script が使う関数は `lib/` に置く。spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す関数は `lib/spec-dirs.mjs`。
 
 | script | 確認すること | 失敗したとき | 除外の書き方 |
@@ -77,6 +77,24 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する（[テストの書き方](../rules/test-writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
 
 ※1：テスト名に含まれない AC は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、成功した検査の警告（`警告：` で始まる行）も出力する。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。手元で CI と同じに確認するときは `CI=true scripts/ci/check-all.sh`。他の誤り（範囲の表記、spec にない AC 番号、除外の一覧の誤り）は、手元でも失敗にする。
+
+### 3.1 カバレッジと mutation score の基準の検査
+
+テストの量と強さが下がったときに CI を失敗にする検査（[テストの書き方](../rules/test-writing.md) 第 1.2 節）。`scripts/ci/report/` の下の script と基準のファイルで行う。
+
+| ファイル | 役割 |
+|----------|------|
+| `coverage-summary.mjs` | カバレッジの合計と、行のカバレッジが低い順の 10 件を、job の summary に書く。失敗にはしない |
+| `coverage-baseline.mjs` | 報告の値を基準の値と比べ、下回ると終了コード 1 で失敗にする。上回ったときは、基準の更新を促す警告を表示する。`--write` で基準のファイルを書き換える |
+| `mutation-report.mjs` | PIT の報告（`mutations.xml`）から mutation score と、生き残った変異が多いクラスを読む（`coverage-baseline.mjs` が使う） |
+| `quality-baseline.json` | 基準の値と許容の幅（`tolerance`）。対象は、行と分岐を持つ `backend`、`admin`、`store`、`shared` と、mutation score を持つ `backend-domain` |
+
+- 検査の手順は、報告を保存した後に置く（失敗しても報告が残る）。位置は、管理画面、店舗画面、「バックエンド」のジョブでは最後。「バックエンド（ビルドと単体テスト）」のジョブでは、失敗時のテストレポートの保存の前。店舗画面のジョブは、店舗画面と共有パッケージの 2 つの手順で検査する。
+- 基準は対象ごとの合計で、ファイルごとの基準はない。
+- 失敗したときは、ログと summary に出る対象、基準、今回の値、差を確認し、テストを追加して値を戻す。正当な理由で下げるときは、手元で `--write` を実行して基準のファイルを更新する。更新したファイルは同じ pull request に含め、pull request に理由を書く。手元の実行は [テストの実行方法](running-tests.md) 第 5 節。
+- バックエンドのカバレッジは、統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつく。観測した最大の欠けは、行 0.02 ポイント、分岐 0.11 ポイント（分岐 2 つ分）。分岐 1 つは約 0.05 ポイントで、同じ競合の分岐が他にもありうるため、`backend` の許容の幅は、行 0.10、分岐 0.30（どちらも約 6 つ分）にしている。
+- PIT は、ビルドと単体テストのジョブの、単体テストの後で実行する（`./gradlew pitest`。`check` には含まれない）。変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、毎回そのジョブの時間が 2 分ほど増える（手順の実測は 2 分 1 秒から 2 分 28 秒）。報告は artifact `pitest-backend` に保存する。
+- このジョブ（実測 3 分 41 秒から 4 分 10 秒）は、統合テストの遅い方のジョブ（実測 5 分 41 秒から 6 分 15 秒）より早く終わるので、`ci.yml` の全体の時間は遅い方のジョブで決まる。同じ commit の 4 回の実測の全体は 6 分 22 秒から 7 分 10 秒で、8 分以下だった。
 
 ## 4. GitHub のセキュリティの機能
 

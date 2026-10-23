@@ -51,9 +51,15 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 
 `scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。
 
-- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
+- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。この節の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。除外の一覧を持つなら `lib/exclusions.mjs` を使い、画面のソースを読むなら `lib/screen-sources.mjs` を使う。
 - 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md) 第 4 節）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
-- 複数の script が使う関数は `lib/` に置く。spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す関数は `lib/spec-dirs.mjs`。Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧は `lib/git-files.mjs`、画面の本番のソース（admin・store・shared の `src` の `.ts`・`.tsx` から、テスト・生成物・ui を除く）の定義は `lib/screen-sources.mjs`。画面のソースを読む検査は定義を使い、違う対象を読む検査は理由を書く。
+- 複数の script が使う関数は `lib/` に置く（テストは `*.test.mjs`）。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
+  - `spec-dirs.mjs`：spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す。
+  - `git-files.mjs`：Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧を返す。
+  - `screen-sources.mjs`：画面の本番のソース（admin・store・shared の `src` の `.ts`・`.tsx` から、テスト・生成物・ui を除く）の定義。
+  - `exclusions.mjs`：除外の一覧（`{キー: 理由}`）を読み、理由のない除外と不要になった除外を見つける。
+  - `strip-comments.mjs`：ソースのコメントを空白に置き換える。
+  - `closing-paren.mjs`：開き括弧に対応する閉じ括弧の位置を求める（文字列とコメントの中は数えない）。
 
 | script | 確認すること | 失敗したとき | 除外の書き方 |
 |--------|--------------|--------------|--------------|

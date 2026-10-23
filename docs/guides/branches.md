@@ -105,6 +105,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 - `@types/node` の major は、Dependabot の対象から外す。理由：実行の環境は `.node-version` の Node（`package.json` の `engines.node` はその下限の範囲）で、型の定義だけを上げると、その版にない API も型の検査を通ってしまうため。Node の版を上げるときに、合わせて上げる。
 - `github-actions` は、ワークフローに加え、ローカルの複合の action（`.github/actions/setup-frontend`）で使う action の版も更新する。理由：`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため、`directories` に複合の action のディレクトリを追加している。複合の action を増やしたら、追加する。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
+- Gradle の版を上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<版>-bin.zip.sha256` の値に替える。Dependabot の Gradle の wrapper の更新がこの値も替えるかは確認していないので、更新の pull request で確認する。
 - 注意：GitHub の文書（2026-10-22 の時点）では、Dependabot の pnpm の対応は v10 まで。このリポジトリは pnpm 12 である。`npm` の更新が失敗したときは、issue を起票し、その issue で Renovate への切り替えを検討する。
 
 ## 7. デプロイの spec まで

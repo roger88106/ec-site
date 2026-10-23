@@ -17,10 +17,11 @@ C 側の画面は、商品の情報と在庫の有無を同時に必要とする
 ```
 storefront/
 ├── presentation/           # store.yaml から生成したインターフェースを実装
-├── application/            # 組み合わせ、表示の型、店舗の情報の設定
-│   ├── model/              # 表示の型（view）と商品の一覧の条件
+├── application/            # 組み合わせ、表示の型、店舗の情報の設定の値の型（ShopProperties。service が読み、view に変える）
+│   ├── model/              # 表示の型（view。店舗の情報の ShopView を含む）と商品の一覧の条件
 │   └── port/               # 腐敗防止層の port と、その型
 └── infrastructure/
+    ├── StorefrontConfig    # 設定のクラス。店舗の情報の設定の値の型を有効にする
     └── directory/          # 商品カタログ・在庫・注文の API を自分の型に変える腐敗防止層
 ```
 
@@ -40,5 +41,5 @@ storefront/
 
 ## 店舗の情報
 
-- 問い合わせ先のメールアドレスを設定に持ち、店舗 API で返す。キャンセルの申請が却下された注文の画面に表示する。
+- 問い合わせ先のメールアドレスを設定に持ち、店舗 API で返す。application の service が設定の値の型を読んで view（ShopView）に変え、presentation は view から応答に変換する（presentation は設定の値の型を受け取らない）。キャンセルの申請が却下された注文の画面に表示する。
 - 問い合わせ先は必須。なければ起動しない。

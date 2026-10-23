@@ -34,7 +34,7 @@ T155-03-01〜04 と T155-03-06 は、変えるファイルが重ならないの�
 - [x] **T155-03-08** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.3 節に、`member.api.CurrentMemberIds` を presentation から使う例外と理由を書く。バックエンドの書き方 第 6.1 節に、モジュールの `@Configuration` は infrastructure（またはその下）に置くことと、presentation は設定の値の型を受け取らないことを追加する。規則の一覧の確認方法に、追加した自動の検査を反映する。
   - 依存：T155-03-01、T155-03-04、T155-03-07
   - 範囲：`docs/rules/backend-coding.md`（`:7-32,86-94,254-266`）
-- [ ] **T155-03-09** 各モジュールの設計書の「構成」を、段階 3 のコードに合わせる。shipping（設定の型の置き場所）、notification（`infrastructure/mail/` の設定の型）、storefront（`infrastructure/` の設定のクラス、店舗の情報の view、設定の型の説明）、reporting（設定の service と view）である。
+- [x] **T155-03-09** 各モジュールの設計書の「構成」を、段階 3 のコードに合わせる。shipping（設定の型の置き場所）、notification（`infrastructure/mail/` の設定の型）、storefront（`infrastructure/` の設定のクラス、店舗の情報の view、設定の型の説明）、reporting（設定の service と view）である。
   - 依存：T155-03-03〜06
   - 範囲：`docs/design/modules/shipping.md`（`:127-139`）、`docs/design/modules/notification.md`（`:45-53`）、`docs/design/modules/storefront.md`（`:15-22,40-42`）、`docs/design/modules/reporting.md`（`:126-139`）
 - [ ] **T155-03-10** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check` と `scripts/ci/check-all.sh` が通る。

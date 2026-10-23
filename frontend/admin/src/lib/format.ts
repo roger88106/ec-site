@@ -1,13 +1,4 @@
 import { japanDateTimeFormat } from '@ec-site/shared/lib/format'
-import { LOCALE } from '@ec-site/shared/lib/locale'
-
-/** 数の書式（3 桁ごとのカンマ） */
-const number = new Intl.NumberFormat(LOCALE)
-
-/** 数（例：「1,234」）。単位は付けない */
-export function formatNumber(value: number): string {
-  return number.format(value)
-}
 
 /** 1 分のミリ秒 */
 const MINUTE_MS = 60 * 1000

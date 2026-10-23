@@ -2,6 +2,7 @@ import { describe, expect, test } from 'vitest'
 import {
   axisValuesLabel,
   formatDateTime,
+  formatNumber,
   formatPostalCode,
   formatPrice,
   formatYen,
@@ -10,6 +11,12 @@ import {
 } from './format'
 
 describe('共有の整形', () => {
+  test('数は 3 桁ごとに区切る。単位は付けない', () => {
+    expect(formatNumber(1234)).toBe('1,234')
+    expect(formatNumber(1234567)).toBe('1,234,567')
+    expect(formatNumber(0)).toBe('0')
+  })
+
   test('金額は 3 桁ごとに区切って「円」を付ける', () => {
     expect(formatYen(1980)).toBe('1,980 円')
   })

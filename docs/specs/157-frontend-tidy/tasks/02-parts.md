@@ -8,10 +8,10 @@
 
 実装は実装役のサブエージェントに任せる。`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（[開発の進め方](../../../rules/workflow.md) 第 2.1 節）。
 
-- [ ] **T157-02-01** [P] [テスト] 共有の既定の数の整形の単体テストを書き、レッドを確認する。管理画面の数の整形のテスト（3 桁ごとの区切り、0）を移す（DC-157-3）。
+- [x] **T157-02-01** [P] [テスト] 共有の既定の数の整形の単体テストを書き、レッドを確認する。管理画面の数の整形のテスト（3 桁ごとの区切り、0）を移す（DC-157-3）。
   - 依存：なし
   - 範囲：`frontend/shared/src/lib/format.test.ts`
-- [ ] **T157-02-02** T157-02-01 のテストが通る実装を書く。共有の金額の整形と、店舗画面の税込・税抜の金額の文字は、共有の数の整形を使う。管理画面の数の整形とそのテストを削除し、呼び出し元を共有に変更する。管理画面だけの書式（符号付き、率、短縮）は変えない。既定の数の書式を作る箇所が 1 か所であることを `git grep "new Intl.NumberFormat(LOCALE)"` で確認する（DC-157-3〜5）。
+- [x] **T157-02-02** T157-02-01 のテストが通る実装を書く。共有の金額の整形と、店舗画面の税込・税抜の金額の文字は、共有の数の整形を使う。管理画面の数の整形とそのテストを削除し、呼び出し元を共有に変更する。管理画面だけの書式（符号付き、率、短縮）は変えない。既定の数の書式を作る箇所が 1 か所であることを `git grep "new Intl.NumberFormat(LOCALE)"` で確認する（DC-157-3〜5）。
   - 依存：T157-02-01
   - 範囲：`frontend/shared/src/lib/format.ts`、`frontend/store/src/lib/format.ts`、`frontend/admin/src/lib/format.ts`、`frontend/admin/src/lib/format.test.ts`、`frontend/admin/src/features/report/pages/VariantSalesPage.tsx`、`frontend/admin/src/components/ChartValueTooltip.tsx`（コメント）。変更しない：`frontend/admin/src/lib/delta.ts`、`frontend/admin/src/lib/rate.ts`、`frontend/admin/src/features/report/report.ts`
 - [x] **T157-02-03** [P] 自分の権限の一覧の戻り値を、状態を判別の項目に持つ 3 つの型の合併にする。呼び出し元の 2 つを、状態で絞り込んでから値を読む形にする。振る舞いは変えない（DC-157-6）。

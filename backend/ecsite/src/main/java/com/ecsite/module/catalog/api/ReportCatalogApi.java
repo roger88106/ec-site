@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.api;
 
 import com.ecsite.module.catalog.application.OrderableVariantQueryService;
-import com.ecsite.module.catalog.application.ProductQueryService;
+import com.ecsite.module.catalog.application.product.ProductQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

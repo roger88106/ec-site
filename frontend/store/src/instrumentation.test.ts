@@ -1,49 +1,36 @@
-import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
+import { beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
 import { register } from '@/instrumentation'
+import { PRODUCTION_ENV } from '@/test/env'
+import { recordStderr, type StderrRecord } from '@/test/stderr'
 
-/** 本番のモードで必須の環境変数 */
-const REQUIRED_ENV = {
-  AUTH_KEYCLOAK_ISSUER: 'https://idp.example.com/realms/shop',
-  AUTH_KEYCLOAK_ID: 'store',
-  AUTH_KEYCLOAK_SECRET: 'secret',
-  AUTH_SECRET: 'auth-secret',
-  STORE_API_BASE_URL: 'https://api.example.com',
-  AUTH_URL: 'https://shop.example.com',
-}
+/** 差し替えた process.exit が投げる例外の文言 */
+const EXIT_ERROR = 'process.exit が呼ばれた'
 
 describe('起動時の設定の確認', () => {
   let exit: MockInstance
-  let stderr: MockInstance
+  let stderr: StderrRecord
 
   beforeEach(() => {
-    exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never)
-    stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
+    // process.exit は never を返す型なので、差し替えも例外を投げて終わる関数にする（終了の代わりに例外で止まる）
+    exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error(EXIT_ERROR)
+    })
+    stderr = recordStderr()
     vi.stubEnv('NEXT_RUNTIME', 'nodejs')
-    vi.stubEnv('NODE_ENV', 'production')
-    for (const [name, value] of Object.entries(REQUIRED_ENV)) {
+    for (const [name, value] of Object.entries(PRODUCTION_ENV)) {
       vi.stubEnv(name, value)
     }
   })
-
-  afterEach(() => {
-    vi.unstubAllEnvs()
-    vi.restoreAllMocks()
-  })
-
-  /** 標準エラー出力に書いた内容 */
-  function written(): string {
-    return stderr.mock.calls.map(([text]) => String(text)).join('')
-  }
 
   test('DC-135-23 本番のモードで必須の値がなければ、足りない設定の名前を標準エラー出力に書いて終了する', () => {
     vi.stubEnv('AUTH_SECRET', '')
     vi.stubEnv('STORE_API_BASE_URL', '')
 
-    register()
+    expect(() => register()).toThrow(EXIT_ERROR)
 
-    expect(written()).toContain('AUTH_SECRET')
-    expect(written()).toContain('STORE_API_BASE_URL')
-    expect(written()).not.toContain('AUTH_KEYCLOAK_ID')
+    expect(stderr.text()).toContain('AUTH_SECRET')
+    expect(stderr.text()).toContain('STORE_API_BASE_URL')
+    expect(stderr.text()).not.toContain('AUTH_KEYCLOAK_ID')
     expect(exit).toHaveBeenCalledWith(1)
   })
 
@@ -51,7 +38,7 @@ describe('起動時の設定の確認', () => {
     register()
 
     expect(exit).not.toHaveBeenCalled()
-    expect(stderr).not.toHaveBeenCalled()
+    expect(stderr.text()).toBe('')
   })
 
   test('DC-135-24 Node.js 以外の実行環境では何もしない（設定を読まず、終了しない）', () => {
@@ -61,6 +48,6 @@ describe('起動時の設定の確認', () => {
     register()
 
     expect(exit).not.toHaveBeenCalled()
-    expect(stderr).not.toHaveBeenCalled()
+    expect(stderr.text()).toBe('')
   })
 })

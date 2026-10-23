@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（状態遷移、注文時点の写し、在庫との強い一貫性） |
 | 依存 | カート（API、イベント）、決済（API、イベント）、出荷・商品カタログ・在庫・税・地域（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ## 見積もり
 
@@ -24,7 +24,7 @@
 - 始めるときに、購入できない品目がないことを確認してから、全品目を引き当てる。
 - 同じカートで再び始めたら、新しい注文手続きを作り、前の引当を解く。
 - カート変更のイベントを受けたら、そのカートの注文手続きの引当を解く ※1。
-- 期限から保存期間（既定 1 日）を過ぎた注文手続きは、注文になったものも、片付けのジョブが削除する（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。注文の表示と操作は注文手続きを読まない。削除した注文手続きを読む・注文する操作は 404 ※1a。
+- 期限から保存期間（既定 1 日）を過ぎた注文手続きは、注文になったものも、片付けのジョブが削除する。件数の上限ごとに削除するループとログ出力は、共通の `ExpiredDataCleanup` を使う（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。注文の表示と操作は注文手続きを読まない。削除した注文手続きを読む・注文する操作は 404 ※1a。
 
 ※1：イベントの処理に失敗しても、引当は期限で数えられなくなるので実害は小さい。
 
@@ -153,17 +153,18 @@ order/
 ├── api/                    # カートの見積もり、レポートの注文の写し
 ├── event/                  # 注文の状態の変化、出荷済み
 ├── presentation/           # store.yaml・admin.yaml から生成したインターフェースを実装
-├── application/            # 注文の参照（詳細は view を返す）、キャンセル、レポートの参照
-│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの片付け、カート変更のリスナー
+├── application/            # 注文の参照（詳細は view を返す）、キャンセル、レポートの参照。設定の値の型 OrderProperties（送料、送料の税区分、引当の期限）
+│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの片付けは CheckoutCleanupJob、その設定の値の型は CheckoutCleanupProperties、カート変更のリスナー
 │   ├── payment/            # 支払の結果の反映、支払画面
 │   ├── shipment/           # 出荷の登録
-│   ├── model/              # 表示の型（注文手続き、注文の詳細、支払）と注文の成立の入出力
+│   ├── model/              # 表示の型（view。見積もり、注文手続き、注文の詳細と一覧、支払、出荷、レポート用の注文）と注文の成立の入出力
 │   └── port/               # 注文の一覧の検索と、腐敗防止層の port（カート、商品カタログ、在庫、地域、決済、出荷）
-├── domain/
+├── domain/                 # 直下に、エラーの定義（OrderErrorCode）
 │   ├── quote/              # 見積もり、明細、金額の内訳。port/ は税の腐敗防止層の port
 │   ├── checkout/           # 注文手続き。port/ はリポジトリ
-│   └── order/              # 注文（集約）、状態などの列挙、エラー。vo/ は値、port/ はリポジトリ
+│   └── order/              # 注文（集約）、状態などの列挙、購入者の情報（BuyerProfile）、キャンセル（Cancellation）。vo/ は注文番号・配送先・明細などの値、port/ はリポジトリ
 └── infrastructure/
+    ├── OrderConfig         # 設定のクラス。注文の設定の値の型と、注文手続きの片付けの設定の値の型を有効にする
     ├── persistence/        # リポジトリと一覧の検索の実装
     └── directory/          # カート・商品カタログ・在庫・地域・税・決済・出荷の腐敗防止層
 ```

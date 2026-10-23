@@ -86,7 +86,7 @@
 | AC-61 | ページ単位で取得できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreProductSearchTest`、`StorefrontApiTest`、`searchQuery.test.ts` |
 | AC-62 | 商品名、説明、画像、価格（BR-4）、バリアント軸と選択肢を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`VariantPicker.test.tsx`、`publish.spec.ts` ほか 2 |
 | AC-63 | バリアントを選ぶと、その在庫状況を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`variantSelection.test.ts` |
-| AC-64 | 在庫状況は「在庫あり」「在庫なし」のみ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `QuoteItemSummary.test.tsx`、`StorefrontApiTest`、`publish.spec.ts` ほか 1 |
+| AC-64 | 在庫状況は「在庫あり」「在庫なし」のみ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`variantSelection.test.ts` |
 | AC-65 | C 側に表示されない商品は、存在しない商品と同じ結果になる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
 | AC-66 | URL は品番が変わっても変わらない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
 | AC-67 | BMP、HEIC / HEIF など一般的な画像形式も受け付ける（対応形式は p… | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ImageFormatTest`、`MediaApiTest`、`ProductEditPage.test.tsx` ほか 3 |
@@ -102,14 +102,14 @@
 | AC-77 | 品目ごとに商品名、軸の値、画像、単価（BR-4）、数量、小計を表示し、あわせて商… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AmountsSummary.test.tsx`、`QuoteItemSummary.test.tsx`、`StorefrontCartTest` ほか 1 |
 | AC-78 | 品目の数量を変更（AC-75、76 の範囲で）・削除できる。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartItemControls.test.tsx`、`CartTest` ほか 1 |
 | AC-79 | 単価は常に現在の価格で表示する。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StorefrontCartTest` |
-| AC-80 | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartItemControls.test.tsx`、`OrderCatalogApiTest`、`QuoteItemSummary.test.tsx` ほか 4 |
+| AC-80 | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `OrderCatalogApiTest`、`QuoteItemSummary.test.tsx`、`QuoteTest` ほか 3 |
 | AC-81 | 最後に変更してから 30 日たったカートは、空のカートとして扱う。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [017](../specs/archive/mvp/017-stability/spec.md) | [カートモジュール](modules/cart.md)（期限） | `CartApiTest`、`CartMergeTest`、`CartTest` ほか 1 |
 | AC-82 | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる（B… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`StockReservationApiTest`、`cart.test.ts` ほか 2 |
 | AC-83 | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`reservation-race.spec.ts` |
-| AC-84 | 引当は次のときに解除される。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（引当） | `CheckoutApiTest`、`StockReservationApiTest` |
+| AC-84 | 引当は次のときに解除される。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（引当） | `CheckoutApiTest`、`CheckoutCartChangeApiTest`、`StockReservationApiTest` |
 | AC-85 | 注文手続きでは、カートの内容、送料、総額、税率ごとの消費税額を確認し、メールアド… | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md)、[016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文（集約））、[店舗画面](apps/store.md) 第 4.8 節 | `CheckoutApiTest`、`order.spec.ts` |
 | AC-86 | 入力の形式。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[地域モジュール](modules/region.md) | `OrderForm.test.tsx`、`OrderTest`、`PlaceOrderApiTest` ほか 4 |
-| AC-87 | 注文が成立すると、全品目の在庫数を注文数だけ減らし、引当を解除する。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（操作） | `OrderForm.test.tsx`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` ほか 3 |
+| AC-87 | 注文が成立すると、全品目の在庫数を注文数だけ減らし、引当を解除する。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（操作） | `OrderForm.test.tsx`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` ほか 2 |
 | AC-88 | 空のカート、または購入できない品目（AC-80）を含むカートは注文できない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`OrderTest` |
 | AC-89 | 確認した総額と、注文時点で計算した総額が異なる場合（その間に価格や税率が変わった… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `PlaceOrderApiTest`、`checkout.test.ts`、`placeOrderErrors.test.ts` |
 | AC-90 | 注文が成立すると注文番号を採番し、カートを空にする。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（状態遷移の後の箇条）、[カートモジュール](modules/cart.md)（カート） | `PlaceOrderApiTest` |
@@ -117,7 +117,7 @@
 | AC-92 | 注文には、注文時点の商品品番、バリアント品番、商品名、軸の値、税抜単価、税率、税… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `OrderCatalogApiTest`、`OrderTest`、`PlaceOrderApiTest` |
 | AC-93 | 注文の直後に、注文番号、注文日時、明細、金額の内訳（BR-7、8）、お届け先、状… | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [店舗画面](apps/store.md) 第 4.7 節 | `PlaceOrderApiTest`、`order.spec.ts` |
 | AC-94 | 注文の URL を知っていれば、後から同じ内容を見られる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表） | `PlaceOrderApiTest` |
-| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表、状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`checkout.test.ts` ほか 2 |
+| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表、状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`order.spec.ts` ほか 2 |
 | AC-96 | キャンセルの申請は、1 つの注文につき 1 回だけ。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`StorefrontShopTest` ほか 2 |
 | AC-97 | 全ての注文を、注文日時の新しい順に一覧できる。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx` |
 | AC-98 | 注文番号の前方一致、状態、注文日の範囲（BR-3）で絞り込める。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx`、`orderFilter.test.ts` |
@@ -151,7 +151,7 @@
 | AC-126 | 注文手続きは、それを始めた会員だけが操作・参照できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-127 | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`OrderForm.test.tsx`、`placeOrderErrors.test.ts` |
 | AC-128 | 注文は、注文した会員に結び付く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`member.spec.ts` |
+| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`member.spec.ts`、`orderListQuery.test.ts` |
 | AC-130 | 一覧から注文の詳細（AC-93 と同じ内容）に遷移し、キャンセルを申請できる（A… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 変更 | [003](../specs/archive/mvp/003-auth/spec.md) | [015](../specs/archive/mvp/015-security/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表：ログインしていなければ 401） | `MemberOrderApiTest` |
 | AC-132 | 管理画面は、ログインしなければ何も表示しない。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthGate.test.tsx`、`login.test.ts` |
@@ -164,7 +164,7 @@
 | AC-139 | 運営者の権限は、IdP で職務（BR-12）を割り当てて与える。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest` |
 | AC-140 | 職務の付け外しと、アカウントの無効化は、一定時間（plan で決める）のうちに管… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest`、`RealmSettingsContractTest` |
 | AC-141 | 管理画面で権限のない操作をすると、「権限がない」と表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `StockPage.test.tsx`、`errors.test.ts`、`permission.spec.ts` |
-| AC-142 | 在庫の調整（AC-45 の履歴）、注文のキャンセルの申請の承認・却下、運営者の判… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `CancellationApiTest`、`InventoryApiTest`、`StockPage.test.tsx` |
+| AC-142 | 在庫の調整（AC-45 の履歴）、注文のキャンセルの申請の承認・却下、運営者の判… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `CancellationApiTest`、`InventoryApiTest`、`OrderDetailPage.test.tsx` ほか 1 |
 | AC-143 | 注文手続きで注文すると、注文は「支払待ち」で作られ、決済サービスの支払画面に移る… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`OrderTest` ほか 2 |
 | AC-144 | 「支払待ち」の注文を作ると、全品目の在庫数を減らす。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PlaceOrderApiTest` |
 | AC-145 | カード番号は決済サービスの画面で入力する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
@@ -173,7 +173,7 @@
 | AC-148 | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-149 | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-150 | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
-| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 2 |
+| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`order.test.ts` ほか 2 |
 | AC-152 | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentApiTest` |
 | AC-153 | 支払の期限（BR-16）までに与信が成功しなかった注文は、キャンセルになり、明細… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`PaymentExpiryJobTest` ほか 2 |
 | AC-154 | 期限切れのキャンセルは、期限から一定時間（plan で決める）のうちに行われる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentExpiryJobTest` |
@@ -182,7 +182,7 @@
 | AC-157 | 期限切れでキャンセルした後に与信の成功を受信したら、その与信を取り消す。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` |
 | AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderPaymentApiTest`、`orderState.test.ts` ほか 1 |
 | AC-159 | 店舗の注文一覧と注文詳細に、「支払待ち」の注文の支払の期限を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
-| AC-160 | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderListPage.test.tsx`、`OrderPaymentApiTest` |
+| AC-160 | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderListPage.test.tsx`、`OrderPaymentApiTest` ほか 1 |
 | AC-161 | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderListPage.test.tsx`、`OrderPaymentApiTest` |
 | AC-162 | 与信済みの注文がキャンセルになると、与信を取り消す。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` ほか 1 |
 | AC-163 | キャンセルは、与信の取消の結果を待たずに成立する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest` |
@@ -201,8 +201,8 @@
 | AC-176 | 通知の順序が入れ替わっても、配送状態は戻らない（例：「配達完了」の後に「配送中」… | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`ShipmentTest` |
 | AC-177 | 途中の状態の通知が届かなくても、後の状態に遷移する（例：「出荷済み」から「配達完… | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`ShipmentTest` |
 | AC-178 | 署名を確認できない通知と、登録済みのどの出荷にも一致しない通知は、処理しない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`MockCarrierTest` |
-| AC-179 | 店舗の注文詳細に、配送状態、配送業者、送り状番号を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `ShippingApiTest`、`StoreOrderShipmentApiTest`、`labels.test.ts` ほか 1 |
-| AC-180 | 店舗の注文一覧で、出荷後の注文は、注文状態の代わりに配送状態を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest`、`labels.test.ts`、`shipping.spec.ts` |
+| AC-179 | 店舗の注文詳細に、配送状態、配送業者、送り状番号を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderStatusBadge.test.tsx`、`ShippingApiTest`、`StoreOrderShipmentApiTest` ほか 2 |
+| AC-180 | 店舗の注文一覧で、出荷後の注文は、注文状態の代わりに配送状態を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderStatusBadge.test.tsx`、`StoreOrderShipmentApiTest`、`labels.test.ts` ほか 1 |
 | AC-181 | 管理画面の注文詳細に、配送状態、配送業者、送り状番号、出荷日時を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx` |
 | AC-182 | 管理画面の注文一覧で、状態「出荷済み」で絞り込める。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderListPage.test.tsx` |
 | AC-183 | 出荷を登録すると、注文のメールアドレスに、注文番号、配送業者、送り状番号を書いた… | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `ShipmentMailTest`、`shipping.spec.ts` |
@@ -216,19 +216,19 @@
 | AC-191 | 返送された注文をキャンセルするとき、運営者は在庫に戻すかを選ぶ。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderShipmentTest`、`ReturnedOrderCancellationApiTest` ほか 1 |
 | AC-192 | 返送された注文をキャンセルすると、総額（送料を含む）を返金する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentRefundTest`、`ReturnedOrderCancellationApiTest`、`shipping.spec.ts` |
 | AC-193 | キャンセルは、返金の結果を待たずに成立する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentRefundTest`、`ReturnedOrderCancellationApiTest` |
-| AC-194 | 返金が済むまで、管理画面の注文詳細に「返金待ち」と表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx`、`PaymentRefundTest` |
+| AC-194 | 返金が済むまで、管理画面の注文詳細に「返金待ち」と表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx`、`PaymentRefundTest` ほか 1 |
 | AC-195 | 同じ注文の返金が重複して実行されても、返金は 1 回だけ。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentRefundTest` |
 | AC-196 | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest` |
-| AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 2 |
+| AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 3 |
 | AC-198 | 同じ数字を、粒度ごとの行の表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest` |
 | AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
-| AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
+| AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest`、`labels.test.ts` |
 | AC-201 | 売れなかった区切りも、0 の行として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
-| AC-202 | 運営者は、商品を 1 つと期間を選び、バリエーション（軸の値の組み合わせ）ごとの… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
+| AC-202 | 運営者は、商品を 1 つと期間を選び、バリエーション（軸の値の組み合わせ）ごとの… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` ほか 1 |
 | AC-203 | 同じ数字を表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
 | AC-204 | 期間に売れなかったバリエーションも、0 として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
 | AC-205 | 運営者は、期間を選び、お届け先の都道府県ごとの売上額と注文件数を、グラフと表で見… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
-| AC-206 | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
+| AC-206 | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 2 |
 | AC-207 | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` |
 | AC-208 | 生年月日の分からない会員の注文は、年齢層「不明」として数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AgeGroupTest`、`CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest` ほか 2 |
 | AC-209 | IdP の会員登録の画面で、生年月日を入れられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
@@ -241,7 +241,7 @@
 | AC-216 | 権限はレポートごとに分ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AdminApiPermissionContractTest` |
 | AC-217 | 役割ごとの権限は BR-28 のとおり。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
 | AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx` ほか 1 |
-| AC-219 | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
+| AC-219 | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 2 |
 | AC-220 | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-221 | IdP の会員登録の画面で性別（BR-29）を選べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
 | AC-222 | 注文の成立のときに、その時点の性別を注文に記録する。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest`、`RealmSettingsContractTest` ほか 1 |
@@ -262,9 +262,9 @@
 | AC-237 | 運用ポートの番号は設定で変更でき、ローカルの既定は業務ポートと競合しない。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `ManagementPortConfigTest` |
 | AC-238 | 管理画面を本番モードでビルドするとき、IdP の接続先と client ID が… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `oidcEnv.test.ts` |
 | AC-239 | 管理画面の開発モードとテストは、今までどおりローカルの IdP の既定値で動く。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `oidcEnv.test.ts` |
-| AC-240 | 店舗画面は、公開する URL（origin）を環境変数で受け取る。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `publicUrl.test.ts` |
-| AC-241 | 店舗画面のログインの戻り先と、ログアウトの後の戻り先は、公開する URL から作… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `loginRedirect.test.ts`、`publicUrl.test.ts` |
-| AC-242 | 店舗画面の任意の設定（API の応答を再取得する間隔など）も、必須の設定と同じ … | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `publicUrl.test.ts` |
+| AC-240 | 店舗画面は、公開する URL（origin）を環境変数で受け取る。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `config.test.ts` |
+| AC-241 | 店舗画面のログインの戻り先と、ログアウトの後の戻り先は、公開する URL から作… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `index.test.ts`、`loginRedirect.test.ts` |
+| AC-242 | 店舗画面の任意の設定（API の応答を再取得する間隔など）も、必須の設定と同じ … | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `config.test.ts` |
 | AC-243 | ローカル環境（compose）のサービスのポートは、既定では手元のマシン（127… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | 除外 |
 | AC-244 | バックエンドの本番の jarに、ローカル・E2E・Stripe の sandbo… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | 除外 |
 | AC-245 | 本番の jarを、ローカルの profile を指定して起動しても、mock フ… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `ProductionJarStartupTest` |
@@ -299,17 +299,17 @@
 | AC-274 | 店舗 API と管理 API の契約は、操作ごとに、返しうるエラーのコードの一覧… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ErrorCodeCheckTest`、`ErrorCodeContractTest` |
 | AC-275 | バックエンドのエラーのコードと、契約のエラーのコードの一覧が食い違うと、CI で… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ErrorCodeContractTest` |
 | AC-276 | 管理 API の商品のバリアントの追加は、作ったバリアントの URL を応答の … | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductApiTest` |
-| AC-277 | モジュールの間で列挙を写すときは、全ての値の対応を、コンパイルかテストで確認する… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `CartQuoteServiceTest`、`InventoryMapperTest`、`OrderApiDirectoryTest` ほか 3 |
-| AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `BasisTest`、`StatusHistoryEntryTest` |
+| AC-277 | モジュールの間で列挙を写すときは、全ての値の対応を、コンパイルかテストで確認する… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `InventoryMapperTest`、`OrderApiDirectoryTest`、`OrderQuoteApiTest` ほか 6 |
+| AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `BasisTest`、`ReportGenderTest`、`StatusHistoryEntryTest` |
 | AC-279 | 列挙を文字列で持つデータベースの列は、全て取りうる値を制約で制限する。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `EnumColumnConstraintTest` |
 | AC-280 | 業務の日付の基準にする時間帯（日本時間）は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-281 | 時点の税率の判定は 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-282 | 分類の深さの上限は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductListApiTest` |
 | AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`RegionApiTest`、`postalCodeFill.test.ts` |
 | AC-284 | 片付けの定期ジョブが、次のデータを保存期間を過ぎたら削除する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CartTest`、`CheckoutCleanupJobTest` ほか 2 |
-| AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
+| AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-286 | 片付けは、注文・支払・出荷と、未完了のイベント・止めたイベントを削除しない。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CheckoutCleanupJobTest`、`EventCleanupJobTest` |
-| AC-287 | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
+| AC-287 | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-288 | 片付けのジョブは、データごとに削除した件数をログに出力する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest`、`EventCleanupJobTest` ほか 1 |
 | AC-289 | 期限切れのカート・注文手続きを削除した後に、そのカート・注文手続きを使う操作は、… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest` |
 | AC-290 | 再発行しても処理に失敗し続けるイベントは、決めた回数（設定で変更できる）を超えた… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `EventResubmissionJobTest`、`EventResubmissionSettingsTest` |
@@ -321,7 +321,7 @@
 | AC-296 | 画像の確定で、画像の変換のサービスに接続できない、時間内に応答がない、変換のサー… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ProductImageServiceErrorApiTest` |
 | AC-297 | 画像の確定で、変換のサービスがファイルを読めない（ファイルの側の問題）ときだけ、… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ImgproxyImageConverterFailureTest` |
 | AC-298 | 画像の確定で、ファイル保存のサービスのエラーなら 502 を返す（受付は署名付き… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ProductImageServiceErrorApiTest`、`S3ObjectStorageFailureTest` |
-| AC-299 | 店舗画面と管理画面は、外部サービスのエラーを受けたら、再試行できることを示すメッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ProductEditPage.test.tsx`、`checkout.test.ts` |
+| AC-299 | 店舗画面と管理画面は、外部サービスのエラーを受けたら、再試行できることを示すメッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ProductEditPage.test.tsx`、`order.test.ts` |
 | AC-300 | API の規約に、外部サービスのエラーの扱いと、OpenAPI の外のエンドポイ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | 除外 |
 | AC-301 | バックエンドから決済サービスとファイル保存のサービスへの呼び出しに、接続と応答の… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `S3ObjectStorageFailureTest`、`StripeConfigTest` |
 | AC-302 | 店舗画面のサーバー側から、バックエンドと IdP への呼び出しに、タイムアウトが… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `config.test.ts`、`timeout.test.ts` |

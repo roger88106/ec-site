@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.product.vo;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.catalog.domain.product.ProductErrorCode;
+import com.ecsite.module.catalog.domain.ProductErrorCode;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.List;

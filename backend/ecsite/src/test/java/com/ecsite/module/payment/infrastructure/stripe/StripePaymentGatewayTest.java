@@ -9,7 +9,7 @@ import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.PageRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.RefundRequest;
-import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
+import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.Request;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;

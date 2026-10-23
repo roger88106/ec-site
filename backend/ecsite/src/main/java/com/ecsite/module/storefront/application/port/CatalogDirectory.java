@@ -2,6 +2,8 @@ package com.ecsite.module.storefront.application.port;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.storefront.application.model.CatalogCategory;
+import com.ecsite.module.storefront.application.model.ProductCondition;
 
 import java.util.List;
 import java.util.Optional;

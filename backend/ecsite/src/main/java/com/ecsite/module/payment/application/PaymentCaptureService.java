@@ -4,7 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.port.PaymentGateway;
-import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
+import com.ecsite.module.payment.domain.PaymentErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 

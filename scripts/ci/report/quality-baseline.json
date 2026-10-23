@@ -2,37 +2,37 @@
   "targets": {
     "backend": {
       "line": {
-        "value": 98.09,
+        "value": 98.17,
         "tolerance": 0.1
       },
       "branch": {
-        "value": 85.26,
+        "value": 85.59,
         "tolerance": 0.3
       }
     },
     "admin": {
       "line": {
-        "value": 96.59,
+        "value": 96.6,
         "tolerance": 0
       },
       "branch": {
-        "value": 94.11,
+        "value": 94.13,
         "tolerance": 0
       }
     },
     "store": {
       "line": {
-        "value": 85.38,
+        "value": 85.55,
         "tolerance": 0
       },
       "branch": {
-        "value": 83.3,
+        "value": 83.54,
         "tolerance": 0
       }
     },
     "shared": {
       "line": {
-        "value": 97.06,
+        "value": 97.14,
         "tolerance": 0
       },
       "branch": {
@@ -42,7 +42,7 @@
     },
     "backend-domain": {
       "mutation": {
-        "value": 90.2,
+        "value": 91.02,
         "tolerance": 0
       }
     }

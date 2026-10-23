@@ -2,9 +2,10 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
-import com.ecsite.module.reporting.domain.Basis;
-import com.ecsite.module.reporting.domain.DailySales;
-import com.ecsite.module.reporting.domain.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.Basis;
+import com.ecsite.module.reporting.domain.sales.DailySales;
+import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
+import com.ecsite.module.reporting.domain.sales.ReportPeriod;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
@@ -111,7 +112,7 @@ class JooqReportQueryRepository implements ReportQueryRepository {
                     .from(SALES_ORDER)
                     .where(counted(period, basis))
                     .groupBy(keys)
-                    .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), row.value3(), money(row.value4()),
+                    .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), buyerGender(row.value3()), money(row.value4()),
                             row.value5()));
         }
         // 商品を選んだら、その商品の明細を含む注文だけを数え、売上額はその明細の分だけ
@@ -121,11 +122,18 @@ class JooqReportQueryRepository implements ReportQueryRepository {
                 .join(SALES_ORDER_LINE).on(SALES_ORDER_LINE.ORDER_ID.eq(SALES_ORDER.ORDER_ID))
                 .where(counted(period, basis), SALES_ORDER_LINE.PRODUCT_ID.eq(productId))
                 .groupBy(keys)
-                .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), row.value3(), money(row.value4()),
+                .fetch(row -> new SegmentTotal(row.value1(), age(row.value2()), buyerGender(row.value3()), money(row.value4()),
                         row.value5()));
     }
 
 // ============================== プライベートメソッド ==============================
+
+    /**
+     * 列の性別の値を、注文時の性別の列挙にする。
+     */
+    private static @Nullable ReportBuyerGender buyerGender(@Nullable String value) {
+        return value == null ? null : ReportBuyerGender.valueOf(value);
+    }
 
     /**
      * 数える日：注文基準は注文日、出荷基準は出荷日

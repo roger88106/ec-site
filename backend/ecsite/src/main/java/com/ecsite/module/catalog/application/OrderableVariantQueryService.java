@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.application;
 
-import com.ecsite.module.catalog.api.OrderableVariant;
+import com.ecsite.module.catalog.application.model.view.OrderableVariantView;
 import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -36,7 +36,7 @@ public class OrderableVariantQueryService {
      * @param variantIds バリアント ID
      * @return バリアント ID → 情報。存在しないバリアントは含めない
      */
-    public Map<UUID, OrderableVariant> findVariants(Collection<UUID> variantIds) {
+    public Map<UUID, OrderableVariantView> findVariants(Collection<UUID> variantIds) {
         if (variantIds.isEmpty()) {
             return Map.of();
         }

@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.product.vo;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.domain.product.ProductErrorCode;
+import com.ecsite.module.catalog.domain.ProductErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

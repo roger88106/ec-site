@@ -7,10 +7,10 @@ import com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuer
 import com.ecsite.module.reporting.application.model.view.AgeGroupSales;
 import com.ecsite.module.reporting.application.model.view.GenderSales;
 import com.ecsite.module.reporting.application.model.view.PrefectureSales;
-import com.ecsite.module.reporting.domain.AgeGroup;
-import com.ecsite.module.reporting.domain.Basis;
-import com.ecsite.module.reporting.domain.ReportGender;
-import com.ecsite.module.reporting.domain.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.AgeGroup;
+import com.ecsite.module.reporting.domain.sales.Basis;
+import com.ecsite.module.reporting.domain.sales.ReportGender;
+import com.ecsite.module.reporting.domain.sales.ReportPeriod;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;

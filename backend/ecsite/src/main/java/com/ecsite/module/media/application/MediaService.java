@@ -1,8 +1,7 @@
 package com.ecsite.module.media.application;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.media.api.ImageUpload;
-import com.ecsite.module.media.api.PreparedImage;
+import com.ecsite.module.media.application.model.ImageUploadView;
 import com.ecsite.module.media.application.port.AssetRepository;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
@@ -68,7 +67,7 @@ public class MediaService {
      * @param contentLength ファイルの大きさ（バイト）
      * @return 受付の情報
      */
-    public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
+    public ImageUploadView requestImageUpload(String scope, String contentType, long contentLength) {
         var uploadId = UUID.randomUUID();
         var uploadKey = AssetKeys.upload(scope, uploadId);
         if (ImageFormat.ofContentType(contentType).isEmpty()) {
@@ -78,14 +77,14 @@ public class MediaService {
 
         // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザが付ける Content-Type と合う）
         var presigned = storage.presignUpload(uploadKey, contentType.toLowerCase(Locale.ROOT), contentLength);
-        return new ImageUpload(uploadId, presigned.url(), presigned.headers(), presigned.expiresAt());
+        return new ImageUploadView(uploadId, presigned.url(), presigned.headers(), presigned.expiresAt());
     }
 
     /**
      * 受け付けた画像を用意する（MediaApi の同じメソッドの説明を参照）。<br />
      * DB を使わないので、トランザクションを始めない。
      */
-    public PreparedImage prepareImage(String scope, UUID uploadId) {
+    public UUID prepareImage(String scope, UUID uploadId) {
         var uploadKey = AssetKeys.upload(scope, uploadId);
         var size = storage.findUploadSize(uploadKey)
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND));
@@ -96,26 +95,26 @@ public class MediaService {
         }
         var webp = imageConverter.convertToWebp(uploadKey);
 
-        var prepared = new PreparedImage(UUID.randomUUID());
-        storage.putPublished(storageKey(prepared), webp, ImageFormat.WEBP.contentType());
-        return prepared;
+        var assetId = UUID.randomUUID();
+        storage.putPublished(storageKey(assetId), webp, ImageFormat.WEBP.contentType());
+        return assetId;
     }
 
     /**
      * 用意した画像をアセットとして記録する（MediaApi の同じメソッドの説明を参照）。
      */
     @Transactional(propagation = Propagation.MANDATORY)
-    public UUID registerImage(PreparedImage prepared) {
-        assetRepository.insert(new Asset(prepared.assetId(), ImageFormat.WEBP, storageKey(prepared), clock.instant()));
-        return prepared.assetId();
+    public UUID registerImage(UUID assetId) {
+        assetRepository.insert(new Asset(assetId, ImageFormat.WEBP, storageKey(assetId), clock.instant()));
+        return assetId;
     }
 
     /**
      * 用意した画像の配信のファイルを消す（MediaApi の同じメソッドの説明を参照）。<br />
      * 消せなかったファイルは、だれからも参照されずに残る（登録のないファイルを探して消すことはしない）。
      */
-    public void discardImage(PreparedImage prepared) {
-        var storageKey = storageKey(prepared);
+    public void discardImage(UUID assetId) {
+        var storageKey = storageKey(assetId);
         try {
             storage.deletePublished(storageKey);
         } catch (RuntimeException ex) {
@@ -157,8 +156,8 @@ public class MediaService {
     /**
      * 用意した画像の、配信のバケットでのキー（アセット ID と WebP で決まる）。
      */
-    private static String storageKey(PreparedImage prepared) {
-        return AssetKeys.published(prepared.assetId(), ImageFormat.WEBP);
+    private static String storageKey(UUID assetId) {
+        return AssetKeys.published(assetId, ImageFormat.WEBP);
     }
 
     /**

@@ -4,7 +4,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
-import com.ecsite.module.tax.domain.taxcategory.TaxErrorCode;
+import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxRate;
 import com.ecsite.module.tax.domain.taxcategory.TaxRateDraft;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;

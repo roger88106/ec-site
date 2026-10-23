@@ -6,7 +6,7 @@ C 側 API。複数のモジュールの結果を組み合わせて返す。
 |------|------|
 | レベル | B（ドメインもテーブルも持たない参照専用の層） |
 | 依存 | 商品カタログ・在庫・注文（API）、会員（API。presentation だけ） |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[013](../../specs/archive/mvp/013-backend-consistency) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[013](../../specs/archive/mvp/013-backend-consistency)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ## 置く理由
 
@@ -17,9 +17,11 @@ C 側の画面は、商品の情報と在庫の有無を同時に必要とする
 ```
 storefront/
 ├── presentation/           # store.yaml から生成したインターフェースを実装
-├── application/            # 組み合わせ、表示の型、店舗の情報の設定
+├── application/            # 組み合わせの service、表示の型、設定の値の型 ShopProperties。ShopProperties は service が読み、view に変える
+│   ├── model/              # 表示の型（view。店舗の情報の ShopView を含む）と商品の一覧の条件
 │   └── port/               # 腐敗防止層の port と、その型
 └── infrastructure/
+    ├── StorefrontConfig    # 設定のクラス。店舗の情報の設定の値の型を有効にする
     └── directory/          # 商品カタログ・在庫・注文の API を自分の型に変える腐敗防止層
 ```
 
@@ -32,12 +34,12 @@ storefront/
 | カート | 注文の見積もり API に、品目の取得から金額と購入できるかの判定までを任せ、表示の形に変える ※1 |
 
 - 在庫がまだないバリアントは「在庫なし」（[inventory.md](inventory.md)）。
-- 組み合わせの結果は application の表示の型（view）にし、presentation はそれを API の型に変えるだけにする。腐敗防止層の型をそのまま presentation に渡さないのは、在庫の有無と、軸ごとの値の一覧（選べない値を含む）を組み立てる加工が application にあるため。
+- 組み合わせの結果は application の表示の型（view）にし、presentation はそれを API の型に変えるだけにする。腐敗防止層の型（port の型）は presentation に渡さず、application の型に変える。在庫の有無と、軸ごとの値の一覧（選べない値を含む）を組み立てる処理が application にあるため。
 - 会員のカートは持ち主だけに表示し、他の人には 404 を返す。要求した会員 ID（ログインしていなければなし）を見積もり API に渡し、注文モジュールがカートの持ち主と照合する。
 
 ※1：注文手続き中なら、注文モジュールがその引当を販売可能数から除いて見積もる。
 
 ## 店舗の情報
 
-- 問い合わせ先のメールアドレスを設定に持ち、店舗 API で返す。キャンセルの申請が却下された注文の画面に表示する。
+- 問い合わせ先のメールアドレスを設定に持ち、店舗 API で返す。application の service が設定の値の型を読んで view（ShopView）に変換し、presentation は view から応答に変換する。presentation は設定の値の型を受け取らない。店舗画面は、キャンセルの申請が却下された注文の画面にこのメールアドレスを表示する。
 - 問い合わせ先は必須。なければ起動しない。

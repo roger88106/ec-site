@@ -1,7 +1,7 @@
 package com.ecsite.module.tax.domain.taxcategory.vo;
 
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.tax.domain.taxcategory.TaxErrorCode;
+import com.ecsite.module.tax.domain.TaxErrorCode;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 

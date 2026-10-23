@@ -1,37 +1,45 @@
 import { describe, expect, test } from 'vitest'
 import { loadServerConfig, readServerConfig } from '@/auth/config'
-
-/** 本番で渡す値のすべて */
-const ALL_SET = {
-  NODE_ENV: 'production',
-  AUTH_SECRET: 'secret',
-  AUTH_KEYCLOAK_SECRET: 'client-secret',
-  AUTH_KEYCLOAK_ISSUER: 'https://idp.example/realms/ec-store',
-  AUTH_KEYCLOAK_ID: 'ec-store-web',
-  STORE_API_BASE_URL: 'https://api.example/api/store',
-  AUTH_URL: 'https://shop.example',
-}
+import { PRODUCTION_ENV } from '@/test/env'
 
 describe('店舗画面のサーバーの設定', () => {
   test('本番のモードで必須の値がなければ、足りない名前を並べて失敗する', () => {
-    const { AUTH_SECRET: _secret, AUTH_KEYCLOAK_SECRET: _clientSecret, ...missingTwo } = ALL_SET
+    const { AUTH_SECRET: _secret, AUTH_KEYCLOAK_SECRET: _clientSecret, ...missingTwo } = PRODUCTION_ENV
 
     expect(() => loadServerConfig(missingTwo)).toThrow(/AUTH_SECRET.*AUTH_KEYCLOAK_SECRET/)
   })
 
   test('本番のモードで空の値は、ないものとして扱う', () => {
-    expect(() => loadServerConfig({ ...ALL_SET, AUTH_KEYCLOAK_ISSUER: '' })).toThrow(/AUTH_KEYCLOAK_ISSUER/)
+    expect(() => loadServerConfig({ ...PRODUCTION_ENV, AUTH_KEYCLOAK_ISSUER: '' })).toThrow(/AUTH_KEYCLOAK_ISSUER/)
   })
 
   test('本番のモードで必須の値がそろえば、その値を使う', () => {
-    const config = loadServerConfig(ALL_SET)
+    const config = loadServerConfig(PRODUCTION_ENV)
 
-    expect(config.issuer).toBe(ALL_SET.AUTH_KEYCLOAK_ISSUER)
-    expect(config.clientId).toBe(ALL_SET.AUTH_KEYCLOAK_ID)
-    expect(config.clientSecret).toBe(ALL_SET.AUTH_KEYCLOAK_SECRET)
-    expect(config.secret).toBe(ALL_SET.AUTH_SECRET)
-    expect(config.apiBaseUrl).toBe(ALL_SET.STORE_API_BASE_URL)
-    expect(config.publicUrl).toBe(ALL_SET.AUTH_URL)
+    expect(config.issuer).toBe(PRODUCTION_ENV.AUTH_KEYCLOAK_ISSUER)
+    expect(config.clientId).toBe(PRODUCTION_ENV.AUTH_KEYCLOAK_ID)
+    expect(config.clientSecret).toBe(PRODUCTION_ENV.AUTH_KEYCLOAK_SECRET)
+    expect(config.secret).toBe(PRODUCTION_ENV.AUTH_SECRET)
+    expect(config.apiBaseUrl).toBe(PRODUCTION_ENV.STORE_API_BASE_URL)
+  })
+
+  test('AC-240 本番のモードで公開する URL（AUTH_URL）がなければ、起動に失敗する', () => {
+    const { AUTH_URL: _url, ...missing } = PRODUCTION_ENV
+
+    expect(() => loadServerConfig(missing)).toThrow(/AUTH_URL/)
+  })
+
+  test('AC-240 本番のモードで公開する URL があれば、その値を使う', () => {
+    expect(loadServerConfig(PRODUCTION_ENV).publicUrl).toBe(PRODUCTION_ENV.AUTH_URL)
+  })
+
+  test('AC-240 開発のモードとテストでは、値がなければローカルの店舗画面の URL を使う', () => {
+    expect(loadServerConfig({ NODE_ENV: 'development' }).publicUrl).toBe('http://localhost:3000')
+  })
+
+  test('AC-242 API の応答を取り直す間隔は、設定の 1 か所で読み、なければ 60 秒', () => {
+    expect(readServerConfig({ STORE_API_REVALIDATE_SECONDS: '1' }).apiRevalidateSeconds).toBe(1)
+    expect(readServerConfig({}).apiRevalidateSeconds).toBe(60)
   })
 
   test('開発のモードとテストでは、値がなければローカル用の既定の値を使う', () => {
@@ -48,7 +56,7 @@ describe('店舗画面のサーバーの設定', () => {
     expect(defaults.idpTimeoutSeconds).toBe(10)
 
     const config = loadServerConfig({
-      ...ALL_SET,
+      ...PRODUCTION_ENV,
       STORE_API_TIMEOUT_SECONDS: '45',
       AUTH_KEYCLOAK_TIMEOUT_SECONDS: '5',
     })
@@ -60,7 +68,7 @@ describe('店舗画面のサーバーの設定', () => {
     expect(() => loadServerConfig({ NODE_ENV: 'development', STORE_API_TIMEOUT_SECONDS: value })).toThrow(
       /STORE_API_TIMEOUT_SECONDS/,
     )
-    expect(() => loadServerConfig({ ...ALL_SET, AUTH_KEYCLOAK_TIMEOUT_SECONDS: value })).toThrow(
+    expect(() => loadServerConfig({ ...PRODUCTION_ENV, AUTH_KEYCLOAK_TIMEOUT_SECONDS: value })).toThrow(
       /AUTH_KEYCLOAK_TIMEOUT_SECONDS/,
     )
   })
@@ -70,8 +78,10 @@ describe('店舗画面のサーバーの設定', () => {
     expect(loadServerConfig({ NODE_ENV: 'development', STORE_API_REVALIDATE_SECONDS: '' }).apiRevalidateSeconds).toBe(
       60,
     )
-    expect(loadServerConfig({ ...ALL_SET, STORE_API_REVALIDATE_SECONDS: '1' }).apiRevalidateSeconds).toBe(1)
-    expect(loadServerConfig({ ...ALL_SET, STORE_API_REVALIDATE_SECONDS: '3600' }).apiRevalidateSeconds).toBe(3600)
+    expect(loadServerConfig({ ...PRODUCTION_ENV, STORE_API_REVALIDATE_SECONDS: '1' }).apiRevalidateSeconds).toBe(1)
+    expect(loadServerConfig({ ...PRODUCTION_ENV, STORE_API_REVALIDATE_SECONDS: '3600' }).apiRevalidateSeconds).toBe(
+      3600,
+    )
   })
 
   test('DC-135-16 再取得の間隔の 0 は、キャッシュしない設定として受け付ける', () => {
@@ -86,7 +96,7 @@ describe('店舗画面のサーバーの設定', () => {
       expect(() => loadServerConfig({ NODE_ENV: 'development', STORE_API_REVALIDATE_SECONDS: value })).toThrow(
         /STORE_API_REVALIDATE_SECONDS/,
       )
-      expect(() => loadServerConfig({ ...ALL_SET, STORE_API_REVALIDATE_SECONDS: value })).toThrow(
+      expect(() => loadServerConfig({ ...PRODUCTION_ENV, STORE_API_REVALIDATE_SECONDS: value })).toThrow(
         /STORE_API_REVALIDATE_SECONDS/,
       )
     },
@@ -95,14 +105,14 @@ describe('店舗画面のサーバーの設定', () => {
 
 describe('店舗画面の Cookie の接頭辞の設定', () => {
   test('DC-104-12 STORE_COOKIE_PREFIX は任意で、なければ空（今の名前のまま）。本番でも必須にしない', () => {
-    expect(() => loadServerConfig(ALL_SET)).not.toThrow()
-    expect(loadServerConfig(ALL_SET).cookiePrefix).toBe('')
+    expect(() => loadServerConfig(PRODUCTION_ENV)).not.toThrow()
+    expect(loadServerConfig(PRODUCTION_ENV).cookiePrefix).toBe('')
     expect(loadServerConfig({ NODE_ENV: 'development' }).cookiePrefix).toBe('')
     expect(readServerConfig({}).cookiePrefix).toBe('')
   })
 
   test('DC-104-12 STORE_COOKIE_PREFIX の値を使う', () => {
-    expect(loadServerConfig({ ...ALL_SET, STORE_COOKIE_PREFIX: 's1-' }).cookiePrefix).toBe('s1-')
+    expect(loadServerConfig({ ...PRODUCTION_ENV, STORE_COOKIE_PREFIX: 's1-' }).cookiePrefix).toBe('s1-')
     expect(readServerConfig({ STORE_COOKIE_PREFIX: 'Slot_2-' }).cookiePrefix).toBe('Slot_2-')
   })
 

@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（集約の不変条件がなく、写しと集計だけ。理由は後述） |
 | 依存 | 注文（API、イベント）、出荷（イベント）、商品カタログ・地域（API）。他のモジュールはレポートに依存しない |
-| 関連 spec | [010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ## レベルを B とした理由
 
@@ -119,11 +119,14 @@
 
 ```
 reporting/
-├── application/            # イベントのリスナー、写しの再作成、3 つのレポートの集計
-│   ├── model/              # 3 つのレポートの問い合わせの条件（query/）と結果（view/）
+├── application/            # イベントのリスナー、写しの再作成、3 つのレポートの集計、レポートの設定（設定の値の型 ReportingProperties と、それを view に変える ReportSettingsQueryService）
+│   ├── model/              # 3 つのレポートの問い合わせの条件（query/）と結果（view/。レポートの設定の ReportSettingsView を含む）
 │   └── port/               # 写しと履歴の保存、集計の問い合わせ、注文・商品カタログ・地域の腐敗防止層
-├── domain/                 # 注文の写しと状態の履歴、期間と区切り、推移、年齢層と性別
+├── domain/                 # 直下に、エラーの定義（ReportingErrorCode）。集約がないので、用途でパッケージを分ける
+│   ├── snapshot/           # 注文の写しと状態の履歴。注文時の性別（ReportBuyerGender）、キャンセルの種類、履歴に記録する状態は HistoryStatus で、注文の状態か配送状態を列挙で持つ
+│   └── sales/              # 売上の集計の値：期間と区切り、推移、日ごとの売上、年齢層と性別
 ├── infrastructure/
+│   ├── ReportingConfig     # 設定のクラス。レポートの設定の値の型を有効にする
 │   ├── directory/          # 注文・商品カタログ・地域の API の呼び出し
 │   └── persistence/        # 写しと履歴の保存、集計の SQL
 └── presentation/           # 管理 API（3 つのレポート）

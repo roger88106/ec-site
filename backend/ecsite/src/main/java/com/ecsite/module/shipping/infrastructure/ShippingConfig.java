@@ -1,6 +1,5 @@
 package com.ecsite.module.shipping.infrastructure;
 
-import com.ecsite.module.shipping.application.ShippingProperties;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Bean;

@@ -1,5 +1,5 @@
 import { describe, expect, test } from 'vitest'
-import type { Variant, VariantAxis } from '@/api/types'
+import type { VariantAxis } from '@/api/types'
 import {
   emptySelection,
   imageForVariant,
@@ -8,6 +8,7 @@ import {
   stockLabel,
   toggleValue,
 } from '@/features/catalog/variantSelection'
+import { variant } from '@/test/fixtures'
 
 /** テストの商品の軸（色とサイズ） */
 const axes: VariantAxis[] = [
@@ -15,20 +16,12 @@ const axes: VariantAxis[] = [
   { name: 'サイズ', values: ['M', 'L'] },
 ]
 
-/** テストのバリアントを作る */
-const variant = (id: string, axisValues: string[], inStock: boolean, salesSuspended = false): Variant => ({
-  id,
-  axisValues,
-  inStock,
-  salesSuspended,
-})
-
 // 白 M：在庫あり、白 L：在庫切れ、黒 M：販売停止（在庫はある）、黒 L：在庫あり。赤のバリアントはない
 const variants = [
-  variant('wm', ['白', 'M'], true),
-  variant('wl', ['白', 'L'], false),
-  variant('bm', ['黒', 'M'], true, true),
-  variant('bl', ['黒', 'L'], true),
+  variant('白', 'M'),
+  variant('白', 'L', { inStock: false }),
+  variant('黒', 'M', { salesSuspended: true }),
+  variant('黒', 'L'),
 ]
 
 describe('バリアントの選択', () => {
@@ -65,12 +58,12 @@ describe('バリアントの選択', () => {
   })
 
   test('AC-63 すべての軸を選ぶと、そのバリアントが決まる', () => {
-    expect(selectedVariant(axes, variants, ['白', 'M'])?.id).toBe('wm')
+    expect(selectedVariant(axes, variants, ['白', 'M'])?.id).toBe('variant-白-M')
     expect(selectedVariant(axes, variants, ['白', null])).toBeNull()
   })
 
   test('AC-63 軸のない商品は、ただ 1 つのバリアントが選ばれている', () => {
-    const single = [variant('only', [], false)]
+    const single = [variant('白', 'M', { id: 'only', axisValues: [], inStock: false })]
     expect(selectedVariant([], single, emptySelection([]))?.id).toBe('only')
   })
 
@@ -81,13 +74,13 @@ describe('バリアントの選択', () => {
   })
 
   test('AC-64 在庫状況は「在庫あり」「在庫なし」だけ。販売停止も「在庫なし」', () => {
-    expect(stockLabel(variant('a', [], true))).toBe('在庫あり')
-    expect(stockLabel(variant('b', [], false))).toBe('在庫なし')
-    expect(stockLabel(variant('c', [], true, true))).toBe('在庫なし')
+    expect(stockLabel(variant('白', 'M'))).toBe('在庫あり')
+    expect(stockLabel(variant('白', 'M', { inStock: false }))).toBe('在庫なし')
+    expect(stockLabel(variant('白', 'M', { salesSuspended: true }))).toBe('在庫なし')
   })
 })
 
-describe('imageForVariant', () => {
+describe('バリアントの画像', () => {
   const images = ['https://cdn.test/1.png', 'https://cdn.test/2.png']
 
   test('AC-38 バリアントに指定した画像を出す', () => {
@@ -99,7 +92,7 @@ describe('imageForVariant', () => {
     expect(imageForVariant(images, null)).toBe('https://cdn.test/1.png')
   })
 
-  test('画像がなければ null', () => {
+  test('商品に画像がなければ、画像を出さない（null）', () => {
     expect(imageForVariant([], null)).toBeNull()
   })
 })

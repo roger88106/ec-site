@@ -1,5 +1,7 @@
 import { HttpResponse, http as mswHttp } from 'msw'
 import { NextRequest } from 'next/server'
+import type { NextAuthConfig, Session } from 'next-auth'
+import type { JWT } from 'next-auth/jwt'
 import { describe, expect, test } from 'vitest'
 import { logout } from '@/actions/auth'
 import { GET as login } from '@/app/login/route'
@@ -8,10 +10,7 @@ import { readServerConfig } from '@/auth/config'
 import { ACCESS_TOKEN, authState, signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { cookieValue, redirectedTo, resetRequest } from '@/test/next'
-import { http, IDP, server } from '@/test/server'
-
-/** IdP の token の口 */
-const TOKEN_ENDPOINT = `${IDP}/protocol/openid-connect/token`
+import { http, IDP, networkError, server, TOKEN_ENDPOINT } from '@/test/server'
 
 /** いまの時刻（UNIX 時刻の秒） */
 const now = () => Math.floor(Date.now() / 1000)
@@ -22,7 +21,38 @@ function callbacks() {
   if (!config?.callbacks?.jwt || !config.callbacks.session) {
     throw new Error('auth.ts が Auth.js にコールバックを渡していない')
   }
-  return config.callbacks as Required<typeof config.callbacks>
+  return { jwt: config.callbacks.jwt, session: config.callbacks.session }
+}
+
+/** jwt コールバックの引数 */
+type JwtParams = Parameters<ReturnType<typeof callbacks>['jwt']>[0]
+
+/** session コールバックの引数 */
+type SessionParams = Parameters<ReturnType<typeof callbacks>['session']>[0]
+
+/** signIn イベントの引数 */
+type SignInEvent = Parameters<NonNullable<NonNullable<NextAuthConfig['events']>['signIn']>>[0]
+
+/** jwt コールバックの引数を作る。ログインした直後でなければ account はない */
+function jwtParams(overrides: Partial<JwtParams> & Pick<JwtParams, 'token'>): JwtParams {
+  return { user: { id: 'subject' }, account: null, ...overrides }
+}
+
+/**
+ * session コールバックの引数を作る（JWT のセッションなので session と token を渡す）。<br />
+ * Auth.js の型は、データベースのセッションの形（session が AdapterSession、user が AdapterUser）との合併で、
+ * JWT のセッションの形だけを型に書けないので、ここで 1 回だけ型を合わせる。
+ */
+function sessionParams(params: { session: Session; token: JWT }): SessionParams {
+  return params as SessionParams
+}
+
+/** signIn イベントの引数を作る */
+function signInEvent(accessToken: string): SignInEvent {
+  return {
+    user: { id: 'subject' },
+    account: { provider: 'keycloak', type: 'oidc', providerAccountId: 'subject', access_token: accessToken },
+  }
 }
 
 describe('ログイン', () => {
@@ -44,15 +74,6 @@ describe('ログイン', () => {
     expect(authState.signIn).toHaveBeenCalledWith('keycloak', { redirectTo: '/cart' }, { prompt: 'create' })
   })
 
-  test('DC-104-12 接頭辞を指定しなければ、Auth.js に Cookie の設定を渡さず、既定の名前でセッションを読む', async () => {
-    signInAs()
-
-    await getAccessToken()
-
-    expect(authState.config?.cookies).toBeUndefined()
-    expect(authState.tokenParams?.cookieName).toBe('authjs.session-token')
-  })
-
   test('ログインの画面へ移すときは、指定がなければいまの画面に戻る', async () => {
     resetRequest({ headers: { 'x-pathname': '/orders?page=2' } })
 
@@ -60,19 +81,21 @@ describe('ログイン', () => {
   })
 
   test('AC-114 ログインした直後の token に、画面に出す氏名（姓 名）と IdP の token を持つ', async () => {
-    const token = await callbacks().jwt({
-      token: { email: 'member@example.com' },
-      account: {
-        provider: 'keycloak',
-        type: 'oidc',
-        providerAccountId: 'subject',
-        access_token: 'access',
-        refresh_token: 'refresh',
-        id_token: 'id',
-        expires_at: 2000000000,
-      },
-      profile: { family_name: '山田', given_name: '太郎', email: 'member@example.com' },
-    } as never)
+    const token = await callbacks().jwt(
+      jwtParams({
+        token: { email: 'member@example.com' },
+        account: {
+          provider: 'keycloak',
+          type: 'oidc',
+          providerAccountId: 'subject',
+          access_token: 'access',
+          refresh_token: 'refresh',
+          id_token: 'id',
+          expires_at: 2000000000,
+        },
+        profile: { family_name: '山田', given_name: '太郎', email: 'member@example.com' },
+      }),
+    )
 
     expect(token).toMatchObject({
       name: '山田 太郎',
@@ -85,10 +108,12 @@ describe('ログイン', () => {
   })
 
   test('画面から読めるセッションには、氏名とメールアドレスだけを入れる（token は入れない）', async () => {
-    const session = await callbacks().session({
-      session: { expires: '2099-01-01T00:00:00.000Z', user: { name: 'x', email: 'x' } },
-      token: { name: '山田 太郎', email: 'member@example.com', accessToken: 'access', refreshToken: 'refresh' },
-    } as never)
+    const session = await callbacks().session(
+      sessionParams({
+        session: { expires: '2099-01-01T00:00:00.000Z', user: { name: 'x', email: 'x' } },
+        token: { name: '山田 太郎', email: 'member@example.com', accessToken: 'access', refreshToken: 'refresh' },
+      }),
+    )
 
     expect(session).toEqual({
       expires: '2099-01-01T00:00:00.000Z',
@@ -107,7 +132,7 @@ describe('ログイン', () => {
       }),
     )
 
-    await authState.config?.events?.signIn?.({ account: { access_token: 'login-access' } } as never)
+    await authState.config?.events?.signIn?.(signInEvent('login-access'))
 
     expect(authorization).toBe('Bearer login-access')
     expect(cookieValue('cart_id')).toBeUndefined()
@@ -138,6 +163,15 @@ describe('ログアウト', () => {
     expect(authState.signOut).toHaveBeenCalledWith({ redirect: false })
     expect(cookieValue('cart_id')).toBeUndefined()
   })
+
+  test('AC-241 ログアウトの後の戻り先は公開する URL から作り、リクエストヘッダーのホストとプロトコルを使わない', async () => {
+    signInAs({ idToken: 'member-id-token' })
+    resetRequest({ headers: { host: 'evil.test', 'x-forwarded-proto': 'https', 'x-forwarded-host': 'evil.test' } })
+
+    const url = new URL(await redirectedTo(() => logout()))
+
+    expect(url.searchParams.get('post_logout_redirect_uri')).toBe(`${readServerConfig().publicUrl}/`)
+  })
 })
 
 describe('token の取り直し', () => {
@@ -150,9 +184,9 @@ describe('token の取り直し', () => {
       }),
     )
 
-    const token = await callbacks().jwt({
-      token: { accessToken: 'old', refreshToken: 'old-refresh', idToken: 'id', expiresAt: now() + 30 },
-    } as never)
+    const token = await callbacks().jwt(
+      jwtParams({ token: { accessToken: 'old', refreshToken: 'old-refresh', idToken: 'id', expiresAt: now() + 30 } }),
+    )
 
     expect(grant).toMatchObject({
       grant_type: 'refresh_token',
@@ -160,31 +194,31 @@ describe('token の取り直し', () => {
       refresh_token: 'old-refresh',
     })
     expect(token).toMatchObject({ accessToken: 'new-access', refreshToken: 'new-refresh', idToken: 'id' })
-    expect((token as { expiresAt: number }).expiresAt).toBeGreaterThanOrEqual(now() + 299)
+    expect(token?.expiresAt).toBeGreaterThanOrEqual(now() + 299)
   })
 
   test('期限まで十分あれば、取り直さない', async () => {
     const token = { accessToken: 'current', refreshToken: 'refresh', expiresAt: now() + 3600 }
 
     // ハンドラーを渡さないので、IdP を呼べばテストが失敗する（setup.ts）
-    expect(await callbacks().jwt({ token } as never)).toEqual(token)
+    expect(await callbacks().jwt(jwtParams({ token }))).toEqual(token)
   })
 
   test('AC-117 IdP に取り直しを断られたら（ログインの状態が切れた）、ログインしていないものとする', async () => {
     server.use(mswHttp.post(TOKEN_ENDPOINT, () => HttpResponse.json({ error: 'invalid_grant' }, { status: 400 })))
 
-    const token = await callbacks().jwt({
-      token: { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: now() - 10 },
-    } as never)
+    const token = await callbacks().jwt(
+      jwtParams({ token: { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: now() - 10 } }),
+    )
 
     expect(token).toBeNull()
   })
 
   test('IdP に届かなければ、ログインの状態を残す', async () => {
-    server.use(mswHttp.post(TOKEN_ENDPOINT, () => HttpResponse.error()))
+    server.use(networkError('post', TOKEN_ENDPOINT))
     const token = { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: now() - 10 }
 
-    expect(await callbacks().jwt({ token } as never)).toEqual(token)
+    expect(await callbacks().jwt(jwtParams({ token }))).toEqual(token)
   })
 
   test('API を呼ぶときの access token は、期限が切れていればその場で取り直したものを使う', async () => {

@@ -31,6 +31,7 @@ import java.util.UUID;
 
 import static com.ecsite.OrderTestData.orderBody;
 import static com.ecsite.OrderTestData.startCheckoutRequest;
+import static com.ecsite.jooq.member.Tables.MEMBER_;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
@@ -78,7 +79,9 @@ class MemberOrderApiTest {
     /**
      * 会員（持ち主）
      */
-    private final TestTokens.Builder owner = TestTokens.member().subject(UUID.randomUUID()).email("owner@example.com");
+    private final UUID ownerSubject = UUID.randomUUID();
+
+    private final TestTokens.Builder owner = TestTokens.member().subject(ownerSubject).email("owner@example.com");
 
     /**
      * ほかの会員
@@ -162,7 +165,10 @@ class MemberOrderApiTest {
             mockMvc.perform(get(STORE + "/orders/" + orderId).with(owner.bearer()))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.email").value("owner@example.com"));
-            assertThat(dsl.fetchValue(SALES_ORDER.MEMBER_ID, SALES_ORDER.ID.eq(orderId))).isNotNull();
+            var ownerMemberId = dsl.select(MEMBER_.ID).from(MEMBER_)
+                    .where(MEMBER_.IDP_SUBJECT.eq(ownerSubject.toString())).fetchOne(MEMBER_.ID);
+            assertThat(ownerMemberId).isNotNull();
+            assertThat(dsl.fetchValue(SALES_ORDER.MEMBER_ID, SALES_ORDER.ID.eq(orderId))).isEqualTo(ownerMemberId);
         }
 
         @Test

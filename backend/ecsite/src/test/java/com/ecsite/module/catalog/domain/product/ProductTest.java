@@ -2,6 +2,7 @@ package com.ecsite.module.catalog.domain.product;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;

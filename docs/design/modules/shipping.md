@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（不変条件は配送状態の順位だけで、状態の履歴に業務の価値がない。理由は後述） |
 | 依存 | なし（注文が出荷の API を呼ぶ。出荷は注文に依存しない ※1） |
-| 関連 spec | [009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ※1：出荷が注文のイベントを受けると、モジュールが循環する。配送状態の変化を注文に知らせる必要もない（注文は読むだけ）。出荷が公開するイベント「配送状態の変化」を受けるのはレポートだけで、レポートには注文も出荷も依存しないので、循環しない。
 
@@ -111,7 +111,7 @@
 - 送り先は、画面を返したサーバーのエンドポイント（要求と同じ接続先）。設定で URL を持たない。
 - 状態の名前の表があるのはヤマト運輸だけなので、ほかの配送業者の出荷にはボタンを表示しない。
 - テストのコードから、通知の重複・順序の入れ替わり・途中の欠け・署名の誤り・合わない送り状番号を送れる。mock は、正しい署名の通知を作る操作と、HTTP でエンドポイントに送る操作を公開する。重複は同じ通知を重ねて送り、順序の入れ替わりと欠けは送る内容と順序で作り、合わない送り状番号は別の番号で作る。署名の誤りは、テストだけで使う作り方（`TestCarrierNotifications`。テストで共有するソース `src/testFixtures` に置き、本番の jar に入らない）で、正しい通知の署名を別の鍵で再生成する。決済の mock と同じく、本番の mock にテストだけで使う操作を置かないため。
-- 追跡を始めた送り状番号を覚え、テストから確認できる。
+- 追跡を始めても、mock は何も送信しない。テストが、追跡を始めた送り状番号を確認するときは、テスト共通のソース（`src/testFixtures`）の、mock を包む実装（`TestCarrierTracking`）が記録する。本番の mock にテストだけで使う記録を置かないため。
 - 自動では進めない。
 
 ## 構成
@@ -124,6 +124,7 @@ shipping/
 │   └── port/               # リポジトリ、追跡を始める、通知の受信
 ├── domain/                 # 出荷、配送業者、配送状態、送り状番号、エラーの定義
 └── infrastructure/
+    ├── ShippingConfig      # 設定のクラス。設定の値の型 ShippingProperties を有効にする。使う層が infrastructure なので、同じ層に置く
     ├── persistence/        # リポジトリの実装
     ├── carrier/            # 通知のエンドポイント、署名の検証、状態の名前の対応の表
     └── mock/               # mock の物流サービス、mock の画面

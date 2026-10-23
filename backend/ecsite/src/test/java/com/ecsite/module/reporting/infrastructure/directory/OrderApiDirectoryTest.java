@@ -1,8 +1,9 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
 import com.ecsite.module.order.api.OrderReportSnapshot;
-import com.ecsite.module.reporting.domain.ReportCancellationKind;
-import com.ecsite.module.reporting.domain.ReportOrderStatus;
+import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
+import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
+import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -26,7 +27,7 @@ class OrderApiDirectoryTest {
     @EnumSource(OrderReportSnapshot.CancellationKind.class)
     @DisplayName("AC-277 注文の API のキャンセルの種類の全ての値を、レポートのキャンセルの種類の同じ名前の値に写す")
     void mapsEveryCancellationKind(OrderReportSnapshot.CancellationKind kind) {
-        assertThat(OrderApiDirectory.toCancellationKind(kind)).isEqualTo(ReportCancellationKind.valueOf(kind.name()).name());
+        assertThat(OrderApiDirectory.toCancellationKind(kind)).isEqualTo(ReportCancellationKind.valueOf(kind.name()));
     }
 
     @Test
@@ -37,9 +38,9 @@ class OrderApiDirectoryTest {
 
     @ParameterizedTest(name = "{0}")
     @EnumSource(OrderReportSnapshot.Gender.class)
-    @DisplayName("AC-277 注文の API の性別の全ての値を、写しに持つ同じ名前の値に写す")
+    @DisplayName("AC-277 注文の API の性別の全ての値を、レポートの注文時の性別の同じ名前の値に写す")
     void mapsEveryGender(OrderReportSnapshot.Gender gender) {
-        assertThat(OrderApiDirectory.toBuyerGender(gender)).isEqualTo(gender.name());
+        assertThat(OrderApiDirectory.toBuyerGender(gender)).isEqualTo(ReportBuyerGender.valueOf(gender.name()));
     }
 
     @Test

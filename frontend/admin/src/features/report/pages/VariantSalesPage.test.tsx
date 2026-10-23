@@ -1,6 +1,8 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { VariantSalesReport } from '@/api/types'
+import { recordDownloads } from '@/test/download'
+import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
@@ -47,28 +49,25 @@ function serveVariantSales() {
   return queries
 }
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
-})
-
 describe('バリアントの売れ行き', () => {
-  it('AC-202、203、204 バリアントごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
+  test('AC-202、203、204 バリアントごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
     const queries = serveVariantSales()
     renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}&excludeTax=true`)
 
-    const rows = (await screen.findAllByRole('row')).slice(1)
-    expect(within(rows[0]).getByRole('cell', { name: '色：白、サイズ：M' })).toBeInTheDocument()
-    expect(within(rows[0]).getByRole('cell', { name: '12' })).toBeInTheDocument()
-    expect(within(rows[0]).getByRole('cell', { name: '39,336 円' })).toBeInTheDocument()
-    expect(within(rows[1]).getByRole('cell', { name: '色：黒、サイズ：L' })).toBeInTheDocument()
-    expect(within(rows[1]).getByRole('cell', { name: '0 円' })).toBeInTheDocument()
+    const white = await findRow('色：白、サイズ：M')
+    const black = getRow('色：黒、サイズ：L')
+    expect(within(white).getByRole('cell', { name: '12' })).toBeInTheDocument()
+    expect(within(white).getByRole('cell', { name: '39,336 円' })).toBeInTheDocument()
+    expect(within(black).getByRole('cell', { name: '0 円' })).toBeInTheDocument()
+    expect(screen.getAllByRole('row').slice(1)).toEqual([white, black])
     expect(screen.getByText('商品：ベーシック T シャツ')).toBeInTheDocument()
-    expect(queries[0].get('productId')).toBe(SHIRT_ID)
-    expect(queries[0].get('excludeTax')).toBe('true')
+    expect(queries).toHaveLength(1)
+    const [query] = queries
+    expect(query.get('productId')).toBe(SHIRT_ID)
+    expect(query.get('excludeTax')).toBe('true')
   })
 
-  it('AC-202 商品を選ぶまでは API を呼ばず、選ぶと URL に書いて出す', async () => {
+  test('AC-202 商品を選ぶまでは API を呼ばず、選ぶと URL に書いて出す', async () => {
     const queries = serveVariantSales()
     const { user, router } = renderApp('/reports/variant-sales?from=2026-09-01&to=2026-09-30')
 
@@ -85,25 +84,19 @@ describe('バリアントの売れ行き', () => {
     expect(queries).toHaveLength(1)
   })
 
-  it('AC-218 表を CSV で取り出せる', async () => {
+  test('AC-218 表を CSV で取り出せる', async () => {
     serveVariantSales()
-    const createObjectURL = vi.fn(() => 'blob:report')
-    const revokeObjectURL = vi.fn()
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
-    const downloads: string[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      downloads.push(this.download)
-    })
+    const recorder = recordDownloads()
     const { user } = renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}`)
     await screen.findByRole('cell', { name: '色：白、サイズ：M' })
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
-    expect(downloads).toEqual(['バリアントの売れ行き_ベーシック T シャツ_2026-09-01_2026-09-30.csv'])
-
-    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
-    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
-    expect(text).toBe(
+    const downloads = await recorder.downloads()
+    expect(downloads).toHaveLength(1)
+    const [download] = downloads
+    expect(download.filename).toBe('バリアントの売れ行き_ベーシック T シャツ_2026-09-01_2026-09-30.csv')
+    expect(download.text).toBe(
       '\uFEFFバリアント,品番,販売数量,売上額\r\n色：白、サイズ：M,TEE-001-WH-M,12,39336\r\n色：黒、サイズ：L,TEE-001-BK-L,0,0\r\n',
     )
   })

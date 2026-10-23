@@ -11,6 +11,7 @@ describe('ログインの後に戻ってよいパス', () => {
     expect(isSafeReturnPath('//evil.example')).toBe(false)
     expect(isSafeReturnPath('/\\evil.example')).toBe(false)
     expect(isSafeReturnPath('https://evil.example')).toBe(false)
+    expect(isSafeReturnPath('orders')).toBe(false)
     expect(isSafeReturnPath(undefined)).toBe(false)
     expect(isSafeReturnPath(42)).toBe(false)
   })

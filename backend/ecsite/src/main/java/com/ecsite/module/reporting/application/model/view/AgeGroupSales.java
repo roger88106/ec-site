@@ -1,7 +1,7 @@
 package com.ecsite.module.reporting.application.model.view;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.reporting.domain.AgeGroup;
+import com.ecsite.module.reporting.domain.sales.AgeGroup;
 
 /**
  * 年齢層の売上

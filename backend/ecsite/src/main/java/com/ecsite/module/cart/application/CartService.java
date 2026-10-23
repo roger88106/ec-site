@@ -3,7 +3,7 @@ package com.ecsite.module.cart.application;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
-import com.ecsite.module.cart.api.CartContents;
+import com.ecsite.module.cart.application.model.CartContentsView;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.application.port.CatalogDirectory;
 import com.ecsite.module.cart.application.port.StockDirectory;
@@ -143,10 +143,10 @@ public class CartService {
      * @return カートの中身。カートがなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<CartContents> findContents(UUID cartId) {
+    public Optional<CartContentsView> findContents(UUID cartId) {
         var now = clock.instant();
-        return cartRepository.findById(cartId).map(cart -> new CartContents(cart.id(), cart.memberId().orElse(null), cart.version(),
-                cart.itemsAt(now).stream().map(item -> new CartContents.Item(item.variantId(), item.quantity())).toList()));
+        return cartRepository.findById(cartId).map(cart -> new CartContentsView(cart.id(), cart.memberId().orElse(null), cart.version(),
+                cart.itemsAt(now).stream().map(item -> new CartContentsView.Item(item.variantId(), item.quantity())).toList()));
     }
 
     /**

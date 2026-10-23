@@ -1,6 +1,6 @@
 package com.ecsite.module.reporting.application.model.view;
 
-import com.ecsite.module.reporting.domain.TrendPoint;
+import com.ecsite.module.reporting.domain.sales.TrendPoint;
 
 import java.util.List;
 

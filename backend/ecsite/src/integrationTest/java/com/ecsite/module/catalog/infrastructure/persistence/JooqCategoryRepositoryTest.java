@@ -3,7 +3,7 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.catalog.domain.category.Category;
-import com.ecsite.module.catalog.domain.category.CategoryErrorCode;
+import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import com.ecsite.module.catalog.domain.product.ProductFactory;

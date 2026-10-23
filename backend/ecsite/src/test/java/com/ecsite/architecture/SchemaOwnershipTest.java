@@ -88,7 +88,6 @@ class SchemaOwnershipTest {
                     .orElseGet(() -> resideInAPackage(JOOQ_PACKAGE + ".."));
             noClasses().that().resideInAPackage("com.ecsite.module." + module + "..")
                     .should().dependOnClassesThat(otherSchema.as(schema.map(name -> "are jOOQ classes outside schema " + name).orElse("are jOOQ classes")))
-                    .allowEmptyShould(true)
                     .check(CLASSES);
         });
     }

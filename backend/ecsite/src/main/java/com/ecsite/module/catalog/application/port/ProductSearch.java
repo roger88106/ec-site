@@ -2,7 +2,7 @@ package com.ecsite.module.catalog.application.port;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.catalog.api.StoreProductSummary;
+import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -25,5 +25,5 @@ public interface ProductSearch {
      * @param rates   税区分 ID → 表示時刻で有効な率（%）
      * @return 検索結果（新着順）
      */
-    PageResult<StoreProductSummary> search(String keyword, PageRequest request, Instant now, Map<UUID, BigDecimal> rates);
+    PageResult<StoreProductSummaryView> search(String keyword, PageRequest request, Instant now, Map<UUID, BigDecimal> rates);
 }

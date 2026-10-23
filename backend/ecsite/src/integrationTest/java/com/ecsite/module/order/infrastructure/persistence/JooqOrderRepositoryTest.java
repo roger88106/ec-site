@@ -5,7 +5,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
-import com.ecsite.module.order.domain.order.vo.BuyerProfile;
+import com.ecsite.module.order.domain.order.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.AddressArea;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;

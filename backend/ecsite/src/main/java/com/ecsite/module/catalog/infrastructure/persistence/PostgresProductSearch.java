@@ -2,8 +2,7 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.common.persistence.LikePatterns;
-import com.ecsite.module.catalog.api.StoreProductSummary;
+import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import com.ecsite.module.catalog.application.port.ProductSearch;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -46,7 +45,7 @@ class PostgresProductSearch implements ProductSearch {
      * @return 検索結果（新着順）
      */
     @Override
-    public PageResult<StoreProductSummary> search(String keyword, PageRequest request, Instant now,
+    public PageResult<StoreProductSummaryView> search(String keyword, PageRequest request, Instant now,
                                                   Map<UUID, BigDecimal> rates) {
         // 有効な税率がひとつもなければ、どの商品も税込価格を出せない（表示できない）
         if (rates.isEmpty()) {

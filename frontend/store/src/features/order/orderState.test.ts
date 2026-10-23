@@ -7,20 +7,20 @@ import {
   showsPaymentSection,
 } from '@/features/order/orderState'
 
-describe('キャンセルの申請の状況（AC-95、96）', () => {
+describe('キャンセルの申請の状況', () => {
   /** API が返すフラグ */
   const requestable = { requestCancellation: true }
   const notRequestable = { requestCancellation: false }
 
-  test('AC-95 申請できる（API のフラグ）「受付」の注文は、申請できる', () => {
+  test('AC-95 申請できる（API のフラグ）「受付」の注文は、申請できる状況にする', () => {
     expect(cancellationState({ status: 'ACCEPTED', actions: requestable })).toBe('REQUESTABLE')
   })
 
-  test('AC-95 申請中', () => {
+  test('AC-95 キャンセルを申請した注文は、申請中として扱う', () => {
     expect(cancellationState({ status: 'CANCELLATION_REQUESTED', actions: notRequestable })).toBe('PENDING')
   })
 
-  test('AC-96、267 申請の結果が却下の注文は、却下された注文（問い合わせ先を示す）', () => {
+  test('AC-96、267 申請の結果が却下の注文は、却下された注文として扱う（問い合わせ先を示す）', () => {
     expect(
       cancellationState({
         status: 'ACCEPTED',
@@ -34,7 +34,7 @@ describe('キャンセルの申請の状況（AC-95、96）', () => {
     expect(cancellationState({ status: 'ACCEPTED', actions: notRequestable })).toBe('UNAVAILABLE')
   })
 
-  test('キャンセル済み（申請の承認、運営者の判断のどちらでも）', () => {
+  test('申請の承認でも運営者の判断でも、キャンセルされた注文はキャンセル済みとして扱う', () => {
     expect(cancellationState({ status: 'CANCELLED', actions: notRequestable })).toBe('CANCELLED')
     expect(
       cancellationState({
@@ -64,7 +64,7 @@ describe('キャンセルの申請の状況（AC-95、96）', () => {
   })
 })
 
-describe('支払の状況（AC-150、151）', () => {
+describe('支払の状況', () => {
   /** API が返すフラグ */
   const payable = { pay: true }
   const notPayable = { pay: false }
@@ -78,11 +78,11 @@ describe('支払の状況（AC-150、151）', () => {
     expect(paymentState({ status: 'PENDING_PAYMENT', actions: notPayable }, true)).toBe('CONFIRMING')
   })
 
-  test('支払待ちで支払えないのは、支払の期限を過ぎた（まもなくキャンセルになる）', () => {
+  test('AC-151 支払待ちで支払えない注文は、支払の期限を過ぎた（まもなくキャンセルになる）ものとして扱う', () => {
     expect(paymentState({ status: 'PENDING_PAYMENT', actions: notPayable }, false)).toBe('CLOSING')
   })
 
-  test('支払待ちでなければ、支払の欄は出さない（戻った直後でも）', () => {
+  test('支払待ちでない注文は、戻った直後でも、支払の欄を出さない状況にする', () => {
     expect(paymentState({ status: 'ACCEPTED', actions: notPayable }, true)).toBe('NONE')
     expect(paymentState({ status: 'CANCELLED', actions: notPayable }, false)).toBe('NONE')
   })
@@ -102,7 +102,7 @@ describe('注文の画面の欄を出すか', () => {
     expect(showsCancellationSection('UNAVAILABLE')).toBe(false)
   })
 
-  test('キャンセルの欄は、申請できる、申請中、却下、キャンセル済み、支払期限切れでは出す', () => {
+  test('AC-95、155、267 キャンセルの欄は、申請できる、申請中、却下、キャンセル済み、支払期限切れでは出す', () => {
     expect(showsCancellationSection('REQUESTABLE')).toBe(true)
     expect(showsCancellationSection('PENDING')).toBe(true)
     expect(showsCancellationSection('REJECTED')).toBe(true)
@@ -111,14 +111,14 @@ describe('注文の画面の欄を出すか', () => {
   })
 })
 
-describe('注文の一覧の支払の期限（AC-159）', () => {
+describe('注文の一覧の支払の期限', () => {
   test('AC-159 支払待ちの注文は、支払の期限を示す', () => {
     expect(paymentDeadlineLabel({ status: 'PENDING_PAYMENT', paymentDeadline: '2026-10-10T15:35:00Z' })).toBe(
       'お支払い期限 2026/10/11 00:35',
     )
   })
 
-  test('支払待ちでない注文は、示さない', () => {
+  test('AC-159 支払待ちでない注文は、支払の期限を示さない', () => {
     expect(paymentDeadlineLabel({ status: 'ACCEPTED' })).toBeNull()
   })
 })

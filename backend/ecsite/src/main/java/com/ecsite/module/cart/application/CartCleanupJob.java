@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.application;
 
+import com.ecsite.common.scheduling.ExpiredDataCleanup;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -42,16 +43,7 @@ class CartCleanupJob {
     @SchedulerLock(name = "cart-cleanup")
     void cleanUp() {
         var expiredBefore = clock.instant().minus(properties.retention());
-        long total = 0;
-        int deleted;
-        do {
-            deleted = service.deleteExpired(expiredBefore, properties.batchSize());
-            total += deleted;
-        } while (deleted == properties.batchSize());
-        if (total > 0) {
-            log.info("期限切れのカートを消した：{} 件", total);
-        } else {
-            log.debug("期限切れのカートを消した：0 件");
-        }
+        ExpiredDataCleanup.run(log, "期限切れのカート", properties.batchSize(),
+                () -> service.deleteExpired(expiredBefore, properties.batchSize()));
     }
 }

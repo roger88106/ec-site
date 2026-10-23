@@ -5,7 +5,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | 項目 | 内容 |
 |------|------|
 | 依存 | 管理 API（`admin.yaml`）、運営者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy)、[157](../../specs/archive/1to10/157-frontend-tidy) |
 
 ## 1. 技術
 
@@ -34,19 +34,31 @@ frontend/admin/
     │   ├── generated/      # admin.yaml から生成（型と、入力の制約の定数）
     │   ├── client.ts       # クライアント
     │   ├── errors.ts       # エラーの変換（ApiError）
+    │   ├── formErrors.ts   # サーバーの入力検証エラーのフォームへの反映
+    │   ├── invalidate.ts   # 更新の後のキャッシュの無効化（パスの前方一致）
+    │   ├── useApiMutation.ts   # 更新の hook（成功の通知と無効化をまとめる）
+    │   ├── useMutationGroup.ts # 複数の更新の待ち状態とエラーをまとめる hook
     │   └── types.ts        # 画面から使う型の別名
     ├── components/         # 機能をまたぐコンポーネント（価格、日時、エラー、ページングなど）。ui/ は shadcn/ui
     ├── i18n/               # 文言の Provider、合わせ方、キーの型、コンポーネントの外で引く translate
-    ├── hooks/              # 機能をまたぐ hook（バージョン付きのフォームなど）
+    ├── hooks/              # 機能をまたぐ hook
+    │   ├── useVersionedForm.ts # バージョン付きのフォーム
+    │   └── use-mobile.ts   # 画面の幅の判定（モバイルの幅か）
     ├── lib/                # 画面に依存しない関数（単体テストを横に置く）
+    │   ├── array.ts        # 一覧の要素の移動
+    │   ├── code.ts         # 品番の入力の正規化（英小文字を大文字にする）
     │   ├── date.ts         # 日付の形（yyyy-MM-dd）の判定
-    │   ├── format.ts       # 日時の入力欄との変換、日本時間の日付、数の整形（金額・価格・日時などの整形は共有パッケージの lib/format.ts）
-    │   └── searchParams.ts # URL のクエリのページ番号の読み取り
+    │   ├── delta.ts        # 在庫の増減量の表示（符号付き）
+    │   ├── format.ts       # 日時の入力欄との変換、日本時間の日付（金額・価格・数・日時などの整形は共有パッケージの lib/format.ts）
+    │   ├── login.ts        # ログインの後に戻る画面のパスの読み取り
+    │   ├── rate.ts         # 税率の表示
+    │   ├── searchParams.ts # URL のクエリのページ番号の読み取り
+    │   └── utils.ts        # shadcn/ui の部品が読むクラス名の結合（共有のパッケージのものを再公開）
     ├── test/               # 結合テストの土台（画面のコードからは import しない）
     └── features/<機能>/    # tax、category、product、inventory、order、report
         ├── pages/          # ルートに対応する画面（取得とコンポーネントの組み立てだけ）
         ├── components/     # その機能だけのコンポーネント
-        ├── labels.ts       # その機能だけで使う列挙の表示名と Badge の見た目（2 つ以上の機能で使うなら lib/labels.ts）
+        ├── labels.ts       # その機能だけで使う列挙の表示名と Badge の見た目（2 つ以上の機能で使うなら lib/labels.ts、2 つの画面で同じ表示名なら共有パッケージ）
         └── *.ts            # その機能だけの関数・型・hook
 ```
 
@@ -83,8 +95,8 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 
 - 取得は `$api.useQuery('get', '<パス>', { params })`、更新は `useApiMutation('<メソッド>', '<パス>', { success, invalidate, onSuccess })`。キャッシュのキーとクエリの関数を手動で書かない。
 - 1 つの場所に複数の更新があるときは、`useMutationGroup(...)` で待ち状態・最初のエラー・エラーの消去をまとめる。
-- エラーの応答はクライアントの middleware で `ApiError` にして投げ、画面は `ApiError` だけを扱う。
-- access token はクライアントの middleware で `Authorization` に付ける（第 10 節）。
+- エラーの応答はクライアントのミドルウェアで `ApiError` にして投げ、画面は `ApiError` だけを扱う。
+- access token はクライアントのミドルウェアで `Authorization` に付ける（第 10 節）。
 - バックエンドへの呼び出しに、タイムアウトを置かない。ブラウザーの fetch で呼ぶので、画面は止まらず、利用者が操作できるため。
 
 | 応答 | 扱い |
@@ -175,7 +187,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 server.use(
   http.get('/tax-categories', ({ response }) => response(200).json({ items: [...] })),
   http.put('/tax-categories/{taxCategoryId}/rates', ({ response }) =>
-    response(409).json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。')),
+    conflict(response),
   ),
 )
 const { user } = renderApp('/tax-categories/<ID>')
@@ -186,10 +198,18 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
 | `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
+| `renderApp.tsx` の `ALL_PERMISSIONS`、`TEST_OPERATOR_NAME` | `ALL_PERMISSIONS` は運営者の権限の既定（全て）。`TEST_OPERATOR_NAME` はログインしている運営者の名前で、画面の表示の確認に使う |
 | `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
 | `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `problem(...)` | エラーレスポンスの本文を作る |
+| `getServerError(path)`、`getNetworkError(path)` | 契約にない応答（サーバーのエラー、通信の失敗）を返す、型のない MSW のハンドラーを作る（テストの書き方 第 4.2 節） |
+| `stockHandler(quantity)` | バリアントの在庫数の取得に、バリアントによらず同じ数で応答する。関数を渡すと、取得のたびに関数の戻り値で応答する |
+| `conflict(response)`、`Reply` | 更新の競合（409）の応答を返す。`Reply` は、条件で応答を変える関数の型で、その関数が返す応答は契約にあるものに限られる |
+| `reportServer.ts` の `serveReportBasics`、`SHIRT_ID` | レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する。会計年度は 4 月始まり、商品は T シャツ 1 つ（ID は `SHIRT_ID`）。結合テストだけで使う |
+| `setup.ts` | 全てのテストに共通の後始末。各テストの後に、`vi.restoreAllMocks()`（`vi.spyOn` で差し替えたものを戻す）、toast の消去、描画した部品の撤去、ハンドラーの初期化を行い、ハンドラーのない API が呼ばれていればテストを失敗させる |
 | `fixtures.ts` | 応答に使うデータ。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す |
+| `queries.ts` | 詳細の項目の値、一覧の行、一覧のセル（`getCell`）を、名前で探す。名前は、項目の値では項目名、行では行の名前、セルでは行の名前と列の見出し。テストのファイルでは DOM の位置を指定しない |
+| `download.ts` | ファイルのダウンロード（URL の作成とリンクのクリック）を差し替え、保存名と本文を返す。差し替えはテストの後に元の実装に戻される |
 
 - 置き場所は、主に確認する画面（`pages/`）の横。
 - リンクの見た目のボタン（共有の `LinkButton`）は、役割が `button` になる。
@@ -220,7 +240,7 @@ SPA がブラウザーで IdP とやり取りし（public client）、token は�
 
 ### 10.1 API に付ける token
 
-`AuthGate` が、今の access token を読む関数と、401 で再ログインする関数を `auth/token.ts` に渡し、クライアントの middleware がそれを使う。
+`AuthGate` が、今の access token を読む関数と、401 で再ログインする関数を `auth/token.ts` に渡し、クライアントのミドルウェアがそれを使う。
 
 - 渡すのは layout effect で行う（子コンポーネントでデータを取得する effect が親の effect より先に実行され、ログイン直後の最初の取得に token が付かなくなるため）。
 - 401 で再ログインしてから 30 秒以内にまた 401 なら、エラーを画面に表示する（IdP へのリダイレクトを繰り返さないため。時刻は sessionStorage）。

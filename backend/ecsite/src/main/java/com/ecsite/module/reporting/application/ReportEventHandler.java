@@ -1,11 +1,11 @@
 package com.ecsite.module.reporting.application;
 
 import com.ecsite.module.order.event.OrderStatusChanged;
-import com.ecsite.module.reporting.domain.DeliveryStatus;
-import com.ecsite.module.reporting.domain.HistoryKind;
-import com.ecsite.module.reporting.domain.ReportCancellationKind;
-import com.ecsite.module.reporting.domain.ReportOrderStatus;
-import com.ecsite.module.reporting.domain.StatusHistoryEntry;
+import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
+import com.ecsite.module.reporting.domain.snapshot.HistoryKind;
+import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
+import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
+import com.ecsite.module.reporting.domain.snapshot.StatusHistoryEntry;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;
@@ -26,28 +26,28 @@ class ReportEventHandler {
     private final ReportCollectionService reportCollectionService;
 
     /**
-     * 注文の状態の変化：履歴に追加し、注文の写しを再作成する。履歴の状態は、レポートの列挙の名前で持つ。
+     * 注文の状態の変化：履歴に追加し、注文の写しを再作成する。履歴の状態は、レポートの列挙で持つ。
      *
      * @param event 注文の状態の変化
      */
     @ApplicationModuleListener
     void on(OrderStatusChanged event) {
         reportCollectionService.record(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.ORDER_STATUS,
-                event.from() == null ? null : toOrderStatus(event.from()).name(), toOrderStatus(event.to()).name(),
+                event.from() == null ? null : toOrderStatus(event.from()), toOrderStatus(event.to()),
                 event.occurredAt(),
-                event.cancellationKind() == null ? null : toCancellationKind(event.cancellationKind()).name(),
+                event.cancellationKind() == null ? null : toCancellationKind(event.cancellationKind()),
                 event.restocked()));
     }
 
     /**
-     * 配送状態の変化：履歴に追加し、注文の写しを再作成する。履歴の状態は、レポートの列挙の名前で持つ。
+     * 配送状態の変化：履歴に追加し、注文の写しを再作成する。履歴の状態は、レポートの列挙で持つ。
      *
      * @param event 配送状態の変化
      */
     @ApplicationModuleListener
     void on(DeliveryStatusChanged event) {
         reportCollectionService.record(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.DELIVERY_STATUS,
-                event.from() == null ? null : toDeliveryStatus(event.from()).name(), toDeliveryStatus(event.to()).name(),
+                event.from() == null ? null : toDeliveryStatus(event.from()), toDeliveryStatus(event.to()),
                 event.occurredAt(), null, null));
     }
 

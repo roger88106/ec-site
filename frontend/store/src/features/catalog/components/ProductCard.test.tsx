@@ -1,6 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import type { ProductSummary } from '@/api/types'
 import { ProductCard, ProductGrid } from '@/features/catalog/components/ProductCard'
+import { findTag } from '@/test/markup'
 import { renderMarkup } from '@/test/render'
 
 /** 画像があり、在庫のある商品 */
@@ -15,12 +16,12 @@ function product(overrides: Partial<ProductSummary> = {}): ProductSummary {
   }
 }
 
-describe('一覧の商品', () => {
+describe('一覧の商品のカード', () => {
   test('AC-55 商品名、代表画像、価格（税込と税抜）を出し、商品の詳細へのリンクにする', () => {
     const html = renderMarkup(<ProductCard product={product()} />)
 
     expect(html).toContain('マグカップ')
-    expect(html).toMatch(/<img alt="商品の画像"[^>]* src="http:\/\/cdn\.test\/mug\.webp"/)
+    expect(findTag(html, 'img', { alt: '商品の画像' }).src).toBe('http://cdn.test/mug.webp')
     expect(html).toContain('1,100 円')
     expect(html).toContain('税抜 1,000 円')
     expect(html).toContain('href="/products/00000000-0000-0000-0000-000000000101"')
@@ -34,16 +35,16 @@ describe('一覧の商品', () => {
     expect(html).toContain('在庫なし')
   })
 
-  test('画像がなければ、代わりの図を出す', () => {
+  test('画像がなければ、画像を出さずに商品名を出す', () => {
     const html = renderMarkup(<ProductCard product={product({ imageUrl: null })} />)
 
     expect(html).not.toContain('<img')
-    expect(html).toContain('<svg')
+    expect(html).toContain('マグカップ')
   })
 })
 
 describe('商品の並び', () => {
-  test('商品を並べる', () => {
+  test('商品を 1 件ずつ並べて出し、メッセージは出さない', () => {
     const html = renderMarkup(
       <ProductGrid
         emptyMessage="ありません"

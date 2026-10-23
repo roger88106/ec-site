@@ -1,31 +1,10 @@
 import { describe, expect, test } from 'vitest'
-import type { Order } from '@/api/types'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
-import { ORDER_ID } from '@/test/fixtures'
+import { order } from '@/test/fixtures'
 import { renderMarkup } from '@/test/render'
 
-/** 注文（キャンセルの欄が使う項目だけを意味のある値にする） */
-const order = (overrides: Partial<Order>): Order => ({
-  id: ORDER_ID,
-  orderNumber: '20261010-482915',
-  orderedAt: '2026-10-10T15:05:00Z',
-  status: 'ACCEPTED',
-  lines: [],
-  amounts: { itemsTotal: 0, shippingFee: 0, total: 0, taxes: [] },
-  email: 'member@example.com',
-  shippingAddress: {
-    name: '山田 太郎',
-    postalCode: '1000001',
-    prefectureCode: '13',
-    prefectureName: '東京都',
-    municipalityCode: '13101',
-    municipalityName: '千代田区',
-    address: '千代田 1-1',
-    phone: '0312345678',
-  },
-  actions: { requestCancellation: false, pay: false },
-  ...overrides,
-})
+/** 申請も支払もできない（API のフラグ） */
+const NO_ACTIONS = { requestCancellation: false, pay: false }
 
 describe('注文のキャンセルの欄', () => {
   test('AC-155 支払期限切れでキャンセルされた注文は、そのことを示す', () => {
@@ -34,6 +13,7 @@ describe('注文のキャンセルの欄', () => {
         contactEmail="contact@shop.example"
         order={order({
           status: 'CANCELLED',
+          actions: NO_ACTIONS,
           cancellation: { cancelledAt: '2026-10-10T15:35:00Z', kind: 'PAYMENT_EXPIRED' },
         })}
       />,
@@ -45,7 +25,10 @@ describe('注文のキャンセルの欄', () => {
   test('欄を出さない状況（支払待ち）の注文で描くと、使い方の誤りとして例外にする', () => {
     expect(() =>
       renderMarkup(
-        <CancellationSection contactEmail="contact@shop.example" order={order({ status: 'PENDING_PAYMENT' })} />,
+        <CancellationSection
+          contactEmail="contact@shop.example"
+          order={order({ status: 'PENDING_PAYMENT', actions: NO_ACTIONS })}
+        />,
       ),
     ).toThrow('キャンセルの欄を出さない状況で描かれた：PENDING_PAYMENT')
   })

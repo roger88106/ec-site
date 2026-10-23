@@ -1,5 +1,6 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
+import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
 import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import org.junit.jupiter.api.DisplayName;

@@ -6,7 +6,7 @@ import com.ecsite.common.persistence.ConstraintViolationTranslator;
 import com.ecsite.jooq.catalog.Keys;
 import com.ecsite.jooq.catalog.tables.records.CategoryRecord;
 import com.ecsite.module.catalog.domain.category.Category;
-import com.ecsite.module.catalog.domain.category.CategoryErrorCode;
+import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import lombok.RequiredArgsConstructor;

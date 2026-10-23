@@ -2,9 +2,9 @@ package com.ecsite.module.catalog.application;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.catalog.api.StoreProductDetail;
-import com.ecsite.module.catalog.api.StoreProductQuery;
-import com.ecsite.module.catalog.api.StoreProductSummary;
+import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
+import com.ecsite.module.catalog.application.model.view.StoreProductDetailView;
+import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import com.ecsite.module.catalog.application.port.ProductSearch;
 import com.ecsite.module.catalog.application.port.StoreProductQueryRepository;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
@@ -52,7 +52,7 @@ public class StoreProductQueryService {
      * @param request ページの指定
      * @return 商品の一覧
      */
-    public PageResult<StoreProductSummary> listProducts(StoreProductQuery query, PageRequest request) {
+    public PageResult<StoreProductSummaryView> listProducts(StoreProductListQuery query, PageRequest request) {
         var now = clock.instant();
         return storeProductQueryRepository.findVisible(query, request, now, taxDirectory.ratesAt(now));
     }
@@ -64,7 +64,7 @@ public class StoreProductQueryService {
      * @param request ページの指定
      * @return 検索結果（新着順）
      */
-    public PageResult<StoreProductSummary> searchProducts(String keyword, PageRequest request) {
+    public PageResult<StoreProductSummaryView> searchProducts(String keyword, PageRequest request) {
         var now = clock.instant();
         return productSearch.search(keyword, request, now, taxDirectory.ratesAt(now));
     }
@@ -75,7 +75,7 @@ public class StoreProductQueryService {
      * @param id 商品 ID
      * @return 商品の詳細。表示されない商品なら空（存在しない商品と同じ扱い）
      */
-    public Optional<StoreProductDetail> findProduct(UUID id) {
+    public Optional<StoreProductDetailView> findProduct(UUID id) {
         var now = clock.instant();
         return storeProductQueryRepository.findVisibleDetail(id, now, taxDirectory.ratesAt(now));
     }

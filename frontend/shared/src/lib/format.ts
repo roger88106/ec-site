@@ -1,8 +1,13 @@
 import { LOCALE, TIME_ZONE } from './locale'
 import { translate } from './translate'
 
-/** 金額の書式（3 桁ごとのカンマ） */
-const yen = new Intl.NumberFormat(LOCALE)
+/** 既定の数の書式（3 桁ごとのカンマ）。金額の整形も使う */
+const number = new Intl.NumberFormat(LOCALE)
+
+/** 数（例：「1,234」）。3 桁ごとに区切り、単位は付けない */
+export function formatNumber(value: number): string {
+  return number.format(value)
+}
 
 /** 日時の書式（日本時間の年・月・日・時・分をゼロ埋めで出す。例：「2026/10/10 14:05」）。管理画面の日時の入力欄も使う */
 export const japanDateTimeFormat = new Intl.DateTimeFormat(LOCALE, {
@@ -17,7 +22,7 @@ export const japanDateTimeFormat = new Intl.DateTimeFormat(LOCALE, {
 
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {
-  return translate('common.yen', { amount: yen.format(amount) }) // 金額に「円」を付ける
+  return translate('common.yen', { amount: formatNumber(amount) }) // 金額に「円」を付ける
 }
 
 /**
@@ -26,11 +31,11 @@ export function formatYen(amount: number): string {
  */
 export function formatPrice(price: { inclTax?: number | null; exclTax: number }): string {
   if (price.inclTax == null) {
-    return translate('common.priceExclTaxOnly', { exclTax: yen.format(price.exclTax) }) // 税抜の金額と、税込を計算できない案内
+    return translate('common.priceExclTaxOnly', { exclTax: formatNumber(price.exclTax) }) // 税抜の金額と、税込を計算できない案内
   }
   return translate('common.priceWithExclTax', {
-    inclTax: yen.format(price.inclTax),
-    exclTax: yen.format(price.exclTax),
+    inclTax: formatNumber(price.inclTax),
+    exclTax: formatNumber(price.exclTax),
   }) // 税込と税抜の金額
 }
 

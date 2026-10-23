@@ -2,7 +2,7 @@ package com.ecsite.module.reporting.infrastructure.directory;
 
 import com.ecsite.module.catalog.api.ReportCatalogApi;
 import com.ecsite.module.reporting.application.port.CatalogDirectory;
-import com.ecsite.module.reporting.domain.ReportOrder;
+import com.ecsite.module.reporting.domain.snapshot.ReportOrder;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

@@ -1,6 +1,6 @@
 import { HttpResponse, http as mswHttp } from 'msw'
 import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
-import { getApi, getMemberApi } from '@/api/client'
+import { getApi, getMemberApi, UNCACHED } from '@/api/client'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
 import { resetRequest } from '@/test/next'
@@ -38,6 +38,31 @@ describe('店舗 API の口', () => {
     await (await getApi()).GET('/categories')
 
     expect(received).toBe(TRACEPARENT)
+  })
+
+  test('会員の口は、呼ぶ側が Authorization を付けた要求には、セッションの token を重ねて付けずそのまま使う', async () => {
+    signInAs()
+    let received: string | null = null
+    server.use(
+      mswHttp.get(`${STORE_API}/me/orders`, ({ request }) => {
+        received = request.headers.get('Authorization')
+        return HttpResponse.json({ items: [], page: 1, size: 20, totalItems: 0, totalPages: 0 })
+      }),
+    )
+
+    await (await getMemberApi()).GET('/me/orders', { headers: { Authorization: 'Bearer caller-token' } })
+
+    expect(received).toBe('Bearer caller-token')
+  })
+
+  test('UNCACHED を付けて呼ぶと、Next.js のキャッシュを使わずに取り直す（no-store）', async () => {
+    server.use(mswHttp.get(`${STORE_API}/categories`, () => HttpResponse.json({ items: [] })))
+    const fetchSpy = vi.spyOn(globalThis, 'fetch')
+
+    await (await getApi()).GET('/categories', { ...UNCACHED })
+
+    expect(fetchSpy.mock.calls.map((call) => call[1])).toEqual([expect.objectContaining({ cache: 'no-store' })])
+    fetchSpy.mockRestore()
   })
 
   test('要求に traceparent がなければ、付けない', async () => {
@@ -106,6 +131,14 @@ describe('店舗 API の 5xx のログ', () => {
     expect(logged()).toEqual([
       expect.objectContaining({ level: 'warn', status: 503, method: 'GET', path: '/categories' }),
     ])
+  })
+
+  test('AC-308 5xx の本文にエラーコードがなければ、エラーコードを null にして出す', async () => {
+    server.use(mswHttp.get(`${STORE_API}/categories`, () => HttpResponse.json({ message: 'down' }, { status: 500 })))
+
+    await (await getApi()).GET('/categories')
+
+    expect(logged()).toEqual([expect.objectContaining({ level: 'warn', status: 500, errorCode: null })])
   })
 
   test('AC-308 4xx では、ログに出さない', async () => {

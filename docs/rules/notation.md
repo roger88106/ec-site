@@ -1,6 +1,6 @@
 # 文書の記号と番号
 
-spec・plan・tasks・constitution・モジュール設計書で使う番号と記号の意味。業務の用語と識別子（クラス名、テーブル名など）は[用語集](../design/glossary.md)で引く。
+spec・plan・tasks・モジュールの設計書で使う番号と記号の意味。業務の用語と識別子（クラス名、テーブル名など）は[用語集](../design/glossary.md)で引く。
 
 ## spec の種類
 
@@ -90,13 +90,12 @@ spec の進み具合（どの段階まで完了したか）は、MVP の spec �
   - 範囲：`scripts/ci/lib/spec-dirs.mjs`
 ```
 
-## constitution の記号
+## モジュールの設計書の記号
 
 | 記号 | 意味 |
 |------|------|
-| 【提案】 | 暫定のルール。運用して確定する |
-| アーキテクチャのレベル `A` | フル：domain / application / infrastructure / presentation（バックエンドのアーキテクチャ 第 2 節） |
-| アーキテクチャのレベル `B` | 簡略：3 層（バックエンドのアーキテクチャ 第 2 節） |
-| アーキテクチャのレベル `C` | イベントストア（バックエンドのアーキテクチャ 第 2 節） |
+| アーキテクチャのレベル `A` | フル：domain / application / infrastructure / presentation（[バックエンドのアーキテクチャ](../design/backend-architecture.md) 第 2 節） |
+| アーキテクチャのレベル `B` | 簡略：3 層（[バックエンドのアーキテクチャ](../design/backend-architecture.md) 第 2 節） |
+| アーキテクチャのレベル `C` | イベントストア（[バックエンドのアーキテクチャ](../design/backend-architecture.md) 第 2 節） |
 
 モジュールごとのレベルと選んだ理由は、`docs/design/modules/<module>.md` の冒頭に書く。

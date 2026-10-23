@@ -165,9 +165,10 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
   - 依存：なし
   - 範囲：`docker/keycloak/realms/ec-admin-realm.json` の `description`、`docs/design/role-permissions.md`（`node scripts/ci/role-permissions.mjs --write`）
   - 結果：realm の 4 つのロールの `description` の「すべて」を「全て」にし、対応表を再生成した。差分は説明の文言の 4 行だけで、ロール、権限、設定は変えていない。
-- [ ] **T156-02-03** constitution、文書の記号と番号、skill `docs` を修正する（DC-156-14、20、24〜27、39）。
+- [x] **T156-02-03** constitution、文書の記号と番号、skill `docs` を修正する（DC-156-14、20、24〜27、39）。
   - 依存：なし
   - 範囲：`docs/constitution.md`、`docs/rules/notation.md`、`.claude/skills/docs/SKILL.md`
+  - 結果：constitution の「プロジェクトの位置づけ」「認証・認可」「CI/CD」の節を要点 3 つにまとめ（全体構成と、CI とブランチの文書への案内を付けた）、CI の要点を「文書だけの push では CI の検査の script の全てを実行する」に直した。店舗画面のテスト、`guides/` の説明、公開ネットワークの前提の参照（バックエンドのアーキテクチャの前提の一覧）も直し、使われていない【提案】を constitution と文書の記号と番号から除いた。文書の記号と番号の節は「モジュールの設計書の記号」にし、レベルはバックエンドのアーキテクチャの第 2 節へのリンクにした。skill `docs` の置き場所の表にもブランチとリリースを足した。
 - [ ] **T156-02-04** 書き方の規則と API の規約を修正する（DC-156-16〜18、21、23、38）。
   - 依存：なし
   - 範囲：`docs/rules/backend-coding.md`、`api-conventions.md`、`comments.md`、`test-writing.md`

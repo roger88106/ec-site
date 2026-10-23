@@ -1,4 +1,49 @@
-// ソース（.ts・.tsx）のコメントを空白に置き換える。画面のソースを読む検査（hardcoded-text、frontend-rules）が共通で使う
+// ソースのコメントを空白に置き換える。
+// - .ts・.tsx：画面のソースを読む検査（hardcoded-text、frontend-rules）が共通で使う（stripComments）
+// - .java：Java のソースを読む検査（java-rules、env-defaults）が共通で使う（stripJavaComments）
+
+/**
+ * Java のコメント（行コメント、ブロックコメント、Javadoc）を、同じ長さの空白に置き換える。改行は残すので、位置と行番号は変わらない。<br />
+ * 文字列、テキストブロック、文字リテラルの中の // などはコメントにしない。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントを空白にしたソース
+ */
+export function stripJavaComments(text) {
+  let result = ''
+  let i = 0
+  const blank = (chunk) => chunk.replace(/[^\r\n]/g, ' ')
+  while (i < text.length) {
+    if (text.startsWith('//', i)) {
+      const end = text.indexOf('\n', i)
+      const stop = end < 0 ? text.length : end
+      result += blank(text.slice(i, stop))
+      i = stop
+    } else if (text.startsWith('/*', i)) {
+      const end = text.indexOf('*/', i + 2)
+      const stop = end < 0 ? text.length : end + 2
+      result += blank(text.slice(i, stop))
+      i = stop
+    } else if (text.startsWith('"""', i)) {
+      const end = text.indexOf('"""', i + 3)
+      const stop = end < 0 ? text.length : end + 3
+      result += text.slice(i, stop)
+      i = stop
+    } else if (text[i] === '"' || text[i] === "'") {
+      // 文字列と文字は、閉じる引用符まで（同じ行の中）そのまま残す
+      const quote = text[i]
+      let j = i + 1
+      while (j < text.length && text[j] !== quote && text[j] !== '\n') j += text[j] === '\\' ? 2 : 1
+      const stop = Math.min(j + 1, text.length)
+      result += text.slice(i, stop)
+      i = stop
+    } else {
+      result += text[i]
+      i += 1
+    }
+  }
+  return result
+}
 
 /**
  * コメントを空白に置き換える（行の数は変えない）。文字列の中の // は、URL などなので消さない。

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { stripComments } from './strip-comments.mjs'
+import { stripComments, stripJavaComments } from './strip-comments.mjs'
 
 describe('コメントの除去', () => {
   test('行コメントとブロックコメントを空白にし、行の数を変えない', () => {
@@ -27,5 +27,15 @@ describe('コメントの除去', () => {
     const text = 'const a = /\\/\\//.test(x) // 後ろ'
     assert.equal(stripComments(text, { keepRegex: true }).includes('後ろ'), false)
     assert.equal(stripComments(text, { keepRegex: true }).includes('.test(x)'), true)
+  })
+})
+
+describe('Java のコメントの除去', () => {
+  test('Java のコメントを同じ長さの空白に置き換え、行番号を保つ', () => {
+    const text = ['a /* x', 'y */ b // z', '"//w" \'"\' c'].join('\n')
+    const blanked = stripJavaComments(text)
+    assert.equal(blanked.length, text.length)
+    assert.equal(blanked.split('\n').length, 3)
+    assert.equal(blanked, ['a     ', '     b     ', '"//w" \'"\' c'].join('\n'))
   })
 })

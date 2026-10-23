@@ -176,9 +176,10 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：`scripts/ci/compose-ports.mjs`、`scripts/ci/role-permissions.mjs`、テスト
   - 結果：2 つの検査が、`ports:` の節と契約の `paths:` の下で、知らない書き方の行（フロー形式、字下げの違い、引用符で囲んだパスなど）を `unknown` に集めて失敗にする。今の compose と 2 つの契約は 0 件で通り、ci.md の 2 つの行を合わせた。
-- [ ] **T183-02-02** [テスト] 環境変数の既定の検査が、設定の値のクラスを読めないときに失敗にする。Java の規則の検査が、コメントの中を違反と読まない（DC-183-13、14）。
+- [x] **T183-02-02** [テスト] 環境変数の既定の検査が、設定の値のクラスを読めないときに失敗にする。Java の規則の検査が、コメントの中を違反と読まない（DC-183-13、14）。
   - 依存：なし
   - 範囲：`scripts/ci/env-defaults.mjs`、`scripts/ci/java-rules.mjs`、`scripts/ci/lib/strip-comments.mjs`（使うとき）、テスト
+  - 結果：環境変数の既定の検査が、設定のクラスを 1 つも読めないとき、record でない・引数が空・プロパティが 0 件などのときを、ファイルの名前付きの理由で失敗にする。Java の規則の検査は、コメントを同じ長さの空白にしてから読み（`stripJavaComments` を `lib/strip-comments.mjs` に移した）、今のリポジトリは違反 0 件で通る。
 - [ ] **T183-02-03** [テスト] 使わない語の検査に、許す語の一覧を加える（DC-183-15）。
   - 依存：なし
   - 範囲：`scripts/ci/doc-terms.mjs`、`scripts/ci/doc-terms.json`、テスト

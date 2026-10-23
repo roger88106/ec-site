@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { compareDefaults, normalizeValue, parseEnvTable, parseProperties } from './env-defaults.mjs'
+import { compareDefaults, normalizeValue, parseEnvTable, parseProperties, readAllProperties, readProperties } from './env-defaults.mjs'
 
 const JAVA = `
 @ConfigurationProperties("ecsite.payment")
@@ -71,5 +71,77 @@ describe('環境変数の文書と既定値の検査', () => {
       'ECSITE_PAYMENT_LIMIT：コードの既定「10」が、文書にない',
       'ECSITE_PAYMENT_RETURN_URL：文書の既定「5s」が、コードにない（コードは既定を持たない）',
     ])
+  })
+})
+
+describe('設定の値のクラスを読めないときの失敗', () => {
+  test('record の形の設定のクラスは、読めない理由がない', () => {
+    assert.deepEqual(readProperties(JAVA).problems, [])
+  })
+
+  test('record でないクラス（class）に付けた注釈は、読めない理由にする', () => {
+    const java = ['@ConfigurationProperties("ecsite.x")', 'public class XProperties {', '  private int a;', '}'].join('\n')
+    assert.equal(readProperties(java).problems.length, 1)
+    assert.match(readProperties(java).problems[0], /record/)
+  })
+
+  test('接頭辞が文字列リテラルでない注釈（prefix = 定数）は、読めない理由にする', () => {
+    const java = ['@ConfigurationProperties(prefix = PREFIX)', 'public record XProperties(int a) {}'].join('\n')
+    assert.equal(readProperties(java).problems.length, 1)
+  })
+
+  test('prefix = "..." の書き方も読む', () => {
+    const java = '@ConfigurationProperties(prefix = "a.b")\nrecord X(@DefaultValue("1") int c) {}'
+    assert.deepEqual(readProperties(java), { properties: [{ env: 'A_B_C', value: '1' }], problems: [] })
+  })
+
+  test('注釈の後の record でなく、離れた別の record を読み違えない', () => {
+    const java = ['@ConfigurationProperties("ecsite.x")', 'public class X {', '  record Other(@DefaultValue("1") int a) {}', '}'].join('\n')
+    const { properties, problems } = readProperties(java)
+    assert.deepEqual(properties, [])
+    assert.equal(problems.length, 1)
+  })
+
+  test('引数が閉じていない record と、引数が 0 件の record は、読めない理由にする', () => {
+    assert.equal(readProperties('@ConfigurationProperties("a.b")\nrecord X(int a').problems.length, 1)
+    const empty = readProperties('@ConfigurationProperties("a.b")\nrecord X() {}')
+    assert.equal(empty.problems.length, 1)
+    assert.match(empty.problems[0], /引数/)
+  })
+
+  test('引数の名前を読めない行は、読めない理由にする（例外にしない）', () => {
+    const java = '@ConfigurationProperties("a.b")\nrecord X(int a, @DefaultValue("1") ) {}'
+    assert.doesNotThrow(() => readProperties(java))
+    assert.equal(readProperties(java).problems.length, 1)
+  })
+
+  test('コメントの中の注釈は、設定のクラスとして読まない', () => {
+    const java = ['// @ConfigurationProperties("a.b") は使わない', '/* @ConfigurationProperties("c.d") */', 'class Z {}'].join('\n')
+    assert.deepEqual(readProperties(java), { properties: [], problems: [] })
+  })
+
+  test('設定のクラスが 1 つもないときは、ファイルごとでなく全体の理由を返す', () => {
+    const result = readAllProperties([])
+    assert.equal(result.code.length, 0)
+    assert.equal(result.problems.length, 1)
+    assert.match(result.problems[0], /1 つも/)
+  })
+
+  test('読めないファイルの理由にファイルの名前を付け、読めるファイルの既定値は残す', () => {
+    const result = readAllProperties([
+      { file: 'A.java', source: JAVA },
+      { file: 'B.java', source: '@ConfigurationProperties("b.c")\npublic class B {}' },
+    ])
+    assert.equal(result.code.length, 5)
+    assert.equal(result.problems.length, 1)
+    assert.match(result.problems[0], /^B\.java：/)
+  })
+
+  test('注釈のないファイルは、対象にしない', () => {
+    const result = readAllProperties([
+      { file: 'A.java', source: JAVA },
+      { file: 'C.java', source: 'class C {}' },
+    ])
+    assert.deepEqual(result.problems, [])
   })
 })

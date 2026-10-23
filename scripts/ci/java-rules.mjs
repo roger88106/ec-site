@@ -9,6 +9,7 @@ import { closingParen } from './lib/closing-paren.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
+import { stripJavaComments } from './lib/strip-comments.mjs'
 
 /** テストのソース */
 const TEST_SOURCE = /^backend\/ecsite\/src\/(?:test|integrationTest|testFixtures)\/.*\.java$/
@@ -41,17 +42,19 @@ const ENUM_STRING = new RegExp(`\\b(?!(?:${NON_ENUM_TYPES})\\b)[A-Z]\\w*\\.(?:va
 const STRING_CONVERSION_ALLOWED = /\/(?:domain|infrastructure\/persistence)\//
 
 /**
- * 正規表現に合う行を探す。
+ * 正規表現に合う行を探す。コメントの中は読まない（行番号は変わらない）。
  *
  * @param {string} text ソース
  * @param {RegExp} pattern 行に当てる正規表現
  * @returns {{ line: number, text: string }[]} 見つけた行（行の順）
  */
 function findLines(text, pattern) {
-  return text
+  const original = text.split('\n')
+  return stripJavaComments(text)
     .split('\n')
-    .map((line, index) => ({ line: index + 1, text: line.trim() }))
-    .filter((hit) => pattern.test(hit.text))
+    .map((line, index) => ({ line: index + 1, code: line.trim(), text: original[index].trim() }))
+    .filter((hit) => pattern.test(hit.code))
+    .map(({ line, text: lineText }) => ({ line, text: lineText }))
 }
 
 /**
@@ -65,49 +68,6 @@ export function findLombok(text) {
 }
 
 /**
- * 行コメントとブロックコメントを、同じ長さの空白に置き換える。改行は残すので、位置と行番号は変わらない。<br />
- * 文字列、テキストブロック、文字リテラルの中の // などはコメントにしない。
- *
- * @param {string} text ソース
- * @returns {string} コメントを空白にしたソース
- */
-export function blankComments(text) {
-  let result = ''
-  let i = 0
-  const blank = (chunk) => chunk.replace(/[^\r\n]/g, ' ')
-  while (i < text.length) {
-    if (text.startsWith('//', i)) {
-      const end = text.indexOf('\n', i)
-      const stop = end < 0 ? text.length : end
-      result += blank(text.slice(i, stop))
-      i = stop
-    } else if (text.startsWith('/*', i)) {
-      const end = text.indexOf('*/', i + 2)
-      const stop = end < 0 ? text.length : end + 2
-      result += blank(text.slice(i, stop))
-      i = stop
-    } else if (text.startsWith('"""', i)) {
-      const end = text.indexOf('"""', i + 3)
-      const stop = end < 0 ? text.length : end + 3
-      result += text.slice(i, stop)
-      i = stop
-    } else if (text[i] === '"' || text[i] === "'") {
-      // 文字列と文字は、閉じる引用符まで（同じ行の中）そのまま残す
-      const quote = text[i]
-      let j = i + 1
-      while (j < text.length && text[j] !== quote && text[j] !== '\n') j += text[j] === '\\' ? 2 : 1
-      const stop = Math.min(j + 1, text.length)
-      result += text.slice(i, stop)
-      i = stop
-    } else {
-      result += text[i]
-      i += 1
-    }
-  }
-  return result
-}
-
-/**
  * 列挙型の変換に name() を渡す呼び出しを探す。改行を挟んだ呼び出しも見つけ、呼び出しの始まりの行を返す。
  *
  * @param {string} text ソース
@@ -117,7 +77,7 @@ export function findEnumNameConversions(text) {
   const lines = text.split('\n')
   const lineOf = createLineLocator(text)
   const hits = []
-  const blanked = blankComments(text)
+  const blanked = stripJavaComments(text)
   for (const match of blanked.matchAll(ENUM_CALL)) {
     // 引数は、開き括弧から対応する閉じ括弧まで。引数の最後が name() のときだけ違反にする
     const open = match.index + match[0].length - 1

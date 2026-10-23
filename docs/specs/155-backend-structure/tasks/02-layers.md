@@ -28,7 +28,7 @@
 - [x] **T155-02-03** [P] カートの内容を返す service を、`cart/application/model/CartContentsView` を返す形にする。`CartContentsApi` が `CartContents` に変換する。`MergedCart` は動かさない（DC-155-8、9）。
   - 依存：なし
   - 範囲：`main/module/cart/application/CartService.java`（`:6,145-150`）、`main/module/cart/application/model/CartContentsView.java`（新規）、`main/module/cart/api/CartContentsApi.java`（`:31`）。利用者の `main/module/order/infrastructure/directory/CartApiDirectory.java` は、変更せず、テストが通ることを確認する。
-- [ ] **T155-02-04** [P] 画像の service を、アセット ID を返す形にする。`prepareImage` は `UUID` を返し、`registerImage`、`discardImage` は `UUID` を受ける。`requestImageUpload` は `media/application/model/ImageUploadView` を返す。`MediaApi` が `PreparedImage`、`ImageUpload` に変換する（DC-155-8、9）。
+- [x] **T155-02-04** [P] 画像の service を、アセット ID を返す形にする。`prepareImage` は `UUID` を返し、`registerImage`、`discardImage` は `UUID` を受ける。`requestImageUpload` は `media/application/model/ImageUploadView` を返す。`MediaApi` が `PreparedImage`、`ImageUpload` に変換する（DC-155-8、9）。
   - 依存：なし
   - 範囲：`main/module/media/application/MediaService.java`（`:4-5,71,81,88,99,108,117,160`）、`main/module/media/application/model/ImageUploadView.java`（新規）、`main/module/media/api/MediaApi.java`（`:36-37,51-52,63-64,73-74`）。`it/module/media/api/MediaApiTest.java` と、利用者の `main/module/catalog/infrastructure/directory/MediaApiDirectory.java` は、変更せず、テストが通ることを確認する。
 - [ ] **T155-02-05** [P] catalog の `OrderableVariantView`（入れ子 `AxisValue`）を `catalog/application/model/view/` に作る。`OrderableVariantQueryService`、`OrderableVariantQueryRepository`、`JooqOrderableVariantQueryRepository` はこの view を使う。`OrderCatalogApi` が `OrderableVariant` に変換する。`ReportCatalogApi` が使うのは値の `productId` だけで、view の型の変更に影響されない（DC-155-8、9）。

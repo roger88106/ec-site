@@ -3,7 +3,7 @@ import { defineConfig } from 'vitest/config'
 /** 単体テストの設定。カバレッジの対象は、管理画面・店舗画面と同じ形にする（shadcn/ui の生成物は src/ui） */
 export default defineConfig({
   test: {
-    // カバレッジは報告と基準の検査に使う（テストの書き方 第 1 節）。shadcn/ui の生成物、テストの補助は数えない
+    // カバレッジは報告と基準の検査に使う（テストの書き方 第 1.2 節）。shadcn/ui の生成物、テストの補助は数えない
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

@@ -124,11 +124,11 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
 - [x] **T17-01-01** [テスト] 基準の検査の script のテストを書き、レッドを確認する（DC-17-6）。`scripts/ci/check-all.sh` が `scripts/ci/` の下の `*.test.mjs` を実行する（docs.yml）ので、CI の変更は要らない。
   - 依存：なし
   - 範囲：`scripts/ci/report/`
-  - 結果：pre-commit の hook が `*.test.mjs` を流すので、レッドのテストだけでは commit できず、開発の進め方 第 2.1 節の例外で 1 つの commit にした（7b411640）。
+  - 結果：pre-commit の hook が `*.test.mjs` を実行するので、レッドのテストだけでは commit できず、開発の進め方 第 2.1 節の例外で 1 つの commit にした（7b411640）。
 - [x] **T17-01-02** 基準の検査の script と基準のファイルを作る。手元でも同じ引数で実行できる CLI にする。初期値は、spec 131 のマージの後の `develop` の最新の CI の値から取る。共有パッケージのカバレッジを取る設定を加える。共有パッケージは CI でまだ取っていないので、初期値は T17-01-03 で作業ブランチの CI の値を置く（DC-17-1、3、4、6、8）。
   - 依存：T17-01-01
   - 範囲：`scripts/ci/report/`、`frontend/shared/`
-  - 結果：pre-commit の hook が `*.test.mjs` を流すので、レッドのテストだけでは commit できず、開発の進め方 第 2.1 節の例外で 1 つの commit にした（7b411640）。
+  - 結果：T17-01-01 のテストを通す実装として、T17-01-01 と 1 つの commit にした（7b411640）。実装の要点は次のとおり。
   - 実装の要点：
     - script は `scripts/ci/report/coverage-baseline.mjs`。使い方は `node scripts/ci/report/coverage-baseline.mjs <対象> <報告のファイル> [--write] [--baseline <基準のファイル>]`。報告の読み取りは `coverage-summary.mjs` の `readTotals` を使い回す。
     - 基準のファイルは `targets.<対象>.<line|branch>.{value,tolerance}`。対象の名前は `backend`、`admin`、`store`、`shared`。`--write` は既存の対象だけを書き換え、許容の幅は変えない。対象や指標を追加するときは、基準のファイルを手で直す。
@@ -138,9 +138,9 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
   - 依存：T17-01-02
   - 範囲：`.github/workflows/ci.yml`、`scripts/ci/report/quality-baseline.json`
   - 結果：
-    - 組み込み：バックエンドは「バックエンド」の最後の手順、管理画面と店舗画面はそれぞれのジョブの最後の手順（`if: always()`。ビルドの失敗と両方見える）に置いた。共有パッケージは店舗画面のジョブで、summary と報告の保存（artifact `coverage-shared`）を足し、検査は店舗画面と同じ手順で行う。ジョブの名前は変えていない。
+    - 組み込み：バックエンドは「バックエンド」の最後の手順、管理画面と店舗画面はそれぞれのジョブの最後の手順（`if: always()`。ビルドの失敗と両方見える）に置いた。共有パッケージは店舗画面のジョブで、summary と報告の保存（artifact `coverage-shared`）を追加し、検査は店舗画面と同じ手順で行う。ジョブの名前は変えていない。
     - 共有パッケージの初期値：作業ブランチの CI の値は行 97.06%、分岐 100.00%で、T17-01-02 の仮の値と同じだったので、基準のファイルは変えていない。
-    - 値のばらつき（DC-17-5）：develop のビルドのキャッシュからテストを読む通常の実行（実行 39888360936 の 3 回）は、バックエンドのテストが FROM-CACHE になり、毎回同じ値になる。ばらつきを測るため、テストとコンパイルをキャッシュから読まない一時の commit（`--no-build-cache`。戻した）で 3 回流した（実行 39889809786 の 3 回）。
+    - 値のばらつき（DC-17-5）：develop のビルドのキャッシュからテストを読む通常の実行（実行 39888360936 の 3 回）は、バックエンドのテストが FROM-CACHE になり、毎回同じ値になる。ばらつきを測るため、テストとコンパイルをキャッシュから読まない一時の commit（`--no-build-cache`。戻した）で 3 回実行した（実行 39889809786 の 3 回）。
 
       | 対象 | 通常の 3 回（行 / 分岐） | キャッシュなしの 3 回（行 / 分岐） |
       |------|------------------------|----------------------------------|
@@ -149,18 +149,18 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
       | 店舗画面 | 85.38 / 83.30 を 3 回 | 85.38 / 83.30 を 3 回 |
       | 共有パッケージ | 97.06 / 100.00 を 3 回 | 97.06 / 100.00 を 3 回 |
 
-    - 許容の幅：管理画面、店舗画面、共有パッケージはばらつきがなく、行も分岐も 0 のままにした。バックエンドの分岐だけ、キャッシュから読んだ値（85.26）と、テストを実際に流した値（85.20）に、分岐 1 つ分（0.06 ポイント）の差があった。同じ条件の 3 回の中のばらつきは 0 だが、develop が書く基準の値は通常の実行（キャッシュ）で決まり、キャッシュのないブランチの実行は 85.20 になるので、最大の差の 0.06 を許容の幅にした（バックエンドの行は 0）。理由は、コードを変えた pull request ではテストが実際に流れ、基準の検査が誤って失敗するため。
-    - DC-17-7：共有パッケージのテスト（`login.test.ts`）を 1 つ消す一時の commit を push すると、実行 39892309170 で「店舗画面」が失敗した。ログは「カバレッジが基準を下回りました（shared）。行：基準 97.06%、今回 79.41%、差 -17.65 ポイント／分岐：基準 100.00%、今回 55.00%」と、直し方を表示した（他のジョブは成功）。消したテストは revert の commit で戻し、戻した後の実行 39892775900 は全て成功した。消すとき、`docs/design/acceptance-criteria.md`（AC の一覧）の更新も要ったので、同じ一時の commit に入れ、同じ revert で戻した。
-    - 全体の時間（最初のジョブの開始から最後のジョブの終了まで。DN-17-3）：通常の 3 回は 4:21、4:14、4:23、最後の実行 39892775900 は 4:32。キャッシュなしの 3 回（バックエンドのテストを実際に流す）は 5:55、6:08、6:18。全て 8 分以下。
+    - 許容の幅：管理画面、店舗画面、共有パッケージはばらつきがなく、行も分岐も 0 のままにした。バックエンドの分岐だけ、キャッシュから読んだ値（85.26）と、テストを実際に実行した値（85.20）に、分岐 1 つ分（0.06 ポイント）の差があった。同じ条件の 3 回の中のばらつきは 0 だった。ただし、基準の値は develop の通常の実行（キャッシュ）で決まり、キャッシュのないブランチの実行は 85.20 になる。この差の 0.06 を許容の幅にした（バックエンドの行は 0）。理由は、コードを変えた pull request ではテストが実際に実行され、基準の検査が誤って失敗するため。
+    - DC-17-7：共有パッケージのテスト（`login.test.ts`）を 1 つ消す一時の commit を push すると、実行 39892309170 で「店舗画面」が失敗した。ログは「カバレッジが基準を下回りました（shared）。行：基準 97.06%、今回 79.41%、差 -17.65 ポイント／分岐：基準 100.00%、今回 55.00%」と、直し方を表示した（他のジョブは成功）。消したテストは revert の commit で戻し、戻した後の実行 39892775900 は全て成功した。消すとき、`docs/design/acceptance-criteria.md`（AC の一覧）の更新も必要だったので、同じ一時の commit に入れ、同じ revert で戻した。
+    - 全体の時間（最初のジョブの開始から最後のジョブの終了まで。DN-17-3）：通常の 3 回は 4:21、4:14、4:23、最後の実行 39892775900 は 4:32。キャッシュなしの 3 回（バックエンドのテストを実際に実行する）は 5:55、6:08、6:18。全て 8 分以下。
 - [x] **T17-01-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。DN-17-2（除外を増やさない）を観点に含める。
   - 依存：T17-01-03
   - 結果：レビュー（一般の観点を汎用で 2 回、重要な観点を高性能と汎用で）の指摘は、高 1、必須 6（重複を除く）。全て直した。確認の CI は実行 39893879625（全てのジョブが成功）。
-    - 高：行の全体が 0 の報告（中身がない、全体の counter がない XML）で成功していた。行の全体が 0 なら失敗にし、`--write` も書き換えない（分岐の全体が 0 は 100 のまま）。
+    - 高：行の総数が 0 の報告（中身がない、または総数の `<counter>` がない XML）で成功していた。行の総数が 0 なら失敗にし、`--write` も書き換えない（分岐の総数が 0 のときは 100% とする）。
     - 店舗画面のジョブの基準の検査を、店舗画面と共有パッケージの 2 つの手順に分け、両方 `if: always()` にした。
-    - 失敗のときに出す `--write` のコマンドの script と報告を、リポジトリのルートからのパスにした。
-    - テストの抜けを足した（summary への出力、JaCoCo の XML、分岐の下回り、基準のファイルの誤り、行の全体が 0 の報告、コマンドのパス）。
-    - `coverage-baseline.mjs` の冒頭のコメントの spec の番号を規則の言葉にし、`DEFAULT_BASELINE` と `signed` に TSDoc を付けた。
-    - T17-01-02 の結果に、実装の要点を足した。
+    - 失敗のときに表示する `--write` のコマンドの script と報告のパスを、リポジトリのルートからの相対パスにした。
+    - テストの抜けを追加した（summary への出力、JaCoCo の XML、分岐の下回り、基準のファイルの誤り、行の全体が 0 の報告、コマンドのパス）。
+    - `coverage-baseline.mjs` の冒頭のコメントの spec の番号（DC-17-n）を、規則の内容を書く文に置き換え、`DEFAULT_BASELINE` と `signed` に TSDoc を付けた。
+    - T17-01-02 の結果に、実装の要点を追加した。
 
 ### 段階 2：domain の mutation testing
 
@@ -172,30 +172,30 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
   - 依存：なし
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、`docs/design/licenses.md`、`scripts/ci/licenses/policy.json`
   - 結果：
-    - 版：PIT 1.30.1、`gradle-pitest-plugin`（`info.solidsoft.pitest`）1.19.0、`pitest-junit5-plugin` 1.2.3。プラグインは 1.15.0 だと Gradle 9.8.2 で適用に失敗する（`reporting.baseDir` が無い）ので、Gradle 9 に対応する 1.19.0 にした。版の名前は、カタログで `pitest` が葉と枝を兼ねないよう `pitest-engine`、`pitest-gradle-plugin`、`pitest-junit5-plugin` にした。
-    - 設定：対象は `com.ecsite.module.*.domain.*`、テストは `src/test` 全体（PIT がカバレッジで、対象のクラスを実行するテストだけを変異ごとに流すので、絞らない）、スレッドは 4、報告は HTML と XML で `build/reports/pitest/`（`timestampedReports = false`。`index.html` と `mutations.xml` がそこに出る）。`check` の依存に入れていない。変異の種類は PIT の既定。
-    - ライセンス：PIT（`pitest`、`pitest-entry`、`pitest-command-line`、`pitest-html-report`）と `pitest-junit5-plugin` は POM が Apache-2.0。`gradle-pitest-plugin` は 1.15.0 の POM が Apache-2.0 で、1.19.0 の POM にはライセンスの記述がないが、公式のリポジトリの README と `LICENSE-2.0.txt` が Apache-2.0。方針の許可に入る。`licenses.md` の 3.1 と `policy.json` の `gradlePlugins` に書いた。
-    - `checkLicense`：PIT の構成（`pitest` の構成と Gradle のプラグインの classpath）は `licenseReport` の検査の構成に含まれず、対象に入らない（`licenses.json` に pitest が出ない）。JaCoCo と違い policy の `components` に書く必要はない。`./gradlew checkLicense` は通る。
+    - 版：PIT 1.30.1、`gradle-pitest-plugin`（`info.solidsoft.pitest`）1.19.0、`pitest-junit5-plugin` 1.2.3。プラグインは 1.15.0 だと Gradle 9.8.2 で適用に失敗する（`reporting.baseDir` が無い）ので、Gradle 9 に対応する 1.19.0 にした。版のカタログ（`libs.versions.toml`）の別名は、`pitest-engine`、`pitest-gradle-plugin`、`pitest-junit5-plugin` にした。`pitest-engine` を `pitest` にすると、`pitest` が単独の別名と `pitest-` で始まる別名のグループを兼ねることになり、`build.gradle.kts` がコンパイルできない（T17-03-02 で、試しに `pitest` にして確認した）。
+    - 設定：対象は `com.ecsite.module.*.domain.*`、テストは `src/test` 全体（T17-02-05 で `targetTests` を明示して直した）、スレッドは 4、報告は HTML と XML で `build/reports/pitest/`（`timestampedReports = false`。`index.html` と `mutations.xml` がそこに出る）。`check` の依存に入れていない。変異の種類は PIT の既定。
+    - ライセンス：PIT（`pitest`、`pitest-entry`、`pitest-command-line`、`pitest-html-report`）と `pitest-junit5-plugin` は POM が Apache-2.0。`gradle-pitest-plugin` は 1.15.0 の POM が Apache-2.0 で、1.19.0 の POM にはライセンスの記述がないが、公式のリポジトリの README と `LICENSE-2.0.txt` が Apache-2.0。Apache-2.0 と確認した。Apache-2.0 は `policy.json` の許可の一覧にあるので、許可される。`licenses.md` の 3.1 と `policy.json` の `gradlePlugins` に書いた。
+    - `checkLicense`：PIT の構成（`pitest` の構成と Gradle のプラグインの classpath）は `licenseReport` の検査の構成に含まれず、対象に入らない（`licenses.json` に pitest が出ない）。JaCoCo と違い policy の `components` に書く必要はない。`./gradlew checkLicense` は通る。（T17-03-02 で、`pitest` の構成を `licenseReport` の対象に加えた。）
     - 既存の検査：`./gradlew checkLicense build -x integrationTest`（Error Prone、Checkstyle、単体テスト、`checkLicense`）は成功（1 分 21 秒）。
-    - 手元の実行（`./gradlew pitest`）：PIT の実行は 1 分（解析 3 秒、変異の実行 55 秒）、Gradle 全体は 2 分 41 秒（コンパイルを含む）。生成した変異 643、殺した変異 578、mutation score 90%（578/643）、カバレッジのない変異 40、テストの強さ 96%（カバーされた変異 603 のうち 578）。domain の行のカバレッジ 93%（1036/1111）。191 のテストを調べ、1419 回流した。
+    - 手元の実行（`./gradlew pitest`）：PIT の実行は 1 分（解析 3 秒、変異の実行 55 秒）、Gradle 全体は 2 分 41 秒（コンパイルを含む）。生成した変異 643、殺した変異 578、mutation score 90%（578/643）、カバレッジのない変異 40、テストの強さ 96%（カバーされた変異 603 のうち 578）。domain の行のカバレッジ 93%（1036/1111）。191 のテストを調べ、1419 回実行した。
     - 生き残った変異（生き残りとカバレッジなしの合計）が多いクラスの上位：`media.domain.ImageFormat` 12/51、`order.domain.order.Order` 11/77、`catalog.domain.product.Product` 8/118、`order.domain.checkout.Checkout` 5/5、`cart.domain.Cart` 4/63、`inventory.domain.stock.StockAllocation` 4/4、`media.domain.AssetKeys` 4/4。
     - 注意：`mutations.xml` は `<mutations partial="true">` で始まる（PIT の出力の仕様。T17-02-02 のテストのデータはこの形に合わせる）。
 - [x] **T17-02-02** [テスト] 検査の script が PIT の XML の mutation score を読むテストを書き、レッドを確認する。テストのデータは、T17-02-01 で作った実際の PIT の XML に合わせる（DC-17-10）。
   - 依存：T17-02-01
   - 範囲：`scripts/ci/report/`
-  - 結果：テストは、実際の `mutations.xml` から切り出した 7 件（`scripts/ci/report/testdata/pit-mutations.xml`。検出 4、生き残り 3）で書き、`mutation-report.mjs` がないレッドを確認した。pre-commit の hook が `*.test.mjs` を流すので、T17-02-03 と 1 つの commit にした（開発の進め方 第 2.1 節）。
+  - 結果：テストは、実際の `mutations.xml` から切り出した 7 件（`scripts/ci/report/testdata/pit-mutations.xml`。検出 4、生き残り 3）で書き、`mutation-report.mjs` がないレッドを確認した。pre-commit の hook が `*.test.mjs` を実行するので、T17-02-03 と 1 つの commit にした（開発の進め方 第 2.1 節）。
 - [x] **T17-02-03** 検査の script に、mutation score の読み取りと比較、summary の「生き残った変異（テストが検出できなかった変異）が多いクラスの上位 10 件」、`--write` での mutation score の書き換えを加える。基準のファイルの mutation score の初期値は、ここでは置かない。PIT の報告がない CI で失敗しないため。T17-02-04 で、作業ブランチの CI の値を置く（DC-17-10）。
   - 依存：T17-02-01、T17-02-02
   - 範囲：`scripts/ci/report/`
   - 結果：
     - 読み取り：新しい `mutation-report.mjs`（`isPitReport`、`readMutations`）。mutation score は `detected="true"` の数 ÷ 全変異（小数第 2 位）。手元の報告で、検出 578 / 変異 643 = 89.89% で、PIT のコンソールの「Killed 578（90%）」と一致した。生き残りは `detected="false"`（SURVIVED と NO_COVERAGE）で、クラスごとに数えて多い順に 10 件を summary とログに出す（成功のときも出す）。
-    - 基準のファイル：対象の名前は `backend-domain`（既存の `backend` はカバレッジの全体で、PIT は domain だけなので、範囲が分かる名前にした）。指標は `mutation`（`{ value, tolerance }`。ある対象は mutation だけを持ち、ない対象は `line` と `branch`）。初期値はまだ置いていない（T17-02-04）。
+    - 基準のファイル：対象の名前は `backend-domain`（既存の `backend` はカバレッジの全体で、PIT は domain だけなので、範囲が分かる名前にした）。指標は `mutation`（`{ value, tolerance }`）と `line`、`branch`。`backend-domain` は `mutation` だけ、他の対象は `line` と `branch` を持つ。初期値はまだ置いていない（T17-02-04）。
     - 報告の種類：JaCoCo の XML と PIT の XML は、ルートの要素（`<mutations>`）で見分ける。対象の基準の指標と報告の種類が合わないと失敗にする。変異が 0 の報告も失敗にする。下回る・上回る・`--write` は、カバレッジと同じ扱い。
 - [x] **T17-02-04** `ci.yml` に組み込む。PIT を実行するジョブを実測で決め、3 回測る。PIT の報告を artifact に保存する。mutation score の許容の幅を、DC-17-5 と同じ方法で測る。ジョブを分けたときは「バックエンド」の `needs` に加える。基準のファイルに、作業ブランチの CI の mutation score を初期値として置く。DC-17-13 の push で失敗を確認し、削除を戻す。`ci.yml` の全体が 8 分以下であることを書く。結果をこのタスクの下に書く（DC-17-10、11、13）。
   - 依存：T17-02-01、T17-02-03
   - 範囲：`.github/workflows/ci.yml`、`scripts/ci/report/quality-baseline.json`
   - 結果：
-    - 置き場所：ビルドと単体テストのジョブ（「バックエンド（ビルドと単体テスト）」）の最後に、`./gradlew pitest`、報告の保存（artifact `pitest-backend`）、検査（`coverage-baseline.mjs backend-domain build/reports/pitest/mutations.xml`）の 3 つの手順を足した。ジョブは分けていない。理由は、このジョブの終了が、統合テストの遅い方のジョブの終了より早いまま（下の表）で、DC-17-11 の条件を満たすため。「バックエンド」の `needs` と、結果の確認は変えていない（このジョブの失敗は、既存の確認で「バックエンド」を失敗させる）。
+    - 置き場所：ビルドと単体テストのジョブ（「バックエンド（ビルドと単体テスト）」）の最後に、`./gradlew pitest`、報告の保存（artifact `pitest-backend`）、検査（`coverage-baseline.mjs backend-domain build/reports/pitest/mutations.xml`）の 3 つの手順を追加した。ジョブは分けていない。理由は、このジョブの終了が、統合テストの遅い方のジョブの終了より早いまま（下の表）で、DC-17-11 の条件を満たすため。「バックエンド」の `needs` と、結果の確認は変えていない（このジョブの失敗は、既存の確認で「バックエンド」を失敗させる）。
     - 3 回の時間（同じ commit 3d6751ef の実行 39896488509 の 3 回。分:秒）：
 
       | 回 | ビルドと単体テストのジョブ | うち PIT の手順（Gradle の時間） | 統合テストの遅い方 | ci.yml の全体 |
@@ -205,16 +205,19 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
       | 3 | 3:11 | 1:30 | 5:52 | 6:49 |
 
       `ci.yml` の全体は 7:16 以下で、8 分以下（DN-17-3、DC-131-1）。PIT の変異の実行は 1 分 10〜26 秒。
-    - キャッシュ：PIT のタスク（`pitest`）は、3 回とも実行された（`FROM-CACHE` でも `UP-TO-DATE` でもない）。単体テスト（`test`）は 2 回目以降 `FROM-CACHE` になるが、PIT はテストを自分で流すので影響しない。毎回の時間が、そのまま増える。
-    - score と許容の幅：作業ブランチの CI の mutation score は 89.89%（検出 578 / 変異 643）で、3 回とも同じ。手元の値とも同じ。ばらつきがないので、許容の幅は 0 のまま。基準のファイルの `backend-domain` に 89.89 を置いた。PIT のタスクがキャッシュされず毎回全て流れるので、キャッシュなしの実行も別には測っていない。
+    - キャッシュ：PIT のタスク（`pitest`）は、3 回とも実行された（`FROM-CACHE` でも `UP-TO-DATE` でもない）。単体テスト（`test`）は 2 回目以降 `FROM-CACHE` になるが、PIT はテストを自分で実行するので影響しない。毎回の時間が、そのまま増える。
+    - score と許容の幅：作業ブランチの CI の mutation score は 89.89%（検出 578 / 変異 643）で、3 回とも同じ。手元の値とも同じ。ばらつきがないので、許容の幅は 0 のまま。基準のファイルの `backend-domain` に 89.89 を置いた。PIT のタスクがキャッシュされず毎回全て実行されるので、キャッシュなしの実行も別には測っていない。
     - DC-17-13：最初に `CategoryTest` の名称変更の検証を消した（実行 39898489184）が、別のテストが同じ変異を検出するので、mutation score は変わらず成功した（revert で戻した）。次に `ImageFormatTest` の WebP の判定の検証（2 行）を消した commit を push すると、検査が「mutation score：基準 89.89%、今回 89.27%、差 -0.62 ポイント」で失敗し、ジョブ「バックエンド（ビルドと単体テスト）」と「バックエンド」が失敗した（実行 39899447961）。revert で戻した。
     - 気づいたこと：1 回目の push（実行 39895723133）で、「バックエンド」のカバレッジの検査が、行 98.07%（基準 98.09%）、分岐 85.15%（基準 85.26%、許容の幅 0.06）で失敗した。PIT とは関係がなく、`OrderPlacementService` の行 1 つと分岐 1 つ、`ReportCollectionService` の分岐 1 つが、統合テストの実行で網羅されなかったため（直前の成功の実行と、クラスごとに比べた）。以降の 4 回（上の 3 回と DC-17-13 の 1 回）は基準どおりで通った。T17-01-03 で測ったばらつき（分岐 1624〜1625）より大きく、行にも出たので、バックエンドの許容の幅の再検討が必要になる可能性がある（段階 2 のレビューか、利用者の判断）。
 - [x] **T17-02-05** 段階の最後のレビューを行い、指摘に対応する。DN-17-2（除外を増やさない）を観点に含める。
   - 依存：T17-02-04
   - 結果：レビュー（一般の観点を汎用で 2 回、重要な観点を高性能と汎用で）の指摘は、高 2、必須 2（重複を除く）。全て直した。確認の CI は実行 39901775038（全てのジョブが成功）。
-    - 必須（pitest の `targetTests`）：コメントは「テストは src/test 全体」と書いていたが、`targetTests` を省くと `targetClasses`（domain）と同じ範囲になっていた。`targetTests = com.ecsite.*` を明示し、全ての単体テスト（998 クラス）を渡した。全てを渡すと、test の task が設定する systemProperty とヒープがなく、`ModuleDiagramTest` が「変異なしで失敗」して PIT が止まったので、`jvmArgs` で test の task と同じ設定を渡した。結果は、mutation score が 89.89%（578/643）から 90.20%（580/643）に上がり、テストの強さ 96%、PIT の実行は手元で 1 分 49 秒、CI で 1 分 48 秒（以前は 1 分 10〜26 秒。カバレッジの計算が 63 秒）。CI の「ビルドと単体テスト」は 3:31 で、統合テストの遅い方（5:40）より早く、`ci.yml` の全体は 6:26。ジョブは分けない（DC-17-11）。基準の `backend-domain` は CI の値 90.20 に置き直した。
-    - 高（バックエンドのカバレッジの許容の幅）：実行 39895723133 で、行 98.07%（基準 98.09%）、分岐 85.15%（基準 85.26%）になり、「バックエンド」の検査が失敗した。`OrderPlacementService`（138 行付近）と `ReportCollectionService`（66 行付近）の、同時実行の競合で通る分岐で、構造的に再発する。DC-17-5 の測定の結果として、許容の幅を行 0、分岐 0.06 から、行 0.05、分岐 0.15 にした（観測した最大の差、行 0.02、分岐 0.11 に、競合で通る分岐が他にもありうる余裕を足した）。T17-01-03 の結果（3 回の測定）は残す。
-    - 高（`readMutations`）：閉じの `</mutations>` がない（途中で切れた）XML は失敗にする。属性の並びとクォートに依存せず、`<mutation>` の開始タグから `detected` と `status`、子の `<mutatedClass>` を読む。開始タグの数と読めた変異の数が違えば失敗にする。検出は PIT の定義（`detected="true"`）のまま。RUN_ERROR などは、全変異に数え、検出にも生き残りにも数えない。テストを先に足し、レッド（4 件失敗）を確認してから直した。
+    - 必須（pitest の `targetTests`）：
+      - 原因：コメントは「テストは src/test 全体」と書いていたが、`targetTests` を省くと `targetClasses`（domain）と同じ範囲になっていた。
+      - 対応：`targetTests = com.ecsite.*` を明示し、全ての単体テスト（998 クラス）を渡した。全ての単体テストを渡すと、test の task が設定する systemProperty とヒープがなく、`ModuleDiagramTest` が「変異なしで失敗」して PIT が失敗したので、`jvmArgs` で test の task と同じ設定を渡した。
+      - 結果：mutation score が 89.89%（578/643）から 90.20%（580/643）に上がり、テストの強さは 96%。PIT の実行は手元で 1 分 49 秒、CI で 1 分 48 秒（`targetTests` を明示する前は、CI で 1 分 10〜26 秒。増えた分は、カバレッジの計算の 63 秒）。CI の「ビルドと単体テスト」は 3:31 で、統合テストの遅い方（5:40）より早く、`ci.yml` の全体は 6:26。ジョブは分けない（DC-17-11）。基準の `backend-domain` は CI の値 90.20 に置き直した。
+    - 高（バックエンドのカバレッジの許容の幅）：実行 39895723133 で、行 98.07%（基準 98.09%）、分岐 85.15%（基準 85.26%）になり、「バックエンド」の検査が失敗した。`OrderPlacementService`（138 行付近）と `ReportCollectionService`（66 行付近）の、同時実行の競合があるときだけ実行される分岐で、実行ごとに起きうる。DC-17-5 の測定の結果として、許容の幅を行 0、分岐 0.06 から、行 0.05、分岐 0.15 にした（観測した最大の差、行 0.02、分岐 0.11 に、競合の分岐が他にもありうる分を余裕として加えた）。T17-01-03 の結果（3 回の測定）は残す。
+    - 高（`readMutations`）：閉じの `</mutations>` がない（途中で切れた）XML は失敗にする。属性の並びとクォートに依存せず、`<mutation>` の開始タグから `detected` と `status`、子の `<mutatedClass>` を読む。開始タグの数と読めた変異の数が違えば失敗にする。検出は PIT の定義（`detected="true"`）のまま。RUN_ERROR などは、全変異に数え、検出にも生き残りにも数えない。テストを先に追加し、レッド（4 件失敗）を確認してから直した。
     - 必須（コメント）：`build.gradle.kts` の JaCoCo の節のコメントを、基準の検査がある今の動きに直した。`grep -rn "基準の値"` で残った `coverage-summary.mjs` の冒頭のコメントは、T17-03-01 の範囲なのでそのままにした。
     - 後回しの作業：同時実行の競合で通る分岐（`OrderPlacementService`、`ReportCollectionService`）を、単体テストで毎回通し、バックエンドのカバレッジの許容の幅を狭くする。tasks にない作業なので、T17-03-04 で起票の案にする。
 
@@ -228,13 +231,42 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
   - 依存：T17-02-05
   - 範囲：`docs/rules/test-writing.md`、`docs/guides/ci.md`、`docs/guides/running-tests.md`、`.github/workflows/ci.yml`、`scripts/ci/report/coverage-summary.mjs`
   - 結果：
-    - `test-writing.md` 第 1 節：「基準の値で失敗させない」を、前回の値を下回らない規則（対象、基準のファイル、合計だけでファイルごとの基準がないこと、下げるときの `--write` と pull request の理由）に直した。規則の一覧に、確認方法「自動」の行を足した。
-    - `ci.md`：第 2 節のジョブの表に PIT と基準の検査を足した。第 3 節に、`report/` の下の script の説明と、基準の検査の節（失敗したときの修正方法、PIT の時間）を足した。
-    - `running-tests.md`：第 1 節の表に `./gradlew pitest`、第 2 節に共有パッケージのカバレッジ、第 5 節に基準の検査を手元で実行するコマンドと、対象ごとの報告の作り方を足した。
+    - `test-writing.md` 第 1 節：「基準の値で失敗させない」を、前回の値を下回らない規則（対象、基準のファイル、合計だけでファイルごとの基準がないこと、下げるときの `--write` と pull request の理由）に直した。規則の一覧に、確認方法「自動」の行を追加した。
+    - `ci.md`：第 2 節のジョブの表に PIT と基準の検査を追加した。第 3 節に、`report/` の下の script の説明と、基準の検査の節（失敗したときの修正方法、PIT の時間）を追加した。
+    - `running-tests.md`：第 1 節の表に `./gradlew pitest`、第 2 節に共有パッケージのカバレッジ、第 5 節に基準の検査を手元で実行するコマンドと、対象ごとの報告の作り方を追加した。
     - `coverage-summary.mjs` の冒頭のコメントと、用語集の「カバレッジ」の行（古い規則が残っていた）を直した。`ci.yml` のコメントは、T17-01・T17-02 で今の動きに直してあり、変更は要らなかった。
-    - アーカイブを除き、`基準の値で失敗させない` 系の古い記述は残っていない。
-- [ ] **T17-03-02** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）を行い、指摘に対応する。DN-17-2（除外を増やさない）を観点に含める。
+    - 古い記述の確認：検索の語が `基準の値` に限られ、設定ファイルのコメント（管理画面の `vite.config.ts`、店舗画面の `vitest.config.ts` の「カバレッジは報告だけ」）が残っていた。T17-03-02 で、この 2 つを直し、`報告だけ` をリポジトリ全体（アーカイブ、`node_modules`、`.local` を除く。拡張子は md、ts、tsx、mjs、kts、yml、json）で検索して、残りが `build.gradle.kts` の `coverageReport` の説明（task が報告だけを作る。正しい）だけであることを確認した。
+- [x] **T17-03-02** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）を行い、指摘に対応する。DN-17-2（除外を増やさない）を観点に含める。
   - 依存：T17-03-01
+  - 結果：レビュー（一般の観点を汎用で 2 回、重要な観点を高性能と汎用で、文書の言い回しを汎用で）の指摘は、重複を除いて、高 1、必須 6、推奨 8、言い回しの候補 35（採用 34。「手順」を step に変える案は、ci.yml の step の呼び方として既存の文書と同じなので採用しなかった）。推奨で採用しなかったものはない。確認の CI は実行 CONFIRM_RUN（全てのジョブが成功）。
+    - H1（バックエンドの許容の幅）：分岐 1 つは約 0.05 ポイントで、観測した最大の欠け（85.15%）が床（85.11%）のすぐ上にあった。`backend` の許容の幅を、行 0.10、分岐 0.30（どちらも約 6 つ分）にした。`ci.md` 第 3.1 節の説明も合わせた。
+    - M1：`running-tests.md` 第 1 節の表の、`./gradlew pitest` の行の前の空行を削除した。
+    - M2：PIT の時間を、M5 の実測で `ci.md` と `running-tests.md`（※2 に出した）に書き直した。
+    - M3：管理画面と店舗画面の Vitest の設定のコメントを、共有パッケージと同じ書き方（「報告と基準の検査に使う」）にした。T17-03-01 の結果の記録も、検索の語と範囲を書いて直した。
+    - M4：用語集に「mutation score」と「カバレッジの基準」を追加し、「カバレッジ」の行を許容の幅が分かる書き方にした。
+    - M5：下の表。
+    - M6：T17-01-02 と T17-02-01 の結果を直した。
+    - R1：単体テストの systemProperty とヒープを 1 つの値（`unitTestSystemProperties`、`unitTestMaxHeap`）にまとめ、test の task と `pitest` の `jvmArgs` の両方で使う。`./gradlew pitest --dry-run` に `:test` が出ないことを確認した。`ecsite.update-docs` は PIT に渡らない。
+    - R2：`build.gradle.kts` の PIT のコメントを、カバレッジのために全ての単体テストを 1 回実行する（CI で約 1 分）という内容に直した。
+    - R3：`licenseReport` の `configurations` に `pitest` の構成を加えた。`checkLicense` は、PIT の本体（`pitest`、`pitest-entry`、`pitest-command-line`、`pitest-html-report`、`pitest-junit5-plugin`）と間接の依存を照合する。不許可の依存はなかったが、間接の依存の `antlr:antlr:2.7.7`（ライセンスの名前 `BSD License`）と `org.antlr:stringtemplate:3.2.1`（`BSD licence`）が、名前が許可の一覧に合わず失敗した。どちらも ANTLR の BSD の 3 条項のライセンスなので、`policy.json` の `normalize` に BSD-3-Clause として加え、`licenses.md` の 3.1 に書いた（例外にしたものはない）。
+    - R4：`running-tests.md` 第 5 節に、バックエンドの `--write` は CI の summary の値か、`--rerun-tasks` などで実際に実行した値を使うと書いた。
+    - R5：`mutation-report.mjs` のテストを `mutation-report.test.mjs` に分けた（`readMutations` の単体のテスト。CLI のテストは `coverage-baseline.test.mjs`）。テストは 45 件が成功。
+    - R6：`coverage-baseline.mjs` の冒頭のコメントに終了コード 2（引数の誤り）を書いた。
+    - R7：[テストの書き方](../../rules/test-writing.md)の第 1 節を、1.1 テストの種類と 1.2 カバレッジと mutation score の基準に分け、規則の一覧の行を 1.2 にした。基準を指す参照は、全て 1.2 の節に直した。
+    - R8：`ci.md` 第 3.1 節の「ジョブの最後」を、実際の位置（報告を保存した後。「バックエンド（ビルドと単体テスト）」は失敗時のテストレポートの保存の前）に合わせた。`ci.yml` のコメントも合わせた。
+    - 言い回し：#12 以外を直した。#15、#16 は M2 と一緒に直した。#29 の理由は、版のカタログの別名を `pitest` にすると、`pitest` が単独の別名とグループを兼ねることになり、`build.gradle.kts` がコンパイルできないことを試して確認し、書いた。
+    - M5（同じ commit e1f79c03 の CI を `gh run rerun` で実行した結果。分:秒。実行 39904141358 の 4 回。rerun の指示を重複して実行したため、3 回でなく 4 回になった）。設定は `targetTests`、`jvmArgs`（R1 の後）、許容の幅（H1）の後のもの：
+
+      | 回 | mutation score | ビルドと単体テストのジョブ | うち PIT の手順 | 統合テストの遅い方 | ci.yml の全体 |
+      |----|----------------|--------------------------|-----------------|--------------------|---------------|
+      | 1 | 90.20%（580/643） | 4:02 | 2:16 | 6:14 | 7:02 |
+      | 2 | 90.20%（580/643） | 4:10 | 2:28 | 6:15 | 7:10 |
+      | 3 | 90.20%（580/643） | 3:41 | 2:01 | 5:41 | 6:22 |
+      | 4 | 90.20%（580/643） | 4:05 | 2:18 | 6:03 | 6:54 |
+
+      mutation score は 4 回とも同じで、揺れがないので、`backend-domain` の `tolerance` は 0 のまま。ビルドと単体テストのジョブは、全ての回で統合テストの遅い方より早く終わり（DC-17-11）、全体は 7:10 以下で、8 分以下（DC-17-10）。4 回とも、全てのジョブ（バックエンドのカバレッジの検査を含む）が成功した。
+    - 許容の幅の最終の値：`backend` は行 0.10、分岐 0.30。`admin`、`store`、`shared` は行・分岐とも 0。`backend-domain` は mutation 0。
+    - 後回しの作業（T17-03-04 で起票の案にする）：T17-02-05 の結果にある「競合で通る分岐を単体テストで毎回通す」（許容の幅を狭くするため）。R3 で例外にしたものはない。
 - [ ] **T17-03-03** pull request の前のレビュー（profile「厚め」：高性能で spec との一致と完了の定義、使うツールの組み込みのコードレビュー）を行い、指摘に対応する。
   - 依存：T17-03-02
 - [ ] **T17-03-04** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。この commit で、全てのタスクのチェックボックスを `[x]` にする（開発の進め方 第 4.2 節）。pull request の作成はタスクにせず、URL を追跡の issue に記録する。

@@ -1,6 +1,6 @@
 // ============================================================================
 // カバレッジの合計（行・分岐）と、行のカバレッジが低い所を、GitHub Actions の job の summary に書く
-// （テストの書き方 第 1 節）
+// （テストの書き方 第 1.2 節）
 //
 //   使い方：node scripts/ci/report/coverage-summary.mjs <名前> <報告のファイル>
 //     報告のファイル：JaCoCo の XML（*.xml）か、Vitest の json-summary（coverage-summary.json）

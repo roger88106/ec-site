@@ -352,7 +352,7 @@ pitest {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの書き方 第 1 節。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
+// カバレッジ（テストの書き方 第 1.2 節。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
 //   報告：build/reports/jacoco/coverageReport/（html、xml）
 //   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：

@@ -15,10 +15,11 @@
 | `./gradlew integrationTest -PintegrationTestForks=<数>` | 統合テストを実行するフォークの数（既定 1。CI も 1）。手元では通常は使わない | 必要 |
 | `./gradlew integrationTestShards` | 統合テストのジョブ（1/2・2/2）に入るクラスの一覧（`-PintegrationTestShardCount=<数>` で分ける数を変える。既定 2） | 不要 |
 | `./gradlew coverageReport` | 単体テストと統合テストを合算したカバレッジ（`build/reports/jacoco/coverageReport/`。`check` の後にも実行できる）。`-PcoverageExecDir=<ディレクトリ>` と `-PcoverageClassesDir=<ディレクトリ>` で、別のディレクトリの実行データ（`*.exec`）とクラスから作る（CI が、ジョブごとに保存したものを集めるために使う。手元では通常は使わない） | 必要 |
-
-| `./gradlew pitest` | domain（`com.ecsite.module.*.domain.*`）の mutation testing（PIT）。単体テスト（`src/test`）だけを使う。報告は `build/reports/pitest/`（`index.html` と `mutations.xml`）。`check` と `build` には含まれない。手元の実行は、変異の実行が約 1 分、コンパイルを含めて 2〜3 分（CI では 1 分 10 秒から 1 分 30 秒ほど） | 不要 ※1 |
+| `./gradlew pitest` | domain（`com.ecsite.module.*.domain.*`）の mutation testing（PIT）。単体テスト（`src/test`）だけを使う。報告は `build/reports/pitest/`（`index.html` と `mutations.xml`）。`check` と `build` には含まれない。時間は ※2 | 不要 ※1 |
 
 ※1：jOOQ のコード生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うため、マイグレーションか生成の設定が変わったときだけ Docker が必要（変わらなければ `generateJooq UP-TO-DATE` でスキップされる）。
+
+※2：PIT は変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、時間の多くはその実行に使われる。手元はコンパイル済みで約 2 分（実測 1 分 57 秒）。CI の手順は 2 分 1 秒から 2 分 28 秒（[CI の検査](ci.md) 第 3.1 節）。
 
 単体テストには、構成と契約の検査も含まれる：モジュールの境界（`ModulithTest`）、アーキテクチャの規則（`architecture/` の ArchUnit）、契約の制約（`contract/`）、エラーの定義とメッセージの対応（`MessageContractTest`）。
 
@@ -34,7 +35,7 @@ pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
 - 管理画面の `pnpm build`（本番ビルド）は、環境変数 `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がないと失敗する（[環境変数](environment.md)）。ローカルの値で確認するときは、`VITE_OIDC_AUTHORITY=http://localhost:8180/realms/ec-admin VITE_OIDC_CLIENT_ID=ec-admin-web pnpm build`。
-- `pnpm test` はカバレッジのレポートを `coverage/index.html` に生成する。共有パッケージ（`frontend/shared`）の `pnpm test` も同じ設定でカバレッジを取り、`coverage/coverage-summary.json` に出力する。
+- `pnpm test` はカバレッジのレポートを `coverage/index.html` に生成する。共有パッケージ（`frontend/shared`）の `pnpm test` も、上と同じ Vitest のカバレッジの設定（v8）でカバレッジを取り、`coverage/coverage-summary.json` に出力する。
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる（管理画面のビルドの環境変数は、未設定ならローカルの値を使う）。
 
@@ -85,7 +86,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 ## 5. カバレッジと mutation score の基準の検査
 
-CI と同じ検査を、手元で実行できる（[テストの書き方](../rules/test-writing.md) 第 1 節、[CI の検査](ci.md) 第 3.1 節）。先に、対象のテストを実行して報告を作る。
+CI と同じ検査を、手元で実行できる（[テストの書き方](../rules/test-writing.md) 第 1.2 節、[CI の検査](ci.md) 第 3.1 節）。先に、対象のテストを実行して報告を作る。
 
 ```bash
 # ルートで：node scripts/ci/report/coverage-baseline.mjs <対象> <報告のパス> [--write]
@@ -102,6 +103,7 @@ node scripts/ci/report/coverage-baseline.mjs backend-domain backend/ecsite/build
 | `admin`、`store`、`shared` | 各ディレクトリで `pnpm test` | Vitest の `coverage-summary.json` |
 | `backend-domain` | `backend/ecsite/` で `./gradlew pitest` | PIT の `mutations.xml` |
 
-- 基準は `scripts/ci/report/quality-baseline.json`。値が基準から許容の幅を引いた値を下回ると、対象、基準、今回の値、差を出力して終了コード 1 で終了する。上回ったときは成功にして、基準の更新を促す警告を表示する。
+- 基準は `scripts/ci/report/quality-baseline.json`。報告の値が、基準から許容の幅を引いた値を下回ると、対象、基準、今回の値、差を出力して終了コード 1 で終了する。上回ったときは成功にして、基準の更新を促す警告を表示する。
 - `--write` は、基準のファイルのその対象の値を、報告の値で書き換える（許容の幅は変えない）。基準を下げるときと、上回った値に更新するときに使い、書き換えたファイルを同じ pull request に含める。下げるときは、pull request に理由を書く。
-- 手元でバックエンドの一部のテストだけを実行した報告は、値が低くなる。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
+- 手元でバックエンドの一部のテストだけを実行すると、報告の値が基準より低くなり、検査が失敗する。基準の検査には、CI と同じ範囲（`./gradlew check`）の報告を使う。
+- バックエンドの `--write` は、手元のビルドのキャッシュから読んだテストの報告ではなく、CI の summary の値、または `./gradlew check --rerun-tasks` などでテストを実際に実行した報告の値で行う。キャッシュから読んだ報告は、実行した報告と分岐が 1 つ違うことがある（実測：キャッシュから読んだ値は分岐 85.26%、実行した値は 85.20%）。

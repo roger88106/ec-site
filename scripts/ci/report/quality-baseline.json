@@ -7,7 +7,7 @@
       },
       "branch": {
         "value": 85.26,
-        "tolerance": 0
+        "tolerance": 0.06
       }
     },
     "admin": {

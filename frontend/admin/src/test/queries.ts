@@ -8,6 +8,11 @@ function escapeRegExp(text: string): string {
   return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 }
 
+/** 行の名前が、渡した文字で始まる行に当たる正規表現 */
+function rowNamePattern(name: string): RegExp {
+  return new RegExp(`^${escapeRegExp(name)}`)
+}
+
 /**
  * 項目名の `dt` の次の要素（対の `dd`）を返す。
  *
@@ -47,26 +52,27 @@ export async function findDetailValue(name: string, scope: Scope = screen): Prom
 }
 
 /**
- * 一覧の行を、名前に含む文字で返す。行の名前は、行の中のセルの文字をつないだもの。見つからなければ失敗する。
+ * 一覧の行を、名前の始まりの文字で返す。行の名前は、行の中のセルの文字をつないだもの。見つからなければ失敗する。
+ * 「標準」と「標準（旧）」のような似た名前は、後者の全体を渡して区別する。
  * 例：`within(getRow('標準税率')).getByRole('cell', { name: '10%' })`
  *
- * @param name 行の名前に含む文字
+ * @param name 行の名前の始まりの文字
  * @param scope 探す範囲。省略すると画面全体
- * @returns 名前に含む文字の行
+ * @returns 名前が渡した文字で始まる行
  */
 export function getRow(name: string, scope: Scope = screen): HTMLElement {
-  return scope.getByRole('row', { name: new RegExp(escapeRegExp(name)) })
+  return scope.getByRole('row', { name: rowNamePattern(name) })
 }
 
 /**
  * {@link getRow} の、行が現れるまで待つ版。
  *
- * @param name 行の名前に含む文字
+ * @param name 行の名前の始まりの文字
  * @param scope 探す範囲。省略すると画面全体
- * @returns 名前に含む文字の行
+ * @returns 名前が渡した文字で始まる行
  */
 export function findRow(name: string, scope: Scope = screen): Promise<HTMLElement> {
-  return scope.findByRole('row', { name: new RegExp(escapeRegExp(name)) })
+  return scope.findByRole('row', { name: rowNamePattern(name) })
 }
 
 /**
@@ -74,7 +80,7 @@ export function findRow(name: string, scope: Scope = screen): Promise<HTMLElemen
  * 見出しは、行のある表の `columnheader`。見つからなければ失敗する。
  * 例：`expect(getCell('ABC-001', '在庫数の合計')).toHaveTextContent('12')`
  *
- * @param rowName 行の名前に含む文字（{@link getRow} と同じ）
+ * @param rowName 行の名前の始まりの文字（{@link getRow} と同じ）
  * @param columnName 列の見出しの文字
  * @param scope 探す範囲。省略すると画面全体
  * @returns 行と列が交わる `cell`

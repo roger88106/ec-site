@@ -50,18 +50,17 @@ export function renderApp(
     me = 'ok',
   }: { permissions?: readonly string[]; me?: 'ok' | 'serverError' | 'networkError' | 'pending' } = {},
 ) {
-  server.use(
-    me === 'serverError'
-      ? getServerError('/me')
-      : me === 'networkError'
-        ? getNetworkError('/me')
-        : http.get('/me', async ({ response }) => {
-            if (me === 'pending') {
-              await delay('infinite')
-            }
-            return response(200).json({ permissions: [...permissions] })
-          }),
-  )
+  const meHandlers = {
+    ok: () => http.get('/me', ({ response }) => response(200).json({ permissions: [...permissions] })),
+    pending: () =>
+      http.get('/me', async ({ response }) => {
+        await delay('infinite')
+        return response(200).json({ permissions: [...permissions] })
+      }),
+    serverError: () => getServerError('/me'),
+    networkError: () => getNetworkError('/me'),
+  }
+  server.use(meHandlers[me]())
   const router = createMemoryRouter(routes, { initialEntries: [url] })
   const user = userEvent.setup()
   const logout = vi.fn()

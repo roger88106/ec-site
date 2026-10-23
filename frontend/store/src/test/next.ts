@@ -72,21 +72,21 @@ export function cookieOptions(name: string): Record<string, unknown> | undefined
 }
 
 /**
- * 処理が投げた例外の digest を返す。<br />
+ * 処理が投げた例外と、その digest を返す。<br />
  * Next.js の redirect・notFound は、種類と移動先を digest に持つ例外を投げる。
  *
  * @param run 処理
- * @returns 例外の digest。例外を投げなかった、または digest のない例外なら undefined
+ * @returns 例外（投げなければ undefined）と、その digest（なければ undefined）
  */
-async function thrownDigest(run: () => Promise<unknown>): Promise<string | undefined> {
+async function thrown(run: () => Promise<unknown>): Promise<{ error: unknown; digest: string | undefined }> {
   const error = await run().then(
     () => undefined,
-    (thrown: unknown) => thrown,
+    (caught: unknown) => caught,
   )
   if (typeof error === 'object' && error !== null && 'digest' in error && typeof error.digest === 'string') {
-    return error.digest
+    return { error, digest: error.digest }
   }
-  return undefined
+  return { error, digest: undefined }
 }
 
 /**
@@ -98,9 +98,9 @@ async function thrownDigest(run: () => Promise<unknown>): Promise<string | undef
  * @throws redirect していないとき
  */
 export async function redirectedTo(run: () => Promise<unknown>): Promise<string> {
-  const digest = await thrownDigest(run)
+  const { error, digest } = await thrown(run)
   if (digest === undefined || !digest.startsWith('NEXT_REDIRECT;')) {
-    throw new Error(`redirect していない：${String(digest)}`)
+    throw new Error(`redirect していない：${String(error)}`)
   }
   return digest.split(';').slice(2, -2).join(';')
 }
@@ -113,8 +113,8 @@ export async function redirectedTo(run: () => Promise<unknown>): Promise<string>
  * @throws notFound() していないとき
  */
 export async function expectNotFound(run: () => Promise<unknown>): Promise<void> {
-  const digest = await thrownDigest(run)
+  const { error, digest } = await thrown(run)
   if (digest !== 'NEXT_HTTP_ERROR_FALLBACK;404') {
-    throw new Error(`notFound() していない：${String(digest)}`)
+    throw new Error(`notFound() していない：${String(error)}`)
   }
 }

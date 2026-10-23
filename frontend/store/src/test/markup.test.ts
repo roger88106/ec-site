@@ -15,4 +15,16 @@ describe('HTML の開始タグの取り出し', () => {
     expect(findTag(html, 'img', { alt: 'a > b' }).src).toBe('x.png')
     expect(() => findTag(html, 'img', { alt: 'c' })).toThrow('タグがない')
   })
+
+  test('自己終了のタグの / は属性にしない', () => {
+    expect(startTags('<input type="text" name="q" />', 'input')).toEqual([{ type: 'text', name: 'q' }])
+    expect(startTags('<img src="x.png"/>', 'img')).toEqual([{ src: 'x.png' }])
+  })
+
+  test('属性の値の文字参照を戻してから返し、戻した値で探す', () => {
+    const html = `<a title="A &amp; B &quot;c&quot; &#x27;d&#x27; &lt;e&gt;" href="/x?a=1&amp;b=2">x</a>`
+
+    expect(startTags(html, 'a')[0].title).toBe(`A & B "c" 'd' <e>`)
+    expect(findTag(html, 'a', { href: '/x?a=1&b=2' }).title).toBe(`A & B "c" 'd' <e>`)
+  })
 })

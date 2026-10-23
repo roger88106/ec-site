@@ -148,7 +148,32 @@ describe('一覧の行', () => {
         </tbody>
       </table>,
     )
-    expect(getRow('(税込)')).toBeInTheDocument()
+    expect(getRow('A (税込)')).toBeInTheDocument()
+  })
+
+  test('名前が渡した文字で始まる行だけを返し、行の途中にある文字には当たらない', () => {
+    render(
+      <table>
+        <tbody>
+          <tr>
+            <td>標準</td>
+          </tr>
+          <tr>
+            <td>標準（旧）</td>
+          </tr>
+          <tr>
+            <td>ABC-001</td>
+          </tr>
+          <tr>
+            <td>ABC-0012</td>
+          </tr>
+        </tbody>
+      </table>,
+    )
+    expect(getRow('標準（旧）')).toHaveTextContent(/^標準（旧）$/)
+    expect(getRow('ABC-0012')).toHaveTextContent(/^ABC-0012$/)
+    expect(() => getRow('（旧）')).toThrow()
+    expect(() => getRow('-0012')).toThrow()
   })
 
   test('含む行がなければ失敗する', () => {

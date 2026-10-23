@@ -14,6 +14,10 @@ describe('redirect したことの確認', () => {
   test('redirect でない例外では失敗する', async () => {
     await expect(redirectedTo(async () => notFound())).rejects.toThrow('redirect していない')
   })
+
+  test('失敗のメッセージに、投げられた元の例外を含める', async () => {
+    await expect(redirectedTo(async () => Promise.reject(new Error('boom')))).rejects.toThrow('boom')
+  })
 })
 
 describe('見つからないことの確認', () => {
@@ -28,5 +32,9 @@ describe('見つからないことの確認', () => {
   test('notFound() でない例外では失敗する', async () => {
     await expect(expectNotFound(async () => redirect('/login'))).rejects.toThrow('notFound() していない')
     await expect(expectNotFound(async () => Promise.reject(new Error('boom')))).rejects.toThrow('notFound() していない')
+  })
+
+  test('失敗のメッセージに、投げられた元の例外を含める', async () => {
+    await expect(expectNotFound(async () => Promise.reject(new Error('boom')))).rejects.toThrow('boom')
   })
 })

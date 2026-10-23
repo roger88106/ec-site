@@ -5,15 +5,15 @@ import type { paths } from '@/api/generated/admin'
 import type { ErrorCode, Problem } from '@/api/types'
 import { stock } from '@/test/fixtures'
 
+/** 管理 API の基底の URL（型付きの http と、型のないハンドラーで共通に使う） */
+const ADMIN_API = `${window.location.origin}/api/admin`
+
 /**
  * 管理 API の応答を差し替えるハンドラーを作る（管理画面の構成 第 9 節）。<br />
  * パス・パラメーター・リクエストとレスポンスの本文は admin.yaml の型に合わせる。admin.yaml にない応答は型エラーになる。
  * 例：`http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))`
  */
-export const http = createOpenApiHttp<paths>({ baseUrl: `${window.location.origin}/api/admin` })
-
-/** 型のないハンドラーで、管理 API の GET に応答するときのパスの接頭辞 */
-const ADMIN_API = `${window.location.origin}/api/admin`
+export const http = createOpenApiHttp<paths>({ baseUrl: ADMIN_API })
 
 /**
  * 管理 API の GET を通信の失敗（接続できない）にするハンドラーを作る。

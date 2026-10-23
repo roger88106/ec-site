@@ -164,8 +164,8 @@ describe('操作した運営者', () => {
     renderApp(URL)
 
     await screen.findAllByRole('columnheader')
-    expect(getCell('在庫 一郎', '操作した運営者')).toHaveTextContent('在庫 一郎')
-    expect(getCell('注文番号 20261010-482915', '操作した運営者')).toBeEmptyDOMElement()
+    expect(getCell('2026/10/10 11:00', '操作した運営者')).toHaveTextContent('在庫 一郎')
+    expect(getCell('2026/10/10 10:00', '操作した運営者')).toBeEmptyDOMElement()
   })
 })
 

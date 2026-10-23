@@ -5,7 +5,21 @@ export type Attributes = Record<string, string>
 const START_TAG = /<([a-zA-Z][\w-]*)((?:[^>"]|"[^"]*")*)>/g
 
 /** 属性 1 つ（`name="value"` か、値のない `name`） */
-const ATTRIBUTE = /([^\s="]+)(?:="([^"]*)")?/g
+const ATTRIBUTE = /([^\s="/]+)(?:="([^"]*)")?/g
+
+/** 属性の値の HTML の文字参照（描画が書き出すもの）と、元の文字 */
+const CHARACTER_REFERENCES: Record<string, string> = {
+  '&quot;': '"',
+  '&#x27;': "'",
+  '&lt;': '<',
+  '&gt;': '>',
+  '&amp;': '&',
+}
+
+/** 属性の値の文字参照を、元の文字に戻す（1 回の置き換えで戻すので、`&amp;lt;` は `&lt;` になる） */
+function decode(value: string): string {
+  return value.replace(/&(?:quot|#x27|lt|gt|amp);/g, (reference) => CHARACTER_REFERENCES[reference])
+}
 
 /**
  * HTML から、指定したタグの開始タグを全て取り出し、属性の対にする（店舗画面の構成 第 7 節）。<br />
@@ -23,7 +37,7 @@ export function startTags(html: string, tag: string): Attributes[] {
     }
     const attributes: Attributes = {}
     for (const attribute of matched[2].matchAll(ATTRIBUTE)) {
-      attributes[attribute[1]] = attribute[2] ?? ''
+      attributes[attribute[1]] = decode(attribute[2] ?? '')
     }
     found.push(attributes)
   }

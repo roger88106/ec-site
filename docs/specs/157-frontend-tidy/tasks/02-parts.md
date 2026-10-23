@@ -25,7 +25,7 @@
   - 範囲：`frontend/admin/src/features/product/components/ProductFields.tsx`、`frontend/admin/src/features/product/components/BasicInfoCard.tsx`、`frontend/admin/src/features/product/pages/ProductCreatePage.tsx`
 - [ ] **T157-02-06** 管理画面の構成の「middleware」を「ミドルウェア」にし、ディレクトリの図を今のファイルに合わせる。`lib/format.ts` の説明から数の整形を削除する。フロントのアーキテクチャの共有のパッケージの一覧に、形の判定、shadcn/ui の共有のコンポーネント、API の生成で使う script を追加する（DC-157-9、35、36）。
   - 依存：T157-02-02（数の整形の置き場所を書くため）
-  - 範囲：`docs/design/apps/admin.md`、`docs/design/frontend-architecture.md`
+  - 範囲：`docs/design/apps/admin.md`（冒頭の関連 spec の表に 157 を追加する）、`docs/design/frontend-architecture.md`
 - [ ] **T157-02-07** skill `new-screen` に「共有の部品」の節を追加する。共有のパッケージの全てのコンポーネントと関数の表（置き場所、役割、使う場面）と、画面に書く前に共有の部品を探して使う手順を書く（DC-157-1、2）。
   - 依存：T157-02-02（共有の数の整形を表に含めるため）
   - 範囲：`.claude/skills/new-screen/SKILL.md`

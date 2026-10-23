@@ -153,10 +153,11 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：T183-01-01
   - 範囲：`scripts/ci/check-all.sh`、`scripts/ci/hardcoded-text.mjs`、`scripts/ci/input-constraints.mjs`、テスト、`docs/guides/ci.md`
   - 結果：判定を `lib/check-result.mjs`（要約の行の判定と成功・失敗の判定）に移し、`check-all.sh` から呼ぶ。2 つの検査は、違反を標準出力、最後の行を要約の行にそろえた。全ての検査が通ることを確認した。
-- [ ] **T183-01-04** [テスト] commit の前の hook の、検査を選ぶ処理と失敗の終了コードにテストを書く（DC-183-6）。
+- [x] **T183-01-04** [テスト] commit の前の hook の、検査を選ぶ処理と失敗の終了コードにテストを書く（DC-183-6）。
   - 依存：T183-01-03
   - 範囲：`scripts/dev/hooks/`、テスト
   - テストは、Git を呼ぶ前に `GIT_` で始まる環境変数を外す（spec 158 の T158-01-02 の経緯）
+  - 結果：hook の処理（index のパスの絶対パス化、取り出し、検査の実行、終了コード）を `scripts/dev/lib/pre-commit.mjs` に移し、hook はそれを呼ぶだけにした。取り出しの失敗は 2、検査の失敗はその終了コードを返すことを、差し替えた処理と一時リポジトリでの実際の hook の実行でテストした。
 - [ ] **T183-01-05** 文言の番号の検査の関数の名前、両方の画面のファイルの一覧を 1 回だけ求めること、E2E の実行中の判定を 1 か所にまとめる（DC-183-8、10、11）。
   - 依存：T183-01-01
   - 範囲：`scripts/ci/message-numbers.mjs`、`scripts/ci/frontend-rules.mjs`、`scripts/dev/lib/e2e-running.mjs`、`e2e/scripts/run.ts`、テスト

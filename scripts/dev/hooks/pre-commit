@@ -6,24 +6,9 @@
 # core.hooksPath は使わない（各自が .git/hooks/ に置いた hook と並べられるように）。
 # テスト（バックエンド・画面・E2E）は時間がかかるので流さない。
 # 検査するのは、ステージした内容（次の commit）だけ。ステージした内容を一時ディレクトリに取り出し、そこで検査する。
+# 処理は scripts/dev/lib/pre-commit.mjs（テストのため）。この script は、それを呼ぶだけ。
 # 作業ツリーは変えない（stash で退避して戻すと、一部だけをステージしたファイルで戻すときに衝突するため）。
 # 関連 spec の照合（commit のメッセージが要る）は commit-msg の hook で行う。
 # ============================================================================
 ROOT="$(git rev-parse --show-toplevel)"
-GIT_DIR_ABS="$(cd "$(git rev-parse --git-dir)" && pwd)"
-# git commit -a などでは、git が一時の index を GIT_INDEX_FILE で渡す。相対パスなら絶対パスにする
-if [ -n "${GIT_INDEX_FILE:-}" ]; then
-  case "$GIT_INDEX_FILE" in
-    /*|[A-Za-z]:*) ;;
-    *) GIT_INDEX_FILE="$ROOT/$GIT_INDEX_FILE" ;;
-  esac
-  export GIT_INDEX_FILE
-fi
-
-STAGED="$(mktemp -d -t pre-commit.XXXXXX)"
-trap 'rm -rf "$STAGED"' EXIT
-
-git -c core.longpaths=true checkout-index -a --prefix="$STAGED/" || exit 2
-
-# 検査の script は git（ls-files、log など）を呼ぶ。リポジトリは元のものを使い、作業ツリーだけを取り出した先にする
-GIT_DIR="$GIT_DIR_ABS" GIT_WORK_TREE="$STAGED" "$STAGED/scripts/ci/check-all.sh"
+exec node "$ROOT/scripts/dev/lib/pre-commit.mjs"

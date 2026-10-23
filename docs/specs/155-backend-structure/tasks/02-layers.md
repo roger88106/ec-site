@@ -87,3 +87,5 @@
 - [x] **T155-02-23** 段階 2 のレビューの指摘を修正する。注文のレポートの view が集約をそのまま持っているので、[plan](../plan.md) 第 2 節のとおり、domain の値（注文番号、状態、キャンセル、配送先、購入者の属性、金額、明細など）と配送料の税額を持つ record にし、公開の API は view の値から変換する（DC-155-10）。カートの内容の公開の API の変換のメソッドに Javadoc を書く（Checkstyle）。
   - 依存：T155-02-22
   - 範囲：`main/module/order/application/model/OrderReportView.java`、`main/module/order/application/OrderReportQueryService.java`、`main/module/order/api/OrderReportApi.java`、`main/module/cart/api/CartContentsApi.java`
+
+気づき（段階 2）：手元で `./gradlew check` の全体を流すと、店舗の統合テスト（`StorefrontApiTest` の商品一覧、`StorefrontFreshnessTest`）が失敗することがある。店舗の統合テストだけを流すと通り、CI（16291481）は全体が通った。段階 2 の前のコード（433bb27f）でも、商品カタログ・カートの統合テストと同じ実行に混ぜると同じく失敗した。テストの間の干渉とみられ、本 spec の変更が原因ではない。spec の最後の起票の案に含める。

@@ -53,6 +53,20 @@ describe('バックエンドの書き方の検査', () => {
     assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [3, 7])
   })
 
+  test('valueOf の閉じ括弧より後ろの name() は、引数でないので見つけない', () => {
+    const text = [
+      'BigDecimal.valueOf(amount)',
+      '    .setScale(2)',
+      '    .add(of(status.name()));',
+      'Status.valueOf(x).name();',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text), [])
+  })
+
+  test('引数の途中に括弧があっても、引数が name() で終わる valueOf は見つける', () => {
+    assert.deepEqual(findEnumNameConversions('Status.valueOf(order.items().get(0).status().name());').map((hit) => hit.line), [1])
+  })
+
   test('name() を渡さない valueOf は見つけない', () => {
     assert.deepEqual(findEnumNameConversions('BigDecimal.valueOf(amount.longValue()); String.valueOf(name)'), [])
   })

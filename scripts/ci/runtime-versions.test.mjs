@@ -52,6 +52,14 @@ describe('版の一致の検査', () => {
     assert.match(problems[0], /Node/)
   })
 
+  test('.node-version が数で始まらない（lts/*、node）なら理由を出して失敗にする', () => {
+    for (const nodeFile of ['lts/*', 'node']) {
+      const problems = findRuntimeVersionProblems({ ...ok, nodeFile })
+      assert.equal(problems.length, 1)
+      assert.match(problems[0], /数/)
+    }
+  })
+
   test('engines が >=N の形でなければ理由を出して失敗にする', () => {
     const problems = findRuntimeVersionProblems({ ...ok, enginesNode: '^24' })
     assert.equal(problems.length, 1)

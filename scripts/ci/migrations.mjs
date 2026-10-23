@@ -4,6 +4,7 @@
 // 新しい DB で動くテストと CI では見つからないので、ここで確認する。commit の履歴を読むので、shallow clone では失敗する。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync, execSync } from 'node:child_process'
+import { splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 
@@ -92,7 +93,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log('shallow clone では commit の履歴を読めない（CI の checkout に fetch-depth: 0 を付ける）')
     process.exit(1)
   }
-  const files = execSync(`git ls-files "${MIGRATIONS}"`, { encoding: 'utf8' }).split('\n').filter(isVersionedMigration)
+  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', MIGRATIONS], { encoding: 'utf8' })).filter(isVersionedMigration)
   const emptyReason = findEmptyReason(files, MIGRATIONS)
   if (emptyReason) {
     console.log(emptyReason)

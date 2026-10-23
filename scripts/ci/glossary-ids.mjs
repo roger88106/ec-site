@@ -2,7 +2,8 @@
 // 調べる場所は backend/、frontend/、api/、docker/、e2e/、scripts/ の Git のファイル（生成物を除く）。
 // 名前の形の例（XxxRepository など、Xxx を含むもの）は調べない。コードにない語でよいものは glossary-ids-exclusions.json に名前と理由を書く。
 // 使い方：node scripts/ci/glossary-ids.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
+import { execFileSync } from 'node:child_process'
+import { splitNulList } from './lib/git-files.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -100,11 +101,10 @@ export function isExclusionNeeded(id, ids) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json'))
-  const files = execSync(`git ls-files ${SEARCH_ROOTS.join(' ')}`, { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && isSearchedFile(file) && existsSync(file))
+  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', ...SEARCH_ROOTS], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }))
+    .filter((file) => isSearchedFile(file) && existsSync(file))
   // パスの形の識別子（docs/constitution.md など）は、リポジトリのすべてのファイルのパスにも当たる
-  const allPaths = execSync('git ls-files', { encoding: 'utf8' })
+  const allPaths = splitNulList(execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })).join('\n')
   const contents = [allPaths, ...files.map((file) => readFileSync(file, 'utf8'))]
   const tokens = new Set(contents.flatMap((text) => text.match(/\w+/g) ?? []))
   const ids = parseGlossaryIds(readFileSync(GLOSSARY, 'utf8'))

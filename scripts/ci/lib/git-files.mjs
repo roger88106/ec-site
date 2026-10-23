@@ -6,6 +6,16 @@ import { existsSync } from 'node:fs'
 import path from 'node:path'
 
 /**
+ * `git ls-files -z` の出力を、パスの配列に分ける（ASCII でない文字を含むパスも、引用符なしで扱える）。
+ *
+ * @param {string} output NUL 区切りの出力
+ * @returns {string[]} 空でないパス
+ */
+export function splitNulList(output) {
+  return output.split('\0').filter(Boolean)
+}
+
+/**
  * Git の対象のファイルの一覧を返す。作業ツリーから消えたファイルは含めない。
  *
  * @param {string[]} [pathspecs] 探すパス（ディレクトリなど）。なければリポジトリの全体
@@ -13,6 +23,6 @@ import path from 'node:path'
  * @returns {string[]} cwd からの相対パス（/ 区切り）。名前の順
  */
 export function listGitFiles(pathspecs = [], cwd = process.cwd()) {
-  const output = execFileSync('git', ['ls-files', '-co', '--exclude-standard', '--', ...pathspecs], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
-  return [...new Set(output.split('\n'))].filter((file) => file && existsSync(path.join(cwd, file))).sort()
+  const output = execFileSync('git', ['ls-files', '-z', '-co', '--exclude-standard', '--', ...pathspecs], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  return [...new Set(splitNulList(output))].filter((file) => existsSync(path.join(cwd, file))).sort()
 }

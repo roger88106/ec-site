@@ -24,6 +24,8 @@ describe('フロントの書き方の検査', () => {
       "import { checkoutQuery } from '../checkoutQuery'",
     ].join('\n')
     assert.deepEqual(findCrossFeatureImports(text, 'cart').map((hit) => hit.line), [3])
+    const commented = ["// moved from '@/features/orders'", "/* import { x } from '@/features/orders' */", "import { y } from '@/features/orders'"].join('\n')
+    assert.deepEqual(findCrossFeatureImports(commented, 'cart').map((hit) => hit.line), [3])
   })
 
   test('相対パス、export from、import() の書き方でも、ほかの機能の import を見つける', () => {

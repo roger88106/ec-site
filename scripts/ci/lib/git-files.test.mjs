@@ -4,7 +4,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
-import { listGitFiles } from './git-files.mjs'
+import { listGitFiles, splitNulList } from './git-files.mjs'
 
 /** 試す Git のリポジトリ */
 const repo = mkdtempSync(path.join(tmpdir(), 'git-files-'))
@@ -33,6 +33,16 @@ before(() => {
   rmSync(path.join(repo, 'removed.txt'))
   write('untracked.txt')
   write('ignored.txt')
+})
+
+describe('-z の出力の分割', () => {
+  test('NUL で分け、空の要素は捨て、ASCII でない文字を含むパスはそのまま返す', () => {
+    assert.deepEqual(splitNulList('docs/日本語.md\0a b.txt\0\0'), ['docs/日本語.md', 'a b.txt'])
+  })
+
+  test('空の出力は空の配列', () => {
+    assert.deepEqual(splitNulList(''), [])
+  })
 })
 
 describe('Git の対象のファイルの一覧', () => {

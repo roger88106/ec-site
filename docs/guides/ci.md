@@ -86,7 +86,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | `test-names` | バックエンドの全ての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../rules/test-writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
 | `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する（[テストの書き方](../rules/test-writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
 
-※1：テスト名に含まれない AC と、当たる commit がない `related-specs` の除外は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、成功した検査の警告（`警告：` で始まる行）も出力する。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。手元で CI と同じに確認するときは `CI=true scripts/ci/check-all.sh`。他の誤り（範囲の表記、spec にない AC 番号、除外の一覧の誤り）は、手元でも失敗にする。
+※1：テスト名に含まれない AC と、当たる commit がない `related-specs` の除外は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、成功した検査の警告（`警告：` で始まる行）も出力する。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。手元で CI と同じに確認するときは `CI=true scripts/ci/check-all.sh`。ほかの誤り（範囲の表記、spec にない AC 番号、テストがある AC の除外など、`related-specs` の当たる commit がない除外を除く除外の一覧の誤り）は、手元でも失敗にする。
 
 ### 3.1 カバレッジと mutation score の基準の検査
 

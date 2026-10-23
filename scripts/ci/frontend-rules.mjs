@@ -138,7 +138,8 @@ export function findCrossFeatureImports(text, feature, file) {
   // 全文に当て、一致の位置から行番号を求める（import が複数の行にまたがってもよい）
   const lines = text.split('\n')
   const hits = []
-  for (const match of text.matchAll(IMPORT_SPECIFIER)) {
+  // コメントの中の指定（移した元の説明など）は import でないので、空白にしてから探す（行番号は変わらない）
+  for (const match of stripComments(text).matchAll(IMPORT_SPECIFIER)) {
     const imported = featureOfSpecifier(match[2])
     if (imported === null || imported === feature) continue
     const line = text.slice(0, match.index).split('\n').length

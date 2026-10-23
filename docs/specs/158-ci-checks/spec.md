@@ -344,7 +344,7 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
   - 範囲：`.github/workflows/`、`.github/actions/setup-frontend/action.yml`、`scripts/ci/`（`review/` を含む）のコメントと除外の理由、`docs/guides/ci.md` の push の対象外の一覧。spec 17 の手順は、版の指定の行だけを変える（DN-158-4）
   - DC-158-45 の 3 件のうち、前のタスクで修正済みのものは、結果にそう書く
   - 結果：Node はルートの `.node-version`（`24`）から読む（`engines.node` は範囲 `>=24` で最新の版に解決されるため使わない）。JDK は `ci.yml` の `env.JAVA_VERSION` に 1 か所にした（`libs.versions.toml` の `java` と同じにする旨をコメントに書いた）。
-  - 結果：push の対象外に `.github/ISSUE_TEMPLATE/**` と `.github/dependabot.yml` を加え、`docs/guides/ci.md` にも書いた。workflow と除外の理由、`test-diff.mjs` の spec・plan・DN の番号を言葉に直し、型の生成のコメントを型チェックの手順の前に移した。AC の照合のテストの見出しの指令は、該当する記述が見つからず変更なし。
+  - 結果：push の対象外に `.github/ISSUE_TEMPLATE/**` と `.github/dependabot.yml` を加え、`docs/guides/ci.md` にも書いた。workflow と除外の理由、`test-diff.mjs` の spec・plan・DN の番号を言葉に直し、型の生成のコメントを型チェックの手順の前に移した。AC の照合のテストの見出しの指令は、T158-02-01 で直した。
 - [x] **T158-04-05** E2E の実行中の印を E2E のロックの 1 つにまとめる（DC-158-7、8）。
   - 依存：なし
   - 範囲：`scripts/dev/e2e.sh`、`scripts/dev/check-frontend.sh`、`scripts/dev/lib/`、`docs/guides/running-tests.md`
@@ -385,8 +385,12 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
 - [x] **T158-06-01** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）と、pull request の前のレビューを行い、指摘に対応する。
   - 結果（spec の最後のレビュー）：一般の観点を汎用で 2 回、重要な観点（ファイルをまたぐ影響を含む）を高性能と汎用で行った。高 0、必須 2、推奨 約 20（重複を含む）。
   - 修正したもの：関連 spec の不要な除外は CI でだけ失敗にした（手元の hook では新しい除外を加える最初の commit が通らなかった）、message-comments の対象を前の対象に戻した（検査を狭めない規則）、閉じ括弧の探し方がコメントを飛ばす（テストを追加）、image-versions の一覧の取り方、AC の並びの正規表現の重複、用語集の識別子の根拠から全ての除外の一覧を外す、CI の検査の文書の `lib/` と検査の追加の手順、Gradle のハッシュの更新の手順（commit be511c1a と、この commit）。
-  - 第 8 節の起票の案は、T158-06-02 で最新にする。pull request の前のレビューは、この結果の後に追記する。
+  - 第 8 節の起票の案は、T158-06-02 で最新にする。pull request の前のレビューの指摘は、T158-06-03 で対応した。
   - 依存：T158-05-02
+- [x] **T158-06-03** pull request の前のレビュー（組み込みのコードレビューと高性能）の指摘に対応する。
+  - 依存：T158-06-01
+  - 結果：組み込みのコードレビュー 9 件、高性能 推奨 2 件。修正したもの：Git のファイル一覧を `-z` で読む（ASCII でない文字を含むパスが検査から外れた。ほかの script の `git ls-files` も同じ）、`.node-version` が数でないときは失敗にする、`valueOf(`・`fromValue(` の引数を対応する閉じ括弧までにして連鎖の誤検出をなくす、フロントの機能をまたぐ import でコメントを見ない、compose の `image:` の変数の差し込みは既定値を読み読めなければ失敗にする、`hardcoded-text --count` で除外の誤りを警告にして数も出す、CI の検査の文書の ※1 の食い違いと、T158-04-04 の結果の記述。
+  - 修正しなかったもの（行番号を求める処理の計算量、`duplicatedFiles` を 2 回呼ぶこと、`isRunning` が `e2e/scripts/run.ts` と重複すること）は、第 8 節に回す。
 - [ ] **T158-06-02** 後回しにする作業と起票の案（第 8 節）を最新にし、spec を `docs/specs/archive/1to10/` に移す。#15 の PID の再利用の項目は、案内で足りるとした決定（第 6 節の 1）を第 8 節に書く。
   - 依存：T158-06-01
   - 範囲：`docs/specs/`、spec へのリンクを持つ文書

@@ -6,6 +6,7 @@
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { closingParen } from './lib/closing-paren.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 
 /** テストのソース */
@@ -17,8 +18,11 @@ const MAIN_SOURCE = /^backend\/ecsite\/src\/main\/.*\.java$/
 /** Lombok の import と、完全修飾名で書いた注釈 */
 const LOMBOK = /^\s*import\s+(?:static\s+)?lombok\.|@lombok\./
 
-/** 列挙型の変換に name() を渡す呼び出し */
-const ENUM_NAME = /\b(?:valueOf|fromValue)\(\s*[\w.()\s]*\.\s*name\(\s*\)\s*\)/
+/** 列挙型の変換の呼び出しの開き括弧まで */
+const ENUM_CALL = /\b(?:valueOf|fromValue)\(/g
+
+/** 引数（コメントを空白にしたもの）が name() で終わる */
+const ENDS_WITH_NAME = /\.\s*name\(\s*\)\s*$/
 
 /** 他の Nullable：JSpecify 以外の Nullable の import（static import も）と、完全修飾名で書いた注釈 */
 const OTHER_NULLABLE = /^\s*import\s+(?:static\s+)?(?!org\.jspecify\.annotations\.)[\w.]+\.Nullable\b|@(?!org\.jspecify\.annotations\.)(?:[a-z]\w*\.)+Nullable\b/
@@ -111,7 +115,12 @@ export function blankComments(text) {
 export function findEnumNameConversions(text) {
   const lines = text.split('\n')
   const hits = []
-  for (const match of blankComments(text).matchAll(new RegExp(ENUM_NAME.source, 'g'))) {
+  const blanked = blankComments(text)
+  for (const match of blanked.matchAll(ENUM_CALL)) {
+    // 引数は、開き括弧から対応する閉じ括弧まで。引数の最後が name() のときだけ違反にする
+    const open = match.index + match[0].length - 1
+    const argument = blanked.slice(open + 1, closingParen(blanked, open))
+    if (!ENDS_WITH_NAME.test(argument)) continue
     const line = text.slice(0, match.index).split('\n').length
     hits.push({ line, text: lines[line - 1].trim() })
   }

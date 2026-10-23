@@ -25,6 +25,18 @@ describe('compose のイメージの読み取り', () => {
     )
   })
 
+  test('変数の差し込みは、既定値（:- の後）を読む', () => {
+    const images = readComposeImages('    image: ${PG_IMAGE:-postgres:18}\n    image: "${KC:-quay.io/keycloak/keycloak:26.8.1}"')
+    assert.deepEqual([...images.get('postgres')], ['18'])
+    assert.deepEqual([...images.get('quay.io/keycloak/keycloak')], ['26.8.1'])
+  })
+
+  test('既定値のない差し込みは、読めないので理由を出して失敗にする', () => {
+    assert.throws(() => readComposeImages('    image: ${PG_IMAGE}'), /変数/)
+    assert.throws(() => readComposeImages('    image: ${PG_IMAGE:?必須}'), /変数/)
+    assert.throws(() => readComposeImages('    image: postgres:${PG_VERSION}'), /変数/)
+  })
+
   test('同じ名前に別の版があれば、両方を残す', () => {
     const images = readComposeImages(['    image: a/b:1.0.0', '    image: a/b:1.0.1'].join('\n'))
     assert.deepEqual([...images.get('a/b')], ['1.0.0', '1.0.1'])

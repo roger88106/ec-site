@@ -43,7 +43,15 @@ export function readComposeImages(text) {
     if (!match) {
       continue
     }
-    const reference = match[1]
+    let reference = match[1]
+    if (reference.includes('$')) {
+      // 変数の差し込みは、既定値（${NAME:-既定値}）を読む。既定値のない書き方は版を決められないので失敗にする
+      const fallback = /^\$\{[A-Za-z_]\w*:?-([^${}]+)\}$/.exec(reference)?.[1]
+      if (fallback === undefined) {
+        throw new Error(`compose の image: の変数の差し込みを読めない（既定値 \${NAME:-名前:版} の形だけを扱う）：${reference}`)
+      }
+      reference = fallback
+    }
     const colon = reference.lastIndexOf(':')
     const hasVersion = colon > reference.lastIndexOf('/')
     const name = hasVersion ? reference.slice(0, colon) : reference
@@ -148,7 +156,13 @@ function readSourceFiles() {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const images = readComposeImages(readFileSync(COMPOSE_FILE, 'utf8'))
+  let images
+  try {
+    images = readComposeImages(readFileSync(COMPOSE_FILE, 'utf8'))
+  } catch (error) {
+    console.log(error.message)
+    process.exit(1)
+  }
   const files = readSourceFiles()
   const { mismatches, unknown } = findImageProblems(images, files)
   const unpinned = findUnpinned(images)

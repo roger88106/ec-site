@@ -53,11 +53,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const hitsByFile = scanSources(files, (file) => readFileSync(file, 'utf8'))
   const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))
   const problems = checkExclusions('hardcoded-text-exclusions.json', exclusions, (file) => hitsByFile.has(file))
+  const countOnly = process.argv.includes('--count')
   if (problems.length > 0) {
-    for (const problem of problems) console.error(problem)
-    process.exit(1)
+    // --count は数だけを出し、失敗にしない。除外の誤りは警告として出して、数も出す
+    for (const problem of problems) console.error(countOnly ? `警告：${problem}` : problem)
+    if (!countOnly) process.exit(1)
   }
-  if (process.argv.includes('--count')) {
+  if (countOnly) {
     const byFile = Object.groupBy(found, (hit) => hit.file)
     for (const [file, hits] of Object.entries(byFile)) console.log(`${hits.length}\t${file}`)
     console.log(`合計 ${found.length} 行、${Object.keys(byFile).length} ファイル`)

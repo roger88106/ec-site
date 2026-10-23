@@ -70,7 +70,9 @@ export function findRuntimeVersionProblems({ workflowJava, tomlJava, nodeFile, e
   if (enginesNode === undefined) {
     problems.push('package.json の engines.node を読めない')
   }
-  if (nodeFile !== undefined && enginesNode !== undefined) {
+  if (nodeFile !== undefined && !/^\d+(\.\d+){0,2}$/.test(nodeFile)) {
+    problems.push(`.node-version は数の版（24 など）だけを扱う：${nodeFile}`)
+  } else if (nodeFile !== undefined && enginesNode !== undefined) {
     const minimum = /^>=\s*(\d+)(\.\d+){0,2}$/.exec(enginesNode.trim())?.[1]
     if (minimum === undefined) {
       problems.push(`engines.node は >=N の形だけを扱う：${enginesNode}`)

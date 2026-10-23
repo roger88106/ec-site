@@ -4,7 +4,7 @@
 
 ## 1. 背景と目的
 
-テストの量の基準がなく、テストが減っても気づけない（issue #17。出典：外部レビューの意見 2026-10-20、MVP 004 の Non-goals）。今の規則は、CI でカバレッジの報告を作るが、基準の値で CI を失敗させない（[テストの書き方](../../rules/test-writing.md) 第 1 節）。
+テストの量の基準がなく、テストが減っても気づけない（issue #17。出典：外部レビューの意見 2026-10-20、MVP 004 の Non-goals）。今の規則は、CI でカバレッジの報告を作るが、基準の値で CI を失敗させない（[テストの書き方](../../../../rules/test-writing.md) 第 1 節）。
 
 今の報告は `scripts/ci/report/coverage-summary.mjs` が作る。JaCoCo の XML と Vitest の json-summary を読み、job の summary に、合計と、カバレッジが低い順の 10 件を書く。
 
@@ -20,7 +20,7 @@
 
 カバレッジは、テストが実行したコードの割合で、テストが振る舞いを確認しているかは分からない。domain のクラスは各モジュールの `domain` パッケージ（`com.ecsite.module.<モジュール>.domain`）に約 101 個あり、domain の単体テストは `src/test` に約 30 クラスある。統合テストに domain のテストはない。そこで、domain のテストの強さを mutation testing（コードに小さな変異を入れ、テストが失敗するかを確認する）で測る。ツールは PIT（Java の mutation testing）、`gradle-pitest-plugin`、`pitest-junit5-plugin` である。ライセンスは T17-02-01 で確認し、依存とライセンスの文書に書く（constitution 第 15 節）。
 
-追跡の issue は [#17](https://github.com/roger88106/ec-site/issues/17)、作業ブランチは `17-coverage-ratchet` である。本 spec は整理の spec で、規模は M である（2026-10-22 に利用者が承認。[開発の進め方](../../rules/workflow.md) 第 4.2 節。API の契約とデータベースを変えず、AC を変えない）。
+追跡の issue は [#17](https://github.com/roger88106/ec-site/issues/17)、作業ブランチは `17-coverage-ratchet` である。本 spec は整理の spec で、規模は M である（2026-10-22 に利用者が承認。[開発の進め方](../../../../rules/workflow.md) 第 4.2 節。API の契約とデータベースを変えず、AC を変えない）。
 
 ## 2. スコープ
 
@@ -45,22 +45,22 @@
   - 報告がない：失敗にする。
   - 基準のファイルの誤り（対象がない、値の形が違う）：失敗にする。
 - **DC-17-7** 基準を下回る push（テストを 1 つ削除）で CI が失敗することを確認し、削除を戻す。結果をタスクに書く。
-- **DC-17-8** 基準の検査を、手元でも CI と同じ引数で実行できる。手順を[テストの実行方法](../../guides/running-tests.md)に書く。
+- **DC-17-8** 基準の検査を、手元でも CI と同じ引数で実行できる。手順を[テストの実行方法](../../../../guides/running-tests.md)に書く。
 
 ### DS-17-2 domain のテストの強さが下がったら CI が失敗する（D / P1）
 
 - **DC-17-9** `./gradlew pitest` で、単体テスト（`src/test`）を使い、domain のクラス（`com.ecsite.module.*.domain.*`）の mutation testing を実行する。報告（HTML と XML）は `build/reports/pitest/` に出力する。
 - **DC-17-10** mutation score を、DC-17-1 の基準のファイルに置き、下回ると CI が失敗する（DC-17-2〜4 と同じ扱い）。比較は、PIT を実行するジョブの中で行う。PIT のジョブを分けたときは、そのジョブの失敗が `needs` で「バックエンド」を失敗させる。許容の幅も、DC-17-5 と同じ方法で測る。summary に、mutation score と、生き残った変異（テストが検出できなかった変異）が多いクラスの上位 10 件を表示する。報告を artifact に保存する。
 - **DC-17-11** PIT を実行するジョブは、実測で決める。ビルドと単体テストのジョブに PIT を加えたとき、そのジョブの終了が統合テストの遅い方のジョブの終了を超えなければ、そのジョブに入れる。超えたら、PIT のジョブを分けて、「バックエンド」の `needs` に加える。PIT のジョブがスキップ・失敗したときは、「バックエンド」が失敗する（DC-131-4 と同じ）。作業ブランチで 3 回測り、`ci.yml` の全体が 8 分以下（DC-131-1）であることをタスクに書く。
-- **DC-17-12** PIT のライセンスを確認し、結果を[依存とライセンス](../../design/licenses.md)に書く。ライセンスの検査（`checkLicense`）の対象に入るかを確認し、結果をタスクに書く。
+- **DC-17-12** PIT のライセンスを確認し、結果を[依存とライセンス](../../../../design/licenses.md)に書く。ライセンスの検査（`checkLicense`）の対象に入るかを確認し、結果をタスクに書く。
 - **DC-17-13** mutation score を下げる push（domain のテストの検証を 1 つ削除）で CI が失敗することを確認し、削除を戻す。結果をタスクに書く。
 
 ### 共通
 
 - **DC-17-14** 次の文書とコメントが、カバレッジと mutation score の基準の規則と一致する。
-  - [テストの書き方](../../rules/test-writing.md) 第 1 節：「基準の値で失敗させない」を、「前回の値を下回らない」に修正する。
-  - [CI の検査](../../guides/ci.md)：ジョブの表と、第 3 節の CI の検査の script の説明。
-  - [テストの実行方法](../../guides/running-tests.md)：基準の検査と `pitest` の手順。
+  - [テストの書き方](../../../../rules/test-writing.md) 第 1 節：「基準の値で失敗させない」を、「前回の値を下回らない」に修正する。
+  - [CI の検査](../../../../guides/ci.md)：ジョブの表と、第 3 節の CI の検査の script の説明。
+  - [テストの実行方法](../../../../guides/running-tests.md)：基準の検査と `pitest` の手順。
   - `ci.yml` のコメントと、`coverage-summary.mjs` の冒頭のコメント。
 
 ## 4. 守る制約
@@ -225,7 +225,7 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
 
 - 前提：段階 1、2
 - 完了条件：DC-17-8 と DC-17-14 を満たし、spec の最後のレビューの指摘に対応し、spec をアーカイブに移し、pull request を作っている。
-- 参照：[エージェントの作業フロー](../../rules/subagents.md) 第 4 節
+- 参照：[エージェントの作業フロー](../../../../rules/subagents.md) 第 4 節
 
 - [x] **T17-03-01** 文書とコメントを修正する。基準の検査の手元での手順を、テストの実行方法に書く（DC-17-14、DC-17-8）。
   - 依存：T17-02-05
@@ -252,7 +252,7 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
     - R4：`running-tests.md` 第 5 節に、バックエンドの `--write` は CI の summary の値か、`--rerun-tasks` などで実際に実行した値を使うと書いた。
     - R5：`mutation-report.mjs` のテストを `mutation-report.test.mjs` に分けた（`readMutations` の単体のテスト。CLI のテストは `coverage-baseline.test.mjs`）。テストは 45 件が成功。
     - R6：`coverage-baseline.mjs` の冒頭のコメントに終了コード 2（引数の誤り）を書いた。
-    - R7：[テストの書き方](../../rules/test-writing.md)の第 1 節を、1.1 テストの種類と 1.2 カバレッジと mutation score の基準に分け、規則の一覧の行を 1.2 にした。基準を指す参照は、全て 1.2 の節に直した。
+    - R7：[テストの書き方](../../../../rules/test-writing.md)の第 1 節を、1.1 テストの種類と 1.2 カバレッジと mutation score の基準に分け、規則の一覧の行を 1.2 にした。基準を指す参照は、全て 1.2 の節に直した。
     - R8：`ci.md` 第 3.1 節の「ジョブの最後」を、実際の位置（報告を保存した後。「バックエンド（ビルドと単体テスト）」は失敗時のテストレポートの保存の前）に合わせた。`ci.yml` のコメントも合わせた。
     - 言い回し：#12 以外を直した。#15、#16 は M2 と一緒に直した。#29 の理由は、版のカタログの別名を `pitest` にすると、`pitest` が単独の別名とグループを兼ねることになり、`build.gradle.kts` がコンパイルできないことを試して確認し、書いた。
     - M5（同じ commit e1f79c03 の CI を `gh run rerun` で実行した結果。分:秒。実行 39904141358 の 4 回。rerun の指示を重複して実行したため、3 回でなく 4 回になった）。設定は `targetTests`、`jvmArgs`（R1 の後）、許容の幅（H1）の後のもの：
@@ -274,6 +274,22 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
     - 直したもの：(1) `build.gradle.kts` の PIT の節のコメントを、`pitest` の構成を `licenseReport` の対象に入れている今の事実に直した。(2) `policy.json` の ANTLR の 2 つのための `normalize`（BSD License、BSD licence → BSD-3-Clause）を、`BSD-unspecified`（条件付き）に変え、`antlr:antlr` と `org.antlr:stringtemplate` だけを `conditional.components` に理由付きで載せた。`licenses.md` の 3.1 の ※1 と T17-02-03 の結果の R3 も合わせた。(3) `mutation-report.mjs` が、各 `<mutation>` の本文を次の `<mutation` の開始位置（なければ文書の終わり）までに限り、その中に `</mutation>` がなければ読めない変異にした。閉じタグが 1 つ欠けた XML が失敗するテストを先に足してレッドを確認した。(4) `pitest` の task にも、`test` の task と同じ inputs（`openapi`、`keycloak/realms`、`overview.md`）を宣言した。(5) M5 の表の後の「8 分以下」の参照を DC-17-11、DN-17-3 に直した。
     - 採用しなかった推奨：`coverage-baseline.mjs` の summary への書き込みと報告の種類の判定の重複（共通の関数への切り出し）、ログと markdown の二重の組み立て。理由は、1 つの script の中の小さな重複で、読みやすさを損なっていないから。
     - 利用者に確認すること：バックエンドの許容の幅（行 0.10、分岐 0.30）は、pull request で確認する。
-- [ ] **T17-03-04** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。この commit で、全てのタスクのチェックボックスを `[x]` にする（開発の進め方 第 4.2 節）。pull request の作成はタスクにせず、URL を追跡の issue に記録する。
+- [x] **T17-03-04** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。この commit で、全てのタスクのチェックボックスを `[x]` にする（開発の進め方 第 4.2 節）。pull request の作成はタスクにせず、URL を追跡の issue に記録する。
   - 依存：T17-03-03
   - 範囲：`docs/specs/`
+
+## 9. 後回しにする作業と起票の案
+
+| 項目 | 起票の案 |
+|------|----------|
+| 同時実行の競合があるときだけ実行される分岐（`OrderPlacementService`、`ReportCollectionService`）が、統合テストの実行ごとに、通ることと通らないことがある。この揺れのために、バックエンドのカバレッジの許容の幅を、行 0.10、分岐 0.30 と広くしている（T17-02-05、T17-03-02）。競合の分岐を、単体テストで毎回通すようにし、許容の幅を狭くする | 整理の issue を 1 つ（テンプレート「整理」。milestone なし、label `保留:条件付き` は付けない）。下の本文の案 |
+
+起票する整理の issue の本文の案：
+
+- 背景と目的：バックエンドのカバレッジの基準の検査は、許容の幅（行 0.10、分岐 0.30）を持つ。`OrderPlacementService` と `ReportCollectionService` の、同時実行の競合があるときだけ実行される分岐が、統合テストの実行ごとに網羅されたりされなかったりし、行で 2 行、分岐で約 0.2 ポイントの揺れが出るため。揺れの原因をなくし、許容の幅を狭くして、テストの減少に早く気づけるようにする。
+- 整えるもの：競合の分岐（楽観ロックの失敗、一意制約の違反などで、再試行や別の結果になる分岐）を、単体テストで毎回通す。そのうえで、`scripts/ci/report/quality-baseline.json` の `backend` の `tolerance` を、揺れがなくなった値まで狭くする。
+- 完了の目安：同じコミットの CI を複数回実行して、カバレッジの値が同じになる。`backend` の許容の幅を行・分岐とも 0.05 以下に狭くしても、複数回の実行が成功する。
+- 出典：spec 17 の T17-02-05 と T17-03-02 の結果、`docs/specs/archive/1to10/17-coverage-ratchet/spec.md`。
+- 関連：#17（追跡の issue）。
+
+他に後回しにする作業はない。レビューで出た指摘のうち採用しなかったもの（T17-03-03 の結果の `coverage-baseline.mjs` の重複）は、小さな重複で、読みやすさを損なっていないので、起票しない。

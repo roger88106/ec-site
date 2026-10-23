@@ -6,7 +6,8 @@
 // - AC：spec.md（docs/specs/ の直下とアーカイブの下の spec）の定義の行（MVP の - **AC-n** と、1→10 の - **AC-7-1**）。
 //   2 つの形は別の AC として扱う（テスト名の AC-7-1 を AC-7 と読まない）
 // - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
-//   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない
+//   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない。
+//   skip・fixme のテストと、skip・fixme のまとまりの中のテストは数えない。Git の対象のファイルだけを読む
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない

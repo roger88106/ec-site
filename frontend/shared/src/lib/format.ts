@@ -63,5 +63,5 @@ export function formatPostalCode(postalCode: string): string {
  * @param separator  区切り。画面ごとに違うので、呼ぶ側の文言から渡す
  */
 export function axisValuesLabel(axisValues: readonly { name: string; value: string }[], separator: string): string {
-  return axisValues.map((axis) => translate('common.axisValue', axis /* 軸の名前：値 */)).join(separator)
+  return axisValues.map((axis) => translate('common.axisValue', axis)).join(separator) // 軸の名前：値
 }

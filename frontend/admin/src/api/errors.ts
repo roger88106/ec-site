@@ -17,8 +17,8 @@ export class ApiError extends Error {
     super(
       problem?.message ??
         (status === 403
-          ? translate('api.errors.forbidden' /* 権限がない案内 */)
-          : translate('common.httpFailed', { status } /* 通信の失敗（HTTP の状態付き） */)),
+          ? translate('api.errors.forbidden') // 権限がない案内
+          : translate('common.httpFailed', { status })), // 通信の失敗（HTTP の状態付き）
     )
     this.name = 'ApiError'
     this.status = status
@@ -46,7 +46,7 @@ export function errorMessage(error: unknown): string {
   if (error instanceof ApiError) {
     // バージョン不一致は、再読み込みを促す案内にする
     return error.isConcurrentModification
-      ? translate('api.errors.concurrentModification' /* 再読み込みの案内 */)
+      ? translate('api.errors.concurrentModification') // 再読み込みの案内
       : error.message
   }
   // fetch 自体の失敗（バックエンドが止まっているなど）

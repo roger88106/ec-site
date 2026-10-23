@@ -46,6 +46,6 @@ export function bucketLabel(point: SalesTrendPoint, granularity: Granularity): s
 /** バリアントの売れ行きの表示名。軸があれば「名前：値」を区切りの文言で並べ（例：「色：白、サイズ：M」）、軸がなければ品番 */
 export function variantSalesLabel(variant: VariantSales): string {
   return variant.axisValues.length > 0
-    ? axisValuesLabel(variant.axisValues, translate('app.common.listSeparator' /* 読点 */))
+    ? axisValuesLabel(variant.axisValues, translate('app.common.listSeparator')) // 読点
     : variant.variantCode
 }

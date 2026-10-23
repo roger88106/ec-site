@@ -79,7 +79,7 @@ function itemLabel(item: SourceItem): string {
     ? item.productName
     : translate('cart.merge.itemLabel', {
         name: item.productName,
-        axes: axisValuesLabel(item.axisValues, translate('labels.axisSeparator' /* 軸の区切りの全角の空白 */)),
+        axes: axisValuesLabel(item.axisValues, translate('labels.axisSeparator')), // 軸の区切りの全角の空白
       })
 }
 

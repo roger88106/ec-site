@@ -37,6 +37,7 @@ plugins {
     alias(libs.plugins.openapi.generator)
     alias(libs.plugins.dependency.license.report)
     alias(libs.plugins.errorprone)
+    alias(libs.plugins.pitest)
     jacoco
     checkstyle
     // mock を包むテスト用の実装など、単体テストと統合テストで共有するもの（src/testFixtures）
@@ -176,19 +177,27 @@ dependencies {
 //   ./gradlew integrationTest  → 統合のみ
 //   ./gradlew check / build    → 両方
 // -----------------------------------------------------------------------------
+// 単体テストの JVM のヒープ。ArchUnit のテスト（src/test/.../architecture）は、テストのクラスごとに本番のクラスを読み込むので、既定（512MB）では足りない
+val unitTestMaxHeap = "1g"
+
+// 単体テストの JVM の systemProperty。test の task と pitest で同じ値を使う（ないと、設定を読むテストが PIT で失敗する）。
+//   openapi.dir：契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
+//   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
+//   design.overview：図をコードと比べる文書（ModuleDiagramTest）
+val unitTestSystemProperties = mapOf(
+    "openapi.dir" to file("../../api/openapi").absolutePath,
+    "keycloak.realms.dir" to file("../../docker/keycloak/realms").absolutePath,
+    "design.overview" to file("../../docs/design/overview.md").absolutePath,
+)
+
 tasks.named<Test>("test") {
     useJUnitPlatform()
-    // ArchUnit のテスト（src/test/.../architecture）は、テストのクラスごとに本番のクラスを読み込むので、既定（512MB）では足りない
-    maxHeapSize = "1g"
-    // 契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
-    systemProperty("openapi.dir", file("../../api/openapi").absolutePath)
+    maxHeapSize = unitTestMaxHeap
+    unitTestSystemProperties.forEach { (key, value) -> systemProperty(key, value) }
     inputs.dir("../../api/openapi")
-    // 契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
-    systemProperty("keycloak.realms.dir", file("../../docker/keycloak/realms").absolutePath)
     inputs.dir("../../docker/keycloak/realms")
-    // 図をコードと比べる文書（ModuleDiagramTest）。-PupdateDocs を付けると、比べずに文書の図を書き直す
-    systemProperty("design.overview", file("../../docs/design/overview.md").absolutePath)
     inputs.files(fileTree("../../docs/design") { include("overview.md") })
+    // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
     if (project.hasProperty("updateDocs")) {
         systemProperty("ecsite.update-docs", "true")
         outputs.upToDateWhen { false }
@@ -318,7 +327,39 @@ tasks.named<Checkstyle>("checkstyleMain") {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの書き方 第 1 節。報告だけで、基準の値では失敗させない）
+// mutation testing（PIT。カバレッジとは別に、テストが振る舞いを確認しているかを測る）
+//   ./gradlew pitest で、domain のクラスに小さな変異を入れ、単体テストが失敗するか（変異を検出するか）を見る。
+//   報告：build/reports/pitest/（html、xml。タイムスタンプのディレクトリを作らず、CI が決まったパスで読む）
+//   単体テスト（src/test）だけを使う（統合テストは Docker が要り、domain のテストもない）。
+//   テストは targetTests で src/test の全ての単体テスト（com.ecsite.*）を渡す。省くと targetClasses（domain）と同じ範囲になり、
+//   domain のクラスと同じパッケージのテストしか使われず、ほかのパッケージ（architecture、contract など）のテストが変異を検出できない。
+//   PIT は変異の前にカバレッジを取るため、渡した全ての単体テストを 1 回実行する（CI で約 1 分）。変異ごとには、対象のクラスを実行するテストだけを実行する。
+//   PIT は遅いので、check には入れない（CI は専用の手順で流す）。
+//   PIT の本体と間接の依存は、pitest の構成を licenseReport の対象に入れて checkLicense で照合する（Gradle のプラグインは policy.json の gradlePlugins）
+// -----------------------------------------------------------------------------
+pitest {
+    pitestVersion = libs.versions.pitest.engine.get()
+    junit5PluginVersion = libs.versions.pitest.junit5.plugin.get()
+    targetClasses = listOf("com.ecsite.module.*.domain.*")
+    targetTests = listOf("com.ecsite.*")
+    // テストの JVM の設定（systemProperty、ヒープ）を、test の task と同じ値にする。ないと、設定を読むテスト（ModuleDiagramTest など）が失敗し、PIT が失敗する。
+    // test の task から読まないので、pitest は test に依存しない
+    jvmArgs = unitTestSystemProperties.map { (key, value) -> "-D$key=$value" } + "-Xmx$unitTestMaxHeap"
+    // 4 コア（GitHub の ubuntu-latest）と手元で動く値
+    threads = 4
+    outputFormats = listOf("HTML", "XML")
+    timestampedReports = false
+}
+
+// jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）
+tasks.named("pitest") {
+    inputs.dir("../../api/openapi")
+    inputs.dir("../../docker/keycloak/realms")
+    inputs.files(fileTree("../../docs/design") { include("overview.md") })
+}
+
+// -----------------------------------------------------------------------------
+// カバレッジ（テストの書き方 第 1.2 節。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
 //   報告：build/reports/jacoco/coverageReport/（html、xml）
 //   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：
@@ -442,6 +483,7 @@ licenseReport {
         "integrationTestCompileClasspath", "integrationTestRuntimeClasspath",
         "testFixturesCompileClasspath", "testFixturesRuntimeClasspath",
         "annotationProcessor", "jooqGenerator",
+        "pitest",
     )
     filters = arrayOf(
         PreferPomLicenses(),

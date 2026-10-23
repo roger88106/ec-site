@@ -5,22 +5,34 @@ import { lastQueryError } from '@/app/queryClient'
 /** 管理 API の権限（admin.yaml の x-required-permission）のうち、画面で出し分けに使うもの */
 export type Permission = 'report-sales-trend:read' | 'report-variant-sales:read' | 'report-customer:read'
 
-/** 自分の権限の一覧の取得の状態：取得中・失敗・取得済み */
-export type PermissionsStatus = 'loading' | 'failed' | 'ready'
+/** 権限の一覧を取得している間の状態。読める項目は status だけ */
+export type PermissionsLoading = {
+  /** 取得の状態（取得中） */
+  status: 'loading'
+}
 
-/** 自分の権限の一覧（取得中と失敗は空） */
-export type Permissions = {
-  /** 取得の状態。失敗は、権限がないのとは区別する（権限がないのは取得済みで has が false） */
-  status: PermissionsStatus
-  /** 取得の失敗（status が failed のとき） */
+/** 権限の一覧の取得に失敗した状態。権限がないのとは区別する（権限がないのは取得済みで has が false） */
+export type PermissionsFailed = {
+  /** 取得の状態（失敗） */
+  status: 'failed'
+  /** 取得の失敗の中身 */
   error: unknown
   /** 取得中か（失敗の後の取り直しの間も true） */
   isFetching: boolean
   /** 取得をやり直す（失敗のときの再試行に使う） */
   retry: () => void
-  /** その権限を持つか（取得済みでなければ持たないとみなす） */
+}
+
+/** 権限の一覧を取得できた状態 */
+export type PermissionsReady = {
+  /** 取得の状態（取得済み） */
+  status: 'ready'
+  /** その権限を持つか */
   has: (permission: Permission) => boolean
 }
+
+/** 自分の権限の一覧。status で絞り込んでから、その状態の項目を読む */
+export type Permissions = PermissionsLoading | PermissionsFailed | PermissionsReady
 
 /**
  * ログインしている運営者の権限を、管理 API の自分の権限の一覧から読む（管理画面の構成 第 10 節）。<br />
@@ -35,15 +47,19 @@ export function usePermissions(): Permissions {
   // 画面の部品に持たせると、取り直しの間に新しく開いた画面が失敗を知らないので、判定も失敗の中身も、キャッシュの側から求める
   const retrying = query.isPending && query.errorUpdatedAt > 0
   const failed = query.isError || retrying
-  const status: PermissionsStatus = failed ? 'failed' : query.isPending ? 'loading' : 'ready'
-  const queryKey = $api.queryOptions('get', '/me', {}).queryKey
-  return {
-    status,
-    error: query.isError ? query.error : lastQueryError(queryClient, queryKey),
-    isFetching: query.isFetching,
-    retry: () => {
-      void query.refetch()
-    },
-    has: (permission) => granted.has(permission),
+  if (failed) {
+    const queryKey = $api.queryOptions('get', '/me', {}).queryKey
+    return {
+      status: 'failed',
+      error: query.isError ? query.error : lastQueryError(queryClient, queryKey),
+      isFetching: query.isFetching,
+      retry: () => {
+        void query.refetch()
+      },
+    }
   }
+  if (query.isPending) {
+    return { status: 'loading' }
+  }
+  return { status: 'ready', has: (permission) => granted.has(permission) }
 }

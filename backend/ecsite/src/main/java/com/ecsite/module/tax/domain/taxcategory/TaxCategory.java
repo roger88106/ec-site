@@ -8,6 +8,7 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Comparator;
@@ -170,7 +171,7 @@ public class TaxCategory extends AggregateRoot {
      * @param draft   置き換え後の内容。削除する場合は null
      * @param now     現在時刻
      */
-    private static void verifyChangeable(TaxRate current, TaxRateDraft draft, Instant now) {
+    private static void verifyChangeable(TaxRate current, @Nullable TaxRateDraft draft, Instant now) {
         var period = current.period();
         if (period.hasEnded(now)) {
             if (draft == null || !current.sameAs(draft)) {
@@ -193,7 +194,7 @@ public class TaxCategory extends AggregateRoot {
      * @param current 既存の税率。新しい税率なら null
      * @param now     現在時刻
      */
-    private static void verifyNoPastDateTime(TaxRateDraft draft, TaxRate current, Instant now) {
+    private static void verifyNoPastDateTime(TaxRateDraft draft, @Nullable TaxRate current, Instant now) {
         var from = draft.period().effectiveFrom();
         var to = draft.period().effectiveTo();
         boolean fromChanged = current == null || !Objects.equals(current.period().effectiveFrom(), from);
@@ -211,7 +212,7 @@ public class TaxCategory extends AggregateRoot {
      * @param now     現在時刻
      * @return 現在以前の日時なら true
      */
-    private static boolean isNotFuture(Instant instant, Instant now) {
+    private static boolean isNotFuture(@Nullable Instant instant, Instant now) {
         return instant != null && !instant.isAfter(now);
     }
 

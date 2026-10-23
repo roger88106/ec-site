@@ -1,6 +1,6 @@
 package com.ecsite.module.tax.application.model.command;
 
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.math.BigDecimal;
 import java.time.Instant;

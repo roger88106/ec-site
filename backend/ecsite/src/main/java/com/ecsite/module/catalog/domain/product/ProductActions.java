@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.domain.product;
 
-import jakarta.annotation.Nullable;
 import lombok.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 

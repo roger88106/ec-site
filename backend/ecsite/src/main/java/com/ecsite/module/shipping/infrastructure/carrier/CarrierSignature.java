@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.carrier;
 
 import com.ecsite.common.error.exception.SystemException;
+import org.jspecify.annotations.Nullable;
 
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
@@ -66,7 +67,7 @@ public final class CarrierSignature {
      * @param header ヘッダーの値。なければ null
      * @return 合えば true
      */
-    public boolean verify(byte[] body, String header) {
+    public boolean verify(byte[] body, @Nullable String header) {
         if (header == null) {
             return false;
         }

@@ -19,8 +19,8 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 | ワークフロー | ジョブ | 実行するもの | 実行する時 |
 |--------------|--------|----------|----------|
-| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Javadoc の記述漏れの検査（Checkstyle。private を含む）、単体テスト、OpenAPI の構文の検証 | push（下の除外のファイルだけの push を除く）と pull request |
-| `ci.yml` | バックエンド（統合テスト 1/2・2/2） | 統合テストの半分ずつ（2 つのジョブ） | 同上 |
+| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Error Prone と NullAway（コンパイルの時の静的解析）、Javadoc の記述漏れの検査（Checkstyle。private を含む）、単体テスト、OpenAPI の構文の検証 | push（下の除外のファイルだけの push を除く）と pull request |
+| `ci.yml` | バックエンド（統合テスト 1/2・2/2） | 統合テストの半分ずつ（2 つのジョブ。統合テストのコンパイルでも Error Prone が動く） | 同上 |
 | `ci.yml` | バックエンド | 上の 3 つのジョブの結果の確認、カバレッジの報告（要約） | 同上 |
 | `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの要約 | 同上 |
 | `ci.yml` | 店舗画面 | 画面の依存のライセンスの検査、共有パッケージの lint・型チェック・テスト、店舗画面の lint、型チェック、テスト、ビルド、カバレッジの要約 | 同上 |
@@ -65,7 +65,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | `glossary-ids` | [用語集](../design/glossary.md) の識別子の列の名前が、コード（`backend/`、`frontend/`、`api/`、`docker/`、`e2e/`、`scripts/`）かファイルのパスにある。kebab-case の設定の名前は camelCase の語でもよい。名前の形の例（`Xxx`、`<…>`、`*`）は検査の対象外 | 用語集の識別子を、今のコードの名前に修正する | `glossary-ids-exclusions.json` に名前と理由 |
 | `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../rules/frontend-coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで取得する。`--count` で数だけを出力する | `hardcoded-text-exclusions.json` にファイルと理由 |
 | `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../rules/frontend-coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |
-| `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../rules/backend-coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.3 節） | テストでは定型コードを手動で書く。列挙型は `switch` 式で変換する | なし |
+| `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../rules/backend-coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.3 節）。本番のソースのうち `domain` と `infrastructure/persistence` 以外で、列挙型を名前の文字列から変換していない（文字列リテラル以外を `valueOf`・`fromValue` に渡していない）。本番・テスト・tools のソースで、JSpecify 以外の `Nullable` を使っていない（[バックエンドの書き方](../rules/backend-coding.md) 第 7.1 節） | テストでは定型コードを手動で書く。列挙型は `switch` 式で変換する。`Nullable` は `org.jspecify.annotations.Nullable` に替える | なし |
 | `message-comments` | 画面のコードで、キーを文字列リテラルで書いた文言の呼び出し（`t('…')`）に、表示する内容のコメントがある（[コメントの書き方](../rules/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは検査の対象外 | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
 | `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）以外の数字がない（[バックエンドの書き方](../rules/backend-coding.md) 第 3.2 節）。除外の一覧の、不要になったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` にキーと理由（「1 つだけ」など数え方の言葉で、規則の値でないもの） |
 | `migrations` | バージョン付きのマイグレーション（`V*.sql`）が、追加した後に変わっていない（コメントだけの変更も含む。Flyway が適用済みの DB で checksum の不一致にする）。commit の履歴を読むので、shallow clone では失敗する | 元に戻し、変更は新しいマイグレーションで行う | なし |

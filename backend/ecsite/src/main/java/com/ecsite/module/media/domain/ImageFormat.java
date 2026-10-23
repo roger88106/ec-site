@@ -142,6 +142,8 @@ public enum ImageFormat {
     }
 
     /**
+     * この形式の MIME タイプを返す。
+     *
      * @return MIME タイプ（例：image/jpeg）。いくつかあるときは代表のもの
      */
     public String contentType() {

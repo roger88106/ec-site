@@ -38,6 +38,8 @@
       "maven:org.eclipse.angus:*": "メールの送信（Jakarta Mail の実装。Spring Boot のメールの依存）。EDL-1.0（BSD-3-Clause と同じ条件）を選ぶ。改変しない",
       "maven:org.junit*:*": "テストの実行（JUnit）。テストでだけ使い、配布しない",
       "maven:org.jacoco:*": "カバレッジの計測（JaCoCo）。テストでだけ使い、配布しない",
+      "maven:io.github.eisop:dataflow-errorprone": "Error Prone が静的解析のときに使う Checker Framework の dataflow（GPL-2.0 with Classpath-exception）。コンパイルのときだけ動くツールで、配布物に入らず、改変しない",
+      "maven:org.checkerframework:dataflow-nullaway": "NullAway が静的解析のときに使う Checker Framework の dataflow（GPL-2.0 with Classpath-exception）。コンパイルのときだけ動くツールで、配布物に入らず、改変しない",
       "npm:lightningcss*": "Tailwind CSS がビルドのときに使う CSS の変換。配布物に入らない",
       "npm:caniuse-lite": "ビルドの道具が使うブラウザーの対応のデータ（CC-BY-4.0）。配布物に入らない",
       "npm:@fontsource-variable/*": "管理画面の字体（OFL-1.1）。字体を単独で販売しない",
@@ -87,6 +89,7 @@
     "GNU GENERAL PUBLIC LICENSE, Version 2 + Classpath Exception": "GPL-2.0-with-classpath-exception",
     "GNU General Public License, version 2 with the GNU Classpath Exception": "GPL-2.0-with-classpath-exception",
     "GPL2 w/ CPE": "GPL-2.0-with-classpath-exception",
+    "GNU General Public License, version 2 (GPL2), with the classpath exception": "GPL-2.0-with-classpath-exception",
     "https://www.jooq.org/inc/LICENSE.txt": "Apache-2.0"
   },
   "gradlePlugins": {
@@ -95,6 +98,7 @@
     "io.spring.dependency-management": "Apache-2.0",
     "nu.studer.jooq": "Apache-2.0",
     "org.openapi.generator": "Apache-2.0",
-    "com.github.jk1.dependency-license-report": "Apache-2.0"
+    "com.github.jk1.dependency-license-report": "Apache-2.0",
+    "net.ltgt.errorprone": "Apache-2.0"
   }
 }

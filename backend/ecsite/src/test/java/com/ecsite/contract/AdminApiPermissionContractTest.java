@@ -9,6 +9,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.regex.Pattern;
@@ -140,7 +141,7 @@ class AdminApiPermissionContractTest {
             // パス共通の parameters などは操作ではない
             if (HTTP_METHODS.contains(key)) {
                 var operation = (Map<String, Object>) value;
-                operations.add(new Operation(key.toUpperCase(), path, operation.get(PERMISSION_KEY)));
+                operations.add(new Operation(key.toUpperCase(Locale.ROOT), path, operation.get(PERMISSION_KEY)));
             }
         }));
         return operations;

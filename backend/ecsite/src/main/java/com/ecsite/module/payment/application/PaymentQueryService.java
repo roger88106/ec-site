@@ -17,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Clock;
 import java.util.Collection;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -171,6 +172,8 @@ public class PaymentQueryService {
         return paymentRepository.findById(paymentId)
                 .filter(payment -> payment.status() == PaymentStatus.REFUND_PENDING)
                 .map(payment -> new PaymentGateway.RefundRequest(
-                        payment.orderId(), payment.authorizationRef(), payment.amount()));
+                        payment.orderId(),
+                        Objects.requireNonNull(payment.authorizationRef(), "返金待ちの支払には与信の参照がある"),
+                        payment.amount()));
     }
 }

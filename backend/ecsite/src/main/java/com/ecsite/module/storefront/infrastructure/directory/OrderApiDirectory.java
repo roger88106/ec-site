@@ -5,6 +5,7 @@ import com.ecsite.module.order.api.CartQuote;
 import com.ecsite.module.order.api.OrderQuoteApi;
 import com.ecsite.module.storefront.application.port.CartView;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -31,7 +32,7 @@ public class OrderApiDirectory implements OrderDirectory {
      * @return カートの表示。カートがない、または会員のカートで持ち主でなければ空
      */
     @Override
-    public Optional<CartView> findCart(UUID cartId, UUID requester) {
+    public Optional<CartView> findCart(UUID cartId, @Nullable UUID requester) {
         return orderQuoteApi.quoteCart(cartId, requester).map(OrderApiDirectory::toView);
     }
 

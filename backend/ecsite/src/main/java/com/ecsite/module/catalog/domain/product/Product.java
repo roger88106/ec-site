@@ -16,11 +16,11 @@ import com.ecsite.module.catalog.event.ProductPublished;
 import com.ecsite.module.catalog.event.ProductUnpublished;
 import com.ecsite.module.catalog.event.VariantDeleted;
 import com.ecsite.module.catalog.event.VariantRegistered;
-import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.ArrayList;
@@ -124,6 +124,7 @@ public class Product extends AggregateRoot {
     /**
      * 初回表示日時。null は一度も表示されていない（表示の予定もない）
      */
+    @Nullable
     private Instant firstShownAt;
 
     /**
@@ -193,6 +194,8 @@ public class Product extends AggregateRoot {
 // ============================== Getter（ほかのフィールドの Getter は Lombok で作る） ==============================
 
     /**
+     * 代表画像を返す。
+     *
      * @return 代表画像（画像の並びの先頭）。画像がなければ空
      */
     public Optional<ProductImage> representativeImage() {
@@ -372,7 +375,7 @@ public class Product extends AggregateRoot {
      * @param variantId バリアント ID
      * @param imageId   画像 ID。null で指定を外す（代表画像を使う）
      */
-    public void setVariantImage(@NonNull UUID variantId, UUID imageId) {
+    public void setVariantImage(@NonNull UUID variantId, @Nullable UUID imageId) {
         if (variants.stream().noneMatch(variant -> variant.id().equals(variantId))) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
         }
@@ -551,7 +554,7 @@ public class Product extends AggregateRoot {
      * @param now 現在時刻
      * @return 初回表示日時
      */
-    private Instant calculateFirstShownAt(Instant now) {
+    private @Nullable Instant calculateFirstShownAt(Instant now) {
         if (hasBeenShown(now)) {
             return firstShownAt;
         }
@@ -687,7 +690,7 @@ public class Product extends AggregateRoot {
      */
     public record Snapshot(UUID id, ProductCode productCode, String name, String description, UUID taxCategoryId,
                            PriceExclTax priceExclTax, Set<UUID> categoryIds, List<String> axes,
-                           PublicationStatus status, Instant firstShownAt, PublicationPeriod publicationPeriod,
+                           PublicationStatus status, @Nullable Instant firstShownAt, PublicationPeriod publicationPeriod,
                            List<ProductImage> images, List<Variant> variants, long version) {
     }
 

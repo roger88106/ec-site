@@ -6,6 +6,7 @@ import com.ecsite.common.model.value.Operator;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -25,8 +26,9 @@ import java.util.UUID;
  * @param operator    調整した運営者。注文に由来する調整なら null
  */
 @Entity
-public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReason reason, String memo, UUID orderId,
-                              String orderNumber, Instant adjustedAt, Operator operator) {
+public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReason reason, @Nullable String memo,
+                              @Nullable UUID orderId, @Nullable String orderNumber, Instant adjustedAt,
+                              @Nullable Operator operator) {
 
     /**
      * メモの最大の文字数
@@ -53,7 +55,7 @@ public record StockAdjustment(@Identity UUID id, int delta, StockAdjustmentReaso
      * @param now      現在時刻
      * @return 在庫調整
      */
-    public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, String memo,
+    public static StockAdjustment create(int delta, @NonNull StockAdjustmentReason reason, @Nullable String memo,
                                          @NonNull Operator operator, @NonNull Instant now) {
         if (delta == 0 || delta > MAX_MANUAL_DELTA || delta < -MAX_MANUAL_DELTA) {
             throw BusinessException.of(InventoryErrorCode.INVALID_STOCK_DELTA, List.of(MAX_MANUAL_DELTA));

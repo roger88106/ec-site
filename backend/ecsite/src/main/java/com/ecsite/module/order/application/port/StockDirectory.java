@@ -1,6 +1,6 @@
 package com.ecsite.module.order.application.port;
 
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;

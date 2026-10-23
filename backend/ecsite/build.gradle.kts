@@ -1,3 +1,5 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+import net.ltgt.gradle.errorprone.errorprone
 import nu.studer.gradle.jooq.JooqGenerate
 import org.flywaydb.core.Flyway
 import org.jooq.meta.jaxb.ForcedType
@@ -34,6 +36,7 @@ plugins {
     alias(libs.plugins.jooq)
     alias(libs.plugins.openapi.generator)
     alias(libs.plugins.dependency.license.report)
+    alias(libs.plugins.errorprone)
     jacoco
     checkstyle
     // mock を包むテスト用の実装など、単体テストと統合テストで共有するもの（src/testFixtures）
@@ -141,6 +144,13 @@ dependencies {
     // --- コード生成（Lombok） ---
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
+
+    // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
+    errorprone(libs.errorprone.core)
+    errorprone(libs.nullaway)
+    // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
+    // test などの classpath にも必要なので、compileOnly でなく implementation にする
+    implementation(libs.jspecify)
 
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
     implementation(libs.bundles.jmolecules)
@@ -424,6 +434,7 @@ val allowedLicensesOutput =layout.buildDirectory.file("license-policy/allowed-li
 
 licenseReport {
     // 実行時、コンパイル時、テスト、注釈の処理、jOOQ のコード生成。
+    // Error Prone の errorprone 構成は解決できないが、annotationProcessor が継承するので、そこで検査に入る
     // buildscript の classpath（生成で使う Testcontainers・Flyway）は構成に出ないが、同じ部品が統合テストと実行時の構成に入る
     configurations = arrayOf(
         "compileClasspath", "runtimeClasspath",
@@ -681,10 +692,42 @@ val checkTestClassNames = tasks.register("checkTestClassNames") {
 tasks.check { dependsOn(checkTestClassNames) }
 
 // -----------------------------------------------------------------------------
-// コンパイルオプション
+// コンパイルオプション（Error Prone と NullAway を含む）
 // -----------------------------------------------------------------------------
-tasks.withType<JavaCompile> {
+tasks.withType<JavaCompile>().configureEach {
     // リフレクション用にメソッド引数名を保持
     options.compilerArgs.add("-parameters")
     options.encoding = "UTF-8"
+    // 警告も失敗にする（Error Prone の警告も、javac の -Werror で失敗になる）
+    options.compilerArgs.add("-Werror")
+    options.errorprone {
+        // 生成したコード（jOOQ、OpenAPI。build/generated の下）は検査しない
+        excludedPaths.set(".*[/\\\\]build[/\\\\]generated.*")
+        disableWarningsInGeneratedCode.set(true)
+        // Lombok の @NonNull の引数を持つクラスで Error Prone が例外を投げ、コンパイルが失敗するので無効にする
+        disable("StringConcatToTextBlock")
+        // enum のフィールドは List.of で作る一覧で、Error Prone は List の型を変更できると判断する。
+        // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする（spec 18 第 6 節の 8）
+        disable("ImmutableEnumChecker")
+        // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
+        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない（spec 18 第 6 節の 8）
+        if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
+            disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
+        }
+        // NullAway は main のコンパイルだけ動かし、報告はエラーにする。
+        // 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
+        // （docs/rules/backend-coding.md 第 7 節）。
+        if (name == "compileJava") {
+            check("NullAway", CheckSeverity.ERROR)
+            // com.ecsite.jooq（jOOQ の生成）と com.ecsite.api（OpenAPI の生成）は、注釈のない生成コードとして扱う
+            option("NullAway:AnnotatedPackages", "com.ecsite")
+            option("NullAway:UnannotatedSubPackages", "com.ecsite.jooq,com.ecsite.api")
+            option("NullAway:CustomContractAnnotations", "org.springframework.lang.Contract")
+            // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
+        } else {
+            // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
+            // 意図して null を渡す（spec 18 第 5 節）
+            disable("NullAway")
+        }
+    }
 }

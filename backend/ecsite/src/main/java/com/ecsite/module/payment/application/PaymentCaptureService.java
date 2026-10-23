@@ -8,6 +8,7 @@ import com.ecsite.module.payment.domain.payment.PaymentErrorCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -55,7 +56,9 @@ public class PaymentCaptureService {
             default -> throw BusinessException.of(PaymentErrorCode.PAYMENT_NOT_CAPTURABLE);
         }
         var result = gateway.capture(
-                new PaymentGateway.CaptureRequest(orderId, payment.authorizationRef(), payment.amount()));
+                new PaymentGateway.CaptureRequest(orderId,
+                        Objects.requireNonNull(payment.authorizationRef(), "売上を確定できる支払には与信の参照がある"),
+                        payment.amount()));
         switch (result) {
             case CAPTURED -> commandService.markCaptured(payment.id());
             case AUTHORIZATION_EXPIRED -> {

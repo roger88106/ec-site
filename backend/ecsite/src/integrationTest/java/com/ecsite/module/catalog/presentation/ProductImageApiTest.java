@@ -32,6 +32,7 @@ import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -226,7 +227,7 @@ class ProductImageApiTest {
         @DisplayName("形式を偽ったファイル（中身が画像でない）は、登録のときに先頭のバイトで確認して 400")
         void rejectsDisguisedFile() throws Exception {
             var productId = productWithVariant();
-            var uploadId = upload(productId, "image/png", "これは画像ではない".getBytes());
+            var uploadId = upload(productId, "image/png", "これは画像ではない".getBytes(StandardCharsets.UTF_8));
 
             addImage(productId, uploadId, 1)
                     .andExpect(status().isBadRequest())
@@ -370,7 +371,7 @@ class ProductImageApiTest {
      * 軸がなく、バリアントを 1 つ持つ非公開の商品（バージョン 1）
      */
     private String productWithVariant() throws Exception {
-        var code = CODE_PREFIX + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        var code = CODE_PREFIX + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
         var id = createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
                 {"productCode": "%s", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
                  "priceExclTax": 1000}""".formatted(code, taxCategoryId)));

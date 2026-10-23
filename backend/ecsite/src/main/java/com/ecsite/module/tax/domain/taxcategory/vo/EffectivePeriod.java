@@ -2,8 +2,8 @@ package com.ecsite.module.tax.domain.taxcategory.vo;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.tax.domain.taxcategory.TaxErrorCode;
-import jakarta.annotation.Nullable;
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Collection;

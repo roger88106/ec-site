@@ -1,7 +1,7 @@
 package com.ecsite.module.order.application.model;
 
 import com.ecsite.common.model.value.Money;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -22,7 +22,7 @@ import java.util.UUID;
  * @param birthdate     生年月日（会員の token のもの。なければ null）
  * @param gender        性別（会員の token のもの。なければ null）
  */
-public record PlaceOrderCommand(UUID checkoutId, UUID memberId, String email, boolean emailVerified,
+public record PlaceOrderCommand(UUID checkoutId, UUID memberId, @Nullable String email, boolean emailVerified,
                                 String name, String postalCode, String prefectureCode,
                                 String municipalityCode, String address, String phone, Money expectedTotal,
                                 @Nullable String birthdate, @Nullable String gender) {

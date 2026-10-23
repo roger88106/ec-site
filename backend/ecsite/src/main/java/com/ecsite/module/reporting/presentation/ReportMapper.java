@@ -15,7 +15,7 @@ import com.ecsite.module.reporting.domain.AgeGroup;
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.ReportGender;
 import com.ecsite.module.reporting.domain.TrendPoint;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 /**

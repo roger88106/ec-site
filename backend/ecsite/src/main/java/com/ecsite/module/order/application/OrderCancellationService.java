@@ -9,6 +9,7 @@ import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.time.Clock;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.function.Predicate;
 
@@ -61,7 +63,7 @@ public class OrderCancellationService {
      * @param reason   理由（任意）
      */
     @Transactional
-    public void request(UUID orderId, UUID memberId, String reason) {
+    public void request(UUID orderId, UUID memberId, @Nullable String reason) {
         var order = lock(orderId);
         if (!order.memberId().equals(memberId)) {
             throw BusinessException.of(CommonErrorCode.NOT_FOUND);
@@ -152,7 +154,7 @@ public class OrderCancellationService {
             return;
         }
         orderRepository.update(order);
-        if (order.cancellation().restocked()) {
+        if (Objects.requireNonNull(order.cancellation(), "キャンセルした注文にはキャンセルの記録がある").restocked()) {
             stockDirectory.restore(quantities(order), order.id(), order.orderNumber().value());
         }
         paymentDirectory.cancel(order.id());

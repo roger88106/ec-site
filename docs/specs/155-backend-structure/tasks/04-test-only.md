@@ -10,7 +10,7 @@
 
 T155-04-01 と、T155-04-02 から始まる組は、変えるファイルが重ならないので、互いに `[P]` である。
 
-- [ ] **T155-04-01** [P] 配送業者の mock から、テスト専用の記録（`started`、`started()`、`Started`）を削除する。testFixtures に `TestCarrierTracking` を作る。`CarrierTracking` を実装して mock を包み、追跡を始めた送り状番号の記録を持つ。統合テストの設定 `TestCarrierTrackingConfig` を作る（`@Primary`、`TestPaymentGatewayConfig` と同じ形、`ecsite.shipping.mock.enabled` の条件を付ける）。`IntegrationTest` の `@Import` に追加する。`ShippingApiTest` は包む実装を使い、トランザクションの有無の記録も包む実装に対して行う。mock のクラスは public のまま残す（DC-155-25、26）。
+- [x] **T155-04-01** [P] 配送業者の mock から、テスト専用の記録（`started`、`started()`、`Started`）を削除する。testFixtures に `TestCarrierTracking` を作る。`CarrierTracking` を実装して mock を包み、追跡を始めた送り状番号の記録を持つ。統合テストの設定 `TestCarrierTrackingConfig` を作る（`@Primary`、`TestPaymentGatewayConfig` と同じ形、`ecsite.shipping.mock.enabled` の条件を付ける）。`IntegrationTest` の `@Import` に追加する。`ShippingApiTest` は包む実装を使い、トランザクションの有無の記録も包む実装に対して行う。mock のクラスは public のまま残す（DC-155-25、26）。
   - 依存：なし
   - 範囲：`main/module/shipping/infrastructure/mock/MockCarrierTracking.java`（`:13-45`）、`fix/module/shipping/infrastructure/mock/TestCarrierTracking.java`（新規）、`it/TestCarrierTrackingConfig.java`（新規）、`it/IntegrationTest.java`（`:26-27`）、`it/module/shipping/api/ShippingApiTest.java`（`:10,52,136-137,144-147`）。`test/config/ExternalServiceSelectionTest.java`（`:10,90`）は、変更せず、テストが通ることを確認する。
 - [ ] **T155-04-02** [P] [テスト] 期限切れの片付けの共通のクラス `ExpiredDataCleanup` の単体テストを書き、レッドを確認する。確認する内容：件数の上限ごとに削除し、削除した件数が上限と等しい間繰り返す。合計が 1 件以上なら info、0 件なら debug でログを出す。ログの文面は渡した名詞から作り、渡したロガーに出す。AC の番号は付けない（DC-155-29）。

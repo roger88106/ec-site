@@ -4,7 +4,7 @@
 // 1 か所から読めない版は、置き場所の間の一致を検査で確かめる。ずれると、手元と CI で別の版を動かす。
 // 使い方：node scripts/ci/runtime-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { isMain } from './lib/is-main.mjs'
 
 /**
  * workflow の `JAVA_VERSION` の値を読む。
@@ -83,7 +83,7 @@ export function findRuntimeVersionProblems({ workflowJava, tomlJava, nodeFile, e
   return problems
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const read = (path) => readFileSync(path, 'utf8')
   const problems = findRuntimeVersionProblems({
     workflowJava: readJavaFromWorkflow(read('.github/workflows/ci.yml')),

@@ -2,8 +2,8 @@
 // 規則は言葉で書き、spec との対応はテストの名前に書く。テスト、生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { listGitFiles } from './lib/git-files.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /**
  * 本番のコードの置き場所。バックエンドも見るので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。
@@ -41,7 +41,7 @@ export function isProductionFile(file) {
   return SOURCE_DIRS.some((dir) => file.startsWith(dir)) && !EXCLUDED.some((pattern) => pattern.test(file))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => isProductionFile(file))
   let count = 0
   for (const file of files) {

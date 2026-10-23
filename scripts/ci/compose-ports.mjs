@@ -2,7 +2,7 @@
 // 他のマシンからつなぐときは、すべてのポートを 1 つの変数（LOCAL_BIND_ADDRESS）で替える。
 // 使い方：node scripts/ci/compose-ports.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { isMain } from './lib/is-main.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -41,7 +41,7 @@ export function findPortProblems(text) {
   return { ports, problems: ports.filter((port) => !port.entry.startsWith(BIND_PREFIX)) }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const { ports, problems } = findPortProblems(readFileSync(COMPOSE_FILE, 'utf8'))
   for (const problem of problems) {
     console.log(`${COMPOSE_FILE}:${problem.line} ${problem.entry}（${BIND_PREFIX} で始める）`)

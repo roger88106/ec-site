@@ -8,6 +8,7 @@ import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** 開発者だけが見る文（ログ、プログラムの誤りの例外）の行。利用者に見せる文ではないので見ない */
 const DEVELOPER_ONLY = /\b(log|console)\.(debug|info|warn|error)\(|throw new Error\(/
@@ -46,7 +47,7 @@ export function scanSources(files, read) {
   return hitsByFile
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const exclusions = readExclusions(fileURLToPath(new URL('./hardcoded-text-exclusions.json', import.meta.url)))
   const files = listGitFiles(['frontend']).filter(isScreenSource)
   // 除外のファイルも読む。除外が要るのは、文言を直接書いた行があるファイルだけ

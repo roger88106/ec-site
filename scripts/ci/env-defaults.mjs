@@ -8,7 +8,7 @@
 import { execFileSync } from 'node:child_process'
 import { splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { isMain } from './lib/is-main.mjs'
 
 /** 環境変数の文書 */
 const ENV_DOC = 'docs/guides/environment.md'
@@ -193,7 +193,7 @@ export function compareDefaults(code, doc) {
   return problems.sort()
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const sources = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'backend/ecsite/src/main/java/*.java'], { encoding: 'utf8' }))
     .map((file) => readFileSync(file, 'utf8'))
     .filter((source) => source.includes('@ConfigurationProperties('))

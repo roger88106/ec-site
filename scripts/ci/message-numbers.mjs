@@ -4,8 +4,8 @@
 // 理由を添えて message-numbers-exclusions.json に書く。メールの文（ecsite.notification.*）はエラーの文でないので見ない。
 // 使い方：node scripts/ci/message-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** エラーの文のファイル */
 const MESSAGES = 'backend/ecsite/src/main/resources/messages.properties'
@@ -74,7 +74,7 @@ export function findStaleExclusions(text, exclusions) {
   return Object.keys(exclusions).filter((key) => !values.has(key) || !DIGIT.test(values.get(key).replace(PLACEHOLDER, '')))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const text = readFileSync(MESSAGES, 'utf8')
   const exclusions = readExclusions(EXCLUSIONS)
   const hits = findNumbers(text, exclusions)

@@ -25,6 +25,7 @@ import { closingParen } from './lib/closing-paren.mjs'
 import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
 const RANGE = '[〜～~]'
@@ -473,6 +474,6 @@ function main() {
   process.exit(ok ? 0 : 1)
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   main()
 }

@@ -2,8 +2,9 @@
 // 時間で待つテストは、遅い環境で失敗し、速い環境で時間を無駄にする。条件で待つ（latch、Playwright の expect の再試行など）。
 // 使い方：node scripts/ci/time-waits.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { listGitFiles } from './lib/git-files.mjs'
+import { isMain } from './lib/is-main.mjs'
+import { createLineLocator } from './lib/line-number.mjs'
 
 /** テストのコードの置き場所。本番のソースを読む検査ではなくテストを読むので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない */
 const TEST_FILES = [
@@ -28,7 +29,7 @@ const PROMISE_TIMEOUT = /new Promise\(\s*\(?\s*(\w+)\s*\)?\s*=>\s*(setTimeout\()
  * @returns {{ line: number, call: string }[]} 見つけた行と呼び出し（行の順）
  */
 export function findTimeWaits(text) {
-  const lineOf = (index) => text.slice(0, index).split('\n').length
+  const lineOf = createLineLocator(text)
   const hits = [...text.matchAll(TIME_WAIT)].map((match) => ({ line: lineOf(match.index), call: match[0] }))
   for (const match of text.matchAll(PROMISE_TIMEOUT)) {
     hits.push({ line: lineOf(match.index + match[0].lastIndexOf(match[2])), call: match[2] })
@@ -46,7 +47,7 @@ export function isTestFile(file) {
   return TEST_FILES.some((pattern) => pattern.test(file))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => isTestFile(file))
   let count = 0
   for (const file of files) {

@@ -3,8 +3,8 @@
 // 版がずれると、手元（compose）と CI（Testcontainers）で別のイメージを動かすことになり、片方だけで起きる不具合を見逃す。
 // 使い方：node scripts/ci/image-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { listGitFiles } from './lib/git-files.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -155,7 +155,7 @@ function readSourceFiles() {
   return paths.map((path) => ({ path, text: readFileSync(path, 'utf8') }))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   let images
   try {
     images = readComposeImages(readFileSync(COMPOSE_FILE, 'utf8'))

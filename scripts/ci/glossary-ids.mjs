@@ -8,6 +8,7 @@ import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** 用語集 */
 const GLOSSARY = 'docs/design/glossary.md'
@@ -99,7 +100,7 @@ export function isExclusionNeeded(id, ids) {
   return ids.includes(id)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json'))
   const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', ...SEARCH_ROOTS], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }))
     .filter((file) => isSearchedFile(file) && existsSync(file))

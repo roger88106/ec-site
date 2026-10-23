@@ -6,8 +6,8 @@
 // 使い方：node scripts/ci/progress.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { findMvpList, listSpecDirs } from './lib/spec-dirs.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** 対象の最初の spec の番号 */
 const FIRST_SPEC = 11
@@ -170,7 +170,7 @@ export function checkArchivedTasks(tasks) {
     )
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const specsDir = 'docs/specs'
   const mvpList = findMvpList(specsDir)
   if (!mvpList) {

@@ -7,7 +7,7 @@
 // release- か hotfix- で始まる名前だけを通す。通さないときは終了コード 1 を返す。
 // 引数が必要なので、check-all.sh が引数なしで流す scripts/ci/ の直下には置かない。
 // ============================================================================
-import { fileURLToPath } from 'node:url'
+import { isMain } from '../lib/is-main.mjs'
 
 /** main に入れられる元のブランチの名前の始まり */
 const ALLOWED_PREFIXES = ['release-', 'hotfix-']
@@ -28,7 +28,7 @@ export function checkMainSource(headRef) {
   }
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const result = checkMainSource(process.argv[2])
   console.log(result.message)
   process.exit(result.ok ? 0 : 1)

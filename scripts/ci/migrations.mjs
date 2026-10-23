@@ -6,7 +6,8 @@
 import { execFileSync, execSync } from 'node:child_process'
 import { splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { isMain } from './lib/is-main.mjs'
+import { exitIfShallow } from './lib/shallow-clone.mjs'
 
 /** マイグレーションの置き場所 */
 const MIGRATIONS = 'backend/ecsite/src/main/resources/db/migration/'
@@ -88,11 +89,8 @@ export function parseAddedLog(log) {
   return addedIn
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  if (execSync('git rev-parse --is-shallow-repository', { encoding: 'utf8' }).trim() === 'true') {
-    console.log('shallow clone では commit の履歴を読めない（CI の checkout に fetch-depth: 0 を付ける）')
-    process.exit(1)
-  }
+if (isMain(import.meta.url)) {
+  exitIfShallow()
   const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', MIGRATIONS], { encoding: 'utf8' })).filter(isVersionedMigration)
   const emptyReason = findEmptyReason(files, MIGRATIONS)
   if (emptyReason) {

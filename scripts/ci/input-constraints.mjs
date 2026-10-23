@@ -2,9 +2,9 @@
 // 制約は API の契約から書き出した定数（src/api/generated/constraints.ts）を使う。
 // 使い方：node scripts/ci/input-constraints.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource, SCREEN_APPS } from './lib/screen-sources.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** src/test/ のテストの補助（.tsx）。テストそのものは含まない */
 const TEST_HELPER = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/test/.*(?<!\\.test)\\.tsx$`)
@@ -34,7 +34,7 @@ export function findLiterals(text) {
   return text.split('\n').flatMap((line, index) => (line.match(LITERAL) ? [{ line: index + 1, text: line.trim() }] : []))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const found = listGitFiles(['frontend'])
     .filter(isTarget)
     .flatMap((file) => findLiterals(readFileSync(file, 'utf8')).map((hit) => `${file}:${hit.line}  ${hit.text}`))

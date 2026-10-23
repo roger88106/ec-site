@@ -2,7 +2,7 @@
 // 表は、管理 API の各操作の x-required-permission、運営者の realm のロール、店舗 API の各操作の security から作る。
 // 使い方：node scripts/ci/role-permissions.mjs（リポジトリのルートで。--write で文書の表を書き直す）
 import { readFileSync, writeFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { isMain } from './lib/is-main.mjs'
 
 /** 対応表の文書 */
 const DOCUMENT = 'docs/design/role-permissions.md'
@@ -194,7 +194,7 @@ export function replaceGenerated(document, markdown) {
   return `${document.slice(0, from + START.length)}\n${markdown}${document.slice(to)}`
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const { markdown, problems } = renderTables({
     admin: parseOperations(readFileSync(ADMIN_API, 'utf8')),
     store: parseOperations(readFileSync(STORE_API, 'utf8')),

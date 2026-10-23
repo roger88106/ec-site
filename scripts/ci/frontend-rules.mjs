@@ -15,6 +15,8 @@ import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
+import { isMain } from './lib/is-main.mjs'
+import { createLineLocator } from './lib/line-number.mjs'
 
 /** ロケールとタイムゾーンを書いてよいファイル */
 const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
@@ -137,12 +139,13 @@ export function findCrossFeatureImports(text, feature, file) {
   }
   // 全文に当て、一致の位置から行番号を求める（import が複数の行にまたがってもよい）
   const lines = text.split('\n')
+  const lineOf = createLineLocator(text)
   const hits = []
   // コメントの中の指定（移した元の説明など）は import でないので、空白にしてから探す（行番号は変わらない）
   for (const match of stripComments(text).matchAll(IMPORT_SPECIFIER)) {
     const imported = featureOfSpecifier(match[2])
     if (imported === null || imported === feature) continue
-    const line = text.slice(0, match.index).split('\n').length
+    const line = lineOf(match.index)
     if (!hits.some((hit) => hit.line === line)) hits.push({ line, text: lines[line - 1].trim() })
   }
   return hits
@@ -178,13 +181,14 @@ export function findQueryUrlStrings(text) {
   const code = stripComments(text)
   const literals = [...code.matchAll(STRING_LITERAL)].map((match) => ({ start: match.index, end: match.index + match[0].length, content: match[0].slice(1, -1) }))
   const lines = text.split('\n')
+  const lineOf = createLineLocator(code)
   const hits = []
   literals.forEach((literal, index) => {
     const next = literals[index + 1]
     const joinedToParam =
       ENDS_WITH_QUERY_MARK.test(literal.content) && next && /^\s*\+\s*$/.test(code.slice(literal.end, next.start)) && STARTS_WITH_PARAM.test(next.content)
     if (!QUERY_PARAM_IN_STRING.test(literal.content) && !joinedToParam) return
-    const line = code.slice(0, literal.start).split('\n').length
+    const line = lineOf(literal.start)
     if (!hits.some((hit) => hit.line === line)) hits.push({ line, text: lines[line - 1].trim() })
   })
   return hits
@@ -315,7 +319,7 @@ export function findDefinitions(text, names) {
 /** 共有の名前と同じ名前の定義の除外のキー（<画面>:<名前>）。画面は store か admin */
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   // E2E（e2e/）は、CSS のクラスの確認だけを見る。ほかの規則は frontend/ のファイルだけに当てる
   const files = listGitFiles(['frontend', 'e2e'])
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'frontend-rules-exclusions.json'))

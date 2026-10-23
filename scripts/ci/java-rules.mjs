@@ -5,9 +5,10 @@
 // - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { closingParen } from './lib/closing-paren.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
+import { isMain } from './lib/is-main.mjs'
+import { createLineLocator } from './lib/line-number.mjs'
 
 /** テストのソース */
 const TEST_SOURCE = /^backend\/ecsite\/src\/(?:test|integrationTest|testFixtures)\/.*\.java$/
@@ -114,6 +115,7 @@ export function blankComments(text) {
  */
 export function findEnumNameConversions(text) {
   const lines = text.split('\n')
+  const lineOf = createLineLocator(text)
   const hits = []
   const blanked = blankComments(text)
   for (const match of blanked.matchAll(ENUM_CALL)) {
@@ -121,7 +123,7 @@ export function findEnumNameConversions(text) {
     const open = match.index + match[0].length - 1
     const argument = blanked.slice(open + 1, closingParen(blanked, open))
     if (!ENDS_WITH_NAME.test(argument)) continue
-    const line = text.slice(0, match.index).split('\n').length
+    const line = lineOf(match.index)
     hits.push({ line, text: lines[line - 1].trim() })
   }
   return hits
@@ -179,7 +181,7 @@ export function ruleFor(file) {
   return null
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => ruleFor(file) || isNullableTarget(file))
   const messages = { lombok: 'テストで Lombok を使う', 'enum-name': '列挙型の変換に name() を渡す' }
   let count = 0

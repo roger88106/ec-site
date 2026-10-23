@@ -85,12 +85,11 @@ class ModuleStructureTest {
     @Test
     @DisplayName("domain は、同じモジュールのほかの層に依存しない")
     void domainDependsOnNoOtherLayer() {
-        for (String module : modules()) {
+        for (String module : modulesWith("domain")) {
             ArchRule rule = noClasses().that().resideInAPackage(layer(module, "domain"))
                     .should().dependOnClassesThat().resideInAnyPackage(
                             layer(module, "api"), layer(module, "presentation"),
-                            layer(module, "application"), layer(module, "infrastructure"))
-                    .allowEmptyShould(true);
+                            layer(module, "application"), layer(module, "infrastructure"));
             rule.check(CLASSES);
         }
     }
@@ -108,11 +107,10 @@ class ModuleStructureTest {
     @Test
     @DisplayName("application は、presentation と infrastructure に依存しない")
     void applicationDependsOnNeitherPresentationNorInfrastructure() {
-        for (String module : modules()) {
+        for (String module : modulesWith("application")) {
             ArchRule rule = noClasses().that().resideInAPackage(layer(module, "application"))
                     .should().dependOnClassesThat().resideInAnyPackage(
-                            layer(module, "presentation"), layer(module, "infrastructure"))
-                    .allowEmptyShould(true);
+                            layer(module, "presentation"), layer(module, "infrastructure"));
             rule.check(CLASSES);
         }
     }
@@ -120,14 +118,14 @@ class ModuleStructureTest {
     @Test
     @DisplayName("presentation・api・event と infrastructure は、互いに依存しない")
     void entryLayersAndInfrastructureAreIndependent() {
-        for (String module : modules()) {
+        for (String module : modulesWith("presentation", "api", "event")) {
             noClasses().that().resideInAnyPackage(layer(module, "presentation"), layer(module, "api"), layer(module, "event"))
                     .should().dependOnClassesThat().resideInAPackage(layer(module, "infrastructure"))
-                    .allowEmptyShould(true)
                     .check(CLASSES);
+        }
+        for (String module : modulesWith("infrastructure")) {
             noClasses().that().resideInAPackage(layer(module, "infrastructure"))
                     .should().dependOnClassesThat().resideInAPackage(layer(module, "presentation"))
-                    .allowEmptyShould(true)
                     .check(CLASSES);
         }
     }
@@ -137,12 +135,10 @@ class ModuleStructureTest {
     void transactionalOnlyInApplicationOrInfrastructure() {
         classes().that().areAnnotatedWith(Transactional.class)
                 .should().resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
-                .allowEmptyShould(true)
                 .check(CLASSES);
         methods().that().areAnnotatedWith(Transactional.class)
                 .should().beDeclaredInClassesThat()
                 .resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
-                .allowEmptyShould(true)
                 .check(CLASSES);
     }
 
@@ -209,15 +205,19 @@ class ModuleStructureTest {
     }
 
     /**
-     * 本番のクラスがあるモジュールの名前を返す。
+     * 指定した層のどれかに、本番のクラスがあるモジュールの名前を返す。<br />
+     * 層を持たないモジュールで繰り返すと、規則の対象が 0 件になって常に通るので、層を持つモジュールだけを返す。
      *
+     * @param layers 層の名前
      * @return モジュールの名前
      */
-    private static Set<String> modules() {
+    private static Set<String> modulesWith(String... layers) {
+        Set<String> wanted = Set.of(layers);
         return CLASSES.stream()
                 .map(JavaClass::getPackageName)
                 .map(MODULE_SUBPACKAGE::matcher)
                 .filter(Matcher::find)
+                .filter(matcher -> wanted.contains(matcher.group(2)))
                 .map(matcher -> matcher.group(1))
                 .collect(Collectors.toCollection(TreeSet::new));
     }

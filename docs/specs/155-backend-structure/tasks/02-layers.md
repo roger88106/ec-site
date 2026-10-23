@@ -67,7 +67,7 @@
 - [x] **T155-02-16** [P] 公開の API の検査を実装に合わせる。`ModuleRoleTest.apiInterfacesAreImplementedInApi`（対象が 0 件で常に通る）を削除する（DC-155-13、14）。
   - 依存：なし
   - 範囲：`test/architecture/ModuleRoleTest.java`（`:66-74`）
-- [ ] **T155-02-17** 対象が 0 件になる構成の検査を修正する。`levelAPresentationDoesNotDependOnAggregates`（payment）、`domainDependsOnNoOtherLayer`（notification、storefront）、`entryLayersAndInfrastructureAreIndependent` の 1 つ目（notification）は、その層を持つモジュールだけで繰り返し、`allowEmptyShould` を外す。層を持つモジュールを求める補助を追加する。他の 5 つの `allowEmptyShould` も外す。外すと失敗するものがあれば、理由を調べて報告し、spec 担当のセッションが plan に書く。外した規則について、対象が 0 件のとき失敗することを確認する（DC-155-14）。
+- [x] **T155-02-17** 対象が 0 件になる構成の検査を修正する。`levelAPresentationDoesNotDependOnAggregates`（payment）、`domainDependsOnNoOtherLayer`（notification、storefront）、`entryLayersAndInfrastructureAreIndependent` の 1 つ目（notification）は、その層を持つモジュールだけで繰り返し、`allowEmptyShould` を外す。層を持つモジュールを求める補助を追加する。他の 5 つの `allowEmptyShould` も外す。外すと失敗するものがあれば、理由を調べて報告し、spec 担当のセッションが plan に書く。外した規則について、対象が 0 件のとき失敗することを確認する（DC-155-14）。
   - 依存：T155-02-16
   - 範囲：`test/architecture/ModuleRoleTest.java`（`:50`）、`test/architecture/ModuleStructureTest.java`（行番号は段階 1 の変更でずれるので、規則の名前で探す）、`test/architecture/SchemaOwnershipTest.java`（`:91`）
 - [ ] **T155-02-18** `ModuleStructureTest` に 2 つのテストメソッドを追加する。application は `api` に依存しない。presentation と `application.model` は `application.port` に依存しない。`allowEmptyShould` を付けない。違反を修正した後に有効にし、一時的に違反を入れて、失敗することを確認する（DC-155-15、16）。

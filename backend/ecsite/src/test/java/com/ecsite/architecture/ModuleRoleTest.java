@@ -41,11 +41,10 @@ class ModuleRoleTest {
     @DisplayName("レベル A のモジュールの presentation は、集約に依存しない（参照の service の view を受け取る）")
     void levelAPresentationDoesNotDependOnAggregates() {
         var classes = importModules();
-        for (String module : LEVEL_A_MODULES) {
+        // presentation のないモジュール（payment）は、対象が 0 件になるので繰り返さない
+        for (String module : modulesWithPresentation(classes)) {
             ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module." + module + ".presentation..")
-                    .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class)
-                    // presentation のないモジュール（payment）も通す
-                    .allowEmptyShould(true);
+                    .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class);
             rule.check(classes);
         }
     }
@@ -59,6 +58,20 @@ class ModuleRoleTest {
         ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module..presentation..")
                 .should().callConstructorWhere(positional);
         rule.check(importModules());
+    }
+
+    /**
+     * presentation に本番のクラスがある、レベル A のモジュールの名前を返す。
+     *
+     * @param classes モジュールの本番のクラス
+     * @return モジュールの名前
+     */
+    private static List<String> modulesWithPresentation(JavaClasses classes) {
+        return LEVEL_A_MODULES.stream()
+                .filter(module -> classes.stream()
+                        .anyMatch(javaClass -> javaClass.getPackageName()
+                                .startsWith("com.ecsite.module." + module + ".presentation")))
+                .toList();
     }
 
     /**

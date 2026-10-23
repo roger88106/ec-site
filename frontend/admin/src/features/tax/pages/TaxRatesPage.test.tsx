@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { TaxCategory } from '@/api/types'
 import { TAX_CATEGORY_ID, taxCategory } from '@/test/fixtures'
+import { getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
 
@@ -51,7 +52,7 @@ function serveTaxCategory(
 
 /** n 行目（0 始まり）の入力欄。行の名前で行を探し、その中で入力欄を探す */
 function rowInputs(index: number) {
-  const row = within(screen.getByRole('row', { name: `${index + 1} 行目の税率` }))
+  const row = within(getRow(`${index + 1} 行目の税率`))
   return {
     rate: row.getByLabelText<HTMLInputElement>('率（%）'),
     from: row.getByLabelText<HTMLInputElement>('適用開始'),

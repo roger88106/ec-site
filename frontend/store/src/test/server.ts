@@ -10,6 +10,9 @@ export const STORE_API = 'http://localhost:8080/api/store'
 /** テストで呼ぶ IdP（消費者の realm。auth.ts の既定） */
 export const IDP = 'http://localhost:8180/realms/ec-store'
 
+/** IdP の token の口 */
+export const TOKEN_ENDPOINT = `${IDP}/protocol/openid-connect/token`
+
 /**
  * 店舗 API の応答を差し替えるハンドラーを作る（店舗画面の構成 第 7 節）。<br />
  * パス・パラメーター・リクエストとレスポンスの本文は store.yaml の型に合わせる。store.yaml にない応答は型エラーになる。

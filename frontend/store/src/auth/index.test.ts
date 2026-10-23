@@ -10,10 +10,7 @@ import { readServerConfig } from '@/auth/config'
 import { ACCESS_TOKEN, authState, signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { cookieValue, redirectedTo, resetRequest } from '@/test/next'
-import { http, IDP, server } from '@/test/server'
-
-/** IdP の token の口 */
-const TOKEN_ENDPOINT = `${IDP}/protocol/openid-connect/token`
+import { http, IDP, networkError, server, TOKEN_ENDPOINT } from '@/test/server'
 
 /** いまの時刻（UNIX 時刻の秒） */
 const now = () => Math.floor(Date.now() / 1000)
@@ -218,7 +215,7 @@ describe('token の取り直し', () => {
   })
 
   test('IdP に届かなければ、ログインの状態を残す', async () => {
-    server.use(mswHttp.post(TOKEN_ENDPOINT, () => HttpResponse.error()))
+    server.use(networkError('post', TOKEN_ENDPOINT))
     const token = { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: now() - 10 }
 
     expect(await callbacks().jwt(jwtParams({ token }))).toEqual(token)

@@ -2,8 +2,9 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, test } from 'vitest'
-import { findDetailValue, findRow, getCell, getDetailValue, getRow } from '@/test/queries'
+import { findDetailValue, findGroup, findRow, getCell, getDetailValue, getRow } from '@/test/queries'
 
+/** 画面全体の項目と、「お届け先」の中の同じ名前の項目を持つ詳細 */
 function Detail() {
   return (
     <div>
@@ -50,6 +51,7 @@ function Reveal() {
   )
 }
 
+/** 名称と件数の列を持つ、2 行の一覧 */
 function List() {
   return (
     <table>
@@ -190,6 +192,36 @@ describe('一覧の行', () => {
     await user.click(screen.getByRole('button', { name: '表示する' }))
 
     expect(await found).toHaveTextContent('遅れた行')
+  })
+})
+
+describe('名前を持つグループ', () => {
+  test('名前が全体で一致するグループを返す', async () => {
+    render(
+      <>
+        <fieldset aria-label="衣類">衣類の中</fieldset>
+        <fieldset aria-label="衣類の小物">小物の中</fieldset>
+      </>,
+    )
+    expect(await findGroup('衣類')).toHaveTextContent('衣類の中')
+  })
+
+  test('範囲を渡すと、その中のグループだけを探す', async () => {
+    render(
+      <>
+        <fieldset aria-label="衣類">外</fieldset>
+        <section aria-label="別の木">
+          <fieldset aria-label="衣類">中</fieldset>
+        </section>
+      </>,
+    )
+    const section = screen.getByRole('region', { name: '別の木' })
+    expect(await findGroup('衣類', within(section))).toHaveTextContent('中')
+  })
+
+  test('グループがなければ失敗する', async () => {
+    render(<List />)
+    await expect(findGroup('衣類')).rejects.toThrow()
   })
 })
 

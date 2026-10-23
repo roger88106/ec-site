@@ -100,3 +100,15 @@ export function getCell(rowName: string, columnName: string, scope: Scope = scre
   }
   return within(row).getAllByRole('cell')[column]
 }
+
+/**
+ * 名前を持つ `group` を、名前の全体が一致するもので返す。現れるまで待つ。
+ * 例：`within(await findGroup('衣類')).getByRole('button', { name: '子を追加' })`
+ *
+ * @param name `group` の名前（aria-label など）
+ * @param scope 探す範囲。省略すると画面全体
+ * @returns 名前が一致する `group`
+ */
+export function findGroup(name: string, scope: Scope = screen): Promise<HTMLElement> {
+  return scope.findByRole('group', { name })
+}

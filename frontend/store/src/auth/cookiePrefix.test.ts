@@ -13,6 +13,7 @@ import { cookieValue, resetRequest } from '@/test/next'
  * （next-auth、next/headers）を先に読み込んで、補助との結び付きを決めておく。
  *
  * @param prefix STORE_COOKIE_PREFIX の値。空なら指定しない
+ * @returns 読み込み直した auth.ts と cartCookie.ts
  */
 async function loadWithPrefix(prefix: string) {
   vi.resetModules()

@@ -21,6 +21,7 @@ export type ProductFieldConstraints = {
  * 操作の契約のスキーマ（登録・更新の要求）から、商品の項目の入力の制約を作る。
  *
  * @param schema 商品名・説明・税抜価格の制約を持つ要求のスキーマ
+ * @returns 商品名・説明の最大の長さと、税抜価格の最小の値
  */
 export function productFieldConstraints(schema: {
   name: { maxLength: number }

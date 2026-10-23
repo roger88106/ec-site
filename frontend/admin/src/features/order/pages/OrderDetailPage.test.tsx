@@ -507,7 +507,7 @@ describe('返送の注文のキャンセル', () => {
   ] as const
 
   test.each(NO_RESTOCK_CASES)(
-    'AC-268在庫に戻すかは API のフラグで聞くかを決める。フラグが偽なら、%s聞かない',
+    'AC-268 在庫に戻すかは API のフラグで聞くかを決める。フラグが偽なら、%s聞かない',
     async (_case, order, status) => {
       serveOrder(order)
       const { user } = renderApp(URL)

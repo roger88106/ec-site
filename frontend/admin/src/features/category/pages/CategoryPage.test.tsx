@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { CategoryNode } from '@/api/types'
 import { categoryNode } from '@/test/fixtures'
+import { findGroup } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
 
@@ -54,11 +55,6 @@ function serveCategories(
   return requests
 }
 
-/** カテゴリの行（名称を名前に持つグループ）の中を探す */
-async function row(name: string) {
-  return within(await screen.findByRole('group', { name }))
-}
-
 describe('カテゴリの画面', () => {
   test('AC-8 カテゴリの木を、階層の入れ子で表示する', async () => {
     serveCategories([CLOTHING, GOODS])
@@ -89,7 +85,7 @@ describe('カテゴリの画面', () => {
     const requests = serveCategories([CLOTHING])
     const { user } = renderApp('/categories')
 
-    await user.click((await row('衣類')).getByRole('button', { name: '子を追加' }))
+    await user.click(within(await findGroup('衣類')).getByRole('button', { name: '子を追加' }))
     const dialog = await screen.findByRole('dialog', { name: '「衣類」の子カテゴリを追加' })
     await user.type(within(dialog).getByLabelText('名称'), 'ボトムス')
     await user.click(within(dialog).getByRole('button', { name: '保存' }))
@@ -102,10 +98,10 @@ describe('カテゴリの画面', () => {
     serveCategories([CLOTHING, categoryNode('301', '深い', 3, [], true), categoryNode('302', '浅い', 1, [], false)])
     renderApp('/categories')
 
-    expect((await row('トップス')).getByRole('button', { name: '子を追加' })).toBeInTheDocument()
-    expect((await row('T シャツ')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
-    expect((await row('深い')).getByRole('button', { name: '子を追加' })).toBeInTheDocument()
-    expect((await row('浅い')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
+    expect(within(await findGroup('トップス')).getByRole('button', { name: '子を追加' })).toBeInTheDocument()
+    expect(within(await findGroup('T シャツ')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
+    expect(within(await findGroup('深い')).getByRole('button', { name: '子を追加' })).toBeInTheDocument()
+    expect(within(await findGroup('浅い')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
   })
 
   test('AC-10 同じ親の下に同じ名称があれば、ダイアログにエラーを出し、入力を残す', async () => {
@@ -130,7 +126,7 @@ describe('カテゴリの画面', () => {
     const requests = serveCategories([GOODS])
     const { user } = renderApp('/categories')
 
-    await user.click((await row('雑貨')).getByRole('button', { name: '名称の変更' }))
+    await user.click(within(await findGroup('雑貨')).getByRole('button', { name: '名称の変更' }))
     const dialog = await screen.findByRole('dialog', { name: '名称の変更' })
     const input = within(dialog).getByLabelText('名称')
     expect(input).toHaveValue('雑貨')
@@ -156,7 +152,7 @@ describe('カテゴリの画面', () => {
     )
     const { user } = renderApp('/categories')
 
-    await user.click((await row('雑貨')).getByRole('button', { name: '名称の変更' }))
+    await user.click(within(await findGroup('雑貨')).getByRole('button', { name: '名称の変更' }))
     const dialog = await screen.findByRole('dialog', { name: '名称の変更' })
     await user.clear(within(dialog).getByLabelText('名称'))
     await user.type(within(dialog).getByLabelText('名称'), '生活雑貨')
@@ -201,7 +197,7 @@ describe('カテゴリの画面', () => {
     })
     const { user } = renderApp('/categories')
 
-    await user.click((await row('衣類')).getByRole('button', { name: '削除' }))
+    await user.click(within(await findGroup('衣類')).getByRole('button', { name: '削除' }))
     await user.click(await screen.findByRole('button', { name: '削除する' }))
 
     expect(await screen.findByText(message)).toBeInTheDocument()
@@ -212,7 +208,7 @@ describe('カテゴリの画面', () => {
     const requests = serveCategories([GOODS])
     const { user } = renderApp('/categories')
 
-    await user.click((await row('雑貨')).getByRole('button', { name: '削除' }))
+    await user.click(within(await findGroup('雑貨')).getByRole('button', { name: '削除' }))
     await user.click(await screen.findByRole('button', { name: '削除する' }))
 
     expect(await screen.findByText('カテゴリを削除しました')).toBeInTheDocument()

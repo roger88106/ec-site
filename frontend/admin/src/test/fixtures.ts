@@ -171,7 +171,7 @@ export function productSummary(overrides: Partial<ProductSummary> = {}): Product
 }
 
 /**
- * カテゴリの節。ID は {@code 00000000-0000-0000-0000-000000000<id>}。
+ * カテゴリの節。ID は `00000000-0000-0000-0000-000000000<id>`。
  *
  * @param id       ID の末尾（3 桁）
  * @param name     名称

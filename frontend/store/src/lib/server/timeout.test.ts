@@ -4,7 +4,7 @@ import { describe, expect, test, vi } from 'vitest'
 import { withActionResult } from '@/actions/withActionResult'
 import { getApi, getMemberApi } from '@/api/client'
 import { authState, signInAs } from '@/test/auth'
-import { IDP, STORE_API, server } from '@/test/server'
+import { IDP, STORE_API, server, TOKEN_ENDPOINT } from '@/test/server'
 import '@/auth'
 import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
 import { connectionFailedMessage } from '@/lib/actionResult'
@@ -14,9 +14,6 @@ vi.hoisted(() => {
   process.env.STORE_API_TIMEOUT_SECONDS = '0.05'
   process.env.AUTH_KEYCLOAK_TIMEOUT_SECONDS = '0.05'
 })
-
-/** IdP の token の口 */
-const TOKEN_ENDPOINT = `${IDP}/protocol/openid-connect/token`
 
 /** 応答を返さない（上限で打ち切られるまで待たせる）ハンドラー */
 const hang = async () => {

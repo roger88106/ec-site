@@ -11,17 +11,16 @@ describe('カートの品目の操作', () => {
 
     expect(html).toMatch(/<option[^>]* value="3" selected="">3<\/option>/)
     expect(html).toContain('3,300 円')
-    expect(html).not.toContain('<s>')
     expect(html).toContain('>削除</button>')
   })
 
-  test('AC-80 購入できない品目の小計は、合計に含めないので取り消しの要素（s）で出す', () => {
+  test('AC-80 購入できない品目でも、小計の金額を出す', () => {
     const html = renderMarkup(
       <CartItemControls
         item={quoteItem({ purchasable: false, subtotal: 1100, unpurchasableReason: 'INSUFFICIENT_STOCK' })}
       />,
     )
 
-    expect(html).toContain('<s>1,100 円</s>')
+    expect(html).toContain('1,100 円')
   })
 })

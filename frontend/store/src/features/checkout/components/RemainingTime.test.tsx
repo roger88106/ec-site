@@ -20,12 +20,13 @@ describe('引当の残り時間', () => {
   test('残り時間を出し、1 秒ごとに数え直して、期限を過ぎると案内を替える', () => {
     renderInBrowser(<RemainingTime expiresAt="2026-10-16T10:00:02Z" />)
 
-    expect(screen.getByText('0:02')).toBeTruthy()
+    expect(screen.getByText('0:02').textContent).toBe('0:02')
 
     act(() => vi.advanceTimersByTime(1000))
-    expect(screen.getByText('0:01')).toBeTruthy()
+    expect(screen.getByText('0:01').textContent).toBe('0:01')
 
     act(() => vi.advanceTimersByTime(1000))
-    expect(screen.getByText(/在庫の確保の期限が切れました。/)).toBeTruthy()
+    expect(screen.getByText(/在庫の確保の期限が切れました。/).textContent).toContain('在庫の確保の期限が切れました。')
+    expect(screen.queryByText(/^\d+:\d{2}$/)).toBeNull()
   })
 })

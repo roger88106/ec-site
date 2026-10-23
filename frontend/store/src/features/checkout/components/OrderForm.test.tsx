@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import type { PostalCodeAddress, Prefecture } from '@/api/types'
@@ -53,7 +53,11 @@ function form(result: ActionResult | null = null) {
 
 /** 選んでいる値 */
 function selected(label: string): string {
-  return (screen.getByLabelText(label) as HTMLSelectElement).value
+  const select = screen.getByLabelText(label)
+  if (!(select instanceof HTMLSelectElement)) {
+    throw new Error(`選択欄ではない：${label}`)
+  }
+  return select.value
 }
 
 /**
@@ -72,7 +76,11 @@ function fieldOf(html: string, label: string): string {
 
 /** 住所の欄の値 */
 function addressValue(): string {
-  return (screen.getByLabelText('住所') as HTMLInputElement).value
+  const input = screen.getByLabelText('住所')
+  if (!(input instanceof HTMLInputElement)) {
+    throw new Error('入力欄ではない：住所')
+  }
+  return input.value
 }
 
 beforeEach(() => {
@@ -227,6 +235,9 @@ describe('郵便番号で補う', () => {
     await user.type(screen.getByLabelText('郵便番号'), '9999999')
 
     await waitFor(() => expect(findPostalCodeAddresses).toHaveBeenCalledWith('9999999'))
+    // 結果（空の配列）の処理が終わってから、変わらないことを確認する
+    await vi.mocked(findPostalCodeAddresses).mock.results[0]?.value
+    await act(async () => {})
     expect(selected('都道府県')).toBe('')
     expect(addressValue()).toBe('')
     expect(document.body.textContent).toBe(textBefore)

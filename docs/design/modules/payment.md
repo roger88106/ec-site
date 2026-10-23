@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（支払の状態遷移、外部からの通知の重複と順序の入れ替わり、期限切れとの競合） |
 | 依存 | なし（注文が決済の API を呼び、決済は結果をイベントで伝える ※1） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[013](../../specs/archive/mvp/013-backend-consistency)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/155-backend-structure) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[013](../../specs/archive/mvp/013-backend-consistency)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ※1：決済が注文のイベントを受けると、モジュールが循環する。
 

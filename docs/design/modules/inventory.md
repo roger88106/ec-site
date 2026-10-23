@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（並行して調整されても失われないこと、引当と減算） |
 | 依存 | 商品カタログ（イベント） |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[019](../../specs/archive/mvp/019-mvp-completion)、[155](../../specs/155-backend-structure) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[019](../../specs/archive/mvp/019-mvp-completion)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ## 在庫と在庫調整
 

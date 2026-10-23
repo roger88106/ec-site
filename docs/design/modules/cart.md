@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（品目の上限と合算だけで、状態遷移を持たない） |
 | 依存 | 商品カタログ・在庫（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[017](../../specs/archive/mvp/017-stability)、[019](../../specs/archive/mvp/019-mvp-completion)、[155](../../specs/155-backend-structure) |
+| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[017](../../specs/archive/mvp/017-stability)、[019](../../specs/archive/mvp/019-mvp-completion)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ## カート
 

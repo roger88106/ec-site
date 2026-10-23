@@ -2,11 +2,11 @@
 
 - 前提：段階 1
 - 完了条件：DC-155-8〜16 を満たす。列挙の対応を変える 3 か所（order の見積もりの変換、catalog の並び順の変換、reporting の性別と履歴の状態）は、先にテストを追加した。追加した構成の検査の規則について、一時的に違反を入れて失敗することを確認した。関係する文書を更新し、AC 一覧のテストの列を再生成した。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。
-- 参照：[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 7 節、[spec](../spec.md) の DS-155-2 と DC-155-8〜16、DN-155-1〜5、[開発の進め方](../../../rules/workflow.md) 第 2.1 節、[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.1 節、[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.3 節
+- 参照：[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 7 節、[spec](../spec.md) の DS-155-2 と DC-155-8〜16、DN-155-1〜5、[開発の進め方](../../../../../rules/workflow.md) 第 2.1 節、[バックエンドの書き方](../../../../../rules/backend-coding.md) 第 1.1 節、[バックエンドの書き方](../../../../../rules/backend-coding.md) 第 1.3 節
 
 ## タスク
 
-実装は実装役のサブエージェントに任せる。`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（[開発の進め方](../../../rules/workflow.md) 第 2.1 節）。`[テスト]` と実装の組は、同じ実装役が順に行う。パスの書き方は、[plan](../plan.md) の共通の決定の最後の項目のとおりである。
+実装は実装役のサブエージェントに任せる。`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（[開発の進め方](../../../../../rules/workflow.md) 第 2.1 節）。`[テスト]` と実装の組は、同じ実装役が順に行う。パスの書き方は、[plan](../plan.md) の共通の決定の最後の項目のとおりである。
 
 公開の API の戻り値の型は変えない。各モジュールの腐敗防止層（利用者）は書き換えない。
 
@@ -73,7 +73,7 @@
 - [x] **T155-02-18** `ModuleStructureTest` に 2 つのテストメソッドを追加する。application は `api` に依存しない。presentation と `application.model` は `application.port` に依存しない。`allowEmptyShould` を付けない。違反を修正した後に有効にし、一時的に違反を入れて、失敗することを確認する（DC-155-15、16）。
   - 依存：T155-02-01〜15、T155-02-17
   - 範囲：`test/architecture/ModuleStructureTest.java`
-- [x] **T155-02-19** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.1 節「公開の API」を、`api/` の interface を持たない `@Component` のクラスが application の service に委譲する、という実装に合わせる。規則の一覧の該当行も修正する。層の依存の表の presentation の行を「application（`port/` を除く）」にする。[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.4 節の表の `reporting.domain` の数を 16 から 18 に修正する。規則の一覧に、application と `api`、presentation と `port` の規則の行を追加する（DC-155-13、15、16）。
+- [x] **T155-02-19** [バックエンドの書き方](../../../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.1 節「公開の API」を、`api/` の interface を持たない `@Component` のクラスが application の service に委譲する、という実装に合わせる。規則の一覧の該当行も修正する。層の依存の表の presentation の行を「application（`port/` を除く）」にする。[バックエンドの書き方](../../../../../rules/backend-coding.md) 第 1.4 節の表の `reporting.domain` の数を 16 から 18 に修正する。規則の一覧に、application と `api`、presentation と `port` の規則の行を追加する（DC-155-13、15、16）。
   - 依存：T155-02-18
   - 範囲：`docs/rules/backend-coding.md`（`:7-32,44,58-64,76,98-103`）
 - [x] **T155-02-20** 各モジュールの設計書の「構成」を、段階 2 のコードに合わせる。order（`model/` の 9 クラス、`port/`）、cart（`model/`）、media（`model/`）、catalog（`model/view/`、`model/query/`）、storefront（`model/`、`port/`）、reporting（`ReportBuyerGender`、`HistoryStatus`）である。storefront の設計書の port の型に関する記述（`:35`）を、application の型に修正する。DC-155-45 のため、次の 3 点も個別に修正する。決済の設計書の「構成」の `model/` を、コードの `model/view/` に合わせる。カートの設計書の「構成」と公開の表の利用者を、注文だけにする（コードの `cart/api/package-info.java` と一致する）。税の設計書の公開の表と `tax/api/package-info.java` の利用者に、注文を追加する。

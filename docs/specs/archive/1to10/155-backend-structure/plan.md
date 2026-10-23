@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 155 が確定した。実装は spec 17 のマージ（`09730eeb`）の後に始める。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../.claude/skills/review/SKILL.md)）。
+前提：spec 155 が確定した。実装は spec 17 のマージ（`09730eeb`）の後に始める。文書の書き方は skill `docs`（[SKILL.md](../../../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../../../.claude/skills/review/SKILL.md)）。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|
@@ -29,7 +29,7 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 - 構成の検査（ArchUnit）の規則は、違反を修正した後に有効にする。有効にした後、一時的に違反を入れて失敗することを確認する（DN-155-4）。確認の方式は、違反する例のクラスをテストの中に置き、規則が検出することを恒久のテストにする。例は `NamingTest.java:56-67` にある。この方式が使えない規則は、手動で一時的に違反を入れて実行し、結果を commit の本文に書く。
 - 構成の検査に追加する規則には、全て `allowEmptyShould(true)` を付けない（DC-155-14）。規則を追加するタスクは、この項目に従う。
 - 実装は実装役（汎用）に 1 タスクずつ任せる。`[リスク]` は DC-155-42（店舗の service を読み取り専用のトランザクションにする）だけである。理由：トランザクションを扱うため。このタスクの実装役は高性能にし、実装の後に高性能のレビュー（profile「厚め」）を実施する。金額、セキュリティ、データの移行、外部サービスの振る舞いは変えない。
-- 1 タスクを 1 commit にする。例外は `[テスト]` と実装の組で、2 つのタスクを 1 commit にする（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
+- 1 タスクを 1 commit にする。例外は `[テスト]` と実装の組で、2 つのタスクを 1 commit にする（[開発の進め方](../../../../rules/workflow.md) 第 2.1 節）。
 - 段階の最後のタスクは、段階のレビューと全体の検査である。段階のレビューは profile「厚め」で、一般の観点を汎用で 2 回、重要な観点を高性能と汎用で 1 回ずつ実施する。重要な観点は、ファイルをまたぐ影響である。
 - 段階の間では、確認のために中断しない。
 - 文書は、変えたコードと同じ段階で修正する。モジュールの設計書の「構成」、バックエンドの書き方、共通コードの設計書が対象である。最後の段階で全体を照合する（DC-155-44〜46）。
@@ -43,12 +43,12 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 |----|------|----------|----------|
 | 1、2 | `config/` 直下のイベントの再発行と片付けの 6 クラス（`EventCleanupConfig`、`EventCleanupJob`、`EventPublicationMetrics`、`EventPublicationRecords`、`EventResubmissionConfig`、`EventResubmissionJob`）を移す。`@Scheduled` の式にある設定の型の Bean の名前の文字列 2 か所を修正する。`config/` 直下は 6 になる | `main/config/event/` | `./gradlew check`（統合テストがアプリケーションを起動し、Bean の名前の誤りを検出する） |
 | 1、2 | テスト 4 つを `config/event` のパッケージに移す。`CleanupJobSettingsTest` は 4 モジュールの設定を 1 つのファイルで見ているので、片付けのジョブの部分だけを `config/event/` の新しいテストに分ける ※1 | `test/config/event/`、`it/config/event/` | 移したテストと、残る `CleanupJobSettingsTest` が通る |
-| 1 | `config/security`（11）は分けず、バックエンドの書き方 第 1.4 節の表に行を追加する ※2 | [バックエンドの書き方](../../rules/backend-coding.md) 第 1.4 節 | レビュー |
+| 1 | `config/security`（11）は分けず、バックエンドの書き方 第 1.4 節の表に行を追加する ※2 | [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.4 節 | レビュー |
 | 3、4 | 表示順の再採番（`DisplayOrders`）を、モジュールの domain の直下に移す。テスト `DisplayOrdersTest` も移す。バックエンドの書き方 第 1.1 節に「モジュールの domain の直下には、複数の集約が使う値を置く」を 1 行追加する | `main/module/catalog/domain/`、`test/module/catalog/domain/` | `DisplayOrdersTest`、段階 1 の最後の `./gradlew pitest` |
 | 3、4 | LIKE の検索の文字の扱い（`LikePatterns`）を、使う 2 クラスの隣に移し、package-private にする。バックエンドの書き方 第 1.4 節の表の `catalog.infrastructure.persistence` を 13 から 14 に修正する | `main/module/catalog/infrastructure/persistence/` | 統合テスト `StoreProductSearchTest`、`ProductListApiTest` の `escapesWildcards` |
-| 5 | ログインした人の情報を返す操作（`MeController`）は `config/security/` に残す。`ModuleStructureTest.restControllerOnlyInPresentation` の対象を `com.ecsite..` に広げ、`MeController` を完全修飾名で除く。バックエンドの書き方 第 2.1 節に例外と理由を書く | `test/architecture/ModuleStructureTest.java`、[バックエンドの書き方](../../rules/backend-coding.md) 第 2.1 節 | 構成の検査。別の場所の `@RestController` を一時的に置いて失敗することを確認する |
+| 5 | ログインした人の情報を返す操作（`MeController`）は `config/security/` に残す。`ModuleStructureTest.restControllerOnlyInPresentation` の対象を `com.ecsite..` に広げ、`MeController` を完全修飾名で除く。バックエンドの書き方 第 2.1 節に例外と理由を書く | `test/architecture/ModuleStructureTest.java`、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 2.1 節 | 構成の検査。別の場所の `@RestController` を一時的に置いて失敗することを確認する |
 | 6、7 | `ModuleStructureTest` に 2 つの規則を追加する。共通コードと設定はモジュールに依存しない。モジュールは設定に依存しない。今の違反は 0 | `test/architecture/ModuleStructureTest.java`。規則の一覧と依存の表に行を追加する | 構成の検査。一時的に違反を入れて失敗することを確認する |
-| 43 | 共通コードの設計書：エラーの詳細、認証の設定の値の型、契約の操作の一覧を一覧に追加する。表示順の再採番と LIKE の検索の行を削除する。イベントのクラスの置き場所を修正する。調査のメモの 2 行を削除し、基準はバックエンドの書き方 第 1.5 節に「共通コードには、2 つ以上のモジュールが使うものだけを置く」を追加して指す。横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）は除く（spec の DC-155-3 と同じ） | [共通コード・ログ・可観測性](../../design/common.md)、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.5 節 | レビュー。`doc-refs.mjs`、`glossary-ids.mjs` |
+| 43 | 共通コードの設計書：エラーの詳細、認証の設定の値の型、契約の操作の一覧を一覧に追加する。表示順の再採番と LIKE の検索の行を削除する。イベントのクラスの置き場所を修正する。調査のメモの 2 行を削除し、基準はバックエンドの書き方 第 1.5 節に「共通コードには、2 つ以上のモジュールが使うものだけを置く」を追加して指す。横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）は除く（spec の DC-155-3 と同じ） | [共通コード・ログ・可観測性](../../../../design/common.md)、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.5 節 | レビュー。`doc-refs.mjs`、`glossary-ids.mjs` |
 
 ※1：理由は、設定の型が package-private で、同じパッケージのテストだけが使えるため。
 
@@ -82,9 +82,9 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 | 11 | order：`OrderSummaryView` を `OrderQueryRepository` の入れ子から最上位の record に出す（絞り込み条件 `Filter` は port に残す）。`ShippingDirectory.Shipment` を `OrderShipment`（入れ子の列挙 `Status`）に、`PaymentDirectory.Status` を `OrderPayment.Status`（入れ子の列挙）にする。port の戻り値をこれらの型にし、腐敗防止層の実装が直接変換する。`order/application/model` は 5 から 9 になる | `main/module/order/application/model/` | 統合テスト（`Admin*`、`Member*`、`Shipment*` の API のテスト） |
 | 11 | storefront：`CartView`、`CatalogCategory`、`ProductCondition`（port から）と `ProductSummaryView`、`ProductDetailView`（application の直下から）を `application/model/` に移す。名前は変えない。port の戻り値をこの型にする。`CatalogProduct`、`CatalogProductDetail` は port に残す | `main/module/storefront/application/model/` | `StorefrontMapperTest`、`OrderApiDirectoryTest`、統合テスト |
 | 12 | reporting：キャンセルの種類は既存の `ReportCancellationKind` で持つ。注文時の性別は新しい列挙 `ReportBuyerGender`（MALE、FEMALE、OTHER、UNDISCLOSED）で持ち、`ReportGender.of` を列挙の switch 式にする。状態の履歴の `from`、`to` は、`ReportOrderStatus` と `DeliveryStatus` が実装する sealed interface `HistoryStatus` で持つ。※1 | `main/module/reporting/domain/`、`main/module/reporting/infrastructure/persistence/` | 新しい単体テスト、`EnumColumnConstraintTest`、段階 2 の最後の `./gradlew pitest` |
-| 13 | バックエンドの書き方 第 1.1 節「公開の API」と規則の一覧の記述を、今の実装に合わせる。今の実装では、`api/` の `@Component` のクラスが application の service に委譲する。`ModuleRoleTest.apiInterfacesAreImplementedInApi` を削除する | [バックエンドの書き方](../../rules/backend-coding.md) 第 1.1 節、`test/architecture/ModuleRoleTest.java` | 構成の検査 |
+| 13 | バックエンドの書き方 第 1.1 節「公開の API」と規則の一覧の記述を、今の実装に合わせる。今の実装では、`api/` の `@Component` のクラスが application の service に委譲する。`ModuleRoleTest.apiInterfacesAreImplementedInApi` を削除する | [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.1 節、`test/architecture/ModuleRoleTest.java` | 構成の検査 |
 | 14 | モジュールごとに繰り返す規則のうち、層を持たないモジュールで対象が 0 件になる 3 つの規則は、その層を持つモジュールだけで繰り返し、`allowEmptyShould` を外す ※2。他の 5 つも外す。外せない規則があれば、実装役が理由を報告し、spec 担当のセッションが plan に書く | `test/architecture/ModuleRoleTest.java`、`ModuleStructureTest.java`、`SchemaOwnershipTest.java` | 構成の検査。外した規則の対象が 0 件なら失敗する |
-| 15、16 | `ModuleStructureTest` に 2 つのテストメソッドを追加する。application は `api` に依存しない。presentation と `application.model` は `application.port` に依存しない。層の依存の表の presentation の行を「application（`port/` を除く）」に修正する | `test/architecture/ModuleStructureTest.java`、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.1 節 | 構成の検査。一時的に違反を入れて失敗することを確認する |
+| 15、16 | `ModuleStructureTest` に 2 つのテストメソッドを追加する。application は `api` に依存しない。presentation と `application.model` は `application.port` に依存しない。層の依存の表の presentation の行を「application（`port/` を除く）」に修正する | `test/architecture/ModuleStructureTest.java`、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.1 節 | 構成の検査。一時的に違反を入れて失敗することを確認する |
 
 ※1：DB の文字列との変換は `infrastructure/persistence/` だけに置く。先に `[テスト]` で、`ReportGender.of` の全ての値の対応と `StatusHistoryEntry` の判定の単体テストを追加する。理由：単体テストがなく、列挙の対応を変えるため、mutation の基準（90.2、許容 0）を下回るおそれがあるため。
 
@@ -133,7 +133,7 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 
 | DC | 決定 | 置き場所 | 確認方法 |
 |----|------|----------|----------|
-| 17、18 | `ModuleStructureTest` に規則を追加する。他のモジュールの `api` を使うのは `infrastructure.directory` だけにする。許可の一覧は 1 件で、`member.api.CurrentMemberIds` を presentation から使う。規則はモジュールごとに作り、対象を「そのモジュールの `api` を、外のクラスが使う依存」と記述する。バックエンドの書き方 第 1.3 節に同じ例外を書く | `test/architecture/ModuleStructureTest.java`、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.3 節 | 構成の検査。許可の一覧にない使い方を一時的に置いて失敗することを確認する |
+| 17、18 | `ModuleStructureTest` に規則を追加する。他のモジュールの `api` を使うのは `infrastructure.directory` だけにする。許可の一覧は 1 件で、`member.api.CurrentMemberIds` を presentation から使う。規則はモジュールごとに作り、対象を「そのモジュールの `api` を、外のクラスが使う依存」と記述する。バックエンドの書き方 第 1.3 節に同じ例外を書く | `test/architecture/ModuleStructureTest.java`、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.3 節 | 構成の検査。許可の一覧にない使い方を一時的に置いて失敗することを確認する |
 | 19 | 腐敗防止層の実装の public を外す（cart の `CatalogApiDirectory`、`StockApiDirectory`、storefront の `CatalogApiDirectory`、`OrderApiDirectory`、`StockApiDirectory`）。規則：`*Directory` を実装する `infrastructure.directory` のクラスは public にしない。`TaxRateScheduleCache` は Directory を実装しないので対象外にする。その `evict` は #85 で扱う | `main/module/cart/infrastructure/directory/`、`main/module/storefront/infrastructure/directory/`、`test/architecture/NamingTest.java` | 構成の検査。public な例のクラスで検出することを恒久のテストにする |
 | 21 | `ShippingProperties` を出荷の infrastructure に、`NotificationProperties` を `infrastructure/mail/` に移す。`ShopProperties` は application に残す。理由：使う層が application になるため（DC-155-23） | `main/module/shipping/infrastructure/`、`main/module/notification/infrastructure/mail/` | 起動のテスト（`RequiredPropertiesTest`）、統合テスト |
 | 22 | `StorefrontConfig` を `storefront/infrastructure/` に移す。バックエンドの書き方 第 6.1 節に「モジュールの `@Configuration` は infrastructure（またはその下）に置く」を追加し、`ConfigurationPropertiesTest` に検査を追加する | `main/module/storefront/infrastructure/`、`test/architecture/ConfigurationPropertiesTest.java` | 構成の検査。infrastructure の外に置いた例で失敗することを確認する |
@@ -183,12 +183,12 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 | DC | 決定 | 置き場所 | 確認方法 |
 |----|------|----------|----------|
 | 33 | catalog の application を、商品、バリアント、画像、公開の 7 クラス（`ProductLoader` は package-private のまま）と、カテゴリの 2 クラスに分ける。直下には `OrderableVariantQueryService`、`StoreProductQueryService` の 2 つが残る | `main/module/catalog/application/product/`、`main/module/catalog/application/category/` | `./gradlew check` |
-| 34 | 利用者に確認する（第 10 節）。推奨は、在庫をレベル A のまま、設計書を今のコードに合わせ、レベル A の定義に「整合性を DB の更新の条件で保つモジュールは、集約のクラスを持たなくてよい」の例外を書くことである。在庫の設計書の修正は第 7 節にある。集約のクラスは作らない | [在庫モジュール](../../design/modules/inventory.md)、[バックエンドのアーキテクチャ](../../design/backend-architecture.md) 第 2 節、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.1 節 | レビュー |
+| 34 | 利用者に確認する（第 10 節）。推奨は、在庫をレベル A のまま、設計書を今のコードに合わせ、レベル A の定義に「整合性を DB の更新の条件で保つモジュールは、集約のクラスを持たなくてよい」の例外を書くことである。在庫の設計書の修正は第 7 節にある。集約のクラスは作らない | [在庫モジュール](../../../../design/modules/inventory.md)、[バックエンドのアーキテクチャ](../../../../design/backend-architecture.md) 第 2 節、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.1 節 | レビュー |
 | 35 | `StockReservationService.sellableQuantities` を `StockQueryService` に移す（名前は変えない）。`StockAvailabilityApi`、`StockReservationApi` の委譲先を替える | `main/module/inventory/application/` | `StockReservationApiTest`、`StockOrderApiTest` |
 | 36 | 商品の参照の service に、バージョンなしで画像を加えられるか確認する操作を追加し、商品の取り出しにバージョンなしの取り出しを追加する。画像のアップロードの要求は、それを使い、集約を直接読まない。トランザクションの注釈を外す | `main/module/catalog/application/product/` | `ProductImageApiTest`（404、20 枚の確認は変わらない） |
 | 37 | 在庫に、用途の名前の新しい service `StockRegistrationService`（在庫の作成と削除）を作り、商品カタログのイベントのリスナーはそれに委譲する | `main/module/inventory/application/` | `CatalogEventHandlerTest` |
 | 38、39 | 全てのモジュールのエラーの定義を `domain/` の直下に置く。catalog の 2 つ、inventory、order、payment、tax の 6 つを移す。catalog は集約ごとの 2 つのままにし、規則の図の「エラーの定義」を「集約ごとに分けてよい」と修正する。order の `BuyerProfile`、`Cancellation`（値のパッケージから集約の列挙を使う 2 つ）を `domain/order/` に移し、`domain/order` と値のパッケージの循環をなくす ※1 | `main/module/*/domain/`、`main/module/order/domain/order/` | `./gradlew check`、段階 5 の最後の `./gradlew pitest` |
-| 40 | バックエンドの書き方 第 1.5 節に、税込価格の SQL の計算の例外を書く。理由：絞り込みと並べ替えを DB で行うために必要で、一致を確認するテストが既にあるため。コードは変えない | [バックエンドの書き方](../../rules/backend-coding.md) 第 1.5 節 | レビュー |
+| 40 | バックエンドの書き方 第 1.5 節に、税込価格の SQL の計算の例外を書く。理由：絞り込みと並べ替えを DB で行うために必要で、一致を確認するテストが既にあるため。コードは変えない | [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.5 節 | レビュー |
 | 41 | reporting の domain を分ける。注文の写しと状態の履歴は `domain/snapshot/`（8）、集計と期間は `domain/sales/`（9）、直下に `ReportingErrorCode`（1）。パッケージの名前はこの 2 つに確定する。バックエンドの書き方 第 1.4 節の表から `reporting.domain` の行を削除し、レベル B でもクラスが多いときは用途で分けてよいことを規則に書く ※2。段階 2 の reporting の列挙の変更の後に行う | `main/module/reporting/domain/snapshot/`、`main/module/reporting/domain/sales/` | `./gradlew check`、段階 5 の最後の `./gradlew pitest` |
 | 42 | `[リスク]` 店舗の service にクラス全体の読み取り専用のトランザクションを付ける。全ての経路が既に読み取り専用であることを、レビューで確認する | `main/module/storefront/application/StorefrontService.java` | 統合テスト、高性能のレビュー |
 
@@ -238,8 +238,8 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 | 47 | AC-84 のテストを、新しい非トランザクションの統合テストのクラスに移す。カートの変更の API（数量を減らす `PUT`）を呼び、`AsyncEvents.awaitHandled` でカートの変更のイベントの処理を待ってから、販売可能数が戻ることを確認する。品目の追加の後も、注文手続きを始める前にイベントの処理を待つ。理由：後から動いた解除で引当が消えないため。`CheckoutApiTest` から AC-84 のテストと `CheckoutService` の注入を削除する | `it/module/order/presentation/CheckoutCartChangeApiTest.java` | 新しいテスト。一時的に期待値を変えて失敗することを確認する |
 | 48 | AC-128 のテスト：持ち主の `sub` を変数に持ち、会員の表から会員 ID を引いて、注文の会員 ID と等しいことを確認する | `it/module/order/presentation/MemberOrderApiTest.java` | 一時的に期待値を変えて失敗することを確認する |
 
-- 2 つとも、今のコードで通るテストの強化である。一時的に期待値を変えて、失敗することを確認する（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
-- 新しいテストは、作った商品・在庫・カートなどを `@AfterEach` で削除する。理由：このテストはコミットするので、公開した商品が残ると、店舗の商品の一覧の件数を確認する他の統合テスト（`StorefrontApiTest` など）が失敗するため。[テストの書き方](../../rules/test-writing.md) 第 3.1 節は後処理を不要としているが、禁じてはいない（段階 1 のレビューで後処理を外し、段階 3 で戻した）。`CheckoutApiTest` の補助（商品と在庫の作成、注文手続きの開始）を複製するか、共通のクラスにする。実装役が選ぶ。
+- 2 つとも、今のコードで通るテストの強化である。一時的に期待値を変えて、失敗することを確認する（[開発の進め方](../../../../rules/workflow.md) 第 2.1 節）。
+- 新しいテストは、作った商品・在庫・カートなどを `@AfterEach` で削除する。理由：このテストはコミットするので、公開した商品が残ると、店舗の商品の一覧の件数を確認する他の統合テスト（`StorefrontApiTest` など）が失敗するため。[テストの書き方](../../../../rules/test-writing.md) 第 3.1 節は後処理を不要としているが、禁じてはいない（段階 1 のレビューで後処理を外し、段階 3 で戻した）。`CheckoutApiTest` の補助（商品と在庫の作成、注文手続きの開始）を複製するか、共通のクラスにする。実装役が選ぶ。
 - AC 一覧は変えない（DN-155-3）。AC-84 のテストの列に新しいクラスを追加する。
 
 呼び出し元とテスト：
@@ -255,20 +255,20 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 
 | 文書 | 修正 | 段階 |
 |------|------|------|
-| [共通コード・ログ・可観測性](../../design/common.md) | 一覧の抜け 3 つ、移したクラスの行、イベントの置き場所、調査のメモの置き換え（DC-155-43） | 1 |
-| [共通コード・ログ・可観測性](../../design/common.md) | 期限切れの片付けの共通のクラスの行 | 4 |
-| [バックエンドの書き方](../../rules/backend-coding.md) 第 1.1 節、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.4 節、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.5 節、[バックエンドの書き方](../../rules/backend-coding.md) 第 2.1 節、規則の一覧、依存の表 | 段階 1 の変更：domain の直下の規則、`config/security` と `catalog.infrastructure.persistence` の行、共通コードの基準、`MeController` の例外、共通コードと設定の依存の規則 | 1 |
-| [バックエンドの書き方](../../rules/backend-coding.md) 第 1.1 節、規則の一覧、依存の表 | 公開の API の記述（DC-155-13）、application と `api`、presentation と `port` の規則（DC-155-15、16） | 2 |
-| [バックエンドの書き方](../../rules/backend-coding.md) 第 1.4 節 | `reporting.domain` の数を 16 から 18 に修正する（段階 5 で行を削除する） | 2 |
-| [決済モジュール](../../design/modules/payment.md) の「構成」 | `model/` の記述を、コードの `model/view/` に合わせる（DC-155-45） | 2 |
-| [カートモジュール](../../design/modules/cart.md) の「構成」と公開の表、[税モジュール](../../design/modules/tax.md) の公開の表、`tax/api/package-info.java` | カートの公開の API の利用者から店舗を除いて注文だけにし、税の公開の API の利用者に注文を追加する（DC-155-45） | 2 |
-| [バックエンドの書き方](../../rules/backend-coding.md) 第 1.3 節、[バックエンドの書き方](../../rules/backend-coding.md) 第 6.1 節 | `api` の例外の許可、設定のクラスの層、presentation が設定の型を受けないこと | 3 |
-| [バックエンドの書き方](../../rules/backend-coding.md) 第 1.1 節、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.4 節、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.5 節、規則の図 | 在庫の例外（DC-155-34）、エラーの定義、reporting の行の削除と用途で分けてよいこと、税込価格の例外 | 5 |
+| [共通コード・ログ・可観測性](../../../../design/common.md) | 一覧の抜け 3 つ、移したクラスの行、イベントの置き場所、調査のメモの置き換え（DC-155-43） | 1 |
+| [共通コード・ログ・可観測性](../../../../design/common.md) | 期限切れの片付けの共通のクラスの行 | 4 |
+| [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.1 節、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.4 節、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.5 節、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 2.1 節、規則の一覧、依存の表 | 段階 1 の変更：domain の直下の規則、`config/security` と `catalog.infrastructure.persistence` の行、共通コードの基準、`MeController` の例外、共通コードと設定の依存の規則 | 1 |
+| [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.1 節、規則の一覧、依存の表 | 公開の API の記述（DC-155-13）、application と `api`、presentation と `port` の規則（DC-155-15、16） | 2 |
+| [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.4 節 | `reporting.domain` の数を 16 から 18 に修正する（段階 5 で行を削除する） | 2 |
+| [決済モジュール](../../../../design/modules/payment.md) の「構成」 | `model/` の記述を、コードの `model/view/` に合わせる（DC-155-45） | 2 |
+| [カートモジュール](../../../../design/modules/cart.md) の「構成」と公開の表、[税モジュール](../../../../design/modules/tax.md) の公開の表、`tax/api/package-info.java` | カートの公開の API の利用者から店舗を除いて注文だけにし、税の公開の API の利用者に注文を追加する（DC-155-45） | 2 |
+| [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.3 節、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 6.1 節 | `api` の例外の許可、設定のクラスの層、presentation が設定の型を受けないこと | 3 |
+| [バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.1 節、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.4 節、[バックエンドの書き方](../../../../rules/backend-coding.md) 第 1.5 節、規則の図 | 在庫の例外（DC-155-34）、エラーの定義、reporting の行の削除と用途で分けてよいこと、税込価格の例外 | 5 |
 | 各モジュールの設計書の「構成」 | 段階ごとの変更（order、cart、media、catalog、storefront、reporting、shipping、notification、inventory、payment、tax）。DC-155-44、45 は段階 6 で全体を照合する | 2〜6 |
-| [在庫モジュール](../../design/modules/inventory.md) | 「在庫（集約）」の記述（DC-155-34 の推奨の案） | 5 |
-| [バックエンドのアーキテクチャ](../../design/backend-architecture.md) 第 2 節、第 8 節 | レベル A の例外、mock とテスト専用の記録の記述 | 4、5 |
-| [AC 一覧](../../design/acceptance-criteria.md) | テストの列（`ac-check.mjs --write`）。AC は変えない | 1、2、5 |
-| [用語集](../../design/glossary.md) | 追加する語はない。追加するクラスは型の名前で、業務の用語でないため。名前が変わるものがないことを `glossary-ids.mjs` で確認する | 6 |
+| [在庫モジュール](../../../../design/modules/inventory.md) | 「在庫（集約）」の記述（DC-155-34 の推奨の案） | 5 |
+| [バックエンドのアーキテクチャ](../../../../design/backend-architecture.md) 第 2 節、第 8 節 | レベル A の例外、mock とテスト専用の記録の記述 | 4、5 |
+| [AC 一覧](../../../../design/acceptance-criteria.md) | テストの列（`ac-check.mjs --write`）。AC は変えない | 1、2、5 |
+| [用語集](../../../../design/glossary.md) | 追加する語はない。追加するクラスは型の名前で、業務の用語でないため。名前が変わるものがないことを `glossary-ids.mjs` で確認する | 6 |
 
 - 並行する #156 が、共通コードの設計書とモジュールの設計書を変えうる。同じ行を触るので、後でマージする側が `develop` を取り込んで解消する。
 - 節の番号を変える文書の移動はない。
@@ -288,7 +288,7 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 - 段階 5 は段階 4 の後に行い、並行しない。理由：在庫の設計書とバックエンドのアーキテクチャを、段階 4 と段階 5 の両方が変えるため。
 - 段階 5 の reporting の分割は、段階 2 の reporting の列挙の変更の後に行う。
 - 各段階の最後のタスクは、段階のレビュー（profile「厚め」）と、全体の検査の実行である。検査は第 9 節にある。domain に触れた段階（1、2、5）は `./gradlew pitest` も実行する。
-- 段階 6 の内容は上の表のとおりである。pull request の作成はタスクにしない（[開発の進め方](../../rules/workflow.md) 第 4.2 節）。
+- 段階 6 の内容は上の表のとおりである。pull request の作成はタスクにしない（[開発の進め方](../../../../rules/workflow.md) 第 4.2 節）。
 - アーカイブ先は `docs/specs/archive/1to10/155-backend-structure/` である。
 
 ## 9. 確認の方法

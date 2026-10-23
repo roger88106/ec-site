@@ -1,8 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { chooseCart, shouldMergeCart } from '@/lib/cartChoice'
-
-/** Cookie のカート ID */
-const COOKIE_CART_ID = '11111111-1111-4111-8111-111111111111'
+import { COOKIE_CART_ID } from '@/test/fixtures'
 
 describe('使うカート', () => {
   test('AC-120 ログインしていなければ、Cookie のカートを使う', () => {

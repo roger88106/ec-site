@@ -1,4 +1,4 @@
-import { formatYen } from '@ec-site/shared/lib/format'
+import { formatNumber, formatYen } from '@ec-site/shared/lib/format'
 import { keepPreviousData } from '@tanstack/react-query'
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from 'recharts'
 import { useTranslations } from 'use-intl'
@@ -13,7 +13,6 @@ import { ReportPage } from '@/features/report/components/ReportPage'
 import { variantSalesLabel } from '@/features/report/labels'
 import { CALENDAR_PRESETS } from '@/features/report/period'
 import type { ReportCondition } from '@/features/report/reportCondition'
-import { formatNumber } from '@/lib/format'
 
 /** バリアントの売れ行き。商品を選んでから出す。条件は URL に持つ */
 export function VariantSalesPage() {

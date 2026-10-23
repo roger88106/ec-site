@@ -2,59 +2,39 @@ import { describe, expect, test } from 'vitest'
 import type { Order } from '@/api/types'
 import OrderPage from '@/app/orders/[orderId]/page'
 import { signInAs } from '@/test/auth'
-import { ORDER_ID } from '@/test/fixtures'
+import { ORDER_ID, order } from '@/test/fixtures'
 import { renderMarkup } from '@/test/render'
 import { http, server } from '@/test/server'
 
 /** 受付済みの注文（キャンセルを申請できる。支払の欄は出さない） */
-const ACCEPTED: Order = {
-  id: ORDER_ID,
-  orderNumber: '20261010-482915',
-  orderedAt: '2026-10-10T03:00:00Z',
-  status: 'ACCEPTED',
-  lines: [],
-  amounts: { itemsTotal: 0, shippingFee: 0, total: 0, taxes: [] },
-  email: 'member@example.com',
-  shippingAddress: {
-    name: '山田 太郎',
-    postalCode: '1000001',
-    prefectureCode: '13',
-    prefectureName: '東京都',
-    municipalityCode: '13101',
-    municipalityName: '千代田区',
-    address: '千代田 1-1',
-    phone: '0312345678',
-  },
-  actions: { requestCancellation: true, pay: false },
-}
+const ACCEPTED = order()
 
 /** 支払待ちの注文（支払える。キャンセルの欄は出さない） */
-const PENDING_PAYMENT: Order = {
-  ...ACCEPTED,
+const PENDING_PAYMENT = order({
   status: 'PENDING_PAYMENT',
   paymentDeadline: '2026-10-10T15:35:00Z',
   actions: { requestCancellation: false, pay: true },
-}
+})
 
 /** 出荷済みの注文（キャンセルの欄を出さない） */
-const SHIPPED: Order = { ...ACCEPTED, status: 'SHIPPED', actions: { requestCancellation: false, pay: false } }
+const SHIPPED = order({ status: 'SHIPPED', actions: { requestCancellation: false, pay: false } })
 
 /**
  * 注文の画面を HTML にする（会員がログインしている）。
  *
- * @param order 注文の API が返す注文
+ * @param apiOrder 注文の API が返す注文
  * @returns HTML の文字
  */
-async function renderOrderPage(order: Order): Promise<string> {
+async function renderOrderPage(apiOrder: Order): Promise<string> {
   signInAs()
   server.use(
-    http.get('/orders/{orderId}', ({ response }) => response(200).json(order)),
+    http.get('/orders/{orderId}', ({ response }) => response(200).json(apiOrder)),
     http.get('/shop', ({ response }) => response(200).json({ contactEmail: 'support@example.com' })),
   )
   const page = await OrderPage({
     params: Promise.resolve({ orderId: ORDER_ID }),
     searchParams: Promise.resolve({}),
-  } as Parameters<typeof OrderPage>[0])
+  })
   return renderMarkup(page)
 }
 

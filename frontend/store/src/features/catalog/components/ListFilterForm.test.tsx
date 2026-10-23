@@ -1,5 +1,4 @@
 import { describe, expect, test } from 'vitest'
-import { CategoryList } from '@/features/catalog/components/CategoryList'
 import { ListFilterForm } from '@/features/catalog/components/ListFilterForm'
 import { renderMarkup } from '@/test/render'
 
@@ -44,26 +43,5 @@ describe('商品一覧の絞り込み', () => {
     )
 
     expect(selectedOptions(html)).toEqual([':すべて', 'newest:新着順'])
-  })
-})
-
-describe('カテゴリの一覧', () => {
-  test('最上位と、その子を並べ、それぞれ絞り込んだ商品一覧へリンクする', () => {
-    const html = renderMarkup(
-      <CategoryList
-        categories={[
-          { id: CLOTHES, name: '衣類', children: [{ id: SHIRTS, name: 'シャツ', children: [] }] },
-          { id: '00000000-0000-0000-0000-000000000303', name: '食器', children: [] },
-        ]}
-      />,
-    )
-
-    expect(html).toContain(`href="/products?categoryId=${CLOTHES}">衣類</a>`)
-    expect(html).toContain(`href="/products?categoryId=${SHIRTS}">シャツ</a>`)
-    expect(html).toContain('食器')
-  })
-
-  test('カテゴリがなければ、何も出さない', () => {
-    expect(renderMarkup(<CategoryList categories={[]} />)).toBe('')
   })
 })

@@ -1,13 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ApiError, errorMessage, fieldErrors, toApiError } from '@/api/errors'
-
-/** Problem Details の応答の本文を作る */
-const problem = (status: number, errorCode: string, message: string) => ({
-  status,
-  errorCode,
-  message,
-  traceId: 'trace',
-})
+import { problem } from '@/test/server'
 
 describe('API のエラー', () => {
   test('エラーレスポンスの message をそのまま出す', () => {

@@ -31,6 +31,7 @@ vi.mock('next-intl/server', async () => {
   const { messages } = await import('@/i18n/messages')
   return {
     getTranslations: async (namespace?: string) =>
+      // 名前空間は文字だが、型は messages にある名前空間だけを受け付けるため、型を合わせる
       createTranslator({ locale: LOCALE, messages, namespace: namespace as never }),
   }
 })
@@ -60,6 +61,8 @@ afterEach(() => {
   cleanup()
   // テストで差し替えた関数（console.error など）を戻す
   vi.restoreAllMocks()
+  // テストで差し替えた環境変数を戻す
+  vi.unstubAllEnvs()
   server.resetHandlers()
   const requests = unhandledRequests.splice(0)
   if (requests.length > 0) {

@@ -1,11 +1,21 @@
 import { NextRequest } from 'next/server'
 import { describe, expect, test } from 'vitest'
 import { config, proxy } from '@/proxy'
+import { TRACEPARENT } from '@/test/fixtures'
 
-/** proxy を呼ぶ（Auth.js のセッションの確認は、テストでは置き換えてある） */
-async function runProxy(url: string): Promise<Response> {
-  const handler = proxy as unknown as (request: NextRequest) => Response | Promise<Response>
-  return handler(new NextRequest(url))
+/**
+ * proxy を呼ぶ（Auth.js のセッションの確認は、テストでは置き換えてある）。
+ *
+ * @param url  要求の URL
+ * @param init 要求のヘッダーなど
+ */
+async function runProxy(url: string, init?: ConstructorParameters<typeof NextRequest>[1]): Promise<Response> {
+  // auth(処理) の型は、ルートハンドラーの形（第 2 引数に params）になる。置き換えた auth は処理をそのまま返すので、第 2 引数は使われない
+  const response = await proxy(new NextRequest(url, init), { params: Promise.resolve({}) })
+  if (!response) {
+    throw new Error('proxy が応答を返さなかった')
+  }
+  return response
 }
 
 describe('要求ごとの確認（proxy）', () => {
@@ -26,11 +36,9 @@ describe('要求ごとの確認（proxy）', () => {
   })
 
   test('要求がすでに正しい traceparent を持っていれば、その追跡の ID を引き継ぐ', async () => {
-    const incoming = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
-    const handler = proxy as unknown as (request: NextRequest) => Response | Promise<Response>
-    const response = await handler(
-      new NextRequest('http://localhost:3000/products', { headers: { traceparent: incoming } }),
-    )
+    const incoming = TRACEPARENT
+
+    const response = await runProxy('http://localhost:3000/products', { headers: { traceparent: incoming } })
 
     expect(response.headers.get('x-middleware-request-traceparent')).toBe(incoming)
   })

@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 
 /** URL に条件がないときの期間 */
@@ -8,7 +8,7 @@ const DEFAULT_PERIOD = { from: '2026-04-01', to: '2027-03-31' }
 const PRODUCT_ID = '00000000-0000-0000-0000-000000002001'
 
 describe('レポートの条件と URL の検索パラメータ', () => {
-  it('URL に条件がなければ、既定の期間、月、注文基準、全商品、消費税・送料を含む', () => {
+  test('URL に条件がなければ、既定の期間、月、注文基準、全商品、消費税・送料を含む', () => {
     expect(parseCondition(new URLSearchParams(), DEFAULT_PERIOD)).toEqual({
       from: '2026-04-01',
       to: '2027-03-31',
@@ -20,7 +20,7 @@ describe('レポートの条件と URL の検索パラメータ', () => {
     })
   })
 
-  it('URL の条件を読む', () => {
+  test('URL の条件を読む', () => {
     const params = new URLSearchParams(
       `from=2025-01-01&to=2025-12-31&granularity=QUARTER&basis=SHIPMENT&productId=${PRODUCT_ID}&excludeTax=true&excludeShipping=true`,
     )
@@ -36,7 +36,7 @@ describe('レポートの条件と URL の検索パラメータ', () => {
     })
   })
 
-  it('正しくない値は無視して既定にする', () => {
+  test('正しくない値は無視して既定にする', () => {
     const params = new URLSearchParams(
       'from=2025-02-30&to=yesterday&granularity=DAY&basis=PAID&productId=abc&excludeTax=yes&excludeShipping=1',
     )
@@ -52,7 +52,7 @@ describe('レポートの条件と URL の検索パラメータ', () => {
     })
   })
 
-  it('URL には期間と、既定でない条件だけを書く', () => {
+  test('URL には期間と、既定でない条件だけを書く', () => {
     const condition: ReportCondition = {
       from: '2026-04-01',
       to: '2027-03-31',
@@ -78,7 +78,7 @@ describe('レポートの条件と URL の検索パラメータ', () => {
     )
   })
 
-  it('URL に書いた条件を読むと、同じ条件に戻る', () => {
+  test('URL に書いた条件を読むと、同じ条件に戻る', () => {
     const condition: ReportCondition = {
       from: '2025-10-01',
       to: '2025-10-31',

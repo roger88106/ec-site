@@ -16,6 +16,16 @@ import type { ReportCondition } from '@/features/report/reportCondition'
 /** 商品の選択肢に出す商品の数（商品の一覧の API の 1 ページの上限） */
 const PRODUCT_LIMIT = parameters.listProducts.size.maximum
 
+/** レポートの条件の入力に出す項目の指定（レポートの画面ごとに違う） */
+export type ReportConditionItems = {
+  /** 区切りを選ぶか（売上の推移だけ） */
+  granularity?: boolean
+  /** 送料を除くかを選ぶか（バリアントの売れ行きは送料を含めないので選ばない） */
+  excludeShipping?: boolean
+  /** 商品を必ず選ぶか（バリアントの売れ行き） */
+  productRequired?: boolean
+}
+
 /**
  * レポートの条件の入力（管理画面の構成 第 3 節）。「表示する」で URL に反映する。<br />
  * 期間は、選択肢を選ぶと始まりと終わりの日を埋める。日付を直接入れてもよい。
@@ -36,14 +46,11 @@ export function ReportConditionForm({
   granularity = false,
   excludeShipping = true,
   productRequired = false,
-}: {
+}: ReportConditionItems & {
   condition: ReportCondition
   onApply: (condition: ReportCondition) => void
   presets: readonly PeriodPreset[]
   fiscalYearStartMonth: number
-  granularity?: boolean
-  excludeShipping?: boolean
-  productRequired?: boolean
 }) {
   const t = useTranslations('report.condition')
   // 粒度と売上の数え方の選択肢

@@ -1,30 +1,14 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
-import type { Variant, VariantAxis } from '@/api/types'
+import type { Variant } from '@/api/types'
 import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
+import { button } from '@/test/elements'
+import { VARIANT_AXES, variant } from '@/test/fixtures'
 import { renderInBrowser } from '@/test/render'
-
-/** 色とサイズの軸 */
-const AXES: VariantAxis[] = [
-  { name: '色', values: ['赤', '青'] },
-  { name: 'サイズ', values: ['M', 'L'] },
-]
 
 /** 商品の画像。先頭が代表画像 */
 const IMAGE_URLS = ['http://cdn.test/1.webp', 'http://cdn.test/2.webp']
-
-/** 色とサイズの値を持つバリアント。在庫があり、販売停止でない */
-function variant(color: string, size: string, overrides: Partial<Variant> = {}): Variant {
-  return {
-    id: `variant-${color}-${size}`,
-    axisValues: [color, size],
-    inStock: true,
-    salesSuspended: false,
-    imageUrl: null,
-    ...overrides,
-  }
-}
 
 /** 赤 L は専用の画像を持ち、赤 M は画像の指定がない。青 M は在庫切れ、青 L は販売停止 */
 const VARIANTS = [
@@ -37,13 +21,18 @@ const VARIANTS = [
 /** 画像、バリアントの選択、カートに入れる操作を描く */
 function renderShowcase() {
   return renderInBrowser(
-    <ProductShowcase axes={AXES} header={<h1>T シャツ</h1>} imageUrls={IMAGE_URLS} variants={VARIANTS} />,
+    <ProductShowcase axes={VARIANT_AXES} header={<h1>T シャツ</h1>} imageUrls={IMAGE_URLS} variants={VARIANTS} />,
   )
 }
 
-/** 押せるかどうかと、押している状態 */
-function button(name: string): HTMLButtonElement {
-  return screen.getByRole('button', { name }) as HTMLButtonElement
+/** 軸のない商品の、ただ 1 つのバリアント。既定は在庫があり、販売停止でない */
+function onlyVariant(overrides: Partial<Variant> = {}): Variant {
+  return variant('', '', { id: 'variant-only', axisValues: [], ...overrides })
+}
+
+/** 軸のない商品を描く */
+function renderWithoutAxes(variants: Variant[]) {
+  return renderInBrowser(<ProductShowcase axes={[]} header={<h1>マグカップ</h1>} imageUrls={[]} variants={variants} />)
 }
 
 /** 大きな画像の URL */
@@ -78,15 +67,8 @@ describe('商品の詳細の画像', () => {
     expect(button('画像 1を見る').getAttribute('aria-pressed')).toBe('false')
   })
 
-  test('軸のない商品は、画像がなければ代わりの図を出し、小さな画像の並びを出さない', () => {
-    renderInBrowser(
-      <ProductShowcase
-        axes={[]}
-        header={<h1>マグカップ</h1>}
-        imageUrls={[]}
-        variants={[{ id: 'variant-only', axisValues: [], inStock: true, salesSuspended: false, imageUrl: null }]}
-      />,
-    )
+  test('軸のない商品は、画像がなければ商品の画像も小さな画像の並びも出さない', () => {
+    renderWithoutAxes([onlyVariant()])
 
     expect(screen.queryByRole('img', { name: '商品の画像' })).toBeNull()
     expect(screen.queryByRole('button', { name: /を見る$/ })).toBeNull()
@@ -113,29 +95,13 @@ describe('商品の詳細のカートに入れる操作', () => {
     ['販売停止', { salesSuspended: true }],
   ])('DC-135-27 買えないバリアント（%s）のときは、「カートに入れる」を押せない', (_name, overrides) => {
     // 軸のある商品は、買えない値を選べないので、バリアントが決まる軸のない商品で確認する
-    renderInBrowser(
-      <ProductShowcase
-        axes={[]}
-        header={<h1>マグカップ</h1>}
-        imageUrls={[]}
-        variants={[
-          { id: 'variant-only', axisValues: [], inStock: true, salesSuspended: false, imageUrl: null, ...overrides },
-        ]}
-      />,
-    )
+    renderWithoutAxes([onlyVariant(overrides)])
 
     expect(button('カートに入れる').disabled).toBe(true)
   })
 
   test('軸のない商品は、ただ 1 つのバリアントをすぐカートに入れられる', () => {
-    renderInBrowser(
-      <ProductShowcase
-        axes={[]}
-        header={<h1>マグカップ</h1>}
-        imageUrls={[]}
-        variants={[{ id: 'variant-only', axisValues: [], inStock: true, salesSuspended: false, imageUrl: null }]}
-      />,
-    )
+    renderWithoutAxes([onlyVariant()])
 
     expect(button('カートに入れる').disabled).toBe(false)
   })

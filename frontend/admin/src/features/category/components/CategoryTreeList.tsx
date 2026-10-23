@@ -31,8 +31,13 @@ export function CategoryTreeList({
   return (
     <ul className={parentId === null ? 'space-y-1' : 'mt-1 space-y-1 border-l pl-6'}>
       {nodes.map((node, index) => (
-        <li key={node.id}>
-          <div className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted">
+        <li aria-label={node.name} key={node.id}>
+          {/* biome-ignore lint/a11y/useSemanticElements: 行は入力のまとまりでないので fieldset にしない。行に名前を付ける（支援技術向け。見た目は変えない） */}
+          <div
+            aria-label={node.name}
+            className="flex items-center gap-2 rounded-md px-2 py-1 hover:bg-muted"
+            role="group"
+          >
             <span className="flex-1">{node.name}</span>
             <Button
               aria-label={tApp('moveUp', { name: node.name }) /* 上へ */}

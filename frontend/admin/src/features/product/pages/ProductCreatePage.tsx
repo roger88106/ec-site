@@ -13,7 +13,7 @@ import { ErrorMessage } from '@/components/ErrorMessage'
 import { PageHeader } from '@/components/PageHeader'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldDescription, FieldError, FieldLabel } from '@/components/ui/field'
-import { ProductFields } from '@/features/product/components/ProductFields'
+import { ProductFields, productFieldConstraints } from '@/features/product/components/ProductFields'
 import {
   EMPTY_PRODUCT_FIELDS,
   isProductFieldsFilled,
@@ -23,11 +23,7 @@ import {
 } from '@/features/product/product'
 
 /** 商品の項目の入力の制約（登録のリクエストの制約） */
-const PRODUCT_FIELD_CONSTRAINTS = {
-  nameMaxLength: schemas.CreateProductRequest.name.maxLength,
-  descriptionMaxLength: schemas.CreateProductRequest.description.maxLength,
-  priceMinimum: schemas.CreateProductRequest.priceExclTax.minimum,
-}
+const PRODUCT_FIELD_CONSTRAINTS = productFieldConstraints(schemas.CreateProductRequest)
 
 /** バリアント軸の上限 */
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems

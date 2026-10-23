@@ -1,12 +1,18 @@
+import type { components } from '@/api/generated/admin'
 import type {
+  CategoryNode,
   OrderActions,
   OrderDetail,
   OrderSummary,
   ProductActions,
   ProductDetail,
+  ProductSummary,
   TaxCategory,
   Variant,
 } from '@/api/types'
+
+/** 在庫数の応答（バリアントの在庫数） */
+type Stock = components['schemas']['Stock']
 
 /**
  * 結合テストで API の応答に使うデータ（管理画面の構成 第 9 節）。<br />
@@ -150,4 +156,55 @@ export function orderDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
     },
     ...overrides,
   }
+}
+
+/** 一覧の公開中の商品 1 件（バリアント 2 つ） */
+export function productSummary(overrides: Partial<ProductSummary> = {}): ProductSummary {
+  return {
+    id: PRODUCT_ID,
+    productCode: 'ABC-001',
+    name: 'T シャツ',
+    status: 'PUBLISHED',
+    variantCount: 2,
+    ...overrides,
+  }
+}
+
+/**
+ * カテゴリの節。ID は `00000000-0000-0000-0000-000000000<id>`。
+ *
+ * @param id       ID の末尾（3 桁）
+ * @param name     名称
+ * @param depth    階層（最上位が 1）
+ * @param children 子
+ * @param addChild 子を足せるか（API が返すフラグ。既定はいちばん深い 3 階層目だけ偽）
+ * @returns カテゴリの節
+ */
+export function categoryNode(
+  id: string,
+  name: string,
+  depth: number,
+  children: CategoryNode[] = [],
+  addChild = depth < 3,
+): CategoryNode {
+  return {
+    id: `00000000-0000-0000-0000-000000000${id}`,
+    name,
+    depth,
+    displayOrder: 0,
+    version: 3,
+    children,
+    actions: { addChild },
+  }
+}
+
+/**
+ * バリアントの在庫数の応答。
+ *
+ * @param quantity 在庫数
+ * @param variantId バリアントの ID。省略すると {@link variant} の ID
+ * @returns 在庫数の応答
+ */
+export function stock(quantity: number, variantId: string = variant().id): Stock {
+  return { variantId, quantity }
 }

@@ -2,7 +2,7 @@ import { QueryClientProvider } from '@tanstack/react-query'
 import { act, renderHook, waitFor } from '@testing-library/react'
 import type { ReactNode } from 'react'
 import { toast } from 'sonner'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import { $api } from '@/api/client'
 import { useApiMutation } from '@/api/useApiMutation'
 import { createQueryClient } from '@/app/queryClient'
@@ -16,10 +16,6 @@ function renderWithClient<T>(hook: () => T) {
   )
   return renderHook(hook, { wrapper })
 }
-
-afterEach(() => {
-  vi.restoreAllMocks()
-})
 
 describe('更新の操作', () => {
   test('成功したら知らせを出し、続きの処理の後に、指定した一覧を取り直す', async () => {

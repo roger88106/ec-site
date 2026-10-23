@@ -164,7 +164,7 @@
 | AC-139 | 運営者の権限は、IdP で職務（BR-12）を割り当てて与える。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest` |
 | AC-140 | 職務の付け外しと、アカウントの無効化は、一定時間（plan で決める）のうちに管… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest`、`RealmSettingsContractTest` |
 | AC-141 | 管理画面で権限のない操作をすると、「権限がない」と表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `StockPage.test.tsx`、`errors.test.ts`、`permission.spec.ts` |
-| AC-142 | 在庫の調整（AC-45 の履歴）、注文のキャンセルの申請の承認・却下、運営者の判… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `CancellationApiTest`、`InventoryApiTest`、`StockPage.test.tsx` |
+| AC-142 | 在庫の調整（AC-45 の履歴）、注文のキャンセルの申請の承認・却下、運営者の判… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `CancellationApiTest`、`InventoryApiTest`、`OrderDetailPage.test.tsx` ほか 1 |
 | AC-143 | 注文手続きで注文すると、注文は「支払待ち」で作られ、決済サービスの支払画面に移る… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`OrderTest` ほか 2 |
 | AC-144 | 「支払待ち」の注文を作ると、全品目の在庫数を減らす。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PlaceOrderApiTest` |
 | AC-145 | カード番号は決済サービスの画面で入力する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
@@ -182,7 +182,7 @@
 | AC-157 | 期限切れでキャンセルした後に与信の成功を受信したら、その与信を取り消す。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` |
 | AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderPaymentApiTest`、`orderState.test.ts` ほか 1 |
 | AC-159 | 店舗の注文一覧と注文詳細に、「支払待ち」の注文の支払の期限を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
-| AC-160 | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderListPage.test.tsx`、`OrderPaymentApiTest` |
+| AC-160 | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderListPage.test.tsx`、`OrderPaymentApiTest` ほか 1 |
 | AC-161 | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderListPage.test.tsx`、`OrderPaymentApiTest` |
 | AC-162 | 与信済みの注文がキャンセルになると、与信を取り消す。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` ほか 1 |
 | AC-163 | キャンセルは、与信の取消の結果を待たずに成立する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest` |
@@ -216,7 +216,7 @@
 | AC-191 | 返送された注文をキャンセルするとき、運営者は在庫に戻すかを選ぶ。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderShipmentTest`、`ReturnedOrderCancellationApiTest` ほか 1 |
 | AC-192 | 返送された注文をキャンセルすると、総額（送料を含む）を返金する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentRefundTest`、`ReturnedOrderCancellationApiTest`、`shipping.spec.ts` |
 | AC-193 | キャンセルは、返金の結果を待たずに成立する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentRefundTest`、`ReturnedOrderCancellationApiTest` |
-| AC-194 | 返金が済むまで、管理画面の注文詳細に「返金待ち」と表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx`、`PaymentRefundTest` |
+| AC-194 | 返金が済むまで、管理画面の注文詳細に「返金待ち」と表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx`、`PaymentRefundTest` ほか 1 |
 | AC-195 | 同じ注文の返金が重複して実行されても、返金は 1 回だけ。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentRefundTest` |
 | AC-196 | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest` |
 | AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 2 |
@@ -290,7 +290,7 @@
 | AC-265 | 店舗 API の入力の誤りの文は、消費者が読んで修正できる文にする。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PlaceOrderApiTest` |
 | AC-266 | エラーの文に上限・桁数などの値を入れるときは、数字を文に書かず、正となる所から差… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `MessageInterpolationTest` |
 | AC-267 | 店舗 API の注文の応答は、キャンセルの申請の結果（申請していない、申請中、承… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `orderState.test.ts` |
-| AC-268 | 管理 API の注文の応答は、キャンセルの時に在庫を戻すかを運営者に確認するかを… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`ReturnedOrderCancellationApiTest`、`ShipmentApiTest` |
+| AC-268 | 管理 API の注文の応答は、キャンセルの時に在庫を戻すかを運営者に確認するかを… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ReturnedOrderCancellationApiTest`、`ShipmentApiTest` |
 | AC-269 | 管理 API の商品の応答は、商品を削除できないときの理由を返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx` |
 | AC-270 | 管理 API の分類の応答は、子の分類を追加できるかを返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `CategoryApiTest`、`CategoryPage.test.tsx` |
 | AC-271 | 店舗画面と管理画面は、API の応答の操作の可否と理由のほかに、注文の状態や商品… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |

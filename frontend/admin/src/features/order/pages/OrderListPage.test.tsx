@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import { orderSummary } from '@/test/fixtures'
+import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, server } from '@/test/server'
 
@@ -34,12 +35,12 @@ describe('注文一覧', () => {
     ])
     renderApp('/orders')
 
-    const row = (await screen.findByRole('link', { name: '20261010-123456' })).closest('tr') as HTMLElement
+    const row = await findRow('20261010-123456')
     expect(within(row).getByText('2026/10/10 10:00')).toBeInTheDocument()
     expect(within(row).getByText('山田 太郎')).toBeInTheDocument()
     expect(within(row).getByText('4,300 円')).toBeInTheDocument()
     expect(within(row).getByText('受付')).toBeInTheDocument()
-    const requested = screen.getByRole('link', { name: '20261009-654321' }).closest('tr') as HTMLElement
+    const requested = getRow('20261009-654321')
     expect(within(requested).getByText('キャンセル申請中')).toBeInTheDocument()
   })
 
@@ -81,12 +82,12 @@ describe('注文一覧', () => {
     renderApp('/orders')
 
     expect(await screen.findByRole('columnheader', { name: '支払' })).toBeInTheDocument()
-    const authorized = (await screen.findByRole('link', { name: '20261010-123456' })).closest('tr') as HTMLElement
+    const authorized = await findRow('20261010-123456')
     expect(within(authorized).getByText('与信済み')).toBeInTheDocument()
-    const pending = screen.getByRole('link', { name: '20261009-654321' }).closest('tr') as HTMLElement
+    const pending = getRow('20261009-654321')
     expect(within(pending).getByText('支払待ち')).toBeInTheDocument()
     expect(within(pending).getByText('未払い')).toBeInTheDocument()
-    const old = screen.getByRole('link', { name: '20261001-000001' }).closest('tr') as HTMLElement
+    const old = getRow('20261001-000001')
     expect(within(old).getAllByRole('cell').at(-1)?.textContent).toBe('')
   })
 
@@ -125,9 +126,9 @@ describe('出荷と与信期限', () => {
     ])
     renderApp('/orders')
 
-    const expiring = (await screen.findByRole('link', { name: '20261010-123456' })).closest('tr') as HTMLElement
+    const expiring = await findRow('20261010-123456')
     expect(within(expiring).getByText('期限が近い')).toBeInTheDocument()
-    const shipped = screen.getByRole('link', { name: '20261009-654321' }).closest('tr') as HTMLElement
+    const shipped = getRow('20261009-654321')
     expect(within(shipped).getByText('出荷済み')).toBeInTheDocument()
     expect(within(shipped).getByText('返送')).toBeInTheDocument()
     expect(within(shipped).queryByText('期限が近い')).not.toBeInTheDocument()

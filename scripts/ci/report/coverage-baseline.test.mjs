@@ -6,6 +6,7 @@ import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { compare, percent2 } from './coverage-baseline.mjs'
+import { readMutations } from './mutation-report.mjs'
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'coverage-baseline.mjs')
 /** リポジトリのルート（scripts/ci/report/ の 3 つ上） */
@@ -246,6 +247,119 @@ describe('--write', () => {
   test('報告がないと、書き換えずに失敗にする', () => {
     const original = baselineOf(0, 99, 99)
     const { status } = run(original, ['store', 'missing.json', '--write'])
+    assert.equal(status, 1)
+    assert.equal(readFileSync(path.join(dir, 'baseline.json'), 'utf8'), original)
+  })
+})
+
+describe('mutation score（PIT の XML）', () => {
+  /** 実際の mutations.xml から切り出した 7 件（検出 4、生き残り 3：Order 2、Product 1）。57.14% */
+  const PIT = path.join(path.dirname(SCRIPT), 'testdata', 'pit-mutations.xml')
+  const TARGET = 'backend-domain'
+  const mutationBaseline = (value = 57.14, tolerance = 0) =>
+    JSON.stringify({ targets: { [TARGET]: { mutation: { value, tolerance } } } })
+  const runPit = (baseline, args = [TARGET, PIT], extraEnv = {}) => run(baseline, args, extraEnv)
+
+  test('検出した変異（detected が true）の数を、全変異で割って、小数第 2 位にする', () => {
+    const result = readMutations(readFileSync(PIT, 'utf8'))
+    assert.equal(result.total, 7)
+    assert.equal(result.detected, 4)
+    assert.equal(percent2(result.detected, result.total), 57.14)
+  })
+
+  test('生き残った変異（SURVIVED と NO_COVERAGE）が多いクラスを、多い順に返す', () => {
+    const { survivors } = readMutations(readFileSync(PIT, 'utf8'))
+    assert.deepEqual(survivors, [
+      { name: 'com.ecsite.module.order.domain.order.Order', survived: 2, total: 3 },
+      { name: 'com.ecsite.module.catalog.domain.product.Product', survived: 1, total: 3 },
+    ])
+  })
+
+  test('上位は 10 件までにする', () => {
+    const mutation = (n) => `<mutation detected='false' status='SURVIVED'><mutatedClass>c.C${n}</mutatedClass></mutation>`
+    const xml = `<mutations>${Array.from({ length: 12 }, (_, n) => mutation(n)).join('')}</mutations>`
+    assert.equal(readMutations(xml).survivors.length, 10)
+  })
+
+  test('基準を下回ると失敗にして、対象・基準・今回・差・直し方と、生き残ったクラスを出す', () => {
+    const { status, out } = runPit(mutationBaseline(60))
+    assert.equal(status, 1)
+    assert.match(out, /backend-domain/)
+    assert.match(out, /mutation score/)
+    assert.match(out, /60\.00%/)
+    assert.match(out, /57\.14%/)
+    assert.match(out, /-2\.86/)
+    assert.match(out, /--write/)
+    assert.match(out, /domain\.order\.Order/)
+  })
+
+  test('基準と同じなら成功にし、許容の幅の中なら成功にする', () => {
+    const same = runPit(mutationBaseline())
+    assert.equal(same.status, 0)
+    assert.doesNotMatch(same.out, /警告：/)
+    assert.equal(runPit(mutationBaseline(60, 3)).status, 0)
+    assert.equal(runPit(mutationBaseline(60, 2)).status, 1)
+  })
+
+  test('基準を上回ると成功にして、警告を出す', () => {
+    const { status, out } = runPit(mutationBaseline(50))
+    assert.equal(status, 0)
+    assert.match(out, /^警告：.*mutation score.*--write/m)
+  })
+
+  test('変異が 0 の報告は、成功にせず失敗にする', () => {
+    writeFileSync(path.join(dir, 'pit-empty.xml'), '<mutations partial="true">\n</mutations>\n')
+    const { status, out } = runPit(mutationBaseline(0), [TARGET, 'pit-empty.xml'])
+    assert.equal(status, 1)
+    assert.match(out, /変異がない/)
+  })
+
+  test('報告の種類と対象の基準が合わないと失敗にする（JaCoCo と PIT を取り違えない）', () => {
+    const pitForCoverage = run(baselineOf(), ['store', PIT])
+    assert.equal(pitForCoverage.status, 1)
+    assert.match(pitForCoverage.out, /mutation score/)
+    const jacocoForMutation = runPit(mutationBaseline(), [TARGET, 'report.xml'])
+    assert.equal(jacocoForMutation.status, 1)
+    assert.match(jacocoForMutation.out, /JaCoCo/)
+  })
+
+  test('基準のファイルの mutation の値の形が違うと失敗にする', () => {
+    const of = (mutation) => JSON.stringify({ targets: { [TARGET]: { mutation } } })
+    assert.equal(runPit(of({ value: '57', tolerance: 0 })).status, 1)
+    assert.equal(runPit(of({ value: 101, tolerance: 0 })).status, 1)
+    assert.equal(runPit(of({ value: 57, tolerance: -1 })).status, 1)
+    assert.equal(runPit(JSON.stringify({ targets: { [TARGET]: {} } })).status, 1)
+  })
+
+  test('summary に、mutation score と、生き残った変異が多いクラスの表を書く', () => {
+    const summary = path.join(dir, 'summary.md')
+    writeFileSync(summary, '')
+    runPit(mutationBaseline(), [TARGET, PIT], { GITHUB_STEP_SUMMARY: summary })
+    const text = readFileSync(summary, 'utf8')
+    assert.match(text, /mutation score/)
+    assert.match(text, /57\.14%/)
+    assert.match(text, /生き残った変異/)
+    assert.match(text, /\| `com\.ecsite\.module\.order\.domain\.order\.Order` \| 2 \| 3 \|/)
+  })
+
+  test('--write で、報告の値に書き換える（許容の幅と、ほかの対象は変えない）', () => {
+    const base = JSON.stringify({
+      targets: {
+        [TARGET]: { mutation: { value: 90, tolerance: 1.5 } },
+        store: { line: { value: 70, tolerance: 0 }, branch: { value: 60, tolerance: 0 } },
+      },
+    })
+    const { status } = runPit(base, [TARGET, PIT, '--write'])
+    assert.equal(status, 0)
+    const written = JSON.parse(readFileSync(path.join(dir, 'baseline.json'), 'utf8')).targets
+    assert.deepEqual(written[TARGET], { mutation: { value: 57.14, tolerance: 1.5 } })
+    assert.deepEqual(written.store, { line: { value: 70, tolerance: 0 }, branch: { value: 60, tolerance: 0 } })
+  })
+
+  test('--write は、変異が 0 の報告では書き換えずに失敗にする', () => {
+    writeFileSync(path.join(dir, 'pit-empty.xml'), '<mutations partial="true"></mutations>')
+    const original = mutationBaseline(90)
+    const { status } = runPit(original, [TARGET, 'pit-empty.xml', '--write'])
     assert.equal(status, 1)
     assert.equal(readFileSync(path.join(dir, 'baseline.json'), 'utf8'), original)
   })

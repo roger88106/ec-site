@@ -180,12 +180,17 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
     - 手元の実行（`./gradlew pitest`）：PIT の実行は 1 分（解析 3 秒、変異の実行 55 秒）、Gradle 全体は 2 分 41 秒（コンパイルを含む）。生成した変異 643、殺した変異 578、mutation score 90%（578/643）、カバレッジのない変異 40、テストの強さ 96%（カバーされた変異 603 のうち 578）。domain の行のカバレッジ 93%（1036/1111）。191 のテストを調べ、1419 回流した。
     - 生き残った変異（生き残りとカバレッジなしの合計）が多いクラスの上位：`media.domain.ImageFormat` 12/51、`order.domain.order.Order` 11/77、`catalog.domain.product.Product` 8/118、`order.domain.checkout.Checkout` 5/5、`cart.domain.Cart` 4/63、`inventory.domain.stock.StockAllocation` 4/4、`media.domain.AssetKeys` 4/4。
     - 注意：`mutations.xml` は `<mutations partial="true">` で始まる（PIT の出力の仕様。T17-02-02 のテストのデータはこの形に合わせる）。
-- [ ] **T17-02-02** [テスト] 検査の script が PIT の XML の mutation score を読むテストを書き、レッドを確認する。テストのデータは、T17-02-01 で作った実際の PIT の XML に合わせる（DC-17-10）。
+- [x] **T17-02-02** [テスト] 検査の script が PIT の XML の mutation score を読むテストを書き、レッドを確認する。テストのデータは、T17-02-01 で作った実際の PIT の XML に合わせる（DC-17-10）。
   - 依存：T17-02-01
   - 範囲：`scripts/ci/report/`
-- [ ] **T17-02-03** 検査の script に、mutation score の読み取りと比較、summary の「生き残った変異（テストが検出できなかった変異）が多いクラスの上位 10 件」、`--write` での mutation score の書き換えを加える。基準のファイルの mutation score の初期値は、ここでは置かない。PIT の報告がない CI で失敗しないため。T17-02-04 で、作業ブランチの CI の値を置く（DC-17-10）。
+  - 結果：テストは、実際の `mutations.xml` から切り出した 7 件（`scripts/ci/report/testdata/pit-mutations.xml`。検出 4、生き残り 3）で書き、`mutation-report.mjs` がないレッドを確認した。pre-commit の hook が `*.test.mjs` を流すので、T17-02-03 と 1 つの commit にした（開発の進め方 第 2.1 節）。
+- [x] **T17-02-03** 検査の script に、mutation score の読み取りと比較、summary の「生き残った変異（テストが検出できなかった変異）が多いクラスの上位 10 件」、`--write` での mutation score の書き換えを加える。基準のファイルの mutation score の初期値は、ここでは置かない。PIT の報告がない CI で失敗しないため。T17-02-04 で、作業ブランチの CI の値を置く（DC-17-10）。
   - 依存：T17-02-01、T17-02-02
   - 範囲：`scripts/ci/report/`
+  - 結果：
+    - 読み取り：新しい `mutation-report.mjs`（`isPitReport`、`readMutations`）。mutation score は `detected="true"` の数 ÷ 全変異（小数第 2 位）。手元の報告で、検出 578 / 変異 643 = 89.89% で、PIT のコンソールの「Killed 578（90%）」と一致した。生き残りは `detected="false"`（SURVIVED と NO_COVERAGE）で、クラスごとに数えて多い順に 10 件を summary とログに出す（成功のときも出す）。
+    - 基準のファイル：対象の名前は `backend-domain`（既存の `backend` はカバレッジの全体で、PIT は domain だけなので、範囲が分かる名前にした）。指標は `mutation`（`{ value, tolerance }`。ある対象は mutation だけを持ち、ない対象は `line` と `branch`）。初期値はまだ置いていない（T17-02-04）。
+    - 報告の種類：JaCoCo の XML と PIT の XML は、ルートの要素（`<mutations>`）で見分ける。対象の基準の指標と報告の種類が合わないと失敗にする。変異が 0 の報告も失敗にする。下回る・上回る・`--write` は、カバレッジと同じ扱い。
 - [ ] **T17-02-04** `ci.yml` に組み込む。PIT を実行するジョブを実測で決め、3 回測る。PIT の報告を artifact に保存する。mutation score の許容の幅を、DC-17-5 と同じ方法で測る。ジョブを分けたときは「バックエンド」の `needs` に加える。基準のファイルに、作業ブランチの CI の mutation score を初期値として置く。DC-17-13 の push で失敗を確認し、削除を戻す。`ci.yml` の全体が 8 分以下であることを書く。結果をこのタスクの下に書く（DC-17-10、11、13）。
   - 依存：T17-02-01、T17-02-03
   - 範囲：`.github/workflows/ci.yml`、`scripts/ci/report/quality-baseline.json`

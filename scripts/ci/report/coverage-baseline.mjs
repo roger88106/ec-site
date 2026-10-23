@@ -4,8 +4,10 @@
 // 基準は、リポジトリのファイルに置く。正当な理由で下げるときは、--write で書き換え、pull request に理由を書く
 //
 //   使い方：node scripts/ci/report/coverage-baseline.mjs <対象> <報告のファイル> [--write] [--baseline <基準のファイル>]
-//     対象：基準のファイルの targets の名前（backend、admin、store、shared）
-//     報告のファイル：JaCoCo の XML（*.xml）か、Vitest の json-summary（coverage-summary.json）
+//     対象：基準のファイルの targets の名前（backend、admin、store、shared、backend-domain）
+//     報告のファイル：JaCoCo の XML か、Vitest の json-summary（coverage-summary.json）か、PIT の XML（mutations.xml）。
+//       JaCoCo と PIT の XML は、中身（PIT は <mutations>）で見分ける。対象の基準の指標（line と branch、または mutation）と合わない報告は失敗にする
+//     指標：line（行）と branch（分岐）はカバレッジ、mutation は mutation score（検出した変異 ÷ 全変異。mutation-report.mjs）
 //     --write：基準のファイルの、その対象の値を、報告の値で書き換える（上げるときも下げるときも）。許容の幅は変えない
 //     --baseline：基準のファイル（既定は quality-baseline.json）。CI と手元は同じ引数で流せる
 //
@@ -20,6 +22,7 @@ import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readTotals } from './coverage-summary.mjs'
+import { isPitReport, readMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
@@ -29,8 +32,14 @@ const ROOT = path.resolve(SCRIPT_DIR, '../../..')
 /** 基準のファイルの既定の場所（この script と同じディレクトリ） */
 const DEFAULT_BASELINE = path.join(SCRIPT_DIR, 'quality-baseline.json')
 
-/** 指標の表示名。基準のファイルの指標を、この順で比べる。mutation score のような指標は、ここと parseBaseline に足す */
-const METRIC_LABELS = { line: '行', branch: '分岐' }
+/** 指標の表示名 */
+const METRIC_LABELS = { line: '行', branch: '分岐', mutation: 'mutation score' }
+
+/** 基準の対象の指標。mutation を持つ対象は mutation だけ、ほかは行と分岐 */
+const metricsOf = (entry) => (entry && 'mutation' in entry ? ['mutation'] : ['line', 'branch'])
+
+/** 指標の値の名前（メッセージの「カバレッジ」「mutation score」） */
+const subjectOf = (metrics) => (metrics[0] === 'mutation' ? 'mutation score' : 'カバレッジ')
 
 /**
  * 割合を、小数第 2 位に丸めて返す。全体が 0 のときは 100（足りないものがない）。
@@ -64,7 +73,7 @@ export function parseBaseline(text) {
     throw new Error('基準のファイルに targets がありません')
   }
   for (const [name, entry] of Object.entries(baseline.targets)) {
-    for (const metric of Object.keys(METRIC_LABELS)) {
+    for (const metric of metricsOf(entry)) {
       const cell = entry?.[metric]
       const valid = (n) => typeof n === 'number' && Number.isFinite(n)
       if (!valid(cell?.value) || !valid(cell?.tolerance) || cell.value < 0 || cell.value > 100 || cell.tolerance < 0) {
@@ -86,7 +95,7 @@ export function parseBaseline(text) {
 export function compare(entry, actual) {
   const failures = []
   const warnings = []
-  for (const metric of Object.keys(METRIC_LABELS)) {
+  for (const metric of Object.keys(actual)) {
     const { value, tolerance } = entry[metric]
     const row = { metric, baseline: value, actual: actual[metric], diff: Math.round((actual[metric] - value) * 100) / 100 }
     if (hundredths(actual[metric]) < hundredths(value) - hundredths(tolerance)) failures.push(row)
@@ -118,7 +127,7 @@ function report({ ok, lines, markdown }) {
 
 /** 失敗したことを出して、終了する */
 function fail(title, message) {
-  report({ ok: false, lines: [`${title}：${message}`], markdown: `### カバレッジの基準（${title}）\n\n失敗：${message}\n` })
+  report({ ok: false, lines: [`${title}：${message}`], markdown: `### 基準の検査（${title}）\n\n失敗：${message}\n` })
   process.exit(1)
 }
 
@@ -154,36 +163,79 @@ function main() {
   const entry = baseline.targets[name]
   if (!entry) fail(name, `基準のファイルに対象「${name}」がありません（あるもの：${Object.keys(baseline.targets).join('、')}）。`)
 
-  const totals = readTotals(readFileSync(file, 'utf8'), file.endsWith('.xml') ? 'xml' : 'json')
-  // 行の全体が 0 の報告は、中身がない・壊れている（全体の counter がない XML を含む）ので、100% とみなさず失敗にする
-  if (totals.lines.total === 0) fail(name, `報告に行がない（${file}）。報告の作り方を確認する。`)
-  const actual = {
-    line: percent2(totals.lines.covered, totals.lines.total),
-    branch: percent2(totals.branches.covered, totals.branches.total),
+  const text = readFileSync(file, 'utf8')
+  const pit = isPitReport(text)
+  const metrics = metricsOf(entry)
+  const subject = subjectOf(metrics)
+  if (pit && metrics[0] !== 'mutation') {
+    fail(name, `対象「${name}」の基準は行と分岐のカバレッジだが、報告は PIT の XML（mutation score。${file}）。対象か報告を確認する。`)
+  }
+  if (!pit && metrics[0] === 'mutation') {
+    fail(name, `対象「${name}」の基準は mutation score だが、報告は PIT の XML ではない（JaCoCo か Vitest の報告。${file}）。対象か報告を確認する。`)
   }
 
+  let actual
+  let detail = ''
+  /** 生き残った変異が多いクラス（PIT のとき）*/
+  let survivors = []
+  if (pit) {
+    const result = readMutations(text)
+    // 変異が 0 の報告は、中身がない・壊れているので、100% とみなさず失敗にする
+    if (result.total === 0) fail(name, `報告に変異がない（${file}）。PIT が対象のクラスを見つけているか確認する。`)
+    actual = { mutation: percent2(result.detected, result.total) }
+    survivors = result.survivors
+    detail = `検出 ${result.detected} / 変異 ${result.total}`
+  } else {
+    const totals = readTotals(text, file.endsWith('.xml') ? 'xml' : 'json')
+    // 行の全体が 0 の報告は、中身がない・壊れている（全体の counter がない XML を含む）ので、100% とみなさず失敗にする
+    if (totals.lines.total === 0) fail(name, `報告に行がない（${file}）。報告の作り方を確認する。`)
+    actual = {
+      line: percent2(totals.lines.covered, totals.lines.total),
+      branch: percent2(totals.branches.covered, totals.branches.total),
+    }
+  }
+  const values = metrics.map((metric) => `${METRIC_LABELS[metric]} ${actual[metric].toFixed(2)}%`).join('、')
+
   if (write) {
-    for (const metric of Object.keys(METRIC_LABELS)) entry[metric].value = actual[metric]
+    for (const metric of metrics) entry[metric].value = actual[metric]
     writeFileSync(baselineFile, `${JSON.stringify(baseline, null, 2)}\n`)
-    const text = `基準（${name}）を書き換えました：行 ${actual.line.toFixed(2)}%、分岐 ${actual.branch.toFixed(2)}%。基準のファイルを同じ pull request に含める。`
-    report({ ok: true, lines: [text], markdown: `### カバレッジの基準（${name}）\n\n${text}\n` })
+    const done = `基準（${name}）を書き換えました：${values}。基準のファイルを同じ pull request に含める。`
+    report({ ok: true, lines: [done], markdown: `### 基準の検査（${name}）\n\n${done}\n` })
     return
   }
+
+  // 生き残った変異が多いクラス。成功のときも失敗のときも出す（テストを足す所の手がかり）
+  const survivorLines = survivors.length === 0 ? [] : [
+    `生き残った変異（テストが検出できなかった変異）が多いクラス（上位 ${SURVIVORS_LIMIT} 件）：`,
+    ...survivors.map((row) => `  ${row.name}  ${row.survived} / ${row.total}`),
+  ]
+  const survivorMarkdown = survivors.length === 0 ? [] : [
+    `生き残った変異（テストが検出できなかった変異）が多いクラス（上位 ${SURVIVORS_LIMIT} 件）：`,
+    '',
+    '| クラス | 生き残った変異 | 変異 |',
+    '|--------|----------------|------|',
+    ...survivors.map((row) => `| \`${row.name}\` | ${row.survived} | ${row.total} |`),
+    '',
+  ]
 
   const { failures, warnings } = compare(entry, actual)
   const label = (row) => METRIC_LABELS[row.metric]
   if (failures.length > 0) {
+    const remedy = pit
+      ? '直し方：生き残った変異を検出できるように、テストの検証を追加する。'
+      : '直し方：テストを追加して、カバレッジを基準まで戻す。'
     const lines = [
-      `カバレッジが基準を下回りました（${name}）。`,
+      `${subject}${pit ? ' ' : ''}が基準を下回りました（${name}）。`,
       ...failures.map(
         (row) =>
           `  ${label(row)}：基準 ${row.baseline.toFixed(2)}%（許容の幅 ${entry[row.metric].tolerance}）、今回 ${row.actual.toFixed(2)}%、差 ${signed(row.diff)} ポイント`,
       ),
-      '直し方：テストを追加して、カバレッジを基準まで戻す。',
+      remedy,
       `正当な理由で下げるときは、${writeCommand(name, file)} で基準のファイルを書き換え、pull request に理由を書く。`,
+      ...survivorLines,
     ]
     const markdown = [
-      `### カバレッジの基準（${name}）：失敗`,
+      `### 基準の検査（${name}）：失敗`,
       '',
       '| 種類 | 基準 | 許容の幅 | 今回 | 差 |',
       '|------|------|----------|------|----|',
@@ -192,22 +244,25 @@ function main() {
           `| ${label(row)} | ${row.baseline.toFixed(2)}% | ${entry[row.metric].tolerance} | ${row.actual.toFixed(2)}% | ${signed(row.diff)} |`,
       ),
       '',
-      '直し方：テストを追加して、カバレッジを基準まで戻す。',
+      remedy,
       '',
       `正当な理由で下げるときは、\`${writeCommand(name, file)}\` で基準のファイルを書き換え、pull request に理由を書く。`,
       '',
+      ...survivorMarkdown,
     ].join('\n')
     report({ ok: false, lines, markdown })
     process.exit(1)
   }
 
-  const lines = [`カバレッジは基準以上です（${name}）：行 ${actual.line.toFixed(2)}%、分岐 ${actual.branch.toFixed(2)}%。`]
-  const markdown = [`### カバレッジの基準（${name}）：成功`, '', ...lines, '']
+  const lines = [`${subject}${pit ? ' ' : ''}は基準以上です（${name}）：${values}${detail ? `（${detail}）` : ''}。`]
+  const markdown = [`### 基準の検査（${name}）：成功`, '', ...lines, '']
   for (const row of warnings) {
-    const text = `警告：${name} の${label(row)}のカバレッジが基準より高い（基準 ${row.baseline.toFixed(2)}%、今回 ${row.actual.toFixed(2)}%、差 ${signed(row.diff)} ポイント）。--write で基準のファイルを更新して、pull request に含める。`
-    lines.push(text)
-    markdown.push(text, '')
+    const warning = `警告：${name} の${pit ? ' ' : ''}${label(row)}${pit ? '' : 'のカバレッジ'}${pit ? ' ' : ''}が基準より高い（基準 ${row.baseline.toFixed(2)}%、今回 ${row.actual.toFixed(2)}%、差 ${signed(row.diff)} ポイント）。--write で基準のファイルを更新して、pull request に含める。`
+    lines.push(warning)
+    markdown.push(warning, '')
   }
+  lines.push(...survivorLines)
+  markdown.push(...survivorMarkdown)
   report({ ok: true, lines, markdown: markdown.join('\n') })
 }
 

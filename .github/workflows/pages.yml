@@ -1,5 +1,5 @@
 # ============================================================================
-# 機能紹介のページ（showcase/）を GitHub Pages に出す（spec 008）
+# 機能紹介のページ（showcase/）を GitHub Pages に出す
 #
 # showcase/ をそのまま出す（ビルドしない）。main で showcase/ が変わったときと、手で起動したときに流す。
 # 前提（利用者が設定する）：Settings → Pages の Source が「GitHub Actions」、

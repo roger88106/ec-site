@@ -159,6 +159,27 @@ describe('進捗の一致の検査', () => {
     }
   })
 
+  test('1→10 の spec を、番号の数値の順に並べる（10 は 7 の後）', () => {
+    const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      for (const name of ['10-ten', '7-seven', '2-two']) {
+        mkdirSync(path.join(specsDir, 'archive/1to10', name, 'tasks'), { recursive: true })
+        writeFileSync(path.join(specsDir, 'archive/1to10', name, 'tasks', '01.md'), '- [ ] **T1-01-01** a')
+      }
+      assert.deepEqual([...readArchivedTasks(specsDir).keys()], ['2-two', '7-seven', '10-ten'])
+      const open = new Map([
+        ['10-ten', { total: 1, done: 0 }],
+        ['7-seven', { total: 1, done: 0 }],
+      ])
+      assert.deepEqual(
+        checkArchivedTasks(open).map((line) => line.split('：')[0]),
+        ['1→10 の spec 7-seven', '1→10 の spec 10-ten'],
+      )
+    } finally {
+      rmSync(specsDir, { recursive: true, force: true })
+    }
+  })
+
   test('直下とアーカイブの spec の tasks を読む', () => {
     const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
     try {

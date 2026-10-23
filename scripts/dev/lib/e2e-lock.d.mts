@@ -6,3 +6,4 @@ export function formatLock(owner: LockOwner): string
 export function parseLock(content: string): LockOwner | null
 export function decideTakeover(input: { judged: string; moved: string }): 'take' | 'restore'
 export function decideLock(input: { content: string | null; isRunning: (pid: number) => boolean }): LockDecision
+export function isE2eRunningIn(input: { content: string | null; worktree: string; isRunning: (pid: number) => boolean }): boolean

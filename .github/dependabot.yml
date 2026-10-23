@@ -76,7 +76,11 @@ updates:
     open-pull-requests-limit: 5
 
   - package-ecosystem: github-actions
-    directory: /
+    # `/` は .github/workflows と、ルートの action.yml だけを見る。
+    # ローカルの複合の action は、置いてあるディレクトリを追加して見せる。
+    directories:
+      - /
+      - /.github/actions/setup-frontend
     schedule:
       interval: weekly
       day: monday

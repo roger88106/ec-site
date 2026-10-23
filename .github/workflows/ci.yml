@@ -20,6 +20,8 @@ on:
       - 'scripts/dev/lib/**' # CI の E2E の script から使う script の置き場所
       - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
       - '!.github/workflows/pages.yml'
+      - '!.github/ISSUE_TEMPLATE/**' # issue のテンプレート
+      - '!.github/dependabot.yml'     # 依存の更新の設定（更新の pull request で CI が流れる）
       - '!.gitignore'
       - '!LICENSE'
       - 'docs/design/overview.md' # 全体構成の文書。バックエンドの単体テスト（ModuleDiagramTest）が図と照合する
@@ -28,6 +30,11 @@ on:
 
 permissions:
   contents: read
+
+# 全ての job の JDK の版。バックエンドの toolchain の版（backend/ecsite/gradle/libs.versions.toml の java）と同じにする。
+# setup-java は libs.versions.toml を読めないので、ここに 1 か所だけ書き、各 job が参照する
+env:
+  JAVA_VERSION: '21'
 
 # 同じブランチで新しい実行が始まったら、古い実行は止める
 concurrency:
@@ -53,7 +60,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
 
       # Gradle のキャッシュと、wrapper の検証
       - uses: gradle/actions/setup-gradle@v6
@@ -134,7 +141,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
 
       - uses: gradle/actions/setup-gradle@v6
 
@@ -161,7 +168,7 @@ jobs:
             backend/ecsite/build/test-results/
           retention-days: 7
 
-  # ruleset の必須の検査の名前は「バックエンド」なので、この名前を残す（変えると ruleset の変更が要る）。
+  # ruleset の必須の検査の名前は「バックエンド」なので、この名前を残す（変えると ruleset の変更が必要になる）。
   # 上の 3 つのジョブの後に、カバレッジの実行データを合わせて報告を作る。
   # 上のジョブが失敗・スキップしたときも、このジョブを実行して失敗にする。
   # needs のジョブが失敗するとこのジョブはスキップされ、必須の検査としては成功と同じに扱われるので、
@@ -198,7 +205,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
 
       # 報告を作る Gradle の呼び出しだけに使う（テストもコンパイルも流さない）
       - uses: gradle/actions/setup-gradle@v6
@@ -252,10 +259,10 @@ jobs:
       # pnpm と Node の準備、workspace の依存のインストール
       - uses: ./.github/actions/setup-frontend
 
-      # 型チェックとビルドは、admin.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認
         run: pnpm lint
 
+      # 型チェックとビルドは、admin.yaml から型を生成してから行う（生成物はコミットしない）
       - name: 型チェック
         run: pnpm typecheck
 
@@ -327,10 +334,10 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
-      # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認
         run: pnpm lint
 
+      # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
       - name: 型チェック
         run: pnpm typecheck
 
@@ -371,7 +378,7 @@ jobs:
     name: E2E
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    # ほかのジョブを待たずに始める（CI の全体の時間を短くするため。plan 011 第 4.2 節）。
+    # ほかのジョブを待たずに始める（CI の全体の時間を短くするため）。
     # E2E は自分でバックエンドをコンパイルし画面をビルドするので、ほかのジョブの結果は使わない。
     # 失敗したときは、部分のジョブの結果を先に見る（docs/guides/ci.md）
 
@@ -381,7 +388,7 @@ jobs:
       - uses: actions/setup-java@v6
         with:
           distribution: temurin
-          java-version: '21'
+          java-version: ${{ env.JAVA_VERSION }}
 
       - uses: gradle/actions/setup-gradle@v6
 
@@ -390,11 +397,11 @@ jobs:
 
       # E2E 用の DB と IdP の置き場所（PostgreSQL）と、IdP が送るメールの受け手（Mailpit）。
       # docker/compose.yaml（ルートの .env が指す）をそのまま使う。E2E 用の DB・Keycloak（profile e2e）の再作成と起動は、
-      # pnpm test の準備の script（e2e/scripts/prepare.ts）が手元と同じように行う（plan 004 第 6.1 節）
+      # pnpm test の準備の script（e2e/scripts/prepare.ts）が手元と同じように行う
       - name: DB・メールの起動
         run: docker compose up -d --wait postgres mailpit
 
-      # 画像の置き場所（S3 互換）と変換（imgproxy）。バケット、CORS、公開の設定は、compose の初期化のコンテナで作る（plan 001 第 7 節）
+      # 画像の置き場所（S3 互換）と変換（imgproxy）。バケット、CORS、公開の設定は、compose の初期化のコンテナで作る
       - name: 画像の置き場所（SeaweedFS）と変換（imgproxy）の起動
         run: |
           docker compose up -d --wait seaweedfs imgproxy
@@ -418,7 +425,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
       # OS の依存（--with-deps、install-deps）は入れない。Chromium が使うライブラリは、ランナーのイメージに入っている。
-      # 依存の導入が足すのはフォントなどで、CI で流す e2e/tests の結果に影響しない（画面の撮影は CI で流さない）。
+      # 依存の導入が追加するのはフォントなどで、CI で流す e2e/tests の結果に影響しない（画面の撮影は CI で流さない）。
       # 一方、apt の取得は外部のミラーが遅いと数分から 30 分かかり、E2E のジョブ全体を止めることがある。
       # 失敗時の画面の撮影（screenshot: 'only-on-failure'）では、日本語のフォントがなく文字が四角になることがある。
       # 読めないときは、手元の scripts/dev/e2e.sh で再現する

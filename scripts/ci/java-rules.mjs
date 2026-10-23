@@ -4,9 +4,10 @@
 // - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない（valueOf(文字列リテラル以外)、fromValue(文字列リテラル以外)）。モジュールやレイヤーの間の列挙を文字列で受け渡すと、相手に値を追加したときにコンパイルでもテストでも気づけないため
 // - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { closingParen } from './lib/closing-paren.mjs'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** テストのソース */
 const TEST_SOURCE = /^backend\/ecsite\/src\/(?:test|integrationTest|testFixtures)\/.*\.java$/
@@ -17,8 +18,11 @@ const MAIN_SOURCE = /^backend\/ecsite\/src\/main\/.*\.java$/
 /** Lombok の import と、完全修飾名で書いた注釈 */
 const LOMBOK = /^\s*import\s+(?:static\s+)?lombok\.|@lombok\./
 
-/** 列挙型の変換に name() を渡す呼び出し */
-const ENUM_NAME = /\b(?:valueOf|fromValue)\(\s*[\w.()]*\.name\(\)\s*\)/
+/** 列挙型の変換の呼び出しの開き括弧まで */
+const ENUM_CALL = /\b(?:valueOf|fromValue)\(/g
+
+/** 引数（コメントを空白にしたもの）が name() で終わる */
+const ENDS_WITH_NAME = /\.\s*name\(\s*\)\s*$/
 
 /** 他の Nullable：JSpecify 以外の Nullable の import（static import も）と、完全修飾名で書いた注釈 */
 const OTHER_NULLABLE = /^\s*import\s+(?:static\s+)?(?!org\.jspecify\.annotations\.)[\w.]+\.Nullable\b|@(?!org\.jspecify\.annotations\.)(?:[a-z]\w*\.)+Nullable\b/
@@ -60,13 +64,67 @@ export function findLombok(text) {
 }
 
 /**
- * 列挙型の変換に name() を渡す行を探す。
+ * 行コメントとブロックコメントを、同じ長さの空白に置き換える。改行は残すので、位置と行番号は変わらない。<br />
+ * 文字列、テキストブロック、文字リテラルの中の // などはコメントにしない。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントを空白にしたソース
+ */
+export function blankComments(text) {
+  let result = ''
+  let i = 0
+  const blank = (chunk) => chunk.replace(/[^\r\n]/g, ' ')
+  while (i < text.length) {
+    if (text.startsWith('//', i)) {
+      const end = text.indexOf('\n', i)
+      const stop = end < 0 ? text.length : end
+      result += blank(text.slice(i, stop))
+      i = stop
+    } else if (text.startsWith('/*', i)) {
+      const end = text.indexOf('*/', i + 2)
+      const stop = end < 0 ? text.length : end + 2
+      result += blank(text.slice(i, stop))
+      i = stop
+    } else if (text.startsWith('"""', i)) {
+      const end = text.indexOf('"""', i + 3)
+      const stop = end < 0 ? text.length : end + 3
+      result += text.slice(i, stop)
+      i = stop
+    } else if (text[i] === '"' || text[i] === "'") {
+      // 文字列と文字は、閉じる引用符まで（同じ行の中）そのまま残す
+      const quote = text[i]
+      let j = i + 1
+      while (j < text.length && text[j] !== quote && text[j] !== '\n') j += text[j] === '\\' ? 2 : 1
+      const stop = Math.min(j + 1, text.length)
+      result += text.slice(i, stop)
+      i = stop
+    } else {
+      result += text[i]
+      i += 1
+    }
+  }
+  return result
+}
+
+/**
+ * 列挙型の変換に name() を渡す呼び出しを探す。改行を挟んだ呼び出しも見つけ、呼び出しの始まりの行を返す。
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行
  */
 export function findEnumNameConversions(text) {
-  return findLines(text, ENUM_NAME)
+  const lines = text.split('\n')
+  const hits = []
+  const blanked = blankComments(text)
+  for (const match of blanked.matchAll(ENUM_CALL)) {
+    // 引数は、開き括弧から対応する閉じ括弧まで。引数の最後が name() のときだけ違反にする
+    const open = match.index + match[0].length - 1
+    const argument = blanked.slice(open + 1, closingParen(blanked, open))
+    if (!ENDS_WITH_NAME.test(argument)) continue
+    const line = text.slice(0, match.index).split('\n').length
+    hits.push({ line, text: lines[line - 1].trim() })
+  }
+  return hits
 }
 
 /**
@@ -122,9 +180,7 @@ export function ruleFor(file) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && (ruleFor(file) || isNullableTarget(file)) && existsSync(file))
+  const files = listGitFiles().filter((file) => ruleFor(file) || isNullableTarget(file))
   const messages = { lombok: 'テストで Lombok を使う', 'enum-name': '列挙型の変換に name() を渡す' }
   let count = 0
   for (const file of files) {

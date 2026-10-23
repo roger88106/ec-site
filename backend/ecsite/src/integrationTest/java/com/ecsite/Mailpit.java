@@ -39,7 +39,7 @@ public class Mailpit implements AutoCloseable {
      * コンテナを起動する。
      */
     public Mailpit() {
-        container = new GenericContainer<>(DockerImageName.parse("axllent/mailpit:v1.31.5"))
+        container = new GenericContainer<>(DockerImageName.parse("axllent/mailpit:v1.31.6"))
                 .withExposedPorts(SMTP_PORT, HTTP_PORT)
                 .waitingFor(Wait.forHttp("/livez").forPort(HTTP_PORT));
         container.start();

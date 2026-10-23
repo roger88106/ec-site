@@ -117,7 +117,7 @@ module/<モジュール>/
 
 Controller は OpenAPI から生成した interface（`XxxApi`）を実装する。パスと入力の形は interface に任せ、`@RequestMapping` を書かない。
 
-例外：外部のサービスとのやり取りのエンドポイント（mock の支払画面、Stripe の通知のエンドポイント）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](../design/modules/payment.md)）。
+例外：外部のサービスとのやり取りのエンドポイント（決済・物流の通知、mock の支払画面と物流の画面。[API の規約](api-conventions.md) 第 4.1 節）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](../design/modules/payment.md)、[出荷モジュール](../design/modules/shipping.md)）。
 
 理由：契約（`api/openapi/`）を正本にし、実装とずれないようにするため。
 
@@ -147,7 +147,7 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 ### 3.2 エラーは `XxxErrorCode` と `BusinessException`
 
 - 業務のエラーは、モジュールごとの `XxxErrorCode`（`ErrorCodeProvider` の enum）で表し、`BusinessException.of(...)` で投げる。定数は種類（`ErrorType`）と、いつ起きるかの Javadoc を持つ。
-- メッセージのキーは `ecsite.<モジュール>.<定数の名前の小文字>`、文は `messages.properties` に置く（例：`CART_ITEM_LIMIT_EXCEEDED` → `ecsite.cart.cart_item_limit_exceeded`）。
+- メッセージのキーは `ecsite.<モジュール>.<定数の名前の小文字>`、文は `messages.properties` に置く（例：`TOO_MANY_CART_ITEMS` → `ecsite.cart.too_many_cart_items`）。
 - 文に上限などの値を入れるときは、数字を書かず名前で差し込み（`{max} 品目までです`）、値はドメインの定数から渡す。
 - レスポンスへの変換は `GlobalExceptionHandler` だけが行う。
 

@@ -1,4 +1,6 @@
 import { render, screen, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
+import { useState } from 'react'
 import { describe, expect, test } from 'vitest'
 import { findDetailValue, findRow, getDetailValue, getRow } from '@/test/queries'
 
@@ -17,6 +19,33 @@ function Detail() {
           <dd>お届け先の支払</dd>
         </dl>
       </section>
+    </div>
+  )
+}
+
+/** ボタンを押すと、描画の後で項目と行が現れる */
+function Reveal() {
+  const [shown, setShown] = useState(false)
+  return (
+    <div>
+      <button type="button" onClick={() => setShown(true)}>
+        表示する
+      </button>
+      {shown && (
+        <>
+          <dl>
+            <dt>遅れた項目</dt>
+            <dd>遅れた値</dd>
+          </dl>
+          <table>
+            <tbody>
+              <tr>
+                <td>遅れた行</td>
+              </tr>
+            </tbody>
+          </table>
+        </>
+      )}
     </div>
   )
 }
@@ -58,12 +87,28 @@ describe('詳細の項目の値', () => {
 
   test('項目名がなければ失敗する', () => {
     render(<Detail />)
-    expect(() => getDetailValue('配送')).toThrow()
+    expect(() => getDetailValue('配送')).toThrow(/配送/)
+  })
+
+  test('項目名の次が値（dd）でなければ失敗する', () => {
+    render(
+      <dl>
+        <dt>配送</dt>
+        <dt>支払</dt>
+      </dl>,
+    )
+    expect(() => getDetailValue('配送')).toThrow('項目「配送」の次に値（dd）がない')
   })
 
   test('項目名が後から出ても、非同期で探せる', async () => {
-    render(<Detail />)
-    expect(await findDetailValue('与信期限')).toHaveTextContent('2026/10/20')
+    const user = userEvent.setup()
+    render(<Reveal />)
+    expect(screen.queryByText('遅れた項目')).not.toBeInTheDocument()
+
+    const found = findDetailValue('遅れた項目')
+    await user.click(screen.getByRole('button', { name: '表示する' }))
+
+    expect(await found).toHaveTextContent('遅れた値')
   })
 })
 
@@ -108,11 +153,17 @@ describe('一覧の行', () => {
 
   test('含む行がなければ失敗する', () => {
     render(<List />)
-    expect(() => getRow('非課税')).toThrow()
+    expect(() => getRow('非課税')).toThrow(/非課税/)
   })
 
   test('行が後から出ても、非同期で探せる', async () => {
-    render(<List />)
-    expect(await findRow('標準')).toBeInTheDocument()
+    const user = userEvent.setup()
+    render(<Reveal />)
+    expect(screen.queryByRole('row')).not.toBeInTheDocument()
+
+    const found = findRow('遅れた')
+    await user.click(screen.getByRole('button', { name: '表示する' }))
+
+    expect(await found).toHaveTextContent('遅れた行')
   })
 })

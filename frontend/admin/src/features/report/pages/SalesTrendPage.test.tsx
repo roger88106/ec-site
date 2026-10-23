@@ -116,7 +116,9 @@ describe('売上の推移', () => {
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
-    const [download] = await recorder.downloads()
+    const downloads = await recorder.downloads()
+    expect(downloads).toHaveLength(1)
+    const [download] = downloads
     expect(download.filename).toBe('売上の推移_2026-04-01_2026-06-30.csv')
     expect(download.text).toBe(
       '\uFEFF区切り,売上額,販売数量\r\n2026 年 4 月,120000,40\r\n2026 年 5 月,0,0\r\n2026 年 6 月,98000,31\r\n',

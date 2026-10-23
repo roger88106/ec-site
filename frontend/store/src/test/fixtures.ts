@@ -74,6 +74,7 @@ export const VARIANT_AXES: VariantAxis[] = [
  * @param color     色の値
  * @param size      サイズの値
  * @param overrides 上書きする項目
+ * @returns バリアント
  */
 export function variant(color: string, size: string, overrides: Partial<Variant> = {}): Variant {
   return {

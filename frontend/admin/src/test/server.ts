@@ -6,13 +6,13 @@ import type { ErrorCode, Problem } from '@/api/types'
 /**
  * 管理 API の応答を差し替えるハンドラーを作る（管理画面の構成 第 9 節）。<br />
  * パス・パラメーター・リクエストとレスポンスの本文は admin.yaml の型に合わせる。admin.yaml にない応答は型エラーになる。
- * 例：{@code http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))}
+ * 例：`http.get('/tax-categories', ({ response }) => response(200).json({ items: [] }))`
  */
 export const http = createOpenApiHttp<paths>({ baseUrl: `${window.location.origin}/api/admin` })
 
 /**
  * 結合テストで API の代わりに応答するサーバー。<br />
- * 既定のハンドラーは持たない。各テストで {@code server.use(...)} に、そのテストで呼ばれる API の応答を渡す。
+ * 既定のハンドラーは持たない。各テストで `server.use(...)` に、そのテストで呼ばれる API の応答を渡す。
  * ハンドラーのない API が呼ばれたら、テストを失敗させる（setup.ts）。
  */
 export const server = setupServer()
@@ -24,6 +24,7 @@ export const server = setupServer()
  * @param errorCode admin.yaml の errorCode（例：PRODUCT_CODE_ALREADY_EXISTS）
  * @param message 画面にそのまま出すメッセージ
  * @param errors 入力検証エラーの項目ごとのメッセージ
+ * @returns Problem の本文
  */
 export function problem(status: number, errorCode: ErrorCode, message: string, errors?: Problem['errors']): Problem {
   return { type: 'about:blank', status, errorCode, message, traceId: 'test-trace', errors }
@@ -35,11 +36,12 @@ export function concurrentModification(): Problem {
 }
 
 /**
- * 更新の競合（409）の応答を作る。ハンドラーに渡される {@code response} を渡す。<br />
+ * 更新の競合（409）の応答を作る。ハンドラーに渡される `response` を渡す。<br />
  * 409 が契約にない API では、型エラーになる。
- * 例：{@code http.put('/products/{productId}', ({ response }) => conflict(response))}
+ * 例：`http.put('/products/{productId}', ({ response }) => conflict(response))`
  *
- * @param response ハンドラーに渡される {@code response}
+ * @param response ハンドラーに渡される `response`
+ * @returns 409 の応答
  */
 export function conflict<Result>(
   response: (status: 409) => { json: (body: Problem, init?: undefined) => Result },
@@ -48,9 +50,9 @@ export function conflict<Result>(
 }
 
 /**
- * 条件で応答を変える関数の型。第 2 引数の {@code response} で、契約に合った応答を作る（{@code Response} を返さない）。<br />
- * 例：{@code reply: Reply<'/tax-categories', 'post', CreateTaxCategoryRequest>}、
- * {@code (body, response) => response(409).json(problem(...))}
+ * 条件で応答を変える関数の型。第 2 引数の `response` で、契約に合った応答を作る（`Response` を返さない）。<br />
+ * 例：`reply: Reply<'/tax-categories', 'post', CreateTaxCategoryRequest>`、
+ * `(body, response) => response(409).json(problem(...))`
  *
  * @typeParam Path admin.yaml のパス
  * @typeParam Method HTTP のメソッド（小文字）

@@ -65,6 +65,7 @@ export function cookieValue(name: string): string | undefined {
  * Cookie の属性（テストで確認する）。
  *
  * @param name Cookie の名前
+ * @returns 属性。なければ undefined
  */
 export function cookieOptions(name: string): Record<string, unknown> | undefined {
   return cookieJar.get(name)?.options

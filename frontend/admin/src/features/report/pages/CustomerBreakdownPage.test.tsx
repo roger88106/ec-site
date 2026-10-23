@@ -101,7 +101,9 @@ describe('地域・年齢層・性別', () => {
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
-    const [download] = await recorder.downloads()
+    const downloads = await recorder.downloads()
+    expect(downloads).toHaveLength(1)
+    const [download] = downloads
     expect(download.filename).toBe('地域・年齢層・性別_2026-09-01_2026-09-30.csv')
     expect(download.text).toBe(
       [

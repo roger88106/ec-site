@@ -178,6 +178,7 @@ export function productSummary(overrides: Partial<ProductSummary> = {}): Product
  * @param depth    階層（最上位が 1）
  * @param children 子
  * @param addChild 子を足せるか（API が返すフラグ。既定はいちばん深い 3 階層目だけ偽）
+ * @returns カテゴリの節
  */
 export function categoryNode(
   id: string,
@@ -202,6 +203,7 @@ export function categoryNode(
  *
  * @param quantity 在庫数
  * @param variantId バリアントの ID。省略すると {@link variant} の ID
+ * @returns 在庫数の応答
  */
 export function stock(quantity: number, variantId: string = variant().id): Stock {
   return { variantId, quantity }

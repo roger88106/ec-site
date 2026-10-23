@@ -89,7 +89,9 @@ describe('バリアントの売れ行き', () => {
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
-    const [download] = await recorder.downloads()
+    const downloads = await recorder.downloads()
+    expect(downloads).toHaveLength(1)
+    const [download] = downloads
     expect(download.filename).toBe('バリアントの売れ行き_ベーシック T シャツ_2026-09-01_2026-09-30.csv')
     expect(download.text).toBe(
       '\uFEFFバリアント,品番,販売数量,売上額\r\n色：白、サイズ：M,TEE-001-WH-M,12,39336\r\n色：黒、サイズ：L,TEE-001-BK-L,0,0\r\n',

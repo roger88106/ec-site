@@ -82,5 +82,8 @@
 - [x] **T155-02-21** AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成し、`ac-check.mjs` が通ることを確認する（AC-277、278）。
   - 依存：T155-02-20
   - 範囲：`docs/design/acceptance-criteria.md`
-- [ ] **T155-02-22** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。pitest は、reporting の domain の列挙を変えたため実行する。基準（90.2、許容 0）を下回るときは、そのクラスの単体テストを追加する。
+- [x] **T155-02-22** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。pitest は、reporting の domain の列挙を変えたため実行する。基準（90.2、許容 0）を下回るときは、そのクラスの単体テストを追加する。
   - 依存：T155-02-01〜21
+- [x] **T155-02-23** 段階 2 のレビューの指摘を修正する。注文のレポートの view が集約をそのまま持っているので、[plan](../plan.md) 第 2 節のとおり、domain の値（注文番号、状態、キャンセル、配送先、購入者の属性、金額、明細など）と配送料の税額を持つ record にし、公開の API は view の値から変換する（DC-155-10）。カートの内容の公開の API の変換のメソッドに Javadoc を書く（Checkstyle）。
+  - 依存：T155-02-22
+  - 範囲：`main/module/order/application/model/OrderReportView.java`、`main/module/order/application/OrderReportQueryService.java`、`main/module/order/api/OrderReportApi.java`、`main/module/cart/api/CartContentsApi.java`

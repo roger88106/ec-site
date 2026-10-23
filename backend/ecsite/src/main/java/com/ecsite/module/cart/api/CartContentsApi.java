@@ -32,6 +32,9 @@ public class CartContentsApi {
         return cartService.findContents(cartId).map(CartContentsApi::toContents);
     }
 
+    /**
+     * カートの中身を公開の型にする。
+     */
     private static CartContents toContents(CartContentsView view) {
         return new CartContents(view.cartId(), view.memberId(), view.version(),
                 view.items().stream().map(item -> new CartContents.Item(item.variantId(), item.quantity())).toList());

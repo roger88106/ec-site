@@ -40,29 +40,28 @@ public class OrderReportApi {
     /**
      * 注文を公開の型にする。
      */
-    private static OrderReportSnapshot toSnapshot(OrderReportView result) {
-        var order = result.order();
-        var cancellation = order.cancellation();
-        var buyer = order.buyerProfile();
-        var amounts = order.amounts();
+    private static OrderReportSnapshot toSnapshot(OrderReportView view) {
+        var cancellation = view.cancellation();
+        var buyer = view.buyerProfile();
+        var amounts = view.amounts();
         return new OrderReportSnapshot(
-                order.id(),
-                order.orderNumber().value(),
-                order.memberId(),
-                order.orderedAt(),
-                toStatus(order.status()),
+                view.id(),
+                view.orderNumber().value(),
+                view.memberId(),
+                view.orderedAt(),
+                toStatus(view.status()),
                 cancellation == null ? null : cancellation.cancelledAt(),
                 cancellation == null ? null : toKind(cancellation.kind()),
                 cancellation == null ? null : cancellation.restocked(),
-                order.shippingAddress().postalCode(),
-                order.shippingAddress().area().prefectureCode(),
+                view.shippingAddress().postalCode(),
+                view.shippingAddress().area().prefectureCode(),
                 buyer.age(),
                 buyer.gender() == null ? null : toGender(buyer.gender()),
                 amounts.total(),
                 amounts.shippingFee(),
                 amounts.taxes().stream().map(TaxAmount::taxAmount).reduce(Money.ZERO, Money::plus),
-                result.shippingTax(),
-                order.lines().stream().map(OrderReportApi::toLine).toList());
+                view.shippingTax(),
+                view.lines().stream().map(OrderReportApi::toLine).toList());
     }
 
     /**

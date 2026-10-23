@@ -47,7 +47,16 @@ public class OrderReportQueryService {
      */
     @Transactional(readOnly = true)
     public Optional<OrderReportView> find(UUID orderId) {
-        return orderRepository.findById(orderId).map(order -> new OrderReportView(order, shippingTax(order)));
+        return orderRepository.findById(orderId).map(this::toView);
+    }
+
+    /**
+     * 注文を、レポート用の表示にする。
+     */
+    private OrderReportView toView(Order order) {
+        return new OrderReportView(order.id(), order.orderNumber(), order.memberId(), order.orderedAt(),
+                order.status(), order.cancellation(), order.shippingAddress(), order.buyerProfile(),
+                order.amounts(), shippingTax(order), order.lines());
     }
 
     /**

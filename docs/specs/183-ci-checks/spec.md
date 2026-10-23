@@ -218,9 +218,10 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 範囲：`.github/workflows/ci.yml`、`frontend/store/package.json`、`frontend/admin/package.json`、`docs/guides/`
   - CI の統合テストのジョブは push の後に確認する（手元では統合テストを実行しない）
   - 結果：全体の検査を `./gradlew check` に決めた（`check` が checkLicense・テスト・compileToolsJava・OpenAPI の検証・checkBootJar・coverageReport を含み、`build` は `assemble` を加えるだけで、`checkLicense build` は重複）。ci.yml と docs/guides/ci.md・running-tests.md を合わせ、分ける数は matrix の `shard` の一覧だけにして総数は `strategy.job-total` から読み、店舗画面の `--passWithNoTests` を外した（外して `pnpm --filter ./frontend/store run test` が 317 件通った）。
-- [ ] **T183-03-02** [テスト] React のバージョンの指定をそろえ、Gradle のプラグインの一覧と Dependabot の対象を確認する検査を加える（DC-183-26〜28）。
+- [x] **T183-03-02** [テスト] React のバージョンの指定をそろえ、Gradle のプラグインの一覧と Dependabot の対象を確認する検査を加える（DC-183-26〜28）。
   - 依存：なし
   - 範囲：3 つの `package.json`、`pnpm-lock.yaml`、`scripts/ci/` の直下（新しい検査。`check-all.sh` が実行する置き場所）、`scripts/ci/licenses/policy.json`、テスト、`docs/guides/ci.md`
+  - 結果：React の指定を、他の依存と同じ `^` の範囲にそろえた（store の `react`・`react-dom` と shared の devDependencies の固定 `19.3.1` を `^19.3.1` に。admin はすでに `^19.3.1`、shared の peerDependencies `^19.3.0` は範囲のまま）。解決は 19.3.1 のままで、`pnpm-lock.yaml` の差分は specifier の 4 行だけ。検査 `gradle-plugins`（カタログの `[plugins]` と `plugins {}` の id を `policy.json` の `gradlePlugins` と過不足照合）と `dependabot-actions`（`action.yml` のディレクトリが Dependabot の `directories` にあるか）を加え、ci.md の表に行を加えた。
 - [ ] **T183-03-03** [テスト] ローカルのポートの一覧を 1 か所に置き、他の所との食い違いを見つける検査を作る（DC-183-29、30）。
   - 依存：なし
   - 範囲：一覧の置き場所（`scripts/dev/` か `docker/`。結果に書く）、`docker/compose.yaml`、`scripts/dev/slot.mjs`・`scripts/dev/lib/`、`scripts/dev/windows/`、`e2e/playwright.config.ts`、`scripts/ci/`、テスト、`docs/guides/setup.md`、`docs/guides/ci.md`

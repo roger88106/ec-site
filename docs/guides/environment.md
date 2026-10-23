@@ -71,7 +71,7 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | 環境変数 | 内容 | 既定 ※1 |
 |----------|------|---------|
 | `STORE_API_BASE_URL` | 店舗 API の接続先 | `http://localhost:8080/api/store` |
-| `STORE_API_REVALIDATE_SECONDS` | API の結果をキャッシュする秒数（E2E で短くする。本番相当では設定しない）。0 以上の整数。0 はキャッシュしない設定。小数、負の数、数でない値は起動に失敗する | 60 |
+| `STORE_API_REVALIDATE_SECONDS` | API の結果をキャッシュする秒数（E2E で短くする。本番相当では設定しない） ※2 | 60 |
 | `STORE_API_TIMEOUT_SECONDS` | 店舗 API の応答のタイムアウト（秒）。正の数でなければ起動に失敗する | 30 |
 | `AUTH_KEYCLOAK_TIMEOUT_SECONDS` | IdP（ログイン、token の更新）の応答のタイムアウト（秒）。正の数でなければ起動に失敗する | 10 |
 | `AUTH_KEYCLOAK_ISSUER` | IdP（消費者の realm） | `http://localhost:8180/realms/ec-store` |
@@ -81,3 +81,5 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `STORE_COOKIE_PREFIX` | 店舗画面の Cookie（Auth.js のセッション・CSRF・PKCE など、カート）の名前の前に付ける接頭辞。HTTPS の `__Secure-`・`__Host-` があれば、その後ろに付ける。英数字と `-`、`_` だけ（それ以外は起動に失敗する）。任意。`slot.mjs run` が設定する（[開発環境の起動](setup.md) 第 9 節） | 空（今の名前のまま） |
 
 ※1：既定値はローカルと CI 向けの値で、開発モードとテストでだけ使う。本番モードでは、`STORE_API_REVALIDATE_SECONDS`、`STORE_API_TIMEOUT_SECONDS`、`AUTH_KEYCLOAK_TIMEOUT_SECONDS` 以外がなければ起動に失敗する。
+
+※2：0 以上の整数。0 はキャッシュしない設定。小数、負の数、数でない値は起動に失敗する。

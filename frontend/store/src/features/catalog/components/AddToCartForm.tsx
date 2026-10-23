@@ -38,7 +38,7 @@ export function AddToCartForm({ variant }: { variant: Variant | null }) {
           {pending ? t('adding') : t('submit') /* 送信中か、カートに入れる */}
         </Button>
       </div>
-      {/* 成功も失敗も、常にある領域に入れて確実に読み上げる（失敗の文は他の画面と同じ部品で、領域は入れ子にしない） */}
+      {/* 成功も失敗も、常にある領域に入れて確実に読み上げる（エラーメッセージは他の画面と同じ部品で、領域は入れ子にしない） */}
       <div aria-live="polite" className="text-sm">
         {result?.ok === true && (
           <p>

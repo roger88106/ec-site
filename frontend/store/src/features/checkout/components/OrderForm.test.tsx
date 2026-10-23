@@ -57,7 +57,7 @@ function selected(label: string): string {
 }
 
 /**
- * 欄の見出しの後から、次の欄の見出し（または注文のボタン）の前までの HTML（誤りの文がその欄の下に出ることを確認するため）。
+ * 欄の見出しの後から、次の欄の見出し（または注文のボタン）の前までの HTML（エラーメッセージがその欄の下に出ることを確認するため）。
  *
  * @param html  フォームの HTML
  * @param label 欄の見出し
@@ -92,7 +92,7 @@ describe('お届け先の入力と注文', () => {
       expect(html).toContain(`name="${name}"`)
     }
     expect(html).toContain('>注文する（3,200 円）</button>')
-    // 初期表示には、失敗の文も欄ごとの誤りもない（段落は、メールアドレスの見出しと案内と、欄のヒントだけ）
+    // 初期表示には、エラーメッセージも欄ごとの誤りもない（段落は、メールアドレスの見出しと案内と、欄のヒントだけ）
     expect(html).not.toContain('aria-live')
     const paragraphs = [...html.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)].map((match) => match[1])
     expect(paragraphs).toEqual([

@@ -2,11 +2,11 @@
   "targets": {
     "backend": {
       "line": {
-        "value": 98.09,
+        "value": 98.17,
         "tolerance": 0.1
       },
       "branch": {
-        "value": 85.26,
+        "value": 85.53,
         "tolerance": 0.3
       }
     },
@@ -42,7 +42,7 @@
     },
     "backend-domain": {
       "mutation": {
-        "value": 90.2,
+        "value": 90.95,
         "tolerance": 0
       }
     }

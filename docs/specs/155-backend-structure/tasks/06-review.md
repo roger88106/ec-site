@@ -12,7 +12,7 @@
 - [x] **T155-06-02** [バックエンドの書き方](../../../rules/backend-coding.md) 第 1 節（標準の構成、パッケージの大きさの表）と[バックエンドの書き方](../../../rules/backend-coding.md) 第 6 節（設定の値の型）を、本 spec の決定と照合して修正する。バックエンドのアーキテクチャと共通コードの設計書の、構成とテスト専用の操作の記述も照合する。パッケージの大きさの表は、現在の 10 を超えるパッケージの一覧と一致させる（DC-155-46）。
   - 依存：段階 1〜5
   - 範囲：`docs/rules/backend-coding.md`、`docs/design/backend-architecture.md`、`docs/design/common.md`
-- [ ] **T155-06-03** 全体の検査：`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` を実行する。mutation とカバレッジが基準（line 98.09、branch 85.26、domain の mutation 90.2）を下回らないことを確認する。
+- [x] **T155-06-03** 全体の検査：`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` を実行する。mutation とカバレッジが基準（line 98.09、branch 85.26、domain の mutation 90.2）を下回らないことを確認する。
   - 依存：T155-06-01、T155-06-02
 - [ ] **T155-06-04** spec の最後のレビュー：profile「厚め」で行い、組み合わせは[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節の表に従う。ファイルをまたぐ影響の観点を必ず含める。DC-155-1〜48 と DN-155-1〜5 を満たすことを確認する。推奨ごとに、自動の検査に移せるかどうかを併記する。DN-155-2 のため、spec の最初の commit からの差分に `api/openapi/` と `db/migration/` のファイルがないことも確認する。
   - 依存：T155-06-03

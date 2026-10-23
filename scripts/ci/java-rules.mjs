@@ -60,13 +60,19 @@ export function findLombok(text) {
 }
 
 /**
- * 列挙型の変換に name() を渡す行を探す。
+ * 列挙型の変換に name() を渡す呼び出しを探す。改行を挟んだ呼び出しも見つけ、呼び出しの始まりの行を返す。
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行
  */
 export function findEnumNameConversions(text) {
-  return findLines(text, ENUM_NAME)
+  const lines = text.split('\n')
+  const hits = []
+  for (const match of text.matchAll(new RegExp(ENUM_NAME.source, 'g'))) {
+    const line = text.slice(0, match.index).split('\n').length
+    hits.push({ line, text: lines[line - 1].trim() })
+  }
+  return hits
 }
 
 /**

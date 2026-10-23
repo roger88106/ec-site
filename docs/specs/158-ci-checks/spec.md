@@ -231,9 +231,10 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
   - 依存：T158-01-02（Git の対象のファイルの一覧の関数を使う）
   - 範囲：`scripts/ci/ac-check.mjs`、`scripts/ci/ac-check.test.mjs`
   - 結果：テスト名の数は 1769 件から 1765 件に減った。減ったのは `frontend/store/src/proxy.test.ts` の `matcher.test('/products')` など `.test(` の呼び出し 4 件で、AC を持たない。AC の「テストあり」、警告、AC 一覧は変わらない（`skip`・`fixme` のテストは 0 件）。
-- [ ] **T158-02-02** [テスト] Java の規則の検査：改行を挟んだ `valueOf(x.name())` を見つける（DC-158-3）。
+- [x] **T158-02-02** [テスト] Java の規則の検査：改行を挟んだ `valueOf(x.name())` を見つける（DC-158-3）。
   - 依存：なし
   - 範囲：`scripts/ci/java-rules.mjs`、テスト
+  - 結果：改行を挟んだ `valueOf(x.name())` を全文への一致で見つけ、呼び出しの始まりの行番号を返すようにした。今のコードの違反は 0 件のまま。
 - [ ] **T158-02-03** [テスト] フロントの規則の検査：相対パス、`export … from`、`import()` の import を見つける。不要になった除外を失敗にする（DC-158-4、5）。
   - 依存：なし
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト

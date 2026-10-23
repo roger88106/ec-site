@@ -36,6 +36,22 @@ describe('バックエンドの書き方の検査', () => {
     assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [1, 2])
   })
 
+  test('改行を挟んだ valueOf(x.name()) も、呼び出しの始まりの行で見つける', () => {
+    const text = [
+      'class A {',
+      '    Status f() {',
+      '        return Status.valueOf(',
+      '            order.status().name());',
+      '    }',
+      '    Status g() {',
+      '        return PaymentStatus.fromValue(status.name()',
+      '        );',
+      '    }',
+      '}',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [3, 7])
+  })
+
   test('name() を渡さない valueOf は見つけない', () => {
     assert.deepEqual(findEnumNameConversions('BigDecimal.valueOf(amount.longValue()); String.valueOf(name)'), [])
   })

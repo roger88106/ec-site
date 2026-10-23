@@ -1,4 +1,4 @@
-package com.ecsite.module.notification.application;
+package com.ecsite.module.notification.infrastructure.mail;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;

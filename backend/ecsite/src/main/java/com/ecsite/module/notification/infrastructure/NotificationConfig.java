@@ -1,6 +1,6 @@
 package com.ecsite.module.notification.infrastructure;
 
-import com.ecsite.module.notification.application.NotificationProperties;
+import com.ecsite.module.notification.infrastructure.mail.NotificationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

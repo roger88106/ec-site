@@ -1,6 +1,5 @@
 package com.ecsite.module.notification.infrastructure.mail;
 
-import com.ecsite.module.notification.application.NotificationProperties;
 import com.ecsite.module.notification.application.port.Mailer;
 import lombok.RequiredArgsConstructor;
 import org.springframework.mail.SimpleMailMessage;

@@ -114,7 +114,7 @@ CI の検査の script（`scripts/ci/`）と workflow（`.github/`）に、検�
 
 ※3：版を 1 か所から読む方法は、compose（YAML）、Gradle、Java の統合テストの 3 つの形式をまたぐので、照合の検査にする。今の食い違い（imgproxy、Keycloak、Mailpit）は、検査を加える時に修正する。
 
-※4：Dependabot が `directory: /` の設定で複合の action を見ないことは、GitHub の文書でまだ確認していない。段階 4 の最初のタスクで確認する。
+※4：`directory: /` は `.github/workflows` とルートの `action.yml` しか見ない（GitHub の文書で確認。T158-04-01）。複合の action は `directories` に追加して見せる。
 
 ※5：Node はルートの `package.json` の `engines`、JDK は Gradle の toolchain の版と、別に持っている。
 
@@ -326,9 +326,10 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
 - 完了条件：DC-158-7、8、38〜48 を満たし、CI と `check-all.sh` が通る。
 - 参照：第 3 節の DS-158-5、DC-158-7、8
 
-- [ ] **T158-04-01** GitHub の文書で、Dependabot の `github-actions` が複合の action を見る条件を確認し、結果をこのタスクの下に書く。必要なら設定を修正する（DC-158-42）。
+- [x] **T158-04-01** GitHub の文書で、Dependabot の `github-actions` が複合の action を見る条件を確認し、結果をこのタスクの下に書く。必要なら設定を修正する（DC-158-42）。
   - 依存：なし
   - 範囲：`.github/dependabot.yml`、`docs/guides/branches.md`（Dependabot の対象の欄）
+  - 結果：GitHub の文書（https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference ）では、`github-actions` の `directory: /` は `.github/workflows` とルートの `action.yml` を見ると読める。`.github/actions/` の下には触れていない。そのため `directories` に `/.github/actions/setup-frontend` を追加した。
 - [ ] **T158-04-02** [テスト] コンテナのイメージの版が compose、Gradle、統合テストで一致することを照合する検査を作る。今の食い違い（imgproxy、Keycloak、Mailpit）を compose の版にそろえ、Zipkin の版を patch まで固定する（DC-158-39、40）。
   - 依存：なし
   - 範囲：`scripts/ci/`、`docker/compose.yaml`、`backend/ecsite/src/integrationTest/`（版の文字列だけ）、`docs/guides/ci.md` の表

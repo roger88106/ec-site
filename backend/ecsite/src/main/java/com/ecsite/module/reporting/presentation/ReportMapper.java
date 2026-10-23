@@ -7,10 +7,12 @@ import com.ecsite.api.admin.model.Granularity;
 import com.ecsite.api.admin.model.OrderAxisValue;
 import com.ecsite.api.admin.model.PrefectureSales;
 import com.ecsite.api.admin.model.ReportBasis;
+import com.ecsite.api.admin.model.ReportSettings;
 import com.ecsite.api.admin.model.SalesTrendPoint;
 import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSales;
 import com.ecsite.api.admin.model.VariantSalesReport;
+import com.ecsite.module.reporting.application.model.view.ReportSettingsView;
 import com.ecsite.module.reporting.domain.AgeGroup;
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.ReportGender;
@@ -24,6 +26,17 @@ import org.springframework.stereotype.Component;
  */
 @Component
 class ReportMapper {
+
+    /**
+     * レポートの設定のレスポンスに変換する。
+     *
+     * @param view レポートの設定
+     * @return レポートの設定のレスポンス
+     */
+    ReportSettings toReportSettings(ReportSettingsView view) {
+        return new ReportSettings()
+                .fiscalYearStartMonth(view.fiscalYearStartMonth());
+    }
 
     /**
      * 売上の数え方に変換する。省けば注文基準。

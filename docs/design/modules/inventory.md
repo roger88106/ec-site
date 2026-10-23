@@ -99,11 +99,11 @@ RETURNING quantity;
 inventory/
 ├── api/                    # 販売可能数の照会、在庫の操作（引き当てる、解く、減算に置き換える、戻す）
 ├── presentation/           # admin.yaml から生成したインターフェースを実装
-├── application/            # 在庫の調整と参照、引当、期限切れの引当の片付け、商品カタログのイベントのリスナー
+├── application/            # 在庫の調整（StockCommandService）、参照（StockQueryService。販売可能数を含む）、引当（StockReservationService）、在庫の作成と削除（StockRegistrationService）、期限切れの引当の片付け、商品カタログのイベントのリスナー（在庫の作成と削除は StockRegistrationService に委ねる）
 │   ├── model/              # コマンド（command）と表示の型（view）
 │   └── port/               # 在庫の参照用リポジトリ
-├── domain/
-│   └── stock/              # 在庫の調整、行ロックした在庫、引当の判定、エラー。port/ は在庫と引当のリポジトリ
+├── domain/                 # 直下に、エラーの定義（InventoryErrorCode）
+│   └── stock/              # 在庫の調整、行ロックした在庫、引当の判定。port/ は在庫と引当のリポジトリ
 └── infrastructure/
     └── persistence/        # リポジトリと参照用リポジトリの実装、有効な引当の条件
 ```

@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（期間の重複・途切れの禁止、開始済みの税率の変更制限など、不変条件が多い） |
 | 依存 | なし |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/155-backend-structure) |
 
 ## 税区分（集約）
 
@@ -62,8 +62,8 @@ tax/
 ├── application/            # 税区分の作成、税率の置き換え、参照
 │   ├── model/              # コマンド（command）と表示の型（view）
 │   └── port/               # 税区分の参照用リポジトリ
-├── domain/
-│   └── taxcategory/        # 税区分（集約）、税率、税の計算、エラー。vo/ は率と適用期間、port/ はリポジトリ
+├── domain/                 # 直下に、エラーの定義（TaxErrorCode）
+│   └── taxcategory/        # 税区分（集約）、税率、税の計算。vo/ は率と適用期間、port/ はリポジトリ
 └── infrastructure/
     └── persistence/        # リポジトリと参照用リポジトリの実装
 ```

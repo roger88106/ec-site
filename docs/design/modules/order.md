@@ -159,10 +159,10 @@ order/
 │   ├── shipment/           # 出荷の登録
 │   ├── model/              # 表示の型（view。見積もり、注文手続き、注文の詳細と一覧、支払、出荷、レポート用の注文）と注文の成立の入出力
 │   └── port/               # 注文の一覧の検索と、腐敗防止層の port（カート、商品カタログ、在庫、地域、決済、出荷）
-├── domain/
+├── domain/                 # 直下に、エラーの定義（OrderErrorCode）
 │   ├── quote/              # 見積もり、明細、金額の内訳。port/ は税の腐敗防止層の port
 │   ├── checkout/           # 注文手続き。port/ はリポジトリ
-│   └── order/              # 注文（集約）、状態などの列挙、エラー。vo/ は値、port/ はリポジトリ
+│   └── order/              # 注文（集約）、状態などの列挙、購入者の情報（BuyerProfile）、キャンセル（Cancellation）。vo/ は注文番号・配送先・明細などの値、port/ はリポジトリ
 └── infrastructure/
     ├── persistence/        # リポジトリと一覧の検索の実装
     └── directory/          # カート・商品カタログ・在庫・地域・税・決済・出荷の腐敗防止層

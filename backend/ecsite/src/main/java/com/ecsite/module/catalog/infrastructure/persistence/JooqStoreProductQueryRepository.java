@@ -3,8 +3,8 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.catalog.api.StoreProductDetail;
 import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
+import com.ecsite.module.catalog.application.model.view.StoreProductDetailView;
 import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import com.ecsite.module.catalog.application.port.StoreProductQueryRepository;
 import lombok.RequiredArgsConstructor;
@@ -90,7 +90,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
      * @return 商品の詳細
      */
     @Override
-    public Optional<StoreProductDetail> findVisibleDetail(UUID id, Instant now, Map<UUID, BigDecimal> rates) {
+    public Optional<StoreProductDetailView> findVisibleDetail(UUID id, Instant now, Map<UUID, BigDecimal> rates) {
         if (rates.isEmpty()) {
             return Optional.empty();
         }
@@ -103,7 +103,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
                 .fetchOptional()
                 .map(row -> {
                     var images = storeImageUrls.ofProduct(id);
-                    return new StoreProductDetail(row.value1(), row.value2(), row.value3(), Money.of(row.value4()), Money.of(row.value5()),
+                    return new StoreProductDetailView(row.value1(), row.value2(), row.value3(), Money.of(row.value4()), Money.of(row.value5()),
                             axes(id), variants(id, images), List.copyOf(images.values()));
                 });
     }
@@ -152,7 +152,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     /**
      * すべてのバリアント（販売停止中を含む）を表示順で取得する。バリアントの画像は、指定した画像の URL（なければ null）。
      */
-    private List<StoreProductDetail.Variant> variants(UUID productId, Map<UUID, String> imageUrls) {
+    private List<StoreProductDetailView.Variant> variants(UUID productId, Map<UUID, String> imageUrls) {
         Map<UUID, List<String>> axisValuesByVariant = dsl.select(VARIANT_AXIS_VALUE.VARIANT_ID, VARIANT_AXIS_VALUE.VALUE)
                 .from(VARIANT_AXIS_VALUE)
                 .join(VARIANT).on(VARIANT.ID.eq(VARIANT_AXIS_VALUE.VARIANT_ID))
@@ -162,7 +162,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
         return dsl.selectFrom(VARIANT)
                 .where(VARIANT.PRODUCT_ID.eq(productId))
                 .orderBy(VARIANT.DISPLAY_ORDER)
-                .fetch(variant -> new StoreProductDetail.Variant(
+                .fetch(variant -> new StoreProductDetailView.Variant(
                         variant.getId(),
                         axisValuesByVariant.getOrDefault(variant.getId(), List.of()),
                         variant.getSalesSuspended(),

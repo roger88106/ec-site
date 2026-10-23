@@ -2,8 +2,8 @@ package com.ecsite.module.catalog.application.port;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.catalog.api.StoreProductDetail;
 import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
+import com.ecsite.module.catalog.application.model.view.StoreProductDetailView;
 import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 
 import java.math.BigDecimal;
@@ -39,5 +39,5 @@ public interface StoreProductQueryRepository {
      * @param rates 税区分 ID → 表示時刻で有効な率（%）
      * @return 商品の詳細。表示されない商品なら空
      */
-    Optional<StoreProductDetail> findVisibleDetail(UUID id, Instant now, Map<UUID, BigDecimal> rates);
+    Optional<StoreProductDetailView> findVisibleDetail(UUID id, Instant now, Map<UUID, BigDecimal> rates);
 }

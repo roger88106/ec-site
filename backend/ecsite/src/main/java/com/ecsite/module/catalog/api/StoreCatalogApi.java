@@ -6,6 +6,7 @@ import com.ecsite.module.catalog.application.CategoryQueryService;
 import com.ecsite.module.catalog.application.StoreProductQueryService;
 import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
 import com.ecsite.module.catalog.application.model.view.CategoryNodeView;
+import com.ecsite.module.catalog.application.model.view.StoreProductDetailView;
 import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -62,7 +63,7 @@ public class StoreCatalogApi {
      * @return 商品の詳細。表示されない商品なら空
      */
     public Optional<StoreProductDetail> findProduct(UUID productId) {
-        return storeProductQueryService.findProduct(productId);
+        return storeProductQueryService.findProduct(productId).map(StoreCatalogApi::toDetail);
     }
 
     /**
@@ -103,6 +104,19 @@ public class StoreCatalogApi {
             case PRICE_ASC -> StoreProductListQuery.Sort.PRICE_ASC;
             case PRICE_DESC -> StoreProductListQuery.Sort.PRICE_DESC;
         };
+    }
+
+    /**
+     * 詳細の view を公開する型に変換する。
+     */
+    private static StoreProductDetail toDetail(StoreProductDetailView view) {
+        return new StoreProductDetail(view.id(), view.name(), view.description(), view.priceInclTax(),
+                view.priceExclTax(), view.axes(),
+                view.variants().stream()
+                        .map(variant -> new StoreProductDetail.Variant(variant.id(), variant.axisValues(),
+                                variant.salesSuspended(), variant.imageUrl()))
+                        .toList(),
+                view.imageUrls());
     }
 
     /**

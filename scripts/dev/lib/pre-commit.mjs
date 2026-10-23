@@ -3,7 +3,6 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { isMain } from '../../ci/lib/is-main.mjs'
 
 /** 取り出しに失敗したときの終了コード（検査の失敗の 1 と区別する） */
 export const CHECKOUT_FAILED = 2
@@ -51,8 +50,13 @@ export function runPreCommit({ root, gitDir, env, checkout, runCheck, makeTemp, 
   }
 }
 
-/** 実際の git と一時ディレクトリで runPreCommit を実行する */
-function main() {
+/**
+ * 実際の git と一時ディレクトリで runPreCommit を実行する。
+ * 直接実行の判定に頼らず、入口（pre-commit-main.mjs）が必ず呼ぶ。判定が外れて hook が何もせず成功するのを防ぐため。
+ *
+ * @returns {number} hook の終了コード
+ */
+export function main() {
   const git = (args) => spawnSync('git', args, { encoding: 'utf8' })
   const root = git(['rev-parse', '--show-toplevel']).stdout.trim()
   const gitDir = path.resolve(git(['rev-parse', '--git-dir']).stdout.trim())
@@ -68,5 +72,3 @@ function main() {
     removeTemp: (dir) => rmSync(dir, { recursive: true, force: true }),
   })
 }
-
-if (isMain(import.meta.url)) process.exitCode = main()

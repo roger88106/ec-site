@@ -1,6 +1,7 @@
 // 検査の成功・失敗の判定。check-all.sh が、検査ごとに終了コードと出力の最後の行を見るために使う
 //   使い方：node scripts/ci/lib/check-result.mjs <終了コード> <出力のファイル> <summary|none>
-//   失敗なら理由を標準出力に出して終了コード 1 を返す。成功なら何も出さない
+//   成功なら OK の 1 行を標準出力に出して終了コード 0 を返す。失敗なら理由を標準出力に出して終了コード 1 を返す
+//   呼ぶ側は、OK の行が出たときだけ成功にする（この script が動かなかったときに成功にしないため）
 import { readFileSync } from 'node:fs'
 import { isMain } from './is-main.mjs'
 
@@ -39,4 +40,5 @@ if (isMain(import.meta.url)) {
     console.log(result.reason)
     process.exit(1)
   }
+  console.log('OK')
 }

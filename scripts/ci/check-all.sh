@@ -27,7 +27,8 @@ failed=0
 
 # 1 つを流し、結果を 1 行で出す（失敗したら出力の末尾を添える）
 #   $1：表示の名前、$2：要約の行を求めるか（summary か none）、残り：流すコマンド
-#   summary のものは、終了コードが 0 でも、最後の行が要約の行（「<何>：<件数>」）でなければ失敗にする（判定は lib/check-result.mjs）
+#   終了コードが 0 でなければ、node を呼ばずに失敗にする。
+#   summary のものは、終了コードが 0 でも、最後の行が要約の行（「<何>：<件数>」）でなければ失敗にする（判定は lib/check-result.mjs。成功は OK の 1 行で示す）
 run_check() {
   local name="$1"
   local mode="$2"
@@ -36,9 +37,20 @@ run_check() {
   "$@" >"$LOG" 2>&1
   local status=$?
   local elapsed=$((SECONDS - start))
-  local reason
-  reason="$(node scripts/ci/lib/check-result.mjs "$status" "$LOG" "$mode")"
-  if [ $? -eq 0 ]; then
+  local reason ok=0
+  if [ "$status" -ne 0 ]; then
+    # 終了コードは shell が直接見る（node の判定に頼らない）
+    reason="終了コード $status"
+  else
+    # 要約の行の判定だけを node に任せる。OK の行が出なければ、判定の script が動かなかったものとして失敗にする
+    reason="$(node scripts/ci/lib/check-result.mjs "$status" "$LOG" "$mode")"
+    if [ $? -eq 0 ] && [ "$reason" = "OK" ]; then
+      ok=1
+    elif [ -z "$reason" ]; then
+      reason="判定の script が結果を出さなかった"
+    fi
+  fi
+  if [ "$ok" -eq 1 ]; then
     echo "OK   $name (${elapsed}s)"
     # 通っても、警告（「警告：」で始まる行）は出す
     grep '^警告：' "$LOG" | sed 's/^/     | /'

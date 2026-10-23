@@ -49,9 +49,9 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 
 ## 3. CI の検査の script
 
-`scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。1 つでも失敗すれば、全てを実行したあとで終了コード 1 を返す。検査は、終了コードが 0 でなければ失敗で、終了コードが 0 でも、最後の行が要約の行（`<何>：<件数>`。「：」の後に数字がある行）でなければ失敗にする（判定は `lib/check-result.mjs`）。script のテストは `node --test` の出力なので、要約の行を求めず、終了コードだけで判定する。
+`scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。1 つでも失敗すれば、全てを実行したあとで終了コード 1 を返す。検査は、終了コードが 0 でなければ失敗で、終了コードが 0 でも、最後の行が要約の行（`<何>：<件数>`。「：」の後に数字がある行）でなければ失敗にする（判定は `lib/check-result.mjs`。終了コードが 0 でなければ、`check-all.sh` が node を呼ばずに直接失敗にする）。script のテストは `node --test` の出力なので、要約の行を求めず、終了コードだけで判定する。
 
-- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。違反は標準出力に出し、最後の行に要約の行（例：`切れた参照：0`）を出して、違反があれば終了コード 1 にする。`check-all.sh`、CI、hook は修正しなくてよい。この節の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。除外の一覧を持つなら `lib/exclusions.mjs` を使い、画面のソースを読むなら `lib/screen-sources.mjs` を使う。
+- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。違反は標準出力に出し、最後の行に要約の行（例：`切れた参照：0`）を出して、違反があれば終了コード 1 にする。処理は `if (isMain(import.meta.url)) { … }`（`lib/is-main.mjs`）の中に書き、テストが import しても動かないようにする。`check-all.sh`、CI、hook は修正しなくてよい。この節の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。除外の一覧を持つなら `lib/exclusions.mjs` を使い、画面のソースを読むなら `lib/screen-sources.mjs` を使う。
 - 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md) 第 4 節）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
 - 複数の script が使う関数は `lib/` に置く（テストは `*.test.mjs`）。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
   - `spec-dirs.mjs`：spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す。
@@ -60,6 +60,11 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
   - `exclusions.mjs`：除外の一覧（`{キー: 理由}`）を読み、理由のない除外と不要になった除外を見つける。
   - `strip-comments.mjs`：ソースのコメントを空白に置き換える。
   - `closing-paren.mjs`：開き括弧に対応する閉じ括弧の位置を求める（文字列とコメントの中は数えない）。
+  - `is-main.mjs`：script が直接実行されたか（import されたのでないか）を判定する。シンボリックリンク経由でも同じファイルなら直接実行とみなす。
+  - `shallow-clone.mjs`：shallow clone（commit の履歴が途中までのリポジトリ）かを確認する。履歴を読む検査が、shallow clone では失敗にするために使う。
+  - `line-number.mjs`：文字列の中の位置から行番号を求める。
+  - `test-files.mjs`：テストのファイルの探し方と、テストの関数の読み方（AC の照合と機能紹介の数え方が使う）。
+  - `check-result.mjs`：検査の成功・失敗の判定（`check-all.sh` が使う）。終了コードが 0 でも、最後の行が要約の行でなければ失敗にする。成功は `OK` の 1 行で示す。
 
 | script | 確認すること | 失敗したとき | 除外の書き方 |
 |--------|--------------|--------------|--------------|

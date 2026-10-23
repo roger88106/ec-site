@@ -161,9 +161,10 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 - [x] **T183-01-05** 文言の番号の検査の関数の名前、両方の画面のファイルの一覧を 1 回だけ求めること、E2E の実行中の判定を 1 か所にまとめる（DC-183-8、10、11）。
   - 依存：T183-01-01
   - 範囲：`scripts/ci/message-numbers.mjs`、`scripts/ci/frontend-rules.mjs`、`scripts/dev/lib/e2e-running.mjs`、`e2e/scripts/run.ts`、テスト
-  - 結果：message-numbers の関数を findExclusionsWithoutNumbers に改名し、frontend-rules の同じ内容のファイルの一覧を 1 回だけ求めるようにし、プロセスが実行中かの判定を lock-io.mjs の isProcessRunning にまとめた（e2e-running.mjs と run.ts が使う）。既存のテストと e2e の型チェックが通り、isProcessRunning のテストを足した。
-- [ ] **T183-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+  - 結果：message-numbers の関数を findExclusionsWithoutNumbers に改名し、frontend-rules の同じ内容のファイルの一覧を 1 回だけ求めるようにし、プロセスが実行中かの判定を lock-io.mjs の isProcessRunning にまとめた（e2e-running.mjs、run.ts、slot.mjs が使う）。既存のテストと e2e の型チェックが通り、isProcessRunning のテストを足した。
+- [x] **T183-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-01-01〜05
+  - 結果：一般の観点を汎用で 2 回（高 0、必須 2・3）、重要な観点を高性能と汎用で（高 0・1、必須 2・0）。重複を除いて 5 件を修正した。(1) check-all.sh が終了コードを直接見て、判定の CLI が OK の行を出したときだけ成功にする。isMain は実体のパスでも比べ、commit の前の hook は入口の pre-commit-main.mjs から必ず処理を実行する。(2) ci.md の lib/ の一覧に 5 つを加えた。(3) closing-paren.mjs の使う所を直した。(4) slot.mjs の isRunning を isProcessRunning（中身は同じ、EPERM は動いているとみなす）に置き換えた。(5) hardcoded-text と input-constraints の出力の形と終了コード、--count の振る舞いのテストを足した。check-all.sh の配線（summary と none の受け渡し）の実行テストは、検査の script を一時ディレクトリに複製する必要があるので作らず、判定の関数と CLI のテストで DC-183-7 を満たすとした。
 
 ### 段階 2：既存の検査の読み方
 

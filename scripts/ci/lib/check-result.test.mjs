@@ -64,10 +64,10 @@ describe('check-all.sh から呼ぶ形（コマンドライン）', () => {
     }
   }
 
-  test('成功は終了コード 0 で、何も出さない', () => {
+  test('成功は終了コード 0 で、OK の 1 行を出す', () => {
     const result = run('切れた参照：0\n', 0, 'summary')
     assert.equal(result.status, 0)
-    assert.equal(result.stdout, '')
+    assert.equal(result.stdout.trim(), 'OK')
   })
 
   test('要約の行がなければ終了コード 1 で、理由を出す', () => {

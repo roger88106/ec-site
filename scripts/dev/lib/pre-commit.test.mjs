@@ -94,7 +94,7 @@ describe('検査の実行と終了コード', () => {
 describe('実際の hook', () => {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
   /** 実際のリポジトリと同じ置き場所に写す、hook とその hook が読む script */
-  const hookFiles = ['scripts/dev/hooks/pre-commit', 'scripts/dev/lib/pre-commit.mjs', 'scripts/ci/lib/is-main.mjs']
+  const hookFiles = ['scripts/dev/hooks/pre-commit', 'scripts/dev/lib/pre-commit.mjs', 'scripts/dev/lib/pre-commit-main.mjs']
 
   /** Git の環境変数を外した環境（hook の中でテストを実行しても、元のリポジトリを壊さないため） */
   function cleanEnv() {

@@ -14,6 +14,7 @@ import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,10 +25,18 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.OrderTestData.startCheckoutRequest;
+import static com.ecsite.jooq.cart.Tables.CART_;
+import static com.ecsite.jooq.catalog.Tables.PRODUCT;
+import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
+import static com.ecsite.jooq.inventory.Tables.STOCK_RESERVATION;
+import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
+import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
+import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -36,8 +45,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文手続きと、カートの変更のイベントの受け入れテスト（AC-84）。<br />
- * カートの変更のイベントはコミットの後に非同期で届くので、テストはトランザクションにせず、コミットして処理を待つ。
- * 値（税区分など）はテストごとに作り、自分のデータだけを確認する（テストの書き方 第 3.1 節）。
+ * カートの変更のイベントはコミットの後に非同期で届くので、テストはトランザクションにせず、コミットして処理を待ち、
+ * 作ったデータを後で消す。<br />
+ * 後処理（{@code @AfterEach}）を持つ理由：コミットした公開の商品が残ると、商品の一覧の件数を確認する他のテスト
+ * （店舗の統合テスト）に見えて、失敗するため。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -73,6 +84,11 @@ class CheckoutCartChangeApiTest {
 
     private UUID cartId;
 
+    /**
+     * このテストで作った商品
+     */
+    private final List<CatalogTestData.TestProduct> products = new ArrayList<>();
+
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
@@ -80,6 +96,24 @@ class CheckoutCartChangeApiTest {
         data = new CatalogTestData(mockMvc, clock);
         taxCategoryId = data.taxCategory("カート変更-" + UUID.randomUUID().toString().substring(0, 8), "10");
         cartId = createCart();
+    }
+
+    @AfterEach
+    void cleanUp() {
+        var stockItemIds = products.stream()
+                .flatMap(product -> dsl.select(STOCK_ITEM.ID).from(STOCK_ITEM)
+                        .where(STOCK_ITEM.PRODUCT_ID.eq(product.id)).fetch(STOCK_ITEM.ID).stream())
+                .toList();
+        dsl.deleteFrom(STOCK_RESERVATION).where(STOCK_RESERVATION.STOCK_ITEM_ID.in(stockItemIds)).execute();
+        dsl.deleteFrom(CHECKOUT).where(CHECKOUT.CART_ID.eq(cartId)).execute();
+        // 会員のカートは、次に使うときに再作成される
+        dsl.deleteFrom(CART_).where(CART_.ID.eq(cartId)).execute();
+        products.forEach(product -> {
+            dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(product.id)).execute();
+            dsl.deleteFrom(PRODUCT).where(PRODUCT.ID.eq(product.id)).execute();
+        });
+        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(taxCategoryId)).execute();
+        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(taxCategoryId)).execute();
     }
 
     @Test
@@ -142,6 +176,7 @@ class CheckoutCartChangeApiTest {
      */
     private UUID stockedVariant(int quantity) throws Exception {
         var product = data.product(taxCategoryId, "商品", 1000).publish();
+        products.add(product);
         var variantId = product.variantIds.getFirst();
         stockItemRepository.createIfAbsent(variantId, product.id);
         stockItemRepository.adjust(variantId,

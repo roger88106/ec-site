@@ -15,7 +15,7 @@
 | 3.1 | サーバーアクションは `withActionResult` で包む | 自動（Biome の plugin `no-catch-in-actions`） |
 | 3.2 | サーバーアクションの結果は `ActionResult` | レビュー |
 | 4 | 整形と lint は Biome | 自動（`pnpm lint`） |
-| 5.1 | 共有パッケージに入れるもの・入れないもの | admin と store の同じファイルは自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー |
+| 5.1 | 共有パッケージに入れるもの・入れないもの | admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー |
 | 6 | 画面の URL は型で確認する | 自動（型チェック）、型の付かない URL はレビュー |
 | 7.1 | 表示の文言は文言ファイルに置く | 自動（`hardcoded-text.mjs`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー |
 | 7.2 | 文言キーの形 | レビュー |

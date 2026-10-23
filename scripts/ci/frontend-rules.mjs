@@ -2,11 +2,12 @@
 // - 機能（features/<機能>/）は、ほかの機能を import しない
 // - ロケールとタイムゾーンは frontend/shared/src/lib/locale.ts だけに書く。Intl と toLocaleString にロケールを直接書かない
 // - 店舗画面と管理画面に、同じ相対パスで同じ内容のファイルを置かない（共有パッケージに置く）
+// - 店舗画面と管理画面の本番のソースに、共有パッケージが公開する名前と同じ名前の関数・定数・クラスを定義しない（第 5.1 節。公開する名前は shared の package.json の exports から読む）
 // - 共通の置き場所（actions/、lib/、api/）は features/ を import しない（第 1.2 節）
 // - クエリ付きの URL を文字列で組み立てない（第 6 節）。line-through を直接書かない（第 10.1 節）
 // - テストと E2E で CSS のクラスを確認しない（テストの書き方 第 4.1 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
-// 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く
+// 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く。共有と同じ名前の定義でよいもの（各画面の translate など）は、キー <画面>:<名前> と理由を書く
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -179,6 +180,77 @@ export function duplicatedFiles(files, read, excluded) {
     .sort()
 }
 
+/** 行頭の export function・const・class（async も）から、公開する名前 */
+const EXPORT_DECLARATION = /^export\s+(?:async\s+)?(?:function\*?|const|class)\s+([\w$]+)/gm
+
+/** export { … }（export { … } from '…' も）の波括弧の中 */
+const EXPORT_LIST = /^export\s*\{([^}]*)\}/gm
+
+/**
+ * ソースが公開する名前を読む。
+ * 読む書き方は、export function・const・class と export { a, b as c }（from 付きも）。型（export type、{ type X }）と default は、値の名前として使い分ける対象ではないので読まない。
+ * 今の共有のパッケージはこの書き方だけで公開しているため、export * や再 export の連鎖は追わない
+ *
+ * @param {string} text ソース
+ * @returns {string[]} 公開する名前（出てきた順）
+ */
+export function findExportedNames(text) {
+  const hits = [...text.matchAll(EXPORT_DECLARATION)].map((match) => ({ index: match.index, names: [match[1]] }))
+  for (const match of text.matchAll(EXPORT_LIST)) {
+    const names = match[1]
+      .split(',')
+      .map((item) => item.trim())
+      .filter((item) => item && !item.startsWith('type '))
+      .map((item) => item.split(/\s+as\s+/).pop())
+    hits.push({ index: match.index, names })
+  }
+  return hits.sort((a, b) => a.index - b.index).flatMap((hit) => hit.names)
+}
+
+/**
+ * 共有のパッケージが公開する名前を集める。
+ * package.json の exports の値（./src/lib/*.ts など。* は 1 つ以内）に合うソースのファイルを読む。テストは公開しないので読まない。
+ * exports にない src のファイルは、パッケージの外から import できないので読まない
+ *
+ * @param {Record<string, string>} exportsMap shared の package.json の exports
+ * @param {string[]} files リポジトリのルートからのパス
+ * @param {(file: string) => string} read ファイルの中身を読む関数
+ * @returns {Set<string>} 公開する名前
+ */
+export function sharedPublicNames(exportsMap, files, read) {
+  const patterns = Object.values(exportsMap)
+    .filter((target) => typeof target === 'string')
+    .map((target) => {
+      const escaped = target.replace(/^\.\//, 'frontend/shared/').replace(/[.+?^${}()|[\]\\]/g, '\\$&')
+      return new RegExp(`^${escaped.replace('*', '.*')}$`)
+    })
+  const names = new Set()
+  for (const file of files) {
+    if (TEST.test(file) || !/\.tsx?$/.test(file) || !patterns.some((pattern) => pattern.test(file))) continue
+    for (const name of findExportedNames(read(file))) names.add(name)
+  }
+  return names
+}
+
+/**
+ * 指定した名前の関数・定数・クラスを定義する行を探す（export の有無によらない）。
+ * 行頭から始まる定義だけを見る。関数の中の同じ名前の変数は、共有のものと取り違えないので対象にしない
+ *
+ * @param {string} text ソース
+ * @param {Set<string>} names 探す名前
+ * @returns {{ line: number, text: string, name: string }[]} 見つけた定義
+ */
+export function findDefinitions(text, names) {
+  const definition = /^(?:export\s+)?(?:async\s+)?(?:function\*?|const|class)\s+([\w$]+)/
+  return text
+    .split('\n')
+    .map((line, index) => ({ line: index + 1, text: line.trim(), name: line.match(definition)?.[1] }))
+    .filter((hit) => hit.name !== undefined && names.has(hit.name))
+}
+
+/** 共有の名前と同じ名前の定義の除外のキー（<画面>:<名前>）。画面は store か admin */
+const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const files = listGitFiles(['frontend'])
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'frontend-rules-exclusions.json'))
@@ -187,8 +259,20 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     console.log(message)
     count += 1
   }
+  const sharedExports = JSON.parse(readFileSync('frontend/shared/package.json', 'utf8')).exports
+  const sharedNames = sharedPublicNames(sharedExports, files, (file) => readFileSync(file, 'utf8'))
+  const shadowing = new Set()
   for (const file of files.filter((file) => SOURCE.test(file) && !TEST.test(file))) {
     const text = readFileSync(file, 'utf8')
+    if (isScreenSource(file) && !file.startsWith('frontend/shared/')) {
+      for (const hit of findDefinitions(text, sharedNames)) {
+        const key = shadowKey(file, hit.name)
+        shadowing.add(key)
+        if (!(key in exclusions)) {
+          report(`${file}:${hit.line} 共有のパッケージが公開する ${hit.name} と同じ名前の定義（共有のパッケージの ${hit.name} を使う。フロントの書き方 第 5.1 節。別の定義が正しいときは除外の一覧にキー ${key} と理由を書く）：${hit.text}`)
+        }
+      }
+    }
     const feature = featureOf(file)
     if (feature) {
       for (const hit of findCrossFeatureImports(text, feature.feature, file)) {
@@ -223,9 +307,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   for (const relative of duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), Object.keys(exclusions))) {
     report(`frontend/{store,admin}/src/${relative} 店舗画面と管理画面に同じ内容のファイルがある（共有パッケージに置く）`)
   }
-  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるものだけ（片方が消えた、内容が変わったものは不要）
+  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）と、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）だけ
+  // （片方が消えた、内容が変わった、定義がなくなったものは不要）
   const duplicated = new Set(duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), []))
-  for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (relative) => duplicated.has(relative))) {
+  for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (key) => duplicated.has(key) || shadowing.has(key))) {
     report(message)
   }
   console.log(`フロントの書き方の違反：${count}`)

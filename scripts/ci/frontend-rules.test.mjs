@@ -8,7 +8,10 @@ import {
   findLineThrough,
   findLocaleLiterals,
   findQueryUrlStrings,
+  findDefinitions,
+  findExportedNames,
   isCommonFile,
+  sharedPublicNames,
 } from './frontend-rules.mjs'
 
 describe('フロントの書き方の検査', () => {
@@ -150,5 +153,61 @@ describe('店舗画面の書き方の規則', () => {
     assert.equal(isCommonFile('frontend/admin/src/api/client.ts'), true)
     assert.equal(isCommonFile('frontend/shared/src/lib/locale.ts'), false)
     assert.equal(isCommonFile('frontend/store/src/features/cart/lib/x.ts'), false)
+  })
+})
+
+describe('共有のパッケージと同じ名前の定義', () => {
+  test('export の書き方から、公開する名前を読む（型は除く）', () => {
+    const text = [
+      'export function formatYen(amount: number): string {',
+      'export async function load() {',
+      "export const LOCALE = 'ja-JP'",
+      'export class Foo {}',
+      "export { cn } from 'cn'",
+      'export { Button, buttonVariants }',
+      'export { Inner as Outer, type Skip }',
+      'export type Node = { id: string }',
+      'export default function Page() {}',
+      'const hidden = 1',
+    ].join('\n')
+    assert.deepEqual(findExportedNames(text), ['formatYen', 'load', 'LOCALE', 'Foo', 'cn', 'Button', 'buttonVariants', 'Outer'])
+  })
+
+  test('package.json の exports の先のファイルだけから、公開する名前を集める', () => {
+    const exportsMap = { './lib/*': './src/lib/*.ts', './ui/*': './src/ui/*.tsx', './theme.css': './src/theme.css' }
+    const files = [
+      'frontend/shared/src/lib/format.ts',
+      'frontend/shared/src/lib/format.test.ts',
+      'frontend/shared/src/ui/button.tsx',
+      'frontend/shared/src/internal/secret.ts',
+      'frontend/shared/src/theme.css',
+    ]
+    const sources = {
+      'frontend/shared/src/lib/format.ts': 'export function formatYen() {}',
+      'frontend/shared/src/lib/format.test.ts': 'export const fromTest = 1',
+      'frontend/shared/src/ui/button.tsx': 'export { Button }',
+      'frontend/shared/src/internal/secret.ts': 'export const secret = 1',
+    }
+    assert.deepEqual([...sharedPublicNames(exportsMap, files, (file) => sources[file])].sort(), ['Button', 'formatYen'])
+  })
+
+  test('同じ名前の関数・定数・クラスの定義を、export の有無によらず見つける', () => {
+    const text = [
+      'export const translate = createTranslator()',
+      'function formatYen(amount) {}',
+      'async function load() {}',
+      'class Button {}',
+      'const other = 1',
+      '  const translate = 2',
+      'const translated = 3',
+      "import { translate } from 'x'",
+    ].join('\n')
+    const names = new Set(['translate', 'formatYen', 'load', 'Button'])
+    assert.deepEqual(findDefinitions(text, names).map((hit) => [hit.line, hit.name]), [
+      [1, 'translate'],
+      [2, 'formatYen'],
+      [3, 'load'],
+      [4, 'Button'],
+    ])
   })
 })

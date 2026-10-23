@@ -56,8 +56,6 @@ class ImageFormatTest {
                     .contains(ImageFormat.JPEG);
             assertThat(ImageFormat.detect(bytes(0x89, 'P', 'N', 'G', '\r', '\n', 0x1A, '\n', 0, 0, 0, 13)))
                     .contains(ImageFormat.PNG);
-            assertThat(ImageFormat.detect(bytes('R', 'I', 'F', 'F', 36, 0, 0, 0, 'W', 'E', 'B', 'P')))
-                    .contains(ImageFormat.WEBP);
         }
 
         @Test

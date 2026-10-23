@@ -30,6 +30,29 @@ describe('コメントの除去', () => {
   })
 })
 
+describe('正規表現のリテラルの扱い', () => {
+  test('正規表現の中の ) " \' // を、括弧・文字列・コメントと読まない', () => {
+    for (const regex of ['/[)"\']/', '/\\/\\//', '/\\)/', '/"/', "/'/"]) {
+      const text = `const a = ${regex}.test(x) // 後ろ\nconst b = 1`
+      const result = stripComments(text, { keepRegex: true })
+      assert.equal(result.includes('後ろ'), false, regex)
+      assert.equal(result.includes('.test(x)'), true, regex)
+      assert.equal(result.includes('const b = 1'), true, regex)
+    }
+  })
+
+  test('正規表現の中の引用符の後ろにあるコメントも消える', () => {
+    const result = stripComments('const a = /"/ // コメント "', { keepRegex: true })
+    assert.equal(result.includes('コメント'), false)
+  })
+
+  test('割り算の / は正規表現と読まず、後ろのコメントを消す', () => {
+    const text = 'const a = b / c / d // 後ろ'
+    assert.equal(stripComments(text), 'const a = b / c / d      ')
+    assert.equal(stripComments('const a = (b) / 2 / (c) // 後ろ').includes('後ろ'), false)
+  })
+})
+
 describe('Java のコメントの除去', () => {
   test('Java のコメントを同じ長さの空白に置き換え、行番号を保つ', () => {
     const text = ['a /* x', 'y */ b // z', '"//w" \'"\' c'].join('\n')

@@ -2,6 +2,7 @@ import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import {
   findRuntimeVersionProblems,
+  findVersionLiteralProblems,
   readEnginesNode,
   readJavaFromToml,
   readJavaFromWorkflow,
@@ -70,5 +71,49 @@ describe('版の一致の検査', () => {
     assert.equal(findRuntimeVersionProblems({ ...ok, workflowJava: undefined }).length, 1)
     assert.equal(findRuntimeVersionProblems({ ...ok, nodeFile: undefined }).length, 1)
     assert.equal(findRuntimeVersionProblems({ ...ok, enginesNode: undefined }).length, 1)
+  })
+})
+
+describe('workflow と action のバージョンの参照の検査', () => {
+  const ok = [
+    '      - uses: actions/setup-java@v6',
+    '        with:',
+    '          distribution: temurin',
+    '          java-version: ${{ env.JAVA_VERSION }}',
+    '      - uses: actions/setup-node@v7',
+    '        with:',
+    '          node-version-file: .node-version',
+  ].join('\n')
+
+  test('決めた 1 か所を参照する形は通る', () => {
+    assert.deepEqual(findVersionLiteralProblems([{ path: '.github/workflows/ci.yml', text: ok }]), [])
+  })
+
+  test('新しい job に java-version や node-version を直接書けば、ファイルと行を出して失敗にする', () => {
+    const text = ['jobs:', '  new-job:', '    steps:', '      - uses: actions/setup-java@v6', '        with:', '          java-version: 21', '      - uses: actions/setup-node@v7', '        with:', "          node-version: '24'"].join('\n')
+    const problems = findVersionLiteralProblems([{ path: '.github/workflows/new.yml', text }])
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /new\.yml:6/)
+    assert.match(problems[1], /new\.yml:9/)
+  })
+
+  test('参照の形でない値（別のファイル、行列、引用符つきの直書き）も失敗にする', () => {
+    const lines = [
+      'java-version: ${{ matrix.java }}',
+      'node-version-file: package.json',
+      'node-version: ${{ env.NODE_VERSION }}',
+      'java-version-file: .java-version',
+      "java-version: '21'",
+      'java-version: [17, 21]',
+    ]
+    for (const line of lines) {
+      assert.equal(findVersionLiteralProblems([{ path: 'a.yml', text: `          ${line}` }]).length, 1, line)
+    }
+  })
+
+  test('リストの項目の先頭（- ）にあっても検出し、コメントの中は見ない', () => {
+    assert.equal(findVersionLiteralProblems([{ path: 'a.yml', text: '      - java-version: 21' }]).length, 1)
+    const text = '# java-version: 21\n          java-version: ${{ env.JAVA_VERSION }} # 21'
+    assert.deepEqual(findVersionLiteralProblems([{ path: 'a.yml', text }]), [])
   })
 })

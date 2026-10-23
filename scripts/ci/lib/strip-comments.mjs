@@ -113,7 +113,7 @@ const BEFORE_REGEX_WORD = /\b(?:return|typeof|case|in|of|delete|void|throw|new|i
  * @param {string} before ここまでのコード
  * @returns {boolean} 行の始まりか、式の始まりになる記号・語の後なら true（それ以外は割り算）
  */
-function startsRegex(before) {
+export function startsRegex(before) {
   const trimmed = before.replace(/[ \t]+$/, '')
   const last = trimmed.at(-1)
   return last === undefined || last === '\n' || BEFORE_REGEX_CHARS.includes(last) || BEFORE_REGEX_WORD.test(trimmed)
@@ -126,7 +126,7 @@ function startsRegex(before) {
  * @param {number} start 始まりの / の位置
  * @returns {number} フラグの次の位置（行の終わりまでに閉じなければ、行の終わり）
  */
-function regexEnd(text, start) {
+export function regexEnd(text, start) {
   let index = start + 1
   let inClass = false
   while (index < text.length && text[index] !== '\n') {

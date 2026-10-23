@@ -60,3 +60,17 @@ export function decideLock({ content, isRunning }) {
 export function decideTakeover({ judged, moved }) {
   return judged === moved ? 'take' : 'restore'
 }
+
+/**
+ * 指定の作業ツリーの E2E が実行中かを判定する。
+ * ロックがあり、所有者がその作業ツリーで、所有者のプロセスが動いているときに実行中とする（PID の再利用は判定しない）。
+ * @param {{ content: string | null, worktree: string, isRunning: (pid: number) => boolean }} input content はロックのファイルの中身（なければ null）、worktree は調べる作業ツリーのパス
+ * @returns {boolean}
+ */
+export function isE2eRunningIn({ content, worktree, isRunning }) {
+  if (content === null) {
+    return false
+  }
+  const owner = parseLock(content)
+  return owner !== null && owner.worktree === worktree && isRunning(owner.pid)
+}

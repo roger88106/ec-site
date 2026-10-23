@@ -345,11 +345,13 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
   - DC-158-45 の 3 件のうち、前のタスクで修正済みのものは、結果にそう書く
   - 結果：Node はルートの `.node-version`（`24`）から読む（`engines.node` は範囲 `>=24` で最新の版に解決されるため使わない）。JDK は `ci.yml` の `env.JAVA_VERSION` に 1 か所にした（`libs.versions.toml` の `java` と同じにする旨をコメントに書いた）。
   - 結果：push の対象外に `.github/ISSUE_TEMPLATE/**` と `.github/dependabot.yml` を加え、`docs/guides/ci.md` にも書いた。workflow と除外の理由、`test-diff.mjs` の spec・plan・DN の番号を言葉に直し、型の生成のコメントを型チェックの手順の前に移した。AC の照合のテストの見出しの指令は、該当する記述が見つからず変更なし。
-- [ ] **T158-04-05** E2E の実行中の印を E2E のロックの 1 つにまとめる（DC-158-7、8）。
+- [x] **T158-04-05** E2E の実行中の印を E2E のロックの 1 つにまとめる（DC-158-7、8）。
   - 依存：なし
   - 範囲：`scripts/dev/e2e.sh`、`scripts/dev/check-frontend.sh`、`scripts/dev/lib/`、`docs/guides/running-tests.md`
   - `e2e.sh` を変えるので、スロットを 1 つ使って手元の E2E で確認する
   - PID の再利用の案内の文（`scripts/dev/lib/slot-lock.mjs`）は変えず、まとめた後の印の説明と食い違わないことを確認する（DC-158-8）
+  - 結果：`e2e.sh` が書く `.local/e2e-running` をやめ、`check-frontend.sh` は `scripts/dev/lib/e2e-running.mjs`（`isE2eRunningIn`。ロックの所有者が自分の作業ツリーで動いていれば実行中）で E2E のロックを見る。`isE2eRunningIn` のテストを先に書いて失敗（レッド）を確認してから実装した（13 件通過）。
+  - 結果：スロット 1 で `e2e.sh` の実行中に `check-frontend.sh admin build` を流すと、実行中を検出して build を止めた（終了コード 1）。E2E は 20 件通過。終了後は同じ build が通った（9 秒）。PID の再利用の案内の文は変えず、まとめた後の説明（ロックは 1 つ）と食い違わない。スロットは解除した。
 - [ ] **T158-04-06** CI の検査の文書を、今の構成に合わせる：補助の script の置き場所の `review/`、手元の実行の表の「共有パッケージ」（DC-158-47、48）。
   - 依存：T158-04-01〜05
   - 範囲：`docs/guides/ci.md`

@@ -7,6 +7,7 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
+import com.ecsite.module.order.application.model.OrderSummaryView;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.ShippingDirectory;
@@ -88,7 +89,7 @@ public class OrderQueryService {
      * @param request  ページの指定
      * @return 注文の一覧
      */
-    public PageResult<OrderQueryRepository.OrderSummaryView> listForMember(UUID memberId, PageRequest request) {
+    public PageResult<OrderSummaryView> listForMember(UUID memberId, PageRequest request) {
         return orderQueryRepository.findOrders(OrderQueryRepository.Filter.ofMember(memberId), request);
     }
 
@@ -105,7 +106,7 @@ public class OrderQueryService {
      * @param request               ページの指定
      * @return 注文の一覧
      */
-    public PageResult<OrderQueryRepository.OrderSummaryView> list(@Nullable String orderNumberPrefix,
+    public PageResult<OrderSummaryView> list(@Nullable String orderNumberPrefix,
                                                                   @Nullable OrderStatus status,
                                                                   @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
                                                                   boolean authorizationExpiring, boolean returned,

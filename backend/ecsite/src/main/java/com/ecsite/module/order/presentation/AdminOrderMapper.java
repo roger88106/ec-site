@@ -22,7 +22,7 @@ import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
-import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
+import com.ecsite.module.order.application.model.OrderSummaryView;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.quote.Amounts;

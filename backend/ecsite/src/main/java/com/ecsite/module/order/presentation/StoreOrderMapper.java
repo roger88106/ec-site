@@ -29,7 +29,7 @@ import com.ecsite.module.order.application.model.CheckoutView;
 import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.model.PlaceOrderCommand;
-import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummaryView;
+import com.ecsite.module.order.application.model.OrderSummaryView;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.jspecify.annotations.Nullable;

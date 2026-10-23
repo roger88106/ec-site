@@ -1,8 +1,8 @@
 package com.ecsite.module.order.application.port;
 
-import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.order.application.model.OrderSummaryView;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import org.jspecify.annotations.Nullable;
 
@@ -46,19 +46,5 @@ public interface OrderQueryRepository {
         public static Filter ofMember(UUID memberId) {
             return new Filter(memberId, null, null, null, null, null);
         }
-    }
-
-    /**
-     * 注文一覧の 1 件
-     *
-     * @param id           注文 ID
-     * @param orderNumber  注文番号
-     * @param orderedAt    注文日時
-     * @param customerName お届け先の氏名
-     * @param total        総額
-     * @param status       状態
-     */
-    record OrderSummaryView(UUID id, String orderNumber, Instant orderedAt, String customerName, Money total,
-                            OrderStatus status) {
     }
 }

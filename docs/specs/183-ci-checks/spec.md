@@ -180,9 +180,10 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：`scripts/ci/env-defaults.mjs`、`scripts/ci/java-rules.mjs`、`scripts/ci/lib/strip-comments.mjs`（使うとき）、テスト
   - 結果：環境変数の既定の検査が、設定のクラスを 1 つも読めないとき、record でない・引数が空・プロパティが 0 件などのときを、ファイルの名前付きの理由で失敗にする。Java の規則の検査は、コメントを同じ長さの空白にしてから読み（`stripJavaComments` を `lib/strip-comments.mjs` に移した）、今のリポジトリは違反 0 件で通る。
-- [ ] **T183-02-03** [テスト] 使わない語の検査に、許す語の一覧を加える（DC-183-15）。
+- [x] **T183-02-03** [テスト] 使わない語の検査に、許す語の一覧を加える（DC-183-15）。
   - 依存：なし
   - 範囲：`scripts/ci/doc-terms.mjs`、`scripts/ci/doc-terms.json`、テスト
+  - 結果：ng の項目に任意の `allow`（許す語の配列）を持てるようにし、一致の位置が許す語の中なら数えない。許す語が使わない語を含まないときは設定の誤りとして例外で失敗にする。今のリポジトリは違反 0 件で通り、ci.md の行を合わせた。
 - [ ] **T183-02-04** [テスト] テストの時間の待ちの検査の対象を広げ、文言の直書きの検査のコメントの除去を共通の関数にする（DC-183-16、17）。
   - 依存：なし
   - 範囲：`scripts/ci/time-waits.mjs`、`scripts/ci/hardcoded-text.mjs`、`scripts/ci/lib/strip-comments.mjs`、テスト

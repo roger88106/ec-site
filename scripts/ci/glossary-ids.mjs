@@ -19,7 +19,7 @@ const SEARCH_ROOTS = ['backend', 'frontend', 'api', 'docker', 'e2e', 'scripts']
  * 検査の script のテストと例の文字を根拠にすると、コードにない識別子が通るため、調べない。
  * scripts/ci/ の本番の script（.mjs）と scripts/dev/ は、調べる。
  */
-const SELF_FILES = /^scripts\/ci\/(?:.*\.test\.mjs$|(?:.*\/)?testdata\/|glossary-ids-exclusions\.json$|doc-terms\.json$)/
+const SELF_FILES = /^scripts\/ci\/(?:.*\.test\.mjs$|(?:.*\/)?testdata\/|[\w-]+-exclusions\.json$|doc-terms\.json$)/
 
 /** 調べないファイル（生成物、画像など） */
 const SKIPPED = /\/(?:node_modules|build|dist|\.next|generated)\/|\.(?:png|jpe?g|webp|gif|ico|svg|woff2?|jar|lock)$|pnpm-lock\.yaml$/

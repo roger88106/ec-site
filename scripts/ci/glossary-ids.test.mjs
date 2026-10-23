@@ -56,3 +56,14 @@ describe('用語集の識別子の検査', () => {
     assert.equal(isSearchedFile('frontend/store/logo.png'), false)
   })
 })
+
+describe('除外の一覧は根拠にしない', () => {
+  test('scripts/ci/ の全ての *-exclusions.json を調べない', () => {
+    assert.equal(isSearchedFile('scripts/ci/related-specs-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/ac-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/frontend-rules-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/hardcoded-text-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/message-numbers-exclusions.json'), false)
+    assert.equal(isSearchedFile('scripts/dev/lib/x-exclusions.json'), true)
+  })
+})

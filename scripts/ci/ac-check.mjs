@@ -32,6 +32,9 @@ const RANGE = '[〜～~]'
 /** AC の番号の書き方。MVP の `12` と、1→10 の `7-1`（spec の番号 ＋ 連番）の 2 つの形 */
 const AC_NUMBER = '[0-9]+(?:-[0-9]+)?'
 
+/** テスト名の中の AC の並び（`AC-1、2`、`AC-8〜10` など）に合う正規表現の元。1 つ目の括弧が、`AC-` の後の並び全体 */
+const AC_LIST_SOURCE = `AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`
+
 /** AC の番号だけに合う正規表現（`AC-` の後の全体） */
 const AC_NUMBER_ONLY = new RegExp(`^(${AC_NUMBER})$`)
 
@@ -118,7 +121,7 @@ const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescri
 export function parseAcRefs(name) {
   const acs = []
   const ranges = []
-  const list = new RegExp(`AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`, 'g')
+  const list = new RegExp(AC_LIST_SOURCE, 'g')
   const item = new RegExp(`(${AC_NUMBER})\\s*(${RANGE})\\s*(${AC_NUMBER})|(${AC_NUMBER})`, 'g')
   for (const [, numbers] of name.matchAll(list)) {
     for (const [, from, sign, to, single] of numbers.matchAll(item)) {
@@ -143,7 +146,7 @@ export function parseAcRefs(name) {
  * @returns 曖昧な並べ方の文字列
  */
 export function findAmbiguousAcLists(name) {
-  const list = new RegExp(`AC-(${AC_NUMBER}(?:\\s*(?:[、,]\\s*(?:AC-)?|${RANGE}\\s*)${AC_NUMBER})*)`, 'g')
+  const list = new RegExp(AC_LIST_SOURCE, 'g')
   const found = []
   for (const match of name.matchAll(list)) {
     // 範囲を含まない並びの区切りで分け、AC- が付かない数字だけの項目が、新しい形の直後にあるかを見る

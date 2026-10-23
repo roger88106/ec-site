@@ -122,3 +122,14 @@ describe('調べるファイル', () => {
     assert.equal(isTargetFile('frontend/admin/vite.config.ts'), false)
   })
 })
+
+describe('調べるファイル（共通の定義より広い部分）', () => {
+  test('src/test/ のテストの補助と generated/ の .tsx も見る', () => {
+    assert.equal(isTargetFile('frontend/admin/src/test/renderApp.tsx'), true)
+    assert.equal(isTargetFile('frontend/store/src/test/render.tsx'), true)
+    assert.equal(isTargetFile('frontend/admin/src/generated/Foo.tsx'), true)
+    assert.equal(isTargetFile('frontend/admin/src/test/helper.ts'), false)
+    assert.equal(isTargetFile('frontend/admin/src/components/ui/sidebar.tsx'), false)
+    assert.equal(isTargetFile('frontend/admin/src/a.test.tsx'), false)
+  })
+})

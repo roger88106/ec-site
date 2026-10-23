@@ -2,9 +2,9 @@
 // compose の `image:` の `名前:版` を正とし、同じ名前のイメージを書いた Gradle と統合テストのコードの版が違えば失敗にする。
 // 版がずれると、手元（compose）と CI（Testcontainers）で別のイメージを動かすことになり、片方だけで起きる不具合を見逃す。
 // 使い方：node scripts/ci/image-versions.mjs（リポジトリのルートで）
-import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -143,10 +143,7 @@ export function findUnpinned(images) {
 
 /** Git の対象のファイルのうち、`SOURCE_PATHS` の下のものを読む */
 function readSourceFiles() {
-  const paths = execFileSync('git', ['ls-files', '--', ...SOURCE_PATHS], { encoding: 'utf8' })
-    .split('\n')
-    .map((path) => path.trim())
-    .filter((path) => /\.(java|kts)$/.test(path))
+  const paths = listGitFiles(SOURCE_PATHS).filter((path) => /\.(java|kts)$/.test(path))
   return paths.map((path) => ({ path, text: readFileSync(path, 'utf8') }))
 }
 

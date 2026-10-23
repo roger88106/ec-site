@@ -6,7 +6,8 @@
 //   spec-numbers：バックエンドも読み、画面の共有の ui と shadcn/ui の部品も読む
 //   input-constraints：定義に加えて、src/test/ のテストの補助を読む
 //   time-waits：本番のソースでなく、テストを読む
-// 定義と同じ対象を読む検査は、message-comments、hardcoded-text、frontend-rules のうち画面の本番のソースに当てる規則（共有の名前の定義、クエリ付きの URL、line-through）
+//   message-comments：定義に加えて、店舗画面・管理画面の src/test/ のテストの補助と generated/ の .tsx を読む
+// 定義と同じ対象を読む検査は、hardcoded-text、frontend-rules のうち画面の本番のソースに当てる規則（共有の名前の定義、クエリ付きの URL、line-through）
 
 /** 画面のパッケージ（frontend/ の下のディレクトリ） */
 export const SCREEN_APPS = ['admin', 'store', 'shared']

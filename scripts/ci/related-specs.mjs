@@ -2,13 +2,14 @@
 // spec は、文書を変えた commit のメッセージの 1 行目のタスク番号（T011-01-01、T7-01-01 の形）から読む。古い形式のタスク番号（T3101 など）は
 // spec を一意に決められないので見ない。文書の移動は git log --follow で追う。
 // 設計を変えない作業（言い回しの修正、文書の移動など）の段階は、related-specs-exclusions.json に、タスク番号の前置き（T018-05）と理由を書く。
+// 当たるタスク番号の commit がない除外は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする（新しい除外を加える最初の commit は、履歴にまだ当たる commit がないため）。
 // 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
 // 次の commit の照合：node scripts/ci/related-specs.mjs --staged <メッセージのファイル>（commit-msg の hook から呼ぶ。ステージした文書とメッセージの 1 行目を照合する）
 import { execFileSync, execSync, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { findEmptyReasons, findStaleExclusions, readExclusions } from './lib/exclusions.mjs'
 
 /** 概要の表の「関連 spec」の行 */
 const RELATED_ROW = /^\|\s*関連 spec\s*\|(.*)\|\s*$/m
@@ -91,6 +92,22 @@ export function findMissingInStaged(docs, subject, excludedPrefixes) {
   })
 }
 
+/**
+ * 除外の一覧の誤りを、失敗と警告に分ける。理由のない除外は常に失敗。当たる commit がない除外は、CI でだけ失敗にし、手元では警告にする。
+ * 理由：新しい段階の除外を加える最初の commit では、履歴にまだそのタスク番号の commit がないので、手元（hook を含む）で失敗にすると commit できない。
+ *
+ * @param {Record<string, unknown>} exclusions 除外の一覧
+ * @param {(prefix: string) => boolean} isNeeded その前置きに当たる commit が履歴にあるか
+ * @param {boolean} strict CI なら true
+ * @returns {{ failures: string[], warnings: string[] }} 失敗にする文と、警告として表示する文（「警告：」で始まる）
+ */
+export function checkRelatedExclusions(exclusions, isNeeded, strict) {
+  const name = 'related-specs-exclusions.json'
+  const failures = findEmptyReasons(exclusions).map((key) => `${name}：${key} の理由がない（除外には理由を書く）`)
+  const stale = findStaleExclusions(exclusions, isNeeded).map((key) => `${name}：${key} は不要になった除外（一覧から消す）`)
+  return strict ? { failures: [...failures, ...stale], warnings: [] } : { failures, warnings: stale.map((line) => `警告：${line}`) }
+}
+
 /** 次の commit（ステージした内容とメッセージ）を照合する。commit-msg の hook から呼ぶ */
 function checkStaged(messageFile, excludedPrefixes) {
   const subject = readFileSync(messageFile, 'utf8').split(/\r?\n/)[0]
@@ -117,8 +134,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
   const merging = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { encoding: 'utf8' }).status === 0
   const allSubjects = execFileSync('git', historyLogArgs(merging), { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean)
-  const exclusionProblems = checkExclusions('related-specs-exclusions.json', exclusions, (prefix) => isPrefixUsed(prefix, allSubjects))
-  for (const problem of exclusionProblems) console.log(problem)
+  const { failures: exclusionProblems, warnings } = checkRelatedExclusions(exclusions, (prefix) => isPrefixUsed(prefix, allSubjects), process.env.CI === 'true')
+  for (const line of [...exclusionProblems, ...warnings]) console.log(line)
   const files = execSync('git ls-files "docs/*.md"', { encoding: 'utf8' }).split('\n').filter(Boolean)
   let count = 0
   for (const file of files) {

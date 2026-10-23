@@ -102,14 +102,19 @@ export function findMissingComments(text) {
   return missing
 }
 
+/** 2 つの画面の src の .tsx（テストと shadcn/ui の部品を除く）。src/test/ のテストの補助と generated/ の .tsx を含む */
+const SCREEN_TSX = /^frontend\/(?:admin|store)\/src\/.*\.tsx$/
+
 /**
- * 調べるファイルかを返す。画面の本番のソースの定義（lib/screen-sources.mjs）と同じ対象を見る。
+ * 調べるファイルかを返す。画面の本番のソースの定義（lib/screen-sources.mjs）に加えて、
+ * 2 つの画面の src/test/ のテストの補助と generated/ の .tsx も見る。
+ * 理由：テストの補助や生成物にも画面の文言を書けるので、共通の定義に合わせて対象を狭めない。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 画面の本番のソースなら true
+ * @returns {boolean} 調べるなら true
  */
 export function isTargetFile(file) {
-  return isScreenSource(file)
+  return isScreenSource(file) || (SCREEN_TSX.test(file) && !file.endsWith('.test.tsx') && !file.includes('/components/ui/'))
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

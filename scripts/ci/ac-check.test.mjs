@@ -465,3 +465,16 @@ describe('テストのファイルの選び方', () => {
     )
   })
 })
+
+describe('スキップしたまとまりの範囲とコメント', () => {
+  test('まとまりの中のコメントに引用符や括弧があっても、後ろのテストを数える', () => {
+    const source = [
+      "describe.skip('まとまり', () => {",
+      "  // it's skipped (for now",
+      "  it('AC-1 数えない', () => {})",
+      '})',
+      "it('AC-2 数える', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-2 数える'])
+  })
+})

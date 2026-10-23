@@ -181,9 +181,10 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
   - 依存：T156-02-03（skill `docs` を同じく変えるため）
   - 範囲：`docs/design/apps/store.md`、`docs/design/apps/admin.md`、`.claude/skills/docs/SKILL.md`
   - 結果：2 つの文書の冒頭に依存と関連 spec の表を置いた。関連 spec は `git log --follow` のタスク番号から、関連 spec の検査と同じ除外を適用して拾い（店舗画面は 8 件、管理画面は 5 件）、`related-specs.mjs` が通ることを確認した。skill `docs` は、レベルを `modules/` だけに求める記述にした。管理画面の構成の本文の節（技術、API の呼び出し、ほか）は変えていない。
-- [ ] **T156-02-07** 注の番号、用語、参照の書き方をそろえる（DC-156-28、30、31）。
+- [x] **T156-02-07** 注の番号、用語、参照の書き方をそろえる（DC-156-28、30、31）。
   - 依存：T156-02-01〜06、T156-02-08（同じ文書を変えるため）
   - 範囲：`docs/design/backend-architecture.md`、`docs/design/apps/store.md`、`AGENTS.md`、`docs/design/acceptance-criteria.md`、`docs/design/modules/` の関連 spec の行、`docs/rules/workflow.md`、`docs/guides/ci.md`、`docs/rules/subagents.md`、用語の揺れのある文書（完了した spec・plan・tasks を除く。DN-156-2）
+  - 結果：注の番号を、バックエンドのアーキテクチャ（7 個）、店舗画面の構成（8 個）、AGENTS.md（3 個）で、出る順の通し番号にした（定義の段落を出る順に並べ替えた）。用語は「ブラウザー」「作業ツリー」「ミドルウェア」にそろえ、「掃除」は残っていなかった。AC 一覧の「変えた spec」のリンクを `spec.md` にそろえ、メディアの関連 spec をディレクトリの形にし、開発の進め方、CI の検査、エージェントの作業フローの文書への参照をリンクにした。
 - [x] **T156-02-08** MVP の完成までの一覧から、完了した作業の記録と切れたリンクを除く（DC-156-35）。
   - 依存：なし
   - 範囲：`docs/specs/archive/mvp/mvp.md`

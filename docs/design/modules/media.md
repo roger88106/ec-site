@@ -7,7 +7,7 @@
 |------|------|
 | レベル | B（業務の不変条件はなく、ストレージとの連携が中心） |
 | 依存 | なし（使う側から API で呼ばれる） |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[131](../../specs/archive/1to10/131-ci-tidy/spec.md) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[131](../../specs/archive/1to10/131-ci-tidy) |
 | 範囲外 | サイトの静的ファイル（ロゴ、CSS、JavaScript）。フロントのビルド成果物として、フロントの配信（CDN）が配信する |
 
 ## アセット
@@ -20,7 +20,7 @@
 
 ## アップロードの流れ
 
-ファイルはブラウザからアップロードのバケットへ直接送る（署名付き URL）。バックエンドは中継しない。
+ファイルはブラウザーからアップロードのバケットへ直接送る（署名付き URL）。バックエンドは中継しない。
 
 1. **アップロードの受付**（`requestImageUpload`）：形式とサイズを確認し、アップロードのバケットへの署名付き URL を返す。DB には記録しない。
    - 使う側は持ち主を表す範囲（商品 ID など）を渡す。アップロードのキーは `{範囲}/{uploadId}` で、別の範囲のアップロードを用意できない。

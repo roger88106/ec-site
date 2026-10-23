@@ -10,7 +10,7 @@
 
 T155-05-01、02、04、08、09 は、変えるファイルが重ならないので、互いに `[P]` である。エラーの定義の移動（T155-05-06、07）は多くのモジュールのファイルを変えるので、他のコードのタスクの後に行う。
 
-- [ ] **T155-05-01** [P] catalog の application を分ける。商品、バリアント、画像、公開の 7 クラス（`ProductCommandService`、`ProductQueryService`、`ProductPublicationService`、`VariantCommandService`、`ProductImageService`、`ProductImageCommandService`、`ProductLoader`）を `application/product/` に、カテゴリの 2 クラスを `application/category/` に移す。`ProductLoader` は package-private のままにする。直下は `OrderableVariantQueryService`、`StoreProductQueryService` の 2 つになる（DC-155-33）。
+- [x] **T155-05-01** [P] catalog の application を分ける。商品、バリアント、画像、公開の 7 クラス（`ProductCommandService`、`ProductQueryService`、`ProductPublicationService`、`VariantCommandService`、`ProductImageService`、`ProductImageCommandService`、`ProductLoader`）を `application/product/` に、カテゴリの 2 クラスを `application/category/` に移す。`ProductLoader` は package-private のままにする。直下は `OrderableVariantQueryService`、`StoreProductQueryService` の 2 つになる（DC-155-33）。
   - 依存：なし
   - 範囲：`main/module/catalog/application/`（9 クラス）、`main/module/catalog/presentation/{ProductController,CategoryController}.java`（`ProductController.java:20-24`、`CategoryController.java:11-12`）、`main/module/catalog/api/{StoreCatalogApi,ReportCatalogApi}.java`（`StoreCatalogApi.java:5`、`ReportCatalogApi.java:4`）
 - [ ] **T155-05-02** [P] 販売可能数の参照を参照の service に移す。`StockReservationService.sellableQuantities` を `StockQueryService` に移す（名前は変えない）。`StockQueryService` に `Clock` を注入し、`StockReservationService` から参照の Repository を削除する。`StockAvailabilityApi` は `StockQueryService` に、`StockReservationApi` は参照を `StockQueryService`、引当を `StockReservationService` に委譲する（DC-155-35）。

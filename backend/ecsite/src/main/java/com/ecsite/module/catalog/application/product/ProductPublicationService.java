@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.application;
+package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.module.catalog.application.model.command.ChangePublicationPeriodCommand;
 import com.ecsite.module.catalog.domain.product.Product;

@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.application;
+package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.module.catalog.application.model.command.AddVariantCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderVariantsCommand;

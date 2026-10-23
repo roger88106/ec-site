@@ -2,7 +2,7 @@ package com.ecsite.module.catalog.api;
 
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.catalog.application.CategoryQueryService;
+import com.ecsite.module.catalog.application.category.CategoryQueryService;
 import com.ecsite.module.catalog.application.StoreProductQueryService;
 import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
 import com.ecsite.module.catalog.application.model.view.CategoryNodeView;

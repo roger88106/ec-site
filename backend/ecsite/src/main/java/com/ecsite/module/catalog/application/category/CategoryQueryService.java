@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.application;
+package com.ecsite.module.catalog.application.category;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;

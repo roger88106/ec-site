@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.application;
+package com.ecsite.module.catalog.application.product;
 
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.application.port.MediaDirectory.PreparedImage;

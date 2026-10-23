@@ -1,6 +1,6 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.module.inventory.application.StockReservationService;
+import com.ecsite.module.inventory.application.StockQueryService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -19,9 +19,9 @@ import java.util.UUID;
 public class StockAvailabilityApi {
 
     /**
-     * 引当のサービス（販売可能数）
+     * 参照のサービス（販売可能数）
      */
-    private final StockReservationService reservationService;
+    private final StockQueryService queryService;
 
     /**
      * 在庫の有無を返す。販売可能数（在庫数 − 有効な引当）が 1 以上なら「あり」。<br />
@@ -31,7 +31,7 @@ public class StockAvailabilityApi {
      * @return バリアント ID → 在庫があれば true（指定したすべてのバリアントを含む）
      */
     public Map<UUID, Boolean> availabilityOf(Collection<UUID> variantIds) {
-        var sellable = reservationService.sellableQuantities(variantIds, null);
+        var sellable = queryService.sellableQuantities(variantIds, null);
         var availability = new LinkedHashMap<UUID, Boolean>();
         sellable.forEach((variantId, quantity) -> availability.put(variantId, quantity > 0));
         return Collections.unmodifiableMap(availability);

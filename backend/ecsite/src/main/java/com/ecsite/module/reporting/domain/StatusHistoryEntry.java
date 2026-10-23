@@ -7,7 +7,7 @@ import java.util.UUID;
 
 /**
  * 状態の履歴の 1 行（docs/design/modules/reporting.md「集めるデータ」）。受けたイベントごとに 1 行。<br />
- * 状態は、出来事に応じて注文の状態か配送状態の名前をそのまま持つ（後から出来事を追加しても表を変えずに済むため）。
+ * 状態は、出来事に応じて注文の状態か配送状態の列挙で持つ（後から出来事を追加しても表を変えずに済むため）。
  *
  * @param eventId          元のイベント ID
  * @param orderId          注文 ID
@@ -18,7 +18,7 @@ import java.util.UUID;
  * @param cancellationKind キャンセルの種類。キャンセルでなければ null
  * @param restocked        キャンセルで在庫に戻したか。キャンセルでなければ null
  */
-public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @Nullable String from, String to,
+public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @Nullable HistoryStatus from, HistoryStatus to,
                                  Instant occurredAt, @Nullable ReportCancellationKind cancellationKind, @Nullable Boolean restocked) {
 
     /**
@@ -27,7 +27,10 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
      * @return 後の状態を配送状態の列挙にしたもの（出来事が配送状態の変化のときだけ使う）
      */
     public DeliveryStatus deliveryStatus() {
-        return DeliveryStatus.valueOf(to);
+        if (to instanceof DeliveryStatus delivery) {
+            return delivery;
+        }
+        throw new IllegalStateException("後の状態が配送状態ではない：" + to);
     }
 
     /**
@@ -36,9 +39,9 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
      * @return 出荷を表す変化か（注文の状態か配送状態が出荷済みになった）
      */
     public boolean marksShipment() {
-        return switch (kind) {
-            case ORDER_STATUS -> ReportOrderStatus.valueOf(to) == ReportOrderStatus.SHIPPED;
-            case DELIVERY_STATUS -> DeliveryStatus.valueOf(to) == DeliveryStatus.SHIPPED;
+        return switch (to) {
+            case ReportOrderStatus status -> status == ReportOrderStatus.SHIPPED;
+            case DeliveryStatus status -> status == DeliveryStatus.SHIPPED;
         };
     }
 }

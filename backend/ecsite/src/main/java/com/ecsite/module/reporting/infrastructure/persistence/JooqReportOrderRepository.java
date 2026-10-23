@@ -2,9 +2,12 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 
 import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
+import com.ecsite.module.reporting.domain.DeliveryStatus;
 import com.ecsite.module.reporting.domain.HistoryKind;
+import com.ecsite.module.reporting.domain.HistoryStatus;
 import com.ecsite.module.reporting.domain.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.ReportOrder;
+import com.ecsite.module.reporting.domain.ReportOrderStatus;
 import com.ecsite.module.reporting.domain.StatusHistoryEntry;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -71,8 +74,8 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .set(STATUS_HISTORY.EVENT_ID, entry.eventId())
                 .set(STATUS_HISTORY.ORDER_ID, entry.orderId())
                 .set(STATUS_HISTORY.KIND, entry.kind().name())
-                .set(STATUS_HISTORY.FROM_STATUS, entry.from())
-                .set(STATUS_HISTORY.TO_STATUS, entry.to())
+                .set(STATUS_HISTORY.FROM_STATUS, entry.from() == null ? null : entry.from().name())
+                .set(STATUS_HISTORY.TO_STATUS, entry.to().name())
                 .set(STATUS_HISTORY.OCCURRED_AT, entry.occurredAt())
                 .set(STATUS_HISTORY.CANCELLATION_KIND, entry.cancellationKind() == null ? null : entry.cancellationKind().name())
                 .set(STATUS_HISTORY.RESTOCKED, entry.restocked())
@@ -93,10 +96,14 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         return dsl.selectFrom(STATUS_HISTORY)
                 .where(STATUS_HISTORY.ORDER_ID.eq(orderId))
                 .orderBy(STATUS_HISTORY.OCCURRED_AT, STATUS_HISTORY.EVENT_ID)
-                .fetch(row -> new StatusHistoryEntry(row.getEventId(), row.getOrderId(), HistoryKind.valueOf(row.getKind()),
-                        row.getFromStatus(), row.getToStatus(), row.getOccurredAt(),
-                        row.getCancellationKind() == null ? null : ReportCancellationKind.valueOf(row.getCancellationKind()),
-                        row.getRestocked()));
+                .fetch(row -> {
+                    var kind = HistoryKind.valueOf(row.getKind());
+                    return new StatusHistoryEntry(row.getEventId(), row.getOrderId(), kind,
+                            row.getFromStatus() == null ? null : historyStatus(kind, row.getFromStatus()),
+                            historyStatus(kind, row.getToStatus()), row.getOccurredAt(),
+                            row.getCancellationKind() == null ? null : ReportCancellationKind.valueOf(row.getCancellationKind()),
+                            row.getRestocked());
+                });
     }
 
     /**
@@ -167,6 +174,16 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                     line.subtotalInclTax().yen(), line.subtotalExclTax().yen());
         }
         insert.execute();
+    }
+
+    /**
+     * 履歴の列の状態の値を、出来事に合う列挙にする（注文の状態の変化なら注文の状態、配送状態の変化なら配送状態）。
+     */
+    private static HistoryStatus historyStatus(HistoryKind kind, String value) {
+        return switch (kind) {
+            case ORDER_STATUS -> ReportOrderStatus.valueOf(value);
+            case DELIVERY_STATUS -> DeliveryStatus.valueOf(value);
+        };
     }
 
     /**

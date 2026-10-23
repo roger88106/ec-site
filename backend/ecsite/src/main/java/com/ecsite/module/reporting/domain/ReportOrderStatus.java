@@ -3,7 +3,7 @@ package com.ecsite.module.reporting.domain;
 /**
  * 注文の状態（docs/design/modules/order.md「状態遷移」の写し）
  */
-public enum ReportOrderStatus {
+public enum ReportOrderStatus implements HistoryStatus {
 
     /**
      * 支払待ち

@@ -1,7 +1,7 @@
-package com.ecsite.module.order.application.checkout;
+package com.ecsite.module.order.api;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.order.api.CartQuote;
+import com.ecsite.module.order.application.model.CartQuoteView;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.AxisValue;
 import com.ecsite.module.order.domain.quote.Quote;
@@ -23,13 +23,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * 見積もりを公開する型に変換するときの、列挙の変換と項目の対応の単体テスト
  */
-class CartQuoteServiceTest {
+class OrderQuoteApiTest {
 
     @ParameterizedTest(name = "{0}")
     @EnumSource(UnpurchasableReason.class)
     @DisplayName("AC-277 購入できない理由の全ての値を、公開する型の同じ名前の値に写す")
     void mapsEveryReason(UnpurchasableReason reason) {
-        assertThat(CartQuoteService.toReason(reason)).isEqualTo(CartQuote.UnpurchasableReason.valueOf(reason.name()));
+        assertThat(OrderQuoteApi.toReason(reason)).isEqualTo(CartQuote.UnpurchasableReason.valueOf(reason.name()));
     }
 
     @Test
@@ -49,7 +49,7 @@ class CartQuoteServiceTest {
                 List.of(new TaxAmount(rate, new Money(2700), new Money(245))));
         var quote = new Quote(List.of(purchasable, unpurchasable), amounts, false);
 
-        var actual = CartQuoteService.toCartQuote(cartId, quote);
+        var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(cartId, quote));
 
         var expectedAxes = List.of(new CartQuote.AxisValue("色", "赤"), new CartQuote.AxisValue("サイズ", "M"));
         assertThat(actual).isEqualTo(new CartQuote(cartId,
@@ -73,7 +73,7 @@ class CartQuoteServiceTest {
         var quote = new Quote(List.of(item),
                 new Amounts(new Money(3240), Money.ZERO, new Money(3240), List.of()), true);
 
-        var actual = CartQuoteService.toCartQuote(UUID.randomUUID(), quote);
+        var actual = OrderQuoteApi.toCartQuote(new CartQuoteView(UUID.randomUUID(), quote));
 
         assertThat(actual.orderable()).isTrue();
         assertThat(actual.items()).singleElement().satisfies(i -> {

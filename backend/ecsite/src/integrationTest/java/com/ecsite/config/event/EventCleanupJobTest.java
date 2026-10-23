@@ -1,4 +1,4 @@
-package com.ecsite.config;
+package com.ecsite.config.event;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;

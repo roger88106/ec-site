@@ -1,4 +1,4 @@
-package com.ecsite.config;
+package com.ecsite.config.event;
 
 import jakarta.validation.constraints.NotNull;
 import lombok.RequiredArgsConstructor;
@@ -69,7 +69,7 @@ class EventCleanupJob {
      */
     // 片付けの設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-cleanup-"
-            + "com.ecsite.config.EventCleanupJob$Properties'.interval()}")
+            + "com.ecsite.config.event.EventCleanupJob$Properties'.interval()}")
     @SchedulerLock(name = "event-cleanup")
     void cleanUp() {
         // Spring Modulith の「処理を終えた時刻で消す」操作と同じ条件。消した件数をログに出すため、自分で消す

@@ -1,4 +1,4 @@
-package com.ecsite.config;
+package com.ecsite.config.event;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

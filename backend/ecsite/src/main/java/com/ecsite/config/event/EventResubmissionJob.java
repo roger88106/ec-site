@@ -1,4 +1,4 @@
-package com.ecsite.config;
+package com.ecsite.config.event;
 
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
@@ -60,7 +60,7 @@ class EventResubmissionJob {
      */
     // 再発行の設定の Bean の名前は「接頭辞-完全修飾名」（@EnableConfigurationProperties の決まり）
     @Scheduled(fixedDelayString = "#{@'ecsite.scheduling.event-resubmission-"
-            + "com.ecsite.config.EventResubmissionJob$Properties'.interval()}")
+            + "com.ecsite.config.event.EventResubmissionJob$Properties'.interval()}")
     @SchedulerLock(name = "event-resubmission")
     void resubmit() {
         for (var stopped : publicationRecords.markStopped(properties.maxAttempts())) {

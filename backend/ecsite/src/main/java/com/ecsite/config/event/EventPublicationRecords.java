@@ -1,4 +1,4 @@
-package com.ecsite.config;
+package com.ecsite.config.event;
 
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;

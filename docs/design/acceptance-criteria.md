@@ -307,9 +307,9 @@
 | AC-282 | 分類の深さの上限は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductListApiTest` |
 | AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`RegionApiTest`、`postalCodeFill.test.ts` |
 | AC-284 | 片付けの定期ジョブが、次のデータを保存期間を過ぎたら削除する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CartTest`、`CheckoutCleanupJobTest` ほか 2 |
-| AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
+| AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-286 | 片付けは、注文・支払・出荷と、未完了のイベント・止めたイベントを削除しない。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CheckoutCleanupJobTest`、`EventCleanupJobTest` |
-| AC-287 | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
+| AC-287 | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-288 | 片付けのジョブは、データごとに削除した件数をログに出力する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest`、`EventCleanupJobTest` ほか 1 |
 | AC-289 | 期限切れのカート・注文手続きを削除した後に、そのカート・注文手続きを使う操作は、… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest` |
 | AC-290 | 再発行しても処理に失敗し続けるイベントは、決めた回数（設定で変更できる）を超えた… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `EventResubmissionJobTest`、`EventResubmissionSettingsTest` |

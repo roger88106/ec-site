@@ -19,20 +19,17 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * 片付けのジョブの設定と分散ロックの単体テスト（T017-01-09、AC-285、287）。<br />
- * 設定は Spring を起動せずに、設定の型へ値を当てはめて確認する。
+ * 設定は Spring を起動せずに、設定の型へ値を当てはめて確認する。処理の済んだイベントの片付けは {@code EventCleanupJobSettingsTest} が確認する。
  */
 class CleanupJobSettingsTest {
 
     @Test
-    @DisplayName("AC-285 片付けのジョブの間隔は既定で 1 時間、保存期間は処理の済んだイベント 7 日・引当 1 日・注文手続き 1 日・カート 0")
+    @DisplayName("AC-285 片付けのジョブの間隔は既定で 1 時間、保存期間は引当 1 日・注文手続き 1 日・カート 0")
     void defaults() {
-        var events = bind("ecsite.scheduling.event-cleanup", EventCleanupJob.Properties.class, Map.of());
         var reservations = bind("ecsite.inventory.cleanup", StockReservationCleanupProperties.class, Map.of());
         var checkouts = bind("ecsite.order.cleanup", CheckoutCleanupProperties.class, Map.of());
         var carts = bind("ecsite.cart.cleanup", CartCleanupProperties.class, Map.of());
 
-        assertThat(events.interval()).isEqualTo(Duration.ofHours(1));
-        assertThat(events.retention()).isEqualTo(Duration.ofDays(7));
         assertThat(reservations.interval()).isEqualTo(Duration.ofHours(1));
         assertThat(reservations.retention()).isEqualTo(Duration.ofDays(1));
         assertThat(checkouts.interval()).isEqualTo(Duration.ofHours(1));
@@ -49,9 +46,6 @@ class CleanupJobSettingsTest {
     void overridesBySettings() {
         var values = Map.of("interval", "10m", "retention", "3d");
 
-        assertThat(bind("ecsite.scheduling.event-cleanup", EventCleanupJob.Properties.class, values))
-                .extracting(EventCleanupJob.Properties::interval, EventCleanupJob.Properties::retention)
-                .containsExactly(Duration.ofMinutes(10), Duration.ofDays(3));
         assertThat(bind("ecsite.inventory.cleanup", StockReservationCleanupProperties.class, values))
                 .extracting(StockReservationCleanupProperties::interval, StockReservationCleanupProperties::retention)
                 .containsExactly(Duration.ofMinutes(10), Duration.ofDays(3));
@@ -65,7 +59,6 @@ class CleanupJobSettingsTest {
 
     @ParameterizedTest(name = "{0}")
     @CsvSource({
-            "com.ecsite.config.EventCleanupJob, event-cleanup",
             "com.ecsite.module.inventory.application.StockReservationCleanupJob, stock-reservation-cleanup",
             "com.ecsite.module.order.application.checkout.CheckoutCleanupJob, checkout-cleanup",
             "com.ecsite.module.cart.application.CartCleanupJob, cart-cleanup"})

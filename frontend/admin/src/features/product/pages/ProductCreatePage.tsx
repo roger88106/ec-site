@@ -1,3 +1,4 @@
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, FormProvider, useFieldArray, useForm } from 'react-hook-form'
@@ -20,6 +21,13 @@ import {
   type ProductFieldsValues,
   toProductBody,
 } from '@/features/product/product'
+
+/** 商品の項目の入力の制約（登録のリクエストの制約） */
+const PRODUCT_FIELD_CONSTRAINTS = {
+  nameMaxLength: schemas.CreateProductRequest.name.maxLength,
+  descriptionMaxLength: schemas.CreateProductRequest.description.maxLength,
+  priceMinimum: schemas.CreateProductRequest.priceExclTax.minimum,
+}
 
 /** バリアント軸の上限 */
 const MAX_AXES = schemas.CreateProductRequest.axes.maxItems
@@ -56,13 +64,9 @@ export function ProductCreatePage() {
   return (
     <>
       <PageHeader title={t('title') /* 商品の登録 */}>
-        <Button
-          nativeButton={false} /* a を描くので、button の振る舞いを外す */
-          render={<Link to={paths.products()} />}
-          variant="outline"
-        >
+        <LinkButton link={<Link to={paths.products()} />} variant="outline">
           {tApp('backToList') /* 一覧へ戻る */}
-        </Button>
+        </LinkButton>
       </PageHeader>
       <FormProvider {...form}>
         <form
@@ -100,7 +104,7 @@ export function ProductCreatePage() {
                 <FieldDescription>{t('productCodeHelp') /* 品番の形 */}</FieldDescription>
                 <FieldError errors={[form.formState.errors.productCode]} />
               </Field>
-              <ProductFields />
+              <ProductFields constraints={PRODUCT_FIELD_CONSTRAINTS} />
             </CardContent>
           </Card>
 

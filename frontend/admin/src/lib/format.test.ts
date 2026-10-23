@@ -1,5 +1,13 @@
 import { describe, expect, test } from 'vitest'
-import { fromDateTimeInput, toDateTimeInput } from '@/lib/format'
+import { formatNumber, fromDateTimeInput, toDateTimeInput } from '@/lib/format'
+
+describe('数の整形', () => {
+  test('数は 3 桁ごとに区切る。単位は付けない', () => {
+    expect(formatNumber(1234)).toBe('1,234')
+    expect(formatNumber(1234567)).toBe('1,234,567')
+    expect(formatNumber(0)).toBe('0')
+  })
+})
 
 describe('日時の入力（BR-3）', () => {
   test('BR-3 入力された日時は日本時間として扱い、オフセット付きで送る', () => {

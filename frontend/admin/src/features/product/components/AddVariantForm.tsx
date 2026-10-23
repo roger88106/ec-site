@@ -27,7 +27,7 @@ function emptyValues(product: ProductDetail): Values {
  * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
  */
 export function AddVariantForm({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
-  const { form, baseVersion, reload } = useVersionedForm(product, emptyValues, refetch)
+  const { form, baseVersion, reloadAfter } = useVersionedForm(product, emptyValues, refetch)
   const t = useTranslations('product.variants')
   const mutation = useApiMutation('post', '/products/{productId}/variants', {
     success: t('added'), // 追加の知らせ
@@ -85,14 +85,7 @@ export function AddVariantForm({ product, refetch }: { product: ProductDetail; r
           {t('add') /* バリアントを追加 */}
         </Button>
       </div>
-      <ErrorMessage
-        error={mutation.error}
-        onReload={async () => {
-          mutation.reset()
-          await reload()
-        }}
-        shownFields={['variantCode']}
-      />
+      <ErrorMessage error={mutation.error} onReload={() => reloadAfter(mutation)} shownFields={['variantCode']} />
     </form>
   )
 }

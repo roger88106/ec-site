@@ -4,6 +4,7 @@ import com.ecsite.module.catalog.domain.product.vo.VariantCode;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.Entity;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;
@@ -21,7 +22,7 @@ import java.util.UUID;
  */
 @Entity
 public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCode, @NonNull List<String> axisValues,
-                      int displayOrder, boolean salesSuspended, UUID imageId) {
+                      int displayOrder, boolean salesSuspended, @Nullable UUID imageId) {
 
     /**
      * 軸キーで軸の値を区切る文字（U+001F 単位区切り文字）
@@ -70,7 +71,7 @@ public record Variant(@Identity @NonNull UUID id, @NonNull VariantCode variantCo
      * @param imageId 画像 ID。null で指定を外す
      * @return バリアント
      */
-    Variant withImageId(UUID imageId) {
+    Variant withImageId(@Nullable UUID imageId) {
         return new Variant(id, variantCode, axisValues, displayOrder, salesSuspended, imageId);
     }
 }

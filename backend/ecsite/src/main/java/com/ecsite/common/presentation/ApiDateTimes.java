@@ -2,6 +2,8 @@ package com.ecsite.common.presentation;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.lang.Contract;
 
 import java.time.Instant;
 import java.time.OffsetDateTime;
@@ -20,7 +22,8 @@ public final class ApiDateTimes {
      * @param instant 日時。null なら null
      * @return API の日時
      */
-    public static OffsetDateTime toOffsetDateTime(Instant instant) {
+    @Contract("null -> null; !null -> !null")
+    public static @Nullable OffsetDateTime toOffsetDateTime(@Nullable Instant instant) {
         return instant == null ? null : instant.atOffset(ZoneOffset.UTC);
     }
 
@@ -30,7 +33,8 @@ public final class ApiDateTimes {
      * @param dateTime API の日時。null なら null
      * @return アプリの日時
      */
-    public static Instant toInstant(OffsetDateTime dateTime) {
+    @Contract("null -> null; !null -> !null")
+    public static @Nullable Instant toInstant(@Nullable OffsetDateTime dateTime) {
         return dateTime == null ? null : dateTime.toInstant();
     }
 }

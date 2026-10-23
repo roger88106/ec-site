@@ -1,3 +1,4 @@
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { Button } from '@ec-site/shared/ui/button'
 import type { Route } from 'next'
 import Link from 'next/link'
@@ -25,28 +26,18 @@ export function PageLinks({
       <span className="text-muted-foreground">{t('summary', { totalItems, page, totalPages }) /* 件数とページ */}</span>
       <div className="flex gap-2">
         {page > 1 ? (
-          <Button
-            nativeButton={false} /* a を描くので、button の振る舞いを外す */
-            render={<Link href={hrefFor(page - 1)} />}
-            size="sm"
-            variant="outline"
-          >
+          <LinkButton link={<Link href={hrefFor(page - 1)} />} size="sm" variant="outline">
             {t('previous') /* 前へ */}
-          </Button>
+          </LinkButton>
         ) : (
           <Button disabled size="sm" variant="outline">
             {t('previous') /* 前へ */}
           </Button>
         )}
         {page < totalPages ? (
-          <Button
-            nativeButton={false} /* a を描くので、button の振る舞いを外す */
-            render={<Link href={hrefFor(page + 1)} />}
-            size="sm"
-            variant="outline"
-          >
+          <LinkButton link={<Link href={hrefFor(page + 1)} />} size="sm" variant="outline">
             {t('next') /* 次へ */}
-          </Button>
+          </LinkButton>
         ) : (
           <Button disabled size="sm" variant="outline">
             {t('next') /* 次へ */}

@@ -6,6 +6,7 @@ import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -50,6 +51,7 @@ public class Cart {
      * 会員 ID。ログインせずに作ったカートは null
      */
     @Getter(AccessLevel.NONE)
+    @Nullable
     private final UUID memberId;
 
     /**
@@ -77,7 +79,7 @@ public class Cart {
      * @param version   バージョン
      * @param updatedAt 最終更新日時
      */
-    public Cart(@NonNull UUID id, UUID memberId, @NonNull List<CartItem> items, long version, @NonNull Instant updatedAt) {
+    public Cart(@NonNull UUID id, @Nullable UUID memberId, @NonNull List<CartItem> items, long version, @NonNull Instant updatedAt) {
         this.id = id;
         this.memberId = memberId;
         this.items = new ArrayList<>(items);
@@ -109,6 +111,8 @@ public class Cart {
     }
 
     /**
+     * カートの持ち主の会員 ID を返す。
+     *
      * @return 会員 ID。ログインせずに作ったカートは空
      */
     public Optional<UUID> memberId() {
@@ -121,7 +125,7 @@ public class Cart {
      * @param requesterMemberId 要求した会員の ID（ログインしていなければ null）
      * @return 使えれば true
      */
-    public boolean isAccessibleBy(UUID requesterMemberId) {
+    public boolean isAccessibleBy(@Nullable UUID requesterMemberId) {
         return memberId == null || memberId.equals(requesterMemberId);
     }
 

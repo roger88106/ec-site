@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.dao.DataAccessException;
 import org.springframework.stereotype.Repository;
@@ -101,7 +102,7 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return 子カテゴリの一覧
      */
     @Override
-    public List<Category> lockChildren(UUID parentId) {
+    public List<Category> lockChildren(@Nullable UUID parentId) {
         return dsl.selectFrom(CATEGORY)
                 .where(childOf(parentId))
                 .orderBy(CATEGORY.ID)
@@ -116,7 +117,7 @@ class JooqCategoryRepository implements CategoryRepository {
      * @return 兄弟の最大＋1。兄弟がなければ 1
      */
     @Override
-    public int nextDisplayOrder(UUID parentId) {
+    public int nextDisplayOrder(@Nullable UUID parentId) {
         return dsl.select(DSL.coalesce(DSL.max(CATEGORY.DISPLAY_ORDER), 0).plus(1))
                 .from(CATEGORY)
                 .where(childOf(parentId))
@@ -250,7 +251,7 @@ class JooqCategoryRepository implements CategoryRepository {
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 条件
      */
-    private static Condition childOf(UUID parentId) {
+    private static Condition childOf(@Nullable UUID parentId) {
         return parentId == null ? CATEGORY.PARENT_ID.isNull() : CATEGORY.PARENT_ID.eq(parentId);
     }
 

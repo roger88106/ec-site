@@ -1,7 +1,7 @@
 package com.ecsite.module.storefront.application;
 
 import com.ecsite.common.model.value.Money;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.UUID;

@@ -1,3 +1,4 @@
+import { carrierLabel, shipmentStatusLabel } from '@ec-site/shared/lib/orderLabels'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useForm } from 'react-hook-form'
@@ -13,7 +14,6 @@ import { ErrorMessage } from '@/components/ErrorMessage'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
-import { carrierLabel, shipmentStatusLabel } from '@/features/order/labels'
 
 /** 入力欄の値 */
 type Values = { carrier: Carrier | null; trackingNumber: string }

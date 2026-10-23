@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.application.model.command;
 
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 

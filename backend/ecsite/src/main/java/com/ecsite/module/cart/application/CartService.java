@@ -13,6 +13,7 @@ import com.ecsite.module.cart.domain.CartItem;
 import com.ecsite.module.cart.domain.CartMergeResult;
 import com.ecsite.module.cart.event.CartChanged;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -90,7 +91,7 @@ public class CartService {
      * @param quantity  数量
      */
     @Transactional
-    public void addItem(UUID cartId, UUID requester, UUID variantId, int quantity) {
+    public void addItem(UUID cartId, @Nullable UUID requester, UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
             if (!catalogDirectory.isSelectable(variantId)) {
                 throw BusinessException.of(CartErrorCode.VARIANT_NOT_SELECTABLE);
@@ -109,7 +110,7 @@ public class CartService {
      * @param quantity  新しい数量
      */
     @Transactional
-    public void changeQuantity(UUID cartId, UUID requester, UUID variantId, int quantity) {
+    public void changeQuantity(UUID cartId, @Nullable UUID requester, UUID variantId, int quantity) {
         change(cartId, requester, (cart, now) -> {
             // 今の数量より増やすときだけ、在庫を確認する（減らす操作は、在庫が減っていても受け付ける）
             var current = cart.itemsAt(now).stream()
@@ -131,7 +132,7 @@ public class CartService {
      * @param variantId バリアント ID
      */
     @Transactional
-    public void removeItem(UUID cartId, UUID requester, UUID variantId) {
+    public void removeItem(UUID cartId, @Nullable UUID requester, UUID variantId) {
         change(cartId, requester, (cart, now) -> cart.remove(variantId, now));
     }
 
@@ -227,7 +228,7 @@ public class CartService {
      * @param requester 要求した会員の ID（ログインしていなければ null）。会員のカートは持ち主だけが変えられる
      * @param change    変更（カートと現在時刻を受け取る）
      */
-    private void change(UUID cartId, UUID requester, CartChange change) {
+    private void change(UUID cartId, @Nullable UUID requester, CartChange change) {
         var now = clock.instant();
         var cart = load(cartId);
         if (!cart.isAccessibleBy(requester)) {

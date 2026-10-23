@@ -101,7 +101,9 @@ class JooqCartRepository implements CartRepository {
         var items = cart.itemsAt(cart.updatedAt());
         if (!items.isEmpty()) {
             var insert = dsl.insertInto(CART_ITEM, CART_ITEM.CART_ID, CART_ITEM.VARIANT_ID, CART_ITEM.QUANTITY, CART_ITEM.ADDED_AT);
-            items.forEach(item -> insert.values(cart.id(), item.variantId(), item.quantity(), item.addedAt()));
+            for (var item : items) {
+                insert = insert.values(cart.id(), item.variantId(), item.quantity(), item.addedAt());
+            }
             insert.execute();
         }
     }

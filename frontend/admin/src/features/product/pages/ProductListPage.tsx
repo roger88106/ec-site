@@ -1,4 +1,4 @@
-import { Button } from '@ec-site/shared/ui/button'
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { keepPreviousData } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useTranslations } from 'use-intl'
@@ -54,12 +54,7 @@ export function ProductListPage() {
   return (
     <>
       <PageHeader title={t('title') /* 商品 */}>
-        <Button
-          nativeButton={false} /* a を描くので、button の振る舞いを外す */
-          render={<Link to={paths.productNew()} />}
-        >
-          {t('create') /* 商品を登録 */}
-        </Button>
+        <LinkButton link={<Link to={paths.productNew()} />}>{t('create') /* 商品を登録 */}</LinkButton>
       </PageHeader>
       <div className="space-y-4">
         {/* 絞り込みを変えたら（URL が変わったら）入力欄を再作成する */}

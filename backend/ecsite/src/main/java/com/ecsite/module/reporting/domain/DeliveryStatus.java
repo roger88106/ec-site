@@ -40,6 +40,8 @@ public enum DeliveryStatus {
     }
 
     /**
+     * 配送状態の順位を返す。
+     *
      * @return 順位（出荷済み 0、配送中 1、配達完了・返送 2）
      */
     public int rank() {

@@ -3,7 +3,7 @@ package com.ecsite.module.catalog.application.model.view;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.catalog.domain.product.ProductActions;
 import com.ecsite.module.catalog.domain.product.PublicationStatus;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.net.URI;
 import java.time.Instant;
@@ -72,6 +72,6 @@ public record ProductDetailView(UUID id, String productCode, String name, String
      * @param id  画像 ID
      * @param url 配信の URL
      */
-    public record ImageView(UUID id, URI url) {
+    public record ImageView(UUID id, @Nullable URI url) {
     }
 }

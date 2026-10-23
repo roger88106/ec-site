@@ -3,6 +3,7 @@ package com.ecsite.module.shipping.infrastructure.carrier;
 import com.ecsite.module.shipping.application.port.ShipmentNotificationReceiver;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -50,8 +51,8 @@ class CarrierWebhookController {
      * @return 受け付けたら 200、署名を確認できなければ 401、署名が合っても本文が読めなければ 400
      */
     @PostMapping(CarrierNotification.WEBHOOK_PATH)
-    ResponseEntity<Void> receive(@RequestBody(required = false) byte[] payload,
-                                 @RequestHeader(name = CarrierSignature.HEADER, required = false) String signatureHeader) {
+    ResponseEntity<Void> receive(@RequestBody(required = false) byte @Nullable [] payload,
+                                 @RequestHeader(name = CarrierSignature.HEADER, required = false) @Nullable String signatureHeader) {
         var body = payload == null ? new byte[0] : payload;
         if (!signature.verify(body, signatureHeader)) {
             log.warn("署名を確認できない物流サービスの通知を拒否した");
@@ -77,7 +78,7 @@ class CarrierWebhookController {
      *
      * @return 通知。読めない、または項目が足りなければ null
      */
-    private CarrierNotification read(byte[] body) {
+    private @Nullable CarrierNotification read(byte[] body) {
         try {
             var notification = jsonMapper.readValue(body, CarrierNotification.class);
             if (notification == null || !notification.isComplete()) {

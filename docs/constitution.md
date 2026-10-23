@@ -41,6 +41,7 @@
 | メール | SMTP（Spring の mail。ローカルは Mailpit） |
 | 定期ジョブの分散ロック | ShedLock |
 | ビルド | Gradle Kotlin DSL、version catalog |
+| 静的解析 | Error Prone、NullAway、Checkstyle |
 | 定型コードの生成 | Lombok |
 | テスト | JUnit 5、AssertJ、Testcontainers、MockMvc |
 | 可観測性 | Actuator、Micrometer（Prometheus）、分散トレーシング（Zipkin）、構造化ログ |

@@ -77,8 +77,9 @@ class JooqStockReservationRepository implements StockReservationRepository {
         var insert = dsl.insertInto(STOCK_RESERVATION,
                 STOCK_RESERVATION.ID, STOCK_RESERVATION.HOLDER_ID, STOCK_RESERVATION.STOCK_ITEM_ID,
                 STOCK_RESERVATION.QUANTITY, STOCK_RESERVATION.EXPIRES_AT, STOCK_RESERVATION.CREATED_AT);
-        quantitiesByStockItem.forEach((stockItemId, quantity) ->
-                insert.values(UUID.randomUUID(), holderId, stockItemId, quantity, expiresAt, now));
+        for (var entry : quantitiesByStockItem.entrySet()) {
+            insert = insert.values(UUID.randomUUID(), holderId, entry.getKey(), entry.getValue(), expiresAt, now);
+        }
         if (!quantitiesByStockItem.isEmpty()) {
             insert.execute();
         }

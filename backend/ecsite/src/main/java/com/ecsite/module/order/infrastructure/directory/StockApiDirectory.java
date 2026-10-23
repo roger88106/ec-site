@@ -3,6 +3,7 @@ package com.ecsite.module.order.infrastructure.directory;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.order.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;
@@ -27,7 +28,7 @@ class StockApiDirectory implements StockDirectory {
      * バリアントの販売可能数を返す。
      */
     @Override
-    public Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, UUID excludedHolderId) {
+    public Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId) {
         return stockReservationApi.sellableQuantities(variantIds, excludedHolderId);
     }
 

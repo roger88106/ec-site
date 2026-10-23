@@ -1,3 +1,4 @@
+import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
 import type { Metadata } from 'next'
 import Link from 'next/link'
 import { getTranslations } from 'next-intl/server'
@@ -6,7 +7,6 @@ import { readCartMergeNotice } from '@/api/cartCookie'
 import { getApi, getMemberApi, UNCACHED } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
 import type { Cart } from '@/api/types'
-import { AmountsSummary } from '@/components/AmountsSummary'
 import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { CartItemControls } from '@/features/cart/components/CartItemControls'
 import { CartMergeNoticeView } from '@/features/cart/components/CartMergeNoticeView'
@@ -66,7 +66,7 @@ export default async function CartPage() {
             ))}
           </ul>
           <aside className="space-y-4 self-start rounded-lg border p-4">
-            <AmountsSummary amounts={cart.amounts} />
+            <AmountsSummary amounts={cart.amounts} variant="page" />
             <StartCheckoutForm orderable={cart.orderable} />
           </aside>
         </div>

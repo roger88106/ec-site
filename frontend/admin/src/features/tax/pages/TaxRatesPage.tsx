@@ -1,4 +1,4 @@
-import { Button } from '@ec-site/shared/ui/button'
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { Link, useParams } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
@@ -19,13 +19,9 @@ export function TaxRatesPage() {
       {(taxCategory) => (
         <>
           <PageHeader title={t('title', { name: taxCategory.name }) /* 税区分の税率 */}>
-            <Button
-              nativeButton={false} /* a を描くので、button の振る舞いを外す */
-              render={<Link to={paths.taxCategories()} />}
-              variant="outline"
-            >
+            <LinkButton link={<Link to={paths.taxCategories()} />} variant="outline">
               {tApp('backToList') /* 一覧へ戻る */}
-            </Button>
+            </LinkButton>
           </PageHeader>
           <div className="max-w-4xl space-y-4">
             <p className="text-muted-foreground text-sm">

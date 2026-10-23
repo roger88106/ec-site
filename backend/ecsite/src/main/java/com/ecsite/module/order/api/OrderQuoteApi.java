@@ -2,6 +2,7 @@ package com.ecsite.module.order.api;
 
 import com.ecsite.module.order.application.checkout.CartQuoteService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -28,7 +29,7 @@ public class OrderQuoteApi {
      * @param requester 要求した会員の ID（ログインしていなければ null）
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
-    public Optional<CartQuote> quoteCart(UUID cartId, UUID requester) {
+    public Optional<CartQuote> quoteCart(UUID cartId, @Nullable UUID requester) {
         return cartQuoteService.quoteCart(cartId, requester);
     }
 }

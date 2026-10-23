@@ -124,7 +124,7 @@ class AdminRealmPermissionContractTest {
         assertThat(new TreeSet<>(mapped.getFirst())).isEqualTo(declaredPermissions);
     }
 
-    private static TreeSet<String> readPermissionsWithoutReports() {
+    private static Set<String> readPermissionsWithoutReports() {
         return new TreeSet<>(declaredPermissions.stream()
                 .filter(p -> p.endsWith(":read") && !p.startsWith(REPORT_PREFIX))
                 .toList());

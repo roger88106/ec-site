@@ -13,6 +13,7 @@ import com.ecsite.module.storefront.application.port.OrderDirectory;
 import com.ecsite.module.storefront.application.port.ProductCondition;
 import com.ecsite.module.storefront.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 
 import java.util.LinkedHashSet;
@@ -92,7 +93,7 @@ public class StorefrontService {
      * @param requester 要求した会員の ID（ログインしていなければ null）
      * @return カートの表示
      */
-    public CartView getCart(UUID cartId, UUID requester) {
+    public CartView getCart(UUID cartId, @Nullable UUID requester) {
         return orderDirectory.findCart(cartId, requester).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 

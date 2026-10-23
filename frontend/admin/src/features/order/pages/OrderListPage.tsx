@@ -1,4 +1,5 @@
 import { formatYen } from '@ec-site/shared/lib/format'
+import { shipmentStatusLabel } from '@ec-site/shared/lib/orderLabels'
 import { keepPreviousData } from '@tanstack/react-query'
 import { Link, useNavigate, useSearchParams } from 'react-router'
 import { useTranslations } from 'use-intl'
@@ -13,7 +14,6 @@ import { AuthorizationExpiringBadge } from '@/features/order/components/Authoriz
 import { OrderFilterForm } from '@/features/order/components/OrderFilterForm'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentStatusBadge } from '@/features/order/components/PaymentStatusBadge'
-import { shipmentStatusLabel } from '@/features/order/labels'
 import { type OrderFilter, parseFilter, toSearchParams } from '@/features/order/orderFilter'
 
 /**

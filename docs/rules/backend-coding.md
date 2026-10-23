@@ -10,11 +10,12 @@
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
 | 1.1 | 公開の API は `api/` のクラスが service に委ねる | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
+| 1.1 | 共通コードと設定はモジュールに依存せず、モジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
 | 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所は自動（ArchUnit）、変換の書き忘れは自動（コンパイル。全ての値の対応は変換ごとの単体テスト）、`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）、port と実装の分け方はレビュー |
 | 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）、目安はレビュー |
 | 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー |
-| 2.1 | 生成した interface を実装する | 自動（コンパイル）、契約にない endpoint はレビュー |
+| 2.1 | 生成した interface を実装する。`@RestController` は presentation だけに付ける（`MeController` を除く） | `@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー |
 | 2.2 | 応答への変換は手動で書く | 生成したモデルの組み立ては自動（ArchUnit）、他はレビュー |
 | 3.1 | 形の検証は presentation、業務の規則は domain | 自動（契約のテスト）、判定の重複はレビュー |
 | 3.2 | エラーは `XxxErrorCode` と `BusinessException` | 自動（メッセージのテスト）、文に数字がないことは自動（CI の検査 `message-numbers`） |
@@ -62,6 +63,10 @@ module/<モジュール>/
 | application | domain、common |
 | domain | common（レベル A は Spring・jOOQ にも依存しない） |
 | infrastructure | application の port、domain、common |
+| common | モジュールに依存しない |
+| config | common。モジュールに依存しない |
+
+どの層も、config に依存しない。
 
 | レベル | 中身の違い |
 |--------|------------|
@@ -74,6 +79,7 @@ module/<モジュール>/
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
 - **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
 - **公開の API**：`api/` の interface は、`api/` の `@Component` が実装し、application の service に委ねる。service は `api/` の interface を実装しない。
+- **domain の直下**：モジュールの domain の直下には、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
 
@@ -99,11 +105,13 @@ module/<モジュール>/
 
 | パッケージ | 数 | 分けない理由 |
 |------------|----|--------------|
-| `catalog.infrastructure.persistence` | 13 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
+| `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
+| `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラス（認可の対応表、認可の判定、契約の操作の一覧）が package-private。分けるとクラスを公開しなければならない |
 | `reporting.domain` | 16 | 集約がなく、集計の値（区切り、推移の点、日ごとの売上 など）と列挙が多い。集約ごとに分ける区切りがない |
 
 ### 1.5 共通の型
 
+- 共通コード（`common/`）には、2 つ以上のモジュールが使うものだけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。
 - モジュールに共通の型は `common/model/` に置く。`base/`：集約の土台（`AggregateRoot`、`DomainEvent`）、`value/`：値（`Money`、`BoundedText`、`Operator`）。
 - 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものはその `vo/` に置く。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけ。設定の値の金額は、使う所で `Money` にする。
@@ -118,6 +126,8 @@ module/<モジュール>/
 Controller は OpenAPI から生成した interface（`XxxApi`）を実装する。パスと入力の形は interface に任せ、`@RequestMapping` を書かない。
 
 例外：外部のサービスとのやり取りのエンドポイント（決済・物流の通知、mock の支払画面と物流の画面。[API の規約](api-conventions.md) 第 4.1 節）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](../design/modules/payment.md)、[出荷モジュール](../design/modules/shipping.md)）。
+
+例外：ログインした人の情報を返す操作（`MeController`）は、モジュールの presentation でなく `config/security/` に置く。認可の設定と同じ権限の変換（`PermissionConverter`）を使い、どのモジュールにも属さないため。`@RestController` の置き場所の検査（ArchUnit）は、`MeController` だけを完全修飾名で除く。
 
 理由：契約（`api/openapi/`）を正本にし、実装とずれないようにするため。
 

@@ -25,6 +25,7 @@
 | `common/paging/` | `PageRequest`（ページは 1 始まり、件数は既定 20・最大 100）、`PageResult` | 一覧の API。応答の型への変換は presentation で行う |
 | `common/persistence/` | `ConstraintViolationTranslator`（DB の制約の違反を業務のエラーに変える） | リポジトリの実装 |
 | `common/presentation/` | `ApiDateTimes`（API の日時と `Instant` の変換）、`CreatedResponses`（作成の応答 201）、`StorePrices`（店舗 API の税込・税抜の価格） | Controller と応答への変換 |
+| `common/scheduling/` | `ExpiredDataCleanup`（期限切れのデータの片付けの共通の処理。件数の上限ごとに消して、消した件数が上限と等しい間繰り返し、合計の件数をログに出す） | カート、在庫の引当、注文手続きの片付けのジョブ。`@Scheduled` と `@SchedulerLock` は各ジョブに残す |
 | `common/security/` | `CurrentMember`（店舗 API の token の会員）、`CurrentOperator`（管理 API の token の運営者）、`AuthenticatedMember` | presentation 層で呼び出し元を取り出す。Spring Security の型は application・domain に出さない（[バックエンドのアーキテクチャ](backend-architecture.md) 第 7.2 節） |
 
 - common に置く基準は、2 つ以上のモジュールが使うものだけ（[バックエンドの書き方](../rules/backend-coding.md) 第 1.5 節）。

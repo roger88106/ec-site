@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（並行して調整されても失われないこと、引当と減算） |
 | 依存 | 商品カタログ（イベント） |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[019](../../specs/archive/mvp/019-mvp-completion) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[019](../../specs/archive/mvp/019-mvp-completion)、[155](../../specs/155-backend-structure) |
 
 ## 在庫と在庫調整
 
@@ -56,7 +56,7 @@ RETURNING quantity;
 
 - 引当は、持ち主（注文手続き）、在庫、数量、期限を持つ。持ち主と在庫の組で 1 つ。
 - 販売可能数 ＝ 在庫数 − 有効な引当の合計。期限切れの引当は数えないだけで、すぐには削除しない ※3。
-- 期限から保存期間（既定 1 日）を過ぎた引当は、片付けのジョブが削除する（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。
+- 期限から保存期間（既定 1 日）を過ぎた引当は、片付けのジョブが削除する。件数の上限ごとに消すループとログは、共通の `ExpiredDataCleanup` を使う（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。
 - 引当は在庫数を変えない。在庫数を変えるのは、運営者の調整、注文の成立、キャンセルだけ。
 - C 側の在庫の有無は、販売可能数が 1 以上か。
 

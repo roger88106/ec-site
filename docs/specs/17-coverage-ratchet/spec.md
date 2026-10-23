@@ -168,9 +168,18 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
 - 完了条件：DC-17-9〜13 を満たし、CI が通る。
 - 参照：第 3 節の DS-17-2
 
-- [ ] **T17-02-01** PIT を導入し、手元で実行して時間と mutation score を記録する。ライセンスを確認し、`checkLicense` の対象に入るかを確認して、結果を書く。`check` の依存に PIT を入れない（第 7 節の 7）（DC-17-9、12）。
+- [x] **T17-02-01** PIT を導入し、手元で実行して時間と mutation score を記録する。ライセンスを確認し、`checkLicense` の対象に入るかを確認して、結果を書く。`check` の依存に PIT を入れない（第 7 節の 7）（DC-17-9、12）。
   - 依存：なし
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/libs.versions.toml`、`docs/design/licenses.md`、`scripts/ci/licenses/policy.json`
+  - 結果：
+    - 版：PIT 1.30.1、`gradle-pitest-plugin`（`info.solidsoft.pitest`）1.19.0、`pitest-junit5-plugin` 1.2.3。プラグインは 1.15.0 だと Gradle 9.8.2 で適用に失敗する（`reporting.baseDir` が無い）ので、Gradle 9 に対応する 1.19.0 にした。版の名前は、カタログで `pitest` が葉と枝を兼ねないよう `pitest-engine`、`pitest-gradle-plugin`、`pitest-junit5-plugin` にした。
+    - 設定：対象は `com.ecsite.module.*.domain.*`、テストは `src/test` 全体（PIT がカバレッジで、対象のクラスを実行するテストだけを変異ごとに流すので、絞らない）、スレッドは 4、報告は HTML と XML で `build/reports/pitest/`（`timestampedReports = false`。`index.html` と `mutations.xml` がそこに出る）。`check` の依存に入れていない。変異の種類は PIT の既定。
+    - ライセンス：PIT（`pitest`、`pitest-entry`、`pitest-command-line`、`pitest-html-report`）と `pitest-junit5-plugin` は POM が Apache-2.0。`gradle-pitest-plugin` は 1.15.0 の POM が Apache-2.0 で、1.19.0 の POM にはライセンスの記述がないが、公式のリポジトリの README と `LICENSE-2.0.txt` が Apache-2.0。方針の許可に入る。`licenses.md` の 3.1 と `policy.json` の `gradlePlugins` に書いた。
+    - `checkLicense`：PIT の構成（`pitest` の構成と Gradle のプラグインの classpath）は `licenseReport` の検査の構成に含まれず、対象に入らない（`licenses.json` に pitest が出ない）。JaCoCo と違い policy の `components` に書く必要はない。`./gradlew checkLicense` は通る。
+    - 既存の検査：`./gradlew checkLicense build -x integrationTest`（Error Prone、Checkstyle、単体テスト、`checkLicense`）は成功（1 分 21 秒）。
+    - 手元の実行（`./gradlew pitest`）：PIT の実行は 1 分（解析 3 秒、変異の実行 55 秒）、Gradle 全体は 2 分 41 秒（コンパイルを含む）。生成した変異 643、殺した変異 578、mutation score 90%（578/643）、カバレッジのない変異 40、テストの強さ 96%（カバーされた変異 603 のうち 578）。domain の行のカバレッジ 93%（1036/1111）。191 のテストを調べ、1419 回流した。
+    - 生き残った変異（生き残りとカバレッジなしの合計）が多いクラスの上位：`media.domain.ImageFormat` 12/51、`order.domain.order.Order` 11/77、`catalog.domain.product.Product` 8/118、`order.domain.checkout.Checkout` 5/5、`cart.domain.Cart` 4/63、`inventory.domain.stock.StockAllocation` 4/4、`media.domain.AssetKeys` 4/4。
+    - 注意：`mutations.xml` は `<mutations partial="true">` で始まる（PIT の出力の仕様。T17-02-02 のテストのデータはこの形に合わせる）。
 - [ ] **T17-02-02** [テスト] 検査の script が PIT の XML の mutation score を読むテストを書き、レッドを確認する。テストのデータは、T17-02-01 で作った実際の PIT の XML に合わせる（DC-17-10）。
   - 依存：T17-02-01
   - 範囲：`scripts/ci/report/`

@@ -99,6 +99,7 @@
     "nu.studer.jooq": "Apache-2.0",
     "org.openapi.generator": "Apache-2.0",
     "com.github.jk1.dependency-license-report": "Apache-2.0",
-    "net.ltgt.errorprone": "Apache-2.0"
+    "net.ltgt.errorprone": "Apache-2.0",
+    "info.solidsoft.pitest": "Apache-2.0"
   }
 }

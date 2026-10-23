@@ -37,6 +37,7 @@ plugins {
     alias(libs.plugins.openapi.generator)
     alias(libs.plugins.dependency.license.report)
     alias(libs.plugins.errorprone)
+    alias(libs.plugins.pitest)
     jacoco
     checkstyle
     // mock を包むテスト用の実装など、単体テストと統合テストで共有するもの（src/testFixtures）
@@ -315,6 +316,25 @@ checkstyle {
 
 tasks.named<Checkstyle>("checkstyleMain") {
     setSource(fileTree("src/main/java"))
+}
+
+// -----------------------------------------------------------------------------
+// mutation testing（PIT。カバレッジとは別に、テストが振る舞いを確認しているかを測る）
+//   ./gradlew pitest で、domain のクラスに小さな変異を入れ、単体テストが失敗するか（変異を検出するか）を見る。
+//   報告：build/reports/pitest/（html、xml。タイムスタンプのディレクトリを作らず、CI が決まったパスで読む）
+//   単体テスト（src/test）だけを使う（統合テストは Docker が要り、domain のテストもない）。
+//   テストは src/test 全体を渡す。PIT はカバレッジで、対象のクラスを実行するテストだけを変異ごとに流すので、絞らない。
+//   PIT は遅いので、check には入れない（CI は専用の手順で流す）。
+//   PIT はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない
+// -----------------------------------------------------------------------------
+pitest {
+    pitestVersion = libs.versions.pitest.engine.get()
+    junit5PluginVersion = libs.versions.pitest.junit5.plugin.get()
+    targetClasses = listOf("com.ecsite.module.*.domain.*")
+    // 4 コア（GitHub の ubuntu-latest）と手元で動く値
+    threads = 4
+    outputFormats = listOf("HTML", "XML")
+    timestampedReports = false
 }
 
 // -----------------------------------------------------------------------------

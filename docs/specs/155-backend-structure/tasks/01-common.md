@@ -22,7 +22,7 @@ T155-01-01〜06 は、変えるファイルが重ならないので、互いに 
 - [x] **T155-01-04** [P] 表示順の再採番（`DisplayOrders`）を `module/catalog/domain/` の直下に移し、`DisplayOrdersTest` も `test/module/catalog/domain/` に移す。`Category` と `Product` の import を修正する（DC-155-3、4）。
   - 依存：なし
   - 範囲：`main/common/model/value/DisplayOrders.java`、`main/module/catalog/domain/category/Category.java`（`:6,144`）、`main/module/catalog/domain/product/Product.java`（`:7,337,593,613`）、`test/common/model/value/DisplayOrdersTest.java`
-- [ ] **T155-01-05** [P] LIKE の検索の文字の扱い（`LikePatterns`）を `module/catalog/infrastructure/persistence/` に移し、クラスとメソッドの public を外す。`JooqProductQueryRepository`、`PostgresProductSearch` の import を削除する（DC-155-3、4）。
+- [x] **T155-01-05** [P] LIKE の検索の文字の扱い（`LikePatterns`）を `module/catalog/infrastructure/persistence/` に移し、クラスとメソッドの public を外す。`JooqProductQueryRepository`、`PostgresProductSearch` の import を削除する（DC-155-3、4）。
   - 依存：なし
   - 範囲：`main/common/persistence/LikePatterns.java`、`main/module/catalog/infrastructure/persistence/JooqProductQueryRepository.java`（`:6,106,107,111,114`）、`main/module/catalog/infrastructure/persistence/PostgresProductSearch.java`（`:5,56,60,61`）
 - [ ] **T155-01-06** [P] `ModuleStructureTest.restControllerOnlyInPresentation` の対象を `com.ecsite..` に広げ、`MeController` を完全修飾名で除外する。表示名に「`MeController` を除く」を追加する。`MeController` 以外のクラスに `@RestController` を一時的に付けて、失敗することを確認する（DC-155-5）。

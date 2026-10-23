@@ -1,4 +1,4 @@
-package com.ecsite.common.persistence;
+package com.ecsite.module.catalog.infrastructure.persistence;
 
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
@@ -9,12 +9,12 @@ import lombok.NoArgsConstructor;
  * エスケープ文字は {@link #ESCAPE}。jOOQ では {@code field.like(pattern, LikePatterns.ESCAPE)} のように使う。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
-public final class LikePatterns {
+final class LikePatterns {
 
     /**
      * エスケープ文字
      */
-    public static final char ESCAPE = '!';
+    static final char ESCAPE = '!';
 
     /**
      * 前方一致のパターンを作る。
@@ -22,7 +22,7 @@ public final class LikePatterns {
      * @param value 利用者が入力した文字列
      * @return {@code value%}（ワイルドカード文字はエスケープ済み）
      */
-    public static String startsWith(String value) {
+    static String startsWith(String value) {
         return escape(value) + "%";
     }
 
@@ -32,7 +32,7 @@ public final class LikePatterns {
      * @param value 利用者が入力した文字列
      * @return {@code %value%}（ワイルドカード文字はエスケープ済み）
      */
-    public static String contains(String value) {
+    static String contains(String value) {
         return "%" + escape(value) + "%";
     }
 

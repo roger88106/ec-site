@@ -157,9 +157,10 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
 - 完了条件：DC-156-13〜28、30〜35、38、39 を満たし、`scripts/ci/check-all.sh` が通る。
 - 参照：第 3 節の DS-156-2〜4、第 6 節、skill `docs`、[文書の記号と番号](../../rules/notation.md)
 
-- [ ] **T156-02-01** 用語集を修正する（DC-156-13、32、33）。
+- [x] **T156-02-01** 用語集を修正する（DC-156-13、32、33）。
   - 依存：なし
   - 範囲：`docs/design/glossary.md`
+  - 結果：決済サービスと物流サービスの「テストと既定は mock」を、mock フラグの条件（決済は立てなければ Stripe、物流は mock だけで立てなければ起動に失敗）に直した。識別子のない 2 行の `-` を空欄にし、AGENTS.md への参照をリンクにして、tasks の記号 2 行（並行、リスク）を除いた。
 - [ ] **T156-02-02** ロールの説明の「すべて」を「全て」にし、ロールと権限の対応表を再生成する（DC-156-34）。
   - 依存：なし
   - 範囲：`docker/keycloak/realms/ec-admin-realm.json` の `description`、`docs/design/role-permissions.md`（`node scripts/ci/role-permissions.mjs --write`）

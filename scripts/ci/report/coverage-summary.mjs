@@ -6,7 +6,7 @@
 //     報告のファイル：JaCoCo の XML（*.xml）か、Vitest の json-summary（coverage-summary.json）
 //
 // 低い所は、JaCoCo はパッケージ、Vitest はファイル（流した場所からのパス）の単位で、低い順に 10 件を出す。
-// 報告だけで、基準の値では失敗させない。報告がなければ、そのことを書いて終わる。
+// この script は報告を書くだけで、失敗にしない。基準の検査は coverage-baseline.mjs が行う。報告がなければ、そのことを書いて終わる。
 // GITHUB_STEP_SUMMARY がなければ（ローカル）、標準出力に書く。
 // ============================================================================
 import { appendFileSync, existsSync, readFileSync } from 'node:fs'

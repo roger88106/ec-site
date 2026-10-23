@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  */
 @Component
 @RequiredArgsConstructor
-public class StockApiDirectory implements StockDirectory {
+class StockApiDirectory implements StockDirectory {
 
     /**
      * 店舗向けの在庫の API

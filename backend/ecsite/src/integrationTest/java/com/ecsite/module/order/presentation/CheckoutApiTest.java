@@ -10,7 +10,6 @@ import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.checkout.CheckoutService;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -41,7 +40,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文手続きの受け入れテスト（T2311、AC-82、84、85、88）。<br />
- * カート変更のイベントはコミット後に非同期で届くので、ここではリスナーが呼ぶ引当の解除を直接呼んで確認する。テストごとにロールバックする。
+ * テストごとにロールバックする。カートの変更のイベントによる引当の解除（AC-84）は、コミットが要るので
+ * {@link CheckoutCartChangeApiTest} で確認する。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -65,9 +65,6 @@ class CheckoutApiTest {
 
     @Autowired
     StockReservationApi stockReservationApi;
-
-    @Autowired
-    CheckoutService checkoutService;
 
     @Autowired
     DSLContext dsl;
@@ -159,18 +156,6 @@ class CheckoutApiTest {
         // 期限も 15 分に戻る
         mockMvc.perform(get("/api/store/checkouts/" + second))
                 .andExpect(jsonPath("$.expiresAt").value(clock.instant().plus(Duration.ofMinutes(15)).toString()));
-    }
-
-    @Test
-    @DisplayName("AC-84 カートを変更すると（カート変更のイベント）、そのカートの注文手続きの引当が解かれる")
-    void releasesReservationOnCartChange() throws Exception {
-        var variant = stockedVariant(3);
-        add(cartId, variant, 2);
-        startCheckout(cartId);
-
-        checkoutService.releaseReservations(cartId);
-
-        assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 3);
     }
 
     @Test

@@ -8,13 +8,13 @@ import com.ecsite.api.admin.model.ReportSettings;
 import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSalesReport;
 import com.ecsite.module.reporting.application.CustomerBreakdownQueryService;
-import com.ecsite.module.reporting.application.ReportingProperties;
+import com.ecsite.module.reporting.application.ReportSettingsQueryService;
 import com.ecsite.module.reporting.application.SalesTrendQueryService;
 import com.ecsite.module.reporting.application.VariantSalesQueryService;
 import com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuery;
 import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.application.model.query.VariantSalesQuery;
-import com.ecsite.module.reporting.domain.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.ReportPeriod;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
@@ -52,9 +52,9 @@ class ReportController implements ReportApi {
     private final ReportMapper mapper;
 
     /**
-     * レポートの設定
+     * レポートの設定のクエリサービス
      */
-    private final ReportingProperties properties;
+    private final ReportSettingsQueryService settingsService;
 
 // ============================== GET ==============================
 
@@ -124,6 +124,6 @@ class ReportController implements ReportApi {
      */
     @Override
     public ResponseEntity<ReportSettings> getReportSettings() {
-        return ResponseEntity.ok(new ReportSettings().fiscalYearStartMonth(properties.fiscalYearStartMonth()));
+        return ResponseEntity.ok(mapper.toReportSettings(settingsService.settings()));
     }
 }

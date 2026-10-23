@@ -4,17 +4,22 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.module.storefront.application.port.CartView;
-import com.ecsite.module.storefront.application.port.CatalogCategory;
+import com.ecsite.module.storefront.application.model.CartView;
+import com.ecsite.module.storefront.application.model.CatalogCategory;
+import com.ecsite.module.storefront.application.model.ProductCondition;
+import com.ecsite.module.storefront.application.model.ProductDetailView;
+import com.ecsite.module.storefront.application.model.ProductSummaryView;
+import com.ecsite.module.storefront.application.model.ShopView;
 import com.ecsite.module.storefront.application.port.CatalogDirectory;
 import com.ecsite.module.storefront.application.port.CatalogProduct;
 import com.ecsite.module.storefront.application.port.CatalogProductDetail;
 import com.ecsite.module.storefront.application.port.OrderDirectory;
-import com.ecsite.module.storefront.application.port.ProductCondition;
 import com.ecsite.module.storefront.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -27,6 +32,7 @@ import java.util.stream.IntStream;
  */
 @Service
 @RequiredArgsConstructor
+@Transactional(readOnly = true)
 public class StorefrontService {
 
     /**
@@ -43,6 +49,11 @@ public class StorefrontService {
      * 注文の腐敗防止層（カートの見積もり）
      */
     private final OrderDirectory orderDirectory;
+
+    /**
+     * 店舗の情報の設定
+     */
+    private final ShopProperties shopProperties;
 
     /**
      * 商品一覧を取得する。
@@ -104,6 +115,17 @@ public class StorefrontService {
      */
     public List<CatalogCategory> categoryTree() {
         return catalogDirectory.categoryTree();
+    }
+
+    /**
+     * 店舗の情報を取得する。設定の値から返すので、DB は読まない。<br />
+     * クラス全体の読み取り専用のトランザクションと接続を取らないよう、トランザクションなしで動かす（{@code MediaService} の DB を使わない操作と同じ）。
+     *
+     * @return 店舗の情報
+     */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    public ShopView getShop() {
+        return new ShopView(shopProperties.contactEmail());
     }
 
 // ============================== プライベートメソッド ==============================

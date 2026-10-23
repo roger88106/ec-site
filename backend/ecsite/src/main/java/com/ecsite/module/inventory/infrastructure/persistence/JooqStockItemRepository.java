@@ -2,7 +2,7 @@ package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import com.ecsite.module.inventory.domain.stock.InventoryErrorCode;
+import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import lombok.RequiredArgsConstructor;

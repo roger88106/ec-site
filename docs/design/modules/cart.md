@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（品目の上限と合算だけで、状態遷移を持たない） |
 | 依存 | 商品カタログ・在庫（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[017](../../specs/archive/mvp/017-stability)、[019](../../specs/archive/mvp/019-mvp-completion) |
+| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[017](../../specs/archive/mvp/017-stability)、[019](../../specs/archive/mvp/019-mvp-completion)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ## カート
 
@@ -30,7 +30,7 @@
 ### 期限
 
 - 最終更新から 30 日たったカートは、読むときに空として扱い、次に書くときに品目を削除してから書く。
-- 期限が切れたカートは、片付けのジョブが品目と共に削除する（既定では期限で削除する。[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。削除したカートを使う操作は 404 になり、店舗画面は新しいカートを作る。会員のカートは、次に求めたときに再作成する。
+- 期限が切れたカートは、片付けのジョブが品目と共に削除する。件数の上限ごとに削除するループとログ出力は、共通の `ExpiredDataCleanup` を使う（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。削除したカートを使う操作は 404 になり、店舗画面は新しいカートを作る。会員のカートは、次に求めたときに再作成する。
 - 読み込んだ後に片付けで削除されたカートを保存すると、同時の変更（409）になる。
 
 ### 会員のカート
@@ -57,10 +57,12 @@ cart/
 ├── api/                    # 注文に公開する API
 ├── event/                  # カート変更のイベント
 ├── presentation/           # store.yaml から生成したインターフェースを実装
-├── application/            # カートの操作、期限切れのカートの片付け
+├── application/            # カートの操作、期限切れのカートの片付け（CartCleanupJob と、その設定の値の型 CartCleanupProperties）
+│   ├── model/              # 表示の型（view。カートの内容）
 │   └── port/               # リポジトリと腐敗防止層の port（選べるバリアントか、販売可能数）
-├── domain/                 # カート、品目、エラー
+├── domain/                 # カート、品目、統合の結果、エラー
 └── infrastructure/
+    ├── CartConfig          # 設定のクラス。片付けの設定の値の型を有効にする
     ├── persistence/        # リポジトリの実装
     └── directory/          # 商品カタログ・在庫の腐敗防止層
 ```

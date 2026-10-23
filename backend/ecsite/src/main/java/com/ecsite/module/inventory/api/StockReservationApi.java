@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.api;
 
+import com.ecsite.module.inventory.application.StockQueryService;
 import com.ecsite.module.inventory.application.StockReservationService;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -25,6 +26,11 @@ public class StockReservationApi {
     private final StockReservationService reservationService;
 
     /**
+     * 参照のサービス（販売可能数）
+     */
+    private final StockQueryService queryService;
+
+    /**
      * 販売可能数（在庫数 − 有効な引当の合計）を返す。在庫のないバリアントは 0。
      *
      * @param variantIds       バリアント ID
@@ -32,7 +38,7 @@ public class StockReservationApi {
      * @return バリアント ID → 販売可能数（指定したすべてのバリアントを含む）
      */
     public Map<UUID, Integer> sellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId) {
-        return reservationService.sellableQuantities(variantIds, excludedHolderId);
+        return queryService.sellableQuantities(variantIds, excludedHolderId);
     }
 
     /**

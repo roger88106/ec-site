@@ -1,7 +1,7 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.api.StoreProductSummary;
+import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.Record4;
@@ -36,11 +36,11 @@ class StoreProductSummaries {
      * @param rows 商品 ID、商品名、税込価格、税抜価格の行（表示する順）
      * @return 一覧の商品（行と同じ順）
      */
-    List<StoreProductSummary> of(Result<Record4<UUID, String, Long, Long>> rows) {
+    List<StoreProductSummaryView> of(Result<Record4<UUID, String, Long, Long>> rows) {
         var productIds = rows.map(Record4::value1);
         var sellable = SellableVariants.byProduct(dsl, productIds);
         var images = storeImageUrls.representatives(productIds);
-        return rows.map(row -> new StoreProductSummary(row.value1(), row.value2(), Money.of(row.value3()), Money.of(row.value4()),
+        return rows.map(row -> new StoreProductSummaryView(row.value1(), row.value2(), Money.of(row.value3()), Money.of(row.value4()),
                 sellable.getOrDefault(row.value1(), List.of()), images.get(row.value1())));
     }
 }

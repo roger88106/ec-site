@@ -34,7 +34,8 @@ public class MediaApi {
      * @throws com.ecsite.common.error.exception.BusinessException 形式が対象外、または大きさが範囲の外
      */
     public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
-        return mediaService.requestImageUpload(scope, contentType, contentLength);
+        var view = mediaService.requestImageUpload(scope, contentType, contentLength);
+        return new ImageUpload(view.uploadId(), view.uploadUrl(), view.headers(), view.expiresAt());
     }
 
     /**
@@ -49,7 +50,7 @@ public class MediaApi {
      * @throws com.ecsite.common.error.exception.BusinessException 受付がない（範囲の違うものを含む）、大きさが範囲の外、中身が対象の画像でない
      */
     public PreparedImage prepareImage(String scope, UUID uploadId) {
-        return mediaService.prepareImage(scope, uploadId);
+        return new PreparedImage(mediaService.prepareImage(scope, uploadId));
     }
 
     /**
@@ -61,7 +62,7 @@ public class MediaApi {
      * @throws org.springframework.transaction.IllegalTransactionStateException トランザクションの外で呼んだ
      */
     public UUID registerImage(PreparedImage prepared) {
-        return mediaService.registerImage(prepared);
+        return mediaService.registerImage(prepared.assetId());
     }
 
     /**
@@ -71,7 +72,7 @@ public class MediaApi {
      * @param prepared 用意した画像
      */
     public void discardImage(PreparedImage prepared) {
-        mediaService.discardImage(prepared);
+        mediaService.discardImage(prepared.assetId());
     }
 
     /**

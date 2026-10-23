@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.domain.category;
 
+import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

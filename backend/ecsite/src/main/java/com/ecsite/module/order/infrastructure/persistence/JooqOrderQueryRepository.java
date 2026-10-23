@@ -3,6 +3,7 @@ package com.ecsite.module.order.infrastructure.persistence;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
+import com.ecsite.module.order.application.model.OrderSummaryView;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import lombok.RequiredArgsConstructor;

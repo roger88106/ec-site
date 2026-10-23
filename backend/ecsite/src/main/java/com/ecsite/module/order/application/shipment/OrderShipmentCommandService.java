@@ -2,9 +2,10 @@ package com.ecsite.module.order.application.shipment;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
-import com.ecsite.module.order.domain.order.OrderErrorCode;
+import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -45,7 +46,7 @@ class OrderShipmentCommandService {
      * @throws BusinessException 売上確定の後に、注文が受付でなくなっていた（支払は売上確定済みのまま残る）
      */
     @Transactional
-    public ShippingDirectory.Shipment ship(UUID orderId, Carrier carrier, String trackingNumber) {
+    public OrderShipment ship(UUID orderId, Carrier carrier, String trackingNumber) {
         var order = orderRepository.lockById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         if (!order.isShippable()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);

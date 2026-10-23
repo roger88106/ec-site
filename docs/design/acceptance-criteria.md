@@ -106,7 +106,7 @@
 | AC-81 | 最後に変更してから 30 日たったカートは、空のカートとして扱う。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [017](../specs/archive/mvp/017-stability/spec.md) | [カートモジュール](modules/cart.md)（期限） | `CartApiTest`、`CartMergeTest`、`CartTest` ほか 1 |
 | AC-82 | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる（B… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`StockReservationApiTest`、`cart.test.ts` ほか 2 |
 | AC-83 | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`reservation-race.spec.ts` |
-| AC-84 | 引当は次のときに解除される。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（引当） | `CheckoutApiTest`、`StockReservationApiTest` |
+| AC-84 | 引当は次のときに解除される。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（引当） | `CheckoutApiTest`、`CheckoutCartChangeApiTest`、`StockReservationApiTest` |
 | AC-85 | 注文手続きでは、カートの内容、送料、総額、税率ごとの消費税額を確認し、メールアド… | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md)、[016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文（集約））、[店舗画面](apps/store.md) 第 4.8 節 | `CheckoutApiTest`、`order.spec.ts` |
 | AC-86 | 入力の形式。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[地域モジュール](modules/region.md) | `OrderForm.test.tsx`、`OrderTest`、`PlaceOrderApiTest` ほか 4 |
 | AC-87 | 注文が成立すると、全品目の在庫数を注文数だけ減らし、引当を解除する。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（操作） | `OrderForm.test.tsx`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` ほか 2 |
@@ -299,17 +299,17 @@
 | AC-274 | 店舗 API と管理 API の契約は、操作ごとに、返しうるエラーのコードの一覧… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ErrorCodeCheckTest`、`ErrorCodeContractTest` |
 | AC-275 | バックエンドのエラーのコードと、契約のエラーのコードの一覧が食い違うと、CI で… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ErrorCodeContractTest` |
 | AC-276 | 管理 API の商品のバリアントの追加は、作ったバリアントの URL を応答の … | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductApiTest` |
-| AC-277 | モジュールの間で列挙を写すときは、全ての値の対応を、コンパイルかテストで確認する… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `CartQuoteServiceTest`、`InventoryMapperTest`、`OrderApiDirectoryTest` ほか 3 |
-| AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `BasisTest`、`StatusHistoryEntryTest` |
+| AC-277 | モジュールの間で列挙を写すときは、全ての値の対応を、コンパイルかテストで確認する… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `InventoryMapperTest`、`OrderApiDirectoryTest`、`OrderQuoteApiTest` ほか 6 |
+| AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `BasisTest`、`ReportGenderTest`、`StatusHistoryEntryTest` |
 | AC-279 | 列挙を文字列で持つデータベースの列は、全て取りうる値を制約で制限する。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `EnumColumnConstraintTest` |
 | AC-280 | 業務の日付の基準にする時間帯（日本時間）は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-281 | 時点の税率の判定は 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-282 | 分類の深さの上限は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductListApiTest` |
 | AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`RegionApiTest`、`postalCodeFill.test.ts` |
 | AC-284 | 片付けの定期ジョブが、次のデータを保存期間を過ぎたら削除する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CartTest`、`CheckoutCleanupJobTest` ほか 2 |
-| AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
+| AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-286 | 片付けは、注文・支払・出荷と、未完了のイベント・止めたイベントを削除しない。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CheckoutCleanupJobTest`、`EventCleanupJobTest` |
-| AC-287 | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest` |
+| AC-287 | 片付けのジョブは、複数のインスタンスで動かしても同時に 1 つだけが動く（[バッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-288 | 片付けのジョブは、データごとに削除した件数をログに出力する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest`、`EventCleanupJobTest` ほか 1 |
 | AC-289 | 期限切れのカート・注文手続きを削除した後に、そのカート・注文手続きを使う操作は、… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CheckoutCleanupJobTest` |
 | AC-290 | 再発行しても処理に失敗し続けるイベントは、決めた回数（設定で変更できる）を超えた… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `EventResubmissionJobTest`、`EventResubmissionSettingsTest` |

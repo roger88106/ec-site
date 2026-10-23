@@ -1,6 +1,6 @@
 package com.ecsite.module.catalog.application.port;
 
-import com.ecsite.module.catalog.api.OrderableVariant;
+import com.ecsite.module.catalog.application.model.view.OrderableVariantView;
 
 import java.time.Instant;
 import java.util.Collection;
@@ -19,5 +19,5 @@ public interface OrderableVariantQueryRepository {
      * @param now        表示されるかを判定する時刻
      * @return バリアント ID → 情報。存在しないバリアントは含めない
      */
-    Map<UUID, OrderableVariant> findVariants(Collection<UUID> variantIds, Instant now);
+    Map<UUID, OrderableVariantView> findVariants(Collection<UUID> variantIds, Instant now);
 }

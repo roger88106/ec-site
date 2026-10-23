@@ -1,8 +1,8 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.api.OrderableVariant.AxisValue;
-import com.ecsite.module.catalog.api.OrderableVariant;
+import com.ecsite.module.catalog.application.model.view.OrderableVariantView.AxisValue;
+import com.ecsite.module.catalog.application.model.view.OrderableVariantView;
 import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
@@ -48,7 +48,7 @@ class JooqOrderableVariantQueryRepository implements OrderableVariantQueryReposi
      * @return バリアント ID → 情報
      */
     @Override
-    public Map<UUID, OrderableVariant> findVariants(Collection<UUID> variantIds, Instant now) {
+    public Map<UUID, OrderableVariantView> findVariants(Collection<UUID> variantIds, Instant now) {
         // 表示条件は、一覧・検索と同じ部品で判定する
         var visible = DSL.field(ProductVisibility.visibleAt(now));
         var rows = dsl.select(VARIANT.ID, VARIANT.PRODUCT_ID, PRODUCT.PRODUCT_CODE, VARIANT.VARIANT_CODE, PRODUCT.NAME,
@@ -63,7 +63,7 @@ class JooqOrderableVariantQueryRepository implements OrderableVariantQueryReposi
                 rows.stream().map(row -> row.get(VARIANT.IMAGE_ID)).filter(Objects::nonNull).toList());
         var representatives = storeImageUrls.representatives(new HashSet<>(rows.map(row -> row.get(VARIANT.PRODUCT_ID))));
 
-        var result = new LinkedHashMap<UUID, OrderableVariant>();
+        var result = new LinkedHashMap<UUID, OrderableVariantView>();
         rows.forEach(row -> {
             var variantId = row.get(VARIANT.ID);
             var productId = row.get(VARIANT.PRODUCT_ID);
@@ -72,7 +72,7 @@ class JooqOrderableVariantQueryRepository implements OrderableVariantQueryReposi
             var imageUrl = imageId != null && imageUrls.containsKey(imageId)
                     ? imageUrls.get(imageId)
                     : representatives.get(productId);
-            result.put(variantId, new OrderableVariant(variantId, productId, row.get(PRODUCT.PRODUCT_CODE),
+            result.put(variantId, new OrderableVariantView(variantId, productId, row.get(PRODUCT.PRODUCT_CODE),
                     row.get(VARIANT.VARIANT_CODE), row.get(PRODUCT.NAME), axisValues.getOrDefault(variantId, List.of()),
                     Money.of(row.get(PRODUCT.PRICE_EXCL_TAX)), row.get(PRODUCT.TAX_CATEGORY_ID), imageUrl,
                     Boolean.TRUE.equals(row.get(visible)), row.get(VARIANT.SALES_SUSPENDED)));

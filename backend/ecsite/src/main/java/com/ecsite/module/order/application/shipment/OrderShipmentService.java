@@ -2,10 +2,10 @@ package com.ecsite.module.order.application.shipment;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
-import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
-import com.ecsite.module.order.domain.order.OrderErrorCode;
+import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -46,7 +46,7 @@ public class OrderShipmentService {
      * @throws BusinessException 注文がない、受付でない（売上確定の後に変わった場合を含む）、与信の期限が切れている
      * @throws com.ecsite.common.error.exception.SystemException 決済サービスに接続できない（出荷は作らない）
      */
-    public ShippingDirectory.Shipment ship(UUID orderId, Carrier carrier, String trackingNumber) {
+    public OrderShipment ship(UUID orderId, Carrier carrier, String trackingNumber) {
         var order = orderRepository.findById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
         // 受付でなければ、売上を確定しない
         if (!order.isShippable()) {

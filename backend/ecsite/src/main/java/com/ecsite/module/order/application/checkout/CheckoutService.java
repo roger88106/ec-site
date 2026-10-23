@@ -7,7 +7,7 @@ import com.ecsite.module.order.application.port.CartDirectory;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
-import com.ecsite.module.order.domain.order.OrderErrorCode;
+import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.quote.Quote;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

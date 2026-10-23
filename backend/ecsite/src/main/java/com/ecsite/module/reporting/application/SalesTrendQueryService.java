@@ -3,7 +3,7 @@ package com.ecsite.module.reporting.application;
 import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.application.model.view.SalesTrendReport;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
-import com.ecsite.module.reporting.domain.SalesTrend;
+import com.ecsite.module.reporting.domain.sales.SalesTrend;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;

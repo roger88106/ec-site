@@ -13,8 +13,6 @@ import org.springframework.context.ApplicationEventPublisher;
 
 import java.util.List;
 
-import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
-import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
@@ -43,11 +41,10 @@ class ModuleRoleTest {
     @DisplayName("レベル A のモジュールの presentation は、集約に依存しない（参照の service の view を受け取る）")
     void levelAPresentationDoesNotDependOnAggregates() {
         var classes = importModules();
-        for (String module : LEVEL_A_MODULES) {
+        // presentation のないモジュール（payment）は、対象が 0 件になるので繰り返さない
+        for (String module : modulesWithPresentation(classes)) {
             ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module." + module + ".presentation..")
-                    .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class)
-                    // presentation のないモジュール（payment）も通す
-                    .allowEmptyShould(true);
+                    .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class);
             rule.check(classes);
         }
     }
@@ -63,14 +60,18 @@ class ModuleRoleTest {
         rule.check(importModules());
     }
 
-    @Test
-    @DisplayName("api/ の interface を実装するクラスは api/ にある（application の service が直接実装しない）")
-    void apiInterfacesAreImplementedInApi() {
-        ArchRule rule = classes().that().implement(resideInAPackage("com.ecsite.module..api.."))
-                .should().resideInAPackage("com.ecsite.module..api..")
-                // api/ に interface がない（すべて @Component のクラス）ときも通す
-                .allowEmptyShould(true);
-        rule.check(importModules());
+    /**
+     * presentation に本番のクラスがある、レベル A のモジュールの名前を返す。
+     *
+     * @param classes モジュールの本番のクラス
+     * @return モジュールの名前
+     */
+    private static List<String> modulesWithPresentation(JavaClasses classes) {
+        return LEVEL_A_MODULES.stream()
+                .filter(module -> classes.stream()
+                        .anyMatch(javaClass -> javaClass.getPackageName()
+                                .startsWith("com.ecsite.module." + module + ".presentation")))
+                .toList();
     }
 
     /**

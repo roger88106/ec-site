@@ -7,7 +7,7 @@ import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.ShippingErrorCode;
-import com.ecsite.module.shipping.infrastructure.mock.MockCarrierTracking;
+import com.ecsite.module.shipping.infrastructure.mock.TestCarrierTracking;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -46,10 +46,10 @@ class ShippingApiTest {
     ShipmentRepository repository;
 
     /**
-     * mock の物流サービスの追跡（呼ばれた時点のトランザクションの有無を記録するため、包む）
+     * テスト用の物流サービスの追跡（mock を包む実装。呼ばれた時点のトランザクションの有無を記録するため、spy にする）
      */
     @MockitoSpyBean
-    MockCarrierTracking tracking;
+    TestCarrierTracking tracking;
 
     @Autowired
     DSLContext dsl;
@@ -133,8 +133,8 @@ class ShippingApiTest {
 
         asyncEvents.awaitHandled(event -> event instanceof TrackingRequested requested
                 && List.of("88812223", "88845556").contains(requested.trackingNumber()));
-        assertThat(tracking.started()).contains(new MockCarrierTracking.Started(Carrier.YAMATO, "88812223"))
-                .doesNotContain(new MockCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
+        assertThat(tracking.started()).contains(new TestCarrierTracking.Started(Carrier.YAMATO, "88812223"))
+                .doesNotContain(new TestCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
     }
 
     @Test

@@ -3,7 +3,6 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
-import com.ecsite.common.persistence.LikePatterns;
 import com.ecsite.jooq.catalog.tables.records.ProductImageRecord;
 import com.ecsite.jooq.catalog.tables.records.ProductRecord;
 import com.ecsite.module.catalog.application.model.query.ProductListQuery;

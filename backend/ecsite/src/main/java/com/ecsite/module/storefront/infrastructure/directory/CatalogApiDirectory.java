@@ -9,10 +9,10 @@ import com.ecsite.module.catalog.api.StoreProductDetail;
 import com.ecsite.module.catalog.api.StoreProductQuery;
 import com.ecsite.module.catalog.api.StoreProductSort;
 import com.ecsite.module.catalog.api.StoreProductSummary;
-import com.ecsite.module.storefront.application.port.CatalogCategory;
+import com.ecsite.module.storefront.application.model.CatalogCategory;
+import com.ecsite.module.storefront.application.model.ProductCondition;
 import com.ecsite.module.storefront.application.port.CatalogProduct;
 import com.ecsite.module.storefront.application.port.CatalogProductDetail;
-import com.ecsite.module.storefront.application.port.ProductCondition;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -26,7 +26,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-public class CatalogApiDirectory implements CatalogDirectory {
+class CatalogApiDirectory implements CatalogDirectory {
 
     /**
      * 店舗向けの商品カタログの API

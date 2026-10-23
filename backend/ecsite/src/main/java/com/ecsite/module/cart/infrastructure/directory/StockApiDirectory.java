@@ -14,7 +14,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-public class StockApiDirectory implements StockDirectory {
+class StockApiDirectory implements StockDirectory {
 
     /**
      * 販売可能数と引当の API

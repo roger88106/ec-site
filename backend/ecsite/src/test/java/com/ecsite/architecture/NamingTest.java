@@ -2,6 +2,7 @@ package com.ecsite.architecture;
 
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.DisplayName;
@@ -65,6 +66,55 @@ class NamingTest {
                 .containsExactly(MisnamedExampleRepositoryImpl.class.getName());
         assertThat(implementationViolations(examples, "Directory", "", "Api", ".infrastructure.directory"))
                 .containsExactly(MisnamedExampleDirectoryAdapter.class.getName());
+    }
+
+    @Test
+    @DisplayName("腐敗防止層の実装は、public にしない（対象は 1 件以上ある）")
+    void directoryImplementationsAreNotPublic() {
+        assertThat(directoryImplementations(CLASSES, ".infrastructure.directory")).isNotEmpty();
+        assertThat(publicDirectoryImplementations(CLASSES, ".infrastructure.directory")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("public の規則は、public な腐敗防止層の実装の例に当たる")
+    void publicRuleMatchesPublicExample() {
+        var examples = new ClassFileImporter().importClasses(
+                ExampleDirectory.class, PublicExampleApiDirectory.class, MisnamedExampleDirectoryAdapter.class);
+
+        assertThat(publicDirectoryImplementations(examples, ".architecture"))
+                .containsExactly(PublicExampleApiDirectory.class.getName());
+    }
+
+    /**
+     * public な腐敗防止層の実装の名前を返す。
+     *
+     * @param classes    調べるクラス
+     * @param packageEnd 実装を置くパッケージの名前の終わり
+     * @return public な実装のクラスの名前（名前の順）
+     */
+    private static List<String> publicDirectoryImplementations(JavaClasses classes, String packageEnd) {
+        return directoryImplementations(classes, packageEnd).stream()
+                .filter(javaClass -> javaClass.getModifiers().contains(JavaModifier.PUBLIC))
+                .map(JavaClass::getName)
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * 腐敗防止層の窓口（名前が Directory で終わる interface）を実装する、クラスを返す。
+     *
+     * @param classes    調べるクラス
+     * @param packageEnd 実装を置くパッケージの名前の終わり
+     * @return 実装のクラス
+     */
+    private static List<JavaClass> directoryImplementations(JavaClasses classes, String packageEnd) {
+        return classes.stream()
+                .filter(javaClass -> !javaClass.isAnonymousClass())
+                .filter(javaClass -> !javaClass.isInterface())
+                .filter(javaClass -> javaClass.getPackageName().endsWith(packageEnd))
+                .filter(javaClass -> javaClass.getRawInterfaces().stream()
+                        .anyMatch(port -> port.getSimpleName().endsWith("Directory")))
+                .toList();
     }
 
     /**
@@ -136,6 +186,12 @@ class NamingTest {
             }
         }
         return violations.stream().sorted().toList();
+    }
+
+    /**
+     * 規則に当たる例：腐敗防止層の実装が public（public のクラスは、ファイルの名前のクラスしか書けないので、入れ子で置く）
+     */
+    public static final class PublicExampleApiDirectory implements ExampleDirectory {
     }
 }
 

@@ -5,8 +5,6 @@ import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
-import com.ecsite.module.order.domain.order.vo.BuyerProfile;
-import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;

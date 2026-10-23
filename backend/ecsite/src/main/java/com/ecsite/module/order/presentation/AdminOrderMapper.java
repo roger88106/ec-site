@@ -237,7 +237,7 @@ class AdminOrderMapper {
     /**
      * キャンセル。
      */
-    private static Cancellation toCancellation(com.ecsite.module.order.domain.order.vo.Cancellation cancellation) {
+    private static Cancellation toCancellation(com.ecsite.module.order.domain.order.Cancellation cancellation) {
         return new Cancellation()
                 .cancelledAt(ApiDateTimes.toOffsetDateTime(cancellation.cancelledAt()))
                 .kind(toKind(cancellation.kind()))

@@ -1,7 +1,6 @@
-package com.ecsite.module.order.domain.order.vo;
+package com.ecsite.module.order.domain.order;
 
 import com.ecsite.common.model.value.BusinessTime;
-import com.ecsite.module.order.domain.order.Gender;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
 import org.jspecify.annotations.Nullable;

@@ -3,7 +3,6 @@ package com.ecsite.module.order.domain.order;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
-import com.ecsite.module.order.domain.order.vo.BuyerProfile;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;

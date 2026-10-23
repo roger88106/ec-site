@@ -1,7 +1,7 @@
 package com.ecsite.module.order.application.model;
 
 import com.ecsite.module.order.domain.order.OrderStatus;
-import com.ecsite.module.order.domain.order.vo.Cancellation;
+import com.ecsite.module.order.domain.order.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;

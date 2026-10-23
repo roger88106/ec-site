@@ -2,8 +2,8 @@ package com.ecsite.module.order.application.model;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.domain.order.OrderStatus;
-import com.ecsite.module.order.domain.order.vo.BuyerProfile;
-import com.ecsite.module.order.domain.order.vo.Cancellation;
+import com.ecsite.module.order.domain.order.BuyerProfile;
+import com.ecsite.module.order.domain.order.Cancellation;
 import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;

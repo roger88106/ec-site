@@ -84,6 +84,25 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+      # domain の mutation testing（PIT。backend/ecsite/build.gradle.kts の pitest）。単体テストで domain の変異を検出できるかを測る。
+      # check には入れていないので、ここで流す。報告（build/reports/pitest/）を保存した後に、基準の検査を行う
+      - name: domain の mutation testing（PIT）
+        run: ./gradlew pitest
+
+      - name: mutation testing の報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pitest-backend
+          path: backend/ecsite/build/reports/pitest/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # 基準（scripts/ci/report/quality-baseline.json の backend-domain）を下回ると失敗にする。
+      # summary に、mutation score と、生き残った変異が多いクラスの上位 10 件を書く
+      - name: mutation score の基準の検査
+        run: node ../../scripts/ci/report/coverage-baseline.mjs backend-domain build/reports/pitest/mutations.xml
+
       - name: テストレポートを保存（失敗時）
         if: failure()
         uses: actions/upload-artifact@v7
@@ -190,7 +209,7 @@ jobs:
           pattern: backend-*
           path: ${{ runner.temp }}/backend
 
-      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない。
+      # カバレッジ（テストの書き方 第 1.2 節）。基準の検査は、報告を保存した後の最後の手順で行う。
       # 実行データ（単体 1 つと統合 2 つ）を 1 つの報告にする。クラスは、ビルドのジョブがコンパイルしたもの
       # JaCoCo は、実行データとクラスが一致しないと警告を出す（各ジョブが別々にコンパイルしたクラスが違うとき）。
       # 失敗にはせず、注釈に出す。pipefail で Gradle の失敗は隠さない
@@ -214,6 +233,10 @@ jobs:
           path: backend/ecsite/build/reports/jacoco/coverageReport/
           if-no-files-found: ignore
           retention-days: 7
+
+      # 基準（scripts/ci/report/quality-baseline.json）を下回ると失敗にする。報告の保存の後に置き、失敗しても報告を残す
+      - name: カバレッジの基準の検査
+        run: node ../../scripts/ci/report/coverage-baseline.mjs backend build/reports/jacoco/coverageReport/coverageReport.xml
 
   admin:
     name: 管理画面
@@ -239,7 +262,7 @@ jobs:
       - name: テスト
         run: pnpm test
 
-      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
+      # カバレッジ（テストの書き方 第 1.2 節）。基準の検査は、ジョブの最後の手順で行う
       - name: カバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/report/coverage-summary.mjs 管理画面 coverage/coverage-summary.json
@@ -259,6 +282,11 @@ jobs:
           # 本番ビルドは IdP の設定がなければ失敗する。CI はローカルの IdP の値で確認する（realm の JSON と同じ）
           VITE_OIDC_AUTHORITY: http://localhost:8180/realms/ec-admin
           VITE_OIDC_CLIENT_ID: ec-admin-web
+
+      # 基準（scripts/ci/report/quality-baseline.json）を下回ると失敗にする。ビルドが失敗したときも流して、両方の失敗を見えるようにする
+      - name: カバレッジの基準の検査
+        if: always()
+        run: node ../../scripts/ci/report/coverage-baseline.mjs admin coverage/coverage-summary.json
 
   store:
     name: 店舗画面
@@ -284,6 +312,21 @@ jobs:
         working-directory: frontend/shared
         run: pnpm lint && pnpm typecheck && pnpm test
 
+      # 共有のパッケージのカバレッジ（管理画面・店舗画面と同じ v8 の設定）。基準の検査は、ジョブの最後の手順で行う
+      - name: 共有のパッケージのカバレッジの合計を summary に書く
+        if: always()
+        run: node ../../scripts/ci/report/coverage-summary.mjs 共有パッケージ coverage/coverage-summary.json
+        working-directory: frontend/shared
+
+      - name: 共有のパッケージのカバレッジの報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-shared
+          path: frontend/shared/coverage/
+          if-no-files-found: ignore
+          retention-days: 7
+
       # 型チェックとビルドは、store.yaml から型を生成してから行う（生成物はコミットしない）
       - name: lint と整形の確認
         run: pnpm lint
@@ -294,7 +337,7 @@ jobs:
       - name: テスト
         run: pnpm test
 
-      # カバレッジ（テストの書き方 第 1 節）。報告だけで、基準の値では失敗させない
+      # カバレッジ（テストの書き方 第 1.2 節）。基準の検査は、ジョブの最後の手順で行う
       - name: カバレッジの合計を summary に書く
         if: always()
         run: node ../../scripts/ci/report/coverage-summary.mjs 店舗画面 coverage/coverage-summary.json
@@ -311,6 +354,16 @@ jobs:
       # 画面はリクエストのたびに作るので、ビルドにバックエンドは必要ない
       - name: ビルド
         run: pnpm build
+
+      # 基準（scripts/ci/report/quality-baseline.json）を下回ると失敗にする。ビルドが失敗したときも流して、両方の失敗を見えるようにする
+      - name: カバレッジの基準の検査
+        if: always()
+        run: node ../../scripts/ci/report/coverage-baseline.mjs store coverage/coverage-summary.json
+
+      # 1 つの手順にまとめると、店舗画面が失敗したときに共有のパッケージが流れないので、手順を分ける
+      - name: 共有のパッケージのカバレッジの基準の検査
+        if: always()
+        run: node ../../scripts/ci/report/coverage-baseline.mjs shared ../shared/coverage/coverage-summary.json
 
   # CI の検査の script（scripts/ci/check-all.sh）は、文書だけの push でも実行するため docs.yml で実行する
 

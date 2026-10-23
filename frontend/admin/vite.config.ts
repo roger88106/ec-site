@@ -43,7 +43,7 @@ export default defineConfig(({ command, mode }) => {
       // 結合テスト（管理画面の構成 第 9 節）のため jsdom で動かす。単体テストもそのまま動く
       environment: 'jsdom',
       setupFiles: ['src/test/setup.ts'],
-      // カバレッジは報告だけ（テストの書き方 第 1 節）。生成物と shadcn/ui の生成物、テストの補助は数えない
+      // カバレッジは報告と基準の検査に使う（テストの書き方 第 1.2 節）。生成物と shadcn/ui の生成物、テストの補助は数えない
       coverage: {
         provider: 'v8',
         include: ['src/**/*.{ts,tsx}'],

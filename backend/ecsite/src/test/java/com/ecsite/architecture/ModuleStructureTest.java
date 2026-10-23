@@ -57,6 +57,11 @@ class ModuleStructureTest {
     private static final Pattern MODULE_SUBPACKAGE = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)\\.([^.]+)");
 
     /**
+     * presentation の外に置く例外の {@code @RestController}（どのモジュールにも属さない GET /me）
+     */
+    private static final String ME_CONTROLLER = "com.ecsite.config.security.MeController";
+
+    /**
      * 本番のクラス（テストを除く）
      */
     private static final JavaClasses CLASSES = new ClassFileImporter()
@@ -142,10 +147,11 @@ class ModuleStructureTest {
     }
 
     @Test
-    @DisplayName("@RestController は presentation だけに付ける")
+    @DisplayName("@RestController は presentation だけに付ける（MeController を除く）")
     void restControllerOnlyInPresentation() {
         classes().that().areAnnotatedWith(RestController.class)
-                .and().resideInAPackage(MODULE_PACKAGE + "..")
+                .and().resideInAPackage("com.ecsite..")
+                .and().doNotHaveFullyQualifiedName(ME_CONTROLLER)
                 .should().resideInAPackage(MODULE_PACKAGE + ".*.presentation..")
                 .check(CLASSES);
     }

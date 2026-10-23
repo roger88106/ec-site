@@ -25,7 +25,7 @@ T155-01-01〜06 は、変えるファイルが重ならないので、互いに 
 - [x] **T155-01-05** [P] LIKE の検索の文字の扱い（`LikePatterns`）を `module/catalog/infrastructure/persistence/` に移し、クラスとメソッドの public を外す。`JooqProductQueryRepository`、`PostgresProductSearch` の import を削除する（DC-155-3、4）。
   - 依存：なし
   - 範囲：`main/common/persistence/LikePatterns.java`、`main/module/catalog/infrastructure/persistence/JooqProductQueryRepository.java`（`:6,106,107,111,114`）、`main/module/catalog/infrastructure/persistence/PostgresProductSearch.java`（`:5,56,60,61`）
-- [ ] **T155-01-06** [P] `ModuleStructureTest.restControllerOnlyInPresentation` の対象を `com.ecsite..` に広げ、`MeController` を完全修飾名で除外する。表示名に「`MeController` を除く」を追加する。`MeController` 以外のクラスに `@RestController` を一時的に付けて、失敗することを確認する（DC-155-5）。
+- [x] **T155-01-06** [P] `ModuleStructureTest.restControllerOnlyInPresentation` の対象を `com.ecsite..` に広げ、`MeController` を完全修飾名で除外する。表示名に「`MeController` を除く」を追加する。`MeController` 以外のクラスに `@RestController` を一時的に付けて、失敗することを確認する（DC-155-5）。
   - 依存：なし
   - 範囲：`test/architecture/ModuleStructureTest.java`（`:144-151`）
 - [ ] **T155-01-07** `ModuleStructureTest` に 2 つの規則を追加する。共通コードと設定（`com.ecsite.common..`、`com.ecsite.config..`）はモジュールに依存しない。モジュールは設定に依存しない。`allowEmptyShould` を付けない。一時的に違反を入れて、失敗することを確認する（DC-155-6、7）。

@@ -29,7 +29,7 @@ frontend/
 | ログイン | Auth.js。サーバーが IdP とやり取りする（confidential client） | oidc-client-ts。ブラウザーが IdP とやり取りする（public client、PKCE） |
 | token の置き場所 | 暗号化した HttpOnly の Cookie（サーバーだけが読む） | ブラウザーのメモリーだけ |
 | 文言 | next-intl | use-intl |
-| コンポーネントのテスト | HTML に描画して確認する（結合テストなし ※1） | React Testing Library と MSW の結合テスト |
+| コンポーネントのテスト | HTML に描画して確認する。ブラウザーの中だけで終わる操作は jsdom と Testing Library で操作する（結合テストなし ※1） | React Testing Library と MSW の結合テスト |
 
 ※1：操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないため。画面をつないだ流れは E2E で確認する。
 

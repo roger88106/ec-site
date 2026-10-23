@@ -173,9 +173,10 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
   - 依存：なし
   - 範囲：`docs/rules/backend-coding.md`、`api-conventions.md`、`comments.md`、`test-writing.md`
   - 結果：メッセージのキーの例を実在する `TOO_MANY_CART_ITEMS` に直し、OpenAPI に書かない例外に物流の通知と mock の物流の画面を加えた。mock の支払画面に拒否の操作の応答を足し、コメントの規則の一覧を 3 列（確認方法あり）にした。契約テストの「対象の AC」は、AC 一覧の「テスト」の列を正とし、表は例だと示して、「（spec 012）」を除いた。
-- [ ] **T156-02-05** 環境変数と CI の検査の文書、フロントのアーキテクチャを修正する（DC-156-15、19、20）。
+- [x] **T156-02-05** 環境変数と CI の検査の文書、フロントのアーキテクチャを修正する（DC-156-15、19、20）。
   - 依存：T156-02-03（constitution の CI の要点と食い違わないようにするため。DC-156-14）
   - 範囲：`docs/guides/environment.md`、`docs/guides/ci.md`、`docs/design/frontend-architecture.md`
+  - 結果：環境変数の表にメディアのストレージの資格情報（アクセスキー ID とシークレット）の行を足した。CI の検査の文書の「CI のジョブ」の列を、ジョブの表にある名前（管理画面、店舗画面、E2E）にそろえた。フロントのアーキテクチャの店舗画面のコンポーネントのテストに、ブラウザーの中だけで終わる操作を jsdom で操作することを足した。
 - [ ] **T156-02-06** 店舗画面と管理画面の構成の冒頭に概要の表を置き、skill `docs` の概要の表の記述を修正する（DC-156-22、第 6 節の 2）。関連 spec は、2 つの文書の履歴から抽出する。
   - 依存：T156-02-03（skill `docs` を同じく変えるため）
   - 範囲：`docs/design/apps/store.md`、`docs/design/apps/admin.md`、`.claude/skills/docs/SKILL.md`

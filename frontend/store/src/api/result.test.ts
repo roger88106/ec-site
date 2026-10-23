@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ApiError, unwrap, unwrapMember } from '@/api/result'
-import { redirectedTo, resetRequest } from '@/test/next'
+import { expectNotFound, redirectedTo, resetRequest } from '@/test/next'
 
 /** openapi-fetch の結果を作る */
 function result<T>(status: number, data?: T, error?: unknown) {
@@ -22,10 +22,8 @@ describe('API の結果の取り出し', () => {
     expect(unwrap(result(200, { id: 'a' }))).toEqual({ id: 'a' })
   })
 
-  test('404 は「見つかりません」の画面にする', () => {
-    const error = thrown(() => unwrap(result(404, undefined, { message: '見つかりません。' })))
-
-    expect((error as { digest?: string }).digest).toMatch(/;404$/)
+  test('404 は「見つかりません」の画面にする', async () => {
+    await expectNotFound(async () => unwrap(result(404, undefined, { message: '見つかりません。' })))
   })
 
   test('それ以外の失敗は、エラーレスポンスのメッセージと状態を持つ例外を投げる', () => {

@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import CheckoutPage from '@/app/checkout/[checkoutId]/page'
 import { signInAs } from '@/test/auth'
-import { redirectedTo, resetRequest } from '@/test/next'
+import { expectNotFound, redirectedTo, resetRequest } from '@/test/next'
 
 /** 形の違う ID（UUID でない） */
 const MALFORMED_ID = 'not-a-uuid'
@@ -15,7 +15,7 @@ function openCheckoutPage(checkoutId: string) {
   return CheckoutPage({
     params: Promise.resolve({ checkoutId }),
     searchParams: Promise.resolve({}),
-  } as Parameters<typeof CheckoutPage>[0])
+  })
 }
 
 describe('注文手続きの画面の確認の順', () => {
@@ -30,6 +30,6 @@ describe('注文手続きの画面の確認の順', () => {
   test('ログインした人が形の違う ID で開くと、「見つかりません」になる', async () => {
     signInAs()
 
-    await expect(openCheckoutPage(MALFORMED_ID)).rejects.toMatchObject({ digest: 'NEXT_HTTP_ERROR_FALLBACK;404' })
+    await expectNotFound(() => openCheckoutPage(MALFORMED_ID))
   })
 })

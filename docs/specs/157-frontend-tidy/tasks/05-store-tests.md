@@ -20,7 +20,7 @@
 - [x] **T157-05-04** [P] 注文のテストを修正する。名前を振る舞いの文にし、まとまりの名前だけにある AC の番号をテストの名前に移す。注文の状態のバッジのテストを自分のファイルに移す。注文とお届け先は補助を使う。電話番号とメールアドレスは項目名と合わせて確認する。画面の props の型の変換を修正する（DC-157-18、19、21、24、26、31）。
   - 依存：なし
   - 範囲：`frontend/store/src/features/order/orderState.test.ts`、`orderListQuery.test.ts`、`labels.test.ts`、`frontend/store/src/features/order/components/CancellationRequestForm.test.tsx`、`OrderStatusBadge.test.tsx`（新規）、`CancellationSection.test.tsx`、`PaymentSection.test.tsx`、`ShippingAddressDetails.test.tsx`、`frontend/store/src/app/orders/[orderId]/page.test.tsx`
-- [ ] **T157-05-05** [P] サーバーアクションと API の接続のテストを修正する。引数のない例外の確認を補助と内容の確認に、標準エラー出力の確認を補助に、通信の失敗を補助にする。注文の操作のサーバーアクションのテストを自分のファイルに移す。契約にある応答を型付きのハンドラーにし、契約にない応答に理由を書く。要求の本文の型の変換を修正する。結果の包みのテストの重複をまとめる（DC-157-15、16、18、23、26、27、32、33）。
+- [x] **T157-05-05** [P] サーバーアクションと API の接続のテストを修正する。引数のない例外の確認を補助と内容の確認に、標準エラー出力の確認を補助に、通信の失敗を補助にする。注文の操作のサーバーアクションのテストを自分のファイルに移す。契約にある応答を型付きのハンドラーにし、契約にない応答に理由を書く。要求の本文の型の変換を修正する。結果の包みのテストの重複をまとめる（DC-157-15、16、18、23、26、27、32、33）。
   - 依存：なし
   - 範囲：`frontend/store/src/actions/withActionResult.test.ts`、`checkout.test.ts`、`order.test.ts`（新規）、`cart.test.ts`、`region.test.ts`、`frontend/store/src/api/client.test.ts`、`cart.test.ts`、`result.test.ts`、`frontend/store/src/app/checkout/[checkoutId]/page.test.tsx`
 - [ ] **T157-05-06** [P] 店舗画面の lib とサーバーの処理のテストを修正する。追跡の ID のテストを自分のファイルに移し、ログの確認を補助と内容の確認にする。カートの ID の例外の確認に内容を加え、カートの ID は補助を使う。ログインの戻り先のテストの重複を削除する（DC-157-23、24、26、27、31、33）。

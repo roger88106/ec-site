@@ -117,7 +117,7 @@
 | AC-92 | 注文には、注文時点の商品品番、バリアント品番、商品名、軸の値、税抜単価、税率、税… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `OrderCatalogApiTest`、`OrderTest`、`PlaceOrderApiTest` |
 | AC-93 | 注文の直後に、注文番号、注文日時、明細、金額の内訳（BR-7、8）、お届け先、状… | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [店舗画面](apps/store.md) 第 4.7 節 | `PlaceOrderApiTest`、`order.spec.ts` |
 | AC-94 | 注文の URL を知っていれば、後から同じ内容を見られる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表） | `PlaceOrderApiTest` |
-| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表、状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`checkout.test.ts` ほか 2 |
+| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表、状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`order.spec.ts` ほか 2 |
 | AC-96 | キャンセルの申請は、1 つの注文につき 1 回だけ。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`StorefrontShopTest` ほか 2 |
 | AC-97 | 全ての注文を、注文日時の新しい順に一覧できる。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx` |
 | AC-98 | 注文番号の前方一致、状態、注文日の範囲（BR-3）で絞り込める。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx`、`orderFilter.test.ts` |
@@ -173,7 +173,7 @@
 | AC-148 | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-149 | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-150 | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
-| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 2 |
+| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`order.test.ts` ほか 2 |
 | AC-152 | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentApiTest` |
 | AC-153 | 支払の期限（BR-16）までに与信が成功しなかった注文は、キャンセルになり、明細… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`PaymentExpiryJobTest` ほか 2 |
 | AC-154 | 期限切れのキャンセルは、期限から一定時間（plan で決める）のうちに行われる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentExpiryJobTest` |
@@ -321,7 +321,7 @@
 | AC-296 | 画像の確定で、画像の変換のサービスに接続できない、時間内に応答がない、変換のサー… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ProductImageServiceErrorApiTest` |
 | AC-297 | 画像の確定で、変換のサービスがファイルを読めない（ファイルの側の問題）ときだけ、… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ImgproxyImageConverterFailureTest` |
 | AC-298 | 画像の確定で、ファイル保存のサービスのエラーなら 502 を返す（受付は署名付き… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ProductImageServiceErrorApiTest`、`S3ObjectStorageFailureTest` |
-| AC-299 | 店舗画面と管理画面は、外部サービスのエラーを受けたら、再試行できることを示すメッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ProductEditPage.test.tsx`、`checkout.test.ts` |
+| AC-299 | 店舗画面と管理画面は、外部サービスのエラーを受けたら、再試行できることを示すメッ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `ProductEditPage.test.tsx`、`order.test.ts` |
 | AC-300 | API の規約に、外部サービスのエラーの扱いと、OpenAPI の外のエンドポイ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | 除外 |
 | AC-301 | バックエンドから決済サービスとファイル保存のサービスへの呼び出しに、接続と応答の… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `S3ObjectStorageFailureTest`、`StripeConfigTest` |
 | AC-302 | 店舗画面のサーバー側から、バックエンドと IdP への呼び出しに、タイムアウトが… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `config.test.ts`、`timeout.test.ts` |

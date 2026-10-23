@@ -17,7 +17,7 @@ export const japanDateTimeFormat = new Intl.DateTimeFormat(LOCALE, {
 
 /** 金額（例：「1,000 円」） */
 export function formatYen(amount: number): string {
-  return translate('common.yen', { amount: yen.format(amount) })
+  return translate('common.yen', { amount: yen.format(amount) }) // 金額に「円」を付ける
 }
 
 /**
@@ -26,12 +26,12 @@ export function formatYen(amount: number): string {
  */
 export function formatPrice(price: { inclTax?: number | null; exclTax: number }): string {
   if (price.inclTax == null) {
-    return translate('common.priceExclTaxOnly', { exclTax: yen.format(price.exclTax) })
+    return translate('common.priceExclTaxOnly', { exclTax: yen.format(price.exclTax) }) // 税抜の金額と、税込を計算できない案内
   }
   return translate('common.priceWithExclTax', {
     inclTax: yen.format(price.inclTax),
     exclTax: yen.format(price.exclTax),
-  })
+  }) // 税込と税抜の金額
 }
 
 /** 日時の表示。日本時間の「yyyy/MM/dd HH:mm」。空白（null）は空文字 */
@@ -48,7 +48,7 @@ export function taxLabel(tax: { ratePercent: number; taxableAmount: number; taxA
     ratePercent: tax.ratePercent,
     taxableAmount: formatYen(tax.taxableAmount),
     taxAmount: formatYen(tax.taxAmount),
-  })
+  }) // 税率、課税対象額、消費税額
 }
 
 /** 郵便番号（API はハイフンなしの 7 桁を返す。例：「100-0001」） */
@@ -63,5 +63,5 @@ export function formatPostalCode(postalCode: string): string {
  * @param separator  区切り。画面ごとに違うので、呼ぶ側の文言から渡す
  */
 export function axisValuesLabel(axisValues: readonly { name: string; value: string }[], separator: string): string {
-  return axisValues.map((axis) => translate('common.axisValue', axis)).join(separator)
+  return axisValues.map((axis) => translate('common.axisValue', axis /* 軸の名前：値 */)).join(separator)
 }

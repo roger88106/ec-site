@@ -7,6 +7,6 @@ const percent = new Intl.NumberFormat(LOCALE, { maximumFractionDigits: 2 })
 /** 税率の表示。例：「10%」「8.5%」。null は「なし」 */
 export function formatRate(ratePercent: number | null | undefined): string {
   return ratePercent == null
-    ? translate('format.rate.none')
-    : translate('format.rate.value', { rate: percent.format(ratePercent) })
+    ? translate('format.rate.none') // なし
+    : translate('format.rate.value', { rate: percent.format(ratePercent) }) // 率に「%」を付ける
 }

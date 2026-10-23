@@ -256,10 +256,11 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
   - 依存：なし
   - 範囲：`scripts/ci/licenses/check-frontend.mjs`、テスト
   - 結果：レッドを確認してから、式を字句に分けて AND を OR より強く結ぶ再帰下降の解析にした。括弧の対応が合わない、演算子が続く、空の式は理由つきで失敗にし、WITH を含む識別子は今の evaluateOne のまま 1 つとして扱う。今の依存に多い式は同じ結果。
-- [ ] **T158-02-08** [テスト] 文言のコメントの検査：`translate('…')` と、共有のパッケージと `.ts` のファイルを対象にする。今の違反にコメントを追加する（DC-158-17、18、26）。
+- [x] **T158-02-08** [テスト] 文言のコメントの検査：`translate('…')` と、共有のパッケージと `.ts` のファイルを対象にする。今の違反にコメントを追加する（DC-158-17、18、26）。
   - 依存：なし
   - 範囲：`scripts/ci/message-comments.mjs`、テスト、違反のある `frontend/admin/src/`・`frontend/shared/src/` のファイル（コメントの追加だけ）、`docs/rules/comments.md` の「CI で確認する」の記述（DC-158-28）
   - 対象が T158-01-02 の画面の本番のソースの定義と変わるので、定義を使うか、違う理由を更新する（DC-158-37）
+  - 結果：レッドを確認してから、`translate('…')` を対象に加え、対象を画面の本番のソースの定義（`isScreenSource`）にした。違反は 22 件で、admin の api/errors.ts・features/report・lib/rate.ts、shared の lib/format.ts、store の api/result.ts・catalog・order・lib にコメントを足した。
 - [ ] **T158-02-09** [テスト] `main` への pull request の元のブランチの判定を、テストのある関数に移し、workflow から呼ぶ（DC-158-32）。
   - 依存：なし
   - 範囲：`scripts/ci/`、`.github/workflows/main-source.yml`、`docs/guides/ci.md`

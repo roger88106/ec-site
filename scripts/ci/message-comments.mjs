@@ -1,13 +1,14 @@
 // 文言をキーで引く所に、表示する内容のコメントがあることを確認する（コメントの書き方 第 6.1 節）。
-// キーだけでは画面に何が出るかを読めないため、`t('…')` の呼び出しの始めから、閉じ括弧のある行の終わりまでに、
+// キーだけでは画面に何が出るかを読めないため、`t('…')`・`translate('…')` の呼び出しの始めから、閉じ括弧のある行の終わりまでに、
 // コメント（/* */ か //）を求める。キーを組み立てる呼び出し（t(`…${x}`)）は、表示が値で変わるので見ない。
 // 使い方：node scripts/ci/message-comments.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { listGitFiles } from './lib/git-files.mjs'
+import { isScreenSource } from './lib/screen-sources.mjs'
 
-/** 文言の関数（t、tCommon など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
-const MESSAGE_CALL = /(?<![\w.$])t(?:[A-Z]\w*)?\(\s*(['"])([^'"]+)\1/g
+/** 文言の関数（t、tCommon、translate など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
+const MESSAGE_CALL = /(?<![\w.$])(?:t(?:[A-Z]\w*)?|translate)\(\s*(['"])([^'"]+)\1/g
 
 /**
  * 呼び出しの閉じ括弧の位置を返す。文字列の中の括弧は数えない。
@@ -128,19 +129,13 @@ export function findMissingComments(text) {
 }
 
 /**
- * 調べるファイルかを返す。
- * 画面の本番のソースの定義（lib/screen-sources.mjs）より狭く、2 つの画面の .tsx だけを見る（共有パッケージ、src/ui/、generated/ は見ない）。
- * 定義に合わせて対象を広げるのは別の作業で行うので、今は今の対象のままにしている（今のコードの違反は、広げても 0 件）
+ * 調べるファイルかを返す。画面の本番のソースの定義（lib/screen-sources.mjs）と同じ対象を見る。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 2 つの画面の src の .tsx（テストと shadcn/ui の生成物を除く）なら true
+ * @returns {boolean} 画面の本番のソースなら true
  */
 export function isTargetFile(file) {
-  return (
-    /^frontend\/(?:admin|store)\/src\/.*\.tsx$/.test(file) &&
-    !/\.test\.tsx$/.test(file) &&
-    !file.includes('/components/ui/')
-  )
+  return isScreenSource(file)
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {

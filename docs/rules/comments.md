@@ -4,7 +4,7 @@
 
 ## 規則の一覧
 
-第 1 節の spec・plan・tasks の番号は、CI の `spec-numbers.mjs` で確認する。第 2 節のうち、本番のコードのクラスとメンバーに Javadoc があることは、Checkstyle（`./gradlew check`）で確認する。第 6.1 節のうち、キーを文字で書いた呼び出しにコメントがあることは、CI の `message-comments.mjs` で確認する。他は、各 spec の [レビュー](review.md) で読む。
+第 1 節の spec・plan・tasks の番号は、CI の `spec-numbers.mjs` で確認する。第 2 節のうち、本番のコードのクラスとメンバーに Javadoc があることは、Checkstyle（`./gradlew check`）で確認する。第 6.1 節のうち、画面の本番のソース（`.ts` と `.tsx`、共有パッケージを含む）で、キーを文字で書いた呼び出し（`t('…')`、`translate('…')`）にコメントがあることは、CI の `message-comments.mjs` で確認する。他は、各 spec の [レビュー](review.md) で読む。
 
 | 節 | 規則 |
 |----|------|

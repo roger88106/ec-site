@@ -3,7 +3,7 @@ import { translate } from '@/i18n/translate'
 
 /** 通信の失敗（バックエンドが止まっているなど）のときの案内（店舗画面の構成 第 6 節） */
 export function connectionFailedMessage(): string {
-  return translate('common.connectionFailed')
+  return translate('common.connectionFailed') // サーバーに接続できない案内
 }
 
 /**
@@ -25,7 +25,7 @@ export const SUCCESS: ActionResult = { ok: true }
  */
 export function toFailure(status: number, body: unknown): Extract<ActionResult, { ok: false }> {
   if (typeof body !== 'object' || body === null || !('message' in body) || typeof body.message !== 'string') {
-    return { ok: false, message: translate('common.httpFailed', { status }) }
+    return { ok: false, message: translate('common.httpFailed', { status } /* 通信の失敗（HTTP の状態付き） */) }
   }
   const problem = body as { message: string; errorCode?: ErrorCode; errors?: { field: string; message: string }[] }
   const fieldErrors = Object.fromEntries((problem.errors ?? []).map((error) => [error.field, error.message]))

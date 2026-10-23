@@ -19,6 +19,7 @@
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
@@ -170,9 +171,10 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
 
   const excluded = new Set()
   const invalidExclusions = []
-  for (const [key, reason] of Object.entries(exclusions)) {
+  const emptyReasons = new Set(findEmptyReasons(exclusions))
+  for (const key of Object.keys(exclusions)) {
     const match = /^AC-([0-9]+(?:-[0-9]+)?)$/.exec(key)
-    if (!match || !specAcs.has(toAcKey(match[1])) || typeof reason !== 'string' || reason.trim() === '') {
+    if (!match || !specAcs.has(toAcKey(match[1])) || emptyReasons.has(key)) {
       invalidExclusions.push(key)
     } else {
       excluded.add(toAcKey(match[1]))
@@ -399,7 +401,7 @@ function main() {
   const tests = findTestFiles(root).flatMap(({ file, kind }) =>
     extractTestNames(readFileSync(file, 'utf8'), kind).map((name) => ({ file, name })),
   )
-  const exclusions = JSON.parse(readFileSync(path.join(here, 'ac-exclusions.json'), 'utf8'))
+  const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))
 
   // AC 一覧：手で書く列（状態など）を読み、テストの列を再作成して比べる
   const listFile = path.join(root, AC_LIST)

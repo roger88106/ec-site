@@ -8,6 +8,7 @@ import { execFileSync, execSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 
 /** 概要の表の「関連 spec」の行 */
 const RELATED_ROW = /^\|\s*関連 spec\s*\|(.*)\|\s*$/m
@@ -37,6 +38,17 @@ export function specsOfCommit(subject, excludedPrefixes) {
   const matches = [...subject.matchAll(TASK_ID)]
   if (matches.some((match) => excludedPrefixes.some((prefix) => match[0].startsWith(prefix)))) return []
   return [...new Set(matches.map((match) => match[1]))]
+}
+
+/**
+ * 除外のタスク番号の前置きが、どれかの commit のタスク番号に当たるかを返す（当たらない除外は不要）。
+ *
+ * @param {string} prefix 数えないタスク番号の前置き（T018-05 など）
+ * @param {string[]} subjects commit のメッセージの 1 行目
+ * @returns {boolean} 前置きで始まるタスク番号を持つ commit があれば true
+ */
+export function isPrefixUsed(prefix, subjects) {
+  return subjects.some((subject) => [...subject.matchAll(TASK_ID)].some((match) => match[0].startsWith(prefix)))
 }
 
 /**
@@ -84,13 +96,17 @@ function checkStaged(messageFile, excludedPrefixes) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const exclusionsFile = path.join(path.dirname(fileURLToPath(import.meta.url)), 'related-specs-exclusions.json')
-  const excludedPrefixes = Object.keys(JSON.parse(readFileSync(exclusionsFile, 'utf8')))
+  const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'related-specs-exclusions.json'))
+  const excludedPrefixes = Object.keys(exclusions)
   if (process.argv[2] === '--staged') checkStaged(process.argv[3], excludedPrefixes)
   if (execSync('git rev-parse --is-shallow-repository', { encoding: 'utf8' }).trim() === 'true') {
     console.log('commit の履歴が足りない（shallow clone）。CI では checkout に fetch-depth: 0 を付ける')
     process.exit(1)
   }
+  // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
+  const allSubjects = execFileSync('git', ['log', '--format=%s'], { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean)
+  const exclusionProblems = checkExclusions('related-specs-exclusions.json', exclusions, (prefix) => isPrefixUsed(prefix, allSubjects))
+  for (const problem of exclusionProblems) console.log(problem)
   const files = execSync('git ls-files "docs/*.md"', { encoding: 'utf8' }).split('\n').filter(Boolean)
   let count = 0
   for (const file of files) {
@@ -104,6 +120,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       count += 1
     }
   }
+  count += exclusionProblems.length
   console.log(`関連 spec の漏れ：${count}`)
   process.exit(count ? 1 : 0)
 }

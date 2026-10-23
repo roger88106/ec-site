@@ -8,6 +8,7 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 
 /** ロケールとタイムゾーンを書いてよいファイル */
 const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
@@ -101,8 +102,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const files = execSync('git ls-files -co --exclude-standard frontend', { encoding: 'utf8' })
     .split('\n')
     .filter((file) => file && existsSync(file))
-  const exclusionsFile = path.join(path.dirname(fileURLToPath(import.meta.url)), 'frontend-rules-exclusions.json')
-  const exclusions = JSON.parse(readFileSync(exclusionsFile, 'utf8'))
+  const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'frontend-rules-exclusions.json'))
   let count = 0
   const report = (message) => {
     console.log(message)
@@ -126,10 +126,10 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   for (const relative of duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), Object.keys(exclusions))) {
     report(`frontend/{store,admin}/src/${relative} 店舗画面と管理画面に同じ内容のファイルがある（共有パッケージに置く）`)
   }
-  for (const relative of Object.keys(exclusions)) {
-    if (!sourceFiles.includes(`frontend/store/src/${relative}`) || !sourceFiles.includes(`frontend/admin/src/${relative}`)) {
-      report(`frontend-rules-exclusions.json：${relative} が 2 つの画面の両方にない（除外の一覧から消す）`)
-    }
+  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるものだけ（片方が消えた、内容が変わったものは不要）
+  const duplicated = new Set(duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), []))
+  for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (relative) => duplicated.has(relative))) {
+    report(message)
   }
   console.log(`フロントの書き方の違反：${count}`)
   process.exit(count ? 1 : 0)

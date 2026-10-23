@@ -44,4 +44,14 @@ describe('フロントの書き方の検査', () => {
     const read = (file) => files[file]
     assert.deepEqual(duplicatedFiles(Object.keys(files), read, ['lib/utils.ts']), ['lib/price.ts'])
   })
+
+  test('除外を外した同じ内容のファイルの一覧に、除外がまだ要るファイルが出る', () => {
+    const files = {
+      'frontend/store/src/lib/utils.ts': 'same',
+      'frontend/admin/src/lib/utils.ts': 'same',
+      'frontend/store/src/lib/price.ts': 'store',
+      'frontend/admin/src/lib/price.ts': 'admin',
+    }
+    assert.deepEqual(duplicatedFiles(Object.keys(files), (file) => files[file], []), ['lib/utils.ts'])
+  })
 })

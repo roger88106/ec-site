@@ -203,11 +203,14 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
 - 完了条件：DC-158-33、34、36、37 を満たし、`check-all.sh` が通る。
 - 参照：第 3 節の DS-158-4
 
-- [ ] **T158-01-01** [テスト] 除外の一覧の読み込みと、不要になった除外の検出の共通の関数を `lib/` に作り、除外の一覧を持つ検査が使う。除外の一覧の形を `{キー: 理由}` にそろえる（DC-158-33、34）。
+- [x] **T158-01-01** [テスト] 除外の一覧の読み込みと、不要になった除外の検出の共通の関数を `lib/` に作り、除外の一覧を持つ検査が使う。除外の一覧の形を `{キー: 理由}` にそろえる（DC-158-33、34）。
   - 依存：なし
   - 範囲：`scripts/ci/lib/`、除外の一覧を持つ検査とその JSON（ac-check、frontend-rules、glossary-ids、hardcoded-text、message-numbers、related-specs）、`docs/guides/ci.md` の除外の書き方の列
   - 始めに `scripts/ci/` の全ての検査を調べ、除外の一覧を持つ検査が上の 6 つだけであることを確認する。他にあれば範囲に加える。除外を JSON でなく定数で持つ検査（doc-refs など）は、DC-158-34 の対象外とし、結果に書く
   - 関連 spec の除外の一覧の項目が、どの commit にも当たらなくなったことを共通の検出で扱えるかを決め、結果に書く（第 8 節の 13 の起票の要否）
+  - 結果：除外の JSON を持つ検査は ac-check、frontend-rules、glossary-ids、hardcoded-text、message-numbers、related-specs の 6 つだけだった（`doc-terms.json` は除外でなく ng の語の一覧）。除外を定数で持つ doc-refs、doc-terms（`EXCLUDED`）、hardcoded-text の置き場所（`EXCLUDED`）などは DC-158-34 の対象外にした。共通の関数は `lib/exclusions.mjs`（読み込み、理由が空、不要な除外）。
+  - 結果：関連 spec の除外は共通の検出で扱える（前置きに当たるタスク番号が履歴の commit にあるかを見る。shallow clone では履歴を読む前に失敗にするので検出しない）ため実装した。今の除外は全て当たり、第 8 節の 13 は起票しない。hardcoded-text の形を `{パス: 理由}` にし、`{}` にした。
+  - 結果：glossary-ids は除外の一覧自身が検索の対象で、除外の名前が見つかったことになっていたので、一覧を対象から外した。その結果、コードにあって不要だった `develop`、`main`、`[P]` の除外を削除した。frontend-rules の不要な除外は、片方の画面にないときに加え、内容が変わったときも見つける。
 - [ ] **T158-01-02** [テスト] 画面の本番のソースの定義（対象の画面、除くディレクトリ）と、Git の対象のファイルの一覧の関数を `lib/` に作り、画面のソースを読む検査が使う。定義と違う対象を読む検査に理由を書く（DC-158-36、37）。
   - 依存：T158-01-01
   - 範囲：`scripts/ci/lib/`、frontend-rules、hardcoded-text、input-constraints、message-comments、spec-numbers、time-waits

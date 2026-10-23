@@ -1,10 +1,11 @@
 // 画面のコードに、表示の文言（日本語の文字）を直接書いた所がないことを確認する（フロントの書き方 第 7.1 節）。
 // 文言は各画面の messages/ja.json（共通は frontend/shared/src/messages/ja.json）に置き、キーで引く。
-// コメントと、開発者だけが見る文（ログ、プログラムの誤りの例外）は見ない。テスト、生成物、shadcn/ui の部品、例外の一覧（hardcoded-text-exclusions.json）のファイルも見ない。
+// コメントと、開発者だけが見る文（ログ、プログラムの誤りの例外）は見ない。テスト、生成物、shadcn/ui の部品、除外の一覧（hardcoded-text-exclusions.json。リポジトリのルートからのパスと理由）のファイルも見ない。
 // 使い方：node scripts/ci/hardcoded-text.mjs [--count]（リポジトリのルートで。--count は数だけを出し、失敗にしない）
 import { readdirSync, readFileSync } from 'node:fs'
 import { join, relative } from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 
 /** 調べる画面のソースの置き場所 */
 const SOURCE_DIRS = ['frontend/admin/src', 'frontend/store/src', 'frontend/shared/src']
@@ -142,15 +143,33 @@ function sourceFiles(dir) {
     .filter((file) => !EXCLUDED.some((pattern) => pattern.test(file)))
 }
 
+/**
+ * ファイルごとに、文言を直接書いた行を集める。
+ *
+ * @param {string[]} files 調べるファイル
+ * @param {(file: string) => string} read ファイルの中身を読む関数
+ * @returns {Map<string, { line: number, text: string }[]>} 文言を直接書いた行があるファイルと、その行（ない場合はファイルを含めない）
+ */
+export function scanSources(files, read) {
+  const hitsByFile = new Map()
+  for (const file of files) {
+    const hits = findHardcodedText(read(file))
+    if (hits.length > 0) hitsByFile.set(file, hits)
+  }
+  return hitsByFile
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const exclusions = JSON.parse(readFileSync(new URL('./hardcoded-text-exclusions.json', import.meta.url), 'utf8'))
-  const excluded = new Set(exclusions.files.map((item) => item.path))
-  const found = SOURCE_DIRS.flatMap((dir) =>
-    sourceFiles(dir)
-      .map((file) => relative('.', file).replaceAll('\\', '/'))
-      .filter((file) => !excluded.has(file))
-      .flatMap((file) => findHardcodedText(readFileSync(file, 'utf8')).map((hit) => ({ file, ...hit }))),
-  )
+  const exclusions = readExclusions(fileURLToPath(new URL('./hardcoded-text-exclusions.json', import.meta.url)))
+  const files = SOURCE_DIRS.flatMap((dir) => sourceFiles(dir)).map((file) => relative('.', file).replaceAll('\\', '/'))
+  // 除外のファイルも読む。除外が要るのは、文言を直接書いた行があるファイルだけ
+  const hitsByFile = scanSources(files, (file) => readFileSync(file, 'utf8'))
+  const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))
+  const problems = checkExclusions('hardcoded-text-exclusions.json', exclusions, (file) => hitsByFile.has(file))
+  if (problems.length > 0) {
+    for (const problem of problems) console.error(problem)
+    process.exit(1)
+  }
   if (process.argv.includes('--count')) {
     const byFile = Object.groupBy(found, (hit) => hit.file)
     for (const [file, hits] of Object.entries(byFile)) console.log(`${hits.length}\t${file}`)

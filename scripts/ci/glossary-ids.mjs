@@ -6,12 +6,16 @@ import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 
 /** 用語集 */
 const GLOSSARY = 'docs/design/glossary.md'
 
 /** 調べる場所 */
 const SEARCH_ROOTS = ['backend', 'frontend', 'api', 'docker', 'e2e', 'scripts']
+
+/** 除外の一覧。除外の名前が自分に当たって見つかったことにならないよう、調べない */
+const EXCLUSIONS_FILE = 'scripts/ci/glossary-ids-exclusions.json'
 
 /** 調べないファイル（生成物、画像など） */
 const SKIPPED = /\/(?:node_modules|build|dist|\.next|generated)\/|\.(?:png|jpe?g|webp|gif|ico|svg|woff2?|jar|lock)$|pnpm-lock\.yaml$/
@@ -68,22 +72,22 @@ export function findMissing(ids, tokens, content) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const exclusionsFile = path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json')
-  const exclusions = JSON.parse(readFileSync(exclusionsFile, 'utf8'))
+  const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json'))
   const files = execSync(`git ls-files ${SEARCH_ROOTS.join(' ')}`, { encoding: 'utf8' })
     .split('\n')
-    .filter((file) => file && !SKIPPED.test(file) && existsSync(file))
+    .filter((file) => file && !SKIPPED.test(file) && file !== EXCLUSIONS_FILE && existsSync(file))
   // パスの形の識別子（docs/constitution.md など）は、リポジトリのすべてのファイルのパスにも当たる
   const allPaths = execSync('git ls-files', { encoding: 'utf8' })
   const contents = [allPaths, ...files.map((file) => readFileSync(file, 'utf8'))]
   const tokens = new Set(contents.flatMap((text) => text.match(/\w+/g) ?? []))
   const ids = parseGlossaryIds(readFileSync(GLOSSARY, 'utf8'))
-  const missing = findMissing(ids, tokens, contents.join('\n')).filter((id) => !(id in exclusions))
+  const absent = findMissing(ids, tokens, contents.join('\n'))
+  const missing = absent.filter((id) => !(id in exclusions))
   for (const id of missing) console.log(`${GLOSSARY}：識別子 \`${id}\` がコードにない`)
-  for (const id of Object.keys(exclusions).filter((id) => !ids.includes(id))) {
-    console.log(`glossary-ids-exclusions.json：\`${id}\` が用語集にない（除外の一覧から消す）`)
-  }
-  const count = missing.length + Object.keys(exclusions).filter((id) => !ids.includes(id)).length
+  // 除外が要るのは、用語集にあり、除外がなければコードにないと失敗になる識別子だけ（コードに現れた識別子の除外は不要）
+  const problems = checkExclusions('glossary-ids-exclusions.json', exclusions, (id) => absent.includes(id))
+  for (const problem of problems) console.log(problem)
+  const count = missing.length + problems.length
   console.log(`用語集の識別子の不一致：${count}`)
   process.exit(count ? 1 : 0)
 }

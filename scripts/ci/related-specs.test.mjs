@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMissingInStaged, findMissingSpecs, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
+import { findMissingInStaged, findMissingSpecs, isPrefixUsed, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
 
 describe('設計の文書の関連 spec の検査', () => {
   test('概要の表の「関連 spec」の行から、spec の番号を読む', () => {
@@ -62,5 +62,14 @@ describe('設計の文書の関連 spec の検査', () => {
     assert.deepEqual(findMissingInStaged([payment], 'payment: 期限切れを直す（T017-06-01）', []), [])
     assert.deepEqual(findMissingInStaged([payment], 'docs: 言い回し（T019-05-03）', ['T019-05']), [])
     assert.deepEqual(findMissingInStaged([payment], 'docs: 用語をそろえる', []), [])
+  })
+
+  test('前置きで始まるタスク番号が、どれかの commit にあれば、その除外はまだ使われている', () => {
+    const subjects = ['docs: 言い回し（T018-05-02）', 'payment: 構成を追加する（T019-01-07）']
+    assert.equal(isPrefixUsed('T018-05', subjects), true)
+    assert.equal(isPrefixUsed('T019-01-07', subjects), true)
+    assert.equal(isPrefixUsed('T018-06', subjects), false)
+    assert.equal(isPrefixUsed('T018-05', ['docs: T018-050 の話']), false)
+    assert.equal(isPrefixUsed('T018-05', []), false)
   })
 })

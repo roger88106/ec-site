@@ -93,7 +93,7 @@ stateDiagram-v2
 
 | 画面 | フラグ |
 |------|----|
-| 管理画面（`admin.yaml` の `OrderActions`） | 承認・却下はキャンセル申請中、運営者のキャンセルは受付・キャンセル申請中か、出荷済みで配送状態が返送のとき。出荷の登録は受付のとき |
+| 管理画面（`admin.yaml` の `OrderActions`） | 承認（`approveCancellation`）・却下（`rejectCancellation`）はキャンセル申請中、運営者のキャンセル（`cancel`）は受付・キャンセル申請中か、出荷済みで配送状態が返送のとき。キャンセルの時に在庫に戻すかを聞く（`cancelAsksRestock`）のは、出荷済みで配送状態が返送のとき（偽なら在庫に必ず戻す）。出荷の登録（`ship`）は受付のとき |
 | 店舗画面（`store.yaml` の `OrderActions`） | 申請は受付で、まだ申請していないとき。支払うは支払待ちで、支払の期限の前のとき |
 
 ### 注文時の年齢と性別
@@ -150,11 +150,11 @@ stateDiagram-v2
 
 ```
 order/
-├── api/                    # カートの見積もり、帳票の注文の写し
+├── api/                    # カートの見積もり、レポートの注文の写し
 ├── event/                  # 注文の状態の変化、出荷済み
 ├── presentation/           # store.yaml・admin.yaml から生成したインターフェースを実装
-├── application/            # 注文の参照（詳細は view を返す）、キャンセル、帳票の参照
-│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの掃除、カート変更のリスナー
+├── application/            # 注文の参照（詳細は view を返す）、キャンセル、レポートの参照
+│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの片付け、カート変更のリスナー
 │   ├── payment/            # 支払の結果の反映、支払画面
 │   ├── shipment/           # 出荷の登録
 │   ├── model/              # 表示の型（注文手続き、注文の詳細、支払）と注文の成立の入出力
@@ -181,13 +181,13 @@ order/
 
 ## データモデル
 
-[V202610111200__ordering_create_order.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610111200__ordering_create_order.sql)、[V202610121200__ordering_add_member_id.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)、[V202610151000__ordering_add_shipped.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151000__ordering_add_shipped.sql)、[V202610151010__ordering_add_cancellation_restocked.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151010__ordering_add_cancellation_restocked.sql)、[V202610151100__ordering_add_buyer_profile.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151100__ordering_add_buyer_profile.sql)
+[V202610111200__ordering_create_order.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610111200__ordering_create_order.sql)、[V202610121200__ordering_add_member_id.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)、[V202610121410__ordering_add_operator.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121410__ordering_add_operator.sql)、[V202610140920__ordering_add_pending_payment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610140920__ordering_add_pending_payment.sql)、[V202610151000__ordering_add_shipped.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151000__ordering_add_shipped.sql)、[V202610151010__ordering_add_cancellation_restocked.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151010__ordering_add_cancellation_restocked.sql)、[V202610151100__ordering_add_buyer_profile.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610151100__ordering_add_buyer_profile.sql)、[V202610200920__ordering_add_shipping_area_codes.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610200920__ordering_add_shipping_area_codes.sql)、[V202610201110__ordering_add_checkout_expires_at_index.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201110__ordering_add_checkout_expires_at_index.sql)
 
 - schema は `ordering`（`order` は SQL の予約語のため）。
 - カート・バリアント・会員は他のモジュールの ID なので、外部キーは張らない。
-- 注文手続きと注文は会員 ID を必須で持つ（認証を入れる前の、会員のない注文と引当はマイグレーションで削除した）。
+- 注文手続きと注文は会員 ID を必須で持つ。
 - 明細の軸の値の写しは、変わらない一覧なので JSON で持つ。
-- キャンセルの申請とキャンセルは注文に 1 回ずつなので、注文の列に持つ。在庫に戻したかは、列を追加する前のキャンセルを「戻した」とする。
-- 注文時の年齢と性別は、分からなければ空。列を追加する前の注文は空（不明）。
-- お届け先の都道府県と市区町村は、コードと名前を持つ。地域のマスターデータの表に外部キーは張らない。コードを持つ前の注文は、移行で、都道府県名からコードを取得し、住所の先頭のいちばん長い市区町村名を市区町村として住所から分けた。照合できない注文があれば移行を失敗させる（その一度だけ、移行の SQL が地域の表を読む）。
+- キャンセルの申請とキャンセルは注文に 1 回ずつなので、注文の列に持つ。在庫に戻したかも、注文の列に持つ。
+- 注文時の年齢と性別は、分からなければ空（不明）。
+- お届け先の都道府県と市区町村は、コードと名前を持つ。地域のマスターデータの表に外部キーは張らない。住所は市区町村より下だけを持つ。
 - 金額の整合（総額 ＝ 商品の合計 ＋ 送料、小計 ＝ 税込単価 × 数量）は CHECK 制約でも守る。

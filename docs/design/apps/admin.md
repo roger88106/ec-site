@@ -1,6 +1,11 @@
 # 管理画面（`frontend/admin`）の構成
 
-B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.yaml`）をブラウザから呼ぶ。店舗画面との違いと共通の決まりは [フロントのアーキテクチャ](../frontend-architecture.md)。新しい画面は第 8 節の手順で作る。
+B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.yaml`）をブラウザーから呼ぶ。店舗画面との違いと共通の決まりは [フロントのアーキテクチャ](../frontend-architecture.md)。新しい画面は第 8 節の手順で作る。
+
+| 項目 | 内容 |
+|------|------|
+| 依存 | 管理 API（`admin.yaml`）、運営者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy) |
 
 ## 1. 技術
 

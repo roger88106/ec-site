@@ -38,10 +38,6 @@
 | タイムアウト | 接続・読み・書きをそれぞれ 10 秒（`spring.mail.properties`）。タイムアウトがないと、応答しない SMTP サーバーでメールのリスナーが止まったままになる。タイムアウトで失敗したら、上の「失敗」と同じく再発行で再送する |
 | ローカル・テスト・E2E | compose の Mailpit（SMTP は `localhost:2525`。ポートは `MAILPIT_SMTP_PORT` で変えられる。届いたメールは `http://localhost:8025` で確認する）。統合テストは Testcontainers の Mailpit |
 
-## 他のモジュールへの公開
-
-なし。
-
 ## 構成
 
 ```
@@ -52,6 +48,10 @@ notification/
     ├── mail/               # SMTP での送信
     └── persistence/        # 送ったメールの記録の実装
 ```
+
+## 他のモジュールへの公開
+
+なし。
 
 ## データモデル
 

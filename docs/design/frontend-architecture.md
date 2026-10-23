@@ -7,8 +7,8 @@
 C 側（店舗画面）と B 側（管理画面）は別のアプリにし、2 つで同じ処理と表示のコンポーネントは共有パッケージに置く。
 
 ```
-店舗画面：ブラウザ ──> Next.js のサーバー（サーバーコンポーネント・サーバーアクション）──> 店舗 API（/api/store）
-管理画面：ブラウザ（React の SPA）────────────────────────────────────> 管理 API（/api/admin）
+店舗画面：ブラウザー ──> Next.js のサーバー（サーバーコンポーネント・サーバーアクション）──> 店舗 API（/api/store）
+管理画面：ブラウザー（React の SPA）────────────────────────────────────> 管理 API（/api/admin）
 
 frontend/
 ├── store/    # 店舗画面
@@ -29,7 +29,7 @@ frontend/
 | ログイン | Auth.js。サーバーが IdP とやり取りする（confidential client） | oidc-client-ts。ブラウザーが IdP とやり取りする（public client、PKCE） |
 | token の置き場所 | 暗号化した HttpOnly の Cookie（サーバーだけが読む） | ブラウザーのメモリーだけ |
 | 文言 | next-intl | use-intl |
-| コンポーネントのテスト | HTML に描画して確認する（結合テストなし ※1） | React Testing Library と MSW の結合テスト |
+| コンポーネントのテスト | HTML に描画して確認する。ブラウザーの中だけで終わる操作は jsdom と Testing Library で操作する（結合テストなし ※1） | React Testing Library と MSW の結合テスト |
 
 ※1：操作がサーバーアクションを通り、ブラウザーの中だけでは再現できないため。画面をつないだ流れは E2E で確認する。
 

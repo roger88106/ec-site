@@ -1,20 +1,49 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, it } from 'vitest'
+import type { components } from '@/api/generated/admin'
 import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
-import { PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
+import { PRODUCT_ID, productActions, productDetail, stock, taxCategory, variant } from '@/test/fixtures'
+import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { http, problem, server } from '@/test/server'
+import { conflict, http, problem, server } from '@/test/server'
 
 /** 商品の編集の画面の URL */
 const URL = `/products/${PRODUCT_ID}`
+
+/** 商品の基本情報の更新の要求の本文（送った内容を確認する） */
+type UpdateProductRequest = components['schemas']['UpdateProductRequest']
+
+/** バリアントの追加の要求の本文（送った内容を確認する） */
+type AddVariantRequest = components['schemas']['AddVariantRequest']
+
+/** バリアントの並び替えの要求の本文（送った内容を確認する） */
+type ReorderVariantsRequest = components['schemas']['ReorderVariantsRequest']
+
+/** 公開期間の設定の要求の本文（送った内容を確認する） */
+type SetPublicationPeriodRequest = components['schemas']['SetPublicationPeriodRequest']
+
+/** バリアントの画像の指定の要求の本文（送った内容を確認する） */
+type SetVariantImageRequest = components['schemas']['SetVariantImageRequest']
+
+/** 商品の画像の並び替えの要求の本文（送った内容を確認する） */
+type ReorderProductImagesRequest = components['schemas']['ReorderProductImagesRequest']
 
 /** 契約の画像の大きさの上限（バイト） */
 const MAX_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 
 /** 契約の商品の画像の枚数の上限 */
 const MAX_IMAGES = schemas.ProductDetail.images.maxItems
+
+/** バリアントの在庫数（画面のバリアントの行が取得する）に、どのバリアントにも同じ数で応答する */
+function serveStock(quantity: number) {
+  server.use(
+    http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+      response(200).json(stock(quantity, params.variantId)),
+    ),
+  )
+}
 
 /**
  * 商品の編集の画面が使う API に応答する。<br />
@@ -23,20 +52,18 @@ const MAX_IMAGES = schemas.ProductDetail.images.maxItems
  */
 function serveProduct(initial: ProductDetail) {
   const state = { current: initial, versions: [] as number[], calls: [] as string[] }
-  const conflict = () =>
-    Response.json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。'), { status: 409 })
   server.use(
     http.get('/products/{productId}', ({ response }) => response(200).json(state.current)),
     http.get('/tax-categories', ({ response }) => response(200).json({ items: [taxCategory()] })),
     http.get('/categories', ({ response }) => response(200).json({ items: [] })),
-    http.put('/products/{productId}', async ({ request }) => {
+    http.put('/products/{productId}', async ({ request, response }) => {
       const body = await request.json()
       state.versions.push(body.version)
       if (body.version !== state.current.version) {
-        return conflict() as never
+        return conflict(response)
       }
       state.current = { ...state.current, ...body, version: state.current.version + 1 }
-      return Response.json(state.current) as never
+      return response(204).empty()
     }),
     http.put('/products/{productId}/discontinue', ({ response }) => {
       state.calls.push('PUT discontinue')
@@ -91,7 +118,7 @@ describe('商品の編集', () => {
     const REDUCED_ID = '00000000-0000-0000-0000-000000000002'
     const CATEGORY_ID = '00000000-0000-0000-0000-000000000031'
     const state = serveProduct(productDetail())
-    const requests: unknown[] = []
+    const requests: UpdateProductRequest[] = []
     server.use(
       http.get('/tax-categories', ({ response }) =>
         response(200).json({
@@ -113,12 +140,12 @@ describe('商品の編集', () => {
           ],
         }),
       ),
-      http.put('/products/{productId}', async ({ request }) => {
+      http.put('/products/{productId}', async ({ request, response }) => {
         const body = await request.json()
         requests.push(body)
-        // 保存の応答は、変更後の税率（8%）で計算した税込価格を返す
+        // 保存の後に取得し直す商品は、変更後の税率（8%）で計算した税込価格を返す
         state.current = productDetail({ ...body, priceInclTax: 1296, version: body.version + 1 })
-        return Response.json(state.current) as never
+        return response(204).empty()
       }),
     )
     const { user } = renderApp(URL)
@@ -217,11 +244,9 @@ describe('商品の編集', () => {
   })
   it('AC-21、24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))
-    const requests: unknown[] = []
+    const requests: AddVariantRequest[] = []
+    serveStock(0)
     server.use(
-      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-        response(200).json({ variantId: params.variantId, quantity: 0 }),
-      ),
       http.post('/products/{productId}/variants', async ({ request, response }) => {
         requests.push(await request.json())
         state.current = {
@@ -241,15 +266,13 @@ describe('商品の編集', () => {
     expect(await screen.findByText('軸を持たない商品のバリアントは 1 つだけです。')).toBeInTheDocument()
     expect(screen.getByRole('cell', { name: 'ABC-001-RED' })).toBeInTheDocument()
     expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
-    expect(requests).toEqual([expect.objectContaining({ variantCode: 'ABC-001-X' })])
+    expect(requests).toEqual([{ variantCode: 'ABC-001-X', axisValues: [], version: 0 }])
   })
   it('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
     const state = serveProduct(productDetail({ axes: ['色', 'サイズ'], variants: [] }))
-    const requests: unknown[] = []
+    const requests: AddVariantRequest[] = []
+    serveStock(0)
     server.use(
-      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-        response(200).json({ variantId: params.variantId, quantity: 0 }),
-      ),
       http.post('/products/{productId}/variants', async ({ request, response }) => {
         requests.push(await request.json())
         state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
@@ -269,17 +292,13 @@ describe('商品の編集', () => {
   it('バリアントの追加の入力中に他の人が商品を更新すると、取得し直しても入力は消えず、追加は 409 になり、再読み込みで最新のバージョンの空のフォームに再作成してから追加できる', async () => {
     const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
     const versions: number[] = []
+    serveStock(0)
     server.use(
-      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-        response(200).json({ variantId: params.variantId, quantity: 0 }),
-      ),
       http.post('/products/{productId}/variants', async ({ request, response }) => {
         const body = await request.json()
         versions.push(body.version)
         if (body.version !== state.current.version) {
-          return Response.json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。'), {
-            status: 409,
-          }) as never
+          return conflict(response)
         }
         state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
         return response(201).json({ id: variant().id })
@@ -328,10 +347,8 @@ describe('商品の編集', () => {
         version: state.current.version + 1,
       }
     }
+    serveStock(3)
     server.use(
-      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-        response(200).json({ variantId: params.variantId, quantity: 3 }),
-      ),
       http.put('/products/{productId}/variants/{variantId}/suspend', ({ params, response }) => {
         calls.push(`suspend ${params.variantId}`)
         setSuspended(true)
@@ -344,13 +361,7 @@ describe('商品の編集', () => {
       }),
     )
     const { user } = renderApp(URL)
-    const row = () => {
-      const found = screen.getByRole('cell', { name: 'ABC-001-RED' }).closest('tr')
-      if (!found) {
-        throw new Error('ABC-001-RED の行がない')
-      }
-      return found
-    }
+    const row = () => getRow('ABC-001-RED')
 
     await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを販売停止' }))
 
@@ -372,11 +383,9 @@ describe('商品の編集', () => {
         variants: [variant(), variant({ id: SECOND_ID, variantCode: 'ABC-001-BLUE', axisValues: ['青'] })],
       }),
     )
-    const requests: unknown[] = []
+    const requests: ReorderVariantsRequest[] = []
+    serveStock(3)
     server.use(
-      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-        response(200).json({ variantId: params.variantId, quantity: 3 }),
-      ),
       http.put('/products/{productId}/variants/order', async ({ request, response }) => {
         requests.push(await request.json())
         state.current = {
@@ -398,10 +407,8 @@ describe('商品の編集', () => {
   it('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
     const state = serveProduct(productDetail({ version: 5, variants: [variant()] }))
     const calls: string[] = []
+    serveStock(3)
     server.use(
-      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-        response(200).json({ variantId: params.variantId, quantity: 3 }),
-      ),
       http.delete('/products/{productId}/variants/{variantId}', ({ params, query, response }) => {
         calls.push(`DELETE ${params.variantId} version=${query.get('version')}`)
         state.current = { ...state.current, variants: [], version: state.current.version + 1 }
@@ -410,10 +417,7 @@ describe('商品の編集', () => {
     )
     const { user } = renderApp(URL)
 
-    const row = (await screen.findByRole('cell', { name: 'ABC-001-RED' })).closest('tr')
-    if (!row) {
-      throw new Error('ABC-001-RED の行がない')
-    }
+    const row = await findRow('ABC-001-RED')
     await user.click(within(row).getByRole('button', { name: '削除' }))
     const dialog = await screen.findByRole('alertdialog', { name: 'バリアント「ABC-001-RED」を削除しますか？' })
     await user.click(within(dialog).getByRole('button', { name: '削除する' }))
@@ -461,25 +465,20 @@ describe('商品の編集', () => {
 })
 
 describe('公開期間', () => {
-  type PeriodBody = { publishStart?: string | null; publishEnd?: string | null; version: number }
-
   /** 公開期間の設定に応答する。バージョンが今のものと違えば 409、終了が開始以前なら 400（AC-36） */
   function servePeriod(state: ReturnType<typeof serveProduct>) {
-    const requests: PeriodBody[] = []
+    const requests: SetPublicationPeriodRequest[] = []
     server.use(
       http.put('/products/{productId}/publication-period', async ({ request, response }) => {
         const body = await request.json()
         requests.push(body)
         if (body.version !== state.current.version) {
-          return Response.json(problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。'), {
-            status: 409,
-          }) as never
+          return conflict(response)
         }
         if (body.publishStart && body.publishEnd && body.publishStart >= body.publishEnd) {
-          return Response.json(
+          return response(400).json(
             problem(400, 'INVALID_PUBLICATION_PERIOD', '公開終了日時は、公開開始日時より後にしてください。'),
-            { status: 400 },
-          ) as never
+          )
         }
         state.current = {
           ...state.current,
@@ -596,7 +595,7 @@ describe('商品画像', () => {
 
     expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
     expect(await screen.findByRole('img', { name: '画像 1' })).toBeInTheDocument()
-    expect(screen.getByText('代表画像', { selector: 'span' })).toBeInTheDocument()
+    expect(within(screen.getByRole('listitem', { name: '画像 1' })).getByText('代表画像')).toBeInTheDocument()
     expect(calls).toEqual(['受付 image/png 2', 'PUT image/png', '登録 version=0'])
   })
 
@@ -630,14 +629,13 @@ describe('商品画像', () => {
     const state = serveProduct(productDetail())
     serveUpload(state)
     server.use(
-      http.post('/products/{productId}/images', () =>
-        Response.json(
+      http.post('/products/{productId}/images', ({ response }) =>
+        response(400).json(
           problem(
             400,
             'IMAGE_CONVERSION_FAILED',
             '画像を変換できませんでした。ファイルが壊れていないか確かめて、もう一度アップロードしてください。',
           ),
-          { status: 400 },
         ),
       ),
     )
@@ -660,14 +658,13 @@ describe('商品画像', () => {
     const state = serveProduct(productDetail())
     serveUpload(state)
     server.use(
-      http.post('/products/{productId}/images', () =>
-        Response.json(
+      http.post('/products/{productId}/images', ({ response }) =>
+        response(502).json(
           problem(
             502,
             'IMAGE_SERVICE_UNAVAILABLE',
             '画像のサービスに接続できませんでした。しばらくしてから、やり直してください。',
           ),
-          { status: 502 },
         ),
       ),
     )
@@ -690,8 +687,7 @@ describe('商品画像', () => {
 
     expect(
       await screen.findByText(
-        `JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF で 1 ファイル ${MAX_BYTES / (1024 * 1024)}MB まで、${MAX_IMAGES} 枚まで`,
-        { exact: false },
+        `JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF で 1 ファイル ${MAX_BYTES / (1024 * 1024)}MB まで、${MAX_IMAGES} 枚まで登録できます。先頭の画像が代表画像です。登録した画像は WebP に変換し、位置情報などの情報は取り除きます。`,
       ),
     ).toBeInTheDocument()
   })
@@ -711,10 +707,8 @@ describe('商品画像', () => {
     const state = serveProduct(productDetail())
     serveUpload(state)
     server.use(
-      http.post('/products/{productId}/image-uploads', () =>
-        Response.json(problem(400, 'TOO_MANY_PRODUCT_IMAGES', '画像は 1 商品あたり 20 枚まで登録できます。'), {
-          status: 400,
-        }),
+      http.post('/products/{productId}/image-uploads', ({ response }) =>
+        response(400).json(problem(400, 'TOO_MANY_PRODUCT_IMAGES', '画像は 1 商品あたり 20 枚まで登録できます。')),
       ),
     )
     const { user } = renderApp(URL)
@@ -750,11 +744,9 @@ describe('商品画像', () => {
       { id: '00000000-0000-0000-0000-000000000952', url: 'http://cdn.test/2.png' },
     ]
     const state = serveProduct(productDetail({ images, variants: [variant()] }))
-    const requests: unknown[] = []
+    const requests: SetVariantImageRequest[] = []
+    serveStock(0)
     server.use(
-      http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-        response(200).json({ variantId: params.variantId, quantity: 0 }),
-      ),
       http.put('/products/{productId}/variants/{variantId}/image', async ({ request, response }) => {
         const body = await request.json()
         requests.push(body)
@@ -783,7 +775,7 @@ describe('商品画像', () => {
 
   it('AC-37 画像を後へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
     const state = serveProduct(productDetail({ version: 5, images: TWO_IMAGES }))
-    const requests: unknown[] = []
+    const requests: ReorderProductImagesRequest[] = []
     server.use(
       http.put('/products/{productId}/images/order', async ({ request, response }) => {
         requests.push(await request.json())

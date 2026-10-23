@@ -12,7 +12,7 @@ const FORMAT_ERROR = '画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF�
 /** 大きさの誤りのメッセージ */
 const SIZE_ERROR = `画像は 1 ファイル ${MAX_BYTES / (1024 * 1024)}MB までです。`
 
-describe('imageContentType', () => {
+describe('画像の形式の判定', () => {
   it('AC-39、67、272 受け付ける形式（契約の形式の一覧）は、ブラウザの形式をそのまま使う', () => {
     for (const type of createImageUploadRequestContentTypeValues) {
       expect(imageContentType({ type, name: 'a' })).toBe(type)
@@ -34,13 +34,13 @@ describe('imageContentType', () => {
   })
 })
 
-describe('imageFormatsLabel', () => {
+describe('受け付ける画像の形式の表示', () => {
   it('AC-272 契約の形式の一覧を、表示の名前の一覧にする（HEIC と HEIF は 1 つにまとめる）', () => {
     expect(imageFormatsLabel()).toBe('JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF')
   })
 })
 
-describe('imageFileError', () => {
+describe('画像のファイルの検査', () => {
   it('AC-39、67、272 受け付ける形式で、契約の大きさの上限までなら誤りはない', () => {
     for (const type of createImageUploadRequestContentTypeValues) {
       expect(imageFileError({ type, name: 'a', size: MAX_BYTES })).toBeNull()

@@ -123,10 +123,10 @@ CI の検査の script（`scripts/ci/`）と workflow（`.github/`）に、検�
 - **DN-158-1** 消費者・運営者に見える振る舞い、API の契約、データベースを変えない。
 - **DN-158-2** 検査を弱めない。検査の対象を狭めるのは、見逃しを減らすとき（DC-158-11 など）だけにし、理由を検査に書く。
 - **DN-158-3** `scripts/ci/frontend-rules.mjs` は、本 spec だけが変える。spec 157 は変えない。
-- **DN-158-4** spec 17 が変える所（下の表）は、本 spec で変えない。変える必要が出たら、spec 17 のセッションと相談する。
+- **DN-158-4** spec 17（`develop` にマージ済み。09730eeb）が加えた手順と script（下の表）は、本 spec で変えない。変える必要が出たら、利用者に相談する。
 - **DN-158-5** 共有の文書（[CI の検査](../../guides/ci.md)、規則の文書）と、spec 17・157 と重なるファイルの衝突は、後でマージする pull request が `develop` を取り込んで解消する。
 
-spec 17 の変更と本 spec の重なりは次のとおり。
+spec 17 の変更と本 spec の重なりは次のとおり。実装の前の照合（2026-10-23）で、マージされた spec 17 の変更と一致することを確認した。
 
 | 場所 | spec 17 の変更 | 本 spec の変更 |
 |------|----------------|----------------|
@@ -190,7 +190,133 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
 
 ## 7. tasks
 
-spec の確定の後に書く。
+- 段階は、変えるファイルのまとまりで分ける。段階 1 で作る共通の関数を、段階 2・3 の検査が使う。
+- `[テスト]` のタスクは、テストを書いてレッドを確認し、同じ実装役が続けて実装する（タスクの名前は 1 つ）。
+- 新しい検査で今のコードに違反が出るときは、検査を加えるタスクで違反も修正する（第 6 節の 2）。
+- 各段階の最後のレビューは、profile「厚め」で行う（[エージェントの作業フロー](../../rules/subagents.md) 第 4 節）。
+
+### 段階 1：検査の共通の関数
+
+- 前提：spec の確定、実装の前の照合
+- 完了条件：DC-158-33、34、36、37 を満たし、`check-all.sh` が通る。
+- 参照：第 3 節の DS-158-4
+
+- [ ] **T158-01-01** [テスト] 除外の一覧の読み込みと、不要になった除外の検出の共通の関数を `lib/` に作り、除外の一覧を持つ検査が使う。除外の一覧の形を `{キー: 理由}` にそろえる（DC-158-33、34）。
+  - 依存：なし
+  - 範囲：`scripts/ci/lib/`、除外の一覧を持つ検査とその JSON（ac-check、frontend-rules、glossary-ids、hardcoded-text、message-numbers、related-specs）、`docs/guides/ci.md` の除外の書き方の列
+- [ ] **T158-01-02** [テスト] 画面の本番のソースの定義（対象の画面、除くディレクトリ）と、Git の対象のファイルの一覧の関数を `lib/` に作り、画面のソースを読む検査が使う。定義と違う対象を読む検査に理由を書く（DC-158-36、37）。
+  - 依存：T158-01-01
+  - 範囲：`scripts/ci/lib/`、frontend-rules、hardcoded-text、input-constraints、message-comments、spec-numbers、time-waits
+- [ ] **T158-01-03** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+  - 依存：T158-01-02
+
+### 段階 2：既存の検査の見逃しと誤った通過
+
+- 前提：段階 1
+- 完了条件：DC-158-1〜6、9〜18、29〜32、35 を満たし、DC-158-26 のうち DC-158-17・18 の違反が 0 件で、`check-all.sh` が通る。
+- 参照：第 3 節の DS-158-1、DS-158-2、DS-158-4
+
+- [ ] **T158-02-01** [テスト] AC の照合：`skip`・`fixme` と `.test(` の呼び出しを数えない。Git の対象のファイルだけを読む。AC の番号の正規表現を 1 か所にする（DC-158-1、2、10、30）。
+  - 依存：なし
+  - 範囲：`scripts/ci/ac-check.mjs`、`scripts/ci/ac-check.test.mjs`
+- [ ] **T158-02-02** [テスト] Java の規則の検査：改行を挟んだ `valueOf(x.name())` を見つける（DC-158-3）。
+  - 依存：なし
+  - 範囲：`scripts/ci/java-rules.mjs`、テスト
+- [ ] **T158-02-03** [テスト] フロントの規則の検査：相対パス、`export … from`、`import()` の import を見つける。不要になった除外を失敗にする（DC-158-4、5）。
+  - 依存：なし
+  - 範囲：`scripts/ci/frontend-rules.mjs`、テスト
+- [ ] **T158-02-04** [テスト] 関連 spec の検査の脚注、進捗の検査のアーカイブの読み方と並べ方を修正する（DC-158-9、29、31）。
+  - 依存：なし
+  - 範囲：`scripts/ci/related-specs.mjs`、`scripts/ci/progress.mjs`、テスト
+- [ ] **T158-02-05** [テスト] 用語集の識別子の検査：検査の script 自身のファイルを根拠にしない。除外の一覧を、コードに見つからない識別子だけにする（DC-158-11、12）。
+  - 依存：なし
+  - 範囲：`scripts/ci/glossary-ids.mjs`、除外の一覧、テスト。用語集の識別子がコードにないと分かったときは、用語集を今のコードの名前に修正する
+- [ ] **T158-02-06** [テスト] マイグレーションの検査：改名と削除、ファイルが 0 件のときを失敗にする（DC-158-13、14）。
+  - 依存：なし
+  - 範囲：`scripts/ci/migrations.mjs`、テスト
+- [ ] **T158-02-07** [テスト] 画面の依存のライセンスの検査：丸括弧と `AND`・`OR` の式を解析し、解析できない式を失敗にする（DC-158-15、16）。
+  - 依存：なし
+  - 範囲：`scripts/ci/licenses/check-frontend.mjs`、テスト
+- [ ] **T158-02-08** [テスト] 文言のコメントの検査：`translate('…')` と、共有のパッケージと `.ts` のファイルを対象にする。今の違反にコメントを追加する（DC-158-17、18、26）。
+  - 依存：なし
+  - 範囲：`scripts/ci/message-comments.mjs`、テスト、違反のある `frontend/admin/src/`・`frontend/shared/src/` のファイル（コメントの追加だけ）、`docs/rules/comments.md` の「CI で確認する」の記述（DC-158-28）
+- [ ] **T158-02-09** [テスト] `main` への pull request の元のブランチの判定を、テストのある script に移し、workflow から呼ぶ。チェックリストの script の表の読み方を関数に分け、テストを書く。文書の参照の検査の効いていない除外を削除する（DC-158-6、32、35）。
+  - 依存：なし
+  - 範囲：`scripts/ci/`、`.github/workflows/main-source.yml`、`.claude/skills/review/checklist.cjs` とテスト、`scripts/ci/doc-refs.mjs`
+- [ ] **T158-02-10** 段階の最後のレビュー（profile「厚め」。重要な観点に「検査を弱めていないか」（DN-158-2）を含める）を行い、指摘に対応する。
+  - 依存：T158-02-01〜09
+
+### 段階 3：追加したい検査
+
+- 前提：段階 2
+- 完了条件：DC-158-19〜28、49 を満たし、DC-158-26 のうち段階 3 の検査の違反が 0 件で、`check-all.sh` が通る。
+- 参照：第 3 節の DS-158-3、DC-158-49
+
+- [ ] **T158-03-01** [テスト] 使わない語の検査の対象に、`.github/` の yml と Markdown を加える。今の違反（`ci.yml` のコメントの 2 件）を言い換える（DC-158-19、20、26）。
+  - 依存：なし
+  - 範囲：`scripts/ci/doc-terms.mjs`、テスト、`.github/workflows/ci.yml`（コメントだけ）
+- [ ] **T158-03-02** [テスト] フロントの規則の検査に、クエリ付きの URL の文字列の組み立て、テストでの CSS のクラスの確認、`line-through` の直書き、`actions/`・`lib/`・`api/` から `features/` への import を加える。今の違反（店舗画面の注文の一覧の URL）を修正する（DC-158-21〜24、26）。
+  - 依存：なし
+  - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`frontend/store/src/features/order/`（URL の組み立ての置き換えだけ）
+- [ ] **T158-03-03** [テスト] フロントの規則の検査に、共有のパッケージが公開する名前と同じ名前の定義を加える。各画面の `translate` は、理由付きで除外の一覧に置く（DC-158-25、26）。
+  - 依存：T158-03-02
+  - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、除外の一覧
+- [ ] **T158-03-04** [テスト] CI の検査の文書の検査の一覧の表と、`scripts/ci/` の直下の script が 1 対 1 に対応することを確認する検査を作る。加えた検査を、CI の検査の文書の表と規則の文書（フロントの書き方）に書く（DC-158-27、28、49）。
+  - 依存：T158-03-01〜03
+  - 範囲：`scripts/ci/`、`docs/guides/ci.md`、`docs/rules/frontend-coding.md`
+- [ ] **T158-03-05** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+  - 依存：T158-03-04
+
+### 段階 4：CI の構成と版
+
+- 前提：段階 3
+- 完了条件：DC-158-7、8、38〜48 を満たし、CI と `check-all.sh` が通る。
+- 参照：第 3 節の DS-158-5、DC-158-7、8
+
+- [ ] **T158-04-01** GitHub の文書で、Dependabot の `github-actions` が複合の action を見る条件を確認し、結果をこのタスクの下に書く。必要なら設定を修正する（DC-158-42）。
+  - 依存：なし
+  - 範囲：`.github/dependabot.yml`、`docs/guides/branches.md`（Dependabot の対象の欄）
+- [ ] **T158-04-02** [テスト] コンテナのイメージの版が compose、Gradle、統合テストで一致することを照合する検査を作る。今の食い違い（imgproxy、Keycloak、Mailpit）を compose の版にそろえ、Zipkin の版を patch まで固定する（DC-158-39、40）。
+  - 依存：なし
+  - 範囲：`scripts/ci/`、`docker/compose.yaml`、`backend/ecsite/src/integrationTest/`（版の文字列だけ）
+  - 統合テストの版を上げるので、CI の統合テストのジョブで通ることを確認する
+- [ ] **T158-04-03** CI のビルドで tools のソースをコンパイルし、Gradle の配布物のハッシュを検証する（DC-158-38、41）。
+  - 依存：なし
+  - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties`、`.github/workflows/ci.yml`
+- [ ] **T158-04-04** Node と JDK の版を 1 か所から読む。push の対象外の一覧に、CI の結果に関わらない `.github/` のファイルを加える。workflow のコメントと除外の理由の spec・plan の番号、古い・位置が違うコメントを修正する（DC-158-43〜46）。
+  - 依存：T158-04-03
+  - 範囲：`.github/workflows/`、`.github/actions/setup-frontend/action.yml`、`scripts/ci/` のコメントと除外の理由、`docs/guides/ci.md` の push の対象外の一覧
+- [ ] **T158-04-05** E2E の実行中の印を E2E のロックの 1 つにまとめる（DC-158-7、8）。
+  - 依存：なし
+  - 範囲：`scripts/dev/e2e.sh`、`scripts/dev/check-frontend.sh`、`scripts/dev/lib/`、`docs/guides/running-tests.md`
+  - `e2e.sh` を変えるので、スロットを 1 つ使って手元の E2E で確認する
+- [ ] **T158-04-06** CI の検査の文書を、今の構成に合わせる：補助の script の置き場所の `review/`、手元の実行の表の「共有パッケージ」（DC-158-47、48）。
+  - 依存：T158-04-01〜05
+  - 範囲：`docs/guides/ci.md`
+- [ ] **T158-04-07** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+  - 依存：T158-04-06
+
+### 段階 5：spec 157 の違反の修正の後に加える検査
+
+- 前提：段階 4、spec 157 のマージ。マージされていなければ、本 spec の他の作業を先に pull request にするかを利用者に聞く
+- 完了条件：DC-158-50、51 を満たし、DC-158-26 のうちこの 2 つの検査の違反が 0 件で、`check-all.sh` が通る。
+- 参照：第 3 節の DC-158-50、51、第 6 節の 2
+
+- [ ] **T158-05-01** [テスト] フロントの規則の検査に、画面のテストのコンポーネントの内部の属性と `querySelector` を加える。AC の照合で、空白で区切った AC の並びを失敗にする。CI の検査の文書とテストの書き方の「CI で確認する」の記述を合わせる（DC-158-26〜28、50、51）。
+  - 依存：なし
+  - 範囲：`scripts/ci/frontend-rules.mjs`、`scripts/ci/ac-check.mjs`、テスト、`docs/guides/ci.md`、`docs/rules/test-writing.md`
+
+### 段階 6：完了
+
+- 前提：段階 1〜5
+- 完了条件：spec の最後のレビューの指摘に対応し、spec をアーカイブに移し、pull request を作っている。
+- 参照：[エージェントの作業フロー](../../rules/subagents.md) 第 4 節
+
+- [ ] **T158-06-01** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）と、pull request の前のレビューを行い、指摘に対応する。
+  - 依存：T158-05-01
+- [ ] **T158-06-02** 後回しにする作業と起票の案（第 8 節）を最新にし、spec を `docs/specs/archive/1to10/` に移す。
+  - 依存：T158-06-01
+  - 範囲：`docs/specs/`、spec へのリンクを持つ文書
 
 ## 8. 後回しにする作業と起票の案
 

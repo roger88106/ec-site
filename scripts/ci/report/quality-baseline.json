@@ -1,0 +1,50 @@
+{
+  "targets": {
+    "backend": {
+      "line": {
+        "value": 98.09,
+        "tolerance": 0.1
+      },
+      "branch": {
+        "value": 85.26,
+        "tolerance": 0.3
+      }
+    },
+    "admin": {
+      "line": {
+        "value": 96.59,
+        "tolerance": 0
+      },
+      "branch": {
+        "value": 94.11,
+        "tolerance": 0
+      }
+    },
+    "store": {
+      "line": {
+        "value": 85.38,
+        "tolerance": 0
+      },
+      "branch": {
+        "value": 83.3,
+        "tolerance": 0
+      }
+    },
+    "shared": {
+      "line": {
+        "value": 97.06,
+        "tolerance": 0
+      },
+      "branch": {
+        "value": 100,
+        "tolerance": 0
+      }
+    },
+    "backend-domain": {
+      "mutation": {
+        "value": 90.2,
+        "tolerance": 0
+      }
+    }
+  }
+}

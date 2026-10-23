@@ -14,7 +14,7 @@
   "scripts": {
     "lint": "biome check .",
     "typecheck": "tsc --noEmit",
-    "test": "vitest run"
+    "test": "vitest run --coverage"
   },
   "dependencies": {
     "@base-ui/react": "^1.8.0",
@@ -29,6 +29,7 @@
     "@biomejs/biome": "^2.5.15",
     "@types/react": "^19.2.18",
     "@types/react-dom": "^19.2.7",
+    "@vitest/coverage-v8": "^5.0.5",
     "js-yaml": "^4.3.2",
     "react": "19.3.1",
     "react-dom": "19.3.1",

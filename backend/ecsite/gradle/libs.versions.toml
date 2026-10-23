@@ -33,7 +33,7 @@ spring-modulith = "2.1.1"
 jooq = "3.21.9"
 jooqPlugin = "10.2.1"
 # jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM の版になるので、Boot の管理する版に合わせる
-flyway = "13.7.0"
+flyway = "13.10.3"
 postgresql = "42.7.14"
 
 # --- API ---

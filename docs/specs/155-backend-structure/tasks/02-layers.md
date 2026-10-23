@@ -64,7 +64,7 @@
 - [x] **T155-02-15** reporting の状態の履歴の `from`、`to` を列挙で持つ。`ReportOrderStatus` と `DeliveryStatus` が実装する sealed interface `HistoryStatus` を domain に追加する。`StatusHistoryEntry` の `from`、`to` をこの型にし、`marksShipment()` と `deliveryStatus()` を型の判定にする。`ReportEventHandler`、`ReportCollectionService` から `.name()` と文字列からの変換を削除する。DB の文字列との変換（`kind` に合う列挙の読み込み）は `JooqReportOrderRepository` だけに置く。`StatusHistoryEntryTest` の入力を列挙にする（DC-155-12）。
   - 依存：T155-02-14
   - 範囲：`main/module/reporting/domain/{StatusHistoryEntry,HistoryStatus,ReportOrderStatus,DeliveryStatus}.java`（`StatusHistoryEntry.java:21,29-31,38-43`）、`main/module/reporting/application/{ReportEventHandler,ReportCollectionService}.java`（`ReportCollectionService.java:105-110`）、`main/module/reporting/infrastructure/persistence/JooqReportOrderRepository.java`（`:72-76,95-97`）、`test/module/reporting/domain/StatusHistoryEntryTest.java`。`it/module/reporting/application/ReportCollectionTest.java` は DB の値が変わらないので、変更せず、テストが通ることを確認する。
-- [ ] **T155-02-16** [P] 公開の API の検査を実装に合わせる。`ModuleRoleTest.apiInterfacesAreImplementedInApi`（対象が 0 件で常に通る）を削除する（DC-155-13、14）。
+- [x] **T155-02-16** [P] 公開の API の検査を実装に合わせる。`ModuleRoleTest.apiInterfacesAreImplementedInApi`（対象が 0 件で常に通る）を削除する（DC-155-13、14）。
   - 依存：なし
   - 範囲：`test/architecture/ModuleRoleTest.java`（`:66-74`）
 - [ ] **T155-02-17** 対象が 0 件になる構成の検査を修正する。`levelAPresentationDoesNotDependOnAggregates`（payment）、`domainDependsOnNoOtherLayer`（notification、storefront）、`entryLayersAndInfrastructureAreIndependent` の 1 つ目（notification）は、その層を持つモジュールだけで繰り返し、`allowEmptyShould` を外す。層を持つモジュールを求める補助を追加する。他の 5 つの `allowEmptyShould` も外す。外すと失敗するものがあれば、理由を調べて報告し、spec 担当のセッションが plan に書く。外した規則について、対象が 0 件のとき失敗することを確認する（DC-155-14）。

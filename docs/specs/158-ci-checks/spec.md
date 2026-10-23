@@ -266,7 +266,8 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
   - 範囲：`scripts/ci/`、`.github/workflows/main-source.yml`、`docs/guides/ci.md`
   - 判定の入口は引数（元のブランチの名前）が必要なので、`scripts/ci/` の直下に置かない（直下の script は `check-all.sh` が引数なしで実行する）。置き場所は、引数が必要な補助の置き場所の規則（[CI の検査](../../guides/ci.md) 第 3 節）に従う
   - 結果：レッドを確認してから、判定を `scripts/ci/workflow/main-source.mjs`（テスト 8 件）に移し、workflow は checkout の後にその入口を呼ぶ形にした（名前と失敗の文は同じ）。workflow は `main` への pull request でしか実行されないので、CI での確認はリリースの時になる。
-- [ ] **T158-02-10** [テスト] チェックリストの script の表の読み方を関数に分け、テストを書く（DC-158-6）。
+- [x] **T158-02-10** [テスト] チェックリストの script の表の読み方を関数に分け、テストを書く（DC-158-6）。
+  - 結果：表の読み方を readRuleTable と reviewItems に分けて export し、直接実行のときだけ出力する。テスト 7 件（節の行、- の区切り、レビューの有無、節なし、CRLF など）を先にレッドで確認してから実装し、出力は変更の前後で同じ。
   - 依存：なし
   - 範囲：`.claude/skills/review/checklist.cjs`、テスト
 - [ ] **T158-02-11** 文書の参照の検査の効いていない除外（`.local/`）を削除する（DC-158-35）。

@@ -62,7 +62,7 @@ DC の列は「157-1」の形で書く。spec の番号 157 を付けた DC-157-
 | 157-7 | レポートの条件の項目（粒度、送料を除く、商品の指定）の props の型を、条件のフォームのファイルで 1 つ定義して export する。レポートの共通の画面の 2 つのコンポーネントは、その型との交差型で使う | 管理画面 `features/report/components/ReportConditionForm.tsx`、`ReportPage.tsx` | 型チェック、今の結合テスト |
 | 157-8 | 商品の項目の制約の組を、操作のスキーマ（商品名と説明の最大の長さ、税抜価格の最小）から作る関数を、商品の項目のフォームのファイルに置く。登録の画面と基本情報のカードは、それぞれのスキーマを渡す | 管理画面 `features/product/components/ProductFields.tsx`、`BasicInfoCard.tsx`、`pages/ProductCreatePage.tsx` | 型チェック、`input-constraints`、今の結合テスト |
 | 157-9 | 「middleware」（3 か所）を「ミドルウェア」にする | [管理画面の構成](../../design/apps/admin.md) 第 4 節、[管理画面の構成](../../design/apps/admin.md) 第 10.1 節 | `git grep -n middleware docs/design/apps/admin.md` が 0 件 |
-| 157-36 | ディレクトリの図を今のファイルに合わせる。`api/` の変換と hook（フォームのエラー、無効化、変更の hook）、`lib/` の関数（配列、品番、増減、ログイン、率、クラス名）、`hooks/` の画面の幅の hook を追加し、ない `lib/labels.ts` の案内を「2 つ以上の機能で使う表示名は共有の注文の表示名か、使う機能の `labels.ts`」に修正する | [管理画面の構成](../../design/apps/admin.md) 第 2 節 | レビュー（`frontend/admin/src` の一覧と照合する） |
+| 157-36 | ディレクトリの図を今のファイルに合わせる。`api/` の変換と hook（フォームのエラー、無効化、変更の hook）、`lib/` の関数（配列、品番、増減、ログイン、率、クラス名）、`hooks/` の画面の幅の hook を追加し、`lib/labels.ts` の案内は[フロントの書き方](../../rules/frontend-coding.md) 第 1.1 節の置き場所の規則なので残し、2 つの画面で同じ表示名は共有パッケージに置くことを追記する（実装のときに規則と照合して決めた） | [管理画面の構成](../../design/apps/admin.md) 第 2 節 | レビュー（`frontend/admin/src` の一覧と照合する） |
 
 ※1：今は全ての状態で同じ型を返し、取得中と失敗でも、権限の判定の関数が false を返す。呼び出し元は状態を先に判定しているので、判別の型にすると、判定の前に権限を読む誤りを型チェックで防げる。
 

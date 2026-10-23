@@ -24,8 +24,11 @@ const TEST = /\.test\.tsx?$/
 /** 機能のファイル */
 const FEATURE_FILE = /^frontend\/(store|admin)\/src\/features\/([^/]+)\//
 
-/** 機能の import */
-const FEATURE_IMPORT = /from\s+['"]@\/features\/([^/'"]+)/
+/** import のパス（import … from、export … from、import(…)、import '…'） */
+const IMPORT_SPECIFIER = /(?:\bfrom\s+|\bimport\s*\(\s*|\bimport\s+)['"]([^'"]+)['"]/g
+
+/** 別名 @/ で書いた機能の import */
+const ALIAS_FEATURE = /^@\/features\/([^/]+)/
 
 /** Intl・toLocaleString に直接書いたロケール、ロケールとタイムゾーンの文字 */
 const LOCALE_LITERAL = [
@@ -64,13 +67,24 @@ export function featureOf(file) {
  *
  * @param {string} text ソース
  * @param {string} feature そのファイルの機能の名前
+ * @param {string} [file] リポジトリのルートからのパス。相対パスの import を解決するのに使う（なければ相対パスは見ない）
  * @returns {{ line: number, text: string }[]} 見つけた行
  */
-export function findCrossFeatureImports(text, feature) {
-  return findLines(text, (line) => {
-    const match = line.match(FEATURE_IMPORT)
-    return Boolean(match) && match[1] !== feature
-  })
+export function findCrossFeatureImports(text, feature, file) {
+  const featureOfSpecifier = (specifier) => {
+    const alias = specifier.match(ALIAS_FEATURE)
+    if (alias) return alias[1]
+    if (file && specifier.startsWith('.')) {
+      return featureOf(`${path.posix.join(path.posix.dirname(file), specifier)}/`)?.feature ?? null
+    }
+    return null
+  }
+  return findLines(text, (line) =>
+    [...line.matchAll(IMPORT_SPECIFIER)].some((match) => {
+      const imported = featureOfSpecifier(match[1])
+      return imported !== null && imported !== feature
+    }),
+  )
 }
 
 /**
@@ -114,7 +128,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     const text = readFileSync(file, 'utf8')
     const feature = featureOf(file)
     if (feature) {
-      for (const hit of findCrossFeatureImports(text, feature.feature)) {
+      for (const hit of findCrossFeatureImports(text, feature.feature, file)) {
         report(`${file}:${hit.line} ほかの機能を import する：${hit.text}`)
       }
     }

@@ -13,6 +13,24 @@ describe('フロントの書き方の検査', () => {
     assert.deepEqual(findCrossFeatureImports(text, 'cart').map((hit) => hit.line), [3])
   })
 
+  test('相対パス、export from、import() の書き方でも、ほかの機能の import を見つける', () => {
+    const file = 'frontend/store/src/features/cart/components/CartLine.tsx'
+    const text = [
+      "import { OrderSummary } from '../../order/components/OrderSummary'",
+      "export { OrderSummary } from '../../order/components/OrderSummary'",
+      "const Lazy = lazy(() => import('../../order/pages/OrderPage'))",
+      "import '../../order/styles'",
+      "import { checkoutQuery } from '../checkoutQuery'",
+      "import { CartTotal } from '../../cart/components/CartTotal'",
+      "import { formatPrice } from '../../../lib/format'",
+      "export * from '@/features/order/index'",
+      'import {',
+      "  Foo,",
+      "} from '../../order/foo'",
+    ].join('\n')
+    assert.deepEqual(findCrossFeatureImports(text, 'cart', file).map((hit) => hit.line), [1, 2, 3, 4, 8, 11])
+  })
+
   test('機能のファイルかどうかと、その機能の名前を返す', () => {
     assert.deepEqual(featureOf('frontend/store/src/features/cart/components/CartLine.tsx'), { app: 'store', feature: 'cart' })
     assert.deepEqual(featureOf('frontend/admin/src/features/order/pages/OrderListPage.tsx'), { app: 'admin', feature: 'order' })

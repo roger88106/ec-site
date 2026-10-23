@@ -83,6 +83,7 @@ describe('対象が 0 件のときの失敗', () => {
     'java-rules',
     'message-comments',
     'related-specs',
+    'runtime-versions',
     'spec-numbers',
     'test-names',
     'time-waits',

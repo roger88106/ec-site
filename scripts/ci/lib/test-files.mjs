@@ -137,9 +137,15 @@ function readTsCall(source, start, nameLength) {
   let pos = start + nameLength
   let skipped = false
   let last = ''
+  let afterArgs = false
   while (source[pos] !== '(') {
     const modifier = /^\.(\w+)/.exec(source.slice(pos, pos + 20))
-    if (!modifier) return null
+    if (!modifier) {
+      // 表や条件の括弧の後に名前の括弧が続かないものは、読み方の外れか知らない書き方なので、数えずに消えないよう読めない呼び出しにする
+      if (afterArgs) return { reason: `${last} の後に、テスト名の括弧が続かない` }
+      return null
+    }
+    afterArgs = false
     pos += modifier[0].length
     if (TS_MODIFIERS.has(modifier[1])) {
       skipped ||= modifier[1] === 'skip' || modifier[1] === 'fixme' || modifier[1] === 'todo'
@@ -150,15 +156,18 @@ function readTsCall(source, start, nameLength) {
       const close = closingParen(source, pos)
       if (close >= source.length) return { reason: `${modifier[1]} の条件の括弧が閉じない` }
       pos = close + 1
+      afterArgs = true
     } else if (modifier[1] === 'each' || modifier[1] === 'for') {
       last = modifier[1]
       if (source[pos] === '(') {
         const close = closingParen(source, pos)
         if (close >= source.length) return { reason: 'each の表の括弧が閉じない' }
         pos = close + 1
+        afterArgs = true
       } else if (source[pos] === '`') {
         pos = templateEnd(source, pos)
         if (source[pos - 1] !== '`') return { reason: 'each の表のテンプレートが閉じない' }
+        afterArgs = true
       } else {
         return null
       }
@@ -168,7 +177,14 @@ function readTsCall(source, start, nameLength) {
       return { reason: `知らない修飾 .${modifier[1]} が付いている（読み方を足すか、テストの宣言でない呼び出しに加える）` }
     }
   }
-  TS_NAME.lastIndex = pos + 1 + /^\s*/.exec(source.slice(pos + 1))[0].length
+  const nameStart = pos + 1 + /^\s*/.exec(source.slice(pos + 1))[0].length
+  if (source[nameStart] === '`') {
+    // テンプレートの名前は、`${...}` の中の入れ子のテンプレートで切れないよう、テンプレートの終わりまで読む
+    const end = templateEnd(source, nameStart)
+    if (source[end - 1] === '`' && end - 1 > nameStart) return { name: source.slice(nameStart + 1, end - 1).replace(/\\(.)/g, '$1'), skipped }
+    return { reason: 'テスト名のテンプレートが閉じない' }
+  }
+  TS_NAME.lastIndex = nameStart
   const name = TS_NAME.exec(source)
   if (name) return { name: name[2].replace(/\\(.)/g, '$1'), skipped }
   // test.skip(条件, 理由)・test.fixme() は、実行中に飛ばす書き方で、テストの宣言でない
@@ -193,10 +209,12 @@ function scanTsTests(source) {
   const tests = []
   const unreadable = []
   for (const match of source.matchAll(TS_CALL_START)) {
+    // コメントと文字列の中の呼び出し（コメントアウトしたテスト、説明の例）は、テストでも読めない呼び出しでもない
+    if (!code[match.index]) continue
     const call = readTsCall(source, match.index, match[0].length)
     if (!call) continue
     if ('reason' in call) {
-      if (code[match.index]) unreadable.push({ index: match.index, reason: call.reason })
+      unreadable.push({ index: match.index, reason: call.reason })
       continue
     }
     tests.push({

@@ -4,7 +4,7 @@ import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { hasSummaryLine, judgeCheck } from './check-result.mjs'
+import { countTests, hasSummaryLine, judgeCheck } from './check-result.mjs'
 
 describe('要約の行の判定', () => {
   test('最後の行が「<何>：<件数>」の形なら、要約の行がある', () => {
@@ -31,23 +31,45 @@ describe('要約の行の判定', () => {
 
 describe('検査の成功・失敗の判定', () => {
   test('終了コード 0 で要約の行があれば成功', () => {
-    assert.deepEqual(judgeCheck({ status: 0, output: '切れた参照：0\n', needsSummary: true }), { ok: true })
+    assert.deepEqual(judgeCheck({ status: 0, output: '切れた参照：0\n', mode: 'summary' }), { ok: true })
   })
 
   test('終了コードが 0 でなければ、要約の行があっても失敗', () => {
-    const result = judgeCheck({ status: 1, output: '切れた参照：2\n', needsSummary: true })
+    const result = judgeCheck({ status: 1, output: '切れた参照：2\n', mode: 'summary' })
     assert.equal(result.ok, false)
   })
 
   test('終了コード 0 でも、要約の行がなければ失敗にして、理由を返す', () => {
-    const result = judgeCheck({ status: 0, output: '問題はない\n', needsSummary: true })
+    const result = judgeCheck({ status: 0, output: '問題はない\n', mode: 'summary' })
     assert.equal(result.ok, false)
     assert.match(result.reason, /要約の行/)
   })
 
-  test('要約の行を求めないもの（script のテスト）は、終了コードだけで判定する', () => {
-    assert.deepEqual(judgeCheck({ status: 0, output: '# pass 10\n', needsSummary: false }), { ok: true })
-    assert.equal(judgeCheck({ status: 1, output: '', needsSummary: false }).ok, false)
+  test('script のテスト（tests）は、node --test の出力のテストの数が 1 件以上なら成功', () => {
+    assert.deepEqual(judgeCheck({ status: 0, output: 'ℹ tests 659\nℹ pass 658\n', mode: 'tests' }), { ok: true })
+    assert.deepEqual(judgeCheck({ status: 0, output: '# tests 1\n# pass 1\n', mode: 'tests' }), { ok: true })
+  })
+
+  test('script のテストが 0 件（glob が 1 件も一致しない）なら、終了コード 0 でも失敗にする', () => {
+    const result = judgeCheck({ status: 0, output: 'ℹ tests 0\nℹ suites 0\nℹ pass 0\n', mode: 'tests' })
+    assert.equal(result.ok, false)
+    assert.match(result.reason, /0 件/)
+  })
+
+  test('テストの数の行がなければ、失敗にする', () => {
+    const result = judgeCheck({ status: 0, output: 'ℹ pass 10\n', mode: 'tests' })
+    assert.equal(result.ok, false)
+    assert.match(result.reason, /テストの数/)
+  })
+
+  test('script のテストでも、終了コードが 0 でなければ失敗', () => {
+    assert.equal(judgeCheck({ status: 1, output: 'ℹ tests 3\n', mode: 'tests' }).ok, false)
+  })
+
+  test('countTests は、node --test の出力（spec と tap）のテストの数を読み、なければ null', () => {
+    assert.equal(countTests('ℹ tests 12\n'), 12)
+    assert.equal(countTests('# tests 3\n'), 3)
+    assert.equal(countTests('tests 3\n'), null)
   })
 })
 
@@ -76,7 +98,17 @@ describe('check-all.sh から呼ぶ形（コマンドライン）', () => {
     assert.match(result.stdout, /要約の行/)
   })
 
-  test('モードが none なら、要約の行がなくても成功', () => {
-    assert.equal(run('# pass 10\n', 0, 'none').status, 0)
+  test('モードが tests なら、要約の行がなくても、テストが 1 件以上あれば成功', () => {
+    assert.equal(run('ℹ tests 10\nℹ pass 10\n', 0, 'tests').status, 0)
+  })
+
+  test('モードが tests で、テストが 0 件なら終了コード 1 で、理由を出す', () => {
+    const result = run('ℹ tests 0\nℹ pass 0\n', 0, 'tests')
+    assert.equal(result.status, 1)
+    assert.match(result.stdout, /0 件/)
+  })
+
+  test('知らないモードは失敗にする', () => {
+    assert.equal(run('切れた参照：0\n', 0, 'unknown').status, 1)
   })
 })

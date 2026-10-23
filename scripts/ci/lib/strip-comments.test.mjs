@@ -23,6 +23,12 @@ describe('コメントの除去', () => {
     assert.equal(stripComments(text, { keepRegex: true }).includes('注'), false)
   })
 
+  test('テンプレートの ${...} の中はコードとして読み、入れ子のテンプレートの中の // をコメントにしない', () => {
+    assert.equal(stripComments('const a = `x${`//y`}` // c\nz'), 'const a = `x${`//y`}`     \nz')
+    const text = 'const a = `${b /* 注 */}` + `${{ c: `}` }.c}` // 後ろ'
+    assert.equal(stripComments(text), text.replace('/* 注 */', ' '.repeat(7)).replace('// 後ろ', ' '.repeat(5)))
+  })
+
   test('keepRegex でも、正規表現の中の // をコメントにしない', () => {
     const text = 'const a = /\\/\\//.test(x) // 後ろ'
     assert.equal(stripComments(text, { keepRegex: true }).includes('後ろ'), false)

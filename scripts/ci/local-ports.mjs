@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
 import { exitIfNoFiles } from './lib/git-files.mjs'
-import { BIND_PREFIX, findPortProblems } from './compose-ports.mjs'
+import { findPortProblems, readHostPort } from './compose-ports.mjs'
 
 /** ポートの一覧 */
 const LIST_FILE = 'scripts/dev/ports.json'
@@ -70,22 +70,25 @@ export function expandedPorts(list) {
 }
 
 /**
- * compose の `ports` の項目から、ホスト側のポートを読む。<br />
- * `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` の後ろが、数字か `${変数:-数字}` の書き方のもの。それ以外の書き方の項目は読まない（compose-ports が失敗にする）。
+ * compose の `ports` の項目から、ホスト側のポートを読む（読み方は compose-ports の readHostPort）。<br />
+ * `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` の後ろが、数字か `${変数:-数字}` の書き方のもの。
+ * それ以外の書き方の項目（既定値のない変数、範囲など）は、読み飛ばすと一覧にないポートを見逃すので、`unreadable` に入れる。
  *
  * @param {string} text compose のファイル
- * @returns {number[]} ホスト側のポート（行の順）
+ * @returns {{ ports: number[], unreadable: { line: number, entry: string }[] }} ホスト側のポートと、読めない項目（行の順）
  */
 export function readComposeHostPorts(text) {
   const ports = []
-  for (const { entry } of findPortProblems(text).ports) {
-    const rest = entry.startsWith(BIND_PREFIX) ? entry.slice(BIND_PREFIX.length) : entry
-    const match = /^(?:\$\{[A-Z_]+:-(\d+)\}|(\d+)):/.exec(rest)
-    if (match) {
-      ports.push(Number(match[1] ?? match[2]))
+  const unreadable = []
+  for (const port of findPortProblems(text).ports) {
+    const host = readHostPort(port.entry)
+    if (host === null) {
+      unreadable.push(port)
+    } else {
+      ports.push(host)
     }
   }
-  return ports
+  return { ports, unreadable }
 }
 
 /**
@@ -202,7 +205,11 @@ export function findPortMismatches({ list, compose, powershell, docs, sources, c
   }
 
   const shared = new Set(list.ports.filter((entry) => entry.group === 'shared').map((entry) => entry.port))
-  problems.push(...diffProblems(readComposeHostPorts(compose), shared, COMPOSE_FILE, 'compose'))
+  const composePorts = readComposeHostPorts(compose)
+  for (const port of composePorts.unreadable) {
+    problems.push(`${COMPOSE_FILE}:${port.line} ${port.entry} のホスト側のポートを読めない（数字か \${変数:-数字} で 1 つのポートを書く）`)
+  }
+  problems.push(...diffProblems(composePorts.ports, shared, COMPOSE_FILE, 'compose'))
 
   problems.push(...diffProblems(readPowerShellPorts(powershell), expandedPorts(list), POWERSHELL_FILE, 'Windows の予約の script'))
 

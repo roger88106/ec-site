@@ -149,6 +149,39 @@ describe('テストの関数の読み方', () => {
     assert.deepEqual(findUnreadableTsTests(source), [])
   })
 
+  test('コメント・ブロックコメント・文字列・テンプレートの中の test・it の呼び出しは、テストとして数えない', () => {
+    const source = [
+      "// test('AC-1 行コメント', () => {})",
+      "/* it('AC-2 ブロックコメント', () => {}) */",
+      "const s = \"test('AC-3 文字列', 1)\"",
+      "const t = `it('AC-4 テンプレート', 1)`",
+      "test('AC-5 コード', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-5 コード'])
+  })
+
+  test('each の表と名前のテンプレートの ${...} の中に、入れ子のテンプレートや括弧があっても、テスト名を読む', () => {
+    const source = [
+      'test.each([[`a${`b)`}`]])(`AC-1 入れ子 %s`, () => {})',
+      "it.each([[`${f(')')}`, `${{ a: `}` }.a}`]])('AC-2 括弧と波括弧', () => {})",
+      'test(`AC-3 名前 ${`x`}`, () => {})',
+    ].join('\n')
+    assert.deepEqual(
+      readTsTests(source).map(({ name }) => name),
+      ['AC-1 入れ子 %s', 'AC-2 括弧と波括弧', 'AC-3 名前 ${`x`}'],
+    )
+    assert.deepEqual(findUnreadableTsTests(source), [])
+  })
+
+  test('each の表の後に、名前の括弧が続かない呼び出しは、読めない呼び出しにする', () => {
+    const source = 'test.each([[1]])`AC-1 名前`'
+    assert.deepEqual(readTsTests(source), [])
+    assert.deepEqual(
+      findUnreadableTsTests(source).map(({ index }) => index),
+      [0],
+    )
+  })
+
   test('extractTestNames の java は、メソッドの @DisplayName を読み、クラスの名前を読まない', () => {
     const source = ['@DisplayName("まとまり")', 'class A {', '  @Test', '  @DisplayName("AC-1 通る")', '  void a() {}', '}'].join('\n')
     assert.deepEqual(extractTestNames(source, 'java'), ['AC-1 通る'])

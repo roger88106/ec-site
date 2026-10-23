@@ -6,6 +6,7 @@ import { regexEnd, startsRegex } from './strip-comments.mjs'
 
 /**
  * 呼び出しの閉じ括弧の位置を返す。文字列とコメントの中の括弧は数えない。
+ * テンプレートの `${...}` の中はコードとして読む（入れ子のテンプレートも数える）。
  *
  * @param {string} text  ソース
  * @param {number} open  開き括弧の位置
@@ -16,11 +17,28 @@ export function closingParen(text, open, options = {}) {
   const readRegex = options.regex ?? true
   let depth = 0
   let quote = null
+  // テンプレートの `${...}` の中はコードとして読む。入れ子に備えて、`${` を開いたときの { の深さを積む
+  let braces = 0
+  const templates = []
   for (let i = open; i < text.length; i += 1) {
     const ch = text[i]
     if (quote) {
       if (ch === '\\') i += 1
       else if (ch === quote) quote = null
+      else if (quote === '`' && ch === '$' && text[i + 1] === '{') {
+        templates.push(braces)
+        quote = null
+        i += 1
+      }
+    } else if (ch === '{') {
+      braces += 1
+    } else if (ch === '}') {
+      if (templates.length > 0 && templates.at(-1) === braces) {
+        templates.pop()
+        quote = '`'
+      } else {
+        braces -= 1
+      }
     } else if (ch === '/' && text[i + 1] === '/') {
       // 行コメントは行の終わりまで飛ばす（中の引用符や括弧を数えない）
       const end = text.indexOf('\n', i)

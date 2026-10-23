@@ -1,12 +1,12 @@
 // pre-commit.mjs のテスト（node --test scripts/dev/lib/pre-commit.test.mjs）
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { CHECKOUT_FAILED, resolveIndexFile, runPreCommit } from './pre-commit.mjs'
+import { CHECKOUT_FAILED, checkShell, resolveIndexFile, runPreCommit } from './pre-commit.mjs'
 
 describe('一時の index のパス', () => {
   test('相対パスは、リポジトリのルートからの絶対パスにする', () => {
@@ -22,6 +22,17 @@ describe('一時の index のパス', () => {
   test('値がなければ undefined を返す', () => {
     assert.equal(resolveIndexFile(undefined, '/repo'), undefined)
     assert.equal(resolveIndexFile('', '/repo'), undefined)
+  })
+})
+
+describe('検査を実行する bash', () => {
+  test('hook が渡した bash のパス（PRE_COMMIT_BASH）があれば、それを使う', () => {
+    assert.equal(checkShell({ PRE_COMMIT_BASH: 'C:/Program Files/Git/usr/bin/bash.exe' }), 'C:/Program Files/Git/usr/bin/bash.exe')
+  })
+
+  test('なければ、PATH の bash を使う', () => {
+    assert.equal(checkShell({}), 'bash')
+    assert.equal(checkShell({ PRE_COMMIT_BASH: '' }), 'bash')
   })
 })
 
@@ -101,11 +112,40 @@ describe('実際の hook', () => {
     return Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
   }
 
-  /** 検査の script を差し替えた一時のリポジトリで、ファイルをステージして hook を実行する */
-  function runHook(checkAll) {
+  /**
+   * hook を実行する bash。Windows の素の PATH では、bash が WSL の bash.exe を指すことがあるので、Git の bash を使う
+   * （git が hook を実行するときと同じ bash にする）。
+   *
+   * PATH を差し替えても同じ bash を使えるよう、絶対パスで返す。
+   *
+   * @returns {string} bash のパス（見つからなければ PATH の bash）
+   */
+  function gitBash() {
+    if (process.platform !== 'win32') return spawnSync('bash', ['-c', 'command -v bash'], { encoding: 'utf8' }).stdout.trim() || 'bash'
+    const execPath = spawnSync('git', ['--exec-path'], { env: cleanEnv(), encoding: 'utf8' }).stdout.trim()
+    const candidate = path.resolve(execPath, '../../../bin/bash.exe')
+    return existsSync(candidate) ? candidate : 'bash'
+  }
+
+  /**
+   * 検査の script を差し替えた一時のリポジトリで、ファイルをステージして hook を実行する。
+   *
+   * @param {string} checkAll 検査の script の中身
+   * @param {{ fakeBash?: boolean }} [options] fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く
+   * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
+   */
+  function runHook(checkAll, { fakeBash = false } = {}) {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
       const env = cleanEnv()
+      if (fakeBash) {
+        const bin = path.join(dir, '.fake-bin')
+        mkdirSync(bin)
+        writeFileSync(path.join(bin, 'bash'), '#!/bin/sh\nexit 42\n')
+        chmodSync(path.join(bin, 'bash'), 0o755)
+        const key = Object.keys(env).find((name) => name.toUpperCase() === 'PATH') ?? 'PATH'
+        env[key] = `${bin}${path.delimiter}${env[key] ?? ''}`
+      }
       const git = (...args) => spawnSync('git', args, { cwd: dir, env, encoding: 'utf8' })
       git('init', '-q')
       for (const file of hookFiles) {
@@ -118,7 +158,7 @@ describe('実際の hook', () => {
       writeFileSync(path.join(dir, 'staged.txt'), 'staged')
       git('add', '-A')
       writeFileSync(path.join(dir, 'unstaged.txt'), 'unstaged')
-      const result = spawnSync('bash', ['scripts/dev/hooks/pre-commit'], { cwd: dir, env, encoding: 'utf8' })
+      const result = spawnSync(gitBash(), ['scripts/dev/hooks/pre-commit'], { cwd: dir, env, encoding: 'utf8' })
       return { status: result.status, output: result.stdout }
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -135,5 +175,9 @@ describe('実際の hook', () => {
   test('検査が失敗すれば、その終了コードを返して commit を止める', () => {
     assert.equal(runHook('#!/usr/bin/env bash\nexit 1\n').status, 1)
     assert.equal(runHook('#!/usr/bin/env bash\nexit 3\n').status, 3)
+  })
+
+  test('検査は、PATH の先頭の bash でなく、hook を実行している bash で実行する', () => {
+    assert.equal(runHook('#!/usr/bin/env bash\nexit 0\n', { fakeBash: true }).status, 0)
   })
 })

@@ -47,6 +47,7 @@ export function stripJavaComments(text) {
 
 /**
  * コメントを空白に置き換える（行の数は変えない）。文字列の中の // は、URL などなので消さない。
+ * テンプレートの `${...}` の中はコードとして読む（入れ子のテンプレートも数える）。
  *
  * @param {string} text ソース
  * @param {{ keepRegex?: boolean }} [options] keepRegex が true なら、正規表現のリテラルを残す（中の文字を読む検査用。既定は空白にする）
@@ -56,6 +57,9 @@ export function stripComments(text, options = {}) {
   let result = ''
   let index = 0
   let quote = null
+  // テンプレートの `${...}` の中はコードとして読む。入れ子に備えて、`${` を開いたときの { の深さを積む
+  let braces = 0
+  const templates = []
   while (index < text.length) {
     const char = text[index]
     const next = text[index + 1]
@@ -67,8 +71,26 @@ export function stripComments(text, options = {}) {
         continue
       }
       if (char === quote) quote = null
+      else if (quote === '`' && char === '$' && next === '{') {
+        templates.push(braces)
+        quote = null
+        result += next
+        index += 2
+        continue
+      }
       index += 1
       continue
+    }
+    if (char === '{') braces += 1
+    if (char === '}') {
+      if (templates.length > 0 && templates.at(-1) === braces) {
+        templates.pop()
+        quote = '`'
+        result += char
+        index += 1
+        continue
+      }
+      braces -= 1
     }
     if (char === '/' && next === '*') {
       const end = text.indexOf('*/', index + 2)

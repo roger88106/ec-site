@@ -22,6 +22,17 @@ export function resolveIndexFile(indexFile, root) {
 }
 
 /**
+ * 検査の script を実行する bash を返す。hook の shell script が、自分を実行している bash のパスを PRE_COMMIT_BASH で渡す。
+ * Windows の素の PATH では、名前の bash が WSL の bash.exe を指すことがあり、C:/ のパスを渡した検査が失敗するため。
+ *
+ * @param {Record<string, string | undefined>} env 環境変数
+ * @returns {string} bash のパス。渡されていなければ、PATH の bash
+ */
+export function checkShell(env) {
+  return env.PRE_COMMIT_BASH || 'bash'
+}
+
+/**
  * ステージした内容を一時ディレクトリに取り出し、そこで CI の検査を実行して、hook の終了コードを返す。
  * 取り出しに失敗したら 2、そうでなければ検査の終了コード（検査が終了コードを返さなければ 1）。
  * 一時ディレクトリは、成功でも失敗でも消す。
@@ -67,7 +78,7 @@ export function main() {
     env: process.env,
     checkout: (prefix, env) =>
       spawnSync('git', ['-c', 'core.longpaths=true', 'checkout-index', '-a', `--prefix=${toSlash(prefix)}`], { env, stdio: 'inherit' }).status,
-    runCheck: (script, env) => spawnSync('bash', [toSlash(script)], { env, stdio: 'inherit' }).status,
+    runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     makeTemp: () => toSlash(mkdtempSync(path.join(tmpdir(), 'pre-commit.'))),
     removeTemp: (dir) => rmSync(dir, { recursive: true, force: true }),
   })

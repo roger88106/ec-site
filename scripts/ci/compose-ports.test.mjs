@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
-import { findPortProblems } from './compose-ports.mjs'
+import { findPortProblems, readHostPort } from './compose-ports.mjs'
 
 /** 知らない書き方の行を「行 内容」で並べる */
 const unknownOf = (text) => findPortProblems(text).unknown.map((entry) => `${entry.line} ${entry.text}`)
@@ -101,11 +101,35 @@ describe('compose のポートの検査', () => {
     assert.equal(findPortProblems(text).ports.length, 1)
   })
 
+  test('ホスト側のポートは、数字か既定値付きの変数から読み、それ以外（既定値のない変数、範囲）は読めない', () => {
+    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432'), 5432)
+    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025'), 2525)
+    assert.equal(readHostPort('5432:5432'), 5432)
+    for (const entry of ['${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:80']) {
+      assert.equal(readHostPort(entry), null, entry)
+    }
+  })
+
+  test('ホスト側のポートを読めない項目は、読み飛ばさずに失敗にする', () => {
+    const text = [
+      '    ports:',
+      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80"',
+      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80"',
+      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"',
+    ].join('\n')
+    assert.deepEqual(problemsOf(text), [])
+    assert.deepEqual(
+      findPortProblems(text).unreadable.map((port) => `${port.line} ${port.entry}`),
+      ['2 ${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80', '3 ${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80'],
+    )
+  })
+
   test('リポジトリの compose のすべてのポートが、決まった形で書いてある', () => {
     const text = readFileSync('docker/compose.yaml', 'utf8')
-    const { ports, problems } = findPortProblems(text)
+    const { ports, problems, unreadable } = findPortProblems(text)
     assert.ok(ports.length > 0)
     assert.deepEqual(problems, [])
+    assert.deepEqual(unreadable, [])
     assert.deepEqual(unknownOf(text), [])
   })
 })

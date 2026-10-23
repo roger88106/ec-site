@@ -26,7 +26,7 @@ trap 'rm -f "$LOG"' EXIT
 failed=0
 
 # 1 つを流し、結果を 1 行で出す（失敗したら出力の末尾を添える）
-#   $1：表示の名前、$2：要約の行を求めるか（summary か none）、残り：流すコマンド
+#   $1：表示の名前、$2：判定の種類（summary は要約の行を求める、tests は node --test のテストの数が 1 件以上を求める）、残り：流すコマンド
 #   終了コードが 0 でなければ、node を呼ばずに失敗にする。
 #   summary のものは、終了コードが 0 でも、最後の行が要約の行（「<何>：<件数>」）でなければ失敗にする（判定は lib/check-result.mjs。成功は OK の 1 行で示す）
 run_check() {
@@ -61,8 +61,9 @@ run_check() {
   fi
 }
 
-# script のテストは node --test の出力で、要約の行の形ではないので、終了コードだけで判定する（none）
-run_check "script のテスト" none node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
+# script のテストは node --test の出力で、要約の行の形ではないので、テストの数（tests N）が 1 件以上かで判定する（tests）。
+# glob が 1 件も一致しないと、node --test は tests 0 で終了コード 0 になるため
+run_check "script のテスト" tests node --test "scripts/ci/**/*.test.mjs" "scripts/dev/**/*.test.mjs" ".claude/skills/**/*.test.cjs"
 
 for script in scripts/ci/*.mjs; do
   case "$script" in

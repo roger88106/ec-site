@@ -11,4 +11,11 @@
 # 関連 spec の照合（commit のメッセージが要る）は commit-msg の hook で行う。
 # ============================================================================
 ROOT="$(git rev-parse --show-toplevel)"
+# 検査は、この hook と同じ bash で実行する（node が PATH から bash を探すと、Windows では WSL の bash.exe を引くことがある）。
+# Git Bash の $BASH は /usr/bin/bash の形なので、node が開けるよう cygpath で Windows のパスにする
+PRE_COMMIT_BASH="${BASH:-$(command -v bash)}"
+if command -v cygpath >/dev/null 2>&1; then
+  PRE_COMMIT_BASH="$(cygpath -m "$PRE_COMMIT_BASH")"
+fi
+export PRE_COMMIT_BASH
 exec node "$ROOT/scripts/dev/lib/pre-commit-main.mjs"

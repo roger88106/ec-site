@@ -63,6 +63,16 @@ describe('閉じ括弧の位置', () => {
     }
   })
 
+  test('テンプレートの ${...} の中はコードとして読み、入れ子のテンプレートの中の括弧は数えない', () => {
+    const text = 'f([`a${`b)`}`], `${g(")")}`, `${{ a: `}` }.a}`) + h()'
+    assert.equal(closingParen(text, 1), text.indexOf(') + h'))
+  })
+
+  test('テンプレートの ${...} の中の括弧は、コードの括弧として数える', () => {
+    const text = 'f(`${(a)}`, b)'
+    assert.equal(closingParen(text, 1), text.length - 1)
+  })
+
   test('閉じなければソースの終わりを返す', () => {
     assert.equal(closingParen('f(a', 1), 3)
   })

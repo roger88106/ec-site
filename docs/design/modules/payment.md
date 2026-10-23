@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（支払の状態遷移、外部からの通知の重複と順序の入れ替わり、期限切れとの競合） |
 | 依存 | なし（注文が決済の API を呼び、決済は結果をイベントで伝える ※1） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[013](../../specs/archive/mvp/013-backend-consistency)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[013](../../specs/archive/mvp/013-backend-consistency)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/155-backend-structure) |
 
 ※1：決済が注文のイベントを受けると、モジュールが循環する。
 
@@ -167,7 +167,7 @@ payment/
 ├── api/                    # 支払の作成・取消・売上確定、支払画面の URL、支払の参照、与信の期限
 ├── event/                  # 与信の成功、支払の期限切れ
 ├── application/            # 支払の作成と参照、決済サービスの通知の反映、売上確定、支払画面、期限切れのジョブ、返金・与信取消の依頼のリスナー
-│   ├── model/              # 表示の型（view）
+│   ├── model/view/         # 表示の型（view）
 │   └── port/               # 決済サービス、通知の受信、参照用リポジトリ
 ├── domain/
 │   └── payment/            # 支払（集約）、状態、与信の有効期間、支払画面、返金・与信取消の依頼、エラー。port/ はリポジトリ

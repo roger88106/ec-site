@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（集約の不変条件がなく、写しと集計だけ。理由は後述） |
 | 依存 | 注文（API、イベント）、出荷（イベント）、商品カタログ・地域（API）。他のモジュールはレポートに依存しない |
-| 関連 spec | [010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/155-backend-structure) |
 
 ## レベルを B とした理由
 
@@ -122,7 +122,7 @@ reporting/
 ├── application/            # イベントのリスナー、写しの再作成、3 つのレポートの集計
 │   ├── model/              # 3 つのレポートの問い合わせの条件（query/）と結果（view/）
 │   └── port/               # 写しと履歴の保存、集計の問い合わせ、注文・商品カタログ・地域の腐敗防止層
-├── domain/                 # 注文の写しと状態の履歴、期間と区切り、推移、年齢層と性別
+├── domain/                 # 注文の写しと状態の履歴、期間と区切り、推移、年齢層と性別。注文時の性別（ReportBuyerGender）、キャンセルの種類、状態の履歴の状態（HistoryStatus。注文の状態か配送状態）は列挙で持つ
 ├── infrastructure/
 │   ├── directory/          # 注文・商品カタログ・地域の API の呼び出し
 │   └── persistence/        # 写しと履歴の保存、集計の SQL

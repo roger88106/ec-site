@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（状態遷移、注文時点の写し、在庫との強い一貫性） |
 | 依存 | カート（API、イベント）、決済（API、イベント）、出荷・商品カタログ・在庫・税・地域（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [002](../../specs/archive/mvp/002-cart-and-order)、[003](../../specs/archive/mvp/003-auth)、[007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[013](../../specs/archive/mvp/013-backend-consistency)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/155-backend-structure) |
 
 ## 見積もり
 
@@ -157,7 +157,7 @@ order/
 │   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの片付け、カート変更のリスナー
 │   ├── payment/            # 支払の結果の反映、支払画面
 │   ├── shipment/           # 出荷の登録
-│   ├── model/              # 表示の型（注文手続き、注文の詳細、支払）と注文の成立の入出力
+│   ├── model/              # 表示の型（view。見積もり、注文手続き、注文の詳細と一覧、支払、出荷、レポート用の注文）と注文の成立の入出力
 │   └── port/               # 注文の一覧の検索と、腐敗防止層の port（カート、商品カタログ、在庫、地域、決済、出荷）
 ├── domain/
 │   ├── quote/              # 見積もり、明細、金額の内訳。port/ は税の腐敗防止層の port

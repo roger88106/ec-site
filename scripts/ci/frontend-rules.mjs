@@ -384,12 +384,13 @@ if (isMain(import.meta.url)) {
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))
-  for (const relative of duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), Object.keys(exclusions))) {
+  // 同じ内容のファイルの一覧は 1 回だけ求め、違反の報告（除外を除く）と除外の要否の判定の両方に使う
+  const duplicated = new Set(duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), []))
+  for (const relative of [...duplicated].filter((relative) => !Object.hasOwn(exclusions, relative))) {
     report(`frontend/{store,admin}/src/${relative} 店舗画面と管理画面に同じ内容のファイルがある（共有パッケージに置く）`)
   }
   // 除外が要るのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）と、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）だけ
   // （片方が消えた、内容が変わった、定義がなくなったものは不要）
-  const duplicated = new Set(duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), []))
   for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (key) => duplicated.has(key) || shadowing.has(key))) {
     report(message)
   }

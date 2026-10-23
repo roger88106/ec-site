@@ -63,13 +63,13 @@ export function findNumbers(text, exclusions) {
 }
 
 /**
- * 例外の一覧のうち、ファイルにないキーと、数字のない文のキーを探す（例外が取り残されないように）。
+ * 例外の一覧のうち、ファイルにないキーと、数字のない文のキーを探す（数字のない文は例外が要らない）。
  *
  * @param {string} text       properties のファイルの中身
  * @param {Record<string, string>} exclusions 例外の一覧（キー → 理由）
- * @returns {string[]} 不要な例外のキー
+ * @returns {string[]} 例外が要らないキー
  */
-export function findStaleExclusions(text, exclusions) {
+export function findExclusionsWithoutNumbers(text, exclusions) {
   const values = new Map(parseProperties(text).map(({ key, value }) => [key, value]))
   return Object.keys(exclusions).filter((key) => !values.has(key) || !DIGIT.test(values.get(key).replace(PLACEHOLDER, '')))
 }
@@ -81,8 +81,8 @@ if (isMain(import.meta.url)) {
   for (const hit of hits) {
     console.log(`${MESSAGES}:${hit.line} ${hit.key}=${hit.value}`)
   }
-  const stale = new Set(findStaleExclusions(text, exclusions))
-  const problems = checkExclusions(EXCLUSIONS, exclusions, (key) => !stale.has(key))
+  const withoutNumbers = new Set(findExclusionsWithoutNumbers(text, exclusions))
+  const problems = checkExclusions(EXCLUSIONS, exclusions, (key) => !withoutNumbers.has(key))
   for (const problem of problems) {
     console.log(problem)
   }

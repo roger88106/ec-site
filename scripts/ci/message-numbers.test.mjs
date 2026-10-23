@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findNumbers, findStaleExclusions, parseProperties } from './message-numbers.mjs'
+import { findNumbers, findExclusionsWithoutNumbers, parseProperties } from './message-numbers.mjs'
 
 describe('エラーの文の数字の検査', () => {
   test('AC-266 差し込みを除いた文に数字（半角・全角）があれば見つける', () => {
@@ -31,9 +31,9 @@ describe('エラーの文の数字の検査', () => {
     ])
   })
 
-  test('ファイルにないキーと、数字のなくなった文のキーの例外は、不要な例外として見つける', () => {
+  test('ファイルにないキーと、数字のなくなった文のキーの例外を、例外の要らないキーとして見つける', () => {
     const text = 'ecsite.a={max} 文字以内\necsite.b=1 つだけ'
-    assert.deepEqual(findStaleExclusions(text, { 'ecsite.a': '理由', 'ecsite.b': '理由', 'ecsite.c': '理由' }), [
+    assert.deepEqual(findExclusionsWithoutNumbers(text, { 'ecsite.a': '理由', 'ecsite.b': '理由', 'ecsite.c': '理由' }), [
       'ecsite.a',
       'ecsite.c',
     ])

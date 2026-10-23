@@ -7,7 +7,7 @@ import com.ecsite.jooq.tax.Keys;
 import com.ecsite.jooq.tax.tables.records.TaxRateRecord;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategory;
 import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
-import com.ecsite.module.tax.domain.taxcategory.TaxErrorCode;
+import com.ecsite.module.tax.domain.TaxErrorCode;
 import com.ecsite.module.tax.domain.taxcategory.TaxRate;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
 import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;

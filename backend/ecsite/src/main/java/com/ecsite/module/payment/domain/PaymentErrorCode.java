@@ -1,4 +1,4 @@
-package com.ecsite.module.payment.domain.payment;
+package com.ecsite.module.payment.domain;
 
 import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;

@@ -1,6 +1,6 @@
 package com.ecsite.module.tax.domain.taxcategory.vo;
 
-import com.ecsite.module.tax.domain.taxcategory.TaxErrorCode;
+import com.ecsite.module.tax.domain.TaxErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

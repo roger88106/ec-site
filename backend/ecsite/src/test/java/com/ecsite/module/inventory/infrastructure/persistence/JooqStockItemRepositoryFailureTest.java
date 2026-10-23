@@ -1,7 +1,7 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.module.inventory.domain.stock.InventoryErrorCode;
+import com.ecsite.module.inventory.domain.InventoryErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

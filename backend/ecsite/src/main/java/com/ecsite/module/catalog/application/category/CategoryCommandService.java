@@ -7,7 +7,7 @@ import com.ecsite.module.catalog.application.model.command.CreateCategoryCommand
 import com.ecsite.module.catalog.application.model.command.RenameCategoryCommand;
 import com.ecsite.module.catalog.application.model.command.ReorderCategoriesCommand;
 import com.ecsite.module.catalog.domain.category.Category;
-import com.ecsite.module.catalog.domain.category.CategoryErrorCode;
+import com.ecsite.module.catalog.domain.CategoryErrorCode;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import lombok.RequiredArgsConstructor;

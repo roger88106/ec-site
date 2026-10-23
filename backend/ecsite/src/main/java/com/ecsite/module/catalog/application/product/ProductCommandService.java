@@ -6,7 +6,7 @@ import com.ecsite.module.catalog.application.model.command.UpdateProductCommand;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.application.port.TaxDirectory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
-import com.ecsite.module.catalog.domain.product.ProductErrorCode;
+import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
 import com.ecsite.module.catalog.domain.product.ProductImage;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;

@@ -1,4 +1,4 @@
-package com.ecsite.module.catalog.domain.category;
+package com.ecsite.module.catalog.domain;
 
 import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;

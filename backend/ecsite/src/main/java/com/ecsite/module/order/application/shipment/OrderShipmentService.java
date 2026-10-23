@@ -5,7 +5,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
-import com.ecsite.module.order.domain.order.OrderErrorCode;
+import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;

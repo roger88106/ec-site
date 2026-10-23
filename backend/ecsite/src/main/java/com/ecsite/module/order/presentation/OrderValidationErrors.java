@@ -2,7 +2,7 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.common.error.ErrorDetail;
 import com.ecsite.common.error.ValidationErrorMapping;
-import com.ecsite.module.order.domain.order.OrderErrorCode;
+import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import org.springframework.stereotype.Component;
 

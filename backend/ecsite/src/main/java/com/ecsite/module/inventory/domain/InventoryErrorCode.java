@@ -1,4 +1,4 @@
-package com.ecsite.module.inventory.domain.stock;
+package com.ecsite.module.inventory.domain;
 
 import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;

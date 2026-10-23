@@ -112,8 +112,6 @@ jackson-databind-nullable = { module = "org.openapitools:jackson-databind-nullab
 lombok = { module = "org.projectlombok:lombok" }
 # コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
-# @Immutable などの注釈（コンパイルのときだけ使う）
-errorprone-annotations = { module = "com.google.errorprone:error_prone_annotations", version.ref = "errorprone" }
 # null を許す型の注釈（Nullable）。NullAway が見る（版は Spring Boot の BOM が管理）
 jspecify = { module = "org.jspecify:jspecify" }
 # null の検査（errorprone の構成に入れる）

@@ -21,8 +21,6 @@ public enum Basis {
     /**
      * 数える注文の状態
      */
-    // List.of で作る変更できない一覧。Error Prone は List の型だけを見て変更できると判断するので抑える
-    @SuppressWarnings("ImmutableEnumChecker")
     private final List<ReportOrderStatus> countedStatuses;
 
     /**

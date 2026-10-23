@@ -136,8 +136,6 @@ class AdminRealmPermissionContractTest {
         return composites.getFirst();
     }
 
-    // JsonPath.read と同じく、呼び出し側が受ける型で T が決まるツール（直す手間に見合わないので抑える）
-    @SuppressWarnings("TypeParameterUnusedInFormals")
     private static <T> T read(String path) {
         return JsonPath.read(realm, path);
     }

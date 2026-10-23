@@ -1,6 +1,5 @@
 package com.ecsite.common.message;
 
-import com.google.errorprone.annotations.Immutable;
 import lombok.NonNull;
 
 import java.util.List;
@@ -11,9 +10,6 @@ import java.util.List;
  * @param code メッセージコード
  * @param paramKeys メッセージパラメータキー
  */
-// コンストラクターで List.copyOf にするので変更できない。Error Prone は List の型だけを見て判断するので抑える
-@SuppressWarnings("Immutable")
-@Immutable
 public record I18nMessage(@NonNull String code, @NonNull List<String> paramKeys) {
 
     /**

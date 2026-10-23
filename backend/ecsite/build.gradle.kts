@@ -148,7 +148,6 @@ dependencies {
     // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
     errorprone(libs.errorprone.core)
     errorprone(libs.nullaway)
-    compileOnly(libs.errorprone.annotations)
     // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
     // test などの classpath にも必要なので、compileOnly でなく implementation にする
     implementation(libs.jspecify)
@@ -707,6 +706,14 @@ tasks.withType<JavaCompile>().configureEach {
         disableWarningsInGeneratedCode.set(true)
         // Lombok の @NonNull の引数を持つクラスで Error Prone が例外を投げ、コンパイルが失敗するので無効にする
         disable("StringConcatToTextBlock")
+        // enum のフィールドは List.of で作る一覧で、Error Prone は List の型を変更できると判断する。
+        // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする（spec 18 第 6 節の 8）
+        disable("ImmutableEnumChecker")
+        // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
+        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない（spec 18 第 6 節の 8）
+        if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
+            disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
+        }
         // NullAway は main のコンパイルだけ動かし、報告はエラーにする。
         // 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
         // （docs/rules/backend-coding.md 第 7 節）。

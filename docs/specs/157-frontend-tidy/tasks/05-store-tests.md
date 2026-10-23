@@ -17,7 +17,7 @@
 - [x] **T157-05-03** [P] カートと注文手続きのテストを修正する。購入できない品目の小計の取り消し線の確認を削除する。AC-256 は結果の処理を待ってから確認する。数量を表示しないことのテスト名と確認を一致させる。まとまりの名前だけにある AC-84 をテストの名前に移す。`toBeTruthy` と要素の型の変換を修正する（DC-157-14、18、21、22、24、25）。
   - 依存：なし
   - 範囲：`frontend/store/src/features/cart/components/CartItemControls.test.tsx`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx`、`RemainingTime.test.tsx`、`frontend/store/src/features/checkout/remainingTime.test.ts`、`frontend/store/src/components/QuoteItemSummary.test.tsx`、`frontend/store/src/lib/labels.test.ts`
-- [ ] **T157-05-04** [P] 注文のテストを修正する。名前を振る舞いの文にし、まとまりの名前だけにある AC の番号をテストの名前に移す。注文の状態のバッジのテストを自分のファイルに移す。注文とお届け先は補助を使う。電話番号とメールアドレスは項目名と合わせて確認する。画面の props の型の変換を修正する（DC-157-18、19、21、24、26、31）。
+- [x] **T157-05-04** [P] 注文のテストを修正する。名前を振る舞いの文にし、まとまりの名前だけにある AC の番号をテストの名前に移す。注文の状態のバッジのテストを自分のファイルに移す。注文とお届け先は補助を使う。電話番号とメールアドレスは項目名と合わせて確認する。画面の props の型の変換を修正する（DC-157-18、19、21、24、26、31）。
   - 依存：なし
   - 範囲：`frontend/store/src/features/order/orderState.test.ts`、`orderListQuery.test.ts`、`labels.test.ts`、`frontend/store/src/features/order/components/CancellationRequestForm.test.tsx`、`OrderStatusBadge.test.tsx`（新規）、`CancellationSection.test.tsx`、`PaymentSection.test.tsx`、`ShippingAddressDetails.test.tsx`、`frontend/store/src/app/orders/[orderId]/page.test.tsx`
 - [ ] **T157-05-05** [P] サーバーアクションと API の接続のテストを修正する。引数のない例外の確認を補助と内容の確認に、標準エラー出力の確認を補助に、通信の失敗を補助にする。注文の操作のサーバーアクションのテストを自分のファイルに移す。契約にある応答を型付きのハンドラーにし、契約にない応答に理由を書く。要求の本文の型の変換を修正する。結果の包みのテストの重複をまとめる（DC-157-15、16、18、23、26、27、32、33）。

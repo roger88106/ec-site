@@ -151,7 +151,7 @@
 | AC-126 | 注文手続きは、それを始めた会員だけが操作・参照できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-127 | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`OrderForm.test.tsx`、`placeOrderErrors.test.ts` |
 | AC-128 | 注文は、注文した会員に結び付く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`member.spec.ts` |
+| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`member.spec.ts`、`orderListQuery.test.ts` |
 | AC-130 | 一覧から注文の詳細（AC-93 と同じ内容）に遷移し、キャンセルを申請できる（A… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 変更 | [003](../specs/archive/mvp/003-auth/spec.md) | [015](../specs/archive/mvp/015-security/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表：ログインしていなければ 401） | `MemberOrderApiTest` |
 | AC-132 | 管理画面は、ログインしなければ何も表示しない。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthGate.test.tsx`、`login.test.ts` |
@@ -201,8 +201,8 @@
 | AC-176 | 通知の順序が入れ替わっても、配送状態は戻らない（例：「配達完了」の後に「配送中」… | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`ShipmentTest` |
 | AC-177 | 途中の状態の通知が届かなくても、後の状態に遷移する（例：「出荷済み」から「配達完… | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`ShipmentTest` |
 | AC-178 | 署名を確認できない通知と、登録済みのどの出荷にも一致しない通知は、処理しない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`MockCarrierTest` |
-| AC-179 | 店舗の注文詳細に、配送状態、配送業者、送り状番号を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `ShippingApiTest`、`StoreOrderShipmentApiTest`、`labels.test.ts` ほか 1 |
-| AC-180 | 店舗の注文一覧で、出荷後の注文は、注文状態の代わりに配送状態を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest`、`labels.test.ts`、`shipping.spec.ts` |
+| AC-179 | 店舗の注文詳細に、配送状態、配送業者、送り状番号を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderStatusBadge.test.tsx`、`ShippingApiTest`、`StoreOrderShipmentApiTest` ほか 2 |
+| AC-180 | 店舗の注文一覧で、出荷後の注文は、注文状態の代わりに配送状態を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderStatusBadge.test.tsx`、`StoreOrderShipmentApiTest`、`labels.test.ts` ほか 1 |
 | AC-181 | 管理画面の注文詳細に、配送状態、配送業者、送り状番号、出荷日時を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderDetailPage.test.tsx` |
 | AC-182 | 管理画面の注文一覧で、状態「出荷済み」で絞り込める。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `AdminOrderShipmentViewApiTest`、`OrderListPage.test.tsx` |
 | AC-183 | 出荷を登録すると、注文のメールアドレスに、注文番号、配送業者、送り状番号を書いた… | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `ShipmentMailTest`、`shipping.spec.ts` |

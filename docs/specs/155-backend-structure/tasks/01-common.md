@@ -13,7 +13,7 @@ T155-01-01〜06 は、変えるファイルが重ならないので、互いに 
 - [x] **T155-01-01** [P] [テスト] AC-84 のテストを、新しい非トランザクションの統合テストのクラスに移す。カートの変更の API（数量を減らす `PUT`）を呼び、`AsyncEvents.awaitHandled` でカートの変更のイベントの処理を待ってから、販売可能数が戻ることを確認する。品目の追加の後も、注文手続きを始める前にイベントの処理を待つ。作ったデータは `@AfterEach` で削除する。`CheckoutApiTest` から AC-84 のテストと `CheckoutService` の注入を削除し、クラスの説明のコメントを修正する。テスト名に AC-84 を入れる。一時的に期待値を変えて、失敗することを確認する（DC-155-47）。
   - 依存：なし
   - 範囲：`it/module/order/presentation/CheckoutCartChangeApiTest.java`（新規）、`it/module/order/presentation/CheckoutApiTest.java`（`:33-37,49,70,152-171`）
-- [ ] **T155-01-02** [P] [テスト] AC-128 のテストを強める。持ち主の `sub` を変数に保持し、会員の表から会員 ID を取得して、注文の会員 ID と等しいことを確認する。一時的に期待値を変えて、失敗することを確認する（DC-155-48）。
+- [x] **T155-01-02** [P] [テスト] AC-128 のテストを強める。持ち主の `sub` を変数に保持し、会員の表から会員 ID を取得して、注文の会員 ID と等しいことを確認する。一時的に期待値を変えて、失敗することを確認する（DC-155-48）。
   - 依存：なし
   - 範囲：`it/module/order/presentation/MemberOrderApiTest.java`（`:76,161-166`）
 - [ ] **T155-01-03** [P] イベントの再発行と片付けの 6 クラスを `config/event/` に移す。`@Scheduled` の式にある設定の型の Bean の名前の文字列 2 か所を修正する。テスト 4 つを `config/event` のパッケージに移す。`CleanupJobSettingsTest` は、片付けのジョブの部分だけを `test/config/event/` の新しいテストに分ける。移した後、config 直下が 6 クラスになることを確認する（DC-155-1、2）。

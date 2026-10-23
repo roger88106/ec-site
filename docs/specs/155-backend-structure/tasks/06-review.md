@@ -21,7 +21,7 @@
   - 範囲：`test/common/scheduling/ExpiredDataCleanupTest.java`、`docs/specs/155-backend-structure/spec.md`、`docs/rules/backend-coding.md`、`docs/design/common.md`、`docs/design/modules/catalog.md`
 - [ ] **T155-06-05** E2E を実行し（`scripts/dev/e2e.sh`）、通ることを確認する。API の応答を変えないことを、注文、出荷、レポート、店舗の画面のシナリオで確認するため。
   - 依存：T155-06-04
-- [ ] **T155-06-06** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書を、skill `docs` の言い回しと論理の規則と照合する。
+- [x] **T155-06-06** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書を、skill `docs` の言い回しと論理の規則と照合する。
   - 依存：T155-06-04
   - 範囲：`docs/rules/backend-coding.md`、`docs/design/common.md`、`docs/design/backend-architecture.md`、`docs/design/modules/`（本 spec で修正したもの）
 - [ ] **T155-06-07** 起票のまとめの案を作る。後回しにする作業、未決事項、spec の最後のレビューの推奨のうち採用しなかったものを、既存の issue と重複しないようにまとめ、案を pull request の本文に付ける。利用者が承認したら、issue 担当のセッションが起票する（[開発の進め方](../../../rules/workflow.md) 第 4.1 節）。

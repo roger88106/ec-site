@@ -6,14 +6,14 @@
 
 | 節 | 規則 | 確認方法 |
 |----|------|----------|
-| 1.1 | 標準の構成（層とパッケージ） | 依存の表のうち、domain・application・presentation・infrastructure の間の向き、application と `api`、presentation・`application/model/` と `port/` は自動（ArchUnit）、他の組はレビュー |
+| 1.1 | 標準の構成（層とパッケージ） | 依存の表のうち、domain・application・presentation・infrastructure の間の向き、application と `api`、presentation・`application/model/` と `port/` は自動（ArchUnit）、他の依存の組はレビュー |
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
 | 1.1 | 共通コードと設定はモジュールに依存せず、モジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
-| 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/`（許可の一覧の 1 件を除く）だけであること、実装が public でないことは自動（ArchUnit）、変換の書き忘れは自動（コンパイル。全ての値の対応は変換ごとの単体テスト）、`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）、port と実装の分け方はレビュー |
+| 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー |
 | 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）、目安はレビュー |
 | 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー |
 | 2.1 | 生成した interface を実装する。`@RestController` は presentation だけに付ける（`MeController` を除く） | `@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー |
@@ -29,7 +29,7 @@
 | 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
 | 5.4 | 書式は IntelliJ の整形を推奨する（強制しない） | なし（強制しない） |
-| 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
+| 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
 | 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントはレビュー |
 
@@ -62,9 +62,9 @@ module/<モジュール>/
 |----|----------------|
 | api・event | application、domain、common |
 | presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
-| application | domain、common、event（自分のモジュールのイベントを送り出す。他のモジュールのイベントを受ける） |
+| application | domain、common、event（自分のモジュールのイベントを発行する。他のモジュールのイベントを購読する） |
 | domain | common、自分のモジュールの event（レベル A は Spring・jOOQ にも依存しない） |
-| infrastructure | application の port と model（port が返す view）、設定の値の型（設定のクラスが有効にする）、domain、common |
+| infrastructure | application の port と model（port が返す view）、設定の値の型（設定のクラスが有効にしたもの）、domain、common |
 | common | モジュールに依存しない |
 | config | common。モジュールに依存しない |
 
@@ -72,7 +72,7 @@ module/<モジュール>/
 
 | レベル | 中身の違い |
 |--------|------------|
-| A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS）。例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい（今は在庫だけ。在庫数の並行の更新を、集約を読んで書き戻さずに、DB の差分の加算と条件で守るため） |
+| A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS）。例外：状態を DB の更新の条件で守るモジュール（今は在庫だけ）は、集約のクラスを持たなくてよい（理由は [バックエンドのアーキテクチャ](../design/backend-architecture.md) 第 2 節 ※3） |
 | B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port は全て `application/port/`。CQRS なし。`application/model/` は必要なときだけ。クラスが多いときは、用途で domain を分けてよい（`domain/<用途>/`。reporting の `domain/snapshot/` と `domain/sales/`） |
 
 層の中の役割：
@@ -81,7 +81,7 @@ module/<モジュール>/
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
 - **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
 - **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
-- **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、`vo/` から集約のパッケージへ依存して循環するので、集約のパッケージの直下に置く（order の `BuyerProfile`、`Cancellation`）。
+- **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、集約のパッケージの直下に置く。`vo/` に置くと、`vo/` と集約のパッケージが互いに依存して循環するためである（例：order の `BuyerProfile`、`Cancellation`）。
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
 
@@ -103,7 +103,7 @@ module/<モジュール>/
 
 理由：相手の変更の影響を、実装の 1 か所に限るため。`switch` 式は列挙の全ての値を書かないとコンパイルに失敗するので、片方に値を追加して変換を書き忘れると気づける（名前で変換すると、実行するまで気づけない）。
 
-※1：`CurrentMemberIds` は、要求の token から会員の ID を得る、API の入口のための部品で、会員のモジュールが presentation 向けに公開している。会員の ID は presentation が token から読み、application へ引数で渡す。会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために同じ組が増える。
+※1：`CurrentMemberIds` は、要求の token から会員の ID を得る、API の入口（presentation）のためのクラスで、会員のモジュールが presentation 向けに公開している。会員の ID は presentation が token から読み、application へ引数で渡す。会員の腐敗防止層（port と実装）をモジュールごとに作ると、読み取りだけのために同じ port と実装の組が増える。
 
 ### 1.4 パッケージの大きさ
 
@@ -112,16 +112,16 @@ module/<モジュール>/
 | パッケージ | 数 | 分けない理由 |
 |------------|----|--------------|
 | `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
-| `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラス（認可の対応表（管理・店舗）、認可の判定、契約の操作の一覧）が package-private。分けるとクラスを公開しなければならない |
+| `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラスは package-private。対象は認可の対応表、認可の判定、契約の操作の一覧で、対応表は管理用と店舗用がある。分けるとクラスを公開しなければならない |
 
 ### 1.5 共通の型
 
 - 共通コード（`common/`）には、2 つ以上のモジュールが使うものだけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。例外は横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）で、全てのモジュールの要求の処理に関わり、どのモジュールにも属さないので、`common/` に置く。
-- モジュールに共通の型は `common/model/` に置く。`base/`：集約の土台（`AggregateRoot`、`DomainEvent`、`AggregateGuards`）、`value/`：値（`Money`、`BoundedText`、`BusinessTime`、`Operator`）。
+- モジュールに共通の型は `common/model/` に置く。`base/`：集約の基底（`AggregateRoot`、`DomainEvent`、`AggregateGuards`）、`value/`：値（`Money`、`BoundedText`、`BusinessTime`、`Operator`）。
 - 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものは、そのモジュールの domain に置く。置き場所（集約の `vo/` か domain の直下）は第 1.1 節のとおり。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけ。設定の値の金額は、使う所で `Money` にする。
 - 金額の掛け算・割り算は、`Money` の操作と税の計算（`TaxCalculator`）の中だけで行う。端数が出る計算は、端数の扱い（切り捨て など）をメソッドで明示する。
-- 例外として、商品の一覧の税込価格の絞り込みと並べ替えは、SQL で税込価格（税抜価格 × (100 + 税率) ÷ 100 の切り捨て）を計算する（`catalog.infrastructure.persistence.PriceInclTaxField`）。理由：税区分ごとに税率が違い、税抜の順と税込の順が一致しないため、絞り込みと並べ替えを DB で行う必要がある。`TaxCalculator` と同じ結果になることは `PriceInclTaxFieldTest`（端数の境界値を含む）で確認する。
+- 例外として、商品の一覧の税込価格の絞り込みと並べ替えは、SQL で税込価格を計算する。計算するクラスは `catalog.infrastructure.persistence.PriceInclTaxField` で、式は 税抜価格 × (100 + 税率) ÷ 100 の切り捨て。理由：税区分ごとに税率が違い、税抜の順と税込の順が一致しない。一覧は DB で `LIMIT`・`OFFSET` を使ってページングするので、絞り込みと並べ替えも DB で行う必要がある。`TaxCalculator` と同じ結果になることは、端数の境界値を含めて `PriceInclTaxFieldTest` で確認する。
 
 理由：同じ規則を 1 か所に置きつつ、共通の型を増やしすぎて、モジュールが互いに依存しないようにするため。金額の計算を複数の場所に書くと、端数の扱いが場所によって変わる。
 
@@ -234,7 +234,7 @@ getter・コンストラクターの注入などの定型コードは、main で
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `OrderApiDirectory` |
 | イベント | 過去形 | `OrderShipped` |
 
-※3：1 つの集約に用途が複数あるとき、他のモジュールの呼び出しを組み合わせるとき。データを変えずに他のモジュールの結果を組み合わせる service（注文の手続きの見積もりなど）も用途の名前にし、読み取り専用のトランザクションにする。
+※3：用途の名前を使うのは、1 つの集約に用途が複数あるとき、他のモジュールの呼び出しを組み合わせるとき。データを変えずに他のモジュールの結果を組み合わせる service（注文の手続きの見積もりなど）も用途の名前にし、読み取り専用のトランザクションにする。
 
 別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
 
@@ -273,12 +273,12 @@ Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。
 - 接頭辞は `ecsite.<モジュール>`、まとまりを分けるときは `ecsite.<モジュール>.<範囲>`（`ecsite.media.storage` など）。モジュールでない共通の設定は `ecsite.<範囲>`（`ecsite.security` など）。
 - 環境で変わる値（接続先、資格情報、ID、バケット名）は既定値を持たず必須にする。環境によらない値（上限、時間など）だけ既定値を持つ ※4。
 - モジュールの `@Configuration` のクラスは、`infrastructure/`（またはその下）に置く。
-- presentation は、設定の値の型（`@ConfigurationProperties` を付けたクラス）を受け取らない。設定の値が必要なときは、application の service が設定の型を読み、view で返す。`api/` は対象にしない。
+- presentation は、設定の値の型（`@ConfigurationProperties` を付けたクラス）を受け取らない。設定の値が必要なときは、application の service が設定の値の型を読み、view で返す。`api/` は対象にしない。
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
 
-※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番の動き（path style を使わない）を既定値にする。
+※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
 
 理由：設定を忘れたまま、別の環境の値で動き出さないようにするため（足りなければ起動に失敗する）。
 

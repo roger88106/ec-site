@@ -12,7 +12,7 @@
 
 ## 1. 共通コード（common/）
 
-`common/` と `config/` はモジュールではない（`application.yml` の `spring.modulith.detection-strategy: explicitly-annotated` により、`package-info.java` に `@ApplicationModule` を付けたパッケージだけがモジュールになる）。`common/` はどのモジュールからも使える。`common/` と `config/` はモジュールに依存せず、モジュールも `config/` に依存しない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.1 節）。
+`common/` と `config/` はモジュールではない。`application.yml` の `spring.modulith.detection-strategy: explicitly-annotated` により、`package-info.java` に `@ApplicationModule` を付けたパッケージだけがモジュールになるためである。`common/` はどのモジュールからも使える。`common/` と `config/` はモジュールに依存せず、モジュールも `config/` に依存しない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.1 節）。
 
 | パッケージ | 置くもの | 使う場面 |
 |------------|----------|----------|
@@ -25,10 +25,10 @@
 | `common/paging/` | `PageRequest`（ページは 1 始まり、件数は既定 20・最大 100）、`PageResult` | 一覧の API。応答の型への変換は presentation で行う |
 | `common/persistence/` | `ConstraintViolationTranslator`（DB の制約の違反を業務のエラーに変える） | リポジトリの実装 |
 | `common/presentation/` | `ApiDateTimes`（API の日時と `Instant` の変換）、`CreatedResponses`（作成の応答 201）、`StorePrices`（店舗 API の税込・税抜の価格） | Controller と応答への変換 |
-| `common/scheduling/` | `ExpiredDataCleanup`（期限切れのデータの片付けの共通の処理。件数の上限ごとに消して、消した件数が上限と等しい間繰り返し、合計の件数をログに出す） | カート、在庫の引当、注文手続きの片付けのジョブ。`@Scheduled` と `@SchedulerLock` は各ジョブに残す |
+| `common/scheduling/` | `ExpiredDataCleanup`（期限切れのデータの片付けの共通の処理。件数の上限ごとに削除し、削除した件数が上限と等しい間繰り返す。合計の件数はログに出力する） | カート、在庫の引当、注文手続きの片付けのジョブ。`@Scheduled` と `@SchedulerLock` は各ジョブに残す |
 | `common/security/` | `CurrentMember`（店舗 API の token の会員）、`CurrentOperator`（管理 API の token の運営者）、`AuthenticatedMember` | presentation 層で呼び出し元を取り出す。Spring Security の型は application・domain に出さない（[バックエンドのアーキテクチャ](backend-architecture.md) 第 7.2 節） |
 
-- common に置く基準は、2 つ以上のモジュールが使うものだけ。ただし、横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）は除く（[バックエンドの書き方](../rules/backend-coding.md) 第 1.5 節）。
+- common に置く基準は、2 つ以上のモジュールが使うものだけ。ただし、エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出しは、横断の仕組みとして除く（[バックエンドの書き方](../rules/backend-coding.md) 第 1.5 節）。
 
 ## 2. 設定（config/）
 
@@ -38,10 +38,10 @@
 | `ApiPathConfig` | 生成したインターフェースの実装に付ける API のパスのプレフィックス（管理 API は `/api/admin`、店舗 API は `/api/store`） |
 | `ValidationConfig` | Bean Validation のバリデーター。制約のメッセージを `messages.properties` から解決する |
 | `OpenApiEnumConverterConfig` | クエリパラメータの文字列を、OpenAPI から生成した列挙型の `fromValue` で変換する |
-| `event/` の `EventResubmissionConfig`、`EventResubmissionJob`、`EventPublicationRecords`、`EventPublicationMetrics` | 未完了のイベントを定期ジョブで再発行し、止めたイベントに印を付け、件数をメトリクスとして公開する |
+| `event/` の `EventResubmissionConfig`、`EventResubmissionJob`、`EventPublicationRecords`、`EventPublicationMetrics` | 未完了のイベントを定期ジョブで再発行し、再発行を停止したイベントにマークを付け、件数をメトリクスとして公開する |
 | `event/` の `EventCleanupConfig`、`EventCleanupJob` | 処理の済んだイベントの記録を、保存期間を過ぎたら削除する |
 | `SchedulingConfig`、`SchedulerLockConfig` | 定期ジョブの起動（`ecsite.scheduling.enabled`）と、同じジョブを 1 インスタンスだけで動かす分散ロック |
-| `security/` | 認証・認可。filter chain（`SecurityConfig`）、token の検証（`RealmKeys`）、権限の変換（`PermissionConverter`）、管理 API の権限（`AdminOperationPermissions`、`AdminPermissionAuthorizationManager`）、店舗 API の token の要否（`StoreOperationSecurity`、`StoreTokenAuthorizationManager`）、認証・認可の失敗の応答（`SecurityProblemResponder`）、認証の設定の値の型（`SecurityProperties`）、契約の操作ごとの値の一覧（`OpenApiOperations`）、`GET /me`（`MeController`） |
+| `security/` | 認証・認可。`SecurityConfig` は filter chain、`RealmKeys` は token の検証、`PermissionConverter` は権限の変換。管理 API の権限は `AdminOperationPermissions` と `AdminPermissionAuthorizationManager`、店舗 API の token の要否は `StoreOperationSecurity` と `StoreTokenAuthorizationManager`。`SecurityProblemResponder` は認証・認可の失敗の応答、`SecurityProperties` は認証の設定の値の型、`OpenApiOperations` は契約の操作ごとの値の一覧、`MeController` は `GET /me` |
 
 - イベント・ジョブ・分散ロックの動きと設定の値は [バックエンドのアーキテクチャ](backend-architecture.md) 第 5 節に書く。
 - 認証・認可の方式は [バックエンドのアーキテクチャ](backend-architecture.md) 第 7 節に、ロールと権限の対応は [ロールと権限の対応表](role-permissions.md) に書く。

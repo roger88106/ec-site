@@ -65,7 +65,7 @@ tax/
 ├── domain/                 # 直下に、エラーの定義（TaxErrorCode）
 │   └── taxcategory/        # 税区分（集約）、税率、税の計算。vo/ は率と適用期間、port/ はリポジトリ
 └── infrastructure/
-    ├── TaxDomainConfig     # 設定のクラス。domain の Factory を Spring の部品にする
+    ├── TaxDomainConfig     # 設定のクラス。domain の Factory を Spring の Bean にする
     └── persistence/        # リポジトリと参照用リポジトリの実装
 ```
 

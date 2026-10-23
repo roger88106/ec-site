@@ -123,7 +123,7 @@ reporting/
 │   ├── model/              # 3 つのレポートの問い合わせの条件（query/）と結果（view/。レポートの設定の ReportSettingsView を含む）
 │   └── port/               # 写しと履歴の保存、集計の問い合わせ、注文・商品カタログ・地域の腐敗防止層
 ├── domain/                 # 直下に、エラーの定義（ReportingErrorCode）。集約がないので、用途でパッケージを分ける
-│   ├── snapshot/           # 注文の写しと状態の履歴。注文時の性別（ReportBuyerGender）、キャンセルの種類、状態の履歴の状態（HistoryStatus。注文の状態か配送状態）は列挙で持つ
+│   ├── snapshot/           # 注文の写しと状態の履歴。注文時の性別（ReportBuyerGender）、キャンセルの種類、履歴に記録する状態は HistoryStatus で、注文の状態か配送状態を列挙で持つ
 │   └── sales/              # 売上の集計の値：期間と区切り、推移、日ごとの売上、年齢層と性別
 ├── infrastructure/
 │   ├── ReportingConfig     # 設定のクラス。レポートの設定の値の型を有効にする

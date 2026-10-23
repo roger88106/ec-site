@@ -166,7 +166,7 @@ stateDiagram-v2
 payment/
 ├── api/                    # 支払の作成・取消・売上確定、支払画面の URL、支払の参照、与信の期限
 ├── event/                  # 与信の成功、支払の期限切れ
-├── application/            # 支払の作成と参照、決済サービスの通知の反映、売上確定、支払画面、期限切れのジョブ（PaymentExpiryJob）、返金・与信取消の依頼のリスナー、決済の設定の値の型（PaymentProperties）
+├── application/            # 支払の作成と参照、決済サービスの通知の反映、売上確定、支払画面、期限切れの支払を処理するジョブ（PaymentExpiryJob）、返金・与信取消の依頼のリスナー、決済の設定の値の型（PaymentProperties）
 │   ├── model/view/         # 表示の型（view）
 │   └── port/               # 決済サービス、通知の受信、参照用リポジトリ
 ├── domain/                 # 直下に、エラーの定義（PaymentErrorCode）
@@ -175,7 +175,7 @@ payment/
     ├── PaymentConfig       # 設定のクラス。決済の設定の値の型を有効にする
     ├── persistence/        # リポジトリと参照用リポジトリの実装
     ├── mock/               # mock の決済サービス、mock の支払画面、その設定のクラスと設定の値の型
-    └── stripe/             # Stripe の決済サービス（腐敗防止層）、通知のエンドポイント（Webhook）と署名の検証、その設定のクラスと設定の値の型
+    └── stripe/             # Stripe の決済サービスの腐敗防止層、Webhook のエンドポイントと署名の検証、設定のクラスと設定の値の型
 ```
 
 ## 他のモジュールへの公開

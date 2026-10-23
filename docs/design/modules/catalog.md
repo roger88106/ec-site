@@ -65,7 +65,7 @@ C 側に最初に表示された（される予定の）日時。新着順の基
   2. メディアモジュールで画像を用意する（トランザクションの外）。
   3. 1 つのトランザクションで、アセットを登録し、商品の画像の最後に追加する。用意の間にほかの操作が商品を変えていれば、バージョンの不一致で失敗する。
   4. 3 が失敗したら、用意した画像を破棄し、元の失敗を返す。
-- 流れは `ProductImageService`（トランザクションなし）、確認は `ProductQueryService`（`verifyCanAddImage`。読み取りだけのトランザクション）、保存は `ProductImageCommandService` に置く。
+- 画像追加の手順の制御は `ProductImageService`（トランザクションなし）、可否の確認は `ProductQueryService`（`verifyCanAddImage`。読み取りだけのトランザクション）、保存は `ProductImageCommandService` が担う。
 - 画像・商品を削除したら、同じトランザクションでアセットを解放する。
 - C 側・B 側に返す画像の URL は、メディアモジュールからまとめて取る。
 
@@ -147,17 +147,17 @@ catalog/
 ├── api/                    # 注文向けの購入できるバリアント、店舗向けの商品・カテゴリの参照と検索、レポート向けの商品の写し
 ├── event/                  # 商品・バリアントの公開、非公開、販売終了、削除、価格の変更、バリアントの登録
 ├── presentation/           # store.yaml・admin.yaml から生成したインターフェースを実装
-├── application/            # 直下に、他のモジュール向けの参照（店舗向けの商品の参照、注文向けの購入できるバリアントの参照）の service
+├── application/            # 直下に、他のモジュール向けの service（店舗向けの商品の参照、注文向けの購入できるバリアントの参照）
 │   ├── product/            # 商品・バリアント・画像の操作、公開の切り替え、管理画面の商品の参照
 │   ├── category/           # カテゴリの更新と参照
-│   ├── model/              # command/（コマンド）、query/（一覧の条件。管理画面と店舗画面）、view/（表示の型。注文向けのバリアント、店舗向けの商品を含む）
+│   ├── model/              # command/（更新の入力）、query/（一覧の条件）、view/（表示の型）。管理画面・店舗画面・注文向けのものも含む
 │   └── port/               # 参照用リポジトリ、キーワード検索の窓口、税とメディアの腐敗防止層の port
-├── domain/                 # 直下に、商品とカテゴリが使う表示順の再採番（DisplayOrders）と、集約ごとのエラーの定義（ProductErrorCode、CategoryErrorCode）
-│   ├── product/            # 商品（集約）、バリアント、画像、公開の状態、できる操作。vo/ はコードと価格と公開期間、port/ はリポジトリ
+├── domain/                 # 直下に、商品とカテゴリが使う `DisplayOrders`（表示順の再採番）、集約ごとのエラーの定義（`ProductErrorCode`、`CategoryErrorCode`）
+│   ├── product/            # 商品（集約）、バリアント、画像、公開の状態、実行できる操作。vo/ はコード・価格・公開期間、port/ はリポジトリ
 │   └── category/           # カテゴリ（集約）。port/ はリポジトリ
 └── infrastructure/
-    ├── CatalogDomainConfig # 設定のクラス。domain の Factory を Spring の部品にする
-    ├── persistence/        # リポジトリと参照用リポジトリの実装、キーワード検索の実装（PostgreSQL）、LIKE の検索の文字の扱い（LikePatterns）、それだけが使う package-private のクラス
+    ├── CatalogDomainConfig # 設定のクラス。domain の Factory を Spring の Bean にする
+    ├── persistence/        # リポジトリと参照用リポジトリの実装、キーワード検索の実装（PostgreSQL）、LIKE 検索のエスケープ（LikePatterns）、それだけが使う package-private のクラス
     └── directory/          # 税・メディアの腐敗防止層。税率の一覧のキャッシュ
 ```
 

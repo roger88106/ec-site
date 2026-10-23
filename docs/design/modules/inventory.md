@@ -10,7 +10,7 @@
 
 ## 在庫と在庫調整
 
-- 在庫は、バリアント、商品、在庫数を持つ。在庫は集約のクラスを持たない。在庫数は、下の条件付きの更新で変え、引当の判定は行ロックして読んだ在庫（`LockedStock`）で行う。在庫は、状態を DB の更新の条件で守るモジュールとして、レベル A で集約のクラスを持たない例外とする（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 2 節）。理由：集約を読み込んで書き戻すと、並行した調整で増減が失われるため（「在庫の調整は差分の加算」の節）。
+- 在庫は、バリアント、商品、在庫数を持つ。在庫は集約のクラスを持たない。在庫数は、下の条件付きの更新で変え、引当の判定は行ロックして読んだ在庫（`LockedStock`）で行う。レベル A の例外にあたる（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 2 節）。理由：集約を読み込んで書き戻すと、並行した調整で増減が失われるため（「在庫の調整は差分の加算」の節）。
 - 在庫調整（エンティティ）は、増減量（0 以外）、調整理由、メモを持つ。理由が「その他」ならメモは必須。
 - 運営者の調整は、1 回の増減量が ±1,000,000 以内で、調整後の在庫数が 1,000,000 以下。注文のキャンセルで戻す調整には、在庫数の上限を当てない（引き当てた分を戻すだけで、桁あふれにならないため）。
 - 調整履歴は、在庫とは別に、追記だけの記録として保存する（増え続けるため）。
@@ -56,7 +56,7 @@ RETURNING quantity;
 
 - 引当は、持ち主（注文手続き）、在庫、数量、期限を持つ。持ち主と在庫の組で 1 つ。
 - 販売可能数 ＝ 在庫数 − 有効な引当の合計。期限切れの引当は数えないだけで、すぐには削除しない ※3。
-- 期限から保存期間（既定 1 日）を過ぎた引当は、片付けのジョブが削除する。件数の上限ごとに消すループとログは、共通の `ExpiredDataCleanup` を使う（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。
+- 期限から保存期間（既定 1 日）を過ぎた引当は、片付けのジョブが削除する。件数の上限ごとに削除するループとログ出力は、共通の `ExpiredDataCleanup` を使う（[バックエンドのアーキテクチャ](../backend-architecture.md) 第 5 節）。
 - 引当は在庫数を変えない。在庫数を変えるのは、運営者の調整、注文の成立、キャンセルだけ。
 - C 側の在庫の有無は、販売可能数が 1 以上か。
 
@@ -99,7 +99,7 @@ RETURNING quantity;
 inventory/
 ├── api/                    # 販売可能数の照会、在庫の操作（引き当てる、解く、減算に置き換える、戻す）
 ├── presentation/           # admin.yaml から生成したインターフェースを実装
-├── application/            # 在庫の調整（StockCommandService）、参照（StockQueryService。販売可能数を含む）、引当（StockReservationService）、在庫の作成と削除（StockRegistrationService）、期限切れの引当の片付け（StockReservationCleanupJob と、その設定の値の型 StockReservationCleanupProperties）、商品カタログのイベントのリスナー（在庫の作成と削除は StockRegistrationService に委ねる）
+├── application/            # service は、在庫の調整が StockCommandService、参照（販売可能数を含む）が StockQueryService、引当が StockReservationService、在庫の作成と削除が StockRegistrationService。期限切れの引当の片付けは StockReservationCleanupJob と、その設定の値の型 StockReservationCleanupProperties。商品カタログのイベントのリスナーは、在庫の作成と削除を StockRegistrationService に委ねる
 │   ├── model/              # コマンド（command）と表示の型（view）
 │   └── port/               # 在庫の参照用リポジトリ
 ├── domain/                 # 直下に、エラーの定義（InventoryErrorCode）

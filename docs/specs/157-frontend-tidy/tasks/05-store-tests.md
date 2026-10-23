@@ -29,7 +29,7 @@
 - [x] **T157-05-07** [P] 認証と proxy のテストを修正する。Auth.js の引数と proxy の型の変換を、型に合う値を作る補助にする。環境変数の一式は補助を使う。重複したテスト（公開の URL と設定、ログインと Cookie の接頭辞）をまとめる。ヘッダーのテストは、役割と名前で要素を探して確認する（DC-157-18、24、27、31）。
   - 依存：なし
   - 範囲：`frontend/store/src/auth/index.test.ts`、`cookiePrefix.test.ts`、`publicUrl.test.ts`、`config.test.ts`、`loginRedirect.test.ts`、`frontend/store/src/proxy.test.ts`、`frontend/store/src/components/SiteHeader.test.tsx`
-- [ ] **T157-05-08** `node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DN-157-3）。
+- [x] **T157-05-08** `node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DN-157-3）。
   - 依存：T157-05-01〜07
   - 範囲：`docs/design/acceptance-criteria.md`
 - [ ] **T157-05-09** 段階のレビュー（profile「厚め」）と全体の検査を行う。結果をこのファイルの末尾に書く。

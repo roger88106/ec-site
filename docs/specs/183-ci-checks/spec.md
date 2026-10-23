@@ -213,10 +213,11 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 - 完了条件：DC-183-23〜30 を満たし、CI と `check-all.sh` が通る。
 - 参照：第 3 節の DS-183-3、DS-183-4
 
-- [ ] **T183-03-01** バックエンドの全体の検査のコマンドを文書と CI で 1 通りにし、統合テストを分ける数を `ci.yml` の 1 か所にし、2 つの画面のテストのコマンドをそろえる（DC-183-23〜25）。
+- [x] **T183-03-01** バックエンドの全体の検査のコマンドを文書と CI で 1 通りにし、統合テストを分ける数を `ci.yml` の 1 か所にし、2 つの画面のテストのコマンドをそろえる（DC-183-23〜25）。
   - 依存：なし
   - 範囲：`.github/workflows/ci.yml`、`frontend/store/package.json`、`frontend/admin/package.json`、`docs/guides/`
   - CI の統合テストのジョブは push の後に確認する（手元では統合テストを実行しない）
+  - 結果：全体の検査を `./gradlew check` に決めた（`check` が checkLicense・テスト・compileToolsJava・OpenAPI の検証・checkBootJar・coverageReport を含み、`build` は `assemble` を加えるだけで、`checkLicense build` は重複）。ci.yml と docs/guides/ci.md・running-tests.md を合わせ、分ける数は matrix の `shard` の一覧だけにして総数は `strategy.job-total` から読み、店舗画面の `--passWithNoTests` を外した（外して `pnpm --filter ./frontend/store run test` が 317 件通った）。
 - [ ] **T183-03-02** [テスト] React のバージョンの指定をそろえ、Gradle のプラグインの一覧と Dependabot の対象を確認する検査を加える（DC-183-26〜28）。
   - 依存：なし
   - 範囲：3 つの `package.json`、`pnpm-lock.yaml`、`scripts/ci/` の直下（新しい検査。`check-all.sh` が実行する置き場所）、`scripts/ci/licenses/policy.json`、テスト、`docs/guides/ci.md`

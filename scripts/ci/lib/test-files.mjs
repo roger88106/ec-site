@@ -264,7 +264,7 @@ export function extractTestNames(source, kind) {
     // クラス（@Nested を含む）に付いたものは、テストのまとまりの名前なので読まない。
     // 後に続く注釈と修飾子を飛ばした次の語が class かで見分ける（構文は解析しない）
     const classAfter =
-      /^(?:\s*@[\w.]+(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/
+      /^(?:\s*@[\w.]+(?![\w.])(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/
     // コメントアウトしたテストは数えない（位置を保ったままコメントを空白にしてから読む）
     const code = stripJavaComments(source)
     return [...code.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]

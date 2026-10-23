@@ -100,7 +100,7 @@ describe('ローカルのポートの一覧の検査', () => {
     const missing = findPortMismatches({ ...INPUT, powershell: PS1.replace("  28080 = 'スロット 2'\n", '') })
     assert.equal(missing.length, 1)
     assert.match(missing[0], /28080/)
-    const extra = findPortMismatches({ ...INPUT, powershell: PS1.replace('}', "  7777 = 'x'\n}") })
+    const extra = findPortMismatches({ ...INPUT, powershell: PS1.replaceAll('}', "  7777 = 'x'\n}") })
     assert.equal(extra.length, 1)
     assert.match(extra[0], /7777/)
   })

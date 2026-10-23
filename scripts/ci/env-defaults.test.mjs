@@ -102,6 +102,13 @@ describe('設定の値のクラスを読めないときの失敗', () => {
     assert.equal(problems.length, 1)
   })
 
+  test('注釈と修飾子を飛ばす部分で、重なる読み方があっても指数的に遅くならない', () => {
+    const java = `@ConfigurationProperties("!")@${'.final @'.repeat(40)}`
+    const start = Date.now()
+    assert.equal(readProperties(java).problems.length, 1)
+    assert.ok(Date.now() - start < 1000)
+  })
+
   test('引数が閉じていない record と、引数が 0 件の record は、読めない理由にする', () => {
     assert.equal(readProperties('@ConfigurationProperties("a.b")\nrecord X(int a').problems.length, 1)
     const empty = readProperties('@ConfigurationProperties("a.b")\nrecord X() {}')

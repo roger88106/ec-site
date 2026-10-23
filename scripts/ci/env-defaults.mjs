@@ -76,7 +76,7 @@ function paramsFrom(source, start) {
 }
 
 /** 設定の値のクラスの注釈（接頭辞を文字列リテラルで書いた形）の後ろから、record の名前の開き括弧まで（間は注釈と修飾子だけ） */
-const CONFIG_HEAD = /^(?:(?:prefix|value)\s*=\s*)?"([^"]+)"\)\s*(?:@[\w.]+(?:\([^)]*\))?\s*|(?:public|protected|private|static|final|sealed|strictfp)\s+)*record\s+(\w+)\s*\(/
+const CONFIG_HEAD = /^(?:(?:prefix|value)\s*=\s*)?"([^"]+)"\)\s*(?:@[\w.]+(?![\w.])(?:\([^)]*\))?\s*|(?:public|protected|private|static|final|sealed|strictfp)\s+)*record\s+(\w+)\s*\(/
 
 /**
  * 設定の型の record から、環境変数の名前と既定値を作る。読めなかった設定のクラスは problems に理由を入れる（黙って飛ばさない）。

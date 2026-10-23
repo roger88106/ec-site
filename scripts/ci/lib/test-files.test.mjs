@@ -56,6 +56,13 @@ describe('テストの関数の読み方', () => {
     )
   })
 
+  test('extractTestNames の java は、注釈と修飾子が重なる形でも指数的に遅くならない', () => {
+    const source = `@DisplayName("a")@${'.final @'.repeat(40)}`
+    const start = Date.now()
+    assert.deepEqual(extractTestNames(source, 'java'), ['a'])
+    assert.ok(Date.now() - start < 1000)
+  })
+
   test('extractTestNames の ts は、skipped のテストを除いた名前を返す', () => {
     const source = "it('a', () => {})\ntest.skip('b', () => {})\ntest.each([1])('c %s', () => {})"
     assert.deepEqual(extractTestNames(source, 'ts'), ['a', 'c %s'])

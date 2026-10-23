@@ -45,5 +45,5 @@ T155-05-01、02、04、08、09 は、変えるファイルが重ならないの�
 - [x] **T155-05-12** 各モジュールの設計書の「構成」を、段階 5 のコードに合わせる。catalog（`application/product/`、`application/category/`、`domain/` 直下のエラーの定義）、inventory（`StockRegistrationService`、参照の service、エラーの定義）、order、payment、tax（エラーの定義の置き場所、order の値のパッケージ）、reporting（`domain/snapshot/`、`domain/sales/`）である。AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成し、`ac-check.mjs` が通ることを確認する。
   - 依存：T155-05-11
   - 範囲：`docs/design/modules/catalog.md`（`:55-68,140-155`）、`docs/design/modules/inventory.md`（`:81-83,100-106`）、`docs/design/modules/order.md`（`:149-165`）、`docs/design/modules/payment.md`（`:173`）、`docs/design/modules/tax.md`（`:66`）、`docs/design/modules/reporting.md`（`:126-139`）、`docs/design/acceptance-criteria.md`
-- [ ] **T155-05-13** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。pitest は、エラーの定義と reporting の domain を移動したため実行する。基準（90.2、許容 0）を下回るときは、そのクラスの単体テストを追加する。
+- [x] **T155-05-13** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。pitest は、エラーの定義と reporting の domain を移動したため実行する。基準（90.2、許容 0）を下回るときは、そのクラスの単体テストを追加する。
   - 依存：T155-05-01〜12

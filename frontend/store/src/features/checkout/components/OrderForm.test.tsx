@@ -56,6 +56,20 @@ function selected(label: string): string {
   return (screen.getByLabelText(label) as HTMLSelectElement).value
 }
 
+/**
+ * 欄の見出しの後から、次の欄の見出し（または注文のボタン）の前までの HTML（エラーメッセージがその欄の下に出ることを確認するため）。
+ *
+ * @param html  フォームの HTML
+ * @param label 欄の見出し
+ */
+function fieldOf(html: string, label: string): string {
+  const matched = new RegExp(`<label[^>]*>${label}</label>(.*?)(?=<label|<button)`, 's').exec(html)
+  if (!matched) {
+    throw new Error(`欄がない：${label}`)
+  }
+  return matched[1]
+}
+
 /** 住所の欄の値 */
 function addressValue(): string {
   return (screen.getByLabelText('住所') as HTMLInputElement).value
@@ -78,7 +92,17 @@ describe('お届け先の入力と注文', () => {
       expect(html).toContain(`name="${name}"`)
     }
     expect(html).toContain('>注文する（3,200 円）</button>')
-    expect(html).not.toContain('text-destructive')
+    // 初期表示には、エラーメッセージも欄ごとの誤りもない（段落は、メールアドレスの見出しと案内と、欄のヒントだけ）
+    expect(html).not.toContain('aria-live')
+    const paragraphs = [...html.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)].map((match) => match[1])
+    expect(paragraphs).toEqual([
+      'メールアドレス',
+      'member@example.com',
+      'ご注文の連絡は、会員のメールアドレスにお送りします。',
+      '例：100-0001',
+      '町名、番地、建物名',
+      '例：03-1234-5678',
+    ])
   })
 
   test('AC-248、250 欄は郵便番号・都道府県・市区町村・住所の順で、都道府県は API の一覧から選び、初めは選んでいない', () => {
@@ -98,9 +122,8 @@ describe('お届け先の入力と注文', () => {
       form({ ok: false, message: '郵便番号は 7 桁で入力してください。', errorCode: 'INVALID_POSTAL_CODE' }),
     )
 
-    expect(html).toMatch(
-      /name="postalCode"[^>]*\/>.*<p class="text-destructive text-sm">郵便番号は 7 桁で入力してください。<\/p>/,
-    )
+    expect(fieldOf(html, '郵便番号')).toContain('郵便番号は 7 桁で入力してください。')
+    expect(fieldOf(html, '氏名')).not.toContain('郵便番号は 7 桁で入力してください。')
     expect(html).not.toContain('カートを見る')
   })
 
@@ -114,7 +137,8 @@ describe('お届け先の入力と注文', () => {
       }),
     )
 
-    expect(html).toMatch(/name="phone"[^>]*\/>.*<p class="text-destructive text-sm">API が決めた電話番号の文<\/p>/)
+    expect(fieldOf(html, '電話番号')).toContain('API が決めた電話番号の文')
+    expect(fieldOf(html, '氏名')).not.toContain('API が決めた電話番号の文')
   })
 
   test('AC-251 市区町村の誤りは、市区町村の欄の下に出す', () => {
@@ -122,16 +146,17 @@ describe('お届け先の入力と注文', () => {
       form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }),
     )
 
-    expect(html).toMatch(
-      /name="municipalityCode".*<\/select>.*<p class="text-destructive text-sm">市区町村を選んでください。<\/p>.*name="address"/,
-    )
+    expect(fieldOf(html, '市区町村')).toContain('市区町村を選んでください。')
+    expect(fieldOf(html, '都道府県')).not.toContain('市区町村を選んでください。')
+    expect(fieldOf(html, '住所')).not.toContain('市区町村を選んでください。')
   })
 
   test('AC-87 在庫が足りなければ、フォームの下にメッセージとカートへのリンクを出す', () => {
     const html = renderMarkup(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
-    expect(html).toContain('在庫が足りない商品があります。')
-    expect(html).toContain('href="/cart">カートを見る</a>')
+    expect(html).toMatch(
+      /<p aria-live="polite"[^>]*>在庫が足りない商品があります。<a [^>]*href="\/cart">カートを見る<\/a><\/p>/,
+    )
   })
 })
 
@@ -197,13 +222,14 @@ describe('郵便番号で補う', () => {
 
   test('AC-256 結果がなければ（通信の失敗も空で届く）何も補わず、メッセージも出さない', async () => {
     const { user } = renderInBrowser(form())
+    const textBefore = document.body.textContent
 
     await user.type(screen.getByLabelText('郵便番号'), '9999999')
 
     await waitFor(() => expect(findPostalCodeAddresses).toHaveBeenCalledWith('9999999'))
     expect(selected('都道府県')).toBe('')
     expect(addressValue()).toBe('')
-    expect(document.querySelector('.text-destructive')).toBeNull()
+    expect(document.body.textContent).toBe(textBefore)
   })
 
   test('AC-257 補った後も、どの欄も変えられる', async () => {

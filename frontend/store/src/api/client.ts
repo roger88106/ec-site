@@ -30,6 +30,22 @@ const timeout: Middleware = {
 }
 
 /**
+ * 画面の要求と同じ追跡の ID（traceparent）を、店舗 API の要求に付ける（店舗画面の構成 第 4.2 節）。
+ * バックエンドのログを、画面の要求から辿れるようにする。<br />
+ * Next.js はキャッシュの鍵から traceparent を除くので、キャッシュする要求に付けてもキャッシュは使われる。
+ * 呼ぶ口（{@link getApi}、{@link getMemberApi}）は connection() の後に返すので、必ず要求の中で動く。
+ */
+const trace: Middleware = {
+  async onRequest({ request }) {
+    const traceparent = (await headers()).get(TRACEPARENT_HEADER)
+    if (traceparent !== null) {
+      request.headers.set(TRACEPARENT_HEADER, traceparent)
+    }
+    return request
+  },
+}
+
+/**
  * 店舗 API の 5xx の応答を、warn のログに出す（店舗画面の構成 第 4.2 節）。<br />
  * 出すのは状態コード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）だけ。
  * token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出さない。
@@ -73,7 +89,7 @@ const api = createClient<paths>({
   baseUrl: BASE_URL,
   requestInitExt: { next: { revalidate: REVALIDATE_SECONDS } },
 })
-api.use(timeout, serverErrorLog)
+api.use(timeout, trace, serverErrorLog)
 
 /**
  * 店舗 API の会員の口（店舗画面の構成 第 4.6 節）。会員の access token を付け、キャッシュを使わない
@@ -83,18 +99,13 @@ const memberApi = createClient<paths>({
   baseUrl: BASE_URL,
   fetch: (request: Request) => fetch(request, { cache: 'no-store' }),
 })
-memberApi.use(timeout, serverErrorLog)
+memberApi.use(timeout, trace, serverErrorLog)
 memberApi.use({
   async onRequest({ request }) {
     // 呼ぶ側が token を付けたとき（ログインの直後で、セッションの Cookie がまだないとき）は、そのまま使う
     const accessToken = request.headers.has('Authorization') ? null : await getAccessToken()
     if (accessToken !== null) {
       request.headers.set('Authorization', `Bearer ${accessToken}`)
-    }
-    // 画面の要求と同じ追跡の ID で、バックエンドのログを辿れるようにする
-    const traceparent = (await headers()).get(TRACEPARENT_HEADER)
-    if (traceparent !== null) {
-      request.headers.set(TRACEPARENT_HEADER, traceparent)
     }
     return request
   },

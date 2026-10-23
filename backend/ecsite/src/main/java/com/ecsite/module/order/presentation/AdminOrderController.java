@@ -14,6 +14,7 @@ import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.application.shipment.OrderShipmentService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -67,8 +68,9 @@ class AdminOrderController implements OrderApi {
      * @return Http 200 : {@link OrderSummaryPage}
      */
     @Override
-    public ResponseEntity<OrderSummaryPage> listOrders(String orderNumber, OrderStatus status, LocalDate orderedFrom,
-                                                       LocalDate orderedTo, Boolean authorizationExpiring, Boolean returned,
+    public ResponseEntity<OrderSummaryPage> listOrders(@Nullable String orderNumber, @Nullable OrderStatus status,
+                                                       @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
+                                                       @Nullable Boolean authorizationExpiring, @Nullable Boolean returned,
                                                        Integer page, Integer size) {
         var result = orderQueryService.list(orderNumber,
                 status == null ? null : mapper.toDomainStatus(status),

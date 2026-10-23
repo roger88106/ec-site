@@ -4,6 +4,7 @@ import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.domain.product.ProductErrorCode;
 import lombok.NonNull;
 import org.jmolecules.ddd.annotation.ValueObject;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 
@@ -15,7 +16,7 @@ import java.time.Instant;
  * @param publishEnd   公開終了日時。null は無期限
  */
 @ValueObject
-public record PublicationPeriod(Instant publishStart, Instant publishEnd) {
+public record PublicationPeriod(@Nullable Instant publishStart, @Nullable Instant publishEnd) {
 
     /**
      * 期間の限りがない公開期間
@@ -42,7 +43,7 @@ public record PublicationPeriod(Instant publishStart, Instant publishEnd) {
      * @param publishEnd   公開終了日時。null は無期限
      * @return 公開期間
      */
-    public static PublicationPeriod of(Instant publishStart, Instant publishEnd) {
+    public static PublicationPeriod of(@Nullable Instant publishStart, @Nullable Instant publishEnd) {
         return new PublicationPeriod(publishStart, publishEnd);
     }
 

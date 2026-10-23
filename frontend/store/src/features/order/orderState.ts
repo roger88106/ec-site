@@ -69,6 +69,16 @@ export function paymentState(
   return order.actions.pay ? 'PAYABLE' : 'CLOSING'
 }
 
+/** 注文の画面に、支払の欄（見出しを含む）を出すか。支払待ちのときだけ出す */
+export function showsPaymentSection(state: PaymentState): boolean {
+  return state !== 'NONE'
+}
+
+/** 注文の画面に、キャンセルの欄（見出しを含む）を出すか。支払待ちと出荷済みの注文、申請も結果もない注文では出さない */
+export function showsCancellationSection(state: CancellationState): boolean {
+  return state !== 'NOT_YET' && state !== 'SHIPPED' && state !== 'UNAVAILABLE'
+}
+
 /** 注文の一覧の支払の期限（例：「お支払い期限 2026/10/11 00:35」）。支払待ちでなければ null */
 export function paymentDeadlineLabel(order: { status: OrderStatus; paymentDeadline?: string }): string | null {
   if (order.status !== 'PENDING_PAYMENT' || order.paymentDeadline === undefined) {

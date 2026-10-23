@@ -144,7 +144,7 @@ class KeycloakIntegrationTest {
         @DisplayName("AC-137 署名を書き換えた token は 401")
         void tamperedTokenIsRejected() throws Exception {
             var token = adminToken("admin@example.com", "admin-pass-1");
-            var parts = token.split("\\.");
+            var parts = token.split("\\.", -1);
             var signature = Base64.getUrlDecoder().decode(parts[2]);
             signature[0] ^= 0x01;
             var tampered = parts[0] + "." + parts[1] + "." + Base64.getUrlEncoder().withoutPadding().encodeToString(signature);
@@ -194,7 +194,7 @@ class KeycloakIntegrationTest {
         @DisplayName("AC-140 access token の有効期間は 5 分")
         void accessTokenLifespanIsFiveMinutes() {
             for (var token : List.of(adminToken("admin@example.com", "admin-pass-1"), storeToken("member@example.com", "member-pass-1"))) {
-                var payload = new String(Base64.getUrlDecoder().decode(token.split("\\.")[1]), StandardCharsets.UTF_8);
+                var payload = new String(Base64.getUrlDecoder().decode(token.split("\\.", -1)[1]), StandardCharsets.UTF_8);
                 long issuedAt = ((Number) JsonPath.read(payload, "$.iat")).longValue();
                 long expiresAt = ((Number) JsonPath.read(payload, "$.exp")).longValue();
 
@@ -205,7 +205,7 @@ class KeycloakIntegrationTest {
         @Test
         @DisplayName("運営者の token の権限は、職務から展開された管理 API の client role だけ")
         void operatorTokenCarriesPermissions() {
-            var payload = new String(Base64.getUrlDecoder().decode(adminToken("viewer@example.com", "viewer-pass-1").split("\\.")[1]),
+            var payload = new String(Base64.getUrlDecoder().decode(adminToken("viewer@example.com", "viewer-pass-1").split("\\.", -1)[1]),
                     StandardCharsets.UTF_8);
             List<String> roles = JsonPath.read(payload, "$.resource_access['ec-admin-api'].roles");
 

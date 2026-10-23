@@ -3,7 +3,6 @@ import { Input } from '@ec-site/shared/ui/input'
 import { useForm } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
-import { schemas } from '@/api/generated/constraints'
 import { ErrorMessage } from '@/components/ErrorMessage'
 import { Dialog, DialogContent, DialogFooter, DialogHeader, DialogTitle } from '@/components/ui/dialog'
 import { Field, FieldError, FieldLabel } from '@/components/ui/field'
@@ -18,6 +17,7 @@ type Values = { name: string }
 export function CategoryNameDialog({
   title,
   initialName,
+  nameMaxLength,
   pending,
   error,
   onSubmit,
@@ -26,6 +26,8 @@ export function CategoryNameDialog({
 }: {
   title: string
   initialName: string
+  /** 名称の最大の長さ */
+  nameMaxLength: number
   pending: boolean
   error: unknown
   onSubmit: (name: string, callbacks: { onSuccess: () => void; onError: (error: unknown) => void }) => void
@@ -55,7 +57,7 @@ export function CategoryNameDialog({
             <Input
               autoFocus
               id="category-name"
-              maxLength={schemas.CreateCategoryRequest.name.maxLength}
+              maxLength={nameMaxLength}
               {...form.register('name', { required: true })}
             />
             <FieldError errors={[form.formState.errors.name]} />

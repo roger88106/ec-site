@@ -1,4 +1,5 @@
-import { axisValuesLabel, formatYen, taxLabel } from '@ec-site/shared/lib/format'
+import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
+import { axisValuesLabel, formatYen } from '@ec-site/shared/lib/format'
 import { useTranslations } from 'use-intl'
 import type { OrderAmounts, OrderLine } from '@/api/types'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
@@ -9,7 +10,6 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
  */
 export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts: OrderAmounts }) {
   const t = useTranslations('order.lines')
-  const tCommon = useTranslations('common')
   const tApp = useTranslations('app.common')
   return (
     <Card>
@@ -53,28 +53,7 @@ export function OrderLinesCard({ lines, amounts }: { lines: OrderLine[]; amounts
             ))}
           </TableBody>
         </Table>
-        <dl className="ml-auto w-full max-w-sm space-y-1 text-sm">
-          <div className="flex justify-between">
-            <dt>{tCommon('amounts.itemsTotal') /* 商品の合計 */}</dt>
-            <dd className="tabular-nums">{formatYen(amounts.itemsTotal)}</dd>
-          </div>
-          <div className="flex justify-between">
-            <dt>{tCommon('amounts.shippingFee') /* 送料 */}</dt>
-            <dd className="tabular-nums">{formatYen(amounts.shippingFee)}</dd>
-          </div>
-          <div className="flex justify-between border-t pt-1 font-semibold">
-            <dt>{tCommon('amounts.total') /* 総額 */}</dt>
-            <dd className="tabular-nums">{formatYen(amounts.total)}</dd>
-          </div>
-          {amounts.taxes.map((tax) => (
-            <div className="text-right text-muted-foreground tabular-nums" key={tax.ratePercent}>
-              <dt className="sr-only">
-                {tCommon('amounts.taxOf', { ratePercent: tax.ratePercent }) /* 税率ごとの消費税 */}
-              </dt>
-              <dd>{taxLabel(tax)}</dd>
-            </div>
-          ))}
-        </dl>
+        <AmountsSummary amounts={amounts} variant="card" />
       </CardContent>
     </Card>
   )

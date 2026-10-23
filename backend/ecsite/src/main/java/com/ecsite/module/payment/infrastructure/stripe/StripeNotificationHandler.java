@@ -9,6 +9,7 @@ import com.stripe.model.StripeObject;
 import com.stripe.model.checkout.Session;
 import com.stripe.net.Webhook;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Clock;
 
@@ -68,7 +69,7 @@ class StripeNotificationHandler {
      * @param signatureHeader ヘッダー {@code Stripe-Signature}
      * @throws InvalidStripeNotificationException 署名がない・合わない・古いとき
      */
-    void handle(String payload, String signatureHeader) {
+    void handle(String payload, @Nullable String signatureHeader) {
         var event = verify(payload, signatureHeader);
         switch (event.getType()) {
             case SESSION_COMPLETED -> {
@@ -85,7 +86,7 @@ class StripeNotificationHandler {
     /**
      * 署名を確認して、通知を読む。
      */
-    private Event verify(String payload, String signatureHeader) {
+    private Event verify(String payload, @Nullable String signatureHeader) {
         if (signatureHeader == null || signatureHeader.isBlank()) {
             throw new InvalidStripeNotificationException("署名のない Stripe の通知", null);
         }

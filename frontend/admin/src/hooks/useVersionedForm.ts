@@ -10,9 +10,9 @@ type Versioned = { version: number }
  * <ul>
  *   <li>入力を変える前にリソースが変わったら（自分の別の操作など）、フォームを最新の値で再作成する。</li>
  *   <li>入力を変えた後に他の人が更新していれば、送ると 409 になる。古い入力で黙って上書きしないため。</li>
- *   <li>409 の後は {@link reload} で取得し直し、フォームを最新の値で再作成する。</li>
+ *   <li>409 の後は {@link reloadAfter} で更新の状態を戻して取得し直し、フォームを最新の値で再作成する。</li>
  * </ul>
- * 保存に成功したら {@link markSaved} を呼ぶ。入力を変えていない状態に戻し、取得し直した値で再作成できようにする。
+ * 保存に成功したら {@link markSaved} を呼ぶ。入力を変えていない状態に戻し、取得し直した値で再作成できるようにする。
  *
  * @param resource 取得したリソース
  * @param toValues リソースからフォームの値を作る
@@ -26,7 +26,7 @@ export function useVersionedForm<R extends Versioned, T extends FieldValues>(
   form: UseFormReturn<T>
   baseVersion: number
   markSaved: () => void
-  reload: () => Promise<void>
+  reloadAfter: (mutation: { reset: () => void }) => Promise<void>
 } {
   // 呼ぶ側が毎回新しい関数を渡しても、再作成の effect が走り直さないよう、最新の関数を ref に持つ
   const toValuesRef = useRef(toValues)
@@ -49,7 +49,8 @@ export function useVersionedForm<R extends Versioned, T extends FieldValues>(
     form,
     baseVersion,
     markSaved: () => form.reset(form.getValues()),
-    reload: async () => {
+    reloadAfter: async (mutation) => {
+      mutation.reset()
       setReloading(true)
       await refetch()
     },

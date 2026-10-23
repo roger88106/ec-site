@@ -7,6 +7,7 @@ import {
   prefectureLabel,
   reportBasisLabel,
   reportGenderLabel,
+  variantSalesLabel,
 } from '@/features/report/labels'
 
 describe('レポートの表示名', () => {
@@ -53,5 +54,20 @@ describe('レポートの表示名', () => {
     expect(bucketLabel({ ...point, start: '2026-04-01', end: '2027-03-31', fiscalYear: 2026 }, 'YEAR')).toBe(
       '2026 年度',
     )
+  })
+
+  it('バリアントの売れ行きの表示名は、軸があれば「名前：値」を「、」で並べ、軸がなければ品番にする', () => {
+    const variant = { variantId: 'v1', variantCode: 'TEE-001-WH-M', quantity: 0, amount: 0 }
+    expect(
+      variantSalesLabel({
+        ...variant,
+        axisValues: [
+          { name: '色', value: '白' },
+          { name: 'サイズ', value: 'M' },
+        ],
+      }),
+    ).toBe('色：白、サイズ：M')
+    expect(variantSalesLabel({ ...variant, axisValues: [{ name: '色', value: '白' }] })).toBe('色：白')
+    expect(variantSalesLabel({ ...variant, axisValues: [] })).toBe('TEE-001-WH-M')
   })
 })

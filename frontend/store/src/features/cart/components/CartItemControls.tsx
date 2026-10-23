@@ -7,6 +7,7 @@ import { useTranslations } from 'next-intl'
 import { useActionState, useId } from 'react'
 import { changeCartItemQuantity, removeCartItem } from '@/actions/cart'
 import type { QuoteItem } from '@/api/types'
+import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
@@ -43,11 +44,9 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
           ))}
         </NativeSelect>
       </form>
-      {/* 購入できない品目は合計に含めないので、小計を打ち消し線で出す */}
-      <p
-        className={item.purchasable ? 'font-semibold tabular-nums' : 'text-muted-foreground tabular-nums line-through'}
-      >
-        {formatYen(item.subtotal)}
+      {/* 購入できない品目は合計に含めないので、小計を取り消し（s）で出す。取り消し線は s の既定の見た目 */}
+      <p className={item.purchasable ? 'font-semibold tabular-nums' : 'text-muted-foreground tabular-nums'}>
+        {item.purchasable ? formatYen(item.subtotal) : <s>{formatYen(item.subtotal)}</s>}
       </p>
       <form action={removeAction}>
         <input name="variantId" type="hidden" value={item.variantId} />
@@ -55,11 +54,7 @@ export function CartItemControls({ item }: { item: QuoteItem }) {
           {removing ? t('removing') : t('remove') /* 削除中か、削除 */}
         </Button>
       </form>
-      {failure?.ok === false && (
-        <p aria-live="polite" className="text-destructive">
-          {failure.message}
-        </p>
-      )}
+      <ActionError result={failure} />
     </div>
   )
 }

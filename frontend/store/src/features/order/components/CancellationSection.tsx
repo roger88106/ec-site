@@ -54,6 +54,7 @@ export function CancellationSection({ order, contactEmail }: { order: Order; con
     case 'NOT_YET':
     case 'SHIPPED':
     case 'UNAVAILABLE':
-      return null
+      // 欄ごと出さない注文は、呼び出し側が `showsCancellationSection` で除く。ここに来るのは使い方の誤り
+      throw new Error(`キャンセルの欄を出さない状況で描かれた：${order.status}`)
   }
 }

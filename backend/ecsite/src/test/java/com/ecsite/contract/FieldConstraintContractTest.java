@@ -174,7 +174,7 @@ class FieldConstraintContractTest {
      * @return 上限。なければ null
      */
     private static Integer contractLimit(String location) {
-        String[] fileAndPath = location.split("#");
+        String[] fileAndPath = location.split("#", -1);
         Map<String, Object> document = CONTRACTS.get(fileAndPath[0]);
         Map<String, Object> components = map(document.get("components"));
         String path = fileAndPath[1];
@@ -183,7 +183,7 @@ class FieldConstraintContractTest {
         if (path.startsWith("parameters/")) {
             schema = map(map(map(components.get("parameters")).get(path.substring("parameters/".length()))).get("schema"));
         } else {
-            String[] parts = path.split("\\.");
+            String[] parts = path.split("\\.", -1);
             schema = resolve(document, map(map(components.get("schemas")).get(parts[0])));
             for (int i = 1; i < parts.length; i++) {
                 String property = parts[i].replace("[]", "");
@@ -207,7 +207,7 @@ class FieldConstraintContractTest {
      * @throws ReflectiveOperationException クラスか定数がない
      */
     private static int domainLimit(String location) throws ReflectiveOperationException {
-        String[] classAndField = location.split("#");
+        String[] classAndField = location.split("#", -1);
         var field = Class.forName(classAndField[0]).getDeclaredField(classAndField[1]);
         field.setAccessible(true);
         return ((Number) field.get(null)).intValue();
@@ -224,7 +224,7 @@ class FieldConstraintContractTest {
         Map<String, Object> current = node;
         while (current.get("$ref") instanceof String ref) {
             Object target = document;
-            for (String key : ref.substring(2).split("/")) {
+            for (String key : ref.substring(2).split("/", -1)) {
                 target = map(target).get(key);
             }
             current = map(target);

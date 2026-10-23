@@ -1,0 +1,45 @@
+import { describe, expect, test } from 'vitest'
+import { ActionError } from '@/components/ActionError'
+import { renderMarkup } from '@/test/render'
+
+describe('サーバーアクションの失敗の表示', () => {
+  test('失敗の文を、読み上げの対象として出す', () => {
+    const html = renderMarkup(<ActionError message="在庫が足りません。" />)
+
+    expect(html).toMatch(/<p aria-live="polite"[^>]*>在庫が足りません。<\/p>/)
+  })
+
+  test('文のあとに、子の要素を添えられる', () => {
+    const html = renderMarkup(
+      <ActionError message="在庫が足りません。">
+        <a href="/cart">カートを見る</a>
+      </ActionError>,
+    )
+
+    expect(html).toMatch(/>在庫が足りません。<a href="\/cart">カートを見る<\/a><\/p>/)
+  })
+
+  test('親が読み上げの領域を持つとき（inLiveRegion）は、自分では領域にしない', () => {
+    const html = renderMarkup(<ActionError inLiveRegion message="在庫が足りません。" />)
+
+    expect(html).not.toContain('aria-live')
+    expect(html).toContain('在庫が足りません。')
+  })
+
+  test('サーバーアクションの結果が失敗なら、その message を出す', () => {
+    const html = renderMarkup(<ActionError result={{ ok: false, message: '在庫が足りません。' }} />)
+
+    expect(html).toMatch(/<p aria-live="polite"[^>]*>在庫が足りません。<\/p>/)
+  })
+
+  test.each([{ ok: true } as const, null, undefined])(
+    'サーバーアクションの結果が成功か、まだない（%j）なら何も出さない',
+    (result) => {
+      expect(renderMarkup(<ActionError result={result} />)).toBe('')
+    },
+  )
+
+  test.each([null, undefined, ''])('文がなければ（%j）何も出さない', (message) => {
+    expect(renderMarkup(<ActionError message={message}>子</ActionError>)).toBe('')
+  })
+})

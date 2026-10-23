@@ -1,5 +1,7 @@
 package com.ecsite.module.cart.api;
 
+import org.jspecify.annotations.Nullable;
+
 import java.util.List;
 import java.util.UUID;
 
@@ -11,7 +13,7 @@ import java.util.UUID;
  * @param version  バージョン（変更のたびに上がる）
  * @param items    品目（入れた順）
  */
-public record CartContents(UUID cartId, UUID memberId, long version, List<Item> items) {
+public record CartContents(UUID cartId, @Nullable UUID memberId, long version, List<Item> items) {
 
     /**
      * 品目

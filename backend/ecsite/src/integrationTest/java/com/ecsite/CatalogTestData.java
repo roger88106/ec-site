@@ -248,7 +248,7 @@ public class CatalogTestData {
                                     .formatted(JsonPath.<String>read(detail, "$.name"), taxCategoryId, priceExclTax,
                                             JsonPath.<Integer>read(detail, "$.version"))))
                     .andExpect(status().isNoContent());
-            version = JsonPath.<Integer>read(detail, "$.version") + 1;
+            version = JsonPath.<Integer>read(detail, "$.version") + 1L;
             return this;
         }
     }

@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.domain.category;
 
 import com.ecsite.common.model.base.AggregateGuards;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 
@@ -17,7 +18,7 @@ public class CategoryFactory {
      * @param displayOrder 表示順
      * @return カテゴリ
      */
-    public Category create(Category parent, String name, int displayOrder) {
+    public Category create(@Nullable Category parent, String name, int displayOrder) {
         return Category.create(UUID.randomUUID(), parent, name, displayOrder);
     }
 

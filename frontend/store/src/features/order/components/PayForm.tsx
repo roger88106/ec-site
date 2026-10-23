@@ -4,6 +4,7 @@ import { Button } from '@ec-site/shared/ui/button'
 import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { payOrder } from '@/actions/order'
+import { ActionError } from '@/components/ActionError'
 
 /** 「支払う」。決済サービスの支払画面に移る */
 export function PayForm({ orderId }: { orderId: string }) {
@@ -15,11 +16,7 @@ export function PayForm({ orderId }: { orderId: string }) {
       <Button disabled={pending} type="submit">
         {pending ? t('paying') /* 移っています */ : t('pay') /* 支払う */}
       </Button>
-      {result?.ok === false && (
-        <p aria-live="polite" className="text-destructive text-sm">
-          {result.message}
-        </p>
-      )}
+      <ActionError result={result} />
     </form>
   )
 }

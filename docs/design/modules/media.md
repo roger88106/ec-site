@@ -7,7 +7,7 @@
 |------|------|
 | レベル | B（業務の不変条件はなく、ストレージとの連携が中心） |
 | 依存 | なし（使う側から API で呼ばれる） |
-| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[131](../../specs/archive/1to10/131-ci-tidy/spec.md) |
 | 範囲外 | サイトの静的ファイル（ロゴ、CSS、JavaScript）。フロントのビルド成果物として、フロントの配信（CDN）が配信する |
 
 ## アセット
@@ -70,9 +70,9 @@
 ```
 media/
 ├── api/                    # アップロードの受付・用意・登録・破棄、アセットの解放、配信 URL の取得
-├── application/            # 画像のアップロードの流れ、手放したアセットの配信のファイルを削除するリスナー
+├── application/            # 画像のアップロードの流れ、アセット解放のイベント、手放したアセットの配信のファイルを削除するリスナー
 │   └── port/               # アセットのリポジトリ、画像の変換、ファイルの置き場所
-├── domain/                 # アセット、ファイルのキーの決まり、画像の形式、アセット解放のイベント、エラー
+├── domain/                 # アセット、ファイルのキーの決まり、画像の形式、エラー
 └── infrastructure/
     ├── persistence/        # リポジトリの実装
     ├── converter/          # imgproxy による画像の変換

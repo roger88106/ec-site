@@ -26,7 +26,7 @@ import com.ecsite.module.order.application.port.OrderQueryRepository.OrderSummar
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.quote.Amounts;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.Map;
@@ -151,7 +151,7 @@ class AdminOrderMapper {
      * 注文一覧の 1 件。支払のない注文（決済を入れる前の注文）は支払の状態を、出荷していない注文は配送状態を返さない。
      */
     private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
-                                          @Nullable ShippingDirectory.Shipment shipment) {
+                                          ShippingDirectory.@Nullable Shipment shipment) {
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())

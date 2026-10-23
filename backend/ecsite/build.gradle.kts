@@ -1,3 +1,5 @@
+import net.ltgt.gradle.errorprone.CheckSeverity
+import net.ltgt.gradle.errorprone.errorprone
 import nu.studer.gradle.jooq.JooqGenerate
 import org.flywaydb.core.Flyway
 import org.jooq.meta.jaxb.ForcedType
@@ -34,6 +36,7 @@ plugins {
     alias(libs.plugins.jooq)
     alias(libs.plugins.openapi.generator)
     alias(libs.plugins.dependency.license.report)
+    alias(libs.plugins.errorprone)
     jacoco
     checkstyle
     // mock を包むテスト用の実装など、単体テストと統合テストで共有するもの（src/testFixtures）
@@ -142,6 +145,13 @@ dependencies {
     compileOnly(libs.lombok)
     annotationProcessor(libs.lombok)
 
+    // --- 静的解析（Error Prone。全てのソースセットのコンパイルで動く） ---
+    errorprone(libs.errorprone.core)
+    errorprone(libs.nullaway)
+    // @Nullable（org.jspecify.annotations.Nullable）。Spring が間接で持つが、直接使うので明示する。
+    // test などの classpath にも必要なので、compileOnly でなく implementation にする
+    implementation(libs.jspecify)
+
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
     implementation(libs.bundles.jmolecules)
 
@@ -202,9 +212,71 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     inputs.file(bootJarFile)
     doFirst { systemProperty("ecsite.boot-jar", bootJarFile.get().asFile.absolutePath) }
     shouldRunAfter(tasks.test)
+
+    // 統合テストのフォーク（JVM）の数。各フォークがテストのコンテナを 1 回ずつ起動するので、手元の既定は 1。
+    // CI で時間が短くなるときだけ、-PintegrationTestForks=2 で増やす
+    maxParallelForks = providers.gradleProperty("integrationTestForks").map { it.toInt() }.orElse(1).get()
+
+    // 統合テストを複数のジョブに分けて流す：-PintegrationTestShard=<番号>/<総数>（例 1/2）。
+    // プロパティがなければ全てを流す（手元の既定）
+    providers.gradleProperty("integrationTestShard").orNull?.let { spec ->
+        val (index, count) = parseShard(spec)
+        exclude { element -> !element.isDirectory && shardOf(element.path, count) != index }
+    }
 }
 
 tasks.check { dependsOn(integrationTest) }
+
+// -----------------------------------------------------------------------------
+// 統合テストの分け方（CI でジョブを分けて同時に流して、全体の時間を短くする）
+//   テストクラスの完全修飾名の hash で決める。内部クラス（Outer$Inner）は外のクラスと同じ側に入る。
+//   名前だけで決まるので、テストクラスを追加しても設定を変えなくてよい。全てのクラスがちょうど 1 つの側に入る。
+//   2 つの側の時間が離れたときは、shardOf の salt を変えて分け直す
+//   ./gradlew integrationTestShards                                → 各側に入るクラスの一覧（Docker 不要）
+//   ./gradlew integrationTestShards -PintegrationTestShardCount=3  → 3 つに分けた一覧
+// -----------------------------------------------------------------------------
+/** "1/2" → (0, 2)。番号は 1 から数え、内部では 0 から数える */
+fun parseShard(spec: String): Pair<Int, Int> {
+    val match = Regex("([0-9]+)/([0-9]+)").matchEntire(spec)
+        ?: throw GradleException("integrationTestShard は <番号>/<総数> で指定する（例 1/2）：$spec")
+    val index = match.groupValues[1].toInt()
+    val count = match.groupValues[2].toInt()
+    if (count < 1 || index < 1 || index > count) {
+        throw GradleException("integrationTestShard の番号は 1〜総数：$spec")
+    }
+    return (index - 1) to count
+}
+
+/** クラスのファイル（com/ecsite/Foo$Bar.class）またはソース（com/ecsite/Foo.java）の相対パスが入る側（0 から数える） */
+fun shardOf(path: String, count: Int): Int {
+    val outer = path.removeSuffix(".class").removeSuffix(".java").substringBefore('$').replace('/', '.')
+    val salt = "a" // 時間の差が大きいときに変えて分け直す（"a" はテストの数がほぼ半々になる値）
+    // String.hashCode の下位ビットは文字の偶奇に偏るので（2 つに分けると偏る）、混ぜてから割る
+    val mixed = (salt + outer).hashCode() * -1640531535
+    return Math.floorMod(mixed xor (mixed ushr 15), count)
+}
+
+tasks.register("integrationTestShards") {
+    description = "統合テストの各側に入るテストクラスの一覧を出す（Docker 不要）"
+    group = "verification"
+    val sourceRoot = layout.projectDirectory.dir("src/integrationTest/java")
+    val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }.orElse(2)
+    inputs.dir(sourceRoot)
+    doLast {
+        val root = sourceRoot.asFile
+        val count = shardCount.get()
+        val classes = root.walkTopDown().filter { it.isFile && (it.nameWithoutExtension.endsWith("Test") || it.nameWithoutExtension.endsWith("Tests")) }
+            .map { it.relativeTo(root).invariantSeparatorsPath.removeSuffix(".java").replace('/', '.') }
+            .sorted().toList()
+        val shards = classes.groupBy { shardOf(it, count) }
+        for (index in 0 until count) {
+            val members = shards[index].orEmpty()
+            println("shard ${index + 1}/$count: ${members.size} classes")
+            members.forEach { println("  $it") }
+        }
+        println("total: ${classes.size} classes")
+    }
+}
 
 // -----------------------------------------------------------------------------
 // 地域の最初のデータ（地域モジュールの設計書「最初のデータ」）
@@ -249,22 +321,41 @@ tasks.named<Checkstyle>("checkstyleMain") {
 // カバレッジ（テストの書き方 第 1 節。報告だけで、基準の値では失敗させない）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
 //   報告：build/reports/jacoco/coverageReport/（html、xml）
+//   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：
+//   ./gradlew coverageReport -PcoverageExecDir=<*.exec を探すディレクトリ> -PcoverageClassesDir=<build/classes/java/main の写し>
+//   各ジョブは別々にコンパイルするが、javac の出力は同じ入力なら同じなので、JaCoCo のクラスの ID は一致する
 // -----------------------------------------------------------------------------
 jacoco {
     toolVersion = libs.versions.jacoco.get()
 }
 
+/** 生成したコード（jOOQ、OpenAPI）は数えない */
+val coverageExcludes = listOf("com/ecsite/jooq/**", "com/ecsite/api/**")
+
 val coverageReport = tasks.register<JacocoReport>("coverageReport") {
     description = "単体と統合のテストを合わせたカバレッジの報告を作る"
     group = "verification"
-    executionData.from(
-        tasks.test.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile!! },
-        integrationTest.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile!! },
-    )
-    sourceSets(sourceSets.main.get())
-    classDirectories.setFrom(sourceSets.main.get().output.classesDirs.asFileTree.matching {
-        exclude("com/ecsite/jooq/**", "com/ecsite/api/**")
-    })
+    val execDir = providers.gradleProperty("coverageExecDir").orNull
+    val classesDir = providers.gradleProperty("coverageClassesDir").orNull
+    if (execDir != null) {
+        // 渡された実行データを使う。テストの task には依存しない
+        executionData.from(fileTree(execDir) { include("**/*.exec") })
+    } else {
+        executionData.from(
+            tasks.test.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile!! },
+            integrationTest.map { it.extensions.getByType<JacocoTaskExtension>().destinationFile!! },
+        )
+    }
+    if (classesDir != null) {
+        // 渡されたクラスを使う。compileJava には依存しない
+        sourceDirectories.from(layout.projectDirectory.dir("src/main/java"))
+        classDirectories.setFrom(fileTree(classesDir) { exclude(coverageExcludes) })
+    } else {
+        sourceSets(sourceSets.main.get())
+        classDirectories.setFrom(sourceSets.main.get().output.classesDirs.asFileTree.matching {
+            exclude(coverageExcludes)
+        })
+    }
     reports {
         xml.required = true
         html.required = true
@@ -343,6 +434,7 @@ val allowedLicensesOutput =layout.buildDirectory.file("license-policy/allowed-li
 
 licenseReport {
     // 実行時、コンパイル時、テスト、注釈の処理、jOOQ のコード生成。
+    // Error Prone の errorprone 構成は解決できないが、annotationProcessor が継承するので、そこで検査に入る
     // buildscript の classpath（生成で使う Testcontainers・Flyway）は構成に出ないが、同じ部品が統合テストと実行時の構成に入る
     configurations = arrayOf(
         "compileClasspath", "runtimeClasspath",
@@ -600,10 +692,42 @@ val checkTestClassNames = tasks.register("checkTestClassNames") {
 tasks.check { dependsOn(checkTestClassNames) }
 
 // -----------------------------------------------------------------------------
-// コンパイルオプション
+// コンパイルオプション（Error Prone と NullAway を含む）
 // -----------------------------------------------------------------------------
-tasks.withType<JavaCompile> {
+tasks.withType<JavaCompile>().configureEach {
     // リフレクション用にメソッド引数名を保持
     options.compilerArgs.add("-parameters")
     options.encoding = "UTF-8"
+    // 警告も失敗にする（Error Prone の警告も、javac の -Werror で失敗になる）
+    options.compilerArgs.add("-Werror")
+    options.errorprone {
+        // 生成したコード（jOOQ、OpenAPI。build/generated の下）は検査しない
+        excludedPaths.set(".*[/\\\\]build[/\\\\]generated.*")
+        disableWarningsInGeneratedCode.set(true)
+        // Lombok の @NonNull の引数を持つクラスで Error Prone が例外を投げ、コンパイルが失敗するので無効にする
+        disable("StringConcatToTextBlock")
+        // enum のフィールドは List.of で作る一覧で、Error Prone は List の型を変更できると判断する。
+        // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする（spec 18 第 6 節の 8）
+        disable("ImmutableEnumChecker")
+        // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
+        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない（spec 18 第 6 節の 8）
+        if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
+            disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
+        }
+        // NullAway は main のコンパイルだけ動かし、報告はエラーにする。
+        // 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
+        // （docs/rules/backend-coding.md 第 7 節）。
+        if (name == "compileJava") {
+            check("NullAway", CheckSeverity.ERROR)
+            // com.ecsite.jooq（jOOQ の生成）と com.ecsite.api（OpenAPI の生成）は、注釈のない生成コードとして扱う
+            option("NullAway:AnnotatedPackages", "com.ecsite")
+            option("NullAway:UnannotatedSubPackages", "com.ecsite.jooq,com.ecsite.api")
+            option("NullAway:CustomContractAnnotations", "org.springframework.lang.Contract")
+            // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
+        } else {
+            // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
+            // 意図して null を渡す（spec 18 第 5 節）
+            disable("NullAway")
+        }
+    }
 }

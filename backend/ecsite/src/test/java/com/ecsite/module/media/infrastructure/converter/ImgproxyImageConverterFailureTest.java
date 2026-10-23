@@ -14,6 +14,7 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.web.client.RestClient;
 
 import java.io.IOException;
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.URI;
@@ -34,9 +35,15 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ImgproxyImageConverterFailureTest {
 
     /**
-     * 変換を待つ時間の上限（テストでは短くする）
+     * 正常に応答するサーバーを使うテストの、変換を待つ時間の上限。
+     * 負荷のある環境で応答が遅れても、時間の上限を超えたと見なされないよう長くする。
      */
-    private static final Duration TIMEOUT = Duration.ofMillis(300);
+    private static final Duration TIMEOUT = Duration.ofSeconds(5);
+
+    /**
+     * 時間の上限を確かめるテストの、変換を待つ時間の上限（応答しないサーバーを待つので短くする）
+     */
+    private static final Duration SHORT_TIMEOUT = Duration.ofMillis(300);
 
     /**
      * imgproxy の代わりの HTTP サーバー
@@ -55,7 +62,7 @@ class ImgproxyImageConverterFailureTest {
 
     @BeforeEach
     void startServer() throws IOException {
-        server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server = HttpServer.create(new InetSocketAddress(InetAddress.getByAddress(new byte[] {127, 0, 0, 1}), 0), 0);
         server.createContext("/", exchange -> responder.get().respond(exchange));
         server.start();
     }
@@ -118,7 +125,7 @@ class ImgproxyImageConverterFailureTest {
             send(exchange, 200, "late");
         });
 
-        assertServiceUnavailable(converter(baseUrl()));
+        assertServiceUnavailable(converter(baseUrl(), SHORT_TIMEOUT));
     }
 
     @Test
@@ -156,7 +163,18 @@ class ImgproxyImageConverterFailureTest {
      * @return 変換の実装
      */
     private static ImgproxyImageConverter converter(URI baseUrl) {
-        var properties = new ImgproxyProperties(baseUrl, "0123456789abcdef", "fedcba9876543210", 82, TIMEOUT);
+        return converter(baseUrl, TIMEOUT);
+    }
+
+    /**
+     * 変換を待つ時間の上限を指定して、テストのサーバーを呼ぶ変換の実装を作る
+     *
+     * @param baseUrl imgproxy の URL
+     * @param timeout 変換を待つ時間の上限
+     * @return 変換の実装
+     */
+    private static ImgproxyImageConverter converter(URI baseUrl, Duration timeout) {
+        var properties = new ImgproxyProperties(baseUrl, "0123456789abcdef", "fedcba9876543210", 82, timeout);
         var storage = new MediaStorageProperties(null, "us-east-1", true, null, null,
                 "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
                 Duration.ofSeconds(10), Duration.ofSeconds(30));

@@ -1,7 +1,7 @@
 package com.ecsite.module.payment.application.model.view;
 
 import com.ecsite.module.payment.domain.payment.PaymentPage;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 

@@ -3,7 +3,6 @@ import { Input } from '@ec-site/shared/ui/input'
 import { Controller, useFormContext } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
-import { schemas } from '@/api/generated/constraints'
 import { LabeledCheckbox } from '@/components/LabeledCheckbox'
 import { OptionSelect } from '@/components/OptionSelect'
 import { Field, FieldError, FieldLabel, FieldSet } from '@/components/ui/field'
@@ -11,11 +10,18 @@ import { Textarea } from '@/components/ui/textarea'
 import type { ProductFieldsValues } from '@/features/product/product'
 import { formatRate } from '@/lib/rate'
 
+/** 商品の項目の入力の制約（登録と編集で、それぞれのリクエストの制約から引いて渡す） */
+export type ProductFieldConstraints = {
+  nameMaxLength: number
+  descriptionMaxLength: number
+  priceMinimum: number
+}
+
 /**
  * 商品名、説明、税区分、税抜価格、所属カテゴリの入力欄（登録と編集で共通）。<br />
  * 外側の FormProvider のフォームに、これらの項目を持たせる。
  */
-export function ProductFields() {
+export function ProductFields({ constraints }: { constraints: ProductFieldConstraints }) {
   const t = useTranslations('product.fields')
   const { register, control, formState } = useFormContext<ProductFieldsValues>()
   const errors = formState.errors
@@ -23,18 +29,14 @@ export function ProductFields() {
     <div className="grid gap-4">
       <Field>
         <FieldLabel htmlFor="product-name">{t('name') /* 商品名 */}</FieldLabel>
-        <Input
-          id="product-name"
-          maxLength={schemas.UpdateProductRequest.name.maxLength}
-          {...register('name', { required: true })}
-        />
+        <Input id="product-name" maxLength={constraints.nameMaxLength} {...register('name', { required: true })} />
         <FieldError errors={[errors.name]} />
       </Field>
       <Field>
         <FieldLabel htmlFor="product-description">{t('description') /* 説明 */}</FieldLabel>
         <Textarea
           id="product-description"
-          maxLength={schemas.UpdateProductRequest.description.maxLength}
+          maxLength={constraints.descriptionMaxLength}
           rows={4}
           {...register('description')}
         />
@@ -56,7 +58,7 @@ export function ProductFields() {
           <FieldLabel htmlFor="product-price">{t('priceExclTax') /* 税抜価格 */}</FieldLabel>
           <Input
             id="product-price"
-            min={schemas.UpdateProductRequest.priceExclTax.minimum}
+            min={constraints.priceMinimum}
             step={1}
             type="number"
             {...register('priceExclTax', { required: true })}

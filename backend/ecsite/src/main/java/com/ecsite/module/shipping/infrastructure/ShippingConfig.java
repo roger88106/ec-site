@@ -14,6 +14,8 @@ import org.springframework.context.annotation.Configuration;
 class ShippingConfig {
 
     /**
+     * 物流サービスの通知の署名を作る。
+     *
      * @param properties 出荷の設定
      * @return 物流サービスの通知の署名
      */

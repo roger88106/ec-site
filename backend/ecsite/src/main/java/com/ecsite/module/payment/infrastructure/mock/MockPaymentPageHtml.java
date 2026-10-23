@@ -1,8 +1,8 @@
 package com.ecsite.module.payment.infrastructure.mock;
 
-import jakarta.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.web.util.HtmlUtils;
 
 /**

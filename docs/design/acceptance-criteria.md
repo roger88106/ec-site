@@ -40,19 +40,19 @@
 | AC-15 | 商品品番は半角の英大文字・数字とハイフンで 1〜32 文字。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductCodeTest`、`ProductCreatePage.test.tsx` ほか 1 |
 | AC-16 | 税区分は必須。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest` |
 | AC-17 | 登録直後の商品は非公開。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
-| AC-18 | 商品名、説明、税区分、税抜価格、所属カテゴリは変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
-| AC-19 | 税区分を変更すると、税込価格が変更後の税率で計算される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest` |
-| AC-20 | バリアント品番と軸の値（例：色＝白、サイズ＝M）を指定してバリアントを登録できる… | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
-| AC-21 | バリアント品番は全バリアントで一意。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `JooqProductRepositoryTest`、`ProductApiTest`、`ProductTest` ほか 1 |
-| AC-22 | 商品に軸があれば、バリアントは全ての軸の値を持つ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
+| AC-18 | 商品名、説明、税区分、税抜価格、所属カテゴリは変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
+| AC-19 | 税区分を変更すると、税込価格が変更後の税率で計算される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx` |
+| AC-20 | バリアント品番と軸の値（例：色＝白、サイズ＝M）を指定してバリアントを登録できる… | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
+| AC-21 | バリアント品番は全バリアントで一意。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `JooqProductRepositoryTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 2 |
+| AC-22 | 商品に軸があれば、バリアントは全ての軸の値を持つ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-23 | 同じ商品の中で、軸の値の組み合わせは重複できない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-24 | 軸を持たない商品のバリアントは 1 つだけ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
 | AC-25 | 税抜価格は 1 円以上の整数。 | 変更 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | [019](../specs/archive/mvp/019-mvp-completion) | [商品モジュール](modules/catalog.md)（商品（集約）。上限 9,999,999 円） | `PriceExclTaxTest`、`ProductApiTest`、`ProductTest` |
 | AC-26 | 価格の変更は C 側に反映される（NFR-1）。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`StorefrontFreshnessTest` |
-| AC-27 | バリアントの表示順を変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
+| AC-27 | バリアントの表示順を変更できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-28 | バリアントを販売停止・解除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 3 |
-| AC-29 | 公開にすると、C 側の一覧・検索・詳細に表示される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` ほか 2 |
-| AC-30 | 非公開にすると、C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` ほか 1 |
+| AC-29 | 公開にすると、C 側の一覧・検索・詳細に表示される。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 3 |
+| AC-30 | 非公開にすると、C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` ほか 2 |
 | AC-31 | バリアントのない商品は公開できない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest` |
 | AC-32 | 状態は「非公開」「公開」「販売終了」。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` |
 | AC-33 | C 側に一度も表示されていない商品は削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
@@ -93,7 +93,7 @@
 | AC-68 | 全ての画像を WebP に変換して配信する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterFailureTest`、`ImgproxyImageConverterTest`、`MediaApiTest` ほか 1 |
 | AC-69 | 変換時に位置情報などのメタデータを除去する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ImgproxyImageConverterTest` |
 | AC-70 | 変換に失敗した画像は登録されず、運営者にその旨が表示される。 | 変更 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | [017](../specs/archive/mvp/017-stability) | [メディアモジュール](modules/media.md)（アップロードの流れ ※1）、[API の規約](../rules/api-conventions.md) 第 4 節 | `ImgproxyImageConverterTest`、`MediaApiTest`、`ProductEditPage.test.tsx` |
-| AC-71 | C 側に一度も表示されていない商品のバリアントは削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductTest` |
+| AC-71 | C 側に一度も表示されていない商品のバリアントは削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
 | AC-72 | C 側に表示される商品（BR-2）の、選べるバリアント（販売停止でなく、在庫あり… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`order.spec.ts` |
 | AC-73 | カートを持っていなければ、最初に商品を入れたときに作られる。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth) | [カートモジュール](modules/cart.md)（会員のカート）、[店舗画面](apps/store.md) 第 4.5 節 | `CartApiTest`、`CartTest`、`cart.test.ts` ほか 2 |
 | AC-74 | カートにあるバリアントをもう一度入れると、数量を合算する。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartTest` |
@@ -135,7 +135,7 @@
 | AC-110 | パスワードの条件（長さなど）を満たさない登録は拒否される。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
 | AC-111 | 登録すると確認メールが届く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
 | AC-112 | メールアドレスの確認が済むと、ログインした状態で店舗（会員登録を始めた画面）に戻… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
-| AC-113 | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `PageLinks.test.tsx`、`index.test.ts`、`login.test.ts` ほか 1 |
+| AC-113 | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `LoginLinks.test.tsx`、`index.test.ts`、`login.test.ts` ほか 1 |
 | AC-114 | ログインしている間、店舗の画面に会員の氏名とログアウトの操作を表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`login.test.ts`、`member.spec.ts` |
 | AC-115 | ログアウトすると、店舗でも IdP でもログインしていない状態になる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`member.spec.ts` |
 | AC-116 | パスワードを続けて間違えると、そのアカウントは一定時間ログインできなくなる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
@@ -173,14 +173,14 @@
 | AC-148 | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-149 | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-150 | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
-| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 1 |
+| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 2 |
 | AC-152 | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentApiTest` |
 | AC-153 | 支払の期限（BR-16）までに与信が成功しなかった注文は、キャンセルになり、明細… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`PaymentExpiryJobTest` ほか 2 |
 | AC-154 | 期限切れのキャンセルは、期限から一定時間（plan で決める）のうちに行われる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentExpiryJobTest` |
 | AC-155 | 期限切れのキャンセルの理由は「支払期限切れ」とし、注文の詳細（店舗・管理画面）に… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `CancellationSection.test.tsx`、`OrderDetailPage.test.tsx`、`OrderPaymentApiTest` ほか 3 |
 | AC-156 | 期限の直前に与信が成功した注文は、期限切れでキャンセルしない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentExpiryJobTest`、`PaymentTest` |
 | AC-157 | 期限切れでキャンセルした後に与信の成功を受信したら、その与信を取り消す。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` |
-| AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `CancellationSection.test.tsx`、`OrderDetailPage.test.tsx`、`OrderPaymentApiTest` ほか 1 |
+| AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderPaymentApiTest`、`orderState.test.ts` ほか 1 |
 | AC-159 | 店舗の注文一覧と注文詳細に、「支払待ち」の注文の支払の期限を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
 | AC-160 | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderListPage.test.tsx`、`OrderPaymentApiTest` |
 | AC-161 | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderListPage.test.tsx`、`OrderPaymentApiTest` |
@@ -193,7 +193,7 @@
 | AC-168 | 出荷を登録すると、総額で売上を確定し、注文は「出荷済み」になる。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`PaymentCaptureTest`、`ShipmentApiTest` |
 | AC-169 | 売上確定に失敗したら、出荷は登録されず、注文は「受付」のまま。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`PaymentCaptureTest`、`ShipmentApiTest` |
 | AC-170 | 「受付」以外の注文は出荷を登録できない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`ShipmentApiTest` |
-| AC-171 | 「出荷済み」の注文は、消費者はキャンセルを申請できない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`ReturnedOrderCancellationApiTest`、`StoreOrderShipmentApiTest` ほか 1 |
+| AC-171 | 「出荷済み」の注文は、消費者はキャンセルを申請できない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`ReturnedOrderCancellationApiTest`、`StoreOrderShipmentApiTest` ほか 2 |
 | AC-172 | 同じ注文に出荷を重複して登録しても、売上確定は 1 回だけ実行する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentCaptureTest`、`ShipmentApiTest` |
 | AC-173 | 配送業者は決まった一覧（plan で決める）から選ぶ。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `ShipmentApiTest`、`ShippingApiTest`、`TrackingNumberTest` |
 | AC-174 | 配送状態（BR-19）は、物流サービスからの通知で遷移する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`JooqShipmentRepositoryTest`、`MockCarrierTest` ほか 3 |
@@ -240,7 +240,7 @@
 | AC-215 | 権限のないレポートの API を呼ぶと 403 になる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
 | AC-216 | 権限はレポートごとに分ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AdminApiPermissionContractTest` |
 | AC-217 | 役割ごとの権限は BR-28 のとおり。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
-| AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`csv.test.ts` |
+| AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx` ほか 1 |
 | AC-219 | 同じ期間の、性別（BR-29）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-220 | 都道府県は、全国地方公共団体コードの順（北海道から沖縄県）に並べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-221 | IdP の会員登録の画面で性別（BR-29）を選べる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |

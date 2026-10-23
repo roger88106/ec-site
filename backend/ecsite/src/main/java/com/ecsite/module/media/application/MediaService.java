@@ -8,7 +8,6 @@ import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.Asset;
 import com.ecsite.module.media.domain.AssetKeys;
-import com.ecsite.module.media.domain.AssetReleased;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
 import lombok.RequiredArgsConstructor;
@@ -72,8 +71,9 @@ public class MediaService {
     public ImageUpload requestImageUpload(String scope, String contentType, long contentLength) {
         var uploadId = UUID.randomUUID();
         var uploadKey = AssetKeys.upload(scope, uploadId);
-        ImageFormat.ofContentType(contentType)
-                .orElseThrow(() -> BusinessException.of(MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT, List.of(ImageFormat.displayNames())));
+        if (ImageFormat.ofContentType(contentType).isEmpty()) {
+            throw BusinessException.of(MediaErrorCode.UNSUPPORTED_IMAGE_FORMAT, List.of(ImageFormat.displayNames()));
+        }
         verifySize(contentLength);
 
         // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザが付ける Content-Type と合う）
@@ -91,8 +91,9 @@ public class MediaService {
                 .orElseThrow(() -> BusinessException.of(MediaErrorCode.IMAGE_UPLOAD_NOT_FOUND));
         verifySize(size);
         // 変換の前に、受け付ける形式であることを確認する（判定できないものは変換に回さない）
-        ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH))
-                .orElseThrow(() -> BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE, List.of(ImageFormat.displayNames())));
+        if (ImageFormat.detect(storage.readUploadHead(uploadKey, ImageFormat.SIGNATURE_LENGTH)).isEmpty()) {
+            throw BusinessException.of(MediaErrorCode.INVALID_IMAGE_FILE, List.of(ImageFormat.displayNames()));
+        }
         var webp = imageConverter.convertToWebp(uploadKey);
 
         var prepared = new PreparedImage(UUID.randomUUID());

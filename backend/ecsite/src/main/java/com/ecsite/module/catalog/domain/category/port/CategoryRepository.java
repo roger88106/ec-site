@@ -1,6 +1,7 @@
 package com.ecsite.module.catalog.domain.category.port;
 
 import com.ecsite.module.catalog.domain.category.Category;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Collection;
 import java.util.List;
@@ -27,7 +28,7 @@ public interface CategoryRepository {
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 子カテゴリの一覧
      */
-    List<Category> lockChildren(UUID parentId);
+    List<Category> lockChildren(@Nullable UUID parentId);
 
     /**
      * 新しい子カテゴリの表示順（兄弟の最大＋1。兄弟がなければ 1）を返す。
@@ -35,7 +36,7 @@ public interface CategoryRepository {
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 表示順
      */
-    int nextDisplayOrder(UUID parentId);
+    int nextDisplayOrder(@Nullable UUID parentId);
 
     /**
      * 子カテゴリを持つかを返す。

@@ -11,8 +11,8 @@ import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.Shipping;
 import com.ecsite.module.order.domain.quote.VariantInfo;
 import com.ecsite.module.order.domain.quote.port.TaxDirectory;
-import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 

@@ -1,4 +1,6 @@
+import { AmountsSummary } from '@ec-site/shared/components/AmountsSummary'
 import { axisValuesLabel, formatDateTime, formatYen } from '@ec-site/shared/lib/format'
+import { carrierLabel } from '@ec-site/shared/lib/orderLabels'
 import { isUuid } from '@ec-site/shared/lib/patterns'
 import type { Metadata } from 'next'
 import Link from 'next/link'
@@ -7,14 +9,17 @@ import { getTranslations } from 'next-intl/server'
 import { getApi, getMemberApi } from '@/api/client'
 import { unwrap, unwrapMember } from '@/api/result'
 import { currentMember, redirectToLogin } from '@/auth'
-import { AmountsSummary } from '@/components/AmountsSummary'
 import { PriceText } from '@/components/PriceText'
 import { CancellationSection } from '@/features/order/components/CancellationSection'
 import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { PaymentSection } from '@/features/order/components/PaymentSection'
 import { ShippingAddressDetails } from '@/features/order/components/ShippingAddressDetails'
-import { carrierLabel } from '@/features/order/labels'
-import { cancellationState, paymentState } from '@/features/order/orderState'
+import {
+  cancellationState,
+  paymentState,
+  showsCancellationSection,
+  showsPaymentSection,
+} from '@/features/order/orderState'
 
 /** ブラウザのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
@@ -46,7 +51,6 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
   ])
   const order = await unwrapMember(orderResult)
   const shop = unwrap(shopResult)
-  const cancellation = cancellationState(order)
 
   return (
     <div className="space-y-8">
@@ -84,7 +88,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
         )}
       </dl>
 
-      {paymentState(order, returned) !== 'NONE' && (
+      {showsPaymentSection(paymentState(order, returned)) && (
         <section className="space-y-3">
           <h2 className="font-semibold">{t('payment') /* お支払い */}</h2>
           <PaymentSection order={order} returned={returned} />
@@ -113,7 +117,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
           ))}
         </ul>
         <div className="rounded-lg border p-4 md:ml-auto md:w-96">
-          <AmountsSummary amounts={order.amounts} />
+          <AmountsSummary amounts={order.amounts} variant="page" />
         </div>
       </section>
 
@@ -122,8 +126,7 @@ export default async function OrderPage({ params, searchParams }: PageProps<'/or
         <ShippingAddressDetails address={order.shippingAddress} email={order.email} />
       </section>
 
-      {/* 支払待ちと出荷済みの注文は、申請できず、キャンセルもされていない */}
-      {cancellation !== 'NOT_YET' && cancellation !== 'SHIPPED' && cancellation !== 'UNAVAILABLE' && (
+      {showsCancellationSection(cancellationState(order)) && (
         <section className="space-y-3">
           <h2 className="font-semibold">{t('cancellation') /* キャンセル */}</h2>
           <CancellationSection contactEmail={shop.contactEmail} order={order} />

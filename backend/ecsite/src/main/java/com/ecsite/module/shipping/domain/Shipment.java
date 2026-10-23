@@ -1,9 +1,9 @@
 package com.ecsite.module.shipping.domain;
 
-import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -59,7 +59,7 @@ public class Shipment {
      */
     private Shipment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Carrier carrier,
                      @NonNull TrackingNumber trackingNumber, @NonNull DeliveryStatus status,
-                     @NonNull Instant shippedAt, Instant lastNotifiedAt) {
+                     @NonNull Instant shippedAt, @Nullable Instant lastNotifiedAt) {
         this.id = id;
         this.orderId = orderId;
         this.carrier = carrier;
@@ -101,6 +101,8 @@ public class Shipment {
     }
 
     /**
+     * 最後に通知を反映した日時を返す。
+     *
      * @return 最後に通知を反映した日時。まだ通知を反映していなければ空
      */
     public Optional<Instant> lastNotifiedAt() {

@@ -1,4 +1,4 @@
-import { Button } from '@ec-site/shared/ui/button'
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { Link } from 'react-router'
 import { $api } from '@/api/client'
 import { paths } from '@/app/paths'
@@ -11,14 +11,13 @@ export function StockLink({ productId, variantId }: { productId: string; variant
   const query = $api.useQuery('get', '/inventory/variants/{variantId}', { params: { path: { variantId } } })
   const label = query.isSuccess ? String(query.data.quantity) : query.isError ? '—' : '…'
   return (
-    <Button
+    <LinkButton
       className="tabular-nums"
-      nativeButton={false} /* a を描くので、button の振る舞いを外す */
-      render={<Link to={paths.stock(productId, variantId)} />}
+      link={<Link to={paths.stock(productId, variantId)} />}
       size="xs"
       variant="link"
     >
       {label}
-    </Button>
+    </LinkButton>
   )
 }

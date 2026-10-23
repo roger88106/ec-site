@@ -2,7 +2,7 @@ package com.ecsite.module.payment.application.model.view;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.UUID;
 

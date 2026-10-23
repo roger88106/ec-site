@@ -42,11 +42,11 @@ describe('注文のキャンセルの欄', () => {
     expect(html).toContain('お支払い期限までにお支払いがなかったため')
   })
 
-  test('AC-158 支払待ちの注文は、キャンセルの申請を示さない', () => {
-    const html = renderMarkup(
-      <CancellationSection contactEmail="contact@shop.example" order={order({ status: 'PENDING_PAYMENT' })} />,
-    )
-
-    expect(html).toBe('')
+  test('欄を出さない状況（支払待ち）の注文で描くと、使い方の誤りとして例外にする', () => {
+    expect(() =>
+      renderMarkup(
+        <CancellationSection contactEmail="contact@shop.example" order={order({ status: 'PENDING_PAYMENT' })} />,
+      ),
+    ).toThrow('キャンセルの欄を出さない状況で描かれた：PENDING_PAYMENT')
   })
 })

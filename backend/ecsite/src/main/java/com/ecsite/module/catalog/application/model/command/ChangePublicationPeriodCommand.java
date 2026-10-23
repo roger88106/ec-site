@@ -1,5 +1,7 @@
 package com.ecsite.module.catalog.application.model.command;
 
+import org.jspecify.annotations.Nullable;
+
 import java.time.Instant;
 import java.util.UUID;
 
@@ -11,5 +13,6 @@ import java.util.UUID;
  * @param publishEnd   公開終了日時。null は無期限
  * @param version      取得時の商品のバージョン
  */
-public record ChangePublicationPeriodCommand(UUID productId, Instant publishStart, Instant publishEnd, long version) {
+public record ChangePublicationPeriodCommand(UUID productId, @Nullable Instant publishStart, @Nullable Instant publishEnd,
+                                            long version) {
 }

@@ -3,6 +3,7 @@ package com.ecsite.common.message;
 import com.ecsite.common.error.ErrorDetail;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.MessageSource;
 import org.springframework.context.NoSuchMessageException;
 import org.springframework.context.i18n.LocaleContextHolder;
@@ -68,7 +69,7 @@ public class MessageHelper {
      */
     public static String formatValue(Object value) {
         if (value instanceof Long || value instanceof Integer || value instanceof Short) {
-            return "%,d".formatted(value);
+            return "%,d".formatted(((Number) value).longValue());
         }
         return value == null ? "" : value.toString();
     }
@@ -82,7 +83,7 @@ public class MessageHelper {
      * @param params   パラメータマップ
      * @return フォーマット済みメッセージ
      */
-    private String formatMessage(String template, Map<String, String> params) {
+    private String formatMessage(String template, @Nullable Map<String, String> params) {
         if (params == null || params.isEmpty()) {
             return template;
         }

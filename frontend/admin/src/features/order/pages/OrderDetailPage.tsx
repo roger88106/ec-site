@@ -1,5 +1,5 @@
+import { LinkButton } from '@ec-site/shared/components/LinkButton'
 import { formatPostalCode } from '@ec-site/shared/lib/format'
-import { Button } from '@ec-site/shared/ui/button'
 import { Link, useParams } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { $api } from '@/api/client'
@@ -34,13 +34,9 @@ export function OrderDetailPage() {
           </span>
         }
       >
-        <Button
-          nativeButton={false} /* a を描くので、button の振る舞いを外す */
-          render={<Link to={paths.orders()} />}
-          variant="outline"
-        >
+        <LinkButton link={<Link to={paths.orders()} />} variant="outline">
           {tApp('backToList') /* 一覧へ戻る */}
-        </Button>
+        </LinkButton>
       </PageHeader>
       <QueryState query={query}>
         {(order) => (

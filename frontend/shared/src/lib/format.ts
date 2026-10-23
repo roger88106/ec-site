@@ -4,8 +4,8 @@ import { translate } from './translate'
 /** 金額の書式（3 桁ごとのカンマ） */
 const yen = new Intl.NumberFormat(LOCALE)
 
-/** 日時の書式（日本時間の「2026/10/10 14:05」） */
-const dateTime = new Intl.DateTimeFormat(LOCALE, {
+/** 日時の書式（日本時間の年・月・日・時・分をゼロ埋めで出す。例：「2026/10/10 14:05」）。管理画面の日時の入力欄も使う */
+export const japanDateTimeFormat = new Intl.DateTimeFormat(LOCALE, {
   timeZone: TIME_ZONE,
   year: 'numeric',
   month: '2-digit',
@@ -39,7 +39,7 @@ export function formatDateTime(iso: string | null | undefined): string {
   if (!iso) {
     return ''
   }
-  return dateTime.format(new Date(iso))
+  return japanDateTimeFormat.format(new Date(iso))
 }
 
 /** 1 つの税率の消費税額（例：「10% 対象 11,000 円（内消費税 1,000 円）」） */

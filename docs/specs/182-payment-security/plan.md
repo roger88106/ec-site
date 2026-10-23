@@ -32,10 +32,9 @@ DC の列は「182-1」の形で書く。spec の番号 182 を付けた DC-182-
 | DC | 決定 | 置き場所 | 確認方法 |
 |----|------|----------|----------|
 | 1 | 決済の設定の支払の期限に、Hibernate Validator の `@DurationMax(minutes = 30)` を付ける。Javadoc に上限と理由を書く | `main/module/payment/application/PaymentProperties.java` | 単体テスト |
-| 3 | 設定の検証のテストを追加する。`ApplicationContextRunner` で、30 分は起動でき、31 分は起動に失敗し、失敗の原因に設定の名前（`deadline`）が含まれることを確認する。書き方は `test/config/RequiredPropertiesTest.java` に倣う | `test/module/payment/application/PaymentPropertiesTest.java`（新規） | 実装の前に失敗する（レッド） |
-| 2 | 決済のモジュールの設計書の「支払の期限」の節に、上限（30 分）と理由を書く。理由は、支払画面が支払の期限より前に閉じないため | `docs/design/modules/payment.md` | レビュー |
-
 | 1 | 支払画面の期限の定数は変えない。定数のコメントに、支払の期限の上限（30 分）がこの値を前提にすることを 1 文で追加する | `main/module/payment/infrastructure/stripe/StripePaymentGateway.java`（`PAGE_LIFETIME`） | レビュー |
+| 2 | 決済のモジュールの設計書の「支払の期限」の節に、上限（30 分）と理由を書く。理由は、支払画面が支払の期限より前に閉じないため | `docs/design/modules/payment.md` | レビュー |
+| 3 | 設定の検証のテストを追加する。`ApplicationContextRunner` で、30 分は起動でき、31 分は起動に失敗し、失敗の原因に設定の名前（`deadline`）が含まれることを確認する。書き方は `test/config/RequiredPropertiesTest.java` に倣う | `test/module/payment/application/PaymentPropertiesTest.java`（新規） | 実装の前に失敗する（レッド） |
 
 - 上限は 30 分にする。理由：支払画面は注文の後に作るので、支払画面の期限（作ってから 31 分）は注文日時から 31 分以上後になる。上限を 30 分にすると、時計のずれの余裕（1 分）を残して、支払画面が支払の期限より前に閉じない。今の既定値とも同じである。
 
@@ -46,10 +45,9 @@ DC の列は「182-1」の形で書く。spec の番号 182 を付けた DC-182-
 | 4 | `security` を書かない 9 つの操作に `security: []` を追加する ※1 | `api/openapi/store.yaml` | DC-182-5 の起動の検証（統合テストが起動する） |
 | 5 | 契約を読み込む処理で、操作に `security` がなければ `IllegalStateException` を投げる。メッセージに、操作のメソッドとパスを含める。`security: []` は今のとおり token が不要とする | `main/config/security/StoreOperationSecurity.java`（`load`）。メソッドとパスを渡せないときは `main/config/security/OpenApiOperations.java` を変える | 単体テスト |
 | 6 | `StoreOperationSecurityTest` に、`security` のない操作を含む契約の例を新しく作り、読み込むと失敗するテストを追加する。今の契約の例の `security` のない操作を `security: []` に直す。AC-233 のテストの名前の「security のない操作」を「security が空の一覧の操作」に直す | `test/config/security/StoreOperationSecurityTest.java` | 実装の前に失敗する（レッド） |
+| 4、5 | 契約の変更が認可の判定を変えないことを、既存の統合テスト（AC-232、233）で確認する。このテストの契約の読み方（`security` がなければ不要とする）は変えない。理由：起動の検証が `security` のない契約を許さないため | `it/config/security/StoreApiTokenContractTest.java` | `./gradlew check` |
 
 ※1：`GET /products`、`GET /products/search`、`GET /products/{productId}`、`GET /categories`、`POST /carts`、`GET /shop`、`GET /prefectures`、`GET /prefectures/{prefectureCode}/municipalities`、`GET /postal-codes/{postalCode}`（2026-10-24 の `develop`）。
-
-| 4、5 | 契約の変更が認可の判定を変えないことを、既存の統合テスト（AC-232、233）で確認する。このテストの契約の読み方（`security` がなければ不要とする）は変えない。理由：起動の検証が `security` のない契約を許さないため | `it/config/security/StoreApiTokenContractTest.java` | `./gradlew check` |
 
 - 管理 API の操作の権限の対応は変えない（spec 第 8 節）。
 
@@ -72,11 +70,11 @@ DC の列は「182-1」の形で書く。spec の番号 182 を付けた DC-182-
 | 11 | 共通の設定から Zipkin の送信先を削除し、`management.tracing.export.zipkin.enabled: false` を置く。local の profile に `enabled: true` と送信先（`http://localhost:9411/api/v2/spans`）を置く ※3 | `main/resources/application.yml`、`main/resources/application-local.yml` | local の profile で起動し、自動構成の判定（`/actuator/conditions`）に Zipkin の送信の Bean があることを確認する。Zipkin への到達は確認しない ※4 |
 | 12 | 環境変数の一覧に `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED`（既定 false。local と E2E は true）を追加する。送信先の既定（Spring Boot の既定の `http://localhost:9411/api/v2/spans`）は変わらないので、説明に「送信を有効にしたときの送信先」と書く。共通コードの設計書のトレースの節も同じに直す | `docs/guides/environment.md`（`:20`）、`docs/design/common.md`（トレースの節） | レビュー ※4 |
 | 13 | 作成の応答の補助で、`Location` をホストを含まない相対の URL にする。基にするパスは今のとおりで、管理 API と店舗 API の作成は今のリクエストのパス、別のパスを指す店舗 API の作成はアプリの起点（コンテキストパス）である。どちらも URI のパスの部分だけを使い、スキーム・ホスト・ポートを除く。メソッドの Javadoc を直す | `main/common/presentation/CreatedResponses.java` | 単体テスト |
+| 13 | 契約の `Location` の説明を「作成したリソースの URL（ホストを含まない相対の URL）」に直す。API の規約の作成の行の※1と、バックエンドの書き方 第 2.2 節の作成の応答の行に、相対の URL であることを追加する | `api/openapi/store.yaml`（`:637`）、`api/openapi/admin.yaml`（`:1370`）、`docs/rules/api-conventions.md`、`docs/rules/backend-coding.md` | レビュー |
 | 14 | `CreatedResponsesTest` の期待値 3 つを相対の URL（`/api/admin/products/<ID>` など）に直す | `test/common/presentation/CreatedResponsesTest.java`（`:43,55,67`） | 実装の前に失敗する（レッド） |
 | 14 | `Location` の URL で取得する既存の API のテスト（カテゴリ、商品、税区分。AC-8、13、20、276、1）が通ることを確認する。MockMvc は相対の URL を受け付ける | `it/module/catalog/presentation/CategoryApiTest.java`、`it/module/catalog/presentation/ProductApiTest.java`、`it/module/tax/presentation/TaxCategoryApiTest.java` | `./gradlew check` |
-| 13 | 契約の `Location` の説明を「作成したリソースの URL（ホストを含まない相対の URL）」に直す。API の規約の作成の行の※1と、バックエンドの書き方 第 2.2 節の作成の応答の行に、相対の URL であることを追加する | `api/openapi/store.yaml`（`:637`）、`api/openapi/admin.yaml`（`:1370`）、`docs/rules/api-conventions.md`、`docs/rules/backend-coding.md` | レビュー |
 
-※3：Spring Boot 4.1 は、`management.tracing.export.zipkin.enabled` で Zipkin への送信の有無を決める（Spring Boot の `OnEnabledTracingExportCondition`、2026-10-24 確認）。送信先を消しただけでは Spring Boot の既定の送信先に送るので、無効にする設定が必要だ。E2E の profile は local に重ねて使うので、今と同じく送信が有効になる。
+※3：Spring Boot 4.1 は、`management.tracing.export.zipkin.enabled` で Zipkin への送信の有無を決める（Spring Boot の `OnEnabledTracingExportCondition`、2026-10-24 確認）。送信先を消しただけでは Spring Boot の既定の送信先に送るので、無効にする設定が必要になる。E2E の profile は local に重ねて使うので、今と同じく送信が有効になる。
 
 ※4：`scripts/ci/` の `env-defaults` は設定の record だけを見るので、yml と環境変数の一覧の食い違いを検出しない。
 

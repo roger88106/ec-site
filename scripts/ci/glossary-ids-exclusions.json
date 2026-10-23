@@ -1,7 +1,7 @@
 {
   "/.local/handoff/": "引き継ぎの文書の置き場所。Git に入れない（AGENTS.md「Git」）",
-  "develop": "ブランチの名前。.github/ と文書にある",
-  "main": "ブランチの名前。.github/ と文書にある",
+  "develop": "ブランチの名前。.github/ と文書にある。コードに偶然の一致（sourceSets.main、テストのデータなど）があっても除外する",
+  "main": "ブランチの名前。.github/ と文書にある。コードに偶然の一致（sourceSets.main、テストのデータなど）があっても除外する",
   "release-": "ブランチの名前の先頭。.github/ と文書にある",
   "hotfix-": "ブランチの名前の先頭。.github/ と文書にある"
 }

@@ -19,14 +19,14 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 | ワークフロー | ジョブ | 実行するもの | 実行する時 |
 |--------------|--------|----------|----------|
-| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Error Prone と NullAway（コンパイルの時の静的解析）、Javadoc の記述漏れの検査（Checkstyle。private を含む）、単体テスト、OpenAPI の構文の検証、domain の mutation testing（PIT）と mutation score の基準の検査 | push（下の除外のファイルだけの push を除く）と pull request |
+| `ci.yml` | バックエンド（ビルドと単体テスト） | 依存のライセンスの検査、ビルド、Error Prone と NullAway（コンパイルの時の静的解析）、Javadoc の記述漏れの検査（Checkstyle。private を含む）、tools のソースのコンパイル、単体テスト、OpenAPI の構文の検証、domain の mutation testing（PIT）と mutation score の基準の検査 | push（下の除外のファイルだけの push を除く）と pull request |
 | `ci.yml` | バックエンド（統合テスト 1/2・2/2） | 統合テストの半分ずつ（2 つのジョブ。統合テストのコンパイルでも Error Prone が動く） | 同上 |
 | `ci.yml` | バックエンド | 上の 3 つのジョブの結果の確認、カバレッジの報告（要約）、カバレッジの基準の検査 | 同上 |
 | `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの要約、カバレッジの基準の検査 | 同上 |
 | `ci.yml` | 店舗画面 | 画面の依存のライセンスの検査、共有パッケージ（lint、型チェック、テスト、カバレッジの要約）、店舗画面（lint、型チェック、テスト、ビルド、カバレッジの要約）、店舗画面と共有パッケージのカバレッジの基準の検査 | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェック、バックエンド・管理画面・店舗画面を起動してブラウザーで操作する | 同上 |
 | `docs.yml` | 文書と CI の検査の script | `scripts/ci/check-all.sh`（第 3 節） | 全ての push と pull request（文書だけの push でも実行する） |
-| `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチが `release-` か `hotfix-` で始まる。`main` の ruleset の必須の検査（[ブランチとリリース](branches.md) 第 3.2 節） | `main` への pull request |
+| `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチが `release-` か `hotfix-` で始まる（判定は `scripts/ci/workflow/main-source.mjs`。第 3 節）。`main` の ruleset の必須の検査（[ブランチとリリース](branches.md) 第 3.2 節） | `main` への pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する | `main` で `showcase/` が変わったとき、手動で起動したとき |
 
 バックエンドのジョブの構成：
@@ -41,42 +41,52 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 - 統合テストのフォークの数（`maxParallelForks`）は 1。2 にしても 10% 以上は短くならなかった（遅い方のジョブで約 2%）。CI で測って 10% 以上短くなれば、`-PintegrationTestForks=2` にする。
 - 「バックエンド」は、各ジョブが保存したカバレッジの実行データとクラスを集めて、1 つの報告にする（コンパイルもテストもしない）。各ジョブが別々にコンパイルしたクラスの実行データを合わせるので、クラスが一致しないと JaCoCo が警告を出し、「バックエンド」が注釈（warning）を出す。
 - E2E は、ブラウザーの OS の依存を apt で入れない。ランナーのイメージに依存が入っていて、apt の取得に数分から 30 分かかることがあったため。失敗時の画面の撮影では、日本語のフォントがなく文字が四角になることがある。読めないときは、手元の `scripts/dev/e2e.sh` で再現する。
+- Node の版は `.node-version`、JDK の版は `ci.yml` の `JAVA_VERSION` と `libs.versions.toml` の `java` に書く。1 か所にできない組は、検査 `runtime-versions`（第 3 節）が一致を確認する。
 
 CI の検査の script は、文書だけの変更でも結果が変わる（文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec など）ので、文書だけの push でも実行する `docs.yml` で実行する。
 
-`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.gitignore`、`LICENSE`。ただし、全体構成の文書（`docs/design/overview.md`）は、バックエンドの単体テストが図と照合するので、Markdown でも実行する。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
+`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.github/ISSUE_TEMPLATE/`、`.github/dependabot.yml`、`.gitignore`、`LICENSE`。ただし、全体構成の文書（`docs/design/overview.md`）は、バックエンドの単体テストが図と照合するので、Markdown でも実行する。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
 
 ## 3. CI の検査の script
 
 `scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。
 
-- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
-- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）は、下のディレクトリに置く。
-- 複数の script が使う関数は `lib/` に置く。spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す関数は `lib/spec-dirs.mjs`。
+- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。この節の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。除外の一覧を持つなら `lib/exclusions.mjs` を使い、画面のソースを読むなら `lib/screen-sources.mjs` を使う。
+- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md) 第 4 節）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
+- 複数の script が使う関数は `lib/` に置く（テストは `*.test.mjs`）。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
+  - `spec-dirs.mjs`：spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す。
+  - `git-files.mjs`：Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧を返す。
+  - `screen-sources.mjs`：画面の本番のソース（admin・store・shared の `src` の `.ts`・`.tsx` から、テスト・生成物・ui を除く）の定義。
+  - `exclusions.mjs`：除外の一覧（`{キー: 理由}`）を読み、理由のない除外と不要になった除外を見つける。
+  - `strip-comments.mjs`：ソースのコメントを空白に置き換える。
+  - `closing-paren.mjs`：開き括弧に対応する閉じ括弧の位置を求める（文字列とコメントの中は数えない）。
 
 | script | 確認すること | 失敗したとき | 除外の書き方 |
 |--------|--------------|--------------|--------------|
-| `ac-check` | 機能の spec の全ての AC（MVP の `AC-n` と、1→10 の spec の `AC-n-m`。番号は [文書の記号と番号](../rules/notation.md) 「spec の番号」）が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数）に 1 つずつ含まれる（[テストの書き方](../rules/test-writing.md) 第 2.1 節）※1。[AC 一覧](../design/acceptance-criteria.md)を読み、廃止の AC はテストを求めず、テストが参照すると失敗にする。spec と一覧の AC の食い違い、決まっていない状態、古い表も失敗にする | テストを追加するか、テスト名に AC を書く。範囲（`AC-8〜10`）でなく 1 つずつ書く。表が古いときは `node scripts/ci/ac-check.mjs --write` で再生成する | `ac-exclusions.json` に AC と理由 |
+| `ac-check` | 機能の spec の全ての AC（MVP の `AC-n` と、1→10 の spec の `AC-n-m`。番号は [文書の記号と番号](../rules/notation.md) 「spec の番号」）が、テスト名（メソッドの `@DisplayName`、`test`・`it` の第 1 引数。`skip`・`fixme` のテストと、`skip`・`fixme` のまとまりの中のテストは数えない。Git の対象のファイルだけを読む）に 1 つずつ含まれる（[テストの書き方](../rules/test-writing.md) 第 2.1 節）※1。[AC 一覧](../design/acceptance-criteria.md)を読み、廃止の AC はテストを求めず、テストが参照すると失敗にする。spec と一覧の AC の食い違い、決まっていない状態、古い表も失敗にする | テストを追加するか、テスト名に AC を書く。範囲（`AC-8〜10`）や空白で区切った並び（`AC-1 AC-2`）でなく、読点で 1 つずつ書く（`AC-1、AC-2`）。表が古いときは `node scripts/ci/ac-check.mjs --write` で再生成する | `ac-exclusions.json` に `{キー: 理由}`。キーは AC（`AC-n`）。テストがある AC の除外は失敗 |
+| `ci-docs` | この表の 1 列目の名前が、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）と 1 対 1 に対応する。表にない検査も、検査のない表の行も、同じ名前の行が 2 つあるのも失敗にする | 表に行を加えるか、不要な行を消す | なし |
 | `compose-ports` | compose の全ての `ports` が、待ち受けるアドレスを `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始める（既定でこのマシンだけで待ち受け、1 つの変数で変更できる。[開発環境の起動](setup.md) 第 2 節） | ポートの前に `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` を書く | なし |
 | `doc-refs` | Markdown のリンク先と、`<文書の名前> 第 N 節` の参照先が存在する | リンクか節の番号を修正する（skill `docs`） | なし |
-| `doc-terms` | 文書に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も表示する | `doc-terms.json` |
+| `doc-terms` | 文書（`.github/` の yml と Markdown を含む）に使わない語（`doc-terms.json` の ng）がない | 言い換える。`--caution` で文脈で決める語も表示する | `doc-terms.json` |
 | `env-defaults` | [環境変数](environment.md) の表の「既定」が、設定の型（`@ConfigurationProperties` の record）の `@DefaultValue` と一致する。コードの既定値は文書にあり、文書に書いた既定値（時間、数、真偽）はコードにもある（[バックエンドの書き方](../rules/backend-coding.md) 第 6.1 節）。時間は書き方によらず長さで比較する | 文書の表の行か値を修正する。省略形（`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えた名前として読む | なし |
-| `frontend-rules` | 機能（`features/<機能>/`）が、他の機能を import しない（[フロントの書き方](../rules/frontend-coding.md) 第 1.2 節）。ロケールとタイムゾーンを `frontend/shared/src/lib/locale.ts` 以外に直接書かない（[フロントの書き方](../rules/frontend-coding.md) 第 7.3 節）。店舗画面と管理画面に、同じ相対パスで同じ内容のファイルがない（[フロントの書き方](../rules/frontend-coding.md) 第 5.1 節） | 2 つの機能で使うものは `components/` か `lib/` に置く。ロケールは `LOCALE`・`TIME_ZONE` を使う。同じファイルは共有パッケージに移す | `frontend-rules-exclusions.json` に src からの相対パスと理由 |
-| `glossary-ids` | [用語集](../design/glossary.md) の識別子の列の名前が、コード（`backend/`、`frontend/`、`api/`、`docker/`、`e2e/`、`scripts/`）かファイルのパスにある。kebab-case の設定の名前は camelCase の語でもよい。名前の形の例（`Xxx`、`<…>`、`*`）は検査の対象外 | 用語集の識別子を、今のコードの名前に修正する | `glossary-ids-exclusions.json` に名前と理由 |
-| `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../rules/frontend-coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで取得する。`--count` で数だけを出力する | `hardcoded-text-exclusions.json` にファイルと理由 |
+| `frontend-rules` | 機能（`features/<機能>/`）が、他の機能を import しない（`@/features/` のほか、相対パス、`export … from`、`import()` の書き方も見る）（[フロントの書き方](../rules/frontend-coding.md) 第 1.2 節）。ロケールとタイムゾーンを `frontend/shared/src/lib/locale.ts` 以外に直接書かない（[フロントの書き方](../rules/frontend-coding.md) 第 7.3 節）。店舗画面と管理画面に、同じ相対パスで同じ内容のファイルがない。画面の本番のソースに、共有のパッケージ（`frontend/shared/package.json` の `exports` の先）が公開する名前と同じ名前の関数・定数・クラスの定義がない（[フロントの書き方](../rules/frontend-coding.md) 第 5.1 節）。画面の本番のソースに、クエリ付きの URL の文字列の組み立て（[フロントの書き方](../rules/frontend-coding.md) 第 6 節）と `line-through` の直書き（[フロントの書き方](../rules/frontend-coding.md) 第 10.1 節）がない。`actions/`・`lib/`・`api/` が `features/` を import しない（[フロントの書き方](../rules/frontend-coding.md) 第 1.2 節）。画面のテストと E2E が CSS のクラスを確認しない。画面のテストが、コンポーネントの内部の属性（`data-slot`）と `querySelector`・`querySelectorAll` で要素を探さない（[テストの書き方](../rules/test-writing.md) 第 4.1 節） | 2 つの機能で使うものは `components/` か `lib/` に置く。ロケールは `LOCALE`・`TIME_ZONE` を使う。同じファイルは共有パッケージに移す。クエリは `URLSearchParams` で組み立てる。テストは役割と名前で確認する（CSS のクラス、`data-slot`、`querySelector` を使わない）。取り消し線は `<s>` で示す。`actions/`・`lib/`・`api/` が使うものは `features/` の外の共通の置き場所に移す。共有のパッケージにあるものは、同じ名前で定義せず共有のものを使う | `frontend-rules-exclusions.json` に `{キー: 理由}`。キーは src からの相対パス（同じ内容のファイル）か `<画面>:<名前>`（共有と同じ名前の定義。例：`store:translate`）。不要になった除外は失敗 |
+| `glossary-ids` | [用語集](../design/glossary.md) の識別子の列の名前が、コード（`backend/`、`frontend/`、`api/`、`docker/`、`e2e/`、`scripts/`）かファイルのパスにある（`scripts/ci/` のテスト、`testdata/`、`doc-terms.json`、除外の一覧は根拠にしない）。kebab-case の設定の名前は camelCase の語でもよい。名前の形の例（`Xxx`、`<…>`、`*`）は検査の対象外 | 用語集の識別子を、今のコードの名前に修正する | `glossary-ids-exclusions.json` に `{キー: 理由}`。キーは識別子。用語集にない識別子の除外は失敗（コードに偶然の一致があっても除外は残す） |
+| `hardcoded-text` | 画面のコードに表示の文言を直接書いていない（[フロントの書き方](../rules/frontend-coding.md) 第 7.1 節） | 文言を `messages/ja.json` に置き、キーで取得する。`--count` で数だけを出力する | `hardcoded-text-exclusions.json` に `{キー: 理由}`。キーはリポジトリのルートからのファイルのパス。文言を直接書いていないファイルの除外は失敗 |
+| `image-versions` | compose の `image:` の `名前:版` を正とし、Gradle（`build.gradle.kts`）と統合テストのコードに書いた同じイメージの版が一致する（手元の compose と CI の Testcontainers で別の版を動かさないため）。compose の全てのイメージの版が patch まで固定されている（`latest`、版なし、`3` や `3.6` は失敗。patch のない版を使う `postgres`（major だけ）と `chrislusf/seaweedfs`（`major.minor` だけ）は、版の付け方がそうなので許す）。compose にないイメージを統合テストが使うときは、照合する相手がないので「警告：」で報告するだけにする | 統合テストと Gradle の版を compose の版にそろえる。compose の版は patch まで書く | なし |
 | `input-constraints` | 画面の入力の制約に数字を直接書いていない（[フロントの書き方](../rules/frontend-coding.md) 第 2.3 節） | API の契約から書き出した定数を使う | なし |
-| `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../rules/backend-coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（[バックエンドの書き方](../rules/backend-coding.md) 第 1.3 節）。本番のソースのうち `domain` と `infrastructure/persistence` 以外で、列挙型を名前の文字列から変換していない（文字列リテラル以外を `valueOf`・`fromValue` に渡していない）。本番・テスト・tools のソースで、JSpecify 以外の `Nullable` を使っていない（[バックエンドの書き方](../rules/backend-coding.md) 第 7.1 節） | テストでは定型コードを手動で書く。列挙型は `switch` 式で変換する。`Nullable` は `org.jspecify.annotations.Nullable` に替える | なし |
-| `message-comments` | 画面のコードで、キーを文字列リテラルで書いた文言の呼び出し（`t('…')`）に、表示する内容のコメントがある（[コメントの書き方](../rules/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは検査の対象外 | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
-| `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）以外の数字がない（[バックエンドの書き方](../rules/backend-coding.md) 第 3.2 節）。除外の一覧の、不要になったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` にキーと理由（「1 つだけ」など数え方の言葉で、規則の値でないもの） |
-| `migrations` | バージョン付きのマイグレーション（`V*.sql`）が、追加した後に変わっていない（コメントだけの変更も含む。Flyway が適用済みの DB で checksum の不一致にする）。commit の履歴を読むので、shallow clone では失敗する | 元に戻し、変更は新しいマイグレーションで行う | なし |
+| `java-rules` | テストのソース（`test`・`integrationTest`・`testFixtures`）に Lombok がない（[バックエンドの書き方](../rules/backend-coding.md) 第 5.1 節）。本番のソースで、列挙型の変換に `name()` を渡していない（改行やコメントを挟んだ書き方も見る）（[バックエンドの書き方](../rules/backend-coding.md) 第 1.3 節）。本番のソースのうち `domain` と `infrastructure/persistence` 以外で、列挙型を名前の文字列から変換していない（文字列リテラル以外を `valueOf`・`fromValue` に渡していない）。本番・テスト・tools のソースで、JSpecify 以外の `Nullable` を使っていない（[バックエンドの書き方](../rules/backend-coding.md) 第 7.1 節） | テストでは定型コードを手動で書く。列挙型は `switch` 式で変換する。`Nullable` は `org.jspecify.annotations.Nullable` に替える | なし |
+| `message-comments` | 画面の本番のソース（店舗画面・管理画面・共有パッケージの `.ts`・`.tsx`）と、店舗画面・管理画面の `src/test/` のテストの補助と `generated/` の `.tsx` で、キーを文字列リテラルで書いた文言の呼び出し（`t('…')`、`translate('…')`）に、表示する内容のコメントがある（[コメントの書き方](../rules/comments.md) 第 6.1 節）。キーを組み立てる呼び出しは検査の対象外 | 呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く | なし |
+| `message-numbers` | バックエンドのエラーの文（`messages.properties`。メールの文は除く）に、差し込み（`{max}` など）以外の数字がない（[バックエンドの書き方](../rules/backend-coding.md) 第 3.2 節）。除外の一覧の、不要になったキーも失敗にする | 値をドメインの定数から `{名前}` で差し込む | `message-numbers-exclusions.json` に `{キー: 理由}`。キーはメッセージのキーで、理由は「1 つだけ」など数え方の言葉で、規則の値でないもの |
+| `migrations` | バージョン付きのマイグレーション（`V*.sql`）が、追加した後に変わっていない（コメントだけの変更も含む。Flyway が適用済みの DB で checksum の不一致にする）。改名と削除、マイグレーションのファイルが 0 件のときも失敗にする。commit の履歴を読むので、shallow clone では失敗する | 元に戻し、変更は新しいマイグレーションで行う | なし |
 | `progress` | MVP の spec 011 以降（0 埋めの 3 桁）の進捗が、README の進捗の表、MVP の完成までの一覧、tasks のチェックボックスで一致する（tasks が全て完了した spec だけが「完了」。2 つの表の状態が同じ）。アーカイブした 1→10 の spec（`docs/specs/archive/1to10/`）は、tasks が全て済んでいる | 最後のタスクを完了する commit で、2 つの表の状態を「完了」にする。アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを `[x]` にする。マージの前にアーカイブの後に追加するタスクは、アーカイブのタスクの後に、済ませる commit で `[x]` の行として追加する（[開発の進め方](../rules/workflow.md) 第 4.2 節） | なし |
-| `related-specs` | 設計の文書（概要の表に「関連 spec」の行を持つもの）を変えた commit の spec（1 行目の `（T0NN-…）` か `（T7-…）`。MVP と 1→10 の spec を番号の形で区別する）が、その行にある。commit の履歴を読むので、shallow clone では失敗する | 概要の表の「関連 spec」に、その spec のリンクを追加する | `related-specs-exclusions.json` に、設計を変えない段階のタスク番号の前置き（`T018-05` など）と理由 |
+| `related-specs` | 設計の文書（概要の表に「関連 spec」の行を持つもの）を変えた commit の spec（1 行目の `（T0NN-…）` か `（T7-…）`。MVP と 1→10 の spec を番号の形で区別する）が、その行にある。commit の履歴を読むので、shallow clone では失敗する | 概要の表の「関連 spec」に、その spec のリンクを追加する | `related-specs-exclusions.json` に `{キー: 理由}`。キーは設計を変えない段階のタスク番号の前置き（`T018-05` など）。当たる commit がない除外は、CI でだけ失敗にし、手元では警告にする（※1） |
 | `role-permissions` | [ロールと権限の対応表](../design/role-permissions.md)が、管理 API の契約の `x-required-permission`、運営者の realm のロール、店舗 API の契約の `security` から再生成した表と一致する。管理 API の操作に権限がない、realm にない権限を使う、も失敗にする | ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認する | なし |
+| `runtime-versions` | JDK の版（`ci.yml` の `env.JAVA_VERSION` と `backend/ecsite/gradle/libs.versions.toml` の `java`）が一致する。Node の版（`.node-version`）が、ルートの `package.json` の `engines.node`（`>=N` の形だけを扱う）の範囲を満たす。1 か所から読めない版は、この検査で一致を確認する | 置き場所の版をそろえる。Node の版を上げるときは `.node-version` と `engines.node` を合わせる | なし |
 | `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号（MVP の `AC-n` や `T011-…`、1→10 の `AC-7-1` や `T7-…`）がない（[コメントの書き方](../rules/comments.md) 第 1 節） | 番号を削除し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
 | `test-names` | バックエンドの全ての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../rules/test-writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
 | `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する（[テストの書き方](../rules/test-writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
 
-※1：テスト名に含まれない AC は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、成功した検査の警告（`警告：` で始まる行）も出力する。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。手元で CI と同じに確認するときは `CI=true scripts/ci/check-all.sh`。他の誤り（範囲の表記、spec にない AC 番号、除外の一覧の誤り）は、手元でも失敗にする。
+※1：テスト名に含まれない AC と、当たる commit がない `related-specs` の除外は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、成功した検査の警告（`警告：` で始まる行）も出力する。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。手元で CI と同じに確認するときは `CI=true scripts/ci/check-all.sh`。ほかの誤り（範囲の表記、spec にない AC 番号、テストがある AC の除外など、`related-specs` の当たる commit がない除外を除く除外の一覧の誤り）は、手元でも失敗にする。
 
 ### 3.1 カバレッジと mutation score の基準の検査
 

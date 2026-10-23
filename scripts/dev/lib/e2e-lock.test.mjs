@@ -1,7 +1,7 @@
 // e2e-lock.mjs のテスト（node --test scripts/dev/lib/e2e-lock.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { decideLock, decideTakeover, formatLock, parseLock } from './e2e-lock.mjs'
+import { decideLock, decideTakeover, formatLock, isE2eRunningIn, parseLock } from './e2e-lock.mjs'
 
 const owner = { worktree: '/work/a', pid: 4321, startedAt: '2026-10-22T10:00:00.000Z' }
 
@@ -50,5 +50,24 @@ describe('古いロックの取り直し', () => {
 
   test('判定に使ったロックが壊れた中身でも、同じ内容なら取り直す', () => {
     assert.equal(decideTakeover({ judged: 'broken', moved: 'broken' }), 'take')
+  })
+})
+
+describe('作業ツリーの E2E が実行中かの判定', () => {
+  test('所有者が自分の作業ツリーで、プロセスが動いていれば実行中', () => {
+    assert.equal(isE2eRunningIn({ content: formatLock(owner), worktree: '/work/a', isRunning: () => true }), true)
+  })
+
+  test('所有者が他の作業ツリーなら、実行中とみなさない', () => {
+    assert.equal(isE2eRunningIn({ content: formatLock(owner), worktree: '/work/b', isRunning: () => true }), false)
+  })
+
+  test('プロセスがなければ、実行中とみなさない', () => {
+    assert.equal(isE2eRunningIn({ content: formatLock(owner), worktree: '/work/a', isRunning: () => false }), false)
+  })
+
+  test('ロックがない、または壊れていれば、実行中とみなさない', () => {
+    assert.equal(isE2eRunningIn({ content: null, worktree: '/work/a', isRunning: () => true }), false)
+    assert.equal(isE2eRunningIn({ content: 'broken', worktree: '/work/a', isRunning: () => true }), false)
   })
 })

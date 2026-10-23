@@ -5,6 +5,7 @@
 // 使い方：node scripts/ci/message-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 
 /** エラーの文のファイル */
 const MESSAGES = 'backend/ecsite/src/main/resources/messages.properties'
@@ -75,15 +76,16 @@ export function findStaleExclusions(text, exclusions) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const text = readFileSync(MESSAGES, 'utf8')
-  const exclusions = JSON.parse(readFileSync(EXCLUSIONS, 'utf8'))
+  const exclusions = readExclusions(EXCLUSIONS)
   const hits = findNumbers(text, exclusions)
   for (const hit of hits) {
     console.log(`${MESSAGES}:${hit.line} ${hit.key}=${hit.value}`)
   }
-  const stale = findStaleExclusions(text, exclusions)
-  for (const key of stale) {
-    console.log(`${EXCLUSIONS}：不要な例外 ${key}`)
+  const stale = new Set(findStaleExclusions(text, exclusions))
+  const problems = checkExclusions(EXCLUSIONS, exclusions, (key) => !stale.has(key))
+  for (const problem of problems) {
+    console.log(problem)
   }
-  console.log(`数字を書いたエラーの文：${hits.length}、不要な例外：${stale.length}`)
-  process.exit(hits.length || stale.length ? 1 : 0)
+  console.log(`数字を書いたエラーの文：${hits.length}、除外の誤り：${problems.length}`)
+  process.exit(hits.length || problems.length ? 1 : 0)
 }

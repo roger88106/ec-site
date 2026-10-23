@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMissingInStaged, findMissingSpecs, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
+import { checkRelatedExclusions, findMissingInStaged, findMissingSpecs, historyLogArgs, isPrefixUsed, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
 
 describe('設計の文書の関連 spec の検査', () => {
   test('概要の表の「関連 spec」の行から、spec の番号を読む', () => {
@@ -12,6 +12,11 @@ describe('設計の文書の関連 spec の検査', () => {
     ].join('\n')
     assert.deepEqual(parseRelatedSpecs(markdown), ['007', '009', '017'])
     assert.equal(parseRelatedSpecs('| 項目 | 内容 |'), null)
+  })
+
+  test('関連 spec の行の脚注（[1] など）は、spec の番号として読まない', () => {
+    const markdown = '| 関連 spec | [007](../../specs/007-payment)[1]、[9](../../specs/9-shipping) ※[2] |'
+    assert.deepEqual(parseRelatedSpecs(markdown), ['007', '9'])
   })
 
   test('commit のメッセージの 1 行目から、新しい形式のタスク番号を読む。除外のタスクの前置きに合うものは数えない', () => {
@@ -62,5 +67,43 @@ describe('設計の文書の関連 spec の検査', () => {
     assert.deepEqual(findMissingInStaged([payment], 'payment: 期限切れを直す（T017-06-01）', []), [])
     assert.deepEqual(findMissingInStaged([payment], 'docs: 言い回し（T019-05-03）', ['T019-05']), [])
     assert.deepEqual(findMissingInStaged([payment], 'docs: 用語をそろえる', []), [])
+  })
+
+  test('前置きで始まるタスク番号が、どれかの commit にあれば、その除外はまだ使われている', () => {
+    const subjects = ['docs: 言い回し（T018-05-02）', 'payment: 構成を追加する（T019-01-07）']
+    assert.equal(isPrefixUsed('T018-05', subjects), true)
+    assert.equal(isPrefixUsed('T019-01-07', subjects), true)
+    assert.equal(isPrefixUsed('T018-06', subjects), false)
+    assert.equal(isPrefixUsed('T018-05', ['docs: T018-050 の話']), false)
+    assert.equal(isPrefixUsed('T018-05', []), false)
+  })
+
+  test('merge の途中なら、除外の要否を見る履歴に merge の相手の履歴も含める', () => {
+    assert.deepEqual(historyLogArgs(false), ['log', '--format=%s'])
+    assert.deepEqual(historyLogArgs(true), ['log', '--format=%s', 'HEAD', 'MERGE_HEAD'])
+  })
+})
+
+describe('除外の一覧の誤りの扱い', () => {
+  const exclusions = { 'T018-05': '言い回し', 'T099-01': '当たる commit がない', 'T018-06': ' ' }
+  const isNeeded = (prefix) => prefix !== 'T099-01'
+
+  test('CI では、当たる commit がない除外を失敗にする', () => {
+    const { failures, warnings } = checkRelatedExclusions(exclusions, isNeeded, true)
+    assert.equal(failures.some((line) => line.includes('T099-01')), true)
+    assert.deepEqual(warnings, [])
+  })
+
+  test('手元では、当たる commit がない除外を「警告：」で始まる行にし、失敗にしない', () => {
+    const { failures, warnings } = checkRelatedExclusions(exclusions, isNeeded, false)
+    assert.equal(failures.some((line) => line.includes('T099-01')), false)
+    assert.equal(warnings.length, 1)
+    assert.equal(warnings[0].startsWith('警告：'), true)
+    assert.equal(warnings[0].includes('T099-01'), true)
+  })
+
+  test('理由のない除外は、手元でも失敗にする', () => {
+    const { failures } = checkRelatedExclusions(exclusions, isNeeded, false)
+    assert.equal(failures.some((line) => line.includes('T018-06') && line.includes('理由がない')), true)
   })
 })

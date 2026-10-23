@@ -84,5 +84,5 @@ export function paymentDeadlineLabel(order: { status: OrderStatus; paymentDeadli
   if (order.status !== 'PENDING_PAYMENT' || order.paymentDeadline === undefined) {
     return null
   }
-  return translate('order.list.paymentDeadline', { deadline: formatDateTime(order.paymentDeadline) })
+  return translate('order.list.paymentDeadline', { deadline: formatDateTime(order.paymentDeadline) }) // お支払い期限の日時
 }

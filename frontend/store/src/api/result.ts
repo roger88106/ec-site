@@ -8,7 +8,7 @@ export class ApiError extends Error {
   readonly status: number
 
   constructor(status: number, problem: Partial<Problem> | undefined) {
-    super(problem?.message ?? translate('common.httpFailed', { status }))
+    super(problem?.message ?? translate('common.httpFailed', { status })) // 通信の失敗（HTTP の状態付き）
     this.name = 'ApiError'
     this.status = status
   }

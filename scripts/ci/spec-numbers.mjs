@@ -1,11 +1,14 @@
 // 本番のコードに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方 第 1 節）。
 // 規則は言葉で書き、spec との対応はテストの名前に書く。テスト、生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
-/** 本番のコードの置き場所 */
+/**
+ * 本番のコードの置き場所。バックエンドも見るので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。
+ * 画面は、定義が除く共有の ui（src/ui/）と shadcn/ui の部品（components/ui/）も、番号を書かないものとして見る
+ */
 const SOURCE_DIRS = ['backend/ecsite/src/main/', 'frontend/admin/src/', 'frontend/store/src/', 'frontend/shared/src/']
 
 /** 本番のコードでないもの（テスト、テストの補助、生成物、適用済みのマイグレーション） */
@@ -39,9 +42,7 @@ export function isProductionFile(file) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && isProductionFile(file) && existsSync(file))
+  const files = listGitFiles().filter((file) => isProductionFile(file))
   let count = 0
   for (const file of files) {
     for (const hit of findSpecNumbers(readFileSync(file, 'utf8'))) {

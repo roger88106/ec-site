@@ -1,5 +1,6 @@
-// ac-check.mjs のテスト（node --test "scripts/ci/*.test.mjs"）
+// ac-check.mjs のテスト（node --test scripts/ci/ac-check.test.mjs）
 import assert from 'node:assert/strict'
+import path from 'node:path'
 import { describe, test } from 'node:test'
 import {
   check,
@@ -9,9 +10,11 @@ import {
   parseAcList,
   parseAcRefs,
   findAmbiguousAcLists,
+  findSpacedAcLists,
   parseSpecAcDefinitions,
   parseSpecAcs,
   renderAcList,
+  findTestFiles,
 } from './ac-check.mjs'
 
 describe('spec の AC の取り出し', () => {
@@ -80,6 +83,26 @@ describe('テスト名の取り出し', () => {
       'AC-11 並び順を変える',
       'AC-12 %s',
     ])
+  })
+
+  test('skip・fixme のテストは数えない', () => {
+    const source = [
+      "test.skip('AC-1 飛ばす', () => {})",
+      "it.skip('AC-2 飛ばす', () => {})",
+      "test.fixme('AC-3 直す', () => {})",
+      "it.fixme('AC-4 直す', () => {})",
+      "test.only('AC-5 数える', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-5 数える'])
+  })
+
+  test('メソッドの .test( の呼び出し（正規表現など）は数えない', () => {
+    const source = [
+      "expect(/re/.test('AC-1 正規表現')).toBe(true)",
+      "const ok = pattern.test('AC-2 呼び出し')",
+      "test('AC-3 本物', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-3 本物'])
   })
 })
 
@@ -295,6 +318,25 @@ describe('1→10 の AC（AC-n-m）', () => {
     assert.deepEqual(result.ambiguous, [{ file: 'X.test.ts', name: 'AC-7-1、2 a' }])
   })
 
+  test('空白（半角・全角）で区切った AC の並びを見つける', () => {
+    assert.deepEqual(findSpacedAcLists('AC-1 AC-2 注文'), ['AC-1 AC-2'])
+    assert.deepEqual(findSpacedAcLists('AC-98 AC-187 AC-189 注文'), ['AC-98 AC-187 AC-189'])
+    assert.deepEqual(findSpacedAcLists('AC-7-1　AC-7-2 注文'), ['AC-7-1　AC-7-2'])
+  })
+
+  test('読点で並べた AC と、1 つだけの AC は、空白の並びにしない', () => {
+    assert.deepEqual(findSpacedAcLists('AC-1、AC-2 注文'), [])
+    assert.deepEqual(findSpacedAcLists('AC-1、2 注文'), [])
+    assert.deepEqual(findSpacedAcLists('AC-7-1 数量を 10 にする'), [])
+    assert.deepEqual(findSpacedAcLists('AC-1 注文し、AC-2 の確認も'), [])
+  })
+
+  test('空白で区切った AC の並びのテスト名があれば、check は失敗する（手元でも）', () => {
+    const result = check({ specAcs: new Set([1, 2, 3]), tests: tests('AC-1 AC-2 a', 'AC-3 b'), exclusions: {}, strict: false })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.spaced, [{ file: 'X.test.ts', name: 'AC-1 AC-2 a' }])
+  })
+
   test('新しい形の範囲（AC-7-1〜3、AC-7-1〜7-3）は、範囲として返す', () => {
     assert.deepEqual(parseAcRefs('AC-7-1〜3 注文'), { acs: ['7-1', '7-3'], ranges: ['7-1〜3'] })
     assert.deepEqual(parseAcRefs('AC-7-1~7-3 注文'), { acs: ['7-1', '7-3'], ranges: ['7-1~7-3'] })
@@ -376,5 +418,63 @@ describe('手元と CI の見分け', () => {
 
   test('手元（CI がない）では、テスト名に出ない AC を警告にする', () => {
     assert.equal(isStrict({}), false)
+  })
+})
+
+describe('スキップしたまとまりの中のテスト', () => {
+  test('describe.skip・describe.fixme・test.describe.skip・test.describe.fixme・xdescribe の中のテストは数えない', () => {
+    const source = [
+      "describe.skip('まとまり', () => {",
+      "  it('AC-1 数えない', () => { expect(f('x)')).toBe(1) })",
+      '})',
+      "test.describe.fixme('まとまり', () => {",
+      "  test('AC-2 数えない', async () => {})",
+      '})',
+      "test.describe.skip('まとまり', () => { test('AC-3 数えない', () => {}) })",
+      "describe.fixme('まとまり', () => { it('AC-4 数えない', () => {}) })",
+      "xdescribe('まとまり', () => { it('AC-5 数えない', () => {}) })",
+      "describe('生きている', () => { it('AC-6 数える', () => {}) })",
+      "it('AC-7 数える', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-6 数える', 'AC-7 数える'])
+  })
+})
+
+describe('テストのファイルの選び方', () => {
+  test('Java の src/test・src/integrationTest と .test.ts(x)・.spec.ts を選び、他のファイルを選ばない', () => {
+    const files = [
+      'backend/ecsite/src/test/java/a/ATest.java',
+      'backend/ecsite/src/integrationTest/java/a/BIT.java',
+      'backend/ecsite/src/main/java/a/Main.java',
+      'backend/ecsite/src/test/resources/x.sql',
+      'frontend/store/src/a.test.ts',
+      'frontend/store/src/b.test.tsx',
+      'frontend/store/e2e/c.spec.ts',
+      'frontend/store/src/d.spec.tsx',
+      'frontend/store/src/e.ts',
+    ]
+    assert.deepEqual(
+      findTestFiles('/r', files).map((entry) => [path.relative('/r', entry.file).split(path.sep).join('/'), entry.kind]),
+      [
+        ['backend/ecsite/src/test/java/a/ATest.java', 'java'],
+        ['backend/ecsite/src/integrationTest/java/a/BIT.java', 'java'],
+        ['frontend/store/src/a.test.ts', 'ts'],
+        ['frontend/store/src/b.test.tsx', 'ts'],
+        ['frontend/store/e2e/c.spec.ts', 'ts'],
+      ],
+    )
+  })
+})
+
+describe('スキップしたまとまりの範囲とコメント', () => {
+  test('まとまりの中のコメントに引用符や括弧があっても、後ろのテストを数える', () => {
+    const source = [
+      "describe.skip('まとまり', () => {",
+      "  // it's skipped (for now",
+      "  it('AC-1 数えない', () => {})",
+      '})',
+      "it('AC-2 数える', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-2 数える'])
   })
 })

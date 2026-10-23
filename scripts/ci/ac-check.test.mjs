@@ -5,7 +5,6 @@ import { describe, test } from 'node:test'
 import {
   check,
   checkAcList,
-  extractTestNames,
   isStrict,
   parseAcList,
   parseAcRefs,
@@ -14,8 +13,8 @@ import {
   parseSpecAcDefinitions,
   parseSpecAcs,
   renderAcList,
-  findTestFiles,
 } from './ac-check.mjs'
+import { extractTestNames, findTestFiles } from './lib/test-files.mjs'
 
 describe('spec の AC の取り出し', () => {
   test('AC の定義の行（- **AC-n**）から番号を取り出す', () => {

@@ -144,10 +144,11 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：`scripts/ci/lib/`、`scripts/ci/` の検査とテスト
   - 結果：`lib/is-main.mjs`（27 の script の入口の判定）、`lib/shallow-clone.mjs`（migrations、related-specs。失敗の文を 1 つにそろえた）、`lib/line-number.mjs`（改行の位置を 1 回求めて二分探索。frontend-rules、java-rules、message-comments、time-waits）を作った。変更の前後で 25 の検査の出力が同じ。
-- [ ] **T183-01-02** [テスト] テストのファイルの探し方とテストの関数の読み方を共通の関数にし、AC の照合と機能紹介の数え方が使う（DC-183-4）。
+- [x] **T183-01-02** [テスト] テストのファイルの探し方とテストの関数の読み方を共通の関数にし、AC の照合と機能紹介の数え方が使う（DC-183-4）。
   - 依存：T183-01-01（同じ `ac-check.mjs` を変える）
   - 範囲：`scripts/ci/lib/`、`scripts/ci/ac-check.mjs`、`scripts/dev/showcase-counts.mjs`、テスト
   - 変更の前後で、AC の照合の結果と機能紹介の数が同じであることを確認する
+  - 結果：`lib/test-files.mjs`（ファイルの種類、テストの関数の読み方）を作り、ac-check と showcase-counts が使う。AC の照合の出力は変更の前後で同一。showcase の Vitest・Playwright の数が 583 → 579（RegExp の `.test(` 4 件を数えなくなった）。
 - [ ] **T183-01-03** [テスト] 文言の直書きと入力の制約の検査の出力の形を他の検査にそろえ、検査の一括の実行が要約の行のない検査を失敗にする。一括の実行の判定にテストを書く（DC-183-2、5、7）。
   - 依存：T183-01-01
   - 範囲：`scripts/ci/check-all.sh`、`scripts/ci/hardcoded-text.mjs`、`scripts/ci/input-constraints.mjs`、テスト、`docs/guides/ci.md`

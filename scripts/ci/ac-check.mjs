@@ -21,7 +21,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { closingParen } from './lib/closing-paren.mjs'
+import { extractTestNames, findTestFiles } from './lib/test-files.mjs'
 import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
@@ -77,41 +77,6 @@ export function parseSpecAcs(markdown) {
   }
   return acs
 }
-
-/**
- * テストのソースから、テスト名を取り出す。
- *
- * @param source テストのソース
- * @param kind   'java'（メソッドの @DisplayName）か 'ts'（test・it の第 1 引数）
- * @returns テスト名
- */
-export function extractTestNames(source, kind) {
-  if (kind === 'java') {
-    // クラス（@Nested を含む）に付いたものは、テストのまとまりの名前なので読まない。
-    // 後に続く注釈と修飾子を飛ばした次の語が class かで見分ける（構文は解析しない）
-    const classAfter =
-      /^(?:\s*@[\w.]+(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/
-    return [...source.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]
-      .filter((match) => !classAfter.test(source.slice(match.index + match[0].length)))
-      .map((match) => match[1].replace(/\\(.)/g, '$1'))
-  }
-  // describe はテストのまとまりの名前なので読まない（test.describe も同じ）
-  // skip・fixme は実行されないので数えない（連鎖に入れない）。前が . や語の文字のもの（/re/.test(...) など）も数えない
-  const call =
-    /(?<![.\w$])(?:it|test)(?:\.(?:serial|parallel|only|concurrent|each\([^)]*\)))*\(\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
-  // 実行されないまとまり（describe.skip、describe.fixme、test.describe.skip、test.describe.fixme、xdescribe）の中は数えない。
-  // まとまりの範囲は、呼び出しの括弧の対応で求める
-  const skippedRanges = [...source.matchAll(SKIPPED_GROUP)].map((match) => {
-    const open = match.index + match[0].length - 1
-    return [open, closingParen(source, open)]
-  })
-  return [...source.matchAll(call)]
-    .filter((match) => !skippedRanges.some(([from, to]) => match.index > from && match.index < to))
-    .map((match) => match[2].replace(/\\(.)/g, '$1'))
-}
-
-/** 実行されないテストのまとまりの呼び出し。末尾の ( が、まとまりの範囲の始まり */
-const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescribe)\(/g
 
 /**
  * テスト名から AC 番号を取り出す。AC- の後に読点・カンマで並べた番号（AC- は先頭だけでもよい）を読む。
@@ -356,26 +321,6 @@ export function checkAcList({ definitions, list }) {
  */
 export function isStrict(env) {
   return env.CI === 'true'
-}
-
-/**
- * Git の対象のファイルから、テストのファイルを選ぶ。
- *
- * @param root     リポジトリのルート
- * @param gitFiles Git の対象のファイル（ルートからの相対パス、/ 区切り）
- * @returns テストのファイル（絶対パス）と、その種類
- */
-export function findTestFiles(root, gitFiles) {
-  const files = []
-  for (const rel of gitFiles) {
-    const full = path.join(root, rel)
-    if (rel.endsWith('.java') && /(^|\/)src\/(test|integrationTest)\//.test(rel)) {
-      files.push({ file: full, kind: 'java' })
-    } else if (/\.test\.tsx?$|\.spec\.ts$/.test(rel)) {
-      files.push({ file: full, kind: 'ts' })
-    }
-  }
-  return files
 }
 
 /** 照合した結果を、標準出力に書く */

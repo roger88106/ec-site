@@ -162,14 +162,14 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
   - 依存：なし
   - 範囲：`docs/rules/backend-coding.md`、`api-conventions.md`、`comments.md`、`test-writing.md`
 - [ ] **T156-02-05** 環境変数と CI の検査の文書、フロントのアーキテクチャを修正する（DC-156-15、19、20）。
-  - 依存：なし
+  - 依存：T156-02-03（constitution の CI の要点と食い違わないようにするため。DC-156-14）
   - 範囲：`docs/guides/environment.md`、`docs/guides/ci.md`、`docs/design/frontend-architecture.md`
 - [ ] **T156-02-06** 店舗画面と管理画面の構成の冒頭に概要の表を置き、skill `docs` の概要の表の記述を修正する（DC-156-22、第 6 節の 2）。関連 spec は、2 つの文書の履歴から抽出する。
   - 依存：T156-02-03（skill `docs` を同じく変えるため）
   - 範囲：`docs/design/apps/store.md`、`docs/design/apps/admin.md`、`.claude/skills/docs/SKILL.md`
 - [ ] **T156-02-07** 注の番号、用語、参照の書き方をそろえる（DC-156-28、30、31）。
-  - 依存：T156-02-01〜06（同じ文書を変えるため）
-  - 範囲：`docs/design/backend-architecture.md`、`docs/design/apps/store.md`、`AGENTS.md`、`docs/design/acceptance-criteria.md`、`docs/design/modules/` の関連 spec の行、用語の揺れのある文書
+  - 依存：T156-02-01〜06、T156-02-08（同じ文書を変えるため）
+  - 範囲：`docs/design/backend-architecture.md`、`docs/design/apps/store.md`、`AGENTS.md`、`docs/design/acceptance-criteria.md`、`docs/design/modules/` の関連 spec の行、`docs/rules/workflow.md`、`docs/guides/ci.md`、`docs/rules/subagents.md`、用語の揺れのある文書（完了した spec・plan・tasks を除く。DN-156-2）
 - [ ] **T156-02-08** MVP の完成までの一覧から、完了した作業の記録と切れたリンクを除く（DC-156-35）。
   - 依存：なし
   - 範囲：`docs/specs/archive/mvp/mvp.md`

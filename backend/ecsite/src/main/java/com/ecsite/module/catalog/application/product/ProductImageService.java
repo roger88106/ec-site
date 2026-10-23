@@ -1,10 +1,7 @@
 package com.ecsite.module.catalog.application.product;
 
-import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.module.catalog.application.model.view.ImageUploadView;
 import com.ecsite.module.catalog.application.port.MediaDirectory;
-import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
@@ -56,10 +53,8 @@ public class ProductImageService {
      * @param contentLength ファイルの大きさ（申告）
      * @return 受付
      */
-    @Transactional(readOnly = true)
     public ImageUploadView createUpload(UUID productId, String contentType, long contentLength) {
-        var product = findProduct(productId);
-        product.verifyCanAddImage();
+        queryService.verifyCanAddImage(productId);
 
         var upload = mediaDirectory.requestImageUpload(productId, contentType, contentLength);
         return new ImageUploadView(upload.uploadId(), upload.uploadUrl(), upload.headers(), upload.expiresAt());
@@ -136,16 +131,6 @@ public class ProductImageService {
         product.setVariantImage(variantId, imageId);
 
         productRepository.save(product);
-    }
-
-// ============================== プライベートメソッド ==============================
-
-    /**
-     * 商品を取得する。なければ 404 の業務のエラーにする。
-     */
-    private Product findProduct(UUID productId) {
-        return productRepository.findById(productId)
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
 }

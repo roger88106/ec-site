@@ -39,12 +39,22 @@ class ProductLoader {
      * @return 商品
      */
     Product get(UUID productId, long version) {
-        var product = productRepository.findById(productId)
-                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
+        var product = get(productId);
 
         // 取得時のバージョンと一致しなければ、他の人が先に更新している（保存のときにもリポジトリが比べる）
         AggregateGuards.requireVersion(product.version(), version);
         return product;
+    }
+
+    /**
+     * 商品を、バージョンを確認せずに取得する。なければ 404 の業務のエラーにする。
+     *
+     * @param productId 商品 ID
+     * @return 商品
+     */
+    Product get(UUID productId) {
+        return productRepository.findById(productId)
+                .orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
     }
 
     /**

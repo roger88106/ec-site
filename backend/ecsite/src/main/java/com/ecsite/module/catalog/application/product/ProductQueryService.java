@@ -59,6 +59,16 @@ public class ProductQueryService {
     }
 
     /**
+     * 画像を加えられることを、バージョンなしで確認する（商品がある、枚数が上限に達していない）。<br />
+     * 画像のアップロードの要求で、外部サービスを呼ぶ前に読む。
+     *
+     * @param productId 商品 ID
+     */
+    public void verifyCanAddImage(UUID productId) {
+        productLoader.get(productId).verifyCanAddImage();
+    }
+
+    /**
      * 商品の詳細を取得する。税込価格は現時点の税率で計算し、できる操作は現在時刻で決める。
      *
      * @param id 商品 ID

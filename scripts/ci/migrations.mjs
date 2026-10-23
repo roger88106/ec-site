@@ -36,21 +36,56 @@ export function findChangedMigrations(files, readAdded, readNow) {
   })
 }
 
+/**
+ * 追加した後に、今はないマイグレーション（削除と改名。改名は古い名前が消える）を返す。
+ *
+ * @param {Iterable<string>} addedFiles 履歴で追加したことのあるマイグレーション
+ * @param {string[]} currentFiles 今あるマイグレーション
+ * @returns {string[]} 今はないマイグレーション
+ */
+export function findRemovedMigrations(addedFiles, currentFiles) {
+  const current = new Set(currentFiles)
+  return [...addedFiles].filter((file) => !current.has(file))
+}
+
+/**
+ * git log --diff-filter=A --name-only --format=%H の出力から、ファイルごとの最初に追加した commit を読む。
+ * 出力は新しい順なので、同じファイルが複数回出たときは最後のものが最初の追加。
+ *
+ * @param {string} log git log の出力
+ * @returns {Map<string, string>} ファイル → 最初に追加した commit
+ */
+export function parseAddedLog(log) {
+  const addedIn = new Map()
+  let commit = null
+  for (const line of log.split('\n')) {
+    if (/^[0-9a-f]{40}$/.test(line)) commit = line
+    else if (line) addedIn.set(line, commit)
+  }
+  return addedIn
+}
+
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   if (execSync('git rev-parse --is-shallow-repository', { encoding: 'utf8' }).trim() === 'true') {
     console.log('shallow clone では commit の履歴を読めない（CI の checkout に fetch-depth: 0 を付ける）')
     process.exit(1)
   }
   const files = execSync(`git ls-files "${MIGRATIONS}"`, { encoding: 'utf8' }).split('\n').filter(isVersionedMigration)
-  // 各ファイルを追加した commit（1 回の git log で、新しい順に読む。最後に出たものが最初の追加）
-  const addedIn = new Map()
-  let commit = null
-  for (const line of execSync(`git log --diff-filter=A --name-only --format=%H -- "${MIGRATIONS}"`, {
-    encoding: 'utf8',
-    maxBuffer: 64 * 1024 * 1024,
-  }).split('\n')) {
-    if (/^[0-9a-f]{40}$/.test(line)) commit = line
-    else if (line) addedIn.set(line, commit)
+  if (files.length === 0) {
+    console.log(`マイグレーションが 1 件も見つからない（検査の対象の置き場所が変わっていないか確認する）：${MIGRATIONS}`)
+    process.exit(1)
+  }
+  // 各ファイルを追加した commit（1 回の git log で読む）。--no-renames がないと、改名したファイルが追加として現れず、見落とす
+  const addedIn = parseAddedLog(
+    execSync(`git log --no-renames --diff-filter=A --name-only --format=%H -- "${MIGRATIONS}"`, {
+      encoding: 'utf8',
+      maxBuffer: 64 * 1024 * 1024,
+    }),
+  )
+  // 履歴にあって今ないバージョン付きのマイグレーション。ステージした削除と改名は、hook でも今の index に無いので見つかる
+  const removed = findRemovedMigrations([...addedIn.keys()].filter(isVersionedMigration), files)
+  for (const file of removed) {
+    console.log(`追加した後に削除か改名された（元に戻す）：${file}`)
   }
   // commit の前の hook では、ステージした新しいマイグレーションはまだ履歴にない
   const readAdded = (file) =>
@@ -60,6 +95,6 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   for (const file of changed) {
     console.log(`追加した後に変わった（元に戻し、変更は新しいマイグレーションで行う）：${file}`)
   }
-  console.log(`変わったマイグレーション：${changed.length}（${files.length} 件中）`)
-  process.exit(changed.length ? 1 : 0)
+  console.log(`変わったマイグレーション：${changed.length}、削除か改名：${removed.length}（${files.length} 件中）`)
+  process.exit(changed.length || removed.length ? 1 : 0)
 }

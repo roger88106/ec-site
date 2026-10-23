@@ -48,7 +48,7 @@ DC の列は「155-1」の形で書く。spec の番号 155 を付けた DC-155-
 | 3、4 | LIKE の検索の文字の扱い（`LikePatterns`）を、使う 2 クラスの隣に移し、package-private にする。バックエンドの書き方 第 1.4 節の表の `catalog.infrastructure.persistence` を 13 から 14 に修正する | `main/module/catalog/infrastructure/persistence/` | 統合テスト `StoreProductSearchTest`、`ProductListApiTest` の `escapesWildcards` |
 | 5 | ログインした人の情報を返す操作（`MeController`）は `config/security/` に残す。`ModuleStructureTest.restControllerOnlyInPresentation` の対象を `com.ecsite..` に広げ、`MeController` を完全修飾名で除く。バックエンドの書き方 第 2.1 節に例外と理由を書く | `test/architecture/ModuleStructureTest.java`、[バックエンドの書き方](../../rules/backend-coding.md) 第 2.1 節 | 構成の検査。別の場所の `@RestController` を一時的に置いて失敗することを確認する |
 | 6、7 | `ModuleStructureTest` に 2 つの規則を追加する。共通コードと設定はモジュールに依存しない。モジュールは設定に依存しない。今の違反は 0 | `test/architecture/ModuleStructureTest.java`。規則の一覧と依存の表に行を追加する | 構成の検査。一時的に違反を入れて失敗することを確認する |
-| 43 | 共通コードの設計書：エラーの詳細、認証の設定の値の型、契約の操作の一覧を一覧に追加する。表示順の再採番と LIKE の検索の行を削除する。イベントのクラスの置き場所を修正する。調査のメモの 2 行を削除し、基準はバックエンドの書き方 第 1.5 節に「共通コードには、2 つ以上のモジュールが使うものだけを置く」を追加して指す | [共通コード・ログ・可観測性](../../design/common.md)、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.5 節 | レビュー。`doc-refs.mjs`、`glossary-ids.mjs` |
+| 43 | 共通コードの設計書：エラーの詳細、認証の設定の値の型、契約の操作の一覧を一覧に追加する。表示順の再採番と LIKE の検索の行を削除する。イベントのクラスの置き場所を修正する。調査のメモの 2 行を削除し、基準はバックエンドの書き方 第 1.5 節に「共通コードには、2 つ以上のモジュールが使うものだけを置く」を追加して指す。横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）は除く（spec の DC-155-3 と同じ） | [共通コード・ログ・可観測性](../../design/common.md)、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.5 節 | レビュー。`doc-refs.mjs`、`glossary-ids.mjs` |
 
 ※1：理由は、設定の型が package-private で、同じパッケージのテストだけが使えるため。
 

@@ -26,8 +26,11 @@
   - 範囲：`docs/rules/backend-coding.md`、`docs/design/common.md`、`docs/design/backend-architecture.md`、`docs/design/modules/`（本 spec で修正したもの）
 - [x] **T155-06-07** 起票のまとめの案を作る。後回しにする作業、未決事項、spec の最後のレビューの推奨のうち採用しなかったものを、既存の issue と重複しないようにまとめ、案を pull request の本文に付ける。利用者が承認したら、issue 担当のセッションが起票する（[開発の進め方](../../../rules/workflow.md) 第 4.1 節）。
   - 依存：T155-06-04〜06
-- [ ] **T155-06-08** pull request の前のレビュー：profile「厚め」のとおり、高性能のレビュー役が spec との一致と完了の定義を確認し、組み込みのコードレビュー（`/code-review`）も行う。指摘の扱いを決め、修正する（[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節）。
+- [x] **T155-06-08** pull request の前のレビュー：profile「厚め」のとおり、高性能のレビュー役が spec との一致と完了の定義を確認し、組み込みのコードレビュー（`/code-review`）も行う。指摘の扱いを決め、修正する（[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節）。
   - 依存：T155-06-07
+- [x] **T155-06-11** pull request の前のレビューの指摘を修正する。店舗の情報の操作（DB を読まない）は、読み取り専用のトランザクションを取らない（伝播を NOT_SUPPORTED にする）。状態の履歴の 1 行で、出来事（kind）と状態（from、to）の型が合わないときは作れないようにし、単体テストを追加する。期限切れの片付けのログは、名詞を SLF4J の引数で渡す（文面は変えない）。T155-01-01 の本文と plan の DC-155-43 の行を、後から変えた決定（AC-84 のテストの後処理、横断の仕組みの除外）に合わせる。新しいテストの Javadoc のタスクの番号を消す。
+  - 依存：T155-06-08
+  - 範囲：`main/module/storefront/application/StorefrontService.java`、`main/module/reporting/domain/snapshot/StatusHistoryEntry.java`、`test/module/reporting/domain/snapshot/StatusHistoryEntryTest.java`、`main/common/scheduling/ExpiredDataCleanup.java`、`test/common/scheduling/ExpiredDataCleanupTest.java`、`test/config/event/EventCleanupJobSettingsTest.java`、`docs/specs/155-backend-structure/tasks/01-common.md`、`docs/specs/155-backend-structure/plan.md`
 - [ ] **T155-06-09** 本 spec（spec、plan、tasks）を `docs/specs/archive/1to10/155-backend-structure/` に移し、参照を修正する。移した後に `scripts/ci/check-all.sh` が通る（[開発の進め方](../../../rules/workflow.md) 第 4.2 節）。そのタスク自身を含む全てのチェックボックスを `[x]` にする。
   - 依存：T155-06-08
 

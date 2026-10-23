@@ -51,6 +51,38 @@ class StatusHistoryEntryTest {
         assertThatThrownBy(entry::deliveryStatus).isInstanceOf(IllegalStateException.class);
     }
 
+    @Test
+    @DisplayName("AC-277、AC-278 出来事に合う型の状態なら作れる。前の状態は null でもよい")
+    void acceptsMatchingStatus() {
+        assertThat(new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+                ReportOrderStatus.PENDING_PAYMENT, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null)).isNotNull();
+        assertThat(new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.DELIVERY_STATUS,
+                DeliveryStatus.SHIPPED, DeliveryStatus.IN_TRANSIT, Instant.EPOCH, null, null)).isNotNull();
+        assertThat(entry(HistoryKind.DELIVERY_STATUS, DeliveryStatus.SHIPPED).from()).isNull();
+    }
+
+    @Test
+    @DisplayName("AC-277、AC-278 注文の状態の出来事に配送状態を入れると作れない")
+    void rejectsDeliveryStatusForOrderKind() {
+        assertThatThrownBy(() -> entry(HistoryKind.ORDER_STATUS, DeliveryStatus.SHIPPED))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("AC-277、AC-278 配送状態の出来事に注文の状態を入れると作れない")
+    void rejectsOrderStatusForDeliveryKind() {
+        assertThatThrownBy(() -> entry(HistoryKind.DELIVERY_STATUS, ReportOrderStatus.SHIPPED))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
+    @Test
+    @DisplayName("AC-277、AC-278 前の状態が出来事に合わない型だと作れない")
+    void rejectsMismatchedFrom() {
+        assertThatThrownBy(() -> new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), HistoryKind.ORDER_STATUS,
+                DeliveryStatus.SHIPPED, ReportOrderStatus.ACCEPTED, Instant.EPOCH, null, null))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
+
     private static StatusHistoryEntry entry(HistoryKind kind, HistoryStatus to) {
         return new StatusHistoryEntry(UUID.randomUUID(), UUID.randomUUID(), kind, null, to, Instant.EPOCH, null, null);
     }

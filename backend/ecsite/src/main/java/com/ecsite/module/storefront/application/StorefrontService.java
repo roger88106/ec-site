@@ -18,6 +18,7 @@ import com.ecsite.module.storefront.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.LinkedHashSet;
@@ -117,10 +118,12 @@ public class StorefrontService {
     }
 
     /**
-     * 店舗の情報を取得する。設定の値から返すので、DB は読まない。
+     * 店舗の情報を取得する。設定の値から返すので、DB は読まない。<br />
+     * クラス全体の読み取り専用のトランザクションと接続を取らないよう、トランザクションなしで動かす（{@code MediaService} の DB を使わない操作と同じ）。
      *
      * @return 店舗の情報
      */
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     public ShopView getShop() {
         return new ShopView(shopProperties.contactEmail());
     }

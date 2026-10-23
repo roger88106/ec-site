@@ -62,7 +62,7 @@ class ExpiredDataCleanupTest {
 
         ExpiredDataCleanup.run(log, "期限切れのカート", BATCH_SIZE, results::removeFirst);
 
-        verify(log).info("期限切れのカートを消した：{} 件", 8L);
+        verify(log).info("{}を消した：{} 件", "期限切れのカート", 8L);
         verify(log, never()).debug(anyString());
         verifyNoMoreInteractions(log);
     }
@@ -72,7 +72,7 @@ class ExpiredDataCleanupTest {
     void logsZeroAtDebugWhenNothingWasDeleted() {
         ExpiredDataCleanup.run(log, "期限切れの引当", BATCH_SIZE, () -> 0);
 
-        verify(log).debug("期限切れの引当を消した：0 件");
+        verify(log).debug("{}を消した：0 件", "期限切れの引当");
         verifyNoMoreInteractions(log);
     }
 }

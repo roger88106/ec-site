@@ -13,7 +13,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 処理の済んだイベントを消す片付けのジョブの設定と分散ロックの単体テスト（T017-01-09、AC-285、287）。<br />
+ * 処理の済んだイベントを消す片付けのジョブの設定と分散ロックの単体テスト（AC-285、287）。<br />
  * 設定は Spring を起動せずに、設定の型へ値を当てはめて確認する。他のモジュールの片付けのジョブは {@code CleanupJobSettingsTest} が確認する。
  */
 class EventCleanupJobSettingsTest {

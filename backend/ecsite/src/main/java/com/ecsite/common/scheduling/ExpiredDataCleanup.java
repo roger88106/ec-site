@@ -20,7 +20,7 @@ public final class ExpiredDataCleanup {
 
     /**
      * 件数の上限ずつ消すのを、消した件数が上限に満たなくなるまで繰り返し、合計の件数をログに出す。<br />
-     * 合計が 1 件以上なら info、0 件なら debug で出す。ログの文は {@code <名詞>を消した：{} 件} で、渡したロガーに出す。
+     * 合計が 1 件以上なら info、0 件なら debug で出す。ログの文は {@code {}を消した：{} 件}（名詞は引数で渡す）で、渡したロガーに出す。
      *
      * @param log        ログを出すロガー（呼ぶジョブのもの）
      * @param noun       消すものを表す名詞（例：期限切れのカート）
@@ -35,9 +35,9 @@ public final class ExpiredDataCleanup {
             total += deleted;
         } while (deleted == batchSize);
         if (total > 0) {
-            log.info(noun + "を消した：{} 件", total);
+            log.info("{}を消した：{} 件", noun, total);
         } else {
-            log.debug(noun + "を消した：0 件");
+            log.debug("{}を消した：0 件", noun);
         }
     }
 }

@@ -22,6 +22,18 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
                                  Instant occurredAt, @Nullable ReportCancellationKind cancellationKind, @Nullable Boolean restocked) {
 
     /**
+     * 出来事と状態の型が合うことを確かめる。<br />
+     * 注文の状態の出来事なら状態は注文の状態、配送状態の出来事なら配送状態でなければならない。前の状態は null でもよい。
+     *
+     * @throws IllegalArgumentException 出来事に合わない型の状態のとき
+     */
+    public StatusHistoryEntry {
+        if (!matches(kind, to) || (from != null && !matches(kind, from))) {
+            throw new IllegalArgumentException("出来事と状態の型が合わない：kind=" + kind + "、from=" + from + "、to=" + to);
+        }
+    }
+
+    /**
      * 後の状態を配送状態の列挙にする。
      *
      * @return 後の状態を配送状態の列挙にしたもの（出来事が配送状態の変化のときだけ使う）
@@ -42,6 +54,20 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
         return switch (to) {
             case ReportOrderStatus status -> status == ReportOrderStatus.SHIPPED;
             case DeliveryStatus status -> status == DeliveryStatus.SHIPPED;
+        };
+    }
+
+    /**
+     * 出来事に合う型の状態かを返す。
+     *
+     * @param kind   出来事
+     * @param status 状態
+     * @return 注文の状態の出来事なら注文の状態、配送状態の出来事なら配送状態か
+     */
+    private static boolean matches(HistoryKind kind, HistoryStatus status) {
+        return switch (kind) {
+            case ORDER_STATUS -> status instanceof ReportOrderStatus;
+            case DELIVERY_STATUS -> status instanceof DeliveryStatus;
         };
     }
 }

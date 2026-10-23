@@ -17,7 +17,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-public class OrderApiDirectory implements OrderDirectory {
+class OrderApiDirectory implements OrderDirectory {
 
     /**
      * 見積もりの API

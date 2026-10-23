@@ -26,7 +26,7 @@ import java.util.UUID;
  */
 @Component
 @RequiredArgsConstructor
-public class CatalogApiDirectory implements CatalogDirectory {
+class CatalogApiDirectory implements CatalogDirectory {
 
     /**
      * 店舗向けの商品カタログの API

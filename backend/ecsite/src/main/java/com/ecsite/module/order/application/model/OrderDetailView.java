@@ -1,6 +1,5 @@
 package com.ecsite.module.order.application.model;
 
-import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.vo.Cancellation;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
@@ -35,7 +34,7 @@ import java.util.UUID;
 public record OrderDetailView(UUID id, OrderNumber orderNumber, Instant orderedAt, OrderStatus status,
                               List<OrderLine> lines, Amounts amounts, String email, ShippingAddress shippingAddress,
                               @Nullable CancellationRequest cancellationRequest, @Nullable Cancellation cancellation,
-                              @Nullable OrderPayment payment, ShippingDirectory.@Nullable Shipment shipment,
+                              @Nullable OrderPayment payment, @Nullable OrderShipment shipment,
                               boolean awaitingPayment, Actions actions) {
 
     /**

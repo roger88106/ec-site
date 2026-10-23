@@ -28,9 +28,9 @@ import com.ecsite.common.security.AuthenticatedMember;
 import com.ecsite.module.order.application.model.CheckoutView;
 import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
-import com.ecsite.module.order.application.model.PlaceOrderCommand;
+import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.model.OrderSummaryView;
-import com.ecsite.module.order.application.port.ShippingDirectory;
+import com.ecsite.module.order.application.model.PlaceOrderCommand;
 import com.ecsite.module.order.domain.quote.Quote;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -243,7 +243,7 @@ class StoreOrderMapper {
      * @return 注文の一覧のレスポンス
      */
     OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
-                                        Map<UUID, ShippingDirectory.Shipment> shipments) {
+                                        Map<UUID, OrderShipment> shipments) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
@@ -256,7 +256,7 @@ class StoreOrderMapper {
      * 自分の注文の一覧の 1 件。支払の期限は支払待ちのときだけ、配送状態は出荷したときだけ返す。
      */
     private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
-                                          ShippingDirectory.@Nullable Shipment shipment) {
+                                          @Nullable OrderShipment shipment) {
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())
@@ -310,7 +310,7 @@ class StoreOrderMapper {
     /**
      * 配送状態。
      */
-    private static ShipmentStatus toShipmentStatus(ShippingDirectory.Status status) {
+    private static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
         return switch (status) {
             case SHIPPED -> ShipmentStatus.SHIPPED;
             case IN_TRANSIT -> ShipmentStatus.IN_TRANSIT;

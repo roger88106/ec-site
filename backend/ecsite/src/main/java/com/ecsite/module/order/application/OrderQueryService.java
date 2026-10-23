@@ -7,6 +7,7 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
+import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.model.OrderSummaryView;
 import com.ecsite.module.order.application.port.OrderQueryRepository;
 import com.ecsite.module.order.application.port.PaymentDirectory;
@@ -107,10 +108,10 @@ public class OrderQueryService {
      * @return 注文の一覧
      */
     public PageResult<OrderSummaryView> list(@Nullable String orderNumberPrefix,
-                                                                  @Nullable OrderStatus status,
-                                                                  @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
-                                                                  boolean authorizationExpiring, boolean returned,
-                                                                  PageRequest request) {
+                                             @Nullable OrderStatus status,
+                                             @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
+                                             boolean authorizationExpiring, boolean returned,
+                                             PageRequest request) {
         @Nullable Set<UUID> orderIds = null;
         if (authorizationExpiring) {
             // 与信期限が近いのは「受付」の注文だけ（キャンセル済みの注文は、与信期限切れの支払が残っても除く）
@@ -156,7 +157,7 @@ public class OrderQueryService {
      * @param orderIds 注文 ID
      * @return 注文 ID → 出荷。出荷のない注文は含まない
      */
-    public Map<UUID, ShippingDirectory.Shipment> findShipments(Collection<UUID> orderIds) {
+    public Map<UUID, OrderShipment> findShipments(Collection<UUID> orderIds) {
         return shippingDirectory.find(orderIds);
     }
 

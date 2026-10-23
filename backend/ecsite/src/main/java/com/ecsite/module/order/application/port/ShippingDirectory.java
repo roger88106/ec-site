@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.port;
 
+import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.domain.order.Carrier;
 
 import java.time.Instant;
@@ -22,7 +23,7 @@ public interface ShippingDirectory {
      * @param shippedAt      出荷日時
      * @return 作った出荷
      */
-    Shipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt);
+    OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt);
 
     /**
      * 注文の出荷をまとめて返す。
@@ -30,7 +31,7 @@ public interface ShippingDirectory {
      * @param orderIds 注文 ID
      * @return 注文 ID → 出荷。出荷のない注文は含まない
      */
-    Map<UUID, Shipment> find(Collection<UUID> orderIds);
+    Map<UUID, OrderShipment> find(Collection<UUID> orderIds);
 
     /**
      * 配送状態が返送の注文 ID を返す。
@@ -38,50 +39,4 @@ public interface ShippingDirectory {
      * @return 注文 ID
      */
     List<UUID> returnedOrderIds();
-
-    /**
-     * 注文の出荷
-     *
-     * @param carrier        配送業者
-     * @param trackingNumber 送り状番号（ハイフンを除いた数字）
-     * @param status         配送状態
-     * @param shippedAt      出荷日時
-     */
-    record Shipment(Carrier carrier, String trackingNumber, Status status, Instant shippedAt) {
-
-        /**
-         * 配送状態が返送かを返す。
-         *
-         * @return 返送なら true
-         */
-        public boolean isReturned() {
-            return status == Status.RETURNED;
-        }
-    }
-
-    /**
-     * 配送状態（docs/design/modules/shipping.md）
-     */
-    enum Status {
-
-        /**
-         * 出荷済み
-         */
-        SHIPPED,
-
-        /**
-         * 配送中
-         */
-        IN_TRANSIT,
-
-        /**
-         * 配達完了
-         */
-        DELIVERED,
-
-        /**
-         * 返送
-         */
-        RETURNED,
-    }
 }

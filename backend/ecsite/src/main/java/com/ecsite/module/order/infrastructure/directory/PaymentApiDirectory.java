@@ -1,6 +1,7 @@
 package com.ecsite.module.order.infrastructure.directory;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.application.model.OrderPayment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.payment.api.AuthorizationDeadline;
 import com.ecsite.module.payment.api.PaymentApi;
@@ -70,17 +71,17 @@ class PaymentApiDirectory implements PaymentDirectory {
     /**
      * 決済モジュールの支払の状態を、注文の型にする。
      */
-    private static Status toStatus(PaymentSummary.Status status) {
+    private static OrderPayment.Status toStatus(PaymentSummary.Status status) {
         return switch (status) {
-            case UNPAID -> Status.UNPAID;
-            case AUTHORIZED -> Status.AUTHORIZED;
-            case VOID_PENDING -> Status.VOID_PENDING;
-            case VOIDED -> Status.VOIDED;
-            case NOT_PAID -> Status.NOT_PAID;
-            case CAPTURED -> Status.CAPTURED;
-            case AUTHORIZATION_EXPIRED -> Status.AUTHORIZATION_EXPIRED;
-            case REFUND_PENDING -> Status.REFUND_PENDING;
-            case REFUNDED -> Status.REFUNDED;
+            case UNPAID -> OrderPayment.Status.UNPAID;
+            case AUTHORIZED -> OrderPayment.Status.AUTHORIZED;
+            case VOID_PENDING -> OrderPayment.Status.VOID_PENDING;
+            case VOIDED -> OrderPayment.Status.VOIDED;
+            case NOT_PAID -> OrderPayment.Status.NOT_PAID;
+            case CAPTURED -> OrderPayment.Status.CAPTURED;
+            case AUTHORIZATION_EXPIRED -> OrderPayment.Status.AUTHORIZATION_EXPIRED;
+            case REFUND_PENDING -> OrderPayment.Status.REFUND_PENDING;
+            case REFUNDED -> OrderPayment.Status.REFUNDED;
         };
     }
 }

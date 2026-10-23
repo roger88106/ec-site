@@ -22,9 +22,8 @@ import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.ApiDateTimes;
 import com.ecsite.module.order.application.model.OrderDetailView;
 import com.ecsite.module.order.application.model.OrderPayment;
+import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.model.OrderSummaryView;
-import com.ecsite.module.order.application.port.PaymentDirectory;
-import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.quote.Amounts;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
@@ -47,7 +46,7 @@ class AdminOrderMapper {
      * @return 注文一覧のページのレスポンス
      */
     OrderSummaryPage toOrderSummaryPage(PageResult<OrderSummaryView> page, Map<UUID, OrderPayment> payments,
-                                        Map<UUID, ShippingDirectory.Shipment> shipments) {
+                                        Map<UUID, OrderShipment> shipments) {
         return new OrderSummaryPage()
                 .page(page.page())
                 .size(page.size())
@@ -107,7 +106,7 @@ class AdminOrderMapper {
      * @param shipment 注文の出荷
      * @return 出荷のレスポンス
      */
-    Shipment toShipment(ShippingDirectory.Shipment shipment) {
+    Shipment toShipment(OrderShipment shipment) {
         return new Shipment()
                 .carrier(toCarrier(shipment.carrier()))
                 .trackingNumber(shipment.trackingNumber())
@@ -151,7 +150,7 @@ class AdminOrderMapper {
      * 注文一覧の 1 件。支払のない注文（決済を入れる前の注文）は支払の状態を、出荷していない注文は配送状態を返さない。
      */
     private static OrderSummary toSummary(OrderSummaryView view, @Nullable OrderPayment payment,
-                                          ShippingDirectory.@Nullable Shipment shipment) {
+                                          @Nullable OrderShipment shipment) {
         var summary = new OrderSummary()
                 .id(view.id())
                 .orderNumber(view.orderNumber())
@@ -281,7 +280,7 @@ class AdminOrderMapper {
     /**
      * 支払の状態。
      */
-    private static PaymentStatus toPaymentStatus(PaymentDirectory.Status status) {
+    private static PaymentStatus toPaymentStatus(OrderPayment.Status status) {
         return switch (status) {
             case UNPAID -> PaymentStatus.UNPAID;
             case AUTHORIZED -> PaymentStatus.AUTHORIZED;
@@ -309,7 +308,7 @@ class AdminOrderMapper {
     /**
      * 配送状態。
      */
-    private static ShipmentStatus toShipmentStatus(ShippingDirectory.Status status) {
+    private static ShipmentStatus toShipmentStatus(OrderShipment.Status status) {
         return switch (status) {
             case SHIPPED -> ShipmentStatus.SHIPPED;
             case IN_TRANSIT -> ShipmentStatus.IN_TRANSIT;

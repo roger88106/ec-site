@@ -1,5 +1,6 @@
 package com.ecsite.module.order.infrastructure.directory;
 
+import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.port.ShippingDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
 import com.ecsite.module.shipping.api.ShipmentSummary;
@@ -27,12 +28,12 @@ class ShippingApiDirectory implements ShippingDirectory {
     private final ShippingApi shippingApi;
 
     @Override
-    public Shipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
+    public OrderShipment create(UUID orderId, Carrier carrier, String trackingNumber, Instant shippedAt) {
         return toShipment(shippingApi.create(orderId, toShippingCarrier(carrier), trackingNumber, shippedAt));
     }
 
     @Override
-    public Map<UUID, Shipment> find(Collection<UUID> orderIds) {
+    public Map<UUID, OrderShipment> find(Collection<UUID> orderIds) {
         return shippingApi.find(orderIds).stream()
                 .collect(Collectors.toMap(ShipmentSummary::orderId, ShippingApiDirectory::toShipment));
     }
@@ -45,8 +46,8 @@ class ShippingApiDirectory implements ShippingDirectory {
     /**
      * 出荷モジュールの型を、注文の型にする。
      */
-    private static Shipment toShipment(ShipmentSummary summary) {
-        return new Shipment(toCarrier(summary.carrier()), summary.trackingNumber(), toStatus(summary.status()),
+    private static OrderShipment toShipment(ShipmentSummary summary) {
+        return new OrderShipment(toCarrier(summary.carrier()), summary.trackingNumber(), toStatus(summary.status()),
                 summary.shippedAt());
     }
 
@@ -75,12 +76,12 @@ class ShippingApiDirectory implements ShippingDirectory {
     /**
      * 出荷モジュールの配送状態を、注文の型にする。
      */
-    private static Status toStatus(ShipmentSummary.Status status) {
+    private static OrderShipment.Status toStatus(ShipmentSummary.Status status) {
         return switch (status) {
-            case SHIPPED -> Status.SHIPPED;
-            case IN_TRANSIT -> Status.IN_TRANSIT;
-            case DELIVERED -> Status.DELIVERED;
-            case RETURNED -> Status.RETURNED;
+            case SHIPPED -> OrderShipment.Status.SHIPPED;
+            case IN_TRANSIT -> OrderShipment.Status.IN_TRANSIT;
+            case DELIVERED -> OrderShipment.Status.DELIVERED;
+            case RETURNED -> OrderShipment.Status.RETURNED;
         };
     }
 }

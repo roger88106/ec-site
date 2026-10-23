@@ -28,7 +28,7 @@
 | `common/scheduling/` | `ExpiredDataCleanup`（期限切れのデータの片付けの共通の処理。件数の上限ごとに消して、消した件数が上限と等しい間繰り返し、合計の件数をログに出す） | カート、在庫の引当、注文手続きの片付けのジョブ。`@Scheduled` と `@SchedulerLock` は各ジョブに残す |
 | `common/security/` | `CurrentMember`（店舗 API の token の会員）、`CurrentOperator`（管理 API の token の運営者）、`AuthenticatedMember` | presentation 層で呼び出し元を取り出す。Spring Security の型は application・domain に出さない（[バックエンドのアーキテクチャ](backend-architecture.md) 第 7.2 節） |
 
-- common に置く基準は、2 つ以上のモジュールが使うものだけ（[バックエンドの書き方](../rules/backend-coding.md) 第 1.5 節）。
+- common に置く基準は、2 つ以上のモジュールが使うものだけ。ただし、横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）は除く（[バックエンドの書き方](../rules/backend-coding.md) 第 1.5 節）。
 
 ## 2. 設定（config/）
 

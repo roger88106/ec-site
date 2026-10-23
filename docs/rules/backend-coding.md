@@ -6,7 +6,7 @@
 
 | 節 | 規則 | 確認方法 |
 |----|------|----------|
-| 1.1 | 標準の構成（層とパッケージ） | 自動（ArchUnit） |
+| 1.1 | 標準の構成（層とパッケージ） | 依存の表のうち、domain・application・presentation・infrastructure の間の向き、application と `api`、presentation・`application/model/` と `port/` は自動（ArchUnit）、他の組はレビュー |
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
@@ -81,7 +81,7 @@ module/<モジュール>/
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
 - **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
 - **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
-- **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。
+- **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、`vo/` から集約のパッケージへ依存して循環するので、集約のパッケージの直下に置く（order の `BuyerProfile`、`Cancellation`）。
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
 
@@ -112,11 +112,11 @@ module/<モジュール>/
 | パッケージ | 数 | 分けない理由 |
 |------------|----|--------------|
 | `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
-| `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラス（認可の対応表、認可の判定、契約の操作の一覧）が package-private。分けるとクラスを公開しなければならない |
+| `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラス（認可の対応表（管理・店舗）、認可の判定、契約の操作の一覧）が package-private。分けるとクラスを公開しなければならない |
 
 ### 1.5 共通の型
 
-- 共通コード（`common/`）には、2 つ以上のモジュールが使うものだけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。
+- 共通コード（`common/`）には、2 つ以上のモジュールが使うものだけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。例外は横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）で、全てのモジュールの要求の処理に関わり、どのモジュールにも属さないので、`common/` に置く。
 - モジュールに共通の型は `common/model/` に置く。`base/`：集約の土台（`AggregateRoot`、`DomainEvent`、`AggregateGuards`）、`value/`：値（`Money`、`BoundedText`、`BusinessTime`、`Operator`）。
 - 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものは、そのモジュールの domain に置く。置き場所（集約の `vo/` か domain の直下）は第 1.1 節のとおり。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけ。設定の値の金額は、使う所で `Money` にする。

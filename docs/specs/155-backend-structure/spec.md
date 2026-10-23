@@ -50,7 +50,7 @@ MVP 019 の全体のレビューで、バックエンドの構成（パッケー
 
 - **DC-155-1** 設定（`config`）の直下と、その下の各パッケージの `.java` が、パッケージの大きさの目安（10）以下である。目安を超えて分けないパッケージは、バックエンドの書き方 第 1.4 節の表に理由がある。#76 の項目である。
 - **DC-155-2** イベントの再発行と片付けのクラスは、設定の下の 1 つのパッケージにある。#76 の項目である。
-- **DC-155-3** 共通コードの各クラスは、2 つ以上のモジュールが使う。
+- **DC-155-3** 共通コードの各クラスは、2 つ以上のモジュールが使う。横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）は除く。理由：全てのモジュールの要求の処理に関わる仕組みで、どのモジュールにも属さないため。
 - **DC-155-4** 表示順の再採番と、LIKE の検索の文字の扱いは、商品カタログのモジュールにある。理由：使うのが商品カタログだけのため。#76 と再レビューの項目である。
 - **DC-155-5** ログインした人の情報を返す操作のクラスは設定の下に置き、規則にその例外と理由がある。理由：認可の設定と同じ権限の変換を使い、どのモジュールにも属さないため（利用者の決定、2026-10-23）。
 - **DC-155-6** 共通コードと設定がモジュールに依存しないことを、構成の検査が確認する。
@@ -123,22 +123,22 @@ MVP 019 の全体のレビューで、バックエンドの構成（パッケー
 
 ## 5. 移す範囲
 
-後のバックエンドの spec が衝突を避けられるように、移動・分割するもの（パッケージ、クラス）を挙げる。正確な移動先は plan で決め、本表を更新する。
+後のバックエンドの spec が衝突を避けられるように、移動・分割するもの（パッケージ、クラス）を挙げる。正確な移動先は plan で決め、決めた後に本表を更新した。下の表は、plan の決定と今のコードの移動先を示す。
 
-| 対象 | 今の置き場所 | 移動先（案） | DC |
-|------|--------------|--------------|----|
+| 対象 | 今の置き場所 | 移動先 | DC |
+|------|--------------|--------|----|
 | イベントの再発行と片付けの 6 クラス | `config/` | `config/event/` | DC-155-1、DC-155-2 |
-| 認証と認可のクラス（11） | `config/security/` | 分けるか、表に理由を書く（plan） | DC-155-1 |
+| 認証と認可のクラス（11） | `config/security/` | 分けず、`config/security/` に残す（バックエンドの書き方 第 1.4 節の表に理由を書く） | DC-155-1 |
 | `MeController` | `config/security/` | 移さない（規則の例外にする） | DC-155-5 |
-| `DisplayOrders`、`LikePatterns` | `common/model/value/`、`common/persistence/` | `module/catalog/` の中 | DC-155-4 |
-| `CartQuote` への変換、レポート用の view | `order/application/` | `order/application/model/` に view を置き、`order/api/` が変換 | DC-155-8〜DC-155-10 |
-| `CartService`・`MediaService`・catalog の参照の service が返す型 | 各モジュールの `api/` の型 | 各モジュールの `application/model/` の view | DC-155-8、DC-155-9 |
+| `DisplayOrders`、`LikePatterns` | `common/model/value/`、`common/persistence/` | `DisplayOrders` は `module/catalog/domain/`、`LikePatterns` は `module/catalog/infrastructure/persistence/` | DC-155-4 |
+| `CartQuote` への変換、レポート用の view | `order/application/` | `order/application/model/` に view（`CartQuoteView`、`OrderReportView`）を置き、`order/api/` が変換 | DC-155-8〜DC-155-10 |
+| `CartService`・`MediaService`・catalog の参照の service が返す型 | 各モジュールの `api/` の型 | 各モジュールの `application/model/` の view（`CartContentsView`、`ImageUploadView`、catalog は `application/model/view/`） | DC-155-8、DC-155-9 |
 | 注文と店舗の view | `order/application/port/`、`storefront/application/port/`、`storefront/application/` | 各モジュールの `application/model/` | DC-155-11 |
-| `ShippingProperties`、`NotificationProperties`、`ShopProperties`、`StorefrontConfig` | 各モジュールの `application/` | 使う層（infrastructure など） | DC-155-21、DC-155-22 |
-| `MockCarrierTracking` の確認用の記録 | `shipping/infrastructure/` | `src/testFixtures/` | DC-155-25、DC-155-26 |
-| 片付けのジョブのループ | cart、inventory、order の `application/` | 1 か所（plan） | DC-155-29 |
-| エラーの定義（`*ErrorCode`） | レベル A は集約のパッケージ、他は `domain/` | 規則に合わせてそろえる（plan） | DC-155-38、DC-155-39 |
-| 商品カタログの application の直下、レポートの domain | `catalog/application/`、`reporting/domain/` | 分けるか、表に理由を書く（plan） | DC-155-33、DC-155-41 |
+| `ShippingProperties`、`NotificationProperties`、`ShopProperties`、`StorefrontConfig` | 各モジュールの `application/` | `ShippingProperties` は `shipping/infrastructure/`、`NotificationProperties` は `notification/infrastructure/mail/`、`StorefrontConfig` は `storefront/infrastructure/`。`ShopProperties` は、application の service が読むので `storefront/application/` に残す | DC-155-21、DC-155-22 |
+| `MockCarrierTracking` の確認用の記録 | `shipping/infrastructure/` | `src/testFixtures/` の `TestCarrierTracking` | DC-155-25、DC-155-26 |
+| 片付けのジョブのループ | cart、inventory、order の `application/` | `common/scheduling/ExpiredDataCleanup`（`@Scheduled` と `@SchedulerLock` は各ジョブに残す） | DC-155-29 |
+| エラーの定義（`*ErrorCode`） | レベル A は集約のパッケージ、他は `domain/` | 全モジュールで `domain/` の直下 | DC-155-38、DC-155-39 |
+| 商品カタログの application の直下、レポートの domain | `catalog/application/`、`reporting/domain/` | catalog の application は `product/`・`category/` に分ける。reporting の domain は `snapshot/`・`sales/` に分ける | DC-155-33、DC-155-41 |
 
 変える設計書は次のとおり。
 

@@ -19,12 +19,12 @@
 - [x] **T155-06-10** spec の最後のレビューの指摘を修正する（必須 4 件と、採る推奨 3 件）。テストの Javadoc のタスクの番号を消す。spec 第 5 節の表を plan の決定と今のコードに合わせる。spec の DC-155-3 とバックエンドの書き方 第 1.5 節、共通コードの設計書に、横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）を除くことと理由を書く。商品カタログの設計書の画像の追加の確認の記述を直す。注文の値のパッケージの例外、`config.security` の行の説明、規則の一覧の標準の構成の行の確認方法を直す。
   - 依存：T155-06-04
   - 範囲：`test/common/scheduling/ExpiredDataCleanupTest.java`、`docs/specs/155-backend-structure/spec.md`、`docs/rules/backend-coding.md`、`docs/design/common.md`、`docs/design/modules/catalog.md`
-- [ ] **T155-06-05** E2E を実行し（`scripts/dev/e2e.sh`）、通ることを確認する。API の応答を変えないことを、注文、出荷、レポート、店舗の画面のシナリオで確認するため。
+- [x] **T155-06-05** E2E を実行し（`scripts/dev/e2e.sh`）、通ることを確認する。API の応答を変えないことを、注文、出荷、レポート、店舗の画面のシナリオで確認するため。
   - 依存：T155-06-04
 - [x] **T155-06-06** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書を、skill `docs` の言い回しと論理の規則と照合する。
   - 依存：T155-06-04
   - 範囲：`docs/rules/backend-coding.md`、`docs/design/common.md`、`docs/design/backend-architecture.md`、`docs/design/modules/`（本 spec で修正したもの）
-- [ ] **T155-06-07** 起票のまとめの案を作る。後回しにする作業、未決事項、spec の最後のレビューの推奨のうち採用しなかったものを、既存の issue と重複しないようにまとめ、案を pull request の本文に付ける。利用者が承認したら、issue 担当のセッションが起票する（[開発の進め方](../../../rules/workflow.md) 第 4.1 節）。
+- [x] **T155-06-07** 起票のまとめの案を作る。後回しにする作業、未決事項、spec の最後のレビューの推奨のうち採用しなかったものを、既存の issue と重複しないようにまとめ、案を pull request の本文に付ける。利用者が承認したら、issue 担当のセッションが起票する（[開発の進め方](../../../rules/workflow.md) 第 4.1 節）。
   - 依存：T155-06-04〜06
 - [ ] **T155-06-08** pull request の前のレビュー：profile「厚め」のとおり、高性能のレビュー役が spec との一致と完了の定義を確認し、組み込みのコードレビュー（`/code-review`）も行う。指摘の扱いを決め、修正する（[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節）。
   - 依存：T155-06-07

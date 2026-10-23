@@ -1,8 +1,8 @@
 package com.ecsite.common.message;
 
 import com.ecsite.common.error.ErrorCode;
-import jakarta.annotation.Nullable;
 import lombok.NonNull;
+import org.jspecify.annotations.Nullable;
 
 import java.util.List;
 import java.util.Map;

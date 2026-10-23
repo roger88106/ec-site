@@ -31,6 +31,8 @@ public enum Basis {
     }
 
     /**
+     * 数える注文の状態を返す。
+     *
      * @return 数える注文の状態
      */
     public List<ReportOrderStatus> countedStatuses() {
@@ -38,6 +40,8 @@ public enum Basis {
     }
 
     /**
+     * その状態の注文を数えるかを返す。
+     *
      * @param status 注文の状態
      * @return その状態の注文を数えるか
      */

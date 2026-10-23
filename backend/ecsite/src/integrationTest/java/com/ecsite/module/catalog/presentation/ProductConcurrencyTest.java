@@ -14,6 +14,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutorService;
@@ -62,7 +63,7 @@ class ProductConcurrencyTest {
                         .content("""
                                 {"version": 0, "rates": [{"ratePercent": 10}]}"""))
                 .andExpect(status().isNoContent());
-        productCode = "CONCURRENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase();
+        productCode = "CONCURRENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
     }
 
     @AfterEach

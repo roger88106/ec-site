@@ -9,6 +9,7 @@ import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.UnpurchasableReason;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -53,7 +54,7 @@ public class CartQuoteService {
      * @return 見積もり。カートがない、または持ち主でなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<CartQuote> quoteCart(UUID cartId, UUID requester) {
+    public Optional<CartQuote> quoteCart(UUID cartId, @Nullable UUID requester) {
         var now = clock.instant();
         var holderId = checkoutRepository.findLatestIdByCartId(cartId).orElse(null);
         return cartDirectory.find(cartId)
@@ -77,6 +78,7 @@ public class CartQuoteService {
      */
     private static CartQuote.Item toItem(QuoteItem item) {
         var variant = item.variant();
+        var reason = item.unpurchasableReason();
         return new CartQuote.Item(
                 variant.variantId(),
                 variant.productId(),
@@ -87,7 +89,7 @@ public class CartQuoteService {
                 item.unitPriceInclTax(),
                 item.quantity(),
                 item.subtotal(),
-                item.purchasable() ? null : toReason(item.unpurchasableReason()));
+                reason == null ? null : toReason(reason));
     }
 
     /**

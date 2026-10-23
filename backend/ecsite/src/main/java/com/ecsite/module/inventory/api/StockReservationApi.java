@@ -1,8 +1,8 @@
 package com.ecsite.module.inventory.api;
 
 import com.ecsite.module.inventory.application.StockReservationService;
-import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.time.Instant;

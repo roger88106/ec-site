@@ -158,10 +158,12 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 SALES_ORDER_LINE.VARIANT_CODE, SALES_ORDER_LINE.PRODUCT_NAME, SALES_ORDER_LINE.AXIS_VALUES,
                 SALES_ORDER_LINE.QUANTITY, SALES_ORDER_LINE.RATE_PERCENT, SALES_ORDER_LINE.SUBTOTAL_INCL_TAX,
                 SALES_ORDER_LINE.SUBTOTAL_EXCL_TAX);
-        order.lines().forEach(line -> insert.values(order.orderId(), (short) line.lineNo(), line.productId(),
-                line.variantId(), line.productCode(), line.variantCode(), line.productName(),
-                JSONB.valueOf(jsonMapper.writeValueAsString(line.axisValues())), line.quantity(), line.ratePercent(),
-                line.subtotalInclTax().yen(), line.subtotalExclTax().yen()));
+        for (var line : order.lines()) {
+            insert = insert.values(order.orderId(), (short) line.lineNo(), line.productId(),
+                    line.variantId(), line.productCode(), line.variantCode(), line.productName(),
+                    JSONB.valueOf(jsonMapper.writeValueAsString(line.axisValues())), line.quantity(), line.ratePercent(),
+                    line.subtotalInclTax().yen(), line.subtotalExclTax().yen());
+        }
         insert.execute();
     }
 

@@ -3,9 +3,9 @@ package com.ecsite.module.shipping.infrastructure.mock;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 import com.ecsite.module.shipping.domain.Shipment;
-import jakarta.annotation.Nullable;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.web.util.HtmlUtils;
 
 import java.util.List;

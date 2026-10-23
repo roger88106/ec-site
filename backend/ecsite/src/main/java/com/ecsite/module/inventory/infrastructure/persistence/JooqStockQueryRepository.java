@@ -8,6 +8,7 @@ import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;
 import org.jooq.impl.DSL;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
@@ -108,7 +109,7 @@ class JooqStockQueryRepository implements StockQueryRepository {
      * @return バリアント ID → 販売可能数
      */
     @Override
-    public Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, UUID excludedHolderId, Instant now) {
+    public Map<UUID, Integer> findSellableQuantities(Collection<UUID> variantIds, @Nullable UUID excludedHolderId, Instant now) {
         // 在庫ごとの有効な引当の合計（引当がなければ 0）
         var reserved = DSL.coalesce(
                 DSL.select(DSL.sum(STOCK_RESERVATION.QUANTITY).cast(Integer.class))

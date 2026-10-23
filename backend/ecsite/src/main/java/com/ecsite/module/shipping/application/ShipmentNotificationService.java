@@ -9,6 +9,7 @@ import com.ecsite.module.shipping.domain.TrackingNumber;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -79,7 +80,7 @@ class ShipmentNotificationService implements ShipmentNotificationReceiver {
     /**
      * 通知の送り状番号を、保存と同じ形にする。形に合わなければ、どの出荷にも合わないので null。
      */
-    private static TrackingNumber normalize(String trackingNumber) {
+    private static @Nullable TrackingNumber normalize(String trackingNumber) {
         try {
             return TrackingNumber.of(trackingNumber);
         } catch (BusinessException e) {

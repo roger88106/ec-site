@@ -13,6 +13,7 @@ import org.jooq.Condition;
 import org.jooq.DSLContext;
 import org.jooq.Field;
 import org.jooq.OrderField;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Repository;
 
 import java.math.BigDecimal;
@@ -130,7 +131,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     /**
      * 並び順。同じ値なら ID の順にし、ページをまたいでも重複・欠落しないようにする（API の規約）。
      */
-    private static List<OrderField<?>> orderBy(StoreProductSort sort, Field<Long> priceInclTax) {
+    private static List<OrderField<?>> orderBy(@Nullable StoreProductSort sort, Field<Long> priceInclTax) {
         return switch (sort == null ? StoreProductSort.NEWEST : sort) {
             case NEWEST -> List.of(PRODUCT.FIRST_SHOWN_AT.desc(), PRODUCT.ID);
             case PRICE_ASC -> List.of(priceInclTax.asc(), PRODUCT.ID);

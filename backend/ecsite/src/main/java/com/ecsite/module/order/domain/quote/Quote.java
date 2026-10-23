@@ -7,6 +7,7 @@ import org.jmolecules.ddd.annotation.ValueObject;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 /**
  * 見積もり（docs/design/modules/order.md「見積もり」）。カートの表示、注文手続き、注文の成立で同じ計算をする。
@@ -37,7 +38,8 @@ public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
 
         // 消費税は、品目と送料（あれば）の課税対象から、税率ごとに求める
         var taxables = new ArrayList<TaxDirectory.Taxable>();
-        purchasable.forEach(item -> taxables.add(new TaxDirectory.Taxable(item.ratePercent(), item.subtotal())));
+        purchasable.forEach(item -> taxables.add(new TaxDirectory.Taxable(
+                Objects.requireNonNull(item.ratePercent(), "買える品目には率がある"), item.subtotal())));
         if (shippingFee.yen() > 0) {
             taxables.add(new TaxDirectory.Taxable(shipping.ratePercent(), shippingFee));
         }
@@ -55,8 +57,7 @@ public record Quote(List<QuoteItem> items, Amounts amounts, boolean orderable) {
      * @return 在庫だけが足りないなら true
      */
     public boolean shortOfStockOnly() {
-        var unpurchasable = items.stream().filter(item -> !item.purchasable()).toList();
-        return !unpurchasable.isEmpty()
-                && unpurchasable.stream().allMatch(item -> item.unpurchasableReason().isStockShortage());
+        var reasons = items.stream().map(QuoteItem::unpurchasableReason).filter(Objects::nonNull).toList();
+        return !reasons.isEmpty() && reasons.stream().allMatch(UnpurchasableReason::isStockShortage);
     }
 }

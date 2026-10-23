@@ -16,6 +16,7 @@ import java.util.Comparator;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Set;
 import java.util.function.BiFunction;
@@ -79,9 +80,9 @@ final class OpenApiOperations<T> {
     @SuppressWarnings("unchecked")
     private static <T> OpenApiOperations<T> parse(InputStream in, BiFunction<String, Map<String, Object>, T> valueOf) {
         Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
-        var servers = (List<Map<String, Object>>) root.get("servers");
+        var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約に servers がない");
         var basePath = (String) servers.getFirst().get("url");
-        var paths = (Map<String, Map<String, Object>>) root.get("paths");
+        var paths = (Map<String, Map<String, Object>>) Objects.requireNonNull(root.get("paths"), "OpenAPI の契約に paths がない");
 
         var parser = PathPatternParser.defaultInstance;
         var operations = new ArrayList<Operation<T>>();

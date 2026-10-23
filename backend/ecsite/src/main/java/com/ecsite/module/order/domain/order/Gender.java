@@ -1,6 +1,6 @@
 package com.ecsite.module.order.domain.order;
 
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.util.Arrays;
 
@@ -49,8 +49,7 @@ public enum Gender {
      * @param claim token の値
      * @return 性別。値がない・一覧にない値なら null（不明）
      */
-    @Nullable
-    public static Gender fromClaim(@Nullable String claim) {
+    public static @Nullable Gender fromClaim(@Nullable String claim) {
         return Arrays.stream(values()).filter(gender -> gender.claim.equals(claim)).findFirst().orElse(null);
     }
 }

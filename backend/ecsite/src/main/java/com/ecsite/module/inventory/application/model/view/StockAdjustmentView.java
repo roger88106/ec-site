@@ -1,7 +1,7 @@
 package com.ecsite.module.inventory.application.model.view;
 
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.UUID;

@@ -4,11 +4,11 @@ import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
-import jakarta.annotation.Nullable;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.Optional;
@@ -89,8 +89,8 @@ public class Payment extends AggregateRoot {
      * 全属性コンストラクタ
      */
     private Payment(@NonNull UUID id, @NonNull UUID orderId, @NonNull Money amount, @NonNull Instant deadline,
-                    @NonNull PaymentStatus status, PaymentPage page, String authorizationRef, Instant authorizedAt,
-                    Instant awaitingAuthorizationSince, long version) {
+                    @NonNull PaymentStatus status, @Nullable PaymentPage page, @Nullable String authorizationRef,
+                    @Nullable Instant authorizedAt, @Nullable Instant awaitingAuthorizationSince, long version) {
         this.id = id;
         this.orderId = orderId;
         this.amount = amount;

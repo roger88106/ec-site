@@ -14,6 +14,8 @@ import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
+import org.springframework.lang.Contract;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -103,11 +105,12 @@ public class OrderQueryService {
      * @param request               ページの指定
      * @return 注文の一覧
      */
-    public PageResult<OrderQueryRepository.OrderSummaryView> list(String orderNumberPrefix, OrderStatus status,
-                                                                  LocalDate orderedFrom, LocalDate orderedTo,
+    public PageResult<OrderQueryRepository.OrderSummaryView> list(@Nullable String orderNumberPrefix,
+                                                                  @Nullable OrderStatus status,
+                                                                  @Nullable LocalDate orderedFrom, @Nullable LocalDate orderedTo,
                                                                   boolean authorizationExpiring, boolean returned,
                                                                   PageRequest request) {
-        Set<UUID> orderIds = null;
+        @Nullable Set<UUID> orderIds = null;
         if (authorizationExpiring) {
             // 与信期限が近いのは「受付」の注文だけ（キャンセル済みの注文は、与信期限切れの支払が残っても除く）
             orderIds = status == null || status == OrderStatus.ACCEPTED
@@ -166,7 +169,7 @@ public class OrderQueryService {
         var awaitingPayment = order.isAwaitingPayment() && payment != null;
         var returned = shipment != null && shipment.isReturned();
         var actions = new OrderDetailView.Actions(order.isCancellationRequestable(),
-                awaitingPayment && payment.payable(), order.isCancellationPending(),
+                payment != null && awaitingPayment && payment.payable(), order.isCancellationPending(),
                 order.isCancellableByOperator(returned), order.isShippable(), order.asksRestockOnCancel(returned));
         return new OrderDetailView(order.id(), order.orderNumber(), order.orderedAt(), order.status(), order.lines(),
                 order.amounts(), order.email(), order.shippingAddress(), order.cancellationRequest(),
@@ -176,7 +179,8 @@ public class OrderQueryService {
     /**
      * 日本時間の日付の始まりの時刻。
      */
-    private static Instant startOf(LocalDate date) {
+    @Contract("null -> null; !null -> !null")
+    private static @Nullable Instant startOf(@Nullable LocalDate date) {
         return date == null ? null : date.atStartOfDay(BusinessTime.ZONE).toInstant();
     }
 }

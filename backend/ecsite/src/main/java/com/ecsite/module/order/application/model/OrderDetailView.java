@@ -8,7 +8,7 @@ import com.ecsite.module.order.domain.order.vo.OrderLine;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.Instant;
 import java.util.List;
@@ -35,7 +35,7 @@ import java.util.UUID;
 public record OrderDetailView(UUID id, OrderNumber orderNumber, Instant orderedAt, OrderStatus status,
                               List<OrderLine> lines, Amounts amounts, String email, ShippingAddress shippingAddress,
                               @Nullable CancellationRequest cancellationRequest, @Nullable Cancellation cancellation,
-                              @Nullable OrderPayment payment, @Nullable ShippingDirectory.Shipment shipment,
+                              @Nullable OrderPayment payment, ShippingDirectory.@Nullable Shipment shipment,
                               boolean awaitingPayment, Actions actions) {
 
     /**

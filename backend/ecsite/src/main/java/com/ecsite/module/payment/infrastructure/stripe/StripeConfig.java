@@ -24,6 +24,8 @@ class StripeConfig {
     private static final int MAX_NETWORK_RETRIES = 2;
 
     /**
+     * Stripe の API を作る。
+     *
      * @param properties Stripe の設定
      * @return Stripe の API
      */
@@ -48,6 +50,8 @@ class StripeConfig {
     }
 
     /**
+     * Stripe の決済サービスを作る。
+     *
      * @param client Stripe の API
      * @param clock  時計
      * @return Stripe の決済サービス
@@ -58,6 +62,8 @@ class StripeConfig {
     }
 
     /**
+     * Stripe の通知の受け取りを作る。
+     *
      * @param receiver   通知の port
      * @param properties Stripe の設定
      * @param clock      時計

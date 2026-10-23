@@ -15,8 +15,8 @@ import com.ecsite.module.reporting.application.model.query.CustomerBreakdownQuer
 import com.ecsite.module.reporting.application.model.query.SalesTrendQuery;
 import com.ecsite.module.reporting.application.model.query.VariantSalesQuery;
 import com.ecsite.module.reporting.domain.ReportPeriod;
-import jakarta.annotation.Nullable;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 

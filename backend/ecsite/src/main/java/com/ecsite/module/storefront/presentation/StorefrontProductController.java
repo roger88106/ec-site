@@ -7,6 +7,7 @@ import com.ecsite.api.store.model.ProductSummaryPage;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.storefront.application.StorefrontService;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -41,7 +42,7 @@ class StorefrontProductController implements ProductApi {
      * @return Http 200 : {@link ProductSummaryPage}
      */
     @Override
-    public ResponseEntity<ProductSummaryPage> listProducts(UUID categoryId, Long minPrice, Long maxPrice,
+    public ResponseEntity<ProductSummaryPage> listProducts(@Nullable UUID categoryId, @Nullable Long minPrice, @Nullable Long maxPrice,
                                                            ProductSort sort, Integer page, Integer size) {
         var condition = mapper.toProductCondition(categoryId, minPrice, maxPrice, sort);
         var result = storefrontService.listProducts(condition, PageRequest.of(page, size));

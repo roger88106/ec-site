@@ -8,9 +8,11 @@ import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;
 import org.jmolecules.ddd.annotation.Identity;
+import org.jspecify.annotations.Nullable;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -43,6 +45,7 @@ public class Category extends AggregateRoot {
     /**
      * 親カテゴリ ID。最上位なら null
      */
+    @Nullable
     private final UUID parentId;
 
     /**
@@ -77,7 +80,7 @@ public class Category extends AggregateRoot {
      * @param displayOrder 表示順
      * @param version      バージョン
      */
-    private Category(@NonNull UUID id, UUID parentId, String name, int depth, int displayOrder, long version) {
+    private Category(@NonNull UUID id, @Nullable UUID parentId, String name, int depth, int displayOrder, long version) {
         if (depth < 1 || depth > MAX_DEPTH) {
             throw BusinessException.of(CategoryErrorCode.CATEGORY_DEPTH_EXCEEDED, List.of(MAX_DEPTH));
         }
@@ -101,7 +104,7 @@ public class Category extends AggregateRoot {
      * @param displayOrder 表示順
      * @return カテゴリ
      */
-    static Category create(UUID id, Category parent, String name, int displayOrder) {
+    static Category create(UUID id, @Nullable Category parent, String name, int displayOrder) {
         if (parent == null) {
             return new Category(id, null, name, 1, displayOrder, 0);
         }
@@ -142,7 +145,7 @@ public class Category extends AggregateRoot {
                 CategoryErrorCode.INVALID_CATEGORY_ORDER);
         var changed = new ArrayList<Category>();
         for (var category : siblings) {
-            int displayOrder = orders.get(category.id);
+            int displayOrder = Objects.requireNonNull(orders.get(category.id), "並び順は同じ親の全てのカテゴリに付く");
             if (category.displayOrder != displayOrder) {
                 category.displayOrder = displayOrder;
                 changed.add(category);
@@ -178,7 +181,7 @@ public class Category extends AggregateRoot {
      * @param displayOrder 表示順
      * @param version      バージョン
      */
-    public record Snapshot(UUID id, UUID parentId, String name, int depth, int displayOrder, long version) {
+    public record Snapshot(UUID id, @Nullable UUID parentId, String name, int depth, int displayOrder, long version) {
     }
 
     /**

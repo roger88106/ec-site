@@ -7,6 +7,7 @@ import com.ecsite.module.catalog.application.model.view.CategoryView;
 import com.ecsite.module.catalog.application.port.CategoryQueryRepository;
 import com.ecsite.module.catalog.domain.category.Category;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -62,7 +63,7 @@ public class CategoryQueryService {
      * @param childrenByParent 親カテゴリ ID → 子カテゴリ
      * @return 木の節の一覧
      */
-    private static List<CategoryNodeView> toNodes(UUID parentId, Map<UUID, List<CategoryView>> childrenByParent) {
+    private static List<CategoryNodeView> toNodes(@Nullable UUID parentId, Map<UUID, List<CategoryView>> childrenByParent) {
         return childrenByParent.getOrDefault(parentId, List.of()).stream()
                 .map(category -> new CategoryNodeView(
                         category.id(),

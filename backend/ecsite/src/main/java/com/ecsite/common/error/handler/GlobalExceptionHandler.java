@@ -162,7 +162,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
                     if (result instanceof ParameterErrors parameterErrors) {
                         return toFieldErrors(parameterErrors.getAllErrors().stream()).stream();
                     }
-                    String parameterName = result.getMethodParameter().getParameterName();
+                    @Nullable String parameterName = result.getMethodParameter().getParameterName();
                     return result.getResolvableErrors().stream()
                             .map(error -> new FieldValidationError(parameterName, validationMessages.of(result, error)));
                 })
@@ -185,7 +185,7 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
         List<FieldValidationError> errors = ex.getConstraintViolations().stream()
                 .map(violation -> {
                     // プロパティパス（メソッド名.引数名.…）の最後の名前を、フィールド名にする
-                    String field = null;
+                    @Nullable String field = null;
                     for (Path.Node node : violation.getPropertyPath()) {
                         field = node.getName();
                     }
@@ -337,6 +337,6 @@ class GlobalExceptionHandler extends ResponseEntityExceptionHandler {
      * @param field   フィールド名
      * @param message エラーメッセージ
      */
-    private record FieldValidationError(String field, @Nullable String message) {
+    private record FieldValidationError(@Nullable String field, @Nullable String message) {
     }
 }

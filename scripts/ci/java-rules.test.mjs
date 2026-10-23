@@ -4,6 +4,8 @@ import {
   findEnumNameConversions,
   findEnumStringConversions,
   findLombok,
+  findOtherNullable,
+  isNullableTarget,
   isStringConversionTarget,
   ruleFor,
 } from './java-rules.mjs'
@@ -81,5 +83,42 @@ describe('バックエンドの書き方の検査', () => {
     assert.equal(ruleFor('backend/ecsite/src/main/java/com/ecsite/Foo.java'), 'enum-name')
     assert.equal(ruleFor('backend/ecsite/src/main/resources/application.yml'), null)
     assert.equal(ruleFor('frontend/admin/src/lib/foo.ts'), null)
+  })
+
+  test('JSpecify 以外の Nullable の import（static import も）と、完全修飾名の注釈を見つける', () => {
+    const text = [
+      'package com.ecsite;',
+      'import jakarta.annotation.Nullable;',
+      'import javax.annotation.Nullable;',
+      'import org.springframework.lang.Nullable;',
+      'import static jakarta.annotation.Nullable.*;',
+      'void f(@jakarta.annotation.Nullable String a, @javax.annotation.Nullable String b, @org.springframework.lang.Nullable String c) {}',
+    ].join('\n')
+    assert.deepEqual(findOtherNullable(text).map((hit) => hit.line), [2, 3, 4, 5, 6])
+  })
+
+  test('JSpecify の Nullable と、Nullable という語を含むだけの行は見つけない', () => {
+    const text = [
+      'import org.jspecify.annotations.Nullable;',
+      'import jakarta.annotation.Resource;',
+      'import org.springframework.lang.NonNull;',
+      '// jakarta.annotation.Nullable は使わない',
+      'String s = "import javax.annotation.Nullable;";',
+      'void f(@Nullable String a, @org.jspecify.annotations.Nullable String b) {}',
+    ].join('\n')
+    assert.deepEqual(findOtherNullable(text), [])
+  })
+
+  test('他の Nullable は本番とテストのソース（tools も）を見て、生成したコードは見ない', () => {
+    const base = 'backend/ecsite/src'
+    assert.equal(isNullableTarget(`${base}/main/java/com/ecsite/Foo.java`), true)
+    assert.equal(isNullableTarget(`${base}/test/java/com/ecsite/FooTest.java`), true)
+    assert.equal(isNullableTarget(`${base}/integrationTest/java/com/ecsite/FooTest.java`), true)
+    assert.equal(isNullableTarget(`${base}/testFixtures/java/com/ecsite/Foo.java`), true)
+    assert.equal(isNullableTarget(`${base}/tools/java/com/ecsite/Foo.java`), true)
+    assert.equal(isNullableTarget('backend/ecsite/build/generated-sources/jooq/com/ecsite/jooq/Foo.java'), false)
+    assert.equal(isNullableTarget('backend/ecsite/build/generated/openapi/src/main/java/com/ecsite/api/Foo.java'), false)
+    assert.equal(isNullableTarget(`${base}/main/resources/application.yml`), false)
+    assert.equal(isNullableTarget('frontend/admin/src/lib/foo.ts'), false)
   })
 })

@@ -9,6 +9,7 @@ import com.ecsite.module.reporting.domain.ReportOrder;
 import com.ecsite.module.reporting.domain.StatusHistoryEntry;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -16,6 +17,7 @@ import java.time.Instant;
 import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -74,7 +76,7 @@ public class ReportCollectionService {
     /**
      * 明細の商品 ID を、商品カタログの API で求める。求められなければ、前の写しの商品 ID を残す。
      */
-    private HashMap<Integer, UUID> productIds(ReportOrder order) {
+    private Map<Integer, UUID> productIds(ReportOrder order) {
         var byVariant = catalogDirectory.productIdsOf(order.lines().stream().map(ReportOrder.Line::variantId).toList());
         var result = new HashMap<>(repository.productIds(order.orderId()));
         order.lines().forEach(line -> {
@@ -89,7 +91,7 @@ public class ReportCollectionService {
     /**
      * 出荷日時：注文の状態が出荷済みになった変化、または配送状態が出荷済みになった変化の、早いほうの発生日時。
      */
-    private static Instant shippedAt(List<StatusHistoryEntry> history) {
+    private static @Nullable Instant shippedAt(List<StatusHistoryEntry> history) {
         return history.stream()
                 .filter(StatusHistoryEntry::marksShipment)
                 .map(StatusHistoryEntry::occurredAt)
@@ -100,7 +102,7 @@ public class ReportCollectionService {
     /**
      * 配送状態：配送状態の変化の後の状態のうち、順位の最も高いもの。
      */
-    private static DeliveryStatus deliveryStatus(List<StatusHistoryEntry> history) {
+    private static @Nullable DeliveryStatus deliveryStatus(List<StatusHistoryEntry> history) {
         return history.stream()
                 .filter(entry -> entry.kind() == HistoryKind.DELIVERY_STATUS)
                 .map(StatusHistoryEntry::deliveryStatus)

@@ -7,6 +7,7 @@ import com.ecsite.module.catalog.application.port.MediaDirectory;
 import com.ecsite.module.catalog.domain.product.Product;
 import com.ecsite.module.catalog.domain.product.port.ProductRepository;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -129,7 +130,7 @@ public class ProductImageService {
      * @param version   取得時の商品のバージョン
      */
     @Transactional
-    public void setVariantImage(UUID productId, UUID variantId, UUID imageId, long version) {
+    public void setVariantImage(UUID productId, UUID variantId, @Nullable UUID imageId, long version) {
         var product = productLoader.get(productId, version);
 
         product.setVariantImage(variantId, imageId);

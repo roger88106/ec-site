@@ -4,7 +4,7 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.DailySales;
 import com.ecsite.module.reporting.domain.ReportPeriod;
-import jakarta.annotation.Nullable;
+import org.jspecify.annotations.Nullable;
 
 import java.time.LocalDate;
 import java.util.List;

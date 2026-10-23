@@ -26,13 +26,13 @@ describe('グラフの吹き出し', () => {
     renderTooltip('amount', formatYen)
 
     expect(screen.getByText('1,234 円')).toBeInTheDocument()
-    expect(screen.getAllByText('売上金額').length).toBeGreaterThan(0) // 見出しと系列の行の両方に出る
+    expect(screen.getAllByText('売上金額')).toHaveLength(2) // 見出しと系列の行
   })
 
   it('数の整形を渡すと、値が「1,234」で出て、系列の名前もそのまま出る', () => {
     renderTooltip('quantity', formatNumber)
 
     expect(screen.getByText('1,234')).toBeInTheDocument()
-    expect(screen.getAllByText('販売数量').length).toBeGreaterThan(0) // 見出しと系列の行の両方に出る
+    expect(screen.getAllByText('販売数量')).toHaveLength(2) // 見出しと系列の行
   })
 })

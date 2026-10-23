@@ -1,5 +1,6 @@
 import { render, screen } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
+import { User } from 'oidc-client-ts'
 import { StrictMode } from 'react'
 import type { AuthContextProps } from 'react-oidc-context'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
@@ -16,12 +17,21 @@ vi.mock('react-oidc-context', () => ({
   hasAuthParams: () => false,
 }))
 
-/** ログインした運営者（IdP の token の中身のうち、門が使うものだけ） */
-const USER = {
+/** ログインした運営者（IdP の token の中身。門が使わない必須の項目は、固定の値で埋める） */
+const USER = new User({
   access_token: 'access-token-1',
   id_token: 'id-token-1',
-  profile: { family_name: '管理', given_name: '太郎' },
-} as unknown as AuthContextProps['user']
+  token_type: 'Bearer',
+  profile: {
+    iss: 'http://idp.test',
+    sub: 'operator-1',
+    aud: 'admin',
+    exp: 4102444800,
+    iat: 1767225600,
+    family_name: '管理',
+    given_name: '太郎',
+  },
+})
 
 /** ログインしていない状態 */
 function signedOut(): Partial<AuthContextProps> {
@@ -138,7 +148,8 @@ describe('ログインの門', () => {
   })
 
   it('ログインに失敗すると、理由を出し、ログインし直すとトップに戻る', async () => {
-    auth = { ...signedOut(), error: new Error('IdP に届かない') as AuthContextProps['error'] }
+    const error = Object.assign(new Error('IdP に届かない'), { source: 'signinCallback' as const })
+    auth = { ...signedOut(), error }
     const user = userEvent.setup()
     renderGate()
 

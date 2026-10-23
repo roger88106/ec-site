@@ -23,7 +23,7 @@
 - [ ] **T157-04-05** [P] レポートのテストを修正する。行と要求を並びのインデックスで選ぶ所を補助と件数の確認に、重ねた `expect` と同じハンドラーの重複をまとめる。名前を振る舞いの文にする（DC-157-12、19、24、32）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/report/pages/SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx`、`CustomerBreakdownPage.test.tsx`、`ReportPermission.test.tsx`、`frontend/admin/src/features/report/report.test.ts`、`frontend/admin/src/features/report/labels.test.ts`
-- [ ] **T157-04-06** [P] その他のテストを修正する。吹き出しの件数の確認と、ログインの利用者の型の変換を修正する（DC-157-18、24）。
+- [x] **T157-04-06** [P] その他のテストを修正する。吹き出しの件数の確認と、ログインの利用者の型の変換を修正する（DC-157-18、24）。
   - 依存：なし
   - 範囲：`frontend/admin/src/components/ChartValueTooltip.test.tsx`、`frontend/admin/src/auth/AuthGate.test.tsx`
 - [ ] **T157-04-07** 管理画面のテストの関数を `test` にそろえる（24 ファイル）。他の変更を含めない。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DC-157-28、21）。

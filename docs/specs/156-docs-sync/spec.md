@@ -1,6 +1,6 @@
 # Spec 156：設計の文書と用語集を実装に合わせる（MVP 019 の全体のレビューの指摘）
 
-ステータス：草案
+ステータス：確定
 
 ## 1. 背景と目的
 
@@ -95,7 +95,7 @@ MVP 019 の全体のレビュー（2026-10-21）で、設計の文書と用語�
 
 ## 6. 決めたこと
 
-2026-10-23 に、利用者が次の 2 つの決定と、第 5 節の採らない推奨の指摘を確認した。Open questions はない。spec 17 の実装が終わり、本 spec の前提が変わっていなければ、ステータスを確定にして plan に進む（利用者の決定）。
+2026-10-23 に、利用者が次の 2 つの決定と、第 5 節の採らない推奨の指摘を確認した。Open questions はない。spec 17 の実装が終わった後に、本 spec の前提が変わっていないことを確認して確定にした（利用者の決定、2026-10-23）。
 
 ### 1. モジュールの設計書のデータモデルに挙げるマイグレーション（DC-156-8）
 
@@ -113,7 +113,82 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
 
 ## 7. tasks
 
-plan の段階で書く（規模 M なので、spec の確定の後に、本節に tasks を書く）。
+### 段階 1：モジュールの設計書
+
+- 前提：spec の確定
+- 完了条件：DC-156-1〜12、29、36、37 を満たし、`scripts/ci/check-all.sh` が通る。
+- 参照：第 3 節の DS-156-1、DS-156-4、第 6 節、skill `docs`、[開発の進め方](../../rules/workflow.md) 第 1.3 節、[開発の進め方](../../rules/workflow.md) 第 1.5 節
+
+- [ ] **T156-01-01** 関連 spec の検査の除外に、本 spec の段階 1 と段階 2 を追加する。理由：文書をコードと規則に合わせるだけで、設計を変えないため。
+  - 依存：なし
+  - 範囲：`scripts/ci/related-specs-exclusions.json`
+- [ ] **T156-01-02** 商品カタログの設計書を修正する（DC-156-1、2、8、36、37）。
+  - 依存：T156-01-01
+  - 範囲：`docs/design/modules/catalog.md`
+- [ ] **T156-01-03** 注文の設計書を修正する（DC-156-3、8、10、36）。
+  - 依存：T156-01-01
+  - 範囲：`docs/design/modules/order.md`
+- [ ] **T156-01-04** 決済の設計書を修正する（DC-156-4、8、9、37）。
+  - 依存：T156-01-01
+  - 範囲：`docs/design/modules/payment.md`
+- [ ] **T156-01-05** 地域、カート、在庫の設計書を修正する（DC-156-5〜8、11、37）。
+  - 依存：T156-01-01
+  - 範囲：`docs/design/modules/region.md`、`cart.md`、`inventory.md`
+- [ ] **T156-01-06** 会員、メディア、レポートの設計書と、バックエンドのアーキテクチャの本文を修正する（DC-156-12、36、37）。
+  - 依存：T156-01-01
+  - 範囲：`docs/design/modules/member.md`、`media.md`、`reporting.md`、`docs/design/backend-architecture.md`
+- [ ] **T156-01-07** 通知、レポート、出荷の設計書の節の順と構成の図の並びを、他の設計書にそろえる（DC-156-29）。
+  - 依存：T156-01-06（レポートの設計書を同じく変えるため）
+  - 範囲：`docs/design/modules/notification.md`、`reporting.md`、`shipping.md`
+- [ ] **T156-01-08** 段階の最後のレビュー（profile「厚め」）。
+  - 依存：T156-01-02〜07
+
+### 段階 2：用語集、規則、手順と、文書の型
+
+- 前提：段階 1
+- 完了条件：DC-156-13〜28、30〜35、38、39 を満たし、`scripts/ci/check-all.sh` が通る。
+- 参照：第 3 節の DS-156-2〜4、第 6 節、skill `docs`、[文書の記号と番号](../../rules/notation.md)
+
+- [ ] **T156-02-01** 用語集を修正する（DC-156-13、32、33）。
+  - 依存：なし
+  - 範囲：`docs/design/glossary.md`
+- [ ] **T156-02-02** ロールの説明の「すべて」を「全て」にし、ロールと権限の対応表を再生成する（DC-156-34）。
+  - 依存：なし
+  - 範囲：`docker/keycloak/realms/ec-admin-realm.json` の `description`、`docs/design/role-permissions.md`（`node scripts/ci/role-permissions.mjs --write`）
+- [ ] **T156-02-03** constitution、文書の記号と番号、skill `docs` を修正する（DC-156-14、20、24〜27、39）。
+  - 依存：なし
+  - 範囲：`docs/constitution.md`、`docs/rules/notation.md`、`.claude/skills/docs/SKILL.md`
+- [ ] **T156-02-04** 書き方の規則と API の規約を修正する（DC-156-16〜18、21、23、38）。
+  - 依存：なし
+  - 範囲：`docs/rules/backend-coding.md`、`api-conventions.md`、`comments.md`、`test-writing.md`
+- [ ] **T156-02-05** 環境変数と CI の検査の文書、フロントのアーキテクチャを修正する（DC-156-15、19、20）。
+  - 依存：なし
+  - 範囲：`docs/guides/environment.md`、`docs/guides/ci.md`、`docs/design/frontend-architecture.md`
+- [ ] **T156-02-06** 店舗画面と管理画面の構成の冒頭に概要の表を置き、skill `docs` の概要の表の記述を修正する（DC-156-22、第 6 節の 2）。関連 spec は、2 つの文書の履歴から抽出する。
+  - 依存：T156-02-03（skill `docs` を同じく変えるため）
+  - 範囲：`docs/design/apps/store.md`、`docs/design/apps/admin.md`、`.claude/skills/docs/SKILL.md`
+- [ ] **T156-02-07** 注の番号、用語、参照の書き方をそろえる（DC-156-28、30、31）。
+  - 依存：T156-02-01〜06（同じ文書を変えるため）
+  - 範囲：`docs/design/backend-architecture.md`、`docs/design/apps/store.md`、`AGENTS.md`、`docs/design/acceptance-criteria.md`、`docs/design/modules/` の関連 spec の行、用語の揺れのある文書
+- [ ] **T156-02-08** MVP の完成までの一覧から、完了した作業の記録と切れたリンクを除く（DC-156-35）。
+  - 依存：なし
+  - 範囲：`docs/specs/archive/mvp/mvp.md`
+- [ ] **T156-02-09** 段階の最後のレビュー（profile「厚め」）。
+  - 依存：T156-02-01〜08
+
+### 段階 3：完了
+
+- 前提：段階 1、2
+- 完了条件：spec の最後のレビューと pull request の前のレビューの指摘に対応し、spec をアーカイブに移している。
+- 参照：[エージェントの作業フロー](../../rules/subagents.md) 第 4 節、[開発の進め方](../../rules/workflow.md) 第 4.2 節
+
+- [ ] **T156-03-01** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）を行い、指摘に対応する。
+  - 依存：T156-02-09
+- [ ] **T156-03-02** pull request の前のレビュー（高性能で spec との一致と完了の定義、組み込みのコードレビュー）を行い、指摘に対応する。
+  - 依存：T156-03-01
+- [ ] **T156-03-03** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。
+  - 依存：T156-03-02
+  - 範囲：`docs/specs/`
 
 ## 8. 後回しにする作業と起票の案
 

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { expandedPorts, findPortMismatches, readComposeHostPorts, readDocPorts, readPowerShellPorts } from './local-ports.mjs'
+import { expandedPorts, findPortMismatches, readComposeHostPorts, readConfigPorts, readDocPorts, readPowerShellPorts } from './local-ports.mjs'
 
 /** 小さな一覧（共有 2 件、スロットでずらす 1 件、E2E 1 件、スロット 3 つ） */
 const LIST = {
@@ -118,6 +118,32 @@ describe('ローカルのポートの一覧の検査', () => {
     const problems = findPortMismatches({ ...INPUT, sources: { 'e2e/src/urls.ts': "'http://localhost:8091'" } })
     assert.ok(problems.some((problem) => /urls\.ts.*8091/.test(problem)))
     assert.ok(problems.some((problem) => /8090.*E2E/.test(problem)))
+  })
+
+  test('設定のポートは、yml の port、JSON の port、起動の引数の --port から読む', () => {
+    const yml = 'server:\n  port: 8090\nmanagement:\n  server:\n    port: ${MANAGEMENT_SERVER_PORT:9080}\nurl: http://localhost:5432/x'
+    assert.deepEqual(readConfigPorts(yml), [5432, 8090, 9080])
+    assert.deepEqual(readConfigPorts('{ "port": 5173, "args": ["--port", "3000"] }'), [3000, 5173])
+  })
+
+  test('設定（realm、yml、起動の設定）に一覧にないポートがあれば失敗にする', () => {
+    const configs = { 'backend/application.yml': 'server:\n  port: 8081', 'docker/realm.json': '"http://localhost:8080/*"' }
+    const problems = findPortMismatches({ ...INPUT, configs })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /application\.yml.*8081/)
+  })
+
+  test('スロットでずらした値は、一覧から決まる値なら通り、ずれていれば失敗にする', () => {
+    assert.deepEqual(findPortMismatches({ ...INPUT, configs: { 'x.json': '"port": 18080' } }), [])
+    assert.ok(findPortMismatches({ ...INPUT, configs: { 'x.json': '"port": 18081' } }).some((problem) => /18081/.test(problem)))
+  })
+
+  test('realm の redirect URI に、一覧のスロットごとのポートが足りなければ失敗にする', () => {
+    const realm = (ports) => ({ text: ports.map((port) => `http://localhost:${port}/*`).join(' '), keys: ['backend', 'backend-e2e'] })
+    assert.deepEqual(findPortMismatches({ ...INPUT, realms: { 'docker/r.json': realm([8080, 18080, 28080, 8090]) } }), [])
+    const problems = findPortMismatches({ ...INPUT, realms: { 'docker/r.json': realm([8080, 18080, 8090]) } })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /28080.*r\.json/)
   })
 
   test('一覧の中で同じポートを重ねて書くと失敗にする', () => {

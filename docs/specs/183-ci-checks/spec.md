@@ -218,17 +218,21 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 範囲：`.github/workflows/ci.yml`、`frontend/store/package.json`、`frontend/admin/package.json`、`docs/guides/`
   - CI の統合テストのジョブは push の後に確認する（手元では統合テストを実行しない）
   - 結果：全体の検査を `./gradlew check` に決めた（`check` が checkLicense・テスト・compileToolsJava・OpenAPI の検証・checkBootJar・coverageReport を含み、`build` は `assemble` を加えるだけで、`checkLicense build` は重複）。ci.yml と docs/guides/ci.md・running-tests.md を合わせ、分ける数は matrix の `shard` の一覧だけにして総数は `strategy.job-total` から読み、店舗画面の `--passWithNoTests` を外した（外して `pnpm --filter ./frontend/store run test` が 317 件通った）。
+  - 確認方法：DC-183-23 は文書と CI を読む（レビュー）。DC-183-24 は CI の統合テストのジョブ名が 1/2・2/2 で通ったこと（run 40023186252）。DC-183-25 は 2 つの `package.json` の `test` を読む（レビュー）。
 - [x] **T183-03-02** [テスト] React のバージョンの指定をそろえ、Gradle のプラグインの一覧と Dependabot の対象を確認する検査を加える（DC-183-26〜28）。
   - 依存：なし
   - 範囲：3 つの `package.json`、`pnpm-lock.yaml`、`scripts/ci/` の直下（新しい検査。`check-all.sh` が実行する置き場所）、`scripts/ci/licenses/policy.json`、テスト、`docs/guides/ci.md`
   - 結果：React の指定を、他の依存と同じ `^` の範囲にそろえた（store の `react`・`react-dom` と shared の devDependencies の固定 `19.3.1` を `^19.3.1` に。admin はすでに `^19.3.1`、shared の peerDependencies `^19.3.0` は範囲のまま）。解決は 19.3.1 のままで、`pnpm-lock.yaml` の差分は specifier の 4 行だけ。検査 `gradle-plugins`（カタログの `[plugins]` と `plugins {}` の id を `policy.json` の `gradlePlugins` と過不足照合）と `dependabot-actions`（`action.yml` のディレクトリが Dependabot の `directories` にあるか）を加え、ci.md の表に行を加えた。
+  - 確認方法：DC-183-26 は `runtime-versions` の React の指定の判定（`findReactSpecifierProblems`。`peerDependencies` は範囲で持つので対象外）のテストと、今のリポジトリの結果が 0 件であること。DC-183-27 は `gradle-plugins` のテスト（読めない書き方の失敗を含む）。DC-183-28 は `dependabot-actions` のテスト。
 - [x] **T183-03-03** [テスト] ローカルのポートの一覧を 1 か所に置き、他の所との食い違いを見つける検査を作る（DC-183-29、30）。
   - 依存：なし
   - 範囲：一覧の置き場所（`scripts/dev/` か `docker/`。結果に書く）、`docker/compose.yaml`、`scripts/dev/slot.mjs`・`scripts/dev/lib/`、`scripts/dev/windows/`、`e2e/playwright.config.ts`、`scripts/ci/`、テスト、`docs/guides/setup.md`、`docs/guides/ci.md`
   - compose の検査（compose-ports）と重なる所は、1 つの検査にまとめるかを結果に書く
   - 結果：一覧を `scripts/dev/ports.json`（key・ポート・名前・group・スロットでずらすか）に置き、スロットの script（`lib/slot.mjs`）はここから読む。検査 `local-ports` が compose、Windows の予約の script、起動と E2E の文書、E2E の設定を一覧と照合する（今の食い違いは 0 件）。compose-ports は待ち受けるアドレスの検査として残し、local-ports がその読み取りを再利用する。
-- [ ] **T183-03-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+- [x] **T183-03-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-03-01〜03
+  - 結果：一般の観点を汎用で 2 回（高 1・0、必須 0・1）、重要な観点を高性能と汎用で（高 1・0、必須 2・1）レビューした。重複を除いて高 1 件、必須 3 件を修正した。
+  - 修正：`gradle-plugins` は、読めない書き方（`[plugins.名前]` の表、複数行の表、`plugins {}` の中の知らない行、`apply(plugin = "…")`）をファイル:行を出して失敗にし、文字列の形、同じ行の `id("…")`、`kotlin("…")` を読む。ci.yml の push の paths に `scripts/dev/ports.json` を加えた。`local-ports` は、バックエンドの yml、launch.json、画面の認証の設定、補助の script、ci.yml を一覧と照合し、realm の redirect URI に一覧の画面のポートが全てあることを確認する（テストコードの中のポートは対象外）。React の指定の書き方は `runtime-versions` が確認する。DC-183-23〜28 の確認方法を追記した。
 
 ### 段階 4：完了
 

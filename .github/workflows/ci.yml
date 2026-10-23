@@ -16,8 +16,9 @@ on:
       - '**'
       - '!**.md'          # 文書、skill の本文
       - '!.claude/**'     # エージェントの設定と、ローカルの画面の確認の設定
-      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く。E2E の script から使う scripts/dev/lib/ は次の行で含め直す）
+      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く。E2E の script から使う scripts/dev/lib/ と scripts/dev/ports.json は次の 2 行で含め直す）
       - 'scripts/dev/lib/**' # CI の E2E の script から使う script の置き場所
+      - 'scripts/dev/ports.json' # lib/slot.mjs が読むローカルのポートの一覧
       - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
       - '!.github/workflows/pages.yml'
       - '!.github/ISSUE_TEMPLATE/**' # issue のテンプレート

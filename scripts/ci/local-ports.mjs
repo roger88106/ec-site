@@ -1,6 +1,11 @@
 // ローカルのポートの一覧（scripts/dev/ports.json）と、一覧を読めない所のポートが食い違わないことを確認する。
 // 一覧を読む所（スロットの script `scripts/dev/lib/slot.mjs`）は検査の対象にしない。
-// 一覧を読めない所：compose（docker/compose.yaml）、Windows の予約の script、Playwright の設定（E2E のポート）、開発環境の起動の文書。
+// 一覧を読めない所：compose（docker/compose.yaml）、Windows の予約の script、Playwright の設定（E2E のポート）、開発環境の起動の文書、
+// そして、ポートを直接書く設定とスクリプト（Keycloak の realm の redirect URI、バックエンドの application*.yml、.claude/launch.json、
+// 画面の認証の設定、起動の補助の script、CI の workflow など。CONFIG_FILES）。
+// 設定のポートは、一覧から決まる値（スロットでずらした値を含む）であることを確認する。realm は、一覧の画面のポートが全て redirect URI にあることも確認する。
+// 対象外：テストコードの中のポート（単体テストの URL の例で、一覧のポートと同じである必要がない）、
+// 開発の文書のうち DOC_FILES 以外（ポートの一覧を書く文書ではない）。
 // compose の待ち受けるアドレス（LOCAL_BIND_ADDRESS）は compose-ports が確認する。この検査は、ポートの番号だけを照合する。
 // 使い方：node scripts/ci/local-ports.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
@@ -22,6 +27,30 @@ const DOC_FILES = ['docs/guides/setup.md', 'docs/guides/running-tests.md']
 
 /** E2E のポートを書く設定（E2E のサーバーの URL と、画面のサーバーの `--port`） */
 const SOURCE_FILES = ['e2e/src/urls.ts', 'e2e/playwright.config.ts']
+
+/** ポートを直接書く設定とスクリプト（一覧にあるポートだけが書かれていることを確認する） */
+const CONFIG_FILES = [
+  'backend/ecsite/src/main/resources/application.yml',
+  'backend/ecsite/src/main/resources/application-local.yml',
+  'backend/ecsite/src/main/resources/application-e2e.yml',
+  'backend/ecsite/src/main/resources/db/seed/local/R__payment_seed.sql',
+  '.claude/launch.json',
+  '.github/workflows/ci.yml',
+  'frontend/store/src/auth/config.ts',
+  'frontend/admin/src/auth/oidc.ts',
+  'frontend/admin/vite.config.ts',
+  'e2e/showcase/capture.spec.ts',
+  'docker/seaweedfs/init.sh',
+  'scripts/dev/check-frontend.sh',
+  'scripts/dev/keycloak.sh',
+  'scripts/dev/reset.sh',
+]
+
+/** Keycloak の realm の redirect URI。値は、そのクライアントの画面の、一覧の key（スロットごとの分と E2E を含む） */
+const REALM_FILES = {
+  'docker/keycloak/realms/ec-store-realm.json': ['store', 'store-e2e'],
+  'docker/keycloak/realms/ec-admin-realm.json': ['admin', 'admin-e2e'],
+}
 
 /**
  * 一覧が使うポートを、スロットごとにずらした分も含めて返す。
@@ -81,6 +110,23 @@ export function readDocPorts(text) {
 }
 
 /**
+ * 設定とスクリプトのポートを読む。`:ポート`（URL、`${変数:-ポート}`）と `--port ポート` に加え、
+ * yml の `port: ポート`・`port: ${変数:ポート}`、JSON の `"port": ポート`、起動の引数の `"--port", "ポート"` を読む。
+ *
+ * @param {string} text 設定やスクリプト
+ * @returns {number[]} ポート（種類ごとに出てくる順。重複は除く）
+ */
+export function readConfigPorts(text) {
+  const found = [
+    ...readDocPorts(text),
+    ...[...text.matchAll(/^\s*port:\s*(?:\$\{\w+:)?(\d{4,5})(?!\d)/gm)].map((match) => Number(match[1])),
+    ...[...text.matchAll(/"port"\s*:\s*(\d{4,5})(?!\d)/g)].map((match) => Number(match[1])),
+    ...[...text.matchAll(/"--port"\s*,\s*"(\d{4,5})"/g)].map((match) => Number(match[1])),
+  ]
+  return [...new Set(found)].sort((a, b) => a - b)
+}
+
+/**
  * 文書のスロットの表（`| 番号 | ポート… | …` の行）を読む。
  *
  * @param {string} text 文書
@@ -137,10 +183,10 @@ function diffProblems(actual, expected, where, place) {
  *
  * @param {{ list: { slotCount: number, slotOffset: number, ports: { key: string, port: number, group: string, slotted: boolean }[] },
  *   compose: string, powershell: string, docs: Record<string, string>, sources: Record<string, string> }} input
- *   docs と sources は、ファイルのパス → 内容
+ *   docs・sources・configs は、ファイルのパス → 内容。realms は、ファイルのパス → { text: 内容, keys: redirect URI に全て書く画面の一覧の key }
  * @returns {string[]} 問題の文
  */
-export function findPortMismatches({ list, compose, powershell, docs, sources }) {
+export function findPortMismatches({ list, compose, powershell, docs, sources, configs = {}, realms = {} }) {
   const problems = []
 
   const used = new Map()
@@ -207,11 +253,36 @@ export function findPortMismatches({ list, compose, powershell, docs, sources })
       problems.push(`一覧の E2E のポート ${port} が E2E の設定（${Object.keys(sources).join('、')}）にない`)
     }
   }
+
+  for (const [file, text] of Object.entries(configs)) {
+    for (const port of readConfigPorts(text)) {
+      if (!all.has(port)) {
+        problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、${file} を修正する）`)
+      }
+    }
+  }
+  for (const [file, { text, keys }] of Object.entries(realms)) {
+    const written = new Set(readConfigPorts(text))
+    for (const port of readConfigPorts(text)) {
+      if (!all.has(port)) {
+        problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、${file} を修正する）`)
+      }
+    }
+    for (const entry of list.ports.filter((item) => keys.includes(item.key))) {
+      const slots = entry.slotted ? list.slotCount : 1
+      for (let slot = 0; slot < slots; slot++) {
+        const port = entry.port + list.slotOffset * slot
+        if (!written.has(port)) {
+          problems.push(`一覧のポート ${port}（${entry.key}）が ${file} の redirect URI にない（${file} に加える）`)
+        }
+      }
+    }
+  }
   return problems
 }
 
 if (isMain(import.meta.url)) {
-  const files = [LIST_FILE, COMPOSE_FILE, POWERSHELL_FILE, ...DOC_FILES, ...SOURCE_FILES]
+  const files = [LIST_FILE, COMPOSE_FILE, POWERSHELL_FILE, ...DOC_FILES, ...SOURCE_FILES, ...CONFIG_FILES, ...Object.keys(REALM_FILES)]
   const missing = files.filter((file) => !existsSync(file))
   for (const file of missing) {
     console.log(`${file} がない（置き場所が変わっていないか確認する）`)
@@ -228,6 +299,8 @@ if (isMain(import.meta.url)) {
     powershell: read(POWERSHELL_FILE),
     docs: Object.fromEntries(DOC_FILES.map((file) => [file, read(file)])),
     sources: Object.fromEntries(SOURCE_FILES.map((file) => [file, read(file)])),
+    configs: Object.fromEntries(CONFIG_FILES.map((file) => [file, read(file)])),
+    realms: Object.fromEntries(Object.entries(REALM_FILES).map(([file, keys]) => [file, { text: read(file), keys }])),
   })
   for (const problem of problems) {
     console.log(problem)

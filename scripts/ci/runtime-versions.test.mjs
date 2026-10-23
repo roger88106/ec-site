@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import {
+  findReactSpecifierProblems,
   findRuntimeVersionProblems,
   findVersionLiteralProblems,
   readEnginesNode,
@@ -115,5 +116,39 @@ describe('workflow と action のバージョンの参照の検査', () => {
     assert.equal(findVersionLiteralProblems([{ path: 'a.yml', text: '      - java-version: 21' }]).length, 1)
     const text = '# java-version: 21\n          java-version: ${{ env.JAVA_VERSION }} # 21'
     assert.deepEqual(findVersionLiteralProblems([{ path: 'a.yml', text }]), [])
+  })
+})
+
+describe('React の指定の書き方の検査', () => {
+  const pkg = (path, dependencies, devDependencies = {}, peerDependencies = {}) => ({
+    path,
+    text: JSON.stringify({ dependencies, devDependencies, peerDependencies }),
+  })
+
+  test('react・react-dom・@types の指定が全て ^ の範囲なら問題がない', () => {
+    const files = [
+      pkg('frontend/admin/package.json', { react: '^19.3.1', 'react-dom': '^19.3.1' }, { '@types/react': '^19.2.18', '@types/react-dom': '^19.2.7' }),
+      pkg('frontend/shared/package.json', {}, { react: '^19.3.1' }),
+    ]
+    assert.deepEqual(findReactSpecifierProblems(files), [])
+  })
+
+  test('固定のバージョンの指定を失敗にする（ファイルと名前を出す）', () => {
+    const problems = findReactSpecifierProblems([pkg('frontend/store/package.json', { react: '19.3.1', 'react-dom': '^19.3.1' })])
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /frontend\/store\/package\.json.*react.*19\.3\.1/)
+  })
+
+  test('devDependencies の @types の固定も失敗にする', () => {
+    const problems = findReactSpecifierProblems([pkg('a/package.json', {}, { '@types/react': '19.2.18' })])
+    assert.equal(problems.length, 1)
+  })
+
+  test('peerDependencies は範囲で持つので対象にしない', () => {
+    assert.deepEqual(findReactSpecifierProblems([pkg('a/package.json', { react: '^19.3.1' }, {}, { react: '>=19' })]), [])
+  })
+
+  test('React の指定が 1 件もなければ失敗にする', () => {
+    assert.equal(findReactSpecifierProblems([pkg('a/package.json', { lodash: '1.0.0' })]).length, 1)
   })
 })

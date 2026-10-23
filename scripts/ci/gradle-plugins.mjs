@@ -1,7 +1,8 @@
 // Gradle のプラグインの id が、ライセンスの検査の一覧（scripts/ci/licenses/policy.json の gradlePlugins）と一致することを確認する。
 // Gradle のプラグインは依存の構成（licenseReport が読む構成）に出ないので、ライセンスは policy.json に手で書いている。
 // プラグインを追加・削除して一覧を直し忘れると、ライセンスを確認しないプラグインが入る、または使わないものが残るため、過不足を失敗にする。
-// プラグインの id は、`gradle/libs.versions.toml` の `[plugins]` と、`build.gradle.kts` の `plugins {}` に直接書いた `id("…")` から読む。
+// プラグインの id は、`gradle/libs.versions.toml` の `[plugins]`（1 行の表と文字列）と、`build.gradle.kts` の `plugins {}` に直接書いた `id("…")`・`kotlin("…")` から読む。
+// 読めない書き方（`[plugins.名前]` の表、複数行の表、`plugins {}` の中の知らない行、`apply(plugin = "…")`）は、読み飛ばすと誤って通るので、ファイル:行を出して失敗にする。
 // 使い方：node scripts/ci/gradle-plugins.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
@@ -26,56 +27,95 @@ const BUILD_PATHS = ['backend/ecsite']
 const isExternal = (id) => id.includes('.')
 
 /**
- * バージョンカタログの `[plugins]` の id を読む。
+ * バージョンカタログの `[plugins]` の id を読む。<br />
+ * 読める書き方は、1 行の表（`foo = { id = "…", version.ref = "…" }`）と、文字列（`foo = "id:バージョン"`）。
+ * それ以外の行（`[plugins.名前]` の表、複数行の表、id のない表）は読めないので、`unknown` に集める（読み飛ばすと、ライセンスを確認しないプラグインが通る）。
  *
  * @param {string} text libs.versions.toml の内容
- * @returns {string[]} id（書いた順）
+ * @returns {{ ids: string[], unknown: { line: number, text: string }[] }} id（書いた順）と、読めない行（1 始まりの行番号と内容）
  */
-export function readCatalogPluginIds(text) {
+export function readCatalogPlugins(text) {
   const ids = []
+  const unknown = []
   let inPlugins = false
-  for (const line of text.split('\n')) {
-    const section = /^\s*\[([^\]]+)\]/.exec(line)
-    if (section) {
-      inPlugins = section[1] === 'plugins'
-      continue
+  text.split('\n').forEach((raw, index) => {
+    const line = raw.replace(/\r$/, '').replace(/(^|\s)#.*$/, '').trim()
+    if (line === '') {
+      return
     }
-    if (inPlugins) {
-      const id = /^\s*[\w.-]+\s*=\s*\{[^}]*\bid\s*=\s*"([^"]+)"/.exec(line)?.[1]
-      if (id) {
-        ids.push(id)
+    const section = /^\[([^\]]+)\]/.exec(line)
+    if (section) {
+      inPlugins = section[1].trim() === 'plugins'
+      if (section[1].trim().startsWith('plugins.')) {
+        unknown.push({ line: index + 1, text: line })
+      }
+      return
+    }
+    if (!inPlugins) {
+      return
+    }
+    const id =
+      /^[\w.-]+\s*=\s*\{[^}]*\bid\s*=\s*"([^"]+)"[^}]*\}$/.exec(line)?.[1] ?? /^[\w.-]+\s*=\s*"([^":]+)(?::[^"]*)?"$/.exec(line)?.[1]
+    if (id) {
+      ids.push(id)
+    } else {
+      unknown.push({ line: index + 1, text: line })
+    }
+  })
+  return { ids, unknown }
+}
+
+/** `plugins {}` の中の 1 つの文（`;` で区切る）が読める形か。id("…")、kotlin("…")、alias(…)、組み込みの名前（`java`、`` `java-library` ``）の後に、`version …`、`apply …` が続いてよい */
+const PLUGIN_STATEMENT = /^(?:id\s*\(\s*"([^"]+)"\s*\)|kotlin\s*\(\s*"([^"]+)"\s*\)|alias\s*\([^)]*\)|`?[\w-]+`?)(?:\s+(?:version|apply)\b.*)?$/
+
+/**
+ * `build.gradle.kts` の `plugins {}` の中に直接書いた `id("…")` と `kotlin("…")`（`org.jetbrains.kotlin.…`）を読む。<br />
+ * `alias(libs.plugins.…)` はバージョンカタログ側で読むので読まない。行コメントの中は読まない。`plugins {` と同じ行の書き方も読む。
+ * `plugins {}` の中の読めない行と、`apply(plugin = "…")` は、`unknown` に集める。
+ *
+ * @param {string} text Gradle のファイルの内容
+ * @returns {{ ids: string[], unknown: { line: number, text: string }[] }} id（書いた順）と、読めない行（1 始まりの行番号と内容）
+ */
+export function readBuildPlugins(text) {
+  const ids = []
+  const unknown = []
+  let inPlugins = false
+  const readStatements = (content, lineNumber) => {
+    for (const statement of content.split(';').map((item) => item.trim()).filter((item) => item !== '')) {
+      const match = PLUGIN_STATEMENT.exec(statement)
+      if (!match) {
+        unknown.push({ line: lineNumber, text: statement })
+      } else if (match[1]) {
+        ids.push(match[1])
+      } else if (match[2]) {
+        ids.push(`org.jetbrains.kotlin.${match[2]}`)
       }
     }
   }
-  return ids
-}
-
-/**
- * `build.gradle.kts` の `plugins {}` の中に直接書いた `id("…")` を読む。<br />
- * `alias(libs.plugins.…)` はバージョンカタログ側で読むので読まない。行コメントの中は読まない。
- *
- * @param {string} text Gradle のファイルの内容
- * @returns {string[]} id（書いた順）
- */
-export function readBuildPluginIds(text) {
-  const ids = []
-  let inPlugins = false
-  for (const raw of text.split('\n')) {
-    const line = raw.replace(/\/\/.*$/, '')
+  text.split('\n').forEach((raw, index) => {
+    const line = raw.replace(/\r$/, '').replace(/\/\/.*$/, '')
+    const lineNumber = index + 1
+    if (/\bapply\s*\(\s*plugin\b|\bapply\s+plugin\b/.test(line)) {
+      unknown.push({ line: lineNumber, text: line.trim() })
+      return
+    }
+    let content = line
     if (!inPlugins) {
-      inPlugins = /^plugins\s*\{/.test(line)
-      continue
+      const start = /^plugins\s*\{(.*)$/.exec(line)
+      if (!start) {
+        return
+      }
+      inPlugins = true
+      content = start[1]
     }
-    if (/^\}/.test(line)) {
+    const end = /\}/.exec(content)
+    if (end) {
       inPlugins = false
-      continue
+      content = content.slice(0, end.index)
     }
-    const id = /^\s*id\(\s*"([^"]+)"\s*\)/.exec(line)?.[1]
-    if (id) {
-      ids.push(id)
-    }
-  }
-  return ids
+    readStatements(content, lineNumber)
+  })
+  return { ids, unknown }
 }
 
 /**
@@ -118,9 +158,15 @@ export function findPluginProblems(used, listed) {
 if (isMain(import.meta.url)) {
   const buildFiles = listGitFiles(BUILD_PATHS).filter((path) => /\.gradle\.kts$/.test(path))
   exitIfNoFiles(buildFiles, 'Gradle のファイル')
-  const used = [...readCatalogPluginIds(readFileSync(CATALOG_FILE, 'utf8'))]
+  const used = []
+  const unknownLines = []
+  const catalog = readCatalogPlugins(readFileSync(CATALOG_FILE, 'utf8'))
+  used.push(...catalog.ids)
+  unknownLines.push(...catalog.unknown.map((item) => `${CATALOG_FILE}:${item.line}: 読めない書き方（${item.text}）`))
   for (const file of buildFiles) {
-    used.push(...readBuildPluginIds(readFileSync(file, 'utf8')))
+    const build = readBuildPlugins(readFileSync(file, 'utf8'))
+    used.push(...build.ids)
+    unknownLines.push(...build.unknown.map((item) => `${file}:${item.line}: 読めない書き方（${item.text}）`))
   }
   let listed
   try {
@@ -129,7 +175,7 @@ if (isMain(import.meta.url)) {
     console.log(error.message)
     process.exit(1)
   }
-  const problems = findPluginProblems(used, listed)
+  const problems = [...unknownLines, ...findPluginProblems(used, listed)]
   if (used.filter(isExternal).length === 0) {
     problems.push('Gradle のプラグインが 1 件も見つからない（読む場所が変わっていないか確認する）')
   }

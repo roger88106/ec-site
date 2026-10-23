@@ -2,6 +2,7 @@
 // JDK：`.github/workflows/ci.yml` の `env.JAVA_VERSION` と `backend/ecsite/gradle/libs.versions.toml` の `java` が同じ値。
 // Node：`.node-version` の値が、ルートの `package.json` の `engines.node`（`>=N` の形）の範囲を満たす。
 // workflow と action の yml は、版を直接書かず、この置き場所を参照する（新しい job の直書きを見つける）。
+// 3 つの package.json の React の指定（`react`、`react-dom`、`@types/react`、`@types/react-dom`）は、全て `^` の範囲の書き方にそろえる。
 // 1 か所から読めない版は、置き場所の間の一致を検査で確かめる。ずれると、手元と CI で別の版を動かす。
 // 使い方：node scripts/ci/runtime-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -119,6 +120,42 @@ export function findVersionLiteralProblems(files) {
   return problems
 }
 
+/** React の package（バージョンの書き方をそろえる対象） */
+const REACT_PACKAGES = ['react', 'react-dom', '@types/react', '@types/react-dom']
+
+/** package.json の React の指定を読む場所の一覧（`frontend/` の下の画面と共有のパッケージ） */
+const PACKAGE_JSON_PATHS = ['frontend/admin/package.json', 'frontend/store/package.json', 'frontend/shared/package.json']
+
+/**
+ * 複数の package.json の、React の指定（`dependencies` と `devDependencies` の `react`、`react-dom`、`@types/react`、`@types/react-dom`）が、
+ * 全て `^1.2.3` の範囲の書き方か調べる。固定のバージョン（`19.3.1`）が混ざると、更新の仕方がパッケージごとに変わるため。<br />
+ * `peerDependencies` は、使う側に許す範囲（`>=19` など）を書くものなので、対象にしない。
+ *
+ * @param {{ path: string, text: string }[]} files package.json のパスと内容
+ * @returns {string[]} 問題の説明（なければ空）
+ */
+export function findReactSpecifierProblems(files) {
+  const problems = []
+  let found = 0
+  for (const { path, text } of files) {
+    const json = JSON.parse(text)
+    for (const section of ['dependencies', 'devDependencies']) {
+      for (const name of REACT_PACKAGES) {
+        const specifier = json[section]?.[name]
+        if (specifier === undefined) continue
+        found++
+        if (!/^\^\d+\.\d+\.\d+$/.test(specifier)) {
+          problems.push(`${path}: ${section} の ${name} の指定が ^ の範囲でない：${specifier}（^ を付ける）`)
+        }
+      }
+    }
+  }
+  if (found === 0) {
+    problems.push('package.json に React の指定が 1 件も見つからない（読む場所が変わっていないか確認する）')
+  }
+  return problems
+}
+
 if (isMain(import.meta.url)) {
   const read = (path) => readFileSync(path, 'utf8')
   const ymls = listGitFiles(['.github/workflows', '.github/actions']).filter((file) => /\.ya?ml$/.test(file))
@@ -132,6 +169,7 @@ if (isMain(import.meta.url)) {
     problems.push('workflow と action の yml が 1 件も見つからない（置き場所が変わっていないか確認する）')
   }
   problems.push(...findVersionLiteralProblems(ymls.map((file) => ({ path: file, text: read(file) }))))
+  problems.push(...findReactSpecifierProblems(PACKAGE_JSON_PATHS.map((file) => ({ path: file, text: read(file) }))))
   for (const problem of problems) {
     console.log(problem)
   }

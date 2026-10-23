@@ -4,9 +4,9 @@
 // - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない（valueOf(文字列リテラル以外)、fromValue(文字列リテラル以外)）。モジュールやレイヤーの間の列挙を文字列で受け渡すと、相手に値を追加したときにコンパイルでもテストでも気づけないため
 // - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** テストのソース */
 const TEST_SOURCE = /^backend\/ecsite\/src\/(?:test|integrationTest|testFixtures)\/.*\.java$/
@@ -122,9 +122,7 @@ export function ruleFor(file) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && (ruleFor(file) || isNullableTarget(file)) && existsSync(file))
+  const files = listGitFiles().filter((file) => ruleFor(file) || isNullableTarget(file))
   const messages = { lombok: 'テストで Lombok を使う', 'enum-name': '列挙型の変換に name() を渡す' }
   let count = 0
   for (const file of files) {

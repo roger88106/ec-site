@@ -2,9 +2,9 @@
 // キーだけでは画面に何が出るかを読めないため、`t('…')` の呼び出しの始めから、閉じ括弧のある行の終わりまでに、
 // コメント（/* */ か //）を求める。キーを組み立てる呼び出し（t(`…${x}`)）は、表示が値で変わるので見ない。
 // 使い方：node scripts/ci/message-comments.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** 文言の関数（t、tCommon など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
 const MESSAGE_CALL = /(?<![\w.$])t(?:[A-Z]\w*)?\(\s*(['"])([^'"]+)\1/g
@@ -129,6 +129,8 @@ export function findMissingComments(text) {
 
 /**
  * 調べるファイルかを返す。
+ * 画面の本番のソースの定義（lib/screen-sources.mjs）より狭く、2 つの画面の .tsx だけを見る（共有パッケージ、src/ui/、generated/ は見ない）。
+ * 定義に合わせて対象を広げるのは別の作業で行うので、今は今の対象のままにしている（今のコードの違反は、広げても 0 件）
  *
  * @param {string} file リポジトリのルートからのパス
  * @returns {boolean} 2 つの画面の src の .tsx（テストと shadcn/ui の生成物を除く）なら true
@@ -142,9 +144,7 @@ export function isTargetFile(file) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && isTargetFile(file) && existsSync(file))
+  const files = listGitFiles().filter((file) => isTargetFile(file))
   let count = 0
   for (const file of files) {
     for (const hit of findMissingComments(readFileSync(file, 'utf8'))) {

@@ -2,16 +2,11 @@
 // 文言は各画面の messages/ja.json（共通は frontend/shared/src/messages/ja.json）に置き、キーで引く。
 // コメントと、開発者だけが見る文（ログ、プログラムの誤りの例外）は見ない。テスト、生成物、shadcn/ui の部品、除外の一覧（hardcoded-text-exclusions.json。リポジトリのルートからのパスと理由）のファイルも見ない。
 // 使い方：node scripts/ci/hardcoded-text.mjs [--count]（リポジトリのルートで。--count は数だけを出し、失敗にしない）
-import { readdirSync, readFileSync } from 'node:fs'
-import { join, relative } from 'node:path'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
-
-/** 調べる画面のソースの置き場所 */
-const SOURCE_DIRS = ['frontend/admin/src', 'frontend/store/src', 'frontend/shared/src']
-
-/** 調べない置き場所（生成物、shadcn/ui の部品、テストの補助） */
-const EXCLUDED = [/[\\/]generated[\\/]/, /[\\/]components[\\/]ui[\\/]/, /[\\/]src[\\/]ui[\\/]/, /[\\/]src[\\/]test[\\/]/]
+import { listGitFiles } from './lib/git-files.mjs'
+import { isScreenSource } from './lib/screen-sources.mjs'
 
 /** 開発者だけが見る文（ログ、プログラムの誤りの例外）の行。利用者に見せる文ではないので見ない */
 const DEVELOPER_ONLY = /\b(log|console)\.(debug|info|warn|error)\(|throw new Error\(/
@@ -135,14 +130,6 @@ export function findHardcodedText(text) {
     )
 }
 
-/** 調べるファイル（テストを除く .ts と .tsx） */
-function sourceFiles(dir) {
-  return readdirSync(dir, { recursive: true, withFileTypes: true })
-    .filter((entry) => entry.isFile() && /\.tsx?$/.test(entry.name) && !entry.name.includes('.test.'))
-    .map((entry) => join(entry.parentPath, entry.name))
-    .filter((file) => !EXCLUDED.some((pattern) => pattern.test(file)))
-}
-
 /**
  * ファイルごとに、文言を直接書いた行を集める。
  *
@@ -161,7 +148,7 @@ export function scanSources(files, read) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const exclusions = readExclusions(fileURLToPath(new URL('./hardcoded-text-exclusions.json', import.meta.url)))
-  const files = SOURCE_DIRS.flatMap((dir) => sourceFiles(dir)).map((file) => relative('.', file).replaceAll('\\', '/'))
+  const files = listGitFiles(['frontend']).filter(isScreenSource)
   // 除外のファイルも読む。除外が要るのは、文言を直接書いた行があるファイルだけ
   const hitsByFile = scanSources(files, (file) => readFileSync(file, 'utf8'))
   const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))

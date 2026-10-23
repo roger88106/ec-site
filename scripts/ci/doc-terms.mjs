@@ -3,9 +3,9 @@
 //   caution：文脈で言い換えるかを決める語。--caution を付けたときだけ示し、失敗にしない（文書を書くときに見る）
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown。
 // 使い方：node scripts/ci/doc-terms.mjs [--caution]（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** 調べる文書 */
 const DOCS = /^(docs\/.*|README|AGENTS|\.claude\/skills\/.*)\.md$/
@@ -44,9 +44,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const caution = process.argv.includes('--caution')
   const list = JSON.parse(readFileSync(new URL('./doc-terms.json', import.meta.url), 'utf8'))
   const terms = caution ? list.caution : list.ng
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && isTargetDoc(file) && existsSync(file))
+  const files = listGitFiles().filter((file) => isTargetDoc(file))
   let count = 0
   for (const file of files) {
     for (const hit of findTerms(readFileSync(file, 'utf8'), terms)) {

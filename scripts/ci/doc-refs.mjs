@@ -4,10 +4,10 @@
 // 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。名前のない「第 N 節」は、Markdown ではその文書自身を指す。
 // アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** 見ないファイル（当時の記録、直せないもの、この検査のテストの例） */
 const EXCLUDED = [/^docs\/specs\/archive\//, /\/db\/migration\//, /^\.local\//, /^scripts\/ci\/doc-refs\.test\.mjs$/]
@@ -199,9 +199,7 @@ export function checkReferences(files, read, exists) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && TEXT_FILE.test(file) && !isExcluded(file) && existsSync(file))
+  const files = listGitFiles().filter((file) => TEXT_FILE.test(file) && !isExcluded(file))
   const problems = checkReferences(files, (file) => readFileSync(file, 'utf8'), existsSync)
   for (const problem of problems) console.log(problem)
   console.log(`切れた参照：${problems.length}`)

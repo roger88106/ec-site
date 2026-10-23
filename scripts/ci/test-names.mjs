@@ -1,9 +1,9 @@
 // バックエンドのすべてのテストに、表示の名前（@DisplayName）があることを確認する（テストの書き方 第 2.2 節）。
 // テストのメソッド（@Test・@ParameterizedTest）の注釈のまとまりに @DisplayName がなければ失敗する。構文は解析しない。
 // 使い方：node scripts/ci/test-names.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** テストのコードの置き場所 */
 const TEST_FILE = /^backend\/ecsite\/src\/(?:test|integrationTest)\/.*\.java$/
@@ -49,9 +49,7 @@ export function findUnnamedTests(source) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => TEST_FILE.test(file) && existsSync(file))
+  const files = listGitFiles().filter((file) => TEST_FILE.test(file))
   let count = 0
   for (const file of files) {
     for (const hit of findUnnamedTests(readFileSync(file, 'utf8'))) {

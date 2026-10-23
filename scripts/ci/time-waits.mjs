@@ -1,11 +1,11 @@
 // テストが時間で待っていないことを確認する（テストの書き方 第 5 節）。
 // 時間で待つテストは、遅い環境で失敗し、速い環境で時間を無駄にする。条件で待つ（latch、Playwright の expect の再試行など）。
 // 使い方：node scripts/ci/time-waits.mjs（リポジトリのルートで）
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from './lib/git-files.mjs'
 
-/** テストのコードの置き場所 */
+/** テストのコードの置き場所。本番のソースを読む検査ではなくテストを読むので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない */
 const TEST_FILES = [
   /^backend\/ecsite\/src\/(?:test|integrationTest)\/.*\.java$/,
   /^frontend\/(?:admin|store|shared)\/src\/.*\.test\.tsx?$/,
@@ -47,9 +47,7 @@ export function isTestFile(file) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && isTestFile(file) && existsSync(file))
+  const files = listGitFiles().filter((file) => isTestFile(file))
   let count = 0
   for (const file of files) {
     for (const hit of findTimeWaits(readFileSync(file, 'utf8'))) {

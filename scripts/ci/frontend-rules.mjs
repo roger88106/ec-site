@@ -4,16 +4,20 @@
 // - 店舗画面と管理画面に、同じ相対パスで同じ内容のファイルを置かない（共有パッケージに置く）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 // 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く
-import { execSync } from 'node:child_process'
-import { existsSync, readFileSync } from 'node:fs'
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { listGitFiles } from './lib/git-files.mjs'
 
 /** ロケールとタイムゾーンを書いてよいファイル */
 const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
 
-/** 調べる画面のソース（テストを除く） */
+/**
+ * 調べる画面のソース（テストを除く）。
+ * 画面の本番のソースの定義（lib/screen-sources.mjs）とは違い、生成物、shadcn/ui の部品、共有の ui、テストの補助（src/test/）も調べる。
+ * ロケールの直接の記述と機能の間の import は、どのファイルに書いても規則に反するため、本番のソースに絞らない
+ */
 const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/
 const TEST = /\.test\.tsx?$/
 
@@ -99,9 +103,7 @@ export function duplicatedFiles(files, read, excluded) {
 }
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = execSync('git ls-files -co --exclude-standard frontend', { encoding: 'utf8' })
-    .split('\n')
-    .filter((file) => file && existsSync(file))
+  const files = listGitFiles(['frontend'])
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'frontend-rules-exclusions.json'))
   let count = 0
   const report = (message) => {

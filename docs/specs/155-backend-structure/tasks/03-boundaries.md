@@ -31,7 +31,7 @@ T155-03-01〜04 と T155-03-06 は、変えるファイルが重ならないの�
 - [x] **T155-03-07** 構成の検査を追加する。`com.ecsite.module.*.presentation..` のクラスは、`@ConfigurationProperties` を付けたクラスに依存しない。`api` は対象にしない（spec と同じ範囲）。`allowEmptyShould` を付けない。presentation に設定の型を使う例を一時的に置いて、失敗することを確認する（DC-155-23）。
   - 依存：T155-03-04〜06
   - 範囲：`test/architecture/ConfigurationPropertiesTest.java`
-- [ ] **T155-03-08** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.3 節に、`member.api.CurrentMemberIds` を presentation から使う例外と理由を書く。バックエンドの書き方 第 6.1 節に、モジュールの `@Configuration` は infrastructure（またはその下）に置くことと、presentation は設定の値の型を受け取らないことを追加する。規則の一覧の確認方法に、追加した自動の検査を反映する。
+- [x] **T155-03-08** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.3 節に、`member.api.CurrentMemberIds` を presentation から使う例外と理由を書く。バックエンドの書き方 第 6.1 節に、モジュールの `@Configuration` は infrastructure（またはその下）に置くことと、presentation は設定の値の型を受け取らないことを追加する。規則の一覧の確認方法に、追加した自動の検査を反映する。
   - 依存：T155-03-01、T155-03-04、T155-03-07
   - 範囲：`docs/rules/backend-coding.md`（`:7-32,86-94,254-266`）
 - [ ] **T155-03-09** 各モジュールの設計書の「構成」を、段階 3 のコードに合わせる。shipping（設定の型の置き場所）、notification（`infrastructure/mail/` の設定の型）、storefront（`infrastructure/` の設定のクラス、店舗の情報の view、設定の型の説明）、reporting（設定の service と view）である。

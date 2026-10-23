@@ -13,7 +13,7 @@
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
 | 1.1 | 共通コードと設定はモジュールに依存せず、モジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
-| 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所は自動（ArchUnit）、変換の書き忘れは自動（コンパイル。全ての値の対応は変換ごとの単体テスト）、`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）、port と実装の分け方はレビュー |
+| 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/`（許可の一覧の 1 件を除く）だけであること、実装が public でないことは自動（ArchUnit）、変換の書き忘れは自動（コンパイル。全ての値の対応は変換ごとの単体テスト）、`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）、port と実装の分け方はレビュー |
 | 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）、目安はレビュー |
 | 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー |
 | 2.1 | 生成した interface を実装する。`@RestController` は presentation だけに付ける（`MeController` を除く） | `@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー |
@@ -29,7 +29,7 @@
 | 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
 | 5.4 | 書式は IntelliJ の整形を推奨する（強制しない） | なし（強制しない） |
-| 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所は自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
+| 6.1 | 設定の値の型 | 自動（起動のテスト）、`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）、型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
 | 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントはレビュー |
 
@@ -93,12 +93,15 @@ module/<モジュール>/
 ### 1.3 他のモジュールは腐敗防止層で包む
 
 - 他のモジュールの `api/` を呼ぶときは、port（`<相手>Directory` の interface と、相手の情報を変換して持つ自分の型）を使う層の `port/` に置き、実装は `infrastructure/directory/` に置く。
+- 他のモジュールの `api/` を使うのは `infrastructure/directory/` だけにする。例外は 1 件で、`member.api.CurrentMemberIds` を presentation から使う ※1。
 - 相手の型を内部で使わない。
 - モジュールの直下に、クラスが 1 つだけのパッケージ（`<相手>dir` など）を作らない。
 - 列挙を別の列挙に変換するとき（相手の型と自分の型、ドメインとイベント、ドメインと生成したモデル）は、`switch` 式で値ごとに書く。`valueOf(x.name())`、`fromValue(x.name())` は使わない。
 - モジュールの間とレイヤーの間で、列挙を名前の文字列で受け渡さない。command・query・view・api の型は列挙で持つ。名前の文字列から列挙にするのは、DB の文字列を読む `infrastructure/persistence/` と、ドメインの中だけ（`java-rules` が、それ以外の `valueOf`・`fromValue` を見つける）。
 
 理由：相手の変更の影響を、実装の 1 か所に限るため。`switch` 式は列挙の全ての値を書かないとコンパイルに失敗するので、片方に値を追加して変換を書き忘れると気づける（名前で変換すると、実行するまで気づけない）。
+
+※1：`CurrentMemberIds` は、要求の token から会員の ID を得る、API の入口のための部品で、会員のモジュールが presentation 向けに公開している。会員の ID は presentation が token から読み、application へ引数で渡す。会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために同じ組が増える。
 
 ### 1.4 パッケージの大きさ
 
@@ -148,10 +151,10 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 
 - 長さ・必須・形式は OpenAPI の制約（生成した Bean Validation）、業務の規則（重複、状態、期間の前後など）は domain で確認する。
 - リクエストの数値の項目には範囲（`minimum` と `maximum` の両方）、文字の項目には長さ（`maxLength`）か形式（`pattern`・`format`・`enum`）を書く。上限を書かないのは、計算に使わない項目（楽観ロックの版、ページ番号、絞り込みの値など）だけで、契約のテストの一覧に理由を書く。理由：上限のない数値を計算に使うと、桁あふれや DB の範囲の超過で 500 になるため。
-- 同じ項目の契約の制約、ドメインの上限の定数、DB の列の長さは一致させる ※1。
+- 同じ項目の契約の制約、ドメインの上限の定数、DB の列の長さは一致させる ※2。
 - 文字の「空白でない」「長さを code point で数える」の判定は `BoundedText` で行い、各ドメインは上限とエラーの種類だけを持つ。
 
-※1：`OpenApiRequestConstraintTest`（制約の漏れ）と `FieldConstraintContractTest`（契約・ドメイン・DB の一致）で確認する。項目を追加したら、テストの表にも追加する。
+※2：`OpenApiRequestConstraintTest`（制約の漏れ）と `FieldConstraintContractTest`（契約・ドメイン・DB の一致）で確認する。項目を追加したら、テストの表にも追加する。
 
 理由：契約に書ける検証は契約に、業務の規則は 1 か所に置くため。
 
@@ -224,12 +227,12 @@ getter・コンストラクターの注入などの定型コードは、main で
 | リポジトリの port（domain） | `XxxRepository` | `OrderRepository` |
 | 参照用のリポジトリの port（application） | `XxxQueryRepository` | `OrderQueryRepository` |
 | jOOQ の実装 | `JooqXxxRepository` | `JooqOrderRepository` |
-| service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` か用途の名前 ※2 | `OrderQueryService`、`OrderPlacementService` |
+| service（レベル A） | 参照は `XxxQueryService`、更新は `XxxCommandService` か用途の名前 ※3 | `OrderQueryService`、`OrderPlacementService` |
 | 腐敗防止層の port | `<相手>Directory`（使う層の `port/`） | `OrderDirectory` |
 | その実装 | `<相手>ApiDirectory`（`infrastructure/directory/`） | `OrderApiDirectory` |
 | イベント | 過去形 | `OrderShipped` |
 
-※2：1 つの集約に用途が複数あるとき、他のモジュールの呼び出しを組み合わせるとき。データを変えずに他のモジュールの結果を組み合わせる service（注文の手続きの見積もりなど）も用途の名前にし、読み取り専用のトランザクションにする。
+※3：1 つの集約に用途が複数あるとき、他のモジュールの呼び出しを組み合わせるとき。データを変えずに他のモジュールの結果を組み合わせる service（注文の手続きの見積もりなど）も用途の名前にし、読み取り専用のトランザクションにする。
 
 別のモジュールに同じ単純名のクラスがあってよい（Spring の Bean の名前は完全修飾名にしている）。
 
@@ -266,12 +269,14 @@ Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。
 
 - 設定は `@ConfigurationProperties` の record で受け、`@Validated` を付ける。型は使う層に置く（画像の変換の設定は `infrastructure/converter/` など）。
 - 接頭辞は `ecsite.<モジュール>`、まとまりを分けるときは `ecsite.<モジュール>.<範囲>`（`ecsite.media.storage` など）。モジュールでない共通の設定は `ecsite.<範囲>`（`ecsite.security` など）。
-- 環境で変わる値（接続先、資格情報、ID、バケット名）は既定値を持たず必須にする。環境によらない値（上限、時間など）だけ既定値を持つ ※3。
+- 環境で変わる値（接続先、資格情報、ID、バケット名）は既定値を持たず必須にする。環境によらない値（上限、時間など）だけ既定値を持つ ※4。
+- モジュールの `@Configuration` のクラスは、`infrastructure/`（またはその下）に置く。
+- presentation は、設定の値の型（`@ConfigurationProperties` を付けたクラス）を受け取らない。設定の値が必要なときは、application の service が設定の型を読み、view で返す。`api/` は対象にしない。
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
 
-※3：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番の動き（path style を使わない）を既定値にする。
+※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番の動き（path style を使わない）を既定値にする。
 
 理由：設定を忘れたまま、別の環境の値で動き出さないようにするため（足りなければ起動に失敗する）。
 

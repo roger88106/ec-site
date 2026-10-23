@@ -5,7 +5,7 @@
 // - 店舗画面と管理画面の本番のソースに、共有パッケージが公開する名前と同じ名前の関数・定数・クラスを定義しない（第 5.1 節。公開する名前は shared の package.json の exports から読む）
 // - 共通の置き場所（actions/、lib/、api/）は features/ を import しない（第 1.2 節）
 // - クエリ付きの URL を文字列で組み立てない（第 6 節）。line-through を直接書かない（第 10.1 節）
-// - テストと E2E で CSS のクラスを確認しない（テストの書き方 第 4.1 節）
+// - テストと E2E で CSS のクラスを確認しない。画面のテストで data-slot と querySelector で探さない（テストの書き方 第 4.1 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 // 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く。共有と同じ名前の定義でよいもの（各画面の translate など）は、キー <画面>:<名前> と理由を書く
 import { readFileSync } from 'node:fs'
@@ -71,6 +71,9 @@ const CSS_CLASS_CHECK = [
   /\bclass=\\?["']/,
   /(?:\blocator|\bquerySelector(?:All)?|\bclosest|\bmatches|\$\$?)\(\s*['"`][\w\s>+~*#-]*\.[A-Za-z_-]/,
 ]
+
+/** コンポーネントの内部の属性（data-slot）と、DOM のセレクターで探す書き方 */
+const INTERNAL_SELECTOR = [/\bdata-slot\b/, /\bquerySelector(?:All)?\b/]
 
 /** テストの種類のファイル（画面のテストと E2E） */
 const TEST_FILE = /^(?:frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?|e2e\/.*\.tsx?)$/
@@ -194,6 +197,18 @@ export function findQueryUrlStrings(text) {
  */
 export function findCssClassChecks(text) {
   return findCodeLines(text, (line) => CSS_CLASS_CHECK.some((pattern) => pattern.test(line)), { keepRegex: true })
+}
+
+/**
+ * コンポーネントの内部の属性（data-slot）と querySelector・querySelectorAll で要素を探す行を探す（テストの書き方 第 4.1 節。役割と名前で探す）。
+ * 画面のテストだけに当てる。E2E は対象にしない：E2E の locator は、IdP の画面（id で探す。e2e/src/auth.ts）と詳細の項目（xpath。e2e/src/detail.ts）に限って許し、
+ * 今の E2E に data-slot と querySelector の使用がなく、locator 全体を禁じると許した所まで失敗になるため
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findInternalSelectors(text) {
+  return findCodeLines(text, (line) => INTERNAL_SELECTOR.some((pattern) => pattern.test(line)), { keepRegex: true })
 }
 
 /**
@@ -356,6 +371,11 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   for (const file of files.filter((file) => TEST_FILE.test(file))) {
     for (const hit of findCssClassChecks(readFileSync(file, 'utf8'))) {
       report(`${file}:${hit.line} CSS のクラスを確認する（役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
+    }
+  }
+  for (const file of files.filter((file) => /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/.test(file))) {
+    for (const hit of findInternalSelectors(readFileSync(file, 'utf8'))) {
+      report(`${file}:${hit.line} コンポーネントの内部の属性（data-slot）か querySelector で探す（役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))

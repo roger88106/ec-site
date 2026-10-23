@@ -5,6 +5,7 @@ import {
   featureOf,
   findCrossFeatureImports,
   findCssClassChecks,
+  findInternalSelectors,
   findLineThrough,
   findLocaleLiterals,
   findQueryUrlStrings,
@@ -178,6 +179,20 @@ describe('店舗画面の書き方の規則', () => {
       "expect(button).toHaveAttribute('aria-pressed', 'true')",
     ].join('\n')
     assert.deepEqual(findCssClassChecks(text).map((hit) => hit.line), [1, 2, 3, 4])
+  })
+
+  test('コンポーネントの内部の属性（data-slot）と querySelector で探す行を見つける', () => {
+    const text = [
+      `const card = container.querySelector('[data-slot="card"]')`,
+      `container.querySelectorAll('li')`,
+      `screen.getByText('a').closest('[data-slot="field"]')`,
+      `expect(el).toHaveAttribute('data-slot', 'card')`,
+      `document.querySelector('#a')`,
+      `const el = screen.getByRole('button', { name: '保存' })`,
+      `expect(el).toHaveAttribute('aria-pressed', 'true')`,
+      `// container.querySelector('[data-slot]')`,
+    ].join('\n')
+    assert.deepEqual(findInternalSelectors(text).map((hit) => hit.line), [1, 2, 3, 4, 5])
   })
 
   test('line-through の直書きの行を見つける', () => {

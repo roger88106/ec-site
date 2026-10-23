@@ -2,6 +2,9 @@
 // - 機能（features/<機能>/）は、ほかの機能を import しない
 // - ロケールとタイムゾーンは frontend/shared/src/lib/locale.ts だけに書く。Intl と toLocaleString にロケールを直接書かない
 // - 店舗画面と管理画面に、同じ相対パスで同じ内容のファイルを置かない（共有パッケージに置く）
+// - 共通の置き場所（actions/、lib/、api/）は features/ を import しない（第 1.2 節）
+// - クエリ付きの URL を文字列で組み立てない（第 6 節）。line-through を直接書かない（第 10.1 節）
+// - テストと E2E で CSS のクラスを確認しない（テストの書き方 第 4.1 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 // 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く
 import { readFileSync } from 'node:fs'
@@ -9,6 +12,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
+import { isScreenSource } from './lib/screen-sources.mjs'
 
 /** ロケールとタイムゾーンを書いてよいファイル */
 const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
@@ -39,6 +43,18 @@ const LOCALE_LITERAL = [
   /\.toLocale\w*String\(\s*['"`]/,
   /(['"`])(?:ja|ja-JP|en|en-US|Asia\/Tokyo)\1/,
 ]
+
+/** 店舗画面と管理画面の、機能の外の共通の置き場所（actions/、lib/、api/）のファイル */
+const COMMON_FILE = /^frontend\/(?:store|admin)\/src\/(?:actions|lib|api)\//
+
+/** クエリ付きの URL を文字列で組み立てる書き方（テンプレート文字列の ?x=${…}、連結の '?x=' + … や … + '&x='） */
+const QUERY_URL_STRING = [/[?&][\w-]+=\$\{/, /[?&][\w-]+=['"`]\s*\+/, /\+\s*['"`][?&][\w-]+=/]
+
+/** CSS のクラスを確認する書き方 */
+const CSS_CLASS_CHECK = /\btoHaveClass\b|\.className\b|\.classList\b|getAttribute\(\s*['"`]class['"`]/
+
+/** テストの種類のファイル（画面のテストと E2E） */
+const TEST_FILE = /^(?:frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?|e2e\/.*\.tsx?)$/
 
 /**
  * 正規表現のどれかに合う行を探す。
@@ -105,6 +121,46 @@ export function findLocaleLiterals(text) {
 }
 
 /**
+ * 店舗画面と管理画面の、機能の外の共通の置き場所のファイルかを返す。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} actions/、lib/、api/ のファイルなら true
+ */
+export function isCommonFile(file) {
+  return COMMON_FILE.test(file)
+}
+
+/**
+ * クエリ付きの URL を文字列で組み立てる行を探す（フロントの書き方 第 6 節。URLSearchParams で作る）。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findQueryUrlStrings(text) {
+  return findLines(text, (line) => QUERY_URL_STRING.some((pattern) => pattern.test(line)))
+}
+
+/**
+ * CSS のクラスを確認する行を探す（テストの書き方 第 4.1 節。役割と名前で探す）。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findCssClassChecks(text) {
+  return findLines(text, (line) => CSS_CLASS_CHECK.test(line))
+}
+
+/**
+ * line-through を直接書いた行を探す（フロントの書き方 第 10.1 節。取り消し線は <s> で示す）。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findLineThrough(text) {
+  return findLines(text, (line) => line.includes('line-through'))
+}
+
+/**
  * 店舗画面と管理画面に、同じ相対パスで同じ内容のファイルを探す。
  *
  * @param {string[]} files リポジトリのルートからのパス
@@ -143,6 +199,24 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
       for (const hit of findLocaleLiterals(text)) {
         report(`${file}:${hit.line} ロケールかタイムゾーンを直接書く：${hit.text}`)
       }
+    }
+    if (isCommonFile(file)) {
+      for (const hit of findCrossFeatureImports(text, null, file)) {
+        report(`${file}:${hit.line} 共通の置き場所（actions/・lib/・api/）が features/ を import する（フロントの書き方 第 1.2 節）：${hit.text}`)
+      }
+    }
+    if (isScreenSource(file)) {
+      for (const hit of findQueryUrlStrings(text)) {
+        report(`${file}:${hit.line} クエリ付きの URL を文字列で組み立てる（機能の *Query.ts で URLSearchParams を使う。フロントの書き方 第 6 節）：${hit.text}`)
+      }
+      for (const hit of findLineThrough(text)) {
+        report(`${file}:${hit.line} line-through を直接書く（取り消し線は <s> で示す。フロントの書き方 第 10.1 節）：${hit.text}`)
+      }
+    }
+  }
+  for (const file of files.filter((file) => TEST_FILE.test(file))) {
+    for (const hit of findCssClassChecks(readFileSync(file, 'utf8'))) {
+      report(`${file}:${hit.line} CSS のクラスを確認する（役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))

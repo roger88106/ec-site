@@ -298,9 +298,10 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
   - 依存：なし
   - 範囲：`scripts/ci/doc-terms.mjs`、テスト、`.github/workflows/ci.yml`（コメントだけ）
   - 結果：対象に `.github/` の yml と Markdown を加え、`ci.yml` のコメントの 2 件を言い換えた。使わない語は 0 件、誤検出なし。
-- [ ] **T158-03-02** [テスト] フロントの規則の検査に、クエリ付きの URL の文字列の組み立て、テストでの CSS のクラスの確認、`line-through` の直書き、`actions/`・`lib/`・`api/` から `features/` への import を加える。今の違反（店舗画面の注文の一覧の URL）を修正する（DC-158-21〜24、26）。
+- [x] **T158-03-02** [テスト] フロントの規則の検査に、クエリ付きの URL の文字列の組み立て、テストでの CSS のクラスの確認、`line-through` の直書き、`actions/`・`lib/`・`api/` から `features/` への import を加える。今の違反（店舗画面の注文の一覧の URL）を修正する（DC-158-21〜24、26）。
   - 依存：なし（T158-01-02 の画面の本番のソースの定義を使う）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`frontend/store/src/features/order/`（URL の組み立ての置き換えだけ）
+  - 結果：違反は店舗画面の注文の一覧の URL（`orderListHref`）の 1 件で、`listHref` と同じ `URLSearchParams` の書き方に置き換えた（作る URL は同じ）。CSS のクラスの確認、`line-through`、共通の置き場所から `features/` への import の違反は 0 件。
 - [ ] **T158-03-03** [テスト] フロントの規則の検査に、共有のパッケージが公開する名前と同じ名前の定義を加える。各画面の `translate` は、理由付きで除外の一覧に置く（DC-158-25、26）。
   - 依存：T158-03-02（T158-01-02 の画面の本番のソースの定義を使う）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、除外の一覧

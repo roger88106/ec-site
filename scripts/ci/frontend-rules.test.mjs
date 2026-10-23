@@ -1,6 +1,15 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { duplicatedFiles, featureOf, findCrossFeatureImports, findLocaleLiterals } from './frontend-rules.mjs'
+import {
+  duplicatedFiles,
+  featureOf,
+  findCrossFeatureImports,
+  findCssClassChecks,
+  findLineThrough,
+  findLocaleLiterals,
+  findQueryUrlStrings,
+  isCommonFile,
+} from './frontend-rules.mjs'
 
 describe('フロントの書き方の検査', () => {
   test('機能のファイルの、ほかの機能の import を見つける', () => {
@@ -92,5 +101,54 @@ describe('ほかの機能の import の境界', () => {
   test('テンプレート文字列の動的 import は、${ を含まない固定の文字列だけを見る', () => {
     const text = ['import(`@/features/cart/x`)', 'import(`@/features/${name}/x`)'].join('\n')
     assert.deepEqual(findCrossFeatureImports(text, 'order').map((hit) => hit.line), [1])
+  })
+})
+
+describe('店舗画面の書き方の規則', () => {
+  test('クエリ付きの URL を文字列で組み立てる行を見つける', () => {
+    const text = [
+      "return page > 1 ? `/orders?page=${page}` : '/orders'",
+      "const a = '/orders?page=' + page",
+      "const b = '/orders' + '&page=' + page",
+      'const c = `/products?sort=newest&page=${page}`',
+      "const d = '/orders?page=1'",
+      'const e = new URLSearchParams({ page: String(page) })',
+      'const f = `/orders/${id}`',
+    ].join('\n')
+    assert.deepEqual(findQueryUrlStrings(text).map((hit) => hit.line), [1, 2, 3, 4])
+  })
+
+  test('CSS のクラスを確認する行を見つける', () => {
+    const text = [
+      "expect(button).toHaveClass('active')",
+      "expect(el.className).toContain('a')",
+      "el.classList.contains('a')",
+      "el.getAttribute('class')",
+      "expect(button).toHaveAttribute('aria-pressed', 'true')",
+    ].join('\n')
+    assert.deepEqual(findCssClassChecks(text).map((hit) => hit.line), [1, 2, 3, 4])
+  })
+
+  test('line-through の直書きの行を見つける', () => {
+    const text = ['<span className="line-through">x</span>', '<s>x</s>'].join('\n')
+    assert.deepEqual(findLineThrough(text).map((hit) => hit.line), [1])
+  })
+
+  test('actions・lib・api のファイルから features への import を、相対パスも含めて見つける', () => {
+    const file = 'frontend/store/src/actions/cart.ts'
+    const text = [
+      "import { x } from '@/features/cart/x'",
+      "import { y } from '../features/order/y'",
+      "import { z } from '@/lib/z'",
+    ].join('\n')
+    assert.deepEqual(findCrossFeatureImports(text, null, file).map((hit) => hit.line), [1, 2])
+  })
+
+  test('店舗画面と管理画面の actions・lib・api のファイルだけを共通の置き場所とする', () => {
+    assert.equal(isCommonFile('frontend/store/src/actions/cart.ts'), true)
+    assert.equal(isCommonFile('frontend/admin/src/lib/format.ts'), true)
+    assert.equal(isCommonFile('frontend/admin/src/api/client.ts'), true)
+    assert.equal(isCommonFile('frontend/shared/src/lib/locale.ts'), false)
+    assert.equal(isCommonFile('frontend/store/src/features/cart/lib/x.ts'), false)
   })
 })

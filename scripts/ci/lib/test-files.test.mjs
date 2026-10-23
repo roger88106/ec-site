@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { extractTestNames, findTestFiles, readTsTests, testFileKind } from './test-files.mjs'
+import { extractTestNames, findTestFiles, findUnreadableTsTests, readTsTests, testFileKind } from './test-files.mjs'
 
 describe('テストのファイルの種類', () => {
   test('Java の src/test・src/integrationTest と .test.ts(x)・.spec.ts を選び、他は null にする', () => {
@@ -59,6 +59,61 @@ describe('テストの関数の読み方', () => {
   test('extractTestNames の ts は、skipped のテストを除いた名前を返す', () => {
     const source = "it('a', () => {})\ntest.skip('b', () => {})\ntest.each([1])('c %s', () => {})"
     assert.deepEqual(extractTestNames(source, 'ts'), ['a', 'c %s'])
+  })
+
+  test('each の表の中に関数の呼び出し・入れ子の括弧・文字列と正規表現の中の ) があっても、テスト名を読む', () => {
+    const source = [
+      "test.each([[f(1), 'a']])('AC-1 関数 %s', () => {})",
+      "it.each([[[1, 2], (x) => g(h(x))]])('AC-2 入れ子 %s', () => {})",
+      "test.each([['a)b', 1]])('AC-3 文字列 %s', () => {})",
+      "test.each([[/\\)/.source]])('AC-4 正規表現 %s', () => {})",
+      'it.each`',
+      '  a | b',
+      '  ${f(1)} | ${2}',
+      "`('AC-5 テンプレートの表 $a', () => {})",
+      "test.skip.each([[f(1)]])('AC-6 飛ばす', () => {})",
+    ].join('\n')
+    assert.deepEqual(
+      readTsTests(source).map(({ name, skipped }) => [name, skipped]),
+      [
+        ['AC-1 関数 %s', false],
+        ['AC-2 入れ子 %s', false],
+        ['AC-3 文字列 %s', false],
+        ['AC-4 正規表現 %s', false],
+        ['AC-5 テンプレートの表 $a', false],
+        ['AC-6 飛ばす', true],
+      ],
+    )
+    assert.deepEqual(findUnreadableTsTests(source), [])
+  })
+
+  test('findUnreadableTsTests は、名前が文字列でない呼び出しと、括弧が閉じない呼び出しを、位置と理由で返す', () => {
+    const source = ['test(name, () => {})', 'it.each([[1]])(title, () => {})', 'test.each([[1, 2]', "test('閉じない名前"].join('\n')
+    const problems = findUnreadableTsTests(source)
+    assert.deepEqual(
+      problems.map(({ index }) => index),
+      [0, source.indexOf('it.each'), source.indexOf('test.each'), source.indexOf("test('閉")],
+    )
+    assert.match(problems[0].reason, /テスト名/)
+    assert.match(problems[1].reason, /テスト名/)
+    assert.match(problems[2].reason, /括弧/)
+    assert.match(problems[3].reason, /テスト名/)
+  })
+
+  test('findUnreadableTsTests は、テストの宣言でない呼び出しを失敗にしない', () => {
+    const source = [
+      "test.describe('まとまり', () => {})",
+      'test.use({ locale: "ja" })',
+      'test.step(name, async () => {})',
+      "test.skip(browserName === 'webkit', '理由')",
+      'test.fixme()',
+      'test.setTimeout(10)',
+      'expect(/re/.test(name)).toBe(true)',
+      'pattern.test(name)',
+      '// test(name) はコメント',
+      "const text = 'test(name)'",
+    ].join('\n')
+    assert.deepEqual(findUnreadableTsTests(source), [])
   })
 
   test('extractTestNames の java は、メソッドの @DisplayName を読み、クラスの名前を読まない', () => {

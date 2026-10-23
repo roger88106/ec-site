@@ -11,6 +11,7 @@
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
 //   空白で区切った AC の並びがある（AC-1 AC-2。AC-1、AC-2 と書く）、
+//   テスト名を読めない test・it の呼び出し（名前が文字列でない、each の括弧が閉じない）がある、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
@@ -21,7 +22,8 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { extractTestNames, findTestFiles } from './lib/test-files.mjs'
+import { extractTestNames, findTestFiles, findUnreadableTsTests } from './lib/test-files.mjs'
+import { createLineLocator } from './lib/line-number.mjs'
 import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
@@ -355,6 +357,18 @@ function report(result, root, strict) {
   }
 }
 
+/**
+ * テスト名を読めない呼び出しを、失敗の文にして返す。読めないテストは AC の照合から消えるので、黙って落とさない。
+ *
+ * @param {string} source Vitest・Playwright のテストのソース
+ * @param {string} rel 表示するファイルのパス
+ * @returns {string[]} `ファイル:行：理由`
+ */
+export function describeUnreadableTests(source, rel) {
+  const lineOf = createLineLocator(source)
+  return findUnreadableTsTests(source).map(({ index, reason }) => `${rel}:${lineOf(index)}：${reason}`)
+}
+
 /** spec とテストを読んで照合する */
 function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
@@ -371,9 +385,12 @@ function main() {
   const specAcs = new Set(definitions.map((definition) => definition.ac))
   const gitFiles = listGitFiles([], root)
   exitIfNoFiles(gitFiles, 'Git のファイル')
-  const tests = findTestFiles(root, gitFiles).flatMap(({ file, kind }) =>
-    extractTestNames(readFileSync(file, 'utf8'), kind).map((name) => ({ file, name })),
-  )
+  const unreadable = []
+  const tests = findTestFiles(root, gitFiles).flatMap(({ file, kind }) => {
+    const source = readFileSync(file, 'utf8')
+    if (kind === 'ts') unreadable.push(...describeUnreadableTests(source, path.relative(root, file).replaceAll('\\', '/')))
+    return extractTestNames(source, kind).map((name) => ({ file, name }))
+  })
   const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))
 
   // AC 一覧：手で書く列（状態など）を読み、テストの列を再作成して比べる
@@ -414,7 +431,8 @@ function main() {
   const result = check({ specAcs, tests, exclusions, deprecated, strict })
   report(result, root, strict)
   for (const problem of listProblems) console.log(problem)
-  const ok = result.ok && listProblems.length === 0
+  for (const problem of unreadable) console.log(`読めないテストの呼び出し（テスト名を文字列かテンプレートで書く）：${problem}`)
+  const ok = result.ok && listProblems.length === 0 && unreadable.length === 0
   console.log(
     `${ok ? 'OK' : 'NG'}：AC ${specAcs.size} 件（廃止 ${deprecated.size} 件）、テスト名 ${tests.length} 件、除外 ${Object.keys(exclusions).length} 件`,
   )

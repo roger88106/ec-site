@@ -1,5 +1,5 @@
 import { notFound, redirect } from 'next/navigation'
-import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
+import { beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
 import { withActionResult } from '@/actions/withActionResult'
 import { connectionFailedMessage } from '@/lib/actionResult'
 import { redirectedTo } from '@/test/next'
@@ -40,10 +40,6 @@ describe('サーバーアクションの失敗のログ', () => {
 
   beforeEach(() => {
     stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   test('AC-307 例外で失敗したら、error のログに例外の名前とメッセージを出し、「接続できない」の結果を返す', async () => {

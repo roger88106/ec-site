@@ -1,5 +1,5 @@
 import { HttpResponse, http as mswHttp } from 'msw'
-import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
+import { beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
 import { getApi, getMemberApi, UNCACHED } from '@/api/client'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
@@ -85,10 +85,6 @@ describe('店舗 API の 5xx のログ', () => {
 
   beforeEach(() => {
     stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   /** 標準エラー出力に書いたログ（1 行 1 件の JSON） */

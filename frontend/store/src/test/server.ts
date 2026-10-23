@@ -1,3 +1,4 @@
+import { HttpResponse, http as mswHttp } from 'msw'
 import { setupServer } from 'msw/node'
 import { createOpenApiHttp } from 'openapi-msw'
 import type { paths } from '@/api/generated/store'
@@ -22,6 +23,17 @@ export const http = createOpenApiHttp<paths>({ baseUrl: STORE_API })
  * ハンドラーのない API が呼ばれたら、テストを失敗させる（setup.ts）。
  */
 export const server = setupServer()
+
+/**
+ * 要求を通信の失敗（接続できない）にするハンドラーを作る。
+ *
+ * @param method HTTP のメソッド
+ * @param url    完全な URL。`:name` でパスのパラメーターを書ける（例：`${STORE_API}/carts/:cartId/items`）
+ */
+export function networkError(method: 'get' | 'post' | 'put' | 'patch' | 'delete', url: string) {
+  // 通信の失敗は store.yaml にない応答なので、型付きの http でなく、型のない msw のハンドラーで作る
+  return mswHttp[method](url, () => HttpResponse.error())
+}
 
 /**
  * エラーレスポンス（Problem）の本文を作る。画面に出るのは message。

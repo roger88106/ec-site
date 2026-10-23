@@ -1,4 +1,4 @@
-import { afterEach, beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
+import { beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
 import { log } from '@/lib/server/log'
 import { newTraceparent, TRACEPARENT_HEADER, traceIdOf } from '@/lib/server/trace'
 import { resetRequest } from '@/test/next'
@@ -26,10 +26,6 @@ describe('サーバー側のログ', () => {
   beforeEach(() => {
     stdout = vi.spyOn(process.stdout, 'write').mockImplementation(() => true)
     stderr = vi.spyOn(process.stderr, 'write').mockImplementation(() => true)
-  })
-
-  afterEach(() => {
-    vi.restoreAllMocks()
   })
 
   /** 書いた 1 行を JSON として読む */

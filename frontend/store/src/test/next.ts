@@ -1,5 +1,3 @@
-import { expect } from 'vitest'
-
 /**
  * サーバーの処理のテストで、Next.js の要求の口（next/headers、next/cache）の代わりに使う入れ物（店舗画面の構成 第 7 節）。<br />
  * setup.ts が next/headers・next/cache をこれに置き換える。next/navigation（redirect、notFound、unstable_rethrow）は
@@ -73,21 +71,49 @@ export function cookieOptions(name: string): Record<string, unknown> | undefined
 }
 
 /**
+ * 処理が投げた例外の digest を返す。<br />
+ * Next.js の redirect・notFound は、種類と移動先を digest に持つ例外を投げる。
+ *
+ * @param run 処理
+ * @returns 例外の digest。例外を投げなかった、または digest のない例外なら undefined
+ */
+async function thrownDigest(run: () => Promise<unknown>): Promise<string | undefined> {
+  const error = await run().then(
+    () => undefined,
+    (thrown: unknown) => thrown,
+  )
+  if (typeof error === 'object' && error !== null && 'digest' in error && typeof error.digest === 'string') {
+    return error.digest
+  }
+  return undefined
+}
+
+/**
  * 処理が redirect したことを確認し、移動先を返す。<br />
  * Next.js の redirect は、移動先を digest（`NEXT_REDIRECT;<種類>;<URL>;<状態>;`）に持つ例外を投げる。
  *
  * @param run 処理
  * @returns 移動先の URL
+ * @throws redirect していないとき
  */
 export async function redirectedTo(run: () => Promise<unknown>): Promise<string> {
-  const error = await run().then(
-    () => undefined,
-    (thrown: unknown) => thrown,
-  )
-  const digest = (error as { digest?: unknown } | undefined)?.digest
-  expect(
-    typeof digest === 'string' && digest.startsWith('NEXT_REDIRECT;'),
-    `redirect していない：${String(error)}`,
-  ).toBe(true)
-  return (digest as string).split(';').slice(2, -2).join(';')
+  const digest = await thrownDigest(run)
+  if (digest === undefined || !digest.startsWith('NEXT_REDIRECT;')) {
+    throw new Error(`redirect していない：${String(digest)}`)
+  }
+  return digest.split(';').slice(2, -2).join(';')
+}
+
+/**
+ * 処理が notFound() で見つからないことを知らせたことを確認する。<br />
+ * Next.js の notFound は、digest が `NEXT_HTTP_ERROR_FALLBACK;404` の例外を投げる。
+ *
+ * @param run 処理
+ * @throws notFound() していないとき
+ */
+export async function expectNotFound(run: () => Promise<unknown>): Promise<void> {
+  const digest = await thrownDigest(run)
+  if (digest !== 'NEXT_HTTP_ERROR_FALLBACK;404') {
+    throw new Error(`notFound() していない：${String(digest)}`)
+  }
 }

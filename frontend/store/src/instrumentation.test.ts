@@ -27,7 +27,6 @@ describe('起動時の設定の確認', () => {
 
   afterEach(() => {
     vi.unstubAllEnvs()
-    vi.restoreAllMocks()
   })
 
   /** 標準エラー出力に書いた内容 */

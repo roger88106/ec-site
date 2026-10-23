@@ -26,10 +26,10 @@
 - [x] **T157-03-06** [P] 店舗画面のテストデータの補助に、注文、お届け先、バリアントと軸、カートの ID を追加し、本番の環境変数の一式の補助を作る。補助と同じ定義を持つファイル（フォームの値、カートの ID）を、補助を使う形にする（DC-157-31）。
   - 依存：T157-03-01
   - 範囲：`frontend/store/src/test/fixtures.ts`、`frontend/store/src/test/env.ts`、`frontend/store/src/lib/server/formData.test.ts`。注文・バリアント・環境変数を使うファイルの置き換えは段階 5 で行う
-- [ ] **T157-03-07** [P] [テスト] 店舗画面の標準エラー出力の記録、通信の失敗の応答、見つからないことの確認の補助のテストを書き、レッドを確認する。見つからないことの確認の補助は、今の型の変換を型の絞り込みにする（DC-157-16、18、23、33）。
+- [x] **T157-03-07** [P] [テスト] 店舗画面の標準エラー出力の記録、通信の失敗の応答、見つからないことの確認の補助のテストを書き、レッドを確認する。見つからないことの確認の補助は、今の型の変換を型の絞り込みにする（DC-157-16、18、23、33）。
   - 依存：T157-03-01
   - 範囲：`frontend/store/src/test/stderr.test.ts`、`frontend/store/src/test/next.test.ts`、`frontend/store/src/test/server.test.ts`
-- [ ] **T157-03-08** T157-03-07 のテストが通る補助を書く。店舗画面の 4 ファイルの `restoreAllMocks` の `afterEach` を削除する。理由：setup で実行するため（DC-157-34）。
+- [x] **T157-03-08** T157-03-07 のテストが通る補助を書く。店舗画面の 4 ファイルの `restoreAllMocks` の `afterEach` を削除する。理由：setup で実行するため（DC-157-34）。
   - 依存：T157-03-07
   - 範囲：`frontend/store/src/test/stderr.ts`、`frontend/store/src/test/next.ts`、`frontend/store/src/test/server.ts`、`frontend/store/src/actions/withActionResult.test.ts`、`frontend/store/src/api/client.test.ts`、`frontend/store/src/lib/server/log.test.ts`、`frontend/store/src/instrumentation.test.ts`（`afterEach` だけ）
 - [ ] **T157-03-09** 管理画面の構成の結合テストの補助の表に、追加した補助を書く。

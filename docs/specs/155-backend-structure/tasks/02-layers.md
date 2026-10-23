@@ -79,7 +79,7 @@
 - [x] **T155-02-20** 各モジュールの設計書の「構成」を、段階 2 のコードに合わせる。order（`model/` の 9 クラス、`port/`）、cart（`model/`）、media（`model/`）、catalog（`model/view/`、`model/query/`）、storefront（`model/`、`port/`）、reporting（`ReportBuyerGender`、`HistoryStatus`）である。storefront の設計書の port の型に関する記述（`:35`）を、application の型に修正する。DC-155-45 のため、次の 3 点も個別に修正する。決済の設計書の「構成」の `model/` を、コードの `model/view/` に合わせる。カートの設計書の「構成」と公開の表の利用者を、注文だけにする（コードの `cart/api/package-info.java` と一致する）。税の設計書の公開の表と `tax/api/package-info.java` の利用者に、注文を追加する。
   - 依存：T155-02-15、T155-02-18
   - 範囲：`docs/design/modules/order.md`（`:149-179`）、`docs/design/modules/cart.md`（`:53-65`）、`docs/design/modules/media.md`（`:68-80`）、`docs/design/modules/catalog.md`（`:140-155`）、`docs/design/modules/storefront.md`（`:15-22,35`）、`docs/design/modules/reporting.md`（`:23,25,95-101,126-139`）、`docs/design/modules/payment.md`（`:173` の付近の `model/`）、`docs/design/modules/tax.md`（`:73` の公開の表）、`backend/ecsite/src/main/java/com/ecsite/module/tax/api/package-info.java`、`backend/ecsite/src/main/java/com/ecsite/module/cart/api/package-info.java`（利用者の記述を確認する）
-- [ ] **T155-02-21** AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成し、`ac-check.mjs` が通ることを確認する（AC-277、278）。
+- [x] **T155-02-21** AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成し、`ac-check.mjs` が通ることを確認する（AC-277、278）。
   - 依存：T155-02-20
   - 範囲：`docs/design/acceptance-criteria.md`
 - [ ] **T155-02-22** 段階のレビューと完了の確認。段階のレビューは profile「厚め」で、一般の観点は汎用 2 回、重要な観点は高性能と汎用で実施する。重要な観点は、ファイルをまたぐ影響である。判定は spec 担当のセッションが行う。確認の内容は次のとおり。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。pitest は、reporting の domain の列挙を変えたため実行する。基準（90.2、許容 0）を下回るときは、そのクラスの単体テストを追加する。

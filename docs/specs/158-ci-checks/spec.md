@@ -287,9 +287,10 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
 - 完了条件：DC-158-19〜28、49 を満たし、DC-158-26 のうち段階 3 の検査の違反が 0 件で、`check-all.sh` が通る。
 - 参照：第 3 節の DS-158-3、DC-158-49
 
-- [ ] **T158-03-01** [テスト] 使わない語の検査の対象に、`.github/` の yml と Markdown を加える。今の違反（`ci.yml` のコメントの 2 件）を言い換える（DC-158-19、20、26）。
+- [x] **T158-03-01** [テスト] 使わない語の検査の対象に、`.github/` の yml と Markdown を加える。今の違反（`ci.yml` のコメントの 2 件）を言い換える（DC-158-19、20、26）。
   - 依存：なし
   - 範囲：`scripts/ci/doc-terms.mjs`、テスト、`.github/workflows/ci.yml`（コメントだけ）
+  - 結果：対象に `.github/` の yml と Markdown を加え、`ci.yml` のコメントの 2 件を言い換えた。使わない語は 0 件、誤検出なし。
 - [ ] **T158-03-02** [テスト] フロントの規則の検査に、クエリ付きの URL の文字列の組み立て、テストでの CSS のクラスの確認、`line-through` の直書き、`actions/`・`lib/`・`api/` から `features/` への import を加える。今の違反（店舗画面の注文の一覧の URL）を修正する（DC-158-21〜24、26）。
   - 依存：なし（T158-01-02 の画面の本番のソースの定義を使う）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`frontend/store/src/features/order/`（URL の組み立ての置き換えだけ）

@@ -161,7 +161,7 @@ jobs:
             backend/ecsite/build/test-results/
           retention-days: 7
 
-  # ruleset の必須の検査の名前は「バックエンド」なので、この名前を残す（変えると ruleset の変更が要る）。
+  # ruleset の必須の検査の名前は「バックエンド」なので、この名前を残す（変えると ruleset の変更が必要になる）。
   # 上の 3 つのジョブの後に、カバレッジの実行データを合わせて報告を作る。
   # 上のジョブが失敗・スキップしたときも、このジョブを実行して失敗にする。
   # needs のジョブが失敗するとこのジョブはスキップされ、必須の検査としては成功と同じに扱われるので、
@@ -418,7 +418,7 @@ jobs:
           key: playwright-${{ runner.os }}-${{ steps.playwright.outputs.version }}
 
       # OS の依存（--with-deps、install-deps）は入れない。Chromium が使うライブラリは、ランナーのイメージに入っている。
-      # 依存の導入が足すのはフォントなどで、CI で流す e2e/tests の結果に影響しない（画面の撮影は CI で流さない）。
+      # 依存の導入が追加するのはフォントなどで、CI で流す e2e/tests の結果に影響しない（画面の撮影は CI で流さない）。
       # 一方、apt の取得は外部のミラーが遅いと数分から 30 分かかり、E2E のジョブ全体を止めることがある。
       # 失敗時の画面の撮影（screenshot: 'only-on-failure'）では、日本語のフォントがなく文字が四角になることがある。
       # 読めないときは、手元の scripts/dev/e2e.sh で再現する

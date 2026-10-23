@@ -26,4 +26,13 @@ describe('文書の用語の検査', () => {
   test('言い換える前の語を例に挙げる、言い回しの規則の文書は見ない', () => {
     assert.equal(isTargetDoc('.claude/skills/docs/tech-writing.md'), false)
   })
+
+  test('.github の yml（issue のテンプレート、workflow、action、dependabot）と Markdown を見る', () => {
+    assert.equal(isTargetDoc('.github/ISSUE_TEMPLATE/bug.yml'), true)
+    assert.equal(isTargetDoc('.github/workflows/ci.yml'), true)
+    assert.equal(isTargetDoc('.github/actions/setup-frontend/action.yml'), true)
+    assert.equal(isTargetDoc('.github/dependabot.yml'), true)
+    assert.equal(isTargetDoc('.github/pull_request_template.md'), true)
+    assert.equal(isTargetDoc('frontend/store/.github/workflows/ci.yml'), false)
+  })
 })

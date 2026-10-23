@@ -28,7 +28,7 @@ T155-03-01〜04 と T155-03-06 は、変えるファイルが重ならないの�
 - [x] **T155-03-06** [P] レポートの設定を application の view で返す。新しい `reporting/application/ReportSettingsQueryService` が `ReportingProperties` を読み、`reporting/application/model/view/ReportSettingsView` を返す。`ReportController` は service を使い、`ReportMapper` が view から応答に変換する。presentation が `ReportingProperties` を受けなくなったことを確認する（DC-155-23）。
   - 依存：なし
   - 範囲：`main/module/reporting/application/ReportSettingsQueryService.java`（新規）、`main/module/reporting/application/model/view/ReportSettingsView.java`（新規）、`main/module/reporting/presentation/ReportController.java`（`:11,57,127`）、`main/module/reporting/presentation/ReportMapper.java`。`main/module/reporting/application/SalesTrendQueryService.java`（`:27,39`）は変更しない。`it/module/reporting/presentation/ReportPermissionApiTest.java` は、変更せず、テストが通ることを確認する。
-- [ ] **T155-03-07** 構成の検査を追加する。`com.ecsite.module.*.presentation..` のクラスは、`@ConfigurationProperties` を付けたクラスに依存しない。`api` は対象にしない（spec と同じ範囲）。`allowEmptyShould` を付けない。presentation に設定の型を使う例を一時的に置いて、失敗することを確認する（DC-155-23）。
+- [x] **T155-03-07** 構成の検査を追加する。`com.ecsite.module.*.presentation..` のクラスは、`@ConfigurationProperties` を付けたクラスに依存しない。`api` は対象にしない（spec と同じ範囲）。`allowEmptyShould` を付けない。presentation に設定の型を使う例を一時的に置いて、失敗することを確認する（DC-155-23）。
   - 依存：T155-03-04〜06
   - 範囲：`test/architecture/ConfigurationPropertiesTest.java`
 - [ ] **T155-03-08** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.3 節に、`member.api.CurrentMemberIds` を presentation から使う例外と理由を書く。バックエンドの書き方 第 6.1 節に、モジュールの `@Configuration` は infrastructure（またはその下）に置くことと、presentation は設定の値の型を受け取らないことを追加する。規則の一覧の確認方法に、追加した自動の検査を反映する。

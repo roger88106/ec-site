@@ -49,7 +49,7 @@ module/<モジュール>/
 ├── application/        use case（@Transactional はここ）
 │   ├── model/          command・query・view
 │   └── port/           application が使う port（参照の Repository、他のモジュールの Directory）
-├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode）
+├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
 │   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装
     ├── persistence/    jOOQ の Repository と、それが使うクラス
@@ -72,7 +72,7 @@ module/<モジュール>/
 | レベル | 中身の違い |
 |--------|------------|
 | A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS）。例外：状態を DB の更新の条件で守るモジュールは、集約のクラスを持たなくてよい（今は在庫だけ。在庫数の並行の更新を、集約を読んで書き戻さずに、DB の差分の加算と条件で守るため） |
-| B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port は全て `application/port/`。CQRS なし。`application/model/` は必要なときだけ |
+| B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port は全て `application/port/`。CQRS なし。`application/model/` は必要なときだけ。クラスが多いときは、用途で domain を分けてよい（`domain/<用途>/`。reporting の `domain/snapshot/` と `domain/sales/`） |
 
 層の中の役割：
 
@@ -112,7 +112,6 @@ module/<モジュール>/
 |------------|----|--------------|
 | `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
 | `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラス（認可の対応表、認可の判定、契約の操作の一覧）が package-private。分けるとクラスを公開しなければならない |
-| `reporting.domain` | 18 | 集約がなく、集計の値（区切り、推移の点、日ごとの売上 など）と列挙が多い。集約ごとに分ける区切りがない |
 
 ### 1.5 共通の型
 
@@ -121,6 +120,7 @@ module/<モジュール>/
 - 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものは、そのモジュールの domain に置く。置き場所（集約の `vo/` か domain の直下）は第 1.1 節のとおり。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけ。設定の値の金額は、使う所で `Money` にする。
 - 金額の掛け算・割り算は、`Money` の操作と税の計算（`TaxCalculator`）の中だけで行う。端数が出る計算は、端数の扱い（切り捨て など）をメソッドで明示する。
+- 例外として、商品の一覧の税込価格の絞り込みと並べ替えは、SQL で税込価格（税抜価格 × (100 + 税率) ÷ 100 の切り捨て）を計算する（`catalog.infrastructure.persistence.PriceInclTaxField`）。理由：税区分ごとに税率が違い、税抜の順と税込の順が一致しないため、絞り込みと並べ替えを DB で行う必要がある。`TaxCalculator` と同じ結果になることは `PriceInclTaxFieldTest`（端数の境界値を含む）で確認する。
 
 理由：同じ規則を 1 か所に置きつつ、共通の型を増やしすぎて、モジュールが互いに依存しないようにするため。金額の計算を複数の場所に書くと、端数の扱いが場所によって変わる。
 

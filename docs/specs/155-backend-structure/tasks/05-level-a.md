@@ -39,7 +39,7 @@ T155-05-01、02、04、08、09 は、変えるファイルが重ならないの�
   - 範囲：`main/module/storefront/application/StorefrontService.java`。統合テスト（`it/module/storefront/presentation/`）は、変更せず、テストが通ることを確認する。
 - [x] **T155-05-10** [リスク] T155-05-09 の後のレビュー（profile「厚め」：高性能）。トランザクションの伝播（内側の読み取り専用が外側に加わる）、書き込みの経路がないこと、リクエストの間に接続を持つ影響を確認する。
   - 依存：T155-05-09
-- [ ] **T155-05-11** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.1 節の構成の図で、エラーの定義を「`<モジュール>ErrorCode`（集約ごとに分けてよい）」にする。バックエンドの書き方 第 1.4 節の表から `reporting.domain` の行を削除し、レベル B でもクラスが多いときは用途で分けてよいことを、バックエンドの書き方 第 1.1 節のレベルの表に書く。バックエンドの書き方 第 1.5 節に、商品の一覧の税込価格の絞り込みと並べ替えのために SQL で計算する例外を書く。端数は切り捨てで、税の計算と同じである。例外の理由は [plan](../plan.md) 第 5 節のとおりで、税の計算との一致は `PriceInclTaxFieldTest` で確認している（DC-155-38〜41）。
+- [x] **T155-05-11** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.1 節の構成の図で、エラーの定義を「`<モジュール>ErrorCode`（集約ごとに分けてよい）」にする。バックエンドの書き方 第 1.4 節の表から `reporting.domain` の行を削除し、レベル B でもクラスが多いときは用途で分けてよいことを、バックエンドの書き方 第 1.1 節のレベルの表に書く。バックエンドの書き方 第 1.5 節に、商品の一覧の税込価格の絞り込みと並べ替えのために SQL で計算する例外を書く。端数は切り捨てで、税の計算と同じである。例外の理由は [plan](../plan.md) 第 5 節のとおりで、税の計算との一致は `PriceInclTaxFieldTest` で確認している（DC-155-38〜41）。
   - 依存：T155-05-05、T155-05-06〜08
   - 範囲：`docs/rules/backend-coding.md`（`:16,44-58,61,68-69,98-112,147-152`）
 - [ ] **T155-05-12** 各モジュールの設計書の「構成」を、段階 5 のコードに合わせる。catalog（`application/product/`、`application/category/`、`domain/` 直下のエラーの定義）、inventory（`StockRegistrationService`、参照の service、エラーの定義）、order、payment、tax（エラーの定義の置き場所、order の値のパッケージ）、reporting（`domain/snapshot/`、`domain/sales/`）である。AC 一覧のテストの列を `node scripts/ci/ac-check.mjs --write` で再生成し、`ac-check.mjs` が通ることを確認する。

@@ -116,6 +116,22 @@ class ModuleStructureTest {
     }
 
     @Test
+    @DisplayName("application は、api に依存しない（公開の API が application の view を変換する）")
+    void applicationDoesNotDependOnApi() {
+        noClasses().that().resideInAPackage(MODULE_PACKAGE + ".*.application..")
+                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.api..")
+                .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("presentation と application.model は、application.port に依存しない（port の型を view にして渡す）")
+    void presentationAndApplicationModelDoNotDependOnPort() {
+        noClasses().that().resideInAnyPackage(MODULE_PACKAGE + ".*.presentation..", MODULE_PACKAGE + ".*.application.model..")
+                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.application.port..")
+                .check(CLASSES);
+    }
+
+    @Test
     @DisplayName("presentation・api・event と infrastructure は、互いに依存しない")
     void entryLayersAndInfrastructureAreIndependent() {
         for (String module : modulesWith("presentation", "api", "event")) {

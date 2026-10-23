@@ -14,6 +14,7 @@ import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
+import { stripComments } from './lib/strip-comments.mjs'
 
 /** ロケールとタイムゾーンを書いてよいファイル */
 const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
@@ -48,11 +49,28 @@ const LOCALE_LITERAL = [
 /** 店舗画面と管理画面の、機能の外の共通の置き場所（actions/、lib/、api/）のファイル */
 const COMMON_FILE = /^frontend\/(?:store|admin)\/src\/(?:actions|lib|api)\//
 
-/** クエリ付きの URL を文字列で組み立てる書き方（テンプレート文字列の ?x=${…}、連結の '?x=' + … や … + '&x='） */
-const QUERY_URL_STRING = [/[?&][\w-]+=\$\{/, /[?&][\w-]+=['"`]\s*\+/, /\+\s*['"`][?&][\w-]+=/]
+/** 文字列のリテラルとテンプレート文字列（引用符で閉じるまで。' と " は同じ行の中） */
+const STRING_LITERAL = /'(?:[^'\\\n]|\\.)*'|"(?:[^"\\\n]|\\.)*"|`(?:[^`\\]|\\.)*`/g
 
-/** CSS のクラスを確認する書き方 */
-const CSS_CLASS_CHECK = /\btoHaveClass\b|\.className\b|\.classList\b|getAttribute\(\s*['"`]class['"`]/
+/** クエリのパラメーター名（名前か ${…}）と =。? か & の直後に続く */
+const PARAM_NAME = String.raw`(?:[\w-]+|\$\{[^}]*\})=`
+
+/** 文字列の中の ?名前= か &名前=（'/x?a=1'、'/x?page=' + p、`${b}?${k}=${v}`） */
+const QUERY_PARAM_IN_STRING = new RegExp(`[?&]${PARAM_NAME}`)
+
+/** 連結の前半（? か & で終わる文字列。'/x?' + 'page=' + p の '/x?'） */
+const ENDS_WITH_QUERY_MARK = /[?&]$/
+
+/** 連結の後半（名前= で始まる文字列。'/x?' + 'page=' + p の 'page='） */
+const STARTS_WITH_PARAM = new RegExp(`^${PARAM_NAME}`)
+
+/** CSS のクラスを確認する書き方（toHaveClass、className、classList、属性の class、描画した HTML の class="、クラスのセレクター） */
+const CSS_CLASS_CHECK = [
+  /\btoHaveClass\b|\.className\b|\.classList\b/,
+  /(?:getAttribute|toHaveAttribute)\(\s*['"`]class['"`]/,
+  /\bclass=\\?["']/,
+  /(?:\blocator|\bquerySelector(?:All)?|\bclosest|\bmatches|\$\$?)\(\s*['"`][\w\s>+~*#-]*\.[A-Za-z_-]/,
+]
 
 /** テストの種類のファイル（画面のテストと E2E） */
 const TEST_FILE = /^(?:frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?|e2e\/.*\.tsx?)$/
@@ -69,6 +87,21 @@ function findLines(text, matches) {
     .split('\n')
     .map((line, index) => ({ line: index + 1, text: line.trim() }))
     .filter((hit) => matches(hit.text))
+}
+
+/**
+ * コメントを除いた行のうち、判定に合う行を探す。行の番号と表示する文字は元のソースのもの。
+ *
+ * @param {string} text ソース
+ * @param {(line: string) => boolean} matches コメントを除いた行の判定
+ * @param {{ keepRegex?: boolean }} [options] stripComments の指定
+ * @returns {{ line: number, text: string }[]} 見つけた行（行の順）
+ */
+function findCodeLines(text, matches, options) {
+  const original = text.split('\n')
+  return stripComments(text, options)
+    .split('\n')
+    .flatMap((line, index) => (matches(line) ? [{ line: index + 1, text: original[index].trim() }] : []))
 }
 
 /**
@@ -138,7 +171,19 @@ export function isCommonFile(file) {
  * @returns {{ line: number, text: string }[]} 見つけた行
  */
 export function findQueryUrlStrings(text) {
-  return findLines(text, (line) => QUERY_URL_STRING.some((pattern) => pattern.test(line)))
+  const code = stripComments(text)
+  const literals = [...code.matchAll(STRING_LITERAL)].map((match) => ({ start: match.index, end: match.index + match[0].length, content: match[0].slice(1, -1) }))
+  const lines = text.split('\n')
+  const hits = []
+  literals.forEach((literal, index) => {
+    const next = literals[index + 1]
+    const joinedToParam =
+      ENDS_WITH_QUERY_MARK.test(literal.content) && next && /^\s*\+\s*$/.test(code.slice(literal.end, next.start)) && STARTS_WITH_PARAM.test(next.content)
+    if (!QUERY_PARAM_IN_STRING.test(literal.content) && !joinedToParam) return
+    const line = code.slice(0, literal.start).split('\n').length
+    if (!hits.some((hit) => hit.line === line)) hits.push({ line, text: lines[line - 1].trim() })
+  })
+  return hits
 }
 
 /**
@@ -148,7 +193,7 @@ export function findQueryUrlStrings(text) {
  * @returns {{ line: number, text: string }[]} 見つけた行
  */
 export function findCssClassChecks(text) {
-  return findLines(text, (line) => CSS_CLASS_CHECK.test(line))
+  return findCodeLines(text, (line) => CSS_CLASS_CHECK.some((pattern) => pattern.test(line)), { keepRegex: true })
 }
 
 /**
@@ -158,7 +203,7 @@ export function findCssClassChecks(text) {
  * @returns {{ line: number, text: string }[]} 見つけた行
  */
 export function findLineThrough(text) {
-  return findLines(text, (line) => line.includes('line-through'))
+  return findCodeLines(text, (line) => line.includes('line-through'))
 }
 
 /**
@@ -229,6 +274,9 @@ export function sharedPublicNames(exportsMap, files, read) {
     if (TEST.test(file) || !/\.tsx?$/.test(file) || !patterns.some((pattern) => pattern.test(file))) continue
     for (const name of findExportedNames(read(file))) names.add(name)
   }
+  if (names.size === 0) {
+    throw new Error('共有のパッケージが公開する名前を 1 件も読めない（frontend/shared/package.json の exports の形か、export の書き方が変わった。検査を直す）')
+  }
   return names
 }
 
@@ -252,7 +300,8 @@ export function findDefinitions(text, names) {
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const files = listGitFiles(['frontend'])
+  // E2E（e2e/）は、CSS のクラスの確認だけを見る。ほかの規則は frontend/ のファイルだけに当てる
+  const files = listGitFiles(['frontend', 'e2e'])
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'frontend-rules-exclusions.json'))
   let count = 0
   const report = (message) => {
@@ -260,7 +309,13 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     count += 1
   }
   const sharedExports = JSON.parse(readFileSync('frontend/shared/package.json', 'utf8')).exports
-  const sharedNames = sharedPublicNames(sharedExports, files, (file) => readFileSync(file, 'utf8'))
+  let sharedNames
+  try {
+    sharedNames = sharedPublicNames(sharedExports, files, (file) => readFileSync(file, 'utf8'))
+  } catch (error) {
+    console.log(error.message)
+    process.exit(1)
+  }
   const shadowing = new Set()
   for (const file of files.filter((file) => SOURCE.test(file) && !TEST.test(file))) {
     const text = readFileSync(file, 'utf8')

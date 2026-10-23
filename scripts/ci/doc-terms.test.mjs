@@ -32,6 +32,8 @@ describe('文書の用語の検査', () => {
     assert.equal(isTargetDoc('.github/workflows/ci.yml'), true)
     assert.equal(isTargetDoc('.github/actions/setup-frontend/action.yml'), true)
     assert.equal(isTargetDoc('.github/dependabot.yml'), true)
+    assert.equal(isTargetDoc('.github/dependabot.yaml'), true)
+    assert.equal(isTargetDoc('.github/actions/setup-frontend/action.yaml'), true)
     assert.equal(isTargetDoc('.github/pull_request_template.md'), true)
     assert.equal(isTargetDoc('frontend/store/.github/workflows/ci.yml'), false)
   })

@@ -25,7 +25,7 @@
 - [x] **T155-02-02** 注文の見積もりの service を、カート ID と見積もり結果を持つ view `CartQuoteView`（`order/application/model/`）を返す形にする。公開の API `OrderQuoteApi` が公開の型 `CartQuote` に変換する。変換（`toCartQuote`、`toItem`、`toReason`、`toAmounts`、`toTaxAmount`）を API に移し、`CartQuoteServiceTest` を `test/module/order/api/OrderQuoteApiTest.java` に移す。`toReason` は package-private の static のままにし、単体テストから呼ぶ（DC-155-8、9）。
   - 依存：T155-02-01
   - 範囲：`main/module/order/application/checkout/CartQuoteService.java`（`:3,57,68-123`）、`main/module/order/application/model/CartQuoteView.java`（新規）、`main/module/order/api/OrderQuoteApi.java`（`:32-34`）、`test/module/order/application/checkout/CartQuoteServiceTest.java`（移動）。利用者の `main/module/storefront/infrastructure/directory/OrderApiDirectory.java` は、変更せず、テストが通ることを確認する。
-- [ ] **T155-02-03** [P] カートの内容を返す service を、`cart/application/model/CartContentsView` を返す形にする。`CartContentsApi` が `CartContents` に変換する。`MergedCart` は動かさない（DC-155-8、9）。
+- [x] **T155-02-03** [P] カートの内容を返す service を、`cart/application/model/CartContentsView` を返す形にする。`CartContentsApi` が `CartContents` に変換する。`MergedCart` は動かさない（DC-155-8、9）。
   - 依存：なし
   - 範囲：`main/module/cart/application/CartService.java`（`:6,145-150`）、`main/module/cart/application/model/CartContentsView.java`（新規）、`main/module/cart/api/CartContentsApi.java`（`:31`）。利用者の `main/module/order/infrastructure/directory/CartApiDirectory.java` は、変更せず、テストが通ることを確認する。
 - [ ] **T155-02-04** [P] 画像の service を、アセット ID を返す形にする。`prepareImage` は `UUID` を返し、`registerImage`、`discardImage` は `UUID` を受ける。`requestImageUpload` は `media/application/model/ImageUploadView` を返す。`MediaApi` が `PreparedImage`、`ImageUpload` に変換する（DC-155-8、9）。

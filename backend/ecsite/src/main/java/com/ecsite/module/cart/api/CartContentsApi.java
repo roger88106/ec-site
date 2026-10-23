@@ -1,6 +1,7 @@
 package com.ecsite.module.cart.api;
 
 import com.ecsite.module.cart.application.CartService;
+import com.ecsite.module.cart.application.model.CartContentsView;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
@@ -28,7 +29,12 @@ public class CartContentsApi {
      * @return カートの中身。カートがなければ空
      */
     public Optional<CartContents> find(UUID cartId) {
-        return cartService.findContents(cartId);
+        return cartService.findContents(cartId).map(CartContentsApi::toContents);
+    }
+
+    private static CartContents toContents(CartContentsView view) {
+        return new CartContents(view.cartId(), view.memberId(), view.version(),
+                view.items().stream().map(item -> new CartContents.Item(item.variantId(), item.quantity())).toList());
     }
 
     /**

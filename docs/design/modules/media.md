@@ -76,8 +76,8 @@ media/
 ├── domain/                 # アセット、ファイルのキーの決まり、画像の形式、エラー
 └── infrastructure/
     ├── persistence/        # リポジトリの実装
-    ├── converter/          # imgproxy による画像の変換
-    └── storage/            # S3 互換のオブジェクトストレージ
+    ├── converter/          # imgproxy による画像の変換と、その設定のクラス（ImgproxyConfig）と設定の値の型（ImgproxyProperties）
+    └── storage/            # S3 互換のオブジェクトストレージと、その設定のクラス（MediaStorageConfig）と設定の値の型（MediaStorageProperties）
 ```
 
 ## 他のモジュールへの公開

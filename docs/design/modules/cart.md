@@ -57,11 +57,12 @@ cart/
 ├── api/                    # 注文に公開する API
 ├── event/                  # カート変更のイベント
 ├── presentation/           # store.yaml から生成したインターフェースを実装
-├── application/            # カートの操作、期限切れのカートの片付け
+├── application/            # カートの操作、期限切れのカートの片付け（CartCleanupJob と、その設定の値の型 CartCleanupProperties）
 │   ├── model/              # 表示の型（view。カートの内容）
 │   └── port/               # リポジトリと腐敗防止層の port（選べるバリアントか、販売可能数）
-├── domain/                 # カート、品目、エラー
+├── domain/                 # カート、品目、統合の結果、エラー
 └── infrastructure/
+    ├── CartConfig          # 設定のクラス。片付けの設定の値の型を有効にする
     ├── persistence/        # リポジトリの実装
     └── directory/          # 商品カタログ・在庫の腐敗防止層
 ```

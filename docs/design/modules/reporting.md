@@ -126,6 +126,7 @@ reporting/
 │   ├── snapshot/           # 注文の写しと状態の履歴。注文時の性別（ReportBuyerGender）、キャンセルの種類、状態の履歴の状態（HistoryStatus。注文の状態か配送状態）は列挙で持つ
 │   └── sales/              # 売上の集計の値：期間と区切り、推移、日ごとの売上、年齢層と性別
 ├── infrastructure/
+│   ├── ReportingConfig     # 設定のクラス。レポートの設定の値の型を有効にする
 │   ├── directory/          # 注文・商品カタログ・地域の API の呼び出し
 │   └── persistence/        # 写しと履歴の保存、集計の SQL
 └── presentation/           # 管理 API（3 つのレポート）

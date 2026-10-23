@@ -153,8 +153,8 @@ order/
 ├── api/                    # カートの見積もり、レポートの注文の写し
 ├── event/                  # 注文の状態の変化、出荷済み
 ├── presentation/           # store.yaml・admin.yaml から生成したインターフェースを実装
-├── application/            # 注文の参照（詳細は view を返す）、キャンセル、レポートの参照
-│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの片付け、カート変更のリスナー
+├── application/            # 注文の参照（詳細は view を返す）、キャンセル、レポートの参照。注文の設定の値の型（OrderProperties。送料、送料の税区分、引当の期限）
+│   ├── checkout/           # 見積もり、注文手続きの開始と参照、注文の成立、期限切れの注文手続きの片付け（CheckoutCleanupJob と、その設定の値の型 CheckoutCleanupProperties）、カート変更のリスナー
 │   ├── payment/            # 支払の結果の反映、支払画面
 │   ├── shipment/           # 出荷の登録
 │   ├── model/              # 表示の型（view。見積もり、注文手続き、注文の詳細と一覧、支払、出荷、レポート用の注文）と注文の成立の入出力
@@ -164,6 +164,7 @@ order/
 │   ├── checkout/           # 注文手続き。port/ はリポジトリ
 │   └── order/              # 注文（集約）、状態などの列挙、購入者の情報（BuyerProfile）、キャンセル（Cancellation）。vo/ は注文番号・配送先・明細などの値、port/ はリポジトリ
 └── infrastructure/
+    ├── OrderConfig         # 設定のクラス。注文の設定の値の型と、注文手続きの片付けの設定の値の型を有効にする
     ├── persistence/        # リポジトリと一覧の検索の実装
     └── directory/          # カート・商品カタログ・在庫・地域・税・決済・出荷の腐敗防止層
 ```

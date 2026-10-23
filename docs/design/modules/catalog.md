@@ -156,7 +156,8 @@ catalog/
 │   ├── product/            # 商品（集約）、バリアント、画像、公開の状態、できる操作。vo/ はコードと価格と公開期間、port/ はリポジトリ
 │   └── category/           # カテゴリ（集約）。port/ はリポジトリ
 └── infrastructure/
-    ├── persistence/        # リポジトリと参照用リポジトリの実装、キーワード検索の実装（PostgreSQL）、LIKE の検索の文字の扱い（LikePatterns）
+    ├── CatalogDomainConfig # 設定のクラス。domain の Factory を Spring の部品にする
+    ├── persistence/        # リポジトリと参照用リポジトリの実装、キーワード検索の実装（PostgreSQL）、LIKE の検索の文字の扱い（LikePatterns）、それだけが使う package-private のクラス
     └── directory/          # 税・メディアの腐敗防止層。税率の一覧のキャッシュ
 ```
 

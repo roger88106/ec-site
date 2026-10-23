@@ -307,6 +307,9 @@ tasks.register<JavaExec>("generateRegionMigration") {
     )
 }
 
+// tools のソースは手で実行するまでコンパイルされず、壊れても気づけない。check に入れて、手元と CI の両方で壊れたら失敗させる
+tasks.check { dependsOn("compileToolsJava") }
+
 // -----------------------------------------------------------------------------
 // Javadoc の書き漏れ（コメントの書き方 第 2 節）
 //   Checkstyle で、本番のコード（src/main/java）のクラスとメンバー（private を含む）に Javadoc があることを確認する。

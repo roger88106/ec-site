@@ -334,9 +334,10 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
   - 依存：なし
   - 範囲：`scripts/ci/`、`docker/compose.yaml`、`backend/ecsite/src/integrationTest/`（版の文字列だけ）、`docs/guides/ci.md` の表
   - 統合テストのイメージの版を上げるので、push の後の CI の統合テストのジョブで通ることを確認する。手元では統合テストを実行しない（他のセッションと同時に実行しないため。skill `local-dev`）
-- [ ] **T158-04-03** CI のビルドで tools のソースをコンパイルし、Gradle の配布物のハッシュを検証する（DC-158-38、41）。
+- [x] **T158-04-03** CI のビルドで tools のソースをコンパイルし、Gradle の配布物のハッシュを検証する（DC-158-38、41）。
   - 依存：なし
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties`、`.github/workflows/ci.yml`。spec 17 の手順（PIT、基準の検査）は変えない（DN-158-4）
+  - 結果：`check` が `compileToolsJava` に依存するようにし、`distributionSha256Sum` を加えた（`ci.yml` は変更なし）。ハッシュの取得元は `https://downloads.gradle.org/distributions/gradle-9.8.2-bin.zip.sha256`（`services.gradle.org` の同じ path が 301 で転送する先）。
 - [ ] **T158-04-04** Node と JDK の版を 1 か所から読む。push の対象外の一覧に、CI の結果に関わらない `.github/` のファイルを加える。workflow のコメントと除外の理由の spec・plan の番号、古い・位置が違うコメントを修正する（DC-158-43〜46）。
   - 依存：T158-04-01（Dependabot の設定）、T158-04-03（同じ `ci.yml`）
   - 範囲：`.github/workflows/`、`.github/actions/setup-frontend/action.yml`、`scripts/ci/`（`review/` を含む）のコメントと除外の理由、`docs/guides/ci.md` の push の対象外の一覧。spec 17 の手順は、版の指定の行だけを変える（DN-158-4）

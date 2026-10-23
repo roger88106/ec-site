@@ -26,7 +26,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `ci.yml` | 店舗画面 | 画面の依存のライセンスの検査、共有パッケージ（lint、型チェック、テスト、カバレッジの要約）、店舗画面（lint、型チェック、テスト、ビルド、カバレッジの要約）、店舗画面と共有パッケージのカバレッジの基準の検査 | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェック、バックエンド・管理画面・店舗画面を起動してブラウザで操作する | 同上 |
 | `docs.yml` | 文書と CI の検査の script | `scripts/ci/check-all.sh`（第 3 節） | 全ての push と pull request（文書だけの push でも実行する） |
-| `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチが `release-` か `hotfix-` で始まる。`main` の ruleset の必須の検査（[ブランチとリリース](branches.md) 第 3.2 節） | `main` への pull request |
+| `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチが `release-` か `hotfix-` で始まる（判定は `scripts/ci/workflow/main-source.mjs`。第 3 節）。`main` の ruleset の必須の検査（[ブランチとリリース](branches.md) 第 3.2 節） | `main` への pull request |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する | `main` で `showcase/` が変わったとき、手動で起動したとき |
 
 バックエンドのジョブの構成：
@@ -51,7 +51,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 `scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。
 
 - 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
-- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）は、下のディレクトリに置く。
+- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）は、下のディレクトリに置く。
 - 複数の script が使う関数は `lib/` に置く。spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す関数は `lib/spec-dirs.mjs`。Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧は `lib/git-files.mjs`、画面の本番のソース（admin・store・shared の `src` の `.ts`・`.tsx` から、テスト・生成物・ui を除く）の定義は `lib/screen-sources.mjs`。画面のソースを読む検査は定義を使い、違う対象を読む検査は理由を書く。
 
 | script | 確認すること | 失敗したとき | 除外の書き方 |

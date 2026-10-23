@@ -261,10 +261,11 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
   - 範囲：`scripts/ci/message-comments.mjs`、テスト、違反のある `frontend/admin/src/`・`frontend/shared/src/` のファイル（コメントの追加だけ）、`docs/rules/comments.md` の「CI で確認する」の記述（DC-158-28）
   - 対象が T158-01-02 の画面の本番のソースの定義と変わるので、定義を使うか、違う理由を更新する（DC-158-37）
   - 結果：レッドを確認してから、`translate('…')` を対象に加え、対象を画面の本番のソースの定義（`isScreenSource`）にした。違反は 22 件で、admin の api/errors.ts・features/report・lib/rate.ts、shared の lib/format.ts、store の api/result.ts・catalog・order・lib にコメントを足した。
-- [ ] **T158-02-09** [テスト] `main` への pull request の元のブランチの判定を、テストのある関数に移し、workflow から呼ぶ（DC-158-32）。
+- [x] **T158-02-09** [テスト] `main` への pull request の元のブランチの判定を、テストのある関数に移し、workflow から呼ぶ（DC-158-32）。
   - 依存：なし
   - 範囲：`scripts/ci/`、`.github/workflows/main-source.yml`、`docs/guides/ci.md`
   - 判定の入口は引数（元のブランチの名前）が必要なので、`scripts/ci/` の直下に置かない（直下の script は `check-all.sh` が引数なしで実行する）。置き場所は、引数が必要な補助の置き場所の規則（[CI の検査](../../guides/ci.md) 第 3 節）に従う
+  - 結果：レッドを確認してから、判定を `scripts/ci/workflow/main-source.mjs`（テスト 8 件）に移し、workflow は checkout の後にその入口を呼ぶ形にした（名前と失敗の文は同じ）。workflow は `main` への pull request でしか実行されないので、CI での確認はリリースの時になる。
 - [ ] **T158-02-10** [テスト] チェックリストの script の表の読み方を関数に分け、テストを書く（DC-158-6）。
   - 依存：なし
   - 範囲：`.claude/skills/review/checklist.cjs`、テスト

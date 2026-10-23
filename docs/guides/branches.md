@@ -47,7 +47,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 `main` は、`release-` と `hotfix-` で始まるブランチからの pull request だけを受け付ける。理由：リリースするのは確認した commit で、`develop` の最新とは限らないため（第 4 節）。
 
-- 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request の元のブランチの名前が `release-` か `hotfix-` で始まらなければ失敗する。
+- 検査の workflow は `.github/workflows/main-source.yml`。`main` への pull request の元のブランチの名前が `release-` か `hotfix-` で始まらなければ失敗する。判定は `scripts/ci/workflow/main-source.mjs`（テストあり）。
 - この検査を `main` の ruleset の必須の検査にする。
 
 ### 3.3 マージの方式

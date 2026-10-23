@@ -129,6 +129,11 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
   - 依存：T17-01-01
   - 範囲：`scripts/ci/report/`、`frontend/shared/`
   - 結果：pre-commit の hook が `*.test.mjs` を流すので、レッドのテストだけでは commit できず、開発の進め方 第 2.1 節の例外で 1 つの commit にした（7b411640）。
+  - 実装の要点：
+    - script は `scripts/ci/report/coverage-baseline.mjs`。使い方は `node scripts/ci/report/coverage-baseline.mjs <対象> <報告のファイル> [--write] [--baseline <基準のファイル>]`。報告の読み取りは `coverage-summary.mjs` の `readTotals` を使い回す。
+    - 基準のファイルは `targets.<対象>.<line|branch>.{value,tolerance}`。対象の名前は `backend`、`admin`、`store`、`shared`。`--write` は既存の対象だけを書き換え、許容の幅は変えない。対象や指標を追加するときは、基準のファイルを手で直す。
+    - 共有パッケージは、`frontend/shared/vitest.config.ts`（v8。除外は shadcn/ui の `src/ui/**` とテストだけ）と、devDependencies の `@vitest/coverage-v8`（店舗画面と同じ版）で、`pnpm test` が `coverage/coverage-summary.json` を作る。
+    - 初期値は、`develop` の CI の実行 39887272462 の artifact の値（バックエンドは行 98.09、分岐 85.26。管理画面は 96.59、94.11。店舗画面は 85.38、83.30）。共有パッケージ（97.06、100.00）は、手元の `pnpm test` の値を仮に置き、T17-01-03 で CI の値と同じことを確認した。
 - [x] **T17-01-03** `ci.yml` に組み込み、基準のファイルに共有パッケージの初期値を置く。同じ commit の CI を 3 回実行して許容の幅を決める。DC-17-7 の push で失敗を確認し、削除を戻す。`ci.yml` の全体の時間を記録する（DN-17-3）。結果をこのタスクの下に書く（DC-17-2、5、7）。
   - 依存：T17-01-02
   - 範囲：`.github/workflows/ci.yml`、`scripts/ci/report/quality-baseline.json`

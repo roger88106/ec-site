@@ -3,7 +3,7 @@ import { useSearchParams } from 'react-router'
 import { useTranslations } from 'use-intl'
 import { PageHeader } from '@/components/PageHeader'
 import { QueryState } from '@/components/QueryState'
-import { ReportConditionForm } from '@/features/report/components/ReportConditionForm'
+import { ReportConditionForm, type ReportConditionItems } from '@/features/report/components/ReportConditionForm'
 import { type PeriodPreset, presetPeriod, todayInJapan } from '@/features/report/period'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
 import { useReportSettings } from '@/features/report/settings'
@@ -28,13 +28,10 @@ export function ReportPage({
   excludeShipping,
   productRequired,
   children,
-}: {
+}: ReportConditionItems & {
   menuKey: 'salesTrend' | 'variantSales' | 'customerBreakdown'
   defaultPreset: PeriodPreset
   presets: readonly PeriodPreset[]
-  granularity?: boolean
-  excludeShipping?: boolean
-  productRequired?: boolean
   children: (condition: ReportCondition) => ReactNode
 }) {
   const t = useTranslations('app.menu')
@@ -69,13 +66,10 @@ function ReportBody({
   excludeShipping,
   productRequired,
   children,
-}: {
+}: ReportConditionItems & {
   defaultPreset: PeriodPreset
   presets: readonly PeriodPreset[]
   fiscalYearStartMonth: number
-  granularity?: boolean
-  excludeShipping?: boolean
-  productRequired?: boolean
   children: (condition: ReportCondition) => ReactNode
 }) {
   const [searchParams, setSearchParams] = useSearchParams()

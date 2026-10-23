@@ -17,7 +17,7 @@
 - [ ] **T157-02-03** [P] 自分の権限の一覧の戻り値を、状態を判別の項目に持つ 3 つの型の合併にする。呼び出し元の 2 つを、状態で絞り込んでから値を読む形にする。振る舞いは変えない（DC-157-6）。
   - 依存：なし
   - 範囲：`frontend/admin/src/auth/permissions.ts`、`frontend/admin/src/app/Layout.tsx`、`frontend/admin/src/auth/RequirePermission.tsx`。`ReportPermission.test.tsx` などの今の結合テストが通ることを確認する
-- [ ] **T157-02-04** [P] レポートの条件の項目の props の型を、条件のフォームのファイルで 1 つ定義して export し、レポートの共通の画面の 2 つのコンポーネントがそれを使う（DC-157-7）。
+- [x] **T157-02-04** [P] レポートの条件の項目の props の型を、条件のフォームのファイルで 1 つ定義して export し、レポートの共通の画面の 2 つのコンポーネントがそれを使う（DC-157-7）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/report/components/ReportConditionForm.tsx`、`frontend/admin/src/features/report/components/ReportPage.tsx`
 - [ ] **T157-02-05** [P] 商品の項目の制約の組を、操作のスキーマから作る関数を、商品の項目のフォームのファイルに置く。登録の画面と基本情報のカードは、それぞれのスキーマを渡す（DC-157-8）。

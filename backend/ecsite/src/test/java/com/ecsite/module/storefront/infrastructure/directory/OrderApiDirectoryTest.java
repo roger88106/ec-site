@@ -1,7 +1,7 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
 import com.ecsite.module.order.api.CartQuote;
-import com.ecsite.module.storefront.application.port.CartView;
+import com.ecsite.module.storefront.application.model.CartView;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.EnumSource;

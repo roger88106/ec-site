@@ -19,12 +19,12 @@ import com.ecsite.api.store.model.VariantAxis;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.StorePrices;
-import com.ecsite.module.storefront.application.ProductDetailView;
-import com.ecsite.module.storefront.application.ProductSummaryView;
 import com.ecsite.module.storefront.application.ShopProperties;
-import com.ecsite.module.storefront.application.port.CartView;
-import com.ecsite.module.storefront.application.port.CatalogCategory;
-import com.ecsite.module.storefront.application.port.ProductCondition;
+import com.ecsite.module.storefront.application.model.CartView;
+import com.ecsite.module.storefront.application.model.CatalogCategory;
+import com.ecsite.module.storefront.application.model.ProductCondition;
+import com.ecsite.module.storefront.application.model.ProductDetailView;
+import com.ecsite.module.storefront.application.model.ProductSummaryView;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 

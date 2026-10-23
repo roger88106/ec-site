@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.application.port;
+package com.ecsite.module.storefront.application.model;
 
 import java.util.List;
 import java.util.UUID;

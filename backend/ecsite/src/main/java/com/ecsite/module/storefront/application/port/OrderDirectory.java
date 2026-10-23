@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.application.port;
 
+import com.ecsite.module.storefront.application.model.CartView;
 import org.jspecify.annotations.Nullable;
 
 import java.util.Optional;

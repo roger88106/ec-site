@@ -1,4 +1,4 @@
-package com.ecsite.module.storefront.application;
+package com.ecsite.module.storefront.application.model;
 
 import com.ecsite.common.model.value.Money;
 import org.jspecify.annotations.Nullable;

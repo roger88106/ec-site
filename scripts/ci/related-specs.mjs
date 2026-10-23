@@ -24,7 +24,7 @@ const TASK_ID = /(?<![A-Za-z0-9])T(\d+)-\d{2}-\d{2}/g
  */
 export function parseRelatedSpecs(markdown) {
   const row = markdown.match(RELATED_ROW)
-  return row ? [...row[1].matchAll(/\[(\d+)\]/g)].map((match) => match[1]) : null
+  return row ? [...row[1].matchAll(/\[(\d+)\]\(/g)].map((match) => match[1]) : null
 }
 
 /**

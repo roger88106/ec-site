@@ -14,6 +14,11 @@ describe('設計の文書の関連 spec の検査', () => {
     assert.equal(parseRelatedSpecs('| 項目 | 内容 |'), null)
   })
 
+  test('関連 spec の行の脚注（[1] など）は、spec の番号として読まない', () => {
+    const markdown = '| 関連 spec | [007](../../specs/007-payment)[1]、[9](../../specs/9-shipping) ※[2] |'
+    assert.deepEqual(parseRelatedSpecs(markdown), ['007', '9'])
+  })
+
   test('commit のメッセージの 1 行目から、新しい形式のタスク番号を読む。除外のタスクの前置きに合うものは数えない', () => {
     assert.deepEqual(specsOfCommit('order: 注文を直す（T017-03-01）', []), ['017'])
     assert.deepEqual(specsOfCommit('scripts: 検査を追加する（T018-03-05、T018-03-06）', []), ['018'])

@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { CancellationRequest, OrderDetail, Shipment } from '@/api/types'
 import { ORDER_ID, orderActions, orderDetail } from '@/test/fixtures'
@@ -66,7 +66,7 @@ async function shownPayment() {
 }
 
 describe('注文の詳細', () => {
-  it('AC-100、252 明細（注文時点の写し）、金額の内訳、お届け先（都道府県名・市区町村名・住所の順）、キャンセルの申請を出す', async () => {
+  test('AC-100、252 明細（注文時点の写し）、金額の内訳、お届け先（都道府県名・市区町村名・住所の順）、キャンセルの申請を出す', async () => {
     serveOrder(REQUESTED)
     renderApp(URL)
 
@@ -80,7 +80,7 @@ describe('注文の詳細', () => {
     expect(screen.getByText('申請中')).toBeInTheDocument()
   })
 
-  it('AC-101、142 申請を承認すると、確認の後で送り、キャンセルになった注文と、判断した運営者・キャンセルした運営者の氏名を出す', async () => {
+  test('AC-101、142 申請を承認すると、確認の後で送り、キャンセルになった注文と、判断した運営者・キャンセルした運営者の氏名を出す', async () => {
     serveOrder(
       REQUESTED,
       orderDetail({
@@ -115,7 +115,7 @@ describe('注文の詳細', () => {
     expect(getDetailValue('キャンセルした運営者')).toHaveTextContent('審査 一郎')
   })
 
-  it('AC-102 申請を却下すると「受付」に戻り、キャンセルの操作だけが残る', async () => {
+  test('AC-102 申請を却下すると「受付」に戻り、キャンセルの操作だけが残る', async () => {
     serveOrder(REQUESTED, orderDetail({ cancellationRequest: { ...REQUEST, result: 'REJECTED' } }))
     const { user } = renderApp(URL)
     await shownStatus('キャンセル申請中')
@@ -130,7 +130,7 @@ describe('注文の詳細', () => {
     expect(screen.getByRole('button', { name: 'キャンセルする' })).toBeInTheDocument()
   })
 
-  it('AC-103 運営者のキャンセルは理由がないと送れず、理由を付けて送ると、キャンセルの内容に理由を出す', async () => {
+  test('AC-103 運営者のキャンセルは理由がないと送れず、理由を付けて送ると、キャンセルの内容に理由を出す', async () => {
     const state = serveOrder(
       orderDetail(),
       orderDetail({
@@ -161,7 +161,7 @@ describe('注文の詳細', () => {
     expect(state.reasons).toEqual(['電話で取り消しの依頼'])
   })
 
-  it('AC-103 運営者のキャンセルが拒否されたら、ダイアログの中にメッセージを出し、入力を残す', async () => {
+  test('AC-103 運営者のキャンセルが拒否されたら、ダイアログの中にメッセージを出し、入力を残す', async () => {
     serveOrder(orderDetail())
     server.use(
       http.put('/orders/{orderId}/cancel', ({ response }) =>
@@ -182,7 +182,7 @@ describe('注文の詳細', () => {
     expect(within(dialog).getByLabelText('理由（必須）')).toHaveValue('理由')
   })
 
-  it('承認が拒否されたら（他の人が先に却下した など）、操作の近くにメッセージを出す', async () => {
+  test('承認が拒否されたら（他の人が先に却下した など）、操作の近くにメッセージを出す', async () => {
     serveOrder(REQUESTED)
     server.use(
       http.put('/orders/{orderId}/cancellation-request/approve', ({ response }) =>
@@ -202,7 +202,7 @@ describe('注文の詳細', () => {
     expect(await screen.findByText('この注文には、承認・却下できるキャンセルの申請がありません。')).toBeInTheDocument()
   })
 
-  it('AC-105 キャンセル済みの注文には操作を出さない', async () => {
+  test('AC-105 キャンセル済みの注文には操作を出さない', async () => {
     serveOrder(
       orderDetail({
         status: 'CANCELLED',
@@ -217,7 +217,7 @@ describe('注文の詳細', () => {
     expect(screen.queryByRole('button', { name: '申請を承認する' })).not.toBeInTheDocument()
   })
 
-  it('AC-160 支払の状態と、支払の期限を出す', async () => {
+  test('AC-160 支払の状態と、支払の期限を出す', async () => {
     serveOrder(
       orderDetail({
         payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
@@ -229,7 +229,7 @@ describe('注文の詳細', () => {
     expect(getDetailValue('支払の期限')).toHaveTextContent('2026/10/10 10:30')
   })
 
-  it('AC-165 与信の取消が済むまで「与信の取消待ち」と示す', async () => {
+  test('AC-165 与信の取消が済むまで「与信の取消待ち」と示す', async () => {
     serveOrder(
       orderDetail({
         status: 'CANCELLED',
@@ -243,7 +243,7 @@ describe('注文の詳細', () => {
     expect(await shownPayment()).toHaveTextContent('与信の取消待ち')
   })
 
-  it('AC-155 支払期限切れのキャンセルを示す', async () => {
+  test('AC-155 支払期限切れのキャンセルを示す', async () => {
     serveOrder(
       orderDetail({
         status: 'CANCELLED',
@@ -259,7 +259,7 @@ describe('注文の詳細', () => {
     expect(screen.queryByText('理由')).not.toBeInTheDocument()
   })
 
-  it('AC-158 支払待ちの注文には、キャンセルの操作を出さない', async () => {
+  test('AC-158 支払待ちの注文には、キャンセルの操作を出さない', async () => {
     serveOrder(
       orderDetail({
         status: 'PENDING_PAYMENT',
@@ -274,7 +274,7 @@ describe('注文の詳細', () => {
     expect(screen.queryByRole('button', { name: 'キャンセルする' })).not.toBeInTheDocument()
   })
 
-  it('決済を入れる前の注文には、支払の状態を出さない', async () => {
+  test('決済を入れる前の注文には、支払の状態を出さない', async () => {
     serveOrder(orderDetail())
     renderApp(URL)
 
@@ -344,7 +344,7 @@ describe('出荷', () => {
     await user.click(within(await screen.findByRole('alertdialog')).getByRole('button', { name: '出荷する' }))
   }
 
-  it('AC-167 受付の注文で、配送業者と送り状番号を入れて出荷を登録できる', async () => {
+  test('AC-167 受付の注文で、配送業者と送り状番号を入れて出荷を登録できる', async () => {
     const state = serveShipment(SHIPPABLE, { ...SHIPPED, shipment: REGISTERED })
     const { user } = renderApp(URL)
     await shownStatus('受付')
@@ -357,7 +357,7 @@ describe('出荷', () => {
     expect(screen.queryByRole('button', { name: '出荷を登録する' })).not.toBeInTheDocument()
   })
 
-  it.each([
+  test.each([
     [409, 'AUTHORIZATION_EXPIRED', '与信の期限が切れているため、売上を確定できません。'],
     [502, 'PAYMENT_GATEWAY_UNAVAILABLE', '決済サービスに接続できませんでした。しばらくしてから、やり直してください。'],
   ] as const)(
@@ -381,7 +381,7 @@ describe('出荷', () => {
     },
   )
 
-  it('AC-181 出荷後は、配送状態、配送業者、送り状番号、出荷日時を示す', async () => {
+  test('AC-181 出荷後は、配送状態、配送業者、送り状番号、出荷日時を示す', async () => {
     serveShipment(SHIPPED)
     renderApp(URL)
 
@@ -393,7 +393,7 @@ describe('出荷', () => {
     expect(screen.queryByRole('button', { name: '出荷を登録する' })).not.toBeInTheDocument()
   })
 
-  it('出荷できない注文（支払待ち）には、出荷の欄を出さない', async () => {
+  test('出荷できない注文（支払待ち）には、出荷の欄を出さない', async () => {
     serveShipment(
       orderDetail({
         status: 'PENDING_PAYMENT',
@@ -409,7 +409,7 @@ describe('出荷', () => {
 })
 
 describe('与信期限と返金', () => {
-  it.each([
+  test.each([
     [true, '2026/10/17 10:10期限が近い'],
     [false, '2026/10/17 10:10'],
   ] as const)('AC-186 与信期限を示す（期限が近い：%s）', async (authorizationExpiring, expected) => {
@@ -428,7 +428,7 @@ describe('与信期限と返金', () => {
     expect(await findDetailValue('与信期限')).toHaveTextContent(new RegExp(`^${expected}$`))
   })
 
-  it.each([
+  test.each([
     ['REFUND_PENDING', '返金待ち'],
     ['REFUNDED', '返金済み'],
   ] as const)('AC-194 返金の状態（%s）を示す', async (status, label) => {
@@ -473,7 +473,7 @@ describe('返送の注文のキャンセル', () => {
     return bodies
   }
 
-  it.each([
+  test.each([
     ['在庫に戻す', true],
     ['在庫に戻さない', false],
   ] as const)('AC-190、191 理由を入れ、%s を選んでキャンセルできる', async (choice, restock) => {
@@ -493,7 +493,7 @@ describe('返送の注文のキャンセル', () => {
     expect(bodies).toEqual([{ reason: '受取拒否', restock }])
   })
 
-  it.each([
+  test.each([
     [
       '出荷済みの注文でも',
       { ...RETURNED, actions: orderActions({ cancel: true, cancelAsksRestock: false }) },

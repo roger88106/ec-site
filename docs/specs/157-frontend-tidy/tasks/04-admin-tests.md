@@ -26,7 +26,7 @@
 - [x] **T157-04-06** [P] その他のテストを修正する。吹き出しの件数の確認と、ログインの利用者の型の変換を修正する（DC-157-18、24）。
   - 依存：なし
   - 範囲：`frontend/admin/src/components/ChartValueTooltip.test.tsx`、`frontend/admin/src/auth/AuthGate.test.tsx`
-- [ ] **T157-04-07** 管理画面のテストの関数を `test` にそろえる（24 ファイル）。他の変更を含めない。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DC-157-28、21）。
+- [x] **T157-04-07** 管理画面のテストの関数を `test` にそろえる（24 ファイル）。他の変更を含めない。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DC-157-28、21）。
   - 依存：T157-04-01〜06（同じファイルを変えるため）
   - 範囲：`frontend/admin/src/**/*.test.ts(x)`、`docs/design/acceptance-criteria.md`
 - [ ] **T157-04-08** 段階のレビュー（profile「厚め」）と全体の検査を行う。結果をこのファイルの末尾に書く。

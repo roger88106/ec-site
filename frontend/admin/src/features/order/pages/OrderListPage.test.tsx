@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { orderSummary } from '@/test/fixtures'
 import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
@@ -22,7 +22,7 @@ function serveOrders(items = [orderSummary()]) {
 }
 
 describe('注文一覧', () => {
-  it('AC-97 注文番号、注文日時、氏名、総額、状態を出す', async () => {
+  test('AC-97 注文番号、注文日時、氏名、総額、状態を出す', async () => {
     serveOrders([
       orderSummary(),
       orderSummary({
@@ -44,7 +44,7 @@ describe('注文一覧', () => {
     expect(within(requested).getByText('キャンセル申請中')).toBeInTheDocument()
   })
 
-  it('AC-98 注文番号・注文日の範囲で絞り込むと、URL に残し、その条件で取得し直す', async () => {
+  test('AC-98 注文番号・注文日の範囲で絞り込むと、URL に残し、その条件で取得し直す', async () => {
     const queries = serveOrders()
     const { user, router } = renderApp('/orders')
     await screen.findByRole('link', { name: '20261010-123456' })
@@ -60,7 +60,7 @@ describe('注文一覧', () => {
     expect(queries.at(-1)?.get('orderedTo')).toBe('2026-10-10')
   })
 
-  it('AC-98 URL の状態の条件で開くと、その状態で取得する', async () => {
+  test('AC-98 URL の状態の条件で開くと、その状態で取得する', async () => {
     const queries = serveOrders([orderSummary({ status: 'CANCELLATION_REQUESTED' })])
     renderApp('/orders?status=CANCELLATION_REQUESTED')
 
@@ -68,7 +68,7 @@ describe('注文一覧', () => {
     expect(queries.at(-1)?.get('status')).toBe('CANCELLATION_REQUESTED')
   })
 
-  it('AC-160 支払の状態の列を出す（決済を入れる前の注文は空）', async () => {
+  test('AC-160 支払の状態の列を出す（決済を入れる前の注文は空）', async () => {
     serveOrders([
       orderSummary({ paymentStatus: 'AUTHORIZED' }),
       orderSummary({
@@ -91,7 +91,7 @@ describe('注文一覧', () => {
     expect(within(old).getAllByRole('cell').at(-1)?.textContent).toBe('')
   })
 
-  it('AC-161 状態「支払待ち」で絞り込むと、URL に残し、その状態で取得し直す', async () => {
+  test('AC-161 状態「支払待ち」で絞り込むと、URL に残し、その状態で取得し直す', async () => {
     const queries = serveOrders()
     const { user, router } = renderApp('/orders')
     await screen.findByRole('link', { name: '20261010-123456' })
@@ -104,7 +104,7 @@ describe('注文一覧', () => {
     await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('PENDING_PAYMENT'))
   })
 
-  it('該当する注文がなければ、そう示す', async () => {
+  test('該当する注文がなければ、そう示す', async () => {
     serveOrders([])
     renderApp('/orders')
 
@@ -113,7 +113,7 @@ describe('注文一覧', () => {
 })
 
 describe('出荷と与信期限', () => {
-  it('AC-182、186 配送状態と、与信期限が近いことを出す', async () => {
+  test('AC-182、186 配送状態と、与信期限が近いことを出す', async () => {
     serveOrders([
       orderSummary({ authorizationExpiring: true, paymentStatus: 'AUTHORIZED' }),
       orderSummary({
@@ -134,7 +134,7 @@ describe('出荷と与信期限', () => {
     expect(within(shipped).queryByText('期限が近い')).not.toBeInTheDocument()
   })
 
-  it('AC-182 状態「出荷済み」で絞り込める', async () => {
+  test('AC-182 状態「出荷済み」で絞り込める', async () => {
     const queries = serveOrders()
     const { user, router } = renderApp('/orders')
     await screen.findByRole('link', { name: '20261010-123456' })
@@ -147,7 +147,7 @@ describe('出荷と与信期限', () => {
     await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('SHIPPED'))
   })
 
-  it('AC-187、189 与信期限が近い注文と、返送の注文で絞り込める', async () => {
+  test('AC-187、189 与信期限が近い注文と、返送の注文で絞り込める', async () => {
     const queries = serveOrders()
     const { user, router } = renderApp('/orders')
     await screen.findByRole('link', { name: '20261010-123456' })

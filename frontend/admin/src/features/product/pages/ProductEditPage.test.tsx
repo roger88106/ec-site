@@ -1,6 +1,6 @@
 import { fireEvent, screen, waitFor, within } from '@testing-library/react'
 import { HttpResponse, http as rawHttp } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
@@ -88,7 +88,7 @@ function serveProduct(initial: ProductDetail) {
 }
 
 describe('商品の編集', () => {
-  it('入力中に他の人が基本情報を更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の値に再作成してから保存できる', async () => {
+  test('入力中に他の人が基本情報を更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の値に再作成してから保存できる', async () => {
     const state = serveProduct(productDetail())
     const { user } = renderApp(URL)
     const name = await screen.findByLabelText('商品名')
@@ -114,7 +114,7 @@ describe('商品の編集', () => {
     expect(state.versions).toEqual([0, 1])
   })
 
-  it('AC-18、19 税区分を変えて基本情報を保存すると、入力した値とバージョンを送り、保存を知らせ、変更後の税率の税込価格を出す', async () => {
+  test('AC-18、19 税区分を変えて基本情報を保存すると、入力した値とバージョンを送り、保存を知らせ、変更後の税率の税込価格を出す', async () => {
     const REDUCED_ID = '00000000-0000-0000-0000-000000000002'
     const CATEGORY_ID = '00000000-0000-0000-0000-000000000031'
     const state = serveProduct(productDetail())
@@ -178,7 +178,7 @@ describe('商品の編集', () => {
     expect(await screen.findByText('1,296 円（税抜 1,200 円）')).toBeInTheDocument()
   })
 
-  it('販売終了は確認のダイアログで確定したときだけ行い、やめれば何もしない', async () => {
+  test('販売終了は確認のダイアログで確定したときだけ行い、やめれば何もしない', async () => {
     const state = serveProduct(
       productDetail({ status: 'PUBLISHED', actions: productActions({ publish: false, unpublish: true }) }),
     )
@@ -198,7 +198,7 @@ describe('商品の編集', () => {
     expect(state.calls).toEqual(['PUT discontinue'])
   })
 
-  it('AC-33 C 側に表示されたことのない商品は、確認のダイアログで確定すると削除し、一覧に移る', async () => {
+  test('AC-33 C 側に表示されたことのない商品は、確認のダイアログで確定すると削除し、一覧に移る', async () => {
     const state = serveProduct(productDetail({ version: 3 }))
     const { user, router } = renderApp(URL)
 
@@ -211,7 +211,7 @@ describe('商品の編集', () => {
     expect(state.calls).toEqual(['DELETE version=3'])
   })
 
-  it('AC-33、269 削除できない商品には削除のボタンがなく、応答の削除できない理由（C 側に表示された）で販売終了を案内する', async () => {
+  test('AC-33、269 削除できない商品には削除のボタンがなく、応答の削除できない理由（C 側に表示された）で販売終了を案内する', async () => {
     serveProduct(
       productDetail({
         status: 'PUBLISHED',
@@ -235,14 +235,14 @@ describe('商品の編集', () => {
     expect(screen.queryByRole('button', { name: '削除' })).not.toBeInTheDocument()
   })
 
-  it('AC-269 削除できない理由が応答になければ、理由を推し量って出さない', async () => {
+  test('AC-269 削除できない理由が応答になければ、理由を推し量って出さない', async () => {
     serveProduct(productDetail({ actions: productActions({ delete: false }) }))
     renderApp(URL)
 
     expect(await screen.findByRole('button', { name: '販売終了にする' })).toBeInTheDocument()
     expect(screen.queryByText(/店舗に表示されたことがあるため/)).not.toBeInTheDocument()
   })
-  it('AC-21、24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
+  test('AC-21、24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))
     const requests: AddVariantRequest[] = []
     serveStock(0)
@@ -268,7 +268,7 @@ describe('商品の編集', () => {
     expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
     expect(requests).toEqual([{ variantCode: 'ABC-001-X', axisValues: [], version: 0 }])
   })
-  it('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
+  test('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
     const state = serveProduct(productDetail({ axes: ['色', 'サイズ'], variants: [] }))
     const requests: AddVariantRequest[] = []
     serveStock(0)
@@ -289,7 +289,7 @@ describe('商品の編集', () => {
     expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
     expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
   })
-  it('バリアントの追加の入力中に他の人が商品を更新すると、取得し直しても入力は消えず、追加は 409 になり、再読み込みで最新のバージョンの空のフォームに再作成してから追加できる', async () => {
+  test('バリアントの追加の入力中に他の人が商品を更新すると、取得し直しても入力は消えず、追加は 409 になり、再読み込みで最新のバージョンの空のフォームに再作成してから追加できる', async () => {
     const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
     const versions: number[] = []
     serveStock(0)
@@ -337,7 +337,7 @@ describe('商品の編集', () => {
     expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
     expect(versions).toEqual([0, 1])
   })
-  it('AC-28 バリアントを販売停止にすると「販売停止」と出て、販売を再開できる', async () => {
+  test('AC-28 バリアントを販売停止にすると「販売停止」と出て、販売を再開できる', async () => {
     const state = serveProduct(productDetail({ variants: [variant()] }))
     const calls: string[] = []
     const setSuspended = (salesSuspended: boolean) => {
@@ -375,7 +375,7 @@ describe('商品の編集', () => {
     expect(calls).toEqual([`suspend ${variant().id}`, `resume ${variant().id}`])
   })
 
-  it('AC-27 バリアントを下へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
+  test('AC-27 バリアントを下へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
     const SECOND_ID = '00000000-0000-0000-0000-000000000202'
     const state = serveProduct(
       productDetail({
@@ -404,7 +404,7 @@ describe('商品の編集', () => {
     expect(requests).toEqual([{ variantIds: [SECOND_ID, variant().id], version: 5 }])
   })
 
-  it('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
+  test('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
     const state = serveProduct(productDetail({ version: 5, variants: [variant()] }))
     const calls: string[] = []
     serveStock(3)
@@ -426,7 +426,7 @@ describe('商品の編集', () => {
     expect(calls).toEqual([`DELETE ${variant().id} version=5`])
   })
 
-  it('AC-29、30 公開すると公開中の表示と知らせに変わり、非公開にすると非公開の表示と知らせに戻る', async () => {
+  test('AC-29、30 公開すると公開中の表示と知らせに変わり、非公開にすると非公開の表示と知らせに戻る', async () => {
     const state = serveProduct(productDetail())
     const calls: string[] = []
     const change = (status: ProductDetail['status'], actions: ProductDetail['actions']) => {
@@ -492,7 +492,7 @@ describe('公開期間', () => {
     return requests
   }
 
-  it('AC-34 日本時間で入れた公開開始・終了を保存し、保存を知らせる', async () => {
+  test('AC-34 日本時間で入れた公開開始・終了を保存し、保存を知らせる', async () => {
     const state = serveProduct(productDetail())
     const requests = servePeriod(state)
     const { user } = renderApp(URL)
@@ -507,7 +507,7 @@ describe('公開期間', () => {
     ])
   })
 
-  it('AC-36 終了が開始より後でなければ、サーバーのエラーのメッセージを出す', async () => {
+  test('AC-36 終了が開始より後でなければ、サーバーのエラーのメッセージを出す', async () => {
     const state = serveProduct(productDetail())
     servePeriod(state)
     const { user } = renderApp(URL)
@@ -519,7 +519,7 @@ describe('公開期間', () => {
     expect(await screen.findByText('公開終了日時は、公開開始日時より後にしてください。')).toBeInTheDocument()
   })
 
-  it('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の期間に再作成する', async () => {
+  test('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の期間に再作成する', async () => {
     const state = serveProduct(productDetail())
     const requests = servePeriod(state)
     const { user } = renderApp(URL)
@@ -583,7 +583,7 @@ describe('商品画像', () => {
     return calls
   }
 
-  it('AC-37 選んだ画像を受付・PUT・登録の順に送り、登録した画像を代表画像として出す', async () => {
+  test('AC-37 選んだ画像を受付・PUT・登録の順に送り、登録した画像を代表画像として出す', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
     const { user } = renderApp(URL)
@@ -599,7 +599,7 @@ describe('商品画像', () => {
     expect(calls).toEqual(['受付 image/png 2', 'PUT image/png', '登録 version=0'])
   })
 
-  it('AC-39、67 受け付ける形式以外のファイルは送らずに誤りを出す', async () => {
+  test('AC-39、67 受け付ける形式以外のファイルは送らずに誤りを出す', async () => {
     serveProduct(productDetail())
     renderApp(URL)
 
@@ -612,7 +612,7 @@ describe('商品画像', () => {
     ).toBeInTheDocument()
   })
 
-  it('AC-67 ブラウザが形式を空で渡す HEIC も、拡張子で形式を補って送る', async () => {
+  test('AC-67 ブラウザが形式を空で渡す HEIC も、拡張子で形式を補って送る', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
     renderApp(URL)
@@ -625,7 +625,7 @@ describe('商品画像', () => {
     expect(calls).toEqual(['受付 image/heic 4', 'PUT image/heic', '登録 version=0'])
   })
 
-  it('AC-70 変換に失敗した画像は登録されず、そのメッセージを出す', async () => {
+  test('AC-70 変換に失敗した画像は登録されず、そのメッセージを出す', async () => {
     const state = serveProduct(productDetail())
     serveUpload(state)
     server.use(
@@ -654,7 +654,7 @@ describe('商品画像', () => {
     expect(screen.queryByRole('img', { name: '画像 1' })).not.toBeInTheDocument()
   })
 
-  it('AC-299 画像のサービスのエラー（502）なら、やり直せることを示す応答のメッセージを出す', async () => {
+  test('AC-299 画像のサービスのエラー（502）なら、やり直せることを示す応答のメッセージを出す', async () => {
     const state = serveProduct(productDetail())
     serveUpload(state)
     server.use(
@@ -681,7 +681,7 @@ describe('商品画像', () => {
     expect(screen.queryByRole('img', { name: '画像 1' })).not.toBeInTheDocument()
   })
 
-  it('AC-272 画像の説明に、契約の形式・大きさ・枚数の上限を差し込む', async () => {
+  test('AC-272 画像の説明に、契約の形式・大きさ・枚数の上限を差し込む', async () => {
     serveProduct(productDetail())
     renderApp(URL)
 
@@ -692,7 +692,7 @@ describe('商品画像', () => {
     ).toBeInTheDocument()
   })
 
-  it('AC-40、272 契約の上限の枚数がある商品は、画像を追加できない', async () => {
+  test('AC-40、272 契約の上限の枚数がある商品は、画像を追加できない', async () => {
     const images = Array.from({ length: MAX_IMAGES }, (_, index) => ({
       id: `00000000-0000-0000-0000-0000000009${String(index).padStart(2, '0')}`,
       url: `http://cdn.test/${index}.png`,
@@ -703,7 +703,7 @@ describe('商品画像', () => {
     expect(await screen.findByRole('button', { name: '画像を追加' })).toBeDisabled()
   })
 
-  it('AC-40 サーバーが上限で拒否したら、そのメッセージを出す', async () => {
+  test('AC-40 サーバーが上限で拒否したら、そのメッセージを出す', async () => {
     const state = serveProduct(productDetail())
     serveUpload(state)
     server.use(
@@ -721,7 +721,7 @@ describe('商品画像', () => {
     expect(await screen.findByText('画像は 1 商品あたり 20 枚まで登録できます。')).toBeInTheDocument()
   })
 
-  it('ストレージへの送信に失敗したら、やり直しを促し、画像を登録しない', async () => {
+  test('ストレージへの送信に失敗したら、やり直しを促し、画像を登録しない', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
     server.use(rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 403 })))
@@ -738,7 +738,7 @@ describe('商品画像', () => {
     expect(calls.filter((call) => call.startsWith('登録'))).toEqual([])
   })
 
-  it('AC-38 バリアントの画像に、その商品の画像を選べる', async () => {
+  test('AC-38 バリアントの画像に、その商品の画像を選べる', async () => {
     const images = [
       { id: '00000000-0000-0000-0000-000000000951', url: 'http://cdn.test/1.png' },
       { id: '00000000-0000-0000-0000-000000000952', url: 'http://cdn.test/2.png' },
@@ -773,7 +773,7 @@ describe('商品画像', () => {
     { id: '00000000-0000-0000-0000-000000000952', url: 'http://cdn.test/2.png' },
   ]
 
-  it('AC-37 画像を後へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
+  test('AC-37 画像を後へ移すと、移した後の並びを商品のバージョンとともに送る', async () => {
     const state = serveProduct(productDetail({ version: 5, images: TWO_IMAGES }))
     const requests: ReorderProductImagesRequest[] = []
     server.use(
@@ -795,7 +795,7 @@ describe('商品画像', () => {
     expect(requests).toEqual([{ imageIds: [TWO_IMAGES[1].id, TWO_IMAGES[0].id], version: 5 }])
   })
 
-  it('確認のダイアログで確定すると、商品のバージョンを添えて画像を削除する', async () => {
+  test('確認のダイアログで確定すると、商品のバージョンを添えて画像を削除する', async () => {
     const state = serveProduct(productDetail({ version: 5, images: TWO_IMAGES }))
     const calls: string[] = []
     server.use(

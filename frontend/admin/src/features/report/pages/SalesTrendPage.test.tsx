@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, describe, expect, test, vi } from 'vitest'
 import type { SalesTrendReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
 import { findRow, getRow } from '@/test/queries'
@@ -39,7 +39,7 @@ afterEach(() => {
 })
 
 describe('売上の推移', () => {
-  it('AC-197、201 区切りごとの売上額と販売数量を表に出し、売れなかった区切りも 0 の行で出す', async () => {
+  test('AC-197、201 区切りごとの売上額と販売数量を表に出し、売れなかった区切りも 0 の行で出す', async () => {
     serveTrend()
     renderApp('/reports/sales-trend?from=2026-04-01&to=2026-06-30')
 
@@ -51,7 +51,7 @@ describe('売上の推移', () => {
     expect(screen.getByRole('region', { name: '売上額の推移' })).toBeInTheDocument()
   })
 
-  it('AC-197 URL に期間がなければ、今年度を月ごとに出す', async () => {
+  test('AC-197 URL に期間がなければ、今年度を月ごとに出す', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-10-15T03:00:00Z'))
     const queries = serveTrend()
@@ -66,7 +66,7 @@ describe('売上の推移', () => {
     expect(query.get('basis')).toBe('ORDER')
   })
 
-  it('AC-197、200 区切りと売上の数え方を変えて表示すると、条件を URL に書き、その条件で取り直す', async () => {
+  test('AC-197、200 区切りと売上の数え方を変えて表示すると、条件を URL に書き、その条件で取り直す', async () => {
     const queries = serveTrend()
     const { user, router } = renderApp('/reports/sales-trend?from=2026-04-01&to=2026-06-30')
     await screen.findByRole('cell', { name: '2026 年 4 月' })
@@ -88,7 +88,7 @@ describe('売上の推移', () => {
     expect(queries.at(-1)?.get('excludeTax')).toBe('true')
   })
 
-  it('AC-197 期間の選択肢の前年度を選ぶと、始まりと終わりの日を埋める', async () => {
+  test('AC-197 期間の選択肢の前年度を選ぶと、始まりと終わりの日を埋める', async () => {
     vi.useFakeTimers({ toFake: ['Date'] })
     vi.setSystemTime(new Date('2026-10-15T03:00:00Z'))
     serveTrend()
@@ -102,7 +102,7 @@ describe('売上の推移', () => {
     await waitFor(() => expect(router.state.location.search).toBe('?from=2025-04-01&to=2026-03-31'))
   })
 
-  it('AC-199 商品を選ぶと、その商品で取り直し、送料を含めていないことを示す', async () => {
+  test('AC-199 商品を選ぶと、その商品で取り直し、送料を含めていないことを示す', async () => {
     const queries = serveTrend({ ...QUARTER_BY_MONTH, shippingExcluded: true })
     renderApp(`/reports/sales-trend?from=2026-04-01&to=2026-06-30&productId=${SHIRT_ID}`)
 
@@ -113,7 +113,7 @@ describe('売上の推移', () => {
     expect(screen.getByRole('combobox', { name: '商品' })).toHaveTextContent('ベーシック T シャツ')
   })
 
-  it('AC-218 表を CSV で取り出せる', async () => {
+  test('AC-218 表を CSV で取り出せる', async () => {
     serveTrend()
     const recorder = recordDownloads()
     const { user } = renderApp('/reports/sales-trend?from=2026-04-01&to=2026-06-30')

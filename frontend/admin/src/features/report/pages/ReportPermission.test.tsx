@@ -1,6 +1,6 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { delay } from 'msw'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import { renderApp } from '@/test/renderApp'
 import { serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
@@ -42,7 +42,7 @@ function holdMe() {
 }
 
 describe('レポートの権限による出し分け', () => {
-  it('AC-214 営業は、メニューの「レポート」に、権限のある画面だけを見る', async () => {
+  test('AC-214 営業は、メニューの「レポート」に、権限のある画面だけを見る', async () => {
     renderApp('/reports/sales-trend', { permissions: SALES })
 
     await screen.findByRole('link', { name: 'バリアントの売れ行き' })
@@ -51,21 +51,21 @@ describe('レポートの権限による出し分け', () => {
     expect(menu().queryByRole('link', { name: '売上の推移' })).not.toBeInTheDocument()
   })
 
-  it('AC-214 権限のない画面を URL で開くと「権限がない」を示す', async () => {
+  test('AC-214 権限のない画面を URL で開くと「権限がない」を示す', async () => {
     renderApp('/reports/sales-trend', { permissions: SALES })
 
     expect(await screen.findByText('この画面を見る権限がありません。')).toBeInTheDocument()
     expect(screen.queryByRole('heading', { name: '売上の推移' })).not.toBeInTheDocument()
   })
 
-  it('AC-214 レポートの権限がなければ、メニューに「レポート」を出さない', async () => {
+  test('AC-214 レポートの権限がなければ、メニューに「レポート」を出さない', async () => {
     renderApp('/reports/customer-breakdown', { permissions: VIEWER })
 
     expect(await screen.findByText('この画面を見る権限がありません。')).toBeInTheDocument()
     expect(menu().queryByText('レポート')).not.toBeInTheDocument()
   })
 
-  it('AC-214 権限があれば、メニューから画面を開ける', async () => {
+  test('AC-214 権限があれば、メニューから画面を開ける', async () => {
     serveReportBasics()
     serveEmptyBreakdown()
     const { user, router } = renderApp('/reports/sales-trend', { permissions: SALES })
@@ -76,7 +76,7 @@ describe('レポートの権限による出し分け', () => {
     expect(await screen.findByRole('heading', { name: '地域・年齢層・性別' })).toBeInTheDocument()
   })
 
-  it.each(ME_FAILURES)(
+  test.each(ME_FAILURES)(
     '自分の権限の一覧の取得に失敗すると、レポートの画面は取得の失敗を示し、再試行して開ける（%s）',
     async (_name, me, message) => {
       serveReportBasics()
@@ -95,7 +95,7 @@ describe('レポートの権限による出し分け', () => {
     },
   )
 
-  it('自分の権限の一覧の取得中は、レポートの画面は何も表示せず、メニューにレポートを表示しない', async () => {
+  test('自分の権限の一覧の取得中は、レポートの画面は何も表示せず、メニューにレポートを表示しない', async () => {
     renderApp('/reports/customer-breakdown', { me: 'pending' })
 
     await screen.findByRole('navigation', { name: '機能のメニュー' })
@@ -106,7 +106,7 @@ describe('レポートの権限による出し分け', () => {
     expect(menu().queryByRole('link', { name: '地域・年齢層・性別' })).not.toBeInTheDocument()
   })
 
-  it('再試行の間（取得し直している間）は、「再試行」のボタンを押せない', async () => {
+  test('再試行の間（取得し直している間）は、「再試行」のボタンを押せない', async () => {
     const { user } = renderApp('/reports/customer-breakdown', { me: 'serverError' })
     const retry = await screen.findByRole('button', { name: '再試行' })
     expect(retry).toBeEnabled()
@@ -117,7 +117,7 @@ describe('レポートの権限による出し分け', () => {
     await waitFor(() => expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled())
   })
 
-  it.each(ME_FAILURES)(
+  test.each(ME_FAILURES)(
     '再試行の間に別のレポートの画面へ移っても、取得の失敗を示し、「再試行」のボタンを押せない（%s）',
     async (_name, me, message) => {
       const { user, router } = renderApp('/reports/customer-breakdown', { me })
@@ -140,7 +140,7 @@ describe('レポートの権限による出し分け', () => {
     },
   )
 
-  it.each(ME_FAILURES)(
+  test.each(ME_FAILURES)(
     '自分の権限の一覧の取得に失敗すると、メニューにレポートの入口を全て表示する（%s）',
     async (_name, me, message) => {
       renderApp('/reports/customer-breakdown', { me })

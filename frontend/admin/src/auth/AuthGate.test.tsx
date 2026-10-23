@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { User } from 'oidc-client-ts'
 import { StrictMode } from 'react'
 import type { AuthContextProps } from 'react-oidc-context'
-import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
+import { afterEach, beforeEach, describe, expect, test, vi } from 'vitest'
 import { AuthGate } from '@/auth/AuthGate'
 import { useOperator } from '@/auth/operator'
 import { currentAccessToken, handleUnauthorized } from '@/auth/token'
@@ -86,7 +86,7 @@ describe('ログインの門', () => {
     window.history.replaceState(null, '', '/')
   })
 
-  it('AC-132 ログインしていなければ、画面を出さず、今の画面を戻り先にして IdP へ移る', () => {
+  test('AC-132 ログインしていなければ、画面を出さず、今の画面を戻り先にして IdP へ移る', () => {
     auth = signedOut()
 
     renderGate()
@@ -95,7 +95,7 @@ describe('ログインの門', () => {
     expect(auth.signinRedirect).toHaveBeenCalledWith({ state: { returnTo: '/orders?status=ACCEPTED' } })
   })
 
-  it('effect が 2 回動いても（StrictMode）、IdP へ移るのは 1 回', () => {
+  test('effect が 2 回動いても（StrictMode）、IdP へ移るのは 1 回', () => {
     auth = signedOut()
 
     renderGate()
@@ -103,7 +103,7 @@ describe('ログインの門', () => {
     expect(auth.signinRedirect).toHaveBeenCalledTimes(1)
   })
 
-  it('ログインの途中（読み込み中・IdP とのやり取り中）は、IdP へ移らない', () => {
+  test('ログインの途中（読み込み中・IdP とのやり取り中）は、IdP へ移らない', () => {
     const loading = { ...signedOut(), isLoading: true }
     auth = loading
     renderGate()
@@ -115,7 +115,7 @@ describe('ログインの門', () => {
     expect(navigating.signinRedirect).not.toHaveBeenCalled()
   })
 
-  it('ログインしていれば、画面と運営者の名前を出し、API に token を渡す。ログアウトは IdP に ID token を渡す', async () => {
+  test('ログインしていれば、画面と運営者の名前を出し、API に token を渡す。ログアウトは IdP に ID token を渡す', async () => {
     auth = signedIn()
     const user = userEvent.setup()
 
@@ -128,7 +128,7 @@ describe('ログインの門', () => {
     expect(auth.signoutRedirect).toHaveBeenCalledWith({ id_token_hint: 'id-token-1' })
   })
 
-  it('画面を閉じると、API に token を渡さなくなる', () => {
+  test('画面を閉じると、API に token を渡さなくなる', () => {
     auth = signedIn()
 
     renderGate().unmount()
@@ -136,7 +136,7 @@ describe('ログインの門', () => {
     expect(currentAccessToken()).toBeUndefined()
   })
 
-  it('API が 401 を返すと、今の画面を戻り先にしてログインし直し、その直後の 401 では繰り返さない', () => {
+  test('API が 401 を返すと、今の画面を戻り先にしてログインし直し、その直後の 401 では繰り返さない', () => {
     auth = signedIn()
     renderGate()
 
@@ -147,7 +147,7 @@ describe('ログインの門', () => {
     expect(auth.signinRedirect).toHaveBeenCalledWith({ state: { returnTo: '/orders?status=ACCEPTED' } })
   })
 
-  it('ログインに失敗すると、理由を出し、ログインし直すとトップに戻る', async () => {
+  test('ログインに失敗すると、理由を出し、ログインし直すとトップに戻る', async () => {
     const error = Object.assign(new Error('IdP に届かない'), { source: 'signinCallback' as const })
     auth = { ...signedOut(), error }
     const user = userEvent.setup()

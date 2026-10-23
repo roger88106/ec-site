@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
 import { getRow } from '@/test/queries'
@@ -64,7 +64,7 @@ async function shownQuantity(expected: number) {
 }
 
 describe('在庫の調整', () => {
-  it('増減量と理由で調整すると、結果を知らせ、在庫数を取得し直す', async () => {
+  test('増減量と理由で調整すると、結果を知らせ、在庫数を取得し直す', async () => {
     const state = serveStock(5)
     const { user } = renderApp(URL)
     await shownQuantity(5)
@@ -80,7 +80,7 @@ describe('在庫の調整', () => {
     expect(state.requests).toEqual([{ delta: 10, reason: 'ARRIVAL', memo: null }])
   })
 
-  it('AC-43 調整後に負になる調整は拒否され、そのメッセージを出し、在庫数は変わらない', async () => {
+  test('AC-43 調整後に負になる調整は拒否され、そのメッセージを出し、在庫数は変わらない', async () => {
     serveStock(2)
     const { user } = renderApp(URL)
     await shownQuantity(2)
@@ -95,7 +95,7 @@ describe('在庫の調整', () => {
     expect(await shownQuantity(2)).toBeInTheDocument()
   })
 
-  it('AC-46 理由が「その他」のときはメモが必須と示し、メモがなければ拒否のメッセージを出す', async () => {
+  test('AC-46 理由が「その他」のときはメモが必須と示し、メモがなければ拒否のメッセージを出す', async () => {
     serveStock(5)
     const { user } = renderApp(URL)
     await shownQuantity(5)
@@ -114,7 +114,7 @@ describe('在庫の調整', () => {
     expect(await screen.findByText('+1 を反映し、在庫数は 6 になりました')).toBeInTheDocument()
   })
 
-  it('AC-107 注文に由来する調整は理由と注文番号を履歴に出し、調整の理由には選べない', async () => {
+  test('AC-107 注文に由来する調整は理由と注文番号を履歴に出し、調整の理由には選べない', async () => {
     serveStock(3, [
       {
         id: '00000000-0000-0000-0000-000000000302',
@@ -140,7 +140,7 @@ describe('在庫の調整', () => {
 })
 
 describe('操作した運営者', () => {
-  it('AC-142 運営者の調整は、調整した運営者の氏名を履歴に出す。注文に由来する調整は空', async () => {
+  test('AC-142 運営者の調整は、調整した運営者の氏名を履歴に出す。注文に由来する調整は空', async () => {
     serveStock(4, [
       {
         id: '00000000-0000-0000-0000-000000000303',
@@ -175,7 +175,7 @@ describe('操作した運営者', () => {
 })
 
 describe('権限のない操作', () => {
-  it('AC-141 権限のない運営者（閲覧者）が調整すると、権限がないことを調整のフォームに出す', async () => {
+  test('AC-141 権限のない運営者（閲覧者）が調整すると、権限がないことを調整のフォームに出す', async () => {
     serveStock(5)
     server.use(
       http.post('/inventory/variants/{variantId}/adjustments', ({ response }) =>

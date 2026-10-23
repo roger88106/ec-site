@@ -1,6 +1,6 @@
 import { screen, waitFor } from '@testing-library/react'
 import type { UserEvent } from '@testing-library/user-event'
-import { beforeEach, describe, expect, it } from 'vitest'
+import { beforeEach, describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { PRODUCT_ID, productDetail, taxCategory } from '@/test/fixtures'
 import { renderApp } from '@/test/renderApp'
@@ -41,7 +41,7 @@ describe('商品の登録', () => {
     )
   })
 
-  it('AC-15 品番の英小文字は、入力した時点で大文字になる', async () => {
+  test('AC-15 品番の英小文字は、入力した時点で大文字になる', async () => {
     serveCreate((_, response) => response(201).json({ id: PRODUCT_ID }))
     const { user } = renderApp('/products/new')
 
@@ -50,7 +50,7 @@ describe('商品の登録', () => {
     expect(screen.getByLabelText('商品品番（登録後は変更できません）')).toHaveValue('ABC-001')
   })
 
-  it('AC-15 登録すると、入れた内容（品番は大文字）で登録し、編集の画面に移る', async () => {
+  test('AC-15 登録すると、入れた内容（品番は大文字）で登録し、編集の画面に移る', async () => {
     const requests = serveCreate((_, response) => response(201).json({ id: PRODUCT_ID }))
     const { user, router } = renderApp('/products/new')
 
@@ -78,7 +78,7 @@ describe('商品の登録', () => {
     ])
   })
 
-  it('AC-15 サーバーの入力検証エラーは、その項目の入力欄の下に出て、画面は移らない', async () => {
+  test('AC-15 サーバーの入力検証エラーは、その項目の入力欄の下に出て、画面は移らない', async () => {
     serveCreate((_, response) =>
       response(400).json(
         problem(400, 'INVALID_REQUEST', '入力に誤りがあります。', [

@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { ProductSummary } from '@/api/types'
 import { productSummary } from '@/test/fixtures'
 import { getRow } from '@/test/queries'
@@ -46,7 +46,7 @@ function totalOf(productCode: string): HTMLElement {
 }
 
 describe('商品の一覧', () => {
-  it('AC-49 表示中のページの商品の在庫数の合計を、集計の API から取って組み合わせる', async () => {
+  test('AC-49 表示中のページの商品の在庫数の合計を、集計の API から取って組み合わせる', async () => {
     const state = serveList([SHIRT, CAP], (_, response) =>
       response(200).json({
         items: [
@@ -63,7 +63,7 @@ describe('商品の一覧', () => {
     expect(state.summaryQueries).toEqual([`${SHIRT.id},${CAP.id}`])
   })
 
-  it('AC-49 在庫の集計の取得に失敗しても、一覧は出し、在庫数の合計は取得できないと出す', async () => {
+  test('AC-49 在庫の集計の取得に失敗しても、一覧は出し、在庫数の合計は取得できないと出す', async () => {
     // 4xx にする。5xx は取得を繰り返すので、失敗を表示するまでに時間がかかる
     serveList([SHIRT], (_, response) => response(400).json(problem(400, 'INVALID_REQUEST', '入力に誤りがあります。')))
     renderApp('/products')
@@ -72,7 +72,7 @@ describe('商品の一覧', () => {
     expect(await within(totalOf('ABC-001')).findByText('取得できません')).toBeInTheDocument()
   })
 
-  it('AC-48 絞り込みは URL のクエリになり、1 ページ目から API に送る', async () => {
+  test('AC-48 絞り込みは URL のクエリになり、1 ページ目から API に送る', async () => {
     const state = serveList([SHIRT], (_, response) => response(200).json({ items: [] }))
     const { user, router } = renderApp('/products?page=2')
     await screen.findByRole('cell', { name: 'T シャツ' })
@@ -89,7 +89,7 @@ describe('商品の一覧', () => {
     await waitFor(() => expect(state.listQueries.at(-1)).toBe(`${expected}&page=1`))
   })
 
-  it('AC-48 URL のクエリの絞り込みとページで一覧を取得し、入力欄にも出す（戻る・再読み込みで同じ一覧）', async () => {
+  test('AC-48 URL のクエリの絞り込みとページで一覧を取得し、入力欄にも出す（戻る・再読み込みで同じ一覧）', async () => {
     const state = serveList([SHIRT], (_, response) => response(200).json({ items: [] }))
     const { user, router } = renderApp('/products?code=ABC&status=PUBLISHED&page=2')
 

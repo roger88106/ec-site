@@ -1,5 +1,5 @@
 import { fireEvent, screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { TaxCategory } from '@/api/types'
 import { TAX_CATEGORY_ID, taxCategory } from '@/test/fixtures'
@@ -64,7 +64,7 @@ function setDateTime(input: HTMLInputElement, value: string) {
 }
 
 describe('税率の一覧の編集', () => {
-  it('AC-4 期間限定の税率に切り替える一覧を作って保存すると、追加した行の開始は直前の行の終了から始まり、保存を知らせる', async () => {
+  test('AC-4 期間限定の税率に切り替える一覧を作って保存すると、追加した行の開始は直前の行の終了から始まり、保存を知らせる', async () => {
     const state = serveTaxCategory(taxCategory())
     const { user } = renderApp(URL)
     await screen.findByRole('heading', { name: '税区分「標準」の税率' })
@@ -97,7 +97,7 @@ describe('税率の一覧の編集', () => {
     ])
   })
 
-  it('AC-3 期間が途切れる一覧はサーバーに拒否され、そのメッセージを出し、入力は残る', async () => {
+  test('AC-3 期間が途切れる一覧はサーバーに拒否され、そのメッセージを出し、入力は残る', async () => {
     serveTaxCategory(taxCategory(), (_, response) =>
       response(400).json(problem(400, 'TAX_RATE_PERIODS_GAP', '税率の期間に途切れがあります。')),
     )
@@ -115,7 +115,7 @@ describe('税率の一覧の編集', () => {
     expect(screen.queryByText('税率を保存しました')).not.toBeInTheDocument()
   })
 
-  it('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の一覧に再作成してから保存できる', async () => {
+  test('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の一覧に再作成してから保存できる', async () => {
     const state = serveTaxCategory(taxCategory(), (body, response) =>
       body.version === state.current.version ? undefined : conflict(response),
     )

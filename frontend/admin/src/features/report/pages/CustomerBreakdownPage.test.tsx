@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { CustomerBreakdownReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
 import { getRow } from '@/test/queries'
@@ -57,7 +57,7 @@ function expectSegmentsInOrder(dimension: string, segments: string[]) {
 }
 
 describe('地域・年齢層・性別', () => {
-  it('AC-205、220、262 都道府県ごとの売上額と注文件数を、コードの順に応答の名前で出し、コードのないものは不明', async () => {
+  test('AC-205、220、262 都道府県ごとの売上額と注文件数を、コードの順に応答の名前で出し、コードのないものは不明', async () => {
     serveBreakdown()
     renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
 
@@ -68,7 +68,7 @@ describe('地域・年齢層・性別', () => {
     expect(within(tokyo).getByRole('cell', { name: '12' })).toBeInTheDocument()
   })
 
-  it('AC-206、208、219 年齢層と性別は、すべての区分（不明を含む）を出す', async () => {
+  test('AC-206、208、219 年齢層と性別は、すべての区分（不明を含む）を出す', async () => {
     serveBreakdown()
     renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
 
@@ -77,7 +77,7 @@ describe('地域・年齢層・性別', () => {
     expectSegmentsInOrder('性別', ['男性', '女性', 'その他', '不明'])
   })
 
-  it('AC-207 商品を選ぶと、その商品で取り直し、送料を含めていないことを示す', async () => {
+  test('AC-207 商品を選ぶと、その商品で取り直し、送料を含めていないことを示す', async () => {
     const queries = serveBreakdown({ ...BREAKDOWN, shippingExcluded: true })
     renderApp(`/reports/customer-breakdown?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}&basis=SHIPMENT`)
 
@@ -88,7 +88,7 @@ describe('地域・年齢層・性別', () => {
     expect(query.get('basis')).toBe('SHIPMENT')
   })
 
-  it('AC-218 3 つの表を 1 つにまとめた CSV で取り出せる', async () => {
+  test('AC-218 3 つの表を 1 つにまとめた CSV で取り出せる', async () => {
     serveBreakdown()
     const recorder = recordDownloads()
     const { user } = renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')

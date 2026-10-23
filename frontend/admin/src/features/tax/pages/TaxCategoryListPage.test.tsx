@@ -1,5 +1,5 @@
 import { screen, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { TaxCategory } from '@/api/types'
 import { taxCategory } from '@/test/fixtures'
@@ -52,7 +52,7 @@ function serveTaxCategories(
 }
 
 describe('税区分の一覧', () => {
-  it('税区分ごとに、名称・現時点の率・税率の件数と、税率の編集へ移るボタンを出す', async () => {
+  test('税区分ごとに、名称・現時点の率・税率の件数と、税率の編集へ移るボタンを出す', async () => {
     serveTaxCategories([taxCategory(), REDUCED])
     renderApp(URL)
 
@@ -68,7 +68,7 @@ describe('税区分の一覧', () => {
 })
 
 describe('税区分の登録', () => {
-  it('AC-1 名称を入れて登録すると、知らせを出し、入力を空にして一覧に追加する', async () => {
+  test('AC-1 名称を入れて登録すると、知らせを出し、入力を空にして一覧に追加する', async () => {
     const state = serveTaxCategories([taxCategory()])
     const { user } = renderApp(URL)
 
@@ -83,7 +83,7 @@ describe('税区分の登録', () => {
     expect(state.requests).toEqual([{ name: '軽減' }])
   })
 
-  it('AC-1 名称が重複していると、サーバーのエラーを出し、入力を残す', async () => {
+  test('AC-1 名称が重複していると、サーバーのエラーを出し、入力を残す', async () => {
     serveTaxCategories([taxCategory()], (_, response) =>
       response(409).json(problem(409, 'TAX_CATEGORY_NAME_ALREADY_EXISTS', 'この名称の税区分はすでにあります。')),
     )
@@ -97,7 +97,7 @@ describe('税区分の登録', () => {
     expect(name).toHaveValue('標準')
   })
 
-  it('空白だけの名称では、登録できない', async () => {
+  test('空白だけの名称では、登録できない', async () => {
     serveTaxCategories([taxCategory()])
     const { user } = renderApp(URL)
 

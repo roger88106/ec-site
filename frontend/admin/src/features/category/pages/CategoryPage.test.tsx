@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { CategoryNode } from '@/api/types'
 import { categoryNode } from '@/test/fixtures'
@@ -60,7 +60,7 @@ async function row(name: string) {
 }
 
 describe('カテゴリの画面', () => {
-  it('AC-8 カテゴリの木を、階層の入れ子で表示する', async () => {
+  test('AC-8 カテゴリの木を、階層の入れ子で表示する', async () => {
     serveCategories([CLOTHING, GOODS])
     renderApp('/categories')
 
@@ -70,7 +70,7 @@ describe('カテゴリの画面', () => {
     expect(within(clothing).queryByText('雑貨')).not.toBeInTheDocument()
   })
 
-  it('AC-8 親を指定せずに登録すると、最上位のカテゴリになる', async () => {
+  test('AC-8 親を指定せずに登録すると、最上位のカテゴリになる', async () => {
     const requests = serveCategories([GOODS])
     const { user } = renderApp('/categories')
 
@@ -85,7 +85,7 @@ describe('カテゴリの画面', () => {
     ])
   })
 
-  it('AC-8 子を追加すると、その行のカテゴリを親として登録する', async () => {
+  test('AC-8 子を追加すると、その行のカテゴリを親として登録する', async () => {
     const requests = serveCategories([CLOTHING])
     const { user } = renderApp('/categories')
 
@@ -98,7 +98,7 @@ describe('カテゴリの画面', () => {
     expect(requests[0]?.body).toEqual({ name: 'ボトムス', parentId: CLOTHING.id })
   })
 
-  it('AC-9、270 子を追加する操作は、階層の深さでなく API のフラグで出し分ける', async () => {
+  test('AC-9、270 子を追加する操作は、階層の深さでなく API のフラグで出し分ける', async () => {
     serveCategories([CLOTHING, categoryNode('301', '深い', 3, [], true), categoryNode('302', '浅い', 1, [], false)])
     renderApp('/categories')
 
@@ -108,7 +108,7 @@ describe('カテゴリの画面', () => {
     expect((await row('浅い')).queryByRole('button', { name: '子を追加' })).not.toBeInTheDocument()
   })
 
-  it('AC-10 同じ親の下に同じ名称があれば、ダイアログにエラーを出し、入力を残す', async () => {
+  test('AC-10 同じ親の下に同じ名称があれば、ダイアログにエラーを出し、入力を残す', async () => {
     serveCategories([GOODS], {
       create: (_body, response) =>
         response(409).json(
@@ -126,7 +126,7 @@ describe('カテゴリの画面', () => {
     expect(within(dialog).getByLabelText('名称')).toHaveValue('雑貨')
   })
 
-  it('AC-11 名称を変えると、ダイアログを開いたときのバージョンを添えて送る', async () => {
+  test('AC-11 名称を変えると、ダイアログを開いたときのバージョンを添えて送る', async () => {
     const requests = serveCategories([GOODS])
     const { user } = renderApp('/categories')
 
@@ -144,7 +144,7 @@ describe('カテゴリの画面', () => {
     ])
   })
 
-  it('名称の変更が 409 になると、再読み込みでダイアログを閉じて最新の一覧を表示する', async () => {
+  test('名称の変更が 409 になると、再読み込みでダイアログを閉じて最新の一覧を表示する', async () => {
     // 他の人が名称を変えた後の木。409 を返した後の取得から、これを返す
     let tree = [GOODS]
     server.use(
@@ -168,7 +168,7 @@ describe('カテゴリの画面', () => {
     expect(screen.queryByRole('group', { name: '雑貨' })).not.toBeInTheDocument()
   })
 
-  it('AC-11 並び順を変えると、兄弟の並びを送る。先頭は上へ、末尾は下へ動かせない', async () => {
+  test('AC-11 並び順を変えると、兄弟の並びを送る。先頭は上へ、末尾は下へ動かせない', async () => {
     const requests = serveCategories([CLOTHING, GOODS])
     const { user } = renderApp('/categories')
 
@@ -184,7 +184,7 @@ describe('カテゴリの画面', () => {
     })
   })
 
-  it.each([
+  test.each([
     {
       name: '子を持つカテゴリ',
       errorCode: 'CATEGORY_HAS_CHILDREN',
@@ -208,7 +208,7 @@ describe('カテゴリの画面', () => {
     expect(requests).toEqual([{ method: 'DELETE', path: `/categories/${CLOTHING.id}` }])
   })
 
-  it('AC-12 子も商品もないカテゴリは、確認の後に削除する', async () => {
+  test('AC-12 子も商品もないカテゴリは、確認の後に削除する', async () => {
     const requests = serveCategories([GOODS])
     const { user } = renderApp('/categories')
 

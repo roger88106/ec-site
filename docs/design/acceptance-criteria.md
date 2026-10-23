@@ -136,7 +136,7 @@
 | AC-111 | 登録すると確認メールが届く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
 | AC-112 | メールアドレスの確認が済むと、ログインした状態で店舗（会員登録を始めた画面）に戻… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
 | AC-113 | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `LoginLinks.test.tsx`、`index.test.ts`、`login.test.ts` ほか 1 |
-| AC-114 | ログインしている間、店舗の画面に会員の氏名とログアウトの操作を表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`login.test.ts`、`member.spec.ts` |
+| AC-114 | ログインしている間、店舗の画面に会員の氏名とログアウトの操作を表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`member.spec.ts` |
 | AC-115 | ログアウトすると、店舗でも IdP でもログインしていない状態になる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`member.spec.ts` |
 | AC-116 | パスワードを続けて間違えると、そのアカウントは一定時間ログインできなくなる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
 | AC-117 | ログインの状態は、最後に操作してから一定時間（plan で決める）続く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`index.test.ts` |
@@ -157,7 +157,7 @@
 | AC-132 | 管理画面は、ログインしなければ何も表示しない。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthGate.test.tsx`、`login.test.ts` |
 | AC-133 | 運営者のアカウントは、会員のアカウントとは別にある（constitution 1… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest` |
 | AC-134 | 運営者は自分で登録できない。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
-| AC-135 | 管理画面に運営者の氏名とログアウトの操作を表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `App.test.tsx`、`login.test.ts` |
+| AC-135 | 管理画面に運営者の氏名とログアウトの操作を表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `App.test.tsx` |
 | AC-136 | 管理 API の各操作は、運営者がその操作の権限（spec 001、002 の各… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthorizationTest`、`permission.spec.ts` |
 | AC-137 | 認証のない要求（なし、無効、期限切れ）は、管理 API と、店舗 API の会員… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthorizationTest`、`KeycloakIntegrationTest`、`MemberCartApiTest` ほか 1 |
 | AC-138 | 会員のアカウントで得た認証では、管理 API を使えない。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthorizationTest`、`KeycloakIntegrationTest` |

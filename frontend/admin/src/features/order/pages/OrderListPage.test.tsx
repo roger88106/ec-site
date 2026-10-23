@@ -112,7 +112,7 @@ describe('注文一覧', () => {
 })
 
 describe('出荷と与信期限', () => {
-  it('AC-182 AC-186 配送状態と、与信期限が近いことを出す', async () => {
+  it('AC-182、186 配送状態と、与信期限が近いことを出す', async () => {
     serveOrders([
       orderSummary({ authorizationExpiring: true, paymentStatus: 'AUTHORIZED' }),
       orderSummary({
@@ -146,7 +146,7 @@ describe('出荷と与信期限', () => {
     await waitFor(() => expect(queries.at(-1)?.get('status')).toBe('SHIPPED'))
   })
 
-  it('AC-187 AC-189 与信期限が近い注文と、返送の注文で絞り込める', async () => {
+  it('AC-187、189 与信期限が近い注文と、返送の注文で絞り込める', async () => {
     const queries = serveOrders()
     const { user, router } = renderApp('/orders')
     await screen.findByRole('link', { name: '20261010-123456' })

@@ -1,6 +1,7 @@
 import { carrierLabel, shipmentStatusLabel } from '@ec-site/shared/lib/orderLabels'
 import { Button } from '@ec-site/shared/ui/button'
 import { Input } from '@ec-site/shared/ui/input'
+import { useId } from 'react'
 import { Controller, useForm } from 'react-hook-form'
 import { useTranslations } from 'use-intl'
 import { setServerFieldErrors } from '@/api/formErrors'
@@ -27,13 +28,15 @@ const FIELD_NAMES = ['carrier', 'trackingNumber'] as const
  */
 export function ShipmentCard({ order }: { order: OrderDetail }) {
   const t = useTranslations('order.shipment')
+  const titleId = useId()
   if (!order.shipment && !order.actions.ship) {
     return null
   }
   return (
-    <Card>
+    // 見出しを名前にした region にして、支援技術から出荷の欄として探せるようにする
+    <Card aria-labelledby={titleId} role="region">
       <CardHeader>
-        <CardTitle>{t('title') /* 出荷 */}</CardTitle>
+        <CardTitle id={titleId}>{t('title') /* 出荷 */}</CardTitle>
       </CardHeader>
       <CardContent>
         {order.shipment ? (

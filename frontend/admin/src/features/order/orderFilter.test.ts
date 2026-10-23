@@ -2,7 +2,7 @@ import { describe, expect, test } from 'vitest'
 import { EMPTY_FILTER, parseFilter, toSearchParams } from '@/features/order/orderFilter'
 
 describe('注文一覧の絞り込みと URL', () => {
-  test('AC-98 AC-187 AC-189 絞り込みとページを URL のクエリにし、読み戻せる', () => {
+  test('AC-98、187、189 絞り込みとページを URL のクエリにし、読み戻せる', () => {
     const filter = {
       orderNumber: '20261010',
       status: 'CANCELLATION_REQUESTED' as const,

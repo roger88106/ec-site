@@ -1,10 +1,15 @@
 package com.ecsite.architecture;
 
+import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
+import com.tngtech.archunit.core.domain.PackageMatcher;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.transaction.annotation.Transactional;
@@ -60,6 +65,15 @@ class ModuleStructureTest {
      * presentation の外に置く例外の {@code @RestController}（どのモジュールにも属さない GET /me）
      */
     private static final String ME_CONTROLLER = "com.ecsite.config.security.MeController";
+
+    /**
+     * 他のモジュールの api を、infrastructure.directory の外から使ってよい組。<br />
+     * 組を足すときは、理由をコメントに書き、バックエンドの書き方 第 1.3 節の例外にも書く。
+     */
+    private static final List<AllowedApiUse> ALLOWED_API_USES = List.of(
+            // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。
+            // 会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために 3 組が増える
+            new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", "com.ecsite.module.*.presentation.."));
 
     /**
      * 本番のクラス（テストを除く）
@@ -210,6 +224,63 @@ class ModuleStructureTest {
         assertThat(dirPackages).isEmpty();
     }
 
+    @Test
+    @DisplayName("他のモジュールの api を使うのは infrastructure.directory だけである（許可の一覧を除く）")
+    void otherModulesApiIsUsedOnlyByDirectories() {
+        for (String module : modulesWith("api")) {
+            classes().that().resideOutsideOfPackages(
+                            "%s.%s..".formatted(MODULE_PACKAGE, module), MODULE_PACKAGE + ".*.infrastructure.directory..")
+                    .should(notUseApiOf(module))
+                    .check(CLASSES);
+        }
+    }
+
+    @Test
+    @DisplayName("api を使う許可の一覧は、全て本番のクラスで使われている")
+    void everyAllowedApiUseIsUsed() {
+        for (AllowedApiUse allowed : ALLOWED_API_USES) {
+            boolean used = CLASSES.stream()
+                    .filter(javaClass -> PackageMatcher.of(allowed.userPackage()).matches(javaClass.getPackageName()))
+                    .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
+                    .anyMatch(dependency -> dependency.getTargetClass().getName().equals(allowed.apiType()));
+            assertThat(used).as(allowed.apiType()).isTrue();
+        }
+    }
+
+    /**
+     * 他のモジュールの api を、許可の一覧にない使い方で使わない、という条件を返す。
+     *
+     * @param module api を持つモジュールの名前
+     * @return 条件
+     */
+    private static ArchCondition<JavaClass> notUseApiOf(String module) {
+        String apiPackage = "%s.%s.api".formatted(MODULE_PACKAGE, module);
+        return new ArchCondition<>("%s の api を、許可の一覧にない使い方で使わない".formatted(module)) {
+            @Override
+            public void check(JavaClass javaClass, ConditionEvents events) {
+                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                    JavaClass target = dependency.getTargetClass();
+                    if (target.getPackageName().equals(apiPackage) && !isAllowed(javaClass, target)) {
+                        events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
+                    }
+                }
+            }
+        };
+    }
+
+    /**
+     * api の型の使い方が、許可の一覧にあるかを返す。
+     *
+     * @param user   使う側のクラス
+     * @param target 使われる api の型
+     * @return 許可の一覧にあれば true
+     */
+    private static boolean isAllowed(JavaClass user, JavaClass target) {
+        return ALLOWED_API_USES.stream().anyMatch(allowed ->
+                allowed.apiType().equals(target.getName())
+                        && PackageMatcher.of(allowed.userPackage()).matches(user.getPackageName()));
+    }
+
     /**
      * 生成したコード（OpenAPI の interface と型、jOOQ）のパッケージかを返す。
      *
@@ -247,5 +318,14 @@ class ModuleStructureTest {
      */
     private static String layer(String module, String layer) {
         return "%s.%s.%s..".formatted(MODULE_PACKAGE, module, layer);
+    }
+
+    /**
+     * 他のモジュールの api を使ってよい組
+     *
+     * @param apiType     使われる api の型の完全修飾名
+     * @param userPackage 使ってよい層のパッケージ（ArchUnit の指定）
+     */
+    private record AllowedApiUse(String apiType, String userPackage) {
     }
 }

@@ -10,7 +10,7 @@
 
 T155-03-01〜04 と T155-03-06 は、変えるファイルが重ならないので、互いに `[P]` である。T155-03-04 と T155-03-07 は同じファイルを変えるので、順に行う。構成の検査に規則を追加するタスクは、`allowEmptyShould(true)` を付けない（[plan](../plan.md) の共通の決定）。
 
-- [ ] **T155-03-01** [P] `ModuleStructureTest` に規則を追加する。他のモジュールの `api` を使うのは `infrastructure.directory` だけにする。許可の一覧は 1 件で、`member.api.CurrentMemberIds` を presentation から使う。規則はモジュールごとに作り、対象を「そのモジュールの `api` を、外のクラスが使う依存」と記述する。`api` を持つモジュールだけを対象にし、`allowEmptyShould` を付けない。許可の一覧にない使い方を一時的に置いて、失敗することを確認する（DC-155-17、18）。
+- [x] **T155-03-01** [P] `ModuleStructureTest` に規則を追加する。他のモジュールの `api` を使うのは `infrastructure.directory` だけにする。許可の一覧は 1 件で、`member.api.CurrentMemberIds` を presentation から使う。規則はモジュールごとに作り、対象を「そのモジュールの `api` を、外のクラスが使う依存」と記述する。`api` を持つモジュールだけを対象にし、`allowEmptyShould` を付けない。許可の一覧にない使い方を一時的に置いて、失敗することを確認する（DC-155-17、18）。
   - 依存：なし
   - 範囲：`test/architecture/ModuleStructureTest.java`。使う側の `main/module/cart/presentation/CartController.java`、`main/module/order/presentation/{StoreCheckoutController,StoreOrderController}.java`、`main/module/storefront/presentation/StorefrontCartController.java` は、変更せず、検査が通ることを確認する。
 - [ ] **T155-03-02** [P] 腐敗防止層の実装の public を外す。cart の `CatalogApiDirectory`、`StockApiDirectory`、storefront の `CatalogApiDirectory`、`OrderApiDirectory`、`StockApiDirectory` である。規則を追加する：`*Directory` を実装する `infrastructure.directory` のクラスは public にしない。`TaxRateScheduleCache` は対象外にする。`allowEmptyShould` を付けず、対象が 0 件でないことを確認する。public な例のクラスで、規則が検出することを恒久のテストにする（DC-155-19）。

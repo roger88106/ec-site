@@ -33,7 +33,7 @@ jobs:
 
       - uses: actions/setup-node@v7
         with:
-          node-version: '24'
+          node-version-file: .node-version
 
       # script のテストと、scripts/ci/ の直下の検査の全て（CI では、テスト名に出ない AC も失敗にする）
       - name: CI の検査の script

@@ -339,10 +339,12 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
   - 依存：なし
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties`、`.github/workflows/ci.yml`。spec 17 の手順（PIT、基準の検査）は変えない（DN-158-4）
   - 結果：`check` が `compileToolsJava` に依存するようにし、`distributionSha256Sum` を加えた（`ci.yml` は変更なし）。ハッシュの取得元は `https://downloads.gradle.org/distributions/gradle-9.8.2-bin.zip.sha256`（`services.gradle.org` の同じ path が 301 で転送する先）。
-- [ ] **T158-04-04** Node と JDK の版を 1 か所から読む。push の対象外の一覧に、CI の結果に関わらない `.github/` のファイルを加える。workflow のコメントと除外の理由の spec・plan の番号、古い・位置が違うコメントを修正する（DC-158-43〜46）。
+- [x] **T158-04-04** Node と JDK の版を 1 か所から読む。push の対象外の一覧に、CI の結果に関わらない `.github/` のファイルを加える。workflow のコメントと除外の理由の spec・plan の番号、古い・位置が違うコメントを修正する（DC-158-43〜46）。
   - 依存：T158-04-01（Dependabot の設定）、T158-04-03（同じ `ci.yml`）
   - 範囲：`.github/workflows/`、`.github/actions/setup-frontend/action.yml`、`scripts/ci/`（`review/` を含む）のコメントと除外の理由、`docs/guides/ci.md` の push の対象外の一覧。spec 17 の手順は、版の指定の行だけを変える（DN-158-4）
   - DC-158-45 の 3 件のうち、前のタスクで修正済みのものは、結果にそう書く
+  - 結果：Node はルートの `.node-version`（`24`）から読む（`engines.node` は範囲 `>=24` で最新の版に解決されるため使わない）。JDK は `ci.yml` の `env.JAVA_VERSION` に 1 か所にした（`libs.versions.toml` の `java` と同じにする旨をコメントに書いた）。
+  - 結果：push の対象外に `.github/ISSUE_TEMPLATE/**` と `.github/dependabot.yml` を加え、`docs/guides/ci.md` にも書いた。workflow と除外の理由、`test-diff.mjs` の spec・plan・DN の番号を言葉に直し、型の生成のコメントを型チェックの手順の前に移した。AC の照合のテストの見出しの指令は、該当する記述が見つからず変更なし。
 - [ ] **T158-04-05** E2E の実行中の印を E2E のロックの 1 つにまとめる（DC-158-7、8）。
   - 依存：なし
   - 範囲：`scripts/dev/e2e.sh`、`scripts/dev/check-frontend.sh`、`scripts/dev/lib/`、`docs/guides/running-tests.md`

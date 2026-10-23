@@ -4,7 +4,7 @@
 // 設計を変えない作業（言い回しの修正、文書の移動など）の段階は、related-specs-exclusions.json に、タスク番号の前置き（T018-05）と理由を書く。
 // 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
 // 次の commit の照合：node scripts/ci/related-specs.mjs --staged <メッセージのファイル>（commit-msg の hook から呼ぶ。ステージした文書とメッセージの 1 行目を照合する）
-import { execFileSync, execSync } from 'node:child_process'
+import { execFileSync, execSync, spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
@@ -49,6 +49,17 @@ export function specsOfCommit(subject, excludedPrefixes) {
  */
 export function isPrefixUsed(prefix, subjects) {
   return subjects.some((subject) => [...subject.matchAll(TASK_ID)].some((match) => match[0].startsWith(prefix)))
+}
+
+/**
+ * 除外の要否を見る commit の履歴を読む Git の引数を返す。
+ * merge の途中は、除外の一覧が相手の側の内容になるが HEAD の履歴にはまだ相手の commit がないので、相手の履歴も読む。
+ *
+ * @param {boolean} merging merge の途中（MERGE_HEAD がある）なら true
+ * @returns {string[]} git に渡す引数
+ */
+export function historyLogArgs(merging) {
+  return merging ? ['log', '--format=%s', 'HEAD', 'MERGE_HEAD'] : ['log', '--format=%s']
 }
 
 /**
@@ -104,7 +115,8 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
     process.exit(1)
   }
   // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
-  const allSubjects = execFileSync('git', ['log', '--format=%s'], { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean)
+  const merging = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { encoding: 'utf8' }).status === 0
+  const allSubjects = execFileSync('git', historyLogArgs(merging), { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean)
   const exclusionProblems = checkExclusions('related-specs-exclusions.json', exclusions, (prefix) => isPrefixUsed(prefix, allSubjects))
   for (const problem of exclusionProblems) console.log(problem)
   const files = execSync('git ls-files "docs/*.md"', { encoding: 'utf8' }).split('\n').filter(Boolean)

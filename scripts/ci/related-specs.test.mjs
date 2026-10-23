@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMissingInStaged, findMissingSpecs, isPrefixUsed, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
+import { findMissingInStaged, findMissingSpecs, historyLogArgs, isPrefixUsed, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
 
 describe('設計の文書の関連 spec の検査', () => {
   test('概要の表の「関連 spec」の行から、spec の番号を読む', () => {
@@ -76,5 +76,10 @@ describe('設計の文書の関連 spec の検査', () => {
     assert.equal(isPrefixUsed('T018-06', subjects), false)
     assert.equal(isPrefixUsed('T018-05', ['docs: T018-050 の話']), false)
     assert.equal(isPrefixUsed('T018-05', []), false)
+  })
+
+  test('merge の途中なら、除外の要否を見る履歴に merge の相手の履歴も含める', () => {
+    assert.deepEqual(historyLogArgs(false), ['log', '--format=%s'])
+    assert.deepEqual(historyLogArgs(true), ['log', '--format=%s', 'HEAD', 'MERGE_HEAD'])
   })
 })

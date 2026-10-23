@@ -20,7 +20,7 @@
 - [x] **T157-02-04** [P] レポートの条件の項目の props の型を、条件のフォームのファイルで 1 つ定義して export し、レポートの共通の画面の 2 つのコンポーネントがそれを使う（DC-157-7）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/report/components/ReportConditionForm.tsx`、`frontend/admin/src/features/report/components/ReportPage.tsx`
-- [ ] **T157-02-05** [P] 商品の項目の制約の組を、操作のスキーマから作る関数を、商品の項目のフォームのファイルに置く。登録の画面と基本情報のカードは、それぞれのスキーマを渡す（DC-157-8）。
+- [x] **T157-02-05** [P] 商品の項目の制約の組を、操作のスキーマから作る関数を、商品の項目のフォームのファイルに置く。登録の画面と基本情報のカードは、それぞれのスキーマを渡す（DC-157-8）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/product/components/ProductFields.tsx`、`frontend/admin/src/features/product/components/BasicInfoCard.tsx`、`frontend/admin/src/features/product/pages/ProductCreatePage.tsx`
 - [ ] **T157-02-06** 管理画面の構成の「middleware」を「ミドルウェア」にし、ディレクトリの図を今のファイルに合わせる。`lib/format.ts` の説明から数の整形を削除する。フロントのアーキテクチャの共有のパッケージの一覧に、形の判定、shadcn/ui の共有のコンポーネント、API の生成で使う script を追加する（DC-157-9、35、36）。

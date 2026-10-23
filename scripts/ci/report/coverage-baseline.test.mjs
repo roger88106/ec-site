@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
+import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url'
 import { compare, percent2 } from './coverage-baseline.mjs'
 
 const SCRIPT = path.join(path.dirname(fileURLToPath(import.meta.url)), 'coverage-baseline.mjs')
+/** リポジトリのルート（scripts/ci/report/ の 3 つ上） */
+const ROOT = path.resolve(path.dirname(SCRIPT), '../../..')
 
 /** Vitest の json-summary の小さな例（行 80.00%、分岐 50.00%） */
 const REPORT = JSON.stringify({
@@ -22,18 +24,36 @@ const baselineOf = (tolerance = 0, line = 80, branch = 50) =>
     },
   })
 
+/** JaCoCo の XML の小さな例（行 80.00%、分岐 50.00%）。全体の counter は最後の package の後に並ぶ */
+const JACOCO = [
+  '<report name="ecsite">',
+  '<package name="com/ecsite/a">',
+  '<sourcefile name="A.java"><counter type="LINE" missed="20" covered="80"/></sourcefile>',
+  '<counter type="LINE" missed="20" covered="80"/>',
+  '</package>',
+  '<counter type="LINE" missed="20" covered="80"/><counter type="BRANCH" missed="1" covered="1"/>',
+  '</report>',
+].join('\n')
+
+/** 行の全体が 0 の json-summary */
+const NO_LINES = JSON.stringify({ total: { lines: { covered: 0, total: 0 }, branches: { covered: 0, total: 0 } } })
+
 let dir
 before(() => {
   dir = mkdtempSync(path.join(tmpdir(), 'coverage-baseline-'))
   writeFileSync(path.join(dir, 'report.json'), REPORT)
+  writeFileSync(path.join(dir, 'report.xml'), JACOCO)
+  writeFileSync(path.join(dir, 'empty.json'), NO_LINES)
+  writeFileSync(path.join(dir, 'broken.xml'), '<report name="ecsite"></report>')
 })
 after(() => rmSync(dir, { recursive: true, force: true }))
 
 /** script を流す。基準のファイルは、渡されたときだけ dir の中に書く。summary は標準出力に出る */
-function run(baseline, args = ['store', 'report.json']) {
+function run(baseline, args = ['store', 'report.json'], extraEnv = {}) {
   if (baseline !== undefined) writeFileSync(path.join(dir, 'baseline.json'), baseline)
   const env = { ...process.env }
   delete env.GITHUB_STEP_SUMMARY
+  Object.assign(env, extraEnv)
   const result = spawnSync(process.execPath, [SCRIPT, ...args, '--baseline', 'baseline.json'], {
     cwd: dir,
     env,
@@ -113,6 +133,75 @@ describe('基準の検査（CLI）', () => {
     assert.equal(run('{ not json').status, 1)
   })
 
+  test('分岐だけが基準を下回っても失敗にする', () => {
+    const { status, out } = run(baselineOf(0, 80, 60))
+    assert.equal(status, 1)
+    assert.match(out, /分岐：基準 60/)
+    assert.doesNotMatch(out, /行：基準/)
+  })
+
+  test('JaCoCo の XML の報告も読んで比べる', () => {
+    assert.equal(run(baselineOf(), ['store', 'report.xml']).status, 0)
+    assert.equal(run(baselineOf(0, 90, 50), ['store', 'report.xml']).status, 1)
+  })
+
+  test('行の全体が 0 の報告は、成功にせず失敗にする', () => {
+    const { status, out } = run(baselineOf(0, 0, 0), ['store', 'empty.json'])
+    assert.equal(status, 1)
+    assert.match(out, /行がない/)
+  })
+
+  test('分岐の全体が 0 の報告は、分岐を 100 とみなす', () => {
+    const noBranches = JSON.stringify({ total: { lines: { covered: 80, total: 100 }, branches: { covered: 0, total: 0 } } })
+    writeFileSync(path.join(dir, 'no-branches.json'), noBranches)
+    assert.equal(run(baselineOf(0, 80, 100), ['store', 'no-branches.json']).status, 0)
+  })
+
+  test('package も全体の counter もない XML は失敗にする', () => {
+    const { status, out } = run(baselineOf(0, 0, 0), ['store', 'broken.xml'])
+    assert.equal(status, 1)
+    assert.match(out, /行がない/)
+  })
+
+  test('基準のファイルに targets がない、branch の値が違う、ファイルがないと失敗にする', () => {
+    assert.equal(run(JSON.stringify({ other: {} })).status, 1)
+    const branchBroken = JSON.stringify({
+      targets: { store: { line: { value: 80, tolerance: 0 }, branch: { value: 'x', tolerance: 0 } } },
+    })
+    assert.equal(run(branchBroken).status, 1)
+    rmSync(path.join(dir, 'baseline.json'))
+    const { status, out } = run(undefined)
+    assert.equal(status, 1)
+    assert.match(out, /基準のファイルがありません/)
+  })
+
+  test('失敗したときは、summary にも対象・基準・今回・差・直し方を書く', () => {
+    const summary = path.join(dir, 'summary.md')
+    writeFileSync(summary, '')
+    run(baselineOf(0, 90, 50), ['store', 'report.json'], { GITHUB_STEP_SUMMARY: summary })
+    const text = readFileSync(summary, 'utf8')
+    assert.match(text, /store/)
+    assert.match(text, /90\.00%/)
+    assert.match(text, /80\.00%/)
+    assert.match(text, /-10\.00/)
+    assert.match(text, /--write/)
+  })
+
+  test('上回ったときは、summary に警告を書く', () => {
+    const summary = path.join(dir, 'summary.md')
+    writeFileSync(summary, '')
+    run(baselineOf(0, 70, 50), ['store', 'report.json'], { GITHUB_STEP_SUMMARY: summary })
+    assert.match(readFileSync(summary, 'utf8'), /警告：/)
+  })
+
+  test('直し方の --write のコマンドは、script と報告をリポジトリのルートからのパスで示し、そのまま解決できる', () => {
+    const { out } = run(baselineOf(0, 90, 50))
+    const [, scriptPath, reportPath] = out.match(/node (\S+coverage-baseline\.mjs) store (\S+) --write/)
+    assert.equal(path.resolve(ROOT, scriptPath), SCRIPT)
+    assert.equal(path.resolve(ROOT, reportPath), path.join(dir, 'report.json'))
+    assert.ok(existsSync(path.resolve(ROOT, scriptPath)))
+  })
+
   test('引数が足りないと、使い方を出して終了コード 2 にする', () => {
     assert.equal(run(baselineOf(), ['store']).status, 2)
   })
@@ -145,6 +234,13 @@ describe('--write', () => {
     const { status, out } = run(undefined)
     assert.equal(status, 0)
     assert.doesNotMatch(out, /警告：/)
+  })
+
+  test('行の全体が 0 の報告では、書き換えずに失敗にする', () => {
+    const original = baselineOf(0, 99, 99)
+    const { status } = run(original, ['store', 'empty.json', '--write'])
+    assert.equal(status, 1)
+    assert.equal(readFileSync(path.join(dir, 'baseline.json'), 'utf8'), original)
   })
 
   test('報告がないと、書き換えずに失敗にする', () => {

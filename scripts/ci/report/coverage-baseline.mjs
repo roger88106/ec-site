@@ -1,6 +1,7 @@
 // ============================================================================
 // カバレッジの基準の検査：今回の値が、基準の値（から許容の幅を引いた値）を下回ったら失敗にする
-// （テストの書き方 第 1 節、spec 17）
+// （テストの書き方 第 1 節）。カバレッジが前回の値（基準）を下回らないことを、CI で守る。
+// 基準は、リポジトリのファイルに置く。正当な理由で下げるときは、--write で書き換え、pull request に理由を書く
 //
 //   使い方：node scripts/ci/report/coverage-baseline.mjs <対象> <報告のファイル> [--write] [--baseline <基準のファイル>]
 //     対象：基準のファイルの targets の名前（backend、admin、store、shared）
@@ -20,9 +21,15 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readTotals } from './coverage-summary.mjs'
 
-const DEFAULT_BASELINE = path.join(path.dirname(fileURLToPath(import.meta.url)), 'quality-baseline.json')
+const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
-/** 指標の表示名。基準のファイルに値があるものを、この順で比べる（mutation score は段階 2 で足す） */
+/** リポジトリのルート（この script の 3 つ上）。直し方のコマンドのパスの基準 */
+const ROOT = path.resolve(SCRIPT_DIR, '../../..')
+
+/** 基準のファイルの既定の場所（この script と同じディレクトリ） */
+const DEFAULT_BASELINE = path.join(SCRIPT_DIR, 'quality-baseline.json')
+
+/** 指標の表示名。基準のファイルの指標を、この順で比べる。mutation score のような指標は、ここと parseBaseline に足す */
 const METRIC_LABELS = { line: '行', branch: '分岐' }
 
 /**
@@ -88,7 +95,20 @@ export function compare(entry, actual) {
   return { failures, warnings }
 }
 
+/** 差を、符号付きで小数第 2 位まで表示する（上回るときは +） */
 const signed = (diff) => `${diff > 0 ? '+' : ''}${diff.toFixed(2)}`
+
+/**
+ * 基準を書き換えるコマンドを返す。どこで流してもよいように、script と報告をリポジトリのルートからのパスにする。
+ *
+ * @param {string} name 対象
+ * @param {string} file 報告のファイル（流した場所からのパス）
+ * @returns {string} ルートで流すコマンド
+ */
+function writeCommand(name, file) {
+  const report = path.relative(ROOT, path.resolve(file)).replaceAll('\\', '/')
+  return `node scripts/ci/report/coverage-baseline.mjs ${name} ${report} --write`
+}
 
 /** 結果を出す。標準出力・標準エラーに出し、GITHUB_STEP_SUMMARY があれば summary にも書く */
 function report({ ok, lines, markdown }) {
@@ -135,6 +155,8 @@ function main() {
   if (!entry) fail(name, `基準のファイルに対象「${name}」がありません（あるもの：${Object.keys(baseline.targets).join('、')}）。`)
 
   const totals = readTotals(readFileSync(file, 'utf8'), file.endsWith('.xml') ? 'xml' : 'json')
+  // 行の全体が 0 の報告は、中身がない・壊れている（全体の counter がない XML を含む）ので、100% とみなさず失敗にする
+  if (totals.lines.total === 0) fail(name, `報告に行がない（${file}）。報告の作り方を確認する。`)
   const actual = {
     line: percent2(totals.lines.covered, totals.lines.total),
     branch: percent2(totals.branches.covered, totals.branches.total),
@@ -158,7 +180,7 @@ function main() {
           `  ${label(row)}：基準 ${row.baseline.toFixed(2)}%（許容の幅 ${entry[row.metric].tolerance}）、今回 ${row.actual.toFixed(2)}%、差 ${signed(row.diff)} ポイント`,
       ),
       '直し方：テストを追加して、カバレッジを基準まで戻す。',
-      `正当な理由で下げるときは、node scripts/ci/report/coverage-baseline.mjs ${name} ${file} --write で基準のファイルを書き換え、pull request に理由を書く。`,
+      `正当な理由で下げるときは、${writeCommand(name, file)} で基準のファイルを書き換え、pull request に理由を書く。`,
     ]
     const markdown = [
       `### カバレッジの基準（${name}）：失敗`,
@@ -172,7 +194,7 @@ function main() {
       '',
       '直し方：テストを追加して、カバレッジを基準まで戻す。',
       '',
-      `正当な理由で下げるときは、\`node scripts/ci/report/coverage-baseline.mjs ${name} ${file} --write\` で基準のファイルを書き換え、pull request に理由を書く。`,
+      `正当な理由で下げるときは、\`${writeCommand(name, file)}\` で基準のファイルを書き換え、pull request に理由を書く。`,
       '',
     ].join('\n')
     report({ ok: false, lines, markdown })

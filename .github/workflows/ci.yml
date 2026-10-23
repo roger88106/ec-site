@@ -339,9 +339,12 @@ jobs:
       # 基準（scripts/ci/report/quality-baseline.json）を下回ると失敗にする。ビルドが失敗したときも流して、両方の失敗を見えるようにする
       - name: カバレッジの基準の検査
         if: always()
-        run: |
-          node ../../scripts/ci/report/coverage-baseline.mjs store coverage/coverage-summary.json
-          node ../../scripts/ci/report/coverage-baseline.mjs shared ../shared/coverage/coverage-summary.json
+        run: node ../../scripts/ci/report/coverage-baseline.mjs store coverage/coverage-summary.json
+
+      # 1 つの手順にまとめると、店舗画面が失敗したときに共有のパッケージが流れないので、手順を分ける
+      - name: 共有のパッケージのカバレッジの基準の検査
+        if: always()
+        run: node ../../scripts/ci/report/coverage-baseline.mjs shared ../shared/coverage/coverage-summary.json
 
   # CI の検査の script（scripts/ci/check-all.sh）は、文書だけの push でも実行するため docs.yml で実行する
 

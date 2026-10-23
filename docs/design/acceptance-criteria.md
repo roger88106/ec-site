@@ -299,8 +299,8 @@
 | AC-274 | 店舗 API と管理 API の契約は、操作ごとに、返しうるエラーのコードの一覧… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ErrorCodeCheckTest`、`ErrorCodeContractTest` |
 | AC-275 | バックエンドのエラーのコードと、契約のエラーのコードの一覧が食い違うと、CI で… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ErrorCodeContractTest` |
 | AC-276 | 管理 API の商品のバリアントの追加は、作ったバリアントの URL を応答の … | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductApiTest` |
-| AC-277 | モジュールの間で列挙を写すときは、全ての値の対応を、コンパイルかテストで確認する… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `InventoryMapperTest`、`OrderApiDirectoryTest`、`OrderQuoteApiTest` ほか 4 |
-| AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `BasisTest`、`StatusHistoryEntryTest` |
+| AC-277 | モジュールの間で列挙を写すときは、全ての値の対応を、コンパイルかテストで確認する… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `InventoryMapperTest`、`OrderApiDirectoryTest`、`OrderQuoteApiTest` ほか 6 |
+| AC-278 | 売上レポートは、注文の状態を文字列で比べず、列挙で比べる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `BasisTest`、`ReportGenderTest`、`StatusHistoryEntryTest` |
 | AC-279 | 列挙を文字列で持つデータベースの列は、全て取りうる値を制約で制限する。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `EnumColumnConstraintTest` |
 | AC-280 | 業務の日付の基準にする時間帯（日本時間）は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-281 | 時点の税率の判定は 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |

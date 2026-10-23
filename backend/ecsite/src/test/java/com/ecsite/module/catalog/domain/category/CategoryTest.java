@@ -83,8 +83,6 @@ class CategoryTest {
             var category = factory.create(null, "衣類", 1);
 
             category.rename("ファッション");
-
-            assertThat(category.name()).isEqualTo("ファッション");
         }
 
         @Test

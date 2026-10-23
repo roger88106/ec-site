@@ -2,11 +2,11 @@
 
 - 前提：段階 1
 - 完了条件：DC-157-1〜9、35、36 を満たす。共有の数の整形のテストは先に書き、レッドを確認した。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 3 節、[spec](../spec.md) の DS-157-1〜3、[フロントの書き方](../../../rules/frontend-coding.md) 第 5.1 節、[フロントの書き方](../../../rules/frontend-coding.md) 第 7.3 節、skill `writing-for-agents`
+- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 3 節、[spec](../spec.md) の DS-157-1〜3、[フロントの書き方](../../../../../rules/frontend-coding.md) 第 5.1 節、[フロントの書き方](../../../../../rules/frontend-coding.md) 第 7.3 節、skill `writing-for-agents`
 
 ## タスク
 
-実装は実装役のサブエージェントに任せる。`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（[開発の進め方](../../../rules/workflow.md) 第 2.1 節）。
+実装は実装役のサブエージェントに任せる。`[テスト]` のタスクは、続く実装のタスクと同じ commit に入れる（[開発の進め方](../../../../../rules/workflow.md) 第 2.1 節）。
 
 - [x] **T157-02-01** [P] [テスト] 共有の既定の数の整形の単体テストを書き、レッドを確認する。管理画面の数の整形のテスト（3 桁ごとの区切り、0）を移す（DC-157-3）。
   - 依存：なし

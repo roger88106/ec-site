@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：テストの書き方に本 spec の規則がある（DC-157-28）。plan 第 4.2 節の補助があり（DC-157-13、29〜33 の補助）、補助の単体テストは先に書き、レッドを確認した。全てのテストの後のクリーンアップを各ファイルで繰り返さない（DC-157-34）。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 4 節、[spec](../spec.md) の DS-157-6、DC-157-13、28、[テストの書き方](../../../rules/test-writing.md)、[コメントの書き方](../../../rules/comments.md)
+- 参照：[plan](../plan.md) 第 4 節、[spec](../spec.md) の DS-157-6、DC-157-13、28、[テストの書き方](../../../../../rules/test-writing.md)、[コメントの書き方](../../../../../rules/comments.md)
 
 ## タスク
 

@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：管理画面のテストが DC-157-12、15、18〜27、31、32 を満たす。`git grep -n "as never" -- 'frontend/admin/*.test.ts*'` が 0 件。テストの関数が `test` にそろっている。AC 一覧を再生成した。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-157-4、5、[テストの書き方](../../../rules/test-writing.md)、レビューの結果（`/.local/review/202610231200-157-frontend-tests/admin-1.md`、`admin-2.md`）
+- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-157-4、5、[テストの書き方](../../../../../rules/test-writing.md)、レビューの結果（`/.local/review/202610231200-157-frontend-tests/admin-1.md`、`admin-2.md`）
 
 ## タスク
 

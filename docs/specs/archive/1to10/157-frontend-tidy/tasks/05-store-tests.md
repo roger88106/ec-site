@@ -2,7 +2,7 @@
 
 - 前提：段階 3（段階 4 とは依存がない。スロットとテストの実行が重ならないよう、段階 4 の後に行う）
 - 完了条件：店舗画面と共有のパッケージのテストが DC-157-14〜16、18〜27、31〜33 を満たす。AC 一覧を再生成した。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-157-4、5、[テストの書き方](../../../rules/test-writing.md) 第 1.1 節（店舗画面のテストの種類）、レビューの結果（`/.local/review/202610231200-157-frontend-tests/store-1.md`、`store-2.md`）
+- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-157-4、5、[テストの書き方](../../../../../rules/test-writing.md) 第 1.1 節（店舗画面のテストの種類）、レビューの結果（`/.local/review/202610231200-157-frontend-tests/store-1.md`、`store-2.md`）
 
 ## タスク
 

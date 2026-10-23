@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { findChangedMigrations, findEmptyReason, gitLogArgs, findRemovedMigrations, isVersionedMigration, parseAddedLog } from './migrations.mjs'
+import { findChangedMigrations, findEmptyReason, findRemovedMigrations, isVersionedMigration, parseBlobList } from './migrations.mjs'
 
 describe('適用済みのマイグレーションの検査', () => {
   test('バージョン付きのマイグレーション（V*.sql）だけを見る。繰り返しのもの（R__*.sql）は見ない', () => {
@@ -50,15 +50,6 @@ describe('適用済みのマイグレーションの検査', () => {
     assert.deepEqual(findRemovedMigrations(['V1__a.sql'], ['V1__a.sql']), [])
   })
 
-  test('git log の出力から、ファイルごとの最初に追加した commit を読む（新しい順の出力で、最後に出たものが最初の追加）', () => {
-    const c1 = 'a'.repeat(40)
-    const c2 = 'b'.repeat(40)
-    const log = [c2, 'V2__b.sql', 'V1__a.sql', '', c1, 'V1__a.sql', ''].join('\n')
-    const added = parseAddedLog(log)
-    assert.equal(added.get('V1__a.sql'), c1)
-    assert.equal(added.get('V2__b.sql'), c2)
-    assert.equal(added.size, 2)
-  })
 })
 
 describe('マイグレーションの検査の判定', () => {
@@ -67,20 +58,15 @@ describe('マイグレーションの検査の判定', () => {
     assert.equal(findEmptyReason(['V1__a.sql'], 'db/migration/'), null)
   })
 
-  test('履歴を読む git log は改名を追加として扱う（--no-renames）', () => {
-    const args = gitLogArgs('db/migration/')
-    assert.ok(args.includes('--no-renames'))
-    assert.ok(args.includes('--diff-filter=A'))
-    assert.deepEqual(args.slice(-2), ['--', 'db/migration/'])
-  })
-
-  test('履歴を読む起点を渡せる（なければ HEAD）', () => {
-    assert.ok(gitLogArgs('db/migration/', 'abc123').includes('abc123'))
-    assert.ok(gitLogArgs('db/migration/').includes('HEAD'))
+  test('git ls-tree と git ls-files -s の出力から、パスごとの blob を読む', () => {
+    const tree = ['100644 blob aaa\tdb/V1__a.sql', '100644 blob bbb\tdb/V2__日本語.sql', ''].join('\0')
+    assert.deepEqual([...parseBlobList(tree, 2)], [['db/V1__a.sql', 'aaa'], ['db/V2__日本語.sql', 'bbb']])
+    const index = ['100644 ccc 0\tdb/V1__a.sql', ''].join('\0')
+    assert.deepEqual([...parseBlobList(index, 1)], [['db/V1__a.sql', 'ccc']])
   })
 })
 
-describe('develop との分岐点までの履歴での判定（一時リポジトリ）', () => {
+describe('develop・main との分岐点の tree を基準にした判定（一時リポジトリ）', () => {
   const script = fileURLToPath(new URL('./migrations.mjs', import.meta.url))
   const dir = 'backend/ecsite/src/main/resources/db/migration'
   // commit の hook の中では GIT_DIR などが設定され、試すリポジトリでなく commit 中のリポジトリを指すので、外す
@@ -184,7 +170,7 @@ describe('develop との分岐点までの履歴での判定（一時リポジ�
     assert.doesNotMatch(result.stdout, /警告/)
   })
 
-  test('develop も main もない（origin/ の方も含む）ときは、全ての履歴で判定し（弱めない）、警告を出す', () => {
+  test('develop も main もない（origin/ の方も含む）ときは、HEAD の 1 つ目の親を基準にし、警告を出す', () => {
     const r = createRepo({ developRef: null })
     r.git('branch', '-D', 'main')
     r.write('V2__b.sql', 'create table b;\n')
@@ -195,5 +181,49 @@ describe('develop との分岐点までの履歴での判定（一時リポジ�
     assert.equal(result.status, 1)
     assert.match(result.stdout, /警告：.*main/)
     assert.match(result.stdout, /削除か改名された.*V2__b\.sql/)
+  })
+
+  test('自分のブランチで追加して改名したものを merge commit で develop にマージした後も、develop の上と次のブランチで通る', () => {
+    const r = createRepo()
+    r.write('V2__b.sql', 'create table b;\n')
+    r.commit('V2')
+    r.git('mv', `${dir}/V2__b.sql`, `${dir}/V3__b.sql`)
+    r.commit('振り直し')
+    r.git('checkout', '-q', 'develop')
+    r.git('merge', '-q', '--no-ff', '--no-edit', 'feature')
+    const onDevelop = r.run()
+    assert.equal(onDevelop.status, 0, onDevelop.stdout)
+    r.git('checkout', '-q', '-b', 'next')
+    r.write('V4__c.sql', 'create table c;\n')
+    r.commit('V4')
+    const onNext = r.run()
+    assert.equal(onNext.status, 0, onNext.stdout)
+  })
+
+  test('develop の上（分岐点が HEAD 自身）では、HEAD の 1 つ目の親にあるものの改名を失敗にする', () => {
+    const r = createRepo()
+    r.git('checkout', '-q', 'develop')
+    r.git('mv', `${dir}/V1__a.sql`, `${dir}/V1__renamed.sql`)
+    r.commit('改名')
+    const result = r.run()
+    assert.equal(result.status, 1)
+    assert.match(result.stdout, /削除か改名された.*V1__a\.sql/)
+  })
+
+  test('ステージした（まだ commit していない）変更も、次の commit として判定する（commit の前の hook）', () => {
+    const r = createRepo()
+    r.write('V1__a.sql', 'create table a2;\n')
+    r.git('add', '-A')
+    const result = r.run()
+    assert.equal(result.status, 1)
+    assert.match(result.stdout, /変わった.*V1__a\.sql/)
+  })
+
+  test('初めの commit だけで develop も main もなければ、全てを新しいものとみなして通る（警告を出す）', () => {
+    const r = createRepo({ developRef: null })
+    r.git('branch', '-D', 'main')
+    const result = r.run()
+    assert.equal(result.status, 0, result.stdout)
+    assert.match(result.stdout, /警告：/)
   })
 })

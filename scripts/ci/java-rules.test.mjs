@@ -62,6 +62,16 @@ describe('バックエンドの書き方の検査', () => {
     assert.deepEqual(findEnumNameConversions(text), [])
   })
 
+  test('引数の中の割り算（行頭の / や in / 2）を正規表現と読まず、name() を渡す valueOf を見つける', () => {
+    const text = [
+      'Status a = Status.valueOf(x',
+      '    / 2 == 0 ? a.name() : b.name());',
+      'Status b = Status.valueOf(in / 2 == 0 ? a.name() : b.name());',
+      'int y = 1;',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [1, 3])
+  })
+
   test('引数の途中に括弧があっても、引数が name() で終わる valueOf は見つける', () => {
     assert.deepEqual(findEnumNameConversions('Status.valueOf(order.items().get(0).status().name());').map((hit) => hit.line), [1])
   })

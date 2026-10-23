@@ -47,6 +47,22 @@ describe('閉じ括弧の位置', () => {
     assert.equal(closingParen(text2, 1), text2.length - 1)
   })
 
+  test('改行を挟んだ割り算（行頭の /）は正規表現の始まりと読まない', () => {
+    const text = 'f(a\n  / b)\nq('
+    assert.equal(closingParen(text, 1), text.indexOf(')'))
+  })
+
+  test('改行の後でも、} の後の / は正規表現の始まりと読む', () => {
+    const text = "f(() => {\n}\n/')'/.test(x))"
+    assert.equal(closingParen(text, 1), text.length - 1)
+  })
+
+  test('正規表現のリテラルを読まない指定（Java）では、in / 2 などの / を全て割り算と読む', () => {
+    for (const text of ['f(in / 2, x.name(), "a")', 'f(of / 2 + ")")', 'f(a,\n  / b)\nq(']) {
+      assert.equal(closingParen(text, 1, { regex: false }), text.indexOf(')', text.lastIndexOf('"') + 1), text)
+    }
+  })
+
   test('閉じなければソースの終わりを返す', () => {
     assert.equal(closingParen('f(a', 1), 3)
   })

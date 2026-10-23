@@ -168,6 +168,26 @@ describe('ロールと権限の対応表', () => {
         ['5         - memberToken: [x]'],
       )
     })
+
+    test('security の項目は字下げ 8 だけを読み、5・6・7・9・10 の字下げは読み飛ばさずに失敗にする', () => {
+      const head = ['paths:', '  /a:', '    get:', '      summary: x', '      security:']
+      const item = (indent) => `${' '.repeat(indent)}- memberToken: []`
+      const ok = readOperations([...head, item(8)].join('\n'))
+      assert.deepEqual(ok.unknown, [])
+      assert.deepEqual(ok.operations[0].security, ['memberToken'])
+      for (const indent of [5, 6, 7, 9, 10]) {
+        assert.deepEqual(unknownOf([...head, item(indent)]), [`6 ${item(indent)}`], `字下げ ${indent}`)
+      }
+    })
+
+    test('項目のない security: は、認証が不要（[]）と読まずに失敗にする', () => {
+      assert.deepEqual(unknownOf(['paths:', '  /a:', '    get:', '      security:', '      summary: x']), ['4       security:'])
+      assert.deepEqual(unknownOf(['paths:', '  /a:', '    get:', '      security:']), ['4       security:'])
+    })
+
+    test('操作のほかの項目（responses など）の中身は、字下げ 8 以上でも読まない', () => {
+      assert.deepEqual(unknownOf(['paths:', '  /a:', '    get:', '      responses:', "        '200':", '          description: ok']), [])
+    })
   })
 
   test('realm から、管理 API の権限を持つロールと、その権限を読む（権限のないロールは除く）', () => {

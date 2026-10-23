@@ -28,7 +28,7 @@ const NOT_PLAIN_VALUE = /^([|>[{&*!#]|$)/
  * OpenAPI の契約から操作を読む。<br />
  * YAML のライブラリを使わず、`paths:` の下を字下げで読む（契約のファイルは 2 字ずつ字下げする）。<br />
  * 読む節（`paths:` の下のパス、メソッド、操作の直下のキー、`security` の項目）の中で、知っている書き方に当たらない行
- * （1 行で書くフロー形式、字下げの違い、引用符で囲んだパス、ブロックの値など）は、読み飛ばさずに `unknown` に入れる。
+ * （1 行で書くフロー形式、字下げの違い、引用符で囲んだパス、ブロックの値、項目のない `security:` など）は、読み飛ばさずに `unknown` に入れる。
  * 空行とコメントは除く。
  *
  * @param {string} text OpenAPI の契約
@@ -43,6 +43,8 @@ export function readOperations(text) {
   let path = null
   let operation = null
   let inSecurity = false
+  // 項目を持つはずの「security:」の行（操作 → 行）
+  const securityHeads = new Map()
   // パスやメソッドの次の行が、決まった字下げで始まるか見る（親の字下げと、子の字下げ）
   let child = null
   text.split('\n').forEach((raw, index) => {
@@ -64,6 +66,8 @@ export function readOperations(text) {
     if (!inPaths) return
     const indent = /^ */.exec(line)[0].length
     if (line[indent] === '\t') return bad()
+    // security の中の行（読めた項目か、失敗にした行）があれば、項目のない security: ではない
+    if (inSecurity && indent > 4 && !/^ {6}[\w-]+:/.test(line)) securityHeads.delete(operation)
     if (child && indent > child.parent && indent !== child.indent) {
       child = null
       return bad()
@@ -102,18 +106,27 @@ export function readOperations(text) {
           if (value !== '' && value !== '[]') return bad()
           operation.security = []
           inSecurity = value !== '[]'
+          if (inSecurity) securityHeads.set(operation, { line: index + 1, text: line })
+          else securityHeads.delete(operation)
         }
       } else if (inSecurity || !/^ {6}- /.test(line)) {
         bad()
       }
     } else if (indent < 2 || indent === 3 || (indent === 5 && operation)) {
       bad()
-    } else if (inSecurity && operation && indent >= 8) {
+    } else if (operation && indent > 6) {
+      // 操作のほかの項目（responses、parameters など）の中身は、権限と認証の判定に使わないので読まない。
+      // security の中は、字下げ 8 の決まった形の項目だけを読み、それ以外の行（字下げ 7、9 以上など）は全て失敗にする
+      if (!inSecurity) return
       const item = /^ {8}- (\{\}|([\w-]+): \[\])\s*$/.exec(line)
       if (item) operation.security.push(item[2] ?? '')
       else bad()
     }
+    // 操作の外（パスの parameters の中身など）の字下げ 6 以上の行は、操作の判定に使わないので読まない
   })
+  // 項目のない「security:」は YAML では null で、[]（認証が不要）と同じでないので、不要と読まずに失敗にする
+  unknown.push(...securityHeads.values())
+  unknown.sort((a, b) => a.line - b.line)
   return { operations, unknown }
 }
 

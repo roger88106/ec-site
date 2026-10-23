@@ -81,7 +81,7 @@ export function findEnumNameConversions(text) {
   for (const match of blanked.matchAll(ENUM_CALL)) {
     // 引数は、開き括弧から対応する閉じ括弧まで。引数の最後が name() のときだけ違反にする
     const open = match.index + match[0].length - 1
-    const argument = blanked.slice(open + 1, closingParen(blanked, open))
+    const argument = blanked.slice(open + 1, closingParen(blanked, open, { regex: false }))
     if (!ENDS_WITH_NAME.test(argument)) continue
     const line = lineOf(match.index)
     hits.push({ line, text: lines[line - 1].trim() })

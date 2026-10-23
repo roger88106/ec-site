@@ -51,6 +51,16 @@ describe('正規表現のリテラルの扱い', () => {
     assert.equal(stripComments(text), 'const a = b / c / d      ')
     assert.equal(stripComments('const a = (b) / 2 / (c) // 後ろ').includes('後ろ'), false)
   })
+
+  test('改行を挟んだ割り算（行頭の /）は、直前の意味のある字で割り算と読む', () => {
+    assert.equal(stripComments('const a = b\n  / c // 後ろ'), 'const a = b\n  / c      ')
+    assert.equal(stripComments('const a = b\n// 間\n  / c // 後ろ'), 'const a = b\n    \n  / c      ')
+  })
+
+  test('ファイルの始まりと、改行の後の } の後の / は正規表現と読む', () => {
+    assert.equal(stripComments("/'/.test(a) // 後ろ").includes('後ろ'), false)
+    assert.equal(stripComments("if (a) {\n}\n/'/.test(b) // 後ろ").includes('後ろ'), false)
+  })
 })
 
 describe('Java のコメントの除去', () => {

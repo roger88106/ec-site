@@ -99,7 +99,7 @@ export function stripComments(text, options = {}) {
 
 /**
  * 正規表現のリテラルの前に来る記号（この後の / は割り算でなく正規表現の始まり）。
- * } は JSX の属性の後の /> と見分けられないので入れない（ブロックの後の正規表現は、たいてい行の始まりにある）。
+ * } は JSX の属性の後の /> と見分けられないので入れない（改行を挟んだ } の後だけを、ブロックの後の文の始まりとして正規表現と読む）。
  * JSX の文字の中の記号の後の /（`<p>(/日本語)</p>` など）も正規表現と読み、行の終わりまでを見ない。まれなので、見逃しとして許す
  */
 const BEFORE_REGEX_CHARS = '(,=:[!&|?{;'
@@ -109,14 +109,17 @@ const BEFORE_REGEX_WORD = /\b(?:return|typeof|case|in|of|delete|void|throw|new|i
 
 /**
  * ここまでのコードの後の / が、正規表現のリテラルの始まりかを返す。
+ * 直前の意味のある字（空白と改行を飛ばす）で決める。行頭の / も、前の行の終わりが識別子や ) なら割り算と読む（式を改行して演算子を行頭に置く書き方）。
+ * 簡易の判定のため、if (a) の後の行頭の正規表現は割り算と読み、生のソースの行コメントの後の / はコメントの最後の字で決まる
  *
  * @param {string} before ここまでのコード
- * @returns {boolean} 行の始まりか、式の始まりになる記号・語の後なら true（それ以外は割り算）
+ * @returns {boolean} ソースの始まりか、式の始まりになる記号・語の後か、改行を挟んだ } の後なら true（それ以外は割り算）
  */
 export function startsRegex(before) {
-  const trimmed = before.replace(/[ \t]+$/, '')
+  const trimmed = before.replace(/\s+$/, '')
   const last = trimmed.at(-1)
-  return last === undefined || last === '\n' || BEFORE_REGEX_CHARS.includes(last) || BEFORE_REGEX_WORD.test(trimmed)
+  if (last === undefined || BEFORE_REGEX_CHARS.includes(last) || BEFORE_REGEX_WORD.test(trimmed)) return true
+  return last === '}' && before.slice(trimmed.length).includes('\n')
 }
 
 /**

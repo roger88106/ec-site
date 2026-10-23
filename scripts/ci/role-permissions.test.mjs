@@ -1,6 +1,14 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkDocument, parseOperations, parseRealmRoles, renderTables, replaceGenerated } from './role-permissions.mjs'
+import { readFileSync } from 'node:fs'
+import {
+  checkDocument,
+  parseOperations,
+  parseRealmRoles,
+  readOperations,
+  renderTables,
+  replaceGenerated,
+} from './role-permissions.mjs'
 
 const ADMIN = [
   'openapi: 3.0.3',
@@ -87,6 +95,79 @@ describe('ロールと権限の対応表', () => {
       parseOperations(STORE).map((operation) => operation.security),
       [null, ['', 'memberToken'], ['memberToken']],
     )
+  })
+
+  describe('契約の知らない書き方', () => {
+    /** 知らない書き方の行を「行 内容」で並べる */
+    const unknownOf = (lines) => readOperations(lines.join('\n')).unknown.map((entry) => `${entry.line} ${entry.text}`)
+
+    test('今の書き方（2 字ずつの字下げ、コメント、空行、引用符）は、知らない書き方にならない', () => {
+      assert.deepEqual(unknownOf(ADMIN.split('\n')), [])
+      assert.deepEqual(unknownOf(STORE.split('\n')), [])
+      assert.deepEqual(
+        unknownOf([
+          'paths:',
+          '  # 運営者',
+          '',
+          '  /a:',
+          '    get:',
+          "      summary: 'a'",
+          '      x-required-permission: "tax:read"',
+          '      security: []',
+        ]),
+        [],
+      )
+    })
+
+    test('paths の 1 行の書き方（フロー形式）は、読み飛ばさずに失敗にする', () => {
+      assert.deepEqual(unknownOf(['paths: {}']), ['1 paths: {}'])
+      assert.deepEqual(unknownOf(['paths:', '  /a: {get: {summary: a}}']), ['2   /a: {get: {summary: a}}'])
+      assert.deepEqual(unknownOf(['paths:', '  /a:', '    get: {summary: a}']), ['3     get: {summary: a}'])
+    })
+
+    test('字下げが 2 字ずつでない（4 字）パスと、操作の中身は、読み飛ばさずに失敗にする', () => {
+      assert.deepEqual(unknownOf(['paths:', '    /a:', '        get:', '            summary: a']), ['2     /a:'])
+      assert.deepEqual(unknownOf(['paths:', '  /a:', '    get:', '        summary: a']), ['4         summary: a'])
+      assert.deepEqual(unknownOf(['paths:', '  /a:', '        get:']), ['3         get:'])
+    })
+
+    test('引用符で囲んだパスと、知らないメソッドの行は失敗にする', () => {
+      assert.deepEqual(unknownOf(['paths:', "  '/a':", '    get:']), ["2   '/a':"])
+      assert.deepEqual(unknownOf(['paths:', '  /a:', '    head:', '    GET:']), ['3     head:', '4     GET:'])
+    })
+
+    test('summary、権限の値が空か、ブロックやフロー形式のときは失敗にする', () => {
+      assert.deepEqual(
+        unknownOf([
+          'paths:',
+          '  /a:',
+          '    get:',
+          '      summary: >',
+          '      x-required-permission:',
+          '      security: [{}, memberToken: []]',
+        ]),
+        ['4       summary: >', '5       x-required-permission:', '6       security: [{}, memberToken: []]'],
+      )
+    })
+
+    test('リポジトリの管理 API と店舗 API の契約に、知らない書き方の行がない', () => {
+      for (const file of ['api/openapi/admin.yaml', 'api/openapi/store.yaml']) {
+        const { operations, unknown } = readOperations(readFileSync(file, 'utf8'))
+        assert.ok(operations.length > 0)
+        assert.deepEqual(unknown, [])
+      }
+    })
+
+    test('security の項目の字下げが違う、知らない書き方の項目は失敗にし、読み飛ばして不要と読まない', () => {
+      assert.deepEqual(
+        unknownOf(['paths:', '  /a:', '    get:', '      security:', '      - memberToken: []', '        - {}']),
+        ['5       - memberToken: []'],
+      )
+      assert.deepEqual(
+        unknownOf(['paths:', '  /a:', '    get:', '      security:', '        - memberToken: [x]']),
+        ['5         - memberToken: [x]'],
+      )
+    })
   })
 
   test('realm から、管理 API の権限を持つロールと、その権限を読む（権限のないロールは除く）', () => {

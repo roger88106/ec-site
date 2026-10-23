@@ -21,64 +21,110 @@ const END = '<!-- /generated:role-permissions -->'
 
 const METHODS = ['get', 'post', 'put', 'patch', 'delete']
 
+/** 値として読めない書き方（空、ブロック、フロー形式、アンカーなど）の先頭 */
+const NOT_PLAIN_VALUE = /^([|>[{&*!#]|$)/
+
 /**
  * OpenAPI の契約から操作を読む。<br />
- * YAML のライブラリを使わず、`paths:` の下を字下げで読む（契約のファイルは 2 字ずつ字下げする）。
+ * YAML のライブラリを使わず、`paths:` の下を字下げで読む（契約のファイルは 2 字ずつ字下げする）。<br />
+ * 読む節（`paths:` の下のパス、メソッド、操作の直下のキー、`security` の項目）の中で、知っている書き方に当たらない行
+ * （1 行で書くフロー形式、字下げの違い、引用符で囲んだパス、ブロックの値など）は、読み飛ばさずに `unknown` に入れる。
+ * 空行とコメントは除く。
  *
  * @param {string} text OpenAPI の契約
- * @returns {{ method: string, path: string, summary: string, permission: string | null, security: string[] | null }[]}
- *   操作（契約の順）。security は操作に書いた要件の名前の一覧（`{}` は空の文字）で、書いていなければ null
+ * @returns {{ operations: { method: string, path: string, summary: string, permission: string | null,
+ *   security: string[] | null }[], unknown: { line: number, text: string }[] }}
+ *   操作（契約の順）と、知らない書き方の行（行の順）。security は操作に書いた要件の名前の一覧（`{}` は空の文字）で、書いていなければ null
  */
-export function parseOperations(text) {
+export function readOperations(text) {
   const operations = []
+  const unknown = []
   let inPaths = false
   let path = null
   let operation = null
   let inSecurity = false
-  for (const raw of text.split('\n')) {
+  // パスやメソッドの次の行が、決まった字下げで始まるか見る（親の字下げと、子の字下げ）
+  let child = null
+  text.split('\n').forEach((raw, index) => {
     const line = raw.replace(/\r$/, '')
+    if (line.trim() === '' || line.trim().startsWith('#')) return
+    const bad = () => unknown.push({ line: index + 1, text: line })
     if (/^\S/.test(line)) {
-      inPaths = line === 'paths:'
+      inPaths = /^paths:/.test(line)
+      if (inPaths && line.trimEnd() !== 'paths:') {
+        inPaths = false
+        bad()
+      }
       path = null
       operation = null
-      continue
+      inSecurity = false
+      child = null
+      return
     }
-    if (!inPaths) continue
-    const pathMatch = /^ {2}(\/\S*):\s*$/.exec(line)
-    if (pathMatch) {
-      path = pathMatch[1]
-      operation = null
-      continue
+    if (!inPaths) return
+    const indent = /^ */.exec(line)[0].length
+    if (line[indent] === '\t') return bad()
+    if (child && indent > child.parent && indent !== child.indent) {
+      child = null
+      return bad()
     }
-    const methodMatch = /^ {4}(\w+):\s*$/.exec(line)
-    if (methodMatch) {
+    child = null
+    if (indent === 2) {
+      const pathMatch = /^ {2}(\/\S*):\s*$/.exec(line)
+      path = pathMatch ? pathMatch[1] : null
       operation = null
-      if (path && METHODS.includes(methodMatch[1])) {
+      inSecurity = false
+      if (!pathMatch) return bad()
+      child = { parent: 2, indent: 4 }
+    } else if (indent === 4) {
+      operation = null
+      inSecurity = false
+      const methodMatch = /^ {4}(\w+):\s*$/.exec(line)
+      if (methodMatch && METHODS.includes(methodMatch[1])) {
+        if (!path) return
         operation = { method: methodMatch[1].toUpperCase(), path, summary: '', permission: null, security: null }
         operations.push(operation)
+        child = { parent: 4, indent: 6 }
+      } else if (!/^ {4}(parameters:\s*$|(summary|description|servers):)/.test(line)) {
+        bad()
       }
-      continue
-    }
-    if (!operation) continue
-    const key = /^ {6}([\w-]+):\s*(.*)$/.exec(line)
-    if (key) {
-      inSecurity = false
-      const value = key[2].trim().replace(/^'(.*)'$/, '$1')
-      if (key[1] === 'summary') operation.summary = value
-      if (key[1] === 'x-required-permission') operation.permission = value
-      if (key[1] === 'security') {
-        operation.security = []
-        inSecurity = value !== '[]'
+    } else if (indent === 6 && operation) {
+      const key = /^ {6}([\w-]+):\s*(.*)$/.exec(line)
+      if (key) {
+        inSecurity = false
+        const value = key[2].trim().replace(/^(['"])(.*)\1$/, '$2')
+        if (key[1] === 'summary' || key[1] === 'x-required-permission') {
+          if (NOT_PLAIN_VALUE.test(value)) return bad()
+          if (key[1] === 'summary') operation.summary = value
+          else operation.permission = value
+        }
+        if (key[1] === 'security') {
+          if (value !== '' && value !== '[]') return bad()
+          operation.security = []
+          inSecurity = value !== '[]'
+        }
+      } else if (inSecurity || !/^ {6}- /.test(line)) {
+        bad()
       }
-      continue
-    }
-    if (inSecurity) {
+    } else if (indent < 2 || indent === 3 || (indent === 5 && operation)) {
+      bad()
+    } else if (inSecurity && operation && indent >= 8) {
       const item = /^ {8}- (\{\}|([\w-]+): \[\])\s*$/.exec(line)
       if (item) operation.security.push(item[2] ?? '')
-      else if (!/^ {8,}/.test(line)) inSecurity = false
+      else bad()
     }
-  }
-  return operations
+  })
+  return { operations, unknown }
+}
+
+/**
+ * OpenAPI の契約から操作を読む（知らない書き方の行は読まない）。
+ *
+ * @param {string} text OpenAPI の契約
+ * @returns {ReturnType<typeof readOperations>['operations']} 操作（契約の順）
+ */
+export function parseOperations(text) {
+  return readOperations(text).operations
 }
 
 /**
@@ -195,11 +241,18 @@ export function replaceGenerated(document, markdown) {
 }
 
 if (isMain(import.meta.url)) {
+  const admin = readOperations(readFileSync(ADMIN_API, 'utf8'))
+  const store = readOperations(readFileSync(STORE_API, 'utf8'))
+  const unknownLines = [
+    ...admin.unknown.map((entry) => ({ file: ADMIN_API, ...entry })),
+    ...store.unknown.map((entry) => ({ file: STORE_API, ...entry })),
+  ].map((entry) => `${entry.file}:${entry.line} ${entry.text.trim()}（知らない書き方。検査の読み方を追加するか、契約を今の書き方にそろえる）`)
   const { markdown, problems } = renderTables({
-    admin: parseOperations(readFileSync(ADMIN_API, 'utf8')),
-    store: parseOperations(readFileSync(STORE_API, 'utf8')),
+    admin: admin.operations,
+    store: store.operations,
     realm: parseRealmRoles(JSON.parse(readFileSync(ADMIN_REALM, 'utf8'))),
   })
+  problems.push(...unknownLines)
   const document = readFileSync(DOCUMENT, 'utf8')
   if (process.argv.includes('--write') && problems.length === 0) {
     writeFileSync(DOCUMENT, replaceGenerated(document, markdown))

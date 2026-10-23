@@ -28,7 +28,7 @@ T155-01-01〜06 は、変えるファイルが重ならないので、互いに 
 - [x] **T155-01-06** [P] `ModuleStructureTest.restControllerOnlyInPresentation` の対象を `com.ecsite..` に広げ、`MeController` を完全修飾名で除外する。表示名に「`MeController` を除く」を追加する。`MeController` 以外のクラスに `@RestController` を一時的に付けて、失敗することを確認する（DC-155-5）。
   - 依存：なし
   - 範囲：`test/architecture/ModuleStructureTest.java`（`:144-151`）
-- [ ] **T155-01-07** `ModuleStructureTest` に 2 つの規則を追加する。共通コードと設定（`com.ecsite.common..`、`com.ecsite.config..`）はモジュールに依存しない。モジュールは設定に依存しない。`allowEmptyShould` を付けない。一時的に違反を入れて、失敗することを確認する（DC-155-6、7）。
+- [x] **T155-01-07** `ModuleStructureTest` に 2 つの規則を追加する。共通コードと設定（`com.ecsite.common..`、`com.ecsite.config..`）はモジュールに依存しない。モジュールは設定に依存しない。`allowEmptyShould` を付けない。一時的に違反を入れて、失敗することを確認する（DC-155-6、7）。
   - 依存：T155-01-06
   - 範囲：`test/architecture/ModuleStructureTest.java`
 - [ ] **T155-01-08** [バックエンドの書き方](../../../rules/backend-coding.md) を、段階 1 のコードに合わせる。バックエンドの書き方 第 1.1 節に「モジュールの domain の直下には、複数の集約が使う値を置く」を追加する。バックエンドの書き方 第 1.4 節の表に `config.security`（11）の行を追加し、`catalog.infrastructure.persistence` を 14 に修正する。バックエンドの書き方 第 1.5 節に「共通コードには、2 つ以上のモジュールが使うものだけを置く」を追加する。バックエンドの書き方 第 2.1 節の例外の段落に `MeController` の例外と理由を書く。規則の一覧と依存の表に、共通コードと設定の依存の規則の行を追加する。

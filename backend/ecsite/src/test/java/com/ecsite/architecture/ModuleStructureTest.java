@@ -157,6 +157,22 @@ class ModuleStructureTest {
     }
 
     @Test
+    @DisplayName("共通コードと設定は、モジュールに依存しない")
+    void commonAndConfigDependOnNoModule() {
+        noClasses().that().resideInAnyPackage("com.ecsite.common..", "com.ecsite.config..")
+                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + "..")
+                .check(CLASSES);
+    }
+
+    @Test
+    @DisplayName("モジュールは、設定に依存しない")
+    void modulesDependOnNoConfig() {
+        noClasses().that().resideInAPackage(MODULE_PACKAGE + "..")
+                .should().dependOnClassesThat().resideInAPackage("com.ecsite.config..")
+                .check(CLASSES);
+    }
+
+    @Test
     @DisplayName("1 つのパッケージの直下のクラスは 20 を超えない")
     void packagesAreSmallEnough() {
         // 手で書いたパッケージごとに、入れ子でないクラスを数える（package-info は数えない）

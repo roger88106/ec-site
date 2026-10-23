@@ -1,6 +1,6 @@
 # Plan 186：バックエンドの構成の検査を強める
 
-ステータス：草案　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 前提：spec 186 が確定した。文書の書き方は skill `docs` と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`。
 
@@ -145,7 +145,7 @@ DC-186-3 で置き換える既存の検査と、新しい規則が含む組：
 
 今は、店舗のモジュールの presentation（`main/module/storefront/presentation/StorefrontMapper.java:46-55`、指定がなければ新着順）と、カタログのモジュールの永続化（`main/module/catalog/infrastructure/persistence/JooqStoreProductQueryRepository.java:133-134`、`null` なら新着順）の 2 か所にある。カタログの公開の API の入力（`StoreProductQuery.sort`）と application の条件（`StoreProductListQuery.sort`）は `@Nullable` で、公開の API（`StoreCatalogApi.toSort`）は `null` をそのまま渡す。カタログの公開の API の呼び出し元は、店舗の腐敗防止層（`main/module/storefront/infrastructure/directory/CatalogApiDirectory.java`）だけである。
 
-- 推奨：店舗の presentation に残し、カタログの公開の API の入力から永続化までの並び順を必須（`@Nullable` を外す）にする。理由：「指定がなければ」は消費者の要求の入力の解釈で、入力を受ける presentation の役割であるため。カタログの側の `null` の扱いがなくなり、型で必須と分かる。別案と合わせて第 8 節で確認する。
+- 推奨：店舗の presentation に残し、カタログの公開の API の入力から永続化までの並び順を必須（`@Nullable` を外す）にする。理由：「指定がなければ」は消費者の要求の入力の解釈で、入力を受ける presentation の役割であるため。カタログの側の `null` の扱いがなくなり、型で必須と分かる。利用者が 2026-10-24 に推奨を選んだ（第 8 節）。
 - 推奨のときに変えるもの：`StoreProductQuery`、`StoreCatalogApi.toSort`、`StoreProductListQuery`、`JooqStoreProductQueryRepository.orderBy`（以上カタログ）。店舗の `CatalogApiDirectory` は、presentation が既定を決めた並び順を渡すので、変えなくてよいかを実装の時に確認する。
 - カタログの単体テスト `StoreCatalogApiSortTest:26` の「`toSort(null)` が `null` を返す」確認は、`null` を受け付けなくなるので削除し、3 つの並び順の変換の確認だけを残す（常に成り立つ確認でなく、仕様の変更による削除なので、理由を commit の本文に書く）。カタログの統合テスト（`StoreCatalogApiTest`、`StoreProductSearchTest`）で並び順に `null` を渡している所は、新着順を渡す形に修正する。
 - 別案のとき：カタログの application の条件に既定を置き、店舗の presentation の既定を削除して指定をそのまま渡す。変えるものは `StorefrontMapper.toSort`、`StoreProductListQuery`（既定を入れる）、`JooqStoreProductQueryRepository.orderBy`（`null` の扱いを削除）である。
@@ -198,6 +198,6 @@ profile「厚め」（[エージェントの作業フロー](../../rules/subagen
 
 ## 8. 利用者に確認すること
 
-- **Q1（DC-186-15）** 並び順の既定値を残す層。推奨と理由、変えるものは第 3.2 節にある。
+- **Q1（DC-186-15）** 並び順の既定値を残す層。答え：推奨（利用者、2026-10-24）。推奨と理由、変えるものは第 3.2 節にある。
   - 推奨：店舗の presentation に残し、カタログの側を必須にする。
   - 別案：カタログの側（application の条件）に残し、店舗は指定をそのまま渡す。利点は、カタログの公開の API が「指定がなければ新着順」を自分で守り、他の呼び出し元が増えても既定が同じになること。欠点は、`@Nullable` が公開の API から application まで残ること。今の呼び出し元は店舗だけである。

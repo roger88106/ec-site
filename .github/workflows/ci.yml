@@ -84,6 +84,25 @@ jobs:
           if-no-files-found: error
           retention-days: 1
 
+      # domain の mutation testing（PIT。backend/ecsite/build.gradle.kts の pitest）。単体テストで domain の変異を検出できるかを測る。
+      # check には入れていないので、ここで流す。報告（build/reports/pitest/）を保存し、基準の検査は最後に行う
+      - name: domain の mutation testing（PIT）
+        run: ./gradlew pitest
+
+      - name: mutation testing の報告を保存
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: pitest-backend
+          path: backend/ecsite/build/reports/pitest/
+          if-no-files-found: ignore
+          retention-days: 7
+
+      # 基準（scripts/ci/report/quality-baseline.json の backend-domain）を下回ると失敗にする。
+      # summary に、mutation score と、生き残った変異が多いクラスの上位 10 件を書く
+      - name: mutation score の基準の検査
+        run: node ../../scripts/ci/report/coverage-baseline.mjs backend-domain build/reports/pitest/mutations.xml
+
       - name: テストレポートを保存（失敗時）
         if: failure()
         uses: actions/upload-artifact@v7

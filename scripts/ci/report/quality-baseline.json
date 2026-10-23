@@ -39,6 +39,12 @@
         "value": 100,
         "tolerance": 0
       }
+    },
+    "backend-domain": {
+      "mutation": {
+        "value": 0,
+        "tolerance": 0
+      }
     }
   }
 }

@@ -35,7 +35,7 @@ class ReportEventHandler {
         reportCollectionService.record(new StatusHistoryEntry(event.eventId(), event.orderId(), HistoryKind.ORDER_STATUS,
                 event.from() == null ? null : toOrderStatus(event.from()).name(), toOrderStatus(event.to()).name(),
                 event.occurredAt(),
-                event.cancellationKind() == null ? null : toCancellationKind(event.cancellationKind()).name(),
+                event.cancellationKind() == null ? null : toCancellationKind(event.cancellationKind()),
                 event.restocked()));
     }
 

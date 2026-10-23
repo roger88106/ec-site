@@ -34,9 +34,10 @@ import java.util.UUID;
  */
 public record ReportOrder(UUID orderId, String orderNumber, UUID memberId, Instant orderedAt, ReportOrderStatus status,
                           @Nullable Instant shippedAt, @Nullable DeliveryStatus deliveryStatus,
-                          @Nullable Instant cancelledAt, @Nullable String cancellationKind, @Nullable Boolean restocked,
+                          @Nullable Instant cancelledAt, @Nullable ReportCancellationKind cancellationKind,
+                          @Nullable Boolean restocked,
                           String postalCode, @Nullable String prefectureCode, @Nullable Integer buyerAge,
-                          @Nullable String buyerGender, Money total, Money shippingFee, Money taxTotal, Money shippingTax,
+                          @Nullable ReportBuyerGender buyerGender, Money total, Money shippingFee, Money taxTotal, Money shippingTax,
                           List<Line> lines) {
 
     /**

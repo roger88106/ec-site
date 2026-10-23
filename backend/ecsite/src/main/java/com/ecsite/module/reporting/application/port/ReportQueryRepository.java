@@ -3,6 +3,7 @@ package com.ecsite.module.reporting.application.port;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.domain.Basis;
 import com.ecsite.module.reporting.domain.DailySales;
+import com.ecsite.module.reporting.domain.ReportBuyerGender;
 import com.ecsite.module.reporting.domain.ReportPeriod;
 import org.jspecify.annotations.Nullable;
 
@@ -74,7 +75,7 @@ public interface ReportQueryRepository {
      * @param amount         売上額
      * @param orders         注文件数
      */
-    record SegmentTotal(@Nullable String prefectureCode, @Nullable Integer age, @Nullable String gender, Money amount,
-                        long orders) {
+    record SegmentTotal(@Nullable String prefectureCode, @Nullable Integer age, @Nullable ReportBuyerGender gender,
+                        Money amount, long orders) {
     }
 }

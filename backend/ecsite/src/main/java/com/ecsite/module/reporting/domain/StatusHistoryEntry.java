@@ -19,7 +19,7 @@ import java.util.UUID;
  * @param restocked        キャンセルで在庫に戻したか。キャンセルでなければ null
  */
 public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @Nullable String from, String to,
-                                 Instant occurredAt, @Nullable String cancellationKind, @Nullable Boolean restocked) {
+                                 Instant occurredAt, @Nullable ReportCancellationKind cancellationKind, @Nullable Boolean restocked) {
 
     /**
      * 後の状態を配送状態の列挙にする。

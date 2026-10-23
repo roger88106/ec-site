@@ -3,6 +3,7 @@ package com.ecsite.module.reporting.infrastructure.directory;
 import com.ecsite.module.order.api.OrderReportApi;
 import com.ecsite.module.order.api.OrderReportSnapshot;
 import com.ecsite.module.reporting.application.port.OrderDirectory;
+import com.ecsite.module.reporting.domain.ReportBuyerGender;
 import com.ecsite.module.reporting.domain.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.ReportGender;
 import com.ecsite.module.reporting.domain.ReportOrder;
@@ -89,40 +90,38 @@ class OrderApiDirectory implements OrderDirectory {
     }
 
     /**
-     * 注文の API のキャンセルの種類を、レポートの型の名前にして写しに入れる。
+     * 注文の API のキャンセルの種類を、レポートの型にして写しに入れる。
      *
      * @param kind キャンセルの種類。キャンセルでなければ null
-     * @return レポートのキャンセルの種類の名前。キャンセルでなければ null
+     * @return レポートのキャンセルの種類。キャンセルでなければ null
      */
-    static @Nullable String toCancellationKind(OrderReportSnapshot.@Nullable CancellationKind kind) {
+    static @Nullable ReportCancellationKind toCancellationKind(OrderReportSnapshot.@Nullable CancellationKind kind) {
         if (kind == null) {
             return null;
         }
-        var reportKind = switch (kind) {
+        return switch (kind) {
             case REQUEST_APPROVED -> ReportCancellationKind.REQUEST_APPROVED;
             case OPERATOR -> ReportCancellationKind.OPERATOR;
             case PAYMENT_EXPIRED -> ReportCancellationKind.PAYMENT_EXPIRED;
         };
-        return reportKind.name();
     }
 
     /**
-     * 注文の API の性別を、写しに入れる名前にする。<br />
-     * 写しの性別の列は注文の列と同じ値（MALE・FEMALE・OTHER・UNDISCLOSED）だけを許す。
+     * 注文の API の性別を、レポートの注文時の性別にして写しに入れる。<br />
      * 「回答しない」を不明にまとめるのは、読むとき（{@link ReportGender#of}）に行う。
      *
      * @param gender 注文時の性別。分からなければ null
-     * @return 写しの性別の名前。分からなければ null
+     * @return 写しの性別。分からなければ null
      */
-    static @Nullable String toBuyerGender(OrderReportSnapshot.@Nullable Gender gender) {
+    static @Nullable ReportBuyerGender toBuyerGender(OrderReportSnapshot.@Nullable Gender gender) {
         if (gender == null) {
             return null;
         }
         return switch (gender) {
-            case MALE -> ReportGender.MALE.name();
-            case FEMALE -> ReportGender.FEMALE.name();
-            case OTHER -> ReportGender.OTHER.name();
-            case UNDISCLOSED -> "UNDISCLOSED";
+            case MALE -> ReportBuyerGender.MALE;
+            case FEMALE -> ReportBuyerGender.FEMALE;
+            case OTHER -> ReportBuyerGender.OTHER;
+            case UNDISCLOSED -> ReportBuyerGender.UNDISCLOSED;
         };
     }
 }

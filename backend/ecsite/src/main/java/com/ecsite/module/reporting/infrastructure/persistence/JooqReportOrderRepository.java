@@ -3,6 +3,7 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 import com.ecsite.common.model.value.BusinessTime;
 import com.ecsite.module.reporting.application.port.ReportOrderRepository;
 import com.ecsite.module.reporting.domain.HistoryKind;
+import com.ecsite.module.reporting.domain.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.ReportOrder;
 import com.ecsite.module.reporting.domain.StatusHistoryEntry;
 import lombok.RequiredArgsConstructor;
@@ -73,7 +74,7 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .set(STATUS_HISTORY.FROM_STATUS, entry.from())
                 .set(STATUS_HISTORY.TO_STATUS, entry.to())
                 .set(STATUS_HISTORY.OCCURRED_AT, entry.occurredAt())
-                .set(STATUS_HISTORY.CANCELLATION_KIND, entry.cancellationKind())
+                .set(STATUS_HISTORY.CANCELLATION_KIND, entry.cancellationKind() == null ? null : entry.cancellationKind().name())
                 .set(STATUS_HISTORY.RESTOCKED, entry.restocked())
                 .set(STATUS_HISTORY.RECORDED_AT, clock.instant())
                 .onConflict(STATUS_HISTORY.EVENT_ID)
@@ -93,7 +94,8 @@ class JooqReportOrderRepository implements ReportOrderRepository {
                 .where(STATUS_HISTORY.ORDER_ID.eq(orderId))
                 .orderBy(STATUS_HISTORY.OCCURRED_AT, STATUS_HISTORY.EVENT_ID)
                 .fetch(row -> new StatusHistoryEntry(row.getEventId(), row.getOrderId(), HistoryKind.valueOf(row.getKind()),
-                        row.getFromStatus(), row.getToStatus(), row.getOccurredAt(), row.getCancellationKind(),
+                        row.getFromStatus(), row.getToStatus(), row.getOccurredAt(),
+                        row.getCancellationKind() == null ? null : ReportCancellationKind.valueOf(row.getCancellationKind()),
                         row.getRestocked()));
     }
 
@@ -132,12 +134,12 @@ class JooqReportOrderRepository implements ReportOrderRepository {
         record.setShippedOn(order.shippedAt() == null ? null : dateOf(order.shippedAt()));
         record.setDeliveryStatus(order.deliveryStatus() == null ? null : order.deliveryStatus().name());
         record.setCancelledAt(order.cancelledAt());
-        record.setCancellationKind(order.cancellationKind());
+        record.setCancellationKind(order.cancellationKind() == null ? null : order.cancellationKind().name());
         record.setRestocked(order.restocked());
         record.setPostalCode(order.postalCode());
         record.setPrefectureCode(order.prefectureCode());
         record.setBuyerAge(order.buyerAge() == null ? null : order.buyerAge().shortValue());
-        record.setBuyerGender(order.buyerGender());
+        record.setBuyerGender(order.buyerGender() == null ? null : order.buyerGender().name());
         record.setTotalAmount(order.total().yen());
         record.setShippingFee(order.shippingFee().yen());
         record.setTaxTotal(order.taxTotal().yen());

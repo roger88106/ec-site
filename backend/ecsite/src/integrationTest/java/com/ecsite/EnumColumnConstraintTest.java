@@ -4,7 +4,6 @@ import com.ecsite.module.catalog.domain.product.PublicationStatus;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.notification.application.port.SentMailRepository;
-import com.ecsite.module.order.api.OrderReportSnapshot;
 import com.ecsite.module.order.domain.order.CancellationKind;
 import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.OrderStatus;
@@ -12,6 +11,8 @@ import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.reporting.domain.DeliveryStatus;
 import com.ecsite.module.reporting.domain.HistoryKind;
+import com.ecsite.module.reporting.domain.ReportBuyerGender;
+import com.ecsite.module.reporting.domain.ReportCancellationKind;
 import com.ecsite.module.reporting.domain.ReportOrderStatus;
 import com.ecsite.module.shipping.domain.Carrier;
 import org.junit.jupiter.api.DisplayName;
@@ -54,13 +55,13 @@ class EnumColumnConstraintTest {
             entry("payment.payment.status", List.of(PaymentStatus.class)),
             entry("reporting.sales_order.status", List.of(ReportOrderStatus.class)),
             entry("reporting.sales_order.delivery_status", List.of(DeliveryStatus.class)),
-            entry("reporting.sales_order.cancellation_kind", List.of(OrderReportSnapshot.CancellationKind.class)),
-            entry("reporting.sales_order.buyer_gender", List.of(OrderReportSnapshot.Gender.class)),
+            entry("reporting.sales_order.cancellation_kind", List.of(ReportCancellationKind.class)),
+            entry("reporting.sales_order.buyer_gender", List.of(ReportBuyerGender.class)),
             entry("reporting.status_history.kind", List.of(HistoryKind.class)),
             // 状態の履歴は、出来事に応じて注文の状態か配送状態を持つ
             entry("reporting.status_history.from_status", List.of(ReportOrderStatus.class, DeliveryStatus.class)),
             entry("reporting.status_history.to_status", List.of(ReportOrderStatus.class, DeliveryStatus.class)),
-            entry("reporting.status_history.cancellation_kind", List.of(OrderReportSnapshot.CancellationKind.class)),
+            entry("reporting.status_history.cancellation_kind", List.of(ReportCancellationKind.class)),
             entry("shipping.shipment.carrier", List.of(Carrier.class)),
             entry("shipping.shipment.status", List.of(com.ecsite.module.shipping.domain.DeliveryStatus.class)));
 

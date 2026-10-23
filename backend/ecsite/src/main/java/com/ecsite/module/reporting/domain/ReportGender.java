@@ -31,18 +31,18 @@ public enum ReportGender {
     /**
      * 注文に記録した性別の区分を返す。
      *
-     * @param gender 注文時の性別（性別の名前）。記録がなければ null
+     * @param gender 注文時の性別。記録がなければ null
      * @return 区分
      */
-    public static ReportGender of(@Nullable String gender) {
+    public static ReportGender of(@Nullable ReportBuyerGender gender) {
         if (gender == null) {
             return UNKNOWN;
         }
         return switch (gender) {
-            case "MALE" -> MALE;
-            case "FEMALE" -> FEMALE;
-            case "OTHER" -> OTHER;
-            default -> UNKNOWN;
+            case MALE -> MALE;
+            case FEMALE -> FEMALE;
+            case OTHER -> OTHER;
+            case UNDISCLOSED -> UNKNOWN;
         };
     }
 }

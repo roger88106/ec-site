@@ -2,6 +2,7 @@ package com.ecsite.module.order.api;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.order.application.OrderReportQueryService;
+import com.ecsite.module.order.application.model.OrderReportView;
 import com.ecsite.module.order.domain.order.CancellationKind;
 import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.OrderStatus;
@@ -39,7 +40,7 @@ public class OrderReportApi {
     /**
      * 注文を公開の型にする。
      */
-    private static OrderReportSnapshot toSnapshot(OrderReportQueryService.Result result) {
+    private static OrderReportSnapshot toSnapshot(OrderReportView result) {
         var order = result.order();
         var cancellation = order.cancellation();
         var buyer = order.buyerProfile();

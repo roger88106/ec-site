@@ -2,6 +2,7 @@ package com.ecsite.module.order.application;
 
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.order.application.model.OrderReportView;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
 import com.ecsite.module.order.domain.quote.TaxAmount;
@@ -45,8 +46,8 @@ public class OrderReportQueryService {
      * @return 注文と送料の消費税。注文がなければ空
      */
     @Transactional(readOnly = true)
-    public Optional<Result> find(UUID orderId) {
-        return orderRepository.findById(orderId).map(order -> new Result(order, shippingTax(order)));
+    public Optional<OrderReportView> find(UUID orderId) {
+        return orderRepository.findById(orderId).map(order -> new OrderReportView(order, shippingTax(order)));
     }
 
     /**
@@ -62,14 +63,5 @@ public class OrderReportQueryService {
         return taxDirectory.consumptionTaxes(List.of(new TaxDirectory.Taxable(rate, fee))).stream()
                 .map(TaxAmount::taxAmount)
                 .reduce(Money.ZERO, Money::plus);
-    }
-
-    /**
-     * 注文と送料の消費税
-     *
-     * @param order       注文
-     * @param shippingTax 送料の消費税
-     */
-    public record Result(Order order, Money shippingTax) {
     }
 }

@@ -25,7 +25,7 @@ const POWERSHELL_FILE = 'scripts/dev/windows/exclude-ports.ps1'
 /** ポートを書く文書 */
 const DOC_FILES = ['docs/guides/setup.md', 'docs/guides/running-tests.md']
 
-/** E2E のポートを書く設定（E2E のサーバーの URL と、画面のサーバーの `--port`） */
+/** E2E のポートを書く設定（E2E のサーバーの URL、画面のサーバーの `--port`、Playwright の `port:`。読み方は CONFIG_FILES と同じ readConfigPorts） */
 const SOURCE_FILES = ['e2e/src/urls.ts', 'e2e/playwright.config.ts']
 
 /** ポートを直接書く設定とスクリプト（一覧にあるポートだけが書かれていることを確認する） */
@@ -248,7 +248,7 @@ export function findPortMismatches({ list, compose, powershell, docs, sources, c
   const e2e = new Set(list.ports.filter((entry) => entry.group === 'e2e').map((entry) => entry.port))
   const sourcePorts = new Set()
   for (const [file, text] of Object.entries(sources)) {
-    for (const port of new Set(readDocPorts(text))) {
+    for (const port of readConfigPorts(text)) {
       sourcePorts.add(port)
       if (!all.has(port)) {
         problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、設定を修正する）`)

@@ -1,6 +1,7 @@
 // ソースのコメントを空白に置き換える。
 // - .ts・.tsx：画面のソースを読む検査（hardcoded-text、frontend-rules）が共通で使う（stripComments）
 // - .java：Java のソースを読む検査（java-rules、env-defaults）が共通で使う（stripJavaComments）
+// - startsRegex・regexEnd（正規表現のリテラルの判定）は、closing-paren と test-files も使う
 
 /**
  * Java のコメント（行コメント、ブロックコメント、Javadoc）を、同じ長さの空白に置き換える。改行は残すので、位置と行番号は変わらない。<br />

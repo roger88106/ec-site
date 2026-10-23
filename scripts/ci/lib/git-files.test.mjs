@@ -72,11 +72,13 @@ describe('対象が 0 件のときの失敗', () => {
   const checks = [
     'ac-check',
     'ci-docs',
+    'dependabot-actions',
     'doc-refs',
     'doc-terms',
     'env-defaults',
     'frontend-rules',
     'glossary-ids',
+    'gradle-plugins',
     'hardcoded-text',
     'image-versions',
     'input-constraints',

@@ -105,6 +105,7 @@ export function findUncoveredActions(actionDirectories, targets) {
 if (isMain(import.meta.url)) {
   const files = listGitFiles()
   exitIfNoFiles(files, 'Git のファイル')
+  exitIfNoFiles(files.filter((file) => file === DEPENDABOT_FILE), 'Dependabot の設定')
   const actionDirectories = findActionDirectories(files)
   const targets = readActionsDirectories(readFileSync(DEPENDABOT_FILE, 'utf8'))
   const problems = findUncoveredActions(actionDirectories, targets)

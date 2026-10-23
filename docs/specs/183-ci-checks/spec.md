@@ -162,6 +162,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：T183-01-01
   - 範囲：`scripts/ci/message-numbers.mjs`、`scripts/ci/frontend-rules.mjs`、`scripts/dev/lib/e2e-running.mjs`、`e2e/scripts/run.ts`、テスト
   - 結果：message-numbers の関数を findExclusionsWithoutNumbers に改名し、frontend-rules の同じ内容のファイルの一覧を 1 回だけ求めるようにし、プロセスが実行中かの判定を lock-io.mjs の isProcessRunning にまとめた（e2e-running.mjs、run.ts、slot.mjs が使う）。既存のテストと e2e の型チェックが通り、isProcessRunning のテストを足した。
+  - 確認方法：DC-183-8 は、関数の名前をレビューで読む。DC-183-10 は、frontend-rules のテスト（`duplicatedFiles` の呼び出しが定義のほかに 1 つだけであること）と、レビューで読む。
 - [x] **T183-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-01-01〜05
   - 結果：一般の観点を汎用で 2 回（高 0、必須 2・3）、重要な観点を高性能と汎用で（高 0・1、必須 2・0）。重複を除いて 5 件を修正した。(1) check-all.sh が終了コードを直接見て、判定の CLI が OK の行を出したときだけ成功にする。isMain は実体のパスでも比べ、commit の前の hook は入口の pre-commit-main.mjs から必ず処理を実行する。(2) ci.md の lib/ の一覧に 5 つを加えた。(3) closing-paren.mjs の使う所を直した。(4) slot.mjs の isRunning を isProcessRunning（中身は同じ、EPERM は動いているとみなす）に置き換えた。(5) hardcoded-text と input-constraints の出力の形と終了コード、--count の振る舞いのテストを足した。check-all.sh の配線（summary と none の受け渡し）の実行テストは、検査の script を一時ディレクトリに複製する必要があるので作らず、判定の関数と CLI のテストで DC-183-7 を満たすとした。
@@ -191,7 +192,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 - [x] **T183-02-05** [テスト] マイグレーションの検査の改名・削除の判定を、`develop` との分岐点までの履歴に絞る。Git の一覧を読む全ての検査が、対象が 0 件のときに失敗にする（DC-183-18、19）。
   - 依存：T183-01-01、T183-02-04（同じ検査のファイルを変える）
   - 範囲：`scripts/ci/migrations.mjs`、`scripts/ci/lib/git-files.mjs`、Git の一覧を読む検査、テスト
-  - 結果：`migrations` が、`develop` と `main`（それぞれ `origin/` を先に見る）との merge-base までの履歴で判定し、どちらにも入っていない分岐の後のものの振り直しと中身の変更を通す。main にだけあるもの（hotfix）は守る（片方の ref だけならある方、どちらもなければ全ての履歴で判定して警告）。共通の `exitIfNoFiles` を 15 の検査に置き、一時リポジトリのテストを加えた。CI（docs.yml）は fetch-depth: 0 で origin/develop があるので workflow は変えていない。
+  - 結果：`migrations` が、`develop` と `main`（それぞれ `origin/` を先に見る）との merge-base までの履歴で判定し、どちらにも入っていない分岐の後のものの振り直しと中身の変更を通す。main にだけあるもの（hotfix）は検査の対象にする（片方の ref だけならある方、どちらもなければ全ての履歴で判定して警告）。共通の `exitIfNoFiles` を 15 の検査に置き、一時リポジトリのテストを加えた。CI（docs.yml）は fetch-depth: 0 で origin/develop があるので workflow は変えていない。
 - [x] **T183-02-06** [テスト] 実行環境のバージョンの検査が新しい job のバージョンの直書きを見つける。閉じ括弧の探し方とコメントの除去が、正規表現のリテラルを扱う（DC-183-20、21）。
   - 依存：T183-02-04（同じコメントの除去の関数）
   - 範囲：`scripts/ci/runtime-versions.mjs`、`scripts/ci/lib/strip-comments.mjs`、閉じ括弧を探す関数、テスト
@@ -223,7 +224,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：3 つの `package.json`、`pnpm-lock.yaml`、`scripts/ci/` の直下（新しい検査。`check-all.sh` が実行する置き場所）、`scripts/ci/licenses/policy.json`、テスト、`docs/guides/ci.md`
   - 結果：React の指定を、他の依存と同じ `^` の範囲にそろえた（store の `react`・`react-dom` と shared の devDependencies の固定 `19.3.1` を `^19.3.1` に。admin はすでに `^19.3.1`、shared の peerDependencies `^19.3.0` は範囲のまま）。解決は 19.3.1 のままで、`pnpm-lock.yaml` の差分は specifier の 4 行だけ。検査 `gradle-plugins`（カタログの `[plugins]` と `plugins {}` の id を `policy.json` の `gradlePlugins` と過不足照合）と `dependabot-actions`（`action.yml` のディレクトリが Dependabot の `directories` にあるか）を加え、ci.md の表に行を加えた。
-  - 確認方法：DC-183-26 は `runtime-versions` の React の指定の判定（`findReactSpecifierProblems`。`peerDependencies` は範囲で持つので対象外）のテストと、今のリポジトリの結果が 0 件であること。DC-183-27 は `gradle-plugins` のテスト（読めない書き方の失敗を含む）。DC-183-28 は `dependabot-actions` のテスト。
+  - 確認方法：DC-183-26 は `runtime-versions` の React の指定の判定（`findReactSpecifierProblems`。`peerDependencies` は範囲で書くので対象外）のテストと、今のリポジトリの結果が 0 件であること。DC-183-27 は `gradle-plugins` のテスト（読めない書き方の失敗を含む）。DC-183-28 は `dependabot-actions` のテスト。
 - [x] **T183-03-03** [テスト] ローカルのポートの一覧を 1 か所に置き、他の所との食い違いを見つける検査を作る（DC-183-29、30）。
   - 依存：なし
   - 範囲：一覧の置き場所（`scripts/dev/` か `docker/`。結果に書く）、`docker/compose.yaml`、`scripts/dev/slot.mjs`・`scripts/dev/lib/`、`scripts/dev/windows/`、`e2e/playwright.config.ts`、`scripts/ci/`、テスト、`docs/guides/setup.md`、`docs/guides/ci.md`
@@ -242,6 +243,8 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 
 - [ ] **T183-04-01** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）と、pull request の前のレビューを行い、指摘に対応する。
   - 依存：T183-03-04
+  - 結果（spec の最後のレビュー）：一般の観点を汎用で 2 回（高 1・0、必須 0・2、推奨 7・11）、重要な観点（ファイルをまたぐ影響を含む）を高性能と汎用で（高 1・0、必須 1・0、推奨 7・3）、文書の言い回しを汎用で 1 回（候補 30）行った。重複を除いて高 2 件、必須 3 件と、推奨のうち実害に近い 8 件を修正した（commit fbb4353c と、この commit）。残りの推奨は第 8 節に回した。
+  - 修正の要約：コード（fbb4353c）は、コメント・文字列の中のテストを数えない、compose・ローカルのポートの読めない項目の失敗、runtime-versions の読み方、check-all.sh のテストの数の判定、テンプレートの入れ子の読み方、commit の前の hook の bash の指定。この commit は、0 件の失敗のテストの追加（gradle-plugins、dependabot-actions）、E2E の設定のポートの読み方、DC-183-10 のテスト、コメントと文書、言い回し。
 - [ ] **T183-04-02** 後回しにする作業と起票の案（第 8 節）を最新にし、spec を `docs/specs/archive/1to10/` に移す。
   - 依存：T183-04-01
   - 範囲：`docs/specs/`、spec へのリンクを持つ文書
@@ -251,6 +254,21 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 | 起票の案 | 扱う issue | 内容 |
 |----------|------------|------|
 | [#185](https://github.com/roger88106/ec-site/issues/185)（新しい追跡の issue。起票済み） | #20、#161、#169 | マイグレーションの互換性の規則と検査、文書の食い違いの検査、フロントのテストの書き方の検査。spec の確認（2026-10-24）で分けると決め、issue 担当のセッションが起票した |
+
+最後のレビューで回した推奨：
+
+| # | 項目 | 起票の案 |
+|---|------|----------|
+| 1 | isMain が 1 通りであることを守る検査がない | #185 に加える（検査の script の整理。新しい検査を加える spec の前に、共通の処理として行う） |
+| 2 | Git を呼ぶテストの `GIT_` の環境変数を外す処理が 6 つのテストに重複する | #185 に加える（同上） |
+| 3 | 除外の一覧のパスの求め方が 4 通りあり、related-specs が除外の誤りの文を `checkExclusions` と別に組み立てる | #185 に加える（同上） |
+| 4 | 読めない行の出力の形が 3 通りある | #185 に加える（同上） |
+| 5 | migrations が `emptyListReason` と同じ処理を別に持つ | #185 に加える（同上） |
+| 6 | コメント・文字列・正規表現を読み飛ばす走査が closingParen、codeEnd、stripComments の 3 か所にある | #185 に加える（同上） |
+| 7 | doc-terms の `allow` に理由と不要の検出がない | #185 に加える（同上） |
+| 8 | dependabot-actions が知らない書き方の行を失敗にしない | #185 に加える（同上） |
+| 9 | env-defaults、glossary-ids、related-specs が `listGitFiles` を使わず `git ls-files` を直接呼ぶ | #185 に加える（同上） |
+| 10 | 時間の待ちの検査の除外がファイルの単位なので、`e2e/scripts/run.ts` に後から書いた待ちも通る。除外を行か関数の単位にする | #185 に加える（同上） |
 
 - 新しい spec は、本 spec のマージの後に始める。本 spec の共通の関数（テストのファイルの探し方、許す語の一覧など）を使うため。
 - 新しい spec の決定（マイグレーションの互換性の規則、規則の文書にない検査を先に規則に書くこと、テストの書き方の検査を spec 184 のマージの後に加えること）は、spec の確認で利用者が決めた（2026-10-24）。新しい spec は、その決定をそのまま書く。

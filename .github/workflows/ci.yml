@@ -43,8 +43,8 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # バックエンドは 4 つのジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、2 つに分けて同時に流す。
-  # 3 つのジョブは同時に始まり、それぞれコンパイルする（結果を渡すと、統合テストがビルドを待って全体が長くなる）。
+  # バックエンドは、ビルドと単体テスト、統合テスト（matrix の shard の一覧の数に分ける）、集計のジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、分けて同時に流す。
+  # 集計の前のジョブは同時に始まり、それぞれコンパイルする（結果を渡すと、統合テストがビルドを待って全体が長くなる）。
   # 変わっていない部分（jOOQ のコード、コンパイル）は、setup-gradle が develop のビルドのキャッシュから読む。
   # 手元は分けずに ./gradlew check で全て流す（docs/guides/ci.md）。
   backend-build:
@@ -122,7 +122,7 @@ jobs:
             backend/ecsite/build/reports/dependency-license/dependencies-without-allowed-license.json
           retention-days: 7
 
-  # 統合テストをテストクラスの名前で 2 つに分け、2 つのジョブで同時に流す（分け方は build.gradle.kts の integrationTestShards）。
+  # 統合テストをテストクラスの名前で分け、matrix の shard の一覧のジョブで同時に流す（分け方は build.gradle.kts の integrationTestShards）。
   # 片方が失敗しても、もう片方は最後まで流す（失敗の全体を一度に見るため）
   backend-integration:
     name: バックエンド（統合テスト ${{ matrix.shard }}/${{ strategy.job-total }}）
@@ -218,7 +218,7 @@ jobs:
           path: ${{ runner.temp }}/backend
 
       # カバレッジ（テストの書き方 第 1.2 節）。基準の検査は、報告を保存した後の最後の手順で行う。
-      # 実行データ（単体 1 つと統合 2 つ）を 1 つの報告にする。クラスは、ビルドのジョブがコンパイルしたもの
+      # 実行データ（単体のジョブと、統合テストの全てのジョブ）を 1 つの報告にする。クラスは、ビルドのジョブがコンパイルしたもの
       # JaCoCo は、実行データとクラスが一致しないと警告を出す（各ジョブが別々にコンパイルしたクラスが違うとき）。
       # 失敗にはせず、注釈に出す。pipefail で Gradle の失敗は隠さない
       - name: カバレッジの報告を作る

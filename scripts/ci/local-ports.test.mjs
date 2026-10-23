@@ -128,6 +128,13 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.ok(problems.some((problem) => /8090.*E2E/.test(problem)))
   })
 
+  test('E2E の設定は、Playwright の webServer の port: も読み、一覧にないポートを失敗にする', () => {
+    const sources = { 'e2e/src/urls.ts': "'http://localhost:8090'", 'e2e/playwright.config.ts': 'webServer: {\n  port: 4174,\n}' }
+    const problems = findPortMismatches({ ...INPUT, sources })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /playwright\.config\.ts.*4174/)
+  })
+
   test('設定のポートは、yml の port、JSON の port、起動の引数の --port から読む', () => {
     const yml = 'server:\n  port: 8090\nmanagement:\n  server:\n    port: ${MANAGEMENT_SERVER_PORT:9080}\nurl: http://localhost:5432/x'
     assert.deepEqual(readConfigPorts(yml), [5432, 8090, 9080])

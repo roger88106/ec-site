@@ -1,7 +1,7 @@
 # 段階 5：レベル A の構成、reporting の domain の分割、店舗の service のトランザクション
 
 - 前提：段階 2、段階 3、段階 4。段階 5 は段階 4 の後に行い、並行しない。理由：在庫の設計書とバックエンドのアーキテクチャを、両方の段階が変えるため。
-- 完了条件：DC-155-33〜42 を満たす。DC-155-34 は、利用者が確認した案で満たす（[plan](../plan.md) 第 10 節）。店舗の service が読み取り専用のトランザクションで動き、書き込みの経路がないことをレビューで確認した。関係する文書を更新した。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。
+- 完了条件：DC-155-33〜42 を満たす。DC-155-34 は、利用者が選んだ推奨の案で満たす（[plan](../plan.md) 第 10 節）。店舗の service が読み取り専用のトランザクションで動き、書き込みの経路がないことをレビューで確認した。関係する文書を更新した。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` が通る。
 - 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 7 節、[plan](../plan.md) 第 10 節、[spec](../spec.md) の DS-155-7 と DC-155-33〜42、DN-155-1〜5、[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.1 節、[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.4 節、[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.5 節、[バックエンドの書き方](../../../rules/backend-coding.md) 第 4.1 節
 
 ## タスク
@@ -22,7 +22,7 @@ T155-05-01、02、04、08、09 は、変えるファイルが重ならないの�
 - [ ] **T155-05-04** [P] 商品カタログのイベントのリスナーが、Repository を直接使わない形にする。在庫の作成と削除を持つ用途の名前の service `StockRegistrationService`（`inventory/application/`）を作り、リスナーはそれに委譲する。冪等の作成（既にあれば何もしない）は変えない（DC-155-37）。
   - 依存：なし
   - 範囲：`main/module/inventory/application/CatalogEventHandler.java`（`:22,31,40,50`）、`main/module/inventory/application/StockRegistrationService.java`（新規）。`it/module/inventory/application/CatalogEventHandlerTest.java` は、変更せず、テストが通ることを確認する。
-- [ ] **T155-05-05** 在庫の設計書を今のコードに合わせる（DC-155-34。利用者が推奨の案を選んだ場合）。「在庫（集約）」の記述を、在庫数を DB の差分の加算で更新し、集約で読み書きしないことに修正する。バックエンドのアーキテクチャ 第 2 節とバックエンドの書き方 第 1.1 節のレベル A の定義に、「整合性を DB の更新の条件で保つモジュールは、集約のクラスを持たなくてよい」の例外と理由を書く。
+- [ ] **T155-05-05** 在庫の設計書を今のコードに合わせる（DC-155-34。利用者が推奨の案を選んだ）。「在庫（集約）」の記述を、在庫数を DB の差分の加算で更新し、集約で読み書きしないことに修正する。バックエンドのアーキテクチャ 第 2 節とバックエンドの書き方 第 1.1 節のレベル A の定義に、「整合性を DB の更新の条件で保つモジュールは、集約のクラスを持たなくてよい」の例外と理由を書く。
   - 依存：なし（段階 4 の T155-04-04 の後に行う）
   - 範囲：`docs/design/modules/inventory.md`（`:7,11,13,16,40,105-106`）、`docs/design/backend-architecture.md`（バックエンドのアーキテクチャ 第 2 節）、`docs/rules/backend-coding.md`（バックエンドの書き方 第 1.1 節、`:68`）
 - [ ] **T155-05-06** エラーの定義を全て `domain/` の直下に置く。`CategoryErrorCode`、`ProductErrorCode`（catalog）、`InventoryErrorCode`、`OrderErrorCode`、`PaymentErrorCode`、`TaxErrorCode` を移し、参照する main、test、integrationTest、testFixtures の import と package 行を修正する。同じパッケージの package-private の参照は、移動後に import が必要になる。エラーのメッセージのキーが変わらないことを確認する（DC-155-38、39）。

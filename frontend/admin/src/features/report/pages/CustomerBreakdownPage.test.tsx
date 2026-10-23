@@ -1,6 +1,7 @@
 import { screen, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { CustomerBreakdownReport } from '@/api/types'
+import { recordDownloads } from '@/test/download'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
@@ -49,11 +50,6 @@ function rowsOf(dimension: string): HTMLElement[] {
   return within(section).getAllByRole('row').slice(1)
 }
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
-})
-
 describe('地域・年齢層・性別', () => {
   it('AC-205、220、262 都道府県ごとの売上額と注文件数を、コードの順に応答の名前で出し、コードのないものは不明', async () => {
     serveBreakdown()
@@ -99,23 +95,15 @@ describe('地域・年齢層・性別', () => {
 
   it('AC-218 3 つの表を 1 つにまとめた CSV で取り出せる', async () => {
     serveBreakdown()
-    const createObjectURL = vi.fn(() => 'blob:report')
-    const revokeObjectURL = vi.fn()
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
-    const downloads: string[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      downloads.push(this.download)
-    })
+    const recorder = recordDownloads()
     const { user } = renderApp('/reports/customer-breakdown?from=2026-09-01&to=2026-09-30')
     await screen.findByRole('region', { name: '都道府県ごとの売上額' })
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
-    expect(downloads).toEqual(['地域・年齢層・性別_2026-09-01_2026-09-30.csv'])
-
-    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
-    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
-    expect(text).toBe(
+    const [download] = await recorder.downloads()
+    expect(download.filename).toBe('地域・年齢層・性別_2026-09-01_2026-09-30.csv')
+    expect(download.text).toBe(
       [
         '\uFEFF分け方,区分,売上額,注文件数',
         '都道府県,東京都,52000,12',

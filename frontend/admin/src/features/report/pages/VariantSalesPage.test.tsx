@@ -1,6 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, it, vi } from 'vitest'
+import { describe, expect, it } from 'vitest'
 import type { VariantSalesReport } from '@/api/types'
+import { recordDownloads } from '@/test/download'
 import { renderApp } from '@/test/renderApp'
 import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
@@ -47,11 +48,6 @@ function serveVariantSales() {
   return queries
 }
 
-afterEach(() => {
-  vi.unstubAllGlobals()
-  vi.restoreAllMocks()
-})
-
 describe('バリアントの売れ行き', () => {
   it('AC-202、203、204 バリアントごとの販売数量と売上額を、販売数量の多い順に出し、売れなかったものも 0 で出す', async () => {
     const queries = serveVariantSales()
@@ -87,23 +83,15 @@ describe('バリアントの売れ行き', () => {
 
   it('AC-218 表を CSV で取り出せる', async () => {
     serveVariantSales()
-    const createObjectURL = vi.fn(() => 'blob:report')
-    const revokeObjectURL = vi.fn()
-    vi.stubGlobal('URL', Object.assign(URL, { createObjectURL, revokeObjectURL }))
-    const downloads: string[] = []
-    vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
-      downloads.push(this.download)
-    })
+    const recorder = recordDownloads()
     const { user } = renderApp(`/reports/variant-sales?from=2026-09-01&to=2026-09-30&productId=${SHIRT_ID}`)
     await screen.findByRole('cell', { name: '色：白、サイズ：M' })
 
     await user.click(screen.getByRole('button', { name: 'CSV で取り出す' }))
 
-    expect(downloads).toEqual(['バリアントの売れ行き_ベーシック T シャツ_2026-09-01_2026-09-30.csv'])
-
-    const blob = (createObjectURL.mock.calls[0] as unknown as [Blob])[0]
-    const text = new TextDecoder('utf-8', { ignoreBOM: true }).decode(await blob.arrayBuffer())
-    expect(text).toBe(
+    const [download] = await recorder.downloads()
+    expect(download.filename).toBe('バリアントの売れ行き_ベーシック T シャツ_2026-09-01_2026-09-30.csv')
+    expect(download.text).toBe(
       '\uFEFFバリアント,品番,販売数量,売上額\r\n色：白、サイズ：M,TEE-001-WH-M,12,39336\r\n色：黒、サイズ：L,TEE-001-BK-L,0,0\r\n',
     )
   })

@@ -102,7 +102,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
 - `develop` が進んで Dependabot の pull request が最新でなくなったときは、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
-- `@types/node` の major は、Dependabot の対象から外す。理由：実行の環境は `package.json` の engines の Node で、型の定義だけを上げると、その版にない API も型の検査を通ってしまうため。Node の版を上げるときに、合わせて上げる。
+- `@types/node` の major は、Dependabot の対象から外す。理由：実行の環境は `.node-version` の Node（`package.json` の `engines.node` はその下限の範囲）で、型の定義だけを上げると、その版にない API も型の検査を通ってしまうため。Node の版を上げるときに、合わせて上げる。
 - `github-actions` は、ワークフローに加え、ローカルの複合の action（`.github/actions/setup-frontend`）で使う action の版も更新する。理由：`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため、`directories` に複合の action のディレクトリを追加している。複合の action を増やしたら、追加する。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
 - 注意：GitHub の文書（2026-10-22 の時点）では、Dependabot の pnpm の対応は v10 まで。このリポジトリは pnpm 12 である。`npm` の更新が失敗したときは、issue を起票し、その issue で Renovate への切り替えを検討する。

@@ -105,7 +105,7 @@ describe('テストの差分の検査', () => {
   })
 })
 
-describe('ファイルをまたぐテストの移動（spec 014 の DN-18）', () => {
+describe('ファイルをまたぐテストの移動（中身を変えない移動は通し、中身を変えた移動は違反にする）', () => {
   const FROM = 'frontend/store/src/lib/orderDisplay.test.ts'
   const TO = 'frontend/store/src/lib/labels.test.ts'
   const MOVED = ["  test('注文の状態の表示名', () => {", "    expect(orderStatusLabel('ACCEPTED')).toBe('受付')", '  })']

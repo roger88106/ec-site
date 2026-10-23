@@ -41,6 +41,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 - 統合テストのフォークの数（`maxParallelForks`）は 1。2 にしても 10% 以上は短くならなかった（遅い方のジョブで約 2%）。CI で測って 10% 以上短くなれば、`-PintegrationTestForks=2` にする。
 - 「バックエンド」は、各ジョブが保存したカバレッジの実行データとクラスを集めて、1 つの報告にする（コンパイルもテストもしない）。各ジョブが別々にコンパイルしたクラスの実行データを合わせるので、クラスが一致しないと JaCoCo が警告を出し、「バックエンド」が注釈（warning）を出す。
 - E2E は、ブラウザーの OS の依存を apt で入れない。ランナーのイメージに依存が入っていて、apt の取得に数分から 30 分かかることがあったため。失敗時の画面の撮影では、日本語のフォントがなく文字が四角になることがある。読めないときは、手元の `scripts/dev/e2e.sh` で再現する。
+- Node の版は `.node-version`、JDK の版は `ci.yml` の `JAVA_VERSION` と `libs.versions.toml` の `java` に書く。1 か所にできない組は、検査 `runtime-versions`（第 3 節）が一致を確認する。
 
 CI の検査の script は、文書だけの変更でも結果が変わる（文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec など）ので、文書だけの push でも実行する `docs.yml` で実行する。
 
@@ -74,6 +75,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | `progress` | MVP の spec 011 以降（0 埋めの 3 桁）の進捗が、README の進捗の表、MVP の完成までの一覧、tasks のチェックボックスで一致する（tasks が全て完了した spec だけが「完了」。2 つの表の状態が同じ）。アーカイブした 1→10 の spec（`docs/specs/archive/1to10/`）は、tasks が全て済んでいる | 最後のタスクを完了する commit で、2 つの表の状態を「完了」にする。アーカイブに移すタスクを tasks の最後にし、その commit で全てのタスクのチェックボックスを `[x]` にする。マージの前にアーカイブの後に追加するタスクは、アーカイブのタスクの後に、済ませる commit で `[x]` の行として追加する（[開発の進め方](../rules/workflow.md) 第 4.2 節） | なし |
 | `related-specs` | 設計の文書（概要の表に「関連 spec」の行を持つもの）を変えた commit の spec（1 行目の `（T0NN-…）` か `（T7-…）`。MVP と 1→10 の spec を番号の形で区別する）が、その行にある。commit の履歴を読むので、shallow clone では失敗する | 概要の表の「関連 spec」に、その spec のリンクを追加する | `related-specs-exclusions.json` に `{キー: 理由}`。キーは設計を変えない段階のタスク番号の前置き（`T018-05` など）。当たる commit がない除外は失敗 |
 | `role-permissions` | [ロールと権限の対応表](../design/role-permissions.md)が、管理 API の契約の `x-required-permission`、運営者の realm のロール、店舗 API の契約の `security` から再生成した表と一致する。管理 API の操作に権限がない、realm にない権限を使う、も失敗にする | ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認する | なし |
+| `runtime-versions` | JDK の版（`ci.yml` の `env.JAVA_VERSION` と `backend/ecsite/gradle/libs.versions.toml` の `java`）が一致する。Node の版（`.node-version`）が、ルートの `package.json` の `engines.node`（`>=N` の形だけを扱う）の範囲を満たす。1 か所から読めない版は、この検査で一致を確認する | 置き場所の版をそろえる。Node の版を上げるときは `.node-version` と `engines.node` を合わせる | なし |
 | `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号（MVP の `AC-n` や `T011-…`、1→10 の `AC-7-1` や `T7-…`）がない（[コメントの書き方](../rules/comments.md) 第 1 節） | 番号を削除し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
 | `test-names` | バックエンドの全ての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../rules/test-writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
 | `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する（[テストの書き方](../rules/test-writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |

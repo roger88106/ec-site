@@ -4,8 +4,11 @@ import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.application.CategoryQueryService;
 import com.ecsite.module.catalog.application.StoreProductQueryService;
+import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
 import com.ecsite.module.catalog.application.model.view.CategoryNodeView;
+import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import lombok.RequiredArgsConstructor;
+import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -38,7 +41,7 @@ public class StoreCatalogApi {
      * @return 商品の一覧
      */
     public PageResult<StoreProductSummary> listProducts(StoreProductQuery query, PageRequest request) {
-        return storeProductQueryService.listProducts(query, request);
+        return storeProductQueryService.listProducts(toListQuery(query), request).map(StoreCatalogApi::toSummary);
     }
 
     /**
@@ -49,7 +52,7 @@ public class StoreCatalogApi {
      * @return 検索結果
      */
     public PageResult<StoreProductSummary> searchProducts(String keyword, PageRequest request) {
-        return storeProductQueryService.searchProducts(keyword, request);
+        return storeProductQueryService.searchProducts(keyword, request).map(StoreCatalogApi::toSummary);
     }
 
     /**
@@ -78,5 +81,35 @@ public class StoreCatalogApi {
      */
     private static StoreCategoryNode toNode(CategoryNodeView view) {
         return new StoreCategoryNode(view.id(), view.name(), view.children().stream().map(StoreCatalogApi::toNode).toList());
+    }
+
+    /**
+     * 公開する条件を、application の条件に変換する。
+     */
+    private static StoreProductListQuery toListQuery(StoreProductQuery query) {
+        return new StoreProductListQuery(query.categoryId(), query.minPrice(), query.maxPrice(), toSort(query.sort()));
+    }
+
+    /**
+     * 公開する並び順を、application の並び順に変換する。指定がなければ指定なし（新着順として扱われる）。
+     * 単体テストから呼ぶので package-private。
+     */
+    static StoreProductListQuery.@Nullable Sort toSort(@Nullable StoreProductSort sort) {
+        if (sort == null) {
+            return null;
+        }
+        return switch (sort) {
+            case NEWEST -> StoreProductListQuery.Sort.NEWEST;
+            case PRICE_ASC -> StoreProductListQuery.Sort.PRICE_ASC;
+            case PRICE_DESC -> StoreProductListQuery.Sort.PRICE_DESC;
+        };
+    }
+
+    /**
+     * 一覧の view を公開する型に変換する。
+     */
+    private static StoreProductSummary toSummary(StoreProductSummaryView view) {
+        return new StoreProductSummary(view.id(), view.name(), view.priceInclTax(), view.priceExclTax(),
+                view.sellableVariantIds(), view.imageUrl());
     }
 }

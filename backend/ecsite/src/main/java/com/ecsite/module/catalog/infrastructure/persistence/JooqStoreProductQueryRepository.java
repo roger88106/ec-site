@@ -4,9 +4,8 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.StoreProductDetail;
-import com.ecsite.module.catalog.api.StoreProductQuery;
-import com.ecsite.module.catalog.api.StoreProductSort;
-import com.ecsite.module.catalog.api.StoreProductSummary;
+import com.ecsite.module.catalog.application.model.query.StoreProductListQuery;
+import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import com.ecsite.module.catalog.application.port.StoreProductQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
@@ -60,7 +59,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
      * @return 商品の一覧
      */
     @Override
-    public PageResult<StoreProductSummary> findVisible(StoreProductQuery query, PageRequest request, Instant now,
+    public PageResult<StoreProductSummaryView> findVisible(StoreProductListQuery query, PageRequest request, Instant now,
                                                        Map<UUID, BigDecimal> rates) {
         // 有効な税率がひとつもなければ、どの商品も税込価格を出せない（表示できない）
         if (rates.isEmpty()) {
@@ -114,7 +113,7 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     /**
      * 一覧の条件：表示される商品で、税込価格を出せること。カテゴリ・価格の範囲で絞り込む。
      */
-    private static Condition condition(StoreProductQuery query, Instant now, Field<Long> priceInclTax) {
+    private static Condition condition(StoreProductListQuery query, Instant now, Field<Long> priceInclTax) {
         var condition = ProductVisibility.visibleAt(now).and(priceInclTax.isNotNull());
         if (query.categoryId() != null) {
             condition = condition.and(CategoryConditions.productInCategory(query.categoryId()));
@@ -131,8 +130,8 @@ class JooqStoreProductQueryRepository implements StoreProductQueryRepository {
     /**
      * 並び順。同じ値なら ID の順にし、ページをまたいでも重複・欠落しないようにする（API の規約）。
      */
-    private static List<OrderField<?>> orderBy(@Nullable StoreProductSort sort, Field<Long> priceInclTax) {
-        return switch (sort == null ? StoreProductSort.NEWEST : sort) {
+    private static List<OrderField<?>> orderBy(StoreProductListQuery.@Nullable Sort sort, Field<Long> priceInclTax) {
+        return switch (sort == null ? StoreProductListQuery.Sort.NEWEST : sort) {
             case NEWEST -> List.of(PRODUCT.FIRST_SHOWN_AT.desc(), PRODUCT.ID);
             case PRICE_ASC -> List.of(priceInclTax.asc(), PRODUCT.ID);
             case PRICE_DESC -> List.of(priceInclTax.desc(), PRODUCT.ID);

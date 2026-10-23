@@ -1,12 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { payOrder, requestCancellation } from '@/actions/order'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
-import { form, ORDER_ID } from '@/test/fixtures'
+import { form, ORDER_ID, PAYMENT_PAGE_URL } from '@/test/fixtures'
 import { redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
 import { http, problem, server } from '@/test/server'
-
-/** 決済サービスの支払画面の URL */
-const PAYMENT_PAGE_URL = 'https://pay.example/cs_test_1'
 
 describe('キャンセルを申請する', () => {
   test('AC-95 理由を添えて申請し、注文の画面を表示し直す。理由が空なら送らない', async () => {

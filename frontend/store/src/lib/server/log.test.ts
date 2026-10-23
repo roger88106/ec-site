@@ -1,11 +1,9 @@
 import { beforeEach, describe, expect, type MockInstance, test, vi } from 'vitest'
 import { log } from '@/lib/server/log'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
+import { TRACEPARENT } from '@/test/fixtures'
 import { resetRequest } from '@/test/next'
 import { recordStderr, type StderrRecord } from '@/test/stderr'
-
-/** 要求のヘッダーの traceparent（proxy が付けたもの） */
-const TRACEPARENT = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
 
 describe('サーバー側のログ', () => {
   let stdout: MockInstance

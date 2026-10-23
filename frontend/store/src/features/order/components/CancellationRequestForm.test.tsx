@@ -15,7 +15,7 @@ describe('キャンセルの申請', () => {
 
     const reason = screen.getByLabelText('理由（任意）')
     expect(reason.getAttribute('maxlength')).toBe('500')
-    expect(reason.parentElement?.textContent).toContain('500 文字まで')
+    expect(screen.getByText('500 文字まで')).toBeDefined()
     await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
 
     expect(confirm).toHaveBeenCalledWith('キャンセルを申請します。申請は 1 回だけできます。よろしいですか？')

@@ -11,6 +11,10 @@ export const COOKIE_CART_ID = '00000000-0000-0000-0000-0000000000c1'
 export const NEW_CART_ID = '00000000-0000-0000-0000-0000000000c2'
 /** 会員のカートの ID */
 export const MEMBER_CART_ID = '00000000-0000-0000-0000-0000000000c3'
+/** 決済サービスの支払画面の URL */
+export const PAYMENT_PAGE_URL = 'https://pay.example/cs_test_1'
+/** 要求のヘッダーの traceparent（proxy が付けたもの） */
+export const TRACEPARENT = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
 /** バリアントの ID */
 export const VARIANT_ID = '00000000-0000-0000-0000-000000000201'
 /** 注文手続きの ID */

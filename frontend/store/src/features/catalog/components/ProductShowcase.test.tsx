@@ -75,7 +75,7 @@ describe('商品の詳細の画像', () => {
     expect(button('画像 1を見る').getAttribute('aria-pressed')).toBe('false')
   })
 
-  test('軸のない商品は、画像がなければ代わりの図を出し、小さな画像の並びを出さない', () => {
+  test('軸のない商品は、画像がなければ商品の画像も小さな画像の並びも出さない', () => {
     renderWithoutAxes([onlyVariant()])
 
     expect(screen.queryByRole('img', { name: '商品の画像' })).toBeNull()

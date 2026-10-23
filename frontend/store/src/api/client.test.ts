@@ -3,12 +3,10 @@ import { describe, expect, test, vi } from 'vitest'
 import { getApi, getMemberApi, UNCACHED } from '@/api/client'
 import { TRACEPARENT_HEADER } from '@/lib/server/trace'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
+import { TRACEPARENT } from '@/test/fixtures'
 import { resetRequest } from '@/test/next'
 import { http, problem, STORE_API, server } from '@/test/server'
 import { recordStderr } from '@/test/stderr'
-
-/** 要求のヘッダーの traceparent（proxy が付けたもの） */
-const TRACEPARENT = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
 
 describe('店舗 API の口', () => {
   test('会員の口の要求には、いまの要求の traceparent を付ける（バックエンドのログと同じ追跡の ID にする）', async () => {

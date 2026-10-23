@@ -1,12 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { placeOrder } from '@/actions/checkout'
 import { ACCESS_TOKEN, signInAs } from '@/test/auth'
-import { CHECKOUT_ID, form, ORDER_ID } from '@/test/fixtures'
+import { CHECKOUT_ID, form, ORDER_ID, PAYMENT_PAGE_URL } from '@/test/fixtures'
 import { redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
 import { http, problem, server } from '@/test/server'
-
-/** 決済サービスの支払画面の URL */
-const PAYMENT_PAGE_URL = 'https://pay.example/cs_test_1'
 
 /** 注文のフォーム（前後に空白のある入力を含む） */
 const orderForm = () =>

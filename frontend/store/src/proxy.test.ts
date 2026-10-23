@@ -1,6 +1,7 @@
 import { NextRequest } from 'next/server'
 import { describe, expect, test } from 'vitest'
 import { config, proxy } from '@/proxy'
+import { TRACEPARENT } from '@/test/fixtures'
 
 /**
  * proxy を呼ぶ（Auth.js のセッションの確認は、テストでは置き換えてある）。
@@ -35,7 +36,7 @@ describe('要求ごとの確認（proxy）', () => {
   })
 
   test('要求がすでに正しい traceparent を持っていれば、その追跡の ID を引き継ぐ', async () => {
-    const incoming = '00-0af7651916cd43dd8448eb211c80319c-b7ad6b7169203331-01'
+    const incoming = TRACEPARENT
 
     const response = await runProxy('http://localhost:3000/products', { headers: { traceparent: incoming } })
 

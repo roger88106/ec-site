@@ -4,6 +4,7 @@ import 'next/headers'
 import { afterEach, describe, expect, test, vi } from 'vitest'
 import { parseCartMergeNotice } from '@/lib/cartMergeNotice'
 import { authState, signInAs } from '@/test/auth'
+import { COOKIE_CART_ID, NEW_CART_ID } from '@/test/fixtures'
 import { cookieValue, resetRequest } from '@/test/next'
 
 /**
@@ -47,17 +48,17 @@ describe('店舗画面の Cookie の接頭辞（STORE_COOKIE_PREFIX）', () => {
 
   test('DC-104-12 カートの Cookie の名前に接頭辞が付く', async () => {
     const { cartCookie } = await loadWithPrefix('s1-')
-    resetRequest({ cookies: { 's1-cart_id': '11111111-1111-4111-8111-111111111111', cart_id: 'other' } })
+    resetRequest({ cookies: { 's1-cart_id': COOKIE_CART_ID, cart_id: 'other' } })
     const notice = {
       truncated: { items: [{ label: '商品 A', quantity: 3 }], more: 0 },
       skipped: { items: [], more: 0 },
     }
 
-    expect(await cartCookie.readCartId()).toBe('11111111-1111-4111-8111-111111111111')
+    expect(await cartCookie.readCartId()).toBe(COOKIE_CART_ID)
 
-    await cartCookie.writeCartId('22222222-2222-4222-8222-222222222222')
+    await cartCookie.writeCartId(NEW_CART_ID)
     await cartCookie.writeCartMergeNotice(notice)
-    expect(cookieValue('s1-cart_id')).toBe('22222222-2222-4222-8222-222222222222')
+    expect(cookieValue('s1-cart_id')).toBe(NEW_CART_ID)
     expect(parseCartMergeNotice(cookieValue('s1-cart_merge_notice'))).toEqual(notice)
     expect(cookieValue('cart_merge_notice')).toBeUndefined()
 

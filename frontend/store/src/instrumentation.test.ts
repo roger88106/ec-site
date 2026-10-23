@@ -3,13 +3,18 @@ import { register } from '@/instrumentation'
 import { PRODUCTION_ENV } from '@/test/env'
 import { recordStderr, type StderrRecord } from '@/test/stderr'
 
+/** 差し替えた process.exit が投げる例外の文言 */
+const EXIT_ERROR = 'process.exit が呼ばれた'
+
 describe('起動時の設定の確認', () => {
   let exit: MockInstance
   let stderr: StderrRecord
 
   beforeEach(() => {
-    // process.exit は never を返す型なので、終了しない差し替えは型を合わせられず as never が要る
-    exit = vi.spyOn(process, 'exit').mockImplementation((() => undefined) as never)
+    // process.exit は never を返す型なので、差し替えも例外を投げて終わる関数にする（終了の代わりに例外で止まる）
+    exit = vi.spyOn(process, 'exit').mockImplementation(() => {
+      throw new Error(EXIT_ERROR)
+    })
     stderr = recordStderr()
     vi.stubEnv('NEXT_RUNTIME', 'nodejs')
     for (const [name, value] of Object.entries(PRODUCTION_ENV)) {
@@ -25,7 +30,7 @@ describe('起動時の設定の確認', () => {
     vi.stubEnv('AUTH_SECRET', '')
     vi.stubEnv('STORE_API_BASE_URL', '')
 
-    register()
+    expect(() => register()).toThrow(EXIT_ERROR)
 
     expect(stderr.text()).toContain('AUTH_SECRET')
     expect(stderr.text()).toContain('STORE_API_BASE_URL')

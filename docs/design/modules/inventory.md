@@ -8,10 +8,10 @@
 | 依存 | 商品カタログ（イベント） |
 | 関連 spec | [001](../../specs/archive/mvp/001-catalog-and-inventory)、[002](../../specs/archive/mvp/002-cart-and-order)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[019](../../specs/archive/mvp/019-mvp-completion) |
 
-## 在庫（集約）と在庫調整
+## 在庫と在庫調整
 
-- 在庫は、バリアント、商品、在庫数を持つ。
-- 在庫調整は、増減量（0 以外）、調整理由、メモを持つ。理由が「その他」ならメモは必須。
+- 在庫は、バリアント、商品、在庫数を持つ。在庫は集約のクラスを持たない。在庫数は、下の条件付きの更新で変え、引当の判定は行ロックして読んだ在庫（`LockedStock`）で行う。
+- 在庫調整（エンティティ）は、増減量（0 以外）、調整理由、メモを持つ。理由が「その他」ならメモは必須。
 - 運営者の調整は、1 回の増減量が ±1,000,000 以内で、調整後の在庫数が 1,000,000 以下。注文のキャンセルで戻す調整には、在庫数の上限を当てない（引き当てた分を戻すだけで、桁あふれにならないため）。
 - 調整履歴は集約に含めず、追記だけの記録として別に保存する（増え続けるため）。
 
@@ -120,6 +120,8 @@ inventory/
 
 - [V202610091600__inventory_create_stock_item.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610091600__inventory_create_stock_item.sql)：在庫、在庫調整
 - [V202610111000__inventory_create_stock_reservation.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610111000__inventory_create_stock_reservation.sql)：引当、注文の調整理由と注文
+- [V202610121400__inventory_add_operator_name.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610121400__inventory_add_operator_name.sql)：運営者の氏名の写し
+- [V202610201100__inventory_add_stock_reservation_expires_at_index.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201100__inventory_add_stock_reservation_expires_at_index.sql)：引当の片付けが期限で探す索引
 
 - バリアント・商品・注文手続き・注文は他のモジュールの ID なので、外部キーは張らない。
 - 商品を持つのは、B 側で商品ごとの在庫数の合計を出すため。

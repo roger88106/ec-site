@@ -19,7 +19,7 @@
 - storefront：T155-02-12
 - reporting：T155-02-13〜15
 
-- [ ] **T155-02-01** [P] [テスト] 注文の見積もりの変換を固定する。今の `CartQuoteService` の変換について、見積もり結果の全ての項目（品目、軸の値、金額、税額）と、買えない理由の全ての値の対応を確認する単体テストを追加する。今のコードで通ることを確認し、一時的に変換の実装か期待値を変えて、失敗しうることを確認してから元に戻す。AC-277 のテスト名を残す（DC-155-8、9）。
+- [x] **T155-02-01** [P] [テスト] 注文の見積もりの変換を固定する。今の `CartQuoteService` の変換について、見積もり結果の全ての項目（品目、軸の値、金額、税額）と、買えない理由の全ての値の対応を確認する単体テストを追加する。今のコードで通ることを確認し、一時的に変換の実装か期待値を変えて、失敗しうることを確認してから元に戻す。AC-277 のテスト名を残す（DC-155-8、9）。
   - 依存：なし
   - 範囲：`test/module/order/application/checkout/CartQuoteServiceTest.java`（`:3,20`）
 - [ ] **T155-02-02** 注文の見積もりの service を、カート ID と見積もり結果を持つ view `CartQuoteView`（`order/application/model/`）を返す形にする。公開の API `OrderQuoteApi` が公開の型 `CartQuote` に変換する。変換（`toCartQuote`、`toItem`、`toReason`、`toAmounts`、`toTaxAmount`）を API に移し、`CartQuoteServiceTest` を `test/module/order/api/OrderQuoteApiTest.java` に移す。`toReason` は package-private の static のままにし、単体テストから呼ぶ（DC-155-8、9）。

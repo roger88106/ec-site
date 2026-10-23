@@ -26,7 +26,7 @@
 - [x] **T157-05-06** [P] 店舗画面の lib とサーバーの処理のテストを修正する。追跡の ID のテストを自分のファイルに移し、ログの確認を補助と内容の確認にする。カートの ID の例外の確認に内容を加え、カートの ID は補助を使う。ログインの戻り先のテストの重複を削除する（DC-157-23、24、26、27、31、33）。
   - 依存：なし
   - 範囲：`frontend/store/src/lib/server/log.test.ts`、`trace.test.ts`（新規）、`timeout.test.ts`、`frontend/store/src/lib/cartId.test.ts`、`frontend/store/src/lib/cartChoice.test.ts`、`frontend/store/src/lib/login.test.ts`、`frontend/store/src/instrumentation.test.ts`
-- [ ] **T157-05-07** [P] 認証と proxy のテストを修正する。Auth.js の引数と proxy の型の変換を、型に合う値を作る補助にする。環境変数の一式は補助を使う。重複したテスト（公開の URL と設定、ログインと Cookie の接頭辞）をまとめる。ヘッダーのテストは、役割と名前で要素を探して確認する（DC-157-18、24、27、31）。
+- [x] **T157-05-07** [P] 認証と proxy のテストを修正する。Auth.js の引数と proxy の型の変換を、型に合う値を作る補助にする。環境変数の一式は補助を使う。重複したテスト（公開の URL と設定、ログインと Cookie の接頭辞）をまとめる。ヘッダーのテストは、役割と名前で要素を探して確認する（DC-157-18、24、27、31）。
   - 依存：なし
   - 範囲：`frontend/store/src/auth/index.test.ts`、`cookiePrefix.test.ts`、`publicUrl.test.ts`、`config.test.ts`、`loginRedirect.test.ts`、`frontend/store/src/proxy.test.ts`、`frontend/store/src/components/SiteHeader.test.tsx`
 - [ ] **T157-05-08** `node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DN-157-3）。

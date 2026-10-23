@@ -1,44 +1,38 @@
-import { beforeEach, describe, expect, test, vi } from 'vitest'
+// @vitest-environment jsdom
+import { screen } from '@testing-library/react'
+import { describe, expect, test, vi } from 'vitest'
+import { ACCOUNT_URL } from '@/auth'
 import { SiteHeader } from '@/components/SiteHeader'
-import { renderMarkup } from '@/test/render'
+import { signInAs } from '@/test/auth'
+import { renderInBrowser } from '@/test/render'
 
-/** IdP のアカウントの画面（テストの値） */
-const ACCOUNT_URL = 'http://idp.test/realms/ec-store/account'
-
-const currentMember = vi.fn()
-
-vi.mock('@/auth', () => ({
-  ACCOUNT_URL: 'http://idp.test/realms/ec-store/account',
-  currentMember: () => currentMember(),
-}))
 vi.mock('@/actions/auth', () => ({ logout: async () => {} }))
+// 「ログイン」「会員登録」は現在の画面の位置を読むため、ここでは置き換える（LoginLinks.test.tsx で確認する）
 vi.mock('@/components/LoginLinks', () => ({ LoginLinks: () => <a href="/login">ログイン</a> }))
 
-/** ヘッダーを HTML にする（サーバーコンポーネントなので、関数として呼んでから描画する） */
+/** ヘッダーを描画する（サーバーコンポーネントなので、関数として呼んでから描画する） */
 async function renderHeader() {
-  return renderMarkup(await SiteHeader())
+  renderInBrowser(await SiteHeader())
 }
 
 describe('ヘッダーのログインの状態', () => {
-  beforeEach(() => {
-    currentMember.mockReset()
-  })
-
   test('AC-119 ログインしている会員には、IdP のアカウントの画面へのリンクが出る', async () => {
-    currentMember.mockResolvedValue({ name: '山田 太郎' })
+    signInAs()
 
-    const html = await renderHeader()
+    await renderHeader()
 
-    expect(html).toContain(`href="${ACCOUNT_URL}">アカウント</a>`)
-    expect(html).toContain('山田 太郎 様')
+    expect(screen.getByRole('link', { name: 'アカウント' }).getAttribute('href')).toBe(ACCOUNT_URL)
+    expect(screen.getByText('山田 太郎 様')).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'ログアウト' })).toBeTruthy()
+    expect(screen.queryByRole('link', { name: 'ログイン' })).toBeNull()
   })
 
-  test('ログインしていなければ、アカウントの画面へのリンクは出ない', async () => {
-    currentMember.mockResolvedValue(null)
+  test('ログインしていなければ、アカウントの画面へのリンクとログアウトの操作は出ず、ログインのリンクが出る', async () => {
+    await renderHeader()
 
-    const html = await renderHeader()
-
-    expect(html).not.toContain('アカウント')
-    expect(html).toContain('ログイン')
+    expect(screen.queryByRole('link', { name: 'アカウント' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'ご注文履歴' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'ログアウト' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'ログイン' })).toBeTruthy()
   })
 })

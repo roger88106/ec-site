@@ -262,9 +262,9 @@
 | AC-237 | 運用ポートの番号は設定で変更でき、ローカルの既定は業務ポートと競合しない。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `ManagementPortConfigTest` |
 | AC-238 | 管理画面を本番モードでビルドするとき、IdP の接続先と client ID が… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `oidcEnv.test.ts` |
 | AC-239 | 管理画面の開発モードとテストは、今までどおりローカルの IdP の既定値で動く。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `oidcEnv.test.ts` |
-| AC-240 | 店舗画面は、公開する URL（origin）を環境変数で受け取る。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `publicUrl.test.ts` |
-| AC-241 | 店舗画面のログインの戻り先と、ログアウトの後の戻り先は、公開する URL から作… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `loginRedirect.test.ts`、`publicUrl.test.ts` |
-| AC-242 | 店舗画面の任意の設定（API の応答を再取得する間隔など）も、必須の設定と同じ … | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `publicUrl.test.ts` |
+| AC-240 | 店舗画面は、公開する URL（origin）を環境変数で受け取る。 | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `config.test.ts` |
+| AC-241 | 店舗画面のログインの戻り先と、ログアウトの後の戻り先は、公開する URL から作… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `index.test.ts`、`loginRedirect.test.ts` |
+| AC-242 | 店舗画面の任意の設定（API の応答を再取得する間隔など）も、必須の設定と同じ … | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `config.test.ts` |
 | AC-243 | ローカル環境（compose）のサービスのポートは、既定では手元のマシン（127… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | 除外 |
 | AC-244 | バックエンドの本番の jarに、ローカル・E2E・Stripe の sandbo… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | 除外 |
 | AC-245 | 本番の jarを、ローカルの profile を指定して起動しても、mock フ… | 有効 | [015](../specs/archive/mvp/015-security/spec.md) | — | spec | `ProductionJarStartupTest` |

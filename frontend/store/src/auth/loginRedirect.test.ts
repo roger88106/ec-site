@@ -44,6 +44,14 @@ function forgedRequest(path: string, init: { method?: string; body?: string; coo
   })
 }
 
+/** Auth.js の /csrf の応答の本文から、CSRF token を取り出す */
+function csrfTokenOf(body: unknown): string {
+  if (typeof body === 'object' && body !== null && 'csrfToken' in body && typeof body.csrfToken === 'string') {
+    return body.csrfToken
+  }
+  throw new Error('Auth.js の /csrf の応答に csrfToken がない')
+}
+
 afterEach(() => {
   vi.unstubAllEnvs()
 })
@@ -55,7 +63,7 @@ describe('ログインの戻り先', () => {
     const { handlers } = await import('@/auth')
 
     const csrf = await handlers.GET(forgedRequest('/csrf'))
-    const { csrfToken } = (await csrf.json()) as { csrfToken: string }
+    const csrfToken = csrfTokenOf(await csrf.json())
     const cookie = csrf.headers
       .getSetCookie()
       .map((value) => value.split(';')[0])

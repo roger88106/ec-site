@@ -38,10 +38,8 @@ if (isMain(import.meta.url)) {
   const found = listGitFiles(['frontend'])
     .filter(isTarget)
     .flatMap((file) => findLiterals(readFileSync(file, 'utf8')).map((hit) => `${file}:${hit.line}  ${hit.text}`))
-  if (found.length > 0) {
-    console.error('入力の制約に数字を直接書いた所がある。src/api/generated/constraints.ts の定数を使う：')
-    for (const line of found) console.error(`  ${line}`)
-    process.exit(1)
-  }
-  console.log('入力の制約に、数字を直接書いた所はない')
+  // 他の検査と同じ形：違反を標準出力に出し、最後の行に要約を出す。直すときは src/api/generated/constraints.ts の定数を使う
+  for (const line of found) console.log(line)
+  console.log(`入力の制約に数字を直接書いた所：${found.length}`)
+  process.exit(found.length > 0 ? 1 : 0)
 }

@@ -149,9 +149,10 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 範囲：`scripts/ci/lib/`、`scripts/ci/ac-check.mjs`、`scripts/dev/showcase-counts.mjs`、テスト
   - 変更の前後で、AC の照合の結果と機能紹介の数が同じであることを確認する
   - 結果：`lib/test-files.mjs`（ファイルの種類、テストの関数の読み方）を作り、ac-check と showcase-counts が使う。AC の照合の出力は変更の前後で同一。showcase の Vitest・Playwright の数が 583 → 579（RegExp の `.test(` 4 件を数えなくなった）。
-- [ ] **T183-01-03** [テスト] 文言の直書きと入力の制約の検査の出力の形を他の検査にそろえ、検査の一括の実行が要約の行のない検査を失敗にする。一括の実行の判定にテストを書く（DC-183-2、5、7）。
+- [x] **T183-01-03** [テスト] 文言の直書きと入力の制約の検査の出力の形を他の検査にそろえ、検査の一括の実行が要約の行のない検査を失敗にする。一括の実行の判定にテストを書く（DC-183-2、5、7）。
   - 依存：T183-01-01
   - 範囲：`scripts/ci/check-all.sh`、`scripts/ci/hardcoded-text.mjs`、`scripts/ci/input-constraints.mjs`、テスト、`docs/guides/ci.md`
+  - 結果：判定を `lib/check-result.mjs`（要約の行の判定と成功・失敗の判定）に移し、`check-all.sh` から呼ぶ。2 つの検査は、違反を標準出力、最後の行を要約の行にそろえた。全ての検査が通ることを確認した。
 - [ ] **T183-01-04** [テスト] commit の前の hook の、検査を選ぶ処理と失敗の終了コードにテストを書く（DC-183-6）。
   - 依存：T183-01-03
   - 範囲：`scripts/dev/hooks/`、テスト

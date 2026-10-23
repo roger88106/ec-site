@@ -49,9 +49,9 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 
 ## 3. CI の検査の script
 
-`scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。
+`scripts/ci/check-all.sh` は、`scripts/ci/` と `scripts/dev/` の下の script のテスト（`*.test.mjs`）、skill の script のテスト（`.claude/skills/` の下の `*.test.cjs`）と、`scripts/ci/` の直下の検査（`*.test.mjs` 以外の `*.mjs`）を全て実行する。1 つでも失敗すれば、全てを実行したあとで終了コード 1 を返す。検査は、終了コードが 0 でなければ失敗で、終了コードが 0 でも、最後の行が要約の行（`<何>：<件数>`。「：」の後に数字がある行）でなければ失敗にする（判定は `lib/check-result.mjs`）。script のテストは `node --test` の出力なので、要約の行を求めず、終了コードだけで判定する。
 
-- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。この節の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。除外の一覧を持つなら `lib/exclusions.mjs` を使い、画面のソースを読むなら `lib/screen-sources.mjs` を使う。
+- 検査を追加するときは、引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。違反は標準出力に出し、最後の行に要約の行（例：`切れた参照：0`）を出して、違反があれば終了コード 1 にする。`check-all.sh`、CI、hook は修正しなくてよい。この節の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。除外の一覧を持つなら `lib/exclusions.mjs` を使い、画面のソースを読むなら `lib/screen-sources.mjs` を使う。
 - 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md) 第 4 節）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
 - 複数の script が使う関数は `lib/` に置く（テストは `*.test.mjs`）。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
   - `spec-dirs.mjs`：spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す。

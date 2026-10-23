@@ -1,7 +1,7 @@
 // 画面の本番のソースの定義。画面のソースを読む検査は、ここで決めた対象を読む。
 // 対象は、店舗画面・管理画面・共有パッケージの src の .ts と .tsx。
 // 除くものは、テスト（.test.ts(x)、src/test/ のテストの補助）、生成物（generated/）、shadcn/ui の部品（components/ui/）、共有の ui（src/ui/）。
-// 定義と違う対象を読む検査（frontend-rules、message-comments、spec-numbers）は、その理由を検査の中に書く
+// 定義と違う対象を読む検査（frontend-rules、message-comments、spec-numbers、input-constraints）は、その理由を検査の中に書く
 // hardcoded-text、input-constraints が使う
 
 /** 画面のパッケージ（frontend/ の下のディレクトリ） */

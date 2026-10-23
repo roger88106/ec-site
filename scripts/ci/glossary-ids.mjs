@@ -71,7 +71,20 @@ export function findMissing(ids, tokens, content) {
   })
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+/**
+ * 除外が今も必要かを返す。
+ * 不要とするのは、用語集になくなった名前だけ。コードに見つかったことでは不要としない
+ * （ブランチの名前や tasks の記号は、型の paths[P]、テストのデータ、sourceSets.main などに偶然一致し、機械で見分けられないため）。
+ *
+ * @param {string} id 除外の名前
+ * @param {string[]} ids 用語集の識別子
+ * @returns {boolean} 用語集にあれば true
+ */
+export function isExclusionNeeded(id, ids) {
+  return ids.includes(id)
+}
+
+if (process.argv[1] ===fileURLToPath(import.meta.url)) {
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json'))
   const files = execSync(`git ls-files ${SEARCH_ROOTS.join(' ')}`, { encoding: 'utf8' })
     .split('\n')
@@ -84,8 +97,7 @@ if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const absent = findMissing(ids, tokens, contents.join('\n'))
   const missing = absent.filter((id) => !(id in exclusions))
   for (const id of missing) console.log(`${GLOSSARY}：識別子 \`${id}\` がコードにない`)
-  // 除外が要るのは、用語集にあり、除外がなければコードにないと失敗になる識別子だけ（コードに現れた識別子の除外は不要）
-  const problems = checkExclusions('glossary-ids-exclusions.json', exclusions, (id) => absent.includes(id))
+  const problems = checkExclusions('glossary-ids-exclusions.json', exclusions, (id) => isExclusionNeeded(id, ids))
   for (const problem of problems) console.log(problem)
   const count = missing.length + problems.length
   console.log(`用語集の識別子の不一致：${count}`)

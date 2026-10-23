@@ -210,15 +210,16 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
   - 関連 spec の除外の一覧の項目が、どの commit にも当たらなくなったことを共通の検出で扱えるかを決め、結果に書く（第 8 節の 13 の起票の要否）
   - 結果：除外の JSON を持つ検査は ac-check、frontend-rules、glossary-ids、hardcoded-text、message-numbers、related-specs の 6 つだけだった（`doc-terms.json` は除外でなく ng の語の一覧）。除外を定数で持つ doc-refs、doc-terms（`EXCLUDED`）、hardcoded-text の置き場所（`EXCLUDED`）などは DC-158-34 の対象外にした。共通の関数は `lib/exclusions.mjs`（読み込み、理由が空、不要な除外）。
   - 結果：関連 spec の除外は共通の検出で扱える（前置きに当たるタスク番号が履歴の commit にあるかを見る。shallow clone では履歴を読む前に失敗にするので検出しない）ため実装した。今の除外は全て当たり、第 8 節の 13 は起票しない。hardcoded-text の形を `{パス: 理由}` にし、`{}` にした。
-  - 結果：glossary-ids は除外の一覧自身が検索の対象で、除外の名前が見つかったことになっていたので、一覧を対象から外した。その結果、コードにあって不要だった `develop`、`main`、`[P]` の除外を削除した。frontend-rules の不要な除外は、片方の画面にないときに加え、内容が変わったときも見つける。
+  - 結果：glossary-ids は除外の一覧自身が検索の対象で、除外の名前が見つかったことになっていたので、一覧を対象から外した。`develop`、`main`、`[P]` の除外はコードに見つかる（`sourceSets.main`、型の `paths[P]`、テストのデータ）が偶然の一致で、機械では見分けられないため残した。glossary-ids の不要な除外は、用語集にない名前だけにした。frontend-rules の不要な除外は、片方の画面にないときに加え、内容が変わったときも見つける。
 - [x] **T158-01-02** [テスト] 画面の本番のソースの定義（対象の画面、除くディレクトリ）と、Git の対象のファイルの一覧の関数を `lib/` に作り、画面のソースを読む検査が使う。定義と違う対象を読む検査に理由を書く（DC-158-36、37）。
   - 依存：T158-01-01
   - 範囲：`scripts/ci/lib/`、frontend-rules、hardcoded-text、input-constraints、message-comments、spec-numbers、time-waits
-  - 結果：画面の本番のソースは「admin・store・shared の `src` の `.ts`・`.tsx`、テスト（`.test.*`、`src/test/`）・生成物・shadcn/ui の部品・`src/ui/` を除く」と `lib/screen-sources.mjs` に定義し、hardcoded-text と input-constraints が使う（input-constraints は `.ts` も見るようになり、違反は 0 件）。Git の対象のファイルの一覧は `lib/git-files.mjs` の `listGitFiles` で、`git ls-files -co --exclude-standard` を呼んでいた 10 の検査が使う。input-constraints は `src/test/` の補助（2 ファイル）を見なくなったが、画面の入力の制約を持たないテストの補助なので、検査は弱まらない。
+  - 結果：画面の本番のソースは「admin・store・shared の `src` の `.ts`・`.tsx`、テスト（`.test.*`、`src/test/`）・生成物・shadcn/ui の部品・`src/ui/` を除く」と `lib/screen-sources.mjs` に定義し、hardcoded-text と input-constraints が使う（input-constraints は `.ts` も見るようになり、違反は 0 件）。Git の対象のファイルの一覧は `lib/git-files.mjs` の `listGitFiles` で、`git ls-files -co --exclude-standard` を呼んでいた 10 の検査が使う。input-constraints は定義に加えて `src/test/` の補助（`.tsx`）も読み、変更の前に読んでいた対象を保つ。
   - 経緯：最初の版の `git-files` のテストは、commit の前の hook の中で `git init` を呼び、hook が設定した `GIT_DIR` を継いで、メインのリポジトリの `.git/config` に `core.worktree` を書いた。全ての作業ツリーで git が失敗したので、利用者の許可を得て issue 担当のセッションが削除した。テストは、Git を呼ぶ前に `GIT_` で始まる環境変数を外すようにした。hook と同じ環境変数を別の一時リポジトリに向けて実行し、そのリポジトリの設定が変わらないことを確認した。
   - 定義と違う対象のまま理由を書いた検査：frontend-rules（生成物・ui・`src/test/` も見る）、message-comments（2 つの画面の `.tsx` だけ。広げるのは別の作業）、spec-numbers（バックエンドも見る。ui も見る）、time-waits（テストを読む）。
-- [ ] **T158-01-03** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+- [x] **T158-01-03** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T158-01-02
+  - 結果：一般の観点を汎用で 2 回（高 0、必須 0）、重要な観点を高性能と汎用で（高 2、必須 1。重複を除いて 2 件）。2 件（input-constraints の対象の縮小、glossary-ids の偶然の一致の除外の削除）を直した。input-constraints は定義に加えて `src/test/` の `.tsx` も読み、glossary-ids は削除した除外 `develop`、`main`、`[P]` を戻して、不要な除外を「用語集にない」ものだけにした。
 
 ### 段階 2：既存の検査の見逃しと誤った通過
 

@@ -4,7 +4,22 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { listGitFiles } from './lib/git-files.mjs'
-import { isScreenSource } from './lib/screen-sources.mjs'
+import { isScreenSource, SCREEN_APPS } from './lib/screen-sources.mjs'
+
+/** src/test/ のテストの補助（.tsx）。テストそのものは含まない */
+const TEST_HELPER = new RegExp(`^frontend/(?:${SCREEN_APPS.join('|')})/src/test/.*(?<!\\.test)\\.tsx$`)
+
+/**
+ * 検査の対象かを返す。
+ * 画面の本番のソースの定義に加えて src/test/ のテストの補助も読む。
+ * テストの補助にも画面の部品があり、数字を直接書くと本番の部品の写しになるため。
+ *
+ * @param {string} file リポジトリのルートからのパス（/ 区切り）
+ * @returns {boolean} 対象なら true
+ */
+export function isTarget(file) {
+  return isScreenSource(file) || TEST_HELPER.test(file)
+}
 
 /** 制約の属性に、数字を直接書いた所（例：maxLength={50}、min="0"） */
 const LITERAL = /\b(maxLength|minLength|max|min)=(\{\s*-?\d|"-?\d)/g
@@ -21,7 +36,7 @@ export function findLiterals(text) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const found = listGitFiles(['frontend'])
-    .filter(isScreenSource)
+    .filter(isTarget)
     .flatMap((file) => findLiterals(readFileSync(file, 'utf8')).map((hit) => `${file}:${hit.line}  ${hit.text}`))
   if (found.length > 0) {
     console.error('入力の制約に数字を直接書いた所がある。src/api/generated/constraints.ts の定数を使う：')

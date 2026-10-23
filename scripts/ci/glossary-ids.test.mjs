@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMissing, parseGlossaryIds } from './glossary-ids.mjs'
+import { findMissing, isExclusionNeeded, parseGlossaryIds } from './glossary-ids.mjs'
 
 const GLOSSARY = [
   '| 用語 | 識別子 | 意味 |',
@@ -37,5 +37,11 @@ describe('用語集の識別子の検査', () => {
     assert.deepEqual(findMissing(['Order', 'ordering.sales_order', 'common/model/value/', 'occurredAt', 'occurred_at'], tokens, content), [
       'occurred_at',
     ])
+  })
+
+  test('除外が不要なのは、用語集にない名前だけ。コードに偶然見つかっても不要としない', () => {
+    const ids = ['develop', 'Order']
+    assert.equal(isExclusionNeeded('develop', ids), true)
+    assert.equal(isExclusionNeeded('removed-name', ids), false)
   })
 })

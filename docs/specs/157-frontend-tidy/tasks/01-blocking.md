@@ -11,7 +11,7 @@
 - [ ] **T157-01-01** [P] 管理画面の注文の詳細と商品の登録のテストで、内部の属性で探す 5 か所を、役割と名前で探す形にする。名前のない状態のバッジと出荷のカードには、画面に支援技術向けの名前を追加する。入力欄のエラーは、エラーの文を入力欄に関連付けて、入力欄の説明で確認する。見える文言は変えない。あわせて、注文の詳細のテストの、空白で区切った AC の番号 1 か所を読点で区切る（DC-157-10、11、20、DN-157-1）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/order/pages/OrderDetailPage.test.tsx`、`frontend/admin/src/features/product/pages/ProductCreatePage.test.tsx`、注文の詳細の状態のバッジと出荷のカードのコンポーネント（`frontend/admin/src/features/order/`）、商品の登録の入力欄（`frontend/admin/src/features/product/`）。shadcn/ui の生成物（`components/ui/`）は変えない
-- [ ] **T157-01-02** [P] 共有の金額の内訳のテストの、Tailwind のクラスと区切り線の属性の確認を、見た目の種類ごとに見える文言と順の確認にする。店舗画面のバリアントの選択のテストの、取り消し線の要素を `querySelector` で調べる確認を削除する（選べないことは、既存の無効の確認で確認している）。カバレッジの基準を下回らないことを確認する（DC-157-14）。
+- [x] **T157-01-02** [P] 共有の金額の内訳のテストの、Tailwind のクラスと区切り線の属性の確認を、見た目の種類ごとに見える文言と順の確認にする。店舗画面のバリアントの選択のテストの、取り消し線の要素を `querySelector` で調べる確認を削除する（選べないことは、既存の無効の確認で確認している）。カバレッジの基準を下回らないことを確認する（DC-157-14）。
   - 依存：なし
   - 範囲：`frontend/shared/src/components/AmountsSummary.test.tsx`、`frontend/store/src/features/catalog/components/VariantPicker.test.tsx`
 - [ ] **T157-01-03** 空白で区切った AC の番号（4 か所）を読点で区切る。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DC-157-20）。

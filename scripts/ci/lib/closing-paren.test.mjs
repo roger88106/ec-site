@@ -73,6 +73,11 @@ describe('閉じ括弧の位置', () => {
     assert.equal(closingParen(text, 1), text.length - 1)
   })
 
+  test("単独の ' や \" は、改行で文字列を終える（JSX の it's で、後ろを全て文字列と読まない）", () => {
+    const text = "f(<p>it's<br />\n)\ng(')')"
+    assert.equal(closingParen(text, 1), text.indexOf(')\ng'))
+  })
+
   test('閉じなければソースの終わりを返す', () => {
     assert.equal(closingParen('f(a', 1), 3)
   })

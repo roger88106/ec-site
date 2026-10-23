@@ -172,6 +172,14 @@ describe('JAVA_VERSION の定義の場所の検査', () => {
     assert.match(twice[0], /ci\.yml:5/)
   })
 
+  test('引用符で囲んだ最上位のキー（"jobs":）の下の JAVA_VERSION を、最上位の env の中と誤って許さない', () => {
+    const path = '.github/workflows/ci.yml'
+    for (const key of ['"jobs":', "'jobs':", '? jobs\n:']) {
+      const problems = findJavaVersionDefinitionProblems([{ path, text: `env:\n  A: 1\n${key}\n  JAVA_VERSION: '17'\n` }])
+      assert.equal(problems.length, 1, key)
+    }
+  })
+
   test('参照（${{ env.JAVA_VERSION }}）とコメントは定義と読まない', () => {
     const text = `${ci}    # JAVA_VERSION: 17\n    with:\n      java-version: \${{ env.JAVA_VERSION }}\n`
     assert.deepEqual(findJavaVersionDefinitionProblems([{ path: '.github/workflows/ci.yml', text }]), [])

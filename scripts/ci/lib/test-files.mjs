@@ -2,7 +2,7 @@
 // AC の照合（ac-check）と、機能紹介の数え方（scripts/dev/showcase-counts）が使う
 import path from 'node:path'
 import { closingParen } from './closing-paren.mjs'
-import { regexEnd, startsRegex } from './strip-comments.mjs'
+import { regexEnd, startsRegex, stripJavaComments } from './strip-comments.mjs'
 
 /**
  * テストのファイルの種類を返す。Java は src/test・src/integrationTest の下の .java、
@@ -199,13 +199,16 @@ function readTsCall(source, start, nameLength) {
  * @returns {{ tests: { name: string, index: number, skipped: boolean }[], unreadable: { index: number, reason: string }[] }}
  *   読めたテストと、読めない呼び出し（コード上のものだけ。コメントと文字列の中は含めない）
  */
-function scanTsTests(source) {
-  const skippedRanges = [...source.matchAll(SKIPPED_GROUP)].map((match) => {
-    const open = match.index + match[0].length - 1
-    return [open, closingParen(source, open)]
-  })
+export function scanTsTests(source) {
   const code = new Uint8Array(source.length)
   codeEnd(source, 0, false, code)
+  // コメントと文字列の中の describe.skip( は、まとまりの範囲にしない（後ろのテストを skipped にしない）
+  const skippedRanges = [...source.matchAll(SKIPPED_GROUP)]
+    .filter((match) => code[match.index])
+    .map((match) => {
+      const open = match.index + match[0].length - 1
+      return [open, closingParen(source, open)]
+    })
   const tests = []
   const unreadable = []
   for (const match of source.matchAll(TS_CALL_START)) {
@@ -262,8 +265,10 @@ export function extractTestNames(source, kind) {
     // 後に続く注釈と修飾子を飛ばした次の語が class かで見分ける（構文は解析しない）
     const classAfter =
       /^(?:\s*@[\w.]+(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/
-    return [...source.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]
-      .filter((match) => !classAfter.test(source.slice(match.index + match[0].length)))
+    // コメントアウトしたテストは数えない（位置を保ったままコメントを空白にしてから読む）
+    const code = stripJavaComments(source)
+    return [...code.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]
+      .filter((match) => !classAfter.test(code.slice(match.index + match[0].length)))
       .map((match) => match[1].replace(/\\(.)/g, '$1'))
   }
   return readTsTests(source)

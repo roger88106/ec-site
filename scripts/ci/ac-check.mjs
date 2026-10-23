@@ -22,7 +22,7 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { extractTestNames, findTestFiles, findUnreadableTsTests } from './lib/test-files.mjs'
+import { extractTestNames, findTestFiles, scanTsTests } from './lib/test-files.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
@@ -362,11 +362,12 @@ function report(result, root, strict) {
  *
  * @param {string} source Vitest・Playwright のテストのソース
  * @param {string} rel 表示するファイルのパス
+ * @param {{ index: number, reason: string }[]} unreadable scanTsTests が返した、読めない呼び出し
  * @returns {string[]} `ファイル:行：理由`
  */
-export function describeUnreadableTests(source, rel) {
+export function describeUnreadableTests(source, rel, unreadable) {
   const lineOf = createLineLocator(source)
-  return findUnreadableTsTests(source).map(({ index, reason }) => `${rel}:${lineOf(index)}：${reason}`)
+  return unreadable.map(({ index, reason }) => `${rel}:${lineOf(index)}：${reason}`)
 }
 
 /** spec とテストを読んで照合する */
@@ -391,7 +392,12 @@ function main() {
   const unreadable = []
   const tests = testSources.flatMap(({ file, kind }) => {
     const source = readFileSync(file, 'utf8')
-    if (kind === 'ts') unreadable.push(...describeUnreadableTests(source, path.relative(root, file).replaceAll('\\', '/')))
+    if (kind === 'ts') {
+      // 1 回の走査で、テスト名と読めない呼び出しの両方を得る
+      const scan = scanTsTests(source)
+      unreadable.push(...describeUnreadableTests(source, path.relative(root, file).replaceAll('\\', '/'), scan.unreadable))
+      return scan.tests.filter((test) => !test.skipped).map((test) => ({ file, name: test.name }))
+    }
     return extractTestNames(source, kind).map((name) => ({ file, name }))
   })
   const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))

@@ -25,6 +25,8 @@ export function closingParen(text, open, options = {}) {
     if (quote) {
       if (ch === '\\') i += 1
       else if (ch === quote) quote = null
+      // ' と " の文字列は改行で終える（JSX の it's などの単独の引用符で、後ろを全て文字列と読まない）
+      else if (ch === '\n' && quote !== '`') quote = null
       else if (quote === '`' && ch === '$' && text[i + 1] === '{') {
         templates.push(braces)
         quote = null

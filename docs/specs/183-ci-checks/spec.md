@@ -143,6 +143,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 - [x] **T183-01-01** [テスト] 直接実行の判定、shallow clone の確認、行番号を求める処理を `lib/` の共通の関数にし、全ての検査が使う（DC-183-1、3、9）。
   - 依存：なし
   - 範囲：`scripts/ci/lib/`、`scripts/ci/` の検査とテスト
+  - 確認方法：DC-183-1 は、入口の判定が `isMain` だけで、`process.argv[1]` を直接比べる所が `lib/is-main.mjs` のほかにないことを `git grep -n "process.argv\[1\]" -- scripts` で確認する。DC-183-3 は、`--is-shallow-repository` が `lib/shallow-clone.mjs` の 1 か所だけであることを `git grep` で確認する。
   - 結果：`lib/is-main.mjs`（27 の script の入口の判定）、`lib/shallow-clone.mjs`（migrations、related-specs。失敗の文を 1 つにそろえた）、`lib/line-number.mjs`（改行の位置を 1 回求めて二分探索。frontend-rules、java-rules、message-comments、time-waits）を作った。変更の前後で 25 の検査の出力が同じ。
 - [x] **T183-01-02** [テスト] テストのファイルの探し方とテストの関数の読み方を共通の関数にし、AC の照合と機能紹介の数え方が使う（DC-183-4）。
   - 依存：T183-01-01（同じ `ac-check.mjs` を変える）
@@ -162,7 +163,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：T183-01-01
   - 範囲：`scripts/ci/message-numbers.mjs`、`scripts/ci/frontend-rules.mjs`、`scripts/dev/lib/e2e-running.mjs`、`e2e/scripts/run.ts`、テスト
   - 結果：message-numbers の関数を findExclusionsWithoutNumbers に改名し、frontend-rules の同じ内容のファイルの一覧を 1 回だけ求めるようにし、プロセスが実行中かの判定を lock-io.mjs の isProcessRunning にまとめた（e2e-running.mjs、run.ts、slot.mjs が使う）。既存のテストと e2e の型チェックが通り、isProcessRunning のテストを足した。
-  - 確認方法：DC-183-8 は、関数の名前をレビューで読む。DC-183-10 は、frontend-rules のテスト（`duplicatedFiles` の呼び出しが定義のほかに 1 つだけであること）と、レビューで読む。
+  - 確認方法：DC-183-8 は、関数の名前をレビューで読む。DC-183-10 は、frontend-rules のテスト（`duplicatedFiles` の呼び出しが定義のほかに 1 つだけであること）と、レビューで読む。DC-183-11 は、`process.kill(pid, 0)` が `scripts/dev/lib/lock-io.mjs` の `isProcessRunning` の 1 か所だけであることを `git grep -n "process.kill(" -- scripts e2e` で確認し、e2e-running.mjs・run.ts・slot.mjs がそれを使うことをレビューで読む。
 - [x] **T183-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-01-01〜05
   - 結果：一般の観点を汎用で 2 回（高 0、必須 2・3）、重要な観点を高性能と汎用で（高 0・1、必須 2・0）。重複を除いて 5 件を修正した。(1) check-all.sh が終了コードを直接見て、判定の CLI が OK の行を出したときだけ成功にする。isMain は実体のパスでも比べ、commit の前の hook は入口の pre-commit-main.mjs から必ず処理を実行する。(2) ci.md の lib/ の一覧に 5 つを加えた。(3) closing-paren.mjs の使う所を直した。(4) slot.mjs の isRunning を isProcessRunning（中身は同じ、EPERM は動いているとみなす）に置き換えた。(5) hardcoded-text と input-constraints の出力の形と終了コード、--count の振る舞いのテストを足した。check-all.sh の配線（summary と none の受け渡し）の実行テストは、検査の script を一時ディレクトリに複製する必要があるので作らず、判定の関数と CLI のテストで DC-183-7 を満たすとした。
@@ -204,7 +205,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 結果：テストの関数の読み方（lib/test-files）を、each の表を括弧の対応（closingParen）とテンプレートの表で読む形にし、読めない呼び出しを `ファイル:行：理由` で失敗にした。変更の前後で ac-check（テスト名 1825 件、AC 312 件、警告なし）と showcase-counts（1825 件）は同じで、今のリポジトリに読めない呼び出しはない。
 - [x] **T183-02-08** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-02-01〜07
-  - 結果（高）：閉じ括弧の探し方に正規表現を読まない指定を加えて Java（java-rules）で使い、TypeScript の正規表現の判定を直前の意味のある字で決める形にした。migrations は履歴の commit でなく、develop・main との分岐点の tree（分岐点が HEAD なら HEAD とその親）と今の index を比べる形にし、merge commit の後の改名で失敗しないことをテストで確認した。role-permissions は security の中の字下げ 8 以外の項目と項目のない `security:` を失敗にした。4 つの検査の今のリポジトリの結果は 0 件のまま。
+  - 結果（高）：閉じ括弧の探し方に正規表現を読まない指定を加えて Java（java-rules）で使い、TypeScript の正規表現の判定を直前の意味のある字で決める形にした。migrations は履歴の commit でなく、develop・main との分岐点の tree（分岐点が HEAD なら HEAD とその親）と今の index を比べる形にし、merge commit の後の改名で失敗しないことをテストで確認した。role-permissions は security の中の字下げ 8 以外の項目と項目のない `security:` を失敗にした。4 つの検査の今のリポジトリの結果は 0 件のまま。その後、基準（develop・main）を求められないときは、T183-02-05 の「全ての履歴で判定して警告」でなく、HEAD の 1 つ目の親を基準にして警告する形に変えた。
   - 結果：一般の観点を汎用で 2 回（高 0・1、必須 3・1）、重要な観点を高性能と汎用で（高 1・2、必須 1・0）レビューした。重複を除いて高 3 件、必須 5 件を修正した。
   - 結果（必須）：テストの関数の読み方（lib/test-files）が test.for と skipIf・runIf・sequential・fails・todo を読み、知らない修飾の付いた test・it を読めない呼び出しとして失敗にした。互換の関数 parseProperties・parseOperations を削除し、テストを readProperties・readOperations に替えた。docs/guides/ci.md の lib の行と、5 つの検査（migrations、compose-ports、role-permissions、env-defaults、time-waits）と ac-check の先頭のコメントを今の振る舞いに合わせた。ac-check は script の場所をルートにしていたので、他の検査と同じく今のディレクトリをルートにし、テストのファイルが 0 件なら失敗にして、0 件の検査のテストの一覧に加えた。ac-check の結果（AC 312、テスト名 1825）は変わらない。
 
@@ -229,6 +230,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：一覧の置き場所（`scripts/dev/` か `docker/`。結果に書く）、`docker/compose.yaml`、`scripts/dev/slot.mjs`・`scripts/dev/lib/`、`scripts/dev/windows/`、`e2e/playwright.config.ts`、`scripts/ci/`、テスト、`docs/guides/setup.md`、`docs/guides/ci.md`
   - compose の検査（compose-ports）と重なる所は、1 つの検査にまとめるかを結果に書く
+  - 確認方法：DC-183-29 は、ポートを持つのが `scripts/dev/ports.json` だけで、スロットの script（`lib/slot.mjs`）がそこから読むことをレビューで読み、`git grep -n "ports.json" -- scripts/dev` で読む所を確認する。DC-183-30 は、local-ports のテスト。
   - 結果：一覧を `scripts/dev/ports.json`（key・ポート・名前・group・スロットでずらすか）に置き、スロットの script（`lib/slot.mjs`）はここから読む。検査 `local-ports` が compose、Windows の予約の script、起動と E2E の文書、E2E の設定を一覧と照合する（今の食い違いは 0 件）。compose-ports は待ち受けるアドレスの検査として残し、local-ports がその読み取りを再利用する。
 - [x] **T183-03-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-03-01〜03
@@ -241,10 +243,11 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 - 完了条件：spec の最後のレビューの指摘に対応し、spec をアーカイブに移し、pull request を作っている。
 - 参照：[エージェントの作業フロー](../../rules/subagents.md) 第 4 節
 
-- [ ] **T183-04-01** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）と、pull request の前のレビューを行い、指摘に対応する。
+- [x] **T183-04-01** spec の最後のレビュー（profile「厚め」。ファイルをまたぐ影響の観点を含める）と、pull request の前のレビューを行い、指摘に対応する。
   - 依存：T183-03-04
   - 結果（spec の最後のレビュー）：一般の観点を汎用で 2 回（高 1・0、必須 0・2、推奨 7・11）、重要な観点（ファイルをまたぐ影響を含む）を高性能と汎用で（高 1・0、必須 1・0、推奨 7・3）、文書の言い回しを汎用で 1 回（候補 30）行った。重複を除いて高 2 件、必須 3 件と、推奨のうち実害に近い 8 件を修正した（commit fbb4353c と、この commit）。残りの推奨は第 8 節に回した。
-  - 修正の要約：コード（fbb4353c）は、コメント・文字列の中のテストを数えない、compose・ローカルのポートの読めない項目の失敗、runtime-versions の読み方、check-all.sh のテストの数の判定、テンプレートの入れ子の読み方、commit の前の hook の bash の指定。この commit は、0 件の失敗のテストの追加（gradle-plugins、dependabot-actions）、E2E の設定のポートの読み方、DC-183-10 のテスト、コメントと文書、言い回し。
+  - 修正の要約：コード（fbb4353c）は、コメント・文字列の中のテストを数えない、compose・ローカルのポートの読めない項目の失敗、runtime-versions の読み方、check-all.sh のテストの数の判定、テンプレートの入れ子の読み方、commit の前の hook の bash の指定。この commit は、0 件の失敗のテストの追加（gradle-plugins、dependabot-actions）、E2E の設定のポートの読み方、DC-183-10 のテスト、コメントと文書、言い回し。なお、T183-01-06 の結果の判定の種類 `none` は、この修正（fbb4353c）でテストの数を見る `tests` に替えた。
+  - 結果（pull request の前のレビュー）：高性能（高 0、必須 2、推奨 5）と組み込みのコードレビュー（5 件）。必須 2 件と、コードレビューの 5 件、推奨 4 件を修正し、1 件（統合テストを分ける数の既定値）を第 8 節に回した。
 - [ ] **T183-04-02** 後回しにする作業と起票の案（第 8 節）を最新にし、spec を `docs/specs/archive/1to10/` に移す。
   - 依存：T183-04-01
   - 範囲：`docs/specs/`、spec へのリンクを持つ文書
@@ -269,6 +272,7 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
 | 8 | dependabot-actions が知らない書き方の行を失敗にしない | #185 に加える（同上） |
 | 9 | env-defaults、glossary-ids、related-specs が `listGitFiles` を使わず `git ls-files` を直接呼ぶ | #185 に加える（同上） |
 | 10 | 時間の待ちの検査の除外がファイルの単位なので、`e2e/scripts/run.ts` に後から書いた待ちも通る。除外を行か関数の単位にする | #185 に加える（同上） |
+| 11 | 統合テストを分ける数の既定（`backend/ecsite/build.gradle.kts` の `integrationTestShards` の `orElse(2)`）と、ci.yml の matrix の食い違いを見つける検査がない | #185 に加える（同上） |
 
 - 新しい spec は、本 spec のマージの後に始める。本 spec の共通の関数（テストのファイルの探し方、許す語の一覧など）を使うため。
 - 新しい spec の決定（マイグレーションの互換性の規則、規則の文書にない検査を先に規則に書くこと、テストの書き方の検査を spec 184 のマージの後に加えること）は、spec の確認で利用者が決めた（2026-10-24）。新しい spec は、その決定をそのまま書く。

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import path from 'node:path'
 import { describe, test } from 'node:test'
-import { extractTestNames, findTestFiles, findUnreadableTsTests, readTsTests, testFileKind } from './test-files.mjs'
+import { extractTestNames, findTestFiles, findUnreadableTsTests, readTsTests, scanTsTests, testFileKind } from './test-files.mjs'
 
 describe('テストのファイルの種類', () => {
   test('Java の src/test・src/integrationTest と .test.ts(x)・.spec.ts を選び、他は null にする', () => {
@@ -180,6 +180,43 @@ describe('テストの関数の読み方', () => {
       findUnreadableTsTests(source).map(({ index }) => index),
       [0],
     )
+  })
+
+  test('java は、コメントの中の @DisplayName をテスト名に数えない', () => {
+    const source = [
+      '  // @DisplayName("AC-1 行コメント")',
+      '  /* @DisplayName("AC-2 ブロック") */',
+      '  /** @DisplayName("AC-3 Javadoc") */',
+      '  @DisplayName("AC-4 生きている")',
+      '  void a() {}',
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'java'), ['AC-4 生きている'])
+  })
+
+  test('skip のまとまりの呼び出しがコメントや文字列の中にあっても、後ろのテストを skipped にしない', () => {
+    const source = ['// describe.skip(', "const s = 'describe.skip('", "test('AC-1 a', () => {})", '/* xdescribe( */', "test('AC-2 b', () => {})"].join('\n')
+    assert.deepEqual(
+      readTsTests(source).map(({ skipped }) => skipped),
+      [false, false],
+    )
+  })
+
+  test('JSX の単独の引用符（it\'s）で、後ろを全て文字列と読まない', () => {
+    const source = ["const a = <p>it's</p>", "describe.skip('x', () => {})", "test('AC-1 a', () => {})"].join('\n')
+    assert.deepEqual(
+      readTsTests(source).map(({ skipped }) => skipped),
+      [false],
+    )
+  })
+
+  test('scanTsTests は、1 回の走査でテストと読めない呼び出しを返す', () => {
+    const source = ["test('AC-1 a', () => {})", 'test(name, () => {})'].join('\n')
+    const { tests, unreadable } = scanTsTests(source)
+    assert.deepEqual(
+      tests.map(({ name }) => name),
+      ['AC-1 a'],
+    )
+    assert.equal(unreadable.length, 1)
   })
 
   test('extractTestNames の java は、メソッドの @DisplayName を読み、クラスの名前を読まない', () => {

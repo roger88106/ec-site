@@ -152,8 +152,8 @@ export function findJavaVersionDefinitionProblems(files) {
     text.split('\n').forEach((raw, index) => {
       const line = raw.replace(/\r$/, '')
       if (/^\s*(#|$)/.test(line)) return
-      const top = /^([\w-]+)\s*:/.exec(line)
-      if (top) topKey = top[1]
+      // 字下げのない行は最上位のキー（引用符で囲んだものも）。キーと読めない行（? jobs など）は null にして、前の env を引きずらない
+      if (/^\S/.test(line)) topKey = /^(?:"([^"]*)"|'([^']*)'|([\w-]+))\s*:/.exec(line)?.slice(1).find(Boolean) ?? null
       const code = line.replace(/\s+#.*$/, '')
       if (!/(?:^\s*(?:-\s+)?|[{,]\s*)JAVA_VERSION\s*:/.test(code)) return
       const inTopEnv = path === JAVA_VERSION_HOME && topKey === 'env' && /^\s+JAVA_VERSION\s*:/.test(code)

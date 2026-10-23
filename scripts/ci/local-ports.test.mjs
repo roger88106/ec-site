@@ -135,6 +135,13 @@ describe('ローカルのポートの一覧の検査', () => {
     assert.match(problems[0], /playwright\.config\.ts.*4174/)
   })
 
+  test('E2E の設定のポートが、一覧にあっても E2E のポートでなければ（開発の画面のポートなどは）失敗にする', () => {
+    const sources = { 'e2e/src/urls.ts': "'http://localhost:8090'", 'e2e/playwright.config.ts': 'command: pnpm preview --port 8080' }
+    const problems = findPortMismatches({ ...INPUT, sources })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /playwright\.config\.ts.*8080.*E2E/)
+  })
+
   test('設定のポートは、yml の port、JSON の port、起動の引数の --port から読む', () => {
     const yml = 'server:\n  port: 8090\nmanagement:\n  server:\n    port: ${MANAGEMENT_SERVER_PORT:9080}\nurl: http://localhost:5432/x'
     assert.deepEqual(readConfigPorts(yml), [5432, 8090, 9080])

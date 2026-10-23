@@ -15,7 +15,7 @@ import {
   parseSpecAcs,
   renderAcList,
 } from './ac-check.mjs'
-import { extractTestNames, findTestFiles } from './lib/test-files.mjs'
+import { extractTestNames, findTestFiles, scanTsTests } from './lib/test-files.mjs'
 
 describe('spec の AC の取り出し', () => {
   test('AC の定義の行（- **AC-n**）から番号を取り出す', () => {
@@ -482,7 +482,7 @@ describe('スキップしたまとまりの範囲とコメント', () => {
 describe('読めないテストの呼び出し', () => {
   test('ファイル:行と理由で返し、each の表の中の関数の呼び出しは読めるので返さない', () => {
     const source = ["test.each([[f(1)]])('AC-1 読める', () => {})", '', 'test(name, () => {})'].join('\n')
-    assert.deepEqual(describeUnreadableTests(source, 'frontend/a.test.ts'), [
+    assert.deepEqual(describeUnreadableTests(source, 'frontend/a.test.ts', scanTsTests(source).unreadable), [
       'frontend/a.test.ts:3：テスト名が文字列でもテンプレートでもない（または閉じていない）',
     ])
   })

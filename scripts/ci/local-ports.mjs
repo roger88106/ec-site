@@ -28,6 +28,9 @@ const DOC_FILES = ['docs/guides/setup.md', 'docs/guides/running-tests.md']
 /** E2E のポートを書く設定（E2E のサーバーの URL、画面のサーバーの `--port`、Playwright の `port:`。読み方は CONFIG_FILES と同じ readConfigPorts） */
 const SOURCE_FILES = ['e2e/src/urls.ts', 'e2e/playwright.config.ts']
 
+/** E2E の設定が書いてよい共有のサービスの key（E2E 用の IdP と、メールを確認する Mailpit の画面） */
+const E2E_SHARED_KEYS = ['keycloak-e2e', 'mailpit-ui']
+
 /** ポートを直接書く設定とスクリプト（一覧にあるポートだけが書かれていることを確認する） */
 const CONFIG_FILES = [
   'backend/ecsite/src/main/resources/application.yml',
@@ -246,12 +249,16 @@ export function findPortMismatches({ list, compose, powershell, docs, sources, c
   }
 
   const e2e = new Set(list.ports.filter((entry) => entry.group === 'e2e').map((entry) => entry.port))
+  // E2E の設定が書いてよいのは、E2E のポートと、E2E が使う共有のサービス（IdP・Mailpit）だけ。開発の画面のポートなどに替えても、一覧にあるだけで通さない
+  const allowed = new Set([...e2e, ...list.ports.filter((entry) => E2E_SHARED_KEYS.includes(entry.key)).map((entry) => entry.port)])
   const sourcePorts = new Set()
   for (const [file, text] of Object.entries(sources)) {
     for (const port of readConfigPorts(text)) {
       sourcePorts.add(port)
       if (!all.has(port)) {
         problems.push(`${file} に一覧にないポート ${port} がある（${LIST_FILE} に加えるか、設定を修正する）`)
+      } else if (!allowed.has(port)) {
+        problems.push(`${file} のポート ${port} は、一覧の E2E のポート（group が e2e）でも E2E が使う共有のサービスでもない（E2E の設定を修正する）`)
       }
     }
   }

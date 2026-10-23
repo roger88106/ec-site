@@ -222,10 +222,11 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：3 つの `package.json`、`pnpm-lock.yaml`、`scripts/ci/` の直下（新しい検査。`check-all.sh` が実行する置き場所）、`scripts/ci/licenses/policy.json`、テスト、`docs/guides/ci.md`
   - 結果：React の指定を、他の依存と同じ `^` の範囲にそろえた（store の `react`・`react-dom` と shared の devDependencies の固定 `19.3.1` を `^19.3.1` に。admin はすでに `^19.3.1`、shared の peerDependencies `^19.3.0` は範囲のまま）。解決は 19.3.1 のままで、`pnpm-lock.yaml` の差分は specifier の 4 行だけ。検査 `gradle-plugins`（カタログの `[plugins]` と `plugins {}` の id を `policy.json` の `gradlePlugins` と過不足照合）と `dependabot-actions`（`action.yml` のディレクトリが Dependabot の `directories` にあるか）を加え、ci.md の表に行を加えた。
-- [ ] **T183-03-03** [テスト] ローカルのポートの一覧を 1 か所に置き、他の所との食い違いを見つける検査を作る（DC-183-29、30）。
+- [x] **T183-03-03** [テスト] ローカルのポートの一覧を 1 か所に置き、他の所との食い違いを見つける検査を作る（DC-183-29、30）。
   - 依存：なし
   - 範囲：一覧の置き場所（`scripts/dev/` か `docker/`。結果に書く）、`docker/compose.yaml`、`scripts/dev/slot.mjs`・`scripts/dev/lib/`、`scripts/dev/windows/`、`e2e/playwright.config.ts`、`scripts/ci/`、テスト、`docs/guides/setup.md`、`docs/guides/ci.md`
   - compose の検査（compose-ports）と重なる所は、1 つの検査にまとめるかを結果に書く
+  - 結果：一覧を `scripts/dev/ports.json`（key・ポート・名前・group・スロットでずらすか）に置き、スロットの script（`lib/slot.mjs`）はここから読む。検査 `local-ports` が compose、Windows の予約の script、起動と E2E の文書、E2E の設定を一覧と照合する（今の食い違いは 0 件）。compose-ports は待ち受けるアドレスの検査として残し、local-ports がその読み取りを再利用する。
 - [ ] **T183-03-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T183-03-01〜03
 

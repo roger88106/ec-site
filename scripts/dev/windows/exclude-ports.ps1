@@ -12,7 +12,7 @@
 #   3. 確認したら変える。予約したポートは、ほかのプログラムが動的に取る範囲に入らなくなる（再起動の後も残る）
 # 予約を消すとき：netsh int ipv4 delete excludedportrange protocol=tcp startport=<ポート> numberofports=1
 #
-# ポートを追加したら（compose、バックエンド、画面、E2E）、この表も直す。
+# ポートを追加したら（compose、バックエンド、画面、E2E）、この表も直す。一覧は scripts/dev/ports.json。この表との一致は CI の検査（local-ports）が確認する。
 # ============================================================================
 param([switch]$WhatIf)
 

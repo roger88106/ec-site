@@ -20,13 +20,13 @@ description: ec-site のフロントに画面や操作を追加するときの�
 
 画面に表示や処理を書く前に、次の表から使える部品を探す。import のパスは `@ec-site/shared/` の後ろに置き場所を続ける（例：`@ec-site/shared/lib/format`）。
 
-1. 書こうとする表示や処理（整形、表示名、リンクのボタン、選択肢、ID や戻り先の判定など）を、「使う場面」の列で探す。
+1. 書こうとする表示や処理（整形、表示名、リンクのボタン、選択肢、ID や戻り先の判定など）に当たる行を、「使う場面」の列から探す。
 2. あれば、その部品を import して使う。自分で同じものを書かない。
-3. 表にないものを 2 つの画面で使うときは、各画面に書かず共有に置く。置き場所と条件は [フロントの書き方](../../../docs/rules/frontend-coding.md) 第 5.1 節。共有に置いたら、この表に 1 行を追加する。
+3. 表にないものを 2 つの画面で使うときは、各画面に書かず `frontend/shared` に置く。置き場所と条件は [フロントの書き方](../../../docs/rules/frontend-coding.md) 第 5.1 節。共有に置いたら、この表に 1 行を追加する。
 
 | 置き場所（import のパス） | 役割 | 使う場面 |
 |---------------------------|------|----------|
-| `lib/format` | `formatYen`（円）、`formatPrice`（税込・税抜の価格）、`formatNumber`（数）、`formatDateTime`（日時、日本時間）、`taxLabel`（税率ごとの消費税の行）、`formatPostalCode`（郵便番号）、`axisValuesLabel`（バリアントの軸の値の並び）、`japanDateTimeFormat` | 金額、数、日時、郵便番号の表示。既定の書式で足りるものは自分で `toLocaleString` や `Intl` を呼ばない。既定と違う書式（符号付き、率など）は使う画面の `lib/` に置き、ロケールは `lib/locale` から取る |
+| `lib/format` | `formatYen`（円）、`formatPrice`（税込・税抜の価格）、`formatNumber`（数）、`formatDateTime`（日時、日本時間）、`taxLabel`（税率ごとの消費税の行）、`formatPostalCode`（郵便番号）、`axisValuesLabel`（バリアントの軸の値の並び）、`japanDateTimeFormat` | 金額、数、日時、郵便番号の表示。既定の書式で足りるものは自分で `toLocaleString` や `Intl` を呼ばない ※1 |
 | `lib/orderLabels` | `orderStatusLabel`、`shipmentStatusLabel`、`carrierLabel`：注文の状態、配送状態、配送業者の表示名 | 2 つの画面で同じ列挙の表示名 |
 | `lib/options` | `withAllOption`：選択肢の先頭に「すべて」（値は null）を付ける | 絞り込みの選択肢 |
 | `lib/categoryTree` | `flattenTree`（カテゴリの木を深さ付きの一覧にする）、`categoryOptions`（その一覧を選択肢にする） | カテゴリの選択肢と字下げ |
@@ -34,13 +34,15 @@ description: ec-site のフロントに画面や操作を追加するときの�
 | `lib/login` | `isSafeReturnPath`（ログインの後に戻ってよいパスか）、`fullName`（姓名を 1 つの表示にする） | ログインの戻り先の検査、氏名の表示 |
 | `lib/cn` | `cn`：クラス名の結合 | 条件つきのクラス名 |
 | `lib/locale` | `LOCALE`、`TIME_ZONE` | 整形のツールに渡すロケールとタイムゾーン |
-| `lib/translate` | `translate`：共有の文言（`common`）だけを引く関数 | 共有のパッケージの中。各画面は各画面の `translate` を使う |
+| `lib/translate` | `translate`：共有の文言（`common`）だけを引く関数 | 共有パッケージの中だけで使う。各画面は、その画面の `translate` を使う |
 | `components/AmountsSummary` | `AmountsSummary`：金額の内訳（商品の合計、送料、総額、税率ごとの消費税額）。`variant` は `card`（管理画面）か `page`（店舗画面） | カート、注文手続き、注文の金額の内訳 |
 | `components/LinkButton` | `LinkButton`：リンクの見た目のボタン。描く `a` は `link` で渡す | ルーターのリンクをボタンの見た目にする |
 | `ui/alert`、`ui/badge`、`ui/button`、`ui/input`、`ui/label`、`ui/separator` | shadcn/ui の生成物：`Alert`、`Badge`、`Button`、`Input`、`Label`、`Separator` | 警告、バッジ、ボタン、入力欄、ラベル、区切り線 |
 | `theme.css` | shadcn/ui のテーマ（色、角丸、フォント）。各画面の CSS が import する | 色などの値。画面に値を直接書かない |
 | `messages/ja.json` | 共有の文言（`common`） | 2 つの画面で同じ文言。列挙の表示名、「すべて」、接続の失敗など |
-| `scripts/export-constraints.mjs` | OpenAPI の入力の制約を、画面が使う定数のファイルに書き出す。各画面の API の生成で使う | 画面の入力欄の制約。直接は呼ばず、各画面の API の生成の script で動かす |
+| `scripts/export-constraints.mjs` | OpenAPI の入力の制約を、画面が使う定数のファイルに書き出す。各画面の API の生成で使う | 画面の入力欄の制約。直接は実行せず、各画面の API 生成の script から実行する |
+
+※1：既定と違う書式（符号付き、率など）は使う画面の `lib/` に置き、ロケールは `lib/locale` から取る。
 
 ## 店舗画面（`frontend/store`）
 

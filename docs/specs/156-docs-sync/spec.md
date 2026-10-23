@@ -184,9 +184,10 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
 - [ ] **T156-02-07** 注の番号、用語、参照の書き方をそろえる（DC-156-28、30、31）。
   - 依存：T156-02-01〜06、T156-02-08（同じ文書を変えるため）
   - 範囲：`docs/design/backend-architecture.md`、`docs/design/apps/store.md`、`AGENTS.md`、`docs/design/acceptance-criteria.md`、`docs/design/modules/` の関連 spec の行、`docs/rules/workflow.md`、`docs/guides/ci.md`、`docs/rules/subagents.md`、用語の揺れのある文書（完了した spec・plan・tasks を除く。DN-156-2）
-- [ ] **T156-02-08** MVP の完成までの一覧から、完了した作業の記録と切れたリンクを除く（DC-156-35）。
+- [x] **T156-02-08** MVP の完成までの一覧から、完了した作業の記録と切れたリンクを除く（DC-156-35）。
   - 依存：なし
   - 範囲：`docs/specs/archive/mvp/mvp.md`
+  - 結果：仮の名前の説明、第 3 節（削除済みの TODO 一覧へのリンクと移したテストの問題）、第 4 節（文書の用語）を除き、第 1 節の表と第 2 節の原則を残した。進捗の検査（`progress.mjs`）は通る。
 - [ ] **T156-02-09** 段階の最後のレビュー（profile「厚め」）。
   - 依存：T156-02-01〜08
 

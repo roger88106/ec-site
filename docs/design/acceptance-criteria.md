@@ -290,7 +290,7 @@
 | AC-265 | 店舗 API の入力の誤りの文は、消費者が読んで修正できる文にする。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PlaceOrderApiTest` |
 | AC-266 | エラーの文に上限・桁数などの値を入れるときは、数字を文に書かず、正となる所から差… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `MessageInterpolationTest` |
 | AC-267 | 店舗 API の注文の応答は、キャンセルの申請の結果（申請していない、申請中、承… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `orderState.test.ts` |
-| AC-268 | 管理 API の注文の応答は、キャンセルの時に在庫を戻すかを運営者に確認するかを… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ReturnedOrderCancellationApiTest`、`ShipmentApiTest` |
+| AC-268 | 管理 API の注文の応答は、キャンセルの時に在庫を戻すかを運営者に確認するかを… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`ReturnedOrderCancellationApiTest`、`ShipmentApiTest` |
 | AC-269 | 管理 API の商品の応答は、商品を削除できないときの理由を返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx` |
 | AC-270 | 管理 API の分類の応答は、子の分類を追加できるかを返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `CategoryApiTest`、`CategoryPage.test.tsx` |
 | AC-271 | 店舗画面と管理画面は、API の応答の操作の可否と理由のほかに、注文の状態や商品… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |

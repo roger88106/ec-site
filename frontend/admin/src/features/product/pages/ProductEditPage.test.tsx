@@ -4,10 +4,10 @@ import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
-import { PRODUCT_ID, productActions, productDetail, stock, taxCategory, variant } from '@/test/fixtures'
+import { PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
 import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { conflict, http, problem, server } from '@/test/server'
+import { conflict, http, problem, server, stockHandler } from '@/test/server'
 
 /** 商品の編集の画面の URL */
 const URL = `/products/${PRODUCT_ID}`
@@ -38,11 +38,7 @@ const MAX_IMAGES = schemas.ProductDetail.images.maxItems
 
 /** バリアントの在庫数（画面のバリアントの行が取得する）に、どのバリアントにも同じ数で応答する */
 function serveStock(quantity: number) {
-  server.use(
-    http.get('/inventory/variants/{variantId}', ({ params, response }) =>
-      response(200).json(stock(quantity, params.variantId)),
-    ),
-  )
+  server.use(stockHandler(quantity))
 }
 
 /**

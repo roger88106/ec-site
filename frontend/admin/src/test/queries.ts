@@ -1,4 +1,4 @@
-import { type BoundFunctions, type queries, screen } from '@testing-library/react'
+import { type BoundFunctions, type queries, screen, within } from '@testing-library/react'
 
 /** 探す範囲。省略すると画面全体。`within(要素)` の結果を渡すと、その要素の中だけを探す */
 type Scope = BoundFunctions<typeof queries>
@@ -67,4 +67,30 @@ export function getRow(name: string, scope: Scope = screen): HTMLElement {
  */
 export function findRow(name: string, scope: Scope = screen): Promise<HTMLElement> {
   return scope.findByRole('row', { name: new RegExp(escapeRegExp(name)) })
+}
+
+/**
+ * 一覧のセルを、行の名前と列の見出しの名前で返す。セルの並びの位置を、テストのファイルに書かない。
+ * 見出しは、行のある表の `columnheader`。見つからなければ失敗する。
+ * 例：`expect(getCell('ABC-001', '在庫数の合計')).toHaveTextContent('12')`
+ *
+ * @param rowName 行の名前に含む文字（{@link getRow} と同じ）
+ * @param columnName 列の見出しの文字
+ * @param scope 探す範囲。省略すると画面全体
+ * @returns 行と列が交わる `cell`
+ * @throws 列の見出しがないとき
+ */
+export function getCell(rowName: string, columnName: string, scope: Scope = screen): HTMLElement {
+  const row = getRow(rowName, scope)
+  const table = row.closest('table')
+  if (table === null) {
+    throw new Error(`行「${rowName}」が表の中にない`)
+  }
+  const column = within(table)
+    .getAllByRole('columnheader')
+    .findIndex((heading) => heading.textContent === columnName)
+  if (column < 0) {
+    throw new Error(`列「${columnName}」がない`)
+  }
+  return within(row).getAllByRole('cell')[column]
 }

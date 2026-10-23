@@ -1,10 +1,10 @@
-import { screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
-import { getRow } from '@/test/queries'
+import { getCell } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { http, problem, server } from '@/test/server'
+import { http, problem, server, stockHandler } from '@/test/server'
 
 /** 在庫の調整の要求の本文（送った内容を確認する） */
 type AdjustStockRequest = components['schemas']['AdjustStockRequest']
@@ -25,9 +25,7 @@ function serveStock(quantity: number, history: StockAdjustment[] = []) {
   const state = { quantity, requests: [] as AdjustStockRequest[] }
   server.use(
     http.get('/products/{productId}', ({ response }) => response(200).json(productDetail({ variants: [VARIANT] }))),
-    http.get('/inventory/variants/{variantId}', ({ response }) =>
-      response(200).json({ variantId: VARIANT.id, quantity: state.quantity }),
-    ),
+    stockHandler(() => state.quantity),
     http.get('/inventory/variants/{variantId}/adjustments', ({ response }) =>
       response(200).json({ items: history, page: 1, size: 20, totalItems: history.length, totalPages: 1 }),
     ),
@@ -165,12 +163,9 @@ describe('操作した運営者', () => {
     ])
     renderApp(URL)
 
-    const headers = await screen.findAllByRole('columnheader')
-    const operatorColumn = headers.findIndex((header) => header.textContent === '操作した運営者')
-    expect(operatorColumn).toBeGreaterThanOrEqual(0)
-    const operatorOf = (row: HTMLElement) => within(row).getAllByRole('cell')[operatorColumn]
-    expect(operatorOf(getRow('在庫 一郎'))).toHaveTextContent('在庫 一郎')
-    expect(operatorOf(getRow('注文番号 20261010-482915'))).toBeEmptyDOMElement()
+    await screen.findAllByRole('columnheader')
+    expect(getCell('在庫 一郎', '操作した運営者')).toHaveTextContent('在庫 一郎')
+    expect(getCell('注文番号 20261010-482915', '操作した運営者')).toBeEmptyDOMElement()
   })
 })
 

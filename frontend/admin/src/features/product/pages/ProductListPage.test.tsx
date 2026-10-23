@@ -2,7 +2,7 @@ import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { ProductSummary } from '@/api/types'
 import { productSummary } from '@/test/fixtures'
-import { getRow } from '@/test/queries'
+import { getCell } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, type Reply, server } from '@/test/server'
 
@@ -39,10 +39,9 @@ function serveList(items: ProductSummary[], summary: Reply<'/inventory/stock-sum
   return state
 }
 
-/** 商品品番の行の、在庫数の合計の欄。列は見出し「在庫数の合計」の位置で選ぶ */
+/** 商品品番の行の、在庫数の合計の欄。列は見出し「在庫数の合計」で選ぶ */
 function totalOf(productCode: string): HTMLElement {
-  const headings = screen.getAllByRole('columnheader').map((heading) => heading.textContent)
-  return within(getRow(productCode)).getAllByRole('cell')[headings.indexOf('在庫数の合計')]
+  return getCell(productCode, '在庫数の合計')
 }
 
 describe('商品の一覧', () => {

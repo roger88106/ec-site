@@ -7,7 +7,10 @@ import { findDetailValue, getDetailValue } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
+/** 出荷の登録の要求の本文（送った内容を確認する） */
 type ShipOrderRequest = components['schemas']['ShipOrderRequest']
+
+/** キャンセルの要求の本文（送った内容を確認する） */
 type CancelOrderRequest = components['schemas']['CancelOrderRequest']
 
 /** 注文の詳細の URL */
@@ -493,15 +496,18 @@ describe('返送の注文のキャンセル', () => {
     expect(bodies).toEqual([{ reason: '受取拒否', restock }])
   })
 
-  test.each([
+  /** フラグが偽でも聞かない注文。出荷済みでも、出荷前でも */
+  const NO_RESTOCK_CASES = [
     [
       '出荷済みの注文でも',
       { ...RETURNED, actions: orderActions({ cancel: true, cancelAsksRestock: false }) },
       '出荷済み',
     ],
     ['出荷前の注文では', orderDetail(), '受付'],
-  ] as const)(
-    'AC-268 在庫に戻すかは API のフラグで聞くかを決める。フラグが偽なら、%s聞かない',
+  ] as const
+
+  test.each(NO_RESTOCK_CASES)(
+    'AC-268在庫に戻すかは API のフラグで聞くかを決める。フラグが偽なら、%s聞かない',
     async (_case, order, status) => {
       serveOrder(order)
       const { user } = renderApp(URL)

@@ -1,7 +1,7 @@
 import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import { orderSummary } from '@/test/fixtures'
-import { findRow, getRow } from '@/test/queries'
+import { findRow, getCell, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, server } from '@/test/server'
 
@@ -87,8 +87,7 @@ describe('注文一覧', () => {
     const pending = getRow('20261009-654321')
     expect(within(pending).getByText('支払待ち')).toBeInTheDocument()
     expect(within(pending).getByText('未払い')).toBeInTheDocument()
-    const old = getRow('20261001-000001')
-    expect(within(old).getAllByRole('cell').at(-1)?.textContent).toBe('')
+    expect(getCell('20261001-000001', '支払')).toHaveTextContent(/^$/)
   })
 
   test('AC-161 状態「支払待ち」で絞り込むと、URL に残し、その状態で取得し直す', async () => {

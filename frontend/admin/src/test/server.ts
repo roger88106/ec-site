@@ -2,6 +2,7 @@ import { setupServer } from 'msw/node'
 import { createOpenApiHttp, type HttpMethod, type ResponseResolver, type ResponseResolverInfo } from 'openapi-msw'
 import type { paths } from '@/api/generated/admin'
 import type { ErrorCode, Problem } from '@/api/types'
+import { stock } from '@/test/fixtures'
 
 /**
  * 管理 API の応答を差し替えるハンドラーを作る（管理画面の構成 第 9 節）。<br />
@@ -62,3 +63,16 @@ export type Reply<Path extends keyof paths, Method extends HttpMethod, Arg> = (
   arg: Arg,
   response: ResponseResolverInfo<paths, Path, Method>['response'],
 ) => ReturnType<ResponseResolver<paths, Path, Method>>
+
+/**
+ * バリアントの在庫数の取得（GET /inventory/variants/{variantId}）に応答するハンドラーを作る。どのバリアントにも同じ数で応答する。<br />
+ * 例：`server.use(stockHandler(5))`、`server.use(stockHandler(() => state.quantity))`
+ *
+ * @param quantity 在庫数。関数を渡すと、取得のたびに呼んで今の値を返す
+ * @returns `server.use` に渡すハンドラー
+ */
+export function stockHandler(quantity: number | (() => number)) {
+  return http.get('/inventory/variants/{variantId}', ({ params, response }) =>
+    response(200).json(stock(typeof quantity === 'function' ? quantity() : quantity, params.variantId)),
+  )
+}

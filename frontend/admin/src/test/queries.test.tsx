@@ -2,7 +2,7 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, test } from 'vitest'
-import { findDetailValue, findRow, getDetailValue, getRow } from '@/test/queries'
+import { findDetailValue, findRow, getCell, getDetailValue, getRow } from '@/test/queries'
 
 function Detail() {
   return (
@@ -165,5 +165,49 @@ describe('一覧の行', () => {
     await user.click(screen.getByRole('button', { name: '表示する' }))
 
     expect(await found).toHaveTextContent('遅れた行')
+  })
+})
+
+describe('一覧のセル', () => {
+  test('行の名前と列の見出しの名前で、セルを返す', () => {
+    render(<List />)
+    expect(getCell('軽減', '件数')).toHaveTextContent(/^5$/)
+    expect(getCell('標準', '名称')).toHaveTextContent(/^標準税率$/)
+  })
+
+  test('範囲を渡すと、その中の行だけを探す', () => {
+    render(
+      <>
+        <List />
+        <section aria-label="別の表">
+          <table>
+            <thead>
+              <tr>
+                <th>名称</th>
+                <th>件数</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr>
+                <td>標準税率</td>
+                <td>99</td>
+              </tr>
+            </tbody>
+          </table>
+        </section>
+      </>,
+    )
+    const section = screen.getByRole('region', { name: '別の表' })
+    expect(getCell('標準', '件数', within(section))).toHaveTextContent(/^99$/)
+  })
+
+  test('列の見出しがなければ失敗する', () => {
+    render(<List />)
+    expect(() => getCell('標準', '金額')).toThrow('列「金額」がない')
+  })
+
+  test('行がなければ失敗する', () => {
+    render(<List />)
+    expect(() => getCell('非課税', '件数')).toThrow(/非課税/)
   })
 })

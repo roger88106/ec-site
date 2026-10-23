@@ -3,7 +3,7 @@ package com.ecsite.module.catalog.domain.category;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
-import com.ecsite.common.model.value.DisplayOrders;
+import com.ecsite.module.catalog.domain.DisplayOrders;
 import lombok.Getter;
 import lombok.NonNull;
 import lombok.experimental.Accessors;

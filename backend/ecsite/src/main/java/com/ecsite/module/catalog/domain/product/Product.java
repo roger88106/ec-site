@@ -4,7 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.base.AggregateRoot;
 import com.ecsite.common.model.value.BoundedText;
-import com.ecsite.common.model.value.DisplayOrders;
+import com.ecsite.module.catalog.domain.DisplayOrders;
 import com.ecsite.module.catalog.domain.product.vo.PriceExclTax;
 import com.ecsite.module.catalog.domain.product.vo.ProductCode;
 import com.ecsite.module.catalog.domain.product.vo.PublicationPeriod;

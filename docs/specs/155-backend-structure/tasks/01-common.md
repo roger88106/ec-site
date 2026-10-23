@@ -19,7 +19,7 @@ T155-01-01〜06 は、変えるファイルが重ならないので、互いに 
 - [x] **T155-01-03** [P] イベントの再発行と片付けの 6 クラスを `config/event/` に移す。`@Scheduled` の式にある設定の型の Bean の名前の文字列 2 か所を修正する。テスト 4 つを `config/event` のパッケージに移す。`CleanupJobSettingsTest` は、片付けのジョブの部分だけを `test/config/event/` の新しいテストに分ける。移した後、config 直下が 6 クラスになることを確認する（DC-155-1、2）。
   - 依存：なし
   - 範囲：`main/config/{EventCleanupConfig,EventCleanupJob,EventPublicationMetrics,EventPublicationRecords,EventResubmissionConfig,EventResubmissionJob}.java`（`EventCleanupJob.java:72-73`、`EventResubmissionJob.java:63-64`）、`test/config/CleanupJobSettingsTest.java`（`:29,52,53,68,74`）、`test/config/EventResubmissionSettingsTest.java`、`it/config/EventCleanupJobTest.java`、`it/config/EventResubmissionJobTest.java`
-- [ ] **T155-01-04** [P] 表示順の再採番（`DisplayOrders`）を `module/catalog/domain/` の直下に移し、`DisplayOrdersTest` も `test/module/catalog/domain/` に移す。`Category` と `Product` の import を修正する（DC-155-3、4）。
+- [x] **T155-01-04** [P] 表示順の再採番（`DisplayOrders`）を `module/catalog/domain/` の直下に移し、`DisplayOrdersTest` も `test/module/catalog/domain/` に移す。`Category` と `Product` の import を修正する（DC-155-3、4）。
   - 依存：なし
   - 範囲：`main/common/model/value/DisplayOrders.java`、`main/module/catalog/domain/category/Category.java`（`:6,144`）、`main/module/catalog/domain/product/Product.java`（`:7,337,593,613`）、`test/common/model/value/DisplayOrdersTest.java`
 - [ ] **T155-01-05** [P] LIKE の検索の文字の扱い（`LikePatterns`）を `module/catalog/infrastructure/persistence/` に移し、クラスとメソッドの public を外す。`JooqProductQueryRepository`、`PostgresProductSearch` の import を削除する（DC-155-3、4）。

@@ -1,4 +1,4 @@
-package com.ecsite.common.model.value;
+package com.ecsite.module.catalog.domain;
 
 import com.ecsite.common.error.CommonErrorCode;
 import org.junit.jupiter.api.DisplayName;

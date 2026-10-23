@@ -1,4 +1,4 @@
-package com.ecsite.common.model.value;
+package com.ecsite.module.catalog.domain;
 
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.ecsite.common.error.exception.BusinessException;

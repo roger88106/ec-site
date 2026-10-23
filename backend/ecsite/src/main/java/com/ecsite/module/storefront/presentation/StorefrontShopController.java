@@ -2,7 +2,7 @@ package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.api.store.ShopApi;
 import com.ecsite.api.store.model.Shop;
-import com.ecsite.module.storefront.application.ShopProperties;
+import com.ecsite.module.storefront.application.StorefrontService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RestController;
@@ -15,9 +15,9 @@ import org.springframework.web.bind.annotation.RestController;
 class StorefrontShopController implements ShopApi {
 
     /**
-     * 店舗の情報の設定
+     * 店舗のサービス
      */
-    private final ShopProperties shopProperties;
+    private final StorefrontService service;
 
     /**
      * 店舗 API のマッパー
@@ -31,6 +31,6 @@ class StorefrontShopController implements ShopApi {
      */
     @Override
     public ResponseEntity<Shop> getShop() {
-        return ResponseEntity.ok(mapper.toShop(shopProperties));
+        return ResponseEntity.ok(mapper.toShop(service.getShop()));
     }
 }

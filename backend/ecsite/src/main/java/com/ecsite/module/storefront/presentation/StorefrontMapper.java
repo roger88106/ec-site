@@ -19,12 +19,12 @@ import com.ecsite.api.store.model.VariantAxis;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.common.presentation.StorePrices;
-import com.ecsite.module.storefront.application.ShopProperties;
 import com.ecsite.module.storefront.application.model.CartView;
 import com.ecsite.module.storefront.application.model.CatalogCategory;
 import com.ecsite.module.storefront.application.model.ProductCondition;
 import com.ecsite.module.storefront.application.model.ProductDetailView;
 import com.ecsite.module.storefront.application.model.ProductSummaryView;
+import com.ecsite.module.storefront.application.model.ShopView;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -141,12 +141,12 @@ class StorefrontMapper {
     /**
      * 店舗の情報のレスポンスに変換する。
      *
-     * @param properties 店舗の情報の設定
+     * @param view 店舗の情報
      * @return 店舗の情報のレスポンス
      */
-    Shop toShop(ShopProperties properties) {
+    Shop toShop(ShopView view) {
         return new Shop()
-                .contactEmail(properties.contactEmail());
+                .contactEmail(view.contactEmail());
     }
 
 // ============================== プライベートメソッド ==============================

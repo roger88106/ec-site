@@ -9,6 +9,7 @@ import com.ecsite.module.storefront.application.model.CatalogCategory;
 import com.ecsite.module.storefront.application.model.ProductCondition;
 import com.ecsite.module.storefront.application.model.ProductDetailView;
 import com.ecsite.module.storefront.application.model.ProductSummaryView;
+import com.ecsite.module.storefront.application.model.ShopView;
 import com.ecsite.module.storefront.application.port.CatalogDirectory;
 import com.ecsite.module.storefront.application.port.CatalogProduct;
 import com.ecsite.module.storefront.application.port.CatalogProductDetail;
@@ -45,6 +46,11 @@ public class StorefrontService {
      * 注文の腐敗防止層（カートの見積もり）
      */
     private final OrderDirectory orderDirectory;
+
+    /**
+     * 店舗の情報の設定
+     */
+    private final ShopProperties shopProperties;
 
     /**
      * 商品一覧を取得する。
@@ -106,6 +112,15 @@ public class StorefrontService {
      */
     public List<CatalogCategory> categoryTree() {
         return catalogDirectory.categoryTree();
+    }
+
+    /**
+     * 店舗の情報を取得する。設定の値から返すので、DB は読まない。
+     *
+     * @return 店舗の情報
+     */
+    public ShopView getShop() {
+        return new ShopView(shopProperties.contactEmail());
     }
 
 // ============================== プライベートメソッド ==============================

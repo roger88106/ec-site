@@ -19,7 +19,7 @@ T155-03-01〜04 と T155-03-06 は、変えるファイルが重ならないの�
 - [x] **T155-03-03** [P] `ShippingProperties` を `shipping/infrastructure/` に、`NotificationProperties` を `notification/infrastructure/mail/` に移す。`ShippingConfig`、`NotificationConfig` の import を修正する。`ShopProperties` は application に残す（DC-155-21）。
   - 依存：なし
   - 範囲：`main/module/shipping/application/ShippingProperties.java`、`main/module/shipping/infrastructure/ShippingConfig.java`（`:22`）、`main/module/notification/application/NotificationProperties.java`、`main/module/notification/infrastructure/mail/SmtpMailer.java`、`main/module/notification/infrastructure/NotificationConfig.java`（`:11`）。参照するテストはない。`test/config/RequiredPropertiesTest.java` は、変更せず、テストが通ることを確認する。
-- [ ] **T155-03-04** [P] `StorefrontConfig` を `storefront/infrastructure/` に移す。`ConfigurationPropertiesTest` に検査を追加する。`com.ecsite.module..` の `@Configuration` を付けたクラスは `..infrastructure..` に置く。`allowEmptyShould` を付けない。`infrastructure` の外に置いた例で、失敗することを確認する（DC-155-22）。
+- [x] **T155-03-04** [P] `StorefrontConfig` を `storefront/infrastructure/` に移す。`ConfigurationPropertiesTest` に検査を追加する。`com.ecsite.module..` の `@Configuration` を付けたクラスは `..infrastructure..` に置く。`allowEmptyShould` を付けない。`infrastructure` の外に置いた例で、失敗することを確認する（DC-155-22）。
   - 依存：なし
   - 範囲：`main/module/storefront/application/StorefrontConfig.java`（`:10`）、`test/architecture/ConfigurationPropertiesTest.java`（`:17-28`）。`test/config/RequiredPropertiesTest.java`（`:7,97`）は、変更せず、テストが通ることを確認する。
 - [ ] **T155-03-05** 店舗の情報を application の view で返す。`StorefrontService` に店舗の情報を返す操作を追加し、`storefront/application/model/ShopView` を返す。`StorefrontShopController` は service を使い、`StorefrontMapper` は view から応答に変換する（メソッドチェーンの setter で書く）。presentation が `ShopProperties` を受けなくなったことを確認する（DC-155-23）。

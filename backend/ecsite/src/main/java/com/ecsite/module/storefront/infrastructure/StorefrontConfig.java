@@ -1,5 +1,6 @@
-package com.ecsite.module.storefront.application;
+package com.ecsite.module.storefront.infrastructure;
 
+import com.ecsite.module.storefront.application.ShopProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 

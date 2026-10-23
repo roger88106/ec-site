@@ -1,4 +1,4 @@
-// ac-check.mjs のテスト（node --test "scripts/ci/*.test.mjs"）
+// ac-check.mjs のテスト（node --test scripts/ci/ac-check.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import {
@@ -80,6 +80,26 @@ describe('テスト名の取り出し', () => {
       'AC-11 並び順を変える',
       'AC-12 %s',
     ])
+  })
+
+  test('skip・fixme のテストは数えない', () => {
+    const source = [
+      "test.skip('AC-1 飛ばす', () => {})",
+      "it.skip('AC-2 飛ばす', () => {})",
+      "test.fixme('AC-3 直す', () => {})",
+      "it.fixme('AC-4 直す', () => {})",
+      "test.only('AC-5 数える', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-5 数える'])
+  })
+
+  test('メソッドの .test( の呼び出し（正規表現など）は数えない', () => {
+    const source = [
+      "expect(/re/.test('AC-1 正規表現')).toBe(true)",
+      "const ok = pattern.test('AC-2 呼び出し')",
+      "test('AC-3 本物', () => {})",
+    ].join('\n')
+    assert.deepEqual(extractTestNames(source, 'ts'), ['AC-3 本物'])
   })
 })
 

@@ -227,9 +227,10 @@ DC は 51 になったが、変えるのは検査の script、workflow、CI の�
 - 完了条件：DC-158-1〜6、9〜18、29〜32、35 を満たし、DC-158-26 のうち DC-158-17・18 の違反が 0 件で、`check-all.sh` が通る。
 - 参照：第 3 節の DS-158-1、DS-158-2、DS-158-4
 
-- [ ] **T158-02-01** [テスト] AC の照合：`skip`・`fixme` と `.test(` の呼び出しを数えない。Git の対象のファイルだけを読む。AC の番号の正規表現を 1 か所にする（DC-158-1、2、10、30）。
+- [x] **T158-02-01** [テスト] AC の照合：`skip`・`fixme` と `.test(` の呼び出しを数えない。Git の対象のファイルだけを読む。AC の番号の正規表現を 1 か所にする（DC-158-1、2、10、30）。
   - 依存：T158-01-02（Git の対象のファイルの一覧の関数を使う）
   - 範囲：`scripts/ci/ac-check.mjs`、`scripts/ci/ac-check.test.mjs`
+  - 結果：テスト名の数は 1769 件から 1765 件に減った。減ったのは `frontend/store/src/proxy.test.ts` の `matcher.test('/products')` など `.test(` の呼び出し 4 件で、AC を持たない。AC の「テストあり」、警告、AC 一覧は変わらない（`skip`・`fixme` のテストは 0 件）。
 - [ ] **T158-02-02** [テスト] Java の規則の検査：改行を挟んだ `valueOf(x.name())` を見つける（DC-158-3）。
   - 依存：なし
   - 範囲：`scripts/ci/java-rules.mjs`、テスト

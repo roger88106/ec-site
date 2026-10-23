@@ -177,9 +177,10 @@ skill `docs` 第 2 節は、`modules/` と `apps/` の冒頭に概要の表（�
   - 依存：T156-02-03（constitution の CI の要点と食い違わないようにするため。DC-156-14）
   - 範囲：`docs/guides/environment.md`、`docs/guides/ci.md`、`docs/design/frontend-architecture.md`
   - 結果：環境変数の表にメディアのストレージの資格情報（アクセスキー ID とシークレット）の行を足した。CI の検査の文書の「CI のジョブ」の列を、ジョブの表にある名前（管理画面、店舗画面、E2E）にそろえた。フロントのアーキテクチャの店舗画面のコンポーネントのテストに、ブラウザーの中だけで終わる操作を jsdom で操作することを足した。
-- [ ] **T156-02-06** 店舗画面と管理画面の構成の冒頭に概要の表を置き、skill `docs` の概要の表の記述を修正する（DC-156-22、第 6 節の 2）。関連 spec は、2 つの文書の履歴から抽出する。
+- [x] **T156-02-06** 店舗画面と管理画面の構成の冒頭に概要の表を置き、skill `docs` の概要の表の記述を修正する（DC-156-22、第 6 節の 2）。関連 spec は、2 つの文書の履歴から抽出する。
   - 依存：T156-02-03（skill `docs` を同じく変えるため）
   - 範囲：`docs/design/apps/store.md`、`docs/design/apps/admin.md`、`.claude/skills/docs/SKILL.md`
+  - 結果：2 つの文書の冒頭に依存と関連 spec の表を置いた。関連 spec は `git log --follow` のタスク番号から、関連 spec の検査と同じ除外を適用して拾い（店舗画面は 8 件、管理画面は 5 件）、`related-specs.mjs` が通ることを確認した。skill `docs` は、レベルを `modules/` だけに求める記述にした。管理画面の構成の本文の節（技術、API の呼び出し、ほか）は変えていない。
 - [ ] **T156-02-07** 注の番号、用語、参照の書き方をそろえる（DC-156-28、30、31）。
   - 依存：T156-02-01〜06、T156-02-08（同じ文書を変えるため）
   - 範囲：`docs/design/backend-architecture.md`、`docs/design/apps/store.md`、`AGENTS.md`、`docs/design/acceptance-criteria.md`、`docs/design/modules/` の関連 spec の行、`docs/rules/workflow.md`、`docs/guides/ci.md`、`docs/rules/subagents.md`、用語の揺れのある文書（完了した spec・plan・tasks を除く。DN-156-2）

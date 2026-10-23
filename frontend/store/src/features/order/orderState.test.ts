@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { cancellationState, paymentDeadlineLabel, paymentState } from '@/features/order/orderState'
+import {
+  cancellationState,
+  paymentDeadlineLabel,
+  paymentState,
+  showsCancellationSection,
+  showsPaymentSection,
+} from '@/features/order/orderState'
 
 describe('キャンセルの申請の状況（AC-95、96）', () => {
   /** API が返すフラグ */
@@ -79,6 +85,29 @@ describe('支払の状況（AC-150、151）', () => {
   test('支払待ちでなければ、支払の欄は出さない（戻った直後でも）', () => {
     expect(paymentState({ status: 'ACCEPTED', actions: notPayable }, true)).toBe('NONE')
     expect(paymentState({ status: 'CANCELLED', actions: notPayable }, false)).toBe('NONE')
+  })
+})
+
+describe('注文の画面の欄を出すか', () => {
+  test('AC-150、151 支払の欄は、支払待ちのとき（支払える、確認中、期限切れ）だけ出す', () => {
+    expect(showsPaymentSection('PAYABLE')).toBe(true)
+    expect(showsPaymentSection('CONFIRMING')).toBe(true)
+    expect(showsPaymentSection('CLOSING')).toBe(true)
+    expect(showsPaymentSection('NONE')).toBe(false)
+  })
+
+  test('AC-158、171 キャンセルの欄は、支払待ち、出荷済み、申請も結果もない注文では出さない', () => {
+    expect(showsCancellationSection('NOT_YET')).toBe(false)
+    expect(showsCancellationSection('SHIPPED')).toBe(false)
+    expect(showsCancellationSection('UNAVAILABLE')).toBe(false)
+  })
+
+  test('キャンセルの欄は、申請できる、申請中、却下、キャンセル済み、支払期限切れでは出す', () => {
+    expect(showsCancellationSection('REQUESTABLE')).toBe(true)
+    expect(showsCancellationSection('PENDING')).toBe(true)
+    expect(showsCancellationSection('REJECTED')).toBe(true)
+    expect(showsCancellationSection('CANCELLED')).toBe(true)
+    expect(showsCancellationSection('PAYMENT_EXPIRED')).toBe(true)
   })
 })
 

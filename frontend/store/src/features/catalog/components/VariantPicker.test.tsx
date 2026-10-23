@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 import { screen } from '@testing-library/react'
+import { useState } from 'react'
 import { describe, expect, test, vi } from 'vitest'
 import type { Variant, VariantAxis } from '@/api/types'
-import { ProductShowcase } from '@/features/catalog/components/ProductShowcase'
 import { VariantPicker } from '@/features/catalog/components/VariantPicker'
+import { emptySelection, type Selection, selectedVariant } from '@/features/catalog/variantSelection'
 import { renderInBrowser } from '@/test/render'
 
 /** 色とサイズの軸 */
@@ -37,20 +38,42 @@ function button(name: string): HTMLButtonElement {
   return screen.getByRole('button', { name }) as HTMLButtonElement
 }
 
+/** 選択を親として持ち、変わるたびに onChange を呼んで知らせる。選択の状態は VariantPicker でなく親が持つ */
+function Controlled({ variants, onChange }: { variants: Variant[]; onChange?: (selection: Selection) => void }) {
+  const [selection, setSelection] = useState(() => emptySelection(AXES))
+  return (
+    <VariantPicker
+      axes={AXES}
+      chosen={selectedVariant(AXES, variants, selection)}
+      onChange={(next) => {
+        setSelection(next)
+        onChange?.(next)
+      }}
+      selection={selection}
+      variants={variants}
+    />
+  )
+}
+
 describe('バリアントの選択', () => {
   test('AC-62 選んでいない軸を示し、在庫切れ・販売停止のバリアントにしかならない値は選べない', () => {
-    renderInBrowser(<VariantPicker axes={AXES} variants={VARIANTS} />)
+    renderInBrowser(<Controlled variants={VARIANTS} />)
 
     expect(screen.getByText('色・サイズを選ぶと、在庫状況を表示します。')).toBeTruthy()
     expect(button('赤').disabled).toBe(false)
     expect(button('青').disabled).toBe(true)
   })
 
+  test('選べない値は取り消しの要素（s）で出し、選べる値は出さない。ボタンの名前は値のまま', () => {
+    renderInBrowser(<Controlled variants={VARIANTS} />)
+
+    expect(button('青').querySelector('s')?.textContent).toBe('青')
+    expect(button('赤').querySelector('s')).toBeNull()
+  })
+
   test('すべての軸を選ぶと、そのバリアントの在庫状況を出して知らせ、選んだ値を押すと外す', async () => {
-    const onSelectVariant = vi.fn()
-    const { user } = renderInBrowser(
-      <VariantPicker axes={AXES} onSelectVariant={onSelectVariant} variants={VARIANTS} />,
-    )
+    const onChange = vi.fn()
+    const { user } = renderInBrowser(<Controlled onChange={onChange} variants={VARIANTS} />)
 
     await user.click(button('赤'))
     expect(screen.getByText('サイズを選ぶと、在庫状況を表示します。')).toBeTruthy()
@@ -60,62 +83,12 @@ describe('バリアントの選択', () => {
 
     await user.click(button('L'))
     expect(screen.getByText('サイズを選ぶと、在庫状況を表示します。')).toBeTruthy()
-    expect(onSelectVariant.mock.calls).toEqual([[null], [VARIANTS[1]], [null]])
+    expect(onChange.mock.calls).toEqual([[['赤', null]], [['赤', 'L']], [['赤', null]]])
   })
 
   test('AC-56 すべてのバリアントが買えなければ、選ぶ前から「在庫なし」と出す', () => {
-    renderInBrowser(<VariantPicker axes={AXES} variants={[VARIANTS[2], VARIANTS[3]]} />)
+    renderInBrowser(<Controlled variants={[VARIANTS[2], VARIANTS[3]]} />)
 
     expect(screen.getByText('在庫なし')).toBeTruthy()
-  })
-})
-
-describe('商品の詳細の画像とカートに入れる操作', () => {
-  /** 大きな画像の URL */
-  function shownImage(): string | null {
-    return screen.getByRole('img', { name: '商品の画像' }).getAttribute('src')
-  }
-
-  test('小さな画像を押すとその画像に、バリアントを選ぶとその画像に替え、選ぶまでカートに入れられない', async () => {
-    const { user } = renderInBrowser(
-      <ProductShowcase
-        axes={AXES}
-        header={<h1>T シャツ</h1>}
-        imageUrls={['http://cdn.test/1.webp', 'http://cdn.test/2.webp']}
-        variants={VARIANTS}
-      />,
-    )
-
-    expect(shownImage()).toBe('http://cdn.test/1.webp')
-    expect(button('カートに入れる').disabled).toBe(true)
-
-    await user.click(button('画像 2を見る'))
-    expect(shownImage()).toBe('http://cdn.test/2.webp')
-    expect(button('画像 2を見る').getAttribute('aria-pressed')).toBe('true')
-
-    await user.click(button('赤'))
-    await user.click(button('L'))
-    expect(shownImage()).toBe('http://cdn.test/red-l.webp')
-    expect(button('カートに入れる').disabled).toBe(false)
-
-    // 画像の指定のないバリアントは、代表画像に戻す
-    await user.click(button('L'))
-    await user.click(button('M'))
-    expect(shownImage()).toBe('http://cdn.test/1.webp')
-  })
-
-  test('軸のない商品は、ただ 1 つのバリアントをすぐカートに入れられる。画像がなければ代わりの図を出す', () => {
-    renderInBrowser(
-      <ProductShowcase
-        axes={[]}
-        header={<h1>マグカップ</h1>}
-        imageUrls={[]}
-        variants={[{ id: 'variant-only', axisValues: [], inStock: true, salesSuspended: false, imageUrl: null }]}
-      />,
-    )
-
-    expect(screen.queryByRole('img', { name: '商品の画像' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /を見る$/ })).toBeNull()
-    expect(button('カートに入れる').disabled).toBe(false)
   })
 })

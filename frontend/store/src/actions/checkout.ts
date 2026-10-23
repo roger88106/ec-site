@@ -7,7 +7,7 @@ import { withActionResult } from '@/actions/withActionResult'
 import { getMemberApi } from '@/api/client'
 import type { ErrorCode } from '@/api/types'
 import { type ActionResult, toFailure } from '@/lib/actionResult'
-import { readInt, readString } from '@/lib/server/formData'
+import { readIntOrNaN, readString } from '@/lib/server/formData'
 
 /** 確認した総額が注文の時点と違うときのエラーコード */
 const TOTAL_AMOUNT_CHANGED: ErrorCode = 'TOTAL_AMOUNT_CHANGED'
@@ -33,8 +33,7 @@ export async function placeOrder(_previous: ActionResult | null, formData: FormD
           address: readString(formData, 'address'),
           phone: readString(formData, 'phone'),
         },
-        // 数でなければ API が断る（入力の検証の 400）
-        expectedTotal: readInt(formData, 'expectedTotal') ?? Number.NaN,
+        expectedTotal: readIntOrNaN(formData, 'expectedTotal'),
       },
     })
     await redirectIfUnauthenticated(response)

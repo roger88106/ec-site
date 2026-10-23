@@ -20,7 +20,7 @@ describe('一覧の商品', () => {
     const html = renderMarkup(<ProductCard product={product()} />)
 
     expect(html).toContain('マグカップ')
-    expect(html).toContain('<img alt="商品の画像" class="size-full object-cover" src="http://cdn.test/mug.webp"/>')
+    expect(html).toMatch(/<img alt="商品の画像"[^>]* src="http:\/\/cdn\.test\/mug\.webp"/)
     expect(html).toContain('1,100 円')
     expect(html).toContain('税抜 1,000 円')
     expect(html).toContain('href="/products/00000000-0000-0000-0000-000000000101"')

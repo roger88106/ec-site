@@ -135,7 +135,7 @@
 | AC-110 | パスワードの条件（長さなど）を満たさない登録は拒否される。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
 | AC-111 | 登録すると確認メールが届く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
 | AC-112 | メールアドレスの確認が済むと、ログインした状態で店舗（会員登録を始めた画面）に戻… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest`、`member.spec.ts` |
-| AC-113 | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `PageLinks.test.tsx`、`index.test.ts`、`login.test.ts` ほか 1 |
+| AC-113 | 店舗からログインの画面に遷移し、メールアドレスとパスワードでログインできる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `LoginLinks.test.tsx`、`index.test.ts`、`login.test.ts` ほか 1 |
 | AC-114 | ログインしている間、店舗の画面に会員の氏名とログアウトの操作を表示する。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`login.test.ts`、`member.spec.ts` |
 | AC-115 | ログアウトすると、店舗でも IdP でもログインしていない状態になる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `index.test.ts`、`member.spec.ts` |
 | AC-116 | パスワードを続けて間違えると、そのアカウントは一定時間ログインできなくなる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
@@ -173,14 +173,14 @@
 | AC-148 | カードが拒否されたときは、決済サービスの画面で別のカードを入力して再試行できる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-149 | 支払を終える・やめると、決済サービスの画面から注文の画面に戻る。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `payment.spec.ts` |
 | AC-150 | 戻った時点で EC が与信の結果を受信していなければ、注文の画面に「支払の確認中… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
-| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 1 |
+| AC-151 | 支払の期限の前なら、「支払待ち」の注文画面から、支払画面に再び遷移して支払える。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentSection.test.tsx`、`checkout.test.ts` ほか 2 |
 | AC-152 | 同じ注文で支払画面に何度移っても、与信は 1 回だけ取られる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentApiTest` |
 | AC-153 | 支払の期限（BR-16）までに与信が成功しなかった注文は、キャンセルになり、明細… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`OrderPaymentTest`、`PaymentExpiryJobTest` ほか 2 |
 | AC-154 | 期限切れのキャンセルは、期限から一定時間（plan で決める）のうちに行われる。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentExpiryJobTest` |
 | AC-155 | 期限切れのキャンセルの理由は「支払期限切れ」とし、注文の詳細（店舗・管理画面）に… | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `CancellationSection.test.tsx`、`OrderDetailPage.test.tsx`、`OrderPaymentApiTest` ほか 3 |
 | AC-156 | 期限の直前に与信が成功した注文は、期限切れでキャンセルしない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentExpiryJobTest`、`PaymentTest` |
 | AC-157 | 期限切れでキャンセルした後に与信の成功を受信したら、その与信を取り消す。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderPaymentApiTest`、`PaymentTest`、`PaymentVoidTest` |
-| AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `CancellationSection.test.tsx`、`OrderDetailPage.test.tsx`、`OrderPaymentApiTest` ほか 1 |
+| AC-158 | 「支払待ち」の注文は、消費者のキャンセルの申請も、運営者のキャンセルもできない。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderPaymentApiTest`、`orderState.test.ts` ほか 1 |
 | AC-159 | 店舗の注文一覧と注文詳細に、「支払待ち」の注文の支払の期限を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `PaymentSection.test.tsx`、`orderState.test.ts` |
 | AC-160 | 管理画面の注文一覧と注文詳細に、支払の状態（BR-15）を表示する。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`OrderListPage.test.tsx`、`OrderPaymentApiTest` |
 | AC-161 | 管理画面の注文の一覧で、状態「支払待ち」で絞り込める。 | 有効 | [007](../specs/archive/mvp/007-payment/spec.md) | — | spec | `OrderListPage.test.tsx`、`OrderPaymentApiTest` |
@@ -193,7 +193,7 @@
 | AC-168 | 出荷を登録すると、総額で売上を確定し、注文は「出荷済み」になる。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`PaymentCaptureTest`、`ShipmentApiTest` |
 | AC-169 | 売上確定に失敗したら、出荷は登録されず、注文は「受付」のまま。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`PaymentCaptureTest`、`ShipmentApiTest` |
 | AC-170 | 「受付」以外の注文は出荷を登録できない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`ShipmentApiTest` |
-| AC-171 | 「出荷済み」の注文は、消費者はキャンセルを申請できない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`ReturnedOrderCancellationApiTest`、`StoreOrderShipmentApiTest` ほか 1 |
+| AC-171 | 「出荷済み」の注文は、消費者はキャンセルを申請できない。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `OrderShipmentTest`、`ReturnedOrderCancellationApiTest`、`StoreOrderShipmentApiTest` ほか 2 |
 | AC-172 | 同じ注文に出荷を重複して登録しても、売上確定は 1 回だけ実行する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `PaymentCaptureTest`、`ShipmentApiTest` |
 | AC-173 | 配送業者は決まった一覧（plan で決める）から選ぶ。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `ShipmentApiTest`、`ShippingApiTest`、`TrackingNumberTest` |
 | AC-174 | 配送状態（BR-19）は、物流サービスからの通知で遷移する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `CarrierWebhookTest`、`JooqShipmentRepositoryTest`、`MockCarrierTest` ほか 3 |

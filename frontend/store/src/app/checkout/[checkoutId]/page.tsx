@@ -24,12 +24,12 @@ export async function generateMetadata(): Promise<Metadata> {
 export default async function CheckoutPage({ params }: PageProps<'/checkout/[checkoutId]'>) {
   const t = await getTranslations('checkout.page')
   const { checkoutId } = await params
-  if (!isUuid(checkoutId)) {
-    notFound()
-  }
   const member = await currentMember()
   if (member === null) {
     return redirectToLogin()
+  }
+  if (!isUuid(checkoutId)) {
+    notFound()
   }
   const api = await getMemberApi()
   const checkout = await unwrapMember(await api.GET('/checkouts/{checkoutId}', { params: { path: { checkoutId } } }))

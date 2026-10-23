@@ -22,28 +22,37 @@ frontend/store/
 └── src/
     ├── instrumentation.ts    # 起動時に、本番で必須の環境変数を確認する
     ├── proxy.ts              # 要求ごとにセッションを確認し、token を更新して Cookie に書く。今の画面のパスを知らせる
-    ├── app/                  # ルート（取得とコンポーネントの組み立てだけ）
+    ├── app/                  # ルート（取得とコンポーネントの組み立てだけ）。ページのテストは `page.test.tsx`（第 7 節）
     │   ├── api/auth/         # Auth.js のエンドポイント（IdP からの戻り先など）
     │   └── login/            # ログイン・会員登録（IdP）へ移る口
-    ├── actions/              # サーバーアクション。資源ごとに 1 ファイル（cart、checkout、order、auth）と、ラッパーと会員の操作のヘルパー
-    ├── auth/                 # ログイン（設定とセッション、環境変数、token の更新、ログアウト）。第 9 節
+    ├── actions/              # サーバーアクション。資源ごとに 1 ファイル（cart、checkout、order、auth、region）と、ラッパー（withActionResult）と会員の操作のヘルパー（memberAction）
+    ├── auth/                 # ログイン（設定とセッション、環境変数、Cookie の名前と接頭辞、token の更新、ログアウト）。第 9 節
     ├── api/
     │   ├── generated/        # store.yaml から生成（型と、入力の制約の定数）
     │   ├── client.ts         # クライアント。公開用と会員用（サーバー専用）
+    │   ├── result.ts         # 応答を結果に変える（ApiError、404 の扱い）
     │   ├── cartCookie.ts     # カート ID と、カートを移した知らせの Cookie（サーバー専用）
     │   ├── cart.ts           # 使うカートを選ぶ（サーバー専用）
     │   └── types.ts          # 画面から使う型の別名
-    ├── components/           # 機能をまたぐコンポーネント（価格、ページング、ヘッダーなど）。ui/ は shadcn/ui
+    ├── components/           # 機能をまたぐコンポーネント（価格、ページング、ヘッダー、失敗の表示 ActionError など）。ui/ は shadcn/ui
     ├── i18n/                 # next-intl の設定、共有の文言との結合、キーの型、コンポーネントの外で使う translate
     ├── lib/                  # 画面に依存しない関数（単体テストを横に置く）
     │   ├── labels.ts         # 2 つ以上の機能で使う列挙の表示名（1 つの機能だけなら features/<機能>/labels.ts）
     │   ├── searchParams.ts   # URL のクエリの読み取り（配列の最初、ページ番号、型）
     │   ├── format.ts         # 価格をコンポーネントで分けて出す書式（金額・日時などの整形は共有パッケージの lib/format.ts）
-    │   └── actionResult.ts   # サーバーアクションの結果の型と、API のエラーからの変換
-    ├── test/                 # テストの土台（画面のコードからは import しない）
+    │   ├── actionResult.ts   # サーバーアクションの結果の型と、API のエラーからの変換
+    │   ├── cartChoice.ts     # 使うカートの種類（会員か Cookie か）と選び方（第 4.5 節）
+    │   ├── cartId.ts         # カート ID の Cookie の属性と、カートが見つからなかったことを示す値
+    │   ├── cartMergeNotice.ts # カートを移した知らせの内容（品目の数の上限を持つ）
+    │   ├── login.ts          # ログイン後の戻り先を、店舗画面の中のパスに限る（第 9 節）
+    │   ├── postalCode.ts     # 郵便番号の形の判定
+    │   ├── quantity.ts       # 数量の選択肢（契約の下限から上限まで）
+    │   ├── utils.ts          # shadcn/ui が読む `cn`（共有パッケージのもの）
+    │   └── server/           # サーバー専用の関数。formData（フォームの項目の読み取り）、log（JSON のログ）、timeout（待つ時間の上限）、trace（追跡 ID）
+    ├── test/                 # テストの土台（Next.js と Auth.js の置き換え、API の応答のデータ、MSW、描画。画面のコードからは import しない）
     └── features/<機能>/      # catalog、cart、checkout、order
         ├── components/       # その機能だけのコンポーネント
-        └── *.ts              # その機能だけの関数・型
+        └── *.ts              # その機能だけの関数・型（クエリの組み立て、注文の状態の判定など）
 ```
 
 - 画面のコンポーネントは `features/` に置き、`page.tsx` は薄く保つ（`app/` の置き場所は Next.js が決めるため）。
@@ -97,8 +106,9 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | 401 | ログイン画面へリダイレクトする（第 9 節） |
 | それ以外 | エラーの画面（`error.tsx`） |
 
-- タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求の middleware でタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
-- 5xx のログ：店舗 API が 5xx を返したら、応答の middleware で warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
+- タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求の ミドルウェア でタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
+- 追跡 ID：店舗 API のクライアント（公開用と会員用）は、要求の ミドルウェア で、画面の要求の `traceparent` を付ける。バックエンドのログを画面の要求から辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュする要求に付けてもキャッシュは使われる。
+- 5xx のログ：店舗 API が 5xx を返したら、応答の ミドルウェア で warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
 
 ### 4.3 サーバーアクション
 
@@ -197,6 +207,8 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | 業務のエラー（400、409） | フォームの下に `message`。次にすべきことが別の画面にあるもの（在庫不足、カートの変更）はそこへのリンクを添える。総額が変わったら新しい金額で再表示する |
 | 通信の失敗 | 「サーバーに接続できませんでした。」 |
 
+エラーメッセージは、共通の部品 `components/ActionError.tsx` で出す（メッセージがなければ何も出さない）。親が常にある読み上げの領域（`aria-live`）を持ち、その中で出すとき（カートに入れる）は `inLiveRegion` を付け、部品に領域を付けさせない（領域を入れ子にしない）。
+
 ※4：欄の下には、API の応答の項目ごとの文（`errors[].message`）をそのまま表示し、画面で文を作らない（`features/checkout/placeOrderErrors.ts`）。契約の形の検証で見つかった誤りも、API が業務の検証エラーと同じ文を返す（[バックエンドの書き方](../../rules/backend-coding.md) 第 3.3 節）。
 
 キャンセルの申請が却下された注文には、問い合わせ先（`GET /shop` の店舗の情報。値はバックエンドの設定）を示す。
@@ -209,7 +221,9 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
 | 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderToStaticMarkup` で HTML にし、文字と並びを確認する（`src/test/render.tsx` の `renderMarkup`） | 対象の横（`*.test.tsx`） |
+| サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | `useActionState` を差し替えて結果を与え、`renderMarkup` で HTML にして確認する（`OrderForm.test.tsx`、`AddToCartForm.test.tsx` の形）。サーバーアクションそのものは呼ばないので、送る内容の確認はサーバーアクションのテストと E2E で行う | 対象の横（`*.test.tsx`） |
 | クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※7 | 対象の横（`*.test.tsx`） |
+| ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ページの関数を呼び、`renderMarkup` で HTML にする。ログインの状態は `signInAs`、店舗 API は MSW で差し替える。表示でなく確認の順（ログイン、ID の形）を確認するテストは、jsdom を使わずに Node でページの関数を呼び、移る先（`src/test/next.ts` の `redirectedTo`）と「見つからない」（例外の digest）で確認する（`app/checkout/[checkoutId]/page.test.tsx`） | ページの横（`app/**/page.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Node で直接呼ぶ。Next.js のモジュール（`next/headers` など）と `@/auth` は `src/test/` で置き換え、バックエンドは MSW（`msw/node`） | 対象の横（`*.test.ts`） |
 | 画面をつないだ流れ | E2E | `e2e/tests/` |
 

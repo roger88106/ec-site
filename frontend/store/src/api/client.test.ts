@@ -24,6 +24,35 @@ describe('店舗 API の口', () => {
 
     expect(received).toBe(TRACEPARENT)
   })
+
+  test('公開の口の要求にも、いまの要求の traceparent を付ける（キャッシュする GET も同じ）', async () => {
+    resetRequest({ headers: { [TRACEPARENT_HEADER]: TRACEPARENT } })
+    let received: string | null = null
+    server.use(
+      mswHttp.get(`${STORE_API}/categories`, ({ request }) => {
+        received = request.headers.get(TRACEPARENT_HEADER)
+        return HttpResponse.json({ items: [] })
+      }),
+    )
+
+    await (await getApi()).GET('/categories')
+
+    expect(received).toBe(TRACEPARENT)
+  })
+
+  test('要求に traceparent がなければ、付けない', async () => {
+    let received: string | null = 'unset'
+    server.use(
+      mswHttp.get(`${STORE_API}/categories`, ({ request }) => {
+        received = request.headers.get(TRACEPARENT_HEADER)
+        return HttpResponse.json({ items: [] })
+      }),
+    )
+
+    await (await getApi()).GET('/categories')
+
+    expect(received).toBeNull()
+  })
 })
 
 describe('店舗 API の 5xx のログ', () => {

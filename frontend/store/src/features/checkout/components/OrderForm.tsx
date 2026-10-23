@@ -11,12 +11,11 @@ import { placeOrder } from '@/actions/checkout'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { schemas } from '@/api/generated/constraints'
 import type { Municipality, Prefecture } from '@/api/types'
+import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrderErrors'
 import { postalCodeFill } from '@/features/checkout/postalCodeFill'
-
-/** 郵便番号の形（ハイフンを除いて数字 7 桁） */
-const POSTAL_CODE_DIGITS = /^[0-9]{7}$/
+import { normalizePostalCode } from '@/lib/postalCode'
 
 /**
  * お届け先の入力と、注文。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />
@@ -137,16 +136,13 @@ export function OrderForm({
       <Field error={errors.fields.phone} hint={t('phoneHint') /* 例 */} label={t('phone') /* 電話番号 */} name="phone">
         <Input autoComplete="tel" className="w-48" id="phone" inputMode="tel" name="phone" type="tel" />
       </Field>
-      {errors.message && (
-        <p aria-live="polite" className="text-destructive text-sm">
-          {errors.message}
-          {errors.backToCart && (
-            <Link className="ml-2 underline" href="/cart">
-              {t('viewCart') /* カートを見る */}
-            </Link>
-          )}
-        </p>
-      )}
+      <ActionError message={errors.message}>
+        {errors.backToCart && (
+          <Link className="ml-2 underline" href="/cart">
+            {t('viewCart') /* カートを見る */}
+          </Link>
+        )}
+      </ActionError>
       <Button className="w-full" disabled={pending} size="lg" type="submit">
         {pending ? t('placing') : t('submit', { total: formatYen(expectedTotal) }) /* 注文中か、総額を添えて注文する */}
       </Button>
@@ -195,8 +191,8 @@ function useAddressArea() {
 
   /** 郵便番号が 7 桁になったら引いて補う。補えなければ何もしない */
   const changePostalCode = async (value: string) => {
-    const digits = value.replace('-', '')
-    if (!POSTAL_CODE_DIGITS.test(digits)) {
+    const digits = normalizePostalCode(value)
+    if (digits === null) {
       lookedUpPostalCode.current = ''
       ++postalCodeRequest.current
       return

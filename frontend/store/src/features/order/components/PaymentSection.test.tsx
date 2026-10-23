@@ -25,6 +25,12 @@ describe('注文の支払', () => {
     expect(html).toContain('お支払いを確認しています')
   })
 
+  test('支払待ちでない注文で描くと、使い方の誤りとして例外にする', () => {
+    expect(() => renderMarkup(<PaymentSection order={{ ...pending, status: 'ACCEPTED' }} returned={false} />)).toThrow(
+      '支払の欄を出さない状況で描かれた：ACCEPTED',
+    )
+  })
+
   test('支払の期限を過ぎたら「支払う」を出さず、まもなくキャンセルになると示す', () => {
     const html = renderMarkup(
       <PaymentSection order={{ ...pending, actions: { requestCancellation: false, pay: false } }} returned={false} />,
@@ -32,16 +38,5 @@ describe('注文の支払', () => {
 
     expect(html).not.toContain('支払う</button>')
     expect(html).toContain('まもなくご注文はキャンセルになります')
-  })
-
-  test('支払待ちでなければ、何も出さない', () => {
-    const html = renderMarkup(
-      <PaymentSection
-        order={{ id: ORDER_ID, status: 'ACCEPTED', actions: { requestCancellation: true, pay: false } }}
-        returned={true}
-      />,
-    )
-
-    expect(html).toBe('')
   })
 })

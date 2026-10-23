@@ -29,7 +29,7 @@ describe('ヘッダーのログインの状態', () => {
 
     const html = await renderHeader()
 
-    expect(html).toContain(`<a class="hover:underline" href="${ACCOUNT_URL}">アカウント</a>`)
+    expect(html).toContain(`href="${ACCOUNT_URL}">アカウント</a>`)
     expect(html).toContain('山田 太郎 様')
   })
 

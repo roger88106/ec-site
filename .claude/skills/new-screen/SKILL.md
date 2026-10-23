@@ -26,7 +26,7 @@ description: ec-site のフロントに画面や操作を追加するときの�
 
 | 置き場所（import のパス） | 役割 | 使う場面 |
 |---------------------------|------|----------|
-| `lib/format` | `formatYen`（円）、`formatPrice`（税込・税抜の価格）、`formatNumber`（数）、`formatDateTime`（日時、日本時間）、`taxLabel`（税率ごとの消費税の行）、`formatPostalCode`（郵便番号）、`axisValuesLabel`（バリアントの軸の値の並び）、`japanDateTimeFormat` | 金額、数、日時、郵便番号の表示。`toLocaleString` や `Intl` を直接呼ばない |
+| `lib/format` | `formatYen`（円）、`formatPrice`（税込・税抜の価格）、`formatNumber`（数）、`formatDateTime`（日時、日本時間）、`taxLabel`（税率ごとの消費税の行）、`formatPostalCode`（郵便番号）、`axisValuesLabel`（バリアントの軸の値の並び）、`japanDateTimeFormat` | 金額、数、日時、郵便番号の表示。既定の書式で足りるものは自分で `toLocaleString` や `Intl` を呼ばない。既定と違う書式（符号付き、率など）は使う画面の `lib/` に置き、ロケールは `lib/locale` から取る |
 | `lib/orderLabels` | `orderStatusLabel`、`shipmentStatusLabel`、`carrierLabel`：注文の状態、配送状態、配送業者の表示名 | 2 つの画面で同じ列挙の表示名 |
 | `lib/options` | `withAllOption`：選択肢の先頭に「すべて」（値は null）を付ける | 絞り込みの選択肢 |
 | `lib/categoryTree` | `flattenTree`（カテゴリの木を深さ付きの一覧にする）、`categoryOptions`（その一覧を選択肢にする） | カテゴリの選択肢と字下げ |

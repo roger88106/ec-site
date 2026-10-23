@@ -175,7 +175,7 @@ public class TestcontainersConfig {
      */
     @Bean
     GenericContainer<?> imgproxy(Network network, GenericContainer<?> seaweedfs) {
-        var container = new GenericContainer<>(DockerImageName.parse("darthsim/imgproxy:v4.0.17"))
+        var container = new GenericContainer<>(DockerImageName.parse("darthsim/imgproxy:v4.0.18"))
                 .withNetwork(network)
                 .withEnv(Map.ofEntries(
                         Map.entry("IMGPROXY_KEY", IMGPROXY_KEY),

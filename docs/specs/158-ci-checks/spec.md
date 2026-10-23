@@ -330,10 +330,11 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
   - 依存：なし
   - 範囲：`.github/dependabot.yml`、`docs/guides/branches.md`（Dependabot の対象の欄）
   - 結果：GitHub の文書（https://docs.github.com/en/code-security/dependabot/working-with-dependabot/dependabot-options-reference ）では、`github-actions` の `directory: /` は `.github/workflows` とルートの `action.yml` を見ると読める。`.github/actions/` の下には触れていない。そのため `directories` に `/.github/actions/setup-frontend` を追加した。
-- [ ] **T158-04-02** [テスト] コンテナのイメージの版が compose、Gradle、統合テストで一致することを照合する検査を作る。今の食い違い（imgproxy、Keycloak、Mailpit）を compose の版にそろえ、Zipkin の版を patch まで固定する（DC-158-39、40）。
+- [x] **T158-04-02** [テスト] コンテナのイメージの版が compose、Gradle、統合テストで一致することを照合する検査を作る。今の食い違い（imgproxy、Keycloak、Mailpit）を compose の版にそろえ、Zipkin の版を patch まで固定する（DC-158-39、40）。
   - 依存：なし
   - 範囲：`scripts/ci/`、`docker/compose.yaml`、`backend/ecsite/src/integrationTest/`（版の文字列だけ）、`docs/guides/ci.md` の表
   - 統合テストのイメージの版を上げるので、push の後の CI の統合テストのジョブで通ることを確認する。手元では統合テストを実行しない（他のセッションと同時に実行しないため。skill `local-dev`）
+  - 結果：`image-versions.mjs` を追加し、imgproxy v4.0.18、Keycloak 26.8.1、Mailpit v1.31.6 に統合テストをそろえ、Zipkin を 3.6.1 に固定した（GitHub の openzipkin/zipkin のリリースの最新の 3 系。2026-04-08）。patch のない版は postgres（major だけ）と seaweedfs（major.minor だけ。patch の版がない）を許す。
 - [x] **T158-04-03** CI のビルドで tools のソースをコンパイルし、Gradle の配布物のハッシュを検証する（DC-158-38、41）。
   - 依存：なし
   - 範囲：`backend/ecsite/build.gradle.kts`、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties`、`.github/workflows/ci.yml`。spec 17 の手順（PIT、基準の検査）は変えない（DN-158-4）

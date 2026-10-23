@@ -1,7 +1,8 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { PRODUCT_ID, productDetail, variant } from '@/test/fixtures'
+import { getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
 
@@ -34,17 +35,12 @@ function serveStock(quantity: number, history: StockAdjustment[] = []) {
       const body = await request.json()
       state.requests.push(body)
       if (state.quantity + body.delta < 0) {
-        return Response.json(problem(400, 'INSUFFICIENT_STOCK', `在庫が足りません（在庫数 ${state.quantity}）。`), {
-          status: 400,
-        }) as never
+        return response(400).json(problem(400, 'INSUFFICIENT_STOCK', `在庫が足りません（在庫数 ${state.quantity}）。`))
       }
       if (body.reason === 'OTHER' && !body.memo) {
-        return Response.json(
+        return response(400).json(
           problem(400, 'STOCK_MEMO_REQUIRED', '理由が「その他」のときは、メモを入力してください。'),
-          {
-            status: 400,
-          },
-        ) as never
+        )
       }
       state.quantity += body.delta
       return response(201).json({
@@ -60,9 +56,11 @@ function serveStock(quantity: number, history: StockAdjustment[] = []) {
   return state
 }
 
-/** 在庫数のカードに出ている数 */
+/** 在庫数（名前「在庫数」の status）が expected になるまで待つ */
 async function shownQuantity(expected: number) {
-  return screen.findByText(String(expected), { selector: 'p' })
+  const quantity = await screen.findByRole('status', { name: '在庫数' })
+  await waitFor(() => expect(quantity).toHaveTextContent(new RegExp(`^${expected}$`)))
+  return quantity
 }
 
 describe('在庫の調整', () => {
@@ -167,9 +165,12 @@ describe('操作した運営者', () => {
     ])
     renderApp(URL)
 
-    const operatorCells = await screen.findAllByRole('cell', { name: '在庫 一郎' })
-    expect(operatorCells).toHaveLength(1)
-    expect(screen.getByRole('columnheader', { name: '操作した運営者' })).toBeInTheDocument()
+    const headers = await screen.findAllByRole('columnheader')
+    const operatorColumn = headers.findIndex((header) => header.textContent === '操作した運営者')
+    expect(operatorColumn).toBeGreaterThanOrEqual(0)
+    const operatorOf = (row: HTMLElement) => within(row).getAllByRole('cell')[operatorColumn]
+    expect(operatorOf(getRow('在庫 一郎'))).toHaveTextContent('在庫 一郎')
+    expect(operatorOf(getRow('注文番号 20261010-482915'))).toBeEmptyDOMElement()
   })
 })
 

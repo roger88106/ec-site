@@ -14,7 +14,7 @@
 - [ ] **T157-04-02** [P] 商品のテストを修正する。`as never` を型付きの応答に、商品の更新の応答を契約の 204 にする。送った本文に契約の型を付ける。在庫数のハンドラーは補助を使う。並びのインデックスと行の探し方を補助に、部分一致の確認を全体の一致にする。商品の一覧の項目と 409 の応答は補助を使う。関数名だけの describe と名詞だけの名前を振る舞いの文にする（DC-157-12、15、18、19、24、31、32）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/product/pages/ProductCreatePage.test.tsx`、`ProductEditPage.test.tsx`、`ProductListPage.test.tsx`、`frontend/admin/src/features/product/imageUpload.test.ts`、`frontend/admin/src/features/product/product.test.ts`
-- [ ] **T157-04-03** [P] カテゴリと在庫のテストを修正する。HTML の要素の種類と DOM の位置で探す所を、役割と名前か補助に（名前のない要素は画面に支援技術向けの名前を追加する）、`as never` を型付きの応答にする。AC-9・270 と AC-12 の重複したテストをまとめる。在庫の調整の履歴の「空」を確認する。カテゴリの節と 409 の応答は補助を使い、行の要素の型の変換を除く（DC-157-11、12、15、18、22、27、31、32）。
+- [x] **T157-04-03** [P] カテゴリと在庫のテストを修正する。HTML の要素の種類と DOM の位置で探す所を、役割と名前か補助に（名前のない要素は画面に支援技術向けの名前を追加する）、`as never` を型付きの応答にする。AC-9・270 と AC-12 の重複したテストをまとめる。在庫の調整の履歴の「空」を確認する。カテゴリの節と 409 の応答は補助を使い、行の要素の型の変換を除く（DC-157-11、12、15、18、22、27、31、32）。
   - 依存：なし
   - 範囲：`frontend/admin/src/features/category/pages/CategoryPage.test.tsx`、`frontend/admin/src/features/inventory/pages/StockPage.test.tsx`、名前を追加する画面のコンポーネント（`features/category/`、`features/inventory/`）
 - [ ] **T157-04-04** [P] 税のテストを修正する。`as never` を型付きの応答に、税区分の再定義と 409 の応答を補助にする（DC-157-15、31、32）。

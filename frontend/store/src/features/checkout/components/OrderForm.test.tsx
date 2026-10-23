@@ -94,7 +94,7 @@ describe('お届け先の入力と注文', () => {
     expect(html).toContain('>注文する（3,200 円）</button>')
     // 初期表示には、失敗の文も欄ごとの誤りもない（段落は、メールアドレスの見出しと案内と、欄のヒントだけ）
     expect(html).not.toContain('aria-live')
-    const paragraphs = [...html.matchAll(/<p[ >][^<]*<\/p>/g)].map((match) => match[0].replace(/<[^>]*>/g, ''))
+    const paragraphs = [...html.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)].map((match) => match[1])
     expect(paragraphs).toEqual([
       'メールアドレス',
       'member@example.com',

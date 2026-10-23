@@ -1,7 +1,7 @@
 package com.ecsite.module.reporting.application.model.view;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.reporting.domain.ReportGender;
+import com.ecsite.module.reporting.domain.sales.ReportGender;
 
 /**
  * 性別の売上

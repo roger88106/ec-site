@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.sales;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

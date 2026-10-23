@@ -1,6 +1,7 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.sales;
 
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.reporting.domain.ReportingErrorCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;

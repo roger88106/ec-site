@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.snapshot;
 
 /**
  * 配送状態（docs/design/modules/shipping.md「配送状態と順位」の写し）。<br />

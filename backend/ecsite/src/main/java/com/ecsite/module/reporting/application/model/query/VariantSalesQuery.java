@@ -1,7 +1,7 @@
 package com.ecsite.module.reporting.application.model.query;
 
-import com.ecsite.module.reporting.domain.Basis;
-import com.ecsite.module.reporting.domain.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.Basis;
+import com.ecsite.module.reporting.domain.sales.ReportPeriod;
 
 import java.util.UUID;
 

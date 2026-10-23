@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.snapshot;
 
 /**
  * 状態の履歴の状態。出来事に応じて、注文の状態（{@link ReportOrderStatus}）か配送状態（{@link DeliveryStatus}）のどちらかを持つ。

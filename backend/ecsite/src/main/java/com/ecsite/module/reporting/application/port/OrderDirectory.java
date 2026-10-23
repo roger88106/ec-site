@@ -1,6 +1,6 @@
 package com.ecsite.module.reporting.application.port;
 
-import com.ecsite.module.reporting.domain.ReportOrder;
+import com.ecsite.module.reporting.domain.snapshot.ReportOrder;
 
 import java.util.Optional;
 import java.util.UUID;

@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.sales;
 
 /**
  * 集計の粒度（売上の推移の区切り）

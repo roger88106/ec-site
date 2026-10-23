@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.snapshot;
 
 import org.jspecify.annotations.Nullable;
 

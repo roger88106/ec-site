@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.snapshot;
 
 /**
  * 状態の履歴の出来事

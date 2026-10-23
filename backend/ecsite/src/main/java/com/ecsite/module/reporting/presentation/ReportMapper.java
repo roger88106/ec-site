@@ -13,10 +13,10 @@ import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSales;
 import com.ecsite.api.admin.model.VariantSalesReport;
 import com.ecsite.module.reporting.application.model.view.ReportSettingsView;
-import com.ecsite.module.reporting.domain.AgeGroup;
-import com.ecsite.module.reporting.domain.Basis;
-import com.ecsite.module.reporting.domain.ReportGender;
-import com.ecsite.module.reporting.domain.TrendPoint;
+import com.ecsite.module.reporting.domain.sales.AgeGroup;
+import com.ecsite.module.reporting.domain.sales.Basis;
+import com.ecsite.module.reporting.domain.sales.ReportGender;
+import com.ecsite.module.reporting.domain.sales.TrendPoint;
 import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
@@ -60,12 +60,12 @@ class ReportMapper {
      * @param granularity 集計の粒度
      * @return 集計の粒度
      */
-    com.ecsite.module.reporting.domain.Granularity toGranularity(Granularity granularity) {
+    com.ecsite.module.reporting.domain.sales.Granularity toGranularity(Granularity granularity) {
         return switch (granularity) {
-            case WEEK -> com.ecsite.module.reporting.domain.Granularity.WEEK;
-            case MONTH -> com.ecsite.module.reporting.domain.Granularity.MONTH;
-            case QUARTER -> com.ecsite.module.reporting.domain.Granularity.QUARTER;
-            case YEAR -> com.ecsite.module.reporting.domain.Granularity.YEAR;
+            case WEEK -> com.ecsite.module.reporting.domain.sales.Granularity.WEEK;
+            case MONTH -> com.ecsite.module.reporting.domain.sales.Granularity.MONTH;
+            case QUARTER -> com.ecsite.module.reporting.domain.sales.Granularity.QUARTER;
+            case YEAR -> com.ecsite.module.reporting.domain.sales.Granularity.YEAR;
         };
     }
 

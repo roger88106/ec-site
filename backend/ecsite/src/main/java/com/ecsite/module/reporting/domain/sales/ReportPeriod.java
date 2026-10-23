@@ -1,6 +1,7 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.sales;
 
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.reporting.domain.ReportingErrorCode;
 import lombok.NonNull;
 
 import java.time.DayOfWeek;

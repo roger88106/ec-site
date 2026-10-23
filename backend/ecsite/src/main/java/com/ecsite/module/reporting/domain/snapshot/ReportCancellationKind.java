@@ -1,4 +1,4 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.snapshot;
 
 /**
  * キャンセルの種類（注文のキャンセルの種類の写し。docs/design/modules/order.md）

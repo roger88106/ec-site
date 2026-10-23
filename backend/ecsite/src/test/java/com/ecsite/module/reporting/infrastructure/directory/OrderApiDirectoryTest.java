@@ -1,9 +1,9 @@
 package com.ecsite.module.reporting.infrastructure.directory;
 
 import com.ecsite.module.order.api.OrderReportSnapshot;
-import com.ecsite.module.reporting.domain.ReportBuyerGender;
-import com.ecsite.module.reporting.domain.ReportCancellationKind;
-import com.ecsite.module.reporting.domain.ReportOrderStatus;
+import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
+import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
+import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

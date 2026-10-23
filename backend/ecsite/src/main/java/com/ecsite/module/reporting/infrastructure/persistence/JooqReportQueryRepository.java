@@ -2,10 +2,10 @@ package com.ecsite.module.reporting.infrastructure.persistence;
 
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
-import com.ecsite.module.reporting.domain.Basis;
-import com.ecsite.module.reporting.domain.DailySales;
-import com.ecsite.module.reporting.domain.ReportBuyerGender;
-import com.ecsite.module.reporting.domain.ReportPeriod;
+import com.ecsite.module.reporting.domain.sales.Basis;
+import com.ecsite.module.reporting.domain.sales.DailySales;
+import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
+import com.ecsite.module.reporting.domain.sales.ReportPeriod;
 import lombok.RequiredArgsConstructor;
 import org.jooq.Condition;
 import org.jooq.DSLContext;

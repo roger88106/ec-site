@@ -1,11 +1,11 @@
 package com.ecsite.module.reporting.application;
 
 import com.ecsite.module.order.event.OrderStatusChanged;
-import com.ecsite.module.reporting.domain.DeliveryStatus;
-import com.ecsite.module.reporting.domain.HistoryKind;
-import com.ecsite.module.reporting.domain.ReportCancellationKind;
-import com.ecsite.module.reporting.domain.ReportOrderStatus;
-import com.ecsite.module.reporting.domain.StatusHistoryEntry;
+import com.ecsite.module.reporting.domain.snapshot.DeliveryStatus;
+import com.ecsite.module.reporting.domain.snapshot.HistoryKind;
+import com.ecsite.module.reporting.domain.snapshot.ReportCancellationKind;
+import com.ecsite.module.reporting.domain.snapshot.ReportOrderStatus;
+import com.ecsite.module.reporting.domain.snapshot.StatusHistoryEntry;
 import com.ecsite.module.shipping.event.DeliveryStatusChanged;
 import lombok.RequiredArgsConstructor;
 import org.springframework.modulith.events.ApplicationModuleListener;

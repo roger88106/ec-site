@@ -1,5 +1,6 @@
-package com.ecsite.module.reporting.domain;
+package com.ecsite.module.reporting.domain.sales;
 
+import com.ecsite.module.reporting.domain.snapshot.ReportBuyerGender;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;

@@ -184,9 +184,10 @@ DC は 49 で、spec 158（M、51）と同じくらいである。変えるの�
   - 依存：なし
   - 範囲：`scripts/ci/doc-terms.mjs`、`scripts/ci/doc-terms.json`、テスト
   - 結果：ng の項目に任意の `allow`（許す語の配列）を持てるようにし、一致の位置が許す語の中なら数えない。許す語が使わない語を含まないときは設定の誤りとして例外で失敗にする。今のリポジトリは違反 0 件で通り、ci.md の行を合わせた。
-- [ ] **T183-02-04** [テスト] テストの時間の待ちの検査の対象を広げ、文言の直書きの検査のコメントの除去を共通の関数にする（DC-183-16、17）。
+- [x] **T183-02-04** [テスト] テストの時間の待ちの検査の対象を広げ、文言の直書きの検査のコメントの除去を共通の関数にする（DC-183-16、17）。
   - 依存：なし
   - 範囲：`scripts/ci/time-waits.mjs`、`scripts/ci/hardcoded-text.mjs`、`scripts/ci/lib/strip-comments.mjs`、テスト
+  - 結果：`time-waits` が E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助も読む。対象を広げて見つかった `e2e/scripts/run.ts` の sleep（ロックの待ち時間が 0 で実際には待たない）は、理由付きの除外の一覧（`time-waits-exclusions.json`）に置いた。`hardcoded-text` は既に共通の `stripComments` を使っていたので実装は変えず、行番号の回帰テストを加えた。今のリポジトリで 0 件で通り、ci.md の行を合わせた。
 - [ ] **T183-02-05** [テスト] マイグレーションの検査の改名・削除の判定を、`develop` との分岐点までの履歴に絞る。Git の一覧を読む全ての検査が、対象が 0 件のときに失敗にする（DC-183-18、19）。
   - 依存：T183-01-01、T183-02-04（同じ検査のファイルを変える）
   - 範囲：`scripts/ci/migrations.mjs`、`scripts/ci/lib/git-files.mjs`、Git の一覧を読む検査、テスト

@@ -89,7 +89,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | `runtime-versions` | JDK の版（`ci.yml` の `env.JAVA_VERSION` と `backend/ecsite/gradle/libs.versions.toml` の `java`）が一致する。Node の版（`.node-version`）が、ルートの `package.json` の `engines.node`（`>=N` の形だけを扱う）の範囲を満たす。1 か所から読めない版は、この検査で一致を確認する | 置き場所の版をそろえる。Node の版を上げるときは `.node-version` と `engines.node` を合わせる | なし |
 | `spec-numbers` | 本番のコードのコメントに spec・plan・tasks の番号（MVP の `AC-n` や `T011-…`、1→10 の `AC-7-1` や `T7-…`）がない（[コメントの書き方](../rules/comments.md) 第 1 節） | 番号を削除し、規則を言葉で書く。spec との対応はテスト名に書く | なし |
 | `test-names` | バックエンドの全ての `@Test`・`@ParameterizedTest` に `@DisplayName` がある（[テストの書き方](../rules/test-writing.md) 第 2.2 節） | 振る舞いを書いた名前を付ける | なし |
-| `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する（[テストの書き方](../rules/test-writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | なし |
+| `time-waits` | テストが時間で待っていない。決まった時間だけ待つ書き方（Awaitility の `during`・`pollDelay`、Promise で包んだ `setTimeout`）も検出する。バックエンド・画面・E2E のテストに加え、E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助（`src/test/`）も読む（[テストの書き方](../rules/test-writing.md) 第 5 節） | 条件で待つ。バックエンドの「起きないこと」は `AsyncEvents` で待つ | `time-waits-exclusions.json` に `{キー: 理由}`。キーはリポジトリのルートからのファイルのパス。時間で待つ行がないファイルの除外は失敗 |
 
 ※1：テスト名に含まれない AC と、当たる commit がない `related-specs` の除外は、CI（環境変数 `CI=true`）でだけ失敗にし、手元（hook を含む）では警告にする。`check-all.sh` は、成功した検査の警告（`警告：` で始まる行）も出力する。spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。手元で CI と同じに確認するときは `CI=true scripts/ci/check-all.sh`。ほかの誤り（範囲の表記、spec にない AC 番号、テストがある AC の除外など、`related-specs` の当たる commit がない除外を除く除外の一覧の誤り）は、手元でも失敗にする。
 

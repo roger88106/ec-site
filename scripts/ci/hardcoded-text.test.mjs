@@ -35,6 +35,11 @@ describe('表示の文言を直接書いた所の検査', () => {
     )
   })
 
+  test('複数行のコメントの後も、行番号は元のファイルの行と同じ', () => {
+    const text = ['/*', ' * 説明', ' */', '{/* 注', '  続き */}', "const label = '保存'"].join('\n')
+    assert.deepEqual(findHardcodedText(text), [{ line: 6, text: "const label = '保存'" }])
+  })
+
   test('ログとプログラムの誤りの例外の文は見ない', () => {
     const text = [
       "await log.warn('カートを移せませんでした')",

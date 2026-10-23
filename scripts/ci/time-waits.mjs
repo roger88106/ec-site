@@ -2,15 +2,23 @@
 // 時間で待つテストは、遅い環境で失敗し、速い環境で時間を無駄にする。条件で待つ（latch、Playwright の expect の再試行など）。
 // 使い方：node scripts/ci/time-waits.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { fileURLToPath } from 'node:url'
+import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
 import { listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
 
-/** テストのコードの置き場所。本番のソースを読む検査ではなくテストを読むので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない */
+/**
+ * テストのコードの置き場所。本番のソースを読む検査ではなくテストを読むので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。
+ * テストを動かす側（E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助）も、時間で待てば同じ問題になるので読む
+ */
 const TEST_FILES = [
   /^backend\/ecsite\/src\/(?:test|integrationTest)\/.*\.java$/,
   /^frontend\/(?:admin|store|shared)\/src\/.*\.test\.tsx?$/,
-  /^e2e\/(?:tests|src|showcase)\/.*\.ts$/,
+  /^frontend\/(?:admin|store|shared)\/src\/test\/.*\.tsx?$/,
+  /^frontend\/(?:admin|store|shared)\/(?:vite|vitest)\.config\.[mc]?[tj]s$/,
+  /^e2e\/(?:tests|src|showcase|scripts)\/.*\.ts$/,
+  /^e2e\/playwright(?:\.\w+)?\.config\.[mc]?[tj]s$/,
 ]
 
 /**
@@ -47,15 +55,31 @@ export function isTestFile(file) {
   return TEST_FILES.some((pattern) => pattern.test(file))
 }
 
-if (isMain(import.meta.url)) {
-  const files = listGitFiles().filter((file) => isTestFile(file))
-  let count = 0
+/**
+ * ファイルごとに、時間で待つ行を集める。
+ *
+ * @param {string[]} files 調べるファイル
+ * @param {(file: string) => string} read ファイルの中身を読む関数
+ * @returns {Map<string, { line: number, call: string }[]>} 時間で待つ行があるファイルと、その行（ない場合はファイルを含めない）
+ */
+export function scanTestFiles(files, read) {
+  const hitsByFile = new Map()
   for (const file of files) {
-    for (const hit of findTimeWaits(readFileSync(file, 'utf8'))) {
-      console.log(`${file}:${hit.line} ${hit.call}`)
-      count += 1
-    }
+    const hits = findTimeWaits(read(file))
+    if (hits.length > 0) hitsByFile.set(file, hits)
   }
-  console.log(`時間で待つテスト：${count}`)
-  process.exit(count ? 1 : 0)
+  return hitsByFile
+}
+
+if (isMain(import.meta.url)) {
+  const exclusions = readExclusions(fileURLToPath(new URL('./time-waits-exclusions.json', import.meta.url)))
+  const files = listGitFiles().filter((file) => isTestFile(file))
+  // 除外のファイルも読む。除外が要るのは、時間で待つ行があるファイルだけ
+  const hitsByFile = scanTestFiles(files, (file) => readFileSync(file, 'utf8'))
+  const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))
+  const problems = checkExclusions('time-waits-exclusions.json', exclusions, (file) => hitsByFile.has(file))
+  for (const problem of problems) console.log(problem)
+  for (const hit of found) console.log(`${hit.file}:${hit.line} ${hit.call}`)
+  console.log(`時間で待つテスト：${found.length}、除外の誤り：${problems.length}`)
+  process.exit(found.length > 0 || problems.length > 0 ? 1 : 0)
 }

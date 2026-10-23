@@ -20,7 +20,7 @@
 - [x] **T157-03-04** [P] 管理画面のダウンロードの記録の補助を書く。URL の作成とリンクのクリックを `vi.spyOn` で差し替え、保存名と本文を返す。管理画面の setup に `restoreAllMocks` を追加し、同じクリーンアップを持つファイルの `afterEach` を削除する。レポートの 3 画面の CSV のテストを、この補助に置き換える（DC-157-29、30）。
   - 依存：T157-03-01
   - 範囲：`frontend/admin/src/test/download.ts`、`frontend/admin/src/test/setup.ts`、`frontend/admin/src/features/report/pages/SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx`、`CustomerBreakdownPage.test.tsx`（CSV のテストと、そのための `afterEach` だけ）、`frontend/admin/src/api/useApiMutation.test.tsx`（`afterEach` だけ）
-- [ ] **T157-03-05** [P] 管理画面の API の差し替えの補助に、409 の応答と、条件で応答を変えるハンドラーが返す型付きの応答を追加する。テストデータの補助に、商品の一覧の項目、カテゴリの節、在庫数の応答を追加する。`api/errors.test.ts` の問題の応答と、`App.test.tsx`・税率のテストの税区分の再定義を、補助を使う形にする（DC-157-15、31、32）。
+- [x] **T157-03-05** [P] 管理画面の API の差し替えの補助に、409 の応答と、条件で応答を変えるハンドラーが返す型付きの応答を追加する。テストデータの補助に、商品の一覧の項目、カテゴリの節、在庫数の応答を追加する。`api/errors.test.ts` の問題の応答と、`App.test.tsx`・税率のテストの税区分の再定義を、補助を使う形にする（DC-157-15、31、32）。
   - 依存：T157-03-01
   - 範囲：`frontend/admin/src/test/server.ts`、`frontend/admin/src/test/fixtures.ts`、`frontend/admin/src/api/errors.test.ts`、`frontend/admin/src/app/App.test.tsx`。税率のテストの置き換えは T157-04-04 で行う
 - [x] **T157-03-06** [P] 店舗画面のテストデータの補助に、注文、お届け先、バリアントと軸、カートの ID を追加し、本番の環境変数の一式の補助を作る。補助と同じ定義を持つファイル（フォームの値、カートの ID）を、補助を使う形にする（DC-157-31）。

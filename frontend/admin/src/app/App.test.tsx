@@ -1,10 +1,8 @@
 import { screen } from '@testing-library/react'
 import { describe, expect, it } from 'vitest'
+import { TAX_CATEGORY_ID } from '@/test/fixtures'
 import { renderApp, TEST_OPERATOR_NAME } from '@/test/renderApp'
 import { http, problem, server } from '@/test/server'
-
-/** テストで使う税区分の ID */
-const TAX_CATEGORY_ID = '00000000-0000-0000-0000-000000000001'
 
 describe('結合テストの土台', () => {
   it('API の応答を画面に出し、リンクで移った画面に API のエラーのメッセージを出す', async () => {

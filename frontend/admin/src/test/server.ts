@@ -1,5 +1,5 @@
 import { setupServer } from 'msw/node'
-import { createOpenApiHttp } from 'openapi-msw'
+import { createOpenApiHttp, type HttpMethod, type ResponseResolver, type ResponseResolverInfo } from 'openapi-msw'
 import type { paths } from '@/api/generated/admin'
 import type { ErrorCode, Problem } from '@/api/types'
 
@@ -28,3 +28,35 @@ export const server = setupServer()
 export function problem(status: number, errorCode: ErrorCode, message: string, errors?: Problem['errors']): Problem {
   return { type: 'about:blank', status, errorCode, message, traceId: 'test-trace', errors }
 }
+
+/** 更新の競合（409、CONCURRENT_MODIFICATION）の本文 */
+export function concurrentModification(): Problem {
+  return problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。')
+}
+
+/**
+ * 更新の競合（409）の応答を作る。ハンドラーに渡される {@code response} を渡す。<br />
+ * 409 が契約にない API では、型エラーになる。
+ * 例：{@code http.put('/products/{productId}', ({ response }) => conflict(response))}
+ *
+ * @param response ハンドラーに渡される {@code response}
+ */
+export function conflict<Result>(
+  response: (status: 409) => { json: (body: Problem, init?: undefined) => Result },
+): Result {
+  return response(409).json(concurrentModification())
+}
+
+/**
+ * 条件で応答を変える関数の型。第 2 引数の {@code response} で、契約に合った応答を作る（{@code Response} を返さない）。<br />
+ * 例：{@code reply: Reply<'/tax-categories', 'post', CreateTaxCategoryRequest>}、
+ * {@code (body, response) => response(409).json(problem(...))}
+ *
+ * @typeParam Path admin.yaml のパス
+ * @typeParam Method HTTP のメソッド（小文字）
+ * @typeParam Arg 関数に渡す値（リクエストの本文など）
+ */
+export type Reply<Path extends keyof paths, Method extends HttpMethod, Arg> = (
+  arg: Arg,
+  response: ResponseResolverInfo<paths, Path, Method>['response'],
+) => ReturnType<ResponseResolver<paths, Path, Method>>

@@ -73,7 +73,7 @@
 - [x] **T155-02-18** `ModuleStructureTest` に 2 つのテストメソッドを追加する。application は `api` に依存しない。presentation と `application.model` は `application.port` に依存しない。`allowEmptyShould` を付けない。違反を修正した後に有効にし、一時的に違反を入れて、失敗することを確認する（DC-155-15、16）。
   - 依存：T155-02-01〜15、T155-02-17
   - 範囲：`test/architecture/ModuleStructureTest.java`
-- [ ] **T155-02-19** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.1 節「公開の API」を、`api/` の interface を持たない `@Component` のクラスが application の service に委譲する、という実装に合わせる。規則の一覧の該当行も修正する。層の依存の表の presentation の行を「application（`port/` を除く）」にする。[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.4 節の表の `reporting.domain` の数を 16 から 18 に修正する。規則の一覧に、application と `api`、presentation と `port` の規則の行を追加する（DC-155-13、15、16）。
+- [x] **T155-02-19** [バックエンドの書き方](../../../rules/backend-coding.md) を修正する。バックエンドの書き方 第 1.1 節「公開の API」を、`api/` の interface を持たない `@Component` のクラスが application の service に委譲する、という実装に合わせる。規則の一覧の該当行も修正する。層の依存の表の presentation の行を「application（`port/` を除く）」にする。[バックエンドの書き方](../../../rules/backend-coding.md) 第 1.4 節の表の `reporting.domain` の数を 16 から 18 に修正する。規則の一覧に、application と `api`、presentation と `port` の規則の行を追加する（DC-155-13、15、16）。
   - 依存：T155-02-18
   - 範囲：`docs/rules/backend-coding.md`（`:7-32,44,58-64,76,98-103`）
 - [ ] **T155-02-20** 各モジュールの設計書の「構成」を、段階 2 のコードに合わせる。order（`model/` の 9 クラス、`port/`）、cart（`model/`）、media（`model/`）、catalog（`model/view/`、`model/query/`）、storefront（`model/`、`port/`）、reporting（`ReportBuyerGender`、`HistoryStatus`）である。storefront の設計書の port の型に関する記述（`:35`）を、application の型に修正する。DC-155-45 のため、次の 3 点も個別に修正する。決済の設計書の「構成」の `model/` を、コードの `model/view/` に合わせる。カートの設計書の「構成」と公開の表の利用者を、注文だけにする（コードの `cart/api/package-info.java` と一致する）。税の設計書の公開の表と `tax/api/package-info.java` の利用者に、注文を追加する。

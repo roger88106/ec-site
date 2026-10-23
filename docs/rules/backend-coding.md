@@ -8,7 +8,8 @@
 |----|------|----------|
 | 1.1 | 標準の構成（層とパッケージ） | 自動（ArchUnit） |
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
-| 1.1 | 公開の API は `api/` のクラスが service に委ねる | 自動（ArchUnit） |
+| 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
+| 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
 | 1.1 | 共通コードと設定はモジュールに依存せず、モジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
@@ -59,7 +60,7 @@ module/<モジュール>/
 | 層 | 依存してよい先 |
 |----|----------------|
 | api・event | application、domain、common |
-| presentation | application、domain（エラーの定義と値の型）、common |
+| presentation | application（`port/` を除く）、domain（エラーの定義と値の型）、common |
 | application | domain、common |
 | domain | common（レベル A は Spring・jOOQ にも依存しない） |
 | infrastructure | application の port、domain、common |
@@ -78,7 +79,7 @@ module/<モジュール>/
 - **参照と更新（レベル A）**：参照の service は、`application/model/` の view を返し、集約を返さない。presentation は集約を受け取らない。画面の操作の可否は、view を作る所で集約のメソッドを呼んで view に入れる。
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
 - **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
-- **公開の API**：`api/` の interface は、`api/` の `@Component` が実装し、application の service に委ねる。service は `api/` の interface を実装しない。
+- **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
 - **domain の直下**：モジュールの domain の直下には、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
@@ -107,7 +108,7 @@ module/<モジュール>/
 |------------|----|--------------|
 | `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
 | `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラス（認可の対応表、認可の判定、契約の操作の一覧）が package-private。分けるとクラスを公開しなければならない |
-| `reporting.domain` | 16 | 集約がなく、集計の値（区切り、推移の点、日ごとの売上 など）と列挙が多い。集約ごとに分ける区切りがない |
+| `reporting.domain` | 18 | 集約がなく、集計の値（区切り、推移の点、日ごとの売上 など）と列挙が多い。集約ごとに分ける区切りがない |
 
 ### 1.5 共通の型
 

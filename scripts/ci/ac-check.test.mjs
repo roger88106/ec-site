@@ -10,6 +10,7 @@ import {
   parseAcList,
   parseAcRefs,
   findAmbiguousAcLists,
+  findSpacedAcLists,
   parseSpecAcDefinitions,
   parseSpecAcs,
   renderAcList,
@@ -315,6 +316,25 @@ describe('1→10 の AC（AC-n-m）', () => {
     const result = check({ specAcs: new Set(['7-1', '7-2', 2]), tests: tests('AC-7-1、2 a', 'AC-7-2 b'), exclusions: {}, strict: false })
     assert.equal(result.ok, false)
     assert.deepEqual(result.ambiguous, [{ file: 'X.test.ts', name: 'AC-7-1、2 a' }])
+  })
+
+  test('空白（半角・全角）で区切った AC の並びを見つける', () => {
+    assert.deepEqual(findSpacedAcLists('AC-1 AC-2 注文'), ['AC-1 AC-2'])
+    assert.deepEqual(findSpacedAcLists('AC-98 AC-187 AC-189 注文'), ['AC-98 AC-187 AC-189'])
+    assert.deepEqual(findSpacedAcLists('AC-7-1　AC-7-2 注文'), ['AC-7-1　AC-7-2'])
+  })
+
+  test('読点で並べた AC と、1 つだけの AC は、空白の並びにしない', () => {
+    assert.deepEqual(findSpacedAcLists('AC-1、AC-2 注文'), [])
+    assert.deepEqual(findSpacedAcLists('AC-1、2 注文'), [])
+    assert.deepEqual(findSpacedAcLists('AC-7-1 数量を 10 にする'), [])
+    assert.deepEqual(findSpacedAcLists('AC-1 注文し、AC-2 の確認も'), [])
+  })
+
+  test('空白で区切った AC の並びのテスト名があれば、check は失敗する（手元でも）', () => {
+    const result = check({ specAcs: new Set([1, 2, 3]), tests: tests('AC-1 AC-2 a', 'AC-3 b'), exclusions: {}, strict: false })
+    assert.equal(result.ok, false)
+    assert.deepEqual(result.spaced, [{ file: 'X.test.ts', name: 'AC-1 AC-2 a' }])
   })
 
   test('新しい形の範囲（AC-7-1〜3、AC-7-1〜7-3）は、範囲として返す', () => {

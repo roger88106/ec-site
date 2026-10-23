@@ -371,9 +371,10 @@ T158-03-02 の実装役が、DC-158-23・24 の規則が規則の文書にない
   - 依存：T158-03-02（CSS のクラスの確認と同じ検査に加える）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`docs/guides/ci.md`、`docs/rules/test-writing.md`
   - 結果：画面のテストの `data-slot` と `querySelector(All)` を見つける検査を加えた（違反 0 件）。E2E は対象にしない（`locator` は IdP の id と詳細の xpath を許していて、今の E2E に `data-slot` と `querySelector` がないため）。
-- [ ] **T158-05-02** [テスト] AC の照合で、空白で区切った AC の並びを失敗にする。CI の検査の文書とテストの書き方の記述を合わせる（DC-158-26〜28、51）。
+- [x] **T158-05-02** [テスト] AC の照合で、空白で区切った AC の並びを失敗にする。CI の検査の文書とテストの書き方の記述を合わせる（DC-158-26〜28、51）。
   - 依存：T158-02-01（AC の番号の正規表現を使う）
   - 範囲：`scripts/ci/ac-check.mjs`、テスト、`docs/guides/ci.md`、`docs/rules/test-writing.md`
+  - 結果：`findSpacedAcLists` で `AC-1 AC-2` の並び（半角・全角の空白、両方の形）を失敗にした（違反 0 件）。レッドは import の失敗で確認した。
 
 ### 段階 6：完了
 

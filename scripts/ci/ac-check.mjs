@@ -10,6 +10,7 @@
 //   skip・fixme のテストと、skip・fixme のまとまりの中のテストは数えない。Git の対象のファイルだけを読む
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
+//   空白で区切った AC の並びがある（AC-1 AC-2。AC-1、AC-2 と書く）、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
@@ -154,6 +155,18 @@ export function findAmbiguousAcLists(name) {
 }
 
 /**
+ * テスト名から、空白（半角・全角）で区切った AC の並び（AC-1 AC-2）を取り出す。<br />
+ * 理由：複数の AC は読点で 1 つずつ並べる決まりで（AC-1、AC-2）、空白の並びは読み方が人によって分かれるため。
+ *
+ * @param name テスト名
+ * @returns 空白で区切った並びの文字列
+ */
+export function findSpacedAcLists(name) {
+  const list = new RegExp(`AC-${AC_NUMBER}(?:[\\s\\u3000]+AC-${AC_NUMBER})+`, 'g')
+  return [...name.matchAll(list)].map((match) => match[0])
+}
+
+/**
  * AC とテスト名を照合する。
  *
  * @param input.specAcs    spec の AC の番号
@@ -166,6 +179,7 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
   const covered = new Set()
   const ranges = []
   const ambiguous = []
+  const spaced = []
   const unknown = []
   const deprecatedRefs = []
   for (const test of tests) {
@@ -175,6 +189,9 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
     }
     if (findAmbiguousAcLists(test.name).length > 0) {
       ambiguous.push(test)
+    }
+    if (findSpacedAcLists(test.name).length > 0) {
+      spaced.push(test)
     }
     for (const ac of refs.acs) {
       if (!specAcs.has(ac)) {
@@ -206,11 +223,12 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
     (!strict || missing.length === 0) &&
     ranges.length === 0 &&
     ambiguous.length === 0 &&
+    spaced.length === 0 &&
     unknown.length === 0 &&
     deprecatedRefs.length === 0 &&
     staleExclusions.length === 0 &&
     invalidExclusions.length === 0
-  return { ok, missing, ranges, ambiguous, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
+  return { ok, missing, ranges, ambiguous, spaced, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
 }
 
 /** AC 一覧の状態 */
@@ -370,6 +388,9 @@ function report(result, root, strict) {
   }
   for (const test of result.ambiguous) {
     console.log(`曖昧な AC の並べ方（新しい形は AC-7-1、AC-7-2 と書く）：${where(test)}`)
+  }
+  for (const test of result.spaced) {
+    console.log(`空白で区切った AC の並び（AC-1、AC-2 と読点で 1 つずつ書く）：${where(test)}`)
   }
   for (const test of result.unknown) {
     console.log(`spec にない AC-${test.ac}：${where(test)}`)

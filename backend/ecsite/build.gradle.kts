@@ -335,7 +335,7 @@ tasks.named<Checkstyle>("checkstyleMain") {
 //   domain のクラスと同じパッケージのテストしか使われず、ほかのパッケージ（architecture、contract など）のテストが変異を検出できない。
 //   PIT は変異の前にカバレッジを取るため、渡した全ての単体テストを 1 回実行する（CI で約 1 分）。変異ごとには、対象のクラスを実行するテストだけを実行する。
 //   PIT は遅いので、check には入れない（CI は専用の手順で流す）。
-//   PIT はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない
+//   PIT の本体と間接の依存は、pitest の構成を licenseReport の対象に入れて checkLicense で照合する（Gradle のプラグインは policy.json の gradlePlugins）
 // -----------------------------------------------------------------------------
 pitest {
     pitestVersion = libs.versions.pitest.engine.get()
@@ -349,6 +349,13 @@ pitest {
     threads = 4
     outputFormats = listOf("HTML", "XML")
     timestampedReports = false
+}
+
+// jvmArgs で渡すファイルを、test の task と同じく inputs に宣言する（変わったときに PIT を再実行するため）
+tasks.named("pitest") {
+    inputs.dir("../../api/openapi")
+    inputs.dir("../../docker/keycloak/realms")
+    inputs.files(fileTree("../../docs/design") { include("overview.md") })
 }
 
 // -----------------------------------------------------------------------------

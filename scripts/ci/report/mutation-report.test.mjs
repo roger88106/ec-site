@@ -73,4 +73,9 @@ describe('PIT の XML の厳密な読み取り', () => {
     const noClose = `<mutations><mutation detected='true' status='KILLED'><mutatedClass>c.A</mutatedClass></mutations>`
     assert.throws(() => readMutations(noClose), /読めたのは 0 件/)
   })
+
+  test('閉じタグが 1 つ欠けた変異は、次の変異の <mutatedClass> を数えず、失敗にする', () => {
+    const missingClose = `<mutations><mutation detected='true' status='KILLED'><mutatedClass>c.A</mutatedClass>${mutation("detected='true' status='KILLED'", 'c.B')}</mutations>`
+    assert.throws(() => readMutations(missingClose), /2 件あるが、読めたのは 1 件/)
+  })
 })

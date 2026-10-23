@@ -248,7 +248,7 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
     - M6：T17-01-02 と T17-02-01 の結果を直した。
     - R1：単体テストの systemProperty とヒープを 1 つの値（`unitTestSystemProperties`、`unitTestMaxHeap`）にまとめ、test の task と `pitest` の `jvmArgs` の両方で使う。`./gradlew pitest --dry-run` に `:test` が出ないことを確認した。`ecsite.update-docs` は PIT に渡らない。
     - R2：`build.gradle.kts` の PIT のコメントを、カバレッジのために全ての単体テストを 1 回実行する（CI で約 1 分）という内容に直した。
-    - R3：`licenseReport` の `configurations` に `pitest` の構成を加えた。`checkLicense` は、PIT の本体（`pitest`、`pitest-entry`、`pitest-command-line`、`pitest-html-report`、`pitest-junit5-plugin`）と間接の依存を照合する。不許可の依存はなかったが、間接の依存の `antlr:antlr:2.7.7`（ライセンスの名前 `BSD License`）と `org.antlr:stringtemplate:3.2.1`（`BSD licence`）が、名前が許可の一覧に合わず失敗した。どちらも ANTLR の BSD の 3 条項のライセンスなので、`policy.json` の `normalize` に BSD-3-Clause として加え、`licenses.md` の 3.1 に書いた（例外にしたものはない）。
+    - R3：`licenseReport` の `configurations` に `pitest` の構成を加えた。`checkLicense` は、PIT の本体（`pitest`、`pitest-entry`、`pitest-command-line`、`pitest-html-report`、`pitest-junit5-plugin`）と間接の依存を照合する。不許可の依存はなかったが、間接の依存の `antlr:antlr:2.7.7`（ライセンスの名前 `BSD License`）と `org.antlr:stringtemplate:3.2.1`（`BSD licence`）が、名前が許可の一覧に合わず失敗した。どちらも ANTLR の BSD の 3 条項のライセンスだが、名前だけでは何条項か分からないので、`normalize` で `BSD-unspecified`（条件付き）にし、この 2 つの部品だけを `conditional.components` に理由付きで載せた（名前を BSD-3-Clause にそろえない。そろえると、後で入る別の BSD の依存も確認せずに通る）。`licenses.md` の 3.1 に書いた。
     - R4：`running-tests.md` 第 5 節に、バックエンドの `--write` は CI の summary の値か、`--rerun-tasks` などで実際に実行した値を使うと書いた。
     - R5：`mutation-report.mjs` のテストを `mutation-report.test.mjs` に分けた（`readMutations` の単体のテスト。CLI のテストは `coverage-baseline.test.mjs`）。テストは 45 件が成功。
     - R6：`coverage-baseline.mjs` の冒頭のコメントに終了コード 2（引数の誤り）を書いた。
@@ -264,11 +264,16 @@ spec の確認で、利用者が 7 つとも案 A に決めた（2026-10-22）�
       | 3 | 90.20%（580/643） | 3:41 | 2:01 | 5:41 | 6:22 |
       | 4 | 90.20%（580/643） | 4:05 | 2:18 | 6:03 | 6:54 |
 
-      mutation score は 4 回とも同じで、揺れがないので、`backend-domain` の `tolerance` は 0 のまま。ビルドと単体テストのジョブは、全ての回で統合テストの遅い方より早く終わり（DC-17-11）、全体は 7:10 以下で、8 分以下（DC-17-10）。4 回とも、全てのジョブ（バックエンドのカバレッジの検査を含む）が成功した。
+      mutation score は 4 回とも同じで、揺れがないので、`backend-domain` の `tolerance` は 0 のまま。ビルドと単体テストのジョブは、全ての回で統合テストの遅い方より早く終わり（DC-17-11）、全体は 7:10 以下で、8 分以下（DC-17-11、DN-17-3）。4 回とも、全てのジョブ（バックエンドのカバレッジの検査を含む）が成功した。
     - 許容の幅の最終の値：`backend` は行 0.10、分岐 0.30。`admin`、`store`、`shared` は行・分岐とも 0。`backend-domain` は mutation 0。
-    - 後回しの作業（T17-03-04 で起票の案にする）：T17-02-05 の結果にある「競合で通る分岐を単体テストで毎回通す」（許容の幅を狭くするため）。R3 で例外にしたものはない。
-- [ ] **T17-03-03** pull request の前のレビュー（profile「厚め」：高性能で spec との一致と完了の定義、使うツールの組み込みのコードレビュー）を行い、指摘に対応する。
+    - 後回しの作業（T17-03-04 で起票の案にする）：T17-02-05 の結果にある「競合で通る分岐を単体テストで毎回通す」（許容の幅を狭くするため）。R3 で条件付きの許可にした部品は 2 件（ANTLR 2、StringTemplate 3。理由付き）。
+- [x] **T17-03-03** pull request の前のレビュー（profile「厚め」：高性能で spec との一致と完了の定義、使うツールの組み込みのコードレビュー）を行い、指摘に対応する。
   - 依存：T17-03-02
+  - 結果：
+    - レビューの件数：高性能（spec との一致と完了の定義）は必須 1、推奨 2。使うツールの組み込みのコードレビューは 6。
+    - 直したもの：(1) `build.gradle.kts` の PIT の節のコメントを、`pitest` の構成を `licenseReport` の対象に入れている今の事実に直した。(2) `policy.json` の ANTLR の 2 つのための `normalize`（BSD License、BSD licence → BSD-3-Clause）を、`BSD-unspecified`（条件付き）に変え、`antlr:antlr` と `org.antlr:stringtemplate` だけを `conditional.components` に理由付きで載せた。`licenses.md` の 3.1 の ※1 と T17-02-03 の結果の R3 も合わせた。(3) `mutation-report.mjs` が、各 `<mutation>` の本文を次の `<mutation` の開始位置（なければ文書の終わり）までに限り、その中に `</mutation>` がなければ読めない変異にした。閉じタグが 1 つ欠けた XML が失敗するテストを先に足してレッドを確認した。(4) `pitest` の task にも、`test` の task と同じ inputs（`openapi`、`keycloak/realms`、`overview.md`）を宣言した。(5) M5 の表の後の「8 分以下」の参照を DC-17-11、DN-17-3 に直した。
+    - 採用しなかった推奨：`coverage-baseline.mjs` の summary への書き込みと報告の種類の判定の重複（共通の関数への切り出し）、ログと markdown の二重の組み立て。理由は、1 つの script の中の小さな重複で、読みやすさを損なっていないから。
+    - 利用者に確認すること：バックエンドの許容の幅（行 0.10、分岐 0.30）は、pull request で確認する。
 - [ ] **T17-03-04** 後回しにする作業と起票のまとめ方の案を書き、spec を `docs/specs/archive/1to10/` に移す。この commit で、全てのタスクのチェックボックスを `[x]` にする（開発の進め方 第 4.2 節）。pull request の作成はタスクにせず、URL を追跡の issue に記録する。
   - 依存：T17-03-03
   - 範囲：`docs/specs/`

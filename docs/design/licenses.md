@@ -43,7 +43,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | テスト | Testcontainers | MIT |
 | テスト | JUnit | 条件付き（EPL-2.0。テストでだけ使い、配布しない） |
 
-※1：PIT の本体（`pitest`、`pitest-junit5-plugin`）と間接の依存は、`pitest` の構成を `licenseReport` の対象に含めているので、`checkLicense` が照合する。間接の依存の ANTLR 2 と StringTemplate は、POM のライセンスの名前が「BSD License」「BSD licence」なので、`policy.json` の `normalize` で BSD-3-Clause にしている。`gradle-pitest-plugin` は Gradle のプラグインで、Gradle の依存の構成（`licenseReport` が読む構成）に含まれないので、`policy.json` の `gradlePlugins` に手動で書く。
+※1：PIT の本体（`pitest`、`pitest-junit5-plugin`）と間接の依存は、`pitest` の構成を `licenseReport` の対象に含めているので、`checkLicense` が照合する。間接の依存の ANTLR 2 と StringTemplate は、POM のライセンスの名前が「BSD License」「BSD licence」だけで、BSD の何条項か名前から分からない。名前を BSD-3-Clause にそろえると、後で入る別の依存も確認せずに通るので、`normalize` で `BSD-unspecified`（条件付き）にし、この 2 つの部品だけを `conditional.components` に理由付きで載せている（ANTLR の LICENSE は 3 条項）。`gradle-pitest-plugin` は Gradle のプラグインで、Gradle の依存の構成（`licenseReport` が読む構成）に含まれないので、`policy.json` の `gradlePlugins` に手動で書く。
 
 ### 3.2 フロント
 

@@ -45,10 +45,12 @@ export function readMutations(text, { limit = SURVIVORS_LIMIT } = {}) {
   let total = 0
   let detected = 0
   const classes = new Map()
-  for (const start of starts) {
+  for (const [i, start] of starts.entries()) {
     const detectedValue = attribute(start[0], 'detected')
-    const end = text.indexOf('</mutation>', start.index)
-    const body = end < 0 ? '' : text.slice(start.index + start[0].length, end)
+    // 本文は次の <mutation の開始位置（なければ文書の終わり）までに限る。閉じタグが欠けた変異が、次の変異の中身を読まないため
+    const section = text.slice(start.index + start[0].length, starts[i + 1]?.index ?? text.length)
+    const end = section.indexOf('</mutation>')
+    const body = end < 0 ? '' : section.slice(0, end)
     const name = body.match(/<mutatedClass>([^<]+)<\/mutatedClass>/)?.[1]
     if ((detectedValue !== 'true' && detectedValue !== 'false') || end < 0 || !name) continue
     total++

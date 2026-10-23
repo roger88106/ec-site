@@ -14,7 +14,7 @@
 - [x] **T157-01-02** [P] 共有の金額の内訳のテストの、Tailwind のクラスと区切り線の属性の確認を、見た目の種類ごとに見える文言と順の確認にする。店舗画面のバリアントの選択のテストの、取り消し線の要素を `querySelector` で調べる確認を削除する（選べないことは、既存の無効の確認で確認している）。カバレッジの基準を下回らないことを確認する（DC-157-14）。
   - 依存：なし
   - 範囲：`frontend/shared/src/components/AmountsSummary.test.tsx`、`frontend/store/src/features/catalog/components/VariantPicker.test.tsx`
-- [ ] **T157-01-03** 空白で区切った AC の番号（4 か所）を読点で区切る。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DC-157-20）。
+- [x] **T157-01-03** 空白で区切った AC の番号（4 か所）を読点で区切る。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DC-157-20）。
   - 依存：T157-01-01（AC 一覧の再生成に T157-01-01 の変更を含めるため）
   - 範囲：`frontend/admin/src/features/order/orderFilter.test.ts`、`frontend/admin/src/features/order/pages/OrderListPage.test.tsx`、`frontend/store/src/features/order/labels.test.ts`、`docs/design/acceptance-criteria.md`。`OrderDetailPage.test.tsx` の 1 か所は、同じファイルを変える T157-01-01 で行う
 - [ ] **T157-01-04** 段階のレビュー（profile「厚め」）と全体の検査を行う。管理画面を起動し、注文の詳細と商品の登録の画面の見た目が変わらないことを目視する。結果をこのファイルの末尾に書く。

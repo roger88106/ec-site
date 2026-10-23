@@ -11,7 +11,7 @@
 - [x] **T157-05-01** [P] 共有のパッケージのテストを修正する。整形のテストの重複を関数ごとの describe にまとめ、注文の表示名のテストの名前を振る舞いの文にする（DC-157-19、27）。
   - 依存：なし
   - 範囲：`frontend/shared/src/lib/format.test.ts`、`frontend/shared/src/lib/orderLabels.test.ts`
-- [ ] **T157-05-02** [P] 商品の表示のテストを修正する。代替画像の確認を削除し、`toBeTruthy` と要素の型の変換を修正する。バリアントと軸は補助を使う。カテゴリの一覧のテストをカテゴリの一覧のファイルに移す。関数名だけの describe と名詞だけの名前を振る舞いの文にする（DC-157-14、18、19、24、26、31）。
+- [x] **T157-05-02** [P] 商品の表示のテストを修正する。代替画像の確認を削除し、`toBeTruthy` と要素の型の変換を修正する。バリアントと軸は補助を使う。カテゴリの一覧のテストをカテゴリの一覧のファイルに移す。関数名だけの describe と名詞だけの名前を振る舞いの文にする（DC-157-14、18、19、24、26、31）。
   - 依存：なし
   - 範囲：`frontend/store/src/features/catalog/components/VariantPicker.test.tsx`、`ProductCard.test.tsx`、`ProductShowcase.test.tsx`、`ListFilterForm.test.tsx`、`CategoryList.test.tsx`、`frontend/store/src/features/catalog/variantSelection.test.ts`
 - [ ] **T157-05-03** [P] カートと注文手続きのテストを修正する。購入できない品目の小計の取り消し線の確認を削除する。AC-256 は結果の処理を待ってから確認する。数量を表示しないことのテスト名と確認を一致させる。まとまりの名前だけにある AC-84 をテストの名前に移す。`toBeTruthy` と要素の型の変換を修正する（DC-157-14、18、21、22、24、25）。

@@ -16,6 +16,9 @@
   - 依存：T155-06-01、T155-06-02
 - [x] **T155-06-04** spec の最後のレビュー：profile「厚め」で行い、組み合わせは[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節の表に従う。ファイルをまたぐ影響の観点を必ず含める。DC-155-1〜48 と DN-155-1〜5 を満たすことを確認する。推奨ごとに、自動の検査に移せるかどうかを併記する。DN-155-2 のため、spec の最初の commit からの差分に `api/openapi/` と `db/migration/` のファイルがないことも確認する。
   - 依存：T155-06-03
+- [x] **T155-06-10** spec の最後のレビューの指摘を修正する（必須 4 件と、採る推奨 3 件）。テストの Javadoc のタスクの番号を消す。spec 第 5 節の表を plan の決定と今のコードに合わせる。spec の DC-155-3 とバックエンドの書き方 第 1.5 節、共通コードの設計書に、横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）を除くことと理由を書く。商品カタログの設計書の画像の追加の確認の記述を直す。注文の値のパッケージの例外、`config.security` の行の説明、規則の一覧の標準の構成の行の確認方法を直す。
+  - 依存：T155-06-04
+  - 範囲：`test/common/scheduling/ExpiredDataCleanupTest.java`、`docs/specs/155-backend-structure/spec.md`、`docs/rules/backend-coding.md`、`docs/design/common.md`、`docs/design/modules/catalog.md`
 - [ ] **T155-06-05** E2E を実行し（`scripts/dev/e2e.sh`）、通ることを確認する。API の応答を変えないことを、注文、出荷、レポート、店舗の画面のシナリオで確認するため。
   - 依存：T155-06-04
 - [ ] **T155-06-06** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書を、skill `docs` の言い回しと論理の規則と照合する。
@@ -33,6 +36,3 @@ T155-06-09 は tasks の最後に行うタスクで、pull request を作る直�
 ## tasks の外の作業
 
 pull request の作成と、その後の `develop` へのマージと後片付けは、tasks に書かない（[開発の進め方](../../../rules/workflow.md) 第 4.2 節、[開発の進め方](../../../rules/workflow.md) 第 5.7 節）。pull request はテンプレートで作り、本文に受け入れの確認、推奨の扱い、起票する issue の案を書き、#155 にコメントする。マージは spec 担当のセッションが利用者の許可を得てから行う。
-- [x] **T155-06-10** spec の最後のレビューの指摘を修正する（必須 4 件と、採る推奨 3 件）。テストの Javadoc のタスクの番号を消す。spec 第 5 節の表を plan の決定と今のコードに合わせる。spec の DC-155-3 とバックエンドの書き方 第 1.5 節、共通コードの設計書に、横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）を除くことと理由を書く。商品カタログの設計書の画像の追加の確認の記述を直す。注文の値のパッケージの例外、`config.security` の行の説明、規則の一覧の標準の構成の行の確認方法を直す。
-  - 依存：T155-06-04
-  - 範囲：`test/common/scheduling/ExpiredDataCleanupTest.java`、`docs/specs/155-backend-structure/spec.md`、`docs/rules/backend-coding.md`、`docs/design/common.md`、`docs/design/modules/catalog.md`

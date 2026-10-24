@@ -2,41 +2,14 @@
 import { act, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
-import type { PostalCodeAddress, Prefecture } from '@/api/types'
 import { OrderForm, OrderFormView } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
 import { input, select } from '@/test/elements'
+import { MUNICIPALITIES, PREFECTURES, postalCodeAddress as postal } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
 // 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確認する（店舗画面の構成 第 7 節 ※6）
 vi.mock('@/actions/region', () => ({ listMunicipalities: vi.fn(), findPostalCodeAddresses: vi.fn() }))
-
-/** API から取った都道府県の一覧（テストでは 3 つ） */
-const PREFECTURES: Prefecture[] = [
-  { code: '01', name: '北海道' },
-  { code: '13', name: '東京都' },
-  { code: '14', name: '神奈川県' },
-]
-
-/** 都道府県ごとの市区町村 */
-const MUNICIPALITIES: Record<string, { code: string; name: string }[]> = {
-  '01': [{ code: '01101', name: '札幌市中央区' }],
-  '13': [
-    { code: '13101', name: '千代田区' },
-    { code: '13102', name: '中央区' },
-  ],
-  '14': [{ code: '14104', name: '横浜市中区' }],
-}
-
-/** 郵便番号の住所 */
-function postal(prefectureCode: string, municipalityCode: string, townName: string): PostalCodeAddress {
-  const prefecture = PREFECTURES.find((found) => found.code === prefectureCode)
-  const municipality = MUNICIPALITIES[prefectureCode]?.find((found) => found.code === municipalityCode)
-  if (!prefecture || !municipality) {
-    throw new Error(`テストのデータにない：${prefectureCode} ${municipalityCode}`)
-  }
-  return { prefecture, municipality, townName }
-}
 
 /** 注文のサーバーアクションの結果（null は送る前）を渡した、注文のフォームの表示 */
 function form(result: ActionResult | null = null, formAction: (formData: FormData) => void = () => {}) {

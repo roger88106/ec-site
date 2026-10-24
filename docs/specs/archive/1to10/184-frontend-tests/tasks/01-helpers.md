@@ -1,8 +1,8 @@
 # 段階 1：依存、補助、フォームの分割
 
-- 前提：spec 184 の plan と tasks の確認、実装を始める前の照合（[開発の進め方](../../../rules/workflow.md) 第 5.6 節）
+- 前提：spec 184 の plan と tasks の確認、実装を始める前の照合（[開発の進め方](../../../../../rules/workflow.md) 第 5.6 節）
 - 完了条件：店舗画面と共有のパッケージで jest-dom を使える（DC-184-6）。DOM に読み込む補助があり、補助の単体テストは先に書き、レッドを確認した（DC-184-1、2 の土台）。2 つのフォームが表示のコンポーネントに分かれ、テストに `vi.mock('react')` がない（DC-184-8〜10）。店舗画面の構成とテストの書き方が新しい書き方を案内する（DC-184-5）。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 2 節、[spec](../spec.md) の DS-184-1〜3、[テストの書き方](../../../rules/test-writing.md)、[店舗画面の構成](../../../design/apps/store.md) 第 7 節
+- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 2 節、[spec](../spec.md) の DS-184-1〜3、[テストの書き方](../../../../../rules/test-writing.md)、[店舗画面の構成](../../../../../design/apps/store.md) 第 7 節
 
 ## タスク
 

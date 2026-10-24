@@ -2,7 +2,7 @@
 
 - 前提：段階 3
 - 完了条件：spec の最後のレビューの「高」と「必須」を修正し、推奨の扱いを決めた。E2E が通る。起票のまとめの案がある。spec をアーカイブに移した。
-- 参照：[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 7 節、[plan](../plan.md) 第 8 節、skill `review`、[開発の進め方](../../../rules/workflow.md) 第 4.2 節
+- 参照：[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 7 節、[plan](../plan.md) 第 8 節、skill `review`、[開発の進め方](../../../../../rules/workflow.md) 第 4.2 節
 
 ## タスク
 
@@ -18,7 +18,7 @@
 - [x] **T184-04-04** pull request の前のレビューを行う（高性能で spec との一致と完了の定義、組み込みのコードレビュー）。
   - 依存：T184-04-02、03
   - 範囲：pull request の差分
-- [ ] **T184-04-05** spec をアーカイブに移す。全てのチェックボックスを `[x]` にする。
+- [x] **T184-04-05** spec をアーカイブに移す。全てのチェックボックスを `[x]` にする。
   - 依存：T184-04-04
   - 範囲：`docs/specs/184-frontend-tests/` → `docs/specs/archive/1to10/184-frontend-tests/`
 

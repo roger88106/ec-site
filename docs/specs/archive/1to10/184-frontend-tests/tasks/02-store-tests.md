@@ -2,7 +2,7 @@
 
 - 前提：段階 1
 - 完了条件：店舗画面と共有のパッケージのテストが、描画した HTML の文字を確認せず、DOM に読み込んで役割と名前で探す（DC-184-1、3）。jsdom のテストの状態と属性の確認が jest-dom の照合の関数である（DC-184-7）。開始タグの補助を削除した（DC-184-4）。spec 第 6 節の違反（`toBeDefined` 3 か所、HTML の正規表現・文字の一致 14 か所）が 0 件。AC 一覧を再生成した。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 3 節、[spec](../spec.md) の DS-184-1、2、[spec](../spec.md) 第 6 節、[テストの書き方](../../../rules/test-writing.md) 第 4.1 節、レビューの結果（`/.local/review/202610231200-157-frontend-tests/store-1.md`、`store-2.md`）
+- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 3 節、[spec](../spec.md) の DS-184-1、2、[spec](../spec.md) 第 6 節、[テストの書き方](../../../../../rules/test-writing.md) 第 4.1 節、レビューの結果（`/.local/review/202610231200-157-frontend-tests/store-1.md`、`store-2.md`）
 
 ## タスク
 

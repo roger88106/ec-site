@@ -5,7 +5,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | 項目 | 内容 |
 |------|------|
 | 依存 | 管理 API（`admin.yaml`）、運営者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/184-frontend-tests) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests) |
 
 ## 1. 技術
 

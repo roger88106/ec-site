@@ -2,7 +2,7 @@
 
 - 前提：段階 2（テストの実行とカバレッジの確認が重ならないため）
 - 完了条件：管理画面と店舗画面のテストが DC-184-11〜21 を満たす。補助の単体テストは先に書き、レッドを確認した。AC 一覧を再生成した。`scripts/dev/check-frontend.sh all`、カバレッジの基準、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 4 節、[plan](../plan.md) 第 5 節、[spec](../spec.md) の DS-184-4、5、[テストの書き方](../../../rules/test-writing.md) 第 4.5 節、[管理画面の構成](../../../design/apps/admin.md) 第 9 節、レビューの結果（`/.local/review/202610231200-157-frontend-tests/admin-1.md`、`admin-2.md`、`/.local/review/202610232100-157-final/general-2.md`）
+- 参照：[plan](../plan.md) 第 4 節、[plan](../plan.md) 第 5 節、[spec](../spec.md) の DS-184-4、5、[テストの書き方](../../../../../rules/test-writing.md) 第 4.5 節、[管理画面の構成](../../../../../design/apps/admin.md) 第 9 節、レビューの結果（`/.local/review/202610231200-157-frontend-tests/admin-1.md`、`admin-2.md`、`/.local/review/202610232100-157-final/general-2.md`）
 
 ## タスク
 

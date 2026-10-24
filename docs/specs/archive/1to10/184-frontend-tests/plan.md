@@ -1,8 +1,8 @@
 # Plan 184：フロントのテストの書き方の残りをそろえる（第 2 回）
 
-ステータス：確定　対象：[spec.md](spec.md)
+ステータス：完了　対象：[spec.md](spec.md)
 
-前提：spec 184 が確定した。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../.claude/skills/review/SKILL.md)）。
+前提：spec 184 が確定した。文書の書き方は skill `docs`（[SKILL.md](../../../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../../../.claude/skills/review/SKILL.md)）。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|
@@ -24,8 +24,8 @@ DC の列は「184-1」の形で書く。spec の番号 184 を付けた DC-184-
 - 実装は実装役（汎用）に、1 タスクずつ任せる。`[リスク]` のタスクはない（テストとコンポーネントの構成だけを変え、API と金額の計算に触れない）。
 - テストのファイルを変えるタスクは、そのファイルにある本 spec の DC の違反を全て直す。実装役には、spec 157 のレビューの結果（`/.local/review/202610231200-157-frontend-tests/`、`/.local/review/202610232100-157-final/`）のうち、そのファイルの指摘を渡す。
 - 段階の間では、確認のために中断しない。plan と tasks は一緒に利用者が確認する。
-- 1 タスクを 1 commit にする。例外は `[テスト]` と実装の組で、2 つのタスクを 1 commit にする（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
-- 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）で、第 3〜5 節の対象の箇所が今の `develop` に残っているかを確認し直す。spec 183 が先にマージされていれば、その検査の対象と第 6 節の扱いを照合する（2026-10-24 に照合した。#169 は #185 に移り、spec 183 は #169 の検査を加えていない）。
+- 1 タスクを 1 commit にする。例外は `[テスト]` と実装の組で、2 つのタスクを 1 commit にする（[開発の進め方](../../../../rules/workflow.md) 第 2.1 節）。
+- 実装を始める前の照合（[開発の進め方](../../../../rules/workflow.md) 第 5.6 節）で、第 3〜5 節の対象の箇所が今の `develop` に残っているかを確認し直す。spec 183 が先にマージされていれば、その検査の対象と第 6 節の扱いを照合する（2026-10-24 に照合した。#169 は #185 に移り、spec 183 は #169 の検査を加えていない）。
 
 ## 1. DOM に読み込む補助と jest-dom（DC-184-1、2、4〜7）
 
@@ -34,7 +34,7 @@ DC の列は「184-1」の形で書く。spec の番号 184 を付けた DC-184-
 | 184-1、2 | 店舗画面の補助に、部品を `renderMarkup` で HTML にし、その HTML を jsdom の文書に読み込んで、問い合わせの関数（Testing Library の `within` の戻り値）を返す関数を置く（※1）。効果は実行されない（DC-184-2） | 店舗画面 `src/test/render.tsx`（`renderStatic`）、`render.test.tsx` | 単体テスト（`[テスト]` を先に書き、レッドを確認する） |
 | 184-1 | 共有のパッケージの金額の内訳のテストは、テストのファイルの中で同じ処理を書く（※2） | 共有 `src/components/AmountsSummary.test.tsx` | 単体テスト |
 | 184-4 | 開始タグの補助（`startTags`、`findTag`）とそのテストを、全ての書き換えの後に削除する | 店舗画面 `src/test/markup.ts`、`markup.test.ts` | `git grep -n "test/markup"` が 0 件 |
-| 184-5 | テストの表と補助の表を書き換える。表示のコンポーネントとページは `renderStatic` で DOM に読み込んで役割と名前で探すこと、サーバーアクションの結果の表示は結果を props で受けるコンポーネントで確認すること（第 2 節）、`markup.ts` の行の削除、`renderStatic` の行の追加 | [店舗画面の構成](../../design/apps/store.md) 第 7 節、[テストの書き方](../../rules/test-writing.md) 第 1.1 節（「HTML に描画し」の文） | レビュー |
+| 184-5 | テストの表と補助の表を書き換える。表示のコンポーネントとページは `renderStatic` で DOM に読み込んで役割と名前で探すこと、サーバーアクションの結果の表示は結果を props で受けるコンポーネントで確認すること（第 2 節）、`markup.ts` の行の削除、`renderStatic` の行の追加 | [店舗画面の構成](../../../../design/apps/store.md) 第 7 節、[テストの書き方](../../../../rules/test-writing.md) 第 1.1 節（「HTML に描画し」の文） | レビュー |
 | 184-6 | 店舗画面と共有のパッケージに `@testing-library/jest-dom` を開発の依存として加える。版は管理画面と同じにする。店舗画面は `src/test/setup.ts` で、共有のパッケージは `vitest.config.ts` の setupFiles で読み込む。共有のパッケージには、`jsdom` と `@testing-library/dom` も加える（※2） | 店舗画面・共有 `package.json`、`pnpm-lock.yaml`、店舗画面 `src/test/setup.ts`、共有 `vitest.config.ts` | 型チェック、単体テスト |
 | 184-7 | `.disabled`、`getAttribute` の比較（14 か所）を jest-dom の照合の関数にする | 店舗画面 `ProductShowcase.test.tsx`、`VariantPicker.test.tsx`、`CancellationRequestForm.test.tsx` | `git grep -nE "\.disabled\b|getAttribute\(" -- 'frontend/store/**/*.test.tsx'` が 0 件 |
 
@@ -42,7 +42,7 @@ DC の列は「184-1」の形で書く。spec の番号 184 を付けた DC-184-
 
 ※2：共有のパッケージは補助を置かない（spec 157 の plan 第 4.1 節）。使うのは 1 ファイルなので、その中で `JSDOM` と `@testing-library/dom` の `within` を使う。React の描画は今の `renderToStaticMarkup` のままにする。
 
-- `renderStatic` の戻り値の要素は、テストのファイルの中で `screen` の代わりに使う。補助には説明のコメント（TSDoc）を書く（[コメントの書き方](../../rules/comments.md)）。
+- `renderStatic` の戻り値の要素は、テストのファイルの中で `screen` の代わりに使う。補助には説明のコメント（TSDoc）を書く（[コメントの書き方](../../../../rules/comments.md)）。
 - 用語集には「jest-dom」を追加する（spec 第 2 節）。他の語は本 spec の中だけで使うので追加しない。
 
 ## 2. フォームのコンポーネントの分割（DC-184-8〜10）
@@ -50,7 +50,7 @@ DC の列は「184-1」の形で書く。spec の番号 184 を付けた DC-184-
 | DC | 決定 | 置き場所 | 確認方法 |
 |----|------|----------|----------|
 | 184-8 | 2 つのフォームを、`useActionState` を呼ぶコンポーネント（今の名前のまま。呼び出し元は変えない）と、props（結果、送る関数、送信中か）を受けて表示するコンポーネントに分ける。表示のコンポーネントは同じファイルに置いて export する（名前は `OrderFormView`、`AddToCartFormView`） | 店舗画面 `features/checkout/components/OrderForm.tsx`、`features/catalog/components/AddToCartForm.tsx` | 型チェック、E2E |
-| 184-9 | 2 つのフォームのテストは、表示のコンポーネントに結果を渡して確認し、`vi.mock('react')` を削除する。読むだけのサーバーアクション（地域）の差し替えは今のまま残す（[店舗画面の構成](../../design/apps/store.md) 第 7 節 ※6） | 店舗画面 `OrderForm.test.tsx`、`AddToCartForm.test.tsx` | `git grep -n "vi.mock('react'"` が 0 件、単体テスト |
+| 184-9 | 2 つのフォームのテストは、表示のコンポーネントに結果を渡して確認し、`vi.mock('react')` を削除する。読むだけのサーバーアクション（地域）の差し替えは今のまま残す（[店舗画面の構成](../../../../design/apps/store.md) 第 7 節 ※6） | 店舗画面 `OrderForm.test.tsx`、`AddToCartForm.test.tsx` | `git grep -n "vi.mock('react'"` が 0 件、単体テスト |
 | 184-10 | 表示のコンポーネントは、今の描画の内容を移すだけにする。送信中の表示、エラーの出し方、入力欄の名前を変えない | 同上 | 単体テスト、カバレッジの基準、E2E（注文、カートに入れる。段階 4） |
 
 - 画面を作るときの skill（`new-screen`）のフォームの例に、結果の表示をテストするフォームは表示のコンポーネントに分けることを 1 行で書く（skill `writing-for-agents`）。他のフォームは分けない。理由：今のテストが結果を差し替えているのは 2 つだけで、全てのフォームを分けると差分が広がるため。
@@ -130,7 +130,7 @@ DC の列は「184-1」の形で書く。spec の番号 184 を付けた DC-184-
 | 確認 | 方法 |
 |------|------|
 | 単体・結合テスト | `scripts/dev/check-frontend.sh all`（共有、店舗画面、管理画面、E2E の lint と型検査を含む）。他のセッションが実行しているときは待つ |
-| カバレッジの基準 | 各段階の最後に、`node scripts/ci/report/coverage-baseline.mjs <対象> <報告>`（対象は `admin`、`store`、`shared`）（[テストの実行方法](../../guides/running-tests.md) 第 5 節） |
+| カバレッジの基準 | 各段階の最後に、`node scripts/ci/report/coverage-baseline.mjs <対象> <報告>`（対象は `admin`、`store`、`shared`）（[テストの実行方法](../../../../guides/running-tests.md) 第 5 節） |
 | CI の検査 | `scripts/ci/check-all.sh` |
 | 書き換えたテストが失敗しうること | 共通の決定の手順。段階のレビューで、確認したテストの一覧を見る |
 | 画面 | 目視はしない。見える文言と配置を変えないため。支援技術向けの名前とフォームの分割は、テストと E2E で確認する |

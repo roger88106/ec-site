@@ -13,7 +13,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
 - [x] **T182-01-01** [P] [テスト] 決済の設定の検証のテストを追加する。`ApplicationContextRunner` で、支払の期限が 30 分なら起動でき、31 分なら起動に失敗し、失敗の原因に `deadline` が含まれることを確認する。書き方は `test/config/RequiredPropertiesTest.java` に倣う。実装の前に失敗することを確認する（DC-182-3）。
   - 依存：なし
   - 範囲：`test/module/payment/application/PaymentPropertiesTest.java`（新規）
-- [ ] **T182-01-02** 決済の設定の支払の期限に `@DurationMax(minutes = 30)` を付け、Javadoc に上限と理由を書く。支払画面の期限の定数のコメントに、支払の期限の上限（30 分）がこの値を前提にすることを 1 文で追加する。決済のモジュールの設計書の「支払の期限」の節に、上限と理由を書く（DC-182-1、2）。
+- [x] **T182-01-02** 決済の設定の支払の期限に `@DurationMax(minutes = 30)` を付け、Javadoc に上限と理由を書く。支払画面の期限の定数のコメントに、支払の期限の上限（30 分）がこの値を前提にすることを 1 文で追加する。決済のモジュールの設計書の「支払の期限」の節に、上限と理由を書く（DC-182-1、2）。
   - 依存：T182-01-01
   - 範囲：`main/module/payment/application/PaymentProperties.java`（`:17,27`）、`main/module/payment/infrastructure/stripe/StripePaymentGateway.java`（`:32-35`）、`docs/design/modules/payment.md`（「支払の期限」の節）
 - [ ] **T182-01-03** [P] [テスト] `StoreOperationSecurityTest` に、`security` のない操作を含む契約の例を新しく作り、読み込むと `IllegalStateException` で失敗し、メッセージに操作のメソッドとパスが含まれるテストを追加する。テストの契約の例の `security` のない操作を `security: []` に直し、AC-233 のテストの名前の「security のない操作」を「security が空の一覧の操作」に直す。実装の前に失敗することを確認する（DC-182-6）。

@@ -19,7 +19,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
 - [x] **T182-01-03** [P] [テスト] `StoreOperationSecurityTest` に、`security` のない操作を含む契約の例を新しく作り、読み込むと `IllegalStateException` で失敗し、メッセージに操作のメソッドとパスが含まれるテストを追加する。テストの契約の例の `security` のない操作を `security: []` に直し、AC-233 のテストの名前の「security のない操作」を「security が空の一覧の操作」に直す。実装の前に失敗することを確認する（DC-182-6）。
   - 依存：なし
   - 範囲：`test/config/security/StoreOperationSecurityTest.java`
-- [ ] **T182-01-04** [リスク] 店舗の操作の公開を、契約の明示に変える（DC-182-4、5）。
+- [x] **T182-01-04** [リスク] 店舗の操作の公開を、契約の明示に変える（DC-182-4、5）。
   - `store.yaml` の `security` のない 9 つの操作に `security: []` を追加する（plan 第 2 節の※1）。
   - 契約を読み込む処理で、`security` のない操作があれば `IllegalStateException` を投げる。メッセージに操作のメソッドとパスを含める。クラスの Javadoc を新しい扱いに直す。
   - バックエンドのアーキテクチャの店舗 API の token の要否の記述を直す。

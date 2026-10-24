@@ -43,7 +43,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
 - [x] **T182-01-09** [P] 共通の設定から Zipkin の送信先を削除し、`management.tracing.export.zipkin.enabled: false` を置く。local の profile に `enabled: true` と送信先を置く。環境変数の一覧に送信を有効にする環境変数（既定 false。local と E2E は true）を追加し、送信先の説明を「送信を有効にしたときの送信先」に直す。共通コードの設計書のトレースの節も同じに直す。local の profile で起動し、自動構成の判定（`/actuator/conditions`）に Zipkin の送信の Bean があることを確認する（DC-182-11、12。plan 第 4 節）。
   - 依存：なし
   - 範囲：`main/resources/application.yml`（`:76-79`）、`main/resources/application-local.yml`（`:47-50`）、`docs/guides/environment.md`（`:20`）、`docs/design/common.md`（トレースの節）
-- [ ] **T182-01-10** [P] [テスト] `CreatedResponsesTest` の 3 つの期待値を、ホストを含まない相対の URL に直す。実装の前に失敗することを確認する（DC-182-14）。
+- [x] **T182-01-10** [P] [テスト] `CreatedResponsesTest` の 3 つの期待値を、ホストを含まない相対の URL に直す。実装の前に失敗することを確認する（DC-182-14）。
   - 依存：なし
   - 範囲：`test/common/presentation/CreatedResponsesTest.java`（`:38-68`）
 - [ ] **T182-01-11** 作成の応答の補助で、`Location` をホストを含まない相対の URL にする。基にするパスは今のまま（今のリクエストのパス、またはアプリの起点）で、スキーム・ホスト・ポートを除く。メソッドの Javadoc を直す。契約の `Location` の説明 2 か所、API の規約の作成の行の※1、バックエンドの書き方 第 2.2 節の作成の応答の行に、相対の URL であることを書く。`Location` の URL で取得する既存の API のテスト（カテゴリ、商品、税区分）が通ることを確認する（DC-182-13、14）。

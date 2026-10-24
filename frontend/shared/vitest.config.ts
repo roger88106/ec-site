@@ -4,12 +4,12 @@ import { defineConfig } from 'vitest/config'
 export default defineConfig({
   test: {
     // jest-dom の照合の関数（toBeDisabled など）を使えるようにする
-    setupFiles: ['@testing-library/jest-dom/vitest'],
+    setupFiles: ['./src/test/setup.ts'],
     // カバレッジは報告と基準の検査に使う（テストの書き方 第 1.2 節）。shadcn/ui の生成物、テストの補助は数えない
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],
-      exclude: ['src/ui/**', '**/*.test.{ts,tsx}'],
+      exclude: ['src/ui/**', 'src/test/**', '**/*.test.{ts,tsx}'],
       reporter: ['text-summary', 'json-summary', 'html'],
     },
   },

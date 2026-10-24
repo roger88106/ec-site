@@ -26,11 +26,6 @@ function form(result: ActionResult | null = null, formAction: (formData: FormDat
   )
 }
 
-/** 選んでいる値 */
-function selected(label: string): string {
-  return select(label).value
-}
-
 /**
  * エラーの文が、その欄の入力欄の後で、次の欄の入力欄より前に出ることを確認する（見える文言の順）。
  *
@@ -70,11 +65,6 @@ const INITIAL_TEXTS = [
   '例：03-1234-5678',
   '注文する（3,200 円）',
 ]
-
-/** 住所の欄の値 */
-function addressValue(): string {
-  return input('住所').value
-}
 
 beforeEach(() => {
   vi.mocked(listMunicipalities).mockImplementation(async (code) => MUNICIPALITIES[code] ?? null)
@@ -189,12 +179,12 @@ describe('都道府県と市区町村を選ぶ', () => {
     await user.selectOptions(screen.getByLabelText('市区町村'), '13102')
     expect(listMunicipalities).toHaveBeenCalledWith('13')
     expect(screen.queryByRole('option', { name: '横浜市中区' })).toBeNull()
-    expect(selected('市区町村')).toBe('13102')
+    expect(select('市区町村')).toHaveValue('13102')
 
     await user.selectOptions(screen.getByLabelText('都道府県'), '14')
     await screen.findByRole('option', { name: '横浜市中区' })
     expect(screen.queryByRole('option', { name: '中央区' })).toBeNull()
-    expect(selected('市区町村')).toBe('')
+    expect(select('市区町村')).toHaveValue('')
   })
 })
 
@@ -207,10 +197,10 @@ describe('郵便番号で補う', () => {
     expect(findPostalCodeAddresses).not.toHaveBeenCalled()
     await user.type(screen.getByLabelText('郵便番号'), '1')
 
-    await waitFor(() => expect(selected('市区町村')).toBe('13101'))
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
     expect(findPostalCodeAddresses).toHaveBeenCalledWith('1000001')
-    expect(selected('都道府県')).toBe('13')
-    expect(addressValue()).toBe('千代田')
+    expect(select('都道府県')).toHaveValue('13')
+    expect(input('住所')).toHaveValue('千代田')
   })
 
   test('AC-255 住所の欄に入力があれば、町域を入れない', async () => {
@@ -220,8 +210,8 @@ describe('郵便番号で補う', () => {
     await user.type(screen.getByLabelText('住所'), '丸の内 1-1')
     await user.type(screen.getByLabelText('郵便番号'), '1000001')
 
-    await waitFor(() => expect(selected('市区町村')).toBe('13101'))
-    expect(addressValue()).toBe('丸の内 1-1')
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
+    expect(input('住所')).toHaveValue('丸の内 1-1')
   })
 
   test('複数の結果で都道府県と市区町村が同じなら選び、町域は入れない。違えば何も補わない', async () => {
@@ -229,15 +219,15 @@ describe('郵便番号で補う', () => {
     const { user } = renderInBrowser(form())
 
     await user.type(screen.getByLabelText('郵便番号'), '1040061')
-    await waitFor(() => expect(selected('市区町村')).toBe('13102'))
-    expect(addressValue()).toBe('')
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13102'))
+    expect(input('住所')).toHaveValue('')
 
     vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('01', '01101', '甲'), postal('14', '14104', '乙')])
     await user.clear(screen.getByLabelText('郵便番号'))
     await user.type(screen.getByLabelText('郵便番号'), '9999998')
     await waitFor(() => expect(findPostalCodeAddresses).toHaveBeenCalledWith('9999998'))
-    expect(selected('都道府県')).toBe('13')
-    expect(selected('市区町村')).toBe('13102')
+    expect(select('都道府県')).toHaveValue('13')
+    expect(select('市区町村')).toHaveValue('13102')
   })
 
   test('AC-256 結果がなければ（通信の失敗も空で届く）何も補わず、メッセージも出さない', async () => {
@@ -250,8 +240,8 @@ describe('郵便番号で補う', () => {
     // 結果（空の配列）の処理が終わってから、変わらないことを確認する
     await vi.mocked(findPostalCodeAddresses).mock.results[0]?.value
     await act(async () => {})
-    expect(selected('都道府県')).toBe('')
-    expect(addressValue()).toBe('')
+    expect(select('都道府県')).toHaveValue('')
+    expect(input('住所')).toHaveValue('')
     expect(document.body.textContent).toBe(textBefore)
   })
 
@@ -259,7 +249,7 @@ describe('郵便番号で補う', () => {
     vi.mocked(findPostalCodeAddresses).mockResolvedValue([postal('13', '13101', '千代田')])
     const { user } = renderInBrowser(form())
     await user.type(screen.getByLabelText('郵便番号'), '1000001')
-    await waitFor(() => expect(selected('市区町村')).toBe('13101'))
+    await waitFor(() => expect(select('市区町村')).toHaveValue('13101'))
 
     await user.selectOptions(screen.getByLabelText('市区町村'), '13102')
     await user.type(screen.getByLabelText('住所'), ' 1-1')
@@ -267,8 +257,8 @@ describe('郵便番号で補う', () => {
     await screen.findByRole('option', { name: '横浜市中区' })
     await user.selectOptions(screen.getByLabelText('市区町村'), '14104')
 
-    expect(selected('都道府県')).toBe('14')
-    expect(selected('市区町村')).toBe('14104')
-    expect(addressValue()).toBe('千代田 1-1')
+    expect(select('都道府県')).toHaveValue('14')
+    expect(select('市区町村')).toHaveValue('14104')
+    expect(input('住所')).toHaveValue('千代田 1-1')
   })
 })

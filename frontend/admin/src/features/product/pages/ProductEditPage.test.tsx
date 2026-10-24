@@ -1,4 +1,5 @@
-import { fireEvent, screen, waitFor, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
+import userEvent from '@testing-library/user-event'
 import { HttpResponse, http as rawHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
@@ -318,6 +319,7 @@ describe('商品の編集', () => {
     expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
     expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
   })
+
   describe('バリアントの追加の入力中に他の人が商品を更新した（409）', () => {
     /** 品番と軸の値を入力し、他の人が価格を変えた後に、画面が取得し直した状態にする */
     async function fillVariantAfterOthersUpdate() {
@@ -700,11 +702,13 @@ describe('商品画像', () => {
   test('AC-39、67 受け付ける形式以外のファイルは送らずに誤りを出す', async () => {
     serveProduct(productDetail())
     renderApp(PAGE_PATH)
+    // user.upload は、既定では入力の accept に合わないファイルを選べない（捨てる）ので、受け付けない形式は applyAccept を切って渡す
+    const user = userEvent.setup({ applyAccept: false })
 
-    // user.upload は、入力の accept に合わないファイルを選べない（捨てる）ので、受け付けない形式は fireEvent.change で渡す
-    fireEvent.change(await screen.findByLabelText('画像のファイル'), {
-      target: { files: [new File(['GIF89a'], 'a.gif', { type: 'image/gif' })] },
-    })
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File(['GIF89a'], 'a.gif', { type: 'image/gif' }),
+    )
 
     expect(
       await screen.findByText('画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF、AVIF のいずれかにしてください。'),

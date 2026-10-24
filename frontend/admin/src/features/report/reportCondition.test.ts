@@ -1,11 +1,9 @@
 import { describe, expect, test } from 'vitest'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
+import { SHIRT_ID } from '@/test/reportServer'
 
 /** URL に条件がないときの期間 */
 const DEFAULT_PERIOD = { from: '2026-04-01', to: '2027-03-31' }
-
-/** 商品 ID */
-const PRODUCT_ID = '00000000-0000-0000-0000-000000002001'
 
 describe('レポートの条件と URL の検索パラメータ', () => {
   test('URL に条件がなければ、既定の期間、月、注文基準、全商品、消費税・送料を含む', () => {
@@ -22,7 +20,7 @@ describe('レポートの条件と URL の検索パラメータ', () => {
 
   test('URL の条件を読む', () => {
     const params = new URLSearchParams(
-      `from=2025-01-01&to=2025-12-31&granularity=QUARTER&basis=SHIPMENT&productId=${PRODUCT_ID}&excludeTax=true&excludeShipping=true`,
+      `from=2025-01-01&to=2025-12-31&granularity=QUARTER&basis=SHIPMENT&productId=${SHIRT_ID}&excludeTax=true&excludeShipping=true`,
     )
 
     expect(parseCondition(params, DEFAULT_PERIOD)).toEqual({
@@ -30,7 +28,7 @@ describe('レポートの条件と URL の検索パラメータ', () => {
       to: '2025-12-31',
       granularity: 'QUARTER',
       basis: 'SHIPMENT',
-      productId: PRODUCT_ID,
+      productId: SHIRT_ID,
       excludeTax: true,
       excludeShipping: true,
     })
@@ -69,12 +67,12 @@ describe('レポートの条件と URL の検索パラメータ', () => {
         ...condition,
         granularity: 'WEEK',
         basis: 'SHIPMENT',
-        productId: PRODUCT_ID,
+        productId: SHIRT_ID,
         excludeTax: true,
         excludeShipping: true,
       }).toString(),
     ).toBe(
-      `from=2026-04-01&to=2027-03-31&granularity=WEEK&basis=SHIPMENT&productId=${PRODUCT_ID}&excludeTax=true&excludeShipping=true`,
+      `from=2026-04-01&to=2027-03-31&granularity=WEEK&basis=SHIPMENT&productId=${SHIRT_ID}&excludeTax=true&excludeShipping=true`,
     )
   })
 
@@ -84,7 +82,7 @@ describe('レポートの条件と URL の検索パラメータ', () => {
       to: '2025-10-31',
       granularity: 'YEAR',
       basis: 'SHIPMENT',
-      productId: PRODUCT_ID,
+      productId: SHIRT_ID,
       excludeTax: true,
       excludeShipping: false,
     }

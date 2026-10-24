@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { parseCondition, type ReportCondition, toSearchParams } from '@/features/report/reportCondition'
-import { SHIRT_ID } from '@/test/reportServer'
+import { SHIRT_ID } from '@/test/fixtures'
 
 /** URL に条件がないときの期間 */
 const DEFAULT_PERIOD = { from: '2026-04-01', to: '2027-03-31' }

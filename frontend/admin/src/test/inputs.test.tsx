@@ -1,7 +1,7 @@
 import { render, screen } from '@testing-library/react'
 import { useState } from 'react'
 import { describe, expect, test } from 'vitest'
-import { typeDateTime } from '@/test/inputs'
+import { returnToTab, typeDateTime } from '@/test/inputs'
 
 /** 日時の入力。入力を受けた値を、下に文字で出す */
 function DateTimeField() {
@@ -31,5 +31,20 @@ describe('日時の入力', () => {
     typeDateTime(screen.getByLabelText('開始'), '2028-01-02T03:04')
 
     expect(screen.getByLabelText('受けた値')).toHaveTextContent('2028-01-02T03:04')
+  })
+})
+
+describe('別のタブから戻る', () => {
+  test('window の visibilitychange を発火する', () => {
+    let fired = 0
+    const listener = () => {
+      fired += 1
+    }
+    window.addEventListener('visibilitychange', listener)
+
+    returnToTab()
+
+    window.removeEventListener('visibilitychange', listener)
+    expect(fired).toBe(1)
   })
 })

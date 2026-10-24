@@ -13,3 +13,12 @@ import { fireEvent } from '@testing-library/react'
 export function typeDateTime(input: HTMLElement, value: string): void {
   fireEvent.change(input, { target: { value } })
 }
+
+/**
+ * 利用者が別のタブから戻ったことを表す。画面は表示中の情報を取得し直す。
+ *
+ * window の `visibilitychange` を発火する。user-event に対応する操作がないため `fireEvent` を使う。
+ */
+export function returnToTab(): void {
+  fireEvent(window, new Event('visibilitychange'))
+}

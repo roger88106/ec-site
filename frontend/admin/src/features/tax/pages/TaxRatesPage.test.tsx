@@ -1,9 +1,9 @@
-import { fireEvent, screen, within } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { TaxCategory } from '@/api/types'
-import { TAX_CATEGORY_ID, taxCategory } from '@/test/fixtures'
-import { typeDateTime } from '@/test/inputs'
+import { CONFLICT_MESSAGE, TAX_CATEGORY_ID, taxCategory } from '@/test/fixtures'
+import { returnToTab, typeDateTime } from '@/test/inputs'
 import { getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
@@ -123,13 +123,12 @@ describe('税率の一覧の編集', () => {
       await screen.findByRole('heading', { name: '税区分「標準」の税率' })
       await user.clear(rowInputs(0).rate)
       await user.type(rowInputs(0).rate, '9')
-      // 入力中に、他の人が 8% に変えた。利用者が別のタブから戻ると、画面は取得し直す
       state.current = taxCategory({
         version: 1,
         currentRatePercent: 8,
         rates: [{ id: RATE_ID, ratePercent: 8, effectiveFrom: null, effectiveTo: null }],
       })
-      fireEvent(window, new Event('visibilitychange'))
+      returnToTab()
       await screen.findByText('現時点の率：8%')
       return { state, user }
     }
@@ -151,7 +150,7 @@ describe('税率の一覧の編集', () => {
 
       const alert = await saveToConflict(user)
 
-      expect(within(alert).getByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
+      expect(within(alert).getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
       expect(rowInputs(0).rate).toHaveValue(9)
     })
 

@@ -23,6 +23,10 @@ type Stock = components['schemas']['Stock']
 export const TAX_CATEGORY_ID = '00000000-0000-0000-0000-000000000001'
 /** テストのデータの商品の ID */
 export const PRODUCT_ID = '00000000-0000-0000-0000-000000000101'
+/** レポートのテストの商品（T シャツ）の ID */
+export const SHIRT_ID = '00000000-0000-0000-0000-000000002001'
+/** 他の人に先に更新されたとき（409）に画面が出す、競合の知らせ */
+export const CONFLICT_MESSAGE = '他の人が先に更新しました。再読み込みしてください'
 
 /** 「標準」に 10%（開始・終了とも空白）だけがある税区分 */
 export function taxCategory(overrides: Partial<TaxCategory> = {}): TaxCategory {

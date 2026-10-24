@@ -4,17 +4,14 @@ import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
-import { PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
-import { typeDateTime } from '@/test/inputs'
+import { CONFLICT_MESSAGE, PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
+import { returnToTab, typeDateTime } from '@/test/inputs'
 import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, server, stockHandler } from '@/test/server'
 
 /** 商品の編集の画面のパス */
 const PAGE_PATH = `/products/${PRODUCT_ID}`
-
-/** 他の人に先に更新されたときの、競合の知らせ */
-const CONFLICT_MESSAGE = '他の人が先に更新しました。再読み込みしてください'
 
 /** 商品の基本情報の更新の要求の本文（送った内容を確認する） */
 type UpdateProductRequest = components['schemas']['UpdateProductRequest']
@@ -91,9 +88,8 @@ describe('商品の編集', () => {
       const name = await screen.findByLabelText('商品名')
       await user.clear(name)
       await user.type(name, 'T シャツ（改）')
-      // 入力中に、他の人が商品名と価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
       state.current = productDetail({ name: 'T シャツ（新）', priceExclTax: 1200, priceInclTax: 1320, version: 1 })
-      fireEvent(window, new Event('visibilitychange'))
+      returnToTab()
       expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
       return { state, user }
     }
@@ -342,7 +338,6 @@ describe('商品の編集', () => {
       const { user } = renderApp(PAGE_PATH)
       await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
       await user.type(screen.getByLabelText('色'), '赤')
-      // 入力中に、他の人が価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
       state.current = productDetail({
         axes: ['色'],
         variants: [],
@@ -350,7 +345,7 @@ describe('商品の編集', () => {
         priceInclTax: 1320,
         version: 1,
       })
-      fireEvent(window, new Event('visibilitychange'))
+      returnToTab()
       expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
       return { user, versions }
     }
@@ -595,9 +590,8 @@ describe('公開期間', () => {
       const requests = servePeriod(state)
       const { user } = renderApp(PAGE_PATH)
       typeDateTime(await screen.findByLabelText('公開開始'), '2026-11-01T10:00')
-      // 入力中に、他の人が商品名を変えた。利用者が別のタブから戻ると、画面は取得し直す
       state.current = productDetail({ name: 'T シャツ（新）', version: 1, publishEnd: '2026-12-31T15:00:00Z' })
-      fireEvent(window, new Event('visibilitychange'))
+      returnToTab()
       expect(await screen.findByDisplayValue('T シャツ（新）')).toBeInTheDocument()
       return { user, requests }
     }

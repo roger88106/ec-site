@@ -64,16 +64,13 @@ function selected(label: string): string {
  * @param view      HTML に描画したフォーム
  * @param message   エラーの文
  * @param label     エラーが出る欄の見出し
- * @param nextLabel 次の欄の見出し（最後の欄は省く。入力欄の後にあることだけを確認する）
+ * @param nextLabel 次の欄の見出し（最後の欄は省く。省いたときは、注文のボタンより前に出ることを確認する）
  */
 function expectErrorUnder(view: ReturnType<typeof renderStatic>, message: string, label: string, nextLabel?: string) {
   const error = view.getByText(message)
+  const boundary = nextLabel ? view.getByLabelText(nextLabel) : view.getByRole('button', { name: /^注文する/ })
   expect(view.getByLabelText(label).compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  if (nextLabel) {
-    expect(
-      error.compareDocumentPosition(view.getByLabelText(nextLabel)) & Node.DOCUMENT_POSITION_FOLLOWING,
-    ).toBeTruthy()
-  }
+  expect(error.compareDocumentPosition(boundary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
 }
 
 /**
@@ -135,12 +132,11 @@ describe('お届け先の入力と注文', () => {
 
     // 欄は、画面に出る順（文書の順）に返る
     const fields = view.getAllByLabelText(/^(郵便番号|都道府県|市区町村|住所)$/)
-    expect(fields.map((field) => field.getAttribute('name'))).toEqual([
-      'postalCode',
-      'prefectureCode',
-      'municipalityCode',
-      'address',
-    ])
+    expect(fields).toHaveLength(4)
+    expect(fields[0]).toHaveAttribute('name', 'postalCode')
+    expect(fields[1]).toHaveAttribute('name', 'prefectureCode')
+    expect(fields[2]).toHaveAttribute('name', 'municipalityCode')
+    expect(fields[3]).toHaveAttribute('name', 'address')
     const prefecture = within(view.getByRole('combobox', { name: '都道府県' }))
     expect(prefecture.getByRole('option', { name: '東京都' })).toHaveAttribute('value', '13')
     expect(prefecture.getByRole('option', { name: '神奈川県' })).toHaveAttribute('value', '14')

@@ -3,6 +3,7 @@ import { useEffect, useState } from 'react'
 import { describe, expect, test } from 'vitest'
 import { renderStatic } from '@/test/render'
 
+/** next-intl の文言を使う、無効なボタンとリンク */
 function SampleButtons() {
   const t = useTranslations('components.siteHeader')
   return (
@@ -15,6 +16,7 @@ function SampleButtons() {
   )
 }
 
+/** 効果（`useEffect`）で、表示の文言を「初期」から「効果の後」に変える段落 */
 function EffectLabel() {
   const [label, setLabel] = useState('初期')
   useEffect(() => {

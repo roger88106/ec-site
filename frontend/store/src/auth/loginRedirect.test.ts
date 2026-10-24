@@ -72,8 +72,8 @@ describe('ログインの戻り先', () => {
       }),
     )
 
-    const location = new URL(signIn.headers.get('location') ?? '')
-    expect(`${location.origin}${location.pathname}`).toBe(`${IDP}/protocol/openid-connect/auth`)
-    expect(location.searchParams.get('redirect_uri')).toBe(`${PUBLIC_URL}/api/auth/callback/keycloak`)
+    const signInUrl = new URL(signIn.headers.get('location') ?? '')
+    expect(`${signInUrl.origin}${signInUrl.pathname}`).toBe(`${IDP}/protocol/openid-connect/auth`)
+    expect(signInUrl.searchParams.get('redirect_uri')).toBe(`${PUBLIC_URL}/api/auth/callback/keycloak`)
   })
 })

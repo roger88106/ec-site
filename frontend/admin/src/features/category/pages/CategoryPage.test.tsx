@@ -3,7 +3,7 @@ import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { CategoryNode } from '@/api/types'
 import { categoryNode } from '@/test/fixtures'
-import { findGroup } from '@/test/queries'
+import { findGroup, getListItemContaining } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
 
@@ -60,10 +60,8 @@ describe('カテゴリの画面', () => {
     serveCategories([CLOTHING, GOODS])
     renderApp('/categories')
 
-    await findGroup('衣類')
     // 衣類の行を含む項目（子の行も、この項目の中に入る）
-    const clothing = screen.getAllByRole('listitem').find((item) => within(item).queryByRole('group', { name: '衣類' }))
-    if (clothing === undefined) throw new Error('衣類の項目がない')
+    const clothing = getListItemContaining(await findGroup('衣類'))
     expect(within(clothing).getByText('トップス')).toBeInTheDocument()
     expect(within(clothing).getByText('T シャツ')).toBeInTheDocument()
     expect(within(clothing).queryByText('雑貨')).not.toBeInTheDocument()

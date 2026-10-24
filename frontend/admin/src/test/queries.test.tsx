@@ -2,7 +2,15 @@ import { render, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { useState } from 'react'
 import { describe, expect, test } from 'vitest'
-import { findDetailValue, findGroup, findRow, getCell, getDetailValue, getRow } from '@/test/queries'
+import {
+  findDetailValue,
+  findGroup,
+  findRow,
+  getCell,
+  getDetailValue,
+  getListItemContaining,
+  getRow,
+} from '@/test/queries'
 
 /** 画面全体の項目と、「お届け先」の中の同じ名前の項目を持つ詳細 */
 function Detail() {
@@ -325,5 +333,76 @@ describe('一覧のセル', () => {
   test('行がなければ失敗する', () => {
     render(<List />)
     expect(() => getCell('非課税', '件数')).toThrow(/非課税/)
+  })
+
+  test('行のセルが列より少ないときは、undefined を返さず失敗する', () => {
+    render(
+      <table>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>件数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>短い行</td>
+          </tr>
+        </tbody>
+      </table>,
+    )
+    expect(() => getCell('短い行', '件数')).toThrow('行「短い行」に列「件数」のセルがない')
+  })
+})
+
+describe('要素を含む項目', () => {
+  test('入れ子の一覧では、渡した要素を含む一番外の項目を返す', () => {
+    render(
+      <ul>
+        <li>
+          衣類
+          <ul>
+            <li>
+              <span>トップス</span>
+            </li>
+          </ul>
+        </li>
+        <li>雑貨</li>
+      </ul>,
+    )
+    const item = getListItemContaining(screen.getByText('トップス'))
+    expect(item).toHaveTextContent('衣類')
+    expect(item).not.toHaveTextContent('雑貨')
+  })
+
+  test('範囲を渡すと、その中の項目だけを探す', () => {
+    render(
+      <>
+        <ul>
+          <li>外の項目</li>
+        </ul>
+        <section aria-label="別の一覧">
+          <ul>
+            <li>
+              <span>中の要素</span>
+            </li>
+          </ul>
+        </section>
+      </>,
+    )
+    const scope = within(screen.getByRole('region', { name: '別の一覧' }))
+    expect(getListItemContaining(scope.getByText('中の要素'), scope)).toHaveTextContent('中の要素')
+  })
+
+  test('含む項目がなければ失敗する', () => {
+    render(
+      <>
+        <ul>
+          <li>項目</li>
+        </ul>
+        <p>項目の外</p>
+      </>,
+    )
+    expect(() => getListItemContaining(screen.getByText('項目の外'))).toThrow('渡した要素を含む listitem がない')
   })
 })

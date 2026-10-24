@@ -7,7 +7,7 @@ import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
 import { CONFLICT_MESSAGE, PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
 import { returnToTab, typeDateTime } from '@/test/inputs'
-import { findRow, getRow } from '@/test/queries'
+import { findRow, getListItemContaining, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, server, stockHandler } from '@/test/server'
 
@@ -86,9 +86,9 @@ describe('商品の編集', () => {
     async function editNameAfterOthersUpdate() {
       const state = serveProduct(productDetail())
       const { user } = renderApp(PAGE_PATH)
-      const name = await screen.findByLabelText('商品名')
-      await user.clear(name)
-      await user.type(name, 'T シャツ（改）')
+      const nameField = await screen.findByLabelText('商品名')
+      await user.clear(nameField)
+      await user.type(nameField, 'T シャツ（改）')
       state.current = productDetail({ name: 'T シャツ（新）', priceExclTax: 1200, priceInclTax: 1320, version: 1 })
       returnToTab()
       expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
@@ -178,9 +178,9 @@ describe('商品の編集', () => {
     )
     const { user } = renderApp(PAGE_PATH)
 
-    const name = await screen.findByLabelText('商品名')
-    await user.clear(name)
-    await user.type(name, 'T シャツ（改）')
+    const nameField = await screen.findByLabelText('商品名')
+    await user.clear(nameField)
+    await user.type(nameField, 'T シャツ（改）')
     const description = screen.getByLabelText('説明')
     await user.clear(description)
     await user.type(description, '綿 100%')
@@ -692,9 +692,9 @@ describe('商品画像', () => {
     )
 
     expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
-    expect(await screen.findByRole('img', { name: '画像 1' })).toBeInTheDocument()
-    const first = screen.getAllByRole('listitem').find((item) => within(item).queryByRole('img', { name: '画像 1' }))
-    if (first === undefined) throw new Error('画像 1 の項目がない')
+    const image = await screen.findByRole('img', { name: '画像 1' })
+    expect(image).toBeInTheDocument()
+    const first = getListItemContaining(image)
     expect(within(first).getByText('代表画像')).toBeInTheDocument()
     expect(calls).toEqual(['受付 image/png 2', 'PUT image/png', '登録 version=0'])
   })

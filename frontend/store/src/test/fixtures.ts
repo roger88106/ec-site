@@ -114,9 +114,9 @@ export function cart(items: QuoteItem[], overrides: Partial<Cart> = {}): Cart {
 }
 
 /** 東京都 */
-export const TOKYO: Prefecture = { code: '13', name: '東京都' }
+const TOKYO: Prefecture = { code: '13', name: '東京都' }
 /** 千代田区 */
-export const CHIYODA: Municipality = { code: '13101', name: '千代田区' }
+const CHIYODA: Municipality = { code: '13101', name: '千代田区' }
 
 /** API から取った都道府県の一覧（3 つ） */
 export const PREFECTURES: Prefecture[] = [{ code: '01', name: '北海道' }, TOKYO, { code: '14', name: '神奈川県' }]

@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { OrderForm, OrderFormView } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
-import { input, select } from '@/test/elements'
+import { expectInOrder, input, select } from '@/test/elements'
 import { MUNICIPALITIES, PREFECTURES, postalCodeAddress as postal } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
@@ -37,8 +37,7 @@ function form(result: ActionResult | null = null, formAction: (formData: FormDat
 function expectErrorUnder(view: ReturnType<typeof renderStatic>, message: string, label: string, nextLabel?: string) {
   const error = view.getByText(message)
   const boundary = nextLabel ? view.getByLabelText(nextLabel) : view.getByRole('button', { name: /^注文する/ })
-  expect(view.getByLabelText(label).compareDocumentPosition(error)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
-  expect(error.compareDocumentPosition(boundary)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  expectInOrder(view.getByLabelText(label), error, boundary)
 }
 
 /**

@@ -33,7 +33,8 @@ export function recordDownloads(): DownloadRecorder {
     blobs.push(object)
     return `blob:download-${blobs.length}`
   })
-  const realClick = HTMLAnchorElement.prototype.click
+  // 差し替えない継承元から取る。差し替え済みの関数を本物として取ると、2 回目の呼び出しで再帰する
+  const realClick = HTMLElement.prototype.click
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
     if (!this.hasAttribute('download')) {
       // ダウンロードのリンクではない。記録せず、本物のクリックの処理に渡す

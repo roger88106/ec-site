@@ -1,5 +1,6 @@
-import { describe, expect, test } from 'vitest'
+import { describe, test } from 'vitest'
 import { ShippingAddressDetails } from '@/features/order/components/ShippingAddressDetails'
+import { expectInOrder } from '@/test/elements'
 import { SHIPPING_ADDRESS } from '@/test/fixtures'
 import { renderStatic } from '@/test/render'
 
@@ -13,8 +14,6 @@ describe('注文のお届け先', () => {
     const phone = view.getByText('電話番号 0312345678')
     const email = view.getByText('メールアドレス member@example.com')
     // 宛名、住所、電話番号、メールアドレスの順に出る
-    expect(name.compareDocumentPosition(address)).toBe(name.DOCUMENT_POSITION_FOLLOWING)
-    expect(address.compareDocumentPosition(phone)).toBe(address.DOCUMENT_POSITION_FOLLOWING)
-    expect(phone.compareDocumentPosition(email)).toBe(phone.DOCUMENT_POSITION_FOLLOWING)
+    expectInOrder(name, address, phone, email)
   })
 })

@@ -72,14 +72,14 @@ describe('税区分の登録', () => {
     const state = serveTaxCategories([taxCategory()])
     const { user } = renderApp(PAGE_PATH)
 
-    const name = await screen.findByLabelText('名称')
+    const nameField = await screen.findByLabelText('名称')
     expect(screen.getByRole('button', { name: '登録' })).toBeDisabled()
-    await user.type(name, '軽減')
+    await user.type(nameField, '軽減')
     await user.click(screen.getByRole('button', { name: '登録' }))
 
     expect(await screen.findByText('税区分を登録しました')).toBeInTheDocument()
     expect(await screen.findByRole('cell', { name: '軽減' })).toBeInTheDocument()
-    expect(name).toHaveValue('')
+    expect(nameField).toHaveValue('')
     expect(state.requests).toEqual([{ name: '軽減' }])
   })
 

@@ -4,6 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, test } from 'vitest'
 import { AmountsSummary, type AmountsSummaryVariant } from './AmountsSummary'
 
+/** 内訳に渡す金額（商品の合計、送料、総額、税率ごとの課税対象額と消費税額） */
 const amounts = {
   itemsTotal: 3462,
   shippingFee: 1000,
@@ -24,12 +25,12 @@ function renderSummary(variant: AmountsSummaryVariant) {
   return within(document.body)
 }
 
-/** 文書の中で、前の要素が後の要素より前にある */
-const FOLLOWING = 4
+/** 前の要素が後の要素より前にある。`compareDocumentPosition` の結果の印（DOCUMENT_POSITION_FOLLOWING） */
+const FOLLOWING = new JSDOM('').window.Node.DOCUMENT_POSITION_FOLLOWING
 
 /** 見える文言が、この順に出ている。見つからない文言があれば、その文言が失敗のメッセージに出る */
-function expectInOrder(screen: ReturnType<typeof within>, texts: string[]) {
-  const elements = texts.map((text) => screen.getByText(text))
+function expectInOrder(view: ReturnType<typeof within>, texts: string[]) {
+  const elements = texts.map((text) => view.getByText(text))
   elements.slice(1).forEach((element, index) => {
     expect(
       elements[index].compareDocumentPosition(element) & FOLLOWING,
@@ -38,6 +39,7 @@ function expectInOrder(screen: ReturnType<typeof within>, texts: string[]) {
   })
 }
 
+/** 見える文言の、画面に出る順（商品の合計、送料、総額、税率ごとの消費税額） */
 const ORDER = ['商品の合計', '3,462 円', '送料', '1,000 円', '総額（税込）', '4,462 円'].concat([
   '10% 対象 4,300 円（内消費税 390 円）',
   '8% 対象 162 円（内消費税 12 円）',
@@ -45,17 +47,16 @@ const ORDER = ['商品の合計', '3,462 円', '送料', '1,000 円', '総額（
 
 describe('金額の内訳（BR-7、8）', () => {
   test('AC-77 見た目の種類 page は、商品の合計、送料、区切り線、総額、税率ごとの消費税額の順に出す', () => {
-    const screen = renderSummary('page')
-    expectInOrder(screen, ORDER)
-    expect(screen.getByRole('separator')).toBeInTheDocument()
-    const separator = screen.getByRole('separator')
-    expect(screen.getByText('1,000 円').compareDocumentPosition(separator) & FOLLOWING).toBe(FOLLOWING)
-    expect(separator.compareDocumentPosition(screen.getByText('総額（税込）')) & FOLLOWING).toBe(FOLLOWING)
+    const view = renderSummary('page')
+    expectInOrder(view, ORDER)
+    const separator = view.getByRole('separator')
+    expect(view.getByText('1,000 円').compareDocumentPosition(separator) & FOLLOWING).toBe(FOLLOWING)
+    expect(separator.compareDocumentPosition(view.getByText('総額（税込）')) & FOLLOWING).toBe(FOLLOWING)
   })
 
   test('見た目の種類 card は、区切り線を出さずに、商品の合計、送料、総額、税率ごとの消費税額を金額と一緒に順に出す', () => {
-    const screen = renderSummary('card')
-    expectInOrder(screen, ORDER)
-    expect(screen.queryByRole('separator')).not.toBeInTheDocument()
+    const view = renderSummary('card')
+    expectInOrder(view, ORDER)
+    expect(view.queryByRole('separator')).not.toBeInTheDocument()
   })
 })

@@ -697,7 +697,9 @@ describe('商品画像', () => {
 
     expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
     expect(await screen.findByRole('img', { name: '画像 1' })).toBeInTheDocument()
-    expect(within(screen.getByRole('listitem', { name: '画像 1' })).getByText('代表画像')).toBeInTheDocument()
+    const first = screen.getAllByRole('listitem').find((item) => within(item).queryByRole('img', { name: '画像 1' }))
+    if (first === undefined) throw new Error('画像 1 の項目がない')
+    expect(within(first).getByText('代表画像')).toBeInTheDocument()
     expect(calls).toEqual(['受付 image/png 2', 'PUT image/png', '登録 version=0'])
   })
 

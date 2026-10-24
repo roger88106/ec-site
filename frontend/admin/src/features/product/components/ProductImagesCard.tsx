@@ -100,7 +100,7 @@ export function ProductImagesCard({ product }: { product: ProductDetail }) {
         ) : (
           <ul className="grid grid-cols-2 gap-3 sm:grid-cols-4">
             {images.map((image, index) => (
-              <li aria-label={t('image', { number: index + 1 }) /* 画像の番号 */} className="space-y-1" key={image.id}>
+              <li className="space-y-1" key={image.id}>
                 <img
                   alt={t('image', { number: index + 1 }) /* 画像の番号 */}
                   className="aspect-square w-full rounded-md border object-cover"

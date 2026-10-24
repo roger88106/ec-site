@@ -31,7 +31,7 @@ export function CategoryTreeList({
   return (
     <ul className={parentId === null ? 'space-y-1' : 'mt-1 space-y-1 border-l pl-6'}>
       {nodes.map((node, index) => (
-        <li aria-label={node.name} key={node.id}>
+        <li key={node.id}>
           {/* biome-ignore lint/a11y/useSemanticElements: 行は入力のまとまりでないので fieldset にしない。行に名前を付ける（支援技術向け。見た目は変えない） */}
           <div
             aria-label={node.name}

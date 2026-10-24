@@ -644,7 +644,7 @@ components:
       description: 作成した
       headers:
         Location:
-          description: 作成したリソースの URL
+          description: 作成したリソースの URL（ホストを含まない相対の URL。例：`/api/store/orders/{id}`）
           schema:
             type: string
       content:

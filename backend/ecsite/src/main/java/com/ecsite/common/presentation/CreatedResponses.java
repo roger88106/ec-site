@@ -17,7 +17,7 @@ import java.util.UUID;
 public final class CreatedResponses {
 
     /**
-     * 管理 API の作成の応答を作る。Location は、今のリクエストの URI に ID を追加したもの。
+     * 管理 API の作成の応答を作る。Location は、今のリクエストのパスに ID を追加した、ホストを含まない相対の URL。
      *
      * @param id 作成した ID
      * @return 作成の応答
@@ -27,7 +27,7 @@ public final class CreatedResponses {
     }
 
     /**
-     * 店舗の API の作成の応答を作る。Location は、今のリクエストの URI に ID を追加したもの。
+     * 店舗の API の作成の応答を作る。Location は、今のリクエストのパスに ID を追加した、ホストを含まない相対の URL。
      *
      * @param id 作成した ID
      * @return 作成の応答
@@ -37,7 +37,7 @@ public final class CreatedResponses {
     }
 
     /**
-     * 店舗の API の作成の応答を、別のパスを指して作る。Location は、アプリの起点にパスを追加したもの。
+     * 店舗の API の作成の応答を、別のパスを指して作る。Location は、アプリの起点にパスを追加した、ホストを含まない相対の URL。
      *
      * @param path パス（`{id}` に ID を入れる。例：`/api/store/orders/{id}`）
      * @param id   作成した ID
@@ -48,7 +48,7 @@ public final class CreatedResponses {
                 .path(path)
                 .buildAndExpand(id)
                 .toUri();
-        return ResponseEntity.created(location).body(storeId(id));
+        return ResponseEntity.created(withoutOrigin(location)).body(storeId(id));
     }
 
     /**
@@ -62,15 +62,28 @@ public final class CreatedResponses {
     }
 
     /**
-     * 今のリクエストの URI に ID を追加する。
+     * 今のリクエストのパスに ID を追加する。スキーム・ホスト・ポートは含めない。
      *
      * @param id 作成した ID
-     * @return 作成したものの URI
+     * @return 作成したものの相対の URL
      */
     private static URI belowCurrentRequest(UUID id) {
-        return ServletUriComponentsBuilder.fromCurrentRequest()
+        var uri = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}")
                 .buildAndExpand(id)
                 .toUri();
+        return withoutOrigin(uri);
+    }
+
+    /**
+     * URI からスキーム・ホスト・ポートを除き、パスとクエリだけにする。
+     * デプロイ先のプロキシのヘッダーの扱い（`server.forward-headers-strategy`）によらず、同じ値にするため。
+     *
+     * @param uri 絶対の URI
+     * @return ホストを含まない相対の URL
+     */
+    private static URI withoutOrigin(URI uri) {
+        var query = uri.getRawQuery();
+        return URI.create(query == null ? uri.getRawPath() : uri.getRawPath() + "?" + query);
     }
 }

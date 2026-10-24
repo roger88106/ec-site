@@ -1368,7 +1368,7 @@ components:
       description: 登録した
       headers:
         Location:
-          description: 登録したリソースの URL
+          description: 登録したリソースの URL（ホストを含まない相対の URL。例：`/api/admin/products/{id}`）
           schema:
             type: string
       content:

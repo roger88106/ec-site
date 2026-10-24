@@ -142,7 +142,7 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 
 - 変換はモジュールごとの mapper（`XxxMapper`）に手動で書く。変換のライブラリーは使わない。
 - 生成したモデルは、引数なしのコンストラクターと項目名のメソッドで組み立てる（`new OrderLine().productCode(...)`）。位置で並べるコンストラクターは使わない。項目が 1 つの型（作成した ID など）も同じ。
-- 作成の応答（201、Location、作成した ID）は、`common/presentation` の共通の補助で作る。
+- 作成の応答（201、Location、作成した ID）は、`common/presentation` の共通の補助で作る。`Location` はホストを含まない相対の URL（`/api/...`）で、プロキシのヘッダーの扱いによらず同じ値になる。
 - 入れ子の型（明細、金額、住所など）は型ごとに private メソッドに分け、上位のメソッドには項目の並びだけを残す。
 - 自分で定義した record は、引数が多ければ 1 行に 1 つ書く。
 

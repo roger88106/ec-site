@@ -5,9 +5,10 @@
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** 開発者だけが見る文（ログ、プログラムの誤りの例外）の行。利用者に見せる文ではないので見ない */
 const DEVELOPER_ONLY = /\b(log|console)\.(debug|info|warn|error)\(|throw new Error\(/
@@ -46,28 +47,26 @@ export function scanSources(files, read) {
   return hitsByFile
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const exclusions = readExclusions(fileURLToPath(new URL('./hardcoded-text-exclusions.json', import.meta.url)))
   const files = listGitFiles(['frontend']).filter(isScreenSource)
+  exitIfNoFiles(files, '画面のソース')
   // 除外のファイルも読む。除外が要るのは、文言を直接書いた行があるファイルだけ
   const hitsByFile = scanSources(files, (file) => readFileSync(file, 'utf8'))
   const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))
   const problems = checkExclusions('hardcoded-text-exclusions.json', exclusions, (file) => hitsByFile.has(file))
   const countOnly = process.argv.includes('--count')
-  if (problems.length > 0) {
-    // --count は数だけを出し、失敗にしない。除外の誤りは警告として出して、数も出す
-    for (const problem of problems) console.error(countOnly ? `警告：${problem}` : problem)
-    if (!countOnly) process.exit(1)
-  }
   if (countOnly) {
+    // --count は数だけを出し、失敗にしない。除外の誤りは警告として出して、数も出す
+    for (const problem of problems) console.log(`警告：${problem}`)
     const byFile = Object.groupBy(found, (hit) => hit.file)
     for (const [file, hits] of Object.entries(byFile)) console.log(`${hits.length}\t${file}`)
     console.log(`合計 ${found.length} 行、${Object.keys(byFile).length} ファイル`)
-  } else if (found.length > 0) {
-    console.error('表示の文言を直接書いた所がある。messages/ja.json に置き、キーで引く：')
-    for (const hit of found) console.error(`  ${hit.file}:${hit.line}  ${hit.text}`)
-    process.exit(1)
   } else {
-    console.log('表示の文言を直接書いた所はない')
+    // 他の検査と同じ形：違反と誤りを標準出力に出し、最後の行に要約を出す。違反があれば失敗
+    for (const problem of problems) console.log(problem)
+    for (const hit of found) console.log(`${hit.file}:${hit.line}  ${hit.text}`)
+    console.log(`表示の文言を直接書いた所：${found.length}、除外の誤り：${problems.length}`)
+    process.exit(found.length > 0 || problems.length > 0 ? 1 : 0)
   }
 }

@@ -7,6 +7,21 @@ import { linkSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:
 const MOVE_RETRY_CODES = ['ENOENT', 'EPERM', 'EBUSY', 'EACCES']
 
 /**
+ * プロセスが実行中か。権限がなくて信号を送れない（EPERM）プロセスも実行中とみなす。
+ *
+ * @param {number} pid
+ * @returns {boolean}
+ */
+export function isProcessRunning(pid) {
+  try {
+    process.kill(pid, 0)
+    return true
+  } catch (e) {
+    return e.code === 'EPERM'
+  }
+}
+
+/**
  * ロックのファイルの操作を作る。<br />
  * 作成は、一時のファイルに中身を書いてから link で置く。書きかけ（空）のロックを他方に読まれず、link はロックがあれば原子的に失敗する。
  *

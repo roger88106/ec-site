@@ -4,11 +4,14 @@
 // 環境変数の名前は、接頭辞と項目の名前から作る（ecsite.payment の expiryInterval → ECSITE_PAYMENT_EXPIRY_INTERVAL）。
 // 文書の省略形（`ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えて、コードにある名前に合わせる。
 // 時間は、書き方によらず同じ長さなら同じ値とみなす（1m と PT1M）。
+// Java のコメントの中の注釈は読まない。設定の値のクラスを 1 つも読めないとき、読めないクラス（record でない、引数やプロパティが 0 件など）があるとき、
+// Java のファイルが 0 件のときも失敗にする。
 // 使い方：node scripts/ci/env-defaults.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
-import { splitNulList } from './lib/git-files.mjs'
+import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
+import { isMain } from './lib/is-main.mjs'
+import { stripJavaComments } from './lib/strip-comments.mjs'
 
 /** 環境変数の文書 */
 const ENV_DOC = 'docs/guides/environment.md'
@@ -72,21 +75,30 @@ function paramsFrom(source, start) {
   return ''
 }
 
+/** 設定の値のクラスの注釈（接頭辞を文字列リテラルで書いた形）の後ろから、record の名前の開き括弧まで（間は注釈と修飾子だけ） */
+const CONFIG_HEAD = /^(?:(?:prefix|value)\s*=\s*)?"([^"]+)"\)\s*(?:@[\w.]+(?![\w.])(?:\([^)]*\))?\s*|(?:public|protected|private|static|final|sealed|strictfp)\s+)*record\s+(\w+)\s*\(/
+
 /**
- * 設定の型の record から、環境変数の名前と既定値を作る。
+ * 設定の型の record から、環境変数の名前と既定値を作る。読めなかった設定のクラスは problems に理由を入れる（黙って飛ばさない）。
  *
  * @param {string} source Java のソース
- * @returns {{ env: string, value: string | null }[]} 環境変数の名前と既定値（既定値がなければ null）
+ * @returns {{ properties: { env: string, value: string | null }[], problems: string[] }} 環境変数の名前と既定値（既定値がなければ null）と、読めなかった理由
  */
-export function parseProperties(source) {
+export function readProperties(source) {
+  const code = stripJavaComments(source)
   const records = new Map()
-  for (const match of source.matchAll(/\brecord\s+(\w+)\s*\(/g)) {
-    records.set(match[1], paramsFrom(source, match.index + match[0].length - 1))
+  for (const match of code.matchAll(/\brecord\s+(\w+)\s*\(/g)) {
+    records.set(match[1], paramsFrom(code, match.index + match[0].length - 1))
   }
-  const result = []
+  const properties = []
+  const problems = []
   const walk = (recordName, envPrefix) => {
     for (const param of splitTopLevel(records.get(recordName) ?? '')) {
-      const name = param.match(/(\w+)\s*$/)[1]
+      const name = param.match(/(\w+)\s*$/)?.[1]
+      if (!name) {
+        problems.push(`record ${recordName} の引数「${param}」の名前を読めない`)
+        continue
+      }
       const type = param.replace(/@\w+(\([^)]*\))?/g, '').trim().split(/\s+/)[0].replace(/<.*$/, '')
       const env = `${envPrefix}_${toEnvPart(name)}`
       if (records.has(type) && type !== recordName) {
@@ -94,13 +106,43 @@ export function parseProperties(source) {
         continue
       }
       const value = param.match(/@DefaultValue\("([^"]*)"\)/)
-      result.push({ env, value: value ? value[1] : null })
+      properties.push({ env, value: value ? value[1] : null })
     }
   }
-  for (const match of source.matchAll(/@ConfigurationProperties\("([^"]+)"\)[^]*?\brecord\s+(\w+)\s*\(/g)) {
-    walk(match[2], toEnvPart(match[1]))
+  for (const match of code.matchAll(/@ConfigurationProperties\(/g)) {
+    const head = code.slice(match.index + match[0].length).match(CONFIG_HEAD)
+    if (!head) {
+      problems.push('@ConfigurationProperties の付いた宣言が、接頭辞を文字列リテラルで書いた record の形でない（record の設定のクラスにする）')
+      continue
+    }
+    const [, prefix, recordName] = head
+    if (!records.get(recordName)?.trim()) {
+      problems.push(`record ${recordName} の引数を読めない（空か、括弧が閉じていない）`)
+      continue
+    }
+    const before = properties.length
+    walk(recordName, toEnvPart(prefix))
+    if (properties.length === before) problems.push(`record ${recordName} から、プロパティが 0 件しか読めなかった`)
   }
-  return result
+  return { properties, problems }
+}
+
+/**
+ * 設定の値のクラスを持つファイルを全て読む。1 つも見つけられないときも、理由にする。
+ *
+ * @param {{ file: string, source: string }[]} entries 設定の注釈を含むファイル
+ * @returns {{ code: { env: string, value: string | null }[], problems: string[] }} 環境変数の名前と既定値、読めなかった理由（ファイルの名前が先頭）
+ */
+export function readAllProperties(entries) {
+  const code = []
+  const problems = []
+  for (const { file, source } of entries) {
+    const result = readProperties(source)
+    code.push(...result.properties)
+    problems.push(...result.problems.map((problem) => `${file}：${problem}`))
+  }
+  if (!entries.length) problems.push('設定の値のクラス（@ConfigurationProperties）を 1 つも見つけられない')
+  return { code, problems }
 }
 
 /**
@@ -193,13 +235,15 @@ export function compareDefaults(code, doc) {
   return problems.sort()
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
-  const sources = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'backend/ecsite/src/main/java/*.java'], { encoding: 'utf8' }))
-    .map((file) => readFileSync(file, 'utf8'))
-    .filter((source) => source.includes('@ConfigurationProperties('))
-  const code = sources.flatMap(parseProperties)
+if (isMain(import.meta.url)) {
+  const javaFiles = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'backend/ecsite/src/main/java/*.java'], { encoding: 'utf8' }))
+  exitIfNoFiles(javaFiles, '設定を読む Java のファイル')
+  const entries = javaFiles
+    .map((file) => ({ file, source: readFileSync(file, 'utf8') }))
+    .filter(({ source }) => stripJavaComments(source).includes('@ConfigurationProperties('))
+  const { code, problems: unreadable } = readAllProperties(entries)
   const doc = parseEnvTable(readFileSync(ENV_DOC, 'utf8'), new Set(code.map((row) => row.env)))
-  const problems = compareDefaults(code, doc)
+  const problems = [...unreadable, ...compareDefaults(code, doc)]
   for (const problem of problems) console.log(problem)
   console.log(`環境変数の既定値の食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

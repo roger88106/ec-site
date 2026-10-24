@@ -39,6 +39,7 @@ paths:
     get:
       tags: [product]
       operationId: listProducts
+      security: []
       summary: 商品一覧（AC-51〜57）
       parameters:
         - name: categoryId
@@ -81,6 +82,7 @@ paths:
     get:
       tags: [product]
       operationId: searchProducts
+      security: []
       summary: キーワード検索（AC-58〜61）
       description: 商品名または説明にキーワードを含む商品。並びは新着順で固定。精度は問わない。
       parameters:
@@ -107,6 +109,7 @@ paths:
     get:
       tags: [product]
       operationId: getProduct
+      security: []
       summary: 商品の詳細（AC-62〜66）
       parameters:
         - name: productId
@@ -129,6 +132,7 @@ paths:
     get:
       tags: [category]
       operationId: listCategories
+      security: []
       summary: カテゴリの木（AC-52 の絞り込み用）
       responses:
         '200':
@@ -144,6 +148,7 @@ paths:
     post:
       tags: [cart]
       operationId: createCart
+      security: []
       summary: カートを作る（AC-73）
       description: 空のカートを作る。返したカート ID を知っていることが、カートを使える条件になる（plan 002 第 3 節）。
       responses:
@@ -499,6 +504,7 @@ paths:
     get:
       tags: [shop]
       operationId: getShop
+      security: []
       summary: 店舗の情報（AC-96）
       description: 問い合わせ先など、画面に示す店舗の情報。値はバックエンドの設定（plan 002 第 4 節）。
       responses:
@@ -514,6 +520,7 @@ paths:
     get:
       tags: [region]
       operationId: listPrefectures
+      security: []
       summary: 都道府県の一覧（AC-250）
       description: コードの順。マスターデータの更新でしか変わらない
       responses:
@@ -528,6 +535,7 @@ paths:
     get:
       tags: [region]
       operationId: listMunicipalities
+      security: []
       summary: 都道府県の市区町村の一覧（AC-249、250）
       description: コードの順。政令指定都市は区を 1 つの市区町村とし、市そのものは含めない
       parameters:
@@ -548,6 +556,7 @@ paths:
     get:
       tags: [region]
       operationId: findPostalCodeAddresses
+      security: []
       summary: 郵便番号の住所（AC-253、254、256）
       description: |
         郵便番号に対応する住所（都道府県、市区町村、町域）を、並び順で返す。1 つの郵便番号に複数の住所があれば、全てを返す。

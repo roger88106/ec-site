@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
-import { execFileSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
-import { listGitFiles, splitNulList } from './git-files.mjs'
+import { fileURLToPath } from 'node:url'
+import { emptyListReason, listGitFiles, splitNulList } from './git-files.mjs'
 
 /** 試す Git のリポジトリ */
 const repo = mkdtempSync(path.join(tmpdir(), 'git-files-'))
@@ -59,4 +60,48 @@ describe('Git の対象のファイルの一覧', () => {
   test('パスの指定があれば、その下だけを返す', () => {
     assert.deepEqual(listGitFiles(['frontend', 'docs'], repo), ['docs/a.md', 'frontend/app.ts'])
   })
+})
+
+describe('対象が 0 件のときの失敗', () => {
+  test('0 件なら理由を返し、あるときは null', () => {
+    assert.match(emptyListReason([], 'テストのファイル') ?? '', /テストのファイル.*1 件も見つからない/)
+    assert.equal(emptyListReason(['a.txt'], 'テストのファイル'), null)
+  })
+
+  // Git の一覧を読む検査は、対象が 0 件のとき（検査の対象の置き場所が変わった、除外の条件が広すぎる）に、何も見ずに成功してしまわない
+  const checks = [
+    'ac-check',
+    'ci-docs',
+    'dependabot-actions',
+    'doc-refs',
+    'doc-terms',
+    'env-defaults',
+    'frontend-rules',
+    'glossary-ids',
+    'gradle-plugins',
+    'hardcoded-text',
+    'image-versions',
+    'input-constraints',
+    'java-rules',
+    'message-comments',
+    'related-specs',
+    'runtime-versions',
+    'spec-numbers',
+    'test-names',
+    'time-waits',
+  ]
+  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')))
+  const empty = mkdtempSync(path.join(tmpdir(), 'empty-targets-'))
+  after(() => rmSync(empty, { recursive: true, force: true }))
+  execFileSync('git', ['init', '-q'], { cwd: empty, env })
+  writeFileSync(path.join(empty, 'unrelated.txt'), 'x')
+
+  for (const name of checks) {
+    test(`${name} は、対象のファイルが 0 件のとき失敗にする`, () => {
+      const script = fileURLToPath(new URL(`../${name}.mjs`, import.meta.url))
+      const result = spawnSync('node', [script], { cwd: empty, env, encoding: 'utf8' })
+      assert.equal(result.status, 1, result.stdout + result.stderr)
+      assert.match(result.stdout, /1 件も見つからない/)
+    })
+  }
 })

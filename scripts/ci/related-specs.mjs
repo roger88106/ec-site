@@ -5,12 +5,14 @@
 // 当たるタスク番号の commit がない除外は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする（新しい除外を加える最初の commit は、履歴にまだ当たる commit がないため）。
 // 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
 // 次の commit の照合：node scripts/ci/related-specs.mjs --staged <メッセージのファイル>（commit-msg の hook から呼ぶ。ステージした文書とメッセージの 1 行目を照合する）
-import { execFileSync, execSync, spawnSync } from 'node:child_process'
-import { splitNulList } from './lib/git-files.mjs'
+import { execFileSync, spawnSync } from 'node:child_process'
+import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { findEmptyReasons, findStaleExclusions, readExclusions } from './lib/exclusions.mjs'
+import { isMain } from './lib/is-main.mjs'
+import { exitIfShallow } from './lib/shallow-clone.mjs'
 
 /** 概要の表の「関連 spec」の行 */
 const RELATED_ROW = /^\|\s*関連 spec\s*\|(.*)\|\s*$/m
@@ -124,20 +126,18 @@ function checkStaged(messageFile, excludedPrefixes) {
   process.exit(missing.length ? 1 : 0)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'related-specs-exclusions.json'))
   const excludedPrefixes = Object.keys(exclusions)
   if (process.argv[2] === '--staged') checkStaged(process.argv[3], excludedPrefixes)
-  if (execSync('git rev-parse --is-shallow-repository', { encoding: 'utf8' }).trim() === 'true') {
-    console.log('commit の履歴が足りない（shallow clone）。CI では checkout に fetch-depth: 0 を付ける')
-    process.exit(1)
-  }
+  exitIfShallow()
+  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'docs/*.md'], { encoding: 'utf8' }))
+  exitIfNoFiles(files, '文書')
   // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
   const merging = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { encoding: 'utf8' }).status === 0
   const allSubjects = execFileSync('git', historyLogArgs(merging), { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean)
   const { failures: exclusionProblems, warnings } = checkRelatedExclusions(exclusions, (prefix) => isPrefixUsed(prefix, allSubjects), process.env.CI === 'true')
   for (const line of [...exclusionProblems, ...warnings]) console.log(line)
-  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'docs/*.md'], { encoding: 'utf8' }))
   let count = 0
   for (const file of files) {
     const related = parseRelatedSpecs(readFileSync(file, 'utf8'))

@@ -16,8 +16,9 @@ on:
       - '**'
       - '!**.md'          # 文書、skill の本文
       - '!.claude/**'     # エージェントの設定と、ローカルの画面の確認の設定
-      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く。E2E の script から使う scripts/dev/lib/ は次の行で含め直す）
+      - '!scripts/dev/**' # ローカル用の script（CI で使う script は scripts/ci/ に置く。E2E の script から使う scripts/dev/lib/ と scripts/dev/ports.json は次の 2 行で含め直す）
       - 'scripts/dev/lib/**' # CI の E2E の script から使う script の置き場所
+      - 'scripts/dev/ports.json' # lib/slot.mjs が読むローカルのポートの一覧
       - '!showcase/**'    # 機能紹介のページ（pages.yml で公開する）
       - '!.github/workflows/pages.yml'
       - '!.github/ISSUE_TEMPLATE/**' # issue のテンプレート
@@ -42,10 +43,10 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  # バックエンドは 4 つのジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、2 つに分けて同時に流す。
-  # 3 つのジョブは同時に始まり、それぞれコンパイルする（結果を渡すと、統合テストがビルドを待って全体が長くなる）。
+  # バックエンドは、ビルドと単体テスト、統合テスト（matrix の shard の一覧の数に分ける）、集計のジョブに分ける。統合テストが全体の約 3 分の 2 を占めるので、分けて同時に流す。
+  # 集計の前のジョブは同時に始まり、それぞれコンパイルする（結果を渡すと、統合テストがビルドを待って全体が長くなる）。
   # 変わっていない部分（jOOQ のコード、コンパイル）は、setup-gradle が develop のビルドのキャッシュから読む。
-  # 手元は分けずに ./gradlew checkLicense build で全て流す（docs/guides/ci.md）。
+  # 手元は分けずに ./gradlew check で全て流す（docs/guides/ci.md）。
   backend-build:
     name: バックエンド（ビルドと単体テスト）
     runs-on: ubuntu-latest
@@ -66,12 +67,12 @@ jobs:
       - uses: gradle/actions/setup-gradle@v6
 
       # 依存のライセンスを、方針（scripts/ci/licenses/policy.json）と照合する（依存とライセンス）。
-      # 別の手順にすると Gradle の起動と依存の解決が 2 回になり、1 分ほど延びるので、ビルドと同じ呼び出しで流す。
+      # `check` がライセンスの検査（checkLicense）を含む。
       # 失敗したときは、ログの「Some library licenses are not allowed」と build/reports/dependency-license/ を見る。
       # 統合テストは別のジョブで流す。カバレッジの報告も、合わせるジョブ（backend）で作る。
       # jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
       - name: ライセンスの検査、ビルドと単体テスト
-        run: ./gradlew checkLicense build -x integrationTest -x coverageReport
+        run: ./gradlew check -x integrationTest -x coverageReport
 
       # 合わせるジョブ（backend）が、コンパイルなしでカバレッジの報告を作るために使う。
       # クラスは、各ジョブが別々にコンパイルしたものと中身が同じ（JaCoCo のクラスの ID が一致する）
@@ -121,10 +122,10 @@ jobs:
             backend/ecsite/build/reports/dependency-license/dependencies-without-allowed-license.json
           retention-days: 7
 
-  # 統合テストをテストクラスの名前で 2 つに分け、2 つのジョブで同時に流す（分け方は build.gradle.kts の integrationTestShards）。
+  # 統合テストをテストクラスの名前で分け、matrix の shard の一覧のジョブで同時に流す（分け方は build.gradle.kts の integrationTestShards）。
   # 片方が失敗しても、もう片方は最後まで流す（失敗の全体を一度に見るため）
   backend-integration:
-    name: バックエンド（統合テスト ${{ matrix.shard }}/2）
+    name: バックエンド（統合テスト ${{ matrix.shard }}/${{ strategy.job-total }}）
     runs-on: ubuntu-latest
     timeout-minutes: 15
     strategy:
@@ -147,8 +148,8 @@ jobs:
 
       # 統合テストに必要な task だけが流れる（ライセンスの検査と Checkstyle は、ビルドと単体テストのジョブで流す）。
       # 統合テストと jOOQ のコード生成は Testcontainers を使う（ランナーの Docker で動く）
-      - name: 統合テスト（${{ matrix.shard }}/2）
-        run: ./gradlew integrationTest -PintegrationTestShard=${{ matrix.shard }}/2
+      - name: 統合テスト（${{ matrix.shard }}/${{ strategy.job-total }}）
+        run: ./gradlew integrationTest -PintegrationTestShard=${{ matrix.shard }}/${{ strategy.job-total }}
 
       - name: カバレッジの実行データ（統合テスト）を保存
         uses: actions/upload-artifact@v7
@@ -217,7 +218,7 @@ jobs:
           path: ${{ runner.temp }}/backend
 
       # カバレッジ（テストの書き方 第 1.2 節）。基準の検査は、報告を保存した後の最後の手順で行う。
-      # 実行データ（単体 1 つと統合 2 つ）を 1 つの報告にする。クラスは、ビルドのジョブがコンパイルしたもの
+      # 実行データ（単体のジョブと、統合テストの全てのジョブ）を 1 つの報告にする。クラスは、ビルドのジョブがコンパイルしたもの
       # JaCoCo は、実行データとクラスが一致しないと警告を出す（各ジョブが別々にコンパイルしたクラスが違うとき）。
       # 失敗にはせず、注釈に出す。pipefail で Gradle の失敗は隠さない
       - name: カバレッジの報告を作る

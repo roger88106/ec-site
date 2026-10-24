@@ -8,34 +8,14 @@
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { listGitFiles } from '../ci/lib/git-files.mjs'
 import { listSpecDirs } from '../ci/lib/spec-dirs.mjs'
+import { findTestFiles, readTsTests } from '../ci/lib/test-files.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
 
-/** テストを探さないディレクトリ */
-const SKIPPED_DIRS = new Set(['.git', '.gradle', '.idea', '.local', '.next', 'build', 'coverage', 'dist', 'generated', 'node_modules', 'test-results'])
-
 /** Java のテストのメソッドの注釈 */
 const JAVA_TEST = /^\s*@(?:Test|ParameterizedTest)\b/gm
-
-/** Vitest・Playwright のテストの呼び出し（describe・step・beforeEach などは数えない） */
-const TS_TEST = /\b(?:it|test)(?:\.(?:only|skip|fixme|concurrent|serial|each\([^)]*\)))*\(\s*['"`]/g
-
-/**
- * テストのファイルを探す。
- *
- * @param {string} dir 探すディレクトリ
- * @returns {{ file: string, kind: 'java' | 'ts' }[]} テストのファイルと種類
- */
-function findTestFiles(dir) {
-  return readdirSync(dir, { withFileTypes: true }).flatMap((entry) => {
-    const full = path.join(dir, entry.name)
-    if (entry.isDirectory()) return SKIPPED_DIRS.has(entry.name) ? [] : findTestFiles(full)
-    if (entry.name.endsWith('.java') && /[\\/]src[\\/](test|integrationTest)[\\/]/.test(full)) return [{ file: full, kind: 'java' }]
-    if (/\.test\.tsx?$|\.spec\.ts$/.test(entry.name)) return [{ file: full, kind: 'ts' }]
-    return []
-  })
-}
 
 const specDirs = listSpecDirs(path.join(ROOT, 'docs/specs'))
 
@@ -49,8 +29,10 @@ for (const { dir } of specDirs) {
 }
 
 const tests = { java: 0, ts: 0 }
-for (const { file, kind } of findTestFiles(ROOT)) {
-  tests[kind] += [...readFileSync(file, 'utf8').matchAll(kind === 'java' ? JAVA_TEST : TS_TEST)].length
+for (const { file, kind } of findTestFiles(ROOT, listGitFiles([], ROOT))) {
+  const source = readFileSync(file, 'utf8')
+  // skip・fixme のテストも、ソースにある件数として数える
+  tests[kind] += kind === 'java' ? [...source.matchAll(JAVA_TEST)].length : readTsTests(source).length
 }
 
 /**

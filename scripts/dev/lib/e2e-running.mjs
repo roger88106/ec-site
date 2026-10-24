@@ -4,6 +4,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { isE2eRunningIn } from './e2e-lock.mjs'
+import { isProcessRunning } from './lock-io.mjs'
 
 /**
  * git の出力（改行を除いたもの）を返す。
@@ -12,20 +13,6 @@ import { isE2eRunningIn } from './e2e-lock.mjs'
  */
 function git(args) {
   return execFileSync('git', args, { cwd: import.meta.dirname, encoding: 'utf8' }).trim()
-}
-
-/**
- * プロセスが動いているか。
- * @param {number} pid
- * @returns {boolean}
- */
-function isRunning(pid) {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (e) {
-    return e.code === 'EPERM'
-  }
 }
 
 /**
@@ -44,4 +31,4 @@ function readLock(file) {
 
 const worktree = path.resolve(git(['rev-parse', '--show-toplevel']))
 const lockFile = path.join(path.resolve(import.meta.dirname, git(['rev-parse', '--git-common-dir'])), 'ec-site-e2e.lock')
-process.exit(isE2eRunningIn({ content: readLock(lockFile), worktree, isRunning }) ? 0 : 1)
+process.exit(isE2eRunningIn({ content: readLock(lockFile), worktree, isRunning: isProcessRunning }) ? 0 : 1)

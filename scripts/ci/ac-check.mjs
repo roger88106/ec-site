@@ -11,6 +11,7 @@
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
 //   空白で区切った AC の並びがある（AC-1 AC-2。AC-1、AC-2 と書く）、
+//   テスト名を読めない test・it の呼び出し（名前が文字列でない、each の括弧が閉じない、知らない修飾が付いている）がある、テストのファイルが 0 件、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
@@ -21,10 +22,12 @@
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { closingParen } from './lib/closing-paren.mjs'
+import { extractTestNames, findTestFiles, scanTsTests } from './lib/test-files.mjs'
+import { createLineLocator } from './lib/line-number.mjs'
 import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
 const RANGE = '[〜～~]'
@@ -76,41 +79,6 @@ export function parseSpecAcs(markdown) {
   }
   return acs
 }
-
-/**
- * テストのソースから、テスト名を取り出す。
- *
- * @param source テストのソース
- * @param kind   'java'（メソッドの @DisplayName）か 'ts'（test・it の第 1 引数）
- * @returns テスト名
- */
-export function extractTestNames(source, kind) {
-  if (kind === 'java') {
-    // クラス（@Nested を含む）に付いたものは、テストのまとまりの名前なので読まない。
-    // 後に続く注釈と修飾子を飛ばした次の語が class かで見分ける（構文は解析しない）
-    const classAfter =
-      /^(?:\s*@[\w.]+(?:\((?:[^()"]|"(?:[^"\\]|\\.)*")*\))?)*\s*(?:(?:public|protected|private|static|final|abstract|sealed|non-sealed)\s+)*(?:class|record|enum|interface)\b/
-    return [...source.matchAll(/@DisplayName\(\s*"((?:[^"\\]|\\.)*)"\s*\)/g)]
-      .filter((match) => !classAfter.test(source.slice(match.index + match[0].length)))
-      .map((match) => match[1].replace(/\\(.)/g, '$1'))
-  }
-  // describe はテストのまとまりの名前なので読まない（test.describe も同じ）
-  // skip・fixme は実行されないので数えない（連鎖に入れない）。前が . や語の文字のもの（/re/.test(...) など）も数えない
-  const call =
-    /(?<![.\w$])(?:it|test)(?:\.(?:serial|parallel|only|concurrent|each\([^)]*\)))*\(\s*(['"`])((?:(?!\1)[^\\]|\\.)*)\1/g
-  // 実行されないまとまり（describe.skip、describe.fixme、test.describe.skip、test.describe.fixme、xdescribe）の中は数えない。
-  // まとまりの範囲は、呼び出しの括弧の対応で求める
-  const skippedRanges = [...source.matchAll(SKIPPED_GROUP)].map((match) => {
-    const open = match.index + match[0].length - 1
-    return [open, closingParen(source, open)]
-  })
-  return [...source.matchAll(call)]
-    .filter((match) => !skippedRanges.some(([from, to]) => match.index > from && match.index < to))
-    .map((match) => match[2].replace(/\\(.)/g, '$1'))
-}
-
-/** 実行されないテストのまとまりの呼び出し。末尾の ( が、まとまりの範囲の始まり */
-const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescribe)\(/g
 
 /**
  * テスト名から AC 番号を取り出す。AC- の後に読点・カンマで並べた番号（AC- は先頭だけでもよい）を読む。
@@ -357,26 +325,6 @@ export function isStrict(env) {
   return env.CI === 'true'
 }
 
-/**
- * Git の対象のファイルから、テストのファイルを選ぶ。
- *
- * @param root     リポジトリのルート
- * @param gitFiles Git の対象のファイル（ルートからの相対パス、/ 区切り）
- * @returns テストのファイル（絶対パス）と、その種類
- */
-export function findTestFiles(root, gitFiles) {
-  const files = []
-  for (const rel of gitFiles) {
-    const full = path.join(root, rel)
-    if (rel.endsWith('.java') && /(^|\/)src\/(test|integrationTest)\//.test(rel)) {
-      files.push({ file: full, kind: 'java' })
-    } else if (/\.test\.tsx?$|\.spec\.ts$/.test(rel)) {
-      files.push({ file: full, kind: 'ts' })
-    }
-  }
-  return files
-}
-
 /** 照合した結果を、標準出力に書く */
 function report(result, root, strict) {
   const where = (test) => `${path.relative(root, test.file).replaceAll('\\', '/')}：${test.name}`
@@ -409,10 +357,28 @@ function report(result, root, strict) {
   }
 }
 
+/**
+ * テスト名を読めない呼び出しを、失敗の文にして返す。読めないテストは AC の照合から消えるので、黙って落とさない。
+ *
+ * @param {string} source Vitest・Playwright のテストのソース
+ * @param {string} rel 表示するファイルのパス
+ * @param {{ index: number, reason: string }[]} unreadable scanTsTests が返した、読めない呼び出し
+ * @returns {string[]} `ファイル:行：理由`
+ */
+export function describeUnreadableTests(source, rel, unreadable) {
+  const lineOf = createLineLocator(source)
+  return unreadable.map(({ index, reason }) => `${rel}:${lineOf(index)}：${reason}`)
+}
+
 /** spec とテストを読んで照合する */
 function main() {
   const here = path.dirname(fileURLToPath(import.meta.url))
-  const root = path.resolve(here, '../..')
+  // 他の検査と同じく、リポジトリのルートで実行する（今のディレクトリを、読む対象のルートにする）
+  const root = process.cwd()
+  const gitFiles = listGitFiles([], root)
+  exitIfNoFiles(gitFiles, 'Git のファイル')
+  const testSources = findTestFiles(root, gitFiles)
+  exitIfNoFiles(testSources, 'テストのファイル')
   const specsDir = path.join(root, 'docs/specs')
   const definitions = []
   for (const { name, rel, dir } of listSpecDirs(specsDir)) {
@@ -423,9 +389,17 @@ function main() {
     }
   }
   const specAcs = new Set(definitions.map((definition) => definition.ac))
-  const tests = findTestFiles(root, listGitFiles([], root)).flatMap(({ file, kind }) =>
-    extractTestNames(readFileSync(file, 'utf8'), kind).map((name) => ({ file, name })),
-  )
+  const unreadable = []
+  const tests = testSources.flatMap(({ file, kind }) => {
+    const source = readFileSync(file, 'utf8')
+    if (kind === 'ts') {
+      // 1 回の走査で、テスト名と読めない呼び出しの両方を得る
+      const scan = scanTsTests(source)
+      unreadable.push(...describeUnreadableTests(source, path.relative(root, file).replaceAll('\\', '/'), scan.unreadable))
+      return scan.tests.filter((test) => !test.skipped).map((test) => ({ file, name: test.name }))
+    }
+    return extractTestNames(source, kind).map((name) => ({ file, name }))
+  })
   const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))
 
   // AC 一覧：手で書く列（状態など）を読み、テストの列を再作成して比べる
@@ -466,13 +440,14 @@ function main() {
   const result = check({ specAcs, tests, exclusions, deprecated, strict })
   report(result, root, strict)
   for (const problem of listProblems) console.log(problem)
-  const ok = result.ok && listProblems.length === 0
+  for (const problem of unreadable) console.log(`読めないテストの呼び出し（テスト名を文字列かテンプレートで書く）：${problem}`)
+  const ok = result.ok && listProblems.length === 0 && unreadable.length === 0
   console.log(
     `${ok ? 'OK' : 'NG'}：AC ${specAcs.size} 件（廃止 ${deprecated.size} 件）、テスト名 ${tests.length} 件、除外 ${Object.keys(exclusions).length} 件`,
   )
   process.exit(ok ? 0 : 1)
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   main()
 }

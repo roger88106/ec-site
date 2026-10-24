@@ -14,7 +14,7 @@ type ShipOrderRequest = components['schemas']['ShipOrderRequest']
 type CancelOrderRequest = components['schemas']['CancelOrderRequest']
 
 /** 注文の詳細の URL */
-const URL = `/orders/${ORDER_ID}`
+const PAGE_PATH = `/orders/${ORDER_ID}`
 
 /** 理由つきの、申請中のキャンセルの申請 */
 const REQUEST: CancellationRequest = {
@@ -71,7 +71,7 @@ async function shownPayment() {
 describe('注文の詳細', () => {
   test('AC-100、252 明細（注文時点の写し）、金額の内訳、お届け先（都道府県名・市区町村名・住所の順）、キャンセルの申請を出す', async () => {
     serveOrder(REQUESTED)
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await screen.findByText('ABC-001-RED')).toBeInTheDocument()
     expect(screen.getByText('色：赤')).toBeInTheDocument()
@@ -104,7 +104,7 @@ describe('注文の詳細', () => {
         },
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownStatus('キャンセル申請中')
 
     await user.click(screen.getByRole('button', { name: '申請を承認する' }))
@@ -120,7 +120,7 @@ describe('注文の詳細', () => {
 
   test('AC-102 申請を却下すると「受付」に戻り、キャンセルの操作だけが残る', async () => {
     serveOrder(REQUESTED, orderDetail({ cancellationRequest: { ...REQUEST, result: 'REJECTED' } }))
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownStatus('キャンセル申請中')
 
     await user.click(screen.getByRole('button', { name: '申請を却下する' }))
@@ -147,7 +147,7 @@ describe('注文の詳細', () => {
         },
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownStatus('受付')
 
     await user.click(screen.getByRole('button', { name: 'キャンセルする' }))
@@ -173,7 +173,7 @@ describe('注文の詳細', () => {
         ),
       ),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownStatus('受付')
 
     await user.click(screen.getByRole('button', { name: 'キャンセルする' }))
@@ -194,7 +194,7 @@ describe('注文の詳細', () => {
         ),
       ),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownStatus('キャンセル申請中')
 
     await user.click(screen.getByRole('button', { name: '申請を承認する' }))
@@ -213,7 +213,7 @@ describe('注文の詳細', () => {
         cancellation: { cancelledAt: '2026-10-10T03:00:00Z', kind: 'OPERATOR', reason: '在庫の誤り', restocked: true },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await shownStatus('キャンセル')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'キャンセルする' })).not.toBeInTheDocument()
@@ -226,7 +226,7 @@ describe('注文の詳細', () => {
         payment: { status: 'AUTHORIZED', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await shownPayment()).toHaveTextContent('与信済み')
     expect(getDetailValue('支払の期限')).toHaveTextContent('2026/10/10 10:30')
@@ -241,7 +241,7 @@ describe('注文の詳細', () => {
         payment: { status: 'VOID_PENDING', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await shownPayment()).toHaveTextContent('与信の取消待ち')
   })
@@ -255,7 +255,7 @@ describe('注文の詳細', () => {
         payment: { status: 'NOT_PAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await shownPayment()).toHaveTextContent('支払なし')
     expect(getDetailValue('きっかけ')).toHaveTextContent('支払期限切れ')
@@ -270,7 +270,7 @@ describe('注文の詳細', () => {
         payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await shownStatus('支払待ち')).toBeInTheDocument()
     expect(await shownPayment()).toHaveTextContent('未払い')
@@ -279,7 +279,7 @@ describe('注文の詳細', () => {
 
   test('決済を入れる前の注文には、支払の状態を出さない', async () => {
     serveOrder(orderDetail())
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await shownStatus('受付')).toBeInTheDocument()
     expect(screen.queryByText('支払')).not.toBeInTheDocument()
@@ -349,7 +349,7 @@ describe('出荷', () => {
 
   test('AC-167 受付の注文で、配送業者と送り状番号を入れて出荷を登録できる', async () => {
     const state = serveShipment(SHIPPABLE, { ...SHIPPED, shipment: REGISTERED })
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownStatus('受付')
 
     await ship(user, 'ヤマト運輸', '1234-5678-9012')
@@ -374,7 +374,7 @@ describe('出荷', () => {
             : response(502).json(problem(502, errorCode, message)),
         ),
       )
-      const { user } = renderApp(URL)
+      const { user } = renderApp(PAGE_PATH)
       await shownStatus('受付')
 
       await ship(user, '佐川急便', '123456789012')
@@ -386,7 +386,7 @@ describe('出荷', () => {
 
   test('AC-181 出荷後は、配送状態、配送業者、送り状番号、出荷日時を示す', async () => {
     serveShipment(SHIPPED)
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     const card = within(await screen.findByRole('region', { name: '出荷' }))
     expect(getDetailValue('配送状態', card)).toHaveTextContent('配送中')
@@ -404,7 +404,7 @@ describe('出荷', () => {
         payment: { status: 'UNPAID', deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     await shownStatus('支払待ち')
     expect(screen.queryByRole('region', { name: '出荷' })).not.toBeInTheDocument()
@@ -426,7 +426,7 @@ describe('与信期限と返金', () => {
         },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await findDetailValue('与信期限')).toHaveTextContent(new RegExp(`^${expected}$`))
   })
@@ -443,7 +443,7 @@ describe('与信期限と返金', () => {
         payment: { status, deadline: '2026-10-10T01:30:00Z', authorizationExpiring: false },
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await shownPayment()).toHaveTextContent(label)
   })
@@ -481,7 +481,7 @@ describe('返送の注文のキャンセル', () => {
     ['在庫に戻さない', false],
   ] as const)('AC-190、191 理由を入れ、%s を選んでキャンセルできる', async (choice, restock) => {
     const bodies = serveCancel()
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownStatus('出荷済み')
 
     await user.click(screen.getByRole('button', { name: 'キャンセルする' }))
@@ -510,7 +510,7 @@ describe('返送の注文のキャンセル', () => {
     'AC-268 在庫に戻すかは API のフラグで聞くかを決める。フラグが偽なら、%s聞かない',
     async (_case, order, status) => {
       serveOrder(order)
-      const { user } = renderApp(URL)
+      const { user } = renderApp(PAGE_PATH)
       await shownStatus(status)
 
       await user.click(screen.getByRole('button', { name: 'キャンセルする' }))

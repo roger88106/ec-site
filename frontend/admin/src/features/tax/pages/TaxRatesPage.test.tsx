@@ -3,6 +3,7 @@ import { describe, expect, test } from 'vitest'
 import type { components } from '@/api/generated/admin'
 import type { TaxCategory } from '@/api/types'
 import { TAX_CATEGORY_ID, taxCategory } from '@/test/fixtures'
+import { typeDateTime } from '@/test/inputs'
 import { getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, type Reply, server } from '@/test/server'
@@ -12,8 +13,8 @@ type ReplaceTaxRatesRequest = components['schemas']['ReplaceTaxRatesRequest']
 
 /** 既存の税率の ID（fixtures の taxCategory() の税率） */
 const RATE_ID = taxCategory().rates[0].id
-/** 税率の画面の URL */
-const URL = `/tax-categories/${TAX_CATEGORY_ID}`
+/** 税率の画面のパス */
+const PAGE_PATH = `/tax-categories/${TAX_CATEGORY_ID}`
 
 /**
  * 税区分の取得と税率の置き換えに応答する。置き換えの要求は requests に取っておく。<br />
@@ -60,22 +61,17 @@ function rowInputs(index: number) {
   }
 }
 
-/** 日時の入力欄（datetime-local）に日本時間の値を入れる。user-event は datetime-local の入力に対応しないため */
-function setDateTime(input: HTMLInputElement, value: string) {
-  fireEvent.change(input, { target: { value } })
-}
-
 describe('税率の一覧の編集', () => {
   test('AC-4 期間限定の税率に切り替える一覧を作って保存すると、追加した行の開始は直前の行の終了から始まり、保存を知らせる', async () => {
     const state = serveTaxCategory(taxCategory())
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await screen.findByRole('heading', { name: '税区分「標準」の税率' })
 
-    setDateTime(rowInputs(0).to, '2027-04-01T00:00')
+    typeDateTime(rowInputs(0).to, '2027-04-01T00:00')
     await user.click(screen.getByRole('button', { name: '税率を追加' }))
     expect(rowInputs(1).from).toHaveValue('2027-04-01T00:00')
     await user.type(rowInputs(1).rate, '8')
-    setDateTime(rowInputs(1).to, '2028-04-01T00:00')
+    typeDateTime(rowInputs(1).to, '2028-04-01T00:00')
     await user.click(screen.getByRole('button', { name: '税率を追加' }))
     expect(rowInputs(2).from).toHaveValue('2028-04-01T00:00')
     await user.type(rowInputs(2).rate, '10')
@@ -103,13 +99,13 @@ describe('税率の一覧の編集', () => {
     serveTaxCategory(taxCategory(), (_, response) =>
       response(400).json(problem(400, 'TAX_RATE_PERIODS_GAP', '税率の期間に途切れがあります。')),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await screen.findByRole('heading', { name: '税区分「標準」の税率' })
 
-    setDateTime(rowInputs(0).to, '2027-04-01T00:00')
+    typeDateTime(rowInputs(0).to, '2027-04-01T00:00')
     await user.click(screen.getByRole('button', { name: '税率を追加' }))
     await user.type(rowInputs(1).rate, '8')
-    setDateTime(rowInputs(1).from, '2027-05-01T00:00')
+    typeDateTime(rowInputs(1).from, '2027-05-01T00:00')
     await user.click(screen.getByRole('button', { name: '保存' }))
 
     expect(await screen.findByText('税率の期間に途切れがあります。')).toBeInTheDocument()
@@ -117,36 +113,68 @@ describe('税率の一覧の編集', () => {
     expect(screen.queryByText('税率を保存しました')).not.toBeInTheDocument()
   })
 
-  test('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の一覧に再作成してから保存できる', async () => {
-    const state = serveTaxCategory(taxCategory(), (body, response) =>
-      body.version === state.current.version ? undefined : conflict(response),
-    )
-    const { user } = renderApp(URL)
-    await screen.findByRole('heading', { name: '税区分「標準」の税率' })
+  describe('入力中に他の人が更新したとき', () => {
+    /** 率を 9 に入力した後で、他の人が 8% に変えたのを、画面が取得し直した状態にする */
+    async function editThenRefetch() {
+      const state = serveTaxCategory(taxCategory(), (body, response) =>
+        body.version === state.current.version ? undefined : conflict(response),
+      )
+      const { user } = renderApp(PAGE_PATH)
+      await screen.findByRole('heading', { name: '税区分「標準」の税率' })
+      await user.clear(rowInputs(0).rate)
+      await user.type(rowInputs(0).rate, '9')
+      // 入力中に、他の人が 8% に変えた。利用者が別のタブから戻ると、画面は取得し直す
+      state.current = taxCategory({
+        version: 1,
+        currentRatePercent: 8,
+        rates: [{ id: RATE_ID, ratePercent: 8, effectiveFrom: null, effectiveTo: null }],
+      })
+      fireEvent(window, new Event('visibilitychange'))
+      await screen.findByText('現時点の率：8%')
+      return { state, user }
+    }
 
-    await user.clear(rowInputs(0).rate)
-    await user.type(rowInputs(0).rate, '9')
-    // 入力中に、他の人が 8% に変えた。利用者が別のタブから戻ると、画面は取得し直す
-    state.current = taxCategory({
-      version: 1,
-      currentRatePercent: 8,
-      rates: [{ id: RATE_ID, ratePercent: 8, effectiveFrom: null, effectiveTo: null }],
+    /** 保存して 409 の表示を出し、その表示を返す */
+    async function saveToConflict(user: Awaited<ReturnType<typeof editThenRefetch>>['user']) {
+      await user.click(screen.getByRole('button', { name: '保存' }))
+      return screen.findByRole('alert')
+    }
+
+    test('取得し直しても、入力した率は消えない', async () => {
+      await editThenRefetch()
+
+      expect(rowInputs(0).rate).toHaveValue(9)
     })
-    fireEvent(window, new Event('visibilitychange'))
-    expect(await screen.findByText('現時点の率：8%')).toBeInTheDocument()
-    expect(rowInputs(0).rate).toHaveValue(9)
-    await user.click(screen.getByRole('button', { name: '保存' }))
 
-    const alert = await screen.findByRole('alert')
-    expect(within(alert).getByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
-    expect(rowInputs(0).rate).toHaveValue(9)
+    test('保存は 409 になり、他の人が先に更新したことを知らせ、入力は残る', async () => {
+      const { user } = await editThenRefetch()
 
-    await user.click(within(alert).getByRole('button', { name: '再読み込み' }))
-    expect(await screen.findByDisplayValue('8')).toBe(rowInputs(0).rate)
-    expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+      const alert = await saveToConflict(user)
 
-    await user.click(screen.getByRole('button', { name: '保存' }))
-    expect(await screen.findByText('税率を保存しました')).toBeInTheDocument()
-    expect(state.requests.map((request) => request.version)).toEqual([0, 1])
+      expect(within(alert).getByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
+      expect(rowInputs(0).rate).toHaveValue(9)
+    })
+
+    test('再読み込みすると、最新の一覧に再作成され、知らせは消える', async () => {
+      const { user } = await editThenRefetch()
+      const alert = await saveToConflict(user)
+
+      await user.click(within(alert).getByRole('button', { name: '再読み込み' }))
+
+      expect(await screen.findByDisplayValue('8')).toBe(rowInputs(0).rate)
+      expect(screen.queryByRole('alert')).not.toBeInTheDocument()
+    })
+
+    test('再読み込みの後は、最新のバージョンで保存できる', async () => {
+      const { state, user } = await editThenRefetch()
+      const alert = await saveToConflict(user)
+      await user.click(within(alert).getByRole('button', { name: '再読み込み' }))
+      await screen.findByDisplayValue('8')
+
+      await user.click(screen.getByRole('button', { name: '保存' }))
+
+      expect(await screen.findByText('税率を保存しました')).toBeInTheDocument()
+      expect(state.requests.map((request) => request.version)).toEqual([0, 1])
+    })
   })
 })

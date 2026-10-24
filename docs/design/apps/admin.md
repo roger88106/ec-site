@@ -206,12 +206,12 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 | `stockHandler(quantity)` | バリアントの在庫数の取得に、バリアントによらず同じ数で応答する。関数を渡すと、取得のたびに関数の戻り値で応答する |
 | `conflict(response)`、`Reply` | 更新の競合（409）の応答を返す。`Reply` は、条件で応答を変える関数の型で、その関数が返す応答は契約にあるものに限られる |
 | `reportServer.ts` の `serveReportBasics` | レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する。会計年度は 4 月始まり、商品は T シャツ 1 つ（ID は `fixtures.ts` の `SHIRT_ID`）。結合テストだけで使う |
-| `setup.ts` | 全てのテストに共通の後始末。各テストの後に、`vi.restoreAllMocks()`（`vi.spyOn` で差し替えたものを戻す）、toast の消去、描画した部品の撤去、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化を行い、ハンドラーのない API が呼ばれていればテストを失敗させる |
+| `setup.ts` | 全てのテストに共通の設定。各テストの後に、`vi.restoreAllMocks()`（`vi.spyOn` で差し替えたものを戻す）、toast の消去、描画した部品の撤去、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化を実行する。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
 | `fixtures.ts` | 応答に使うデータと、テストで共有する定数（`SHIRT_ID`、競合の知らせの文言 `CONFLICT_MESSAGE`）。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す。MSW に依存しないので、単体テストからも読める |
-| `queries.ts` | 詳細の項目の値、一覧の行、一覧のセル（`getCell`）を、名前で探す。名前は、項目の値では項目名、行では行の名前、セルでは行の名前と列の見出し。行の見出しのセル（`th scope="row"`）も 1 つの列に数え、入れ子の表の中の見出しとセルは外の表の列に数えない。テストのファイルでは DOM の位置を指定しない |
-| `download.ts` | ファイルのダウンロード（URL の作成とリンクのクリック）を差し替え、保存名と本文を返す。`download` の属性のないリンクのクリックは記録せず、本物のクリックの処理に渡す。差し替えはテストの後に元の実装に戻される |
-| `inputs.ts` の `typeDateTime` | 日時の入力（`datetime-local`）に値（`yyyy-MM-ddTHH:mm`）を入れる。user-event は文字を打てず、jsdom は直接の入力を受け付けないので、補助の中で `fireEvent.change` を使う |
-| `inputs.ts` の `returnToTab` | 別のタブから戻ったこと（window の `visibilitychange`）を発火し、画面に取得し直させる。user-event に対応する操作がないので `fireEvent` を使う |
+| `queries.ts` | 詳細の項目の値、一覧の行、一覧のセル（`getCell`）を、名前で探す。名前は、項目の値では項目名、行では行の名前、セルでは行の名前と列の見出し。行の見出しのセル（`th scope="row"`）も列に含め、入れ子の表の中の見出しとセルは外の表の列に数えない。テストのファイルでは DOM の位置を指定しない |
+| `download.ts` | ファイルのダウンロード（URL の作成とリンクのクリック）を差し替え、保存名と本文を返す。`download` の属性のないリンクのクリックは記録せず、本物のクリックの処理に渡す。テストの後に、差し替えを元の実装に戻す |
+| `inputs.ts` の `typeDateTime` | 日時の入力（`datetime-local`）に値（`yyyy-MM-ddTHH:mm`）を入れる。user-event は `datetime-local` に入力できず、jsdom は `value` への代入では入力の通知（`input`・`change` イベント）を発火しないので、補助の中で `fireEvent.change` を使う |
+| `inputs.ts` の `returnToTab` | 別のタブから戻ったこと（window の `visibilitychange`）を発火し、画面に再取得させる。user-event に対応する操作がないので `fireEvent` を使う |
 
 - 置き場所は、主に確認する画面（`pages/`）の横。
 - リンクの見た目のボタン（共有の `LinkButton`）は、役割が `button` になる。

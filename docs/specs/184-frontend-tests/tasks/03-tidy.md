@@ -29,7 +29,7 @@
 - [x] **T184-03-07** [P] 店舗画面の地域のデータを補助に移す。地域のサーバーアクションと注文のフォームのテストは、補助を使う（DC-184-18）。
   - 依存：T184-03-03
   - 範囲：`frontend/store/src/test/fixtures.ts`、`frontend/store/src/actions/region.test.ts`、`frontend/store/src/features/checkout/components/OrderForm.test.tsx`
-- [x] **T184-03-08** 管理画面のカテゴリの木と商品の画像の、重ねた支援技術向けの名前を 1 つにする。テストと、探し方が当たる E2E を合わせる（DC-184-21）。
+- [x] **T184-03-08** 管理画面のカテゴリの木と商品の画像の、重ねた支援技術向けの名前を 1 つにする。テストと、名前の変更で探せなくなる E2E を合わせる（DC-184-21）。
   - 依存：T184-03-04（商品の編集のテストが重なるため）
   - 範囲：`frontend/admin/src/features/category/components/CategoryTreeList.tsx`、`frontend/admin/src/features/product/components/ProductImagesCard.tsx`、`frontend/admin/src/features/category/pages/CategoryPage.test.tsx`、`frontend/admin/src/features/product/pages/ProductEditPage.test.tsx`（商品の画像のテストだけ）、`e2e/`（当たる所だけ）
 - [x] **T184-03-09** 管理画面の構成 第 9 節と店舗画面の構成 第 7 節の補助の表に、追加・移動した補助を書く。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DN-184-3）。
@@ -49,7 +49,7 @@
 | 一般の観点 2 回目（一貫性、重複、文書） | 汎用 | 0 | 0 |
 | ファイルをまたぐ影響 | 高性能 | 0 | 1 |
 
-修正したもの（必須 2 件と、2 回目のレビューが表の外に挙げた重複 2 件）：
+修正したもの（必須 2 件と、2 回目のレビューが表の件数に含めずに報告した重複 2 件）：
 
 - 別のタブから戻る操作（`visibilitychange` の発火）を 4 か所で書いていた（テストの書き方 第 4.5 節）。管理画面の補助 `returnToTab` にまとめ、`fireEvent` を使う理由を TSDoc に書いた。
 - 単体テストが、MSW のサーバーを読み込むレポートの補助から商品 ID を読んでいた。管理画面の構成 第 9 節は、その補助を結合テストだけで使うと書いている。商品 ID をテストデータの補助に移した。

@@ -225,8 +225,8 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | 対象 | テスト | 置き場所 |
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
-| 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderStatic` で HTML にして DOM に読み込み、役割と名前で探し、jest-dom の照合の関数で確認する（`src/test/render.tsx`）。「何も出さない」ことは、HTML の構造に依存しないので、例外として `renderMarkup` の結果が空の文字列であることで確認する。効果（`useEffect`）は実行されない | 対象の横（`*.test.tsx`） |
-| サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | 結果を props で受ける表示のコンポーネント（`OrderFormView`、`AddToCartFormView`）に結果を渡し、`renderStatic` で確認する。`useActionState` などの React の関数は差し替えない。サーバーアクションそのものは呼ばないので、送る内容の確認はサーバーアクションのテストと E2E で行う | 対象の横（`*.test.tsx`） |
+| 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderStatic` で HTML にして DOM に読み込み、役割と名前で探し、jest-dom の照合の関数で確認する（`src/test/render.tsx`）。「何も出さない」ことは、`renderMarkup` の結果が空の文字列であることで確認する。HTML の構造に依存しないので、例外として認める。効果（`useEffect`）は実行されない | 対象の横（`*.test.tsx`） |
+| サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | 結果を props で受ける表示のコンポーネント（`OrderFormView`、`AddToCartFormView`）に結果を渡し、`renderStatic` で確認する。`useActionState` などの React の関数は差し替えない。表示のコンポーネントに送る関数の代わりを渡し、ボタンを押したときに渡す値は jsdom で確認してよい（`OrderForm.test.tsx` の形）。サーバーアクションが API に送る内容そのものは、サーバーアクションのテストと E2E で確認する | 対象の横（`*.test.tsx`） |
 | クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※6 | 対象の横（`*.test.tsx`） |
 | ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ページの関数を呼び、`renderStatic` で DOM に読み込んで、役割と名前で探す。ログインの状態は `signInAs`、店舗 API は MSW で差し替える。表示でなく確認の順（ログイン、ID の形）を確認するテストは、jsdom を使わずに Node でページの関数を呼び、移る先（`src/test/next.ts` の `redirectedTo`）と「見つからない」（`expectNotFound`）で確認する（`app/checkout/[checkoutId]/page.test.tsx`） | ページの横（`app/**/page.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Node で直接呼ぶ。Next.js のモジュール（`next/headers` など）と `@/auth` は `src/test/` で置き換え、バックエンドは MSW（`msw/node`） | 対象の横（`*.test.ts`） |
@@ -236,7 +236,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
-| `render.tsx` の `renderMarkup`、`renderStatic`、`renderInBrowser` | 部品を日本語の文言の提供者（next-intl）で包む。`renderMarkup` は HTML の文字にし、`renderStatic` はその HTML を jsdom の文書に読み込んで、役割と名前などで探す関数（Testing Library の `within`）を返す。`renderInBrowser` は jsdom の上に描画して、操作に使う `user`（user-event）を返す |
+| `render.tsx` の `renderMarkup`、`renderStatic`、`renderInBrowser` | 部品を日本語の文言の提供者（next-intl）で包む。`renderMarkup` は HTML の文字列にし、`renderStatic` はその HTML を jsdom の文書に読み込んで、役割と名前などで探す関数（Testing Library の `within`）を返す。`renderInBrowser` は jsdom の上に描画して、操作に使う `user`（user-event）を返す |
 | `next.ts` | Next.js の要求の口（`next/headers` の Cookie とヘッダー、`next/cache` の `revalidatePath`）の代わりの入れ物。Cookie の値と属性は `cookieValue`・`cookieOptions`、表示し直しを知らせたパスは `revalidatedPaths` で確認する。`next/navigation` は置き換えず、本物を使う |
 | `next.ts` の `redirectedTo`、`expectNotFound` | 処理が投げた例外の digest で、移る先（`redirectedTo`）と「見つからない」（`expectNotFound`）を確認する。どちらも、該当しなければテストを失敗させる |
 | `auth.ts` の `signInAs`、`authState` | Auth.js（`next-auth`、`next-auth/jwt`）の代わりのログインの状態。`signInAs(token)` で会員がログインしている状態にし（token は上書きできる）、`authState` で `signIn`・`signOut` の呼び出しと `auth.ts` が渡した設定を確認する。ログインしていない状態は、各テストの前に戻る |
@@ -247,7 +247,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | `server.ts` の `networkError`、`problem` | `networkError` は要求を通信の失敗にする、型のない MSW のハンドラーを作る（`store.yaml` にない応答のため）。`problem` はエラーレスポンスの本文を作る |
 | `stderr.ts` の `recordStderr` | 標準エラー出力への書き込みを差し替えて記録し、書いた行（JSON）と全文を返す。差し替えはテストの後に元に戻る |
 | `elements.ts` の `button`、`select`、`input` | jsdom の上の要素を、役割（ボタン）か見出し（選択欄、入力欄）で探す。型が違えば、テストを失敗させる |
-| `setup.ts` | 全てのテストに共通の設定。jest-dom の照合の関数を読み込む。`next/headers`・`next/cache`・`next-auth` などの置き換えと、MSW の開始。各テストの前に Cookie とログインの状態を戻し、後に描画した部品の撤去、`vi.restoreAllMocks()`、環境変数の差し替えの復元、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化を行う。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
+| `setup.ts` | 全てのテストに共通の設定。jest-dom の照合の関数を読み込み、`next/headers`・`next/cache`・`next-auth` などを置き換え、MSW を開始する。各テストの前に、Cookie とログインの状態を初期化する。各テストの後に、描画した部品の撤去、`vi.restoreAllMocks()`、環境変数の差し替えの復元、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化を実行する。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
 
 ## 8. 画面を追加する手順
 

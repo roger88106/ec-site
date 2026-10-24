@@ -23,7 +23,7 @@
 - [x] **T184-01-05** [P] カートに入れるフォームを、`useActionState` を呼ぶコンポーネントと、結果を props で受ける `AddToCartFormView` に分ける。テストは `AddToCartFormView` に結果を渡して確認し、`vi.mock('react')` を削除する。テストの HTML の確認も `renderStatic` で書き換える（DC-184-1、8〜10）。
   - 依存：T184-01-03
   - 範囲：`frontend/store/src/features/catalog/components/AddToCartForm.tsx`、`AddToCartForm.test.tsx`
-- [ ] **T184-01-06** 文書を新しい書き方にする。店舗画面の構成 第 7 節のテストの表（表示のコンポーネント、サーバーアクションの結果の表示、ページ）と補助の表（`renderStatic` の追加、jest-dom）、テストの書き方 第 1.1 節の「HTML に描画し」の文、skill `new-screen` のフォームの例の 1 行（plan 第 2 節）。用語集に「jest-dom」を追加する（DC-184-5）。`markup.ts` の行の削除は T184-02-06 で行う。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DN-184-3）。
+- [x] **T184-01-06** 文書を新しい書き方にする。店舗画面の構成 第 7 節のテストの表（表示のコンポーネント、サーバーアクションの結果の表示、ページ）と補助の表（`renderStatic` の追加、jest-dom）、テストの書き方 第 1.1 節の「HTML に描画し」の文、skill `new-screen` のフォームの例の 1 行（plan 第 2 節）。用語集に「jest-dom」を追加する（DC-184-5）。`markup.ts` の行の削除は T184-02-06 で行う。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する（DN-184-3）。
   - 依存：T184-01-03〜05
   - 範囲：`docs/design/apps/store.md`、`docs/rules/test-writing.md`、`.claude/skills/new-screen/SKILL.md`、`docs/design/glossary.md`、`docs/design/acceptance-criteria.md`
 - [ ] **T184-01-07** 段階のレビュー（profile「厚め」）と全体の検査を行う。結果をこのファイルの末尾に書く。

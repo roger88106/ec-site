@@ -2,7 +2,7 @@
 
 ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
-前提：spec 182 が確定した。文書の書き方は skill `docs`（[SKILL.md](../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../.claude/skills/review/SKILL.md)）。
+前提：spec 182 が確定した。文書の書き方は skill `docs`（[SKILL.md](../../../../../.claude/skills/docs/SKILL.md)）と[開発の進め方](../../../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../../../rules/notation.md)。レビューは skill `review`（[SKILL.md](../../../../../.claude/skills/review/SKILL.md)）。
 
 | 対象 | 本書 | 主な担当 |
 |------|------|----------|
@@ -20,7 +20,7 @@ DC の列は「182-1」の形で書く。spec の番号 182 を付けた DC-182-
 
 - 実装は、利用者が issue 担当のセッションに開始を指示してから始める。利用者は使用量を見て時期を決める。
 - 実装は実装役（汎用）に 1 タスクずつ任せる。`[リスク]` は T182-01-04（店舗の操作の公開の実装）だけである。理由：認可の判定を読む処理を変えるため。このタスクの実装役は高性能にし、タスクの完了の条件に、実装の直後の高性能のレビュー（観点：セキュリティ）を含める。
-- 1 タスクを 1 commit にする。`[テスト]` のタスクはレッドを確認して commit し、続く実装のタスクで通す。理由：[開発の進め方](../../rules/workflow.md) 第 2.1 節の 2 つのタスクを 1 commit にする例外は、CI の検査の script のテストだけのため。
+- 1 タスクを 1 commit にする。`[テスト]` のタスクはレッドを確認して commit し、続く実装のタスクで通す。理由：[開発の進め方](../../../../rules/workflow.md) 第 2.1 節の 2 つのタスクを 1 commit にする例外は、CI の検査の script のテストだけのため。
 - 新しいテストは単体テストにし、統合テストの補助（`src/testFixtures/`、`src/integrationTest/` の共通のクラス）は変えない。理由：並行する spec 181 が統合テストの補助を変えうるため（spec 第 7 節）。
 - AC を変えない（DN-182-3）。AC-233 のテストの名前だけを変える。テストの名前を変えたら `node scripts/ci/ac-check.mjs --write` で AC 一覧を再生成する。
 - データベースの構造を変えない（DN-182-2）。確認方法は、段階 1 の最後のレビューと段階 2 の照合で、spec の最初の commit からの差分に `db/migration/` のファイルがないことを確認する。API の契約（`api/openapi/`）の差分は、`security: []` の追加と `Location` の説明だけであることを確認する。
@@ -114,7 +114,7 @@ DC の列は「182-1」の形で書く。spec の番号 182 を付けた DC-182-
 
 - 段階 1 の各タスクは、変えるファイルが重ならないものは並行してよい（tasks の `[P]`）。
 - 段階 1 の最後のタスクは、段階のレビュー（profile「厚め」）と全体の検査の実行である。domain で変えるのは集約のファクトリーの補助の呼び出しの引数だけで、判定の論理を変えないので、`./gradlew pitest` は段階 2 の全体の検査で 1 回だけ実行する。
-- pull request の作成はタスクにしない（[開発の進め方](../../rules/workflow.md) 第 4.2 節）。
+- pull request の作成はタスクにしない（[開発の進め方](../../../../rules/workflow.md) 第 4.2 節）。
 - アーカイブ先は `docs/specs/archive/1to10/182-payment-security/` である。
 
 ## 8. 確認の方法

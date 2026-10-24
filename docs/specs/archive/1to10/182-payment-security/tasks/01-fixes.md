@@ -1,8 +1,8 @@
 # 段階 1：決済の設定、セキュリティと設定、出荷の読み取り
 
-- 前提：plan が承認され、issue 担当のセッションが実装の開始を指示した。最新の `develop` を取り込み、plan の前提と照合した（[開発の進め方](../../../rules/workflow.md) 第 5.6 節）。
+- 前提：plan が承認され、issue 担当のセッションが実装の開始を指示した。最新の `develop` を取り込み、plan の前提と照合した（[開発の進め方](../../../../../rules/workflow.md) 第 5.6 節）。
 - 完了条件：DC-182-1〜16 を満たす。`[テスト]` のタスクが実装の前に失敗することを確認した。関係する文書を更新し、AC 一覧を再生成した。`./gradlew check`、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 1〜6 節、[spec](../spec.md) の DS-182-1〜5 と DC-182-1〜16、DN-182-1〜5、[開発の進め方](../../../rules/workflow.md) 第 2.1 節、[バックエンドの書き方](../../../rules/backend-coding.md)、[テストの書き方](../../../rules/test-writing.md)
+- 参照：[plan](../plan.md) 第 1〜6 節、[spec](../spec.md) の DS-182-1〜5 と DC-182-1〜16、DN-182-1〜5、[開発の進め方](../../../../../rules/workflow.md) 第 2.1 節、[バックエンドの書き方](../../../../../rules/backend-coding.md)、[テストの書き方](../../../../../rules/test-writing.md)
 
 ## タスク
 

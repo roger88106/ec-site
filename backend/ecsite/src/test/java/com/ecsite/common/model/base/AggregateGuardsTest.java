@@ -46,7 +46,7 @@ class AggregateGuardsTest {
         }
 
         @Test
-        @DisplayName("戻すときに例外が出れば、名前と保存した状態を書いた、復元の失敗のシステムの例外にする")
+        @DisplayName("戻すときに例外が出れば、名前だけを書いた（保存した状態は書かない）、復元の失敗のシステムの例外にする")
         void wrapsFailure() {
             var cause = new IllegalArgumentException("壊れた状態");
 
@@ -55,7 +55,7 @@ class AggregateGuardsTest {
             }))
                     .isInstanceOfSatisfying(SystemException.class, ex -> {
                         assertThat(ex.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.RESTORE_ERROR.getCode());
-                        assertThat(ex.getMessage()).isEqualTo("tax category restore error.\nsnapshot: Snapshot[id=1]\n");
+                        assertThat(ex.getMessage()).isEqualTo("tax category restore error.").doesNotContain("Snapshot");
                     })
                     .hasCause(cause);
         }

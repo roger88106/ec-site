@@ -24,6 +24,7 @@ import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { readTotals } from './coverage-summary.mjs'
 import { isPitReport, readMutations, SURVIVORS_LIMIT } from './mutation-report.mjs'
+import { isMain } from '../lib/is-main.mjs'
 
 const SCRIPT_DIR = path.dirname(fileURLToPath(import.meta.url))
 
@@ -272,6 +273,6 @@ function main() {
   report({ ok: true, lines, markdown: markdown.join('\n') })
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   main()
 }

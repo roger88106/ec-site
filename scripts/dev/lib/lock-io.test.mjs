@@ -4,7 +4,7 @@ import { mkdtempSync, readFileSync, readdirSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { afterEach, beforeEach, describe, test } from 'node:test'
-import { createLockIo } from './lock-io.mjs'
+import { createLockIo, isProcessRunning } from './lock-io.mjs'
 
 let dir
 let lock
@@ -77,5 +77,15 @@ describe('古いロックの退避', () => {
     io.restore()
     assert.equal(readFileSync(lock, 'utf8'), 'new')
     assert.deepEqual(readdirSync(dir), ['x.lock'])
+  })
+})
+
+describe('プロセスが実行中かの判定', () => {
+  test('自分のプロセスは実行中', () => {
+    assert.equal(isProcessRunning(process.pid), true)
+  })
+
+  test('存在しない PID は実行中でない', () => {
+    assert.equal(isProcessRunning(2 ** 22 + 12345), false)
   })
 })

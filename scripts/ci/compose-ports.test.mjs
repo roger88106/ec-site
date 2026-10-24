@@ -1,7 +1,10 @@
 import assert from 'node:assert/strict'
 import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
-import { findPortProblems } from './compose-ports.mjs'
+import { findPortProblems, readHostPort } from './compose-ports.mjs'
+
+/** 知らない書き方の行を「行 内容」で並べる */
+const unknownOf = (text) => findPortProblems(text).unknown.map((entry) => `${entry.line} ${entry.text}`)
 
 /** 問題の項目を「行 項目」で並べる */
 const problemsOf = (text) => findPortProblems(text).problems.map((port) => `${port.line} ${port.entry}`)
@@ -58,9 +61,75 @@ describe('compose のポートの検査', () => {
     assert.deepEqual(problemsOf(text), ['4 5432:5432'])
   })
 
+  test('1 行で書いたポート（フロー形式）は、読み飛ばさずに知らない書き方として失敗にする', () => {
+    const text = ['services:', '  app:', '    ports: ["8080:8080"]'].join('\n')
+    assert.deepEqual(unknownOf(text), ['3     ports: ["8080:8080"]'])
+  })
+
+  test('字下げが 2 でも 4 でも、ports と同じ字下げの項目も読む', () => {
+    const two = ['services:', '  app:', '    ports:', '      - "5432:5432"']
+    const four = ['services:', '    app:', '        ports:', '            - "5432:5432"']
+    const sameLevel = ['  app:', '    ports:', '    - "5432:5432"']
+    for (const lines of [two, four, sameLevel]) {
+      const text = lines.join('\n')
+      assert.deepEqual(problemsOf(text), [`${lines.length} 5432:5432`])
+      assert.deepEqual(unknownOf(text), [])
+    }
+  })
+
+  test('項目の字下げがそろわない行と、項目でない行は、知らない書き方として失敗にする', () => {
+    const text = [
+      '    ports:',
+      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432"',
+      '          - "8080:8080"',
+      '      target: 80',
+      '      -"8081:8081"',
+    ].join('\n')
+    assert.deepEqual(unknownOf(text), ['3           - "8080:8080"', '4       target: 80', '5       -"8081:8081"'])
+  })
+
+  test('引用符のない項目、ports の行末のコメント、コメントと空行は読み、兄弟のキーで節が終わる', () => {
+    const text = [
+      '    ports: # 公開',
+      '      # SMTP',
+      '',
+      '      - ${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432',
+      '    restart: always',
+      '    other: 1',
+    ].join('\n')
+    assert.deepEqual(unknownOf(text), [])
+    assert.equal(findPortProblems(text).ports.length, 1)
+  })
+
+  test('ホスト側のポートは、数字か既定値付きの変数から読み、それ以外（既定値のない変数、範囲）は読めない', () => {
+    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:5432:5432'), 5432)
+    assert.equal(readHostPort('${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025'), 2525)
+    assert.equal(readHostPort('5432:5432'), 5432)
+    for (const entry of ['${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80', '${LOCAL_BIND_ADDRESS:-127.0.0.1}:80']) {
+      assert.equal(readHostPort(entry), null, entry)
+    }
+  })
+
+  test('ホスト側のポートを読めない項目は、読み飛ばさずに失敗にする', () => {
+    const text = [
+      '    ports:',
+      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80"',
+      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80"',
+      '      - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:${MAILPIT_SMTP_PORT:-2525}:1025"',
+    ].join('\n')
+    assert.deepEqual(problemsOf(text), [])
+    assert.deepEqual(
+      findPortProblems(text).unreadable.map((port) => `${port.line} ${port.entry}`),
+      ['2 ${LOCAL_BIND_ADDRESS:-127.0.0.1}:${NEW_PORT}:80', '3 ${LOCAL_BIND_ADDRESS:-127.0.0.1}:9000-9001:80'],
+    )
+  })
+
   test('リポジトリの compose のすべてのポートが、決まった形で書いてある', () => {
-    const { ports, problems } = findPortProblems(readFileSync('docker/compose.yaml', 'utf8'))
+    const text = readFileSync('docker/compose.yaml', 'utf8')
+    const { ports, problems, unreadable } = findPortProblems(text)
     assert.ok(ports.length > 0)
     assert.deepEqual(problems, [])
+    assert.deepEqual(unreadable, [])
+    assert.deepEqual(unknownOf(text), [])
   })
 })

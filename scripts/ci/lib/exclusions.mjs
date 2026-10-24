@@ -1,6 +1,6 @@
 // 検査の除外の一覧（<検査>-exclusions.json）を読み、理由のない除外と不要になった除外を見つける。
 // 除外の一覧の形は、全ての検査で {キー: 理由}。キーが何を指すか（AC 番号、ファイルのパス、識別子など）は検査が決める。
-// ac-check、frontend-rules、glossary-ids、hardcoded-text、message-numbers、related-specs が使う
+// ac-check、frontend-rules、glossary-ids、hardcoded-text、message-numbers、related-specs、time-waits が使う
 import { readFileSync } from 'node:fs'
 
 /**

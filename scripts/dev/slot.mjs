@@ -15,7 +15,7 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { createLockIo } from './lib/lock-io.mjs'
+import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
 import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
 import {
   assignSlot,
@@ -276,21 +276,6 @@ function sleep(ms) {
 }
 
 /**
- * PID のプロセスが動いているか。権限がなくて信号を送れない（EPERM）プロセスも動いているとみなす。
- *
- * @param {number} pid プロセスの ID
- * @returns {boolean}
- */
-function isRunning(pid) {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (e) {
-    return e.code === 'EPERM'
-  }
-}
-
-/**
  * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
  * ロックは git の共通のディレクトリの ec-site-slot-assign.lock（作業ツリーのパス、PID、開始の時刻）。
  * 所有者の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
@@ -305,7 +290,7 @@ async function withLock(ctx, action) {
   const lock = path.join(ctx.commonDir, 'ec-site-slot-assign.lock')
   const io = createLockIo(lock)
   const owner = { worktree: ctx.root, pid: process.pid, startedAt: new Date().toISOString() }
-  const result = await acquireLock({ io, owner, isRunning, waitMs: LOCK_WAIT_MS, sleep })
+  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: LOCK_WAIT_MS, sleep })
   if (!result.acquired) {
     throw new Exit(1, `スロットのロックを取れなかった。${busyLockMessage({ lock, owner: result.owner })}`)
   }

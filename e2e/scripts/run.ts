@@ -11,7 +11,7 @@ import { type ChildProcess, execFileSync, spawn, spawnSync } from 'node:child_pr
 import { rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
-import { createLockIo } from '../../scripts/dev/lib/lock-io.mjs'
+import { createLockIo, isProcessRunning } from '../../scripts/dev/lib/lock-io.mjs'
 import { slotEnvNames } from '../../scripts/dev/lib/slot-env-names.mjs'
 import {
   acquireLock,
@@ -50,16 +50,6 @@ function git(...args: string[]): string {
   return execFileSync('git', args, { cwd: E2E_DIR, encoding: 'utf8' }).trim()
 }
 
-/** PID のプロセスが実行中か。権限がなくて信号を送れない（EPERM）プロセスも実行中とみなす */
-function isRunning(pid: number): boolean {
-  try {
-    process.kill(pid, 0)
-    return true
-  } catch (error) {
-    return (error as NodeJS.ErrnoException).code === 'EPERM'
-  }
-}
-
 /**
  * ロックを取る。取れなければ、所有者とロックのファイルのパスを示して終了コード 1 で終了する。
  * 所有者のプロセスが実行中なら待たない。プロセスがなければ古いロックとして取得し直す。
@@ -69,7 +59,7 @@ async function acquireLockOrExit(io: LockIo, file: string, owner: LockOwner): Pr
   const result = await acquireLock({
     io,
     owner,
-    isRunning,
+    isRunning: isProcessRunning,
     waitMs: 0,
     sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
   })

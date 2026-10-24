@@ -1,7 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import {
-  blankComments,
   findEnumNameConversions,
   findEnumStringConversions,
   findLombok,
@@ -61,6 +60,16 @@ describe('バックエンドの書き方の検査', () => {
       'Status.valueOf(x).name();',
     ].join('\n')
     assert.deepEqual(findEnumNameConversions(text), [])
+  })
+
+  test('引数の中の割り算（行頭の / や in / 2）を正規表現と読まず、name() を渡す valueOf を見つける', () => {
+    const text = [
+      'Status a = Status.valueOf(x',
+      '    / 2 == 0 ? a.name() : b.name());',
+      'Status b = Status.valueOf(in / 2 == 0 ? a.name() : b.name());',
+      'int y = 1;',
+    ].join('\n')
+    assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [1, 3])
   })
 
   test('引数の途中に括弧があっても、引数が name() で終わる valueOf は見つける', () => {
@@ -180,11 +189,34 @@ describe('name() の変換の検査の境界', () => {
     assert.deepEqual(findEnumNameConversions(text).map((hit) => hit.line), [3])
   })
 
-  test('コメントを同じ長さの空白に置き換え、行番号を保つ', () => {
-    const text = ['a /* x', 'y */ b // z', '"//w" \'"\' c'].join('\n')
-    const blanked = blankComments(text)
-    assert.equal(blanked.length, text.length)
-    assert.equal(blanked.split('\n').length, 3)
-    assert.equal(blanked, ['a     ', '     b     ', '"//w" \'"\' c'].join('\n'))
+})
+
+describe('コメントの中を違反と読まない', () => {
+  test('コメントの中の Lombok は見つけず、コードの Lombok は行番号のまま見つける', () => {
+    const text = ['// import lombok.Data;', '/**', ' * @lombok.Getter と @Data は使わない', ' */', 'import lombok.Data;'].join('\n')
+    assert.deepEqual(findLombok(text).map((hit) => hit.line), [5])
+  })
+
+  test('コメントの中の valueOf（文字列リテラル以外）は見つけず、コードの valueOf は見つける', () => {
+    const text = ['// Status.valueOf(x);', '/* Status.valueOf(x) */', '/** Status.fromValue(x) */', 'Status s = Status.valueOf(x); // ok'].join('\n')
+    assert.deepEqual(findEnumStringConversions(text).map((hit) => hit.line), [4])
+    assert.equal(findEnumStringConversions(text)[0].text, 'Status s = Status.valueOf(x); // ok')
+  })
+
+  test('文字列リテラルの中の // の後ろにある valueOf は、コードとして見つける', () => {
+    const text = 'String u = "http://x"; Status s = Status.valueOf(x);'
+    assert.deepEqual(findEnumStringConversions(text).map((hit) => hit.line), [1])
+  })
+
+  test('コメントの中の Nullable は見つけず、コードの Nullable は見つける', () => {
+    const text = [
+      '// import org.springframework.lang.Nullable;',
+      '/* @org.springframework.lang.Nullable */',
+      '/**',
+      ' * {@code @javax.annotation.Nullable} は使わない',
+      ' */',
+      'import javax.annotation.Nullable;',
+    ].join('\n')
+    assert.deepEqual(findOtherNullable(text).map((hit) => hit.line), [6])
   })
 })

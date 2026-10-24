@@ -48,7 +48,7 @@ public final class CreatedResponses {
                 .path(path)
                 .buildAndExpand(id)
                 .toUri();
-        return ResponseEntity.created(withoutOrigin(location)).body(storeId(id));
+        return ResponseEntity.created(pathOnly(location)).body(storeId(id));
     }
 
     /**
@@ -72,18 +72,17 @@ public final class CreatedResponses {
                 .path("/{id}")
                 .buildAndExpand(id)
                 .toUri();
-        return withoutOrigin(uri);
+        return pathOnly(uri);
     }
 
     /**
-     * URI からスキーム・ホスト・ポートを除き、パスとクエリだけにする。
+     * URI のパスの部分だけにする。スキーム・ホスト・ポートとクエリを除く。
      * デプロイ先のプロキシのヘッダーの扱い（`server.forward-headers-strategy`）によらず、同じ値にするため。
      *
      * @param uri 絶対の URI
-     * @return ホストを含まない相対の URL
+     * @return パスだけの相対の URL
      */
-    private static URI withoutOrigin(URI uri) {
-        var query = uri.getRawQuery();
-        return URI.create(query == null ? uri.getRawPath() : uri.getRawPath() + "?" + query);
+    private static URI pathOnly(URI uri) {
+        return URI.create(uri.getRawPath());
     }
 }

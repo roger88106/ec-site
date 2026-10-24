@@ -71,6 +71,21 @@ class CreatedResponsesTest {
     }
 
     @Test
+    @DisplayName("リクエストにクエリがあっても、Location にはクエリを含めない")
+    void excludesQueryFromLocation() {
+        var request = new MockHttpServletRequest("POST", "/api/admin/products");
+        request.setServerName("localhost");
+        request.setServerPort(8080);
+        request.setQueryString("token=secret&a=b");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        assertThat(CreatedResponses.admin(ID).getHeaders().getLocation())
+                .isEqualTo(URI.create("/api/admin/products/" + ID));
+        assertThat(CreatedResponses.store(ID).getHeaders().getLocation())
+                .isEqualTo(URI.create("/api/admin/products/" + ID));
+    }
+
+    @Test
     @DisplayName("店舗の API の作成した ID の本文だけを作れる（作成済みを 200 で返すとき）")
     void createsStoreBody() {
         assertThat(CreatedResponses.storeId(ID).getId()).isEqualTo(ID);

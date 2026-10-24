@@ -28,4 +28,15 @@ public record ImgproxyProperties(
         @NotBlank String salt,
         @DefaultValue("82") @Min(1) @Max(100) int quality,
         @DefaultValue("30s") Duration timeout) {
+
+    /**
+     * 文字列表現を返す。署名の鍵とソルトは、ログに出さないため {@code ***} にする。
+     *
+     * @return 文字列表現
+     */
+    @Override
+    public String toString() {
+        return "ImgproxyProperties[baseUrl=" + baseUrl + ", key=***, salt=***, quality=" + quality
+                + ", timeout=" + timeout + "]";
+    }
 }

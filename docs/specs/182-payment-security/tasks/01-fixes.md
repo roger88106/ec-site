@@ -31,7 +31,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
 - [x] **T182-01-05** [P] [テスト] 画像の保存先の設定と画像の変換の設定の `toString` に、秘密の値（S3 のアクセスキー ID と秘密の鍵、imgproxy の鍵と salt）が含まれないことを確認するテストを追加する。実装の前に失敗することを確認する（DC-182-7）。
   - 依存：なし
   - 範囲：`test/module/media/infrastructure/storage/MediaStoragePropertiesTest.java`、`test/module/media/infrastructure/converter/ImgproxyPropertiesTest.java`（新規）
-- [ ] **T182-01-06** 2 つの設定の record の `toString` を上書きし、秘密の値を `***` にする。書き方は `StripeProperties` に倣う。バックエンドの書き方 第 6.1 節と規則の一覧の表に、秘密の値を持つ設定の record の `toString` を伏せる規則と確認方法（単体テスト、レビュー）を追加する（DC-182-7、8）。
+- [x] **T182-01-06** 2 つの設定の record の `toString` を上書きし、秘密の値を `***` にする。書き方は `StripeProperties` に倣う。バックエンドの書き方 第 6.1 節と規則の一覧の表に、秘密の値を持つ設定の record の `toString` を伏せる規則と確認方法（単体テスト、レビュー）を追加する（DC-182-7、8）。
   - 依存：T182-01-05
   - 範囲：`main/module/media/infrastructure/storage/MediaStorageProperties.java`、`main/module/media/infrastructure/converter/ImgproxyProperties.java`、`docs/rules/backend-coding.md`
 - [ ] **T182-01-07** [P] [テスト] `AggregateGuardsTest` の期待値を、集約の名前だけのメッセージに直し、保存した状態の文字列を含まないことを確認する。呼び出しの引数は変えない（T182-01-08 で直す）。理由：コンパイルに失敗させると、並行するタスクのレッドの確認ができなくなるため。実装の前に失敗することを確認する（DC-182-10）。

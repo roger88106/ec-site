@@ -38,10 +38,10 @@ describe('バリアントの選択', () => {
   test('AC-62 選んでいない軸を示し、在庫切れ・販売停止のバリアントにしかならない値は選べない', () => {
     renderInBrowser(<Controlled variants={VARIANTS} />)
 
-    expect(screen.queryByText('色・サイズを選ぶと、在庫状況を表示します。')).not.toBeNull()
-    expect(screen.queryByText('在庫あり')).toBeNull()
-    expect(button('赤').disabled).toBe(false)
-    expect(button('青').disabled).toBe(true)
+    expect(screen.getByText('色・サイズを選ぶと、在庫状況を表示します。')).toBeInTheDocument()
+    expect(screen.queryByText('在庫あり')).not.toBeInTheDocument()
+    expect(button('赤')).toBeEnabled()
+    expect(button('青')).toBeDisabled()
   })
 
   test('すべての軸を選ぶと、そのバリアントの在庫状況を出して知らせ、選んだ値を押すと外す', async () => {
@@ -49,23 +49,23 @@ describe('バリアントの選択', () => {
     const { user } = renderInBrowser(<Controlled onChange={onChange} variants={VARIANTS} />)
 
     await user.click(button('赤'))
-    expect(screen.queryByText('サイズを選ぶと、在庫状況を表示します。')).not.toBeNull()
-    expect(screen.queryByText('在庫あり')).toBeNull()
+    expect(screen.getByText('サイズを選ぶと、在庫状況を表示します。')).toBeInTheDocument()
+    expect(screen.queryByText('在庫あり')).not.toBeInTheDocument()
     await user.click(button('L'))
-    expect(screen.queryByText('在庫あり')).not.toBeNull()
-    expect(button('L').getAttribute('aria-pressed')).toBe('true')
+    expect(screen.getByText('在庫あり')).toBeInTheDocument()
+    expect(button('L')).toHaveAttribute('aria-pressed', 'true')
 
     await user.click(button('L'))
-    expect(screen.queryByText('サイズを選ぶと、在庫状況を表示します。')).not.toBeNull()
-    expect(screen.queryByText('在庫あり')).toBeNull()
-    expect(button('L').getAttribute('aria-pressed')).toBe('false')
+    expect(screen.getByText('サイズを選ぶと、在庫状況を表示します。')).toBeInTheDocument()
+    expect(screen.queryByText('在庫あり')).not.toBeInTheDocument()
+    expect(button('L')).toHaveAttribute('aria-pressed', 'false')
     expect(onChange.mock.calls).toEqual([[['赤', null]], [['赤', 'L']], [['赤', null]]])
   })
 
   test('AC-56 すべてのバリアントが買えなければ、選ぶ前から「在庫なし」と出す', () => {
     renderInBrowser(<Controlled variants={[VARIANTS[2], VARIANTS[3]]} />)
 
-    expect(screen.queryByText('在庫なし')).not.toBeNull()
-    expect(screen.queryByText('色・サイズを選ぶと、在庫状況を表示します。')).toBeNull()
+    expect(screen.getByText('在庫なし')).toBeInTheDocument()
+    expect(screen.queryByText('色・サイズを選ぶと、在庫状況を表示します。')).not.toBeInTheDocument()
   })
 })

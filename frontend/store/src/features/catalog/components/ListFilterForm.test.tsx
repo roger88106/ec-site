@@ -1,21 +1,14 @@
 import { describe, expect, test } from 'vitest'
 import { ListFilterForm } from '@/features/catalog/components/ListFilterForm'
-import { renderMarkup } from '@/test/render'
+import { renderStatic } from '@/test/render'
 
 /** 衣類とその子のシャツ */
 const CLOTHES = '00000000-0000-0000-0000-000000000301'
 const SHIRTS = '00000000-0000-0000-0000-000000000302'
 
-/** HTML の選択肢のうち、選んでいるものの値と文字 */
-function selectedOptions(html: string): string[] {
-  return [...html.matchAll(/<option[^>]* value="([^"]*)" selected="">([^<]*)<\/option>/g)].map(
-    ([, value, label]) => `${value}:${label}`,
-  )
-}
-
 describe('商品一覧の絞り込み', () => {
   test('URL のクエリの条件を初めの値にし、商品一覧へ GET で送る', () => {
-    const html = renderMarkup(
+    const view = renderStatic(
       <ListFilterForm
         categories={[
           { id: CLOTHES, name: '衣類', depth: 1 },
@@ -25,23 +18,35 @@ describe('商品一覧の絞り込み', () => {
       />,
     )
 
-    expect(html).toMatch(/<form [^>]*action="\/products"/)
-    expect(selectedOptions(html)).toEqual([`${SHIRTS}:　シャツ`, 'price_asc:価格の安い順'])
-    expect(html).toContain(`value="${CLOTHES}">衣類</option>`)
-    expect(html).toMatch(/name="minPrice"[^>]*value="1000"/)
-    expect(html).toMatch(/name="maxPrice"[^>]*value=""/)
+    const category = view.getByRole<HTMLSelectElement>('combobox', { name: 'カテゴリ' })
+    expect(category.form).toHaveAttribute('action', '/products')
+    expect(category).toHaveValue(SHIRTS)
+    expect(category).toHaveDisplayValue('　シャツ')
+    expect(view.getByRole('option', { name: '衣類' })).toHaveAttribute('value', CLOTHES)
+    const sort = view.getByRole('combobox', { name: '並び順' })
+    expect(sort).toHaveValue('price_asc')
+    expect(sort).toHaveDisplayValue('価格の安い順')
+    expect(view.getByRole('spinbutton', { name: '下限' })).toHaveAttribute('name', 'minPrice')
+    expect(view.getByRole('spinbutton', { name: '下限' })).toHaveValue(1000)
+    expect(view.getByRole('spinbutton', { name: '上限' })).toHaveAttribute('name', 'maxPrice')
+    expect(view.getByRole('spinbutton', { name: '上限' })).toHaveValue(null)
     // ページは送らない（絞り込むと 1 ページ目に戻る）
-    expect(html).not.toContain('name="page"')
+    expect(category.form?.elements.namedItem('page')).toBeNull()
   })
 
   test('条件がなければ、すべてのカテゴリと新着順を選ぶ', () => {
-    const html = renderMarkup(
+    const view = renderStatic(
       <ListFilterForm
         categories={[]}
         query={{ categoryId: null, minPrice: null, maxPrice: null, sort: 'newest', page: 1 }}
       />,
     )
 
-    expect(selectedOptions(html)).toEqual([':すべて', 'newest:新着順'])
+    const category = view.getByRole('combobox', { name: 'カテゴリ' })
+    expect(category).toHaveValue('')
+    expect(category).toHaveDisplayValue('すべて')
+    const sort = view.getByRole('combobox', { name: '並び順' })
+    expect(sort).toHaveValue('newest')
+    expect(sort).toHaveDisplayValue('新着順')
   })
 })

@@ -42,20 +42,20 @@ class AggregateGuardsTest {
         @Test
         @DisplayName("戻せれば、戻した集約を返す")
         void returnsRestored() {
-            assertThat(AggregateGuards.restore("category", "snapshot", () -> "restored")).isEqualTo("restored");
+            assertThat(AggregateGuards.restore("category", () -> "restored")).isEqualTo("restored");
         }
 
         @Test
-        @DisplayName("戻すときに例外が出れば、名前と保存した状態を書いた、復元の失敗のシステムの例外にする")
+        @DisplayName("戻すときに例外が出れば、名前だけを書いた（保存した状態は書かない）、復元の失敗のシステムの例外にする")
         void wrapsFailure() {
             var cause = new IllegalArgumentException("壊れた状態");
 
-            assertThatThrownBy(() -> AggregateGuards.restore("tax category", "Snapshot[id=1]", () -> {
+            assertThatThrownBy(() -> AggregateGuards.restore("tax category", () -> {
                 throw cause;
             }))
                     .isInstanceOfSatisfying(SystemException.class, ex -> {
                         assertThat(ex.getErrorDetail().errorCode()).isEqualTo(CommonErrorCode.RESTORE_ERROR.getCode());
-                        assertThat(ex.getMessage()).isEqualTo("tax category restore error.\nsnapshot: Snapshot[id=1]\n");
+                        assertThat(ex.getMessage()).isEqualTo("tax category restore error.").doesNotContain("Snapshot");
                     })
                     .hasCause(cause);
         }

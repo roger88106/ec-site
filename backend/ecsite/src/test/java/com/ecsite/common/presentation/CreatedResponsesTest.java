@@ -35,39 +35,54 @@ class CreatedResponsesTest {
     }
 
     @Test
-    @DisplayName("管理 API：201 で、今のリクエストの URI に ID を追加した Location と、作成した ID を返す")
+    @DisplayName("管理 API：201 で、今のリクエストの URI に ID を追加した、ホストを含まない相対の URL の Location と、作成した ID を返す")
     void createsAdminResponse() {
         var response = CreatedResponses.admin(ID);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getHeaders().getLocation())
-                .isEqualTo(URI.create("http://localhost:8080/api/admin/products/" + ID));
+                .isEqualTo(URI.create("/api/admin/products/" + ID));
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getId()).isEqualTo(ID);
     }
 
     @Test
-    @DisplayName("店舗の API：201 で、今のリクエストの URI に ID を追加した Location と、作成した ID を返す")
+    @DisplayName("店舗の API：201 で、今のリクエストの URI に ID を追加した、ホストを含まない相対の URL の Location と、作成した ID を返す")
     void createsStoreResponse() {
         var response = CreatedResponses.store(ID);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getHeaders().getLocation())
-                .isEqualTo(URI.create("http://localhost:8080/api/admin/products/" + ID));
+                .isEqualTo(URI.create("/api/admin/products/" + ID));
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getId()).isEqualTo(ID);
     }
 
     @Test
-    @DisplayName("店舗の API：別のパスを指すときは、アプリの起点にパスと ID を追加した Location を返す")
+    @DisplayName("店舗の API：別のパスを指すときは、アプリの起点にパスと ID を追加した、ホストを含まない相対の URL の Location を返す")
     void createsStoreResponseAtPath() {
         var response = CreatedResponses.storeAt("/api/store/orders/{id}", ID);
 
         assertThat(response.getStatusCode()).isEqualTo(HttpStatus.CREATED);
         assertThat(response.getHeaders().getLocation())
-                .isEqualTo(URI.create("http://localhost:8080/api/store/orders/" + ID));
+                .isEqualTo(URI.create("/api/store/orders/" + ID));
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getId()).isEqualTo(ID);
+    }
+
+    @Test
+    @DisplayName("リクエストにクエリがあっても、Location にはクエリを含めない")
+    void excludesQueryFromLocation() {
+        var request = new MockHttpServletRequest("POST", "/api/admin/products");
+        request.setServerName("localhost");
+        request.setServerPort(8080);
+        request.setQueryString("token=secret&a=b");
+        RequestContextHolder.setRequestAttributes(new ServletRequestAttributes(request));
+
+        assertThat(CreatedResponses.admin(ID).getHeaders().getLocation())
+                .isEqualTo(URI.create("/api/admin/products/" + ID));
+        assertThat(CreatedResponses.store(ID).getHeaders().getLocation())
+                .isEqualTo(URI.create("/api/admin/products/" + ID));
     }
 
     @Test

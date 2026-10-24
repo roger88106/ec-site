@@ -30,6 +30,7 @@
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
 | 5.4 | 書式は IntelliJ の整形を推奨する（強制しない） | なし（強制しない） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
+| 6.1 | 秘密の値を持つ設定の record は、`toString` で値を伏せる | 単体テスト（`toString` に秘密の値が含まれないこと）、上書きの書き忘れはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
 | 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントはレビュー |
 
@@ -141,7 +142,7 @@ Controller は OpenAPI から生成した interface（`XxxApi`）を実装する
 
 - 変換はモジュールごとの mapper（`XxxMapper`）に手動で書く。変換のライブラリーは使わない。
 - 生成したモデルは、引数なしのコンストラクターと項目名のメソッドで組み立てる（`new OrderLine().productCode(...)`）。位置で並べるコンストラクターは使わない。項目が 1 つの型（作成した ID など）も同じ。
-- 作成の応答（201、Location、作成した ID）は、`common/presentation` の共通の補助で作る。
+- 作成の応答（201、Location、作成した ID）は、`common/presentation` の共通の補助で作る。`Location` はホストを含まない相対の URL（`/api/...`）で、プロキシのヘッダーの扱いによらず同じ値になる。
 - 入れ子の型（明細、金額、住所など）は型ごとに private メソッドに分け、上位のメソッドには項目の並びだけを残す。
 - 自分で定義した record は、引数が多ければ 1 行に 1 つ書く。
 
@@ -277,6 +278,7 @@ Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
+- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` に倣う）。理由：record の既定の `toString` は全ての項目を出し、設定の値をログや例外のメッセージに出したときに秘密の値が漏れるため。確認方法は単体テスト（`toString` に秘密の値が含まれないこと）で、秘密の値の項目を足したときの上書きの書き忘れはレビューで読む。
 
 ※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
 

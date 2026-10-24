@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { ActionError } from '@/components/ActionError'
-import { renderStatic } from '@/test/render'
+import { renderMarkup, renderStatic } from '@/test/render'
 
 describe('サーバーアクションの失敗の表示', () => {
   test('失敗の文を、読み上げの対象として出す', () => {
@@ -39,15 +39,11 @@ describe('サーバーアクションの失敗の表示', () => {
   test.each([{ ok: true } as const, null, undefined])(
     'サーバーアクションの結果が成功か、まだない（%j）なら何も出さない',
     (result) => {
-      const view = renderStatic(<ActionError result={result} />)
-
-      expect(view.queryByText(/./)).toBeNull()
+      expect(renderMarkup(<ActionError result={result} />)).toBe('')
     },
   )
 
   test.each([null, undefined, ''])('文がなければ（%j）何も出さない', (message) => {
-    const view = renderStatic(<ActionError message={message}>子</ActionError>)
-
-    expect(view.queryByText(/./)).toBeNull()
+    expect(renderMarkup(<ActionError message={message}>子</ActionError>)).toBe('')
   })
 })

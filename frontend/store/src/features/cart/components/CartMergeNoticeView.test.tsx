@@ -1,7 +1,7 @@
 import { within } from '@testing-library/dom'
 import { describe, expect, test } from 'vitest'
 import { CartMergeNoticeView } from '@/features/cart/components/CartMergeNoticeView'
-import { renderStatic } from '@/test/render'
+import { renderMarkup, renderStatic } from '@/test/render'
 
 /** 一覧の項目の文言 */
 function itemTexts(list: HTMLElement): string[] {
@@ -54,9 +54,6 @@ describe('カートを移した結果の知らせ', () => {
   })
 
   test('知らせがなければ、何も出さない', () => {
-    const view = renderStatic(<CartMergeNoticeView notice={null} />)
-
-    expect(view.queryByRole('alert')).not.toBeInTheDocument()
-    expect(view.queryAllByText(/./)).toHaveLength(0)
+    expect(renderMarkup(<CartMergeNoticeView notice={null} />)).toBe('')
   })
 })

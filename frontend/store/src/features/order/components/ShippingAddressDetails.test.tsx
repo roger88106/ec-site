@@ -9,11 +9,11 @@ describe('注文のお届け先', () => {
     const view = renderStatic(<ShippingAddressDetails address={SHIPPING_ADDRESS} email="member@example.com" />)
 
     // 項目名と値は 1 つの文として出るので、文全体の一致で対応を確認する
-    const name = view.getByText('山田 太郎 様')
+    const recipient = view.getByText('山田 太郎 様')
     const address = view.getByText('〒100-0001 東京都千代田区千代田 1-1')
     const phone = view.getByText('電話番号 0312345678')
     const email = view.getByText('メールアドレス member@example.com')
     // 宛名、住所、電話番号、メールアドレスの順に出る
-    expectInOrder(name, address, phone, email)
+    expectInOrder(recipient, address, phone, email)
   })
 })

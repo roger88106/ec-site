@@ -48,6 +48,15 @@ describe('HTML に描画した部品の問い合わせ', () => {
     expect(view.queryByText('効果の後')).not.toBeInTheDocument()
   })
 
+  test('続けて描画しても、前の描画は残らない', () => {
+    const first = renderStatic(<EffectLabel />)
+    const second = renderStatic(<SampleButtons />)
+
+    expect(second.getByRole('link', { name: 'ご注文履歴' })).toBeInTheDocument()
+    expect(second.queryByText('初期')).not.toBeInTheDocument()
+    expect(first.queryByText('初期')).not.toBeInTheDocument()
+  })
+
   test('next-intl の日本語の文言が出る', () => {
     const view = renderStatic(<SampleButtons />)
 

@@ -6,8 +6,7 @@
     "jsx": "react-jsx",
     "isolatedModules": true,
     "resolveJsonModule": true,
-    "verbatimModuleSyntax": true,
-    "types": ["@testing-library/jest-dom/vitest"]
+    "verbatimModuleSyntax": true
   },
   "include": ["src/**/*.ts", "src/**/*.tsx"]
 }

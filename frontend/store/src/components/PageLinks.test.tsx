@@ -19,11 +19,13 @@ describe('ページ送り', () => {
 
   test('最初のページの前へ、最後のページの次へは、押せないボタンにする', () => {
     const first = renderStatic(<PageLinks hrefFor={hrefFor} page={1} totalItems={45} totalPages={3} />)
-    const last = renderStatic(<PageLinks hrefFor={hrefFor} page={3} totalItems={45} totalPages={3} />)
 
     expect(first.getByRole('button', { name: '前へ' })).toBeDisabled()
     expect(first.getByRole('button', { name: '前へ' })).not.toHaveAttribute('href')
     expect(first.getByRole('button', { name: '次へ' })).toHaveAttribute('href', '/orders?page=2')
+
+    // 同じ文書を使い回すので、前の描画の確認を終えてから、次を描画する
+    const last = renderStatic(<PageLinks hrefFor={hrefFor} page={3} totalItems={45} totalPages={3} />)
     expect(last.getByRole('button', { name: '次へ' })).toBeDisabled()
     expect(last.getByRole('button', { name: '次へ' })).not.toHaveAttribute('href')
     expect(last.getByRole('button', { name: '前へ' })).toHaveAttribute('href', '/orders?page=2')

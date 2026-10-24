@@ -1,3 +1,5 @@
+// 照合の関数（toBeInTheDocument など）の型を得る。製品のコードの型の範囲を変えないよう、tsconfig でなくここで読み込む
+import '@testing-library/jest-dom/vitest'
 import { within } from '@testing-library/dom'
 import { JSDOM } from 'jsdom'
 import { renderToStaticMarkup } from 'react-dom/server'
@@ -25,17 +27,14 @@ function renderSummary(variant: AmountsSummaryVariant) {
   return within(document.body)
 }
 
-/** 前の要素が後の要素より前にある。`compareDocumentPosition` の結果の印（DOCUMENT_POSITION_FOLLOWING） */
-const FOLLOWING = new JSDOM('').window.Node.DOCUMENT_POSITION_FOLLOWING
-
 /** 見える文言が、この順に出ている。見つからない文言があれば、その文言が失敗のメッセージに出る */
 function expectInOrder(view: ReturnType<typeof within>, texts: string[]) {
   const elements = texts.map((text) => view.getByText(text))
   elements.slice(1).forEach((element, index) => {
-    expect(
-      elements[index].compareDocumentPosition(element) & FOLLOWING,
-      `「${texts[index]}」の後に「${texts[index + 1]}」`,
-    ).toBe(FOLLOWING)
+    const previous = elements[index]
+    expect(previous.compareDocumentPosition(element), `「${texts[index]}」の後に「${texts[index + 1]}」`).toBe(
+      previous.DOCUMENT_POSITION_FOLLOWING,
+    )
   })
 }
 
@@ -50,8 +49,10 @@ describe('金額の内訳（BR-7、8）', () => {
     const view = renderSummary('page')
     expectInOrder(view, ORDER)
     const separator = view.getByRole('separator')
-    expect(view.getByText('1,000 円').compareDocumentPosition(separator) & FOLLOWING).toBe(FOLLOWING)
-    expect(separator.compareDocumentPosition(view.getByText('総額（税込）')) & FOLLOWING).toBe(FOLLOWING)
+    const shippingFee = view.getByText('1,000 円')
+    const total = view.getByText('総額（税込）')
+    expect(shippingFee.compareDocumentPosition(separator)).toBe(shippingFee.DOCUMENT_POSITION_FOLLOWING)
+    expect(separator.compareDocumentPosition(total)).toBe(separator.DOCUMENT_POSITION_FOLLOWING)
   })
 
   test('見た目の種類 card は、区切り線を出さずに、商品の合計、送料、総額、税率ごとの消費税額を金額と一緒に順に出す', () => {

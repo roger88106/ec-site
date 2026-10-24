@@ -89,12 +89,12 @@ describe('税区分の登録', () => {
     )
     const { user } = renderApp(PAGE_PATH)
 
-    const name = await screen.findByLabelText('名称')
-    await user.type(name, '標準')
+    const nameField = await screen.findByLabelText('名称')
+    await user.type(nameField, '標準')
     await user.click(screen.getByRole('button', { name: '登録' }))
 
     expect(await screen.findByText('この名称の税区分はすでにあります。')).toBeInTheDocument()
-    expect(name).toHaveValue('標準')
+    expect(nameField).toHaveValue('標準')
   })
 
   test('空白だけの名称では、登録できない', async () => {

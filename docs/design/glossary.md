@@ -299,7 +299,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 更新の service | `XxxCommandService` など | データを更新する application の service。参照だけのメソッドを持たない |
 | view | `application/model/view/` | 参照の service が返す、表示や使う側に必要な項目だけの型。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
 | 作成の応答 | `CreatedResponses` | 作成の API の応答（201、作成したものの Location、作成した ID）。共通の補助で作る |
-| jest-dom | `@testing-library/jest-dom` | DOM の要素の状態を確認する照合の関数（`toBeDisabled`、`toHaveAttribute`、`toHaveAccessibleName` など）を Vitest に加えるライブラリ。管理画面と店舗画面はテストの setup、共有のパッケージは vitest の setupFiles（型は tsconfig の types）で読み込む |
+| jest-dom | `@testing-library/jest-dom` | DOM の要素の状態を確認する照合の関数（`toBeDisabled`、`toHaveAttribute`、`toHaveAccessibleName` など）を Vitest に加えるライブラリ。管理画面と店舗画面はテストの setup、共有のパッケージは vitest の setupFiles で読み込み、型は照合の関数を使うテストのファイルで `@testing-library/jest-dom/vitest` を読み込んで得る |
 | テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確認する script。対応は spec の名前の対応のファイル（`renames.txt`）に書く |
 | 共通の値の型 | `common/model/value/` | 2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つ値の型（金額、文字の長さの上限など） |
 | メッセージのキー | `ecsite.<モジュール>.<名前>` | エラーの文を `messages.properties` から取得するためのキー。エラーの定義（enum の定数）の名前から決まる |

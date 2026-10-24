@@ -1,22 +1,12 @@
 // @vitest-environment jsdom
-import { act, screen, waitFor } from '@testing-library/react'
+import { act, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import type { PostalCodeAddress, Prefecture } from '@/api/types'
-import { OrderForm } from '@/features/checkout/components/OrderForm'
+import { OrderFormView } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
 import { input, select } from '@/test/elements'
-import { findTag } from '@/test/markup'
-import { renderInBrowser, renderMarkup } from '@/test/render'
-
-/** 注文のサーバーアクションの結果として、フォームに渡す値（null は送る前） */
-let actionResult: ActionResult | null = null
-
-// 注文の送信はサーバーアクションを通るので、送った結果の表示だけを、結果を差し替えて HTML で確認する（テストの書き方 第 1 節）
-vi.mock('react', async (importOriginal) => {
-  const react = await importOriginal<typeof import('react')>()
-  return { ...react, useActionState: () => [actionResult, () => {}, false] }
-})
+import { renderInBrowser, renderStatic } from '@/test/render'
 
 // 一覧と郵便番号は読むだけのサーバーアクションなので、結果を差し替えてフォームの操作を確認する（店舗画面の構成 第 7 節 ※6）
 vi.mock('@/actions/region', () => ({ listMunicipalities: vi.fn(), findPostalCodeAddresses: vi.fn() }))
@@ -48,9 +38,19 @@ function postal(prefectureCode: string, municipalityCode: string, townName: stri
   return { prefecture, municipality, townName }
 }
 
+/** 注文のサーバーアクションの結果（null は送る前）を渡した、注文のフォームの表示 */
 function form(result: ActionResult | null = null) {
-  actionResult = result
-  return <OrderForm checkoutId="checkout-1" email="member@example.com" expectedTotal={3200} prefectures={PREFECTURES} />
+  return (
+    <OrderFormView
+      checkoutId="checkout-1"
+      email="member@example.com"
+      expectedTotal={3200}
+      formAction={() => {}}
+      pending={false}
+      prefectures={PREFECTURES}
+      result={result}
+    />
+  )
 }
 
 /** 選んでいる値 */
@@ -59,18 +59,47 @@ function selected(label: string): string {
 }
 
 /**
- * 欄の見出しの後から、次の欄の見出し（または注文のボタン）の前までの HTML（エラーメッセージがその欄の下に出ることを確認するため）。
+ * エラーの文が、その欄の入力欄の後で、次の欄の入力欄より前に出ることを確認する（見える文言の順）。
  *
- * @param html  フォームの HTML
- * @param label 欄の見出し
+ * @param view      HTML に描画したフォーム
+ * @param message   エラーの文
+ * @param label     エラーが出る欄の見出し
+ * @param nextLabel 次の欄の見出し（最後の欄は省く。入力欄の後にあることだけを確認する）
  */
-function fieldOf(html: string, label: string): string {
-  const matched = new RegExp(`<label[^>]*>${label}</label>(.*?)(?=<label|<button)`, 's').exec(html)
-  if (!matched) {
-    throw new Error(`欄がない：${label}`)
+function expectErrorUnder(view: ReturnType<typeof renderStatic>, message: string, label: string, nextLabel?: string) {
+  const error = view.getByText(message)
+  expect(view.getByLabelText(label).compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  if (nextLabel) {
+    expect(
+      error.compareDocumentPosition(view.getByLabelText(nextLabel)) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy()
   }
-  return matched[1]
 }
+
+/**
+ * 送る前（結果がない）の初期表示で、文字を直接持つ要素の文言を、文書の順に並べたもの
+ * （見出し、メールアドレスと案内、各欄の見出しとヒント、選択肢、ボタン）。エラーの文は含まない。
+ */
+const INITIAL_TEXTS = [
+  'メールアドレス',
+  'member@example.com',
+  'ご注文の連絡は、会員のメールアドレスにお送りします。',
+  '氏名',
+  '郵便番号',
+  '例：100-0001',
+  '都道府県',
+  '選んでください',
+  '北海道',
+  '東京都',
+  '神奈川県',
+  '市区町村',
+  '都道府県を先に選んでください',
+  '住所',
+  '町名、番地、建物名',
+  '電話番号',
+  '例：03-1234-5678',
+  '注文する（3,200 円）',
+]
 
 /** 住所の欄の値 */
 function addressValue(): string {
@@ -84,55 +113,53 @@ beforeEach(() => {
 
 describe('お届け先の入力と注文', () => {
   test('AC-127 会員のメールアドレスを示し、お届け先の欄と、総額を添えた注文のボタンを出す', () => {
-    const html = renderMarkup(form())
+    const view = renderStatic(form())
 
-    expect(html).toContain('member@example.com')
-    expect(html).toContain('ご注文の連絡は、会員のメールアドレスにお送りします。')
-    expect(findTag(html, 'input', { name: 'checkoutId' }).value).toBe('checkout-1')
-    expect(findTag(html, 'input', { name: 'expectedTotal' }).value).toBe('3200')
-    for (const name of ['name', 'postalCode', 'prefectureCode', 'municipalityCode', 'address', 'phone']) {
-      expect(html).toContain(`name="${name}"`)
-    }
-    expect(html).toContain('>注文する（3,200 円）</button>')
-    // 初期表示には、エラーメッセージも欄ごとの誤りもない（段落は、メールアドレスの見出しと案内と、欄のヒントだけ）
-    expect(html).not.toContain('aria-live')
-    const paragraphs = [...html.matchAll(/<p(?:\s[^>]*)?>([^<]*)<\/p>/g)].map((match) => match[1])
-    expect(paragraphs).toEqual([
-      'メールアドレス',
-      'member@example.com',
-      'ご注文の連絡は、会員のメールアドレスにお送りします。',
-      '例：100-0001',
-      '町名、番地、建物名',
-      '例：03-1234-5678',
-    ])
+    expect(view.getByText('member@example.com')).toBeInTheDocument()
+    expect(view.getByText('ご注文の連絡は、会員のメールアドレスにお送りします。')).toBeInTheDocument()
+    expect(view.getByDisplayValue('checkout-1')).toHaveAttribute('name', 'checkoutId')
+    expect(view.getByDisplayValue('3200')).toHaveAttribute('name', 'expectedTotal')
+    expect(view.getByRole('textbox', { name: '氏名' })).toHaveAttribute('name', 'name')
+    expect(view.getByRole('textbox', { name: '郵便番号' })).toHaveAttribute('name', 'postalCode')
+    expect(view.getByRole('combobox', { name: '都道府県' })).toHaveAttribute('name', 'prefectureCode')
+    expect(view.getByRole('combobox', { name: '市区町村' })).toHaveAttribute('name', 'municipalityCode')
+    expect(view.getByRole('textbox', { name: '住所' })).toHaveAttribute('name', 'address')
+    expect(view.getByRole('textbox', { name: '電話番号' })).toHaveAttribute('name', 'phone')
+    expect(view.getByRole('button', { name: '注文する（3,200 円）' })).toBeInTheDocument()
+    // 初期表示には、エラーメッセージも欄ごとの誤りもない（文字を直接持つ要素は、これだけ）
+    expect(view.queryAllByText(/./).map((element) => element.textContent)).toEqual(INITIAL_TEXTS)
   })
 
   test('AC-248、250 欄は郵便番号・都道府県・市区町村・住所の順で、都道府県は API の一覧から選び、初めは選んでいない', () => {
-    const html = renderMarkup(form())
+    const view = renderStatic(form())
 
-    const positions = ['postalCode', 'prefectureCode', 'municipalityCode', 'address'].map((name) =>
-      html.indexOf(`name="${name}"`),
-    )
-    expect(positions).toEqual([...positions].sort((a, b) => a - b))
-    expect(html).toMatch(/<option[^>]* value="13"[^>]*>東京都<\/option>/)
-    expect(html).toMatch(/<option[^>]* value="14"[^>]*>神奈川県<\/option>/)
+    // 欄は、画面に出る順（文書の順）に返る
+    const fields = view.getAllByLabelText(/^(郵便番号|都道府県|市区町村|住所)$/)
+    expect(fields.map((field) => field.getAttribute('name'))).toEqual([
+      'postalCode',
+      'prefectureCode',
+      'municipalityCode',
+      'address',
+    ])
+    const prefecture = within(view.getByRole('combobox', { name: '都道府県' }))
+    expect(prefecture.getByRole('option', { name: '東京都' })).toHaveAttribute('value', '13')
+    expect(prefecture.getByRole('option', { name: '神奈川県' })).toHaveAttribute('value', '14')
     // 先頭の「選んでください」は、選んでいて、選べない
-    expect(findTag(html, 'option', { value: '' })).toMatchObject({ disabled: '', selected: '' })
-    expect(html).toContain('>選んでください</option>')
+    expect(view.getByRole('combobox', { name: '都道府県' })).toHaveValue('')
+    expect(prefecture.getByRole('option', { name: '選んでください' })).toBeDisabled()
   })
 
   test('AC-86 入力の誤りは、その欄の下に出す', () => {
-    const html = renderMarkup(
+    const view = renderStatic(
       form({ ok: false, message: '郵便番号は 7 桁で入力してください。', errorCode: 'INVALID_POSTAL_CODE' }),
     )
 
-    expect(fieldOf(html, '郵便番号')).toContain('郵便番号は 7 桁で入力してください。')
-    expect(fieldOf(html, '氏名')).not.toContain('郵便番号は 7 桁で入力してください。')
-    expect(html).not.toContain('カートを見る')
+    expectErrorUnder(view, '郵便番号は 7 桁で入力してください。', '郵便番号', '都道府県')
+    expect(view.queryByRole('link', { name: 'カートを見る' })).not.toBeInTheDocument()
   })
 
   test('AC-264 入力の検証の誤り（400）は、欄ごとに API の文をそのまま出す', () => {
-    const html = renderMarkup(
+    const view = renderStatic(
       form({
         ok: false,
         message: '入力内容に誤りがあります。',
@@ -141,26 +168,23 @@ describe('お届け先の入力と注文', () => {
       }),
     )
 
-    expect(fieldOf(html, '電話番号')).toContain('API が決めた電話番号の文')
-    expect(fieldOf(html, '氏名')).not.toContain('API が決めた電話番号の文')
+    expectErrorUnder(view, 'API が決めた電話番号の文', '電話番号')
   })
 
   test('AC-251 市区町村の誤りは、市区町村の欄の下に出す', () => {
-    const html = renderMarkup(
+    const view = renderStatic(
       form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }),
     )
 
-    expect(fieldOf(html, '市区町村')).toContain('市区町村を選んでください。')
-    expect(fieldOf(html, '都道府県')).not.toContain('市区町村を選んでください。')
-    expect(fieldOf(html, '住所')).not.toContain('市区町村を選んでください。')
+    expectErrorUnder(view, '市区町村を選んでください。', '市区町村', '住所')
   })
 
   test('AC-87 在庫が足りなければ、フォームの下にメッセージとカートへのリンクを出す', () => {
-    const html = renderMarkup(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
+    const view = renderStatic(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
-    expect(html).toMatch(
-      /<p aria-live="polite"[^>]*>在庫が足りない商品があります。<a [^>]*href="\/cart">カートを見る<\/a><\/p>/,
-    )
+    const message = view.getByText('在庫が足りない商品があります。')
+    expect(message).toHaveAttribute('aria-live', 'polite')
+    expect(within(message).getByRole('link', { name: 'カートを見る' })).toHaveAttribute('href', '/cart')
   })
 })
 

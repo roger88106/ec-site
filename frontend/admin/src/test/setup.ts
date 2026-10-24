@@ -22,6 +22,8 @@ afterEach(() => {
   cleanup()
   // vi.spyOn で差し替えたものを戻す（各テストのファイルで繰り返さない）
   vi.restoreAllMocks()
+  // 偽の時計（vi.useFakeTimers）を戻す
+  vi.useRealTimers()
   server.resetHandlers()
   const requests = unhandledRequests.splice(0)
   if (requests.length > 0) {

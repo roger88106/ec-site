@@ -1,5 +1,5 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { SalesTrendReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
 import { findRow, getRow } from '@/test/queries'
@@ -33,10 +33,6 @@ function serveTrend(report: SalesTrendReport = QUARTER_BY_MONTH) {
   )
   return queries
 }
-
-afterEach(() => {
-  vi.useRealTimers()
-})
 
 describe('売上の推移', () => {
   test('AC-197、201 区切りごとの売上額と販売数量を表に出し、売れなかった区切りも 0 の行で出す', async () => {

@@ -11,8 +11,8 @@ import { connectionFailedMessage } from '@/lib/actionResult'
 
 // 上限は、モジュールを読み込むときに設定から読むので、読み込む前に短くする（0.05 秒）
 vi.hoisted(() => {
-  process.env.STORE_API_TIMEOUT_SECONDS = '0.05'
-  process.env.AUTH_KEYCLOAK_TIMEOUT_SECONDS = '0.05'
+  vi.stubEnv('STORE_API_TIMEOUT_SECONDS', '0.05')
+  vi.stubEnv('AUTH_KEYCLOAK_TIMEOUT_SECONDS', '0.05')
 })
 
 /** 応答を返さない（上限で打ち切られるまで待たせる）ハンドラー */

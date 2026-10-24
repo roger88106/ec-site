@@ -127,7 +127,11 @@ class StoreApiTokenContractTest {
         ((Map<String, Map<String, Object>>) root.get("paths")).forEach((path, item) -> item.forEach((key, value) -> {
             if (HTTP_METHODS.contains(key)) {
                 var security = (List<Map<String, Object>>) ((Map<String, Object>) value).get("security");
-                var requiresToken = security != null && !security.isEmpty() && security.stream().noneMatch(Map::isEmpty);
+                if (security == null) {
+                    // 起動の検証（StoreOperationSecurity）と同じく、security のない操作は契約の誤りとして失敗させる
+                    throw new IllegalStateException("store.yaml の " + key.toUpperCase(Locale.ROOT) + " " + path + " に security がない");
+                }
+                var requiresToken = !security.isEmpty() && security.stream().noneMatch(Map::isEmpty);
                 operations.add(new Operation(key.toUpperCase(Locale.ROOT), basePath + path, requiresToken));
             }
         }));

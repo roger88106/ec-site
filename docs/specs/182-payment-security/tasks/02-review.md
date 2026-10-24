@@ -6,7 +6,7 @@
 
 ## タスク
 
-- [ ] **T182-02-01** 文書の照合：店舗 API の `security` に触れる設計書（店舗画面の設計書、モジュールの設計書）、作成の応答の `Location` に触れる文書、トレースの送信に触れる手順書を検索し、本 spec の後のコードと一致させる。契約の差分が `security: []` の追加と `Location` の説明だけであり、`db/migration/` に差分がないことを確認する（DN-182-2）。
+- [x] **T182-02-01** 文書の照合：店舗 API の `security` に触れる設計書（店舗画面の設計書、モジュールの設計書）、作成の応答の `Location` に触れる文書、トレースの送信に触れる手順書を検索し、本 spec の後のコードと一致させる。契約の差分が `security: []` の追加と `Location` の説明だけであり、`db/migration/` に差分がないことを確認する（DN-182-2）。
   - 依存：段階 1
   - 範囲：`docs/design/`、`docs/guides/`、`docs/rules/`（本 spec に関係する所）
 - [ ] **T182-02-02** 全体の検査：`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` を実行する。mutation とカバレッジが基準を下回らないことを確認する。

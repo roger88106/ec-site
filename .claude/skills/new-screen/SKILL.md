@@ -128,6 +128,8 @@ export async function updateFoo(_previous: ActionResult | null, formData: FormDa
 
 ### フォーム（`features/<機能>/components/FooForm.tsx`）
 
+結果の表示をテストするフォームは、`useActionState` を呼ぶコンポーネントと、結果を props で受ける表示のコンポーネントに分ける（例：`OrderForm` と `OrderFormView`）。テストは表示のコンポーネントに結果を渡す。結果の表示をテストしない他のフォームは、分けなくてよい。
+
 ```tsx
 'use client'
 

@@ -42,7 +42,7 @@ class AggregateGuardsTest {
         @Test
         @DisplayName("戻せれば、戻した集約を返す")
         void returnsRestored() {
-            assertThat(AggregateGuards.restore("category", "snapshot", () -> "restored")).isEqualTo("restored");
+            assertThat(AggregateGuards.restore("category", () -> "restored")).isEqualTo("restored");
         }
 
         @Test
@@ -50,7 +50,7 @@ class AggregateGuardsTest {
         void wrapsFailure() {
             var cause = new IllegalArgumentException("壊れた状態");
 
-            assertThatThrownBy(() -> AggregateGuards.restore("tax category", "Snapshot[id=1]", () -> {
+            assertThatThrownBy(() -> AggregateGuards.restore("tax category", () -> {
                 throw cause;
             }))
                     .isInstanceOfSatisfying(SystemException.class, ex -> {

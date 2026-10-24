@@ -37,7 +37,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
 - [x] **T182-01-07** [P] [テスト] `AggregateGuardsTest` の期待値を、集約の名前だけのメッセージに直し、保存した状態の文字列を含まないことを確認する。呼び出しの引数は変えない（T182-01-08 で直す）。理由：コンパイルに失敗させると、並行するタスクのレッドの確認ができなくなるため。実装の前に失敗することを確認する（DC-182-10）。
   - 依存：なし
   - 範囲：`test/common/model/base/AggregateGuardsTest.java`（`:58`）
-- [ ] **T182-01-08** 集約を戻す補助から保存した状態の引数を削除し、デバッグ用のメッセージを集約の名前だけにする。原因の例外は残す。呼び出し元 3 つと、テストの呼び出し 2 か所を直す（DC-182-9）。
+- [x] **T182-01-08** 集約を戻す補助から保存した状態の引数を削除し、デバッグ用のメッセージを集約の名前だけにする。原因の例外は残す。呼び出し元 3 つと、テストの呼び出し 2 か所を直す（DC-182-9）。
   - 依存：T182-01-07
   - 範囲：`main/common/model/base/AggregateGuards.java`、`main/module/catalog/domain/category/CategoryFactory.java`、`main/module/catalog/domain/product/ProductFactory.java`、`main/module/tax/domain/taxcategory/TaxCategoryFactory.java`、`test/common/model/base/AggregateGuardsTest.java`（`:45,53`）
 - [ ] **T182-01-09** [P] 共通の設定から Zipkin の送信先を削除し、`management.tracing.export.zipkin.enabled: false` を置く。local の profile に `enabled: true` と送信先を置く。環境変数の一覧に送信を有効にする環境変数（既定 false。local と E2E は true）を追加し、送信先の説明を「送信を有効にしたときの送信先」に直す。共通コードの設計書のトレースの節も同じに直す。local の profile で起動し、自動構成の判定（`/actuator/conditions`）に Zipkin の送信の Bean があることを確認する（DC-182-11、12。plan 第 4 節）。

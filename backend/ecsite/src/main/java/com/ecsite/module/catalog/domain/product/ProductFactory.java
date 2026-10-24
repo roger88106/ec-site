@@ -39,6 +39,6 @@ public class ProductFactory {
      */
     public Product restore(Product.Snapshot snapshot) {
         // 復元失敗の場合、復元エラーに変換してスローする
-        return AggregateGuards.restore("product", snapshot, () -> new Product(snapshot));
+        return AggregateGuards.restore("product", () -> new Product(snapshot));
     }
 }

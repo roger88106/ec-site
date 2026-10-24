@@ -258,6 +258,65 @@ describe('一覧のセル', () => {
     expect(getCell('標準', '件数', within(section))).toHaveTextContent(/^99$/)
   })
 
+  test('行の見出しのセル（th scope=row）も列に数える', () => {
+    render(
+      <table>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>件数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <th scope="row">標準税率</th>
+            <td>3</td>
+          </tr>
+        </tbody>
+      </table>,
+    )
+    expect(getCell('標準', '名称')).toHaveTextContent(/^標準税率$/)
+    expect(getCell('標準', '件数')).toHaveTextContent(/^3$/)
+  })
+
+  test('入れ子の表のセルと見出しは、列に数えない', () => {
+    render(
+      <table>
+        <thead>
+          <tr>
+            <th>名称</th>
+            <th>内訳</th>
+            <th>件数</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td>標準税率</td>
+            <td>
+              <table>
+                <thead>
+                  <tr>
+                    <th>期間</th>
+                    <th>率</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>2026 年</td>
+                    <td>10%</td>
+                  </tr>
+                </tbody>
+              </table>
+            </td>
+            <td>3</td>
+          </tr>
+        </tbody>
+      </table>,
+    )
+    expect(getCell('標準', '件数')).toHaveTextContent(/^3$/)
+    expect(() => getCell('標準', '率')).toThrow('列「率」がない')
+  })
+
   test('列の見出しがなければ失敗する', () => {
     render(<List />)
     expect(() => getCell('標準', '金額')).toThrow('列「金額」がない')

@@ -78,6 +78,7 @@ export function findRow(name: string, scope: Scope = screen): Promise<HTMLElemen
 /**
  * 一覧のセルを、行の名前と列の見出しの名前で返す。セルの並びの位置を、テストのファイルに書かない。
  * 見出しは、行のある表の `columnheader`。見つからなければ失敗する。
+ * 行の見出しのセル（`th scope="row"`、`rowheader`）も 1 つの列に数える。入れ子の表の見出しとセルは、外の表の列に数えない。
  * 例：`expect(getCell('ABC-001', '在庫数の合計')).toHaveTextContent('12')`
  *
  * @param rowName 行の名前の始まりの文字（{@link getRow} と同じ）
@@ -92,13 +93,17 @@ export function getCell(rowName: string, columnName: string, scope: Scope = scre
   if (table === null) {
     throw new Error(`行「${rowName}」が表の中にない`)
   }
+  // 入れ子の表の見出しとセルは、外の表の列に数えない
   const column = within(table)
     .getAllByRole('columnheader')
+    .filter((heading) => heading.closest('table') === table)
     .findIndex((heading) => heading.textContent === columnName)
   if (column < 0) {
     throw new Error(`列「${columnName}」がない`)
   }
-  return within(row).getAllByRole('cell')[column]
+  // 行の見出しのセル（th scope="row"）も、1 つの列に数える
+  const cells = Array.from(row.children).filter((child) => child.matches('td, th'))
+  return cells[column] as HTMLElement
 }
 
 /**

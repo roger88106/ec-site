@@ -5,12 +5,16 @@ import type { components } from '@/api/generated/admin'
 import { schemas } from '@/api/generated/constraints'
 import type { ProductDetail } from '@/api/types'
 import { PRODUCT_ID, productActions, productDetail, taxCategory, variant } from '@/test/fixtures'
+import { typeDateTime } from '@/test/inputs'
 import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
 import { conflict, http, problem, server, stockHandler } from '@/test/server'
 
-/** 商品の編集の画面の URL */
-const URL = `/products/${PRODUCT_ID}`
+/** 商品の編集の画面のパス */
+const PAGE_PATH = `/products/${PRODUCT_ID}`
+
+/** 他の人に先に更新されたときの、競合の知らせ */
+const CONFLICT_MESSAGE = '他の人が先に更新しました。再読み込みしてください'
 
 /** 商品の基本情報の更新の要求の本文（送った内容を確認する） */
 type UpdateProductRequest = components['schemas']['UpdateProductRequest']
@@ -35,11 +39,6 @@ const MAX_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 
 /** 契約の商品の画像の枚数の上限 */
 const MAX_IMAGES = schemas.ProductDetail.images.maxItems
-
-/** バリアントの在庫数（画面のバリアントの行が取得する）に、どのバリアントにも同じ数で応答する */
-function serveStock(quantity: number) {
-  server.use(stockHandler(quantity))
-}
 
 /**
  * 商品の編集の画面が使う API に応答する。<br />
@@ -84,30 +83,66 @@ function serveProduct(initial: ProductDetail) {
 }
 
 describe('商品の編集', () => {
-  test('入力中に他の人が基本情報を更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の値に再作成してから保存できる', async () => {
-    const state = serveProduct(productDetail())
-    const { user } = renderApp(URL)
-    const name = await screen.findByLabelText('商品名')
+  describe('基本情報の入力中に他の人が更新した（409）', () => {
+    /** 商品名を入力し、他の人が商品名と価格を変えた後に、画面が取得し直した状態にする */
+    async function editNameAfterOthersUpdate() {
+      const state = serveProduct(productDetail())
+      const { user } = renderApp(PAGE_PATH)
+      const name = await screen.findByLabelText('商品名')
+      await user.clear(name)
+      await user.type(name, 'T シャツ（改）')
+      // 入力中に、他の人が商品名と価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
+      state.current = productDetail({ name: 'T シャツ（新）', priceExclTax: 1200, priceInclTax: 1320, version: 1 })
+      fireEvent(window, new Event('visibilitychange'))
+      expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+      return { state, user }
+    }
 
-    await user.clear(name)
-    await user.type(name, 'T シャツ（改）')
-    // 入力中に、他の人が商品名と価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
-    state.current = productDetail({ name: 'T シャツ（新）', priceExclTax: 1200, priceInclTax: 1320, version: 1 })
-    fireEvent(window, new Event('visibilitychange'))
-    expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
-    expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
-    await user.click(screen.getByRole('button', { name: '保存' }))
+    /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする */
+    async function saveIntoConflict() {
+      const context = await editNameAfterOthersUpdate()
+      await context.user.click(screen.getByRole('button', { name: '保存' }))
+      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+      return context
+    }
 
-    expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
-    expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+    test('取得し直しても、入力した商品名は消えない', async () => {
+      await editNameAfterOthersUpdate()
 
-    await user.click(screen.getByRole('button', { name: '再読み込み' }))
-    expect(await screen.findByDisplayValue('T シャツ（新）')).toBe(screen.getByLabelText('商品名'))
-    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
+      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+    })
 
-    await user.click(screen.getByRole('button', { name: '保存' }))
-    expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
-    expect(state.versions).toEqual([0, 1])
+    test('保存すると 409 になり、競合を知らせる', async () => {
+      const { state } = await saveIntoConflict()
+
+      expect(state.versions).toEqual([0])
+    })
+
+    test('409 になっても、入力した商品名は消えない', async () => {
+      await saveIntoConflict()
+
+      expect(screen.getByLabelText('商品名')).toHaveValue('T シャツ（改）')
+    })
+
+    test('再読み込みすると、最新の値に再作成され、競合の知らせが消える', async () => {
+      const { user } = await saveIntoConflict()
+
+      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+
+      expect(await screen.findByDisplayValue('T シャツ（新）')).toBe(screen.getByLabelText('商品名'))
+      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+    })
+
+    test('再読み込みした後は、最新のバージョンで保存できる', async () => {
+      const { state, user } = await saveIntoConflict()
+      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+      await screen.findByDisplayValue('T シャツ（新）')
+
+      await user.click(screen.getByRole('button', { name: '保存' }))
+
+      expect(await screen.findByText('基本情報を保存しました')).toBeInTheDocument()
+      expect(state.versions).toEqual([0, 1])
+    })
   })
 
   test('AC-18、19 税区分を変えて基本情報を保存すると、入力した値とバージョンを送り、保存を知らせ、変更後の税率の税込価格を出す', async () => {
@@ -144,7 +179,7 @@ describe('商品の編集', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     const name = await screen.findByLabelText('商品名')
     await user.clear(name)
@@ -178,7 +213,7 @@ describe('商品の編集', () => {
     const state = serveProduct(
       productDetail({ status: 'PUBLISHED', actions: productActions({ publish: false, unpublish: true }) }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.click(await screen.findByRole('button', { name: '販売終了にする' }))
     const dialog = await screen.findByRole('alertdialog', { name: '商品「T シャツ」を販売終了にしますか？' })
@@ -196,7 +231,7 @@ describe('商品の編集', () => {
 
   test('AC-33 C 側に表示されたことのない商品は、確認のダイアログで確定すると削除し、一覧に移る', async () => {
     const state = serveProduct(productDetail({ version: 3 }))
-    const { user, router } = renderApp(URL)
+    const { user, router } = renderApp(PAGE_PATH)
 
     await user.click(await screen.findByRole('button', { name: '削除' }))
     const dialog = await screen.findByRole('alertdialog', { name: '商品「T シャツ」を削除しますか？' })
@@ -221,7 +256,7 @@ describe('商品の編集', () => {
         }),
       }),
     )
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(
       await screen.findByText(
@@ -233,15 +268,16 @@ describe('商品の編集', () => {
 
   test('AC-269 削除できない理由が応答になければ、理由を推し量って出さない', async () => {
     serveProduct(productDetail({ actions: productActions({ delete: false }) }))
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await screen.findByRole('button', { name: '販売終了にする' })).toBeInTheDocument()
     expect(screen.queryByText(/店舗に表示されたことがあるため/)).not.toBeInTheDocument()
   })
+
   test('AC-21、24 軸を持たない商品は、バリアントがなければ品番を大文字にして追加でき、1 つあれば追加の欄を出さない', async () => {
     const state = serveProduct(productDetail({ axes: [] }))
     const requests: AddVariantRequest[] = []
-    serveStock(0)
+    server.use(stockHandler(0))
     server.use(
       http.post('/products/{productId}/variants', async ({ request, response }) => {
         requests.push(await request.json())
@@ -254,7 +290,7 @@ describe('商品の編集', () => {
         return response(201).json({ id: variant().id })
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-x')
     await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
@@ -264,10 +300,11 @@ describe('商品の編集', () => {
     expect(screen.queryByLabelText('バリアント品番')).not.toBeInTheDocument()
     expect(requests).toEqual([{ variantCode: 'ABC-001-X', axisValues: [], version: 0 }])
   })
+
   test('AC-20、22 軸が 2 つの商品にバリアントを追加すると、品番と軸の値を軸の順に、バージョンとともに送る', async () => {
     const state = serveProduct(productDetail({ axes: ['色', 'サイズ'], variants: [] }))
     const requests: AddVariantRequest[] = []
-    serveStock(0)
+    server.use(stockHandler(0))
     server.use(
       http.post('/products/{productId}/variants', async ({ request, response }) => {
         requests.push(await request.json())
@@ -275,7 +312,7 @@ describe('商品の編集', () => {
         return response(201).json({ id: variant().id })
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-wh-m')
     await user.type(screen.getByLabelText('色'), ' 白 ')
@@ -285,54 +322,90 @@ describe('商品の編集', () => {
     expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
     expect(requests).toEqual([{ variantCode: 'ABC-001-WH-M', axisValues: ['白', 'M'], version: 0 }])
   })
-  test('バリアントの追加の入力中に他の人が商品を更新すると、取得し直しても入力は消えず、追加は 409 になり、再読み込みで最新のバージョンの空のフォームに再作成してから追加できる', async () => {
-    const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
-    const versions: number[] = []
-    serveStock(0)
-    server.use(
-      http.post('/products/{productId}/variants', async ({ request, response }) => {
-        const body = await request.json()
-        versions.push(body.version)
-        if (body.version !== state.current.version) {
-          return conflict(response)
-        }
-        state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
-        return response(201).json({ id: variant().id })
-      }),
-    )
-    const { user } = renderApp(URL)
+  describe('バリアントの追加の入力中に他の人が商品を更新した（409）', () => {
+    /** 品番と軸の値を入力し、他の人が価格を変えた後に、画面が取得し直した状態にする */
+    async function fillVariantAfterOthersUpdate() {
+      const state = serveProduct(productDetail({ axes: ['色'], variants: [] }))
+      const versions: number[] = []
+      server.use(
+        stockHandler(0),
+        http.post('/products/{productId}/variants', async ({ request, response }) => {
+          const body = await request.json()
+          versions.push(body.version)
+          if (body.version !== state.current.version) {
+            return conflict(response)
+          }
+          state.current = { ...state.current, variants: [variant()], version: state.current.version + 1 }
+          return response(201).json({ id: variant().id })
+        }),
+      )
+      const { user } = renderApp(PAGE_PATH)
+      await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
+      await user.type(screen.getByLabelText('色'), '赤')
+      // 入力中に、他の人が価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
+      state.current = productDetail({
+        axes: ['色'],
+        variants: [],
+        priceExclTax: 1200,
+        priceInclTax: 1320,
+        version: 1,
+      })
+      fireEvent(window, new Event('visibilitychange'))
+      expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
+      return { user, versions }
+    }
 
-    await user.type(await screen.findByLabelText('バリアント品番'), 'abc-001-red')
-    await user.type(screen.getByLabelText('色'), '赤')
-    // 入力中に、他の人が価格を変えた。利用者が別のタブから戻ると、画面は取得し直す
-    state.current = productDetail({
-      axes: ['色'],
-      variants: [],
-      priceExclTax: 1200,
-      priceInclTax: 1320,
-      version: 1,
+    /** 取得し直した後に追加して 409 にし、競合の知らせが出た状態にする */
+    async function addIntoConflict() {
+      const context = await fillVariantAfterOthersUpdate()
+      await context.user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+      return context
+    }
+
+    test('取得し直しても、入力した品番と軸の値は消えない', async () => {
+      await fillVariantAfterOthersUpdate()
+
+      expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+      expect(screen.getByLabelText('色')).toHaveValue('赤')
     })
-    fireEvent(window, new Event('visibilitychange'))
-    expect(await screen.findByText('1,320 円（税抜 1,200 円）')).toBeInTheDocument()
-    expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
-    expect(screen.getByLabelText('色')).toHaveValue('赤')
-    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
 
-    expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
-    expect(versions).toEqual([0])
-    expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+    test('追加すると 409 になり、競合を知らせる', async () => {
+      const { versions } = await addIntoConflict()
 
-    await user.click(screen.getByRole('button', { name: '再読み込み' }))
-    await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
-    expect(screen.getByLabelText('色')).toHaveValue('')
-    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
+      expect(versions).toEqual([0])
+    })
 
-    await user.type(screen.getByLabelText('バリアント品番'), 'abc-001-red')
-    await user.type(screen.getByLabelText('色'), '赤')
-    await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
-    expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
-    expect(versions).toEqual([0, 1])
+    test('409 になっても、入力した品番は消えない', async () => {
+      await addIntoConflict()
+
+      expect(screen.getByLabelText('バリアント品番')).toHaveValue('ABC-001-RED')
+    })
+
+    test('再読み込みすると、空のフォームに再作成され、競合の知らせが消える', async () => {
+      const { user } = await addIntoConflict()
+
+      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+
+      await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
+      expect(screen.getByLabelText('色')).toHaveValue('')
+      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+    })
+
+    test('再読み込みした後は、最新のバージョンで追加できる', async () => {
+      const { user, versions } = await addIntoConflict()
+      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+      await waitFor(() => expect(screen.getByLabelText('バリアント品番')).toHaveValue(''))
+
+      await user.type(screen.getByLabelText('バリアント品番'), 'abc-001-red')
+      await user.type(screen.getByLabelText('色'), '赤')
+      await user.click(screen.getByRole('button', { name: 'バリアントを追加' }))
+
+      expect(await screen.findByText('バリアントを追加しました')).toBeInTheDocument()
+      expect(versions).toEqual([0, 1])
+    })
   })
+
   test('AC-28 バリアントを販売停止にすると「販売停止」と出て、販売を再開できる', async () => {
     const state = serveProduct(productDetail({ variants: [variant()] }))
     const calls: string[] = []
@@ -343,7 +416,7 @@ describe('商品の編集', () => {
         version: state.current.version + 1,
       }
     }
-    serveStock(3)
+    server.use(stockHandler(3))
     server.use(
       http.put('/products/{productId}/variants/{variantId}/suspend', ({ params, response }) => {
         calls.push(`suspend ${params.variantId}`)
@@ -356,7 +429,7 @@ describe('商品の編集', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     const row = () => getRow('ABC-001-RED')
 
     await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを販売停止' }))
@@ -380,7 +453,7 @@ describe('商品の編集', () => {
       }),
     )
     const requests: ReorderVariantsRequest[] = []
-    serveStock(3)
+    server.use(stockHandler(3))
     server.use(
       http.put('/products/{productId}/variants/order', async ({ request, response }) => {
         requests.push(await request.json())
@@ -392,7 +465,7 @@ describe('商品の編集', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.click(await screen.findByRole('button', { name: 'ABC-001-REDを下へ' }))
 
@@ -403,7 +476,7 @@ describe('商品の編集', () => {
   test('AC-71 C 側に表示されたことのない商品のバリアントは、確認のダイアログで確定すると、商品のバージョンを添えて削除する', async () => {
     const state = serveProduct(productDetail({ version: 5, variants: [variant()] }))
     const calls: string[] = []
-    serveStock(3)
+    server.use(stockHandler(3))
     server.use(
       http.delete('/products/{productId}/variants/{variantId}', ({ params, query, response }) => {
         calls.push(`DELETE ${params.variantId} version=${query.get('version')}`)
@@ -411,7 +484,7 @@ describe('商品の編集', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     const row = await findRow('ABC-001-RED')
     await user.click(within(row).getByRole('button', { name: '削除' }))
@@ -440,7 +513,7 @@ describe('商品の編集', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     // 状態の表示は、画面の見出し（商品コードと状態）の中にある
     const header = await screen.findByRole('heading', { level: 1 })
@@ -491,10 +564,10 @@ describe('公開期間', () => {
   test('AC-34 日本時間で入れた公開開始・終了を保存し、保存を知らせる', async () => {
     const state = serveProduct(productDetail())
     const requests = servePeriod(state)
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
-    fireEvent.change(await screen.findByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
-    fireEvent.change(screen.getByLabelText('公開終了（この日時は含まない）'), { target: { value: '2026-12-01T00:00' } })
+    typeDateTime(await screen.findByLabelText('公開開始'), '2026-11-01T10:00')
+    typeDateTime(screen.getByLabelText('公開終了（この日時は含まない）'), '2026-12-01T00:00')
     await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
 
     expect(await screen.findByText('公開期間を保存しました')).toBeInTheDocument()
@@ -506,40 +579,72 @@ describe('公開期間', () => {
   test('AC-36 終了が開始より後でなければ、サーバーのエラーのメッセージを出す', async () => {
     const state = serveProduct(productDetail())
     servePeriod(state)
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
-    fireEvent.change(await screen.findByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
-    fireEvent.change(screen.getByLabelText('公開終了（この日時は含まない）'), { target: { value: '2026-11-01T10:00' } })
+    typeDateTime(await screen.findByLabelText('公開開始'), '2026-11-01T10:00')
+    typeDateTime(screen.getByLabelText('公開終了（この日時は含まない）'), '2026-11-01T10:00')
     await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
 
     expect(await screen.findByText('公開終了日時は、公開開始日時より後にしてください。')).toBeInTheDocument()
   })
 
-  test('入力中に他の人が更新すると、取得し直しても入力は消えず、保存は 409 になり、再読み込みで最新の期間に再作成する', async () => {
-    const state = serveProduct(productDetail())
-    const requests = servePeriod(state)
-    const { user } = renderApp(URL)
+  describe('入力中に他の人が更新した（409）', () => {
+    /** 公開開始を入力し、他の人が商品名と公開終了を変えた後に、画面が取得し直した状態にする */
+    async function inputStartAfterOthersUpdate() {
+      const state = serveProduct(productDetail())
+      const requests = servePeriod(state)
+      const { user } = renderApp(PAGE_PATH)
+      typeDateTime(await screen.findByLabelText('公開開始'), '2026-11-01T10:00')
+      // 入力中に、他の人が商品名を変えた。利用者が別のタブから戻ると、画面は取得し直す
+      state.current = productDetail({ name: 'T シャツ（新）', version: 1, publishEnd: '2026-12-31T15:00:00Z' })
+      fireEvent(window, new Event('visibilitychange'))
+      expect(await screen.findByDisplayValue('T シャツ（新）')).toBeInTheDocument()
+      return { user, requests }
+    }
 
-    fireEvent.change(await screen.findByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
-    // 入力中に、他の人が商品名を変えた。利用者が別のタブから戻ると、画面は取得し直す
-    state.current = productDetail({ name: 'T シャツ（新）', version: 1, publishEnd: '2026-12-31T15:00:00Z' })
-    fireEvent(window, new Event('visibilitychange'))
-    expect(await screen.findByDisplayValue('T シャツ（新）')).toBeInTheDocument()
-    expect(screen.getByLabelText('公開開始')).toHaveValue('2026-11-01T10:00')
-    await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+    /** 取得し直した後に保存して 409 にし、競合の知らせが出た状態にする */
+    async function saveIntoConflict() {
+      const context = await inputStartAfterOthersUpdate()
+      await context.user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+      expect(await screen.findByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+      return context
+    }
 
-    expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
-    await user.click(screen.getByRole('button', { name: '再読み込み' }))
-    expect(await screen.findByDisplayValue('2027-01-01T00:00')).toBe(
-      screen.getByLabelText('公開終了（この日時は含まない）'),
-    )
-    expect(screen.getByLabelText('公開開始')).toHaveValue('')
-    expect(screen.queryByText('他の人が先に更新しました。再読み込みしてください')).not.toBeInTheDocument()
+    test('取得し直しても、入力した公開開始は消えない', async () => {
+      await inputStartAfterOthersUpdate()
 
-    fireEvent.change(screen.getByLabelText('公開開始'), { target: { value: '2026-11-01T10:00' } })
-    await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
-    expect(await screen.findByText('公開期間を保存しました')).toBeInTheDocument()
-    expect(requests.map((request) => request.version)).toEqual([0, 1])
+      expect(screen.getByLabelText('公開開始')).toHaveValue('2026-11-01T10:00')
+    })
+
+    test('保存すると 409 になり、競合を知らせる', async () => {
+      const { requests } = await saveIntoConflict()
+
+      expect(requests.map((request) => request.version)).toEqual([0])
+    })
+
+    test('再読み込みすると、最新の期間に再作成され、競合の知らせが消える', async () => {
+      const { user } = await saveIntoConflict()
+
+      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+
+      expect(await screen.findByDisplayValue('2027-01-01T00:00')).toBe(
+        screen.getByLabelText('公開終了（この日時は含まない）'),
+      )
+      expect(screen.getByLabelText('公開開始')).toHaveValue('')
+      expect(screen.queryByText(CONFLICT_MESSAGE)).not.toBeInTheDocument()
+    })
+
+    test('再読み込みした後は、最新のバージョンで保存できる', async () => {
+      const { user, requests } = await saveIntoConflict()
+      await user.click(screen.getByRole('button', { name: '再読み込み' }))
+      await screen.findByDisplayValue('2027-01-01T00:00')
+
+      typeDateTime(screen.getByLabelText('公開開始'), '2026-11-01T10:00')
+      await user.click(screen.getByRole('button', { name: '公開期間を保存' }))
+
+      expect(await screen.findByText('公開期間を保存しました')).toBeInTheDocument()
+      expect(requests.map((request) => request.version)).toEqual([0, 1])
+    })
   })
 })
 
@@ -583,7 +688,7 @@ describe('商品画像', () => {
   test('AC-37 選んだ画像を受付・PUT・登録の順に送り、登録した画像を代表画像として出す', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.upload(
       await screen.findByLabelText('画像のファイル'),
@@ -598,8 +703,9 @@ describe('商品画像', () => {
 
   test('AC-39、67 受け付ける形式以外のファイルは送らずに誤りを出す', async () => {
     serveProduct(productDetail())
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
+    // user.upload は、入力の accept に合わないファイルを選べない（捨てる）ので、受け付けない形式は fireEvent.change で渡す
     fireEvent.change(await screen.findByLabelText('画像のファイル'), {
       target: { files: [new File(['GIF89a'], 'a.gif', { type: 'image/gif' })] },
     })
@@ -612,11 +718,12 @@ describe('商品画像', () => {
   test('AC-67 ブラウザが形式を空で渡す HEIC も、拡張子で形式を補って送る', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
-    renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
-    fireEvent.change(await screen.findByLabelText('画像のファイル'), {
-      target: { files: [new File([new Uint8Array([0, 0, 0, 0x18])], 'IMG_0001.HEIC', { type: '' })] },
-    })
+    await user.upload(
+      await screen.findByLabelText('画像のファイル'),
+      new File([new Uint8Array([0, 0, 0, 0x18])], 'IMG_0001.HEIC', { type: '' }),
+    )
 
     expect(await screen.findByText('画像を 1 枚登録しました')).toBeInTheDocument()
     expect(calls).toEqual(['受付 image/heic 4', 'PUT image/heic', '登録 version=0'])
@@ -636,7 +743,7 @@ describe('商品画像', () => {
         ),
       ),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.upload(
       await screen.findByLabelText('画像のファイル'),
@@ -665,7 +772,7 @@ describe('商品画像', () => {
         ),
       ),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.upload(
       await screen.findByLabelText('画像のファイル'),
@@ -680,7 +787,7 @@ describe('商品画像', () => {
 
   test('AC-272 画像の説明に、契約の形式・大きさ・枚数の上限を差し込む', async () => {
     serveProduct(productDetail())
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(
       await screen.findByText(
@@ -695,7 +802,7 @@ describe('商品画像', () => {
       url: `http://cdn.test/${index}.png`,
     }))
     serveProduct(productDetail({ images }))
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     expect(await screen.findByRole('button', { name: '画像を追加' })).toBeDisabled()
   })
@@ -708,7 +815,7 @@ describe('商品画像', () => {
         response(400).json(problem(400, 'TOO_MANY_PRODUCT_IMAGES', '画像は 1 商品あたり 20 枚まで登録できます。')),
       ),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.upload(
       await screen.findByLabelText('画像のファイル'),
@@ -723,7 +830,7 @@ describe('商品画像', () => {
     const calls = serveUpload(state)
     // ストレージの拒否（403）は admin.yaml にない応答なので、型のない msw のハンドラーで作る
     server.use(rawHttp.put(UPLOAD_URL.split('?')[0], () => new HttpResponse(null, { status: 403 })))
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.upload(
       await screen.findByLabelText('画像のファイル'),
@@ -743,7 +850,7 @@ describe('商品画像', () => {
     ]
     const state = serveProduct(productDetail({ images, variants: [variant()] }))
     const requests: SetVariantImageRequest[] = []
-    serveStock(0)
+    server.use(stockHandler(0))
     server.use(
       http.put('/products/{productId}/variants/{variantId}/image', async ({ request, response }) => {
         const body = await request.json()
@@ -756,7 +863,7 @@ describe('商品画像', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.click(await screen.findByRole('combobox', { name: 'ABC-001-REDの画像' }))
     await user.click(await screen.findByRole('option', { name: '画像 2' }))
@@ -785,7 +892,7 @@ describe('商品画像', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.click(await screen.findByRole('button', { name: '画像 1を後へ' }))
 
@@ -803,7 +910,7 @@ describe('商品画像', () => {
         return response(204).empty()
       }),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.click(await screen.findByRole('button', { name: '画像 1を削除' }))
     const dialog = await screen.findByRole('alertdialog', { name: '画像 1を削除しますか？' })

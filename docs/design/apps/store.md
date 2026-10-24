@@ -225,7 +225,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | 対象 | テスト | 置き場所 |
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
-| 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderStatic` で HTML にして DOM に読み込み、役割と名前で探し、jest-dom の照合の関数で確認する（`src/test/render.tsx`）。効果（`useEffect`）は実行されない | 対象の横（`*.test.tsx`） |
+| 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderStatic` で HTML にして DOM に読み込み、役割と名前で探し、jest-dom の照合の関数で確認する（`src/test/render.tsx`）。「何も出さない」ことは、HTML の構造に依存しないので、例外として `renderMarkup` の結果が空の文字列であることで確認する。効果（`useEffect`）は実行されない | 対象の横（`*.test.tsx`） |
 | サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | 結果を props で受ける表示のコンポーネント（`OrderFormView`、`AddToCartFormView`）に結果を渡し、`renderStatic` で確認する。`useActionState` などの React の関数は差し替えない。サーバーアクションそのものは呼ばないので、送る内容の確認はサーバーアクションのテストと E2E で行う | 対象の横（`*.test.tsx`） |
 | クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※6 | 対象の横（`*.test.tsx`） |
 | ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ページの関数を呼び、`renderStatic` で DOM に読み込んで、役割と名前で探す。ログインの状態は `signInAs`、店舗 API は MSW で差し替える。表示でなく確認の順（ログイン、ID の形）を確認するテストは、jsdom を使わずに Node でページの関数を呼び、移る先（`src/test/next.ts` の `redirectedTo`）と「見つからない」（`expectNotFound`）で確認する（`app/checkout/[checkoutId]/page.test.tsx`） | ページの横（`app/**/page.test.tsx`） |

@@ -19,6 +19,7 @@ describe('商品一覧の絞り込み', () => {
     )
 
     const category = view.getByRole<HTMLSelectElement>('combobox', { name: 'カテゴリ' })
+    // form は要素の位置でなく、入力欄が属するフォーム（フォームの所有者）を返す
     expect(category.form).toHaveAttribute('action', '/products')
     expect(category).toHaveValue(SHIRTS)
     expect(category).toHaveDisplayValue('　シャツ')

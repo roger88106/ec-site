@@ -69,8 +69,8 @@ function selected(label: string): string {
 function expectErrorUnder(view: ReturnType<typeof renderStatic>, message: string, label: string, nextLabel?: string) {
   const error = view.getByText(message)
   const boundary = nextLabel ? view.getByLabelText(nextLabel) : view.getByRole('button', { name: /^注文する/ })
-  expect(view.getByLabelText(label).compareDocumentPosition(error) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
-  expect(error.compareDocumentPosition(boundary) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy()
+  expect(view.getByLabelText(label).compareDocumentPosition(error)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+  expect(error.compareDocumentPosition(boundary)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
 }
 
 /**

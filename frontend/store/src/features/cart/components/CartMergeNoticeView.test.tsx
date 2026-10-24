@@ -10,6 +10,15 @@ function itemTexts(list: HTMLElement): string[] {
     .map((item) => item.textContent)
 }
 
+/** 指定した項目を持つ一覧。なければテストを失敗させる */
+function listWith(container: HTMLElement, itemText: string): HTMLElement {
+  const found = within(container)
+    .getAllByRole('list')
+    .find((list) => within(list).queryByText(itemText) !== null)
+  if (!found) throw new Error('「' + itemText + '」を持つ一覧がない')
+  return found
+}
+
 describe('カートを移した結果の知らせ', () => {
   test('AC-123 数量を切り詰めた品目と、移せなかった品目と、省いた数を示す', () => {
     const view = renderStatic(
@@ -30,10 +39,9 @@ describe('カートを移した結果の知らせ', () => {
       within(notice).getByText('カートに入る商品の数の上限（30 品目）を超えたため、次の商品は移せませんでした。'),
     ).toBeInTheDocument()
 
-    const [truncated, skipped] = within(notice).getAllByRole('list')
     expect(within(notice).getAllByRole('list')).toHaveLength(2)
-    expect(itemTexts(truncated as HTMLElement)).toEqual(['T シャツ（色：赤）（10 点）'])
-    expect(itemTexts(skipped as HTMLElement)).toEqual(['マグカップ（2 点）', 'ほか 3 品目'])
+    expect(itemTexts(listWith(notice, 'T シャツ（色：赤）（10 点）'))).toEqual(['T シャツ（色：赤）（10 点）'])
+    expect(itemTexts(listWith(notice, 'マグカップ（2 点）'))).toEqual(['マグカップ（2 点）', 'ほか 3 品目'])
   })
 
   test('切り詰めた品目だけなら、移せなかった品目の欄を出さない', () => {

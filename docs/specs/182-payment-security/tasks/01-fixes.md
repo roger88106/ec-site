@@ -49,7 +49,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
 - [x] **T182-01-11** 作成の応答の補助で、`Location` をホストを含まない相対の URL にする。基にするパスは今のまま（今のリクエストのパス、またはアプリの起点）で、スキーム・ホスト・ポートを除く。メソッドの Javadoc を直す。契約の `Location` の説明 2 か所、API の規約の作成の行の※1、バックエンドの書き方 第 2.2 節の作成の応答の行に、相対の URL であることを書く。`Location` の URL で取得する既存の API のテスト（カテゴリ、商品、税区分）が通ることを確認する（DC-182-13、14）。
   - 依存：T182-01-04、T182-01-06、T182-01-10
   - 範囲：`main/common/presentation/CreatedResponses.java`、`api/openapi/store.yaml`（`:637-640`）、`api/openapi/admin.yaml`（`:1370-1373`）、`docs/rules/api-conventions.md`（`:33`）、`docs/rules/backend-coding.md`（`:144`）
-- [ ] **T182-01-12** [P] 出荷の登録の service が、注文の参照の service の運営者用の詳細を読み、操作の可否で出荷できるかを判定するようにする。注文の Repository の依存を削除し、クラスの Javadoc を直す。既存の出荷の登録の API のテストが通ることを確認する（DC-182-15、16）。
+- [x] **T182-01-12** [P] 出荷の登録の service が、注文の参照の service の運営者用の詳細を読み、操作の可否で出荷できるかを判定するようにする。注文の Repository の依存を削除し、クラスの Javadoc を直す。既存の出荷の登録の API のテストが通ることを確認する（DC-182-15、16）。
   - 依存：なし
   - 範囲：`main/module/order/application/shipment/OrderShipmentService.java`
 - [ ] **T182-01-13** 段階のレビュー（profile「厚め」）と全体の検査：一般の観点を汎用で 2 回、重要な観点（セキュリティ、ファイルをまたぐ影響）を高性能と汎用で 1 回ずつ、計 4 回実施し、指摘の扱いを決めて修正する。spec の最初の commit からの差分で、契約の差分が `security: []` の追加と `Location` の説明だけであり、`db/migration/` に差分がないことを確認する（DN-182-2）。`./gradlew check`、`scripts/ci/check-all.sh` を実行する。

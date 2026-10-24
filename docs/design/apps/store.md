@@ -245,7 +245,6 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | `server.ts` の `http`、`server` | `http` は `store.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー）。`server` は店舗 API と IdP の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `server.ts` の `networkError`、`problem` | `networkError` は要求を通信の失敗にする、型のない MSW のハンドラーを作る（`store.yaml` にない応答のため）。`problem` はエラーレスポンスの本文を作る |
 | `stderr.ts` の `recordStderr` | 標準エラー出力への書き込みを差し替えて記録し、書いた行（JSON）と全文を返す。差し替えはテストの後に元に戻る |
-| `markup.ts` の `startTags`、`findTag` | 描画した HTML から開始タグの属性を取り出す。`findTag` は指定した属性を全て持つタグを 1 つ返す（なければテストを失敗させる）。新しいテストでは使わず、`renderStatic` と jest-dom で確認する |
 | `elements.ts` の `button`、`select`、`input` | jsdom の上の要素を、役割（ボタン）か見出し（選択欄、入力欄）で探す。型が違えば、テストを失敗させる |
 | `setup.ts` | 全てのテストに共通の設定。jest-dom の照合の関数を読み込む。`next/headers`・`next/cache`・`next-auth` などの置き換えと、MSW の開始。各テストの前に Cookie とログインの状態を戻し、後に描画した部品の撤去、`vi.restoreAllMocks()`、環境変数の差し替えの復元、ハンドラーの初期化を行う。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
 

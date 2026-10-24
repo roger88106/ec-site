@@ -75,8 +75,9 @@ management:
       probability: 0.1
     export:
       zipkin:
-        # 送信先。環境に合わせて MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT で変える
-        endpoint: http://localhost:9411/api/v2/spans
+        # 送信は既定で無効にする（送信先を持たない）。送るときは MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED を true にし、
+        # MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT で送信先を指定する。local の profile は有効にする
+        enabled: false
 
 logging:
   structured:

@@ -17,7 +17,8 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `SPRING_DATASOURCE_URL`、`_USERNAME`、`_PASSWORD` | DB の接続先 | — |
 | `SERVER_PORT` | 業務ポート（Spring Boot の `server.port`）。`slot.mjs run` が設定する（[開発環境の起動](setup.md) 第 9 節） | 8080（E2E は 8090） |
 | `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外部に公開しない | 9080（E2E は 9090） |
-| `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | トレースの送信先 | `http://localhost:9411/api/v2/spans` |
+| `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` | トレースの送信を有効にする | false（local と E2E は true） |
+| `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | 送信を有効にしたときの送信先 | — （local と E2E は `http://localhost:9411/api/v2/spans`） |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |
 | `ECSITE_SECURITY_ADMIN_ISSUER_URI`、`_AUDIENCE` | 管理 API が受け付ける token の issuer（運営者の realm）と audience | 必須 |
 | `ECSITE_SECURITY_STORE_ISSUER_URI`、`_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience | 必須 |

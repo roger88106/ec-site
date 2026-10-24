@@ -3,7 +3,7 @@ import { act, screen, waitFor, within } from '@testing-library/react'
 import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import type { PostalCodeAddress, Prefecture } from '@/api/types'
-import { OrderFormView } from '@/features/checkout/components/OrderForm'
+import { OrderForm, OrderFormView } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
 import { input, select } from '@/test/elements'
 import { renderInBrowser, renderStatic } from '@/test/render'
@@ -39,13 +39,13 @@ function postal(prefectureCode: string, municipalityCode: string, townName: stri
 }
 
 /** 注文のサーバーアクションの結果（null は送る前）を渡した、注文のフォームの表示 */
-function form(result: ActionResult | null = null) {
+function form(result: ActionResult | null = null, formAction: (formData: FormData) => void = () => {}) {
   return (
     <OrderFormView
       checkoutId="checkout-1"
       email="member@example.com"
       expectedTotal={3200}
-      formAction={() => {}}
+      formAction={formAction}
       pending={false}
       prefectures={PREFECTURES}
       result={result}
@@ -185,6 +185,29 @@ describe('お届け先の入力と注文', () => {
     const message = view.getByText('在庫が足りない商品があります。')
     expect(message).toHaveAttribute('aria-live', 'polite')
     expect(within(message).getByRole('link', { name: 'カートを見る' })).toHaveAttribute('href', '/cart')
+  })
+
+  test('結果を受ける前の OrderForm は、表示と同じ初期表示を出す', () => {
+    const view = renderStatic(
+      <OrderForm checkoutId="checkout-1" email="member@example.com" expectedTotal={3200} prefectures={PREFECTURES} />,
+    )
+
+    expect(view.queryAllByText(/./).map((element) => element.textContent)).toEqual(INITIAL_TEXTS)
+    expect(view.getByRole('button', { name: '注文する（3,200 円）' })).toBeEnabled()
+  })
+
+  test('注文のボタンを押すと、入力した値と隠しの値を送る関数に渡す', async () => {
+    const formAction = vi.fn<(formData: FormData) => void>()
+    const { user } = renderInBrowser(form(null, formAction))
+
+    await user.type(screen.getByLabelText('氏名'), '山田 太郎')
+    await user.click(screen.getByRole('button', { name: '注文する（3,200 円）' }))
+
+    expect(formAction).toHaveBeenCalledTimes(1)
+    const sent = formAction.mock.calls[0]?.[0]
+    expect(sent?.get('name')).toBe('山田 太郎')
+    expect(sent?.get('checkoutId')).toBe('checkout-1')
+    expect(sent?.get('expectedTotal')).toBe('3200')
   })
 })
 

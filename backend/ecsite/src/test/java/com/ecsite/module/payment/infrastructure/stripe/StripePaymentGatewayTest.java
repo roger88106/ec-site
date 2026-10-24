@@ -4,6 +4,7 @@ import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCode;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.payment.application.PaymentProperties;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureRequest;
 import com.ecsite.module.payment.application.port.PaymentGateway.CaptureResult;
 import com.ecsite.module.payment.application.port.PaymentGateway.CloseResult;
@@ -13,6 +14,7 @@ import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.domain.payment.PaymentPage;
 import com.ecsite.module.payment.infrastructure.stripe.StripeApiStub.Request;
 import org.assertj.core.api.ThrowableAssert.ThrowingCallable;
+import org.hibernate.validator.constraints.time.DurationMax;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +31,7 @@ import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.function.Consumer;
 import java.util.stream.Stream;
 
@@ -196,6 +199,24 @@ class StripePaymentGatewayTest {
                     "metadata[paymentId]=" + PAYMENT_ID,
                     "payment_intent_data[metadata][orderId]=" + ORDER_ID,
                     "expires_at=" + NOW.plus(Duration.ofMinutes(31)).getEpochSecond());
+        }
+
+        @Test
+        @DisplayName("支払画面の期限は、支払の期限の上限（deadline の @DurationMax）より長い")
+        void pageLifetimeExceedsDeadlineLimit() throws NoSuchFieldException {
+            respond("POST /v1/checkout/sessions", 200, session("open"));
+
+            gateway.openPage(new PageRequest(PAYMENT_ID, ORDER_ID, Money.of(6940), RETURN_URL));
+
+            // 期限の定数は private で、テストのために広げない。Stripe に渡した expires_at から期限を求める。
+            // 上限はテストに値を写さず、設定の注釈から読む（上限を延ばしたときに、このテストが失敗して気づく）
+            var matcher = Pattern.compile("expires_at=(\\d+)").matcher(requests().getFirst().body());
+            assertThat(matcher.find()).isTrue();
+            var pageLifetime = Duration.between(NOW, Instant.ofEpochSecond(Long.parseLong(matcher.group(1))));
+            var limit = PaymentProperties.class.getDeclaredField("deadline").getAnnotation(DurationMax.class);
+            var deadlineLimit = Duration.ofDays(limit.days()).plusHours(limit.hours()).plusMinutes(limit.minutes())
+                    .plusSeconds(limit.seconds()).plusMillis(limit.millis()).plusNanos(limit.nanos());
+            assertThat(pageLifetime).isGreaterThan(deadlineLimit);
         }
 
         @Test

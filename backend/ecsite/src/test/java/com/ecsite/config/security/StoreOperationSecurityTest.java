@@ -81,6 +81,23 @@ class StoreOperationSecurityTest {
     }
 
     @Test
+    @DisplayName("security が値のない（明示の null の）操作があれば、読み込みに失敗する")
+    void operationWithNullSecurityFailsToLoad() {
+        var resource = new ByteArrayResource("""
+                servers:
+                  - url: /api/store
+                paths:
+                  /products/{productId}:
+                    get:
+                      security:
+                """.getBytes(StandardCharsets.UTF_8));
+
+        assertThatThrownBy(() -> StoreOperationSecurity.load(resource))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("GET /products/{productId}");
+    }
+
+    @Test
     @DisplayName("契約にない操作は、要否が決まらない（拒む）")
     void unknownOperationIsEmpty() {
         assertThat(security.requiresToken("POST", "/api/store/products")).isEmpty();

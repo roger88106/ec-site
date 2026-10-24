@@ -29,6 +29,20 @@ class MediaStoragePropertiesTest {
     }
 
     @Test
+    @DisplayName("資格情報が null（本番の形）でも、文字列表現を作れる")
+    void toStringAcceptsNullCredentials() {
+        var withoutCredentials = new MediaStorageProperties(
+                URI.create("http://seaweedfs:8333"), "ap-northeast-1", true,
+                null, null,
+                "incoming-bucket", "public-bucket", URI.create("http://cdn.example.test"),
+                Duration.ofMinutes(5), Duration.ofSeconds(10), Duration.ofSeconds(30));
+
+        assertThat(withoutCredentials.toString())
+                .contains("accessKeyId=null")
+                .contains("secretAccessKey=null");
+    }
+
+    @Test
     @DisplayName("文字列表現に、秘密でない値（バケット名など）を含む")
     void toStringKeepsNonSecrets() {
         assertThat(properties.toString())

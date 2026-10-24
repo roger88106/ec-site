@@ -199,6 +199,7 @@ Spring Modulith でモジュールに分ける。デプロイ単位は 1 つ。
 - ログインせずに作るカートの作成の回数を、入口（リバースプロキシなど）で制限する
 - 確定していないアップロードを削除する期限を、アップロードのバケットのライフサイクル規則で設定する（ローカルは 1 日）
 - メトリクスにアラートを設定する。少なくとも、止めたイベントの件数（`ecsite.events.stopped`。第 5 節）
+- トレースを送るなら、`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` を true にし、送信先（`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT`）を渡す。既定は送らない（[環境変数](../guides/environment.md)）
 - 配布物に、第三者のライセンスの告知のファイルと部品表（SBOM）を付ける
 
 ## 8. 外部連携（決済・物流）

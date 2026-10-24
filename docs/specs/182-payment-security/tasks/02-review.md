@@ -19,7 +19,7 @@
   - 範囲：`test/module/payment/infrastructure/stripe/`（支払画面の期限のテスト）、`test/module/media/infrastructure/storage/MediaStoragePropertiesTest.java`、`test/config/security/StoreOperationSecurityTest.java`、`it/config/security/StoreApiTokenContractTest.java`、`main/common/model/base/AggregateGuards.java`、`docs/design/backend-architecture.md`（公開ネットワークへのデプロイの前提の節）
 - [ ] **T182-02-04** E2E を実行し（`scripts/dev/e2e.sh`）、通ることを確認する。`Location` と契約の `security` を変えたので、店舗と管理の作成の操作を E2E で通して確認する。
   - 依存：T182-02-09
-- [ ] **T182-02-05** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書を、skill `docs` の言い回しと論理の規則と照合する。
+- [x] **T182-02-05** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書を、skill `docs` の言い回しと論理の規則と照合する。
   - 依存：T182-02-09
   - 範囲：本 spec で修正した `docs/` の文書
 - [ ] **T182-02-06** 起票のまとめの案を作る。後回しにする作業、未決事項、spec の最後のレビューの推奨のうち採用しなかったものを、既存の issue と重複しないようにまとめ、案を pull request の本文に付ける。利用者が承認したら、issue 担当のセッションが起票する（[開発の進め方](../../../rules/workflow.md) 第 4.1 節）。

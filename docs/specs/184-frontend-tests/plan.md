@@ -25,7 +25,7 @@ DC の列は「184-1」の形で書く。spec の番号 184 を付けた DC-184-
 - テストのファイルを変えるタスクは、そのファイルにある本 spec の DC の違反を全て直す。実装役には、spec 157 のレビューの結果（`/.local/review/202610231200-157-frontend-tests/`、`/.local/review/202610232100-157-final/`）のうち、そのファイルの指摘を渡す。
 - 段階の間では、確認のために中断しない。plan と tasks は一緒に利用者が確認する。
 - 1 タスクを 1 commit にする。例外は `[テスト]` と実装の組で、2 つのタスクを 1 commit にする（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
-- 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）で、第 3〜5 節の対象の箇所が今の `develop` に残っているかを確認し直す。spec 183 が先にマージされていれば、その検査の対象と第 6 節の扱いを照合する。
+- 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）で、第 3〜5 節の対象の箇所が今の `develop` に残っているかを確認し直す。spec 183 が先にマージされていれば、その検査の対象と第 6 節の扱いを照合する（2026-10-24 に照合した。#169 は #185 に移り、spec 183 は #169 の検査を加えていない）。
 
 ## 1. DOM に読み込む補助と jest-dom（DC-184-1、2、4〜7）
 
@@ -104,13 +104,13 @@ DC の列は「184-1」の形で書く。spec の番号 184 を付けた DC-184-
 
 | spec | 同じファイル | 扱い |
 |------|--------------|------|
-| 183（CI の検査） | `docs/rules/test-writing.md`、`frontend/*/package.json`・`pnpm-lock.yaml`（#167 の package の書き方）、`docs/guides/ci.md` | 後でマージする側が `develop` を取り込んで解消する。`pnpm-lock.yaml` は取り込みの後に `pnpm install` で再生成する。`scripts/ci/` は本 spec では変えない（DN-184-6） |
+| 183（CI の検査。マージ済み）、#185 の spec（#169 の検査） | `docs/rules/test-writing.md`、`frontend/*/package.json`・`pnpm-lock.yaml`（#167 の package の書き方）、`docs/guides/ci.md` | 後でマージする側が `develop` を取り込んで解消する。`pnpm-lock.yaml` は取り込みの後に `pnpm install` で再生成する。`scripts/ci/` は本 spec では変えない（DN-184-6） |
 | 181（バックエンドのテスト） | `docs/rules/test-writing.md`（バックエンドの節） | 同上 |
 | 182（決済と設定） | なし（バックエンドだけ） | なし |
 | 全て | `docs/design/acceptance-criteria.md`（テストの列）、`docs/design/glossary.md` | 衝突したら `node scripts/ci/ac-check.mjs --write` で再生成する。用語集は両方の行を残す |
 | 全て | `scripts/ci/report/quality-baseline.json`（カバレッジの基準。T184-04-02 で上回ったときだけ更新） | 衝突したら、取り込みの後に `coverage-baseline.mjs --write` で更新し直す。spec 183 に知らせる |
 
-- spec 183 には、spec 第 6 節の違反の一覧と、jest-dom の書き方（プロパティと `getAttribute` の比較）を検査に加えるかの判断を、plan と tasks の確認のときに知らせる。spec 183 が検査を加えるのは、本 spec のマージの後である。
+- #185 の spec には、spec 第 6 節の違反の一覧と、jest-dom の書き方（プロパティと `getAttribute` の比較）を検査に加えるかの判断を知らせる（plan と tasks の確認のときに、共有の備忘で spec 183 に知らせた）。#169 の検査は、本 spec のマージの後に加わる。
 
 ## 7. 段階
 

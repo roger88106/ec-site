@@ -16,7 +16,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
 - [x] **T182-01-02** 決済の設定の支払の期限に `@DurationMax(minutes = 30)` を付け、Javadoc に上限と理由を書く。支払画面の期限の定数のコメントに、支払の期限の上限（30 分）がこの値を前提にすることを 1 文で追加する。決済のモジュールの設計書の「支払の期限」の節に、上限と理由を書く（DC-182-1、2）。
   - 依存：T182-01-01
   - 範囲：`main/module/payment/application/PaymentProperties.java`（`:17,27`）、`main/module/payment/infrastructure/stripe/StripePaymentGateway.java`（`:32-35`）、`docs/design/modules/payment.md`（「支払の期限」の節）
-- [ ] **T182-01-03** [P] [テスト] `StoreOperationSecurityTest` に、`security` のない操作を含む契約の例を新しく作り、読み込むと `IllegalStateException` で失敗し、メッセージに操作のメソッドとパスが含まれるテストを追加する。テストの契約の例の `security` のない操作を `security: []` に直し、AC-233 のテストの名前の「security のない操作」を「security が空の一覧の操作」に直す。実装の前に失敗することを確認する（DC-182-6）。
+- [x] **T182-01-03** [P] [テスト] `StoreOperationSecurityTest` に、`security` のない操作を含む契約の例を新しく作り、読み込むと `IllegalStateException` で失敗し、メッセージに操作のメソッドとパスが含まれるテストを追加する。テストの契約の例の `security` のない操作を `security: []` に直し、AC-233 のテストの名前の「security のない操作」を「security が空の一覧の操作」に直す。実装の前に失敗することを確認する（DC-182-6）。
   - 依存：なし
   - 範囲：`test/config/security/StoreOperationSecurityTest.java`
 - [ ] **T182-01-04** [リスク] 店舗の操作の公開を、契約の明示に変える（DC-182-4、5）。

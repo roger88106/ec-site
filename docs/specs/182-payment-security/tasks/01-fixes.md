@@ -28,7 +28,7 @@ T182-01-01、03、05、07、09、10、12 は、変えるファイルが重なら
   - 実装の直後に、高性能のレビュー役がこのタスクの差分をセキュリティの観点でレビューし、指摘を直す（skill `review`）。
   - 依存：T182-01-03
   - 範囲：`api/openapi/store.yaml`、`main/config/security/StoreOperationSecurity.java`（`:10-14,37-40`）、必要なら `main/config/security/OpenApiOperations.java`、`docs/design/backend-architecture.md`（`:183`）、`docs/design/acceptance-criteria.md`
-- [ ] **T182-01-05** [P] [テスト] 画像の保存先の設定と画像の変換の設定の `toString` に、秘密の値（S3 のアクセスキー ID と秘密の鍵、imgproxy の鍵と salt）が含まれないことを確認するテストを追加する。実装の前に失敗することを確認する（DC-182-7）。
+- [x] **T182-01-05** [P] [テスト] 画像の保存先の設定と画像の変換の設定の `toString` に、秘密の値（S3 のアクセスキー ID と秘密の鍵、imgproxy の鍵と salt）が含まれないことを確認するテストを追加する。実装の前に失敗することを確認する（DC-182-7）。
   - 依存：なし
   - 範囲：`test/module/media/infrastructure/storage/MediaStoragePropertiesTest.java`、`test/module/media/infrastructure/converter/ImgproxyPropertiesTest.java`（新規）
 - [ ] **T182-01-06** 2 つの設定の record の `toString` を上書きし、秘密の値を `***` にする。書き方は `StripeProperties` に倣う。バックエンドの書き方 第 6.1 節と規則の一覧の表に、秘密の値を持つ設定の record の `toString` を伏せる規則と確認方法（単体テスト、レビュー）を追加する（DC-182-7、8）。

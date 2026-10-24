@@ -94,6 +94,7 @@ DC の列は「182-1」の形で書く。spec の番号 182 を付けた DC-182-
 | 文書 | 変えること | DC |
 |------|------------|----|
 | `docs/design/modules/payment.md` | 「支払の期限」の節に上限と理由 | 182-2 |
+| `docs/guides/environment.md` | 支払の期限の行に、上限（30 分）と、超えると起動に失敗すること | 182-2 |
 | `docs/design/backend-architecture.md`（`:183`） | 店舗 API の token の要否：`security` のない操作は起動に失敗する。公開の操作は `security: []` で明示する | 182-4、5 |
 | `docs/rules/backend-coding.md` | バックエンドの書き方 第 6.1 節に秘密の値の `toString` の規則。バックエンドの書き方 第 2.2 節の作成の応答に相対の URL | 182-8、13 |
 | `docs/rules/api-conventions.md` | 作成の行の※1に、`Location` は相対の URL | 182-13 |

@@ -73,6 +73,6 @@
 
 ## 5. トレース
 
-- 分散トレースの送信先は Zipkin。記録するリクエストの割合は既定 0.1（`MANAGEMENT_TRACING_SAMPLING_PROBABILITY`）、送信は既定で無効（`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` が false。共通の設定は送信先を持たない）で、環境変数で有効にしたときだけ、`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` の送信先へ送る。
+- 分散トレースの送信先は Zipkin。記録するリクエストの割合は既定 0.1（`MANAGEMENT_TRACING_SAMPLING_PROBABILITY`）、送信は既定で無効（`MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` が false）で、環境変数で有効にしたときだけ送る。送信先は `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` で指定する（共通の設定は書かず、指定しなければ Spring Boot の既定の `http://localhost:9411/api/v2/spans`）。
 - ローカルの profile は送信を有効にし、割合を 1.0 にして全リクエストを記録し、compose の Zipkin（`http://localhost:9411`）で確認する。E2E は local に重ねるので同じ。
 - トレース ID は、ログ（第 3 節）とエラーの応答の `traceId` に入る。問い合わせのトレース ID から、ログとトレースを関連づけられる。

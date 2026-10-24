@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeEach, vi } from 'vitest'
 import { resetAuth } from '@/test/auth'

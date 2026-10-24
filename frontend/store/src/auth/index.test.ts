@@ -7,13 +7,10 @@ import { logout } from '@/actions/auth'
 import { GET as login } from '@/app/login/route'
 import { currentMember, getAccessToken, redirectToLogin } from '@/auth'
 import { readServerConfig } from '@/auth/config'
-import { ACCESS_TOKEN, authState, signInAs } from '@/test/auth'
+import { ACCESS_TOKEN, authState, nowSeconds, signInAs } from '@/test/auth'
 import { COOKIE_CART_ID, cart, MEMBER_CART_ID } from '@/test/fixtures'
 import { cookieValue, redirectedTo, resetRequest } from '@/test/next'
 import { http, IDP, networkError, server, TOKEN_ENDPOINT } from '@/test/server'
-
-/** いまの時刻（UNIX 時刻の秒） */
-const now = () => Math.floor(Date.now() / 1000)
 
 /** auth.ts が Auth.js に渡したコールバック */
 function callbacks() {
@@ -185,7 +182,9 @@ describe('token の取り直し', () => {
     )
 
     const token = await callbacks().jwt(
-      jwtParams({ token: { accessToken: 'old', refreshToken: 'old-refresh', idToken: 'id', expiresAt: now() + 30 } }),
+      jwtParams({
+        token: { accessToken: 'old', refreshToken: 'old-refresh', idToken: 'id', expiresAt: nowSeconds() + 30 },
+      }),
     )
 
     expect(grant).toMatchObject({
@@ -194,11 +193,11 @@ describe('token の取り直し', () => {
       refresh_token: 'old-refresh',
     })
     expect(token).toMatchObject({ accessToken: 'new-access', refreshToken: 'new-refresh', idToken: 'id' })
-    expect(token?.expiresAt).toBeGreaterThanOrEqual(now() + 299)
+    expect(token?.expiresAt).toBeGreaterThanOrEqual(nowSeconds() + 299)
   })
 
   test('期限まで十分あれば、取り直さない', async () => {
-    const token = { accessToken: 'current', refreshToken: 'refresh', expiresAt: now() + 3600 }
+    const token = { accessToken: 'current', refreshToken: 'refresh', expiresAt: nowSeconds() + 3600 }
 
     // ハンドラーを渡さないので、IdP を呼べばテストが失敗する（setup.ts）
     expect(await callbacks().jwt(jwtParams({ token }))).toEqual(token)
@@ -208,7 +207,7 @@ describe('token の取り直し', () => {
     server.use(mswHttp.post(TOKEN_ENDPOINT, () => HttpResponse.json({ error: 'invalid_grant' }, { status: 400 })))
 
     const token = await callbacks().jwt(
-      jwtParams({ token: { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: now() - 10 } }),
+      jwtParams({ token: { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: nowSeconds() - 10 } }),
     )
 
     expect(token).toBeNull()
@@ -216,7 +215,7 @@ describe('token の取り直し', () => {
 
   test('IdP に届かなければ、ログインの状態を残す', async () => {
     server.use(networkError('post', TOKEN_ENDPOINT))
-    const token = { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: now() - 10 }
+    const token = { accessToken: 'old', refreshToken: 'old-refresh', expiresAt: nowSeconds() - 10 }
 
     expect(await callbacks().jwt(jwtParams({ token }))).toEqual(token)
   })
@@ -224,7 +223,7 @@ describe('token の取り直し', () => {
   test('API を呼ぶときの access token は、期限が切れていればその場で取り直したものを使う', async () => {
     expect(await getAccessToken()).toBeNull()
 
-    signInAs({ expiresAt: now() - 10 })
+    signInAs({ expiresAt: nowSeconds() - 10 })
     server.use(mswHttp.post(TOKEN_ENDPOINT, () => HttpResponse.json({ access_token: 'fresh', expires_in: 300 })))
 
     expect(await getAccessToken()).toBe('fresh')

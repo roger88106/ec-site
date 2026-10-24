@@ -18,7 +18,7 @@ export type DownloadRecorder = {
 
 /**
  * ファイルのダウンロード（Blob の URL を作り、リンクをクリックする操作）を記録する。<br />
- * ブラウザーの保存は起こさない。差し替えは `vi.restoreAllMocks()`（setup.ts がテストごとに実行する）で戻る。
+ * ブラウザーの保存は起こさない。`download` のないリンクのクリックは、記録せず、本物のクリックの処理に渡す。差し替えは `vi.restoreAllMocks()`（setup.ts がテストごとに実行する）で戻る。
  * 例：`expect(await recorder.downloads()).toEqual([{ filename: 'a.csv', text: '﻿a,b\r\n' }])`
  *
  * @returns 画面の操作の前に呼び、操作の後に `downloads()` で確認する
@@ -33,7 +33,14 @@ export function recordDownloads(): DownloadRecorder {
     blobs.push(object)
     return `blob:download-${blobs.length}`
   })
+  // 差し替えない継承元から取る。差し替え済みの関数を本物として取ると、2 回目の呼び出しで再帰する
+  const realClick = HTMLElement.prototype.click
   vi.spyOn(HTMLAnchorElement.prototype, 'click').mockImplementation(function (this: HTMLAnchorElement) {
+    if (!this.hasAttribute('download')) {
+      // ダウンロードのリンクではない。記録せず、本物のクリックの処理に渡す
+      realClick.call(this)
+      return
+    }
     filenames.push(this.download)
   })
   return {

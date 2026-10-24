@@ -78,13 +78,14 @@ export function findRow(name: string, scope: Scope = screen): Promise<HTMLElemen
 /**
  * 一覧のセルを、行の名前と列の見出しの名前で返す。セルの並びの位置を、テストのファイルに書かない。
  * 見出しは、行のある表の `columnheader`。見つからなければ失敗する。
+ * 行の見出しのセル（`th scope="row"`、`rowheader`）も 1 つの列に数える。入れ子の表の見出しとセルは、外の表の列に数えない。
  * 例：`expect(getCell('ABC-001', '在庫数の合計')).toHaveTextContent('12')`
  *
  * @param rowName 行の名前の始まりの文字（{@link getRow} と同じ）
  * @param columnName 列の見出しの文字
  * @param scope 探す範囲。省略すると画面全体
  * @returns 行と列が交わる `cell`
- * @throws 列の見出しがないとき
+ * @throws 列の見出しがないとき、または行にその列のセルがないとき
  */
 export function getCell(rowName: string, columnName: string, scope: Scope = screen): HTMLElement {
   const row = getRow(rowName, scope)
@@ -92,13 +93,38 @@ export function getCell(rowName: string, columnName: string, scope: Scope = scre
   if (table === null) {
     throw new Error(`行「${rowName}」が表の中にない`)
   }
+  // 入れ子の表の見出しとセルは、外の表の列に数えない
   const column = within(table)
     .getAllByRole('columnheader')
+    .filter((heading) => heading.closest('table') === table)
     .findIndex((heading) => heading.textContent === columnName)
   if (column < 0) {
     throw new Error(`列「${columnName}」がない`)
   }
-  return within(row).getAllByRole('cell')[column]
+  // 行の見出しのセル（th scope="row"）も、1 つの列に数える
+  const cells = Array.from(row.children).filter((child) => child.matches('td, th'))
+  const cell = cells[column]
+  if (!(cell instanceof HTMLElement)) {
+    throw new Error(`行「${rowName}」に列「${columnName}」のセルがない`)
+  }
+  return cell
+}
+
+/**
+ * 渡した要素を含む `listitem` を返す。入れ子の一覧では、一番外の項目（子の項目も中に入る）を返す。含む項目がなければ失敗する。
+ * 例：`within(getListItemContaining(await findGroup('衣類'))).getByText('トップス')`
+ *
+ * @param element 項目の中にある要素
+ * @param scope 探す範囲。省略すると画面全体
+ * @returns 渡した要素を含む `listitem`
+ * @throws 含む `listitem` がないとき
+ */
+export function getListItemContaining(element: HTMLElement, scope: Scope = screen): HTMLElement {
+  const item = scope.getAllByRole('listitem').find((candidate) => candidate.contains(element))
+  if (item === undefined) {
+    throw new Error('渡した要素を含む listitem がない')
+  }
+  return item
 }
 
 /**

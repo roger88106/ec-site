@@ -14,9 +14,8 @@ describe('キャンセルの申請', () => {
     const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
 
     const reason = screen.getByLabelText('理由（任意）')
-    expect(reason.getAttribute('maxlength')).toBe('500')
-    // 上限の文が出ていること（なければ getByText が失敗する）
-    screen.getByText('500 文字まで')
+    expect(reason).toHaveAttribute('maxlength', '500')
+    expect(screen.getByText('500 文字まで')).toBeInTheDocument()
     await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
 
     expect(confirm).toHaveBeenCalledWith('キャンセルを申請します。申請は 1 回だけできます。よろしいですか？')

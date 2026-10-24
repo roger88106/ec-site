@@ -1,12 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
+import { MUNICIPALITIES, postalCodeAddress } from '@/test/fixtures'
 import { http, networkError, problem, STORE_API, server } from '@/test/server'
-
-/** 東京都 */
-const TOKYO = { code: '13', name: '東京都' }
-
-/** 千代田区 */
-const CHIYODA = { code: '13101', name: '千代田区' }
 
 describe('都道府県の市区町村の一覧を取る', () => {
   test('AC-249 選んだ都道府県の市区町村を、API の順のまま返す', async () => {
@@ -14,11 +9,11 @@ describe('都道府県の市区町村の一覧を取る', () => {
     server.use(
       http.get('/prefectures/{prefectureCode}/municipalities', ({ params, response }) => {
         requested = params.prefectureCode
-        return response(200).json({ items: [CHIYODA, { code: '13102', name: '中央区' }] })
+        return response(200).json({ items: MUNICIPALITIES['13'] })
       }),
     )
 
-    expect(await listMunicipalities('13')).toEqual([CHIYODA, { code: '13102', name: '中央区' }])
+    expect(await listMunicipalities('13')).toEqual(MUNICIPALITIES['13'])
     expect(requested).toBe('13')
   })
 
@@ -41,13 +36,11 @@ describe('郵便番号で住所を引く', () => {
     server.use(
       http.get('/postal-codes/{postalCode}', ({ params, response }) => {
         requested = params.postalCode
-        return response(200).json({ items: [{ prefecture: TOKYO, municipality: CHIYODA, townName: '千代田' }] })
+        return response(200).json({ items: [postalCodeAddress('13', '13101', '千代田')] })
       }),
     )
 
-    expect(await findPostalCodeAddresses('100-0001')).toEqual([
-      { prefecture: TOKYO, municipality: CHIYODA, townName: '千代田' },
-    ])
+    expect(await findPostalCodeAddresses('100-0001')).toEqual([postalCodeAddress('13', '13101', '千代田')])
     expect(requested).toBe('1000001')
   })
 

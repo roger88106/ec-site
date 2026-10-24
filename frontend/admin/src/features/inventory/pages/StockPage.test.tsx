@@ -14,7 +14,7 @@ type StockAdjustment = components['schemas']['StockAdjustment']
 /** 在庫を調整するバリアント */
 const VARIANT = variant()
 /** 在庫の画面の URL */
-const URL = `/products/${PRODUCT_ID}/variants/${VARIANT.id}/stock`
+const PAGE_PATH = `/products/${PRODUCT_ID}/variants/${VARIANT.id}/stock`
 
 /**
  * 在庫の画面が使う API に応答する。在庫数は quantity から始める。<br />
@@ -64,7 +64,7 @@ async function shownQuantity(expected: number) {
 describe('在庫の調整', () => {
   test('増減量と理由で調整すると、結果を知らせ、在庫数を取得し直す', async () => {
     const state = serveStock(5)
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownQuantity(5)
 
     await user.type(screen.getByLabelText('増減量'), '10')
@@ -80,7 +80,7 @@ describe('在庫の調整', () => {
 
   test('AC-43 調整後に負になる調整は拒否され、そのメッセージを出し、在庫数は変わらない', async () => {
     serveStock(2)
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownQuantity(2)
 
     await user.type(screen.getByLabelText('増減量'), '-3')
@@ -95,7 +95,7 @@ describe('在庫の調整', () => {
 
   test('AC-46 理由が「その他」のときはメモが必須と示し、メモがなければ拒否のメッセージを出す', async () => {
     serveStock(5)
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownQuantity(5)
 
     expect(screen.getByLabelText('メモ（任意）')).toBeInTheDocument()
@@ -125,7 +125,7 @@ describe('在庫の調整', () => {
         adjustedAt: '2026-10-10T10:00:00+09:00',
       },
     ])
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     expect(await screen.findByText('注文番号 20261010-482915')).toBeInTheDocument()
     expect(screen.getByRole('cell', { name: '注文' })).toBeInTheDocument()
@@ -161,7 +161,7 @@ describe('操作した運営者', () => {
         operatorName: null,
       },
     ])
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     await screen.findAllByRole('columnheader')
     expect(getCell('2026/10/10 11:00', '操作した運営者')).toHaveTextContent('在庫 一郎')
@@ -177,7 +177,7 @@ describe('権限のない操作', () => {
         response(403).json(problem(403, 'FORBIDDEN', 'この操作を行う権限がありません。')),
       ),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
     await shownQuantity(5)
 
     await user.type(screen.getByLabelText('増減量'), '10')

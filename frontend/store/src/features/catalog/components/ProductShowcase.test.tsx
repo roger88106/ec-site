@@ -35,26 +35,26 @@ function renderWithoutAxes(variants: Variant[]) {
   return renderInBrowser(<ProductShowcase axes={[]} header={<h1>マグカップ</h1>} imageUrls={[]} variants={variants} />)
 }
 
-/** 大きな画像の URL */
-function shownImage(): string | null {
-  return screen.getByRole('img', { name: '商品の画像' }).getAttribute('src')
+/** 大きな画像 */
+function shownImage(): HTMLElement {
+  return screen.getByRole('img', { name: '商品の画像' })
 }
 
 describe('商品の詳細の画像', () => {
   test('DC-135-25 バリアントを選ぶとそのバリアントの画像に、画像の指定がなければ代表画像に切り替える', async () => {
     const { user } = renderShowcase()
-    expect(shownImage()).toBe('http://cdn.test/1.webp')
+    expect(shownImage()).toHaveAttribute('src', 'http://cdn.test/1.webp')
 
     await user.click(button('画像 2を見る'))
     await user.click(button('赤'))
     await user.click(button('L'))
-    expect(shownImage()).toBe('http://cdn.test/red-l.webp')
+    expect(shownImage()).toHaveAttribute('src', 'http://cdn.test/red-l.webp')
 
     // 小さな画像で別の画像を出した後に、画像のない赤 M を選ぶと、代表画像に戻る
     await user.click(button('画像 2を見る'))
-    expect(shownImage()).toBe('http://cdn.test/2.webp')
+    expect(shownImage()).toHaveAttribute('src', 'http://cdn.test/2.webp')
     await user.click(button('M'))
-    expect(shownImage()).toBe('http://cdn.test/1.webp')
+    expect(shownImage()).toHaveAttribute('src', 'http://cdn.test/1.webp')
   })
 
   test('DC-135-26 小さな画像を押すとその画像に切り替え、押した画像を押している状態にする', async () => {
@@ -62,32 +62,32 @@ describe('商品の詳細の画像', () => {
 
     await user.click(button('画像 2を見る'))
 
-    expect(shownImage()).toBe('http://cdn.test/2.webp')
-    expect(button('画像 2を見る').getAttribute('aria-pressed')).toBe('true')
-    expect(button('画像 1を見る').getAttribute('aria-pressed')).toBe('false')
+    expect(shownImage()).toHaveAttribute('src', 'http://cdn.test/2.webp')
+    expect(button('画像 2を見る')).toHaveAttribute('aria-pressed', 'true')
+    expect(button('画像 1を見る')).toHaveAttribute('aria-pressed', 'false')
   })
 
   test('軸のない商品は、画像がなければ商品の画像も小さな画像の並びも出さない', () => {
     renderWithoutAxes([onlyVariant()])
 
-    expect(screen.queryByRole('img', { name: '商品の画像' })).toBeNull()
-    expect(screen.queryByRole('button', { name: /を見る$/ })).toBeNull()
+    expect(screen.queryByRole('img', { name: '商品の画像' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('button', { name: /を見る$/ })).not.toBeInTheDocument()
   })
 })
 
 describe('商品の詳細のカートに入れる操作', () => {
   test('DC-135-27 バリアントを選ぶまでは「カートに入れる」を押せない', async () => {
     const { user } = renderShowcase()
-    expect(button('カートに入れる').disabled).toBe(true)
+    expect(button('カートに入れる')).toBeDisabled()
 
     await user.click(button('赤'))
-    expect(button('カートに入れる').disabled).toBe(true)
+    expect(button('カートに入れる')).toBeDisabled()
 
     await user.click(button('L'))
-    expect(button('カートに入れる').disabled).toBe(false)
+    expect(button('カートに入れる')).toBeEnabled()
 
     await user.click(button('L'))
-    expect(button('カートに入れる').disabled).toBe(true)
+    expect(button('カートに入れる')).toBeDisabled()
   })
 
   test.each([
@@ -97,12 +97,12 @@ describe('商品の詳細のカートに入れる操作', () => {
     // 軸のある商品は、買えない値を選べないので、バリアントが決まる軸のない商品で確認する
     renderWithoutAxes([onlyVariant(overrides)])
 
-    expect(button('カートに入れる').disabled).toBe(true)
+    expect(button('カートに入れる')).toBeDisabled()
   })
 
   test('軸のない商品は、ただ 1 つのバリアントをすぐカートに入れられる', () => {
     renderWithoutAxes([onlyVariant()])
 
-    expect(button('カートに入れる').disabled).toBe(false)
+    expect(button('カートに入れる')).toBeEnabled()
   })
 })

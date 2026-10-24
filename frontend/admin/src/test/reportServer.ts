@@ -1,7 +1,5 @@
+import { SHIRT_ID } from '@/test/fixtures'
 import { http, server } from '@/test/server'
-
-/** 結合テストの商品 ID */
-export const SHIRT_ID = '00000000-0000-0000-0000-000000002001'
 
 /**
  * レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する（結合テストだけで使う）。<br />

@@ -102,7 +102,7 @@
 | AC-77 | 品目ごとに商品名、軸の値、画像、単価（BR-4）、数量、小計を表示し、あわせて商… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AmountsSummary.test.tsx`、`QuoteItemSummary.test.tsx`、`StorefrontCartTest` ほか 1 |
 | AC-78 | 品目の数量を変更（AC-75、76 の範囲で）・削除できる。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartApiTest`、`CartItemControls.test.tsx`、`CartTest` ほか 1 |
 | AC-79 | 単価は常に現在の価格で表示する。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StorefrontCartTest` |
-| AC-80 | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `OrderCatalogApiTest`、`QuoteItemSummary.test.tsx`、`QuoteTest` ほか 3 |
+| AC-80 | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartItemControls.test.tsx`、`OrderCatalogApiTest`、`QuoteItemSummary.test.tsx` ほか 4 |
 | AC-81 | 最後に変更してから 30 日たったカートは、空のカートとして扱う。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [017](../specs/archive/mvp/017-stability/spec.md) | [カートモジュール](modules/cart.md)（期限） | `CartApiTest`、`CartMergeTest`、`CartTest` ほか 1 |
 | AC-82 | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる（B… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`StockReservationApiTest`、`cart.test.ts` ほか 2 |
 | AC-83 | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`reservation-race.spec.ts` |

@@ -16,6 +16,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
@@ -26,6 +29,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -235,18 +239,36 @@ class ShipmentApiTest {
     @DisplayName("AC-173 入力")
     class Input {
 
-        @Test
-        @DisplayName("AC-173 配送業者は一覧から選び、送り状番号は必須で、数字とハイフンの 30 文字まで（数字が 1 つ以上）。誤りは 400 で売上を確定しない")
-        void validates() throws Exception {
-            ship("KURONEKO", "123456789012").andExpect(status().isBadRequest());
-            ship("YAMATO", "").andExpect(status().isBadRequest());
-            ship("YAMATO", "ABC-123").andExpect(status().isBadRequest());
-            ship("YAMATO", "1".repeat(31)).andExpect(status().isBadRequest());
-            ship("YAMATO", "---").andExpect(status().isBadRequest());
-            mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
-                            .contentType(MediaType.APPLICATION_JSON).content("""
-                                    {"carrier": "YAMATO"}"""))
-                    .andExpect(status().isBadRequest());
+        static Stream<Arguments> invalidInputs() {
+            return Stream.of(
+                    Arguments.of("一覧にない配送業者", "KURONEKO", "123456789012", null),
+                    Arguments.of("空の送り状番号", "YAMATO", "", "trackingNumber"),
+                    Arguments.of("数字とハイフン以外を含む送り状番号", "YAMATO", "ABC-123", "trackingNumber"),
+                    Arguments.of("31 文字の送り状番号", "YAMATO", "1".repeat(31), "trackingNumber"),
+                    Arguments.of("数字を含まない送り状番号", "YAMATO", "---", "trackingNumber"),
+                    Arguments.of("欠けている送り状番号", "YAMATO", null, "trackingNumber"));
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("invalidInputs")
+        @DisplayName("AC-173 配送業者は一覧から選び、送り状番号は必須で、数字とハイフンの 30 文字まで（数字が 1 つ以上）。誤りは 400 で項目を示し、売上を確定しない")
+        void validates(String name, String carrier, String trackingNumber, String field) throws Exception {
+            var body = trackingNumber == null
+                    ? """
+                    {"carrier": "%s"}""".formatted(carrier)
+                    : """
+                    {"carrier": "%s", "trackingNumber": "%s"}""".formatted(carrier, trackingNumber);
+
+            var result = mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
+                            .contentType(MediaType.APPLICATION_JSON).content(body))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+            if (field == null) {
+                // 一覧にない値は、本文を読み取れない誤りなので、項目ごとの誤りは付かない
+                result.andExpect(jsonPath("$.errors").doesNotExist());
+            } else {
+                result.andExpect(jsonPath("$.errors[0].field").value(field));
+            }
 
             assertThat(gateway.captureCalls()).isZero();
         }

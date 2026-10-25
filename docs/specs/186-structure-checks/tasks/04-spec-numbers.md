@@ -8,9 +8,9 @@
 
 順序は [plan](../plan.md) 第 4 節のとおり、書き換え（T186-04-02〜04）を先にし、検査を広げる T186-04-05 を最後にする。T186-04-02〜04 は、それぞれ別のファイルだけを変えるので `[P]` である。
 
-- [ ] **T186-04-01** [テスト] Java のコメントを取り出す関数 `scripts/ci/lib/java-comments.mjs` とその単体テストを書く。テストは、Javadoc、ブロックのコメント、行のコメントを取り出す例と、文字列とテキストブロックの中の `//`・`/*` を取り出さない例を含め、先に失敗することを確認する。この関数で、テストのコメントの番号の件数を数え、T186-04-02〜04 の分け方を確認する（[plan](../plan.md) 第 4 節。DC-186-13）。
+- [ ] **T186-04-01** [テスト] Java のコメントだけを残す関数 `keepJavaComments` を `scripts/ci/lib/strip-comments.mjs` に追加し、単体テストを書く。テストは、Javadoc、ブロックのコメント、行のコメントを残す例と、文字列とテキストブロックの中の `//`・`/*` を残さない例と、行番号が変わらない例を含め、先に失敗することを確認する。この関数で、テストのコメントの番号の件数を数え、T186-04-02〜04 の分け方を確認する（[plan](../plan.md) 第 4 節。DC-186-13）。
   - 依存：なし
-  - 範囲：`scripts/ci/lib/java-comments.mjs`（新規）、`scripts/ci/lib/java-comments.test.mjs`（新規）
+  - 範囲：`scripts/ci/lib/strip-comments.mjs`、`scripts/ci/lib/strip-comments.test.mjs`
 - [ ] **T186-04-02** [P] モジュールの外のテスト（`test/` と `it/` の `architecture/`、`modulith/`、`contract/`、`config/`、`common/`、`observability/`、直下）と、`fix/` の全体のコメントの番号を、言葉に書き換える（DC-186-14）。
   - 依存：T186-04-01
   - 範囲：上に挙げたディレクトリ
@@ -20,7 +20,7 @@
 - [ ] **T186-04-04** [P] 注文のモジュール（cart、order、member、payment、shipping、notification、reporting）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。
   - 依存：T186-04-01
   - 範囲：`test/module/` と `it/module/` の、cart、order、member、payment、shipping、notification、reporting
-- [ ] **T186-04-05** [テスト] `scripts/ci/spec-numbers.test.mjs` に、テストの Javadoc と行のコメントの番号を検出する例と、`@DisplayName` の番号を検出しない例を追加し、失敗することを確認する。`spec-numbers.mjs` の対象にバックエンドのテストのコメントを加え（T186-04-01 の関数を使う）、テストが通り、検査が 0 件になる。0 件にならなければ、残った番号を同じタスクで書き換える（DC-186-13）。
+- [ ] **T186-04-05** [テスト] `scripts/ci/spec-numbers.test.mjs` に、テストの Javadoc と行のコメントの番号を検出する例と、`@DisplayName` の番号を検出しない例を追加し、失敗することを確認する。`spec-numbers.mjs` の対象にバックエンドのテストのコメントを加え（T186-04-01 の `keepJavaComments` を使う）、テストが通り、検査が 0 件になる。0 件にならなければ、残った番号を同じタスクで書き換える（DC-186-13）。
   - 依存：T186-04-02〜04
   - 範囲：`scripts/ci/spec-numbers.mjs`、`scripts/ci/spec-numbers.test.mjs`、残った番号のあるテスト
 - [ ] **T186-04-06** [コメントの書き方](../../../rules/comments.md) 第 1 節の対象に、テストのコメントを加える（DC-186-14）。

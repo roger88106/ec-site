@@ -28,6 +28,9 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
@@ -167,11 +170,40 @@ class OrderReportApiTest {
     @Test
     @DisplayName("NFR-16 写しに、氏名・住所・電話番号・メールアドレスの項目を持たない")
     void excludesPersonalInformation() {
-        var components = List.of(OrderReportSnapshot.class.getRecordComponents()).stream()
-                .map(component -> component.getName().toLowerCase(Locale.ROOT))
+        var components = new ArrayList<String>();
+        collectRecordComponents(OrderReportSnapshot.class, components);
+
+        // 商品名と軸の名前は、個人の情報ではない
+        var personal = components.stream()
+                .filter(path -> !path.equals("Line.productName") && !path.equals("AxisValue.name"))
+                .filter(path -> {
+                    var name = path.substring(path.indexOf('.') + 1).toLowerCase(Locale.ROOT);
+                    return name.contains("name") || name.contains("address")
+                            || name.contains("phone") || name.contains("email");
+                })
                 .toList();
 
-        assertThat(components).noneMatch(name -> name.contains("name") || name.equals("address")
-                || name.contains("phone") || name.contains("email"));
+        assertThat(components).contains("Line.productName", "AxisValue.name");
+        assertThat(personal).isEmpty();
+    }
+
+    /**
+     * record の項目を「型名.項目名」で集める。項目の型が record のとき、List の要素の型が record のときは、その中まで集める。
+     */
+    private static void collectRecordComponents(Class<?> type, List<String> paths) {
+        for (var component : type.getRecordComponents()) {
+            paths.add(type.getSimpleName() + "." + component.getName());
+            collectRecordComponents(component.getGenericType(), paths);
+        }
+    }
+
+    private static void collectRecordComponents(Type type, List<String> paths) {
+        if (type instanceof Class<?> clazz && clazz.isRecord()) {
+            collectRecordComponents(clazz, paths);
+        } else if (type instanceof ParameterizedType parameterized) {
+            for (var argument : parameterized.getActualTypeArguments()) {
+                collectRecordComponents(argument, paths);
+            }
+        }
     }
 }

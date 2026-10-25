@@ -41,6 +41,16 @@ public final class ProductionClasses {
     public static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order", "payment");
 
     /**
+     * OpenAPI から生成した interface と型のパッケージ
+     */
+    private static final String API_PACKAGE = "com.ecsite.api";
+
+    /**
+     * jOOQ が生成したコードのパッケージ
+     */
+    private static final String JOOQ_PACKAGE = "com.ecsite.jooq";
+
+    /**
      * モジュールのパッケージの接頭辞
      */
     private static final String MODULE_PACKAGE_PREFIX = "com.ecsite.module.";
@@ -55,6 +65,9 @@ public final class ProductionClasses {
      */
     private static final Pattern MODULE_NAME = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)");
 
+    /**
+     * インスタンスを作らない。
+     */
     private ProductionClasses() {
     }
 
@@ -68,7 +81,8 @@ public final class ProductionClasses {
     }
 
     /**
-     * 手書きの本番のクラスを返す。{@link #all()} から生成したコードを除いたもの。
+     * 手書きの本番のクラスを返す。{@link #all()} から生成したコードを除いたもの。<br />
+     * 生成したコードのクラスも依存先としては読み込まれているので、生成したコードへの依存は見える。
      *
      * @return 生成したコードを除いた本番のクラス
      */
@@ -130,7 +144,18 @@ public final class ProductionClasses {
      * @return 生成したコードなら true
      */
     public static boolean isGenerated(String packageName) {
-        return packageName.startsWith("com.ecsite.api.") || packageName.startsWith("com.ecsite.jooq");
+        return isInPackage(packageName, API_PACKAGE) || isInPackage(packageName, JOOQ_PACKAGE);
+    }
+
+    /**
+     * パッケージの名前が、指定したパッケージそのものか、その下のパッケージかを返す。
+     *
+     * @param packageName パッケージの名前
+     * @param root        パッケージ
+     * @return パッケージそのもの、またはその下なら true
+     */
+    private static boolean isInPackage(String packageName, String root) {
+        return packageName.equals(root) || packageName.startsWith(root + ".");
     }
 
     /**

@@ -36,9 +36,13 @@ class ModuleDiagramTest {
     /** 全体構成の文書（Gradle がシステムプロパティで渡す） */
     private static final Path OVERVIEW = Path.of(System.getProperty("design.overview"));
 
+    /** 文書の生成の範囲の始まりの印 */
     private static final String GENERATED_START = "<!-- generated:modules -->";
+    /** 文書の生成の範囲の終わりの印 */
     private static final String GENERATED_END = "<!-- /generated:modules -->";
+    /** 文書の手書きの外部システムの図の始まりの印 */
     private static final String EXTERNAL_START = "<!-- external-systems -->";
+    /** 文書の手書きの外部システムの図の終わりの印 */
     private static final String EXTERNAL_END = "<!-- /external-systems -->";
 
     /** 手書きの図で、モジュールを表す節点（{@code module_<名前>}） */
@@ -78,7 +82,7 @@ class ModuleDiagramTest {
     }
 
     @Test
-    @DisplayName("図は、依存を実線、イベントを発行するモジュールから受けるモジュールへの点線で書き、同じ組の線を 1 本にまとめる")
+    @DisplayName("固定した内容から、依存を実線、イベントを発行するモジュールから受けるモジュールへの点線で、名前の順に描く")
     void rendersDependenciesAndEvents() {
         var events = new TreeMap<EventEdge, Set<String>>();
         events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired", "PaymentAuthorized")));
@@ -88,6 +92,7 @@ class ModuleDiagramTest {
 
         var rendered = render(diagram);
 
+        // 依存の抽出とイベントの組ごとの集約は、固定した内容では確かめられない。generatedDiagramMatchesCode が、コードから作った図を文書と比べて確かめる
         assertThat(rendered).isEqualTo("""
                 ```mermaid
                 flowchart LR
@@ -99,9 +104,6 @@ class ModuleDiagramTest {
                     payment -. PaymentAuthorized<br>PaymentExpired .-> order
                 ```
                 """);
-        assertThat(rendered.lines().filter(line -> line.contains("-->") || line.contains(".->")))
-                .as("同じモジュールの組の線は 1 本にまとめる")
-                .doesNotHaveDuplicates();
     }
 
     /**
@@ -110,7 +112,7 @@ class ModuleDiagramTest {
      * @param modules モジュールの一覧
      * @return 図に描く内容
      */
-    static Diagram diagramOf(ApplicationModules modules) {
+    private static Diagram diagramOf(ApplicationModules modules) {
         return new Diagram(moduleNames(modules), dependencies(modules), events(modules));
     }
 
@@ -120,7 +122,7 @@ class ModuleDiagramTest {
      * @param modules モジュールの一覧
      * @return Mermaid のコードブロック
      */
-    static String render(ApplicationModules modules) {
+    private static String render(ApplicationModules modules) {
         return render(diagramOf(modules));
     }
 
@@ -130,7 +132,7 @@ class ModuleDiagramTest {
      * @param diagram 図に描く内容
      * @return Mermaid のコードブロック
      */
-    static String render(Diagram diagram) {
+    private static String render(Diagram diagram) {
         var lines = new ArrayList<String>();
         lines.add("```mermaid");
         lines.add("flowchart LR");
@@ -143,6 +145,12 @@ class ModuleDiagramTest {
         return String.join("\n", lines) + "\n";
     }
 
+    /**
+     * モジュールの名前を返す。
+     *
+     * @param modules モジュールの一覧
+     * @return モジュールの名前（名前の順）
+     */
     private static Set<String> moduleNames(ApplicationModules modules) {
         return modules.stream().map(ApplicationModule::getIdentifier).map(Object::toString)
                 .collect(Collectors.toCollection(TreeSet::new));
@@ -182,6 +190,14 @@ class ModuleDiagramTest {
         return result;
     }
 
+    /**
+     * 文書の、始まりの印と終わりの印の間を返す。
+     *
+     * @param document 文書
+     * @param start    始まりの印
+     * @param end      終わりの印
+     * @return 印の間の文字列（前後の空白を除き、末尾に改行を付ける）
+     */
     private static String between(String document, String start, String end) {
         int from = document.indexOf(start);
         int to = document.indexOf(end);
@@ -190,6 +206,15 @@ class ModuleDiagramTest {
         return document.substring(from + start.length(), to).strip() + "\n";
     }
 
+    /**
+     * 文書の、始まりの印と終わりの印の間を、指定した内容に置き換える。
+     *
+     * @param document 文書
+     * @param start    始まりの印
+     * @param end      終わりの印
+     * @param content  新しい内容
+     * @return 置き換えた後の文書
+     */
     private static String replaceBetween(String document, String start, String end, String content) {
         int from = document.indexOf(start);
         int to = document.indexOf(end);

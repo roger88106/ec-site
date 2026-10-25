@@ -34,6 +34,11 @@ class ProductionClassesTest {
      */
     private static final Pattern LEVEL_ROW = Pattern.compile("^\\| レベル \\| (\\S)", Pattern.MULTILINE);
 
+    /**
+     * 補助の外に書かない、本番のクラスを読み込む呼び出し
+     */
+    private static final List<String> LOADING_CALLS = List.of("importPackages" + "(", "importClasspath" + "(", "ApplicationModules" + ".of(");
+
     @Test
     @DisplayName("手書きのクラスの一覧は、生成したコードを含まない")
     void handwrittenExcludesGeneratedCode() {
@@ -80,6 +85,34 @@ class ProductionClassesTest {
         assertThat(ProductionClasses.isGenerated("com.ecsite.jooq.tables")).isTrue();
         assertThat(ProductionClasses.isGenerated("com.ecsite.module.catalog.api")).isFalse();
         assertThat(ProductionClasses.isGenerated("com.ecsite.config")).isFalse();
+        assertThat(ProductionClasses.isGenerated("com.ecsite.jooqx")).isFalse();
+        assertThat(ProductionClasses.isGenerated("com.ecsite.apix")).isFalse();
+    }
+
+    @Test
+    @DisplayName("構成の検査は、本番のクラスを補助の外で読み込まない")
+    void testsDoNotLoadProductionClassesOutsideHelper() throws IOException {
+        var helper = Path.of("src/test/java/com/ecsite/ProductionClasses.java").toAbsolutePath().normalize();
+        var violations = new TreeSet<String>();
+        for (String root : List.of("src/test/java", "src/integrationTest/java")) {
+            try (Stream<Path> files = Files.walk(Path.of(root))) {
+                for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
+                    if (file.toAbsolutePath().normalize().equals(helper)) {
+                        continue;
+                    }
+                    var source = Files.readString(file, StandardCharsets.UTF_8);
+                    for (String call : LOADING_CALLS) {
+                        if (source.contains(call)) {
+                            violations.add(file + " : " + call);
+                        }
+                    }
+                }
+            }
+        }
+
+        assertThat(violations)
+                .as("本番のクラスの読み込みは、補助 ProductionClasses から行う")
+                .isEmpty();
     }
 
     @Test

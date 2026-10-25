@@ -183,7 +183,7 @@ dependencies {
 //   ./gradlew integrationTest  → 統合のみ
 //   ./gradlew check / build    → 両方
 // -----------------------------------------------------------------------------
-// 単体テストの JVM のヒープ。test と pitest の両方が通る最小の値（512m で両方が通った）に 256m を加えた値。ArchUnit のテストは、本番のクラスを補助 ProductionClasses から読む（spec 186 plan 第 1.2 節）
+// 単体テストの JVM のヒープ。test と pitest の両方が通る最小の値に余裕を加えた値。ArchUnit のテストは、本番のクラスを補助 ProductionClasses から 1 回だけ読む
 val unitTestMaxHeap = "768m"
 
 // 単体テストの JVM の systemProperty。test の task と pitest で同じ値を使う（ないと、設定を読むテストが PIT で失敗する）。

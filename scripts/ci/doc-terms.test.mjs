@@ -12,6 +12,29 @@ describe('文書の用語の検査', () => {
     )
   })
 
+  test('許す語の中の一致は数えない', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー'] }]
+    assert.deepEqual(findTerms('ブラウザーを開く', terms), [])
+  })
+
+  test('許す語の外の一致は数える（同じ行に両方あっても）', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー'] }]
+    const text = ['ブラウザーを開く', 'ブラウザーとブラウザを比べる', 'ブラウザ'].join('\n')
+    assert.deepEqual(
+      findTerms(text, terms).map((hit) => hit.line),
+      [2, 3],
+    )
+  })
+
+  test('許す語の一覧がない語は、これまで通り部分一致で数える', () => {
+    assert.equal(findTerms('道具箱', [{ word: '道具', use: 'ツール' }]).length, 1)
+  })
+
+  test('許す語が使わない語を含まないのは設定の誤りとして失敗にする', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー', 'ウェブ'] }]
+    assert.throws(() => findTerms('何か', terms), /ウェブ/)
+  })
+
   test('docs・README・AGENTS・skill と進行中の spec の Markdown を見て、アーカイブした spec は見ない', () => {
     assert.equal(isTargetDoc('docs/frontend/coding.md'), true)
     assert.equal(isTargetDoc('README.md'), true)

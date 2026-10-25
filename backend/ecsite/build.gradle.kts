@@ -156,6 +156,12 @@ dependencies {
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
     implementation(libs.bundles.jmolecules)
 
+    // --- テスト：共有（testFixtures。エラーの種類の検査が契約の YAML と応答の JSON を読む） ---
+    testFixturesImplementation(libs.spring.core)
+    testFixturesImplementation(libs.json.path)
+    testFixturesImplementation(libs.snakeyaml)
+    testFixturesImplementation(libs.jspecify)
+
     // --- テスト：単体 ---
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)
@@ -269,6 +275,7 @@ tasks.register("integrationTestShards") {
     description = "統合テストの各側に入るテストクラスの一覧を出す（Docker 不要）"
     group = "verification"
     val sourceRoot = layout.projectDirectory.dir("src/integrationTest/java")
+    // 既定の数は、.github/workflows/ci.yml の backend-integration の matrix の shard の一覧の長さと合わせる
     val shardCount = providers.gradleProperty("integrationTestShardCount").map { it.toInt() }.orElse(2)
     inputs.dir(sourceRoot)
     doLast {

@@ -15,29 +15,53 @@ import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { type OrderField, placeOrderErrors } from '@/features/checkout/placeOrderErrors'
 import { postalCodeFill } from '@/features/checkout/postalCodeFill'
+import type { ActionResult } from '@/lib/actionResult'
 import { normalizePostalCode } from '@/lib/postalCode'
 
-/**
- * お届け先の入力と、注文。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />
- * 都道府県と市区町村は一覧から選び、郵便番号が 7 桁になったら補う（店舗画面の構成 第 4.8 節）。
- * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
- * フォームの action ではなく onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。
- */
-export function OrderForm({
-  checkoutId,
-  expectedTotal,
-  email,
-  prefectures,
-}: {
+/** 注文のフォームの props（注文の連絡先、金額、都道府県の一覧） */
+type OrderFormProps = {
   checkoutId: string
   expectedTotal: number
   /** 会員のメールアドレス（注文の連絡先） */
   email: string
   /** 都道府県の一覧（店舗 API から取ったもの） */
   prefectures: Prefecture[]
+}
+
+/**
+ * お届け先の入力と、注文。注文のサーバーアクションの結果を受け、表示（{@link OrderFormView}）に渡す。
+ */
+export function OrderForm(props: OrderFormProps) {
+  const [result, formAction, pending] = useActionState(placeOrder, null)
+
+  return <OrderFormView {...props} formAction={formAction} pending={pending} result={result} />
+}
+
+/**
+ * お届け先の入力と、注文の表示。連絡先のメールアドレスは会員のものを示すだけで、入力しない。<br />
+ * 都道府県と市区町村は一覧から選び、郵便番号が 7 桁になったら補う（店舗画面の構成 第 4.8 節）。
+ * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
+ * フォームの action ではなく onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。<br />
+ * サーバーアクションの結果を props で受けるので、結果ごとの表示をテストで確かめられる。
+ *
+ * @param result     注文のサーバーアクションの結果（送る前は null）
+ * @param formAction 入力を送る関数（`useActionState` が返すもの）
+ * @param pending    送信中か
+ */
+export function OrderFormView({
+  checkoutId,
+  expectedTotal,
+  email,
+  prefectures,
+  result,
+  formAction,
+  pending,
+}: OrderFormProps & {
+  result: ActionResult | null
+  formAction: (formData: FormData) => void
+  pending: boolean
 }) {
   const t = useTranslations('checkout.form')
-  const [result, formAction, pending] = useActionState(placeOrder, null)
   const errors = placeOrderErrors(result)
   const area = useAddressArea()
 

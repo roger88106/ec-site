@@ -3,10 +3,11 @@
 // コメント（/* */ か //）を求める。キーを組み立てる呼び出し（t(`…${x}`)）は、表示が値で変わるので見ない。
 // 使い方：node scripts/ci/message-comments.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
 import { closingParen } from './lib/closing-paren.mjs'
-import { listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
+import { isMain } from './lib/is-main.mjs'
+import { createLineLocator } from './lib/line-number.mjs'
 
 /** 文言の関数（t、tCommon、translate など）を、キーを文字で書いて呼ぶ所。名前の途中（format( など）は除く */
 const MESSAGE_CALL = /(?<![\w.$])(?:t(?:[A-Z]\w*)?|translate)\(\s*(['"])([^'"]+)\1/g
@@ -86,7 +87,7 @@ function hasComment(range) {
  * @returns {{ line: number, key: string }[]} 見つけた呼び出しの行とキー（行の順）
  */
 export function findMissingComments(text) {
-  const lineOf = (index) => text.slice(0, index).split('\n').length
+  const lineOf = createLineLocator(text)
   const missing = []
   for (const match of text.matchAll(MESSAGE_CALL)) {
     const close = closingParen(text, match.index + match[0].indexOf('('))
@@ -117,8 +118,9 @@ export function isTargetFile(file) {
   return isScreenSource(file) || (SCREEN_TSX.test(file) && !file.endsWith('.test.tsx') && !file.includes('/components/ui/'))
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const files = listGitFiles().filter((file) => isTargetFile(file))
+  exitIfNoFiles(files, '文言を読むファイル')
   let count = 0
   for (const file of files) {
     for (const hit of findMissingComments(readFileSync(file, 'utf8'))) {

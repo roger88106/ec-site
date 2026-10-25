@@ -1,3 +1,4 @@
+import '@testing-library/jest-dom/vitest'
 import { cleanup } from '@testing-library/react'
 import { afterAll, afterEach, beforeEach, vi } from 'vitest'
 import { resetAuth } from '@/test/auth'
@@ -63,6 +64,8 @@ afterEach(() => {
   vi.restoreAllMocks()
   // テストで差し替えた環境変数を戻す
   vi.unstubAllEnvs()
+  // 偽の時計（vi.useFakeTimers）を戻す
+  vi.useRealTimers()
   server.resetHandlers()
   const requests = unhandledRequests.splice(0)
   if (requests.length > 0) {

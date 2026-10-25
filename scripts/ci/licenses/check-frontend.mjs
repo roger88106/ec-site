@@ -10,6 +10,7 @@ import { execFileSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { isMain } from '../lib/is-main.mjs'
 
 /**
  * 部品の名前が、方針の部品の名前の形（* は任意の文字列）に合うか。
@@ -190,6 +191,6 @@ function main() {
   process.exit(failures.length === 0 ? 0 : 1)
 }
 
-if (process.argv[1] && path.resolve(process.argv[1]) === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   main()
 }

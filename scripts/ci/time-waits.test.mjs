@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findTimeWaits, isTestFile } from './time-waits.mjs'
+import { findTimeWaits, isTestFile, scanTestFiles } from './time-waits.mjs'
 
 describe('時間で待つテストの検査', () => {
   test('Thread.sleep、TimeUnit の sleep、waitForTimeout を見つける', () => {
@@ -46,5 +46,27 @@ describe('時間で待つテストの検査', () => {
     assert.equal(isTestFile('e2e/src/store.ts'), true)
     assert.equal(isTestFile('backend/ecsite/src/main/java/com/ecsite/Foo.java'), false)
     assert.equal(isTestFile('frontend/store/src/lib/price.ts'), false)
+  })
+
+  test('E2E の実行の script、設定のファイル、画面のテストの補助も見る', () => {
+    assert.equal(isTestFile('e2e/scripts/run.ts'), true)
+    assert.equal(isTestFile('e2e/playwright.config.ts'), true)
+    assert.equal(isTestFile('e2e/playwright.showcase.config.ts'), true)
+    assert.equal(isTestFile('frontend/admin/vite.config.ts'), true)
+    assert.equal(isTestFile('frontend/store/vitest.config.ts'), true)
+    assert.equal(isTestFile('frontend/shared/vitest.config.ts'), true)
+    assert.equal(isTestFile('frontend/store/src/test/render.tsx'), true)
+    assert.equal(isTestFile('frontend/admin/src/test/server.ts'), true)
+    assert.equal(isTestFile('frontend/store/next.config.ts'), false)
+  })
+
+  test('ファイルごとに、時間で待つ行を集める（見つからないファイルは含めない）', () => {
+    const files = {
+      'e2e/scripts/run.ts': 'await new Promise((resolve) => setTimeout(resolve, 100))',
+      'frontend/store/src/test/setup.ts': 'const a = 1',
+    }
+    const hits = scanTestFiles(Object.keys(files), (file) => files[file])
+    assert.deepEqual([...hits.keys()], ['e2e/scripts/run.ts'])
+    assert.equal(hits.get('e2e/scripts/run.ts')[0].line, 1)
   })
 })

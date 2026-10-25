@@ -2,15 +2,14 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
+import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
+import com.ecsite.TestJson;
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,9 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -63,13 +60,26 @@ class CheckoutApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     StockReservationApi stockReservationApi;
 
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
+
+    /**
+     * 注文を作る補助
+     */
+    private OrderTestData orders;
 
     private UUID standard;
 
@@ -77,11 +87,13 @@ class CheckoutApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
+        orders = new OrderTestData(mockMvc);
         standard = data.taxCategory("標準", "10");
-        cartId = createCart();
+        cartId = orders.cart();
     }
 
     @Test
@@ -89,8 +101,8 @@ class CheckoutApiTest {
     void reservesAllItems() throws Exception {
         var shirt = stockedVariant(3);
         var cap = stockedVariant(5);
-        add(cartId, shirt, 2);
-        add(cartId, cap, 1);
+        orders.add(cartId, shirt, 2);
+        orders.add(cartId, cap, 1);
 
         var checkoutId = startCheckout(cartId);
 
@@ -108,8 +120,8 @@ class CheckoutApiTest {
     void reservesNothingWhenShort() throws Exception {
         var plenty = stockedVariant(5);
         var scarce = stockedVariant(2);
-        add(cartId, plenty, 1);
-        add(cartId, scarce, 2);
+        orders.add(cartId, plenty, 1);
+        orders.add(cartId, scarce, 2);
         // ほかの消費者が 1 個引き当てる
         stockReservationApi.reserve(UUID.randomUUID(), Map.of(scarce, 1), clock.instant().plus(Duration.ofMinutes(15)));
 
@@ -131,10 +143,8 @@ class CheckoutApiTest {
                 .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
 
         var product = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
-        stockItemRepository.createIfAbsent(product.variantIds.getFirst(), product.id);
-        stockItemRepository.adjust(product.variantIds.getFirst(),
-                StockAdjustment.create(3, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
-        add(cartId, product.variantIds.getFirst(), 1);
+        inventory.stock(product.variantIds.getFirst(), product.id, 3);
+        orders.add(cartId, product.variantIds.getFirst(), 1);
         product.suspend(0);
 
         mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts"))
@@ -146,7 +156,7 @@ class CheckoutApiTest {
     @DisplayName("AC-84 進み直すと、前の注文手続きの引当を解いて、その時点のカートで引き当て直す")
     void replacesReservationOnRestart() throws Exception {
         var variant = stockedVariant(3);
-        add(cartId, variant, 2);
+        orders.add(cartId, variant, 2);
         startCheckout(cartId);
 
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(10)));
@@ -162,7 +172,7 @@ class CheckoutApiTest {
     @DisplayName("AC-85 注文手続きの表示：内容と金額を返す。自分の引当は販売可能数から除くので、購入できる")
     void showsCheckoutExcludingOwnReservation() throws Exception {
         var variant = stockedVariant(1);
-        add(cartId, variant, 1);
+        orders.add(cartId, variant, 1);
 
         var checkoutId = startCheckout(cartId);
 
@@ -179,6 +189,33 @@ class CheckoutApiTest {
     }
 
     @Test
+    @DisplayName("AC-85 注文手続きの表示：税率ごとの消費税額を返す（税率の高い順。送料は 10% の対象）")
+    void showsTaxAmountPerRate() throws Exception {
+        var reduced = data.taxCategory("軽減", "8");
+        var standardVariant = stockedVariant(1);
+        var reducedProduct = data.product(reduced, "軽減の商品", 1000).publish();
+        var reducedVariant = reducedProduct.variantIds.getFirst();
+        inventory.stock(reducedVariant, reducedProduct.id, 1);
+        orders.add(cartId, standardVariant, 1);
+        orders.add(cartId, reducedVariant, 1);
+
+        var checkoutId = startCheckout(cartId);
+
+        // 10%：1,100 円 + 送料 1,000 円 = 2,100 円 → 2,100 × 10 ÷ 110 = 190.9 → 190 円
+        // 8%：1,080 円 → 1,080 × 8 ÷ 108 = 80 円
+        mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
+                .andExpect(jsonPath("$.amounts.itemsTotal").value(2180))
+                .andExpect(jsonPath("$.amounts.total").value(3180))
+                .andExpect(jsonPath("$.amounts.taxes.length()").value(2))
+                .andExpect(jsonPath("$.amounts.taxes[0].ratePercent").value(10))
+                .andExpect(jsonPath("$.amounts.taxes[0].taxableAmount").value(2100))
+                .andExpect(jsonPath("$.amounts.taxes[0].taxAmount").value(190))
+                .andExpect(jsonPath("$.amounts.taxes[1].ratePercent").value(8))
+                .andExpect(jsonPath("$.amounts.taxes[1].taxableAmount").value(1080))
+                .andExpect(jsonPath("$.amounts.taxes[1].taxAmount").value(80));
+    }
+
+    @Test
     @DisplayName("存在しないカート・注文手続きは 404")
     void returnsNotFound() throws Exception {
         mockMvc.perform(post("/api/store/carts/" + UUID.randomUUID() + "/checkouts")).andExpect(status().isNotFound());
@@ -188,14 +225,6 @@ class CheckoutApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * 既定の会員（TestSecurityConfig）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる。AC-125）
-     */
-    private UUID createCart() throws Exception {
-        var body = mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.cartId"));
-    }
-
-    /**
      * 注文手続きに進み、201 と Location を確認して、注文手続き ID を返す
      */
     private UUID startCheckout(UUID cart) throws Exception {
@@ -203,18 +232,7 @@ class CheckoutApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
-    }
-
-    /**
-     * カートに入れ、204 を確認する
-     */
-    private ResultActions add(UUID cart, UUID variantId, int quantity) throws Exception {
-        return mockMvc.perform(post("/api/store/carts/" + cart + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
-                .andExpect(status().isNoContent());
+        return TestJson.createdId(body);
     }
 
     /**
@@ -223,9 +241,7 @@ class CheckoutApiTest {
     private UUID stockedVariant(int quantity) throws Exception {
         var product = data.product(standard, "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId,
-                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+        inventory.stock(variantId, product.id, quantity);
         return variantId;
     }
 }

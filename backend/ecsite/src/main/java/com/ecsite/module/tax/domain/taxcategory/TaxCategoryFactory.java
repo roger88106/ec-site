@@ -27,6 +27,6 @@ public class TaxCategoryFactory {
      */
     public TaxCategory restore(TaxCategory.Snapshot snapshot) {
         // 復元失敗の場合、復元エラーに変換してスローする
-        return AggregateGuards.restore("tax category", snapshot, () -> new TaxCategory(snapshot));
+        return AggregateGuards.restore("tax category", () -> new TaxCategory(snapshot));
     }
 }

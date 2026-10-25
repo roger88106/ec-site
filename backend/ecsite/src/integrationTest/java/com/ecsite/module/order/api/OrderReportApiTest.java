@@ -2,14 +2,15 @@ package com.ecsite.module.order.api;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
+import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
+import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -27,12 +28,14 @@ import org.springframework.transaction.annotation.Transactional;
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
+import java.lang.reflect.ParameterizedType;
+import java.lang.reflect.Type;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -57,6 +60,9 @@ class OrderReportApiTest {
     TestPaymentGateway gateway;
 
     @Autowired
+    MockCarrier mockCarrier;
+
+    @Autowired
     OrderPaymentService orderPaymentService;
 
     @Autowired
@@ -65,26 +71,34 @@ class OrderReportApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     DSLContext dsl;
 
     @Autowired
     OrderReportApi orderReportApi;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
     private CatalogTestData.TestProduct shirt;
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var data = new CatalogTestData(mockMvc, clock);
         shirt = data.product(data.taxCategory("標準", "10"), "T シャツ", 1000, "色").variant("白").publish();
         var variantId = shirt.variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, shirt.id);
-        stockItemRepository.adjust(variantId, StockAdjustment.create(10, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, shirt.id, 10);
         orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
         clock.setInstant(NOW);
     }
@@ -128,11 +142,7 @@ class OrderReportApiTest {
     @DisplayName("出荷済みの注文の写しは、状態が出荷済み")
     void returnsShippedOrder() throws Exception {
         var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
-        mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"carrier": "YAMATO", "trackingNumber": "123456789012"}"""))
-                .andExpect(status().isCreated());
+        new ShippingTestData(mockMvc, mockCarrier).ship(orderId, Carrier.YAMATO, "123456789012");
 
         assertThat(orderReportApi.find(orderId).orElseThrow().status()).isEqualTo(OrderReportSnapshot.Status.SHIPPED);
     }
@@ -166,11 +176,43 @@ class OrderReportApiTest {
     @Test
     @DisplayName("NFR-16 写しに、氏名・住所・電話番号・メールアドレスの項目を持たない")
     void excludesPersonalInformation() {
-        var components = List.of(OrderReportSnapshot.class.getRecordComponents()).stream()
-                .map(component -> component.getName().toLowerCase(Locale.ROOT))
+        var components = new ArrayList<String>();
+        collectRecordComponents(OrderReportSnapshot.class, components);
+
+        // 商品名と軸の名前は、個人の情報ではない
+        var personal = components.stream()
+                .filter(path -> !path.equals("Line.productName") && !path.equals("AxisValue.name"))
+                .filter(path -> {
+                    var name = path.substring(path.indexOf('.') + 1).toLowerCase(Locale.ROOT);
+                    return name.contains("name") || name.contains("address")
+                            || name.contains("phone") || name.contains("email");
+                })
                 .toList();
 
-        assertThat(components).noneMatch(name -> name.contains("name") || name.equals("address")
-                || name.contains("phone") || name.contains("email"));
+        assertThat(components).contains("Line.productName", "AxisValue.name");
+        assertThat(personal).isEmpty();
+    }
+
+    /**
+     * record の項目を「型名.項目名」で集める。項目の型が record のとき、List の要素の型が record のときは、その中まで集める。
+     */
+    private static void collectRecordComponents(Class<?> type, List<String> paths) {
+        for (var component : type.getRecordComponents()) {
+            paths.add(type.getSimpleName() + "." + component.getName());
+            collectRecordComponents(component.getGenericType(), paths);
+        }
+    }
+
+    /**
+     * 型が record のとき、または record を要素に持つ List などのとき、その中の項目を集める。
+     */
+    private static void collectRecordComponents(Type type, List<String> paths) {
+        if (type instanceof Class<?> clazz && clazz.isRecord()) {
+            collectRecordComponents(clazz, paths);
+        } else if (type instanceof ParameterizedType parameterized) {
+            for (var argument : parameterized.getActualTypeArguments()) {
+                collectRecordComponents(argument, paths);
+            }
+        }
     }
 }

@@ -2,19 +2,16 @@ package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -41,7 +38,6 @@ import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -96,6 +92,11 @@ class CheckoutCleanupJobTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     DSLContext dsl;
 
@@ -103,18 +104,18 @@ class CheckoutCleanupJobTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         var data = new CatalogTestData(mockMvc, clock);
         var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId, StockAdjustment.create(10, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, product.id, 10);
     }
 
     @Test
-    @DisplayName("AC-284 期限から保存期間（1 日）より前の注文手続きは消え、その後の注文手続きは残る。消した件数をログに出す（AC-288）")
-    void deletesCheckoutsExpiredBeforeRetention(CapturedOutput output) {
+    @DisplayName("AC-284 期限から保存期間（1 日）より前の注文手続きは消え、その後の注文手続きは残る")
+    void deletesCheckoutsExpiredBeforeRetention() {
         var old = insertCheckout(NOW);
         var recent = insertCheckout(NOW.plus(Duration.ofHours(2)));
 
@@ -122,7 +123,6 @@ class CheckoutCleanupJobTest {
         job.cleanUp();
 
         assertThat(remaining(List.of(old, recent))).containsExactly(recent);
-        assertThat(output).containsPattern("期限切れの注文手続きを消した：[1-9][0-9]* 件");
     }
 
     @Test
@@ -154,15 +154,10 @@ class CheckoutCleanupJobTest {
     @Test
     @DisplayName("AC-289 消した注文手続きを読む操作と、注文する操作は 404 になる")
     void deletedCheckoutIsNotFound() throws Exception {
-        var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(get("/api/store/me/cart"))
-                .andReturn().getResponse().getContentAsString(), "$.cartId"));
-        mockMvc.perform(post("/api/store/carts/" + cartId + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": 1}""".formatted(variantId)))
-                .andExpect(status().isNoContent());
-        var checkoutId = UUID.fromString(JsonPath.read(mockMvc.perform(OrderTestData.startCheckoutRequest(cartId))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
+        var orders = new OrderTestData(mockMvc);
+        var cartId = orders.cart();
+        orders.add(cartId, variantId, 1);
+        var checkoutId = orders.startCheckout(cartId);
 
         clock.setInstant(AFTER_RETENTION);
         job.cleanUp();
@@ -201,6 +196,26 @@ class CheckoutCleanupJobTest {
 
         assertThat(deleted).isEqualTo(2);
         assertThat(remaining(checkouts)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
+    void logsDeletedCount(CapturedOutput output) {
+        // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
+        var longAgo = Instant.parse("2000-01-01T00:00:00Z");
+        var checkouts = new ArrayList<UUID>();
+        for (int i = 0; i < 5; i++) {
+            checkouts.add(insertCheckout(longAgo));
+        }
+        var smallBatch = new CheckoutCleanupJob(service,
+                new CheckoutCleanupProperties(Duration.ofHours(1), Duration.ofDays(1), 2), clock);
+
+        clock.setInstant(longAgo.plus(TTL).plus(Duration.ofDays(1)).plusSeconds(1));
+        smallBatch.cleanUp();
+
+        var deleted = checkouts.size() - remaining(checkouts).size();
+        assertThat(deleted).isEqualTo(5);
+        assertThat(output).contains("期限切れの注文手続きを消した：" + deleted + " 件");
     }
 
     /**

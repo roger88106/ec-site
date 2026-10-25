@@ -1,6 +1,6 @@
 import { describe, expect, test, vi } from 'vitest'
 import { LoginLinks } from '@/components/LoginLinks'
-import { renderMarkup } from '@/test/render'
+import { renderStatic } from '@/test/render'
 
 // ヘッダーのログインのリンクは、いまの画面（パスとクエリ）を戻り先にする
 vi.mock('next/navigation', async (importOriginal) => ({
@@ -11,10 +11,13 @@ vi.mock('next/navigation', async (importOriginal) => ({
 
 describe('ヘッダーのログインと会員登録', () => {
   test('AC-113 いまの画面（パスとクエリ）を戻り先にして、ログインと会員登録の口へ移る', () => {
-    const html = renderMarkup(<LoginLinks />)
+    const view = renderStatic(<LoginLinks />)
     const returnTo = encodeURIComponent('/products?categoryId=c1&page=2')
 
-    expect(html).toContain(`href="/login?returnTo=${returnTo}">ログイン</a>`)
-    expect(html).toContain(`href="/login?returnTo=${returnTo}&amp;register=1">会員登録</a>`)
+    expect(view.getByRole('link', { name: 'ログイン' })).toHaveAttribute('href', `/login?returnTo=${returnTo}`)
+    expect(view.getByRole('link', { name: '会員登録' })).toHaveAttribute(
+      'href',
+      `/login?returnTo=${returnTo}&register=1`,
+    )
   })
 })

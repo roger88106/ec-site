@@ -2,6 +2,7 @@ package com.ecsite.module.shipping.infrastructure.carrier;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
@@ -195,7 +196,7 @@ class CarrierWebhookTest {
     void ignoresUnknownTrackingNumber() throws Exception {
         var shipment = shipped();
 
-        send(signed(body("YAMATO", number(), "配達完了"))).andExpect(status().isOk());
+        send(signed(body("YAMATO", ShippingTestData.trackingNumber(), "配達完了"))).andExpect(status().isOk());
 
         assertThat(statusOf(shipment)).isEqualTo(DeliveryStatus.SHIPPED);
     }
@@ -248,16 +249,9 @@ class CarrierWebhookTest {
      */
     private Created shipped() {
         var orderId = UUID.randomUUID();
-        var trackingNumber = number();
+        var trackingNumber = ShippingTestData.trackingNumber();
         shippingApi.create(orderId, ShipmentSummary.Carrier.YAMATO, trackingNumber, NOW);
         return new Created(orderId, trackingNumber);
-    }
-
-    /**
-     * 他のテストが確定させた出荷と重ならない送り状番号（12 桁）を作る。
-     */
-    private static String number() {
-        return String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits() % 900_000_000_000L) + 100_000_000_000L);
     }
 
     /**

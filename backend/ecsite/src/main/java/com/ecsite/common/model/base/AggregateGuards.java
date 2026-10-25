@@ -29,22 +29,19 @@ public final class AggregateGuards {
     }
 
     /**
-     * 保存した状態から集約を戻す。戻すときに例外が出れば、復元の失敗のシステムの例外にする。
+     * 保存した状態から集約を戻す。戻すときに例外が出れば、復元の失敗のシステムの例外にする。<br />
+     * 保存した状態は集約の全ての値を含む（集約によっては個人情報を含みうる）ので、メッセージには書かない。原因は、例外の cause で追う。
      *
      * @param name     集約の名前（デバッグ用のメッセージに書く。例：`category`）
-     * @param snapshot 保存した状態
      * @param restorer 集約を戻す処理
      * @param <T>      集約の型
      * @return 戻した集約
      */
-    public static <T> T restore(String name, Object snapshot, Supplier<T> restorer) {
+    public static <T> T restore(String name, Supplier<T> restorer) {
         try {
             return restorer.get();
         } catch (Exception e) {
-            String debugMessage = """
-                    %s restore error.
-                    snapshot: %s
-                    """.formatted(name, snapshot);
+            String debugMessage = "%s restore error.".formatted(name);
             throw SystemException.of(debugMessage, e, CommonErrorCode.RESTORE_ERROR);
         }
     }

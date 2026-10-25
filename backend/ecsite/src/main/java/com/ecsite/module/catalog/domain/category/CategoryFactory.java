@@ -30,6 +30,6 @@ public class CategoryFactory {
      */
     public Category restore(Category.Snapshot snapshot) {
         // 復元失敗の場合、復元エラーに変換してスローする
-        return AggregateGuards.restore("category", snapshot, () -> new Category(snapshot));
+        return AggregateGuards.restore("category", () -> new Category(snapshot));
     }
 }

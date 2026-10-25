@@ -28,7 +28,8 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # 設計の文書の関連 spec の検査（related-specs）が commit の履歴を読む
+          # 設計の文書の関連 spec の検査（related-specs）が commit の履歴を読む。
+          # マイグレーションの検査（migrations）は、全ての branch を取得して origin/develop と origin/main との分岐点を求める
           fetch-depth: 0
 
       - uses: actions/setup-node@v7

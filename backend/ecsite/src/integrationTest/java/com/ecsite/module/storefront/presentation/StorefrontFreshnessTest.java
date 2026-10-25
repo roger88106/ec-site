@@ -1,12 +1,11 @@
 package com.ecsite.module.storefront.presentation;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +16,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.RequestBuilder;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -27,7 +26,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,47 +63,59 @@ class StorefrontFreshnessTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
+    /**
+     * テストで使う税区分の ID
+     */
     private String taxCategoryId;
 
     private String productId;
 
     private String variantId;
 
+    private String categoryId;
+
+    /**
+     * このテストのカテゴリで絞った商品の一覧の要求
+     */
+    private MockHttpServletRequestBuilder list() {
+        return get(STORE + "/products").param("categoryId", categoryId);
+    }
+
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         taxRateScheduleCache.evict();
-        taxCategoryId = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name": "標準"}"""));
-        mockMvc.perform(put("/api/admin/tax-categories/" + taxCategoryId + "/rates")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"version": 0, "rates": [{"ratePercent": 10}]}"""))
-                .andExpect(status().isNoContent());
-        productId = createdId(post("/api/admin/products").contentType(MediaType.APPLICATION_JSON).content("""
-                {"productCode": "FRESH-001", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                 "priceExclTax": 1000}""".formatted(taxCategoryId)));
-        variantId = createdId(post("/api/admin/products/" + productId + "/variants")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"variantCode": "FRESH-001", "axisValues": [], "version": 0}"""));
-        mockMvc.perform(put("/api/admin/products/" + productId + "/publish")).andExpect(status().isNoContent());
-        stockItemRepository.createIfAbsent(UUID.fromString(variantId), UUID.fromString(productId));
+        var catalog = new CatalogTestData(mockMvc, clock);
+        taxCategoryId = catalog.taxCategory("標準", "10").toString();
+        // 巻き戻さないテストの商品が見えても影響しないよう、一覧はこのテストのカテゴリで絞る
+        categoryId = catalog.category("鮮度 " + UUID.randomUUID(), null).toString();
+        var product = catalog.product(UUID.fromString(taxCategoryId), "T シャツ", 1000, List.of(UUID.fromString(categoryId))).publish();
+        // 公開で進んだ時計を戻す（税率のキャッシュの確認が、NOW からの秒数で書かれている）
+        clock.setInstant(NOW);
+        productId = product.id.toString();
+        variantId = product.variantIds.getFirst().toString();
+        inventory.create(product.variantIds.getFirst(), product.id);
     }
 
     @Test
     @DisplayName("NFR-1、AC-26 価格の変更は、直後の照会に反映される")
     void reflectsPriceChange() throws Exception {
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
 
         mockMvc.perform(put("/api/admin/products/" + productId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "T シャツ", "description": "", "taxCategoryId": "%s", "priceExclTax": 2000,
-                                 "categoryIds": [], "version": 2}""".formatted(taxCategoryId)))
+                                 "categoryIds": ["%s"], "version": 2}""".formatted(taxCategoryId, categoryId)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(2200));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(2200));
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(jsonPath("$.price.inclTax").value(2200));
     }
 
@@ -113,21 +123,21 @@ class StorefrontFreshnessTest {
     @DisplayName("NFR-1、AC-29、30 公開状態の変更は、直後の照会に反映される")
     void reflectsPublicationChange() throws Exception {
         mockMvc.perform(put("/api/admin/products/" + productId + "/unpublish")).andExpect(status().isNoContent());
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items").isEmpty());
+        mockMvc.perform(list()).andExpect(jsonPath("$.items").isEmpty());
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(status().isNotFound());
 
         mockMvc.perform(put("/api/admin/products/" + productId + "/publish")).andExpect(status().isNoContent());
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].id").value(productId));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].id").value(productId));
     }
 
     @Test
     @DisplayName("NFR-1 在庫の変更は、直後の照会に反映される")
     void reflectsStockChange() throws Exception {
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(false));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].inStock").value(false));
 
-        stockItemRepository.adjust(UUID.fromString(variantId), StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(UUID.fromString(variantId), UUID.fromString(productId), 1);
 
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(true));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].inStock").value(true));
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(jsonPath("$.variants[0].inStock").value(true));
     }
 
@@ -135,7 +145,7 @@ class StorefrontFreshnessTest {
     @DisplayName("税率の一覧のキャッシュの有効期間は 30 秒。税率の変更は、最大 30 秒遅れて反映される")
     void cachesTaxRatesFor30Seconds() throws Exception {
         // キャッシュに 10% の一覧が入る
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
 
         // 10 秒後から 8% にする
         var switchAt = NOW.plusSeconds(10).atOffset(ZoneOffset.UTC);
@@ -151,20 +161,10 @@ class StorefrontFreshnessTest {
 
         // 29 秒後：キャッシュの一覧には 8% の予定がないので、10% のまま
         clock.setInstant(NOW.plus(Duration.ofSeconds(29)));
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
 
         // 30 秒後：一覧を取得し直し、8% になる
         clock.setInstant(NOW.plus(Duration.ofSeconds(30)));
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1080));
-    }
-
-    // ============================== 補助 ==============================
-
-    /**
-     * 要求を送って 201 を確認し、応答の本文の ID を返す
-     */
-    private String createdId(RequestBuilder request) throws Exception {
-        var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1080));
     }
 }

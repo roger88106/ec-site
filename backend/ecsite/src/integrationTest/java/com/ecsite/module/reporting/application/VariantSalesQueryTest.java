@@ -23,7 +23,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
@@ -134,7 +133,12 @@ class VariantSalesQueryTest {
     @DisplayName("BR-26 バリアントの売れ行きは送料を含めない（送料を除いた印を返す）")
     void shippingExcluded() {
         assertThat(service.variants(new VariantSalesQuery(shirt.id, PERIOD, Basis.ORDER, false)).shippingExcluded()).isTrue();
-        assertThat(List.of(service.variants(new VariantSalesQuery(shirt.id, PERIOD, Basis.ORDER, false)).productName()))
-                .containsExactly("T シャツ");
+    }
+
+    @Test
+    @DisplayName("バリアントの売れ行きに、商品名を添える")
+    void returnsProductName() {
+        assertThat(service.variants(new VariantSalesQuery(shirt.id, PERIOD, Basis.ORDER, false)).productName())
+                .isEqualTo("T シャツ");
     }
 }

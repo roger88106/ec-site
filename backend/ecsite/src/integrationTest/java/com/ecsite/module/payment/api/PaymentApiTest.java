@@ -2,6 +2,7 @@ package com.ecsite.module.payment.api;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.event.PaymentAuthorized;
@@ -47,6 +48,11 @@ class PaymentApiTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 支払を進める補助
+     */
+    PaymentTestData payments;
+
     @Autowired
     DSLContext dsl;
 
@@ -55,6 +61,7 @@ class PaymentApiTest {
 
     @BeforeEach
     void setUp() {
+        payments = new PaymentTestData(paymentApi, gateway);
         clock.setInstant(ORDERED_AT);
         gateway.reset();
     }
@@ -75,7 +82,7 @@ class PaymentApiTest {
     @Test
     @DisplayName("AC-152 支払画面の URL を何度求めても、開いている同じ画面を返し、決済サービスに再作成させない")
     void reusesOpenPage() {
-        var orderId = created();
+        var orderId = payments.created(ORDERED_AT);
 
         var first = paymentApi.pageUrl(orderId);
         var second = paymentApi.pageUrl(orderId);
@@ -88,7 +95,7 @@ class PaymentApiTest {
     @Test
     @DisplayName("BR-16 支払の期限の後は、支払画面の URL を返さない")
     void noPageAfterDeadline() {
-        var orderId = created();
+        var orderId = payments.created(ORDERED_AT);
 
         clock.advance(Duration.ofMinutes(30));
 
@@ -105,8 +112,8 @@ class PaymentApiTest {
     @Test
     @DisplayName("AC-146 与信の成功の通知で与信済みになり、与信の成功のイベントが出る")
     void authorizesOnNotification() {
-        var orderId = created();
-        var pageId = pageIdOf(paymentApi.pageUrl(orderId).orElseThrow());
+        var orderId = payments.created(ORDERED_AT);
+        var pageId = payments.openPage(orderId);
 
         gateway.pay(pageId);
 
@@ -118,8 +125,8 @@ class PaymentApiTest {
     @Test
     @DisplayName("BR-17 与信の成功の通知が重ねて届いても、イベントは 1 回だけ")
     void ignoresDuplicateNotification() {
-        var orderId = created();
-        var pageId = pageIdOf(paymentApi.pageUrl(orderId).orElseThrow());
+        var orderId = payments.created(ORDERED_AT);
+        var pageId = payments.openPage(orderId);
 
         gateway.pay(pageId);
         gateway.notifyAuthorized(pageId);
@@ -130,32 +137,14 @@ class PaymentApiTest {
     @Test
     @DisplayName("支払の状態を、注文 ID でまとめて読める。支払のない注文は含まない")
     void findsSummaries() {
-        var unpaid = created();
-        var authorized = created();
-        gateway.pay(pageIdOf(paymentApi.pageUrl(authorized).orElseThrow()));
+        var unpaid = payments.created(ORDERED_AT);
+        var authorized = payments.created(ORDERED_AT);
+        payments.pay(authorized);
 
         var summaries = paymentApi.find(List.of(unpaid, authorized, UUID.randomUUID()));
 
         assertThat(summaries).extracting(PaymentSummary::orderId, PaymentSummary::status).containsExactlyInAnyOrder(
                 tuple(unpaid, PaymentSummary.Status.UNPAID),
                 tuple(authorized, PaymentSummary.Status.AUTHORIZED));
-    }
-
-    // ============================== 補助 ==============================
-
-    /**
-     * 未払いの支払を作る。
-     */
-    private UUID created() {
-        var orderId = UUID.randomUUID();
-        paymentApi.create(orderId, Money.of(6940), ORDERED_AT);
-        return orderId;
-    }
-
-    /**
-     * mock の支払画面の URL から、画面の ID を取り出す。
-     */
-    private static String pageIdOf(String url) {
-        return url.substring(url.lastIndexOf('/') + 1);
     }
 }

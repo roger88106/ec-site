@@ -1,26 +1,42 @@
 // スロット（作業ツリーごとの手元の環境）の値、空きの選び方、環境変数の組み立て。
 // docker と git を呼ばない純粋な関数だけを置く（割り当ての手順は、ロック・git・ファイル・docker の操作を引数で受ける）。
 // 呼ぶのは scripts/dev/slot.mjs。
+import { readFileSync } from 'node:fs'
 import path from 'node:path'
 
+/** ローカルのポートの一覧（scripts/dev/ports.json）。他のポートの書き場所との照合は scripts/ci/local-ports.mjs */
+const PORT_LIST = JSON.parse(readFileSync(new URL('../ports.json', import.meta.url), 'utf8'))
+
+/**
+ * 一覧からポートを引く。
+ *
+ * @param {string} key 一覧の key
+ * @returns {number} ポート（スロット 0 の値）
+ */
+function portOf(key) {
+  const entry = PORT_LIST.ports.find((item) => item.key === key)
+  if (!entry) throw new Error(`ポートの一覧にない key: ${key}`)
+  return entry.port
+}
+
 /** スロットの数。0 がメインの作業ツリー、1〜3 が作業ツリー */
-export const SLOT_COUNT = 4
+export const SLOT_COUNT = PORT_LIST.slotCount
 
 /** 共有の基盤（compose）のホストのポート。スロットのポートと重ならない */
-export const SHARED_PORTS = [5432, 9411, 8333, 8081, 8180, 8181, 2525, 8025]
+export const SHARED_PORTS = PORT_LIST.ports.filter((item) => item.group === 'shared').map((item) => item.port)
 
 /** E2E のポート、データベース、バケット。スロットの値と重ならない */
 export const E2E = {
-  ports: [8090, 9090, 4173, 3100],
+  ports: PORT_LIST.ports.filter((item) => item.group === 'e2e').map((item) => item.port),
   database: 'ec_site_e2e',
   buckets: ['ec-site-e2e-images', 'ec-site-e2e-images-incoming'],
 }
 
 /** 共有の SeaweedFS（S3 互換）の URL。配信の基準 URL の前半 */
-const STORAGE_ORIGIN = 'http://localhost:8333'
+const STORAGE_ORIGIN = `http://localhost:${portOf('seaweedfs')}`
 
 /** 共有の PostgreSQL への JDBC URL の前半 */
-const JDBC_PREFIX = 'jdbc:postgresql://localhost:5432/'
+const JDBC_PREFIX = `jdbc:postgresql://localhost:${portOf('postgres')}/`
 
 /**
  * スロットの番号が 0〜3 の整数であることを確認する。
@@ -44,14 +60,14 @@ function assertSlot(slot) {
  */
 export function slotValues(slot) {
   assertSlot(slot)
-  const offset = 10000 * slot
+  const offset = PORT_LIST.slotOffset * slot
   const suffix = slot === 0 ? '' : `-${slot}`
   return {
     slot,
-    backendPort: 8080 + offset,
-    managementPort: 9080 + offset,
-    storePort: 3000 + offset,
-    adminPort: 5173 + offset,
+    backendPort: portOf('backend') + offset,
+    managementPort: portOf('management') + offset,
+    storePort: portOf('store') + offset,
+    adminPort: portOf('admin') + offset,
     database: slot === 0 ? 'ec_site' : `ec_site_${slot}`,
     publicBucket: `ec-site-images${suffix}`,
     incomingBucket: `ec-site-images-incoming${suffix}`,

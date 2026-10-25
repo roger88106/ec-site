@@ -71,4 +71,21 @@ public record MediaStorageProperties(
     boolean hasStaticCredentials() {
         return accessKeyId != null && !accessKeyId.isBlank();
     }
+
+    /**
+     * 文字列表現を返す。アクセスキー ID と秘密の鍵は、ログに出さないため {@code ***} にする。<br />
+     * 本番は資格情報を設定しない（null）ので、設定していないことが分かるように null はそのまま出す。
+     *
+     * @return 文字列表現
+     */
+    @Override
+    public String toString() {
+        return "MediaStorageProperties[endpoint=" + endpoint + ", region=" + region
+                + ", pathStyleAccess=" + pathStyleAccess
+                + ", accessKeyId=" + (accessKeyId == null ? null : "***")
+                + ", secretAccessKey=" + (secretAccessKey == null ? null : "***")
+                + ", incomingBucket=" + incomingBucket + ", publicBucket=" + publicBucket
+                + ", publicBaseUrl=" + publicBaseUrl + ", uploadUrlTtl=" + uploadUrlTtl
+                + ", attemptTimeout=" + attemptTimeout + ", callTimeout=" + callTimeout + "]";
+    }
 }

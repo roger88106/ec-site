@@ -30,7 +30,7 @@ import java.time.Duration;
 class StripePaymentGateway implements PaymentGateway {
 
     /**
-     * 支払画面の期限（作ってから）。Stripe の最短の 30 分に、時計のずれの余裕を追加する
+     * 支払画面の期限（作ってから）。Stripe の最短の 30 分に、時計のずれの余裕を追加する。支払の期限の上限（30 分）は、この値を前提にする
      */
     private static final Duration PAGE_LIFETIME = Duration.ofMinutes(31);
 

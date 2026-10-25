@@ -2,15 +2,14 @@ package com.ecsite.module.cart.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -71,12 +70,20 @@ class MemberCartApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     ApplicationEvents events;
 
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
 
     private UUID standard;
@@ -93,6 +100,7 @@ class MemberCartApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         data = new CatalogTestData(mockMvc, clock);
         standard = data.taxCategory("標準", "10");
@@ -255,6 +263,32 @@ class MemberCartApiTest {
         }
 
         @Test
+        @DisplayName("AC-123 会員のカートが 30 品目なら、別のバリアントは移さず、移さなかった品目として返す")
+        void skipsItemsOverTheItemLimit() throws Exception {
+            var memberCartId = memberCart(owner);
+            for (int i = 0; i < 30; i++) {
+                dsl.insertInto(CART_ITEM)
+                        .set(CART_ITEM.CART_ID, memberCartId)
+                        .set(CART_ITEM.VARIANT_ID, UUID.randomUUID())
+                        .set(CART_ITEM.QUANTITY, 1)
+                        .set(CART_ITEM.ADDED_AT, NOW)
+                        .execute();
+            }
+            var extra = stockedVariant(20);
+            var guestCartId = guestCart();
+            add(guestCartId, extra, 4, TestTokens.none()).andExpect(status().isNoContent());
+
+            merge(guestCartId, owner.bearer())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.truncatedItems", hasSize(0)))
+                    .andExpect(jsonPath("$.skippedItems", hasSize(1)))
+                    .andExpect(jsonPath("$.skippedItems[0].variantId").value(extra.toString()))
+                    .andExpect(jsonPath("$.skippedItems[0].quantity").value(4));
+
+            assertThat(items(memberCartId)).hasSize(30).noneMatch(item -> item.getKey().equals(extra));
+        }
+
+        @Test
         @DisplayName("会員のカートは、移す元に指定できない（自分のもの・ほかの会員のものとも 404）。ないカートも 404")
         void rejectsMemberCartAsSource() throws Exception {
             var ownCart = memberCart(owner);
@@ -283,7 +317,7 @@ class MemberCartApiTest {
         var body = mockMvc.perform(get(MEMBER_CART).with(member.bearer()))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.cartId"));
+        return TestJson.uuid(body, "$.cartId");
     }
 
     /**
@@ -293,7 +327,7 @@ class MemberCartApiTest {
         var body = mockMvc.perform(post(CARTS))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        return TestJson.createdId(body);
     }
 
     /**
@@ -321,8 +355,7 @@ class MemberCartApiTest {
      */
     private UUID stockedVariant(int quantity) throws Exception {
         var variantId = data.product(standard, "商品", 1000).publish().variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, UUID.randomUUID(), quantity);
         return variantId;
     }
 

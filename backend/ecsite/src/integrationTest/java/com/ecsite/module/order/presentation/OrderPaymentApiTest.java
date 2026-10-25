@@ -3,13 +3,12 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.application.PaymentExpiryJob;
@@ -18,7 +17,6 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -32,19 +30,12 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
-import static com.ecsite.jooq.cart.Tables.CART_;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
-import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
-import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
-import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.awaitility.Awaitility.await;
@@ -59,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文と支払の受け入れテスト（T7305、AC-143〜166）。<br />
- * 決済のイベントはコミットの後に非同期で届くので、コミットして処理を待ち、作ったデータを後で消す。
+ * 決済のイベントはコミットの後に非同期で届くので、コミットして処理を待つ。作ったデータは消さない。
  * 決済サービスは mock。支払の期限は、時計を進めて期限切れのジョブを呼んで確認する。
  */
 @IntegrationTest
@@ -90,54 +81,44 @@ class OrderPaymentApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     DSLContext dsl;
 
     @Autowired
     AsyncEvents asyncEvents;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
+    /**
+     * このテストの会員（巻き戻さないので、他のテストとカートを共有しないよう、テストごとに変える）
+     */
+    private TestTokens.Builder owner;
+
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
-
-    /**
-     * このテストで作った商品
-     */
-    private final List<CatalogTestData.TestProduct> products = new ArrayList<>();
-
-    /**
-     * このテストで作った注文
-     */
-    private final List<UUID> orderIds = new ArrayList<>();
 
     private UUID variantId;
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         taxCategoryId = new CatalogTestData(mockMvc, clock).taxCategory("支払-" + UUID.randomUUID().toString().substring(0, 8), "10");
         variantId = stockedVariant("支払の商品");
-        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
-    }
-
-    @AfterEach
-    void cleanUp() {
-        var checkoutIds = dsl.select(SALES_ORDER.CHECKOUT_ID).from(SALES_ORDER).where(SALES_ORDER.ID.in(orderIds))
-                .fetch(SALES_ORDER.CHECKOUT_ID);
-        var cartIds = dsl.select(CHECKOUT.CART_ID).from(CHECKOUT).where(CHECKOUT.ID.in(checkoutIds)).fetch(CHECKOUT.CART_ID);
-        dsl.deleteFrom(PAYMENT_).where(PAYMENT_.ORDER_ID.in(orderIds)).execute();
-        dsl.deleteFrom(SALES_ORDER).where(SALES_ORDER.ID.in(orderIds)).execute();
-        dsl.deleteFrom(CHECKOUT).where(CHECKOUT.ID.in(checkoutIds)).execute();
-        // 会員のカートは、支払待ちの注文の品目が残るので消す（次に使うときに再作成される）
-        dsl.deleteFrom(CART_).where(CART_.ID.in(cartIds)).execute();
-        products.forEach(product -> {
-            dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(product.id)).execute();
-            dsl.deleteFrom(PRODUCT).where(PRODUCT.ID.eq(product.id)).execute();
-        });
-        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(taxCategoryId)).execute();
-        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(taxCategoryId)).execute();
+        owner = TestTokens.member().subject(UUID.randomUUID());
+        orders = new OrderTestData(mockMvc, gateway, orderPaymentService, owner.bearer());
     }
 
     @Nested
@@ -164,7 +145,7 @@ class OrderPaymentApiTest {
         void acceptsOnAuthorization() throws Exception {
             var orderId = pending(2);
             var addedLater = stockedVariant("後から追加した商品");
-            addToCart(addedLater);
+            orders.add(orders.cart(), addedLater, 1);
 
             gateway.pay(orders.openPaymentPage(orderId));
 
@@ -181,7 +162,7 @@ class OrderPaymentApiTest {
         @DisplayName("AC-147 品目が複数の注文でも、与信が成功すると受付になり、注文した品目がすべてカートから除かれる")
         void removesAllOrderedItems() throws Exception {
             var other = stockedVariant("一緒に注文する商品");
-            addToCart(other);
+            orders.add(orders.cart(), other, 1);
             var orderId = pending(1);
 
             gateway.pay(orders.openPaymentPage(orderId));
@@ -309,8 +290,21 @@ class OrderPaymentApiTest {
 
             admin(orderId).andExpect(jsonPath("$.actions.cancel").value(false));
             cancelByOperator(orderId)
-                    .andExpect(status().is4xxClientError())
+                    .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("AWAITING_PAYMENT"));
+            store(orderId).andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
+        }
+
+        @Test
+        @DisplayName("AC-158 支払待ちの注文は、消費者もキャンセルを申請できない")
+        void consumerCannotRequestCancellationOfPending() throws Exception {
+            var orderId = pending(1);
+
+            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
+                            .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("CANCELLATION_NOT_REQUESTABLE"));
+
             store(orderId).andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
         }
     }
@@ -326,12 +320,17 @@ class OrderPaymentApiTest {
             var acceptedId = pending(1);
             orders.pay(acceptedId);
 
-            mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("size", "100"))
+            // 他のテストの注文が混ざらないよう、自分の注文の注文番号でも絞る
+            var pendingNumber = orderNumber(pendingId);
+            var acceptedNumber = orderNumber(acceptedId);
+            mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("orderNumber", pendingNumber))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.items[*].id").value(hasItem(pendingId.toString())))
-                    .andExpect(jsonPath("$.items[*].id").value(not(hasItem(acceptedId.toString()))))
                     .andExpect(jsonPath("$.items[?(@.id == '" + pendingId + "')].paymentStatus").value(hasItem("UNPAID")));
-            mockMvc.perform(get("/api/admin/orders").param("size", "100"))
+            mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("orderNumber", acceptedNumber))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[*].id").value(not(hasItem(acceptedId.toString()))));
+            mockMvc.perform(get("/api/admin/orders").param("orderNumber", acceptedNumber))
                     .andExpect(jsonPath("$.items[?(@.id == '" + acceptedId + "')].paymentStatus").value(hasItem("AUTHORIZED")));
         }
 
@@ -365,7 +364,7 @@ class OrderPaymentApiTest {
         @DisplayName("AC-162 申請の承認によるキャンセルでも、与信が取り消される")
         void voidsOnApproval() throws Exception {
             var orderId = accepted();
-            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
+            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
                             .contentType(MediaType.APPLICATION_JSON).content("{}"))
                     .andExpect(status().isNoContent());
 
@@ -400,10 +399,8 @@ class OrderPaymentApiTest {
     private UUID stockedVariant(String name) throws Exception {
         var data = new CatalogTestData(mockMvc, clock);
         var product = data.product(taxCategoryId, name, 1000).publish();
-        products.add(product);
         var id = product.variantIds.getFirst();
-        stockItemRepository.createIfAbsent(id, product.id);
-        stockItemRepository.adjust(id, StockAdjustment.create(5, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(id, product.id, 5);
         return id;
     }
 
@@ -411,9 +408,7 @@ class OrderPaymentApiTest {
      * 支払わずに注文する。
      */
     private UUID pending(int quantity) throws Exception {
-        var orderId = orders.placePendingOrder(variantId, quantity);
-        orderIds.add(orderId);
-        return orderId;
+        return orders.placePendingOrder(variantId, quantity);
     }
 
     /**
@@ -426,25 +421,21 @@ class OrderPaymentApiTest {
         return orderId;
     }
 
-    private void addToCart(UUID variant) throws Exception {
-        mockMvc.perform(post("/api/store/carts/" + cartId() + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": 1}""".formatted(variant)))
-                .andExpect(status().isNoContent());
-    }
-
-    private String cartId() throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString(), "$.cartId");
-    }
-
     private List<String> cartVariantIds() throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + cartId())).andReturn().getResponse().getContentAsString(),
+        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + orders.cart()).with(owner.bearer())).andReturn().getResponse().getContentAsString(),
                 "$.items[*].variantId");
     }
 
     private ResultActions store(UUID orderId) throws Exception {
-        return mockMvc.perform(get("/api/store/orders/" + orderId)).andExpect(status().isOk());
+        return mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(status().isOk());
+    }
+
+    /**
+     * 注文の注文番号を、購入者として取得する。
+     */
+    private String orderNumber(UUID orderId) throws Exception {
+        return JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andReturn().getResponse()
+                .getContentAsString(), "$.orderNumber");
     }
 
     private ResultActions admin(UUID orderId) throws Exception {
@@ -452,7 +443,7 @@ class OrderPaymentApiTest {
     }
 
     private ResultActions openPage(UUID orderId) throws Exception {
-        return mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page"));
+        return mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page").with(owner.bearer()));
     }
 
     private ResultActions cancelByOperator(UUID orderId) throws Exception {
@@ -466,7 +457,7 @@ class OrderPaymentApiTest {
      * 注文の支払の期限（注文日時 ＋ 30 分。BR-16）
      */
     private Instant deadlineOf(UUID orderId) throws Exception {
-        String orderedAt = JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId)).andReturn().getResponse()
+        String orderedAt = JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andReturn().getResponse()
                 .getContentAsString(), "$.orderedAt");
         return Instant.parse(orderedAt).plus(Duration.ofMinutes(30));
     }

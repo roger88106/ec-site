@@ -17,7 +17,8 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `SPRING_DATASOURCE_URL`、`_USERNAME`、`_PASSWORD` | DB の接続先 | — |
 | `SERVER_PORT` | 業務ポート（Spring Boot の `server.port`）。`slot.mjs run` が設定する（[開発環境の起動](setup.md) 第 9 節） | 8080（E2E は 8090） |
 | `MANAGEMENT_SERVER_PORT` | 運用ポート（死活監視とメトリクス）。業務ポートと分け、外部に公開しない | 9080（E2E は 9090） |
-| `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | トレースの送信先 | `http://localhost:9411/api/v2/spans` |
+| `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENABLED` | トレースの送信を有効にする | false（local と E2E は true） |
+| `MANAGEMENT_TRACING_EXPORT_ZIPKIN_ENDPOINT` | 送信を有効にしたときの送信先 | `http://localhost:9411/api/v2/spans`（Spring Boot の既定） |
 | `MANAGEMENT_TRACING_SAMPLING_PROBABILITY` | 記録するリクエストの割合 | 0.1 |
 | `ECSITE_SECURITY_ADMIN_ISSUER_URI`、`_AUDIENCE` | 管理 API が受け付ける token の issuer（運営者の realm）と audience | 必須 |
 | `ECSITE_SECURITY_STORE_ISSUER_URI`、`_AUDIENCE` | 店舗 API が受け付ける token の issuer（消費者の realm）と audience | 必須 |
@@ -35,7 +36,7 @@ profile の設定ファイルは本番の jar に含まれない（[バックエ
 | `ECSITE_REPORTING_FISCAL_YEAR_START_MONTH` | 会計年度の始まりの月（1〜12）。売上の推移の四半期と年の区切りに使う | 4 |
 | `ECSITE_PAYMENT_RETURN_URL` | 支払画面からの戻り先（店舗画面の注文の画面）の URL。`{orderId}` に注文 ID が入る | 必須 |
 | `ECSITE_PAYMENT_MOCK_ENABLED` | 決済の mock フラグ。`true` なら mock、それ以外なら Stripe を使う。本番では有効にしない | false |
-| `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔 | 30m、1m |
+| `ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL` | 支払の期限（注文日時からの時間）、期限切れのジョブの間隔。支払の期限は 30 分を超えると起動に失敗する | 30m、1m |
 | `ECSITE_PAYMENT_AWAITING_AUTHORIZATION_WARNING` | 通知を待つ支払のうち、待ち始めてからこの時間を過ぎたものの件数を、warn のログに出力する | 1h |
 | `ECSITE_PAYMENT_AUTHORIZATION_VALIDITY`、`_AUTHORIZATION_WARNING` | 与信の有効期間（与信の時刻からの時間）、「期限が近い」とする期間（与信期限までの残り時間） | 7d、2d |
 | `ECSITE_PAYMENT_MOCK_BASE_URL` | mock の支払画面を表示するバックエンドの URL（ブラウザーから開ける URL） | 決済の mock フラグを有効にしたら必須 |

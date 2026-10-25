@@ -1,13 +1,11 @@
 package com.ecsite.config.event;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import io.micrometer.core.instrument.MeterRegistry;
 import org.jooq.DSLContext;
-import org.jooq.Field;
-import org.jooq.Table;
-import org.jooq.impl.DSL;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +18,6 @@ import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Import;
 import org.springframework.modulith.events.ApplicationModuleListener;
-import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.IncompleteEventPublications;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.modulith.events.core.TargetEventPublication;
@@ -34,6 +31,11 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
+import static com.ecsite.config.event.EventPublications.COMPLETION_ATTEMPTS;
+import static com.ecsite.config.event.EventPublications.COMPLETION_DATE;
+import static com.ecsite.config.event.EventPublications.EVENT_PUBLICATION;
+import static com.ecsite.config.event.EventPublications.ID;
+import static com.ecsite.config.event.EventPublications.STATUS;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
@@ -51,31 +53,6 @@ class EventResubmissionJobTest {
      * テストの現在時刻（イベントの発行日時になる）
      */
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
-
-    /**
-     * イベントの記録のテーブル（Spring Modulith の表。jOOQ の生成クラスはモジュールの外では使わない）
-     */
-    private static final Table<?> EVENT_PUBLICATION = DSL.table(DSL.name("common", "event_publication"));
-
-    /**
-     * イベントの記録の ID
-     */
-    private static final Field<UUID> ID = DSL.field(DSL.name("id"), UUID.class);
-
-    /**
-     * 処理の状態
-     */
-    private static final Field<String> STATUS = DSL.field(DSL.name("status"), String.class);
-
-    /**
-     * 処理の回数
-     */
-    private static final Field<Integer> COMPLETION_ATTEMPTS = DSL.field(DSL.name("completion_attempts"), Integer.class);
-
-    /**
-     * 処理を終えた時刻
-     */
-    private static final Field<Instant> COMPLETION_DATE = DSL.field(DSL.name("completion_date"), Instant.class);
 
     @Autowired
     EventResubmissionJob job;
@@ -116,9 +93,18 @@ class EventResubmissionJobTest {
     @Autowired
     DSLContext dsl;
 
+    @Autowired
+    AsyncEvents asyncEvents;
+
+    /**
+     * イベントの発行を確かめる補助
+     */
+    EventPublications publications;
+
     @BeforeEach
     void setUp() {
         clock.setInstant(NOW);
+        publications = new EventPublications(dsl, transactionTemplate, eventPublisher, registry, asyncEvents, clock);
     }
 
     @Test
@@ -129,7 +115,9 @@ class EventResubmissionJobTest {
         clock.advance(Duration.ofMinutes(6));
         job.resubmit();
 
-        await().atMost(TIMEOUT).until(() -> listener.attempts(event) == 2 && listener.succeeded(event));
+        asyncEvents.awaitHandled(event::equals);
+        assertThat(listener.attempts(event)).isEqualTo(2);
+        assertThat(listener.succeeded(event)).isTrue();
     }
 
     @Test
@@ -224,7 +212,9 @@ class EventResubmissionJobTest {
         clock.advance(Duration.ofMinutes(6));
         job.resubmit();
 
-        await().atMost(TIMEOUT).until(() -> listener.attempts(event) == 2 && listener.succeeded(event));
+        asyncEvents.awaitHandled(event::equals);
+        assertThat(listener.attempts(event)).isEqualTo(2);
+        assertThat(listener.succeeded(event)).isTrue();
     }
 
     @Test
@@ -275,44 +265,21 @@ class EventResubmissionJobTest {
      */
     private FailingEvent failedUntil(EventResubmissionJob job, int completionAttempts) {
         var event = new FailingEvent(UUID.randomUUID(), "stopped-" + UUID.randomUUID() + "@example.com");
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
-        await().atMost(TIMEOUT).until(() -> failedWith(event, 1));
-        clock.advance(Duration.ofMinutes(5));
-        for (int attempts = 2; attempts <= completionAttempts; attempts++) {
-            clock.advance(Duration.ofMinutes(1));
-            job.resubmit();
-            int expected = attempts;
-            await().atMost(TIMEOUT).until(() -> failedWith(event, expected));
-        }
-        return event;
-    }
-
-    /**
-     * テストのイベントの発行の記録が、指定の処理の回数で、処理に失敗した状態か。
-     */
-    private boolean failedWith(Object event, int completionAttempts) {
-        var publication = publicationOf(event);
-        return publication.getStatus() == EventPublication.Status.FAILED
-                && publication.getCompletionAttempts() == completionAttempts;
+        return publications.failedUntil(event, job, completionAttempts);
     }
 
     /**
      * テストのイベントの、未完了の発行の記録
      */
     private TargetEventPublication publicationOf(Object event) {
-        return registry.findIncompletePublications().stream()
-                .filter(publication -> publication.getEvent().equals(event))
-                .findFirst().orElseThrow();
+        return publications.publicationOf(event);
     }
 
     /**
      * イベントをコミットするトランザクションで発行し、リスナーの 1 回目の失敗を待つ。
      */
     private FlakyEvent failedOnce() {
-        var event = new FlakyEvent(UUID.randomUUID());
-        transactionTemplate.executeWithoutResult(status -> eventPublisher.publishEvent(event));
-        await().atMost(TIMEOUT).until(() -> listener.attempts(event) == 1);
-        return event;
+        return publications.failedOnce(new FlakyEvent(UUID.randomUUID()));
     }
 
     /**

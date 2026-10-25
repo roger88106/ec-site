@@ -1,10 +1,11 @@
 import { screen, waitFor, within } from '@testing-library/react'
-import { afterEach, describe, expect, test, vi } from 'vitest'
+import { describe, expect, test, vi } from 'vitest'
 import type { SalesTrendReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
+import { SHIRT_ID } from '@/test/fixtures'
 import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
+import { serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
 /** 2026 年度の 4 月〜6 月の月ごとの推移（5 月は売れなかった） */
@@ -33,10 +34,6 @@ function serveTrend(report: SalesTrendReport = QUARTER_BY_MONTH) {
   )
   return queries
 }
-
-afterEach(() => {
-  vi.useRealTimers()
-})
 
 describe('売上の推移', () => {
   test('AC-197、201 区切りごとの売上額と販売数量を表に出し、売れなかった区切りも 0 の行で出す', async () => {

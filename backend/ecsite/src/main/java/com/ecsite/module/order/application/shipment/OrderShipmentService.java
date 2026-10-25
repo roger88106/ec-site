@@ -1,12 +1,11 @@
 package com.ecsite.module.order.application.shipment;
 
-import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.module.order.application.OrderQueryService;
 import com.ecsite.module.order.application.model.OrderShipment;
 import com.ecsite.module.order.application.port.PaymentDirectory;
 import com.ecsite.module.order.domain.order.Carrier;
 import com.ecsite.module.order.domain.OrderErrorCode;
-import com.ecsite.module.order.domain.order.port.OrderRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -14,6 +13,7 @@ import java.util.UUID;
 
 /**
  * 出荷の登録のサービス（docs/design/modules/order.md「出荷の登録」）。<br />
+ * 出荷できるかは、注文の参照の service（{@link OrderQueryService}）の運営者用の詳細で確かめ、注文の Repository には依存しない。<br />
  * 売上確定は決済サービスを呼ぶので、トランザクションを持たずに先に行い、注文と出荷の変更だけを
  * {@link OrderShipmentCommandService} のトランザクションで行う（決済サービスの応答を待つ間、注文の行ロックを持たない）。
  */
@@ -22,9 +22,9 @@ import java.util.UUID;
 public class OrderShipmentService {
 
     /**
-     * 注文リポジトリ
+     * 注文の照会のサービス（出荷できるかは、運営者用の詳細の操作の可否で判定する）
      */
-    private final OrderRepository orderRepository;
+    private final OrderQueryService orderQueryService;
 
     /**
      * 決済の腐敗防止層
@@ -47,9 +47,8 @@ public class OrderShipmentService {
      * @throws com.ecsite.common.error.exception.SystemException 決済サービスに接続できない（出荷は作らない）
      */
     public OrderShipment ship(UUID orderId, Carrier carrier, String trackingNumber) {
-        var order = orderRepository.findById(orderId).orElseThrow(() -> BusinessException.of(CommonErrorCode.NOT_FOUND));
-        // 受付でなければ、売上を確定しない
-        if (!order.isShippable()) {
+        // 注文がなければ、照会のサービスが NOT_FOUND にする。出荷できなければ、売上を確定しない
+        if (!orderQueryService.get(orderId).actions().shippable()) {
             throw BusinessException.of(OrderErrorCode.ORDER_NOT_SHIPPABLE);
         }
         paymentDirectory.capture(orderId);

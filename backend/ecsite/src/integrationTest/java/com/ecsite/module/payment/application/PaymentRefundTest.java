@@ -3,6 +3,7 @@ package com.ecsite.module.payment.application;
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
@@ -20,10 +21,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
@@ -56,19 +53,20 @@ class PaymentRefundTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 支払を進める補助
+     */
+    PaymentTestData payments;
+
     @Autowired
     AsyncEvents asyncEvents;
 
     @Autowired
     DSLContext dsl;
 
-    /**
-     * 注文 ID → 支払画面 ID
-     */
-    private final Map<UUID, String> pageIds = new HashMap<>();
-
     @BeforeEach
     void setUp() {
+        payments = new PaymentTestData(paymentApi, gateway);
         clock.setInstant(ORDERED_AT);
         gateway.reset();
     }
@@ -76,22 +74,22 @@ class PaymentRefundTest {
     @Test
     @DisplayName("AC-192、193 売上確定済みの支払を取り消すと返金待ちになり、コミットの後に決済サービスで返金されて、返金済みになる")
     void refundsCapturedPayment() {
-        var orderId = captured();
+        var orderId = payments.captured(ORDERED_AT);
 
         paymentApi.cancel(orderId);
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
         assertThat(gateway.refunded()).containsExactly(orderId);
     }
 
     @Test
     @DisplayName("AC-192 返金で決済サービスに渡す額は、その注文の売上確定の額（総額）と同じ")
     void refundsCapturedAmount() {
-        var orderId = captured();
+        var orderId = payments.captured(ORDERED_AT);
 
         paymentApi.cancel(orderId);
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.CAPTURE, orderId)).containsExactly(Money.of(6940));
         assertThat(gateway.amountsOf(TestPaymentGateway.Operation.REFUND, orderId))
                 .isEqualTo(gateway.amountsOf(TestPaymentGateway.Operation.CAPTURE, orderId));
@@ -100,55 +98,55 @@ class PaymentRefundTest {
     @Test
     @DisplayName("AC-306 返金のリスナーは、データベースのトランザクションの外で決済サービスを呼ぶ")
     void refundsOutsideTransaction() {
-        var orderId = captured();
+        var orderId = payments.captured(ORDERED_AT);
         var transactionActive = new CopyOnWriteArrayList<Boolean>();
         gateway.onRefundOrVoid(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
 
         paymentApi.cancel(orderId);
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
         assertThat(transactionActive).containsExactly(false);
     }
 
     @Test
     @DisplayName("AC-193、194 決済サービスが返金に失敗したら返金待ちのまま残り、未完了のイベントの再発行で返金される")
     void retriesFailedRefund() {
-        var orderId = captured();
+        var orderId = payments.captured(ORDERED_AT);
         gateway.failNextRefunds(1);
 
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitFailed(PaymentRequests.of(dsl, orderId));
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUND_PENDING);
-        assertThat(gateway.refunded()).isEmpty();
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUND_PENDING);
+        assertThat(gateway.refunded()).doesNotContain(orderId);
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
         clock.advance(Duration.ofMinutes(6));
         incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
-        assertThat(gateway.refunded()).containsExactly(orderId);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.refunded()).containsOnlyOnce(orderId);
     }
 
     @Test
     @DisplayName("AC-195 返金済みの支払を重ねて取り消しても、成功し、返金は 1 回のまま変わらない")
     void ignoresRepeatedCancel() {
-        var orderId = captured();
+        var orderId = payments.captured(ORDERED_AT);
         paymentApi.cancel(orderId);
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
 
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(gateway.refunded()).hasSize(1);
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
     }
 
     @Test
     @DisplayName("AC-188 与信期限切れの支払を取り消しても、何もしない。返金も与信の取消も呼ばない")
     void cancelsAuthorizationExpiredWithoutRefund() {
-        var orderId = authorized();
-        gateway.expireAuthorization(gateway.authorizationRefOf(pageIdOf(orderId)));
+        var orderId = payments.authorized(ORDERED_AT);
+        gateway.expireAuthorization(gateway.authorizationRefOf(payments.pageIdOf(orderId)));
         assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
         paymentApi.cancel(orderId);
@@ -156,65 +154,27 @@ class PaymentRefundTest {
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(gateway.refunded()).isEmpty();
         assertThat(gateway.voided()).isEmpty();
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZATION_EXPIRED);
     }
 
     @Test
     @DisplayName("T9314 売上確定の最中に注文がキャンセルされたら、確定の反映で返金待ちになり、返金される。与信は取り消さない")
     void refundsWhenCancelledDuringCapture() {
-        var orderId = authorized();
+        var orderId = payments.authorized(ORDERED_AT);
+        var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
         // 決済サービスが確定した後、確定を反映する前に、注文のキャンセルで支払が与信の取消待ちになる
         gateway.duringNextCapture(() -> paymentApi.cancel(orderId));
 
         paymentApi.capture(orderId);
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.REFUNDED);
-        assertThat(gateway.refunded()).containsExactly(orderId);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.refunded()).containsOnlyOnce(orderId);
 
         // 与信の取消の依頼は、再発行で何もせずに終わる
         clock.advance(Duration.ofMinutes(6));
         incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-        assertThat(gateway.voided()).isEmpty();
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
+        assertThat(gateway.voided()).doesNotContain(authorizationRef);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
     }
-
-    // ============================== 補助 ==============================
-
-    private UUID created() {
-        var orderId = UUID.randomUUID();
-        paymentApi.create(orderId, Money.of(6940), ORDERED_AT);
-        return orderId;
-    }
-
-    /**
-     * 支払画面を開いて支払い、与信済みにする。
-     */
-    private UUID authorized() {
-        var orderId = created();
-        var url = paymentApi.pageUrl(orderId).orElseThrow();
-        var pageId = url.substring(url.lastIndexOf('/') + 1);
-        pageIds.put(orderId, pageId);
-        gateway.pay(pageId);
-        return orderId;
-    }
-
-    /**
-     * 与信済みにして、売上を確定する。
-     */
-    private UUID captured() {
-        var orderId = authorized();
-        paymentApi.capture(orderId);
-        return orderId;
-    }
-
-    /**
-     * 与信済みにした注文の、支払画面 ID を返す（支払の後は画面の URL を引けないため、覚えておく）。
-     */
-    private String pageIdOf(UUID orderId) {
-        return pageIds.get(orderId);
-    }
-
-    private PaymentSummary.Status statusOf(UUID orderId) {
-        return paymentApi.find(List.of(orderId)).getFirst().status();
-    }}
+}

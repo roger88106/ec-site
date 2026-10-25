@@ -2,9 +2,10 @@ import { screen, waitFor, within } from '@testing-library/react'
 import { describe, expect, test } from 'vitest'
 import type { VariantSalesReport } from '@/api/types'
 import { recordDownloads } from '@/test/download'
+import { SHIRT_ID } from '@/test/fixtures'
 import { findRow, getRow } from '@/test/queries'
 import { renderApp } from '@/test/renderApp'
-import { SHIRT_ID, serveReportBasics } from '@/test/reportServer'
+import { serveReportBasics } from '@/test/reportServer'
 import { http, server } from '@/test/server'
 
 /** T シャツの売れ行き（販売数量の多い順。黒の L は売れなかった） */

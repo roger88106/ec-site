@@ -510,7 +510,7 @@ paths:
       operationId: addVariant
       x-error-codes: [INVALID_VARIANT_CODE, INVALID_AXIS_VALUES, SINGLE_VARIANT_ONLY, VARIANT_AXIS_VALUES_ALREADY_EXISTS, VARIANT_CODE_ALREADY_EXISTS]
       summary: バリアントの登録（AC-20〜24）
-      description: 応答の `Location` は、登録したバリアントの URL（`/products/{productId}/variants/{variantId}`。AC-276）。
+      description: 応答の `Location` は、登録したバリアントを取得する操作の URL で、ホストを含まない相対の URL（`/api/admin/products/{productId}/variants/{variantId}`。AC-276）。
       x-required-permission: product:write
       requestBody:
         required: true
@@ -1368,7 +1368,7 @@ components:
       description: 登録した
       headers:
         Location:
-          description: 登録したリソースの URL
+          description: 登録したリソースの URL（ホストを含まない相対の URL。例：`/api/admin/products/{id}`）
           schema:
             type: string
       content:

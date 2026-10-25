@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.ShippingTestData;
 import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -30,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MockCarrierTest {
 
     /**
-     * 出荷日時。一覧（新しい順）の先頭に並ぶよう、ほかのテストの出荷より後にする
+     * 出荷日時。画面の一覧（新しい順に 50 件）の先頭に並ぶよう、ほかのテストの出荷より後にする。このテストの出荷は確定して残るので、全体から新しい順に読む別のテストは、これより後の日時（3000 年）を使う
      */
     private static final Instant SHIPPED_AT = Instant.parse("2095-01-01T00:00:00Z");
 
@@ -117,7 +118,7 @@ class MockCarrierTest {
 
         var invalid = TestCarrierNotifications.withInvalidSignature(
                 mockCarrier.notification(Carrier.YAMATO, shipment.trackingNumber(), "配達完了"));
-        var unknown = mockCarrier.notification(Carrier.YAMATO, number(), "配達完了");
+        var unknown = mockCarrier.notification(Carrier.YAMATO, ShippingTestData.trackingNumber(), "配達完了");
 
         assertThat(mockCarrier.send(baseUrl(), invalid)).isEqualTo(401);
         assertThat(mockCarrier.send(baseUrl(), unknown)).isEqualTo(200);
@@ -168,16 +169,9 @@ class MockCarrierTest {
      */
     private Created shipped(ShipmentSummary.Carrier carrier) {
         var orderId = UUID.randomUUID();
-        var trackingNumber = number();
+        var trackingNumber = ShippingTestData.trackingNumber();
         shippingApi.create(orderId, carrier, trackingNumber, SHIPPED_AT);
         return new Created(orderId, trackingNumber);
-    }
-
-    /**
-     * 他のテストが確定させた出荷と重ならない送り状番号（12 桁）を作る。
-     */
-    private static String number() {
-        return String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits() % 900_000_000_000L) + 100_000_000_000L);
     }
 
     /**

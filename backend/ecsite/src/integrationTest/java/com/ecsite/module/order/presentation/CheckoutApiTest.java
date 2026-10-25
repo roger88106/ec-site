@@ -3,6 +3,7 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
@@ -16,9 +17,7 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -71,6 +70,8 @@ class CheckoutApiTest {
 
     private CatalogTestData data;
 
+    private OrderTestData orders;
+
     private UUID standard;
 
     private UUID cartId;
@@ -81,8 +82,9 @@ class CheckoutApiTest {
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
+        orders = new OrderTestData(mockMvc);
         standard = data.taxCategory("標準", "10");
-        cartId = createCart();
+        cartId = orders.cart();
     }
 
     @Test
@@ -90,8 +92,8 @@ class CheckoutApiTest {
     void reservesAllItems() throws Exception {
         var shirt = stockedVariant(3);
         var cap = stockedVariant(5);
-        add(cartId, shirt, 2);
-        add(cartId, cap, 1);
+        orders.add(cartId, shirt, 2);
+        orders.add(cartId, cap, 1);
 
         var checkoutId = startCheckout(cartId);
 
@@ -109,8 +111,8 @@ class CheckoutApiTest {
     void reservesNothingWhenShort() throws Exception {
         var plenty = stockedVariant(5);
         var scarce = stockedVariant(2);
-        add(cartId, plenty, 1);
-        add(cartId, scarce, 2);
+        orders.add(cartId, plenty, 1);
+        orders.add(cartId, scarce, 2);
         // ほかの消費者が 1 個引き当てる
         stockReservationApi.reserve(UUID.randomUUID(), Map.of(scarce, 1), clock.instant().plus(Duration.ofMinutes(15)));
 
@@ -133,7 +135,7 @@ class CheckoutApiTest {
 
         var product = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
         inventory.stock(product.variantIds.getFirst(), product.id, 3);
-        add(cartId, product.variantIds.getFirst(), 1);
+        orders.add(cartId, product.variantIds.getFirst(), 1);
         product.suspend(0);
 
         mockMvc.perform(post("/api/store/carts/" + cartId + "/checkouts"))
@@ -145,7 +147,7 @@ class CheckoutApiTest {
     @DisplayName("AC-84 進み直すと、前の注文手続きの引当を解いて、その時点のカートで引き当て直す")
     void replacesReservationOnRestart() throws Exception {
         var variant = stockedVariant(3);
-        add(cartId, variant, 2);
+        orders.add(cartId, variant, 2);
         startCheckout(cartId);
 
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(10)));
@@ -161,7 +163,7 @@ class CheckoutApiTest {
     @DisplayName("AC-85 注文手続きの表示：内容と金額を返す。自分の引当は販売可能数から除くので、購入できる")
     void showsCheckoutExcludingOwnReservation() throws Exception {
         var variant = stockedVariant(1);
-        add(cartId, variant, 1);
+        orders.add(cartId, variant, 1);
 
         var checkoutId = startCheckout(cartId);
 
@@ -187,14 +189,6 @@ class CheckoutApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * 既定の会員（TestSecurityConfig）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる。AC-125）
-     */
-    private UUID createCart() throws Exception {
-        var body = mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.cartId"));
-    }
-
-    /**
      * 注文手続きに進み、201 と Location を確認して、注文手続き ID を返す
      */
     private UUID startCheckout(UUID cart) throws Exception {
@@ -203,17 +197,6 @@ class CheckoutApiTest {
                 .andExpect(header().exists("Location"))
                 .andReturn().getResponse().getContentAsString();
         return UUID.fromString(JsonPath.read(body, "$.id"));
-    }
-
-    /**
-     * カートに入れ、204 を確認する
-     */
-    private ResultActions add(UUID cart, UUID variantId, int quantity) throws Exception {
-        return mockMvc.perform(post("/api/store/carts/" + cart + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
-                .andExpect(status().isNoContent());
     }
 
     /**

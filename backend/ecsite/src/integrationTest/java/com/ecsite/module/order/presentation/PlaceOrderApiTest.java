@@ -4,6 +4,7 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
@@ -39,7 +40,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.header;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -83,6 +83,8 @@ class PlaceOrderApiTest {
 
     private CatalogTestData data;
 
+    private OrderTestData orders;
+
     private UUID standard;
 
     private UUID cartId;
@@ -95,11 +97,12 @@ class PlaceOrderApiTest {
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
+        orders = new OrderTestData(mockMvc);
         standard = data.taxCategory("標準", "10");
         shirt = data.product(standard, "T シャツ", 2700, "色", "サイズ").variant("白", "M").publish();
         stock(shirt.variantIds.getFirst(), 3);
-        cartId = createCart();
-        add(shirt.variantIds.getFirst(), 2);
+        cartId = orders.cart();
+        orders.add(cartId, shirt.variantIds.getFirst(), 2);
     }
 
     @Nested
@@ -109,7 +112,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-87、90、107、144 成立すると在庫が減り、引当が消え、注文番号が振られ、支払待ちになる。カートは変わらない")
         void placesOrder() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
 
             var orderId = place(checkoutId, 6940)
                     .andExpect(status().isCreated())
@@ -139,7 +142,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-87 引当の期限が切れていても、足りれば成立する")
         void placesAfterExpiryWhenSufficient() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
             clock.setInstant(clock.instant().plus(Duration.ofMinutes(20)));
 
             place(checkoutId, 6940).andExpect(status().isCreated());
@@ -148,7 +151,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-87 期限切れの間にほかの消費者に引き当てられて足りなければ 409 で、在庫も注文もカートも変わらない")
         void rejectsWhenOthersReservedAfterExpiry() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
             clock.setInstant(clock.instant().plus(Duration.ofMinutes(20)));
             var variant = shirt.variantIds.getFirst();
             stockReservationApi.reserve(UUID.randomUUID(), Map.of(variant, 2), clock.instant().plus(Duration.ofMinutes(15)));
@@ -165,7 +168,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-89 確認した総額と、注文時点の総額が違えば 409")
         void rejectsChangedTotal() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
             shirt.changePrice(standard, 3000);
 
             place(checkoutId, 6940)
@@ -177,7 +180,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("注文手続きの後にカートが変われば 409")
         void rejectsChangedCart() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
             // 減らす変更は販売可能数を確認しないので、注文手続き中でもできる
             mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + shirt.variantIds.getFirst())
                             .contentType(MediaType.APPLICATION_JSON)
@@ -193,7 +196,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-86 入力の形が違えば 400")
         void rejectsInvalidInput() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
 
             placeWith(checkoutId, body("1000", "13", "13101"))
                     .andExpect(status().isBadRequest());
@@ -202,7 +205,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-251 マスターデータにない都道府県は 400（INVALID_PREFECTURE）")
         void rejectsUnknownPrefecture() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
 
             placeWith(checkoutId, body("100-0001", "48", "13101"))
                     .andExpect(status().isBadRequest())
@@ -212,7 +215,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-251 マスターデータにない市区町村と、選んだ都道府県に属さない市区町村は 400（INVALID_MUNICIPALITY）")
         void rejectsUnknownOrMismatchedMunicipality() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
 
             placeWith(checkoutId, body("100-0001", "13", "13999"))
                     .andExpect(status().isBadRequest())
@@ -225,7 +228,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("都道府県と市区町村のコードの形が違えば、入力の検証で 400")
         void rejectsMalformedCodes() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
 
             placeWith(checkoutId, body("100-0001", "東京都", "13101"))
                     .andExpect(status().isBadRequest())
@@ -240,7 +243,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-265 郵便番号と電話番号の形の誤りは、入力の検証で見つかっても業務のエラーと同じ文を欄のエラーに返す")
         void returnsBusinessMessagesForMalformedPostalCodeAndPhone() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
 
             placeWith(checkoutId, body("1000", "13", "13101"))
                     .andExpect(status().isBadRequest())
@@ -274,7 +277,7 @@ class PlaceOrderApiTest {
         @Test
         @DisplayName("AC-91 同じ注文手続きでの再送には、作成済みの注文 ID を 200 で返し、注文は 1 件だけ")
         void returnsExistingOrderOnResend() throws Exception {
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
             var first = JsonPath.<String>read(place(checkoutId, 6940).andExpect(status().isCreated())
                     .andReturn().getResponse().getContentAsString(), "$.id");
 
@@ -303,7 +306,7 @@ class PlaceOrderApiTest {
                             .content("""
                                     {"quantity": %d}""".formatted(max)))
                     .andExpect(status().isNoContent());
-            var checkoutId = startCheckout();
+            var checkoutId = orders.startCheckout(cartId);
             var shown = mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
                     .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
             long total = ((Number) JsonPath.read(shown, "$.amounts.total")).longValue();
@@ -443,7 +446,7 @@ class PlaceOrderApiTest {
      * T シャツ 2 枚を注文し、注文 ID を返す
      */
     private String placeOrder() throws Exception {
-        var body = place(startCheckout(), 6940).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        var body = place(orders.startCheckout(cartId), 6940).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
         return JsonPath.read(body, "$.id");
     }
 
@@ -459,34 +462,6 @@ class PlaceOrderApiTest {
      */
     private ResultActions placeWith(UUID checkoutId, String body) throws Exception {
         return mockMvc.perform(placeOrderRequest(checkoutId, body));
-    }
-
-    /**
-     * 注文手続きに進み、注文手続き ID を返す
-     */
-    private UUID startCheckout() throws Exception {
-        var body = mockMvc.perform(startCheckoutRequest(cartId))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
-    }
-
-    /**
-     * 既定の会員（TestSecurityConfig）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる。AC-125）
-     */
-    private UUID createCart() throws Exception {
-        var body = mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.cartId"));
-    }
-
-    /**
-     * カートに入れ、204 を確認する
-     */
-    private void add(UUID variantId, int quantity) throws Exception {
-        mockMvc.perform(post("/api/store/carts/" + cartId + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
-                .andExpect(status().isNoContent());
     }
 
     /**

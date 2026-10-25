@@ -3,6 +3,7 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -36,7 +36,6 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
-import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -46,7 +45,6 @@ import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -78,6 +76,8 @@ class PlaceOrderConcurrencyTest {
     @Autowired
     DSLContext dsl;
 
+    private OrderTestData orders;
+
     private UUID taxCategoryId;
 
     private CatalogTestData.TestProduct product;
@@ -100,6 +100,7 @@ class PlaceOrderConcurrencyTest {
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         var data = new CatalogTestData(mockMvc, clock);
+        orders = new OrderTestData(mockMvc);
         taxCategoryId = data.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
         product = data.product(taxCategoryId, "並行の商品", 1000).publish();
     }
@@ -202,15 +203,10 @@ class PlaceOrderConcurrencyTest {
      */
     private UUID cartWith(int quantity) throws Exception {
         var owner = TestTokens.member().subject(UUID.randomUUID());
-        var body = mockMvc.perform(get("/api/store/me/cart").with(owner.bearer())).andReturn().getResponse().getContentAsString();
-        var cartId = UUID.fromString(JsonPath.read(body, "$.cartId"));
+        var cartId = orders.cart(owner.bearer());
         cartIds.add(cartId);
         owners.put(cartId, owner);
-        mockMvc.perform(post("/api/store/carts/" + cartId + "/items").with(owner.bearer())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": %d}""".formatted(product.variantIds.getFirst(), quantity)))
-                .andExpect(status().isNoContent());
+        orders.add(cartId, product.variantIds.getFirst(), quantity, owner.bearer());
         return cartId;
     }
 
@@ -219,9 +215,7 @@ class PlaceOrderConcurrencyTest {
      */
     private UUID startCheckout(UUID cartId) throws Exception {
         var owner = owners.get(cartId);
-        var body = mockMvc.perform(startCheckoutRequest(cartId).with(owner.bearer()))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        var checkoutId = UUID.fromString(JsonPath.read(body, "$.id"));
+        var checkoutId = orders.startCheckout(cartId, owner.bearer());
         checkoutOwners.put(checkoutId, owner);
         return checkoutId;
     }

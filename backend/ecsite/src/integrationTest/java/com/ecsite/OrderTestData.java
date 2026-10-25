@@ -6,6 +6,7 @@ import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -55,6 +56,85 @@ public class OrderTestData {
         this.mockMvc = mockMvc;
         this.gateway = gateway;
         this.orderPaymentService = orderPaymentService;
+    }
+
+    /**
+     * カートと注文手続きの補助だけを使うときのコンストラクタ（支払う補助は使えない）。
+     *
+     * @param mockMvc MockMvc
+     */
+    public OrderTestData(MockMvc mockMvc) {
+        this(mockMvc, null, null);
+    }
+
+    /**
+     * 既定の会員（{@link TestSecurityConfig}）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる）。
+     *
+     * @return カート ID
+     */
+    public UUID cart() throws Exception {
+        return cart(request -> request);
+    }
+
+    /**
+     * 指定した会員の会員のカートの ID を返す。
+     *
+     * @param requester 会員の token などを付ける後処理
+     * @return カート ID
+     */
+    public UUID cart(RequestPostProcessor requester) throws Exception {
+        var body = mockMvc.perform(get("/api/store/me/cart").with(requester)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        return UUID.fromString(JsonPath.read(body, "$.cartId"));
+    }
+
+    /**
+     * 既定の会員のカートに入れ、204 を確認する。
+     *
+     * @param cartId    カート ID
+     * @param variantId バリアント ID
+     * @param quantity  数量
+     */
+    public void add(UUID cartId, UUID variantId, int quantity) throws Exception {
+        add(cartId, variantId, quantity, request -> request);
+    }
+
+    /**
+     * 指定した要求者でカートに入れ、204 を確認する。
+     *
+     * @param cartId    カート ID
+     * @param variantId バリアント ID
+     * @param quantity  数量
+     * @param requester token などを付ける後処理
+     */
+    public void add(UUID cartId, UUID variantId, int quantity, RequestPostProcessor requester) throws Exception {
+        mockMvc.perform(post("/api/store/carts/" + cartId + "/items").with(requester)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
+                .andExpect(status().isNoContent());
+    }
+
+    /**
+     * 既定の会員として注文手続きを始め、201 を確認して、注文手続き ID を返す。
+     *
+     * @param cartId カート ID
+     * @return 注文手続き ID
+     */
+    public UUID startCheckout(UUID cartId) throws Exception {
+        return startCheckout(cartId, request -> request);
+    }
+
+    /**
+     * 指定した要求者で注文手続きを始め、201 を確認して、注文手続き ID を返す。
+     *
+     * @param cartId    カート ID
+     * @param requester token などを付ける後処理
+     * @return 注文手続き ID
+     */
+    public UUID startCheckout(UUID cartId, RequestPostProcessor requester) throws Exception {
+        return createdId(mockMvc.perform(startCheckoutRequest(cartId).with(requester))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
     }
 
     /**
@@ -145,16 +225,9 @@ public class OrderTestData {
      * 氏名を指定して注文する（支払わない）。
      */
     private UUID placePendingOrder(UUID variantId, int quantity, String name) throws Exception {
-        // 既定の会員（TestSecurityConfig）の会員のカート
-        var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(get("/api/store/me/cart")).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString(), "$.cartId"));
-        mockMvc.perform(post("/api/store/carts/" + cartId + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
-                .andExpect(status().isNoContent());
-        var checkoutId = createdId(mockMvc.perform(startCheckoutRequest(cartId))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        var cartId = cart();
+        add(cartId, variantId, quantity);
+        var checkoutId = startCheckout(cartId);
         var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId)).andReturn().getResponse().getContentAsString();
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
         var order = mockMvc.perform(placeOrderRequest(checkoutId, orderBody(total, name)))

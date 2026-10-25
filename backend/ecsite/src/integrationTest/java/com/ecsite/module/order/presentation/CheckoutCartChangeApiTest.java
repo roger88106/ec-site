@@ -4,13 +4,13 @@ import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
+import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
-import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -36,8 +35,6 @@ import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -80,6 +77,8 @@ class CheckoutCartChangeApiTest {
 
     private CatalogTestData data;
 
+    private OrderTestData orders;
+
     private UUID taxCategoryId;
 
     private UUID cartId;
@@ -95,8 +94,9 @@ class CheckoutCartChangeApiTest {
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
+        orders = new OrderTestData(mockMvc);
         taxCategoryId = data.taxCategory("カート変更-" + UUID.randomUUID().toString().substring(0, 8), "10");
-        cartId = createCart();
+        cartId = orders.cart();
     }
 
     @AfterEach
@@ -121,10 +121,10 @@ class CheckoutCartChangeApiTest {
     @DisplayName("AC-84 カートを変更すると（カート変更のイベント）、そのカートの注文手続きの引当が解かれる")
     void releasesReservationOnCartChange() throws Exception {
         var variant = stockedVariant(3);
-        add(cartId, variant, 2);
+        orders.add(cartId, variant, 2);
         // 追加のイベントのリスナーが、次の注文手続きの引当を解かないように、先に処理を待つ
         awaitCartChanged();
-        startCheckout(cartId);
+        orders.startCheckout(cartId);
         assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
 
         mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + variant)
@@ -144,32 +144,6 @@ class CheckoutCartChangeApiTest {
      */
     private void awaitCartChanged() {
         asyncEvents.awaitHandled(published -> published instanceof CartChanged changed && changed.cartId().equals(cartId));
-    }
-
-    /**
-     * 既定の会員（TestSecurityConfig）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる。AC-125）
-     */
-    private UUID createCart() throws Exception {
-        var body = mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.cartId"));
-    }
-
-    /**
-     * 注文手続きに進み、201 を確認する
-     */
-    private void startCheckout(UUID cart) throws Exception {
-        mockMvc.perform(startCheckoutRequest(cart)).andExpect(status().isCreated());
-    }
-
-    /**
-     * カートに入れ、204 を確認する
-     */
-    private void add(UUID cart, UUID variantId, int quantity) throws Exception {
-        mockMvc.perform(post("/api/store/carts/" + cart + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
-                .andExpect(status().isNoContent());
     }
 
     /**

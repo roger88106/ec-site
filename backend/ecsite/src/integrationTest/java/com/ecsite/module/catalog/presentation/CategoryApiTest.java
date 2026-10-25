@@ -1,12 +1,16 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.MutableClock;
+import com.ecsite.TestClockConfig;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -14,6 +18,7 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.contains;
@@ -33,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @AutoConfigureMockMvc
+@Import(TestClockConfig.class)
 @Transactional
 class CategoryApiTest {
 
@@ -48,6 +54,9 @@ class CategoryApiTest {
 
     @Autowired
     MockMvc mockMvc;
+
+    @Autowired
+    MutableClock clock;
 
     @Nested
     @DisplayName("AC-8、9、10 カテゴリの登録")
@@ -386,8 +395,8 @@ class CategoryApiTest {
      * カテゴリを登録して、その ID を返す
      */
     private String createdId(String name, String parentId) throws Exception {
-        var body = createCategory(name, parentId).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+        var parent = parentId == null ? null : UUID.fromString(parentId);
+        return new CatalogTestData(mockMvc, clock).category(name, parent).toString();
     }
 
     /**

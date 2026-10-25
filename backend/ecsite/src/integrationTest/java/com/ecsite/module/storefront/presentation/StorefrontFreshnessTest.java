@@ -1,5 +1,6 @@
 package com.ecsite.module.storefront.presentation;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
@@ -15,7 +16,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -25,7 +25,6 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -76,22 +75,14 @@ class StorefrontFreshnessTest {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         taxRateScheduleCache.evict();
-        taxCategoryId = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name": "標準"}"""));
-        mockMvc.perform(put("/api/admin/tax-categories/" + taxCategoryId + "/rates")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"version": 0, "rates": [{"ratePercent": 10}]}"""))
-                .andExpect(status().isNoContent());
-        productId = createdId(post("/api/admin/products").contentType(MediaType.APPLICATION_JSON).content("""
-                {"productCode": "FRESH-001", "name": "T シャツ", "description": "", "taxCategoryId": "%s",
-                 "priceExclTax": 1000}""".formatted(taxCategoryId)));
-        variantId = createdId(post("/api/admin/products/" + productId + "/variants")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"variantCode": "FRESH-001", "axisValues": [], "version": 0}"""));
-        mockMvc.perform(put("/api/admin/products/" + productId + "/publish")).andExpect(status().isNoContent());
-        inventory.create(UUID.fromString(variantId), UUID.fromString(productId));
+        var catalog = new CatalogTestData(mockMvc, clock);
+        taxCategoryId = catalog.taxCategory("標準", "10").toString();
+        var product = catalog.product("FRESH-001", UUID.fromString(taxCategoryId), "T シャツ", 1000).publish();
+        // 公開で進んだ時計を戻す（税率のキャッシュの確認が、NOW からの秒数で書かれている）
+        clock.setInstant(NOW);
+        productId = product.id.toString();
+        variantId = product.variantIds.getFirst().toString();
+        inventory.create(product.variantIds.getFirst(), product.id);
     }
 
     @Test
@@ -157,15 +148,5 @@ class StorefrontFreshnessTest {
         // 30 秒後：一覧を取得し直し、8% になる
         clock.setInstant(NOW.plus(Duration.ofSeconds(30)));
         mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1080));
-    }
-
-    // ============================== 補助 ==============================
-
-    /**
-     * 要求を送って 201 を確認し、応答の本文の ID を返す
-     */
-    private String createdId(RequestBuilder request) throws Exception {
-        var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
     }
 }

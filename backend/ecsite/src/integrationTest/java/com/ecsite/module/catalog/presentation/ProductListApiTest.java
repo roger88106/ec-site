@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -19,6 +20,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsInAnyOrder;
@@ -54,30 +56,27 @@ class ProductListApiTest {
     @Autowired
     MutableClock clock;
 
-    private String taxCategoryId;
+    private CatalogTestData catalog;
 
-    private String clothing;
+    private UUID taxCategoryId;
 
-    private String tops;
+    private UUID clothing;
 
-    private String tShirts;
+    private UUID tops;
 
-    private String food;
+    private UUID tShirts;
+
+    private UUID food;
 
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
-        taxCategoryId = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name": "標準"}"""));
-        mockMvc.perform(put("/api/admin/tax-categories/" + taxCategoryId + "/rates")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"version": 0, "rates": [{"ratePercent": 10}]}"""))
-                .andExpect(status().isNoContent());
-        clothing = createCategory("衣類", null);
-        tops = createCategory("トップス", clothing);
-        tShirts = createCategory("T シャツ", tops);
-        food = createCategory("食品", null);
+        catalog = new CatalogTestData(mockMvc, clock);
+        taxCategoryId = catalog.taxCategory("標準", "10");
+        clothing = catalog.category("衣類", null);
+        tops = catalog.category("トップス", clothing);
+        tShirts = catalog.category("T シャツ", tops);
+        food = catalog.category("食品", null);
     }
 
     @Test
@@ -156,9 +155,9 @@ class ProductListApiTest {
         createProduct("A-003", "食品の商品", food);
         createProduct("A-004", "カテゴリなしの商品");
 
-        mockMvc.perform(get(BASE).param("categoryId", clothing))
+        mockMvc.perform(get(BASE).param("categoryId", clothing.toString()))
                 .andExpect(jsonPath("$.items[*].id", contains(inTShirts, inClothing)));
-        mockMvc.perform(get(BASE).param("categoryId", tops))
+        mockMvc.perform(get(BASE).param("categoryId", tops.toString()))
                 .andExpect(jsonPath("$.items[*].id", contains(inTShirts)));
     }
 
@@ -168,14 +167,14 @@ class ProductListApiTest {
         var field = Category.class.getDeclaredField("MAX_DEPTH");
         field.setAccessible(true);
         int maxDepth = field.getInt(null);
-        var top = createCategory("深さ 1", null);
+        var top = catalog.category("深さ 1", null);
         var deepest = top;
         for (int depth = 2; depth <= maxDepth; depth++) {
-            deepest = createCategory("深さ " + depth, deepest);
+            deepest = catalog.category("深さ " + depth, deepest);
         }
         var product = createProduct("A-001", "いちばん深いカテゴリの商品", deepest);
 
-        mockMvc.perform(get(BASE).param("categoryId", top))
+        mockMvc.perform(get(BASE).param("categoryId", top.toString()))
                 .andExpect(jsonPath("$.items[*].id", contains(product)));
     }
 
@@ -186,7 +185,7 @@ class ProductListApiTest {
         createProduct("ABC-002", "パンツ", clothing);
         createProduct("XYZ-001", "T シャツ", clothing);
 
-        mockMvc.perform(get(BASE).param("code", "ABC").param("name", "シャツ").param("categoryId", clothing))
+        mockMvc.perform(get(BASE).param("code", "ABC").param("name", "シャツ").param("categoryId", clothing.toString()))
                 .andExpect(jsonPath("$.items[*].id", contains(target)));
     }
 
@@ -227,18 +226,9 @@ class ProductListApiTest {
     }
 
     /**
-     * カテゴリを登録して、その ID を返す。親がなければ最上位
-     */
-    private String createCategory(String name, String parentId) throws Exception {
-        var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
-        return createdId(post("/api/admin/categories").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name": "%s", "parentId": %s}""".formatted(name, parent)));
-    }
-
-    /**
      * 商品を登録し、時計を 1 分進める（登録日時をずらす）
      */
-    private String createProduct(String code, String name, String... categoryIds) throws Exception {
+    private String createProduct(String code, String name, UUID... categoryIds) throws Exception {
         var categories = String.join(", ", Arrays.stream(categoryIds).map("\"%s\""::formatted).toList());
         var id = createdId(post(BASE).contentType(MediaType.APPLICATION_JSON).content("""
                 {"productCode": "%s", "name": "%s", "description": "", "taxCategoryId": "%s",

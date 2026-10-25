@@ -10,6 +10,7 @@ import java.net.http.HttpClient;
 import java.net.http.HttpRequest;
 import java.net.http.HttpResponse;
 import java.time.Duration;
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -23,7 +24,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 統合テストで、税区分と商品を B 側の API で作る補助（spec 002 のカート・注文のテストで使う）。<br />
+ * 統合テストで、税区分・カテゴリ・商品を B 側の API で作る補助（spec 002 のカート・注文のテストで使う）。<br />
  * 公開するごとに時計を 1 分進める（新着順が決まるように）。品番は呼ぶたびに振り直す。
  */
 public class CatalogTestData {
@@ -78,7 +79,20 @@ public class CatalogTestData {
     }
 
     /**
-     * 軸を指定して商品を登録する。軸がなければ、バリアントを 1 つ持つ。
+     * カテゴリを登録する。
+     *
+     * @param name     名称
+     * @param parentId 親のカテゴリ ID（最上位なら null）
+     * @return カテゴリ ID
+     */
+    public UUID category(String name, UUID parentId) throws Exception {
+        var parent = parentId == null ? "null" : "\"%s\"".formatted(parentId);
+        return createdId(post("/api/admin/categories").contentType(MediaType.APPLICATION_JSON).content("""
+                {"name": "%s", "parentId": %s}""".formatted(name, parent)));
+    }
+
+    /**
+     * 軸を指定して商品を登録する。軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
      *
      * @param taxCategoryId 税区分 ID
      * @param name          商品名
@@ -88,15 +102,37 @@ public class CatalogTestData {
      */
     public TestProduct product(UUID taxCategoryId, String name, long priceExclTax, String... axes) throws Exception {
         sequence++;
+        return product("TD-" + sequence, taxCategoryId, name, priceExclTax, axes);
+    }
+
+    /**
+     * 品番と軸を指定して商品を登録する。軸がなければ、バリアントを 1 つ持つ。
+     *
+     * @param productCode   商品品番
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param priceExclTax  税抜価格
+     * @param axes          軸の名前
+     * @return 商品
+     */
+    public TestProduct product(String productCode, UUID taxCategoryId, String name, long priceExclTax, String... axes)
+            throws Exception {
         var axesJson = Arrays.stream(axes).map("\"%s\""::formatted).collect(Collectors.joining(", "));
         var id = createdId(post("/api/admin/products").contentType(MediaType.APPLICATION_JSON).content("""
-                {"productCode": "TD-%d", "name": "%s", "description": "説明", "taxCategoryId": "%s",
-                 "priceExclTax": %d, "axes": [%s]}""".formatted(sequence, name, taxCategoryId, priceExclTax, axesJson)));
-        var product = new TestProduct(id, "TD-" + sequence);
+                {"productCode": "%s", "name": "%s", "description": "説明", "taxCategoryId": "%s",
+                 "priceExclTax": %d, "axes": [%s]}""".formatted(productCode, name, taxCategoryId, priceExclTax, axesJson)));
+        var product = new TestProduct(id, productCode);
         if (axes.length == 0) {
             product.variant();
         }
         return product;
+    }
+
+    /**
+     * 日時を JSON の値にする（null は null）
+     */
+    private static String jsonInstant(Instant instant) {
+        return instant == null ? "null" : "\"" + instant + "\"";
     }
 
     /**
@@ -223,6 +259,30 @@ public class CatalogTestData {
          */
         public TestProduct unpublish() throws Exception {
             mockMvc.perform(put("/api/admin/products/" + id + "/unpublish")).andExpect(status().isNoContent());
+            return this;
+        }
+
+        /**
+         * 販売を終了する。
+         */
+        public TestProduct discontinue() throws Exception {
+            mockMvc.perform(put("/api/admin/products/" + id + "/discontinue")).andExpect(status().isNoContent());
+            return this;
+        }
+
+        /**
+         * 公開期間を設定する（null は制限なし）。
+         */
+        public TestProduct period(Instant publishStart, Instant publishEnd) throws Exception {
+            var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
+            var current = JsonPath.<Integer>read(detail, "$.version");
+            mockMvc.perform(put("/api/admin/products/" + id + "/publication-period")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    {"publishStart": %s, "publishEnd": %s, "version": %d}"""
+                                    .formatted(jsonInstant(publishStart), jsonInstant(publishEnd), current)))
+                    .andExpect(status().isNoContent());
+            version = current + 1L;
             return this;
         }
 

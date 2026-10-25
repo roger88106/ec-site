@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.api;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -54,7 +55,7 @@ class StoreProductSearchTest {
     @Autowired
     MutableClock clock;
 
-    private String taxCategoryId;
+    private UUID taxCategoryId;
 
     private int sequence;
 
@@ -62,13 +63,7 @@ class StoreProductSearchTest {
     void setUp() throws Exception {
         clock.setInstant(NOW);
         taxRateScheduleCache.evict();
-        taxCategoryId = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name": "標準"}"""));
-        mockMvc.perform(put("/api/admin/tax-categories/" + taxCategoryId + "/rates")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"version": 0, "rates": [{"ratePercent": 10}]}"""))
-                .andExpect(status().isNoContent());
+        taxCategoryId = new CatalogTestData(mockMvc, clock).taxCategory("標準", "10");
     }
 
     @Test
@@ -143,7 +138,8 @@ class StoreProductSearchTest {
     }
 
     /**
-     * バリアントを 1 つ持つ商品を登録して公開し、時計を 1 分進める
+     * バリアントを 1 つ持つ商品を登録して公開し、時計を 1 分進める。
+     * CatalogTestData は商品の説明を指定できないので、ここだけ API で作る
      */
     private String publishedProduct(String name, String description) throws Exception {
         sequence++;

@@ -13,7 +13,7 @@ T181-01-01〜03 は同じテストのファイル（`StorefrontApiTest` など�
 - [x] **T181-01-01** 在庫を作って入荷として調整する補助 `InventoryTestData` を作り、`createIfAbsent` と入荷の調整を書いている全ての統合テストから使う（DC-181-27）。
   - 依存：なし
   - 範囲：`it/InventoryTestData.java`（新規）、`it/module/` の下で `StockAdjustmentReason.ARRIVAL` を使うテスト（在庫の Repository のテスト `JooqStockItemRepositoryTest` を除く。調整そのものを確認する箇所は替えない）
-- [x] **T181-01-02** `CatalogTestData` に、カテゴリの登録、販売の終了、販売期間、品番を指定する商品の登録を追加する。店舗とカタログのテストの、商品・税区分・カテゴリの登録の再定義（`StorefrontApiTest` の内部クラス `TestProduct` を含む）を補助の呼び出しに置き換える（DC-181-27）。
+- [x] **T181-01-02** `CatalogTestData` に、カテゴリの登録、販売の終了、公開期間、品番を指定する商品の登録を追加する。店舗とカタログのテストの、商品・税区分・カテゴリの登録の再定義（`StorefrontApiTest` の内部クラス `TestProduct` を含む）を補助の呼び出しに置き換える（DC-181-27）。
   - 依存：T181-01-01
   - 範囲：`it/CatalogTestData.java`、`it/module/storefront/presentation/StorefrontApiTest.java`（`:98-109,391-419,421-428,440-537`）、`StorefrontFreshnessTest.java`（`:74-94`）、`it/module/catalog/api/StoreCatalogApiTest.java`（`:74-80,230-278`）、`StoreProductSearchTest.java`（`:61-72,137-161`）、`it/module/catalog/presentation/CategoryApiTest.java`（`:377-383`）、`ProductListApiTest.java`（`:232-236`）
 - [x] **T181-01-03** `CatalogTestData.TestProduct` に、画像の受付とアップロード（`upload()`）と確定（`addImage(uploadId, version)`）を追加し、`image()` をこの 2 つで組み立てる。画像のテスト 3 つの再定義を補助の呼び出しに置き換える（DC-181-27）。

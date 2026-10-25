@@ -96,6 +96,9 @@ class EventResubmissionJobTest {
     @Autowired
     AsyncEvents asyncEvents;
 
+    /**
+     * イベントの発行を確かめる補助
+     */
     EventPublications publications;
 
     @BeforeEach

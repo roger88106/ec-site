@@ -54,6 +54,9 @@ class CheckoutCartChangeApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -65,10 +68,19 @@ class CheckoutCartChangeApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
 
     private UUID cartId;

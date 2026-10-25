@@ -60,6 +60,9 @@ class CheckoutApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -68,8 +71,14 @@ class CheckoutApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
     private UUID standard;

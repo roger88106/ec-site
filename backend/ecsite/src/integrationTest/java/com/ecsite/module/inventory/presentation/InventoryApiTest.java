@@ -65,6 +65,9 @@ class InventoryApiTest {
     @Autowired
     StockReservationApi stockReservationApi;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     private UUID productId;
@@ -103,7 +106,7 @@ class InventoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-42、43、44、46 在庫の調整")
+    @DisplayName("AC-42、43、46 在庫の調整")
     class Adjust {
 
         @Test

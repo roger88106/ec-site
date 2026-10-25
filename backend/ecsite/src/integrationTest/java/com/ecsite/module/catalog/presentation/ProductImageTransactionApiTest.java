@@ -77,6 +77,9 @@ class ProductImageTransactionApiTest {
      */
     private final List<String> publishedKeys = new ArrayList<>();
 
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
 
     private CatalogTestData.TestProduct product;

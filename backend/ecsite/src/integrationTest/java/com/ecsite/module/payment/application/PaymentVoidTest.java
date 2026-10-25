@@ -53,6 +53,9 @@ class PaymentVoidTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 支払を進める補助
+     */
     PaymentTestData payments;
 
     @Autowired

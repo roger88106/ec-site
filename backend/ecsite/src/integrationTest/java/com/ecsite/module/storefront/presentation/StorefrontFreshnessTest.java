@@ -63,8 +63,14 @@ class StorefrontFreshnessTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private String taxCategoryId;
 
     private String productId;

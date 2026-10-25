@@ -50,8 +50,14 @@ class ProductListApiTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData catalog;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
 
     private UUID clothing;

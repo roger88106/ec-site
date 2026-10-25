@@ -58,11 +58,17 @@ class StorefrontCartTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
 
     private UUID standard;
@@ -88,8 +94,8 @@ class StorefrontCartTest {
     void returnsCartWithAmounts() throws Exception {
         var shirt = data.product(standard, "T シャツ", 2700, "色", "サイズ").variant("白", "M").publish();
         var tea = data.product(reduced, "お茶", 1234).publish();
-        stock(shirt.variantIds.getFirst(), 5);
-        stock(tea.variantIds.getFirst(), 5);
+        inventory.stock(shirt.variantIds.getFirst(), UUID.randomUUID(), 5);
+        inventory.stock(tea.variantIds.getFirst(), UUID.randomUUID(), 5);
         add(shirt.variantIds.getFirst(), 1);
         add(tea.variantIds.getFirst(), 1);
 
@@ -123,8 +129,8 @@ class StorefrontCartTest {
     void returnsImageUrlOfVariantOrRepresentative() throws Exception {
         var shirt = data.product(standard, "T シャツ", 2700, "色").variant("白").variant("黒")
                 .image().image().variantImage(0, 1).publish();
-        stock(shirt.variantIds.get(0), 5);
-        stock(shirt.variantIds.get(1), 5);
+        inventory.stock(shirt.variantIds.get(0), UUID.randomUUID(), 5);
+        inventory.stock(shirt.variantIds.get(1), UUID.randomUUID(), 5);
         add(shirt.variantIds.get(0), 1);
         add(shirt.variantIds.get(1), 1);
 
@@ -137,7 +143,7 @@ class StorefrontCartTest {
     @DisplayName("AC-79 単価は常に現在の価格で表示する")
     void showsCurrentPrice() throws Exception {
         var product = data.product(standard, "商品", 1000).publish();
-        stock(product.variantIds.getFirst(), 5);
+        inventory.stock(product.variantIds.getFirst(), UUID.randomUUID(), 5);
         add(product.variantIds.getFirst(), 2);
 
         product.changePrice(standard, 2000);
@@ -156,7 +162,7 @@ class StorefrontCartTest {
         var short_ = data.product(standard, "足りなくなる", 1000).publish();
         var ok = data.product(standard, "買える", 1000).publish();
         for (var product : new CatalogTestData.TestProduct[]{hidden, suspended, soldOut, short_, ok}) {
-            stock(product.variantIds.getFirst(), 3);
+            inventory.stock(product.variantIds.getFirst(), UUID.randomUUID(), 3);
             add(product.variantIds.getFirst(), 2);
         }
         hidden.unpublish();
@@ -177,7 +183,7 @@ class StorefrontCartTest {
     @DisplayName("AC-81 最後の変更から 30 日たったカートは空として返す。空のカートは送料 0 で注文できない")
     void returnsExpiredCartAsEmpty() throws Exception {
         var product = data.product(standard, "商品", 1000).publish();
-        stock(product.variantIds.getFirst(), 5);
+        inventory.stock(product.variantIds.getFirst(), UUID.randomUUID(), 5);
         var changedAt = clock.instant();
         add(product.variantIds.getFirst(), 1);
 
@@ -213,14 +219,6 @@ class StorefrontCartTest {
                         .content("""
                                 {"variantId": "%s", "quantity": %d}""".formatted(variantId, quantity)))
                 .andExpect(status().isNoContent());
-    }
-
-    /**
-     * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
-     */
-    private void stock(UUID variantId, int quantity) {
-        inventory.create(variantId, UUID.randomUUID());
-        adjust(variantId, quantity);
     }
 
     /**

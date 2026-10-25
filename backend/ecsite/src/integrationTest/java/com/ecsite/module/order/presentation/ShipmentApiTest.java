@@ -69,11 +69,17 @@ class ShipmentApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
     private UUID variantId;
@@ -239,6 +245,9 @@ class ShipmentApiTest {
     @DisplayName("AC-173 入力")
     class Input {
 
+        /**
+         * 入力の検証で拒否される組。
+         */
         static Stream<Arguments> invalidInputs() {
             return Stream.of(
                     Arguments.of("一覧にない配送業者", "KURONEKO", "123456789012", null),

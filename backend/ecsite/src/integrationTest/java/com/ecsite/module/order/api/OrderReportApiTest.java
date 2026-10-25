@@ -71,6 +71,9 @@ class OrderReportApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -79,6 +82,9 @@ class OrderReportApiTest {
     @Autowired
     OrderReportApi orderReportApi;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
     private CatalogTestData.TestProduct shirt;
@@ -197,6 +203,9 @@ class OrderReportApiTest {
         }
     }
 
+    /**
+     * 型が record のとき、または record を要素に持つ List などのとき、その中の項目を集める。
+     */
     private static void collectRecordComponents(Type type, List<String> paths) {
         if (type instanceof Class<?> clazz && clazz.isRecord()) {
             collectRecordComponents(clazz, paths);

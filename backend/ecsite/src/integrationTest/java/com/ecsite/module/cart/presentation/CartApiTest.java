@@ -73,6 +73,9 @@ class CartApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -84,6 +87,9 @@ class CartApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
 
     private UUID standard;
@@ -104,7 +110,7 @@ class CartApiTest {
     }
 
     @Nested
-    @DisplayName("AC-72、73、74、75、76 カートに入れる")
+    @DisplayName("AC-72、74、75、76 カートに入れる")
     class AddItem {
 
         @Test

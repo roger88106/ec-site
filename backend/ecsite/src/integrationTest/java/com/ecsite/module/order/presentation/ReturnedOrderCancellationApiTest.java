@@ -65,6 +65,9 @@ class ReturnedOrderCancellationApiTest {
     @Autowired
     MockCarrier mockCarrier;
 
+    /**
+     * 出荷を作る補助
+     */
     private ShippingTestData shipping;
 
     @Autowired
@@ -76,6 +79,9 @@ class ReturnedOrderCancellationApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired

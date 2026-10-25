@@ -42,6 +42,8 @@ public final class ErrorCodeCheck {
     private final Set<String> common;
 
     /**
+     * 契約から読んだエラーのコードで確認を作る。
+     *
      * @param apis   操作ごとの返しうるエラーのコード
      * @param common 共通のエラー
      */

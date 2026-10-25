@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 統合テストで、税区分・カテゴリ・商品を B 側の API で作る補助（spec 002 のカート・注文のテストで使う）。<br />
+ * 統合テストで、税区分・カテゴリ・商品を B 側の API で作る補助（カート・注文・店舗のテストで使う）。<br />
  * 公開するごとに時計を 1 分進める（新着順が決まるように）。品番は呼ぶたびに振り直す。
  */
 public class CatalogTestData {

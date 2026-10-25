@@ -68,6 +68,9 @@ class StorefrontApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -76,6 +79,9 @@ class StorefrontApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData catalog;
 
     private UUID standard;
@@ -361,7 +367,7 @@ class StorefrontApiTest {
     class Categories {
 
         @Test
-        @DisplayName("カテゴリの木が、運営者が決めた並び順で返る")
+        @DisplayName("カテゴリの木が、自分の最上位の 2 つを登録順に、子を登録順に含んで返る")
         void listsCategoryTree() throws Exception {
             var rootName = "衣類 " + UUID.randomUUID();
             var clothing = catalog.category(rootName, null);

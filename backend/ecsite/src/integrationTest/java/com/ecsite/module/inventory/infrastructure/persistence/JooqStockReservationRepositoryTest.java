@@ -1,10 +1,12 @@
 package com.ecsite.module.inventory.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.module.inventory.domain.stock.LockedStock;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.inventory.domain.stock.port.StockReservationRepository;
 import org.jooq.DSLContext;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -35,8 +37,18 @@ class JooqStockReservationRepositoryTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     DSLContext dsl;
+
+    @BeforeEach
+    void setUp() {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
+    }
 
     @Test
     @DisplayName("バリアントの在庫を、バリアント ID の順に数量つきで取得し、在庫のないバリアントは含まない")
@@ -151,11 +163,15 @@ class JooqStockReservationRepositoryTest {
     // ============================== 補助 ==============================
 
     /**
-     * 在庫を作り、数量を設定して、在庫 ID を返す
+     * 在庫を作り、数量を入荷として設定して、在庫 ID を返す
      */
     private UUID createStock(UUID variantId, int quantity) {
-        stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        dsl.execute("update inventory.stock_item set quantity = ? where variant_id = ?", quantity, variantId);
+        var productId = UUID.randomUUID();
+        if (quantity > 0) {
+            inventory.stock(variantId, productId, quantity);
+        } else {
+            inventory.create(variantId, productId);
+        }
         return dsl.resultQuery("select id from inventory.stock_item where variant_id = ?", variantId)
                 .fetchSingle(0, UUID.class);
     }

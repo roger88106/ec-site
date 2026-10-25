@@ -59,6 +59,9 @@ class StoreCatalogApiTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData catalog;
 
     private UUID standard;

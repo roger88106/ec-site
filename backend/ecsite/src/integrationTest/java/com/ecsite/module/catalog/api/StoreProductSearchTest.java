@@ -49,8 +49,14 @@ class StoreProductSearchTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData catalog;
 
     /**

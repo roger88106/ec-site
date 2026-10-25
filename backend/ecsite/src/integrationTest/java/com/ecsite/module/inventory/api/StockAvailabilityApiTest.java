@@ -38,6 +38,9 @@ class StockAvailabilityApiTest {
     @Autowired
     StockReservationApi reservationApi;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @BeforeEach

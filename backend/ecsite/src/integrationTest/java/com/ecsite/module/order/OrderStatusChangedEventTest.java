@@ -79,6 +79,9 @@ class OrderStatusChangedEventTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -87,8 +90,14 @@ class OrderStatusChangedEventTest {
     @Autowired
     ApplicationEvents events;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
+    /**
+     * 出荷を作る補助
+     */
     private ShippingTestData shipping;
 
     private UUID variantId;

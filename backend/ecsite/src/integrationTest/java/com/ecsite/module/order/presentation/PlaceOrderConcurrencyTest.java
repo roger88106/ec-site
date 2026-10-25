@@ -65,13 +65,22 @@ class PlaceOrderConcurrencyTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
 
     private CatalogTestData.TestProduct product;

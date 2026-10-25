@@ -81,6 +81,9 @@ class OrderPaymentApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -89,6 +92,9 @@ class OrderPaymentApiTest {
     @Autowired
     AsyncEvents asyncEvents;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
     /**
@@ -96,6 +102,9 @@ class OrderPaymentApiTest {
      */
     private TestTokens.Builder owner;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
 
     private UUID variantId;
@@ -421,6 +430,9 @@ class OrderPaymentApiTest {
         return mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(status().isOk());
     }
 
+    /**
+     * 注文の注文番号を、購入者として取得する。
+     */
     private String orderNumber(UUID orderId) throws Exception {
         return JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andReturn().getResponse()
                 .getContentAsString(), "$.orderNumber");

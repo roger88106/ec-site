@@ -63,6 +63,9 @@ class ReportApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private UUID taxCategoryId;
     private CatalogTestData.TestProduct shirt;
 

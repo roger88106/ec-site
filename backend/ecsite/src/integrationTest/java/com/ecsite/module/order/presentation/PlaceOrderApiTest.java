@@ -72,6 +72,9 @@ class PlaceOrderApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -83,8 +86,14 @@ class PlaceOrderApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
 
+    /**
+     * 注文を作る補助
+     */
     private OrderTestData orders;
 
     private UUID standard;
@@ -128,7 +137,7 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.items", hasSize(1)))
                     .andExpect(jsonPath("$.items[0].variantId").value(variant.toString()))
                     .andExpect(jsonPath("$.items[0].quantity").value(2));
-            var id = JsonPath.<String>read(orderId, "$.id");
+            var id = TestJson.createdId(orderId);
             mockMvc.perform(get("/api/store/orders/" + id))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
@@ -139,8 +148,8 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.items[0].reason").value("ORDER"))
                     .andExpect(jsonPath("$.items[0].delta").value(-2))
                     .andExpect(jsonPath("$.items[0].orderNumber").value(orderNumber))
-                    .andExpect(jsonPath("$.items[0].orderId").value(id));
-            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(UUID.fromString(id));
+                    .andExpect(jsonPath("$.items[0].orderId").value(id.toString()));
+            assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(id);
         }
 
         @Test
@@ -150,7 +159,7 @@ class PlaceOrderApiTest {
 
             var body = place(checkoutId, 6940).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
 
-            mockMvc.perform(get("/api/store/orders/" + JsonPath.<String>read(body, "$.id")))
+            mockMvc.perform(get("/api/store/orders/" + TestJson.createdId(body)))
                     .andExpect(jsonPath("$.orderNumber", matchesPattern("20261008-\\d{6}")));
         }
 
@@ -293,8 +302,8 @@ class PlaceOrderApiTest {
         @DisplayName("AC-91 同じ注文手続きでの再送には、作成済みの注文 ID を 200 で返し、注文は 1 件だけ")
         void returnsExistingOrderOnResend() throws Exception {
             var checkoutId = orders.startCheckout(cartId);
-            var first = JsonPath.<String>read(place(checkoutId, 6940).andExpect(status().isCreated())
-                    .andReturn().getResponse().getContentAsString(), "$.id");
+            var first = TestJson.createdId(place(checkoutId, 6940).andExpect(status().isCreated())
+                    .andReturn().getResponse().getContentAsString()).toString();
 
             place(checkoutId, 6940)
                     .andExpect(status().isOk())
@@ -329,7 +338,7 @@ class PlaceOrderApiTest {
             var body = place(checkoutId, total).andExpect(status().isCreated())
                     .andReturn().getResponse().getContentAsString();
 
-            mockMvc.perform(get("/api/store/orders/" + JsonPath.<String>read(body, "$.id")))
+            mockMvc.perform(get("/api/store/orders/" + TestJson.createdId(body)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.lines[0].quantity").value(max));
         }
@@ -470,7 +479,7 @@ class PlaceOrderApiTest {
      */
     private String placeOrder() throws Exception {
         var body = place(orders.startCheckout(cartId), 6940).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+        return TestJson.createdId(body).toString();
     }
 
     /**

@@ -38,7 +38,7 @@ DC の列は「181-1」の形で書く。spec の番号 181 を付けた DC-181-
 | テストデータ | 補助の置き場所と形 | 使う側（今、再定義しているもの） |
 |--------------|--------------------|----------------------------------|
 | 在庫を作って入荷として調整する | 新しい `it/InventoryTestData`。`stock(variantId, productId, quantity)` は、今のテストと同じく在庫の Repository の作成と調整を呼ぶ | 在庫・店舗・注文・カートの統合テスト（約 27 ファイル。`createIfAbsent` と入荷の調整を書いているもの全て） |
-| 公開した商品（税区分の登録を含む） | `it/CatalogTestData`。`TestProduct` に販売の終了（`discontinue()`）と販売期間（`period(...)`）を追加する。品番を指定する `product(...)` のオーバーロードを追加する | `StorefrontApiTest` の内部クラス `TestProduct` と、`StoreCatalogApiTest`、`StoreProductSearchTest`、`StorefrontFreshnessTest` の商品と税区分の登録 |
+| 公開した商品（税区分の登録を含む） | `it/CatalogTestData`。`TestProduct` に販売の終了（`discontinue()`）と公開期間（`period(...)`）を追加する。品番を指定する `product(...)` のオーバーロードを追加する | `StorefrontApiTest` の内部クラス `TestProduct` と、`StoreCatalogApiTest`、`StoreProductSearchTest`、`StorefrontFreshnessTest` の商品と税区分の登録 |
 | カテゴリ | `it/CatalogTestData` に `category(name, parentId)` | `CategoryApiTest`、`ProductListApiTest`、`StoreCatalogApiTest`、`StorefrontApiTest` |
 | 画像の受付・アップロード・確定 | `it/CatalogTestData.TestProduct` に `upload()`（受付とアップロード。受付の ID を返す）と `addImage(uploadId, version)`（確定。結果の `ResultActions` を返す）。`image()` はこの 2 つで組み立てる | `ProductImageApiTest`、`ProductImageServiceErrorApiTest`、`ProductImageTransactionApiTest` |
 | カートに入れて注文手続きを始める | `it/OrderTestData` に `cart()`、`add(cartId, variantId, quantity)`、`startCheckout(cartId)`。会員のカートは token を受け取るオーバーロード | `CheckoutApiTest`、`CheckoutCartChangeApiTest`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest`、`MemberOrderApiTest` |

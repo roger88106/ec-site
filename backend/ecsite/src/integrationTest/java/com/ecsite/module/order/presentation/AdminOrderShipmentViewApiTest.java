@@ -82,6 +82,9 @@ class AdminOrderShipmentViewApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
     private InventoryTestData inventory;
 
     @Autowired
@@ -92,6 +95,9 @@ class AdminOrderShipmentViewApiTest {
      */
     private OrderTestData orders;
 
+    /**
+     * 出荷を作る補助
+     */
     private ShippingTestData shipping;
 
     /**

@@ -1,6 +1,6 @@
 package com.ecsite.modulith;
 
-import com.ecsite.EcSiteApplication;
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -44,7 +44,7 @@ class ModuleDiagramTest {
     /** 手書きの図で、モジュールを表す節点（{@code module_<名前>}） */
     private static final Pattern MODULE_NODE = Pattern.compile("\\bmodule_([a-z]+)\\b");
 
-    private final ApplicationModules modules = ApplicationModules.of(EcSiteApplication.class, ModulithTest.TEST_CLASSES);
+    private final ApplicationModules modules = ProductionClasses.applicationModules();
 
     @Test
     @DisplayName("全体構成の文書のモジュールの依存とイベントの図が、コードから作った図と一致する")

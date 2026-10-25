@@ -1,8 +1,6 @@
 package com.ecsite.modulith;
 
-import com.ecsite.EcSiteApplication;
-import com.tngtech.archunit.base.DescribedPredicate;
-import com.tngtech.archunit.core.domain.JavaClass;
+import com.ecsite.ProductionClasses;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.modulith.core.ApplicationModules;
@@ -17,19 +15,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ModulithTest {
 
     /**
-     * テストのクラス（名前が Test で終わるクラスと、その入れ子のクラス）。<br />
-     * テストは準備のために他のモジュールの内部（リポジトリなど）を直接使うことがあるので、境界の検証から除く。
-     * 検証するのは本番のコードの境界。
+     * Spring Modulith のモジュールの一覧（テストのクラスを除く）
      */
-    static final DescribedPredicate<JavaClass> TEST_CLASSES = DescribedPredicate.describe(
-            "test classes", javaClass -> javaClass.getName().matches(".*Test(\\$.*)?"));
-
-    private final ApplicationModules modules = ApplicationModules.of(EcSiteApplication.class, TEST_CLASSES);
+    private final ApplicationModules modules = ProductionClasses.applicationModules();
 
     @Test
     @DisplayName("モジュール間の依存が宣言のとおりである")
     void verifiesModuleDependencies() {
-        modules.forEach(System.out::println);
         modules.verify();
     }
 

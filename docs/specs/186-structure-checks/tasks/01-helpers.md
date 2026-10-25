@@ -23,7 +23,7 @@
 - [x] **T186-01-03** `architecture/` の 8 つの検査、`common/message/MessageContractTest`、`contract/ErrorCodeContractTest` の本番のクラスの読み込み、レベル A の一覧、層を持つモジュールを求める処理、モジュールの名前の取り出し、生成したコードの判定を、`ProductionClasses` の呼び出しに置き換える。`ModuleRoleTest` の static に持たない理由のコメントを削除する（DC-186-8、10）。
   - 依存：T186-01-02
   - 範囲：`test/architecture/*.java`、`test/common/message/MessageContractTest.java`、`test/contract/ErrorCodeContractTest.java`
-- [ ] **T186-01-04** `ModulithTest` と `ModuleDiagramTest` が、`ProductionClasses` のモジュールの一覧と `TEST_CLASSES` を使う。`ModulithTest` の標準出力への書き出しを削除する（DC-186-8、12）。
+- [x] **T186-01-04** `ModulithTest` と `ModuleDiagramTest` が、`ProductionClasses` のモジュールの一覧と `TEST_CLASSES` を使う。`ModulithTest` の標準出力への書き出しを削除する（DC-186-8、12）。
   - 依存：T186-01-02
   - 範囲：`test/modulith/ModulithTest.java`、`test/modulith/ModuleDiagramTest.java`
 - [ ] **T186-01-05** [テスト] モジュールの図の描画のテスト `rendersDependenciesAndEvents` を、固定した小さな入力（[plan](../plan.md) 第 1.3 節の record）を描いて確認する形に書き換え、record から描くメソッドがないので失敗する（コンパイルできない）ことを確認する（DC-186-12）。

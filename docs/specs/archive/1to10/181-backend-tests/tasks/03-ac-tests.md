@@ -2,7 +2,7 @@
 
 - 前提：段階 2
 - 完了条件：DC-181-1〜17 を満たす。強めたテストと追加したテストについて、一時的に期待値かコードを変えて失敗することを確認した。AC 一覧のテストの列を再生成し、テストのない有効・変更の AC がない。`./gradlew check`、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 3 節、[spec](../spec.md) の DS-181-1、2 と DC-181-1〜17、DN-181-1〜7、[テストの書き方](../../../rules/test-writing.md) 第 2 節、[AC 一覧](../../../design/acceptance-criteria.md)
+- 参照：[plan](../plan.md) 第 3 節、[spec](../spec.md) の DS-181-1、2 と DC-181-1〜17、DN-181-1〜7、[テストの書き方](../../../../../rules/test-writing.md) 第 2 節、[AC 一覧](../../../../../design/acceptance-criteria.md)
 
 ## タスク
 

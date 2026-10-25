@@ -1,8 +1,8 @@
 # 段階 1：テストの補助、待ち方、置き場所
 
-- 前提：plan が承認された。実装を始める前の照合（[開発の進め方](../../../rules/workflow.md) 第 5.6 節）を済ませた。spec 182 のマージの有無を確認し、マージ済みなら `develop` を取り込んだ（[plan](../plan.md) の共通の決定）。
+- 前提：plan が承認された。実装を始める前の照合（[開発の進め方](../../../../../rules/workflow.md) 第 5.6 節）を済ませた。spec 182 のマージの有無を確認し、マージ済みなら `develop` を取り込んだ（[plan](../plan.md) の共通の決定）。
 - 完了条件：DC-181-24〜27 を満たす。補助へ移したテストの確認は変わっていない（差分で確認する）。テストの書き方 第 3.2 節に補助の一覧がある。`./gradlew check`、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 5 節、[spec](../spec.md) の DS-181-4 と DC-181-24〜27、DN-181-1〜7、[テストの書き方](../../../rules/test-writing.md) 第 3 節、[テストの書き方](../../../rules/test-writing.md) 第 5 節
+- 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 5 節、[spec](../spec.md) の DS-181-4 と DC-181-24〜27、DN-181-1〜7、[テストの書き方](../../../../../rules/test-writing.md) 第 3 節、[テストの書き方](../../../../../rules/test-writing.md) 第 5 節
 
 ## タスク
 
@@ -43,7 +43,7 @@ T181-01-01〜03 は同じテストのファイル（`StorefrontApiTest` など�
 - [x] **T181-01-11** [P] エラーの種類の検査の、契約を読んで照合する処理を `fix/` に移し、MockMvc に接続する設定だけを `it/` に残す。検査のテストを `test/` に移す。`fix/` の依存に JSON の path と YAML の読み込みのライブラリを追加する（DC-181-26）。
   - 依存：なし
   - 範囲：`it/config/security/ErrorCodeCheck.java`、`it/config/security/ErrorCodeCheckTest.java`、`fix/config/security/`（新規）、`test/config/security/ErrorCodeCheckTest.java`（移動先）、`backend/ecsite/build.gradle.kts`
-- [x] **T181-01-12** [テストの書き方](../../../rules/test-writing.md) 第 3.2 節に、補助の一覧（`InventoryTestData`、`ShippingTestData`、`PaymentTestData`、`TestJson`）を追記する。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。
+- [x] **T181-01-12** [テストの書き方](../../../../../rules/test-writing.md) 第 3.2 節に、補助の一覧（`InventoryTestData`、`ShippingTestData`、`PaymentTestData`、`TestJson`）を追記する。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。
   - 依存：T181-01-01〜07
   - 範囲：`docs/rules/test-writing.md`、`docs/design/glossary.md`
 - [x] **T181-01-13** 段階のレビューと全体の検査：profile「厚め」で、一般の観点（規則、重複と抽象）を汎用で 2 回実施する。補助へ移したテストの確認が変わっていないことを、差分で確認させる。`./gradlew check`、`scripts/ci/check-all.sh` を実行する。

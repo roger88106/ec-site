@@ -2,7 +2,7 @@
 
 - 前提：段階 1
 - 完了条件：DC-181-18〜23 を満たす。[plan](../plan.md) 第 2 節の 7 ファイルに、データを削除する後処理が残っていない。統合テストを、分け方を変えて 2 回実行し、どちらも通る。`./gradlew check`、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 7 節、[spec](../spec.md) の DS-181-3 と DC-181-18〜23、DN-181-1〜7、[テストの書き方](../../../rules/test-writing.md) 第 3.1 節
+- 参照：[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 7 節、[spec](../spec.md) の DS-181-3 と DC-181-18〜23、DN-181-1〜7、[テストの書き方](../../../../../rules/test-writing.md) 第 3.1 節
 
 ## タスク
 

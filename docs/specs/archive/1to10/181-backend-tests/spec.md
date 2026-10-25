@@ -27,7 +27,7 @@ MVP 019 の全体のレビューと spec 155 の後に、バックエンドの�
 - 理由：1 つの pull request が小さくなり、レビューの負担が減るため。
 - DS-181-6、7 と DC-181-32〜44 は、欠番として残す。新しい追跡の issue は #186 である。
 
-本 spec は整理の spec である（[文書の記号と番号](../../rules/notation.md)）。
+本 spec は整理の spec である（[文書の記号と番号](../../../../rules/notation.md)）。
 
 ## 2. 用語
 
@@ -141,7 +141,7 @@ AC のテストのうち、状態コードだけ、空であることだけ、�
 | 統合テストの補助 | `src/integrationTest/` の直下（`CatalogTestData`、`OrderTestData`、`AsyncEvents` など）と、新しい補助 | DS-181-3、4 |
 | カートの永続化とその呼び出し | `module/cart/` の infrastructure と application | DS-181-5 |
 | AC の除外の一覧 | `scripts/ci/` の除外の一覧（DC-181-11 で除外にするとき） | DS-181-1 |
-| 規則の文書 | [テストの書き方](../../rules/test-writing.md)（補助の一覧など、plan で決める） | 全て |
+| 規則の文書 | [テストの書き方](../../../../rules/test-writing.md)（補助の一覧など、plan で決める） | 全て |
 
 ## 6. 非機能要件
 

@@ -2,13 +2,11 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -63,6 +61,8 @@ class CheckoutApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     StockReservationApi stockReservationApi;
 
@@ -77,6 +77,7 @@ class CheckoutApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
@@ -131,9 +132,7 @@ class CheckoutApiTest {
                 .andExpect(jsonPath("$.errorCode").value("CART_NOT_ORDERABLE"));
 
         var product = data.product(standard, "販売停止にする", 1000, "色").variant("白").publish();
-        stockItemRepository.createIfAbsent(product.variantIds.getFirst(), product.id);
-        stockItemRepository.adjust(product.variantIds.getFirst(),
-                StockAdjustment.create(3, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+        inventory.stock(product.variantIds.getFirst(), product.id, 3);
         add(cartId, product.variantIds.getFirst(), 1);
         product.suspend(0);
 
@@ -223,9 +222,7 @@ class CheckoutApiTest {
     private UUID stockedVariant(int quantity) throws Exception {
         var product = data.product(standard, "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId,
-                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+        inventory.stock(variantId, product.id, quantity);
         return variantId;
     }
 }

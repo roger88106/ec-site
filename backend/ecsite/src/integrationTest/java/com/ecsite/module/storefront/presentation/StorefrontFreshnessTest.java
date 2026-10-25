@@ -1,12 +1,10 @@
 package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
@@ -65,6 +63,8 @@ class StorefrontFreshnessTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     private String taxCategoryId;
 
     private String productId;
@@ -73,6 +73,7 @@ class StorefrontFreshnessTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         taxRateScheduleCache.evict();
         taxCategoryId = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
@@ -90,7 +91,7 @@ class StorefrontFreshnessTest {
                 .content("""
                         {"variantCode": "FRESH-001", "axisValues": [], "version": 0}"""));
         mockMvc.perform(put("/api/admin/products/" + productId + "/publish")).andExpect(status().isNoContent());
-        stockItemRepository.createIfAbsent(UUID.fromString(variantId), UUID.fromString(productId));
+        inventory.create(UUID.fromString(variantId), UUID.fromString(productId));
     }
 
     @Test
@@ -125,7 +126,7 @@ class StorefrontFreshnessTest {
     void reflectsStockChange() throws Exception {
         mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(false));
 
-        stockItemRepository.adjust(UUID.fromString(variantId), StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(UUID.fromString(variantId), UUID.fromString(productId), 1);
 
         mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(true));
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(jsonPath("$.variants[0].inStock").value(true));

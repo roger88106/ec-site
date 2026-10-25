@@ -3,14 +3,12 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -69,6 +67,8 @@ class CheckoutCartChangeApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     StockReservationApi stockReservationApi;
 
@@ -91,6 +91,7 @@ class CheckoutCartChangeApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
@@ -178,9 +179,7 @@ class CheckoutCartChangeApiTest {
         var product = data.product(taxCategoryId, "商品", 1000).publish();
         products.add(product);
         var variantId = product.variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId,
-                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+        inventory.stock(variantId, product.id, quantity);
         return variantId;
     }
 }

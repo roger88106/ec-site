@@ -1,10 +1,9 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.TestTokens;
 import com.ecsite.IntegrationTest;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
+import com.ecsite.InventoryTestData;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +38,13 @@ class StockAvailabilityApiTest {
     @Autowired
     StockReservationApi reservationApi;
 
+    private InventoryTestData inventory;
+
+    @BeforeEach
+    void setUp() {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
+    }
+
     @Test
     @DisplayName("複数のバリアントの在庫の有無を返す。在庫数 0 と、在庫がまだないバリアントは「在庫なし」")
     void returnsAvailability() {
@@ -46,9 +52,8 @@ class StockAvailabilityApiTest {
         var inStock = UUID.randomUUID();
         var soldOut = UUID.randomUUID();
         var withoutStock = UUID.randomUUID();
-        stockItemRepository.createIfAbsent(inStock, productId);
-        stockItemRepository.createIfAbsent(soldOut, productId);
-        stockItemRepository.adjust(inStock, StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(inStock, productId, 1);
+        inventory.create(soldOut, productId);
 
         var availability = api.availabilityOf(List.of(inStock, soldOut, withoutStock));
 
@@ -64,10 +69,8 @@ class StockAvailabilityApiTest {
         var productId = UUID.randomUUID();
         var reserved = UUID.randomUUID();
         var partlyReserved = UUID.randomUUID();
-        stockItemRepository.createIfAbsent(reserved, productId);
-        stockItemRepository.createIfAbsent(partlyReserved, productId);
-        stockItemRepository.adjust(reserved, StockAdjustment.create(1, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
-        stockItemRepository.adjust(partlyReserved, StockAdjustment.create(2, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(reserved, productId, 1);
+        inventory.stock(partlyReserved, productId, 2);
         // 期限は実際の時計より十分先にする
         var expiresAt = Instant.now().plus(Duration.ofHours(1));
         reservationApi.reserve(UUID.randomUUID(), Map.of(reserved, 1, partlyReserved, 1), expiresAt);

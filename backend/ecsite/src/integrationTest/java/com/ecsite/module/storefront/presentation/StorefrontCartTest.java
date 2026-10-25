@@ -2,6 +2,7 @@ package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
@@ -56,6 +57,8 @@ class StorefrontCartTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     DSLContext dsl;
 
@@ -69,6 +72,7 @@ class StorefrontCartTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
@@ -194,7 +198,7 @@ class StorefrontCartTest {
      * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
      */
     private void stock(UUID variantId, int quantity) {
-        stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
+        inventory.create(variantId, UUID.randomUUID());
         adjust(variantId, quantity);
     }
 

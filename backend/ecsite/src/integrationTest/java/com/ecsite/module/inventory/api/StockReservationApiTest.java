@@ -1,11 +1,9 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.TestTokens;
+import com.ecsite.InventoryTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.AfterEach;
@@ -53,6 +51,8 @@ class StockReservationApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     MutableClock clock;
 
@@ -63,6 +63,7 @@ class StockReservationApiTest {
 
     @BeforeEach
     void setUp() {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         productId = UUID.randomUUID();
     }
@@ -178,9 +179,10 @@ class StockReservationApiTest {
      */
     private UUID stock(int quantity) {
         var variantId = UUID.randomUUID();
-        stockItemRepository.createIfAbsent(variantId, productId);
         if (quantity > 0) {
-            stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+            inventory.stock(variantId, productId, quantity);
+        } else {
+            inventory.create(variantId, productId);
         }
         return variantId;
     }

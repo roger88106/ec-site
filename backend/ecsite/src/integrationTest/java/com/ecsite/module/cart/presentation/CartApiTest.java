@@ -2,6 +2,7 @@ package com.ecsite.module.cart.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
@@ -72,6 +73,8 @@ class CartApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     StockReservationApi stockReservationApi;
 
@@ -89,6 +92,7 @@ class CartApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         data = new CatalogTestData(mockMvc, clock);
         standard = data.taxCategory("標準", "10");
@@ -275,8 +279,7 @@ class CartApiTest {
      * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
      */
     private void stock(UUID variantId, int quantity) {
-        stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, UUID.randomUUID(), quantity);
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.InventoryTestData;
 import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
@@ -7,8 +8,6 @@ import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.jayway.jsonpath.JsonPath;
@@ -71,6 +70,8 @@ class PlaceOrderApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     StockReservationApi stockReservationApi;
 
@@ -90,6 +91,7 @@ class PlaceOrderApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
@@ -491,8 +493,6 @@ class PlaceOrderApiTest {
      * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
      */
     private void stock(UUID variantId, int quantity) {
-        stockItemRepository.createIfAbsent(variantId, shirt.id);
-        stockItemRepository.adjust(variantId,
-                StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, clock.instant()));
+        inventory.stock(variantId, shirt.id, quantity);
     }
 }

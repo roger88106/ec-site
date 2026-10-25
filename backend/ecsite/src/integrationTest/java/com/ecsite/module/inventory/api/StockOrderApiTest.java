@@ -1,13 +1,12 @@
 package com.ecsite.module.inventory.api;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.inventory.application.model.view.StockAdjustmentView;
 import com.ecsite.module.inventory.application.port.StockQueryRepository;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import org.jooq.DSLContext;
@@ -56,6 +55,8 @@ class StockOrderApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     StockQueryRepository stockQueryRepository;
 
@@ -71,6 +72,7 @@ class StockOrderApiTest {
 
     @BeforeEach
     void setUp() {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         productId = UUID.randomUUID();
         orderId = UUID.randomUUID();
@@ -155,8 +157,7 @@ class StockOrderApiTest {
      */
     private UUID stock(int quantity) {
         var variantId = UUID.randomUUID();
-        stockItemRepository.createIfAbsent(variantId, productId);
-        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, productId, quantity);
         return variantId;
     }
 

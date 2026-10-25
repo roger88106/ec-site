@@ -1,14 +1,12 @@
 package com.ecsite.module.storefront.presentation;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestImages;
-import com.ecsite.TestTokens;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
 import com.ecsite.module.inventory.api.StockReservationApi;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -85,6 +83,8 @@ class StorefrontApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    private InventoryTestData inventory;
+
     @Autowired
     StockReservationApi stockReservationApi;
 
@@ -97,6 +97,7 @@ class StorefrontApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         taxRateScheduleCache.evict();
         standard = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
@@ -423,9 +424,11 @@ class StorefrontApiTest {
      */
     private void stock(String variantId, int quantity) {
         var id = UUID.fromString(variantId);
-        stockItemRepository.createIfAbsent(id, UUID.randomUUID());
+        var productId = UUID.randomUUID();
         if (quantity > 0) {
-            stockItemRepository.adjust(id, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+            inventory.stock(id, productId, quantity);
+        } else {
+            inventory.create(id, productId);
         }
     }
 

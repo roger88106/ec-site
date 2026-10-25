@@ -11,7 +11,7 @@ T186-03-01〜03 は、それぞれ別のファイルだけを変えるので `[P
 - [x] **T186-03-01** [P] 設定の補助 `TestSettings`（profile を重ねた設定ファイルの読み込みと、設定の型への値の当てはめ）を作る。設定のテスト 5 つと支払の設定のテスト 2 つで、各テストに重複していた定義を、補助の呼び出しに置き換える（DC-186-11）。
   - 依存：なし
   - 範囲：`test/TestSettings.java`（新規）、`test/config/ProfileFlagsTest.java`、`ManagementPortConfigTest.java`、`CleanupJobSettingsTest.java`、`test/config/event/EventCleanupJobSettingsTest.java`、`EventResubmissionSettingsTest.java`、`test/module/payment/application/PaymentExpiryJobLoggingTest.java`、`test/module/payment/infrastructure/stripe/StripeConfigTest.java`
-- [ ] **T186-03-02** [P] [テスト] 契約の補助 `Contracts` を作り、契約と realm の置き場所が渡されないときに失敗することを確認する。契約のテスト 6 つの置き場所の読み取りと YAML の読み込みを補助の呼び出しに置き換え、既定の置き場所を削除する。`AdminApiPermissionContractTest` の `listOperations` の Javadoc に、本番の `OpenApiOperations` を使わない理由を書く（[plan](../plan.md) 第 3.1 節。DC-186-11）。
+- [x] **T186-03-02** [P] [テスト] 契約の補助 `Contracts` を作り、契約と realm の置き場所が渡されないときに失敗することを確認する。契約のテスト 6 つの置き場所の読み取りと YAML の読み込みを補助の呼び出しに置き換え、既定の置き場所を削除する。`AdminApiPermissionContractTest` の `listOperations` の Javadoc に、本番の `OpenApiOperations` を使わない理由を書く（[plan](../plan.md) 第 3.1 節。DC-186-11）。
   - 依存：なし
   - 範囲：`test/contract/Contracts.java`（新規）、`test/contract/ContractsTest.java`（新規）、`test/contract/` の 6 つのテスト
 - [ ] **T186-03-03** [P] 店舗向けの並び順の既定値を、Q1 の答えの層だけに置く。変えるファイルとテストの修正は、[plan](../plan.md) 第 3.2 節の、答えに合う項目のとおりにする。店舗の API の既定の並びの統合テストが通る（DC-186-15）。

@@ -7,11 +7,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.MethodSource;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -35,11 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 項目の表はこのクラスの {@link #fields()} に書く。上限のある項目を追加したら、表にも追加する。
  */
 class FieldConstraintContractTest {
-
-    /**
-     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ecsite/ からの相対パス
-     */
-    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../../api/openapi"));
 
     /**
      * 契約のファイルの名前 → 読み込んだ契約
@@ -143,9 +134,9 @@ class FieldConstraintContractTest {
      * 2 つの API の契約を読む
      */
     @BeforeAll
-    static void loadContracts() throws IOException {
+    static void loadContracts() {
         for (String file : List.of("admin.yaml", "store.yaml")) {
-            CONTRACTS.put(file, new Yaml().load(Files.readString(OPENAPI_DIR.resolve(file))));
+            CONTRACTS.put(file, Contracts.openApi(file));
         }
     }
 

@@ -9,7 +9,6 @@ import org.junit.jupiter.params.provider.ValueSource;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 
@@ -21,11 +20,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 会員と運営者のアカウントが別の realm にあること（AC-133）は、KeycloakIntegrationTest と段階 1 の手動確認で確認する。
  */
 class RealmSettingsContractTest {
-
-    /**
-     * realm の設定の置き場所。Gradle の test task が設定する
-     */
-    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../../docker/keycloak/realms"));
 
     private static final String STORE = "ec-store";
     private static final String ADMIN = "ec-admin";
@@ -39,8 +33,8 @@ class RealmSettingsContractTest {
     @BeforeAll
     static void load() throws IOException {
         realms = Map.of(
-                STORE, Files.readString(REALMS_DIR.resolve("ec-store-realm.json")),
-                ADMIN, Files.readString(REALMS_DIR.resolve("ec-admin-realm.json")));
+                STORE, Files.readString(Contracts.realmsDir().resolve("ec-store-realm.json")),
+                ADMIN, Files.readString(Contracts.realmsDir().resolve("ec-admin-realm.json")));
     }
 
     @ParameterizedTest(name = "{0}")

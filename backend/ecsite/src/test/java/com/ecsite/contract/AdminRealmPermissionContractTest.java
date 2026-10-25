@@ -4,11 +4,9 @@ import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -21,16 +19,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Keycloak は起動せず、{@code admin.yaml} と realm の JSON（{@code docker/keycloak/realms/ec-admin-realm.json}）を読む。
  */
 class AdminRealmPermissionContractTest {
-
-    /**
-     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ecsite/ からの相対パス
-     */
-    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../../api/openapi"));
-
-    /**
-     * realm の設定の置き場所。Gradle の test task が設定する
-     */
-    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../../docker/keycloak/realms"));
 
     /**
      * 権限の role を持つ client（管理 API）
@@ -58,7 +46,7 @@ class AdminRealmPermissionContractTest {
     @BeforeAll
     @SuppressWarnings("unchecked")
     static void load() throws IOException {
-        Map<String, Object> spec = new Yaml().load(Files.readString(OPENAPI_DIR.resolve("admin.yaml")));
+        Map<String, Object> spec = Contracts.openApi("admin.yaml");
         var paths = (Map<String, Map<String, Object>>) spec.get("paths");
         declaredPermissions = new TreeSet<>();
         paths.values().forEach(item -> item.values().forEach(value -> {
@@ -67,7 +55,7 @@ class AdminRealmPermissionContractTest {
                 declaredPermissions.add(permission);
             }
         }));
-        realm = Files.readString(REALMS_DIR.resolve("ec-admin-realm.json"));
+        realm = Files.readString(Contracts.realmsDir().resolve("ec-admin-realm.json"));
     }
 
     @Test

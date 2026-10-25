@@ -6,7 +6,6 @@ import org.yaml.snakeyaml.Yaml;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -23,11 +22,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 認証の導入時に、この記載から認可を組み立てる。
  */
 class AdminApiPermissionContractTest {
-
-    /**
-     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ecsite/ からの相対パス
-     */
-    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../../api/openapi"));
 
     /**
      * 権限の拡張項目の名前
@@ -52,7 +46,7 @@ class AdminApiPermissionContractTest {
     @Test
     @DisplayName("admin.yaml のすべての操作に、resource:action の形の権限か authenticated が書かれている")
     void allAdminOperationsDeclarePermission() throws IOException {
-        var spec = Files.readString(OPENAPI_DIR.resolve("admin.yaml"));
+        var spec = Files.readString(Contracts.openApiDir().resolve("admin.yaml"));
 
         var operations = listOperations(spec);
 
@@ -63,7 +57,7 @@ class AdminApiPermissionContractTest {
     @Test
     @DisplayName("AC-216 レポートの権限は、レポートの操作ごとに 1 つずつで、条件ごとの操作や権限はない")
     void onePermissionPerReport() throws IOException {
-        var spec = Files.readString(OPENAPI_DIR.resolve("admin.yaml"));
+        var spec = Files.readString(Contracts.openApiDir().resolve("admin.yaml"));
 
         var reports = listOperations(spec).stream()
                 .filter(operation -> String.valueOf(operation.permission()).startsWith("report-"))
@@ -127,8 +121,10 @@ class AdminApiPermissionContractTest {
 
     /**
      * OpenAPI の文書から、すべての操作を取り出す。
+     * 本番の {@code OpenApiOperations}（{@code config.security} の package-private のクラス）は、リクエストのメソッドとパスから
+     * 1 つの操作を探す用途で、契約の全ての操作と権限の記載を一覧にする、この検査の役割とは違う。そのため使わず、契約を直接たどる。
      *
-     * @param spec OpenAPI の文書（YAML）
+     * @param spec OpenAPI の文書（読み込み済み）
      * @return 操作の一覧
      */
     @SuppressWarnings("unchecked")

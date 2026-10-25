@@ -1,0 +1,82 @@
+package com.ecsite.contract;
+
+import org.yaml.snakeyaml.Yaml;
+
+import java.io.IOException;
+import java.io.UncheckedIOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.Map;
+
+/**
+ * 契約のテストが使う補助。契約（OpenAPI）と realm の設定の置き場所の取得と、契約の読み込みを、各テストに重複して書かないために置く。<br />
+ * 置き場所は Gradle の設定が system property で渡す。渡されないときに既定の相対パスで読むと、Gradle の設定の誤りに気づけないので、失敗させる。
+ */
+final class Contracts {
+
+    /**
+     * OpenAPI の置き場所を渡す system property の名前
+     */
+    private static final String OPENAPI_DIR = "openapi.dir";
+
+    /**
+     * realm の設定の置き場所を渡す system property の名前
+     */
+    private static final String REALMS_DIR = "keycloak.realms.dir";
+
+    /**
+     * インスタンスを作らない。
+     */
+    private Contracts() {
+    }
+
+    /**
+     * OpenAPI の置き場所を返す。
+     *
+     * @return system property {@code openapi.dir} の値
+     * @throws IllegalStateException system property が渡されていないとき
+     */
+    static Path openApiDir() {
+        return directory(OPENAPI_DIR, System.getProperty(OPENAPI_DIR));
+    }
+
+    /**
+     * realm の設定の置き場所を返す。
+     *
+     * @return system property {@code keycloak.realms.dir} の値
+     * @throws IllegalStateException system property が渡されていないとき
+     */
+    static Path realmsDir() {
+        return directory(REALMS_DIR, System.getProperty(REALMS_DIR));
+    }
+
+    /**
+     * 契約の YAML を読む。
+     *
+     * @param file 契約のファイルの名前（OpenAPI の置き場所の下。例：{@code admin.yaml}）
+     * @return 読んだ契約
+     */
+    static Map<String, Object> openApi(String file) {
+        try {
+            return new Yaml().load(Files.readString(openApiDir().resolve(file)));
+        } catch (IOException e) {
+            throw new UncheckedIOException("契約を読めない: " + file, e);
+        }
+    }
+
+    /**
+     * system property の値から置き場所を作る。値がなければ、原因を説明して失敗させる。
+     *
+     * @param property system property の名前
+     * @param value    system property の値（渡されなければ null）
+     * @return 置き場所
+     * @throws IllegalStateException 値がないとき
+     */
+    static Path directory(String property, String value) {
+        if (value == null || value.isBlank()) {
+            throw new IllegalStateException("system property " + property
+                    + " が渡されていない。build.gradle.kts の unitTestSystemProperties を確認する");
+        }
+        return Path.of(value);
+    }
+}

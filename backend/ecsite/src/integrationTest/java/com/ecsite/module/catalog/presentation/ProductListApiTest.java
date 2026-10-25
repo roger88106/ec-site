@@ -62,6 +62,11 @@ class ProductListApiTest {
 
     private UUID food;
 
+    /**
+     * テストごとのカテゴリ（一覧をこのカテゴリで絞って、他のテストの商品が見えないようにする）
+     */
+    private UUID scope;
+
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
@@ -71,17 +76,18 @@ class ProductListApiTest {
         tops = catalog.category("トップス", clothing);
         tShirts = catalog.category("T シャツ", tops);
         food = catalog.category("食品", null);
+        scope = catalog.category("範囲 " + UUID.randomUUID(), null);
     }
 
     @Test
     @DisplayName("AC-47、49 状態に関係なくすべての商品が、登録日時の新しい順に、品番・名前・状態・バリアント数とともに返る")
     void listsAllProductsNewestFirst() throws Exception {
-        var unpublished = catalog.draft("A-001", taxCategoryId, "非公開の商品").id.toString();
-        var published = catalog.draft("B-001", taxCategoryId, "公開の商品").variant().publish().id.toString();
-        var discontinued = catalog.draft("C-001", taxCategoryId, "販売終了の商品").id.toString();
+        var unpublished = catalog.draft("A-001", taxCategoryId, "非公開の商品", scope).id.toString();
+        var published = catalog.draft("B-001", taxCategoryId, "公開の商品", scope).variant().publish().id.toString();
+        var discontinued = catalog.draft("C-001", taxCategoryId, "販売終了の商品", scope).id.toString();
         mockMvc.perform(put(BASE + "/" + discontinued + "/discontinue")).andExpect(status().isNoContent());
 
-        mockMvc.perform(get(BASE))
+        mockMvc.perform(get(BASE).param("categoryId", scope.toString()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id", contains(discontinued, published, unpublished)))
                 .andExpect(jsonPath("$.items[*].productCode", contains("C-001", "B-001", "A-001")))
@@ -94,12 +100,12 @@ class ProductListApiTest {
     @Test
     @DisplayName("AC-48 商品品番またはバリアント品番の前方一致で絞り込める。英小文字は大文字として扱う")
     void filtersByCode() throws Exception {
-        var abc = catalog.draft("ABC-001", taxCategoryId, "商品 1").id.toString();
-        var xyz = catalog.draft("XYZ-001", taxCategoryId, "商品 2").variantCoded("ABC-VARIANT").id.toString();
-        catalog.draft("DEF-001", taxCategoryId, "商品 3");
-        catalog.draft("XABC-001", taxCategoryId, "前方一致しない");
+        var abc = catalog.draft("ABC-001", taxCategoryId, "商品 1", scope).id.toString();
+        var xyz = catalog.draft("XYZ-001", taxCategoryId, "商品 2", scope).variantCoded("ABC-VARIANT").id.toString();
+        catalog.draft("DEF-001", taxCategoryId, "商品 3", scope);
+        catalog.draft("XABC-001", taxCategoryId, "前方一致しない", scope);
 
-        mockMvc.perform(get(BASE).param("code", "abc"))
+        mockMvc.perform(get(BASE).param("code", "abc").param("categoryId", scope.toString()))
                 .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(abc, xyz)))
                 .andExpect(jsonPath("$.totalItems").value(2));
     }
@@ -107,34 +113,34 @@ class ProductListApiTest {
     @Test
     @DisplayName("AC-48 商品名の部分一致で絞り込める。英字の大文字・小文字は区別しない")
     void filtersByName() throws Exception {
-        var shirt = catalog.draft("A-001", taxCategoryId, "Basic T-Shirt").id.toString();
-        var poloShirt = catalog.draft("A-002", taxCategoryId, "ポロ SHIRT").id.toString();
-        catalog.draft("A-003", taxCategoryId, "パンツ");
+        var shirt = catalog.draft("A-001", taxCategoryId, "Basic T-Shirt", scope).id.toString();
+        var poloShirt = catalog.draft("A-002", taxCategoryId, "ポロ SHIRT", scope).id.toString();
+        catalog.draft("A-003", taxCategoryId, "パンツ", scope);
 
-        mockMvc.perform(get(BASE).param("name", "shirt"))
+        mockMvc.perform(get(BASE).param("name", "shirt").param("categoryId", scope.toString()))
                 .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(shirt, poloShirt)));
     }
 
     @Test
     @DisplayName("絞り込みの文字列中の % と _ は、ただの文字として扱う")
     void escapesWildcards() throws Exception {
-        var percent = catalog.draft("A-001", taxCategoryId, "100% 綿").id.toString();
-        catalog.draft("A-002", taxCategoryId, "綿 100");
+        var percent = catalog.draft("A-001", taxCategoryId, "100% 綿", scope).id.toString();
+        catalog.draft("A-002", taxCategoryId, "綿 100", scope);
 
-        mockMvc.perform(get(BASE).param("name", "0%"))
+        mockMvc.perform(get(BASE).param("name", "0%").param("categoryId", scope.toString()))
                 .andExpect(jsonPath("$.items[*].id", contains(percent)));
-        mockMvc.perform(get(BASE).param("name", "_"))
+        mockMvc.perform(get(BASE).param("name", "_").param("categoryId", scope.toString()))
                 .andExpect(jsonPath("$.items").isEmpty());
     }
 
     @Test
     @DisplayName("AC-48 状態で絞り込める")
     void filtersByStatus() throws Exception {
-        catalog.draft("A-001", taxCategoryId, "非公開の商品");
-        var discontinued = catalog.draft("A-002", taxCategoryId, "販売終了の商品").id.toString();
+        catalog.draft("A-001", taxCategoryId, "非公開の商品", scope);
+        var discontinued = catalog.draft("A-002", taxCategoryId, "販売終了の商品", scope).id.toString();
         mockMvc.perform(put(BASE + "/" + discontinued + "/discontinue")).andExpect(status().isNoContent());
 
-        mockMvc.perform(get(BASE).param("status", "DISCONTINUED"))
+        mockMvc.perform(get(BASE).param("status", "DISCONTINUED").param("categoryId", scope.toString()))
                 .andExpect(jsonPath("$.items[*].id", contains(discontinued)));
     }
 
@@ -185,10 +191,10 @@ class ProductListApiTest {
     void pages() throws Exception {
         var ids = new String[5];
         for (int i = 0; i < 5; i++) {
-            ids[i] = catalog.draft("A-00" + i, taxCategoryId, "商品 " + i).id.toString();
+            ids[i] = catalog.draft("A-00" + i, taxCategoryId, "商品 " + i, scope).id.toString();
         }
 
-        mockMvc.perform(get(BASE).param("page", "2").param("size", "2"))
+        mockMvc.perform(get(BASE).param("categoryId", scope.toString()).param("page", "2").param("size", "2"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items[*].id", contains(ids[2], ids[1])))
                 .andExpect(jsonPath("$.page").value(2))

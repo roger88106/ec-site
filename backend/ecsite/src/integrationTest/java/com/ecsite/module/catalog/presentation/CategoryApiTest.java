@@ -22,6 +22,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -180,38 +181,39 @@ class CategoryApiTest {
         @Test
         @DisplayName("木は、各階層が並び順どおりに返る")
         void listsTreeInDisplayOrder() throws Exception {
-            var clothing = createdId("衣類", null);
-            var food = createdId("食品", null);
+            var root = uniqueName("衣類");
+            var clothing = createdId(root, null);
             var tops = createdId("トップス", clothing);
             var bottoms = createdId("ボトムス", clothing);
             createdId("T シャツ", tops);
             createdId("シャツ", tops);
-            reorder(null, food, clothing).andExpect(status().isNoContent());
             reorder(clothing, bottoms, tops).andExpect(status().isNoContent());
 
+            var node = nodeOf(root);
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.items[*].name", contains("食品", "衣類")))
-                    .andExpect(jsonPath("$.items[0].children").isEmpty())
-                    .andExpect(jsonPath("$.items[1].depth").value(1))
-                    .andExpect(jsonPath("$.items[1].children[*].name", contains("ボトムス", "トップス")))
-                    .andExpect(jsonPath("$.items[1].children[1].depth").value(2))
-                    .andExpect(jsonPath("$.items[1].children[1].children[*].name", contains("T シャツ", "シャツ")))
-                    .andExpect(jsonPath("$.items[1].children[1].children[0].depth").value(3));
+                    .andExpect(jsonPath(node + ".depth", contains(1)))
+                    .andExpect(jsonPath(node + ".children[*].name", contains("ボトムス", "トップス")))
+                    .andExpect(jsonPath(node + ".children[0].children").value(contains(empty())))
+                    .andExpect(jsonPath(node + ".children[1].depth", contains(2)))
+                    .andExpect(jsonPath(node + ".children[1].children[*].name", contains("T シャツ", "シャツ")))
+                    .andExpect(jsonPath(node + ".children[1].children[0].depth", contains(3)));
         }
 
         @Test
         @DisplayName("AC-270 木の節は子のカテゴリを足せるかを持ち、いちばん深いカテゴリだけ足せない")
         void listsAddChildAction() throws Exception {
-            var clothing = createdId("衣類", null);
+            var root = uniqueName("衣類");
+            var clothing = createdId(root, null);
             var tops = createdId("トップス", clothing);
             createdId("T シャツ", tops);
 
+            var node = nodeOf(root);
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.items[0].actions.addChild").value(true))
-                    .andExpect(jsonPath("$.items[0].children[0].actions.addChild").value(true))
-                    .andExpect(jsonPath("$.items[0].children[0].children[0].actions.addChild").value(false));
+                    .andExpect(jsonPath(node + ".actions.addChild", contains(true)))
+                    .andExpect(jsonPath(node + ".children[0].actions.addChild", contains(true)))
+                    .andExpect(jsonPath(node + ".children[0].children[0].actions.addChild", contains(false)));
         }
     }
 
@@ -284,14 +286,15 @@ class CategoryApiTest {
         @Test
         @DisplayName("AC-11 子カテゴリを並べ替えられる")
         void reordersChildren() throws Exception {
-            var parent = createdId("衣類", null);
+            var root = uniqueName("衣類");
+            var parent = createdId(root, null);
             var tops = createdId("トップス", parent);
             var bottoms = createdId("ボトムス", parent);
 
             reorder(parent, bottoms, tops).andExpect(status().isNoContent());
 
             mockMvc.perform(get(BASE))
-                    .andExpect(jsonPath("$.items[0].children[*].name", contains("ボトムス", "トップス")));
+                    .andExpect(jsonPath(nodeOf(root) + ".children[*].name", contains("ボトムス", "トップス")));
         }
 
         @Test
@@ -379,6 +382,20 @@ class CategoryApiTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * 他のテストが確定させた最上位のカテゴリと重ならない、テストごとの名称にする
+     */
+    private static String uniqueName(String name) {
+        return name + " " + UUID.randomUUID();
+    }
+
+    /**
+     * 木の中から、名称で最上位のカテゴリを選ぶ JSONPath（他のテストの最上位のカテゴリが木に混ざっていても、自分の部分木だけを見る）
+     */
+    private static String nodeOf(String rootName) {
+        return "$.items[?(@.name=='%s')]".formatted(rootName);
+    }
 
     /**
      * カテゴリを登録する。親がなければ最上位

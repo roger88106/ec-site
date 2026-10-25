@@ -362,15 +362,16 @@ class StorefrontApiTest {
         @Test
         @DisplayName("カテゴリの木が、運営者が決めた並び順で返る")
         void listsCategoryTree() throws Exception {
-            var clothing = catalog.category("衣類", null);
-            catalog.category("食品", null);
+            var rootName = "衣類 " + UUID.randomUUID();
+            var clothing = catalog.category(rootName, null);
+            catalog.category("食品", clothing);
             catalog.category("トップス", clothing);
 
+            var node = "$.items[?(@.name=='%s')]".formatted(rootName);
             mockMvc.perform(get(BASE + "/categories"))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.items[*].name", contains("衣類", "食品")))
-                    .andExpect(jsonPath("$.items[0].children[*].name", contains("トップス")))
-                    .andExpect(jsonPath("$.items[0].depth").doesNotExist());
+                    .andExpect(jsonPath(node + ".children[*].name", contains("食品", "トップス")))
+                    .andExpect(jsonPath(node + ".depth").doesNotExist());
         }
     }
 

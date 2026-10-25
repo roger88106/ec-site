@@ -85,7 +85,7 @@ class CartCleanupJobTest {
     }
 
     @Test
-    @DisplayName("AC-284 最後の変更から 30 日（期限）と保存期間（0）がたったカートは品目と共に消え、それより新しいカートは残る。消した件数をログに出す（AC-288）")
+    @DisplayName("AC-284 最後の変更から 30 日（期限）と保存期間（0）がたったカートは品目と共に消え、それより新しいカートは残る")
     void deletesExpiredCartsWithItems() {
         var old = cartWithItem(NOW);
         var recent = cartWithItem(NOW.plus(Duration.ofDays(2)));

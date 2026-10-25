@@ -111,7 +111,7 @@ class CheckoutCleanupJobTest {
     }
 
     @Test
-    @DisplayName("AC-284 期限から保存期間（1 日）より前の注文手続きは消え、その後の注文手続きは残る。消した件数をログに出す（AC-288）")
+    @DisplayName("AC-284 期限から保存期間（1 日）より前の注文手続きは消え、その後の注文手続きは残る")
     void deletesCheckoutsExpiredBeforeRetention() {
         var old = insertCheckout(NOW);
         var recent = insertCheckout(NOW.plus(Duration.ofHours(2)));

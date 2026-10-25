@@ -139,8 +139,8 @@ class JooqStockReservationRepositoryTest {
     @Test
     @DisplayName("期限が指定した時刻より前の引当だけを消す。ちょうどの時刻のものは残り、件数の上限までしか消さない")
     void deletesExpiredReservationsUpToLimit() {
-        // 表の全体から期限切れを消すので、ロールバックしない他のテストの引当（2026 年）に当たらない過去の時刻にする
-        var now = Instant.parse("2000-01-01T00:00:00Z");
+        // 表の全体から期限切れを消すので、ロールバックしない片付けのジョブのテストが残す引当（2000 年）より前の時刻にする
+        var now = Instant.parse("1980-01-01T00:00:00Z");
         var stock = createStock(UUID.randomUUID(), 10);
         var expired1 = UUID.randomUUID();
         var expired2 = UUID.randomUUID();

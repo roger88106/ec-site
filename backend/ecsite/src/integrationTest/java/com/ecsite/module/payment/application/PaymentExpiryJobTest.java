@@ -7,6 +7,7 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
+import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.event.PaymentExpired;
 import com.ecsite.module.payment.infrastructure.mock.MockPaymentGateway;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -24,6 +25,7 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -47,8 +49,19 @@ class PaymentExpiryJobTest {
      */
     private static final Instant DEADLINE = ORDERED_AT.plus(Duration.ofMinutes(30));
 
+    /**
+     * ジョブが 1 回に処理する支払の数（ジョブの上限と同じ値）
+     */
+    private static final int BATCH_SIZE = 100;
+
     @Autowired
     PaymentExpiryJob job;
+
+    @Autowired
+    PaymentQueryService queryService;
+
+    @Autowired
+    PaymentRepository paymentRepository;
 
     @Autowired
     PaymentApi paymentApi;
@@ -142,10 +155,14 @@ class PaymentExpiryJobTest {
             awaiting.add(orderId);
         }
         clock.setInstant(DEADLINE);
-        // 通知を待つ支払にする（ほかのテストが残した期限切れの支払も含めて、すべてを一度は処理する）
-        job.expire();
-        job.expire();
-        job.expire();
+        // 自分の支払がすべて通知を待つ支払になるまで流す（ほかのテストが残した期限切れの支払も、同じ回で処理される）。
+        // 回数の上限は、未処理の支払の数を 1 回の件数で割った回数に 1 を加えたもの
+        int pending = queryService.findPastDeadline(Integer.MAX_VALUE).size();
+        int maxRuns = (pending + BATCH_SIZE - 1) / BATCH_SIZE + 1;
+        for (int run = 0; run < maxRuns && !allAwaitingAuthorization(awaiting); run++) {
+            job.expire();
+        }
+        assertThat(allAwaitingAuthorization(awaiting)).as("上限の回数で、自分の支払がすべて処理される").isTrue();
 
         // それより新しい支払が、期限を過ぎる
         var newerOrderedAt = ORDERED_AT.plus(Duration.ofHours(1));
@@ -183,6 +200,15 @@ class PaymentExpiryJobTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * 指定の注文の支払が、すべて与信の通知を待つ支払になっているか。
+     */
+    private boolean allAwaitingAuthorization(List<UUID> orderIds) {
+        var found = paymentRepository.findByOrderIds(orderIds);
+        return found.size() == orderIds.size()
+                && found.stream().allMatch(payment -> payment.awaitingAuthorizationSince().isPresent());
+    }
 
     private long expiredEvents(UUID orderId) {
         return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(orderId)).count();

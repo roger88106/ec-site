@@ -10,7 +10,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * バリアント品番の単体テスト（T302）
+ * バリアント品番の単体テスト
  */
 class VariantCodeTest {
 

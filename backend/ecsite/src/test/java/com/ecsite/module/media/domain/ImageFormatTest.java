@@ -12,7 +12,7 @@ import java.nio.charset.StandardCharsets;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 受け付ける画像の形式の単体テスト（T1033。AC-39、67。plan 001 第 7.5 節）
+ * 受け付ける画像の形式の単体テスト
  */
 class ImageFormatTest {
 

@@ -14,7 +14,7 @@
 - [x] **T186-04-02** [P] モジュールの外のテスト（`test/` と `it/` の `architecture/`、`modulith/`、`contract/`、`config/`、`common/`、`observability/`、直下）と、`fix/` の全体のコメントの番号を、言葉に書き換える（DC-186-14）。
   - 依存：T186-04-01
   - 範囲：上に挙げたディレクトリ
-- [ ] **T186-04-03** [P] 商品カタログのモジュール（tax、catalog、media、inventory、storefront、region）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。
+- [x] **T186-04-03** [P] 商品カタログのモジュール（tax、catalog、media、inventory、storefront、region）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。
   - 依存：T186-04-01
   - 範囲：`test/module/` と `it/module/` の、tax、catalog、media、inventory、storefront、region
 - [ ] **T186-04-04** [P] 注文のモジュール（cart、order、member、payment、shipping、notification、reporting）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。

@@ -11,7 +11,7 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 税込価格の計算の単体テスト（T108、BR-1）
+ * 税込価格の計算の単体テスト
  */
 class TaxCalculatorTest {
 

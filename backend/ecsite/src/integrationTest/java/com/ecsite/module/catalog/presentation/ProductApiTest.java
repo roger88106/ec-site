@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品 API の受け入れテスト（T309、US-3〜5）。<br />
+ * 商品 API の受け入れテスト。<br />
  * 現在時刻は {@link MutableClock} で 2026-10-08 00:00（日本時間）に固定する。
  * 税区分（標準 10%、軽減 8%、有効な税率のない税区分）は、テストごとに税区分 API で作る。テストごとにロールバックする。
  */
@@ -622,7 +622,7 @@ class ProductApiTest {
             publish(id).andExpect(status().isNoContent());
 
             getProduct(id).andExpect(jsonPath("$.firstShownAt").value("2026-10-09T15:00:00Z"));
-            // 表示前なので、予約を取り消せば削除できる（AC-33）
+            // 表示前なので、予約を取り消せば削除できる
             unpublish(id).andExpect(status().isNoContent());
             deleteProduct(id, 4).andExpect(status().isNoContent());
         }

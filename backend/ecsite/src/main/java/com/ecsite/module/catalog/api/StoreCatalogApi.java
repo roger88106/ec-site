@@ -9,7 +9,6 @@ import com.ecsite.module.catalog.application.model.view.CategoryNodeView;
 import com.ecsite.module.catalog.application.model.view.StoreProductDetailView;
 import com.ecsite.module.catalog.application.model.view.StoreProductSummaryView;
 import lombok.RequiredArgsConstructor;
-import org.jspecify.annotations.Nullable;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -92,13 +91,10 @@ public class StoreCatalogApi {
     }
 
     /**
-     * 公開する並び順を、application の並び順に変換する。指定がなければ指定なし（新着順として扱われる）。
+     * 公開する並び順を、application の並び順に変換する。
      * 単体テストから呼ぶので package-private。
      */
-    static StoreProductListQuery.@Nullable Sort toSort(@Nullable StoreProductSort sort) {
-        if (sort == null) {
-            return null;
-        }
+    static StoreProductListQuery.Sort toSort(StoreProductSort sort) {
         return switch (sort) {
             case NEWEST -> StoreProductListQuery.Sort.NEWEST;
             case PRICE_ASC -> StoreProductListQuery.Sort.PRICE_ASC;

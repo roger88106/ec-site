@@ -49,7 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文と支払の受け入れテスト（T7305、AC-143〜166）。<br />
+ * 注文と支払の受け入れテスト。<br />
  * 決済のイベントはコミットの後に非同期で届くので、コミットして処理を待つ。作ったデータは消さない。
  * 決済サービスは mock。支払の期限は、時計を進めて期限切れのジョブを呼んで確認する。
  */
@@ -454,7 +454,7 @@ class OrderPaymentApiTest {
     }
 
     /**
-     * 注文の支払の期限（注文日時 ＋ 30 分。BR-16）
+     * 注文の支払の期限（注文日時 ＋ 30 分）
      */
     private Instant deadlineOf(UUID orderId) throws Exception {
         String orderedAt = JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andReturn().getResponse()

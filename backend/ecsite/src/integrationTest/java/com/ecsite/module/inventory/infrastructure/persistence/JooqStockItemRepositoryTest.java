@@ -32,8 +32,8 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 在庫の調整の統合テスト（T406）。<br />
- * 並行調整（AC-44）を確認するため、調整ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
+ * 在庫の調整の統合テスト。<br />
+ * 並行調整を確認するため、調整ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest
 class JooqStockItemRepositoryTest {

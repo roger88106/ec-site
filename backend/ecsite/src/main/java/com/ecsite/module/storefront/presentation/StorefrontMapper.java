@@ -38,15 +38,12 @@ import java.util.UUID;
 class StorefrontMapper {
 
     /**
-     * 並び順を変換する。指定がなければ新着順。
+     * 並び順を変換する。省略されたときの既定（新着順）は、API の契約が持つ。
      *
      * @param sort 並び順
      * @return 並び順
      */
     ProductCondition.Sort toSort(ProductSort sort) {
-        if (sort == null) {
-            return ProductCondition.Sort.NEWEST;
-        }
         return switch (sort) {
             case NEWEST -> ProductCondition.Sort.NEWEST;
             case PRICE_ASC -> ProductCondition.Sort.PRICE_ASC;

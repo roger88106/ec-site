@@ -28,7 +28,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.doAnswer;
 
 /**
- * 出荷の API の統合テスト（T9206、T9208、T017-04-10、AC-173、BR-19、23）。<br />
+ * 出荷の API の統合テスト。<br />
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest

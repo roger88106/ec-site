@@ -25,7 +25,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文の支払による状態遷移の単体テスト（T7303、BR-14、AC-143、146、153、155、158）
+ * 注文の支払による状態遷移の単体テスト
  */
 class OrderPaymentTest {
 

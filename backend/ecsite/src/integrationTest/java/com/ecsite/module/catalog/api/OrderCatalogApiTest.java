@@ -22,7 +22,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * カート・注文向けの商品カタログの API の統合テスト（T2201、AC-72、80、92 の土台）。<br />
+ * カート・注文向けの商品カタログの API の統合テスト。<br />
  * 商品は B 側の API で作る。テストごとにロールバックする。
  */
 @IntegrationTest

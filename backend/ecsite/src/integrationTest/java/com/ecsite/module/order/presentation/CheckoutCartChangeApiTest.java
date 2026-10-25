@@ -31,7 +31,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文手続きと、カートの変更のイベントの受け入れテスト（AC-84）。<br />
+ * 注文手続きと、カートの変更のイベントの受け入れテスト。<br />
  * カートの変更のイベントはコミットの後に非同期で届くので、テストはトランザクションにせず、コミットして処理を待つ。<br />
  * 作ったデータは消さない。他のテストは、一覧の全体ではなく自分のデータだけを確認する。
  */

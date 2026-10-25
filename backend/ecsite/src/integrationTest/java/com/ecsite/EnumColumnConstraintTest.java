@@ -35,7 +35,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.SoftAssertions.assertSoftly;
 
 /**
- * 列挙を文字で持つ列の制約と列挙の一致の検証（T016-09-06、AC-279）。
+ * 列挙を文字で持つ列の制約と列挙の一致の検証。
  */
 @IntegrationTest
 class EnumColumnConstraintTest {

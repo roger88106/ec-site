@@ -27,7 +27,7 @@ import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文による在庫の増減の統合テスト（T2107、AC-87 の土台、AC-107）。<br />
+ * 注文による在庫の増減の統合テスト。<br />
  * 操作ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
  */
 @IntegrationTest

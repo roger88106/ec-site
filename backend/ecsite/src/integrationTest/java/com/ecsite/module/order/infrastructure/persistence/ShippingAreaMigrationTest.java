@@ -19,7 +19,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 既存の注文のお届け先を、都道府県と市区町村のコードに移すマイグレーションの受け入れテスト（T016-02-04、AC-261）。<br />
+ * 既存の注文のお届け先を、都道府県と市区町村のコードに移すマイグレーションの受け入れテスト。<br />
  * テストごとに別のデータベースを作り、移行の前のバージョンまで流してから、今の形の注文を入れ、残りを流す。
  */
 @IntegrationTest

@@ -17,7 +17,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 見積もりの単体テスト（T2302、BR-6〜8、AC-80）
+ * 見積もりの単体テスト
  */
 class QuoteTest {
 

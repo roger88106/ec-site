@@ -11,7 +11,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * token から権限への変換の単体テスト（T3204、plan 003 第 3.2 節）。<br />
+ * token から権限への変換の単体テスト。<br />
  * 権限は {@code resource_access.ec-admin-api.roles} だけから読む。
  */
 class PermissionConverterTest {

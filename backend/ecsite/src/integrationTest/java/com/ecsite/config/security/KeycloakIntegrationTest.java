@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * IdP の設定の統合テスト（T3208、plan 003 第 2 節）。<br />
+ * IdP の設定の統合テスト。<br />
  * Keycloak を Testcontainers で起動して、両 realm の JSON（{@code docker/keycloak/realms/}）を取り込み、
  * Keycloak が発行した token で管理 API を呼ぶ。バックエンドは本番と同じく、issuer の OpenID Connect の設定から公開鍵を取る
  * （テストの鍵に差し替える {@code TestSecurityConfig} は使わないので、{@code @IntegrationTest} とは別の設定で起動する）。<br />

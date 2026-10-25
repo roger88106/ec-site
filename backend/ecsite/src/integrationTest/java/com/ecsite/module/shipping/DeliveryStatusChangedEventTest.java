@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * イベント「配送状態の変化」の統合テスト（T0113、plan 010 第 3 節）。<br />
+ * イベント「配送状態の変化」の統合テスト。<br />
  * 出荷を作ったときと、通知で配送状態が進んだときだけ出て、重ねて届いた通知・戻る通知では出ないことを確認する。
  * テストごとにロールバックする。
  */

@@ -183,17 +183,21 @@ dependencies {
 //   ./gradlew integrationTest  → 統合のみ
 //   ./gradlew check / build    → 両方
 // -----------------------------------------------------------------------------
-// 単体テストの JVM のヒープ。ArchUnit のテスト（src/test/.../architecture）は、テストのクラスごとに本番のクラスを読み込むので、既定（512MB）では足りない
-val unitTestMaxHeap = "1g"
+// 単体テストの JVM のヒープ。test と pitest の両方が通る最小の値に余裕を加えた値。ArchUnit のテストは、本番のクラスを補助 ProductionClasses から 1 回だけ読む
+val unitTestMaxHeap = "768m"
 
 // 単体テストの JVM の systemProperty。test の task と pitest で同じ値を使う（ないと、設定を読むテストが PIT で失敗する）。
 //   openapi.dir：契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   design.overview：図をコードと比べる文書（ModuleDiagramTest）
+//   design.modules.dir：モジュールの設計書の置き場所（ProductionClassesTest が、レベル A の一覧を設計書と比べる）
+//   rules.backend-coding：バックエンドの書き方（ModuleStructureTest が、目安を超えるパッケージの表をコードと比べる）
 val unitTestSystemProperties = mapOf(
     "openapi.dir" to file("../../api/openapi").absolutePath,
     "keycloak.realms.dir" to file("../../docker/keycloak/realms").absolutePath,
     "design.overview" to file("../../docs/design/overview.md").absolutePath,
+    "design.modules.dir" to file("../../docs/design/modules").absolutePath,
+    "rules.backend-coding" to file("../../docs/rules/backend-coding.md").absolutePath,
 )
 
 tasks.named<Test>("test") {
@@ -203,6 +207,8 @@ tasks.named<Test>("test") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
     inputs.files(fileTree("../../docs/design") { include("overview.md") })
+    inputs.dir("../../docs/design/modules")
+    inputs.file("../../docs/rules/backend-coding.md")
     // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
     if (project.hasProperty("updateDocs")) {
         systemProperty("ecsite.update-docs", "true")
@@ -366,6 +372,8 @@ tasks.named("pitest") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
     inputs.files(fileTree("../../docs/design") { include("overview.md") })
+    inputs.dir("../../docs/design/modules")
+    inputs.file("../../docs/rules/backend-coding.md")
 }
 
 // -----------------------------------------------------------------------------

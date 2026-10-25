@@ -1,10 +1,10 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,24 +19,20 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class StaticOnlyClassTest {
 
-    /**
-     * 本番のクラス（テストと、生成したコードを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .withImportOption(location -> !location.contains("/com/ecsite/jooq/") && !location.contains("/com/ecsite/api/"))
-            .importPackages("com.ecsite");
-
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは、コンストラクタがすべて private")
     void staticOnlyClassesHavePrivateConstructors() {
-        assertThat(violations(CLASSES)).isEmpty();
+        ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
+
+        assertThat(violations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは final")
     void staticOnlyClassesAreFinal() {
-        assertThat(nonFinal(CLASSES)).isEmpty();
+        ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
+
+        assertThat(nonFinal(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
@@ -73,10 +69,7 @@ class StaticOnlyClassTest {
      * @return static のメンバーだけで、private でないコンストラクタを持つ最上位のクラスの名前（名前の順）
      */
     private static List<String> violations(JavaClasses classes) {
-        return classes.stream()
-                .filter(StaticOnlyClassTest::isTopLevelClass)
-                .filter(StaticOnlyClassTest::hasOnlyStaticMembers)
-                .filter(javaClass -> !isManagedBySpring(javaClass))
+        return staticOnlyClasses(classes).stream()
                 .filter(javaClass -> javaClass.getConstructors().stream()
                         .anyMatch(constructor -> !constructor.getModifiers().contains(JavaModifier.PRIVATE)))
                 .map(JavaClass::getName)
@@ -91,13 +84,24 @@ class StaticOnlyClassTest {
      * @return static のメンバーだけで final でない最上位のクラスの名前（名前の順）
      */
     private static List<String> nonFinal(JavaClasses classes) {
+        return staticOnlyClasses(classes).stream()
+                .filter(javaClass -> !javaClass.getModifiers().contains(JavaModifier.FINAL))
+                .map(JavaClass::getName)
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * 規則の対象の、static のメンバーだけのクラスを返す。
+     *
+     * @param classes 調べるクラス
+     * @return static のメンバーだけで、Spring がインスタンスを作らない最上位のクラス
+     */
+    private static List<JavaClass> staticOnlyClasses(JavaClasses classes) {
         return classes.stream()
                 .filter(StaticOnlyClassTest::isTopLevelClass)
                 .filter(StaticOnlyClassTest::hasOnlyStaticMembers)
                 .filter(javaClass -> !isManagedBySpring(javaClass))
-                .filter(javaClass -> !javaClass.getModifiers().contains(JavaModifier.FINAL))
-                .map(JavaClass::getName)
-                .sorted()
                 .toList();
     }
 

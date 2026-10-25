@@ -4,20 +4,16 @@ import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestImages;
 import com.ecsite.module.media.infrastructure.converter.ImgproxyProperties;
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.convention.TestBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.core.exception.SdkClientException;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -27,18 +23,12 @@ import java.io.IOException;
 import java.io.UncheckedIOException;
 import java.net.ServerSocket;
 import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
 import java.time.Duration;
-import java.util.Map;
 import java.util.UUID;
 
-import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,10 +42,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @Import(TestClockConfig.class)
 @Transactional
 class ProductImageServiceErrorApiTest {
-
-    private static final byte[] PNG = TestImages.png();
-
-    private final HttpClient http = HttpClient.newHttpClient();
 
     @Autowired
     MockMvc mockMvc;
@@ -101,9 +87,9 @@ class ProductImageServiceErrorApiTest {
     @Test
     @DisplayName("AC-296 画像の変換のサービスに接続できなければ、登録は 502 と、やり直せることを示すメッセージを返す")
     void converterUnreachable() throws Exception {
-        var uploadId = upload();
+        var uploadId = product.upload();
 
-        addImage(uploadId)
+        product.addImage(uploadId, 1)
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.errorCode").value("IMAGE_SERVICE_UNAVAILABLE"))
                 .andExpect(jsonPath("$.message").value(containsString("やり直して")));
@@ -112,38 +98,12 @@ class ProductImageServiceErrorApiTest {
     @Test
     @DisplayName("AC-298 ファイル保存のサービスに接続できなければ、登録は 502 を返す")
     void storageUnreachable() throws Exception {
-        var uploadId = upload();
+        var uploadId = product.upload();
         doThrow(SdkClientException.create("Unable to execute HTTP request: Connection refused"))
                 .when(s3).headObject(any(HeadObjectRequest.class));
 
-        addImage(uploadId)
+        product.addImage(uploadId, 1)
                 .andExpect(status().isBadGateway())
                 .andExpect(jsonPath("$.errorCode").value("IMAGE_SERVICE_UNAVAILABLE"));
-    }
-
-    /**
-     * PNG を受け付けて、署名付き URL へ PUT する。uploadId を返す
-     */
-    private String upload() throws Exception {
-        var body = mockMvc.perform(post("/api/admin/products/" + product.id + "/image-uploads")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"contentType": "image/png", "contentLength": %d}""".formatted(PNG.length)))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        var request = HttpRequest.newBuilder(URI.create(JsonPath.read(body, "$.uploadUrl")))
-                .PUT(HttpRequest.BodyPublishers.ofByteArray(PNG));
-        JsonPath.<Map<String, String>>read(body, "$.headers").forEach(request::header);
-        assertThat(http.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode()).isEqualTo(200);
-        return JsonPath.read(body, "$.uploadId");
-    }
-
-    /**
-     * 受け付けた画像を登録する（商品はバリアントを 1 つ追加した後なので、バージョンは 1）
-     */
-    private ResultActions addImage(String uploadId) throws Exception {
-        return mockMvc.perform(post("/api/admin/products/" + product.id + "/images")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("""
-                        {"uploadId": "%s", "version": 1}""".formatted(uploadId)));
     }
 }

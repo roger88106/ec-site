@@ -3,6 +3,7 @@ package com.ecsite;
 import com.jayway.jsonpath.JsonPath;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
 import java.net.URI;
@@ -14,6 +15,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -204,25 +206,44 @@ public class CatalogTestData {
         }
 
         /**
-         * 画像を 1 枚登録する（受付 → ストレージへの PUT → 確定）。
+         * 画像のアップロードを受け付け、署名付き URL へ PNG を PUT する。
+         *
+         * @return 受付の ID
          */
-        public TestProduct image() throws Exception {
-            var upload = mockMvc.perform(post("/api/admin/products/" + id + "/image-uploads")
+        public String upload() throws Exception {
+            var body = mockMvc.perform(post("/api/admin/products/" + id + "/image-uploads")
                             .contentType(MediaType.APPLICATION_JSON)
                             .content("""
                                     {"contentType": "image/png", "contentLength": %d}""".formatted(PNG.length)))
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-            var request = HttpRequest.newBuilder(URI.create(JsonPath.read(upload, "$.uploadUrl")))
-                    .header("Content-Type", "image/png")
+            var request = HttpRequest.newBuilder(URI.create(JsonPath.read(body, "$.uploadUrl")))
                     .PUT(HttpRequest.BodyPublishers.ofByteArray(PNG));
+            JsonPath.<Map<String, String>>read(body, "$.headers").forEach(request::header);
             try (var client = HttpClient.newHttpClient()) {
                 assertThat(client.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode()).isEqualTo(200);
             }
-            mockMvc.perform(post("/api/admin/products/" + id + "/images")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"uploadId": "%s", "version": %d}""".formatted(JsonPath.<String>read(upload, "$.uploadId"), version)))
-                    .andExpect(status().isCreated());
+            return JsonPath.read(body, "$.uploadId");
+        }
+
+        /**
+         * 受け付けた画像を確定する。結果は呼び出し側で確認する（商品のバージョンは進めない）。
+         *
+         * @param uploadId 受付の ID
+         * @param version  送るバージョン
+         * @return 応答
+         */
+        public ResultActions addImage(String uploadId, long version) throws Exception {
+            return mockMvc.perform(post("/api/admin/products/" + id + "/images")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .content("""
+                            {"uploadId": "%s", "version": %d}""".formatted(uploadId, version)));
+        }
+
+        /**
+         * 画像を 1 枚登録する（受付 → ストレージへの PUT → 確定）。
+         */
+        public TestProduct image() throws Exception {
+            addImage(upload(), version).andExpect(status().isCreated());
             version++;
             var detail = mockMvc.perform(get("/api/admin/products/" + id)).andReturn().getResponse().getContentAsString();
             imageUrls.clear();

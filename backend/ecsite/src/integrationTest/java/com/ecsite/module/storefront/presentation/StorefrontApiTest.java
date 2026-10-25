@@ -17,10 +17,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -93,12 +95,13 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-51、29、30、32 表示される商品だけが出る（非公開・販売終了の商品は出ない）")
         void listsOnlyVisibleProducts() throws Exception {
-            var visible = catalog.product(standard, "公開の商品", 1000).publish();
-            catalog.product(standard, "非公開の商品", 1000).publish().unpublish();
-            catalog.product(standard, "販売終了の商品", 1000).publish().discontinue();
-            catalog.product(standard, "一度も公開していない商品", 1000);
+            var category = newCategory();
+            var visible = catalog.product(standard, "公開の商品", 1000, List.of(category)).publish();
+            catalog.product(standard, "非公開の商品", 1000, List.of(category)).publish().unpublish();
+            catalog.product(standard, "販売終了の商品", 1000, List.of(category)).publish().discontinue();
+            catalog.product(standard, "一度も公開していない商品", 1000, List.of(category));
 
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.items[*].id", contains(visible.id.toString())))
                     .andExpect(jsonPath("$.totalItems").value(1));
@@ -107,9 +110,10 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-55 商品名と、税込・税抜の価格が返る。画像がなければ代表画像は null")
         void returnsNameAndPrice() throws Exception {
-            catalog.product(standard, "T シャツ", 1800).publish();
+            var category = newCategory();
+            catalog.product(standard, "T シャツ", 1800, List.of(category)).publish();
 
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(jsonPath("$.items[0].name").value("T シャツ"))
                     .andExpect(jsonPath("$.items[0].price.inclTax").value(1980))
                     .andExpect(jsonPath("$.items[0].price.exclTax").value(1800))
@@ -119,11 +123,13 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-55、37 代表画像は、商品の画像の並びの先頭の URL")
         void returnsRepresentativeImage() throws Exception {
-            var product = catalog.product(standard, "画像のある商品", 1000).image().image().publish();
+            var category = newCategory();
+            var mark = newMark();
+            var product = catalog.product(standard, mark + "画像のある商品", 1000, List.of(category)).image().image().publish();
 
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(jsonPath("$.items[0].imageUrl").value(product.imageUrls.getFirst()));
-            mockMvc.perform(get(BASE + "/products/search").param("q", "画像のある"))
+            mockMvc.perform(get(BASE + "/products/search").param("q", mark))
                     .andExpect(jsonPath("$.items[0].imageUrl").value(product.imageUrls.getFirst()));
         }
 
@@ -132,22 +138,23 @@ class StorefrontApiTest {
         void listsOnlyWithinPublicationPeriod() throws Exception {
             var start = NOW.plus(Duration.ofDays(1));
             var end = NOW.plus(Duration.ofDays(2));
-            var reserved = catalog.product(standard, "予約の商品", 1000).period(start, end).publish();
-            var plain = catalog.product(standard, "通常の商品", 1000).publish();
+            var category = newCategory();
+            var reserved = catalog.product(standard, "予約の商品", 1000, List.of(category)).period(start, end).publish();
+            var plain = catalog.product(standard, "通常の商品", 1000, List.of(category)).publish();
 
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(jsonPath("$.items[*].id", contains(plain.id.toString())));
             mockMvc.perform(get(BASE + "/products/" + reserved.id)).andExpect(status().isNotFound());
 
             // 運営者の操作なしに、開始日時で表示される
             clock.setInstant(start);
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(jsonPath("$.items[*].id", contains(reserved.id.toString(), plain.id.toString())));
             mockMvc.perform(get(BASE + "/products/" + reserved.id)).andExpect(status().isOk());
 
             // 終了日時ちょうどは含まない
             clock.setInstant(end);
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(jsonPath("$.items[*].id", contains(plain.id.toString())));
             mockMvc.perform(get(BASE + "/products/" + reserved.id)).andExpect(status().isNotFound());
         }
@@ -155,14 +162,15 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-56 全バリアントが在庫なしの商品も出て、在庫なしと示される。在庫がまだないバリアントも在庫なし")
         void marksOutOfStock() throws Exception {
-            var inStock = catalog.product(standard, "在庫あり", 1000, "色").variant("白").variant("黒").publish();
+            var category = newCategory();
+            var inStock = catalog.product(standard, "在庫あり", 1000, List.of(category), "色").variant("白").variant("黒").publish();
             stock(inStock.variantIds.getFirst(), 0);
             stock(inStock.variantIds.get(1), 3);
-            var soldOut = catalog.product(standard, "在庫なし", 1000, "色").variant("白").variant("黒").publish();
+            var soldOut = catalog.product(standard, "在庫なし", 1000, List.of(category), "色").variant("白").variant("黒").publish();
             stock(soldOut.variantIds.getFirst(), 0);
             // 2 つ目のバリアントの在庫は、まだない
 
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(jsonPath("$.items[*].id", contains(soldOut.id.toString(), inStock.id.toString())))
                     .andExpect(jsonPath("$.items[*].inStock", contains(false, true)));
         }
@@ -170,37 +178,40 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-56、28 販売停止のバリアントだけに在庫がある商品は、在庫なしと示される")
         void ignoresSuspendedVariantsForStock() throws Exception {
-            var product = catalog.product(standard, "販売停止", 1000, "色").variant("白").variant("黒").publish();
+            var category = newCategory();
+            var product = catalog.product(standard, "販売停止", 1000, List.of(category), "色").variant("白").variant("黒").publish();
             stock(product.variantIds.getFirst(), 5);
             stock(product.variantIds.get(1), 0);
             product.suspend(0);
 
-            mockMvc.perform(get(BASE + "/products"))
+            mockMvc.perform(listIn(category))
                     .andExpect(jsonPath("$.items[0].inStock").value(false));
         }
 
         @Test
         @DisplayName("AC-53、54 税込価格の範囲で絞り込み、価格の順に並べられる")
         void filtersAndSortsByPrice() throws Exception {
-            catalog.product(standard, "A", 900).publish();
-            var b = catalog.product(standard, "B", 1000).publish();
-            var c = catalog.product(standard, "C", 2000).publish();
+            var category = newCategory();
+            catalog.product(standard, "A", 900, List.of(category)).publish();
+            var b = catalog.product(standard, "B", 1000, List.of(category)).publish();
+            var c = catalog.product(standard, "C", 2000, List.of(category)).publish();
 
-            mockMvc.perform(get(BASE + "/products").param("minPrice", "1100").param("maxPrice", "2200").param("sort", "price_desc"))
+            mockMvc.perform(listIn(category).param("minPrice", "1100").param("maxPrice", "2200").param("sort", "price_desc"))
                     .andExpect(jsonPath("$.items[*].id", contains(c.id.toString(), b.id.toString())));
-            mockMvc.perform(get(BASE + "/products").param("minPrice", "1100").param("maxPrice", "2200").param("sort", "price_asc"))
+            mockMvc.perform(listIn(category).param("minPrice", "1100").param("maxPrice", "2200").param("sort", "price_asc"))
                     .andExpect(jsonPath("$.items[*].id", contains(b.id.toString(), c.id.toString())));
         }
 
         @Test
         @DisplayName("AC-57 ページ単位で取得できる")
         void pages() throws Exception {
+            var category = newCategory();
             var ids = new String[5];
             for (int i = 0; i < 5; i++) {
-                ids[i] = catalog.product(standard, "商品 " + i, 1000).publish().id.toString();
+                ids[i] = catalog.product(standard, "商品 " + i, 1000, List.of(category)).publish().id.toString();
             }
 
-            mockMvc.perform(get(BASE + "/products").param("page", "2").param("size", "2"))
+            mockMvc.perform(listIn(category).param("page", "2").param("size", "2"))
                     .andExpect(jsonPath("$.items[*].id", contains(ids[2], ids[1])))
                     .andExpect(jsonPath("$.page").value(2))
                     .andExpect(jsonPath("$.size").value(2))
@@ -224,11 +235,12 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-58、59 商品名または説明にキーワードを含む、表示される商品が出る")
         void searches() throws Exception {
-            var byName = catalog.product(standard, "綿のシャツ", 1000).publish();
-            catalog.product(standard, "綿のパンツ", 1000).publish().unpublish();
-            catalog.product(standard, "パンツ", 1000).publish();
+            var mark = newMark();
+            var byName = catalog.product(standard, mark + "綿のシャツ", 1000).publish();
+            catalog.product(standard, mark + "綿のパンツ", 1000).publish().unpublish();
+            catalog.product(standard, mark + "パンツ", 1000).publish();
 
-            mockMvc.perform(get(BASE + "/products/search").param("q", "綿"))
+            mockMvc.perform(get(BASE + "/products/search").param("q", mark + "綿"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.items[*].id", contains(byName.id.toString())))
                     .andExpect(jsonPath("$.items[0].price.inclTax").value(1100))
@@ -238,12 +250,13 @@ class StorefrontApiTest {
         @Test
         @DisplayName("AC-61 ページ単位で取得できる")
         void pages() throws Exception {
+            var mark = newMark();
             var ids = new String[3];
             for (int i = 0; i < 3; i++) {
-                ids[i] = catalog.product(standard, "シャツ " + i, 1000).publish().id.toString();
+                ids[i] = catalog.product(standard, mark + "シャツ " + i, 1000).publish().id.toString();
             }
 
-            mockMvc.perform(get(BASE + "/products/search").param("q", "シャツ").param("page", "2").param("size", "2"))
+            mockMvc.perform(get(BASE + "/products/search").param("q", mark + "シャツ").param("page", "2").param("size", "2"))
                     .andExpect(jsonPath("$.items[*].id", contains(ids[0])))
                     .andExpect(jsonPath("$.totalItems").value(3));
         }
@@ -362,6 +375,27 @@ class StorefrontApiTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * テストごとのカテゴリを作る（一覧をこのカテゴリで絞って、他のテストの商品が見えないようにする）
+     */
+    private UUID newCategory() throws Exception {
+        return catalog.category("カテゴリ " + UUID.randomUUID(), null);
+    }
+
+    /**
+     * 商品名の先頭に付ける、テストごとの印（検索をこの印で絞る。他の語と重ならない英数字）
+     */
+    private static String newMark() {
+        return "mk" + UUID.randomUUID().toString().replace("-", "");
+    }
+
+    /**
+     * カテゴリで絞った商品一覧の要求
+     */
+    private static MockHttpServletRequestBuilder listIn(UUID category) {
+        return get(BASE + "/products").param("categoryId", category.toString());
+    }
 
     /**
      * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）

@@ -127,6 +127,26 @@ public class CatalogTestData {
     }
 
     /**
+     * カテゴリと軸を指定して商品を登録する。軸がなければ、バリアントを 1 つ持つ。品番は呼ぶたびに振り直す。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param priceExclTax  税抜価格
+     * @param categoryIds   所属するカテゴリ ID（なければ空）
+     * @param axes          軸の名前
+     * @return 商品
+     */
+    public TestProduct product(UUID taxCategoryId, String name, long priceExclTax, List<UUID> categoryIds,
+                               String... axes) throws Exception {
+        sequence++;
+        var product = register("TD-" + sequence, taxCategoryId, name, "説明", priceExclTax, categoryIds, axes);
+        if (axes.length == 0) {
+            product.variant();
+        }
+        return product;
+    }
+
+    /**
      * 説明とカテゴリを指定して、バリアントを 1 つ持つ商品を登録する。品番は呼ぶたびに振り直す。
      *
      * @param taxCategoryId 税区分 ID

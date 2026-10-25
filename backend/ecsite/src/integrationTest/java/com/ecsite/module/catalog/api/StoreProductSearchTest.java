@@ -53,9 +53,15 @@ class StoreProductSearchTest {
 
     private CatalogTestData catalog;
 
+    /**
+     * テストごとの印（商品名に入れて、検索を自分の商品に絞る。他の語と重ならない英数字）
+     */
+    private String mark;
+
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
+        mark = "mk" + UUID.randomUUID().toString().replace("-", "");
         taxRateScheduleCache.evict();
         catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準", "10");
@@ -64,11 +70,11 @@ class StoreProductSearchTest {
     @Test
     @DisplayName("AC-58 商品名または説明にキーワードを含む商品が、新着順で返る。英字の大文字・小文字は区別しない")
     void searchesNameAndDescription() throws Exception {
-        var byName = catalog.product(taxCategoryId, "Organic Cotton T シャツ", "", 1000, List.of()).publish();
-        var byDescription = catalog.product(taxCategoryId, "T シャツ", "オーガニック COTTON を使用", 1000, List.of()).publish();
+        var byName = catalog.product(taxCategoryId, "Organic " + mark + "Cotton T シャツ", "", 1000, List.of()).publish();
+        var byDescription = catalog.product(taxCategoryId, "T シャツ", "オーガニック " + mark + "COTTON を使用", 1000, List.of()).publish();
         catalog.product(taxCategoryId, "パンツ", "ストレッチ素材", 1000, List.of()).publish();
 
-        var page = api.searchProducts("cotton", PageRequest.of(1, 20));
+        var page = api.searchProducts(mark + "cotton", PageRequest.of(1, 20));
 
         assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(byDescription.id, byName.id);
         assertThat(page.items().getFirst().priceInclTax()).isEqualTo(Money.of(1100));
@@ -77,13 +83,13 @@ class StoreProductSearchTest {
     @Test
     @DisplayName("AC-59 C 側に表示されない商品（非公開、販売終了）は検索されない")
     void excludesInvisibleProducts() throws Exception {
-        var visible = catalog.product(taxCategoryId, "綿のシャツ", "", 1000, List.of()).publish();
-        var unpublished = catalog.product(taxCategoryId, "綿のパンツ", "", 1000, List.of()).publish();
+        var visible = catalog.product(taxCategoryId, mark + "綿のシャツ", "", 1000, List.of()).publish();
+        var unpublished = catalog.product(taxCategoryId, mark + "綿のパンツ", "", 1000, List.of()).publish();
         unpublished.unpublish();
-        var discontinued = catalog.product(taxCategoryId, "綿の靴下", "", 1000, List.of()).publish();
+        var discontinued = catalog.product(taxCategoryId, mark + "綿の靴下", "", 1000, List.of()).publish();
         discontinued.discontinue();
 
-        var page = api.searchProducts("綿", PageRequest.of(1, 20));
+        var page = api.searchProducts(mark + "綿", PageRequest.of(1, 20));
 
         assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(visible.id);
         assertThat(page.totalItems()).isEqualTo(1);
@@ -92,12 +98,12 @@ class StoreProductSearchTest {
     @Test
     @DisplayName("キーワード中の % と _ は、ただの文字として扱う")
     void escapesWildcards() throws Exception {
-        var percent = catalog.product(taxCategoryId, "綿 100% のシャツ", "", 1000, List.of()).publish();
-        catalog.product(taxCategoryId, "綿 100 のシャツ", "", 1000, List.of()).publish();
+        var percent = catalog.product(taxCategoryId, "綿 " + mark + "100% のシャツ", "", 1000, List.of()).publish();
+        catalog.product(taxCategoryId, "綿 " + mark + "100 のシャツ", "", 1000, List.of()).publish();
 
-        assertThat(api.searchProducts("100%", PageRequest.of(1, 20)).items())
+        assertThat(api.searchProducts(mark + "100%", PageRequest.of(1, 20)).items())
                 .extracting(StoreProductSummary::id).containsExactly(percent.id);
-        assertThat(api.searchProducts("_", PageRequest.of(1, 20)).items()).isEmpty();
+        assertThat(api.searchProducts(mark + "_", PageRequest.of(1, 20)).items()).isEmpty();
     }
 
     @Test
@@ -105,10 +111,10 @@ class StoreProductSearchTest {
     void pages() throws Exception {
         var ids = new CatalogTestData.TestProduct[5];
         for (int i = 0; i < 5; i++) {
-            ids[i] = catalog.product(taxCategoryId, "シャツ " + i, "", 1000, List.of()).publish();
+            ids[i] = catalog.product(taxCategoryId, mark + "シャツ " + i, "", 1000, List.of()).publish();
         }
 
-        var page = api.searchProducts("シャツ", PageRequest.of(2, 2));
+        var page = api.searchProducts(mark + "シャツ", PageRequest.of(2, 2));
 
         assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(ids[2].id, ids[1].id);
         assertThat(page.totalItems()).isEqualTo(5);

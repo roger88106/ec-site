@@ -65,6 +65,11 @@ class StoreCatalogApiTest {
 
     private UUID reduced;
 
+    /**
+     * テストごとのカテゴリ（一覧をこのカテゴリで絞って、他のテストの商品が見えないようにする）
+     */
+    private UUID category;
+
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
@@ -72,6 +77,7 @@ class StoreCatalogApiTest {
         taxRateScheduleCache.evict();
         standard = catalog.taxCategory("標準", "10");
         reduced = catalog.taxCategory("軽減", "8");
+        category = catalog.category("カテゴリ " + UUID.randomUUID(), null);
     }
 
     @Test
@@ -83,12 +89,12 @@ class StoreCatalogApiTest {
         for (var taxCategory : List.of(standard, reduced, odd)) {
             var rate = taxRateApi.rateAt(taxCategory, NOW).orElseThrow();
             for (var price : prices) {
-                catalog.product(taxCategory, "商品", price).publish();
+                catalog.product(taxCategory, "商品", price, List.of(category)).publish();
                 expected.add(javaPriceInclTax(price, rate));
             }
         }
 
-        var page = api.listProducts(query(null, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 100));
+        var page = api.listProducts(query(category, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 100));
 
         // 新着順なので、公開した順の逆
         var actual = new ArrayList<>(page.items().stream().map(summary -> summary.priceInclTax().yen()).toList());
@@ -99,12 +105,12 @@ class StoreCatalogApiTest {
     @Test
     @DisplayName("AC-53 税込価格の範囲で絞り込める。下限・上限ともその値を含む")
     void filtersByPriceRange() throws Exception {
-        catalog.product(standard, "商品", 900).publish();   // 990
-        var lower = catalog.product(standard, "商品", 1000).publish();  // 1100
-        var upper = catalog.product(reduced, "商品", 2000).publish();   // 2160
-        catalog.product(standard, "商品", 2000).publish();  // 2200
+        catalog.product(standard, "商品", 900, List.of(category)).publish();   // 990
+        var lower = catalog.product(standard, "商品", 1000, List.of(category)).publish();  // 1100
+        var upper = catalog.product(reduced, "商品", 2000, List.of(category)).publish();   // 2160
+        catalog.product(standard, "商品", 2000, List.of(category)).publish();  // 2200
 
-        var page = api.listProducts(query(null, 1100L, 2160L, StoreProductSort.PRICE_ASC), PageRequest.of(1, 20));
+        var page = api.listProducts(query(category, 1100L, 2160L, StoreProductSort.PRICE_ASC), PageRequest.of(1, 20));
 
         assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(lower.id, upper.id);
         assertThat(page.items()).extracting(StoreProductSummary::priceExclTax).containsExactly(Money.of(1000), Money.of(2000));
@@ -114,25 +120,25 @@ class StoreCatalogApiTest {
     @DisplayName("AC-54 価格の順は税込価格で決まる。税抜と税込の順が逆になる場合も、税込の順に並ぶ")
     void sortsByPriceInclTax() throws Exception {
         // 税抜は 990 < 1000 だが、税込は 1089（10%）> 1080（8%）
-        var cheaperExclTax = catalog.product(standard, "商品", 990).publish();
-        var cheaperInclTax = catalog.product(reduced, "商品", 1000).publish();
+        var cheaperExclTax = catalog.product(standard, "商品", 990, List.of(category)).publish();
+        var cheaperInclTax = catalog.product(reduced, "商品", 1000, List.of(category)).publish();
 
-        assertThat(api.listProducts(query(null, null, null, StoreProductSort.PRICE_ASC), PageRequest.of(1, 20)).items())
+        assertThat(api.listProducts(query(category, null, null, StoreProductSort.PRICE_ASC), PageRequest.of(1, 20)).items())
                 .extracting(StoreProductSummary::id).containsExactly(cheaperInclTax.id, cheaperExclTax.id);
-        assertThat(api.listProducts(query(null, null, null, StoreProductSort.PRICE_DESC), PageRequest.of(1, 20)).items())
+        assertThat(api.listProducts(query(category, null, null, StoreProductSort.PRICE_DESC), PageRequest.of(1, 20)).items())
                 .extracting(StoreProductSummary::id).containsExactly(cheaperExclTax.id, cheaperInclTax.id);
     }
 
     @Test
     @DisplayName("AC-54 新着順は初回表示日時の新しい順。再公開しても順位は上がらない")
     void sortsByFirstShownAt() throws Exception {
-        var first = catalog.product(standard, "商品", 1000).publish();
-        var second = catalog.product(standard, "商品", 1000).publish();
+        var first = catalog.product(standard, "商品", 1000, List.of(category)).publish();
+        var second = catalog.product(standard, "商品", 1000, List.of(category)).publish();
         first.unpublish();
         clock.setInstant(clock.instant().plus(Duration.ofMinutes(1)));
         first.publish();
 
-        assertThat(api.listProducts(query(null, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 20)).items())
+        assertThat(api.listProducts(query(category, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 20)).items())
                 .extracting(StoreProductSummary::id).containsExactly(second.id, first.id);
     }
 
@@ -141,12 +147,12 @@ class StoreCatalogApiTest {
     void pagesWithoutDuplicatesOrGaps() throws Exception {
         var ids = new ArrayList<UUID>();
         for (int i = 0; i < 7; i++) {
-            ids.add(catalog.product(standard, "商品", 1000).publish().id);
+            ids.add(catalog.product(standard, "商品", 1000, List.of(category)).publish().id);
         }
 
         var collected = new ArrayList<UUID>();
         for (int page = 1; page <= 3; page++) {
-            api.listProducts(query(null, null, null, StoreProductSort.PRICE_ASC), PageRequest.of(page, 3)).items()
+            api.listProducts(query(category, null, null, StoreProductSort.PRICE_ASC), PageRequest.of(page, 3)).items()
                     .forEach(item -> collected.add(item.id()));
         }
 
@@ -158,13 +164,13 @@ class StoreCatalogApiTest {
     @Test
     @DisplayName("AC-51 表示されない商品（非公開、販売終了）は含まれない")
     void excludesInvisibleProducts() throws Exception {
-        var visible = catalog.product(standard, "商品", 1000).publish();
-        var unpublished = catalog.product(standard, "商品", 1000).publish();
+        var visible = catalog.product(standard, "商品", 1000, List.of(category)).publish();
+        var unpublished = catalog.product(standard, "商品", 1000, List.of(category)).publish();
         unpublished.unpublish();
-        var discontinued = catalog.product(standard, "商品", 1000).publish();
+        var discontinued = catalog.product(standard, "商品", 1000, List.of(category)).publish();
         discontinued.discontinue();
 
-        var page = api.listProducts(query(null, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 20));
+        var page = api.listProducts(query(category, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 20));
 
         assertThat(page.items()).extracting(StoreProductSummary::id).containsExactly(visible.id);
         assertThat(page.totalItems()).isEqualTo(1);
@@ -189,9 +195,9 @@ class StoreCatalogApiTest {
     @Test
     @DisplayName("一覧の各商品は、販売中のバリアントの ID を持つ（在庫の有無の判定に使う）")
     void returnsSellableVariantIds() throws Exception {
-        var product = catalog.product(standard, "商品 1", 1000).publish();
+        var product = catalog.product(standard, "商品 1", 1000, List.of(category)).publish();
 
-        var item = api.listProducts(query(null, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 20)).items().getFirst();
+        var item = api.listProducts(query(category, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 20)).items().getFirst();
 
         assertThat(item.id()).isEqualTo(product.id);
         assertThat(item.name()).isEqualTo("商品 1");

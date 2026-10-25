@@ -27,6 +27,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -118,6 +119,21 @@ class StorefrontCartTest {
     }
 
     @Test
+    @DisplayName("AC-77 品目の画像は、バリアントの画像があればそれを、なければ商品の代表画像（先頭）の URL を返す")
+    void returnsImageUrlOfVariantOrRepresentative() throws Exception {
+        var shirt = data.product(standard, "T シャツ", 2700, "色").variant("白").variant("黒")
+                .image().image().variantImage(0, 1).publish();
+        stock(shirt.variantIds.get(0), 5);
+        stock(shirt.variantIds.get(1), 5);
+        add(shirt.variantIds.get(0), 1);
+        add(shirt.variantIds.get(1), 1);
+
+        mockMvc.perform(get("/api/store/carts/" + cartId))
+                .andExpect(jsonPath("$.items[0].imageUrl").value(shirt.imageUrls.get(1)))
+                .andExpect(jsonPath("$.items[1].imageUrl").value(shirt.imageUrls.get(0)));
+    }
+
+    @Test
     @DisplayName("AC-79 単価は常に現在の価格で表示する")
     void showsCurrentPrice() throws Exception {
         var product = data.product(standard, "商品", 1000).publish();
@@ -164,6 +180,11 @@ class StorefrontCartTest {
         stock(product.variantIds.getFirst(), 5);
         var changedAt = clock.instant();
         add(product.variantIds.getFirst(), 1);
+
+        clock.setInstant(changedAt.plus(Duration.ofDays(30)).minusMillis(1));
+        mockMvc.perform(get("/api/store/carts/" + cartId))
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.orderable").value(true));
 
         clock.setInstant(changedAt.plus(Duration.ofDays(30)));
 

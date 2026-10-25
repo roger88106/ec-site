@@ -12,7 +12,7 @@
 | 3.1 | 統合テストの土台を使う | レビュー |
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
-| 3.4 | 単体テストの補助を使う。構成の検査は本番のクラスを補助から読み、設定のテストは設定の補助を使う | 構成の検査は自動（`ProductionClassesTest` の文字列の検査）、設定のテストはレビュー |
+| 3.4 | 単体テストの補助を使う。構成の検査は本番のクラスを補助から読み、設定のテストは設定の補助を使う | 構成の検査は自動（`ProductionClassesTest` の文字列の検査）、設定のテストと契約のテストの補助はレビュー |
 | 4.1 | 画面に見えるもので探す | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector` は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
@@ -118,14 +118,17 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 ### 3.4 単体テストの補助（本番のクラスの読み込み、設定）
 
-単体テストの補助は、`src/test` の `com.ecsite` の直下に置く。
+単体テストの補助は、`src/test` の `com.ecsite` の直下に置く（契約の補助 `Contracts` だけは、契約のテストの中だけで使うので `contract/` に置く）。
 
 | 補助 | 使う場面 | 使い方 |
 |------|----------|--------|
 | `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
 | `TestSettings` | 設定のテスト | `load(profile…)` で `application.yml` に profile の設定ファイルを重ねた値を読み、`bind(接頭辞, 設定の型, 値)` で設定の型に値を当てはめる。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
+| `Contracts`（`contract/` の下） | 契約のテスト（`contract/`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読む。置き場所は Gradle が system property で渡すので、テストのクラスに `System.getProperty` や既定の相対パスを書かない（渡されなければ原因を示して失敗する）。契約のテスト以外は使わない |
 
 理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が重なって残るため。設定の読み込みを 1 か所にして、設定のテストが同じ前提で値を読むため。
+
+本番のクラスの読み込みの検査（`ProductionClassesTest` の文字列の検査）は、`src/test/java`、`src/integrationTest/java`、`src/testFixtures/java` の全ての Java のファイルを読み、`importPackages(`、`importPackagesOf(`、`importClasspath(`、`importPath(`、`importLocations(`、`ApplicationModules.of(`、`@AnalyzeClasses` の文字列があれば失敗にする（補助 `ProductionClasses` を除く）。違反する例のクラスを読む `importClasses(` は、本番のクラスの読み込みではないので対象にしない。
 
 ## 4. フロント
 

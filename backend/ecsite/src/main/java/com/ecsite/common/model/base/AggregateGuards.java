@@ -9,18 +9,18 @@ import lombok.NoArgsConstructor;
 import java.util.function.Supplier;
 
 /**
- * 集約の版の比べ方と、集約を戻すときの失敗の扱い（バックエンドの書き方 第 3.5 節）。<br />
- * 版は、service が読んだ時点の版で更新の前に比べ、リポジトリが保存のときにもう一度比べる。
+ * 集約のバージョンの比べ方と、集約を戻すときの失敗の扱い（バックエンドの書き方 第 3.5 節）。<br />
+ * バージョンは、service が読んだ時点のバージョンで更新の前に比べ、リポジトリが保存のときにもう一度比べる。
  * 前者は更新の処理を始める前に失敗させ、後者は読んだ後に他の人が保存した場合を見つける。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class AggregateGuards {
 
     /**
-     * 読んだ時点の版と今の版を比べる。違えば、他の人が先に更新している。
+     * 読んだ時点のバージョンと今のバージョンを比べる。違えば、他の人が先に更新している。
      *
-     * @param current  今の版
-     * @param expected 読んだ時点の版（リクエストの版）
+     * @param current  今のバージョン
+     * @param expected 読んだ時点のバージョン（リクエストのバージョン）
      */
     public static void requireVersion(long current, long expected) {
         if (current != expected) {

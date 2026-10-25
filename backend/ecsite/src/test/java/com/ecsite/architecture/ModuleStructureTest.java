@@ -1,6 +1,8 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
+import com.ecsite.architecture.commondeps.sample.common.CommonToConfig;
+import com.ecsite.architecture.commondeps.sample.config.SampleConfig;
 import com.ecsite.architecture.layerdeps.module.sample.api.ApiToApplication;
 import com.ecsite.architecture.layerdeps.module.sample.application.ApplicationToApi;
 import com.ecsite.architecture.layerdeps.module.sample.domain.DomainToApplication;
@@ -266,9 +268,19 @@ class ModuleStructureTest {
     @Test
     @DisplayName("共通コードは、設定に依存しない")
     void commonDependsOnNoConfig() {
-        noClasses().that().resideInAPackage("com.ecsite.common..")
-                .should().dependOnClassesThat().resideInAPackage("com.ecsite.config..")
-                .check(ProductionClasses.all());
+        dependsOnNoPackage("com.ecsite.common..", "com.ecsite.config..").check(ProductionClasses.all());
+    }
+
+    @Test
+    @DisplayName("共通コードが設定に依存しない規則は、設定に依存するクラスに当たる")
+    void commonDependencyRuleMatchesClassDependingOnConfig() {
+        JavaClasses examples = new ClassFileImporter().importClasses(CommonToConfig.class, SampleConfig.class);
+
+        List<String> details = dependsOnNoPackage("com.ecsite.architecture.commondeps.sample.common..",
+                "com.ecsite.architecture.commondeps.sample.config..")
+                .evaluate(examples).getFailureReport().getDetails();
+
+        assertViolation(details, CommonToConfig.class, SampleConfig.class);
     }
 
     @Test
@@ -495,6 +507,18 @@ class ModuleStructureTest {
      */
     private static List<JavaClass> layeredClasses(JavaClasses classes) {
         return classes.stream().filter(ModuleStructureTest::isLayered).toList();
+    }
+
+    /**
+     * あるパッケージが、別のパッケージに依存しない規則を作る。
+     *
+     * @param sourcePackage 依存する側のパッケージ
+     * @param targetPackage 依存されない側のパッケージ
+     * @return 規則
+     */
+    private static ArchRule dependsOnNoPackage(String sourcePackage, String targetPackage) {
+        return noClasses().that().resideInAPackage(sourcePackage)
+                .should().dependOnClassesThat().resideInAPackage(targetPackage);
     }
 
     /**

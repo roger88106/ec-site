@@ -48,7 +48,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 CI の検査の script は、文書だけの変更でも結果が変わる（文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec など）ので、文書だけの push でも実行する `docs.yml` で実行する。
 
-`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.github/ISSUE_TEMPLATE/`、`.github/dependabot.yml`、`.gitignore`、`LICENSE`。ただし、全体構成の文書（`docs/design/overview.md`）は、バックエンドの単体テストが図と照合するので、Markdown でも実行する。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所で、`scripts/dev/ports.json` はその `lib/slot.mjs` が読むポートの一覧なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
+`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.github/ISSUE_TEMPLATE/`、`.github/dependabot.yml`、`.gitignore`、`LICENSE`。ただし、全体構成の文書（`docs/design/overview.md`）は、バックエンドの単体テストが図と照合するので、Markdown でも実行する。モジュールの設計書（`docs/design/modules/*.md`。`ProductionClassesTest` がレベル A の一覧と照合する）と、バックエンドの書き方（`docs/rules/backend-coding.md`。`ModuleStructureTest` がパッケージの大きさの表と照合する）も同じ。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所で、`scripts/dev/ports.json` はその `lib/slot.mjs` が読むポートの一覧なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
 
 ## 3. CI の検査の script
 

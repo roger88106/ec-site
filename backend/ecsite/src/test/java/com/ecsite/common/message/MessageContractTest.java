@@ -62,6 +62,7 @@ class MessageContractTest {
                 .filter(javaClass -> javaClass.isEnum() && javaClass.isAssignableTo(ErrorCodeProvider.class))
                 .map(JavaClass::reflect)
                 .forEach(type -> ERROR_CODES.addAll(List.of((Enum<?>[]) type.getEnumConstants())));
+        ProductionClasses.requireNotEmpty(ERROR_CODES, "エラーの定義の定数");
     }
 
     @Test

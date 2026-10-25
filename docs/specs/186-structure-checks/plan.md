@@ -55,7 +55,7 @@ spec 181 との重なりの扱い（spec 第 7 節の (1)〜(5)）：
 | `handwritten()` | `all()` から生成したコード（`com.ecsite.api`、`com.ecsite.jooq`）を除いたもの | `ConfigurationPropertiesTest:25`、`CurrentTimeTest:31`、`NamingTest:25`、`StaticOnlyClassTest:25` |
 | `modules()` | `com.ecsite.module` の本番のクラス | `MoneyTypeTest:43`、`ModuleRoleTest:85` |
 | `applicationModules()` | Spring Modulith のモジュールの一覧（テストのクラスを除く） | `ModulithTest:27`、`ModuleDiagramTest:47` |
-| `TEST_CLASSES` | モジュールの一覧から除くテストのクラスの条件（名前が Test で終わるクラスと、testFixtures のクラス）。`all()` も testFixtures を除く | `ModulithTest:24` |
+| `TEST_CLASSES` | モジュールの一覧から除くテストのクラスの条件（名前が Test で終わるクラスと、testFixtures のクラス）。`all()` も testFixtures を除く。補助の中だけで使う | `ModulithTest:24` |
 | `LEVEL_A_MODULES` | レベル A のモジュールの一覧 | `ModuleStructureTest:52`、`ModuleRoleTest:27` |
 | `modulesWith(String... layers)` | 指定した層のどれかに本番のクラスがあるモジュールの名前 | `ModuleStructureTest`（`modulesWith`）、`ModuleRoleTest`（`modulesWithPresentation`） |
 | `moduleName(String packageName)` | パッケージの名前からモジュールの名前を取り出す | `ModuleStructureTest:62`（`MODULE_SUBPACKAGE`）、`SchemaOwnershipTest`、`MessageContractTest` の正規表現 |
@@ -152,6 +152,7 @@ DC-186-3 で置き換える既存の検査と、新しい規則が含む組：
 - カタログの単体テスト `StoreCatalogApiSortTest:26` の「`toSort(null)` が `null` を返す」確認は、`null` を受け付けなくなるので削除し、3 つの並び順の変換の確認だけを残す（常に成り立つ確認でなく、仕様の変更による削除なので、理由を commit の本文に書く）。カタログの統合テスト（`StoreCatalogApiTest`、`StoreProductSearchTest`）で並び順に `null` を渡している所は、新着順を渡す形に修正する。
 - 別案のとき：カタログの application の条件に既定を置き、店舗の presentation の既定を削除して指定をそのまま渡す。変えるものは `StorefrontMapper.toSort`、`StoreProductListQuery`（既定を入れる）、`JooqStoreProductQueryRepository.orderBy`（`null` の扱いを削除）である。
 - 消費者に見える並び順は、店舗の API の統合テスト（`StorefrontApiTest`）の既定の並びの確認で変わらないことを確認する。
+- spec の最後のレビューで分かったこと（2026-10-26）：店舗の API の契約（`api/openapi/store.yaml` の `ProductSort`）が `default: newest` を持ち、生成した interface が `defaultValue = "newest"` で受け取るので、店舗の presentation には指定のない要求でも新着順が届く。`StorefrontMapper.toSort` の `null` の扱いは、要求からは通らない。既定値の置き場所は、入口（presentation）の契約の既定値 1 か所にする。`StorefrontMapper.toSort`、`toProductCondition`、`StorefrontProductController.listProducts` の並び順は必須（`@Nullable` を付けない）にし、`null` の扱いと、`null` を新着順にする単体テストを削除する。理由：通らない分岐を残すと、既定値が 2 か所にあるように読めるため。利用者の答え（入口に残す）とは食い違わない。
 - 確認方法：`./gradlew check`。
 
 ## 4. テストのコメントの spec の番号（DS-186-4：DC-186-13、14）

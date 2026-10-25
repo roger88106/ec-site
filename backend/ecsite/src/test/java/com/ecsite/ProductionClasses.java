@@ -32,7 +32,7 @@ public final class ProductionClasses {
      * テストは準備のために他のモジュールの内部（リポジトリなど）を直接使うことがあるので、境界の検証から除く。
      * 検証するのは本番のコードの境界。
      */
-    public static final DescribedPredicate<JavaClass> TEST_CLASSES = DescribedPredicate.describe(
+    private static final DescribedPredicate<JavaClass> TEST_CLASSES = DescribedPredicate.describe(
             "test classes", javaClass -> javaClass.getName().matches(".*Test(\\$.*)?") || isTestFixture(javaClass));
 
     /**

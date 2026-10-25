@@ -37,7 +37,9 @@ class ProductionClassesTest {
     /**
      * 補助の外に書かない、本番のクラスを読み込む呼び出し
      */
-    private static final List<String> LOADING_CALLS = List.of("importPackages" + "(", "importClasspath" + "(", "ApplicationModules" + ".of(");
+    private static final List<String> LOADING_CALLS = List.of(
+            "importPackages" + "(", "importPackagesOf" + "(", "importClasspath" + "(", "importPath" + "(", "importLocations" + "(",
+            "ApplicationModules" + ".of(", "@Analyze" + "Classes");
 
     @Test
     @DisplayName("手書きのクラスの一覧は、生成したコードを含まない")
@@ -107,7 +109,7 @@ class ProductionClassesTest {
     void testsDoNotLoadProductionClassesOutsideHelper() throws IOException {
         var helper = Path.of("src/test/java/com/ecsite/ProductionClasses.java").toAbsolutePath().normalize();
         var violations = new TreeSet<String>();
-        for (String root : List.of("src/test/java", "src/integrationTest/java")) {
+        for (String root : List.of("src/test/java", "src/integrationTest/java", "src/testFixtures/java")) {
             try (Stream<Path> files = Files.walk(Path.of(root))) {
                 for (Path file : files.filter(path -> path.toString().endsWith(".java")).toList()) {
                     if (file.toAbsolutePath().normalize().equals(helper)) {

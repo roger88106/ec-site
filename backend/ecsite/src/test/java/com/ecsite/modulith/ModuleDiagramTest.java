@@ -33,21 +33,36 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ModuleDiagramTest {
 
-    /** 全体構成の文書（Gradle がシステムプロパティで渡す） */
+    /**
+     * 全体構成の文書（Gradle がシステムプロパティで渡す）
+     */
     private static final Path OVERVIEW = Path.of(System.getProperty("design.overview"));
 
-    /** 文書の生成の範囲の始まりの印 */
+    /**
+     * 文書の生成の範囲の始まりの印
+     */
     private static final String GENERATED_START = "<!-- generated:modules -->";
-    /** 文書の生成の範囲の終わりの印 */
+    /**
+     * 文書の生成の範囲の終わりの印
+     */
     private static final String GENERATED_END = "<!-- /generated:modules -->";
-    /** 文書の手書きの外部システムの図の始まりの印 */
+    /**
+     * 文書の手書きの外部システムの図の始まりの印
+     */
     private static final String EXTERNAL_START = "<!-- external-systems -->";
-    /** 文書の手書きの外部システムの図の終わりの印 */
+    /**
+     * 文書の手書きの外部システムの図の終わりの印
+     */
     private static final String EXTERNAL_END = "<!-- /external-systems -->";
 
-    /** 手書きの図で、モジュールを表す節点（{@code module_<名前>}） */
+    /**
+     * 手書きの図で、モジュールを表す節点（{@code module_<名前>}）
+     */
     private static final Pattern MODULE_NODE = Pattern.compile("\\bmodule_([a-z]+)\\b");
 
+    /**
+     * Spring Modulith のモジュールの一覧（テストのクラスを除く）
+     */
     private final ApplicationModules modules = ProductionClasses.applicationModules();
 
     @Test
@@ -82,7 +97,7 @@ class ModuleDiagramTest {
     }
 
     @Test
-    @DisplayName("固定した内容から、依存を実線、イベントを発行するモジュールから受けるモジュールへの点線で、名前の順に描く")
+    @DisplayName("固定した内容から、依存を実線、イベントを発行するモジュールから受けるモジュールへの点線で描く")
     void rendersDependenciesAndEvents() {
         var events = new TreeMap<EventEdge, Set<String>>();
         events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired", "PaymentAuthorized")));
@@ -156,7 +171,12 @@ class ModuleDiagramTest {
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    /** イベントのほかの依存（モジュールから、使うモジュールへ） */
+    /**
+     * イベント以外の依存（モジュールから、使うモジュールへ）を集める。
+     *
+     * @param modules モジュールの一覧
+     * @return モジュールの名前から、使うモジュールの名前の一覧
+     */
     private static Map<String, Set<String>> dependencies(ApplicationModules modules) {
         var eventTypes = modules.stream().flatMap(module -> module.getPublishedEvents().stream())
                 .map(EventType::getType).map(JavaClass::getName).collect(Collectors.toSet());
@@ -175,7 +195,12 @@ class ModuleDiagramTest {
         return result;
     }
 
-    /** イベントの流れ（発行するモジュールから受けるモジュールへ）と、イベントの名前 */
+    /**
+     * イベントの流れ（発行するモジュールから受けるモジュールへ）と、イベントの名前を集める。
+     *
+     * @param modules モジュールの一覧
+     * @return イベントの流れから、イベントの名前の一覧
+     */
     private static Map<EventEdge, Set<String>> events(ApplicationModules modules) {
         var result = new TreeMap<EventEdge, Set<String>>();
         modules.forEach(listener -> listener.getEventsListenedTo(modules).forEach(event -> {
@@ -235,7 +260,9 @@ class ModuleDiagramTest {
                            Map<EventEdge, Set<String>> events) {
     }
 
-    /** イベントの流れの 1 本 */
+    /**
+     * イベントの流れの 1 本
+     */
     private record EventEdge(String publisher, String listener) implements Comparable<EventEdge> {
 
         @Override

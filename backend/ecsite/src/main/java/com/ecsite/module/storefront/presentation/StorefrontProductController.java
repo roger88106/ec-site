@@ -36,14 +36,14 @@ class StorefrontProductController implements ProductApi {
      * @param categoryId カテゴリ ID（子孫のカテゴリを含む）
      * @param minPrice   税込価格の下限
      * @param maxPrice   税込価格の上限
-     * @param sort       並び順（省略されたら null）
+     * @param sort       並び順
      * @param page       ページ番号
      * @param size       1 ページの件数
      * @return Http 200 : {@link ProductSummaryPage}
      */
     @Override
     public ResponseEntity<ProductSummaryPage> listProducts(@Nullable UUID categoryId, @Nullable Long minPrice, @Nullable Long maxPrice,
-                                                           @Nullable ProductSort sort, Integer page, Integer size) {
+                                                           ProductSort sort, Integer page, Integer size) {
         var condition = mapper.toProductCondition(categoryId, minPrice, maxPrice, sort);
         var result = storefrontService.listProducts(condition, PageRequest.of(page, size));
         return ResponseEntity.ok(mapper.toProductSummaryPage(result));

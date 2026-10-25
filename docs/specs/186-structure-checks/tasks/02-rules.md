@@ -13,7 +13,7 @@
 - T186-02-01、02、04 は、それぞれ別のファイルだけを変えるので `[P]` である。
 - T186-02-03、05、06 は、どれも `ModuleStructureTest` を変えるので、この順に行う。
 
-- [ ] **T186-02-01** [P] [テスト] domain のパッケージの循環の検査 `PackageCycleTest` を追加する。集約のパッケージと `vo/` が互いに依存する例で失敗することを確認する（DC-186-1、7）。
+- [x] **T186-02-01** [P] [テスト] domain のパッケージの循環の検査 `PackageCycleTest` を追加する。集約のパッケージと `vo/` が互いに依存する例で失敗することを確認する（DC-186-1、7）。
   - 依存：なし
   - 範囲：`test/architecture/PackageCycleTest.java`（新規）
 - [ ] **T186-02-02** [P] [テスト] 金額の型の検査の対象を、`application.model` 以下の `View`・`Command` で終わるクラスと、`api`・`event` のクラスにし、対象が 1 件以上あることを `requireNotEmpty` で確認する。`application.model` の直下の view に整数の価格がある例で失敗することを確認する（DC-186-5、6、7）。

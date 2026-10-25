@@ -180,6 +180,33 @@ class CheckoutApiTest {
     }
 
     @Test
+    @DisplayName("AC-85 注文手続きの表示：税率ごとの消費税額を返す（税率の高い順。送料は 10% の対象）")
+    void showsTaxAmountPerRate() throws Exception {
+        var reduced = data.taxCategory("軽減", "8");
+        var standardVariant = stockedVariant(1);
+        var reducedProduct = data.product(reduced, "軽減の商品", 1000).publish();
+        var reducedVariant = reducedProduct.variantIds.getFirst();
+        inventory.stock(reducedVariant, reducedProduct.id, 1);
+        orders.add(cartId, standardVariant, 1);
+        orders.add(cartId, reducedVariant, 1);
+
+        var checkoutId = startCheckout(cartId);
+
+        // 10%：1,100 円 + 送料 1,000 円 = 2,100 円 → 2,100 × 10 ÷ 110 = 190.9 → 190 円
+        // 8%：1,080 円 → 1,080 × 8 ÷ 108 = 80 円
+        mockMvc.perform(get("/api/store/checkouts/" + checkoutId))
+                .andExpect(jsonPath("$.amounts.itemsTotal").value(2180))
+                .andExpect(jsonPath("$.amounts.total").value(3180))
+                .andExpect(jsonPath("$.amounts.taxes.length()").value(2))
+                .andExpect(jsonPath("$.amounts.taxes[0].ratePercent").value(10))
+                .andExpect(jsonPath("$.amounts.taxes[0].taxableAmount").value(2100))
+                .andExpect(jsonPath("$.amounts.taxes[0].taxAmount").value(190))
+                .andExpect(jsonPath("$.amounts.taxes[1].ratePercent").value(8))
+                .andExpect(jsonPath("$.amounts.taxes[1].taxableAmount").value(1080))
+                .andExpect(jsonPath("$.amounts.taxes[1].taxAmount").value(80));
+    }
+
+    @Test
     @DisplayName("存在しないカート・注文手続きは 404")
     void returnsNotFound() throws Exception {
         mockMvc.perform(post("/api/store/carts/" + UUID.randomUUID() + "/checkouts")).andExpect(status().isNotFound());

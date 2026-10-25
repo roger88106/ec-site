@@ -1,5 +1,6 @@
 package com.ecsite.module.order.presentation;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
@@ -21,14 +22,12 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Instant;
 import java.util.UUID;
 
-import static com.ecsite.AsyncEvents.TIMEOUT;
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
@@ -36,7 +35,6 @@ import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
 import static com.ecsite.jooq.tax.Tables.TAX_RATE;
-import static org.awaitility.Awaitility.await;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doThrow;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -80,7 +78,7 @@ class CancellationAtomicityTest {
     DSLContext dsl;
 
     @Autowired
-    EventPublicationRegistry publicationRegistry;
+    AsyncEvents asyncEvents;
 
     @MockitoSpyBean
     StockDirectory stockDirectory;
@@ -124,9 +122,8 @@ class CancellationAtomicityTest {
      * 楽観ロックで衝突し、在庫の戻しの失敗（500）ではなく衝突（409）になることがある。
      */
     private void awaitAuthorizedHandled() {
-        await().atMost(TIMEOUT).until(() -> publicationRegistry.findIncompletePublications().stream()
-                .noneMatch(publication -> publication.getEvent() instanceof PaymentAuthorized event
-                        && event.orderId().equals(orderId)));
+        asyncEvents.awaitHandled(event -> event instanceof PaymentAuthorized authorized
+                && authorized.orderId().equals(orderId));
     }
 
     @Test

@@ -1,38 +1,39 @@
 import { describe, expect, test } from 'vitest'
 import { ActionError } from '@/components/ActionError'
-import { findTag } from '@/test/markup'
-import { renderMarkup } from '@/test/render'
+import { renderMarkup, renderStatic } from '@/test/render'
 
 describe('サーバーアクションの失敗の表示', () => {
   test('失敗の文を、読み上げの対象として出す', () => {
-    const html = renderMarkup(<ActionError message="在庫が足りません。" />)
+    const view = renderStatic(<ActionError message="在庫が足りません。" />)
 
-    expect(findTag(html, 'p', { 'aria-live': 'polite' })).toBeDefined()
-    expect(html).toMatch(/>在庫が足りません。<\/p>/)
+    expect(view.getByText('在庫が足りません。')).toHaveAttribute('aria-live', 'polite')
   })
 
   test('文のあとに、子の要素を添えられる', () => {
-    const html = renderMarkup(
+    const view = renderStatic(
       <ActionError message="在庫が足りません。">
         <a href="/cart">カートを見る</a>
       </ActionError>,
     )
 
-    expect(html).toMatch(/>在庫が足りません。<a href="\/cart">カートを見る<\/a><\/p>/)
+    const message = view.getByText('在庫が足りません。')
+    const link = view.getByRole('link', { name: 'カートを見る' })
+    expect(link).toHaveAttribute('href', '/cart')
+    // 子の要素は、文の要素の中で、文のあとに出る
+    expect(message).toContainElement(link)
+    expect(message).toHaveTextContent('在庫が足りません。カートを見る')
   })
 
   test('親が読み上げの領域を持つとき（inLiveRegion）は、自分では領域にしない', () => {
-    const html = renderMarkup(<ActionError inLiveRegion message="在庫が足りません。" />)
+    const view = renderStatic(<ActionError inLiveRegion message="在庫が足りません。" />)
 
-    expect(html).not.toContain('aria-live')
-    expect(html).toContain('在庫が足りません。')
+    expect(view.getByText('在庫が足りません。')).not.toHaveAttribute('aria-live')
   })
 
   test('サーバーアクションの結果が失敗なら、その message を出す', () => {
-    const html = renderMarkup(<ActionError result={{ ok: false, message: '在庫が足りません。' }} />)
+    const view = renderStatic(<ActionError result={{ ok: false, message: '在庫が足りません。' }} />)
 
-    expect(findTag(html, 'p', { 'aria-live': 'polite' })).toBeDefined()
-    expect(html).toMatch(/>在庫が足りません。<\/p>/)
+    expect(view.getByText('在庫が足りません。')).toHaveAttribute('aria-live', 'polite')
   })
 
   test.each([{ ok: true } as const, null, undefined])(

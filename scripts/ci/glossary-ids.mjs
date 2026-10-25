@@ -3,11 +3,12 @@
 // 名前の形の例（XxxRepository など、Xxx を含むもの）は調べない。コードにない語でよいものは glossary-ids-exclusions.json に名前と理由を書く。
 // 使い方：node scripts/ci/glossary-ids.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
-import { splitNulList } from './lib/git-files.mjs'
+import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
 import { existsSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { isMain } from './lib/is-main.mjs'
 
 /** 用語集 */
 const GLOSSARY = 'docs/design/glossary.md'
@@ -99,10 +100,11 @@ export function isExclusionNeeded(id, ids) {
   return ids.includes(id)
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json'))
   const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', ...SEARCH_ROOTS], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }))
     .filter((file) => isSearchedFile(file) && existsSync(file))
+  exitIfNoFiles(files, '用語の ID を探すファイル')
   // パスの形の識別子（docs/constitution.md など）は、リポジトリのすべてのファイルのパスにも当たる
   const allPaths = splitNulList(execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })).join('\n')
   const contents = [allPaths, ...files.map((file) => readFileSync(file, 'utf8'))]

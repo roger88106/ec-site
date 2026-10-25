@@ -10,15 +10,41 @@ import type { Variant } from '@/api/types'
 import { ActionError } from '@/components/ActionError'
 import { NativeSelect, NativeSelectOption } from '@/components/ui/native-select'
 import { isPurchasable } from '@/features/catalog/variantSelection'
+import type { ActionResult } from '@/lib/actionResult'
 import { QUANTITY_OPTIONS } from '@/lib/quantity'
 
 /**
  * 数量を選んでカートに入れる。<br />
- * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
+ * サーバーアクションの状態（結果、送信中か）を持ち、表示は {@link AddToCartFormView} に任せる。
+ *
+ * @param variant 選んだバリアント（決まっていなければ null）
  */
 export function AddToCartForm({ variant }: { variant: Variant | null }) {
-  const t = useTranslations('catalog.addToCart')
   const [result, formAction, pending] = useActionState(addToCart, null)
+  return <AddToCartFormView formAction={formAction} pending={pending} result={result} variant={variant} />
+}
+
+/**
+ * カートに入れるフォームの表示。サーバーアクションの結果を props で受ける。<br />
+ * バリアントが決まっていない、または買えないバリアントなら押せない。在庫を超えるなどの拒否は、API のメッセージを出す。
+ *
+ * @param variant    選んだバリアント（決まっていなければ null）
+ * @param result     サーバーアクションの結果（送る前は null）
+ * @param formAction フォームを送ったときに呼ぶ関数
+ * @param pending    送信中か
+ */
+export function AddToCartFormView({
+  variant,
+  result,
+  formAction,
+  pending,
+}: {
+  variant: Variant | null
+  result: ActionResult | null
+  formAction: (formData: FormData) => void
+  pending: boolean
+}) {
+  const t = useTranslations('catalog.addToCart')
   const selectable = variant !== null && isPurchasable(variant)
   const quantityId = useId()
 

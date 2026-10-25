@@ -11,6 +11,16 @@ import { type Mock, vi } from 'vitest'
 /** テストの会員の access token */
 export const ACCESS_TOKEN = 'member-access-token'
 
+/**
+ * 現在の時刻を UNIX 時刻の秒にする（token の `expiresAt` と同じ単位）。偽の時計を使っていれば、その時刻。
+ * 例：`signInAs({ expiresAt: nowSeconds() - 10 })`
+ *
+ * @returns 現在の UNIX 時刻の秒。秒に満たない分は切り捨てる
+ */
+export function nowSeconds(): number {
+  return Math.floor(Date.now() / 1000)
+}
+
 /** Auth.js の代わりの状態 */
 export const authState: {
   /** auth() が返すセッション。ログインしていなければ null */
@@ -44,7 +54,7 @@ export function signInAs(token: Partial<JWT> = {}) {
     refreshToken: 'member-refresh-token',
     idToken: 'member-id-token',
     // 期限は十分先（取り直さない）
-    expiresAt: Math.floor(Date.now() / 1000) + 3600,
+    expiresAt: nowSeconds() + 3600,
     ...token,
   }
 }

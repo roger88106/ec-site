@@ -26,3 +26,27 @@ export function listGitFiles(pathspecs = [], cwd = process.cwd()) {
   const output = execFileSync('git', ['ls-files', '-z', '-co', '--exclude-standard', '--', ...pathspecs], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
   return [...new Set(splitNulList(output))].filter((file) => existsSync(path.join(cwd, file))).sort()
 }
+
+/**
+ * 対象のファイルが 0 件のときの失敗の理由を返す。置き場所の変更や除外の条件の広がりで、検査が何も見ずに成功するのを防ぐ。
+ *
+ * @param {string[]} files 検査の対象のファイル
+ * @param {string} label 対象の呼び名（失敗の文に使う）
+ * @returns {string | null} 0 件なら失敗の理由、あれば null
+ */
+export function emptyListReason(files, label) {
+  return files.length === 0 ? `${label}が 1 件も見つからない（検査の対象の条件か置き場所が変わっていないか確認する）` : null
+}
+
+/**
+ * 対象のファイルが 0 件なら、理由を出して終了コード 1 で終わる。
+ *
+ * @param {string[]} files 検査の対象のファイル
+ * @param {string} label 対象の呼び名
+ */
+export function exitIfNoFiles(files, label) {
+  const reason = emptyListReason(files, label)
+  if (!reason) return
+  console.log(reason)
+  process.exit(1)
+}

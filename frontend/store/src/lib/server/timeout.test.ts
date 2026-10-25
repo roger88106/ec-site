@@ -3,7 +3,7 @@ import { customFetch } from 'next-auth'
 import { describe, expect, test, vi } from 'vitest'
 import { withActionResult } from '@/actions/withActionResult'
 import { getApi, getMemberApi } from '@/api/client'
-import { authState, signInAs } from '@/test/auth'
+import { authState, nowSeconds, signInAs } from '@/test/auth'
 import { IDP, STORE_API, server, TOKEN_ENDPOINT } from '@/test/server'
 import '@/auth'
 import { type MemberJwt, refreshIfNeeded } from '@/auth/refresh'
@@ -11,8 +11,8 @@ import { connectionFailedMessage } from '@/lib/actionResult'
 
 // 上限は、モジュールを読み込むときに設定から読むので、読み込む前に短くする（0.05 秒）
 vi.hoisted(() => {
-  process.env.STORE_API_TIMEOUT_SECONDS = '0.05'
-  process.env.AUTH_KEYCLOAK_TIMEOUT_SECONDS = '0.05'
+  vi.stubEnv('STORE_API_TIMEOUT_SECONDS', '0.05')
+  vi.stubEnv('AUTH_KEYCLOAK_TIMEOUT_SECONDS', '0.05')
 })
 
 /** 応答を返さない（上限で打ち切られるまで待たせる）ハンドラー */
@@ -39,7 +39,7 @@ describe('待つ時間の上限（店舗画面のサーバー → バックエ�
 
   test('AC-302 token の更新が上限を過ぎたら、IdP に接続できないときと同じく、ログインの状態を残す', async () => {
     server.use(mswHttp.post(TOKEN_ENDPOINT, hang))
-    const token: MemberJwt = { accessToken: 'old', refreshToken: 'refresh', expiresAt: Math.floor(Date.now() / 1000) }
+    const token: MemberJwt = { accessToken: 'old', refreshToken: 'refresh', expiresAt: nowSeconds() }
 
     expect(await refreshIfNeeded(token, 60)).toEqual(token)
   })

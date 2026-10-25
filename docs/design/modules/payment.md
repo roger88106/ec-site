@@ -6,7 +6,7 @@
 |------|------|
 | レベル | A（支払の状態遷移、外部からの通知の重複と順序の入れ替わり、期限切れとの競合） |
 | 依存 | なし（注文が決済の API を呼び、決済は結果をイベントで伝える ※1） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[013](../../specs/archive/mvp/013-backend-consistency)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[013](../../specs/archive/mvp/013-backend-consistency)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure)、[182](../../specs/archive/1to10/182-payment-security) |
 
 ※1：決済が注文のイベントを受けると、モジュールが循環する。
 
@@ -56,6 +56,7 @@ stateDiagram-v2
 ## 支払の期限
 
 - 支払の期限は、注文日時に設定の時間（既定 30 分）を加えた時刻。注文が支払を作るときに渡す。
+- 支払の期限の設定（`ecsite.payment.deadline`）の上限は 30 分で、超えるとアプリは起動に失敗する。理由：支払画面は注文の後に作るので、画面の期限（作ってから 31 分）は注文日時から 31 分以上後になる。上限が 30 分なら、画面の期限は支払の期限より 1 分以上後になり、時計のずれがあっても支払画面が支払の期限より前に閉じないため。
 - 期限切れのジョブ（設定 `ecsite.payment.expiry-interval` の間隔、既定 1 分。分散ロック付き）が、期限を過ぎた未払いの支払を、次の順に処理する。
   1. 支払画面があれば、決済サービスに閉じさせる。
   2. 閉じられなかった（その前に支払が済んでいた）ら、支払を行ロックし、未払いなら与信の通知を待つ支払にする（待ち始めた時刻を記録する）。与信の成功の通知で与信済みになる。

@@ -1,4 +1,14 @@
-import type { Cart, Order, QuoteItem, ShippingAddress, Variant, VariantAxis } from '@/api/types'
+import type {
+  Cart,
+  Municipality,
+  Order,
+  PostalCodeAddress,
+  Prefecture,
+  QuoteItem,
+  ShippingAddress,
+  Variant,
+  VariantAxis,
+} from '@/api/types'
 
 /**
  * サーバーの処理のテストで API の応答に使うデータ（店舗画面の構成 第 7 節）。<br />
@@ -101,6 +111,42 @@ export function cart(items: QuoteItem[], overrides: Partial<Cart> = {}): Cart {
     orderable: true,
     ...overrides,
   }
+}
+
+/** 東京都 */
+const TOKYO: Prefecture = { code: '13', name: '東京都' }
+/** 千代田区 */
+const CHIYODA: Municipality = { code: '13101', name: '千代田区' }
+
+/** API から取った都道府県の一覧（3 つ） */
+export const PREFECTURES: Prefecture[] = [{ code: '01', name: '北海道' }, TOKYO, { code: '14', name: '神奈川県' }]
+
+/** 都道府県のコード → 市区町村の一覧 */
+export const MUNICIPALITIES: Record<string, Municipality[]> = {
+  '01': [{ code: '01101', name: '札幌市中央区' }],
+  '13': [CHIYODA, { code: '13102', name: '中央区' }],
+  '14': [{ code: '14104', name: '横浜市中区' }],
+}
+
+/**
+ * 郵便番号の住所。都道府県と市区町村は、PREFECTURES と MUNICIPALITIES から引く。
+ *
+ * @param prefectureCode   都道府県のコード
+ * @param municipalityCode 市区町村のコード
+ * @param townName         町域の名前
+ * @returns 郵便番号の住所
+ */
+export function postalCodeAddress(
+  prefectureCode: string,
+  municipalityCode: string,
+  townName: string,
+): PostalCodeAddress {
+  const prefecture = PREFECTURES.find((found) => found.code === prefectureCode)
+  const municipality = MUNICIPALITIES[prefectureCode]?.find((found) => found.code === municipalityCode)
+  if (!prefecture || !municipality) {
+    throw new Error(`テストのデータにない：${prefectureCode} ${municipalityCode}`)
+  }
+  return { prefecture, municipality, townName }
 }
 
 /**

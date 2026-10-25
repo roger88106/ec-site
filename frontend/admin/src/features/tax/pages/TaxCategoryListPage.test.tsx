@@ -11,7 +11,7 @@ import { http, problem, type Reply, server } from '@/test/server'
 type CreateTaxCategoryRequest = components['schemas']['CreateTaxCategoryRequest']
 
 /** 税区分の画面の URL */
-const URL = '/tax-categories'
+const PAGE_PATH = '/tax-categories'
 
 /** 税率のない税区分「軽減」 */
 const REDUCED = taxCategory({
@@ -54,7 +54,7 @@ function serveTaxCategories(
 describe('税区分の一覧', () => {
   test('税区分ごとに、名称・現時点の率・税率の件数と、税率の編集へ移るボタンを出す', async () => {
     serveTaxCategories([taxCategory(), REDUCED])
-    renderApp(URL)
+    renderApp(PAGE_PATH)
 
     const standardRow = within(await findRow('標準'))
     expect(standardRow.getByRole('cell', { name: '10%' })).toBeInTheDocument()
@@ -70,16 +70,16 @@ describe('税区分の一覧', () => {
 describe('税区分の登録', () => {
   test('AC-1 名称を入れて登録すると、知らせを出し、入力を空にして一覧に追加する', async () => {
     const state = serveTaxCategories([taxCategory()])
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
-    const name = await screen.findByLabelText('名称')
+    const nameField = await screen.findByLabelText('名称')
     expect(screen.getByRole('button', { name: '登録' })).toBeDisabled()
-    await user.type(name, '軽減')
+    await user.type(nameField, '軽減')
     await user.click(screen.getByRole('button', { name: '登録' }))
 
     expect(await screen.findByText('税区分を登録しました')).toBeInTheDocument()
     expect(await screen.findByRole('cell', { name: '軽減' })).toBeInTheDocument()
-    expect(name).toHaveValue('')
+    expect(nameField).toHaveValue('')
     expect(state.requests).toEqual([{ name: '軽減' }])
   })
 
@@ -87,19 +87,19 @@ describe('税区分の登録', () => {
     serveTaxCategories([taxCategory()], (_, response) =>
       response(409).json(problem(409, 'TAX_CATEGORY_NAME_ALREADY_EXISTS', 'この名称の税区分はすでにあります。')),
     )
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
-    const name = await screen.findByLabelText('名称')
-    await user.type(name, '標準')
+    const nameField = await screen.findByLabelText('名称')
+    await user.type(nameField, '標準')
     await user.click(screen.getByRole('button', { name: '登録' }))
 
     expect(await screen.findByText('この名称の税区分はすでにあります。')).toBeInTheDocument()
-    expect(name).toHaveValue('標準')
+    expect(nameField).toHaveValue('標準')
   })
 
   test('空白だけの名称では、登録できない', async () => {
     serveTaxCategories([taxCategory()])
-    const { user } = renderApp(URL)
+    const { user } = renderApp(PAGE_PATH)
 
     await user.type(await screen.findByLabelText('名称'), '   ')
 

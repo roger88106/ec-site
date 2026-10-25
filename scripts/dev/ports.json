@@ -1,0 +1,22 @@
+{
+  "slotCount": 4,
+  "slotOffset": 10000,
+  "ports": [
+    { "key": "postgres", "port": 5432, "name": "PostgreSQL", "group": "shared", "slotted": false },
+    { "key": "zipkin", "port": 9411, "name": "Zipkin", "group": "shared", "slotted": false },
+    { "key": "seaweedfs", "port": 8333, "name": "SeaweedFS", "group": "shared", "slotted": false },
+    { "key": "imgproxy", "port": 8081, "name": "imgproxy", "group": "shared", "slotted": false },
+    { "key": "keycloak", "port": 8180, "name": "Keycloak", "group": "shared", "slotted": false },
+    { "key": "keycloak-e2e", "port": 8181, "name": "Keycloak（E2E）", "group": "shared", "slotted": false },
+    { "key": "mailpit-smtp", "port": 2525, "name": "Mailpit の SMTP", "group": "shared", "slotted": false },
+    { "key": "mailpit-ui", "port": 8025, "name": "Mailpit の画面", "group": "shared", "slotted": false },
+    { "key": "backend", "port": 8080, "name": "バックエンド", "group": "app", "slotted": true },
+    { "key": "management", "port": 9080, "name": "バックエンドの運用ポート", "group": "app", "slotted": true },
+    { "key": "store", "port": 3000, "name": "店舗画面", "group": "app", "slotted": true },
+    { "key": "admin", "port": 5173, "name": "管理画面", "group": "app", "slotted": true },
+    { "key": "backend-e2e", "port": 8090, "name": "バックエンド（E2E）", "group": "e2e", "slotted": false },
+    { "key": "management-e2e", "port": 9090, "name": "バックエンドの運用ポート（E2E）", "group": "e2e", "slotted": false },
+    { "key": "admin-e2e", "port": 4173, "name": "管理画面（E2E）", "group": "e2e", "slotted": false },
+    { "key": "store-e2e", "port": 3100, "name": "店舗画面（E2E）", "group": "e2e", "slotted": false }
+  ]
+}

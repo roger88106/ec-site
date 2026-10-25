@@ -6,7 +6,7 @@
 
 | 節 | 規則 | 確認方法 |
 |----|------|----------|
-| 1.1 | 標準の構成（層とパッケージ） | 依存の表のうち、domain・application・presentation・infrastructure の間の向き、application と `api`、presentation・`application/model/` と `port/` は自動（ArchUnit）、他の依存の組はレビュー |
+| 1.1 | 標準の構成（層とパッケージ） | 依存の表の、モジュールの中の層の間の全ての組（表にない層とパッケージへの依存）は自動（ArchUnit）。`api/` に interface がないこと、`api/` の型を `api/` の外が実装・継承しないこと、domain のパッケージに循環がないことも自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることは、集約に依存しないこと（次の行）を除いてレビュー |
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
@@ -14,7 +14,7 @@
 | 1.1 | 共通コードと設定はモジュールに依存せず、モジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
 | 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー |
-| 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）、目安はレビュー |
+| 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数が、第 1.4 節の表と一致することは自動（ArchUnit）。分けない理由はレビュー |
 | 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー |
 | 2.1 | 生成した interface を実装する。`@RestController` は presentation だけに付ける（`MeController` を除く） | `@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー |
 | 2.2 | 応答への変換は手動で書く | 生成したモデルの組み立ては自動（ArchUnit）、他はレビュー |
@@ -114,6 +114,8 @@ module/<モジュール>/
 |------------|----|--------------|
 | `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
 | `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラスは package-private。対象は認可の対応表、認可の判定、契約の操作の一覧で、対応表は管理用と店舗用がある。分けるとクラスを公開しなければならない |
+
+目安を超えるパッケージの一覧と数は、テスト（`ModuleStructureTest`）が表と照合する。表にない超過、目安以下のパッケージの行、数の違いがあると、テストが失敗する。テストが表を読むので、表の書式を変えない：1 列目はバッククォートで囲んだパッケージの名前（`com.ecsite.` と、モジュールの `module.` を除いた形）、2 列目は数。
 
 ### 1.5 共通の型
 

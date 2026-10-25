@@ -124,7 +124,7 @@ class AdminApiPermissionContractTest {
      * 本番の {@code OpenApiOperations}（{@code config.security} の package-private のクラス）は、リクエストのメソッドとパスから
      * 1 つの操作を探す用途で、契約の全ての操作と権限の記載を一覧にする、この検査の役割とは違う。そのため使わず、契約を直接たどる。
      *
-     * @param spec OpenAPI の文書（読み込み済み）
+     * @param spec OpenAPI の文書（YAML の文字列）。YAML の文字列を直接渡すテストがあるので、読み込み済みの {@code Map} ではなく文字列を受け、ここで解析する
      * @return 操作の一覧
      */
     @SuppressWarnings("unchecked")

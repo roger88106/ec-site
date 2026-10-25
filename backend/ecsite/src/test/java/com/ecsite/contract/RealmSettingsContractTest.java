@@ -7,8 +7,6 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 
@@ -31,10 +29,10 @@ class RealmSettingsContractTest {
     private static Map<String, String> realms;
 
     @BeforeAll
-    static void load() throws IOException {
+    static void load() {
         realms = Map.of(
-                STORE, Files.readString(Contracts.realmsDir().resolve("ec-store-realm.json")),
-                ADMIN, Files.readString(Contracts.realmsDir().resolve("ec-admin-realm.json")));
+                STORE, Contracts.realm("ec-store-realm.json"),
+                ADMIN, Contracts.realm("ec-admin-realm.json"));
     }
 
     @ParameterizedTest(name = "{0}")

@@ -40,10 +40,10 @@ class StorefrontMapper {
     /**
      * 並び順を変換する。指定がなければ新着順。
      *
-     * @param sort 並び順
+     * @param sort 並び順（省略されたら null）
      * @return 並び順
      */
-    ProductCondition.Sort toSort(ProductSort sort) {
+    ProductCondition.Sort toSort(@Nullable ProductSort sort) {
         if (sort == null) {
             return ProductCondition.Sort.NEWEST;
         }
@@ -60,11 +60,11 @@ class StorefrontMapper {
      * @param categoryId カテゴリ ID
      * @param minPrice   税込価格の下限（円）
      * @param maxPrice   税込価格の上限（円）
-     * @param sort       並び順
+     * @param sort       並び順（省略されたら null）
      * @return 商品一覧の条件
      */
     ProductCondition toProductCondition(@Nullable UUID categoryId, @Nullable Long minPrice, @Nullable Long maxPrice,
-                                          ProductSort sort) {
+                                          @Nullable ProductSort sort) {
         return new ProductCondition(categoryId, minPrice == null ? null : Money.of(minPrice),
                 maxPrice == null ? null : Money.of(maxPrice), toSort(sort));
     }

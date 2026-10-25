@@ -51,10 +51,26 @@ final class Contracts {
     }
 
     /**
+     * realm の設定の JSON を読む。
+     *
+     * @param file realm の設定のファイルの名前（realm の設定の置き場所の下。例：{@code ec-admin-realm.json}）
+     * @return 読んだ JSON の文字列
+     * @throws UncheckedIOException ファイルを読めないとき
+     */
+    static String realm(String file) {
+        try {
+            return Files.readString(realmsDir().resolve(file));
+        } catch (IOException e) {
+            throw new UncheckedIOException("realm の設定を読めない: " + file, e);
+        }
+    }
+
+    /**
      * 契約の YAML を読む。
      *
      * @param file 契約のファイルの名前（OpenAPI の置き場所の下。例：{@code admin.yaml}）
      * @return 読んだ契約
+     * @throws UncheckedIOException ファイルを読めないとき
      */
     static Map<String, Object> openApi(String file) {
         try {

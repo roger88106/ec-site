@@ -30,7 +30,9 @@ public final class TestSettings {
      * 起動のときと同じ順（{@code application.yml}、指定した profile の順）に重ね、後のものが先のものを上書きするとして読む。
      *
      * @param profiles 指定する profile（順に重ねる。{@code application-<profile>.yml} を読む）
-     * @return 設定の名前（階層は . でつなぐ）と値
+     * @return 設定の名前（階層は . でつなぐ。配列は {@code a[0]} のように添字付きの名前になる）と、文字列にした値。
+     * 値が null のキー（{@code key:} だけ）は含めない（キーがない扱い）
+     * @throws UncheckedIOException 設定ファイルを読めないとき
      */
     public static Map<String, String> load(String... profiles) {
         List<String> files = new ArrayList<>(List.of("application.yml"));
@@ -43,7 +45,13 @@ public final class TestSettings {
                 for (PropertySource<?> source : new YamlPropertySourceLoader().load(file, new ClassPathResource(file))) {
                     if (source instanceof EnumerablePropertySource<?> enumerable) {
                         for (String name : enumerable.getPropertyNames()) {
-                            values.put(name, String.valueOf(enumerable.getProperty(name)));
+                            Object value = enumerable.getProperty(name);
+                            if (value != null) {
+                                values.put(name, String.valueOf(value));
+                            } else {
+                                // 後のファイルが null で上書きしたら、先の値も「ない」扱いにする
+                                values.remove(name);
+                            }
                         }
                     }
                 }

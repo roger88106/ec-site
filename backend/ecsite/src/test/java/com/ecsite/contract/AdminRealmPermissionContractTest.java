@@ -5,8 +5,6 @@ import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
-import java.io.IOException;
-import java.nio.file.Files;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -45,7 +43,7 @@ class AdminRealmPermissionContractTest {
 
     @BeforeAll
     @SuppressWarnings("unchecked")
-    static void load() throws IOException {
+    static void load() {
         Map<String, Object> spec = Contracts.openApi("admin.yaml");
         var paths = (Map<String, Map<String, Object>>) spec.get("paths");
         declaredPermissions = new TreeSet<>();
@@ -55,7 +53,7 @@ class AdminRealmPermissionContractTest {
                 declaredPermissions.add(permission);
             }
         }));
-        realm = Files.readString(Contracts.realmsDir().resolve("ec-admin-realm.json"));
+        realm = Contracts.realm("ec-admin-realm.json");
     }
 
     @Test

@@ -146,8 +146,7 @@ class PaymentVoidTest {
     @DisplayName("AC-157 期限切れの後に与信の成功が届いたら、その与信を取り消す")
     void voidsLateAuthorization() {
         var orderId = payments.created(ORDERED_AT);
-        var url = paymentApi.pageUrl(orderId).orElseThrow();
-        var pageId = url.substring(url.lastIndexOf('/') + 1);
+        var pageId = payments.openPage(orderId);
         clock.advance(Duration.ofMinutes(30));
         expiryJob.expire();
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);

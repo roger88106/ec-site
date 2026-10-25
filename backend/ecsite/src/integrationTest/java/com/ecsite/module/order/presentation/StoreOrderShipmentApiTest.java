@@ -30,7 +30,6 @@ import java.util.UUID;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -101,11 +100,7 @@ class StoreOrderShipmentApiTest {
         var orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
         accepted = orders.placeOrder(variantId, 1);
         shipped = orders.placeOrder(variantId, 1);
-        mockMvc.perform(post("/api/admin/orders/" + shipped + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"carrier": "YAMATO", "trackingNumber": "1234-5678-9012"}"""))
-                .andExpect(status().isCreated());
+        new ShippingTestData(mockMvc, mockCarrier).ship(shipped, Carrier.YAMATO, "1234-5678-9012");
     }
 
     @Test

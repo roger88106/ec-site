@@ -119,15 +119,107 @@ public class CatalogTestData {
      */
     public TestProduct product(String productCode, UUID taxCategoryId, String name, long priceExclTax, String... axes)
             throws Exception {
-        var axesJson = Arrays.stream(axes).map("\"%s\""::formatted).collect(Collectors.joining(", "));
-        var id = createdId(post("/api/admin/products").contentType(MediaType.APPLICATION_JSON).content("""
-                {"productCode": "%s", "name": "%s", "description": "説明", "taxCategoryId": "%s",
-                 "priceExclTax": %d, "axes": [%s]}""".formatted(productCode, name, taxCategoryId, priceExclTax, axesJson)));
-        var product = new TestProduct(id, productCode);
+        var product = register(productCode, taxCategoryId, name, "説明", priceExclTax, List.of(), axes);
         if (axes.length == 0) {
             product.variant();
         }
         return product;
+    }
+
+    /**
+     * 説明とカテゴリを指定して、バリアントを 1 つ持つ商品を登録する。品番は呼ぶたびに振り直す。
+     *
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param description   説明
+     * @param priceExclTax  税抜価格
+     * @param categoryIds   所属するカテゴリ ID（なければ空）
+     * @return 商品
+     */
+    public TestProduct product(UUID taxCategoryId, String name, String description, long priceExclTax,
+                               List<UUID> categoryIds) throws Exception {
+        sequence++;
+        return register("TD-" + sequence, taxCategoryId, name, description, priceExclTax, categoryIds).variant();
+    }
+
+    /**
+     * バリアントを持たない商品を、カテゴリを指定して登録し、時計を 1 分進める（登録日時をずらして、一覧の並びが決まるようにする）。<br />
+     * バリアントは {@link TestProduct#variantCoded} で続けて登録する。
+     *
+     * @param productCode   商品品番
+     * @param taxCategoryId 税区分 ID
+     * @param name          商品名
+     * @param categoryIds   所属するカテゴリ ID（なければ空）
+     * @return 商品
+     */
+    public TestProduct draft(String productCode, UUID taxCategoryId, String name, UUID... categoryIds) throws Exception {
+        var product = register(productCode, taxCategoryId, name, "", 1000, List.of(categoryIds));
+        clock.setInstant(clock.instant().plus(Duration.ofMinutes(1)));
+        return product;
+    }
+
+    /**
+     * 画像のアップロードを受け付ける。応答は呼び出し側で確認する。
+     *
+     * @param productId     商品 ID
+     * @param contentType   ファイルの Content-Type
+     * @param contentLength ファイルの大きさ（バイト）
+     * @return 応答
+     */
+    public ResultActions createUpload(UUID productId, String contentType, long contentLength) throws Exception {
+        return mockMvc.perform(post("/api/admin/products/" + productId + "/image-uploads")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"contentType": "%s", "contentLength": %d}""".formatted(contentType, contentLength)));
+    }
+
+    /**
+     * 画像のアップロードを受け付け、署名付き URL へファイルを PUT する。
+     *
+     * @param productId   商品 ID
+     * @param contentType ファイルの Content-Type
+     * @param content     ファイルの中身
+     * @return 受付の ID
+     */
+    public String upload(UUID productId, String contentType, byte[] content) throws Exception {
+        var body = createUpload(productId, contentType, content.length)
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+        var request = HttpRequest.newBuilder(URI.create(JsonPath.read(body, "$.uploadUrl")))
+                .PUT(HttpRequest.BodyPublishers.ofByteArray(content));
+        JsonPath.<Map<String, String>>read(body, "$.headers").forEach(request::header);
+        try (var client = HttpClient.newHttpClient()) {
+            assertThat(client.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode()).isEqualTo(200);
+        }
+        return JsonPath.read(body, "$.uploadId");
+    }
+
+    /**
+     * 受け付けた画像を確定する。結果は呼び出し側で確認する（商品のバージョンは進めない）。
+     *
+     * @param productId 商品 ID
+     * @param uploadId  受付の ID
+     * @param version   送るバージョン
+     * @return 応答
+     */
+    public ResultActions addImage(UUID productId, String uploadId, long version) throws Exception {
+        return mockMvc.perform(post("/api/admin/products/" + productId + "/images")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("""
+                        {"uploadId": "%s", "version": %d}""".formatted(uploadId, version)));
+    }
+
+    /**
+     * 商品を登録する（バリアントは登録しない）。
+     */
+    private TestProduct register(String productCode, UUID taxCategoryId, String name, String description,
+                                 long priceExclTax, List<UUID> categoryIds, String... axes) throws Exception {
+        var axesJson = Arrays.stream(axes).map("\"%s\""::formatted).collect(Collectors.joining(", "));
+        var categoriesJson = categoryIds.stream().map("\"%s\""::formatted).collect(Collectors.joining(", "));
+        var id = createdId(post("/api/admin/products").contentType(MediaType.APPLICATION_JSON).content("""
+                {"productCode": "%s", "name": "%s", "description": "%s", "taxCategoryId": "%s",
+                 "priceExclTax": %d, "axes": [%s], "categoryIds": [%s]}"""
+                .formatted(productCode, name, description, taxCategoryId, priceExclTax, axesJson, categoriesJson)));
+        return new TestProduct(id, productCode);
     }
 
     /**
@@ -211,18 +303,18 @@ public class CatalogTestData {
          * @return 受付の ID
          */
         public String upload() throws Exception {
-            var body = mockMvc.perform(post("/api/admin/products/" + id + "/image-uploads")
-                            .contentType(MediaType.APPLICATION_JSON)
-                            .content("""
-                                    {"contentType": "image/png", "contentLength": %d}""".formatted(PNG.length)))
-                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-            var request = HttpRequest.newBuilder(URI.create(JsonPath.read(body, "$.uploadUrl")))
-                    .PUT(HttpRequest.BodyPublishers.ofByteArray(PNG));
-            JsonPath.<Map<String, String>>read(body, "$.headers").forEach(request::header);
-            try (var client = HttpClient.newHttpClient()) {
-                assertThat(client.send(request.build(), HttpResponse.BodyHandlers.discarding()).statusCode()).isEqualTo(200);
-            }
-            return JsonPath.read(body, "$.uploadId");
+            return upload("image/png", PNG);
+        }
+
+        /**
+         * 画像のアップロードを受け付け、署名付き URL へ指定したファイルを PUT する。
+         *
+         * @param contentType ファイルの Content-Type
+         * @param content     ファイルの中身
+         * @return 受付の ID
+         */
+        public String upload(String contentType, byte[] content) throws Exception {
+            return CatalogTestData.this.upload(id, contentType, content);
         }
 
         /**
@@ -233,10 +325,23 @@ public class CatalogTestData {
          * @return 応答
          */
         public ResultActions addImage(String uploadId, long version) throws Exception {
-            return mockMvc.perform(post("/api/admin/products/" + id + "/images")
+            return CatalogTestData.this.addImage(id, uploadId, version);
+        }
+
+        /**
+         * 品番を指定してバリアントを登録する（軸はなし）。
+         *
+         * @param variantCode バリアント品番
+         * @return この商品
+         */
+        public TestProduct variantCoded(String variantCode) throws Exception {
+            variantIds.add(createdId(post("/api/admin/products/" + id + "/variants")
                     .contentType(MediaType.APPLICATION_JSON)
                     .content("""
-                            {"uploadId": "%s", "version": %d}""".formatted(uploadId, version)));
+                            {"variantCode": "%s", "axisValues": [], "version": %d}""".formatted(variantCode, version))));
+            variantCodes.add(variantCode);
+            version++;
+            return this;
         }
 
         /**

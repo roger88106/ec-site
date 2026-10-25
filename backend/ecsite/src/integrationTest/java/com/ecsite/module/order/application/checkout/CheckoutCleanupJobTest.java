@@ -7,7 +7,6 @@ import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestJson;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.order.domain.checkout.Checkout;
@@ -39,7 +38,6 @@ import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasItem;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -154,15 +152,10 @@ class CheckoutCleanupJobTest {
     @Test
     @DisplayName("AC-289 消した注文手続きを読む操作と、注文する操作は 404 になる")
     void deletedCheckoutIsNotFound() throws Exception {
-        var cartId = TestJson.uuid(mockMvc.perform(get("/api/store/me/cart"))
-                .andReturn().getResponse().getContentAsString(), "$.cartId");
-        mockMvc.perform(post("/api/store/carts/" + cartId + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": 1}""".formatted(variantId)))
-                .andExpect(status().isNoContent());
-        var checkoutId = TestJson.createdId(mockMvc.perform(OrderTestData.startCheckoutRequest(cartId))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
+        var orders = new OrderTestData(mockMvc);
+        var cartId = orders.cart();
+        orders.add(cartId, variantId, 1);
+        var checkoutId = orders.startCheckout(cartId);
 
         clock.setInstant(AFTER_RETENTION);
         job.cleanUp();

@@ -7,7 +7,6 @@ import org.jooq.Field;
 import org.jooq.Table;
 import org.jooq.impl.DSL;
 import org.springframework.context.ApplicationEventPublisher;
-import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
 import org.springframework.modulith.events.core.TargetEventPublication;
 import org.springframework.transaction.support.TransactionTemplate;
@@ -16,7 +15,6 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.awaitility.Awaitility.await;
 
 /**
  * イベントの記録（Spring Modulith の表）のテーブルの定義と、イベントを発行して処理を待つ補助。<br />
@@ -54,18 +52,46 @@ class EventPublications {
      */
     private static final Field<String> SERIALIZED_EVENT = DSL.field(DSL.name("serialized_event"), String.class);
 
+    /**
+     * イベントの記録の表を数える DSLContext
+     */
     private final DSLContext dsl;
 
+    /**
+     * イベントを、コミットするトランザクションで発行するためのテンプレート
+     */
     private final TransactionTemplate transactionTemplate;
 
+    /**
+     * イベントの発行
+     */
     private final ApplicationEventPublisher eventPublisher;
 
+    /**
+     * 未完了のイベントの発行の記録
+     */
     private final EventPublicationRegistry registry;
 
+    /**
+     * リスナーの処理を待つ補助
+     */
     private final AsyncEvents asyncEvents;
 
+    /**
+     * テスト用の時計（再発行の対象になる時間まで進める）
+     */
     private final MutableClock clock;
 
+    /**
+     * コンストラクタ
+     *
+     * @param dsl                 DSLContext
+     * @param transactionTemplate トランザクションのテンプレート
+     * @param eventPublisher      イベントの発行
+     * @param registry            イベントの発行の記録
+     * @param asyncEvents         リスナーの処理を待つ補助
+     * @param clock               テスト用の時計
+     */
     EventPublications(DSLContext dsl, TransactionTemplate transactionTemplate, ApplicationEventPublisher eventPublisher,
                       EventPublicationRegistry registry, AsyncEvents asyncEvents, MutableClock clock) {
         this.dsl = dsl;
@@ -79,6 +105,8 @@ class EventPublications {
     /**
      * イベントをコミットするトランザクションで発行し、リスナーの処理が終わる（成功か失敗）のを待つ。
      *
+     * @param <E>     イベントの型
+     * @param event   発行するイベント
      * @param failing リスナーが失敗するイベントか
      * @return 発行したイベント
      */
@@ -95,6 +123,8 @@ class EventPublications {
     /**
      * イベントを発行し、リスナーの 1 回目の失敗を待つ。
      *
+     * @param <E>   イベントの型
+     * @param event 発行するイベント
      * @return 発行したイベント
      */
     <E> E failedOnce(E event) {
@@ -104,6 +134,10 @@ class EventPublications {
     /**
      * いつも失敗するイベントを発行し、処理の回数が指定の回数になるまで再発行する（最後の処理も失敗する）。
      *
+     * @param <E>                イベントの型
+     * @param event              発行するイベント
+     * @param job                再発行のジョブ
+     * @param completionAttempts 処理の回数
      * @return 発行したイベント
      */
     <E> E failedUntil(E event, EventResubmissionJob job, int completionAttempts) {
@@ -112,23 +146,16 @@ class EventPublications {
         for (int attempts = 2; attempts <= completionAttempts; attempts++) {
             clock.advance(Duration.ofMinutes(1));
             job.resubmit();
-            int expected = attempts;
-            await().atMost(AsyncEvents.TIMEOUT).until(() -> failedWith(event, expected));
+            asyncEvents.awaitFailed(event::equals, attempts);
         }
         return event;
     }
 
     /**
-     * テストのイベントの発行の記録が、指定の処理の回数で、処理に失敗した状態か。
-     */
-    boolean failedWith(Object event, int completionAttempts) {
-        var publication = publicationOf(event);
-        return publication.getStatus() == EventPublication.Status.FAILED
-                && publication.getCompletionAttempts() == completionAttempts;
-    }
-
-    /**
-     * テストのイベントの、未完了の発行の記録
+     * テストのイベントの、未完了の発行の記録。
+     *
+     * @param event 発行したイベント
+     * @return 未完了の発行の記録
      */
     TargetEventPublication publicationOf(Object event) {
         return registry.findIncompletePublications().stream()
@@ -137,7 +164,10 @@ class EventPublications {
     }
 
     /**
-     * イベント ID を含む記録の数（記録はイベントを JSON にして持つ）
+     * イベント ID を含む記録の数（記録はイベントを JSON にして持つ）。
+     *
+     * @param eventId イベントを見分ける ID
+     * @return 記録の数
      */
     int count(UUID eventId) {
         return dsl.fetchCount(EVENT_PUBLICATION, SERIALIZED_EVENT.contains(eventId.toString()));

@@ -8,32 +8,25 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
 import com.ecsite.module.tax.api.TaxRateApi;
-import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.RequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * C 側向けの商品照会の統合テスト（T603、AC-52〜54）。<br />
@@ -71,8 +64,6 @@ class StoreCatalogApiTest {
     private UUID standard;
 
     private UUID reduced;
-
-    private int sequence;
 
     @BeforeEach
     void setUp() throws Exception {
@@ -186,9 +177,9 @@ class StoreCatalogApiTest {
         var tops = catalog.category("トップス", clothing);
         var tShirts = catalog.category("T シャツ", tops);
         var food = catalog.category("食品", null);
-        var inClothing = publishedInCategory(standard, 1000, clothing);
-        var inTShirts = publishedInCategory(standard, 1000, tShirts);
-        publishedInCategory(standard, 1000, food);
+        var inClothing = catalog.product(standard, "商品", "", 1000, List.of(clothing)).publish().id;
+        var inTShirts = catalog.product(standard, "商品", "", 1000, List.of(tShirts)).publish().id;
+        catalog.product(standard, "商品", "", 1000, List.of(food)).publish();
 
         var page = api.listProducts(query(clothing, null, null, StoreProductSort.NEWEST), PageRequest.of(1, 20));
 
@@ -222,33 +213,5 @@ class StoreCatalogApiTest {
      */
     private long javaPriceInclTax(long price, BigDecimal rate) {
         return taxRateApi.priceInclTax(Money.of(price), rate).yen();
-    }
-
-    /**
-     * 要求を送って 201 を確認し、応答の本文の ID を返す
-     */
-    private String createdId(RequestBuilder request) throws Exception {
-        var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
-    }
-
-    /**
-     * バリアントを 1 つ持つ商品を、カテゴリを指定して登録して公開し、時計を 1 分進める。
-     * CatalogTestData は商品のカテゴリを指定できないので、ここだけ API で作る
-     */
-    private UUID publishedInCategory(UUID taxCategoryId, long price, UUID... categoryIds) throws Exception {
-        sequence++;
-        var categories = String.join(", ", Arrays.stream(categoryIds).map("\"%s\""::formatted).toList());
-        var id = createdId(post("/api/admin/products").contentType(MediaType.APPLICATION_JSON).content("""
-                {"productCode": "P-%d", "name": "商品 %d", "description": "", "taxCategoryId": "%s",
-                 "priceExclTax": %d, "categoryIds": [%s]}""".formatted(sequence, sequence, taxCategoryId, price, categories)));
-        mockMvc.perform(post("/api/admin/products/" + id + "/variants")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantCode": "P-%d", "axisValues": [], "version": 0}""".formatted(sequence)))
-                .andExpect(status().isCreated());
-        mockMvc.perform(put("/api/admin/products/" + id + "/publish")).andExpect(status().isNoContent());
-        clock.setInstant(clock.instant().plus(Duration.ofMinutes(1)));
-        return UUID.fromString(id);
     }
 }

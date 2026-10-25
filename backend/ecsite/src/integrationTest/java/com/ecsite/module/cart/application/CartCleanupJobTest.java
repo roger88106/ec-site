@@ -4,6 +4,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.OrderTestData;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
@@ -120,12 +121,12 @@ class CartCleanupJobTest {
     @DisplayName("AC-289 会員のカートを消した後は、会員のカートを求めると再作成される")
     void recreatesMemberCartAfterDeleted() throws Exception {
         var member = TestTokens.member().subject(UUID.randomUUID()).email("cleanup@example.com");
-        var before = memberCartId(member);
+        var before = new OrderTestData(mockMvc).cart(member.bearer());
 
         clock.setInstant(AFTER_EXPIRY);
         job.cleanUp();
 
-        var after = memberCartId(member);
+        var after = new OrderTestData(mockMvc).cart(member.bearer());
         assertThat(after).isNotEqualTo(before);
         assertThat(remaining(List.of(before))).isEmpty();
     }
@@ -185,14 +186,6 @@ class CartCleanupJobTest {
         cart.add(UUID.randomUUID(), 1, changedAt);
         cartRepository.save(cart);
         return cart.id();
-    }
-
-    /**
-     * 会員のカートの ID を求める（なければ作られる）。
-     */
-    private UUID memberCartId(TestTokens.Builder member) throws Exception {
-        return TestJson.uuid(mockMvc.perform(get("/api/store/me/cart").with(member.bearer()))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.cartId");
     }
 
     /**

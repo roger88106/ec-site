@@ -112,7 +112,9 @@ class EventResubmissionJobTest {
         clock.advance(Duration.ofMinutes(6));
         job.resubmit();
 
-        await().atMost(TIMEOUT).until(() -> listener.attempts(event) == 2 && listener.succeeded(event));
+        asyncEvents.awaitHandled(event::equals);
+        assertThat(listener.attempts(event)).isEqualTo(2);
+        assertThat(listener.succeeded(event)).isTrue();
     }
 
     @Test
@@ -207,7 +209,9 @@ class EventResubmissionJobTest {
         clock.advance(Duration.ofMinutes(6));
         job.resubmit();
 
-        await().atMost(TIMEOUT).until(() -> listener.attempts(event) == 2 && listener.succeeded(event));
+        asyncEvents.awaitHandled(event::equals);
+        assertThat(listener.attempts(event)).isEqualTo(2);
+        assertThat(listener.succeeded(event)).isTrue();
     }
 
     @Test

@@ -9,6 +9,9 @@ import java.util.UUID;
  */
 public final class TestJson {
 
+    /**
+     * 補助の関数だけを持つので、作らせない。
+     */
     private TestJson() {
     }
 

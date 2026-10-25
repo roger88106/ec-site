@@ -6,8 +6,11 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
+import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.module.shipping.domain.Carrier;
+import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -30,7 +33,6 @@ import java.util.Locale;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -53,6 +55,9 @@ class OrderReportApiTest {
 
     @Autowired
     TestPaymentGateway gateway;
+
+    @Autowired
+    MockCarrier mockCarrier;
 
     @Autowired
     OrderPaymentService orderPaymentService;
@@ -128,11 +133,7 @@ class OrderReportApiTest {
     @DisplayName("出荷済みの注文の写しは、状態が出荷済み")
     void returnsShippedOrder() throws Exception {
         var orderId = orders.placeOrder(shirt.variantIds.getFirst(), 1);
-        mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"carrier": "YAMATO", "trackingNumber": "123456789012"}"""))
-                .andExpect(status().isCreated());
+        new ShippingTestData(mockMvc, mockCarrier).ship(orderId, Carrier.YAMATO, "123456789012");
 
         assertThat(orderReportApi.find(orderId).orElseThrow().status()).isEqualTo(OrderReportSnapshot.Status.SHIPPED);
     }

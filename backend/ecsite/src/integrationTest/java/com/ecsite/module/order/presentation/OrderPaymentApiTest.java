@@ -166,7 +166,7 @@ class OrderPaymentApiTest {
         void acceptsOnAuthorization() throws Exception {
             var orderId = pending(2);
             var addedLater = stockedVariant("後から追加した商品");
-            addToCart(addedLater);
+            orders.add(orders.cart(), addedLater, 1);
 
             gateway.pay(orders.openPaymentPage(orderId));
 
@@ -183,7 +183,7 @@ class OrderPaymentApiTest {
         @DisplayName("AC-147 品目が複数の注文でも、与信が成功すると受付になり、注文した品目がすべてカートから除かれる")
         void removesAllOrderedItems() throws Exception {
             var other = stockedVariant("一緒に注文する商品");
-            addToCart(other);
+            orders.add(orders.cart(), other, 1);
             var orderId = pending(1);
 
             gateway.pay(orders.openPaymentPage(orderId));
@@ -427,20 +427,8 @@ class OrderPaymentApiTest {
         return orderId;
     }
 
-    private void addToCart(UUID variant) throws Exception {
-        mockMvc.perform(post("/api/store/carts/" + cartId() + "/items")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": 1}""".formatted(variant)))
-                .andExpect(status().isNoContent());
-    }
-
-    private String cartId() throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/me/cart")).andReturn().getResponse().getContentAsString(), "$.cartId");
-    }
-
     private List<String> cartVariantIds() throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + cartId())).andReturn().getResponse().getContentAsString(),
+        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + orders.cart())).andReturn().getResponse().getContentAsString(),
                 "$.items[*].variantId");
     }
 

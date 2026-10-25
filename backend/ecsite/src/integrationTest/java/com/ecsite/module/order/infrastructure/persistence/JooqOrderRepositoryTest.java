@@ -2,6 +2,11 @@ package com.ecsite.module.order.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
+import com.ecsite.common.model.value.Operator;
+import com.ecsite.module.order.domain.order.Cancellation;
+import com.ecsite.module.order.domain.order.CancellationKind;
+import com.ecsite.module.order.domain.order.OrderStatus;
+import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
@@ -86,6 +91,74 @@ class JooqOrderRepositoryTest {
         assertThat(repository.findIdByCheckoutId(checkoutId)).contains(order.id());
         assertThat(repository.findIdByCheckoutId(UUID.randomUUID())).isEmpty();
         assertThatThrownBy(() -> repository.insert(order(checkoutId, "20261008-000004"))).isInstanceOf(DuplicateKeyException.class);
+    }
+
+    @Test
+    @DisplayName("注文を受付に変えて更新すると、状態が受付になり、バージョンが 1 上がり、状態の変化のイベントが発行される")
+    void updatesStatusAndVersion() {
+        var order = order(UUID.randomUUID(), "20261008-000005");
+        repository.insert(order);
+        var loaded = repository.findById(order.id()).orElseThrow();
+        loaded.acceptPayment(ORDERED_AT.plusSeconds(60));
+
+        repository.update(loaded);
+
+        var restored = repository.findById(order.id()).orElseThrow().toSnapshot();
+        assertThat(restored.status()).isEqualTo(OrderStatus.ACCEPTED);
+        assertThat(restored.version()).isEqualTo(order.toSnapshot().version() + 1);
+        assertThat(restored).usingRecursiveComparison().ignoringFields("status", "version")
+                .isEqualTo(order.toSnapshot());
+        assertThat(events.stream(OrderStatusChanged.class)).hasSize(2);
+    }
+
+    @Test
+    @DisplayName("キャンセルの申請と承認によるキャンセルを更新すると、申請と承認した運営者、キャンセルの記録を含めて再構築できる")
+    void updatesCancellationRequestAndCancellation() {
+        var order = order(UUID.randomUUID(), "20261008-000006");
+        repository.insert(order);
+        var accepted = repository.findById(order.id()).orElseThrow();
+        accepted.acceptPayment(ORDERED_AT.plusSeconds(60));
+        repository.update(accepted);
+        var requested = repository.findById(order.id()).orElseThrow();
+        var requestedAt = ORDERED_AT.plusSeconds(3600);
+        requested.requestCancellation("サイズが合わない", requestedAt);
+        repository.update(requested);
+        assertThat(repository.findById(order.id()).orElseThrow().toSnapshot().cancellationRequest())
+                .isEqualTo(new CancellationRequest(requestedAt, "サイズが合わない", CancellationRequest.Result.PENDING,
+                        null, null));
+
+        var operator = new Operator(UUID.randomUUID(), "管理者 花子");
+        var decidedAt = ORDERED_AT.plusSeconds(7200);
+        var pending = repository.lockById(order.id()).orElseThrow();
+        assertThat(pending.approveCancellation(operator, decidedAt)).isTrue();
+        repository.update(pending);
+
+        var restored = repository.findById(order.id()).orElseThrow().toSnapshot();
+        assertThat(restored.status()).isEqualTo(OrderStatus.CANCELLED);
+        assertThat(restored.cancellationRequest()).isEqualTo(new CancellationRequest(requestedAt, "サイズが合わない",
+                CancellationRequest.Result.APPROVED, decidedAt, operator));
+        assertThat(restored.cancellation()).isEqualTo(
+                new Cancellation(decidedAt, CancellationKind.REQUEST_APPROVED, null, operator));
+        assertThat(restored.version()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("lockById は保存した注文を再構築して返し、ない注文には空を返す")
+    void locksOrderById() {
+        var order = order(UUID.randomUUID(), "20261008-000007");
+        repository.insert(order);
+
+        assertThat(repository.lockById(order.id()).orElseThrow().toSnapshot()).isEqualTo(order.toSnapshot());
+        assertThat(repository.lockById(UUID.randomUUID())).isEmpty();
+    }
+
+    @Test
+    @DisplayName("注文番号が使われているかを、保存した注文の番号だけ true で確認できる")
+    void checksOrderNumberExistence() {
+        repository.insert(order(UUID.randomUUID(), "20261008-000008"));
+
+        assertThat(repository.existsByOrderNumber(OrderNumber.of("20261008-000008"))).isTrue();
+        assertThat(repository.existsByOrderNumber(OrderNumber.of("20261008-000009"))).isFalse();
     }
 
     // ============================== 補助 ==============================

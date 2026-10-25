@@ -2,8 +2,8 @@ package com.ecsite.module.payment.api;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
-import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.domain.PaymentErrorCode;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.junit.jupiter.api.BeforeEach;
@@ -14,9 +14,7 @@ import org.springframework.context.annotation.Import;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
@@ -50,13 +48,11 @@ class PaymentAuthorizationDeadlineTest {
     @Autowired
     MutableClock clock;
 
-    /**
-     * 注文 ID → 支払画面 ID（支払の後は画面の URL を引けないため、覚えておく）
-     */
-    private final Map<UUID, String> pageIds = new HashMap<>();
+    PaymentTestData payments;
 
     @BeforeEach
     void setUp() {
+        payments = new PaymentTestData(paymentApi, gateway);
         clock.setInstant(AUTHORIZED_AT);
         gateway.reset();
     }
@@ -64,8 +60,8 @@ class PaymentAuthorizationDeadlineTest {
     @Test
     @DisplayName("BR-20 与信を受けた注文の与信期限は、与信の時刻の 7 日後。与信を受けていない注文は含まない")
     void returnsDeadlineOfAuthorizedOrders() {
-        var authorized = authorized();
-        var unpaid = created();
+        var authorized = payments.authorized(AUTHORIZED_AT);
+        var unpaid = payments.created(AUTHORIZED_AT);
 
         var deadlines = paymentApi.findAuthorizationDeadlines(List.of(authorized, unpaid, UUID.randomUUID()));
 
@@ -75,7 +71,7 @@ class PaymentAuthorizationDeadlineTest {
     @Test
     @DisplayName("AC-186 与信期限の 2 日前（5 日後）から、期限が近い。その前は近くない")
     void expiringFromTwoDaysBefore() {
-        var orderId = authorized();
+        var orderId = payments.authorized(AUTHORIZED_AT);
 
         clock.setInstant(DEADLINE.minus(Duration.ofDays(2)).minusSeconds(1));
         assertThat(expiringOf(orderId)).isFalse();
@@ -89,7 +85,7 @@ class PaymentAuthorizationDeadlineTest {
     @Test
     @DisplayName("AC-186、187、188 与信期限を過ぎた注文も、期限が近いに含み、一覧にも出る")
     void includesPastDeadline() {
-        var orderId = authorized();
+        var orderId = payments.authorized(AUTHORIZED_AT);
 
         clock.setInstant(DEADLINE.plus(Duration.ofDays(3)));
 
@@ -100,8 +96,8 @@ class PaymentAuthorizationDeadlineTest {
     @Test
     @DisplayName("AC-188 売上確定の与信期限切れで与信期限切れになった注文も、一覧に出る")
     void includesAuthorizationExpired() {
-        var orderId = authorized();
-        gateway.expireAuthorization(gateway.authorizationRefOf(pageIds.get(orderId)));
+        var orderId = payments.authorized(AUTHORIZED_AT);
+        gateway.expireAuthorization(gateway.authorizationRefOf(payments.pageIdOf(orderId)));
         clock.setInstant(DEADLINE.plusSeconds(1));
         assertBusinessError(() -> paymentApi.capture(orderId), PaymentErrorCode.AUTHORIZATION_EXPIRED);
 
@@ -112,7 +108,7 @@ class PaymentAuthorizationDeadlineTest {
     @Test
     @DisplayName("BR-20 売上確定済みの注文は、期限を過ぎても、期限が近いに含めず、一覧にも出さない")
     void excludesCaptured() {
-        var orderId = authorized();
+        var orderId = payments.authorized(AUTHORIZED_AT);
         paymentApi.capture(orderId);
 
         clock.setInstant(DEADLINE.plus(Duration.ofDays(3)));
@@ -122,24 +118,6 @@ class PaymentAuthorizationDeadlineTest {
     }
 
     // ============================== 補助 ==============================
-
-    private UUID created() {
-        var orderId = UUID.randomUUID();
-        paymentApi.create(orderId, Money.of(6940), AUTHORIZED_AT);
-        return orderId;
-    }
-
-    /**
-     * 支払画面を開いて支払い、与信済みにする。
-     */
-    private UUID authorized() {
-        var orderId = created();
-        var url = paymentApi.pageUrl(orderId).orElseThrow();
-        var pageId = url.substring(url.lastIndexOf('/') + 1);
-        pageIds.put(orderId, pageId);
-        gateway.pay(pageId);
-        return orderId;
-    }
 
     private boolean expiringOf(UUID orderId) {
         return paymentApi.findAuthorizationDeadlines(List.of(orderId)).getFirst().expiring();

@@ -2,6 +2,7 @@ package com.ecsite.module.payment.application;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
@@ -23,7 +24,6 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.ArrayList;
-import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -59,6 +59,8 @@ class PaymentExpiryJobTest {
     @Autowired
     MutableClock clock;
 
+    PaymentTestData payments;
+
     @Autowired
     ApplicationEvents events;
 
@@ -67,6 +69,7 @@ class PaymentExpiryJobTest {
 
     @BeforeEach
     void setUp() {
+        payments = new PaymentTestData(paymentApi, gateway);
         clock.setInstant(ORDERED_AT);
         gateway.reset();
     }
@@ -74,13 +77,13 @@ class PaymentExpiryJobTest {
     @Test
     @DisplayName("AC-153 期限を過ぎた未払いの支払は、支払画面を閉じて支払なしになり、期限切れのイベントが出る")
     void expiresUnpaidPastDeadline() {
-        var orderId = created();
-        var pageId = openPage(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        var pageId = payments.openPage(orderId);
 
         clock.setInstant(DEADLINE);
         job.expire();
 
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(gateway.page(pageId).orElseThrow().status()).isEqualTo(MockPaymentGateway.PageStatus.CLOSED);
         assertThat(expiredEvents(orderId)).isEqualTo(1);
     }
@@ -88,44 +91,44 @@ class PaymentExpiryJobTest {
     @Test
     @DisplayName("AC-153 支払画面を開かなかった支払も、期限を過ぎたら支払なしになる")
     void expiresWithoutPage() {
-        var orderId = created();
+        var orderId = payments.created(ORDERED_AT);
 
         clock.setInstant(DEADLINE);
         job.expire();
 
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(expiredEvents(orderId)).isEqualTo(1);
     }
 
     @Test
     @DisplayName("期限の前の支払は、期限切れにしない")
     void keepsBeforeDeadline() {
-        var orderId = created();
-        openPage(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        payments.openPage(orderId);
 
         clock.setInstant(DEADLINE.minusSeconds(1));
         job.expire();
 
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
         assertThat(expiredEvents(orderId)).isZero();
     }
 
     @Test
     @DisplayName("AC-156 期限の直前に支払が済み、通知がまだ届いていなければ、期限切れにせず、通知で与信済みになる")
     void keepsPaidBeforeNotification() {
-        var orderId = created();
-        var pageId = openPage(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        var pageId = payments.openPage(orderId);
         gateway.markPaid(pageId);
 
         clock.setInstant(DEADLINE);
         job.expire();
 
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.UNPAID);
         assertThat(expiredEvents(orderId)).isZero();
 
         gateway.notifyAuthorized(pageId);
 
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.AUTHORIZED);
     }
 
     @Test
@@ -134,8 +137,8 @@ class PaymentExpiryJobTest {
         // 期限の前に支払が済み、通知が届かない支払を、1 回の件数より多く作る
         var awaiting = new ArrayList<UUID>();
         for (int i = 0; i < 101; i++) {
-            var orderId = created();
-            gateway.markPaid(openPage(orderId));
+            var orderId = payments.created(ORDERED_AT);
+            gateway.markPaid(payments.openPage(orderId));
             awaiting.add(orderId);
         }
         clock.setInstant(DEADLINE);
@@ -151,7 +154,7 @@ class PaymentExpiryJobTest {
         clock.setInstant(newerOrderedAt.plus(Duration.ofMinutes(30)));
         job.expire();
 
-        assertThat(statusOf(newer)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+        assertThat(payments.statusOf(newer)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         assertThat(paymentApi.find(awaiting)).extracting(PaymentSummary::status)
                 .containsOnly(PaymentSummary.Status.UNPAID);
     }
@@ -159,8 +162,8 @@ class PaymentExpiryJobTest {
     @Test
     @DisplayName("NFR-7 ジョブを 2 回流しても、期限切れのイベントは 1 回だけ")
     void expiresOnlyOnce() {
-        var orderId = created();
-        openPage(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        payments.openPage(orderId);
 
         clock.setInstant(DEADLINE);
         job.expire();
@@ -180,21 +183,6 @@ class PaymentExpiryJobTest {
     }
 
     // ============================== 補助 ==============================
-
-    private UUID created() {
-        var orderId = UUID.randomUUID();
-        paymentApi.create(orderId, Money.of(6940), ORDERED_AT);
-        return orderId;
-    }
-
-    private String openPage(UUID orderId) {
-        var url = paymentApi.pageUrl(orderId).orElseThrow();
-        return url.substring(url.lastIndexOf('/') + 1);
-    }
-
-    private PaymentSummary.Status statusOf(UUID orderId) {
-        return paymentApi.find(List.of(orderId)).getFirst().status();
-    }
 
     private long expiredEvents(UUID orderId) {
         return events.stream(PaymentExpired.class).filter(event -> event.orderId().equals(orderId)).count();

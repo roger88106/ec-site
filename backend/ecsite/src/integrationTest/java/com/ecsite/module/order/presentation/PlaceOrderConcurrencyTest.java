@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文の並行性の受け入れテスト（T2313、AC-87、91）。<br />
+ * 注文の並行性の受け入れテスト。<br />
  * 行ロックが効いていることを確認するため、要求ごとにコミットする。ロールバックしないが、作ったデータは消さない。
  * 税区分の名称は一意なので、ほかのテストと重ならない名前にする。
  */

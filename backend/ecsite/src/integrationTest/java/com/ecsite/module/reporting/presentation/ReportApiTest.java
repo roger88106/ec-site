@@ -42,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * レポートの API の形の統合テスト（T0218、AC-197〜208、219、220、NFR-16）。<br />
+ * レポートの API の形の統合テスト。<br />
  * 集計の規則は application 層のテスト（{@code SalesTrendQueryTest} など）で確認し、ここは要求の受け取りと応答の形を確認する。
  * 写しは DB に直接入れる。2031 年の日付を使う。テストごとにロールバックする。
  */
@@ -229,7 +229,7 @@ class ReportApiTest {
                             "TEENS_OR_YOUNGER", "TWENTIES", "THIRTIES", "FORTIES", "FIFTIES", "SIXTIES_OR_OLDER", "UNKNOWN")))
                     .andExpect(jsonPath("$.ageGroups[2].amount").value(3200))
                     .andExpect(jsonPath("$.ageGroups[2].orders").value(1))
-                    // AC-208：生年月日のない会員の注文（税込 1,100 円 ＋ 送料 1,000 円）は「不明」に数える
+                    // 生年月日のない会員の注文（税込 1,100 円 ＋ 送料 1,000 円）は「不明」に数える
                     .andExpect(jsonPath("$.ageGroups[6].ageGroup").value("UNKNOWN"))
                     .andExpect(jsonPath("$.ageGroups[6].amount").value(2100))
                     .andExpect(jsonPath("$.ageGroups[6].orders").value(1))

@@ -13,7 +13,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 出荷通知メールの組み立ての単体テスト（T9402、US-38）
+ * 出荷通知メールの組み立ての単体テスト
  */
 class ShipmentMailComposerTest {
 

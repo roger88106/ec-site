@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * カートの変更の受け入れテスト（T2207、US-14、15）。<br />
+ * カートの変更の受け入れテスト。<br />
  * 商品は B 側の API で作る。在庫はバリアント登録のイベント（コミット後に動く）では作られないので、
  * 在庫モジュールのリポジトリで直接作る。カートの中身は、表示の API（段階 3）の代わりに DB で確認する。テストごとにロールバックする。
  */
@@ -176,7 +176,7 @@ class CartApiTest {
             add(cartId, variant, 1)
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("QUANTITY_EXCEEDS_STOCK"))
-                    // 在庫数そのものは示さない（AC-64）
+                    // 在庫数そのものは示さない
                     .andExpect(jsonPath("$.message").value("在庫が足りないため、この数量ではカートに入れられません。"));
 
             assertThat(items()).containsExactly(Map.entry(variant, 2));

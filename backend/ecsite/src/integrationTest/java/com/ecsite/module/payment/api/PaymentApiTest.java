@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * 決済の API の統合テスト（T7207、AC-146、152、BR-15、16）。<br />
+ * 決済の API の統合テスト。<br />
  * 決済サービスは mock。支払はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest

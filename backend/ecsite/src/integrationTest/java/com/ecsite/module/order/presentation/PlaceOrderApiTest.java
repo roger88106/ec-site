@@ -48,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文の成立と注文の表示の受け入れテスト（T2313、AC-86〜94、107）。<br />
+ * 注文の成立と注文の表示の受け入れテスト。<br />
  * 同時の注文と二重送信は、コミットが必要なので {@code PlaceOrderConcurrencyTest} で確認する。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -132,7 +132,7 @@ class PlaceOrderApiTest {
 
             var variant = shirt.variantIds.getFirst();
             assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
-            // 注文した品目は、与信の成功でカートから除く（spec 007 で AC-90 を変更。AC-147）
+            // 注文した品目は、与信の成功でカートから除く
             mockMvc.perform(get("/api/store/carts/" + cartId))
                     .andExpect(jsonPath("$.items", hasSize(1)))
                     .andExpect(jsonPath("$.items[0].variantId").value(variant.toString()))
@@ -141,7 +141,7 @@ class PlaceOrderApiTest {
             mockMvc.perform(get("/api/store/orders/" + id))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
-            // 調整履歴に、理由「注文」と注文番号が残る（AC-107）
+            // 調整履歴に、理由「注文」と注文番号が残る
             var orderNumber = JsonPath.<String>read(mockMvc.perform(get("/api/store/orders/" + id))
                     .andReturn().getResponse().getContentAsString(), "$.orderNumber");
             mockMvc.perform(get("/api/admin/inventory/variants/" + variant + "/adjustments"))

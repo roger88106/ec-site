@@ -30,7 +30,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * レポートの権限と、自分の権限の一覧と、レポートの設定の統合テスト（T0217、T0411、AC-197、214、215、217、BR-28）。<br />
+ * レポートの権限と、自分の権限の一覧と、レポートの設定の統合テスト。<br />
  * 役割ごとの token は、運営者の realm の職務と同じ権限を持つ（{@link TestTokens}）。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -63,7 +63,7 @@ class ReportPermissionApiTest {
     }
 
     /**
-     * 役割、レポート、見られるか（BR-28 の表）
+     * 役割、レポート、見られるか
      */
     static Stream<Arguments> roles() {
         return Stream.of(

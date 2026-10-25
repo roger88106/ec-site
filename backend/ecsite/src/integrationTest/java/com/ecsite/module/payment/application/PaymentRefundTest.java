@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 返金の統合テスト（T9108、AC-188、192、193、194、195、BR-21）。<br />
+ * 返金の統合テスト。<br />
  * 返金はコミットの後に非同期で行われるので、結果を待つ。
  */
 @IntegrationTest

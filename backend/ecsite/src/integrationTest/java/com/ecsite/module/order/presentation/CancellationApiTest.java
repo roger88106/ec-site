@@ -37,8 +37,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * キャンセルの受け入れテスト（T2403、AC-95、96、101〜103、105、107）。<br />
- * 在庫の戻しと注文の取り消しが一緒に起きること（AC-104）は、コミットが必要なので {@code CancellationAtomicityTest} で確認する。
+ * キャンセルの受け入れテスト。<br />
+ * 在庫の戻しと注文の取り消しが一緒に起きることは、コミットが必要なので {@code CancellationAtomicityTest} で確認する。
  * テストごとにロールバックする。
  */
 @IntegrationTest

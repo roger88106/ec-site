@@ -21,7 +21,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 出荷のリポジトリの統合テスト（T9205、BR-19、23）。<br />
+ * 出荷のリポジトリの統合テスト。<br />
  * 各テストは巻き戻すので、データは残らない。
  */
 @IntegrationTest

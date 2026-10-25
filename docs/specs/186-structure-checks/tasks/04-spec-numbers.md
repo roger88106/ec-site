@@ -17,7 +17,7 @@
 - [x] **T186-04-03** [P] 商品カタログのモジュール（tax、catalog、media、inventory、storefront、region）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。
   - 依存：T186-04-01
   - 範囲：`test/module/` と `it/module/` の、tax、catalog、media、inventory、storefront、region
-- [ ] **T186-04-04** [P] 注文のモジュール（cart、order、member、payment、shipping、notification、reporting）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。
+- [x] **T186-04-04** [P] 注文のモジュール（cart、order、member、payment、shipping、notification、reporting）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。
   - 依存：T186-04-01
   - 範囲：`test/module/` と `it/module/` の、cart、order、member、payment、shipping、notification、reporting
 - [ ] **T186-04-05** [テスト] `scripts/ci/spec-numbers.test.mjs` に、テストの Javadoc と行のコメントの番号を検出する例と、`@DisplayName` の番号を検出しない例を追加し、失敗することを確認する。`spec-numbers.mjs` の対象にバックエンドのテストのコメントを加え（T186-04-01 の `keepJavaComments` を使う）、テストが通り、検査が 0 件になる。0 件にならなければ、残った番号を同じタスクで書き換える（DC-186-13）。

@@ -27,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 支払の期限切れのジョブの、例外とログの単体テスト（T017-06-03、AC-310、312）。<br />
+ * 支払の期限切れのジョブの、例外とログの単体テスト。<br />
  * 支払の参照・更新のサービスと決済サービスは mock にする。通知を待つ支払の検索は、統合テスト（PaymentExpiryJobTest）で確認する。
  */
 @ExtendWith(OutputCaptureExtension.class)

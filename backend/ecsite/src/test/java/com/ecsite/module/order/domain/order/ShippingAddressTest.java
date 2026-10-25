@@ -13,7 +13,7 @@ import static com.ecsite.module.order.domain.order.TestAreas.SAPPORO_CHUO;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * お届け先の単体テスト（T2307、AC-86。T016-02-02、AC-258）。<br />
+ * お届け先の単体テスト。<br />
  * 都道府県と市区町村がマスターデータにあるかは、注文の確定で地域の API が確認する（統合テスト）。
  */
 class ShippingAddressTest {

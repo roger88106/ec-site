@@ -165,6 +165,9 @@ class JooqReportOrderRepositoryTest {
                 Money.of(91), lines);
     }
 
+    /**
+     * 指定した行番号と商品の注文の明細を作る
+     */
     private static ReportOrder.Line line(int lineNo, UUID productId) {
         return new ReportOrder.Line(lineNo, productId, UUID.randomUUID(), "TS-001", "TS-001-WM", "T シャツ",
                 List.of(new ReportOrder.AxisValue("色", "白")), 1, BigDecimal.TEN, Money.of(2970), Money.of(2700));

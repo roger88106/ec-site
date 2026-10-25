@@ -31,6 +31,12 @@ class JooqCheckoutRepositoryTest {
      */
     private static final Duration TTL = Duration.ofMinutes(30);
 
+    /**
+     * 削除の確認で使う注文手続きの開始時刻。ロールバックしない他のテストの注文手続き（2026 年）の期限より十分前にして、
+     * 表の全体を対象にする削除の条件に他のテストのデータが当たらないようにする
+     */
+    private static final Instant OLD_STARTED_AT = Instant.parse("2000-01-01T00:00:00Z");
+
     @Autowired
     CheckoutRepository repository;
 
@@ -77,9 +83,9 @@ class JooqCheckoutRepositoryTest {
     @Test
     @DisplayName("期限が指定した時刻より前の注文手続きだけを消す。ちょうどの時刻のものは残る")
     void deletesOnlyCheckoutsExpiredBefore() {
-        var expired = checkout(UUID.randomUUID(), STARTED_AT);
-        var onBoundary = checkout(UUID.randomUUID(), STARTED_AT.plusSeconds(60));
-        var alive = checkout(UUID.randomUUID(), STARTED_AT.plusSeconds(120));
+        var expired = checkout(UUID.randomUUID(), OLD_STARTED_AT);
+        var onBoundary = checkout(UUID.randomUUID(), OLD_STARTED_AT.plusSeconds(60));
+        var alive = checkout(UUID.randomUUID(), OLD_STARTED_AT.plusSeconds(120));
         repository.insert(expired);
         repository.insert(onBoundary);
         repository.insert(alive);
@@ -96,9 +102,9 @@ class JooqCheckoutRepositoryTest {
     @DisplayName("期限切れの注文手続きは、件数の上限までしか消さない")
     void deletesUpToLimit() {
         for (int i = 0; i < 3; i++) {
-            repository.insert(checkout(UUID.randomUUID(), STARTED_AT.plusSeconds(i)));
+            repository.insert(checkout(UUID.randomUUID(), OLD_STARTED_AT.plusSeconds(i)));
         }
-        var cutoff = STARTED_AT.plus(TTL).plusSeconds(10);
+        var cutoff = OLD_STARTED_AT.plus(TTL).plusSeconds(10);
 
         assertThat(repository.deleteExpiredBefore(cutoff, 2)).isEqualTo(2);
         assertThat(repository.deleteExpiredBefore(cutoff, 2)).isEqualTo(1);
@@ -107,6 +113,9 @@ class JooqCheckoutRepositoryTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 指定したカートと開始時刻の注文手続きを作る
+     */
     private static Checkout checkout(UUID cartId, Instant startedAt) {
         return Checkout.start(UUID.randomUUID(), UUID.randomUUID(), cartId, 1, startedAt, TTL);
     }

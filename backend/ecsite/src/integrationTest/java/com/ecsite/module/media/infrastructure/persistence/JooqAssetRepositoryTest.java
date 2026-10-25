@@ -87,6 +87,9 @@ class JooqAssetRepositoryTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 指定した形式の画像の資産を作る
+     */
     private static Asset asset(ImageFormat format) {
         var id = UUID.randomUUID();
         return new Asset(id, format, "images/" + id + ".img", CREATED_AT);

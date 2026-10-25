@@ -32,7 +32,10 @@ T181-04-01〜03 は `[リスク]`（会員のカートの作成。並行と一�
 - [x] **T181-04-08** [P] 在庫の引当と画像の資産の Repository の統合テストを作る（DC-181-31）。
   - 依存：なし
   - 範囲：`it/module/inventory/infrastructure/persistence/JooqStockReservationRepositoryTest.java`（新規）、`it/module/media/infrastructure/persistence/JooqAssetRepositoryTest.java`（新規）
-- [ ] **T181-04-09** 段階のレビューと全体の検査：profile「厚め」で、一般の観点（テスト、規則）を汎用で 2 回、重要な観点（`[リスク]`、ファイルをまたぐ影響）を高性能と汎用で 1 回ずつ実施する。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` を実行し、カバレッジと mutation score が基準を下回らないことを確認する。
+- [x] **T181-04-09** 段階のレビューと全体の検査：profile「厚め」で、一般の観点（テスト、規則）を汎用で 2 回、重要な観点（`[リスク]`、ファイルをまたぐ影響）を高性能と汎用で 1 回ずつ実施する。`node scripts/ci/ac-check.mjs --write` で AC 一覧のテストの列を再生成する。`./gradlew check`、`scripts/ci/check-all.sh`、`./gradlew pitest` を実行し、カバレッジと mutation score が基準を下回らないことを確認する。
   - 依存：T181-04-01〜08
+- [x] **T181-04-10** 段階のレビューの指摘（高 3、必須 2）を修正する。表の全体を対象にする検索と削除を確認する Repository のテストは、他のテストのデータに当たらない時刻にそろえるか、自分の ID で絞って確認する。メソッド名で始まるテスト名を振る舞いの名前にし、テストの補助の private メソッドに Javadoc を書く。
+  - 依存：T181-04-09
+  - 範囲：`JooqCheckoutRepositoryTest.java`、`JooqPaymentRepositoryTest.java`、`JooqStockReservationRepositoryTest.java`、`JooqOrderRepositoryTest.java`、`JooqAssetRepositoryTest.java`、`JooqReportOrderRepositoryTest.java`
 
 新しい各テストのクラス名と置き場所は、実装の Repository の置き場所に合わせる。実装のクラスの名前が上と違えば、実装に合わせる（[plan](../plan.md) 第 4 節）。

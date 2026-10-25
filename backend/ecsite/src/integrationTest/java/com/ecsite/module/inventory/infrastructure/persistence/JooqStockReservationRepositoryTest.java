@@ -127,22 +127,24 @@ class JooqStockReservationRepositoryTest {
     @Test
     @DisplayName("期限が指定した時刻より前の引当だけを消す。ちょうどの時刻のものは残り、件数の上限までしか消さない")
     void deletesExpiredReservationsUpToLimit() {
+        // 表の全体から期限切れを消すので、ロールバックしない他のテストの引当（2026 年）に当たらない過去の時刻にする
+        var now = Instant.parse("2000-01-01T00:00:00Z");
         var stock = createStock(UUID.randomUUID(), 10);
         var expired1 = UUID.randomUUID();
         var expired2 = UUID.randomUUID();
         var onBoundary = UUID.randomUUID();
         var alive = UUID.randomUUID();
-        repository.replace(expired1, Map.of(stock, 1), NOW.minusSeconds(20), NOW.minusSeconds(100));
-        repository.replace(expired2, Map.of(stock, 1), NOW.minusSeconds(10), NOW.minusSeconds(100));
-        repository.replace(onBoundary, Map.of(stock, 1), NOW, NOW.minusSeconds(100));
-        repository.replace(alive, Map.of(stock, 1), NOW.plusSeconds(10), NOW.minusSeconds(100));
+        repository.replace(expired1, Map.of(stock, 1), now.minusSeconds(20), now.minusSeconds(100));
+        repository.replace(expired2, Map.of(stock, 1), now.minusSeconds(10), now.minusSeconds(100));
+        repository.replace(onBoundary, Map.of(stock, 1), now, now.minusSeconds(100));
+        repository.replace(alive, Map.of(stock, 1), now.plusSeconds(10), now.minusSeconds(100));
 
-        assertThat(repository.deleteExpiredBefore(NOW, 1)).isEqualTo(1);
-        assertThat(repository.deleteExpiredBefore(NOW, 10)).isEqualTo(1);
-        assertThat(repository.deleteExpiredBefore(NOW, 10)).isZero();
+        assertThat(repository.deleteExpiredBefore(now, 1)).isEqualTo(1);
+        assertThat(repository.deleteExpiredBefore(now, 10)).isEqualTo(1);
+        assertThat(repository.deleteExpiredBefore(now, 10)).isZero();
 
         assertThat(countReservations(stock)).isEqualTo(2L);
-        assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), NOW.minusSeconds(5)))
+        assertThat(repository.sumActiveReservations(List.of(stock), UUID.randomUUID(), now.minusSeconds(5)))
                 .containsOnly(Map.entry(stock, 2));
     }
 
@@ -158,6 +160,9 @@ class JooqStockReservationRepositoryTest {
                 .fetchSingle(0, UUID.class);
     }
 
+    /**
+     * 在庫の引当の行数を数える
+     */
     private Long countReservations(UUID stockItemId) {
         return dsl.resultQuery("select count(*) from inventory.stock_reservation where stock_item_id = ?", stockItemId)
                 .fetchSingle(0, Long.class);

@@ -143,7 +143,7 @@ class JooqOrderRepositoryTest {
     }
 
     @Test
-    @DisplayName("lockById は保存した注文を再構築して返し、ない注文には空を返す")
+    @DisplayName("注文を行ロックして取得すると、保存した注文を再構築して返す。ない注文には空を返す")
     void locksOrderById() {
         var order = order(UUID.randomUUID(), "20261008-000007");
         repository.insert(order);

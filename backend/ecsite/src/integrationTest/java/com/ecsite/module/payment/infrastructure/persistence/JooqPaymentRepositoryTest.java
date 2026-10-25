@@ -139,7 +139,8 @@ class JooqPaymentRepositoryTest {
     @Test
     @DisplayName("期限を過ぎた未払いの支払を期限の古い順に上限まで取得し、期限内・未払いでない・与信の通知を待つ支払は除く")
     void findsUnpaidPastDeadline() {
-        var now = DEADLINE;
+        // 表の全体から期限切れを引くので、ロールバックしない他のテストの支払（2026 年）に当たらない過去の時刻にする
+        var now = Instant.parse("2000-01-01T00:00:00Z");
         var oldest = payment(UUID.randomUUID(), now.minusSeconds(300));
         var older = payment(UUID.randomUUID(), now.minusSeconds(200));
         var onDeadline = payment(UUID.randomUUID(), now);
@@ -164,6 +165,9 @@ class JooqPaymentRepositoryTest {
 
     // ============================== 補助 ==============================
 
+    /**
+     * 指定した注文と期限の未払いの支払を作る
+     */
     private static Payment payment(UUID orderId, Instant deadline) {
         return Payment.create(UUID.randomUUID(), orderId, Money.of(5302), deadline);
     }

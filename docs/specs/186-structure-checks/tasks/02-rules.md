@@ -25,7 +25,7 @@
 - [x] **T186-02-04** [P] [テスト] `api/` に interface がないことと、`api/` の型を `api/` の外が実装・継承しないことの規則を、新しい `ApiTypeTest` に追加する。2 つの例で失敗することを確認する（DC-186-4、7）。
   - 依存：なし
   - 範囲：`test/architecture/ApiTypeTest.java`（新規）
-- [ ] **T186-02-05** [テスト] パッケージの大きさの目安を超えるパッケージを、バックエンドの書き方 第 1.4 節の表と照合する。文書のパスを system property `rules.backend-coding` で渡し、test の task と pitest の `inputs` に宣言する。判定の関数を、表の外の超過、表のパッケージの目安以下、数の違いの 3 つの例で確認する（DC-186-2、7）。
+- [x] **T186-02-05** [テスト] パッケージの大きさの目安を超えるパッケージを、バックエンドの書き方 第 1.4 節の表と照合する。文書のパスを system property `rules.backend-coding` で渡し、test の task と pitest の `inputs` に宣言する。判定の関数を、表の外の超過、表のパッケージの目安以下、数の違いの 3 つの例で確認する（DC-186-2、7）。
   - 依存：T186-02-03
   - 範囲：`test/architecture/ModuleStructureTest.java`、`backend/ecsite/build.gradle.kts`（`unitTestSystemProperties`、test の task と pitest の `inputs`）
 - [ ] **T186-02-06** 一覧を集めて確認する構成の検査（`NamingTest` の 4 つ、`StaticOnlyClassTest`、`ModuleStructureTest` の一覧の検査、`ConfigurationPropertiesTest`、`ModuleRoleTest` のレベル A で presentation を持つモジュール）が、`ProductionClasses.requireNotEmpty` で対象が 1 件以上あることを確認する（DC-186-6）。0 件の例の確認は、T186-01-01 の補助のテストにある。

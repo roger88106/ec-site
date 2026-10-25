@@ -178,10 +178,13 @@ public final class ProductionClasses {
     private static final class Holder {
 
         /**
-         * {@code com.ecsite} の本番のクラス
+         * {@code com.ecsite} の本番のクラス。<br />
+         * 単体テストと統合テストが共有する testFixtures は、テストのコードなので除く
+         * （単体テストの classpath には、ディレクトリでなく、test-fixtures の jar として入る）。
          */
         private static final JavaClasses ALL = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
+                .withImportOption(location -> !location.contains("/testFixtures/") && !location.contains("-test-fixtures.jar"))
                 .importPackages("com.ecsite");
 
         /**

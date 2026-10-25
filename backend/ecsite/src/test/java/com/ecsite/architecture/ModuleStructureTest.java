@@ -26,6 +26,11 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.IOException;
+import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -108,6 +113,26 @@ class ModuleStructureTest {
      * 1 つのパッケージの直下に置けるクラスの数の上限
      */
     private static final int MAX_CLASSES_PER_PACKAGE = 20;
+
+    /**
+     * 1 つのパッケージの直下のクラスの数の目安。超えて分けないパッケージは、バックエンドの書き方 第 1.4 節の表に理由を書く
+     */
+    private static final int GUIDELINE_CLASSES_PER_PACKAGE = 10;
+
+    /**
+     * バックエンドの書き方（Gradle が system property {@code rules.backend-coding} で渡す）
+     */
+    private static final Path RULES_BACKEND_CODING = Path.of(System.getProperty("rules.backend-coding"));
+
+    /**
+     * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの始まり
+     */
+    private static final String PACKAGE_SIZE_HEADING = "### 1.4 ";
+
+    /**
+     * パッケージの大きさの表の行（1 列目がバッククォートで囲んだパッケージの名前、2 列目が数）
+     */
+    private static final Pattern TABLE_ROW = Pattern.compile("^\\|\\s*`([^`]+)`\\s*\\|\\s*(\\d+)\\s*\\|.*$");
 
     /**
      * presentation の外に置く例外の {@code @RestController}（どのモジュールにも属さない GET /me）
@@ -224,15 +249,57 @@ class ModuleStructureTest {
     @Test
     @DisplayName("1 つのパッケージの直下のクラスは 20 を超えない")
     void packagesAreSmallEnough() {
-        // 手で書いたパッケージごとに、入れ子でないクラスを数える（package-info は数えない）
-        Map<String, Long> countByPackage = ProductionClasses.all().stream()
-                .filter(javaClass -> !ProductionClasses.isGenerated(javaClass.getPackageName()))
-                .filter(JavaClass::isTopLevelClass)
-                .filter(javaClass -> !javaClass.getSimpleName().equals("package-info"))
-                .collect(Collectors.groupingBy(JavaClass::getPackageName, TreeMap::new, Collectors.counting()));
-
-        assertThat(countByPackage).allSatisfy((name, count) ->
+        assertThat(classCountByPackage(ProductionClasses.all())).allSatisfy((name, count) ->
                 assertThat(count).as(name).isLessThanOrEqualTo(MAX_CLASSES_PER_PACKAGE));
+    }
+
+    @Test
+    @DisplayName("目安を超えるパッケージは、バックエンドの書き方 第 1.4 節の表と、パッケージも数も一致する")
+    void oversizedPackagesMatchTable() throws IOException {
+        Map<String, Integer> table = oversizedTable(Files.readAllLines(RULES_BACKEND_CODING, StandardCharsets.UTF_8));
+        ProductionClasses.requireNotEmpty(table.entrySet(), "バックエンドの書き方 第 1.4 節の表の行");
+
+        assertThat(oversizedMismatches(classCountByPackage(ProductionClasses.all()), table)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("表の外のパッケージが目安を超えると、不一致になる")
+    void mismatchWhenPackageOutsideTableExceedsGuideline() {
+        Map<String, Long> counted = Map.of("module.order.application", 11L);
+
+        assertThat(oversizedMismatches(counted, Map.of())).containsExactly("表にない超過: order.application（11）");
+    }
+
+    @Test
+    @DisplayName("表のパッケージが目安以下になると、不一致になる")
+    void mismatchWhenPackageInTableIsWithinGuideline() {
+        Map<String, Long> counted = Map.of("module.order.application", 10L);
+
+        assertThat(oversizedMismatches(counted, Map.of("order.application", 12)))
+                .containsExactly("目安以下: order.application（表 12、実際 10）");
+    }
+
+    @Test
+    @DisplayName("表のパッケージの数が実際と違うと、不一致になる")
+    void mismatchWhenCountDiffers() {
+        Map<String, Long> counted = Map.of("config.security", 12L, "module.order.application", 10L);
+
+        assertThat(oversizedMismatches(counted, Map.of("config.security", 11)))
+                .containsExactly("数の違い: config.security（表 11、実際 12）");
+    }
+
+    @Test
+    @DisplayName("表の読み取りは、見出しの後の最初の表の、パッケージと数の行だけを読む")
+    void tableIsReadFromFirstTableAfterHeading() {
+        List<String> lines = List.of(
+                "| 別の表 | 数 |", "|---|---|", "| `x.y` | 99 |",
+                "### 1.4 パッケージの大きさ", "本文",
+                "| パッケージ | 数 | 分けない理由 |", "|---|---|---|",
+                "| `catalog.infrastructure.persistence` | 14 | 理由 |", "| `config.security` | 11 | 理由 |",
+                "### 1.5 共通の型", "| `z.z` | 5 | 理由 |");
+
+        assertThat(oversizedTable(lines)).containsExactlyInAnyOrderEntriesOf(
+                Map.of("catalog.infrastructure.persistence", 14, "config.security", 11));
     }
 
     @Test
@@ -268,6 +335,88 @@ class ModuleStructureTest {
                     .anyMatch(dependency -> dependency.getTargetClass().getName().equals(allowed.apiType()));
             assertThat(used).as(allowed.apiType()).isTrue();
         }
+    }
+
+    /**
+     * 手で書いたパッケージごとに、入れ子でないクラスの数を返す（package-info は数えない）。
+     *
+     * @param classes 調べるクラス
+     * @return パッケージの名前から、クラスの数への対応（名前の順）
+     */
+    private static Map<String, Long> classCountByPackage(JavaClasses classes) {
+        return classes.stream()
+                .filter(javaClass -> !ProductionClasses.isGenerated(javaClass.getPackageName()))
+                .filter(JavaClass::isTopLevelClass)
+                .filter(javaClass -> !javaClass.getSimpleName().equals("package-info"))
+                .collect(Collectors.groupingBy(JavaClass::getPackageName, TreeMap::new, Collectors.counting()));
+    }
+
+    /**
+     * 目安を超えるパッケージの、数えた結果と表の食い違いを返す。<br />
+     * 数えた結果のパッケージの名前は、{@code com.ecsite.} と、モジュールの {@code module.} を除いて表と比べる
+     * （表はモジュールのパッケージを {@code <モジュール>.<層>} と書く）。
+     *
+     * @param countByPackage パッケージの名前（{@code com.ecsite.} を除いた形でも、含む形でもよい）から、クラスの数への対応
+     * @param table          表のパッケージの名前から、数への対応
+     * @return 食い違いの説明（説明の順）。表の外の超過、表のパッケージの目安以下、数の違い
+     */
+    private static List<String> oversizedMismatches(Map<String, Long> countByPackage, Map<String, Integer> table) {
+        Map<String, Long> counted = countByPackage.entrySet().stream()
+                .collect(Collectors.toMap(entry -> tableName(entry.getKey()), Map.Entry::getValue));
+        Set<String> names = new TreeSet<>(table.keySet());
+        counted.forEach((name, count) -> {
+            if (count > GUIDELINE_CLASSES_PER_PACKAGE) {
+                names.add(name);
+            }
+        });
+
+        List<String> mismatches = new ArrayList<>();
+        for (String name : names) {
+            long actual = counted.getOrDefault(name, 0L);
+            Integer listed = table.get(name);
+            if (listed == null) {
+                mismatches.add("表にない超過: %s（%d）".formatted(name, actual));
+            } else if (actual <= GUIDELINE_CLASSES_PER_PACKAGE) {
+                mismatches.add("目安以下: %s（表 %d、実際 %d）".formatted(name, listed, actual));
+            } else if (actual != listed) {
+                mismatches.add("数の違い: %s（表 %d、実際 %d）".formatted(name, listed, actual));
+            }
+        }
+        return mismatches;
+    }
+
+    /**
+     * パッケージの名前を、表に書く形にする。
+     *
+     * @param packageName パッケージの名前
+     * @return {@code com.ecsite.} と、モジュールの {@code module.} を除いた名前
+     */
+    private static String tableName(String packageName) {
+        String name = packageName.startsWith("com.ecsite.") ? packageName.substring("com.ecsite.".length()) : packageName;
+        return name.startsWith("module.") ? name.substring("module.".length()) : name;
+    }
+
+    /**
+     * バックエンドの書き方 第 1.4 節の、目安を超えるパッケージの表を読む。<br />
+     * 見出しの後の、次の見出しまでの行から、1 列目がバッククォートで囲んだパッケージの名前で、2 列目が数の行を読む。
+     *
+     * @param lines 文書の行
+     * @return パッケージの名前から、数への対応
+     */
+    private static Map<String, Integer> oversizedTable(List<String> lines) {
+        Map<String, Integer> table = new TreeMap<>();
+        boolean inSection = false;
+        for (String line : lines) {
+            if (line.startsWith("#")) {
+                inSection = line.startsWith(PACKAGE_SIZE_HEADING);
+                continue;
+            }
+            Matcher row = inSection ? TABLE_ROW.matcher(line) : null;
+            if (row != null && row.matches()) {
+                table.put(row.group(1), Integer.parseInt(row.group(2)));
+            }
+        }
+        return table;
     }
 
     /**

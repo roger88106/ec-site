@@ -122,7 +122,7 @@ DC-181-20 の対象と絞り方：
 | `PlaceOrderApiTest`（`:107-135`） | AC-90 は残し、名前を、今も有効な注文番号の採番の確認にする。注文番号の形を確認する | — |
 | `PlaceOrderApiTest`（`:411-417`） | 日付と性別のテストに分け、性別のテストに BR-29 を付ける | — |
 | `ReportGenderTest`（`:23,29`） | AC-277、278 を AC-219、BR-29 にする | AC-277、278 は `ReportGender` の対応の他のテスト ※1 |
-| `ShippingApiTest`（`:60-69,87-96`） | 出荷を作るテストは BR-19 にし、形に合わない送り状番号のテストは番号を外す（送り状番号の形とハイフンの除去は BR にない） | AC-173 は `ShipmentApiTest`（DC-181-4） |
+| `ShippingApiTest`（`:60-69,87-96`） | 出荷を作るテストは BR-19 にし、形式に合わない送り状番号のテストは番号を外す（送り状番号の形式とハイフンの除去は BR にない） | AC-173 は `ShipmentApiTest`（DC-181-4） |
 | `CartApiTest`（`:175-179`） | AC-73 を外す | `CartTest`、`cart.test.ts` |
 | `PaymentExpiryJobTest`（`:172-180`） | AC-154 は残し、名前を「期限切れの確認の間隔の既定は 5 分以内」にする | — |
 | `VariantSalesQueryTest`（`:133-139`） | 呼び出しを 1 回にし、商品名の確認を別のテストに分ける | — |

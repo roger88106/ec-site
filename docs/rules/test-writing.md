@@ -96,18 +96,18 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 ### 3.2 テストデータは補助のクラスで作る
 
-複数のテストで使うデータは、統合テストの補助で作る。複数のモジュールのテストで使う補助は `src/integrationTest` の `com.ecsite` の直下に、1 つのパッケージのテストだけが使う補助はそのパッケージに置く。テストのクラスで同じ手順を再定義しない。
+複数のテストで使うデータは、統合テストの補助（次の表）で作る。複数のモジュールのテストで使う補助は `src/integrationTest` の `com.ecsite` の直下に、1 つのパッケージのテストだけが使う補助はそのパッケージに置く。テストのクラスで同じ手順を再定義しない。
 
 | 補助 | 作るもの |
 |------|----------|
 | `CatalogTestData` | 税区分、カテゴリ、商品（バリアント、画像、公開、販売の終了、公開期間） |
-| `InventoryTestData` | 在庫と、入荷としての調整 |
+| `InventoryTestData` | 在庫と、入荷の調整 |
 | `OrderTestData` | カート、注文手続き、注文、支払画面 |
 | `ShippingTestData` | 出荷の登録、配送状態の通知、送り状番号 |
 | `PaymentTestData` | 支払の作成、与信、売上確定、状態の取得 |
 | `TestJson` | 応答の本文から読む ID（作成の応答の ID など） |
 
-token は `TestTokens`、画像は `TestImages` から取る。
+token は `TestTokens`、画像は `TestImages` を使う。
 
 理由：テストの本文に、確認する項目だけを残すため。
 

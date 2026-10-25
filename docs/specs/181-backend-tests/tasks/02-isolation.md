@@ -33,6 +33,6 @@ T181-02-01〜06 は、確認を自分のデータに絞ったテストについ�
   - 範囲：`it/module/order/presentation/CheckoutCartChangeApiTest.java`（`:101-117`）、`PlaceOrderConcurrencyTest.java`（`:105-117`）、`OrderPaymentApiTest.java`（`:125-141`）、`CancellationAtomicityTest.java`（`:108-119`）、`it/module/catalog/presentation/ProductImageApiTest.java`（`:127-132`）、`ProductConcurrencyTest.java`（`:69-74`）、`ProductImageTransactionApiTest.java`（`:115-123`）
 - [x] **T181-02-08** 段階のレビューと全体の検査：profile「厚め」で、一般の観点（テスト、規則）を汎用で 2 回実施する。`./gradlew integrationTest` を、統合テストの分け方（`-PintegrationTestShard=1/2` と `2/2`、続けて `1/3`〜`3/3`）を変えて実行し、全て通ることを確認する。`./gradlew check`、`scripts/ci/check-all.sh` を実行する。
   - 依存：T181-02-07
-- [x] **T181-02-09** 段階のレビューの指摘（高 2、必須 3）を修正する。巻き戻さないテストは、テストごとの会員でカートを使い、固定の会員のカートに品目を残さない。巻き戻さないテストの注文の一覧の確認を、自分の注文で絞る。カテゴリの木のテストで、最上位の並びの確認を、自分の最上位のカテゴリの相対の順序で戻す。将来の固定の時刻にした理由をコメントに書く。T181-02-01、02 の失敗の確認を行い、commit の本文に書く。
+- [x] **T181-02-09** 段階のレビューの指摘（高 2、必須 3）を修正する。巻き戻さないテストは、テストごとの会員でカートを使い、固定の会員のカートに品目を残さない。巻き戻さないテストの注文の一覧の確認を、自分の注文で絞る。カテゴリの木のテストで、最上位の並びの確認を、自分の最上位のカテゴリの相対の順序で戻す。将来の固定の時刻にした理由をコメントに書く。T181-02-01、02 の失敗を確認し、commit の本文に書く。
   - 依存：T181-02-08
   - 範囲：`it/OrderTestData.java`、`OrderPaymentApiTest.java`、`CheckoutCartChangeApiTest.java`、`CancellationAtomicityTest.java`、`PlaceOrderApiTest.java`、`StorefrontApiTest.java`、`CategoryApiTest.java`、`JooqShipmentRepositoryTest.java`、`AdminOrderShipmentViewApiTest.java`、`PaymentExpiryJobTest.java`

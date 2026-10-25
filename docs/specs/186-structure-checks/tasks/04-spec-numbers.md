@@ -23,7 +23,7 @@
 - [x] **T186-04-05** [テスト] `scripts/ci/spec-numbers.test.mjs` に、テストの Javadoc と行のコメントの番号を検出する例と、`@DisplayName` の番号を検出しない例を追加し、失敗することを確認する。`spec-numbers.mjs` の対象にバックエンドのテストのコメントを加え（T186-04-01 の `keepJavaComments` を使う）、テストが通り、検査が 0 件になる。0 件にならなければ、残った番号を同じタスクで書き換える（DC-186-13）。
   - 依存：T186-04-02〜04
   - 範囲：`scripts/ci/spec-numbers.mjs`、`scripts/ci/spec-numbers.test.mjs`、残った番号のあるテスト
-- [ ] **T186-04-06** [コメントの書き方](../../../rules/comments.md) 第 1 節の対象に、テストのコメントを加える（DC-186-14）。
+- [x] **T186-04-06** [コメントの書き方](../../../rules/comments.md) 第 1 節の対象に、テストのコメントを加える（DC-186-14）。
   - 依存：T186-04-05
   - 範囲：`docs/rules/comments.md`
 - [ ] **T186-04-07** 段階のレビューと全体の検査：[plan](../plan.md) 第 7 節の段階 4 の観点とレビュー役で行う。`./gradlew check`、`scripts/ci/check-all.sh` を実行する。

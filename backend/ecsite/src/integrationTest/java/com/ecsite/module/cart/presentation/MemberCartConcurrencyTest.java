@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.presentation;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
@@ -17,6 +18,7 @@ import java.util.UUID;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import static com.ecsite.jooq.cart.Tables.CART_;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,12 +62,12 @@ class MemberCartConcurrencyTest {
                     return TestJson.uuid(body, "$.cartId");
                 }));
             }
-            ready.await();
+            assertThat(ready.await(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS)).isTrue();
             start.countDown();
 
             var cartIds = new HashSet<UUID>();
             for (var future : futures) {
-                cartIds.add(future.get());
+                cartIds.add(future.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS));
             }
 
             assertThat(cartIds).hasSize(1);

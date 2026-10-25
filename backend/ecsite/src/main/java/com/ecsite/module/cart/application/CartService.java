@@ -78,8 +78,10 @@ public class CartService {
     @Transactional
     public UUID createCart() {
         var cart = Cart.create(UUID.randomUUID(), clock.instant());
-        // 会員を持たないカートは、会員ごとの一意制約に当たらないので、必ず作られる
-        cartRepository.create(cart);
+        // 会員を持たないカートは、会員ごとの一意制約に当たらないので、保存されないのは想定外
+        if (!cartRepository.create(cart)) {
+            throw SystemException.of("カートを作れない：" + cart.id(), null);
+        }
         return cart.id();
     }
 

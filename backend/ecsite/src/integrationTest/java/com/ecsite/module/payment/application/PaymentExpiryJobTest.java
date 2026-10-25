@@ -49,10 +49,6 @@ class PaymentExpiryJobTest {
      */
     private static final Instant DEADLINE = ORDERED_AT.plus(Duration.ofMinutes(30));
 
-    /**
-     * ジョブが 1 回に処理する支払の数（ジョブの上限と同じ値）
-     */
-    private static final int BATCH_SIZE = 100;
 
     @Autowired
     PaymentExpiryJob job;
@@ -159,9 +155,9 @@ class PaymentExpiryJobTest {
         }
         clock.setInstant(DEADLINE);
         // 自分の支払がすべて通知を待つ支払になるまで流す（ほかのテストが残した期限切れの支払も、同じ回で処理される）。
-        // 回数の上限は、未処理の支払の数を 1 回の件数で割った回数に 1 を加えたもの
+        // 1 回に少なくとも 1 件は処理するので、回数の上限は、未処理の支払の数に 1 を加えたもの
         int pending = queryService.findPastDeadline(Integer.MAX_VALUE).size();
-        int maxRuns = (pending + BATCH_SIZE - 1) / BATCH_SIZE + 1;
+        int maxRuns = pending + 1;
         for (int run = 0; run < maxRuns && !allAwaitingAuthorization(awaiting); run++) {
             job.expire();
         }

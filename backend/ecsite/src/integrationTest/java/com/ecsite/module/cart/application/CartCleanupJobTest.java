@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * カートの片付けのジョブの統合テスト（T017-01-05、AC-284、288、289、NFR-24）。<br />
+ * カートの片付けのジョブの統合テスト。<br />
  * ジョブはテストから呼ぶ。テストごとにロールバックする（片付けはテストのトランザクションに参加する）。
  */
 @IntegrationTest

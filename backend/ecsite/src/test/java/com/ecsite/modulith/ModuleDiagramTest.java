@@ -1,6 +1,6 @@
 package com.ecsite.modulith;
 
-import com.ecsite.EcSiteApplication;
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -33,18 +33,37 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ModuleDiagramTest {
 
-    /** 全体構成の文書（Gradle がシステムプロパティで渡す） */
+    /**
+     * 全体構成の文書（Gradle がシステムプロパティで渡す）
+     */
     private static final Path OVERVIEW = Path.of(System.getProperty("design.overview"));
 
+    /**
+     * 文書の生成の範囲の始まりの印
+     */
     private static final String GENERATED_START = "<!-- generated:modules -->";
+    /**
+     * 文書の生成の範囲の終わりの印
+     */
     private static final String GENERATED_END = "<!-- /generated:modules -->";
+    /**
+     * 文書の手書きの外部システムの図の始まりの印
+     */
     private static final String EXTERNAL_START = "<!-- external-systems -->";
+    /**
+     * 文書の手書きの外部システムの図の終わりの印
+     */
     private static final String EXTERNAL_END = "<!-- /external-systems -->";
 
-    /** 手書きの図で、モジュールを表す節点（{@code module_<名前>}） */
+    /**
+     * 手書きの図で、モジュールを表す節点（{@code module_<名前>}）
+     */
     private static final Pattern MODULE_NODE = Pattern.compile("\\bmodule_([a-z]+)\\b");
 
-    private final ApplicationModules modules = ApplicationModules.of(EcSiteApplication.class, ModulithTest.TEST_CLASSES);
+    /**
+     * Spring Modulith のモジュールの一覧（テストのクラスを除く）
+     */
+    private final ApplicationModules modules = ProductionClasses.applicationModules();
 
     @Test
     @DisplayName("全体構成の文書のモジュールの依存とイベントの図が、コードから作った図と一致する")
@@ -78,38 +97,86 @@ class ModuleDiagramTest {
     }
 
     @Test
-    @DisplayName("図は、依存を実線、イベントを発行するモジュールから受けるモジュールへの点線で書き、同じ組の線を 1 本にまとめる")
+    @DisplayName("固定した内容から、依存を実線、イベントを発行するモジュールから受けるモジュールへの点線で描く")
     void rendersDependenciesAndEvents() {
-        var rendered = render(modules);
+        var events = new TreeMap<EventEdge, Set<String>>();
+        events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired", "PaymentAuthorized")));
+        var dependencies = new TreeMap<String, Set<String>>();
+        dependencies.put("order", new TreeSet<>(Set.of("shipping", "payment")));
+        var diagram = new Diagram(new TreeSet<>(Set.of("order", "payment", "shipping")), dependencies, events);
 
-        assertThat(rendered).startsWith("```mermaid\nflowchart LR\n");
-        assertThat(rendered).contains("    order --> payment\n");
-        assertThat(rendered).contains("    payment -. PaymentAuthorized<br>PaymentExpired .-> order\n");
-        assertThat(rendered.lines().filter(line -> line.contains("-->") || line.contains(".->")))
-                .as("同じモジュールの組の線は 1 本にまとめる")
-                .doesNotHaveDuplicates();
+        var rendered = render(diagram);
+
+        // 依存の抽出とイベントの組ごとの集約は、固定した内容では確かめられない。generatedDiagramMatchesCode が、コードから作った図を文書と比べて確かめる
+        assertThat(rendered).isEqualTo("""
+                ```mermaid
+                flowchart LR
+                    order
+                    payment
+                    shipping
+                    order --> payment
+                    order --> shipping
+                    payment -. PaymentAuthorized<br>PaymentExpired .-> order
+                ```
+                """);
     }
 
-    /** モジュールの依存とイベントの図（Mermaid のコードブロック）。並びは名前の順で、毎回同じ結果になる */
-    static String render(ApplicationModules modules) {
+    /**
+     * モジュールの検出結果から、図に描く内容を作る。
+     *
+     * @param modules モジュールの一覧
+     * @return 図に描く内容
+     */
+    private static Diagram diagramOf(ApplicationModules modules) {
+        return new Diagram(moduleNames(modules), dependencies(modules), events(modules));
+    }
+
+    /**
+     * モジュールの依存とイベントの図（Mermaid のコードブロック）を描く。並びは名前の順で、毎回同じ結果になる。
+     *
+     * @param modules モジュールの一覧
+     * @return Mermaid のコードブロック
+     */
+    private static String render(ApplicationModules modules) {
+        return render(diagramOf(modules));
+    }
+
+    /**
+     * 図に描く内容から、Mermaid のコードブロックを描く。依存は実線、イベントは発行するモジュールから受けるモジュールへの点線。
+     *
+     * @param diagram 図に描く内容
+     * @return Mermaid のコードブロック
+     */
+    private static String render(Diagram diagram) {
         var lines = new ArrayList<String>();
         lines.add("```mermaid");
         lines.add("flowchart LR");
-        moduleNames(modules).forEach(name -> lines.add("    " + name));
-        dependencies(modules).forEach((source, targets) ->
+        diagram.modules().forEach(name -> lines.add("    " + name));
+        diagram.dependencies().forEach((source, targets) ->
                 targets.forEach(target -> lines.add("    " + source + " --> " + target)));
-        events(modules).forEach((edge, names) ->
+        diagram.events().forEach((edge, names) ->
                 lines.add("    " + edge.publisher() + " -. " + String.join("<br>", names) + " .-> " + edge.listener()));
         lines.add("```");
         return String.join("\n", lines) + "\n";
     }
 
+    /**
+     * モジュールの名前を返す。
+     *
+     * @param modules モジュールの一覧
+     * @return モジュールの名前（名前の順）
+     */
     private static Set<String> moduleNames(ApplicationModules modules) {
         return modules.stream().map(ApplicationModule::getIdentifier).map(Object::toString)
                 .collect(Collectors.toCollection(TreeSet::new));
     }
 
-    /** イベントのほかの依存（モジュールから、使うモジュールへ） */
+    /**
+     * イベント以外の依存（モジュールから、使うモジュールへ）を集める。
+     *
+     * @param modules モジュールの一覧
+     * @return モジュールの名前から、使うモジュールの名前の一覧
+     */
     private static Map<String, Set<String>> dependencies(ApplicationModules modules) {
         var eventTypes = modules.stream().flatMap(module -> module.getPublishedEvents().stream())
                 .map(EventType::getType).map(JavaClass::getName).collect(Collectors.toSet());
@@ -128,7 +195,12 @@ class ModuleDiagramTest {
         return result;
     }
 
-    /** イベントの流れ（発行するモジュールから受けるモジュールへ）と、イベントの名前 */
+    /**
+     * イベントの流れ（発行するモジュールから受けるモジュールへ）と、イベントの名前を集める。
+     *
+     * @param modules モジュールの一覧
+     * @return イベントの流れから、イベントの名前の一覧
+     */
     private static Map<EventEdge, Set<String>> events(ApplicationModules modules) {
         var result = new TreeMap<EventEdge, Set<String>>();
         modules.forEach(listener -> listener.getEventsListenedTo(modules).forEach(event -> {
@@ -143,6 +215,14 @@ class ModuleDiagramTest {
         return result;
     }
 
+    /**
+     * 文書の、始まりの印と終わりの印の間を返す。
+     *
+     * @param document 文書
+     * @param start    始まりの印
+     * @param end      終わりの印
+     * @return 印の間の文字列（前後の空白を除き、末尾に改行を付ける）
+     */
     private static String between(String document, String start, String end) {
         int from = document.indexOf(start);
         int to = document.indexOf(end);
@@ -151,6 +231,15 @@ class ModuleDiagramTest {
         return document.substring(from + start.length(), to).strip() + "\n";
     }
 
+    /**
+     * 文書の、始まりの印と終わりの印の間を、指定した内容に置き換える。
+     *
+     * @param document 文書
+     * @param start    始まりの印
+     * @param end      終わりの印
+     * @param content  新しい内容
+     * @return 置き換えた後の文書
+     */
     private static String replaceBetween(String document, String start, String end, String content) {
         int from = document.indexOf(start);
         int to = document.indexOf(end);
@@ -160,7 +249,20 @@ class ModuleDiagramTest {
         return document.substring(0, from + start.length()) + "\n" + content + document.substring(to);
     }
 
-    /** イベントの流れの 1 本 */
+    /**
+     * 図に描く内容。
+     *
+     * @param modules      モジュールの名前
+     * @param dependencies モジュールから、使うモジュールへの依存（イベント以外）
+     * @param events       イベントの流れと、その流れのイベントの名前
+     */
+    private record Diagram(Set<String> modules, Map<String, Set<String>> dependencies,
+                           Map<EventEdge, Set<String>> events) {
+    }
+
+    /**
+     * イベントの流れの 1 本
+     */
     private record EventEdge(String publisher, String listener) implements Comparable<EventEdge> {
 
         @Override

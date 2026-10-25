@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * 商品（集約）の単体テスト（T304）。<br />
+ * 商品（集約）の単体テスト。<br />
  * 現在時刻は引数で固定する。
  */
 class ProductTest {

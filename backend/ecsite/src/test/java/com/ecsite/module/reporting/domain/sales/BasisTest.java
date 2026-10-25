@@ -8,7 +8,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 売上の数え方の単体テスト（T016-09-02、AC-278）
+ * 売上の数え方の単体テスト
  */
 class BasisTest {
 

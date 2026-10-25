@@ -13,7 +13,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 注文番号の単体テスト（T2307、BR-10）
+ * 注文番号の単体テスト
  */
 class OrderNumberTest {
 

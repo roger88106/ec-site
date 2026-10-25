@@ -11,7 +11,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 商品品番の単体テスト（T302）
+ * 商品品番の単体テスト
  */
 class ProductCodeTest {
 

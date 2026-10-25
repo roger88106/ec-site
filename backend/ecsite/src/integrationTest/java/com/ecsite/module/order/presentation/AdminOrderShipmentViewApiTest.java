@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * B 側の注文の一覧・詳細の、出荷と与信期限の表示と絞り込みの受け入れテスト（T9309、AC-181、182、186、187、189、194）。<br />
+ * B 側の注文の一覧・詳細の、出荷と与信期限の表示と絞り込みの受け入れテスト。<br />
  * 与信期限は 7 日、「期限が近い」は期限の 2 日前から（設定の既定）。テストごとにロールバックする。
  */
 @IntegrationTest

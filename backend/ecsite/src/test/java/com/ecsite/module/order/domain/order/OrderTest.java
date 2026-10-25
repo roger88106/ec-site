@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 注文の単体テスト（T2307、AC-86、90、92、BR-9、10）
+ * 注文の単体テスト
  */
 class OrderTest {
 

@@ -11,7 +11,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 税抜価格の単体テスト（T302）
+ * 税抜価格の単体テスト
  */
 class PriceExclTaxTest {
 

@@ -1,8 +1,8 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,14 +26,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class CurrentTimeTest {
 
     /**
-     * 本番のクラス（テストと、生成したコードを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .withImportOption(location -> !location.contains("/com/ecsite/jooq/") && !location.contains("/com/ecsite/api/"))
-            .importPackages("com.ecsite");
-
-    /**
      * 日時の型の引数なしの now() を呼ばない規則
      */
     private static final ArchRule NO_SYSTEM_NOW = noClasses()
@@ -48,7 +40,7 @@ class CurrentTimeTest {
     @Test
     @DisplayName("本番のクラスは、日時の型の引数なしの now() を呼ばない")
     void productionClassesTakeCurrentTimeFromClock() {
-        NO_SYSTEM_NOW.check(CLASSES);
+        NO_SYSTEM_NOW.check(ProductionClasses.handwritten());
     }
 
     @Test

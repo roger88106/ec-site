@@ -25,7 +25,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 商品カタログのイベントによる在庫の作成・削除の統合テスト（T404）。<br />
+ * 商品カタログのイベントによる在庫の作成・削除の統合テスト。<br />
  * イベントはコミット後に非同期で処理されるので、コミットするトランザクションで発行し、処理を待つ。
  * ロールバックしないので、作ったデータを後で消す。
  */

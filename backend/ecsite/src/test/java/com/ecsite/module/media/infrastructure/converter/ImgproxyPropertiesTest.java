@@ -9,7 +9,7 @@ import java.time.Duration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 画像の変換の設定の文字列表現（spec 182 DC-182-7）。<br />
+ * 画像の変換の設定の文字列表現。<br />
  * ログに出ても秘密の値が漏れないことを確認する。
  */
 class ImgproxyPropertiesTest {

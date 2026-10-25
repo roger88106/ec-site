@@ -15,7 +15,7 @@ import static com.ecsite.jooq.region.Tables.PREFECTURE;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 地域の api の受け入れテスト（T016-01-08）。最初のデータ（郵便番号のデータから作ったマイグレーション）を読む。
+ * 地域の api の受け入れテスト。最初のデータ（郵便番号のデータから作ったマイグレーション）を読む。
  */
 @IntegrationTest
 class RegionApiTest {

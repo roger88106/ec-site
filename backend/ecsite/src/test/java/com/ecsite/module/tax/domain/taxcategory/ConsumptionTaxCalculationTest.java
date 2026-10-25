@@ -13,7 +13,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 税率ごとの消費税額の計算の単体テスト（T2101、BR-8）
+ * 税率ごとの消費税額の計算の単体テスト
  */
 class ConsumptionTaxCalculationTest {
 

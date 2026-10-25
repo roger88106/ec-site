@@ -47,6 +47,23 @@ export function stripJavaComments(text) {
 }
 
 /**
+ * Java のコメントだけを残し、コメントの外（コード、文字列、テキストブロック）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。<br />
+ * コメントの判定は stripJavaComments と同じ（元のソースと stripJavaComments の結果を文字ごとに比べ、空白にされた文字だけを残す）。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントだけを残したソース
+ */
+export function keepJavaComments(text) {
+  const stripped = stripJavaComments(text)
+  let result = ''
+  for (let i = 0; i < text.length; i += 1) {
+    const char = text[i]
+    result += char === '\r' || char === '\n' || stripped[i] !== char ? char : ' '
+  }
+  return result
+}
+
+/**
  * コメントを空白に置き換える（行の数は変えない）。文字列の中の // は、URL などなので消さない。
  * テンプレートの `${...}` の中はコードとして読む（入れ子のテンプレートも数える）。
  *

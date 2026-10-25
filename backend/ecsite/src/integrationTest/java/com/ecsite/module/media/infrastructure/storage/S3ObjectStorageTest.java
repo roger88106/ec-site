@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * ファイルの置き場所の S3 の実装の統合テスト（T1016、T1027、T1037。plan 001 第 7 節）。<br />
+ * ファイルの置き場所の S3 の実装の統合テスト。<br />
  * Testcontainers の SeaweedFS（資格情報を検証する設定）に対して、署名付き URL での PUT から、配信のバケットへの書き込み・削除までを確認する。
  */
 @IntegrationTest

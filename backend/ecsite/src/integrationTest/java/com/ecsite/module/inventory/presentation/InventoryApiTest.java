@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 在庫 API の受け入れテスト（T408、US-8）。<br />
+ * 在庫 API の受け入れテスト。<br />
  * 在庫はバリアント登録のイベントで作られるが、イベントはコミット後に動くので、ここではリポジトリで直接作る。
  * 現在時刻は 2026-10-08 00:00（日本時間）に固定する。テストごとにロールバックする。
  */

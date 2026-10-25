@@ -1,10 +1,8 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaClasses;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -12,8 +10,6 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.tngtech.archunit.core.domain.JavaClass.Predicates.resideInAPackage;
@@ -53,26 +49,13 @@ class SchemaOwnershipTest {
             Map.entry("storefront", Optional.empty()),
             Map.entry("tax", Optional.of("tax")));
 
-    /**
-     * モジュールのパッケージから、モジュールの名前を取り出す形
-     */
-    private static final Pattern MODULE_NAME = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)");
-
-    /**
-     * 本番のクラス（テストを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("com.ecsite");
-
     @Test
     @DisplayName("すべてのモジュールが、schema の対応の表にある")
     void everyModuleHasSchemaEntry() {
-        Set<String> modules = CLASSES.stream()
+        Set<String> modules = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
-                .map(MODULE_NAME::matcher)
-                .filter(Matcher::find)
-                .map(matcher -> matcher.group(1))
+                .map(ProductionClasses::moduleName)
+                .flatMap(Optional::stream)
                 .collect(Collectors.toCollection(TreeSet::new));
 
         assertThat(SCHEMA_BY_MODULE.keySet()).containsExactlyInAnyOrderElementsOf(modules);
@@ -88,7 +71,7 @@ class SchemaOwnershipTest {
                     .orElseGet(() -> resideInAPackage(JOOQ_PACKAGE + ".."));
             noClasses().that().resideInAPackage("com.ecsite.module." + module + "..")
                     .should().dependOnClassesThat(otherSchema.as(schema.map(name -> "are jOOQ classes outside schema " + name).orElse("are jOOQ classes")))
-                    .check(CLASSES);
+                    .check(ProductionClasses.all());
         });
     }
 
@@ -97,6 +80,6 @@ class SchemaOwnershipTest {
     void nonModuleClassesUseNoSchema() {
         noClasses().that().resideOutsideOfPackages("com.ecsite.module..", JOOQ_PACKAGE + "..")
                 .should().dependOnClassesThat().resideInAPackage(JOOQ_PACKAGE + "..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
     }
 }

@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * イベント「注文の状態の変化」の統合テスト（T0110、plan 010 第 2 節）。<br />
+ * イベント「注文の状態の変化」の統合テスト。<br />
  * 注文の状態が変わるたびに 1 つ出て、変わらない操作（重ねて届いた支払の結果など）では出ないことを確認する。
  * イベントの記録は発行の時点なので、コミットを待たない。テストごとにロールバックする。
  */

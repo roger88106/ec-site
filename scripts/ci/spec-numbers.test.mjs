@@ -1,6 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findSpecNumbers, isProductionFile } from './spec-numbers.mjs'
+import { keepJavaComments } from './lib/strip-comments.mjs'
+import { findSpecNumbers, isBackendTestFile, isProductionFile } from './spec-numbers.mjs'
 
 describe('本番のコードの spec の番号の検査', () => {
   test('AC・DC などの番号、タスクの番号、spec・plan の番号を見つける', () => {
@@ -49,13 +50,50 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.deepEqual(findSpecNumbers('const ACTION = "X-12"; const T10 = 1; const UTF8 = true'), [])
   })
 
-  test('テスト、生成物、マイグレーションは見ない', () => {
+  test('画面のテスト、生成物、マイグレーションは見ない', () => {
     assert.equal(isProductionFile('backend/ecsite/src/main/java/com/ecsite/Foo.java'), true)
     assert.equal(isProductionFile('frontend/store/src/lib/price.ts'), true)
     assert.equal(isProductionFile('frontend/store/src/lib/price.test.ts'), false)
     assert.equal(isProductionFile('frontend/admin/src/test/server.ts'), false)
     assert.equal(isProductionFile('frontend/admin/src/api/generated/schema.ts'), false)
     assert.equal(isProductionFile('backend/ecsite/src/main/resources/db/migration/V1__init.sql'), false)
+  })
+
+  test('バックエンドのテストと、テストの補助の .java は、コメントだけを見る対象にする', () => {
+    assert.equal(isBackendTestFile('backend/ecsite/src/test/java/com/ecsite/FooTest.java'), true)
+    assert.equal(isBackendTestFile('backend/ecsite/src/integrationTest/java/com/ecsite/FooIT.java'), true)
+    assert.equal(isBackendTestFile('backend/ecsite/src/testFixtures/java/com/ecsite/FooFixture.java'), true)
+    assert.equal(isBackendTestFile('backend/ecsite/src/main/java/com/ecsite/Foo.java'), false)
+    assert.equal(isBackendTestFile('backend/ecsite/src/test/resources/application.yml'), false)
     assert.equal(isProductionFile('backend/ecsite/src/test/java/com/ecsite/FooTest.java'), false)
+    assert.equal(isProductionFile('frontend/store/src/lib/price.test.ts'), false)
+    assert.equal(isBackendTestFile('frontend/store/src/lib/price.test.ts'), false)
+  })
+
+  test('テストの Javadoc と行のコメントの番号を見つける', () => {
+    const text = [
+      '/** 注文の合計を確かめる（AC-12） */',
+      'class OrderTest {',
+      '  // 在庫が足りない場合（T186-04-05）',
+      '  void test() {}',
+      '}',
+    ].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(keepJavaComments(text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-12', '3 T186-04-05'],
+    )
+  })
+
+  test('@DisplayName の文字列の番号は見つけない', () => {
+    const text = ['class OrderTest {', '  @DisplayName("AC-12 注文の合計を返す")', '  void test() {}', '}'].join('\n')
+    assert.deepEqual(findSpecNumbers(keepJavaComments(text)), [])
+  })
+
+  test('テストの補助（testFixtures）のコメントの番号を見つける', () => {
+    const text = ['public final class OrderFixture {', '  // spec 12 のデータ', '  static int id = 1;', '}'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(keepJavaComments(text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['2 spec 12'],
+    )
   })
 })

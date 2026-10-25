@@ -24,7 +24,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 現在の会員の ID を求める部品の単体テスト（spec 005 DC-39）
+ * 現在の会員の ID を求める部品の単体テスト
  */
 class CurrentMemberIdsTest {
 

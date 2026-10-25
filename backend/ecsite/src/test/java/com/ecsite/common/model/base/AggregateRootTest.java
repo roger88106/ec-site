@@ -9,7 +9,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 集約の基底クラスの単体テスト（T017）
+ * 集約の基底クラスの単体テスト
  */
 class AggregateRootTest {
 

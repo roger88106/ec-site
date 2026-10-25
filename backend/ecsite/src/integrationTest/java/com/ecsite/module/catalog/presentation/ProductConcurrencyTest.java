@@ -1,14 +1,15 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
-import com.jayway.jsonpath.JsonPath;
-import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
+import com.ecsite.MutableClock;
+import com.ecsite.TestClockConfig;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -21,20 +22,17 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
-import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 商品の同時登録のテスト（T309、AC-14）。<br />
- * 別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータを後で消す。
+ * 別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータも消さない。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
+@Import(TestClockConfig.class)
 class ProductConcurrencyTest {
 
     private static final int REQUESTS = 2;
@@ -43,34 +41,20 @@ class ProductConcurrencyTest {
     MockMvc mockMvc;
 
     @Autowired
-    DSLContext dsl;
+    MutableClock clock;
 
+    /**
+     * テストで使う税区分の ID
+     */
     private String taxCategoryId;
 
     private String productCode;
 
     @BeforeEach
     void setUp() throws Exception {
-        var body = mockMvc.perform(post("/api/admin/tax-categories")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"name": "同時登録 %s"}""".formatted(UUID.randomUUID().toString().substring(0, 8))))
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        taxCategoryId = JsonPath.read(body, "$.id");
-        mockMvc.perform(put("/api/admin/tax-categories/" + taxCategoryId + "/rates")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"version": 0, "rates": [{"ratePercent": 10}]}"""))
-                .andExpect(status().isNoContent());
+        taxCategoryId = new CatalogTestData(mockMvc, clock)
+                .taxCategory("同時登録 " + UUID.randomUUID().toString().substring(0, 8), "10").toString();
         productCode = "CONCURRENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
-    }
-
-    @AfterEach
-    void cleanUp() {
-        dsl.deleteFrom(PRODUCT).where(PRODUCT.PRODUCT_CODE.eq(productCode)).execute();
-        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(UUID.fromString(taxCategoryId))).execute();
-        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(UUID.fromString(taxCategoryId))).execute();
     }
 
     @Test

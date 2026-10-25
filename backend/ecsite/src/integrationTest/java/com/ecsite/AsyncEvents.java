@@ -56,4 +56,17 @@ public class AsyncEvents {
                 .anyMatch(publication -> event.test(publication.getEvent())
                         && publication.getStatus() == EventPublication.Status.FAILED));
     }
+
+    /**
+     * 条件に合うイベントのリスナーが、指定の回数以上処理して失敗した状態になるまで待つ（再発行の後の失敗を待つ）。
+     *
+     * @param event    待つイベントの条件（テストで作った ID などで、このテストのイベントだけに絞る）
+     * @param attempts 処理の回数
+     */
+    public void awaitFailed(Predicate<Object> event, int attempts) {
+        await().atMost(TIMEOUT).until(() -> registry.findIncompletePublications().stream()
+                .anyMatch(publication -> event.test(publication.getEvent())
+                        && publication.getStatus() == EventPublication.Status.FAILED
+                        && publication.getCompletionAttempts() >= attempts));
+    }
 }

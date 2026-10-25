@@ -7,7 +7,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 統合テストのエラーの応答の確認（{@link ErrorCodeCheck}）のテスト。
+ * エラーの応答の確認（{@link ErrorCodeCheck}）のテスト。
  */
 class ErrorCodeCheckTest {
 

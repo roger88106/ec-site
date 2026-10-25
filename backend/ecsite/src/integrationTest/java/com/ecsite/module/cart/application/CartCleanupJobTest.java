@@ -4,11 +4,12 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.OrderTestData;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -84,8 +85,8 @@ class CartCleanupJobTest {
     }
 
     @Test
-    @DisplayName("AC-284 最後の変更から 30 日（期限）と保存期間（0）がたったカートは品目と共に消え、それより新しいカートは残る。消した件数をログに出す（AC-288）")
-    void deletesExpiredCartsWithItems(CapturedOutput output) {
+    @DisplayName("AC-284 最後の変更から 30 日（期限）と保存期間（0）がたったカートは品目と共に消え、それより新しいカートは残る")
+    void deletesExpiredCartsWithItems() {
         var old = cartWithItem(NOW);
         var recent = cartWithItem(NOW.plus(Duration.ofDays(2)));
 
@@ -95,14 +96,13 @@ class CartCleanupJobTest {
         assertThat(remaining(List.of(old, recent))).containsExactly(recent);
         assertThat(dsl.fetchCount(CART_ITEM, CART_ITEM.CART_ID.eq(old))).isZero();
         assertThat(dsl.fetchCount(CART_ITEM, CART_ITEM.CART_ID.eq(recent))).isEqualTo(1);
-        assertThat(output).containsPattern("期限切れのカートを消した：[1-9][0-9]* 件");
     }
 
     @Test
     @DisplayName("AC-289 消したカートを読む・変える・注文手続きを始める操作は 404 になる")
     void deletedCartIsNotFound() throws Exception {
-        var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(post("/api/store/carts").with(TestTokens.none()))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
+        var cartId = TestJson.createdId(mockMvc.perform(post("/api/store/carts").with(TestTokens.none()))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
 
         clock.setInstant(AFTER_EXPIRY);
         job.cleanUp();
@@ -120,12 +120,12 @@ class CartCleanupJobTest {
     @DisplayName("AC-289 会員のカートを消した後は、会員のカートを求めると再作成される")
     void recreatesMemberCartAfterDeleted() throws Exception {
         var member = TestTokens.member().subject(UUID.randomUUID()).email("cleanup@example.com");
-        var before = memberCartId(member);
+        var before = new OrderTestData(mockMvc).cart(member.bearer());
 
         clock.setInstant(AFTER_EXPIRY);
         job.cleanUp();
 
-        var after = memberCartId(member);
+        var after = new OrderTestData(mockMvc).cart(member.bearer());
         assertThat(after).isNotEqualTo(before);
         assertThat(remaining(List.of(before))).isEmpty();
     }
@@ -174,6 +174,25 @@ class CartCleanupJobTest {
         assertThat(remaining(carts)).hasSize(1);
     }
 
+    @Test
+    @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
+    void logsDeletedCount(CapturedOutput output) {
+        // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
+        var longAgo = Instant.parse("2000-01-01T00:00:00Z");
+        var carts = new ArrayList<UUID>();
+        for (int i = 0; i < 5; i++) {
+            carts.add(cartWithItem(longAgo));
+        }
+        var smallBatch = new CartCleanupJob(service, new CartCleanupProperties(Duration.ofHours(1), Duration.ZERO, 2), clock);
+
+        clock.setInstant(longAgo.plus(Duration.ofDays(30)).plusSeconds(1));
+        smallBatch.cleanUp();
+
+        var deleted = carts.size() - remaining(carts).size();
+        assertThat(deleted).isEqualTo(5);
+        assertThat(output).contains("期限切れのカートを消した：" + deleted + " 件");
+    }
+
     /**
      * 指定した時刻に 1 品目を入れたカートを、直接保存する（商品カタログと在庫は確認しない）。
      *
@@ -181,18 +200,10 @@ class CartCleanupJobTest {
      */
     private UUID cartWithItem(Instant changedAt) {
         var cart = Cart.create(UUID.randomUUID(), changedAt);
-        cartRepository.create(cart);
+        assertThat(cartRepository.create(cart)).isTrue();
         cart.add(UUID.randomUUID(), 1, changedAt);
         cartRepository.save(cart);
         return cart.id();
-    }
-
-    /**
-     * 会員のカートの ID を求める（なければ作られる）。
-     */
-    private UUID memberCartId(TestTokens.Builder member) throws Exception {
-        return UUID.fromString(JsonPath.read(mockMvc.perform(get("/api/store/me/cart").with(member.bearer()))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.cartId"));
     }
 
     /**

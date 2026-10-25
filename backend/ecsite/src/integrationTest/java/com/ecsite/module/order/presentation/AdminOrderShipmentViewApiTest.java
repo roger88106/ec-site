@@ -2,13 +2,12 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
+import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
-import com.ecsite.TestTokens;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -56,9 +55,9 @@ class AdminOrderShipmentViewApiTest {
     private static final String BASE = "/api/admin/orders";
 
     /**
-     * 注文・与信の時刻
+     * 注文・与信の時刻（日本時間の 2026-11-20 00:00。他のテストの注文日（2026-10-08、12 月）と重ならない日にして、注文番号の前方一致で自分の注文だけを絞れるようにする）
      */
-    private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
+    private static final Instant NOW = Instant.parse("2026-11-19T15:00:00Z");
 
     /**
      * 与信期限（与信の時刻から 7 日）
@@ -83,6 +82,11 @@ class AdminOrderShipmentViewApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     DSLContext dsl;
 
@@ -90,6 +94,11 @@ class AdminOrderShipmentViewApiTest {
      * 注文のテストデータ
      */
     private OrderTestData orders;
+
+    /**
+     * 出荷を作る補助
+     */
+    private ShippingTestData shipping;
 
     /**
      * 受付のまま（出荷待ち）の注文
@@ -108,28 +117,24 @@ class AdminOrderShipmentViewApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
         var data = new CatalogTestData(mockMvc, clock);
         var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, product.id);
-        stockItemRepository.adjust(variantId, StockAdjustment.create(10, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, product.id, 10);
         // 商品の公開で時計が進むので、注文と与信の時刻をそろえる
         clock.setInstant(NOW);
         orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        shipping = new ShippingTestData(mockMvc, mockCarrier);
         accepted = orders.placeOrder(variantId, 1, "受付 太郎");
         shipped = orders.placeOrder(variantId, 1, "出荷 花子");
         returned = orders.placeOrder(variantId, 1, "返送 次郎");
-        ship(shipped, "111111111111");
-        ship(returned, "222222222222");
-        var notification = mockCarrier.notification(Carrier.YAMATO, "222222222222", "返品");
-        mockMvc.perform(post("/api/webhooks/carrier")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Carrier-Signature", notification.signature())
-                        .content(notification.body()))
-                .andExpect(status().isOk());
+        shipping.ship(shipped, Carrier.YAMATO, "111111111111");
+        shipping.ship(returned, Carrier.YAMATO, "222222222222");
+        shipping.notifyStatus(Carrier.YAMATO, "222222222222", "返品");
     }
 
     @Nested
@@ -143,7 +148,7 @@ class AdminOrderShipmentViewApiTest {
                     .andExpect(jsonPath("$.shipment.carrier").value("YAMATO"))
                     .andExpect(jsonPath("$.shipment.trackingNumber").value("222222222222"))
                     .andExpect(jsonPath("$.shipment.status").value("RETURNED"))
-                    .andExpect(jsonPath("$.shipment.shippedAt").value("2026-10-07T15:00:00Z"));
+                    .andExpect(jsonPath("$.shipment.shippedAt").value("2026-11-19T15:00:00Z"));
             mockMvc.perform(get(BASE + "/" + accepted)).andExpect(jsonPath("$.shipment").doesNotExist());
         }
 
@@ -151,7 +156,7 @@ class AdminOrderShipmentViewApiTest {
         @DisplayName("AC-186 与信期限を返し、期限の 2 日前を過ぎたら「期限が近い」にする（期限を過ぎても近いのまま）")
         void showsAuthorizationDeadline() throws Exception {
             mockMvc.perform(get(BASE + "/" + accepted))
-                    .andExpect(jsonPath("$.payment.authorizationDeadline").value("2026-10-14T15:00:00Z"))
+                    .andExpect(jsonPath("$.payment.authorizationDeadline").value("2026-11-26T15:00:00Z"))
                     .andExpect(jsonPath("$.payment.authorizationExpiring").value(false));
 
             clock.setInstant(AUTHORIZATION_DEADLINE.minus(Duration.ofDays(2)));
@@ -188,7 +193,7 @@ class AdminOrderShipmentViewApiTest {
             mockMvc.perform(get(BASE + "/" + accepted))
                     .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"))
                     .andExpect(jsonPath("$.payment.authorizationExpiring").value(false));
-            mockMvc.perform(get(BASE).param("authorizationExpiring", "true"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true"))
                     .andExpect(jsonPath("$.items", empty()));
         }
 
@@ -224,34 +229,34 @@ class AdminOrderShipmentViewApiTest {
         @Test
         @DisplayName("AC-182 状態「出荷済み」で絞り込むと出荷済みの注文が、「受付」で絞り込むと出荷待ちの注文が並ぶ")
         void filtersByShipped() throws Exception {
-            mockMvc.perform(get(BASE).param("status", "SHIPPED"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("status", "SHIPPED"))
                     .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(shipped.toString(), returned.toString())));
-            mockMvc.perform(get(BASE).param("status", "ACCEPTED"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("status", "ACCEPTED"))
                     .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(accepted.toString())));
         }
 
         @Test
         @DisplayName("AC-187 与信期限が近い注文で絞り込める。他の条件と組み合わせられる")
         void filtersByAuthorizationExpiring() throws Exception {
-            mockMvc.perform(get(BASE).param("authorizationExpiring", "true"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true"))
                     .andExpect(jsonPath("$.items", empty()))
                     .andExpect(jsonPath("$.totalItems").value(0));
 
             clock.setInstant(AUTHORIZATION_DEADLINE.minus(Duration.ofDays(1)));
-            mockMvc.perform(get(BASE).param("authorizationExpiring", "true"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true"))
                     .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(accepted.toString())));
-            mockMvc.perform(get(BASE).param("authorizationExpiring", "true").param("status", "CANCELLED"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true").param("status", "CANCELLED"))
                     .andExpect(jsonPath("$.items", empty()));
-            mockMvc.perform(get(BASE).param("authorizationExpiring", "false"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "false"))
                     .andExpect(jsonPath("$.totalItems").value(3));
         }
 
         @Test
         @DisplayName("AC-189 配送状態「返送」の注文で絞り込める")
         void filtersByReturned() throws Exception {
-            mockMvc.perform(get(BASE).param("returned", "true"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("returned", "true"))
                     .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(returned.toString())));
-            mockMvc.perform(get(BASE).param("returned", "true").param("status", "ACCEPTED"))
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("returned", "true").param("status", "ACCEPTED"))
                     .andExpect(jsonPath("$.items", empty()));
         }
     }
@@ -259,20 +264,9 @@ class AdminOrderShipmentViewApiTest {
     // ============================== 補助 ==============================
 
     /**
-     * 出荷を登録する
-     */
-    private void ship(UUID orderId, String trackingNumber) throws Exception {
-        mockMvc.perform(post(BASE + "/" + orderId + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"carrier": "YAMATO", "trackingNumber": "%s"}""".formatted(trackingNumber)))
-                .andExpect(status().isCreated());
-    }
-
-    /**
-     * このテストの注文に共通する注文番号の前方一致（注文日）
+     * このテストの注文に共通する注文番号の前方一致（注文日。他のテストは、この日に注文しない）
      */
     private static String orderNumberPrefix() {
-        return "20261008";
+        return "20261120";
     }
 }

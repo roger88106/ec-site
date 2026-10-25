@@ -2,15 +2,16 @@ package com.ecsite.module.cart.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -72,6 +73,11 @@ class CartApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     StockReservationApi stockReservationApi;
 
@@ -81,6 +87,9 @@ class CartApiTest {
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 税区分・カテゴリ・商品を作る補助
+     */
     private CatalogTestData data;
 
     private UUID standard;
@@ -89,6 +98,7 @@ class CartApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         data = new CatalogTestData(mockMvc, clock);
         standard = data.taxCategory("標準", "10");
@@ -96,11 +106,11 @@ class CartApiTest {
                 .andExpect(status().isCreated())
                 .andExpect(header().exists("Location"))
                 .andReturn().getResponse().getContentAsString();
-        cartId = UUID.fromString(JsonPath.read(body, "$.id"));
+        cartId = TestJson.createdId(body);
     }
 
     @Nested
-    @DisplayName("AC-72、73、74、75、76 カートに入れる")
+    @DisplayName("AC-72、74、75、76 カートに入れる")
     class AddItem {
 
         @Test
@@ -173,7 +183,7 @@ class CartApiTest {
         }
 
         @Test
-        @DisplayName("AC-73 存在しないカートは 404")
+        @DisplayName("存在しないカートは 404")
         void rejectsUnknownCart() throws Exception {
             add(UUID.randomUUID(), stockedVariant(1), 1).andExpect(status().isNotFound());
         }
@@ -275,8 +285,7 @@ class CartApiTest {
      * バリアントの在庫を作り、在庫数を設定する（入荷として調整する）
      */
     private void stock(UUID variantId, int quantity) {
-        stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        stockItemRepository.adjust(variantId, StockAdjustment.create(quantity, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, UUID.randomUUID(), quantity);
     }
 
     /**

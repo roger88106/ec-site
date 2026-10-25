@@ -58,7 +58,7 @@ class ShippingApiTest {
     AsyncEvents asyncEvents;
 
     @Test
-    @DisplayName("AC-173 配送業者と送り状番号で出荷を作ると、配送状態は出荷済みで、送り状番号はハイフンを除いて保存される")
+    @DisplayName("BR-19 配送業者と送り状番号で出荷を作ると、配送状態は出荷済みで、送り状番号はハイフンを除いて保存される")
     void createsShipment() {
         var orderId = UUID.randomUUID();
 
@@ -85,7 +85,7 @@ class ShippingApiTest {
     }
 
     @Test
-    @DisplayName("AC-173 形に合わない送り状番号では出荷を作れず、何も保存されない")
+    @DisplayName("形に合わない送り状番号では出荷を作れず、何も保存されない")
     void rejectsInvalidTrackingNumber() {
         var orderId = UUID.randomUUID();
 

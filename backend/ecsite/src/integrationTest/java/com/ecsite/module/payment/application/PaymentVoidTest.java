@@ -3,8 +3,8 @@ package com.ecsite.module.payment.application;
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
-import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -19,8 +19,6 @@ import org.springframework.transaction.support.TransactionSynchronizationManager
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
-import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
@@ -55,6 +53,11 @@ class PaymentVoidTest {
     @Autowired
     MutableClock clock;
 
+    /**
+     * 支払を進める補助
+     */
+    PaymentTestData payments;
+
     @Autowired
     AsyncEvents asyncEvents;
 
@@ -63,6 +66,7 @@ class PaymentVoidTest {
 
     @BeforeEach
     void setUp() {
+        payments = new PaymentTestData(paymentApi, gateway);
         clock.setInstant(ORDERED_AT);
         gateway.reset();
     }
@@ -70,73 +74,73 @@ class PaymentVoidTest {
     @Test
     @DisplayName("AC-162 与信済みの支払を取り消すと、コミットの後に決済サービスで取り消され、与信の取消済みになる")
     void voidsAuthorizedPayment() {
-        var orderId = created();
-        var pageId = paid(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        var pageId = payments.pay(orderId);
 
         paymentApi.cancel(orderId);
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.VOIDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.VOIDED);
         assertThat(gateway.voided()).containsExactly(gateway.authorizationRefOf(pageId));
     }
 
     @Test
     @DisplayName("AC-306 与信の取消のリスナーは、データベースのトランザクションの外で決済サービスを呼ぶ")
     void voidsOutsideTransaction() {
-        var orderId = created();
-        paid(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        payments.pay(orderId);
         var transactionActive = new CopyOnWriteArrayList<Boolean>();
         gateway.onRefundOrVoid(() -> transactionActive.add(TransactionSynchronizationManager.isActualTransactionActive()));
 
         paymentApi.cancel(orderId);
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.VOIDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.VOIDED);
         assertThat(transactionActive).containsExactly(false);
     }
 
     @Test
     @DisplayName("AC-164、165 決済サービスで取消に失敗したら与信の取消待ちのまま残り、未完了のイベントの再発行で取り消される")
     void retriesFailedVoid() {
-        var orderId = created();
-        paid(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        var authorizationRef = gateway.authorizationRefOf(payments.pay(orderId));
         gateway.failNextVoids(1);
 
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitFailed(PaymentRequests.of(dsl, orderId));
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOID_PENDING);
-        assertThat(gateway.voided()).isEmpty();
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOID_PENDING);
+        assertThat(gateway.voided()).doesNotContain(authorizationRef);
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
         clock.advance(Duration.ofMinutes(6));
         incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.VOIDED);
-        assertThat(gateway.voided()).hasSize(1);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.VOIDED);
+        assertThat(gateway.voided()).containsOnlyOnce(authorizationRef);
     }
 
     @Test
     @DisplayName("AC-166 取消済みの支払を重ねて取り消しても、成功し、決済サービスを呼び直さない")
     void ignoresRepeatedCancel() {
-        var orderId = created();
-        paid(orderId);
+        var orderId = payments.created(ORDERED_AT);
+        payments.pay(orderId);
         paymentApi.cancel(orderId);
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.VOIDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.VOIDED);
 
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(gateway.voided()).hasSize(1);
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOIDED);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOIDED);
     }
 
     @Test
     @DisplayName("未払いの支払を取り消すと支払なしになり、決済サービスは呼ばない")
     void cancelsUnpaidWithoutVoid() {
-        var orderId = created();
+        var orderId = payments.created(ORDERED_AT);
 
         paymentApi.cancel(orderId);
 
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
         assertThat(gateway.voided()).isEmpty();
     }
@@ -144,39 +148,18 @@ class PaymentVoidTest {
     @Test
     @DisplayName("AC-157 期限切れの後に与信の成功が届いたら、その与信を取り消す")
     void voidsLateAuthorization() {
-        var orderId = created();
-        var url = paymentApi.pageUrl(orderId).orElseThrow();
-        var pageId = url.substring(url.lastIndexOf('/') + 1);
+        var orderId = payments.created(ORDERED_AT);
+        var pageId = payments.openPage(orderId);
         clock.advance(Duration.ofMinutes(30));
         expiryJob.expire();
-        assertThat(statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
+        assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.NOT_PAID);
 
         // 順序の入れ替わった通知
         gateway.notifyAuthorized(pageId);
 
-        await().atMost(TIMEOUT).until(() -> statusOf(orderId) == PaymentSummary.Status.VOIDED);
+        await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.VOIDED);
         assertThat(gateway.voided()).containsExactly(gateway.authorizationRefOf(pageId));
     }
 
     // ============================== 補助 ==============================
-
-    private UUID created() {
-        var orderId = UUID.randomUUID();
-        paymentApi.create(orderId, Money.of(6940), ORDERED_AT);
-        return orderId;
-    }
-
-    /**
-     * 支払画面を開いて支払い、与信済みにする。
-     */
-    private String paid(UUID orderId) {
-        var url = paymentApi.pageUrl(orderId).orElseThrow();
-        var pageId = url.substring(url.lastIndexOf('/') + 1);
-        gateway.pay(pageId);
-        return pageId;
-    }
-
-    private PaymentSummary.Status statusOf(UUID orderId) {
-        return paymentApi.find(List.of(orderId)).getFirst().status();
-    }
 }

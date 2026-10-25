@@ -1,6 +1,7 @@
 package com.ecsite.module.inventory.presentation;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
@@ -64,6 +65,11 @@ class InventoryApiTest {
     @Autowired
     StockReservationApi stockReservationApi;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     private UUID productId;
 
     private UUID variantId;
@@ -73,7 +79,8 @@ class InventoryApiTest {
         clock.setInstant(NOW);
         productId = UUID.randomUUID();
         variantId = UUID.randomUUID();
-        stockItemRepository.createIfAbsent(variantId, productId);
+        inventory = new InventoryTestData(stockItemRepository, clock);
+        inventory.create(variantId, productId);
     }
 
     @Nested
@@ -99,7 +106,7 @@ class InventoryApiTest {
     }
 
     @Nested
-    @DisplayName("AC-42、43、44、46 在庫の調整")
+    @DisplayName("AC-42、43、46 在庫の調整")
     class Adjust {
 
         @Test
@@ -119,7 +126,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("AC-44 在庫数 10 に +5 と +3 を行うと 18")
+        @DisplayName("AC-42 増減量を続けて加えると、調整後の在庫数が加えた値になる（在庫数 10 に +5 と +3 を行うと 18）")
         void addsDeltas() throws Exception {
             adjust(variantId, 10, "ARRIVAL", null).andExpect(status().isCreated());
             adjust(variantId, 5, "ARRIVAL", null).andExpect(status().isCreated());
@@ -249,7 +256,7 @@ class InventoryApiTest {
         @DisplayName("商品ごとに在庫数を合計し、指定した順に返す。在庫がまだない商品は 0")
         void sumsQuantitiesByProduct() throws Exception {
             var secondVariant = UUID.randomUUID();
-            stockItemRepository.createIfAbsent(secondVariant, productId);
+            inventory.create(secondVariant, productId);
             adjust(variantId, 3, "ARRIVAL", null).andExpect(status().isCreated());
             adjust(secondVariant, 4, "ARRIVAL", null).andExpect(status().isCreated());
             var withoutStock = UUID.randomUUID();

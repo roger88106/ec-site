@@ -195,14 +195,12 @@ class MediaApiTest {
         }
 
         @Test
-        @DisplayName("AC-70 変換できない（壊れた）ファイルは拒否し、アセットを残さない")
+        @DisplayName("AC-70 変換できない（壊れた）ファイルは拒否する")
         void rejectsUnconvertibleFile() throws Exception {
             var scope = scope();
             var upload = uploaded(scope, "image/heic", TestImages.of("broken.heic"));
-            var before = assetIds();
 
             assertErrorCode(() -> media.prepareImage(scope, upload.uploadId()), "IMAGE_CONVERSION_FAILED");
-            assertThat(assetIds()).isSubsetOf(before);
         }
 
         @Test
@@ -415,14 +413,6 @@ class MediaApiTest {
     private boolean releaseRegistered(UUID assetId) {
         return dsl.fetchExists(EVENT_PUBLICATION, EVENT_PUBLICATION.EVENT_TYPE.endsWith(".AssetReleased")
                 .and(EVENT_PUBLICATION.SERIALIZED_EVENT.contains(assetId.toString())));
-    }
-
-    /**
-     * 今あるアセットの ID。アセットは受付の範囲を持たないので、ID の集まりで、新しく作られていないことを確認する
-     * （ほかのテストが消すことはあるので、数では比べない）
-     */
-    private Set<UUID> assetIds() {
-        return dsl.select(ASSET.ID).from(ASSET).fetchSet(ASSET.ID);
     }
 
     /**

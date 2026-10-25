@@ -37,14 +37,14 @@ class BusinessPortAccessTest {
     }
 
     @Test
-    @DisplayName("AC-235 物流の通知の口は、認証なしで口の中まで届く（署名が合えば 401 にならない）")
+    @DisplayName("AC-235 物流の通知の口は、認証なしで口の中まで届く（署名が合えば、契約の応答 400 が返る）")
     void acceptsCarrierWebhook() throws Exception {
         var body = "{}";
         // 統合テストの設定の、物流サービスの通知の署名の鍵
         var signature = new CarrierSignature("test-carrier-webhook-secret").sign(body.getBytes(StandardCharsets.UTF_8));
         mockMvc.perform(post("/api/webhooks/carrier").contentType(MediaType.APPLICATION_JSON).content(body)
                         .header(CarrierSignature.HEADER, signature))
-                .andExpect(result -> assertThat(result.getResponse().getStatus()).isNotEqualTo(401));
+                .andExpect(result -> assertThat(result.getResponse().getStatus()).isEqualTo(400));
     }
 
     @Test

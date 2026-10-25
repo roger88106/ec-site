@@ -2,12 +2,13 @@ package com.ecsite.module.order.presentation;
 
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
+import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
-import com.ecsite.module.inventory.domain.stock.StockAdjustment;
-import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.jayway.jsonpath.JsonPath;
@@ -71,8 +72,18 @@ class MemberOrderApiTest {
     @Autowired
     StockItemRepository stockItemRepository;
 
+    /**
+     * 在庫を作る補助
+     */
+    private InventoryTestData inventory;
+
     @Autowired
     DSLContext dsl;
+
+    /**
+     * 注文を作る補助
+     */
+    private OrderTestData orders;
 
     private UUID variantId;
 
@@ -90,13 +101,14 @@ class MemberOrderApiTest {
 
     @BeforeEach
     void setUp() throws Exception {
+        inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         var data = new CatalogTestData(mockMvc, clock);
+        orders = new OrderTestData(mockMvc);
         var standard = data.taxCategory("標準", "10");
         variantId = data.product(standard, "T シャツ", 2700).publish().variantIds.getFirst();
-        stockItemRepository.createIfAbsent(variantId, UUID.randomUUID());
-        stockItemRepository.adjust(variantId, StockAdjustment.create(50, StockAdjustmentReason.ARRIVAL, null, TestTokens.OPERATOR, NOW));
+        inventory.stock(variantId, UUID.randomUUID(), 50);
     }
 
     @Nested
@@ -124,9 +136,9 @@ class MemberOrderApiTest {
         @Test
         @DisplayName("AC-125 ログインせずに作ったカートからは始められない（404）")
         void rejectsGuestCart() throws Exception {
-            var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(post(STORE + "/carts").with(TestTokens.none()))
-                    .andReturn().getResponse().getContentAsString(), "$.id"));
-            add(cartId, TestTokens.none());
+            var cartId = TestJson.createdId(mockMvc.perform(post(STORE + "/carts").with(TestTokens.none()))
+                    .andReturn().getResponse().getContentAsString());
+            orders.add(cartId, variantId, 1, TestTokens.none());
 
             startCheckout(cartId, owner.bearer()).andExpect(status().isNotFound());
         }
@@ -279,20 +291,9 @@ class MemberOrderApiTest {
      * 会員のカートに品目を入れ、カート ID を返す
      */
     private UUID memberCartWithItem(TestTokens.Builder member) throws Exception {
-        var body = mockMvc.perform(get(STORE + "/me/cart").with(member.bearer()))
-                .andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        var cartId = UUID.fromString(JsonPath.read(body, "$.cartId"));
-        add(cartId, member.bearer());
+        var cartId = orders.cart(member.bearer());
+        orders.add(cartId, variantId, 1, member.bearer());
         return cartId;
-    }
-
-    private void add(UUID cartId, RequestPostProcessor requester) throws Exception {
-        mockMvc.perform(post(STORE + "/carts/" + cartId + "/items").with(requester)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"variantId": "%s", "quantity": 1}""".formatted(variantId)))
-                .andExpect(status().isNoContent());
     }
 
     private ResultActions startCheckout(UUID cartId, RequestPostProcessor requester) throws Exception {
@@ -303,10 +304,7 @@ class MemberOrderApiTest {
      * 会員のカートに入れて、注文手続きを始める
      */
     private UUID checkout(TestTokens.Builder member) throws Exception {
-        var body = startCheckout(memberCartWithItem(member), member.bearer())
-                .andExpect(status().isCreated())
-                .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        return orders.startCheckout(memberCartWithItem(member), member.bearer());
     }
 
     /**
@@ -335,7 +333,7 @@ class MemberOrderApiTest {
                         .content(orderBody(total)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        return TestJson.createdId(body);
     }
 
     private ResultActions requestCancellation(UUID orderId, RequestPostProcessor requester) throws Exception {

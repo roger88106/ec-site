@@ -35,13 +35,15 @@ class JooqCartRepository implements CartRepository {
     private final Clock clock;
 
     /**
-     * カートを作る。会員のカートは、同じ会員のカートがすでにあれば作らない（一意制約の違反でトランザクションを壊さない）。
+     * カートを作る。会員ごとの一意制約に当たったら、何もせずに false を返す。
      *
      * @param cart 空のカート
+     * @return 保存したら true
      */
     @Override
-    public void create(Cart cart) {
-        dsl.insertInto(CART_)
+    public boolean create(Cart cart) {
+        // 同じ会員のカートの重複は、例外にせず（トランザクションを壊さず）挿入されなかったことで知る
+        int inserted = dsl.insertInto(CART_)
                 .set(CART_.ID, cart.id())
                 .set(CART_.MEMBER_ID, cart.memberId().orElse(null))
                 .set(CART_.VERSION, cart.version())
@@ -50,6 +52,7 @@ class JooqCartRepository implements CartRepository {
                 .onConflict(CART_.MEMBER_ID)
                 .doNothing()
                 .execute();
+        return inserted > 0;
     }
 
     /**

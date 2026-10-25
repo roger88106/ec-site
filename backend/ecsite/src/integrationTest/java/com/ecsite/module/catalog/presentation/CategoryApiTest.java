@@ -1,12 +1,16 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.MutableClock;
+import com.ecsite.TestClockConfig;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.annotation.Import;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -14,9 +18,16 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -33,6 +44,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  */
 @IntegrationTest
 @AutoConfigureMockMvc
+@Import(TestClockConfig.class)
 @Transactional
 class CategoryApiTest {
 
@@ -49,6 +61,10 @@ class CategoryApiTest {
     @Autowired
     MockMvc mockMvc;
 
+    @Autowired
+    MutableClock clock;
+
+
     @Nested
     @DisplayName("AC-8、9、10 カテゴリの登録")
     class Create {
@@ -56,7 +72,9 @@ class CategoryApiTest {
         @Test
         @DisplayName("AC-8 親を指定しなければ最上位になる。Location の URL で、そのカテゴリを取得できる")
         void createsRootAndGetsByLocation() throws Exception {
-            var result = createCategory("衣類", null)
+            var rootCount = roots().size();
+            var name = uniqueName("衣類");
+            var result = createCategory(name, null)
                     .andExpect(status().isCreated())
                     .andExpect(header().string(HttpHeaders.LOCATION, matchesPattern(".*" + BASE + "/[0-9a-f-]{36}")))
                     .andExpect(jsonPath("$.id").isString())
@@ -67,9 +85,9 @@ class CategoryApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
                     .andExpect(jsonPath("$.parentId").value(nullValue()))
-                    .andExpect(jsonPath("$.name").value("衣類"))
+                    .andExpect(jsonPath("$.name").value(name))
                     .andExpect(jsonPath("$.depth").value(1))
-                    .andExpect(jsonPath("$.displayOrder").value(1))
+                    .andExpect(jsonPath("$.displayOrder").value(rootCount + 1))
                     .andExpect(jsonPath("$.version").value(0));
         }
 
@@ -171,38 +189,44 @@ class CategoryApiTest {
         @Test
         @DisplayName("木は、各階層が並び順どおりに返る")
         void listsTreeInDisplayOrder() throws Exception {
-            var clothing = createdId("衣類", null);
-            var food = createdId("食品", null);
+            var others = rootIds();
+            var root = uniqueName("衣類");
+            var clothing = createdId(root, null);
+            var food = createdId(uniqueName("食品"), null);
             var tops = createdId("トップス", clothing);
             var bottoms = createdId("ボトムス", clothing);
             createdId("T シャツ", tops);
             createdId("シャツ", tops);
-            reorder(null, food, clothing).andExpect(status().isNoContent());
+            reorder(null, withOthers(others, food, clothing)).andExpect(status().isNoContent());
             reorder(clothing, bottoms, tops).andExpect(status().isNoContent());
 
+            // 他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序は並び順どおりになる
+            assertThat(rootsOf(clothing, food)).extracting(r -> r.get("id")).containsExactly(food, clothing);
+            var node = nodeOf(root);
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.items[*].name", contains("食品", "衣類")))
-                    .andExpect(jsonPath("$.items[0].children").isEmpty())
-                    .andExpect(jsonPath("$.items[1].depth").value(1))
-                    .andExpect(jsonPath("$.items[1].children[*].name", contains("ボトムス", "トップス")))
-                    .andExpect(jsonPath("$.items[1].children[1].depth").value(2))
-                    .andExpect(jsonPath("$.items[1].children[1].children[*].name", contains("T シャツ", "シャツ")))
-                    .andExpect(jsonPath("$.items[1].children[1].children[0].depth").value(3));
+                    .andExpect(jsonPath(node + ".depth", contains(1)))
+                    .andExpect(jsonPath(node + ".children[*].name", contains("ボトムス", "トップス")))
+                    .andExpect(jsonPath(node + ".children[0].children").value(contains(empty())))
+                    .andExpect(jsonPath(node + ".children[1].depth", contains(2)))
+                    .andExpect(jsonPath(node + ".children[1].children[*].name", contains("T シャツ", "シャツ")))
+                    .andExpect(jsonPath(node + ".children[1].children[0].depth", contains(3)));
         }
 
         @Test
         @DisplayName("AC-270 木の節は子のカテゴリを足せるかを持ち、いちばん深いカテゴリだけ足せない")
         void listsAddChildAction() throws Exception {
-            var clothing = createdId("衣類", null);
+            var root = uniqueName("衣類");
+            var clothing = createdId(root, null);
             var tops = createdId("トップス", clothing);
             createdId("T シャツ", tops);
 
+            var node = nodeOf(root);
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.items[0].actions.addChild").value(true))
-                    .andExpect(jsonPath("$.items[0].children[0].actions.addChild").value(true))
-                    .andExpect(jsonPath("$.items[0].children[0].children[0].actions.addChild").value(false));
+                    .andExpect(jsonPath(node + ".actions.addChild", contains(true)))
+                    .andExpect(jsonPath(node + ".children[0].actions.addChild", contains(true)))
+                    .andExpect(jsonPath(node + ".children[0].children[0].actions.addChild", contains(false)));
         }
     }
 
@@ -260,37 +284,41 @@ class CategoryApiTest {
         @Test
         @DisplayName("AC-11 最上位のカテゴリを並べ替えられる。表示順が変わったカテゴリはバージョンが上がる")
         void reordersRoots() throws Exception {
-            var a = createdId("A", null);
-            var b = createdId("B", null);
-            var c = createdId("C", null);
+            var others = rootIds();
+            var a = createdId(uniqueName("A"), null);
+            var b = createdId(uniqueName("B"), null);
+            var c = createdId(uniqueName("C"), null);
 
-            reorder(null, a, c, b).andExpect(status().isNoContent());
+            reorder(null, withOthers(others, a, c, b)).andExpect(status().isNoContent());
 
-            mockMvc.perform(get(BASE))
-                    .andExpect(jsonPath("$.items[*].name", contains("A", "C", "B")))
-                    .andExpect(jsonPath("$.items[*].displayOrder", contains(1, 2, 3)))
-                    .andExpect(jsonPath("$.items[*].version", contains(0, 1, 1)));
+            var mine = rootsOf(a, c, b);
+            assertThat(mine).extracting(r -> r.get("id")).containsExactly(a, c, b);
+            assertThat(mine).extracting(r -> r.get("displayOrder"))
+                    .containsExactly(others.size() + 1, others.size() + 2, others.size() + 3);
+            assertThat(mine).extracting(r -> r.get("version")).containsExactly(0, 1, 1);
         }
 
         @Test
         @DisplayName("AC-11 子カテゴリを並べ替えられる")
         void reordersChildren() throws Exception {
-            var parent = createdId("衣類", null);
+            var root = uniqueName("衣類");
+            var parent = createdId(root, null);
             var tops = createdId("トップス", parent);
             var bottoms = createdId("ボトムス", parent);
 
             reorder(parent, bottoms, tops).andExpect(status().isNoContent());
 
             mockMvc.perform(get(BASE))
-                    .andExpect(jsonPath("$.items[0].children[*].name", contains("ボトムス", "トップス")));
+                    .andExpect(jsonPath(nodeOf(root) + ".children[*].name", contains("ボトムス", "トップス")));
         }
 
         @Test
         @DisplayName("並べ替えの前に取得したバージョンで名称を変えると 409")
         void renameAfterReorderConflicts() throws Exception {
-            var a = createdId("A", null);
-            var b = createdId("B", null);
-            reorder(null, b, a).andExpect(status().isNoContent());
+            var others = rootIds();
+            var a = createdId(uniqueName("A"), null);
+            var b = createdId(uniqueName("B"), null);
+            reorder(null, withOthers(others, b, a)).andExpect(status().isNoContent());
 
             rename(a, "AA", 0)
                     .andExpect(status().isConflict())
@@ -300,14 +328,14 @@ class CategoryApiTest {
         @Test
         @DisplayName("兄弟が足りなければ 400。並びは変わらない")
         void rejectsMissingSibling() throws Exception {
-            var a = createdId("A", null);
-            createdId("B", null);
+            var others = rootIds();
+            var a = createdId(uniqueName("A"), null);
+            var b = createdId(uniqueName("B"), null);
 
-            reorder(null, a)
+            reorder(null, withOthers(others, a))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ORDER"));
-            mockMvc.perform(get(BASE))
-                    .andExpect(jsonPath("$.items[*].name", contains("A", "B")));
+            assertThat(rootsOf(a, b)).extracting(r -> r.get("id")).containsExactly(a, b);
         }
 
         @Test
@@ -372,6 +400,50 @@ class CategoryApiTest {
     // ============================== 補助 ==============================
 
     /**
+     * 他のテストが確定させた最上位のカテゴリと重ならない、テストごとの名称にする
+     */
+    private static String uniqueName(String name) {
+        return name + " " + UUID.randomUUID();
+    }
+
+    /**
+     * 木の中から、名称で最上位のカテゴリを選ぶ JSONPath（他のテストの最上位のカテゴリが木に混ざっていても、自分の部分木だけを見る）
+     */
+    private static String nodeOf(String rootName) {
+        return "$.items[?(@.name=='%s')]".formatted(rootName);
+    }
+
+    /**
+     * 今の最上位のカテゴリを、表示順に読む（他のテストが確定させたものを含む）
+     */
+    private List<Map<String, Object>> roots() throws Exception {
+        var body = mockMvc.perform(get(BASE)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        return JsonPath.read(body, "$.items");
+    }
+
+    /**
+     * 今の最上位のカテゴリの ID を、表示順に読む
+     */
+    private List<String> rootIds() throws Exception {
+        return roots().stream().map(r -> (String) r.get("id")).toList();
+    }
+
+    /**
+     * 今の最上位のカテゴリのうち、指定した ID のものを、表示順に返す
+     */
+    private List<Map<String, Object>> rootsOf(String... ids) throws Exception {
+        var wanted = Set.of(ids);
+        return roots().stream().filter(r -> wanted.contains((String) r.get("id"))).toList();
+    }
+
+    /**
+     * 並べ替えの API は兄弟の全てを求めるので、今ある最上位のカテゴリの後ろに、自分のカテゴリを並べた一覧にする
+     */
+    private static String[] withOthers(List<String> others, String... mine) {
+        return Stream.concat(others.stream(), Arrays.stream(mine)).toArray(String[]::new);
+    }
+
+    /**
      * カテゴリを登録する。親がなければ最上位
      */
     private ResultActions createCategory(String name, String parentId) throws Exception {
@@ -386,8 +458,8 @@ class CategoryApiTest {
      * カテゴリを登録して、その ID を返す
      */
     private String createdId(String name, String parentId) throws Exception {
-        var body = createCategory(name, parentId).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return JsonPath.read(body, "$.id");
+        var parent = parentId == null ? null : UUID.fromString(parentId);
+        return new CatalogTestData(mockMvc, clock).category(name, parent).toString();
     }
 
     /**

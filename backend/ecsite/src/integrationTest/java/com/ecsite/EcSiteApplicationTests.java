@@ -45,7 +45,9 @@ class EcSiteApplicationTests {
         var schemas = jdbcTemplate.queryForList(
                 "SELECT schema_name FROM information_schema.schemata", String.class);
 
-        assertThat(schemas).contains("common", "tax", "catalog", "media", "inventory", "cart", "ordering");
+        // 共通の schema（common）と、schema を持つ全てのモジュールの schema
+        assertThat(schemas).contains("common", "tax", "catalog", "media", "inventory", "cart", "ordering",
+                "member", "payment", "shipping", "notification", "reporting", "region");
     }
 
     @Test

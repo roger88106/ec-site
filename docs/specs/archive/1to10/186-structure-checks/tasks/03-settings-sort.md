@@ -18,7 +18,7 @@ T186-03-01〜03 は、それぞれ別のファイルだけを変えるので `[P
   - 依存：なし
   - 範囲（推奨のとき）：`main/module/catalog/api/StoreProductQuery.java`、`StoreCatalogApi.java`、`main/module/catalog/application/model/query/StoreProductListQuery.java`、`main/module/catalog/infrastructure/persistence/JooqStoreProductQueryRepository.java`、`main/module/storefront/infrastructure/directory/CatalogApiDirectory.java`（変えなくてよいかの確認）、`test/module/catalog/api/StoreCatalogApiSortTest.java`、`it/module/catalog/api/StoreCatalogApiTest.java`、`StoreProductSearchTest.java`
   - 範囲（別案のとき）：`main/module/storefront/presentation/StorefrontMapper.java`、`main/module/catalog/application/model/query/StoreProductListQuery.java`、`main/module/catalog/infrastructure/persistence/JooqStoreProductQueryRepository.java` と、それらのテスト
-- [x] **T186-03-04** [テストの書き方](../../../rules/test-writing.md) 第 3.4 節（T186-01-08 と同じ節。段階 1 のレビューで、テストの置き場所の節から分けた）に `TestSettings` を書く。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。
+- [x] **T186-03-04** [テストの書き方](../../../../../rules/test-writing.md) 第 3.4 節（T186-01-08 と同じ節。段階 1 のレビューで、テストの置き場所の節から分けた）に `TestSettings` を書く。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。
   - 依存：T186-03-01
   - 範囲：`docs/rules/test-writing.md`、`docs/design/glossary.md`
 - [x] **T186-03-05** 段階のレビューと全体の検査：[plan](../plan.md) 第 7 節の段階 3 の観点とレビュー役で行う。`./gradlew check`、`scripts/ci/check-all.sh` を実行する。

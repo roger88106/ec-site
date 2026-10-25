@@ -2,7 +2,7 @@
 
 - 前提：段階 1〜4
 - 完了条件：spec の最後のレビューの採否を決め、反映した。差分に API の契約とマイグレーションのファイルがない（DN-186-1）。起票のまとめの案がある。本 spec を `docs/specs/archive/1to10/186-structure-checks/` に移した。
-- 参照：[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 7 節、[spec](../spec.md)、[開発の進め方](../../../rules/workflow.md) 第 4.1 節、[開発の進め方](../../../rules/workflow.md) 第 4.2 節、[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節
+- 参照：[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 7 節、[spec](../spec.md)、[開発の進め方](../../../../../rules/workflow.md) 第 4.1 節、[開発の進め方](../../../../../rules/workflow.md) 第 4.2 節、[エージェントの作業フロー](../../../../../rules/subagents.md) 第 4 節
 
 ## タスク
 
@@ -14,18 +14,18 @@
   - 依存：T186-05-02
 - [x] **T186-05-04** 文書のレビュー（skill `review` の文書のレビューの手順）：本 spec で修正した文書（バックエンドの書き方、コメントの書き方、テストの書き方）を、skill `docs` の文書の言い回しと論理の規則（`.claude/skills/docs/tech-writing.md`）と照合する。
   - 依存：T186-05-03
-- [x] **T186-05-05** 起票のまとめの案を作る。後回しにする作業、spec の最後のレビューの推奨のうち採用しなかったもの、DN-186-3 で規則の変更が必要と分かったものを、既存の issue と重複しないようにまとめ、案を pull request の本文に付ける。利用者が承認したら、issue 担当のセッションが起票する（[開発の進め方](../../../rules/workflow.md) 第 4.1 節）。
+- [x] **T186-05-05** 起票のまとめの案を作る。後回しにする作業、spec の最後のレビューの推奨のうち採用しなかったもの、DN-186-3 で規則の変更が必要と分かったものを、既存の issue と重複しないようにまとめ、案を pull request の本文に付ける。利用者が承認したら、issue 担当のセッションが起票する（[開発の進め方](../../../../../rules/workflow.md) 第 4.1 節）。
   - 依存：T186-05-03、T186-05-04
-- [x] **T186-05-06** pull request の前のレビュー：profile「厚め」のとおり、高性能のレビュー役が spec との一致と完了の定義を確認し、組み込みのコードレビュー（`/code-review`）も行う。指摘の扱いを決め、修正する（[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節）。
+- [x] **T186-05-06** pull request の前のレビュー：profile「厚め」のとおり、高性能のレビュー役が spec との一致と完了の定義を確認し、組み込みのコードレビュー（`/code-review`）も行う。指摘の扱いを決め、修正する（[エージェントの作業フロー](../../../../../rules/subagents.md) 第 4 節）。
   - 依存：T186-05-05
-- [ ] **T186-05-07** 本 spec（spec、plan、tasks）を `docs/specs/archive/1to10/186-structure-checks/` に移し、参照を修正する。移した後に `scripts/ci/check-all.sh` が通る（[開発の進め方](../../../rules/workflow.md) 第 4.2 節）。そのタスク自身を含む全てのチェックボックスを `[x]` にする。
+- [x] **T186-05-07** 本 spec（spec、plan、tasks）を `docs/specs/archive/1to10/186-structure-checks/` に移し、参照を修正する。移した後に `scripts/ci/check-all.sh` が通る（[開発の進め方](../../../../../rules/workflow.md) 第 4.2 節）。そのタスク自身を含む全てのチェックボックスを `[x]` にする。
   - 依存：T186-05-06
 
 T186-05-07 は tasks の最後に行うタスクで、pull request を作る直前の commit で行う。理由：アーカイブした spec は、進捗の検査が全てのタスクの済みを求めるため。
 
 ## tasks の外の作業
 
-pull request の作成と、その後の `develop` へのマージと後片付けは、tasks に書かない（[開発の進め方](../../../rules/workflow.md) 第 4.2 節、[開発の進め方](../../../rules/workflow.md) 第 5.7 節）。pull request はテンプレートで作り、本文に受け入れの確認、推奨の扱い、起票する issue の案を書き、#186 にコメントする。マージは spec 担当のセッションが利用者の許可を得てから行う。
+pull request の作成と、その後の `develop` へのマージと後片付けは、tasks に書かない（[開発の進め方](../../../../../rules/workflow.md) 第 4.2 節、[開発の進め方](../../../../../rules/workflow.md) 第 5.7 節）。pull request はテンプレートで作り、本文に受け入れの確認、推奨の扱い、起票する issue の案を書き、#186 にコメントする。マージは spec 担当のセッションが利用者の許可を得てから行う。
 
 ## spec の最後のレビューの結果
 

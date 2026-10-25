@@ -80,25 +80,64 @@ class ModuleDiagramTest {
     @Test
     @DisplayName("図は、依存を実線、イベントを発行するモジュールから受けるモジュールへの点線で書き、同じ組の線を 1 本にまとめる")
     void rendersDependenciesAndEvents() {
-        var rendered = render(modules);
+        var events = new TreeMap<EventEdge, Set<String>>();
+        events.put(new EventEdge("payment", "order"), new TreeSet<>(Set.of("PaymentExpired", "PaymentAuthorized")));
+        var dependencies = new TreeMap<String, Set<String>>();
+        dependencies.put("order", new TreeSet<>(Set.of("shipping", "payment")));
+        var diagram = new Diagram(new TreeSet<>(Set.of("order", "payment", "shipping")), dependencies, events);
 
-        assertThat(rendered).startsWith("```mermaid\nflowchart LR\n");
-        assertThat(rendered).contains("    order --> payment\n");
-        assertThat(rendered).contains("    payment -. PaymentAuthorized<br>PaymentExpired .-> order\n");
+        var rendered = render(diagram);
+
+        assertThat(rendered).isEqualTo("""
+                ```mermaid
+                flowchart LR
+                    order
+                    payment
+                    shipping
+                    order --> payment
+                    order --> shipping
+                    payment -. PaymentAuthorized<br>PaymentExpired .-> order
+                ```
+                """);
         assertThat(rendered.lines().filter(line -> line.contains("-->") || line.contains(".->")))
                 .as("同じモジュールの組の線は 1 本にまとめる")
                 .doesNotHaveDuplicates();
     }
 
-    /** モジュールの依存とイベントの図（Mermaid のコードブロック）。並びは名前の順で、毎回同じ結果になる */
+    /**
+     * モジュールの検出結果から、図に描く内容を作る。
+     *
+     * @param modules モジュールの一覧
+     * @return 図に描く内容
+     */
+    static Diagram diagramOf(ApplicationModules modules) {
+        return new Diagram(moduleNames(modules), dependencies(modules), events(modules));
+    }
+
+    /**
+     * モジュールの依存とイベントの図（Mermaid のコードブロック）を描く。並びは名前の順で、毎回同じ結果になる。
+     *
+     * @param modules モジュールの一覧
+     * @return Mermaid のコードブロック
+     */
     static String render(ApplicationModules modules) {
+        return render(diagramOf(modules));
+    }
+
+    /**
+     * 図に描く内容から、Mermaid のコードブロックを描く。依存は実線、イベントは発行するモジュールから受けるモジュールへの点線。
+     *
+     * @param diagram 図に描く内容
+     * @return Mermaid のコードブロック
+     */
+    static String render(Diagram diagram) {
         var lines = new ArrayList<String>();
         lines.add("```mermaid");
         lines.add("flowchart LR");
-        moduleNames(modules).forEach(name -> lines.add("    " + name));
-        dependencies(modules).forEach((source, targets) ->
+        diagram.modules().forEach(name -> lines.add("    " + name));
+        diagram.dependencies().forEach((source, targets) ->
                 targets.forEach(target -> lines.add("    " + source + " --> " + target)));
-        events(modules).forEach((edge, names) ->
+        diagram.events().forEach((edge, names) ->
                 lines.add("    " + edge.publisher() + " -. " + String.join("<br>", names) + " .-> " + edge.listener()));
         lines.add("```");
         return String.join("\n", lines) + "\n";
@@ -158,6 +197,17 @@ class ModuleDiagramTest {
             throw new IllegalStateException("文書に " + start + " と " + end + " がない");
         }
         return document.substring(0, from + start.length()) + "\n" + content + document.substring(to);
+    }
+
+    /**
+     * 図に描く内容。
+     *
+     * @param modules      モジュールの名前
+     * @param dependencies モジュールから、使うモジュールへの依存（イベント以外）
+     * @param events       イベントの流れと、その流れのイベントの名前
+     */
+    private record Diagram(Set<String> modules, Map<String, Set<String>> dependencies,
+                           Map<EventEdge, Set<String>> events) {
     }
 
     /** イベントの流れの 1 本 */

@@ -26,10 +26,10 @@
 - [x] **T186-01-04** `ModulithTest` と `ModuleDiagramTest` が、`ProductionClasses` のモジュールの一覧と `TEST_CLASSES` を使う。`ModulithTest` の標準出力への書き出しを削除する（DC-186-8、12）。
   - 依存：T186-01-02
   - 範囲：`test/modulith/ModulithTest.java`、`test/modulith/ModuleDiagramTest.java`
-- [ ] **T186-01-05** [テスト] モジュールの図の描画のテスト `rendersDependenciesAndEvents` を、固定した小さな入力（[plan](../plan.md) 第 1.3 節の record）を描いて確認する形に書き換え、record から描くメソッドがないので失敗する（コンパイルできない）ことを確認する（DC-186-12）。
+- [x] **T186-01-05** [テスト] モジュールの図の描画のテスト `rendersDependenciesAndEvents` を、固定した小さな入力（[plan](../plan.md) 第 1.3 節の record）を描いて確認する形に書き換え、record から描くメソッドがないので失敗する（コンパイルできない）ことを確認する（DC-186-12）。
   - 依存：T186-01-04
   - 範囲：`test/modulith/ModuleDiagramTest.java`
-- [ ] **T186-01-06** 図を描く処理を、`ApplicationModules` から record を作るメソッドと、record から描くメソッドに分ける。T186-01-05 のテストが通る。一時的に点線を実線に変えて、テストが失敗することを確認する（DC-186-12）。
+- [x] **T186-01-06** 図を描く処理を、`ApplicationModules` から record を作るメソッドと、record から描くメソッドに分ける。T186-01-05 のテストが通る。一時的に点線を実線に変えて、テストが失敗することを確認する（DC-186-12）。
   - 依存：T186-01-05
   - 範囲：`test/modulith/ModuleDiagramTest.java`
 - [ ] **T186-01-07** 単体テストの heap の上限を、[plan](../plan.md) 第 1.2 節の手順で測って決める。1024m のままにするときは、`unitTestMaxHeap` のコメントに測った値を書く。測った値を commit の本文に書く（DC-186-9）。

@@ -16,7 +16,7 @@
 - [x] **T186-02-01** [P] [テスト] domain のパッケージの循環の検査 `PackageCycleTest` を追加する。集約のパッケージと `vo/` が互いに依存する例で失敗することを確認する（DC-186-1、7）。
   - 依存：なし
   - 範囲：`test/architecture/PackageCycleTest.java`（新規）
-- [ ] **T186-02-02** [P] [テスト] 金額の型の検査の対象を、`application.model` 以下の `View`・`Command` で終わるクラスと、`api`・`event` のクラスにし、対象が 1 件以上あることを `requireNotEmpty` で確認する。`application.model` の直下の view に整数の価格がある例で失敗することを確認する（DC-186-5、6、7）。
+- [x] **T186-02-02** [P] [テスト] 金額の型の検査の対象を、`application.model` 以下の `View`・`Command` で終わるクラスと、`api`・`event` のクラスにし、対象が 1 件以上あることを `requireNotEmpty` で確認する。`application.model` の直下の view に整数の価格がある例で失敗することを確認する（DC-186-5、6、7）。
   - 依存：なし
   - 範囲：`test/architecture/MoneyTypeTest.java`
 - [ ] **T186-02-03** [テスト] 層の依存の表を 1 つの定数にし、表にない組を 1 つの規則で確認する。[plan](../plan.md) 第 2 節の置き換えの表のとおり、既存の層の向きの検査を削除・維持する。共通コードが設定に依存しない規則を追加する。表にない組の例（api → presentation、infrastructure → application の service）で失敗することを確認する（DC-186-3、7）。

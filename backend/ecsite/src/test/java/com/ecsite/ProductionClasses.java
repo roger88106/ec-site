@@ -50,6 +50,11 @@ public final class ProductionClasses {
      */
     private static final Pattern MODULE_SUBPACKAGE = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)\\.([^.]+)");
 
+    /**
+     * パッケージの名前から、モジュールの名前を取り出す形（モジュールの直下のパッケージも含む）
+     */
+    private static final Pattern MODULE_NAME = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)");
+
     private ProductionClasses() {
     }
 
@@ -111,10 +116,10 @@ public final class ProductionClasses {
      * パッケージの名前から、モジュールの名前を取り出す。
      *
      * @param packageName パッケージの名前
-     * @return モジュールの名前。モジュールの層のパッケージでなければ空
+     * @return モジュールの名前。モジュールのパッケージ（直下を含む）でなければ空
      */
     public static Optional<String> moduleName(String packageName) {
-        Matcher matcher = MODULE_SUBPACKAGE.matcher(packageName);
+        Matcher matcher = MODULE_NAME.matcher(packageName);
         return matcher.find() ? Optional.of(matcher.group(1)) : Optional.empty();
     }
 

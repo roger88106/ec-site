@@ -68,7 +68,7 @@ class ProductionClassesTest {
     void extractsModuleNameFromPackageName() {
         assertThat(ProductionClasses.moduleName("com.ecsite.module.order.domain.order.vo")).contains("order");
         assertThat(ProductionClasses.moduleName("com.ecsite.module.tax.api")).contains("tax");
-        assertThat(ProductionClasses.moduleName("com.ecsite.module.tax")).isEmpty();
+        assertThat(ProductionClasses.moduleName("com.ecsite.module.tax")).contains("tax");
         assertThat(ProductionClasses.moduleName("com.ecsite.config.security")).isEmpty();
     }
 

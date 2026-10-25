@@ -1,10 +1,10 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,24 +19,16 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class StaticOnlyClassTest {
 
-    /**
-     * 本番のクラス（テストと、生成したコードを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .withImportOption(location -> !location.contains("/com/ecsite/jooq/") && !location.contains("/com/ecsite/api/"))
-            .importPackages("com.ecsite");
-
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは、コンストラクタがすべて private")
     void staticOnlyClassesHavePrivateConstructors() {
-        assertThat(violations(CLASSES)).isEmpty();
+        assertThat(violations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは final")
     void staticOnlyClassesAreFinal() {
-        assertThat(nonFinal(CLASSES)).isEmpty();
+        assertThat(nonFinal(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test

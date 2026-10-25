@@ -1,11 +1,9 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.PackageMatcher;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
@@ -20,8 +18,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
@@ -47,19 +43,9 @@ class ModuleStructureTest {
     private static final Set<String> LAYERS = Set.of("api", "event", "presentation", "application", "domain", "infrastructure");
 
     /**
-     * レベル A のモジュール（バックエンドのアーキテクチャ 第 2 節。docs/design/modules の各設計書の「レベル」と合わせる）
-     */
-    private static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order", "payment");
-
-    /**
      * 1 つのパッケージの直下に置けるクラスの数の上限
      */
     private static final int MAX_CLASSES_PER_PACKAGE = 20;
-
-    /**
-     * モジュールのパッケージから、モジュールの名前と、モジュールの直下のパッケージの名前を取り出す形
-     */
-    private static final Pattern MODULE_SUBPACKAGE = Pattern.compile("^com\\.ecsite\\.module\\.([^.]+)\\.([^.]+)");
 
     /**
      * presentation の外に置く例外の {@code @RestController}（どのモジュールにも属さない GET /me）
@@ -75,22 +61,17 @@ class ModuleStructureTest {
             // 会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために 3 組が増える
             new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", "com.ecsite.module.*.presentation.."));
 
-    /**
-     * 本番のクラス（テストを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("com.ecsite");
-
     @Test
     @DisplayName("モジュールの直下のパッケージは、標準の層の名前だけである")
     void modulesContainOnlyStandardLayers() {
-        Set<String> unknown = CLASSES.stream()
+        // com.ecsite.module.<モジュール>.<層> の 5 つ目の要素までを、層の名前の確認と報告に使う
+        Set<String> unknown = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
-                .map(MODULE_SUBPACKAGE::matcher)
-                .filter(Matcher::find)
-                .filter(matcher -> !LAYERS.contains(matcher.group(2)))
-                .map(Matcher::group)
+                .filter(packageName -> ProductionClasses.moduleName(packageName).isPresent())
+                .map(packageName -> packageName.split("\\.", 6))
+                .filter(parts -> parts.length >= 5)
+                .filter(parts -> !LAYERS.contains(parts[4]))
+                .map(parts -> String.join(".", parts[0], parts[1], parts[2], parts[3], parts[4]))
                 .collect(Collectors.toCollection(TreeSet::new));
 
         assertThat(unknown).isEmpty();
@@ -99,33 +80,33 @@ class ModuleStructureTest {
     @Test
     @DisplayName("domain は、同じモジュールのほかの層に依存しない")
     void domainDependsOnNoOtherLayer() {
-        for (String module : modulesWith("domain")) {
+        for (String module : ProductionClasses.modulesWith("domain")) {
             ArchRule rule = noClasses().that().resideInAPackage(layer(module, "domain"))
                     .should().dependOnClassesThat().resideInAnyPackage(
                             layer(module, "api"), layer(module, "presentation"),
                             layer(module, "application"), layer(module, "infrastructure"));
-            rule.check(CLASSES);
+            rule.check(ProductionClasses.all());
         }
     }
 
     @Test
     @DisplayName("レベル A の domain は、Spring と jOOQ に依存しない")
     void levelADomainIsFrameworkFree() {
-        for (String module : LEVEL_A_MODULES) {
+        for (String module : ProductionClasses.LEVEL_A_MODULES) {
             ArchRule rule = noClasses().that().resideInAPackage(layer(module, "domain"))
                     .should().dependOnClassesThat().resideInAnyPackage("org.springframework..", "org.jooq..");
-            rule.check(CLASSES);
+            rule.check(ProductionClasses.all());
         }
     }
 
     @Test
     @DisplayName("application は、presentation と infrastructure に依存しない")
     void applicationDependsOnNeitherPresentationNorInfrastructure() {
-        for (String module : modulesWith("application")) {
+        for (String module : ProductionClasses.modulesWith("application")) {
             ArchRule rule = noClasses().that().resideInAPackage(layer(module, "application"))
                     .should().dependOnClassesThat().resideInAnyPackage(
                             layer(module, "presentation"), layer(module, "infrastructure"));
-            rule.check(CLASSES);
+            rule.check(ProductionClasses.all());
         }
     }
 
@@ -134,7 +115,7 @@ class ModuleStructureTest {
     void applicationDoesNotDependOnApi() {
         noClasses().that().resideInAPackage(MODULE_PACKAGE + ".*.application..")
                 .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.api..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
     }
 
     @Test
@@ -142,21 +123,21 @@ class ModuleStructureTest {
     void presentationAndApplicationModelDoNotDependOnPort() {
         noClasses().that().resideInAnyPackage(MODULE_PACKAGE + ".*.presentation..", MODULE_PACKAGE + ".*.application.model..")
                 .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.application.port..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
     }
 
     @Test
     @DisplayName("presentation・api・event と infrastructure は、互いに依存しない")
     void entryLayersAndInfrastructureAreIndependent() {
-        for (String module : modulesWith("presentation", "api", "event")) {
+        for (String module : ProductionClasses.modulesWith("presentation", "api", "event")) {
             noClasses().that().resideInAnyPackage(layer(module, "presentation"), layer(module, "api"), layer(module, "event"))
                     .should().dependOnClassesThat().resideInAPackage(layer(module, "infrastructure"))
-                    .check(CLASSES);
+                    .check(ProductionClasses.all());
         }
-        for (String module : modulesWith("infrastructure")) {
+        for (String module : ProductionClasses.modulesWith("infrastructure")) {
             noClasses().that().resideInAPackage(layer(module, "infrastructure"))
                     .should().dependOnClassesThat().resideInAPackage(layer(module, "presentation"))
-                    .check(CLASSES);
+                    .check(ProductionClasses.all());
         }
     }
 
@@ -165,11 +146,11 @@ class ModuleStructureTest {
     void transactionalOnlyInApplicationOrInfrastructure() {
         classes().that().areAnnotatedWith(Transactional.class)
                 .should().resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
         methods().that().areAnnotatedWith(Transactional.class)
                 .should().beDeclaredInClassesThat()
                 .resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
     }
 
     @Test
@@ -179,7 +160,7 @@ class ModuleStructureTest {
                 .and().resideInAPackage("com.ecsite..")
                 .and().doNotHaveFullyQualifiedName(ME_CONTROLLER)
                 .should().resideInAPackage(MODULE_PACKAGE + ".*.presentation..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
     }
 
     @Test
@@ -187,7 +168,7 @@ class ModuleStructureTest {
     void commonAndConfigDependOnNoModule() {
         noClasses().that().resideInAnyPackage("com.ecsite.common..", "com.ecsite.config..")
                 .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + "..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
     }
 
     @Test
@@ -195,15 +176,15 @@ class ModuleStructureTest {
     void modulesDependOnNoConfig() {
         noClasses().that().resideInAPackage(MODULE_PACKAGE + "..")
                 .should().dependOnClassesThat().resideInAPackage("com.ecsite.config..")
-                .check(CLASSES);
+                .check(ProductionClasses.all());
     }
 
     @Test
     @DisplayName("1 つのパッケージの直下のクラスは 20 を超えない")
     void packagesAreSmallEnough() {
         // 手で書いたパッケージごとに、入れ子でないクラスを数える（package-info は数えない）
-        Map<String, Long> countByPackage = CLASSES.stream()
-                .filter(javaClass -> !isGenerated(javaClass.getPackageName()))
+        Map<String, Long> countByPackage = ProductionClasses.all().stream()
+                .filter(javaClass -> !ProductionClasses.isGenerated(javaClass.getPackageName()))
                 .filter(JavaClass::isTopLevelClass)
                 .filter(javaClass -> !javaClass.getSimpleName().equals("package-info"))
                 .collect(Collectors.groupingBy(JavaClass::getPackageName, TreeMap::new, Collectors.counting()));
@@ -215,7 +196,7 @@ class ModuleStructureTest {
     @Test
     @DisplayName("他のモジュールを包む部品の、部品ごとのパッケージ（*dir）がない")
     void noDirectoryPackages() {
-        Set<String> dirPackages = CLASSES.stream()
+        Set<String> dirPackages = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
                 .filter(name -> name.startsWith(MODULE_PACKAGE))
                 .filter(name -> name.endsWith("dir"))
@@ -227,11 +208,11 @@ class ModuleStructureTest {
     @Test
     @DisplayName("他のモジュールの api を使うのは infrastructure.directory だけである（許可の一覧を除く）")
     void otherModulesApiIsUsedOnlyByDirectories() {
-        for (String module : modulesWith("api")) {
+        for (String module : ProductionClasses.modulesWith("api")) {
             classes().that().resideOutsideOfPackages(
                             "%s.%s..".formatted(MODULE_PACKAGE, module), MODULE_PACKAGE + ".*.infrastructure.directory..")
                     .should(notUseApiOf(module))
-                    .check(CLASSES);
+                    .check(ProductionClasses.all());
         }
     }
 
@@ -239,7 +220,7 @@ class ModuleStructureTest {
     @DisplayName("api を使う許可の一覧は、全て本番のクラスで使われている")
     void everyAllowedApiUseIsUsed() {
         for (AllowedApiUse allowed : ALLOWED_API_USES) {
-            boolean used = CLASSES.stream()
+            boolean used = ProductionClasses.all().stream()
                     .filter(javaClass -> PackageMatcher.of(allowed.userPackage()).matches(javaClass.getPackageName()))
                     .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
                     .anyMatch(dependency -> dependency.getTargetClass().getName().equals(allowed.apiType()));
@@ -279,34 +260,6 @@ class ModuleStructureTest {
         return ALLOWED_API_USES.stream().anyMatch(allowed ->
                 allowed.apiType().equals(target.getName())
                         && PackageMatcher.of(allowed.userPackage()).matches(user.getPackageName()));
-    }
-
-    /**
-     * 生成したコード（OpenAPI の interface と型、jOOQ）のパッケージかを返す。
-     *
-     * @param packageName パッケージの名前
-     * @return 生成したコードなら true
-     */
-    private static boolean isGenerated(String packageName) {
-        return packageName.startsWith("com.ecsite.api.") || packageName.startsWith("com.ecsite.jooq");
-    }
-
-    /**
-     * 指定した層のどれかに、本番のクラスがあるモジュールの名前を返す。<br />
-     * 層を持たないモジュールで繰り返すと、規則の対象が 0 件になって常に通るので、層を持つモジュールだけを返す。
-     *
-     * @param layers 層の名前
-     * @return モジュールの名前
-     */
-    private static Set<String> modulesWith(String... layers) {
-        Set<String> wanted = Set.of(layers);
-        return CLASSES.stream()
-                .map(JavaClass::getPackageName)
-                .map(MODULE_SUBPACKAGE::matcher)
-                .filter(Matcher::find)
-                .filter(matcher -> wanted.contains(matcher.group(2)))
-                .map(matcher -> matcher.group(1))
-                .collect(Collectors.toCollection(TreeSet::new));
     }
 
     /**

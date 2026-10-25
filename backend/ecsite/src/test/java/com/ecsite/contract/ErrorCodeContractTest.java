@@ -2,9 +2,8 @@ package com.ecsite.contract;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -79,10 +78,7 @@ class ErrorCodeContractTest {
     @Test
     @DisplayName("AC-275 バックエンドのすべてのエラーのコードが、どちらかの API の全体の列挙にあり、列挙のすべての値がバックエンドにある")
     void backendCodesAgreeWithContracts() {
-        Set<String> backend = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("com.ecsite")
-                .stream()
+        Set<String> backend = ProductionClasses.all().stream()
                 .filter(javaClass -> javaClass.isEnum() && javaClass.isAssignableTo(ErrorCodeProvider.class))
                 .map(JavaClass::reflect)
                 .flatMap(type -> Arrays.stream(type.getEnumConstants()))

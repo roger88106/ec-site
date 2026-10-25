@@ -1,10 +1,10 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,37 +19,29 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class NamingTest {
 
-    /**
-     * 本番のクラス（テストと、生成したコードを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .withImportOption(location -> !location.contains("/com/ecsite/jooq/") && !location.contains("/com/ecsite/api/"))
-            .importPackages("com.ecsite");
-
     @Test
     @DisplayName("リポジトリの port は domain か application の port に置き、参照用は application に置く")
     void repositoryPortsResideInPortPackages() {
-        assertThat(repositoryPortViolations(CLASSES)).isEmpty();
+        assertThat(repositoryPortViolations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("リポジトリの port の実装は、infrastructure.persistence の Jooq と port の名前のクラス")
     void repositoryImplementationsAreNamedJooq() {
-        assertThat(implementationViolations(CLASSES, "Repository", "Jooq", "", ".infrastructure.persistence"))
+        assertThat(implementationViolations(ProductionClasses.handwritten(), "Repository", "Jooq", "", ".infrastructure.persistence"))
                 .isEmpty();
     }
 
     @Test
     @DisplayName("腐敗防止層の窓口は、使う層の port に置く")
     void directoryPortsResideInPortPackages() {
-        assertThat(directoryPortViolations(CLASSES)).isEmpty();
+        assertThat(directoryPortViolations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("腐敗防止層の実装は、infrastructure.directory の <相手>ApiDirectory のクラス")
     void directoryImplementationsAreNamedApiDirectory() {
-        assertThat(implementationViolations(CLASSES, "Directory", "", "Api", ".infrastructure.directory")).isEmpty();
+        assertThat(implementationViolations(ProductionClasses.handwritten(), "Directory", "", "Api", ".infrastructure.directory")).isEmpty();
     }
 
     @Test
@@ -71,8 +63,8 @@ class NamingTest {
     @Test
     @DisplayName("腐敗防止層の実装は、public にしない（対象は 1 件以上ある）")
     void directoryImplementationsAreNotPublic() {
-        assertThat(directoryImplementations(CLASSES, ".infrastructure.directory")).isNotEmpty();
-        assertThat(publicDirectoryImplementations(CLASSES, ".infrastructure.directory")).isEmpty();
+        assertThat(directoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory")).isNotEmpty();
+        assertThat(publicDirectoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory")).isEmpty();
     }
 
     @Test

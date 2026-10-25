@@ -1,10 +1,9 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaField;
 import com.tngtech.archunit.core.domain.JavaModifier;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -37,17 +36,10 @@ class MoneyTypeTest {
     private static final Pattern CHECKED_PACKAGE =
             Pattern.compile("com\\.ecsite\\.module\\.[^.]+\\.(api|event|application\\.model(\\.command)?)(\\..*)?");
 
-    /**
-     * 本番のクラス（テストを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .importPackages("com.ecsite.module");
-
     @Test
     @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない")
     void moneyIsNotAnInteger() {
-        List<String> violations = CLASSES.stream()
+        List<String> violations = ProductionClasses.modules().stream()
                 .filter(javaClass -> CHECKED_PACKAGE.matcher(javaClass.getPackageName()).matches())
                 .filter(javaClass -> javaClass.getPackageName().contains(".api")
                         || javaClass.getPackageName().contains(".event")

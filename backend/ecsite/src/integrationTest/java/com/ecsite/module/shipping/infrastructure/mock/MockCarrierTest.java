@@ -31,7 +31,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class MockCarrierTest {
 
     /**
-     * 出荷日時。一覧（新しい順）の先頭に並ぶよう、ほかのテストの出荷より後にする
+     * 出荷日時。画面の一覧（新しい順に 50 件）の先頭に並ぶよう、ほかのテストの出荷より後にする。このテストの出荷は確定して残るので、全体から新しい順に読む別のテストは、これより後の日時（3000 年）を使う
      */
     private static final Instant SHIPPED_AT = Instant.parse("2095-01-01T00:00:00Z");
 

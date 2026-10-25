@@ -121,9 +121,9 @@ class JooqShipmentRepositoryTest {
     @DisplayName("出荷を新しい順に、件数の上限まで読める")
     void findsRecentFirst() {
         var older = Shipment.create(UUID.randomUUID(), UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of("111"),
-                Instant.parse("2090-01-01T00:00:00Z"));
+                Instant.parse("3000-01-01T00:00:00Z"));
         var newer = Shipment.create(UUID.randomUUID(), UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of("222"),
-                Instant.parse("2090-01-02T00:00:00Z"));
+                Instant.parse("3000-01-02T00:00:00Z"));
         repository.insert(older);
         repository.insert(newer);
 

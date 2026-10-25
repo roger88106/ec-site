@@ -14,6 +14,7 @@ import com.ecsite.api.admin.model.SalesTrendReport;
 import com.ecsite.api.admin.model.VariantSales;
 import com.ecsite.api.admin.model.VariantSalesReport;
 import com.ecsite.module.reporting.ReportTestData;
+import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -29,6 +30,8 @@ import java.lang.reflect.Field;
 import java.lang.reflect.Modifier;
 import java.time.Instant;
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -60,13 +63,15 @@ class ReportApiTest {
     @Autowired
     DSLContext dsl;
 
+    private UUID taxCategoryId;
     private CatalogTestData.TestProduct shirt;
 
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(Instant.parse("2026-10-07T15:00:00Z"));
         var catalog = new CatalogTestData(mockMvc, clock);
-        shirt = catalog.product(catalog.taxCategory("標準", "10"), "T シャツ", 1000, "色").variant("白").variant("黒");
+        taxCategoryId = catalog.taxCategory("標準", "10");
+        shirt = catalog.product(taxCategoryId, "T シャツ", 1000, "色").variant("白").variant("黒");
 
         var data = new ReportTestData(dsl);
         // 2031 年 4 月 5 日：白 2 枚、東京都、30 歳の女性（税込 2,200 円と送料 1,000 円）
@@ -103,7 +108,7 @@ class ReportApiTest {
         }
 
         @Test
-        @DisplayName("AC-198、199 出荷基準、消費税と送料を除く、商品の選択を受け取る")
+        @DisplayName("AC-200、BR-26 出荷基準、消費税と送料を除く、商品の選択を受け取る")
         void conditions() throws Exception {
             mockMvc.perform(get(REPORTS + "/sales-trend?from=2031-04-01&to=2031-04-30&granularity=MONTH&basis=SHIPMENT"))
                     .andExpect(status().isOk())
@@ -117,6 +122,23 @@ class ReportApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.points[0].amount").value(2200))
                     .andExpect(jsonPath("$.shippingExcluded").value(true));
+        }
+
+        @Test
+        @DisplayName("AC-198 同じ期間を粒度ごとの行で取得でき、行の合計は粒度によらず同じ")
+        void rowsPerGranularity() throws Exception {
+            var expectedRows = Map.of("WEEK", 27, "MONTH", 6, "QUARTER", 2, "YEAR", 1);
+            for (var entry : expectedRows.entrySet()) {
+                var body = mockMvc.perform(get(REPORTS + "/sales-trend?from=2031-04-01&to=2031-09-30&granularity="
+                                + entry.getKey()))
+                        .andExpect(status().isOk())
+                        .andExpect(jsonPath("$.points", hasSize(entry.getValue())))
+                        .andReturn().getResponse().getContentAsString();
+                List<Number> amounts = JsonPath.read(body, "$.points[*].amount");
+                List<Number> quantities = JsonPath.read(body, "$.points[*].quantity");
+                assertThat(amounts.stream().mapToLong(Number::longValue).sum()).as(entry.getKey()).isEqualTo(3200);
+                assertThat(quantities.stream().mapToLong(Number::longValue).sum()).as(entry.getKey()).isEqualTo(2);
+            }
         }
 
         @Test
@@ -204,10 +226,43 @@ class ReportApiTest {
                             "TEENS_OR_YOUNGER", "TWENTIES", "THIRTIES", "FORTIES", "FIFTIES", "SIXTIES_OR_OLDER", "UNKNOWN")))
                     .andExpect(jsonPath("$.ageGroups[2].amount").value(3200))
                     .andExpect(jsonPath("$.ageGroups[2].orders").value(1))
+                    // AC-208：生年月日のない会員の注文（税込 1,100 円 ＋ 送料 1,000 円）は「不明」に数える
+                    .andExpect(jsonPath("$.ageGroups[6].ageGroup").value("UNKNOWN"))
+                    .andExpect(jsonPath("$.ageGroups[6].amount").value(2100))
+                    .andExpect(jsonPath("$.ageGroups[6].orders").value(1))
                     .andExpect(jsonPath("$.genders[*].gender").value(contains("MALE", "FEMALE", "OTHER", "UNKNOWN")))
                     .andExpect(jsonPath("$.genders[1].orders").value(1))
                     .andExpect(jsonPath("$.genders[3].orders").value(1))
                     .andExpect(jsonPath("$.shippingExcluded").value(false));
+        }
+
+        @Test
+        @DisplayName("AC-207 商品を指定すると、その商品を含む注文だけを数え、売上額はその商品の明細の分だけ")
+        void breakdownByProduct() throws Exception {
+            var catalog = new CatalogTestData(mockMvc, clock);
+            var socks = catalog.product(taxCategoryId, "靴下", 500, "色").variant("白");
+            // 靴下だけの 40 歳の男性の注文
+            new ReportTestData(dsl).order("ACCEPTED", "2031-04-07").buyer(40, "MALE")
+                    .line(socks.id, socks.variantIds.get(0), 1).insert();
+
+            mockMvc.perform(get(REPORTS + "/customer-breakdown?from=2031-04-01&to=2031-04-30"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.ageGroups[2].orders").value(1))
+                    .andExpect(jsonPath("$.ageGroups[3].orders").value(1))
+                    .andExpect(jsonPath("$.shippingExcluded").value(false));
+
+            mockMvc.perform(get(REPORTS + "/customer-breakdown?from=2031-04-01&to=2031-04-30&productId=" + shirt.id))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.prefectures", hasSize(1)))
+                    .andExpect(jsonPath("$.prefectures[0].amount").value(2200))
+                    .andExpect(jsonPath("$.prefectures[0].orders").value(1))
+                    .andExpect(jsonPath("$.ageGroups[2].amount").value(2200))
+                    .andExpect(jsonPath("$.ageGroups[2].orders").value(1))
+                    .andExpect(jsonPath("$.ageGroups[3].amount").value(0))
+                    .andExpect(jsonPath("$.ageGroups[3].orders").value(0))
+                    .andExpect(jsonPath("$.genders[1].orders").value(1))
+                    .andExpect(jsonPath("$.genders[0].orders").value(0))
+                    .andExpect(jsonPath("$.shippingExcluded").value(true));
         }
     }
 

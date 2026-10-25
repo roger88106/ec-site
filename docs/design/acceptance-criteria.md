@@ -221,8 +221,8 @@
 | AC-196 | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest` |
 | AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 3 |
 | AC-198 | 同じ数字を、粒度ごとの行の表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest` |
-| AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
-| AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest`、`labels.test.ts` |
+| AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
+| AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` ほか 1 |
 | AC-201 | 売れなかった区切りも、0 の行として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
 | AC-202 | 運営者は、商品を 1 つと期間を選び、バリエーション（軸の値の組み合わせ）ごとの… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` ほか 1 |
 | AC-203 | 同じ数字を表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |

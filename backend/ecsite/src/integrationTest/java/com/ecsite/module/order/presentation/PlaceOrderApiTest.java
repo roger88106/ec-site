@@ -39,6 +39,7 @@ import static com.ecsite.OrderTestData.startCheckoutRequest;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.matchesPattern;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -111,7 +112,7 @@ class PlaceOrderApiTest {
     class Place {
 
         @Test
-        @DisplayName("AC-87、90、107、144 成立すると在庫が減り、引当が消え、注文番号が振られ、支払待ちになる。カートは変わらない")
+        @DisplayName("AC-87、107、144 成立すると在庫が減り、引当が消え、支払待ちになり、調整履歴に注文が残る。カートは変わらない")
         void placesOrder() throws Exception {
             var checkoutId = orders.startCheckout(cartId);
 
@@ -123,11 +124,13 @@ class PlaceOrderApiTest {
             var variant = shirt.variantIds.getFirst();
             assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
             // 注文した品目は、与信の成功でカートから除く（spec 007 で AC-90 を変更。AC-147）
-            mockMvc.perform(get("/api/store/carts/" + cartId)).andExpect(jsonPath("$.items").isNotEmpty());
+            mockMvc.perform(get("/api/store/carts/" + cartId))
+                    .andExpect(jsonPath("$.items", hasSize(1)))
+                    .andExpect(jsonPath("$.items[0].variantId").value(variant.toString()))
+                    .andExpect(jsonPath("$.items[0].quantity").value(2));
             var id = JsonPath.<String>read(orderId, "$.id");
             mockMvc.perform(get("/api/store/orders/" + id))
                     .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.orderNumber", matchesPattern("20261008-\\d{6}")))
                     .andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
             // 調整履歴に、理由「注文」と注文番号が残る（AC-107）
             var orderNumber = JsonPath.<String>read(mockMvc.perform(get("/api/store/orders/" + id))
@@ -138,6 +141,17 @@ class PlaceOrderApiTest {
                     .andExpect(jsonPath("$.items[0].orderNumber").value(orderNumber))
                     .andExpect(jsonPath("$.items[0].orderId").value(id));
             assertThat(events.stream(OrderStatusChanged.class)).extracting(OrderStatusChanged::orderId).containsExactly(UUID.fromString(id));
+        }
+
+        @Test
+        @DisplayName("AC-90 成立すると、注文日（日本時間）と 6 桁の数字の注文番号を採番する")
+        void numbersOrder() throws Exception {
+            var checkoutId = orders.startCheckout(cartId);
+
+            var body = place(checkoutId, 6940).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
+
+            mockMvc.perform(get("/api/store/orders/" + JsonPath.<String>read(body, "$.id")))
+                    .andExpect(jsonPath("$.orderNumber", matchesPattern("20261008-\\d{6}")));
         }
 
         @Test
@@ -415,11 +429,19 @@ class PlaceOrderApiTest {
         }
 
         @Test
-        @DisplayName("AC-213 未来の生年月日と、一覧にない性別は、不明として記録する")
-        void recordsUnknownForInvalidClaims() throws Exception {
-            var orderId = placeAs(TestTokens.member().birthdate("2030-01-01").gender("unknown"));
+        @DisplayName("AC-213 未来の生年月日は、不明として記録する")
+        void recordsUnknownForFutureBirthdate() throws Exception {
+            var orderId = placeAs(TestTokens.member().birthdate("2030-01-01").gender("female"));
 
-            assertThat(buyer(orderId)).containsExactly(null, null);
+            assertThat(buyer(orderId)).containsExactly(null, "FEMALE");
+        }
+
+        @Test
+        @DisplayName("BR-29 一覧にない性別は、不明として記録する")
+        void recordsUnknownForUnlistedGender() throws Exception {
+            var orderId = placeAs(TestTokens.member().birthdate("1990-10-08").gender("unknown"));
+
+            assertThat(buyer(orderId)).containsExactly((short) 36, null);
         }
 
         /**

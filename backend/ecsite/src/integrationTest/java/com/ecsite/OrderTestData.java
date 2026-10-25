@@ -85,7 +85,7 @@ public class OrderTestData {
     public UUID cart(RequestPostProcessor requester) throws Exception {
         var body = mockMvc.perform(get("/api/store/me/cart").with(requester)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.cartId"));
+        return TestJson.uuid(body, "$.cartId");
     }
 
     /**
@@ -133,7 +133,7 @@ public class OrderTestData {
      * @return 注文手続き ID
      */
     public UUID startCheckout(UUID cartId, RequestPostProcessor requester) throws Exception {
-        return createdId(mockMvc.perform(startCheckoutRequest(cartId).with(requester))
+        return TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId).with(requester))
                 .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
     }
 
@@ -233,7 +233,7 @@ public class OrderTestData {
         var order = mockMvc.perform(placeOrderRequest(checkoutId, orderBody(total, name)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        return createdId(order);
+        return TestJson.createdId(order);
     }
 
     /**
@@ -291,12 +291,5 @@ public class OrderTestData {
      */
     public static MockHttpServletRequestBuilder placeOrderRequest(UUID checkoutId, String body) {
         return post("/api/store/checkouts/" + checkoutId + "/order").contentType(MediaType.APPLICATION_JSON).content(body);
-    }
-
-    /**
-     * 本文の ID を取り出す
-     */
-    private static UUID createdId(String body) {
-        return UUID.fromString(JsonPath.read(body, "$.id"));
     }
 }

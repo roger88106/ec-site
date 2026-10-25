@@ -6,11 +6,11 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.StockAdjustment;
 import com.ecsite.module.inventory.domain.stock.StockAdjustmentReason;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -79,7 +79,7 @@ class StorefrontCartTest {
         standard = data.taxCategory("標準", "10");
         reduced = data.taxCategory("軽減", "8");
         var body = mockMvc.perform(post("/api/store/carts")).andReturn().getResponse().getContentAsString();
-        cartId = UUID.fromString(JsonPath.read(body, "$.id"));
+        cartId = TestJson.createdId(body);
     }
 
     @Test

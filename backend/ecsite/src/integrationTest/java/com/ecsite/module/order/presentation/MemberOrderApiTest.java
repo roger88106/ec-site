@@ -7,6 +7,7 @@ import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
@@ -129,8 +130,8 @@ class MemberOrderApiTest {
         @Test
         @DisplayName("AC-125 ログインせずに作ったカートからは始められない（404）")
         void rejectsGuestCart() throws Exception {
-            var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(post(STORE + "/carts").with(TestTokens.none()))
-                    .andReturn().getResponse().getContentAsString(), "$.id"));
+            var cartId = TestJson.createdId(mockMvc.perform(post(STORE + "/carts").with(TestTokens.none()))
+                    .andReturn().getResponse().getContentAsString());
             orders.add(cartId, variantId, 1, TestTokens.none());
 
             startCheckout(cartId, owner.bearer()).andExpect(status().isNotFound());
@@ -326,7 +327,7 @@ class MemberOrderApiTest {
                         .content(orderBody(total)))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        return TestJson.createdId(body);
     }
 
     private ResultActions requestCancellation(UUID orderId, RequestPostProcessor requester) throws Exception {

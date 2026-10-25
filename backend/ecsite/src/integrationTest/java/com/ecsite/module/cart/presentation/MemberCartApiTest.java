@@ -6,10 +6,10 @@ import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -285,7 +285,7 @@ class MemberCartApiTest {
         var body = mockMvc.perform(get(MEMBER_CART).with(member.bearer()))
                 .andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.cartId"));
+        return TestJson.uuid(body, "$.cartId");
     }
 
     /**
@@ -295,7 +295,7 @@ class MemberCartApiTest {
         var body = mockMvc.perform(post(CARTS))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        return TestJson.createdId(body);
     }
 
     /**

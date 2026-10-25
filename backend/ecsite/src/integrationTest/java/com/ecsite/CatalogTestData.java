@@ -142,7 +142,7 @@ public class CatalogTestData {
      */
     private UUID createdId(MockHttpServletRequestBuilder request) throws Exception {
         var body = mockMvc.perform(request).andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-        return UUID.fromString(JsonPath.read(body, "$.id"));
+        return TestJson.createdId(body);
     }
 
     /**

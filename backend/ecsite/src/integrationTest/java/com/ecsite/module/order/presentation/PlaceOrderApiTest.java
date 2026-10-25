@@ -1,6 +1,7 @@
 package com.ecsite.module.order.presentation;
 
 import com.ecsite.InventoryTestData;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
@@ -425,11 +426,11 @@ class PlaceOrderApiTest {
          * token を指定して、T シャツ 2 枚を注文し、注文 ID を返す
          */
         private UUID placeAs(TestTokens.Builder token) throws Exception {
-            var checkoutId = UUID.fromString(JsonPath.read(mockMvc.perform(startCheckoutRequest(cartId).with(token.bearer()))
-                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
+            var checkoutId = TestJson.createdId(mockMvc.perform(startCheckoutRequest(cartId).with(token.bearer()))
+                    .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
             var body = mockMvc.perform(placeOrderRequest(checkoutId, 6940).with(token.bearer()))
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-            return UUID.fromString(JsonPath.read(body, "$.id"));
+            return TestJson.createdId(body);
         }
 
         /**

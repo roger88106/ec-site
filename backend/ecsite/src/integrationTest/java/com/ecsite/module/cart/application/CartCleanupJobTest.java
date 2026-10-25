@@ -4,11 +4,11 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.module.cart.application.port.CartRepository;
 import com.ecsite.module.cart.domain.Cart;
-import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -101,8 +101,8 @@ class CartCleanupJobTest {
     @Test
     @DisplayName("AC-289 消したカートを読む・変える・注文手続きを始める操作は 404 になる")
     void deletedCartIsNotFound() throws Exception {
-        var cartId = UUID.fromString(JsonPath.read(mockMvc.perform(post("/api/store/carts").with(TestTokens.none()))
-                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString(), "$.id"));
+        var cartId = TestJson.createdId(mockMvc.perform(post("/api/store/carts").with(TestTokens.none()))
+                .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString());
 
         clock.setInstant(AFTER_EXPIRY);
         job.cleanUp();
@@ -191,8 +191,8 @@ class CartCleanupJobTest {
      * 会員のカートの ID を求める（なければ作られる）。
      */
     private UUID memberCartId(TestTokens.Builder member) throws Exception {
-        return UUID.fromString(JsonPath.read(mockMvc.perform(get("/api/store/me/cart").with(member.bearer()))
-                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.cartId"));
+        return TestJson.uuid(mockMvc.perform(get("/api/store/me/cart").with(member.bearer()))
+                .andExpect(status().isOk()).andReturn().getResponse().getContentAsString(), "$.cartId");
     }
 
     /**

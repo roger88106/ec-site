@@ -18,9 +18,14 @@ import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Arrays;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.empty;
 import static org.hamcrest.Matchers.matchesPattern;
@@ -59,6 +64,7 @@ class CategoryApiTest {
     @Autowired
     MutableClock clock;
 
+
     @Nested
     @DisplayName("AC-8、9、10 カテゴリの登録")
     class Create {
@@ -66,7 +72,9 @@ class CategoryApiTest {
         @Test
         @DisplayName("AC-8 親を指定しなければ最上位になる。Location の URL で、そのカテゴリを取得できる")
         void createsRootAndGetsByLocation() throws Exception {
-            var result = createCategory("衣類", null)
+            var rootCount = roots().size();
+            var name = uniqueName("衣類");
+            var result = createCategory(name, null)
                     .andExpect(status().isCreated())
                     .andExpect(header().string(HttpHeaders.LOCATION, matchesPattern(".*" + BASE + "/[0-9a-f-]{36}")))
                     .andExpect(jsonPath("$.id").isString())
@@ -77,9 +85,9 @@ class CategoryApiTest {
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
                     .andExpect(jsonPath("$.parentId").value(nullValue()))
-                    .andExpect(jsonPath("$.name").value("衣類"))
+                    .andExpect(jsonPath("$.name").value(name))
                     .andExpect(jsonPath("$.depth").value(1))
-                    .andExpect(jsonPath("$.displayOrder").value(1))
+                    .andExpect(jsonPath("$.displayOrder").value(rootCount + 1))
                     .andExpect(jsonPath("$.version").value(0));
         }
 
@@ -271,16 +279,18 @@ class CategoryApiTest {
         @Test
         @DisplayName("AC-11 最上位のカテゴリを並べ替えられる。表示順が変わったカテゴリはバージョンが上がる")
         void reordersRoots() throws Exception {
-            var a = createdId("A", null);
-            var b = createdId("B", null);
-            var c = createdId("C", null);
+            var others = rootIds();
+            var a = createdId(uniqueName("A"), null);
+            var b = createdId(uniqueName("B"), null);
+            var c = createdId(uniqueName("C"), null);
 
-            reorder(null, a, c, b).andExpect(status().isNoContent());
+            reorder(null, withOthers(others, a, c, b)).andExpect(status().isNoContent());
 
-            mockMvc.perform(get(BASE))
-                    .andExpect(jsonPath("$.items[*].name", contains("A", "C", "B")))
-                    .andExpect(jsonPath("$.items[*].displayOrder", contains(1, 2, 3)))
-                    .andExpect(jsonPath("$.items[*].version", contains(0, 1, 1)));
+            var mine = rootsOf(a, c, b);
+            assertThat(mine).extracting(r -> r.get("id")).containsExactly(a, c, b);
+            assertThat(mine).extracting(r -> r.get("displayOrder"))
+                    .containsExactly(others.size() + 1, others.size() + 2, others.size() + 3);
+            assertThat(mine).extracting(r -> r.get("version")).containsExactly(0, 1, 1);
         }
 
         @Test
@@ -300,9 +310,10 @@ class CategoryApiTest {
         @Test
         @DisplayName("並べ替えの前に取得したバージョンで名称を変えると 409")
         void renameAfterReorderConflicts() throws Exception {
-            var a = createdId("A", null);
-            var b = createdId("B", null);
-            reorder(null, b, a).andExpect(status().isNoContent());
+            var others = rootIds();
+            var a = createdId(uniqueName("A"), null);
+            var b = createdId(uniqueName("B"), null);
+            reorder(null, withOthers(others, b, a)).andExpect(status().isNoContent());
 
             rename(a, "AA", 0)
                     .andExpect(status().isConflict())
@@ -312,14 +323,14 @@ class CategoryApiTest {
         @Test
         @DisplayName("兄弟が足りなければ 400。並びは変わらない")
         void rejectsMissingSibling() throws Exception {
-            var a = createdId("A", null);
-            createdId("B", null);
+            var others = rootIds();
+            var a = createdId(uniqueName("A"), null);
+            var b = createdId(uniqueName("B"), null);
 
-            reorder(null, a)
+            reorder(null, withOthers(others, a))
                     .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("INVALID_CATEGORY_ORDER"));
-            mockMvc.perform(get(BASE))
-                    .andExpect(jsonPath("$.items[*].name", contains("A", "B")));
+            assertThat(rootsOf(a, b)).extracting(r -> r.get("id")).containsExactly(a, b);
         }
 
         @Test
@@ -395,6 +406,36 @@ class CategoryApiTest {
      */
     private static String nodeOf(String rootName) {
         return "$.items[?(@.name=='%s')]".formatted(rootName);
+    }
+
+    /**
+     * 今の最上位のカテゴリを、表示順に読む（他のテストが確定させたものを含む）
+     */
+    private List<Map<String, Object>> roots() throws Exception {
+        var body = mockMvc.perform(get(BASE)).andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+        return JsonPath.read(body, "$.items");
+    }
+
+    /**
+     * 今の最上位のカテゴリの ID を、表示順に読む
+     */
+    private List<String> rootIds() throws Exception {
+        return roots().stream().map(r -> (String) r.get("id")).toList();
+    }
+
+    /**
+     * 今の最上位のカテゴリのうち、指定した ID のものを、表示順に返す
+     */
+    private List<Map<String, Object>> rootsOf(String... ids) throws Exception {
+        var wanted = Set.of(ids);
+        return roots().stream().filter(r -> wanted.contains((String) r.get("id"))).toList();
+    }
+
+    /**
+     * 並べ替えの API は兄弟の全てを求めるので、今ある最上位のカテゴリの後ろに、自分のカテゴリを並べた一覧にする
+     */
+    private static String[] withOthers(List<String> others, String... mine) {
+        return Stream.concat(others.stream(), Arrays.stream(mine)).toArray(String[]::new);
     }
 
     /**

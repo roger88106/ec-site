@@ -21,5 +21,14 @@ T186-03-01〜03 は、それぞれ別のファイルだけを変えるので `[P
 - [x] **T186-03-04** [テストの書き方](../../../rules/test-writing.md)  第 3.3 節（T186-01-08 と同じ節）に `TestSettings` を書く。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。
   - 依存：T186-03-01
   - 範囲：`docs/rules/test-writing.md`、`docs/design/glossary.md`
-- [ ] **T186-03-05** 段階のレビューと全体の検査：[plan](../plan.md) 第 7 節の段階 3 の観点とレビュー役で行う。`./gradlew check`、`scripts/ci/check-all.sh` を実行する。
+- [x] **T186-03-05** 段階のレビューと全体の検査：[plan](../plan.md) 第 7 節の段階 3 の観点とレビュー役で行う。`./gradlew check`、`scripts/ci/check-all.sh` を実行する。
   - 依存：T186-03-01〜04
+
+## 段階のレビューの結果
+
+profile「厚め」で、汎用のレビュー役 2 つ（規則と重複、確認の維持）が行った（高 0、必須 1、推奨 11）。結果は `/.local/review/202610261700-186-stage3/` にある。
+
+- 修正した：店舗の presentation の並び順の引数の `@Nullable`（必須）。並び順の既定値の単体テスト（既定値が 1 つの層だけになり、守るテストがなかった）。realm の設定を読む処理を契約の補助に移した。補助の Javadoc（例外、戻り値）、設定の値が null のキーの扱い、テストの書き方の規則の一覧の文言。
+- 残した：system property の置き場所の読み方を、構成の検査（`rules.backend-coding`、`design.overview`）と契約の補助でそろえること（本 spec の範囲の外。値がないときの失敗の分かりやすさだけの違い）。
+- 起票の案に入れる：統合テストの `KeycloakIntegrationTest` と `StoreApiTokenContractTest` が、契約と realm を既定の相対パスで読むこと。
+- 補助へ移した 14 のテストの確認は、変わっていないことを差分で確認した。`./gradlew check`（並び順の変更の後）、`./gradlew test`、`scripts/ci/check-all.sh`（修正の後）は通った。

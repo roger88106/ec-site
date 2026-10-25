@@ -48,9 +48,12 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("presentation は、設定の値の型（@ConfigurationProperties）に依存しない")
     void presentationDoesNotDependOnConfigurationProperties() {
-        // 規則が空振りしないように、presentation のクラスがあることを確かめる
-        assertThat(ProductionClasses.handwritten().stream().filter(javaClass -> javaClass.getPackageName().contains(".presentation")
-                && javaClass.getPackageName().startsWith("com.ecsite.module."))).isNotEmpty();
+        ProductionClasses.requireNotEmpty(
+                ProductionClasses.handwritten().stream()
+                        .filter(javaClass -> javaClass.getPackageName().contains(".presentation")
+                                && javaClass.getPackageName().startsWith("com.ecsite.module."))
+                        .toList(),
+                "モジュールの presentation のクラス");
 
         presentationRule("com.ecsite.module.*.presentation..").check(ProductionClasses.handwritten());
     }

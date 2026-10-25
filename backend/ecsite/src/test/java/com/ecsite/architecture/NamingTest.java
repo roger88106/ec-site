@@ -22,12 +22,16 @@ class NamingTest {
     @Test
     @DisplayName("リポジトリの port は domain か application の port に置き、参照用は application に置く")
     void repositoryPortsResideInPortPackages() {
+        ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Repository"), "名前が Repository で終わる interface");
+
         assertThat(repositoryPortViolations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("リポジトリの port の実装は、infrastructure.persistence の Jooq と port の名前のクラス")
     void repositoryImplementationsAreNamedJooq() {
+        ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Repository"), "Repository の port の実装のクラス");
+
         assertThat(implementationViolations(ProductionClasses.handwritten(), "Repository", "Jooq", "", ".infrastructure.persistence"))
                 .isEmpty();
     }
@@ -35,12 +39,16 @@ class NamingTest {
     @Test
     @DisplayName("腐敗防止層の窓口は、使う層の port に置く")
     void directoryPortsResideInPortPackages() {
+        ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Directory"), "名前が Directory で終わる interface");
+
         assertThat(directoryPortViolations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("腐敗防止層の実装は、infrastructure.directory の <相手>ApiDirectory のクラス")
     void directoryImplementationsAreNamedApiDirectory() {
+        ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Directory"), "Directory の port の実装のクラス");
+
         assertThat(implementationViolations(ProductionClasses.handwritten(), "Directory", "", "Api", ".infrastructure.directory")).isEmpty();
     }
 
@@ -63,7 +71,9 @@ class NamingTest {
     @Test
     @DisplayName("腐敗防止層の実装は、public にしない（対象は 1 件以上ある）")
     void directoryImplementationsAreNotPublic() {
-        assertThat(directoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory")).isNotEmpty();
+        ProductionClasses.requireNotEmpty(
+                directoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory"), "腐敗防止層の実装のクラス");
+
         assertThat(publicDirectoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory")).isEmpty();
     }
 
@@ -75,6 +85,35 @@ class NamingTest {
 
         assertThat(publicDirectoryImplementations(examples, ".architecture"))
                 .containsExactly(PublicExampleApiDirectory.class.getName());
+    }
+
+    /**
+     * 名前が指定した語で終わる interface（port）を返す。
+     *
+     * @param classes 調べるクラス
+     * @param suffix  port の名前の終わり（Repository、Directory）
+     * @return port の interface
+     */
+    private static List<JavaClass> portsNamedWith(JavaClasses classes, String suffix) {
+        return classes.stream()
+                .filter(JavaClass::isInterface)
+                .filter(javaClass -> javaClass.getSimpleName().endsWith(suffix))
+                .toList();
+    }
+
+    /**
+     * 名前が指定した語で終わる port を、実装するクラスを返す。
+     *
+     * @param classes 調べるクラス
+     * @param suffix  port の名前の終わり（Repository、Directory）
+     * @return port の実装のクラス
+     */
+    private static List<JavaClass> implementationsOf(JavaClasses classes, String suffix) {
+        return classes.stream()
+                .filter(javaClass -> !javaClass.isInterface() && !javaClass.isAnonymousClass())
+                .filter(javaClass -> javaClass.getRawInterfaces().stream()
+                        .anyMatch(port -> port.getPackageName().startsWith("com.ecsite") && port.getSimpleName().endsWith(suffix)))
+                .toList();
     }
 
     /**

@@ -22,12 +22,16 @@ class StaticOnlyClassTest {
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは、コンストラクタがすべて private")
     void staticOnlyClassesHavePrivateConstructors() {
+        ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
+
         assertThat(violations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("static のメンバーだけの最上位のクラスは final")
     void staticOnlyClassesAreFinal() {
+        ProductionClasses.requireNotEmpty(staticOnlyClasses(ProductionClasses.handwritten()), "static のメンバーだけの最上位のクラス");
+
         assertThat(nonFinal(ProductionClasses.handwritten())).isEmpty();
     }
 
@@ -65,10 +69,7 @@ class StaticOnlyClassTest {
      * @return static のメンバーだけで、private でないコンストラクタを持つ最上位のクラスの名前（名前の順）
      */
     private static List<String> violations(JavaClasses classes) {
-        return classes.stream()
-                .filter(StaticOnlyClassTest::isTopLevelClass)
-                .filter(StaticOnlyClassTest::hasOnlyStaticMembers)
-                .filter(javaClass -> !isManagedBySpring(javaClass))
+        return staticOnlyClasses(classes).stream()
                 .filter(javaClass -> javaClass.getConstructors().stream()
                         .anyMatch(constructor -> !constructor.getModifiers().contains(JavaModifier.PRIVATE)))
                 .map(JavaClass::getName)
@@ -83,13 +84,24 @@ class StaticOnlyClassTest {
      * @return static のメンバーだけで final でない最上位のクラスの名前（名前の順）
      */
     private static List<String> nonFinal(JavaClasses classes) {
+        return staticOnlyClasses(classes).stream()
+                .filter(javaClass -> !javaClass.getModifiers().contains(JavaModifier.FINAL))
+                .map(JavaClass::getName)
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * 規則の対象の、static のメンバーだけのクラスを返す。
+     *
+     * @param classes 調べるクラス
+     * @return static のメンバーだけで、Spring がインスタンスを作らない最上位のクラス
+     */
+    private static List<JavaClass> staticOnlyClasses(JavaClasses classes) {
         return classes.stream()
                 .filter(StaticOnlyClassTest::isTopLevelClass)
                 .filter(StaticOnlyClassTest::hasOnlyStaticMembers)
                 .filter(javaClass -> !isManagedBySpring(javaClass))
-                .filter(javaClass -> !javaClass.getModifiers().contains(JavaModifier.FINAL))
-                .map(JavaClass::getName)
-                .sorted()
                 .toList();
     }
 

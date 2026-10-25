@@ -151,10 +151,14 @@ class ModuleStructureTest {
     @Test
     @DisplayName("モジュールの直下のパッケージは、標準の層の名前だけである")
     void modulesContainOnlyStandardLayers() {
-        // com.ecsite.module.<モジュール>.<層> の 5 つ目の要素までを、層の名前の確認と報告に使う
-        Set<String> unknown = ProductionClasses.all().stream()
+        List<String> modulePackages = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
                 .filter(packageName -> ProductionClasses.moduleName(packageName).isPresent())
+                .toList();
+        ProductionClasses.requireNotEmpty(modulePackages, "モジュールのクラスのパッケージ");
+
+        // com.ecsite.module.<モジュール>.<層> の 5 つ目の要素までを、層の名前の確認と報告に使う
+        Set<String> unknown = modulePackages.stream()
                 .map(packageName -> packageName.split("\\.", 6))
                 .filter(parts -> parts.length >= 5)
                 .filter(parts -> !LAYERS.contains(parts[4]))
@@ -249,7 +253,10 @@ class ModuleStructureTest {
     @Test
     @DisplayName("1 つのパッケージの直下のクラスは 20 を超えない")
     void packagesAreSmallEnough() {
-        assertThat(classCountByPackage(ProductionClasses.all())).allSatisfy((name, count) ->
+        Map<String, Long> countByPackage = classCountByPackage(ProductionClasses.all());
+        ProductionClasses.requireNotEmpty(countByPackage.entrySet(), "手で書いたパッケージ");
+
+        assertThat(countByPackage).allSatisfy((name, count) ->
                 assertThat(count).as(name).isLessThanOrEqualTo(MAX_CLASSES_PER_PACKAGE));
     }
 
@@ -305,9 +312,13 @@ class ModuleStructureTest {
     @Test
     @DisplayName("他のモジュールを包む部品の、部品ごとのパッケージ（*dir）がない")
     void noDirectoryPackages() {
-        Set<String> dirPackages = ProductionClasses.all().stream()
+        List<String> modulePackages = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
                 .filter(name -> name.startsWith(MODULE_PACKAGE))
+                .toList();
+        ProductionClasses.requireNotEmpty(modulePackages, "モジュールのクラスのパッケージ");
+
+        Set<String> dirPackages = modulePackages.stream()
                 .filter(name -> name.endsWith("dir"))
                 .collect(Collectors.toCollection(TreeSet::new));
 

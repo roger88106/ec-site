@@ -36,7 +36,9 @@ class ModuleRoleTest {
     void levelAPresentationDoesNotDependOnAggregates() {
         var classes = ProductionClasses.modules();
         // presentation のないモジュール（payment）は、対象が 0 件になるので繰り返さない
-        for (String module : levelAModulesWithPresentation()) {
+        List<String> modules = levelAModulesWithPresentation();
+        ProductionClasses.requireNotEmpty(modules, "presentation を持つレベル A のモジュール");
+        for (String module : modules) {
             ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module." + module + ".presentation..")
                     .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class);
             rule.check(classes);

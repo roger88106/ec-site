@@ -17,7 +17,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 片付けのジョブの設定と分散ロックの単体テスト（T017-01-09、AC-285、287）。<br />
+ * 片付けのジョブの設定と分散ロックの単体テスト。<br />
  * 設定は Spring を起動せずに、設定の型へ値を当てはめて確認する。処理の済んだイベントの片付けは {@code EventCleanupJobSettingsTest} が確認する。
  */
 class CleanupJobSettingsTest {

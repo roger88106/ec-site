@@ -13,9 +13,9 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * realm の設定の契約テスト（T3209、plan 003 第 2.3 節）。<br />
+ * realm の設定の契約テスト。<br />
  * Keycloak は起動せず、realm の JSON（{@code docker/keycloak/realms/}）の値が plan のとおりであることを確認する。
- * 会員と運営者のアカウントが別の realm にあること（AC-133）は、KeycloakIntegrationTest と段階 1 の手動確認で確認する。
+ * 会員と運営者のアカウントが別の realm にあることは、KeycloakIntegrationTest と段階 1 の手動確認で確認する。
  */
 class RealmSettingsContractTest {
 

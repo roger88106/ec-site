@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.catchRuntimeException;
 
 /**
- * DB の制約違反を業務のエラーに変換する部品の検証（T011、API の規約）。<br />
+ * DB の制約違反を業務のエラーに変換する部品の検証（API の規約）。<br />
  * テストの中でテーブルを作る。テストごとにロールバックするので残らない。
  */
 @IntegrationTest

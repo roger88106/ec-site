@@ -15,8 +15,8 @@ import java.util.Set;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 
 /**
- * 層の中の役割の検査（バックエンドの書き方 第 1.1 節、バックエンドのアーキテクチャ 第 3 節、spec 013）。<br />
- * spec 013 は既存のテストを変えないので、{@code ModuleStructureTest} とは別のファイルに置く。
+ * 層の中の役割の検査（バックエンドの書き方 第 1.1 節、バックエンドのアーキテクチャ 第 3 節）。<br />
+ * 層の中の役割の検査は、モジュールの構成を見る {@code ModuleStructureTest} とは別のファイルに置く。
  */
 class ModuleRoleTest {
 

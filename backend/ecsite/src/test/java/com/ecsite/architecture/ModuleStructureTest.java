@@ -52,7 +52,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの標準の構成の検査（docs/rules/backend-coding.md 第 1 節、spec 005 DC-27〜30）。<br />
+ * モジュールの標準の構成の検査（docs/rules/backend-coding.md 第 1 節）。<br />
  * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */

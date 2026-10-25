@@ -11,7 +11,7 @@
 - [x] **T186-04-01** [テスト] Java のコメントだけを残す関数 `keepJavaComments` を `scripts/ci/lib/strip-comments.mjs` に追加し、単体テストを書く。テストは、Javadoc、ブロックのコメント、行のコメントを残す例と、文字列とテキストブロックの中の `//`・`/*` を残さない例と、行番号が変わらない例を含め、先に失敗することを確認する。この関数で、テストのコメントの番号の件数を数え、T186-04-02〜04 の分け方を確認する（[plan](../plan.md) 第 4 節。DC-186-13）。
   - 依存：なし
   - 範囲：`scripts/ci/lib/strip-comments.mjs`、`scripts/ci/lib/strip-comments.test.mjs`
-- [ ] **T186-04-02** [P] モジュールの外のテスト（`test/` と `it/` の `architecture/`、`modulith/`、`contract/`、`config/`、`common/`、`observability/`、直下）と、`fix/` の全体のコメントの番号を、言葉に書き換える（DC-186-14）。
+- [x] **T186-04-02** [P] モジュールの外のテスト（`test/` と `it/` の `architecture/`、`modulith/`、`contract/`、`config/`、`common/`、`observability/`、直下）と、`fix/` の全体のコメントの番号を、言葉に書き換える（DC-186-14）。
   - 依存：T186-04-01
   - 範囲：上に挙げたディレクトリ
 - [ ] **T186-04-03** [P] 商品カタログのモジュール（tax、catalog、media、inventory、storefront、region）のテストのコメントの番号を、言葉に書き換える（DC-186-14）。

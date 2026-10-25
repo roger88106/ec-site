@@ -22,7 +22,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * テスト用の access token（plan 003 第 3.1 節）。<br />
+ * テスト用の access token。<br />
  * IdP（Keycloak）を起動せず、realm ごとのテストの鍵で署名した token を作る。バックエンドは、
  * {@link TestSecurityConfig} が差し替えた公開鍵で署名を確認し、本番と同じ issuer・audience・有効期限・権限の処理を通す。
  * token の中身は Keycloak が発行するものに合わせる（権限は {@code resource_access.ec-admin-api.roles}）。
@@ -142,7 +142,7 @@ public final class TestTokens {
     }
 
     /**
-     * 職務の「管理職」の token（参照の権限と、すべてのレポート。spec 010 BR-28）。
+     * 職務の「管理職」の token（参照の権限と、すべてのレポート）。
      *
      * @return token の組み立て
      */
@@ -151,7 +151,7 @@ public final class TestTokens {
     }
 
     /**
-     * 職務の「営業」の token（参照の権限と、売上の推移を除くレポート。spec 010 BR-28）。
+     * 職務の「営業」の token（参照の権限と、売上の推移を除くレポート）。
      *
      * @return token の組み立て
      */
@@ -208,7 +208,7 @@ public final class TestTokens {
     }
 
     /**
-     * token の組み立て。既定は、有効な token（発行は今、有効期間 5 分。plan 003 第 2.3 節）。
+     * token の組み立て。既定は、有効な token（発行は今、有効期間 5 分）。
      */
     public static final class Builder {
 

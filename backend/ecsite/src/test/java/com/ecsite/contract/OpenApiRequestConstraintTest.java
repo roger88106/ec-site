@@ -14,7 +14,7 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * API の契約のリクエストの制約の漏れを検出する契約テスト（docs/rules/backend-coding.md 第 3.1 節、spec 005 DC-33）。<br />
+ * API の契約のリクエストの制約の漏れを検出する契約テスト（docs/rules/backend-coding.md 第 3.1 節）。<br />
  * リクエスト（パス・クエリの引数と本文）の数値の項目に範囲（下限と上限。上限を求めない項目は理由を付けて除く）があり、
  * 文字の項目に長さか形式（{@code maxLength}・{@code pattern}・{@code format}・{@code enum}）があることを確認する。
  */

@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 集約の版の比べ方と、集約を戻すときの失敗の扱いの単体テスト（spec 013 の DC-137）
+ * 集約のバージョンの比べ方と、集約を戻すときの失敗の扱いの単体テスト
  */
 class AggregateGuardsTest {
 

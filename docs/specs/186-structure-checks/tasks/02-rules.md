@@ -22,7 +22,7 @@
 - [ ] **T186-02-03** [テスト] 層の依存の表を 1 つの定数にし、表にない組を 1 つの規則で確認する。[plan](../plan.md) 第 2 節の置き換えの表のとおり、既存の層の向きの検査を削除・維持する。共通コードが設定に依存しない規則を追加する。表にない組の例（api → presentation、infrastructure → application の service）で失敗することを確認する（DC-186-3、7）。
   - 依存：なし
   - 範囲：`test/architecture/ModuleStructureTest.java`
-- [ ] **T186-02-04** [P] [テスト] `api/` に interface がないことと、`api/` の型を `api/` の外が実装・継承しないことの規則を、新しい `ApiTypeTest` に追加する。2 つの例で失敗することを確認する（DC-186-4、7）。
+- [x] **T186-02-04** [P] [テスト] `api/` に interface がないことと、`api/` の型を `api/` の外が実装・継承しないことの規則を、新しい `ApiTypeTest` に追加する。2 つの例で失敗することを確認する（DC-186-4、7）。
   - 依存：なし
   - 範囲：`test/architecture/ApiTypeTest.java`（新規）
 - [ ] **T186-02-05** [テスト] パッケージの大きさの目安を超えるパッケージを、バックエンドの書き方 第 1.4 節の表と照合する。文書のパスを system property `rules.backend-coding` で渡し、test の task と pitest の `inputs` に宣言する。判定の関数を、表の外の超過、表のパッケージの目安以下、数の違いの 3 つの例で確認する（DC-186-2、7）。

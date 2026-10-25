@@ -27,11 +27,11 @@ public final class TestSettings {
 
     /**
      * 設定ファイルを重ねて読んだ値を返す。<br />
-     * 起動のときと同じ順（{@code application.yml}、指定した profile の順）に重ね、後のものが先のものを上書きするとして読む。
+     * 起動のときと同じ順（{@code application.yml}、指定した profile の順）に重ね、後のものが先のものを上書きするとして読む。後のファイルで値が null のキーは、先の値を消さず、無視する。
      *
      * @param profiles 指定する profile（順に重ねる。{@code application-<profile>.yml} を読む）
      * @return 設定の名前（階層は . でつなぐ。配列は {@code a[0]} のように添字付きの名前になる）と、文字列にした値。
-     * 値が null のキー（{@code key:} だけ）は含めない（キーがない扱い）
+     * どのファイルでも値が null のキー（{@code key:} だけ）は含めない
      * @throws UncheckedIOException 設定ファイルを読めないとき
      */
     public static Map<String, String> load(String... profiles) {
@@ -48,9 +48,6 @@ public final class TestSettings {
                             Object value = enumerable.getProperty(name);
                             if (value != null) {
                                 values.put(name, String.valueOf(value));
-                            } else {
-                                // 後のファイルが null で上書きしたら、先の値も「ない」扱いにする
-                                values.remove(name);
                             }
                         }
                     }

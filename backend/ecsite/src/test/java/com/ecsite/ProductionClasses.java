@@ -22,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 構成の検査が読む、本番のクラスの補助。<br />
  * クラスファイルの読み込みは重いので、JVM ごとに 1 回だけ行い、各検査はここから絞り込んだ結果を受け取る。
  * 検査ごとに読み込むと、同じクラスの複製がテストの JVM のメモリに重ねて残る。
+ * モジュールの一覧も JVM ごとに 1 回だけ作るが、Spring Modulith は自分でもクラスを読み込むので、{@link #all()} とは別の読み込みになる。
  * 違反する例のクラスの読み込みは本番のクラスの読み込みではないので、この補助を通さず、検査の側で行う。
  */
 public final class ProductionClasses {
@@ -193,7 +194,7 @@ public final class ProductionClasses {
     }
 
     /**
-     * 本番のクラスを、遅延の static で 1 回だけ読み込む入れ物。<br />
+     * 本番のクラスを、遅延の static で JVM ごとに 1 回だけ読み込む入れ物。<br />
      * 外側のクラスを読み込んだだけでは、クラスファイルを読まない。
      */
     private static final class Holder {

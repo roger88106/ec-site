@@ -257,6 +257,32 @@ class MemberCartApiTest {
         }
 
         @Test
+        @DisplayName("AC-123 会員のカートが 30 品目なら、別のバリアントは移さず、移さなかった品目として返す")
+        void skipsItemsOverTheItemLimit() throws Exception {
+            var memberCartId = memberCart(owner);
+            for (int i = 0; i < 30; i++) {
+                dsl.insertInto(CART_ITEM)
+                        .set(CART_ITEM.CART_ID, memberCartId)
+                        .set(CART_ITEM.VARIANT_ID, UUID.randomUUID())
+                        .set(CART_ITEM.QUANTITY, 1)
+                        .set(CART_ITEM.ADDED_AT, NOW)
+                        .execute();
+            }
+            var extra = stockedVariant(20);
+            var guestCartId = guestCart();
+            add(guestCartId, extra, 4, TestTokens.none()).andExpect(status().isNoContent());
+
+            merge(guestCartId, owner.bearer())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.truncatedItems", hasSize(0)))
+                    .andExpect(jsonPath("$.skippedItems", hasSize(1)))
+                    .andExpect(jsonPath("$.skippedItems[0].variantId").value(extra.toString()))
+                    .andExpect(jsonPath("$.skippedItems[0].quantity").value(4));
+
+            assertThat(items(memberCartId)).hasSize(30).noneMatch(item -> item.getKey().equals(extra));
+        }
+
+        @Test
         @DisplayName("会員のカートは、移す元に指定できない（自分のもの・ほかの会員のものとも 404）。ないカートも 404")
         void rejectsMemberCartAsSource() throws Exception {
             var ownCart = memberCart(owner);

@@ -281,8 +281,21 @@ class OrderPaymentApiTest {
 
             admin(orderId).andExpect(jsonPath("$.actions.cancel").value(false));
             cancelByOperator(orderId)
-                    .andExpect(status().is4xxClientError())
+                    .andExpect(status().isBadRequest())
                     .andExpect(jsonPath("$.errorCode").value("AWAITING_PAYMENT"));
+            store(orderId).andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
+        }
+
+        @Test
+        @DisplayName("AC-158 支払待ちの注文は、消費者もキャンセルを申請できない")
+        void consumerCannotRequestCancellationOfPending() throws Exception {
+            var orderId = pending(1);
+
+            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
+                            .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("CANCELLATION_NOT_REQUESTABLE"));
+
             store(orderId).andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
         }
     }

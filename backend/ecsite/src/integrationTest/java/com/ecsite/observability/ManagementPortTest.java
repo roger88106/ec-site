@@ -47,8 +47,8 @@ class ManagementPortTest {
     @DisplayName("AC-236 業務ポートでは、死活監視とメトリクスが出ない")
     void businessPortHidesManagementEndpoints() throws Exception {
         assertThat(managementPort).isNotEqualTo(serverPort);
-        assertThat(status(serverPort, "/actuator/health")).isNotEqualTo(200);
-        assertThat(status(serverPort, "/actuator/prometheus")).isNotEqualTo(200);
+        assertThat(status(serverPort, "/actuator/health")).isEqualTo(404);
+        assertThat(status(serverPort, "/actuator/prometheus")).isEqualTo(404);
     }
 
     @Test

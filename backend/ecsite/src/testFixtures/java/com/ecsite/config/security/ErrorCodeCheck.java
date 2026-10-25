@@ -2,12 +2,9 @@ package com.ecsite.config.security;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
-import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.boot.webmvc.test.autoconfigure.MockMvcBuilderCustomizer;
-import org.springframework.context.annotation.Bean;
 import org.springframework.core.io.ClassPathResource;
+import org.jspecify.annotations.Nullable;
 import org.springframework.core.io.Resource;
-import org.springframework.test.web.servlet.MvcResult;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
 import org.yaml.snakeyaml.constructor.SafeConstructor;
@@ -15,7 +12,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.UncheckedIOException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
@@ -24,7 +20,7 @@ import java.util.TreeSet;
 
 /**
  * 統合テストのエラーの応答の確認（docs/rules/api-conventions.md 第 5 節）。<br />
- * MockMvc のすべての結果で、エラーの本文の {@code errorCode} が、その操作の一覧（{@code x-error-codes}）か
+ * 応答（MockMvc のすべての結果）で、エラーの本文の {@code errorCode} が、その操作の一覧（{@code x-error-codes}）か
  * 共通のエラー（{@code x-common-error-codes}）にあることを確認する。操作は、認可と同じく契約から照合する。
  */
 public final class ErrorCodeCheck {
@@ -71,18 +67,19 @@ public final class ErrorCodeCheck {
     }
 
     /**
-     * MockMvc の結果を確認する。エラーの本文でなければ何もしない。
+     * 応答を確認する。エラーの本文（状態コードが 400 以上の JSON）でなければ何もしない。
      *
-     * @param result MockMvc の結果
+     * @param method      HTTP メソッド
+     * @param path        アプリの中のパス（{@code /api/admin/...}）
+     * @param status      応答の状態コード
+     * @param contentType 応答の Content-Type（ないときは null）
+     * @param body        応答の本文
      */
-    public void verify(MvcResult result) throws IOException {
-        var response = result.getResponse();
-        var contentType = response.getContentType();
-        if (response.getStatus() < 400 || contentType == null || !contentType.contains("json")) {
+    public void verify(String method, String path, int status, @Nullable String contentType, String body) {
+        if (status < 400 || contentType == null || !contentType.contains("json")) {
             return;
         }
-        verify(result.getRequest().getMethod(), result.getRequest().getRequestURI(),
-                response.getContentAsString(StandardCharsets.UTF_8));
+        verify(method, path, body);
     }
 
     /**
@@ -93,7 +90,7 @@ public final class ErrorCodeCheck {
      * @param body   エラーの本文
      * @throws AssertionError 一覧にも共通のエラーにもないコードのとき
      */
-    void verify(String method, String path, String body) {
+    public void verify(String method, String path, String body) {
         String errorCode;
         try {
             errorCode = JsonPath.read(body, "$.errorCode");
@@ -135,23 +132,5 @@ public final class ErrorCodeCheck {
      */
     private static Set<String> codes(Object value) {
         return value == null ? Set.of() : Set.copyOf(((List<?>) value).stream().map(String::valueOf).toList());
-    }
-
-    /**
-     * MockMvc のすべての結果を確認する設定
-     */
-    @TestConfiguration(proxyBeanMethods = false)
-    public static class Config {
-
-        /**
-         * MockMvc に、すべての結果の確認を追加する
-         *
-         * @return MockMvc の設定
-         */
-        @Bean
-        MockMvcBuilderCustomizer errorCodeCheckCustomizer() {
-            var check = ErrorCodeCheck.load();
-            return builder -> builder.alwaysDo(check::verify);
-        }
     }
 }

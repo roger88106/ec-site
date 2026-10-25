@@ -156,6 +156,12 @@ dependencies {
     // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
     implementation(libs.bundles.jmolecules)
 
+    // --- テスト：共有（testFixtures。エラーの種類の検査が契約の YAML と応答の JSON を読む） ---
+    testFixturesImplementation(libs.spring.core)
+    testFixturesImplementation(libs.json.path)
+    testFixturesImplementation(libs.snakeyaml)
+    testFixturesImplementation(libs.jspecify)
+
     // --- テスト：単体 ---
     testImplementation(libs.spring.boot.starter.test)
     testImplementation(libs.spring.modulith.starter.test)

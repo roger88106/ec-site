@@ -125,6 +125,9 @@ jmolecules-events = { module = "org.jmolecules:jmolecules-events" }
 
 # --- テスト ---
 spring-boot-starter-test = { module = "org.springframework.boot:spring-boot-starter-test" }
+json-path = { module = "com.jayway.jsonpath:json-path" }
+snakeyaml = { module = "org.yaml:snakeyaml" }
+spring-core = { module = "org.springframework:spring-core" }
 spring-boot-testcontainers = { module = "org.springframework.boot:spring-boot-testcontainers" }
 spring-boot-starter-webmvc-test = { module = "org.springframework.boot:spring-boot-starter-webmvc-test" }
 spring-boot-starter-security-test = { module = "org.springframework.boot:spring-boot-starter-security-test" }

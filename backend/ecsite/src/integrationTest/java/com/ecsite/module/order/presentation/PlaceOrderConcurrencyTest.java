@@ -11,7 +11,6 @@ import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,20 +35,15 @@ import java.util.concurrent.Future;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static com.ecsite.OrderTestData.placeOrderRequest;
-import static com.ecsite.jooq.cart.Tables.CART_;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
-import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
-import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
-import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * 注文の並行性の受け入れテスト（T2313、AC-87、91）。<br />
- * 行ロックが効いていることを確認するため、要求ごとにコミットする。ロールバックしないので、作ったデータを後で消す。
+ * 行ロックが効いていることを確認するため、要求ごとにコミットする。ロールバックしないが、作ったデータは消さない。
  * 税区分の名称は一意なので、ほかのテストと重ならない名前にする。
  */
 @IntegrationTest
@@ -82,8 +76,6 @@ class PlaceOrderConcurrencyTest {
 
     private CatalogTestData.TestProduct product;
 
-    private final List<UUID> cartIds = new ArrayList<>();
-
     /**
      * カート ID → 持ち主の会員の token（同じテストで 2 人の消費者を表すため、カートごとに会員を分ける）
      */
@@ -103,20 +95,6 @@ class PlaceOrderConcurrencyTest {
         orders = new OrderTestData(mockMvc);
         taxCategoryId = data.taxCategory("並行-" + UUID.randomUUID().toString().substring(0, 8), "10");
         product = data.product(taxCategoryId, "並行の商品", 1000).publish();
-    }
-
-    @AfterEach
-    void cleanUp() {
-        var checkouts = dsl.select(CHECKOUT.ID).from(CHECKOUT).where(CHECKOUT.CART_ID.in(cartIds));
-        // 明細と税率ごとの消費税額は、注文の削除で一緒に消える
-        dsl.deleteFrom(SALES_ORDER).where(SALES_ORDER.CHECKOUT_ID.in(checkouts)).execute();
-        dsl.deleteFrom(CHECKOUT).where(CHECKOUT.CART_ID.in(cartIds)).execute();
-        dsl.deleteFrom(CART_).where(CART_.ID.in(cartIds)).execute();
-        // 引当と調整履歴は、在庫の削除で一緒に消える
-        dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(product.id)).execute();
-        dsl.deleteFrom(PRODUCT).where(PRODUCT.ID.eq(product.id)).execute();
-        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(taxCategoryId)).execute();
-        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(taxCategoryId)).execute();
     }
 
     @Test
@@ -204,7 +182,6 @@ class PlaceOrderConcurrencyTest {
     private UUID cartWith(int quantity) throws Exception {
         var owner = TestTokens.member().subject(UUID.randomUUID());
         var cartId = orders.cart(owner.bearer());
-        cartIds.add(cartId);
         owners.put(cartId, owner);
         orders.add(cartId, product.variantIds.getFirst(), quantity, owner.bearer());
         return cartId;

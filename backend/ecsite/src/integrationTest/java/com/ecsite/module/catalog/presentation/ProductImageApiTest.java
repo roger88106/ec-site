@@ -7,7 +7,6 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.TestcontainersConfig;
 import com.ecsite.TestImages;
 import com.jayway.jsonpath.JsonPath;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -17,7 +16,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.jooq.DSLContext;
 import org.springframework.test.web.servlet.ResultActions;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -37,9 +35,6 @@ import java.util.Locale;
 import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
-import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 import static org.hamcrest.Matchers.contains;
@@ -53,7 +48,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 商品画像 API の受け入れテスト（T1018、US-7。plan 001 第 7 節）。<br />
  * ファイルは、受付の応答の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。登録のときに imgproxy で WebP に変換するので、本物の画像を使う。
- * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、テストの後に作ったデータを消す。
+ * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、作ったデータも消さない（ほかのテストは、一覧の全体ではなく自分のデータだけを確認する）。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -102,9 +97,6 @@ class ProductImageApiTest {
     @Autowired
     S3Client s3;
 
-    @Autowired
-    DSLContext dsl;
-
     private UUID taxCategoryId;
 
     private CatalogTestData catalog;
@@ -114,17 +106,6 @@ class ProductImageApiTest {
         clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("画像の標準 " + UUID.randomUUID(), "10");
-    }
-
-    /**
-     * ロールバックしないので、作った商品と税区分を消す（全件を数えるほかのテストに影響しないように）。<br />
-     * 商品は DB から直接消す（配信のファイルはテストのコンテナに残るが、ほかのテストは参照しない）。
-     */
-    @AfterEach
-    void cleanUp() {
-        dsl.deleteFrom(PRODUCT).where(PRODUCT.PRODUCT_CODE.startsWith(CODE_PREFIX)).execute();
-        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(taxCategoryId)).execute();
-        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(taxCategoryId)).execute();
     }
 
     @Nested

@@ -9,11 +9,13 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.awaitility.Awaitility.await;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -86,6 +88,22 @@ public class OrderTestData {
         var body = mockMvc.perform(get("/api/store/me/cart").with(requester)).andExpect(status().isOk())
                 .andReturn().getResponse().getContentAsString();
         return TestJson.uuid(body, "$.cartId");
+    }
+
+    /**
+     * 既定の会員のカートの品目を全て除く。<br />
+     * 支払待ちの注文の品目はカートに残り、会員のカートはテストをまたいで同じなので、巻き戻さないテストの後でも
+     * 注文手続きが在庫不足にならないよう、始めに呼ぶ。
+     *
+     * @param cartId カート ID
+     */
+    public void emptyCart(UUID cartId) throws Exception {
+        var body = mockMvc.perform(get("/api/store/carts/" + cartId)).andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+        List<String> variantIds = JsonPath.read(body, "$.items[*].variantId");
+        for (var id : variantIds) {
+            mockMvc.perform(delete("/api/store/carts/" + cartId + "/items/" + id)).andExpect(status().isNoContent());
+        }
     }
 
     /**

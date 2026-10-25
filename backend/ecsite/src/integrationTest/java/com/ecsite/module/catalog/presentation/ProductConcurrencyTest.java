@@ -2,8 +2,6 @@ package com.ecsite.module.catalog.presentation;
 
 import com.ecsite.IntegrationTest;
 import com.jayway.jsonpath.JsonPath;
-import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,9 +19,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
-import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
-import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -31,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 商品の同時登録のテスト（T309、AC-14）。<br />
- * 別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータを後で消す。
+ * 別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータも消さない。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -41,9 +36,6 @@ class ProductConcurrencyTest {
 
     @Autowired
     MockMvc mockMvc;
-
-    @Autowired
-    DSLContext dsl;
 
     private String taxCategoryId;
 
@@ -64,13 +56,6 @@ class ProductConcurrencyTest {
                                 {"version": 0, "rates": [{"ratePercent": 10}]}"""))
                 .andExpect(status().isNoContent());
         productCode = "CONCURRENT-" + UUID.randomUUID().toString().substring(0, 8).toUpperCase(Locale.ROOT);
-    }
-
-    @AfterEach
-    void cleanUp() {
-        dsl.deleteFrom(PRODUCT).where(PRODUCT.PRODUCT_CODE.eq(productCode)).execute();
-        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(UUID.fromString(taxCategoryId))).execute();
-        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(UUID.fromString(taxCategoryId))).execute();
     }
 
     @Test

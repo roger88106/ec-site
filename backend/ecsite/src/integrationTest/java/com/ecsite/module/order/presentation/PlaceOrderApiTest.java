@@ -103,6 +103,8 @@ class PlaceOrderApiTest {
         shirt = data.product(standard, "T シャツ", 2700, "色", "サイズ").variant("白", "M").publish();
         stock(shirt.variantIds.getFirst(), 3);
         cartId = orders.cart();
+        // 巻き戻さないテストの支払待ちの注文の品目が、会員のカートに残っているので除く（このテストごとに巻き戻る）
+        orders.emptyCart(cartId);
         orders.add(cartId, shirt.variantIds.getFirst(), 2);
     }
 

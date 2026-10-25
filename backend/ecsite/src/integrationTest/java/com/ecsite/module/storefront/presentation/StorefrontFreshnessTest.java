@@ -16,6 +16,7 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
@@ -70,6 +71,15 @@ class StorefrontFreshnessTest {
 
     private String variantId;
 
+    private String categoryId;
+
+    /**
+     * このテストのカテゴリで絞った商品の一覧の要求
+     */
+    private MockHttpServletRequestBuilder list() {
+        return get(STORE + "/products").param("categoryId", categoryId);
+    }
+
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
@@ -77,7 +87,9 @@ class StorefrontFreshnessTest {
         taxRateScheduleCache.evict();
         var catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準", "10").toString();
-        var product = catalog.product("FRESH-001", UUID.fromString(taxCategoryId), "T シャツ", 1000).publish();
+        // 巻き戻さないテストの商品が見えても影響しないよう、一覧はこのテストのカテゴリで絞る
+        categoryId = catalog.category("鮮度 " + UUID.randomUUID(), null).toString();
+        var product = catalog.product(UUID.fromString(taxCategoryId), "T シャツ", 1000, List.of(UUID.fromString(categoryId))).publish();
         // 公開で進んだ時計を戻す（税率のキャッシュの確認が、NOW からの秒数で書かれている）
         clock.setInstant(NOW);
         productId = product.id.toString();
@@ -88,16 +100,16 @@ class StorefrontFreshnessTest {
     @Test
     @DisplayName("NFR-1、AC-26 価格の変更は、直後の照会に反映される")
     void reflectsPriceChange() throws Exception {
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
 
         mockMvc.perform(put("/api/admin/products/" + productId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"name": "T シャツ", "description": "", "taxCategoryId": "%s", "priceExclTax": 2000,
-                                 "categoryIds": [], "version": 2}""".formatted(taxCategoryId)))
+                                 "categoryIds": ["%s"], "version": 2}""".formatted(taxCategoryId, categoryId)))
                 .andExpect(status().isNoContent());
 
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(2200));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(2200));
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(jsonPath("$.price.inclTax").value(2200));
     }
 
@@ -105,21 +117,21 @@ class StorefrontFreshnessTest {
     @DisplayName("NFR-1、AC-29、30 公開状態の変更は、直後の照会に反映される")
     void reflectsPublicationChange() throws Exception {
         mockMvc.perform(put("/api/admin/products/" + productId + "/unpublish")).andExpect(status().isNoContent());
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items").isEmpty());
+        mockMvc.perform(list()).andExpect(jsonPath("$.items").isEmpty());
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(status().isNotFound());
 
         mockMvc.perform(put("/api/admin/products/" + productId + "/publish")).andExpect(status().isNoContent());
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].id").value(productId));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].id").value(productId));
     }
 
     @Test
     @DisplayName("NFR-1 在庫の変更は、直後の照会に反映される")
     void reflectsStockChange() throws Exception {
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(false));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].inStock").value(false));
 
         inventory.stock(UUID.fromString(variantId), UUID.fromString(productId), 1);
 
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].inStock").value(true));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].inStock").value(true));
         mockMvc.perform(get(STORE + "/products/" + productId)).andExpect(jsonPath("$.variants[0].inStock").value(true));
     }
 
@@ -127,7 +139,7 @@ class StorefrontFreshnessTest {
     @DisplayName("税率の一覧のキャッシュの有効期間は 30 秒。税率の変更は、最大 30 秒遅れて反映される")
     void cachesTaxRatesFor30Seconds() throws Exception {
         // キャッシュに 10% の一覧が入る
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
 
         // 10 秒後から 8% にする
         var switchAt = NOW.plusSeconds(10).atOffset(ZoneOffset.UTC);
@@ -143,10 +155,10 @@ class StorefrontFreshnessTest {
 
         // 29 秒後：キャッシュの一覧には 8% の予定がないので、10% のまま
         clock.setInstant(NOW.plus(Duration.ofSeconds(29)));
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1100));
 
         // 30 秒後：一覧を取得し直し、8% になる
         clock.setInstant(NOW.plus(Duration.ofSeconds(30)));
-        mockMvc.perform(get(STORE + "/products")).andExpect(jsonPath("$.items[0].price.inclTax").value(1080));
+        mockMvc.perform(list()).andExpect(jsonPath("$.items[0].price.inclTax").value(1080));
     }
 }

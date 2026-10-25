@@ -7,7 +7,6 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -26,10 +25,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT_IMAGE;
 import static com.ecsite.jooq.media.Tables.ASSET;
-import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
-import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
@@ -41,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 /**
  * 商品画像の登録で、外部サービスをトランザクションの外で呼ぶことの受け入れテスト（T017-04-03、US-65）。<br />
  * 画像の変換を包み、呼ばれた時点のトランザクションの有無を記録する。ファイル保存を包み、置いた配信のファイルのキーを記録する。
- * テストのトランザクションで包むと変換の時点にトランザクションがあるので、このテストはロールバックせず、テストの後に作ったデータを消す。
+ * テストのトランザクションで包むと変換の時点にトランザクションがあるので、このテストはロールバックせず、作ったデータも消さない。
  */
 @IntegrationTest
 @AutoConfigureMockMvc
@@ -98,19 +94,6 @@ class ProductImageTransactionApiTest {
             publishedKeys.add(invocation.getArgument(0));
             return invocation.callRealMethod();
         }).when(storage).putPublished(anyString(), any(), anyString());
-    }
-
-    /**
-     * ロールバックしないので、作った商品・アセット・税区分を消す
-     */
-    @AfterEach
-    void cleanUp() {
-        var assetIds = dsl.select(PRODUCT_IMAGE.ASSET_ID).from(PRODUCT_IMAGE)
-                .where(PRODUCT_IMAGE.PRODUCT_ID.eq(product.id)).fetch(PRODUCT_IMAGE.ASSET_ID);
-        dsl.deleteFrom(PRODUCT).where(PRODUCT.ID.eq(product.id)).execute();
-        dsl.deleteFrom(ASSET).where(ASSET.ID.in(assetIds)).execute();
-        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(taxCategoryId)).execute();
-        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(taxCategoryId)).execute();
     }
 
     @Test

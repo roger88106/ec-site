@@ -17,7 +17,6 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
-import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -31,19 +30,12 @@ import org.springframework.test.web.servlet.ResultActions;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
-import static com.ecsite.jooq.cart.Tables.CART_;
-import static com.ecsite.jooq.catalog.Tables.PRODUCT;
-import static com.ecsite.jooq.inventory.Tables.STOCK_ITEM;
-import static com.ecsite.jooq.ordering.Tables.CHECKOUT;
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
 import static com.ecsite.jooq.payment.Tables.PAYMENT_;
-import static com.ecsite.jooq.tax.Tables.TAX_CATEGORY;
-import static com.ecsite.jooq.tax.Tables.TAX_RATE;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.awaitility.Awaitility.await;
@@ -58,7 +50,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文と支払の受け入れテスト（T7305、AC-143〜166）。<br />
- * 決済のイベントはコミットの後に非同期で届くので、コミットして処理を待ち、作ったデータを後で消す。
+ * 決済のイベントはコミットの後に非同期で届くので、コミットして処理を待つ。作ったデータは消さない。
  * 決済サービスは mock。支払の期限は、時計を進めて期限切れのジョブを呼んで確認する。
  */
 @IntegrationTest
@@ -101,16 +93,6 @@ class OrderPaymentApiTest {
 
     private UUID taxCategoryId;
 
-    /**
-     * このテストで作った商品
-     */
-    private final List<CatalogTestData.TestProduct> products = new ArrayList<>();
-
-    /**
-     * このテストで作った注文
-     */
-    private final List<UUID> orderIds = new ArrayList<>();
-
     private UUID variantId;
 
     @BeforeEach
@@ -122,24 +104,7 @@ class OrderPaymentApiTest {
         taxCategoryId = new CatalogTestData(mockMvc, clock).taxCategory("支払-" + UUID.randomUUID().toString().substring(0, 8), "10");
         variantId = stockedVariant("支払の商品");
         orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
-    }
-
-    @AfterEach
-    void cleanUp() {
-        var checkoutIds = dsl.select(SALES_ORDER.CHECKOUT_ID).from(SALES_ORDER).where(SALES_ORDER.ID.in(orderIds))
-                .fetch(SALES_ORDER.CHECKOUT_ID);
-        var cartIds = dsl.select(CHECKOUT.CART_ID).from(CHECKOUT).where(CHECKOUT.ID.in(checkoutIds)).fetch(CHECKOUT.CART_ID);
-        dsl.deleteFrom(PAYMENT_).where(PAYMENT_.ORDER_ID.in(orderIds)).execute();
-        dsl.deleteFrom(SALES_ORDER).where(SALES_ORDER.ID.in(orderIds)).execute();
-        dsl.deleteFrom(CHECKOUT).where(CHECKOUT.ID.in(checkoutIds)).execute();
-        // 会員のカートは、支払待ちの注文の品目が残るので消す（次に使うときに再作成される）
-        dsl.deleteFrom(CART_).where(CART_.ID.in(cartIds)).execute();
-        products.forEach(product -> {
-            dsl.deleteFrom(STOCK_ITEM).where(STOCK_ITEM.PRODUCT_ID.eq(product.id)).execute();
-            dsl.deleteFrom(PRODUCT).where(PRODUCT.ID.eq(product.id)).execute();
-        });
-        dsl.deleteFrom(TAX_RATE).where(TAX_RATE.TAX_CATEGORY_ID.eq(taxCategoryId)).execute();
-        dsl.deleteFrom(TAX_CATEGORY).where(TAX_CATEGORY.ID.eq(taxCategoryId)).execute();
+        orders.emptyCart(orders.cart());
     }
 
     @Nested
@@ -402,7 +367,6 @@ class OrderPaymentApiTest {
     private UUID stockedVariant(String name) throws Exception {
         var data = new CatalogTestData(mockMvc, clock);
         var product = data.product(taxCategoryId, name, 1000).publish();
-        products.add(product);
         var id = product.variantIds.getFirst();
         inventory.stock(id, product.id, 5);
         return id;
@@ -412,9 +376,7 @@ class OrderPaymentApiTest {
      * 支払わずに注文する。
      */
     private UUID pending(int quantity) throws Exception {
-        var orderId = orders.placePendingOrder(variantId, quantity);
-        orderIds.add(orderId);
-        return orderId;
+        return orders.placePendingOrder(variantId, quantity);
     }
 
     /**

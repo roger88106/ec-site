@@ -1,9 +1,13 @@
-// 本番のコードに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方 第 1 節）。
-// 規則は言葉で書き、spec との対応はテストの名前に書く。テスト、生成物、適用済みのマイグレーションは見ない。
+// 本番のコードと、バックエンドのテストのコメントに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方 第 1 節）。
+// 規則は言葉で書き、spec との対応はテストの名前（@DisplayName）に書く。
+// - 本番のコード：行の全体を見る
+// - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）
+// 画面のテスト、生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { keepJavaComments } from './lib/strip-comments.mjs'
 
 /**
  * 本番のコードの置き場所。バックエンドも見るので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。
@@ -41,12 +45,26 @@ export function isProductionFile(file) {
   return SOURCE_DIRS.some((dir) => file.startsWith(dir)) && !EXCLUDED.some((pattern) => pattern.test(file))
 }
 
+/** バックエンドのテストとテストの補助の置き場所 */
+const BACKEND_TEST_DIRS = ['backend/ecsite/src/test/', 'backend/ecsite/src/integrationTest/', 'backend/ecsite/src/testFixtures/']
+
+/**
+ * コメントだけを調べるファイルかを返す。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} バックエンドのテスト・テストの補助の .java なら true
+ */
+export function isBackendTestFile(file) {
+  return BACKEND_TEST_DIRS.some((dir) => file.startsWith(dir)) && file.endsWith('.java')
+}
+
 if (isMain(import.meta.url)) {
-  const files = listGitFiles().filter((file) => isProductionFile(file))
-  exitIfNoFiles(files, '本番のコードのファイル')
+  const files = listGitFiles().filter((file) => isProductionFile(file) || isBackendTestFile(file))
+  exitIfNoFiles(files, '本番のコードとテストのファイル')
   let count = 0
   for (const file of files) {
-    for (const hit of findSpecNumbers(readFileSync(file, 'utf8'))) {
+    const text = readFileSync(file, 'utf8')
+    for (const hit of findSpecNumbers(isBackendTestFile(file) ? keepJavaComments(text) : text)) {
       console.log(`${file}:${hit.line} ${hit.number}`)
       count += 1
     }

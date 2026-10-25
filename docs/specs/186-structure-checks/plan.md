@@ -98,7 +98,7 @@ spec 181 との重なりの扱い（spec 第 7 節の (1)〜(5)）：
 | 3 | 層の依存の表を、1 つの定数（層 → 同じモジュールの中で依存してよい層とその下のパッケージ）にする。モジュールごと、層ごとに「同じモジュールの中で、表にない層とパッケージに依存しない」ことを 1 つの規則で確認する。共通コードが設定に依存しない規則を追加する | `test/architecture/ModuleStructureTest` | 表にない組（api → presentation、infrastructure → application の service）の例で失敗する |
 | 4 | `api/` に interface がないことと、`api/` の型を実装・継承するクラスが `api/` の中だけにあることを確認する。`api/` の record と列挙は、interface でないので対象にならない | 新しい `test/architecture/ApiTypeTest`。理由：`ModuleStructureTest` が大きいため | `api/` の interface の例と、`api/` の外から `api/` の型を継承する例で失敗する |
 | 5 | 金額の型の検査の対象を、「モジュールの `api`・`event` のクラス」と「`application.model` 以下のクラスで、名前が `View` か `Command` で終わるもの（入れ子の record を含む）」にする。パッケージの名前の `.view` に頼らない | `test/architecture/MoneyTypeTest` | `application.model` の直下の view に整数の価格がある例で失敗する |
-| 6 | `assertThat` で一覧を集めて確認する構成の検査は、絞り込んだ対象が 1 件以上あることを、補助の `requireNotEmpty` で確認する。対象は、`NamingTest` の 4 つ、`StaticOnlyClassTest`、`ModuleStructureTest` の一覧の検査、金額の型の検査 | 左の各ファイル | 対象が 0 件の例で、補助が失敗する（T186-01-01） |
+| 6 | `assertThat` で一覧を集めて確認する構成の検査は、絞り込んだ対象が 1 件以上あることを、補助の `requireNotEmpty` で確認する。対象は、`NamingTest` の 4 つ、`StaticOnlyClassTest`、`ModuleStructureTest` の一覧の検査、金額の型の検査、`ConfigurationPropertiesTest` の presentation の例の確認（今の手書きの `isNotEmpty`）、`ModuleRoleTest` のレベル A で presentation を持つモジュール（段階 1 のレビューで見つけた） | 左の各ファイル | 対象が 0 件の例で、補助が失敗する（T186-01-01） |
 
 DC-186-3 で置き換える既存の検査と、新しい規則が含む組：
 

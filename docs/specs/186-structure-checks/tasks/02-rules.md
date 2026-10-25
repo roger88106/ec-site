@@ -28,9 +28,9 @@
 - [ ] **T186-02-05** [テスト] パッケージの大きさの目安を超えるパッケージを、バックエンドの書き方 第 1.4 節の表と照合する。文書のパスを system property `rules.backend-coding` で渡し、test の task と pitest の `inputs` に宣言する。判定の関数を、表の外の超過、表のパッケージの目安以下、数の違いの 3 つの例で確認する（DC-186-2、7）。
   - 依存：T186-02-03
   - 範囲：`test/architecture/ModuleStructureTest.java`、`backend/ecsite/build.gradle.kts`（`unitTestSystemProperties`、test の task と pitest の `inputs`）
-- [ ] **T186-02-06** 一覧を集めて確認する構成の検査（`NamingTest` の 4 つ、`StaticOnlyClassTest`、`ModuleStructureTest` の一覧の検査）が、`ProductionClasses.requireNotEmpty` で対象が 1 件以上あることを確認する（DC-186-6）。0 件の例の確認は、T186-01-01 の補助のテストにある。
+- [ ] **T186-02-06** 一覧を集めて確認する構成の検査（`NamingTest` の 4 つ、`StaticOnlyClassTest`、`ModuleStructureTest` の一覧の検査、`ConfigurationPropertiesTest`、`ModuleRoleTest` のレベル A で presentation を持つモジュール）が、`ProductionClasses.requireNotEmpty` で対象が 1 件以上あることを確認する（DC-186-6）。0 件の例の確認は、T186-01-01 の補助のテストにある。
   - 依存：T186-02-05
-  - 範囲：`test/architecture/NamingTest.java`、`StaticOnlyClassTest.java`、`ModuleStructureTest.java`
+  - 範囲：`test/architecture/NamingTest.java`、`StaticOnlyClassTest.java`、`ModuleStructureTest.java`、`ConfigurationPropertiesTest.java`、`ModuleRoleTest.java`
 - [ ] **T186-02-07** [バックエンドの書き方](../../../rules/backend-coding.md) の規則の一覧の、バックエンドの書き方 第 1.1 節の行と、バックエンドの書き方 第 1.4 節の行と、バックエンドの書き方 第 1.4 節を、追加した検査に合わせて修正する（[plan](../plan.md) 第 5 節）。表の書式は変えない。
   - 依存：T186-02-01〜06
   - 範囲：`docs/rules/backend-coding.md`

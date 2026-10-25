@@ -84,7 +84,7 @@ class TaxRateApiTest {
     }
 
     @Test
-    @DisplayName("AC-6 その時点の税率がない税区分は、率が空になる")
+    @DisplayName("その時点の税率がない税区分は、率が空になる")
     void returnsEmptyWhenNoRate() {
         var id = createWithRates(new Rate(null, new BigDecimal("10"), APR_2027, null));
 

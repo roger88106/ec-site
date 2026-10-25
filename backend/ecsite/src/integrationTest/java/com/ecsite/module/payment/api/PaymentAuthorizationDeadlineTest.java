@@ -83,7 +83,7 @@ class PaymentAuthorizationDeadlineTest {
     }
 
     @Test
-    @DisplayName("AC-186、187、188 与信期限を過ぎた注文も、期限が近いに含み、一覧にも出る")
+    @DisplayName("AC-186、187 与信期限を過ぎた注文も、期限が近いに含み、一覧にも出る")
     void includesPastDeadline() {
         var orderId = payments.authorized(AUTHORIZED_AT);
 

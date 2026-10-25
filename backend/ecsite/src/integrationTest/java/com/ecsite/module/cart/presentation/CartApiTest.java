@@ -177,7 +177,7 @@ class CartApiTest {
         }
 
         @Test
-        @DisplayName("AC-73 存在しないカートは 404")
+        @DisplayName("存在しないカートは 404")
         void rejectsUnknownCart() throws Exception {
             add(UUID.randomUUID(), stockedVariant(1), 1).andExpect(status().isNotFound());
         }

@@ -123,7 +123,7 @@ class InventoryApiTest {
         }
 
         @Test
-        @DisplayName("AC-44 在庫数 10 に +5 と +3 を行うと 18")
+        @DisplayName("AC-42 増減量を続けて加えると、調整後の在庫数が加えた値になる（在庫数 10 に +5 と +3 を行うと 18）")
         void addsDeltas() throws Exception {
             adjust(variantId, 10, "ARRIVAL", null).andExpect(status().isCreated());
             adjust(variantId, 5, "ARRIVAL", null).andExpect(status().isCreated());

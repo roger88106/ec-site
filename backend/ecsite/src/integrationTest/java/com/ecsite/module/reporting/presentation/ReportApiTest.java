@@ -108,7 +108,7 @@ class ReportApiTest {
         }
 
         @Test
-        @DisplayName("AC-200、BR-26 出荷基準、消費税と送料を除く、商品の選択を受け取る")
+        @DisplayName("AC-199、200、BR-26 出荷基準、消費税と送料を除く、商品の選択を受け取る")
         void conditions() throws Exception {
             mockMvc.perform(get(REPORTS + "/sales-trend?from=2031-04-01&to=2031-04-30&granularity=MONTH&basis=SHIPMENT"))
                     .andExpect(status().isOk())

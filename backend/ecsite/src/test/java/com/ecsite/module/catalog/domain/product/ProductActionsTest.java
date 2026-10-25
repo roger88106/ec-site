@@ -62,11 +62,11 @@ class ProductActionsTest {
     }
 
     @Nested
-    @DisplayName("AC-71 削除")
+    @DisplayName("AC-33、71 削除")
     class Delete {
 
         @Test
-        @DisplayName("AC-71 C 側に表示されたことがなければ、商品とバリアントを削除できる（初回表示日時が空、または未来）")
+        @DisplayName("AC-33、71 C 側に表示されたことがなければ、商品とバリアントを削除できる（初回表示日時が空、または未来）")
         void neverShown() {
             var unpublished = productWithVariant();
             var scheduled = productWithVariant();
@@ -81,7 +81,7 @@ class ProductActionsTest {
         }
 
         @Test
-        @DisplayName("AC-71 初回表示日時ちょうどから後は、商品もバリアントも削除できない")
+        @DisplayName("AC-33、71 初回表示日時ちょうどから後は、商品もバリアントも削除できない")
         void shown() {
             var product = productWithVariant();
             product.changePublicationPeriod(PublicationPeriod.of(NOW, null), NOW);

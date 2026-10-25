@@ -95,7 +95,7 @@ class AdminRealmPermissionContractTest {
     }
 
     @Test
-    @DisplayName("spec 010 BR-28 管理職（manager）は、閲覧者の権限と、3 つのレポートの権限を含む")
+    @DisplayName("BR-28 管理職（manager）は、閲覧者の権限と、3 つのレポートの権限を含む")
     void managerHasAllReports() {
         var expected = readPermissionsWithoutReports();
         expected.addAll(List.of("report-sales-trend:read", "report-variant-sales:read", "report-customer:read"));
@@ -104,7 +104,7 @@ class AdminRealmPermissionContractTest {
     }
 
     @Test
-    @DisplayName("spec 010 BR-28 営業（sales）は、閲覧者の権限と、売上の推移を除くレポートの権限を含む")
+    @DisplayName("BR-28 営業（sales）は、閲覧者の権限と、売上の推移を除くレポートの権限を含む")
     void salesHasReportsExceptSalesTrend() {
         var expected = readPermissionsWithoutReports();
         expected.addAll(List.of("report-variant-sales:read", "report-customer:read"));

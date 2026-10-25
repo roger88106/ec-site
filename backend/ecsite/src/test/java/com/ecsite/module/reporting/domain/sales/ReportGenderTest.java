@@ -20,13 +20,13 @@ class ReportGenderTest {
             "OTHER, OTHER",
             "UNDISCLOSED, UNKNOWN",
     })
-    @DisplayName("AC-277、AC-278 注文時の性別は、回答しないを不明にまとめて集計の区分にする")
+    @DisplayName("AC-219、BR-29 注文時の性別は、回答しないを不明にまとめて集計の区分にする")
     void of(ReportBuyerGender gender, ReportGender expected) {
         assertThat(ReportGender.of(gender)).isEqualTo(expected);
     }
 
     @Test
-    @DisplayName("AC-277、AC-278 注文時の性別の記録がなければ不明にする")
+    @DisplayName("AC-219、BR-29 注文時の性別の記録がなければ不明にする")
     void ofNull() {
         assertThat(ReportGender.of(null)).isEqualTo(ReportGender.UNKNOWN);
     }

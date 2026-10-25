@@ -190,7 +190,7 @@ class PaymentExpiryJobTest {
     }
 
     @Test
-    @DisplayName("AC-154 期限切れのジョブは 5 分以内の間隔で動くので、期限から 5 分のうちにキャンセルされる")
+    @DisplayName("AC-154 期限切れの確認の間隔の既定は 5 分以内")
     void runsWithinFiveMinutes() throws Exception {
         var scheduled = PaymentExpiryJob.class.getMethod("expire").getAnnotation(Scheduled.class);
 

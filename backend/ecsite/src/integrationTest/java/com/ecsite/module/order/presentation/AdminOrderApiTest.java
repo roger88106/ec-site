@@ -48,14 +48,19 @@ class AdminOrderApiTest {
     private static final String BASE = "/api/admin/orders";
 
     /**
-     * 2026-10-08 23:59（日本時間）
+     * このテストの注文の注文番号に共通する前方一致（注文日が 2026 年 12 月の注文。他のテストは 12 月に注文しないので、他のテストの注文が混ざらない）
      */
-    private static final Instant OCT_8_LATE = Instant.parse("2026-10-08T14:59:00Z");
+    private static final String SCOPE = "202612";
 
     /**
-     * 2026-10-09 00:00（日本時間）
+     * 2026-12-08 23:59（日本時間）
      */
-    private static final Instant OCT_9 = Instant.parse("2026-10-08T15:00:00Z");
+    private static final Instant DEC_8_LATE = Instant.parse("2026-12-08T14:59:00Z");
+
+    /**
+     * 2026-12-09 00:00（日本時間）
+     */
+    private static final Instant DEC_9 = Instant.parse("2026-12-08T15:00:00Z");
 
     @Autowired
     MockMvc mockMvc;
@@ -84,7 +89,7 @@ class AdminOrderApiTest {
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, clock);
-        clock.setInstant(OCT_8_LATE.minusSeconds(3600));
+        clock.setInstant(DEC_8_LATE.minusSeconds(3600));
         ShippingTaxCategory.ensure(dsl);
         var data = new CatalogTestData(mockMvc, clock);
         var product = data.product(data.taxCategory("標準", "10"), "T シャツ", 2700, "色").variant("白").publish();
@@ -100,13 +105,13 @@ class AdminOrderApiTest {
         @Test
         @DisplayName("AC-97、106 注文日時の新しい順に、注文番号・注文日時・氏名・総額・状態を返す。キャンセル済みも含む")
         void listsNewestFirst() throws Exception {
-            clock.setInstant(OCT_8_LATE);
+            clock.setInstant(DEC_8_LATE);
             var older = orders.placeOrder(variantId, 1, "佐藤 花子");
-            clock.setInstant(OCT_9);
+            clock.setInstant(DEC_9);
             var newer = orders.placeOrder(variantId, 2, "山田 太郎");
             cancel(older);
 
-            mockMvc.perform(get(BASE))
+            mockMvc.perform(get(BASE).param("orderNumber", SCOPE))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.items[*].id", contains(newer.toString(), older.toString())))
                     .andExpect(jsonPath("$.items[0].customerName").value("山田 太郎"))
@@ -121,23 +126,23 @@ class AdminOrderApiTest {
         @Test
         @DisplayName("AC-98 注文番号の前方一致、状態、注文日の範囲（日本時間）で絞り込める")
         void filters() throws Exception {
-            clock.setInstant(OCT_8_LATE);
-            var oct8 = orders.placeOrder(variantId, 1);
-            clock.setInstant(OCT_9);
-            var oct9 = orders.placeOrder(variantId, 1);
-            cancel(oct9);
+            clock.setInstant(DEC_8_LATE);
+            var dec8 = orders.placeOrder(variantId, 1);
+            clock.setInstant(DEC_9);
+            var dec9 = orders.placeOrder(variantId, 1);
+            cancel(dec9);
 
-            mockMvc.perform(get(BASE).param("orderNumber", "20261009"))
-                    .andExpect(jsonPath("$.items[*].id", contains(oct9.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumber(oct8)))
-                    .andExpect(jsonPath("$.items[*].id", contains(oct8.toString())));
-            mockMvc.perform(get(BASE).param("status", "CANCELLED"))
-                    .andExpect(jsonPath("$.items[*].id", contains(oct9.toString())));
-            mockMvc.perform(get(BASE).param("orderedFrom", "2026-10-09"))
-                    .andExpect(jsonPath("$.items[*].id", contains(oct9.toString())));
-            mockMvc.perform(get(BASE).param("orderedTo", "2026-10-08"))
-                    .andExpect(jsonPath("$.items[*].id", contains(oct8.toString())));
-            mockMvc.perform(get(BASE).param("orderedFrom", "2026-10-08").param("orderedTo", "2026-10-09"))
+            mockMvc.perform(get(BASE).param("orderNumber", "20261209"))
+                    .andExpect(jsonPath("$.items[*].id", contains(dec9.toString())));
+            mockMvc.perform(get(BASE).param("orderNumber", orderNumber(dec8)))
+                    .andExpect(jsonPath("$.items[*].id", contains(dec8.toString())));
+            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("status", "CANCELLED"))
+                    .andExpect(jsonPath("$.items[*].id", contains(dec9.toString())));
+            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("orderedFrom", "2026-12-09"))
+                    .andExpect(jsonPath("$.items[*].id", contains(dec9.toString())));
+            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("orderedTo", "2026-12-08"))
+                    .andExpect(jsonPath("$.items[*].id", contains(dec8.toString())));
+            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("orderedFrom", "2026-12-08").param("orderedTo", "2026-12-09"))
                     .andExpect(jsonPath("$.totalItems").value(2));
         }
 
@@ -148,7 +153,7 @@ class AdminOrderApiTest {
                 orders.placeOrder(variantId, 1);
             }
 
-            mockMvc.perform(get(BASE).param("page", "2").param("size", "2"))
+            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("page", "2").param("size", "2"))
                     .andExpect(jsonPath("$.items.length()").value(1))
                     .andExpect(jsonPath("$.page").value(2))
                     .andExpect(jsonPath("$.totalItems").value(3))

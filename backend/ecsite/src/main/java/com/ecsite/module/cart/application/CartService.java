@@ -78,6 +78,7 @@ public class CartService {
     @Transactional
     public UUID createCart() {
         var cart = Cart.create(UUID.randomUUID(), clock.instant());
+        // 会員を持たないカートは、会員ごとの一意制約に当たらないので、必ず作られる
         cartRepository.create(cart);
         return cart.id();
     }
@@ -169,7 +170,8 @@ public class CartService {
 
     /**
      * 会員のカートの ID を返す。まだなければ空のカートを作る（会員ごとに 1 つ）。<br />
-     * 同じ会員の初回の要求が同時に来ても、会員ごとの一意制約で 1 つだけ作られ、作れなかった要求は先に作られたカートを読み直す。
+     * 同じ会員の初回の要求が同時に来ても、会員ごとの一意制約で 1 つだけ作られる。作れた要求は作ったカートの ID を返し、
+     * 作れなかった要求だけが先に作られたカートを読み直す。
      *
      * @param memberId 会員 ID
      * @return カート ID
@@ -180,7 +182,10 @@ public class CartService {
         if (existing.isPresent()) {
             return existing.get();
         }
-        cartRepository.create(Cart.createForMember(UUID.randomUUID(), memberId, clock.instant()));
+        var cart = Cart.createForMember(UUID.randomUUID(), memberId, clock.instant());
+        if (cartRepository.create(cart)) {
+            return cart.id();
+        }
         return cartRepository.findIdByMemberId(memberId)
                 .orElseThrow(() -> SystemException.of("会員のカートを作れない：" + memberId, null));
     }

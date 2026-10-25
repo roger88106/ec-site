@@ -143,7 +143,7 @@
 | AC-118 | ログインの画面からメールアドレスを入力して、パスワードの再設定を申し込める。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |
 | AC-119 | ログインしている会員は、店舗から IdP のアカウントの画面に遷移し、パスワード… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `SiteHeader.test.tsx` |
 | AC-120 | ログインしていなくても、これまでどおりカートを使える（US-14、15）。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberCartApiTest`、`cart.test.ts`、`cartChoice.test.ts` |
-| AC-121 | ログインしている間は、会員のカートを使う。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest`、`MemberCartApiTest`、`cart.test.ts` ほか 1 |
+| AC-121 | ログインしている間は、会員のカートを使う。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `JooqCartRepositoryTest`、`KeycloakIntegrationTest`、`MemberCartApiTest` ほか 2 |
 | AC-122 | ログインしたとき、そのブラウザーのカート（ログインせずに使っていたもの）に品目が… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `CartMergeTest`、`MemberCartApiTest`、`cart.test.ts` ほか 4 |
 | AC-123 | 移した結果が上限（AC-75）を超える場合は、数量を 10 に切り詰め、30 品… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `CartMergeNoticeView.test.tsx`、`CartMergeTest`、`MemberCartApiTest` ほか 2 |
 | AC-124 | ログアウトすると、そのブラウザーのカートは空に見える。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `cart.test.ts`、`member.spec.ts` |

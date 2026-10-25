@@ -12,11 +12,13 @@ import java.util.UUID;
 public interface CartRepository {
 
     /**
-     * カートを作る。会員のカートは、同じ会員のカートがすでにあれば何もしない（同じ会員の同時の初回の要求）。
+     * カートを作る。<br />
+     * 会員のカートは、同じ会員のカートがすでにあれば何も保存せずに false を返す（同じ会員の同時の初回の要求）。トランザクションは壊さない。
      *
      * @param cart 空のカート
+     * @return 保存したら true
      */
-    void create(Cart cart);
+    boolean create(Cart cart);
 
     /**
      * 会員のカートの ID を探す。

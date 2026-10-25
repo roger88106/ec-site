@@ -202,6 +202,7 @@ class ReportCollectionTest {
 
         publish(event);
         awaitOrder(OrderReportSnapshot.Status.PENDING_PAYMENT);
+        asyncEvents.awaitHandled(event::equals);
         publish(event);
 
         asyncEvents.awaitHandled(event::equals);

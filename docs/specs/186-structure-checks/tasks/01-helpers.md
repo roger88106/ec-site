@@ -35,7 +35,7 @@
 - [ ] **T186-01-07** 単体テストの heap の上限を、[plan](../plan.md) 第 1.2 節の手順で測って決める。1024m のままにするときは、`unitTestMaxHeap` のコメントに測った値を書く。測った値を commit の本文に書く（DC-186-9）。
   - 依存：T186-01-03、T186-01-04、T186-01-06
   - 範囲：`backend/ecsite/build.gradle.kts`（`unitTestMaxHeap`）
-- [ ] **T186-01-08** [テストの書き方](../../../rules/test-writing.md)  第 3.3 節に、`ProductionClasses` と、構成の検査は本番のクラスを補助で読むことを書く。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。
+- [x] **T186-01-08** [テストの書き方](../../../rules/test-writing.md)  第 3.3 節に、`ProductionClasses` と、構成の検査は本番のクラスを補助で読むことを書く。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。
   - 依存：T186-01-03
   - 範囲：`docs/rules/test-writing.md`、`docs/design/glossary.md`
 - [ ] **T186-01-09** 段階のレビューと全体の検査：[plan](../plan.md) 第 7 節の段階 1 の観点とレビュー役で行う。補助の外に本番のクラスの読み込みが残っていないこと（[plan](../plan.md) 第 1.1 節の確認方法）も確認させる。`./gradlew check`、`./gradlew pitest`、`scripts/ci/check-all.sh` を実行する。

@@ -11,7 +11,7 @@
 | 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`） |
 | 3.1 | 統合テストの土台を使う | レビュー |
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
-| 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
+| 3.3 | テストは main と同じパッケージ。構成の検査と契約のテストは、本番のクラスを補助から読む | 置き場所は自動（ソースセット）、補助から読むことはレビュー |
 | 4.1 | 画面に見えるもので探す | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector` は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
@@ -114,6 +114,10 @@ token は `TestTokens`、画像は `TestImages` を使う。
 ### 3.3 テストの置き場所
 
 main と同じパッケージに置く。Spring を起動しないものは `src/test`、起動するものは `src/integrationTest`。
+
+構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`）は、本番のクラスとモジュールの一覧を、単体テストの補助 `ProductionClasses` から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない。
+
+理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が重なって残るため。
 
 ## 4. フロント
 

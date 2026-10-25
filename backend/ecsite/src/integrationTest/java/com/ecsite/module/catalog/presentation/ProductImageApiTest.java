@@ -213,6 +213,21 @@ class ProductImageApiTest {
         }
 
         @Test
+        @DisplayName("AC-70 変換できない（壊れた）ファイルは、登録のときに 400 IMAGE_CONVERSION_FAILED で拒否し、画像もバージョンも変わらない")
+        void rejectsUnconvertibleFile() throws Exception {
+            var productId = productWithVariant();
+            var uploadId = catalog.upload(productId, "image/heic", TestImages.of("broken.heic"));
+
+            catalog.addImage(productId, uploadId, 1)
+                    .andExpect(status().isBadRequest())
+                    .andExpect(jsonPath("$.errorCode").value("IMAGE_CONVERSION_FAILED"));
+
+            var detail = detail(productId);
+            assertThat(JsonPath.<List<String>>read(detail, "$.images")).isEmpty();
+            assertThat(JsonPath.<Integer>read(detail, "$.version")).isEqualTo(1);
+        }
+
+        @Test
         @DisplayName("PUT していない uploadId、別の商品で受け付けた uploadId は登録できず 400")
         void rejectsUnknownUpload() throws Exception {
             var productId = productWithVariant();

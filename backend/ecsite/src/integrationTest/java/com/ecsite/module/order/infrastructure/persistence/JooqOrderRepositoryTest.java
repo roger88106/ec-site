@@ -19,6 +19,7 @@ import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.dao.DuplicateKeyException;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
@@ -84,7 +85,7 @@ class JooqOrderRepositoryTest {
 
         assertThat(repository.findIdByCheckoutId(checkoutId)).contains(order.id());
         assertThat(repository.findIdByCheckoutId(UUID.randomUUID())).isEmpty();
-        assertThatThrownBy(() -> repository.insert(order(checkoutId, "20261008-000004"))).isInstanceOf(RuntimeException.class);
+        assertThatThrownBy(() -> repository.insert(order(checkoutId, "20261008-000004"))).isInstanceOf(DuplicateKeyException.class);
     }
 
     // ============================== 補助 ==============================

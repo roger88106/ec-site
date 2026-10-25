@@ -1,11 +1,11 @@
 package com.ecsite.config.event;
 
+import com.ecsite.TestSettings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 
 import java.time.Duration;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -23,8 +23,7 @@ class EventResubmissionSettingsTest {
     @Test
     @DisplayName("AC-290 再発行の間隔は既定で 1 分、発行からの時間の下限は 5 分、処理の回数の上限は 60")
     void defaults() {
-        var properties = new Binder(new MapConfigurationPropertySource())
-                .bindOrCreate(PREFIX, EventResubmissionJob.Properties.class);
+        var properties = TestSettings.bind(PREFIX, EventResubmissionJob.Properties.class, Map.of());
 
         assertThat(properties.interval()).isEqualTo(Duration.ofMinutes(1));
         assertThat(properties.minAge()).isEqualTo(Duration.ofMinutes(5));
@@ -34,10 +33,7 @@ class EventResubmissionSettingsTest {
     @Test
     @DisplayName("AC-290 処理の回数の上限は、設定で変えられる")
     void overridesMaxAttempts() {
-        var source = new MapConfigurationPropertySource();
-        source.put(PREFIX + ".max-attempts", "10");
-
-        var properties = new Binder(source).bindOrCreate(PREFIX, EventResubmissionJob.Properties.class);
+        var properties = TestSettings.bind(PREFIX, EventResubmissionJob.Properties.class, Map.of("max-attempts", "10"));
 
         assertThat(properties.maxAttempts()).isEqualTo(10);
     }

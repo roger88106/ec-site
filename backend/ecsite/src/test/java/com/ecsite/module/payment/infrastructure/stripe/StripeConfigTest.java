@@ -1,9 +1,8 @@
 package com.ecsite.module.payment.infrastructure.stripe;
 
+import com.ecsite.TestSettings;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 
 import java.util.HashMap;
 import java.util.Map;
@@ -46,8 +45,6 @@ class StripeConfigTest {
         var all = new HashMap<>(values);
         all.put("secret-key", "sk_test_unit");
         all.put("webhook-secret", "whsec_unit");
-        var source = new MapConfigurationPropertySource();
-        all.forEach((key, value) -> source.put(PREFIX + "." + key, value));
-        return new Binder(source).bindOrCreate(PREFIX, StripeProperties.class);
+        return TestSettings.bind(PREFIX, StripeProperties.class, all);
     }
 }

@@ -3,6 +3,10 @@ package com.ecsite.architecture;
 import com.ecsite.ProductionClasses;
 import com.ecsite.architecture.cycle.domain.aggregate.OrderLike;
 import com.ecsite.architecture.cycle.domain.aggregate.vo.AmountLike;
+import com.ecsite.architecture.cycle.domain.oneway.OneWayOrder;
+import com.ecsite.architecture.cycle.domain.oneway.vo.PlainAmount;
+import com.ecsite.architecture.cycle.domain.withport.PortOwner;
+import com.ecsite.architecture.cycle.domain.withport.port.OwnerPort;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
@@ -13,6 +17,7 @@ import com.tngtech.archunit.library.dependencies.SlicesRuleDefinition;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.regex.Pattern;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -56,7 +61,28 @@ class PackageCycleTest {
     void ruleMatchesCycleBetweenAggregateAndValuePackage() {
         JavaClasses examples = new ClassFileImporter().importClasses(OrderLike.class, AmountLike.class);
 
-        assertThat(NO_CYCLES.evaluate(examples).hasViolation()).isTrue();
+        List<String> details = NO_CYCLES.evaluate(examples).getFailureReport().getDetails();
+
+        assertThat(details).isNotEmpty().allSatisfy(detail -> assertThat(detail).contains("Cycle detected"));
+        assertThat(String.join("\n", details))
+                .contains(OrderLike.class.getName())
+                .contains(AmountLike.class.getName());
+    }
+
+    @Test
+    @DisplayName("規則は、集約のパッケージから vo への一方向の依存には当たらない")
+    void ruleDoesNotMatchOneWayDependency() {
+        JavaClasses examples = new ClassFileImporter().importClasses(OneWayOrder.class, PlainAmount.class);
+
+        assertThat(NO_CYCLES.evaluate(examples).hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("規則は、集約のパッケージと、その port が互いに依存する例には当たらない（port は集約と同じ slice）")
+    void ruleDoesNotMatchAggregateAndItsPort() {
+        JavaClasses examples = new ClassFileImporter().importClasses(PortOwner.class, OwnerPort.class);
+
+        assertThat(NO_CYCLES.evaluate(examples).hasViolation()).isFalse();
     }
 
     /**

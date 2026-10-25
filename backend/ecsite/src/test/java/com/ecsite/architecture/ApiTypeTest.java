@@ -42,8 +42,10 @@ class ApiTypeTest {
     }
 
     @Test
-    @DisplayName("api の型を、api の外が実装・継承しない")
+    @DisplayName("api の型を、api の外が実装・継承しない（対象は 1 件以上ある）")
     void apiTypesAreNotExtendedOutsideApi() {
+        ProductionClasses.requireNotEmpty(apiClasses(ProductionClasses.handwritten()), "モジュールの api のクラス");
+
         assertThat(subtypesOutsideApi(ProductionClasses.handwritten())).isEmpty();
     }
 

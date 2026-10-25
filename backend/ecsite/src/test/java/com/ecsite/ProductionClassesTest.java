@@ -69,6 +69,19 @@ class ProductionClassesTest {
     }
 
     @Test
+    @DisplayName("本番のクラスの一覧とモジュールの一覧は、testFixtures のクラスを含まない（testFixtures は単体テストの classpath にある）")
+    void productionClassesExcludeTestFixtures() throws ClassNotFoundException {
+        Class<?> errorCodeCheck = Class.forName("com.ecsite.config.security.ErrorCodeCheck");
+        Class<?> paymentGateway = Class.forName("com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway");
+
+        assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
+                .isNotEmpty()
+                .doesNotContain(errorCodeCheck.getName(), paymentGateway.getName());
+        assertThat(ProductionClasses.applicationModules().stream())
+                .noneMatch(module -> module.contains(paymentGateway));
+    }
+
+    @Test
     @DisplayName("パッケージの名前から、モジュールの名前を取り出す")
     void extractsModuleNameFromPackageName() {
         assertThat(ProductionClasses.moduleName("com.ecsite.module.order.domain.order.vo")).contains("order");

@@ -2,6 +2,10 @@ package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
 import com.ecsite.architecture.layerdeps.module.sample.api.ApiToApplication;
+import com.ecsite.architecture.layerdeps.module.sample.application.ApplicationToApi;
+import com.ecsite.architecture.layerdeps.module.sample.domain.DomainToApplication;
+import com.ecsite.architecture.layerdeps.module.sample.extra.ExtraLayerClass;
+import com.ecsite.architecture.layerdeps.module.sample.presentation.PresentationToPort;
 import com.ecsite.architecture.layerdeps.module.sample.api.ApiToPresentation;
 import com.ecsite.architecture.layerdeps.module.sample.application.SampleProperties;
 import com.ecsite.architecture.layerdeps.module.sample.application.SampleService;
@@ -92,22 +96,21 @@ class ModuleStructureTest {
      */
     private static final ArchRule LAYER_DEPENDENCY_RULE = classes()
             .that(DescribedPredicate.describe("are in a layer of a module", ModuleStructureTest::isLayered))
-            .should(new ArchCondition<JavaClass>("depend only on the layers and packages in the dependency table") {
-                @Override
-                public void check(JavaClass javaClass, ConditionEvents events) {
-                    for (Dependency dependency : forbiddenDependencies(javaClass)) {
-                        events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
-                    }
-                }
-            });
+            .should(new DependOnlyOnTableCondition());
 
     /**
-     * 層の依存の規則の検査の例（違反する例を含む）のクラス
+     * 層の依存の規則に合う例（表にある組だけ）のクラス
      */
-    private static final Class<?>[] LAYER_EXAMPLES = {
-            ApiToApplication.class, ApiToPresentation.class, SamplePresentation.class, SampleService.class,
-            SamplePort.class, SampleProperties.class, InfrastructureToPort.class, InfrastructureToService.class,
-            SampleDomain.class};
+    private static final Class<?>[] ALLOWED_LAYER_EXAMPLES = {
+            ApiToApplication.class, SampleService.class, SamplePort.class, SampleProperties.class,
+            InfrastructureToPort.class, SampleDomain.class};
+
+    /**
+     * 層の依存の規則に当たる例（表にない組）のクラス
+     */
+    private static final Class<?>[] FORBIDDEN_LAYER_EXAMPLES = {
+            ApiToPresentation.class, InfrastructureToService.class, DomainToApplication.class,
+            ApplicationToApi.class, PresentationToPort.class};
 
     /**
      * 1 つのパッケージの直下に置けるクラスの数の上限
@@ -177,13 +180,39 @@ class ModuleStructureTest {
     }
 
     @Test
-    @DisplayName("層の依存の規則は、表にある組には当たらず、api → presentation と infrastructure → application の service に当たる")
-    void layerDependencyRuleMatchesCombinationsOutsideTable() {
-        JavaClasses examples = new ClassFileImporter().importClasses(LAYER_EXAMPLES);
+    @DisplayName("層の依存の規則は、表にある組には当たらない")
+    void layerDependencyRuleDoesNotMatchCombinationsInTable() {
+        JavaClasses examples = new ClassFileImporter().importClasses(ALLOWED_LAYER_EXAMPLES);
 
-        assertThat(forbiddenDependencies(examples)).containsExactlyInAnyOrder(
-                ApiToPresentation.class.getName() + " -> " + SamplePresentation.class.getName(),
-                InfrastructureToService.class.getName() + " -> " + SampleService.class.getName());
+        assertThat(LAYER_DEPENDENCY_RULE.evaluate(examples).hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("層の依存の規則は、表にない組（api → presentation、infrastructure → service、domain → application、application → api、presentation → port）に当たる")
+    void layerDependencyRuleMatchesCombinationsOutsideTable() {
+        JavaClasses examples = new ClassFileImporter().importClasses(Stream.concat(
+                Stream.of(ALLOWED_LAYER_EXAMPLES), Stream.of(FORBIDDEN_LAYER_EXAMPLES)).toArray(Class<?>[]::new));
+
+        List<String> details = LAYER_DEPENDENCY_RULE.evaluate(examples).getFailureReport().getDetails();
+
+        assertThat(details).hasSize(5);
+        assertViolation(details, ApiToPresentation.class, SamplePresentation.class);
+        assertViolation(details, InfrastructureToService.class, SampleService.class);
+        assertViolation(details, DomainToApplication.class, SampleService.class);
+        assertViolation(details, ApplicationToApi.class, ApiToApplication.class);
+        assertViolation(details, PresentationToPort.class, SamplePort.class);
+    }
+
+    @Test
+    @DisplayName("層の依存の規則は、表にない層のクラスを、層の名前を付けた違反にする")
+    void layerDependencyRuleMatchesLayerOutsideTable() {
+        JavaClasses examples = new ClassFileImporter().importClasses(ExtraLayerClass.class);
+
+        List<String> details = LAYER_DEPENDENCY_RULE.evaluate(examples).getFailureReport().getDetails();
+
+        assertThat(details).singleElement().asString()
+                .contains(ExtraLayerClass.class.getName())
+                .contains("依存の表にない層 extra");
     }
 
     @Test
@@ -303,6 +332,8 @@ class ModuleStructureTest {
                 "### 1.4 パッケージの大きさ", "本文",
                 "| パッケージ | 数 | 分けない理由 |", "|---|---|---|",
                 "| `catalog.infrastructure.persistence` | 14 | 理由 |", "| `config.security` | 11 | 理由 |",
+                "", "表の後の本文",
+                "| 2 つ目の表 | 数 |", "|---|---|", "| `w.w` | 7 |",
                 "### 1.5 共通の型", "| `z.z` | 5 | 理由 |");
 
         assertThat(oversizedTable(lines)).containsExactlyInAnyOrderEntriesOf(
@@ -328,7 +359,10 @@ class ModuleStructureTest {
     @Test
     @DisplayName("他のモジュールの api を使うのは infrastructure.directory だけである（許可の一覧を除く）")
     void otherModulesApiIsUsedOnlyByDirectories() {
-        for (String module : ProductionClasses.modulesWith("api")) {
+        Set<String> modulesWithApi = ProductionClasses.modulesWith("api");
+        ProductionClasses.requireNotEmpty(modulesWithApi, "api を持つモジュール");
+
+        for (String module : modulesWithApi) {
             classes().that().resideOutsideOfPackages(
                             "%s.%s..".formatted(MODULE_PACKAGE, module), MODULE_PACKAGE + ".*.infrastructure.directory..")
                     .should(notUseApiOf(module))
@@ -409,22 +443,35 @@ class ModuleStructureTest {
 
     /**
      * バックエンドの書き方 第 1.4 節の、目安を超えるパッケージの表を読む。<br />
-     * 見出しの後の、次の見出しまでの行から、1 列目がバッククォートで囲んだパッケージの名前で、2 列目が数の行を読む。
+     * 見出しの後の最初の表だけを読む。表の行のうち、1 列目がバッククォートで囲んだパッケージの名前で、2 列目が数の行を読み、
+     * 表の後の行（本文や 2 つ目の表）は読まない。
      *
      * @param lines 文書の行
      * @return パッケージの名前から、数への対応
      */
     private static Map<String, Integer> oversizedTable(List<String> lines) {
         Map<String, Integer> table = new TreeMap<>();
-        boolean inSection = false;
+        boolean afterHeading = false;
+        boolean inTable = false;
         for (String line : lines) {
             if (line.startsWith("#")) {
-                inSection = line.startsWith(PACKAGE_SIZE_HEADING);
+                if (inTable) {
+                    break;
+                }
+                afterHeading = line.startsWith(PACKAGE_SIZE_HEADING);
                 continue;
             }
-            Matcher row = inSection ? TABLE_ROW.matcher(line) : null;
-            if (row != null && row.matches()) {
-                table.put(row.group(1), Integer.parseInt(row.group(2)));
+            if (!afterHeading) {
+                continue;
+            }
+            if (line.startsWith("|")) {
+                inTable = true;
+                Matcher row = TABLE_ROW.matcher(line);
+                if (row.matches()) {
+                    table.put(row.group(1), Integer.parseInt(row.group(2)));
+                }
+            } else if (inTable) {
+                break;
             }
         }
         return table;
@@ -451,24 +498,38 @@ class ModuleStructureTest {
     }
 
     /**
-     * 層の依存の表にない依存を、「依存元 -> 依存先」の形で返す。
+     * 規則の違反の詳細に、指定した依存元から依存先への依存が 1 件あることを確認する。
      *
-     * @param classes 調べるクラス
-     * @return 表にない依存（名前の順）
+     * @param details 規則の違反の詳細
+     * @param origin  依存元のクラス
+     * @param target  依存先のクラス
      */
-    private static List<String> forbiddenDependencies(JavaClasses classes) {
-        return layeredClasses(classes).stream()
-                .flatMap(javaClass -> forbiddenDependencies(javaClass).stream())
-                .map(dependency -> dependency.getOriginClass().getName() + " -> " + dependency.getTargetClass().getName())
-                .sorted()
-                .toList();
+    private static void assertViolation(List<String> details, Class<?> origin, Class<?> target) {
+        assertThat(details)
+                .as("%s -> %s", origin.getSimpleName(), target.getSimpleName())
+                .filteredOn(detail -> detail.contains(origin.getName()) && detail.contains(target.getName()))
+                .hasSize(1);
+    }
+
+    /**
+     * クラスがある層の名前を返す。
+     *
+     * @param javaClass モジュールの層のクラス
+     * @return 層の名前
+     */
+    private static String layerOf(JavaClass javaClass) {
+        Matcher origin = LAYERED_PACKAGE.matcher(javaClass.getPackageName());
+        if (!origin.matches()) {
+            throw new IllegalArgumentException("モジュールの層のクラスでない: " + javaClass.getName());
+        }
+        return origin.group(2);
     }
 
     /**
      * クラスの、同じモジュールの中への依存のうち、層の依存の表にないものを返す。
      *
-     * @param javaClass 依存元のクラス
-     * @return 表にない依存。モジュールの層のクラスでなければ空
+     * @param javaClass 依存元のクラス（表にある層のクラス）
+     * @return 表にない依存
      */
     private static List<Dependency> forbiddenDependencies(JavaClass javaClass) {
         Matcher origin = LAYERED_PACKAGE.matcher(javaClass.getPackageName());
@@ -518,18 +579,76 @@ class ModuleStructureTest {
      * @return 条件
      */
     private static ArchCondition<JavaClass> notUseApiOf(String module) {
-        String apiPackage = "%s.%s.api".formatted(MODULE_PACKAGE, module);
-        return new ArchCondition<>("%s の api を、許可の一覧にない使い方で使わない".formatted(module)) {
-            @Override
-            public void check(JavaClass javaClass, ConditionEvents events) {
-                for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
-                    JavaClass target = dependency.getTargetClass();
-                    if (target.getPackageName().equals(apiPackage) && !isAllowed(javaClass, target)) {
-                        events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
-                    }
+        return new NotUseApiCondition(module);
+    }
+
+    /**
+     * 層のクラスの、同じモジュールの中への依存が、依存の表にあるという条件。表にない層のクラスは、層の名前を付けて違反にする。
+     */
+    private static final class DependOnlyOnTableCondition extends ArchCondition<JavaClass> {
+
+        /**
+         * 条件を作る。
+         */
+        DependOnlyOnTableCondition() {
+            super("depend only on the layers and packages in the dependency table");
+        }
+
+        /**
+         * クラスの、同じモジュールの中への依存が表にあるかを確認する。
+         *
+         * @param javaClass 層のクラス
+         * @param events    違反の記録
+         */
+        @Override
+        public void check(JavaClass javaClass, ConditionEvents events) {
+            String layer = layerOf(javaClass);
+            if (!ALLOWED_LAYER_DEPENDENCIES.containsKey(layer)) {
+                events.add(SimpleConditionEvent.violated(javaClass,
+                        "%s は、依存の表にない層 %s にある".formatted(javaClass.getName(), layer)));
+                return;
+            }
+            for (Dependency dependency : forbiddenDependencies(javaClass)) {
+                events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
+            }
+        }
+    }
+
+    /**
+     * 他のモジュールの api を、許可の一覧にない使い方で使わないという条件。
+     */
+    private static final class NotUseApiCondition extends ArchCondition<JavaClass> {
+
+        /**
+         * api のパッケージの名前
+         */
+        private final String apiPackage;
+
+        /**
+         * 条件を作る。
+         *
+         * @param module api を持つモジュールの名前
+         */
+        NotUseApiCondition(String module) {
+            super("%s の api を、許可の一覧にない使い方で使わない".formatted(module));
+            this.apiPackage = "%s.%s.api".formatted(MODULE_PACKAGE, module);
+        }
+
+        /**
+         * クラスの依存のうち、許可の一覧にない api への依存を違反にする。
+         *
+         * @param javaClass 依存元のクラス
+         * @param events    違反の記録
+         */
+        @Override
+        public void check(JavaClass javaClass, ConditionEvents events) {
+            for (Dependency dependency : javaClass.getDirectDependenciesFromSelf()) {
+                JavaClass target = dependency.getTargetClass();
+                if (target.getPackageName().equals(apiPackage) && !isAllowed(javaClass, target)) {
+                    events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
                 }
             }
-        };
+        }
     }
 
     /**

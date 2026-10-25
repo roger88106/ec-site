@@ -27,12 +27,13 @@ import static org.assertj.core.api.Assertions.assertThat;
 public final class ProductionClasses {
 
     /**
-     * モジュールの一覧から除くテストのクラスの条件（名前が Test で終わるクラスと、その入れ子のクラス）。<br />
+     * モジュールの一覧から除くテストのクラスの条件（名前が Test で終わるクラスと、その入れ子のクラス、
+     * 単体テストと統合テストが共有する testFixtures のクラス）。<br />
      * テストは準備のために他のモジュールの内部（リポジトリなど）を直接使うことがあるので、境界の検証から除く。
      * 検証するのは本番のコードの境界。
      */
     public static final DescribedPredicate<JavaClass> TEST_CLASSES = DescribedPredicate.describe(
-            "test classes", javaClass -> javaClass.getName().matches(".*Test(\\$.*)?"));
+            "test classes", javaClass -> javaClass.getName().matches(".*Test(\\$.*)?") || isTestFixture(javaClass));
 
     /**
      * レベル A のモジュール（バックエンドのアーキテクチャ 第 2 節）。<br />
@@ -159,6 +160,26 @@ public final class ProductionClasses {
     }
 
     /**
+     * クラスが、単体テストと統合テストが共有する testFixtures のクラスかを返す。
+     *
+     * @param javaClass クラス
+     * @return ソースの場所が testFixtures なら true
+     */
+    private static boolean isTestFixture(JavaClass javaClass) {
+        return javaClass.getSource().map(source -> isTestFixtureLocation(source.getUri().toString())).orElse(false);
+    }
+
+    /**
+     * ソースの場所が testFixtures かを返す。単体テストの classpath には、ディレクトリでなく、test-fixtures の jar として入る。
+     *
+     * @param location クラスの場所の URI
+     * @return testFixtures のディレクトリか jar なら true
+     */
+    private static boolean isTestFixtureLocation(String location) {
+        return location.contains("/testFixtures/") || location.contains("-test-fixtures.jar");
+    }
+
+    /**
      * 絞り込んだ検査の対象が 1 件以上あることを確認する。<br />
      * 対象が 0 件の規則は、違反を見つけられないまま常に通るので、0 件なら説明を付けて失敗させる。
      *
@@ -179,12 +200,11 @@ public final class ProductionClasses {
 
         /**
          * {@code com.ecsite} の本番のクラス。<br />
-         * 単体テストと統合テストが共有する testFixtures は、テストのコードなので除く
-         * （単体テストの classpath には、ディレクトリでなく、test-fixtures の jar として入る）。
+         * 単体テストと統合テストが共有する testFixtures は、テストのコードなので除く。
          */
         private static final JavaClasses ALL = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .withImportOption(location -> !location.contains("/testFixtures/") && !location.contains("-test-fixtures.jar"))
+                .withImportOption(location -> !isTestFixtureLocation(location.asURI().toString()))
                 .importPackages("com.ecsite");
 
         /**

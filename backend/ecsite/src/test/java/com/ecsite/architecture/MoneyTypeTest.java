@@ -1,8 +1,11 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
+import com.ecsite.architecture.money.module.sample.api.PricedApi;
+import com.ecsite.architecture.money.module.sample.application.model.PricedCommand;
 import com.ecsite.architecture.money.module.sample.application.model.PricedRow;
 import com.ecsite.architecture.money.module.sample.application.model.PricedView;
+import com.ecsite.architecture.money.module.sample.application.model.view.PricedReport;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaField;
@@ -14,6 +17,7 @@ import org.junit.jupiter.api.Test;
 import java.util.List;
 import java.util.Set;
 import java.util.regex.Pattern;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -44,31 +48,65 @@ class MoneyTypeTest {
      */
     private static final Pattern MODEL_PACKAGE = Pattern.compile(".*\\.module\\.[^.]+\\.application\\.model(\\..*)?");
 
+    /**
+     * 表示用（view）のパッケージ（application.model.view とその下）の形
+     */
+    private static final Pattern VIEW_PACKAGE = Pattern.compile(".*\\.module\\.[^.]+\\.application\\.model\\.view(\\..*)?");
+
     @Test
-    @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない（対象は 1 件以上ある）")
+    @DisplayName("api・event の型と command・view に、金額を整数で持つ項目がない（対象は、それぞれ 1 件以上ある）")
     void moneyIsNotAnInteger() {
-        ProductionClasses.requireNotEmpty(checkedClasses(ProductionClasses.modules()), "api・event のクラスと、application.model の View・Command");
+        ProductionClasses.requireNotEmpty(publicClasses(ProductionClasses.modules()), "api・event のクラス");
+        ProductionClasses.requireNotEmpty(modelClasses(ProductionClasses.modules()), "application.model の view のパッケージと、View・Command のクラス");
 
         assertThat(violations(ProductionClasses.modules())).isEmpty();
     }
 
     @Test
-    @DisplayName("規則は、application.model の直下の view にある整数の価格に当たり、名前が View・Command でないクラスには当たらない")
-    void ruleMatchesIntegerPriceInViewDirectlyUnderModel() {
-        JavaClasses examples = new ClassFileImporter().importClasses(PricedView.class, PricedRow.class);
+    @DisplayName("規則は、api、View・Command（入れ子を含む）、view のパッケージにある整数の金額に当たり、対象でないクラスには当たらない")
+    void ruleMatchesIntegerMoneyInCheckedClasses() {
+        JavaClasses examples = new ClassFileImporter().importClasses(
+                PricedView.class, PricedRow.class, PricedCommand.class, PricedCommand.Line.class,
+                PricedReport.class, PricedApi.class);
 
-        assertThat(violations(examples)).containsExactly(PricedView.class.getName() + ".price");
+        assertThat(violations(examples)).containsExactlyInAnyOrder(
+                PricedApi.class.getName() + ".fee",
+                PricedCommand.Line.class.getName() + ".unitPrice",
+                PricedReport.class.getName() + ".amount",
+                PricedView.class.getName() + ".price");
     }
 
     /**
      * 金額の検査の対象のクラスを返す。
      *
      * @param classes 調べるクラス
-     * @return api・event のクラスと、application.model 以下の名前が View・Command で終わるクラス（入れ子のクラスを含む）
+     * @return api・event のクラスと、application.model 以下の対象のクラス
      */
     private static List<JavaClass> checkedClasses(JavaClasses classes) {
+        return Stream.concat(publicClasses(classes).stream(), modelClasses(classes).stream()).toList();
+    }
+
+    /**
+     * モジュールの公開の型（api・event）のクラスを返す。
+     *
+     * @param classes 調べるクラス
+     * @return api・event（とその下）のパッケージのクラス
+     */
+    private static List<JavaClass> publicClasses(JavaClasses classes) {
         return classes.stream()
-                .filter(javaClass -> PUBLIC_PACKAGE.matcher(javaClass.getPackageName()).matches()
+                .filter(javaClass -> PUBLIC_PACKAGE.matcher(javaClass.getPackageName()).matches())
+                .toList();
+    }
+
+    /**
+     * application.model の、金額を調べるクラスを返す。
+     *
+     * @param classes 調べるクラス
+     * @return application.model.view 以下の全てのクラスと、application.model 以下の名前が View か Command で終わるクラス（入れ子のクラスを含む）
+     */
+    private static List<JavaClass> modelClasses(JavaClasses classes) {
+        return classes.stream()
+                .filter(javaClass -> VIEW_PACKAGE.matcher(javaClass.getPackageName()).matches()
                         || (MODEL_PACKAGE.matcher(javaClass.getPackageName()).matches() && isViewOrCommand(javaClass)))
                 .toList();
     }

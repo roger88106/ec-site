@@ -55,7 +55,7 @@ spec 181 との重なりの扱い（spec 第 7 節の (1)〜(5)）：
 | `handwritten()` | `all()` から生成したコード（`com.ecsite.api`、`com.ecsite.jooq`）を除いたもの | `ConfigurationPropertiesTest:25`、`CurrentTimeTest:31`、`NamingTest:25`、`StaticOnlyClassTest:25` |
 | `modules()` | `com.ecsite.module` の本番のクラス | `MoneyTypeTest:43`、`ModuleRoleTest:85` |
 | `applicationModules()` | Spring Modulith のモジュールの一覧（テストのクラスを除く） | `ModulithTest:27`、`ModuleDiagramTest:47` |
-| `TEST_CLASSES` | モジュールの一覧から除くテストのクラスの条件 | `ModulithTest:24` |
+| `TEST_CLASSES` | モジュールの一覧から除くテストのクラスの条件（名前が Test で終わるクラスと、testFixtures のクラス）。`all()` も testFixtures を除く | `ModulithTest:24` |
 | `LEVEL_A_MODULES` | レベル A のモジュールの一覧 | `ModuleStructureTest:52`、`ModuleRoleTest:27` |
 | `modulesWith(String... layers)` | 指定した層のどれかに本番のクラスがあるモジュールの名前 | `ModuleStructureTest`（`modulesWith`）、`ModuleRoleTest`（`modulesWithPresentation`） |
 | `moduleName(String packageName)` | パッケージの名前からモジュールの名前を取り出す | `ModuleStructureTest:62`（`MODULE_SUBPACKAGE`）、`SchemaOwnershipTest`、`MessageContractTest` の正規表現 |
@@ -95,10 +95,10 @@ spec 181 との重なりの扱い（spec 第 7 節の (1)〜(5)）：
 |----|------|----------|---------------------------------------|
 | 1 | モジュールの domain の下を、パッケージごとの slice に分け、`beFreeOfCycles()` を確認する。slice は `slices().assignedFrom(...)` で、クラスのパッケージの名前から `<モジュール>.domain` 以下のパッケージの名前（domain の直下は `<モジュール>.domain`、集約は `<モジュール>.domain.<集約>`、値は `<モジュール>.domain.<集約>.vo`。集約の `port/` は、バックエンドの書き方 第 1.1 節が集約の一部とするので、集約と同じ slice にする）を返す関数で作る。理由：`matching("..domain.(**)")` は domain の直下のクラスを slice に入れないため | 新しい `test/architecture/PackageCycleTest` | 集約のパッケージと `vo/` が互いに依存する例で失敗する |
 | 2 | 目安（10）を超えるパッケージの一覧と数を、[バックエンドの書き方](../../rules/backend-coding.md) 第 1.4 節の表から読み、本番のクラスから数えた一覧と数に一致することを確認する。表は、バックエンドの書き方 第 1.4 節の見出しの後の最初の Markdown の表で、1 列目がバッククォートで囲んだパッケージの名前（`com.ecsite.` を除いた形）、2 列目が数である。文書のパスは system property `rules.backend-coding` で渡す（`design.overview` と同じく、`unitTestSystemProperties` に追加し、test の task と pitest の `inputs` に宣言する） | `test/architecture/ModuleStructureTest` | 表の外のパッケージが 11 になったとき、表のパッケージが 10 以下になったとき、数が違うときの 3 つで失敗する（数えた結果と表を引数に取る判定の関数を、例の値で確認する） |
-| 3 | 層の依存の表を、1 つの定数（層 → 同じモジュールの中で依存してよい層とその下のパッケージ）にする。モジュールごと、層ごとに「同じモジュールの中で、表にない層とパッケージに依存しない」ことを 1 つの規則で確認する。共通コードが設定に依存しない規則を追加する | `test/architecture/ModuleStructureTest` | 表にない組（api → presentation、infrastructure → application の service）の例で失敗する |
+| 3 | 層の依存の表を、1 つの定数（層 → 同じモジュールの中で依存してよい層とその下のパッケージ）にする。モジュールごと、層ごとに「同じモジュールの中で、表にない層とパッケージに依存しない」ことを 1 つの規則で確認する。共通コードが設定に依存しない規則を追加する | `test/architecture/ModuleStructureTest` | 表にない組（api → presentation、infrastructure → application の service、domain → application、application → api、presentation → application の `port/`）と、表にない層の例で、本番の検査と同じ規則を `evaluate` して失敗する。表にある組だけの例では失敗しない |
 | 4 | `api/` に interface がないことと、`api/` の型を実装・継承するクラスが `api/` の中だけにあることを確認する。`api/` の record と列挙は、interface でないので対象にならない | 新しい `test/architecture/ApiTypeTest`。理由：`ModuleStructureTest` が大きいため | `api/` の interface の例と、`api/` の外から `api/` の型を継承する例で失敗する |
-| 5 | 金額の型の検査の対象を、「モジュールの `api`・`event` のクラス」と「`application.model` 以下のクラスで、名前が `View` か `Command` で終わるもの（入れ子の record を含む）」にする。パッケージの名前の `.view` に頼らない | `test/architecture/MoneyTypeTest` | `application.model` の直下の view に整数の価格がある例で失敗する |
-| 6 | `assertThat` で一覧を集めて確認する構成の検査は、絞り込んだ対象が 1 件以上あることを、補助の `requireNotEmpty` で確認する。対象は、`NamingTest` の 4 つ、`StaticOnlyClassTest`、`ModuleStructureTest` の一覧の検査、金額の型の検査、`ConfigurationPropertiesTest` の presentation の例の確認（今の手書きの `isNotEmpty`）、`ModuleRoleTest` のレベル A で presentation を持つモジュール（段階 1 のレビューで見つけた） | 左の各ファイル | 対象が 0 件の例で、補助が失敗する（T186-01-01） |
+| 5 | 金額の型の検査の対象を、「モジュールの `api`・`event` のクラス」と「`application.model.view` 以下の全てのクラス」と「`application.model` 以下で、名前が `View` か `Command` で終わるクラス（入れ子の record を含む）」の和にする（変更前の `application.model.view` 全体より狭めない）。`requireNotEmpty` は、`api`・`event` の部分と `application.model` の部分に分けて付ける | `test/architecture/MoneyTypeTest` | `application.model` の直下の view、`Command` で終わるクラスの入れ子の record、`view/` の下で名前が `View` で終わらない型、`api` のクラスに、整数の金額がある例で失敗する（`View`・`Command` でない型は対象外） |
+| 6 | `assertThat` で一覧を集めて確認する構成の検査は、絞り込んだ対象が 1 件以上あることを、補助の `requireNotEmpty` で確認する。対象は、`NamingTest` の 4 つ、`StaticOnlyClassTest`、`ModuleStructureTest` の一覧の検査、金額の型の検査、`ConfigurationPropertiesTest` の presentation の例の確認（今の手書きの `isNotEmpty`）、`ModuleRoleTest` のレベル A で presentation を持つモジュール（段階 1 のレビューで見つけた）、`ModuleStructureTest` の他のモジュールの api の検査（`api` を持つモジュールの一覧）、`ApiTypeTest` の継承の検査 | 左の各ファイル | 対象が 0 件の例で、補助が失敗する（T186-01-01） |
 
 DC-186-3 で置き換える既存の検査と、新しい規則が含む組：
 

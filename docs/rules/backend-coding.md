@@ -11,7 +11,7 @@
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
-| 1.1 | 共通コードと設定はモジュールに依存せず、モジュールは設定に依存しない | 自動（ArchUnit） |
+| 1.1 | 共通コードと設定はモジュールに依存せず、共通コードとモジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
 | 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー |
 | 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数が、第 1.4 節の表と一致することは自動（ArchUnit）。分けない理由はレビュー |
@@ -108,7 +108,7 @@ module/<モジュール>/
 
 ### 1.4 パッケージの大きさ
 
-1 つのパッケージの直下の `.java` は 10 を目安、20 を上限にする（`package-info.java` とテストは数えない）。目安を超えて分けないときは、下の表に理由を書く。
+1 つのパッケージの直下の `.java` は 10 を目安、20 を上限にする（`package-info.java`、テスト、生成したコード（OpenAPI と jOOQ）は数えない）。目安を超えて分けないときは、下の表に理由を書く。
 
 | パッケージ | 数 | 分けない理由 |
 |------------|----|--------------|

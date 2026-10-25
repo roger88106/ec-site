@@ -111,9 +111,19 @@ class NamingTest {
     private static List<JavaClass> implementationsOf(JavaClasses classes, String suffix) {
         return classes.stream()
                 .filter(javaClass -> !javaClass.isInterface() && !javaClass.isAnonymousClass())
-                .filter(javaClass -> javaClass.getRawInterfaces().stream()
-                        .anyMatch(port -> port.getPackageName().startsWith("com.ecsite") && port.getSimpleName().endsWith(suffix)))
+                .filter(javaClass -> javaClass.getRawInterfaces().stream().anyMatch(port -> isPortNamedWith(port, suffix)))
                 .toList();
+    }
+
+    /**
+     * interface が、このプロジェクトの、名前が指定した語で終わる port かを返す。
+     *
+     * @param port   interface
+     * @param suffix port の名前の終わり（Repository、Directory）
+     * @return このプロジェクトの interface で、名前が suffix で終わるなら true
+     */
+    private static boolean isPortNamedWith(JavaClass port, String suffix) {
+        return port.getPackageName().startsWith("com.ecsite") && port.getSimpleName().endsWith(suffix);
     }
 
     /**
@@ -155,9 +165,7 @@ class NamingTest {
      * @return port のパッケージにない、または参照用なのに application にない interface の名前（名前の順）
      */
     private static List<String> repositoryPortViolations(JavaClasses classes) {
-        return classes.stream()
-                .filter(JavaClass::isInterface)
-                .filter(javaClass -> javaClass.getSimpleName().endsWith("Repository"))
+        return portsNamedWith(classes, "Repository").stream()
                 .filter(javaClass -> {
                     var packageName = javaClass.getPackageName();
                     var inPort = packageName.endsWith(".port");
@@ -178,9 +186,7 @@ class NamingTest {
      * @return port のパッケージにない、名前が Directory で終わる interface の名前（名前の順）
      */
     private static List<String> directoryPortViolations(JavaClasses classes) {
-        return classes.stream()
-                .filter(JavaClass::isInterface)
-                .filter(javaClass -> javaClass.getSimpleName().endsWith("Directory"))
+        return portsNamedWith(classes, "Directory").stream()
                 .filter(javaClass -> !javaClass.getPackageName().endsWith(".port"))
                 .map(JavaClass::getName)
                 .sorted()
@@ -200,13 +206,10 @@ class NamingTest {
     private static List<String> implementationViolations(JavaClasses classes, String suffix, String prefix,
                                                          String infix, String packageEnd) {
         var violations = new ArrayList<String>();
-        for (var javaClass : classes) {
-            if (javaClass.isInterface() || javaClass.isAnonymousClass()) {
-                continue;
-            }
+        for (var javaClass : implementationsOf(classes, suffix)) {
             for (var port : javaClass.getRawInterfaces()) {
                 var portName = port.getSimpleName();
-                if (!port.getPackageName().startsWith("com.ecsite") || !portName.endsWith(suffix)) {
+                if (!isPortNamedWith(port, suffix)) {
                     continue;
                 }
                 var stem = portName.substring(0, portName.length() - suffix.length());

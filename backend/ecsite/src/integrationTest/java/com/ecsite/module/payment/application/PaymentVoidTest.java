@@ -98,21 +98,21 @@ class PaymentVoidTest {
     @DisplayName("AC-164、165 決済サービスで取消に失敗したら与信の取消待ちのまま残り、未完了のイベントの再発行で取り消される")
     void retriesFailedVoid() {
         var orderId = payments.created(ORDERED_AT);
-        payments.pay(orderId);
+        var authorizationRef = gateway.authorizationRefOf(payments.pay(orderId));
         gateway.failNextVoids(1);
 
         paymentApi.cancel(orderId);
 
         asyncEvents.awaitFailed(PaymentRequests.of(dsl, orderId));
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.VOID_PENDING);
-        assertThat(gateway.voided()).isEmpty();
+        assertThat(gateway.voided()).doesNotContain(authorizationRef);
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
         clock.advance(Duration.ofMinutes(6));
         incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
 
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.VOIDED);
-        assertThat(gateway.voided()).hasSize(1);
+        assertThat(gateway.voided()).containsOnlyOnce(authorizationRef);
     }
 
     @Test

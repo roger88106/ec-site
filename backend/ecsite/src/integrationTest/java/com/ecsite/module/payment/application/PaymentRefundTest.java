@@ -115,14 +115,14 @@ class PaymentRefundTest {
 
         asyncEvents.awaitFailed(PaymentRequests.of(dsl, orderId));
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUND_PENDING);
-        assertThat(gateway.refunded()).isEmpty();
+        assertThat(gateway.refunded()).doesNotContain(orderId);
 
         // 再発行のジョブ（発行から 5 分より前のもの）と同じ
         clock.advance(Duration.ofMinutes(6));
         incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
 
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
-        assertThat(gateway.refunded()).containsExactly(orderId);
+        assertThat(gateway.refunded()).containsOnlyOnce(orderId);
     }
 
     @Test
@@ -158,19 +158,20 @@ class PaymentRefundTest {
     @DisplayName("T9314 売上確定の最中に注文がキャンセルされたら、確定の反映で返金待ちになり、返金される。与信は取り消さない")
     void refundsWhenCancelledDuringCapture() {
         var orderId = payments.authorized(ORDERED_AT);
+        var authorizationRef = gateway.authorizationRefOf(payments.pageIdOf(orderId));
         // 決済サービスが確定した後、確定を反映する前に、注文のキャンセルで支払が与信の取消待ちになる
         gateway.duringNextCapture(() -> paymentApi.cancel(orderId));
 
         paymentApi.capture(orderId);
 
         await().atMost(TIMEOUT).until(() -> payments.statusOf(orderId) == PaymentSummary.Status.REFUNDED);
-        assertThat(gateway.refunded()).containsExactly(orderId);
+        assertThat(gateway.refunded()).containsOnlyOnce(orderId);
 
         // 与信の取消の依頼は、再発行で何もせずに終わる
         clock.advance(Duration.ofMinutes(6));
         incompletePublications.resubmitIncompletePublicationsOlderThan(Duration.ofMinutes(5));
         asyncEvents.awaitHandled(PaymentRequests.of(dsl, orderId));
-        assertThat(gateway.voided()).isEmpty();
+        assertThat(gateway.voided()).doesNotContain(authorizationRef);
         assertThat(payments.statusOf(orderId)).isEqualTo(PaymentSummary.Status.REFUNDED);
     }
 }

@@ -8,6 +8,7 @@ import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.module.cart.event.CartChanged;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -72,13 +73,19 @@ class CheckoutCartChangeApiTest {
 
     private UUID cartId;
 
+    /**
+     * このテストの会員（コミットするので、他のテストとカートを共有しないよう、テストごとに変える）
+     */
+    private TestTokens.Builder owner;
+
     @BeforeEach
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, clock);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
         data = new CatalogTestData(mockMvc, clock);
-        orders = new OrderTestData(mockMvc);
+        owner = TestTokens.member().subject(UUID.randomUUID());
+        orders = new OrderTestData(mockMvc, null, null, owner.bearer());
         taxCategoryId = data.taxCategory("カート変更-" + UUID.randomUUID().toString().substring(0, 8), "10");
         cartId = orders.cart();
     }
@@ -93,7 +100,7 @@ class CheckoutCartChangeApiTest {
         orders.startCheckout(cartId);
         assertThat(stockReservationApi.sellableQuantities(List.of(variant), null)).containsEntry(variant, 1);
 
-        mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + variant)
+        mockMvc.perform(put("/api/store/carts/" + cartId + "/items/" + variant).with(owner.bearer())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {"quantity": 1}"""))

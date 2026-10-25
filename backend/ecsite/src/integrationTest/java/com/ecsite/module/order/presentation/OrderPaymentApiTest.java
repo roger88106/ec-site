@@ -91,6 +91,11 @@ class OrderPaymentApiTest {
 
     private OrderTestData orders;
 
+    /**
+     * このテストの会員（巻き戻さないので、他のテストとカートを共有しないよう、テストごとに変える）
+     */
+    private TestTokens.Builder owner;
+
     private UUID taxCategoryId;
 
     private UUID variantId;
@@ -103,8 +108,8 @@ class OrderPaymentApiTest {
         ShippingTaxCategory.ensure(dsl);
         taxCategoryId = new CatalogTestData(mockMvc, clock).taxCategory("支払-" + UUID.randomUUID().toString().substring(0, 8), "10");
         variantId = stockedVariant("支払の商品");
-        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
-        orders.emptyCart(orders.cart());
+        owner = TestTokens.member().subject(UUID.randomUUID());
+        orders = new OrderTestData(mockMvc, gateway, orderPaymentService, owner.bearer());
     }
 
     @Nested
@@ -293,12 +298,17 @@ class OrderPaymentApiTest {
             var acceptedId = pending(1);
             orders.pay(acceptedId);
 
-            mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("size", "100"))
+            // 他のテストの注文が混ざらないよう、自分の注文の注文番号でも絞る
+            var pendingNumber = orderNumber(pendingId);
+            var acceptedNumber = orderNumber(acceptedId);
+            mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("orderNumber", pendingNumber))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.items[*].id").value(hasItem(pendingId.toString())))
-                    .andExpect(jsonPath("$.items[*].id").value(not(hasItem(acceptedId.toString()))))
                     .andExpect(jsonPath("$.items[?(@.id == '" + pendingId + "')].paymentStatus").value(hasItem("UNPAID")));
-            mockMvc.perform(get("/api/admin/orders").param("size", "100"))
+            mockMvc.perform(get("/api/admin/orders").param("status", "PENDING_PAYMENT").param("orderNumber", acceptedNumber))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.items[*].id").value(not(hasItem(acceptedId.toString()))));
+            mockMvc.perform(get("/api/admin/orders").param("orderNumber", acceptedNumber))
                     .andExpect(jsonPath("$.items[?(@.id == '" + acceptedId + "')].paymentStatus").value(hasItem("AUTHORIZED")));
         }
 
@@ -332,7 +342,7 @@ class OrderPaymentApiTest {
         @DisplayName("AC-162 申請の承認によるキャンセルでも、与信が取り消される")
         void voidsOnApproval() throws Exception {
             var orderId = accepted();
-            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
+            mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request").with(owner.bearer())
                             .contentType(MediaType.APPLICATION_JSON).content("{}"))
                     .andExpect(status().isNoContent());
 
@@ -390,12 +400,17 @@ class OrderPaymentApiTest {
     }
 
     private List<String> cartVariantIds() throws Exception {
-        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + orders.cart())).andReturn().getResponse().getContentAsString(),
+        return JsonPath.read(mockMvc.perform(get("/api/store/carts/" + orders.cart()).with(owner.bearer())).andReturn().getResponse().getContentAsString(),
                 "$.items[*].variantId");
     }
 
     private ResultActions store(UUID orderId) throws Exception {
-        return mockMvc.perform(get("/api/store/orders/" + orderId)).andExpect(status().isOk());
+        return mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(status().isOk());
+    }
+
+    private String orderNumber(UUID orderId) throws Exception {
+        return JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andReturn().getResponse()
+                .getContentAsString(), "$.orderNumber");
     }
 
     private ResultActions admin(UUID orderId) throws Exception {
@@ -403,7 +418,7 @@ class OrderPaymentApiTest {
     }
 
     private ResultActions openPage(UUID orderId) throws Exception {
-        return mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page"));
+        return mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page").with(owner.bearer()));
     }
 
     private ResultActions cancelByOperator(UUID orderId) throws Exception {
@@ -417,7 +432,7 @@ class OrderPaymentApiTest {
      * 注文の支払の期限（注文日時 ＋ 30 分。BR-16）
      */
     private Instant deadlineOf(UUID orderId) throws Exception {
-        String orderedAt = JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId)).andReturn().getResponse()
+        String orderedAt = JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andReturn().getResponse()
                 .getContentAsString(), "$.orderedAt");
         return Instant.parse(orderedAt).plus(Duration.ofMinutes(30));
     }

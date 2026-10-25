@@ -9,13 +9,11 @@ import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilde
 import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
 import static com.ecsite.AsyncEvents.TIMEOUT;
 import static org.awaitility.Awaitility.await;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,16 +46,36 @@ public class OrderTestData {
     private final Map<UUID, String> paidPageIds = new HashMap<>();
 
     /**
-     * コンストラクタ
+     * 補助が会員として行う要求に付ける後処理（既定の会員なら何も付けない）
+     */
+    private final RequestPostProcessor member;
+
+    /**
+     * コンストラクタ（既定の会員として行う）
      *
      * @param mockMvc             MockMvc
      * @param gateway             mock の決済サービス
      * @param orderPaymentService 注文の支払の結果のサービス
      */
     public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, OrderPaymentService orderPaymentService) {
+        this(mockMvc, gateway, orderPaymentService, request -> request);
+    }
+
+    /**
+     * コンストラクタ（指定した会員として行う）。<br />
+     * 巻き戻さないテストは、既定の会員のカートに品目を残すと他のテストに影響するので、テストごとの会員にする。
+     *
+     * @param mockMvc             MockMvc
+     * @param gateway             mock の決済サービス
+     * @param orderPaymentService 注文の支払の結果のサービス
+     * @param member              会員の token などを付ける後処理
+     */
+    public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, OrderPaymentService orderPaymentService,
+                         RequestPostProcessor member) {
         this.mockMvc = mockMvc;
         this.gateway = gateway;
         this.orderPaymentService = orderPaymentService;
+        this.member = member;
     }
 
     /**
@@ -70,12 +88,12 @@ public class OrderTestData {
     }
 
     /**
-     * 既定の会員（{@link TestSecurityConfig}）の会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる）。
+     * 会員のカートの ID を返す（注文手続きは会員のカートからだけ始められる）。
      *
      * @return カート ID
      */
     public UUID cart() throws Exception {
-        return cart(request -> request);
+        return cart(member);
     }
 
     /**
@@ -91,30 +109,14 @@ public class OrderTestData {
     }
 
     /**
-     * 既定の会員のカートの品目を全て除く。<br />
-     * 支払待ちの注文の品目はカートに残り、会員のカートはテストをまたいで同じなので、巻き戻さないテストの後でも
-     * 注文手続きが在庫不足にならないよう、始めに呼ぶ。
-     *
-     * @param cartId カート ID
-     */
-    public void emptyCart(UUID cartId) throws Exception {
-        var body = mockMvc.perform(get("/api/store/carts/" + cartId)).andExpect(status().isOk())
-                .andReturn().getResponse().getContentAsString();
-        List<String> variantIds = JsonPath.read(body, "$.items[*].variantId");
-        for (var id : variantIds) {
-            mockMvc.perform(delete("/api/store/carts/" + cartId + "/items/" + id)).andExpect(status().isNoContent());
-        }
-    }
-
-    /**
-     * 既定の会員のカートに入れ、204 を確認する。
+     * 会員のカートに入れ、204 を確認する。
      *
      * @param cartId    カート ID
      * @param variantId バリアント ID
      * @param quantity  数量
      */
     public void add(UUID cartId, UUID variantId, int quantity) throws Exception {
-        add(cartId, variantId, quantity, request -> request);
+        add(cartId, variantId, quantity, member);
     }
 
     /**
@@ -134,13 +136,13 @@ public class OrderTestData {
     }
 
     /**
-     * 既定の会員として注文手続きを始め、201 を確認して、注文手続き ID を返す。
+     * 会員として注文手続きを始め、201 を確認して、注文手続き ID を返す。
      *
      * @param cartId カート ID
      * @return 注文手続き ID
      */
     public UUID startCheckout(UUID cartId) throws Exception {
-        return startCheckout(cartId, request -> request);
+        return startCheckout(cartId, member);
     }
 
     /**
@@ -198,7 +200,7 @@ public class OrderTestData {
      * @return 支払画面 ID
      */
     public String openPaymentPage(UUID orderId) throws Exception {
-        var body = mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page"))
+        var body = mockMvc.perform(post("/api/store/orders/" + orderId + "/payment-page").with(member))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String url = JsonPath.read(body, "$.url");
         return url.substring(url.lastIndexOf('/') + 1);
@@ -235,7 +237,7 @@ public class OrderTestData {
      * @param status  注文の状態
      */
     public void awaitStatus(UUID orderId, String status) {
-        await().atMost(TIMEOUT).until(() -> status.equals(JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId))
+        await().atMost(TIMEOUT).until(() -> status.equals(JsonPath.read(mockMvc.perform(get("/api/store/orders/" + orderId).with(member))
                 .andReturn().getResponse().getContentAsString(), "$.status")));
     }
 
@@ -246,9 +248,9 @@ public class OrderTestData {
         var cartId = cart();
         add(cartId, variantId, quantity);
         var checkoutId = startCheckout(cartId);
-        var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId)).andReturn().getResponse().getContentAsString();
+        var checkout = mockMvc.perform(get("/api/store/checkouts/" + checkoutId).with(member)).andReturn().getResponse().getContentAsString();
         long total = JsonPath.<Number>read(checkout, "$.amounts.total").longValue();
-        var order = mockMvc.perform(placeOrderRequest(checkoutId, orderBody(total, name)))
+        var order = mockMvc.perform(placeOrderRequest(checkoutId, orderBody(total, name)).with(member))
                 .andExpect(status().isCreated())
                 .andReturn().getResponse().getContentAsString();
         return TestJson.createdId(order);

@@ -55,7 +55,7 @@ class AdminOrderShipmentViewApiTest {
     private static final String BASE = "/api/admin/orders";
 
     /**
-     * 注文・与信の時刻
+     * 注文・与信の時刻（日本時間の 2026-11-20 00:00。他のテストの注文日（2026-10-08、12 月）と重ならない日にして、注文番号の前方一致で自分の注文だけを絞れるようにする）
      */
     private static final Instant NOW = Instant.parse("2026-11-19T15:00:00Z");
 

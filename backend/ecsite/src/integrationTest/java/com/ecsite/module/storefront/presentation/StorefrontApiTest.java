@@ -8,6 +8,7 @@ import com.ecsite.TestClockConfig;
 import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
+import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -364,14 +365,20 @@ class StorefrontApiTest {
         void listsCategoryTree() throws Exception {
             var rootName = "衣類 " + UUID.randomUUID();
             var clothing = catalog.category(rootName, null);
+            var foodName = "食品 " + UUID.randomUUID();
+            catalog.category(foodName, null);
             catalog.category("食品", clothing);
             catalog.category("トップス", clothing);
 
             var node = "$.items[?(@.name=='%s')]".formatted(rootName);
-            mockMvc.perform(get(BASE + "/categories"))
+            var body = mockMvc.perform(get(BASE + "/categories"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath(node + ".children[*].name", contains("食品", "トップス")))
-                    .andExpect(jsonPath(node + ".depth").doesNotExist());
+                    .andExpect(jsonPath(node + ".depth").doesNotExist())
+                    .andReturn().getResponse().getContentAsString();
+            // 他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序は並び順（登録順）どおりになる
+            List<String> rootNames = JsonPath.read(body, "$.items[*].name");
+            assertThat(rootNames.indexOf(rootName)).isLessThan(rootNames.indexOf(foodName));
         }
     }
 

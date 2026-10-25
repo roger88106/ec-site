@@ -189,14 +189,19 @@ class CategoryApiTest {
         @Test
         @DisplayName("木は、各階層が並び順どおりに返る")
         void listsTreeInDisplayOrder() throws Exception {
+            var others = rootIds();
             var root = uniqueName("衣類");
             var clothing = createdId(root, null);
+            var food = createdId(uniqueName("食品"), null);
             var tops = createdId("トップス", clothing);
             var bottoms = createdId("ボトムス", clothing);
             createdId("T シャツ", tops);
             createdId("シャツ", tops);
+            reorder(null, withOthers(others, food, clothing)).andExpect(status().isNoContent());
             reorder(clothing, bottoms, tops).andExpect(status().isNoContent());
 
+            // 他のテストの最上位のカテゴリが間に入っても、自分の 2 つの相対の順序は並び順どおりになる
+            assertThat(rootsOf(clothing, food)).extracting(r -> r.get("id")).containsExactly(food, clothing);
             var node = nodeOf(root);
             mockMvc.perform(get(BASE))
                     .andExpect(status().isOk())

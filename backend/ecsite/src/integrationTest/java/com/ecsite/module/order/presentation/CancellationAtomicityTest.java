@@ -8,6 +8,7 @@ import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
+import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.order.application.port.StockDirectory;
@@ -81,8 +82,14 @@ class CancellationAtomicityTest {
 
     private UUID orderId;
 
+    /**
+     * このテストの会員（コミットするので、他のテストとカートを共有しないよう、テストごとに変える）
+     */
+    private TestTokens.Builder owner;
+
     @BeforeEach
     void setUp() throws Exception {
+        owner = TestTokens.member().subject(UUID.randomUUID());
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
         ShippingTaxCategory.ensure(dsl);
@@ -91,7 +98,7 @@ class CancellationAtomicityTest {
         product = data.product(taxCategoryId, "一貫性の商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
-        orderId = new OrderTestData(mockMvc, gateway, orderPaymentService).placeOrder(variantId, 2);
+        orderId = new OrderTestData(mockMvc, gateway, orderPaymentService, owner.bearer()).placeOrder(variantId, 2);
         awaitAuthorizedHandled();
     }
 
@@ -116,7 +123,7 @@ class CancellationAtomicityTest {
                                 {"reason": "在庫の不備"}"""))
                 .andExpect(status().isInternalServerError());
 
-        mockMvc.perform(get("/api/store/orders/" + orderId)).andExpect(jsonPath("$.status").value("ACCEPTED"));
+        mockMvc.perform(get("/api/store/orders/" + orderId).with(owner.bearer())).andExpect(jsonPath("$.status").value("ACCEPTED"));
         mockMvc.perform(get("/api/admin/inventory/variants/" + product.variantIds.getFirst()))
                 .andExpect(jsonPath("$.quantity").value(3));
     }

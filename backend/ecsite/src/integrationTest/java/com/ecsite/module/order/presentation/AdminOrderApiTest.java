@@ -53,7 +53,7 @@ class AdminOrderApiTest {
     private static final String SCOPE = "202612";
 
     /**
-     * 2026-12-08 23:59（日本時間）
+     * 2026-12-08 23:59（日本時間）。注文日を 2026 年 12 月にするのは、他のテストの注文日（2026-10-08、2026-11-20）と重ならない日にして、注文番号の前方一致で自分の注文だけを絞れるようにするため
      */
     private static final Instant DEC_8_LATE = Instant.parse("2026-12-08T14:59:00Z");
 

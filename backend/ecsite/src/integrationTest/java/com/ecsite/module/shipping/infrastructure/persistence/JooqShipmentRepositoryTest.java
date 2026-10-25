@@ -120,6 +120,7 @@ class JooqShipmentRepositoryTest {
     @Test
     @DisplayName("出荷を新しい順に、件数の上限まで読める")
     void findsRecentFirst() {
+        // 時刻は、表にありうるどの出荷（MockCarrierTest の 2095 年を含む）より後にして、件数の上限で自分の 2 件だけが返るようにする
         var older = Shipment.create(UUID.randomUUID(), UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of("111"),
                 Instant.parse("3000-01-01T00:00:00Z"));
         var newer = Shipment.create(UUID.randomUUID(), UUID.randomUUID(), Carrier.YAMATO, TrackingNumber.of("222"),

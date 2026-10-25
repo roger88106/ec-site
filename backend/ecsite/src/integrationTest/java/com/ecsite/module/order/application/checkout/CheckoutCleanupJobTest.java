@@ -112,7 +112,7 @@ class CheckoutCleanupJobTest {
 
     @Test
     @DisplayName("AC-284 期限から保存期間（1 日）より前の注文手続きは消え、その後の注文手続きは残る。消した件数をログに出す（AC-288）")
-    void deletesCheckoutsExpiredBeforeRetention(CapturedOutput output) {
+    void deletesCheckoutsExpiredBeforeRetention() {
         var old = insertCheckout(NOW);
         var recent = insertCheckout(NOW.plus(Duration.ofHours(2)));
 
@@ -120,7 +120,6 @@ class CheckoutCleanupJobTest {
         job.cleanUp();
 
         assertThat(remaining(List.of(old, recent))).containsExactly(recent);
-        assertThat(output).containsPattern("期限切れの注文手続きを消した：[1-9][0-9]* 件");
     }
 
     @Test
@@ -194,6 +193,26 @@ class CheckoutCleanupJobTest {
 
         assertThat(deleted).isEqualTo(2);
         assertThat(remaining(checkouts)).hasSize(1);
+    }
+
+    @Test
+    @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
+    void logsDeletedCount(CapturedOutput output) {
+        // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
+        var longAgo = Instant.parse("2000-01-01T00:00:00Z");
+        var checkouts = new ArrayList<UUID>();
+        for (int i = 0; i < 5; i++) {
+            checkouts.add(insertCheckout(longAgo));
+        }
+        var smallBatch = new CheckoutCleanupJob(service,
+                new CheckoutCleanupProperties(Duration.ofHours(1), Duration.ofDays(1), 2), clock);
+
+        clock.setInstant(longAgo.plus(TTL).plus(Duration.ofDays(1)).plusSeconds(1));
+        smallBatch.cleanUp();
+
+        var deleted = checkouts.size() - remaining(checkouts).size();
+        assertThat(deleted).isEqualTo(5);
+        assertThat(output).contains("期限切れの注文手続きを消した：" + deleted + " 件");
     }
 
     /**

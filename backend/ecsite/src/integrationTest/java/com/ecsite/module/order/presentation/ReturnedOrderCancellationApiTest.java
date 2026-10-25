@@ -5,6 +5,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
+import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -30,7 +31,6 @@ import java.time.Instant;
 import java.util.UUID;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,6 +65,8 @@ class ReturnedOrderCancellationApiTest {
     @Autowired
     MockCarrier mockCarrier;
 
+    private ShippingTestData shipping;
+
     @Autowired
     OrderPaymentService orderPaymentService;
 
@@ -89,16 +91,13 @@ class ReturnedOrderCancellationApiTest {
         clock.setInstant(NOW);
         gateway.reset();
         ShippingTaxCategory.ensure(dsl);
+        shipping = new ShippingTestData(mockMvc, mockCarrier);
         var data = new CatalogTestData(mockMvc, clock);
         var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
         orderId = new OrderTestData(mockMvc, gateway, orderPaymentService).placeOrder(variantId, 2);
-        mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"carrier": "YAMATO", "trackingNumber": "%s"}""".formatted(TRACKING_NUMBER)))
-                .andExpect(status().isCreated());
+        shipping.ship(orderId, Carrier.YAMATO, TRACKING_NUMBER);
     }
 
     @Test
@@ -195,12 +194,7 @@ class ReturnedOrderCancellationApiTest {
      * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
      */
     private void notifyStatus(String statusName) throws Exception {
-        var notification = mockCarrier.notification(Carrier.YAMATO, TRACKING_NUMBER, statusName);
-        mockMvc.perform(post("/api/webhooks/carrier")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Carrier-Signature", notification.signature())
-                        .content(notification.body()))
-                .andExpect(status().isOk());
+        shipping.notifyStatus(Carrier.YAMATO, TRACKING_NUMBER, statusName);
     }
 
     /**

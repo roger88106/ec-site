@@ -5,6 +5,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
+import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -91,6 +92,8 @@ class AdminOrderShipmentViewApiTest {
      */
     private OrderTestData orders;
 
+    private ShippingTestData shipping;
+
     /**
      * 受付のまま（出荷待ち）の注文
      */
@@ -119,17 +122,13 @@ class AdminOrderShipmentViewApiTest {
         // 商品の公開で時計が進むので、注文と与信の時刻をそろえる
         clock.setInstant(NOW);
         orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        shipping = new ShippingTestData(mockMvc, mockCarrier);
         accepted = orders.placeOrder(variantId, 1, "受付 太郎");
         shipped = orders.placeOrder(variantId, 1, "出荷 花子");
         returned = orders.placeOrder(variantId, 1, "返送 次郎");
-        ship(shipped, "111111111111");
-        ship(returned, "222222222222");
-        var notification = mockCarrier.notification(Carrier.YAMATO, "222222222222", "返品");
-        mockMvc.perform(post("/api/webhooks/carrier")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Carrier-Signature", notification.signature())
-                        .content(notification.body()))
-                .andExpect(status().isOk());
+        shipping.ship(shipped, Carrier.YAMATO, "111111111111");
+        shipping.ship(returned, Carrier.YAMATO, "222222222222");
+        shipping.notifyStatus(Carrier.YAMATO, "222222222222", "返品");
     }
 
     @Nested
@@ -257,17 +256,6 @@ class AdminOrderShipmentViewApiTest {
     }
 
     // ============================== 補助 ==============================
-
-    /**
-     * 出荷を登録する
-     */
-    private void ship(UUID orderId, String trackingNumber) throws Exception {
-        mockMvc.perform(post(BASE + "/" + orderId + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"carrier": "YAMATO", "trackingNumber": "%s"}""".formatted(trackingNumber)))
-                .andExpect(status().isCreated());
-    }
 
     /**
      * このテストの注文に共通する注文番号の前方一致（注文日）

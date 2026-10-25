@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.ShippingTestData;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
@@ -60,30 +61,30 @@ class JooqShipmentRepositoryTest {
     @DisplayName("BR-23 同じ注文に出荷を重ねて保存すると、業務のエラーになる")
     void rejectsSecondShipmentForOrder() {
         var orderId = UUID.randomUUID();
-        repository.insert(shipment(orderId, Carrier.YAMATO, number()));
+        repository.insert(shipment(orderId, Carrier.YAMATO, ShippingTestData.trackingNumber()));
 
-        assertBusinessError(() -> repository.insert(shipment(orderId, Carrier.SAGAWA, number())),
+        assertBusinessError(() -> repository.insert(shipment(orderId, Carrier.SAGAWA, ShippingTestData.trackingNumber())),
                 ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
     }
 
     @Test
     @DisplayName("AC-174 配送業者と送り状番号で出荷を引ける。別の配送業者や別の番号は引けない")
     void findsByCarrierAndTrackingNumber() {
-        var digits = number();
+        var digits = ShippingTestData.trackingNumber();
         var target = shipment(UUID.randomUUID(), Carrier.YAMATO, digits);
         repository.insert(target);
-        repository.insert(shipment(UUID.randomUUID(), Carrier.YAMATO, number()));
+        repository.insert(shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber()));
 
         assertThat(repository.findAllByTrackingForUpdate(Carrier.YAMATO, TrackingNumber.of(digits)))
                 .extracting(Shipment::id).containsExactly(target.id());
         assertThat(repository.findAllByTrackingForUpdate(Carrier.SAGAWA, TrackingNumber.of(digits))).isEmpty();
-        assertThat(repository.findAllByTrackingForUpdate(Carrier.YAMATO, TrackingNumber.of(number()))).isEmpty();
+        assertThat(repository.findAllByTrackingForUpdate(Carrier.YAMATO, TrackingNumber.of(ShippingTestData.trackingNumber()))).isEmpty();
     }
 
     @Test
     @DisplayName("AC-174 進めた配送状態と通知を反映した日時を保存すると、読み直しても残る")
     void savesProgress() {
-        var shipment = shipment(UUID.randomUUID(), Carrier.YAMATO, number());
+        var shipment = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
         repository.insert(shipment);
         var notifiedAt = Instant.parse("2026-10-15T02:00:00Z");
 
@@ -101,9 +102,9 @@ class JooqShipmentRepositoryTest {
     @Test
     @DisplayName("AC-189 配送状態が返送の出荷の注文 ID だけを返す")
     void findsReturnedOrderIds() {
-        var returned = shipment(UUID.randomUUID(), Carrier.YAMATO, number());
-        var delivered = shipment(UUID.randomUUID(), Carrier.YAMATO, number());
-        var shipped = shipment(UUID.randomUUID(), Carrier.YAMATO, number());
+        var returned = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
+        var delivered = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
+        var shipped = shipment(UUID.randomUUID(), Carrier.YAMATO, ShippingTestData.trackingNumber());
         repository.insert(returned);
         repository.insert(delivered);
         repository.insert(shipped);
@@ -128,13 +129,6 @@ class JooqShipmentRepositoryTest {
 
         assertThat(repository.findRecent(2)).extracting(Shipment::id).containsExactly(newer.id(), older.id());
         assertThat(repository.findRecent(1)).extracting(Shipment::id).containsExactly(newer.id());
-    }
-
-    /**
-     * 他のテストが確定させた出荷と重ならない送り状番号を作る。
-     */
-    private static String number() {
-        return String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits() % 1_000_000_000_000L));
     }
 
     /**

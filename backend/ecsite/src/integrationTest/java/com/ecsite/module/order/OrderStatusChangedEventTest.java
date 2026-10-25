@@ -5,6 +5,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
+import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -35,7 +36,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -89,6 +89,8 @@ class OrderStatusChangedEventTest {
 
     private OrderTestData orders;
 
+    private ShippingTestData shipping;
+
     private UUID variantId;
 
     @BeforeEach
@@ -102,6 +104,7 @@ class OrderStatusChangedEventTest {
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 10);
         orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        shipping = new ShippingTestData(mockMvc, mockCarrier);
         // 商品の準備で時計が進むので、注文の前に戻す
         clock.setInstant(NOW);
     }
@@ -118,8 +121,8 @@ class OrderStatusChangedEventTest {
         at(3);
         mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancellation-request/reject")).andExpect(status().isNoContent());
         at(4);
-        ship(orderId);
-        notifyStatus("返品");
+        shipping.ship(orderId, Carrier.YAMATO, TRACKING_NUMBER);
+        shipping.notifyStatus(Carrier.YAMATO, TRACKING_NUMBER, "返品");
         at(5);
         mockMvc.perform(put("/api/admin/orders/" + orderId + "/cancel")
                 .contentType(MediaType.APPLICATION_JSON)
@@ -212,28 +215,5 @@ class OrderStatusChangedEventTest {
      */
     private static Instant minutes(int minutes) {
         return NOW.plus(Duration.ofMinutes(minutes));
-    }
-
-    /**
-     * 出荷を登録する
-     */
-    private void ship(UUID orderId) throws Exception {
-        mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"carrier": "YAMATO", "trackingNumber": "%s"}""".formatted(TRACKING_NUMBER)))
-                .andExpect(status().isCreated());
-    }
-
-    /**
-     * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
-     */
-    private void notifyStatus(String statusName) throws Exception {
-        var notification = mockCarrier.notification(Carrier.YAMATO, TRACKING_NUMBER, statusName);
-        mockMvc.perform(post("/api/webhooks/carrier")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Carrier-Signature", notification.signature())
-                        .content(notification.body()))
-                .andExpect(status().isOk());
     }
 }

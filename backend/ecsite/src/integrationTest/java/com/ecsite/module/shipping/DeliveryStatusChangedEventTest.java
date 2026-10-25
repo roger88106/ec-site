@@ -2,6 +2,7 @@ package com.ecsite.module.shipping;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
+import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
@@ -15,7 +16,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,8 +27,6 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
  * イベント「配送状態の変化」の統合テスト（T0113、plan 010 第 3 節）。<br />
@@ -128,11 +126,6 @@ class DeliveryStatusChangedEventTest {
      * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
      */
     private void notifyStatus(String statusName) throws Exception {
-        var notification = mockCarrier.notification(Carrier.YAMATO, TRACKING_NUMBER, statusName);
-        mockMvc.perform(post("/api/webhooks/carrier")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Carrier-Signature", notification.signature())
-                        .content(notification.body()))
-                .andExpect(status().isOk());
+        new ShippingTestData(mockMvc, mockCarrier).notifyStatus(Carrier.YAMATO, TRACKING_NUMBER, statusName);
     }
 }

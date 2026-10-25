@@ -1,6 +1,7 @@
 package com.ecsite.module.shipping.infrastructure.mock;
 
 import com.ecsite.IntegrationTest;
+import com.ecsite.ShippingTestData;
 import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
 import com.ecsite.module.shipping.domain.Carrier;
@@ -117,7 +118,7 @@ class MockCarrierTest {
 
         var invalid = TestCarrierNotifications.withInvalidSignature(
                 mockCarrier.notification(Carrier.YAMATO, shipment.trackingNumber(), "配達完了"));
-        var unknown = mockCarrier.notification(Carrier.YAMATO, number(), "配達完了");
+        var unknown = mockCarrier.notification(Carrier.YAMATO, ShippingTestData.trackingNumber(), "配達完了");
 
         assertThat(mockCarrier.send(baseUrl(), invalid)).isEqualTo(401);
         assertThat(mockCarrier.send(baseUrl(), unknown)).isEqualTo(200);
@@ -168,16 +169,9 @@ class MockCarrierTest {
      */
     private Created shipped(ShipmentSummary.Carrier carrier) {
         var orderId = UUID.randomUUID();
-        var trackingNumber = number();
+        var trackingNumber = ShippingTestData.trackingNumber();
         shippingApi.create(orderId, carrier, trackingNumber, SHIPPED_AT);
         return new Created(orderId, trackingNumber);
-    }
-
-    /**
-     * 他のテストが確定させた出荷と重ならない送り状番号（12 桁）を作る。
-     */
-    private static String number() {
-        return String.valueOf(Math.abs(UUID.randomUUID().getMostSignificantBits() % 900_000_000_000L) + 100_000_000_000L);
     }
 
     /**

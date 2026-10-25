@@ -5,6 +5,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
+import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
@@ -164,11 +165,6 @@ class StoreOrderShipmentApiTest {
      * mock の物流サービスから、配送状態の通知をエンドポイントへ送る
      */
     private void notifyStatus(Carrier carrier, String statusName) throws Exception {
-        var notification = mockCarrier.notification(carrier, TRACKING_NUMBER, statusName);
-        mockMvc.perform(post("/api/webhooks/carrier")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .header("X-Carrier-Signature", notification.signature())
-                        .content(notification.body()))
-                .andExpect(status().isOk());
+        new ShippingTestData(mockMvc, mockCarrier).notifyStatus(carrier, TRACKING_NUMBER, statusName);
     }
 }

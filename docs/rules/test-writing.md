@@ -12,7 +12,7 @@
 | 3.1 | 統合テストの土台を使う | レビュー |
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
-| 3.4 | 構成の検査は本番のクラスを補助から読む | 自動（`ProductionClassesTest` の文字列の検査） |
+| 3.4 | 構成の検査は本番のクラスを補助から読む。設定のテストは設定の補助を使う | 構成の検査は自動（`ProductionClassesTest` の文字列の検査）、設定のテストはレビュー |
 | 4.1 | 画面に見えるもので探す | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector` は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
@@ -116,11 +116,16 @@ token は `TestTokens`、画像は `TestImages` を使う。
 
 main と同じパッケージに置く。Spring を起動しないものは `src/test`、起動するものは `src/integrationTest`。
 
-### 3.4 構成の検査は本番のクラスを補助から読む
+### 3.4 単体テストの補助（本番のクラスの読み込み、設定）
 
-構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`）は、本番のクラスとモジュールの一覧を、単体テストの補助 `ProductionClasses` から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない。
+単体テストの補助は、`src/test` の `com.ecsite` の直下に置く。
 
-理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が重なって残るため。
+| 補助 | 使う場面 | 使い方 |
+|------|----------|--------|
+| `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
+| `TestSettings` | 設定のテスト | `load(profile…)` で `application.yml` に profile の設定ファイルを重ねた値を読み、`bind(接頭辞, 設定の型, 値)` で設定の型に値を当てはめる。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
+
+理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が重なって残るため。設定の読み込みを 1 か所にして、設定のテストが同じ前提で値を読むため。
 
 ## 4. フロント
 

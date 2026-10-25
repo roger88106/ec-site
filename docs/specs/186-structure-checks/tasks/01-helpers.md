@@ -32,7 +32,7 @@
 - [x] **T186-01-06** 図を描く処理を、`ApplicationModules` から record を作るメソッドと、record から描くメソッドに分ける。T186-01-05 のテストが通る。一時的に点線を実線に変えて、テストが失敗することを確認する（DC-186-12）。
   - 依存：T186-01-05
   - 範囲：`test/modulith/ModuleDiagramTest.java`
-- [ ] **T186-01-07** 単体テストの heap の上限を、[plan](../plan.md) 第 1.2 節の手順で測って決める。1024m のままにするときは、`unitTestMaxHeap` のコメントに測った値を書く。測った値を commit の本文に書く（DC-186-9）。
+- [x] **T186-01-07** 単体テストの heap の上限を、[plan](../plan.md) 第 1.2 節の手順で測って決める。1024m のままにするときは、`unitTestMaxHeap` のコメントに測った値を書く。測った値を commit の本文に書く（DC-186-9）。
   - 依存：T186-01-03、T186-01-04、T186-01-06
   - 範囲：`backend/ecsite/build.gradle.kts`（`unitTestMaxHeap`）
 - [x] **T186-01-08** [テストの書き方](../../../rules/test-writing.md)  第 3.3 節に、`ProductionClasses` と、構成の検査は本番のクラスを補助で読むことを書く。用語集の識別子の検査が求めるときは、用語集に追加する（[plan](../plan.md) 第 5 節）。

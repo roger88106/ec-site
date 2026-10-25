@@ -1,15 +1,28 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
+import com.ecsite.architecture.layerdeps.module.sample.api.ApiToApplication;
+import com.ecsite.architecture.layerdeps.module.sample.api.ApiToPresentation;
+import com.ecsite.architecture.layerdeps.module.sample.application.SampleProperties;
+import com.ecsite.architecture.layerdeps.module.sample.application.SampleService;
+import com.ecsite.architecture.layerdeps.module.sample.application.port.SamplePort;
+import com.ecsite.architecture.layerdeps.module.sample.domain.SampleDomain;
+import com.ecsite.architecture.layerdeps.module.sample.infrastructure.InfrastructureToPort;
+import com.ecsite.architecture.layerdeps.module.sample.infrastructure.InfrastructureToService;
+import com.ecsite.architecture.layerdeps.module.sample.presentation.SamplePresentation;
+import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.PackageMatcher;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
 import com.tngtech.archunit.lang.ConditionEvents;
 import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -18,7 +31,11 @@ import java.util.Map;
 import java.util.Set;
 import java.util.TreeMap;
 import java.util.TreeSet;
+import java.util.function.BiPredicate;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.methods;
@@ -41,6 +58,51 @@ class ModuleStructureTest {
      * モジュールの直下に置いてよいパッケージ（層）
      */
     private static final Set<String> LAYERS = Set.of("api", "event", "presentation", "application", "domain", "infrastructure");
+
+    /**
+     * クラスのパッケージを、モジュールのパッケージ、層、層の下のパッケージに分ける形（層の下のパッケージはなくてもよい）
+     */
+    private static final Pattern LAYERED_PACKAGE = Pattern.compile("^(.*\\.module\\.[^.]+)\\.([^.]+)(?:\\.(.*))?$");
+
+    /**
+     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドの書き方 第 1.1 節の表）。<br />
+     * 層の中の自分自身への依存は、表に書かなくても許す。他のモジュールと共通コードへの依存は、この表の対象でない
+     * （モジュールの間は {@code ModulithTest} と {@code otherModulesApiIsUsedOnlyByDirectories} が確認する）。
+     * presentation の domain への依存は、エラーの定義と値の型に限るが、集約に依存しないことは
+     * {@code ModuleRoleTest} が確認するので、ここでは domain の全体を許す。
+     */
+    private static final Map<String, List<AllowedTarget>> ALLOWED_LAYER_DEPENDENCIES = Map.of(
+            "api", List.of(AllowedTarget.whole("application"), AllowedTarget.whole("domain")),
+            "event", List.of(AllowedTarget.whole("application"), AllowedTarget.whole("domain")),
+            "presentation", List.of(AllowedTarget.except("application", "port"), AllowedTarget.whole("domain")),
+            "application", List.of(AllowedTarget.whole("domain"), AllowedTarget.whole("event")),
+            "domain", List.of(AllowedTarget.whole("event")),
+            "infrastructure", List.of(
+                    AllowedTarget.only("application", "port", "model"),
+                    AllowedTarget.configurationProperties("application"),
+                    AllowedTarget.whole("domain")));
+
+    /**
+     * 層が、同じモジュールの中で、依存の表にない層とパッケージに依存しない規則
+     */
+    private static final ArchRule LAYER_DEPENDENCY_RULE = classes()
+            .that(DescribedPredicate.describe("are in a layer of a module", ModuleStructureTest::isLayered))
+            .should(new ArchCondition<JavaClass>("depend only on the layers and packages in the dependency table") {
+                @Override
+                public void check(JavaClass javaClass, ConditionEvents events) {
+                    for (Dependency dependency : forbiddenDependencies(javaClass)) {
+                        events.add(SimpleConditionEvent.violated(dependency, dependency.getDescription()));
+                    }
+                }
+            });
+
+    /**
+     * 層の依存の規則の検査の例（違反する例を含む）のクラス
+     */
+    private static final Class<?>[] LAYER_EXAMPLES = {
+            ApiToApplication.class, ApiToPresentation.class, SamplePresentation.class, SampleService.class,
+            SamplePort.class, SampleProperties.class, InfrastructureToPort.class, InfrastructureToService.class,
+            SampleDomain.class};
 
     /**
      * 1 つのパッケージの直下に置けるクラスの数の上限
@@ -78,15 +140,21 @@ class ModuleStructureTest {
     }
 
     @Test
-    @DisplayName("domain は、同じモジュールのほかの層に依存しない")
-    void domainDependsOnNoOtherLayer() {
-        for (String module : ProductionClasses.modulesWith("domain")) {
-            ArchRule rule = noClasses().that().resideInAPackage(layer(module, "domain"))
-                    .should().dependOnClassesThat().resideInAnyPackage(
-                            layer(module, "api"), layer(module, "presentation"),
-                            layer(module, "application"), layer(module, "infrastructure"));
-            rule.check(ProductionClasses.all());
-        }
+    @DisplayName("層は、同じモジュールの中で、依存の表にない層とパッケージに依存しない（対象は 1 件以上ある）")
+    void layersDependOnlyOnAllowedLayers() {
+        ProductionClasses.requireNotEmpty(layeredClasses(ProductionClasses.modules()), "モジュールの層のクラス");
+
+        LAYER_DEPENDENCY_RULE.check(ProductionClasses.modules());
+    }
+
+    @Test
+    @DisplayName("層の依存の規則は、表にある組には当たらず、api → presentation と infrastructure → application の service に当たる")
+    void layerDependencyRuleMatchesCombinationsOutsideTable() {
+        JavaClasses examples = new ClassFileImporter().importClasses(LAYER_EXAMPLES);
+
+        assertThat(forbiddenDependencies(examples)).containsExactlyInAnyOrder(
+                ApiToPresentation.class.getName() + " -> " + SamplePresentation.class.getName(),
+                InfrastructureToService.class.getName() + " -> " + SampleService.class.getName());
     }
 
     @Test
@@ -100,45 +168,11 @@ class ModuleStructureTest {
     }
 
     @Test
-    @DisplayName("application は、presentation と infrastructure に依存しない")
-    void applicationDependsOnNeitherPresentationNorInfrastructure() {
-        for (String module : ProductionClasses.modulesWith("application")) {
-            ArchRule rule = noClasses().that().resideInAPackage(layer(module, "application"))
-                    .should().dependOnClassesThat().resideInAnyPackage(
-                            layer(module, "presentation"), layer(module, "infrastructure"));
-            rule.check(ProductionClasses.all());
-        }
-    }
-
-    @Test
-    @DisplayName("application は、api に依存しない（公開の API が application の view を変換する）")
-    void applicationDoesNotDependOnApi() {
-        noClasses().that().resideInAPackage(MODULE_PACKAGE + ".*.application..")
-                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.api..")
-                .check(ProductionClasses.all());
-    }
-
-    @Test
     @DisplayName("presentation と application.model は、application.port に依存しない（port の型を view にして渡す）")
     void presentationAndApplicationModelDoNotDependOnPort() {
         noClasses().that().resideInAnyPackage(MODULE_PACKAGE + ".*.presentation..", MODULE_PACKAGE + ".*.application.model..")
                 .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.application.port..")
                 .check(ProductionClasses.all());
-    }
-
-    @Test
-    @DisplayName("presentation・api・event と infrastructure は、互いに依存しない")
-    void entryLayersAndInfrastructureAreIndependent() {
-        for (String module : ProductionClasses.modulesWith("presentation", "api", "event")) {
-            noClasses().that().resideInAnyPackage(layer(module, "presentation"), layer(module, "api"), layer(module, "event"))
-                    .should().dependOnClassesThat().resideInAPackage(layer(module, "infrastructure"))
-                    .check(ProductionClasses.all());
-        }
-        for (String module : ProductionClasses.modulesWith("infrastructure")) {
-            noClasses().that().resideInAPackage(layer(module, "infrastructure"))
-                    .should().dependOnClassesThat().resideInAPackage(layer(module, "presentation"))
-                    .check(ProductionClasses.all());
-        }
     }
 
     @Test
@@ -168,6 +202,14 @@ class ModuleStructureTest {
     void commonAndConfigDependOnNoModule() {
         noClasses().that().resideInAnyPackage("com.ecsite.common..", "com.ecsite.config..")
                 .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + "..")
+                .check(ProductionClasses.all());
+    }
+
+    @Test
+    @DisplayName("共通コードは、設定に依存しない")
+    void commonDependsOnNoConfig() {
+        noClasses().that().resideInAPackage("com.ecsite.common..")
+                .should().dependOnClassesThat().resideInAPackage("com.ecsite.config..")
                 .check(ProductionClasses.all());
     }
 
@@ -229,6 +271,87 @@ class ModuleStructureTest {
     }
 
     /**
+     * クラスが、モジュールの層（またはその下）のパッケージにあるかを返す。
+     *
+     * @param javaClass クラス
+     * @return モジュールの層のパッケージにあれば true
+     */
+    private static boolean isLayered(JavaClass javaClass) {
+        return LAYERED_PACKAGE.matcher(javaClass.getPackageName()).matches();
+    }
+
+    /**
+     * 規則の対象になる、モジュールの層のクラスを返す。
+     *
+     * @param classes 調べるクラス
+     * @return 層のパッケージのクラス
+     */
+    private static List<JavaClass> layeredClasses(JavaClasses classes) {
+        return classes.stream().filter(ModuleStructureTest::isLayered).toList();
+    }
+
+    /**
+     * 層の依存の表にない依存を、「依存元 -> 依存先」の形で返す。
+     *
+     * @param classes 調べるクラス
+     * @return 表にない依存（名前の順）
+     */
+    private static List<String> forbiddenDependencies(JavaClasses classes) {
+        return layeredClasses(classes).stream()
+                .flatMap(javaClass -> forbiddenDependencies(javaClass).stream())
+                .map(dependency -> dependency.getOriginClass().getName() + " -> " + dependency.getTargetClass().getName())
+                .sorted()
+                .toList();
+    }
+
+    /**
+     * クラスの、同じモジュールの中への依存のうち、層の依存の表にないものを返す。
+     *
+     * @param javaClass 依存元のクラス
+     * @return 表にない依存。モジュールの層のクラスでなければ空
+     */
+    private static List<Dependency> forbiddenDependencies(JavaClass javaClass) {
+        Matcher origin = LAYERED_PACKAGE.matcher(javaClass.getPackageName());
+        if (!origin.matches()) {
+            return List.of();
+        }
+        String modulePackage = origin.group(1);
+        String layer = origin.group(2);
+        List<AllowedTarget> allowed = ALLOWED_LAYER_DEPENDENCIES.get(layer);
+        return javaClass.getDirectDependenciesFromSelf().stream()
+                .filter(dependency -> isInModule(dependency.getTargetClass(), modulePackage))
+                .filter(dependency -> {
+                    String relative = relativePackage(dependency.getTargetClass(), modulePackage);
+                    return !AllowedTarget.isInside(relative, layer)
+                            && allowed.stream().noneMatch(target -> target.allows(relative, dependency.getTargetClass()));
+                })
+                .toList();
+    }
+
+    /**
+     * クラスが、指定したモジュールのパッケージ（直下を含む）にあるかを返す。
+     *
+     * @param javaClass     クラス
+     * @param modulePackage モジュールのパッケージの名前
+     * @return モジュールの中なら true
+     */
+    private static boolean isInModule(JavaClass javaClass, String modulePackage) {
+        return javaClass.getPackageName().equals(modulePackage) || javaClass.getPackageName().startsWith(modulePackage + ".");
+    }
+
+    /**
+     * モジュールの中のクラスの、モジュールからの相対のパッケージの名前を返す。
+     *
+     * @param javaClass     モジュールの中のクラス
+     * @param modulePackage モジュールのパッケージの名前
+     * @return 相対のパッケージの名前（例：{@code application.port}）。モジュールの直下なら空文字
+     */
+    private static String relativePackage(JavaClass javaClass, String modulePackage) {
+        String name = javaClass.getPackageName();
+        return name.length() > modulePackage.length() ? name.substring(modulePackage.length() + 1) : "";
+    }
+
+    /**
      * 他のモジュールの api を、許可の一覧にない使い方で使わない、という条件を返す。
      *
      * @param module api を持つモジュールの名前
@@ -271,6 +394,97 @@ class ModuleStructureTest {
      */
     private static String layer(String module, String layer) {
         return "%s.%s.%s..".formatted(MODULE_PACKAGE, module, layer);
+    }
+
+    /**
+     * 層が依存してよい、同じモジュールの中の先。<br />
+     * 先はモジュールからの相対のパッケージで決め、クラスの注釈で絞ることもある。
+     *
+     * @param matches 相対のパッケージの名前と、依存先のクラスから、依存してよいかを返す関数
+     */
+    private record AllowedTarget(BiPredicate<String, JavaClass> matches) {
+
+        /**
+         * 層の全体（その下のパッケージを含む）に依存してよい先を返す。
+         *
+         * @param layer 層の名前
+         * @return 依存してよい先
+         */
+        static AllowedTarget whole(String layer) {
+            return new AllowedTarget((relative, target) -> isInside(relative, layer));
+        }
+
+        /**
+         * 層の全体のうち、指定した下のパッケージを除いたものに依存してよい先を返す。
+         *
+         * @param layer    層の名前
+         * @param excluded 除く下のパッケージの名前
+         * @return 依存してよい先
+         */
+        static AllowedTarget except(String layer, String excluded) {
+            return new AllowedTarget((relative, target) ->
+                    isInside(relative, layer) && !isInside(relative, layer + "." + excluded));
+        }
+
+        /**
+         * 層の、指定した下のパッケージだけに依存してよい先を返す。
+         *
+         * @param layer       層の名前
+         * @param subpackages 依存してよい下のパッケージの名前
+         * @return 依存してよい先
+         */
+        static AllowedTarget only(String layer, String... subpackages) {
+            return new AllowedTarget((relative, target) ->
+                    Stream.of(subpackages).anyMatch(subpackage -> isInside(relative, layer + "." + subpackage)));
+        }
+
+        /**
+         * 層の、{@code @ConfigurationProperties} を付けたクラス（設定の値の型）だけに依存してよい先を返す。
+         *
+         * @param layer 層の名前
+         * @return 依存してよい先
+         */
+        static AllowedTarget configurationProperties(String layer) {
+            return new AllowedTarget((relative, target) ->
+                    isInside(relative, layer) && isConfigurationProperties(target));
+        }
+
+        /**
+         * 依存してよいかを返す。
+         *
+         * @param relative 依存先のモジュールからの相対のパッケージの名前
+         * @param target   依存先のクラス
+         * @return 依存してよければ true
+         */
+        boolean allows(String relative, JavaClass target) {
+            return matches.test(relative, target);
+        }
+
+        /**
+         * 相対のパッケージが、指定したパッケージそのものか、その下かを返す。
+         *
+         * @param relative 相対のパッケージの名前
+         * @param root     パッケージの名前
+         * @return パッケージそのもの、またはその下なら true
+         */
+        static boolean isInside(String relative, String root) {
+            return relative.equals(root) || relative.startsWith(root + ".");
+        }
+
+        /**
+         * クラスか、それを囲むクラスに {@code @ConfigurationProperties} が付いているかを返す。
+         *
+         * @param target クラス
+         * @return 付いていれば true
+         */
+        private static boolean isConfigurationProperties(JavaClass target) {
+            for (JavaClass current = target; current != null; current = current.getEnclosingClass().orElse(null)) {
+                if (current.isAnnotatedWith(ConfigurationProperties.class)) {
+                    return true;
+                }
+            }
+            return false;
+        }
     }
 
     /**

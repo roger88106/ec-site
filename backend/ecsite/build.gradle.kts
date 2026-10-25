@@ -190,10 +190,12 @@ val unitTestMaxHeap = "1g"
 //   openapi.dir：契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
 //   design.overview：図をコードと比べる文書（ModuleDiagramTest）
+//   design.modules.dir：モジュールの設計書の置き場所（ProductionClassesTest が、レベル A の一覧を設計書と比べる）
 val unitTestSystemProperties = mapOf(
     "openapi.dir" to file("../../api/openapi").absolutePath,
     "keycloak.realms.dir" to file("../../docker/keycloak/realms").absolutePath,
     "design.overview" to file("../../docs/design/overview.md").absolutePath,
+    "design.modules.dir" to file("../../docs/design/modules").absolutePath,
 )
 
 tasks.named<Test>("test") {
@@ -203,6 +205,7 @@ tasks.named<Test>("test") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
     inputs.files(fileTree("../../docs/design") { include("overview.md") })
+    inputs.dir("../../docs/design/modules")
     // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
     if (project.hasProperty("updateDocs")) {
         systemProperty("ecsite.update-docs", "true")
@@ -366,6 +369,7 @@ tasks.named("pitest") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
     inputs.files(fileTree("../../docs/design") { include("overview.md") })
+    inputs.dir("../../docs/design/modules")
 }
 
 // -----------------------------------------------------------------------------

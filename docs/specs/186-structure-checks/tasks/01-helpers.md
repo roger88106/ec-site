@@ -9,7 +9,7 @@
 
 実装は実装役のサブエージェントに任せる。パスの書き方は、[plan](../plan.md) の共通の決定のとおりである。補助へ移すタスクは、テストの確認を変えない。T186-01-01 と T186-01-02、T186-01-05 と T186-01-06 は、`[テスト]` と実装の組なので、それぞれ 1 commit にする。
 
-- [ ] **T186-01-01** [テスト] 本番のクラスの補助 `ProductionClasses` のテストを書き、失敗することを確認する（DC-186-8、10）。確認すること：
+- [x] **T186-01-01** [テスト] 本番のクラスの補助 `ProductionClasses` のテストを書き、失敗することを確認する（DC-186-8、10）。確認すること：
   - `handwritten()` が生成したコードを含まず、`modules()` がモジュールの外を含まない。
   - `moduleName` と `isGenerated` の判定。
   - `modulesWith` が、層を持たないモジュールを返さない。
@@ -17,7 +17,7 @@
   - レベル A の一覧が、設計書の「レベル」の行と一致する（[plan](../plan.md) 第 1.1 節）。
   - 依存：なし
   - 範囲：`test/ProductionClassesTest.java`（新規）
-- [ ] **T186-01-02** `ProductionClasses` を作り、遅延の static で 1 回だけ読み込む（[plan](../plan.md) 第 1.1 節の表）。設計書のディレクトリを system property `design.modules.dir` で渡し、test の task と pitest の `inputs` に宣言する。T186-01-01 のテストが通る（DC-186-8、10）。
+- [x] **T186-01-02** `ProductionClasses` を作り、遅延の static で 1 回だけ読み込む（[plan](../plan.md) 第 1.1 節の表）。設計書のディレクトリを system property `design.modules.dir` で渡し、test の task と pitest の `inputs` に宣言する。T186-01-01 のテストが通る（DC-186-8、10）。
   - 依存：T186-01-01
   - 範囲：`test/ProductionClasses.java`（新規）、`backend/ecsite/build.gradle.kts`（`unitTestSystemProperties`、test の task と pitest の `inputs`）
 - [ ] **T186-01-03** `architecture/` の 8 つの検査、`common/message/MessageContractTest`、`contract/ErrorCodeContractTest` の本番のクラスの読み込み、レベル A の一覧、層を持つモジュールを求める処理、モジュールの名前の取り出し、生成したコードの判定を、`ProductionClasses` の呼び出しに置き換える。`ModuleRoleTest` の static に持たない理由のコメントを削除する（DC-186-8、10）。

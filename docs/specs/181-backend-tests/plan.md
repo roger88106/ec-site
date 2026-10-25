@@ -136,7 +136,7 @@ DC-181-20 の対象と絞り方：
 |----|------|----------|----------|
 | 28 | カートの作成の永続化を、挿入できたかを返す形にする。会員のカートの ID を求める操作は、挿入できたら作った ID を返し、できなかったときだけ読み直す。注文の挿入（`OrderRepository.insert`）と同じ書き方にする。呼び出し元は `CartService` の 2 か所と、`CartCleanupJobTest`（`:184`）である | `main/module/cart/application/port/CartRepository.java`（`:19`）、`main/module/cart/infrastructure/persistence/JooqCartRepository.java`（`:43-52`）、`main/module/cart/application/CartService.java`（`:81,183`） | 新しい Repository のテスト（DC-181-31）で、2 回目の挿入が「できなかった」を返すことを確認する |
 | 29 | 同じ会員の最初のカートの要求を同時に送り、カートが 1 つで、全ての要求が同じ ID を受け取ることを確認する。会員の確定の並行のテスト（`MemberConfirmationTest`）と同じ書き方にする | `it/module/cart/presentation/MemberCartConcurrencyTest.java`（新規） | テスト。一時的に一意の制約の扱いを外して失敗することを確認する |
-| 30 | 注文の Repository のテストに、状態を変えた更新、古いバージョンでの更新の競合、行の lock、注文番号の存在の確認を追加する | `it/module/order/infrastructure/persistence/JooqOrderRepositoryTest.java` | テスト |
+| 30 | 注文の Repository のテストに、状態を変えた更新、行の lock、注文番号の存在の確認を追加する。注文の更新はバージョンで競合を判定しない（行の lock で防ぐ）ので、競合は確認しない | `it/module/order/infrastructure/persistence/JooqOrderRepositoryTest.java` | テスト |
 | 31 | 下の表の Repository に、永続化と再構築を確認する統合テストを追加する | 下の表 | テスト |
 
 DC-181-31 の対象：

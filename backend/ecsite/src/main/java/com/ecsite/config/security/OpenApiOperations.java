@@ -81,9 +81,9 @@ final class OpenApiOperations<T> {
     @SuppressWarnings("unchecked")
     private static <T> OpenApiOperations<T> parse(InputStream in, BiFunction<String, Map<String, Object>, T> valueOf) {
         Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
-        var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約に servers がない");
+        var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約には servers がある");
         var basePath = (String) servers.getFirst().get("url");
-        var paths = (Map<String, Map<String, Object>>) Objects.requireNonNull(root.get("paths"), "OpenAPI の契約に paths がない");
+        var paths = (Map<String, Map<String, Object>>) Objects.requireNonNull(root.get("paths"), "OpenAPI の契約には paths がある");
 
         var parser = PathPatternParser.defaultInstance;
         var operations = new ArrayList<Operation<T>>();

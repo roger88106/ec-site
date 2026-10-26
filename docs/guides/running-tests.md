@@ -23,7 +23,7 @@
 
 単体テストには、構成と契約の検査も含まれる：モジュールの境界（`ModulithTest`）、アーキテクチャの規則（`architecture/` の ArchUnit）、契約の制約（`contract/`）、エラーの定義とメッセージの対応（`MessageContractTest`）。
 
-コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]`（例：`[NullAway]`）で検査が分かる。直し方は、null の報告なら [バックエンドの書き方](../rules/backend-coding.md) 第 7 節。`-Werror` を付けているので、警告でもコンパイルが失敗する。
+コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]`（例：`[NullAway]`）で検査が分かる。直し方は、null の報告なら [バックエンドの書き方](../rules/backend-coding.md) 第 7.1 節。検査を抑えるときは [バックエンドの書き方](../rules/backend-coding.md) 第 7.2 節。`-Werror` を付けているので、警告でもコンパイルが失敗する。
 
 ## 2. 管理画面・店舗画面
 

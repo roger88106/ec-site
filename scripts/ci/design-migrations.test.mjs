@@ -1,0 +1,86 @@
+import assert from 'node:assert/strict'
+import { describe, test } from 'node:test'
+import { checkDesignMigrations, moduleOfMigration, parseDataModelMigrations } from './design-migrations.mjs'
+
+const DIR = '../../../backend/ecsite/src/main/resources/db/migration/'
+
+/** データモデルの節だけにマイグレーションを挙げる設計書 */
+function design(...names) {
+  const links = names.map((name) => `[${name}](${DIR}${name})`).join('、')
+  return ['# 設計', '## 概要', '本文は V999__other_x.sql に触れない', '## データモデル', links, '## 次の節', ''].join('\n')
+}
+
+describe('設計書のデータモデルとマイグレーションの照合', () => {
+  test('ファイル名の接頭辞からモジュールを決める。ordering は order の設計書、common はどのモジュールでもない', () => {
+    assert.equal(moduleOfMigration('V202610091000__tax_create_tax_category.sql'), 'tax')
+    assert.equal(moduleOfMigration('V202610111200__ordering_create_order.sql'), 'order')
+    assert.equal(moduleOfMigration('V202610090000__common_create_schemas.sql'), null)
+    assert.equal(moduleOfMigration('V1__nomodule.sql'), undefined)
+  })
+
+  test('データモデルの節だけから、挙げたマイグレーションのファイル名を読む（リンクの文字とパスの両方に出ても 1 回）', () => {
+    assert.deepEqual(parseDataModelMigrations(design('V1__tax_a.sql', 'V2__tax_b.sql')), ['V1__tax_a.sql', 'V2__tax_b.sql'])
+  })
+
+  test('データモデルの節がなければ null', () => {
+    assert.equal(parseDataModelMigrations('# 設計\n## 概要\n'), null)
+  })
+
+  test('全て挙げていれば問題がない', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__tax_a.sql', 'V2__ordering_b.sql', 'V3__common_c.sql'],
+      designs: { tax: design('V1__tax_a.sql'), order: design('V2__ordering_b.sql'), storefront: '# 設計\n' },
+    })
+    assert.deepEqual(problems, [])
+  })
+
+  test('設計書に挙げていないマイグレーションを失敗にする', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__tax_a.sql', 'V2__tax_b.sql'],
+      designs: { tax: design('V1__tax_a.sql') },
+    })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /docs\/design\/modules\/tax\.md/)
+    assert.match(problems[0], /V2__tax_b\.sql/)
+  })
+
+  test('設計書が挙げたマイグレーションが実在しないとき（ファイル名の誤り）を失敗にする', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__tax_a.sql'],
+      designs: { tax: design('V1__tax_a.sql', 'V9__tax_typo.sql') },
+    })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /V9__tax_typo\.sql/)
+    assert.match(problems[0], /実在しない/)
+  })
+
+  test('他のモジュールのマイグレーションを挙げたときを失敗にする', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__tax_a.sql', 'V2__cart_b.sql'],
+      designs: { tax: design('V1__tax_a.sql', 'V2__cart_b.sql'), cart: design('V2__cart_b.sql') },
+    })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /V2__cart_b\.sql/)
+    assert.match(problems[0], /cart/)
+  })
+
+  test('モジュールの設計書がない、または設計書にデータモデルの節がないマイグレーションを失敗にする', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__tax_a.sql', 'V2__ghost_b.sql'],
+      designs: { tax: '# 設計\n## 概要\n' },
+    })
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /V1__tax_a\.sql/)
+    assert.match(problems[1], /V2__ghost_b\.sql/)
+  })
+
+  test('モジュールが読めないファイル名を失敗にする', () => {
+    const problems = checkDesignMigrations({ migrations: ['V1__nomodule.sql'], designs: {} })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /V1__nomodule\.sql/)
+  })
+
+  test('データモデルの節のある設計書は、マイグレーションが 1 つもなくても問題がない', () => {
+    assert.deepEqual(checkDesignMigrations({ migrations: ['V1__tax_a.sql'], designs: { tax: design('V1__tax_a.sql'), media: design() } }), [])
+  })
+})

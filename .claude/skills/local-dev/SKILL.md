@@ -122,7 +122,7 @@ node scripts/dev/slot.mjs assign   # 空いている最小のスロットを割�
 node scripts/dev/slot.mjs show     # 自分のスロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
 node scripts/dev/slot.mjs env      # スロットの環境変数を export の形で出す（Gradle を直接実行するときなど）
 node scripts/dev/slot.mjs reset    # 割り当てを変えずに DB とバケットを再作成する（バックエンドを止めてから）
-node scripts/dev/slot.mjs release  # DB とバケットを削除し、割り当てを解く
+node scripts/dev/slot.mjs release  # ポートで待ち受けるプロセスを停止し、DB とバケットを削除して、割り当てを解除する
 ```
 
 - 作業ツリーを削除する前に `release` する。`release` せずに削除しても、残った DB とバケットは次の `assign` が再作成するので、手動で削除しない。
@@ -147,7 +147,9 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 
 - 待つ先は自分のスロットの運用ポート。`localhost:9080` はメインのバックエンドなので、待ってはいけない。
 - 店舗画面と管理画面のプレビューは、`.claude/launch.json` の `store-<n>`・`admin-<n>`（`store-1`、`admin-2` など。`<n>` は自分のスロット）を `preview_start` で指定する。`admin`・`store` はスロット 0。プレビューのツールがないときは、`node scripts/dev/slot.mjs run store <n>`・`run admin <n>` をバックグラウンドで実行する。番号が自分のスロットと違うと起動しない。
-- 停止は、自分のスロットのポートで待ち受けているプロセスだけを停止する。Windows の PowerShell では `Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess`（スロット 1 のバックエンド）。他のスロットのポートのプロセスを停止しない。
+- `node scripts/dev/slot.mjs run` は、Ctrl+C など停止のシグナルの 1 回目で子プロセスも含めて停止する。`run backend` は、バックエンドか運用のポートが使われていれば、プロセスの ID と停止のコマンドを表示して終了コード 1 で終了するので、表示されたコマンドで停止してから再実行する。
+- スロットを解除するなら、`node scripts/dev/slot.mjs release` が 4 つのポートのプロセスを停止してから解除する。node を強制終了して残ったバックエンドも停止する。停止できないときは、データを削除せず、停止のコマンドを表示して終了する。
+- 割り当てとデータを残したまま停止するときは、自分のスロットのポートで待ち受けているプロセスだけを停止する。Windows の PowerShell では `Stop-Process -Id (Get-NetTCPConnection -LocalPort 18080 -State Listen).OwningProcess`（スロット 1 のバックエンド）。他のスロットのポートのプロセスを停止しない。
 - DB を見るときは、`docker exec ec-site-postgres psql -U ec_site -d ec_site_<n> -c "..."`（`<n>` は自分のスロット）。
 - データの再作成は、作業ツリーでは `scripts/dev/reset.sh`（`db`）だけが使え、自分のスロットの DB とバケットだけを再作成する（`slot.mjs reset` と同じ）。`keycloak` と `all` は共有のコンテナを再作成するので、メインの作業ツリーで実行する。
 - E2E は、どの作業ツリーからでも実行できる。ロックで 1 つずつ実行され、他が実行中なら所有者を示して終了コード 1 で終わるので、待ってから再実行する。PID が再利用されて終了し続けるときは、示されたロックのファイルを削除してよい。E2E は常にスロット 0 の固定の環境で実行され、E2E のエントリポイント（`e2e/scripts/run.ts`）がスロットの環境変数を削除する。

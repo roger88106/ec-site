@@ -181,6 +181,7 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 |------|----------------|
 | 管理画面 | `frontend/admin/src/test/` |
 | 店舗画面 | `frontend/store/src/test/` |
+| E2E と撮影（`e2e/tests/`、`e2e/showcase/`） | `e2e/src/` |
 
 - 補助のファイルは、データ、API の差し替え、操作のように、役割ごとに分ける。
 - 共有パッケージ（`frontend/shared`）には補助を置かない。

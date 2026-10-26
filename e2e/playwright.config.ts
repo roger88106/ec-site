@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
-import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, STORE_URL } from './src/urls'
+import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, portOf, STORE_URL } from './src/urls'
+import { BACKEND_START_TIMEOUT, FRONTEND_START_TIMEOUT, TEST_TIMEOUT } from './src/waits'
 
 /** CI で動いているか（test.only を禁止し、HTML のレポートを残す） */
 const CI = Boolean(process.env.CI)
@@ -23,8 +24,7 @@ export default defineConfig({
   workers: 1,
   forbidOnly: CI,
   retries: 0,
-  // 店舗画面のキャッシュの反映を待つテストがあるので、既定（30 秒）より長くする
-  timeout: 60_000,
+  timeout: TEST_TIMEOUT,
   reporter: CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     ...devices['Desktop Chrome'],
@@ -41,14 +41,14 @@ export default defineConfig({
       command: `"${GRADLEW}" bootRun --args=--spring.profiles.active=local,e2e`,
       cwd: BACKEND_DIR,
       url: `${BACKEND_MANAGEMENT_URL}/actuator/health/readiness`,
-      timeout: 300_000,
+      timeout: BACKEND_START_TIMEOUT,
       reuseExistingServer: false,
     },
     {
       // ビルドしたものを vite preview で配る。/api は E2E のバックエンドに転送する（vite.config.ts の server.proxy）。
       // IdP の接続先はビルドのときに埋め込む
       name: 'admin',
-      command: 'pnpm build && pnpm preview --port 4173 --strictPort',
+      command: `pnpm build && pnpm preview --port ${portOf(ADMIN_URL)} --strictPort`,
       cwd: '../frontend/admin',
       url: ADMIN_URL,
       env: {
@@ -56,13 +56,13 @@ export default defineConfig({
         VITE_OIDC_CLIENT_ID: 'ec-admin-web',
         ADMIN_API_PROXY_TARGET: BACKEND_URL,
       },
-      timeout: 180_000,
+      timeout: FRONTEND_START_TIMEOUT,
       reuseExistingServer: false,
     },
     {
       // API の結果のキャッシュを 1 秒にし、NFR-1 の 60 秒を待たずに一覧への反映を確認する
       name: 'store',
-      command: 'pnpm build && pnpm start --port 3100',
+      command: `pnpm build && pnpm start --port ${portOf(STORE_URL)}`,
       cwd: '../frontend/store',
       url: STORE_URL,
       env: {
@@ -75,7 +75,7 @@ export default defineConfig({
         AUTH_SECRET: 'ec-store-local-auth-secret-only-for-local-and-ci',
         AUTH_URL: STORE_URL,
       },
-      timeout: 180_000,
+      timeout: FRONTEND_START_TIMEOUT,
       reuseExistingServer: false,
     },
   ],

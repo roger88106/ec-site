@@ -11,7 +11,7 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** 見ないファイル（当時の記録、直せないもの、この検査のテストの例） */
-const EXCLUDED = [/^docs\/specs\/archive\/(?!mvp\/mvp\.md$)/,/\/db\/migration\//, /^scripts\/ci\/doc-refs\.test\.mjs$/]
+const EXCLUDED = [/^docs\/specs\/archive\/(?!mvp\/mvp\.md$)/, /\/db\/migration\//, /^scripts\/ci\/doc-refs\.test\.mjs$/]
 
 /**
  * 見ないファイルか。

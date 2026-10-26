@@ -9,8 +9,6 @@ import { isTargetDoc } from './doc-terms.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
-export { isTargetDoc }
-
 /** 注の定義の行（行頭の `※N：`、枝番は `※2a：`） */
 const DEFINITION = /^※(\d+[a-z]?)：/
 

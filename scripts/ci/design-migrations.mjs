@@ -1,7 +1,7 @@
 // モジュールの設計書（docs/design/modules/<モジュール>.md）の「データモデル」の節に、そのモジュールの全てのバージョン付きのマイグレーションを挙げていることを確認する。
 // モジュールは、マイグレーションのファイル名 V<番号>__<接頭辞>_<内容>.sql の接頭辞で決める。接頭辞が設計書の名前と違うものだけ MODULE_OF_PREFIX に置く（ordering は order の設計書）。
 // マイグレーションが設計書に挙がるべきモジュールは、ファイル名の接頭辞のモジュール（common を除く）と、SQL の中のスキーマ付きの表の名前（<スキーマ>.<表>）のスキーマに当たるモジュールの和集合。
-// スキーマ common と CREATE SCHEMA の文は、どのモジュールにも当てない。SQL のコメント（--）の中は見ない。
+// スキーマ common と CREATE SCHEMA の文は、どのモジュールにも当てない。SQL のコメント（-- と /* */）と文字列の中は見ない（読み飛ばす処理は lib/sql-code.mjs）。
 // 理由：設計書のデータモデルは、本文の制約を定義するマイグレーションが分かるように、そのモジュールの表に触る全てのマイグレーションを挙げる（common のマイグレーションが他のモジュールの表に制約を加えることがある）。
 // 設計書が挙げたマイグレーションが実在しないとき（ファイル名の誤り）と、上の和集合に入らないモジュールのマイグレーションを挙げたときも失敗にする。
 // マイグレーションの接頭辞に当たる設計書がない、または設計書にデータモデルの節がないときも失敗にする。
@@ -11,6 +11,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { blankSqlNonCode } from './lib/sql-code.mjs'
 import { isVersionedMigration } from './migrations.mjs'
 
 /** マイグレーションの置き場所 */
@@ -39,13 +40,13 @@ export function moduleOfMigration(name) {
 }
 
 /**
- * SQL の中のスキーマ付きの表の名前（<スキーマ>.<表>）から、スキーマを読む。コメント（--）の中と、ドットの後ろの名前（ファイル名など）は見ない。
+ * SQL の中のスキーマ付きの表の名前（<スキーマ>.<表>）から、スキーマを読む。コメントと文字列の中と、ドットの後ろの名前（ファイル名など）は見ない。
  *
  * @param {string} sql マイグレーションの SQL
  * @returns {string[]} スキーマの名前（重ねない）
  */
 export function schemasOfSql(sql) {
-  const code = sql.replace(/--[^\n]*/g, '')
+  const { code } = blankSqlNonCode(sql)
   return [...new Set([...code.matchAll(/(?<![\w./])([a-z][a-z0-9_]*)\.[a-z_]/g)].map((match) => match[1]))]
 }
 

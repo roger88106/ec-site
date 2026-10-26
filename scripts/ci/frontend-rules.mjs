@@ -16,7 +16,7 @@ import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { closingParen } from './lib/closing-paren.mjs'
 import { scanCode, templateEnd } from './lib/scan-code.mjs'
-import { checkExclusions,exclusionsPath, readExclusions } from './lib/exclusions.mjs'
+import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
@@ -345,7 +345,8 @@ const TYPE_CAST = /\bas\s+never\b|\bas\s+unknown\s+as\b/g
  */
 function createReasonChecker(text) {
   const original = text.split('\n')
-  const withStrings = stripComments(text).split('\n')
+  // 正規表現のリテラルを残す（空白にすると、同じ行に正規表現があるだけでコメントのある行と読む）
+  const withStrings = stripComments(text, { keepRegex: true }).split('\n')
   const hasComment = (index) => index >= 0 && original[index] !== withStrings[index]
   const commentOnly = (index) => hasComment(index) && withStrings[index].trim() === ''
   return (firstLine, lastLine) => {
@@ -382,7 +383,7 @@ export function findTypeCasts(text) {
  * @returns {{ line: number, text: string }[]} 見つけた行
  */
 export function findWeakExistenceChecks(text) {
-  return findCodeLines(text, (line) => /\.(?:toBeTruthy|toBeDefined)\(/.test(line), { blankStrings: true })
+  return findCodeLines(text, (line) => /\.(?:toBeTruthy|toBeDefined)\s*\(/.test(line), { blankStrings: true })
 }
 
 /** getAllBy…・findAllBy…・queryAllBy… の呼び出しの始まり */

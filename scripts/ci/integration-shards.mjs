@@ -86,6 +86,6 @@ export function findShardCountProblems(ciText, gradleText) {
 if (isMain(import.meta.url)) {
   const problems = findShardCountProblems(readFileSync(CI_FILE, 'utf8'), readFileSync(GRADLE_FILE, 'utf8'))
   for (const problem of problems) console.log(problem)
-  console.log(`統合テストを分ける数：問題 ${problems.length} 件`)
+  console.log(`統合テストを分ける数の問題：${problems.length}`)
   process.exit(problems.length > 0 ? 1 : 0)
 }

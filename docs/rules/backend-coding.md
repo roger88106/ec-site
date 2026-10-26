@@ -341,11 +341,11 @@ public record SignedNotification(byte[] body, String signature) {
 
 新しいマイグレーションは、前のリリースのアプリが動き続けられる変更だけにする。次の変更は、1 つのリリースでしない。
 
-- 表・列の削除
-- 表・列の改名
+- 表・列の削除（スキーマの削除 `DROP SCHEMA` を含む）
+- 表・列の改名（スキーマの改名と、表の別のスキーマへの移動 `SET SCHEMA` を含む）
 - 列の型の変更
-- 既存の列を NOT NULL にすること
-- 既定値のない NOT NULL の列の追加
+- 既存の列を NOT NULL にすること（既存の列への主キーの制約の追加 `ADD PRIMARY KEY` を含む）
+- 既定値のない NOT NULL の列の追加（主キーの列の追加と、`DEFAULT NULL` を指定した NOT NULL の列の追加を含む。`IDENTITY` の列は既定値があるので除く）
 
 これらは、次の 3 段に分ける。
 

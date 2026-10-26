@@ -99,8 +99,7 @@ export function isExclusionNeeded(id, ids) {
 
 if (isMain(import.meta.url)) {
   const exclusions = readExclusions(exclusionsPath('glossary-ids-exclusions.json'))
-  const files = listGitFiles(SEARCH_ROOTS)
-    .filter((file) => isSearchedFile(file))
+  const files = listGitFiles(SEARCH_ROOTS).filter((file) => isSearchedFile(file))
   exitIfNoFiles(files, '用語の ID を探すファイル')
   // パスの形の識別子（docs/constitution.md など）は、リポジトリのすべてのファイルのパスにも当たる
   const allPaths = listGitFiles().join('\n')

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkDesignMigrations, moduleOfMigration, parseDataModelMigrations } from './design-migrations.mjs'
+import { checkDesignMigrations, moduleOfMigration, parseDataModelMigrations, schemasOfSql } from './design-migrations.mjs'
 
 const DIR = '../../../backend/ecsite/src/main/resources/db/migration/'
 
@@ -124,5 +124,16 @@ describe('マイグレーションが SQL で触るスキーマのモジュー�
     })
     assert.equal(problems.length, 1)
     assert.match(problems[0], /tax\.md/)
+  })
+
+  test('スキーマは、コードの中のスキーマ付きの名前だけから読む（行コメント・ブロックコメント・文字列の中は読まない）', () => {
+    const sql = [
+      '-- tax.category',
+      '/* inventory.stock',
+      '   /* shipping.shipment */ */',
+      "COMMENT ON TABLE catalog.product IS 'order.checkout を参照する、payment.payment';",
+      'ALTER TABLE catalog.product ADD x int;',
+    ].join('\n')
+    assert.deepEqual(schemasOfSql(sql), ['catalog'])
   })
 })

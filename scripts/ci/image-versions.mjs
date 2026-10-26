@@ -72,16 +72,6 @@ export function parseComposeImages(text) {
 }
 
 /**
- * compose の `image:` から、イメージの名前ごとのバージョンの集合を読む（読めない行は無視する。読めない行も扱うときは parseComposeImages）。
- *
- * @param {string} text compose のファイル
- * @returns {Map<string, Set<string | undefined>>} イメージの名前から版の集合（版のない書き方は undefined）
- */
-export function readComposeImages(text) {
-  return parseComposeImages(text).images
-}
-
-/**
  * 読めない `image:` の行を、失敗の文にする。
  *
  * @param {string} file compose のファイルのパス

@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { describeUnreadableImages, findImageProblems, findUnpinned, parseComposeImages, readComposeImages, readSourceImages } from './image-versions.mjs'
+import { describeUnreadableImages, findImageProblems, findUnpinned, parseComposeImages, readSourceImages } from './image-versions.mjs'
+
+/** compose の image: の一覧だけを読む（読めない行は見ない） */
+const readComposeImages = (text) => parseComposeImages(text).images
 
 const compose = [
   'services:',

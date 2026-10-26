@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findNoteProblems, isTargetDoc } from './note-numbers.mjs'
+import { findNoteProblems } from './note-numbers.mjs'
 
 describe('注の番号の検査', () => {
   test('番号が 1 から順に出れば問題なし', () => {
@@ -99,17 +99,5 @@ describe('注の番号の検査', () => {
   test('番号が飛んでいても、順に並んでいれば問題にしない', () => {
     const text = ['a ※1', 'b ※3', '※1：1', '※3：3'].join('\n')
     assert.deepEqual(findNoteProblems(text), [])
-  })
-
-  test('対象の文書：docs、README、AGENTS、skill の Markdown。アーカイブは除く', () => {
-    assert.equal(isTargetDoc('docs/design/modules/order.md'), true)
-    assert.equal(isTargetDoc('docs/specs/185-new-checks/spec.md'), true)
-    assert.equal(isTargetDoc('README.md'), true)
-    assert.equal(isTargetDoc('AGENTS.md'), true)
-    assert.equal(isTargetDoc('.claude/skills/docs/SKILL.md'), true)
-    assert.equal(isTargetDoc('docs/specs/archive/1to10/x/spec.md'), false)
-    assert.equal(isTargetDoc('.github/pull_request_template.md'), true)
-    assert.equal(isTargetDoc('.claude/skills/docs/tech-writing.md'), false)
-    assert.equal(isTargetDoc('scripts/ci/note-numbers.mjs'), false)
   })
 })

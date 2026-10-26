@@ -60,6 +60,6 @@ if (isMain(import.meta.url)) {
   for (const hit of found) {
     console.log(`${hit.file}:${hit.line} ${hit.call}（直接実行の判定は lib/is-main.mjs の isMain(import.meta.url) を使う）`)
   }
-  console.log(`直接実行の判定の検査：script ${files.length} 件、共通の関数を使わない判定：${found.length} 件`)
+  console.log(`共通の関数を使わない判定：${found.length}`)
   process.exit(found.length > 0 ? 1 : 0)
 }

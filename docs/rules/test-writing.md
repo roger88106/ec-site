@@ -19,8 +19,8 @@
 | 4.4 | テストの関数は `test` にそろえる | レビュー |
 | 4.5 | 複数のテストで使うものは、テストの補助に置く | レビュー |
 | 4.6 | テストは型を回避する変換を使わない | 理由のコメントのない `as never`・`as unknown as` は自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
-| 4.7 | 要素のプロパティ・属性を `toBe` で比べない | 自動（`scripts/ci/frontend-rules.mjs`） |
-| 4.8 | テストのファイルで `fireEvent` を直接使わない | 自動（`scripts/ci/frontend-rules.mjs`） |
+| 4.7 | 要素のプロパティ・属性を `toBe` で比べない | 受け手が要素のもの（`getBy…` の結果やそれを入れた変数など）は自動（`scripts/ci/frontend-rules.mjs`）、ほかはレビュー |
+| 4.8 | テストのファイルで `fireEvent` を直接使わない | 理由のコメントのないものは自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
 | 5 | 時間で待たない | 自動（`scripts/ci/time-waits.mjs`） |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。

@@ -333,6 +333,22 @@ describe('テストの書き方の検査', () => {
     assert.deepEqual(lines(findTypeCasts(text)), [1, 3])
   })
 
+  test('同じ行に正規表現のリテラルがあっても、理由のコメントがなければ型の回避を見つける', () => {
+    const text = [
+      'foo(/x/, y as never)',
+      'foo(/x/, y as never) // 理由',
+      '// 理由',
+      'foo(/x/, y as unknown as Z)',
+      'const w = /a/.test(s) ? (v as never) : 1',
+    ].join('\n')
+    assert.deepEqual(lines(findTypeCasts(text)), [1, 5])
+  })
+
+  test('toBeTruthy と toBeDefined は、名前と括弧の間に空白があっても見つける', () => {
+    const text = ['expect(el).toBeTruthy ()', 'expect(el).toBeDefined  ()', 'expect(el).toBeInTheDocument ()'].join('\n')
+    assert.deepEqual(lines(findWeakExistenceChecks(text)), [1, 2])
+  })
+
   test('toBeTruthy と toBeDefined の呼び出しを見つける（コメントと文字列の中は数えない）', () => {
     const text = [
       'expect(el).toBeTruthy()',
@@ -541,6 +557,17 @@ describe('テストの書き方の検査', () => {
       'fireEvent.click(y)',
     ].join('\n')
     assert.deepEqual(findFireEvents(text).map((hit) => hit.line), [8, 18])
+  })
+
+  test('同じ行に正規表現のリテラルがあっても、理由のコメントがなければ fireEvent を見つける', () => {
+    const text = [
+      "fireEvent.click(screen.getByRole('button', { name: /送信/ }))",
+      "fireEvent.click(screen.getByRole('button', { name: /送信/ })) // 理由",
+      '// 理由',
+      'fireEvent.change(screen.getByLabelText(/名前/), { target: { value: 1 } })',
+      'if (/a/.test(s)) fireEvent.click(b)',
+    ].join('\n')
+    assert.deepEqual(findFireEvents(text).map((hit) => hit.line), [1, 5])
   })
 
   test('fireEvent を別名で import した呼び出しと、名前空間の import の呼び出しも見つける', () => {

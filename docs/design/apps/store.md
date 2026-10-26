@@ -5,7 +5,7 @@ C 側（消費者）の画面。Next.js（App Router）で、店舗 API（`store
 | 項目 | 内容 |
 |------|------|
 | 依存 | 店舗 API（`store.yaml`）、消費者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[012](../../specs/archive/mvp/012-test-safety-net)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[104](../../specs/archive/1to10/104-parallel-local-env)、[134](../../specs/archive/1to10/134-admin-tidy)、[135](../../specs/archive/1to10/135-store-cleanup)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[012](../../specs/archive/mvp/012-test-safety-net)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[104](../../specs/archive/1to10/104-parallel-local-env)、[134](../../specs/archive/1to10/134-admin-tidy)、[135](../../specs/archive/1to10/135-store-cleanup)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests)、[193](../../specs/193-store-a11y) |
 
 ## 1. 技術
 
@@ -113,6 +113,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 - タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアでタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
 - 追跡 ID：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアで、画面の要求の `traceparent` を付ける。バックエンドのログを画面の要求から辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュする要求に付けてもキャッシュは使われる。
+- サーバーアクションの失敗のログ：サーバーアクションが例外で失敗したら、共通の処理（`withActionResult`）が error のログに例外の名前と、原因の例外（`cause`）の名前とコード（`ECONNREFUSED` など）を出力する。例外のメッセージ（原因のものも含む）は出力しない。メッセージにカートの ID などの識別子が入りうるため。
 - 5xx のログ：店舗 API が 5xx を返したら、応答のミドルウェアで warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
 
 ### 4.3 サーバーアクション

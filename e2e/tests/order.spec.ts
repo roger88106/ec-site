@@ -1,7 +1,7 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
-import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage } from '../src/store'
+import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage, placeOrderButton } from '../src/store'
 import { ADMIN_URL } from '../src/urls'
 
 test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画面でカートに入れ、郵便番号でお届け先を補って注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
@@ -44,7 +44,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
     await expect(page.getByText(ACCOUNTS.member.email)).toBeVisible()
 
     await fillShipping(page, '12')
-    await page.getByRole('button', { name: /^注文する/ }).click()
+    await placeOrderButton(page).click()
     await expect(page.getByText('郵便番号は数字 7 桁で入力してください。')).toBeVisible()
     await expect(page.getByLabel('氏名')).toHaveValue('E2E 太郎')
 
@@ -52,7 +52,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
     await page.getByLabel('郵便番号').fill('100-0001')
     await expect(page.getByLabel('市区町村')).toHaveValue('13101')
     await expect(page.getByLabel('住所')).toHaveValue('千代田 1-1')
-    await page.getByRole('button', { name: /^注文する/ }).click()
+    await placeOrderButton(page).click()
     await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
     orderUrl = await payOnMockPage(page)
     await expect(page.getByText('〒100-0001 東京都千代田区千代田 1-1')).toBeVisible()

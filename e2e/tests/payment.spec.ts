@@ -10,18 +10,18 @@ import {
   orderCart,
   orderIdOf,
   payOnMockPage,
+  placeOrderButton,
 } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits'
 
-/**
- * 支払の E2E。E2E のバックエンドは mock の決済サービスで動き、支払の期限は 12 秒（application-e2e.yml）。
- * 会員のカートは実行をまたいで残るので、各テストはカートを空にしてから始める。
- */
+// 支払の E2E。E2E のバックエンドは mock の決済サービスで動き、支払の期限は 12 秒（application-e2e.yml）。
+// 会員のカートは実行をまたいで残るので、各テストはカートを空にしてから始める。
 
 /**
  * 公開の商品を作り、会員としてログインして、空にしたカートに 1 つずつ入れる。
  *
+ * @param page 店舗画面のページ
  * @param code 品番の一部
  * @param count 作る商品の数
  */
@@ -54,7 +54,7 @@ test('AC-143、145、146、147、149 注文すると mock の支払画面に移�
     await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
     await expect(page.getByLabel(/カード/)).toHaveCount(0)
     await fillShipping(page, '100-0001')
-    await page.getByRole('button', { name: /^注文する/ }).click()
+    await placeOrderButton(page).click()
     await expect(page).toHaveURL(new RegExp(`^${BACKEND_URL}/mock-payment/`))
     await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
   })

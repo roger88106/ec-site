@@ -2,7 +2,7 @@ import { expect, test } from '@playwright/test'
 import { idpPasswordInput, memberEmail, setPasswordFromMail, submitIdpLogin, submitSignup } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { detailValue } from '../src/detail'
-import { addToCart, fillShipping, payOnMockPage } from '../src/store'
+import { addToCart, fillShipping, payOnMockPage, placeOrderButton } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
 test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
@@ -40,7 +40,7 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
     await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
     await expect(page.getByText(account.email)).toBeVisible()
     await fillShipping(page, '100-0001')
-    await page.getByRole('button', { name: /^注文する/ }).click()
+    await placeOrderButton(page).click()
     await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
     await payOnMockPage(page)
     const orderNumber = (await detailValue(page, '注文番号').textContent()) ?? ''

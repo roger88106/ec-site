@@ -68,6 +68,6 @@ export async function waitForMail(query: MailQuery): Promise<Mail> {
       },
       { message: query.message, timeout: MAIL_TIMEOUT },
     )
-    .toBeDefined()
+    .toMatchObject({ subject: expect.any(String), to: expect.any(Array), text: expect.any(String) })
   return found as Mail
 }

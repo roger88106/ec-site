@@ -7,10 +7,8 @@ import { orderAsMember, orderIdOf, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
-/**
- * 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
- * 出荷通知メールは compose の Mailpit に届く。
- */
+// 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
+// 出荷通知メールは compose の Mailpit に届く。
 
 /** 作った商品と、会員が支払って受付になった注文 */
 type AcceptedOrder = { productId: string; variantId: string; orderId: string; orderUrl: string }
@@ -18,6 +16,7 @@ type AcceptedOrder = { productId: string; variantId: string; orderId: string; or
 /**
  * 在庫 3 の公開の商品を作り、会員として 1 つ注文して mock で支払う（受付になる）。
  *
+ * @param page 店舗画面と管理画面を開くページ
  * @param code 品番の一部
  */
 async function acceptedOrder(page: Page, code: string): Promise<AcceptedOrder> {

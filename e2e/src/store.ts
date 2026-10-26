@@ -15,6 +15,16 @@ export function productCard(page: Page, name: string): Locator {
 }
 
 /**
+ * 注文手続きの画面の、注文するボタン。名前は金額を添えた「注文する（3,200 円）」で、金額は注文ごとに違うので、名前の全体を形で探す。
+ *
+ * @param page 注文手続きの画面を開いているページ
+ * @returns 注文するボタン
+ */
+export function placeOrderButton(page: Page): Locator {
+  return page.getByRole('button', { name: /^注文する（[\d,]+ 円）$/ })
+}
+
+/**
  * ログインしている会員のカートを空にする。会員のカートは会員ごとに 1 つで実行をまたいで残るので（AC-121）、
  * 共用のアカウントで注文するテストは、前の実行の品目を消してから始める。
  *
@@ -24,12 +34,14 @@ export function productCard(page: Page, name: string): Locator {
 export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void> {
   await page.goto(`${storeUrl}/cart`)
   const items = page.getByRole('listitem').filter({ has: page.getByRole('button', { name: '削除', exact: true }) })
-  // 品目は商品の詳細へのリンクで見分ける（同じ名前の商品が前の実行から残っていても、リンク先は別）
-  const links = new Set(
-    await items.getByRole('link').evaluateAll((anchors) => anchors.map((a) => a.getAttribute('href'))),
-  )
-  for (const href of links) {
-    const item = items.filter({ has: page.locator(`a[href="${href}"]`) })
+  // 品目は画面に見える文字（商品名、軸の値、単価。数量の欄より前の行）で見分ける。同じ商品のバリアントが複数あっても、軸の値が違う
+  for (const text of await items.allInnerTexts()) {
+    const lines = text.split('\n')
+    const [name, ...details] = lines.slice(0, lines.indexOf('数量'))
+    let item = items.filter({ has: page.getByRole('link', { name, exact: true }) })
+    for (const detail of details) {
+      item = item.filter({ hasText: detail })
+    }
     await item.getByRole('button', { name: '削除', exact: true }).click()
     await expect(item).toHaveCount(0)
   }
@@ -146,7 +158,7 @@ export async function orderCart(page: Page, storeUrl = STORE_URL, name?: string)
   await page.goto(`${storeUrl}/cart`)
   await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
   await fillShipping(page, '100-0001', name)
-  await page.getByRole('button', { name: /^注文する/ }).click()
+  await placeOrderButton(page).click()
   await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
 }
 

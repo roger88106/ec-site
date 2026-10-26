@@ -31,5 +31,5 @@ test('AC-28、62、63 管理画面でバリアントを販売停止にすると�
   await expect(page.getByRole('heading', { name })).toBeVisible()
   await expect(page.getByRole('button', { name: '赤', exact: true })).toBeDisabled()
   await page.getByRole('button', { name: '青', exact: true }).click()
-  await expect(page.getByText('在庫あり')).toBeVisible()
+  await expect(page.getByText('在庫あり', { exact: true })).toBeVisible()
 })

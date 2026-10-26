@@ -16,7 +16,7 @@ T192-01-01、02、04、05、06 は、それぞれ別のモジュールとテス�
 - [ ] **T192-01-02** `[P]` 地域 API の郵便番号検索と応答の型を削除する。AC-253、AC-254 のテストを店舗 API のテストに移し、AC-254 の並び順と、2 つの市区町村にまたがる例の確認を加える（DC-192-1）。地域の設計書と、AC 一覧のテストの列を直す。
   - 依存：なし
   - 範囲：`main/module/region/api/`、`it/module/region/api/RegionApiTest.java`、`it/module/region/presentation/StoreRegionApiTest.java`、`docs/design/modules/region.md`、`docs/design/acceptance-criteria.md`
-- [ ] **T192-01-03** 郵便番号の CSV を読む処理を tools に移し、Lombok を Java の書き方に置き換える。テストを `test/tools/region/` に移し、単体テストのソースセットのクラスパスに tools の出力を加える。`./gradlew generateRegionMigration` の出力が今のマイグレーションと一致することを確認する（DC-192-2、DN-192-2）。
+- [x] **T192-01-03** 郵便番号の CSV を読む処理を tools に移し、Lombok を Java の書き方に置き換える。テストを `test/tools/region/` に移し、単体テストのソースセットのクラスパスに tools の出力を加える。`./gradlew generateRegionMigration` の出力が今のマイグレーションと一致することを確認する（DC-192-2、DN-192-2）。
   - 依存：T192-01-02（地域の設計書を共に変えるため）
   - 範囲：`main/module/region/infrastructure/source/`、`tools/tools/region/`、`test/module/region/infrastructure/source/PostalCodeCsvTest.java`、`test/tools/region/`、`build.gradle.kts` の source set、`docs/design/modules/region.md`
 - [ ] **T192-01-04** `[P]` 最近の出荷を一覧する問い合わせを、出荷の Repository の port と実装から外し、mock 側の問い合わせのクラスに移す。テストも mock の側に移す（DC-192-3）。出荷の設計書を直す。

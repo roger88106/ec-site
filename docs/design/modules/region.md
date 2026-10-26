@@ -33,7 +33,7 @@
 | 項目 | 内容 |
 |------|------|
 | 出典 | 日本郵便の「住所の郵便番号（1 レコード 1 行、UTF-8 形式）」の CSV だけ。市区町村も同じ出典から、地方公共団体コードの重複を除いて作る ※2 |
-| 変換 | `infrastructure/source` の変換（注記を除き、マスターデータの行にする） |
+| 変換 | tools（`src/tools/java/com/ecsite/tools/region/`）の `PostalCodeCsv`（注記を除き、マスターデータの行にする）。本番のコードには入れない |
 | 郵便番号の一覧 | `src/tools/resources/region/postal-codes.txt`。seed・テスト・E2E が使う郵便番号と、変換の確認に使う郵便番号 |
 | 作り方 | 下の手順。作ったマイグレーションは手動で修正しない |
 | 出典と利用の条件 | [依存とライセンス](../licenses.md) 第 3.4 節 |
@@ -79,8 +79,7 @@ region/
 │   └── port/               # リポジトリ
 ├── domain/                 # 都道府県、市区町村、郵便番号の住所
 ├── infrastructure/
-│   ├── persistence/        # リポジトリの実装
-│   └── source/             # 郵便番号のデータの変換
+│   └── persistence/        # リポジトリの実装
 └── presentation/           # 店舗 API
 ```
 

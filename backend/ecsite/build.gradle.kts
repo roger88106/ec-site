@@ -86,6 +86,13 @@ sourceSets {
     }
 }
 
+// tools の郵便番号の CSV を読む処理を単体テストで確認するため、単体テストのクラスパスに tools の出力を加える
+// （カバレッジと mutation の対象は main のままで、tools は含まない）
+sourceSets.test {
+    compileClasspath += sourceSets["tools"].output
+    runtimeClasspath += sourceSets["tools"].output
+}
+
 configurations["integrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
 configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
 

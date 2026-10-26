@@ -1,9 +1,7 @@
-package com.ecsite.module.region.infrastructure.source;
+package com.ecsite.tools.region;
 
 import com.ecsite.module.region.domain.Municipality;
 import com.ecsite.module.region.domain.Prefecture;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -22,8 +20,13 @@ import java.util.regex.Pattern;
  * マスターデータの行に変える（docs/design/modules/region.md「最初のデータ」）。<br />
  * 最初のデータを作るタスクと、1 → 10 の取り込みの仕組みが同じ変換を使う。
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PostalCodeCsv {
+
+    /**
+     * インスタンスを作らない
+     */
+    private PostalCodeCsv() {
+    }
 
     /**
      * 列の数

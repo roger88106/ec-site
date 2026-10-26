@@ -3,19 +3,6 @@ import { type Account, loginStore } from './auth'
 import { STORE_URL } from './urls'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from './waits'
 
-/**
- * 店舗画面を開き直しながら、表示が期待どおりになるのを待つ。<br />
- * 店舗画面は API の結果をキャッシュし、期限の切れた後の最初の表示では古い結果を返して裏で取り直す。
- * そのため、管理画面での変更は、開き直すうちに反映される。
- *
- * @param page 店舗画面のページ
- * @param url 開く URL
- * @param check 表示を確認する。満たさなければ投げる
- */
-export async function expectEventually(page: Page, url: string, check: (page: Page) => Promise<void>) {
-  await reopenUntil(page, url, () => check(page))
-}
-
 /** 店舗画面の一覧・検索の結果の、商品のカード（商品名で探す） */
 export function productCard(page: Page, name: string): Locator {
   return page.getByRole('link').filter({ hasText: name })

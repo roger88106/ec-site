@@ -2,9 +2,9 @@ import path from 'node:path'
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createCategory, createPublishedProduct, RUN_ID, taxCategoryWithRate } from '../src/data'
-import { expectEventually, productCard } from '../src/store'
+import { productCard } from '../src/store'
 import { STORE_URL } from '../src/urls'
-import { CHECK_TIMEOUT } from '../src/waits'
+import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
 /**
  * スマートフォンの形式の画像（AVIF）。左が赤、右が青の 64x32 で、向き（時計回りに 90 度）と位置情報が付いている。
@@ -52,7 +52,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
   const imageUrl = secondUrl
 
   await test.step('店舗画面：一覧の代表画像と、詳細の画像に、並べ替えた順で出る', async () => {
-    await expectEventually(page, `${STORE_URL}/products?categoryId=${categoryId}`, async () => {
+    await reopenUntil(page, `${STORE_URL}/products?categoryId=${categoryId}`, async () => {
       await expect(productCard(page, name).getByRole('img', { name: '商品の画像' })).toHaveAttribute(
         'src',
         imageUrl ?? '',

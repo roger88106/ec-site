@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { expect, type Locator, type Page } from '@playwright/test'
 import { RUN_ID } from './data'
-import { ADMIN_URL, IDP_URL, MAILPIT_URL, STORE_URL } from './urls'
-import { MAIL_TIMEOUT } from './waits'
+import { waitForMail } from './mailpit'
+import { ADMIN_URL, IDP_URL, STORE_URL } from './urls'
 
 /** ログインに使うアカウント */
 export type Account = { email: string; password: string }
@@ -141,30 +141,21 @@ export function idpPasswordInput(page: Page): Locator {
   return page.locator('#password')
 }
 
+/** IdP のメールの、確認・再設定のリンク */
+const IDP_LINK = /https?:\/\/\S+\/login-actions\/action-token\S+/
+
 /**
  * Mailpit に届いた、宛先への最新のメールから、IdP の確認・再設定のリンクを取り出す。届くまで待つ。
  *
  * @param to 宛先のメールアドレス
  */
 export async function latestIdpLink(to: string): Promise<string> {
-  let link: string | undefined
-  await expect
-    .poll(
-      async () => {
-        const search = await fetch(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`)
-        const { messages } = (await search.json()) as { messages: { ID: string }[] }
-        if (messages.length === 0) {
-          return undefined
-        }
-        const message = await fetch(`${MAILPIT_URL}/api/v1/message/${messages[0].ID}`)
-        const { Text } = (await message.json()) as { Text: string }
-        link = Text.match(/https?:\/\/\S+\/login-actions\/action-token\S+/)?.[0]
-        return link
-      },
-      { message: `${to} へのメールが Mailpit に届かない`, timeout: MAIL_TIMEOUT },
-    )
-    .toBeDefined()
-  return link as string
+  const mail = await waitForMail({
+    search: `to:${to}`,
+    accept: (candidate) => IDP_LINK.test(candidate.text),
+    message: `${to} へのメールが Mailpit に届かない`,
+  })
+  return mail.text.match(IDP_LINK)?.[0] as string
 }
 
 /**

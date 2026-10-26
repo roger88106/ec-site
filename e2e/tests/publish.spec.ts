@@ -1,9 +1,9 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createCategory, productCode, RUN_ID, taxCategoryWithRate } from '../src/data'
-import { expectEventually, productCard } from '../src/store'
+import { productCard } from '../src/store'
 import { STORE_URL } from '../src/urls'
-import { CHECK_TIMEOUT } from '../src/waits'
+import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
 test('AC-29、51、58、62、63、64 管理画面で商品を登録し、バリアントと在庫を用意して公開すると、店舗画面の一覧・検索・詳細に出る', async ({
   page,
@@ -60,11 +60,11 @@ test('AC-29、51、58、62、63、64 管理画面で商品を登録し、バリ�
   })
 
   await test.step('店舗画面：カテゴリの一覧と、キーワードの検索に出る', async () => {
-    await expectEventually(page, `${STORE_URL}/products?categoryId=${category.id}`, async () => {
+    await reopenUntil(page, `${STORE_URL}/products?categoryId=${category.id}`, async () => {
       await expect(productCard(page, name)).toBeVisible({ timeout: CHECK_TIMEOUT })
     })
     await expect(productCard(page, name)).toContainText('1,100 円（税抜 1,000 円）')
-    await expectEventually(page, `${STORE_URL}/search?q=${encodeURIComponent(keyword)}`, async () => {
+    await reopenUntil(page, `${STORE_URL}/search?q=${encodeURIComponent(keyword)}`, async () => {
       await expect(productCard(page, name)).toBeVisible({ timeout: CHECK_TIMEOUT })
     })
   })

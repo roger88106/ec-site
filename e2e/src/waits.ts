@@ -1,4 +1,4 @@
-import { expect, type Page } from '@playwright/test'
+import { expect, type Page, type Response } from '@playwright/test'
 
 /**
  * 条件で待つ時間（テストの書き方 第 5 節）。各テストで数字を書かず、ここの値を使う。
@@ -18,35 +18,36 @@ export const RECHECK_INTERVALS = [500, 1_000]
 export const MAIL_TIMEOUT = 30_000
 
 /** レポートの写しは注文のイベントから少し遅れて作られる（spec 010 NFR-14）。表示に出るまでに待つ時間の上限 */
-export const REPORT_TIMEOUT = 30_000
+const REPORT_TIMEOUT = 30_000
 
 /** 支払の期限切れが注文の画面に出るまでに待つ時間の上限。支払の期限（12 秒。application-e2e.yml）と、期限切れを見る間隔と、裏の処理の分 */
 export const PAYMENT_EXPIRY_TIMEOUT = 12_000 + ASYNC_TIMEOUT
 
 /** レポートの画面を開き直す間隔（写しの遅れを待つので、ほかより長い） */
-export const REPORT_RECHECK_INTERVALS = [1_000, 2_000]
+const REPORT_RECHECK_INTERVALS = [1_000, 2_000]
+
+/** レポートの画面を開き直しながら待つときの、待つ時間の上限と開き直す間隔（`reopenUntil` の引数） */
+export const REPORT_WAIT = { timeout: REPORT_TIMEOUT, intervals: REPORT_RECHECK_INTERVALS }
 
 /**
  * 画面を開き直しながら、確認が通るまで待つ。裏の処理（支払の通知、イベント、店舗画面のキャッシュの期限）の結果は、
- * 開き直すうちに画面に出る。1 回の確認で表示を待つのは、`CHECK_TIMEOUT` までにする。
+ * 開き直すうちに画面に出る。1 回の確認で表示を待つのは、`CHECK_TIMEOUT` までにする。<br />
+ * 店舗画面は API の結果をキャッシュし、期限の切れた後の最初の表示では古い結果を返して裏で取り直す。
+ * そのため、管理画面での変更は、開き直すうちに店舗画面に反映される。
  *
  * @param page 使うページ
  * @param url 開く URL（省けば、今の画面を読み直す）
- * @param check 表示を確認する。満たさなければ投げる
+ * @param check 表示を確認する。満たさなければ投げる。開いたときの応答（HTTP の状態など）を受け取る
  * @param options 待つ時間の上限と、開き直す間隔
  */
 export async function reopenUntil(
   page: Page,
   url: string | undefined,
-  check: () => Promise<void>,
+  check: (response: Response | null) => Promise<void>,
   { timeout = ASYNC_TIMEOUT, intervals = RECHECK_INTERVALS }: { timeout?: number; intervals?: number[] } = {},
 ): Promise<void> {
   await expect(async () => {
-    if (url === undefined) {
-      await page.reload()
-    } else {
-      await page.goto(url)
-    }
-    await check()
+    const response = url === undefined ? await page.reload() : await page.goto(url)
+    await check(response)
   }).toPass({ timeout, intervals })
 }

@@ -18,7 +18,7 @@ import java.util.regex.Pattern;
 /**
  * 郵便番号のデータ（日本郵便の「住所の郵便番号（1 レコード 1 行、UTF-8 形式）」の CSV）を、
  * マスターデータの行に変える（docs/design/modules/region.md「最初のデータ」）。<br />
- * 最初のデータを作るタスクと、1 → 10 の取り込みの仕組みが同じ変換を使う。
+ * マイグレーションを作るタスク {@code generateRegionMigration}（{@link RegionMigrationGenerator}）が使う。
  */
 public final class PostalCodeCsv {
 

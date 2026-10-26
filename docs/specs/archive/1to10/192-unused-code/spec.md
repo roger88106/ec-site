@@ -8,7 +8,7 @@ MVP 019 の全体レビューで、使われていないコードの指摘（8 �
 
 追跡の issue は [#192](https://github.com/roger88106/ec-site/issues/192) で、扱う issue は #85、#148 である。作業ブランチは `192-unused-code` である。規模は L を提案する。理由：注文、地域、商品カタログ、媒体、出荷、支払、共通コード、店舗画面、管理画面にまたがるため。
 
-本 spec は整理の spec である（[文書の記号と番号](../../rules/notation.md)）。
+本 spec は整理の spec である（[文書の記号と番号](../../../../rules/notation.md)）。
 
 ### 1.1 使われていないコードの再調査
 
@@ -79,7 +79,7 @@ MVP 019 の全体レビューで、使われていないコードの指摘（8 �
 ### DS-192-4 Java の import（D / P1）
 
 - **DC-192-13** 全てのソースセットの Java のファイルに、使われていない import がない。
-- **DC-192-14** 全てのソースセットの Java のファイルの import は、決めた順に並ぶ。順は plan で決め、[バックエンドの書き方](../../rules/backend-coding.md)に書く。
+- **DC-192-14** 全てのソースセットの Java のファイルの import は、決めた順に並ぶ。順は plan で決め、[バックエンドの書き方](../../../../rules/backend-coding.md)に書く。
 - **DC-192-15** DC-192-13、14 の違反を、CI の検査が見つける。
 
 ### DS-192-5 NullAway と規則の検査（D / P1）
@@ -88,10 +88,10 @@ MVP 019 の全体レビューで、使われていないコードの指摘（8 �
 - **DC-192-17** 必須でないリクエストのヘッダー・パラメータを受ける引数に `@Nullable` がある。今は、決済と配送業者の通知を受ける 2 つの Controller にある。#148 の項目である。
 - **DC-192-18** 全てのソースセットで、`@SuppressWarnings` の直前に理由のコメントがある。今は `unchecked` の 12 か所に理由がない。理由のない `@SuppressWarnings` を、規則の検査が見つける。#148 の項目である。
 - **DC-192-19** JSpecify 以外の `Nullable` を含むパッケージのワイルドカード import（`import javax.annotation.*;` など）を、規則の検査が見つける。#148 の項目である。
-- **DC-192-20** [バックエンドの書き方](../../rules/backend-coding.md) 第 7 節に、次がある。#148 の項目である。
+- **DC-192-20** [バックエンドの書き方](../../../../rules/backend-coding.md) 第 7 節に、次がある。#148 の項目である。
   - getter を `Optional` で返すか `@Nullable` で返すかの基準
   - `Objects.requireNonNull` のメッセージの書き方と、今のコードがその書き方にそろうこと（今は「〜がある」の形と「〜がない」の形などが混ざる）
-  - [テストの実行方法](../../guides/running-tests.md)のコンパイル失敗の読み方から、バックエンドの書き方 第 7.2 節へのリンク
+  - [テストの実行方法](../../../../guides/running-tests.md)のコンパイル失敗の読み方から、バックエンドの書き方 第 7.2 節へのリンク
 
 ## 5. 変える範囲
 
@@ -103,7 +103,7 @@ MVP 019 の全体レビューで、使われていないコードの指摘（8 �
 | 店舗画面、管理画面、共有パッケージ、E2E | `frontend/`、`e2e/` | DS-192-3 |
 | Java の全てのソースセットの import | `backend/ecsite/src/` | DS-192-4 |
 | ビルドの設定、規則の検査 | `build.gradle.kts`、`scripts/ci/`（`java-rules.mjs` など）、CI | DS-192-3〜5 |
-| 規則の文書 | [バックエンドの書き方](../../rules/backend-coding.md)、[フロントの書き方](../../rules/frontend-coding.md)、[テストの実行方法](../../guides/running-tests.md) | DS-192-3〜5 |
+| 規則の文書 | [バックエンドの書き方](../../../../rules/backend-coding.md)、[フロントの書き方](../../../../rules/frontend-coding.md)、[テストの実行方法](../../../../guides/running-tests.md) | DS-192-3〜5 |
 
 ## 6. 非機能要件
 

@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（参照だけのマスターデータで、業務の状態を変える操作がない） |
 | 依存 | なし（`common` だけ。注文・レポートから API で呼ばれる） |
-| 関連 spec | [016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[192](../../specs/192-unused-code) |
+| 関連 spec | [016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[192](../../specs/archive/1to10/192-unused-code) |
 
 名前を「住所」にしないのは、お届け先や会員の住所録を管理するモジュールと混同しないため。
 

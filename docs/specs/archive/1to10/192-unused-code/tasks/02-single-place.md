@@ -2,7 +2,7 @@
 
 - 前提：段階 1
 - 完了条件：DC-192-5〜8 を満たす。[plan](../plan.md) 第 2 節の確認方法の検索の結果が、表のとおりである。`./gradlew check`、`./gradlew pitest`、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-192-2 と DC-192-5〜8、DN-192-1〜5、[バックエンドのアーキテクチャ](../../../design/backend-architecture.md) 第 7.2 節
+- 参照：[plan](../plan.md) 第 2 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-192-2 と DC-192-5〜8、DN-192-1〜5、[バックエンドのアーキテクチャ](../../../../../design/backend-architecture.md) 第 7.2 節
 
 ## タスク
 

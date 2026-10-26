@@ -2,7 +2,7 @@
 
 - 前提：段階 4（CI の検査の文書を共に変えるため）。spec 194 のマージの有無を確認し、マージ済みなら `develop` を取り込んだ（[plan](../plan.md) 第 9 節）。
 - 完了条件：DC-192-9〜12 を満たす。knip が、違反の例で違反を検出し、今のコードで違反が 0 件である。`scripts/dev/check-frontend.sh`、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 9 節、[spec](../spec.md) の DS-192-3 と DC-192-9〜12、DN-192-1〜5、[フロントの書き方](../../../rules/frontend-coding.md)
+- 参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 9 節、[spec](../spec.md) の DS-192-3 と DC-192-9〜12、DN-192-1〜5、[フロントの書き方](../../../../../rules/frontend-coding.md)
 
 ## タスク
 

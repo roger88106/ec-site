@@ -2,7 +2,7 @@
 
 - 前提：段階 1〜3（変えたファイルの import を、まとめて直すため）
 - 完了条件：DC-192-13〜15 を満たす。Checkstyle が全てのソースセットで実行され、import の違反が 0 件である。追加した検査が、違反の例で違反を検出する（DN-192-4）。`./gradlew check`、`scripts/ci/check-all.sh` が通る。
-- 参照：[plan](../plan.md) 第 4 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-192-4 と DC-192-13〜15、DN-192-4、[バックエンドの書き方](../../../rules/backend-coding.md) 第 5.4 節
+- 参照：[plan](../plan.md) 第 4 節、[plan](../plan.md) 第 6 節、[spec](../spec.md) の DS-192-4 と DC-192-13〜15、DN-192-4、[バックエンドの書き方](../../../../../rules/backend-coding.md) 第 5.4 節
 
 ## タスク
 

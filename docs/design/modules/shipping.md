@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（不変条件は配送状態の順位だけで、状態の履歴に業務の価値がない。理由は後述） |
 | 依存 | なし（注文が出荷の API を呼ぶ。出荷は注文に依存しない ※1） |
-| 関連 spec | [009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure)、[192](../../specs/192-unused-code) |
+| 関連 spec | [009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[015](../../specs/archive/mvp/015-security)、[017](../../specs/archive/mvp/017-stability)、[018](../../specs/archive/mvp/018-docs-and-tools)、[155](../../specs/archive/1to10/155-backend-structure)、[192](../../specs/archive/1to10/192-unused-code) |
 
 ※1：出荷が注文のイベントを受けると、モジュールが循環する。配送状態の変化を注文に知らせる必要もない（注文は読むだけ）。出荷が公開するイベント「配送状態の変化」を受けるのはレポートだけで、レポートには注文も出荷も依存しないので、循環しない。
 

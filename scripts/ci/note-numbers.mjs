@@ -1,24 +1,41 @@
 // 文書の注の番号（※1 など）が、1 つの文書の中で重複せず、出る順に並ぶことを確認する。
-//   - 定義：行頭の `※N：`。同じ番号を 2 回定義したら失敗にする
-//   - 本文の参照：定義の行以外の `※N`（他の文書の注を指す `第 N 節 ※N` は除く）。定義も参照も、先の番号より小さい番号が新しく出たら失敗にする（同じ注を何度参照してもよい）
-// 番号が飛ぶこと、参照だけ・定義だけの注は見ない。コードブロックの中は数えない。
-// 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown（doc-terms と同じ）。
+//   - 定義：行頭の `※N：`。同じ番号を 2 回定義したら失敗にする。枝番（※2a）も 1 つの注として読み、順序は ※2、※2a、※3 の順
+//   - 本文の参照：定義の行以外の `※N`（他の文書の注を指す `第 N 節 ※N` は除く。「この節 ※1」は同じ文書の参照）。定義も参照も、先の番号より小さい番号が新しく出たら失敗にする（同じ注を何度参照してもよい）
+// 番号が飛ぶこと、参照だけ・定義だけの注は見ない。コードブロック（CommonMark の囲み：字下げしてよく、開きと同じ字（バッククォートか ~）で、同じ数以上で閉じる）とインラインコードの中は数えない。
+// 見る文書は doc-terms と同じ（doc-terms の isTargetDoc を使う）。
 // 使い方：node scripts/ci/note-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { isTargetDoc } from './doc-terms.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
-/** 調べる文書 */
-const DOCS = /^(docs\/.*|README|AGENTS|\.claude\/skills\/.*)\.md$/
+export { isTargetDoc }
 
-/** 見ない文書（アーカイブした spec は当時の記録） */
-const EXCLUDED = /^docs\/specs\/archive\//
+/** 注の定義の行（行頭の `※N：`、枝番は `※2a：`） */
+const DEFINITION = /^※(\d+[a-z]?)：/
 
-/** 注の定義の行（行頭の `※N：`） */
-const DEFINITION = /^※(\d+)：/
+/** 本文の参照 */
+const REFERENCE = /※(\d+[a-z]?)/g
 
-/** 本文の参照（`第 N 節 ※N` は他の文書の注を指すので、数えない） */
-const REFERENCE = /(?<!節 ?)※(\d+)/g
+/** 他の文書の注を指す参照（`第 N 節 ※N`）。この文書の参照に数えない */
+const OTHER_DOC_REFERENCE = /第 ?\d+(?:\.\d+)* ?節 ?※\d+[a-z]?/g
+
+/** 囲みのコードブロックの開き・閉じの行（字下げしてよい。文字は ` か ~ で 3 つ以上） */
+const FENCE = /^\s*(`{3,}|~{3,})(.*)$/
+
+/** インラインコード（同じ数のバッククォートで囲んだ所） */
+const INLINE_CODE = /(`+)(?!`).*?(?<!`)\1(?!`)/g
+
+/**
+ * 注の番号を、並びを比べる数に直す（※2 < ※2a < ※3）。
+ *
+ * @param {string} id 番号（枝番を含む）
+ * @returns {number} 比べる数
+ */
+function order(id) {
+  const match = id.match(/^(\d+)([a-z]?)$/)
+  return Number(match[1]) * 100 + (match[2] ? match[2].charCodeAt(0) - 96 : 0)
+}
 
 /**
  * 1 つの文書の注の番号の問題を探す。
@@ -30,47 +47,42 @@ export function findNoteProblems(text) {
   const problems = []
   const defined = new Set()
   const referenced = new Set()
-  let lastDefinition = 0
-  let lastReference = 0
-  let inCode = false
+  let lastDefinition = null
+  let lastReference = null
+  let fence = null
   text.split(/\r?\n/).forEach((line, index) => {
-    if (line.startsWith('```')) {
-      inCode = !inCode
+    const fenceMatch = line.match(FENCE)
+    if (fence) {
+      if (fenceMatch && fenceMatch[1][0] === fence.char && fenceMatch[1].length >= fence.length && fenceMatch[2].trim() === '') fence = null
       return
     }
-    if (inCode) return
+    if (fenceMatch && !(fenceMatch[1][0] === '`' && fenceMatch[2].includes('`'))) {
+      fence = { char: fenceMatch[1][0], length: fenceMatch[1].length }
+      return
+    }
     const lineNumber = index + 1
     const definition = line.match(DEFINITION)
     if (definition) {
-      const number = Number(definition[1])
-      if (defined.has(number)) {
-        problems.push({ line: lineNumber, message: `※${number} の定義が重複している` })
+      const id = definition[1]
+      if (defined.has(id)) {
+        problems.push({ line: lineNumber, message: `※${id} の定義が重複している` })
       } else {
-        if (number < lastDefinition) problems.push({ line: lineNumber, message: `※${number} の定義が、※${lastDefinition} の後で順に並んでいない` })
-        defined.add(number)
-        lastDefinition = Math.max(lastDefinition, number)
+        if (lastDefinition !== null && order(id) < order(lastDefinition)) problems.push({ line: lineNumber, message: `※${id} の定義が、※${lastDefinition} の後で順に並んでいない` })
+        defined.add(id)
+        if (lastDefinition === null || order(id) > order(lastDefinition)) lastDefinition = id
       }
       return
     }
-    for (const match of line.matchAll(REFERENCE)) {
-      const number = Number(match[1])
-      if (referenced.has(number)) continue
-      if (number < lastReference) problems.push({ line: lineNumber, message: `※${number} の参照が、※${lastReference} の後で順に並んでいない` })
-      referenced.add(number)
-      lastReference = Math.max(lastReference, number)
+    const body = line.replace(INLINE_CODE, '').replace(OTHER_DOC_REFERENCE, '')
+    for (const match of body.matchAll(REFERENCE)) {
+      const id = match[1]
+      if (referenced.has(id)) continue
+      if (lastReference !== null && order(id) < order(lastReference)) problems.push({ line: lineNumber, message: `※${id} の参照が、※${lastReference} の後で順に並んでいない` })
+      referenced.add(id)
+      if (lastReference === null || order(id) > order(lastReference)) lastReference = id
     }
   })
   return problems
-}
-
-/**
- * 調べる文書かを返す。
- *
- * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} 調べるなら true
- */
-export function isTargetDoc(file) {
-  return DOCS.test(file) && !EXCLUDED.test(file)
 }
 
 if (isMain(import.meta.url)) {

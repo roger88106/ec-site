@@ -84,3 +84,45 @@ describe('設計書のデータモデルとマイグレーションの照合', (
     assert.deepEqual(checkDesignMigrations({ migrations: ['V1__tax_a.sql'], designs: { tax: design('V1__tax_a.sql'), media: design() } }), [])
   })
 })
+
+describe('マイグレーションが SQL で触るスキーマのモジュール', () => {
+  test('common のマイグレーションは、SQL のスキーマ付きの表のスキーマに当たるモジュールの設計書に挙げる', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__common_checks.sql'],
+      sqls: { 'V1__common_checks.sql': 'ALTER TABLE payment.payment ADD CONSTRAINT c CHECK (x);\nALTER TABLE shipping.shipment ADD CONSTRAINT d CHECK (y);' },
+      designs: { payment: design('V1__common_checks.sql'), shipping: design(), tax: design() },
+    })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /docs\/design\/modules\/shipping\.md/)
+    assert.match(problems[0], /V1__common_checks\.sql/)
+  })
+
+  test('スキーマ common と CREATE SCHEMA と SQL のコメントは、どのモジュールにも当てない', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__common_schemas.sql'],
+      sqls: { 'V1__common_schemas.sql': '-- docs/modules/tax.md、tax.category\nCREATE SCHEMA IF NOT EXISTS tax;\nCREATE TABLE common.event (id int);' },
+      designs: { tax: design() },
+    })
+    assert.deepEqual(problems, [])
+  })
+
+  test('接頭辞が別のモジュールのマイグレーションが、他のモジュールの表に触るなら、その設計書にも挙げる（挙げていてもよい）', () => {
+    const migrations = ['V1__ordering_x.sql']
+    const sqls = { 'V1__ordering_x.sql': 'ALTER TABLE ordering.checkout ADD x int;\nUPDATE inventory.stock_reservation SET y = 1;' }
+    const missing = checkDesignMigrations({ migrations, sqls, designs: { order: design('V1__ordering_x.sql'), inventory: design() } })
+    assert.equal(missing.length, 1)
+    assert.match(missing[0], /inventory\.md/)
+    const listed = { order: design('V1__ordering_x.sql'), inventory: design('V1__ordering_x.sql') }
+    assert.deepEqual(checkDesignMigrations({ migrations, sqls, designs: listed }), [])
+  })
+
+  test('SQL に出ないスキーマのモジュールの設計書が common のマイグレーションを挙げると、他のモジュールのものとして失敗にする', () => {
+    const problems = checkDesignMigrations({
+      migrations: ['V1__common_a.sql'],
+      sqls: { 'V1__common_a.sql': "COMMENT ON TABLE catalog.product IS '商品';" },
+      designs: { catalog: design('V1__common_a.sql'), tax: design('V1__common_a.sql') },
+    })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /tax\.md/)
+  })
+})

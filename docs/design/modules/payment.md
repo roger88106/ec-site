@@ -188,7 +188,7 @@ payment/
 
 ## データモデル
 
-[V202610140910__payment_create_payment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610140910__payment_create_payment.sql)、[V202610150900__payment_add_authorized_at.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610150900__payment_add_authorized_at.sql)、[V202610201200__payment_add_awaiting_authorization_since.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201200__payment_add_awaiting_authorization_since.sql)
+[V202610140910__payment_create_payment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610140910__payment_create_payment.sql)、[V202610150900__payment_add_authorized_at.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610150900__payment_add_authorized_at.sql)、[V202610201200__payment_add_awaiting_authorization_since.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201200__payment_add_awaiting_authorization_since.sql)、[V202610201000__common_add_enum_column_checks.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201000__common_add_enum_column_checks.sql)
 
 - schema は `payment`。
 - 注文 ID は他のモジュールの ID なので、外部キーは張らない。注文 ID に一意制約を付ける。

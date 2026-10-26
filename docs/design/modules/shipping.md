@@ -142,7 +142,7 @@ shipping/
 
 ## データモデル
 
-[V202610150910__shipping_create_shipment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610150910__shipping_create_shipment.sql)
+[V202610150910__shipping_create_shipment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610150910__shipping_create_shipment.sql)、[V202610201000__common_add_enum_column_checks.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201000__common_add_enum_column_checks.sql)
 
 - schema は `shipping`。
 - 注文 ID は他のモジュールの ID なので、外部キーは張らない。注文 ID に一意制約を付ける。

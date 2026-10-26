@@ -60,6 +60,42 @@ describe('注の番号の検査', () => {
     assert.deepEqual(findNoteProblems(text), [])
   })
 
+  test('字下げした囲みのコードブロックの中は数えない', () => {
+    const text = ['a ※2', '- 手順', '  ```', '  ※1 の例', '  ```', 'b ※2', '※2：理由'].join('\n')
+    assert.deepEqual(findNoteProblems(text), [])
+  })
+
+  test('4 つ以上のバッククォートの囲みは、同じ数以上で閉じるまで続く（中の 3 つでは閉じない）', () => {
+    const text = ['a ※2', '````md', '```', '※1 の例', '```', '````', 'b ※2', '※2：理由'].join('\n')
+    assert.deepEqual(findNoteProblems(text), [])
+  })
+
+  test('~~~ の囲みのコードブロックの中は数えない。バッククォートの囲みの中の ~~~ では閉じない', () => {
+    const text = ['a ※2', '~~~', '※1 の例', '~~~', '```', '~~~', '※1 の例', '```', 'b ※2', '※2：理由'].join('\n')
+    assert.deepEqual(findNoteProblems(text), [])
+  })
+
+  test('インラインコードの中の ※N は数えない', () => {
+    const text = ['a ※3', '`※1` と ``※2`` の説明', 'b ※3', '※3：理由'].join('\n')
+    assert.deepEqual(findNoteProblems(text), [])
+  })
+
+  test('枝番の注（※2a）を定義と参照として読み、重複と順序を見る', () => {
+    assert.deepEqual(findNoteProblems(['a ※2', 'b ※2a', 'c ※3', '※2：x', '※2a：y', '※3：z'].join('\n')), [])
+    const duplicated = findNoteProblems(['a ※1a', '※1a：x', 'b ※1a', '※1a：y'].join('\n'))
+    assert.equal(duplicated.length, 1)
+    assert.match(duplicated[0].message, /重複/)
+    const reference = findNoteProblems(['a ※2a', 'b ※2', '※2：x', '※2a：y'].join('\n'))
+    assert.deepEqual(reference.map((problem) => problem.line), [2])
+    const definition = findNoteProblems(['a ※2', 'b ※2a', '※2a：y', '※2：x'].join('\n'))
+    assert.deepEqual(definition.map((problem) => problem.line), [4])
+  })
+
+  test('同じ文書の「この節 ※1」は参照として数える', () => {
+    const text = ['x ※3', 'この節 ※1 を見る', '※1：1', '※3：3'].join('\n')
+    assert.deepEqual(findNoteProblems(text).map((problem) => problem.line), [2])
+  })
+
   test('番号が飛んでいても、順に並んでいれば問題にしない', () => {
     const text = ['a ※1', 'b ※3', '※1：1', '※3：3'].join('\n')
     assert.deepEqual(findNoteProblems(text), [])
@@ -72,6 +108,8 @@ describe('注の番号の検査', () => {
     assert.equal(isTargetDoc('AGENTS.md'), true)
     assert.equal(isTargetDoc('.claude/skills/docs/SKILL.md'), true)
     assert.equal(isTargetDoc('docs/specs/archive/1to10/x/spec.md'), false)
+    assert.equal(isTargetDoc('.github/pull_request_template.md'), true)
+    assert.equal(isTargetDoc('.claude/skills/docs/tech-writing.md'), false)
     assert.equal(isTargetDoc('scripts/ci/note-numbers.mjs'), false)
   })
 })

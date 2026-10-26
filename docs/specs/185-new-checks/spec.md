@@ -205,9 +205,10 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
   - 依存：T185-01-02
   - 範囲：`scripts/ci/doc-terms.mjs`、`scripts/ci/doc-terms.json`、`scripts/ci/dependabot-actions.mjs`、テスト、`docs/guides/ci.md`
   - 結果：使わない語の `allow` を `{許す語: 理由}` にし（`doc-terms.mjs` の `findAllowProblems`。除外の共通の関数で、理由のない許す語と、どの文書にも使われなくなった許す語を失敗にする）、今の `doc-terms.json` に `allow` はないので書き換えは不要だった。Dependabot の対象の検査は、`directory`・`directories` の節の知らない書き方の行を `describeUnreadableLine` で失敗にする。今のリポジトリでは両方 0 件で通る。
-- [ ] **T185-01-05** [テスト] 時間の待ちの検査の除外を行か関数の単位にし、統合テストを分ける数の既定と CI の食い違いを見つける検査を加える（DC-185-10、11）。
+- [x] **T185-01-05** [テスト] 時間の待ちの検査の除外を行か関数の単位にし、統合テストを分ける数の既定と CI の食い違いを見つける検査を加える（DC-185-10、11）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/time-waits.mjs`、`scripts/ci/time-waits-exclusions.json`、`scripts/ci/` の直下（分ける数の検査）、テスト、`docs/guides/ci.md`
+  - 結果：`time-waits` の除外のキーを `<ファイル>:<待ちを書いた行の文字>` にし（行が動いても効き、同じ文字の行は除外 1 件につき最初の 1 行だけに効く）、当たる行がない除外は共通の `checkExclusions` で失敗にする。今の除外 1 件を新しい形に書き換えた（`e2e/scripts/run.ts` は変えていない）。新しい検査 `integration-shards`（ci.md の表で `runtime-versions` は実行環境のバージョンの検査なので別の行にした）が、`build.gradle.kts` の `.orElse(N)` と `ci.yml` の `shard` の一覧の数を照合する。今のリポジトリは 2 と 2 で通り、`ci.yml` の push の paths（`**`）は読むファイルを含むので変更不要。
 - [ ] **T185-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T185-01-01〜05
 

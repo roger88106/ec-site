@@ -1,9 +1,15 @@
-import { describe, expect, test } from 'vitest'
+// @vitest-environment jsdom
+import { screen } from '@testing-library/react'
+import { describe, expect, test, vi } from 'vitest'
+import { addToCart } from '@/actions/cart'
 import type { Variant } from '@/api/types'
 import { AddToCartForm, AddToCartFormView } from '@/features/catalog/components/AddToCartForm'
 import type { ActionResult } from '@/lib/actionResult'
 import { VARIANT_ID } from '@/test/fixtures'
-import { renderStatic } from '@/test/render'
+import { renderInBrowser, renderStatic } from '@/test/render'
+
+// カートに入れる操作はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する（テストの書き方 第 1 節）
+vi.mock('@/actions/cart', () => ({ addToCart: vi.fn(async () => ({ ok: true })) }))
 
 /** 買えるバリアント */
 const VARIANT: Variant = { id: VARIANT_ID, axisValues: [], inStock: true, salesSuspended: false, imageUrl: null }
@@ -27,13 +33,35 @@ describe('カートに入れる操作の失敗', () => {
     expect(after.getByText('入力内容に誤りがあります。')).not.toHaveAttribute('aria-live')
   })
 
-  test('AC-193-2、AC-193-3 成功の知らせも同じ領域に出て、前の失敗の文は出ない', () => {
+  test('AC-193-2 成功の知らせも同じ領域に出る', () => {
     const view = renderForm({ ok: true })
 
     const status = view.getByRole('status')
     expect(view.getAllByRole('status')).toHaveLength(1)
     expect(status).toContainElement(view.getByRole('link', { name: 'カートを見る' }))
-    expect(status).not.toHaveTextContent('入力内容に誤りがあります。')
+  })
+
+  test('AC-193-3 失敗の後に成功したとき、同じ領域が残り、前の失敗の文は消えて成功の知らせが入る', async () => {
+    vi.mocked(addToCart).mockResolvedValueOnce({
+      ok: false,
+      message: '在庫が足りません。',
+      errorCode: 'OUT_OF_STOCK',
+    })
+    const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)
+    const status = screen.getByRole('status')
+
+    await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
+    expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBe(status)
+
+    // 2 回目は、モックの既定の成功を返す
+    await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
+    const link = await screen.findByRole('link', { name: 'カートを見る' })
+
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).not.toHaveTextContent('在庫が足りません。')
+    expect(status).toContainElement(link)
   })
 })
 

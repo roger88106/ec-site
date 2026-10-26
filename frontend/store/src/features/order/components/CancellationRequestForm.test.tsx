@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import { describe, expect, test, vi } from 'vitest'
 import { requestCancellation } from '@/actions/order'
 import { CancellationRequestForm } from '@/features/order/components/CancellationRequestForm'
@@ -41,5 +41,28 @@ describe('キャンセルの申請', () => {
     expect(await screen.findByText('この注文はキャンセルを申請できません。')).toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
     expect(screen.getByRole('status')).toHaveTextContent('この注文はキャンセルを申請できません。')
+  })
+
+  test('AC-193-3 失敗の後、入力を直して再送して成功したとき、同じ領域が残り、前の失敗の文は消える', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(requestCancellation).mockResolvedValueOnce({
+      ok: false,
+      message: 'この注文はキャンセルを申請できません。',
+      errorCode: 'CANCELLATION_NOT_REQUESTABLE',
+    })
+    const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
+    const status = screen.getByRole('status')
+
+    await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
+    expect(await screen.findByText('この注文はキャンセルを申請できません。')).toBeInTheDocument()
+    expect(screen.getByRole('status')).toBe(status)
+
+    // 入力を直して再送する。2 回目は、モックの既定の成功を返す
+    await user.type(screen.getByLabelText('理由（任意）'), '誤って注文したため')
+    await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
+
+    await waitFor(() => expect(status).toBeEmptyDOMElement())
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toBe(status)
   })
 })

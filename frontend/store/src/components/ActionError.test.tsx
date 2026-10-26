@@ -39,7 +39,7 @@ describe('サーバーアクションの失敗の表示', () => {
   })
 
   test.each([{ ok: true } as const, null, undefined])(
-    'AC-193-1、AC-193-3 サーバーアクションの結果が成功か、まだない（%j）なら、文のない領域だけを出す',
+    'AC-193-1 サーバーアクションの結果が成功か、まだない（%j）なら、文のない領域だけを出す',
     (result) => {
       const view = renderStatic(<ActionError result={result} />)
 

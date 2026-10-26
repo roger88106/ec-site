@@ -15,7 +15,7 @@ export function StartCheckoutForm({ orderable }: { orderable: boolean }) {
   const t = useTranslations('cart.startCheckout')
   const [result, formAction, pending] = useActionState(startCheckout, null)
   return (
-    <form action={formAction} className="space-y-2">
+    <form action={formAction} className="flex flex-col gap-2">
       <Button className="w-full" disabled={!orderable || pending} size="lg" type="submit">
         {pending ? t('reserving') : t('submit') /* 確保中か、進む */}
       </Button>

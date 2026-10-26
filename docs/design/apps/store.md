@@ -5,7 +5,7 @@ C 側（消費者）の画面。Next.js（App Router）で、店舗 API（`store
 | 項目 | 内容 |
 |------|------|
 | 依存 | 店舗 API（`store.yaml`）、消費者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[012](../../specs/archive/mvp/012-test-safety-net)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[104](../../specs/archive/1to10/104-parallel-local-env)、[134](../../specs/archive/1to10/134-admin-tidy)、[135](../../specs/archive/1to10/135-store-cleanup)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[012](../../specs/archive/mvp/012-test-safety-net)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[104](../../specs/archive/1to10/104-parallel-local-env)、[134](../../specs/archive/1to10/134-admin-tidy)、[135](../../specs/archive/1to10/135-store-cleanup)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests)、[193](../../specs/archive/1to10/193-store-a11y) |
 
 ## 1. 技術
 
@@ -113,6 +113,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 - タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアでタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
 - 追跡 ID：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアで、画面の要求の `traceparent` を付ける。バックエンドのログを画面の要求から辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュする要求に付けてもキャッシュは使われる。
+- サーバーアクションの失敗のログ：サーバーアクションが例外で失敗したら、共通の処理（`withActionResult`）が error のログに例外の名前と、原因の例外（`cause`）の名前とコード（`ECONNREFUSED` など）を出力する。例外のメッセージ（原因のものも含む）は出力しない。メッセージにカートの ID などの識別子が入りうるため。
 - 5xx のログ：店舗 API が 5xx を返したら、応答のミドルウェアで warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
 
 ### 4.3 サーバーアクション
@@ -122,7 +123,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 - 会員の API の 401 と成功の後の移動は、`actions/memberAction.ts` のヘルパーで書く。
   - `redirectIfUnauthenticated(response, returnTo?)`：応答が 401 ならログイン画面へリダイレクトする。戻り先を渡さなければ、いまの画面に戻る。
   - `redirectOnSuccess(work)`：処理を `withActionResult` でラップし、処理が返した移動先へ遷移する。失敗の結果はそのまま返す（`redirect` をラッパーの外で呼ぶ形を 1 か所にする）。
-- `withActionResult` が例外を結果にするときは、画面の移動・not found を通した後、error のログに例外の名前とメッセージを出力する（要求の本文や token は出力しない）。
+- `withActionResult` が例外を結果にするときは、画面の移動・not found を通した後、第 4.2 節のサーバーアクションの失敗のログを出力する。
 - フォームは `useActionState` で結果を受け、送信中はボタンを押せなくする（二重送信の防止。API も、同じ注文手続きの再送には作成済みの注文を返す）。
 
 ### 4.4 カート ID の Cookie
@@ -212,7 +213,13 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | 業務のエラー（400、409） | フォームの下に `message`。次にすべきことが別の画面にあるもの（在庫不足、カートの変更）はそこへのリンクを添える。総額が変わったら新しい金額で再表示する |
 | 通信の失敗 | 「サーバーに接続できませんでした。」 |
 
-エラーメッセージは、共通の部品 `components/ActionError.tsx` で出す（メッセージがなければ何も出さない）。親が常にある読み上げの領域（`aria-live`）を持ち、その中で出すとき（カートに入れる）は `inLiveRegion` を付け、部品に領域を付けさせない（領域を入れ子にしない）。
+エラーメッセージは、共通のコンポーネント `components/ActionError.tsx` で表示する。
+
+- コンポーネントは、メッセージがなくても `status` の役割を持つ読み上げの領域を常に描き、失敗したときに文だけを入れる。理由：後から描かれた領域は読み上げられない支援技術があるため。
+- 文のない領域は、画面から隠して（`sr-only`）並びから外す。`space-y-*` の親の最後の子に置くと前の要素に余白が付くので、そのときは親を `flex flex-col gap-*` にする。
+- 親が常にある読み上げの領域を持ち、その中で表示するとき（カートに入れる）は `inLiveRegion` を付け、コンポーネントに領域を付けさせない（領域を入れ子にしない）。
+
+注文のフォームの欄は、補足の文と誤りの文を、この順で入力欄の説明（`aria-describedby`）として結び付ける。誤りのある欄には `aria-invalid` を付ける。入力欄と選択欄の UI のコンポーネント（shadcn/ui）が持つ誤りの見た目（赤い枠）になる。
 
 ※5：欄の下には、API の応答の項目ごとの文（`errors[].message`）をそのまま表示し、画面で文を作らない（`features/checkout/placeOrderErrors.ts`）。契約の形の検証で見つかった誤りも、API が業務の検証エラーと同じ文を返す（[バックエンドの書き方](../../rules/backend-coding.md) 第 3.3 節）。
 
@@ -227,7 +234,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
 | 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderStatic` で HTML にして DOM に読み込み、役割と名前で探し、jest-dom の照合の関数で確認する（`src/test/render.tsx`）。「何も出さない」ことは、`renderMarkup` の結果が空の文字列であることで確認する。HTML の構造に依存しないので、例外として認める。効果（`useEffect`）は実行されない | 対象の横（`*.test.tsx`） |
 | サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | 結果を props で受ける表示のコンポーネント（`OrderFormView`、`AddToCartFormView`）に結果を渡し、`renderStatic` で確認する。`useActionState` などの React の関数は差し替えない。表示のコンポーネントに送る関数の代わりを渡し、ボタンを押したときに渡す値は jsdom で確認してよい（`OrderForm.test.tsx` の形）。サーバーアクションが API に送る内容そのものは、サーバーアクションのテストと E2E で確認する | 対象の横（`*.test.tsx`） |
-| クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※6 | 対象の横（`*.test.tsx`） |
+| クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※6。サーバーアクションの結果の表示の遷移（同じ読み上げの領域が残り、前の文が消えるなど）も、`vi.mock` で結果を差し替えて操作で確認する（[テストの書き方](../../rules/test-writing.md) 第 1 節） | 対象の横（`*.test.tsx`） |
 | ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ページの関数を呼び、`renderStatic` で DOM に読み込んで、役割と名前で探す。ログインの状態は `signInAs`、店舗 API は MSW で差し替える。表示でなく確認の順（ログイン、ID の形）を確認するテストは、jsdom を使わずに Node でページの関数を呼び、移る先（`src/test/next.ts` の `redirectedTo`）と「見つからない」（`expectNotFound`）で確認する（`app/checkout/[checkoutId]/page.test.tsx`） | ページの横（`app/**/page.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Node で直接呼ぶ。Next.js のモジュール（`next/headers` など）と `@/auth` は `src/test/` で置き換え、バックエンドは MSW（`msw/node`） | 対象の横（`*.test.ts`） |
 | 画面をつないだ流れ | E2E | `e2e/tests/` |

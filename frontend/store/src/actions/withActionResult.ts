@@ -16,10 +16,14 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
   } catch (error) {
     // 画面の移動・not found の例外は、ここで飲み込まずに Next.js へ返す
     unstable_rethrow(error)
-    // 例外の名前とメッセージだけを出す（要求の本文や token を含めない）
+    // 例外の名前と、原因の例外の名前とコードだけを出す。メッセージには、カートの ID などの識別子や
+    // 要求の内容が入りうるので、例外と原因のどちらのメッセージも出さない
+    const cause: unknown = error instanceof Error ? error.cause : undefined
+    const causeCode = cause instanceof Error && 'code' in cause ? cause.code : undefined
     await log.error('サーバーアクションが失敗しました', {
       errorName: error instanceof Error ? error.name : typeof error,
-      errorMessage: error instanceof Error ? error.message : String(error),
+      causeName: cause instanceof Error ? cause.name : null,
+      causeCode: typeof causeCode === 'string' ? causeCode : null,
     })
     return { ok: false, message: connectionFailedMessage() }
   }

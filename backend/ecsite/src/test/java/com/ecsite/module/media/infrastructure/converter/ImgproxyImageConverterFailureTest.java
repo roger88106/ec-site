@@ -2,7 +2,6 @@ package com.ecsite.module.media.infrastructure.converter;
 
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
-import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
 import com.ecsite.module.media.infrastructure.storage.S3ObjectStorage;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
@@ -30,6 +29,8 @@ import javax.crypto.spec.SecretKeySpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 /**
  * 画像の変換の imgproxy の実装の、失敗のときの振る舞いのテスト（docs/design/modules/media.md「アップロードの流れ」）。<br />
@@ -204,10 +205,9 @@ class ImgproxyImageConverterFailureTest {
      */
     private static ImgproxyImageConverter converter(URI baseUrl, Duration timeout) {
         var properties = new ImgproxyProperties(baseUrl, "0123456789abcdef", "fedcba9876543210", 82, timeout);
-        var storage = new MediaStorageProperties(null, "us-east-1", true, null, null,
-                "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
-                Duration.ofSeconds(10), Duration.ofSeconds(30));
-        return new ImgproxyImageConverter(RestClient.builder(), properties, new S3ObjectStorage(null, null, storage));
+        var storage = mock(S3ObjectStorage.class);
+        when(storage.uploadSourceUrl("scope/upload")).thenReturn("s3://incoming/scope/upload");
+        return new ImgproxyImageConverter(RestClient.builder(), properties, storage);
     }
 
     /**

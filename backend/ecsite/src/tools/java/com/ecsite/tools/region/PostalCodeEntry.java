@@ -16,8 +16,8 @@ public record PostalCodeEntry(String postalCode, String municipalityCode, String
      * 郵便番号の表の 1 行を作る。文字列の項目は null を認めない
      */
     public PostalCodeEntry {
-        Objects.requireNonNull(postalCode, "postalCode");
-        Objects.requireNonNull(municipalityCode, "municipalityCode");
-        Objects.requireNonNull(townName, "townName");
+        Objects.requireNonNull(postalCode);
+        Objects.requireNonNull(municipalityCode);
+        Objects.requireNonNull(townName);
     }
 }

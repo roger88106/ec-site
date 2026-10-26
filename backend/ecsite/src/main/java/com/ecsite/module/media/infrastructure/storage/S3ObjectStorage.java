@@ -3,6 +3,7 @@ package com.ecsite.module.media.infrastructure.storage;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.MediaErrorCode;
+import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -21,7 +22,7 @@ import java.util.function.Supplier;
  * ファイルの置き場所の S3 の実装。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
  */
 @Component
-@RequiredArgsConstructor
+@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
 public class S3ObjectStorage implements ObjectStorage {
 
     /**

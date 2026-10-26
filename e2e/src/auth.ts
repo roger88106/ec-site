@@ -5,7 +5,7 @@ import { ADMIN_URL, IDP_URL, MAILPIT_URL, STORE_URL } from './urls'
 import { MAIL_TIMEOUT } from './waits'
 
 /** ログインに使うアカウント */
-export type Account = { email: string; password: string }
+type Account = { email: string; password: string }
 
 /** realm の JSON にあるローカルと CI 用のアカウント（docs/guides/setup.md の「認証（Keycloak）」） */
 export const ACCOUNTS = {
@@ -146,7 +146,7 @@ export function idpPasswordInput(page: Page): Locator {
  *
  * @param to 宛先のメールアドレス
  */
-export async function latestIdpLink(to: string): Promise<string> {
+async function latestIdpLink(to: string): Promise<string> {
   let link: string | undefined
   await expect
     .poll(

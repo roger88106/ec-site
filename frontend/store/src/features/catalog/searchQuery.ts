@@ -2,7 +2,7 @@ import type { Route } from 'next'
 import { firstParam, pageParam, type SearchParams } from '@/lib/searchParams'
 
 /** 検索のキーワードとページ。URL のクエリに持つ */
-export type SearchQuery = { q: string; page: number }
+type SearchQuery = { q: string; page: number }
 
 /** URL のクエリから読む。前後の空白は除き、形の合わないページは 1 ページ目にする */
 export function parseSearchQuery(params: SearchParams): SearchQuery {

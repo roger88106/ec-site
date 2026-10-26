@@ -2,7 +2,7 @@ import { useTranslations } from 'use-intl'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 
 /** 選択肢の 1 つ。value が null の選択肢は「すべて」「なし」などに使う */
-export type Option<V extends string> = { value: V | null; label: string }
+type Option<V extends string> = { value: V | null; label: string }
 
 /**
  * 決まった選択肢から 1 つ選ぶ。<br />

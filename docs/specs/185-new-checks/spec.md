@@ -209,8 +209,10 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
   - 依存：T185-01-02
   - 範囲：`scripts/ci/time-waits.mjs`、`scripts/ci/time-waits-exclusions.json`、`scripts/ci/` の直下（分ける数の検査）、テスト、`docs/guides/ci.md`
   - 結果：`time-waits` の除外のキーを `<ファイル>:<待ちを書いた行の文字>` にし（行が動いても効き、同じ文字の行は除外 1 件につき最初の 1 行だけに効く）、当たる行がない除外は共通の `checkExclusions` で失敗にする。今の除外 1 件を新しい形に書き換えた（`e2e/scripts/run.ts` は変えていない）。新しい検査 `integration-shards`（ci.md の表で `runtime-versions` は実行環境のバージョンの検査なので別の行にした）が、`build.gradle.kts` の `.orElse(N)` と `ci.yml` の `shard` の一覧の数を照合する。今のリポジトリは 2 と 2 で通り、`ci.yml` の push の paths（`**`）は読むファイルを含むので変更不要。
-- [ ] **T185-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+- [x] **T185-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T185-01-01〜05
+  - 結果：一般の観点を汎用で 2 回（高 0・1、必須 2・3）、重要な観点を高性能と汎用で（高 2・1、必須 0・0）レビューした。重複を除いて高 2 件、必須 3 件を修正した。
+    正規表現の判定に渡すコードからコメントを除き、`main-entry` の判定の書き方を広げて文字列の中を読まないようにし（今のリポジトリは 0 件）、`image-versions`・`runtime-versions` の読めない行を `describeUnreadableLine` にそろえて検査の script の直接の組み立てを走査するテストを加えた。`docs/guides/ci.md` の `lib/` の一覧と `exclusions.mjs` の先頭のコメントも直した。
 
 ### 段階 2：マイグレーションの互換性
 

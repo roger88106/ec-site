@@ -55,6 +55,24 @@ describe('コード・コメント・文字列・正規表現の走査', () => {
     assert.equal(segments('x = <br />').some((s) => s.type === 'regex'), false)
   })
 
+  test('正規表現かの判定は、コメントを除いた直前のコードで決める（コメントの最後の字で決めない）', () => {
+    // コメントの後の行頭の / は、前のコードで決める。コメントの最後の字が ( や , でも割り算
+    const division = segments('const a = b // 割る(\n/ 2 + c')
+    assert.equal(division.some((s) => s.type === 'regex'), false)
+    // コメントの最後の字が割り算の字でも、前のコードが = なら正規表現
+    const regexAfterLineComment = segments('x = // 説明\n/https?:\\/\\//,')
+    assert.deepEqual(regexAfterLineComment.filter((s) => s.type === 'regex').map((s) => s.text), ['/https?:\\/\\//'])
+    const regexAfterBlockComment = segments('x = /* c */ /a\\/\\/b/')
+    assert.deepEqual(regexAfterBlockComment.filter((s) => s.type === 'regex').map((s) => s.text), ['/a\\/\\/b/'])
+    const divisionAfterBlockComment = segments('x = a /* ( */ / 2')
+    assert.equal(divisionAfterBlockComment.some((s) => s.type === 'regex'), false)
+  })
+
+  test('複数行のテンプレートの文字の部分の // と /* は、コメントと読まない', () => {
+    const text = 'const a = `\n// 行\n/* 塊 */\n${b}\n// 続き\n`'
+    assert.equal(segments(text).some((s) => s.type === 'comment'), false)
+  })
+
   test('テンプレートの ${...} の中はコードとして読み、入れ子のテンプレートも読む', () => {
     const text = 'f(`a${g(`b${1}`) // x\n}c`)'
     assert.deepEqual(segments(text), [

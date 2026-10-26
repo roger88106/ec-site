@@ -9,6 +9,13 @@
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { describeUnreadableLine } from './lib/unreadable-line.mjs'
+
+/** Node のバージョンを書いたファイル */
+const NODE_VERSION_FILE = '.node-version'
+
+/** ルートの package.json（engines.node） */
+const PACKAGE_JSON_FILE = 'package.json'
 
 /**
  * workflow の `JAVA_VERSION` の値を読む。
@@ -54,10 +61,11 @@ export function readEnginesNode(text) {
 /**
  * 版の置き場所の間の食い違いを探す。
  *
- * @param {{ workflowJava?: string, tomlJava?: string, nodeFile?: string, enginesNode?: string }} versions 読んだ版
- * @returns {string[]} 問題の説明（なければ空）
+ * @param {{ workflowJava?: string, tomlJava?: string, nodeFile?: string, enginesNode?: string, enginesLine?: number }} versions
+ *   読んだ版。enginesLine は package.json の engines.node の行（1 始まり。読めない書き方の文に添える。既定は 1）
+ * @returns {string[]} 問題の説明（読めない版は `ファイル:行 内容（理由）`。なければ空）
  */
-export function findRuntimeVersionProblems({ workflowJava, tomlJava, nodeFile, enginesNode }) {
+export function findRuntimeVersionProblems({ workflowJava, tomlJava, nodeFile, enginesNode, enginesLine = 1 }) {
   const problems = []
   if (workflowJava === undefined) {
     problems.push('ci.yml の env.JAVA_VERSION を読めない')
@@ -75,11 +83,11 @@ export function findRuntimeVersionProblems({ workflowJava, tomlJava, nodeFile, e
     problems.push('package.json の engines.node を読めない')
   }
   if (nodeFile !== undefined && !/^\d+(\.\d+){0,2}$/.test(nodeFile)) {
-    problems.push(`.node-version は数の版（24 など）だけを扱う：${nodeFile}`)
+    problems.push(describeUnreadableLine({ file: NODE_VERSION_FILE, line: 1, text: nodeFile, reason: '数字のバージョン（24 など）だけを扱う' }))
   } else if (nodeFile !== undefined && enginesNode !== undefined) {
     const minimum = /^>=\s*(\d+)(\.\d+){0,2}$/.exec(enginesNode.trim())?.[1]
     if (minimum === undefined) {
-      problems.push(`engines.node は >=N の形だけを扱う：${enginesNode}`)
+      problems.push(describeUnreadableLine({ file: PACKAGE_JSON_FILE, line: enginesLine, text: enginesNode, reason: '>=N の形だけを扱う' }))
     } else if (Number.parseInt(nodeFile, 10) < Number(minimum)) {
       problems.push(`Node の版が違う：.node-version は ${nodeFile}、engines.node は ${enginesNode}`)
     }
@@ -207,11 +215,14 @@ if (isMain(import.meta.url)) {
   const read = (path) => readFileSync(path, 'utf8')
   const ymls = listGitFiles(['.github/workflows', '.github/actions']).filter((file) => /\.ya?ml$/.test(file))
   exitIfNoFiles(ymls, 'workflow と action の yml のファイル')
+  const packageJson = read(PACKAGE_JSON_FILE)
+  const enginesIndex = packageJson.split('\n').findIndex((line) => /"node"\s*:/.test(line))
   const problems = findRuntimeVersionProblems({
     workflowJava: readJavaFromWorkflow(read(JAVA_VERSION_HOME)),
     tomlJava: readJavaFromToml(read('backend/ecsite/gradle/libs.versions.toml')),
-    nodeFile: readNodeVersionFile(read('.node-version')),
-    enginesNode: readEnginesNode(read('package.json')),
+    nodeFile: readNodeVersionFile(read(NODE_VERSION_FILE)),
+    enginesNode: readEnginesNode(packageJson),
+    enginesLine: enginesIndex + 1 || 1,
   })
   const workflows = ymls.map((file) => ({ path: file, text: read(file) }))
   problems.push(...findVersionLiteralProblems(workflows))

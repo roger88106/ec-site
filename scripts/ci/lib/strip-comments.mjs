@@ -12,13 +12,15 @@ const JAVA_SCAN = { regex: false, templates: false, textBlocks: true }
  * @param {string} text ソース
  * @param {Parameters<typeof scanCode>[1]} options 走査の選択肢
  * @param {boolean} [keepRegex] 正規表現のリテラルを残すか（false なら空白にする）
+ * @param {boolean} [blankStrings] 文字列（テンプレートの文字の部分を含む）も空白にするか（false なら残す）
  * @returns {string} コメントを空白にしたソース
  */
-function blankComments(text, options, keepRegex = true) {
+function blankComments(text, options, keepRegex = true, blankStrings = false) {
   const parts = []
   scanCode(text, options, (type, from, to) => {
     const chunk = text.slice(from, to)
-    parts.push(type === 'comment' || (type === 'regex' && !keepRegex) ? chunk.replace(/[^\r\n]/g, ' ') : chunk)
+    const blank = type === 'comment' || (type === 'regex' && !keepRegex) || (type === 'string' && blankStrings)
+    parts.push(blank ? chunk.replace(/[^\r\n]/g, ' ') : chunk)
   })
   return parts.join('')
 }
@@ -56,9 +58,10 @@ export function keepJavaComments(text) {
  * テンプレートの `${...}` の中はコードとして読む（入れ子のテンプレートも数える）。
  *
  * @param {string} text ソース
- * @param {{ keepRegex?: boolean }} [options] keepRegex が true なら、正規表現のリテラルを残す（中の文字を読む検査用。既定は空白にする）
+ * @param {{ keepRegex?: boolean, blankStrings?: boolean }} [options] keepRegex が true なら、正規表現のリテラルを残す（中の文字を読む検査用。既定は空白にする）。
+ *   blankStrings が true なら、文字列も空白にする（コードの書き方だけを探す検査用。既定は残す）
  * @returns {string} コメントを除いたソース
  */
 export function stripComments(text, options = {}) {
-  return blankComments(text, {}, options.keepRegex ?? false)
+  return blankComments(text, {}, options.keepRegex ?? false, options.blankStrings ?? false)
 }

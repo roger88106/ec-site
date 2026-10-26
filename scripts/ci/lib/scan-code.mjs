@@ -18,9 +18,9 @@ const REGEX_LOOKBEHIND = 200
 /**
  * ここまでのコードの後の / が、正規表現のリテラルの始まりかを返す。
  * 直前の意味のある字（空白と改行を飛ばす）で決める。行頭の / も、前の行の終わりが識別子や ) なら割り算と読む（式を改行して演算子を行頭に置く書き方）。
- * 簡易の判定のため、if (a) の後の行頭の正規表現は割り算と読み、生のソースの行コメントの後の / はコメントの最後の字で決まる
+ * 簡易の判定のため、if (a) の後の行頭の正規表現は割り算と読む
  *
- * @param {string} before ここまでのコード
+ * @param {string} before ここまでのコード（コメントは空白にしたもの。呼ぶ側が置き換えて渡す）
  * @returns {boolean} ソースの始まりか、式の始まりになる記号・語の後か、改行を挟んだ } の後なら true（それ以外は割り算）
  */
 export function startsRegex(before) {
@@ -100,6 +100,18 @@ export function scanCode(text, options, visit) {
   const open = []
   let i = start
   const emit = (type, from, to) => visit(type, from, to, open.length) === true
+  // 正規表現の判定に渡す直前のコードから、コメントを除くための区間（遡る範囲の中のものだけ残す）
+  let comments = []
+  const codeBefore = (at) => {
+    const from = Math.max(start, at - REGEX_LOOKBEHIND)
+    comments = comments.filter(([, to]) => to > from)
+    let before = text.slice(from, at)
+    for (const [commentFrom, commentTo] of comments) {
+      const blanked = text.slice(Math.max(commentFrom, from), commentTo).replace(/[^\r\n]/g, ' ')
+      before = before.slice(0, Math.max(commentFrom, from) - from) + blanked + before.slice(commentTo - from)
+    }
+    return before
+  }
   while (i < text.length) {
     const ch = text[i]
     const next = text[i + 1]
@@ -109,11 +121,13 @@ export function scanCode(text, options, visit) {
       const end = text.indexOf('\n', i)
       type = 'comment'
       stop = end === -1 ? text.length : end
+      comments.push([i, stop])
     } else if (ch === '/' && next === '*') {
       const end = text.indexOf('*/', i + 2)
       type = 'comment'
       stop = end === -1 ? text.length : end + 2
-    } else if (regex && ch === '/' && next !== '>' && startsRegex(text.slice(Math.max(start, i - REGEX_LOOKBEHIND), i))) {
+      comments.push([i, stop])
+    } else if (regex && ch === '/' && next !== '>' && startsRegex(codeBefore(i))) {
       type = 'regex'
       stop = regexEnd(text, i)
     } else if (textBlocks && text.startsWith('"""', i)) {

@@ -21,6 +21,44 @@ describe('直接実行の判定の検査', () => {
     assert.deepEqual(judgmentsOf(text), ['1 import.meta.url ===', '2 import.meta.main', '3 require.main'])
   })
 
+  test('argv の 2 つ目の要素を取り出す別の書き方（空白、at、分割代入）を見つける', () => {
+    for (const code of [
+      'if (process.argv[ 1 ] === x) run()',
+      'if (argv [1] === x) run()',
+      'const entry = process.argv.at(1)',
+      'const [, entry] = process.argv',
+      'const [node, entry] = process.argv',
+      'const [ , entry, ...rest] = process.argv',
+    ]) {
+      assert.equal(findMainJudgments(code).length, 1, code)
+    }
+  })
+
+  test('argv の 3 つ目以降（引数）を取り出す書き方は、見つけない', () => {
+    for (const code of ['const x = process.argv[2]', 'const [, , arg] = process.argv', 'const args = process.argv.slice(2)', 'const a = process.argv.at(2)', 'const [command, ...rest] = argv', 'const [name, file] = process.argv.slice(2)']) {
+      assert.deepEqual(findMainJudgments(code), [], code)
+    }
+  })
+
+  test('import.meta の filename・url の比較と、url の endsWith を見つける', () => {
+    for (const code of [
+      'if (import.meta.filename === process.argv0) run()',
+      'if (file !== import.meta.filename) return',
+      'if (import.meta.url.endsWith(name)) run()',
+      'if (import.meta.url === href) run()',
+      'if (href === import.meta.url) run()',
+      'if (require.main === module) run()',
+      'const isEntry = require.main',
+    ]) {
+      assert.equal(findMainJudgments(code).length, 1, code)
+    }
+  })
+
+  test('文字列の中の書き方は、見つけない', () => {
+    const text = ['const a = "require.main を使わない"', "const b = 'import.meta.main'", 'const c = `process.argv[1] と ${x} import.meta.url ===`'].join('\n')
+    assert.deepEqual(findMainJudgments(text), [])
+  })
+
   test('import.meta.url を、ファイルの位置を求めるために使うのは見つけない', () => {
     const text = ['const here = path.dirname(fileURLToPath(import.meta.url))', "const list = new URL('./a.json', import.meta.url)"].join('\n')
     assert.deepEqual(judgmentsOf(text), [])

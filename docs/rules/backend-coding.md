@@ -359,4 +359,4 @@ public record SignedNotification(byte[] body, String signature) {
 
 確認方法は CI の検査（`migrations`）。
 
-理由：適用の後に入れ替え前のアプリが動くため、前のバージョンのアプリが新しいスキーマで失敗しないようにするため。
+理由：前のバージョンのアプリが、新しいスキーマで失敗しないため。

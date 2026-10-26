@@ -4,7 +4,7 @@
 
 ## 1. 背景と目的
 
-spec 183 の確認で、CI の検査の script（`scripts/ci/`）の新しい検査を、spec 183 から分けると決めた（[spec 183](../archive/1to10/183-ci-checks/spec.md) 第 6 節の 1）。本 spec は、分けた 3 つの issue と、spec 183 の最後のレビューで回した推奨 11 件を扱う。
+spec 183 の確認で、CI の検査の script（`scripts/ci/`）の新しい検査を、spec 183 から分けると決めた（[spec 183](../archive/1to10/183-ci-checks/spec.md) 第 6 節の 1）。本 spec は、分けた 3 つの issue と、spec 183 の最後のレビューで本 spec に移した推奨 11 件を扱う。
 
 - #20：マイグレーションの互換性の規則がなく、前のリリースのアプリが動かなくなる変更が入りうる。
 - #161：spec 156 で文書を実装に合わせたときに、機械で見つけられる食い違いが残った。
@@ -27,7 +27,7 @@ spec 183 の確認で、CI の検査の script（`scripts/ci/`）の新しい検
 ## 3. 目的と完了条件
 
 - 1 つの DC に条件を 1 つ書く。出典の列は、spec 183 第 8 節の推奨の番号、spec 158 第 8 節の項目の番号、issue のコメント、spec 184 第 6 節の申し送りの記号である。
-- 整理の spec の DC の確認方法は、[開発の進め方](../../rules/workflow.md) 第 1.2 節のとおりなら plan で決める。規模 M には plan がないので、tasks で決める。
+- 整理の spec の DC の確認方法は、[開発の進め方](../../rules/workflow.md) 第 1.2 節のとおり、plan で決める。規模 M には plan がないので、tasks で決める。
 - 新しい検査と強めた検査で今のコードと文書に違反が出るときは、同じタスクで違反を修正する（spec 183 と同じ扱い）。正しい書き方だけを、理由付きで除外の一覧に置く。
 - 規則の文書に根拠のない検査は、先に規則の文書に書いてから加える（spec 183 の確認で利用者が決めた）。
 
@@ -81,7 +81,7 @@ spec 183 の確認で、CI の検査の script（`scripts/ci/`）の新しい検
 | **DC-185-23** | フロントのテストとテストの補助の、理由のコメントのない型を回避する変換（`as never`、`as unknown as`）を、検査が見つける | 158-28 |
 | **DC-185-24** | フロントのテストと E2E で、探した要素を `toBeTruthy`・`toBeDefined` で確認する所を、検査が見つける | #169 のコメント |
 | **DC-185-25** | フロントのテストと E2E で、`getAllBy…`・`findAllBy…` の結果の並びのインデックスで要素を選ぶ所を、検査が見つける | #169 のコメント |
-| **DC-185-26** | フロントのテストで、HTML の属性の並びに依存する正規表現・文字の一致で確認する所を、検査が見つける。空の描画の確認（`renderMarkup(…)).toBe('')`）は対象にしない | #169 のコメント、184-(a) |
+| **DC-185-26** | フロントのテストで、HTML の属性の並びに依存する正規表現・文字の一致で確認する所を、検査が見つける。空の描画の確認（`expect(renderMarkup(…)).toBe('')`）は対象にしない | #169 のコメント、184-(a) |
 | **DC-185-27** | フロントのテストの `describe` の名前が識別子だけ（関数名・コンポーネント名）のときに、検査が失敗する ※4 | #169 のコメント |
 | **DC-185-28** | フロントのテストで、要素のプロパティ・属性（`.disabled`、`getAttribute`、`.value`）を `toBe` で比べる所を、検査が見つける | 184-(b) |
 | **DC-185-29** | フロントのテストのファイルで、理由のコメントのない `fireEvent` の直接の使用を、検査が見つける | 184-(c) |
@@ -128,7 +128,7 @@ DC は 32 で、spec 183（M、DC-183-1〜30）と同じくらいである。変
 
 ### 6.2 マイグレーションの互換性の規則（DC-185-12〜14）
 
-spec 183 の確認で利用者が決めた（2026-10-24。[spec 183](../archive/1to10/183-ci-checks/spec.md) 第 6 節の 2〜4 と第 8 節に、本 spec に移したことを記録してある）。本 spec はそのまま書く。
+spec 183 の確認で利用者が決めた（2026-10-24。[spec 183](../archive/1to10/183-ci-checks/spec.md) 第 6 節の 2〜4 と第 8 節に、本 spec に移したことを記録してある）。
 
 今は、マイグレーションはデプロイごとに 1 回適用し、起動時には適用しない（[環境変数](../../guides/environment.md) 第 1 節）。適用してからアプリを入れ替えるまでの間、前のバージョンのアプリが新しいスキーマで動く。
 
@@ -149,10 +149,12 @@ spec 184 第 6 節は、#169 の範囲の外の検査の候補 (a)〜(e) を、�
 | 候補 | 今の違反 | 今の規則 |
 |------|----------|----------|
 | (a) 空の描画の確認を、HTML の文字の一致の検査から除く | 検査の誤検出を減らすもので、違反ではない | — |
-| (b) プロパティ・属性の `toBe` での比較 | 0 件（`.disabled`、`.value`、`.checked`、`getAttribute(…)` を `toBe` で比べる所はない。`document.body.textContent` を直前の値と `toBe` で比べる所が 1 件あるが、DC-185-28 の対象の語（`.disabled`、`getAttribute`、`.value`）に当たらず、数えない） | [テストの書き方](../../rules/test-writing.md) 第 4.7 節（T185-04-01 で追加） |
+| (b) プロパティ・属性の `toBe` での比較 | 0 件 ※6 | [テストの書き方](../../rules/test-writing.md) 第 4.7 節（T185-04-01 で追加） |
 | (c) `fireEvent` の直接の使用 | 1 ファイルの 2 か所（管理画面のテストの補助 `frontend/admin/src/test/inputs.ts`）。どちらも `userEvent` で起こせない操作（`datetime-local` への入力、`window` の `visibilitychange`）で、理由をコメントに書いてあるので、テストの書き方 第 4.8 節の例外に当たる | [テストの書き方](../../rules/test-writing.md) 第 4.8 節（T185-04-01 で追加） |
 | (d) 組み込みの名前の `const` | 数えていない | なし |
 | (e) `})` の直後の空行 | 数えていない | なし |
+
+※6：(b) の 0 件は、`.disabled`、`.value`、`.checked`、`getAttribute(…)` を `toBe` で比べる所がないこと。`document.body.textContent` を直前の値と `toBe` で比べる所が 1 件あるが、DC-185-28 の対象の語（`.disabled`、`getAttribute`、`.value`）に当たらないので、数えない。
 
 | 案 | 内容 |
 |----|------|
@@ -166,16 +168,21 @@ spec 184 第 6 節は、#169 の範囲の外の検査の候補 (a)〜(e) を、�
 
 spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の検査は spec 184 のマージの後に加える。spec 184 はマージ済みなので、待つ必要はない。
 
-作業ブランチ（27f901d2）で 2026-10-26 に数え直した違反は、`toBeDefined` が E2E に 2 か所（`e2e/src/auth.ts` の IdP のメール、`e2e/src/shipping.ts` の出荷の通知メール。どちらも `expect.poll(…).toBeDefined()`）である。`toBeTruthy` は 0 件で、フロントの `toBeDefined` も 0 件。他の検査の対象の今の違反は、並びのインデックス（`getAllBy…`・`findAllBy…` の結果の `[n]`）が 0 件（数え直しでは 0 件としたが、検査を加えたときに `OrderForm.test.tsx` の 1 か所、変数に入れてから選ぶ形が見つかり、T185-04-02 の d49e3d54 で直した）、HTML の属性の並びに依存する正規表現・文字の一致が 0 件（`toMatch` は `traceparent` の形の 2 件だけで HTML ではない）、識別子だけの `describe` の名前が 0 件である。E2E の 2 か所は spec 194 が変えうるファイルなので、DN-185-4 のとおり実装の前に照合する。
+作業ブランチ（27f901d2）で 2026-10-26 に数え直した違反は、`toBeDefined` が E2E に 2 か所（`e2e/src/auth.ts` の IdP のメール、`e2e/src/shipping.ts` の出荷の通知メール。どちらも `expect.poll(…).toBeDefined()`）である。`toBeTruthy` は 0 件で、フロントの `toBeDefined` も 0 件。他の検査の対象の今の違反は、次のとおりである。
+- 並びのインデックス（`getAllBy…`・`findAllBy…` の結果の `[n]`）：数え直しでは 0 件としたが、検査を加えたときに `OrderForm.test.tsx` の 1 か所（変数に入れてから選ぶ形）が見つかり、T185-04-02 で修正した。
+- HTML の属性の並びに依存する正規表現・文字の一致：0 件（`toMatch` は `traceparent` の形の 2 件だけで HTML ではない）。
+- 識別子だけの `describe` の名前：0 件。
+
+E2E の 2 か所は spec 194 が変えうるファイルなので、DN-185-4 のとおり実装の前に照合する。
 
 店舗画面のテストの共通の設定に、理由のコメント付きの型の変換が 1 か所ある。テストの書き方 第 4.6 節が理由付きの変換を許すので、違反に数えない（DC-185-23 の検査も、理由のコメントのあるものを見つけない）。
 
 ## 7. tasks
 
-第 6 節の決定で書く。
+tasks は第 6 節の決定に基づく。
 
 - `[P]` のタスクはない。同じ段階のタスクは、番号の順に 1 つずつ行う。理由：多くのタスクが共有の文書（[CI の検査](../../guides/ci.md)）と共通の関数を変えるため。
-- `[テスト]` のタスクは、テストを書いてレッドを確認し、同じ実装役が続けて実装する（テストを書く作業と実装を、1 つのタスクにまとめる。[開発の進め方](../../rules/workflow.md) 第 2.1 節の例外のとおり同じ commit に入れる）。
+- `[テスト]` のタスクは、テストを書いてレッドを確認し、同じ実装役が続けて実装し、同じ commit に入れる（[開発の進め方](../../rules/workflow.md) 第 2.1 節の例外）。
 - 新しい検査と強めた検査で違反が出るときは、検査を変えるタスクで違反も修正する（第 3 節）。修正は振る舞いを変えない（DN-185-1）。
 - `scripts/ci/` の直下に検査を加えるタスクは、[CI の検査](../../guides/ci.md) の表に行を加える（`ci-docs` の検査が求める）。
 - 各段階の最後のレビューは、profile「厚め」で行う（[エージェントの作業フロー](../../rules/subagents.md) 第 4 節）。重要な観点に「検査を弱めていないか」（DN-185-2）を含める。
@@ -186,16 +193,16 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
 - 完了条件：DC-185-1〜11 を満たし、`check-all.sh` が通る。
 - 参照：第 3 節の DS-185-1、spec 183 第 8 節
 
-- [x] **T185-01-01** [テスト] 直接実行の判定が 1 通りであることを守る検査を加え、Git を呼ぶテストの環境変数を外す処理を共通の補助にする（DC-185-1、2）。
+- [x] **T185-01-01** [テスト] 直接実行の判定が 1 通りであることを確認する検査を加え、Git を呼ぶテストの環境変数を外す処理を共通の補助にする（DC-185-1、2）。
   - 依存：なし
   - 範囲：`scripts/ci/`、`scripts/ci/lib/`、Git を呼ぶテスト、`docs/guides/ci.md`
   - 確認方法：`git grep -n "startsWith('GIT_')" -- scripts` が `scripts/ci/lib/git-env.mjs` の 1 行だけであること
-  - 結果：新しい検査 `scripts/ci/main-entry.mjs`（`scripts/` の下のテストでない `.mjs`・`.cjs`。`scripts/dev/` も、同じ判定を書けるので含める。ci.md の表に行を加えた）は、`argv[1]`・`import.meta.url` の比較・`import.meta.main`・`require.main` を失敗にし、今のリポジトリは 53 件で 0 件。`GIT_` を外す処理は `scripts/ci/lib/git-env.mjs`（`withoutGitEnv`、`removeGitEnv`）の 1 か所にし、Git を呼ぶ 7 つのテスト（`pre-commit.test.mjs` を含む）が使う。
+  - 結果：新しい検査 `scripts/ci/main-entry.mjs`（`scripts/` の下のテストでない `.mjs`・`.cjs`。`scripts/dev/` も、同じ判定を書けるので含める。ci.md の表に行を加えた）は、`argv[1]`・`import.meta.url` の比較・`import.meta.main`・`require.main` を失敗にし、今のリポジトリは違反が 0 件。`GIT_` を外す処理は `scripts/ci/lib/git-env.mjs`（`withoutGitEnv`、`removeGitEnv`）の 1 か所にし、Git を呼ぶ 7 つのテスト（`pre-commit.test.mjs` を含む）が使う。
 - [x] **T185-01-02** [テスト] 除外の一覧のパスの求め方と除外の誤りの文、読めない行の出力の形、0 件の理由、Git の一覧の求め方を、共通の関数にそろえる（DC-185-3〜5、9）。
   - 依存：T185-01-01
   - 範囲：`scripts/ci/lib/`、除外の一覧を持つ検査、読めない行を出す検査、`migrations.mjs`、`env-defaults.mjs`、`glossary-ids.mjs`、`related-specs.mjs`、テスト
   - 確認方法：変更の前後で、全ての検査の今のリポジトリの結果が同じであること
-  - 結果：`lib/exclusions.mjs` に `exclusionsPath`・`describeExclusionProblems` などを、`lib/unreadable-line.mjs`（`ファイル:行 内容（理由）`）を加え、7 つの除外の検査、compose-ports・local-ports・role-permissions・gradle-plugins・ac-check の読めない行、migrations の 0 件の理由（`emptyListReason`）、env-defaults・glossary-ids・related-specs の一覧（`listGitFiles`）を共通にした。直接の組み立てと `git ls-files -z` の呼び出しが戻らないよう、テストで検査の script を走査する。変更の前後の `check-all.sh` の結果は、時間を除いて同じ。
+  - 結果：`lib/exclusions.mjs` に `exclusionsPath`・`describeExclusionProblems` などを、`lib/unreadable-line.mjs`（`ファイル:行 内容（理由）`）を加え、7 つの除外の検査、compose-ports・local-ports・role-permissions・gradle-plugins・ac-check の読めない行、migrations の 0 件の理由（`emptyListReason`）、env-defaults・glossary-ids・related-specs の一覧（`listGitFiles`）を共通にした。直接の組み立てと `git ls-files -z` の呼び出しが再び入らないよう、テストで検査の script を走査する。変更の前後の `check-all.sh` の結果は、時間を除いて同じ。
 - [x] **T185-01-03** [テスト] コメント・文字列・正規表現を読み飛ばす走査を 1 か所にまとめる（DC-185-6）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/lib/`（閉じ括弧の探し方、コードの終わりの探し方、コメントの除去）、使う検査、テスト
@@ -208,7 +215,7 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
 - [x] **T185-01-05** [テスト] 時間の待ちの検査の除外を行か関数の単位にし、統合テストを分ける数の既定と CI の食い違いを見つける検査を加える（DC-185-10、11）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/time-waits.mjs`、`scripts/ci/time-waits-exclusions.json`、`scripts/ci/` の直下（分ける数の検査）、テスト、`docs/guides/ci.md`
-  - 結果：`time-waits` の除外のキーを `<ファイル>:<待ちを書いた行の文字>` にし（行が動いても効き、同じ文字の行は除外 1 件につき最初の 1 行だけに効く）、当たる行がない除外は共通の `checkExclusions` で失敗にする。今の除外 1 件を新しい形に書き換えた（`e2e/scripts/run.ts` は変えていない）。新しい検査 `integration-shards`（ci.md の表で `runtime-versions` は実行環境のバージョンの検査なので別の行にした）が、`build.gradle.kts` の `.orElse(N)` と `ci.yml` の `shard` の一覧の数を照合する。今のリポジトリは 2 と 2 で通り、`ci.yml` の push の paths（`**`）は読むファイルを含むので変更不要。
+  - 結果：`time-waits` の除外のキーを `<ファイル>:<待ちを書いた行の文字>` にし（行が移動しても有効で、同じ文字の行は除外 1 件につき最初の 1 行だけが対象になる）、当たる行がない除外は共通の `checkExclusions` で失敗にする。今の除外 1 件を新しい形に書き換えた（`e2e/scripts/run.ts` は変えていない）。新しい検査 `integration-shards`（ci.md の表で `runtime-versions` は実行環境のバージョンの検査なので別の行にした）が、`build.gradle.kts` の `.orElse(N)` と `ci.yml` の `shard` の一覧の数を照合する。今のリポジトリは 2 と 2 で通り、`ci.yml` の push の paths（`**`）は読むファイルを含むので変更不要。
 - [x] **T185-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T185-01-01〜05
   - 結果：一般の観点を汎用で 2 回（高 0・1、必須 2・3）、重要な観点を高性能と汎用で（高 2・1、必須 0・0）レビューした。重複を除いて高 2 件、必須 3 件を修正した。
@@ -277,7 +284,7 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
 - [x] **T185-04-03** CI の検査の文書と、規則の文書の「CI で確認する」の記述を、本 spec で加えた検査に合わせる（DC-185-31）。
   - 依存：T185-04-02
   - 範囲：`docs/guides/ci.md`、`docs/rules/test-writing.md`、`docs/rules/backend-coding.md`
-  - 結果：`ci.md` の表と `lib/` の一覧を、今の検査の振る舞いと照合し、食い違いはなかった（各タスクで直済み）。テストの書き方の確認方法の列は、4.1 の行に `getAllBy…` の結果の選び方を加え、4.6 の行を「理由のコメントのない変換は自動（`frontend-rules`）、理由が妥当かはレビュー」に直した。skill `docs` の確認の手順に `note-numbers.mjs` を加えた。`backend-coding.md`、`comments.md`、`frontend-coding.md` は修正が不要だった。
+  - 結果：`ci.md` の表と `lib/` の一覧を、今の検査の振る舞いと照合し、食い違いはなかった（各タスクで修正済み）。テストの書き方の確認方法の列は、4.1 の行に `getAllBy…` の結果の選び方を加え、4.6 の行を「理由のコメントのない変換は自動（`frontend-rules`）、理由が妥当かはレビュー」に直した。skill `docs` の確認の手順に `note-numbers.mjs` を加えた。`backend-coding.md`、`comments.md`、`frontend-coding.md` は修正が不要だった。
 - [x] **T185-04-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T185-04-03
   - 結果：一般の観点を汎用で 2 回（高 2・1、必須 1・2）、重要な観点を高性能と汎用で（高 4・6、必須 2・0）レビューした。重複を除いて高 7 件、必須 3 件を修正した。並びのインデックスは変数に入れる形（`within`、型の変換、改行、スプレッド、`Array.from`、分割代入、CRLF）を見つけ、変数の使用は宣言の範囲だけ見る。`fireEvent` の例外は除外の一覧をやめ、型の変換と同じ理由のコメント（同じ行か直前の行）の形にし、別名と名前空間の import も見つける。HTML のタグは文字列の中だけ、プロパティの比較は受け手が要素のものだけ、`describe.each` の置き換えの記号は識別子だけの名前にしない。テストの書き方 第 4.1 節の `toBeTruthy`・`toBeDefined` の規則を検査に合わせた。
@@ -306,7 +313,7 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
 | `main-entry` の対象が `scripts/` の下だけ | `frontend/shared/scripts/export-constraints.mjs` の `argv[1]` の比較を見ない。対象のパスを加えれば機械の検査に移せる |
 | `closingParen` が Java のテキストブロックを読まない | 今の本番のコードに 0 件。Java の検査が増えて現れたら、`scan-code` の `textBlocks` を使う形にする（機械の検査に移せる。起こるまで保留） |
 | `listGitFiles` が手元では追跡していないファイルも対象にする | 手元と CI で対象が違う（CI は追跡したファイルだけ）。手元で通って CI で落ちる場合がある。仕様として許す（commit の前に見つけるため）か、追跡のファイルだけにするかを決める（機械の検査では決められない） |
-| 共通の関数を守る走査のテストが 3 か所に分かれる | `exclusions.test.mjs`、`unreadable-line.test.mjs`、`git-files.test.mjs`、`git-env.test.mjs` が、直下の script を同じ形で走査する。走査の補助を `lib/` に集め、守る関数と禁じる書き方の表にすると 1 か所になる（機械の検査に移せる。整理のみ） |
+| 共通の関数を守る走査のテストが複数のファイルに分かれる | `exclusions.test.mjs`、`unreadable-line.test.mjs`、`git-files.test.mjs`、`git-env.test.mjs` が、直下の script を同じ形で走査する。走査の補助を `lib/` に集め、守る関数と禁じる書き方の表にすると 1 か所になる（機械の検査に移せる。整理のみ） |
 | `frontend-rules` の正規表現の重複と、対象のファイルの選び方のテストがない | 同じ正規表現（フロントのテストのファイル）が複数あり、対象のファイルの選び方（`main` の中の `filter`）はテストの外にある。定数にまとめ、選び方を関数にして試す（機械の検査に移せる。整理のみ） |
 | 正規表現かの判定が直前 200 字だけを見る | `scan-code` の正規表現のリテラルの判定が長い直前の文脈を見ないため、まれに誤る。今のリポジトリに該当がなく、見つけたら直す（機械の検査では見つけにくい。レビュー） |
 | 要素かの判定が型の注釈のない引数を見逃す | 要素のプロパティの比較の検査（`findPropertyComparisons`）は、`(input) => expect(input.value).toBe(…)` のような型の注釈のない引数を要素と読まない。今の違反は 0 件。見逃しの側なので、型の推論が必要になる（機械の検査では移せない。レビュー） |

@@ -1,10 +1,10 @@
 import { LOCALE } from '@ec-site/shared/lib/locale'
+import { cn } from 'cn'
 import type { Metadata } from 'next'
 import { Geist } from 'next/font/google'
 import { NextIntlClientProvider } from 'next-intl'
 import { getTranslations } from 'next-intl/server'
 import { SiteHeader } from '@/components/SiteHeader'
-import { cn } from '@/lib/utils'
 import './globals.css'
 
 /** 本文の書体（CSS の変数 --font-sans で使う） */

@@ -40,30 +40,6 @@ public record MediaStorageProperties(
         @DefaultValue("30s") Duration callTimeout) {
 
     /**
-     * 署名付き URL の有効期間を変えた設定を返す（テストで期限切れを確認するため）。
-     *
-     * @param uploadUrlTtl 署名付き URL の有効期間
-     * @return 設定
-     */
-    public MediaStorageProperties withUploadUrlTtl(Duration uploadUrlTtl) {
-        return new MediaStorageProperties(endpoint, region, pathStyleAccess, accessKeyId, secretAccessKey,
-                incomingBucket, publicBucket, publicBaseUrl, uploadUrlTtl, attemptTimeout, callTimeout);
-    }
-
-    /**
-     * S3 の宛先と待つ時間の上限を変えた設定を返す（テストで、応答しない S3 を確認するため）。
-     *
-     * @param endpoint       S3 のエンドポイント
-     * @param attemptTimeout 1 回の試行を待つ時間の上限
-     * @param callTimeout    呼び出しの全体を待つ時間の上限
-     * @return 設定
-     */
-    public MediaStorageProperties withEndpoint(URI endpoint, Duration attemptTimeout, Duration callTimeout) {
-        return new MediaStorageProperties(endpoint, region, pathStyleAccess, accessKeyId, secretAccessKey,
-                incomingBucket, publicBucket, publicBaseUrl, uploadUrlTtl, attemptTimeout, callTimeout);
-    }
-
-    /**
      * 資格情報を設定で与えているかを返す。
      *
      * @return 資格情報を設定で与えているか（ローカル）

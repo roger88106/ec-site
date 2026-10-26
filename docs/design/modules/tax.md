@@ -78,7 +78,7 @@ tax/
 
 ## データモデル
 
-[V202610091000__tax_create_tax_category.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610091000__tax_create_tax_category.sql)
+[V202610091000__tax_create_tax_category.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610091000__tax_create_tax_category.sql)、[V202610101300__common_comment_logical_names.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101300__common_comment_logical_names.sql)
 
 - 排他制約の範囲型は、null の端を無限として扱う。
 - 排他制約の検査は、置き換えの書き込みが終わるまで遅延させる ※2。検査はリポジトリが書き込みの最後に行い、違反を業務のエラーに変える ※3。

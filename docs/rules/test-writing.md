@@ -8,17 +8,19 @@
 |----|------|----------|
 | 1.2 | カバレッジと mutation score は、基準の値（許容の幅を含む）を下回らない | 自動（`scripts/ci/report/coverage-baseline.mjs`） |
 | 2.1 | テスト名に AC 番号を入れる | 自動（`ac-check.mjs`） |
-| 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`） |
+| 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`） |
 | 3.1 | 統合テストの土台を使う | レビュー |
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
-| 4.1 | 画面に見えるもので探す | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector` は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
+| 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない | CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
 | 4.4 | テストの関数は `test` にそろえる | レビュー |
 | 4.5 | 複数のテストで使うものは、テストの補助に置く | レビュー |
-| 4.6 | テストは型を回避する変換を使わない | レビュー |
+| 4.6 | テストは型を回避する変換を使わない | 理由のコメントのない `as never`・`as unknown as` は自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
+| 4.7 | 要素のプロパティ・属性を `toBe` で比べない | 受け手が要素のもの（`getBy…` の結果やそれを入れた変数など）は自動（`scripts/ci/frontend-rules.mjs`）、ほかはレビュー |
+| 4.8 | テストのファイルで `fireEvent` を直接使わない | 理由のコメントのないものは自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
 | 5 | 時間で待たない | 自動（`scripts/ci/time-waits.mjs`） |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
@@ -76,7 +78,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 ### 2.2 名前は振る舞いを書く
 
-「〜すると〜になる」の形で、画面や API に起きることを書く。メソッド名やクラス名をそのまま書かない。Java のテストは、全ての `@Test`・`@ParameterizedTest` に `@DisplayName` を付ける。名前に書く AC の番号は、spec の AC の文と照合してから書く（`ac-check` は番号があることだけを確認し、中身が合うかは見ない）。
+「〜すると〜になる」の形で、画面や API に起きることを書く。メソッド名やクラス名をそのまま書かない。フロントの `describe` の名前も同じで、関数名・コンポーネント名だけにせず、日本語で振る舞いを書く（`describe('ページ送り', …)`。`describe('Pagination', …)` は書かない）。Java のテストは、全ての `@Test`・`@ParameterizedTest` に `@DisplayName` を付ける。名前に書く AC の番号は、spec の AC の文と照合してから書く（`ac-check` は番号があることだけを確認し、中身が合うかは見ない）。
 
 理由：失敗したときに、どの振る舞いが壊れたかが名前だけで分かるようにするため。
 
@@ -152,8 +154,10 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 - 詳細の項目の値（`dd`）は、Biome の検査が名前を認めないので、項目名の次の値を選ぶ書き方を `e2e/src/detail.ts` だけに置く。
 - 結合テストで、詳細の項目の値と一覧の行を探す書き方は、テストの補助だけに置く（第 4.5 節）。考え方は `e2e/src/detail.ts` と同じ。テストのファイルは補助を呼ぶだけにする。
 - Testing Library の文字の比較は、画面の側の空白（全角の空白を含む）を半角 1 つにそろえるが、探す文字はそろえない。探す文字の空白は半角で書く（`'全 45 件 2 / 3 ページ'`）。
+- テストでは `toBeTruthy`・`toBeDefined` を使わない。探した要素があることは `toBeInTheDocument`（E2E は `toBeVisible` など）で、値は型や部分的な構造（`expect.any(…)`、`toMatchObject` など）で確認する。
+- 表示のコンポーネントを HTML にして確認するとき、HTML の属性や要素の並びに依存する正規表現・文字の一致で確認しない。役割と名前で探して jest-dom で確認する。例外は、描画の結果が空文字であることの確認（`expect(renderMarkup(…)).toBe('')`）。
 
-理由：画面を再作成しても、振る舞いが同じならテストが壊れないようにするため。
+理由：画面を再作成しても、振る舞いが同じならテストが壊れないようにするため。`getBy…` は見つからないと先に失敗するので `toBeTruthy` は確認にならず、`queryBy…` の `null` は `toBeDefined` を通るので、どちらも確認として弱いため。HTML の属性や要素の並びへの依存は、見た目に影響しない変更でテストを壊すため。
 
 ### 4.2 API の差し替えは型付きの MSW
 
@@ -195,6 +199,18 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 テストは型を回避する変換（`as never`、`as unknown as`）を使わない。型に合う値を補助で作る。ライブラリの型が合わず避けられないときだけ、理由をコメントに書いて使う。
 
 理由：型を回避する変換で、第 4.2 節が禁じる契約にない応答を、型付きの `http` を通さずに作れてしまうため。
+
+### 4.7 要素のプロパティ・属性を `toBe` で比べない
+
+要素のプロパティや属性（`.disabled`、`getAttribute(…)`、`.value`）を `toBe` で比べない。jest-dom の `toBeDisabled`、`toHaveAttribute`、`toHaveValue` などで確認する。
+
+理由：失敗したときの表示が分かりやすく、支援技術から見える状態で確認するため。
+
+### 4.8 `fireEvent` を直接使わない
+
+テストのファイルで `fireEvent` を直接使わず、`userEvent` で操作する。`userEvent` で起こせない出来事（入力できない種類の入力欄への値の設定、ブラウザーが起こす出来事など）だけは、理由をコメントに書いて使ってよい。理由は呼び出しごとに、同じ行のコメントか、コメントだけの直前の行に書く。
+
+理由：`fireEvent` はイベントを 1 つ発火するだけで、利用者の操作で起きる一連の出来事（フォーカス、キー入力など）を再現せず、実際の操作では起きない状態でもテストが成功することがあるため。
 
 ## 5. 待ち方
 

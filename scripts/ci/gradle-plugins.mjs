@@ -7,6 +7,10 @@
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { describeUnreadableLine } from './lib/unreadable-line.mjs'
+
+/** 読めない行の理由 */
+const UNREADABLE_REASON = '読めない書き方。検査の読み方を追加するか、今の書き方にそろえる'
 
 /** バージョンカタログ */
 const CATALOG_FILE = 'backend/ecsite/gradle/libs.versions.toml'
@@ -162,11 +166,11 @@ if (isMain(import.meta.url)) {
   const unknownLines = []
   const catalog = readCatalogPlugins(readFileSync(CATALOG_FILE, 'utf8'))
   used.push(...catalog.ids)
-  unknownLines.push(...catalog.unknown.map((item) => `${CATALOG_FILE}:${item.line}: 読めない書き方（${item.text}）`))
+  unknownLines.push(...catalog.unknown.map((item) => describeUnreadableLine({ file: CATALOG_FILE, line: item.line, text: item.text, reason: UNREADABLE_REASON })))
   for (const file of buildFiles) {
     const build = readBuildPlugins(readFileSync(file, 'utf8'))
     used.push(...build.ids)
-    unknownLines.push(...build.unknown.map((item) => `${file}:${item.line}: 読めない書き方（${item.text}）`))
+    unknownLines.push(...build.unknown.map((item) => describeUnreadableLine({ file, line: item.line, text: item.text, reason: UNREADABLE_REASON })))
   }
   let listed
   try {

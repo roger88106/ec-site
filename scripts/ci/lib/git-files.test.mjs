@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { removeGitEnv, withoutGitEnv } from './git-env.mjs'
 import { emptyListReason, listGitFiles, splitNulList } from './git-files.mjs'
 
 /** 試す Git のリポジトリ */
@@ -20,10 +21,7 @@ function write(file, content = 'x') {
 const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: 'ignore' })
 
 before(() => {
-  // pre-commit の hook の中では GIT_DIR などが設定され、試すリポジトリでなく commit 中のリポジトリを指すので、外す
-  for (const name of Object.keys(process.env)) {
-    if (name.startsWith('GIT_')) delete process.env[name]
-  }
+  removeGitEnv()
   git('init', '-q')
   write('.gitignore', 'ignored.txt\n')
   write('tracked.txt')
@@ -34,6 +32,16 @@ before(() => {
   rmSync(path.join(repo, 'removed.txt'))
   write('untracked.txt')
   write('ignored.txt')
+})
+
+describe('Git の一覧の求め方', () => {
+  test('検査は、Git の一覧を listGitFiles で求める（git ls-files -z を直接呼ばない）', () => {
+    const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+    const offenders = readdirSync(ciDir)
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+      .filter((name) => /\['ls-files',\s*'-z'/.test(readFileSync(path.join(ciDir, name), 'utf8')))
+    assert.deepEqual(offenders, [])
+  })
 })
 
 describe('-z の出力の分割', () => {
@@ -69,28 +77,19 @@ describe('対象が 0 件のときの失敗', () => {
   })
 
   // Git の一覧を読む検査は、対象が 0 件のとき（検査の対象の置き場所が変わった、除外の条件が広すぎる）に、何も見ずに成功してしまわない
-  const checks = [
-    'ac-check',
-    'ci-docs',
-    'dependabot-actions',
-    'doc-refs',
-    'doc-terms',
-    'env-defaults',
-    'frontend-rules',
-    'glossary-ids',
-    'gradle-plugins',
-    'hardcoded-text',
-    'image-versions',
-    'input-constraints',
-    'java-rules',
-    'message-comments',
-    'related-specs',
-    'runtime-versions',
-    'spec-numbers',
-    'test-names',
-    'time-waits',
-  ]
-  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')))
+  // 一覧は、exitIfNoFiles を呼ぶ検査を走査して作る（検査を足したとき、一覧への追加を忘れない）
+  const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+  const checks = readdirSync(ciDir)
+    .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+    .filter((name) => /\bexitIfNoFiles\(/.test(readFileSync(path.join(ciDir, name), 'utf8')))
+    .map((name) => name.slice(0, -'.mjs'.length))
+
+  test('0 件で失敗にするかを試す検査が、直下の検査の大半を占める（走査が空にならない）', () => {
+    assert.ok(checks.length >= 20, `${checks.length} 件`)
+    for (const name of ['main-entry', 'note-numbers', 'design-migrations', 'frontend-rules']) assert.ok(checks.includes(name), name)
+  })
+
+  const env = withoutGitEnv()
   const empty = mkdtempSync(path.join(tmpdir(), 'empty-targets-'))
   after(() => rmSync(empty, { recursive: true, force: true }))
   execFileSync('git', ['init', '-q'], { cwd: empty, env })

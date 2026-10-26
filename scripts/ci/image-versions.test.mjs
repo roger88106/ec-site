@@ -1,6 +1,9 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findImageProblems, findUnpinned, readComposeImages, readSourceImages } from './image-versions.mjs'
+import { describeUnreadableImages, findImageProblems, findUnpinned, parseComposeImages, readSourceImages } from './image-versions.mjs'
+
+/** compose の image: の一覧だけを読む（読めない行は見ない） */
+const readComposeImages = (text) => parseComposeImages(text).images
 
 const compose = [
   'services:',
@@ -31,10 +34,26 @@ describe('compose のイメージの読み取り', () => {
     assert.deepEqual([...images.get('quay.io/keycloak/keycloak')], ['26.8.1'])
   })
 
-  test('既定値のない差し込みは、読めないので理由を出して失敗にする', () => {
-    assert.throws(() => readComposeImages('    image: ${PG_IMAGE}'), /変数/)
-    assert.throws(() => readComposeImages('    image: ${PG_IMAGE:?必須}'), /変数/)
-    assert.throws(() => readComposeImages('    image: postgres:${PG_VERSION}'), /変数/)
+  test('既定値のない差し込みは、読めない行として行番号と内容を集める（読み飛ばさない）', () => {
+    const text = ['services:', '    image: ${PG_IMAGE}', '    image: ${PG_IMAGE:?必須}', '    image: postgres:${PG_VERSION}', '    image: a/b:1.0.0'].join('\n')
+    const { images, unreadable } = parseComposeImages(text)
+    assert.deepEqual(
+      unreadable.map(({ line, text: content }) => [line, content.trim()]),
+      [
+        [2, 'image: ${PG_IMAGE}'],
+        [3, 'image: ${PG_IMAGE:?必須}'],
+        [4, 'image: postgres:${PG_VERSION}'],
+      ],
+    )
+    assert.match(unreadable[0].reason, /変数/)
+    assert.deepEqual([...images.keys()], ['a/b'])
+  })
+
+  test('読めない行は、ファイル:行 内容（理由）の形の文にして失敗にする', () => {
+    const { unreadable } = parseComposeImages('    image: ${PG_IMAGE}')
+    assert.deepEqual(describeUnreadableImages('docker/compose.yaml', unreadable), [
+      `docker/compose.yaml:1 image: \${PG_IMAGE}（${unreadable[0].reason}）`,
+    ])
   })
 
   test('同じ名前に別の版があれば、両方を残す', () => {

@@ -7,8 +7,7 @@
 // Java のコメントの中の注釈は読まない。設定の値のクラスを 1 つも読めないとき、読めないクラス（record でない、引数やプロパティが 0 件など）があるとき、
 // Java のファイルが 0 件のときも失敗にする。
 // 使い方：node scripts/ci/env-defaults.mjs（リポジトリのルートで）
-import { execFileSync } from 'node:child_process'
-import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
 import { stripJavaComments } from './lib/strip-comments.mjs'
@@ -236,7 +235,7 @@ export function compareDefaults(code, doc) {
 }
 
 if (isMain(import.meta.url)) {
-  const javaFiles = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'backend/ecsite/src/main/java/*.java'], { encoding: 'utf8' }))
+  const javaFiles = listGitFiles(['backend/ecsite/src/main/java/*.java'])
   exitIfNoFiles(javaFiles, '設定を読む Java のファイル')
   const entries = javaFiles
     .map((file) => ({ file, source: readFileSync(file, 'utf8') }))

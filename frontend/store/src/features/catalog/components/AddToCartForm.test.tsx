@@ -14,14 +14,26 @@ function renderForm(result: ActionResult | null) {
 }
 
 describe('カートに入れる操作の失敗', () => {
-  test('DC-135-10 失敗の文の要素は、自分では読み上げの領域にしない（領域を入れ子にしない）', () => {
-    // 失敗の前は、文はない
-    expect(renderForm(null).queryByText('入力内容に誤りがあります。')).toBeNull()
+  test('AC-193-1、AC-193-2 DC-135-10 失敗の文は、送る前からある状態の知らせ（status）の領域の中に出る。領域は入れ子にしない', () => {
+    // 失敗の前も、領域はあり、文はない
+    expect(renderForm(null).getByRole('status')).toBeEmptyDOMElement()
 
     const after = renderForm({ ok: false, message: '入力内容に誤りがあります。', errorCode: 'INVALID_REQUEST' })
 
-    // 文の要素は、自分では読み上げの領域にしない（領域は親にある）
+    // 領域は 1 つだけで、文はその中にある
+    expect(after.getAllByRole('status')).toHaveLength(1)
+    expect(after.getByRole('status')).toHaveTextContent('入力内容に誤りがあります。')
+    // 文の要素は、自分では読み上げの領域にしない
     expect(after.getByText('入力内容に誤りがあります。')).not.toHaveAttribute('aria-live')
+  })
+
+  test('AC-193-2、AC-193-3 成功の知らせも同じ領域に出て、前の失敗の文は出ない', () => {
+    const view = renderForm({ ok: true })
+
+    const status = view.getByRole('status')
+    expect(view.getAllByRole('status')).toHaveLength(1)
+    expect(status).toContainElement(view.getByRole('link', { name: 'カートを見る' }))
+    expect(status).not.toHaveTextContent('入力内容に誤りがあります。')
   })
 })
 

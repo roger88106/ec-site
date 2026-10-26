@@ -141,7 +141,7 @@ describe('お届け先の入力と注文', () => {
     const view = renderStatic(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
     const message = view.getByText('在庫が足りない商品があります。')
-    expect(message).toHaveAttribute('aria-live', 'polite')
+    expect(message).toHaveAttribute('role', 'status')
     expect(within(message).getByRole('link', { name: 'カートを見る' })).toHaveAttribute('href', '/cart')
   })
 

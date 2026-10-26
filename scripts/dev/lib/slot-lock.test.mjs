@@ -187,6 +187,25 @@ describe('ロックを取れないときの待ちと案内', () => {
     assert.deepEqual(result, { acquired: false, owner: other })
   })
 
+  test('sleep を渡さないときは、既定の待ちで間隔を置く', async (t) => {
+    t.mock.timers.enable({ apis: ['setTimeout'] })
+    const lock = fakeLock(formatLock(other))
+    const c = { now: 0 }
+    let done = false
+    const waiting = acquireLock({ io: lock.io, owner: me, isRunning: alive(200), waitMs: 1000, now: () => c.now, intervalMs: 200 })
+    waiting.then(() => {
+      done = true
+    })
+    // 待ちが setTimeout で置かれたら、時計と一緒に進める
+    for (let i = 0; i < 20 && !done; i++) {
+      await new Promise((resolve) => setImmediate(resolve))
+      c.now += 200
+      t.mock.timers.tick(200)
+    }
+    assert.deepEqual(await waiting, { acquired: false, owner: other })
+    assert.ok(c.now >= 1000)
+  })
+
   test('案内は、所有者、ロックのファイルのパス、所有者のプロセスがなければ削除してよいことを示す', () => {
     const message = busyLockMessage({ lock: '/repo/.git/x.lock', owner: other })
     assert.match(message, /\/wt\/other/)

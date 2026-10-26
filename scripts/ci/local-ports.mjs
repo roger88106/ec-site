@@ -42,7 +42,7 @@ const CONFIG_FILES = [
   'frontend/store/src/auth/config.ts',
   'frontend/admin/src/auth/oidc.ts',
   'frontend/admin/vite.config.ts',
-  'e2e/showcase/capture.spec.ts',
+  'e2e/src/showcase-urls.ts',
   'docker/seaweedfs/init.sh',
   'scripts/dev/check-frontend.sh',
   'scripts/dev/keycloak.sh',

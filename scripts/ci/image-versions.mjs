@@ -5,6 +5,7 @@
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -29,26 +30,32 @@ const VERSION = '[A-Za-z0-9._-]+'
 /** patch まで固定した版（先頭の v は付けてよい。後ろの `-alpine` などの種類の名前も付けてよい） */
 const PINNED = /^v?\d+\.\d+\.\d+/
 
+/** 読めない `image:` の行の理由 */
+const UNREADABLE_IMAGE_REASON = '変数の差し込みを読めない。既定値 ${NAME:-名前:版} の形だけを扱う'
+
 /**
- * compose の `image:` から、イメージの名前ごとの版の集合を読む。<br />
+ * compose の `image:` から、イメージの名前ごとのバージョンの集合と、読めない行を読む。<br />
  * YAML のライブラリを使わず、`image:` で始まる行を読む（コメントの行は読まない）。
+ * 変数の差し込みは既定値（`${NAME:-既定値}`）を読み、既定値のない書き方は版を決められないので、読めない行に集める。
  *
  * @param {string} text compose のファイル
- * @returns {Map<string, Set<string | undefined>>} イメージの名前から版の集合（版のない書き方は undefined）
+ * @returns {{ images: Map<string, Set<string | undefined>>, unreadable: { line: number, text: string, reason: string }[] }}
+ *   イメージの名前から版の集合（版のない書き方は undefined）と、読めない行（1 始まりの行番号と内容、行の順）
  */
-export function readComposeImages(text) {
+export function parseComposeImages(text) {
   const images = new Map()
-  for (const raw of text.split('\n')) {
+  const unreadable = []
+  for (const [index, raw] of text.split('\n').entries()) {
     const match = /^\s*image:\s*["']?([^"'\s#]+)/.exec(raw)
     if (!match) {
       continue
     }
     let reference = match[1]
     if (reference.includes('$')) {
-      // 変数の差し込みは、既定値（${NAME:-既定値}）を読む。既定値のない書き方は版を決められないので失敗にする
       const fallback = /^\$\{[A-Za-z_]\w*:?-([^${}]+)\}$/.exec(reference)?.[1]
       if (fallback === undefined) {
-        throw new Error(`compose の image: の変数の差し込みを読めない（既定値 \${NAME:-名前:版} の形だけを扱う）：${reference}`)
+        unreadable.push({ line: index + 1, text: raw, reason: UNREADABLE_IMAGE_REASON })
+        continue
       }
       reference = fallback
     }
@@ -61,7 +68,18 @@ export function readComposeImages(text) {
     }
     images.get(name).add(version)
   }
-  return images
+  return { images, unreadable }
+}
+
+/**
+ * 読めない `image:` の行を、失敗の文にする。
+ *
+ * @param {string} file compose のファイルのパス
+ * @param {{ line: number, text: string, reason: string }[]} unreadable parseComposeImages が返した、読めない行
+ * @returns {string[]} `ファイル:行 内容（理由）`（行の順）
+ */
+export function describeUnreadableImages(file, unreadable) {
+  return unreadable.map((item) => describeUnreadableLine({ file, ...item }))
 }
 
 /** 正規表現の特別な文字を、そのままの文字として書く */
@@ -158,15 +176,13 @@ function readSourceFiles() {
 
 if (isMain(import.meta.url)) {
   const files = readSourceFiles()
-  let images
-  try {
-    images = readComposeImages(readFileSync(COMPOSE_FILE, 'utf8'))
-  } catch (error) {
-    console.log(error.message)
-    process.exit(1)
-  }
+  const { images, unreadable } = parseComposeImages(readFileSync(COMPOSE_FILE, 'utf8'))
   const { mismatches, unknown } = findImageProblems(images, files)
   const unpinned = findUnpinned(images)
+  const unreadableLines = describeUnreadableImages(COMPOSE_FILE, unreadable)
+  for (const item of unreadableLines) {
+    console.log(item)
+  }
   for (const item of mismatches) {
     console.log(`版の食い違い：${item}`)
   }
@@ -176,10 +192,10 @@ if (isMain(import.meta.url)) {
   for (const item of unknown) {
     console.log(`警告：compose にないイメージ（照合しない）：${item}`)
   }
-  const problems = mismatches.length + unpinned.length
+  const problems = mismatches.length + unpinned.length + unreadableLines.length
   console.log(
     `イメージ：${images.size} 件（compose）、読んだファイル：${files.length} 件、` +
-      `食い違い：${mismatches.length} 件、固定されていない：${unpinned.length} 件`,
+      `食い違い：${mismatches.length} 件、固定されていない：${unpinned.length} 件、読めない行：${unreadableLines.length} 件`,
   )
   process.exit(problems || images.size === 0 || files.length === 0 ? 1 : 0)
 }

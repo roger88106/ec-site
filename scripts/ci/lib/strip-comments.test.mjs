@@ -29,6 +29,16 @@ describe('コメントの除去', () => {
     assert.equal(stripComments(text), text.replace('/* 注 */', ' '.repeat(7)).replace('// 後ろ', ' '.repeat(5)))
   })
 
+  test('コメントの後の行頭の / は、コメントの最後の字でなく、前のコードで正規表現か割り算かを決める', () => {
+    // 割り算：コメントが ( で終わっても、後ろの行を正規表現と読んで消さない
+    const division = "const a = b // 割る(\n/ 2 + c('日本語')"
+    assert.equal(stripComments(division), "const a = b       \n/ 2 + c('日本語')")
+    // 正規表現：中の // をコメントと読まず、後ろの文字列を残す
+    assert.equal(stripComments('x = // 説明\n/https?:\\/\\//.test(a) // 後ろ', { keepRegex: true }).includes('https?:\\/\\//.test(a)'), true)
+    assert.equal(stripComments('x = /* c */ /a\\/\\/b/.test(a) // 後ろ', { keepRegex: true }).includes('.test(a)'), true)
+    assert.equal(stripComments('x = /* c */ /a\\/\\/b/.test(a) // 後ろ', { keepRegex: true }).includes('後ろ'), false)
+  })
+
   test('keepRegex でも、正規表現の中の // をコメントにしない', () => {
     const text = 'const a = /\\/\\//.test(x) // 後ろ'
     assert.equal(stripComments(text, { keepRegex: true }).includes('後ろ'), false)

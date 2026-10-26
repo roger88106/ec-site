@@ -90,7 +90,7 @@ media/
 
 ## データモデル
 
-[V202610101100__media_create_asset.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101100__media_create_asset.sql)
+[V202610101100__media_create_asset.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101100__media_create_asset.sql)、[V202610101200__catalog_move_product_image_files_to_media.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101200__catalog_move_product_image_files_to_media.sql)、[V202610101300__common_comment_logical_names.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101300__common_comment_logical_names.sql)、[V202610201000__common_add_enum_column_checks.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201000__common_add_enum_column_checks.sql)
 
 - 使う側からの外部キーは受けない。
 - 配信キーは、アセットごとに記録する。用意で作るアセットは `assets/{アセット ID}.webp`、商品カタログから移したアセットは `products/{productId}/{imageId}.{拡張子}`（拡張子は記録した形式）。

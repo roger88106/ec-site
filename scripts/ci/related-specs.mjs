@@ -6,16 +6,18 @@
 // 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
 // 次の commit の照合：node scripts/ci/related-specs.mjs --staged <メッセージのファイル>（commit-msg の hook から呼ぶ。ステージした文書とメッセージの 1 行目を照合する）
 import { execFileSync, spawnSync } from 'node:child_process'
-import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
-import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { findEmptyReasons, findStaleExclusions, readExclusions } from './lib/exclusions.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
+import { readFileSync, statSync } from 'node:fs'
+import { posix } from 'node:path'
+import { describeExclusionProblems, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
 
 /** 概要の表の「関連 spec」の行 */
 const RELATED_ROW = /^\|\s*関連 spec\s*\|(.*)\|\s*$/m
+
+/** spec のディレクトリのパス（リポジトリのルートから）。進行中は docs/specs/<番号>-<名前>、完了したものは docs/specs/archive/<まとまり>/<番号>-<名前> */
+const SPEC_DIRECTORY = /^docs\/specs\/(?:archive\/[^/]+\/)?\d+-[^/]+$/
 
 /** 新しい形式のタスク番号。spec の番号は文字列のまま使い、0 で始まる 3 桁（T011-）は MVP、0 で始めない番号（T7-）は 1→10 の spec として区別する */
 const TASK_ID = /(?<![A-Za-z0-9])T(\d+)-\d{2}-\d{2}/g
@@ -29,6 +31,27 @@ const TASK_ID = /(?<![A-Za-z0-9])T(\d+)-\d{2}-\d{2}/g
 export function parseRelatedSpecs(markdown) {
   const row = markdown.match(RELATED_ROW)
   return row ? [...row[1].matchAll(/\[(\d+)\]\(/g)].map((match) => match[1]) : null
+}
+
+/**
+ * 概要の表の「関連 spec」の行のリンクが、spec のディレクトリを指すかを確認する。
+ * 正しい形は、`[番号](../../specs/<番号>-<名前>)` か `[番号](../../specs/archive/<まとまり>/<番号>-<名前>)`（spec.md などのファイルや、移動前の古いパスは不可）。
+ *
+ * @param {string} file 文書のパス（リポジトリのルートから）
+ * @param {string} markdown 文書
+ * @param {(path: string) => boolean} isDirectory ディレクトリがあるかを返す関数
+ * @returns {string[]} 誤りの説明
+ */
+export function findBadRelatedLinks(file, markdown, isDirectory) {
+  const row = markdown.match(RELATED_ROW)
+  if (!row) return []
+  return [...row[1].matchAll(/\[([^\]]*)\]\(([^)\s]*)\)/g)].flatMap(([, text, link]) => {
+    const target = posix.normalize(posix.join(posix.dirname(file), link))
+    if (!SPEC_DIRECTORY.test(target)) return [`${file}：関連 spec のリンク ${link} が、docs/specs/ の下の spec のディレクトリを指していない`]
+    if (!isDirectory(target)) return [`${file}：関連 spec のリンク ${link} が、spec のディレクトリを指していない`]
+    if (!posix.basename(target).startsWith(`${text}-`)) return [`${file}：関連 spec のリンク ${link} の番号が、リンクの文字 ${text} と合わない`]
+    return []
+  })
 }
 
 /**
@@ -105,10 +128,17 @@ export function findMissingInStaged(docs, subject, excludedPrefixes) {
  * @returns {{ failures: string[], warnings: string[] }} 失敗にする文と、警告として表示する文（「警告：」で始まる）
  */
 export function checkRelatedExclusions(exclusions, isNeeded, strict) {
-  const name = 'related-specs-exclusions.json'
-  const failures = findEmptyReasons(exclusions).map((key) => `${name}：${key} の理由がない（除外には理由を書く）`)
-  const stale = findStaleExclusions(exclusions, isNeeded).map((key) => `${name}：${key} は不要になった除外（一覧から消す）`)
+  const { emptyReasons: failures, stale } = describeExclusionProblems('related-specs-exclusions.json', exclusions, isNeeded)
   return strict ? { failures: [...failures, ...stale], warnings: [] } : { failures, warnings: stale.map((line) => `警告：${line}`) }
+}
+
+/** ディレクトリがあるか */
+function isDirectory(path) {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
 }
 
 /** 次の commit（ステージした内容とメッセージ）を照合する。commit-msg の hook から呼ぶ */
@@ -127,11 +157,11 @@ function checkStaged(messageFile, excludedPrefixes) {
 }
 
 if (isMain(import.meta.url)) {
-  const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'related-specs-exclusions.json'))
+  const exclusions = readExclusions(exclusionsPath('related-specs-exclusions.json'))
   const excludedPrefixes = Object.keys(exclusions)
   if (process.argv[2] === '--staged') checkStaged(process.argv[3], excludedPrefixes)
   exitIfShallow()
-  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'docs/*.md'], { encoding: 'utf8' }))
+  const files = listGitFiles(['docs/*.md'])
   exitIfNoFiles(files, '文書')
   // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
   const merging = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { encoding: 'utf8' }).status === 0
@@ -140,7 +170,12 @@ if (isMain(import.meta.url)) {
   for (const line of [...exclusionProblems, ...warnings]) console.log(line)
   let count = 0
   for (const file of files) {
-    const related = parseRelatedSpecs(readFileSync(file, 'utf8'))
+    const markdown = readFileSync(file, 'utf8')
+    for (const line of findBadRelatedLinks(file, markdown, isDirectory)) {
+      console.log(line)
+      count += 1
+    }
+    const related = parseRelatedSpecs(markdown)
     if (!related) continue
     const subjects = execFileSync('git', ['log', '--follow', '--format=%s', '--', file], { encoding: 'utf8' })
       .split('\n')

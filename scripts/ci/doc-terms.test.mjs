@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findTerms, isTargetDoc } from './doc-terms.mjs'
+import { findAllowProblems, findTerms, isTargetDoc } from './doc-terms.mjs'
 
 describe('文書の用語の検査', () => {
   test('一覧の語を書いた行を見つける', () => {
@@ -13,12 +13,12 @@ describe('文書の用語の検査', () => {
   })
 
   test('許す語の中の一致は数えない', () => {
-    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー'] }]
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     assert.deepEqual(findTerms('ブラウザーを開く', terms), [])
   })
 
   test('許す語の外の一致は数える（同じ行に両方あっても）', () => {
-    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー'] }]
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     const text = ['ブラウザーを開く', 'ブラウザーとブラウザを比べる', 'ブラウザ'].join('\n')
     assert.deepEqual(
       findTerms(text, terms).map((hit) => hit.line),
@@ -31,8 +31,36 @@ describe('文書の用語の検査', () => {
   })
 
   test('許す語が使わない語を含まないのは設定の誤りとして失敗にする', () => {
-    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー', 'ウェブ'] }]
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '理由', ウェブ: '理由' } }]
     assert.throws(() => findTerms('何か', terms), /ウェブ/)
+  })
+
+  test('許す語を配列で書くのは設定の誤りとして失敗にする', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー'] }]
+    assert.throws(() => findTerms('何か', terms), /理由/)
+  })
+
+  test('許す語に理由がなければ失敗にする', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: ' ' } }]
+    const problems = findAllowProblems(['ブラウザーを開く'], terms)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /ブラウザー.*理由がない/)
+  })
+
+  test('どの文書にも使われなくなった許す語を失敗にする', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
+    const problems = findAllowProblems(['道具を使う', 'ツールを使う'], terms)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /ブラウザー.*不要/)
+  })
+
+  test('許す語が 1 つの文書にでも使われていれば不要とは見ない', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
+    assert.deepEqual(findAllowProblems(['道具', 'ブラウザーを開く'], terms), [])
+  })
+
+  test('許す語のない項目は誤りにしない', () => {
+    assert.deepEqual(findAllowProblems(['道具'], [{ word: '道具', use: 'ツール' }]), [])
   })
 
   test('docs・README・AGENTS・skill と進行中の spec の Markdown を見て、アーカイブした spec は見ない', () => {

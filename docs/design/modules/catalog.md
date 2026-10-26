@@ -185,6 +185,7 @@ catalog/
 | 商品・バリアント | [V202610091400__catalog_create_product.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610091400__catalog_create_product.sql) | ※3 |
 | 商品画像 | [V202610101000__catalog_create_product_image.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101000__catalog_create_product_image.sql) | ※4 |
 | 画像のファイルのメディアへの移し替え | [V202610101200__catalog_move_product_image_files_to_media.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101200__catalog_move_product_image_files_to_media.sql) | 画像はファイルの置き場所を持たず、メディアモジュールのアセット ID を持つ（※4） |
+| テーブルと列の論理名 | [V202610101300__common_comment_logical_names.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610101300__common_comment_logical_names.sql) | 共通のマイグレーション。全モジュールのテーブルと列に論理名を付ける |
 | 税抜価格の上限 | [V202610211600__catalog_add_product_price_upper_limit.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610211600__catalog_add_product_price_upper_limit.sql) | 税抜価格の CHECK を 1 円以上 9,999,999 円以下にする |
 
 ※3：商品の一部（軸、所属カテゴリ、バリアント、軸の値）は商品の削除で一緒に削除される（`ON DELETE CASCADE`）。所属カテゴリからカテゴリへの外部キーは CASCADE にしない（商品が所属しているカテゴリの削除を拒むため）。税区分は他のモジュールの ID なので外部キーは張らない。

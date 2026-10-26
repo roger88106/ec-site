@@ -154,8 +154,13 @@ TypeScript 7 は JavaScript の API を持たないので、API を使うツー�
   - 依存：T195-01-03
   - 範囲：`.github/dependabot.yml`（必要なとき）、`frontend/tsconfig.base.json`（バージョンを書いたコメント）、`.pnpmfile.cjs` の理由を書く文書（フロントの構成の文書など）、TypeScript のバージョンを書いた文書
   - 確認方法：レビューで読む。DC-195-11 は、フックの中の TypeScript 6 を Dependabot が上げる pull request を作らないことを、Dependabot の文書と設定で読み、結果に書く。DC-195-14 は、`git grep -n "TypeScript 6"` で見つけた所が、上書きの説明のほかは 7 に直っていることを読む。
+- [x] **T195-01-06** js-yaml 5 の依存の argparse 3（PSF-2.0）を、依存のライセンスの方針の許可の一覧に加える。
+  - 依存：T195-01-01
+  - 範囲：`docs/design/licenses.md`（第 2 節）、`scripts/ci/licenses/policy.json`
+  - T195-01-03 の `check-frontend.sh` で、ライセンスの検査が方針にない PSF-2.0 で失敗して分かった。argparse 2 は Python-2.0（許可）だった。PSF-2.0 は無料で商用に使え、コピーレフトでないので、依存とライセンス 第 2 節の許可の条件に当たる。
+  - 結果：一覧の 2 か所に加え、ライセンスの検査が通った。
 - [ ] **T195-01-05** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
-  - 依存：T195-01-01〜04
+  - 依存：T195-01-01〜04、06
 
 ### 段階 2：完了
 

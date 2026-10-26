@@ -274,9 +274,10 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
   - 依存：T185-04-01
   - 範囲：`scripts/ci/frontend-rules.mjs`、`scripts/ci/frontend-rules-exclusions.json`、テスト、違反のあるテストのファイル（`e2e/src/` など。DN-185-4 の照合の結果に従う）
   - 結果：`frontend-rules.mjs` に 7 つの検査を加えた。除外は `fireEvent` だけで、キーは `<画面>:<src からのパス>:<関数名>`（`admin:test/inputs.ts` の 2 か所）。今の違反は、E2E の `toBeDefined` 2 か所と、変数に入れてから選ぶ並びのインデックス 1 か所（`OrderForm.test.tsx` の `fields[0]`〜`[3]`）で、直して 0 件になった。
-- [ ] **T185-04-03** CI の検査の文書と、規則の文書の「CI で確認する」の記述を、本 spec で加えた検査に合わせる（DC-185-31）。
+- [x] **T185-04-03** CI の検査の文書と、規則の文書の「CI で確認する」の記述を、本 spec で加えた検査に合わせる（DC-185-31）。
   - 依存：T185-04-02
   - 範囲：`docs/guides/ci.md`、`docs/rules/test-writing.md`、`docs/rules/backend-coding.md`
+  - 結果：`ci.md` の表と `lib/` の一覧を、今の検査の振る舞いと照合し、食い違いはなかった（各タスクで直済み）。テストの書き方の確認方法の列は、4.1 の行に `getAllBy…` の結果の選び方を加え、4.6 の行を「理由のコメントのない変換は自動（`frontend-rules`）、理由が妥当かはレビュー」に直した。skill `docs` の確認の手順に `note-numbers.mjs` を加えた。`backend-coding.md`、`comments.md`、`frontend-coding.md` は修正が不要だった。
 - [ ] **T185-04-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T185-04-03
 

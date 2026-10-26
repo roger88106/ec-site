@@ -13,12 +13,12 @@
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
-| 4.1 | 画面に見えるもので探す。探した要素を `toBeTruthy`・`toBeDefined` で確認しない。HTML の属性や要素の並びに依存して確認しない | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector`、`toBeTruthy`・`toBeDefined`、HTML の属性の並びに依存する正規表現は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
+| 4.1 | 画面に見えるもので探す。探した要素を `toBeTruthy`・`toBeDefined` で確認しない。HTML の属性や要素の並びに依存して確認しない | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector`、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと、HTML の属性の並びに依存する正規表現は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
 | 4.4 | テストの関数は `test` にそろえる | レビュー |
 | 4.5 | 複数のテストで使うものは、テストの補助に置く | レビュー |
-| 4.6 | テストは型を回避する変換を使わない | レビュー |
+| 4.6 | テストは型を回避する変換を使わない | 理由のコメントのない `as never`・`as unknown as` は自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
 | 4.7 | 要素のプロパティ・属性を `toBe` で比べない | 自動（`scripts/ci/frontend-rules.mjs`） |
 | 4.8 | テストのファイルで `fireEvent` を直接使わない | 自動（`scripts/ci/frontend-rules.mjs`） |
 | 5 | 時間で待たない | 自動（`scripts/ci/time-waits.mjs`） |

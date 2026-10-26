@@ -44,6 +44,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
 3. 文書を移した、節の番号や見出しを変えたときは、第 4 節で参照を修正する。
 4. 確認する。次が全て通ること：
    - `node scripts/ci/doc-refs.mjs`（Markdown のリンクと、`<文書の名前> 第 N 節` の参照。CI の docs.yml でも実行する）
+   - `node scripts/ci/note-numbers.mjs`（注の番号 `※N` が、1 つの文書の中で重複せず、出る順に並ぶ）
    - `node scripts/ci/doc-terms.mjs` と `--caution`（使わない語と、文脈で言い換える語。caution で出た語は、言い換えたほうが読みやすければ修正する）
    - コードのコメントを修正したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`
 5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。全ての変更は issue から始まり、規模 S は issue を spec とする（[開発の進め方](../../../docs/rules/workflow.md) 第 4 節）。spec の tasks にないタスクの番号は付けない。push と pull request の作成は許可を求めず、マージは利用者の許可を得てから行う（AGENTS.md の Git の表）。

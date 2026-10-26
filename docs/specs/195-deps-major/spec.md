@@ -149,6 +149,7 @@ TypeScript 7 は JavaScript の API を持たないので、API を使うツー�
   - openapi-typescript に TypeScript 6 を渡す形は、ルートの `.pnpmfile.cjs` の `readPackage`（第 6 節の 1 の ※2）。
   - 範囲：`.pnpmfile.cjs`（新規）、`frontend/admin/package.json`、`frontend/store/package.json`、`frontend/shared/package.json`、`e2e/package.json`、`pnpm-lock.yaml`、`frontend/tsconfig.base.json` と各 tsconfig（必要なとき）、型エラーが出たソース
   - 確認方法：DC-195-1 は、各パッケージの型チェックが使う `tsc` が 7 であること（`tsc --version`）。DC-195-2 は、上げる前後で 3 つの `generate:api` が生成した型のファイルに差がないこと。DC-195-3、4 は各ビルド。DC-195-5、6 はレビューで読む（差分に検査の設定を外す所、`any`・`@ts-ignore`・`@ts-expect-error` の追加がないこと）。DC-195-7 は push の後の CI。
+  - 結果：TypeScript を 7.0.2 に上げ、ルートの `.pnpmfile.cjs` で openapi-typescript（7.13.0）にだけ 6.0.3 を渡した。4 パッケージの `tsc --version` は 7.0.2。3 つの `generate:api` の生成物（型と制約の定数）は上げる前と同一。型エラーと廃止された設定は出ず、ソースと tsconfig は変えていない。店舗画面のビルドの型チェックは 7 で通り、管理画面のビルド、lint、テストも通った。
 - [ ] **T195-01-04** Dependabot の設定を構成に合わせ、上書きの理由と、TypeScript のバージョンを書いた文書とコメントを直す（DC-195-11〜14）。
   - 依存：T195-01-03
   - 範囲：`.github/dependabot.yml`（必要なとき）、`frontend/tsconfig.base.json`（バージョンを書いたコメント）、`.pnpmfile.cjs` の理由を書く文書（フロントの構成の文書など）、TypeScript のバージョンを書いた文書

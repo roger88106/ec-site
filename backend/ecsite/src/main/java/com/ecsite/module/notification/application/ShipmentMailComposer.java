@@ -29,7 +29,7 @@ public class ShipmentMailComposer {
      */
     public Mailer.Mail compose(OrderShipped event) {
         var carrierName = messageHelper.getMessage(
-                "ecsite.notification.carrier." + event.carrier().name().toLowerCase(Locale.ROOT), Map.of());
+                "ecsite.shipping.carrier." + event.carrier().name().toLowerCase(Locale.ROOT), Map.of());
         var params = Map.of(
                 "orderNumber", event.orderNumber(),
                 "carrier", carrierName,

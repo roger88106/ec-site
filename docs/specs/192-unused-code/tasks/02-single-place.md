@@ -8,7 +8,7 @@
 
 実装は実装役のサブエージェントに任せる。T192-02-01〜03 は、変えるファイルが重ならないので `[P]` である。
 
-- [ ] **T192-02-01** `[P]` 配送業者の表示名のキーを出荷モジュールのキーにし、通知のメールと mock の画面がそれを使う（DC-192-5）。出荷の設計書に、表示名のキーを出荷モジュールが持つことを書く。
+- [x] **T192-02-01** `[P]` 配送業者の表示名のキーを出荷モジュールのキーにし、通知のメールと mock の画面がそれを使う（DC-192-5）。出荷の設計書に、表示名のキーを出荷モジュールが持つことを書く。
   - 依存：なし
   - 範囲：`main/resources/messages.properties`、`main/module/notification/application/ShipmentMailComposer.java`、`main/module/shipping/infrastructure/mock/MockCarrierController.java`、通知と mock のテスト、`docs/design/modules/shipping.md`
 - [ ] **T192-02-02** `[P]` 変換元のファイルの場所を、ファイル保存の実装が作る。画像変換のクラスは、ファイル保存設定の型を持たない（DC-192-6）。

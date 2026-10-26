@@ -3,6 +3,7 @@ package com.ecsite.module.media.infrastructure.converter;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
+import com.ecsite.module.media.infrastructure.storage.S3ObjectStorage;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.AfterEach;
@@ -20,8 +21,12 @@ import java.net.ServerSocket;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
+import java.util.Base64;
+import java.util.HexFormat;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.crypto.Mac;
+import javax.crypto.spec.SecretKeySpec;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -109,6 +114,30 @@ class ImgproxyImageConverterFailureTest {
     }
 
     @Test
+    @DisplayName("imgproxy には、アップロードのバケットのファイルを指す署名付きの URL で要求する")
+    void requestsSignedUrlOfUploadedFile() throws Exception {
+        byte[] webp = {'R', 'I', 'F', 'F', 4, 0, 0, 0, 'W', 'E', 'B', 'P', 'V', 'P', '8', ' '};
+        var requested = new AtomicReference<String>();
+        responder.set(exchange -> {
+            requested.set(exchange.getRequestURI().getRawPath());
+            sendBytes(exchange, "image/webp", webp);
+        });
+
+        converter(baseUrl()).convertToWebp("scope/upload");
+
+        var source = Base64.getUrlEncoder().withoutPadding()
+                .encodeToString("s3://incoming/scope/upload".getBytes(StandardCharsets.UTF_8));
+        var path = "/q:82/f:webp/" + source;
+        var hex = HexFormat.of();
+        var mac = Mac.getInstance("HmacSHA256");
+        mac.init(new SecretKeySpec(hex.parseHex("0123456789abcdef"), "HmacSHA256"));
+        mac.update(hex.parseHex("fedcba9876543210"));
+        mac.update(path.getBytes(StandardCharsets.UTF_8));
+        var signature = Base64.getUrlEncoder().withoutPadding().encodeToString(mac.doFinal());
+        assertThat(requested.get()).isEqualTo("/" + signature + path);
+    }
+
+    @Test
     @DisplayName("AC-297 imgproxy が要求を断った（4xx）ら、変換の失敗になる")
     void failsOnClientError() {
         responder.set(exchange -> send(exchange, 422, "unprocessable"));
@@ -178,7 +207,7 @@ class ImgproxyImageConverterFailureTest {
         var storage = new MediaStorageProperties(null, "us-east-1", true, null, null,
                 "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
                 Duration.ofSeconds(10), Duration.ofSeconds(30));
-        return new ImgproxyImageConverter(RestClient.builder(), properties, storage);
+        return new ImgproxyImageConverter(RestClient.builder(), properties, new S3ObjectStorage(null, null, storage));
     }
 
     /**

@@ -6,7 +6,7 @@ import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ImageConverter;
 import com.ecsite.module.media.domain.ImageFormat;
 import com.ecsite.module.media.domain.MediaErrorCode;
-import com.ecsite.module.media.infrastructure.storage.MediaStorageProperties;
+import com.ecsite.module.media.infrastructure.storage.S3ObjectStorage;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.client.JdkClientHttpRequestFactory;
 import org.springframework.stereotype.Component;
@@ -60,25 +60,25 @@ class ImgproxyImageConverter implements ImageConverter {
     private final ImgproxyProperties properties;
 
     /**
-     * ファイルの置き場所の設定（アップロードのバケットの名前）
+     * ファイルの置き場所（変換元の場所を作る）
      */
-    private final MediaStorageProperties storageProperties;
+    private final S3ObjectStorage storage;
 
     /**
      * コンストラクタ
      *
      * @param restClientBuilder HTTP クライアントのビルダー（トレースとメトリクスが付く）
      * @param properties        画像の変換の設定
-     * @param storageProperties ファイルの置き場所の設定（アップロードのバケット）
+     * @param storage           ファイルの置き場所（変換元の場所を作る）
      */
     ImgproxyImageConverter(RestClient.Builder restClientBuilder, ImgproxyProperties properties,
-                           MediaStorageProperties storageProperties) {
+                           S3ObjectStorage storage) {
         var requestFactory = new JdkClientHttpRequestFactory(
                 HttpClient.newBuilder().connectTimeout(CONNECT_TIMEOUT).build());
         requestFactory.setReadTimeout(properties.timeout());
         this.restClient = restClientBuilder.baseUrl(properties.baseUrl().toString()).requestFactory(requestFactory).build();
         this.properties = properties;
-        this.storageProperties = storageProperties;
+        this.storage = storage;
     }
 
     /**
@@ -121,7 +121,7 @@ class ImgproxyImageConverter implements ImageConverter {
      * 処理の指定と元のファイルの URL（base64url）。/q:{品質}/f:webp/{元の URL}
      */
     private String processingPath(String uploadKey) {
-        var source = "s3://" + storageProperties.incomingBucket() + "/" + uploadKey;
+        var source = storage.uploadSourceUrl(uploadKey);
         return "/q:" + properties.quality() + "/f:webp/" + BASE64_URL.encodeToString(source.getBytes(StandardCharsets.UTF_8));
     }
 

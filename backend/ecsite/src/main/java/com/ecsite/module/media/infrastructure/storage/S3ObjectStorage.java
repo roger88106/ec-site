@@ -3,7 +3,6 @@ package com.ecsite.module.media.infrastructure.storage;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.media.application.port.ObjectStorage;
 import com.ecsite.module.media.domain.MediaErrorCode;
-import lombok.AccessLevel;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.core.exception.SdkClientException;
@@ -22,8 +21,8 @@ import java.util.function.Supplier;
  * ファイルの置き場所の S3 の実装。AWS の S3 と、S3 互換のストレージ（SeaweedFS）で動く。
  */
 @Component
-@RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class S3ObjectStorage implements ObjectStorage {
+@RequiredArgsConstructor
+public class S3ObjectStorage implements ObjectStorage {
 
     /**
      * 配信のファイルのキャッシュの指定。キーを上書きしないので、長くキャッシュさせる
@@ -69,6 +68,16 @@ class S3ObjectStorage implements ObjectStorage {
                         .contentLength(contentLength)));
         return new PresignedUpload(URI.create(presigned.url().toString()), Map.of("Content-Type", contentType),
                 presigned.expiration());
+    }
+
+    /**
+     * アップロードのバケットのファイルの、S3 の連携での場所（imgproxy が変換元として読む）を返す。
+     *
+     * @param uploadKey アップロードのキー
+     * @return {@code s3://<アップロードのバケット>/<キー>}
+     */
+    public String uploadSourceUrl(String uploadKey) {
+        return "s3://" + properties.incomingBucket() + "/" + uploadKey;
     }
 
     /**

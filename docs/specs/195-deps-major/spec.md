@@ -130,6 +130,7 @@ TypeScript 7 は JavaScript の API を持たないので、API を使うツー�
   - 依存：なし
   - 範囲：`frontend/shared/package.json`、`frontend/shared/scripts/export-constraints.mjs`、`pnpm-lock.yaml`
   - 確認方法：DC-195-8 は script を読む（レビュー）。DC-195-9 は、上げる前後で管理画面と店舗画面の `generate:api` を流し、生成した定数のファイルに差がないことを確認する。DC-195-10 は共有のパッケージのテスト。
+  - 結果：js-yaml 5.5.0 に上げ、`import { load }` で読むようにした。上げる前後の `generate:api` で、管理画面と店舗画面の制約の定数が同一だった。共有のパッケージの lint・型チェック・テストと check-all は通った。
 - [ ] **T195-01-02** TypeScript 7 で動く openapi-typescript のバージョンがあるか、Next.js 16.4.2 が型チェックにコマンドを使うか、pnpm の上書きが openapi-typescript に TypeScript 6 を渡せるかを確認し、結果をこのタスクに書く。
   - 依存：なし
   - 範囲：調べるだけ（コードを変えない）

@@ -8,6 +8,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProp
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Objects;
 import java.util.function.Function;
 import java.util.stream.Collectors;
 
@@ -48,6 +49,7 @@ class MockShipmentQuery {
                 .fetch(SHIPMENT.ORDER_ID);
         var byOrderId = shipmentRepository.findAllByOrderIds(orderIds).stream()
                 .collect(Collectors.toMap(Shipment::orderId, Function.identity()));
-        return orderIds.stream().map(byOrderId::get).toList();
+        // 注文 ID を読んだ後に出荷が消えることがあるので、なくなった出荷は出さない（mock の画面のため）
+        return orderIds.stream().map(byOrderId::get).filter(Objects::nonNull).toList();
     }
 }

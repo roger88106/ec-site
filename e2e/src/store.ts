@@ -33,11 +33,17 @@ export function placeOrderButton(page: Page): Locator {
  */
 export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void> {
   await page.goto(`${storeUrl}/cart`)
+  // 品目の描画の前に読むと空に見えるので、品目があってもなくても出る見出しで、画面の表示が終わるのを待つ
+  await expect(page.getByRole('heading', { name: 'カート', exact: true })).toBeVisible()
   const items = page.getByRole('listitem').filter({ has: page.getByRole('button', { name: '削除', exact: true }) })
   // 品目は画面に見える文字（商品名、軸の値、単価。数量の欄より前の行）で見分ける。同じ商品のバリアントが複数あっても、軸の値が違う
   for (const text of await items.allInnerTexts()) {
     const lines = text.split('\n')
-    const [name, ...details] = lines.slice(0, lines.indexOf('数量'))
+    const quantityIndex = lines.indexOf('数量')
+    if (quantityIndex === -1) {
+      throw new Error(`カートの品目の表示が想定と違い、数量の行が見つからない：${text}`)
+    }
+    const [name, ...details] = lines.slice(0, quantityIndex)
     let item = items.filter({ has: page.getByRole('link', { name, exact: true }) })
     for (const detail of details) {
       item = item.filter({ hasText: detail })

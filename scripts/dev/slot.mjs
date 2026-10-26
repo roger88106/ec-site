@@ -269,16 +269,6 @@ function dropData(root, slot) {
 }
 
 /**
- * 指定の時間だけ待つ。
- *
- * @param {number} ms ミリ秒
- * @returns {Promise<void>}
- */
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/**
  * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
  * ロックは git の共通のディレクトリの ec-site-slot-assign.lock（作業ツリーのパス、PID、開始の時刻）。
  * 所有者の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
@@ -293,7 +283,7 @@ async function withLock(ctx, action) {
   const lock = path.join(ctx.commonDir, 'ec-site-slot-assign.lock')
   const io = createLockIo(lock)
   const owner = { worktree: ctx.root, pid: process.pid, startedAt: new Date().toISOString() }
-  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: LOCK_WAIT_MS, sleep })
+  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: LOCK_WAIT_MS })
   if (!result.acquired) {
     throw new Exit(1, `スロットのロックを取れなかった。${busyLockMessage({ lock, owner: result.owner })}`)
   }

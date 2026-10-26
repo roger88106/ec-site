@@ -57,13 +57,7 @@ function git(...args: string[]): string {
  * 取得は scripts/dev/lib/slot-lock.mjs の手順で、中身を書いた一時のファイルを link で置くので、空のロックを他方に読まれない。
  */
 async function acquireLockOrExit(io: LockIo, file: string, owner: LockOwner): Promise<void> {
-  const result = await acquireLock({
-    io,
-    owner,
-    isRunning: isProcessRunning,
-    waitMs: 0,
-    sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),
-  })
+  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: 0 })
   if (!result.acquired) {
     console.error(`別の E2E が実行中のため、実行しない。${busyLockMessage({ lock: file, owner: result.owner })}`)
     process.exit(1)

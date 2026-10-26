@@ -1,9 +1,19 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
-import { checkExclusions, findEmptyReasons, findStaleExclusions, readExclusions } from './exclusions.mjs'
+import { fileURLToPath } from 'node:url'
+import {
+  checkExclusions,
+  describeEmptyReason,
+  describeExclusionProblems,
+  describeStaleExclusion,
+  exclusionsPath,
+  findEmptyReasons,
+  findStaleExclusions,
+  readExclusions,
+} from './exclusions.mjs'
 
 /** 除外の一覧の JSON を置く場所 */
 const dir = mkdtempSync(path.join(tmpdir(), 'exclusions-'))
@@ -57,6 +67,38 @@ describe('不要になった除外', () => {
 
   test('全てが必要なら空を返す', () => {
     assert.deepEqual(findStaleExclusions({ a: 'x' }, () => true), [])
+  })
+})
+
+describe('除外の一覧のパス', () => {
+  test('scripts/ci/ の直下の絶対パスを、実行する場所に関わらず返す', () => {
+    const expected = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', 'x-exclusions.json')
+    assert.equal(exclusionsPath('x-exclusions.json'), expected)
+    const before = process.cwd()
+    process.chdir(tmpdir())
+    try {
+      assert.equal(exclusionsPath('x-exclusions.json'), expected)
+    } finally {
+      process.chdir(before)
+    }
+  })
+
+  test('検査は、除外の一覧を exclusionsPath で求める（検査ごとにパスを組み立てない）', () => {
+    const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+    const offenders = readdirSync(ciDir)
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+      .filter((name) => /readExclusions\((?!exclusionsPath\()/.test(readFileSync(path.join(ciDir, name), 'utf8')))
+    assert.deepEqual(offenders, [])
+  })
+})
+
+describe('除外の一覧の誤りの文', () => {
+  test('理由のない除外と不要な除外を分けて返し、検査の文と同じ文にする', () => {
+    const exclusions = { a: '', b: '理由', c: '理由' }
+    const { emptyReasons, stale } = describeExclusionProblems('x.json', exclusions, (key) => key !== 'c')
+    assert.deepEqual(emptyReasons, [describeEmptyReason('x.json', 'a')])
+    assert.deepEqual(stale, [describeStaleExclusion('x.json', 'c')])
+    assert.deepEqual(checkExclusions('x.json', exclusions, (key) => key !== 'c'), [...emptyReasons, ...stale])
   })
 })
 

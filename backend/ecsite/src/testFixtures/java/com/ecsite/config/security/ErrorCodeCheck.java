@@ -2,8 +2,8 @@ package com.ecsite.config.security;
 
 import com.jayway.jsonpath.JsonPath;
 import com.jayway.jsonpath.PathNotFoundException;
-import org.springframework.core.io.ClassPathResource;
 import org.jspecify.annotations.Nullable;
+import org.springframework.core.io.ClassPathResource;
 import org.springframework.core.io.Resource;
 import org.yaml.snakeyaml.LoaderOptions;
 import org.yaml.snakeyaml.Yaml;
@@ -117,6 +117,7 @@ public final class ErrorCodeCheck {
     /**
      * 契約の共通のエラーを読む。
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static Set<String> commonCodes(Resource resource) {
         try (InputStream in = resource.getInputStream()) {

@@ -6,7 +6,7 @@
 |------|------|
 | レベル | B（参照だけのマスターデータで、業務の状態を変える操作がない） |
 | 依存 | なし（`common` だけ。注文・レポートから API で呼ばれる） |
-| 関連 spec | [016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools) |
+| 関連 spec | [016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[192](../../specs/archive/1to10/192-unused-code) |
 
 名前を「住所」にしないのは、お届け先や会員の住所録を管理するモジュールと混同しないため。
 
@@ -33,7 +33,7 @@
 | 項目 | 内容 |
 |------|------|
 | 出典 | 日本郵便の「住所の郵便番号（1 レコード 1 行、UTF-8 形式）」の CSV だけ。市区町村も同じ出典から、地方公共団体コードの重複を除いて作る ※2 |
-| 変換 | `infrastructure/source` の変換（注記を除き、マスターデータの行にする） |
+| 変換 | tools（`src/tools/java/com/ecsite/tools/region/`）の `PostalCodeCsv`（注記を除き、マスターデータの行にする）。本番のコードには入れない（本番で動かさず、tools とテストだけが使うため） |
 | 郵便番号の一覧 | `src/tools/resources/region/postal-codes.txt`。seed・テスト・E2E が使う郵便番号と、変換の確認に使う郵便番号 |
 | 作り方 | 下の手順。作ったマイグレーションは手動で修正しない |
 | 出典と利用の条件 | [依存とライセンス](../licenses.md) 第 3.4 節 |
@@ -74,13 +74,12 @@
 
 ```
 region/
-├── api/                    # 都道府県・市区町村・郵便番号の取得
+├── api/                    # 都道府県・市区町村の取得
 ├── application/            # 参照のサービス
 │   └── port/               # リポジトリ
 ├── domain/                 # 都道府県、市区町村、郵便番号の住所
 ├── infrastructure/
-│   ├── persistence/        # リポジトリの実装
-│   └── source/             # 郵便番号のデータの変換
+│   └── persistence/        # リポジトリの実装
 └── presentation/           # 店舗 API
 ```
 
@@ -88,7 +87,7 @@ region/
 
 | 種類 | 内容 | 利用者 |
 |------|------|--------|
-| API | 都道府県の一覧、都道府県の市区町村の一覧、都道府県をコードで取得する、市区町村をコードで取得する、郵便番号で検索する | 注文、レポート |
+| API | 都道府県の一覧、都道府県の市区町村の一覧、都道府県をコードで取得する、市区町村をコードで取得する | 注文、レポート |
 
 ## データモデル
 
@@ -96,6 +95,7 @@ region/
 |----------|------------------|------|
 | 都道府県、市区町村、郵便番号 | [V202610200900__region_create_master.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610200900__region_create_master.sql) | ※3 |
 | 最初のデータ | [V202610200910__region_seed_master.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610200910__region_seed_master.sql) | 都道府県・市区町村の全件と、郵便番号の一部（「最初のデータ」の節）。手動で修正しない |
+| 注文のお届け先のコードの移行 | [V202610200920__ordering_add_shipping_area_codes.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610200920__ordering_add_shipping_area_codes.sql) | 注文モジュールのマイグレーション。既存の注文の都道府県名と住所から、都道府県と市区町村のコードを引くために、この移行だけ地域の表を読む |
 
 - schema は `region`。
 - 主キーは、都道府県と市区町村がコード、郵便番号が郵便番号と並び順の組。

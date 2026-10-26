@@ -3,8 +3,8 @@ package com.ecsite.module.order.domain.order;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
-import com.ecsite.module.order.domain.order.vo.CancellationRequest.Result;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
+import com.ecsite.module.order.domain.order.vo.CancellationRequest.Result;
 import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;
@@ -244,9 +244,9 @@ class OrderCancellationTest {
             var cancelled = acceptedOrder();
             cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
 
-            assertThat(acceptedOrder().isCancelled()).isFalse();
-            assertThat(requestedOrder().isCancelled()).isFalse();
-            assertThat(cancelled.isCancelled()).isTrue();
+            assertThat(acceptedOrder().status()).isNotEqualTo(OrderStatus.CANCELLED);
+            assertThat(requestedOrder().status()).isNotEqualTo(OrderStatus.CANCELLED);
+            assertThat(cancelled.status()).isEqualTo(OrderStatus.CANCELLED);
         }
     }
 

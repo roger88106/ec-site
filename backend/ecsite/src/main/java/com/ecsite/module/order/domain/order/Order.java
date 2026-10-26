@@ -284,15 +284,6 @@ public class Order extends AggregateRoot {
     }
 
     /**
-     * キャンセル済みかを返す。
-     *
-     * @return 「キャンセル」なら true
-     */
-    public boolean isCancelled() {
-        return status == OrderStatus.CANCELLED;
-    }
-
-    /**
      * 消費者がキャンセルを申請する。「受付」から「キャンセル申請中」にする。<br />
      * 申請中なら何もしない（冪等）。申請は 1 回だけで、却下済み・キャンセル済みの注文は申請できない。
      *

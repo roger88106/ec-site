@@ -96,7 +96,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 表示条件 | `isVisibleAt` | C 側に表示される条件（公開状態が「公開」で、公開期間内） |
 | 販売停止 | `salesSuspended` / `sales_suspended` | バリアントを C 側で選べなくする |
 | 商品画像 | `ProductImage` / `product_image` | 商品の画像。メディアモジュールのアセット ID と並び順を持つ |
-| 代表画像 | `representativeImage` | 商品の画像の並びの先頭。一覧に表示する |
+| 代表画像 | | 商品の画像の並びの先頭。一覧に表示する |
 | 商品検索 | `ProductSearch` | キーワード検索の port |
 | 商品照会 | `ProductQueryRepository` | カテゴリ・価格帯などの条件による一覧 |
 
@@ -182,7 +182,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 用語 | 識別子 | 意味 |
 |------|--------|------|
 | 出荷 | `Shipment` / `shipment` | 注文を配送業者に渡したことの記録。注文に 1 つで、注文の全ての明細を 1 回で出荷する |
-| 物流サービス | `CarrierTracking` | 配送業者の追跡の仕組みを提供する外部のサービス。配送状態の通知を送信する。今の実装は mock だけで、mock フラグを立てなければ起動に失敗する |
+| 物流サービス | `CarrierTracking` | 配送業者の追跡の仕組みを提供する外部のサービス。配送状態の通知を送信する。本番の実装はなく、mock（`MockCarrierTracking`）だけがある。mock フラグを立てなければ起動に失敗する |
 | 配送業者 | `Carrier` / `carrier` | 荷物を届ける事業者。ヤマト運輸（`YAMATO`）、佐川急便（`SAGAWA`）、日本郵便（`JAPAN_POST`） |
 | 送り状番号 | `TrackingNumber` / `tracking_number` | 配送業者が荷物に付ける追跡の番号。半角の数字とハイフン、30 文字まで。ハイフンを除いて保存する |
 | 配送状態 | `DeliveryStatus` / `status` | 出荷した荷物の状態。出荷済み（`SHIPPED`）、配送中（`IN_TRANSIT`）、配達完了（`DELIVERED`）、返送（`RETURNED`）。今より高い順位にだけ進む（出荷済み 0、配送中 1、配達完了・返送 2） |
@@ -284,6 +284,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使い、立てなければ本番の実装を使う（本番の実装がない物流は、起動に失敗する）。ローカルと E2E の設定だけで立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
 | テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗を起こす・呼ばれた操作を記録する操作を追加した実装。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
+| テスト用の物流サービス | `TestCarrierTracking` | テストで、物流の mock をラップし、追跡を始めた送り状番号を記録する実装。統合テストでは `TestCarrierTrackingConfig` が、mock フラグを立てたときだけ追跡として使う。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
 | 業務ポート | `server.port` | API と mock の画面を提供するポート（ローカル 8080、E2E 8090）。公開するのはこのポートだけ |
 | 運用ポート | `management.server.port` | 死活監視とメトリクス（`/actuator/*`）を提供するポート（ローカル 9080、E2E 9090）。外部に公開しない |
 | 共有の基盤 | | compose で動かすミドルウェア（PostgreSQL のサーバー、Keycloak、SeaweedFS、imgproxy、Mailpit、Zipkin）。全ての作業ツリーで 1 つを使う |

@@ -57,7 +57,7 @@
 | AC-32 | 状態は「非公開」「公開」「販売終了」。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` |
 | AC-33 | C 側に一度も表示されていない商品は削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
 | AC-34 | 公開開始日時と公開終了日時（いずれも任意）を設定できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
-| AC-35 | 公開状態でも、開始日時より前と終了日時以降は C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductTest`、`StorefrontApiTest`、`reservation.spec.ts` |
+| AC-35 | 公開状態でも、開始日時より前と終了日時以降は C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductTest`、`StorefrontApiTest`、`publish-schedule.spec.ts` |
 | AC-36 | 終了日時は開始日時より後。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-37 | 商品に画像を複数登録し、並び順を変えられる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `MediaApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 3 |
 | AC-38 | バリアントに画像を 1 枚指定できる（任意）。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `OrderCatalogApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 3 |
@@ -73,7 +73,7 @@
 | AC-48 | 商品品番・バリアント品番の前方一致、商品名の部分一致、状態、カテゴリで絞り込める… | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest`、`ProductListPage.test.tsx`、`productFilter.test.ts` |
 | AC-49 | 商品品番、商品名、状態、バリアント数、在庫数の合計を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest`、`ProductListPage.test.tsx` |
 | AC-50 | ページ単位で取得できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest` |
-| AC-51 | C 側に表示される商品（BR-2）だけが含まれる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`StorefrontApiTest`、`publish.spec.ts` |
+| AC-51 | C 側に表示される商品（BR-2）だけが含まれる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`StorefrontApiTest` |
 | AC-52 | カテゴリで絞り込める。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`listQuery.test.ts` |
 | AC-53 | 税込価格の範囲で絞り込める。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`StorefrontApiTest`、`listQuery.test.ts` |
 | AC-54 | 新着順（既定）、価格の安い順、高い順で並べ替えられる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductTest`、`StoreCatalogApiTest`、`StorefrontApiTest` ほか 2 |
@@ -85,7 +85,7 @@
 | AC-60 | 精度（表記ゆれ、類義語、関連度順）は問わない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | 除外 |
 | AC-61 | ページ単位で取得できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreProductSearchTest`、`StorefrontApiTest`、`searchQuery.test.ts` |
 | AC-62 | 商品名、説明、画像、価格（BR-4）、バリアント軸と選択肢を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`VariantPicker.test.tsx`、`publish.spec.ts` ほか 2 |
-| AC-63 | バリアントを選ぶと、その在庫状況を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`variantSelection.test.ts` |
+| AC-63 | バリアントを選ぶと、その在庫状況を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`suspension.spec.ts` ほか 1 |
 | AC-64 | 在庫状況は「在庫あり」「在庫なし」のみ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`variantSelection.test.ts` |
 | AC-65 | C 側に表示されない商品は、存在しない商品と同じ結果になる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
 | AC-66 | URL は品番が変わっても変わらない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
@@ -105,7 +105,7 @@
 | AC-80 | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartItemControls.test.tsx`、`OrderCatalogApiTest`、`QuoteItemSummary.test.tsx` ほか 4 |
 | AC-81 | 最後に変更してから 30 日たったカートは、空のカートとして扱う。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [017](../specs/archive/mvp/017-stability/spec.md) | [カートモジュール](modules/cart.md)（期限） | `CartApiTest`、`CartMergeTest`、`CartTest` ほか 1 |
 | AC-82 | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる（B… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`StockReservationApiTest`、`cart.test.ts` ほか 2 |
-| AC-83 | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`reservation-race.spec.ts` |
+| AC-83 | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`stock-hold-race.spec.ts` |
 | AC-84 | 引当は次のときに解除される。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（引当） | `CheckoutApiTest`、`CheckoutCartChangeApiTest`、`StockReservationApiTest` |
 | AC-85 | 注文手続きでは、カートの内容、送料、総額、税率ごとの消費税額を確認し、メールアド… | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md)、[016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文（集約））、[店舗画面](apps/store.md) 第 4.8 節 | `CheckoutApiTest`、`order.spec.ts` |
 | AC-86 | 入力の形式。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[地域モジュール](modules/region.md) | `OrderForm.test.tsx`、`OrderTest`、`PlaceOrderApiTest` ほか 4 |
@@ -149,9 +149,9 @@
 | AC-124 | ログアウトすると、そのブラウザーのカートは空に見える。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `cart.test.ts`、`member.spec.ts` |
 | AC-125 | 注文手続きに進むには、ログインが必要。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`cart.test.ts`、`member.spec.ts` |
 | AC-126 | 注文手続きは、それを始めた会員だけが操作・参照できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-127 | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`OrderForm.test.tsx`、`placeOrderErrors.test.ts` |
+| AC-127 | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`OrderForm.test.tsx`、`member.spec.ts` ほか 1 |
 | AC-128 | 注文は、注文した会員に結び付く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`member.spec.ts`、`orderListQuery.test.ts` |
+| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`orderListQuery.test.ts` |
 | AC-130 | 一覧から注文の詳細（AC-93 と同じ内容）に遷移し、キャンセルを申請できる（A… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 変更 | [003](../specs/archive/mvp/003-auth/spec.md) | [015](../specs/archive/mvp/015-security/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表：ログインしていなければ 401） | `MemberOrderApiTest` |
 | AC-132 | 管理画面は、ログインしなければ何も表示しない。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthGate.test.tsx`、`login.test.ts` |
@@ -221,7 +221,7 @@
 | AC-196 | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest` |
 | AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 3 |
 | AC-198 | 同じ数字を、粒度ごとの行の表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest` |
-| AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
+| AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` ほか 1 |
 | AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` ほか 1 |
 | AC-201 | 売れなかった区切りも、0 の行として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
 | AC-202 | 運営者は、商品を 1 つと期間を選び、バリエーション（軸の値の組み合わせ）ごとの… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` ほか 1 |
@@ -229,7 +229,7 @@
 | AC-204 | 期間に売れなかったバリエーションも、0 として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
 | AC-205 | 運営者は、期間を選び、お届け先の都道府県ごとの売上額と注文件数を、グラフと表で見… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-206 | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 2 |
-| AC-207 | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` |
+| AC-207 | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-208 | 生年月日の分からない会員の注文は、年齢層「不明」として数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AgeGroupTest`、`CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest` ほか 2 |
 | AC-209 | IdP の会員登録の画面で、生年月日を入れられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
 | AC-210 | 生年月日は任意とする。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest` |
@@ -237,7 +237,7 @@
 | AC-212 | 注文の成立のときに、その時点の年齢を注文に記録する。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest`、`RealmSettingsContractTest` |
 | AC-213 | 未来の日付と、明らかにありえない日付（120 年より前など）は受け付けない。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest` |
 | AC-214 | 運営者は、権限を持つレポートだけを、管理画面のメニューで見て開ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermission.test.tsx`、`ReportPermissionApiTest`、`report.spec.ts` |
-| AC-215 | 権限のないレポートの API を呼ぶと 403 になる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
+| AC-215 | 権限のないレポートの API を呼ぶと 403 になる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest` |
 | AC-216 | 権限はレポートごとに分ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AdminApiPermissionContractTest` |
 | AC-217 | 役割ごとの権限は BR-28 のとおり。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
 | AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx` ほか 1 |
@@ -275,10 +275,10 @@
 | AC-250 | 都道府県と市区町村の一覧は、店舗 API のマスターデータから取得する。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`StoreRegionApiTest` |
 | AC-251 | 注文の確定は、選んだ都道府県に属さない市区町村、またはマスターデータにないコード… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`PlaceOrderApiTest` |
 | AC-252 | 注文の詳細（店舗画面・管理画面）は、お届け先を、都道府県名・市区町村名・それより… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`ShippingAddressDetails.test.tsx`、`order.spec.ts` |
-| AC-253 | 店舗 API は、郵便番号から、都道府県・市区町村・町域を返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `RegionApiTest`、`StoreRegionApiTest` |
-| AC-254 | 1 つの郵便番号に複数の町域があるときは、全てを返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `RegionApiTest`、`StoreRegionApiTest`、`region.test.ts` |
+| AC-253 | 店舗 API は、郵便番号から、都道府県・市区町村・町域を返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `StoreRegionApiTest` |
+| AC-254 | 1 つの郵便番号に複数の町域があるときは、全てを返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `StoreRegionApiTest`、`region.test.ts` |
 | AC-255 | 注文手続きの画面で郵便番号（7 桁）を入れると、都道府県と市区町村を選んだ状態に… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`order.spec.ts`、`postalCodeFill.test.ts` |
-| AC-256 | マスターデータにない郵便番号は、何も補わず、消費者がそのまま入力を続けられる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`RegionApiTest`、`StoreRegionApiTest` ほか 2 |
+| AC-256 | マスターデータにない郵便番号は、何も補わず、消費者がそのまま入力を続けられる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`StoreRegionApiTest`、`postalCodeFill.test.ts` ほか 1 |
 | AC-257 | 補った後も、消費者は都道府県・市区町村・住所を変えられる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-258 | 注文は、お届け先の都道府県と市区町村をコードで持つ。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PlaceOrderApiTest`、`ShippingAddressTest` |
 | AC-259 | 都道府県と市区町村のマスターデータは、全国の都道府県（47）と市区町村を、最初の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `RegionApiTest` |
@@ -305,7 +305,7 @@
 | AC-280 | 業務の日付の基準にする時間帯（日本時間）は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-281 | 時点の税率の判定は 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-282 | 分類の深さの上限は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductListApiTest` |
-| AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`RegionApiTest`、`postalCodeFill.test.ts` |
+| AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`StoreRegionApiTest`、`postalCodeFill.test.ts` |
 | AC-284 | 片付けの定期ジョブが、次のデータを保存期間を過ぎたら削除する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CartTest`、`CheckoutCleanupJobTest` ほか 2 |
 | AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-286 | 片付けは、注文・支払・出荷と、未完了のイベント・止めたイベントを削除しない。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CheckoutCleanupJobTest`、`EventCleanupJobTest` |
@@ -329,10 +329,16 @@
 | AC-304 | 画像の確定は、画像の変換と保存のサービスを、データベースのトランザクションの外で… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-305 | 画像を公開の保存先に置いた後に、画像の登録か商品への追加が失敗したら、置いたファ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-306 | 他のモジュールの、外部サービスを呼ぶ処理も、データベースのトランザクションの外で… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`PaymentRefundTest`、`PaymentVoidTest` ほか 1 |
-| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力し… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `withActionResult.test.ts` |
+| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力し… | 変更 | [017](../specs/archive/mvp/017-stability/spec.md) | [193](../specs/archive/1to10/193-store-a11y/spec.md) | [店舗画面の構成](apps/store.md)（サーバーアクションの失敗のログ） | `withActionResult.test.ts` |
 | AC-308 | 店舗画面のサーバー側で、バックエンドから 5xx を受けたら、警告のログに状態コ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `client.test.ts` |
 | AC-309 | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[フロ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `client.test.ts` |
 | AC-310 | 支払の期限切れのジョブは、1 件の支払で例外（種類を問わない）が起きても、その支… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest` |
 | AC-311 | 決済サービスで支払済みのまま与信の通知を待つ支払が 1 回の処理の件数を超えて滞… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest`、`PaymentExpiryJobTest`、`PaymentTest` |
 | AC-312 | 与信の通知を待つ支払が、待ち始めてから決めた時間（設定で変更できる）を過ぎても残… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest` |
+| AC-193-1 | 事実 2 の 6 つの操作の失敗のエラーメッセージは、フォームを送る前から画面に… | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `ActionError.test.tsx`、`AddToCartForm.test.tsx`、`CancellationRequestForm.test.tsx` ほか 4 |
+| AC-193-2 | 読み上げの領域は、状態の知らせ（status の役割）として支援技術に伝わる。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `ActionError.test.tsx`、`AddToCartForm.test.tsx` |
+| AC-193-3 | 失敗の後に成功したとき、前のエラーメッセージの文は消え、読み上げの領域は残る。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `AddToCartForm.test.tsx`、`CancellationRequestForm.test.tsx` |
+| AC-193-4 | 注文のフォームで欄に誤りがあるとき、その欄の誤りの文が、入力欄の説明として支援技… | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-193-5 | 誤りのある欄は、誤りのある状態として支援技術に伝わる。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-193-6 | 欄の補足の文（郵便番号・住所・電話番号の入力の例）も、入力欄の説明として伝わる。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
 <!-- /generated:ac-list -->

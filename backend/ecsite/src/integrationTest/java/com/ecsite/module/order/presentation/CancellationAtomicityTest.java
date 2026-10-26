@@ -10,7 +10,6 @@ import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.order.application.port.StockDirectory;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
@@ -57,7 +57,7 @@ class CancellationAtomicityTest {
     TestPaymentGateway gateway;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -104,7 +104,7 @@ class CancellationAtomicityTest {
         product = data.product(taxCategoryId, "一貫性の商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 5);
-        orderId = new OrderTestData(mockMvc, gateway, orderPaymentService, owner.bearer()).placeOrder(variantId, 2);
+        orderId = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer()).placeOrder(variantId, 2);
         awaitAuthorizedHandled();
     }
 

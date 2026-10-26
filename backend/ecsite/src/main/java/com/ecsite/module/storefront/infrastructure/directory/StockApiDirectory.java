@@ -1,7 +1,7 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
-import com.ecsite.module.storefront.application.port.StockDirectory;
 import com.ecsite.module.inventory.api.StockAvailabilityApi;
+import com.ecsite.module.storefront.application.port.StockDirectory;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

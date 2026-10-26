@@ -1,9 +1,11 @@
 // 文書の用語を確認する。言い換えの一覧は doc-terms.json。
-//   ng：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に書く（その中の一致は数えない）
+//   ng：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許す語: 理由} で書く（その中の一致は数えない）
+//       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする
 //   caution：文脈で言い換えるかを決める語。--caution を付けたときだけ示し、失敗にしない（文書を書くときに見る）
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown と、.github/ の yml・yaml と Markdown。
 // 使い方：node scripts/ci/doc-terms.mjs [--caution]（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
+import { checkExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
@@ -18,12 +20,12 @@ const EXCLUDED = /^(docs\/specs\/archive\/|\.claude\/skills\/docs\/tech-writing\
  * 日本語に語の境界はないので、使わない語を一部に含む正しい語は、語ごとの許す語（allow）で救う。
  *
  * @param {string} line 行
- * @param {{ word: string, allow?: string[] }} term 使わない語と許す語
+ * @param {{ word: string, allow?: Record<string, string> }} term 使わない語と許す語（許す語と理由）
  * @returns {boolean} 許す語の外に一致があれば true
  */
 function hasDisallowedMatch(line, term) {
   const allowed = []
-  for (const allow of term.allow ?? []) {
+  for (const allow of Object.keys(term.allow ?? {})) {
     for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
       allowed.push([at, at + allow.length])
     }
@@ -39,12 +41,15 @@ function hasDisallowedMatch(line, term) {
  * 一覧の語を書いた行を探す。許す語が使わない語を含まないときは、設定の誤りとして例外にする。
  *
  * @param {string} text 文書
- * @param {{ word: string, use: string, allow?: string[] }[]} terms 語と言い換えと許す語
+ * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許す語（許す語は {許す語: 理由}）
  * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語
  */
 export function findTerms(text, terms) {
   for (const term of terms) {
-    for (const allow of term.allow ?? []) {
+    if (Array.isArray(term.allow)) {
+      throw new Error(`「${term.word}」の allow は {許す語: 理由} の形で書く（doc-terms.json）`)
+    }
+    for (const allow of Object.keys(term.allow ?? {})) {
       if (!allow.includes(term.word)) {
         throw new Error(`許す語「${allow}」が使わない語「${term.word}」を含まない（doc-terms.json）`)
       }
@@ -57,6 +62,19 @@ export function findTerms(text, terms) {
     }
   })
   return hits
+}
+
+/**
+ * 許す語の誤り（理由がない、どの文書にも使われなくなった）を、表示する文にして返す。
+ *
+ * @param {string[]} texts 調べる文書の内容（全て）
+ * @param {{ word: string, allow?: Record<string, string> }[]} terms 語と許す語
+ * @returns {string[]} 誤りの文
+ */
+export function findAllowProblems(texts, terms) {
+  return terms.flatMap((term) =>
+    checkExclusions(`doc-terms.json の「${term.word}」の allow`, term.allow ?? {}, (allow) => texts.some((text) => text.includes(allow))),
+  )
 }
 
 /**
@@ -75,9 +93,14 @@ if (isMain(import.meta.url)) {
   const terms = caution ? list.caution : list.ng
   const files = listGitFiles().filter((file) => isTargetDoc(file))
   exitIfNoFiles(files, '語を調べる文書')
-  let count = 0
-  for (const file of files) {
-    for (const hit of findTerms(readFileSync(file, 'utf8'), terms)) {
+  const texts = files.map((file) => readFileSync(file, 'utf8'))
+  const allowProblems = caution ? [] : findAllowProblems(texts, terms)
+  for (const problem of allowProblems) {
+    console.log(problem)
+  }
+  let count = allowProblems.length
+  for (const [index, file] of files.entries()) {
+    for (const hit of findTerms(texts[index], terms)) {
       console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
       count += 1
     }

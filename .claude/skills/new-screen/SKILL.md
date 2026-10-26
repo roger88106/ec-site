@@ -32,7 +32,6 @@ description: ec-site のフロントに画面や操作を追加するときの�
 | `lib/categoryTree` | `flattenTree`（カテゴリの木を深さ付きの一覧にする）、`categoryOptions`（その一覧を選択肢にする） | カテゴリの選択肢と字下げ |
 | `lib/patterns` | `isUuid`：ID の形の判定 | URL の ID を API に渡す前の判定 |
 | `lib/login` | `isSafeReturnPath`（ログインの後に戻ってよいパスか）、`fullName`（姓名を 1 つの表示にする） | ログインの戻り先の検査、氏名の表示 |
-| `lib/cn` | `cn`：クラス名の結合 | 条件つきのクラス名 |
 | `lib/locale` | `LOCALE`、`TIME_ZONE` | 整形のツールに渡すロケールとタイムゾーン |
 | `lib/translate` | `translate`：共有の文言（`common`）だけを引く関数 | 共有パッケージの中だけで使う。各画面は、その画面の `translate` を使う |
 | `components/AmountsSummary` | `AmountsSummary`：金額の内訳（商品の合計、送料、総額、税率ごとの消費税額）。`variant` は `card`（管理画面）か `page`（店舗画面） | カート、注文手続き、注文の金額の内訳 |
@@ -128,7 +127,7 @@ export async function updateFoo(_previous: ActionResult | null, formData: FormDa
 
 ### フォーム（`features/<機能>/components/FooForm.tsx`）
 
-結果の表示をテストするフォームは、`useActionState` を呼ぶコンポーネントと、結果を props で受ける表示のコンポーネントに分ける（例：`OrderForm` と `OrderFormView`）。テストは表示のコンポーネントに結果を渡す。結果の表示をテストしない他のフォームは、分けなくてよい。
+結果の表示をテストするフォームは、`useActionState` を呼ぶコンポーネントと、結果を props で受ける表示のコンポーネントに分ける（例：`OrderForm` と `OrderFormView`）。テストは表示のコンポーネントに結果を渡す。結果の表示をテストしない他のフォームは、分けなくてよい。同じ読み上げの領域が残るなど、結果の表示の遷移を確認するときは、分けずにサーバーアクションを `vi.mock` で差し替え、jsdom で操作する（`CancellationRequestForm.test.tsx`。テストの書き方 第 1 節）。
 
 ```tsx
 'use client'
@@ -137,23 +136,21 @@ import { Button } from '@ec-site/shared/ui/button'
 import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { updateFoo } from '@/actions/foo'
+import { ActionError } from '@/components/ActionError'
 
 /** 〇〇のフォーム */
 export function FooForm({ fooId }: { fooId: string }) {
   const t = useTranslations('foo.form')
   const [result, formAction, pending] = useActionState(updateFoo, null)
   return (
-    <form action={formAction} className="space-y-3">
+    // 失敗の読み上げの領域は、送る前から描く（店舗画面の構成 第 6 節）。領域が最後の子なので、親は flex と gap で並べる
+    <form action={formAction} className="flex flex-col items-start gap-3">
       <input name="fooId" type="hidden" value={fooId} />
-      {/* 入力欄。誤りは result?.ok === false && result.fieldErrors?.note を欄の下に出す */}
+      {/* 入力欄。誤りは欄の下に表示し、aria-describedby と aria-invalid で入力欄に結び付ける（OrderForm の Field） */}
       <Button disabled={pending} type="submit">
         {pending ? t('submitting') : t('submit') /* 送信中か、〇〇する */}
       </Button>
-      {result?.ok === false && (
-        <p aria-live="polite" className="text-destructive text-sm">
-          {result.message}
-        </p>
-      )}
+      <ActionError result={result} />
     </form>
   )
 }

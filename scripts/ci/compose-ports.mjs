@@ -5,6 +5,7 @@
 // 使い方：node scripts/ci/compose-ports.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
+import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** compose のファイル */
 const COMPOSE_FILE = 'docker/compose.yaml'
@@ -78,16 +79,27 @@ export function findPortProblems(text) {
   return { ports, problems, unreadable, unknown }
 }
 
+/**
+ * ホスト側のポートを読めない項目を、失敗の文にする（local-ports も使う）。
+ *
+ * @param {string} file 表示する compose のパス
+ * @param {{ line: number, entry: string }} port `readHostPort` が読めなかった項目
+ * @returns {string} `ファイル:行 項目（理由）`
+ */
+export function describeUnreadableHostPort(file, port) {
+  return describeUnreadableLine({ file, line: port.line, text: port.entry, reason: 'ホスト側のポートを読めない。数字か ${変数:-数字} で 1 つのポートを書く' })
+}
+
 if (isMain(import.meta.url)) {
   const { ports, problems, unreadable, unknown } = findPortProblems(readFileSync(COMPOSE_FILE, 'utf8'))
   for (const problem of problems) {
     console.log(`${COMPOSE_FILE}:${problem.line} ${problem.entry}（${BIND_PREFIX} で始める）`)
   }
   for (const port of unreadable) {
-    console.log(`${COMPOSE_FILE}:${port.line} ${port.entry}（ホスト側のポートを読めない。数字か \${変数:-数字} で 1 つのポートを書く）`)
+    console.log(describeUnreadableHostPort(COMPOSE_FILE, port))
   }
   for (const entry of unknown) {
-    console.log(`${COMPOSE_FILE}:${entry.line} ${entry.text.trim()}（知らない書き方。検査の読み方を追加するか、項目を 1 行ずつ書く）`)
+    console.log(describeUnreadableLine({ file: COMPOSE_FILE, line: entry.line, text: entry.text, reason: '知らない書き方。検査の読み方を追加するか、項目を 1 行ずつ書く' }))
   }
   console.log(
     `compose のポート：${ports.length} 件、決まった形でないもの：${problems.length} 件、ホスト側のポートを読めないもの：${unreadable.length} 件、知らない書き方の行：${unknown.length} 件`,

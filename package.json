@@ -7,10 +7,14 @@
     "node": ">=24"
   },
   "scripts": {
-    "lint": "pnpm -r --filter ./frontend/* --filter ./e2e run lint",
-    "typecheck": "pnpm -r --filter ./frontend/* --filter ./e2e run typecheck",
-    "test": "pnpm -r --filter ./frontend/* run test",
-    "build": "pnpm -r --filter ./frontend/* run build",
-    "e2e": "pnpm --filter ./e2e run test"
+    "lint": "pnpm -r --filter \"./frontend/*\" --filter ./e2e run lint",
+    "typecheck": "pnpm -r --filter \"./frontend/*\" --filter ./e2e run typecheck",
+    "test": "pnpm -r --filter \"./frontend/*\" run test",
+    "build": "pnpm -r --filter \"./frontend/*\" run build",
+    "e2e": "pnpm --filter ./e2e run test",
+    "knip": "pnpm -r --filter \"./frontend/*\" --filter ./e2e run generate:api && knip"
+  },
+  "devDependencies": {
+    "knip": "^6.41.0"
   }
 }

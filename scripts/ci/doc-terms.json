@@ -15,6 +15,9 @@
     { "word": "旗", "use": "フラグ" },
     { "word": "支払の画面", "use": "支払画面" },
     { "word": "client の ID", "use": "client ID" },
+    { "word": "ブラウザ", "use": "ブラウザー", "allow": { "ブラウザー": "正しい書き方で、使わない語を一部に含む" } },
+    { "word": "掃除", "use": "片付け" },
+    { "word": "worktree", "use": "作業ツリー", "allow": { "git worktree": "git のコマンドの名前", ".claude/worktrees/": "Claude Code が作業ツリーを置くパス" } },
     { "word": "NNN", "use": "<番号>（spec のパスは docs/specs/<番号>-*/）" }
   ],
   "caution": [

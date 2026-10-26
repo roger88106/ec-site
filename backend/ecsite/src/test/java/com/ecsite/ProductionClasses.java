@@ -181,6 +181,17 @@ public final class ProductionClasses {
     }
 
     /**
+     * ソースの場所が tools の出力かを返す。tools は開発で流す道具で、本番のクラスではない。
+     * 単体テストの classpath には、tools の出力のディレクトリ（build/classes/java/tools）が入る。
+     *
+     * @param location クラスの場所の URI
+     * @return tools の出力のディレクトリなら true
+     */
+    private static boolean isToolsLocation(String location) {
+        return location.contains("/classes/java/tools/");
+    }
+
+    /**
      * 絞り込んだ検査の対象が 1 件以上あることを確認する。<br />
      * 対象が 0 件の規則は、違反を見つけられないまま常に通るので、0 件なら説明を付けて失敗させる。
      *
@@ -202,10 +213,12 @@ public final class ProductionClasses {
         /**
          * {@code com.ecsite} の本番のクラス。<br />
          * 単体テストと統合テストが共有する testFixtures は、テストのコードなので除く。
+         * 単体テストの classpath にある tools は、開発の道具なので除く。
          */
         private static final JavaClasses ALL = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
                 .withImportOption(location -> !isTestFixtureLocation(location.asURI().toString()))
+                .withImportOption(location -> !isToolsLocation(location.asURI().toString()))
                 .importPackages("com.ecsite");
 
         /**

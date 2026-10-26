@@ -41,6 +41,7 @@ class AdminRealmPermissionContractTest {
     private static Set<String> declaredPermissions;
     private static String realm;
 
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @BeforeAll
     @SuppressWarnings("unchecked")
     static void load() {

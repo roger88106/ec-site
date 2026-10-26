@@ -69,6 +69,7 @@ public class Mailpit implements AutoCloseable {
      * @param address 宛先のメールアドレス
      * @return 届いたメール
      */
+    // Mailpit の JSON を読んだ汎用の Map を、API の応答の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     public List<Message> messagesTo(String address) {
         Map<String, Object> result = api.get()

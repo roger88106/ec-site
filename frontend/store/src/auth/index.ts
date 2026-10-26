@@ -91,7 +91,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
 })
 
 /** ログインしている会員（画面に出す情報） */
-export type CurrentMember = {
+type CurrentMember = {
   /** 氏名（姓 名） */
   name: string
   /** メールアドレス */

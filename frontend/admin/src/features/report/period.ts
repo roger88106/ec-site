@@ -11,7 +11,7 @@ export const FISCAL_PRESETS = ['thisFiscalYear', 'lastFiscalYear'] as const sati
 export const CALENDAR_PRESETS = ['thisMonth', 'lastMonth', 'thisYear', 'lastYear'] as const satisfies PeriodPreset[]
 
 /** 期間（日本時間の日付。両端を含む） */
-export type Period = { from: string; to: string }
+type Period = { from: string; to: string }
 
 /** 実在する日付（yyyy-MM-dd）か */
 export function isDate(value: string): boolean {

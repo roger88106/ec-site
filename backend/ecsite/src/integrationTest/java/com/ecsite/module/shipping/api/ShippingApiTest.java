@@ -2,7 +2,7 @@ package com.ecsite.module.shipping.api;
 
 import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
-import com.ecsite.module.shipping.application.TrackingRequested;
+import com.ecsite.module.shipping.application.TrackingRequests;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
@@ -131,8 +131,7 @@ class ShippingApiTest {
         assertBusinessError(() -> shippingApi.create(orderId, ShipmentSummary.Carrier.SAGAWA, "8884-5556", SHIPPED_AT),
                 ShippingErrorCode.SHIPMENT_ALREADY_EXISTS);
 
-        asyncEvents.awaitHandled(event -> event instanceof TrackingRequested requested
-                && List.of("88812223", "88845556").contains(requested.trackingNumber()));
+        asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of("88812223", "88845556")));
         assertThat(tracking.started()).contains(new TestCarrierTracking.Started(Carrier.YAMATO, "88812223"))
                 .doesNotContain(new TestCarrierTracking.Started(Carrier.SAGAWA, "88845556"));
     }
@@ -148,8 +147,7 @@ class ShippingApiTest {
 
         shippingApi.create(UUID.randomUUID(), ShipmentSummary.Carrier.YAMATO, "8891-2223", SHIPPED_AT);
 
-        asyncEvents.awaitHandled(event -> event instanceof TrackingRequested requested
-                && requested.trackingNumber().equals("88912223"));
+        asyncEvents.awaitHandled(event -> TrackingRequests.isFor(event, List.of("88912223")));
         assertThat(transactionActive).containsExactly(false);
     }
 

@@ -5,7 +5,7 @@ import type { ActionResult } from '@/lib/actionResult'
 export type OrderField = 'name' | 'postalCode' | 'prefecture' | 'municipality' | 'address' | 'phone'
 
 /** 注文のフォームに出すエラー。入力欄ごとのメッセージ、フォームの下のメッセージ、カートへのリンクを添えるか */
-export type PlaceOrderErrors = {
+type PlaceOrderErrors = {
   fields: Partial<Record<OrderField, string>>
   /** フォームの下に出すメッセージ。null は出さない */
   message: string | null

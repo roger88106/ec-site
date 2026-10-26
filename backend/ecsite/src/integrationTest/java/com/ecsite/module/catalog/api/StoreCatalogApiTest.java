@@ -6,13 +6,14 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.tax.api.TaxRateApi;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,7 +52,7 @@ class StoreCatalogApiTest {
     TaxRateApi taxRateApi;
 
     @Autowired
-    TaxRateScheduleCache taxRateScheduleCache;
+    ApplicationContext applicationContext;
 
     @Autowired
     MockMvc mockMvc;
@@ -77,7 +78,7 @@ class StoreCatalogApiTest {
     void setUp() throws Exception {
         clock.setInstant(NOW);
         catalog = new CatalogTestData(mockMvc, clock);
-        taxRateScheduleCache.evict();
+        TaxRateScheduleCaches.evict(applicationContext);
         standard = catalog.taxCategory("標準", "10");
         reduced = catalog.taxCategory("軽減", "8");
         category = catalog.category("カテゴリ " + UUID.randomUUID(), null);

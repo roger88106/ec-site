@@ -26,6 +26,26 @@ function form(result: ActionResult | null = null, formAction: (formData: FormDat
   )
 }
 
+/** 欄の見出し、API の項目名、補足の文（ない欄は null）。氏名・郵便番号・都道府県・市区町村・住所・電話番号 */
+const FIELDS = [
+  ['氏名', 'shippingAddress.name', null],
+  ['郵便番号', 'shippingAddress.postalCode', '例：100-0001'],
+  ['都道府県', 'shippingAddress.prefectureCode', null],
+  ['市区町村', 'shippingAddress.municipalityCode', null],
+  ['住所', 'shippingAddress.address', '町名、番地、建物名'],
+  ['電話番号', 'shippingAddress.phone', '例：03-1234-5678'],
+] as const
+
+/** 指定した項目だけに誤りがある、入力の検証の誤り（400）の結果 */
+function fieldError(path: string): ActionResult {
+  return {
+    ok: false,
+    message: '入力内容に誤りがあります。',
+    errorCode: 'INVALID_REQUEST',
+    fieldErrors: { [path]: `${path} の誤りの文` },
+  }
+}
+
 /**
  * エラーの文が、その欄の入力欄の後で、次の欄の入力欄より前に出ることを確認する（見える文言の順）。
  *
@@ -92,13 +112,20 @@ describe('お届け先の入力と注文', () => {
   test('AC-248、250 欄は郵便番号・都道府県・市区町村・住所の順で、都道府県は API の一覧から選び、初めは選んでいない', () => {
     const view = renderStatic(form())
 
-    // 欄は、画面に出る順（文書の順）に返る
-    const fields = view.getAllByLabelText(/^(郵便番号|都道府県|市区町村|住所)$/)
-    expect(fields).toHaveLength(4)
-    expect(fields[0]).toHaveAttribute('name', 'postalCode')
-    expect(fields[1]).toHaveAttribute('name', 'prefectureCode')
-    expect(fields[2]).toHaveAttribute('name', 'municipalityCode')
-    expect(fields[3]).toHaveAttribute('name', 'address')
+    // 各欄を役割と名前（ラベル）で 1 つずつ探し、送る名前を確かめる。画面に出る順は、前の欄が文書の中で先にあることで確かめる
+    const fields = [
+      { role: 'textbox', label: '郵便番号', name: 'postalCode' },
+      { role: 'combobox', label: '都道府県', name: 'prefectureCode' },
+      { role: 'combobox', label: '市区町村', name: 'municipalityCode' },
+      { role: 'textbox', label: '住所', name: 'address' },
+    ].map(({ role, label, name }) => {
+      const field = view.getByRole(role, { name: label })
+      expect(field).toHaveAttribute('name', name)
+      return field
+    })
+    fields.slice(1).forEach((field, previous) => {
+      expect(fields[previous].compareDocumentPosition(field)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
+    })
     const prefecture = within(view.getByRole('combobox', { name: '都道府県' }))
     expect(prefecture.getByRole('option', { name: '東京都' })).toHaveAttribute('value', '13')
     expect(prefecture.getByRole('option', { name: '神奈川県' })).toHaveAttribute('value', '14')
@@ -113,6 +140,9 @@ describe('お届け先の入力と注文', () => {
     )
 
     expectErrorUnder(view, '郵便番号は 7 桁で入力してください。', '郵便番号', '都道府県')
+    expect(view.getByLabelText('郵便番号')).toHaveAccessibleDescription(
+      '例：100-0001 郵便番号は 7 桁で入力してください。',
+    )
     expect(view.queryByRole('link', { name: 'カートを見る' })).not.toBeInTheDocument()
   })
 
@@ -127,6 +157,7 @@ describe('お届け先の入力と注文', () => {
     )
 
     expectErrorUnder(view, 'API が決めた電話番号の文', '電話番号')
+    expect(view.getByLabelText('電話番号')).toHaveAccessibleDescription('例：03-1234-5678 API が決めた電話番号の文')
   })
 
   test('AC-251 市区町村の誤りは、市区町村の欄の下に出す', () => {
@@ -135,14 +166,30 @@ describe('お届け先の入力と注文', () => {
     )
 
     expectErrorUnder(view, '市区町村を選んでください。', '市区町村', '住所')
+    expect(view.getByLabelText('市区町村')).toHaveAccessibleDescription('市区町村を選んでください。')
   })
 
   test('AC-87 在庫が足りなければ、フォームの下にメッセージとカートへのリンクを出す', () => {
     const view = renderStatic(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
-    const message = view.getByText('在庫が足りない商品があります。')
-    expect(message).toHaveAttribute('aria-live', 'polite')
+    const message = view.getByRole('status')
+    expect(message).toHaveTextContent('在庫が足りない商品があります。')
     expect(within(message).getByRole('link', { name: 'カートを見る' })).toHaveAttribute('href', '/cart')
+  })
+
+  test('AC-193-1 失敗の文は、送る前からある状態の知らせ（status）の領域に入る。領域は 1 つだけ', () => {
+    // 送る前も、領域は 1 つあり、文はない
+    const before = renderStatic(form(null))
+    expect(before.getAllByRole('status')).toHaveLength(1)
+    expect(before.getByRole('status')).toBeEmptyDOMElement()
+
+    const after = renderStatic(
+      form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }),
+    )
+
+    // 失敗の結果では、領域に文がある。同じ領域が残ることは、共通のコンポーネントを使う他の画面のテストで確認する
+    expect(after.getAllByRole('status')).toHaveLength(1)
+    expect(after.getByRole('status')).toHaveTextContent('在庫が足りない商品があります。')
   })
 
   test('結果を受ける前の OrderForm は、表示と同じ初期表示を出す', () => {
@@ -166,6 +213,32 @@ describe('お届け先の入力と注文', () => {
     expect(sent?.get('name')).toBe('山田 太郎')
     expect(sent?.get('checkoutId')).toBe('checkout-1')
     expect(sent?.get('expectedTotal')).toBe('3200')
+  })
+})
+
+describe('欄の誤りと補足を入力欄に結び付ける', () => {
+  test.each(FIELDS)(
+    'AC-193-4、AC-193-5、AC-193-6 %s の誤りの文は入力欄の説明になり、その欄は誤りの状態になる',
+    (label, path, hint) => {
+      const view = renderStatic(form(fieldError(path)))
+
+      expect(view.getByLabelText(label)).toHaveAccessibleDescription(
+        [hint, `${path} の誤りの文`].filter(Boolean).join(' '),
+      )
+      expect(view.getByLabelText(label)).toBeInvalid()
+      // 誤りのない他の欄は、誤りの状態を伝えない
+      for (const [otherLabel] of FIELDS.filter(([other]) => other !== label)) {
+        expect(view.getByLabelText(otherLabel)).toBeValid()
+        expect(view.getByLabelText(otherLabel)).not.toHaveAttribute('aria-invalid')
+      }
+    },
+  )
+
+  test.each(FIELDS)('AC-193-6 %s は誤りがないとき、補足の文だけが入力欄の説明になる', (label, _path, hint) => {
+    const view = renderStatic(form())
+
+    expect(view.getByLabelText(label)).toHaveAccessibleDescription(hint ?? '')
+    expect(view.getByLabelText(label)).toBeValid()
   })
 })
 

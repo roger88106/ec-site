@@ -5,7 +5,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | 項目 | 内容 |
 |------|------|
 | 依存 | 管理 API（`admin.yaml`）、運営者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests)、[192](../../specs/archive/1to10/192-unused-code) |
 
 ## 1. 技術
 
@@ -52,8 +52,7 @@ frontend/admin/
     │   ├── format.ts       # 日時の入力欄との変換、日本時間の日付（金額・価格・数・日時などの整形は共有パッケージの lib/format.ts）
     │   ├── login.ts        # ログインの後に戻る画面のパスの読み取り
     │   ├── rate.ts         # 税率の表示
-    │   ├── searchParams.ts # URL のクエリのページ番号の読み取り
-    │   └── utils.ts        # shadcn/ui の部品が読むクラス名の結合（共有のパッケージのものを再公開）
+    │   └── searchParams.ts # URL のクエリのページ番号の読み取り
     ├── test/               # 結合テストの土台（画面のコードからは import しない）
     └── features/<機能>/    # tax、category、product、inventory、order、report
         ├── pages/          # ルートに対応する画面（取得とコンポーネントの組み立てだけ）
@@ -226,19 +225,19 @@ SPA がブラウザーで IdP とやり取りし（public client）、token は�
 
 | 項目 | 決まり |
 |------|--------|
-| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）と `VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。戻り先は画面のトップ ※1 |
+| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）と `VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。戻り先は画面のトップ ※4 |
 | token の置き場所 | メモリー（`InMemoryWebStorage`）。sessionStorage に置かない（JavaScript から読める場所に残さない）。IdP へ移る間の `state` と PKCE の値だけは sessionStorage |
-| ログインを求める | `auth/AuthGate` が全ての画面をラップし、ログインしていなければ IdP へリダイレクトし、戻ったら元の画面を表示する ※2 |
+| ログインを求める | `auth/AuthGate` が全ての画面をラップし、ログインしていなければ IdP へリダイレクトし、戻ったら元の画面を表示する ※5 |
 | token の更新 | 期限が近ければ refresh token で再取得する（自動）。再取得できなければ（最後の操作から 30 分、またはログインから 8 時間を過ぎたとき）再ログインする |
 | ログインしている運営者 | `auth/operator` の `useOperator()` で氏名とログアウトを読む。コンポーネントは react-oidc-context を直接使わない（テストで置き換えるため） |
-| 権限による出し分け | `auth/permissions` の `usePermissions()` で、管理 API の自分の権限の一覧（`GET /me`）を読む ※3。権限のない画面はメニューに表示せず、URL で開いたら `auth/RequirePermission` が「権限がない」を示す（API は呼ばない）。今はレポートの画面だけを出し分ける。自分の権限の一覧の取得に失敗したら（5xx、通信の失敗）、権限が必要な画面は取得の失敗の文と「再試行」を示し、メニューはレポートの入口を全て表示する（権限の有無が分からないので隠さない）。再試行で取得し直している間は、失敗の表示のままボタンを押せなくする |
+| 権限による出し分け | `auth/permissions` の `usePermissions()` で、管理 API の自分の権限の一覧（`GET /me`）を読む ※6。権限のない画面はメニューに表示せず、URL で開いたら `auth/RequirePermission` が「権限がない」を示す（API は呼ばない）。今はレポートの画面だけを出し分ける。自分の権限の一覧の取得に失敗したら（5xx、通信の失敗）、権限が必要な画面は取得の失敗の文と「再試行」を示し、メニューはレポートの入口を全て表示する（権限の有無が分からないので隠さない）。再試行で取得し直している間は、失敗の表示のままボタンを押せなくする |
 | ログアウト | IdP のログアウト（RP-Initiated Logout。ID token と画面のトップを添える）へ移る |
 
-※1：既定値はローカルと CI だけで使う。接続先はビルドの時に埋め込むので、本番ビルド（`vite build` の production モード）では、2 つのどちらかがなければ（空も含む）ビルドに失敗する（`config/oidcEnv.ts` を `vite.config.ts` から呼ぶ。`src/` の外に置くのは、画面のコードに入れないため）。開発サーバー、テスト、本番でないモードのビルドでは確認しない。CI のビルドと E2E は、ローカルの値を渡す。
+※4：既定値はローカルと CI だけで使う。接続先はビルドの時に埋め込むので、本番ビルド（`vite build` の production モード）では、2 つのどちらかがなければ（空も含む）ビルドに失敗する（`config/oidcEnv.ts` を `vite.config.ts` から呼ぶ。`src/` の外に置くのは、画面のコードに入れないため）。開発サーバー、テスト、本番でないモードのビルドでは確認しない。CI のビルドと E2E は、ローカルの値を渡す。
 
-※2：再読み込み・新しいタブではメモリーに token がないので IdP へリダイレクトするが、IdP のログインが残っていれば、パスワードなしですぐ元の画面を表示する。非表示の iframe は使わない。
+※5：再読み込み・新しいタブではメモリーに token がないので IdP へリダイレクトするが、IdP のログインが残っていれば、パスワードなしですぐ元の画面を表示する。非表示の iframe は使わない。
 
-※3：画面が token の権限を読むと、権限を読む処理がバックエンドと 2 か所になる（バックエンドのアーキテクチャ 第 7.2 節）。権限は再ログインするまで変わらないので、再取得しない。
+※6：画面が token の権限を読むと、権限を読む処理がバックエンドと 2 か所になる（バックエンドのアーキテクチャ 第 7.2 節）。権限は再ログインするまで変わらないので、再取得しない。
 
 ### 10.1 API に付ける token
 

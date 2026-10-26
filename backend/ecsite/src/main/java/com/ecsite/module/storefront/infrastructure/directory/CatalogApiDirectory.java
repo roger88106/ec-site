@@ -1,6 +1,5 @@
 package com.ecsite.module.storefront.infrastructure.directory;
 
-import com.ecsite.module.storefront.application.port.CatalogDirectory;
 import com.ecsite.common.paging.PageRequest;
 import com.ecsite.common.paging.PageResult;
 import com.ecsite.module.catalog.api.StoreCatalogApi;
@@ -11,6 +10,7 @@ import com.ecsite.module.catalog.api.StoreProductSort;
 import com.ecsite.module.catalog.api.StoreProductSummary;
 import com.ecsite.module.storefront.application.model.CatalogCategory;
 import com.ecsite.module.storefront.application.model.ProductCondition;
+import com.ecsite.module.storefront.application.port.CatalogDirectory;
 import com.ecsite.module.storefront.application.port.CatalogProduct;
 import com.ecsite.module.storefront.application.port.CatalogProductDetail;
 import lombok.RequiredArgsConstructor;

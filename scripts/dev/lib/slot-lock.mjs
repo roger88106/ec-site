@@ -41,15 +41,28 @@ export function acquireOnce({ io, owner, isRunning }) {
 }
 
 /**
+ * ロックを取り直す間隔だけ待つ。<br />
+ * ロックは別のプロセスが持つファイルで、放されたことを知らせる通知がないため、間を置いて取り直すしかない。
+ * 時間で待つ理由はこれだけで、テストの待ちには使わない。
+ *
+ * @param {number} ms ミリ秒
+ * @returns {Promise<void>}
+ */
+function defaultSleep(ms) {
+  return new Promise((resolve) => setTimeout(resolve, ms))
+}
+
+/**
  * ロックを取るまで待つ。所有者が動いている間は待ち、上限を過ぎたら所有者を返す。
  * 古いロックを取り除けない状態（判定のやり直しが続く）も、間を置いて待ち、上限を過ぎたら終わる（そのときの所有者は null）。
  * 古いロックを取り除いた直後の取り直しは、waitMs が 0 でも行えるよう、やり直しには waitMs とは別に最低 RETRY_MIN_MS の上限を持つ。
  *
  * @param {{ io: LockIo, owner: LockOwner, isRunning: (pid: number) => boolean, waitMs: number,
- *   now?: () => number, sleep: (ms: number) => Promise<void>, intervalMs?: number }} input
+ *   now?: () => number, sleep?: (ms: number) => Promise<void>, intervalMs?: number }} input
+ *   sleep は待ち方で、渡さなければ既定の sleep（テストで差し替える）
  * @returns {Promise<{ acquired: true } | { acquired: false, owner: LockOwner | null }>}
  */
-export async function acquireLock({ io, owner, isRunning, waitMs, now = Date.now, sleep, intervalMs = 200 }) {
+export async function acquireLock({ io, owner, isRunning, waitMs, now = Date.now, sleep = defaultSleep, intervalMs = 200 }) {
   const start = now()
   const busyDeadline = start + waitMs
   const retryDeadline = start + Math.max(waitMs, RETRY_MIN_MS)

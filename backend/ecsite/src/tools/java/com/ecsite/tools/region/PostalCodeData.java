@@ -1,4 +1,4 @@
-package com.ecsite.module.region.infrastructure.source;
+package com.ecsite.tools.region;
 
 import com.ecsite.module.region.domain.Municipality;
 import com.ecsite.module.region.domain.Prefecture;

@@ -69,6 +69,11 @@ describe('版の一致の検査', () => {
     assert.match(problems[0], />=/)
   })
 
+  test('読めない版は、ファイル:行 内容（理由）の形で出す', () => {
+    assert.deepEqual(findRuntimeVersionProblems({ ...ok, nodeFile: 'lts/*' }), ['.node-version:1 lts/*（数字のバージョン（24 など）だけを扱う）'])
+    assert.deepEqual(findRuntimeVersionProblems({ ...ok, enginesNode: '^24', enginesLine: 7 }), ['package.json:7 ^24（>=N の形だけを扱う）'])
+  })
+
   test('読めない値があれば失敗にする', () => {
     assert.equal(findRuntimeVersionProblems({ ...ok, workflowJava: undefined }).length, 1)
     assert.equal(findRuntimeVersionProblems({ ...ok, nodeFile: undefined }).length, 1)

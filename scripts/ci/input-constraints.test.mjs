@@ -6,6 +6,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { findLiterals, isTarget } from './input-constraints.mjs'
+import { withoutGitEnv } from './lib/git-env.mjs'
 
 describe('入力の制約の数字の検査', () => {
   test('長さと範囲の属性に、数字を直接書いた行を見つける', () => {
@@ -43,16 +44,11 @@ describe('入力の制約の数字の検査', () => {
   })
 })
 
-/** Git の環境変数を外した環境（テストの中の git が、元のリポジトリを壊さないため） */
-function cleanEnv() {
-  return Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
-}
-
 /** 画面のソースを 1 つ置いた一時の Git リポジトリで、検査を子プロセスとして実行する */
 function runCheck(source, args = []) {
   const dir = mkdtempSync(path.join(tmpdir(), 'input-constraints-'))
   try {
-    const env = cleanEnv()
+    const env = withoutGitEnv()
     spawnSync('git', ['init', '-q'], { cwd: dir, env })
     const file = path.join(dir, 'frontend/store/src/Sample.tsx')
     mkdirSync(path.dirname(file), { recursive: true })

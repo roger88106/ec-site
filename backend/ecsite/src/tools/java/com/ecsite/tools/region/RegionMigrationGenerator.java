@@ -1,8 +1,5 @@
 package com.ecsite.tools.region;
 
-import com.ecsite.module.region.infrastructure.source.PostalCodeCsv;
-import com.ecsite.module.region.infrastructure.source.PostalCodeData;
-
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;

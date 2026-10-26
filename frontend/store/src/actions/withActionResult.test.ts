@@ -27,7 +27,7 @@ describe('サーバーアクションの処理の包み', () => {
     expect(stderr.text()).toBe('')
   })
 
-  test('AC-307 例外で失敗したら、error のログに例外の名前とメッセージを出し、「接続できない」の結果を返す', async () => {
+  test('AC-307 例外で失敗したら、error のログに出して「接続できない」の結果を返す', async () => {
     const stderr = recordStderr()
 
     const result = await withActionResult(async () => {
@@ -35,8 +35,38 @@ describe('サーバーアクションの処理の包み', () => {
     })
 
     expect(result).toEqual({ ok: false, message: connectionFailedMessage() })
+    expect(stderr.entries()).toEqual([expect.objectContaining({ level: 'error' })])
+  })
+
+  test('NFR-193-1 カートの ID を入れたメッセージの例外でも、ログに ID もメッセージも出さず、例外の名前だけを出す', async () => {
+    const stderr = recordStderr()
+    const cartId = '3f2b8c1e-5d4a-4e7b-9a60-1c2d3e4f5a6b'
+    const message = `カート ${cartId} を作りましたが、Cookie に保存できませんでした`
+
+    await withActionResult(async () => {
+      throw new Error(message)
+    })
+
+    expect(stderr.text()).not.toContain(cartId)
+    expect(stderr.text()).not.toContain(message)
     expect(stderr.entries()).toEqual([
-      expect.objectContaining({ level: 'error', errorName: 'TypeError', errorMessage: 'fetch failed' }),
+      expect.objectContaining({ level: 'error', errorName: 'Error', causeName: null, causeCode: null }),
+    ])
+  })
+
+  test('NFR-193-1 原因の例外があれば、その名前とコードを出し、メッセージは出さない', async () => {
+    const stderr = recordStderr()
+
+    await withActionResult(async () => {
+      throw new TypeError('fetch failed', {
+        cause: Object.assign(new Error('connect ECONNREFUSED 127.0.0.1:8080'), { code: 'ECONNREFUSED' }),
+      })
+    })
+
+    expect(stderr.text()).not.toContain('fetch failed')
+    expect(stderr.text()).not.toContain('127.0.0.1')
+    expect(stderr.entries()).toEqual([
+      expect.objectContaining({ errorName: 'TypeError', causeName: 'Error', causeCode: 'ECONNREFUSED' }),
     ])
   })
 

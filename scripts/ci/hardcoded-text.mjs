@@ -3,8 +3,7 @@
 // コメントと、開発者だけが見る文（ログ、プログラムの誤りの例外）は見ない。テスト、生成物、shadcn/ui の部品、除外の一覧（hardcoded-text-exclusions.json。リポジトリのルートからのパスと理由）のファイルも見ない。
 // 使い方：node scripts/ci/hardcoded-text.mjs [--count]（リポジトリのルートで。--count は数だけを出し、失敗にしない）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
@@ -48,7 +47,7 @@ export function scanSources(files, read) {
 }
 
 if (isMain(import.meta.url)) {
-  const exclusions = readExclusions(fileURLToPath(new URL('./hardcoded-text-exclusions.json', import.meta.url)))
+  const exclusions = readExclusions(exclusionsPath('hardcoded-text-exclusions.json'))
   const files = listGitFiles(['frontend']).filter(isScreenSource)
   exitIfNoFiles(files, '画面のソース')
   // 除外のファイルも読む。除外が要るのは、文言を直接書いた行があるファイルだけ

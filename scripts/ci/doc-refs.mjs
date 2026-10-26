@@ -3,6 +3,7 @@
 //   - 節の参照（`店舗画面の構成 第 4.5 節` など）：文書の名前・リンク・パスが指す文書に、その番号の見出しがあるか
 // 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。名前のない「第 N 節」は、Markdown ではその文書自身を指す。
 // アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
+// ただし、アーカイブの下の MVP の完成までの一覧（mvp.md）は spec の記録でなく一覧の文書で、spec を移すたびにリンクが切れるので見る。
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'
@@ -10,7 +11,7 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** 見ないファイル（当時の記録、直せないもの、この検査のテストの例） */
-const EXCLUDED = [/^docs\/specs\/archive\//, /\/db\/migration\//, /^scripts\/ci\/doc-refs\.test\.mjs$/]
+const EXCLUDED = [/^docs\/specs\/archive\/(?!mvp\/mvp\.md$)/, /\/db\/migration\//, /^scripts\/ci\/doc-refs\.test\.mjs$/]
 
 /**
  * 見ないファイルか。

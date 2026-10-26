@@ -34,6 +34,12 @@ public class CurrentMember {
         return toMember(CurrentToken.require());
     }
 
+    /**
+     * token から会員を作る。
+     *
+     * @param jwt 会員の token
+     * @return 会員
+     */
     private static AuthenticatedMember toMember(Jwt jwt) {
         return new AuthenticatedMember(
                 jwt.getSubject(),

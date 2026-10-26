@@ -131,12 +131,12 @@ TypeScript 7 は JavaScript の API を持たないので、API を使うツー�
 - 完了条件：DC-195-1〜14 を満たし、`check-all.sh` と、管理画面、店舗画面、共有のパッケージ、E2E の lint・型チェック・テスト・ビルドが通る。
 - 参照：第 3 節、第 6 節
 
-- [ ] **T195-01-01** js-yaml を 5 に上げ、入力の制約を書き出す script を名前付きの export で読む（DC-195-8〜10）。
+- [x] **T195-01-01** js-yaml を 5 に上げ、入力の制約を書き出す script を名前付きの export で読む（DC-195-8〜10）。
   - 依存：なし
   - 範囲：`frontend/shared/package.json`、`frontend/shared/scripts/export-constraints.mjs`、`pnpm-lock.yaml`
   - 確認方法：DC-195-8 は script を読む（レビュー）。DC-195-9 は、上げる前後で管理画面と店舗画面の `generate:api` を流し、生成した定数のファイルに差がないことを確認する。DC-195-10 は共有のパッケージのテスト。
   - 結果：js-yaml 5.5.0 に上げ、`import { load }` で読むようにした。上げる前後の `generate:api` で、管理画面と店舗画面の制約の定数が同一だった。共有のパッケージの lint・型チェック・テストと check-all は通った。
-- [ ] **T195-01-02** TypeScript 7 で動く openapi-typescript のバージョンがあるか、Next.js 16.4.2 が型チェックにコマンドを使うか、pnpm の上書きが openapi-typescript に TypeScript 6 を渡せるかを確認し、結果をこのタスクに書く。
+- [x] **T195-01-02** TypeScript 7 で動く openapi-typescript のバージョンがあるか、Next.js 16.4.2 が型チェックにコマンドを使うか、pnpm の上書きが openapi-typescript に TypeScript 6 を渡せるかを確認し、結果をこのタスクに書く。
   - 依存：なし
   - 範囲：調べるだけ（コードを変えない）
   - openapi-typescript が 7 で動くなら、上書きを使わず、T195-01-03 の範囲と確認方法から上書きを除き、DC-195-11〜13 は不要として結果に書く。
@@ -144,16 +144,17 @@ TypeScript 7 は JavaScript の API を持たないので、API を使うツー�
   - 結果（openapi-typescript）：TypeScript 7 で動くバージョンはない。最新は 7.13.0（peer の依存は `typescript` の `^5.x`）で、8.x はない。
   - 結果（Next.js）：16.4.2 は、既定で型チェックに `tsc` のコマンドを使う（`experimental.useTypeScriptCli` の既定が true）。`next typegen` も同じで、JavaScript の API を使わない。店舗画面の設定はこの既定を変えていない。
   - 結果（上書き）：pnpm の overrides と packageExtensions は、peer の依存に効かず、openapi-typescript は直接の依存の TypeScript 7 で解決された。ルートの `.pnpmfile.cjs` の `readPackage` で、openapi-typescript の peer の依存を外して TypeScript 6.0.3 を依存に加える形なら、openapi-typescript が 6 で動き、`tsc` は 7 のままだった（一時的なワークスペースで確認した）。第 6 節の 1 の前提の「上書き」が成り立たないので、作業を止めて利用者に確認した。利用者が `.pnpmfile.cjs` の形に決め、第 6 節の 1 と T195-01-03、04 を直した（2026-10-26）。
-- [ ] **T195-01-03** TypeScript を 7 に上げ、openapi-typescript に TypeScript 6 を渡し、7 で出た型エラーと廃止された設定を直す（DC-195-1〜7）。
+- [x] **T195-01-03** TypeScript を 7 に上げ、openapi-typescript に TypeScript 6 を渡し、7 で出た型エラーと廃止された設定を直す（DC-195-1〜7）。
   - 依存：T195-01-01（同じ `pnpm-lock.yaml`）、T195-01-02
   - openapi-typescript に TypeScript 6 を渡す形は、ルートの `.pnpmfile.cjs` の `readPackage`（第 6 節の 1 の ※2）。
   - 範囲：`.pnpmfile.cjs`（新規）、`frontend/admin/package.json`、`frontend/store/package.json`、`frontend/shared/package.json`、`e2e/package.json`、`pnpm-lock.yaml`、`frontend/tsconfig.base.json` と各 tsconfig（必要なとき）、型エラーが出たソース
   - 確認方法：DC-195-1 は、各パッケージの型チェックが使う `tsc` が 7 であること（`tsc --version`）。DC-195-2 は、上げる前後で 3 つの `generate:api` が生成した型のファイルに差がないこと。DC-195-3、4 は各ビルド。DC-195-5、6 はレビューで読む（差分に検査の設定を外す所、`any`・`@ts-ignore`・`@ts-expect-error` の追加がないこと）。DC-195-7 は push の後の CI。
   - 結果：TypeScript を 7.0.2 に上げ、ルートの `.pnpmfile.cjs` で openapi-typescript（7.13.0）にだけ 6.0.3 を渡した。4 パッケージの `tsc --version` は 7.0.2。3 つの `generate:api` の生成物（型と制約の定数）は上げる前と同一。型エラーと廃止された設定は出ず、ソースと tsconfig は変えていない。店舗画面のビルドの型チェックは 7 で通り、管理画面のビルド、lint、テストも通った。
-- [ ] **T195-01-04** Dependabot の設定を構成に合わせ、上書きの理由と、TypeScript のバージョンを書いた文書とコメントを直す（DC-195-11〜14）。
+- [x] **T195-01-04** Dependabot の設定を構成に合わせ、上書きの理由と、TypeScript のバージョンを書いた文書とコメントを直す（DC-195-11〜14）。
   - 依存：T195-01-03
   - 範囲：`.github/dependabot.yml`（必要なとき）、`frontend/tsconfig.base.json`（バージョンを書いたコメント）、`.pnpmfile.cjs` の理由を書く文書（フロントの構成の文書など）、TypeScript のバージョンを書いた文書
   - 確認方法：レビューで読む。DC-195-11 は、フックの中の TypeScript 6 を Dependabot が上げる pull request を作らないことを、Dependabot の文書と設定で読み、結果に書く。DC-195-14 は、`git grep -n "TypeScript 6"` で見つけた所が、上書きの説明のほかは 7 に直っていることを読む。
+  - 結果：理由と TypeScript 6 を外す条件を、フロントのアーキテクチャ 第 3 節の表と ※2 に書いた（DC-195-12、13）。`tsconfig.base.json` のコメントを「TypeScript 6 以降」に直し、`git grep` で他に TypeScript 6 を書いた今の文書はなかった（DC-195-14）。Dependabot は依存の宣言（`package.json`）と lock を更新し、フックの中の値は読まないので、`dependabot.yml` は変えずに DC-195-11 を満たす。`typescript`（7）の minor・patch は今までどおり更新の対象になる。
 - [x] **T195-01-06** js-yaml 5 の依存の argparse 3（PSF-2.0）を、依存のライセンスの方針の許可の一覧に加える。
   - 依存：T195-01-01
   - 範囲：`docs/design/licenses.md`（第 2 節）、`scripts/ci/licenses/policy.json`

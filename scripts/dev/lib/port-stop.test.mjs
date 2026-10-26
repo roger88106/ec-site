@@ -1,7 +1,7 @@
 // port-stop.mjs のテスト（node --test scripts/dev/lib/port-stop.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findListeners, parseListeners, portBusyMessage, stopFailedMessage, stopListeners, stoppedMessage } from './port-stop.mjs'
+import { findListeners, parseListeners, portBusyMessage, queryFailedMessage, stopFailedMessage, stopListeners, stoppedMessage } from './port-stop.mjs'
 
 /** spawnSync の代わり。呼ばれた指令と引数を記録し、決めた出力を返す */
 function fakeSpawnSync(stdout = '') {
@@ -73,26 +73,54 @@ describe('待ち受けるプロセスの出力の読み方（Windows 以外の l
 describe('待ち受けるプロセスの探し方', () => {
   test('Windows では、PowerShell の Get-NetTCPConnection に渡したポートだけを問い合わせる', () => {
     const { calls, spawnSync } = fakeSpawnSync('18080 1234 Listen\r\n')
-    const listeners = findListeners([18080, 19080], { platform: 'win32', spawnSync, ownPid: 1 })
-    assert.deepEqual(listeners, [{ port: 18080, pid: 1234 }])
+    const result = findListeners([18080, 19080], { platform: 'win32', spawnSync, ownPid: 1 })
+    assert.deepEqual(result, { ok: true, listeners: [{ port: 18080, pid: 1234 }] })
     assert.equal(calls.length, 1)
     const [command, args] = calls[0]
     assert.equal(command, 'powershell')
     const script = args.at(-1)
-    assert.match(script, /Get-NetTCPConnection -LocalPort 18080,19080 /)
+    assert.match(script, /Get-NetTCPConnection -LocalPort 18080,19080 -ErrorAction Stop /)
+  })
+
+  test('Windows では、一致する接続がない誤り（ObjectNotFound）だけを待ち受けなしとし、他の誤りを隠さない', () => {
+    const { calls, spawnSync } = fakeSpawnSync()
+    findListeners([18080], { platform: 'win32', spawnSync, ownPid: 1 })
+    const script = calls[0][1].at(-1)
+    assert.doesNotMatch(script, /SilentlyContinue/)
+    assert.match(script, /catch \{ if \(\$_\.CategoryInfo\.Category -eq 'ObjectNotFound'\) \{ exit 0 \}/)
+    assert.match(script, /exit 1 \}$/)
   })
 
   test('Windows 以外では、lsof に渡したポートの待ち受けだけを問い合わせる', () => {
     const { calls, spawnSync } = fakeSpawnSync('p1234\nn*:19080\n')
-    const listeners = findListeners([18080, 19080], { platform: 'linux', spawnSync, ownPid: 1 })
-    assert.deepEqual(listeners, [{ port: 19080, pid: 1234 }])
+    const result = findListeners([18080, 19080], { platform: 'linux', spawnSync, ownPid: 1 })
+    assert.deepEqual(result, { ok: true, listeners: [{ port: 19080, pid: 1234 }] })
     assert.deepEqual(calls, [['lsof', ['-nP', '-sTCP:LISTEN', '-Fpn', '-iTCP:18080', '-iTCP:19080']]])
   })
 
-  test('問い合わせの指令を流せないときは、待ち受けがないとみなす', () => {
-    const spawnSync = () => ({ status: null, stdout: null, error: new Error('ENOENT') })
-    assert.deepEqual(findListeners([18080], { platform: 'linux', spawnSync, ownPid: 1 }), [])
+  test('lsof の終了コード 1（一致なし）は、待ち受けなしとする', () => {
+    const spawnSync = () => ({ status: 1, stdout: '' })
+    assert.deepEqual(findListeners([18080], { platform: 'linux', spawnSync, ownPid: 1 }), { ok: true, listeners: [] })
   })
+
+  test('問い合わせの指令を流せないときは、待ち受けなしとせず、失敗を返す', () => {
+    const spawnSync = () => ({ status: null, stdout: null, error: new Error('spawnSync lsof ENOENT') })
+    const result = findListeners([18080], { platform: 'linux', spawnSync, ownPid: 1 })
+    assert.equal(result.ok, false)
+    assert.match(result.reason, /ENOENT/)
+  })
+
+  for (const [platform, status] of [
+    ['win32', 1],
+    ['linux', 2],
+  ]) {
+    test(`${platform} で問い合わせの指令が終了コード ${status} で終わったときは、失敗を返す`, () => {
+      const spawnSync = () => ({ status, stdout: '', stderr: 'アクセスが拒否された' })
+      const result = findListeners([18080], { platform, spawnSync, ownPid: 1 })
+      assert.equal(result.ok, false)
+      assert.match(result.reason, /アクセスが拒否された/)
+    })
+  }
 })
 
 describe('待ち受けるプロセスの停止', () => {
@@ -179,6 +207,16 @@ describe('示す文', () => {
     assert.match(message, /5678（ポート 13000）/)
     assert.match(message, /Stop-Process -Id 1234,5678 -Force/)
     assert.match(message, /もう一度 node scripts\/dev\/slot\.mjs release/)
+  })
+
+  test('問い合わせが失敗したときは、理由と、ポートで探して止める指令を示す（Windows）', () => {
+    const message = queryFailedMessage([18080, 19080], 'ENOENT', 'win32')
+    assert.match(message, /ENOENT/)
+    assert.match(message, /Stop-Process -Id \(Get-NetTCPConnection -LocalPort 18080,19080 -State Listen\)\.OwningProcess -Force/)
+  })
+
+  test('問い合わせが失敗したときの止める指令は、Windows 以外では lsof と kill', () => {
+    assert.match(queryFailedMessage([18080, 19080], 'ENOENT', 'linux'), /kill \$\(lsof -t -sTCP:LISTEN -iTCP:18080 -iTCP:19080\)/)
   })
 
   test('解除できない（メインの作業ツリーの）ときは、release を示さず、手動の停止の指令だけを示す', () => {

@@ -61,30 +61,38 @@ function byPortOrder(listeners, ports) {
 /**
  * ポートで待ち受けるプロセスを探す。<br />
  * Windows は PowerShell の Get-NetTCPConnection、それ以外は lsof で問い合わせる。netstat を使わないのは、状態の列が OS の言語で変わるため。
- * 指令を流せないとき（lsof がないなど）は、待ち受けがないとみなす。
+ * 待ち受けがないことと、問い合わせの失敗（指令を流せない、誤りで終わった）を分けて返す。
+ * 失敗を待ち受けなしとみなすと、動いているバックエンドのデータベースを解除で消すため。
+ * 一致なしとみなすのは、Get-NetTCPConnection の ObjectNotFound（どのポートにも接続がない）と、lsof の終了コード 1 だけ。
  *
  * @param {number[]} ports 対象のポート
  * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync, ownPid: number }} [deps] OS、指令の実行、自分のプロセスの ID。テストで差し替える
- * @returns {Listener[]} 待ち受けるプロセス
+ * @returns {{ ok: true, listeners: Listener[] } | { ok: false, reason: string }} 待ち受けるプロセスか、失敗の理由
  */
 export function findListeners(ports, deps = { platform: process.platform, spawnSync, ownPid: process.pid }) {
-  const options = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
-  const result =
-    deps.platform === 'win32'
-      ? deps.spawnSync(
-          'powershell',
-          [
-            '-NoProfile',
-            '-NonInteractive',
-            '-Command',
-            // 二重引用符は引数の受け渡しで崩れるので、単一引用符の連結で 1 行を作る
-            `Get-NetTCPConnection -LocalPort ${ports.join(',')} -ErrorAction SilentlyContinue | ForEach-Object { [string]$_.LocalPort + ' ' + $_.OwningProcess + ' ' + $_.State }`,
-          ],
-          options,
-        )
-      : deps.spawnSync('lsof', ['-nP', '-sTCP:LISTEN', '-Fpn', ...ports.map((port) => `-iTCP:${port}`)], options)
-  if (typeof result.stdout !== 'string') return []
-  return parseListeners(result.stdout, { platform: deps.platform, ports, ownPid: deps.ownPid })
+  const options = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] }
+  const windows = deps.platform === 'win32'
+  const result = windows
+    ? deps.spawnSync(
+        'powershell',
+        [
+          '-NoProfile',
+          '-NonInteractive',
+          '-Command',
+          // 二重引用符は引数の受け渡しで崩れるので、単一引用符の連結で 1 行を作る
+          `try { Get-NetTCPConnection -LocalPort ${ports.join(',')} -ErrorAction Stop | ForEach-Object { [string]$_.LocalPort + ' ' + $_.OwningProcess + ' ' + $_.State } } ` +
+            `catch { if ($_.CategoryInfo.Category -eq 'ObjectNotFound') { exit 0 }; [Console]::Error.WriteLine($_.Exception.Message); exit 1 }`,
+        ],
+        options,
+      )
+    : deps.spawnSync('lsof', ['-nP', '-sTCP:LISTEN', '-Fpn', ...ports.map((port) => `-iTCP:${port}`)], options)
+  if (result.error) return { ok: false, reason: result.error.message }
+  const succeeded = result.status === 0 || (!windows && result.status === 1)
+  if (!succeeded || typeof result.stdout !== 'string') {
+    const detail = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+    return { ok: false, reason: `${windows ? 'Get-NetTCPConnection' : 'lsof'} が終了コード ${result.status} で終わった${detail ? `：${detail}` : ''}` }
+  }
+  return { ok: true, listeners: parseListeners(result.stdout, { platform: deps.platform, ports, ownPid: deps.ownPid }) }
 }
 
 /**
@@ -180,6 +188,22 @@ export function stopFailedMessage(listeners, platform) {
     `スロットのポートで待ち受けるプロセスが残ったので、解かない。待ち受けるプロセス：${describeListeners(listeners)}\n` +
     `${manualStopCommand(listeners, platform)} で止めてから、もう一度 node scripts/dev/slot.mjs release を流す`
   )
+}
+
+/**
+ * ポートの問い合わせが失敗したときに示す文。プロセスの ID が分からないので、ポートで探して止める指令を示す。
+ *
+ * @param {number[]} ports 問い合わせたポート
+ * @param {string} reason 失敗の理由
+ * @param {NodeJS.Platform} platform OS
+ * @returns {string} 示す文
+ */
+export function queryFailedMessage(ports, reason, platform) {
+  const manual =
+    platform === 'win32'
+      ? `PowerShell で Stop-Process -Id (Get-NetTCPConnection -LocalPort ${ports.join(',')} -State Listen).OwningProcess -Force`
+      : `kill $(lsof -t -sTCP:LISTEN ${ports.map((port) => `-iTCP:${port}`).join(' ')})`
+  return `ポート ${ports.join('、')} で待ち受けるプロセスを問い合わせられなかった（${reason}）。\n待ち受けるプロセスがあれば、${manual} で止める`
 }
 
 /**

@@ -95,6 +95,7 @@ region/
 |----------|------------------|------|
 | 都道府県、市区町村、郵便番号 | [V202610200900__region_create_master.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610200900__region_create_master.sql) | ※3 |
 | 最初のデータ | [V202610200910__region_seed_master.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610200910__region_seed_master.sql) | 都道府県・市区町村の全件と、郵便番号の一部（「最初のデータ」の節）。手動で修正しない |
+| 注文のお届け先のコードの移行 | [V202610200920__ordering_add_shipping_area_codes.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610200920__ordering_add_shipping_area_codes.sql) | 注文モジュールのマイグレーション。既存の注文の都道府県名と住所から、都道府県と市区町村のコードを引くために、この移行だけ地域の表を読む |
 
 - schema は `region`。
 - 主キーは、都道府県と市区町村がコード、郵便番号が郵便番号と並び順の組。

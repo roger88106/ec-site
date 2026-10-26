@@ -21,13 +21,16 @@
 // ============================================================================
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { extractTestNames, findTestFiles, scanTsTests } from './lib/test-files.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
-import { findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
+import { describeEmptyReason, describeStaleExclusion, exclusionsPath, findEmptyReasons, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { listSpecDirs } from './lib/spec-dirs.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { describeUnreadableLine } from './lib/unreadable-line.mjs'
+
+/** 除外の一覧のファイルの名前 */
+const EXCLUSIONS_NAME = 'ac-exclusions.json'
 
 /** 範囲を表す記号（全角の波ダッシュ、全角のチルダ、半角のチルダ） */
 const RANGE = '[〜～~]'
@@ -177,12 +180,12 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
 
   const excluded = new Set()
   const invalidExclusions = []
-  const emptyReasons = new Set(findEmptyReasons(exclusions))
+  const emptyReasons = findEmptyReasons(exclusions)
   for (const key of Object.keys(exclusions)) {
     const match = key.startsWith('AC-') ? AC_NUMBER_ONLY.exec(key.slice(3)) : null
-    if (!match || !specAcs.has(toAcKey(match[1])) || emptyReasons.has(key)) {
+    if (!match || !specAcs.has(toAcKey(match[1]))) {
       invalidExclusions.push(key)
-    } else {
+    } else if (!emptyReasons.includes(key)) {
       excluded.add(toAcKey(match[1]))
     }
   }
@@ -198,8 +201,9 @@ export function check({ specAcs, tests, exclusions, deprecated = new Set(), stri
     unknown.length === 0 &&
     deprecatedRefs.length === 0 &&
     staleExclusions.length === 0 &&
-    invalidExclusions.length === 0
-  return { ok, missing, ranges, ambiguous, spaced, unknown, deprecatedRefs, staleExclusions, invalidExclusions }
+    invalidExclusions.length === 0 &&
+    emptyReasons.length === 0
+  return { ok, missing, ranges, ambiguous, spaced, unknown, deprecatedRefs, staleExclusions, invalidExclusions, emptyReasons }
 }
 
 /** AC 一覧の状態 */
@@ -349,11 +353,14 @@ function report(result, root, strict) {
   for (const test of result.deprecatedRefs) {
     console.log(`廃止した AC-${test.ac} を参照するテスト（AC 番号を消すか、AC 一覧の状態を直す）：${where(test)}`)
   }
-  if (result.staleExclusions.length > 0) {
-    console.log(`テストがあるのに除外されている AC：${result.staleExclusions.map((ac) => `AC-${ac}`).join('、')}`)
+  for (const ac of result.staleExclusions) {
+    console.log(describeStaleExclusion(EXCLUSIONS_NAME, `AC-${ac}`))
+  }
+  for (const key of result.emptyReasons) {
+    console.log(describeEmptyReason(EXCLUSIONS_NAME, key))
   }
   if (result.invalidExclusions.length > 0) {
-    console.log(`除外の一覧の誤り（spec にない AC、理由がない）：${result.invalidExclusions.join('、')}`)
+    console.log(`${EXCLUSIONS_NAME}：spec にない AC の除外：${result.invalidExclusions.join('、')}`)
   }
 }
 
@@ -363,16 +370,19 @@ function report(result, root, strict) {
  * @param {string} source Vitest・Playwright のテストのソース
  * @param {string} rel 表示するファイルのパス
  * @param {{ index: number, reason: string }[]} unreadable scanTsTests が返した、読めない呼び出し
- * @returns {string[]} `ファイル:行：理由`
+ * @returns {string[]} `ファイル:行 内容（理由）`
  */
 export function describeUnreadableTests(source, rel, unreadable) {
   const lineOf = createLineLocator(source)
-  return unreadable.map(({ index, reason }) => `${rel}:${lineOf(index)}：${reason}`)
+  const lines = source.split('\n')
+  return unreadable.map(({ index, reason }) => {
+    const line = lineOf(index)
+    return describeUnreadableLine({ file: rel, line, text: lines[line - 1], reason })
+  })
 }
 
 /** spec とテストを読んで照合する */
 function main() {
-  const here = path.dirname(fileURLToPath(import.meta.url))
   // 他の検査と同じく、リポジトリのルートで実行する（今のディレクトリを、読む対象のルートにする）
   const root = process.cwd()
   const gitFiles = listGitFiles([], root)
@@ -400,7 +410,7 @@ function main() {
     }
     return extractTestNames(source, kind).map((name) => ({ file, name }))
   })
-  const exclusions = readExclusions(path.join(here, 'ac-exclusions.json'))
+  const exclusions = readExclusions(exclusionsPath(EXCLUSIONS_NAME))
 
   // AC 一覧：手で書く列（状態など）を読み、テストの列を再作成して比べる
   const listFile = path.join(root, AC_LIST)
@@ -440,7 +450,7 @@ function main() {
   const result = check({ specAcs, tests, exclusions, deprecated, strict })
   report(result, root, strict)
   for (const problem of listProblems) console.log(problem)
-  for (const problem of unreadable) console.log(`読めないテストの呼び出し（テスト名を文字列かテンプレートで書く）：${problem}`)
+  for (const problem of unreadable) console.log(problem)
   const ok = result.ok && listProblems.length === 0 && unreadable.length === 0
   console.log(
     `${ok ? 'OK' : 'NG'}：AC ${specAcs.size} 件（廃止 ${deprecated.size} 件）、テスト名 ${tests.length} 件、除外 ${Object.keys(exclusions).length} 件`,

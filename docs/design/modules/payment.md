@@ -105,13 +105,13 @@ stateDiagram-v2
 | 項目 | 内容 |
 |------|------|
 | port | 支払画面を作る、支払画面を閉じる、与信を取り消す、売上を確定する、返金する。売上確定の結果は、成功・与信期限切れ・接続できない、の 3 つに変換する。決済サービスの型とエラーは `infrastructure` の外に出さない |
-| 実装 | mock と Stripe。mock フラグ（`ecsite.payment.mock.enabled`）が有効なら mock、そうでなければ Stripe を使う。フラグが有効でなく、Stripe の鍵が不足していれば、起動に失敗する ※5 |
-| 支払画面から戻る先 | 店舗の注文の画面。URL は設定の雛形に注文 ID を入れて作る。要求から受け取らない ※3 |
+| 実装 | mock と Stripe。mock フラグ（`ecsite.payment.mock.enabled`）が有効なら mock、そうでなければ Stripe を使う。フラグが有効でなく、Stripe の鍵が不足していれば、起動に失敗する ※3 |
+| 支払画面から戻る先 | 店舗の注文の画面。URL は設定の雛形に注文 ID を入れて作る。要求から受け取らない ※4 |
 | 通知 | 決済サービスからの通知（与信の成功、支払画面の期限切れ）を受けて、与信の成功と支払の期限切れを支払に反映する。結果は通知だけで受け取り、支払画面から戻ったときに決済サービスに問い合わせない |
 
-※3：戻る先を要求から受け取ると、任意のサイトへ移す踏み台（オープンリダイレクト）にされるため。
+※3：設定を忘れたまま、mock で注文を受けないため。mock フラグは、ローカル・E2E・統合テストの設定ファイルだけに書く。
 
-※5：設定を忘れたまま、mock で注文を受けないため。mock フラグは、ローカル・E2E・統合テストの設定ファイルだけに書く。
+※4：戻る先を要求から受け取ると、任意のサイトへ移す踏み台（オープンリダイレクト）にされるため。
 
 ### mock
 
@@ -152,14 +152,14 @@ stateDiagram-v2
 |------|----------|------------|
 | 売上確定 | PaymentIntent の capture（総額。冪等キー `capture-<注文 ID>`） | 成功なら PaymentIntent は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
 | 売上確定済みの売上確定 | 同上（冪等キーが違う） | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`succeeded` なら成功とする |
-| 与信が切れた PaymentIntent の売上確定 | 同上 | 与信が切れると Stripe が PaymentIntent を取り消す（`canceled`）。400 `payment_intent_unexpected_state` を受けたら PaymentIntent を読み、`canceled` なら与信期限切れとする ※4 |
+| 与信が切れた PaymentIntent の売上確定 | 同上 | 与信が切れると Stripe が PaymentIntent を取り消す（`canceled`）。400 `payment_intent_unexpected_state` を受けたら PaymentIntent を読み、`canceled` なら与信期限切れとする ※5 |
 | 返金 | Refund（PaymentIntent の総額。冪等キー `refund-<注文 ID>`） | 成功なら Refund は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
 | 返金済みの返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
 
 - Stripe に接続できない、Stripe の 5xx、回数の制限は、売上確定では「接続できない」の結果にする（与信済みのまま残り、再試行できる）。返金では外部サービスのエラーにし、再発行で再試行する。
 - 上の他の拒否は、システムのエラーにする。
 
-※4：与信は 7 日待たないと切れないので、sandbox では与信を取り消した PaymentIntent で、同じ応答（400 `payment_intent_unexpected_state`、状態 `canceled`）になることを確認した。
+※5：与信は 7 日待たないと切れないので、sandbox では与信を取り消した PaymentIntent で、同じ応答（400 `payment_intent_unexpected_state`、状態 `canceled`）になることを確認した。
 
 ## 構成
 
@@ -188,7 +188,7 @@ payment/
 
 ## データモデル
 
-[V202610140910__payment_create_payment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610140910__payment_create_payment.sql)、[V202610150900__payment_add_authorized_at.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610150900__payment_add_authorized_at.sql)、[V202610201200__payment_add_awaiting_authorization_since.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201200__payment_add_awaiting_authorization_since.sql)
+[V202610140910__payment_create_payment.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610140910__payment_create_payment.sql)、[V202610150900__payment_add_authorized_at.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610150900__payment_add_authorized_at.sql)、[V202610201200__payment_add_awaiting_authorization_since.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201200__payment_add_awaiting_authorization_since.sql)、[V202610201000__common_add_enum_column_checks.sql](../../../backend/ecsite/src/main/resources/db/migration/V202610201000__common_add_enum_column_checks.sql)
 
 - schema は `payment`。
 - 注文 ID は他のモジュールの ID なので、外部キーは張らない。注文 ID に一意制約を付ける。

@@ -2,7 +2,8 @@
 // AC の照合（ac-check）と、機能紹介の数え方（scripts/dev/showcase-counts）が使う
 import path from 'node:path'
 import { closingParen } from './closing-paren.mjs'
-import { regexEnd, startsRegex, stripJavaComments } from './strip-comments.mjs'
+import { scanCode, templateEnd } from './scan-code.mjs'
+import { stripJavaComments } from './strip-comments.mjs'
 
 /**
  * テストのファイルの種類を返す。Java は src/test・src/integrationTest の下の .java、
@@ -66,64 +67,6 @@ const TS_NAME = /(['"`])((?:(?!\1)[^\\]|\\.)*)\1/y
 
 /** 実行されないテストのまとまりの呼び出し。末尾の ( が、まとまりの範囲の始まり */
 const SKIPPED_GROUP = /(?<![.\w$])(?:(?:test\.)?describe\.(?:skip|fixme)|xdescribe)\(/g
-
-/**
- * テンプレートリテラルの終わりの次の位置を返す。`${...}` の中の式は、コードとして読む（中の ` で終わらない）。
- *
- * @param {string} source ソース
- * @param {number} start 始まりの ` の位置
- * @param {Uint8Array} [code] 与えると、`${...}` の中のコードの位置に 1 を書く
- * @returns {number} 終わりの次の位置。閉じなければソースの終わり
- */
-function templateEnd(source, start, code) {
-  let i = start + 1
-  while (i < source.length) {
-    if (source[i] === '\\') i += 2
-    else if (source[i] === '`') return i + 1
-    else if (source[i] === '$' && source[i + 1] === '{') i = codeEnd(source, i + 2, true, code)
-    else i += 1
-  }
-  return source.length
-}
-
-/**
- * コードを読み進め、コードの位置を code に記録する。コメント、文字列、正規表現のリテラルは記録しない。
- *
- * @param {string} source ソース
- * @param {number} start 読み始める位置
- * @param {boolean} nested true なら、対応する } で止まる（テンプレートの `${` の中）
- * @param {Uint8Array} [code] コードの位置に 1 を書く
- * @returns {number} 止まった位置の次。nested でなければソースの終わり
- */
-function codeEnd(source, start, nested, code) {
-  let depth = 0
-  let i = start
-  while (i < source.length) {
-    const ch = source[i]
-    if (ch === '/' && source[i + 1] === '/') {
-      const end = source.indexOf('\n', i)
-      i = end === -1 ? source.length : end
-    } else if (ch === '/' && source[i + 1] === '*') {
-      const end = source.indexOf('*/', i + 2)
-      i = end === -1 ? source.length : end + 2
-    } else if (ch === '/' && source[i + 1] !== '>' && startsRegex(source.slice(Math.max(start, i - 200), i))) {
-      i = regexEnd(source, i)
-    } else if (ch === "'" || ch === '"') {
-      i += 1
-      while (i < source.length && source[i] !== ch && source[i] !== '\n') i += source[i] === '\\' ? 2 : 1
-      i += 1
-    } else if (ch === '`') {
-      i = templateEnd(source, i, code)
-    } else {
-      if (nested && ch === '}' && depth === 0) return i + 1
-      if (ch === '{') depth += 1
-      else if (ch === '}') depth -= 1
-      if (code) code[i] = 1
-      i += 1
-    }
-  }
-  return source.length
-}
 
 /**
  * 1 つの呼び出しを読む。
@@ -201,7 +144,9 @@ function readTsCall(source, start, nameLength) {
  */
 export function scanTsTests(source) {
   const code = new Uint8Array(source.length)
-  codeEnd(source, 0, false, code)
+  scanCode(source, {}, (type, from, to) => {
+    if (type === 'code') code.fill(1, from, to)
+  })
   // コメントと文字列の中の describe.skip( は、まとまりの範囲にしない（後ろのテストを skipped にしない）
   const skippedRanges = [...source.matchAll(SKIPPED_GROUP)]
     .filter((match) => code[match.index])

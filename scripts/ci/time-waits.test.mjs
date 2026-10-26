@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findTimeWaits, isTestFile, scanTestFiles } from './time-waits.mjs'
+import { applyExclusions, exclusionKey, findTimeWaits, isTestFile, scanTestFiles } from './time-waits.mjs'
 
 describe('時間で待つテストの検査', () => {
   test('Thread.sleep、TimeUnit の sleep、waitForTimeout を見つける', () => {
@@ -68,5 +68,49 @@ describe('時間で待つテストの検査', () => {
     const hits = scanTestFiles(Object.keys(files), (file) => files[file])
     assert.deepEqual([...hits.keys()], ['e2e/scripts/run.ts'])
     assert.equal(hits.get('e2e/scripts/run.ts')[0].line, 1)
+  })
+
+  test('見つけた行に、前後の空白を除いた行の文字を添える', () => {
+    const hits = findTimeWaits('  sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),\n')
+    assert.equal(hits[0].text, 'sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),')
+  })
+})
+
+describe('除外は行の文字で当てる', () => {
+  const SLEEP = 'sleep: (ms) => new Promise((resolve) => setTimeout(resolve, ms)),'
+  const file = 'e2e/scripts/run.ts'
+  const key = `${file}:${SLEEP}`
+  const hitsOf = (text) => new Map([[file, findTimeWaits(text)]])
+
+  test('キーは <ファイル>:<行の文字>', () => {
+    assert.equal(exclusionKey(file, `  ${SLEEP}  `), key)
+  })
+
+  test('除外した行は通り、使った除外は使われたものに数える', () => {
+    const { found, used } = applyExclusions(hitsOf(`    ${SLEEP}`), { [key]: '理由' })
+    assert.deepEqual(found, [])
+    assert.deepEqual([...used], [key])
+  })
+
+  test('同じファイルに後から書いた別の待ちは失敗にする', () => {
+    const text = [`    ${SLEEP}`, '  await new Promise((resolve) => setTimeout(resolve, 500))'].join('\n')
+    const { found } = applyExclusions(hitsOf(text), { [key]: '理由' })
+    assert.deepEqual(found.map((hit) => hit.line), [2])
+  })
+
+  test('除外した行と同じ文字の行を後から足しても、除外は 1 行だけに効く', () => {
+    const { found } = applyExclusions(hitsOf([`    ${SLEEP}`, `    ${SLEEP}`].join('\n')), { [key]: '理由' })
+    assert.deepEqual(found.map((hit) => hit.line), [2])
+  })
+
+  test('当たる行がない除外は使われない（不要の検出に使う）', () => {
+    const { found, used } = applyExclusions(hitsOf('const a = 1'), { [key]: '理由' })
+    assert.deepEqual(found, [])
+    assert.equal(used.size, 0)
+  })
+
+  test('行の位置が動いても除外は当たる', () => {
+    const { found } = applyExclusions(hitsOf(`\n\n\n// 追加\n    ${SLEEP}`), { [key]: '理由' })
+    assert.deepEqual(found, [])
   })
 })

@@ -4,6 +4,7 @@
 // 使い方：node scripts/ci/role-permissions.mjs（リポジトリのルートで。--write で文書の表を書き直す）
 import { readFileSync, writeFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
+import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** 対応表の文書 */
 const DOCUMENT = 'docs/design/role-permissions.md'
@@ -250,7 +251,7 @@ if (isMain(import.meta.url)) {
   const unknownLines = [
     ...admin.unknown.map((entry) => ({ file: ADMIN_API, ...entry })),
     ...store.unknown.map((entry) => ({ file: STORE_API, ...entry })),
-  ].map((entry) => `${entry.file}:${entry.line} ${entry.text.trim()}（知らない書き方。検査の読み方を追加するか、契約を今の書き方にそろえる）`)
+  ].map((entry) => describeUnreadableLine({ ...entry, reason: '知らない書き方。検査の読み方を追加するか、契約を今の書き方にそろえる' }))
   const { markdown, problems } = renderTables({
     admin: admin.operations,
     store: store.operations,

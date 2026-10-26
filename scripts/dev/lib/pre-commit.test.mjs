@@ -6,6 +6,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
 import { CHECKOUT_FAILED, checkShell, resolveIndexFile, runPreCommit } from './pre-commit.mjs'
 
 describe('一時の index のパス', () => {
@@ -107,11 +108,6 @@ describe('実際の hook', () => {
   /** 実際のリポジトリと同じ置き場所に写す、hook とその hook が読む script */
   const hookFiles = ['scripts/dev/hooks/pre-commit', 'scripts/dev/lib/pre-commit.mjs', 'scripts/dev/lib/pre-commit-main.mjs']
 
-  /** Git の環境変数を外した環境（hook の中でテストを実行しても、元のリポジトリを壊さないため） */
-  function cleanEnv() {
-    return Object.fromEntries(Object.entries(process.env).filter(([key]) => !key.startsWith('GIT_')))
-  }
-
   /**
    * hook を実行する bash。Windows の素の PATH では、bash が WSL の bash.exe を指すことがあるので、Git の bash を使う
    * （git が hook を実行するときと同じ bash にする）。
@@ -122,7 +118,7 @@ describe('実際の hook', () => {
    */
   function gitBash() {
     if (process.platform !== 'win32') return spawnSync('bash', ['-c', 'command -v bash'], { encoding: 'utf8' }).stdout.trim() || 'bash'
-    const execPath = spawnSync('git', ['--exec-path'], { env: cleanEnv(), encoding: 'utf8' }).stdout.trim()
+    const execPath = spawnSync('git', ['--exec-path'], { env: withoutGitEnv(), encoding: 'utf8' }).stdout.trim()
     const candidate = path.resolve(execPath, '../../../bin/bash.exe')
     return existsSync(candidate) ? candidate : 'bash'
   }
@@ -137,7 +133,7 @@ describe('実際の hook', () => {
   function runHook(checkAll, { fakeBash = false } = {}) {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
-      const env = cleanEnv()
+      const env = withoutGitEnv()
       if (fakeBash) {
         const bin = path.join(dir, '.fake-bin')
         mkdirSync(bin)

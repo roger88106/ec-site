@@ -1,6 +1,6 @@
 import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
-import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, STORE_URL } from './src/urls'
+import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, portOf, STORE_URL } from './src/urls'
 import { BACKEND_START_TIMEOUT, FRONTEND_START_TIMEOUT, TEST_TIMEOUT } from './src/waits'
 
 /** CI で動いているか（test.only を禁止し、HTML のレポートを残す） */
@@ -48,7 +48,7 @@ export default defineConfig({
       // ビルドしたものを vite preview で配る。/api は E2E のバックエンドに転送する（vite.config.ts の server.proxy）。
       // IdP の接続先はビルドのときに埋め込む
       name: 'admin',
-      command: 'pnpm build && pnpm preview --port 4173 --strictPort',
+      command: `pnpm build && pnpm preview --port ${portOf(ADMIN_URL)} --strictPort`,
       cwd: '../frontend/admin',
       url: ADMIN_URL,
       env: {
@@ -62,7 +62,7 @@ export default defineConfig({
     {
       // API の結果のキャッシュを 1 秒にし、NFR-1 の 60 秒を待たずに一覧への反映を確認する
       name: 'store',
-      command: 'pnpm build && pnpm start --port 3100',
+      command: `pnpm build && pnpm start --port ${portOf(STORE_URL)}`,
       cwd: '../frontend/store',
       url: STORE_URL,
       env: {

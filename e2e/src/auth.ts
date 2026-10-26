@@ -47,9 +47,10 @@ export async function submitIdpLogin(page: Page, account: Account): Promise<void
  * 管理画面を開き、運営者としてログインする（管理画面は、開くと IdP のログインへ移る。AC-132）。
  *
  * @param path ログインの後に開く管理画面のパス
+ * @param adminUrl 管理画面の URL（既定は E2E の管理画面）
  */
-export async function loginAdmin(page: Page, account: Account, path = '/'): Promise<void> {
-  await page.goto(`${ADMIN_URL}${path}`)
+export async function loginAdmin(page: Page, account: Account, path = '/', adminUrl = ADMIN_URL): Promise<void> {
+  await page.goto(`${adminUrl}${path}`)
   await submitIdpLogin(page, account)
   await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
 }
@@ -58,9 +59,10 @@ export async function loginAdmin(page: Page, account: Account, path = '/'): Prom
  * 店舗画面で会員としてログインする。ログインの後は returnTo の画面に戻る（AC-113）。
  *
  * @param returnTo ログインの後に戻る店舗画面のパス
+ * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
  */
-export async function loginStore(page: Page, account: Account, returnTo = '/'): Promise<void> {
-  await page.goto(`${STORE_URL}/login?returnTo=${encodeURIComponent(returnTo)}`)
+export async function loginStore(page: Page, account: Account, returnTo = '/', storeUrl = STORE_URL): Promise<void> {
+  await page.goto(`${storeUrl}/login?returnTo=${encodeURIComponent(returnTo)}`)
   await submitIdpLogin(page, account)
   await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
 }

@@ -3,8 +3,9 @@ import { SHOWCASE_TEST_TIMEOUT } from './src/waits'
 
 /**
  * 機能紹介のページ（showcase/）のスクリーンショットの撮影（spec 008 の plan 第 2 節）。<br />
- * E2E ではない。手元で起動しているローカルの環境（compose、バックエンド :8080 の profile local、店舗画面 :3000、
- * 管理画面 :5173）の画面を、local の seed のデータで撮る。サーバーは起動しない。CI では流さない。
+ * E2E ではない。手元で起動しているローカルの環境（compose、profile local のバックエンド、店舗画面、管理画面。
+ * URL は src/showcase-urls.ts で、E2E のサーバーとはポートが別）の画面を、local の seed のデータで撮る。
+ * サーバーは起動しない。CI では流さない。
  * 使い方：e2e/ で pnpm capture（出力は showcase/img/ に上書きする）
  */
 export default defineConfig({

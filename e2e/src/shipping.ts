@@ -22,15 +22,21 @@ export async function shipOnAdmin(page: Page, trackingNumber: string): Promise<v
 }
 
 /**
- * mock の物流の画面（E2E のバックエンド）で、注文の出荷の配送状態を通知し、一覧に反映されるのを待つ。<br />
+ * mock の物流の画面（既定は E2E のバックエンド）で、注文の出荷の配送状態を通知し、一覧に反映されるのを待つ。<br />
  * mock は画面を出したバックエンドのエンドポイントに通知するので、E2E の設定は必要ない。
  *
  * @param page 使うページ（mock の物流の画面に移る）
  * @param orderId 注文 ID
  * @param status 通知する配送状態
+ * @param backendUrl バックエンドの URL（既定は E2E のバックエンド）
  */
-export async function notifyCarrier(page: Page, orderId: string, status: CarrierNotification): Promise<void> {
-  await page.goto(`${BACKEND_URL}/mock-carrier`)
+export async function notifyCarrier(
+  page: Page,
+  orderId: string,
+  status: CarrierNotification,
+  backendUrl = BACKEND_URL,
+): Promise<void> {
+  await page.goto(`${backendUrl}/mock-carrier`)
   const row = page.getByRole('row').filter({ hasText: orderId })
   await row.getByRole('button', { name: status }).click()
   await expect(row.getByRole('cell', { name: status, exact: true })).toBeVisible()

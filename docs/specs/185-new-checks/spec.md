@@ -196,10 +196,11 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
   - 範囲：`scripts/ci/lib/`、除外の一覧を持つ検査、読めない行を出す検査、`migrations.mjs`、`env-defaults.mjs`、`glossary-ids.mjs`、`related-specs.mjs`、テスト
   - 確認方法：変更の前後で、全ての検査の今のリポジトリの結果が同じであること
   - 結果：`lib/exclusions.mjs` に `exclusionsPath`・`describeExclusionProblems` などを、`lib/unreadable-line.mjs`（`ファイル:行 内容（理由）`）を加え、7 つの除外の検査、compose-ports・local-ports・role-permissions・gradle-plugins・ac-check の読めない行、migrations の 0 件の理由（`emptyListReason`）、env-defaults・glossary-ids・related-specs の一覧（`listGitFiles`）を共通にした。直接の組み立てと `git ls-files -z` の呼び出しが戻らないよう、テストで検査の script を走査する。変更の前後の `check-all.sh` の結果は、時間を除いて同じ。
-- [ ] **T185-01-03** [テスト] コメント・文字列・正規表現を読み飛ばす走査を 1 か所にまとめる（DC-185-6）。
+- [x] **T185-01-03** [テスト] コメント・文字列・正規表現を読み飛ばす走査を 1 か所にまとめる（DC-185-6）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/lib/`（閉じ括弧の探し方、コードの終わりの探し方、コメントの除去）、使う検査、テスト
   - 確認方法：変更の前後で、全ての検査の今のリポジトリの結果が同じであること
+  - 結果：走査を `lib/scan-code.mjs`（`scanCode`、`templateEnd`。`regex`・`templates`・`textBlocks` の選択肢で TypeScript と Java を分ける）の 1 か所にし、`closingParen`、`stripComments`・`stripJavaComments`、テストの関数の読み方（旧 `codeEnd`・`templateEnd`）がこれを使う。変更の前後の `check-all.sh` の結果は、時間を除いて同じで、リポジトリの全ての対象のファイルで旧実装と出力を比べた差は、shebang と、引用符が閉じない `.mjs` の 3 件（検査の対象外）だけ。
 - [ ] **T185-01-04** [テスト] 使わない語の許す語に理由と不要の検出を加え、Dependabot の対象の検査が知らない書き方を失敗にする（DC-185-7、8）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/doc-terms.mjs`、`scripts/ci/doc-terms.json`、`scripts/ci/dependabot-actions.mjs`、テスト、`docs/guides/ci.md`

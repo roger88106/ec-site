@@ -61,6 +61,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
   - `git-files.mjs`：Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧を返す。Git の一覧を読む検査は、対象が 0 件のとき（`exitIfNoFiles`）失敗にする。
   - `screen-sources.mjs`：画面の本番のソース（admin・store・shared の `src` の `.ts`・`.tsx` から、テスト・生成物・ui を除く）の定義。
   - `exclusions.mjs`：除外の一覧（`{キー: 理由}`）を読み、理由のない除外と不要になった除外を見つける。
+  - `scan-code.mjs`：ソースを、コード・コメント・文字列・正規表現のリテラルの区間に分けて読む（`scanCode`）。コメント・文字列・正規表現を読み飛ばす処理はここだけにあり、閉じ括弧の探し方・コメントの除去・テストの関数の読み方が使う。TypeScript と Java の違いは選択肢（`regex`、`templates`、`textBlocks`）で決める。
   - `strip-comments.mjs`：ソースのコメントを空白に置き換える。TypeScript は `stripComments`、Java は `stripJavaComments`（文字列とテキストブロックの中の `//` はコメントにしない）。
   - `closing-paren.mjs`：開き括弧に対応する閉じ括弧の位置を求める（文字列とコメントの中は数えない）。TypeScript は正規表現のリテラルの中も数えない。Java には正規表現のリテラルがないので、呼び出し元が `regex: false` を渡して `/` を割り算と読む。
   - `is-main.mjs`：script が直接実行されたか（import されたのでないか）を判定する。シンボリックリンク経由でも同じファイルなら直接実行とみなす。

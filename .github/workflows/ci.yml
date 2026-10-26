@@ -317,6 +317,12 @@ jobs:
         working-directory: .
         run: node scripts/ci/licenses/check-frontend.mjs
 
+      # 管理画面・店舗画面・共有のパッケージ・E2E のコードの、使われていないファイル・export・依存を knip で検査する（設定は knip.ts）。
+      # 生成物（API の型など）を作ってから流す
+      - name: 使われていないコードの検査（knip）
+        working-directory: .
+        run: pnpm knip
+
       # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確認する
       - name: 共有のパッケージの lint・型チェック・テスト
         working-directory: frontend/shared

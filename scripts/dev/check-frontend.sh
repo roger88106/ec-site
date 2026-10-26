@@ -1,16 +1,16 @@
 #!/usr/bin/env bash
 # ============================================================================
-# フロントの確認（依存の入れ直し、ライセンス、lint、型チェック、テスト、ビルド）を実行し、手順ごとに結果の要約だけを出す
+# フロントの確認（依存の入れ直し、ライセンス、knip、lint、型チェック、テスト、ビルド）を実行し、手順ごとに結果の要約だけを出す
 #
 #   使い方：scripts/dev/check-frontend.sh [shared|store|admin|e2e|all] [手順...]
-#     例：scripts/dev/check-frontend.sh                    # install licenses の後に、共有パッケージで lint typecheck test、
+#     例：scripts/dev/check-frontend.sh                    # install licenses knip の後に、共有パッケージで lint typecheck test、
 #                                                          # 両方のアプリで lint typecheck test build、e2e で lint typecheck
 #         scripts/dev/check-frontend.sh admin test         # 管理画面のテストだけ
 #         scripts/dev/check-frontend.sh store lint typecheck
 #
 # e2e（E2E のコード）は lint と typecheck だけを流し、ほかの手順は飛ばす。E2E のテストは scripts/dev/e2e.sh で流す。
 #
-# install（pnpm install --frozen-lockfile）と licenses（依存のライセンスの検査）は、ルートで 1 回だけ流す。
+# install（pnpm install --frozen-lockfile）、licenses（依存のライセンスの検査）、knip（使われていないファイル・export・依存の検査）は、ルートで 1 回だけ流す。
 # 手元は依存が入った後なので、CI のインストールでだけ失敗すること（allowBuilds の漏れなど）を先に見つけるため。
 #
 # 成功した手順は 1 行だけ出す。失敗した手順は、出力の末尾（TAIL_LINES 行。既定 30）を添える。
@@ -40,7 +40,7 @@ case "$target" in
     ;;
 esac
 steps=("$@")
-[ ${#steps[@]} -eq 0 ] && steps=(install licenses lint typecheck test build)
+[ ${#steps[@]} -eq 0 ] && steps=(install licenses knip lint typecheck test build)
 
 failed=0
 
@@ -74,6 +74,7 @@ for step in "${steps[@]}"; do
   case "$step" in
     install) run_step "install" install bash -c "cd '$ROOT' && pnpm install --frozen-lockfile" ;;
     licenses) run_step "licenses" licenses bash -c "cd '$ROOT' && node scripts/ci/licenses/check-frontend.mjs" ;;
+    knip) run_step "knip" knip bash -c "cd '$ROOT' && pnpm knip" ;;
     *) app_steps+=("$step") ;;
   esac
 done

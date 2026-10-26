@@ -15,6 +15,7 @@
 | 3.1 | サーバーアクションは `withActionResult` で包む | 自動（Biome の plugin `no-catch-in-actions`） |
 | 3.2 | サーバーアクションの結果は `ActionResult` | レビュー |
 | 4 | 整形と lint は Biome | 自動（`pnpm lint`） |
+| 4.1 | 使われていないファイル・export・依存を残さない。定義したファイルの中だけで使うものは export しない | 自動（knip。`pnpm knip`） |
 | 5.1 | 共有パッケージに入れるもの・入れないもの | admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー |
 | 6 | 画面の URL は型で確認する | 自動（型チェック）、クエリ付きの URL の文字列の組み立ては自動（`scripts/ci/frontend-rules.mjs`）、型の付かない他の URL はレビュー |
 | 7.1 | 表示の文言は文言ファイルに置く | 自動（`hardcoded-text.mjs`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー |
@@ -96,6 +97,20 @@ API は `openapi-fetch`（管理画面は `openapi-react-query` の `$api`）で
 Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 120、単一引用符、セミコロンは必要な所だけ。Tailwind のクラスの並びも Biome が揃える。
 
 理由：書き方の不統一をツールで防ぎ、レビューで扱わないため。
+
+### 4.1 使われていないものを残さない
+
+使われていないファイル、export、依存を残さない。定義したファイルの中だけで使うものは export しない。
+
+- knip（設定は `knip.ts`）が `frontend/*` と `e2e` を調べ、次を報告する。ルートで `pnpm knip` を実行する（`scripts/dev/check-frontend.sh` と CI のフロントのジョブも実行する）。生成物（API の型と入力の制約の定数）は、knip の前に `generate:api` で作る。
+  - どこからも使われていないファイル
+  - どこからも import されていない export と型。定義したファイルの中だけで使う export も報告する
+  - `package.json` にあって使われていない依存、`package.json` にない依存の import
+- 対象外にするのは、生成物の export だけ。openapi-typescript の型（`src/api/generated/`、`e2e/src/generated/`）、入力の制約の定数（`src/api/generated/constraints.ts`）、shadcn/ui の生成物（`src/components/ui/`、`frontend/shared/src/ui/`）である。生成物のファイル自体が使われていないことは検査する。
+- テストだけが使う export は、使用箇所として数える。
+- 型の拡張（`i18n/types.ts`）と E2E の準備の script（`e2e/scripts/prepare.ts`）のように、import されずに使われるファイルは、`knip.ts` の `entry` に書く。
+
+理由：使われていないものは読む人を惑わせ、直す手間を増やす。生成物は使い切らないのが正しいので、export の報告だけを外す。
 
 ## 5. 共有パッケージ（`frontend/shared/`）
 

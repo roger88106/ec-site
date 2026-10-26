@@ -21,4 +21,25 @@ describe('キャンセルの申請', () => {
     expect(confirm).toHaveBeenCalledWith('キャンセルを申請します。申請は 1 回だけできます。よろしいですか？')
     expect(requestCancellation).not.toHaveBeenCalled()
   })
+
+  test('AC-193-1 失敗の文は、送る前からある状態の知らせ（status）の領域に入る', async () => {
+    vi.spyOn(window, 'confirm').mockReturnValue(true)
+    vi.mocked(requestCancellation).mockResolvedValueOnce({
+      ok: false,
+      message: 'この注文はキャンセルを申請できません。',
+      errorCode: 'CANCELLATION_NOT_REQUESTABLE',
+    })
+    const { user } = renderInBrowser(<CancellationRequestForm orderId="order-1" />)
+
+    // 送る前も、領域は 1 つあり、文はない
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+
+    await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
+
+    // 失敗の後は、同じ領域に文が入る
+    expect(await screen.findByText('この注文はキャンセルを申請できません。')).toBeInTheDocument()
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('この注文はキャンセルを申請できません。')
+  })
 })

@@ -145,6 +145,21 @@ describe('お届け先の入力と注文', () => {
     expect(within(message).getByRole('link', { name: 'カートを見る' })).toHaveAttribute('href', '/cart')
   })
 
+  test('AC-193-1 失敗の文は、送る前からある状態の知らせ（status）の領域に入る。領域は 1 つだけ', () => {
+    // 送る前も、領域は 1 つあり、文はない
+    const before = renderStatic(form(null))
+    expect(before.getAllByRole('status')).toHaveLength(1)
+    expect(before.getByRole('status')).toBeEmptyDOMElement()
+
+    const after = renderStatic(
+      form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }),
+    )
+
+    // 失敗の後は、同じ領域に文が入る
+    expect(after.getAllByRole('status')).toHaveLength(1)
+    expect(after.getByRole('status')).toHaveTextContent('在庫が足りない商品があります。')
+  })
+
   test('結果を受ける前の OrderForm は、表示と同じ初期表示を出す', () => {
     const view = renderStatic(
       <OrderForm checkoutId="checkout-1" email="member@example.com" expectedTotal={3200} prefectures={PREFECTURES} />,

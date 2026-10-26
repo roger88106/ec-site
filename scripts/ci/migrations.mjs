@@ -5,10 +5,12 @@
 // 基準は、HEAD と develop・main（origin/ の方を先に見る）のそれぞれとの分岐点の tree。基準にあるものが今の index にない（削除、改名）か、中身が違えば失敗にする。
 // まだ develop にも main にも入っていない自分のブランチで加えたもの（分岐の後に加えたもの）は、番号の振り直しも中身の変更も通す。どの DB にも適用されておらず、checksum が残っていないため。
 // マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
-// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除と改名、列の型の変更、既存の列を NOT NULL にする、既定値のない NOT NULL の列の追加。バックエンドの書き方 第 8.1 節）を含むと失敗にする。
+// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除と改名・スキーマの移動、列の型の変更、既存の列を NOT NULL にする（主キーの追加を含む）、既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む）。バックエンドの書き方 第 8.1 節）を含むと失敗にする。
+// 対象外は、今ある 38 のマイグレーションのファイル名の一覧（LEGACY_MIGRATIONS）に入っているものだけ。それ以外は番号が小さくても全て対象にする。一覧にあって実在しない名前は失敗にする。
 // 例外は migrations-exclusions.json に理由を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値）。同じファイルの同じ種類の変更全てに効く。
 // 理由のない除外と、当たる変更がなくなった除外も失敗にする。SQL の字面で探すので、読み落としより誤検出の側に倒す（誤検出は除外で理由を残す）。
-// 閉じていない文字列・コメントは読めないので、失敗にする（除外できない）。
+// ドル引用（DO ブロックなど）の中は、文字列とコメントも含め全て字面で探す。
+// 閉じていない文字列・コメント・ドル引用は読めないので、失敗にする（除外できない）。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
@@ -71,34 +73,60 @@ export function findRemovedMigrations(baseFiles, currentFiles) {
 }
 
 /**
- * 互換性の検査の対象にしない、今あるマイグレーションの最大のバージョン。これ以下は対象外にする。
+ * 互換性の検査の対象にしない、今あるマイグレーションのファイル名。
  * 今あるマイグレーションは本番に適用しておらず（本番の環境がまだない）、互換性を問わない。
- * 番号の上限を検査の中の定数にするのは、ファイルごとに印や除外の一覧を持つより単純で、新しいマイグレーションは
- * 必ずこれより大きいバージョンになるため（Flyway は最大のバージョンの後ろに加える）。
- * 本番に適用した後は、この定数を上げずに、除外の一覧に理由を書く。
+ * 番号の範囲でなくファイル名の一覧にするのは、番号が小さい新しいファイル（日付だけの番号など）を対象外にしないため。
+ * この一覧にないものは、番号に関わらず全て対象にする。一覧に加えない。本番に適用した後も、この一覧を増やさずに、除外の一覧に理由を書く。
  */
-export const LEGACY_MAX_VERSION = 202610211600n
+export const LEGACY_MIGRATIONS = [
+  'V202610090000__common_create_schemas.sql',
+  'V202610090001__common_create_event_publication.sql',
+  'V202610091000__tax_create_tax_category.sql',
+  'V202610091200__catalog_create_category.sql',
+  'V202610091400__catalog_create_product.sql',
+  'V202610091600__inventory_create_stock_item.sql',
+  'V202610101000__catalog_create_product_image.sql',
+  'V202610101100__media_create_asset.sql',
+  'V202610101200__catalog_move_product_image_files_to_media.sql',
+  'V202610101300__common_comment_logical_names.sql',
+  'V202610111000__inventory_create_stock_reservation.sql',
+  'V202610111100__cart_create_cart.sql',
+  'V202610111200__ordering_create_order.sql',
+  'V202610121000__member_create_member.sql',
+  'V202610121100__cart_add_member_id.sql',
+  'V202610121200__ordering_add_member_id.sql',
+  'V202610121400__inventory_add_operator_name.sql',
+  'V202610121410__ordering_add_operator.sql',
+  'V202610140900__common_create_shedlock.sql',
+  'V202610140910__payment_create_payment.sql',
+  'V202610140920__ordering_add_pending_payment.sql',
+  'V202610150900__payment_add_authorized_at.sql',
+  'V202610150910__shipping_create_shipment.sql',
+  'V202610151000__ordering_add_shipped.sql',
+  'V202610151010__ordering_add_cancellation_restocked.sql',
+  'V202610151020__notification_create_sent_mail.sql',
+  'V202610151100__ordering_add_buyer_profile.sql',
+  'V202610151200__reporting_create_report.sql',
+  'V202610200900__region_create_master.sql',
+  'V202610200910__region_seed_master.sql',
+  'V202610200920__ordering_add_shipping_area_codes.sql',
+  'V202610201000__common_add_enum_column_checks.sql',
+  'V202610201100__inventory_add_stock_reservation_expires_at_index.sql',
+  'V202610201110__ordering_add_checkout_expires_at_index.sql',
+  'V202610201120__cart_add_cart_updated_at_index.sql',
+  'V202610201130__common_comment_event_publication_stopped.sql',
+  'V202610201200__payment_add_awaiting_authorization_since.sql',
+  'V202610211600__catalog_add_product_price_upper_limit.sql',
+]
 
 /**
- * マイグレーションのファイル名から、バージョンの数を返す。
- *
- * @param {string} file リポジトリのルートからのパス、またはファイル名（V<数>__<名前>.sql）
- * @returns {bigint | null} バージョン。数でなければ null
- */
-export function migrationVersion(file) {
-  const match = /(?:^|\/)V(\d+)__[^/]*\.sql$/.exec(file)
-  return match ? BigInt(match[1]) : null
-}
-
-/**
- * 互換性の検査の対象（今あるマイグレーションより新しいもの）かを返す。
+ * 互換性の検査の対象（今あるマイグレーションの一覧にないもの）かを返す。
  *
  * @param {string} file リポジトリのルートからのパス、またはファイル名
- * @returns {boolean} バージョンが LEGACY_MAX_VERSION より大きければ true。バージョンが数でないもの（V1_1__ など）は、見落とさないよう true
+ * @returns {boolean} LEGACY_MIGRATIONS にないファイルなら true
  */
 export function isCheckedForCompatibility(file) {
-  const version = migrationVersion(file)
-  return version === null || version > LEGACY_MAX_VERSION
+  return !LEGACY_MIGRATIONS.includes(file.split('/').at(-1))
 }
 
 /** 互換性のない変更の種類。除外のキーの後ろに使う */
@@ -115,7 +143,8 @@ export const INCOMPATIBLE_KINDS = {
 /**
  * SQL のコメントと文字列の中身を、同じ長さの空白（改行は残す）にする。位置と行番号は変わらない。<br />
  * 行コメント（--）、入れ子にできるブロックコメント、文字列（'' の重ね書き、E'...' の \ のエスケープ）、引用符付きの識別子（中は _ にする）を読む。
- * ドル引用（$$...$$）の中は、DO ブロックなどで実際に実行される文を書くので、コードとして読む。
+ * ドル引用（$$...$$、$タグ$...$タグ$）の中は、DO ブロックなどで実際に実行される文を書くので、何も空白にせず、全て字面のままコードとして残す。
+ * 中の ' と " を文字列・識別子の始まりとして読まず、-- と /* も読まない（動的な SQL の文字列の中も探すので、誤検出の側に倒れる）。閉じていないドル引用は読めないものとして返す。
  *
  * @param {string} sql マイグレーションの中身
  * @returns {{ code: string, unreadable: { index: number, reason: string }[] }} コメントと文字列を除いた SQL と、閉じていないもの（位置と理由）
@@ -150,6 +179,16 @@ export function blankSqlNonCode(sql) {
       if (depth > 0) unreadable.push({ index: i, reason: '閉じていないブロックコメント' })
       blank(i, j)
       i = j
+    } else if (sql[i] === '$' && !/[\w$]/.test(sql[i - 1] ?? '') && /^\$(?:[A-Za-z_\u0080-￿][\w\u0080-￿]*)?\$/.test(sql.slice(i, i + 200))) {
+      // ドル引用は、中の ' " -- /* を読まずに、字面のままコードとして残す（EXECUTE の動的な SQL も探せる。誤検出の側に倒す）
+      const tag = /^\$[^$]*\$/.exec(sql.slice(i, i + 200))[0]
+      const close = sql.indexOf(tag, i + tag.length)
+      if (close === -1) {
+        unreadable.push({ index: i, reason: '閉じていないドル引用' })
+        i = sql.length
+      } else {
+        i = close + tag.length
+      }
     } else if (sql[i] === "'" || sql[i] === '"') {
       const quote = sql[i]
       const escapes = quote === "'" && /[eE]/.test(sql[i - 1] ?? '') && !/[\w$]/.test(sql[i - 2] ?? '')
@@ -209,12 +248,17 @@ function splitActions(body) {
  */
 function classifyAction(action) {
   if (/^DROP\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.dropColumn
-  if (/^RENAME\s+TO\b/.test(action)) return INCOMPATIBLE_KINDS.renameTable
+  if (/^RENAME\s+TO\b/.test(action) || /^SET\s+SCHEMA\b/.test(action)) return INCOMPATIBLE_KINDS.renameTable
   if (/^RENAME\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.renameColumn
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+(?:SET\s+DATA\s+)?TYPE\b/.test(action)) return INCOMPATIBLE_KINDS.changeType
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+NOT\s+NULL\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
+  // 主キーの制約の追加は、既存の列に SET NOT NULL を行う
+  if (/^ADD\s+(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
   const isAddColumn = /^ADD\s+/.test(action) && !/^ADD\s+(?:CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|EXCLUDE|LIKE)\b/.test(action)
-  if (isAddColumn && /\bNOT\s+NULL\b/.test(action) && !/\bDEFAULT\b/.test(action)) return INCOMPATIBLE_KINDS.addNotNullWithoutDefault
+  if (!isAddColumn) return null
+  // DEFAULT NULL は既定値なし。IDENTITY は既定値がある。主キーの列は NOT NULL を含む
+  const hasDefault = /\bDEFAULT\b/.test(action.replace(/\bDEFAULT\s+NULL\b/g, '')) || /\bAS\s+IDENTITY\b/.test(action)
+  if (/\b(?:NOT\s+NULL|PRIMARY\s+KEY)\b/.test(action) && !hasDefault) return INCOMPATIBLE_KINDS.addNotNullWithoutDefault
   return null
 }
 
@@ -271,12 +315,14 @@ export function exclusionKey(file, kind) {
  * @param {string[]} files マイグレーション（互換性の検査の対象かは、ここで見る）
  * @param {(file: string) => string} read 中身を読む関数
  * @param {Record<string, unknown>} exclusions 除外の一覧
- * @returns {{ found: { file: string, line: number, kind: string, text: string }[], unreadable: { file: string, line: number, text: string, reason: string }[], used: Set<string> }} 除外に当たらない変更、読めなかった所、当たった除外のキー
+ * @returns {{ found: { file: string, line: number, kind: string, text: string }[], unreadable: { file: string, line: number, text: string, reason: string }[], used: Set<string>, missingLegacy: string[] }} 除外に当たらない変更、読めなかった所、当たった除外のキー、今あるマイグレーションの一覧にあって実在しない名前（一覧の誤り）
  */
 export function scanMigrations(files, read, exclusions) {
   const found = []
   const unreadable = []
   const used = new Set()
+  const names = new Set(files.map((file) => file.split('/').at(-1)))
+  const missingLegacy = LEGACY_MIGRATIONS.filter((name) => !names.has(name))
   for (const file of files.filter((name) => isCheckedForCompatibility(name))) {
     const result = findIncompatibleStatements(read(file))
     unreadable.push(...result.unreadable.map((item) => ({ file, ...item })))
@@ -286,7 +332,7 @@ export function scanMigrations(files, read, exclusions) {
       else found.push({ file, ...hit })
     }
   }
-  return { found, unreadable, used }
+  return { found, unreadable, used, missingLegacy }
 }
 
 /** git を実行し、失敗したら null を返す */
@@ -384,11 +430,14 @@ if (isMain(import.meta.url)) {
     console.log(`追加した後に変わった（元に戻し、変更は新しいマイグレーションで行う）：${file}`)
   }
   for (const problem of exclusionProblems) console.log(problem)
+  for (const name of scan.missingLegacy) {
+    console.log(`互換性の検査の対象外の一覧（LEGACY_MIGRATIONS）にあるマイグレーションが実在しない（一覧の誤り）：${name}`)
+  }
   for (const item of scan.unreadable) console.log(describeUnreadableLine(item))
   for (const hit of scan.found) {
     console.log(`${hit.file}:${hit.line} ${hit.text}（${hit.kind}。前のリリースのアプリが動き続けられない。3 段に分ける。段 3 の削除などは migrations-exclusions.json に理由を書く）`)
   }
-  const problems = scan.found.length + scan.unreadable.length + exclusionProblems.length
-  console.log(`変わったマイグレーション：${changed.size}、削除か改名：${removed.size}、互換性のない変更：${scan.found.length}、解釈できない行：${scan.unreadable.length}、除外の誤り：${exclusionProblems.length}（${files.length} 件中）`)
+  const problems = scan.found.length + scan.unreadable.length + exclusionProblems.length + scan.missingLegacy.length
+  console.log(`変わったマイグレーション：${changed.size}、削除か改名：${removed.size}、互換性のない変更：${scan.found.length}、解釈できない行：${scan.unreadable.length}、除外の誤り：${exclusionProblems.length}、対象外の一覧の誤り：${scan.missingLegacy.length}（${files.length} 件中）`)
   process.exit(changed.size || removed.size || problems ? 1 : 0)
 }

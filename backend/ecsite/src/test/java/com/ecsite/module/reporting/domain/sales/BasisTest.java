@@ -27,6 +27,6 @@ class BasisTest {
     })
     @DisplayName("AC-278 数える注文の状態を、注文の状態の列挙で決める")
     void countsByStatus(Basis basis, ReportOrderStatus status, boolean counted) {
-        assertThat(basis.counts(status)).isEqualTo(counted);
+        assertThat(basis.countedStatuses().contains(status)).isEqualTo(counted);
     }
 }

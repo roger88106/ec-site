@@ -244,9 +244,9 @@ class OrderCancellationTest {
             var cancelled = acceptedOrder();
             cancelled.cancelByOperator("在庫の不備", true, false, OPERATOR, LATER);
 
-            assertThat(acceptedOrder().isCancelled()).isFalse();
-            assertThat(requestedOrder().isCancelled()).isFalse();
-            assertThat(cancelled.isCancelled()).isTrue();
+            assertThat(acceptedOrder().status()).isNotEqualTo(OrderStatus.CANCELLED);
+            assertThat(requestedOrder().status()).isNotEqualTo(OrderStatus.CANCELLED);
+            assertThat(cancelled.status()).isEqualTo(OrderStatus.CANCELLED);
         }
     }
 

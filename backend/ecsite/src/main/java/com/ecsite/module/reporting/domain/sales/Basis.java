@@ -40,14 +40,4 @@ public enum Basis {
     public List<ReportOrderStatus> countedStatuses() {
         return countedStatuses;
     }
-
-    /**
-     * その状態の注文を数えるかを返す。
-     *
-     * @param status 注文の状態
-     * @return その状態の注文を数えるか
-     */
-    public boolean counts(ReportOrderStatus status) {
-        return countedStatuses.contains(status);
-    }
 }

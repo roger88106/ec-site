@@ -136,4 +136,9 @@ describe('マイグレーションが SQL で触るスキーマのモジュー�
     ].join('\n')
     assert.deepEqual(schemasOfSql(sql), ['catalog'])
   })
+
+  test('大文字のスキーマ名は小文字にそろえ、引用符付きのスキーマ名も読む', () => {
+    const sql = ['ALTER TABLE PAYMENT.payment ADD x int;', 'ALTER TABLE "tax"."category" ADD y int;', 'ALTER TABLE "Catalog".product ADD z int;'].join('\n')
+    assert.deepEqual(schemasOfSql(sql), ['payment', 'tax', 'catalog'])
+  })
 })

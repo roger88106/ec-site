@@ -101,6 +101,13 @@ describe('関連 spec のリンクの形', () => {
     assert.equal(check('[007](../../specs/007-payment)').length, 1)
   })
 
+  test('docs/specs/ の下でないディレクトリを指すリンクは失敗にする', () => {
+    const other = (row) => findBadRelatedLinks('docs/design/modules/payment.md', `| 関連 spec | ${row} |`, () => true)
+    assert.equal(other('[007](../../guides/007-payment)').length, 1)
+    assert.equal(other('[007](../../specs/archive/007-payment)').length, 1)
+    assert.deepEqual(other('[007](../../specs/archive/mvp/007-payment)'), [])
+  })
+
   test('リンクの番号と、ディレクトリ名の番号が違うものは失敗にする', () => {
     assert.equal(check('[155](../../specs/archive/mvp/007-payment)').length, 1)
   })

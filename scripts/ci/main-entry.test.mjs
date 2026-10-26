@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMainJudgments, isMainTarget } from './main-entry.mjs'
+import { adviceOf, findMainJudgments, isMainTarget } from './main-entry.mjs'
 
 /** 見つけた判定を「行 書き方」で並べる */
 const judgmentsOf = (text) => findMainJudgments(text).map((hit) => `${hit.line} ${hit.call}`)
@@ -67,6 +67,13 @@ describe('直接実行の判定の検査', () => {
   test('コメントの中の書き方は見つけない', () => {
     const text = ['// process.argv[1] と比べない', '/* import.meta.main も使わない */', 'const x = 1'].join('\n')
     assert.deepEqual(judgmentsOf(text), [])
+  })
+
+  test('直し方は、.mjs では isMain(import.meta.url)、.cjs では .mjs にして isMain を使うと示す', () => {
+    assert.match(adviceOf('scripts/ci/a.mjs'), /isMain\(import\.meta\.url\)/)
+    const cjs = adviceOf('scripts/dev/a.cjs')
+    assert.match(cjs, /\.mjs にして/)
+    assert.match(cjs, /CommonJS/)
   })
 
   test('対象は、scripts の下のテストでない .mjs と .cjs。共通の関数の定義は除く', () => {

@@ -16,6 +16,9 @@ import { exitIfShallow } from './lib/shallow-clone.mjs'
 /** 概要の表の「関連 spec」の行 */
 const RELATED_ROW = /^\|\s*関連 spec\s*\|(.*)\|\s*$/m
 
+/** spec のディレクトリのパス（リポジトリのルートから）。進行中は docs/specs/<番号>-<名前>、完了したものは docs/specs/archive/<まとまり>/<番号>-<名前> */
+const SPEC_DIRECTORY = /^docs\/specs\/(?:archive\/[^/]+\/)?\d+-[^/]+$/
+
 /** 新しい形式のタスク番号。spec の番号は文字列のまま使い、0 で始まる 3 桁（T011-）は MVP、0 で始めない番号（T7-）は 1→10 の spec として区別する */
 const TASK_ID = /(?<![A-Za-z0-9])T(\d+)-\d{2}-\d{2}/g
 
@@ -44,6 +47,7 @@ export function findBadRelatedLinks(file, markdown, isDirectory) {
   if (!row) return []
   return [...row[1].matchAll(/\[([^\]]*)\]\(([^)\s]*)\)/g)].flatMap(([, text, link]) => {
     const target = posix.normalize(posix.join(posix.dirname(file), link))
+    if (!SPEC_DIRECTORY.test(target)) return [`${file}：関連 spec のリンク ${link} が、docs/specs/ の下の spec のディレクトリを指していない`]
     if (!isDirectory(target)) return [`${file}：関連 spec のリンク ${link} が、spec のディレクトリを指していない`]
     if (!posix.basename(target).startsWith(`${text}-`)) return [`${file}：関連 spec のリンク ${link} の番号が、リンクの文字 ${text} と合わない`]
     return []

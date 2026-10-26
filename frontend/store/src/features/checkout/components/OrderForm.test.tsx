@@ -112,12 +112,19 @@ describe('お届け先の入力と注文', () => {
   test('AC-248、250 欄は郵便番号・都道府県・市区町村・住所の順で、都道府県は API の一覧から選び、初めは選んでいない', () => {
     const view = renderStatic(form())
 
-    // 欄は、画面に出る順（文書の順）に返る
-    const fields = view.getAllByLabelText(/^(郵便番号|都道府県|市区町村|住所)$/)
-    expect(fields).toHaveLength(4)
-    const names = ['postalCode', 'prefectureCode', 'municipalityCode', 'address']
-    fields.forEach((field, order) => {
-      expect(field).toHaveAttribute('name', names[order])
+    // 各欄を役割と名前（ラベル）で 1 つずつ探し、送る名前を確かめる。画面に出る順は、前の欄が文書の中で先にあることで確かめる
+    const fields = [
+      { role: 'textbox', label: '郵便番号', name: 'postalCode' },
+      { role: 'combobox', label: '都道府県', name: 'prefectureCode' },
+      { role: 'combobox', label: '市区町村', name: 'municipalityCode' },
+      { role: 'textbox', label: '住所', name: 'address' },
+    ].map(({ role, label, name }) => {
+      const field = view.getByRole(role, { name: label })
+      expect(field).toHaveAttribute('name', name)
+      return field
+    })
+    fields.slice(1).forEach((field, previous) => {
+      expect(fields[previous].compareDocumentPosition(field)).toBe(Node.DOCUMENT_POSITION_FOLLOWING)
     })
     const prefecture = within(view.getByRole('combobox', { name: '都道府県' }))
     expect(prefecture.getByRole('option', { name: '東京都' })).toHaveAttribute('value', '13')

@@ -32,6 +32,16 @@ const JUDGMENT = new RegExp(
 )
 
 /**
+ * 見つけたときの直し方を、ファイルの種類に合わせて返す。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {string} 直し方の文
+ */
+export function adviceOf(file) {
+  return file.endsWith('.cjs') ? '直接実行の判定は、.mjs にして lib/is-main.mjs の isMain(import.meta.url) を使う（CommonJS では import.meta を使えない）' : '直接実行の判定は lib/is-main.mjs の isMain(import.meta.url) を使う'
+}
+
+/**
  * 検査の対象のファイルか。
  *
  * @param {string} file リポジトリのルートからのパス（/ 区切り）
@@ -58,7 +68,7 @@ if (isMain(import.meta.url)) {
   exitIfNoFiles(files, '検査の script')
   const found = files.flatMap((file) => findMainJudgments(readFileSync(file, 'utf8')).map((hit) => ({ file, ...hit })))
   for (const hit of found) {
-    console.log(`${hit.file}:${hit.line} ${hit.call}（直接実行の判定は lib/is-main.mjs の isMain(import.meta.url) を使う）`)
+    console.log(`${hit.file}:${hit.line} ${hit.call}（${adviceOf(hit.file)}）`)
   }
   console.log(`共通の関数を使わない判定：${found.length}`)
   process.exit(found.length > 0 ? 1 : 0)

@@ -50,14 +50,22 @@ describe('注の番号の検査', () => {
     assert.deepEqual(findNoteProblems(text), [])
   })
 
-  test('字下げした行の ※1： は定義でなく参照として読む', () => {
-    const text = ['a ※1', '※1：理由', '  ※1：字下げ'].join('\n')
-    assert.deepEqual(findNoteProblems(text), [])
+  test('リストの中で字下げした ※N： も定義として読む（重複は失敗、本文の参照には数えない）', () => {
+    assert.deepEqual(findNoteProblems(['- a ※1', '- b ※2', '  ※1：理由 1', '  ※2：理由 2'].join('\n')), [])
+    const problems = findNoteProblems(['a ※1', '※1：理由', '  ※1：字下げ'].join('\n'))
+    assert.equal(problems.length, 1)
+    assert.match(problems[0].message, /重複/)
   })
 
   test('他の文書の注を指す「第 N 節 ※N」は、この文書の参照に数えない', () => {
     const text = ['他の文書 第 2 節 ※3 を参照', 'a ※1', '※1：理由'].join('\n')
     assert.deepEqual(findNoteProblems(text), [])
+  })
+
+  test('「第 N 節の ※N」（の を挟む形）も他の文書の注を指す参照で、この文書の参照に数えない。「この節 ※1」「この節の ※1」は数える', () => {
+    assert.deepEqual(findNoteProblems(['他の文書 第 2 節の ※3 を参照', 'a ※1', '※1：理由'].join('\n')), [])
+    assert.equal(findNoteProblems(['a ※2', 'この節 ※1', '※1：1', '※2：2'].join('\n')).length, 1)
+    assert.equal(findNoteProblems(['a ※2', 'この節の ※1', '※1：1', '※2：2'].join('\n')).length, 1)
   })
 
   test('字下げした囲みのコードブロックの中は数えない', () => {

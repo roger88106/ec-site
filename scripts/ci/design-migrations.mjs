@@ -41,13 +41,19 @@ export function moduleOfMigration(name) {
 
 /**
  * SQL の中のスキーマ付きの表の名前（<スキーマ>.<表>）から、スキーマを読む。コメントと文字列の中と、ドットの後ろの名前（ファイル名など）は見ない。
+ * 大文字は小文字にそろえ、引用符付きの名前（"payment"."payment"）も読む（引用符の中は blankSqlNonCode が _ にするので、同じ位置の元の文字を読む）。
  *
  * @param {string} sql マイグレーションの SQL
  * @returns {string[]} スキーマの名前（重ねない）
  */
 export function schemasOfSql(sql) {
   const { code } = blankSqlNonCode(sql)
-  return [...new Set([...code.matchAll(/(?<![\w./])([a-z][a-z0-9_]*)\.[a-z_]/g)].map((match) => match[1]))]
+  const names = []
+  for (const match of code.matchAll(/(?<![\w./"])(?:([A-Za-z][A-Za-z0-9_]*)|"(_+)")\.(?:[A-Za-z_]|"_)/g)) {
+    const name = match[1] ?? sql.slice(match.index + 1, match.index + 1 + match[2].length)
+    if (/^[A-Za-z][A-Za-z0-9_]*$/.test(name)) names.push(name.toLowerCase())
+  }
+  return [...new Set(names)]
 }
 
 /**

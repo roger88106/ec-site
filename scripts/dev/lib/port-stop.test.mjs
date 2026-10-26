@@ -95,12 +95,19 @@ describe('待ち受けるプロセスの探し方', () => {
     const { calls, spawnSync } = fakeSpawnSync('p1234\nn*:19080\n')
     const result = findListeners([18080, 19080], { platform: 'linux', spawnSync, ownPid: 1 })
     assert.deepEqual(result, { ok: true, listeners: [{ port: 19080, pid: 1234 }] })
-    assert.deepEqual(calls, [['lsof', ['-nP', '-sTCP:LISTEN', '-Fpn', '-iTCP:18080', '-iTCP:19080']]])
+    assert.deepEqual(calls, [['lsof', ['-nP', '-w', '-sTCP:LISTEN', '-Fpn', '-iTCP:18080', '-iTCP:19080']]])
   })
 
-  test('lsof の終了コード 1（一致なし）は、待ち受けなしとする', () => {
-    const spawnSync = () => ({ status: 1, stdout: '' })
+  test('lsof が終了コード 1 で終わり、誤りの出力がない（一致なし）ときは、待ち受けなしとする', () => {
+    const spawnSync = () => ({ status: 1, stdout: '', stderr: '' })
     assert.deepEqual(findListeners([18080], { platform: 'linux', spawnSync, ownPid: 1 }), { ok: true, listeners: [] })
+  })
+
+  test('lsof が終了コード 1 で終わり、誤りの出力があるときは、待ち受けなしとせず、失敗を返す', () => {
+    const spawnSync = () => ({ status: 1, stdout: '', stderr: 'lsof: status error on /proc: Permission denied\n' })
+    const result = findListeners([18080], { platform: 'linux', spawnSync, ownPid: 1 })
+    assert.equal(result.ok, false)
+    assert.match(result.reason, /Permission denied/)
   })
 
   test('問い合わせの指令を流せないときは、待ち受けなしとせず、失敗を返す', () => {

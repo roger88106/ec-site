@@ -17,8 +17,9 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import path from 'node:path'
 import { stopOnSignals } from './lib/child-stop.mjs'
 import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
-import { findListeners, portBusyMessage, queryFailedMessage, stopFailedMessage, stopListeners, stoppedMessage } from './lib/port-stop.mjs'
+import { findListeners, stopListeners } from './lib/port-stop.mjs'
 import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
+import { checkBackendPorts, releaseSlot } from './lib/slot-ports.mjs'
 import {
   assignSlot,
   checkBackendStopped,
@@ -332,18 +333,6 @@ async function assign(ctx) {
 }
 
 /**
- * スロットのポートで待ち受けるプロセスを問い合わせる。問い合わせが失敗したら、解除をやめて止め方を示して終わる。
- *
- * @param {number[]} ports 対象のポート
- * @returns {import('./lib/port-stop.mjs').Listener[]} 待ち受けるプロセス
- */
-function findListenersOrExit(ports) {
-  const result = findListeners(ports)
-  if (!result.ok) throw new Exit(1, `${queryFailedMessage(ports, result.reason, process.platform)}\n解除はしていない。止めてから、もう一度 node scripts/dev/slot.mjs release を流す`)
-  return result.listeners
-}
-
-/**
  * release：スロットのポートで待ち受けるプロセスを停止してから、割り当てを解く。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
@@ -354,20 +343,20 @@ async function release(ctx) {
   const slot = parseSlotRecord(readRecord(ctx.root))
   if (slot === null) return console.log('スロットは割り当てられていない')
   // スロットのポートは他のスロットと重ならないので、待ち受けるものはこのスロットで起動したもの（強制終了した script の残りを含む）
-  const ports = slotPorts(slot)
-  const found = findListenersOrExit(ports)
-  if (found.length > 0) {
-    stopListeners(found)
-    console.log(stoppedMessage(found))
-    // 止まったことを、ポートの待ち受けがなくなったかで確かめる
-    const left = findListenersOrExit(ports)
-    if (left.length > 0) throw new Exit(1, stopFailedMessage(left, process.platform))
-  }
-  // 問い合わせと別の経路でも、バックエンドが応答しないことを確かめてからデータを消す
-  const problem = checkBackendStopped({ slot, running: await backendRunning(slot), action: '解く' })
-  if (problem !== null) throw new Exit(problem.code, problem.message)
-  dropData(ctx.root, slot)
-  rmSync(recordFile(ctx.root), { force: true })
+  const result = await releaseSlot({
+    slot,
+    ports: slotPorts(slot),
+    platform: process.platform,
+    find: (ports) => findListeners(ports),
+    stop: (listeners) => stopListeners(listeners),
+    backendRunning: () => backendRunning(slot),
+    drop: () => {
+      dropData(ctx.root, slot)
+      rmSync(recordFile(ctx.root), { force: true })
+    },
+    log: (line) => console.log(line),
+  })
+  if (result.code !== 0) throw new Exit(result.code, result.message)
   console.log(`スロット ${slot} を解いた`)
 }
 
@@ -477,14 +466,14 @@ async function run(ctx, args) {
   let cwd
   if (target === 'backend') {
     requireShared(ctx)
-    // 利用者が別に起動したバックエンドかもしれないので、自動で止めず、止め方を示して終わる
-    // 問い合わせが失敗しても、データは壊れず、使われているポートでは起動が失敗するだけなので、知らせて起動する
-    const ports = [values.backendPort, values.managementPort]
-    const found = findListeners(ports)
-    if (!found.ok) console.error(`${queryFailedMessage(ports, found.reason, process.platform)}\nポートを確かめずに起動する`)
-    else if (found.listeners.length > 0) {
-      throw new Exit(1, portBusyMessage(found.listeners, { platform: process.platform, canRelease: !ctx.main }))
-    }
+    const check = checkBackendPorts({
+      ports: [values.backendPort, values.managementPort],
+      platform: process.platform,
+      canRelease: !ctx.main,
+      find: (ports) => findListeners(ports),
+    })
+    if (!check.start) throw new Exit(check.code, check.message)
+    if (check.warning !== null) console.error(check.warning)
     cwd = path.join(ctx.root, 'backend', 'ecsite')
     command = path.join(cwd, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew')
     commandArgs = ['bootRun', '--args=--spring.profiles.active=local']

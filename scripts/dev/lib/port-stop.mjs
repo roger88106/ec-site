@@ -63,7 +63,8 @@ function byPortOrder(listeners, ports) {
  * Windows は PowerShell の Get-NetTCPConnection、それ以外は lsof で問い合わせる。netstat を使わないのは、状態の列が OS の言語で変わるため。
  * 待ち受けがないことと、問い合わせの失敗（指令を流せない、誤りで終わった）を分けて返す。
  * 失敗を待ち受けなしとみなすと、動いているバックエンドのデータベースを解除で消すため。
- * 一致なしとみなすのは、Get-NetTCPConnection の ObjectNotFound（どのポートにも接続がない）と、lsof の終了コード 1 だけ。
+ * 一致なしとみなすのは、Get-NetTCPConnection の ObjectNotFound（どのポートにも接続がない）と、
+ * lsof が誤りの出力なしに終了コード 1 で終わったときだけ。lsof は誤りでも 1 で終わるので、警告を -w で消し、出力の有無で分ける。
  *
  * @param {number[]} ports 対象のポート
  * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync, ownPid: number }} [deps] OS、指令の実行、自分のプロセスの ID。テストで差し替える
@@ -85,11 +86,11 @@ export function findListeners(ports, deps = { platform: process.platform, spawnS
         ],
         options,
       )
-    : deps.spawnSync('lsof', ['-nP', '-sTCP:LISTEN', '-Fpn', ...ports.map((port) => `-iTCP:${port}`)], options)
+    : deps.spawnSync('lsof', ['-nP', '-w', '-sTCP:LISTEN', '-Fpn', ...ports.map((port) => `-iTCP:${port}`)], options)
   if (result.error) return { ok: false, reason: result.error.message }
-  const succeeded = result.status === 0 || (!windows && result.status === 1)
+  const detail = typeof result.stderr === 'string' ? result.stderr.trim() : ''
+  const succeeded = result.status === 0 || (!windows && result.status === 1 && detail === '')
   if (!succeeded || typeof result.stdout !== 'string') {
-    const detail = typeof result.stderr === 'string' ? result.stderr.trim() : ''
     return { ok: false, reason: `${windows ? 'Get-NetTCPConnection' : 'lsof'} が終了コード ${result.status} で終わった${detail ? `：${detail}` : ''}` }
   }
   return { ok: true, listeners: parseListeners(result.stdout, { platform: deps.platform, ports, ownPid: deps.ownPid }) }

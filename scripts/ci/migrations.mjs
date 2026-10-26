@@ -7,7 +7,7 @@
 // マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
 // 使い方：node scripts/ci/migrations.mjs（リポジトリのルートで）
 import { execFileSync } from 'node:child_process'
-import { splitNulList } from './lib/git-files.mjs'
+import { emptyListReason, splitNulList } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
 
@@ -41,14 +41,14 @@ export function findChangedMigrations(files, readBase, readNow) {
 }
 
 /**
- * マイグレーションが 1 件もないときの失敗の理由を返す。置き場所の変更で、検査が空振りするのを防ぐ。
+ * マイグレーションが 1 件もないときの失敗の理由を返す。文は他の検査と同じ共通の関数（emptyListReason）で作り、置き場所を添える。
  *
  * @param {string[]} files 今あるバージョン付きのマイグレーション
  * @param {string} dir マイグレーションの置き場所
  * @returns {string | null} 0 件なら失敗の理由、あれば null
  */
-export function findEmptyReason(files, dir) {
-  return files.length === 0 ? `マイグレーションが 1 件も見つからない（検査の対象の置き場所が変わっていないか確認する）：${dir}` : null
+export function migrationsEmptyReason(files, dir) {
+  return emptyListReason(files, `マイグレーション（${dir}）`)
 }
 
 /**
@@ -128,7 +128,7 @@ if (isMain(import.meta.url)) {
   // 今の index（commit の前の hook では次の commit。ステージした削除・改名・変更を含む）
   const current = parseBlobList(git(['ls-files', '-s', '-z', '--', MIGRATIONS]), 1)
   const files = [...current.keys()].filter(isVersionedMigration)
-  const emptyReason = findEmptyReason(files, MIGRATIONS)
+  const emptyReason = migrationsEmptyReason(files, MIGRATIONS)
   if (emptyReason) {
     console.log(emptyReason)
     process.exit(1)

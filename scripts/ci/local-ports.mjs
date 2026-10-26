@@ -11,7 +11,7 @@
 import { existsSync, readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
 import { exitIfNoFiles } from './lib/git-files.mjs'
-import { findPortProblems, readHostPort } from './compose-ports.mjs'
+import { describeUnreadableHostPort, findPortProblems, readHostPort } from './compose-ports.mjs'
 
 /** ポートの一覧 */
 const LIST_FILE = 'scripts/dev/ports.json'
@@ -210,7 +210,7 @@ export function findPortMismatches({ list, compose, powershell, docs, sources, c
   const shared = new Set(list.ports.filter((entry) => entry.group === 'shared').map((entry) => entry.port))
   const composePorts = readComposeHostPorts(compose)
   for (const port of composePorts.unreadable) {
-    problems.push(`${COMPOSE_FILE}:${port.line} ${port.entry} のホスト側のポートを読めない（数字か \${変数:-数字} で 1 つのポートを書く）`)
+    problems.push(describeUnreadableHostPort(COMPOSE_FILE, port))
   }
   problems.push(...diffProblems(composePorts.ports, shared, COMPOSE_FILE, 'compose'))
 

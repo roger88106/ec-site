@@ -4,14 +4,14 @@
 // 理由を添えて message-numbers-exclusions.json に書く。メールの文（ecsite.notification.*）はエラーの文でないので見ない。
 // 使い方：node scripts/ci/message-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** エラーの文のファイル */
 const MESSAGES = 'backend/ecsite/src/main/resources/messages.properties'
 
 /** 例外の一覧（キー → 理由） */
-const EXCLUSIONS = 'scripts/ci/message-numbers-exclusions.json'
+const EXCLUSIONS = 'message-numbers-exclusions.json'
 
 /** 見ないキーの接頭辞（エラーの文でないもの） */
 const IGNORED_PREFIXES = ['ecsite.notification.']
@@ -76,7 +76,7 @@ export function findExclusionsWithoutNumbers(text, exclusions) {
 
 if (isMain(import.meta.url)) {
   const text = readFileSync(MESSAGES, 'utf8')
-  const exclusions = readExclusions(EXCLUSIONS)
+  const exclusions = readExclusions(exclusionsPath(EXCLUSIONS))
   const hits = findNumbers(text, exclusions)
   for (const hit of hits) {
     console.log(`${MESSAGES}:${hit.line} ${hit.key}=${hit.value}`)

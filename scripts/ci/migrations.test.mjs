@@ -6,7 +6,8 @@ import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from './lib/git-env.mjs'
-import { findChangedMigrations, findEmptyReason, findRemovedMigrations, isVersionedMigration, parseBlobList } from './migrations.mjs'
+import { emptyListReason } from './lib/git-files.mjs'
+import { findChangedMigrations, findRemovedMigrations, isVersionedMigration, migrationsEmptyReason, parseBlobList } from './migrations.mjs'
 
 describe('適用済みのマイグレーションの検査', () => {
   test('バージョン付きのマイグレーション（V*.sql）だけを見る。繰り返しのもの（R__*.sql）は見ない', () => {
@@ -54,9 +55,10 @@ describe('適用済みのマイグレーションの検査', () => {
 })
 
 describe('マイグレーションの検査の判定', () => {
-  test('マイグレーションが 0 件のときは失敗の理由を返し、あるときは null', () => {
-    assert.match(findEmptyReason([], 'db/migration/'), /1 件も見つからない.*db\/migration\//)
-    assert.equal(findEmptyReason(['V1__a.sql'], 'db/migration/'), null)
+  test('マイグレーションが 0 件のときの理由は、他の検査と同じ共通の関数の文で、置き場所を添える', () => {
+    assert.equal(migrationsEmptyReason([], 'db/migration/'), emptyListReason([], 'マイグレーション（db/migration/）'))
+    assert.match(migrationsEmptyReason([], 'db/migration/'), /db\/migration\/.*1 件も見つからない/)
+    assert.equal(migrationsEmptyReason(['V1__a.sql'], 'db/migration/'), null)
   })
 
   test('git ls-tree と git ls-files -s の出力から、パスごとの blob を読む', () => {

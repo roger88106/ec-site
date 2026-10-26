@@ -171,7 +171,8 @@ describe('照合', () => {
   test('除外の一覧に、spec にない AC か、理由のない項目があれば失敗する', () => {
     const result = check({ specAcs: new Set([1]), tests: tests('AC-1 a'), exclusions: { 'AC-9': '理由', 'AC-1': '' } })
     assert.equal(result.ok, false)
-    assert.deepEqual(result.invalidExclusions, ['AC-9', 'AC-1'])
+    assert.deepEqual(result.invalidExclusions, ['AC-9'])
+    assert.deepEqual(result.emptyReasons, ['AC-1'])
   })
 
   test('手元では、テスト名に出ない AC があっても通り、その AC を警告に出す', () => {
@@ -483,7 +484,7 @@ describe('読めないテストの呼び出し', () => {
   test('ファイル:行と理由で返し、each の表の中の関数の呼び出しは読めるので返さない', () => {
     const source = ["test.each([[f(1)]])('AC-1 読める', () => {})", '', 'test(name, () => {})'].join('\n')
     assert.deepEqual(describeUnreadableTests(source, 'frontend/a.test.ts', scanTsTests(source).unreadable), [
-      'frontend/a.test.ts:3：テスト名が文字列でもテンプレートでもない（または閉じていない）',
+      'frontend/a.test.ts:3 test(name, () => {})（テスト名が文字列でもテンプレートでもない（または閉じていない））',
     ])
   })
 })

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
@@ -32,6 +32,16 @@ before(() => {
   rmSync(path.join(repo, 'removed.txt'))
   write('untracked.txt')
   write('ignored.txt')
+})
+
+describe('Git の一覧の求め方', () => {
+  test('検査は、Git の一覧を listGitFiles で求める（git ls-files -z を直接呼ばない）', () => {
+    const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
+    const offenders = readdirSync(ciDir)
+      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
+      .filter((name) => /\['ls-files',\s*'-z'/.test(readFileSync(path.join(ciDir, name), 'utf8')))
+    assert.deepEqual(offenders, [])
+  })
 })
 
 describe('-z の出力の分割', () => {

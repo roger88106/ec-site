@@ -5,8 +5,7 @@
 // 例外は time-waits-exclusions.json に理由を書く（時間で待つ行がないファイルの除外は失敗）。対象のファイルが 0 件のときも失敗にする。
 // 使い方：node scripts/ci/time-waits.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { fileURLToPath } from 'node:url'
-import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
@@ -75,7 +74,7 @@ export function scanTestFiles(files, read) {
 }
 
 if (isMain(import.meta.url)) {
-  const exclusions = readExclusions(fileURLToPath(new URL('./time-waits-exclusions.json', import.meta.url)))
+  const exclusions = readExclusions(exclusionsPath('time-waits-exclusions.json'))
   const files = listGitFiles().filter((file) => isTestFile(file))
   exitIfNoFiles(files, 'テストのファイル')
   // 除外のファイルも読む。除外が要るのは、時間で待つ行があるファイルだけ

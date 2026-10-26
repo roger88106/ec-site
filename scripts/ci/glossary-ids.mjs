@@ -2,12 +2,9 @@
 // 調べる場所は backend/、frontend/、api/、docker/、e2e/、scripts/ の Git のファイル（生成物を除く）。
 // 名前の形の例（XxxRepository など、Xxx を含むもの）は調べない。コードにない語でよいものは glossary-ids-exclusions.json に名前と理由を書く。
 // 使い方：node scripts/ci/glossary-ids.mjs（リポジトリのルートで）
-import { execFileSync } from 'node:child_process'
-import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
-import { existsSync, readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { checkExclusions, readExclusions } from './lib/exclusions.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
+import { readFileSync } from 'node:fs'
+import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** 用語集 */
@@ -101,12 +98,12 @@ export function isExclusionNeeded(id, ids) {
 }
 
 if (isMain(import.meta.url)) {
-  const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'glossary-ids-exclusions.json'))
-  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', ...SEARCH_ROOTS], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 }))
-    .filter((file) => isSearchedFile(file) && existsSync(file))
+  const exclusions = readExclusions(exclusionsPath('glossary-ids-exclusions.json'))
+  const files = listGitFiles(SEARCH_ROOTS)
+    .filter((file) => isSearchedFile(file))
   exitIfNoFiles(files, '用語の ID を探すファイル')
   // パスの形の識別子（docs/constitution.md など）は、リポジトリのすべてのファイルのパスにも当たる
-  const allPaths = splitNulList(execFileSync('git', ['ls-files', '-z'], { encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })).join('\n')
+  const allPaths = listGitFiles().join('\n')
   const contents = [allPaths, ...files.map((file) => readFileSync(file, 'utf8'))]
   const tokens = new Set(contents.flatMap((text) => text.match(/\w+/g) ?? []))
   const ids = parseGlossaryIds(readFileSync(GLOSSARY, 'utf8'))

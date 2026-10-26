@@ -191,10 +191,11 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
   - 範囲：`scripts/ci/`、`scripts/ci/lib/`、Git を呼ぶテスト、`docs/guides/ci.md`
   - 確認方法：`git grep -n "startsWith('GIT_')" -- scripts` が `scripts/ci/lib/git-env.mjs` の 1 行だけであること
   - 結果：新しい検査 `scripts/ci/main-entry.mjs`（`scripts/` の下のテストでない `.mjs`・`.cjs`。`scripts/dev/` も、同じ判定を書けるので含める。ci.md の表に行を加えた）は、`argv[1]`・`import.meta.url` の比較・`import.meta.main`・`require.main` を失敗にし、今のリポジトリは 53 件で 0 件。`GIT_` を外す処理は `scripts/ci/lib/git-env.mjs`（`withoutGitEnv`、`removeGitEnv`）の 1 か所にし、Git を呼ぶ 7 つのテスト（`pre-commit.test.mjs` を含む）が使う。
-- [ ] **T185-01-02** [テスト] 除外の一覧のパスの求め方と除外の誤りの文、読めない行の出力の形、0 件の理由、Git の一覧の求め方を、共通の関数にそろえる（DC-185-3〜5、9）。
+- [x] **T185-01-02** [テスト] 除外の一覧のパスの求め方と除外の誤りの文、読めない行の出力の形、0 件の理由、Git の一覧の求め方を、共通の関数にそろえる（DC-185-3〜5、9）。
   - 依存：T185-01-01
   - 範囲：`scripts/ci/lib/`、除外の一覧を持つ検査、読めない行を出す検査、`migrations.mjs`、`env-defaults.mjs`、`glossary-ids.mjs`、`related-specs.mjs`、テスト
   - 確認方法：変更の前後で、全ての検査の今のリポジトリの結果が同じであること
+  - 結果：`lib/exclusions.mjs` に `exclusionsPath`・`describeExclusionProblems` などを、`lib/unreadable-line.mjs`（`ファイル:行 内容（理由）`）を加え、7 つの除外の検査、compose-ports・local-ports・role-permissions・gradle-plugins・ac-check の読めない行、migrations の 0 件の理由（`emptyListReason`）、env-defaults・glossary-ids・related-specs の一覧（`listGitFiles`）を共通にした。直接の組み立てと `git ls-files -z` の呼び出しが戻らないよう、テストで検査の script を走査する。変更の前後の `check-all.sh` の結果は、時間を除いて同じ。
 - [ ] **T185-01-03** [テスト] コメント・文字列・正規表現を読み飛ばす走査を 1 か所にまとめる（DC-185-6）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/lib/`（閉じ括弧の探し方、コードの終わりの探し方、コメントの除去）、使う検査、テスト

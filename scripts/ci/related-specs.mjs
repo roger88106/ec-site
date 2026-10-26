@@ -6,11 +6,9 @@
 // 使い方：node scripts/ci/related-specs.mjs（リポジトリのルートで。commit の履歴が必要なので、shallow clone では失敗にする）
 // 次の commit の照合：node scripts/ci/related-specs.mjs --staged <メッセージのファイル>（commit-msg の hook から呼ぶ。ステージした文書とメッセージの 1 行目を照合する）
 import { execFileSync, spawnSync } from 'node:child_process'
-import { exitIfNoFiles, splitNulList } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'
-import path from 'node:path'
-import { fileURLToPath } from 'node:url'
-import { findEmptyReasons, findStaleExclusions, readExclusions } from './lib/exclusions.mjs'
+import { describeExclusionProblems, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
 
@@ -105,9 +103,7 @@ export function findMissingInStaged(docs, subject, excludedPrefixes) {
  * @returns {{ failures: string[], warnings: string[] }} 失敗にする文と、警告として表示する文（「警告：」で始まる）
  */
 export function checkRelatedExclusions(exclusions, isNeeded, strict) {
-  const name = 'related-specs-exclusions.json'
-  const failures = findEmptyReasons(exclusions).map((key) => `${name}：${key} の理由がない（除外には理由を書く）`)
-  const stale = findStaleExclusions(exclusions, isNeeded).map((key) => `${name}：${key} は不要になった除外（一覧から消す）`)
+  const { emptyReasons: failures, stale } = describeExclusionProblems('related-specs-exclusions.json', exclusions, isNeeded)
   return strict ? { failures: [...failures, ...stale], warnings: [] } : { failures, warnings: stale.map((line) => `警告：${line}`) }
 }
 
@@ -127,11 +123,11 @@ function checkStaged(messageFile, excludedPrefixes) {
 }
 
 if (isMain(import.meta.url)) {
-  const exclusions = readExclusions(path.join(path.dirname(fileURLToPath(import.meta.url)), 'related-specs-exclusions.json'))
+  const exclusions = readExclusions(exclusionsPath('related-specs-exclusions.json'))
   const excludedPrefixes = Object.keys(exclusions)
   if (process.argv[2] === '--staged') checkStaged(process.argv[3], excludedPrefixes)
   exitIfShallow()
-  const files = splitNulList(execFileSync('git', ['ls-files', '-z', '--', 'docs/*.md'], { encoding: 'utf8' }))
+  const files = listGitFiles(['docs/*.md'])
   exitIfNoFiles(files, '文書')
   // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
   const merging = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { encoding: 'utf8' }).status === 0

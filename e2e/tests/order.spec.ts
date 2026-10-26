@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
-import { emptyCart, fillShipping, payOnMockPage } from '../src/store'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage } from '../src/store'
+import { ADMIN_URL } from '../src/urls'
 
 test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画面でカートに入れ、郵便番号でお届け先を補って注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
   page,
@@ -22,10 +22,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   await test.step('店舗画面：会員としてログインし、商品の詳細から 2 つカートに入れ、カートで金額の内訳を確認する', async () => {
     await loginStore(page, ACCOUNTS.member)
     await emptyCart(page)
-    await page.goto(`${STORE_URL}/products/${productId}`)
-    await page.getByLabel('数量').selectOption('2')
-    await page.getByRole('button', { name: 'カートに入れる' }).click()
-    await expect(page.getByText('カートに入れました。')).toBeVisible()
+    await addToCart(page, productId, { quantity: '2' })
     await page.getByRole('link', { name: 'カートを見る' }).click()
 
     await expect(page.getByRole('heading', { name: 'カート' })).toBeVisible()
@@ -70,7 +67,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   })
 
   await test.step('管理画面：申請を承認するとキャンセルになり、在庫数が戻って履歴に残る', async () => {
-    const orderId = new URL(orderUrl).pathname.split('/').at(-1)
+    const orderId = orderIdOf(orderUrl)
     await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
     await page.getByRole('button', { name: '申請を承認する' }).click()
     await page.getByRole('alertdialog').getByRole('button', { name: '承認してキャンセルする' }).click()

@@ -1,9 +1,9 @@
 import { expect, type Page, test } from '@playwright/test'
-import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
 import { detailValue } from '../src/detail'
 import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
-import { emptyCart, orderCart, payOnMockPage } from '../src/store'
+import { orderAsMember, orderIdOf, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
@@ -30,15 +30,9 @@ async function acceptedOrder(page: Page, code: string): Promise<AcceptedOrder> {
     variants: [{ code: 'A', stock: 3 }],
   })
   const [variantId] = await variantIds(productId)
-  await loginStore(page, ACCOUNTS.member)
-  await emptyCart(page)
-  await page.goto(`${STORE_URL}/products/${productId}`)
-  await page.getByRole('button', { name: 'カートに入れる' }).click()
-  await expect(page.getByText('カートに入れました。')).toBeVisible()
-  await orderCart(page)
+  await orderAsMember(page, ACCOUNTS.member, [productId])
   const orderUrl = await payOnMockPage(page)
-  const orderId = new URL(orderUrl).pathname.split('/').at(-1) as string
-  return { productId, variantId, orderId, orderUrl }
+  return { productId, variantId, orderId: orderIdOf(orderUrl), orderUrl }
 }
 
 /** 管理画面の注文詳細の見出しから、注文番号を読む（読み込むまでは「…」なので、番号が出るのを待つ） */

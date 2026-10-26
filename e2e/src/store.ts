@@ -1,4 +1,5 @@
 import { expect, type Locator, type Page } from '@playwright/test'
+import { type Account, loginStore } from './auth'
 import { STORE_URL } from './urls'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from './waits'
 
@@ -36,13 +37,92 @@ export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void>
   }
 }
 
+/** 商品の詳細からカートに入れるときの選択 */
+export type CartChoice = {
+  /** 数量（数量の欄の選択肢の文言。省けば初めの 1） */
+  quantity?: string
+  /** 選ぶバリアントのボタンの名前（色など。省けば選ばない） */
+  option?: string
+}
+
 /**
- * お届け先の入力（郵便番号だけを差し替えられる）。メールアドレスは会員のものを使い、入力しない（AC-127）。<br />
+ * 商品の詳細を開き、数量とバリアントを選んで、カートに入れる。「カートに入れました。」と出るまで待つ。
+ *
+ * @param page 店舗画面のページ
+ * @param productId 商品 ID
+ * @param choice 数量とバリアントの選択
+ * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
+ */
+export async function addToCart(
+  page: Page,
+  productId: string,
+  { quantity, option }: CartChoice = {},
+  storeUrl = STORE_URL,
+): Promise<void> {
+  await page.goto(`${storeUrl}/products/${productId}`)
+  if (option !== undefined) {
+    await page.getByRole('button', { name: option, exact: true }).click()
+  }
+  if (quantity !== undefined) {
+    await page.getByLabel('数量').selectOption(quantity)
+  }
+  await page.getByRole('button', { name: 'カートに入れる' }).click()
+  await expect(page.getByText('カートに入れました。')).toBeVisible()
+}
+
+/**
+ * 会員としてログインし、カートを空にして、商品を 1 つずつ入れる。会員のカートは実行をまたいで残るので、
+ * 共用のアカウントで注文するテストは、これで始める。
+ *
+ * @param page 店舗画面のページ
+ * @param account ログインする会員
+ * @param productIds カートに入れる商品の ID（1 つずつ入れる）
+ */
+export async function loginWithCart(page: Page, account: Account, productIds: string[]): Promise<void> {
+  await loginStore(page, account)
+  await emptyCart(page)
+  for (const productId of productIds) {
+    await addToCart(page, productId)
+  }
+}
+
+/**
+ * 会員としてログインし、カートを空にして、商品を入れ、注文して mock の支払画面に移るまで進む。
+ *
+ * @param page 店舗画面のページ
+ * @param account ログインする会員
+ * @param productIds カートに入れる商品の ID
+ */
+export async function orderAsMember(page: Page, account: Account, productIds: string[]): Promise<void> {
+  await loginWithCart(page, account, productIds)
+  await orderCart(page)
+}
+
+/**
+ * 注文の画面の URL から、注文 ID を読む。
+ *
+ * @param orderUrl 注文の画面の URL（`/orders/{注文 ID}`。クエリは付いていてもよい）
+ * @returns 注文 ID
+ */
+export function orderIdOf(orderUrl: string): string {
+  const orderId = new URL(orderUrl).pathname.split('/').at(-1)
+  if (!orderId) {
+    throw new Error(`注文の画面の URL から注文 ID を読めない：${orderUrl}`)
+  }
+  return orderId
+}
+
+/**
+ * お届け先の入力（郵便番号と氏名だけを差し替えられる）。メールアドレスは会員のものを使い、入力しない（AC-127）。<br />
  * 郵便番号が 7 桁なら、補われた都道府県（東京都）・市区町村（千代田区）・町域（千代田）を確認して、番地を追加する（AC-255）。
  * 7 桁でなければ補われないので、一覧から選ぶ。
+ *
+ * @param page 注文手続きの画面を開いているページ
+ * @param postalCode 郵便番号
+ * @param name お届け先の氏名
  */
-export async function fillShipping(page: Page, postalCode: string) {
-  await page.getByLabel('氏名').fill('E2E 太郎')
+export async function fillShipping(page: Page, postalCode: string, name = 'E2E 太郎') {
+  await page.getByLabel('氏名').fill(name)
   await page.getByLabel('郵便番号').fill(postalCode)
   if (/^[0-9]{3}-?[0-9]{4}$/.test(postalCode)) {
     await expect(page.getByLabel('市区町村')).toHaveValue('13101')
@@ -61,13 +141,28 @@ export async function fillShipping(page: Page, postalCode: string) {
  * カートから注文手続きに進み、お届け先を入れて注文する。注文すると mock の支払画面に移る。
  *
  * @param page カートに商品のある店舗画面のページ
+ * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
+ * @param name お届け先の氏名（省けば fillShipping の既定）
  */
-export async function orderCart(page: Page) {
-  await page.goto(`${STORE_URL}/cart`)
+export async function orderCart(page: Page, storeUrl = STORE_URL, name?: string) {
+  await page.goto(`${storeUrl}/cart`)
   await page.getByRole('button', { name: '注文手続きへ進む' }).click()
-  await fillShipping(page, '100-0001')
+  await fillShipping(page, '100-0001', name)
   await page.getByRole('button', { name: /^注文する/ }).click()
   await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
+}
+
+/**
+ * mock の支払画面のボタンを押し、注文の画面に戻るのを待つ。
+ *
+ * @param page mock の支払画面を開いているページ
+ * @param button 押すボタンの名前（支払うか、やめる）
+ * @returns 注文の画面の URL（クエリなし）
+ */
+export async function leaveMockPage(page: Page, button: '支払う' | 'やめる'): Promise<string> {
+  await page.getByRole('button', { name: button }).click()
+  await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
+  return page.url().split('?')[0]
 }
 
 /**
@@ -78,9 +173,7 @@ export async function orderCart(page: Page) {
  * @return 注文の画面の URL（クエリなし）
  */
 export async function payOnMockPage(page: Page): Promise<string> {
-  await page.getByRole('button', { name: '支払う' }).click()
-  await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
-  const orderUrl = page.url().split('?')[0]
+  const orderUrl = await leaveMockPage(page, '支払う')
   await expectOrderPage(page, orderUrl, page.getByText('受付', { exact: true }))
   return orderUrl
 }

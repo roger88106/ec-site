@@ -1,7 +1,7 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, memberEmail, registerMember } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
-import { orderCart, payOnMockPage } from '../src/store'
+import { addToCart, orderCart, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, REPORT_RECHECK_INTERVALS, REPORT_TIMEOUT, reopenUntil } from '../src/waits'
 
@@ -52,10 +52,7 @@ test('AC-197、205、206、209、219、221、222 生年月日と性別を入れ�
       { lastName: 'レポート', firstName: '会員' },
       { birthdate: `${year - 35}-01-01`, gender: '女性' },
     )
-    await store.goto(`${STORE_URL}/products/${productId}`)
-    await store.getByLabel('数量').selectOption('2')
-    await store.getByRole('button', { name: 'カートに入れる' }).click()
-    await expect(store.getByText('カートに入れました。')).toBeVisible()
+    await addToCart(store, productId, { quantity: '2' })
     await orderCart(store)
     await payOnMockPage(store)
     await store.context().close()

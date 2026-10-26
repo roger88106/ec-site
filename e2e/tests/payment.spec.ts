@@ -1,8 +1,16 @@
 import { expect, type Page, test } from '@playwright/test'
-import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { detailValue } from '../src/detail'
-import { emptyCart, expectOrderPage, fillShipping, orderCart, payOnMockPage } from '../src/store'
+import {
+  expectOrderPage,
+  fillShipping,
+  leaveMockPage,
+  loginWithCart,
+  orderCart,
+  orderIdOf,
+  payOnMockPage,
+} from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits'
 
@@ -31,13 +39,7 @@ async function memberCartWith(page: Page, code: string, count = 1) {
       }),
     )
   }
-  await loginStore(page, ACCOUNTS.member)
-  await emptyCart(page)
-  for (const productId of productIds) {
-    await page.goto(`${STORE_URL}/products/${productId}`)
-    await page.getByRole('button', { name: 'カートに入れる' }).click()
-    await expect(page.getByText('カートに入れました。')).toBeVisible()
-  }
+  await loginWithCart(page, ACCOUNTS.member, productIds)
 }
 
 test('AC-143、145、146、147、149 注文すると mock の支払画面に移り、支払うと注文の画面に戻って受付になり、注文した品目がカートから除かれる', async ({
@@ -74,9 +76,7 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
   await test.step('カードを拒否させると、支払画面に拒否が出る。やめて注文の画面に戻ると、注文は支払待ちのまま', async () => {
     await page.getByRole('button', { name: 'カードを拒否させる' }).click()
     await expect(page.getByText('カードが拒否されました。別のカードでやり直してください。')).toBeVisible()
-    await page.getByRole('button', { name: 'やめる' }).click()
-    await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
-    await page.goto(page.url().split('?')[0])
+    await page.goto(await leaveMockPage(page, 'やめる'))
     await expect(detailValue(page, '状態')).toHaveText('支払待ち')
   })
 
@@ -95,9 +95,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
   let orderUrl = ''
 
   await test.step('支払画面でやめると、注文の画面に戻り、注文は支払待ちのまま', async () => {
-    await page.getByRole('button', { name: 'やめる' }).click()
-    await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
-    orderUrl = page.url().split('?')[0]
+    orderUrl = await leaveMockPage(page, 'やめる')
     await page.goto(orderUrl)
     await expect(page.getByText('支払待ち', { exact: true })).toBeVisible()
     await expect(page.getByRole('button', { name: '支払う' })).toBeVisible()
@@ -118,7 +116,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
 test('AC-162 管理画面で受付の注文をキャンセルすると、支払の状態が与信の取消済みになる', async ({ page }) => {
   await memberCartWith(page, 'VOID')
   await orderCart(page)
-  const orderId = new URL(await payOnMockPage(page)).pathname.split('/').at(-1)
+  const orderId = orderIdOf(await payOnMockPage(page))
 
   await test.step('管理画面：受付の注文は与信済みで、運営者がキャンセルする', async () => {
     await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)

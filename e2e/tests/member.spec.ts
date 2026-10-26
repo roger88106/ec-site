@@ -1,17 +1,9 @@
-import { expect, type Page, test } from '@playwright/test'
+import { expect, test } from '@playwright/test'
 import { idpPasswordInput, memberEmail, setPasswordFromMail, submitIdpLogin, submitSignup } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
 import { detailValue } from '../src/detail'
-import { fillShipping, payOnMockPage } from '../src/store'
+import { addToCart, fillShipping, payOnMockPage } from '../src/store'
 import { STORE_URL } from '../src/urls'
-
-/** 商品の詳細から、ログインせずにカートに入れる */
-async function addToCart(page: Page, productId: string, quantity: string) {
-  await page.goto(`${STORE_URL}/products/${productId}`)
-  await page.getByLabel('数量').selectOption(quantity)
-  await page.getByRole('button', { name: 'カートに入れる' }).click()
-  await expect(page.getByText('カートに入れました。')).toBeVisible()
-}
 
 test('AC-108、111、112、113、114、115、122、124、125、129 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
   page,
@@ -28,7 +20,7 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
   const account = { email: memberEmail('signup'), password: 'E2e-pass-1234' }
 
   await test.step('ログインせずにカートに入れ、会員登録する。確認のメールが届くまでログインできない（AC-108、111）', async () => {
-    await addToCart(page, productId, '2')
+    await addToCart(page, productId, { quantity: '2' })
     await submitSignup(page, account, { lastName: '会員', firstName: '登録' })
   })
 
@@ -63,7 +55,7 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
     await page.goto(`${STORE_URL}/cart`)
     await expect(page.getByText('カートに商品がありません。')).toBeVisible()
 
-    await addToCart(page, productId, '1')
+    await addToCart(page, productId, { quantity: '1' })
     await page.goto(`${STORE_URL}/cart`)
     await page.getByRole('button', { name: '注文手続きへ進む' }).click()
     await submitIdpLogin(page, account)

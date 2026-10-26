@@ -15,6 +15,7 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { stopOnSignals } from './lib/child-stop.mjs'
 import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
 import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
 import {
@@ -441,24 +442,6 @@ function env(ctx) {
 }
 
 /**
- * 子のプロセスを終了させる。Windows では、cmd の下の子も含めて止める。
- *
- * @param {import('node:child_process').ChildProcess} child 子のプロセス
- * @param {NodeJS.Signals} signal 渡すシグナル
- */
-function killChild(child, signal) {
-  if (process.platform === 'win32' && child.pid) {
-    try {
-      execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
-    } catch {
-      // すでに終わっていればよい
-    }
-  } else {
-    child.kill(signal)
-  }
-}
-
-/**
  * run：スロットの環境変数を付けて対象を起動する。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
@@ -507,13 +490,20 @@ async function run(ctx, args) {
     process.platform === 'win32' && command.endsWith('.bat')
       ? spawn([`"${command}"`, ...commandArgs].join(' '), { ...options, shell: true })
       : spawn(command, commandArgs, options)
-  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => killChild(child, signal))
+  /** 実行中の子。終わったら null */
+  let running = child
+  // シグナルを受けたら子を停止し、子が終わってから終了する。2 回目は待たずに終了する
+  stopOnSignals({ current: () => running })
   return new Promise((resolve) => {
     child.on('error', (e) => {
+      running = null
       console.error(`起動できなかった：${e.message}`)
       resolve(1)
     })
-    child.on('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0)))
+    child.on('exit', (code, signal) => {
+      running = null
+      resolve(code ?? (signal ? 1 : 0))
+    })
   })
 }
 

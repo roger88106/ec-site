@@ -7,10 +7,11 @@
  *
  * 使い方：node scripts/run.ts [Playwright の引数...]（e2e/ で）。引数はそのまま Playwright に渡す。終了コードは失敗した最初の段階のもの。
  */
-import { type ChildProcess, execFileSync, spawn, spawnSync } from 'node:child_process'
+import { type ChildProcess, execFileSync, spawn } from 'node:child_process'
 import { rmSync } from 'node:fs'
 import path from 'node:path'
 import { fileURLToPath } from 'node:url'
+import { stopOnSignals } from '../../scripts/dev/lib/child-stop.mjs'
 import { createLockIo, isProcessRunning } from '../../scripts/dev/lib/lock-io.mjs'
 import { slotEnvNames } from '../../scripts/dev/lib/slot-env-names.mjs'
 import {
@@ -87,20 +88,6 @@ function runStep(step: (typeof STEPS)[number]): Promise<number> {
 
 /** 実行中の子のプロセス */
 let runningChild: ChildProcess | null = null
-/** 信号を受けて終了の途中か */
-let terminating = false
-
-/** 子と配下のプロセスへ終了を送る。Windows では taskkill で配下も止める */
-function killChild(child: ChildProcess, signal: NodeJS.Signals): void {
-  if (child.pid === undefined) {
-    return
-  }
-  if (process.platform === 'win32') {
-    spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
-  } else {
-    child.kill(signal)
-  }
-}
 
 const lockFile = path.join(path.resolve(E2E_DIR, git('rev-parse', '--git-common-dir')), 'ec-site-e2e.lock')
 const lockIo = createLockIo(lockFile)
@@ -118,22 +105,14 @@ function releaseLock(): void {
   }
 }
 process.on('exit', releaseLock)
-// 信号を受けたら、実行中の子へ信号を送り、子が終わってからロックを削除して終了する（子が残ったまま次の E2E がロックを取らないように）。
+// 信号を受けたら、実行中の子を停止し、子が終わってからロックを削除して終了する（子が残ったまま次の E2E がロックを取らないように）。
 // 2 回目の信号では待たずに終了する（'exit' でロックを削除する）
-for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP'] as const) {
-  process.on(signal, () => {
-    if (terminating || runningChild === null) {
-      process.exit(1)
-    }
-    terminating = true
-    killChild(runningChild, signal)
-  })
-}
+const stopping = stopOnSignals({ current: () => runningChild })
 
 let status = 0
 for (const step of STEPS) {
   status = await runStep(step)
-  if (terminating) {
+  if (stopping.isStopping()) {
     status = 1
   }
   if (status !== 0) {

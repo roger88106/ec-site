@@ -5,7 +5,9 @@ import {
   findEnumStringConversions,
   findLombok,
   findOtherNullable,
+  findUnexplainedSuppressWarnings,
   isNullableTarget,
+  isSuppressWarningsTarget,
   isStringConversionTarget,
   ruleFor,
 } from './java-rules.mjs'
@@ -160,6 +162,75 @@ describe('バックエンドの書き方の検査', () => {
     assert.equal(isNullableTarget('backend/ecsite/build/generated/openapi/src/main/java/com/ecsite/api/Foo.java'), false)
     assert.equal(isNullableTarget(`${base}/main/resources/application.yml`), false)
     assert.equal(isNullableTarget('frontend/admin/src/lib/foo.ts'), false)
+  })
+
+  test('JSpecify 以外の Nullable を含むパッケージのワイルドカード import を見つける', () => {
+    const text = [
+      'import jakarta.annotation.*;',
+      'import javax.annotation.*;',
+      'import org.springframework.lang.*;',
+      'import static org.springframework.lang.*;',
+    ].join('\n')
+    assert.deepEqual(findOtherNullable(text).map((hit) => hit.line), [1, 2, 3, 4])
+  })
+
+  test('JSpecify のワイルドカード import と、Nullable を含まないパッケージのワイルドカード import は見つけない', () => {
+    const text = ['import org.jspecify.annotations.*;', 'import java.util.*;', 'import org.springframework.stereotype.*;'].join('\n')
+    assert.deepEqual(findOtherNullable(text), [])
+  })
+})
+
+describe('@SuppressWarnings の理由の検査', () => {
+  test('直前に理由の // のコメントがあれば見つけない。間にある他の注釈は飛ばす', () => {
+    const text = [
+      '// YAML を読んだ Map を、契約の形が決まっているので型に当てはめる',
+      '@SuppressWarnings("unchecked")',
+      'Map<String, Object> a() {}',
+      '// 理由',
+      '@Override',
+      '@SuppressWarnings({"rawtypes", "unchecked"})',
+      'Map b() {}',
+    ].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
+  })
+
+  test('理由のコメントがない @SuppressWarnings を見つけ、行番号を返す', () => {
+    const text = ['class A {', '    int x;', '    @SuppressWarnings("unchecked")', '    Map a() {}', '}'].join('\n')
+    const hits = findUnexplainedSuppressWarnings(text)
+    assert.deepEqual(hits.map((hit) => hit.line), [3])
+    assert.equal(hits[0].text, '@SuppressWarnings("unchecked")')
+  })
+
+  test('Javadoc だけで、直前に // のコメントがない @SuppressWarnings は見つける', () => {
+    const text = [
+      '/**',
+      ' * 型を当てはめる。',
+      ' */',
+      '@SuppressWarnings("unchecked")',
+      'Map a() {}',
+      '/* 理由 */',
+      '@SuppressWarnings("unchecked")',
+      'Map b() {}',
+      '// 理由',
+      '',
+      '@SuppressWarnings("unchecked")',
+      'Map c() {}',
+    ].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text).map((hit) => hit.line), [4, 7, 11])
+  })
+
+  test('コメントや文字列の中の @SuppressWarnings は見つけない', () => {
+    const text = ['// @SuppressWarnings("unchecked") は理由を書く', '/** {@code @SuppressWarnings} */', 'String s = "@SuppressWarnings";'].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
+  })
+
+  test('全てのソースセット（main、test、integrationTest、testFixtures、tools）を見て、生成したコードは見ない', () => {
+    const base = 'backend/ecsite/src'
+    for (const set of ['main', 'test', 'integrationTest', 'testFixtures', 'tools']) {
+      assert.equal(isSuppressWarningsTarget(`${base}/${set}/java/com/ecsite/Foo.java`), true)
+    }
+    assert.equal(isSuppressWarningsTarget('backend/ecsite/build/generated-sources/jooq/com/ecsite/jooq/Foo.java'), false)
+    assert.equal(isSuppressWarningsTarget(`${base}/main/resources/application.yml`), false)
   })
 })
 

@@ -127,6 +127,7 @@ class AdminApiPermissionContractTest {
      * @param spec OpenAPI の文書（YAML の文字列）。YAML の文字列を直接渡すテストがあるので、読み込み済みの {@code Map} ではなく文字列を受け、ここで解析する
      * @return 操作の一覧
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static List<Operation> listOperations(String spec) {
         Map<String, Object> root = new Yaml().load(spec);

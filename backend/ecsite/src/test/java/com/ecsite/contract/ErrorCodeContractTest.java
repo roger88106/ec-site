@@ -117,6 +117,7 @@ class ErrorCodeContractTest {
      * @param value YAML の値
      * @return Map。null なら空
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static Map<String, Object> map(Object value) {
         return value == null ? Map.of() : (Map<String, Object>) value;

@@ -119,6 +119,7 @@ class StoreApiTokenContractTest {
      *
      * @return 操作
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static List<Operation> operations() throws IOException {
         Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(STORE_API));

@@ -319,7 +319,7 @@ public Optional<UUID> memberId() {
 
 ### 7.2 検査を抑えるとき
 
-- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。
+- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く（間にある他の注釈は飛ばす。Javadoc だけでは足りない）。全てのソースセットで、規則の検査（`java-rules`）が確認する。
 - 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。今無効なのは、全てのソースセットで `StringConcatToTextBlock` と `ImmutableEnumChecker`、テストのソースセット（test、integrationTest、testFixtures）で `ArrayRecordComponent` と `TypeParameterUnusedInFormals`（理由は `build.gradle.kts` のコメント）。
 - 生成したコード（`build/generated` の下）は検査しない。
 

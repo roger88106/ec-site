@@ -117,6 +117,7 @@ public final class ErrorCodeCheck {
     /**
      * 契約の共通のエラーを読む。
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static Set<String> commonCodes(Resource resource) {
         try (InputStream in = resource.getInputStream()) {

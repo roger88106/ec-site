@@ -33,6 +33,7 @@ class OpenApiEnumConverterConfig implements WebMvcConfigurer {
     /**
      * 文字列から列挙型への変換。値が合わなければ {@link IllegalArgumentException}（400 になる）。
      */
+    // 変換先の列挙型は実行時にしか分からず、Enum の型引数を静的に確かめられないので、生の型で変換する
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static final class StringToEnumConverterFactory implements ConverterFactory<String, Enum> {
 

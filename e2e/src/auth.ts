@@ -5,7 +5,7 @@ import { waitForMail } from './mailpit'
 import { ADMIN_URL, IDP_URL, STORE_URL } from './urls'
 
 /** ログインに使うアカウント */
-type Account = { email: string; password: string }
+export type Account = { email: string; password: string }
 
 /** realm の JSON にあるローカルと CI 用のアカウント（docs/guides/setup.md の「認証（Keycloak）」） */
 export const ACCOUNTS = {

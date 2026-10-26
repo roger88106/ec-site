@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * 在庫調整の単体テスト（T402）
+ * 在庫調整の単体テスト
  */
 class StockAdjustmentTest {
 

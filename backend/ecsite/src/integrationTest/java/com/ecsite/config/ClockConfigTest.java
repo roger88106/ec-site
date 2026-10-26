@@ -18,7 +18,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.within;
 
 /**
- * 現在時刻（{@link Clock}）の検証（T016、バックエンドのアーキテクチャ 第 5 節）
+ * 現在時刻（{@link Clock}）の検証（バックエンドのアーキテクチャ 第 5 節）
  */
 class ClockConfigTest {
 

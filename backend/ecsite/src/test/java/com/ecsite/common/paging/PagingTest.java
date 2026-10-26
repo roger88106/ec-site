@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * ページングの単体テスト（T014、API の規約）
+ * ページングの単体テスト（API の規約）
  */
 class PagingTest {
 

@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 認証と認可の統合テスト（T3203、plan 003 第 3.1〜3.3 節）。<br />
+ * 認証と認可の統合テスト。<br />
  * token は {@link TestTokens} がテストの鍵で署名したもので、本番と同じ検証（署名・issuer・audience・有効期限）と、
  * {@code admin.yaml} の {@code x-required-permission} による判定を通す。<br />
  * 管理 API の要求には既定で管理者の token が付く（{@link com.ecsite.TestSecurityConfig}）ので、token なしは {@link TestTokens#none()} で表す。
@@ -37,7 +37,7 @@ class AuthorizationTest {
 
     private static final String TAX_CATEGORIES = "/api/admin/tax-categories";
 
-    // 期待するメッセージ（messages.properties。plan 003 第 3.3 節）
+    // 期待するメッセージ（messages.properties）
     private static final String UNAUTHENTICATED = "ログインしてください。";
     private static final String FORBIDDEN = "この操作を行う権限がありません。";
 

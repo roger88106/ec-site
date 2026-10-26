@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.application;
 
+import com.ecsite.TestSettings;
 import com.ecsite.common.error.exception.SystemException;
 import com.ecsite.module.payment.application.model.view.PastDeadlinePaymentView;
 import com.ecsite.module.payment.application.port.PaymentGateway;
@@ -8,8 +9,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.dao.CannotAcquireLockException;
@@ -28,7 +27,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
- * 支払の期限切れのジョブの、例外とログの単体テスト（T017-06-03、AC-310、312）。<br />
+ * 支払の期限切れのジョブの、例外とログの単体テスト。<br />
  * 支払の参照・更新のサービスと決済サービスは mock にする。通知を待つ支払の検索は、統合テスト（PaymentExpiryJobTest）で確認する。
  */
 @ExtendWith(OutputCaptureExtension.class)
@@ -151,9 +150,8 @@ class PaymentExpiryJobLoggingTest {
      */
     private static PaymentProperties bind(Map<String, String> values) {
         var source = new HashMap<String, String>();
-        source.put("ecsite.payment.return-url", "http://localhost:3000/orders/{orderId}");
-        values.forEach((key, value) -> source.put("ecsite.payment." + key, value));
-        return new Binder(new MapConfigurationPropertySource(source))
-                .bindOrCreate("ecsite.payment", PaymentProperties.class);
+        source.put("return-url", "http://localhost:3000/orders/{orderId}");
+        source.putAll(values);
+        return TestSettings.bind("ecsite.payment", PaymentProperties.class, source);
     }
 }

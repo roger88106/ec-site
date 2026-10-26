@@ -7,7 +7,7 @@ import org.junit.jupiter.api.Test;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 文字の項目の判定の単体テスト（spec 005 DC-31）
+ * 文字の項目の判定の単体テスト
  */
 class BoundedTextTest {
 

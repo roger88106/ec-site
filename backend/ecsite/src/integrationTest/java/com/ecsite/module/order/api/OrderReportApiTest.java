@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * レポート用の注文の写しの API の統合テスト（T0112、plan 010 第 2 節）。テストごとにロールバックする。
+ * レポート用の注文の写しの API の統合テスト。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

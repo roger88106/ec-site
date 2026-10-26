@@ -14,7 +14,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 表示順の振り直しの単体テスト（spec 005 DC-40）
+ * 表示順の振り直しの単体テスト
  */
 class DisplayOrdersTest {
 

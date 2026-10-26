@@ -3,11 +3,7 @@ package com.ecsite.contract;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.junit.jupiter.api.DisplayName;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -18,16 +14,11 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * API の契約のリクエストの制約の漏れを検出する契約テスト（docs/rules/backend-coding.md 第 3.1 節、spec 005 DC-33）。<br />
+ * API の契約のリクエストの制約の漏れを検出する契約テスト（docs/rules/backend-coding.md 第 3.1 節）。<br />
  * リクエスト（パス・クエリの引数と本文）の数値の項目に範囲（下限と上限。上限を求めない項目は理由を付けて除く）があり、
  * 文字の項目に長さか形式（{@code maxLength}・{@code pattern}・{@code format}・{@code enum}）があることを確認する。
  */
 class OpenApiRequestConstraintTest {
-
-    /**
-     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ecsite/ からの相対パス
-     */
-    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../../api/openapi"));
 
     /**
      * 操作を表すキー（パスの項目のうち、操作でないもの（parameters など）を除くため）
@@ -48,8 +39,8 @@ class OpenApiRequestConstraintTest {
     @ParameterizedTest
     @ValueSource(strings = {"admin.yaml", "store.yaml"})
     @DisplayName("リクエストの数値の項目に下限と上限、文字の項目に長さか形式がある")
-    void requestFieldsAreConstrained(String file) throws IOException {
-        Map<String, Object> document = new Yaml().load(Files.readString(OPENAPI_DIR.resolve(file)));
+    void requestFieldsAreConstrained(String file) {
+        Map<String, Object> document = Contracts.openApi(file);
         List<String> missing = new ArrayList<>();
 
         // パスごと、操作ごとに、引数と本文の項目をたどる

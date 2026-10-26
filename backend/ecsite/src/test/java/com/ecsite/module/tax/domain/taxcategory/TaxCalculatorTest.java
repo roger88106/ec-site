@@ -11,13 +11,13 @@ import java.math.BigDecimal;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 税込価格の計算の単体テスト（T108、BR-1）
+ * 税込価格の計算の単体テスト
  */
 class TaxCalculatorTest {
 
     @ParameterizedTest(name = "{0} 円・{1}% → {2} 円")
     @CsvSource({
-            // spec の例
+            // 税込価格の基本の例
             "1800, 10, 1980",
             "1234, 8, 1332",
             // 割り切れる

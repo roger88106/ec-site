@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * OpenAPI の生成モデルが、アプリの JSON 変換で正しく扱えることの検証。<br />
- * nullable の項目は {@code JsonNullable} で生成されるため、そのモジュールが登録されている必要がある（T008）。
+ * nullable の項目は {@code JsonNullable} で生成されるため、そのモジュールが登録されている必要がある。
  */
 @IntegrationTest
 class OpenApiModelJsonTest {
@@ -41,7 +41,7 @@ class OpenApiModelJsonTest {
 
         var json = jsonMapper.writeValueAsString(draft);
 
-        // 受け取った日時は UTC に揃えられる（同じ時点）。日本時間での表示は画面で行う（BR-3）
+        // 受け取った日時は UTC に揃えられる（同じ時点）。日本時間での表示は画面で行う
         assertThat(json).contains("\"effectiveFrom\":\"2027-03-31T15:00:00Z\"");
     }
 }

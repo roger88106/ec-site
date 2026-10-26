@@ -19,7 +19,7 @@ T192-01-01、02、04、05、06 は、それぞれ別のモジュールとテス�
 - [x] **T192-01-03** 郵便番号の CSV を読む処理を tools に移し、Lombok を Java の書き方に置き換える。テストを `test/tools/region/` に移し、単体テストのソースセットのクラスパスに tools の出力を加える。`./gradlew generateRegionMigration` の出力が今のマイグレーションと一致することを確認する（DC-192-2、DN-192-2）。
   - 依存：T192-01-02（地域の設計書を共に変えるため）
   - 範囲：`main/module/region/infrastructure/source/`、`tools/tools/region/`、`test/module/region/infrastructure/source/PostalCodeCsvTest.java`、`test/tools/region/`、`build.gradle.kts` の source set、`docs/design/modules/region.md`
-- [ ] **T192-01-04** `[P]` 最近の出荷を一覧する問い合わせを、出荷の Repository の port と実装から外し、mock 側の問い合わせのクラスに移す。テストも mock の側に移す（DC-192-3）。出荷の設計書を直す。
+- [x] **T192-01-04** `[P]` 最近の出荷を一覧する問い合わせを、出荷の Repository の port と実装から外し、mock 側の問い合わせのクラスに移す。テストも mock の側に移す（DC-192-3）。出荷の設計書を直す。
   - 依存：なし
   - 範囲：`main/module/shipping/application/port/ShipmentRepository.java`、`main/module/shipping/infrastructure/persistence/JooqShipmentRepository.java`、`main/module/shipping/infrastructure/mock/`、`it/module/shipping/infrastructure/persistence/JooqShipmentRepositoryTest.java`、`it/module/shipping/infrastructure/mock/`、`docs/design/modules/shipping.md`
 - [ ] **T192-01-05** `[P]` ファイル保存設定の複製 2 つを削除し、テストは設定の型を直接作る。ファイル保存のクライアントを作る static の操作を `@Bean` メソッドに戻し、テストはその `@Bean` メソッドを呼ぶ（DC-192-3）。

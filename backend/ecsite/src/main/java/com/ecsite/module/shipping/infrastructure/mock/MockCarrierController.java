@@ -50,6 +50,11 @@ class MockCarrierController {
     private final ShipmentRepository shipmentRepository;
 
     /**
+     * 最近の出荷の問い合わせ
+     */
+    private final MockShipmentQuery shipmentQuery;
+
+    /**
      * mock の物流サービス
      */
     private final MockCarrier mockCarrier;
@@ -118,7 +123,7 @@ class MockCarrierController {
      */
     private ResponseEntity<String> render(@Nullable String error) {
         return html(HttpStatus.OK,
-                MockCarrierPageHtml.list(shipmentRepository.findRecent(LIST_LIMIT), this::carrierName, error));
+                MockCarrierPageHtml.list(shipmentQuery.findRecent(LIST_LIMIT), this::carrierName, error));
     }
 
     /**

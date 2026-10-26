@@ -12,7 +12,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 
 | 区分 | ライセンス | 扱い |
 |------|------------|------|
-| 許可 | MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、0BSD、BlueOak-1.0.0、CC0-1.0、Zlib、PostgreSQL、Unlicense、Python-2.0。他に、改変を禁じるが無料で商用に使えるもの | そのまま使える。改変を禁じるものは改変しない |
+| 許可 | MIT、MIT-0、Apache-2.0、BSD-2-Clause、BSD-3-Clause、ISC、0BSD、BlueOak-1.0.0、CC0-1.0、Zlib、PostgreSQL、Unlicense、Python-2.0、PSF-2.0。他に、改変を禁じるが無料で商用に使えるもの | そのまま使える。改変を禁じるものは改変しない |
 | 条件付き | EPL-1.0・2.0、MPL-2.0、LGPL-2.1・3.0、CDDL、CC-BY-4.0（データ）、OFL-1.1（フォント）、GPL-2.0 with Classpath-exception。他に、規模（売上、利用者数など）が一定以内なら無料のもの | 改変せずに依存として使う場合だけ。規模で無料のものは、その規模以内で使う。ライブラリごとに理由を書いて一覧に載せる |
 | 禁止 | GPL（例外なし）、AGPL、SSPL、BUSL、Commons Clause、非商用限定、有料のもの、ライセンスが分からないもの | 使わない |
 

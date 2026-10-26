@@ -13,7 +13,8 @@
     "Zlib",
     "PostgreSQL",
     "Unlicense",
-    "Python-2.0"
+    "Python-2.0",
+    "PSF-2.0"
   ],
   "conditional": {
     "$comment": "改変せずに依存として使う場合だけ許す。部品ごとに理由を書く。ここにない部品が条件付きのライセンスだけを持つと、検査は失敗する",

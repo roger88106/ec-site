@@ -110,6 +110,8 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 token は `TestTokens`、画像は `TestImages` を使う。
 
+package-private の本番のクラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、本番のクラスと同じパッケージの統合テストに、public final の補助クラスを置く。補助は Spring のコンテキストから Bean を取り出して呼ぶ。今ある補助は、`TaxRateScheduleCaches`（catalog の `infrastructure/directory`）、`PaymentJobs`（payment の `application`）、`OrderPayments`（order の `application/payment`）、`TrackingRequests`（shipping の `application`）。本番のクラスを public にしたり、テストのために可視性を広げたりしない。
+
 理由：テストの本文に、確認する項目だけを残すため。
 
 ### 3.3 テストの置き場所

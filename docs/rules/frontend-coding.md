@@ -107,6 +107,11 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
   - どこからも import されていない export と型。定義したファイルの中だけで使う export も報告する
   - `package.json` にあって使われていない依存、`package.json` にない依存の import
 - 対象外にするのは、生成物の export だけ。openapi-typescript の型（`src/api/generated/`、`e2e/src/generated/`）、入力の制約の定数（`src/api/generated/constraints.ts`）、shadcn/ui の生成物（`src/components/ui/`、`frontend/shared/src/ui/`）である。生成物のファイル自体が使われていないことは検査する。
+- knip が失敗したときは、報告の種類で直す。
+  - 使われていないファイル、export、依存は削除する。
+  - 定義したファイルの中だけで使うものは、export を外す。
+  - 実行時に import されずに使われるファイルなど、knip の誤検出は、`knip.ts` の `entry` などの設定で扱う。コードに意味のない参照を足さない。
+- 対象外にする生成物は、`knip.ts` の `ignoreIssues` に、ファイルの範囲と `exports`・`types` だけを書き、理由をコメントに書く。ファイル自体の報告は外さない。
 - テストだけが使う export は、使用箇所として数える。
 - 型の拡張（`i18n/types.ts`）と E2E の準備の script（`e2e/scripts/prepare.ts`）のように、import されずに使われるファイルは、`knip.ts` の `entry` に書く。
 
@@ -126,6 +131,7 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 - shadcn/ui のコンポーネントは各画面の `components/ui/` に追加し、2 つの画面で同じ内容になったら `frontend/shared/src/ui/` に移す。`src/ui/` の共有コンポーネントは shadcn/ui の生成物のまま置き、`"use client"` の有無も生成物に従う（生成物が付けているもの（`label`、`separator` など）は、店舗画面のサーバーコンポーネントからも使えるよう付けたままにする）。
 - 共有のコンポーネントのうち shadcn/ui の生成物でないものは `frontend/shared/src/components/` に置き、生成物は `src/ui/` に置く。
 - クラス名の結合 `cn` は、npm のパッケージ `cn` から直接 import する（`import { cn } from 'cn'`）。各画面と共有パッケージに、`cn` を再び export するファイル（`lib/utils.ts` など）を作らない。shadcn/ui の CLI が追加する部品が、パッケージ `cn` を直接 import するため。
+  - 各画面の `components.json` の `utils` の別名（`@/lib/utils`）は、CLI が設定の項目として求めるので残す。追加する部品はパッケージ `cn` を直接 import するので、別名の指す `lib/utils.ts` は置かない（出典：shadcn/ui の changelog「September 2026 - cn」）。
 - `src/components/` の共有コンポーネントは、hook かブラウザーの API を使うものだけに `"use client"` を付ける。使わないもの（金額の内訳など）には付けず、店舗画面のサーバーコンポーネントのまま描画できる。
 - 共有コンポーネントのクラス名は、各画面の CSS の `@source` で Tailwind に読ませる（`node_modules` の先は自動で読まないため）。
 

@@ -32,7 +32,7 @@
 | 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 | 6.1 | 秘密の値を持つ設定の record は、`toString` で値を伏せる | 単体テスト（`toString` に秘密の値が含まれないこと）、上書きの書き忘れはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
-| 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントはレビュー |
+| 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントは自動（`scripts/ci/java-rules.mjs`） |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
 
@@ -314,6 +314,7 @@ import は次の並びにする。まとまりの間は空行 1 行で分け、�
 
 - main では、`com.ecsite` の下の全てのパッケージ（生成したコードの `com.ecsite.jooq`、`com.ecsite.api` を除く）で、注釈のない引数・戻り値・フィールドを null でないとみなす。NullAway がコンパイルのときに確認する（テストのソースセットと tools は対象外）。
 - null を取りうる所には JSpecify の `org.jspecify.annotations.Nullable` を付ける。他の `Nullable`（`jakarta.annotation`、`javax.annotation`、`org.springframework.lang`）は使わない（確認方法：`scripts/ci/java-rules.mjs`）。型の注釈なので、配列や修飾した型では型の直前に付け、迷ったら JSpecify の位置にする（`String @Nullable []` など）。
+- 注釈のない生成したコード（OpenAPI の interface とモデル）の中でも、明示した `@Nullable` は NullAway が読む（設定 `AcknowledgeRestrictiveAnnotations`）。生成した interface の `@Nullable` の引数を注釈なしで上書きすると、モデルの `@Nullable` の getter の値を null でないとみなす引数に渡すと、報告される。
 - 選び方：
   - 今の振る舞いで null が正しい値（API の応答の省略できる項目、DB の null を取りうる列など）には `@Nullable` を付ける。
   - null を渡す必要がない所は、null を作らない書き方にする。

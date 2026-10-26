@@ -224,6 +224,64 @@ describe('@SuppressWarnings の理由の検査', () => {
     assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
   })
 
+  test('行の途中の @SuppressWarnings（引数、修飾子の後ろ、拡張 for、完全修飾名、入れ子の括弧の注釈の後ろ）も見つける', () => {
+    const text = [
+      'void m(@SuppressWarnings("unused") String x) {}',
+      'private @SuppressWarnings("unchecked") List<X> a;',
+      'final @SuppressWarnings("unchecked") var y = z;',
+      'for (@SuppressWarnings("unused") String s : list) {}',
+      '@java.lang.SuppressWarnings("unchecked")',
+      'Map b() {}',
+      '@Foo(x = @Bar("y")) @SuppressWarnings("z")',
+      'Map c() {}',
+    ].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text).map((hit) => hit.line), [1, 2, 3, 4, 5, 7])
+  })
+
+  test('行の途中の @SuppressWarnings も、直前に // の理由があれば見つけない', () => {
+    const text = [
+      '// 理由',
+      'void m(@SuppressWarnings("unused") String x) {}',
+      '// 理由',
+      'private @SuppressWarnings("unchecked") List<X> a;',
+      '// 理由',
+      '@java.lang.SuppressWarnings("unchecked")',
+      'Map b() {}',
+      '// 理由',
+      '@Foo(x = @Bar("y")) @SuppressWarnings("z")',
+      'Map c() {}',
+    ].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
+  })
+
+  test('間にある他の注釈や直前の @SuppressWarnings が複数行でも、直前に // の理由があれば見つけない', () => {
+    const text = [
+      '// 理由',
+      '@Foo(',
+      '    a = 1)',
+      '@SuppressWarnings("unchecked")',
+      'Map a() {}',
+      '// 理由',
+      '@SuppressWarnings({',
+      '    "unchecked",',
+      '    "rawtypes"})',
+      '@Foo(',
+      '    b = 2)',
+      'Map b() {}',
+    ].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
+  })
+
+  test('複数行の注釈の前に // の理由がなければ見つける', () => {
+    const text = ['int x;', '@Foo(', '    a = 1)', '@SuppressWarnings("unchecked")', 'Map a() {}'].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text).map((hit) => hit.line), [4])
+  })
+
+  test('テキストブロックの中の、行の先頭の @SuppressWarnings は見つけない', () => {
+    const text = ['String s = """', '    text', '@SuppressWarnings("unchecked")', '    """;', 'int x;'].join('\n')
+    assert.deepEqual(findUnexplainedSuppressWarnings(text), [])
+  })
+
   test('全てのソースセット（main、test、integrationTest、testFixtures、tools）を見て、生成したコードは見ない', () => {
     const base = 'backend/ecsite/src'
     for (const set of ['main', 'test', 'integrationTest', 'testFixtures', 'tools']) {

@@ -149,7 +149,7 @@ DC-192-20 の規則の内容：
 | 対象 | 置き場所 | 決定 |
 |------|----------|------|
 | どこからも使われない API 型の別名 | `frontend/store/src/api/types.ts:17,20,21,23`（`AxisValue`、`Amounts`、`TaxAmount`、`Checkout`）、`frontend/admin/src/api/types.ts:10,30,34,42`（`TaxRate`、`OrderTaxAmount`、`Me`、`PrefectureSales`） | 削除する |
-| テストだけが使う API 型の別名 | `frontend/admin/src/api/types.ts:15,19,25`（`ProductActions`、`StockAdjustment`、`OrderSummary`） | 残す。理由：テストが API の応答の形を作るのに使うため。knip もテストを使用箇所として数える |
+| テストだけが使う API 型の別名 | `frontend/admin/src/api/types.ts:15,25`（`ProductActions`、`OrderSummary`） | 残す。理由：テストが API の応答の形を作るのに使うため。knip もテストを使用箇所として数える。再調査でテストだけが使うとした `StockAdjustment` は、実際はテストが同じ名前の型を自分で定義していて、どこからも使われていなかったので、T192-05-03 で削除した |
 | `cn` を再び export するファイル | `frontend/admin/src/lib/utils.ts`、`frontend/store/src/lib/utils.ts`、`frontend/shared/src/lib/cn.ts` | 削除する。店舗画面のレイアウト（`frontend/store/src/app/layout.tsx:7`）は、npm のパッケージ `cn` から import する。shadcn/ui の設定（`components.json` の `utils`）は変えない。理由：2026-09 の shadcn/ui の変更で、CLI が追加する部品はパッケージ `cn` を直接 import し、`lib/utils.ts` は初期化のときに作る 1 行の再 export だけになったため。出典：shadcn/ui の changelog「September 2026 - cn」 |
 | 定義したファイルの中だけで使う export | 下の表 | export を外す。外すと使われていないことが分かったものは削除する |
 | shadcn/ui の生成物の、使われていない小部品 | `frontend/admin/src/components/ui/`、`frontend/shared/src/ui/` | 削除しない（spec 第 9 節の 1）。knip の export の検査の対象外にする |
@@ -179,12 +179,13 @@ DC-192-20 の規則の内容：
 
 | 決定 | 置き場所 | 確認方法 |
 |------|----------|----------|
-| knip 6 を、ルートの devDependencies に加える。検査の対象は、`frontend/*` と `e2e` の、使われていないファイル、export、依存である | `package.json`、`knip.json`（新規） | 違反の例（使われていない export）を一時的に入れて、knip が失敗することを確認する |
-| 定義したファイルの中だけで使う export も報告する（`ignoreExportsUsedInFile` を有効にしない） | `knip.json` | 同上 |
-| 対象外は、openapi-typescript の型、制約の定数の生成物、shadcn/ui の生成物の export だけにし、`knip.json` に理由のコメントを書く。生成物のファイル自体が使われていないことは検査する | `knip.json` | knip の結果に、生成物の export が出ない |
+| knip 6 を、ルートの devDependencies に加える。検査の対象は、`frontend/*` と `e2e` の、使われていないファイル、export、依存である | `package.json`、`knip.ts`（新規） | 違反の例（使われていない export）を一時的に入れて、knip が失敗することを確認する |
+| 定義したファイルの中だけで使う export も報告する（`ignoreExportsUsedInFile` を有効にしない） | `knip.ts` | 同上 |
+| 対象外は、openapi-typescript の型、制約の定数の生成物、shadcn/ui の生成物の export だけにし、`knip.ts` に理由のコメントを書く。生成物のファイル自体が使われていないことは検査する | `knip.ts` | knip の結果に、生成物の export が出ない |
 | `scripts/dev/check-frontend.sh` と CI のフロントのジョブで、ルートで 1 回実行する | `scripts/dev/check-frontend.sh`、`.github/workflows/` のフロントのジョブ | `check-frontend.sh` の結果に knip の行がある。CI で knip の手順が実行される |
 | knip のライセンス（ISC）は、今の許可の一覧にある（2026-10-26 に `policy.json` で確認した） | `scripts/ci/licenses/policy.json` | 依存のライセンスの検査が通る |
 
+- 設定のファイルは `knip.ts` にする（実装のときに `knip.json` から変えた）。理由：knip が管理画面の Vite の設定を読むときに、IdP の環境変数がないと失敗するので、設定のファイルの先頭で既定値を入れる必要があり、対象外の理由もコメントに書けるため。既定値は knip のプロセスの中だけで、本番のビルドの検査には影響しない。
 - knip 6 は、TypeScript の言語サービスに頼る機能（クラスのメンバーの検査）を外した。理由は、TypeScript 7 が Go で書き直されたためである（knip の文書「Announcing Knip v6」）。TypeScript 7 の上で動くかは確認していないので、spec 195 と後でマージする側が確認する（第 9 節）。
 
 ## 6. 文書

@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品画像の登録で、外部サービスをトランザクションの外で呼ぶことの受け入れテスト（T017-04-03、US-65）。<br />
+ * 商品画像の登録で、外部サービスをトランザクションの外で呼ぶことの受け入れテスト。<br />
  * 画像の変換を包み、呼ばれた時点のトランザクションの有無を記録する。ファイル保存を包み、置いた配信のファイルのキーを記録する。
  * テストのトランザクションで包むと変換の時点にトランザクションがあるので、このテストはロールバックせず、作ったデータも消さない。
  */

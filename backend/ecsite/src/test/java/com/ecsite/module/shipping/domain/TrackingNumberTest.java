@@ -10,7 +10,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 送り状番号の単体テスト（T9203、AC-173）
+ * 送り状番号の単体テスト
  */
 class TrackingNumberTest {
 

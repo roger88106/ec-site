@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { stripComments, stripJavaComments } from './strip-comments.mjs'
+import { keepJavaComments, stripComments, stripJavaComments } from './strip-comments.mjs'
 
 describe('コメントの除去', () => {
   test('行コメントとブロックコメントを空白にし、行の数を変えない', () => {
@@ -76,5 +76,30 @@ describe('Java のコメントの除去', () => {
     assert.equal(blanked.length, text.length)
     assert.equal(blanked.split('\n').length, 3)
     assert.equal(blanked, ['a     ', '     b     ', '"//w" \'"\' c'].join('\n'))
+  })
+})
+
+describe('Java のコメントだけを残す', () => {
+  test('Javadoc、ブロックのコメント、行のコメントを残し、コードを空白にする', () => {
+    const text = ['/** 説明 */', 'int a; /* 注 */', 'int b; // 後ろ'].join('\n')
+    assert.equal(keepJavaComments(text), ['/** 説明 */', '       /* 注 */', '       // 後ろ'].join('\n'))
+  })
+
+  test('文字列とテキストブロックの中の // と /* を残さない', () => {
+    const text = ['String a = "//x /* y */"; // 注', 'String b = """', '  // z /* w', '  """;'].join('\n')
+    const kept = keepJavaComments(text)
+    assert.equal(kept.includes('x'), false)
+    assert.equal(kept.includes('z'), false)
+    assert.equal(kept.includes('// 注'), true)
+  })
+
+  test('長さと行ごとの長さが元と同じ（行番号が変わらない）', () => {
+    const text = 'a /* x\ny */ b // z\n"//w" c'
+    const kept = keepJavaComments(text)
+    assert.equal(kept.length, text.length)
+    assert.deepEqual(
+      kept.split('\n').map((line) => line.length),
+      text.split('\n').map((line) => line.length),
+    )
   })
 })

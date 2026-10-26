@@ -24,7 +24,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 売上確定の統合テスト（T9106、AC-168、169、172、BR-21、NFR-10）。<br />
+ * 売上確定の統合テスト。<br />
  * 決済サービスは mock。支払はトランザクションを確定させて保存するので、テストごとに別の注文 ID を使う。
  */
 @IntegrationTest

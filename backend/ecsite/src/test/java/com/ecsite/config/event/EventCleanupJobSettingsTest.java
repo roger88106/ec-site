@@ -1,10 +1,9 @@
 package com.ecsite.config.event;
 
+import com.ecsite.TestSettings;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.context.properties.bind.Binder;
-import org.springframework.boot.context.properties.source.MapConfigurationPropertySource;
 import org.springframework.scheduling.annotation.Scheduled;
 
 import java.time.Duration;
@@ -13,7 +12,7 @@ import java.util.Map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 処理の済んだイベントを消す片付けのジョブの設定と分散ロックの単体テスト（AC-285、287）。<br />
+ * 処理の済んだイベントを消す片付けのジョブの設定と分散ロックの単体テスト。<br />
  * 設定は Spring を起動せずに、設定の型へ値を当てはめて確認する。他のモジュールの片付けのジョブは {@code CleanupJobSettingsTest} が確認する。
  */
 class EventCleanupJobSettingsTest {
@@ -51,8 +50,6 @@ class EventCleanupJobSettingsTest {
      * 接頭辞の下の値を、設定の型に当てはめる（値がなければ既定値）。
      */
     private static EventCleanupJob.Properties bind(Map<String, String> values) {
-        var source = new MapConfigurationPropertySource();
-        values.forEach((key, value) -> source.put(PREFIX + "." + key, value));
-        return new Binder(source).bindOrCreate(PREFIX, EventCleanupJob.Properties.class);
+        return TestSettings.bind(PREFIX, EventCleanupJob.Properties.class, values);
     }
 }

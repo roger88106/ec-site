@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 店舗の注文の詳細と一覧の、出荷の表示の受け入れテスト（T9311、AC-171、179、180、196）。<br />
+ * 店舗の注文の詳細と一覧の、出荷の表示の受け入れテスト。<br />
  * 注文と出荷は既定の会員（{@link com.ecsite.TestSecurityConfig}）で作る。テストごとにロールバックする。
  */
 @IntegrationTest

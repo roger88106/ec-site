@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * キーワード検索の統合テスト（T605、AC-58〜61）。<br />
+ * キーワード検索の統合テスト。<br />
  * 商品は B 側の API で作って公開する。公開するごとに時計を 1 分進める（並びは新着順で固定）。テストごとにロールバックする。
  */
 @IntegrationTest

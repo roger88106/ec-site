@@ -25,7 +25,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 税区分のリポジトリの統合テスト（T106）。<br />
+ * 税区分のリポジトリの統合テスト。<br />
  * テストごとにロールバックする。
  */
 @IntegrationTest

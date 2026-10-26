@@ -26,7 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.awaitility.Awaitility.await;
 
 /**
- * 与信の取消の統合テスト（T7211、AC-157、162、164、166）。<br />
+ * 与信の取消の統合テスト。<br />
  * 取消はコミットの後に非同期で行われるので、結果を待つ。
  */
 @IntegrationTest

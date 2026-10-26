@@ -30,7 +30,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 画像の変換の imgproxy の実装の統合テスト（T1035。AC-68〜70。plan 001 第 7.5 節）。<br />
+ * 画像の変換の imgproxy の実装の統合テスト。<br />
  * Testcontainers の imgproxy に、SeaweedFS のアップロードのバケットのファイルを変換させる。
  * テスト用の画像は {@code resources/images}（作り方は {@code generate.sh}）。左が赤、右が青の 64x32 で、
  * JPEG・HEIC・AVIF には向き（時計回りに 90 度）、位置情報、撮影機器（TestCam）が付いている。

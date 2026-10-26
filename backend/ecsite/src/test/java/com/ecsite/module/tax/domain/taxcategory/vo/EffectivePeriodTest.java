@@ -11,7 +11,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 適用期間の単体テスト（T102）
+ * 適用期間の単体テスト
  */
 class EffectivePeriodTest {
 

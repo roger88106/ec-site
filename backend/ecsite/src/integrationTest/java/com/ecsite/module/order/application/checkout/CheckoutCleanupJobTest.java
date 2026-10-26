@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 注文手続きの片付けのジョブの統合テスト（T017-01-03、AC-284、286、288、289、NFR-24）。<br />
+ * 注文手続きの片付けのジョブの統合テスト。<br />
  * ジョブはテストから呼ぶ。テストごとにロールバックする（片付けはテストのトランザクションに参加する）。
  */
 @IntegrationTest

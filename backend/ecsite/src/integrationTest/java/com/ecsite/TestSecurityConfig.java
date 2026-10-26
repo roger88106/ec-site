@@ -59,10 +59,10 @@ public class TestSecurityConfig {
     }
 
     /**
-     * MockMvc の要求に、既定の token を付ける。管理 API には管理者（すべての権限）の token（T3206）、
-     * 店舗 API には既定の会員（{@link TestTokens#MEMBER_SUBJECT}）の token（T3312）。<br />
+     * MockMvc の要求に、既定の token を付ける。管理 API には管理者（すべての権限）の token、
+     * 店舗 API には既定の会員（{@link TestTokens#MEMBER_SUBJECT}）の token。<br />
      * 認証と認可・持ち主を確認するテスト以外は、ログインを前提に業務の振る舞いを確認するので、要求ごとに token を書かない。
-     * 店舗 API の会員を持たないカートは、token があっても今までどおり使える（AC-120）。
+     * 店舗 API の会員を持たないカートは、token があっても今までどおり使える。
      * 要求に {@code Authorization} があれば付けない。要求の {@code with(...)} で
      * {@link TestTokens.Builder#bearer()} を付ければ置き換わり、{@link TestTokens#none()} を付ければ token なしになる
      * （既定の加工は、要求ごとの加工より先に行われる）。token は要求ごとに作る（有効期間が切れないように）。

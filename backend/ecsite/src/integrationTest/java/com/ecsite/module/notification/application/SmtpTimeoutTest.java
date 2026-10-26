@@ -33,7 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.doAnswer;
 
 /**
- * SMTP サーバーが応えないときの統合テスト（T9406）。<br />
+ * SMTP サーバーが応えないときの統合テスト。<br />
  * 接続を受けても何も返さない SMTP サーバーに向け、送信が待ち時間の上限で失敗し（止まったままにならない）、
  * 送ったメールの記録が巻き戻ることを確認する。失敗したイベントは、未完了のイベントの再発行で送り直される。
  */

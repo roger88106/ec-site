@@ -27,7 +27,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文のキャンセルの状態遷移の単体テスト（T2401、BR-9、AC-95、96、101〜103、105）
+ * 注文のキャンセルの状態遷移の単体テスト
  */
 class OrderCancellationTest {
 
@@ -42,7 +42,7 @@ class OrderCancellationTest {
     private static final Instant LATER = ORDERED_AT.plus(Duration.ofHours(1));
 
     /**
-     * 判断・キャンセルした運営者（AC-142）
+     * 判断・キャンセルした運営者
      */
     private static final Operator OPERATOR = new Operator(UUID.randomUUID(), "管理 花子");
 

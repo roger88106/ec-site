@@ -12,7 +12,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 率の単体テスト（T102）
+ * 率の単体テスト
  */
 class RatePercentTest {
 

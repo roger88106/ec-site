@@ -2,19 +2,14 @@ package com.ecsite.contract;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.yaml.snakeyaml.Yaml;
 
-import java.io.IOException;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
@@ -33,11 +28,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ErrorCodeContractTest {
 
     /**
-     * OpenAPI の置き場所。Gradle の test task が設定する。IDE から直接実行した場合は backend/ecsite/ からの相対パス
-     */
-    private static final Path OPENAPI_DIR = Path.of(System.getProperty("openapi.dir", "../../api/openapi"));
-
-    /**
      * 操作の HTTP メソッド
      */
     private static final Set<String> METHODS = Set.of("get", "post", "put", "delete", "patch");
@@ -51,9 +41,9 @@ class ErrorCodeContractTest {
      * 2 つの API の契約を読む
      */
     @BeforeAll
-    static void loadContracts() throws IOException {
+    static void loadContracts() {
         for (String file : List.of("admin.yaml", "store.yaml")) {
-            CONTRACTS.put(file, new Yaml().load(Files.readString(OPENAPI_DIR.resolve(file))));
+            CONTRACTS.put(file, Contracts.openApi(file));
         }
     }
 
@@ -79,10 +69,7 @@ class ErrorCodeContractTest {
     @Test
     @DisplayName("AC-275 バックエンドのすべてのエラーのコードが、どちらかの API の全体の列挙にあり、列挙のすべての値がバックエンドにある")
     void backendCodesAgreeWithContracts() {
-        Set<String> backend = new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("com.ecsite")
-                .stream()
+        Set<String> backend = ProductionClasses.all().stream()
                 .filter(javaClass -> javaClass.isEnum() && javaClass.isAssignableTo(ErrorCodeProvider.class))
                 .map(JavaClass::reflect)
                 .flatMap(type -> Arrays.stream(type.getEnumConstants()))

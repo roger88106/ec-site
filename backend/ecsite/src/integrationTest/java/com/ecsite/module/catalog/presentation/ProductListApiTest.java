@@ -25,7 +25,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * B 側の商品一覧の受け入れテスト（T501、US-9）。<br />
+ * B 側の商品一覧の受け入れテスト。<br />
  * 登録日時の新しい順を確認するため、商品を 1 つ登録するごとに時計を 1 分進める。テストごとにロールバックする。
  */
 @IntegrationTest

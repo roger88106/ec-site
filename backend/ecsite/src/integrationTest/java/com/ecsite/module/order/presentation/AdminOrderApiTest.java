@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * B 側の注文の一覧・詳細の受け入れテスト（T2405、AC-97〜100、106）。<br />
+ * B 側の注文の一覧・詳細の受け入れテスト。<br />
  * 注文は C 側の API で作る。テストごとにロールバックする。
  */
 @IntegrationTest

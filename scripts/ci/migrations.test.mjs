@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { withoutGitEnv } from './lib/git-env.mjs'
 import { findChangedMigrations, findEmptyReason, findRemovedMigrations, isVersionedMigration, parseBlobList } from './migrations.mjs'
 
 describe('適用済みのマイグレーションの検査', () => {
@@ -69,8 +70,7 @@ describe('マイグレーションの検査の判定', () => {
 describe('develop・main との分岐点の tree を基準にした判定（一時リポジトリ）', () => {
   const script = fileURLToPath(new URL('./migrations.mjs', import.meta.url))
   const dir = 'backend/ecsite/src/main/resources/db/migration'
-  // commit の hook の中では GIT_DIR などが設定され、試すリポジトリでなく commit 中のリポジトリを指すので、外す
-  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')))
+  const env = withoutGitEnv()
   const repos = []
   after(() => repos.forEach((repo) => rmSync(repo, { recursive: true, force: true })))
 

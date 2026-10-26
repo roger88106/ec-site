@@ -5,6 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
+import { removeGitEnv, withoutGitEnv } from './git-env.mjs'
 import { emptyListReason, listGitFiles, splitNulList } from './git-files.mjs'
 
 /** 試す Git のリポジトリ */
@@ -20,10 +21,7 @@ function write(file, content = 'x') {
 const git = (...args) => execFileSync('git', args, { cwd: repo, stdio: 'ignore' })
 
 before(() => {
-  // pre-commit の hook の中では GIT_DIR などが設定され、試すリポジトリでなく commit 中のリポジトリを指すので、外す
-  for (const name of Object.keys(process.env)) {
-    if (name.startsWith('GIT_')) delete process.env[name]
-  }
+  removeGitEnv()
   git('init', '-q')
   write('.gitignore', 'ignored.txt\n')
   write('tracked.txt')
@@ -90,7 +88,7 @@ describe('対象が 0 件のときの失敗', () => {
     'test-names',
     'time-waits',
   ]
-  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')))
+  const env = withoutGitEnv()
   const empty = mkdtempSync(path.join(tmpdir(), 'empty-targets-'))
   after(() => rmSync(empty, { recursive: true, force: true }))
   execFileSync('git', ['init', '-q'], { cwd: empty, env })

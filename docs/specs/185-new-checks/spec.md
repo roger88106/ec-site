@@ -186,9 +186,11 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
 - 完了条件：DC-185-1〜11 を満たし、`check-all.sh` が通る。
 - 参照：第 3 節の DS-185-1、spec 183 第 8 節
 
-- [ ] **T185-01-01** [テスト] 直接実行の判定が 1 通りであることを守る検査を加え、Git を呼ぶテストの環境変数を外す処理を共通の補助にする（DC-185-1、2）。
+- [x] **T185-01-01** [テスト] 直接実行の判定が 1 通りであることを守る検査を加え、Git を呼ぶテストの環境変数を外す処理を共通の補助にする（DC-185-1、2）。
   - 依存：なし
   - 範囲：`scripts/ci/`、`scripts/ci/lib/`、Git を呼ぶテスト、`docs/guides/ci.md`
+  - 確認方法：`git grep -n "startsWith('GIT_')" -- scripts` が `scripts/ci/lib/git-env.mjs` の 1 行だけであること
+  - 結果：新しい検査 `scripts/ci/main-entry.mjs`（`scripts/` の下のテストでない `.mjs`・`.cjs`。`scripts/dev/` も、同じ判定を書けるので含める。ci.md の表に行を加えた）は、`argv[1]`・`import.meta.url` の比較・`import.meta.main`・`require.main` を失敗にし、今のリポジトリは 53 件で 0 件。`GIT_` を外す処理は `scripts/ci/lib/git-env.mjs`（`withoutGitEnv`、`removeGitEnv`）の 1 か所にし、Git を呼ぶ 7 つのテスト（`pre-commit.test.mjs` を含む）が使う。
 - [ ] **T185-01-02** [テスト] 除外の一覧のパスの求め方と除外の誤りの文、読めない行の出力の形、0 件の理由、Git の一覧の求め方を、共通の関数にそろえる（DC-185-3〜5、9）。
   - 依存：T185-01-01
   - 範囲：`scripts/ci/lib/`、除外の一覧を持つ検査、読めない行を出す検査、`migrations.mjs`、`env-defaults.mjs`、`glossary-ids.mjs`、`related-specs.mjs`、テスト

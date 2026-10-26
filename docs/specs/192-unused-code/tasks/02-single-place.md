@@ -14,7 +14,7 @@
 - [ ] **T192-02-02** `[P]` 変換元のファイルの場所を、ファイル保存の実装が作る。画像変換のクラスは、ファイル保存設定の型を持たない（DC-192-6）。
   - 依存：なし
   - 範囲：`main/module/media/infrastructure/converter/ImgproxyImageConverter.java`、`main/module/media/infrastructure/storage/S3ObjectStorage.java`、そのテスト
-- [ ] **T192-02-03** `[P]` 片付けのジョブが行う削除の SQL を、イベント記録の表を読み書きするクラスに移す（DC-192-7）。共通コードの設計を直す。
+- [x] **T192-02-03** `[P]` 片付けのジョブが行う削除の SQL を、イベント記録の表を読み書きするクラスに移す（DC-192-7）。共通コードの設計を直す。
   - 依存：なし
   - 範囲：`main/config/event/EventCleanupJob.java`、`main/config/event/EventPublicationRecords.java`、`it/config/event/EventCleanupJobTest.java`、`docs/design/common.md`
 - [ ] **T192-02-04** `[リスク]` 認証情報から token を取り出し、なければ未認証のエラーにする処理を、`common/security/` の 1 つの操作にする。会員、運営者、ログイン中の利用者の情報を返す API は、それを呼ぶ。token がないときに会員の取り出しが空を返す振る舞いを残す（DC-192-8）。共通コードの設計を直す。実装役は高性能にし、実装の後に高性能のレビューを行う。

@@ -38,8 +38,8 @@
 | `ApiPathConfig` | 生成したインターフェースの実装に付ける API のパスのプレフィックス（管理 API は `/api/admin`、店舗 API は `/api/store`） |
 | `ValidationConfig` | Bean Validation のバリデーター。制約のメッセージを `messages.properties` から解決する |
 | `OpenApiEnumConverterConfig` | クエリパラメータの文字列を、OpenAPI から生成した列挙型の `fromValue` で変換する |
-| `event/` の `EventResubmissionConfig`、`EventResubmissionJob`、`EventPublicationRecords`、`EventPublicationMetrics` | 未完了のイベントを定期ジョブで再発行し、再発行を停止したイベントにマークを付け、件数をメトリクスとして公開する |
-| `event/` の `EventCleanupConfig`、`EventCleanupJob` | 処理の済んだイベントの記録を、保存期間を過ぎたら削除する |
+| `event/` の `EventResubmissionConfig`、`EventResubmissionJob`、`EventPublicationRecords`、`EventPublicationMetrics` | 未完了のイベントを定期ジョブで再発行し、再発行を停止したイベントにマークを付け、件数をメトリクスとして公開する。`EventPublicationRecords` は、イベントの記録の表を読み書きし、片付けのジョブの削除も持つ |
+| `event/` の `EventCleanupConfig`、`EventCleanupJob` | 処理の済んだイベントの記録を、保存期間を過ぎたら削除する。削除の SQL は `EventPublicationRecords` が持つ |
 | `SchedulingConfig`、`SchedulerLockConfig` | 定期ジョブの起動（`ecsite.scheduling.enabled`）と、同じジョブを 1 インスタンスだけで動かす分散ロック |
 | `security/` | 認証・認可。`SecurityConfig` は filter chain、`RealmKeys` は token の検証、`PermissionConverter` は権限の変換。管理 API の権限は `AdminOperationPermissions` と `AdminPermissionAuthorizationManager`、店舗 API の token の要否は `StoreOperationSecurity` と `StoreTokenAuthorizationManager`。`SecurityProblemResponder` は認証・認可の失敗の応答、`SecurityProperties` は認証の設定の値の型、`OpenApiOperations` は契約の操作ごとの値の一覧、`MeController` は `GET /me` |
 

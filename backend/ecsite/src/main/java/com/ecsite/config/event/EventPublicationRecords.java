@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * Spring Modulith のイベントの記録を、再発行のジョブのために直接読み書きする（バックエンドのアーキテクチャ 第 5 節）。<br />
+ * Spring Modulith のイベントの記録を、再発行のジョブと片付けのジョブのために直接読み書きする（バックエンドのアーキテクチャ 第 5 節）。<br />
  * 止めた印は、処理の回数を上限より 1 つ多くした値で表す（Spring Modulith の再発行は、処理の回数を見ずに読むため、
  * 絞り込みは再発行のジョブが行う）。
  */
@@ -54,6 +54,11 @@ class EventPublicationRecords {
      * 処理を終えた時刻
      */
     private static final Field<Instant> COMPLETION_DATE = DSL.field(DSL.name("completion_date"), Instant.class);
+
+    /**
+     * 処理を終えた状態
+     */
+    private static final String COMPLETED = "COMPLETED";
 
     /**
      * 最後の処理に失敗した状態
@@ -100,6 +105,20 @@ class EventPublicationRecords {
      */
     int countStopped(int maxAttempts) {
         return dsl.fetchCount(EVENT_PUBLICATION, COMPLETION_DATE.isNull().and(COMPLETION_ATTEMPTS.gt(maxAttempts)));
+    }
+
+    /**
+     * 処理を終えた時刻が基準の時刻より前のイベントを消す。未完了のイベントと止めたイベントは消さない。
+     *
+     * @param threshold 基準の時刻（これより前に処理を終えたものを消す）
+     * @return 消した件数
+     */
+    int deleteCompletedBefore(Instant threshold) {
+        // Spring Modulith の「処理を終えた時刻で消す」操作と同じ条件。消した件数をログに出すため、自分で消す
+        return dsl.deleteFrom(EVENT_PUBLICATION)
+                .where(COMPLETION_DATE.lt(threshold))
+                .and(STATUS.eq(COMPLETED).or(STATUS.isNull()))
+                .execute();
     }
 
     /**

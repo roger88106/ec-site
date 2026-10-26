@@ -11,7 +11,7 @@
 - [x] **T192-02-01** `[P]` 配送業者の表示名のキーを出荷モジュールのキーにし、通知のメールと mock の画面がそれを使う（DC-192-5）。出荷の設計書に、表示名のキーを出荷モジュールが持つことを書く。
   - 依存：なし
   - 範囲：`main/resources/messages.properties`、`main/module/notification/application/ShipmentMailComposer.java`、`main/module/shipping/infrastructure/mock/MockCarrierController.java`、通知と mock のテスト、`docs/design/modules/shipping.md`
-- [ ] **T192-02-02** `[P]` 変換元のファイルの場所を、ファイル保存の実装が作る。画像変換のクラスは、ファイル保存設定の型を持たない（DC-192-6）。
+- [x] **T192-02-02** `[P]` 変換元のファイルの場所を、ファイル保存の実装が作る。画像変換のクラスは、ファイル保存設定の型を持たない（DC-192-6）。
   - 依存：なし
   - 範囲：`main/module/media/infrastructure/converter/ImgproxyImageConverter.java`、`main/module/media/infrastructure/storage/S3ObjectStorage.java`、そのテスト
 - [x] **T192-02-03** `[P]` 片付けのジョブが行う削除の SQL を、イベント記録の表を読み書きするクラスに移す（DC-192-7）。共通コードの設計を直す。

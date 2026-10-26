@@ -1,7 +1,7 @@
 package com.ecsite.common.security;
 
-import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -21,14 +21,7 @@ public class CurrentMember {
      * @return 会員。token がなければ（ログインしていなければ）空
      */
     public Optional<AuthenticatedMember> find() {
-        return CurrentToken.find().map(jwt -> new AuthenticatedMember(
-                jwt.getSubject(),
-                jwt.getClaimAsString("email"),
-                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
-                jwt.getClaimAsString("family_name"),
-                jwt.getClaimAsString("given_name"),
-                jwt.getClaimAsString("birthdate"),
-                jwt.getClaimAsString("gender")));
+        return CurrentToken.find().map(CurrentMember::toMember);
     }
 
     /**
@@ -38,6 +31,17 @@ public class CurrentMember {
      * @throws BusinessException token がない（401）
      */
     public AuthenticatedMember require() {
-        return find().orElseThrow(() -> BusinessException.of(CommonErrorCode.UNAUTHENTICATED));
+        return toMember(CurrentToken.require());
+    }
+
+    private static AuthenticatedMember toMember(Jwt jwt) {
+        return new AuthenticatedMember(
+                jwt.getSubject(),
+                jwt.getClaimAsString("email"),
+                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
+                jwt.getClaimAsString("family_name"),
+                jwt.getClaimAsString("given_name"),
+                jwt.getClaimAsString("birthdate"),
+                jwt.getClaimAsString("gender"));
     }
 }

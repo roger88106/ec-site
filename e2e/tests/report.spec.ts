@@ -19,7 +19,7 @@ function segmentRow(page: Page, dimension: string, segment: string) {
     .filter({ has: page.getByRole('cell', { name: segment, exact: true }) })
 }
 
-test('AC-197、205、206、209、219、221、222 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
+test('AC-197、199、205、206、207、209、219、221、222 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
   browser,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
@@ -84,7 +84,7 @@ test('AC-197、205、206、209、219、221、222 生年月日と性別を入れ�
   })
 })
 
-test('AC-214、215、217 営業は、メニューに売上の推移がなく、URL で開くと「権限がない」と示され、他の 2 つは開ける', async ({
+test('AC-214、217 営業は、メニューに売上の推移がなく、URL で開くと「権限がない」と示され、他の 2 つは開ける', async ({
   page,
 }) => {
   await loginAdmin(page, ACCOUNTS.sales)

@@ -5,7 +5,7 @@ import { detailValue } from '../src/detail'
 import { addToCart, fillShipping, payOnMockPage } from '../src/store'
 import { STORE_URL } from '../src/urls'
 
-test('AC-108、111、112、113、114、115、122、124、125、129 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
+test('AC-108、111、112、113、114、115、122、124、125、127 会員登録して確認のメールのリンクを開くと、ログインした状態で戻ってカートが引き継がれ、注文が一覧に出る', async ({
   page,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
@@ -19,7 +19,7 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
   })
   const account = { email: memberEmail('signup'), password: 'E2e-pass-1234' }
 
-  await test.step('ログインせずにカートに入れ、会員登録する。確認のメールが届くまでログインできない（AC-108、111）', async () => {
+  await test.step('ログインせずにカートに入れ、会員登録する。確認のメールを送ったと示される（AC-108、111）', async () => {
     await addToCart(page, productId, { quantity: '2' })
     await submitSignup(page, account, { lastName: '会員', firstName: '登録' })
   })
@@ -36,7 +36,7 @@ test('AC-108、111、112、113、114、115、122、124、125、129 会員登録�
     await expect(page.getByLabel('数量')).toHaveValue('2')
   })
 
-  await test.step('注文し、注文の一覧に出る（AC-127、129）', async () => {
+  await test.step('注文し、注文の一覧に出る（AC-127）', async () => {
     await page.getByRole('button', { name: '注文手続きへ進む' }).click()
     await expect(page.getByText(account.email)).toBeVisible()
     await fillShipping(page, '100-0001')

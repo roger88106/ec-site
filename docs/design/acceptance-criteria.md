@@ -73,7 +73,7 @@
 | AC-48 | 商品品番・バリアント品番の前方一致、商品名の部分一致、状態、カテゴリで絞り込める… | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest`、`ProductListPage.test.tsx`、`productFilter.test.ts` |
 | AC-49 | 商品品番、商品名、状態、バリアント数、在庫数の合計を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest`、`ProductListPage.test.tsx` |
 | AC-50 | ページ単位で取得できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductListApiTest` |
-| AC-51 | C 側に表示される商品（BR-2）だけが含まれる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`StorefrontApiTest`、`publish.spec.ts` |
+| AC-51 | C 側に表示される商品（BR-2）だけが含まれる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`StorefrontApiTest` |
 | AC-52 | カテゴリで絞り込める。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`listQuery.test.ts` |
 | AC-53 | 税込価格の範囲で絞り込める。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreCatalogApiTest`、`StorefrontApiTest`、`listQuery.test.ts` |
 | AC-54 | 新着順（既定）、価格の安い順、高い順で並べ替えられる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductTest`、`StoreCatalogApiTest`、`StorefrontApiTest` ほか 2 |
@@ -85,7 +85,7 @@
 | AC-60 | 精度（表記ゆれ、類義語、関連度順）は問わない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | 除外 |
 | AC-61 | ページ単位で取得できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StoreProductSearchTest`、`StorefrontApiTest`、`searchQuery.test.ts` |
 | AC-62 | 商品名、説明、画像、価格（BR-4）、バリアント軸と選択肢を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`VariantPicker.test.tsx`、`publish.spec.ts` ほか 2 |
-| AC-63 | バリアントを選ぶと、その在庫状況を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`variantSelection.test.ts` |
+| AC-63 | バリアントを選ぶと、その在庫状況を表示する。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`suspension.spec.ts` ほか 1 |
 | AC-64 | 在庫状況は「在庫あり」「在庫なし」のみ。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest`、`publish.spec.ts`、`variantSelection.test.ts` |
 | AC-65 | C 側に表示されない商品は、存在しない商品と同じ結果になる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
 | AC-66 | URL は品番が変わっても変わらない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `StorefrontApiTest` |
@@ -149,9 +149,9 @@
 | AC-124 | ログアウトすると、そのブラウザーのカートは空に見える。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `cart.test.ts`、`member.spec.ts` |
 | AC-125 | 注文手続きに進むには、ログインが必要。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`cart.test.ts`、`member.spec.ts` |
 | AC-126 | 注文手続きは、それを始めた会員だけが操作・参照できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-127 | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`OrderForm.test.tsx`、`placeOrderErrors.test.ts` |
+| AC-127 | 注文の連絡先のメールアドレスには、会員のメールアドレス（確認済み）を使い、注文手… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`OrderForm.test.tsx`、`member.spec.ts` ほか 1 |
 | AC-128 | 注文は、注文した会員に結び付く。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`member.spec.ts`、`orderListQuery.test.ts` |
+| AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`orderListQuery.test.ts` |
 | AC-130 | 一覧から注文の詳細（AC-93 と同じ内容）に遷移し、キャンセルを申請できる（A… | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 変更 | [003](../specs/archive/mvp/003-auth/spec.md) | [015](../specs/archive/mvp/015-security/spec.md) | [注文モジュール](modules/order.md)（注文（集約）の操作の表：ログインしていなければ 401） | `MemberOrderApiTest` |
 | AC-132 | 管理画面は、ログインしなければ何も表示しない。 | 有効 | [003](../specs/archive/mvp/003-auth/spec.md) | — | spec | `AuthGate.test.tsx`、`login.test.ts` |
@@ -221,7 +221,7 @@
 | AC-196 | キャンセルの後、店舗の注文一覧と注文詳細は「キャンセル」を表示する。 | 有効 | [009](../specs/archive/mvp/009-shipping/spec.md) | — | spec | `StoreOrderShipmentApiTest` |
 | AC-197 | 運営者は、期間と集計の粒度（週、月、四半期、年）を選び、粒度ごとの売上額と販売数… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`ReportPermissionApiTest`、`SalesTrendPage.test.tsx` ほか 3 |
 | AC-198 | 同じ数字を、粒度ごとの行の表でも見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest` |
-| AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
+| AC-199 | 商品を 1 つ選ぶと、その商品だけの推移を見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` ほか 1 |
 | AC-200 | 売上の数え方（BR-25）を画面で切り替えられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`SalesTrendPage.test.tsx`、`SalesTrendQueryTest` ほか 1 |
 | AC-201 | 売れなかった区切りも、0 の行として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `SalesTrendPage.test.tsx`、`SalesTrendQueryTest` |
 | AC-202 | 運営者は、商品を 1 つと期間を選び、バリエーション（軸の値の組み合わせ）ごとの… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` ほか 1 |
@@ -229,7 +229,7 @@
 | AC-204 | 期間に売れなかったバリエーションも、0 として示す。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportApiTest`、`VariantSalesPage.test.tsx`、`VariantSalesQueryTest` |
 | AC-205 | 運営者は、期間を選び、お届け先の都道府県ごとの売上額と注文件数を、グラフと表で見… | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-206 | 同じ期間の、年齢層（BR-27）ごとの売上額と注文件数を、グラフと表で見られる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 2 |
-| AC-207 | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` |
+| AC-207 | 商品を 1 つ選ぶと、その商品を含む注文だけを数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest`、`ReportApiTest` ほか 1 |
 | AC-208 | 生年月日の分からない会員の注文は、年齢層「不明」として数える。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AgeGroupTest`、`CustomerBreakdownPage.test.tsx`、`CustomerBreakdownQueryTest` ほか 2 |
 | AC-209 | IdP の会員登録の画面で、生年月日を入れられる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest`、`report.spec.ts` |
 | AC-210 | 生年月日は任意とする。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `RealmSettingsContractTest` |
@@ -237,7 +237,7 @@
 | AC-212 | 注文の成立のときに、その時点の年齢を注文に記録する。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest`、`RealmSettingsContractTest` |
 | AC-213 | 未来の日付と、明らかにありえない日付（120 年より前など）は受け付けない。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `BuyerProfileTest`、`PlaceOrderApiTest` |
 | AC-214 | 運営者は、権限を持つレポートだけを、管理画面のメニューで見て開ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermission.test.tsx`、`ReportPermissionApiTest`、`report.spec.ts` |
-| AC-215 | 権限のないレポートの API を呼ぶと 403 になる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
+| AC-215 | 権限のないレポートの API を呼ぶと 403 になる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest` |
 | AC-216 | 権限はレポートごとに分ける。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `AdminApiPermissionContractTest` |
 | AC-217 | 役割ごとの権限は BR-28 のとおり。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `ReportPermissionApiTest`、`report.spec.ts` |
 | AC-218 | 運営者は、表示しているレポートの表を CSV で取り出せる。 | 有効 | [010](../specs/archive/mvp/010-sales-report/spec.md) | — | spec | `CustomerBreakdownPage.test.tsx`、`SalesTrendPage.test.tsx`、`VariantSalesPage.test.tsx` ほか 1 |

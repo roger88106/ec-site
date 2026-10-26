@@ -3,7 +3,7 @@ import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createPublishedProduct, productCode, RUN_ID, taxCategoryWithRate } from '../src/data'
 import { STORE_URL } from '../src/urls'
 
-test('AC-28、62 管理画面でバリアントを販売停止にすると、店舗画面の詳細でその値が選べなくなる', async ({ page }) => {
+test('AC-28、62、63 管理画面でバリアントを販売停止にすると、店舗画面の詳細でその値が選べなくなる', async ({ page }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const name = `E2E 販売停止 ${RUN_ID}`
   const code = productCode('SUSPEND')

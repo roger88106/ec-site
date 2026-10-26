@@ -14,7 +14,7 @@ export function acquireLock(input: {
   isRunning: (pid: number) => boolean
   waitMs: number
   now?: () => number
-  sleep: (ms: number) => Promise<void>
+  sleep?: (ms: number) => Promise<void>
   intervalMs?: number
 }): Promise<{ acquired: true } | { acquired: false; owner: LockOwner | null }>
 export function busyLockMessage(input: { lock: string; owner: LockOwner | null }): string

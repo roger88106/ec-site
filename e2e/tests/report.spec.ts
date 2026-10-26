@@ -1,25 +1,14 @@
 import { expect, type Page, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, memberEmail, registerMember } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate } from '../src/data'
-import { orderCart, payOnMockPage } from '../src/store'
+import { addToCart, orderCart, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
-import { CHECK_TIMEOUT, REPORT_RECHECK_INTERVALS, REPORT_TIMEOUT, reopenUntil } from '../src/waits'
+import { CHECK_TIMEOUT, REPORT_WAIT, reopenUntil } from '../src/waits'
 
 /** 今日の日本時間の年と月 */
 function thisMonthInJapan(): { year: number; month: number } {
   const [year, month] = new Date().toLocaleDateString('sv-SE', { timeZone: 'Asia/Tokyo' }).split('-').map(Number)
   return { year, month }
-}
-
-/**
- * レポートの画面を開き直しながら、表示が期待どおりになるのを待つ（写しの遅れを待つ）。
- *
- * @param page 管理画面のページ
- * @param url 開く URL
- * @param check 表示を確認する。満たさなければ投げる
- */
-async function expectReport(page: Page, url: string, check: () => Promise<void>) {
-  await reopenUntil(page, url, check, { timeout: REPORT_TIMEOUT, intervals: REPORT_RECHECK_INTERVALS })
 }
 
 /** 分け方の表で、区分の行 */
@@ -30,7 +19,7 @@ function segmentRow(page: Page, dimension: string, segment: string) {
     .filter({ has: page.getByRole('cell', { name: segment, exact: true }) })
 }
 
-test('AC-197、205、206、209、219、221、222 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
+test('AC-197、199、205、206、207、209、219、221、222 生年月日と性別を入れて登録した会員の注文が、管理職のレポートに数えられる', async ({
   browser,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
@@ -52,10 +41,7 @@ test('AC-197、205、206、209、219、221、222 生年月日と性別を入れ�
       { lastName: 'レポート', firstName: '会員' },
       { birthdate: `${year - 35}-01-01`, gender: '女性' },
     )
-    await store.goto(`${STORE_URL}/products/${productId}`)
-    await store.getByLabel('数量').selectOption('2')
-    await store.getByRole('button', { name: 'カートに入れる' }).click()
-    await expect(store.getByText('カートに入れました。')).toBeVisible()
+    await addToCart(store, productId, { quantity: '2' })
     await orderCart(store)
     await payOnMockPage(store)
     await store.context().close()
@@ -65,29 +51,40 @@ test('AC-197、205、206、209、219、221、222 生年月日と性別を入れ�
   await loginAdmin(admin, ACCOUNTS.manager)
 
   await test.step('管理職：売上の推移で、商品を選ぶと今月に 2 個・2,200 円が数えられる（AC-197、199）', async () => {
-    await expectReport(admin, `${ADMIN_URL}/reports/sales-trend?productId=${productId}`, async () => {
-      const row = admin.getByRole('row').filter({ has: admin.getByRole('cell', { name: `${year} 年 ${month} 月` }) })
-      await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: CHECK_TIMEOUT })
-      await expect(row.getByRole('cell', { name: '2', exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
-    })
+    // 写しの遅れを待つ
+    await reopenUntil(
+      admin,
+      `${ADMIN_URL}/reports/sales-trend?productId=${productId}`,
+      async () => {
+        const row = admin.getByRole('row').filter({ has: admin.getByRole('cell', { name: `${year} 年 ${month} 月` }) })
+        await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: CHECK_TIMEOUT })
+        await expect(row.getByRole('cell', { name: '2', exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
+      },
+      REPORT_WAIT,
+    )
   })
 
   await test.step('管理職：地域・年齢層・性別で、商品を選ぶと東京都・30 代・女性に 1 件ずつ数えられる（AC-205、206、207、219）', async () => {
-    await expectReport(admin, `${ADMIN_URL}/reports/customer-breakdown?productId=${productId}`, async () => {
-      for (const [dimension, segment] of [
-        ['都道府県', '東京都'],
-        ['年齢層', '30 代'],
-        ['性別', '女性'],
-      ]) {
-        const row = segmentRow(admin, dimension, segment)
-        await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: CHECK_TIMEOUT })
-        await expect(row.getByRole('cell', { name: '1', exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
-      }
-    })
+    await reopenUntil(
+      admin,
+      `${ADMIN_URL}/reports/customer-breakdown?productId=${productId}`,
+      async () => {
+        for (const [dimension, segment] of [
+          ['都道府県', '東京都'],
+          ['年齢層', '30 代'],
+          ['性別', '女性'],
+        ]) {
+          const row = segmentRow(admin, dimension, segment)
+          await expect(row.getByRole('cell', { name: '2,200 円' })).toBeVisible({ timeout: CHECK_TIMEOUT })
+          await expect(row.getByRole('cell', { name: '1', exact: true })).toBeVisible({ timeout: CHECK_TIMEOUT })
+        }
+      },
+      REPORT_WAIT,
+    )
   })
 })
 
-test('AC-214、215、217 営業は、メニューに売上の推移がなく、URL で開くと「権限がない」と示され、他の 2 つは開ける', async ({
+test('AC-214、217 営業は、メニューに売上の推移がなく、URL で開くと「権限がない」と示され、他の 2 つは開ける', async ({
   page,
 }) => {
   await loginAdmin(page, ACCOUNTS.sales)

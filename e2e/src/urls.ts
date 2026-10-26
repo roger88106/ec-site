@@ -10,3 +10,13 @@ export const STORE_URL = 'http://localhost:3100'
 export const IDP_URL = 'http://localhost:8181'
 /** IdP が送るメールを受ける Mailpit（compose）の画面と API の URL */
 export const MAILPIT_URL = 'http://localhost:8025'
+
+/**
+ * URL のポート。サーバーの起動の設定（`--port`）を、URL の定数から決めるために使う。
+ *
+ * @param url ポートを含む URL
+ * @returns ポート番号の文字列
+ */
+export function portOf(url: string): string {
+  return new URL(url).port
+}

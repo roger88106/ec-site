@@ -1,16 +1,14 @@
 import { expect, type Page, test } from '@playwright/test'
-import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
+import { ACCOUNTS, loginAdmin } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
 import { detailValue } from '../src/detail'
 import { notifyCarrier, shipmentMail, shipOnAdmin } from '../src/shipping'
-import { emptyCart, orderCart, payOnMockPage } from '../src/store'
+import { orderAsMember, orderIdOf, payOnMockPage } from '../src/store'
 import { ADMIN_URL, STORE_URL } from '../src/urls'
 import { CHECK_TIMEOUT, reopenUntil } from '../src/waits'
 
-/**
- * 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
- * 出荷通知メールは compose の Mailpit に届く。
- */
+// 出荷と配送状況の E2E。E2E のバックエンドは mock の決済サービスと mock の物流サービスで動き、
+// 出荷通知メールは compose の Mailpit に届く。
 
 /** 作った商品と、会員が支払って受付になった注文 */
 type AcceptedOrder = { productId: string; variantId: string; orderId: string; orderUrl: string }
@@ -18,6 +16,7 @@ type AcceptedOrder = { productId: string; variantId: string; orderId: string; or
 /**
  * 在庫 3 の公開の商品を作り、会員として 1 つ注文して mock で支払う（受付になる）。
  *
+ * @param page 店舗画面と管理画面を開くページ
  * @param code 品番の一部
  */
 async function acceptedOrder(page: Page, code: string): Promise<AcceptedOrder> {
@@ -30,15 +29,9 @@ async function acceptedOrder(page: Page, code: string): Promise<AcceptedOrder> {
     variants: [{ code: 'A', stock: 3 }],
   })
   const [variantId] = await variantIds(productId)
-  await loginStore(page, ACCOUNTS.member)
-  await emptyCart(page)
-  await page.goto(`${STORE_URL}/products/${productId}`)
-  await page.getByRole('button', { name: 'カートに入れる' }).click()
-  await expect(page.getByText('カートに入れました。')).toBeVisible()
-  await orderCart(page)
+  await orderAsMember(page, ACCOUNTS.member, [productId])
   const orderUrl = await payOnMockPage(page)
-  const orderId = new URL(orderUrl).pathname.split('/').at(-1) as string
-  return { productId, variantId, orderId, orderUrl }
+  return { productId, variantId, orderId: orderIdOf(orderUrl), orderUrl }
 }
 
 /** 管理画面の注文詳細の見出しから、注文番号を読む（読み込むまでは「…」なので、番号が出るのを待つ） */
@@ -103,18 +96,18 @@ test('AC-189、190、191、192 返送の注文を、管理画面で絞り込ん�
   await test.step('管理画面：返送の注文で絞り込むと、その注文が出る（AC-189）', async () => {
     await page.goto(`${ADMIN_URL}/orders?orderNumber=${orderNumber}`)
     await page.getByRole('checkbox', { name: '返送' }).click()
-    await page.getByRole('button', { name: '絞り込む' }).click()
+    await page.getByRole('button', { name: '絞り込む', exact: true }).click()
     await expect(page).toHaveURL(/returned=true/)
     await expect(page.getByRole('link', { name: orderNumber })).toBeVisible()
   })
 
   await test.step('管理画面：理由を入れ、在庫に戻してキャンセルすると、返金済みになる（AC-190、191、192）', async () => {
     await page.getByRole('link', { name: orderNumber }).click()
-    await page.getByRole('button', { name: 'キャンセルする' }).click()
+    await page.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByLabel('理由（必須）').fill('受取拒否で返送された')
     await dialog.getByRole('radio', { name: '在庫に戻す' }).check()
-    await dialog.getByRole('button', { name: 'キャンセルする' }).click()
+    await dialog.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     await expect(page.getByText('キャンセルしました')).toBeVisible()
     // 返金はキャンセルのコミットの後に、裏で行う
     await reopenUntil(page, undefined, () => expect(page.getByText('返金済み')).toBeVisible({ timeout: CHECK_TIMEOUT }))

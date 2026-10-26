@@ -51,6 +51,9 @@ export type TaxCategoryRef = { id: string; name: string }
  * 現時点の率が ratePercent の税区分を返す。E2E の DB の seed（db/seed/base）の「標準」（10%）「軽減」（8%）を使う。<br />
  * 作らずに、なければ失敗する。作ったばかりの税区分は、バックエンドの税率のキャッシュ（有効期間 30 秒）が切れるまで
  * 率がなく、時間で待つことになるため。
+ *
+ * @param ratePercent 現時点の率（%）
+ * @returns 税区分の ID と名称
  */
 export async function taxCategoryWithRate(ratePercent: number): Promise<TaxCategoryRef> {
   const { items } = unwrap(await api.GET('/tax-categories'))
@@ -64,7 +67,12 @@ export async function taxCategoryWithRate(ratePercent: number): Promise<TaxCateg
 /** カテゴリの名称に付ける通し番号。同じ実行の中で名称が重ならないようにする */
 let categorySequence = 0
 
-/** 最上位のカテゴリを作る。名称には実行ごとの印と通し番号を付ける */
+/**
+ * 最上位のカテゴリを作る。名称には実行ごとの印と通し番号を付ける。
+ *
+ * @param name 名称（印と通し番号を後ろに付ける）
+ * @returns カテゴリの ID と、印を付けた名称
+ */
 export async function createCategory(name: string): Promise<{ id: string; name: string }> {
   categorySequence += 1
   const unique = `${name} ${RUN_ID}-${categorySequence}`
@@ -87,12 +95,22 @@ export type PublishedProduct = {
   publishStart?: Date
 }
 
-/** 実行ごとの印を付けた品番（例：E2E-MG3K2J1A-SHIRT） */
+/**
+ * 実行ごとの印を付けた品番（例：E2E-MG3K2J1A-SHIRT）。
+ *
+ * @param code 品番の後ろの部分
+ * @returns 印を付けた商品品番
+ */
 export function productCode(code: string): string {
   return `E2E-${RUN_ID}-${code}`
 }
 
-/** 商品を登録し、バリアントを追加して在庫を入荷し、公開する。商品 ID を返す */
+/**
+ * 商品を登録し、バリアントを追加して在庫を入荷し、公開する。
+ *
+ * @param product 商品の作り方
+ * @returns 商品 ID
+ */
 export async function createPublishedProduct(product: PublishedProduct): Promise<string> {
   const code = productCode(product.code)
   const { id } = unwrap(
@@ -128,7 +146,12 @@ export async function createPublishedProduct(product: PublishedProduct): Promise
   return id
 }
 
-/** 公開開始日時を変える（公開した後でも変えられる） */
+/**
+ * 公開開始日時を変える（公開した後でも変えられる）。
+ *
+ * @param productId 商品 ID
+ * @param publishStart 新しい公開開始日時
+ */
 export async function changePublishStart(productId: string, publishStart: Date): Promise<void> {
   unwrap(
     await api.PUT('/products/{productId}/publication-period', {
@@ -159,17 +182,30 @@ async function arrive(variantId: string, quantity: number): Promise<void> {
   )
 }
 
-/** 非公開にする */
+/**
+ * 非公開にする。
+ *
+ * @param productId 商品 ID
+ */
 export async function unpublish(productId: string): Promise<void> {
   unwrap(await api.PUT('/products/{productId}/unpublish', { params: { path: { productId } } }))
 }
 
-/** 販売終了にする */
+/**
+ * 販売終了にする。
+ *
+ * @param productId 商品 ID
+ */
 export async function discontinue(productId: string): Promise<void> {
   unwrap(await api.PUT('/products/{productId}/discontinue', { params: { path: { productId } } }))
 }
 
-/** 商品のバリアントの ID（登録した順） */
+/**
+ * 商品のバリアントの ID（登録した順）。
+ *
+ * @param productId 商品 ID
+ * @returns バリアント ID の並び
+ */
 export async function variantIds(productId: string): Promise<string[]> {
   const product = unwrap(await api.GET('/products/{productId}', { params: { path: { productId } } }))
   return product.variants.map((variant) => variant.id)

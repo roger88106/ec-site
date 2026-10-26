@@ -60,29 +60,43 @@ describe('カートの品目の操作', () => {
     expect(unpurchasable.getByText('2,200 円')).toBeInTheDocument()
   })
 
-  test.each([
-    ['削除', removeCartItem],
-    ['数量の変更', changeCartItemQuantity],
-  ])(
-    'AC-193-1 %s の失敗の文は、送る前からある状態の知らせ（status）の領域に入る。領域は 1 つだけ',
-    async (operation, action) => {
-      vi.mocked(action).mockResolvedValueOnce({ ok: false, message: '在庫が足りません。', errorCode: 'OUT_OF_STOCK' })
-      const { user } = renderInBrowser(<CartItemControls item={quoteItem({ quantity: 3, subtotal: 3300 })} />)
+  test('AC-193-1 削除の失敗の文は、送る前からある状態の知らせ（status）の領域に入る。領域は 1 つだけ', async () => {
+    vi.mocked(removeCartItem).mockResolvedValueOnce({
+      ok: false,
+      message: '在庫が足りません。',
+      errorCode: 'OUT_OF_STOCK',
+    })
+    const { user } = renderInBrowser(<CartItemControls item={quoteItem({ quantity: 3, subtotal: 3300 })} />)
 
-      // 送る前も、領域は 1 つあり、文はない
-      expect(screen.getAllByRole('status')).toHaveLength(1)
-      expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    // 送る前も、領域は 1 つあり、文はない
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
 
-      if (operation === '削除') {
-        await user.click(screen.getByRole('button', { name: '削除' }))
-      } else {
-        await user.selectOptions(screen.getByRole('combobox', { name: '数量' }), '2')
-      }
+    await user.click(screen.getByRole('button', { name: '削除' }))
 
-      // 失敗の後は、同じ領域に文が入る
-      expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
-      expect(screen.getAllByRole('status')).toHaveLength(1)
-      expect(screen.getByRole('status')).toHaveTextContent('在庫が足りません。')
-    },
-  )
+    // 失敗の後は、同じ領域に文が入る
+    expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('在庫が足りません。')
+  })
+
+  test('AC-193-1 数量の変更の失敗の文は、送る前からある状態の知らせ（status）の領域に入る。領域は 1 つだけ', async () => {
+    vi.mocked(changeCartItemQuantity).mockResolvedValueOnce({
+      ok: false,
+      message: '在庫が足りません。',
+      errorCode: 'OUT_OF_STOCK',
+    })
+    const { user } = renderInBrowser(<CartItemControls item={quoteItem({ quantity: 3, subtotal: 3300 })} />)
+
+    // 送る前も、領域は 1 つあり、文はない
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+
+    await user.selectOptions(screen.getByRole('combobox', { name: '数量' }), '2')
+
+    // 失敗の後は、同じ領域に文が入る
+    expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
+    expect(screen.getAllByRole('status')).toHaveLength(1)
+    expect(screen.getByRole('status')).toHaveTextContent('在庫が足りません。')
+  })
 })

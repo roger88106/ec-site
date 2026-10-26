@@ -29,8 +29,8 @@ describe('カートに入れる操作の失敗', () => {
     // 領域は 1 つだけで、文はその中にある
     expect(after.getAllByRole('status')).toHaveLength(1)
     expect(after.getByRole('status')).toHaveTextContent('入力内容に誤りがあります。')
-    // 文の要素は、自分では読み上げの領域にしない
-    expect(after.getByText('入力内容に誤りがあります。')).not.toHaveAttribute('aria-live')
+    // 文の要素は、自分では status の役割を持たない
+    expect(after.getByText('入力内容に誤りがあります。')).not.toHaveAttribute('role')
   })
 
   test('AC-193-2 成功の知らせも同じ領域に出る', () => {

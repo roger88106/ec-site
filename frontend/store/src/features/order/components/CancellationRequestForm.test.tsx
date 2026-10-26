@@ -5,7 +5,7 @@ import { requestCancellation } from '@/actions/order'
 import { CancellationRequestForm } from '@/features/order/components/CancellationRequestForm'
 import { renderInBrowser } from '@/test/render'
 
-// 申請はサーバーアクションを通るので、送る前の確認（ブラウザーの中だけで終わる操作）だけを確認する（テストの書き方 第 1 節）
+// 申請はサーバーアクションを通るので、送る前の確認（ブラウザーの中だけで終わる操作）と、結果の表示の遷移を、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方 第 1 節）
 vi.mock('@/actions/order', () => ({ requestCancellation: vi.fn(async () => ({ ok: true })) }))
 
 describe('キャンセルの申請', () => {

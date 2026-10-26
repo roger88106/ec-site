@@ -266,8 +266,11 @@ function useAddressArea() {
 
 /** 入力欄に付ける、見出し・補足・誤りとの結び付け */
 type FieldControlProps = {
+  /** 見出しの `htmlFor` と結び付ける、入力欄の id */
   id: OrderField
+  /** 補足とエラーの文の id（どちらもないときは付けない） */
   'aria-describedby': string | undefined
+  /** エラーのある欄だけ `true`（ないときは付けない） */
   'aria-invalid': true | undefined
 }
 

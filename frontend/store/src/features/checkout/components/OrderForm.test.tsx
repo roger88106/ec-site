@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { OrderForm, OrderFormView } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
-import { input, select } from '@/test/elements'
+import { expectInOrder, input, select } from '@/test/elements'
 import { MUNICIPALITIES, PREFECTURES, postalCodeAddress as postal } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
@@ -44,6 +44,20 @@ function fieldError(path: string): ActionResult {
     errorCode: 'INVALID_REQUEST',
     fieldErrors: { [path]: `${path} の誤りの文` },
   }
+}
+
+/**
+ * エラーの文が、その欄の入力欄の後で、次の欄の入力欄より前に出ることを確認する（見える文言の順）。
+ *
+ * @param view      HTML に描画したフォーム
+ * @param message   エラーの文
+ * @param label     エラーが出る欄の見出し
+ * @param nextLabel 次の欄の見出し（最後の欄は省く。省いたときは、注文のボタンより前に出ることを確認する）
+ */
+function expectErrorUnder(view: ReturnType<typeof renderStatic>, message: string, label: string, nextLabel?: string) {
+  const error = view.getByText(message)
+  const boundary = nextLabel ? view.getByLabelText(nextLabel) : view.getByRole('button', { name: /^注文する/ })
+  expectInOrder(view.getByLabelText(label), error, boundary)
 }
 
 /**
@@ -118,6 +132,7 @@ describe('お届け先の入力と注文', () => {
       form({ ok: false, message: '郵便番号は 7 桁で入力してください。', errorCode: 'INVALID_POSTAL_CODE' }),
     )
 
+    expectErrorUnder(view, '郵便番号は 7 桁で入力してください。', '郵便番号', '都道府県')
     expect(view.getByLabelText('郵便番号')).toHaveAccessibleDescription(
       '例：100-0001 郵便番号は 7 桁で入力してください。',
     )
@@ -134,6 +149,7 @@ describe('お届け先の入力と注文', () => {
       }),
     )
 
+    expectErrorUnder(view, 'API が決めた電話番号の文', '電話番号')
     expect(view.getByLabelText('電話番号')).toHaveAccessibleDescription('例：03-1234-5678 API が決めた電話番号の文')
   })
 
@@ -142,14 +158,15 @@ describe('お届け先の入力と注文', () => {
       form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }),
     )
 
+    expectErrorUnder(view, '市区町村を選んでください。', '市区町村', '住所')
     expect(view.getByLabelText('市区町村')).toHaveAccessibleDescription('市区町村を選んでください。')
   })
 
   test('AC-87 在庫が足りなければ、フォームの下にメッセージとカートへのリンクを出す', () => {
     const view = renderStatic(form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }))
 
-    const message = view.getByText('在庫が足りない商品があります。')
-    expect(message).toHaveAttribute('role', 'status')
+    const message = view.getByRole('status')
+    expect(message).toHaveTextContent('在庫が足りない商品があります。')
     expect(within(message).getByRole('link', { name: 'カートを見る' })).toHaveAttribute('href', '/cart')
   })
 

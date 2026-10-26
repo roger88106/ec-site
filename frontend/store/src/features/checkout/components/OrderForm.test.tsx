@@ -4,7 +4,7 @@ import { beforeEach, describe, expect, test, vi } from 'vitest'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { OrderForm, OrderFormView } from '@/features/checkout/components/OrderForm'
 import type { ActionResult } from '@/lib/actionResult'
-import { expectInOrder, input, select } from '@/test/elements'
+import { input, select } from '@/test/elements'
 import { MUNICIPALITIES, PREFECTURES, postalCodeAddress as postal } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
@@ -26,18 +26,24 @@ function form(result: ActionResult | null = null, formAction: (formData: FormDat
   )
 }
 
-/**
- * エラーの文が、その欄の入力欄の後で、次の欄の入力欄より前に出ることを確認する（見える文言の順）。
- *
- * @param view      HTML に描画したフォーム
- * @param message   エラーの文
- * @param label     エラーが出る欄の見出し
- * @param nextLabel 次の欄の見出し（最後の欄は省く。省いたときは、注文のボタンより前に出ることを確認する）
- */
-function expectErrorUnder(view: ReturnType<typeof renderStatic>, message: string, label: string, nextLabel?: string) {
-  const error = view.getByText(message)
-  const boundary = nextLabel ? view.getByLabelText(nextLabel) : view.getByRole('button', { name: /^注文する/ })
-  expectInOrder(view.getByLabelText(label), error, boundary)
+/** 欄の見出し、API の項目名、補足の文（ない欄は null）。氏名・郵便番号・都道府県・市区町村・住所・電話番号 */
+const FIELDS = [
+  ['氏名', 'shippingAddress.name', null],
+  ['郵便番号', 'shippingAddress.postalCode', '例：100-0001'],
+  ['都道府県', 'shippingAddress.prefectureCode', null],
+  ['市区町村', 'shippingAddress.municipalityCode', null],
+  ['住所', 'shippingAddress.address', '町名、番地、建物名'],
+  ['電話番号', 'shippingAddress.phone', '例：03-1234-5678'],
+] as const
+
+/** 指定した項目だけに誤りがある、入力の検証の誤り（400）の結果 */
+function fieldError(path: string): ActionResult {
+  return {
+    ok: false,
+    message: '入力内容に誤りがあります。',
+    errorCode: 'INVALID_REQUEST',
+    fieldErrors: { [path]: `${path} の誤りの文` },
+  }
 }
 
 /**
@@ -112,7 +118,9 @@ describe('お届け先の入力と注文', () => {
       form({ ok: false, message: '郵便番号は 7 桁で入力してください。', errorCode: 'INVALID_POSTAL_CODE' }),
     )
 
-    expectErrorUnder(view, '郵便番号は 7 桁で入力してください。', '郵便番号', '都道府県')
+    expect(view.getByLabelText('郵便番号')).toHaveAccessibleDescription(
+      '例：100-0001 郵便番号は 7 桁で入力してください。',
+    )
     expect(view.queryByRole('link', { name: 'カートを見る' })).not.toBeInTheDocument()
   })
 
@@ -126,7 +134,7 @@ describe('お届け先の入力と注文', () => {
       }),
     )
 
-    expectErrorUnder(view, 'API が決めた電話番号の文', '電話番号')
+    expect(view.getByLabelText('電話番号')).toHaveAccessibleDescription('例：03-1234-5678 API が決めた電話番号の文')
   })
 
   test('AC-251 市区町村の誤りは、市区町村の欄の下に出す', () => {
@@ -134,7 +142,7 @@ describe('お届け先の入力と注文', () => {
       form({ ok: false, message: '市区町村を選んでください。', errorCode: 'INVALID_MUNICIPALITY' }),
     )
 
-    expectErrorUnder(view, '市区町村を選んでください。', '市区町村', '住所')
+    expect(view.getByLabelText('市区町村')).toHaveAccessibleDescription('市区町村を選んでください。')
   })
 
   test('AC-87 在庫が足りなければ、フォームの下にメッセージとカートへのリンクを出す', () => {
@@ -181,6 +189,32 @@ describe('お届け先の入力と注文', () => {
     expect(sent?.get('name')).toBe('山田 太郎')
     expect(sent?.get('checkoutId')).toBe('checkout-1')
     expect(sent?.get('expectedTotal')).toBe('3200')
+  })
+})
+
+describe('欄の誤りと補足を入力欄に結び付ける', () => {
+  test.each(FIELDS)(
+    'AC-193-4、AC-193-5 %s の誤りの文は入力欄の説明になり、その欄は誤りの状態になる',
+    (label, path, hint) => {
+      const view = renderStatic(form(fieldError(path)))
+
+      expect(view.getByLabelText(label)).toHaveAccessibleDescription(
+        [hint, `${path} の誤りの文`].filter(Boolean).join(' '),
+      )
+      expect(view.getByLabelText(label)).toBeInvalid()
+      // 誤りのない他の欄は、誤りの状態を伝えない
+      for (const [otherLabel] of FIELDS.filter(([other]) => other !== label)) {
+        expect(view.getByLabelText(otherLabel)).toBeValid()
+        expect(view.getByLabelText(otherLabel)).not.toHaveAttribute('aria-invalid')
+      }
+    },
+  )
+
+  test.each(FIELDS)('AC-193-6 %s は誤りがないとき、補足の文だけが入力欄の説明になる', (label, _path, hint) => {
+    const view = renderStatic(form())
+
+    expect(view.getByLabelText(label)).toHaveAccessibleDescription(hint ?? '')
+    expect(view.getByLabelText(label)).toBeValid()
   })
 })
 

@@ -84,7 +84,9 @@ export function OrderFormView({
         <p className="text-muted-foreground text-xs">{t('emailNote') /* 連絡の宛先 */}</p>
       </div>
       <Field error={errors.fields.name} label={t('name') /* 氏名 */} name="name">
-        <Input autoComplete="name" id="name" maxLength={schemas.ShippingAddressInput.name.maxLength} name="name" />
+        {(control) => (
+          <Input {...control} autoComplete="name" maxLength={schemas.ShippingAddressInput.name.maxLength} name="name" />
+        )}
       </Field>
       <Field
         error={errors.fields.postalCode}
@@ -92,55 +94,61 @@ export function OrderFormView({
         label={t('postalCode') /* 郵便番号 */}
         name="postalCode"
       >
-        <Input
-          autoComplete="postal-code"
-          className="w-40"
-          id="postalCode"
-          inputMode="numeric"
-          name="postalCode"
-          onChange={(event) => area.changePostalCode(event.currentTarget.value)}
-        />
+        {(control) => (
+          <Input
+            {...control}
+            autoComplete="postal-code"
+            className="w-40"
+            inputMode="numeric"
+            name="postalCode"
+            onChange={(event) => area.changePostalCode(event.currentTarget.value)}
+          />
+        )}
       </Field>
       <Field error={errors.fields.prefecture} label={t('prefecture') /* 都道府県 */} name="prefecture">
-        <NativeSelect
-          autoComplete="address-level1"
-          id="prefecture"
-          name="prefectureCode"
-          onChange={(event) => area.selectPrefecture(event.currentTarget.value)}
-          value={area.prefectureCode}
-        >
-          <NativeSelectOption disabled value="">
-            {t('prefecturePlaceholder') /* 選択を促す */}
-          </NativeSelectOption>
-          {prefectures.map((prefecture) => (
-            <NativeSelectOption key={prefecture.code} value={prefecture.code}>
-              {prefecture.name}
+        {(control) => (
+          <NativeSelect
+            {...control}
+            autoComplete="address-level1"
+            name="prefectureCode"
+            onChange={(event) => area.selectPrefecture(event.currentTarget.value)}
+            value={area.prefectureCode}
+          >
+            <NativeSelectOption disabled value="">
+              {t('prefecturePlaceholder') /* 選択を促す */}
             </NativeSelectOption>
-          ))}
-        </NativeSelect>
+            {prefectures.map((prefecture) => (
+              <NativeSelectOption key={prefecture.code} value={prefecture.code}>
+                {prefecture.name}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        )}
       </Field>
       <Field error={errors.fields.municipality} label={t('municipality') /* 市区町村 */} name="municipality">
-        <NativeSelect
-          autoComplete="address-level2"
-          disabled={area.municipalities.length === 0}
-          id="municipality"
-          name="municipalityCode"
-          onChange={(event) => area.selectMunicipality(event.currentTarget.value)}
-          value={area.municipalityCode}
-        >
-          <NativeSelectOption disabled value="">
-            {
-              area.prefectureCode === ''
-                ? t('municipalityNeedsPrefecture') /* 都道府県を先に選ぶよう促す */
-                : t('municipalityPlaceholder') /* 選択を促す */
-            }
-          </NativeSelectOption>
-          {area.municipalities.map((municipality) => (
-            <NativeSelectOption key={municipality.code} value={municipality.code}>
-              {municipality.name}
+        {(control) => (
+          <NativeSelect
+            {...control}
+            autoComplete="address-level2"
+            disabled={area.municipalities.length === 0}
+            name="municipalityCode"
+            onChange={(event) => area.selectMunicipality(event.currentTarget.value)}
+            value={area.municipalityCode}
+          >
+            <NativeSelectOption disabled value="">
+              {
+                area.prefectureCode === ''
+                  ? t('municipalityNeedsPrefecture') /* 都道府県を先に選ぶよう促す */
+                  : t('municipalityPlaceholder') /* 選択を促す */
+              }
             </NativeSelectOption>
-          ))}
-        </NativeSelect>
+            {area.municipalities.map((municipality) => (
+              <NativeSelectOption key={municipality.code} value={municipality.code}>
+                {municipality.name}
+              </NativeSelectOption>
+            ))}
+          </NativeSelect>
+        )}
       </Field>
       <Field
         error={errors.fields.address}
@@ -148,17 +156,21 @@ export function OrderFormView({
         label={t('address') /* 住所 */}
         name="address"
       >
-        <Input
-          autoComplete="address-line1"
-          id="address"
-          maxLength={schemas.ShippingAddressInput.address.maxLength}
-          name="address"
-          onChange={(event) => area.changeAddress(event.currentTarget.value)}
-          value={area.address}
-        />
+        {(control) => (
+          <Input
+            {...control}
+            autoComplete="address-line1"
+            maxLength={schemas.ShippingAddressInput.address.maxLength}
+            name="address"
+            onChange={(event) => area.changeAddress(event.currentTarget.value)}
+            value={area.address}
+          />
+        )}
       </Field>
       <Field error={errors.fields.phone} hint={t('phoneHint') /* 例 */} label={t('phone') /* 電話番号 */} name="phone">
-        <Input autoComplete="tel" className="w-48" id="phone" inputMode="tel" name="phone" type="tel" />
+        {(control) => (
+          <Input {...control} autoComplete="tel" className="w-48" inputMode="tel" name="phone" type="tel" />
+        )}
       </Field>
       <ActionError message={errors.message}>
         {errors.backToCart && (
@@ -252,7 +264,17 @@ function useAddressArea() {
   }
 }
 
-/** 入力欄の見出し、補足、エラー */
+/** 入力欄に付ける、見出し・補足・誤りとの結び付け */
+type FieldControlProps = {
+  id: OrderField
+  'aria-describedby': string | undefined
+  'aria-invalid': true | undefined
+}
+
+/**
+ * 入力欄の見出し、補足、エラー。補足とエラーの文を入力欄の説明（補足、エラーの順）に結び付け、
+ * エラーのある欄は誤りの状態にする。入力欄には、子の関数が受ける props を展開して渡す。
+ */
 function Field({
   name,
   label,
@@ -264,14 +286,25 @@ function Field({
   label: string
   hint?: string
   error?: string
-  children: ReactNode
+  children: (control: FieldControlProps) => ReactNode
 }) {
+  const hintId = `${name}-hint`
+  const errorId = `${name}-error`
+  const describedBy = [hint && hintId, error && errorId].filter(Boolean).join(' ')
   return (
     <div className="space-y-1.5">
       <Label htmlFor={name}>{label}</Label>
-      {children}
-      {hint && <p className="text-muted-foreground text-xs">{hint}</p>}
-      {error && <p className="text-destructive text-sm">{error}</p>}
+      {children({ id: name, 'aria-describedby': describedBy || undefined, 'aria-invalid': error ? true : undefined })}
+      {hint && (
+        <p className="text-muted-foreground text-xs" id={hintId}>
+          {hint}
+        </p>
+      )}
+      {error && (
+        <p className="text-destructive text-sm" id={errorId}>
+          {error}
+        </p>
+      )}
     </div>
   )
 }

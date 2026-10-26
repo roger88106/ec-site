@@ -338,7 +338,7 @@
 | AC-193-1 | 事実 2 の 6 つの操作の失敗のエラーメッセージは、フォームを送る前から画面に… | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | `ActionError.test.tsx`、`AddToCartForm.test.tsx`、`CancellationRequestForm.test.tsx` ほか 4 |
 | AC-193-2 | 読み上げの領域は、状態の知らせ（status の役割）として支援技術に伝わる。 | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | `ActionError.test.tsx`、`AddToCartForm.test.tsx` |
 | AC-193-3 | 失敗の後に成功したとき、前のエラーメッセージの文は消え、読み上げの領域は残る。 | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | `ActionError.test.tsx`、`AddToCartForm.test.tsx` |
-| AC-193-4 | 注文のフォームで欄に誤りがあるとき、その欄の誤りの文が、入力欄の説明として支援技… | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | なし |
-| AC-193-5 | 誤りのある欄は、誤りのある状態として支援技術に伝わる。 | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | なし |
-| AC-193-6 | 欄の補足の文（郵便番号・住所・電話番号の入力の例）も、入力欄の説明として伝わる。 | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | なし |
+| AC-193-4 | 注文のフォームで欄に誤りがあるとき、その欄の誤りの文が、入力欄の説明として支援技… | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-193-5 | 誤りのある欄は、誤りのある状態として支援技術に伝わる。 | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-193-6 | 欄の補足の文（郵便番号・住所・電話番号の入力の例）も、入力欄の説明として伝わる。 | 有効 | [193](../specs/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
 <!-- /generated:ac-list -->

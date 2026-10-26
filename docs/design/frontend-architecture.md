@@ -43,13 +43,13 @@ frontend/
 | 文言 | 各アプリの `messages/ja.json` と、共有の `common.*`（`frontend/shared/src/messages/ja.json`） |
 | ロケール | `frontend/shared/src/lib/locale.ts` の 1 か所 |
 | 表示 | 価格は「1,980 円（税抜 1,800 円）」、日時は日本時間（ブラウザーのタイムゾーンに依存しない） |
-| 操作できるか | 画面で業務の規則（注文・商品の状態、階層の深さなど）から判断せず、API の応答の `actions` のフラグで決める。操作の中の選択（キャンセルで在庫に戻すか）と、できない理由（商品を削除できない理由）も API の値で表示する。状態と比べるのは、表示（ラベル、状態ごとの説明）だけ ※1 |
+| 操作できるか | 画面で業務の規則（注文・商品の状態、階層の深さなど）から判断せず、API の応答の `actions` のフラグで決める。操作の中の選択（キャンセルで在庫に戻すか）と、できない理由（商品を削除できない理由）も API の値で表示する。状態と比べるのは、表示（ラベル、状態ごとの説明）だけ ※2 |
 | 確認方法 | lint（Biome）、型チェック、テスト、ビルドを CI で実行する。見た目は目視で確認する |
-| TypeScript | 型チェックとビルドは TypeScript 7。API の型の生成（openapi-typescript）だけが TypeScript 6 を使う ※2 |
+| TypeScript | 型チェックとビルドは TypeScript 7。API の型の生成（openapi-typescript）だけが TypeScript 6 を使う ※3 |
 
-※1：管理画面のフラグと理由の一覧は [管理画面の構成](apps/admin.md) 第 7 節。状態とフラグが食い違うテストデータ（フラグが偽の出荷済みの注文など）を使う結合テストで、画面が状態から推測しないことを確認する。
+※2：管理画面のフラグと理由の一覧は [管理画面の構成](apps/admin.md) 第 7 節。状態とフラグが食い違うテストデータ（フラグが偽の出荷済みの注文など）を使う結合テストで、画面が状態から推測しないことを確認する。
 
-※2：TypeScript 7 には JavaScript のコンパイラーの API がなく、openapi-typescript はその API で型を組み立てるため。ルートの `.pnpmfile.cjs` が、インストールのときに openapi-typescript にだけ TypeScript 6 を渡す。pnpm の overrides は peer の依存に効かないので、フックを使う。lock がフックのチェックサムを持つので、フックを変えたら lock も更新する。openapi-typescript が TypeScript 7 で動くようになったら、`.pnpmfile.cjs` を消す。
+※3：API の型の生成だけが TypeScript 6 を使うのは、TypeScript 7 に JavaScript のコンパイラーの API がなく、openapi-typescript がその API で型を組み立てるためである。ルートの `.pnpmfile.cjs` が、インストールのときに openapi-typescript にだけ TypeScript 6 を渡す。pnpm の overrides は peer の依存に適用されないので、フックを使う。lock がフックのチェックサムを持つので、フックを変えたら lock も更新する。openapi-typescript の peer の依存の範囲が変わると、フックが install を失敗させる。openapi-typescript が TypeScript 7 で動くようになったら、`.pnpmfile.cjs` を削除する。
 
 ## 4. 共有パッケージ
 

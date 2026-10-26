@@ -1,9 +1,9 @@
 // TypeScript 7 には JavaScript の API がなく、openapi-typescript はその API で型を組み立てる。
 // そのため openapi-typescript にだけ TypeScript 6 を渡す。
-// pnpm の overrides は peer の依存に効かないので、インストールのフックで渡す。
-// openapi-typescript が新しい版で peer の範囲を変えたら、フックを消す時期に気づけるよう、install を失敗させる。
+// pnpm の overrides は peer の依存に適用されないので、インストールのフックで渡す。
+// openapi-typescript が新しいバージョンで peer の範囲を変えたら、フックを削除する時期に気づけるよう、install を失敗させる。
 // このファイルを変えたら pnpm install で lock も更新する（lock がフックのチェックサムを持つ）。
-// openapi-typescript が TypeScript 7 で動くようになったら、このファイルを消す。
+// openapi-typescript が TypeScript 7 で動くようになったら、このファイルを削除する。
 const EXPECTED_PEER = '^5.x'
 
 module.exports = {

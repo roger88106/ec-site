@@ -70,14 +70,16 @@ describe('カートの品目の操作', () => {
 
     // 送る前も、領域は 1 つあり、文はない
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    const status = screen.getByRole('status')
+    expect(status).toBeEmptyDOMElement()
 
     await user.click(screen.getByRole('button', { name: '削除' }))
 
     // 失敗の後は、同じ領域に文が入る
     expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toHaveTextContent('在庫が足りません。')
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).toHaveTextContent('在庫が足りません。')
   })
 
   test('AC-193-1 数量の変更の失敗の文は、送る前からある状態の知らせ（status）の領域に入る。領域は 1 つだけ', async () => {
@@ -90,13 +92,15 @@ describe('カートの品目の操作', () => {
 
     // 送る前も、領域は 1 つあり、文はない
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    const status = screen.getByRole('status')
+    expect(status).toBeEmptyDOMElement()
 
     await user.selectOptions(screen.getByRole('combobox', { name: '数量' }), '2')
 
     // 失敗の後は、同じ領域に文が入る
     expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toHaveTextContent('在庫が足りません。')
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).toHaveTextContent('在庫が足りません。')
   })
 })

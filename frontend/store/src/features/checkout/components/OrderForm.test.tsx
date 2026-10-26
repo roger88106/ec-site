@@ -180,7 +180,7 @@ describe('お届け先の入力と注文', () => {
       form({ ok: false, message: '在庫が足りない商品があります。', errorCode: 'OUT_OF_STOCK' }),
     )
 
-    // 失敗の後は、同じ領域に文が入る
+    // 失敗の結果では、領域に文がある。同じ領域が残ることは、共通のコンポーネントを使う他の画面のテストで確認する
     expect(after.getAllByRole('status')).toHaveLength(1)
     expect(after.getByRole('status')).toHaveTextContent('在庫が足りない商品があります。')
   })
@@ -211,7 +211,7 @@ describe('お届け先の入力と注文', () => {
 
 describe('欄の誤りと補足を入力欄に結び付ける', () => {
   test.each(FIELDS)(
-    'AC-193-4、AC-193-5 %s の誤りの文は入力欄の説明になり、その欄は誤りの状態になる',
+    'AC-193-4、AC-193-5、AC-193-6 %s の誤りの文は入力欄の説明になり、その欄は誤りの状態になる',
     (label, path, hint) => {
       const view = renderStatic(form(fieldError(path)))
 

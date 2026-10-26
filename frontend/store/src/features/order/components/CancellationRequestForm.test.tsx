@@ -33,14 +33,16 @@ describe('キャンセルの申請', () => {
 
     // 送る前も、領域は 1 つあり、文はない
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toBeEmptyDOMElement()
+    const status = screen.getByRole('status')
+    expect(status).toBeEmptyDOMElement()
 
     await user.click(screen.getByRole('button', { name: 'キャンセルを申請する' }))
 
     // 失敗の後は、同じ領域に文が入る
     expect(await screen.findByText('この注文はキャンセルを申請できません。')).toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toHaveTextContent('この注文はキャンセルを申請できません。')
+    expect(screen.getByRole('status')).toBe(status)
+    expect(status).toHaveTextContent('この注文はキャンセルを申請できません。')
   })
 
   test('AC-193-3 失敗の後、入力を直して再送して成功したとき、同じ領域が残り、前の失敗の文は消える', async () => {

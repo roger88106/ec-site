@@ -1,9 +1,8 @@
 package com.ecsite.common.message;
 
+import com.ecsite.ProductionClasses;
 import com.ecsite.common.error.ErrorCodeProvider;
 import com.tngtech.archunit.core.domain.JavaClass;
-import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -24,7 +23,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * エラーの定義とメッセージのファイルの対応を確認する契約テスト（docs/rules/backend-coding.md 第 3.2 節、spec 005 DC-36）。<br />
+ * エラーの定義とメッセージのファイルの対応を確認する契約テスト（docs/rules/backend-coding.md 第 3.2 節）。<br />
  * エラーの定義（{@link ErrorCodeProvider} の enum の定数）とメッセージのキーが過不足なく対応し、
  * キーが定数の名前から決まり、文の差し込みの名前と定数に書いた値の名前が一致することを確認する。
  */
@@ -39,11 +38,6 @@ class MessageContractTest {
      * 文の中の差し込みの名前
      */
     private static final Pattern PLACEHOLDER = Pattern.compile("\\{([A-Za-z]+)}");
-
-    /**
-     * エラーの定義のパッケージから、モジュールの名前を取り出す形（モジュールでない共通のものは common）
-     */
-    private static final Pattern MODULE_PACKAGE = Pattern.compile("^com\\.ecsite\\.module\\.([a-z]+)\\..*");
 
     /**
      * メッセージのファイル
@@ -64,13 +58,11 @@ class MessageContractTest {
             assertThat(stream).as("messages.properties").isNotNull();
             MESSAGES.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
         }
-        new ClassFileImporter()
-                .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-                .importPackages("com.ecsite")
-                .stream()
+        ProductionClasses.all().stream()
                 .filter(javaClass -> javaClass.isEnum() && javaClass.isAssignableTo(ErrorCodeProvider.class))
                 .map(JavaClass::reflect)
                 .forEach(type -> ERROR_CODES.addAll(List.of((Enum<?>[]) type.getEnumConstants())));
+        ProductionClasses.requireNotEmpty(ERROR_CODES, "エラーの定義の定数");
     }
 
     @Test
@@ -147,8 +139,8 @@ class MessageContractTest {
      * @return 規則から決まるキー
      */
     private static String expectedKey(Enum<?> constant) {
-        Matcher matcher = MODULE_PACKAGE.matcher(constant.getDeclaringClass().getName());
-        String module = matcher.matches() ? matcher.group(1) : "common";
+        // モジュールでない共通のものは common
+        String module = ProductionClasses.moduleName(constant.getDeclaringClass().getPackageName()).orElse("common");
         return "ecsite.%s.%s".formatted(module, constant.name().toLowerCase(Locale.ROOT));
     }
 }

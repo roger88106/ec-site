@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品の同時登録のテスト（T309、AC-14）。<br />
+ * 商品の同時登録のテスト。<br />
  * 別々のトランザクションで同時に登録するため、ロールバックせず、作ったデータも消さない。
  */
 @IntegrationTest

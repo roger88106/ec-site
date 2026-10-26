@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * キャンセルと在庫の戻しの一貫性の受け入れテスト（T2403、AC-104、NFR-2）。<br />
+ * キャンセルと在庫の戻しの一貫性の受け入れテスト。<br />
  * 在庫の戻しを失敗させ、注文もキャンセルにならないこと（トランザクションごと取り消されること）を確認する。
  * 取り消しを見るためにコミットが必要だが、作ったデータは消さない。税区分の名称は、ほかのテストと重ならない名前にする。
  */

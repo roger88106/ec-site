@@ -11,7 +11,7 @@ import org.springframework.context.annotation.Configuration;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 決済の設定の検証（spec 182 DC-182-1、3）。<br />
+ * 決済の設定の検証。<br />
  * 支払の期限の上限（30 分）を超えると起動に失敗し、設定の名前が知らされることを確認する。
  */
 class PaymentPropertiesTest {

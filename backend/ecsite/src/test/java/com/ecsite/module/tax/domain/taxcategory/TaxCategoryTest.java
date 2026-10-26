@@ -18,8 +18,8 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
 /**
- * 税区分の単体テスト（T104）。<br />
- * 現在時刻は引数で固定する。AC-4 の日時は日本時間なので、UTC に直して書く（2027-04-01 00:00 → 2027-03-31T15:00Z）。
+ * 税区分の単体テスト。<br />
+ * 現在時刻は引数で固定する。適用開始の日時は日本時間なので、UTC に直して書く（2027-04-01 00:00 → 2027-03-31T15:00Z）。
  */
 class TaxCategoryTest {
 

@@ -12,7 +12,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文時の年齢と性別の単体テスト（T0106、AC-212、213、222、BR-29）
+ * 注文時の年齢と性別の単体テスト
  */
 class BuyerProfileTest {
 

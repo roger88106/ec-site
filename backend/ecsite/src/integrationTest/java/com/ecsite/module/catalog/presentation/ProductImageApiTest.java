@@ -46,7 +46,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 商品画像 API の受け入れテスト（T1018、US-7。plan 001 第 7 節）。<br />
+ * 商品画像 API の受け入れテスト。<br />
  * ファイルは、受付の応答の署名付き URL へ実際に PUT する（Testcontainers の SeaweedFS）。登録のときに imgproxy で WebP に変換するので、本物の画像を使う。
  * 配信のファイルの削除はコミット後のイベントで行うので、このテストはロールバックせず、作ったデータも消さない（ほかのテストは、一覧の全体ではなく自分のデータだけを確認する）。
  */
@@ -76,7 +76,7 @@ class ProductImageApiTest {
     private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
 
     /**
-     * 画像の大きさの上限（10MB。AC-39）
+     * 画像の大きさの上限（10MB）
      */
     private static final int MAX_BYTES = 10 * 1024 * 1024;
 
@@ -132,7 +132,7 @@ class ProductImageApiTest {
             assertThat(JsonPath.<List<String>>read(detail, "$.images[*].url")).hasSize(2);
             assertThat(JsonPath.<Integer>read(detail, "$.version")).isEqualTo(3);
             var urls = JsonPath.<List<String>>read(detail, "$.images[*].url");
-            // 配信するのは、変換した WebP（AC-68）
+            // 配信するのは、変換した WebP
             var delivered = fetch(urls.getFirst());
             assertThat(delivered.statusCode()).isEqualTo(200);
             assertThat(new String(delivered.body(), 8, 4, StandardCharsets.US_ASCII)).isEqualTo("WEBP");

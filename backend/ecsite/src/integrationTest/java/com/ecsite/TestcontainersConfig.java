@@ -21,9 +21,9 @@ import java.util.Map;
 /**
  * 統合テスト用の Testcontainers 設定。<br />
  * PostgreSQL を使い捨てコンテナで起動し、{@code @ServiceConnection} で Spring Boot の接続設定を差し替える。
- * 画像の置き場所（S3 互換）は SeaweedFS で起動し、受付・配信のバケットを作って接続設定を与える（plan 001 第 7 節）。
- * 画像の変換は imgproxy で起動し、同じネットワークから SeaweedFS を読ませる（plan 001 第 7.5 節）。
- * メールは Mailpit で受ける（plan 009 第 6 節）。
+ * 画像の置き場所（S3 互換）は SeaweedFS で起動し、受付・配信のバケットを作って接続設定を与える。
+ * 画像の変換は imgproxy で起動し、同じネットワークから SeaweedFS を読ませる。
+ * メールは Mailpit で受ける。
  * コンテナはテスト JVM 内で一度だけ起動され、全テストクラスで共有される。
  * スキーマは Flyway のマイグレーションで作る（profile {@code integration-test}）。
  */
@@ -166,7 +166,7 @@ public class TestcontainersConfig {
     }
 
     /**
-     * imgproxy コンテナ（画像の変換。plan 001 第 7.5 節）。docker/compose.yaml と同じイメージと設定を使う。<br />
+     * imgproxy コンテナ（画像の変換）。docker/compose.yaml と同じイメージと設定を使う。<br />
      * アップロードのバケットを、読むだけの資格情報で、SeaweedFS のネットワークの中の名前で読む。
      *
      * @param network   コンテナ同士のネットワーク

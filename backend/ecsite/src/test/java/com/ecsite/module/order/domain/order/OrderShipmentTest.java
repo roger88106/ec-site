@@ -26,7 +26,7 @@ import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 注文の出荷と、出荷済みの注文のキャンセルの単体テスト（T9303、BR-18、AC-170、171、190、191）
+ * 注文の出荷と、出荷済みの注文のキャンセルの単体テスト
  */
 class OrderShipmentTest {
 

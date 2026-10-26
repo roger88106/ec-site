@@ -40,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 出荷の登録の受け入れテスト（T9305、AC-167〜173、188）。<br />
+ * 出荷の登録の受け入れテスト。<br />
  * 売上確定は mock の決済サービスで行う。テストごとにロールバックする。
  */
 @IntegrationTest

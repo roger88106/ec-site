@@ -12,22 +12,22 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 集約の版の比べ方と、集約を戻すときの失敗の扱いの単体テスト（spec 013 の DC-137）
+ * 集約のバージョンの比べ方と、集約を戻すときの失敗の扱いの単体テスト
  */
 class AggregateGuardsTest {
 
     @Nested
-    @DisplayName("版の比べ方")
+    @DisplayName("バージョンの比べ方")
     class Versions {
 
         @Test
-        @DisplayName("読んだ時点の版と今の版が同じなら、何もしない")
+        @DisplayName("読んだ時点のバージョンと今のバージョンが同じなら、何もしない")
         void acceptsSameVersion() {
             assertThatCode(() -> AggregateGuards.requireVersion(3, 3)).doesNotThrowAnyException();
         }
 
         @Test
-        @DisplayName("版が違えば、更新の競合の業務のエラー")
+        @DisplayName("バージョンが違えば、更新の競合の業務のエラー")
         void rejectsDifferentVersion() {
             assertThatThrownBy(() -> AggregateGuards.requireVersion(4, 3))
                     .isInstanceOfSatisfying(BusinessException.class, ex -> assertThat(ex.getErrorDetail().errorCode())

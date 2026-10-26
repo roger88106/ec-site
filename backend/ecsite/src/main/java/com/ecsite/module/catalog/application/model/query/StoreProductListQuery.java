@@ -11,10 +11,10 @@ import java.util.UUID;
  * @param categoryId カテゴリ ID（子孫のカテゴリを含む）
  * @param minPrice   税込価格の下限（円、この値を含む）
  * @param maxPrice   税込価格の上限（円、この値を含む）
- * @param sort       並び順。null は新着順
+ * @param sort       並び順
  */
 public record StoreProductListQuery(@Nullable UUID categoryId, @Nullable Money minPrice, @Nullable Money maxPrice,
-                                    @Nullable Sort sort) {
+                                    Sort sort) {
 
     /**
      * 並び順。同じ値なら商品 ID の順

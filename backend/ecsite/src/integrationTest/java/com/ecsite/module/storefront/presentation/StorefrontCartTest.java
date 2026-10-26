@@ -35,7 +35,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * カートの表示の受け入れテスト（T2304、AC-77、79〜81）。<br />
+ * カートの表示の受け入れテスト。<br />
  * 商品は B 側の API で作り、在庫は在庫モジュールのリポジトリで直接作る。テストごとにロールバックする。
  */
 @IntegrationTest
@@ -117,7 +117,7 @@ class StorefrontCartTest {
                 .andExpect(jsonPath("$.amounts.itemsTotal").value(2970 + 1332))
                 .andExpect(jsonPath("$.amounts.shippingFee").value(1000))
                 .andExpect(jsonPath("$.amounts.total").value(2970 + 1332 + 1000))
-                // spec の BR-8 の例：10% の対象 3,970 円 → 360 円、8% の対象 1,332 円 → 98 円
+                // 税率ごとに合計してから税額を求める例：10% の対象 3,970 円 → 360 円、8% の対象 1,332 円 → 98 円
                 .andExpect(jsonPath("$.amounts.taxes[*].ratePercent", contains(10, 8)))
                 .andExpect(jsonPath("$.amounts.taxes[*].taxableAmount", contains(3970, 1332)))
                 .andExpect(jsonPath("$.amounts.taxes[*].taxAmount", contains(360, 98)))

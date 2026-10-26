@@ -23,7 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 商品カタログ・注文向けの税 API の統合テスト（T112、T2102）。<br />
+ * 商品カタログ・注文向けの税 API の統合テスト。<br />
  * 現在時刻は 2026-10-08 00:00（日本時間）に固定する。テストごとにロールバックする。
  */
 @IntegrationTest

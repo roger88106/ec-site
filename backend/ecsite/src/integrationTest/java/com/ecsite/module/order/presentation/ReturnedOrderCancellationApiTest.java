@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 返送された注文のキャンセルの受け入れテスト（T9307、AC-171、190〜193）。<br />
+ * 返送された注文のキャンセルの受け入れテスト。<br />
  * 配送状態は、mock の物流サービスの署名付きの通知をエンドポイントに送って進める。返金はコミットの後に行うので、
  * ロールバックするこのテストでは「返金待ち」までを確認する（返金済みになるのは決済の統合テストと E2E）。
  */

@@ -1,10 +1,10 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -19,37 +19,37 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class NamingTest {
 
-    /**
-     * 本番のクラス（テストと、生成したコードを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .withImportOption(location -> !location.contains("/com/ecsite/jooq/") && !location.contains("/com/ecsite/api/"))
-            .importPackages("com.ecsite");
-
     @Test
     @DisplayName("リポジトリの port は domain か application の port に置き、参照用は application に置く")
     void repositoryPortsResideInPortPackages() {
-        assertThat(repositoryPortViolations(CLASSES)).isEmpty();
+        ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Repository"), "名前が Repository で終わる interface");
+
+        assertThat(repositoryPortViolations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("リポジトリの port の実装は、infrastructure.persistence の Jooq と port の名前のクラス")
     void repositoryImplementationsAreNamedJooq() {
-        assertThat(implementationViolations(CLASSES, "Repository", "Jooq", "", ".infrastructure.persistence"))
+        ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Repository"), "Repository の port の実装のクラス");
+
+        assertThat(implementationViolations(ProductionClasses.handwritten(), "Repository", "Jooq", "", ".infrastructure.persistence"))
                 .isEmpty();
     }
 
     @Test
     @DisplayName("腐敗防止層の窓口は、使う層の port に置く")
     void directoryPortsResideInPortPackages() {
-        assertThat(directoryPortViolations(CLASSES)).isEmpty();
+        ProductionClasses.requireNotEmpty(portsNamedWith(ProductionClasses.handwritten(), "Directory"), "名前が Directory で終わる interface");
+
+        assertThat(directoryPortViolations(ProductionClasses.handwritten())).isEmpty();
     }
 
     @Test
     @DisplayName("腐敗防止層の実装は、infrastructure.directory の <相手>ApiDirectory のクラス")
     void directoryImplementationsAreNamedApiDirectory() {
-        assertThat(implementationViolations(CLASSES, "Directory", "", "Api", ".infrastructure.directory")).isEmpty();
+        ProductionClasses.requireNotEmpty(implementationsOf(ProductionClasses.handwritten(), "Directory"), "Directory の port の実装のクラス");
+
+        assertThat(implementationViolations(ProductionClasses.handwritten(), "Directory", "", "Api", ".infrastructure.directory")).isEmpty();
     }
 
     @Test
@@ -71,8 +71,10 @@ class NamingTest {
     @Test
     @DisplayName("腐敗防止層の実装は、public にしない（対象は 1 件以上ある）")
     void directoryImplementationsAreNotPublic() {
-        assertThat(directoryImplementations(CLASSES, ".infrastructure.directory")).isNotEmpty();
-        assertThat(publicDirectoryImplementations(CLASSES, ".infrastructure.directory")).isEmpty();
+        ProductionClasses.requireNotEmpty(
+                directoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory"), "腐敗防止層の実装のクラス");
+
+        assertThat(publicDirectoryImplementations(ProductionClasses.handwritten(), ".infrastructure.directory")).isEmpty();
     }
 
     @Test
@@ -83,6 +85,45 @@ class NamingTest {
 
         assertThat(publicDirectoryImplementations(examples, ".architecture"))
                 .containsExactly(PublicExampleApiDirectory.class.getName());
+    }
+
+    /**
+     * 名前が指定した語で終わる interface（port）を返す。
+     *
+     * @param classes 調べるクラス
+     * @param suffix  port の名前の終わり（Repository、Directory）
+     * @return port の interface
+     */
+    private static List<JavaClass> portsNamedWith(JavaClasses classes, String suffix) {
+        return classes.stream()
+                .filter(JavaClass::isInterface)
+                .filter(javaClass -> javaClass.getSimpleName().endsWith(suffix))
+                .toList();
+    }
+
+    /**
+     * 名前が指定した語で終わる port を、実装するクラスを返す。
+     *
+     * @param classes 調べるクラス
+     * @param suffix  port の名前の終わり（Repository、Directory）
+     * @return port の実装のクラス
+     */
+    private static List<JavaClass> implementationsOf(JavaClasses classes, String suffix) {
+        return classes.stream()
+                .filter(javaClass -> !javaClass.isInterface() && !javaClass.isAnonymousClass())
+                .filter(javaClass -> javaClass.getRawInterfaces().stream().anyMatch(port -> isPortNamedWith(port, suffix)))
+                .toList();
+    }
+
+    /**
+     * interface が、このプロジェクトの、名前が指定した語で終わる port かを返す。
+     *
+     * @param port   interface
+     * @param suffix port の名前の終わり（Repository、Directory）
+     * @return このプロジェクトの interface で、名前が suffix で終わるなら true
+     */
+    private static boolean isPortNamedWith(JavaClass port, String suffix) {
+        return port.getPackageName().startsWith("com.ecsite") && port.getSimpleName().endsWith(suffix);
     }
 
     /**
@@ -124,9 +165,7 @@ class NamingTest {
      * @return port のパッケージにない、または参照用なのに application にない interface の名前（名前の順）
      */
     private static List<String> repositoryPortViolations(JavaClasses classes) {
-        return classes.stream()
-                .filter(JavaClass::isInterface)
-                .filter(javaClass -> javaClass.getSimpleName().endsWith("Repository"))
+        return portsNamedWith(classes, "Repository").stream()
                 .filter(javaClass -> {
                     var packageName = javaClass.getPackageName();
                     var inPort = packageName.endsWith(".port");
@@ -147,9 +186,7 @@ class NamingTest {
      * @return port のパッケージにない、名前が Directory で終わる interface の名前（名前の順）
      */
     private static List<String> directoryPortViolations(JavaClasses classes) {
-        return classes.stream()
-                .filter(JavaClass::isInterface)
-                .filter(javaClass -> javaClass.getSimpleName().endsWith("Directory"))
+        return portsNamedWith(classes, "Directory").stream()
                 .filter(javaClass -> !javaClass.getPackageName().endsWith(".port"))
                 .map(JavaClass::getName)
                 .sorted()
@@ -169,13 +206,10 @@ class NamingTest {
     private static List<String> implementationViolations(JavaClasses classes, String suffix, String prefix,
                                                          String infix, String packageEnd) {
         var violations = new ArrayList<String>();
-        for (var javaClass : classes) {
-            if (javaClass.isInterface() || javaClass.isAnonymousClass()) {
-                continue;
-            }
+        for (var javaClass : implementationsOf(classes, suffix)) {
             for (var port : javaClass.getRawInterfaces()) {
                 var portName = port.getSimpleName();
-                if (!port.getPackageName().startsWith("com.ecsite") || !portName.endsWith(suffix)) {
+                if (!isPortNamedWith(port, suffix)) {
                     continue;
                 }
                 var stem = portName.substring(0, portName.length() - suffix.length());

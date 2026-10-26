@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 物流サービスの通知のエンドポイントの統合テスト（T9207、AC-174〜178、BR-19、22）。<br />
+ * 物流サービスの通知のエンドポイントの統合テスト。<br />
  * HTTP（MockMvc）を通し、署名はエンドポイントの実装を使わずにテストで作る。
  * 出荷はトランザクションを確定させて保存するので、テストごとに別の注文 ID と送り状番号を使う。
  */

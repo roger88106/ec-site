@@ -29,7 +29,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * C 側向けの商品照会の統合テスト（T603、AC-52〜54）。<br />
+ * C 側向けの商品照会の統合テスト。<br />
  * 商品は B 側の API で作って公開する。新着順を確認するため、公開するごとに時計を 1 分進める。
  * 税率の一覧のキャッシュは、前のテストのものが残らないよう、テストごとに捨てる。テストごとにロールバックする。
  */
@@ -218,7 +218,7 @@ class StoreCatalogApiTest {
     }
 
     /**
-     * 税モジュールの税込価格の計算（BR-1）
+     * 税モジュールの税込価格の計算
      */
     private long javaPriceInclTax(long price, BigDecimal rate) {
         return taxRateApi.priceInclTax(Money.of(price), rate).yen();

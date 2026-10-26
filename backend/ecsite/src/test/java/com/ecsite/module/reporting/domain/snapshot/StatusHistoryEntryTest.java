@@ -12,7 +12,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 状態の履歴の 1 行の単体テスト（T016-09-02、AC-277、AC-278）
+ * 状態の履歴の 1 行の単体テスト
  */
 class StatusHistoryEntryTest {
 

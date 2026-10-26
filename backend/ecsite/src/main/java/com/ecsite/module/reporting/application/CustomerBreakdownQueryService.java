@@ -7,8 +7,8 @@ import com.ecsite.module.reporting.application.model.view.CustomerBreakdownRepor
 import com.ecsite.module.reporting.application.model.view.GenderSales;
 import com.ecsite.module.reporting.application.model.view.PrefectureSales;
 import com.ecsite.module.reporting.application.port.RegionDirectory;
-import com.ecsite.module.reporting.application.port.ReportQueryRepository.SegmentTotal;
 import com.ecsite.module.reporting.application.port.ReportQueryRepository;
+import com.ecsite.module.reporting.application.port.ReportQueryRepository.SegmentTotal;
 import com.ecsite.module.reporting.domain.sales.AgeGroup;
 import com.ecsite.module.reporting.domain.sales.ReportGender;
 import lombok.RequiredArgsConstructor;

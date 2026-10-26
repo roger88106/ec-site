@@ -1,7 +1,6 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
-import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.DisplayName;

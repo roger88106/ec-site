@@ -1,18 +1,19 @@
 package com.ecsite.module.order.infrastructure.persistence;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
+import com.ecsite.module.order.domain.order.BuyerProfile;
 import com.ecsite.module.order.domain.order.Cancellation;
 import com.ecsite.module.order.domain.order.CancellationKind;
-import com.ecsite.module.order.domain.order.OrderStatus;
-import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.domain.order.Gender;
 import com.ecsite.module.order.domain.order.Order;
+import com.ecsite.module.order.domain.order.OrderStatus;
 import com.ecsite.module.order.domain.order.port.OrderRepository;
-import com.ecsite.module.order.domain.order.BuyerProfile;
-import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.AddressArea;
+import com.ecsite.module.order.domain.order.vo.CancellationRequest;
+import com.ecsite.module.order.domain.order.vo.OrderNumber;
 import com.ecsite.module.order.domain.order.vo.ShippingAddress;
 import com.ecsite.module.order.domain.quote.Amounts;
 import com.ecsite.module.order.domain.quote.AxisValue;
@@ -21,6 +22,7 @@ import com.ecsite.module.order.domain.quote.QuoteItem;
 import com.ecsite.module.order.domain.quote.TaxAmount;
 import com.ecsite.module.order.domain.quote.VariantInfo;
 import com.ecsite.module.order.event.OrderStatusChanged;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -30,8 +32,6 @@ import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.transaction.support.TransactionTemplate;
-import org.jooq.DSLContext;
-import com.ecsite.AsyncEvents;
 
 import java.math.BigDecimal;
 import java.time.Instant;
@@ -43,7 +43,6 @@ import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.TimeUnit;
 
 import static com.ecsite.jooq.ordering.Tables.SALES_ORDER;
-
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 

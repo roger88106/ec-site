@@ -27,7 +27,8 @@ test('AC-35 公開開始日時を予約して公開すると、開始前は店�
   expect(before?.status()).toBe(404)
   await expect(page.getByRole('heading', { name: 'ページが見つかりません' })).toBeVisible()
 
-  await changePublishStart(productId, new Date(Date.now() + RESERVATION_MILLIS))
+  const publishStart = new Date(Date.now() + RESERVATION_MILLIS)
+  await changePublishStart(productId, publishStart)
 
   // 運営者の操作なしに、開始日時で切り替わる（404 から 200 になる）。詳細はキャッシュを使わない
   await reopenUntil(
@@ -38,5 +39,7 @@ test('AC-35 公開開始日時を予約して公開すると、開始前は店�
     },
     { timeout: RESERVATION_MILLIS + ASYNC_TIMEOUT },
   )
+  // 開始日時より前に公開される不具合を見つけるため
+  expect(Date.now()).toBeGreaterThanOrEqual(publishStart.getTime())
   await expect(page.getByRole('heading', { name })).toBeVisible()
 })

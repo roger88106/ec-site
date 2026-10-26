@@ -7,7 +7,8 @@
 // 次の commit の照合：node scripts/ci/related-specs.mjs --staged <メッセージのファイル>（commit-msg の hook から呼ぶ。ステージした文書とメッセージの 1 行目を照合する）
 import { execFileSync, spawnSync } from 'node:child_process'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
-import { readFileSync } from 'node:fs'
+import { readFileSync, statSync } from 'node:fs'
+import { posix } from 'node:path'
 import { describeExclusionProblems, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
@@ -27,6 +28,26 @@ const TASK_ID = /(?<![A-Za-z0-9])T(\d+)-\d{2}-\d{2}/g
 export function parseRelatedSpecs(markdown) {
   const row = markdown.match(RELATED_ROW)
   return row ? [...row[1].matchAll(/\[(\d+)\]\(/g)].map((match) => match[1]) : null
+}
+
+/**
+ * 概要の表の「関連 spec」の行のリンクが、spec のディレクトリを指すかを確認する。
+ * 正しい形は、`[番号](../../specs/<番号>-<名前>)` か `[番号](../../specs/archive/<まとまり>/<番号>-<名前>)`（spec.md などのファイルや、移動前の古いパスは不可）。
+ *
+ * @param {string} file 文書のパス（リポジトリのルートから）
+ * @param {string} markdown 文書
+ * @param {(path: string) => boolean} isDirectory ディレクトリがあるかを返す関数
+ * @returns {string[]} 誤りの説明
+ */
+export function findBadRelatedLinks(file, markdown, isDirectory) {
+  const row = markdown.match(RELATED_ROW)
+  if (!row) return []
+  return [...row[1].matchAll(/\[([^\]]*)\]\(([^)\s]*)\)/g)].flatMap(([, text, link]) => {
+    const target = posix.normalize(posix.join(posix.dirname(file), link))
+    if (!isDirectory(target)) return [`${file}：関連 spec のリンク ${link} が、spec のディレクトリを指していない`]
+    if (!posix.basename(target).startsWith(`${text}-`)) return [`${file}：関連 spec のリンク ${link} の番号が、リンクの文字 ${text} と合わない`]
+    return []
+  })
 }
 
 /**
@@ -107,6 +128,15 @@ export function checkRelatedExclusions(exclusions, isNeeded, strict) {
   return strict ? { failures: [...failures, ...stale], warnings: [] } : { failures, warnings: stale.map((line) => `警告：${line}`) }
 }
 
+/** ディレクトリがあるか */
+function isDirectory(path) {
+  try {
+    return statSync(path).isDirectory()
+  } catch {
+    return false
+  }
+}
+
 /** 次の commit（ステージした内容とメッセージ）を照合する。commit-msg の hook から呼ぶ */
 function checkStaged(messageFile, excludedPrefixes) {
   const subject = readFileSync(messageFile, 'utf8').split(/\r?\n/)[0]
@@ -136,7 +166,12 @@ if (isMain(import.meta.url)) {
   for (const line of [...exclusionProblems, ...warnings]) console.log(line)
   let count = 0
   for (const file of files) {
-    const related = parseRelatedSpecs(readFileSync(file, 'utf8'))
+    const markdown = readFileSync(file, 'utf8')
+    for (const line of findBadRelatedLinks(file, markdown, isDirectory)) {
+      console.log(line)
+      count += 1
+    }
+    const related = parseRelatedSpecs(markdown)
     if (!related) continue
     const subjects = execFileSync('git', ['log', '--follow', '--format=%s', '--', file], { encoding: 'utf8' })
       .split('\n')

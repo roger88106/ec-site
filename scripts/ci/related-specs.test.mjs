@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkRelatedExclusions, findMissingInStaged, findMissingSpecs, historyLogArgs, isPrefixUsed, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
+import { checkRelatedExclusions, findBadRelatedLinks, findMissingInStaged, findMissingSpecs, historyLogArgs, isPrefixUsed, parseRelatedSpecs, specsOfCommit } from './related-specs.mjs'
 
 describe('設計の文書の関連 spec の検査', () => {
   test('概要の表の「関連 spec」の行から、spec の番号を読む', () => {
@@ -81,6 +81,32 @@ describe('設計の文書の関連 spec の検査', () => {
   test('merge の途中なら、除外の要否を見る履歴に merge の相手の履歴も含める', () => {
     assert.deepEqual(historyLogArgs(false), ['log', '--format=%s'])
     assert.deepEqual(historyLogArgs(true), ['log', '--format=%s', 'HEAD', 'MERGE_HEAD'])
+  })
+})
+
+describe('関連 spec のリンクの形', () => {
+  const dirs = new Set(['docs/specs/archive/mvp/007-payment', 'docs/specs/archive/1to10/155-backend-structure', 'docs/specs/185-new-checks'])
+  const isDirectory = (path) => dirs.has(path)
+  const check = (row) => findBadRelatedLinks('docs/design/modules/payment.md', `| 関連 spec | ${row} |`, isDirectory)
+
+  test('spec のディレクトリを指すリンクは、アーカイブの下も進行中の spec も通る', () => {
+    assert.deepEqual(check('[007](../../specs/archive/mvp/007-payment)、[155](../../specs/archive/1to10/155-backend-structure)、[185](../../specs/185-new-checks)'), [])
+  })
+
+  test('spec.md などのファイルを指すリンクは失敗にする', () => {
+    assert.equal(check('[007](../../specs/archive/mvp/007-payment/spec.md)').length, 1)
+  })
+
+  test('存在しないディレクトリ（アーカイブへの移動前の古いパスなど）を指すリンクは失敗にする', () => {
+    assert.equal(check('[007](../../specs/007-payment)').length, 1)
+  })
+
+  test('リンクの番号と、ディレクトリ名の番号が違うものは失敗にする', () => {
+    assert.equal(check('[155](../../specs/archive/mvp/007-payment)').length, 1)
+  })
+
+  test('関連 spec の行がない文書は見ない', () => {
+    assert.deepEqual(findBadRelatedLinks('docs/guides/setup.md', '# 開発環境の起動', isDirectory), [])
   })
 })
 

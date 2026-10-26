@@ -201,9 +201,10 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
   - 範囲：`scripts/ci/lib/`（閉じ括弧の探し方、コードの終わりの探し方、コメントの除去）、使う検査、テスト
   - 確認方法：変更の前後で、全ての検査の今のリポジトリの結果が同じであること
   - 結果：走査を `lib/scan-code.mjs`（`scanCode`、`templateEnd`。`regex`・`templates`・`textBlocks` の選択肢で TypeScript と Java を分ける）の 1 か所にし、`closingParen`、`stripComments`・`stripJavaComments`、テストの関数の読み方（旧 `codeEnd`・`templateEnd`）がこれを使う。変更の前後の `check-all.sh` の結果は、時間を除いて同じで、リポジトリの全ての対象のファイルで旧実装と出力を比べた差は、shebang と、引用符が閉じない `.mjs` の 3 件（検査の対象外）だけ。
-- [ ] **T185-01-04** [テスト] 使わない語の許す語に理由と不要の検出を加え、Dependabot の対象の検査が知らない書き方を失敗にする（DC-185-7、8）。
+- [x] **T185-01-04** [テスト] 使わない語の許す語に理由と不要の検出を加え、Dependabot の対象の検査が知らない書き方を失敗にする（DC-185-7、8）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/doc-terms.mjs`、`scripts/ci/doc-terms.json`、`scripts/ci/dependabot-actions.mjs`、テスト、`docs/guides/ci.md`
+  - 結果：使わない語の `allow` を `{許す語: 理由}` にし（`doc-terms.mjs` の `findAllowProblems`。除外の共通の関数で、理由のない許す語と、どの文書にも使われなくなった許す語を失敗にする）、今の `doc-terms.json` に `allow` はないので書き換えは不要だった。Dependabot の対象の検査は、`directory`・`directories` の節の知らない書き方の行を `describeUnreadableLine` で失敗にする。今のリポジトリでは両方 0 件で通る。
 - [ ] **T185-01-05** [テスト] 時間の待ちの検査の除外を行か関数の単位にし、統合テストを分ける数の既定と CI の食い違いを見つける検査を加える（DC-185-10、11）。
   - 依存：T185-01-02
   - 範囲：`scripts/ci/time-waits.mjs`、`scripts/ci/time-waits-exclusions.json`、`scripts/ci/` の直下（分ける数の検査）、テスト、`docs/guides/ci.md`

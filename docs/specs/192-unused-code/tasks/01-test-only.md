@@ -25,9 +25,9 @@ T192-01-01、02、04、05、06 は、それぞれ別のモジュールとテス�
 - [ ] **T192-01-05** `[P]` ファイル保存設定の複製 2 つを削除し、テストは設定の型を直接作る。ファイル保存のクライアントを作る static の操作を `@Bean` メソッドに戻し、テストはその `@Bean` メソッドを呼ぶ（DC-192-3）。
   - 依存：なし
   - 範囲：`main/module/media/infrastructure/storage/MediaStorageProperties.java`、`MediaStorageConfig.java`、`it/module/media/infrastructure/storage/S3ObjectStorageTest.java`、`test/module/media/infrastructure/storage/S3ObjectStorageFailureTest.java`
-- [ ] **T192-01-06** `[P]` 税率キャッシュの破棄を、[plan](../plan.md) 第 10 節の 1 で決めた案のとおりにする（DC-192-3）。案 A なら、破棄を package-private にし、クラスの public を外し、統合テストの同じパッケージのテストの補助クラスから呼ぶ。案 A のときは、先に spec の DC-192-3 を直す。
+- [ ] **T192-01-06** `[P]` 税率キャッシュの破棄を package-private にし、クラスの public を外す。4 つの統合テストは、統合テストの同じパッケージのテストの補助クラスから破棄する（DC-192-3、[plan](../plan.md) 第 10 節の 1 の案 A）。
   - 依存：なし
-  - 範囲：`main/module/catalog/infrastructure/directory/TaxRateScheduleCache.java`、`it/module/catalog/infrastructure/directory/`（新しい補助クラス）、`StoreCatalogApiTest.java`、`StoreProductSearchTest.java`、`StorefrontApiTest.java`、`StorefrontFreshnessTest.java`、`docs/specs/192-unused-code/spec.md`
+  - 範囲：`main/module/catalog/infrastructure/directory/TaxRateScheduleCache.java`、`it/module/catalog/infrastructure/directory/`（新しい補助クラス）、`StoreCatalogApiTest.java`、`StoreProductSearchTest.java`、`StorefrontApiTest.java`、`StorefrontFreshnessTest.java`
 - [ ] **T192-01-07** 決済の期限切れジョブを package-private にし、注文のテストは統合テストの同じパッケージのテストの補助クラスから実行する（DC-192-4）。[plan](../plan.md) 第 1.4 節の表の 9 クラスが public である理由を確認し、テストのためだけに広げたものを package-private にする。残したものは、理由と共に段階の報告に書く。
   - 依存：T192-01-01〜06
   - 範囲：`main/module/payment/application/PaymentExpiryJob.java`、`it/module/payment/application/PaymentJobs.java`（新規）、`it/module/order/presentation/OrderPaymentApiTest.java`、[plan](../plan.md) 第 1.4 節の表の 9 クラスとその呼び出し元

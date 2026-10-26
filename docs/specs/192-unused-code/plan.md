@@ -1,6 +1,6 @@
 # Plan 192：使われていないコードを削除し、静的解析の検査を広げる
 
-ステータス：草案　対象：[spec.md](spec.md)
+ステータス：承認済み（tasks 作成済み）　対象：[spec.md](spec.md)
 
 前提：spec 192 が確定した。文書の書き方は skill `docs` と[開発の進め方](../../rules/workflow.md)、番号と記号は[文書の記号と番号](../../rules/notation.md)。レビューは skill `review`。
 
@@ -68,7 +68,7 @@ DC の列は「192-1」の形で書く。spec の番号 192 を付けた DC-192-
 
 | 操作 | 置き場所 | 呼び出し元 | 決定 |
 |------|----------|------------|------|
-| 税率キャッシュの破棄と、クラスの public | `main/module/catalog/infrastructure/directory/TaxRateScheduleCache.java:22,65` | `it/module/catalog/api/StoreCatalogApiTest.java:80`、`StoreProductSearchTest.java:71`、`it/module/storefront/presentation/StorefrontApiTest.java:93`、`StorefrontFreshnessTest.java:93` | 第 10 節の 1 で決める |
+| 税率キャッシュの破棄と、クラスの public | `main/module/catalog/infrastructure/directory/TaxRateScheduleCache.java:22,65` | `it/module/catalog/api/StoreCatalogApiTest.java:80`、`StoreProductSearchTest.java:71`、`it/module/storefront/presentation/StorefrontApiTest.java:93`、`StorefrontFreshnessTest.java:93` | 案 A（第 10 節の 1）。破棄を package-private にし、クラスの public を外す。統合テストの同じパッケージにテストの補助クラスを置き、4 つのテストはそれを呼ぶ |
 | ファイル保存設定の複製 2 つ | `main/module/media/infrastructure/storage/MediaStorageProperties.java:48,61` | `it/module/media/infrastructure/storage/S3ObjectStorageTest.java:97`、`test/module/media/infrastructure/storage/S3ObjectStorageFailureTest.java:172` | 削除する。テストは、変えたい値を入れて設定の型を直接作る |
 | ファイル保存のクライアントを作る static の操作 | `main/module/media/infrastructure/storage/MediaStorageConfig.java:44` | 同じクラスの `@Bean` メソッド（`:35`）、`S3ObjectStorageFailureTest.java:173` | static の操作の中身を `@Bean` メソッドに戻す。テストは `@Bean` メソッド（同じパッケージ）を呼ぶ |
 | 最近の出荷を一覧する問い合わせ | port `main/module/shipping/application/port/ShipmentRepository.java:61`、実装 `main/module/shipping/infrastructure/persistence/JooqShipmentRepository.java:103` | `main/module/shipping/infrastructure/mock/MockCarrierController.java:121`、`it/module/shipping/infrastructure/persistence/JooqShipmentRepositoryTest.java:119-132` | port と実装から外し、mock の側の問い合わせのクラス（`main/module/shipping/infrastructure/mock/MockShipmentQuery`）に移す。テストも mock の側（`it/module/shipping/infrastructure/mock/MockShipmentQueryTest`）に移す。DC-181-19 の時刻の決め方は変えない |
@@ -250,7 +250,9 @@ DC-192-20 の規則の内容：
 
 - 照合した結果を、実装開始のコメントとして #192 に書く（[開発の進め方](../../rules/workflow.md) 第 5.6 節）。
 
-## 10. 確認すること
+## 10. 確認したこと
+
+利用者が 2026-10-26 に、次の全てを推奨のとおり決めた。
 
 1. **税率キャッシュの破棄（DC-192-3）の扱い。** 4 つの統合テストが、前のテストのキャッシュを読まないよう、準備で破棄している。テストは共通の時計を使い、多くのテストが同じ時刻に設定するので、時計を進めても有効期間が切れない。操作を本番から完全に消す案（B、C）は、振る舞いか規模に影響がある。
    - 案 A（推奨）：破棄の操作を残し、package-private にする。統合テストの同じパッケージに、Spring のコンテキストから取り出して破棄するテストの補助クラスを置き、4 つのテストはそれを呼ぶ。クラスの public は外す。spec の DC-192-3 を「税率キャッシュを破棄する操作は public でなく、テストの補助クラスだけが呼ぶ」に直す。理由：本番の振る舞いを変えず、外から呼べる範囲を最小にできるため。

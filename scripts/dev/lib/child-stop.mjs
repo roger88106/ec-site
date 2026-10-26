@@ -17,11 +17,21 @@ export const STOP_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP']
 export function stopChild(child, signal, deps = { platform: process.platform, spawnSync }) {
   if (child.pid === undefined) return
   if (deps.platform === 'win32') {
-    // spawnSync は終了コードが 0 以外でも例外を投げないので、子がすでに終わっていて taskkill が失敗しても止まらない
-    deps.spawnSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
+    killTreeOnWindows(child.pid, deps.spawnSync)
   } else {
     child.kill(signal)
   }
+}
+
+/**
+ * Windows で、プロセスとその子孫を taskkill で強制終了する。<br />
+ * spawnSync は終了コードが 0 以外でも例外を投げないので、プロセスがすでに終わっていて taskkill が失敗しても止まらない。
+ *
+ * @param {number} pid プロセスの ID
+ * @param {typeof spawnSync} [run] 指令の実行。テストで差し替える
+ */
+export function killTreeOnWindows(pid, run = spawnSync) {
+  run('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' })
 }
 
 /**

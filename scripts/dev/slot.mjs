@@ -2,7 +2,7 @@
 //
 // 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい）
 //   assign                          空いている最小のスロットを割り当て、データベースとバケットを作る。割り当て済みなら番号を示すだけ
-//   release                         データベースとバケットを削除し、割り当てを解く
+//   release                         スロットのポートで待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
 //   reset                           割り当てを変えずに、データベースとバケットを作り直す（バックエンドを止めてから）
 //   show                            スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
 //   env                             スロットの環境変数を `export NAME='value'` の形で出す
@@ -17,6 +17,7 @@ import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node
 import path from 'node:path'
 import { stopOnSignals } from './lib/child-stop.mjs'
 import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
+import { findListeners, portBusyMessage, stopFailedMessage, stopListeners, stoppedMessage } from './lib/port-stop.mjs'
 import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
 import {
   assignSlot,
@@ -31,6 +32,7 @@ import {
   parseSlotRecord,
   parseWorktrees,
   slotEnv,
+  slotPorts,
   slotValues,
   SHARED_CONTAINERS,
   SLOT_COUNT,
@@ -47,7 +49,7 @@ const LOCK_WAIT_MS = 90_000
 
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
   assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
-  release                           データベースとバケットを削除し、割り当てを解く
+  release                           待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
   reset                             割り当てを変えずに、データベースとバケットを作り直す
   show                              スロットのポート・URL・名前と、作業ツリーの一覧を示す
   env                               スロットの環境変数を export の形で出す
@@ -340,7 +342,7 @@ async function assign(ctx) {
 }
 
 /**
- * release：割り当てを解く。
+ * release：スロットのポートで待ち受けるプロセスを停止してから、割り当てを解く。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */
@@ -349,8 +351,16 @@ async function release(ctx) {
   requireShared(ctx)
   const slot = parseSlotRecord(readRecord(ctx.root))
   if (slot === null) return console.log('スロットは割り当てられていない')
-  const problem = checkBackendStopped({ slot, running: await backendRunning(slot), action: '解く' })
-  if (problem !== null) throw new Exit(problem.code, problem.message)
+  // スロットのポートは他のスロットと重ならないので、待ち受けるものはこのスロットで起動したもの（強制終了した script の残りを含む）
+  const ports = slotPorts(slot)
+  const listeners = findListeners(ports)
+  if (listeners.length > 0) {
+    stopListeners(listeners)
+    console.log(stoppedMessage(listeners))
+    // 止まったことを、ポートの待ち受けがなくなったかで確かめる
+    const left = findListeners(ports)
+    if (left.length > 0) throw new Exit(1, stopFailedMessage(left, process.platform))
+  }
   dropData(ctx.root, slot)
   rmSync(recordFile(ctx.root), { force: true })
   console.log(`スロット ${slot} を解いた`)
@@ -462,6 +472,9 @@ async function run(ctx, args) {
   let cwd
   if (target === 'backend') {
     requireShared(ctx)
+    // 利用者が別に起動したバックエンドかもしれないので、自動で止めず、止め方を示して終わる
+    const listeners = findListeners([values.backendPort, values.managementPort])
+    if (listeners.length > 0) throw new Exit(1, portBusyMessage(listeners, { platform: process.platform, canRelease: !ctx.main }))
     cwd = path.join(ctx.root, 'backend', 'ecsite')
     command = path.join(cwd, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew')
     commandArgs = ['bootRun', '--args=--spring.profiles.active=local']

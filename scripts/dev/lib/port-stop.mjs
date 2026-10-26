@@ -1,0 +1,195 @@
+// スロットのポートで待ち受けるプロセスを探し、停止する。
+// スロットの script（scripts/dev/slot.mjs）の release と run backend が使う。
+// script の node を強制終了すると停止の処理が動かず、Gradle のデーモンの子のバックエンドがポートで待ち受け続けるため。
+import { spawnSync } from 'node:child_process'
+import { killTreeOnWindows } from './child-stop.mjs'
+
+/**
+ * ポートで待ち受けるプロセス。
+ *
+ * @typedef {{ port: number, pid: number }} Listener
+ */
+
+/**
+ * 問い合わせの指令の出力から、待ち受けるプロセスを読む。<br />
+ * Windows は「ポート プロセスの ID 状態」の行（findListeners の PowerShell が出す形）で、状態が Listen の行だけを読む。
+ * 状態は .NET の列挙の名前なので、OS の言語で変わらない。
+ * それ以外は lsof の -F pn の出力（p の行がプロセス、n の行がアドレス）で、接続（-> を含むアドレス）を読まない。
+ * どちらも、渡したポート以外、自分のプロセス、ID 0（どのプロセスにも属さない接続）を読まず、同じ組（IPv4 と IPv6）は 1 つにする。
+ *
+ * @param {string} text 指令の出力
+ * @param {{ platform: NodeJS.Platform, ports: number[], ownPid: number }} options OS、対象のポート、自分のプロセスの ID
+ * @returns {Listener[]} 待ち受けるプロセス
+ */
+export function parseListeners(text, { platform, ports, ownPid }) {
+  const found = []
+  const add = (port, pid) => {
+    if (!ports.includes(port) || pid === 0 || pid === ownPid) return
+    if (found.some((item) => item.port === port && item.pid === pid)) return
+    found.push({ port, pid })
+  }
+  const lines = text.split(/\r?\n/)
+  if (platform === 'win32') {
+    for (const line of lines) {
+      const match = /^(\d+) (\d+) Listen$/.exec(line.trim())
+      if (match) add(Number(match[1]), Number(match[2]))
+    }
+    return byPortOrder(found, ports)
+  }
+  let pid = null
+  for (const line of lines) {
+    if (line.startsWith('p')) pid = Number(line.slice(1))
+    else if (line.startsWith('n') && pid !== null && !line.includes('->')) {
+      const port = Number(line.slice(line.lastIndexOf(':') + 1))
+      if (Number.isInteger(pid)) add(port, pid)
+    }
+  }
+  return byPortOrder(found, ports)
+}
+
+/**
+ * 待ち受けるプロセスを、渡したポートの順に並べる（示す文のポートの順をそろえるため）。
+ *
+ * @param {Listener[]} listeners 待ち受けるプロセス
+ * @param {number[]} ports 対象のポート
+ * @returns {Listener[]} 並べた待ち受けるプロセス
+ */
+function byPortOrder(listeners, ports) {
+  return [...listeners].sort((a, b) => ports.indexOf(a.port) - ports.indexOf(b.port))
+}
+
+/**
+ * ポートで待ち受けるプロセスを探す。<br />
+ * Windows は PowerShell の Get-NetTCPConnection、それ以外は lsof で問い合わせる。netstat を使わないのは、状態の列が OS の言語で変わるため。
+ * 指令を流せないとき（lsof がないなど）は、待ち受けがないとみなす。
+ *
+ * @param {number[]} ports 対象のポート
+ * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync, ownPid: number }} [deps] OS、指令の実行、自分のプロセスの ID。テストで差し替える
+ * @returns {Listener[]} 待ち受けるプロセス
+ */
+export function findListeners(ports, deps = { platform: process.platform, spawnSync, ownPid: process.pid }) {
+  const options = { encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }
+  const result =
+    deps.platform === 'win32'
+      ? deps.spawnSync(
+          'powershell',
+          [
+            '-NoProfile',
+            '-NonInteractive',
+            '-Command',
+            // 二重引用符は引数の受け渡しで崩れるので、単一引用符の連結で 1 行を作る
+            `Get-NetTCPConnection -LocalPort ${ports.join(',')} -ErrorAction SilentlyContinue | ForEach-Object { [string]$_.LocalPort + ' ' + $_.OwningProcess + ' ' + $_.State }`,
+          ],
+          options,
+        )
+      : deps.spawnSync('lsof', ['-nP', '-sTCP:LISTEN', '-Fpn', ...ports.map((port) => `-iTCP:${port}`)], options)
+  if (typeof result.stdout !== 'string') return []
+  return parseListeners(result.stdout, { platform: deps.platform, ports, ownPid: deps.ownPid })
+}
+
+/**
+ * 待ち受けるプロセスを強制終了する。プロセスごとに 1 回だけ止める。<br />
+ * Windows は taskkill でツリーごと止め、終わるまで Wait-Process で待つ（上限 30 秒）。
+ * 終わるのを待つのは、止めた直後に問い合わせると、まだ待ち受けが残って見えることがあるため。
+ * それ以外は SIGKILL を送る。すでに終わっていて失敗しても止まらない。
+ *
+ * @param {Listener[]} listeners 待ち受けるプロセス
+ * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync, kill: (pid: number, signal: NodeJS.Signals) => void }} [deps]
+ *   OS、指令の実行、シグナルの送り方。テストで差し替える
+ */
+export function stopListeners(listeners, deps = { platform: process.platform, spawnSync, kill: process.kill.bind(process) }) {
+  const pids = uniquePids(listeners)
+  if (pids.length === 0) return
+  if (deps.platform === 'win32') {
+    for (const pid of pids) killTreeOnWindows(pid, deps.spawnSync)
+    deps.spawnSync(
+      'powershell',
+      ['-NoProfile', '-NonInteractive', '-Command', `Wait-Process -Id ${pids.join(',')} -Timeout 30 -ErrorAction SilentlyContinue`],
+      { stdio: 'ignore' },
+    )
+    return
+  }
+  for (const pid of pids) {
+    try {
+      deps.kill(pid, 'SIGKILL')
+    } catch {
+      // すでに終わっている
+    }
+  }
+}
+
+/**
+ * プロセスの ID を、重ねずに出てきた順で返す。
+ *
+ * @param {Listener[]} listeners 待ち受けるプロセス
+ * @returns {number[]} プロセスの ID
+ */
+function uniquePids(listeners) {
+  return [...new Set(listeners.map((item) => item.pid))]
+}
+
+/**
+ * プロセスごとに、待ち受けるポートを並べる（`1234（ポート 18080、19080）`）。
+ *
+ * @param {Listener[]} listeners 待ち受けるプロセス
+ * @returns {string} 示す文
+ */
+function describeListeners(listeners) {
+  return uniquePids(listeners)
+    .map((pid) => {
+      const ports = listeners.filter((item) => item.pid === pid).map((item) => item.port)
+      return `${pid}（ポート ${ports.join('、')}）`
+    })
+    .join('、')
+}
+
+/**
+ * 停止したときに示す 1 行。
+ *
+ * @param {Listener[]} listeners 停止したプロセス
+ * @returns {string} 示す文
+ */
+export function stoppedMessage(listeners) {
+  return `スロットのポートで待ち受けるプロセスを停止した：${describeListeners(listeners)}`
+}
+
+/**
+ * ポートが使われていて起動しないときに示す文。停止の指令（解除できるときは release も）を示す。
+ *
+ * @param {Listener[]} listeners 待ち受けるプロセス
+ * @param {{ platform: NodeJS.Platform, canRelease: boolean }} options OS と、スロットを解除できるか（メインの作業ツリーは解除できない）
+ * @returns {string} 示す文
+ */
+export function portBusyMessage(listeners, { platform, canRelease }) {
+  const release = canRelease ? 'node scripts/dev/slot.mjs release（スロットのデータベースとバケットも消す）か、' : ''
+  return (
+    `バックエンドのポートが使われているので起動しない。待ち受けるプロセス：${describeListeners(listeners)}\n` +
+    `止めるには、${release}${manualStopCommand(listeners, platform)} を流す`
+  )
+}
+
+/**
+ * 停止しても待ち受けが残り、解除しないときに示す文。
+ *
+ * @param {Listener[]} listeners 残った待ち受けるプロセス
+ * @param {NodeJS.Platform} platform OS
+ * @returns {string} 示す文
+ */
+export function stopFailedMessage(listeners, platform) {
+  return (
+    `スロットのポートで待ち受けるプロセスが残ったので、解かない。待ち受けるプロセス：${describeListeners(listeners)}\n` +
+    `${manualStopCommand(listeners, platform)} で止めてから、もう一度 node scripts/dev/slot.mjs release を流す`
+  )
+}
+
+/**
+ * 手動でプロセスを止める指令。
+ *
+ * @param {Listener[]} listeners 待ち受けるプロセス
+ * @param {NodeJS.Platform} platform OS
+ * @returns {string} 指令
+ */
+function manualStopCommand(listeners, platform) {
+  const pids = uniquePids(listeners)
+  return platform === 'win32' ? `PowerShell で Stop-Process -Id ${pids.join(',')} -Force` : `kill ${pids.join(' ')}`
+}

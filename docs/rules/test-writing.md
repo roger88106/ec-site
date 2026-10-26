@@ -13,7 +13,7 @@
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
-| 4.1 | 画面に見えるもので探す。探した要素を `toBeTruthy`・`toBeDefined` で確認しない。HTML の属性や要素の並びに依存して確認しない | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector`、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと、HTML の属性の並びに依存する正規表現は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
+| 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない | CSS のクラスの確認と、画面のテストの `data-slot`・`querySelector`、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶこと、HTML の属性の並びに依存する正規表現は自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
 | 4.4 | テストの関数は `test` にそろえる | レビュー |
@@ -152,7 +152,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 - 詳細の項目の値（`dd`）は、Biome の検査が名前を認めないので、項目名の次の値を選ぶ書き方を `e2e/src/detail.ts` だけに置く。
 - 結合テストで、詳細の項目の値と一覧の行を探す書き方は、テストの補助だけに置く（第 4.5 節）。考え方は `e2e/src/detail.ts` と同じ。テストのファイルは補助を呼ぶだけにする。
 - Testing Library の文字の比較は、画面の側の空白（全角の空白を含む）を半角 1 つにそろえるが、探す文字はそろえない。探す文字の空白は半角で書く（`'全 45 件 2 / 3 ページ'`）。
-- 探した要素を `toBeTruthy`・`toBeDefined` で確認しない。あることは `toBeInTheDocument`（E2E は `toBeVisible` など）で確認する。
+- テストでは `toBeTruthy`・`toBeDefined` を使わない。探した要素があることは `toBeInTheDocument`（E2E は `toBeVisible` など）で、値は形（`expect.any(…)`、`toMatchObject` など）で確認する。
 - 表示のコンポーネントを HTML にして確認するとき、HTML の属性や要素の並びに依存する正規表現・文字の一致で確認しない。役割と名前で探して jest-dom で確認する。例外は、描画の結果が空文字であることの確認（`expect(renderMarkup(…)).toBe('')`）。
 
 理由：画面を再作成しても、振る舞いが同じならテストが壊れないようにするため。`getBy…` は見つからないと先に失敗するので `toBeTruthy` は確認にならず、`queryBy…` の `null` は `toBeDefined` を通るので、どちらも確認として弱いため。HTML の属性や要素の並びへの依存は、見た目に影響しない変更でテストを壊すため。
@@ -205,7 +205,7 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 ### 4.8 `fireEvent` を直接使わない
 
-テストのファイルで `fireEvent` を直接使わず、`userEvent` で操作する。`userEvent` で起こせない出来事（入力できない種類の入力欄への値の設定、ブラウザーが起こす出来事など）だけは、理由をコメントに書いて使ってよい。
+テストのファイルで `fireEvent` を直接使わず、`userEvent` で操作する。`userEvent` で起こせない出来事（入力できない種類の入力欄への値の設定、ブラウザーが起こす出来事など）だけは、理由をコメントに書いて使ってよい。理由は呼び出しごとに、同じ行のコメントか、コメントだけの直前の行に書く。
 
 理由：`fireEvent` はイベントを 1 つ発火するだけで、利用者の操作で起きる一連の出来事（フォーカス、キー入力など）を再現せず、実際の操作では起きない状態を通すことがあるため。
 

@@ -11,10 +11,11 @@
 // - フロントのテストと E2E：toBeTruthy・toBeDefined で確かめない、getAllBy…の結果を並びのインデックスで選ばない（第 4.1 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 // 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く。共有と同じ名前の定義でよいもの（各画面の translate など）は、キー <画面>:<名前> と理由を書く
+// fireEvent を使ってよいのは、同じ行のコメントか、コメントだけの直前の行に理由を書いた呼び出しだけ（除外の一覧には書かない）
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { closingParen } from './lib/closing-paren.mjs'
-import { templateEnd } from './lib/scan-code.mjs'
+import { scanCode, templateEnd } from './lib/scan-code.mjs'
 import { checkExclusions,exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
@@ -332,25 +333,44 @@ function toHits(text, lineNumbers) {
   return [...new Set(lineNumbers)].sort((a, b) => a - b).map((line) => ({ line, text: original[line - 1].trim() }))
 }
 
-/** 型を回避する変換 */
-const TYPE_CAST = /\bas\s+never\b|\bas\s+unknown\s+as\b/
+/** 型を回避する変換（as と never、as unknown as の間の改行を許す） */
+const TYPE_CAST = /\bas\s+never\b|\bas\s+unknown\s+as\b/g
+
+/**
+ * 理由のコメントがあるかを調べる関数を作る。
+ * 理由のコメントは、対象の行（複数の行にまたがるなら、そのどれか）のコメントか、直前の行がコメントだけの行であるものとみなす。
+ *
+ * @param {string} text ソース
+ * @returns {(firstLine: number, lastLine: number) => boolean} 対象の行の範囲（1 始まり）に理由のコメントがあるか
+ */
+function createReasonChecker(text) {
+  const original = text.split('\n')
+  const withStrings = stripComments(text).split('\n')
+  const hasComment = (index) => index >= 0 && original[index] !== withStrings[index]
+  const commentOnly = (index) => hasComment(index) && withStrings[index].trim() === ''
+  return (firstLine, lastLine) => {
+    for (let index = firstLine - 1; index <= lastLine - 1; index += 1) if (hasComment(index)) return true
+    return commentOnly(firstLine - 2)
+  }
+}
 
 /**
  * 理由のコメントのない、型を回避する変換（as never、as unknown as）を探す（テストの書き方 第 4.6 節）。
- * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす。
+ * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす。変換が改行をまたぐときは、またぐ行のどれかのコメントも理由とみなす。
  *
  * @param {string} text ソース
- * @returns {{ line: number, text: string }[]} 見つけた行
+ * @returns {{ line: number, text: string }[]} 見つけた行（変換の始まりの行）
  */
 export function findTypeCasts(text) {
-  const original = text.split('\n')
-  const withStrings = stripComments(text).split('\n')
-  const code = stripComments(text, { blankStrings: true }).split('\n')
-  const hasComment = (index) => index >= 0 && original[index] !== withStrings[index]
-  const commentOnly = (index) => hasComment(index) && withStrings[index].trim() === ''
+  const code = stripComments(text, { blankStrings: true })
+  const lineOf = createLineLocator(code)
+  const hasReason = createReasonChecker(text)
   return toHits(
     text,
-    code.flatMap((line, index) => (TYPE_CAST.test(line) && !hasComment(index) && !commentOnly(index - 1) ? [index + 1] : [])),
+    [...code.matchAll(TYPE_CAST)].flatMap((match) => {
+      const first = lineOf(match.index)
+      return hasReason(first, lineOf(match.index + match[0].length - 1)) ? [] : [first]
+    }),
   )
 }
 
@@ -368,15 +388,69 @@ export function findWeakExistenceChecks(text) {
 /** getAllBy…・findAllBy…・queryAllBy… の呼び出しの始まり */
 const MULTIPLE_QUERY = /\b(?:getAll|findAll|queryAll)By\w+\(/g
 
-/** 呼び出しの直後の、並びのインデックス（[数字]、.at(数字)。findAllBy… の await を囲む括弧を許す） */
-const INDEX_ACCESS = /^\s*\)?\s*(?:\[\s*-?\d+\s*\]|\.at\(\s*-?\d+\s*\))/
+/** 呼び出しの後の、結果をそのまま持つ書き方（空白、閉じ括弧、!、;、as の型の変換）。`)` は await を囲む括弧とスプレッド・Array.from の閉じ */
+const WRAPPER_TAIL = /^(?:\s|[)\]!;]|\bas\s+(?:readonly\s+)?[\w$.]+(?:<[^<>]*>)?(?:\[\])*)*/
 
-/** 変数に入れる文（const items = await screen.getAllByRole(…) など）の、呼び出しの前の部分。1 つ目が名前、配列の分割代入なら 2 つ目が空でない */
-const ASSIGNMENT_BEFORE = /\b(?:const|let)\s+(?:([\w$]+)|(\[))[^=]*=\s*(?:\(?\s*await\s+)?\(?\s*[\w$.]*$/
+/** 呼び出しの直後（WRAPPER_TAIL の後）の、並びのインデックス（[数字]、.at(数字)。?. を許す） */
+const INDEX_ACCESS = /^(?:\?\.)?(?:\[\s*-?\d+\s*\]|\.at\(\s*-?\d+\s*\))/
+
+/** 呼び出しの前の、結果をそのまま持つ書き方（await、括弧、スプレッド、Array.from(、screen.・within(…).・rtl.screen. などの受け手） */
+const CALL_PREFIX = String.raw`(?:\s|\(|await\b|\[\s*\.\.\.|Array\s*\.\s*from\s*\(|within\s*\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)\s*\.|[\w$]+\s*\.)*`
+
+/**
+ * 変数に入れる文（const items = await screen.getAllByRole(…)、const items: T[] = …、let の後の items = … など）の、呼び出しの前の部分。
+ * 1 つ目が const・let・var の名前、2 つ目が配列の分割代入、3 つ目がオブジェクトの分割代入、4 つ目が宣言のない代入の名前
+ */
+const ASSIGNMENT_BEFORE = new RegExp(
+  String.raw`(?:\b(?:const|let|var)\s+(?:([\w$]+)|(\[[^\]]*\])|(\{[^}]*\}))(?:\s*:[^=;]+?)?|(?<![.\w$])([\w$]+))\s*=(?![=>])${CALL_PREFIX}$`,
+)
+
+/** 呼び出しの前を遡って調べる字数 */
+const ASSIGNMENT_LOOKBEHIND = 600
+
+/** 結果の後に式が続く（変数に入れる前に変換する）ことを表す、後ろの始まり */
+const CONTINUES = /^(?:\?\.|\.|\(|\[|&&|\|\||\?|:|\+|\*|\/|%|\||&|==|!=)/
+
+/**
+ * 名前を、同じ名前の別の宣言（const・let・var、分割代入、関数の引数、アロー関数の引数）で上書きする書き方。
+ *
+ * @param {string} name 変数の名前
+ * @returns {RegExp} 上書きの宣言を探す正規表現
+ */
+function shadowingPattern(name) {
+  const id = `(?<![\\w$])${name.replace(/\$/g, '\\$')}(?![\\w$])`
+  return new RegExp(
+    `\\b(?:const|let|var)\\s+(?:${id}|\\{[^}]*${id}[^}]*\\}|\\[[^\\]]*${id}[^\\]]*\\])|\\bfunction\\b[^(]*\\([^)]*${id}|\\([^()]*${id}[^()]*\\)\\s*(?::[^=()]*)?=>|${id}\\s*=>`,
+  )
+}
+
+/**
+ * 位置から後ろで、その位置を含むブロックが閉じる位置を返す。
+ *
+ * @param {string} code ソース（コメントと文字列を空白にしたもの）
+ * @param {number} from 始まりの位置
+ * @returns {number} 閉じる } の位置。なければソースの終わり
+ */
+function blockEnd(code, from) {
+  let depth = 0
+  return scanCode(code, { start: from }, (type, at) => {
+    if (type !== 'code') return false
+    if (code[at] === '{') depth += 1
+    else if (code[at] === '}') {
+      depth -= 1
+      return depth < 0
+    }
+    return false
+  })
+}
 
 /**
  * getAllBy…・findAllBy…・queryAllBy… の結果を、並びのインデックスで選ぶ所を探す（テストの書き方 第 4.1 節の「並びの 1 つ目は使わない」）。
  * 呼び出しの直後の [数字]・.at(数字) と、変数に入れて（配列の分割代入を含む）から [数字]・.at(数字) で選ぶ所を見つける。
+ * 変数に入れる形：const・let・var の宣言と、宣言のない代入。= の後の改行、await、括弧、as の型の変換、型の注釈、
+ * 受け手（screen.、within(…).）、スプレッド（[...x]）、Array.from(x) をはさんでもよい。
+ * 変数の使用は、宣言した所より後で、同じ名前が別の宣言（const・let・var、分割代入、引数）で上書きされるまで、
+ * const・let・var の宣言ならそのブロックが閉じるまでの範囲だけ見る（別のテストの同じ名前の普通の配列は見ない）。
  * 見つけない形：変数に入れる前に map・filter などをつなぐもの、関数の引数や戻り値で渡して選ぶもの。
  * Playwright の .first()・.nth() は対象にしない
  *
@@ -387,30 +461,71 @@ export function findIndexedMultiples(text) {
   const code = stripComments(text, { blankStrings: true })
   const lineOf = createLineLocator(code)
   const lineNumbers = []
-  const variables = new Set()
   for (const match of code.matchAll(MULTIPLE_QUERY)) {
     const close = closingParen(code, match.index + match[0].length - 1)
     if (close >= code.length) continue
     const after = code.slice(close + 1)
-    if (INDEX_ACCESS.test(after)) {
+    const wrapped = after.slice(WRAPPER_TAIL.exec(after)[0].length)
+    if (INDEX_ACCESS.test(wrapped)) {
       lineNumbers.push(lineOf(match.index))
       continue
     }
-    const lineStart = code.lastIndexOf('\n', match.index) + 1
-    const assignment = ASSIGNMENT_BEFORE.exec(code.slice(lineStart, match.index))
-    if (!assignment || !STATEMENT_END.test(after)) continue
-    if (assignment[2]) lineNumbers.push(lineOf(match.index))
-    else variables.add(assignment[1])
-  }
-  for (const name of variables) {
-    const use = new RegExp(`(?<![.\\w$])${name.replace(/\$/g, '\\$')}(?:\\[\\s*-?\\d+\\s*\\]|\\.at\\(\\s*-?\\d+\\s*\\))`, 'g')
-    for (const match of code.matchAll(use)) lineNumbers.push(lineOf(match.index))
+    if (CONTINUES.test(wrapped)) continue
+    const windowStart = Math.max(0, match.index - ASSIGNMENT_LOOKBEHIND)
+    const assignment = ASSIGNMENT_BEFORE.exec(code.slice(windowStart, match.index))
+    if (!assignment) continue
+    if (assignment[2] || (assignment[3] && /^\{\s*\d+\s*:/.test(assignment[3]))) {
+      lineNumbers.push(lineOf(match.index))
+      continue
+    }
+    const name = assignment[1] ?? assignment[4]
+    if (name === undefined) continue
+    const limit = assignment[1] === undefined ? code.length : blockEnd(code, close + 1)
+    const scope = code.slice(close + 1, limit)
+    const shadow = shadowingPattern(name).exec(scope)
+    const range = shadow ? scope.slice(0, shadow.index) : scope
+    const use = new RegExp(`(?<![.\\w$])${name.replace(/\$/g, '\\$')}(?:\\?\\.|!)?(?:\\[\\s*-?\\d+\\s*\\]|\\.at\\(\\s*-?\\d+\\s*\\))`, 'g')
+    for (const usage of range.matchAll(use)) lineNumbers.push(lineOf(close + 1 + usage.index))
   }
   return toHits(text, lineNumbers)
 }
 
-/** 呼び出しの後で文が終わる（同じ行に続きがない）こと */
-const STATEMENT_END = /^[ \t]*;?[ \t]*(?:\n|$)/
+/**
+ * 式の文の終わりの位置を返す（深さ 0 の ; か、続きのない改行。続きは、行末の演算子や = か、次の行の始まりの . ? : && || + as）。
+ *
+ * @param {string} code ソース（コメントと文字列を空白にしたもの）
+ * @param {number} from 式の始まりの位置
+ * @returns {number} 文の終わりの位置。なければソースの終わり
+ */
+function statementEnd(code, from) {
+  const start = from + /^\s*/.exec(code.slice(from))[0].length
+  let depth = 0
+  let end = code.length
+  scanCode(code, { start }, (type, at) => {
+    if (type !== 'code') return false
+    const char = code[at]
+    if ('([{'.includes(char)) depth += 1
+    else if (')]}'.includes(char)) {
+      depth -= 1
+      if (depth < 0) {
+        end = at
+        return true
+      }
+    } else if (depth === 0 && char === ';') {
+      end = at
+      return true
+    } else if (depth === 0 && char === '\n') {
+      const before = code.slice(start, at).trimEnd()
+      const next = code.slice(at).trimStart()
+      if (!/[=+\-*/&|?:,.(]$/.test(before) && !/^(?:\?\.|\.|\?|:|&&|\|\||\+|as\b)/.test(next)) {
+        end = at
+        return true
+      }
+    }
+    return false
+  })
+  return end
+}
 
 /** 値の確認の呼び出し（. の後の名前と括弧）。1 つ目が名前 */
 const MATCHER_CALL = /\.(toMatch|toContain|toBe|toEqual|toStrictEqual)\(/g
@@ -422,9 +537,27 @@ const HTML_TAG = /<\\?\/?[A-Za-z]/
 const HTML_ATTRIBUTE = /[A-Za-z][\w:-]*=\\?["']/
 
 /**
+ * 引数の中の、文字列・テンプレートの文字の部分・正規表現のリテラルだけを集める（コードの部分は除く。`Map<string, number>` の < をタグと読まないため）。
+ *
+ * @param {string} code ソース（コメントを空白にし、文字列と正規表現を残したもの）
+ * @param {number} from 引数の始まりの位置
+ * @param {number} to 引数の終わりの位置
+ * @returns {string} 集めた文字（改行でつなぐ）
+ */
+function literalsOf(code, from, to) {
+  const parts = []
+  scanCode(code.slice(from, to), {}, (type, start, end) => {
+    if (type === 'string' || type === 'regex') parts.push(code.slice(from + start, from + end))
+    return false
+  })
+  return parts.join('\n')
+}
+
+/**
  * 描画した HTML の文字を、要素や属性の並びに依存して確かめる所を探す（テストの書き方 第 4.1 節。描画した結果を DOM に読み込み、役割と名前で探す）。
- * 対象の形は、toMatch・toContain・toBe・toEqual・toStrictEqual の引数に HTML のタグ（`<a`、`</p`）があるもの、
- * toMatch・toContain の引数に属性（`href="`、`aria-label="`）があるもの。空の描画の確認（toBe('')）は、引数にタグも属性もないので対象にならない
+ * 対象の形は、toMatch・toContain・toBe・toEqual・toStrictEqual の引数の文字列・テンプレート・正規表現に HTML のタグ（`<a`、`</p`）があるもの、
+ * toMatch・toContain の引数の文字列・テンプレート・正規表現に属性（`href="`、`aria-label="`）があるもの。
+ * 引数のコード（`new Map<string, number>()` の型引数など）は見ない。空の描画の確認（toBe('')）は、引数にタグも属性もないので対象にならない
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行
@@ -438,7 +571,7 @@ export function findMarkupTextChecks(text) {
     const open = match.index + match[0].length - 1
     const close = closingParen(code, open)
     if (close >= code.length) continue
-    const argument = code.slice(open + 1, close)
+    const argument = literalsOf(code, open + 1, close)
     const attributeAllowed = match[1] === 'toMatch' || match[1] === 'toContain'
     if (HTML_TAG.test(argument) || (attributeAllowed && HTML_ATTRIBUTE.test(argument))) lineNumbers.push(lineOf(match.index))
   }
@@ -451,9 +584,12 @@ const DESCRIBE_CALL = /(?<![.\w$])describe(?![\w$])/g
 /** 識別子だけの名前（英数字、_、$、.、<>、/、()、-、:、#、@ だけ。空白と日本語を含まない。コンポーネントの書き方 `<Foo />` は空白を許す） */
 const IDENTIFIER_NAME = /^(?:[A-Za-z0-9_$.<>/()\-:#@]+|<[A-Za-z0-9_$.]+\s*\/?>)$/
 
+/** describe.each・describe.for の名前の、表の値に置き換わる記号（%s・%d など、$名前・$a.b） */
+const NAME_PLACEHOLDER = /%[sdifjoOp#%]|\$[A-Za-z_]/
+
 /**
  * 識別子だけの describe の名前を探す（テストの書き方 第 2.2 節。関数名・コンポーネント名でなく、振る舞いを書く）。
- * describe.skip・describe.each(表)(名前) などの修飾を読む。名前が文字列でもテンプレートでもないもの（変数や関数を渡す書き方）は読まない
+ * describe.skip・describe.each(表)(名前) などの修飾を読む。describe.each・describe.for の名前の置き換えの記号（%s、$名前）は、表の値で名前が決まるので識別子だけの名前にしない。名前が文字列でもテンプレートでもないもの（変数や関数を渡す書き方）は読まない
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行
@@ -465,9 +601,11 @@ export function findIdentifierDescribes(text) {
   const lineNumbers = []
   for (const match of blanked.matchAll(DESCRIBE_CALL)) {
     let pos = match.index + match[0].length
+    let table = false
     for (let modifier = /^\.(\w+)/.exec(code.slice(pos, pos + 20)); modifier; modifier = /^\.(\w+)/.exec(code.slice(pos, pos + 20))) {
       pos += modifier[0].length
       if (modifier[1] !== 'each' && modifier[1] !== 'for') continue
+      table = true
       if (code[pos] === '(') pos = closingParen(code, pos) + 1
       else if (code[pos] === '`') pos = templateEnd(code, pos)
     }
@@ -481,7 +619,7 @@ export function findIdentifierDescribes(text) {
       const quoted = new RegExp(`^${code[start]}((?:[^\\\\\\n${code[start]}]|\\\\.)*)${code[start]}`).exec(code.slice(start))
       if (quoted) name = quoted[1]
     }
-    if (name !== undefined && IDENTIFIER_NAME.test(name)) lineNumbers.push(lineOf(match.index))
+    if (name !== undefined && !(table && NAME_PLACEHOLDER.test(name)) && IDENTIFIER_NAME.test(name)) lineNumbers.push(lineOf(match.index))
   }
   return toHits(text, lineNumbers)
 }
@@ -492,12 +630,44 @@ const EXPECT_CALL = /(?<![.\w$])expect\(/g
 /** expect の後の、toBe・toEqual（.not などをはさんでもよい） */
 const BE_OR_EQUAL = /^\s*(?:\.(?:not|resolves|rejects)\s*)*\.(?:toBe|toEqual)\(/
 
-/** expect の引数の最後が、要素のプロパティか属性（.disabled、.checked、.value、.getAttribute(…)） */
-const PROPERTY_ARGUMENT = /(?:\.(?:disabled|checked|value)|\.getAttribute\([^]*\))\s*,?$/
+/** expect の引数の最後が、要素のプロパティか属性（.disabled、.checked、.value、.getAttribute(…)。?. も）。その前が受け手 */
+const PROPERTY_TAIL = /\??\.(?:disabled|checked|value)$|\??\.getAttribute\((?:[^()]|\((?:[^()]|\([^()]*\))*\))*\)$/
+
+/** 要素を返す式（getBy…・queryBy…・findBy…、screen.、within(、document.・container. からたどる形） */
+const ELEMENT_SOURCE = /\b(?:get|query|find)(?:All)?By\w+\(|(?<![.\w$])screen\s*\.|\bwithin\s*\(|(?<![.\w$])(?:document|container)\s*\./
+
+/** 要素の型（HTMLInputElement など） */
+const ELEMENT_TYPE = /\bHTML\w*Element\b/
+
+/**
+ * 変数が要素かを、その変数の直前の宣言から判定する。
+ * const・let・var の宣言は、型の注釈が要素の型か、初期値が要素を返す式か要素の型への変換であるもの。引数などの `名前: HTMLInputElement` の型の注釈も要素とする
+ *
+ * @param {string} code ソース（コメントと文字列を空白にしたもの）
+ * @param {string} name 変数の名前
+ * @param {number} before この位置より前の宣言を見る
+ * @returns {boolean} 要素なら true
+ */
+function isElementVariable(code, name, before) {
+  const id = name.replace(/\$/g, '\\$')
+  const declaration = new RegExp(`\\b(?:const|let|var)\\s+${id}(?![\\w$])|(?<![\\w$.])${id}\\s*\\??:\\s*(?:Readonly<)?HTML\\w*Element\\b`, 'g')
+  let last = null
+  for (const match of code.slice(0, before).matchAll(declaration)) last = match
+  if (!last) return false
+  if (!/^(?:const|let|var)/.test(last[0])) return true
+  const rest = code.slice(last.index + last[0].length)
+  const assign = /^\s*(?::[^=;]*?)?=(?![=>])/.exec(rest)
+  if (!assign) return false
+  if (ELEMENT_TYPE.test(assign[0])) return true
+  const init = code.slice(last.index + last[0].length + assign[0].length, statementEnd(code, last.index + last[0].length + assign[0].length))
+  return ELEMENT_SOURCE.test(init) || ELEMENT_TYPE.test(init)
+}
 
 /**
  * 要素のプロパティ・属性（.disabled、.checked、.value、getAttribute(…)）を toBe・toEqual で比べる所を探す（テストの書き方 第 4.7 節）。
- * expect の引数の最後がそのプロパティか属性であるものだけを見つける（`parts.map((part) => part.value)` のように、途中に出てくるものは見つけない）。
+ * expect の引数の最後がそのプロパティか属性であるもので、受け手が要素のものだけを見つける。受け手が要素なのは、
+ * getBy…・queryBy…・findBy…・screen.・within( の結果か、それを入れた変数（要素の型の注釈や変換も）、document.・container. からたどる形。
+ * `parts.map((part) => part.value)` のように途中に出てくるものと、`result.current.value` のように要素でない値は見つけない。
  * .textContent は対象にしない
  *
  * @param {string} text ソース
@@ -510,8 +680,17 @@ export function findPropertyComparisons(text) {
   for (const match of code.matchAll(EXPECT_CALL)) {
     const open = match.index + match[0].length - 1
     const close = closingParen(code, open)
-    if (close >= code.length) continue
-    if (BE_OR_EQUAL.test(code.slice(close + 1)) && PROPERTY_ARGUMENT.test(code.slice(open + 1, close).trim())) lineNumbers.push(lineOf(match.index))
+    if (close >= code.length || !BE_OR_EQUAL.test(code.slice(close + 1))) continue
+    const argument = code.slice(open + 1, close).trim().replace(/,$/, '').trim()
+    const tail = PROPERTY_TAIL.exec(argument)
+    if (!tail) continue
+    const receiver = argument.slice(0, tail.index)
+    const simple = receiver
+      .replace(/\bas\s+[\w$.<>[\]]+/g, '')
+      .replace(/\.at\([^)]*\)|\[[^\]]*\]/g, '')
+      .replace(/[()!?\s]/g, '')
+    const isElement = /^[\w$]+$/.test(simple) ? ELEMENT_TYPE.test(receiver) || isElementVariable(code, simple, match.index) : ELEMENT_SOURCE.test(receiver) || ELEMENT_TYPE.test(receiver)
+    if (isElement) lineNumbers.push(lineOf(match.index))
   }
   return toHits(text, lineNumbers)
 }
@@ -519,39 +698,29 @@ export function findPropertyComparisons(text) {
 /** import 文（import { a } from、import a, * as b from、import type { a } from）。取り込む名前の部分まで */
 const IMPORT_STATEMENT = /\bimport\s+(?:type\s+)?(?:[\w$]+\s*,?\s*)?(?:\*\s*as\s+[\w$]+|\{[^}]*\})?\s*from\b/g
 
-/** 行頭から始まる関数・変数の宣言（関数の名前を求める） */
-const TOP_LEVEL_DECLARATION = /^(?:export\s+)?(?:async\s+)?function\s*\*?\s*([\w$]+)|^(?:export\s+)?(?:const|let)\s+([\w$]+)/
-
 /**
- * fireEvent を使う所を探す（テストの書き方 第 4.8 節。import は除く）。
- * 名前は、その行より前の、行頭から始まる最も近い関数・変数の宣言の名前（なければ (top)）。除外のキーに使う
+ * 理由のコメントのない fireEvent の使用を探す（テストの書き方 第 4.8 節。import は除く）。
+ * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす（型の変換と同じ）。呼び出しごとに理由が要る。
+ * fireEvent を別名で import したとき（import { fireEvent as fe }）は、別名の呼び出し（fe.click(…)、fe(…)）も見つける。
+ * 名前空間の import（import * as rtl）の rtl.fireEvent は、fireEvent の語で見つける
  *
  * @param {string} text ソース
- * @returns {{ line: number, text: string, name: string }[]} 見つけた行（行の順）
+ * @returns {{ line: number, text: string }[]} 見つけた行（行の順）
  */
 export function findFireEvents(text) {
-  const code = stripComments(text, { blankStrings: true }).replace(IMPORT_STATEMENT, (statement) => statement.replace(/[^\r\n]/g, ' '))
-  const codeLines = code.split('\n')
-  const hits = []
-  let name = '(top)'
-  const original = text.split('\n')
-  codeLines.forEach((line, index) => {
-    const declaration = TOP_LEVEL_DECLARATION.exec(line)
-    if (declaration) name = declaration[1] ?? declaration[2]
-    if (/\bfireEvent\b/.test(line)) hits.push({ line: index + 1, text: original[index].trim(), name })
+  const stripped = stripComments(text, { blankStrings: true })
+  const aliases = []
+  const code = stripped.replace(IMPORT_STATEMENT, (statement) => {
+    for (const item of /\{([^}]*)\}/.exec(statement)?.[1].split(',') ?? []) {
+      const alias = /^\s*(?:type\s+)?fireEvent\s+as\s+([\w$]+)/.exec(item)
+      if (alias) aliases.push(alias[1])
+    }
+    return statement.replace(/[^\r\n]/g, ' ')
   })
-  return hits
-}
-
-/**
- * fireEvent の除外のキーを返す。
- *
- * @param {string} file リポジトリのルートからのパス（frontend/<画面>/src/…）
- * @param {string} name 関数の名前（findFireEvents の name）
- * @returns {string} <画面>:<src からのパス>:<関数名>
- */
-export function fireEventKey(file, name) {
-  return `${file.split('/')[1]}:${file.slice(file.indexOf('/src/') + '/src/'.length)}:${name}`
+  const patterns = [/\bfireEvent\b/, ...aliases.map((alias) => new RegExp(`(?<![.\\w$])${alias.replace(/\$/g, '\\$')}\\s*[.(]`))]
+  const hasReason = createReasonChecker(text)
+  const lineNumbers = code.split('\n').flatMap((line, index) => (patterns.some((pattern) => pattern.test(line)) && !hasReason(index + 1, index + 1) ? [index + 1] : []))
+  return toHits(text, lineNumbers)
 }
 
 /** フロントのテストのファイル */
@@ -582,7 +751,6 @@ if (isMain(import.meta.url)) {
     process.exit(1)
   }
   const shadowing = new Set()
-  const fireEventKeys = new Set()
   for (const file of files.filter((file) => SOURCE.test(file) && !TEST.test(file))) {
     const text = readFileSync(file, 'utf8')
     if (isScreenSource(file) && !file.startsWith('frontend/shared/')) {
@@ -635,11 +803,7 @@ if (isMain(import.meta.url)) {
       report(`${file}:${hit.line} 理由のコメントのない型を回避する変換（型に合う値を補助で作る。避けられないときは理由をコメントに書く。テストの書き方 第 4.6 節）：${hit.text}`)
     }
     for (const hit of findFireEvents(text)) {
-      const key = fireEventKey(file, hit.name)
-      fireEventKeys.add(key)
-      if (!(key in exclusions)) {
-        report(`${file}:${hit.line} fireEvent を直接使う（userEvent で操作する。起こせない出来事だけは、除外の一覧にキー ${key} と理由を書く。テストの書き方 第 4.8 節）：${hit.text}`)
-      }
+      report(`${file}:${hit.line} 理由のコメントのない fireEvent の使用（userEvent で操作する。起こせない出来事だけは、同じ行か直前の行のコメントに理由を書く。テストの書き方 第 4.8 節）：${hit.text}`)
     }
   }
   for (const file of files.filter((file) => FRONTEND_TEST.test(file))) {
@@ -669,10 +833,9 @@ if (isMain(import.meta.url)) {
   for (const relative of [...duplicated].filter((relative) => !Object.hasOwn(exclusions, relative))) {
     report(`frontend/{store,admin}/src/${relative} 店舗画面と管理画面に同じ内容のファイルがある（共有パッケージに置く）`)
   }
-  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）、
-  // fireEvent を使うもの（キーは <画面>:<src からのパス>:<関数名>）だけ
+  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）と、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）だけ
   // （片方が消えた、内容が変わった、定義がなくなったものは不要）
-  for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (key) => duplicated.has(key) || shadowing.has(key) || fireEventKeys.has(key))) {
+  for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (key) => duplicated.has(key) || shadowing.has(key))) {
     report(message)
   }
   console.log(`フロントの書き方の違反：${count}`)

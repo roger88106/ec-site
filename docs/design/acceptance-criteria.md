@@ -57,7 +57,7 @@
 | AC-32 | 状態は「非公開」「公開」「販売終了」。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductTest`、`StorefrontApiTest` |
 | AC-33 | C 側に一度も表示されていない商品は削除できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductActionsTest`、`ProductApiTest`、`ProductEditPage.test.tsx` ほか 1 |
 | AC-34 | 公開開始日時と公開終了日時（いずれも任意）を設定できる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
-| AC-35 | 公開状態でも、開始日時より前と終了日時以降は C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductTest`、`StorefrontApiTest`、`reservation.spec.ts` |
+| AC-35 | 公開状態でも、開始日時より前と終了日時以降は C 側に表示されない。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductTest`、`StorefrontApiTest`、`publish-schedule.spec.ts` |
 | AC-36 | 終了日時は開始日時より後。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `ProductApiTest`、`ProductEditPage.test.tsx`、`ProductTest` |
 | AC-37 | 商品に画像を複数登録し、並び順を変えられる。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `MediaApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 3 |
 | AC-38 | バリアントに画像を 1 枚指定できる（任意）。 | 有効 | [001](../specs/archive/mvp/001-catalog-and-inventory/spec.md) | — | spec | `OrderCatalogApiTest`、`ProductEditPage.test.tsx`、`ProductImageApiTest` ほか 3 |
@@ -105,7 +105,7 @@
 | AC-80 | 購入できなくなった品目は、理由とともに「購入できません」と示し、合計に含めない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CartItemControls.test.tsx`、`OrderCatalogApiTest`、`QuoteItemSummary.test.tsx` ほか 4 |
 | AC-81 | 最後に変更してから 30 日たったカートは、空のカートとして扱う。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [017](../specs/archive/mvp/017-stability/spec.md) | [カートモジュール](modules/cart.md)（期限） | `CartApiTest`、`CartMergeTest`、`CartTest` ほか 1 |
 | AC-82 | カートから注文手続きに進むと、全品目をカートの数量だけ 15 分間引き当てる（B… | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`StockReservationApiTest`、`cart.test.ts` ほか 2 |
-| AC-83 | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`reservation-race.spec.ts` |
+| AC-83 | 同じ在庫への引当が同時に要求されても、在庫数を超えて引き当てない。 | 有効 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | — | spec | `StockReservationApiTest`、`stock-hold-race.spec.ts` |
 | AC-84 | 引当は次のときに解除される。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [007](../specs/archive/mvp/007-payment/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[在庫モジュール](modules/inventory.md)（引当） | `CheckoutApiTest`、`CheckoutCartChangeApiTest`、`StockReservationApiTest` |
 | AC-85 | 注文手続きでは、カートの内容、送料、総額、税率ごとの消費税額を確認し、メールアド… | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [003](../specs/archive/mvp/003-auth/spec.md)、[016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文（集約））、[店舗画面](apps/store.md) 第 4.8 節 | `CheckoutApiTest`、`order.spec.ts` |
 | AC-86 | 入力の形式。 | 変更 | [002](../specs/archive/mvp/002-cart-and-order/spec.md) | [016](../specs/archive/mvp/016-master-data/spec.md) | [注文モジュール](modules/order.md)（注文の成立）、[地域モジュール](modules/region.md) | `OrderForm.test.tsx`、`OrderTest`、`PlaceOrderApiTest` ほか 4 |

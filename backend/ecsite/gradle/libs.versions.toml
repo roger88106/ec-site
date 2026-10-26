@@ -26,12 +26,12 @@ dependency-license-report = "3.1.4"
 errorprone-plugin = "5.1.1"
 errorprone = "2.50.0"
 # null の検査（Error Prone の検査として動く）
-nullaway = "0.14.2"
+nullaway = "0.14.3"
 
 # --- フレームワーク ---
-spring-boot = "4.1.1"
+spring-boot = "4.1.2"
 spring-dependency-management = "1.1.7"
-spring-modulith = "2.1.1"
+spring-modulith = "2.1.2"
 
 # --- DB ---
 jooq = "3.21.9"

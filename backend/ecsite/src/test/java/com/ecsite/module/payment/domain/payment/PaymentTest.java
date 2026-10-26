@@ -14,7 +14,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 支払の単体テスト（T7202、BR-15、17、AC-157）
+ * 支払の単体テスト
  */
 class PaymentTest {
 

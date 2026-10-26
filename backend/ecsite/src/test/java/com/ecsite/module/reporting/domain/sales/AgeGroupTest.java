@@ -8,7 +8,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 年齢層の単体テスト（T0207、BR-27、AC-208）
+ * 年齢層の単体テスト
  */
 class AgeGroupTest {
 

@@ -48,7 +48,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 注文のリポジトリの統合テスト（T2309）。行のロックを確認するテスト以外は、テストごとにロールバックする。
+ * 注文のリポジトリの統合テスト。行のロックを確認するテスト以外は、テストごとにロールバックする。
  */
 @IntegrationTest
 @RecordApplicationEvents

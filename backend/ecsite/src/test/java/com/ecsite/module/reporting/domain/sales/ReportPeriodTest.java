@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * 期間と区切りの単体テスト（T0207、BR-24、AC-197、201）
+ * 期間と区切りの単体テスト
  */
 class ReportPeriodTest {
 

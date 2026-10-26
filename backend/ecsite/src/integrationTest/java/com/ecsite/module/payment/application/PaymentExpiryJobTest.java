@@ -31,7 +31,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 支払の期限切れのジョブの統合テスト（T7209、T7308、T017-06-03、AC-153、154、156、311、NFR-7）。<br />
+ * 支払の期限切れのジョブの統合テスト。<br />
  * ジョブはテストから呼ぶ。ほかのテストの支払も期限切れになるので、イベントは注文 ID で絞って確認する。
  */
 @IntegrationTest

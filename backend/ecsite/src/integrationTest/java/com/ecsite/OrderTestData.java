@@ -19,7 +19,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 統合テストで、C 側の API でカートに入れて注文し、mock の決済サービスで支払う補助（spec 002 のキャンセル・B 側の注文、spec 007 の支払のテストで使う）。<br />
+ * 統合テストで、C 側の API でカートに入れて注文し、mock の決済サービスで支払う補助（キャンセル・B 側の注文・支払のテストで使う）。<br />
  * 既定の会員（{@link TestSecurityConfig}）として、会員のカートで注文する。
  * 商品と在庫は、呼ぶ側が先に用意する。
  */

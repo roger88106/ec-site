@@ -6,15 +6,15 @@
 
 | 節 | 規則 | 確認方法 |
 |----|------|----------|
-| 1.1 | 標準の構成（層とパッケージ） | 依存の表のうち、domain・application・presentation・infrastructure の間の向き、application と `api`、presentation・`application/model/` と `port/` は自動（ArchUnit）、他の依存の組はレビュー |
+| 1.1 | 標準の構成（層とパッケージ） | モジュールの中の層の間は、依存の表にある全ての組と、表にない層・パッケージへの依存が自動（ArchUnit）。`api/` に interface がないこと、`api/` の型を `api/` の外が実装・継承しないこと、domain のパッケージに循環がないことも自動（ArchUnit）。presentation が依存する domain をエラーの定義と値の型に限ることはレビュー（集約に依存しないことは次の行で自動） |
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
-| 1.1 | 共通コードと設定はモジュールに依存せず、モジュールは設定に依存しない | 自動（ArchUnit） |
+| 1.1 | 共通コードと設定はモジュールに依存しない。共通コードとモジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
 | 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー |
-| 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）、目安はレビュー |
+| 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数を第 1.4 節の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー |
 | 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー |
 | 2.1 | 生成した interface を実装する。`@RestController` は presentation だけに付ける（`MeController` を除く） | `@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー |
 | 2.2 | 応答への変換は手動で書く | 生成したモデルの組み立ては自動（ArchUnit）、他はレビュー |
@@ -81,7 +81,7 @@ module/<モジュール>/
 - **参照と更新（レベル A）**：参照の service は、`application/model/` の view を返し、集約を返さない。presentation は集約を受け取らない。画面の操作の可否は、view を作る所で集約のメソッドを呼んで view に入れる。
 - **外部の呼び出しの前の読み取り**：更新の流れで、外部のサービスを呼ぶ前に集約の状態を読む処理（外部への要求を作る）も、参照の service に置き、要求の型か view を返す。外部の呼び出しをトランザクションの外で行い、呼んだ後の更新を更新の service で行う。
 - **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
-- **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
+- **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。`api/` の型を `api/` の外が実装・継承しない。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
 - **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、集約のパッケージの直下に置く。`vo/` に置くと、`vo/` と集約のパッケージが互いに依存して循環するためである（例：order の `BuyerProfile`、`Cancellation`）。
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
@@ -108,12 +108,18 @@ module/<モジュール>/
 
 ### 1.4 パッケージの大きさ
 
-1 つのパッケージの直下の `.java` は 10 を目安、20 を上限にする（`package-info.java` とテストは数えない）。目安を超えて分けないときは、下の表に理由を書く。
+1 つのパッケージの直下の `.java` は 10 を目安、20 を上限にする（`package-info.java`、テスト、生成したコード（OpenAPI と jOOQ）は数えない）。目安を超えて分けないときは、下の表に理由を書く。
 
 | パッケージ | 数 | 分けない理由 |
 |------------|----|--------------|
 | `catalog.infrastructure.persistence` | 14 | jOOQ の Repository と、それだけが使う package-private のクラス。分けるとクラスを公開しなければならない |
 | `config.security` | 11 | 認証と認可の設定。filter chain の設定のクラスが組み立てるクラスは package-private。対象は認可の対応表、認可の判定、契約の操作の一覧で、対応表は管理用と店舗用がある。分けるとクラスを公開しなければならない |
+
+目安を超えるパッケージの一覧と数は、テスト（`ModuleStructureTest`）が表と照合する。表にない、目安を超えるパッケージ、目安以下のパッケージの行、数の違いのどれかがあると、テストが失敗する。
+
+テストが表を読むので、表の書式を変えない。1 列目は、バッククォートで囲んだパッケージ名（`com.ecsite.` と `module.` を除く。例：`catalog.infrastructure.persistence`）、2 列目は数にする。
+
+テストは節の見出し（`### 1.4`）で表を探す。節の番号を変えるときは、`ModuleStructureTest` の `PACKAGE_SIZE_HEADING` も修正する。
 
 ### 1.5 共通の型
 

@@ -11,7 +11,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 出荷の単体テスト（T9203、BR-19、AC-174〜177）
+ * 出荷の単体テスト
  */
 class ShipmentTest {
 

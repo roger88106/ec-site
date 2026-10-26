@@ -32,9 +32,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 税区分 API の受け入れテスト（T110、US-1）。<br />
+ * 税区分 API の受け入れテスト。<br />
  * 現在時刻は {@link MutableClock} で 2026-10-08 00:00（日本時間）に固定する。
- * AC-4 の日時は日本時間のオフセット付きで送る。テストごとにロールバックする。
+ * 適用開始の日時は日本時間のオフセット付きで送る。テストごとにロールバックする。
  */
 @IntegrationTest
 @AutoConfigureMockMvc

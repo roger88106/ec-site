@@ -39,7 +39,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * カテゴリ API の受け入れテスト（T204、US-2）。<br />
+ * カテゴリ API の受け入れテスト。<br />
  * テストごとにロールバックする。統合テストでは seed を入れないので、カテゴリはテストで作ったものだけになる。
  */
 @IntegrationTest

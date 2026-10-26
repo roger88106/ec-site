@@ -1,8 +1,8 @@
 package com.ecsite.architecture;
 
+import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
-import com.tngtech.archunit.core.importer.ImportOption;
 import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,26 +19,18 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 class ConfigurationPropertiesTest {
 
-    /**
-     * 本番のクラス（テストと、生成したコードを除く）
-     */
-    private static final JavaClasses CLASSES = new ClassFileImporter()
-            .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)
-            .withImportOption(location -> !location.contains("/com/ecsite/jooq/") && !location.contains("/com/ecsite/api/"))
-            .importPackages("com.ecsite");
-
     @Test
     @DisplayName("@EnableConfigurationProperties を付けるクラスは、設定のクラス（@Configuration）")
     void enableConfigurationPropertiesIsOnConfiguration() {
         ArchRule rule = classes().that().areAnnotatedWith(EnableConfigurationProperties.class)
                 .should().beMetaAnnotatedWith(Configuration.class);
-        rule.check(CLASSES);
+        rule.check(ProductionClasses.handwritten());
     }
 
     @Test
     @DisplayName("モジュールの設定のクラス（@Configuration）は、infrastructure に置く")
     void moduleConfigurationResidesInInfrastructure() {
-        moduleConfigurationRule("com.ecsite.module..").check(CLASSES);
+        moduleConfigurationRule("com.ecsite.module..").check(ProductionClasses.handwritten());
     }
 
     @Test
@@ -56,11 +48,14 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("presentation は、設定の値の型（@ConfigurationProperties）に依存しない")
     void presentationDoesNotDependOnConfigurationProperties() {
-        // 規則が空振りしないように、presentation のクラスがあることを確かめる
-        assertThat(CLASSES.stream().filter(javaClass -> javaClass.getPackageName().contains(".presentation")
-                && javaClass.getPackageName().startsWith("com.ecsite.module."))).isNotEmpty();
+        ProductionClasses.requireNotEmpty(
+                ProductionClasses.handwritten().stream()
+                        .filter(javaClass -> javaClass.getPackageName().contains(".presentation")
+                                && javaClass.getPackageName().startsWith("com.ecsite.module."))
+                        .toList(),
+                "モジュールの presentation のクラス");
 
-        presentationRule("com.ecsite.module.*.presentation..").check(CLASSES);
+        presentationRule("com.ecsite.module.*.presentation..").check(ProductionClasses.handwritten());
     }
 
     @Test

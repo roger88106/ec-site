@@ -9,7 +9,7 @@ import org.junit.jupiter.params.provider.CsvSource;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 集計の性別の区分の単体テスト（AC-277、AC-278）
+ * 集計の性別の区分の単体テスト
  */
 class ReportGenderTest {
 

@@ -144,10 +144,10 @@ export function FooForm({ fooId }: { fooId: string }) {
   const t = useTranslations('foo.form')
   const [result, formAction, pending] = useActionState(updateFoo, null)
   return (
-    // 失敗の表示は送る前から読み上げの領域を描く（店舗画面の構成 第 6 節）。親は flex と gap で並べる
+    // 失敗の読み上げの領域は、送る前から描く（店舗画面の構成 第 6 節）。領域が最後の子なので、親は flex と gap で並べる
     <form action={formAction} className="flex flex-col items-start gap-3">
       <input name="fooId" type="hidden" value={fooId} />
-      {/* 入力欄。誤りは欄の下に出し、aria-describedby と aria-invalid で入力欄に結び付ける（OrderForm の Field） */}
+      {/* 入力欄。誤りは欄の下に表示し、aria-describedby と aria-invalid で入力欄に結び付ける（OrderForm の Field） */}
       <Button disabled={pending} type="submit">
         {pending ? t('submitting') : t('submit') /* 送信中か、〇〇する */}
       </Button>

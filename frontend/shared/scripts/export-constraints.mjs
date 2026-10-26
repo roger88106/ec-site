@@ -3,7 +3,7 @@
 import { readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'
 import { fileURLToPath } from 'node:url'
-import yaml from 'js-yaml'
+import { load } from 'js-yaml'
 
 /** 書き出す制約のキーワード */
 const KEYWORDS = [
@@ -108,6 +108,6 @@ export function renderModule(constraints, source) {
 
 if (process.argv[1] === fileURLToPath(import.meta.url)) {
   const [input, output] = process.argv.slice(2)
-  const doc = yaml.load(readFileSync(input, 'utf8'))
+  const doc = load(readFileSync(input, 'utf8'))
   writeFileSync(output, renderModule(exportConstraints(doc), basename(input)))
 }

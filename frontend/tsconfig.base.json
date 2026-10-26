@@ -3,7 +3,7 @@
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler",
-    // 厳密な型チェック。TypeScript 6 の既定でも有効だが、版に頼らず明示する
+    // 厳密な型チェック。TypeScript 6 以降の既定でも有効だが、バージョンに頼らず明示する
     "strict": true,
     "skipLibCheck": true,
     "noEmit": true

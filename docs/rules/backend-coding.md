@@ -28,7 +28,7 @@
 | 5.1 | Lombok は main だけ | 自動（`scripts/ci/java-rules.mjs`） |
 | 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
-| 5.4 | 書式は IntelliJ の整形を推奨する（強制しない） | なし（強制しない） |
+| 5.4 | 書式は IntelliJ の整形を推奨する（強制しない）。import の並びと使われていない import は強制する | import は自動（Checkstyle）、書式はなし（強制しない） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 | 6.1 | 秘密の値を持つ設定の record は、`toString` で値を伏せる | 単体テスト（`toString` に秘密の値が含まれないこと）、上書きの書き忘れはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
@@ -264,11 +264,29 @@ public final class MoneyFormat {
 
 ### 5.4 書式
 
-Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。強制しない（CI と commit の前の hook では検査しない）。
+Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。書式の整形は強制しない（CI と commit の前の hook では検査しない）。import だけは Checkstyle が検査する（下の import の項）。
 
 - エージェントは、IntelliJ の MCP（`reformat_file`）を使えるとき、変えた Java のファイルを整形してよい。
 - `reformat_file` が整形できるのは、IntelliJ で開いているプロジェクトのファイルだけ。`.claude/worktrees/` の下の作業ツリーのファイルは、その作業ツリーを IntelliJ で開いていなければ、MCP が「ok」を返しても整形しない。整形の後に `git diff` で変わったかを確認する。
 - 既存のファイルの書式だけを直す変更は、他の変更と同じ commit に混ぜない。理由：差分のレビューと `git blame` を読みやすく保つため。
+
+import は次の並びにする。まとまりの間は空行 1 行で分け、まとまりの中は文字コードの順にする。
+
+| 順 | まとまり |
+|----|----------|
+| 1 | `java`・`javax` 以外 |
+| 2 | `java`・`javax` |
+| 3 | static |
+
+- IntelliJ の import の整理（Optimize Imports）をこの並びに合わせる。Settings → Editor → Code Style → Java → Imports の「Import Layout」を、次の順にする。IntelliJ の既定は `import all other imports`、空行、`import javax.*`、`import java.*`、空行、`import static all other imports` で、`javax.*` が `java.*` の前にある。ここでは文字コードの順（`java.` が先）にするので、この 2 行の順を入れ替える。
+  1. `import all other imports`
+  2. 空行
+  3. `import java.*`
+  4. `import javax.*`
+  5. 空行
+  6. `import static all other imports`
+- 同じ画面の「Class count to use import with *」と「Names count to use static import with *」は、`*` の import を作らないよう、大きな値（999）にする。
+- Checkstyle の `UnusedImports` と `CustomImportOrder`（`backend/ecsite/config/checkstyle/checkstyle.xml`）が、使われていない import と上の並びを、全てのソースセット（main、test、integrationTest、testFixtures、tools）で検査する。違反があれば `./gradlew check` と CI が失敗する。Javadoc の書き漏れの検査だけは main に限る。
 
 理由：今のコードは IntelliJ の書式でほぼそろっている。Spotless で強制する案は、今の書式に最も近い設定でも、読みやすさが下がる変更が出た（測定の記録は [issue #19 のコメント](https://github.com/roger88106/ec-site/issues/19)）。
 

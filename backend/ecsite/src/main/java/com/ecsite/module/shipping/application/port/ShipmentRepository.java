@@ -51,12 +51,4 @@ public interface ShipmentRepository {
      * @return 注文 ID
      */
     List<UUID> findReturnedOrderIds();
-
-    /**
-     * 新しい出荷から順に取得する。
-     *
-     * @param limit 件数の上限
-     * @return 出荷（出荷日時の新しい順）
-     */
-    List<Shipment> findRecent(int limit);
 }

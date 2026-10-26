@@ -3,14 +3,14 @@ package com.ecsite.module.order.presentation;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
-import com.ecsite.OrderTestData;
 import com.ecsite.MutableClock;
+import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestJson;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
+import com.ecsite.module.order.application.payment.OrderPayments;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
@@ -19,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -61,7 +62,7 @@ class MemberOrderApiTest {
     private static final Instant NOW = Instant.parse("2026-10-07T15:00:00Z");
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MockMvc mockMvc;
@@ -225,7 +226,7 @@ class MemberOrderApiTest {
         void onlyOwnerCanRequestCancellation() throws Exception {
             var orderId = placeOrder(owner);
             // 申請できるのは受付の注文（与信の成功の後。ロールバックするテストなので、リスナーと同じ処理を呼ぶ）
-            orderPaymentService.accept(orderId);
+            OrderPayments.accept(applicationContext, orderId);
 
             requestCancellation(orderId, other.bearer()).andExpect(status().isNotFound());
             requestCancellation(orderId, TestTokens.none()).andExpect(status().isUnauthorized());

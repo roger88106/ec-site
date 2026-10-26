@@ -8,6 +8,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.test.web.servlet.MockMvc;
 
+import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
@@ -69,12 +70,31 @@ class StoreRegionApiTest {
     }
 
     @Test
-    @DisplayName("AC-254 1 つの郵便番号に複数の住所があれば、すべてを返す")
+    @DisplayName("AC-254 1 つの郵便番号に複数の住所があれば、すべてを並び順に返す")
     void multipleAddresses() throws Exception {
         mockMvc.perform(get("/api/store/postal-codes/0691334").with(TestTokens.none()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.items", hasSize(2)))
-                .andExpect(jsonPath("$.items[*].municipality.code", everyItem(is("01428"))));
+                .andExpect(jsonPath("$.items[*].municipality.code", everyItem(is("01428"))))
+                .andExpect(jsonPath("$.items[*].townName", contains("錦町北", "錦町南")));
+    }
+
+    @Test
+    @DisplayName("AC-254 1 つの郵便番号が 2 つの市区町村にまたがるときも、すべてを並び順に返す")
+    void addressesAcrossMunicipalities() throws Exception {
+        mockMvc.perform(get("/api/store/postal-codes/0040000").with(TestTokens.none()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items[*].municipality.name", contains("札幌市厚別区", "札幌市清田区")));
+    }
+
+    @Test
+    @DisplayName("AC-283 町域名が注記だけの郵便番号は、町域を空で返す")
+    void noteOnlyTownName() throws Exception {
+        mockMvc.perform(get("/api/store/postal-codes/0600000").with(TestTokens.none()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.items", hasSize(1)))
+                .andExpect(jsonPath("$.items[0].townName").value(""))
+                .andExpect(jsonPath("$.items[0].municipality.name").value("札幌市中央区"));
     }
 
     @Test

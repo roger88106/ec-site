@@ -8,7 +8,6 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
 import org.jooq.DSLContext;
@@ -18,6 +17,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -69,7 +69,7 @@ class AdminOrderApiTest {
     TestPaymentGateway gateway;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -101,7 +101,7 @@ class AdminOrderApiTest {
         var product = data.product(data.taxCategory("標準", "10"), "T シャツ", 2700, "色").variant("白").publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 50);
-        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        orders = new OrderTestData(mockMvc, gateway, applicationContext);
     }
 
     @Nested

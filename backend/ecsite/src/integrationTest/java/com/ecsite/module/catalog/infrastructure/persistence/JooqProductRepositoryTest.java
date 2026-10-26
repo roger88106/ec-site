@@ -2,10 +2,10 @@ package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.error.CommonErrorCode;
+import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.category.CategoryFactory;
 import com.ecsite.module.catalog.domain.category.port.CategoryRepository;
 import com.ecsite.module.catalog.domain.product.Product;
-import com.ecsite.module.catalog.domain.ProductErrorCode;
 import com.ecsite.module.catalog.domain.product.ProductFactory;
 import com.ecsite.module.catalog.domain.product.ProductImage;
 import com.ecsite.module.catalog.domain.product.PublicationStatus;

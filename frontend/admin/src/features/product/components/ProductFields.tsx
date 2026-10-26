@@ -11,7 +11,7 @@ import type { ProductFieldsValues } from '@/features/product/product'
 import { formatRate } from '@/lib/rate'
 
 /** 商品の項目の入力の制約（登録と編集で、それぞれのリクエストの制約から引いて渡す） */
-export type ProductFieldConstraints = {
+type ProductFieldConstraints = {
   nameMaxLength: number
   descriptionMaxLength: number
   priceMinimum: number

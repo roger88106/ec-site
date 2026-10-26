@@ -1,10 +1,10 @@
 package com.ecsite;
 
-import java.time.Duration;
-import java.util.function.Predicate;
-
 import org.springframework.modulith.events.EventPublication;
 import org.springframework.modulith.events.core.EventPublicationRegistry;
+
+import java.time.Duration;
+import java.util.function.Predicate;
 
 import static org.awaitility.Awaitility.await;
 

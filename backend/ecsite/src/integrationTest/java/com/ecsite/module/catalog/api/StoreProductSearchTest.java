@@ -6,12 +6,13 @@ import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.common.paging.PageRequest;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -41,7 +42,7 @@ class StoreProductSearchTest {
     StoreCatalogApi api;
 
     @Autowired
-    TaxRateScheduleCache taxRateScheduleCache;
+    ApplicationContext applicationContext;
 
     @Autowired
     MockMvc mockMvc;
@@ -68,7 +69,7 @@ class StoreProductSearchTest {
     void setUp() throws Exception {
         clock.setInstant(NOW);
         mark = "mk" + UUID.randomUUID().toString().replace("-", "");
-        taxRateScheduleCache.evict();
+        TaxRateScheduleCaches.evict(applicationContext);
         catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準", "10");
     }

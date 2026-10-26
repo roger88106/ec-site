@@ -105,7 +105,7 @@ public class OrderCancellationService {
      * @param operator キャンセルした運営者
      */
     @Transactional
-    public void cancel(UUID orderId, String reason, Boolean restock, Operator operator) {
+    public void cancel(UUID orderId, String reason, @Nullable Boolean restock, Operator operator) {
         changeAndRestore(orderId,
                 order -> order.cancelByOperator(reason, restock, isReturned(order), operator, clock.instant()));
     }

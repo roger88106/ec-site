@@ -12,5 +12,5 @@ import java.util.UUID;
  * @param carrier        配送業者
  * @param trackingNumber 送り状番号（ハイフンを除いた数字）
  */
-public record TrackingRequested(UUID shipmentId, Carrier carrier, String trackingNumber) {
+record TrackingRequested(UUID shipmentId, Carrier carrier, String trackingNumber) {
 }

@@ -76,36 +76,4 @@ class RegionApiTest {
         assertThat(regionApi.findMunicipality("01101")).contains(new RegionMunicipality("01101", "札幌市中央区", "01", "北海道"));
         assertThat(regionApi.findMunicipality("99999")).isEmpty();
     }
-
-    @Test
-    @DisplayName("AC-253 郵便番号で引くと、都道府県・市区町村・町域を返す")
-    void findByPostalCode() {
-        assertThat(regionApi.findByPostalCode("1000001")).containsExactly(
-                new RegionPostalAddress("1000001", new RegionMunicipality("13101", "千代田区", "13", "東京都"), "千代田"));
-    }
-
-    @Test
-    @DisplayName("AC-254 1 つの郵便番号に複数の町域があれば、すべてを並び順に返す。2 つの市区町村にまたがることもある")
-    void multipleAddresses() {
-        assertThat(regionApi.findByPostalCode("0691334")).extracting(RegionPostalAddress::townName)
-                .containsExactly("錦町北", "錦町南");
-        assertThat(regionApi.findByPostalCode("0040000")).extracting(address -> address.municipality().name())
-                .containsExactly("札幌市厚別区", "札幌市清田区");
-    }
-
-    @Test
-    @DisplayName("AC-256 ない郵便番号は空を返す")
-    void unknownPostalCode() {
-        assertThat(regionApi.findByPostalCode("9999999")).isEmpty();
-    }
-
-    @Test
-    @DisplayName("AC-283 町域名が注記だけの郵便番号は、町域を空で返す")
-    void noteOnlyTownName() {
-        assertThat(regionApi.findByPostalCode("0600000")).singleElement()
-                .satisfies(address -> {
-                    assertThat(address.townName()).isEmpty();
-                    assertThat(address.municipality().name()).isEqualTo("札幌市中央区");
-                });
-    }
 }

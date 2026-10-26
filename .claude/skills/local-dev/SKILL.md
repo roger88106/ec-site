@@ -80,7 +80,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 lint・型チェック・テスト・ビルドは、手順ごとに 1 行の要約だけを出力する script で実行する。失敗した手順だけ、出力の末尾とログのパスが表示される。
 
 ```bash
-scripts/dev/check-frontend.sh                       # 依存の再インストールとライセンスの後に、共有パッケージで lint typecheck test、両方のアプリで lint typecheck test build、E2E のコードで lint typecheck（CI と同じ）
+scripts/dev/check-frontend.sh                       # 依存の再インストール、ライセンスの検査、knip の実行の後に、共有パッケージで lint typecheck test、両方のアプリで lint typecheck test build、E2E のコードで lint typecheck（CI と同じ）
 scripts/dev/check-frontend.sh admin test            # 管理画面のテストだけ
 scripts/dev/check-frontend.sh store lint typecheck  # 対象と手順を選ぶ
 ```

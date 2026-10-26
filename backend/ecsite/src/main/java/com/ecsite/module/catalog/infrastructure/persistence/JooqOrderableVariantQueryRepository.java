@@ -1,8 +1,8 @@
 package com.ecsite.module.catalog.infrastructure.persistence;
 
 import com.ecsite.common.model.value.Money;
-import com.ecsite.module.catalog.application.model.view.OrderableVariantView.AxisValue;
 import com.ecsite.module.catalog.application.model.view.OrderableVariantView;
+import com.ecsite.module.catalog.application.model.view.OrderableVariantView.AxisValue;
 import com.ecsite.module.catalog.application.port.OrderableVariantQueryRepository;
 import lombok.RequiredArgsConstructor;
 import org.jooq.DSLContext;

@@ -32,7 +32,6 @@ description: ec-site のフロントに画面や操作を追加するときの�
 | `lib/categoryTree` | `flattenTree`（カテゴリの木を深さ付きの一覧にする）、`categoryOptions`（その一覧を選択肢にする） | カテゴリの選択肢と字下げ |
 | `lib/patterns` | `isUuid`：ID の形の判定 | URL の ID を API に渡す前の判定 |
 | `lib/login` | `isSafeReturnPath`（ログインの後に戻ってよいパスか）、`fullName`（姓名を 1 つの表示にする） | ログインの戻り先の検査、氏名の表示 |
-| `lib/cn` | `cn`：クラス名の結合 | 条件つきのクラス名 |
 | `lib/locale` | `LOCALE`、`TIME_ZONE` | 整形のツールに渡すロケールとタイムゾーン |
 | `lib/translate` | `translate`：共有の文言（`common`）だけを引く関数 | 共有パッケージの中だけで使う。各画面は、その画面の `translate` を使う |
 | `components/AmountsSummary` | `AmountsSummary`：金額の内訳（商品の合計、送料、総額、税率ごとの消費税額）。`variant` は `card`（管理画面）か `page`（店舗画面） | カート、注文手続き、注文の金額の内訳 |

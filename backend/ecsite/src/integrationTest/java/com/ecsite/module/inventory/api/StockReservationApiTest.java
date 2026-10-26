@@ -1,7 +1,7 @@
 package com.ecsite.module.inventory.api;
 
-import com.ecsite.InventoryTestData;
 import com.ecsite.IntegrationTest;
+import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;

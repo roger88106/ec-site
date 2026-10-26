@@ -1,8 +1,8 @@
 package com.ecsite.contract;
 
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
-import org.junit.jupiter.api.DisplayName;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -146,6 +146,7 @@ class OpenApiRequestConstraintTest {
      * @param value YAML の値
      * @return Map。null なら空
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static Map<String, Object> map(Object value) {
         return value == null ? Map.of() : (Map<String, Object>) value;
@@ -157,6 +158,7 @@ class OpenApiRequestConstraintTest {
      * @param value YAML の値
      * @return List。null なら空
      */
+    // YAML を読んだ汎用の値を、契約（OpenAPI）の形が決まっているので、List として読む
     @SuppressWarnings("unchecked")
     private static List<Object> list(Object value) {
         return value == null ? List.of() : (List<Object>) value;

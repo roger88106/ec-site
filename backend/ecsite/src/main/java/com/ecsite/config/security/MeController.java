@@ -2,13 +2,10 @@ package com.ecsite.config.security;
 
 import com.ecsite.api.admin.MeApi;
 import com.ecsite.api.admin.model.Me;
-import com.ecsite.common.error.CommonErrorCode;
-import com.ecsite.common.error.exception.BusinessException;
+import com.ecsite.common.security.CurrentToken;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.GrantedAuthority;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.web.bind.annotation.RestController;
 
 /**
@@ -34,10 +31,7 @@ class MeController implements MeApi {
      */
     @Override
     public ResponseEntity<Me> getMe() {
-        if (!(SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken token)) {
-            throw BusinessException.of(CommonErrorCode.UNAUTHENTICATED);
-        }
-        var permissions = new PermissionConverter(properties.admin().audience()).convert(token.getToken()).stream()
+        var permissions = new PermissionConverter(properties.admin().audience()).convert(CurrentToken.require()).stream()
                 .map(GrantedAuthority::getAuthority)
                 .sorted()
                 .toList();

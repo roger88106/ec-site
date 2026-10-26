@@ -77,12 +77,13 @@ final class OpenApiOperations<T> {
     /**
      * 契約の操作を読み、パスの具体的なものが先になるように並べる。
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static <T> OpenApiOperations<T> parse(InputStream in, BiFunction<String, Map<String, Object>, T> valueOf) {
         Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
-        var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約に servers がない");
+        var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約には servers がある");
         var basePath = (String) servers.getFirst().get("url");
-        var paths = (Map<String, Map<String, Object>>) Objects.requireNonNull(root.get("paths"), "OpenAPI の契約に paths がない");
+        var paths = (Map<String, Map<String, Object>>) Objects.requireNonNull(root.get("paths"), "OpenAPI の契約には paths がある");
 
         var parser = PathPatternParser.defaultInstance;
         var operations = new ArrayList<Operation<T>>();

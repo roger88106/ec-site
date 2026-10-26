@@ -8,7 +8,6 @@ import com.ecsite.OrderTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.order.domain.checkout.Checkout;
 import com.ecsite.module.order.domain.checkout.port.CheckoutRepository;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -21,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.system.CapturedOutput;
 import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -84,7 +84,7 @@ class CheckoutCleanupJobTest {
     TestPaymentGateway gateway;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -128,7 +128,7 @@ class CheckoutCleanupJobTest {
     @Test
     @DisplayName("AC-286 注文になった注文手続きを消しても、注文の詳細・一覧（店舗・管理）とキャンセルの申請は今どおり使える")
     void ordersRemainUsableAfterCheckoutDeleted() throws Exception {
-        var orderId = new OrderTestData(mockMvc, gateway, orderPaymentService).placeOrder(variantId, 1);
+        var orderId = new OrderTestData(mockMvc, gateway, applicationContext).placeOrder(variantId, 1);
         var checkoutId = dsl.select(SALES_ORDER.CHECKOUT_ID).from(SALES_ORDER).where(SALES_ORDER.ID.eq(orderId))
                 .fetchOne(SALES_ORDER.CHECKOUT_ID);
 

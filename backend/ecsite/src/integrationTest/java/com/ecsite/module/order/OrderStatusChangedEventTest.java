@@ -5,11 +5,11 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
+import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
+import com.ecsite.module.order.application.payment.OrderPayments;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import com.ecsite.module.order.event.OrderStatusChanged.CancellationKind;
@@ -23,6 +23,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.event.ApplicationEvents;
@@ -71,7 +72,7 @@ class OrderStatusChangedEventTest {
     MockCarrier mockCarrier;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -112,7 +113,7 @@ class OrderStatusChangedEventTest {
         var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 10);
-        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        orders = new OrderTestData(mockMvc, gateway, applicationContext);
         shipping = new ShippingTestData(mockMvc, mockCarrier);
         // 商品の準備で時計が進むので、注文の前に戻す
         clock.setInstant(NOW);
@@ -186,7 +187,7 @@ class OrderStatusChangedEventTest {
     void emitsOnPaymentExpiry() throws Exception {
         var orderId = orders.placePendingOrder(variantId, 1);
         at(30);
-        orderPaymentService.expire(orderId);
+        OrderPayments.expire(applicationContext, orderId);
 
         assertThat(events.stream(OrderStatusChanged.class))
                 .extracting(OrderStatusChanged::from, OrderStatusChanged::to, OrderStatusChanged::occurredAt,
@@ -200,7 +201,7 @@ class OrderStatusChangedEventTest {
     @DisplayName("状態の変わらない操作（重ねて届いた与信の成功、申請中の申請）では出ない")
     void doesNotEmitWithoutChange() throws Exception {
         var orderId = orders.placeOrder(variantId, 1);
-        orderPaymentService.accept(orderId);
+        OrderPayments.accept(applicationContext, orderId);
         for (int i = 0; i < 2; i++) {
             mockMvc.perform(put("/api/store/orders/" + orderId + "/cancellation-request")
                     .contentType(MediaType.APPLICATION_JSON).content("{}")).andExpect(status().isNoContent());

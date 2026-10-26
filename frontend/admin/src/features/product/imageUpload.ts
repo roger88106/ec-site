@@ -4,7 +4,7 @@ import { schemas } from '@/api/generated/constraints'
 import { translate } from '@/i18n/translate'
 
 /** 受け付ける画像の形式（契約の形式の一覧）。登録のときに WebP に変換される */
-export const IMAGE_CONTENT_TYPES = createImageUploadRequestContentTypeValues
+const IMAGE_CONTENT_TYPES = createImageUploadRequestContentTypeValues
 
 /** 受け付ける画像の形式 */
 type ImageContentType = (typeof IMAGE_CONTENT_TYPES)[number]
@@ -41,7 +41,7 @@ export const IMAGE_ACCEPT = [
 ].join(',')
 
 /** 1 ファイルの大きさの上限（バイト。契約の値） */
-export const MAX_IMAGE_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
+const MAX_IMAGE_BYTES = schemas.CreateImageUploadRequest.contentLength.maximum
 
 /** 1 ファイルの大きさの上限（MB。文に差し込む） */
 export const MAX_IMAGE_MEGABYTES = MAX_IMAGE_BYTES / (1024 * 1024)

@@ -5,11 +5,10 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
-import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
+import com.ecsite.ShippingTestData;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
@@ -20,6 +19,7 @@ import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
+import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
@@ -74,7 +74,7 @@ class AdminOrderShipmentViewApiTest {
     MockCarrier mockCarrier;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -127,7 +127,7 @@ class AdminOrderShipmentViewApiTest {
         inventory.stock(variantId, product.id, 10);
         // 商品の公開で時計が進むので、注文と与信の時刻をそろえる
         clock.setInstant(NOW);
-        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        orders = new OrderTestData(mockMvc, gateway, applicationContext);
         shipping = new ShippingTestData(mockMvc, mockCarrier);
         accepted = orders.placeOrder(variantId, 1, "受付 太郎");
         shipped = orders.placeOrder(variantId, 1, "出荷 花子");

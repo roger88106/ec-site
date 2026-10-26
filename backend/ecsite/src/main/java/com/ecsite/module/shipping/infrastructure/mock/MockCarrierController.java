@@ -50,6 +50,11 @@ class MockCarrierController {
     private final ShipmentRepository shipmentRepository;
 
     /**
+     * 最近の出荷の問い合わせ
+     */
+    private final MockShipmentQuery shipmentQuery;
+
+    /**
      * mock の物流サービス
      */
     private final MockCarrier mockCarrier;
@@ -118,14 +123,14 @@ class MockCarrierController {
      */
     private ResponseEntity<String> render(@Nullable String error) {
         return html(HttpStatus.OK,
-                MockCarrierPageHtml.list(shipmentRepository.findRecent(LIST_LIMIT), this::carrierName, error));
+                MockCarrierPageHtml.list(shipmentQuery.findRecent(LIST_LIMIT), this::carrierName, error));
     }
 
     /**
-     * 配送業者の表示の名前を、メッセージ（通知のメールと同じキー）から取る。
+     * 配送業者の表示の名前を、出荷モジュールのメッセージから取る。通知のメールも同じキーを使う。
      */
     private String carrierName(Carrier carrier) {
-        return messageHelper.getMessage("ecsite.notification.carrier." + carrier.name().toLowerCase(Locale.ROOT),
+        return messageHelper.getMessage("ecsite.shipping.carrier." + carrier.name().toLowerCase(Locale.ROOT),
                 Map.of());
     }
 

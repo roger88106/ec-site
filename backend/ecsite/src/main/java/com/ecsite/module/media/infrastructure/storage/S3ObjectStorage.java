@@ -23,7 +23,7 @@ import java.util.function.Supplier;
  */
 @Component
 @RequiredArgsConstructor(access = AccessLevel.PACKAGE)
-class S3ObjectStorage implements ObjectStorage {
+public class S3ObjectStorage implements ObjectStorage {
 
     /**
      * 配信のファイルのキャッシュの指定。キーを上書きしないので、長くキャッシュさせる
@@ -69,6 +69,16 @@ class S3ObjectStorage implements ObjectStorage {
                         .contentLength(contentLength)));
         return new PresignedUpload(URI.create(presigned.url().toString()), Map.of("Content-Type", contentType),
                 presigned.expiration());
+    }
+
+    /**
+     * アップロードのバケットのファイルの、S3 の連携での場所（imgproxy が変換元として読む）を返す。
+     *
+     * @param uploadKey アップロードのキー
+     * @return {@code s3://<アップロードのバケット>/<キー>}
+     */
+    public String uploadSourceUrl(String uploadKey) {
+        return "s3://" + properties.incomingBucket() + "/" + uploadKey;
     }
 
     /**

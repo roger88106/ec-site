@@ -37,7 +37,7 @@ const DEFAULT_IDP_TIMEOUT_SECONDS = 10
 const TIMEOUT_SETTINGS = ['STORE_API_TIMEOUT_SECONDS', 'AUTH_KEYCLOAK_TIMEOUT_SECONDS'] as const
 
 /** 店舗画面のサーバーの設定 */
-export type ServerConfig = {
+type ServerConfig = {
   /** 消費者の realm の issuer */
   issuer: string
   /** 店舗画面の client（confidential）の ID */

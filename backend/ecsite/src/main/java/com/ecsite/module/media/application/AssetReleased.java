@@ -14,7 +14,7 @@ import java.util.UUID;
  * @param assetId    アセット ID
  * @param storageKey 配信のバケットのキー
  */
-public record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String storageKey) implements DomainEvent {
+record AssetReleased(UUID eventId, Instant occurredAt, UUID assetId, String storageKey) implements DomainEvent {
 
     /**
      * イベントを作る。

@@ -15,6 +15,7 @@
 | 3.1 | サーバーアクションは `withActionResult` で包む | 自動（Biome の plugin `no-catch-in-actions`） |
 | 3.2 | サーバーアクションの結果は `ActionResult` | レビュー |
 | 4 | 整形と lint は Biome | 自動（`pnpm lint`） |
+| 4.1 | 使われていないファイル・export・依存を残さない。定義したファイルの中だけで使うものは export しない | 自動（knip。`pnpm knip`） |
 | 5.1 | 共有パッケージに入れるもの・入れないもの | admin と store の同じファイルと、共有のパッケージと同じ名前の定義は自動（`scripts/ci/frontend-rules.mjs`）、共有パッケージに片方だけで使うものがないかはレビュー |
 | 6 | 画面の URL は型で確認する | 自動（型チェック）、クエリ付きの URL の文字列の組み立ては自動（`scripts/ci/frontend-rules.mjs`）、型の付かない他の URL はレビュー |
 | 7.1 | 表示の文言は文言ファイルに置く | 自動（`hardcoded-text.mjs`、型チェック）、共有の文言に置く基準と読み込み時に引かないことはレビュー |
@@ -97,19 +98,39 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 理由：書き方の不統一をツールで防ぎ、レビューで扱わないため。
 
+### 4.1 使われていないものを残さない
+
+使われていないファイル、export、依存を残さない。定義したファイルの中だけで使うものは export しない。
+
+- knip（設定は `knip.ts`）が `frontend/*` と `e2e` を調査し、次を報告する。実行はルートで `pnpm knip` とする。`scripts/dev/check-frontend.sh` と、CI のフロントのジョブも実行する。knip の前に、生成物（API の型、入力の制約の定数）を `generate:api` で作る。
+  - どこからも使われていないファイル
+  - どこからも import されていない export と型。定義したファイルの中だけで使う export も報告する
+  - `package.json` にあって使われていない依存、`package.json` にない依存の import
+- 報告を外すのは、生成物の export と型だけ。生成物のファイル自体が使われていないことは報告する。生成物は、openapi-typescript の型（`src/api/generated/`、`e2e/src/generated/`）、入力の制約の定数（`src/api/generated/constraints.ts`）、shadcn/ui のコンポーネント（`src/components/ui/`、`frontend/shared/src/ui/`）。
+- knip が失敗したときは、報告の種類で直す。
+  - 使われていないファイル、export、依存は削除する。
+  - 定義したファイルの中だけで使うものは、export を外す。
+  - 実行時に import されずに使われるファイルは、knip の誤検出になる。`knip.ts` の `entry` に書き（例：型の拡張 `i18n/types.ts`、E2E の準備の script `e2e/scripts/prepare.ts`）、コードに意味のない参照を追加しない。
+- 生成物は、`knip.ts` の `ignoreIssues` に、ファイルの範囲と `exports`・`types` だけを書き、理由をコメントに書く。
+- テストだけが import している export は、使われているとみなし、報告しない。
+
+理由：使われていないものがあると、読む人が使われているかを確認する手間が増えるため。生成物は、生成元の全てを使うとは限らないため、export の報告だけを外す。
+
 ## 5. 共有パッケージ（`frontend/shared/`）
 
 ### 5.1 入れるもの・入れないもの
 
 | 入れる | 入れない |
 |--------|----------|
-| 2 つの画面で使い、画面のフレームワーク（Vite・Next.js）と API の接続に依存しないもの：カテゴリの木、ログインの戻り先、クラス名の結合、数・日付・金額の整形、2 つの画面で同じ列挙の表示名、同じ表示のコンポーネントとテーマ、共通の文言、2 つの画面の API の生成で使う script（`scripts/`） | API の接続（接続先と認証が違う）、認証、画面の機能、サーバーアクション、片方の画面だけで使うもの |
+| 2 つの画面で使い、画面のフレームワーク（Vite・Next.js）と API の接続に依存しないもの：カテゴリの木、ログインの戻り先、数・日付・金額の整形、2 つの画面で同じ列挙の表示名、同じ表示のコンポーネントとテーマ、共通の文言、2 つの画面の API の生成で使う script（`scripts/`） | API の接続（接続先と認証が違う）、認証、画面の機能、サーバーアクション、片方の画面だけで使うもの |
 
 - 共有のものは、各画面の機能を import しない。
 - 各画面は、共有のパッケージが公開するものと同じ名前の関数・定数・クラスを定義せず、共有のものを使う。名前が同じでも中身が画面ごとに違うもの（各画面の文言を渡す `translate`）は、`frontend-rules-exclusions.json` に理由を書く。
 - テーマの CSS は shadcn/ui の生成のまま 1 つにし、片方の画面だけで使う値（サイドバー、グラフ）も含める。テーマは再生成することがあり、分けると、生成のたびに 2 つのファイルを更新する必要があるため。
 - shadcn/ui のコンポーネントは各画面の `components/ui/` に追加し、2 つの画面で同じ内容になったら `frontend/shared/src/ui/` に移す。`src/ui/` の共有コンポーネントは shadcn/ui の生成物のまま置き、`"use client"` の有無も生成物に従う（生成物が付けているもの（`label`、`separator` など）は、店舗画面のサーバーコンポーネントからも使えるよう付けたままにする）。
 - 共有のコンポーネントのうち shadcn/ui の生成物でないものは `frontend/shared/src/components/` に置き、生成物は `src/ui/` に置く。
+- `cn`（クラス名を結合する関数）は、npm のパッケージ `cn` から直接 import する（`import { cn } from 'cn'`）。各画面と共有パッケージに、`cn` を再 export するファイル（`lib/utils.ts` など）を作らない。理由：shadcn/ui の CLI が追加するコンポーネントが、パッケージ `cn` を直接 import するため。
+  - 各画面の `components.json` には、CLI が設定の項目として求める別名 `utils`（値は `@/lib/utils`）を残す。この別名が指す `lib/utils.ts` は置かない（出典：shadcn/ui の changelog「September 2026 - cn」）。
 - `src/components/` の共有コンポーネントは、hook かブラウザーの API を使うものだけに `"use client"` を付ける。使わないもの（金額の内訳など）には付けず、店舗画面のサーバーコンポーネントのまま描画できる。
 - 共有コンポーネントのクラス名は、各画面の CSS の `@source` で Tailwind に読ませる（`node_modules` の先は自動で読まないため）。
 

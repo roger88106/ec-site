@@ -84,6 +84,17 @@ class ProductionClassesTest {
     }
 
     @Test
+    @DisplayName("本番のクラスの一覧は、tools のクラスを含まない（tools は単体テストの classpath にある）")
+    void productionClassesExcludeTools() throws ClassNotFoundException {
+        Class<?> tools = Class.forName("com.ecsite.tools.region.PostalCodeCsv");
+
+        assertThat(ProductionClasses.all().stream().map(JavaClass::getName))
+                .isNotEmpty()
+                .noneMatch(name -> name.startsWith("com.ecsite.tools."))
+                .doesNotContain(tools.getName());
+    }
+
+    @Test
     @DisplayName("パッケージの名前から、モジュールの名前を取り出す")
     void extractsModuleNameFromPackageName() {
         assertThat(ProductionClasses.moduleName("com.ecsite.module.order.domain.order.vo")).contains("order");

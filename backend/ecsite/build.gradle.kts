@@ -86,6 +86,13 @@ sourceSets {
     }
 }
 
+// tools の郵便番号の CSV を読む処理を単体テストで確認するため、単体テストのクラスパスに tools の出力を加える
+// （カバレッジと mutation の対象は main のままで、tools は含まない）
+sourceSets.test {
+    compileClasspath += sourceSets["tools"].output
+    runtimeClasspath += sourceSets["tools"].output
+}
+
 configurations["integrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
 configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
 
@@ -324,22 +331,25 @@ tasks.register<JavaExec>("generateRegionMigration") {
 tasks.check { dependsOn("compileToolsJava") }
 
 // -----------------------------------------------------------------------------
-// Javadoc の書き漏れ（コメントの書き方 第 2 節）
-//   Checkstyle で、本番のコード（src/main/java）のクラスとメンバー（private を含む）に Javadoc があることを確認する。
-//   Javadoc があるかだけを見て、@param・@return は見ない。
-//   生成したコード（jOOQ、OpenAPI。build/ の下）、上書き（@Override）、テストは見ない。ほかの規則は入れない。
+// Checkstyle（Javadoc の書き漏れ：コメントの書き方 第 2 節、import：バックエンドの書き方 第 5.4 節）
+//   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
+//   ・import：使われていないもの（UnusedImports）と、並び（CustomImportOrder）
+//   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
+//     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
+//   生成したコード（jOOQ、OpenAPI。build/ の下）は見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
 //   Checkstyle はビルドの道具で、アプリと依存のライセンスの検査の構成には入らない
 // -----------------------------------------------------------------------------
 checkstyle {
     toolVersion = libs.versions.checkstyle.get()
-    sourceSets = listOf(project.sourceSets.main.get())
     isIgnoreFailures = false
     maxWarnings = 0
 }
 
-tasks.named<Checkstyle>("checkstyleMain") {
-    setSource(fileTree("src/main/java"))
+// 生成したコードは main の java.srcDirs に入っているので、手で書いたコードの置き場所（src/<ソースセット>/java）だけを渡す
+tasks.withType<Checkstyle>().configureEach {
+    val sourceSetName = name.removePrefix("checkstyle").replaceFirstChar { it.lowercase() }
+    setSource(fileTree("src/$sourceSetName/java"))
 }
 
 // -----------------------------------------------------------------------------
@@ -783,6 +793,10 @@ tasks.withType<JavaCompile>().configureEach {
             option("NullAway:AnnotatedPackages", "com.ecsite")
             option("NullAway:UnannotatedSubPackages", "com.ecsite.jooq,com.ecsite.api")
             option("NullAway:CustomContractAnnotations", "org.springframework.lang.Contract")
+            // 注釈のないパッケージ（上の生成コードなど）でも、明示した @Nullable を読む。次を見つける：
+            // 生成した interface の @Nullable の引数を、実装側が注釈なしで上書きした所と、
+            // 生成したモデルの @Nullable の getter の値を、null でないとみなす引数に渡す所
+            option("NullAway:AcknowledgeRestrictiveAnnotations", "true")
             // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
         } else {
             // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、

@@ -47,7 +47,7 @@ export async function notifyCarrier(
  * 注文番号は注文ごとに違うので、前の実行のメールと混ざらない（メールを消さずに探す）。
  *
  * @param orderNumber 注文番号
- * @return 件名、宛先、本文
+ * @returns 件名、宛先、本文
  */
 export async function shipmentMail(orderNumber: string): Promise<Mail> {
   return waitForMail({

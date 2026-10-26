@@ -1,9 +1,7 @@
 import { expect, type Page, type Response } from '@playwright/test'
 
-/**
- * 条件で待つ時間（テストの書き方 第 5 節）。各テストで数字を書かず、ここの値を使う。
- * 長く待つ必要がある所は、名前を付けた値を追加し、理由を書く。
- */
+// 条件で待つ時間（テストの書き方 第 5 節）。各テストで数字を書かず、ここの値を使う。
+// 長く待つ必要がある所は、名前を付けた値を追加し、理由を書く。
 
 /** 1 つのテストの時間の上限。Playwright の既定（30 秒）より長い。店舗画面のキャッシュの反映や、支払の通知を開き直しながら待つテストがあるため */
 export const TEST_TIMEOUT = 60_000
@@ -24,7 +22,7 @@ export const ASYNC_TIMEOUT = 20_000
 export const CHECK_TIMEOUT = 1_000
 
 /** 開き直す間隔 */
-export const RECHECK_INTERVALS = [500, 1_000]
+const RECHECK_INTERVALS = [500, 1_000]
 
 /** メールが Mailpit に届くまでに待つ時間の上限。イベントの後に SMTP で送るので、裏の処理より長く待つ */
 export const MAIL_TIMEOUT = 30_000

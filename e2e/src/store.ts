@@ -3,7 +3,13 @@ import { type Account, loginStore } from './auth'
 import { STORE_URL } from './urls'
 import { ASYNC_TIMEOUT, CHECK_TIMEOUT, reopenUntil } from './waits'
 
-/** 店舗画面の一覧・検索の結果の、商品のカード（商品名で探す） */
+/**
+ * 店舗画面の一覧・検索の結果の、商品のカード（商品名で探す）。
+ *
+ * @param page 店舗画面の一覧か検索の結果を開いているページ
+ * @param name 商品名（一部でもよい）
+ * @returns 商品のカード
+ */
 export function productCard(page: Page, name: string): Locator {
   return page.getByRole('link').filter({ hasText: name })
 }
@@ -12,6 +18,7 @@ export function productCard(page: Page, name: string): Locator {
  * ログインしている会員のカートを空にする。会員のカートは会員ごとに 1 つで実行をまたいで残るので（AC-121）、
  * 共用のアカウントで注文するテストは、前の実行の品目を消してから始める。
  *
+ * @param page 店舗画面のページ（会員としてログインしている）
  * @param storeUrl 店舗画面の URL（機能紹介の撮影は、E2E でなくローカルの環境の店舗画面を使う）
  */
 export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void> {
@@ -161,7 +168,7 @@ export async function leaveMockPage(page: Page, button: '支払う' | 'やめる
  * 戻った直後は通知の反映の前で「お支払いを確認しています」と出ることがあるので、開き直しながら待つ。
  *
  * @param page mock の支払画面を開いているページ
- * @return 注文の画面の URL（クエリなし）
+ * @returns 注文の画面の URL（クエリなし）
  */
 export async function payOnMockPage(page: Page): Promise<string> {
   const orderUrl = await leaveMockPage(page, '支払う')

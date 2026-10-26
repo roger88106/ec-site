@@ -7,6 +7,7 @@ import type { Locator, Page } from '@playwright/test'
  *
  * @param page 店舗画面か管理画面のページ
  * @param label 項目名（全体が一致するもの）
+ * @returns 項目の値
  */
 export function detailValue(page: Page, label: string): Locator {
   return page.locator('dt', { hasText: new RegExp(`^${label}$`) }).locator('xpath=following-sibling::dd[1]')

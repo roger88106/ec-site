@@ -137,23 +137,21 @@ import { Button } from '@ec-site/shared/ui/button'
 import { useTranslations } from 'next-intl'
 import { useActionState } from 'react'
 import { updateFoo } from '@/actions/foo'
+import { ActionError } from '@/components/ActionError'
 
 /** 〇〇のフォーム */
 export function FooForm({ fooId }: { fooId: string }) {
   const t = useTranslations('foo.form')
   const [result, formAction, pending] = useActionState(updateFoo, null)
   return (
-    <form action={formAction} className="space-y-3">
+    // 失敗の表示は送る前から読み上げの領域を描く（店舗画面の構成 第 6 節）。親は flex と gap で並べる
+    <form action={formAction} className="flex flex-col items-start gap-3">
       <input name="fooId" type="hidden" value={fooId} />
-      {/* 入力欄。誤りは result?.ok === false && result.fieldErrors?.note を欄の下に出す */}
+      {/* 入力欄。誤りは欄の下に出し、aria-describedby と aria-invalid で入力欄に結び付ける（OrderForm の Field） */}
       <Button disabled={pending} type="submit">
         {pending ? t('submitting') : t('submit') /* 送信中か、〇〇する */}
       </Button>
-      {result?.ok === false && (
-        <p aria-live="polite" className="text-destructive text-sm">
-          {result.message}
-        </p>
-      )}
+      <ActionError result={result} />
     </form>
   )
 }

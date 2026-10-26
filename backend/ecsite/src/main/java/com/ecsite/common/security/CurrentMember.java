@@ -2,8 +2,6 @@ package com.ecsite.common.security;
 
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -23,11 +21,7 @@ public class CurrentMember {
      * @return 会員。token がなければ（ログインしていなければ）空
      */
     public Optional<AuthenticatedMember> find() {
-        if (!(SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken token)) {
-            return Optional.empty();
-        }
-        var jwt = token.getToken();
-        return Optional.of(new AuthenticatedMember(
+        return CurrentToken.find().map(jwt -> new AuthenticatedMember(
                 jwt.getSubject(),
                 jwt.getClaimAsString("email"),
                 Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),

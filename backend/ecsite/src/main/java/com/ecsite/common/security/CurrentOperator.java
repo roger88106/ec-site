@@ -1,10 +1,7 @@
 package com.ecsite.common.security;
 
-import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
 import com.ecsite.common.model.value.Operator;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
 import org.springframework.stereotype.Component;
 
 import java.util.Objects;
@@ -27,10 +24,7 @@ public class CurrentOperator {
      * @throws BusinessException token がない（401。filter で認証を必須にしているが、念のため確認する）
      */
     public Operator require() {
-        if (!(SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken token)) {
-            throw BusinessException.of(CommonErrorCode.UNAUTHENTICATED);
-        }
-        var jwt = token.getToken();
+        var jwt = CurrentToken.require();
         // 氏名は「姓 名」。空の部分は飛ばす
         var name = Stream.of(jwt.getClaimAsString("family_name"), jwt.getClaimAsString("given_name"))
                 .filter(Objects::nonNull)

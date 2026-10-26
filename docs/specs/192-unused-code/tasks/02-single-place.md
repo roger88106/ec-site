@@ -17,7 +17,7 @@
 - [x] **T192-02-03** `[P]` 片付けのジョブが行う削除の SQL を、イベント記録の表を読み書きするクラスに移す（DC-192-7）。共通コードの設計を直す。
   - 依存：なし
   - 範囲：`main/config/event/EventCleanupJob.java`、`main/config/event/EventPublicationRecords.java`、`it/config/event/EventCleanupJobTest.java`、`docs/design/common.md`
-- [ ] **T192-02-04** `[リスク]` 認証情報から token を取り出し、なければ未認証のエラーにする処理を、`common/security/` の 1 つの操作にする。会員、運営者、ログイン中の利用者の情報を返す API は、それを呼ぶ。token がないときに会員の取り出しが空を返す振る舞いを残す（DC-192-8）。共通コードの設計を直す。実装役は高性能にし、実装の後に高性能のレビューを行う。
+- [x] **T192-02-04** `[リスク]` 認証情報から token を取り出し、なければ未認証のエラーにする処理を、`common/security/` の 1 つの操作にする。会員、運営者、ログイン中の利用者の情報を返す API は、それを呼ぶ。token がないときに会員の取り出しが空を返す振る舞いを残す（DC-192-8）。共通コードの設計を直す。実装役は高性能にし、実装の後に高性能のレビューを行う。
   - 依存：T192-02-03（共通コードの設計を共に変えるため）
   - 範囲：`main/common/security/`、`main/config/security/MeController.java`、認証のテスト、`docs/design/common.md`
 - [ ] **T192-02-05** 段階のレビュー（profile「厚め」）と全体の検査：`./gradlew check`、`./gradlew pitest`、`scripts/ci/check-all.sh` を実行する。[plan](../plan.md) 第 2 節の検索で、DC-192-5〜8 を満たすことを確認する。指摘を修正する。

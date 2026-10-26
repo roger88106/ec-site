@@ -5,7 +5,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.api.StockReservationApi;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
@@ -15,6 +15,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.web.servlet.MockMvc;
@@ -63,7 +64,7 @@ class StorefrontApiTest {
     MutableClock clock;
 
     @Autowired
-    TaxRateScheduleCache taxRateScheduleCache;
+    ApplicationContext applicationContext;
 
     @Autowired
     StockItemRepository stockItemRepository;
@@ -90,7 +91,7 @@ class StorefrontApiTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
-        taxRateScheduleCache.evict();
+        TaxRateScheduleCaches.evict(applicationContext);
         catalog = new CatalogTestData(mockMvc, clock);
         standard = catalog.taxCategory("標準", "10");
     }

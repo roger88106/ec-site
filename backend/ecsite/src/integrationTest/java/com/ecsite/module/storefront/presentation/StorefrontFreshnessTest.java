@@ -5,13 +5,14 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
-import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCache;
+import com.ecsite.module.catalog.infrastructure.directory.TaxRateScheduleCaches;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.context.ApplicationContext;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -58,7 +59,7 @@ class StorefrontFreshnessTest {
     MutableClock clock;
 
     @Autowired
-    TaxRateScheduleCache taxRateScheduleCache;
+    ApplicationContext applicationContext;
 
     @Autowired
     StockItemRepository stockItemRepository;
@@ -90,7 +91,7 @@ class StorefrontFreshnessTest {
     void setUp() throws Exception {
         inventory = new InventoryTestData(stockItemRepository, NOW);
         clock.setInstant(NOW);
-        taxRateScheduleCache.evict();
+        TaxRateScheduleCaches.evict(applicationContext);
         var catalog = new CatalogTestData(mockMvc, clock);
         taxCategoryId = catalog.taxCategory("標準", "10").toString();
         // 巻き戻さないテストの商品が見えても影響しないよう、一覧はこのテストのカテゴリで絞る

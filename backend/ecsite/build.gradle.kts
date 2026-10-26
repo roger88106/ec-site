@@ -790,6 +790,10 @@ tasks.withType<JavaCompile>().configureEach {
             option("NullAway:AnnotatedPackages", "com.ecsite")
             option("NullAway:UnannotatedSubPackages", "com.ecsite.jooq,com.ecsite.api")
             option("NullAway:CustomContractAnnotations", "org.springframework.lang.Contract")
+            // 注釈のないパッケージ（上の生成コードなど）でも、明示した @Nullable を読む。次を見つける：
+            // 生成した interface の @Nullable の引数を、実装側が注釈なしで上書きした所と、
+            // 生成したモデルの @Nullable の getter の値を、null でないとみなす引数に渡す所
+            option("NullAway:AcknowledgeRestrictiveAnnotations", "true")
             // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
         } else {
             // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、

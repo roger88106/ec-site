@@ -65,7 +65,7 @@ export function AddToCartFormView({
         </Button>
       </div>
       {/* 成功も失敗も、常にある領域に入れて確実に読み上げる（エラーメッセージは他の画面と同じ部品で、領域は入れ子にしない） */}
-      <div aria-live="polite" className="text-sm">
+      <div className="text-sm" role="status">
         {result?.ok === true && (
           <p>
             {t('added') /* 入れた知らせ */}

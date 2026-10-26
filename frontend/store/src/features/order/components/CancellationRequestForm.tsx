@@ -21,7 +21,7 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
   return (
     <form
       action={formAction}
-      className="space-y-3"
+      className="flex flex-col items-start gap-3"
       onSubmit={(event) => {
         if (!window.confirm(t('confirm') /* 申請の確認 */)) {
           event.preventDefault()
@@ -29,7 +29,7 @@ export function CancellationRequestForm({ orderId }: { orderId: string }) {
       }}
     >
       <input name="orderId" type="hidden" value={orderId} />
-      <div className="space-y-1.5">
+      <div className="w-full space-y-1.5">
         <Label htmlFor="cancellation-reason">{t('reason') /* 理由 */}</Label>
         <textarea
           className="min-h-20 w-full rounded-lg border border-input bg-transparent px-2.5 py-2 text-sm outline-none focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/50"

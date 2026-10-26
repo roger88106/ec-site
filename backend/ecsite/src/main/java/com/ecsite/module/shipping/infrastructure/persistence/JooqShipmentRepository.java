@@ -99,14 +99,6 @@ class JooqShipmentRepository implements ShipmentRepository {
                 .fetch(SHIPMENT.ORDER_ID);
     }
 
-    @Override
-    public List<Shipment> findRecent(int limit) {
-        return dsl.selectFrom(SHIPMENT)
-                .orderBy(SHIPMENT.SHIPPED_AT.desc(), SHIPMENT.ID)
-                .limit(limit)
-                .fetch(JooqShipmentRepository::toShipment);
-    }
-
 // ============================== プライベートメソッド ==============================
 
     /**

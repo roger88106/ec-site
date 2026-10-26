@@ -33,6 +33,7 @@ class StoreOperationSecurity {
      * @param resource {@code store.yaml}
      * @return 操作ごとの token の要否
      */
+    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     static StoreOperationSecurity load(Resource resource) {
         return new StoreOperationSecurity(OpenApiOperations.load(resource, (name, operation) -> {

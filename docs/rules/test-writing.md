@@ -114,6 +114,8 @@ token は `TestTokens`、画像は `TestImages` を使う。
 
 理由：テストの本文に、確認する項目だけを残すため。
 
+package-private の本番クラス（ジョブ、スケジュールのキャッシュなど）を別のパッケージの統合テストから使うときは、その本番クラスと同じパッケージの `src/integrationTest` に、public final の補助クラスを置く。補助クラスは、Spring のコンテキストから Bean を取り出して呼ぶ。今ある補助クラスは、`TaxRateScheduleCaches`（catalog の `infrastructure/directory`）、`PaymentJobs`（payment の `application`）、`OrderPayments`（order の `application/payment`）、`TrackingRequests`（shipping の `application`）。本番クラスを public にしたり、テストのために可視性を広げたりしない。
+
 ### 3.3 テストの置き場所
 
 main と同じパッケージに置く。Spring を起動しないものは `src/test`、起動するものは `src/integrationTest`。

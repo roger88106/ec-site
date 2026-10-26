@@ -60,7 +60,7 @@ export function problem(status: number, errorCode: ErrorCode, message: string, e
 }
 
 /** 更新の競合（409、CONCURRENT_MODIFICATION）の本文 */
-export function concurrentModification(): Problem {
+function concurrentModification(): Problem {
   return problem(409, 'CONCURRENT_MODIFICATION', 'バージョンが一致しません。')
 }
 

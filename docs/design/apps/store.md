@@ -5,7 +5,7 @@ C 側（消費者）の画面。Next.js（App Router）で、店舗 API（`store
 | 項目 | 内容 |
 |------|------|
 | 依存 | 店舗 API（`store.yaml`）、消費者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[012](../../specs/archive/mvp/012-test-safety-net)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[104](../../specs/archive/1to10/104-parallel-local-env)、[134](../../specs/archive/1to10/134-admin-tidy)、[135](../../specs/archive/1to10/135-store-cleanup)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests)、[193](../../specs/archive/1to10/193-store-a11y) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[012](../../specs/archive/mvp/012-test-safety-net)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[017](../../specs/archive/mvp/017-stability)、[104](../../specs/archive/1to10/104-parallel-local-env)、[134](../../specs/archive/1to10/134-admin-tidy)、[135](../../specs/archive/1to10/135-store-cleanup)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests)、[193](../../specs/archive/1to10/193-store-a11y)、[192](../../specs/archive/1to10/192-unused-code) |
 
 ## 1. 技術
 
@@ -52,7 +52,6 @@ frontend/store/
     │   ├── login.ts          # ログイン後の戻り先を、店舗画面の中のパスに限る（第 9 節）
     │   ├── postalCode.ts     # 郵便番号の形の判定
     │   ├── quantity.ts       # 数量の選択肢（契約の下限から上限まで）
-    │   ├── utils.ts          # shadcn/ui が読む `cn`（共有パッケージのもの）
     │   └── server/           # サーバー専用の関数。formData（フォームの項目の読み取り）、log（JSON のログ）、timeout（待つ時間の上限）、trace（追跡 ID）
     ├── test/                 # テストの土台（Next.js と Auth.js の置き換え、API の応答のデータ、MSW、描画。画面のコードからは import しない）
     └── features/<機能>/      # catalog、cart、checkout、order

@@ -7,7 +7,7 @@ import { translate } from '@/i18n/translate'
  * 支払期限切れでキャンセル済み、まだ申請できない（支払待ち。支払の期限で自動でキャンセルになる）、
  * 出荷済み（もう申請できない）、受付だが申請できず申請の結果もない（キャンセルの欄を出さない）
  */
-export type CancellationState =
+type CancellationState =
   | 'REQUESTABLE'
   | 'PENDING'
   | 'REJECTED'
@@ -21,7 +21,7 @@ export type CancellationState =
  * 注文の支払の状況。支払える、支払の確認中（支払画面から戻った直後）、支払の期限を過ぎた（まもなくキャンセル）、
  * 支払の欄を出さない（支払待ちでない）
  */
-export type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
+type PaymentState = 'PAYABLE' | 'CONFIRMING' | 'CLOSING' | 'NONE'
 
 /**
  * 注文のキャンセルの状況。申請できるかは API のフラグで、却下されたかは申請の結果で決める。

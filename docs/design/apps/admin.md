@@ -5,7 +5,7 @@ B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.y
 | 項目 | 内容 |
 |------|------|
 | 依存 | 管理 API（`admin.yaml`）、運営者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests) |
+| 関連 spec | [007](../../specs/archive/mvp/007-payment)、[009](../../specs/archive/mvp/009-shipping)、[010](../../specs/archive/mvp/010-sales-report)、[014](../../specs/archive/mvp/014-frontend-consistency)、[015](../../specs/archive/mvp/015-security)、[016](../../specs/archive/mvp/016-master-data)、[018](../../specs/archive/mvp/018-docs-and-tools)、[134](../../specs/archive/1to10/134-admin-tidy)、[157](../../specs/archive/1to10/157-frontend-tidy)、[184](../../specs/archive/1to10/184-frontend-tests)、[192](../../specs/archive/1to10/192-unused-code) |
 
 ## 1. 技術
 
@@ -52,8 +52,7 @@ frontend/admin/
     │   ├── format.ts       # 日時の入力欄との変換、日本時間の日付（金額・価格・数・日時などの整形は共有パッケージの lib/format.ts）
     │   ├── login.ts        # ログインの後に戻る画面のパスの読み取り
     │   ├── rate.ts         # 税率の表示
-    │   ├── searchParams.ts # URL のクエリのページ番号の読み取り
-    │   └── utils.ts        # shadcn/ui の部品が読むクラス名の結合（共有のパッケージのものを再公開）
+    │   └── searchParams.ts # URL のクエリのページ番号の読み取り
     ├── test/               # 結合テストの土台（画面のコードからは import しない）
     └── features/<機能>/    # tax、category、product、inventory、order、report
         ├── pages/          # ルートに対応する画面（取得とコンポーネントの組み立てだけ）

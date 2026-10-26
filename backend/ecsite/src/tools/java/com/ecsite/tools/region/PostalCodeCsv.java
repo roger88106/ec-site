@@ -1,9 +1,7 @@
-package com.ecsite.module.region.infrastructure.source;
+package com.ecsite.tools.region;
 
 import com.ecsite.module.region.domain.Municipality;
 import com.ecsite.module.region.domain.Prefecture;
-import lombok.AccessLevel;
-import lombok.NoArgsConstructor;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -20,10 +18,15 @@ import java.util.regex.Pattern;
 /**
  * 郵便番号のデータ（日本郵便の「住所の郵便番号（1 レコード 1 行、UTF-8 形式）」の CSV）を、
  * マスターデータの行に変える（docs/design/modules/region.md「最初のデータ」）。<br />
- * 最初のデータを作るタスクと、1 → 10 の取り込みの仕組みが同じ変換を使う。
+ * マイグレーションを作るタスク {@code generateRegionMigration}（{@link RegionMigrationGenerator}）が使う。
  */
-@NoArgsConstructor(access = AccessLevel.PRIVATE)
 public final class PostalCodeCsv {
+
+    /**
+     * インスタンスを作らない
+     */
+    private PostalCodeCsv() {
+    }
 
     /**
      * 列の数

@@ -8,6 +8,7 @@ import com.ecsite.module.shipping.application.port.CarrierTracking;
 import com.ecsite.module.shipping.application.port.ShipmentRepository;
 import com.ecsite.module.shipping.infrastructure.carrier.CarrierSignature;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrierTracking;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.autoconfigure.AutoConfigurations;
@@ -57,6 +58,7 @@ class ExternalServiceSelectionTest {
             .withBean(JsonMapper.class, JsonMapper::new)
             .withBean(RestClient.Builder.class, RestClient::builder)
             .withBean(ShipmentRepository.class, () -> mock(ShipmentRepository.class))
+            .withBean(DSLContext.class, () -> mock(DSLContext.class))
             .withBean(MessageHelper.class, () -> mock(MessageHelper.class));
 
     /**

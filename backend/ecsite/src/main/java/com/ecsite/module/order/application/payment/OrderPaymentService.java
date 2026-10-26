@@ -18,7 +18,7 @@ import java.util.UUID;
 @Service
 @Transactional
 @RequiredArgsConstructor
-public class OrderPaymentService {
+class OrderPaymentService {
 
     /**
      * 注文リポジトリ

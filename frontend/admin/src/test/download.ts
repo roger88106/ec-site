@@ -1,7 +1,7 @@
 import { vi } from 'vitest'
 
 /** 記録したダウンロード 1 件 */
-export type Download = {
+type Download = {
   /** 保存名（リンクの `download`） */
   filename: string
   /** 本文。BOM を残したまま文字にしたもの */

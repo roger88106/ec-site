@@ -19,7 +19,7 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 @Component
 @RequiredArgsConstructor
-public class TaxRateScheduleCache {
+class TaxRateScheduleCache {
 
     /**
      * 有効期間
@@ -47,7 +47,7 @@ public class TaxRateScheduleCache {
      *
      * @return 税区分ごとの税率の一覧
      */
-    public List<TaxRateSchedule> schedules() {
+    List<TaxRateSchedule> schedules() {
         var now = clock.instant();
         var current = entry.get();
         if (current == null || !now.isBefore(current.fetchedAt().plus(TTL))) {
@@ -59,10 +59,10 @@ public class TaxRateScheduleCache {
 
     /**
      * キャッシュを捨てる。次の取得で税モジュールから取得し直す。<br />
-     * テスト用：本番のコードからは呼ばない（キャッシュは有効期間で切れる）。税率を変えた統合テストが、
-     * 前のテストのキャッシュを読まないために使う。
+     * テスト用：本番のコードからは呼ばない（キャッシュは有効期間で切れる）。呼ぶのは、統合テストの同じパッケージの補助クラスだけ。
+     * 税率を変えた統合テストが、前のテストのキャッシュを読まないために使う。
      */
-    public void evict() {
+    void evict() {
         entry.set(null);
     }
 

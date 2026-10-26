@@ -28,11 +28,12 @@
 | 5.1 | Lombok は main だけ | 自動（`scripts/ci/java-rules.mjs`） |
 | 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
-| 5.4 | 書式は IntelliJ の整形を推奨する（強制しない） | なし（強制しない） |
+| 5.4 | 整形は IntelliJ の Reformat Code を推奨する（強制しない） | なし |
+| 5.4 | import の並びと使われていない import は強制する | 自動（Checkstyle） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 | 6.1 | 秘密の値を持つ設定の record は、`toString` で値を伏せる | 単体テスト（`toString` に秘密の値が含まれないこと）、上書きの書き忘れはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
-| 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントはレビュー |
+| 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントは自動（`scripts/ci/java-rules.mjs`） |
 | 8.1 | 新しいマイグレーションは、前のリリースのアプリが動き続けられる変更だけにする（表・列の削除と改名などは 3 段に分ける） | 自動（CI の検査 `migrations`）。3 段に分ける手順の妥当性はレビュー |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
@@ -265,11 +266,29 @@ public final class MoneyFormat {
 
 ### 5.4 書式
 
-Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。強制しない（CI と commit の前の hook では検査しない）。
+Java の整形は、IntelliJ IDEA の Reformat Code を推奨する。整形は強制しない（CI と commit の前の hook では検査しない）。ただし、import の並びと使われていない import は、Checkstyle が検査する（下の import の項）。
 
 - エージェントは、IntelliJ の MCP（`reformat_file`）を使えるとき、変えた Java のファイルを整形してよい。
 - `reformat_file` が整形できるのは、IntelliJ で開いているプロジェクトのファイルだけ。`.claude/worktrees/` の下の作業ツリーのファイルは、その作業ツリーを IntelliJ で開いていなければ、MCP が「ok」を返しても整形しない。整形の後に `git diff` で変わったかを確認する。
 - 既存のファイルの書式だけを直す変更は、他の変更と同じ commit に混ぜない。理由：差分のレビューと `git blame` を読みやすく保つため。
+
+import は次のグループの順に並べる。グループの間は空行 1 行で分け、グループの中は文字コードの順にする。
+
+| 順 | グループ |
+|----|----------|
+| 1 | `java`・`javax` 以外 |
+| 2 | `java`・`javax` |
+| 3 | static |
+
+- IntelliJ の Optimize Imports を上の表の並びにするため、Settings → Editor → Code Style → Java → Imports の「Import Layout」を次の順にする。IntelliJ の既定は `import all other imports`、空行、`import javax.*`、`import java.*`、空行、`import static all other imports` で、`javax.*` が `java.*` の前にある。上の表では `java.*` が先なので、既定から `import javax.*` と `import java.*` の 2 行を入れ替える。
+  1. `import all other imports`
+  2. 空行
+  3. `import java.*`
+  4. `import javax.*`
+  5. 空行
+  6. `import static all other imports`
+- 同じ設定画面の「Class count to use import with *」と「Names count to use static import with *」は、`*` の import を作らないよう、大きな値（999）にする。
+- Checkstyle の `UnusedImports` と `CustomImportOrder`（`backend/ecsite/config/checkstyle/checkstyle.xml`）が、使われていない import と上の並びを、全てのソースセット（main、test、integrationTest、testFixtures、tools）で検査する。違反があれば `./gradlew check` と CI が失敗する。Javadoc の書き漏れの検査だけは main に限る。
 
 理由：今のコードは IntelliJ の書式でほぼそろっている。Spotless で強制する案は、今の書式に最も近い設定でも、読みやすさが下がる変更が出た（測定の記録は [issue #19 のコメント](https://github.com/roger88106/ec-site/issues/19)）。
 
@@ -297,12 +316,15 @@ Java の書式は、IntelliJ IDEA の整形（Reformat Code）を推奨する。
 
 - main では、`com.ecsite` の下の全てのパッケージ（生成したコードの `com.ecsite.jooq`、`com.ecsite.api` を除く）で、注釈のない引数・戻り値・フィールドを null でないとみなす。NullAway がコンパイルのときに確認する（テストのソースセットと tools は対象外）。
 - null を取りうる所には JSpecify の `org.jspecify.annotations.Nullable` を付ける。他の `Nullable`（`jakarta.annotation`、`javax.annotation`、`org.springframework.lang`）は使わない（確認方法：`scripts/ci/java-rules.mjs`）。型の注釈なので、配列や修飾した型では型の直前に付け、迷ったら JSpecify の位置にする（`String @Nullable []` など）。
+- OpenAPI から生成した interface とモデルは null の注釈を持たないが、明示した `@Nullable` は NullAway が読む（設定 `AcknowledgeRestrictiveAnnotations`）。生成した interface の `@Nullable` の引数を、注釈なしでオーバーライドすると、その引数は null でないとみなされる。そこにモデルの `@Nullable` の getter の値を渡すと、NullAway が報告する。
 - 選び方：
   - 今の振る舞いで null が正しい値（API の応答の省略できる項目、DB の null を取りうる列など）には `@Nullable` を付ける。
   - null を渡す必要がない所は、null を作らない書き方にする。
-  - 値がないことを返す参照のメソッド（`findXxx`）は、今のコードのとおり `Optional` を返す。集約が null を取りうるフィールドを持つときは、フィールドを `@Nullable` にする。getter は、今のコードでは次の 2 通りがある。
-    - `Cart.memberId()` のように `Optional` を返す。
-    - Lombok の getter が `@Nullable` の値を返す（`Order.cancellation()`、`Payment.authorizationRef()` など）。状態から null でないと分かる所は、呼び出し側で `Objects.requireNonNull` に理由を付けて受ける。
+  - 値がないことを返す参照のメソッド（`findXxx`）は、今のコードのとおり `Optional` を返す。集約が null を取りうるフィールドを持つときは、フィールドを `@Nullable` にする。
+  - getter の戻り値は、値の有無を何が決めるかで選ぶ。
+    - 値の有無が状態に依存しない（会員でないカートには会員 ID がない）ときは、`Optional` を返す（`Cart.memberId()`）。
+    - 値の有無が状態で決まる（キャンセルした注文だけにキャンセルの記録がある）ときは、`@Nullable` を返す（Lombok が生成する `Order.cancellation()`）。呼び出し側は、状態を確認してから `Objects.requireNonNull` で受ける。
+- この規則の対象は、`@Nullable` の値を受ける `Objects.requireNonNull` のメッセージ。メッセージには、null でない根拠となる状態を肯定の文で書く（「キャンセルした注文にはキャンセルの記録がある」）。「〜がない」のように、null のときの失敗を述べる形にしない。メッセージを付けずに引数を確認するだけの呼び出し（`Operator` の生成など）は対象外とする。
 - jOOQ のレコードの getter は注釈がないので、NullAway は null を確認しない。null を取りうる列の値は、`@Nullable` を付けたローカル変数・引数か `Optional` で受ける（null を取りうる列を、注釈のない引数に渡さない）。
 - `lombok.NonNull` は実行時の確認として使ってよい（外さない）。
 
@@ -320,7 +342,7 @@ public Optional<UUID> memberId() {
 
 ### 7.2 検査を抑えるとき
 
-- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付け、理由を同じ所のコメントに書く。
+- Error Prone と NullAway の報告は修正する。誤った報告（フレームワークが初期化するフィールドなど）、修正すると振る舞いが変わるもの、mock（本番で動かないコード）で修正する手間に見合わないものだけ、最も狭い範囲（宣言 1 つ）に `@SuppressWarnings("<検査の名前>")` を付ける。理由は `@SuppressWarnings` の直前の行に `//` のコメントで書く。他の注釈が間にあるときは、その注釈の行を飛ばして直前の行に書く。Javadoc だけでは足りない。全てのソースセットで、CI の検査 `scripts/ci/java-rules.mjs` が確認する。
 - 検査を全体で無効にする、重大度を変えるのは `build.gradle.kts` で行い、先に spec で決める。意味のない注釈を足さないと消えない報告は、注釈でなく設定で扱う。今無効なのは、全てのソースセットで `StringConcatToTextBlock` と `ImmutableEnumChecker`、テストのソースセット（test、integrationTest、testFixtures）で `ArrayRecordComponent` と `TypeParameterUnusedInFormals`（理由は `build.gradle.kts` のコメント）。
 - 生成したコード（`build/generated` の下）は検査しない。
 

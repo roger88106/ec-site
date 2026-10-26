@@ -11,7 +11,7 @@ import { I18nProvider } from '@/i18n/I18nProvider'
 import { getNetworkError, getServerError, http, server } from '@/test/server'
 
 /** 運営者の realm の職務「管理者」と同じ、すべての権限 */
-export const ALL_PERMISSIONS = [
+const ALL_PERMISSIONS = [
   'tax:read',
   'tax:write',
   'category:read',

@@ -22,7 +22,7 @@ type Data<M extends Method, P extends PathWith<M>> = Required<
 >['data']
 
 /** 更新の操作の定型の指定 */
-export type ApiMutationOptions<TData, TInit> = {
+type ApiMutationOptions<TData, TInit> = {
   /** 成功の知らせ。応答や送った値から文を作るときは関数にする */
   success?: string | ((data: TData, init: TInit) => string)
   /** 成功の後に取り直す一覧 */

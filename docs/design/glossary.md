@@ -96,7 +96,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 表示条件 | `isVisibleAt` | C 側に表示される条件（公開状態が「公開」で、公開期間内） |
 | 販売停止 | `salesSuspended` / `sales_suspended` | バリアントを C 側で選べなくする |
 | 商品画像 | `ProductImage` / `product_image` | 商品の画像。メディアモジュールのアセット ID と並び順を持つ |
-| 代表画像 | `representativeImage` | 商品の画像の並びの先頭。一覧に表示する |
+| 代表画像 | | 商品の画像の並びの先頭。一覧に表示する |
 | 商品検索 | `ProductSearch` | キーワード検索の port |
 | 商品照会 | `ProductQueryRepository` | カテゴリ・価格帯などの条件による一覧 |
 

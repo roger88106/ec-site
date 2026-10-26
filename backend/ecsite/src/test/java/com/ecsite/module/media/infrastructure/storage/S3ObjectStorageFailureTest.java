@@ -166,11 +166,10 @@ class S3ObjectStorageFailureTest {
      * @return S3 を呼ぶ実装
      */
     private static S3ObjectStorage storage(URI endpoint, Duration attemptTimeout, Duration callTimeout) {
-        var properties = new MediaStorageProperties(null, "us-east-1", true, "test-key", "test-secret",
+        var properties = new MediaStorageProperties(endpoint, "us-east-1", true, "test-key", "test-secret",
                 "incoming", "public", URI.create("http://cdn.test"), Duration.ofMinutes(5),
-                Duration.ofSeconds(10), Duration.ofSeconds(30))
-                .withEndpoint(endpoint, attemptTimeout, callTimeout);
-        S3Client client = MediaStorageConfig.s3Client(properties);
+                attemptTimeout, callTimeout);
+        S3Client client = new MediaStorageConfig().mediaS3Client(properties);
         return new S3ObjectStorage(client, null, properties);
     }
 

@@ -1,9 +1,7 @@
 package com.ecsite.common.security;
 
-import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.exception.BusinessException;
-import org.springframework.security.core.context.SecurityContextHolder;
-import org.springframework.security.oauth2.server.resource.authentication.JwtAuthenticationToken;
+import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 
 import java.util.Optional;
@@ -23,18 +21,7 @@ public class CurrentMember {
      * @return 会員。token がなければ（ログインしていなければ）空
      */
     public Optional<AuthenticatedMember> find() {
-        if (!(SecurityContextHolder.getContext().getAuthentication() instanceof JwtAuthenticationToken token)) {
-            return Optional.empty();
-        }
-        var jwt = token.getToken();
-        return Optional.of(new AuthenticatedMember(
-                jwt.getSubject(),
-                jwt.getClaimAsString("email"),
-                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
-                jwt.getClaimAsString("family_name"),
-                jwt.getClaimAsString("given_name"),
-                jwt.getClaimAsString("birthdate"),
-                jwt.getClaimAsString("gender")));
+        return CurrentToken.find().map(CurrentMember::toMember);
     }
 
     /**
@@ -44,6 +31,23 @@ public class CurrentMember {
      * @throws BusinessException token がない（401）
      */
     public AuthenticatedMember require() {
-        return find().orElseThrow(() -> BusinessException.of(CommonErrorCode.UNAUTHENTICATED));
+        return toMember(CurrentToken.require());
+    }
+
+    /**
+     * token から会員を作る。
+     *
+     * @param jwt 会員の token
+     * @return 会員
+     */
+    private static AuthenticatedMember toMember(Jwt jwt) {
+        return new AuthenticatedMember(
+                jwt.getSubject(),
+                jwt.getClaimAsString("email"),
+                Boolean.TRUE.equals(jwt.getClaimAsBoolean("email_verified")),
+                jwt.getClaimAsString("family_name"),
+                jwt.getClaimAsString("given_name"),
+                jwt.getClaimAsString("birthdate"),
+                jwt.getClaimAsString("gender"));
     }
 }

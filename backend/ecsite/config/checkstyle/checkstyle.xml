@@ -3,14 +3,26 @@
         "-//Checkstyle//DTD Checkstyle Configuration 1.3//EN"
         "https://checkstyle.org/dtds/configuration_1_3.dtd">
 <!--
-  Javadoc の書き漏れだけを確認する（コメントの書き方 第 2 節）。
-  対象は private を含むすべてのクラス・メソッド・コンストラクタ・項目。上書き（@Override）は除く（MissingJavadocMethod の既定）。
-  Javadoc があるかだけを見て、@param・@return の有無と中身は見ない（private は 1 文の簡単なものでよい）。
+  確認するのは次の 2 つだけ。
+  ・Javadoc の書き漏れ（コメントの書き方 第 2 節）。対象は private を含むすべてのクラス・メソッド・コンストラクタ・項目。
+    上書き（@Override）は除く（MissingJavadocMethod の既定）。Javadoc があるかだけを見て、@param・@return の有無と中身は見ない。
+    main だけに適用し、test などは suppressions.xml で抑える。
+  ・import：使われていないもの、並び（バックエンドの書き方 第 5.4 節）。全てのソースセットに適用する。
+    並びは、java・javax 以外、java・javax、static の順で、まとまりの間は空行 1 行、まとまりの中は文字コードの順。
 -->
 <module name="Checker">
     <property name="charset" value="UTF-8"/>
     <property name="severity" value="error"/>
+    <module name="SuppressionFilter">
+        <property name="file" value="${config_loc}/suppressions.xml"/>
+    </module>
     <module name="TreeWalker">
+        <module name="UnusedImports"/>
+        <module name="CustomImportOrder">
+            <property name="customImportOrderRules" value="THIRD_PARTY_PACKAGE###STANDARD_JAVA_PACKAGE###STATIC"/>
+            <property name="separateLineBetweenGroups" value="true"/>
+            <property name="sortImportsInGroupAlphabetically" value="true"/>
+        </module>
         <module name="MissingJavadocType">
             <property name="scope" value="private"/>
         </module>

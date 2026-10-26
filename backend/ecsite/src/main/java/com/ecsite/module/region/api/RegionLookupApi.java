@@ -66,19 +66,6 @@ public class RegionLookupApi {
     }
 
     /**
-     * 郵便番号の住所
-     *
-     * @param postalCode 郵便番号（数字 7 桁）
-     * @return 並び順の住所。なければ空の一覧
-     */
-    public List<RegionPostalAddress> findByPostalCode(String postalCode) {
-        return queryService.findPostalAddresses(postalCode).stream()
-                .map(address -> new RegionPostalAddress(address.postalCode(),
-                        toMunicipality(address.prefecture(), address.municipality()), address.townName()))
-                .toList();
-    }
-
-    /**
      * 公開する都道府県の型に変換する
      *
      * @param prefecture 都道府県

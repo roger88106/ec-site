@@ -3,7 +3,7 @@ import { translate } from '../lib/translate'
 import { Separator } from '../ui/separator'
 
 /** 金額の内訳の値。各画面の生成した型を import できないので、構造で書く（どちらの画面の型も代入できる）。 */
-export type AmountsSummaryValue = {
+type AmountsSummaryValue = {
   itemsTotal: number
   shippingFee: number
   total: number

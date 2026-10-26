@@ -542,13 +542,13 @@ class ProductTest {
 
             assertThat(product.images()).extracting(ProductImage::id).containsExactly(first, second);
             assertThat(product.images()).extracting(ProductImage::assetId).containsExactly(firstAsset, secondAsset);
-            assertThat(product.representativeImage()).map(ProductImage::id).contains(first);
+            assertThat(product.images()).first().extracting(ProductImage::id).isEqualTo(first);
         }
 
         @Test
         @DisplayName("画像がなければ代表画像もない")
         void hasNoRepresentativeImageWithoutImages() {
-            assertThat(productWithVariant().representativeImage()).isEmpty();
+            assertThat(productWithVariant().images()).isEmpty();
         }
 
         @Test
@@ -577,7 +577,7 @@ class ProductTest {
             product.reorderImages(List.of(ids.get(2), ids.get(0), ids.get(1)));
 
             assertThat(product.images()).extracting(ProductImage::id).containsExactly(ids.get(2), ids.get(0), ids.get(1));
-            assertThat(product.representativeImage()).map(ProductImage::id).contains(ids.get(2));
+            assertThat(product.images()).first().extracting(ProductImage::id).isEqualTo(ids.get(2));
             assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(1))),
                     ProductErrorCode.INVALID_IMAGE_ORDER);
             assertBusinessError(() -> product.reorderImages(List.of(ids.get(0), ids.get(0), ids.get(1))),

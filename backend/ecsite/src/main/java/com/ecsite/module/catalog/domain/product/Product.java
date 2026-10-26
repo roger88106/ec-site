@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.LinkedHashSet;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 import java.util.function.BiFunction;
@@ -193,15 +192,6 @@ public class Product extends AggregateRoot {
     }
 
 // ============================== Getter（ほかのフィールドの Getter は Lombok で作る） ==============================
-
-    /**
-     * 代表画像を返す。
-     *
-     * @return 代表画像（画像の並びの先頭）。画像がなければ空
-     */
-    public Optional<ProductImage> representativeImage() {
-        return images.stream().findFirst();
-    }
 
 // ============================== ドメインの振る舞い ==============================
 

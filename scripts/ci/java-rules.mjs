@@ -2,7 +2,8 @@
 // - テストのソース（test、integrationTest、testFixtures）で Lombok を使わない。Lombok の注釈はクラスファイルに残らず、ArchUnit で見えないため
 // - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())）。値を追加したときの写し忘れをコンパイルで見つけられないため
 // - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない（valueOf(文字列リテラル以外)、fromValue(文字列リテラル以外)）。モジュールやレイヤーの間の列挙を文字列で受け渡すと、相手に値を追加したときにコンパイルでもテストでも気づけないため
-// - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため
+// - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため。Nullable を含むパッケージのワイルドカード import（jakarta.annotation.* など）も同じ
+// - 本番・テスト・tools のソースで、@SuppressWarnings の直前の行に理由の // のコメントを書く（間にある他の注釈は飛ばす）。なぜ検査を抑えてよいかを残すため
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { closingParen } from './lib/closing-paren.mjs'
@@ -27,7 +28,13 @@ const ENUM_CALL = /\b(?:valueOf|fromValue)\(/g
 const ENDS_WITH_NAME = /\.\s*name\(\s*\)\s*$/
 
 /** 他の Nullable：JSpecify 以外の Nullable の import（static import も）と、完全修飾名で書いた注釈 */
-const OTHER_NULLABLE = /^\s*import\s+(?:static\s+)?(?!org\.jspecify\.annotations\.)[\w.]+\.Nullable\b|@(?!org\.jspecify\.annotations\.)(?:[a-z]\w*\.)+Nullable\b/
+const OTHER_NULLABLE = /^\s*import\s+(?:static\s+)?(?!org\.jspecify\.annotations\.)[\w.]+\.Nullable\b|@(?!org\.jspecify\.annotations\.)(?:[a-z]\w*\.)+Nullable\b|^\s*import\s+(?:static\s+)?(?:jakarta\.annotation|javax\.annotation|org\.springframework\.lang)\.\*\s*;/
+
+/** @SuppressWarnings の注釈の始まり（行の途中も。@java.lang.SuppressWarnings も） */
+const SUPPRESS_WARNINGS = /@\s*(?:java\s*\.\s*lang\s*\.\s*)?SuppressWarnings\b/g
+
+/** 注釈の始まりと名前（@interface は注釈の宣言なので含まない） */
+const ANNOTATION_NAME = /@\s*(?!interface\b)[A-Za-z_][\w.]*/g
 
 /** 他の Nullable を検査するソース：本番、テスト、tools（生成したコードは含まない） */
 const NULLABLE_SOURCE = /^backend\/ecsite\/src\/(?:main|test|integrationTest|testFixtures|tools)\/.*\.java$/
@@ -110,6 +117,117 @@ export function findOtherNullable(text) {
 }
 
 /**
+ * 直前に理由の // のコメントがない @SuppressWarnings を探す。間にある他の注釈の行は飛ばす。Javadoc と /* *\/ のコメントだけでは理由にしない。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findUnexplainedSuppressWarnings(text) {
+  const original = text.split('\n').map((line) => line.trim())
+  const code = blankLiterals(text)
+  const mask = annotationMask(code)
+  const codeLines = code.split('\n')
+  const offsets = []
+  let offset = 0
+  for (const line of codeLines) {
+    offsets.push(offset)
+    offset += line.length + 1
+  }
+  // 空でなく、空白でない字が全て注釈の範囲にある行（複数行の注釈の続きの行も）
+  const isAnnotationOnly = (index) => {
+    let seen = false
+    for (let k = 0; k < codeLines[index].length; k += 1) {
+      if (/\s/.test(codeLines[index][k])) continue
+      if (!mask[offsets[index] + k]) return false
+      seen = true
+    }
+    return seen
+  }
+  const lineOf = createLineLocator(text)
+  const hits = []
+  for (const match of code.matchAll(SUPPRESS_WARNINGS)) {
+    const line = lineOf(match.index)
+    let above = line - 2
+    while (above >= 0 && isAnnotationOnly(above)) above -= 1
+    const explained = above >= 0 && codeLines[above].trim() === '' && original[above].startsWith('//')
+    if (!explained) hits.push({ line, text: original[line - 1] })
+  }
+  return hits
+}
+
+/**
+ * コメント、文字列、文字、テキストブロックの中を空白にする（改行は残すので、位置と行番号は変わらない）。この規則だけが使う。
+ *
+ * @param {string} text ソース
+ * @returns {string} コードだけを残したソース
+ */
+function blankLiterals(text) {
+  const source = stripJavaComments(text)
+  const blank = (chunk) => chunk.replace(/[^\r\n]/g, ' ')
+  let result = ''
+  let i = 0
+  while (i < source.length) {
+    if (source.startsWith('"""', i)) {
+      const end = source.indexOf('"""', i + 3)
+      const stop = end < 0 ? source.length : end + 3
+      result += blank(source.slice(i, stop))
+      i = stop
+    } else if (source[i] === '"' || source[i] === "'") {
+      const quote = source[i]
+      let j = i + 1
+      while (j < source.length && source[j] !== quote && source[j] !== '\n') j += source[j] === '\\' ? 2 : 1
+      const stop = Math.min(j + 1, source.length)
+      result += blank(source.slice(i, stop))
+      i = stop
+    } else {
+      result += source[i]
+      i += 1
+    }
+  }
+  return result
+}
+
+/**
+ * 注釈（@名前 と、続く括弧の対応する閉じ括弧まで。入れ子も含む）の範囲の字に印を付ける。
+ *
+ * @param {string} code コードだけを残したソース
+ * @returns {Uint8Array} 注釈の中の字が 1
+ */
+function annotationMask(code) {
+  const mask = new Uint8Array(code.length)
+  for (const match of code.matchAll(ANNOTATION_NAME)) {
+    let end = match.index + match[0].length
+    let probe = end
+    while (probe < code.length && /\s/.test(code[probe])) probe += 1
+    if (code[probe] === '(') {
+      let depth = 0
+      for (let k = probe; k < code.length; k += 1) {
+        if (code[k] === '(') depth += 1
+        else if (code[k] === ')') {
+          depth -= 1
+          if (depth === 0) {
+            end = k + 1
+            break
+          }
+        }
+      }
+    }
+    mask.fill(1, match.index, end)
+  }
+  return mask
+}
+
+/**
+ * @SuppressWarnings の理由を求める場所か。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 本番、テスト、tools のソースなら true（生成したコードは含まない）
+ */
+export function isSuppressWarningsTarget(file) {
+  return NULLABLE_SOURCE.test(file)
+}
+
+/**
  * 他の Nullable を禁じる場所か。
  *
  * @param {string} file リポジトリのルートからのパス
@@ -142,7 +260,7 @@ export function ruleFor(file) {
 }
 
 if (isMain(import.meta.url)) {
-  const files = listGitFiles().filter((file) => ruleFor(file) || isNullableTarget(file))
+  const files = listGitFiles().filter((file) => ruleFor(file) || isNullableTarget(file) || isSuppressWarningsTarget(file))
   exitIfNoFiles(files, 'Java の規則の対象のファイル')
   const messages = { lombok: 'テストで Lombok を使う', 'enum-name': '列挙型の変換に name() を渡す' }
   let count = 0
@@ -152,6 +270,12 @@ if (isMain(import.meta.url)) {
     if (isNullableTarget(file)) {
       for (const hit of findOtherNullable(text)) {
         console.log(`${file}:${hit.line} JSpecify 以外の Nullable を使う（org.jspecify.annotations.Nullable を使う）：${hit.text}`)
+        count += 1
+      }
+    }
+    if (isSuppressWarningsTarget(file)) {
+      for (const hit of findUnexplainedSuppressWarnings(text)) {
+        console.log(`${file}:${hit.line} @SuppressWarnings の直前の行に、理由の // のコメントを書く：${hit.text}`)
         count += 1
       }
     }

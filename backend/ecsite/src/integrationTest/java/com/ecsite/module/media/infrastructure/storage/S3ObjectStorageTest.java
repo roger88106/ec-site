@@ -94,7 +94,11 @@ class S3ObjectStorageTest {
     @Test
     @DisplayName("URL の有効期間は設定のとおりで、期限の切れた URL では PUT できない")
     void rejectsExpiredUrl() throws Exception {
-        var shortLived = new S3ObjectStorage(s3, presigner, properties.withUploadUrlTtl(Duration.ofMinutes(1)));
+        var shortLivedProperties = new MediaStorageProperties(properties.endpoint(), properties.region(),
+                properties.pathStyleAccess(), properties.accessKeyId(), properties.secretAccessKey(),
+                properties.incomingBucket(), properties.publicBucket(), properties.publicBaseUrl(),
+                Duration.ofMinutes(1), properties.attemptTimeout(), properties.callTimeout());
+        var shortLived = new S3ObjectStorage(s3, presigner, shortLivedProperties);
         var upload = shortLived.presignUpload(uploadKey(), "image/png", PNG.length);
         assertThat(upload.url().getQuery()).contains("X-Amz-Expires=60");
 

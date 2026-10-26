@@ -32,16 +32,6 @@ class MediaStorageConfig {
      */
     @Bean(destroyMethod = "close")
     S3Client mediaS3Client(MediaStorageProperties properties) {
-        return s3Client(properties);
-    }
-
-    /**
-     * S3 のクライアントを作る（テストが、テストの S3 に向けて同じ設定のクライアントを作るため）。
-     *
-     * @param properties ファイルの置き場所の設定
-     * @return S3 のクライアント
-     */
-    static S3Client s3Client(MediaStorageProperties properties) {
         var builder = S3Client.builder()
                 .region(Region.of(properties.region()))
                 .credentialsProvider(credentials(properties))

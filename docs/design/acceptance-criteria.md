@@ -275,10 +275,10 @@
 | AC-250 | 都道府県と市区町村の一覧は、店舗 API のマスターデータから取得する。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`StoreRegionApiTest` |
 | AC-251 | 注文の確定は、選んだ都道府県に属さない市区町村、またはマスターデータにないコード… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`PlaceOrderApiTest` |
 | AC-252 | 注文の詳細（店舗画面・管理画面）は、お届け先を、都道府県名・市区町村名・それより… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderDetailPage.test.tsx`、`ShippingAddressDetails.test.tsx`、`order.spec.ts` |
-| AC-253 | 店舗 API は、郵便番号から、都道府県・市区町村・町域を返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `RegionApiTest`、`StoreRegionApiTest` |
-| AC-254 | 1 つの郵便番号に複数の町域があるときは、全てを返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `RegionApiTest`、`StoreRegionApiTest`、`region.test.ts` |
+| AC-253 | 店舗 API は、郵便番号から、都道府県・市区町村・町域を返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `StoreRegionApiTest` |
+| AC-254 | 1 つの郵便番号に複数の町域があるときは、全てを返す。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `StoreRegionApiTest`、`region.test.ts` |
 | AC-255 | 注文手続きの画面で郵便番号（7 桁）を入れると、都道府県と市区町村を選んだ状態に… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`order.spec.ts`、`postalCodeFill.test.ts` |
-| AC-256 | マスターデータにない郵便番号は、何も補わず、消費者がそのまま入力を続けられる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`RegionApiTest`、`StoreRegionApiTest` ほか 2 |
+| AC-256 | マスターデータにない郵便番号は、何も補わず、消費者がそのまま入力を続けられる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx`、`StoreRegionApiTest`、`postalCodeFill.test.ts` ほか 1 |
 | AC-257 | 補った後も、消費者は都道府県・市区町村・住所を変えられる。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-258 | 注文は、お届け先の都道府県と市区町村をコードで持つ。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PlaceOrderApiTest`、`ShippingAddressTest` |
 | AC-259 | 都道府県と市区町村のマスターデータは、全国の都道府県（47）と市区町村を、最初の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `RegionApiTest` |
@@ -305,7 +305,7 @@
 | AC-280 | 業務の日付の基準にする時間帯（日本時間）は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-281 | 時点の税率の判定は 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | 除外 |
 | AC-282 | 分類の深さの上限は、バックエンドの 1 か所で決める。 | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `ProductListApiTest` |
-| AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`RegionApiTest`、`postalCodeFill.test.ts` |
+| AC-283 | 郵便番号のデータの町域名にある、住所でない注記（「以下に掲載がない場合」、括弧の… | 有効 | [016](../specs/archive/mvp/016-master-data/spec.md) | — | spec | `PostalCodeCsvTest`、`StoreRegionApiTest`、`postalCodeFill.test.ts` |
 | AC-284 | 片付けの定期ジョブが、次のデータを保存期間を過ぎたら削除する。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CartCleanupJobTest`、`CartTest`、`CheckoutCleanupJobTest` ほか 2 |
 | AC-285 | 保存期間と、片付けのジョブの間隔は、設定で変更できる。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CleanupJobSettingsTest`、`EventCleanupJobSettingsTest` |
 | AC-286 | 片付けは、注文・支払・出荷と、未完了のイベント・止めたイベントを削除しない。 | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `CheckoutCleanupJobTest`、`EventCleanupJobTest` |

@@ -136,6 +136,9 @@ TypeScript 7 は JavaScript の API を持たないので、API を使うツー�
   - 範囲：調べるだけ（コードを変えない）
   - openapi-typescript が 7 で動くなら、上書きを使わず、T195-01-03 の範囲と確認方法から上書きを除き、DC-195-11〜13 は不要として結果に書く。
   - 上書きが効かないとき、または Next.js が API を使うときは、第 6 節の 1 の前提が成り立たないので、作業を止めて利用者に確認し、spec を直してから進める。
+  - 結果（openapi-typescript）：TypeScript 7 で動くバージョンはない。最新は 7.13.0（peer の依存は `typescript` の `^5.x`）で、8.x はない。
+  - 結果（Next.js）：16.4.2 は、既定で型チェックに `tsc` のコマンドを使う（`experimental.useTypeScriptCli` の既定が true）。`next typegen` も同じで、JavaScript の API を使わない。店舗画面の設定はこの既定を変えていない。
+  - 結果（上書き）：pnpm の overrides と packageExtensions は、peer の依存に効かず、openapi-typescript は直接の依存の TypeScript 7 で解決された。ルートの `.pnpmfile.cjs` の `readPackage` で、openapi-typescript の peer の依存を外して TypeScript 6.0.3 を依存に加える形なら、openapi-typescript が 6 で動き、`tsc` は 7 のままだった（一時的なワークスペースで確認した）。第 6 節の 1 の前提の「上書き」が成り立たないので、作業を止めて利用者に確認する。
 - [ ] **T195-01-03** TypeScript を 7 に上げ、openapi-typescript に TypeScript 6 を渡し、7 で出た型エラーと廃止された設定を直す（DC-195-1〜7）。
   - 依存：T195-01-01（同じ `pnpm-lock.yaml`）、T195-01-02
   - 範囲：`package.json`（ルート。上書き）、`frontend/admin/package.json`、`frontend/store/package.json`、`frontend/shared/package.json`、`e2e/package.json`、`pnpm-lock.yaml`、`frontend/tsconfig.base.json` と各 tsconfig（必要なとき）、型エラーが出たソース

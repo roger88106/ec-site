@@ -1,8 +1,9 @@
 package com.ecsite;
 
-import com.ecsite.module.order.application.payment.OrderPaymentService;
+import com.ecsite.module.order.application.payment.OrderPayments;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.jayway.jsonpath.JsonPath;
+import org.springframework.context.ApplicationContext;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
@@ -36,9 +37,9 @@ public class OrderTestData {
     private final TestPaymentGateway gateway;
 
     /**
-     * 注文の支払の結果のサービス
+     * Spring のコンテキスト（注文の支払の結果を反映するために使う）
      */
-    private final OrderPaymentService orderPaymentService;
+    private final ApplicationContext applicationContext;
 
     /**
      * 注文 ID → 支払った支払画面 ID（支払の後は画面の URL を引けないため、覚えておく）
@@ -53,28 +54,28 @@ public class OrderTestData {
     /**
      * コンストラクタ（既定の会員として行う）
      *
-     * @param mockMvc             MockMvc
-     * @param gateway             mock の決済サービス
-     * @param orderPaymentService 注文の支払の結果のサービス
+     * @param mockMvc            MockMvc
+     * @param gateway            mock の決済サービス
+     * @param applicationContext Spring のコンテキスト（注文の支払の結果を反映するために使う）
      */
-    public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, OrderPaymentService orderPaymentService) {
-        this(mockMvc, gateway, orderPaymentService, request -> request);
+    public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, ApplicationContext applicationContext) {
+        this(mockMvc, gateway, applicationContext, request -> request);
     }
 
     /**
      * コンストラクタ（指定した会員として行う）。<br />
      * 巻き戻さないテストは、既定の会員のカートに品目を残すと他のテストに影響するので、テストごとの会員にする。
      *
-     * @param mockMvc             MockMvc
-     * @param gateway             mock の決済サービス
-     * @param orderPaymentService 注文の支払の結果のサービス
-     * @param member              会員の token などを付ける後処理
+     * @param mockMvc            MockMvc
+     * @param gateway            mock の決済サービス
+     * @param applicationContext Spring のコンテキスト（注文の支払の結果を反映するために使う）
+     * @param member             会員の token などを付ける後処理
      */
-    public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, OrderPaymentService orderPaymentService,
+    public OrderTestData(MockMvc mockMvc, TestPaymentGateway gateway, ApplicationContext applicationContext,
                          RequestPostProcessor member) {
         this.mockMvc = mockMvc;
         this.gateway = gateway;
-        this.orderPaymentService = orderPaymentService;
+        this.applicationContext = applicationContext;
         this.member = member;
     }
 
@@ -217,7 +218,7 @@ public class OrderTestData {
         var pageId = openPaymentPage(orderId);
         paidPageIds.put(orderId, pageId);
         gateway.pay(pageId);
-        orderPaymentService.accept(orderId);
+        OrderPayments.accept(applicationContext, orderId);
     }
 
     /**

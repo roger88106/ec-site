@@ -12,12 +12,12 @@ import com.ecsite.common.model.value.Money;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
@@ -63,7 +63,7 @@ class OrderReportApiTest {
     MockCarrier mockCarrier;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -99,7 +99,7 @@ class OrderReportApiTest {
         shirt = data.product(data.taxCategory("標準", "10"), "T シャツ", 1000, "色").variant("白").publish();
         var variantId = shirt.variantIds.getFirst();
         inventory.stock(variantId, shirt.id, 10);
-        orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        orders = new OrderTestData(mockMvc, gateway, applicationContext);
         clock.setInstant(NOW);
     }
 

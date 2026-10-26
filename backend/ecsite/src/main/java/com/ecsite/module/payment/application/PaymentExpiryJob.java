@@ -19,7 +19,7 @@ import org.springframework.stereotype.Component;
 @Slf4j
 @Component
 @RequiredArgsConstructor
-public class PaymentExpiryJob {
+class PaymentExpiryJob {
 
     /**
      * 1 回に処理する支払の数の上限（残りは次の回で処理する）

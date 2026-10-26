@@ -10,8 +10,7 @@ import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestTokens;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
-import com.ecsite.module.payment.application.PaymentExpiryJob;
+import com.ecsite.module.payment.application.PaymentJobs;
 import com.ecsite.module.payment.domain.payment.VoidRequested;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
@@ -21,6 +20,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
@@ -70,10 +70,7 @@ class OrderPaymentApiTest {
     TestPaymentGateway gateway;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
-
-    @Autowired
-    PaymentExpiryJob expiryJob;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -118,7 +115,7 @@ class OrderPaymentApiTest {
         taxCategoryId = new CatalogTestData(mockMvc, clock).taxCategory("支払-" + UUID.randomUUID().toString().substring(0, 8), "10");
         variantId = stockedVariant("支払の商品");
         owner = TestTokens.member().subject(UUID.randomUUID());
-        orders = new OrderTestData(mockMvc, gateway, orderPaymentService, owner.bearer());
+        orders = new OrderTestData(mockMvc, gateway, applicationContext, owner.bearer());
     }
 
     @Nested
@@ -248,11 +245,11 @@ class OrderPaymentApiTest {
             var deadline = deadlineOf(orderId);
 
             clock.setInstant(deadline.minusSeconds(1));
-            expiryJob.expire();
+            PaymentJobs.expire(applicationContext);
             store(orderId).andExpect(jsonPath("$.status").value("PENDING_PAYMENT"));
 
             clock.setInstant(deadline);
-            expiryJob.expire();
+            PaymentJobs.expire(applicationContext);
 
             orders.awaitStatus(orderId, "CANCELLED");
             store(orderId).andExpect(jsonPath("$.cancellation.kind").value("PAYMENT_EXPIRED"));
@@ -273,7 +270,7 @@ class OrderPaymentApiTest {
             var orderId = pending(1);
             var pageId = orders.openPaymentPage(orderId);
             clock.setInstant(deadlineOf(orderId));
-            expiryJob.expire();
+            PaymentJobs.expire(applicationContext);
             orders.awaitStatus(orderId, "CANCELLED");
 
             gateway.notifyAuthorized(pageId);

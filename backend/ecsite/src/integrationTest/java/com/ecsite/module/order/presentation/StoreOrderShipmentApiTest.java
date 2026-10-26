@@ -9,7 +9,6 @@ import com.ecsite.ShippingTestData;
 import com.ecsite.ShippingTaxCategory;
 import com.ecsite.TestClockConfig;
 import com.ecsite.module.inventory.domain.stock.port.StockItemRepository;
-import com.ecsite.module.order.application.payment.OrderPaymentService;
 import com.ecsite.module.payment.infrastructure.mock.TestPaymentGateway;
 import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.infrastructure.mock.MockCarrier;
@@ -17,6 +16,7 @@ import org.jooq.DSLContext;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.context.ApplicationContext;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
@@ -64,7 +64,7 @@ class StoreOrderShipmentApiTest {
     MockCarrier mockCarrier;
 
     @Autowired
-    OrderPaymentService orderPaymentService;
+    ApplicationContext applicationContext;
 
     @Autowired
     MutableClock clock;
@@ -100,7 +100,7 @@ class StoreOrderShipmentApiTest {
         var product = data.product(data.taxCategory("標準", "10"), "商品", 1000).publish();
         var variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 10);
-        var orders = new OrderTestData(mockMvc, gateway, orderPaymentService);
+        var orders = new OrderTestData(mockMvc, gateway, applicationContext);
         accepted = orders.placeOrder(variantId, 1);
         shipped = orders.placeOrder(variantId, 1);
         new ShippingTestData(mockMvc, mockCarrier).ship(shipped, Carrier.YAMATO, "1234-5678-9012");

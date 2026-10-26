@@ -43,7 +43,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
   expect(secondUrl).not.toBe(firstUrl)
 
   await test.step('管理画面：2 枚目を前へ動かすと、並びが入れ替わり、先頭（代表画像）が替わる（AC-37）', async () => {
-    await page.getByRole('button', { name: '画像 2を前へ' }).click()
+    await page.getByRole('button', { name: '画像 2を前へ', exact: true }).click()
     await expect(page.getByRole('img', { name: '画像 1' })).toHaveAttribute('src', secondUrl ?? '')
     await expect(page.getByRole('img', { name: '画像 2' })).toHaveAttribute('src', firstUrl ?? '')
   })
@@ -69,7 +69,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
       .poll(() => image.evaluate((element: HTMLImageElement) => [element.naturalWidth, element.naturalHeight]))
       .toEqual([32, 64])
     // 小さな画像は並べ替えた順：2 番目は、並べ替えの前の先頭
-    await page.getByRole('button', { name: '画像 2を見る' }).click()
+    await page.getByRole('button', { name: '画像 2を見る', exact: true }).click()
     await expect(image).toHaveAttribute('src', firstUrl ?? '')
   })
 })

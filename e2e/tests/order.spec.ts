@@ -38,7 +38,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   })
 
   await test.step('注文手続き：郵便番号の形の誤りは欄の下に出て入力が残り、直すと都道府県と市区町村が補われて注文でき、支払うと受付になる', async () => {
-    await page.getByRole('button', { name: '注文手続きへ進む' }).click()
+    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
     await expect(page.getByText(/在庫を確保しています。残り/)).toBeVisible()
     await expect(page.getByText(ACCOUNTS.member.email)).toBeVisible()
@@ -61,7 +61,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   await test.step('注文の画面：キャンセルを申請すると「キャンセル申請中」になる', async () => {
     page.once('dialog', (dialog) => dialog.accept())
     await page.getByLabel('理由（任意）').fill('間違えて注文した')
-    await page.getByRole('button', { name: 'キャンセルを申請する' }).click()
+    await page.getByRole('button', { name: 'キャンセルを申請する', exact: true }).click()
     await expect(page.getByText('キャンセル申請中', { exact: true })).toBeVisible()
     await expect(page.getByText(/キャンセルの申請を受け付けました/)).toBeVisible()
   })
@@ -69,8 +69,8 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   await test.step('管理画面：申請を承認するとキャンセルになり、在庫数が戻って履歴に残る', async () => {
     const orderId = orderIdOf(orderUrl)
     await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
-    await page.getByRole('button', { name: '申請を承認する' }).click()
-    await page.getByRole('alertdialog').getByRole('button', { name: '承認してキャンセルする' }).click()
+    await page.getByRole('button', { name: '申請を承認する', exact: true }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: '承認してキャンセルする', exact: true }).click()
     await expect(page.getByText('申請を承認し、キャンセルしました')).toBeVisible()
     await expect(page.getByText('お客様の申請の承認')).toBeVisible()
 

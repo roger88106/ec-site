@@ -24,9 +24,9 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
     await page.getByRole('option', { name: `${taxCategory.name}（現時点の率：10%）` }).click()
     await page.getByLabel('税抜価格（円）').fill('1000')
     await page.getByRole('checkbox', { name: category.name }).click()
-    await page.getByRole('button', { name: '軸を追加' }).click()
+    await page.getByRole('button', { name: '軸を追加', exact: true }).click()
     await page.getByLabel('軸 1').fill('色')
-    await page.getByRole('button', { name: '登録' }).click()
+    await page.getByRole('button', { name: '登録', exact: true }).click()
     await expect(page.getByText('商品を登録しました')).toBeVisible()
     await expect(page.getByRole('heading', { name: code })).toBeVisible()
   })
@@ -38,7 +38,7 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
     ]) {
       await page.getByLabel('バリアント品番').fill(`${code}-${suffix}`)
       await page.getByLabel('色', { exact: true }).fill(color)
-      await page.getByRole('button', { name: 'バリアントを追加' }).click()
+      await page.getByRole('button', { name: 'バリアントを追加', exact: true }).click()
       await expect(page.getByRole('cell', { name: `${code}-${suffix}`, exact: true })).toBeVisible()
     }
   })
@@ -49,13 +49,13 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
     await page.getByLabel('増減量').fill('5')
     await page.getByRole('combobox', { name: '理由' }).click()
     await page.getByRole('option', { name: '入荷' }).click()
-    await page.getByRole('button', { name: '調整する' }).click()
+    await page.getByRole('button', { name: '調整する', exact: true }).click()
     await expect(page.getByText('+5 を反映し、在庫数は 5 になりました')).toBeVisible()
-    await page.getByRole('button', { name: '商品へ戻る' }).click()
+    await page.getByRole('button', { name: '商品へ戻る', exact: true }).click()
   })
 
   await test.step('管理画面：公開する', async () => {
-    await page.getByRole('button', { name: '公開する' }).click()
+    await page.getByRole('button', { name: '公開する', exact: true }).click()
     await expect(page.getByText('公開しました')).toBeVisible()
   })
 
@@ -74,12 +74,11 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
     await expect(page.getByRole('heading', { name })).toBeVisible()
     await expect(page.getByText('1,100 円（税抜 1,000 円）')).toBeVisible()
     await expect(page.getByText('色を選ぶと、在庫状況を表示します。')).toBeVisible()
-    await expect(page.getByRole('button', { name: '青' })).toBeDisabled()
+    await expect(page.getByRole('button', { name: '青', exact: true })).toBeDisabled()
 
-    await page.getByRole('button', { name: '赤' }).click()
-    await expect(page.getByText('在庫あり')).toBeVisible()
-    // 在庫数は出さない（AC-64）。カートに入れる数量の選択肢（1〜10）は在庫数ではないので除く
-    const five = page.getByText('5', { exact: true })
-    await expect(five).toHaveCount(await five.and(page.getByRole('option')).count())
+    await page.getByRole('button', { name: '赤', exact: true }).click()
+    await expect(page.getByText('在庫あり', { exact: true })).toBeVisible()
+    // 在庫数は出さない（AC-64）。在庫の表示は「在庫あり」だけで、在庫の数を示す文（「在庫 5」「残り 5」「5 個」）がない
+    await expect(page.getByText(/在庫[^あ]*[0-9]|残り[^。]*[0-9]|[0-9]+ ?(個|点)/)).toHaveCount(0)
   })
 })

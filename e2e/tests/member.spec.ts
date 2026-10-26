@@ -37,7 +37,7 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
   })
 
   await test.step('注文し、注文の一覧に出る（AC-127）', async () => {
-    await page.getByRole('button', { name: '注文手続きへ進む' }).click()
+    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
     await expect(page.getByText(account.email)).toBeVisible()
     await fillShipping(page, '100-0001')
     await page.getByRole('button', { name: /^注文する/ }).click()
@@ -50,14 +50,14 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
   })
 
   await test.step('ログアウトするとカートは空に見え、ログインせずに入れて注文手続きに進むと、ログインの後にカートに戻る（AC-113、124、125）', async () => {
-    await page.getByRole('button', { name: 'ログアウト' }).click()
+    await page.getByRole('button', { name: 'ログアウト', exact: true }).click()
     await expect(page.getByRole('link', { name: 'ログイン' })).toBeVisible()
     await page.goto(`${STORE_URL}/cart`)
     await expect(page.getByText('カートに商品がありません。')).toBeVisible()
 
     await addToCart(page, productId, { quantity: '1' })
     await page.goto(`${STORE_URL}/cart`)
-    await page.getByRole('button', { name: '注文手続きへ進む' }).click()
+    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
     await submitIdpLogin(page, account)
     await expect(page).toHaveURL(`${STORE_URL}/cart`)
     await expect(page.getByText('会員 登録 様')).toBeVisible()
@@ -65,7 +65,7 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
   })
 
   await test.step('ログアウトすると、パスワードなしではログインし直せない（AC-115）', async () => {
-    await page.getByRole('button', { name: 'ログアウト' }).click()
+    await page.getByRole('button', { name: 'ログアウト', exact: true }).click()
     await page.getByRole('link', { name: 'ログイン' }).click()
     await expect(idpPasswordInput(page)).toBeVisible()
   })

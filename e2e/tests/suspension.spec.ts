@@ -20,16 +20,16 @@ test('AC-28、62、63 管理画面でバリアントを販売停止にすると�
   })
 
   await page.goto(`${STORE_URL}/products/${productId}`)
-  await expect(page.getByRole('button', { name: '赤' })).toBeEnabled()
+  await expect(page.getByRole('button', { name: '赤', exact: true })).toBeEnabled()
 
   await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
-  await page.getByRole('button', { name: `${code}-REDを販売停止` }).click()
+  await page.getByRole('button', { name: `${code}-REDを販売停止`, exact: true }).click()
   await expect(page.getByText('販売停止にしました')).toBeVisible()
 
   // 詳細はキャッシュを使わないので、すぐ反映される
   await page.goto(`${STORE_URL}/products/${productId}`)
   await expect(page.getByRole('heading', { name })).toBeVisible()
-  await expect(page.getByRole('button', { name: '赤' })).toBeDisabled()
-  await page.getByRole('button', { name: '青' }).click()
+  await expect(page.getByRole('button', { name: '赤', exact: true })).toBeDisabled()
+  await page.getByRole('button', { name: '青', exact: true }).click()
   await expect(page.getByText('在庫あり')).toBeVisible()
 })

@@ -44,10 +44,10 @@ for (const [label, change, button, toast] of [
     await expect(page.getByRole('heading', { name })).toBeVisible()
 
     await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
-    await page.getByRole('button', { name: button }).click()
+    await page.getByRole('button', { name: button, exact: true }).click()
     if (change === discontinue) {
       // 販売終了は確認のダイアログで確定する
-      await page.getByRole('alertdialog').getByRole('button', { name: button }).click()
+      await page.getByRole('alertdialog').getByRole('button', { name: button, exact: true }).click()
     }
     await expect(page.getByText(toast)).toBeVisible()
 

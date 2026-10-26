@@ -61,7 +61,7 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await shot(page, 'store-top', page.getByRole('link', { name: /マグカップ/ }))
     await page.goto(`${STORE}/products/${SEED.mug}`)
     await page.getByRole('button', { name: '白', exact: true }).click()
-    await shot(page, 'store-product', page.getByRole('button', { name: 'カートに入れる' }))
+    await shot(page, 'store-product', page.getByRole('button', { name: 'カートに入れる', exact: true }))
   })
 
   await test.step('店舗画面：会員として、税率の違う 2 品目を注文して支払う', async () => {
@@ -82,7 +82,7 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
     await orderCart(page, STORE, RECIPIENT)
     const orderUrl = await leaveMockPage(page, 'やめる')
     await page.goto(orderUrl)
-    await shot(page, 'store-payment', page.getByRole('button', { name: '支払う' }))
+    await shot(page, 'store-payment', page.getByRole('button', { name: '支払う', exact: true }))
   })
 
   await test.step('管理画面：商品、在庫、税率、注文', async () => {

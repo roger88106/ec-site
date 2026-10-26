@@ -40,7 +40,7 @@ export function memberEmail(label: string): string {
 export async function submitIdpLogin(page: Page, account: Account): Promise<void> {
   await page.locator('#username').fill(account.email)
   await page.locator('#password').fill(account.password)
-  await page.getByRole('button', { name: 'サインイン' }).click()
+  await page.getByRole('button', { name: 'サインイン', exact: true }).click()
 }
 
 /**
@@ -52,7 +52,7 @@ export async function submitIdpLogin(page: Page, account: Account): Promise<void
 export async function loginAdmin(page: Page, account: Account, path = '/', adminUrl = ADMIN_URL): Promise<void> {
   await page.goto(`${adminUrl}${path}`)
   await submitIdpLogin(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
 }
 
 /**
@@ -64,7 +64,7 @@ export async function loginAdmin(page: Page, account: Account, path = '/', admin
 export async function loginStore(page: Page, account: Account, returnTo = '/', storeUrl = STORE_URL): Promise<void> {
   await page.goto(`${storeUrl}/login?returnTo=${encodeURIComponent(returnTo)}`)
   await submitIdpLogin(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
 }
 
 /** 会員登録で入れる、会員の任意の属性（IdP の画面の表示のとおり） */
@@ -91,7 +91,7 @@ export async function registerMember(
 ): Promise<void> {
   await submitSignup(page, account, name, profile)
   await setPasswordFromMail(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
 }
 
 /**
@@ -118,7 +118,7 @@ export async function submitSignup(
   if (profile.gender) {
     await page.locator('#gender').selectOption({ label: profile.gender })
   }
-  await page.getByRole('button', { name: '登録' }).click()
+  await page.getByRole('button', { name: '登録', exact: true }).click()
   await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
 }
 
@@ -131,7 +131,7 @@ export async function setPasswordFromMail(page: Page, account: Account): Promise
   await page.goto(await latestIdpLink(account.email))
   await page.locator('#password-new').fill(account.password)
   await page.locator('#password-confirm').fill(account.password)
-  await page.getByRole('button', { name: '送信' }).click()
+  await page.getByRole('button', { name: '送信', exact: true }).click()
 }
 
 /**

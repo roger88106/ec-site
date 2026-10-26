@@ -25,10 +25,10 @@ test('AC-82、83 在庫 1 の商品を 2 つのブラウザーで注文手続き
     await page.goto(`${STORE_URL}/cart`)
   }
 
-  await first.getByRole('button', { name: '注文手続きへ進む' }).click()
+  await first.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
   await expect(first.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
 
-  await second.getByRole('button', { name: '注文手続きへ進む' }).click()
+  await second.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
   await expect(second.getByText('在庫が足りない商品があります。カートを確かめてください。')).toBeVisible()
   await expect(second.getByText('在庫切れです')).toBeVisible()
   await expect(second).toHaveURL(`${STORE_URL}/cart`)

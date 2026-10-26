@@ -16,8 +16,8 @@ export async function shipOnAdmin(page: Page, trackingNumber: string): Promise<v
   await page.getByRole('combobox', { name: '配送業者' }).click()
   await page.getByRole('option', { name: 'ヤマト運輸' }).click()
   await page.getByLabel('送り状番号').fill(trackingNumber)
-  await page.getByRole('button', { name: '出荷を登録する' }).click()
-  await page.getByRole('alertdialog').getByRole('button', { name: '出荷する' }).click()
+  await page.getByRole('button', { name: '出荷を登録する', exact: true }).click()
+  await page.getByRole('alertdialog').getByRole('button', { name: '出荷する', exact: true }).click()
   await expect(page.getByText('出荷を登録しました')).toBeVisible()
 }
 
@@ -38,7 +38,7 @@ export async function notifyCarrier(
 ): Promise<void> {
   await page.goto(`${backendUrl}/mock-carrier`)
   const row = page.getByRole('row').filter({ hasText: orderId })
-  await row.getByRole('button', { name: status }).click()
+  await row.getByRole('button', { name: status, exact: true }).click()
   await expect(row.getByRole('cell', { name: status, exact: true })).toBeVisible()
 }
 

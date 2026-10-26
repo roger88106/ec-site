@@ -50,7 +50,7 @@ test('AC-143、145、146、147、149 注文すると mock の支払画面に移�
 
   await test.step('注文手続き：カードの入力はなく、注文すると mock の支払画面に移る（AC-143、145）', async () => {
     await page.goto(`${STORE_URL}/cart`)
-    await page.getByRole('button', { name: '注文手続きへ進む' }).click()
+    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
     await expect(page.getByLabel(/カード/)).toHaveCount(0)
     await fillShipping(page, '100-0001')
@@ -74,14 +74,14 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
   await orderCart(page)
 
   await test.step('カードを拒否させると、支払画面に拒否が出る。やめて注文の画面に戻ると、注文は支払待ちのまま', async () => {
-    await page.getByRole('button', { name: 'カードを拒否させる' }).click()
+    await page.getByRole('button', { name: 'カードを拒否させる', exact: true }).click()
     await expect(page.getByText('カードが拒否されました。別のカードでやり直してください。')).toBeVisible()
     await page.goto(await leaveMockPage(page, 'やめる'))
     await expect(detailValue(page, '状態')).toHaveText('支払待ち')
   })
 
   await test.step('注文の画面から支払画面を開き直して支払うと、受付になる', async () => {
-    await page.getByRole('button', { name: '支払う' }).click()
+    await page.getByRole('button', { name: '支払う', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
     await payOnMockPage(page)
   })
@@ -98,7 +98,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
     orderUrl = await leaveMockPage(page, 'やめる')
     await page.goto(orderUrl)
     await expect(page.getByText('支払待ち', { exact: true })).toBeVisible()
-    await expect(page.getByRole('button', { name: '支払う' })).toBeVisible()
+    await expect(page.getByRole('button', { name: '支払う', exact: true })).toBeVisible()
   })
 
   await test.step('期限を過ぎると、支払期限切れのキャンセルになる', async () => {
@@ -109,7 +109,7 @@ test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限�
       PAYMENT_EXPIRY_TIMEOUT,
     )
     await expect(detailValue(page, '状態')).toHaveText('キャンセル')
-    await expect(page.getByRole('button', { name: '支払う' })).toHaveCount(0)
+    await expect(page.getByRole('button', { name: '支払う', exact: true })).toHaveCount(0)
   })
 })
 
@@ -121,10 +121,10 @@ test('AC-162 管理画面で受付の注文をキャンセルすると、支払�
   await test.step('管理画面：受付の注文は与信済みで、運営者がキャンセルする', async () => {
     await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
     await expect(paymentStatus(page)).toHaveText('与信済み')
-    await page.getByRole('button', { name: 'キャンセルする' }).click()
+    await page.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByLabel('理由（必須）').fill('E2E の与信の取消')
-    await dialog.getByRole('button', { name: 'キャンセルする' }).click()
+    await dialog.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     await expect(page.getByText('キャンセルしました')).toBeVisible()
   })
 

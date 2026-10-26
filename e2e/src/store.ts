@@ -16,11 +16,15 @@ export function productCard(page: Page, name: string): Locator {
  */
 export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void> {
   await page.goto(`${storeUrl}/cart`)
-  const remove = page.getByRole('button', { name: '削除' })
-  while ((await remove.count()) > 0) {
-    const before = await remove.count()
-    await remove.first().click()
-    await expect(remove).toHaveCount(before - 1)
+  const items = page.getByRole('listitem').filter({ has: page.getByRole('button', { name: '削除', exact: true }) })
+  // 品目は商品の詳細へのリンクで見分ける（同じ名前の商品が前の実行から残っていても、リンク先は別）
+  const links = new Set(
+    await items.getByRole('link').evaluateAll((anchors) => anchors.map((a) => a.getAttribute('href'))),
+  )
+  for (const href of links) {
+    const item = items.filter({ has: page.locator(`a[href="${href}"]`) })
+    await item.getByRole('button', { name: '削除', exact: true }).click()
+    await expect(item).toHaveCount(0)
   }
 }
 
@@ -53,7 +57,7 @@ export async function addToCart(
   if (quantity !== undefined) {
     await page.getByLabel('数量').selectOption(quantity)
   }
-  await page.getByRole('button', { name: 'カートに入れる' }).click()
+  await page.getByRole('button', { name: 'カートに入れる', exact: true }).click()
   await expect(page.getByText('カートに入れました。')).toBeVisible()
 }
 
@@ -133,7 +137,7 @@ export async function fillShipping(page: Page, postalCode: string, name = 'E2E �
  */
 export async function orderCart(page: Page, storeUrl = STORE_URL, name?: string) {
   await page.goto(`${storeUrl}/cart`)
-  await page.getByRole('button', { name: '注文手続きへ進む' }).click()
+  await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
   await fillShipping(page, '100-0001', name)
   await page.getByRole('button', { name: /^注文する/ }).click()
   await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
@@ -147,7 +151,7 @@ export async function orderCart(page: Page, storeUrl = STORE_URL, name?: string)
  * @returns 注文の画面の URL（クエリなし）
  */
 export async function leaveMockPage(page: Page, button: '支払う' | 'やめる'): Promise<string> {
-  await page.getByRole('button', { name: button }).click()
+  await page.getByRole('button', { name: button, exact: true }).click()
   await expect(page).toHaveURL(/\/orders\/[^/?]+\?payment=returned$/)
   return page.url().split('?')[0]
 }

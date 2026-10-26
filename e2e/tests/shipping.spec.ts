@@ -97,18 +97,18 @@ test('AC-189、190、191、192 返送の注文を、管理画面で絞り込ん�
   await test.step('管理画面：返送の注文で絞り込むと、その注文が出る（AC-189）', async () => {
     await page.goto(`${ADMIN_URL}/orders?orderNumber=${orderNumber}`)
     await page.getByRole('checkbox', { name: '返送' }).click()
-    await page.getByRole('button', { name: '絞り込む' }).click()
+    await page.getByRole('button', { name: '絞り込む', exact: true }).click()
     await expect(page).toHaveURL(/returned=true/)
     await expect(page.getByRole('link', { name: orderNumber })).toBeVisible()
   })
 
   await test.step('管理画面：理由を入れ、在庫に戻してキャンセルすると、返金済みになる（AC-190、191、192）', async () => {
     await page.getByRole('link', { name: orderNumber }).click()
-    await page.getByRole('button', { name: 'キャンセルする' }).click()
+    await page.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     const dialog = page.getByRole('dialog')
     await dialog.getByLabel('理由（必須）').fill('受取拒否で返送された')
     await dialog.getByRole('radio', { name: '在庫に戻す' }).check()
-    await dialog.getByRole('button', { name: 'キャンセルする' }).click()
+    await dialog.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     await expect(page.getByText('キャンセルしました')).toBeVisible()
     // 返金はキャンセルのコミットの後に、裏で行う
     await reopenUntil(page, undefined, () => expect(page.getByText('返金済み')).toBeVisible({ timeout: CHECK_TIMEOUT }))

@@ -1,6 +1,7 @@
 import path from 'node:path'
 import { defineConfig, devices } from '@playwright/test'
 import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, IDP_URL, STORE_URL } from './src/urls'
+import { BACKEND_START_TIMEOUT, FRONTEND_START_TIMEOUT, TEST_TIMEOUT } from './src/waits'
 
 /** CI で動いているか（test.only を禁止し、HTML のレポートを残す） */
 const CI = Boolean(process.env.CI)
@@ -23,8 +24,7 @@ export default defineConfig({
   workers: 1,
   forbidOnly: CI,
   retries: 0,
-  // 店舗画面のキャッシュの反映を待つテストがあるので、既定（30 秒）より長くする
-  timeout: 60_000,
+  timeout: TEST_TIMEOUT,
   reporter: CI ? [['list'], ['html', { open: 'never' }]] : [['list']],
   use: {
     ...devices['Desktop Chrome'],
@@ -41,7 +41,7 @@ export default defineConfig({
       command: `"${GRADLEW}" bootRun --args=--spring.profiles.active=local,e2e`,
       cwd: BACKEND_DIR,
       url: `${BACKEND_MANAGEMENT_URL}/actuator/health/readiness`,
-      timeout: 300_000,
+      timeout: BACKEND_START_TIMEOUT,
       reuseExistingServer: false,
     },
     {
@@ -56,7 +56,7 @@ export default defineConfig({
         VITE_OIDC_CLIENT_ID: 'ec-admin-web',
         ADMIN_API_PROXY_TARGET: BACKEND_URL,
       },
-      timeout: 180_000,
+      timeout: FRONTEND_START_TIMEOUT,
       reuseExistingServer: false,
     },
     {
@@ -75,7 +75,7 @@ export default defineConfig({
         AUTH_SECRET: 'ec-store-local-auth-secret-only-for-local-and-ci',
         AUTH_URL: STORE_URL,
       },
-      timeout: 180_000,
+      timeout: FRONTEND_START_TIMEOUT,
       reuseExistingServer: false,
     },
   ],

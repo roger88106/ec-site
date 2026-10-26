@@ -5,6 +5,18 @@ import { expect, type Page, type Response } from '@playwright/test'
  * 長く待つ必要がある所は、名前を付けた値を追加し、理由を書く。
  */
 
+/** 1 つのテストの時間の上限。Playwright の既定（30 秒）より長い。店舗画面のキャッシュの反映や、支払の通知を開き直しながら待つテストがあるため */
+export const TEST_TIMEOUT = 60_000
+
+/** バックエンドの起動を待つ時間の上限。Playwright の既定（60 秒）より長い。Gradle のコンパイルを含めて、初回は 1〜2 分かかるため */
+export const BACKEND_START_TIMEOUT = 300_000
+
+/** 画面のサーバー（管理画面、店舗画面）の起動を待つ時間の上限。Playwright の既定（60 秒）より長い。起動の前にビルドをするため */
+export const FRONTEND_START_TIMEOUT = 180_000
+
+/** 機能紹介の撮影の 1 つのテストの時間の上限。Playwright の既定（30 秒）より長い。注文と支払、出荷を含め、14 枚を 1 つのテストで撮るため */
+export const SHOWCASE_TEST_TIMEOUT = 180_000
+
 /** 裏の処理（支払の通知、イベント、店舗画面のキャッシュの期限）の結果が出るまでに待つ時間の上限 */
 export const ASYNC_TIMEOUT = 20_000
 

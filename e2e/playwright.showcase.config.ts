@@ -1,4 +1,5 @@
 import { defineConfig, devices } from '@playwright/test'
+import { SHOWCASE_TEST_TIMEOUT } from './src/waits'
 
 /**
  * 機能紹介のページ（showcase/）のスクリーンショットの撮影（spec 008 の plan 第 2 節）。<br />
@@ -11,7 +12,7 @@ export default defineConfig({
   fullyParallel: false,
   workers: 1,
   retries: 0,
-  timeout: 180_000,
+  timeout: SHOWCASE_TEST_TIMEOUT,
   reporter: [['list']],
   use: {
     ...devices['Desktop Chrome'],

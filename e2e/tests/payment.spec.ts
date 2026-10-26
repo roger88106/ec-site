@@ -12,7 +12,7 @@ import {
   payOnMockPage,
 } from '../src/store'
 import { BACKEND_URL, STORE_URL } from '../src/urls'
-import { ASYNC_TIMEOUT, CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits'
+import { CHECK_TIMEOUT, PAYMENT_EXPIRY_TIMEOUT, reopenUntil } from '../src/waits'
 
 /**
  * 支払の E2E。E2E のバックエンドは mock の決済サービスで動き、支払の期限は 12 秒（application-e2e.yml）。
@@ -88,8 +88,8 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
 })
 
 test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限切れでキャンセルになる', async ({ page }) => {
-  // 支払の期限と、期限切れを見る間隔を待つ（注文までの操作の分を追加する）
-  test.setTimeout(PAYMENT_EXPIRY_TIMEOUT + ASYNC_TIMEOUT)
+  // 設定の時間の上限に、支払の期限と、期限切れを見る間隔を待つ分を足す
+  test.setTimeout(test.info().timeout + PAYMENT_EXPIRY_TIMEOUT)
   await memberCartWith(page, 'EXPIRE')
   await orderCart(page)
   let orderUrl = ''

@@ -5,6 +5,14 @@ import { fileURLToPath } from 'node:url'
 import {
   duplicatedFiles,
   featureOf,
+  fireEventKey,
+  findFireEvents,
+  findIdentifierDescribes,
+  findIndexedMultiples,
+  findMarkupTextChecks,
+  findPropertyComparisons,
+  findTypeCasts,
+  findWeakExistenceChecks,
   findCrossFeatureImports,
   findCssClassChecks,
   findInternalSelectors,
@@ -290,5 +298,135 @@ describe('共有のパッケージと同じ名前の定義', () => {
       [3, 'load'],
       [4, 'Button'],
     ])
+  })
+})
+
+describe('テストの書き方の検査', () => {
+  const lines = (hits) => hits.map((hit) => hit.line)
+
+  test('理由のコメントのない型を回避する変換を見つける（同じ行か直前の行のコメントは理由とみなす）', () => {
+    const text = [
+      'const a = value as never',
+      'const b = value as unknown as Foo // ライブラリの型が合わない',
+      '// ライブラリの型が合わない',
+      'const c = value as unknown as Foo',
+      'const d = value as never /* 理由 */',
+      'const e = value as unknown as Foo',
+      "const f = 'as never'",
+      '// value as never',
+      'const g = value as Foo',
+    ].join('\n')
+    assert.deepEqual(lines(findTypeCasts(text)), [1, 6])
+  })
+
+  test('toBeTruthy と toBeDefined の呼び出しを見つける（コメントと文字列の中は数えない）', () => {
+    const text = [
+      'expect(el).toBeTruthy()',
+      'expect.poll(() => x)',
+      '  .toBeDefined()',
+      "test('toBeTruthy() で確かめない', () => {})",
+      '// expect(el).toBeDefined()',
+      'expect(el).toBeInTheDocument()',
+    ].join('\n')
+    assert.deepEqual(lines(findWeakExistenceChecks(text)), [1, 3])
+  })
+
+  test('getAllBy・findAllBy・queryAllBy の結果を、並びのインデックスで選ぶ所を見つける', () => {
+    const text = [
+      "screen.getAllByRole('link')[0]",
+      "(await screen.findAllByText('a')).at(1)",
+      "within(x).queryAllByRole('row')[2]",
+      "screen.getAllByRole('link').at(-1)",
+      "expect(screen.getAllByRole('link')).toHaveLength(2)",
+      "screen.getAllByRole('row').slice(1)",
+      "const items = screen.getAllByRole('listitem')",
+      'expect(items[0]).toHaveTextContent(/a/)',
+      "const [first] = screen.getAllByRole('link')",
+      "const rows = screen.getAllByRole('row').map((row) => row)",
+      'rows[0]',
+      "// screen.getAllByRole('link')[0]",
+    ].join('\n')
+    assert.deepEqual(lines(findIndexedMultiples(text)), [1, 2, 3, 4, 8, 9])
+  })
+
+  test('描画した HTML の文字を、要素や属性の並びで確かめる所を見つける（空の描画の確認は除く）', () => {
+    const text = [
+      "expect(html).toContain('<a href=\"/x\">')",
+      'expect(html).toMatch(/<ul[^>]*>/)',
+      "expect(html).toContain('href=\"/cart\"')",
+      "expect(html).toMatch(/aria-label=\"x\"/)",
+      "expect(renderMarkup(<Foo />)).toBe('')",
+      "expect(text).toContain('カートに入れる')",
+      "expect(header).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/)",
+      "expect(query).toContain('a < b')",
+      "expect(html).toBe('<p>x</p>')",
+      "// expect(html).toContain('<a>')",
+    ].join('\n')
+    assert.deepEqual(lines(findMarkupTextChecks(text)), [1, 2, 3, 4, 9])
+  })
+
+  test('識別子だけの describe の名前を見つける（修飾と each も読む）', () => {
+    const text = [
+      "describe('ProductCard', () => {})",
+      "describe('商品カード', () => {})",
+      "describe('formatYen()', () => {})",
+      "describe('<OrderForm />', () => {})",
+      "describe.each(cases)('%s', () => {})",
+      "describe.each([['a', 1]])('lib/format', () => {})",
+      'describe.skip(`useCart`, () => {})',
+      "describe('日本時間の整形', () => {})",
+      "describe('shows the total', () => {})",
+      "// describe('Commented', () => {})",
+      "test('describe(\"InString\")', () => {})",
+    ].join('\n')
+    assert.deepEqual(lines(findIdentifierDescribes(text)), [1, 3, 4, 6, 7])
+  })
+
+  test('.disabled・.checked・.value・getAttribute を toBe・toEqual で比べる所を見つける', () => {
+    const text = [
+      'expect(button.disabled).toBe(true)',
+      'expect((input as HTMLInputElement).value).toEqual(\'a\')',
+      "expect(link.getAttribute('href')).toBe('/x')",
+      'expect(box.checked).not.toBe(true)',
+      'expect(button).toBeDisabled()',
+      'expect(input).toHaveValue(\'a\')',
+      'expect(parts.map((part) => part.value)).toEqual([1])',
+      "expect(link.getAttribute('href')).toBeNull()",
+      'expect(button.textContent).toBe(\'a\')',
+      'expect(\n  input.value,\n).toBe(\'a\')',
+      '// expect(a.disabled).toBe(true)',
+    ].join('\n')
+    assert.deepEqual(lines(findPropertyComparisons(text)), [1, 2, 3, 4, 10])
+  })
+
+  test('fireEvent の使用を見つける（import とコメントと文字列の中は除く）。関数の名前も返す', () => {
+    const text = [
+      "import { fireEvent } from '@testing-library/react'",
+      'import {',
+      '  fireEvent,',
+      "} from '@testing-library/react'",
+      '',
+      '// fireEvent は使わない',
+      'export function typeDateTime(input: HTMLElement, value: string): void {',
+      '  fireEvent.change(input, { target: { value } })',
+      '}',
+      '',
+      'export const returnToTab = (): void => {',
+      "  fireEvent(window, new Event('visibilitychange'))",
+      '}',
+      "test('fireEvent で起こさない', () => {})",
+    ].join('\n')
+    assert.deepEqual(
+      findFireEvents(text).map((hit) => [hit.line, hit.name]),
+      [
+        [8, 'typeDateTime'],
+        [12, 'returnToTab'],
+      ],
+    )
+    assert.deepEqual(findFireEvents('fireEvent.click(x)').map((hit) => hit.name), ['(top)'])
+  })
+
+  test('fireEvent の除外のキーは、画面と src からのパスと関数の名前', () => {
+    assert.equal(fireEventKey('frontend/admin/src/test/inputs.ts', 'typeDateTime'), 'admin:test/inputs.ts:typeDateTime')
   })
 })

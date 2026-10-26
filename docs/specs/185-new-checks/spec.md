@@ -270,9 +270,10 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
   - 依存：なし
   - 範囲：`docs/rules/test-writing.md`、本 spec の第 6 節の 3、4（数え直した結果）
   - 結果：第 6 節の 3、4 を、27f901d2 での数え直し（2026-10-26）に書き換えた。違反は E2E の `toBeDefined` 2 か所だけで、他は 0 件（`fireEvent` は理由付きの例外 1 ファイル 2 か所）。規則を、テストの書き方に書いた（探し方と確認の仕方、`describe` の名前は既存の節に追記し、プロパティの比較と `fireEvent` は新しい節にした）。
-- [ ] **T185-04-02** [テスト] フロントの規則の検査に、DC-185-23〜29 の検査を加え、今の違反を修正する（DC-185-23〜29、32）。
+- [x] **T185-04-02** [テスト] フロントの規則の検査に、DC-185-23〜29 の検査を加え、今の違反を修正する（DC-185-23〜29、32）。
   - 依存：T185-04-01
   - 範囲：`scripts/ci/frontend-rules.mjs`、`scripts/ci/frontend-rules-exclusions.json`、テスト、違反のあるテストのファイル（`e2e/src/` など。DN-185-4 の照合の結果に従う）
+  - 結果：`frontend-rules.mjs` に 7 つの検査を加えた。除外は `fireEvent` だけで、キーは `<画面>:<src からのパス>:<関数名>`（`admin:test/inputs.ts` の 2 か所）。今の違反は、E2E の `toBeDefined` 2 か所と、変数に入れてから選ぶ並びのインデックス 1 か所（`OrderForm.test.tsx` の `fields[0]`〜`[3]`）で、直して 0 件になった。
 - [ ] **T185-04-03** CI の検査の文書と、規則の文書の「CI で確認する」の記述を、本 spec で加えた検査に合わせる（DC-185-31）。
   - 依存：T185-04-02
   - 範囲：`docs/guides/ci.md`、`docs/rules/test-writing.md`、`docs/rules/backend-coding.md`
@@ -295,4 +296,6 @@ spec 183 の確認で利用者が決めた（2026-10-24）とおり、#169 の�
 
 ## 8. 後回しにする作業と起票の案
 
-なし。
+| 項目 | 内容 |
+|------|------|
+| E2E の Playwright の `.first()`・`.nth()` を検査にするか | 今は `e2e/showcase/capture.spec.ts` の 3 か所と `e2e/src/store.ts` の 1 か所。[テストの書き方](../../rules/test-writing.md) 第 4.1 節の「並びの 1 つ目は使わない」に当たりうるが、DC-185-25 の範囲（Testing Library の `getAllBy…` など）の外なので、本 spec では検査にしない |

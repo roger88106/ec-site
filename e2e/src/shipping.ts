@@ -64,6 +64,6 @@ export async function shipmentMail(orderNumber: string): Promise<{ subject: stri
       },
       { message: `注文 ${orderNumber} の出荷通知メールが Mailpit に届かない`, timeout: MAIL_TIMEOUT },
     )
-    .toBeDefined()
+    .toMatchObject({ subject: expect.any(String) })
   return found as { subject: string; to: string[]; text: string }
 }

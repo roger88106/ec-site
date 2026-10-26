@@ -95,10 +95,10 @@ describe('お届け先の入力と注文', () => {
     // 欄は、画面に出る順（文書の順）に返る
     const fields = view.getAllByLabelText(/^(郵便番号|都道府県|市区町村|住所)$/)
     expect(fields).toHaveLength(4)
-    expect(fields[0]).toHaveAttribute('name', 'postalCode')
-    expect(fields[1]).toHaveAttribute('name', 'prefectureCode')
-    expect(fields[2]).toHaveAttribute('name', 'municipalityCode')
-    expect(fields[3]).toHaveAttribute('name', 'address')
+    const names = ['postalCode', 'prefectureCode', 'municipalityCode', 'address']
+    fields.forEach((field, order) => {
+      expect(field).toHaveAttribute('name', names[order])
+    })
     const prefecture = within(view.getByRole('combobox', { name: '都道府県' }))
     expect(prefecture.getByRole('option', { name: '東京都' })).toHaveAttribute('value', '13')
     expect(prefecture.getByRole('option', { name: '神奈川県' })).toHaveAttribute('value', '14')

@@ -163,7 +163,7 @@ export async function latestIdpLink(to: string): Promise<string> {
       },
       { message: `${to} へのメールが Mailpit に届かない`, timeout: MAIL_TIMEOUT },
     )
-    .toBeDefined()
+    .toEqual(expect.any(String))
   return link as string
 }
 

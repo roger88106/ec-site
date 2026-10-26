@@ -6,11 +6,16 @@
 // - 共通の置き場所（actions/、lib/、api/）は features/ を import しない（第 1.2 節）
 // - クエリ付きの URL を文字列で組み立てない（第 6 節）。line-through を直接書かない（第 10.1 節）
 // - テストと E2E で CSS のクラスを確認しない。画面のテストで data-slot と querySelector で探さない（テストの書き方 第 4.1 節）
+// - フロントのテストと補助：理由のコメントのない型の回避（as never、as unknown as）、fireEvent の直接の使用を書かない（第 4.6、4.8 節）
+// - フロントのテスト：describe の名前を識別子だけにしない、要素のプロパティ・属性を toBe・toEqual で比べない、描画した HTML の文字を要素や属性の並びで確かめない（第 2.2、4.7、4.1 節）
+// - フロントのテストと E2E：toBeTruthy・toBeDefined で確かめない、getAllBy…の結果を並びのインデックスで選ばない（第 4.1 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 // 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く。共有と同じ名前の定義でよいもの（各画面の translate など）は、キー <画面>:<名前> と理由を書く
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
-import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
+import { closingParen } from './lib/closing-paren.mjs'
+import { templateEnd } from './lib/scan-code.mjs'
+import { checkExclusions,exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isScreenSource } from './lib/screen-sources.mjs'
 import { stripComments } from './lib/strip-comments.mjs'
@@ -315,6 +320,246 @@ export function findDefinitions(text, names) {
     .filter((hit) => hit.name !== undefined && names.has(hit.name))
 }
 
+/**
+ * 行の番号と表示する文字（元のソースの行）にする。
+ *
+ * @param {string} text 元のソース
+ * @param {number[]} lineNumbers 行の番号（1 始まり）
+ * @returns {{ line: number, text: string }[]} 行の順、重複なし
+ */
+function toHits(text, lineNumbers) {
+  const original = text.split('\n')
+  return [...new Set(lineNumbers)].sort((a, b) => a - b).map((line) => ({ line, text: original[line - 1].trim() }))
+}
+
+/** 型を回避する変換 */
+const TYPE_CAST = /\bas\s+never\b|\bas\s+unknown\s+as\b/
+
+/**
+ * 理由のコメントのない、型を回避する変換（as never、as unknown as）を探す（テストの書き方 第 4.6 節）。
+ * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findTypeCasts(text) {
+  const original = text.split('\n')
+  const withStrings = stripComments(text).split('\n')
+  const code = stripComments(text, { blankStrings: true }).split('\n')
+  const hasComment = (index) => index >= 0 && original[index] !== withStrings[index]
+  const commentOnly = (index) => hasComment(index) && withStrings[index].trim() === ''
+  return toHits(
+    text,
+    code.flatMap((line, index) => (TYPE_CAST.test(line) && !hasComment(index) && !commentOnly(index - 1) ? [index + 1] : [])),
+  )
+}
+
+/**
+ * toBeTruthy・toBeDefined の呼び出しを探す（テストの書き方 第 4.1 節。探した要素の確認は toBeInTheDocument か値の形で行う）。
+ * 探した要素かどうかは機械で区別しないので、全てを対象にする。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findWeakExistenceChecks(text) {
+  return findCodeLines(text, (line) => /\.(?:toBeTruthy|toBeDefined)\(/.test(line), { blankStrings: true })
+}
+
+/** getAllBy…・findAllBy…・queryAllBy… の呼び出しの始まり */
+const MULTIPLE_QUERY = /\b(?:getAll|findAll|queryAll)By\w+\(/g
+
+/** 呼び出しの直後の、並びのインデックス（[数字]、.at(数字)。findAllBy… の await を囲む括弧を許す） */
+const INDEX_ACCESS = /^\s*\)?\s*(?:\[\s*-?\d+\s*\]|\.at\(\s*-?\d+\s*\))/
+
+/** 変数に入れる文（const items = await screen.getAllByRole(…) など）の、呼び出しの前の部分。1 つ目が名前、配列の分割代入なら 2 つ目が空でない */
+const ASSIGNMENT_BEFORE = /\b(?:const|let)\s+(?:([\w$]+)|(\[))[^=]*=\s*(?:\(?\s*await\s+)?\(?\s*[\w$.]*$/
+
+/**
+ * getAllBy…・findAllBy…・queryAllBy… の結果を、並びのインデックスで選ぶ所を探す（テストの書き方 第 4.1 節の「並びの 1 つ目は使わない」）。
+ * 呼び出しの直後の [数字]・.at(数字) と、変数に入れて（配列の分割代入を含む）から [数字]・.at(数字) で選ぶ所を見つける。
+ * 見つけない形：変数に入れる前に map・filter などをつなぐもの、関数の引数や戻り値で渡して選ぶもの。
+ * Playwright の .first()・.nth() は対象にしない
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findIndexedMultiples(text) {
+  const code = stripComments(text, { blankStrings: true })
+  const lineOf = createLineLocator(code)
+  const lineNumbers = []
+  const variables = new Set()
+  for (const match of code.matchAll(MULTIPLE_QUERY)) {
+    const close = closingParen(code, match.index + match[0].length - 1)
+    if (close >= code.length) continue
+    const after = code.slice(close + 1)
+    if (INDEX_ACCESS.test(after)) {
+      lineNumbers.push(lineOf(match.index))
+      continue
+    }
+    const lineStart = code.lastIndexOf('\n', match.index) + 1
+    const assignment = ASSIGNMENT_BEFORE.exec(code.slice(lineStart, match.index))
+    if (!assignment || !STATEMENT_END.test(after)) continue
+    if (assignment[2]) lineNumbers.push(lineOf(match.index))
+    else variables.add(assignment[1])
+  }
+  for (const name of variables) {
+    const use = new RegExp(`(?<![.\\w$])${name.replace(/\$/g, '\\$')}(?:\\[\\s*-?\\d+\\s*\\]|\\.at\\(\\s*-?\\d+\\s*\\))`, 'g')
+    for (const match of code.matchAll(use)) lineNumbers.push(lineOf(match.index))
+  }
+  return toHits(text, lineNumbers)
+}
+
+/** 呼び出しの後で文が終わる（同じ行に続きがない）こと */
+const STATEMENT_END = /^[ \t]*;?[ \t]*(?:\n|$)/
+
+/** 値の確認の呼び出し（. の後の名前と括弧）。1 つ目が名前 */
+const MATCHER_CALL = /\.(toMatch|toContain|toBe|toEqual|toStrictEqual)\(/g
+
+/** 引数にある、HTML の開始タグ・終了タグ（< の後に英字、正規表現のリテラルの \/ も読む） */
+const HTML_TAG = /<\\?\/?[A-Za-z]/
+
+/** 引数にある、属性の書き方（名前="…"、名前='…'。正規表現のリテラルの \" も読む） */
+const HTML_ATTRIBUTE = /[A-Za-z][\w:-]*=\\?["']/
+
+/**
+ * 描画した HTML の文字を、要素や属性の並びに依存して確かめる所を探す（テストの書き方 第 4.1 節。描画した結果を DOM に読み込み、役割と名前で探す）。
+ * 対象の形は、toMatch・toContain・toBe・toEqual・toStrictEqual の引数に HTML のタグ（`<a`、`</p`）があるもの、
+ * toMatch・toContain の引数に属性（`href="`、`aria-label="`）があるもの。空の描画の確認（toBe('')）は、引数にタグも属性もないので対象にならない
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findMarkupTextChecks(text) {
+  const code = stripComments(text, { keepRegex: true })
+  const blanked = stripComments(text, { blankStrings: true })
+  const lineOf = createLineLocator(code)
+  const lineNumbers = []
+  for (const match of blanked.matchAll(MATCHER_CALL)) {
+    const open = match.index + match[0].length - 1
+    const close = closingParen(code, open)
+    if (close >= code.length) continue
+    const argument = code.slice(open + 1, close)
+    const attributeAllowed = match[1] === 'toMatch' || match[1] === 'toContain'
+    if (HTML_TAG.test(argument) || (attributeAllowed && HTML_ATTRIBUTE.test(argument))) lineNumbers.push(lineOf(match.index))
+  }
+  return toHits(text, lineNumbers)
+}
+
+/** describe の呼び出しの始まり（前が . や語の文字のものは読まない） */
+const DESCRIBE_CALL = /(?<![.\w$])describe(?![\w$])/g
+
+/** 識別子だけの名前（英数字、_、$、.、<>、/、()、-、:、#、@ だけ。空白と日本語を含まない。コンポーネントの書き方 `<Foo />` は空白を許す） */
+const IDENTIFIER_NAME = /^(?:[A-Za-z0-9_$.<>/()\-:#@]+|<[A-Za-z0-9_$.]+\s*\/?>)$/
+
+/**
+ * 識別子だけの describe の名前を探す（テストの書き方 第 2.2 節。関数名・コンポーネント名でなく、振る舞いを書く）。
+ * describe.skip・describe.each(表)(名前) などの修飾を読む。名前が文字列でもテンプレートでもないもの（変数や関数を渡す書き方）は読まない
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findIdentifierDescribes(text) {
+  const code = stripComments(text, { keepRegex: true })
+  const blanked = stripComments(text, { blankStrings: true })
+  const lineOf = createLineLocator(code)
+  const lineNumbers = []
+  for (const match of blanked.matchAll(DESCRIBE_CALL)) {
+    let pos = match.index + match[0].length
+    for (let modifier = /^\.(\w+)/.exec(code.slice(pos, pos + 20)); modifier; modifier = /^\.(\w+)/.exec(code.slice(pos, pos + 20))) {
+      pos += modifier[0].length
+      if (modifier[1] !== 'each' && modifier[1] !== 'for') continue
+      if (code[pos] === '(') pos = closingParen(code, pos) + 1
+      else if (code[pos] === '`') pos = templateEnd(code, pos)
+    }
+    if (code[pos] !== '(') continue
+    const start = pos + 1 + /^\s*/.exec(code.slice(pos + 1))[0].length
+    let name
+    if (code[start] === '`') {
+      const end = templateEnd(code, start)
+      if (code[end - 1] === '`' && end - 1 > start) name = code.slice(start + 1, end - 1)
+    } else if (code[start] === "'" || code[start] === '"') {
+      const quoted = new RegExp(`^${code[start]}((?:[^\\\\\\n${code[start]}]|\\\\.)*)${code[start]}`).exec(code.slice(start))
+      if (quoted) name = quoted[1]
+    }
+    if (name !== undefined && IDENTIFIER_NAME.test(name)) lineNumbers.push(lineOf(match.index))
+  }
+  return toHits(text, lineNumbers)
+}
+
+/** expect( の始まり */
+const EXPECT_CALL = /(?<![.\w$])expect\(/g
+
+/** expect の後の、toBe・toEqual（.not などをはさんでもよい） */
+const BE_OR_EQUAL = /^\s*(?:\.(?:not|resolves|rejects)\s*)*\.(?:toBe|toEqual)\(/
+
+/** expect の引数の最後が、要素のプロパティか属性（.disabled、.checked、.value、.getAttribute(…)） */
+const PROPERTY_ARGUMENT = /(?:\.(?:disabled|checked|value)|\.getAttribute\([^]*\))\s*,?$/
+
+/**
+ * 要素のプロパティ・属性（.disabled、.checked、.value、getAttribute(…)）を toBe・toEqual で比べる所を探す（テストの書き方 第 4.7 節）。
+ * expect の引数の最後がそのプロパティか属性であるものだけを見つける（`parts.map((part) => part.value)` のように、途中に出てくるものは見つけない）。
+ * .textContent は対象にしない
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findPropertyComparisons(text) {
+  const code = stripComments(text, { blankStrings: true })
+  const lineOf = createLineLocator(code)
+  const lineNumbers = []
+  for (const match of code.matchAll(EXPECT_CALL)) {
+    const open = match.index + match[0].length - 1
+    const close = closingParen(code, open)
+    if (close >= code.length) continue
+    if (BE_OR_EQUAL.test(code.slice(close + 1)) && PROPERTY_ARGUMENT.test(code.slice(open + 1, close).trim())) lineNumbers.push(lineOf(match.index))
+  }
+  return toHits(text, lineNumbers)
+}
+
+/** import 文（import { a } from、import a, * as b from、import type { a } from）。取り込む名前の部分まで */
+const IMPORT_STATEMENT = /\bimport\s+(?:type\s+)?(?:[\w$]+\s*,?\s*)?(?:\*\s*as\s+[\w$]+|\{[^}]*\})?\s*from\b/g
+
+/** 行頭から始まる関数・変数の宣言（関数の名前を求める） */
+const TOP_LEVEL_DECLARATION = /^(?:export\s+)?(?:async\s+)?function\s*\*?\s*([\w$]+)|^(?:export\s+)?(?:const|let)\s+([\w$]+)/
+
+/**
+ * fireEvent を使う所を探す（テストの書き方 第 4.8 節。import は除く）。
+ * 名前は、その行より前の、行頭から始まる最も近い関数・変数の宣言の名前（なければ (top)）。除外のキーに使う
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string, name: string }[]} 見つけた行（行の順）
+ */
+export function findFireEvents(text) {
+  const code = stripComments(text, { blankStrings: true }).replace(IMPORT_STATEMENT, (statement) => statement.replace(/[^\r\n]/g, ' '))
+  const codeLines = code.split('\n')
+  const hits = []
+  let name = '(top)'
+  const original = text.split('\n')
+  codeLines.forEach((line, index) => {
+    const declaration = TOP_LEVEL_DECLARATION.exec(line)
+    if (declaration) name = declaration[1] ?? declaration[2]
+    if (/\bfireEvent\b/.test(line)) hits.push({ line: index + 1, text: original[index].trim(), name })
+  })
+  return hits
+}
+
+/**
+ * fireEvent の除外のキーを返す。
+ *
+ * @param {string} file リポジトリのルートからのパス（frontend/<画面>/src/…）
+ * @param {string} name 関数の名前（findFireEvents の name）
+ * @returns {string} <画面>:<src からのパス>:<関数名>
+ */
+export function fireEventKey(file, name) {
+  return `${file.split('/')[1]}:${file.slice(file.indexOf('/src/') + '/src/'.length)}:${name}`
+}
+
+/** フロントのテストのファイル */
+const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
+
+/** フロントのテストの補助のファイル（src/test/ の下） */
+const FRONTEND_TEST_SUPPORT = /^frontend\/(?:store|admin|shared)\/src\/(?:.*\/)?test\/.*\.tsx?$/
+
 /** 共有の名前と同じ名前の定義の除外のキー（<画面>:<名前>）。画面は store か admin */
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
@@ -337,6 +582,7 @@ if (isMain(import.meta.url)) {
     process.exit(1)
   }
   const shadowing = new Set()
+  const fireEventKeys = new Set()
   for (const file of files.filter((file) => SOURCE.test(file) && !TEST.test(file))) {
     const text = readFileSync(file, 'utf8')
     if (isScreenSource(file) && !file.startsWith('frontend/shared/')) {
@@ -383,15 +629,50 @@ if (isMain(import.meta.url)) {
       report(`${file}:${hit.line} コンポーネントの内部の属性（data-slot）か querySelector で探す（役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
     }
   }
+  for (const file of files.filter((file) => FRONTEND_TEST.test(file) || FRONTEND_TEST_SUPPORT.test(file))) {
+    const text = readFileSync(file, 'utf8')
+    for (const hit of findTypeCasts(text)) {
+      report(`${file}:${hit.line} 理由のコメントのない型を回避する変換（型に合う値を補助で作る。避けられないときは理由をコメントに書く。テストの書き方 第 4.6 節）：${hit.text}`)
+    }
+    for (const hit of findFireEvents(text)) {
+      const key = fireEventKey(file, hit.name)
+      fireEventKeys.add(key)
+      if (!(key in exclusions)) {
+        report(`${file}:${hit.line} fireEvent を直接使う（userEvent で操作する。起こせない出来事だけは、除外の一覧にキー ${key} と理由を書く。テストの書き方 第 4.8 節）：${hit.text}`)
+      }
+    }
+  }
+  for (const file of files.filter((file) => FRONTEND_TEST.test(file))) {
+    const text = readFileSync(file, 'utf8')
+    for (const hit of findMarkupTextChecks(text)) {
+      report(`${file}:${hit.line} 描画した HTML の文字を、要素や属性の並びで確かめる（描画した結果を DOM に読み込み、役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
+    }
+    for (const hit of findIdentifierDescribes(text)) {
+      report(`${file}:${hit.line} describe の名前が識別子だけ（振る舞いを書く。テストの書き方 第 2.2 節）：${hit.text}`)
+    }
+    for (const hit of findPropertyComparisons(text)) {
+      report(`${file}:${hit.line} 要素のプロパティ・属性を toBe・toEqual で比べる（toBeDisabled、toHaveValue、toHaveAttribute などを使う。テストの書き方 第 4.7 節）：${hit.text}`)
+    }
+  }
+  for (const file of files.filter((file) => TEST_FILE.test(file))) {
+    const text = readFileSync(file, 'utf8')
+    for (const hit of findWeakExistenceChecks(text)) {
+      report(`${file}:${hit.line} toBeTruthy・toBeDefined で確かめる（toBeInTheDocument か、値の形で確かめる。テストの書き方 第 4.1 節）：${hit.text}`)
+    }
+    for (const hit of findIndexedMultiples(text)) {
+      report(`${file}:${hit.line} 複数の結果を並びのインデックスで選ぶ（役割と名前で 1 つに絞る。テストの書き方 第 4.1 節）：${hit.text}`)
+    }
+  }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))
   // 同じ内容のファイルの一覧は 1 回だけ求め、違反の報告（除外を除く）と除外の要否の判定の両方に使う
   const duplicated = new Set(duplicatedFiles(sourceFiles, (file) => readFileSync(file, 'utf8'), []))
   for (const relative of [...duplicated].filter((relative) => !Object.hasOwn(exclusions, relative))) {
     report(`frontend/{store,admin}/src/${relative} 店舗画面と管理画面に同じ内容のファイルがある（共有パッケージに置く）`)
   }
-  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）と、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）だけ
+  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）、
+  // fireEvent を使うもの（キーは <画面>:<src からのパス>:<関数名>）だけ
   // （片方が消えた、内容が変わった、定義がなくなったものは不要）
-  for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (key) => duplicated.has(key) || shadowing.has(key))) {
+  for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (key) => duplicated.has(key) || shadowing.has(key) || fireEventKeys.has(key))) {
     report(message)
   }
   console.log(`フロントの書き方の違反：${count}`)

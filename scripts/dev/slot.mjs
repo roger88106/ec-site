@@ -2,7 +2,7 @@
 //
 // 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい）
 //   assign                          空いている最小のスロットを割り当て、データベースとバケットを作る。割り当て済みなら番号を示すだけ
-//   release                         データベースとバケットを削除し、割り当てを解く
+//   release                         スロットのポートで待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
 //   reset                           割り当てを変えずに、データベースとバケットを作り直す（バックエンドを止めてから）
 //   show                            スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
 //   env                             スロットの環境変数を `export NAME='value'` の形で出す
@@ -15,8 +15,11 @@
 import { execFileSync, spawn, spawnSync } from 'node:child_process'
 import { existsSync, mkdirSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import path from 'node:path'
+import { stopOnSignals } from './lib/child-stop.mjs'
 import { createLockIo, isProcessRunning } from './lib/lock-io.mjs'
+import { findListeners, stopListeners } from './lib/port-stop.mjs'
 import { acquireLock, busyLockMessage, ownsLock } from './lib/slot-lock.mjs'
+import { checkBackendPorts, releaseSlot } from './lib/slot-ports.mjs'
 import {
   assignSlot,
   checkBackendStopped,
@@ -30,6 +33,7 @@ import {
   parseSlotRecord,
   parseWorktrees,
   slotEnv,
+  slotPorts,
   slotValues,
   SHARED_CONTAINERS,
   SLOT_COUNT,
@@ -46,7 +50,7 @@ const LOCK_WAIT_MS = 90_000
 
 const USAGE = `使い方：node scripts/dev/slot.mjs <コマンド>
   assign                            空いている最小のスロットを割り当て、データベースとバケットを作る
-  release                           データベースとバケットを削除し、割り当てを解く
+  release                           待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
   reset                             割り当てを変えずに、データベースとバケットを作り直す
   show                              スロットのポート・URL・名前と、作業ツリーの一覧を示す
   env                               スロットの環境変数を export の形で出す
@@ -266,16 +270,6 @@ function dropData(root, slot) {
 }
 
 /**
- * 指定の時間だけ待つ。
- *
- * @param {number} ms ミリ秒
- * @returns {Promise<void>}
- */
-function sleep(ms) {
-  return new Promise((resolve) => setTimeout(resolve, ms))
-}
-
-/**
  * 全ての作業ツリーで共有するロックを持って処理を流す。<br />
  * ロックは git の共通のディレクトリの ec-site-slot-assign.lock（作業ツリーのパス、PID、開始の時刻）。
  * 所有者の PID のプロセスがなければ古いロックとして取り除く（lib/slot-lock.mjs）。放すときは自分のロックだけを消す。
@@ -290,7 +284,7 @@ async function withLock(ctx, action) {
   const lock = path.join(ctx.commonDir, 'ec-site-slot-assign.lock')
   const io = createLockIo(lock)
   const owner = { worktree: ctx.root, pid: process.pid, startedAt: new Date().toISOString() }
-  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: LOCK_WAIT_MS, sleep })
+  const result = await acquireLock({ io, owner, isRunning: isProcessRunning, waitMs: LOCK_WAIT_MS })
   if (!result.acquired) {
     throw new Exit(1, `スロットのロックを取れなかった。${busyLockMessage({ lock, owner: result.owner })}`)
   }
@@ -339,7 +333,7 @@ async function assign(ctx) {
 }
 
 /**
- * release：割り当てを解く。
+ * release：スロットのポートで待ち受けるプロセスを停止してから、割り当てを解く。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */
@@ -348,10 +342,21 @@ async function release(ctx) {
   requireShared(ctx)
   const slot = parseSlotRecord(readRecord(ctx.root))
   if (slot === null) return console.log('スロットは割り当てられていない')
-  const problem = checkBackendStopped({ slot, running: await backendRunning(slot), action: '解く' })
-  if (problem !== null) throw new Exit(problem.code, problem.message)
-  dropData(ctx.root, slot)
-  rmSync(recordFile(ctx.root), { force: true })
+  // スロットのポートは他のスロットと重ならないので、待ち受けるものはこのスロットで起動したもの（強制終了した script の残りを含む）
+  const result = await releaseSlot({
+    slot,
+    ports: slotPorts(slot),
+    platform: process.platform,
+    find: (ports) => findListeners(ports),
+    stop: (listeners) => stopListeners(listeners),
+    backendRunning: () => backendRunning(slot),
+    drop: () => {
+      dropData(ctx.root, slot)
+      rmSync(recordFile(ctx.root), { force: true })
+    },
+    log: (line) => console.log(line),
+  })
+  if (result.code !== 0) throw new Exit(result.code, result.message)
   console.log(`スロット ${slot} を解いた`)
 }
 
@@ -441,24 +446,6 @@ function env(ctx) {
 }
 
 /**
- * 子のプロセスを終了させる。Windows では、cmd の下の子も含めて止める。
- *
- * @param {import('node:child_process').ChildProcess} child 子のプロセス
- * @param {NodeJS.Signals} signal 渡すシグナル
- */
-function killChild(child, signal) {
-  if (process.platform === 'win32' && child.pid) {
-    try {
-      execFileSync('taskkill', ['/pid', String(child.pid), '/T', '/F'], { stdio: 'ignore' })
-    } catch {
-      // すでに終わっていればよい
-    }
-  } else {
-    child.kill(signal)
-  }
-}
-
-/**
  * run：スロットの環境変数を付けて対象を起動する。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
@@ -479,6 +466,14 @@ async function run(ctx, args) {
   let cwd
   if (target === 'backend') {
     requireShared(ctx)
+    const check = checkBackendPorts({
+      ports: [values.backendPort, values.managementPort],
+      platform: process.platform,
+      canRelease: !ctx.main,
+      find: (ports) => findListeners(ports),
+    })
+    if (!check.start) throw new Exit(check.code, check.message)
+    if (check.warning !== null) console.error(check.warning)
     cwd = path.join(ctx.root, 'backend', 'ecsite')
     command = path.join(cwd, process.platform === 'win32' ? 'gradlew.bat' : 'gradlew')
     commandArgs = ['bootRun', '--args=--spring.profiles.active=local']
@@ -507,13 +502,20 @@ async function run(ctx, args) {
     process.platform === 'win32' && command.endsWith('.bat')
       ? spawn([`"${command}"`, ...commandArgs].join(' '), { ...options, shell: true })
       : spawn(command, commandArgs, options)
-  for (const signal of ['SIGINT', 'SIGTERM', 'SIGHUP']) process.on(signal, () => killChild(child, signal))
+  /** 実行中の子。終わったら null */
+  let running = child
+  // シグナルを受けたら子を停止し、子が終わってから終了する。2 回目は待たずに終了する
+  stopOnSignals({ current: () => running })
   return new Promise((resolve) => {
     child.on('error', (e) => {
+      running = null
       console.error(`起動できなかった：${e.message}`)
       resolve(1)
     })
-    child.on('exit', (code, signal) => resolve(code ?? (signal ? 1 : 0)))
+    child.on('exit', (code, signal) => {
+      running = null
+      resolve(code ?? (signal ? 1 : 0))
+    })
   })
 }
 

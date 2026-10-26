@@ -1,8 +1,8 @@
 import { expect, test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
 import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/data'
-import { emptyCart, fillShipping, payOnMockPage } from '../src/store'
-import { ADMIN_URL, STORE_URL } from '../src/urls'
+import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage, placeOrderButton } from '../src/store'
+import { ADMIN_URL } from '../src/urls'
 
 test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画面でカートに入れ、郵便番号でお届け先を補って注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
   page,
@@ -22,10 +22,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   await test.step('店舗画面：会員としてログインし、商品の詳細から 2 つカートに入れ、カートで金額の内訳を確認する', async () => {
     await loginStore(page, ACCOUNTS.member)
     await emptyCart(page)
-    await page.goto(`${STORE_URL}/products/${productId}`)
-    await page.getByLabel('数量').selectOption('2')
-    await page.getByRole('button', { name: 'カートに入れる' }).click()
-    await expect(page.getByText('カートに入れました。')).toBeVisible()
+    await addToCart(page, productId, { quantity: '2' })
     await page.getByRole('link', { name: 'カートを見る' }).click()
 
     await expect(page.getByRole('heading', { name: 'カート' })).toBeVisible()
@@ -41,13 +38,13 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   })
 
   await test.step('注文手続き：郵便番号の形の誤りは欄の下に出て入力が残り、直すと都道府県と市区町村が補われて注文でき、支払うと受付になる', async () => {
-    await page.getByRole('button', { name: '注文手続きへ進む' }).click()
+    await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
     await expect(page.getByRole('heading', { name: 'ご注文手続き' })).toBeVisible()
     await expect(page.getByText(/在庫を確保しています。残り/)).toBeVisible()
     await expect(page.getByText(ACCOUNTS.member.email)).toBeVisible()
 
     await fillShipping(page, '12')
-    await page.getByRole('button', { name: /^注文する/ }).click()
+    await placeOrderButton(page).click()
     await expect(page.getByText('郵便番号は数字 7 桁で入力してください。')).toBeVisible()
     await expect(page.getByLabel('氏名')).toHaveValue('E2E 太郎')
 
@@ -55,7 +52,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
     await page.getByLabel('郵便番号').fill('100-0001')
     await expect(page.getByLabel('市区町村')).toHaveValue('13101')
     await expect(page.getByLabel('住所')).toHaveValue('千代田 1-1')
-    await page.getByRole('button', { name: /^注文する/ }).click()
+    await placeOrderButton(page).click()
     await expect(page.getByRole('heading', { name: 'mock の支払' })).toBeVisible()
     orderUrl = await payOnMockPage(page)
     await expect(page.getByText('〒100-0001 東京都千代田区千代田 1-1')).toBeVisible()
@@ -64,16 +61,16 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   await test.step('注文の画面：キャンセルを申請すると「キャンセル申請中」になる', async () => {
     page.once('dialog', (dialog) => dialog.accept())
     await page.getByLabel('理由（任意）').fill('間違えて注文した')
-    await page.getByRole('button', { name: 'キャンセルを申請する' }).click()
+    await page.getByRole('button', { name: 'キャンセルを申請する', exact: true }).click()
     await expect(page.getByText('キャンセル申請中', { exact: true })).toBeVisible()
     await expect(page.getByText(/キャンセルの申請を受け付けました/)).toBeVisible()
   })
 
   await test.step('管理画面：申請を承認するとキャンセルになり、在庫数が戻って履歴に残る', async () => {
-    const orderId = new URL(orderUrl).pathname.split('/').at(-1)
+    const orderId = orderIdOf(orderUrl)
     await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
-    await page.getByRole('button', { name: '申請を承認する' }).click()
-    await page.getByRole('alertdialog').getByRole('button', { name: '承認してキャンセルする' }).click()
+    await page.getByRole('button', { name: '申請を承認する', exact: true }).click()
+    await page.getByRole('alertdialog').getByRole('button', { name: '承認してキャンセルする', exact: true }).click()
     await expect(page.getByText('申請を承認し、キャンセルしました')).toBeVisible()
     await expect(page.getByText('お客様の申請の承認')).toBeVisible()
 

@@ -1,8 +1,8 @@
 import { createHash, randomBytes } from 'node:crypto'
 import { expect, type Locator, type Page } from '@playwright/test'
 import { RUN_ID } from './data'
-import { ADMIN_URL, IDP_URL, MAILPIT_URL, STORE_URL } from './urls'
-import { MAIL_TIMEOUT } from './waits'
+import { waitForMail } from './mailpit'
+import { ADMIN_URL, IDP_URL, STORE_URL } from './urls'
 
 /** ログインに使うアカウント */
 export type Account = { email: string; password: string }
@@ -27,6 +27,7 @@ export const ACCOUNTS = {
  * E2E で登録する会員のメールアドレス。実行ごとの印を付け、前の実行で登録した会員と重ならないようにする。
  *
  * @param label テストの中での呼び名（英小文字と数字）
+ * @returns メールアドレス
  */
 export function memberEmail(label: string): string {
   return `e2e-${RUN_ID.toLowerCase()}-${label}@example.com`
@@ -36,33 +37,40 @@ export function memberEmail(label: string): string {
  * IdP（Keycloak）のログインの画面で、メールアドレスとパスワードを入れてログインする。
  *
  * @param page IdP のログインの画面を開いているページ
+ * @param account ログインするアカウント
  */
 export async function submitIdpLogin(page: Page, account: Account): Promise<void> {
   await page.locator('#username').fill(account.email)
   await page.locator('#password').fill(account.password)
-  await page.getByRole('button', { name: 'サインイン' }).click()
+  await page.getByRole('button', { name: 'サインイン', exact: true }).click()
 }
 
 /**
  * 管理画面を開き、運営者としてログインする（管理画面は、開くと IdP のログインへ移る。AC-132）。
  *
+ * @param page 使うページ
+ * @param account ログインする運営者のアカウント
  * @param path ログインの後に開く管理画面のパス
+ * @param adminUrl 管理画面の URL（既定は E2E の管理画面）
  */
-export async function loginAdmin(page: Page, account: Account, path = '/'): Promise<void> {
-  await page.goto(`${ADMIN_URL}${path}`)
+export async function loginAdmin(page: Page, account: Account, path = '/', adminUrl = ADMIN_URL): Promise<void> {
+  await page.goto(`${adminUrl}${path}`)
   await submitIdpLogin(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
 }
 
 /**
  * 店舗画面で会員としてログインする。ログインの後は returnTo の画面に戻る（AC-113）。
  *
+ * @param page 使うページ
+ * @param account ログインする会員のアカウント
  * @param returnTo ログインの後に戻る店舗画面のパス
+ * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
  */
-export async function loginStore(page: Page, account: Account, returnTo = '/'): Promise<void> {
-  await page.goto(`${STORE_URL}/login?returnTo=${encodeURIComponent(returnTo)}`)
+export async function loginStore(page: Page, account: Account, returnTo = '/', storeUrl = STORE_URL): Promise<void> {
+  await page.goto(`${storeUrl}/login?returnTo=${encodeURIComponent(returnTo)}`)
   await submitIdpLogin(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
 }
 
 /** 会員登録で入れる、会員の任意の属性（IdP の画面の表示のとおり） */
@@ -78,6 +86,7 @@ export type MemberProfile = {
  * 同じブラウザーでリンクを開くので、ログインした状態で登録を始めた画面に戻る（AC-112）。
  *
  * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
+ * @param account 登録するアカウント（パスワードは確認のメールのリンクで設定する）
  * @param name 氏名
  * @param profile 生年月日と性別（省けば入れない）
  */
@@ -89,7 +98,7 @@ export async function registerMember(
 ): Promise<void> {
   await submitSignup(page, account, name, profile)
   await setPasswordFromMail(page, account)
-  await expect(page.getByRole('button', { name: 'ログアウト' })).toBeVisible()
+  await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
 }
 
 /**
@@ -97,6 +106,7 @@ export async function registerMember(
  * 確認のメールを送ったと出るまで待つ（パスワードは確認のメールのリンクで決める。{@link setPasswordFromMail}）。
  *
  * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
+ * @param account 登録するアカウント（メールアドレスだけを入れる）
  * @param name 氏名
  * @param profile 生年月日と性別（省けば入れない）
  */
@@ -116,7 +126,7 @@ export async function submitSignup(
   if (profile.gender) {
     await page.locator('#gender').selectOption({ label: profile.gender })
   }
-  await page.getByRole('button', { name: '登録' }).click()
+  await page.getByRole('button', { name: '登録', exact: true }).click()
   await expect(page.getByText(/メールアドレスを確認する手順を記載したメール/)).toBeVisible()
 }
 
@@ -124,52 +134,49 @@ export async function submitSignup(
  * 確認のメールのリンクを開き、IdP の画面でパスワードを決めて送る。送った後の画面は確認しない（呼ぶ側が確認する）。
  *
  * @param page 使うページ（登録を始めたのと同じブラウザーなら、ログインした状態で登録を始めた画面に戻る。AC-112）
+ * @param account 登録したアカウント（メールアドレスでメールを探し、パスワードを決める）
  */
 export async function setPasswordFromMail(page: Page, account: Account): Promise<void> {
   await page.goto(await latestIdpLink(account.email))
   await page.locator('#password-new').fill(account.password)
   await page.locator('#password-confirm').fill(account.password)
-  await page.getByRole('button', { name: '送信' }).click()
+  await page.getByRole('button', { name: '送信', exact: true }).click()
 }
 
 /**
  * IdP のログインの画面の、パスワードの欄（ログインし直すのにパスワードが必要なことを確認する）。
  *
  * @param page IdP のログインの画面を開いているページ
+ * @returns パスワードの欄
  */
 export function idpPasswordInput(page: Page): Locator {
   return page.locator('#password')
 }
 
+/** IdP のメールの、確認・再設定のリンク */
+const IDP_LINK = /https?:\/\/\S+\/login-actions\/action-token\S+/
+
 /**
  * Mailpit に届いた、宛先への最新のメールから、IdP の確認・再設定のリンクを取り出す。届くまで待つ。
  *
  * @param to 宛先のメールアドレス
+ * @returns リンクの URL
  */
-export async function latestIdpLink(to: string): Promise<string> {
-  let link: string | undefined
-  await expect
-    .poll(
-      async () => {
-        const search = await fetch(`${MAILPIT_URL}/api/v1/search?query=${encodeURIComponent(`to:${to}`)}`)
-        const { messages } = (await search.json()) as { messages: { ID: string }[] }
-        if (messages.length === 0) {
-          return undefined
-        }
-        const message = await fetch(`${MAILPIT_URL}/api/v1/message/${messages[0].ID}`)
-        const { Text } = (await message.json()) as { Text: string }
-        link = Text.match(/https?:\/\/\S+\/login-actions\/action-token\S+/)?.[0]
-        return link
-      },
-      { message: `${to} へのメールが Mailpit に届かない`, timeout: MAIL_TIMEOUT },
-    )
-    .toBeDefined()
-  return link as string
+async function latestIdpLink(to: string): Promise<string> {
+  const mail = await waitForMail({
+    search: `to:${to}`,
+    accept: (candidate) => IDP_LINK.test(candidate.text),
+    message: `${to} へのメールが Mailpit に届かない`,
+  })
+  return mail.text.match(IDP_LINK)?.[0] as string
 }
 
 /**
  * 運営者の access token を、管理画面と同じ認可コード + PKCE の流れで取る（ブラウザーを使わない）。<br />
  * テストのデータを管理 API で直接作るときに使う。web の client はパスワードで token を取る方式を無効にしているため。
+ *
+ * @param account ログインする運営者のアカウント
+ * @returns access token
  */
 export async function operatorAccessToken(account: Account): Promise<string> {
   const redirectUri = `${ADMIN_URL}/`

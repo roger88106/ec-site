@@ -6,9 +6,9 @@
 
 ## タスク
 
-- [ ] **T223-04-01** 全体の検査：`./gradlew check`、`./gradlew pitest`、`scripts/dev/check-frontend.sh`、`scripts/ci/check-all.sh` を続けて実行する。カバレッジと mutation score が基準を下回らないことを確認する（DN-223-8）。
+- [x] **T223-04-01** 全体の検査：`./gradlew check`、`./gradlew pitest`、`scripts/dev/check-frontend.sh`、`scripts/ci/check-all.sh` を続けて実行する。カバレッジと mutation score が基準を下回らないことを確認する（DN-223-8）。
   - 依存：段階 1〜3
-- [ ] **T223-04-02** spec の最後のレビュー：profile「厚め」で行い、ファイルをまたぐ影響の観点を必ず含める。DC-223-1〜24 と DN-223-1〜8 を満たすことを確認する。spec の最初の commit からの差分に `api/openapi/` と `db/migration/` のファイルがないことを確認する。変えたコードを[書き方の規則とレビュー](../../../rules/review.md)と照合する。レビューの推奨の指摘ごとに、機械の検査にできるかを書く。AC 一覧に差分がないこと（DN-223-3）を確認する。
+- [x] **T223-04-02** spec の最後のレビュー：profile「厚め」で行い、ファイルをまたぐ影響の観点を必ず含める。DC-223-1〜24 と DN-223-1〜8 を満たすことを確認する。spec の最初の commit からの差分に `api/openapi/` と `db/migration/` のファイルがないことを確認する。変えたコードを[書き方の規則とレビュー](../../../rules/review.md)と照合する。レビューの推奨の指摘ごとに、機械の検査にできるかを書く。AC 一覧に差分がないこと（DN-223-3）を確認する。
   - 依存：T223-04-01
 - [ ] **T223-04-03** spec の最後のレビューの指摘を修正する。
   - 依存：T223-04-02

@@ -1,3 +1,4 @@
+import { HttpResponse, http as mswHttp } from 'msw'
 import { describe, expect, test } from 'vitest'
 import { addToCart, changeCartItemQuantity, removeCartItem, startCheckout } from '@/actions/cart'
 import { connectionFailedMessage } from '@/lib/actionResult'
@@ -5,6 +6,7 @@ import { ACCESS_TOKEN, signInAs } from '@/test/auth'
 import { CHECKOUT_ID, COOKIE_CART_ID, form, MEMBER_CART_ID, NEW_CART_ID, VARIANT_ID } from '@/test/fixtures'
 import { cookieOptions, cookieValue, redirectedTo, resetRequest, revalidatedPaths } from '@/test/next'
 import { http, networkError, problem, STORE_API, server } from '@/test/server'
+import { recordStderr } from '@/test/stderr'
 
 /** カートに入れるフォーム */
 const addForm = () => form({ variantId: VARIANT_ID, quantity: '2' })
@@ -80,6 +82,18 @@ describe('カートに入れる（ゲスト）', () => {
       fieldErrors: { quantity: '数量は 1 以上にしてください。' },
     })
     expect(revalidatedPaths).toEqual([])
+  })
+
+  test('NFR-227-1 カートを作る API が失敗したら、通信の失敗を返し、ログに API の状態コードを出す', async () => {
+    const stderr = recordStderr()
+    // POST /carts は store.yaml に 201 しか定義がないので、500 の応答は型のない msw のハンドラーで作る
+    server.use(mswHttp.post(`${STORE_API}/carts`, () => HttpResponse.json({ message: 'down' }, { status: 500 })))
+
+    expect(await addToCart(null, addForm())).toEqual({ ok: false, message: connectionFailedMessage() })
+
+    expect(stderr.entries().filter((entry) => entry.level === 'error')).toEqual([
+      expect.objectContaining({ errorName: 'ApiError', status: 500 }),
+    ])
   })
 
   test('バックエンドにつながらなければ、通信の失敗を返す', async () => {

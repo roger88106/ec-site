@@ -27,15 +27,16 @@ export function renderMarkup(element: ReactElement): string {
  * テストのファイルの先頭で jsdom を選ぶ（`// @vitest-environment jsdom`）。
  *
  * @param element 描画する部品
- * @returns 操作に使う user（user-event）
+ * @returns 操作に使う user（user-event）と、props を変えて描画し直す rerender
  */
 export function renderInBrowser(element: ReactElement) {
-  render(
+  const wrap = (child: ReactElement) => (
     <NextIntlClientProvider locale={LOCALE} messages={messages} timeZone={TIME_ZONE}>
-      {element}
-    </NextIntlClientProvider>,
+      {child}
+    </NextIntlClientProvider>
   )
-  return { user: userEvent.setup() }
+  const { rerender } = render(wrap(element))
+  return { user: userEvent.setup(), rerender: (next: ReactElement) => rerender(wrap(next)) }
 }
 
 /** `renderStatic` が使う jsdom の window。モジュールで 1 つだけ作り、呼ぶたびに body の中身を入れ替える */

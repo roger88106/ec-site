@@ -6,6 +6,8 @@ import { withActionResult } from '@/actions/withActionResult'
 import { currentCartChoice, memberCartId } from '@/api/cart'
 import { deleteCartMergeNotice, writeCartId } from '@/api/cartCookie'
 import { getApi, getMemberApi } from '@/api/client'
+import { ApiError } from '@/api/result'
+import type { Problem } from '@/api/types'
 import { redirectToLogin } from '@/auth'
 import { translate } from '@/i18n/translate'
 import { type ActionResult, SUCCESS, toFailure } from '@/lib/actionResult'
@@ -153,9 +155,9 @@ async function updateMemberCart(request: CartRequest): Promise<ActionResult> {
 /** カートを作り、その ID を返す */
 async function createCart(): Promise<string> {
   const api = await getApi()
-  const { data, response } = await api.POST('/carts')
+  const { data, error, response } = await api.POST('/carts')
   if (!data) {
-    throw new Error(`カートを作れませんでした（HTTP ${response.status}）`)
+    throw new ApiError(response.status, error as Partial<Problem> | undefined)
   }
   return data.id
 }

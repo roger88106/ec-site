@@ -74,7 +74,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
   - `scan-rules.mjs`：検査の script を走査して、共通の関数を使っているかを確認するテストの補助。走査する script の一覧（`listScanScripts`。範囲は `ci`、`ci+lib`、`all`）と、表を受け取り違反を返す関数（`findRuleViolations`）を持つ。表には、共通の関数ごとに「禁じる書き方」と「例外の script」を書く。`exclusions.test.mjs`・`unreadable-line.test.mjs`・`git-files.test.mjs`・`git-env.test.mjs` が使う。新しい共通の関数を加えたときは、その関数の使用を確認するテストの表に行を追加する。
   - `sql-code.mjs`：SQL のコメント（`--`、入れ子の `/* */`）と文字列の中を空白にする（`blankSqlNonCode`）。マイグレーションを読む検査（`migrations`、`design-migrations`）が共通で使う。
   - `scan-code.mjs`：ソースを、コード・コメント・文字列・正規表現のリテラルの区間に分けて読む（`scanCode`）。コメント・文字列・正規表現を読み飛ばす処理はここだけにあり、閉じ括弧の探し方・コメントの除去・テストの関数の読み方が使う。TypeScript と Java の違いは選択肢（`regex`、`templates`、`textBlocks`）で決める。
-  - `strip-comments.mjs`：ソースのコメントを空白に置き換える。TypeScript は `stripComments`、Java は `stripJavaComments`（文字列とテキストブロックの中の `//` はコメントにしない）。
+  - `strip-comments.mjs`：ソースのコメントを空白に置き換える。TypeScript は `stripComments`、Java は `stripJavaComments`（文字列とテキストブロックの中の `//` はコメントにしない）。逆に、コメントだけを残してコードを空白にするのは、Java が `keepJavaComments`、TypeScript が `keepTsComments`（コメントを読む検査が使う）。
   - `closing-paren.mjs`：開き括弧に対応する閉じ括弧の位置を求める（文字列とコメントの中は数えない）。TypeScript は正規表現のリテラルの中も数えない。Java には正規表現のリテラルがないので、呼び出し元が `regex: false` を渡して `/` を割り算と読む。
   - `is-main.mjs`：script（`scripts/` の下と `frontend/shared/scripts/` の下）が直接実行されたか（import されたのでないか）を判定する。画面の API の生成も読むので、node の標準のモジュールの他を import しない。シンボリックリンク経由でも同じファイルなら直接実行とみなす。
   - `shallow-clone.mjs`：shallow clone（commit の履歴が途中までのリポジトリ）かを確認する。履歴を読む検査が、shallow clone では失敗にするために使う。

@@ -28,7 +28,7 @@ T223-02-01〜05 は、全て [CI の検査](../../../guides/ci.md) の表を変�
   - 確認方法：テストに、補助の外で記録を読む例（違反）と、補助へ渡すために注入するだけの例（違反でない）を書く。対象のファイルが 0 件のときに失敗することを、テストで確認する。今のコードで通る。
 - [x] **T223-02-05** 管理画面の IdP の既定値と、ローカルの検査の script、CI、環境変数の文書の値が一致することを、環境変数の既定値の検査に加える（DC-223-22、[plan](../plan.md) 第 11.5 節）。CI の検査の行を直す。
   - 依存：T223-02-04（同じ文書を変えるため）
-  - 範囲：`scripts/ci/env-defaults.mjs`、`env-defaults.test.mjs`、`docs/guides/ci.md`
+  - 範囲：`scripts/ci/env-defaults.mjs`、`env-defaults.test.mjs`、`docs/guides/ci.md`、`knip.ts`（同じ既定値の置き場所。[plan](../plan.md) 第 6 節）
   - 確認方法：テストに、どれかの値が違う例を書く。今の値で通る。`scripts/dev/check-frontend.sh admin` で管理画面のビルドが通る。
-- [ ] **T223-02-06** 段階のレビュー（profile「厚め」）と全体の検査：`./gradlew check`、`scripts/ci/check-all.sh`、`scripts/dev/check-frontend.sh admin` を続けて実行する。DC を満たし、追加・修正した検査がテストの違反の例で失敗することを確認する。指摘を修正する。
+- [x] **T223-02-06** 段階のレビュー（profile「厚め」）と全体の検査：`./gradlew check`、`scripts/ci/check-all.sh`、`scripts/dev/check-frontend.sh admin` を続けて実行する。DC を満たし、追加・修正した検査がテストの違反の例で失敗することを確認する。指摘を修正する。
   - 依存：T223-02-01〜05

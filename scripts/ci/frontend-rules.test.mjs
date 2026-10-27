@@ -316,6 +316,16 @@ describe('共有のパッケージと同じ名前の定義', () => {
     assert.deepEqual([...sharedPublicNames(exportsMap, files, (file) => sources[file])].sort(), ['Button', 'formatYen'])
   })
 
+  test('src の外の .test.ts も、公開する名前に入れない', () => {
+    const exportsMap = { './lib/*': './lib/*.ts' }
+    const files = ['frontend/shared/lib/format.ts', 'frontend/shared/lib/format.test.ts']
+    const sources = {
+      'frontend/shared/lib/format.ts': 'export function formatYen() {}',
+      'frontend/shared/lib/format.test.ts': 'export const fromTest = 1',
+    }
+    assert.deepEqual([...sharedPublicNames(exportsMap, files, (file) => sources[file])], ['formatYen'])
+  })
+
   test('公開する名前が 0 件のときは、通さずに失敗にする', () => {
     const files = ['frontend/shared/src/lib/format.ts']
     const read = () => 'const hidden = 1'

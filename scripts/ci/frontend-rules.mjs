@@ -33,6 +33,9 @@ const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
  */
 export const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/
 
+/** 場所に関わらない、テストのファイル（.test.ts・.test.tsx）。公開する名前などから、どの場所のテストも除くときに使う */
+export const ANY_TEST_FILE = /\.test\.tsx?$/
+
 /** 画面の単体・結合テストのファイル */
 export const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
 
@@ -325,7 +328,7 @@ export function sharedPublicNames(exportsMap, files, read) {
     })
   const names = new Set()
   for (const file of files) {
-    if (FRONTEND_TEST.test(file) || !/\.tsx?$/.test(file) || !patterns.some((pattern) => pattern.test(file))) continue
+    if (ANY_TEST_FILE.test(file) || !/\.tsx?$/.test(file) || !patterns.some((pattern) => pattern.test(file))) continue
     for (const name of findExportedNames(read(file))) names.add(name)
   }
   if (names.size === 0) {

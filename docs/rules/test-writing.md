@@ -129,6 +129,8 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLo
 | カテゴリの登録の要求 | `CatalogTestData` | `CategoryApiTest` |
 | 支払の API の作成の操作 | `PaymentTestData` | `PaymentApiTest` |
 
+表に手順の行を追加するときは、`scripts/ci/test-helpers.mjs` の `STEP_FINDERS` に探す関数を追加する（ないと検査が失敗する）。
+
 表の手順に、次のものは含めない。
 
 - Repository のテストが、集約を直接作る処理（支払の Repository のテストなど）

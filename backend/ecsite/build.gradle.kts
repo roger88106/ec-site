@@ -229,12 +229,14 @@ val integrationTest = tasks.register<Test>("integrationTest") {
     testClassesDirs = sourceSets["integrationTest"].output.classesDirs
     classpath = sourceSets["integrationTest"].runtimeClasspath
     useJUnitPlatform()
-    // IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
+    // 契約の補助（Contracts）が読む置き場所：店舗 API の token の契約のテストが読む OpenAPI、IdP の設定の統合テスト（KeycloakIntegrationTest）が Keycloak に取り込む realm の設定とテーマ
+    systemProperty("openapi.dir", file("../../api/openapi").absolutePath)
     systemProperty("keycloak.realms.dir", file("../../docker/keycloak/realms").absolutePath)
     systemProperty("keycloak.theme.dir", file("../../docker/keycloak/themes/ec-site").absolutePath)
     // 地域の最初のデータの郵便番号の一覧（RegionApiTest が件数を照合する）
     systemProperty("region.postal-codes", file("src/tools/resources/region/postal-codes.txt").absolutePath)
     inputs.dir("../../docker/keycloak")
+    inputs.dir("../../api/openapi")
     // 本番の jar の起動の統合テスト（ProductionJarStartupTest）が別のプロセスで起動する jar
     val bootJarFile = tasks.bootJar.flatMap { it.archiveFile }
     inputs.file(bootJarFile)

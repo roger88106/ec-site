@@ -4,7 +4,6 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.PaymentTestData;
 import com.ecsite.TestClockConfig;
-import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.api.PaymentApi;
 import com.ecsite.module.payment.api.PaymentSummary;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
@@ -165,8 +164,7 @@ class PaymentExpiryJobTest {
 
         // それより新しい支払が、期限を過ぎる
         var newerOrderedAt = ORDERED_AT.plus(Duration.ofHours(1));
-        var newer = UUID.randomUUID();
-        paymentApi.create(newer, Money.of(6940), newerOrderedAt);
+        var newer = payments.created(newerOrderedAt);
         clock.setInstant(newerOrderedAt.plus(Duration.ofMinutes(30)));
         job.expire();
 

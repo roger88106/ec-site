@@ -5,6 +5,7 @@ import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
 import com.ecsite.TestImages;
+import com.ecsite.TestJson;
 import com.ecsite.TestcontainersConfig;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeEach;
@@ -196,7 +197,7 @@ class ProductImageApiTest {
             var productId = productWithVariant();
             var body = catalog.createUpload(productId, "image/png", PNG.length)
                     .andExpect(status().isCreated()).andReturn().getResponse().getContentAsString();
-            var uploadId = JsonPath.<String>read(body, "$.uploadId");
+            var uploadId = TestJson.uuid(body, "$.uploadId").toString();
             // 署名付き URL は大きさを含むので、ストレージが大きさを検証しない場合に備えた確認を、直接置いて確認する
             s3.putObject(request -> request.bucket(TestcontainersConfig.INCOMING_BUCKET).key(productId + "/" + uploadId),
                     RequestBody.fromBytes(Arrays.copyOf(PNG, MAX_BYTES + 1)));

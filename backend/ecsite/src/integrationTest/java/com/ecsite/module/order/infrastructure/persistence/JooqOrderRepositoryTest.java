@@ -185,7 +185,7 @@ class JooqOrderRepositoryTest {
 
     @Test
     @Transactional(propagation = Propagation.NOT_SUPPORTED)
-    @DisplayName("注文を行ロックして取得している間は、別のトランザクションが同じ注文の行をロックしようとすると失敗する")
+    @DisplayName("注文を行ロックして取得している間は、別のトランザクションが同じ注文の行をロックできない")
     void blocksOtherTransactionWhileLocked() throws Exception {
         // ロールバックしないので、このテストで作った注文の行だけを使う
         var order = order(UUID.randomUUID(), orderNumber());

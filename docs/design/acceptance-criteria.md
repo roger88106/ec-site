@@ -329,7 +329,7 @@
 | AC-304 | 画像の確定は、画像の変換と保存のサービスを、データベースのトランザクションの外で… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-305 | 画像を公開の保存先に置いた後に、画像の登録か商品への追加が失敗したら、置いたファ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-306 | 他のモジュールの、外部サービスを呼ぶ処理も、データベースのトランザクションの外で… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`PaymentRefundTest`、`PaymentVoidTest` ほか 1 |
-| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力し… | 変更 | [017](../specs/archive/mvp/017-stability/spec.md) | [193](../specs/archive/1to10/193-store-a11y/spec.md) | [店舗画面の構成](apps/store.md)（サーバーアクションの失敗のログ） | `withActionResult.test.ts` |
+| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力し… | 変更 | [017](../specs/archive/mvp/017-stability/spec.md) | [193](../specs/archive/1to10/193-store-a11y/spec.md)、[227](../specs/archive/1to10/227-store-forms/spec.md) | [店舗画面の構成](apps/store.md)（サーバーアクションの失敗のログ） | `withActionResult.test.ts` |
 | AC-308 | 店舗画面のサーバー側で、バックエンドから 5xx を受けたら、警告のログに状態コ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `client.test.ts` |
 | AC-309 | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[フロ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `client.test.ts` |
 | AC-310 | 支払の期限切れのジョブは、1 件の支払で例外（種類を問わない）が起きても、その支… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest` |
@@ -341,4 +341,10 @@
 | AC-193-4 | 注文のフォームで欄に誤りがあるとき、その欄の誤りの文が、入力欄の説明として支援技… | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-193-5 | 誤りのある欄は、誤りのある状態として支援技術に伝わる。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-193-6 | 欄の補足の文（郵便番号・住所・電話番号の入力の例）も、入力欄の説明として伝わる。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-227-1 | 注文のフォームの送信が欄の誤りで失敗したとき、フォーカスは、選べる誤りの欄のうち… | 有効 | [227](../specs/archive/1to10/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx`、`order.spec.ts` |
+| AC-227-2 | 誤りのある欄が全て選べないときは、フォーカスを移さない。 | 有効 | [227](../specs/archive/1to10/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-227-3 | 欄の誤りがない失敗（在庫不足、通信の失敗など、フォームの下に出すもの）では、フォ… | 有効 | [227](../specs/archive/1to10/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-227-4 | フォーカスを移す処理は、送信の結果を受けたときだけ動く。 | 有効 | [227](../specs/archive/1to10/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-227-5 | 同じ誤りで再び送信に失敗したときも、AC-227-1 のとおりにフォーカスを移す… | 有効 | [227](../specs/archive/1to10/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx` |
+| AC-227-6 | バリアントの在庫状況の領域は、status の役割を持つ。 | 有効 | [227](../specs/archive/1to10/227-store-forms/spec.md) | — | spec | `VariantPicker.test.tsx` |
 <!-- /generated:ac-list -->

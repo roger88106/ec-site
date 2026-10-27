@@ -9,7 +9,7 @@
 | 1.2 | カバレッジと mutation score は、基準の値（許容の幅を含む）を下回らない | 自動（`scripts/ci/report/coverage-baseline.mjs`） |
 | 2.1 | テスト名に AC 番号を入れる | 自動（`ac-check.mjs`） |
 | 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`） |
-| 3.1 | 統合テストの土台を使う | レビュー |
+| 3.1 | 統合テストの土台を使う。ログを確認するテストは、そのテストの中で出た出力だけを確認する | レビュー |
 | 3.2 | テストデータは補助のクラスで作る。イベントの発行の記録を読む操作は、非同期のイベントの補助の中だけに置く | レビュー（記録を読む操作を補助の外で呼ばないことは自動。`scripts/ci/test-helpers.mjs`） |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
@@ -90,10 +90,13 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
 - データを残さないテストは `@Transactional` で巻き戻す。
 - 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID、実行ごとの印）でデータを分け、自分のデータだけを確認する。表の全体の数や、一覧の全体を確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要 ※4。
+- ログを確認するテストは、そのテストの中で出た出力だけを確認する。`CapturedOutput` には、テストの外で出た出力（Spring の起動のログ、前のテストの非同期の処理が後から出したログ）と、同じテストの中で確認の前に出た出力（準備の処理が出したログ）が残りうるので、確認する処理の前に `CapturedLogs.mark` で位置を記録し、確認では `CapturedLogs.since` でその後の出力だけを読む ※5。巻き戻せないテストで、ほかのテストのデータも処理の対象になるときは、処理の前に対象の行を数え、ログの件数がその数と等しいことを確認する（「1 件以上」だけにしない）。
 
 ※3：IdP は起動せず、`TestSecurityConfig` が署名の鍵を `TestTokens` の鍵に差し替える。Keycloak は、それを確認するテストだけが自分で起動する。
 
 ※4：DB はテストの実行ごとに作る（Testcontainers）。削除する処理には、削除の漏れと順序（外部キー）の手間がある。今ある後処理は残してよい。
+
+※5：テストの外や準備の処理が同じ件数のログを出していると、その出力が件数に数えられ、件数を誤っていても通る。`CapturedOutput` はテストごとの capture を、終了時に解除するので、前のテストの中で出た出力は残らない。
 
 理由：テストごとにコンテナを再起動せず、データが他のテストに漏れないようにするため。
 
@@ -110,7 +113,23 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 | `PaymentTestData` | 支払の作成、与信、売上確定、状態の取得 |
 | `TestJson` | 応答の本文から読む ID（作成の応答の ID など） |
 
-token は `TestTokens`、画像は `TestImages` を使う。
+token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
+
+補助以外のテストは、次の表の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。
+
+| 手順 | 補助 | その操作そのものを確認するテスト |
+|------|------|----------------------------------|
+| 在庫の作成 | `InventoryTestData` | `JooqStockItemRepositoryTest` |
+| 税区分の登録の要求 | `CatalogTestData` | `TaxCategoryApiTest`、`AuthorizationTest`、`KeycloakIntegrationTest` |
+| 作成の応答から ID を取り出す処理 | `TestJson`、`CatalogTestData` | `TaxCategoryApiTest`、`CategoryApiTest`、`ProductApiTest`、`PlaceOrderConcurrencyTest`（確認する API の作成の応答） |
+| カテゴリの登録の要求 | `CatalogTestData` | `CategoryApiTest` |
+| 支払の API の作成の操作 | `PaymentTestData` | `PaymentApiTest` |
+
+表の手順に、次のものは含めない。
+
+- Repository のテストが、集約を直接作る処理（支払の Repository のテストなど）
+- 作った後の変更の要求（店舗の鮮度のテストの税率の変更など）
+- 一覧の応答から、複数の ID を読む処理（画像の並び、税率の一覧など）
 
 イベントの発行の記録（`EventPublicationRegistry`）を読む操作（`find` で始まる操作）は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。テストは記録を読んで待たずに、補助の待つ操作を呼ぶ。補助を作るために記録を注入して渡すだけのテストは、この規則に反しない。CI の `scripts/ci/test-helpers.mjs` が、統合テストで補助の外の呼び出しを見つける。
 
@@ -124,15 +143,15 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 ### 3.4 単体テストの補助
 
-単体テストの補助は、`src/test` の `com.ecsite` の直下に置く。ただし `Contracts` は、契約のテストだけが使うので `contract/` に置く。
+単体テストの補助は、`src/test` の `com.ecsite` の直下に置く。ただし `Contracts` は、単体テストと統合テストが共有するので `src/testFixtures` の `contract/` に置く。
 
 | 補助 | 使う場面 | 使い方 |
 |------|----------|--------|
 | `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む（モジュールの一覧は、Spring Modulith が自分でもクラスを読み込むので、クラスの読み込みとは別になる）。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
 | `TestSettings` | 設定のテスト | `load(profile…)` で `application.yml` に profile の設定ファイルを重ねた値を読み、`bind(接頭辞, 設定の型, 値)` で設定の型に値を当てはめる。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
-| `Contracts`（`contract/` の下） | 契約のテスト（`contract/`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読む。契約のファイルの置き場所は、Gradle が system property で渡す。テストのクラスに `System.getProperty` や既定の相対パスを書かない。渡されないときは、置き場所が渡されなかったことを示して失敗する |
+| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテスト（`contract/`）、店舗 API の token の契約のテストと Keycloak の統合テスト（`src/integrationTest`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読み、`openApiDir()`、`realmsDir()`、`themeDir()` で置き場所を読む。置き場所は、Gradle が system property で渡す。テストのクラスに `System.getProperty` や既定の相対パスを書かない。渡されないときは、置き場所が渡されなかったことを示して失敗する |
 
-理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が残り、メモリを使うため（`ProductionClasses` の理由）。設定の読み込みを 1 か所にして、全ての設定のテストが、同じ設定ファイルの重ね方で値を読むため（`TestSettings` の理由）。契約のファイルの置き場所を既定の相対パスで読むと、Gradle が置き場所を渡さなくても通り、設定の誤りに気づけないため（`Contracts` の理由）。
+理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が残り、メモリを使うため（`ProductionClasses` の理由）。設定の読み込みを 1 か所にして、全ての設定のテストが、同じ設定ファイルの重ね方で値を読むため（`TestSettings` の理由）。契約や realm の置き場所を既定の相対パスで読むと、Gradle が置き場所を渡さなくても通り、設定の誤りに気づけないため（`Contracts` の理由）。
 
 本番のクラスの読み込みの検査（`ProductionClassesTest`）は、`src/test/java`、`src/integrationTest/java`、`src/testFixtures/java` の全ての Java のファイルを読む。次の文字列があれば失敗にする。ただし `ProductionClasses` のファイルは対象にしない。
 

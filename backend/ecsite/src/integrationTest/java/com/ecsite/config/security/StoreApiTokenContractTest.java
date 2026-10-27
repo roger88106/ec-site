@@ -2,6 +2,7 @@ package com.ecsite.config.security;
 
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestTokens;
+import com.ecsite.contract.Contracts;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -15,7 +16,6 @@ import org.yaml.snakeyaml.constructor.SafeConstructor;
 
 import java.io.IOException;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -37,11 +37,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @AutoConfigureMockMvc
 @Transactional
 class StoreApiTokenContractTest {
-
-    /**
-     * 契約の置き場所（統合テストは backend/ecsite/ で動く）
-     */
-    private static final Path STORE_API = Path.of("../../api/openapi/store.yaml");
 
     /**
      * OpenAPI で操作を表す HTTP メソッド
@@ -122,7 +117,7 @@ class StoreApiTokenContractTest {
     // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
     private static List<Operation> operations() throws IOException {
-        Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(STORE_API));
+        Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(Files.readString(Contracts.openApiDir().resolve("store.yaml")));
         var basePath = (String) ((List<Map<String, Object>>) root.get("servers")).getFirst().get("url");
         var operations = new ArrayList<Operation>();
         ((Map<String, Map<String, Object>>) root.get("paths")).forEach((path, item) -> item.forEach((key, value) -> {

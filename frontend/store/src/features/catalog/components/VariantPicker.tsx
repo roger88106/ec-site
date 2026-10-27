@@ -70,7 +70,7 @@ export function VariantPicker({
           </div>
         </fieldset>
       ))}
-      <div aria-live="polite" className="text-sm">
+      <div className="text-sm" role="status">
         {soldOut ? (
           <Badge variant="secondary">{tStock('unavailable') /* 在庫なし */}</Badge>
         ) : chosen ? (

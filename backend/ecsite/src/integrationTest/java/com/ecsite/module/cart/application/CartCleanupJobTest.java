@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.application;
 
+import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
@@ -186,11 +187,12 @@ class CartCleanupJobTest {
         var smallBatch = new CartCleanupJob(service, new CartCleanupProperties(Duration.ofHours(1), Duration.ZERO, 2), clock);
 
         clock.setInstant(longAgo.plus(Duration.ofDays(30)).plusSeconds(1));
+        var logStart = CapturedLogs.mark(output);
         smallBatch.cleanUp();
 
         var deleted = carts.size() - remaining(carts).size();
         assertThat(deleted).isEqualTo(5);
-        assertThat(output).contains("期限切れのカートを消した：" + deleted + " 件");
+        assertThat(CapturedLogs.since(output, logStart)).contains("期限切れのカートを消した：" + deleted + " 件");
     }
 
     /**

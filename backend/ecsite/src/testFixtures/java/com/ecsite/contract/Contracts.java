@@ -9,10 +9,10 @@ import java.nio.file.Path;
 import java.util.Map;
 
 /**
- * 契約のテストが使う補助。契約（OpenAPI）と realm の設定の置き場所の取得と、契約の読み込みを、各テストに重複して書かないために置く。<br />
- * 置き場所は Gradle の設定が system property で渡す。渡されないときに既定の相対パスで読むと、Gradle の設定の誤りに気づけないので、失敗させる。
+ * 契約のテストが使う補助。契約（OpenAPI）、realm の設定、Keycloak のテーマの置き場所の取得と、契約の読み込みを、各テストに重複して書かないために置く。<br />
+ * 単体テストと統合テストが共有する。置き場所は Gradle の設定が system property で渡す。渡されないときに既定の相対パスで読むと、Gradle の設定の誤りに気づけないので、失敗させる。
  */
-final class Contracts {
+public final class Contracts {
 
     /**
      * OpenAPI の置き場所を渡す system property の名前
@@ -23,6 +23,11 @@ final class Contracts {
      * realm の設定の置き場所を渡す system property の名前
      */
     private static final String REALMS_DIR = "keycloak.realms.dir";
+
+    /**
+     * Keycloak のテーマの置き場所を渡す system property の名前
+     */
+    private static final String THEME_DIR = "keycloak.theme.dir";
 
     /**
      * インスタンスを作らない。
@@ -36,7 +41,7 @@ final class Contracts {
      * @return system property {@code openapi.dir} の値
      * @throws IllegalStateException system property が渡されていないとき
      */
-    static Path openApiDir() {
+    public static Path openApiDir() {
         return directory(OPENAPI_DIR, System.getProperty(OPENAPI_DIR));
     }
 
@@ -46,8 +51,18 @@ final class Contracts {
      * @return system property {@code keycloak.realms.dir} の値
      * @throws IllegalStateException system property が渡されていないとき
      */
-    static Path realmsDir() {
+    public static Path realmsDir() {
         return directory(REALMS_DIR, System.getProperty(REALMS_DIR));
+    }
+
+    /**
+     * Keycloak のテーマの置き場所を返す。
+     *
+     * @return system property {@code keycloak.theme.dir} の値
+     * @throws IllegalStateException system property が渡されていないとき
+     */
+    public static Path themeDir() {
+        return directory(THEME_DIR, System.getProperty(THEME_DIR));
     }
 
     /**
@@ -57,7 +72,7 @@ final class Contracts {
      * @return 読んだ JSON の文字列
      * @throws UncheckedIOException ファイルを読めないとき
      */
-    static String realm(String file) {
+    public static String realm(String file) {
         try {
             return Files.readString(realmsDir().resolve(file));
         } catch (IOException e) {
@@ -72,7 +87,7 @@ final class Contracts {
      * @return 読んだ契約
      * @throws UncheckedIOException ファイルを読めないとき
      */
-    static Map<String, Object> openApi(String file) {
+    public static Map<String, Object> openApi(String file) {
         try {
             return new Yaml().load(Files.readString(openApiDir().resolve(file)));
         } catch (IOException e) {
@@ -91,7 +106,7 @@ final class Contracts {
     static Path directory(String property, String value) {
         if (value == null || value.isBlank()) {
             throw new IllegalStateException("system property " + property
-                    + " が渡されていない。build.gradle.kts の unitTestSystemProperties を確認する");
+                    + " が渡されていない。build.gradle.kts の systemProperty を確認する");
         }
         return Path.of(value);
     }

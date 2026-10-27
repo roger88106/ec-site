@@ -25,7 +25,7 @@
 | 8.2 | 店舗画面のサーバーログは 1 行 1 件の JSON | 自動（単体テスト）、`console.*` の直書きは自動（Biome の `noConsole`） |
 | 9.1 | 依存を追加したら再インストールして確認する | 自動（CI のインストールとライセンス検査） |
 | 10.1 | 取り消し線は `<s>` で示す | `line-through` の直書きは自動（`scripts/ci/frontend-rules.mjs`）、他の書き方はレビュー |
-| 10.2 | 店舗画面の読み上げの領域は status の役割で作り、`aria-live` を直接書かない | 自動（Biome の plugin `no-aria-live`） |
+| 10.2 | 店舗画面の読み上げの領域は status の役割で作り、`aria-live` を直接書かない | `aria-live` の直書きは自動（Biome の plugin `no-aria-live`）、status 以外の役割で作っていないかはレビュー |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
 
@@ -216,4 +216,6 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 店舗画面で、内容の変化を支援技術に読み上げさせる領域は、status の役割（`role="status"`）で作り、`aria-live` を直接書かない。読み上げない領域（残り時間の表示 `RemainingTime.tsx`）だけは `aria-live="off"` と書いてよい。
 
-理由：読み上げの領域の作り方を status の役割にそろえるため。status の役割は、既定で polite と atomic を持つので、属性を書き足さなくてよい。
+理由：`aria-live` を直接書くと、領域ごとに値と `aria-atomic` の有無がばらつくため。status の役割は、既定で `aria-live="polite"` と `aria-atomic="true"` を持つ。
+
+検査（Biome の plugin `no-aria-live`）が見るのは、JSX の属性の `aria-live` の直書きだけで、スプレッドや役割の選び方は見ない。ページを開いたときに描く知らせ（共有の `Alert`、`role="alert"`）は、内容の変化を読み上げる領域ではないので、対象外である。

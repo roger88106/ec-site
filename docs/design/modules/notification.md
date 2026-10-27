@@ -45,9 +45,10 @@
 ```
 notification/
 ├── application/            # 注文の出荷のリスナー、出荷通知メールの作成
-│   └── port/               # メールを送る、送ったメールの記録
+│   └── port/               # メールを送る、送ったメールの記録、配送業者の表示名のキーを得る
 └── infrastructure/
     ├── NotificationConfig  # 設定のクラス。設定の値の型を有効にする
+    ├── directory/          # 出荷の腐敗防止層（配送業者の表示名のキー）
     ├── mail/               # SMTP での送信と、その設定の値の型（NotificationProperties）
     └── persistence/        # 送ったメールの記録の実装
 ```

@@ -46,7 +46,7 @@ describe('検査の対象のファイルの振り分け', () => {
     assert.deepEqual(groupTargets(all).frontendTests, [storeTest, adminTest, sharedTest])
   })
 
-  test('テストの補助には、src/test/ の下のファイルだけが入る', () => {
+  test('テストの補助には、src の下の test/ ディレクトリ（src/test/ と機能の中の test/）の下のファイルだけが入る', () => {
     assert.deepEqual(groupTargets(all).testSupport, [support, nestedSupport])
   })
 

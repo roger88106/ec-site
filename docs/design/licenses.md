@@ -35,7 +35,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | 静的解析・注釈 | Error Prone、NullAway、JSpecify | Apache-2.0（Error Prone、JSpecify）、MIT（NullAway） |
 | 静的解析 | Checker Framework の dataflow（Error Prone と NullAway が使う。`dataflow-errorprone`、`dataflow-nullaway`） | 条件付き（GPL-2.0 with Classpath-exception。コンパイルのときだけ動き、配布物に入らない。改変しない） |
 | mutation testing | PIT（`pitest`）、`gradle-pitest-plugin`、`pitest-junit5-plugin` | Apache-2.0。テストの強さを測るツールで、配布物に入らない ※1 |
-| 重複の検出 | `gradle-cpd-plugin`（`de.aaschmid.cpd`。PMD の CPD を実行する）、PMD（`pmd-core`、`pmd-java`）、Saxon-HE | Apache-2.0（Gradle のプラグイン）。PMD は BSD-style で、条件付き（BSD-unspecified）。Saxon-HE は条件付き（MPL-2.0。改変しない）。テストのコードの重複を検出するツールで、配布物に入らない ※2 |
+| 重複の検出 | `gradle-cpd-plugin`（`de.aaschmid.cpd`。PMD の CPD を実行する）、PMD（`pmd-core`、`pmd-java`）、Saxon-HE、`xmlresolver` | Apache-2.0（Gradle のプラグイン、`xmlresolver`）。PMD は BSD-style で、条件付き（BSD-unspecified）。Saxon-HE は条件付き（MPL-2.0。改変しない）。テストのコードの重複を検出するツールで、配布物に入らない ※2 |
 | 定期ジョブ | ShedLock | Apache-2.0 |
 | 決済サービス | stripe-java | MIT |
 | メール | Spring Boot のメール（Jakarta Mail、Eclipse Angus Mail） | Apache-2.0。Jakarta Mail と Angus Mail は条件付き（EDL-1.0 を選ぶ。改変しない） |

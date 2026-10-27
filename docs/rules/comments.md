@@ -23,7 +23,7 @@
 - spec・plan・tasks の番号（`AC-`・`DC-` など、`plan 001 第 7 節`、タスク番号）は、次のコメントに書かず、規則を言葉で書く（`（AC-68）` ではなく「配信する画像は、全て WebP にする」）。
   - 本番のコード（バックエンドの `src/main` と、フロントの `src` のうちテストでないファイル）
   - バックエンドのテストと補助（`src/test`、`src/integrationTest`、`src/testFixtures`）の、全てのコメント（Javadoc、ブロック、行）
-  - 設定のファイルのコメント：リポジトリのルートの `.ts`・`.mjs`（`knip.ts` など）、各パッケージ（`frontend/admin`、`frontend/store`、`frontend/shared`、`e2e`）の直下の `*.config.ts`・`*.config.mjs`、バックエンド（`backend/ecsite/`）の Gradle の設定のファイル（`*.gradle.kts`）
+  - 設定のファイルのコメント：リポジトリのルートの `.ts`・`.mjs`・`.cjs`（`knip.ts`、`.pnpmfile.cjs` など）、各パッケージ（`frontend/admin`、`frontend/store`、`frontend/shared`、`e2e`）の直下の `*.config.ts`・`*.config.mjs`、バックエンド（`backend/ecsite/`）の Gradle の設定のファイル（`*.gradle.kts`）
   - フロントのテストと補助（`*.test.ts`・`*.test.tsx`、`src/test/`）と、E2E（`e2e/` の下の全ての TypeScript）の、全てのコメント
 - spec との対応は、テストの名前（`@DisplayName`、フロントのテストと E2E の `test`・`it` の名前）に AC の番号で書く（[テストの書き方](test-writing.md) 第 2.1 節）。
 - 根拠は、コードと一緒に修正していく文書の名前と節で書く（`（店舗画面の構成 第 4.2 節）` など）。

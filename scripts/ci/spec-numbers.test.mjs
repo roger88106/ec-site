@@ -100,10 +100,11 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.equal(isBackendTestFile('frontend/store/src/lib/price.test.ts'), false)
   })
 
-  test('設定のファイル（ルートの .ts・.mjs、各パッケージ直下の *.config.ts・*.config.mjs、Gradle の *.gradle.kts）を対象にする', () => {
+  test('設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、Gradle の *.gradle.kts）を対象にする', () => {
     for (const file of [
       'knip.ts',
       'eslint.mjs',
+      '.pnpmfile.cjs',
       'e2e/playwright.config.ts',
       'e2e/playwright.showcase.config.ts',
       'frontend/admin/vite.config.ts',
@@ -147,7 +148,7 @@ describe('本番のコードの spec の番号の検査', () => {
     )
   })
 
-  test('TypeScript・mjs の設定のファイルは、コメントの番号だけを見つける（文字列とテンプレートは見ない）', () => {
+  test('TypeScript・mjs・cjs の設定のファイルは、コメントの番号だけを見つける（文字列とテンプレートは見ない）', () => {
     const text = [
       '/**',
       ' * E2E の設定（plan 004 第 6.1 節）',
@@ -156,7 +157,7 @@ describe('本番のコードの spec の番号の検査', () => {
       'const b = `T011-01-01 ${a}`',
       'export default {} // US-3',
     ].join('\n')
-    for (const file of ['e2e/playwright.config.ts', 'frontend/admin/vite.config.mjs', 'knip.ts']) {
+    for (const file of ['e2e/playwright.config.ts', 'frontend/admin/vite.config.mjs', 'knip.ts', '.pnpmfile.cjs']) {
       assert.deepEqual(
         findSpecNumbers(commentsOf(file, text)).map((hit) => `${hit.line} ${hit.number}`),
         ['2 plan 004', '6 US-3'],

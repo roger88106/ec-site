@@ -2,7 +2,7 @@
 // 規則は言葉で書き、spec との対応はテストの名前（@DisplayName、test の名前）に書く。
 // - 本番のコード：行の全体を見る
 // - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）
-// - 設定のファイル（ルートの .ts・.mjs、各パッケージ直下の *.config.ts・*.config.mjs、backend/ecsite/ の *.gradle.kts）：コメントだけを見る
+// - 設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、backend/ecsite/ の *.gradle.kts）：コメントだけを見る
 // - フロントのテストとテストの補助（*.test.ts(x)、src/test/）と、E2E（e2e/ の下の全ての TypeScript）：コメントだけを見る（テスト名と test.step の名前などの文字列、テンプレート文字列、正規表現のリテラルは見ない）
 // 生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
@@ -76,11 +76,11 @@ export function isBackendTestFile(file) {
 
 /**
  * 設定のファイルの置き場所。コメントだけを見る。
- * - リポジトリのルートの .ts・.mjs（knip.ts など）
+ * - リポジトリのルートの .ts・.mjs・.cjs（knip.ts、.pnpmfile.cjs など）
  * - 各パッケージ（frontend/admin、frontend/store、frontend/shared、e2e）の直下の *.config.ts・*.config.mjs
  * - バックエンド（backend/ecsite/）の Gradle の設定のファイル（*.gradle.kts）
  */
-const CONFIG_FILES = [/^[^/]+\.(?:ts|mjs)$/, /^(?:frontend\/(?:admin|store|shared)|e2e)\/[^/]+\.config\.(?:ts|mjs)$/, /^backend\/ecsite\/(?:.+\/)?[^/]+\.gradle\.kts$/]
+const CONFIG_FILES = [/^[^/]+\.(?:ts|mjs|cjs)$/,/^(?:frontend\/(?:admin|store|shared)|e2e)\/[^/]+\.config\.(?:ts|mjs)$/, /^backend\/ecsite\/(?:.+\/)?[^/]+\.gradle\.kts$/]
 
 /**
  * コメントだけを調べる設定のファイルかを返す。
@@ -94,14 +94,14 @@ export function isConfigFile(file) {
 
 /**
  * コメントだけを残す。バックエンドのテストと Gradle の設定のファイル（Kotlin のコメントは Java と同じ書き方）は Java の読み方、
- * フロントのテスト・テストの補助、E2E、TypeScript・mjs の設定のファイルは TypeScript の読み方で読む。
+ * フロントのテスト・テストの補助、E2E、TypeScript・mjs・cjs の設定のファイルは TypeScript の読み方で読む。
  *
  * @param {string} file リポジトリのルートからのパス
  * @param {string} text ソース
  * @returns {string} コメントだけを残したソース（行番号は元と同じ）
  */
 export function commentsOf(file, text) {
-  return /\.(?:tsx?|mjs)$/.test(file) ? keepTsComments(text) : keepJavaComments(text)
+  return /\.(?:tsx?|mjs|cjs)$/.test(file) ? keepTsComments(text) : keepJavaComments(text)
 }
 
 if (isMain(import.meta.url)) {

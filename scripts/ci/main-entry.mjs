@@ -1,4 +1,4 @@
-// 検査の script が、直接実行されたかの判定を共通の関数（lib/is-main.mjs の isMain）だけで行うことを確認する。
+// script（scripts/ と frontend/shared/scripts/ の下）が、直接実行されたかの判定を共通の関数（lib/is-main.mjs の isMain）だけで行うことを確認する。
 // 判定の書き方が複数あると、シンボリックリンクや Windows のパスの違いで、直接実行しても何も検査せずに成功する script ができる。
 // 対象は scripts/ と frontend/shared/scripts/ の下の、テストでない .mjs と .cjs（scripts/dev/ も含む。テストは直接実行しない）。コメントと文字列の中は読まない。
 // argv の 2 つ目の要素を取り出す書き方（argv[1]、argv.at(1)、分割代入）、import.meta.url・filename の比較、import.meta.main、require.main があると失敗にする。対象のファイルが 0 件のときも失敗にする。

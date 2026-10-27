@@ -76,7 +76,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
   - `scan-code.mjs`：ソースを、コード・コメント・文字列・正規表現のリテラルの区間に分けて読む（`scanCode`）。コメント・文字列・正規表現を読み飛ばす処理はここだけにあり、閉じ括弧の探し方・コメントの除去・テストの関数の読み方が使う。TypeScript と Java の違いは選択肢（`regex`、`templates`、`textBlocks`）で決める。
   - `strip-comments.mjs`：ソースのコメントを空白に置き換える。TypeScript は `stripComments`、Java は `stripJavaComments`（文字列とテキストブロックの中の `//` はコメントにしない）。
   - `closing-paren.mjs`：開き括弧に対応する閉じ括弧の位置を求める（文字列とコメントの中は数えない）。TypeScript は正規表現のリテラルの中も数えない。Java には正規表現のリテラルがないので、呼び出し元が `regex: false` を渡して `/` を割り算と読む。
-  - `is-main.mjs`：script が直接実行されたか（import されたのでないか）を判定する。シンボリックリンク経由でも同じファイルなら直接実行とみなす。
+  - `is-main.mjs`：script（`scripts/` の下と `frontend/shared/scripts/` の下）が直接実行されたか（import されたのでないか）を判定する。画面の API の生成も読むので、node の標準のモジュールの他を import しない。シンボリックリンク経由でも同じファイルなら直接実行とみなす。
   - `shallow-clone.mjs`：shallow clone（commit の履歴が途中までのリポジトリ）かを確認する。履歴を読む検査が、shallow clone では失敗にするために使う。
   - `line-number.mjs`：文字列の中の位置から行番号を求める。
   - `test-files.mjs`：テストのファイルの探し方と、テストの関数の読み方（AC の照合と機能紹介の数え方が使う）。`each` の表は括弧の対応で読み、表の中の関数の呼び出しでテスト名が切れない。

@@ -368,6 +368,7 @@ public record SignedNotification(byte[] body, String signature) {
 - 列の型の変更
 - 既存の列を NOT NULL にすること（既存の列への主キーの制約の追加 `ADD PRIMARY KEY` を含む）
 - 既定値のない NOT NULL の列の追加（主キーの列の追加と、`DEFAULT NULL` を指定した NOT NULL の列の追加を含む。`IDENTITY` の列は既定値があるので除く）
+- 既存の列の既定値の削除（`ALTER COLUMN … DROP DEFAULT` と、同じ結果になる `ALTER COLUMN … SET DEFAULT NULL`。列が NOT NULL かに関わらず）。NOT NULL の列では、既定値に頼って列を書かない前のリリースのアプリの INSERT が失敗する。NULL を許す列でも、前のリリースのアプリが既定値に頼っていれば、入る値が変わる
 
 これらは、次の 3 段に分ける。
 

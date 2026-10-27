@@ -232,11 +232,12 @@ tasks は第 6 節の決定に基づく。
   - 違反の数を、引数を除き `const`・`let` だけで再度数え、本タスクの結果に書く。名前を変えるときは、確認する内容を変えない（DN-226-2）
   - 確認方法：テストで、lib の名前と同じ `const`・`let`（分割代入、`for…of` を含む）を見つけ、引数と、lib にない名前を見つけないこと。名前を変えたテストのファイルで、変更の前後のテストの件数と名前が同じで、差分が名前の置き換えだけであること（DN-226-2）。一覧の一致の確認が、一覧から名前を 1 つ削除すると失敗すること（確認した後に戻す）。`scripts/dev/check-frontend.sh` が通ること
   - 結果：Biome 2.5.15 は使えなかった。`noShadowRestrictedNames` が見つけるのは ES の制限された名前（`Set`、`NaN` など）だけで、DOM の `name`・`status`・`alert` は見つけない。`noShadow` は外側の宣言の名前だけを見て、`javascript.globals` に名前を書いても見つけない（試した）。このため一覧の生成を行った。`scripts/ci/globals/lib-globals.mjs` が、TypeScript 7.0.2 の lib（`typescript` ではなく、プラットフォームごとのパッケージ `@typescript/typescript-<OS>-<CPU>` の `lib/` にある `lib.*.d.ts`。`getExePath` の実行ファイルと同じディレクトリ）を、`esnext`・`dom`・`dom.iterable`・`dom.asynciterable` から `/// <reference lib>` をたどって読み、最上位の `declare` の `var`・`let`・`const`・`function`・`class`・`namespace`・`enum` の名前（値の名前だけ。`interface`・`type` は除く）988 個を `lib-globals.json` に書く（`--write`）。`--write` なしは一致を確認する。一致の確認は `ci.yml` の店舗画面の job の、knip の手順の次の「組み込みの名前の一覧の確認」の手順に置いた。違反は 28 か所（`const`・`let` のみ。`status` 10、`name` 12、`alert` 3、`confirm` 1、`cookieStore` 1、`document` 1）で、意味の分かる名前に変えた。変えたテストのファイルの件数と名前は変わらない（`shipping.spec.ts` のステップ名の `${status}` は変数名だけが変わり、文字は同じ）。
-- [ ] **T226-02-03** [テスト] テストの間の空行の検査を加える（DC-226-9、10）。
+- [x] **T226-02-03** [テスト] テストの間の空行の検査を加える（DC-226-9、10）。
   - 依存：T226-02-02（同じ `frontend-rules.mjs` を変える）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`docs/guides/ci.md`、テストの書き方の規則の一覧
   - T226-02-02 の Biome の調査で、Biome の整形か規則で扱えると分かったときは、Biome で行う（Biome の整形は空行を加えないので、扱えない見込み）
   - 確認方法：テストで、`})` の直後の `test(`・`it(`・`describe(`（`test.each(`・`describe.skip(` などを含む）を見つけ、空行を挟むものを見つけないこと。今のリポジトリで 0 件で通ること
+  - 結果：Biome は使わず、`frontend-rules.mjs` の `findMissingTestSpacing` で行った（コメントと文字列を除いた行を読む）。見つける形は、`}` で始まり `)` で終わる行（`})`、`}, 30_000)`、`});`）の直後に、`test`・`it`・`describe`（`.each`・`.skip`・`.only`・`.fixme`・`.describe` などが続く形を含む）で始まる行。`await test.step(` は 1 つのテストの中の段階なので見ない。間にコメントの行があっても、空行がなければ見つける（コメントはテストに付く説明で、テストの間の空行は必要だ）。対象はフロントのテスト、テストの補助、E2E。今のリポジトリで 0 件
 - [ ] **T226-02-04** [テスト] 番号の検査の対象を、フロントのテストと E2E に広げ、今の違反のコメントを修正する（DC-226-17、18）。
   - 依存：T226-02-03（同じ `docs/guides/ci.md` を変える。T226-02-02 が名前を変えたテストのファイルも変える）
   - 範囲：`scripts/ci/spec-numbers.mjs`、テスト、`scripts/ci/lib/strip-comments.mjs` とテスト（TypeScript のコメントの抽出）、E2E とフロントのテストの違反のコメント（第 3 節の 7）、`docs/guides/ci.md` の `spec-numbers` の行、コメントの書き方の規則の一覧

@@ -10,6 +10,7 @@
 // - フロントのテスト：describe の名前を識別子だけにしない、要素のプロパティ・属性を toBe・toEqual で比べない、描画した HTML の文字を要素や属性の並びで確かめない（第 2.2、4.7、4.1 節）
 // - フロントのテストと E2E：toBeTruthy・toBeDefined で確かめない、getAllBy…の結果を並びのインデックスで選ばない（第 4.1 節）
 // - E2E：.first()・.nth()・.last() で選ばない、ボタンの名前を完全一致で探す（第 4.1 節）。networkidle で待たない、タイムアウトを数字のリテラルで書かない（e2e/src/waits.ts を除く。第 5 節）
+// - フロントのテストと補助と E2E：テストの間に空行を置く（}) の直後に test・it・describe を続けない。第 4.11 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 // 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く。共有と同じ名前の定義でよいもの（各画面の translate など）は、キー <画面>:<名前> と理由を書く
 // fireEvent を使ってよいのは、同じ行のコメントか、コメントだけの直前の行に理由を書いた呼び出しだけ（除外の一覧には書かない）
@@ -781,6 +782,33 @@ export function findNetworkIdleWaits(text) {
   return findCodeLines(text, (line) => /\bnetworkidle\b/.test(line))
 }
 
+/** テストの呼び出しを閉じる行（`})`、`}, 30_000)`、`});`）。コメントと文字列を除いた行に当てる */
+const CALL_CLOSE_LINE = /^\}.*\)[;,]?$/
+
+/** テスト・グループの呼び出しの始まりの行（test、it、describe と、test.each(…)、describe.skip(…)、test.describe(… など。await や test.step は含めない） */
+const TEST_CALL_START = /^(?:test|it|describe)(?:\.\w+)*\s*[(`]/
+
+/**
+ * テストの間に空行がない箇所を探す（テストの書き方 第 4.11 節）。
+ * `})` の行の直後に、空行なしで test・it・describe が続く箇所。間にコメントの行があっても、空行がなければ見つける。
+ * test.step は 1 つのテストの中の段階なので見ない。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行（続く側の test・it・describe の行）
+ */
+export function findMissingTestSpacing(text) {
+  const original = text.split('\n')
+  const code = stripComments(text, { blankStrings: true }).split('\n')
+  const hits = []
+  code.forEach((line, index) => {
+    if (!CALL_CLOSE_LINE.test(line.trim())) return
+    let next = index + 1
+    while (next < code.length && code[next].trim() === '' && original[next].trim() !== '') next += 1
+    if (next < code.length && TEST_CALL_START.test(code[next].trim())) hits.push({ line: next + 1, text: original[next].trim() })
+  })
+  return hits
+}
+
 /**
  * 括弧の中の引数や、オブジェクトの項目を、深さ 0 のカンマで分ける。
  *
@@ -1217,6 +1245,11 @@ if (isMain(import.meta.url)) {
     if (!timeoutFiles.has(file)) continue
     for (const hit of findTimeoutLiterals(text)) {
       report(`${file}:${hit.line} タイムアウトを数字のリテラルで書く（e2e/src/waits.ts の定数を使う。テストの書き方 第 5 節）：${hit.text}`)
+    }
+  }
+  for (const file of [...targets.frontendTests, ...targets.testSupport, ...targets.e2e]) {
+    for (const hit of findMissingTestSpacing(readFileSync(file, 'utf8'))) {
+      report(`${file}:${hit.line} テストの間に空行がない（}) の直後に test・it・describe を続けず、空行を置く。テストの書き方 第 4.11 節）：${hit.text}`)
     }
   }
   const builtinNames = new Set(JSON.parse(readFileSync(BUILTIN_NAMES_FILE, 'utf8')))

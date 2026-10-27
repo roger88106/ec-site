@@ -19,6 +19,7 @@ import {
   findInternalSelectors,
   findLineThrough,
   findLocaleLiterals,
+  findMissingTestSpacing,
   findNetworkIdleWaits,
   findPositionSelectors,
   findQueryUrlStrings,
@@ -842,5 +843,81 @@ describe('組み込みの名前をシャドーイングする const・let の検
 
   test('報告に行の番号、元の行の文字、名前を含む', () => {
     assert.deepEqual(findBuiltinShadowing('x\n  const status = 1  ', names), [{ line: 2, text: 'const status = 1', name: 'status' }])
+  })
+})
+
+describe('テストの間の空行の検査', () => {
+  const lines = (hits) => hits.map((hit) => hit.line)
+
+  test('}) の直後の行に test・it・describe が続く箇所を見つける。行は続く側の行', () => {
+    const text = ['test("a", () => {', '  expect(1).toBe(1)', '})', 'test("b", () => {', '})', 'it("c", () => {', '})', 'describe("d", () => {', '})'].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(text)), [4, 6, 8])
+  })
+
+  test('test.each・describe.skip・test.only などの形と、インデントのある行も見つける', () => {
+    const text = [
+      'describe("x", () => {',
+      '  test("a", () => {',
+      '  })',
+      '  test.each([1, 2])("b %s", (n) => {',
+      '  })',
+      '  it.skip("c", () => {',
+      '  })',
+      '  describe.only("d", () => {',
+      '  })',
+      '  test.fixme("e", () => {',
+      '  })',
+      '  test.describe("f", () => {',
+      '  })',
+      '})',
+    ].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(text)), [4, 6, 8, 10, 12])
+  })
+
+  test('閉じる行が }, 30_000) や }); の形でも見つける', () => {
+    const text = ['test("a", async () => {', '}, 30_000)', 'test("b", () => {', '});', 'test("c", () => {', '})'].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(text)), [3, 5])
+  })
+
+  test('空行を挟むものは見つけない', () => {
+    const text = ['test("a", () => {', '})', '', 'test("b", () => {', '})', '', '', 'describe("c", () => {', '})'].join('\n')
+    assert.deepEqual(findMissingTestSpacing(text), [])
+  })
+
+  test('コメントの行を挟んでも、空行がなければ見つける。空行があれば見つけない', () => {
+    const attached = ['test("a", () => {', '})', '// b の説明', 'test("b", () => {', '})'].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(attached)), [4])
+    const blockAttached = ['test("a", () => {', '})', '/**', ' * 説明', ' */', 'test("b", () => {', '})'].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(blockAttached)), [6])
+    const spaced = ['test("a", () => {', '})', '', '// b の説明', 'test("b", () => {', '})'].join('\n')
+    assert.deepEqual(findMissingTestSpacing(spaced), [])
+  })
+
+  test('}) の後がテストでない行、テストの前が } の行でない箇所は見つけない', () => {
+    const text = [
+      'beforeEach(() => {',
+      '})',
+      'test("a", () => {',
+      '  expect(1).toBe(1)',
+      '})',
+      '',
+      'const user = userEvent.setup()',
+      'test("b", () => {})',
+      'test("c", () => {})',
+      'await test.step("s", async () => {',
+      '})',
+      'await test.step("t", async () => {',
+      '})',
+    ].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(text)), [3])
+  })
+
+  test('文字列とコメントの中の }) と test( は見つけない', () => {
+    const text = ['const a = `', '})', 'test(', '`', '// })', '// test(', "const b = '})'"].join('\n')
+    assert.deepEqual(findMissingTestSpacing(text), [])
+  })
+
+  test('報告に行の番号と、元の行の文字を含む', () => {
+    assert.deepEqual(findMissingTestSpacing('  })\n  test("b", () => {  '), [{ line: 2, text: 'test("b", () => {' }])
   })
 })

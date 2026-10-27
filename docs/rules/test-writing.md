@@ -23,7 +23,7 @@
 | 4.8 | テストのファイルで `fireEvent` を直接使わない | 理由のコメントのないものは自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
 | 4.9 | 環境変数は `vi.stubEnv` で変え、`process.env` に代入しない | レビュー |
 | 4.10 | テストの `const`・`let` で、TypeScript の lib のグローバルの名前をシャドーイングしない | 自動（`scripts/ci/frontend-rules.mjs`。名前の一覧は `scripts/ci/globals/lib-globals.mjs` が lib から生成し、CI が一致を確認する） |
-| 4.11 | テストとテストの間に空行を置く | レビュー |
+| 4.11 | テストとテストの間に空行を置く | 自動（`scripts/ci/frontend-rules.mjs`。フロントのテストと補助、E2E） |
 | 5 | 時間で待たない。E2E で `networkidle` で待たず、タイムアウトを数字のリテラルで書かない | 時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`） |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。

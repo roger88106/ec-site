@@ -1,11 +1,16 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
+import com.ecsite.architecture.jooquse.module.sample.application.ApplicationUsesJooq;
+import com.ecsite.architecture.jooquse.module.sample.infrastructure.persistence.PersistenceUsesJooq;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.lang.ArchRule;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
+import java.util.List;
 import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
@@ -23,6 +28,15 @@ import static org.assertj.core.api.Assertions.assertThat;
  * {@code ModulithTest} では他のモジュールのテーブルの読み書きを検出できない。
  */
 class SchemaOwnershipTest {
+
+    /**
+     * jOOQ を、infrastructure/persistence の外から使ってよいクラス。<br />
+     * 追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.1 節の例外の表にも書く。
+     */
+    private static final List<String> JOOQ_EXCEPTIONS = List.of(
+            // mock の物流サービスの画面だけが使う問い合わせで、mock を無効にすると Bean が作られない。
+            // persistence は port の実装の置き場所なので、本番で使わないクラスを置かない
+            ProductionClasses.MODULE_PACKAGE_PREFIX + "shipping.infrastructure.mock.MockShipmentQuery");
 
     /**
      * モジュールの名前から、そのモジュールが持つ schema の名前への対応。
@@ -76,5 +90,63 @@ class SchemaOwnershipTest {
         noClasses().that().resideOutsideOfPackages(ProductionClasses.MODULE_PACKAGE + "..", ProductionClasses.JOOQ_PACKAGE + "..")
                 .should().dependOnClassesThat().resideInAPackage(ProductionClasses.JOOQ_PACKAGE + "..")
                 .check(ProductionClasses.all());
+    }
+
+    @Test
+    @DisplayName("モジュールの jOOQ は、infrastructure/persistence だけが使う（mock の出荷の問い合わせを除く）")
+    void jooqIsUsedOnlyInPersistence() {
+        jooqPlacementRule(ProductionClasses.MODULE_PACKAGE + "..", ProductionClasses.MODULE_PACKAGE + ".*.infrastructure.persistence..")
+                .check(ProductionClasses.all());
+    }
+
+    @Test
+    @DisplayName("jOOQ の置き場所の規則は、application 層で jOOQ を使う例に当たり、persistence で使う例には当たらない")
+    void jooqPlacementRuleMatchesApplicationExampleOnly() {
+        var examples = new ClassFileImporter().importClasses(ApplicationUsesJooq.class, PersistenceUsesJooq.class);
+
+        var details = jooqPlacementRule("com.ecsite.architecture.jooquse.module..",
+                "com.ecsite.architecture.jooquse.module.*.infrastructure.persistence..")
+                .evaluate(examples).getFailureReport().getDetails();
+
+        assertThat(details).anyMatch(detail -> detail.contains(ApplicationUsesJooq.class.getName()));
+        assertThat(details).noneMatch(detail -> detail.contains(PersistenceUsesJooq.class.getName()));
+    }
+
+    @Test
+    @DisplayName("jOOQ の置き場所の例外は、本番のクラスで jOOQ を使っている")
+    void jooqExceptionsAreUsed() {
+        for (String exception : JOOQ_EXCEPTIONS) {
+            boolean used = ProductionClasses.all().stream()
+                    .filter(javaClass -> isExceptionClass(javaClass, exception))
+                    .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
+                    .anyMatch(dependency -> dependency.getTargetClass().getPackageName().startsWith("org.jooq"));
+            assertThat(used).as(exception).isTrue();
+        }
+    }
+
+    /**
+     * jOOQ（{@code org.jooq} と生成したコード）を使えるクラスを、persistence のパッケージと例外の一覧のクラスだけにする規則を作る。
+     *
+     * @param modulePackage      対象にするモジュールのパッケージ（例：com.ecsite.module..）
+     * @param persistencePackage persistence のパッケージ（例：com.ecsite.module.*.infrastructure.persistence..）
+     * @return 規則
+     */
+    private static ArchRule jooqPlacementRule(String modulePackage, String persistencePackage) {
+        return noClasses().that().resideInAPackage(modulePackage)
+                .and().resideOutsideOfPackage(persistencePackage)
+                .and(DescribedPredicate.not(DescribedPredicate.describe("listed in the exceptions",
+                        javaClass -> JOOQ_EXCEPTIONS.stream().anyMatch(exception -> isExceptionClass(javaClass, exception)))))
+                .should().dependOnClassesThat().resideInAnyPackage("org.jooq..", ProductionClasses.JOOQ_PACKAGE + "..");
+    }
+
+    /**
+     * クラスが、例外のクラスか、その入れ子のクラスかを返す。
+     *
+     * @param javaClass クラス
+     * @param exception 例外のクラスの名前
+     * @return 例外のクラスか、その入れ子のクラスなら true
+     */
+    private static boolean isExceptionClass(JavaClass javaClass, String exception) {
+        return javaClass.getName().equals(exception) || javaClass.getName().startsWith(exception + "$");
     }
 }

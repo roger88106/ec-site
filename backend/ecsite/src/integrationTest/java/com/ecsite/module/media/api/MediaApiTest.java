@@ -1,5 +1,6 @@
 package com.ecsite.module.media.api;
 
+import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.TestImages;
 import com.ecsite.TestcontainersConfig;
@@ -316,9 +317,10 @@ class MediaApiTest {
             var prepared = media.prepareImage(scope, uploaded(scope, "image/png", TestImages.png()).uploadId());
             doThrow(SdkClientException.create("connection refused")).when(storage).deletePublished(anyString());
 
+            var logStart = CapturedLogs.mark(output);
             assertThatCode(() -> media.discardImage(prepared)).doesNotThrowAnyException();
 
-            assertThat(output).containsPattern("WARN.*assets/" + prepared.assetId() + "\\.webp");
+            assertThat(CapturedLogs.since(output, logStart)).containsPattern("WARN.*assets/" + prepared.assetId() + "\\.webp");
         }
     }
 

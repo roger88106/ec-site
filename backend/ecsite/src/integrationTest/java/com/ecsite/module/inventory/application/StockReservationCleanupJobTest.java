@@ -1,5 +1,6 @@
 package com.ecsite.module.inventory.application;
 
+import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
@@ -83,11 +84,16 @@ class StockReservationCleanupJobTest {
         var active = reserve(variant, EXPIRES_AT.plus(Duration.ofDays(2)));
 
         // 1 つ目の期限から 1 日と 1 時間後：1 つ目だけが保存期間を過ぎ、2 つ目は期限切れだが保存期間の中
+        var expiredBefore = EXPIRES_AT.plus(Duration.ofHours(1));
         clock.setInstant(EXPIRES_AT.plus(Duration.ofDays(1)).plus(Duration.ofHours(1)));
+        // 巻き戻せないので、ほかのテストの期限の古い引当も消える。消す前に数えて、ログの件数と比べる
+        var expectedDeleted = dsl.fetchCount(STOCK_RESERVATION, STOCK_RESERVATION.EXPIRES_AT.lt(expiredBefore));
+        var logStart = CapturedLogs.mark(output);
         job.cleanUp();
 
         assertThat(holdersWithReservations(List.of(old, recent, active))).containsExactlyInAnyOrder(recent, active);
-        assertThat(output).containsPattern("期限切れの引当を消した：[1-9][0-9]* 件");
+        assertThat(expectedDeleted).isPositive();
+        assertThat(CapturedLogs.since(output, logStart)).contains("期限切れの引当を消した：" + expectedDeleted + " 件");
     }
 
     @Test

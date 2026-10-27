@@ -127,7 +127,7 @@
 |----------|----------|
 | リポジトリのルート | `*.ts`、`*.mjs`（今は `knip.ts`） |
 | 各パッケージの直下（`frontend/admin`、`frontend/store`、`frontend/shared`、`e2e`） | `*.config.ts`、`*.config.mjs` |
-| `backend/ecsite/` | `*.gradle.kts` |
+| `backend/ecsite/`（下の全ての深さ） | `*.gradle.kts` |
 
 - DC-223-13 の誤検出が多いときは、記号の後に数字だけが続く語（`AC10`）に限り、英字が続く語（`US1A` など）は対象にしない。正規表現は、テストの例で確認してから commit する。
 - spec 226 は、番号の検査の対象を E2E とフロントのテストのコードに広げる（spec 226 の第 6 節の 2）。E2E の設定のファイルを spec 226 も対象に含めたときは、後でマージする側が対象の定義を 1 つにまとめる（第 10 節）。
@@ -156,7 +156,7 @@ DC-223-19 の例外：
 |----|------|----------|----------|
 | 20 | 出荷モジュールの公開 API に、配送業者の表示名のキーを返す操作を置く。通知モジュールは、配送業者の表示名のキーを得る port を application に置き、`infrastructure/directory/` の実装が出荷モジュールの公開 API を呼ぶ。実装は、出荷イベント（`OrderShipped`）の配送業者を、出荷モジュールの配送業者に `default` のない `switch` 式で変換する。通知モジュールの依存に出荷モジュールの公開 API を加え、package-info の説明を直す（第 11.3 節の案 A） | `main/module/shipping/api/`（新しい操作）、`main/module/notification/application/ShipmentMailComposer.java:31-32`、`main/module/notification/application/port/`（新しい port）、`main/module/notification/infrastructure/directory/`（新しい実装）、`main/module/notification/package-info.java`、`main/module/shipping/infrastructure/mock/MockCarrierController.java:133` | 出荷通知メールのテスト（`ShipmentMailTest`）が、今と同じ文面を確認して通る。`git grep '"ecsite.shipping.carrier.' -- backend/ecsite/src/main` が出荷モジュールの中だけ。Spring Modulith の検査が通る |
 | 21 | jOOQ（`org.jooq` と生成したコード）を使えるのは、モジュールの `infrastructure/persistence/` だけであることを、構成の検査に加える。mock の出荷の問い合わせ（`MockShipmentQuery`）は例外にし、理由をバックエンドの書き方に書く（第 11.4 節の案 A）。モジュールの外の共通の設定（`config/event/EventPublicationRecords`）は今の規則（`SchemaOwnershipTest`）のとおり | `test/architecture/SchemaOwnershipTest.java`、バックエンドの書き方 第 1 節 | 違反の例（application 層で jOOQ を使う）で検査が失敗する |
-| 22 | 管理画面の IdP の既定値は、管理画面の認証の設定（`frontend/admin/src/auth/oidc.ts`）の 1 か所に置く。ローカルの検査の script と CI は、本番のビルドに値を明示して渡すので、同じ値を重ねて書く（spec の「重ねて書く必要があるとき」）。その値と環境変数の文書の値が、既定値と一致することを CI の検査が確認する（第 11.5 節の案 B） | `scripts/ci/env-defaults.mjs`（規則の追加）、テスト、`frontend/admin/src/auth/oidc.ts:9-10`、`scripts/dev/check-frontend.sh:25-26`、`.github/workflows/ci.yml:293-294`、`docs/guides/environment.md:67-68` | テストに、どれかの値が違う例を書く。今の値で通る |
+| 22 | 管理画面の IdP の既定値は、管理画面の認証の設定（`frontend/admin/src/auth/oidc.ts`）の 1 か所に置く。ローカルの検査の script と CI は、本番のビルドに値を明示して渡すので、同じ値を重ねて書く（spec の「重ねて書く必要があるとき」）。その値と環境変数の文書の値が、既定値と一致することを CI の検査が確認する（第 11.5 節の案 B） | `scripts/ci/env-defaults.mjs`（規則の追加）、テスト、`frontend/admin/src/auth/oidc.ts:9-10`、`scripts/dev/check-frontend.sh:25-26`、`frontend/admin/knip.ts`（同じ値を既定として持つ。実装の T223-02-05 で判明）、`.github/workflows/ci.yml:293-294`、`docs/guides/environment.md:67-68` | テストに、どれかの値が違う例を書く。今の値で通る |
 | 23 | 地域のマイグレーションの生成の処理が書く先頭のコメントを、コミット済みのマイグレーションの 1 行目と同じにする。Javadoc に、適用済みのマイグレーションに合わせる理由と、正しい設計書のパス（`docs/design/modules/region.md`）を書く。理由：コミット済みのコメントは、文書を移す前のパス（`docs/backend/modules/region.md`）を指すため | `tools/tools/region/RegionMigrationGenerator.java:87`、`test/tools/region/`（新しいテスト） | 生成の処理の先頭の 3 行と、コミット済みのマイグレーションの先頭の 3 行を比べる単体テストを加える。`./gradlew generateRegionMigration` の出力がコミット済みのものと一致する（郵便番号の CSV があるメインの作業ツリーで確認する） |
 
 - DC-223-20 で、キーの文字列は出荷モジュールのドメインの配送業者の 1 か所にし、公開 API の操作はそれを呼ぶ。出荷モジュールの mock の画面は、ドメインの配送業者から直接キーを得る。理由：構成の検査の層の表で、infrastructure は同じモジュールの api に依存できないため（実装の T223-01-06 で判明、2026-10-27）。

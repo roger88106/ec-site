@@ -28,13 +28,14 @@ export async function shipOnAdmin(page: Page, trackingNumber: string): Promise<v
  * @param page 使うページ（mock の物流の画面に移る）
  * @param orderId 注文 ID
  * @param status 通知する配送状態
- * @param backendUrl バックエンドの URL（既定は E2E のバックエンド）
+ * @param options 省けば既定の値を使う
+ * @param options.backendUrl バックエンドの URL（既定は E2E のバックエンド）
  */
 export async function notifyCarrier(
   page: Page,
   orderId: string,
   status: CarrierNotification,
-  backendUrl = BACKEND_URL,
+  { backendUrl = BACKEND_URL }: { backendUrl?: string } = {},
 ): Promise<void> {
   await page.goto(`${backendUrl}/mock-carrier`)
   const row = page.getByRole('row').filter({ hasText: orderId })

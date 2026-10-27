@@ -22,9 +22,9 @@ const amounts = {
  * 共有のパッケージは店舗画面のテストの補助を使えないので、このファイルの中で作る。
  */
 function renderSummary(variant: AmountsSummaryVariant) {
-  const { document } = new JSDOM('<!doctype html><html><body></body></html>').window
-  document.body.innerHTML = renderToStaticMarkup(<AmountsSummary amounts={amounts} variant={variant} />)
-  return within(document.body)
+  const { document: jsdomDocument } = new JSDOM('<!doctype html><html><body></body></html>').window
+  jsdomDocument.body.innerHTML = renderToStaticMarkup(<AmountsSummary amounts={amounts} variant={variant} />)
+  return within(jsdomDocument.body)
 }
 
 /** 見える文言が、この順に出ている。見つからない文言があれば、その文言が失敗のメッセージに出る */

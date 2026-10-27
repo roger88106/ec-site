@@ -60,7 +60,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      // API の結果のキャッシュを 1 秒にし、本番のキャッシュの時間（60 秒）を待たずに一覧への反映を確認する
+      // API の結果のキャッシュを 1 秒にし、本番の 60 秒のキャッシュを待たずに一覧への反映を確認する
       name: 'store',
       command: `pnpm build && pnpm start --port ${portOf(STORE_URL)}`,
       cwd: '../frontend/store',

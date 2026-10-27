@@ -156,8 +156,8 @@ export function postalCodeAddress(
  */
 export function form(fields: Record<string, string>): FormData {
   const data = new FormData()
-  for (const [name, value] of Object.entries(fields)) {
-    data.set(name, value)
+  for (const [fieldName, value] of Object.entries(fields)) {
+    data.set(fieldName, value)
   }
   return data
 }

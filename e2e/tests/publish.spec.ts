@@ -13,13 +13,13 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
   const code = productCode('FLOW')
   // 検索のキーワード。実行ごとの印を含め、他の商品に当たらないようにする
   const keyword = `公開の流れ${RUN_ID}`
-  const name = `E2E ${keyword} T シャツ`
+  const productName = `E2E ${keyword} T シャツ`
 
   await test.step('管理画面：商品を登録する（品番は小文字で入れても大文字になる）', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/products/new`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: '/products/new' })
     await page.getByLabel('商品品番（登録後は変更できません）').fill(code.toLowerCase())
     await expect(page.getByLabel('商品品番（登録後は変更できません）')).toHaveValue(code)
-    await page.getByLabel('商品名').fill(name)
+    await page.getByLabel('商品名').fill(productName)
     await page.getByRole('combobox', { name: '税区分' }).click()
     await page.getByRole('option', { name: `${taxCategory.name}（現時点の率：10%）` }).click()
     await page.getByLabel('税抜価格（円）').fill('1000')
@@ -61,24 +61,24 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
 
   await test.step('店舗画面：カテゴリの一覧と、キーワードの検索に出る', async () => {
     await reopenUntil(page, `${STORE_URL}/products?categoryId=${category.id}`, async () => {
-      await expect(productCard(page, name)).toBeVisible({ timeout: CHECK_TIMEOUT })
+      await expect(productCard(page, productName)).toBeVisible({ timeout: CHECK_TIMEOUT })
     })
-    await expect(productCard(page, name)).toContainText('1,100 円（税抜 1,000 円）')
+    await expect(productCard(page, productName)).toContainText('1,100 円（税抜 1,000 円）')
     await reopenUntil(page, `${STORE_URL}/search?q=${encodeURIComponent(keyword)}`, async () => {
-      await expect(productCard(page, name)).toBeVisible({ timeout: CHECK_TIMEOUT })
+      await expect(productCard(page, productName)).toBeVisible({ timeout: CHECK_TIMEOUT })
     })
   })
 
   await test.step('店舗画面：詳細でバリアントを選ぶと、在庫状況を出す。在庫のない青は選べない', async () => {
-    await productCard(page, name).click()
-    await expect(page.getByRole('heading', { name })).toBeVisible()
+    await productCard(page, productName).click()
+    await expect(page.getByRole('heading', { name: productName })).toBeVisible()
     await expect(page.getByText('1,100 円（税抜 1,000 円）')).toBeVisible()
     await expect(page.getByText('色を選ぶと、在庫状況を表示します。')).toBeVisible()
     await expect(page.getByRole('button', { name: '青', exact: true })).toBeDisabled()
 
     await page.getByRole('button', { name: '赤', exact: true }).click()
     await expect(page.getByText('在庫あり', { exact: true })).toBeVisible()
-    // 在庫数は出さない（AC-64）。在庫の表示は「在庫あり」だけで、在庫の数を示す文（「在庫 5」「残り 5」「5 個」）がない
+    // 在庫数は出さない。在庫の表示は「在庫あり」だけで、在庫の数を示す文（「在庫 5」「残り 5」「5 個」）がない
     await expect(page.getByText(/在庫[^あ]*[0-9]|残り[^。]*[0-9]|[0-9]+ ?(個|点)/)).toHaveCount(0)
   })
 })

@@ -9,6 +9,9 @@
 // - フロントのテストと補助：理由のコメントのない型の回避（as never、as unknown as）、fireEvent の直接の使用を書かない（第 4.6、4.8 節）
 // - フロントのテスト：describe の名前を識別子だけにしない、要素のプロパティ・属性を toBe・toEqual で比べない、描画した HTML の文字を要素や属性の並びで確かめない（第 2.2、4.7、4.1 節）
 // - フロントのテストと E2E：toBeTruthy・toBeDefined で確かめない、getAllBy…の結果を並びのインデックスで選ばない（第 4.1 節）
+// - E2E：.first()・.nth()・.last() と、locator の文字列のセレクターの中の位置（nth=、:nth-child( など）で選ばない、ボタンの名前を完全一致で探す（第 4.1 節）。networkidle で待たない、timeout を含む項目・intervals・setTimeout などの引数に、タイムアウトを数字のリテラルで書かない（e2e/src/waits.ts を除く。第 5 節）
+// - フロントのテストと補助と E2E：TypeScript の lib のグローバルの名前（一覧は globals/lib-globals.json）と同じ名前の const・let を宣言しない（テストの書き方 第 4.10 節）
+// - フロントのテストと補助と E2E：テストの間に空行を置く（テストを閉じる行の直後に test・it・describe を続けない。第 4.11 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
 // 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く。共有と同じ名前の定義でよいもの（各画面の translate など）は、キー <画面>:<名前> と理由を書く
 // fireEvent を使ってよいのは、同じ行のコメントか、コメントだけの直前の行に理由を書いた呼び出しだけ（除外の一覧には書かない）
@@ -98,9 +101,10 @@ const INTERNAL_SELECTOR = [/\bdata-slot\b/, /\bquerySelector(?:All)?\b/]
  * まとまりは重なる：sources はテストの補助を含み、tests と testsWithSupport は画面のテストを含む。
  *
  * @param {string[]} files リポジトリのルートからのパス
- * @returns {{ sources: string[], frontendTests: string[], testSupport: string[], e2e: string[], tests: string[], testsWithSupport: string[] }}
+ * @returns {{ sources: string[], frontendTests: string[], testSupport: string[], e2e: string[], tests: string[], testsWithSupport: string[], testsWithSupportAndE2e: string[] }}
  *   sources は画面のソース（テストを除く。テストの補助を含む）、frontendTests は画面の単体・結合テスト、testSupport はテストの補助、e2e は E2E、
- *   tests は画面のテストと E2E、testsWithSupport は画面のテストとテストの補助（E2E を除く）
+ *   tests は画面のテストと E2E、testsWithSupport は画面のテストとテストの補助（E2E を除く）、
+ *   testsWithSupportAndE2e は画面のテストとテストの補助と E2E（src/test/ の下の .test.ts は 1 回だけ入る。ファイルごとに 1 回報告する検査用）
  */
 export function groupTargets(files) {
   const pick = (matches) => files.filter(matches)
@@ -114,6 +118,7 @@ export function groupTargets(files) {
     e2e: pick(isE2e),
     tests: pick((file) => isFrontendTest(file) || isE2e(file)),
     testsWithSupport: pick((file) => isFrontendTest(file) || isTestSupport(file)),
+    testsWithSupportAndE2e: pick((file) => isFrontendTest(file) || isTestSupport(file) || isE2e(file)),
   }
 }
 
@@ -756,11 +761,513 @@ export function findFireEvents(text) {
   return toHits(text, lineNumbers)
 }
 
+/** 位置で要素を選ぶメソッドの呼び出し（.first()、.last()、.nth(…)。?. を含む） */
+const POSITION_SELECTOR = /\.\s*(?:first|last)\s*\(\s*\)|\.\s*nth\s*\(/
+
+/** locator の呼び出しの始まり */
+const LOCATOR_CALL = /\blocator\s*\(/g
+
+/** 文字列のセレクターの中の位置（nth=、:nth-match(、:nth-child(、:nth-of-type(、:first-child、:last-child、:first-of-type、:last-of-type） */
+const POSITION_SELECTOR_TEXT = /(?<![\w-])nth=|:nth-(?:match|child|last-child|of-type|last-of-type)\(|:(?:first|last)-(?:child|of-type)\b/
+
+/**
+ * E2E で、位置で要素を選ぶメソッド（.first()・.nth(…)・.last()）と、locator の文字列のセレクターの中の位置
+ * （nth=、:nth-match(、:nth-child(、:first-child、:last-child など）を使う行を探す（テストの書き方 第 4.1 節。名前や親の要素で絞る）。
+ * セレクターの文字列は、locator( の引数の中だけを見る（テストの名前やメッセージの文字列は見ない）。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findPositionSelectors(text) {
+  const code = stripComments(text, { blankStrings: true })
+  const plain = stripComments(text)
+  const lineOf = createLineLocator(code)
+  const lineNumbers = findCodeLines(text, (line) => POSITION_SELECTOR.test(line), { blankStrings: true }).map((hit) => hit.line)
+  for (const match of code.matchAll(LOCATOR_CALL)) {
+    const open = match.index + match[0].length - 1
+    const close = closingParen(code, open)
+    if (close < code.length && POSITION_SELECTOR_TEXT.test(plain.slice(open + 1, close))) lineNumbers.push(lineOf(match.index))
+  }
+  return toHits(text, lineNumbers)
+}
+
+/**
+ * E2E で、ネットワークが静まるまで待つ networkidle を書いた行を探す（テストの書き方 第 5 節。画面の状態を条件にして待つ）。
+ * waitUntil の値は文字列なので、文字列は残してコメントだけを除く。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findNetworkIdleWaits(text) {
+  return findCodeLines(text, (line) => /\bnetworkidle\b/.test(line))
+}
+
+/** テストの呼び出しを閉じる行（`})`、`}, 30_000)`、`});`）。コメントと文字列を除いた行に当てる */
+const CALL_CLOSE_LINE = /^\}.*\)[;,]?$/
+
+/**
+ * テスト・グループの呼び出しの始まりの行（test、it、describe と、test.each(…)、describe.skip(…)、test.describe(… など）。
+ * `.` の後はテスト・グループの形に限る。test.beforeEach・test.use・test.step・test.info・test.setTimeout などは含めない（await 付きの test.step も含めない）
+ */
+const TEST_CALL_START = /^(?:test|it|describe)(?:\.(?:each|skip|only|fixme|fail|todo|concurrent|describe|serial|parallel))*\s*[(`]/
+
+/** 1 行で閉じるテストの呼び出しの終わり（`)`、`);`） */
+const CALL_ONE_LINE_END = /\)[;,]?$/
+
+/**
+ * 1 行で閉じる、テスト・グループの呼び出しかを返す（test('a', () => {}) のように、始まりの行で括弧が閉じるもの）。
+ *
+ * @param {string} line コメントと文字列を除いた行（前後の空白を除く）
+ * @returns {boolean} 1 行で閉じていれば true
+ */
+function isOneLineTestCall(line) {
+  if (!TEST_CALL_START.test(line) || !CALL_ONE_LINE_END.test(line)) return false
+  let depth = 0
+  for (const char of line) {
+    if (char === '(') depth += 1
+    else if (char === ')') depth -= 1
+  }
+  return depth === 0
+}
+
+/**
+ * テストの間に空行がない箇所を探す（テストの書き方 第 4.11 節）。
+ * テストを閉じる行（`})` と、1 行で閉じるテストの行）の直後に、空行なしで test・it・describe が続く箇所。間にコメントの行があっても、空行がなければ見つける。
+ * test.beforeEach・test.use・test.step などはテスト・グループでないので、続く側として見ない。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行（続く側の test・it・describe の行）
+ */
+export function findMissingTestSpacing(text) {
+  const original = text.split('\n')
+  const code = stripComments(text, { blankStrings: true }).split('\n')
+  const hits = []
+  code.forEach((line, index) => {
+    if (!CALL_CLOSE_LINE.test(line.trim()) && !isOneLineTestCall(line.trim())) return
+    let next = index + 1
+    while (next < code.length && code[next].trim() === '' && original[next].trim() !== '') next += 1
+    if (next < code.length && TEST_CALL_START.test(code[next].trim())) hits.push({ line: next + 1, text: original[next].trim() })
+  })
+  return hits
+}
+
+/**
+ * 括弧の中の引数や、オブジェクトの項目を、深さ 0 のカンマで分ける。
+ *
+ * @param {string} code 文字列を空白にしたソース（括弧とカンマが文字列の中にない）
+ * @param {string} plain code と同じ位置で、文字列を残したソース（空の部分かの判定に使う）
+ * @param {number} from 始まりの位置
+ * @param {number} to 終わりの位置（含まない）
+ * @returns {[number, number][]} 部分の範囲（始まりと終わりの次の位置。末尾のカンマの後の空の部分は除く）
+ */
+function splitTopLevel(code, plain, from, to) {
+  const parts = []
+  let depth = 0
+  let start = from
+  for (let i = from; i < to; i += 1) {
+    if ('([{'.includes(code[i])) depth += 1
+    else if (')]}'.includes(code[i])) depth -= 1
+    else if (code[i] === ',' && depth === 0) {
+      parts.push([start, i])
+      start = i + 1
+    }
+  }
+  parts.push([start, to])
+  // 末尾のカンマの後の、空の部分を除く（文字列は code では空白なので、plain で判定する）
+  const [last] = parts.slice(-1)
+  return parts.length > 1 && plain.slice(...last).trim() === '' ? parts.slice(0, -1) : parts
+}
+
+/** getByRole の呼び出しの始まり */
+const GET_BY_ROLE = /\bgetByRole\s*\(/g
+
+/** 先頭の ^ と末尾の $ を固定した正規表現のリテラル（フラグを許す。最上位の選択 | は isAnchoredRegex が別に見る） */
+const ANCHORED_REGEX = /^\/\^([\s\S]*)\$\/[a-z]*$/
+
+/** オプションの name のキー（name、'name'、"name"、['name']）と、後ろの : */
+const NAME_KEY = /^(?:name|(['"`])name\1|\[\s*(['"`])name\2\s*\])\s*:/
+
+/**
+ * 正規表現のリテラルが、先頭の ^ と末尾の $ で固定されているかを返す。
+ * 末尾の $ がエスケープされていると（/^合計\$/）、文字の $ に一致するだけで行末を固定していないので固定とみなさない（\\$ の $ は固定）。
+ * 最上位に | があると（/^a|b$/）、^a と b$ の選択で部分一致になるので固定とみなさない。グループ・文字クラス・エスケープの中の | は選択でない。
+ *
+ * @param {string} literal 正規表現のリテラル
+ * @returns {boolean} 固定していれば true
+ */
+function isAnchoredRegex(literal) {
+  const match = ANCHORED_REGEX.exec(literal)
+  if (!match) return false
+  const body = match[1]
+  // 末尾の $ の前の \ が奇数個なら、その $ はエスケープされた文字そのもので、行末を固定していない
+  if ((/\\*$/.exec(body)[0].length & 1) === 1) return false
+  let depth = 0
+  let inClass = false
+  for (let i = 0; i < body.length; i += 1) {
+    const char = body[i]
+    if (char === '\\') i += 1
+    else if (inClass) inClass = char !== ']'
+    else if (char === '[') inClass = true
+    else if (char === '(') depth += 1
+    else if (char === ')') depth -= 1
+    else if (char === '|' && depth === 0) return false
+  }
+  return true
+}
+
+/**
+ * E2E で、ボタンを名前で探すのに、完全一致でない箇所を探す（テストの書き方 第 4.1 節）。
+ * name が正規表現のリテラルなら、先頭の ^ と末尾の $ を固定していること。それ以外（文字列、変数、テンプレート文字列）なら exact: true が付いていること。
+ * 役割が button の getByRole だけを見る（row.getByRole(…) のような連鎖の途中、複数の行にまたがる呼び出しも読む）。
+ * name のない呼び出しは名前で探さないので対象にしない。オプションがオブジェクトのリテラルでないとき、
+ * または展開（...）を含み name を読めないときは、名前を読めないので見つける。
+ * name に正規表現を入れた変数を渡す書き方は追わない（変数の名前は文字列にし、exact: true を付ける。テストの書き方 第 4.1 節）
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行（getByRole の行）
+ */
+export function findButtonNameChecks(text) {
+  // 構造を読むための、文字列と正規表現を空白にしたソースと、値を読むための、文字列と正規表現を残したソース（位置は同じ）
+  const code = stripComments(text, { blankStrings: true })
+  const plain = stripComments(text, { keepRegex: true })
+  const lineOf = createLineLocator(code)
+  const lineNumbers = []
+  for (const match of code.matchAll(GET_BY_ROLE)) {
+    const open = match.index + match[0].length - 1
+    const close = closingParen(code, open)
+    if (close >= code.length) continue
+    const [role, options] = splitTopLevel(code, plain, open + 1, close)
+    if (!/^(['"`])button\1$/.test(plain.slice(...role).trim()) || !options) continue
+    const optionsCode = code.slice(...options).trim()
+    if (!optionsCode.startsWith('{') || !optionsCode.endsWith('}')) {
+      lineNumbers.push(lineOf(match.index))
+      continue
+    }
+    const objectFrom = options[0] + code.slice(...options).indexOf('{')
+    const objectTo = options[0] + code.slice(...options).trimEnd().length - 1
+    let nameKind = null
+    let exact = false
+    let hasSpread = false
+    for (const item of splitTopLevel(code, plain, objectFrom + 1, objectTo)) {
+      const masked = code.slice(...item).trim()
+      const value = plain.slice(...item).trim()
+      const nameKey = NAME_KEY.exec(value)
+      if (nameKey || value === 'name') {
+        const nameValue = nameKey ? value.slice(nameKey[0].length).trim() : null
+        if (nameValue?.startsWith('/')) nameKind = isAnchoredRegex(nameValue) ? 'anchored' : 'regex'
+        else nameKind = 'other'
+      } else if (/^exact\s*:\s*true$/.test(masked)) exact = true
+      else if (masked.startsWith('...')) hasSpread = true
+    }
+    if (nameKind === null && hasSpread) lineNumbers.push(lineOf(match.index))
+    if (nameKind === null || nameKind === 'anchored') continue
+    if (nameKind === 'regex' || !exact) lineNumbers.push(lineOf(match.index))
+  }
+  return toHits(text, lineNumbers)
+}
+
+/** タイムアウトの定数を定義するファイル。数字のリテラルを書いてよい */
+const TIMEOUT_CONSTANTS_FILE = 'e2e/src/waits.ts'
+
+/**
+ * タイムアウトの数字の検査を当てるファイルに絞る（タイムアウトの定数を定義するファイルを除く）。
+ *
+ * @param {string[]} files E2E のファイル
+ * @returns {string[]} 検査するファイル（順は保つ）
+ */
+export function timeoutTargets(files) {
+  return files.filter((file) => file !== TIMEOUT_CONSTANTS_FILE)
+}
+
+/** timeout を含む項目（timeout、actionTimeout、timeoutMs、navigationTimeoutMs など）と intervals の項目 */
+const TIMEOUT_PROPERTY = /\b(?:[\w$]*timeout[\w$]*|intervals)\s*:(?!:)/gi
+
+/** 引用符で囲んだ timeout を含む項目と intervals の項目（文字列を残したソースに当てる） */
+const QUOTED_TIMEOUT_PROPERTY = /(['"`])(?:[\w$]*timeout[\w$]*|intervals)\1\s*:(?!:)/gi
+
+/** setTimeout・test.setTimeout・setDefaultTimeout・setDefaultNavigationTimeout の呼び出しの始まり */
+const SET_TIMEOUT = /\b(?:setTimeout|setDefaultTimeout|setDefaultNavigationTimeout)\s*\(/g
+
+/** 型の注釈つきのデフォルト引数の値（timeout: number = 5000 の `number = 5000`）。項目の値でないので見ない */
+const TYPE_ANNOTATED_DEFAULT = /^\s*[\w$.<>[\]|& ]+?(?<![<>!=])=(?![=>])/
+
+/** 数字のリテラルの始まり（識別子の一部の数字は除く） */
+const NUMBER_LITERAL = /(?<![\w$.])\d/
+
+/**
+ * 式の終わりの位置を返す（深さ 0 のカンマか、囲んでいる括弧の閉じ）。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} from 式の始まりの位置
+ * @returns {number} 式の終わりの位置。なければソースの終わり
+ */
+function expressionEnd(code, from) {
+  let depth = 0
+  for (let i = from; i < code.length; i += 1) {
+    if ('([{'.includes(code[i])) depth += 1
+    else if (')]}'.includes(code[i])) {
+      if (depth === 0) return i
+      depth -= 1
+    } else if ((code[i] === ',' || code[i] === ';') && depth === 0) return i
+  }
+  return code.length
+}
+
+/**
+ * E2E で、タイムアウトを数字のリテラルで書く行を探す（テストの書き方 第 5 節。e2e/src/waits.ts の定数を使う）。
+ * timeout を含む項目（timeout、actionTimeout、navigationTimeout など。引用符で囲んだキーを含む）と intervals の項目の値、
+ * setTimeout・test.setTimeout・setDefaultTimeout・setDefaultNavigationTimeout の引数（引数が複数なら最後の引数。global の setTimeout は最後が待つ時間）に、
+ * 数字のリテラルを含む式（10_000、5 * 1000、ASYNC_TIMEOUT * 2 など）を見つける。
+ *
+ * @param {string} text ソース
+ * @returns {{ line: number, text: string }[]} 見つけた行
+ */
+export function findTimeoutLiterals(text) {
+  const code = stripComments(text, { blankStrings: true })
+  const plain = stripComments(text)
+  const lineOf = createLineLocator(code)
+  const lineNumbers = []
+  for (const match of code.matchAll(TIMEOUT_PROPERTY)) {
+    const from = match.index + match[0].length
+    const value = code.slice(from, expressionEnd(code, from))
+    if (code.slice(0, match.index).trimEnd().endsWith('?') || TYPE_ANNOTATED_DEFAULT.test(value)) continue
+    if (NUMBER_LITERAL.test(value)) lineNumbers.push(lineOf(match.index))
+  }
+  for (const match of plain.matchAll(QUOTED_TIMEOUT_PROPERTY)) {
+    // 文字列の中の文字（"a 'timeout': 5" など）は、直前が { か , のときだけキーとみなす
+    const before = plain.slice(0, match.index).trimEnd().at(-1)
+    if (code[match.index] !== ' ' || (before !== '{' && before !== ',')) continue
+    const from = match.index + match[0].length
+    if (NUMBER_LITERAL.test(code.slice(from, expressionEnd(code, from)))) lineNumbers.push(lineOf(match.index))
+  }
+  for (const match of code.matchAll(SET_TIMEOUT)) {
+    const open = match.index + match[0].length - 1
+    const close = closingParen(code, open)
+    if (close >= code.length) continue
+    const target = splitTopLevel(code, plain, open + 1, close).at(-1)
+    if (target && NUMBER_LITERAL.test(code.slice(...target))) lineNumbers.push(lineOf(match.index))
+  }
+  return toHits(text, lineNumbers)
+}
+
+/** 組み込みの名前の一覧（TypeScript の lib から生成する。scripts/ci/globals/lib-globals.mjs） */
+const BUILTIN_NAMES_FILE = 'scripts/ci/globals/lib-globals.json'
+
+/** const・let の宣言の始まり（as const の const と、プロパティの const は除く） */
+const DECLARATION_KEYWORD = /(?<![\w$.])(?:const|let)\s+/g
+
+/** 宣言の名前の後ろに続いてよいもの（初期値、型の注釈、次の宣言、文の終わり、for…of・for…in、行の終わり） */
+const BINDING_FOLLOWER = /^[ \t]*(?:[=,:;)}]|of\b|in\b|\r?\n|$)/
+
+/** 変数の名前 */
+const IDENTIFIER_ONLY = /^[\w$]+$/
+
+/**
+ * 深さ 0 にある、初めての文字の位置を返す（括弧の中は数えない）。= は、=>・==・<=・>=・!= の一部でないものだけを数える。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {string} char 探す文字
+ * @returns {number} 位置。なければ -1
+ */
+function topLevelIndexOf(code, char) {
+  let depth = 0
+  for (let i = 0; i < code.length; i += 1) {
+    if ('([{'.includes(code[i])) depth += 1
+    else if (')]}'.includes(code[i])) depth -= 1
+    else if (depth === 0 && code[i] === char) {
+      if (char === '=' && (/[=>]/.test(code[i + 1] ?? '') || /[=!<>]/.test(code[i - 1] ?? ''))) continue
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * 分割代入の対象（名前か入れ子の分割代入。後ろに既定値があってもよい）が宣言する名前を返す。
+ *
+ * @param {string} target 対象
+ * @returns {string[]} 名前
+ */
+function targetNames(target) {
+  const equals = topLevelIndexOf(target, '=')
+  const value = (equals >= 0 ? target.slice(0, equals) : target).trim()
+  if (value.startsWith('{') || value.startsWith('[')) return patternNames(value)
+  return IDENTIFIER_ONLY.test(value) ? [value] : []
+}
+
+/**
+ * 分割代入のパターン（{ … } か [ … ]）が宣言する名前を返す。
+ * オブジェクトの { a: b } は右側の b が宣言される名前で、{ a } は a、{ ...rest } は rest。配列は全ての要素を見る。
+ *
+ * @param {string} pattern 括弧を含むパターン
+ * @returns {string[]} 名前
+ */
+function patternNames(pattern) {
+  const isObject = pattern.startsWith('{')
+  const inner = pattern.slice(1, -1)
+  const parts = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i <= inner.length; i += 1) {
+    if (i === inner.length || (inner[i] === ',' && depth === 0)) {
+      parts.push(inner.slice(start, i).trim())
+      start = i + 1
+    } else if ('([{'.includes(inner[i])) depth += 1
+    else if (')]}'.includes(inner[i])) depth -= 1
+  }
+  return parts.flatMap((part) => {
+    if (part === '') return []
+    if (part.startsWith('...')) return targetNames(part.slice(3))
+    if (!isObject) return targetNames(part)
+    const colon = topLevelIndexOf(part, ':')
+    const equals = topLevelIndexOf(part, '=')
+    return colon >= 0 && (equals < 0 || colon < equals) ? targetNames(part.slice(colon + 1)) : targetNames(part)
+  })
+}
+
+/**
+ * 宣言の名前（名前か分割代入のパターン）を、位置から読む。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} from 始まりの位置
+ * @returns {{ names: string[], start: number, end: number } | null} 名前、始まりと終わり（含まない）の位置。名前の形でなければ null
+ */
+function readBinding(code, from) {
+  const start = from + /^\s*/.exec(code.slice(from))[0].length
+  let end = start
+  if (code[start] === '{' || code[start] === '[') {
+    let depth = 0
+    for (end = start; end < code.length; end += 1) {
+      if ('([{'.includes(code[end])) depth += 1
+      else if (')]}'.includes(code[end])) {
+        depth -= 1
+        if (depth === 0) break
+      }
+    }
+    if (end >= code.length) return null
+    end += 1
+    return BINDING_FOLLOWER.test(code.slice(end)) ? { names: patternNames(code.slice(start, end)), start, end } : null
+  }
+  end = start + (/^[\w$]*/.exec(code.slice(start))[0].length)
+  if (end === start || !BINDING_FOLLOWER.test(code.slice(end))) return null
+  return { names: [code.slice(start, end)], start, end }
+}
+
+/**
+ * 名前の後ろの型の注釈（: の後ろ）を読み飛ばし、初期値の = か、次の宣言の , か、文の終わりの位置を返す。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} from 名前の終わりの位置
+ * @returns {number} 位置
+ */
+function skipAnnotation(code, from) {
+  let at = from + /^[ \t]*/.exec(code.slice(from))[0].length
+  if (code[at] !== ':') return at
+  let depth = 0
+  for (at += 1; at < code.length; at += 1) {
+    const char = code[at]
+    const arrow = char === '>' && code[at - 1] === '='
+    if ('([{<'.includes(char)) depth += 1
+    else if (')]}>'.includes(char) && !arrow) depth -= 1
+    else if (depth <= 0 && (char === ',' || char === ';' || char === '\n' || (char === '=' && code[at + 1] !== '>'))) break
+  }
+  return at
+}
+
+/**
+ * ジェネリクスの型引数 `<…>` の閉じの位置を返す。呼び出し側は、`<` が識別子の直後にあるものだけを渡す
+ * （比較の `a < b` は演算子の前後に空白を置くので渡されない）。`=>` の `>` は数えない。対応する `>` が文の終わりまでになければ、比較とみなす。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} open `<` の位置
+ * @param {number} end 文の終わりの位置
+ * @returns {number} 対応する `>` の位置。なければ -1
+ */
+function genericsEnd(code, open, end) {
+  let depth = 0
+  for (let i = open; i < end; i += 1) {
+    if (code[i] === '<') depth += 1
+    else if (code[i] === '>' && code[i - 1] !== '=') {
+      depth -= 1
+      if (depth === 0) return i
+    }
+  }
+  return -1
+}
+
+/**
+ * `<` がジェネリクスの型引数の始まりかを返す。識別子の直後（new Map<string, number>）か、
+ * `=` か `(` の直後（const f = <T,>(a: T) => a の型引数を持つ矢印関数）にあるものを、型引数とみなす。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} open `<` の位置
+ * @returns {boolean} 型引数の始まりなら true
+ */
+function opensGenerics(code, open) {
+  if (/[\w$]/.test(code[open - 1] ?? '')) return true
+  const before = code.slice(0, open).trimEnd().at(-1)
+  return before === '=' || before === '('
+}
+
+/**
+ * 初期値の後ろの、次の宣言の始まり（深さ 0 の , の次の位置）を返す。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} from 初期値の始まりの位置
+ * @returns {number} 次の宣言の始まりの位置。なければ -1
+ */
+function nextDeclarator(code, from) {
+  const end = statementEnd(code, from)
+  let depth = 0
+  for (let i = from; i < end; i += 1) {
+    if (code[i] === '<' && opensGenerics(code, i)) {
+      const close = genericsEnd(code, i, end)
+      if (close > i) i = close
+    } else if ('([{'.includes(code[i])) depth += 1
+    else if (')]}'.includes(code[i])) depth -= 1
+    else if (depth === 0 && code[i] === ',') return i + 1
+  }
+  return -1
+}
+
+/**
+ * フロントのテストと E2E で、組み込みの名前（TypeScript の lib が宣言するグローバルの名前）と同じ名前の const・let の宣言を探す
+ * （テストの書き方 第 4.10 節。エラーにならずにグローバルの値が使われるのを防ぐ）。
+ * 対象は、const・let の宣言の名前（1 つの宣言に並べたもの、分割代入、for…of・for…in の宣言を含む）。
+ * 関数の引数、catch の変数、関数・クラスの宣言、import は対象にしない。
+ * 分割代入の { a: name } は右側の name が宣言される名前で、{ name: x } は x。
+ *
+ * @param {string} text ソース
+ * @param {Set<string>} names 組み込みの名前
+ * @returns {{ line: number, text: string, name: string }[]} 見つけた宣言（名前ごと。行は名前か、分割代入の始まりの行）
+ */
+export function findBuiltinShadowing(text, names) {
+  const code = stripComments(text, { blankStrings: true })
+  const lineOf = createLineLocator(code)
+  const original = text.split('\n')
+  const hits = []
+  for (const match of code.matchAll(DECLARATION_KEYWORD)) {
+    if (/\bas\s+$/.test(code.slice(Math.max(0, match.index - 12), match.index))) continue
+    let from = match.index + match[0].length
+    while (from >= 0) {
+      const binding = readBinding(code, from)
+      if (!binding) break
+      for (const name of binding.names) {
+        if (names.has(name)) hits.push({ line: lineOf(binding.start), text: original[lineOf(binding.start) - 1].trim(), name })
+      }
+      const at = skipAnnotation(code, binding.end)
+      if (code[at] === '=') from = nextDeclarator(code, at + 1)
+      else from = code[at] === ',' ? at + 1 : -1
+    }
+  }
+  return hits
+}
+
 /** 共有の名前と同じ名前の定義の除外のキー（<画面>:<名前>）。画面は store か admin */
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
 if (isMain(import.meta.url)) {
-  // E2E（e2e/）には、テストの種類のファイルに当てる規則（CSS のクラスの確認、toBeTruthy・toBeDefined、並びのインデックス）だけを当てる。ほかの規則は frontend/ のファイルだけに当てる
+  // E2E（e2e/）には、テストの種類のファイルに当てる規則（CSS のクラスの確認、toBeTruthy・toBeDefined、並びのインデックス）、E2E の書き方の規則、組み込みの名前のシャドーイングとテストの間の空行の検査だけを当てる。ほかの規則は frontend/ のファイルだけに当てる
   const files = listGitFiles(['frontend', 'e2e'])
   exitIfNoFiles(files, 'フロントのファイル')
   const exclusions = readExclusions(exclusionsPath('frontend-rules-exclusions.json'))
@@ -853,6 +1360,34 @@ if (isMain(import.meta.url)) {
     }
     for (const hit of findIndexedMultiples(text)) {
       report(`${file}:${hit.line} 複数の結果を並びのインデックスで選ぶ（役割と名前で 1 つに絞る。テストの書き方 第 4.1 節）：${hit.text}`)
+    }
+  }
+  const timeoutFiles = new Set(timeoutTargets(targets.e2e))
+  for (const file of targets.e2e) {
+    const text = readFileSync(file, 'utf8')
+    for (const hit of findPositionSelectors(text)) {
+      report(`${file}:${hit.line} 位置で要素を選ぶ（.first()・.nth()・.last() を使わず、名前や親の要素で絞る。テストの書き方 第 4.1 節）：${hit.text}`)
+    }
+    for (const hit of findButtonNameChecks(text)) {
+      report(`${file}:${hit.line} ボタンの名前が完全一致でない（文字列は exact: true を付け、正規表現は先頭の ^ と末尾の $ を固定する。テストの書き方 第 4.1 節）：${hit.text}`)
+    }
+    for (const hit of findNetworkIdleWaits(text)) {
+      report(`${file}:${hit.line} networkidle で待つ（画面の状態を条件にして待つ。テストの書き方 第 5 節）：${hit.text}`)
+    }
+    if (!timeoutFiles.has(file)) continue
+    for (const hit of findTimeoutLiterals(text)) {
+      report(`${file}:${hit.line} タイムアウトを数字のリテラルで書く（e2e/src/waits.ts の定数を使う。テストの書き方 第 5 節）：${hit.text}`)
+    }
+  }
+  for (const file of targets.testsWithSupportAndE2e) {
+    for (const hit of findMissingTestSpacing(readFileSync(file, 'utf8'))) {
+      report(`${file}:${hit.line} テストの間に空行がない（}) の直後に test・it・describe を続けず、空行を置く。テストの書き方 第 4.11 節）：${hit.text}`)
+    }
+  }
+  const builtinNames = new Set(JSON.parse(readFileSync(BUILTIN_NAMES_FILE, 'utf8')))
+  for (const file of targets.testsWithSupportAndE2e) {
+    for (const hit of findBuiltinShadowing(readFileSync(file, 'utf8'), builtinNames)) {
+      report(`${file}:${hit.line} 組み込みの名前 ${hit.name} と同じ名前の const・let（意味の分かる名前にする。テストの書き方 第 4.10 節）：${hit.text}`)
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))

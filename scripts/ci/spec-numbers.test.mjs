@@ -66,6 +66,11 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.deepEqual(findSpecNumbers(text), [])
   })
 
+  test('16 進の色（# の直後の語）は、番号として見つけない', () => {
+    const text = ["const red = '#DC2626'", 'color: #AC1234;'].join('\n')
+    assert.deepEqual(findSpecNumbers(text), [])
+  })
+
   test('全角の英字・数字・ハイフンで書いた番号を見つけ、報告する行の文字は正規化の前のものにする', () => {
     const text = ['// 割引の上限（ＡＣ－１０）', '// 共有の基準（ＤＣ-７）', '// タスク（Ｔ０１１－０１－０１）、ｐｌａｎ　００１'].join('\n')
     const hits = findSpecNumbers(text)

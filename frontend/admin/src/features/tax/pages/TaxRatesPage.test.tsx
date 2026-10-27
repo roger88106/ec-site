@@ -148,17 +148,17 @@ describe('税率の一覧の編集', () => {
     test('保存は 409 になり、他の人が先に更新したことを知らせ、入力は残る', async () => {
       const { user } = await editThenRefetch()
 
-      const alert = await saveToConflict(user)
+      const conflictAlert = await saveToConflict(user)
 
-      expect(within(alert).getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
+      expect(within(conflictAlert).getByText(CONFLICT_MESSAGE)).toBeInTheDocument()
       expect(rowInputs(0).rate).toHaveValue(9)
     })
 
     test('再読み込みすると、最新の一覧に再作成され、知らせは消える', async () => {
       const { user } = await editThenRefetch()
-      const alert = await saveToConflict(user)
+      const conflictAlert = await saveToConflict(user)
 
-      await user.click(within(alert).getByRole('button', { name: '再読み込み' }))
+      await user.click(within(conflictAlert).getByRole('button', { name: '再読み込み' }))
 
       expect(await screen.findByDisplayValue('8')).toBe(rowInputs(0).rate)
       expect(screen.queryByRole('alert')).not.toBeInTheDocument()
@@ -166,8 +166,8 @@ describe('税率の一覧の編集', () => {
 
     test('再読み込みの後は、最新のバージョンで保存できる', async () => {
       const { state, user } = await editThenRefetch()
-      const alert = await saveToConflict(user)
-      await user.click(within(alert).getByRole('button', { name: '再読み込み' }))
+      const conflictAlert = await saveToConflict(user)
+      await user.click(within(conflictAlert).getByRole('button', { name: '再読み込み' }))
       await screen.findByDisplayValue('8')
 
       await user.click(screen.getByRole('button', { name: '保存' }))

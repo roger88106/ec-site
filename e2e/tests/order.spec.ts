@@ -8,10 +8,10 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
   page,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
-  const name = '注文の流れの商品'
+  const productName = '注文の流れの商品'
   const productId = await createPublishedProduct({
     code: 'ORDER',
-    name,
+    name: productName,
     taxCategoryId,
     priceExclTax: 1000,
     variants: [{ code: 'A', stock: 3 }],
@@ -26,11 +26,11 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
     await page.getByRole('link', { name: 'カートを見る' }).click()
 
     await expect(page.getByRole('heading', { name: 'カート' })).toBeVisible()
-    await expect(page.getByRole('link', { name })).toBeVisible()
+    await expect(page.getByRole('link', { name: productName })).toBeVisible()
     await expect(
       page
         .getByRole('listitem')
-        .filter({ has: page.getByRole('link', { name }) })
+        .filter({ has: page.getByRole('link', { name: productName }) })
         .getByText('2,200 円', { exact: true }),
     ).toBeVisible()
     await expect(page.getByText('3,200 円', { exact: true })).toBeVisible()

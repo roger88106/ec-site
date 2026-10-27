@@ -13,6 +13,7 @@ import {
   findTypeCasts,
   findWeakExistenceChecks,
   findCrossFeatureImports,
+  findBuiltinShadowing,
   findButtonNameChecks,
   findCssClassChecks,
   findInternalSelectors,
@@ -760,5 +761,86 @@ describe('E2E の書き方の検査', () => {
   test('タイムアウトの数字の検査は、タイムアウトの定数を定義する waits.ts を対象にしない', () => {
     const files = ['e2e/src/waits.ts', 'e2e/src/store.ts', 'e2e/tests/order.spec.ts', 'e2e/playwright.config.ts', 'e2e/src/waits.test.ts']
     assert.deepEqual(timeoutTargets(files), ['e2e/src/store.ts', 'e2e/tests/order.spec.ts', 'e2e/playwright.config.ts', 'e2e/src/waits.test.ts'])
+  })
+})
+
+describe('組み込みの名前をシャドーイングする const・let の検査', () => {
+  const names = new Set(['status', 'name', 'alert', 'cookieStore', 'Set'])
+  const found = (text) => findBuiltinShadowing(text, names).map((hit) => `${hit.line}:${hit.name}`)
+
+  test('const と let の宣言の名前が一覧にあれば見つける', () => {
+    const text = ['const status = 200', "let name = 'a'", 'const total = 1', 'const cookieStore = createStore()'].join('\n')
+    assert.deepEqual(found(text), ['1:status', '2:name', '4:cookieStore'])
+  })
+
+  test('オブジェクトの分割代入は、右側（宣言される名前）を見る', () => {
+    const text = [
+      'const { status } = response',
+      'const { code: name } = response',
+      'const { name: label } = response',
+      'const { a, ...alert } = response',
+      'const { name = 1 } = response',
+      'const { x: { y: status } } = response',
+      'const { [key]: name } = response',
+    ].join('\n')
+    assert.deepEqual(found(text), ['1:status', '2:name', '4:alert', '5:name', '6:status', '7:name'])
+  })
+
+  test('配列の分割代入は、全ての要素を見る', () => {
+    const text = ['const [a, status] = pair', 'const [, name] = pair', 'const [first, ...Set] = pair', 'const [[alert], b] = pair', 'const [a, b] = pair'].join('\n')
+    assert.deepEqual(found(text), ['1:status', '2:name', '3:Set', '4:alert'])
+  })
+
+  test('for…of と for…in の宣言を見つける', () => {
+    const text = ['for (const status of statuses) {', '}', 'for (let name = 0; name < 3; name += 1) {', '}', 'for (const { name } of items) {', '}', 'for (const key in object) {', '}'].join('\n')
+    assert.deepEqual(found(text), ['1:status', '3:name', '5:name'])
+  })
+
+  test('1 つの宣言に並べた名前と、型の注釈の付いた名前を見つける', () => {
+    const text = ['const a = 1, status = 2', 'let b, name', 'const alert: string = "a"', 'const map: Map<string, number> = new Map()', 'const total = sum(1, 2),', '  Set = 1'].join('\n')
+    assert.deepEqual(found(text), ['1:status', '2:name', '3:alert', '6:Set'])
+  })
+
+  test('関数の引数、catch の変数、関数・クラスの宣言、import は対象外', () => {
+    const text = [
+      'function check(status) {}',
+      'const run = (name) => name',
+      'const fn = async (alert, other) => {}',
+      'try {} catch (status) {}',
+      'function name() {}',
+      'class Set {}',
+      "import { name } from './a'",
+      "import status from './b'",
+      'items.map((status) => status)',
+      'test.each([1])("a", (name) => {})',
+    ].join('\n')
+    assert.deepEqual(found(text), [])
+  })
+
+  test('一覧にない名前、プロパティ、as const は見つけない', () => {
+    const text = [
+      'const orderStatus = 200',
+      'const { code } = response',
+      'const body = { status: 200, name: "a" }',
+      'expect(response.status).toBe(200)',
+      'const items = [1] as const',
+      'status = 3',
+      'const value = status',
+    ].join('\n')
+    assert.deepEqual(found(text), [])
+  })
+
+  test('コメントと文字列の中は見つけない', () => {
+    const text = ['// const status = 1', '/* let name = 2 */', "const text = 'const alert = 1'", 'const html = `let name = ${1}`'].join('\n')
+    assert.deepEqual(found(text), [])
+  })
+
+  test('複数の行にまたがる分割代入も見つける。行は宣言の始まり', () => {
+    const text = ['const {', '  total,', '  status,', '} = response'].join('\n')
+    assert.deepEqual(found(text), ['1:status'])
+  })
+
+  test('報告に行の番号、元の行の文字、名前を含む', () => {
+    assert.deepEqual(findBuiltinShadowing('x\n  const status = 1  ', names), [{ line: 2, text: 'const status = 1', name: 'status' }])
   })
 })

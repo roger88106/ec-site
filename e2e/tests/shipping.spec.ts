@@ -64,18 +64,18 @@ test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock �
     expect(mail.text).toContain(trackingNumber.replaceAll('-', ''))
   })
 
-  for (const status of ['配送中', '配達完了'] as const) {
-    await test.step(`mock の物流で${status}を通知すると、店舗の注文詳細と一覧に${status}が出る（AC-174、179、180）`, async () => {
-      await notifyCarrier(page, order.orderId, status)
+  for (const carrierStatus of ['配送中', '配達完了'] as const) {
+    await test.step(`mock の物流で${carrierStatus}を通知すると、店舗の注文詳細と一覧に${carrierStatus}が出る（AC-174、179、180）`, async () => {
+      await notifyCarrier(page, order.orderId, carrierStatus)
 
       await page.goto(order.orderUrl)
-      await expect(detailValue(page, '状態')).toHaveText(status)
+      await expect(detailValue(page, '状態')).toHaveText(carrierStatus)
       await expect(detailValue(page, '配送業者')).toHaveText('ヤマト運輸')
       await expect(detailValue(page, '送り状番号')).toHaveText(trackingNumber.replaceAll('-', ''))
 
       await page.goto(`${STORE_URL}/orders`)
       const row = page.getByRole('row').filter({ hasText: orderNumber })
-      await expect(row.getByText(status, { exact: true })).toBeVisible()
+      await expect(row.getByText(carrierStatus, { exact: true })).toBeVisible()
     })
   }
 })

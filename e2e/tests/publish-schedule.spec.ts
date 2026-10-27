@@ -11,11 +11,11 @@ const RESERVATION_MILLIS = 3_000
 
 test('AC-35 公開開始日時を予約して公開すると、開始前は店舗画面に出ず、開始日時になると出る', async ({ page }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
-  const name = `E2E 予約 ${RUN_ID}`
+  const productName = `E2E 予約 ${RUN_ID}`
   // 準備（在庫ができるのを待つ など）にかかる時間によらないよう、先の日時で予約して作り、開始前を確認してから近づける
   const productId = await createPublishedProduct({
     code: 'RESERVE',
-    name,
+    name: productName,
     taxCategoryId,
     priceExclTax: 1000,
     variants: [{ code: 'A', stock: 1 }],
@@ -41,5 +41,5 @@ test('AC-35 公開開始日時を予約して公開すると、開始前は店�
   )
   // 開始日時より前に公開される不具合を見つけるため
   expect(Date.now()).toBeGreaterThanOrEqual(publishStart.getTime())
-  await expect(page.getByRole('heading', { name })).toBeVisible()
+  await expect(page.getByRole('heading', { name: productName })).toBeVisible()
 })

@@ -323,6 +323,12 @@ jobs:
         working-directory: .
         run: pnpm knip
 
+      # 組み込みの名前の一覧（scripts/ci/globals/lib-globals.json。フロントのテストと E2E の const・let に使わない名前。frontend-rules が読む）が、
+      # 入れた TypeScript の lib の名前と一致することを確認する。TypeScript を上げて名前が変わったら失敗するので、--write で一覧を書き直す
+      - name: 組み込みの名前の一覧の確認
+        working-directory: .
+        run: node scripts/ci/globals/lib-globals.mjs
+
       # 共有のパッケージは管理画面と店舗画面の両方が使う。ここでまとめて確認する
       - name: 共有のパッケージの lint・型チェック・テスト
         working-directory: frontend/shared

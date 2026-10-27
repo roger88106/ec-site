@@ -55,15 +55,15 @@ describe('注文の支払', () => {
 
     // 送る前も、領域は 1 つあり、文はない
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    const status = screen.getByRole('status')
-    expect(status).toBeEmptyDOMElement()
+    const statusRegion = screen.getByRole('status')
+    expect(statusRegion).toBeEmptyDOMElement()
 
     await user.click(screen.getByRole('button', { name: '支払う' }))
 
     // 失敗の後は、同じ領域に文が入る
     expect(await screen.findByText('支払画面に移れませんでした。')).toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toBe(status)
-    expect(status).toHaveTextContent('支払画面に移れませんでした。')
+    expect(screen.getByRole('status')).toBe(statusRegion)
+    expect(statusRegion).toHaveTextContent('支払画面に移れませんでした。')
   })
 })

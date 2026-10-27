@@ -26,10 +26,10 @@ for (const [label, change, button, toast] of [
   test(`${label}にすると、店舗画面の詳細はすぐ「見つかりません」になり、一覧から消える`, async ({ page }) => {
     const { id: taxCategoryId } = await taxCategoryWithRate(10)
     const { id: categoryId } = await createCategory('E2E カテゴリ')
-    const name = `E2E ${label} ${RUN_ID}`
+    const productName = `E2E ${label} ${RUN_ID}`
     const productId = await createPublishedProduct({
       code: change === unpublish ? 'HIDE' : 'END',
-      name,
+      name: productName,
       taxCategoryId,
       priceExclTax: 1000,
       categoryIds: [categoryId],
@@ -38,10 +38,10 @@ for (const [label, change, button, toast] of [
     const listUrl = `${STORE_URL}/products?categoryId=${categoryId}`
 
     await reopenUntil(page, listUrl, async () => {
-      await expect(productCard(page, name)).toBeVisible({ timeout: CHECK_TIMEOUT })
+      await expect(productCard(page, productName)).toBeVisible({ timeout: CHECK_TIMEOUT })
     })
     await page.goto(`${STORE_URL}/products/${productId}`)
-    await expect(page.getByRole('heading', { name })).toBeVisible()
+    await expect(page.getByRole('heading', { name: productName })).toBeVisible()
 
     await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
     await page.getByRole('button', { name: button, exact: true }).click()

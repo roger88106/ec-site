@@ -36,9 +36,9 @@ describe('カートに入れる操作の失敗', () => {
   test('AC-193-2 成功の知らせも同じ領域に出る', () => {
     const view = renderForm({ ok: true })
 
-    const status = view.getByRole('status')
+    const statusRegion = view.getByRole('status')
     expect(view.getAllByRole('status')).toHaveLength(1)
-    expect(status).toContainElement(view.getByRole('link', { name: 'カートを見る' }))
+    expect(statusRegion).toContainElement(view.getByRole('link', { name: 'カートを見る' }))
   })
 
   test('AC-193-3 失敗の後に成功したとき、同じ領域が残り、前の失敗の文は消えて成功の知らせが入る', async () => {
@@ -48,20 +48,20 @@ describe('カートに入れる操作の失敗', () => {
       errorCode: 'OUT_OF_STOCK',
     })
     const { user } = renderInBrowser(<AddToCartForm variant={VARIANT} />)
-    const status = screen.getByRole('status')
+    const statusRegion = screen.getByRole('status')
 
     await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
     expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
-    expect(screen.getByRole('status')).toBe(status)
+    expect(screen.getByRole('status')).toBe(statusRegion)
 
     // 2 回目は、モックの既定の成功を返す
     await user.click(screen.getByRole('button', { name: 'カートに入れる' }))
     const link = await screen.findByRole('link', { name: 'カートを見る' })
 
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toBe(status)
-    expect(status).not.toHaveTextContent('在庫が足りません。')
-    expect(status).toContainElement(link)
+    expect(screen.getByRole('status')).toBe(statusRegion)
+    expect(statusRegion).not.toHaveTextContent('在庫が足りません。')
+    expect(statusRegion).toContainElement(link)
   })
 })
 

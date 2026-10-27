@@ -17,10 +17,10 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const { id: categoryId } = await createCategory('E2E 画像')
-  const name = `E2E 画像 ${RUN_ID}`
+  const productName = `E2E 画像 ${RUN_ID}`
   const productId = await createPublishedProduct({
     code: 'IMAGE',
-    name,
+    name: productName,
     taxCategoryId,
     priceExclTax: 1000,
     categoryIds: [categoryId],
@@ -53,7 +53,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
 
   await test.step('店舗画面：一覧の代表画像と、詳細の画像に、並べ替えた順で出る', async () => {
     await reopenUntil(page, `${STORE_URL}/products?categoryId=${categoryId}`, async () => {
-      await expect(productCard(page, name).getByRole('img', { name: '商品の画像' })).toHaveAttribute(
+      await expect(productCard(page, productName).getByRole('img', { name: '商品の画像' })).toHaveAttribute(
         'src',
         imageUrl ?? '',
         {

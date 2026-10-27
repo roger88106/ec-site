@@ -223,7 +223,7 @@ tasks は第 6 節の決定に基づく。
   - 225 の振り分けの関数が返す E2E の一覧に当てる。ボタンの名前は、`getByRole('button', { name })` の `name` が正規表現のリテラルなら先頭の `^` と末尾の `$` を求め、それ以外（文字列、変数、テンプレート文字列）なら `exact: true` を求める。複数の行にまたがる呼び出しと、`row.getByRole(…)` のように連鎖の途中の呼び出しも読む
   - タイムアウトの数字は、`timeout` の項目の値、`setTimeout(…)`・`test.setTimeout(…)` の引数、`intervals` の項目の値に、数字のリテラルを含む式（`10_000`、`5 * 1000` など）を書く箇所とする。対象は `e2e/src/waits.ts` を除く E2E（テスト、撮影、補助）と E2E の設定
   - 確認方法：テストで、各検査が違反の例を見つけ、許す形（`exact: true`、固定した正規表現、`waits.ts` の定数）を見つけないこと。`node scripts/ci/frontend-rules.mjs` が今のリポジトリで 0 件で通ること
-- [ ] **T226-02-02** [テスト] 組み込みの名前のシャドーイングの検査を加え、今の違反の名前を変える（DC-226-7、8、10）。
+- [x] **T226-02-02** [テスト] 組み込みの名前のシャドーイングの検査を加え、今の違反の名前を変える（DC-226-7、8、10）。
   - 依存：T226-02-01（同じ `frontend-rules.mjs` を変える）
   - 範囲：`scripts/ci/` のサブディレクトリ（名前の一覧の生成と一覧のファイル。第 6 節の 3）、`scripts/ci/frontend-rules.mjs` とテスト、CI の TypeScript を入れる job（一覧の一致の確認）、フロントのテストと E2E の違反の箇所、`docs/guides/ci.md`、テストの書き方の規則の一覧
   - 対象の宣言は、`const`・`let` の宣言（分割代入と `for (const … of …)` を含む）とする。関数の引数、`catch` の変数、関数・クラスの宣言、import は対象外。対象のファイルは、フロントのテスト（テストの補助 `src/test/` を含む）と E2E
@@ -231,6 +231,7 @@ tasks は第 6 節の決定に基づく。
   - 先に、Biome の規則（`noShadow`、`noShadowRestrictedNames` など）でグローバルの名前のシャドーイングを見つけられるかを、今の Biome のバージョンで確認する。見つけられるなら Biome の設定で行い、名前の一覧の生成は行わない。その場合は、Biome が持つ名前の一覧で DC-226-8 を満たすか（満たさないなら一覧の生成も行う）を判断する。確認した結果と判断を、本タスクの結果に書く
   - 違反の数を、引数を除き `const`・`let` だけで再度数え、本タスクの結果に書く。名前を変えるときは、確認する内容を変えない（DN-226-2）
   - 確認方法：テストで、lib の名前と同じ `const`・`let`（分割代入、`for…of` を含む）を見つけ、引数と、lib にない名前を見つけないこと。名前を変えたテストのファイルで、変更の前後のテストの件数と名前が同じで、差分が名前の置き換えだけであること（DN-226-2）。一覧の一致の確認が、一覧から名前を 1 つ削除すると失敗すること（確認した後に戻す）。`scripts/dev/check-frontend.sh` が通ること
+  - 結果：Biome 2.5.15 は使えなかった。`noShadowRestrictedNames` が見つけるのは ES の制限された名前（`Set`、`NaN` など）だけで、DOM の `name`・`status`・`alert` は見つけない。`noShadow` は外側の宣言の名前だけを見て、`javascript.globals` に名前を書いても見つけない（試した）。このため一覧の生成を行った。`scripts/ci/globals/lib-globals.mjs` が、TypeScript 7.0.2 の lib（`typescript` ではなく、プラットフォームごとのパッケージ `@typescript/typescript-<OS>-<CPU>` の `lib/` にある `lib.*.d.ts`。`getExePath` の実行ファイルと同じディレクトリ）を、`esnext`・`dom`・`dom.iterable`・`dom.asynciterable` から `/// <reference lib>` をたどって読み、最上位の `declare` の `var`・`let`・`const`・`function`・`class`・`namespace`・`enum` の名前（値の名前だけ。`interface`・`type` は除く）988 個を `lib-globals.json` に書く（`--write`）。`--write` なしは一致を確認する。一致の確認は `ci.yml` の店舗画面の job の、knip の手順の次の「組み込みの名前の一覧の確認」の手順に置いた。違反は 28 か所（`const`・`let` のみ。`status` 10、`name` 12、`alert` 3、`confirm` 1、`cookieStore` 1、`document` 1）で、意味の分かる名前に変えた。変えたテストのファイルの件数と名前は変わらない（`shipping.spec.ts` のステップ名の `${status}` は変数名だけが変わり、文字は同じ）。
 - [ ] **T226-02-03** [テスト] テストの間の空行の検査を加える（DC-226-9、10）。
   - 依存：T226-02-02（同じ `frontend-rules.mjs` を変える）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`docs/guides/ci.md`、テストの書き方の規則の一覧

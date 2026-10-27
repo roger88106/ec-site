@@ -928,6 +928,181 @@ export function findTimeoutLiterals(text) {
   return toHits(text, lineNumbers)
 }
 
+/** 組み込みの名前の一覧（TypeScript の lib から生成する。scripts/ci/globals/lib-globals.mjs） */
+const BUILTIN_NAMES_FILE = 'scripts/ci/globals/lib-globals.json'
+
+/** const・let の宣言の始まり（as const の const と、プロパティの const は除く） */
+const DECLARATION_KEYWORD = /(?<![\w$.])(?:const|let)\s+/g
+
+/** 宣言の名前の後ろに続いてよいもの（初期値、型の注釈、次の宣言、文の終わり、for…of・for…in、行の終わり） */
+const BINDING_FOLLOWER = /^[ \t]*(?:[=,:;)}]|of\b|in\b|\r?\n|$)/
+
+/** 変数の名前 */
+const IDENTIFIER_ONLY = /^[\w$]+$/
+
+/**
+ * 深さ 0 にある、初めての文字の位置を返す（括弧の中は数えない）。= は、=>・==・<=・>=・!= の一部でないものだけを数える。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {string} char 探す文字
+ * @returns {number} 位置。なければ -1
+ */
+function topLevelIndexOf(code, char) {
+  let depth = 0
+  for (let i = 0; i < code.length; i += 1) {
+    if ('([{'.includes(code[i])) depth += 1
+    else if (')]}'.includes(code[i])) depth -= 1
+    else if (depth === 0 && code[i] === char) {
+      if (char === '=' && (/[=>]/.test(code[i + 1] ?? '') || /[=!<>]/.test(code[i - 1] ?? ''))) continue
+      return i
+    }
+  }
+  return -1
+}
+
+/**
+ * 分割代入の対象（名前か入れ子の分割代入。後ろに既定値があってもよい）が宣言する名前を返す。
+ *
+ * @param {string} target 対象
+ * @returns {string[]} 名前
+ */
+function targetNames(target) {
+  const equals = topLevelIndexOf(target, '=')
+  const value = (equals >= 0 ? target.slice(0, equals) : target).trim()
+  if (value.startsWith('{') || value.startsWith('[')) return patternNames(value)
+  return IDENTIFIER_ONLY.test(value) ? [value] : []
+}
+
+/**
+ * 分割代入のパターン（{ … } か [ … ]）が宣言する名前を返す。
+ * オブジェクトの { a: b } は右側の b が宣言される名前で、{ a } は a、{ ...rest } は rest。配列は全ての要素を見る。
+ *
+ * @param {string} pattern 括弧を含むパターン
+ * @returns {string[]} 名前
+ */
+function patternNames(pattern) {
+  const isObject = pattern.startsWith('{')
+  const inner = pattern.slice(1, -1)
+  const parts = []
+  let depth = 0
+  let start = 0
+  for (let i = 0; i <= inner.length; i += 1) {
+    if (i === inner.length || (inner[i] === ',' && depth === 0)) {
+      parts.push(inner.slice(start, i).trim())
+      start = i + 1
+    } else if ('([{'.includes(inner[i])) depth += 1
+    else if (')]}'.includes(inner[i])) depth -= 1
+  }
+  return parts.flatMap((part) => {
+    if (part === '') return []
+    if (part.startsWith('...')) return targetNames(part.slice(3))
+    if (!isObject) return targetNames(part)
+    const colon = topLevelIndexOf(part, ':')
+    const equals = topLevelIndexOf(part, '=')
+    return colon >= 0 && (equals < 0 || colon < equals) ? targetNames(part.slice(colon + 1)) : targetNames(part)
+  })
+}
+
+/**
+ * 宣言の名前（名前か分割代入のパターン）を、位置から読む。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} from 始まりの位置
+ * @returns {{ names: string[], start: number, end: number } | null} 名前、始まりと終わり（含まない）の位置。名前の形でなければ null
+ */
+function readBinding(code, from) {
+  const start = from + /^\s*/.exec(code.slice(from))[0].length
+  let end = start
+  if (code[start] === '{' || code[start] === '[') {
+    let depth = 0
+    for (end = start; end < code.length; end += 1) {
+      if ('([{'.includes(code[end])) depth += 1
+      else if (')]}'.includes(code[end])) {
+        depth -= 1
+        if (depth === 0) break
+      }
+    }
+    if (end >= code.length) return null
+    end += 1
+    return BINDING_FOLLOWER.test(code.slice(end)) ? { names: patternNames(code.slice(start, end)), start, end } : null
+  }
+  end = start + (/^[\w$]*/.exec(code.slice(start))[0].length)
+  if (end === start || !BINDING_FOLLOWER.test(code.slice(end))) return null
+  return { names: [code.slice(start, end)], start, end }
+}
+
+/**
+ * 名前の後ろの型の注釈（: の後ろ）を読み飛ばし、初期値の = か、次の宣言の , か、文の終わりの位置を返す。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} from 名前の終わりの位置
+ * @returns {number} 位置
+ */
+function skipAnnotation(code, from) {
+  let at = from + /^[ \t]*/.exec(code.slice(from))[0].length
+  if (code[at] !== ':') return at
+  let depth = 0
+  for (at += 1; at < code.length; at += 1) {
+    const char = code[at]
+    const arrow = char === '>' && code[at - 1] === '='
+    if ('([{<'.includes(char)) depth += 1
+    else if (')]}>'.includes(char) && !arrow) depth -= 1
+    else if (depth <= 0 && (char === ',' || char === ';' || char === '\n' || (char === '=' && code[at + 1] !== '>'))) break
+  }
+  return at
+}
+
+/**
+ * 初期値の後ろの、次の宣言の始まり（深さ 0 の , の次の位置）を返す。
+ *
+ * @param {string} code 文字列を空白にしたソース
+ * @param {number} from 初期値の始まりの位置
+ * @returns {number} 次の宣言の始まりの位置。なければ -1
+ */
+function nextDeclarator(code, from) {
+  const end = statementEnd(code, from)
+  let depth = 0
+  for (let i = from; i < end; i += 1) {
+    if ('([{'.includes(code[i])) depth += 1
+    else if (')]}'.includes(code[i])) depth -= 1
+    else if (depth === 0 && code[i] === ',') return i + 1
+  }
+  return -1
+}
+
+/**
+ * フロントのテストと E2E で、組み込みの名前（TypeScript の lib が宣言するグローバルの名前）と同じ名前の const・let の宣言を探す
+ * （テストの書き方 第 4.10 節。エラーにならずにグローバルの値が使われるのを防ぐ）。
+ * 対象は、const・let の宣言の名前（1 つの宣言に並べたもの、分割代入、for…of・for…in の宣言を含む）。
+ * 関数の引数、catch の変数、関数・クラスの宣言、import は対象にしない。
+ * 分割代入の { a: name } は右側の name が宣言される名前で、{ name: x } は x。
+ *
+ * @param {string} text ソース
+ * @param {Set<string>} names 組み込みの名前
+ * @returns {{ line: number, text: string, name: string }[]} 見つけた宣言（名前ごと。行は名前か、分割代入の始まりの行）
+ */
+export function findBuiltinShadowing(text, names) {
+  const code = stripComments(text, { blankStrings: true })
+  const lineOf = createLineLocator(code)
+  const original = text.split('\n')
+  const hits = []
+  for (const match of code.matchAll(DECLARATION_KEYWORD)) {
+    if (/\bas\s+$/.test(code.slice(Math.max(0, match.index - 12), match.index))) continue
+    let from = match.index + match[0].length
+    while (from >= 0) {
+      const binding = readBinding(code, from)
+      if (!binding) break
+      for (const name of binding.names) {
+        if (names.has(name)) hits.push({ line: lineOf(binding.start), text: original[lineOf(binding.start) - 1].trim(), name })
+      }
+      const at = skipAnnotation(code, binding.end)
+      if (code[at] === '=') from = nextDeclarator(code, at + 1)
+      else from = code[at] === ',' ? at + 1 : -1
+    }
+  }
+  return hits
+}
+
 /** 共有の名前と同じ名前の定義の除外のキー（<画面>:<名前>）。画面は store か admin */
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
@@ -1042,6 +1217,12 @@ if (isMain(import.meta.url)) {
     if (!timeoutFiles.has(file)) continue
     for (const hit of findTimeoutLiterals(text)) {
       report(`${file}:${hit.line} タイムアウトを数字のリテラルで書く（e2e/src/waits.ts の定数を使う。テストの書き方 第 5 節）：${hit.text}`)
+    }
+  }
+  const builtinNames = new Set(JSON.parse(readFileSync(BUILTIN_NAMES_FILE, 'utf8')))
+  for (const file of [...targets.frontendTests, ...targets.testSupport, ...targets.e2e]) {
+    for (const hit of findBuiltinShadowing(readFileSync(file, 'utf8'), builtinNames)) {
+      report(`${file}:${hit.line} 組み込みの名前 ${hit.name} と同じ名前の const・let（意味の分かる名前にする。テストの書き方 第 4.10 節）：${hit.text}`)
     }
   }
   const sourceFiles = files.filter((file) => /^frontend\/(?:store|admin)\/src\//.test(file))

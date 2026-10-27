@@ -43,8 +43,8 @@ export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void>
     if (quantityIndex === -1) {
       throw new Error(`カートの品目の表示が想定と違い、数量の行が見つからない：${text}`)
     }
-    const [name, ...details] = lines.slice(0, quantityIndex)
-    let item = items.filter({ has: page.getByRole('link', { name, exact: true }) })
+    const [productName, ...details] = lines.slice(0, quantityIndex)
+    let item = items.filter({ has: page.getByRole('link', { name: productName, exact: true }) })
     for (const detail of details) {
       item = item.filter({ hasText: detail })
     }

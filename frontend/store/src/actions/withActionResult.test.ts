@@ -1,8 +1,10 @@
 import { notFound, redirect } from 'next/navigation'
 import { describe, expect, test } from 'vitest'
 import { withActionResult } from '@/actions/withActionResult'
+import { ApiError } from '@/api/result'
 import { connectionFailedMessage } from '@/lib/actionResult'
 import { expectNotFound, redirectedTo } from '@/test/next'
+import { problem } from '@/test/server'
 import { recordStderr } from '@/test/stderr'
 
 describe('サーバーアクションの処理の包み', () => {
@@ -68,6 +70,28 @@ describe('サーバーアクションの処理の包み', () => {
     expect(stderr.entries()).toEqual([
       expect.objectContaining({ errorName: 'TypeError', causeName: 'Error', causeCode: 'ECONNREFUSED' }),
     ])
+  })
+
+  test('NFR-227-1 API の失敗の例外なら、error のログに状態コードを出し、メッセージは出さない', async () => {
+    const stderr = recordStderr()
+
+    const result = await withActionResult(async () => {
+      throw new ApiError(502, problem(502, 'PAYMENT_GATEWAY_UNAVAILABLE', 'カート 3f2b8c1e を作れません'))
+    })
+
+    expect(result).toEqual({ ok: false, message: connectionFailedMessage() })
+    expect(stderr.text()).not.toContain('3f2b8c1e')
+    expect(stderr.entries()).toEqual([expect.objectContaining({ level: 'error', errorName: 'ApiError', status: 502 })])
+  })
+
+  test('NFR-227-1 状態コードを持たない例外では、状態コードの項目を null にする', async () => {
+    const stderr = recordStderr()
+
+    await withActionResult(async () => {
+      throw new TypeError('fetch failed')
+    })
+
+    expect(stderr.entries()).toEqual([expect.objectContaining({ level: 'error', status: null })])
   })
 
   test('予期しない例外も、失敗の結果にする（画面を壊さない）', async () => {

@@ -112,7 +112,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 - タイムアウト：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアでタイムアウトの signal を付ける（`STORE_API_TIMEOUT_SECONDS`、既定 30 秒）。タイムアウトを過ぎた要求は例外で失敗し、サーバーアクションでは接続できないときと同じ結果になる。既定は、バックエンドで最も長く待つ操作（支払画面を開く）より長くする（短いと、バックエンドが成功しても画面は失敗を表示する）。
 - 追跡 ID：店舗 API のクライアント（公開用と会員用）は、要求のミドルウェアで、画面の要求の `traceparent` を付ける。バックエンドのログを画面の要求から辿れるようにするため。Next.js はキャッシュの鍵から `traceparent` を除くので、キャッシュする要求に付けてもキャッシュは使われる。
-- サーバーアクションの失敗のログ：サーバーアクションが例外で失敗したら、共通の処理（`withActionResult`）が error のログに例外の名前と、原因の例外（`cause`）の名前とコード（`ECONNREFUSED` など）を出力する。例外のメッセージ（原因のものも含む）は出力しない。メッセージにカートの ID などの識別子が入りうるため。
+- サーバーアクションの失敗のログ：サーバーアクションが例外で失敗したら、共通の処理（`withActionResult`）が error のログに例外の名前と、原因の例外（`cause`）の名前とコード（`ECONNREFUSED` など）を出力する。API の失敗の例外（`ApiError`）なら、その状態コードを `status` に出力し、状態コードを持たない例外では null にする。例外のメッセージ（原因のものも含む）は出力しない。メッセージにカートの ID などの識別子が入りうるため。
 - 5xx のログ：店舗 API が 5xx を返したら、応答のミドルウェアで warn のログにステータスコード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）を出力する。token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出力しない。エラーコードは、呼んだ側が本文を読めるよう、応答を複製して読む。
 
 ### 4.3 サーバーアクション
@@ -217,8 +217,11 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 - コンポーネントは、メッセージがなくても `status` の役割を持つ読み上げの領域を常に描き、失敗したときに文だけを入れる。理由：後から描かれた領域は読み上げられない支援技術があるため。
 - 文のない領域は、画面から隠して（`sr-only`）並びから外す。`space-y-*` の親の最後の子に置くと前の要素に余白が付くので、そのときは親を `flex flex-col gap-*` にする。
 - 親が常にある読み上げの領域を持ち、その中で表示するとき（カートに入れる）は `inLiveRegion` を付け、コンポーネントに領域を付けさせない（領域を入れ子にしない）。
+- バリアントの在庫状況の領域（`VariantPicker`）も `status` の役割を持つ。選択を変えたときに、領域の中の文（在庫のバッジか案内の文）が変わる。
 
 注文のフォームの欄は、補足の文と誤りの文を、この順で入力欄の説明（`aria-describedby`）として結び付ける。誤りのある欄には `aria-invalid` を付ける。入力欄と選択欄の UI のコンポーネント（shadcn/ui）が持つ誤りの見た目（赤い枠）になる。
+
+注文のフォームの送信が欄の誤りで失敗したときは、無効でない誤りの欄のうち画面の順（氏名、郵便番号、都道府県、市区町村、住所、電話番号）で最初の欄へフォーカスを移す。移った欄の誤りの文は、`aria-describedby` で入力欄に結び付けてあるため、入力欄の説明として読み上げられる。無効の欄（一覧を取得できていない市区町村）は飛ばす。誤りのある欄が全て無効のときと、欄の誤りがない失敗（在庫不足、通信の失敗など）では、フォーカスを移さない。フォーカスを移すのは、送信の結果を受けたときだけである。結果を受けた後の入力では、移し直さない。
 
 ※5：欄の下には、API の応答の項目ごとの文（`errors[].message`）をそのまま表示し、画面で文を作らない（`features/checkout/placeOrderErrors.ts`）。契約の形の検証で見つかった誤りも、API が業務の検証エラーと同じ文を返す（[バックエンドの書き方](../../rules/backend-coding.md) 第 3.3 節）。
 
@@ -232,7 +235,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 |------|--------|----------|
 | `lib/`・`features/` の関数（判定、変換、整形、エラーの欄への対応） | Vitest の単体テスト | 対象の横（`*.test.ts`） |
 | 表示のコンポーネント（状態を持たないもの。クライアントコンポーネントの初期表示を含む） | `renderStatic` で HTML にして DOM に読み込み、役割と名前で探し、jest-dom の照合の関数で確認する（`src/test/render.tsx`）。「何も出さない」ことは、`renderMarkup` の結果が空の文字列であることで確認する。HTML の構造に依存しないので、例外として認める。効果（`useEffect`）は実行されない | 対象の横（`*.test.tsx`） |
-| サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | 結果を props で受ける表示のコンポーネント（`OrderFormView`、`AddToCartFormView`）に結果を渡し、`renderStatic` で確認する。`useActionState` などの React の関数は差し替えない。表示のコンポーネントに送る関数の代わりを渡し、ボタンを押したときに渡す値は jsdom で確認してよい（`OrderForm.test.tsx` の形）。サーバーアクションが API に送る内容そのものは、サーバーアクションのテストと E2E で確認する | 対象の横（`*.test.tsx`） |
+| サーバーアクションの結果に応じた表示（エラーメッセージの出し方など） | 結果を props で受ける表示のコンポーネント（`OrderFormView`、`AddToCartFormView`）に結果を渡し、`renderStatic` で確認する。`useActionState` などの React の関数は差し替えない。表示のコンポーネントに送る関数の代わりを渡し、ボタンを押したときに渡す値は jsdom で確認してよい（`OrderForm.test.tsx` の形）。結果を受けた後の振る舞い（誤りの欄へのフォーカスの移動など）は、jsdom で描画し、`rerender` で結果を与え直して確認する（`OrderForm.test.tsx` の形）。サーバーアクションが API に送る内容そのものは、サーバーアクションのテストと E2E で確認する | 対象の横（`*.test.tsx`） |
 | クライアントコンポーネントの、ブラウザーの中だけで終わる操作（サーバーアクションを呼ばないもの） | ファイルの先頭で jsdom を選び（`// @vitest-environment jsdom`）、Testing Library で操作する（`src/test/render.tsx` の `renderInBrowser`）。サーバーアクションを呼ぶ操作は、サーバーアクションのテストと E2E で確認する。例外：読むだけのサーバーアクション（お届け先の市区町村の一覧、郵便番号で検索する。第 4.8 節）は、`vi.mock` で結果を差し替えて、フォームの操作を確認する ※6。サーバーアクションの結果の表示の遷移（同じ読み上げの領域が残り、前の文が消えるなど）も、`vi.mock` で結果を差し替えて操作で確認する（[テストの書き方](../../rules/test-writing.md) 第 1 節） | 対象の横（`*.test.tsx`） |
 | ページ（サーバーコンポーネント）の、取得した内容に応じた表示 | ページの関数を呼び、`renderStatic` で DOM に読み込んで、役割と名前で探す。ログインの状態は `signInAs`、店舗 API は MSW で差し替える。表示でなく確認の順（ログイン、ID の形）を確認するテストは、jsdom を使わずに Node でページの関数を呼び、移る先（`src/test/next.ts` の `redirectedTo`）と「見つからない」（`expectNotFound`）で確認する（`app/checkout/[checkoutId]/page.test.tsx`） | ページの横（`app/**/page.test.tsx`） |
 | サーバーの処理（サーバーアクション、`api/cart.ts`、`auth/` のコールバック、`proxy.ts`） | Node で直接呼ぶ。Next.js のモジュール（`next/headers` など）と `@/auth` は `src/test/` で置き換え、バックエンドは MSW（`msw/node`） | 対象の横（`*.test.ts`） |
@@ -242,7 +245,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 
 | 補助（`src/test/`） | 内容 |
 |---------------------|------|
-| `render.tsx` の `renderMarkup`、`renderStatic`、`renderInBrowser` | 部品を日本語の文言の提供者（next-intl）で包む。`renderMarkup` は HTML の文字列にし、`renderStatic` はその HTML を jsdom の文書に読み込んで、役割と名前などで探す関数（Testing Library の `within`）を返す。`renderInBrowser` は jsdom の上に描画して、操作に使う `user`（user-event）を返す |
+| `render.tsx` の `renderMarkup`、`renderStatic`、`renderInBrowser` | 部品を日本語の文言の提供者（next-intl）で包む。`renderMarkup` は HTML の文字列にし、`renderStatic` はその HTML を jsdom の文書に読み込んで、役割と名前などで探す関数（Testing Library の `within`）を返す。`renderInBrowser` は jsdom の上に描画して、操作に使う `user`（user-event）と、props を変えて描画し直す `rerender`（描画し直すときも、日本語の文言の提供者で包む）を返す |
 | `next.ts` | Next.js の要求の口（`next/headers` の Cookie とヘッダー、`next/cache` の `revalidatePath`）の代わりの入れ物。Cookie の値と属性は `cookieValue`・`cookieOptions`、表示し直しを知らせたパスは `revalidatedPaths` で確認する。`next/navigation` は置き換えず、本物を使う |
 | `next.ts` の `redirectedTo`、`expectNotFound` | 処理が投げた例外の digest で、移る先（`redirectedTo`）と「見つからない」（`expectNotFound`）を確認する。どちらも、該当しなければテストを失敗させる |
 | `auth.ts` の `signInAs`、`authState` | Auth.js（`next-auth`、`next-auth/jwt`）の代わりのログインの状態。`signInAs(token)` で会員がログインしている状態にし（token は上書きできる）、`authState` で `signIn`・`signOut` の呼び出しと `auth.ts` が渡した設定を確認する。ログインしていない状態は、各テストの前に戻る |

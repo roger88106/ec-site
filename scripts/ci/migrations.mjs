@@ -5,7 +5,7 @@
 // 基準は、HEAD と develop・main（origin/ の方を先に見る）のそれぞれとの分岐点の tree。基準にあるものが今の index にない（削除、改名）か、中身が違えば失敗にする。
 // まだ develop にも main にも入っていない自分のブランチで加えたもの（分岐の後に加えたもの）は、番号の振り直しも中身の変更も通す。どの DB にも適用されておらず、checksum が残っていないため。
 // マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
-// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除（DROP SCHEMA を含む）と改名（ALTER SCHEMA … RENAME TO を含む）・スキーマの移動（SET SCHEMA）、列の型の変更、既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）、既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む）。バックエンドの書き方 第 8.1 節）を含むと失敗にする。
+// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除（DROP SCHEMA を含む）と改名（ALTER SCHEMA … RENAME TO を含む）・スキーマの移動（SET SCHEMA）、列の型の変更、既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）、既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む）、既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL）。バックエンドの書き方 第 8.1 節）を含むと失敗にする。
 // 対象外は、今ある 38 のマイグレーションのファイル名の一覧（LEGACY_MIGRATIONS）に入っているものだけ。それ以外は番号が小さくても全て対象にする。一覧にあって実在しない名前は失敗にする。
 // 例外は migrations-exclusions.json に理由を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値）。同じファイルの同じ種類の変更全てに効く。
 // 理由のない除外と、当たる変更がなくなった除外も失敗にする。SQL の字面で探すので、読み落としより誤検出の側に倒す（誤検出は除外で理由を残す）。
@@ -139,6 +139,7 @@ export const INCOMPATIBLE_KINDS = {
   changeType: '列の型の変更',
   setNotNull: '既存の列を NOT NULL にする',
   addNotNullWithoutDefault: '既定値のない NOT NULL の列の追加',
+  dropDefault: '既存の列の既定値の削除',
 }
 
 /**
@@ -175,6 +176,9 @@ function classifyAction(action) {
   if (/^RENAME\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.renameColumn
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+(?:SET\s+DATA\s+)?TYPE\b/.test(action)) return INCOMPATIBLE_KINDS.changeType
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+NOT\s+NULL\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
+  // 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧と ::型 の変換が付いてもよい）。SET DEFAULT 0 などの変更は数えない
+  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+DROP\s+DEFAULT\b/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
+  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+DEFAULT\s+(?:\(\s*)*NULL(?=\s*(?:$|\)|::))/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
   // 主キーの制約の追加は、既存の列に SET NOT NULL を行う
   if (/^ADD\s+(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
   const isAddColumn = /^ADD\s+/.test(action) && !/^ADD\s+(?:CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|EXCLUDE|LIKE)\b/.test(action)

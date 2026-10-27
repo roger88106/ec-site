@@ -329,7 +329,7 @@
 | AC-304 | 画像の確定は、画像の変換と保存のサービスを、データベースのトランザクションの外で… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-305 | 画像を公開の保存先に置いた後に、画像の登録か商品への追加が失敗したら、置いたファ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`ProductImageTransactionApiTest` |
 | AC-306 | 他のモジュールの、外部サービスを呼ぶ処理も、データベースのトランザクションの外で… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `MediaApiTest`、`PaymentRefundTest`、`PaymentVoidTest` ほか 1 |
-| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力し… | 変更 | [017](../specs/archive/mvp/017-stability/spec.md) | [193](../specs/archive/1to10/193-store-a11y/spec.md) | [店舗画面の構成](apps/store.md)（サーバーアクションの失敗のログ） | `withActionResult.test.ts` |
+| AC-307 | 店舗画面のサーバーアクションが例外で失敗したら、例外の内容をエラーのログに出力し… | 変更 | [017](../specs/archive/mvp/017-stability/spec.md) | [193](../specs/archive/1to10/193-store-a11y/spec.md)、[227](../specs/227-store-forms/spec.md) | [店舗画面の構成](apps/store.md)（サーバーアクションの失敗のログ） | `withActionResult.test.ts` |
 | AC-308 | 店舗画面のサーバー側で、バックエンドから 5xx を受けたら、警告のログに状態コ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `client.test.ts` |
 | AC-309 | 店舗画面のログは、トレース ID を持ち、バックエンドのログと照合できる（[フロ… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `client.test.ts` |
 | AC-310 | 支払の期限切れのジョブは、1 件の支払で例外（種類を問わない）が起きても、その支… | 有効 | [017](../specs/archive/mvp/017-stability/spec.md) | — | spec | `PaymentExpiryJobLoggingTest` |

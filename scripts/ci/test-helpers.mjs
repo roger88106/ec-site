@@ -105,14 +105,14 @@ function findPostsTo(code, path) {
 /**
  * 作成の応答の JSON から ID を取り出す処理を探す。<br />
  * 補助 TestJson は `JsonPath.read(body, "$.id")` と読む。テストが同じ読み取りを書くのは、`JsonPath.read(…, "$.id")` と、
- * 解析した文書の `.read("$.id")` の 2 つ。`jsonPath("$.id")`（MockMvc の応答の検証）は取り出す処理でなく確認なので探さない。
+ * 解析した文書の `.read("$.id")` の 2 つ。型引数（`JsonPath.<String>read(…)`）と、path の後の引数（`, String.class`）があっても探す。`jsonPath("$.id")`（MockMvc の応答の検証）は取り出す処理でなく確認なので探さない。
  * 一覧の応答の読み取り（`$.items`、`$.images[*].id`）は表の手順に含めない（テストの書き方）ので、path が `$.id` のものだけを探す。
  *
  * @param {string} code コメントを除いた Java のコード
  * @returns {number[]} 呼び出しの位置
  */
 function findIdExtractions(code) {
-  const patterns = [/JsonPath\s*\.\s*read\s*\([^;]*?,\s*"\$\.id"\s*\)/g, /\.\s*read\s*\(\s*"\$\.id"\s*\)/g]
+  const patterns = [/JsonPath\s*\.\s*(?:<[^>;]*>\s*)?read\s*\([^;]*?,\s*"\$\.id"\s*[),]/g, /\.\s*(?:<[^>;]*>\s*)?read\s*\(\s*"\$\.id"\s*[),]/g]
   return patterns.flatMap((pattern) => [...code.matchAll(pattern)].map((match) => match.index))
 }
 

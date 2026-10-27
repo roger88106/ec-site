@@ -239,6 +239,20 @@ describe('テストの書き方の表から読む規則', () => {
     assert.deepEqual(hits('ID を取り出す', body, `${IT}module/catalog/presentation/CategoryApiTest.java`), [])
   })
 
+  test('応答から ID を取り出す処理：型引数、型を渡す形、後ろの引数がある読み取りも、違反にする', () => {
+    const body = [
+      '    void t() {',
+      '        String a = JsonPath.<String>read(body, "$.id");',
+      '        String b = JsonPath.read(body, "$.id", String.class);',
+      '        String c = context.read("$.id", String.class);',
+      '        Long d = JsonPath.parse(body).read("$.id", Long.class);',
+      '        var e = JsonPath.read(body, "$.orderNumber", String.class);',
+      '        mockMvc.perform(get("/x")).andExpect(jsonPath("$.id", is("a")));',
+      '    }',
+    ].join('\n')
+    assert.deepEqual(hits('ID を取り出す', body), [3, 4, 5, 6])
+  })
+
   test('支払の作成の操作：PaymentApi の変数の create を違反にし、他の create と補助の created は違反にしない', () => {
     const body = [
       '    @Autowired',

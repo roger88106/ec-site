@@ -144,7 +144,8 @@ class ConfigurationPropertiesTest {
     @DisplayName("toString の規則は、toString を宣言する例と、秘密の値の項目を持たない例に当たらない")
     void toStringRuleDoesNotMatchCompliantExamples() {
         var examples = new ClassFileImporter().importClasses(SecretWithToStringProperties.class, ExampleProperties.class,
-                NestedSecretSafeProperties.class, NestedSecretSafeProperties.MaskedCredentials.class);
+                NestedSecretSafeProperties.class, NestedSecretSafeProperties.MaskedCredentials.class,
+                StaticConstantProperties.class, EnumFieldProperties.class, EnumFieldProperties.Kind.class);
 
         assertThat(secretPropertiesRule(examples).evaluate(examples).hasViolation()).isFalse();
     }
@@ -184,14 +185,16 @@ class ConfigurationPropertiesTest {
     }
 
     /**
-     * 設定の型のうち、秘密の値の項目を自分で持つものの名前を返す。
+     * 設定の型のうち、秘密の値の項目を自分で持つものの名前を返す。static の項目（定数、enum の定数）は設定の値でないので数えない。
      *
      * @param classes 設定の型を探すクラス
      * @return 型の名前
      */
     private static Set<String> secretConfigurationTypeNames(JavaClasses classes) {
         return configurationTypes(classes).stream()
-                .filter(javaClass -> javaClass.getFields().stream().anyMatch(field -> isSecretFieldName(field.getName())))
+                .filter(javaClass -> javaClass.getFields().stream()
+                        .filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))
+                        .anyMatch(field -> isSecretFieldName(field.getName())))
                 .map(JavaClass::getName)
                 .collect(Collectors.toCollection(TreeSet::new));
     }
@@ -369,5 +372,33 @@ record NestedSecretSafeProperties(MaskedCredentials account) {
         public String toString() {
             return "MaskedCredentials[apiKey=***]";
         }
+    }
+}
+
+/**
+ * 規則に当たらない例：static の定数の名前が秘密の値の名前だが、設定の値の項目ではない
+ *
+ * @param value 例の値
+ */
+@ConfigurationProperties("example-static-constant")
+record StaticConstantProperties(String value) {
+
+    static final String DEFAULT_KEY = "default";
+}
+
+/**
+ * 規則に当たらない例：項目の型が enum で、enum の定数の名前が秘密の値の名前だが、設定の値の項目ではない
+ *
+ * @param kind 例の種類
+ */
+@ConfigurationProperties("example-enum-field")
+record EnumFieldProperties(Kind kind) {
+
+    /**
+     * 例の種類
+     */
+    enum Kind {
+        TOKEN,
+        PLAIN
     }
 }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
@@ -76,11 +76,9 @@ describe('対象が 0 件のときの失敗', () => {
 
   // Git の一覧を読む検査は、対象が 0 件のとき（検査の対象の置き場所が変わった、除外の条件が広すぎる）に、何も見ずに成功してしまわない
   // 一覧は、exitIfNoFiles を呼ぶ検査を走査して作る（検査を足したとき、一覧への追加を忘れない）
-  const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const checks = readdirSync(ciDir)
-    .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
-    .filter((name) => /\bexitIfNoFiles\(/.test(readFileSync(path.join(ciDir, name), 'utf8')))
-    .map((name) => name.slice(0, -'.mjs'.length))
+  const checks = listScanScripts('ci')
+    .filter(({ raw }) => /\bexitIfNoFiles\(/.test(raw))
+    .map(({ name }) => name.slice('ci/'.length, -'.mjs'.length))
 
   test('0 件で失敗にするかを試す検査が、直下の検査の大半を占める（走査が空にならない）', () => {
     assert.ok(checks.length >= 20, `${checks.length} 件`)

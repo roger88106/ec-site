@@ -10,6 +10,7 @@
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
+| 1.1 | token の取り出し（`CurrentToken`）と、会員・運営者の取り出し（`CurrentMember`、`CurrentOperator`）は、presentation、`common.security`、表の例外の 2 つだけが使う | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
 | 1.1 | 共通コードと設定はモジュールに依存しない。共通コードとモジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
@@ -85,6 +86,13 @@ module/<モジュール>/
 - **イベント**：送り出し方は [バックエンドのアーキテクチャ](../design/backend-architecture.md) に従う。domain は自分のモジュールの `event/` を参照してよい（集約が公開のイベントを記録するため）。モジュールの中だけのイベントは、レベル A は集約のパッケージ、レベル B は application に置く。
 - **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。`api/` の型を `api/` の外が実装・継承しない。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
 - **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、集約のパッケージの直下に置く。`vo/` に置くと、`vo/` と集約のパッケージが互いに依存して循環するためである（例：order の `BuyerProfile`、`Cancellation`）。
+
+- **認証の情報の取り出し**：token の取り出し（`CurrentToken`）と、会員・運営者の取り出し（`CurrentMember`、`CurrentOperator`）を使えるのは、presentation 層と `common.security` だけにする。application 以降へは、取り出した値（会員の ID など）を引数で渡し、Spring Security の型を出さない。例外は次の 2 つで、増やすときはこの表に理由を書く。
+
+| 呼び出し元 | 置き場所 | 例外の理由 |
+|------------|----------|------------|
+| `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation に会員の ID を渡す公開の API で、呼び出し元を presentation に限る規則がある（第 1.3 節 ※1） |
+| `MeController` | `config/security/` | モジュールに属さない API の入口で、役割は presentation 層と同じ。移すとモジュールの構成が変わる |
 
 理由：どのモジュールでも同じ場所に同じものを見つけられるようにし、domain を永続化と API の形に依存させないため。参照の型を集約から分けると、集約の中を変えても presentation と公開の API が変わらない。
 

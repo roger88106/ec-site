@@ -16,6 +16,11 @@ import com.ecsite.architecture.layerdeps.module.sample.infrastructure.Infrastruc
 import com.ecsite.architecture.layerdeps.module.sample.infrastructure.InfrastructureToService;
 import com.ecsite.architecture.layerdeps.module.sample.presentation.PresentationToPort;
 import com.ecsite.architecture.layerdeps.module.sample.presentation.SamplePresentation;
+import com.ecsite.architecture.tokenaccess.sample.application.ApplicationUsesCurrentMember;
+import com.ecsite.architecture.tokenaccess.sample.presentation.PresentationUsesCurrentMember;
+import com.ecsite.common.security.CurrentMember;
+import com.ecsite.common.security.CurrentOperator;
+import com.ecsite.common.security.CurrentToken;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -147,6 +152,22 @@ class ModuleStructureTest {
             // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。
             // 会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために 3 組が増える
             new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", ProductionClasses.MODULE_PACKAGE + ".*.presentation.."));
+
+    /**
+     * token の取り出し（token、会員、運営者）のクラスの名前
+     */
+    private static final Set<String> TOKEN_ACCESSORS = Set.of(
+            CurrentToken.class.getName(), CurrentMember.class.getName(), CurrentOperator.class.getName());
+
+    /**
+     * token の取り出しを、presentation 層と common.security の外から使ってよいクラス。<br />
+     * 追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.1 節の例外の表にも書く。
+     */
+    private static final Set<String> TOKEN_ACCESS_EXCEPTIONS = Set.of(
+            // 他のモジュールの presentation に会員の ID を渡す公開の API。呼び出し元を presentation に限る規則（ALLOWED_API_USES）がある
+            "com.ecsite.module.member.api.CurrentMemberIds",
+            // モジュールに属さない API の入口で、役割は presentation 層と同じ
+            ME_CONTROLLER);
 
     @Test
     @DisplayName("モジュールの直下のパッケージは、標準の層の名前だけである")
@@ -387,6 +408,63 @@ class ModuleStructureTest {
                     .anyMatch(dependency -> dependency.getTargetClass().getName().equals(allowed.apiType()));
             assertThat(used).as(allowed.apiType()).isTrue();
         }
+    }
+
+    @Test
+    @DisplayName("token の取り出しと会員・運営者の取り出しは、presentation、common.security、許可の一覧のクラスだけが使う")
+    void tokenAccessorsAreUsedOnlyInAllowedPlaces() {
+        tokenAccessRule(ProductionClasses.MODULE_PACKAGE + ".*.presentation..").check(ProductionClasses.all());
+    }
+
+    @Test
+    @DisplayName("token の取り出しの規則は、application 層から使う例に当たり、presentation 層から使う例には当たらない")
+    void tokenAccessRuleMatchesApplicationExampleOnly() {
+        JavaClasses examples = new ClassFileImporter().importClasses(
+                ApplicationUsesCurrentMember.class, PresentationUsesCurrentMember.class);
+
+        List<String> details = tokenAccessRule("com.ecsite.architecture.tokenaccess.sample.presentation..")
+                .evaluate(examples).getFailureReport().getDetails();
+
+        assertViolation(details, ApplicationUsesCurrentMember.class, CurrentMember.class);
+        assertThat(details).noneMatch(detail -> detail.contains(PresentationUsesCurrentMember.class.getName()));
+    }
+
+    @Test
+    @DisplayName("token の取り出しを使う許可の一覧は、全て本番のクラスで使われている")
+    void everyTokenAccessExceptionIsUsed() {
+        for (String exception : TOKEN_ACCESS_EXCEPTIONS) {
+            boolean used = ProductionClasses.all().stream()
+                    .filter(javaClass -> outermostName(javaClass).equals(exception))
+                    .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
+                    .anyMatch(dependency -> TOKEN_ACCESSORS.contains(dependency.getTargetClass().getName()));
+            assertThat(used).as(exception).isTrue();
+        }
+    }
+
+    /**
+     * token の取り出しを使える場所を、presentation 層、common.security、許可の一覧のクラスだけにする規則を作る。
+     *
+     * @param presentationPackage presentation 層のパッケージ（例：com.ecsite.module.*.presentation..）
+     * @return 規則
+     */
+    private static ArchRule tokenAccessRule(String presentationPackage) {
+        DescribedPredicate<JavaClass> allowedPlace = JavaClass.Predicates.resideInAnyPackage(presentationPackage, "com.ecsite.common.security..")
+                .or(DescribedPredicate.describe("listed in the exceptions", javaClass -> TOKEN_ACCESS_EXCEPTIONS.contains(outermostName(javaClass))));
+        return noClasses().that(DescribedPredicate.not(allowedPlace))
+                .should().dependOnClassesThat(DescribedPredicate.describe(
+                        "are token accessors", javaClass -> TOKEN_ACCESSORS.contains(javaClass.getName())));
+    }
+
+    /**
+     * 入れ子のクラスを含む外側のクラスの名前を返す。
+     *
+     * @param javaClass クラス
+     * @return 入れ子でないクラスの名前
+     */
+    private static String outermostName(JavaClass javaClass) {
+        String name = javaClass.getName();
+        int nested = name.indexOf('$');
+        return nested < 0 ? name : name.substring(0, nested);
     }
 
     /**

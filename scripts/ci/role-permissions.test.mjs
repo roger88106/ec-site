@@ -44,6 +44,7 @@ const STORE = [
   '  /products:',
   '    get:',
   '      operationId: listProducts',
+  '      security: []',
   '      summary: 商品の一覧（AC-50）',
   '  /carts/{cartId}:',
   '    parameters:',
@@ -92,7 +93,7 @@ describe('ロールと権限の対応表', () => {
     ])
     assert.deepEqual(
       readOperations(STORE).operations.map((operation) => operation.security),
-      [null, ['', 'memberToken'], ['memberToken']],
+      [[], ['', 'memberToken'], ['memberToken']],
     )
   })
 
@@ -226,6 +227,31 @@ describe('ロールと権限の対応表', () => {
       'GET /a：x-required-permission がない',
       'GET /b：権限 unknown:read が運営者の realm にない',
     ])
+  })
+
+  test('security のない店舗 API の操作は、「不要」にせず問題にする。security: [] は token 不要を明示した操作で、「不要」になる', () => {
+    const store = readOperations(
+      [
+        'paths:',
+        '  /open:',
+        '    get:',
+        '      security: []',
+        '      summary: 公開',
+        '  /forgotten:',
+        '    get:',
+        '      summary: security を書き忘れた',
+        '    post:',
+        '      summary: 同じパスの別の操作',
+        '      security:',
+        '        - memberToken: []',
+      ].join('\n'),
+    )
+    assert.equal(store.unknown.length, 0)
+    const { markdown, problems } = renderTables({ admin: [], store: store.operations, realm: parseRealmRoles(REALM) })
+    assert.deepEqual(problems, ['GET /forgotten：security がない。token が要らない操作は security: [] と書く'])
+    assert.match(markdown, /\| `GET \/open` \| 公開 \| 不要 \|/)
+    assert.doesNotMatch(markdown, /GET \/forgotten/)
+    assert.match(markdown, /\| `POST \/forgotten` \| 同じパスの別の操作 \| 会員 \|/)
   })
 
   test('文書の生成の範囲が、生成し直した結果と違えば失敗にし、書き直し方を示す', () => {

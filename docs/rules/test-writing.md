@@ -153,7 +153,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 |------|----------|--------|
 | `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む（モジュールの一覧は、Spring Modulith が自分でもクラスを読み込むので、クラスの読み込みとは別になる）。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
 | `TestSettings` | 設定のテスト | `load(profile…)` で `application.yml` に profile の設定ファイルを重ねた値を読み、`bind(接頭辞, 設定の型, 値)` で設定の型に値を当てはめる。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
-| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテスト（`contract/`）、店舗 API の token の契約のテストと Keycloak の統合テスト（`src/integrationTest`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読み、`openApiDir()`、`realmsDir()`、`themeDir()` で置き場所を読み、設計書などそれ以外の置き場所（ファイルもディレクトリも）は `path(property の名前)` で読む。置き場所は、Gradle が system property で渡す。テストのクラスに `System.getProperty` や既定の相対パスを書かない。渡されないときは、置き場所が渡されなかったことを示して失敗する |
+| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテスト（`contract/`）、構成の検査（`architecture/`、`modulith/`、`ProductionClassesTest`）、店舗 API の token の契約のテストと Keycloak の統合テスト（`src/integrationTest`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読み、`openApiDir()`、`realmsDir()`、`themeDir()` で置き場所を読み、設計書などそれ以外の置き場所（ファイルもディレクトリも）は `path(property の名前)` で読む。置き場所は、Gradle が system property で渡す。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない（統合テストの `RegionApiTest` と `ProductionJarStartupTest` は、Gradle が渡す別の property を読むので対象にしない）。渡されないときは、置き場所が渡されなかったことを示して失敗する |
 
 理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が残り、メモリを使うため（`ProductionClasses` の理由）。設定の読み込みを 1 か所にして、全ての設定のテストが、同じ設定ファイルの重ね方で値を読むため（`TestSettings` の理由）。契約や realm の置き場所を既定の相対パスで読むと、Gradle が置き場所を渡さなくても通り、設定の誤りに気づけないため（`Contracts` の理由）。
 

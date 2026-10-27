@@ -66,7 +66,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 - 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。第 3.1 節）と、画面の依存が必要な検査（`licenses/`）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md) 第 4 節）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
 - 複数の script が使う関数は `lib/` に置く（テストは `*.test.mjs`）。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
   - `spec-dirs.mjs`：spec のディレクトリ（`docs/specs/` の直下とアーカイブの下）を探す。
-  - `git-files.mjs`：Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧を返す。Git の一覧を読む検査は、対象が 0 件のとき（`exitIfNoFiles`）失敗にする。
+  - `git-files.mjs`：Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧を返す。Git の一覧を読む検査は、対象が 0 件のとき（`exitIfNoFiles`）失敗にする。追跡していないファイルも含めるのは、検査を commit の前に実行し、新しく作ったファイルがその時点では `git add` されていないことが多いため（追跡しているファイルだけにすると、新しいテストや文書が検査されずに手元で通り、CI で初めて失敗する）。CI の作業ツリーには追跡していないファイルがないので、手元にだけある commit しないファイルで手元だけ失敗することがあり、commit し忘れたファイルを指す参照は手元で通り CI で失敗することがある。手元だけの失敗は、ファイルを `.gitignore` に書くか `/.local/` に置いて避ける。
   - `screen-sources.mjs`：画面の本番のソース（admin・store・shared の `src` の `.ts`・`.tsx` から、テスト・生成物・ui を除く）の定義。
   - `exclusions.mjs`：除外の一覧（`{キー: 理由}`）を読み、理由のない除外と不要になった除外を見つける。除外の一覧のパス（`exclusionsPath`）と、誤りの文（`checkExclusions`）も作る。検査が文を直接組み立てない（テストが走査する）。
   - `unreadable-line.mjs`：検査が読めなかった行を、`ファイル:行 内容（理由）` の形の失敗の文にする（`describeUnreadableLine`）。検査が文を直接組み立てない（テストが走査する）。

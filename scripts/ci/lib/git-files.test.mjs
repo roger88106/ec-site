@@ -53,7 +53,7 @@ describe('-z の出力の分割', () => {
 })
 
 describe('Git の対象のファイルの一覧', () => {
-  test('追跡しているファイルと、追跡していない無視されないファイルを、名前の順に返す', () => {
+  test('commit の前に新しいファイルも検査するため、追跡していない無視されないファイルも、追跡しているファイルと一緒に名前の順に返す', () => {
     assert.deepEqual(listGitFiles([], repo), ['.gitignore', 'docs/a.md', 'frontend/app.ts', 'tracked.txt', 'untracked.txt'])
   })
 

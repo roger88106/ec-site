@@ -297,6 +297,14 @@ describe('テストの書き方の表から読む規則', () => {
     assert.throws(() => buildTableRules(table('| 在庫の作成 | 補助 | `JooqStockItemRepositoryTest` |'), files), /補助/)
   })
 
+  test('表に、script が探す手順の行がないとき、データの行がないとき、列が 3 つでないときは、期待のメッセージで失敗にする', () => {
+    const { stock, ...withoutStock } = ROWS
+    assert.throws(() => buildTableRules(table(...Object.values(withoutStock)), files), /表に手順の行がない（在庫の作成）/)
+    assert.throws(() => parseHelperTable(table()), /表に行がない/)
+    assert.throws(() => parseHelperTable(table('| 在庫の作成 | `InventoryTestData` |')), /列が 3 つでない/)
+    assert.throws(() => parseHelperTable(table('| 在庫の作成 | `InventoryTestData` | `JooqStockItemRepositoryTest` | 余分 |')), /列が 3 つでない/)
+  })
+
   test('手順の名前ごとに、探す関数を持つ', () => {
     assert.equal(Object.keys(STEP_FINDERS).length, 5)
     for (const find of Object.values(STEP_FINDERS)) assert.equal(typeof find, 'function')

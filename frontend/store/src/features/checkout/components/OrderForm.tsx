@@ -6,7 +6,7 @@ import { Input } from '@ec-site/shared/ui/input'
 import { Label } from '@ec-site/shared/ui/label'
 import Link from 'next/link'
 import { useTranslations } from 'next-intl'
-import { type ReactNode, startTransition, useActionState, useRef, useState } from 'react'
+import { type ReactNode, type RefObject, startTransition, useActionState, useEffect, useRef, useState } from 'react'
 import { placeOrder } from '@/actions/checkout'
 import { findPostalCodeAddresses, listMunicipalities } from '@/actions/region'
 import { schemas } from '@/api/generated/constraints'
@@ -64,10 +64,13 @@ export function OrderFormView({
   const t = useTranslations('checkout.form')
   const errors = placeOrderErrors(result)
   const area = useAddressArea()
+  const formRef = useRef<HTMLFormElement>(null)
+  useFocusFirstErrorField(formRef, result)
 
   return (
     <form
       className="space-y-4"
+      ref={formRef}
       noValidate
       // action で送ると、React が送った後にフォームを空にし、誤りのときに入力が消える。onSubmit から送る
       onSubmit={(event) => {
@@ -187,6 +190,34 @@ export function OrderFormView({
 }
 
 // ============================== 部品 ==============================
+
+/** 欄の並び（画面の順）。誤りの欄のうち最初のものを探すのに使う */
+const FIELD_ORDER: readonly OrderField[] = ['name', 'postalCode', 'prefecture', 'municipality', 'address', 'phone']
+
+/**
+ * 送信の結果を受けたとき、選べる誤りの欄のうち画面の順で最初の欄へフォーカスを移す。<br />
+ * 選べない（無効の）欄は飛ばし、欄の誤りがなければ移さない。結果が変わったときだけ動くので、
+ * 結果の後に欄を入力しても移し直さない。サーバーアクションの結果は送信のたびに新しいオブジェクトになるため、
+ * 同じ誤りで再び失敗したときも動く。
+ *
+ * @param formRef フォームの要素
+ * @param result  注文のサーバーアクションの結果（送る前は null）
+ */
+function useFocusFirstErrorField(formRef: RefObject<HTMLFormElement | null>, result: ActionResult | null) {
+  useEffect(() => {
+    const { fields } = placeOrderErrors(result)
+    for (const field of FIELD_ORDER) {
+      if (!fields[field]) {
+        continue
+      }
+      const control = formRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>(`#${field}`)
+      if (control && !control.disabled) {
+        control.focus()
+        return
+      }
+    }
+  }, [formRef, result])
+}
 
 /**
  * お届け先の都道府県・市区町村・住所の入力の状態（店舗画面の構成 第 4.8 節）。<br />

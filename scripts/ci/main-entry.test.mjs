@@ -76,13 +76,18 @@ describe('直接実行の判定の検査', () => {
     assert.match(cjs, /CommonJS/)
   })
 
-  test('対象は、scripts の下のテストでない .mjs と .cjs。共通の関数の定義は除く', () => {
+  test('対象は、scripts と frontend/shared/scripts の下のテストでない .mjs と .cjs。共通の関数の定義は除く', () => {
     assert.equal(isMainTarget('scripts/ci/time-waits.mjs'), true)
     assert.equal(isMainTarget('scripts/dev/slot.mjs'), true)
     assert.equal(isMainTarget('scripts/ci/lib/git-files.mjs'), true)
     assert.equal(isMainTarget('scripts/ci/lib/is-main.mjs'), false)
     assert.equal(isMainTarget('scripts/ci/time-waits.test.mjs'), false)
     assert.equal(isMainTarget('scripts/ci/check-all.sh'), false)
+    assert.equal(isMainTarget('frontend/shared/scripts/export-constraints.mjs'), true)
+    assert.equal(isMainTarget('frontend/shared/scripts/export-constraints.test.mjs'), false)
+    assert.equal(isMainTarget('frontend/shared/scripts/a.cjs'), true)
+    assert.equal(isMainTarget('frontend/shared/src/a.mjs'), false)
+    assert.equal(isMainTarget('e2e/scripts/a.mjs'), false)
     assert.equal(isMainTarget('backend/a.mjs'), false)
   })
 })

@@ -368,6 +368,7 @@ public record SignedNotification(byte[] body, String signature) {
 - 列の型の変更
 - 既存の列を NOT NULL にすること（既存の列への主キーの制約の追加 `ADD PRIMARY KEY` を含む）
 - 既定値のない NOT NULL の列の追加（主キーの列の追加と、`DEFAULT NULL` を指定した NOT NULL の列の追加を含む。`IDENTITY` の列は既定値があるので除く）
+- 既存の列の既定値の削除（`ALTER COLUMN … DROP DEFAULT` と、同じ結果になる `ALTER COLUMN … SET DEFAULT NULL`。列が NOT NULL かに関わらず）。NOT NULL の列では、既定値が入ることを前提に列を指定しない、前のリリースのアプリの INSERT が失敗する。NULL を許す列でも、前のリリースのアプリが既定値が入ることを前提にしていれば、列に入る値が NULL に変わる
 
 これらは、次の 3 段に分ける。
 
@@ -376,6 +377,8 @@ public record SignedNotification(byte[] body, String signature) {
 | 1 | 最初 | 新しい表・列を追加する（前のバージョンのアプリは使わない） |
 | 2 | 次 | アプリを新しい表・列に切り替えてリリースする |
 | 3 | その次 | 使わなくなった表・列を削除する ※5 |
+
+既存の列の既定値の削除は、段 1 がない。段 2 で、アプリが列に値を必ず書くようにしてリリースし、段 3 で既定値を削除する。除外の一覧に置くのは段 3 の削除（※5 と同じ）。
 
 ※5：段 3 の削除は、マイグレーションの検査の除外の一覧（`scripts/ci/migrations-exclusions.json`）に置く。キーを `<マイグレーションのファイル名>:<変更の種類>`、値を理由にし、理由には、どのリリースで使わなくなったかを書く（詳しくは [CI の検査](../guides/ci.md) の `migrations` の行）。今ある 38 のマイグレーションは本番に適用していないので、検査の対象にしない。
 

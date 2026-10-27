@@ -1,6 +1,6 @@
-// 検査の script が、直接実行されたかの判定を共通の関数（lib/is-main.mjs の isMain）だけで行うことを確認する。
+// script（scripts/ と frontend/shared/scripts/ の下）が、直接実行されたかの判定を共通の関数（lib/is-main.mjs の isMain）だけで行うことを確認する。
 // 判定の書き方が複数あると、シンボリックリンクや Windows のパスの違いで、直接実行しても何も検査せずに成功する script ができる。
-// 対象は scripts/ の下の、テストでない .mjs と .cjs（scripts/dev/ も含む。テストは直接実行しない）。コメントと文字列の中は読まない。
+// 対象は scripts/ と frontend/shared/scripts/ の下の、テストでない .mjs と .cjs（scripts/dev/ も含む。テストは直接実行しない）。コメントと文字列の中は読まない。
 // argv の 2 つ目の要素を取り出す書き方（argv[1]、argv.at(1)、分割代入）、import.meta.url・filename の比較、import.meta.main、require.main があると失敗にする。対象のファイルが 0 件のときも失敗にする。
 // 使い方：node scripts/ci/main-entry.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -45,10 +45,10 @@ export function adviceOf(file) {
  * 検査の対象のファイルか。
  *
  * @param {string} file リポジトリのルートからのパス（/ 区切り）
- * @returns {boolean} scripts/ の下の、テストでない .mjs・.cjs（判定の定義を除く）なら true
+ * @returns {boolean} scripts/ と frontend/shared/scripts/ の下の、テストでない .mjs・.cjs（判定の定義を除く）なら true
  */
 export function isMainTarget(file) {
-  return /^scripts\/.*\.[mc]js$/.test(file) && !/\.test\.[mc]js$/.test(file) && file !== DEFINITION
+  return /^(?:frontend\/shared\/)?scripts\/.*\.[mc]js$/.test(file) && !/\.test\.[mc]js$/.test(file) && file !== DEFINITION
 }
 
 /**
@@ -64,7 +64,7 @@ export function findMainJudgments(text) {
 }
 
 if (isMain(import.meta.url)) {
-  const files = listGitFiles(['scripts']).filter((file) => isMainTarget(file))
+  const files = listGitFiles(['scripts', 'frontend/shared/scripts']).filter((file) => isMainTarget(file))
   exitIfNoFiles(files, '検査の script')
   const found = files.flatMap((file) => findMainJudgments(readFileSync(file, 'utf8')).map((hit) => ({ file, ...hit })))
   for (const hit of found) {

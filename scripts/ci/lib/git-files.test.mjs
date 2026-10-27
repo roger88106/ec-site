@@ -1,12 +1,13 @@
 import assert from 'node:assert/strict'
 import { execFileSync, spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { removeGitEnv, withoutGitEnv } from './git-env.mjs'
 import { emptyListReason, listGitFiles, splitNulList } from './git-files.mjs'
+import { findRuleViolations, listScanScripts } from './scan-rules.mjs'
 
 /** 試す Git のリポジトリ */
 const repo = mkdtempSync(path.join(tmpdir(), 'git-files-'))
@@ -36,11 +37,8 @@ before(() => {
 
 describe('Git の一覧の求め方', () => {
   test('検査は、Git の一覧を listGitFiles で求める（git ls-files -z を直接呼ばない）', () => {
-    const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-    const offenders = readdirSync(ciDir)
-      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
-      .filter((name) => /\['ls-files',\s*'-z'/.test(readFileSync(path.join(ciDir, name), 'utf8')))
-    assert.deepEqual(offenders, [])
+    const rules = [{ guard: 'listGitFiles', forbidden: /\['ls-files',\s*'-z'/, target: 'raw', exceptions: {} }]
+    assert.deepEqual(findRuleViolations(listScanScripts('ci'), rules), [])
   })
 })
 
@@ -55,7 +53,7 @@ describe('-z の出力の分割', () => {
 })
 
 describe('Git の対象のファイルの一覧', () => {
-  test('追跡しているファイルと、追跡していない無視されないファイルを、名前の順に返す', () => {
+  test('commit の前に新しいファイルも検査するため、追跡していない無視されないファイルも、追跡しているファイルと一緒に名前の順に返す', () => {
     assert.deepEqual(listGitFiles([], repo), ['.gitignore', 'docs/a.md', 'frontend/app.ts', 'tracked.txt', 'untracked.txt'])
   })
 
@@ -78,11 +76,9 @@ describe('対象が 0 件のときの失敗', () => {
 
   // Git の一覧を読む検査は、対象が 0 件のとき（検査の対象の置き場所が変わった、除外の条件が広すぎる）に、何も見ずに成功してしまわない
   // 一覧は、exitIfNoFiles を呼ぶ検査を走査して作る（検査を足したとき、一覧への追加を忘れない）
-  const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-  const checks = readdirSync(ciDir)
-    .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
-    .filter((name) => /\bexitIfNoFiles\(/.test(readFileSync(path.join(ciDir, name), 'utf8')))
-    .map((name) => name.slice(0, -'.mjs'.length))
+  const checks = listScanScripts('ci')
+    .filter(({ raw }) => /\bexitIfNoFiles\(/.test(raw))
+    .map(({ name }) => name.slice('ci/'.length, -'.mjs'.length))
 
   test('0 件で失敗にするかを試す検査が、直下の検査の大半を占める（走査が空にならない）', () => {
     assert.ok(checks.length >= 20, `${checks.length} 件`)

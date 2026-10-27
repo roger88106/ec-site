@@ -1,6 +1,7 @@
 package com.ecsite.config.event;
 
 import com.ecsite.AsyncEvents;
+import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -160,15 +161,16 @@ class EventResubmissionJobTest {
         var publication = publicationOf(event);
 
         clock.advance(Duration.ofMinutes(1));
+        var logStart = CapturedLogs.mark(output);
         job.resubmit();
         clock.advance(Duration.ofMinutes(1));
         job.resubmit();
 
-        var logLines = output.getAll().lines().filter(line -> line.contains(publication.getIdentifier().toString())).toList();
+        var logLines = CapturedLogs.since(output, logStart).lines().filter(line -> line.contains(publication.getIdentifier().toString())).toList();
         assertThat(logLines).singleElement().satisfies(line -> assertThat(line)
                 .contains("ERROR", FailingEvent.class.getName(), publication.getTargetIdentifier().getValue(), "処理の回数 2")
                 .doesNotContain(event.email()));
-        assertThat(output.getAll()).doesNotContain(event.email());
+        assertThat(CapturedLogs.since(output, logStart)).doesNotContain(event.email());
     }
 
     @Test
@@ -197,10 +199,11 @@ class EventResubmissionJobTest {
                 .where(ID.eq(publication.getIdentifier())).execute();
 
         clock.advance(Duration.ofMinutes(1));
+        var logStart = CapturedLogs.mark(output);
         job.resubmit();
 
         assertThat(publicationOf(event).getCompletionAttempts()).isEqualTo(2);
-        assertThat(output.getAll()).doesNotContain(publication.getIdentifier().toString());
+        assertThat(CapturedLogs.since(output, logStart)).doesNotContain(publication.getIdentifier().toString());
     }
 
     @Test

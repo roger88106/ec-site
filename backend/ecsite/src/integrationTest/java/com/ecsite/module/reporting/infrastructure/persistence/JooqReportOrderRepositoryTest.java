@@ -51,9 +51,15 @@ class JooqReportOrderRepositoryTest {
     @Autowired
     ReportOrderRepository repository;
 
+    /**
+     * テストが直接 DB を読み書きする jOOQ の DSLContext
+     */
     @Autowired
     DSLContext dsl;
 
+    /**
+     * 別のトランザクションで処理を実行する TransactionTemplate
+     */
     @Autowired
     TransactionTemplate transactionTemplate;
 

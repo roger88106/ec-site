@@ -202,7 +202,6 @@ class CheckoutCleanupJobTest {
     @Test
     @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
     void logsDeletedCount(CapturedOutput output) {
-        var logStart = CapturedLogs.mark(output);
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
         var checkouts = new ArrayList<UUID>();
@@ -213,6 +212,7 @@ class CheckoutCleanupJobTest {
                 new CheckoutCleanupProperties(Duration.ofHours(1), Duration.ofDays(1), 2), clock);
 
         clock.setInstant(longAgo.plus(TTL).plus(Duration.ofDays(1)).plusSeconds(1));
+        var logStart = CapturedLogs.mark(output);
         smallBatch.cleanUp();
 
         var deleted = checkouts.size() - remaining(checkouts).size();

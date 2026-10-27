@@ -178,7 +178,6 @@ class CartCleanupJobTest {
     @Test
     @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
     void logsDeletedCount(CapturedOutput output) {
-        var logStart = CapturedLogs.mark(output);
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
         var carts = new ArrayList<UUID>();
@@ -188,6 +187,7 @@ class CartCleanupJobTest {
         var smallBatch = new CartCleanupJob(service, new CartCleanupProperties(Duration.ofHours(1), Duration.ZERO, 2), clock);
 
         clock.setInstant(longAgo.plus(Duration.ofDays(30)).plusSeconds(1));
+        var logStart = CapturedLogs.mark(output);
         smallBatch.cleanUp();
 
         var deleted = carts.size() - remaining(carts).size();

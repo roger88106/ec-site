@@ -66,9 +66,13 @@ class KeycloakIntegrationTest {
     private static final int MANAGEMENT_PORT = 9000;
 
     /**
-     * realm の設定とテーマの置き場所。Gradle の integrationTest task が渡す system property を、契約の補助で読む
+     * realm の設定の置き場所。Gradle の integrationTest task が渡す system property を、契約の補助で読む
      */
     private static final Path REALMS_DIR = Contracts.realmsDir();
+
+    /**
+     * テーマの置き場所。realm の設定と同じく、契約の補助で読む
+     */
     private static final Path THEME_DIR = Contracts.themeDir();
 
     private static final String TAX_CATEGORIES = "/api/admin/tax-categories";

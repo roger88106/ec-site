@@ -231,7 +231,7 @@ tasks は第 6 節の決定に基づく。
   - 先に、Biome の規則（`noShadow`、`noShadowRestrictedNames` など）でグローバルの名前のシャドーイングを見つけられるかを、今の Biome のバージョンで確認する。見つけられるなら Biome の設定で行い、名前の一覧の生成は行わない。その場合は、Biome が持つ名前の一覧で DC-226-8 を満たすか（満たさないなら一覧の生成も行う）を判断する。確認した結果と判断を、本タスクの結果に書く
   - 違反の数を、引数を除き `const`・`let` だけで再度数え、本タスクの結果に書く。名前を変えるときは、確認する内容を変えない（DN-226-2）
   - 確認方法：テストで、lib の名前と同じ `const`・`let`（分割代入、`for…of` を含む）を見つけ、引数と、lib にない名前を見つけないこと。名前を変えたテストのファイルで、変更の前後のテストの件数と名前が同じで、差分が名前の置き換えだけであること（DN-226-2）。一覧の一致の確認が、一覧から名前を 1 つ削除すると失敗すること（確認した後に戻す）。`scripts/dev/check-frontend.sh` が通ること
-  - 結果：Biome 2.5.15 は使えなかった。`noShadowRestrictedNames` が検出するのは ES の制限された名前（`Set`、`NaN` など）だけで、DOM の `name`・`status`・`alert` は検出しない。`noShadow` は外側の宣言の名前だけを見て、`javascript.globals` に名前を書いても検出しない（試した）。このため一覧を生成する方式にした。`scripts/ci/globals/lib-globals.mjs` が、TypeScript 7.0.2 の lib（`typescript` ではなく、プラットフォームごとのパッケージ `@typescript/typescript-<OS>-<CPU>` の `lib/` にある `lib.*.d.ts`。`getExePath` の実行ファイルと同じディレクトリ）を、`esnext`・`dom`・`dom.iterable`・`dom.asynciterable` から `/// <reference lib>` をたどって読み、最上位の `declare` の `var`・`let`・`const`・`function`・`class`・`namespace`・`enum` の名前（値の名前だけ。`interface`・`type` は除く）988 個を `lib-globals.json` に書く（`--write`）。`--write` なしは一致を確認する。一致の確認は `ci.yml` の店舗画面の job の、knip の手順の次の「組み込みの名前の一覧の確認」の手順に置いた。違反は 28 か所（`const`・`let` のみ。`status` 10、`name` 12、`alert` 3、`confirm` 1、`cookieStore` 1、`document` 1）で、意味の分かる名前に変えた。変えたテストのファイルの件数と名前は変わらない（`shipping.spec.ts` のステップ名の `${status}` は変数名だけが変わり、文字は同じ）。
+  - 結果：Biome 2.5.15 は使えなかった。`noShadowRestrictedNames` が検出するのは ES の制限された名前（`Set`、`NaN` など）だけで、DOM の `name`・`status`・`alert` は検出しない。`noShadow` は外側の宣言の名前だけを見て、`javascript.globals` に名前を書いても検出しない（試した）。このため一覧を生成する方式にした。`scripts/ci/globals/lib-globals.mjs` が、TypeScript 7.0.2 の lib（`typescript` ではなく、プラットフォームごとのパッケージ `@typescript/typescript-<OS>-<CPU>` の `lib/` にある `lib.*.d.ts`。`getExePath` の実行ファイルと同じディレクトリ）を、`esnext`・`dom`・`dom.iterable`・`dom.asynciterable` から `/// <reference lib>` をたどって読み、最上位の `declare` の `var`・`let`・`const`・`function`・`class`・`namespace`・`enum` の名前（値の名前だけ。`interface`・`type` は除く）988 個を `lib-globals.json` に書く（`--write`）。`--write` なしは一致を確認する（一覧から `status` を削除すると、「lib にあり、一覧にない名前：status」で失敗することを確認し、戻した）。一致の確認は `ci.yml` の店舗画面の job の、knip の手順の次の「組み込みの名前の一覧の確認」の手順に置いた。違反は 28 か所（`const`・`let` のみ。`status` 10、`name` 12、`alert` 3、`confirm` 1、`cookieStore` 1、`document` 1）で、意味の分かる名前に変えた。変えたテストのファイルの件数と名前は変わらない（`shipping.spec.ts` のステップ名の `${status}` は変数名だけが変わり、文字は同じ）。
 - [x] **T226-02-03** [テスト] テストの間の空行の検査を加える（DC-226-9、10）。
   - 依存：T226-02-02（同じ `frontend-rules.mjs` を変える）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`docs/guides/ci.md`、テストの書き方の規則の一覧
@@ -291,8 +291,11 @@ tasks は第 6 節の決定に基づく。
     - 必須：第 8 節の 1 の 223・224 の行が、実装の段階の重なり（`spec-numbers`、`strip-comments`、コメントの書き方など）を書いていなかった。行を直し、解消の方針を書いた。
     - 推奨は、13 件を修正した（37618416）：空行の検査の範囲（テスト・グループの形に限り、1 行で閉じるテストを加える）、タイムアウトの検査の誤検出（型の注釈つきのデフォルト引数、三項演算子）、文字列のセレクターの中の位置、ボタンの名前の展開と変数、ジェネリクスの矢印関数の後の宣言、コメントと TSDoc（検査の一覧、名前の一覧の範囲、ゾンビのプロセスの待ち）、テストの書き方 第 4.10 節の対象、テストの名前の AC の番号、Dependabot の TypeScript の更新の手順。1 件（テストの書き方 第 4.9 節の検査の自動化）は第 9 節に後回しとして書いた。言い回しの候補は全て採用した。
     - E2E の全体は 20 件が通り、136 秒（準備を含む。T226-03-01 の修正の前は 154 秒）。延びていない（DN-226-3）
-- [ ] **T226-04-02** pull request の前のレビュー（高性能の区分のモデルのレビューと、組み込みのコードレビュー `/code-review`。[AGENTS.md](../../../AGENTS.md) のモデルの区分）を行い、指摘に対応する。
+- [x] **T226-04-02** pull request の前のレビュー（高性能の区分のモデルのレビューと、組み込みのコードレビュー `/code-review`。[AGENTS.md](../../../AGENTS.md) のモデルの区分）を行い、指摘に対応する。
   - 依存：T226-04-01
+  - 結果：高性能のレビュー（spec との一致、完了の定義）は、高 0 件、必須 0 件、推奨 2 件。組み込みのコードレビューは 6 件（高・必須の区分はない）。
+    - 修正した（db46fc60）：ボタンの名前の正規表現の末尾がエスケープした `$` のときを固定とみなす誤り（2 つのレビューで重複）、`timeoutMs` などの `timeout` を含む項目の見逃し、SIGKILL が EPERM で失敗したプロセス（止められない）を上限まで待つこと。T226-02-02 の結果に、一覧の一致の確認が失敗することを確認した旨を書いた。
+    - 修正しない：空行の検査が文字列だけの行を飛ばすこと（今のコードに該当がなく、誤検出の側で安全）、名前の一覧の生成が TypeScript の内部のファイル（`getExePath.js`）を読むこと（TypeScript の構成が変われば CI の店舗画面の job が失敗して分かる）、番号の検査がファイルの種類の正規表現のために `frontend-rules.mjs` を import すること（#223 との重なりの解消で読み方の関数を 1 つにするときに合わせて再検討する）
 - [ ] **T226-04-03** 後回しにする作業と起票の案（第 9 節）を最新にし、spec を `docs/specs/archive/1to10/` に移す。
   - 依存：T226-04-02
   - 範囲：`docs/specs/`、spec へのリンクを持つ文書、移した spec 自身の相対リンク

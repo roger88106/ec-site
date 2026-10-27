@@ -13,16 +13,21 @@ import {
   findTypeCasts,
   findWeakExistenceChecks,
   findCrossFeatureImports,
+  findButtonNameChecks,
   findCssClassChecks,
   findInternalSelectors,
   findLineThrough,
   findLocaleLiterals,
+  findNetworkIdleWaits,
+  findPositionSelectors,
   findQueryUrlStrings,
+  findTimeoutLiterals,
   findDefinitions,
   findExportedNames,
   groupTargets,
   isCommonFile,
   sharedPublicNames,
+  timeoutTargets,
 } from './frontend-rules.mjs'
 
 describe('検査の対象のファイルの振り分け', () => {
@@ -631,5 +636,129 @@ describe('テストの書き方の検査', () => {
     assert.deepEqual(findFireEvents(namespace).map((hit) => hit.line), [2])
     const crlf = "import { fireEvent as fe } from 'x'\r\n// 理由\r\nfe.click(a)\r\nfe.click(b)\r\n"
     assert.deepEqual(findFireEvents(crlf).map((hit) => hit.line), [4])
+  })
+})
+
+describe('E2E の書き方の検査', () => {
+  const lines = (hits) => hits.map((hit) => hit.line)
+
+  test('位置で選ぶメソッド（.first()・.nth()・.last()）を見つける（?. と空白と改行を含む。コメントと文字列の中は除く）', () => {
+    const text = [
+      "await page.getByRole('row').first().click()",
+      "await page.getByRole('row').nth(2).click()",
+      "await page.getByRole('row').last().click()",
+      "await page.getByRole('row')?.first ( ).click()",
+      "await page.getByRole('row')",
+      '  .nth(',
+      '    0).click()',
+      "// page.getByRole('row').first()",
+      "const message = '.first() は使わない'",
+      "await page.getByRole('row', { name: 'a', exact: true }).click()",
+      'const firstName = first',
+    ].join('\n')
+    assert.deepEqual(lines(findPositionSelectors(text)), [1, 2, 3, 4, 6])
+  })
+
+  test('networkidle で待つ箇所を見つける（コメントの中は除く）', () => {
+    const text = [
+      "await page.goto(url, { waitUntil: 'networkidle' })",
+      'await page.waitForLoadState("networkidle")',
+      '// networkidle では待たない',
+      "await page.goto(url, { waitUntil: 'load' })",
+    ].join('\n')
+    assert.deepEqual(lines(findNetworkIdleWaits(text)), [1, 2])
+  })
+
+  test('ボタンを文字列の名前で探すとき、exact: true がない箇所を見つける（連鎖の途中、複数の行、変数、テンプレート文字列を含む）', () => {
+    const text = [
+      "await page.getByRole('button', { name: '保存' }).click()",
+      "await row.getByRole('button', { name: status }).click()",
+      'await page.getByRole("button", {',
+      '  name: `出荷 ${id}`,',
+      '}).click()',
+      "await page.getByRole('button', { name: '保存', exact: false }).click()",
+      "await page.getByRole('button', { name }).click()",
+      "await page.getByRole('button', { exact: true, name: '保存' }).click()",
+      "await page.getByRole('button', { name: '保存', exact: true }).click()",
+      "await page.getByRole('button', { name: `出荷 ${id}`, exact: true }).click()",
+      "await page.getByRole('button', { name: status, exact: true }).click()",
+    ].join('\n')
+    assert.deepEqual(lines(findButtonNameChecks(text)), [1, 2, 3, 6, 7])
+  })
+
+  test('ボタンを正規表現の名前で探すとき、先頭の ^ と末尾の $ がなければ見つける（フラグ、カンマや括弧を含む正規表現でも読む）', () => {
+    const text = [
+      "await page.getByRole('button', { name: /注文する/ }).click()",
+      "await page.getByRole('button', { name: /^注文する/ }).click()",
+      "await page.getByRole('button', { name: /注文する$/ }).click()",
+      "await page.getByRole('button', { name: /^注文する（[\\d,]+ 円）$/ }).click()",
+      "await page.getByRole('button', { name: /^保存$/i }).click()",
+      "await page.getByRole('button', { name: /^a, b$/, exact: true }).click()",
+      "await page.getByRole('button', { name: /a, b/, exact: true }).click()",
+    ].join('\n')
+    assert.deepEqual(lines(findButtonNameChecks(text)), [1, 2, 3, 7])
+  })
+
+  test('ボタン以外の役割と、名前で探さない呼び出しと、コメントと文字列の中は見つけない', () => {
+    const text = [
+      "await page.getByRole('cell', { name: '2,200 円' }).click()",
+      "await page.getByRole('button').click()",
+      "await page.getByRole('button', { pressed: true }).click()",
+      "// page.getByRole('button', { name: '保存' })",
+      'const text = "page.getByRole(\'button\', { name: \'保存\' })"',
+    ].join('\n')
+    assert.deepEqual(findButtonNameChecks(text), [])
+  })
+
+  test('名前の中に括弧の文字列や別の呼び出しがあっても、閉じ括弧を取り違えない', () => {
+    const text = [
+      "await page.getByRole('button', { name: label('a)'), exact: true }).click()",
+      "await page.getByRole('button', { name: label('a)') }).click()",
+      "await page.getByRole('button', { name: '保存', exact: true }).filter({ has: page.getByRole('button', { name: '削除' }) })",
+    ].join('\n')
+    assert.deepEqual(lines(findButtonNameChecks(text)), [2, 3])
+  })
+
+  test('タイムアウトの数字を見つける（timeout の項目、setTimeout の引数、intervals の項目）', () => {
+    const text = [
+      'await expect(x).toBeVisible({ timeout: 10_000 })',
+      'await expect(x).toBeVisible({ timeout: 5 * 1000 })',
+      'test.setTimeout(60_000)',
+      'test.setTimeout(test.info().timeout + 5000)',
+      'setTimeout(() => done(), 100)',
+      '}).toPass({ timeout: ASYNC_TIMEOUT, intervals: [500, 1_000] })',
+      'await expect(x).toBeVisible({',
+      '  timeout: ASYNC_TIMEOUT * 2,',
+      '})',
+      'await expect(x).toBeVisible({ timeout: 1000 }, { intervals: [CHECK_TIMEOUT] })',
+    ].join('\n')
+    assert.deepEqual(lines(findTimeoutLiterals(text)), [1, 2, 3, 4, 5, 6, 8, 10])
+  })
+
+  test('waits.ts の定数、名前だけの式、型の注釈、文字列とコメントの中の数字は見つけない', () => {
+    const text = [
+      'await expect(x).toBeVisible({ timeout: CHECK_TIMEOUT })',
+      'test.setTimeout(test.info().timeout + PAYMENT_EXPIRY_TIMEOUT)',
+      '}).toPass({ timeout, intervals })',
+      '{ timeout: RESERVATION_MILLIS + ASYNC_TIMEOUT }',
+      '{ message: `在庫が作られない`, timeout: ASYNC_TIMEOUT }',
+      'options: { timeout?: number; intervals?: number[] }',
+      "{ message: 'timeout: 5000 は書かない', timeout: MAIL_TIMEOUT }",
+      '// { timeout: 5000 }',
+      'const REPORT_TIMEOUT2 = ASYNC_TIMEOUT',
+      '{ timeout: TIMEOUT2 }',
+      'await expect(x).toHaveText("a", { timeout: CHECK_TIMEOUT }) // 1000',
+      'await page.waitForTimeout(ms)',
+    ].join('\n')
+    assert.deepEqual(findTimeoutLiterals(text), [])
+  })
+
+  test('報告に行の番号と元の行の文字を含む', () => {
+    assert.deepEqual(findPositionSelectors("x\n  page.getByRole('row').first()  "), [{ line: 2, text: "page.getByRole('row').first()" }])
+  })
+
+  test('タイムアウトの数字の検査は、タイムアウトの定数を定義する waits.ts を対象にしない', () => {
+    const files = ['e2e/src/waits.ts', 'e2e/src/store.ts', 'e2e/tests/order.spec.ts', 'e2e/playwright.config.ts', 'e2e/src/waits.test.ts']
+    assert.deepEqual(timeoutTargets(files), ['e2e/src/store.ts', 'e2e/tests/order.spec.ts', 'e2e/playwright.config.ts', 'e2e/src/waits.test.ts'])
   })
 })

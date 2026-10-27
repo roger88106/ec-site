@@ -13,7 +13,7 @@
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
-| 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない。E2E で、`.first()`・`.nth()`・`.last()` で選ばず、ボタンの名前は完全一致で探す | CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、他（E2E の位置で選ぶメソッドとボタンの名前を含む）はレビュー |
+| 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない。E2E で、`.first()`・`.nth()`・`.last()` で選ばず、ボタンの名前は完全一致で探す | CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、E2E の位置で選ぶメソッド（`.first()`・`.nth()`・`.last()`）とボタンの名前の完全一致（`exact: true`、先頭と末尾を固定した正規表現）も自動（同じ script）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
 | 4.4 | テストの関数は `test` にそろえる | レビュー |
@@ -24,7 +24,7 @@
 | 4.9 | 環境変数は `vi.stubEnv` で変え、`process.env` に代入しない | レビュー |
 | 4.10 | テストの `const`・`let` で、TypeScript の lib のグローバルの名前をシャドーイングしない | レビュー |
 | 4.11 | テストとテストの間に空行を置く | レビュー |
-| 5 | 時間で待たない。E2E で `networkidle` で待たず、タイムアウトを数字のリテラルで書かない | 時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` とタイムアウトの数字のリテラルはレビュー |
+| 5 | 時間で待たない。E2E で `networkidle` で待たず、タイムアウトを数字のリテラルで書かない | 時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`） |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
 

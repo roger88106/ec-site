@@ -217,7 +217,7 @@ tasks は第 6 節の決定に基づく。
 - 完了条件：DC-226-1〜4、6〜10、15、17、18 を満たし、`check-all.sh` が通る。
 - 参照：第 3 節、第 6 節の 2〜4、225 の spec 第 7 節の 2
 
-- [ ] **T226-02-01** [テスト] `frontend-rules` に、E2E の 4 つの検査（位置で選ぶメソッド、`networkidle`、ボタンの名前、タイムアウトの数字）を加える（DC-226-1〜4、6）。
+- [x] **T226-02-01** [テスト] `frontend-rules` に、E2E の 4 つの検査（位置で選ぶメソッド、`networkidle`、ボタンの名前、タイムアウトの数字）を加える（DC-226-1〜4、6）。
   - 依存：段階 1（テストの書き方の規則の一覧の行）
   - 範囲：`scripts/ci/frontend-rules.mjs`、`scripts/ci/frontend-rules.test.mjs`、`docs/guides/ci.md` の `frontend-rules` の行、テストの書き方の規則の一覧
   - 225 の振り分けの関数が返す E2E の一覧に当てる。ボタンの名前は、`getByRole('button', { name })` の `name` が正規表現のリテラルなら先頭の `^` と末尾の `$` を求め、それ以外（文字列、変数、テンプレート文字列）なら `exact: true` を求める。複数の行にまたがる呼び出しと、`row.getByRole(…)` のように連鎖の途中の呼び出しも読む

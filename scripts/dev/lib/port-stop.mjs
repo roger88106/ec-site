@@ -109,7 +109,8 @@ export function findListeners(ports, deps = { platform: process.platform, spawnS
  * どちらも上限は {@link STOP_WAIT_MS}。上限を過ぎても例外を投げず、先へ進む（残ったかどうかは、呼ぶ側の再度の問い合わせで判定する）。
  * 終わるのを待つのは、止めた直後に問い合わせると、まだ待ち受けが残って見えることがあるため。
  * 親が終了状態を回収しないゾンビのプロセスは、シグナル 0 が成功し続けて生きていると判定されるので、上限まで待つ（失敗はしない）。
- * すでに終わっていて kill が失敗しても止まらない。
+ * すでに終わっていて kill が失敗しても止まらない（その場合も生存を確かめる）。
+ * SIGKILL が権限がなく EPERM で失敗したプロセスは、止められず待っても終わらないので、待たずに先へ進む（残ったかどうかは呼ぶ側が判定する）。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
  * @param {Partial<StopDeps>} [deps] OS、指令の実行、シグナルの送り方、時計と待ち。テストで差し替える。省いた項目は実際のものを使う
@@ -127,15 +128,18 @@ export function stopListeners(listeners, deps = {}) {
     )
     return
   }
+  const waiting = []
   for (const pid of pids) {
     try {
       kill(pid, 'SIGKILL')
-    } catch {
-      // すでに終わっている
+      waiting.push(pid)
+    } catch (error) {
+      // すでに終わっている（ESRCH など）プロセスは、念のため生存を確かめる。権限がなく止められない（EPERM）プロセスは、待っても終わらないので待たない
+      if (error?.code !== 'EPERM') waiting.push(pid)
     }
   }
   const deadline = now() + STOP_WAIT_MS
-  let alive = pids.filter((pid) => isAlive(pid, kill))
+  let alive = waiting.filter((pid) => isAlive(pid, kill))
   while (alive.length > 0 && now() < deadline) {
     sleep(POLL_INTERVAL_MS)
     alive = alive.filter((pid) => isAlive(pid, kill))

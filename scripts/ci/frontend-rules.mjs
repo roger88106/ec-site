@@ -9,7 +9,7 @@
 // - フロントのテストと補助：理由のコメントのない型の回避（as never、as unknown as）、fireEvent の直接の使用を書かない（第 4.6、4.8 節）
 // - フロントのテスト：describe の名前を識別子だけにしない、要素のプロパティ・属性を toBe・toEqual で比べない、描画した HTML の文字を要素や属性の並びで確かめない（第 2.2、4.7、4.1 節）
 // - フロントのテストと E2E：toBeTruthy・toBeDefined で確かめない、getAllBy…の結果を並びのインデックスで選ばない（第 4.1 節）
-// - E2E：.first()・.nth()・.last() と、locator の文字列のセレクターの中の位置（nth=、:nth-child( など）で選ばない、ボタンの名前を完全一致で探す（第 4.1 節）。networkidle で待たない、timeout で終わる項目・intervals・setTimeout などの引数に、タイムアウトを数字のリテラルで書かない（e2e/src/waits.ts を除く。第 5 節）
+// - E2E：.first()・.nth()・.last() と、locator の文字列のセレクターの中の位置（nth=、:nth-child( など）で選ばない、ボタンの名前を完全一致で探す（第 4.1 節）。networkidle で待たない、timeout を含む項目・intervals・setTimeout などの引数に、タイムアウトを数字のリテラルで書かない（e2e/src/waits.ts を除く。第 5 節）
 // - フロントのテストと補助と E2E：TypeScript の lib のグローバルの名前（一覧は globals/lib-globals.json）と同じ名前の const・let を宣言しない（テストの書き方 第 4.10 節）
 // - フロントのテストと補助と E2E：テストの間に空行を置く（テストを閉じる行の直後に test・it・describe を続けない。第 4.11 節）
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
@@ -889,6 +889,7 @@ const NAME_KEY = /^(?:name|(['"`])name\1|\[\s*(['"`])name\2\s*\])\s*:/
 
 /**
  * 正規表現のリテラルが、先頭の ^ と末尾の $ で固定されているかを返す。
+ * 末尾の $ がエスケープされていると（/^合計\$/）、文字の $ に一致するだけで行末を固定していないので固定とみなさない（\\$ の $ は固定）。
  * 最上位に | があると（/^a|b$/）、^a と b$ の選択で部分一致になるので固定とみなさない。グループ・文字クラス・エスケープの中の | は選択でない。
  *
  * @param {string} literal 正規表現のリテラル
@@ -898,6 +899,8 @@ function isAnchoredRegex(literal) {
   const match = ANCHORED_REGEX.exec(literal)
   if (!match) return false
   const body = match[1]
+  // 末尾の $ の前の \ が奇数個なら、その $ はエスケープされた文字そのもので、行末を固定していない
+  if ((/\\*$/.exec(body)[0].length & 1) === 1) return false
   let depth = 0
   let inClass = false
   for (let i = 0; i < body.length; i += 1) {
@@ -976,11 +979,11 @@ export function timeoutTargets(files) {
   return files.filter((file) => file !== TIMEOUT_CONSTANTS_FILE)
 }
 
-/** timeout で終わる項目（timeout、actionTimeout、navigationTimeout など）と intervals の項目 */
-const TIMEOUT_PROPERTY = /\b(?:[\w$]*timeout|intervals)\s*:(?!:)/gi
+/** timeout を含む項目（timeout、actionTimeout、timeoutMs、navigationTimeoutMs など）と intervals の項目 */
+const TIMEOUT_PROPERTY = /\b(?:[\w$]*timeout[\w$]*|intervals)\s*:(?!:)/gi
 
-/** 引用符で囲んだ timeout で終わる項目と intervals の項目（文字列を残したソースに当てる） */
-const QUOTED_TIMEOUT_PROPERTY = /(['"`])(?:[\w$]*timeout|intervals)\1\s*:(?!:)/gi
+/** 引用符で囲んだ timeout を含む項目と intervals の項目（文字列を残したソースに当てる） */
+const QUOTED_TIMEOUT_PROPERTY = /(['"`])(?:[\w$]*timeout[\w$]*|intervals)\1\s*:(?!:)/gi
 
 /** setTimeout・test.setTimeout・setDefaultTimeout・setDefaultNavigationTimeout の呼び出しの始まり */
 const SET_TIMEOUT = /\b(?:setTimeout|setDefaultTimeout|setDefaultNavigationTimeout)\s*\(/g
@@ -1012,7 +1015,7 @@ function expressionEnd(code, from) {
 
 /**
  * E2E で、タイムアウトを数字のリテラルで書く行を探す（テストの書き方 第 5 節。e2e/src/waits.ts の定数を使う）。
- * timeout で終わる項目（timeout、actionTimeout、navigationTimeout など。引用符で囲んだキーを含む）と intervals の項目の値、
+ * timeout を含む項目（timeout、actionTimeout、navigationTimeout など。引用符で囲んだキーを含む）と intervals の項目の値、
  * setTimeout・test.setTimeout・setDefaultTimeout・setDefaultNavigationTimeout の引数（引数が複数なら最後の引数。global の setTimeout は最後が待つ時間）に、
  * 数字のリテラルを含む式（10_000、5 * 1000、ASYNC_TIMEOUT * 2 など）を見つける。
  *

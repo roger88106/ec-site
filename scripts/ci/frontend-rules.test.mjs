@@ -748,6 +748,16 @@ describe('E2E の書き方の検査', () => {
     assert.deepEqual(lines(findButtonNameChecks(text)), [1, 5])
   })
 
+  test('末尾の $ がエスケープされていれば固定していないとみなす。\\ の後の $ は固定', () => {
+    const text = [
+      "await page.getByRole('button', { name: /^合計\\$/ }).click()",
+      "await page.getByRole('button', { name: /^a\\\\$/ }).click()",
+      "await page.getByRole('button', { name: /^a\\\\\\$/ }).click()",
+      "await page.getByRole('button', { name: /^合計\\$$/ }).click()",
+    ].join('\n')
+    assert.deepEqual(lines(findButtonNameChecks(text)), [1, 3])
+  })
+
   test('オプションに展開（...）を含み、name が読めないときは見つける。name が読めれば展開があっても判定する', () => {
     const text = [
       "await page.getByRole('button', { ...opts }).click()",
@@ -795,7 +805,7 @@ describe('E2E の書き方の検査', () => {
     assert.deepEqual(lines(findTimeoutLiterals(text)), [1, 2, 3, 4, 5, 6, 8, 10])
   })
 
-  test('timeout で終わる項目（引用符のキーを含む）と、setDefaultTimeout・setDefaultNavigationTimeout の引数も見つける', () => {
+  test('timeout を含む項目（引用符のキーを含む）と、setDefaultTimeout・setDefaultNavigationTimeout の引数も見つける', () => {
     const text = [
       'use: { actionTimeout: 10_000 }',
       'use: { navigationTimeout: 10000, expectTimeout: ASYNC_TIMEOUT }',
@@ -808,6 +818,18 @@ describe('E2E の書き方の検査', () => {
       "{ message: 'x', 'intervals': [100] }",
     ].join('\n')
     assert.deepEqual(lines(findTimeoutLiterals(text)), [1, 2, 3, 4, 5, 6, 9])
+  })
+
+  test('timeout の後に語が続く項目（timeoutMs、navigationTimeoutMs など。大小文字を区別しない）も見つける', () => {
+    const text = [
+      'use: { timeoutMs: 10_000 }',
+      'use: { navigationTimeoutMs: 5000 }',
+      "{ 'timeoutMs': 1000 }",
+      '{ TimeoutSeconds: 30 }',
+      '{ timeoutMs: ASYNC_TIMEOUT }',
+      'const value = ok ? timeoutMs : 5000',
+    ].join('\n')
+    assert.deepEqual(lines(findTimeoutLiterals(text)), [1, 2, 3, 4])
   })
 
   test('型の注釈つきのデフォルト引数と、三項演算子の timeout は項目として見つけない', () => {

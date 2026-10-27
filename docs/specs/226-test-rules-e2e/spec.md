@@ -40,7 +40,7 @@
 | 5 | テストの間の空行の漏れ（`})` の行の直後に `test(`・`describe(`・`it(` の行） | 0 件 | フロントのテストと E2E の 130 ファイル |
 | 6 | 組み込みの名前をシャドーイングする `const`・`let` | 約 21 か所 | TypeScript の lib（ES と DOM）が宣言するグローバルの名前（約 980 個）と同じ名前。内訳は `status` 9、`name` 7、`alert` 3、`confirm` 1、`cookieStore` 1。関数の引数は対象外（第 6 節の 3）で、含めると約 35 か所が加わる。概算なので、T226-02-02 で再度数える |
 | 7 | テストのコードのコメントの spec・plan・AC の番号 | 18 か所 | E2E のテスト・撮影・補助に 15 か所、E2E の設定（`e2e/playwright.config.ts`、`e2e/playwright.showcase.config.ts`）に 2 か所（`e2e/src/auth.ts` の `AC-112`、`e2e/src/urls.ts` の `plan 004 第 6.1 節`、`e2e/src/waits.ts` の `spec 010 NFR-14`、`e2e/src/detail.ts` の `spec 012 の DC-101` など）、フロントのテスト・補助に 1 か所。テスト名の AC 番号は対象外（テストの書き方 第 2.1 節で必要） |
-| 8 | E2E の補助の URL の引数 | 位置が補助ごとに違う | `loginAdmin(page, account, path, adminUrl)`、`loginStore(page, account, returnTo, storeUrl)`、`emptyCart(page, storeUrl)`、`orderCart(page, storeUrl, name)`、`addToCart(page, productId, options, storeUrl)`。撮影（`e2e/showcase/capture.spec.ts`）は `addToCart(page, SEED.chocolate, {}, STORE)` のように空のオプションを渡す |
+| 8 | E2E の補助の URL の引数 | 位置が補助ごとに違う | `loginAdmin(page, account, path, adminUrl)`、`loginStore(page, account, returnTo, storeUrl)`、`emptyCart(page, storeUrl)`、`orderCart(page, storeUrl, name)`、`addToCart(page, productId, options, storeUrl)`、`notifyCarrier(page, orderId, status, backendUrl)`（`e2e/src/shipping.ts`）。撮影（`e2e/showcase/capture.spec.ts`）は `addToCart(page, SEED.chocolate, {}, STORE)` のように空のオプションを渡す |
 | 9 | スロットの解除での、停止したプロセスの終了の待ち | Windows 以外は待たない | 下の ※1 |
 | 10 | 環境変数を `process.env` への代入で変えるテスト | 0 件 | `vi.stubEnv` を使うファイルは 4 件 |
 
@@ -261,8 +261,8 @@ tasks は第 6 節の決定に基づく。
 
 - [x] **T226-03-01** E2E の補助の URL を、最後の引数のオプションで受け取る形にそろえ、撮影の呼び出しを修正する（DC-226-19、20）。
   - 依存：段階 2（T226-02-02、04 が同じ E2E のファイルを変える）
-  - 範囲：`e2e/src/auth.ts`、`e2e/src/store.ts`（URL を受け取る補助）、それを呼ぶ `e2e/tests/` と `e2e/showcase/capture.spec.ts`
-  - 対象は、URL を受け取る補助（`loginAdmin`、`loginStore`、`emptyCart`、`addToCart`、`orderCart`）だけとする。その補助の他の省略できる引数（遷移先のパス、氏名など）も同じオプションに入れる。URL を受け取らない補助（`fillShipping` など）は変えない。補助の TSDoc の `@param` を修正する
+  - 範囲：`e2e/src/auth.ts`、`e2e/src/store.ts`、`e2e/src/shipping.ts`（URL を受け取る補助）、それを呼ぶ `e2e/tests/` と `e2e/showcase/capture.spec.ts`
+  - 対象は、URL を受け取る補助（`loginAdmin`、`loginStore`、`emptyCart`、`addToCart`、`orderCart`、`notifyCarrier`）だけとする。その補助の他の省略できる引数（遷移先のパス、氏名など）も同じオプションに入れる。URL を受け取らない補助（`fillShipping` など）は変えない。補助の TSDoc の `@param` を修正する
   - 修正の前に E2E の全体を 1 回実行して所要時間を記録し、T226-04-01 で比べる（DN-226-3）
   - 確認方法：`scripts/dev/check-frontend.sh`（E2E の lint と型チェック）と E2E の全体が通ること。撮影の呼び出しに `{}` がないこと（`git grep` で確認する）
   - 結果：修正の前の E2E の全体は 20 件が通り、154 秒（Playwright の実行は 1.9 分）。修正の後は 20 件が通り、129 秒（1.6 分）。補助の新しい形：`loginAdmin(page, account, { path, adminUrl })`、`loginStore(page, account, { returnTo, storeUrl })`、`emptyCart(page, { storeUrl })`、`addToCart(page, productId, { quantity, option, storeUrl })`、`orderCart(page, { storeUrl, name })`（どれも項目は省ける）。撮影は空のオプションを渡さず、`{ storeUrl: STORE }` などの必要な項目だけを渡す。`git grep` で `{}` の呼び出しがないことを確認した。撮影の実行（`pnpm capture`）はスロット 0 だけで対応するため流さず、`check-frontend.sh` の E2E の型チェックと lint で確認した
@@ -274,8 +274,9 @@ tasks は第 6 節の決定に基づく。
   - このマシン（Windows）では Windows 以外の実際の停止を確認できない。テストは指令の実行を差し替えて確認し、CI（Linux）で script のテストが通ることを確認する
   - 確認方法：テストで、Windows 以外で、終了を確認したら上限より前に戻ること、上限を過ぎたら待つのをやめて先へ進むこと（例外を投げない）、Windows の振る舞いが変わらないことを確認する
   - 結果：`port-stop.mjs` に `STOP_WAIT_MS`（30 秒。Windows の `Wait-Process -Timeout` と共有）を加え、Windows 以外は SIGKILL を送った後、`kill(pid, 0)` を 100 ミリ秒おきに、全てのプロセスが終わるか上限を過ぎるまで繰り返す（権限がなく問い合わせられない EPERM は生きているとみなす。上限を過ぎても例外を投げない）。`stopListeners` の差し替えの項目に `now`・`sleep` を加えた（省いた項目は実際のものを使う）。テストを先に書き、`node --test` で 32 件中 4 件の失敗（レッド）を確認してから実装し、32 件が通った（Windows 以外の 4 件を加え、SIGKILL だけを確認していた 1 件を置き換えた。Windows の 1 件は定数の共有を確認する）。Windows 以外の実際の停止はこのマシンで確認できないため、差し替えで確認し、CI（Linux）での script のテストの実行に任せる
-- [ ] **T226-03-03** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+- [x] **T226-03-03** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T226-03-01、02
+  - 結果：一般の観点（汎用 2 回）と、重要な観点（テストを弱めていないか、ファイルをまたぐ影響と安定性。高性能と汎用）で、高 0 件、必須 1 件。URL を変えられる補助 `notifyCarrier` が、URL を位置引数で受け取っていた（DC-226-19）。第 3 節の 8 と T226-03-01 の対象に加え、オプションで受け取る形にした
 
 ### 段階 4：完了
 

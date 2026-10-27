@@ -105,7 +105,7 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
   await test.step('管理画面で出荷を登録し、mock の物流で配送中にして、管理画面と店舗画面の注文を撮る', async () => {
     await page.goto(`${ADMIN}/orders/${paidOrderId}`)
     await shipOnAdmin(page, '4321-0987-6543')
-    await notifyCarrier(page, paidOrderId, '配送中', BACKEND)
+    await notifyCarrier(page, paidOrderId, '配送中', { backendUrl: BACKEND })
 
     await page.goto(`${ADMIN}/orders/${paidOrderId}`)
     await shot(page, 'admin-order', page.getByText('売上確定済み'))

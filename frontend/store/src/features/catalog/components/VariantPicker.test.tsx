@@ -68,4 +68,16 @@ describe('バリアントの選択', () => {
     expect(screen.getByText('在庫なし')).toBeInTheDocument()
     expect(screen.queryByText('色・サイズを選ぶと、在庫状況を表示します。')).not.toBeInTheDocument()
   })
+
+  test('AC-227-6 在庫状況の領域は status の役割を持ち、選択を変えると中の文が替わる', async () => {
+    const { user } = renderInBrowser(<Controlled variants={VARIANTS} />)
+
+    const region = screen.getByRole('status')
+    expect(region).toHaveTextContent('色・サイズを選ぶと、在庫状況を表示します。')
+    await user.click(button('赤'))
+    await user.click(button('L'))
+
+    expect(screen.getByRole('status')).toBe(region)
+    expect(region).toHaveTextContent('在庫あり')
+  })
 })

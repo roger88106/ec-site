@@ -346,5 +346,5 @@
 | AC-227-3 | 欄の誤りがない失敗（在庫不足、通信の失敗など、フォームの下に出すもの）では、フォ… | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-227-4 | フォーカスを移す処理は、送信の結果を受けたときだけ動く。 | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-227-5 | 同じ誤りで再び送信に失敗したときも、AC-227-1 のとおりにフォーカスを移す… | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | `OrderForm.test.tsx` |
-| AC-227-6 | バリアントの在庫状況の領域は、status の役割を持つ。 | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
+| AC-227-6 | バリアントの在庫状況の領域は、status の役割を持つ。 | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | `VariantPicker.test.tsx` |
 <!-- /generated:ac-list -->

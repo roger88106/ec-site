@@ -1,6 +1,6 @@
 # 段階 1：契約の読み込み、構成の検査、Checkstyle、モジュールの境界
 
-- 前提：plan が承認された。spec 222 がマージされた。実装を始める前の照合（[開発の進め方](../../../rules/workflow.md) 第 5.6 節）を済ませた。
+- 前提：plan が承認された。spec 222 がマージされた。実装を始める前の照合（[開発の進め方](../../../../../rules/workflow.md) 第 5.6 節）を済ませた。
 - 完了条件：DC-223-1、3、4、11、12、18〜21、23 を満たす。追加した検査は、違反の例で失敗することを確認した（DN-223-6）。`./gradlew check`、`./gradlew pitest`、`scripts/ci/check-all.sh` が通る。
 - 参照：[plan](../plan.md) 第 1 節、[plan](../plan.md) 第 3 節、[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 7 節、[plan](../plan.md) 第 11.3 節、[plan](../plan.md) 第 11.4 節、[spec](../spec.md) の DS-223-1、3、5、6、DN-223-1〜8
 

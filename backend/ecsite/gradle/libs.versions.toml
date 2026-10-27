@@ -6,7 +6,7 @@
 # [bundles]   : まとめて追加する依存関係のグループ
 # [plugins]   : Gradle プラグイン
 #
-# ※ライブラリは、使うタスクで build.gradle.kts に追加する。版はここで先に決めておく。
+# ※ライブラリは、使うタスクで build.gradle.kts に追加する。バージョンはここで先に決めておく。
 # =============================================================================
 
 # ============================== [versions] ==============================
@@ -16,13 +16,13 @@ java = "21"
 jacoco = "0.8.13"
 # Javadoc の書き漏れの検査（コメントの書き方 第 2 節）
 checkstyle = "14.3.0"
-# domain の mutation testing（PIT）。PIT の本体、Gradle のプラグイン、JUnit 5 との連携で版が別
+# domain の mutation testing（PIT）。PIT の本体、Gradle のプラグイン、JUnit 5 との連携でバージョンが別
 pitest-engine = "1.30.1"
 pitest-gradle-plugin = "1.19.0"
 pitest-junit5-plugin = "1.2.3"
 # 依存のライセンスの検査（依存とライセンス）
 dependency-license-report = "3.1.4"
-# コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体で版が別
+# コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体でバージョンが別
 errorprone-plugin = "5.1.1"
 errorprone = "2.50.0"
 # null の検査（Error Prone の検査として動く）
@@ -36,7 +36,7 @@ spring-modulith = "2.1.2"
 # --- DB ---
 jooq = "3.21.9"
 jooqPlugin = "10.2.1"
-# jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM の版になるので、Boot の管理する版に合わせる
+# jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM のバージョンになるので、Boot の管理するバージョンに合わせる
 flyway = "13.10.3"
 postgresql = "42.7.14"
 
@@ -103,7 +103,7 @@ awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 postgresql = { module = "org.postgresql:postgresql" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 
-# --- jOOQ のコード生成（buildscript。Boot BOM が効かないので版を指定する） ---
+# --- jOOQ のコード生成（buildscript。Boot BOM が効かないのでバージョンを指定する） ---
 buildscript-flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 buildscript-flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 buildscript-postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }
@@ -116,7 +116,7 @@ jackson-databind-nullable = { module = "org.openapitools:jackson-databind-nullab
 lombok = { module = "org.projectlombok:lombok" }
 # コンパイルのときだけ動く静的解析の検査（errorprone の構成に入れる）
 errorprone-core = { module = "com.google.errorprone:error_prone_core", version.ref = "errorprone" }
-# null を許す型の注釈（Nullable）。NullAway が見る（版は Spring Boot の BOM が管理）
+# null を許す型の注釈（Nullable）。NullAway が見る（バージョンは Spring Boot の BOM が管理）
 jspecify = { module = "org.jspecify:jspecify" }
 # null の検査（errorprone の構成に入れる）
 nullaway = { module = "com.uber.nullaway:nullaway", version.ref = "nullaway" }

@@ -42,12 +42,12 @@ public class ProductQueryService {
     private final Clock clock;
 
     /**
-     * 商品の取り出し（版の確認を含む）
+     * 商品の取り出し（バージョンの確認を含む）
      */
     private final ProductLoader productLoader;
 
     /**
-     * 画像を加えられることを確認する（商品がある、版が一致する、枚数が上限に達していない）。<br />
+     * 画像を加えられることを確認する（商品がある、バージョンが一致する、枚数が上限に達していない）。<br />
      * 画像の追加で、画像を用意する（外部サービスを呼ぶ）前に読む。
      *
      * @param productId 商品 ID

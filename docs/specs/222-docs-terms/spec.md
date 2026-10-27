@@ -210,7 +210,8 @@ spec 181 で構成の検査を spec 186 に分けたとき、spec の範囲だ�
     - 検査の対象のパスに、commit しない文書を作り、「Node の版」「版は」と書くと失敗し、エディションの複合語は通ることを確認する。その文書と項目を戻す。
     - `ci.yml` の手順の名前を変えても、他の手順・script が名前で参照していないことを `git grep` で確認する。
     - 項目を戻した後に、`scripts/ci/check-all.sh` が通る（`ci.yml` と `action.yml` を検査の script が読むため）。
-- [ ] **T222-01-04** バックエンドと Gradle の設定のコメント、Javadoc、テストの理由の文の「版」を「バージョン」にする（DC-222-2）。
+- [x] **T222-01-04** バックエンドと Gradle の設定のコメント、Javadoc、テストの理由の文の「版」を「バージョン」にする（DC-222-2）。
+  - 結果：9 ファイルの 15 行を替えた（`libs.versions.toml` 6、`ProductQueryService` 2、他は各 1）。`ImageFormat` と `ImageFormatTest` の ftyp の「版」もバージョンにし、楽観ロックの「版」を使う `OpenApiRequestConstraintTest` の理由の文も替えた。`./gradlew check` は BUILD SUCCESSFUL、`check-all.sh` に失敗はなく、`git grep -n "版" -- backend` は 0 行。
   - 依存：なし
   - 範囲：第 1 節の表の Gradle の設定、バックエンドの行（楽観ロック、形式の項目の `ImageFormat`、`ImageFormatTest` を含む）
   - 確認方法：`./gradlew check`。`scripts/ci/check-all.sh`（Gradle の設定を検査の script が読むため）。`git grep -n "版" -- backend` が 0 行。

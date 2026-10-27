@@ -115,7 +115,7 @@ class ProductImageTransactionApiTest {
     @DisplayName("AC-305 変換の後に保存が失敗したら、配信のファイルを消し、アセットを記録せず、元のエラー（409）を返す")
     void discardsFileWhenSaveFails() throws Exception {
         var uploadId = product.upload();
-        // 変換の間に、ほかの操作が商品を変えた（保存のときに版が合わない）
+        // 変換の間に、ほかの操作が商品を変えた（保存のときにバージョンが合わない）
         doAnswer(invocation -> {
             var webp = invocation.callRealMethod();
             dsl.update(PRODUCT).set(PRODUCT.VERSION, PRODUCT.VERSION.plus(1)).where(PRODUCT.ID.eq(product.id)).execute();

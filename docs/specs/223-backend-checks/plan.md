@@ -206,7 +206,7 @@ DC-223-19 の例外：
 
 | 本 spec の段階 | 変えるファイル | 重なる spec | 順序 |
 |----------------|----------------|-------------|------|
-| 全体 | 文書とコードのコメント | spec 222（用語「版」の置き換え） | spec 222 のマージの後に始める |
+| 全体 | 文書とコードのコメント | spec 222（#187 の語の置き換え） | spec 222 のマージの後に始める |
 | 1 | `test/architecture/`、`ProductionClasses`、`test/contract/ErrorCodeContractTest.java`、`main/config/security/`、通知・出荷、tools、Checkstyle、バックエンドの書き方 | spec 224（`test/contract/` の契約の補助を `fix/` に移す。T224-02-04） | 並行してよい ※2 |
 | 2 | `scripts/ci/`（`role-permissions`、`spec-numbers`、`env-defaults`、新しい `test-helpers`）、`build.gradle.kts` のコメント、`e2e/` の設定のファイル、テストの書き方、CI の検査、コメントの書き方、用語集 | spec 225（`scripts/ci/lib/` の走査の補助と、検査の script が守る関数の表）、spec 226（`spec-numbers` の対象、E2E、テストの書き方、コメントの書き方）、spec 224（`build.gradle.kts`、テストの書き方） | spec 225 のマージの後に始める ※3 |
 | 3 | `scripts/ci/test-helpers.mjs`、`build.gradle.kts`（CPD）、重複を直すテスト、`test/` の 3 つのテスト、テストの書き方 | spec 224（テストの書き方の統合テストのデータの表、契約の補助、統合テスト） | spec 224 のマージの後に始める（spec の第 7 節） |

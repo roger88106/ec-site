@@ -85,7 +85,7 @@ describe('問題の集め方', () => {
   })
 
   test('allowed がない、または配列でないときは、その問題を出し、過不足は照合しない', () => {
-    for (const policy of [{}, { allowed: 'MIT' }, { allowed: null }]) {
+    for (const policy of [{}, { allowed: 'MIT' }, { allowed: null }, null, [], 'MIT', 42]) {
       const problems = problemsOf(row('MIT'), policy)
       assert.equal(problems.length, 1)
       assert.match(problems[0], /allowed がない/)

@@ -4,7 +4,7 @@
 language js
 
 JsxAttribute() as $attr where {
-  $attr <: r"aria-live.*",
-  not $attr <: r"aria-live=.{0,2}off.{0,2}",
+  $attr <: r"(?s)aria-live.*",
+  not $attr <: r"aria-live=[{]?[\"'`]off[\"'`][}]?",
   register_diagnostic(span=$attr, message="aria-live を直接書かず、読み上げの領域は role=status で作る。読み上げない領域だけ aria-live=off と書ける（フロントの書き方 第 10.2 節）。", severity="error")
 }

@@ -1,5 +1,6 @@
 package com.ecsite.module.payment.infrastructure.persistence;
 
+import com.ecsite.AsyncEvents;
 import com.ecsite.IntegrationTest;
 import com.ecsite.common.model.value.Money;
 import com.ecsite.module.payment.domain.payment.Payment;
@@ -8,21 +9,29 @@ import com.ecsite.module.payment.domain.payment.PaymentStatus;
 import com.ecsite.module.payment.domain.payment.port.PaymentRepository;
 import com.ecsite.module.payment.event.PaymentAuthorized;
 import com.ecsite.module.payment.event.PaymentExpired;
+import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
+import static com.ecsite.jooq.payment.Tables.PAYMENT_;
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 支払のリポジトリの統合テスト。テストごとにロールバックする。
+ * 支払のリポジトリの統合テスト。行のロックを確認するテスト以外は、テストごとにロールバックする。
  */
 @IntegrationTest
 @RecordApplicationEvents
@@ -36,6 +45,12 @@ class JooqPaymentRepositoryTest {
 
     @Autowired
     PaymentRepository repository;
+
+    @Autowired
+    DSLContext dsl;
+
+    @Autowired
+    TransactionTemplate transactionTemplate;
 
     @Autowired
     ApplicationEvents events;
@@ -105,7 +120,7 @@ class JooqPaymentRepositoryTest {
     }
 
     @Test
-    @DisplayName("支払を、ID・注文・支払画面の ID で行ロックして取得できる。ないものには空を返す")
+    @DisplayName("支払を、ID・注文・支払画面の ID で行ロックして取得すると、保存した支払を返す。ないものには空を返す")
     void locksPayment() {
         var payment = payment(UUID.randomUUID(), DEADLINE);
         repository.insertIfAbsent(payment);
@@ -119,6 +134,30 @@ class JooqPaymentRepositoryTest {
         assertThat(repository.lockById(UUID.randomUUID())).isEmpty();
         assertThat(repository.lockByOrderId(UUID.randomUUID())).isEmpty();
         assertThat(repository.lockByPageId("page-none")).isEmpty();
+    }
+
+    @Test
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("支払を行ロックして取得している間は、別のトランザクションが同じ支払の行をロックできない")
+    void blocksOtherTransactionWhileLocked() {
+        // ロールバックしないので、このテストで作った支払の行だけを使う
+        var payment = payment(UUID.randomUUID(), DEADLINE);
+        transactionTemplate.executeWithoutResult(status -> repository.insertIfAbsent(payment));
+        var executor = Executors.newSingleThreadExecutor();
+        try {
+            transactionTemplate.executeWithoutResult(status -> {
+                assertThat(repository.lockById(payment.id())).isPresent();
+
+                var other = executor.submit(() -> transactionTemplate.executeWithoutResult(inner ->
+                        dsl.selectFrom(PAYMENT_).where(PAYMENT_.ID.eq(payment.id())).forUpdate().noWait().fetch()));
+
+                assertThatThrownBy(() -> other.get(AsyncEvents.TIMEOUT.toSeconds(), TimeUnit.SECONDS))
+                        .isInstanceOf(ExecutionException.class)
+                        .hasMessageContaining("could not obtain lock");
+            });
+        } finally {
+            executor.shutdownNow();
+        }
     }
 
     @Test

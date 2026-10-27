@@ -155,7 +155,7 @@ DC-223-19 の例外：
 | 22 | 管理画面の IdP の既定値は、管理画面の認証の設定（`frontend/admin/src/auth/oidc.ts`）の 1 か所に置く。ローカルの検査の script と CI は、本番のビルドに値を明示して渡すので、同じ値を重ねて書く（spec の「重ねて書く必要があるとき」）。その値と環境変数の文書の値が、既定値と一致することを CI の検査が確認する（第 11.5 節の案 B） | `scripts/ci/env-defaults.mjs`（規則の追加）、テスト、`frontend/admin/src/auth/oidc.ts:9-10`、`scripts/dev/check-frontend.sh:25-26`、`.github/workflows/ci.yml:293-294`、`docs/guides/environment.md:67-68` | テストに、どれかの値が違う例を書く。今の値で通る |
 | 23 | 地域のマイグレーションの生成の処理が書く先頭のコメントを、コミット済みのマイグレーションの 1 行目と同じにする。Javadoc に、適用済みのマイグレーションに合わせる理由と、正しい設計書のパス（`docs/design/modules/region.md`）を書く。理由：コミット済みのコメントは、文書を移す前のパス（`docs/backend/modules/region.md`）を指すため | `tools/tools/region/RegionMigrationGenerator.java:87`、`test/tools/region/`（新しいテスト） | 生成の処理の先頭の 3 行と、コミット済みのマイグレーションの先頭の 3 行を比べる単体テストを加える。`./gradlew generateRegionMigration` の出力がコミット済みのものと一致する（郵便番号の CSV があるメインの作業ツリーで確認する） |
 
-- DC-223-20 で、出荷モジュールの mock の画面も同じ操作でキーを得る。キーの文字列は出荷モジュールの中の 1 か所にする。
+- DC-223-20 で、キーの文字列は出荷モジュールのドメインの配送業者の 1 か所にし、公開 API の操作はそれを呼ぶ。出荷モジュールの mock の画面は、ドメインの配送業者から直接キーを得る。理由：構成の検査の層の表で、infrastructure は同じモジュールの api に依存できないため（実装の T223-01-06 で判明、2026-10-27）。
 - DC-223-20 の port と directory の形は、他のモジュールの公開 API を `infrastructure/directory/` だけから使う今の規則（バックエンドの書き方 第 1.3 節、構成の検査）に合わせる。規則の例外の一覧は変えない。
 - DC-223-23 の単体テストは、生成の処理の先頭のコメントを返す部分を呼んで比べる。全体の生成は郵便番号の CSV（Git に入らない）が必要なので、単体テストでは行わない。
 

@@ -31,9 +31,9 @@
   - 依存：T223-01-02（同じ文書を変えるため）
   - 範囲：`test/architecture/ModuleStructureTest.java`、`test/architecture/` の下の違反の例、`docs/rules/backend-coding.md`
   - 確認方法：違反の例（application 層からの取り出し）で検査が失敗し、今のコードで通る。
-- [ ] **T223-01-06** `[P]` 出荷モジュールの公開 API に、配送業者の表示名のキーを返す操作を置き、出荷の mock の画面がそれを使う。通知モジュールは、キーを得る port と、出荷モジュールの公開 API を呼ぶ `infrastructure/directory/` の実装を置いて使う。通知モジュールの依存に出荷モジュールの公開 API を加え、package-info の説明を直す（DC-223-20、[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 11.3 節）。出荷と通知のモジュールの設計書を直す。
+- [ ] **T223-01-06** `[P]` 出荷モジュールの公開 API に、配送業者の表示名のキーを返す操作を置く。キーの文字列はドメインの配送業者の 1 か所にし、出荷の mock の画面もそれを使う（[plan](../plan.md) 第 6 節）。通知モジュールは、キーを得る port と、出荷モジュールの公開 API を呼ぶ `infrastructure/directory/` の実装を置いて使う。通知モジュールの依存に出荷モジュールの公開 API を加え、package-info の説明を直す（DC-223-20、[plan](../plan.md) 第 6 節、[plan](../plan.md) 第 11.3 節）。出荷と通知のモジュールの設計書を直す。
   - 依存：なし
-  - 範囲：`main/module/shipping/api/`、`main/module/shipping/infrastructure/mock/MockCarrierController.java`、`main/module/notification/application/ShipmentMailComposer.java`、`main/module/notification/application/port/`、`main/module/notification/infrastructure/directory/`、`main/module/notification/package-info.java`、`it/module/notification/` の `ShipmentMailTest.java`、`docs/design/modules/shipping.md`、`docs/design/modules/notification.md`
+  - 範囲：`main/module/shipping/api/`、`main/module/shipping/infrastructure/mock/MockCarrierController.java`、`main/module/notification/application/ShipmentMailComposer.java`、`main/module/notification/application/port/`、`main/module/notification/infrastructure/directory/`、`main/module/notification/package-info.java`、`main/module/shipping/domain/`、`test/module/notification/application/ShipmentMailComposerTest.java`、`it/module/notification/` の `ShipmentMailTest.java`、`docs/design/modules/shipping.md`、`docs/design/modules/notification.md`、`docs/design/overview.md`（モジュールの図）
   - 確認方法：出荷通知メールのテストが、今と同じ文面を確認して通る。キーを返す操作の単体テストで、全ての配送業者のキーが文言のファイルにあることを確認する。Spring Modulith の検査と、他のモジュールの公開 API を `infrastructure/directory/` だけから使う構成の検査が、例外の一覧を変えずに通る。
 - [ ] **T223-01-07** jOOQ を使えるのが `infrastructure/persistence/` だけであることを、構成の検査に加える。mock の出荷の問い合わせを例外にする（DC-223-21、[plan](../plan.md) 第 11.4 節）。違反の例のクラスを置く。バックエンドの書き方に規則と例外の理由を加える。
   - 依存：T223-01-05（同じ文書を変えるため）

@@ -19,6 +19,9 @@ import java.util.UUID;
  */
 public final class TestOrders {
 
+    /**
+     * インスタンスを作らない。
+     */
     private TestOrders() {
     }
 

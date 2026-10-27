@@ -126,7 +126,7 @@ class ImageFormatTest {
     }
 
     /**
-     * ISO の基本メディアファイルの ftyp ボックス（大きさ、"ftyp"、主のブランド、版、互換のブランド）
+     * ISO の基本メディアファイルの ftyp ボックス（大きさ、"ftyp"、主のブランド、バージョン、互換のブランド）
      */
     private static byte[] ftyp(String majorBrand, String... compatibleBrands) {
         var out = new ByteArrayOutputStream();

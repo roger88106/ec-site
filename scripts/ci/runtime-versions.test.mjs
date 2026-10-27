@@ -11,7 +11,7 @@ import {
   readNodeVersionFile,
 } from './runtime-versions.mjs'
 
-describe('版の読み取り', () => {
+describe('バージョンの読み取り', () => {
   test('workflow の env の JAVA_VERSION を読む', () => {
     assert.equal(readJavaFromWorkflow("env:\n  NODE_VERSION: '24'\n  JAVA_VERSION: '21'\n"), '21')
     assert.equal(readJavaFromWorkflow('env:\n  JAVA_VERSION: 21 # 注\n'), '21')
@@ -35,7 +35,7 @@ describe('版の読み取り', () => {
   })
 })
 
-describe('版の一致の検査', () => {
+describe('バージョンの一致の検査', () => {
   const ok = { workflowJava: '21', tomlJava: '21', nodeFile: '24', enginesNode: '>=24' }
 
   test('一致していれば問題はない', () => {
@@ -43,7 +43,7 @@ describe('版の一致の検査', () => {
     assert.deepEqual(findRuntimeVersionProblems({ ...ok, nodeFile: '25.2.0' }), [])
   })
 
-  test('JDK の版が違えば失敗にする', () => {
+  test('JDK のバージョンが違えば失敗にする', () => {
     const problems = findRuntimeVersionProblems({ ...ok, tomlJava: '17' })
     assert.equal(problems.length, 1)
     assert.match(problems[0], /JDK/)
@@ -69,7 +69,7 @@ describe('版の一致の検査', () => {
     assert.match(problems[0], />=/)
   })
 
-  test('読めない版は、ファイル:行 内容（理由）の形で出す', () => {
+  test('読めないバージョンは、ファイル:行 内容（理由）の形で出す', () => {
     assert.deepEqual(findRuntimeVersionProblems({ ...ok, nodeFile: 'lts/*' }), ['.node-version:1 lts/*（数字のバージョン（24 など）だけを扱う）'])
     assert.deepEqual(findRuntimeVersionProblems({ ...ok, enginesNode: '^24', enginesLine: 7 }), ['package.json:7 ^24（>=N の形だけを扱う）'])
   })

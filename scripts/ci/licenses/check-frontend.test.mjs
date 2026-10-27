@@ -56,7 +56,7 @@ describe('1 つの部品のライセンスの判定', () => {
 })
 
 describe('pnpm licenses list --json の結果の判定', () => {
-  test('方針に合わない部品を、名前と版とライセンスで返す', () => {
+  test('方針に合わない部品を、名前とバージョンとライセンスで返す', () => {
     const report = {
       MIT: [{ name: 'react', versions: ['19.3.0'] }],
       'GPL-3.0-only': [{ name: 'bad', versions: ['1.0.0', '1.1.0'] }],

@@ -3,6 +3,7 @@ package com.ecsite.architecture;
 import com.ecsite.ProductionClasses;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaClasses;
 import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.lang.ArchCondition;
@@ -15,8 +16,15 @@ import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
 
+import java.util.ArrayDeque;
+import java.util.Deque;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
+import java.util.Set;
+import java.util.TreeSet;
+import java.util.stream.Collectors;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -33,12 +41,9 @@ class ConfigurationPropertiesTest {
     private static final List<String> SECRET_WORDS = List.of("secret", "password", "salt", "token", "credential");
 
     /**
-     * 秘密の値の項目を持つ設定の値の型（{@code @ConfigurationProperties} を付けたクラス）
+     * 設定の型の項目からたどる型のパッケージ（自分のコードの型だけをたどる）
      */
-    private static final DescribedPredicate<JavaClass> SECRET_PROPERTIES = DescribedPredicate.describe(
-            "configuration properties with a secret field",
-            javaClass -> javaClass.isAnnotatedWith(ConfigurationProperties.class)
-                    && javaClass.getFields().stream().anyMatch(field -> isSecretFieldName(field.getName())));
+    private static final String OWN_PACKAGE_PREFIX = "com.ecsite.";
 
     @Test
     @DisplayName("@EnableConfigurationProperties を付けるクラスは、設定のクラス（@Configuration）")
@@ -92,15 +97,11 @@ class ConfigurationPropertiesTest {
     }
 
     @Test
-    @DisplayName("秘密の値の項目を持つ設定の値の型は、toString を宣言する")
+    @DisplayName("設定の値の型と、その項目からたどれる型のうち、秘密の値の項目を持つものは、toString を宣言する")
     void secretPropertiesDeclareToString() {
-        ProductionClasses.requireNotEmpty(
-                ProductionClasses.handwritten().stream()
-                        .filter(javaClass -> SECRET_PROPERTIES.test(javaClass))
-                        .toList(),
-                "秘密の値の項目を持つ設定の値の型");
+        ProductionClasses.requireNotEmpty(secretConfigurationTypeNames(ProductionClasses.handwritten()), "秘密の値の項目を持つ設定の型");
 
-        secretPropertiesRule().check(ProductionClasses.handwritten());
+        secretPropertiesRule(ProductionClasses.handwritten()).check(ProductionClasses.handwritten());
     }
 
     @Test
@@ -108,7 +109,7 @@ class ConfigurationPropertiesTest {
     void toStringRuleMatchesExampleWithoutToString() {
         var examples = new ClassFileImporter().importClasses(SecretWithoutToStringProperties.class);
 
-        var result = secretPropertiesRule().evaluate(examples);
+        var result = secretPropertiesRule(examples).evaluate(examples);
 
         assertThat(result.hasViolation()).isTrue();
         assertThat(result.getFailureReport().getDetails())
@@ -116,11 +117,36 @@ class ConfigurationPropertiesTest {
     }
 
     @Test
+    @DisplayName("toString の規則は、入れ子の型が秘密の値の項目を持ち toString を宣言しない例に当たる")
+    void toStringRuleMatchesNestedExampleWithoutToString() {
+        var examples = new ClassFileImporter().importClasses(
+                NestedSecretProperties.class, NestedSecretProperties.Credentials.class);
+
+        var result = secretPropertiesRule(examples).evaluate(examples);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(NestedSecretProperties.Credentials.class.getName()));
+    }
+
+    @Test
+    @DisplayName("toString の規則は、Map の値の型が秘密の値の項目を持ち toString を宣言しない例に当たる")
+    void toStringRuleMatchesMapValueExampleWithoutToString() {
+        var examples = new ClassFileImporter().importClasses(
+                MappedSecretProperties.class, MappedSecretProperties.Endpoint.class);
+
+        var result = secretPropertiesRule(examples).evaluate(examples);
+
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(MappedSecretProperties.Endpoint.class.getName()));
+    }
+
+    @Test
     @DisplayName("toString の規則は、toString を宣言する例と、秘密の値の項目を持たない例に当たらない")
     void toStringRuleDoesNotMatchCompliantExamples() {
-        var examples = new ClassFileImporter().importClasses(SecretWithToStringProperties.class, ExampleProperties.class);
+        var examples = new ClassFileImporter().importClasses(SecretWithToStringProperties.class, ExampleProperties.class,
+                NestedSecretSafeProperties.class, NestedSecretSafeProperties.MaskedCredentials.class);
 
-        assertThat(secretPropertiesRule().evaluate(examples).hasViolation()).isFalse();
+        assertThat(secretPropertiesRule(examples).evaluate(examples).hasViolation()).isFalse();
     }
 
     @Test
@@ -133,12 +159,16 @@ class ConfigurationPropertiesTest {
     }
 
     /**
-     * 秘密の値の項目を持つ設定の値の型が toString を宣言する規則を作る。
+     * 設定の型のうち、秘密の値の項目を自分で持つものが toString を宣言する規則を作る。<br />
+     * 外側の型の既定の toString は入れ子の型の toString を呼ぶので、入れ子の型も対象にする。
      *
+     * @param classes 設定の型を探すクラス
      * @return 規則
      */
-    private static ArchRule secretPropertiesRule() {
-        return classes().that(SECRET_PROPERTIES)
+    private static ArchRule secretPropertiesRule(JavaClasses classes) {
+        Set<String> targets = secretConfigurationTypeNames(classes);
+        return classes().that(DescribedPredicate.describe(
+                        "are configuration types with a secret field", javaClass -> targets.contains(javaClass.getName())))
                 .should(new ArchCondition<JavaClass>("toString を宣言する") {
                     @Override
                     public void check(JavaClass javaClass, ConditionEvents events) {
@@ -151,6 +181,45 @@ class ConfigurationPropertiesTest {
                                 "%s は秘密の値の項目を持つが、toString を宣言していない".formatted(javaClass.getName())));
                     }
                 });
+    }
+
+    /**
+     * 設定の型のうち、秘密の値の項目を自分で持つものの名前を返す。
+     *
+     * @param classes 設定の型を探すクラス
+     * @return 型の名前
+     */
+    private static Set<String> secretConfigurationTypeNames(JavaClasses classes) {
+        return configurationTypes(classes).stream()
+                .filter(javaClass -> javaClass.getFields().stream().anyMatch(field -> isSecretFieldName(field.getName())))
+                .map(JavaClass::getName)
+                .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    /**
+     * 設定の型（{@code @ConfigurationProperties} の型と、その項目からたどれる自分のコードの型）を返す。<br />
+     * 項目の型は、コレクションと Map の要素の型（型引数）を含め、再帰的にたどる。static の項目は設定の値でないのでたどらない。
+     *
+     * @param classes 設定の型を探すクラス
+     * @return 設定の型
+     */
+    private static List<JavaClass> configurationTypes(JavaClasses classes) {
+        Map<String, JavaClass> found = new LinkedHashMap<>();
+        Deque<JavaClass> pending = classes.stream()
+                .filter(javaClass -> javaClass.isAnnotatedWith(ConfigurationProperties.class))
+                .collect(Collectors.toCollection(ArrayDeque::new));
+        while (!pending.isEmpty()) {
+            JavaClass current = pending.pop();
+            if (found.putIfAbsent(current.getName(), current) != null) {
+                continue;
+            }
+            current.getFields().stream()
+                    .filter(field -> !field.getModifiers().contains(JavaModifier.STATIC))
+                    .flatMap(field -> field.getType().getAllInvolvedRawTypes().stream())
+                    .filter(type -> type.getPackageName().startsWith(OWN_PACKAGE_PREFIX))
+                    .forEach(pending::push);
+        }
+        return List.copyOf(found.values());
     }
 
     /**
@@ -243,5 +312,62 @@ record SecretWithToStringProperties(String apiKey) {
     @Override
     public String toString() {
         return "SecretWithToStringProperties[apiKey=***]";
+    }
+}
+
+/**
+ * 規則に当たる例：入れ子の型（注釈がない）が秘密の値の項目を持つが、toString を宣言しない
+ *
+ * @param account 例の資格情報
+ */
+@ConfigurationProperties("example-nested-secret")
+record NestedSecretProperties(Credentials account) {
+
+    /**
+     * 例の資格情報
+     *
+     * @param apiKey 例の秘密の値
+     */
+    record Credentials(String apiKey) {
+    }
+}
+
+/**
+ * 規則に当たる例：Map の値の型（注釈がない）が秘密の値の項目を持つが、toString を宣言しない
+ *
+ * @param endpoints 例の接続先（名前ごと）
+ */
+@ConfigurationProperties("example-mapped-secret")
+record MappedSecretProperties(Map<String, Endpoint> endpoints) {
+
+    /**
+     * 例の接続先
+     *
+     * @param url    例の URL
+     * @param secret 例の秘密の値
+     */
+    record Endpoint(String url, String secret) {
+    }
+}
+
+/**
+ * 規則に当たらない例：入れ子の型が秘密の値の項目を持ち、toString を宣言する
+ *
+ * @param account 例の資格情報
+ */
+@ConfigurationProperties("example-nested-secret-safe")
+record NestedSecretSafeProperties(MaskedCredentials account) {
+
+    /**
+     * 例の資格情報
+     *
+     * @param apiKey 例の秘密の値
+     */
+    record MaskedCredentials(String apiKey) {
+
+        @Override
+        public String toString() {
+            return "MaskedCredentials[apiKey=***]";
+        }
     }
 }

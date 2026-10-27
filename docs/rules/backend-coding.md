@@ -33,7 +33,7 @@
 | 5.4 | 整形は IntelliJ の Reformat Code を推奨する（強制しない） | なし |
 | 5.4 | import の並びと、使われていない import と `*` の import（static を含む）は強制する | 自動（Checkstyle） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
-| 6.1 | 秘密の値を持つ設定の record は、`toString` で値を伏せる | `toString` を宣言していることは自動（ArchUnit）。値を伏せていることは単体テスト（`toString` に秘密の値が含まれないこと） |
+| 6.1 | 秘密の値を持つ設定の record（入れ子の型を含む）は、`toString` で値を伏せる。設定の型で Lombok の `@ToString`・`@Data`・`@Value` を使わない | `toString` を宣言していることは自動（ArchUnit）。値を伏せていることは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
 | 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントは自動（`scripts/ci/java-rules.mjs`） |
 | 8.1 | 新しいマイグレーションは、前のリリースのアプリが動き続けられる変更だけにする（表・列の削除と改名などは 3 段に分ける） | 自動（CI の検査 `migrations`）。3 段に分ける手順の妥当性はレビュー |
@@ -319,7 +319,8 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
-- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` に倣う）。理由：record の既定の `toString` は全ての項目を出し、設定の値をログや例外のメッセージに出したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとし、その項目を持つ設定の型が `toString`（`final` でないもの）を宣言していることは構成の検査（`ConfigurationPropertiesTest`）が確認する。値を伏せていることの確認方法は単体テスト（`toString` に秘密の値が含まれないこと）で、隠し方は設定ごとに違うので構成の検査では判定しない。
+- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` に倣う）。理由：record の既定の `toString` は全ての項目を出し、設定の値をログや例外のメッセージに出したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとし、その項目を自分で持つ設定の型が `toString`（`final` でないもの）を宣言していることは構成の検査（`ConfigurationPropertiesTest`）が確認する。設定の型は、`@ConfigurationProperties` の型と、その項目（コレクションと Map の要素の型を含む）から再帰的にたどれる `com.ecsite` の型（注釈のない入れ子の record など）である。理由：外側の型の既定の `toString` は入れ子の型の `toString` を呼ぶので、入れ子の型が宣言しないと値が出るため。値を伏せていることの確認方法は単体テスト（`toString` に秘密の値が含まれないこと）で、隠し方は設定ごとに違うので構成の検査では判定しない。
+- 設定の型では、Lombok の `@ToString`・`@Data`・`@Value` を使わず、`toString` を手で書く。理由：Lombok の注釈はクラスファイルに残らず、作られた `toString` は手で宣言したものと区別できないので、構成の検査が値を出す `toString` を見逃すため。
 
 ※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
 

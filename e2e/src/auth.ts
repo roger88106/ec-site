@@ -46,7 +46,7 @@ export async function submitIdpLogin(page: Page, account: Account): Promise<void
 }
 
 /**
- * 管理画面を開き、運営者としてログインする（管理画面は、開くと IdP のログインへ移る。AC-132）。
+ * 管理画面を開き、運営者としてログインする（管理画面は、開くと IdP のログインへ移る）。
  *
  * @param page 使うページ
  * @param account ログインする運営者のアカウント
@@ -60,7 +60,7 @@ export async function loginAdmin(page: Page, account: Account, path = '/', admin
 }
 
 /**
- * 店舗画面で会員としてログインする。ログインの後は returnTo の画面に戻る（AC-113）。
+ * 店舗画面で会員としてログインする。ログインの後は returnTo の画面に戻る。
  *
  * @param page 使うページ
  * @param account ログインする会員のアカウント
@@ -83,7 +83,7 @@ export type MemberProfile = {
 
 /**
  * 店舗画面から会員登録する。IdP の会員登録の画面でメールアドレス・氏名・任意の属性を入れ、確認のメールのリンクでパスワードを設定する。
- * 同じブラウザーでリンクを開くので、ログインした状態で登録を始めた画面に戻る（AC-112）。
+ * 同じブラウザーでリンクを開くので、ログインした状態で登録を始めた画面に戻る。
  *
  * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
  * @param account 登録するアカウント（パスワードは確認のメールのリンクで設定する）
@@ -133,7 +133,7 @@ export async function submitSignup(
 /**
  * 確認のメールのリンクを開き、IdP の画面でパスワードを決めて送る。送った後の画面は確認しない（呼ぶ側が確認する）。
  *
- * @param page 使うページ（登録を始めたのと同じブラウザーなら、ログインした状態で登録を始めた画面に戻る。AC-112）
+ * @param page 使うページ（登録を始めたのと同じブラウザーなら、ログインした状態で登録を始めた画面に戻る）
  * @param account 登録したアカウント（メールアドレスでメールを探し、パスワードを決める）
  */
 export async function setPasswordFromMail(page: Page, account: Account): Promise<void> {

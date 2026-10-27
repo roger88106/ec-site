@@ -44,7 +44,28 @@ export function stripJavaComments(text) {
  * @returns {string} コメントだけを残したソース
  */
 export function keepJavaComments(text) {
-  const stripped = stripJavaComments(text)
+  return keepBlanked(text, stripJavaComments(text))
+}
+
+/**
+ * TypeScript のコメントだけを残し、コメントの外（コード、文字列、テンプレートの文字の部分と ${...} の中のコード、正規表現のリテラル）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。<br />
+ * コメントの判定は stripComments と同じ。テスト名や test.step の名前などの文字列の中の番号を、コメントの番号と取り違えないために使う。
+ *
+ * @param {string} text ソース
+ * @returns {string} コメントだけを残したソース
+ */
+export function keepTsComments(text) {
+  return keepBlanked(text, stripComments(text, { keepRegex: true }))
+}
+
+/**
+ * 元のソースと、コメントを空白にしたソースを文字ごとに比べ、空白にされた文字（コメント）だけを残す。
+ *
+ * @param {string} text 元のソース
+ * @param {string} stripped コメントを空白にしたソース（text と同じ長さ）
+ * @returns {string} コメントだけを残したソース
+ */
+function keepBlanked(text, stripped) {
   let result = ''
   for (let i = 0; i < text.length; i += 1) {
     const char = text[i]

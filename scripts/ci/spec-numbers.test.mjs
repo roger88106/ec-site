@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { keepJavaComments } from './lib/strip-comments.mjs'
-import { findSpecNumbers, isBackendTestFile, isProductionFile } from './spec-numbers.mjs'
+import { keepJavaComments, keepTsComments } from './lib/strip-comments.mjs'
+import { findSpecNumbers, isBackendTestFile, isCommentOnlyTsFile, isProductionFile } from './spec-numbers.mjs'
 
 describe('本番のコードの spec の番号の検査', () => {
   test('AC・DC などの番号、タスクの番号、spec・plan の番号を見つける', () => {
@@ -95,5 +95,63 @@ describe('本番のコードの spec の番号の検査', () => {
       findSpecNumbers(keepJavaComments(text)).map((hit) => `${hit.line} ${hit.number}`),
       ['2 spec 12'],
     )
+  })
+})
+
+describe('フロントのテストと E2E のコメントの spec の番号の検査', () => {
+  const numbers = (text) => findSpecNumbers(keepTsComments(text)).map((hit) => `${hit.line} ${hit.number}`)
+
+  test('フロントのテスト、テストの補助、E2E の全ての TypeScript を、コメントだけを見る対象にする', () => {
+    for (const file of [
+      'frontend/store/src/lib/price.test.ts',
+      'frontend/admin/src/features/order/pages/OrderListPage.test.tsx',
+      'frontend/shared/src/lib/format.test.ts',
+      'frontend/store/src/test/render.tsx',
+      'frontend/admin/src/features/order/test/factory.ts',
+      'e2e/tests/cart.spec.ts',
+      'e2e/src/waits.ts',
+      'e2e/showcase/capture.spec.ts',
+      'e2e/playwright.config.ts',
+      'e2e/playwright.showcase.config.ts',
+      'e2e/scripts/seed.ts',
+    ]) {
+      assert.equal(isCommentOnlyTsFile(file), true, file)
+    }
+  })
+
+  test('本番のコード、バックエンドのテスト、TypeScript でない E2E のファイルは対象にしない', () => {
+    for (const file of [
+      'frontend/store/src/lib/price.ts',
+      'frontend/store/src/api/generated/schema.ts',
+      'backend/ecsite/src/test/java/com/ecsite/FooTest.java',
+      'e2e/package.json',
+      'e2e/biome.jsonc',
+      'e2e/fixtures/photo.avif',
+    ]) {
+      assert.equal(isCommentOnlyTsFile(file), false, file)
+    }
+  })
+
+  test('E2E とフロントのテストのコメントの番号を見つける', () => {
+    const text = [
+      '// 完了の表示（AC-12）',
+      "test('注文できる', async () => {",
+      '  /* spec 226 の規則 */',
+      '  await page.goto(url) // T186-04-05',
+      '})',
+    ].join('\n')
+    assert.deepEqual(numbers(text), ['1 AC-12', '3 spec 226', '4 T186-04-05'])
+  })
+
+  test('テスト名、test.step の名前、テンプレート文字列、正規表現のリテラルの中の番号は見つけない', () => {
+    const text = [
+      "test('AC-12 注文できる', async ({ page }) => {",
+      "  await test.step('DC-5 手順 1', async () => {})",
+      '  const label = `AC-7-1 ${id}`',
+      '  await expect(page).toHaveURL(/spec 3|T186-04-05/)',
+      "  describe.each([['AC-9']])('T7-01-01 %s', () => {})",
+      '})',
+    ].join('\n')
+    assert.deepEqual(numbers(text), [])
   })
 })

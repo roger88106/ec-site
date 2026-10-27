@@ -78,7 +78,7 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
 
     await page.getByRole('button', { name: '赤', exact: true }).click()
     await expect(page.getByText('在庫あり', { exact: true })).toBeVisible()
-    // 在庫数は出さない（AC-64）。在庫の表示は「在庫あり」だけで、在庫の数を示す文（「在庫 5」「残り 5」「5 個」）がない
+    // 在庫数は出さない。在庫の表示は「在庫あり」だけで、在庫の数を示す文（「在庫 5」「残り 5」「5 個」）がない
     await expect(page.getByText(/在庫[^あ]*[0-9]|残り[^。]*[0-9]|[0-9]+ ?(個|点)/)).toHaveCount(0)
   })
 })

@@ -45,7 +45,7 @@ async function memberCartWith(page: Page, code: string, count = 1) {
 test('AC-143、145、146、147、149 注文すると mock の支払画面に移り、支払うと注文の画面に戻って受付になり、注文した品目がカートから除かれる', async ({
   page,
 }) => {
-  // 品目が複数の注文でも、与信の後にカートから除ける（T7407）
+  // 品目が複数の注文でも、与信の後にカートから除ける
   await memberCartWith(page, 'PAY', 2)
 
   await test.step('注文手続き：カードの入力はなく、注文すると mock の支払画面に移る（AC-143、145）', async () => {

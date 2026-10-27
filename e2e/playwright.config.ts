@@ -12,7 +12,7 @@ const GRADLEW = path.join(BACKEND_DIR, process.platform === 'win32' ? 'gradlew.b
 
 /**
  * E2E（テストの書き方）。バックエンド、管理画面、店舗画面を起動して、ブラウザで操作する。<br />
- * E2E 用の DB・IdP・画像のバケットを使い、ローカルのデータを変えない（plan 004 第 6.1 節）。DB と IdP は、
+ * E2E 用の DB・IdP・画像のバケットを使い、ローカルのデータを変えない。DB と IdP は、
  * 準備の script（scripts/prepare.ts）が毎回再作成する。
  * どのテストも同じ DB を使うので、1 つずつ順に動かす。テストのデータは実行ごとの印を付けて作る（src/data.ts）。
  * 画面のサーバーは、手元でも CI でも毎回起動し、起動済みのサーバーを使い回さない（ポートが使われていれば Playwright が止まる）。
@@ -60,7 +60,7 @@ export default defineConfig({
       reuseExistingServer: false,
     },
     {
-      // API の結果のキャッシュを 1 秒にし、NFR-1 の 60 秒を待たずに一覧への反映を確認する
+      // API の結果のキャッシュを 1 秒にし、本番の 60 秒のキャッシュを待たずに一覧への反映を確認する
       name: 'store',
       command: `pnpm build && pnpm start --port ${portOf(STORE_URL)}`,
       cwd: '../frontend/store',

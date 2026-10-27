@@ -71,6 +71,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
   - `exclusions.mjs`：除外の一覧（`{キー: 理由}`）を読み、理由のない除外と不要になった除外を見つける。除外の一覧のパス（`exclusionsPath`）と、誤りの文（`checkExclusions`）も作る。検査が文を直接組み立てない（テストが走査する）。
   - `unreadable-line.mjs`：検査が読めなかった行を、`ファイル:行 内容（理由）` の形の失敗の文にする（`describeUnreadableLine`）。検査が文を直接組み立てない（テストが走査する）。
   - `git-env.mjs`：Git を呼ぶテストが、`GIT_` の環境変数を外す（`withoutGitEnv`、`removeGitEnv`）。外す処理はここだけに置く。守っているかは `git-env.test.mjs` が確認する（`scripts/` の下の `.mjs` が `startsWith('GIT_')` などで自分で外していると失敗にする）。
+  - `scan-rules.mjs`：検査の script を走査して、共通の関数を使っているかを確認するテストの補助。走査する script の一覧（`listScanScripts`。範囲は `ci`、`ci+lib`、`all`）と、守る関数ごとの「禁じる書き方」と「例外の script」の表から違反を返す関数（`findRuleViolations`）を持つ。`exclusions.test.mjs`・`unreadable-line.test.mjs`・`git-files.test.mjs`・`git-env.test.mjs` が使う。新しい共通の関数を加えたときは、そのテストの表に行を追加する。
   - `sql-code.mjs`：SQL のコメント（`--`、入れ子の `/* */`）と文字列の中を空白にする（`blankSqlNonCode`）。マイグレーションを読む検査（`migrations`、`design-migrations`）が共通で使う。
   - `scan-code.mjs`：ソースを、コード・コメント・文字列・正規表現のリテラルの区間に分けて読む（`scanCode`）。コメント・文字列・正規表現を読み飛ばす処理はここだけにあり、閉じ括弧の探し方・コメントの除去・テストの関数の読み方が使う。TypeScript と Java の違いは選択肢（`regex`、`templates`、`textBlocks`）で決める。
   - `strip-comments.mjs`：ソースのコメントを空白に置き換える。TypeScript は `stripComments`、Java は `stripJavaComments`（文字列とテキストブロックの中の `//` はコメントにしない）。

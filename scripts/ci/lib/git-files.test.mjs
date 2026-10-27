@@ -7,6 +7,7 @@ import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { removeGitEnv, withoutGitEnv } from './git-env.mjs'
 import { emptyListReason, listGitFiles, splitNulList } from './git-files.mjs'
+import { findRuleViolations, listScanScripts } from './scan-rules.mjs'
 
 /** 試す Git のリポジトリ */
 const repo = mkdtempSync(path.join(tmpdir(), 'git-files-'))
@@ -36,11 +37,8 @@ before(() => {
 
 describe('Git の一覧の求め方', () => {
   test('検査は、Git の一覧を listGitFiles で求める（git ls-files -z を直接呼ばない）', () => {
-    const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-    const offenders = readdirSync(ciDir)
-      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
-      .filter((name) => /\['ls-files',\s*'-z'/.test(readFileSync(path.join(ciDir, name), 'utf8')))
-    assert.deepEqual(offenders, [])
+    const rules = [{ guard: 'listGitFiles', forbidden: /\['ls-files',\s*'-z'/, target: 'raw', exceptions: {} }]
+    assert.deepEqual(findRuleViolations(listScanScripts('ci'), rules), [])
   })
 })
 

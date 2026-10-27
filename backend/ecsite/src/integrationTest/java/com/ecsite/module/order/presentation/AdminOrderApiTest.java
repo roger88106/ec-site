@@ -24,9 +24,15 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
+import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.contains;
+import static com.ecsite.module.order.presentation.AdminOrderLists.idsOf;
+import static com.ecsite.module.order.presentation.AdminOrderLists.itemOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -48,12 +54,12 @@ class AdminOrderApiTest {
     private static final String BASE = "/api/admin/orders";
 
     /**
-     * このテストの注文の注文番号に共通する前方一致（注文日が 2026 年 12 月の注文。他のテストは 12 月に注文しないので、他のテストの注文が混ざらない）
+     * 日本時間
      */
-    private static final String SCOPE = "202612";
+    private static final ZoneId JST = ZoneId.of("Asia/Tokyo");
 
     /**
-     * 2026-12-08 23:59（日本時間）。注文日を 2026 年 12 月にするのは、他のテストの注文日（2026-10-08、2026-11-20）と重ならない日にして、注文番号の前方一致で自分の注文だけを絞れるようにするため
+     * 2026-12-08 23:59（日本時間）。日付をまたぐ境界の確認に使う
      */
     private static final Instant DEC_8_LATE = Instant.parse("2026-12-08T14:59:00Z");
 
@@ -90,6 +96,11 @@ class AdminOrderApiTest {
      */
     private OrderTestData orders;
 
+    /**
+     * 注文の一覧を全ページから集める補助
+     */
+    private AdminOrderLists lists;
+
     private UUID variantId;
 
     @BeforeEach
@@ -102,6 +113,7 @@ class AdminOrderApiTest {
         variantId = product.variantIds.getFirst();
         inventory.stock(variantId, product.id, 50);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
+        lists = new AdminOrderLists(mockMvc);
     }
 
     @Nested
@@ -117,16 +129,16 @@ class AdminOrderApiTest {
             var newer = orders.placeOrder(variantId, 2, "山田 太郎");
             cancel(older);
 
-            mockMvc.perform(get(BASE).param("orderNumber", SCOPE))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.items[*].id", contains(newer.toString(), older.toString())))
-                    .andExpect(jsonPath("$.items[0].customerName").value("山田 太郎"))
-                    .andExpect(jsonPath("$.items[0].total").value(2970 * 2 + 1000))
-                    .andExpect(jsonPath("$.items[0].status").value("ACCEPTED"))
-                    .andExpect(jsonPath("$.items[0].orderNumber").value(orderNumber(newer)))
-                    .andExpect(jsonPath("$.items[0].orderedAt").exists())
-                    .andExpect(jsonPath("$.items[1].status").value("CANCELLED"))
-                    .andExpect(jsonPath("$.totalItems").value(2));
+            var items = lists.listAll();
+
+            assertThat(idsOf(items, older, newer)).containsExactly(newer.toString(), older.toString());
+            var newerItem = itemOf(items, newer);
+            assertThat(newerItem.get("customerName")).isEqualTo("山田 太郎");
+            assertThat(newerItem.get("total")).isEqualTo(2970 * 2 + 1000);
+            assertThat(newerItem.get("status")).isEqualTo("ACCEPTED");
+            assertThat(newerItem.get("orderNumber")).isEqualTo(orderNumber(newer));
+            assertThat(newerItem.get("orderedAt")).isNotNull();
+            assertThat(itemOf(items, older).get("status")).isEqualTo("CANCELLED");
         }
 
         @Test
@@ -138,32 +150,51 @@ class AdminOrderApiTest {
             var dec9 = orders.placeOrder(variantId, 1);
             cancel(dec9);
 
-            mockMvc.perform(get(BASE).param("orderNumber", "20261209"))
-                    .andExpect(jsonPath("$.items[*].id", contains(dec9.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumber(dec8)))
-                    .andExpect(jsonPath("$.items[*].id", contains(dec8.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("status", "CANCELLED"))
-                    .andExpect(jsonPath("$.items[*].id", contains(dec9.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("orderedFrom", "2026-12-09"))
-                    .andExpect(jsonPath("$.items[*].id", contains(dec9.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("orderedTo", "2026-12-08"))
-                    .andExpect(jsonPath("$.items[*].id", contains(dec8.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("orderedFrom", "2026-12-08").param("orderedTo", "2026-12-09"))
-                    .andExpect(jsonPath("$.totalItems").value(2));
+            var byDate = lists.listAll("orderNumber", "20261209");
+            assertThat(idsOf(byDate, dec8, dec9)).containsExactly(dec9.toString());
+            assertThat(byDate).allSatisfy(item -> assertThat((String) item.get("orderNumber")).startsWith("20261209"));
+
+            var byNumber = lists.listAll("orderNumber", orderNumber(dec8));
+            assertThat(idsOf(byNumber, dec8, dec9)).containsExactly(dec8.toString());
+            assertThat(byNumber).allSatisfy(item -> assertThat(item.get("orderNumber")).isEqualTo(orderNumber(dec8)));
+
+            var cancelled = lists.listAll("status", "CANCELLED");
+            assertThat(idsOf(cancelled, dec8, dec9)).containsExactly(dec9.toString());
+            assertThat(cancelled).allSatisfy(item -> assertThat(item.get("status")).isEqualTo("CANCELLED"));
+
+            var from = lists.listAll("orderedFrom", "2026-12-09");
+            assertThat(idsOf(from, dec8, dec9)).containsExactly(dec9.toString());
+            assertThat(from).allSatisfy(item -> assertThat(orderedDate(item)).isAfterOrEqualTo(LocalDate.of(2026, 12, 9)));
+
+            var to = lists.listAll("orderedTo", "2026-12-08");
+            assertThat(idsOf(to, dec8, dec9)).containsExactly(dec8.toString());
+            assertThat(to).allSatisfy(item -> assertThat(orderedDate(item)).isBeforeOrEqualTo(LocalDate.of(2026, 12, 8)));
+
+            var range = lists.listAll("orderedFrom", "2026-12-08", "orderedTo", "2026-12-09");
+            assertThat(idsOf(range, dec8, dec9)).containsExactly(dec9.toString(), dec8.toString());
+            assertThat(range).allSatisfy(item -> assertThat(orderedDate(item))
+                    .isBetween(LocalDate.of(2026, 12, 8), LocalDate.of(2026, 12, 9)));
         }
 
         @Test
         @DisplayName("AC-99 ページ単位で取得できる")
         void pages() throws Exception {
             for (int i = 0; i < 3; i++) {
+                // 注文日時が同じだと、並びが取得のたびに変わりうる
+                clock.setInstant(DEC_8_LATE.plusSeconds(i));
                 orders.placeOrder(variantId, 1);
             }
+            var all = lists.listAll();
 
-            mockMvc.perform(get(BASE).param("orderNumber", SCOPE).param("page", "2").param("size", "2"))
-                    .andExpect(jsonPath("$.items.length()").value(1))
-                    .andExpect(jsonPath("$.page").value(2))
-                    .andExpect(jsonPath("$.totalItems").value(3))
-                    .andExpect(jsonPath("$.totalPages").value(2));
+            var body = mockMvc.perform(get(BASE).param("page", "2").param("size", "2"))
+                    .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
+
+            List<Map<String, Object>> pageItems = JsonPath.read(body, "$.items");
+            var expectedIds = all.subList(2, Math.min(4, all.size())).stream().map(item -> item.get("id")).toList();
+            assertThat(pageItems).extracting(item -> item.get("id")).containsExactlyElementsOf(expectedIds);
+            assertThat((int) JsonPath.read(body, "$.page")).isEqualTo(2);
+            assertThat((int) JsonPath.read(body, "$.totalItems")).isEqualTo(all.size());
+            assertThat((int) JsonPath.read(body, "$.totalPages")).isEqualTo((all.size() + 1) / 2);
         }
 
         @Test
@@ -231,6 +262,13 @@ class AdminOrderApiTest {
     }
 
     // ============================== 補助 ==============================
+
+    /**
+     * 行の注文日（日本時間）
+     */
+    private static LocalDate orderedDate(Map<String, Object> item) {
+        return Instant.parse((String) item.get("orderedAt")).atZone(JST).toLocalDate();
+    }
 
     /**
      * 運営者の判断でキャンセルする

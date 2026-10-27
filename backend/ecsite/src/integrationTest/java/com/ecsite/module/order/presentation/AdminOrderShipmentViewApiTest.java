@@ -29,10 +29,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.containsInAnyOrder;
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.nullValue;
+import static com.ecsite.module.order.presentation.AdminOrderLists.idsOf;
+import static com.ecsite.module.order.presentation.AdminOrderLists.itemOf;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
@@ -55,7 +54,7 @@ class AdminOrderShipmentViewApiTest {
     private static final String BASE = "/api/admin/orders";
 
     /**
-     * 注文・与信の時刻（日本時間の 2026-11-20 00:00。他のテストの注文日（2026-10-08、12 月）と重ならない日にして、注文番号の前方一致で自分の注文だけを絞れるようにする）
+     * 注文・与信の時刻（日本時間の 2026-11-20 00:00）
      */
     private static final Instant NOW = Instant.parse("2026-11-19T15:00:00Z");
 
@@ -96,6 +95,11 @@ class AdminOrderShipmentViewApiTest {
     private OrderTestData orders;
 
     /**
+     * 注文の一覧を全ページから集める補助
+     */
+    private AdminOrderLists lists;
+
+    /**
      * 出荷を作る補助
      */
     private ShippingTestData shipping;
@@ -128,6 +132,7 @@ class AdminOrderShipmentViewApiTest {
         // 商品の公開で時計が進むので、注文と与信の時刻をそろえる
         clock.setInstant(NOW);
         orders = new OrderTestData(mockMvc, gateway, applicationContext);
+        lists = new AdminOrderLists(mockMvc);
         shipping = new ShippingTestData(mockMvc, mockCarrier);
         accepted = orders.placeOrder(variantId, 1, "受付 太郎");
         shipped = orders.placeOrder(variantId, 1, "出荷 花子");
@@ -193,8 +198,7 @@ class AdminOrderShipmentViewApiTest {
             mockMvc.perform(get(BASE + "/" + accepted))
                     .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"))
                     .andExpect(jsonPath("$.payment.authorizationExpiring").value(false));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true"))
-                    .andExpect(jsonPath("$.items", empty()));
+            assertThat(idsOf(lists.listAll("authorizationExpiring", "true"), accepted)).isEmpty();
         }
 
         @Test
@@ -218,55 +222,63 @@ class AdminOrderShipmentViewApiTest {
         void showsColumns() throws Exception {
             clock.setInstant(AUTHORIZATION_DEADLINE.minus(Duration.ofDays(1)));
 
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()))
-                    .andExpect(jsonPath("$.items[?(@.id == '%s')].shipmentStatus".formatted(returned)).value("RETURNED"))
-                    .andExpect(jsonPath("$.items[?(@.id == '%s')].shipmentStatus".formatted(shipped)).value("SHIPPED"))
-                    .andExpect(jsonPath("$.items[?(@.id == '%s')].shipmentStatus".formatted(accepted)).value(contains(nullValue())))
-                    .andExpect(jsonPath("$.items[?(@.id == '%s')].authorizationExpiring".formatted(accepted)).value(true))
-                    .andExpect(jsonPath("$.items[?(@.id == '%s')].authorizationExpiring".formatted(shipped)).value(false));
+            var items = lists.listAll();
+
+            assertThat(itemOf(items, returned).get("shipmentStatus")).isEqualTo("RETURNED");
+            assertThat(itemOf(items, shipped).get("shipmentStatus")).isEqualTo("SHIPPED");
+            assertThat(itemOf(items, accepted).get("shipmentStatus")).isNull();
+            assertThat(itemOf(items, accepted).get("authorizationExpiring")).isEqualTo(true);
+            assertThat(itemOf(items, shipped).get("authorizationExpiring")).isEqualTo(false);
         }
 
         @Test
         @DisplayName("AC-182 状態「出荷済み」で絞り込むと出荷済みの注文が、「受付」で絞り込むと出荷待ちの注文が並ぶ")
         void filtersByShipped() throws Exception {
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("status", "SHIPPED"))
-                    .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(shipped.toString(), returned.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("status", "ACCEPTED"))
-                    .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(accepted.toString())));
+            var shippedItems = lists.listAll("status", "SHIPPED");
+            assertThat(idsOf(shippedItems, accepted, shipped, returned)).containsExactlyInAnyOrder(shipped.toString(), returned.toString());
+            assertThat(shippedItems).allSatisfy(item -> assertThat(item.get("status")).isEqualTo("SHIPPED"));
+
+            var acceptedItems = lists.listAll("status", "ACCEPTED");
+            assertThat(idsOf(acceptedItems, accepted, shipped, returned)).containsExactly(accepted.toString());
+            assertThat(acceptedItems).allSatisfy(item -> assertThat(item.get("status")).isEqualTo("ACCEPTED"));
         }
 
         @Test
         @DisplayName("AC-187 与信期限が近い注文で絞り込める。他の条件と組み合わせられる")
         void filtersByAuthorizationExpiring() throws Exception {
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true"))
-                    .andExpect(jsonPath("$.items", empty()))
-                    .andExpect(jsonPath("$.totalItems").value(0));
+            assertThat(idsOf(lists.listAll("authorizationExpiring", "true"), accepted, shipped, returned)).isEmpty();
 
             clock.setInstant(AUTHORIZATION_DEADLINE.minus(Duration.ofDays(1)));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true"))
-                    .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(accepted.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "true").param("status", "CANCELLED"))
-                    .andExpect(jsonPath("$.items", empty()));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("authorizationExpiring", "false"))
-                    .andExpect(jsonPath("$.totalItems").value(3));
+            var expiring = lists.listAll("authorizationExpiring", "true");
+            assertThat(idsOf(expiring, accepted, shipped, returned)).containsExactly(accepted.toString());
+            assertThat(expiring).allSatisfy(item -> assertThat(item.get("authorizationExpiring")).isEqualTo(true));
+
+            var expiringCancelled = lists.listAll("authorizationExpiring", "true", "status", "CANCELLED");
+            assertThat(idsOf(expiringCancelled, accepted, shipped, returned)).isEmpty();
+            assertThat(expiringCancelled).allSatisfy(item -> {
+                assertThat(item.get("authorizationExpiring")).isEqualTo(true);
+                assertThat(item.get("status")).isEqualTo("CANCELLED");
+            });
+
+            // false は絞り込まない
+            var unfiltered = lists.listAll("authorizationExpiring", "false");
+            assertThat(idsOf(unfiltered, accepted, shipped, returned))
+                    .containsExactlyInAnyOrder(accepted.toString(), shipped.toString(), returned.toString());
         }
 
         @Test
         @DisplayName("AC-189 配送状態「返送」の注文で絞り込める")
         void filtersByReturned() throws Exception {
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("returned", "true"))
-                    .andExpect(jsonPath("$.items[*].id", containsInAnyOrder(returned.toString())));
-            mockMvc.perform(get(BASE).param("orderNumber", orderNumberPrefix()).param("returned", "true").param("status", "ACCEPTED"))
-                    .andExpect(jsonPath("$.items", empty()));
+            var returnedItems = lists.listAll("returned", "true");
+            assertThat(idsOf(returnedItems, accepted, shipped, returned)).containsExactly(returned.toString());
+            assertThat(returnedItems).allSatisfy(item -> assertThat(item.get("shipmentStatus")).isEqualTo("RETURNED"));
+
+            var returnedAccepted = lists.listAll("returned", "true", "status", "ACCEPTED");
+            assertThat(idsOf(returnedAccepted, accepted, shipped, returned)).isEmpty();
+            assertThat(returnedAccepted).allSatisfy(item -> {
+                assertThat(item.get("shipmentStatus")).isEqualTo("RETURNED");
+                assertThat(item.get("status")).isEqualTo("ACCEPTED");
+            });
         }
-    }
-
-    // ============================== 補助 ==============================
-
-    /**
-     * このテストの注文に共通する注文番号の前方一致（注文日。他のテストは、この日に注文しない）
-     */
-    private static String orderNumberPrefix() {
-        return "20261120";
     }
 }

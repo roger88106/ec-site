@@ -1,6 +1,7 @@
 package com.ecsite.config.security;
 
 import com.ecsite.TestcontainersConfig;
+import com.ecsite.contract.Contracts;
 import com.jayway.jsonpath.JsonPath;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
@@ -65,10 +66,10 @@ class KeycloakIntegrationTest {
     private static final int MANAGEMENT_PORT = 9000;
 
     /**
-     * realm の設定とテーマの置き場所。Gradle の integrationTest task が設定する
+     * realm の設定とテーマの置き場所。Gradle の integrationTest task が渡す system property を、契約の補助で読む
      */
-    private static final Path REALMS_DIR = Path.of(System.getProperty("keycloak.realms.dir", "../../docker/keycloak/realms"));
-    private static final Path THEME_DIR = Path.of(System.getProperty("keycloak.theme.dir", "../../docker/keycloak/themes/ec-site"));
+    private static final Path REALMS_DIR = Contracts.realmsDir();
+    private static final Path THEME_DIR = Contracts.themeDir();
 
     private static final String TAX_CATEGORIES = "/api/admin/tax-categories";
 

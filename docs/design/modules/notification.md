@@ -10,7 +10,7 @@
 
 ※1：メールに必要な値（宛先、注文番号、配送業者、送り状番号）は、イベント「注文の出荷」に載っている。
 
-※2：配送業者の表示名は出荷モジュールが決めるので、文言のキーを文字列で組み立てずに、出荷モジュールの公開 API から得る。port（`CarrierNameDirectory`）を application に置き、`infrastructure/directory/` の実装が公開 API を呼ぶ。
+※2：配送業者の表示名は出荷モジュールが決めるので、文言のキーを文字列で組み立てずに、出荷モジュールの公開 API から得る。port（`ShippingDirectory`）を application に置き、`infrastructure/directory/` の実装が公開 API を呼ぶ。
 
 ## 出荷通知メール
 

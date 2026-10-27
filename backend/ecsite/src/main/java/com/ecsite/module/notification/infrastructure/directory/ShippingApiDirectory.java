@@ -1,6 +1,6 @@
 package com.ecsite.module.notification.infrastructure.directory;
 
-import com.ecsite.module.notification.application.port.CarrierNameDirectory;
+import com.ecsite.module.notification.application.port.ShippingDirectory;
 import com.ecsite.module.order.event.OrderShipped;
 import com.ecsite.module.shipping.api.ShipmentSummary;
 import com.ecsite.module.shipping.api.ShippingApi;
@@ -13,7 +13,7 @@ import org.springframework.stereotype.Component;
  */
 @Component
 @RequiredArgsConstructor
-class CarrierNameApiDirectory implements CarrierNameDirectory {
+class ShippingApiDirectory implements ShippingDirectory {
 
     /**
      * 出荷の API

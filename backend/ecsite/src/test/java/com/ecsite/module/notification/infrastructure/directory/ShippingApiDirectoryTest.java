@@ -14,9 +14,9 @@ import static org.mockito.Mockito.mock;
 /**
  * 配送業者の表示名のキーを出荷モジュールから得る腐敗防止層の単体テスト
  */
-class CarrierNameApiDirectoryTest {
+class ShippingApiDirectoryTest {
 
-    private final CarrierNameApiDirectory directory = new CarrierNameApiDirectory(new ShippingApi(mock(ShipmentService.class)));
+    private final ShippingApiDirectory directory = new ShippingApiDirectory(new ShippingApi(mock(ShipmentService.class)));
 
     @ParameterizedTest(name = "{0}")
     @EnumSource(OrderShipped.Carrier.class)

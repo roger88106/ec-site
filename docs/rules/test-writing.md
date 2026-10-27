@@ -22,7 +22,7 @@
 | 4.7 | 要素のプロパティ・属性・状態を `toBe` で比べず、jest-dom の照合で確認する | 受け手が要素のもの（`getBy…` の結果やそれを入れた変数など）のプロパティ・属性は自動（`scripts/ci/frontend-rules.mjs`）、ほかはレビュー |
 | 4.8 | テストのファイルで `fireEvent` を直接使わない | 理由のコメントのないものは自動（`scripts/ci/frontend-rules.mjs`）、理由が妥当かはレビュー |
 | 4.9 | 環境変数は `vi.stubEnv` で変え、`process.env` に代入しない | レビュー |
-| 4.10 | テストの `const`・`let` で、TypeScript の lib のグローバルの名前をシャドーイングしない | 自動（`scripts/ci/frontend-rules.mjs`。名前の一覧は `scripts/ci/globals/lib-globals.mjs` が lib から生成し、CI が一致を確認する） |
+| 4.10 | フロントのテストとテストの補助、E2E（`e2e/` の下の全ての TypeScript）の `const`・`let` で、TypeScript の lib のグローバルの名前をシャドーイングしない | 自動（`scripts/ci/frontend-rules.mjs`。名前の一覧は `scripts/ci/globals/lib-globals.mjs` が lib から生成し、CI が一致を確認する） |
 | 4.11 | テストとテストの間に空行を置く | 自動（`scripts/ci/frontend-rules.mjs`。フロントのテストと補助、E2E） |
 | 5 | 時間で待たない。E2E で `networkidle` で待たず、タイムアウトを数字のリテラルで書かない | 時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`timeout` で終わる項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`） |
 
@@ -153,8 +153,8 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 
 結合テストと E2E は、役割と名前で要素を探す（`getByRole('button', { name: '保存' })`、`getByLabel('名称')`）。CSS のクラス、`data-testid`、内部の状態、xpath、並びの 1 つ目は使わない。名前がなければ、画面に支援技術向けの名前を追加する。
 
-- E2E は、位置で要素を選ぶメソッド（`.first()`・`.nth()`・`.last()`）を使わない。複数の要素に当たるときは、名前や、親の要素（行、領域）で絞る。
-- E2E でボタンを名前で探すときは、`exact: true` を付けた文字列か、先頭（`^`）と末尾（`$`）を固定した正規表現で書く（`getByRole('button', { name: '保存', exact: true })`、`getByRole('button', { name: /^注文する（[\d,]+ 円）$/ })`）。固定した正規表現は、金額のように変わる値を含む名前に使う。
+- E2E は、位置で要素を選ぶメソッド（`.first()`・`.nth()`・`.last()`）と、`locator` の文字列のセレクターの中の位置（`nth=`、`:nth-match(`、`:nth-child(`、`:first-child`、`:last-child` など）を使わない。複数の要素に一致するときは、名前や、親の要素（行、領域）で絞る。
+- E2E でボタンを名前で探すときは、`exact: true` を付けた文字列か、先頭（`^`）と末尾（`$`）を固定した正規表現で書く（`getByRole('button', { name: '保存', exact: true })`、`getByRole('button', { name: /^注文する（[\d,]+ 円）$/ })`）。固定した正規表現は、金額のように変わる値を含む名前に使う。ボタンの名前を変数で渡すときは文字列にし、`exact: true` を付ける（正規表現を入れた変数は、`exact` が効かず部分一致になるので使わない。検査は変数の中身を追わない）。
 
 - 自分たちで作っていない画面（IdP）の要素の選び方は、`e2e/src/auth.ts` だけに置く。
 - 詳細の項目の値（`dd`）は、Biome の検査が名前を認めないので、項目名の次の値を選ぶ書き方を `e2e/src/detail.ts` だけに置く。
@@ -163,7 +163,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 - テストでは `toBeTruthy`・`toBeDefined` を使わない。探した要素があることは `toBeInTheDocument`（E2E は `toBeVisible` など）で、値は型や部分的な構造（`expect.any(…)`、`toMatchObject` など）で確認する。
 - 表示のコンポーネントを HTML にして確認するとき、HTML の属性や要素の並びに依存する正規表現・文字の一致で確認しない。役割と名前で探して jest-dom で確認する。例外は、描画の結果が空文字であることの確認（`expect(renderMarkup(…)).toBe('')`）。
 
-理由：画面を再作成しても、振る舞いが同じならテストが壊れないようにするため。位置で選ぶと、並びが変わったときに別の要素を操作しても通ってしまい、ボタンの名前が部分一致だと、名前が似た別のボタンに当たる。`getBy…` は見つからないと先に失敗するので `toBeTruthy` は確認にならず、`queryBy…` の `null` は `toBeDefined` を通るので、どちらも確認として弱いため。HTML の属性や要素の並びへの依存は、見た目に影響しない変更でテストを壊すため。
+理由：画面を再作成しても、振る舞いが同じならテストが壊れないようにするため。位置で選ぶと、並びが変わったときに別の要素を操作しても通ってしまい、ボタンの名前が部分一致だと、名前が似た別のボタンに一致する。`getBy…` は見つからないと先に失敗するので `toBeTruthy` は確認にならず、`queryBy…` の `null` は `toBeDefined` を通るので、どちらも確認として弱いため。HTML の属性や要素の並びへの依存は、見た目に影響しない変更でテストを壊すため。
 
 ### 4.2 API の差し替えは型付きの MSW
 
@@ -208,7 +208,7 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 ### 4.7 要素のプロパティ・属性・状態を jest-dom で確認する
 
-要素のプロパティや属性（`.disabled`、`getAttribute(…)`、`.value`）を `toBe` で比べない。jest-dom の `toBeDisabled`、`toHaveAttribute`、`toHaveValue` などで確認する。要素の状態（表示、選択、フォーカスなど）も同じで、`toBeVisible`、`toBeChecked`、`toHaveFocus` などで確認する。
+要素のプロパティや属性（`.disabled`、`getAttribute(…)`、`.value`）を `toBe` で比べない。jest-dom の `toBeDisabled`、`toHaveAttribute`、`toHaveValue` などで確認する。要素の状態（表示、選択、フォーカスなど）も、`toBeVisible`、`toBeChecked`、`toHaveFocus` などで確認する。
 
 理由：失敗したときの表示が分かりやすく、支援技術から見える状態で確認するため。
 
@@ -222,17 +222,17 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 テストで環境変数を変えるときは `vi.stubEnv` を使い、`process.env` に代入しない。
 
-理由：`process.env` への代入は、テストが終わっても残り、他のテストに漏れるため。`vi.stubEnv` は、後始末で元の値に戻せる。
+理由：`process.env` への代入は、テストが終わっても残り、他のテストの結果に影響するため。`vi.stubEnv` は、後始末で元の値に戻せる。
 
 ### 4.10 組み込みの名前をシャドーイングしない
 
-テストの定数・変数（`const`・`let`）の名前は、TypeScript の lib（ES と DOM）が宣言するグローバルの名前（`URL`、`screen`、`location`、`name`、`status` など）と同じにしない。関数の引数は対象外。
+フロントのテストとテストの補助、E2E（`e2e/` の下の全ての TypeScript）の定数・変数（`const`・`let`）の名前は、TypeScript の lib（ES と DOM）が宣言するグローバルの名前（`URL`、`screen`、`location`、`name`、`status` など）と同じにしない。関数の引数は対象外。
 
-理由：宣言を忘れたときに、エラーにならずにグローバルの値が使われ、意図しない値でテストが通るため。
+理由：変数の宣言を忘れたときに、エラーにならずにグローバルの値が使われ、意図しない値でテストが通るため。
 
 ### 4.11 テストとテストの間に空行を置く
 
-テストとテストの間、`describe` とその前後のテストの間には、空行を置く（`})` の直後の行に `test(`・`it(`・`describe(` を続けない）。
+テストとテストの間、`describe` とその前後のテストの間には、空行を置く（テストを閉じる行（`})` と、`test('a', () => {})` のように 1 行で閉じるテスト）の直後の行に、`test(`・`it(`・`describe(`（`test.each(`・`test.skip(` などの形を含む）を続けない）。`test.beforeEach(`・`test.use(`・`test.step(` などは、テスト・グループでないので対象にしない。
 
 理由：テストの境目を、一目で分かるようにするため。
 
@@ -241,8 +241,8 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 時間で待たない（`Thread.sleep`、`waitForTimeout`）。条件で待つ（Playwright の `expect(...).toBeVisible()` などの自動の再試行、状態を直接確認する）。
 
 - 決まった時間だけ見て「起きないこと」を確認しない（Awaitility の `during`）。バックエンドでは、`AsyncEvents` でイベントのリスナーが終わる（または失敗する）のを待ってから、起きた数を確認する。
-- E2E は、ネットワークが静まるまで待つ `networkidle` で待たない。画面の状態（要素が見えるなど）を条件にして待つ。
-- タイムアウトは、バックエンドは `AsyncEvents.TIMEOUT`、E2E は `e2e/src/waits.ts` の定数を使う。E2E は、定数を定義する `waits.ts` の外で、`timeout` などのタイムアウトを数字のリテラル（`10_000`、`5 * 1000` など）で書かない。長く待つ必要がある所は、`waits.ts` に理由を書いた定数を加えて使う。
+- E2E は、通信がなくなるまで待つ `networkidle` で待たない。画面の状態（要素が見えるなど）を条件にして待つ。
+- タイムアウトは、バックエンドは `AsyncEvents.TIMEOUT`、E2E は `e2e/src/waits.ts` の定数を使う。E2E は、定数を定義する `waits.ts` の外で、`timeout` などのタイムアウトを数字のリテラル（`10_000`、`5 * 1000` など）で書かない。長く待つ必要がある場合は、`waits.ts` に理由を書いた定数を加えて使う。
 - E2E で裏の処理の結果を画面を再度開きながら待つときは、`e2e/src/waits.ts` の `reopenUntil` を使う。
 - 同じイベントを連続して発行するテストは、前の発行の処理が終わるのを待ってから次を発行する。Spring Modulith は処理中の発行を（イベント、リスナー）の組で持つので、同じイベントの処理が重なると発行の記録が完了にならないことがある。
 

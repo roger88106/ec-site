@@ -186,9 +186,9 @@ tasks は第 6 節の決定に基づく。
 |------|----------------|------|
 | 222（文書の整理） | `docs/rules/test-writing.md`、`docs/rules/comments.md`、`docs/guides/ci.md`、`scripts/ci/` と E2E のコメント、`doc-terms.json` | 本 spec の実装は 222 のマージの後に始める（DN-226-7） |
 | 225（CI の検査の script） | `scripts/ci/frontend-rules.mjs` とテスト、`scripts/ci/lib/` の走査の補助、`docs/guides/ci.md`、`frontend/admin/src/test/inputs.ts` | 本 spec の実装は 225 のマージの後に始める。225 が作るファイルの種類の定数と振り分けの関数（225 の spec 第 7 節の 2）に、E2E の規則とテストの規則を加える。225 が名前を変えたときは、実装の前の照合で tasks を修正する |
-| 223（バックエンドの検査） | `scripts/ci/` の新しい検査、`docs/guides/ci.md` の表 | 本 spec が変える検査（`frontend-rules`、`spec-numbers`、新しく生成する名前の一覧）と重ならない。`ci.md` の表は、後でマージする pull request が `develop` を取り込んで解消する |
+| 223（バックエンドの検査） | `scripts/ci/spec-numbers.mjs` とテスト（読み方を選ぶ関数、番号の正規表現）、`scripts/ci/lib/strip-comments.mjs`（同じ名前の `keepTsComments`・`keepBlanked`）、`docs/rules/comments.md` の第 1 節と規則の一覧の 1 の行、`docs/guides/ci.md` の `spec-numbers`・`strip-comments` の行と表、`e2e/playwright.config.ts`・`e2e/playwright.showcase.config.ts` のコメント | 実装の段階で重なりが分かった（spec の最後のレビュー）。後でマージする pull request が `develop` を取り込んで解消する。解消では、(1) `keepTsComments`・`keepBlanked` は 1 つにし、JSX の文字の限界の説明を残す。(2) コメントの読み方を選ぶ関数は 1 つにし、`.ts`・`.tsx`・`.mjs` を `keepTsComments`、`.java`・`.gradle.kts` を `keepJavaComments` で読む。(3) `.tsx` のファイルでテンプレート文字列の中の番号を見つけないテストを残す。(4) コメントの書き方の規則の一覧の 1 の行に、フロントのテストをレビューとする記述を残さない |
 | 227（店舗画面のフォーム） | `frontend/store/` のテスト | 本 spec の T226-02-02 が、店舗画面のテストの `status` などの名前を変える。後にマージする側が `develop` を取り込み、新しく書かれたテストも検査で確認する |
-| 224（バックエンドのテストとログ） | なし | 並行してよい |
+| 224（バックエンドのテストとログ） | `docs/rules/test-writing.md`（変える節は離れている） | 並行してよい。後でマージする pull request が `develop` を取り込む |
 
 ### 段階 1：規則の文書
 
@@ -231,27 +231,27 @@ tasks は第 6 節の決定に基づく。
   - 先に、Biome の規則（`noShadow`、`noShadowRestrictedNames` など）でグローバルの名前のシャドーイングを見つけられるかを、今の Biome のバージョンで確認する。見つけられるなら Biome の設定で行い、名前の一覧の生成は行わない。その場合は、Biome が持つ名前の一覧で DC-226-8 を満たすか（満たさないなら一覧の生成も行う）を判断する。確認した結果と判断を、本タスクの結果に書く
   - 違反の数を、引数を除き `const`・`let` だけで再度数え、本タスクの結果に書く。名前を変えるときは、確認する内容を変えない（DN-226-2）
   - 確認方法：テストで、lib の名前と同じ `const`・`let`（分割代入、`for…of` を含む）を見つけ、引数と、lib にない名前を見つけないこと。名前を変えたテストのファイルで、変更の前後のテストの件数と名前が同じで、差分が名前の置き換えだけであること（DN-226-2）。一覧の一致の確認が、一覧から名前を 1 つ削除すると失敗すること（確認した後に戻す）。`scripts/dev/check-frontend.sh` が通ること
-  - 結果：Biome 2.5.15 は使えなかった。`noShadowRestrictedNames` が見つけるのは ES の制限された名前（`Set`、`NaN` など）だけで、DOM の `name`・`status`・`alert` は見つけない。`noShadow` は外側の宣言の名前だけを見て、`javascript.globals` に名前を書いても見つけない（試した）。このため一覧の生成を行った。`scripts/ci/globals/lib-globals.mjs` が、TypeScript 7.0.2 の lib（`typescript` ではなく、プラットフォームごとのパッケージ `@typescript/typescript-<OS>-<CPU>` の `lib/` にある `lib.*.d.ts`。`getExePath` の実行ファイルと同じディレクトリ）を、`esnext`・`dom`・`dom.iterable`・`dom.asynciterable` から `/// <reference lib>` をたどって読み、最上位の `declare` の `var`・`let`・`const`・`function`・`class`・`namespace`・`enum` の名前（値の名前だけ。`interface`・`type` は除く）988 個を `lib-globals.json` に書く（`--write`）。`--write` なしは一致を確認する。一致の確認は `ci.yml` の店舗画面の job の、knip の手順の次の「組み込みの名前の一覧の確認」の手順に置いた。違反は 28 か所（`const`・`let` のみ。`status` 10、`name` 12、`alert` 3、`confirm` 1、`cookieStore` 1、`document` 1）で、意味の分かる名前に変えた。変えたテストのファイルの件数と名前は変わらない（`shipping.spec.ts` のステップ名の `${status}` は変数名だけが変わり、文字は同じ）。
+  - 結果：Biome 2.5.15 は使えなかった。`noShadowRestrictedNames` が検出するのは ES の制限された名前（`Set`、`NaN` など）だけで、DOM の `name`・`status`・`alert` は検出しない。`noShadow` は外側の宣言の名前だけを見て、`javascript.globals` に名前を書いても検出しない（試した）。このため一覧を生成する方式にした。`scripts/ci/globals/lib-globals.mjs` が、TypeScript 7.0.2 の lib（`typescript` ではなく、プラットフォームごとのパッケージ `@typescript/typescript-<OS>-<CPU>` の `lib/` にある `lib.*.d.ts`。`getExePath` の実行ファイルと同じディレクトリ）を、`esnext`・`dom`・`dom.iterable`・`dom.asynciterable` から `/// <reference lib>` をたどって読み、最上位の `declare` の `var`・`let`・`const`・`function`・`class`・`namespace`・`enum` の名前（値の名前だけ。`interface`・`type` は除く）988 個を `lib-globals.json` に書く（`--write`）。`--write` なしは一致を確認する。一致の確認は `ci.yml` の店舗画面の job の、knip の手順の次の「組み込みの名前の一覧の確認」の手順に置いた。違反は 28 か所（`const`・`let` のみ。`status` 10、`name` 12、`alert` 3、`confirm` 1、`cookieStore` 1、`document` 1）で、意味の分かる名前に変えた。変えたテストのファイルの件数と名前は変わらない（`shipping.spec.ts` のステップ名の `${status}` は変数名だけが変わり、文字は同じ）。
 - [x] **T226-02-03** [テスト] テストの間の空行の検査を加える（DC-226-9、10）。
   - 依存：T226-02-02（同じ `frontend-rules.mjs` を変える）
   - 範囲：`scripts/ci/frontend-rules.mjs`、テスト、`docs/guides/ci.md`、テストの書き方の規則の一覧
   - T226-02-02 の Biome の調査で、Biome の整形か規則で扱えると分かったときは、Biome で行う（Biome の整形は空行を加えないので、扱えない見込み）
   - 確認方法：テストで、`})` の直後の `test(`・`it(`・`describe(`（`test.each(`・`describe.skip(` などを含む）を見つけ、空行を挟むものを見つけないこと。今のリポジトリで 0 件で通ること
-  - 結果：Biome は使わず、`frontend-rules.mjs` の `findMissingTestSpacing` で行った（コメントと文字列を除いた行を読む）。見つける形は、`}` で始まり `)` で終わる行（`})`、`}, 30_000)`、`});`）の直後に、`test`・`it`・`describe`（`.each`・`.skip`・`.only`・`.fixme`・`.describe` などが続く形を含む）で始まる行。`await test.step(` は 1 つのテストの中の段階なので見ない。間にコメントの行があっても、空行がなければ見つける（コメントはテストに付く説明で、テストの間の空行は必要だ）。対象はフロントのテスト、テストの補助、E2E。今のリポジトリで 0 件
+  - 結果：Biome は使わず、`frontend-rules.mjs` の `findMissingTestSpacing` で実装した（コメントと文字列を除いた行を読む）。検出する形は、`}` で始まり `)` で終わる行（`})`、`}, 30_000)`、`});`）の直後に、`test`・`it`・`describe`（`.each`・`.skip`・`.only`・`.fixme`・`.describe` などが続く形を含む）で始まる行。`await test.step(` は 1 つのテストの中の段階なので見ない。間にコメントの行があっても、空行がなければ見つける（コメントはテストに付く説明で、テストの間の空行は必要だ）。対象はフロントのテスト、テストの補助、E2E。今のリポジトリで 0 件
 - [x] **T226-02-04** [テスト] 番号の検査の対象を、フロントのテストと E2E に広げ、今の違反のコメントを修正する（DC-226-17、18）。
   - 依存：T226-02-03（同じ `docs/guides/ci.md` を変える。T226-02-02 が名前を変えたテストのファイルも変える）
   - 範囲：`scripts/ci/spec-numbers.mjs`、テスト、`scripts/ci/lib/strip-comments.mjs` とテスト（TypeScript のコメントの抽出）、E2E とフロントのテストの違反のコメント（第 3 節の 7）、`docs/guides/ci.md` の `spec-numbers` の行、コメントの書き方の規則の一覧
   - 対象は、フロントのテストと、`e2e/` の下の全ての TypeScript（第 4 節の冒頭の定義）
   - TypeScript のファイルはコメントだけを読み、テスト名と `test.step` の名前などの文字列、テンプレート文字列、正規表現のリテラルの中を読まない
   - 確認方法：テストで、E2E とフロントのテストのコメントの番号を見つけ、テスト名の AC 番号を見つけないこと。`node scripts/ci/spec-numbers.mjs` が今のリポジトリで 0 件で通ること
-  - 結果：`strip-comments.mjs` に `keepTsComments` を加えた（`stripComments` の走査が、テンプレート文字列、`${…}` の中、正規表現のリテラルを読み分けていたので、走査は広げずに、コメントだけを残す関数を足した）。対象は `frontend-rules.mjs` が出す正規表現（フロントのテスト、`src/test/` の補助、`e2e/` の下の `.ts(x)`）で、設定と `e2e/scripts/` を含む。違反は 19 行 22 件（番号の種類：AC、spec・plan、NFR、DC、T）で、番号を消して規則を言葉で書く形に直した（根拠の節の番号は残さず、文書の節の参照も外した）
+  - 結果：`strip-comments.mjs` に `keepTsComments` を加えた（`stripComments` の走査が、テンプレート文字列、`${…}` の中、正規表現のリテラルを読み分けていたので、走査は変えず、コメントだけを残す関数を追加した）。対象は `frontend-rules.mjs` が出す正規表現（フロントのテスト、`src/test/` の補助、`e2e/` の下の `.ts(x)`）で、設定と `e2e/scripts/` を含む。違反は 19 行 22 件（番号の種類：AC、spec・plan、NFR、DC、T）で、番号を消して規則を言葉で書く形に直した（根拠の節の番号は残さず、文書の節の参照も外した）
 - [x] **T226-02-05** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T226-02-01〜04
   - テストの書き方の規則の一覧で、DC-226-15 の行の確認方法が、段階 2 の検査と合うことを確認する
   - 結果：一般の観点（汎用 2 回）と、重要な観点（テストと検査を弱めていないか、ファイルをまたぐ影響。高性能と汎用）で、高 4 件、必須 7 件（重複を除く）。
-    - 修正した（a9d9adf5）：テストの補助の違反の 2 回の報告、ジェネリクスのカンマでの宣言の見逃し、ボタンの名前の引用符のキーと最上位の `|` を持つ正規表現、タイムアウトの項目（`actionTimeout` など）と `setDefaultTimeout` などの見逃し、`check-frontend.sh` の一覧の一致の確認、検査の一覧のコメント、古い説明。第 4 節の「E2E」の定義を、振り分けの関数と同じ `e2e/` の下の全ての TypeScript に直した。
+    - 修正した（a9d9adf5）：テストの補助の違反を 2 回報告する不具合、ジェネリクスのカンマでの宣言の見逃し、ボタンの名前の引用符のキーと最上位の `|` を持つ正規表現、タイムアウトの項目（`actionTimeout` など）と `setDefaultTimeout` などの見逃し、`check-frontend.sh` の一覧の一致の確認、検査の一覧のコメント、古い説明。第 4 節の「E2E」の定義を、振り分けの関数と同じ `e2e/` の下の全ての TypeScript に直した。
     - 限界を明記した：番号の検査は、`.tsx` の JSX の文字の中の `'`・`"`・`//` を読み違える（`keepTsComments` の TSDoc と CI の検査の文書）。
-    - 修正しない：入れ子の `test/` のファイルを番号の検査がコメントだけで読む扱い。#225 のテストの補助の定義に当たるため
+    - 修正しない：番号の検査が、入れ子の `test/` のファイルをコメントだけを対象にして検査する扱い。#225 のテストの補助の定義に当たるため
 
 ### 段階 3：E2E の補助とスロットの解除
 
@@ -265,7 +265,7 @@ tasks は第 6 節の決定に基づく。
   - 対象は、URL を受け取る補助（`loginAdmin`、`loginStore`、`emptyCart`、`addToCart`、`orderCart`、`notifyCarrier`）だけとする。その補助の他の省略できる引数（遷移先のパス、氏名など）も同じオプションに入れる。URL を受け取らない補助（`fillShipping` など）は変えない。補助の TSDoc の `@param` を修正する
   - 修正の前に E2E の全体を 1 回実行して所要時間を記録し、T226-04-01 で比べる（DN-226-3）
   - 確認方法：`scripts/dev/check-frontend.sh`（E2E の lint と型チェック）と E2E の全体が通ること。撮影の呼び出しに `{}` がないこと（`git grep` で確認する）
-  - 結果：修正の前の E2E の全体は 20 件が通り、154 秒（Playwright の実行は 1.9 分）。修正の後は 20 件が通り、129 秒（1.6 分）。補助の新しい形：`loginAdmin(page, account, { path, adminUrl })`、`loginStore(page, account, { returnTo, storeUrl })`、`emptyCart(page, { storeUrl })`、`addToCart(page, productId, { quantity, option, storeUrl })`、`orderCart(page, { storeUrl, name })`（どれも項目は省ける）。撮影は空のオプションを渡さず、`{ storeUrl: STORE }` などの必要な項目だけを渡す。`git grep` で `{}` の呼び出しがないことを確認した。撮影の実行（`pnpm capture`）はスロット 0 だけで対応するため流さず、`check-frontend.sh` の E2E の型チェックと lint で確認した
+  - 結果：修正の前の E2E の全体は 20 件が通り、154 秒（Playwright の実行は 1.9 分）。修正の後は 20 件が通り、129 秒（1.6 分）。補助の新しい形：`loginAdmin(page, account, { path, adminUrl })`、`loginStore(page, account, { returnTo, storeUrl })`、`emptyCart(page, { storeUrl })`、`addToCart(page, productId, { quantity, option, storeUrl })`、`orderCart(page, { storeUrl, name })`（どれも項目は省ける）。撮影は空のオプションを渡さず、`{ storeUrl: STORE }` などの必要な項目だけを渡す。`git grep` で `{}` の呼び出しがないことを確認した。撮影の実行（`pnpm capture`）はスロット 0 だけが対象のため実行せず、`check-frontend.sh` の E2E の型チェックと lint で確認した
 - [x] **T226-03-02** [テスト] Windows 以外で、停止したプロセスの終了を上限まで待つ（DC-226-21、22）。
   - 依存：なし
   - 範囲：`scripts/dev/lib/port-stop.mjs`、`scripts/dev/lib/port-stop.test.mjs`
@@ -273,7 +273,7 @@ tasks は第 6 節の決定に基づく。
   - 「Windows 以外では SIGKILL を送るだけ」を確認する今のテストと、`stopListeners` の TSDoc を修正する
   - このマシン（Windows）では Windows 以外の実際の停止を確認できない。テストは指令の実行を差し替えて確認し、CI（Linux）で script のテストが通ることを確認する
   - 確認方法：テストで、Windows 以外で、終了を確認したら上限より前に戻ること、上限を過ぎたら待つのをやめて先へ進むこと（例外を投げない）、Windows の振る舞いが変わらないことを確認する
-  - 結果：`port-stop.mjs` に `STOP_WAIT_MS`（30 秒。Windows の `Wait-Process -Timeout` と共有）を加え、Windows 以外は SIGKILL を送った後、`kill(pid, 0)` を 100 ミリ秒おきに、全てのプロセスが終わるか上限を過ぎるまで繰り返す（権限がなく問い合わせられない EPERM は生きているとみなす。上限を過ぎても例外を投げない）。`stopListeners` の差し替えの項目に `now`・`sleep` を加えた（省いた項目は実際のものを使う）。テストを先に書き、`node --test` で 32 件中 4 件の失敗（レッド）を確認してから実装し、32 件が通った（Windows 以外の 4 件を加え、SIGKILL だけを確認していた 1 件を置き換えた。Windows の 1 件は定数の共有を確認する）。Windows 以外の実際の停止はこのマシンで確認できないため、差し替えで確認し、CI（Linux）での script のテストの実行に任せる
+  - 結果：`port-stop.mjs` に `STOP_WAIT_MS`（30 秒。Windows の `Wait-Process -Timeout` と共有）を追加した。Windows 以外は SIGKILL を送った後、`kill(pid, 0)` を 100 ミリ秒おきに、全てのプロセスが終わるか上限を過ぎるまで繰り返す（権限がなく問い合わせられない EPERM は生きているとみなす。上限を過ぎても例外を投げない）。`stopListeners` の差し替えの項目に `now`・`sleep` を追加した（省いた項目は実際のものを使う）。テストを先に書き、`node --test` で 32 件中 4 件の失敗（レッド）を確認してから実装し、32 件が通った（Windows 以外の 4 件を加え、SIGKILL だけを確認していた 1 件を置き換えた。Windows の 1 件は定数の共有を確認する）。Windows 以外の実際の停止はこのマシンで確認できないため、差し替えで確認し、CI（Linux）での script のテストの実行に任せる
 - [x] **T226-03-03** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T226-03-01、02
   - 結果：一般の観点（汎用 2 回）と、重要な観点（テストを弱めていないか、ファイルをまたぐ影響と安定性。高性能と汎用）で、高 0 件、必須 1 件。URL を変えられる補助 `notifyCarrier` が、URL を位置引数で受け取っていた（DC-226-19）。第 3 節の 8 と T226-03-01 の対象に加え、オプションで受け取る形にした

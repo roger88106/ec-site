@@ -4,7 +4,8 @@
 //   型だけの名前（interface・type）は、値の名前をシャドーイングしないので入れない。
 // - 宣言のファイルは、TypeScript のネイティブの実装（7 系）では、typescript のパッケージでなく、プラットフォームごとのパッケージ
 //   （@typescript/typescript-<OS>-<CPU>）の lib/ にある。typescript の getExePath が返す実行ファイルと同じディレクトリを読む。
-// - 起点の lib は、フロントの tsconfig の lib（dom、dom.iterable、esnext）に合わせ、/// <reference lib="…" /> をたどる。
+// - 起点の lib は、店舗画面・共有の tsconfig の lib（esnext、dom、dom.iterable）に dom.asynciterable を加えた範囲にし、/// <reference lib="…" /> をたどる。
+//   管理画面と E2E の lib（ES2023、DOM）は、この範囲に含まれる。
 // 使い方（リポジトリのルートで。pnpm install の後）：
 //   node scripts/ci/globals/lib-globals.mjs --write   一覧を書き直す（TypeScript を上げたとき）
 //   node scripts/ci/globals/lib-globals.mjs           一覧が今の lib と一致するかを確認する（違えば失敗）
@@ -22,7 +23,7 @@ export const LIST_FILE = path.join(import.meta.dirname, 'lib-globals.json')
 /** typescript を読み込む基準のパッケージ（フロントの TypeScript を入れるパッケージ） */
 const PACKAGE_JSON = 'frontend/shared/package.json'
 
-/** 起点の lib（フロントの tsconfig の lib に合わせる） */
+/** 起点の lib（店舗画面・共有の tsconfig の lib（esnext、dom、dom.iterable）に dom.asynciterable を加えた範囲。管理画面と E2E の lib（ES2023、DOM）を含む） */
 const ENTRY_LIBS = ['esnext', 'dom', 'dom.iterable', 'dom.asynciterable']
 
 /** 最上位の値の宣言（行の頭から始まるもの。入れ子の中は字下げされているので読まない） */

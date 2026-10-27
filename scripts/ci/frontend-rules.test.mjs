@@ -668,6 +668,23 @@ describe('E2E の書き方の検査', () => {
     assert.deepEqual(lines(findPositionSelectors(text)), [1, 2, 3, 4, 6])
   })
 
+  test('locator の文字列のセレクターの中の位置（nth=、:nth-match(、:nth-child(、:first-child、:last-child）を見つける', () => {
+    const text = [
+      "await page.locator('tr >> nth=0').click()",
+      'await page.locator("li:nth-match(:visible, 2)").click()',
+      "await page.locator('ul > li:nth-child(2)').click()",
+      "await page.locator('li:first-child').click()",
+      "await page.locator('li:last-child').click()",
+      "await page.getByRole('row').locator('td:first-child').click()",
+      "await page.locator('table', { has: page.locator('li:nth-child(3)') }).click()",
+      "await page.locator('li').click()",
+      "test('li:first-child は使わない', () => {})",
+      "// page.locator('li:first-child')",
+      "const message = 'li:last-child'",
+    ].join('\n')
+    assert.deepEqual(lines(findPositionSelectors(text)), [1, 2, 3, 4, 5, 6, 7])
+  })
+
   test('networkidle で待つ箇所を見つける（コメントの中は除く）', () => {
     const text = [
       "await page.goto(url, { waitUntil: 'networkidle' })",
@@ -731,6 +748,17 @@ describe('E2E の書き方の検査', () => {
     assert.deepEqual(lines(findButtonNameChecks(text)), [1, 5])
   })
 
+  test('オプションに展開（...）を含み、name が読めないときは見つける。name が読めれば展開があっても判定する', () => {
+    const text = [
+      "await page.getByRole('button', { ...opts }).click()",
+      "await page.getByRole('button', { ...opts, exact: true }).click()",
+      "await page.getByRole('button', { ...opts, name: '保存', exact: true }).click()",
+      "await page.getByRole('button', { name: '保存', ...opts }).click()",
+      "await page.getByRole('button', { ...opts, name: /^保存$/ }).click()",
+    ].join('\n')
+    assert.deepEqual(lines(findButtonNameChecks(text)), [1, 2, 4])
+  })
+
   test('ボタン以外の役割と、名前で探さない呼び出しと、コメントと文字列の中は見つけない', () => {
     const text = [
       "await page.getByRole('cell', { name: '2,200 円' }).click()",
@@ -780,6 +808,18 @@ describe('E2E の書き方の検査', () => {
       "{ message: 'x', 'intervals': [100] }",
     ].join('\n')
     assert.deepEqual(lines(findTimeoutLiterals(text)), [1, 2, 3, 4, 5, 6, 9])
+  })
+
+  test('型の注釈つきのデフォルト引数と、三項演算子の timeout は項目として見つけない', () => {
+    const text = [
+      'function wait(timeout: number = 5000) {}',
+      'const wait2 = (page: Page, timeout: number = 5_000) => timeout',
+      'async function poll(options: { timeout?: number }, actionTimeout: number = 100) {}',
+      'const value = ok ? timeout : 5000',
+      'const value2 = ok ? actionTimeout : 5 * 1000',
+      'await expect(x).toBeVisible({ timeout: ok ? ASYNC_TIMEOUT : 5000 })',
+    ].join('\n')
+    assert.deepEqual(lines(findTimeoutLiterals(text)), [6])
   })
 
   test('文字列の中の引用符つきのキーの形は見つけない', () => {
@@ -864,6 +904,16 @@ describe('組み込みの名前をシャドーイングする const・let の検
     assert.deepEqual(found(text), ['1:status', '2:name', '3:alert', '4:Set', '5:cookieStore', '6:status'])
   })
 
+  test('型引数を持つ矢印関数（= の直後の <）の後ろの宣言も見つける。= の後ろの比較は取り違えない', () => {
+    const text = [
+      'const f = <T,>(a: T) => a, alert = 1',
+      'const g = <T, U>(a: T, b: U) => a, status = 2',
+      'const h = (<T,>(a: T) => a), name = 3',
+      'const lt = a < b, Set = 1',
+    ].join('\n')
+    assert.deepEqual(found(text), ['1:alert', '2:status', '3:name', '4:Set'])
+  })
+
   test('関数の引数、catch の変数、関数・クラスの宣言、import は対象外', () => {
     const text = [
       'function check(status) {}',
@@ -936,6 +986,55 @@ describe('テストの間の空行の検査', () => {
     assert.deepEqual(lines(findMissingTestSpacing(text)), [4, 6, 8, 10, 12])
   })
 
+  test('1 行で閉じるテストの直後に、空行なしで続くテストも見つける。1 行のテストが続いても同じ', () => {
+    const text = [
+      'test("a", () => {})',
+      'test("b", () => {})',
+      '',
+      'it("c", async () => { await run() });',
+      'test.each([1, 2])("d %s", (n) => {})',
+      'test("e", () => {})',
+      '',
+      'const user = userEvent.setup()',
+      'test("f", () => {})',
+    ].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(text)), [2, 5, 6])
+  })
+
+  test('test.beforeEach・test.use・test.step・test.info などのテストでない呼び出しは見つけない', () => {
+    const text = [
+      'test("a", () => {',
+      '})',
+      '',
+      'test.beforeEach(() => {',
+      '})',
+      'test.use({ locale: "ja" })',
+      'test.afterAll(async () => {',
+      '})',
+      'test.step("s", async () => {',
+      '})',
+      'test.info().annotations.push({ type: "x" })',
+      'test.describe.configure({ mode: "serial" })',
+      'test.setTimeout(1000)',
+    ].join('\n')
+    assert.deepEqual(findMissingTestSpacing(text), [])
+  })
+
+  test('test.describe.serial・test.skip・test.todo・test.concurrent などのテスト・グループの形は見つける', () => {
+    const text = [
+      'test("a", () => {})',
+      'test.describe.serial("b", () => {',
+      '})',
+      'test.skip("c", () => {',
+      '})',
+      'test.todo("d")',
+      'test.concurrent("e", () => {})',
+      'test.fail("f", () => {})',
+      'test.describe.parallel("g", () => {})',
+    ].join('\n')
+    assert.deepEqual(lines(findMissingTestSpacing(text)), [2, 4, 6, 7, 8, 9])
+  })
+
   test('閉じる行が }, 30_000) や }); の形でも見つける', () => {
     const text = ['test("a", async () => {', '}, 30_000)', 'test("b", () => {', '});', 'test("c", () => {', '})'].join('\n')
     assert.deepEqual(lines(findMissingTestSpacing(text)), [3, 5])
@@ -955,7 +1054,7 @@ describe('テストの間の空行の検査', () => {
     assert.deepEqual(findMissingTestSpacing(spaced), [])
   })
 
-  test('}) の後がテストでない行、テストの前が } の行でない箇所は見つけない', () => {
+  test('テストでない呼び出しの直後と、テストの前がテストの閉じでない箇所は見つけない（hook の閉じの直後と、1 行のテストの直後のテストは見つける）', () => {
     const text = [
       'beforeEach(() => {',
       '})',
@@ -971,7 +1070,7 @@ describe('テストの間の空行の検査', () => {
       'await test.step("t", async () => {',
       '})',
     ].join('\n')
-    assert.deepEqual(lines(findMissingTestSpacing(text)), [3])
+    assert.deepEqual(lines(findMissingTestSpacing(text)), [3, 9])
   })
 
   test('文字列とコメントの中の }) と test( は見つけない', () => {

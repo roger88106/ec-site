@@ -5,10 +5,12 @@
 | 項目 | 内容 |
 |------|------|
 | レベル | B（業務の規則は「同じ注文に同じ種類のメールは 1 通」だけで、集約に守らせる不変条件がない） |
-| 依存 | 注文（イベントだけ。注文の API は呼ばない ※1） |
+| 依存 | 注文（イベントだけ。注文の API は呼ばない ※1）、出荷（公開 API の「配送業者の表示名のキーを返す」操作だけ ※2） |
 | 関連 spec | [009](../../specs/archive/mvp/009-shipping)、[011](../../specs/archive/mvp/011-dev-foundation)、[017](../../specs/archive/mvp/017-stability)、[155](../../specs/archive/1to10/155-backend-structure) |
 
 ※1：メールに必要な値（宛先、注文番号、配送業者、送り状番号）は、イベント「注文の出荷」に載っている。
+
+※2：配送業者の表示名は出荷モジュールが決めるので、文言のキーを文字列で組み立てずに、出荷モジュールの公開 API から得る。port（`CarrierNameDirectory`）を application に置き、`infrastructure/directory/` の実装が公開 API を呼ぶ。
 
 ## 出荷通知メール
 

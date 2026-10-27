@@ -25,7 +25,11 @@ class ShipmentMailComposerTest {
         messageSource.setBasename("messages");
         messageSource.setDefaultEncoding("UTF-8");
         messageSource.setFallbackToSystemLocale(false);
-        composer = new ShipmentMailComposer(new MessageHelper(messageSource));
+        composer = new ShipmentMailComposer(new MessageHelper(messageSource), carrier -> switch (carrier) {
+            case YAMATO -> "ecsite.shipping.carrier.yamato";
+            case SAGAWA -> "ecsite.shipping.carrier.sagawa";
+            case JAPAN_POST -> "ecsite.shipping.carrier.japan_post";
+        });
     }
 
     @Test

@@ -23,7 +23,6 @@ import org.springframework.web.servlet.support.ServletUriComponentsBuilder;
 
 import java.nio.charset.StandardCharsets;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.UUID;
 
@@ -130,8 +129,7 @@ class MockCarrierController {
      * 配送業者の表示の名前を、出荷モジュールのメッセージから取る。通知のメールも同じキーを使う。
      */
     private String carrierName(Carrier carrier) {
-        return messageHelper.getMessage("ecsite.shipping.carrier." + carrier.name().toLowerCase(Locale.ROOT),
-                Map.of());
+        return messageHelper.getMessage(carrier.nameMessageKey(), Map.of());
     }
 
     /**

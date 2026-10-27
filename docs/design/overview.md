@@ -32,6 +32,7 @@ flowchart LR
     catalog --> media
     catalog --> tax
     notification --> order
+    notification --> shipping
     order --> cart
     order --> catalog
     order --> inventory

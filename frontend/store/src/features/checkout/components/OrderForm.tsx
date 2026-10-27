@@ -191,27 +191,26 @@ export function OrderFormView({
 
 // ============================== 部品 ==============================
 
-/** 欄の並び（画面の順）。誤りの欄のうち最初のものを探すのに使う */
-const FIELD_ORDER: readonly OrderField[] = ['name', 'postalCode', 'prefecture', 'municipality', 'address', 'phone']
-
 /**
- * 送信の結果を受けたとき、選べる誤りの欄のうち画面の順で最初の欄へフォーカスを移す。<br />
- * 選べない（無効の）欄は飛ばし、欄の誤りがなければ移さない。結果が変わったときだけ動くので、
+ * 送信の結果を受けたとき、無効でない誤りの欄のうち画面の順で最初の欄へフォーカスを移す。<br />
+ * 誤りの欄は、`aria-invalid="true"` を持つ要素（{@link Field} が付ける）を DOM の順にたどって探す。
+ * 無効の欄は飛ばし、欄の誤りがなければ移さない。結果のオブジェクトが変わったときだけフォーカスを移すので、
  * 結果の後に欄を入力しても移し直さない。サーバーアクションの結果は送信のたびに新しいオブジェクトになるため、
- * 同じ誤りで再び失敗したときも動く。
+ * 同じ誤りで再び失敗したときも移す。
  *
  * @param formRef フォームの要素
  * @param result  注文のサーバーアクションの結果（送る前は null）
  */
 function useFocusFirstErrorField(formRef: RefObject<HTMLFormElement | null>, result: ActionResult | null) {
   useEffect(() => {
-    const { fields } = placeOrderErrors(result)
-    for (const field of FIELD_ORDER) {
-      if (!fields[field]) {
-        continue
-      }
-      const control = formRef.current?.querySelector<HTMLInputElement | HTMLSelectElement>(`#${field}`)
-      if (control && !control.disabled) {
+    if (result === null) {
+      return
+    }
+    const invalidControls = formRef.current?.querySelectorAll<HTMLInputElement | HTMLSelectElement>(
+      '[aria-invalid="true"]',
+    )
+    for (const control of invalidControls ?? []) {
+      if (!control.disabled) {
         control.focus()
         return
       }

@@ -86,12 +86,13 @@ describe('カートに入れる（ゲスト）', () => {
 
   test('NFR-227-1 カートを作る API が失敗したら、通信の失敗を返し、ログに API の状態コードを出す', async () => {
     const stderr = recordStderr()
+    // POST /carts は store.yaml に 201 しか定義がないので、500 の応答は型のない msw のハンドラーで作る
     server.use(mswHttp.post(`${STORE_API}/carts`, () => HttpResponse.json({ message: 'down' }, { status: 500 })))
 
     expect(await addToCart(null, addForm())).toEqual({ ok: false, message: connectionFailedMessage() })
 
     expect(stderr.entries().filter((entry) => entry.level === 'error')).toEqual([
-      expect.objectContaining({ errorName: 'ApiError', statusCode: 500 }),
+      expect.objectContaining({ errorName: 'ApiError', status: 500 }),
     ])
   })
 

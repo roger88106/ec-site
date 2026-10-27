@@ -81,9 +81,7 @@ describe('サーバーアクションの処理の包み', () => {
 
     expect(result).toEqual({ ok: false, message: connectionFailedMessage() })
     expect(stderr.text()).not.toContain('3f2b8c1e')
-    expect(stderr.entries()).toEqual([
-      expect.objectContaining({ level: 'error', errorName: 'ApiError', statusCode: 502 }),
-    ])
+    expect(stderr.entries()).toEqual([expect.objectContaining({ level: 'error', errorName: 'ApiError', status: 502 })])
   })
 
   test('NFR-227-1 状態コードを持たない例外では、状態コードの項目を null にする', async () => {
@@ -93,7 +91,7 @@ describe('サーバーアクションの処理の包み', () => {
       throw new TypeError('fetch failed')
     })
 
-    expect(stderr.entries()).toEqual([expect.objectContaining({ level: 'error', statusCode: null })])
+    expect(stderr.entries()).toEqual([expect.objectContaining({ level: 'error', status: null })])
   })
 
   test('予期しない例外も、失敗の結果にする（画面を壊さない）', async () => {

@@ -26,7 +26,7 @@ export async function withActionResult<T>(work: () => Promise<T>): Promise<T | E
       causeName: cause instanceof Error ? cause.name : null,
       causeCode: typeof causeCode === 'string' ? causeCode : null,
       // API の失敗の例外なら、その状態コード（識別子ではないので出してよい）
-      statusCode: error instanceof ApiError ? error.status : null,
+      status: error instanceof ApiError ? error.status : null,
     })
     return { ok: false, message: connectionFailedMessage() }
   }

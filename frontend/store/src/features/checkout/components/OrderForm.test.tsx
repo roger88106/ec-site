@@ -336,7 +336,7 @@ describe('郵便番号で補う', () => {
 })
 
 describe('送信が失敗したとき、誤りの欄へフォーカスを移す', () => {
-  /** 複数の項目に誤りがある、入力の検証の誤り（400）の結果 */
+  /** 複数の欄に誤りがある、入力の検証の失敗（400）の結果 */
   function fieldErrors(...paths: string[]): ActionResult {
     return {
       ok: false,
@@ -352,6 +352,14 @@ describe('送信が失敗したとき、誤りの欄へフォーカスを移す'
     rerender(form(fieldErrors('shippingAddress.phone', 'shippingAddress.postalCode', 'shippingAddress.address')))
 
     expect(screen.getByLabelText('郵便番号')).toHaveFocus()
+  })
+
+  test('AC-227-1 都道府県を含む誤りでも、画面の順で最初の欄（都道府県）へ移る', () => {
+    const { rerender } = renderInBrowser(form())
+
+    rerender(form(fieldErrors('shippingAddress.phone', 'shippingAddress.prefectureCode')))
+
+    expect(screen.getByLabelText('都道府県')).toHaveFocus()
   })
 
   test('AC-227-1 欄に対応するエラーコードの業務のエラーでも、その欄へ移る', () => {
@@ -399,13 +407,23 @@ describe('送信が失敗したとき、誤りの欄へフォーカスを移す'
     expect(screen.getByLabelText('住所')).toHaveFocus()
   })
 
-  test('AC-227-5 同じ誤りで再び失敗したときも、最初の欄へ移る', async () => {
+  test('AC-227-4 結果を受けた後に都道府県を選んでも、フォーカスを移し直さない', async () => {
+    const { user, rerender } = renderInBrowser(form())
+    rerender(form(fieldErrors('shippingAddress.name', 'shippingAddress.phone')))
+    expect(screen.getByLabelText('氏名')).toHaveFocus()
+
+    await user.selectOptions(screen.getByLabelText('都道府県'), '13')
+
+    expect(screen.getByLabelText('都道府県')).toHaveFocus()
+  })
+
+  test('AC-227-5同じ誤りで再び失敗したときも、最初の欄へ移る', async () => {
     const { user, rerender } = renderInBrowser(form())
     rerender(form(fieldErrors('shippingAddress.name', 'shippingAddress.phone')))
     await user.type(screen.getByLabelText('電話番号'), '0312345678')
     expect(screen.getByLabelText('電話番号')).toHaveFocus()
 
-    // 同じ内容でも、送信のたびに結果は新しいオブジェクトで届く
+    // 同じ内容でも、送信のたびに、結果は新しいオブジェクトになる
     rerender(form(fieldErrors('shippingAddress.name', 'shippingAddress.phone')))
 
     expect(screen.getByLabelText('氏名')).toHaveFocus()

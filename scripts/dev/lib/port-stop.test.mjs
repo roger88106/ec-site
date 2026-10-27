@@ -1,7 +1,30 @@
 // port-stop.mjs のテスト（node --test scripts/dev/lib/port-stop.test.mjs）
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findListeners, parseListeners, portBusyMessage, queryFailedMessage, stopFailedMessage, stopListeners, stoppedMessage } from './port-stop.mjs'
+import {
+  findListeners,
+  parseListeners,
+  portBusyMessage,
+  queryFailedMessage,
+  STOP_WAIT_MS,
+  stopFailedMessage,
+  stopListeners,
+  stoppedMessage,
+} from './port-stop.mjs'
+
+/** 時計と待ちの代わり。待ちが進めた分だけ時計が進み、実際には待たない */
+function fakeClock() {
+  let time = 0
+  return {
+    deps: {
+      now: () => time,
+      sleep: (ms) => {
+        time += ms
+      },
+    },
+    elapsed: () => time,
+  }
+}
 
 /** spawnSync の代わり。呼ばれた指令と引数を記録し、決めた出力を返す */
 function fakeSpawnSync(stdout = '') {
@@ -152,18 +175,117 @@ describe('待ち受けるプロセスの停止', () => {
     assert.deepEqual(kills, [])
   })
 
-  test('Windows 以外では、プロセスごとに 1 回だけ SIGKILL を送る', () => {
+  test('Windows 以外では、プロセスごとに 1 回だけ SIGKILL を送り、終了を確認したら上限より前に戻る', () => {
     const { calls, spawnSync } = fakeSpawnSync()
+    const clock = fakeClock()
     const kills = []
+    // SIGKILL の後、生存の問い合わせ（シグナル 0）が 2 回は生きていると答え、3 回目に終わっている（ESRCH）
+    let probes = 0
+    const kill = (pid, signal) => {
+      kills.push([pid, signal])
+      if (signal === 0 && ++probes > 2) throw Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' })
+    }
     stopListeners(
       [
         { port: 18080, pid: 1234 },
         { port: 19080, pid: 1234 },
       ],
-      { platform: 'linux', spawnSync, kill: (pid, signal) => kills.push([pid, signal]) },
+      { platform: 'linux', spawnSync, kill, ...clock.deps },
     )
-    assert.deepEqual(kills, [[1234, 'SIGKILL']])
+    assert.deepEqual(
+      kills.filter(([, signal]) => signal === 'SIGKILL'),
+      [[1234, 'SIGKILL']],
+    )
+    assert.equal(probes, 3)
+    assert.ok(clock.elapsed() < STOP_WAIT_MS)
     assert.deepEqual(calls, [])
+  })
+
+  test('Windows 以外では、複数のプロセスのすべてが終わるまで待つ', () => {
+    const clock = fakeClock()
+    // 1 つ目は初めから終わっていて、2 つ目は 1 秒後に終わる
+    const alive = new Set([2])
+    const kill = (pid, signal) => {
+      if (signal === 0 && !alive.has(pid)) throw Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' })
+    }
+    const sleep = (ms) => {
+      clock.deps.sleep(ms)
+      if (clock.elapsed() >= 1000) alive.delete(2)
+    }
+    stopListeners(
+      [
+        { port: 18080, pid: 1 },
+        { port: 19080, pid: 2 },
+      ],
+      { platform: 'linux', spawnSync: () => ({}), kill, now: clock.deps.now, sleep },
+    )
+    assert.equal(alive.size, 0)
+    assert.ok(clock.elapsed() >= 1000)
+    assert.ok(clock.elapsed() < STOP_WAIT_MS)
+  })
+
+  test('Windows 以外では、上限を過ぎても終わらなければ、待つのをやめて例外を投げずに先へ進む', () => {
+    const clock = fakeClock()
+    const kill = () => {}
+    assert.doesNotThrow(() => stopListeners([{ port: 18080, pid: 1234 }], { platform: 'linux', spawnSync: () => ({}), kill, ...clock.deps }))
+    assert.ok(clock.elapsed() >= STOP_WAIT_MS)
+    assert.ok(clock.elapsed() < STOP_WAIT_MS + 1000)
+  })
+
+  test('Windows 以外では、権限がなく問い合わせられない（EPERM）プロセスは、生きているとみなして待つ', () => {
+    const clock = fakeClock()
+    const kill = (_pid, signal) => {
+      if (signal === 0) throw Object.assign(new Error('kill EPERM'), { code: 'EPERM' })
+    }
+    stopListeners([{ port: 18080, pid: 1234 }], { platform: 'linux', spawnSync: () => ({}), kill, ...clock.deps })
+    assert.ok(clock.elapsed() >= STOP_WAIT_MS)
+  })
+
+  test('Windows 以外では、SIGKILL が EPERM で失敗した（止められない）プロセスは待たず、ほかのプロセスだけを待つ', () => {
+    const clock = fakeClock()
+    const probes = []
+    const kill = (pid, signal) => {
+      if (signal === 'SIGKILL' && pid === 1) throw Object.assign(new Error('kill EPERM'), { code: 'EPERM' })
+      if (signal === 0) {
+        probes.push(pid)
+        if (pid === 2) throw Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' })
+        throw Object.assign(new Error('kill EPERM'), { code: 'EPERM' })
+      }
+    }
+    stopListeners(
+      [
+        { port: 18080, pid: 1 },
+        { port: 19080, pid: 2 },
+      ],
+      { platform: 'linux', spawnSync: () => ({}), kill, ...clock.deps },
+    )
+    assert.deepEqual(probes, [2])
+    assert.ok(clock.elapsed() < STOP_WAIT_MS)
+  })
+
+  test('Windows 以外では、SIGKILL が ESRCH で失敗した（すでに終わっている）プロセスは、今までどおり生存を確かめる', () => {
+    const clock = fakeClock()
+    const probes = []
+    const kill = (pid, signal) => {
+      if (signal === 'SIGKILL') throw Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' })
+      probes.push(pid)
+      throw Object.assign(new Error('kill ESRCH'), { code: 'ESRCH' })
+    }
+    stopListeners([{ port: 18080, pid: 1 }], { platform: 'linux', spawnSync: () => ({}), kill, ...clock.deps })
+    assert.deepEqual(probes, [1])
+  })
+
+  test('Windows では、時計と待ちを使わず、Wait-Process の上限に共有の定数を使う', () => {
+    const { calls, spawnSync } = fakeSpawnSync()
+    const deps = {
+      platform: 'win32',
+      spawnSync,
+      kill: () => assert.fail('Windows では kill を使わない'),
+      now: () => assert.fail('Windows では時計を使わない'),
+      sleep: () => assert.fail('Windows では待ちを使わない'),
+    }
+    stopListeners([{ port: 18080, pid: 1234 }], deps)
+    assert.match(calls.at(-1)[1].at(-1), new RegExp(`Wait-Process -Id 1234 -Timeout ${STOP_WAIT_MS / 1000} `))
   })
 
   test('すでに終わっていて kill が失敗しても、例外を投げない', () => {

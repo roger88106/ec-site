@@ -25,8 +25,8 @@ import {
 // スロット（scripts/dev/slot.mjs env）の環境変数を shell に export したまま流すと、バックエンドがスロットの DB とバケットにつながる。
 // E2E は常にスロット 0 の固定の環境で流すので、スロットが付ける環境変数は引き継がない
 const droppedEnv = slotEnvNames().filter((name) => name in process.env)
-for (const name of droppedEnv) {
-  delete process.env[name]
+for (const envName of droppedEnv) {
+  delete process.env[envName]
 }
 if (droppedEnv.length > 0) {
   console.error(`スロットの環境変数を除いて流す：${droppedEnv.join('、')}`)
@@ -103,14 +103,14 @@ process.on('exit', releaseLock)
 // 2 回目の信号では待たずに終了する（'exit' でロックを削除する）
 const stopping = stopOnSignals({ current: () => runningChild })
 
-let status = 0
+let exitCode = 0
 for (const step of STEPS) {
-  status = await runStep(step)
+  exitCode = await runStep(step)
   if (stopping.isStopping()) {
-    status = 1
+    exitCode = 1
   }
-  if (status !== 0) {
+  if (exitCode !== 0) {
     break
   }
 }
-process.exit(status)
+process.exit(exitCode)

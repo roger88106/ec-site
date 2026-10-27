@@ -17,8 +17,8 @@ describe('起動時の設定の確認', () => {
     })
     stderr = recordStderr()
     vi.stubEnv('NEXT_RUNTIME', 'nodejs')
-    for (const [name, value] of Object.entries(PRODUCTION_ENV)) {
-      vi.stubEnv(name, value)
+    for (const [envName, value] of Object.entries(PRODUCTION_ENV)) {
+      vi.stubEnv(envName, value)
     }
   })
 

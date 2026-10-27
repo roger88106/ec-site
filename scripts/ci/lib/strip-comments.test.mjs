@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { keepJavaComments, stripComments, stripJavaComments } from './strip-comments.mjs'
+import { keepJavaComments, keepTsComments, stripComments, stripJavaComments } from './strip-comments.mjs'
 
 describe('コメントの除去', () => {
   test('行コメントとブロックコメントを空白にし、行の数を変えない', () => {
@@ -106,6 +106,49 @@ describe('Java のコメントだけを残す', () => {
   test('長さと行ごとの長さが元と同じ（行番号が変わらない）', () => {
     const text = 'a /* x\ny */ b // z\n"//w" c'
     const kept = keepJavaComments(text)
+    assert.equal(kept.length, text.length)
+    assert.deepEqual(
+      kept.split('\n').map((line) => line.length),
+      text.split('\n').map((line) => line.length),
+    )
+  })
+})
+
+describe('TypeScript のコメントだけを残す', () => {
+  test('行のコメント、ブロックのコメント、TSDoc を残し、コードを空白にする', () => {
+    const text = ['/** 説明 */', 'const a = 1 /* 注 */', 'const b = 2 // 後ろ'].join('\n')
+    assert.equal(keepTsComments(text), ['/** 説明 */', '            /* 注 */', '            // 後ろ'].join('\n'))
+  })
+
+  test('文字列（テスト名、test.step の名前）の中の番号と //、/* を残さない', () => {
+    const text = ["test('AC-12 注文できる', async () => {", "  await test.step('T186-04-05 // 手順 /* 1 */', async () => {})", '}) // 後ろ'].join('\n')
+    const kept = keepTsComments(text)
+    assert.equal(kept.includes('AC-12'), false)
+    assert.equal(kept.includes('T186'), false)
+    assert.equal(kept.includes('後ろ'), true)
+  })
+
+  test('テンプレート文字列の文字の部分と、${...} の中のコードを残さない。${...} の中のコメントは残す', () => {
+    const text = ['const a = `AC-12 // ${b} spec 3`', 'const c = `x${d /* DC-5 */}y` // 後ろ'].join('\n')
+    const kept = keepTsComments(text)
+    assert.equal(kept.includes('AC-12'), false)
+    assert.equal(kept.includes('spec 3'), false)
+    assert.equal(kept.includes('DC-5'), true)
+    assert.equal(kept.includes('後ろ'), true)
+  })
+
+  test('正規表現のリテラルの中の番号と // を残さない', () => {
+    const text = ['await expect(page).toHaveURL(/AC-12\\/\\/x/) // 後ろ', 'const re = /T186-04-05|spec 7/'].join('\n')
+    const kept = keepTsComments(text)
+    assert.equal(kept.includes('AC-12'), false)
+    assert.equal(kept.includes('T186'), false)
+    assert.equal(kept.includes('spec 7'), false)
+    assert.equal(kept.includes('後ろ'), true)
+  })
+
+  test('長さと行ごとの長さが元と同じ（行番号が変わらない）', () => {
+    const text = 'const a = `x\n${b}` // 後ろ\nconst c = /y/ /* 注\n */'
+    const kept = keepTsComments(text)
     assert.equal(kept.length, text.length)
     assert.deepEqual(
       kept.split('\n').map((line) => line.length),

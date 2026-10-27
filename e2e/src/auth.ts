@@ -46,28 +46,38 @@ export async function submitIdpLogin(page: Page, account: Account): Promise<void
 }
 
 /**
- * 管理画面を開き、運営者としてログインする（管理画面は、開くと IdP のログインへ移る。AC-132）。
+ * 管理画面を開き、運営者としてログインする（管理画面は、開くと IdP のログインへ移る）。
  *
  * @param page 使うページ
  * @param account ログインする運営者のアカウント
- * @param path ログインの後に開く管理画面のパス
- * @param adminUrl 管理画面の URL（既定は E2E の管理画面）
+ * @param options 省けば既定の値を使う
+ * @param options.path ログインの後に開く管理画面のパス（既定は `/`）
+ * @param options.adminUrl 管理画面の URL（既定は E2E の管理画面）
  */
-export async function loginAdmin(page: Page, account: Account, path = '/', adminUrl = ADMIN_URL): Promise<void> {
+export async function loginAdmin(
+  page: Page,
+  account: Account,
+  { path = '/', adminUrl = ADMIN_URL }: { path?: string; adminUrl?: string } = {},
+): Promise<void> {
   await page.goto(`${adminUrl}${path}`)
   await submitIdpLogin(page, account)
   await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
 }
 
 /**
- * 店舗画面で会員としてログインする。ログインの後は returnTo の画面に戻る（AC-113）。
+ * 店舗画面で会員としてログインする。ログインの後は returnTo の画面に戻る。
  *
  * @param page 使うページ
  * @param account ログインする会員のアカウント
- * @param returnTo ログインの後に戻る店舗画面のパス
- * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
+ * @param options 省けば既定の値を使う
+ * @param options.returnTo ログインの後に戻る店舗画面のパス（既定は `/`）
+ * @param options.storeUrl 店舗画面の URL（既定は E2E の店舗画面）
  */
-export async function loginStore(page: Page, account: Account, returnTo = '/', storeUrl = STORE_URL): Promise<void> {
+export async function loginStore(
+  page: Page,
+  account: Account,
+  { returnTo = '/', storeUrl = STORE_URL }: { returnTo?: string; storeUrl?: string } = {},
+): Promise<void> {
   await page.goto(`${storeUrl}/login?returnTo=${encodeURIComponent(returnTo)}`)
   await submitIdpLogin(page, account)
   await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
@@ -83,7 +93,7 @@ export type MemberProfile = {
 
 /**
  * 店舗画面から会員登録する。IdP の会員登録の画面でメールアドレス・氏名・任意の属性を入れ、確認のメールのリンクでパスワードを設定する。
- * 同じブラウザーでリンクを開くので、ログインした状態で登録を始めた画面に戻る（AC-112）。
+ * 同じブラウザーでリンクを開くので、ログインした状態で登録を始めた画面に戻る。
  *
  * @param page 店舗画面（ヘッダーに「会員登録」のリンクがある画面）を開いているページ
  * @param account 登録するアカウント（パスワードは確認のメールのリンクで設定する）
@@ -133,7 +143,7 @@ export async function submitSignup(
 /**
  * 確認のメールのリンクを開き、IdP の画面でパスワードを決めて送る。送った後の画面は確認しない（呼ぶ側が確認する）。
  *
- * @param page 使うページ（登録を始めたのと同じブラウザーなら、ログインした状態で登録を始めた画面に戻る。AC-112）
+ * @param page 使うページ（登録を始めたのと同じブラウザーなら、ログインした状態で登録を始めた画面に戻る）
  * @param account 登録したアカウント（メールアドレスでメールを探し、パスワードを決める）
  */
 export async function setPasswordFromMail(page: Page, account: Account): Promise<void> {

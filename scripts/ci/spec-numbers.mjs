@@ -1,13 +1,15 @@
-// 本番のコードと、バックエンドのテストのコメントに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方 第 1 節）。
-// 規則は言葉で書き、spec との対応はテストの名前（@DisplayName）に書く。
+// 本番のコードと、テストのコメントに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方 第 1 節）。
+// 規則は言葉で書き、spec との対応はテストの名前（@DisplayName、test の名前）に書く。
 // - 本番のコード：行の全体を見る
 // - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）
-// 画面のテスト、生成物、適用済みのマイグレーションは見ない。
+// - フロントのテストとテストの補助（*.test.ts(x)、src/test/）と、E2E（e2e/ の下の全ての TypeScript）：コメントだけを見る（テスト名と test.step の名前などの文字列、テンプレート文字列、正規表現のリテラルは見ない）
+// 生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
-import { keepJavaComments } from './lib/strip-comments.mjs'
+import { keepJavaComments, keepTsComments } from './lib/strip-comments.mjs'
+import { E2E_FILE, FRONTEND_TEST, FRONTEND_TEST_SUPPORT } from './frontend-rules.mjs'
 
 /**
  * 本番のコードの置き場所。バックエンドも見るので、画面の本番のソースの定義（lib/screen-sources.mjs）は使わない。
@@ -45,6 +47,16 @@ export function isProductionFile(file) {
   return SOURCE_DIRS.some((dir) => file.startsWith(dir)) && !EXCLUDED.some((pattern) => pattern.test(file))
 }
 
+/**
+ * コメントだけを調べる TypeScript のファイルかを返す。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} フロントのテスト・テストの補助、または E2E（e2e/ の下の全ての TypeScript）なら true
+ */
+export function isCommentOnlyTsFile(file) {
+  return FRONTEND_TEST.test(file) || FRONTEND_TEST_SUPPORT.test(file) || E2E_FILE.test(file)
+}
+
 /** バックエンドのテストとテストの補助の置き場所 */
 const BACKEND_TEST_DIRS = ['backend/ecsite/src/test/', 'backend/ecsite/src/integrationTest/', 'backend/ecsite/src/testFixtures/']
 
@@ -58,13 +70,26 @@ export function isBackendTestFile(file) {
   return BACKEND_TEST_DIRS.some((dir) => file.startsWith(dir)) && file.endsWith('.java')
 }
 
+/**
+ * 番号を探す範囲の文字を返す。本番のコードは全体、テストとテストの補助と E2E はコメントだけ。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @param {string} text ソース
+ * @returns {string} 探す範囲のソース（行番号は元のソースと同じ）
+ */
+function commentsOf(file, text) {
+  if (isBackendTestFile(file)) return keepJavaComments(text)
+  if (isCommentOnlyTsFile(file)) return keepTsComments(text)
+  return text
+}
+
 if (isMain(import.meta.url)) {
-  const files = listGitFiles().filter((file) => isProductionFile(file) || isBackendTestFile(file))
+  const files = listGitFiles().filter((file) => isProductionFile(file) || isBackendTestFile(file) || isCommentOnlyTsFile(file))
   exitIfNoFiles(files, '本番のコードとテストのファイル')
   let count = 0
   for (const file of files) {
     const text = readFileSync(file, 'utf8')
-    for (const hit of findSpecNumbers(isBackendTestFile(file) ? keepJavaComments(text) : text)) {
+    for (const hit of findSpecNumbers(commentsOf(file, text))) {
       console.log(`${file}:${hit.line} ${hit.number}`)
       count += 1
     }

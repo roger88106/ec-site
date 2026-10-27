@@ -25,13 +25,14 @@ export function placeOrderButton(page: Page): Locator {
 }
 
 /**
- * ログインしている会員のカートを空にする。会員のカートは会員ごとに 1 つで実行をまたいで残るので（AC-121）、
+ * ログインしている会員のカートを空にする。会員のカートは会員ごとに 1 つで実行をまたいで残るので、
  * 共用のアカウントで注文するテストは、前の実行の品目を消してから始める。
  *
  * @param page 店舗画面のページ（会員としてログインしている）
- * @param storeUrl 店舗画面の URL（機能紹介の撮影は、E2E でなくローカルの環境の店舗画面を使う）
+ * @param options 省けば既定の値を使う
+ * @param options.storeUrl 店舗画面の URL（既定は E2E の店舗画面。機能紹介の撮影は、ローカルの環境の店舗画面を使う）
  */
-export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void> {
+export async function emptyCart(page: Page, { storeUrl = STORE_URL }: { storeUrl?: string } = {}): Promise<void> {
   await page.goto(`${storeUrl}/cart`)
   // 品目の描画の前に読むと空に見えるので、品目があってもなくても出る見出しで、画面の表示が終わるのを待つ
   await expect(page.getByRole('heading', { name: 'カート', exact: true })).toBeVisible()
@@ -43,8 +44,8 @@ export async function emptyCart(page: Page, storeUrl = STORE_URL): Promise<void>
     if (quantityIndex === -1) {
       throw new Error(`カートの品目の表示が想定と違い、数量の行が見つからない：${text}`)
     }
-    const [name, ...details] = lines.slice(0, quantityIndex)
-    let item = items.filter({ has: page.getByRole('link', { name, exact: true }) })
+    const [productName, ...details] = lines.slice(0, quantityIndex)
+    let item = items.filter({ has: page.getByRole('link', { name: productName, exact: true }) })
     for (const detail of details) {
       item = item.filter({ hasText: detail })
     }
@@ -59,6 +60,8 @@ export type CartChoice = {
   quantity?: string
   /** 選ぶバリアントのボタンの名前（色など。省けば選ばない） */
   option?: string
+  /** 店舗画面の URL（既定は E2E の店舗画面） */
+  storeUrl?: string
 }
 
 /**
@@ -66,14 +69,12 @@ export type CartChoice = {
  *
  * @param page 店舗画面のページ
  * @param productId 商品 ID
- * @param choice 数量とバリアントの選択
- * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
+ * @param choice 数量・バリアントの選択と店舗画面の URL。省けば既定の値を使う
  */
 export async function addToCart(
   page: Page,
   productId: string,
-  { quantity, option }: CartChoice = {},
-  storeUrl = STORE_URL,
+  { quantity, option, storeUrl = STORE_URL }: CartChoice = {},
 ): Promise<void> {
   await page.goto(`${storeUrl}/products/${productId}`)
   if (option !== undefined) {
@@ -129,8 +130,8 @@ export function orderIdOf(orderUrl: string): string {
 }
 
 /**
- * お届け先の入力（郵便番号と氏名だけを差し替えられる）。メールアドレスは会員のものを使い、入力しない（AC-127）。<br />
- * 郵便番号が 7 桁なら、補われた都道府県（東京都）・市区町村（千代田区）・町域（千代田）を確認して、番地を追加する（AC-255）。
+ * お届け先の入力（郵便番号と氏名だけを差し替えられる）。メールアドレスは会員のものを使い、入力しない。<br />
+ * 郵便番号が 7 桁なら、補われた都道府県（東京都）・市区町村（千代田区）・町域（千代田）を確認して、番地を追加する。
  * 7 桁でなければ補われないので、一覧から選ぶ。
  *
  * @param page 注文手続きの画面を開いているページ
@@ -157,10 +158,11 @@ export async function fillShipping(page: Page, postalCode: string, name = 'E2E �
  * カートから注文手続きに進み、お届け先を入れて注文する。注文すると mock の支払画面に移る。
  *
  * @param page カートに商品のある店舗画面のページ
- * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
- * @param name お届け先の氏名（省けば fillShipping の既定）
+ * @param options 省けば既定の値を使う
+ * @param options.storeUrl 店舗画面の URL（既定は E2E の店舗画面）
+ * @param options.name お届け先の氏名（既定は fillShipping の既定）
  */
-export async function orderCart(page: Page, storeUrl = STORE_URL, name?: string) {
+export async function orderCart(page: Page, { storeUrl = STORE_URL, name }: { storeUrl?: string; name?: string } = {}) {
   await page.goto(`${storeUrl}/cart`)
   await page.getByRole('button', { name: '注文手続きへ進む', exact: true }).click()
   await fillShipping(page, '100-0001', name)

@@ -91,7 +91,7 @@ export type PublishedProduct = {
   axes?: string[]
   /** バリアント。code は品番の後ろの部分で、商品品番の後ろに付ける */
   variants: { code: string; axisValues?: string[]; stock: number }[]
-  /** 公開開始日時（公開の予約。AC-34）。省略すると、公開した時刻から表示される */
+  /** 公開開始日時（公開の予約）。省略すると、公開した時刻から表示される */
   publishStart?: Date
 }
 

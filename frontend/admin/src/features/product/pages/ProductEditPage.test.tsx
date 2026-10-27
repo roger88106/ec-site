@@ -531,7 +531,7 @@ describe('商品の編集', () => {
 })
 
 describe('公開期間', () => {
-  /** 公開期間の設定に応答する。バージョンが今のものと違えば 409、終了が開始以前なら 400（AC-36） */
+  /** 公開期間の設定に応答する。バージョンが今のものと違えば 409、終了が開始以前なら 400 */
   function servePeriod(state: ReturnType<typeof serveProduct>) {
     const requests: SetPublicationPeriodRequest[] = []
     server.use(

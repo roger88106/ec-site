@@ -17,7 +17,7 @@ let requestHeaders = new Headers()
 export const revalidatedPaths: string[] = []
 
 /** next/headers の cookies() が返す入れ物。Next.js の Cookie の口のうち、店舗画面が使う分だけを持つ */
-export const cookieStore = {
+export const requestCookieStore = {
   get: (name: string) => {
     const cookie = cookieJar.get(name)
     return cookie === undefined ? undefined : { name, value: cookie.value }
@@ -44,8 +44,8 @@ export function currentHeaders(): Headers {
  */
 export function resetRequest(init: { cookies?: Record<string, string>; headers?: Record<string, string> } = {}) {
   cookieJar.clear()
-  for (const [name, value] of Object.entries(init.cookies ?? {})) {
-    cookieJar.set(name, { value })
+  for (const [cookieName, value] of Object.entries(init.cookies ?? {})) {
+    cookieJar.set(cookieName, { value })
   }
   requestHeaders = new Headers(init.headers)
   revalidatedPaths.length = 0

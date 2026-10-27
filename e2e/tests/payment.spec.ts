@@ -45,7 +45,7 @@ async function memberCartWith(page: Page, code: string, count = 1) {
 test('AC-143、145、146、147、149 注文すると mock の支払画面に移り、支払うと注文の画面に戻って受付になり、注文した品目がカートから除かれる', async ({
   page,
 }) => {
-  // 品目が複数の注文でも、与信の後にカートから除ける（T7407）
+  // 品目が複数の注文でも、与信の後にカートから除ける
   await memberCartWith(page, 'PAY', 2)
 
   await test.step('注文手続き：カードの入力はなく、注文すると mock の支払画面に移る（AC-143、145）', async () => {
@@ -119,7 +119,7 @@ test('AC-162 管理画面で受付の注文をキャンセルすると、支払�
   const orderId = orderIdOf(await payOnMockPage(page))
 
   await test.step('管理画面：受付の注文は与信済みで、運営者がキャンセルする', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: `/orders/${orderId}` })
     await expect(paymentStatus(page)).toHaveText('与信済み')
     await page.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     const dialog = page.getByRole('dialog')

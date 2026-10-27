@@ -17,10 +17,10 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
   const { id: categoryId } = await createCategory('E2E 画像')
-  const name = `E2E 画像 ${RUN_ID}`
+  const productName = `E2E 画像 ${RUN_ID}`
   const productId = await createPublishedProduct({
     code: 'IMAGE',
-    name,
+    name: productName,
     taxCategoryId,
     priceExclTax: 1000,
     categoryIds: [categoryId],
@@ -28,7 +28,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
   })
 
   await test.step('管理画面：画像を 2 枚選ぶと、ストレージへ送って登録する（AC-37）', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: `/products/${productId}` })
     await page.getByLabel('画像のファイル').setInputFiles([PHOTO, PHOTO])
     await expect(page.getByText('画像を 2 枚登録しました')).toBeVisible()
     await expect(page.getByRole('img', { name: '画像 1' })).toBeVisible()
@@ -37,7 +37,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
 
   const firstUrl = await page.getByRole('img', { name: '画像 1' }).getAttribute('src')
   const secondUrl = await page.getByRole('img', { name: '画像 2' }).getAttribute('src')
-  // 配信するのは、変換した WebP（AC-68）。2 枚は別の画像として登録される
+  // 配信するのは、変換した WebP。2 枚は別の画像として登録される
   expect(firstUrl).toMatch(/\.webp$/)
   expect(secondUrl).toMatch(/\.webp$/)
   expect(secondUrl).not.toBe(firstUrl)
@@ -53,7 +53,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
 
   await test.step('店舗画面：一覧の代表画像と、詳細の画像に、並べ替えた順で出る', async () => {
     await reopenUntil(page, `${STORE_URL}/products?categoryId=${categoryId}`, async () => {
-      await expect(productCard(page, name).getByRole('img', { name: '商品の画像' })).toHaveAttribute(
+      await expect(productCard(page, productName).getByRole('img', { name: '商品の画像' })).toHaveAttribute(
         'src',
         imageUrl ?? '',
         {

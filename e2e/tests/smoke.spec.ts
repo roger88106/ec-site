@@ -13,7 +13,7 @@ test('E2E の土台：API で作った公開の商品が、管理画面の一覧
     variants: [{ code: 'A', stock: 1 }],
   })
 
-  await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
+  await loginAdmin(page, ACCOUNTS.administrator, { path: `/products/${productId}` })
   await expect(page.getByRole('heading', { level: 1, name: /(^|\s)公開$/ })).toBeVisible()
 
   await page.goto(`${STORE_URL}/products/${productId}`)

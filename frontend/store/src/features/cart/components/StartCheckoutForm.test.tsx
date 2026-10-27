@@ -33,15 +33,15 @@ describe('注文手続きに進む', () => {
 
     // 送る前も、領域は 1 つあり、文はない
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    const status = screen.getByRole('status')
-    expect(status).toBeEmptyDOMElement()
+    const statusRegion = screen.getByRole('status')
+    expect(statusRegion).toBeEmptyDOMElement()
 
     await user.click(screen.getByRole('button', { name: '注文手続きへ進む' }))
 
     // 失敗の後は、同じ領域に文が入る
     expect(await screen.findByText('在庫が足りません。')).toBeInTheDocument()
     expect(screen.getAllByRole('status')).toHaveLength(1)
-    expect(screen.getByRole('status')).toBe(status)
-    expect(status).toHaveTextContent('在庫が足りません。')
+    expect(screen.getByRole('status')).toBe(statusRegion)
+    expect(statusRegion).toHaveTextContent('在庫が足りません。')
   })
 })

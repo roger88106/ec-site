@@ -9,10 +9,10 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
   page,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
-  const name = '会員の注文の商品'
+  const productName = '会員の注文の商品'
   const productId = await createPublishedProduct({
     code: 'MEMBER',
-    name,
+    name: productName,
     taxCategoryId,
     priceExclTax: 1000,
     variants: [{ code: 'A', stock: 5 }],
@@ -32,7 +32,7 @@ test('AC-108、111、112、113、114、115、122、124、125、127 会員登録�
 
   await test.step('ログインせずに入れたカートが、会員のカートに移っている（AC-122）', async () => {
     await page.goto(`${STORE_URL}/cart`)
-    await expect(page.getByRole('link', { name })).toBeVisible()
+    await expect(page.getByRole('link', { name: productName })).toBeVisible()
     await expect(page.getByLabel('数量')).toHaveValue('2')
   })
 

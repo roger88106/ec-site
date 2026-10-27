@@ -10,7 +10,7 @@ import { server } from '@/test/server'
 vi.mock('server-only', () => ({}))
 vi.mock('next/headers', async () => {
   const next = await import('@/test/next')
-  return { cookies: async () => next.cookieStore, headers: async () => next.currentHeaders() }
+  return { cookies: async () => next.requestCookieStore, headers: async () => next.currentHeaders() }
 })
 vi.mock('next/cache', async () => {
   const next = await import('@/test/next')

@@ -74,6 +74,7 @@ class CategoryApiTest {
         void createsRootAndGetsByLocation() throws Exception {
             var rootCount = roots().size();
             var name = uniqueName("衣類");
+            // CPD-OFF 登録の API の応答（201、Location、ID）の確認そのものを読めるように、各 API のテストに書く。補助に移すと確認の内容が読めなくなる
             var result = createCategory(name, null)
                     .andExpect(status().isCreated())
                     .andExpect(header().string(HttpHeaders.LOCATION, matchesPattern(".*" + BASE + "/[0-9a-f-]{36}")))
@@ -84,6 +85,7 @@ class CategoryApiTest {
             mockMvc.perform(get(result.getResponse().getHeader(HttpHeaders.LOCATION)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
+                    // CPD-ON
                     .andExpect(jsonPath("$.parentId").value(nullValue()))
                     .andExpect(jsonPath("$.name").value(name))
                     .andExpect(jsonPath("$.depth").value(1))

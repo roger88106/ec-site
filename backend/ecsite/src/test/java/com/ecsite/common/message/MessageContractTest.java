@@ -2,7 +2,6 @@ package com.ecsite.common.message;
 
 import com.ecsite.ProductionClasses;
 import com.ecsite.common.error.ErrorCodeProvider;
-import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -58,10 +57,7 @@ class MessageContractTest {
             assertThat(stream).as("messages.properties").isNotNull();
             MESSAGES.load(new InputStreamReader(stream, StandardCharsets.UTF_8));
         }
-        ProductionClasses.all().stream()
-                .filter(javaClass -> javaClass.isEnum() && javaClass.isAssignableTo(ErrorCodeProvider.class))
-                .map(JavaClass::reflect)
-                .forEach(type -> ERROR_CODES.addAll(List.of((Enum<?>[]) type.getEnumConstants())));
+        ERROR_CODES.addAll(ProductionClasses.errorCodes());
         ProductionClasses.requireNotEmpty(ERROR_CODES, "エラーの定義の定数");
     }
 

@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { keepJavaComments, keepTsComments } from './lib/strip-comments.mjs'
-import { findSpecNumbers, isBackendTestFile, isCommentOnlyTsFile, isProductionFile } from './spec-numbers.mjs'
+import { commentsOf, findSpecNumbers, isBackendTestFile, isCommentOnlyTsFile, isConfigFile, isProductionFile } from './spec-numbers.mjs'
 
 describe('本番のコードの spec の番号の検査', () => {
   test('AC・DC などの番号、タスクの番号、spec・plan の番号を見つける', () => {
@@ -50,6 +50,41 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.deepEqual(findSpecNumbers('const ACTION = "X-12"; const T10 = 1; const UTF8 = true'), [])
   })
 
+  test('記号と数字の間に区切りのない番号（AC10、DC7-2 など）を見つける', () => {
+    const text = ['// 割引の上限（AC10）', '// 共有の基準（DC7-2、US12）', '// 規則（BR3、NFR1、DS4、DN5）'].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(text).map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC10', '2 DC7-2', '2 US12', '3 BR3', '3 NFR1', '3 DS4', '3 DN5'],
+    )
+  })
+
+  test('記号で始まる別の語や、記号の後に英字が続く語は、区切りのない番号として見つけない', () => {
+    const text = [
+      '// ACME10 社、US1A 規格、DNS4 の設定、ADS5、ACTION10、DCI3',
+      'const AC = 1; const UTF8 = true; const DC = 2',
+    ].join('\n')
+    assert.deepEqual(findSpecNumbers(text), [])
+  })
+
+  test('16 進の色（# の直後の語）は、番号として見つけない', () => {
+    const text = ["const red = '#DC2626'", 'color: #AC1234;'].join('\n')
+    assert.deepEqual(findSpecNumbers(text), [])
+  })
+
+  test('全角の英字・数字・ハイフンで書いた番号を見つけ、報告する行の文字は正規化の前のものにする', () => {
+    const text = ['// 割引の上限（ＡＣ－１０）', '// 共有の基準（ＤＣ-７）', '// タスク（Ｔ０１１－０１－０１）、ｐｌａｎ　００１'].join('\n')
+    const hits = findSpecNumbers(text)
+    assert.deepEqual(
+      hits.map((hit) => `${hit.line} ${hit.number}`),
+      ['1 AC-10', '2 DC-7', '3 T011-01-01', '3 plan 001'],
+    )
+    assert.equal(hits[0].text, '// 割引の上限（ＡＣ－１０）')
+  })
+
+  test('全角の文字でも、番号に似た語は見つけない', () => {
+    assert.deepEqual(findSpecNumbers('// ＡＣＭＥ１０、ＵＳ１Ａ、ＵＴＦ８'), [])
+  })
+
   test('画面のテスト、生成物、マイグレーションは見ない', () => {
     assert.equal(isProductionFile('backend/ecsite/src/main/java/com/ecsite/Foo.java'), true)
     assert.equal(isProductionFile('frontend/store/src/lib/price.ts'), true)
@@ -68,6 +103,72 @@ describe('本番のコードの spec の番号の検査', () => {
     assert.equal(isProductionFile('backend/ecsite/src/test/java/com/ecsite/FooTest.java'), false)
     assert.equal(isProductionFile('frontend/store/src/lib/price.test.ts'), false)
     assert.equal(isBackendTestFile('frontend/store/src/lib/price.test.ts'), false)
+  })
+
+  test('設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、Gradle の *.gradle.kts）を対象にする', () => {
+    for (const file of [
+      'knip.ts',
+      'eslint.mjs',
+      '.pnpmfile.cjs',
+      'e2e/playwright.config.ts',
+      'e2e/playwright.showcase.config.ts',
+      'frontend/admin/vite.config.ts',
+      'frontend/store/next.config.ts',
+      'frontend/shared/vitest.config.mjs',
+      'backend/ecsite/build.gradle.kts',
+      'backend/ecsite/settings.gradle.kts',
+    ]) {
+      assert.equal(isConfigFile(file), true, file)
+    }
+  })
+
+  test('設定のファイルでないものは、対象にしない（入れ子のディレクトリ、*.config でない .ts、他の拡張子）', () => {
+    for (const file of [
+      'scripts/ci/foo.mjs',
+      'e2e/src/data.ts',
+      'e2e/playwright.ts',
+      'frontend/admin/src/foo.config.ts',
+      'frontend/admin/package.json',
+      'frontend/other/vite.config.ts',
+      'package.json',
+      'backend/ecsite/gradle/libs.versions.toml',
+      'backend/ecsite/src/main/java/com/ecsite/Foo.java',
+    ]) {
+      assert.equal(isConfigFile(file), false, file)
+    }
+    assert.equal(isProductionFile('knip.ts'), false)
+  })
+
+  test('Gradle の設定のファイルは、コメントの番号だけを見つける（文字列は見ない）', () => {
+    const text = [
+      'tasks.withType<JavaCompile> {',
+      '    // 誤った報告を消すため（spec 18 第 6 節）',
+      '    /* ブロック DC-5 */',
+      '    println("AC-12")',
+      '}',
+    ].join('\n')
+    assert.deepEqual(
+      findSpecNumbers(commentsOf('backend/ecsite/build.gradle.kts', text)).map((hit) => `${hit.line} ${hit.number}`),
+      ['2 spec 18', '3 DC-5'],
+    )
+  })
+
+  test('TypeScript・mjs・cjs の設定のファイルは、コメントの番号だけを見つける（文字列とテンプレートは見ない）', () => {
+    const text = [
+      '/**',
+      ' * E2E の設定（plan 004 第 6.1 節）',
+      ' */',
+      "const a = 'AC-1'",
+      'const b = `T011-01-01 ${a}`',
+      'export default {} // US-3',
+    ].join('\n')
+    for (const file of ['e2e/playwright.config.ts', 'frontend/admin/vite.config.mjs', 'knip.ts', '.pnpmfile.cjs']) {
+      assert.deepEqual(
+        findSpecNumbers(commentsOf(file, text)).map((hit) => `${hit.line} ${hit.number}`),
+        ['2 plan 004', '6 US-3'],
+        file,
+      )
+    }
   })
 
   test('テストの Javadoc と行のコメントの番号を見つける', () => {

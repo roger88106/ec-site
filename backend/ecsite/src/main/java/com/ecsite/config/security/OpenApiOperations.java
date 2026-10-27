@@ -36,6 +36,16 @@ final class OpenApiOperations<T> {
     private static final Set<String> HTTP_METHODS = Set.of("get", "put", "post", "delete", "patch", "head", "options", "trace");
 
     /**
+     * OpenAPI の Path Item の項目のうち、操作でないもの。拡張（{@code x-} で始まるもの）も認める
+     */
+    private static final Set<String> PATH_ITEM_FIELDS = Set.of("summary", "description", "servers", "parameters", "$ref");
+
+    /**
+     * OpenAPI の拡張のキーの接頭辞
+     */
+    private static final String EXTENSION_PREFIX = "x-";
+
+    /**
      * 操作
      *
      * @param method  HTTP メソッド（大文字）
@@ -65,10 +75,11 @@ final class OpenApiOperations<T> {
      * @param valueOf  操作の名前（{@code GET /products} の形）と操作の定義から、操作ごとの値を作る。起動を止めるときは例外を投げる
      * @param <T>      操作ごとの値の型
      * @return 操作ごとの値
+     * @throws IllegalStateException パスの下に、小文字の HTTP メソッド、Path Item の項目、拡張のどれでもないキーがあるとき
      */
     static <T> OpenApiOperations<T> load(Resource resource, BiFunction<String, Map<String, Object>, T> valueOf) {
         try (InputStream in = resource.getInputStream()) {
-            return parse(in, valueOf);
+            return parse(resource.getDescription(), in, valueOf);
         } catch (IOException e) {
             throw new UncheckedIOException("OpenAPI の契約を読めない：" + resource, e);
         }
@@ -76,10 +87,12 @@ final class OpenApiOperations<T> {
 
     /**
      * 契約の操作を読み、パスの具体的なものが先になるように並べる。
+     *
+     * @param contract 契約のファイル（例外のメッセージに使う）
      */
     // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
     @SuppressWarnings("unchecked")
-    private static <T> OpenApiOperations<T> parse(InputStream in, BiFunction<String, Map<String, Object>, T> valueOf) {
+    private static <T> OpenApiOperations<T> parse(String contract, InputStream in, BiFunction<String, Map<String, Object>, T> valueOf) {
         Map<String, Object> root = new Yaml(new SafeConstructor(new LoaderOptions())).load(in);
         var servers = (List<Map<String, Object>>) Objects.requireNonNull(root.get("servers"), "OpenAPI の契約には servers がある");
         var basePath = (String) servers.getFirst().get("url");
@@ -88,8 +101,9 @@ final class OpenApiOperations<T> {
         var parser = PathPatternParser.defaultInstance;
         var operations = new ArrayList<Operation<T>>();
         paths.forEach((path, item) -> item.forEach((key, value) -> {
-            // パス共通の parameters などは操作ではない
             if (!HTTP_METHODS.contains(key)) {
+                // パス共通の parameters などは操作ではない。誤記は、認可の条件のない操作になるので起動を止める
+                checkPathItemField(contract, path, key);
                 return;
             }
             var method = key.toUpperCase(Locale.ROOT);
@@ -98,6 +112,25 @@ final class OpenApiOperations<T> {
         }));
         operations.sort(Comparator.comparing(Operation::pattern, PathPattern.SPECIFICITY_COMPARATOR));
         return new OpenApiOperations<>(List.copyOf(operations));
+    }
+
+    /**
+     * 操作でないパスの下のキーが、OpenAPI の Path Item の項目か拡張であることを確かめる。
+     *
+     * @param contract 契約のファイル
+     * @param path     パス
+     * @param key      パスの下のキー
+     * @throws IllegalStateException 小文字でない HTTP メソッドか、Path Item の項目の外のキーのとき
+     */
+    private static void checkPathItemField(String contract, String path, String key) {
+        if (HTTP_METHODS.contains(key.toLowerCase(Locale.ROOT))) {
+            throw new IllegalStateException(
+                    "OpenAPI の契約 " + contract + " のパス " + path + " の HTTP メソッド " + key + " は小文字で書く");
+        }
+        if (!PATH_ITEM_FIELDS.contains(key) && !key.startsWith(EXTENSION_PREFIX)) {
+            throw new IllegalStateException(
+                    "OpenAPI の契約 " + contract + " のパス " + path + " に、HTTP メソッドと Path Item の項目の外のキー " + key + " がある");
+        }
     }
 
     /**

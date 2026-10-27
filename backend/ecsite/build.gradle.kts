@@ -38,6 +38,7 @@ plugins {
     alias(libs.plugins.dependency.license.report)
     alias(libs.plugins.errorprone)
     alias(libs.plugins.pitest)
+    alias(libs.plugins.cpd)
     jacoco
     checkstyle
     // mock を包むテスト用の実装など、単体テストと統合テストで共有するもの（src/testFixtures）
@@ -108,6 +109,8 @@ idea {
 // 依存関係
 // -----------------------------------------------------------------------------
 dependencies {
+    // CPD は Java だけ見る。既定の pmd-dist は全ての言語の部品（約 40 個）を引くので、Java の部品だけにする（pmd-core は pmd-java から入る）
+    "cpd"("net.sourceforge.pmd:pmd-java:${libs.versions.pmd.get()}")
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.validation)
@@ -355,6 +358,26 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 // -----------------------------------------------------------------------------
+// 重複の検出（PMD の CPD。テストの書き方 第 3.5 節）
+//   テストのソースセット（src/test、src/integrationTest、src/testFixtures）の Java のコードで、100 トークン以上の重複を見つけると失敗する。
+//   直さない重複は、重複の場所を // CPD-OFF 理由 と // CPD-ON で囲む。main は見ない（生成したコードを含むため）。
+//   報告：build/reports/cpd/。CPD の部品（cpd の構成。Java の部品だけにしている）は、pitest と同じく licenseReport の対象に入れて checkLicense で照合する（Gradle のプラグインは policy.json の gradlePlugins）
+// -----------------------------------------------------------------------------
+cpd {
+    toolVersion = libs.versions.pmd.get()
+    minimumTokenCount = 100
+    language = "java"
+    // 既定は実行する機械の文字コード。日本語を含むソースを読み違えて、読めないファイルが黙って飛ばされるのを防ぐ
+    encoding = "UTF-8"
+    isIgnoreFailures = false
+}
+
+tasks.cpdCheck {
+    setSource(files("src/test/java", "src/integrationTest/java", "src/testFixtures/java"))
+    include("**/*.java")
+}
+
+// -----------------------------------------------------------------------------
 // mutation testing（PIT。カバレッジとは別に、テストが振る舞いを確認しているかを測る）
 //   ./gradlew pitest で、domain のクラスに小さな変異を入れ、単体テストが失敗するか（変異を検出するか）を見る。
 //   報告：build/reports/pitest/（html、xml。タイムスタンプのディレクトリを作らず、CI が決まったパスで読む）
@@ -513,7 +536,7 @@ licenseReport {
         "integrationTestCompileClasspath", "integrationTestRuntimeClasspath",
         "testFixturesCompileClasspath", "testFixturesRuntimeClasspath",
         "annotationProcessor", "jooqGenerator",
-        "pitest",
+        "pitest", "cpd",
     )
     filters = arrayOf(
         PreferPomLicenses(),
@@ -779,10 +802,10 @@ tasks.withType<JavaCompile>().configureEach {
         // Lombok の @NonNull の引数を持つクラスで Error Prone が例外を投げ、コンパイルが失敗するので無効にする
         disable("StringConcatToTextBlock")
         // enum のフィールドは List.of で作る一覧で、Error Prone は List の型を変更できると判断する。
-        // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする（spec 18 第 6 節の 8）
+        // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする
         disable("ImmutableEnumChecker")
         // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
-        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない（spec 18 第 6 節の 8）
+        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない
         if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
             disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
         }
@@ -802,7 +825,7 @@ tasks.withType<JavaCompile>().configureEach {
             // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
         } else {
             // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
-            // 意図して null を渡す（spec 18 第 5 節）
+            // 意図して null を渡す
             disable("NullAway")
         }
     }

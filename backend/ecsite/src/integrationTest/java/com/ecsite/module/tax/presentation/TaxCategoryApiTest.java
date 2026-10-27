@@ -75,6 +75,7 @@ class TaxCategoryApiTest {
         @Test
         @DisplayName("AC-1 名称で登録できる。Location の URL で、その税区分を取得できる")
         void createsAndGetsByLocation() throws Exception {
+            // CPD-OFF 登録の API の応答（201、Location、ID）の確認そのものを読めるように、各 API のテストに書く。補助に移すと確認の内容が読めなくなる
             var result = createCategory("標準")
                     .andExpect(status().isCreated())
                     .andExpect(header().string(HttpHeaders.LOCATION, matchesPattern(".*" + BASE + "/[0-9a-f-]{36}")))
@@ -85,6 +86,7 @@ class TaxCategoryApiTest {
             mockMvc.perform(get(result.getResponse().getHeader(HttpHeaders.LOCATION)))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.id").value(id))
+                    // CPD-ON
                     .andExpect(jsonPath("$.name").value("標準"))
                     .andExpect(jsonPath("$.rates").isEmpty())
                     .andExpect(jsonPath("$.currentRatePercent").value(nullValue()))

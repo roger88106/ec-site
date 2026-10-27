@@ -16,6 +16,14 @@ import com.ecsite.architecture.layerdeps.module.sample.infrastructure.Infrastruc
 import com.ecsite.architecture.layerdeps.module.sample.infrastructure.InfrastructureToService;
 import com.ecsite.architecture.layerdeps.module.sample.presentation.PresentationToPort;
 import com.ecsite.architecture.layerdeps.module.sample.presentation.SamplePresentation;
+import com.ecsite.architecture.tokenaccess.sample.application.ApplicationUsesCurrentMember;
+import com.ecsite.architecture.tokenaccess.sample.infrastructure.directory.DirectoryUsesCurrentMemberIds;
+import com.ecsite.architecture.tokenaccess.sample.presentation.PresentationUsesCurrentMember;
+import com.ecsite.common.security.CurrentMember;
+import com.ecsite.common.security.CurrentOperator;
+import com.ecsite.common.security.CurrentToken;
+import com.ecsite.contract.Contracts;
+import com.ecsite.module.member.api.CurrentMemberIds;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -59,11 +67,6 @@ import static org.assertj.core.api.Assertions.assertThat;
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
 class ModuleStructureTest {
-
-    /**
-     * モジュールのパッケージの接頭辞
-     */
-    private static final String MODULE_PACKAGE = "com.ecsite.module";
 
     /**
      * モジュールの直下に置いてよいパッケージ（層）
@@ -127,7 +130,7 @@ class ModuleStructureTest {
     /**
      * バックエンドの書き方（Gradle が system property {@code rules.backend-coding} で渡す）
      */
-    private static final Path RULES_BACKEND_CODING = Path.of(System.getProperty("rules.backend-coding"));
+    private static final Path RULES_BACKEND_CODING = Contracts.path("rules.backend-coding");
 
     /**
      * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの始まり
@@ -151,7 +154,26 @@ class ModuleStructureTest {
     private static final List<AllowedApiUse> ALLOWED_API_USES = List.of(
             // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。
             // 会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために 3 組が増える
-            new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", "com.ecsite.module.*.presentation.."));
+            new AllowedApiUse(CurrentMemberIds.class.getName(), ProductionClasses.MODULE_PACKAGE + ".*.presentation.."));
+
+    /**
+     * token の取り出し（token、会員、運営者、会員 ID）のクラスの名前。<br />
+     * 会員 ID の取り出し（CurrentMemberIds）を含める。他のモジュールの api の規則は infrastructure.directory からの利用を除くので、
+     * それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため。
+     */
+    private static final Set<String> TOKEN_ACCESSORS = Set.of(
+            CurrentToken.class.getName(), CurrentMember.class.getName(), CurrentOperator.class.getName(),
+            CurrentMemberIds.class.getName());
+
+    /**
+     * token の取り出しを、presentation 層と common.security の外から使ってよいクラス。<br />
+     * 追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.1 節の例外の表にも書く。
+     */
+    private static final Set<String> TOKEN_ACCESS_EXCEPTIONS = Set.of(
+            // 他のモジュールの presentation に会員の ID を渡す公開の API。自身も取り出しの対象（TOKEN_ACCESSORS）で、呼び出し元は presentation に限る
+            CurrentMemberIds.class.getName(),
+            // モジュールに属さない API の入口で、役割は presentation 層と同じ
+            ME_CONTROLLER);
 
     @Test
     @DisplayName("モジュールの直下のパッケージは、標準の層の名前だけである")
@@ -230,8 +252,8 @@ class ModuleStructureTest {
     @Test
     @DisplayName("presentation と application.model は、application.port に依存しない（port の型を view にして渡す）")
     void presentationAndApplicationModelDoNotDependOnPort() {
-        noClasses().that().resideInAnyPackage(MODULE_PACKAGE + ".*.presentation..", MODULE_PACKAGE + ".*.application.model..")
-                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.application.port..")
+        noClasses().that().resideInAnyPackage(ProductionClasses.MODULE_PACKAGE + ".*.presentation..", ProductionClasses.MODULE_PACKAGE + ".*.application.model..")
+                .should().dependOnClassesThat().resideInAPackage(ProductionClasses.MODULE_PACKAGE + ".*.application.port..")
                 .check(ProductionClasses.all());
     }
 
@@ -239,11 +261,11 @@ class ModuleStructureTest {
     @DisplayName("@Transactional は application と infrastructure だけに付ける")
     void transactionalOnlyInApplicationOrInfrastructure() {
         classes().that().areAnnotatedWith(Transactional.class)
-                .should().resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
+                .should().resideInAnyPackage(ProductionClasses.MODULE_PACKAGE + ".*.application..", ProductionClasses.MODULE_PACKAGE + ".*.infrastructure..")
                 .check(ProductionClasses.all());
         methods().that().areAnnotatedWith(Transactional.class)
                 .should().beDeclaredInClassesThat()
-                .resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
+                .resideInAnyPackage(ProductionClasses.MODULE_PACKAGE + ".*.application..", ProductionClasses.MODULE_PACKAGE + ".*.infrastructure..")
                 .check(ProductionClasses.all());
     }
 
@@ -253,7 +275,7 @@ class ModuleStructureTest {
         classes().that().areAnnotatedWith(RestController.class)
                 .and().resideInAPackage("com.ecsite..")
                 .and().doNotHaveFullyQualifiedName(ME_CONTROLLER)
-                .should().resideInAPackage(MODULE_PACKAGE + ".*.presentation..")
+                .should().resideInAPackage(ProductionClasses.MODULE_PACKAGE + ".*.presentation..")
                 .check(ProductionClasses.all());
     }
 
@@ -261,7 +283,7 @@ class ModuleStructureTest {
     @DisplayName("共通コードと設定は、モジュールに依存しない")
     void commonAndConfigDependOnNoModule() {
         noClasses().that().resideInAnyPackage("com.ecsite.common..", "com.ecsite.config..")
-                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + "..")
+                .should().dependOnClassesThat().resideInAPackage(ProductionClasses.MODULE_PACKAGE + "..")
                 .check(ProductionClasses.all());
     }
 
@@ -286,7 +308,7 @@ class ModuleStructureTest {
     @Test
     @DisplayName("モジュールは、設定に依存しない")
     void modulesDependOnNoConfig() {
-        noClasses().that().resideInAPackage(MODULE_PACKAGE + "..")
+        noClasses().that().resideInAPackage(ProductionClasses.MODULE_PACKAGE + "..")
                 .should().dependOnClassesThat().resideInAPackage("com.ecsite.config..")
                 .check(ProductionClasses.all());
     }
@@ -357,7 +379,7 @@ class ModuleStructureTest {
     void noDirectoryPackages() {
         List<String> modulePackages = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
-                .filter(name -> name.startsWith(MODULE_PACKAGE))
+                .filter(name -> name.startsWith(ProductionClasses.MODULE_PACKAGE))
                 .toList();
         ProductionClasses.requireNotEmpty(modulePackages, "モジュールのクラスのパッケージ");
 
@@ -376,7 +398,7 @@ class ModuleStructureTest {
 
         for (String module : modulesWithApi) {
             classes().that().resideOutsideOfPackages(
-                            "%s.%s..".formatted(MODULE_PACKAGE, module), MODULE_PACKAGE + ".*.infrastructure.directory..")
+                            "%s.%s..".formatted(ProductionClasses.MODULE_PACKAGE, module), ProductionClasses.MODULE_PACKAGE + ".*.infrastructure.directory..")
                     .should(notUseApiOf(module))
                     .check(ProductionClasses.all());
         }
@@ -392,6 +414,74 @@ class ModuleStructureTest {
                     .anyMatch(dependency -> dependency.getTargetClass().getName().equals(allowed.apiType()));
             assertThat(used).as(allowed.apiType()).isTrue();
         }
+    }
+
+    @Test
+    @DisplayName("token の取り出しと会員・運営者の取り出しは、presentation、common.security、許可の一覧のクラスだけが使う")
+    void tokenAccessorsAreUsedOnlyInAllowedPlaces() {
+        tokenAccessRule(ProductionClasses.MODULE_PACKAGE + ".*.presentation..").check(ProductionClasses.all());
+    }
+
+    @Test
+    @DisplayName("token の取り出しの規則は、application 層から使う例に当たり、presentation 層から使う例には当たらない")
+    void tokenAccessRuleMatchesApplicationExampleOnly() {
+        JavaClasses examples = new ClassFileImporter().importClasses(
+                ApplicationUsesCurrentMember.class, PresentationUsesCurrentMember.class);
+
+        List<String> details = tokenAccessRule("com.ecsite.architecture.tokenaccess.sample.presentation..")
+                .evaluate(examples).getFailureReport().getDetails();
+
+        assertViolation(details, ApplicationUsesCurrentMember.class, CurrentMember.class);
+        assertThat(details).noneMatch(detail -> detail.contains(PresentationUsesCurrentMember.class.getName()));
+    }
+
+    @Test
+    @DisplayName("token の取り出しの規則は、infrastructure.directory から会員 ID の取り出しを使う例に当たる")
+    void tokenAccessRuleMatchesDirectoryUsingCurrentMemberIds() {
+        JavaClasses examples = new ClassFileImporter().importClasses(DirectoryUsesCurrentMemberIds.class);
+
+        List<String> details = tokenAccessRule("com.ecsite.architecture.tokenaccess.sample.presentation..")
+                .evaluate(examples).getFailureReport().getDetails();
+
+        assertViolation(details, DirectoryUsesCurrentMemberIds.class, CurrentMemberIds.class);
+    }
+
+    @Test
+    @DisplayName("token の取り出しを使う許可の一覧は、全て本番のクラスで使われている")
+    void everyTokenAccessExceptionIsUsed() {
+        for (String exception : TOKEN_ACCESS_EXCEPTIONS) {
+            boolean used = ProductionClasses.all().stream()
+                    .filter(javaClass -> outermostName(javaClass).equals(exception))
+                    .flatMap(javaClass -> javaClass.getDirectDependenciesFromSelf().stream())
+                    .anyMatch(dependency -> TOKEN_ACCESSORS.contains(dependency.getTargetClass().getName()));
+            assertThat(used).as(exception).isTrue();
+        }
+    }
+
+    /**
+     * token の取り出しを使える場所を、presentation 層、common.security、許可の一覧のクラスだけにする規則を作る。
+     *
+     * @param presentationPackage presentation 層のパッケージ（例：com.ecsite.module.*.presentation..）
+     * @return 規則
+     */
+    private static ArchRule tokenAccessRule(String presentationPackage) {
+        DescribedPredicate<JavaClass> allowedPlace = JavaClass.Predicates.resideInAnyPackage(presentationPackage, "com.ecsite.common.security..")
+                .or(DescribedPredicate.describe("listed in the exceptions", javaClass -> TOKEN_ACCESS_EXCEPTIONS.contains(outermostName(javaClass))));
+        return noClasses().that(DescribedPredicate.not(allowedPlace))
+                .should().dependOnClassesThat(DescribedPredicate.describe(
+                        "are token accessors", javaClass -> TOKEN_ACCESSORS.contains(javaClass.getName())));
+    }
+
+    /**
+     * 入れ子のクラスを含む外側のクラスの名前を返す。
+     *
+     * @param javaClass クラス
+     * @return 入れ子でないクラスの名前
+     */
+    private static String outermostName(JavaClass javaClass) {
+        String name = javaClass.getName();
+        int nested = name.indexOf('$');
+        return nested < 0 ? name : name.substring(0, nested);
     }
 
     /**
@@ -655,7 +745,7 @@ class ModuleStructureTest {
          */
         NotUseApiCondition(String module) {
             super("%s の api を、許可の一覧にない使い方で使わない".formatted(module));
-            this.apiPackage = "%s.%s.api".formatted(MODULE_PACKAGE, module);
+            this.apiPackage = "%s.%s.api".formatted(ProductionClasses.MODULE_PACKAGE, module);
         }
 
         /**
@@ -696,7 +786,7 @@ class ModuleStructureTest {
      * @return パッケージの指定
      */
     private static String layer(String module, String layer) {
-        return "%s.%s.%s..".formatted(MODULE_PACKAGE, module, layer);
+        return "%s.%s.%s..".formatted(ProductionClasses.MODULE_PACKAGE, module, layer);
     }
 
     /**

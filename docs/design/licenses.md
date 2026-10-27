@@ -35,6 +35,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | 静的解析・注釈 | Error Prone、NullAway、JSpecify | Apache-2.0（Error Prone、JSpecify）、MIT（NullAway） |
 | 静的解析 | Checker Framework の dataflow（Error Prone と NullAway が使う。`dataflow-errorprone`、`dataflow-nullaway`） | 条件付き（GPL-2.0 with Classpath-exception。コンパイルのときだけ動き、配布物に入らない。改変しない） |
 | mutation testing | PIT（`pitest`）、`gradle-pitest-plugin`、`pitest-junit5-plugin` | Apache-2.0。テストの強さを測るツールで、配布物に入らない ※1 |
+| 重複の検出 | `gradle-cpd-plugin`（`de.aaschmid.cpd`。PMD の CPD を実行する）、PMD（`pmd-core`、`pmd-java`）、Saxon-HE、`xmlresolver` | Apache-2.0（Gradle のプラグイン、`xmlresolver`）。PMD は BSD-style で、条件付き（BSD-unspecified）。Saxon-HE は条件付き（MPL-2.0。改変しない）。テストのコードの重複を検出するツールで、配布物に入らない ※2 |
 | 定期ジョブ | ShedLock | Apache-2.0 |
 | 決済サービス | stripe-java | MIT |
 | メール | Spring Boot のメール（Jakarta Mail、Eclipse Angus Mail） | Apache-2.0。Jakarta Mail と Angus Mail は条件付き（EDL-1.0 を選ぶ。改変しない） |
@@ -44,6 +45,8 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | テスト | JUnit | 条件付き（EPL-2.0。テストでだけ使い、配布しない） |
 
 ※1：PIT の本体（`pitest`、`pitest-junit5-plugin`）と間接の依存は、`pitest` の構成を `licenseReport` の対象に含めているので、`checkLicense` が照合する。間接の依存の ANTLR 2 と StringTemplate は、POM のライセンスの名前が「BSD License」「BSD licence」だけで、BSD の何条項か名前から分からない。名前を BSD-3-Clause にそろえると、後で入る別の依存も確認せずに通るので、`normalize` で `BSD-unspecified`（条件付き）にし、この 2 つの部品だけを `conditional.components` に理由付きで載せている（ANTLR の LICENSE は 3 条項）。`gradle-pitest-plugin` は Gradle のプラグインで、Gradle の依存の構成（`licenseReport` が読む構成）に含まれないので、`policy.json` の `gradlePlugins` に手動で書く。
+
+※2：`gradle-cpd-plugin` は Gradle のプラグインなので、`policy.json` の `gradlePlugins` に手動で書く。PMD のライブラリ（`cpd` の構成）は、`pitest` と同じく `licenseReport` の対象に含めているので、`checkLicense` が照合する。プラグインの既定は全ての言語を含む `pmd-dist`（約 40 個のライブラリ）だが、Java のコードしか見ないので、`build.gradle.kts` で `pmd-java` だけを指定し、ライブラリを `pmd-core`、`pmd-java`、`Saxon-HE`、`xmlresolver` に絞っている。ライセンスの名前が「BSD-style」だけで、BSD の何条項か名前から分からない PMD の 2 つは、`normalize` で `BSD-unspecified`（条件付き）にし、この 2 つのライブラリだけを `conditional.components` に理由付きで載せている。Saxon-HE（MPL-2.0）も同じく載せている。
 
 ### 3.2 フロント
 

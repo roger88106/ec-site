@@ -25,7 +25,7 @@ class ModuleRoleTest {
     void levelAApplicationDoesNotPublishEvents() {
         var classes = ProductionClasses.modules();
         for (String module : ProductionClasses.LEVEL_A_MODULES) {
-            ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module." + module + ".application..")
+            ArchRule rule = noClasses().that().resideInAPackage(ProductionClasses.MODULE_PACKAGE_PREFIX + module + ".application..")
                     .should().dependOnClassesThat().areAssignableTo(ApplicationEventPublisher.class);
             rule.check(classes);
         }
@@ -39,7 +39,7 @@ class ModuleRoleTest {
         List<String> modules = levelAModulesWithPresentation();
         ProductionClasses.requireNotEmpty(modules, "presentation を持つレベル A のモジュール");
         for (String module : modules) {
-            ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module." + module + ".presentation..")
+            ArchRule rule = noClasses().that().resideInAPackage(ProductionClasses.MODULE_PACKAGE_PREFIX + module + ".presentation..")
                     .should().dependOnClassesThat().areAnnotatedWith(AggregateRoot.class);
             rule.check(classes);
         }
@@ -49,9 +49,9 @@ class ModuleRoleTest {
     @DisplayName("presentation は、生成したモデルを引数なしのコンストラクターと項目名のメソッドで組み立てる（位置で並べるコンストラクターを呼ばない）")
     void presentationBuildsGeneratedModelsWithFluentSetters() {
         var positional = DescribedPredicate.<JavaConstructorCall>describe("生成したモデルの引数を取るコンストラクター",
-                call -> call.getTargetOwner().getPackageName().startsWith("com.ecsite.api")
+                call -> call.getTargetOwner().getPackageName().startsWith(ProductionClasses.API_PACKAGE)
                         && !call.getTarget().getRawParameterTypes().isEmpty());
-        ArchRule rule = noClasses().that().resideInAPackage("com.ecsite.module..presentation..")
+        ArchRule rule = noClasses().that().resideInAPackage(ProductionClasses.MODULE_PACKAGE + "..presentation..")
                 .should().callConstructorWhere(positional);
         rule.check(ProductionClasses.modules());
     }

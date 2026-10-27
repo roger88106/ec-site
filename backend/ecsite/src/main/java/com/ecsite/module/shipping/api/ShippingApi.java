@@ -58,6 +58,16 @@ public class ShippingApi {
     }
 
     /**
+     * 配送業者の表示名の文言のキーを返す。表示名は出荷モジュールが決める。
+     *
+     * @param carrier 配送業者
+     * @return 文言のキー
+     */
+    public String carrierNameKey(ShipmentSummary.Carrier carrier) {
+        return toCarrier(carrier).nameMessageKey();
+    }
+
+    /**
      * 出荷を公開の型にする。
      */
     private static ShipmentSummary toSummary(Shipment shipment) {

@@ -10,9 +10,10 @@
 | 2.1 | テスト名に AC 番号を入れる | 自動（`ac-check.mjs`） |
 | 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`） |
 | 3.1 | 統合テストの土台を使う。ログを確認するテストは、そのテストの中で出た出力だけを確認する | レビュー |
-| 3.2 | テストデータは補助のクラスで作る | レビュー |
+| 3.2 | テストデータは補助のクラスで作る。イベントの発行の記録を読む操作は、非同期のイベントの補助の中だけに置く | レビュー（記録を読む操作と、表の手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`） |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
+| 3.5 | テストのコードに、100 トークン以上の重複を置かない。修正しない重複は `// CPD-OFF 理由` と `// CPD-ON` で囲む | 自動（`./gradlew check` の `cpdCheck`。PMD の CPD） |
 | 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない。E2E で、`.first()`・`.nth()`・`.last()` で選ばず、ボタンの名前は完全一致で探す | CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、E2E の位置で選ぶメソッド（`.first()`・`.nth()`・`.last()`）とボタンの名前の完全一致（`exact: true`、先頭と末尾を固定した正規表現）も自動（同じ script）、他はレビュー |
 | 4.2 | API の差し替えは型付きの MSW | 自動（型チェック） |
 | 4.3 | E2E のデータに実行ごとの印 | レビュー |
@@ -118,7 +119,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
 
-補助以外のテストは、次の表の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。
+補助以外のテストは、次の表の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。CI の `scripts/ci/test-helpers.mjs` が、この表の全ての行について、「補助」と「その操作そのものを確認するテスト」の列のクラス以外のファイルで手順を書いていないかを調べる。2 つの列は、バッククォートで囲んだクラス名をそのまま読むので、クラスの名前を実際のファイルと合わせて書く（括弧の注記は読まない）。表の行や列を変えるときは、script の手順の対応も直す。
 
 | 手順 | 補助 | その操作そのものを確認するテスト |
 |------|------|----------------------------------|
@@ -128,11 +129,15 @@ token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLo
 | カテゴリの登録の要求 | `CatalogTestData` | `CategoryApiTest` |
 | 支払の API の作成の操作 | `PaymentTestData` | `PaymentApiTest` |
 
+表に手順の行を追加するときは、`scripts/ci/test-helpers.mjs` の `STEP_FINDERS` に探す関数を追加する（ないと検査が失敗する）。
+
 表の手順に、次のものは含めない。
 
 - Repository のテストが、集約を直接作る処理（支払の Repository のテストなど）
 - 作った後の変更の要求（店舗の鮮度のテストの税率の変更など）
 - 一覧の応答から、複数の ID を読む処理（画像の並び、税率の一覧など）
+
+イベントの発行の記録（`EventPublicationRegistry`）を読む操作（`find` で始まる操作）は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。テストは記録を読んで待たずに、補助の待つ操作を呼ぶ。補助を作るために記録を注入して渡すだけのテストは、この規則に反しない。CI の `scripts/ci/test-helpers.mjs` が、統合テストで補助の外の呼び出しを見つける。
 
 理由：テストの本文に、確認する項目だけを残すため。
 
@@ -150,7 +155,7 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 |------|----------|--------|
 | `ProductionClasses` | 構成の検査（`architecture/`、`modulith/`）と契約のテスト（`common/message/`、`contract/`） | 本番のクラスとモジュールの一覧を、この補助から読む（モジュールの一覧は、Spring Modulith が自分でもクラスを読み込むので、クラスの読み込みとは別になる）。テストのクラスごとに `ClassFileImporter` や `ApplicationModules.of` で読み込まない |
 | `TestSettings` | 設定のテスト | `load(profile…)` で `application.yml` に profile の設定ファイルを重ねた値を読み、`bind(接頭辞, 設定の型, 値)` で設定の型に値を当てはめる。設定ファイルの読み込みと `Binder` の組み立てを、テストのクラスに書かない |
-| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテスト（`contract/`）、店舗 API の token の契約のテストと Keycloak の統合テスト（`src/integrationTest`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読み、`openApiDir()`、`realmsDir()`、`themeDir()` で置き場所を読む。置き場所は、Gradle が system property で渡す。テストのクラスに `System.getProperty` や既定の相対パスを書かない。渡されないときは、置き場所が渡されなかったことを示して失敗する |
+| `Contracts`（`src/testFixtures` の `contract/` の下） | 契約のテスト（`contract/`）、構成の検査（`architecture/`、`modulith/`、`ProductionClassesTest`）、店舗 API の token の契約のテストと Keycloak の統合テスト（`src/integrationTest`） | `openApi(ファイル名)` で契約（OpenAPI）を、`realm(ファイル名)` で realm の設定を読み、`openApiDir()`、`realmsDir()`、`themeDir()` で置き場所を読み、設計書などそれ以外の置き場所（ファイルもディレクトリも）は `path(property の名前)` で読む。置き場所は、Gradle が system property で渡す。単体テストのクラスに `System.getProperty` や既定の相対パスを書かない（統合テストの `RegionApiTest` と `ProductionJarStartupTest` は、Gradle が渡す別の property を読むので対象にしない）。渡されないときは、置き場所が渡されなかったことを示して失敗する |
 
 理由：同じクラスの読み込みをテストのクラスごとに繰り返すと、heap に同じクラスの複製が残り、メモリを使うため（`ProductionClasses` の理由）。設定の読み込みを 1 か所にして、全ての設定のテストが、同じ設定ファイルの重ね方で値を読むため（`TestSettings` の理由）。契約や realm の置き場所を既定の相対パスで読むと、Gradle が置き場所を渡さなくても通り、設定の誤りに気づけないため（`Contracts` の理由）。
 
@@ -165,6 +170,21 @@ main と同じパッケージに置く。Spring を起動しないものは `src
 - `@AnalyzeClasses`
 
 `importClasses(` は、検査自身のテストが、違反する例のクラスを読むために使う。本番のクラスを読まないので、対象にしない。
+
+### 3.5 テストのコードの重複
+
+PMD の CPD（Gradle のプラグイン `de.aaschmid.cpd`）が、`./gradlew check` で重複を検出し、見つかると失敗にする（タスクは `cpdCheck`、報告は `backend/ecsite/build/reports/cpd/`）。
+
+| 項目 | 内容 |
+|------|------|
+| 対象 | `src/test`、`src/integrationTest`、`src/testFixtures` の Java のファイル。`src/main` は、生成したコードを含むので見ない |
+| 基準 | 100 トークン以上の同じ並び（CPD の既定。変数名と値の違いは同じとみなさない）。基準を上げるときは、値と理由をこの節に書く |
+| 修正方法 | 補助に移す。同じ種類のテストデータの作り方は、補助のクラス（第 3.2 節）か、テストのパッケージの補助に置く |
+| 修正しない重複 | 重複の場所を `// CPD-OFF 理由` と `// CPD-ON` で囲む。理由は `CPD-OFF` の行に書く |
+
+修正しない重複の例は、API の仕様そのものを読めるように、各 API のテストに書く確認の並び（登録の応答の確認）と、テストデータの並び。補助に移すと、テストが何を確認するかが読めなくなるとき、または補助にするほどの共通の意味がないときだけ囲む。「修正が面倒」は理由にならない。
+
+理由：同じコードを複数のテストに複製すると、仕様の変更で修正漏れが出て、テストごとに確認の内容がずれるため。除外を重複の場所のコメントに残すと、理由と一緒に読める。
 
 ## 4. フロント
 

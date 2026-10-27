@@ -1,5 +1,6 @@
 package com.ecsite;
 
+import com.ecsite.common.error.ErrorCodeProvider;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.JavaClass;
 import com.tngtech.archunit.core.domain.JavaClasses;
@@ -7,6 +8,7 @@ import com.tngtech.archunit.core.importer.ClassFileImporter;
 import com.tngtech.archunit.core.importer.ImportOption;
 import org.springframework.modulith.core.ApplicationModules;
 
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
@@ -45,17 +47,22 @@ public final class ProductionClasses {
     /**
      * OpenAPI から生成した interface と型のパッケージ
      */
-    private static final String API_PACKAGE = "com.ecsite.api";
+    public static final String API_PACKAGE = "com.ecsite.api";
 
     /**
      * jOOQ が生成したコードのパッケージ
      */
-    private static final String JOOQ_PACKAGE = "com.ecsite.jooq";
+    public static final String JOOQ_PACKAGE = "com.ecsite.jooq";
 
     /**
-     * モジュールのパッケージの接頭辞
+     * モジュールのパッケージ（モジュールの名前を除く）
      */
-    private static final String MODULE_PACKAGE_PREFIX = "com.ecsite.module.";
+    public static final String MODULE_PACKAGE = "com.ecsite.module";
+
+    /**
+     * モジュールのパッケージの接頭辞（モジュールの名前の前の区切りの点を含む）
+     */
+    public static final String MODULE_PACKAGE_PREFIX = MODULE_PACKAGE + ".";
 
     /**
      * パッケージの名前から、モジュールの名前と、モジュールの直下のパッケージの名前を取り出す形
@@ -126,6 +133,20 @@ public final class ProductionClasses {
                 .filter(matcher -> wanted.contains(matcher.group(2)))
                 .map(matcher -> matcher.group(1))
                 .collect(Collectors.toCollection(TreeSet::new));
+    }
+
+    /**
+     * エラーの種類を表す列挙（{@link ErrorCodeProvider} を実装する enum）の定数を、全て返す。<br />
+     * 文言の契約とエラーコードの契約の検査が、本番のエラーの定義を探すために使う。
+     *
+     * @return 本番のエラーの種類の列挙の定数
+     */
+    public static List<Enum<?>> errorCodes() {
+        return all().stream()
+                .filter(javaClass -> javaClass.isEnum() && javaClass.isAssignableTo(ErrorCodeProvider.class))
+                .map(JavaClass::reflect)
+                .flatMap(type -> Arrays.stream((Enum<?>[]) type.getEnumConstants()))
+                .toList();
     }
 
     /**

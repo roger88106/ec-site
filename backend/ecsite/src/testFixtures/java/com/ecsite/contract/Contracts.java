@@ -9,7 +9,7 @@ import java.nio.file.Path;
 import java.util.Map;
 
 /**
- * 契約のテストが使う補助。契約（OpenAPI）、realm の設定、Keycloak のテーマの置き場所の取得と、契約の読み込みを、各テストに重複して書かないために置く。<br />
+ * テストが使う、Gradle が system property で渡す置き場所の補助。契約（OpenAPI）、realm の設定、Keycloak のテーマの置き場所の取得、設計書などの任意の置き場所の取得（{@link #path(String)}）、契約の読み込みを、各テストに重複して書かないために置く。<br />
  * 単体テストと統合テストが共有する。置き場所は Gradle の設定が system property で渡す。渡されないときに既定の相対パスで読むと、Gradle の設定の誤りに気づけないので、失敗させる。
  */
 public final class Contracts {
@@ -63,6 +63,17 @@ public final class Contracts {
      */
     public static Path themeDir() {
         return directory(THEME_DIR, System.getProperty(THEME_DIR));
+    }
+
+    /**
+     * system property で渡された置き場所（ファイルまたはディレクトリ）を返す。契約、realm、テーマ以外の文書などの置き場所を、テストが読むために使う。
+     *
+     * @param property system property の名前（例：{@code design.overview}）
+     * @return system property の値
+     * @throws IllegalStateException system property が渡されていないとき
+     */
+    public static Path path(String property) {
+        return directory(property, System.getProperty(property));
     }
 
     /**

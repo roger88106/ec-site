@@ -1,5 +1,6 @@
 package com.ecsite;
 
+import com.ecsite.contract.Contracts;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class ProductionClassesTest {
     /**
      * 設計書のディレクトリ（Gradle がシステムプロパティで渡す）
      */
-    private static final Path MODULE_DESIGNS = Path.of(System.getProperty("design.modules.dir"));
+    private static final Path MODULE_DESIGNS = Contracts.path("design.modules.dir");
 
     /**
      * 設計書の表の「レベル」の行。値の最初の文字がレベルを表す
@@ -47,10 +48,10 @@ class ProductionClassesTest {
         var packages = packageNames(ProductionClasses.handwritten());
 
         assertThat(packages).isNotEmpty();
-        assertThat(packages).noneMatch(name -> name.startsWith("com.ecsite.api.") || name.startsWith("com.ecsite.jooq"));
+        assertThat(packages).noneMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + ".") || name.startsWith(ProductionClasses.JOOQ_PACKAGE));
         assertThat(packageNames(ProductionClasses.all()))
-                .anyMatch(name -> name.startsWith("com.ecsite.api."))
-                .anyMatch(name -> name.startsWith("com.ecsite.jooq"));
+                .anyMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + "."))
+                .anyMatch(name -> name.startsWith(ProductionClasses.JOOQ_PACKAGE));
     }
 
     @Test
@@ -59,7 +60,7 @@ class ProductionClassesTest {
         var packages = packageNames(ProductionClasses.modules());
 
         assertThat(packages).isNotEmpty();
-        assertThat(packages).allMatch(name -> name.startsWith("com.ecsite.module."));
+        assertThat(packages).allMatch(name -> name.startsWith(ProductionClasses.MODULE_PACKAGE_PREFIX));
         assertThat(packageNames(ProductionClasses.all())).anyMatch(name -> name.startsWith("com.ecsite.config"));
     }
 

@@ -2,6 +2,7 @@
 // 規則は言葉で書き、spec との対応はテストの名前（@DisplayName、test の名前）に書く。
 // - 本番のコード：行の全体を見る
 // - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）
+// - 設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、backend/ecsite/ の *.gradle.kts）：コメントだけを見る
 // - フロントのテストとテストの補助（*.test.ts(x)、src/test/）と、E2E（e2e/ の下の全ての TypeScript）：コメントだけを見る（テスト名と test.step の名前などの文字列、テンプレート文字列、正規表現のリテラルは見ない）
 // 生成物、適用済みのマイグレーションは見ない。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
@@ -20,19 +21,22 @@ const SOURCE_DIRS = ['backend/ecsite/src/main/', 'frontend/admin/src/', 'fronten
 /** 本番のコードでないもの（テスト、テストの補助、生成物、適用済みのマイグレーション） */
 const EXCLUDED = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/db\/migration\//]
 
-/** spec の番号（AC-12、1→10 の spec の AC-7-1 など）、タスクの番号（T011-01-01、T7-01-01、古い形式の T6803 など）、spec・plan の番号（plan 001、spec 7 など） */
-const SPEC_NUMBER = /\b(?:AC|DC|BR|NFR|US|DS|DN)-\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.)/g
+/** spec の番号（AC-12、1→10 の spec の AC-7-1 など）、タスクの番号（T011-01-01、T7-01-01、古い形式の T6803 など）、spec・plan の番号（plan 001、spec 7 など）。# の直後の語は 16 進の色（#DC2626 など）なので番号にしない */
+const SPEC_NUMBER = /(?<!#)(?:\b(?:AC|DC|BR|NFR|US|DS|DN)-?\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.))/g
 
 /**
  * spec・plan・tasks の番号を書いた行を探す。
  *
  * @param {string} text ソース
- * @returns {{ line: number, number: string }[]} 見つけた行と番号
+ * @returns {{ line: number, number: string, text: string }[]} 見つけた行、番号（正規化した後の形）、行の文字（正規化の前）
  */
 export function findSpecNumbers(text) {
   const hits = []
   text.split('\n').forEach((line, index) => {
-    for (const match of line.matchAll(SPEC_NUMBER)) hits.push({ line: index + 1, number: match[0] })
+    // 全角の英字・数字・ハイフンで書いた番号も見つけるため、照合の前に NFKC で正規化する。報告する行の文字は正規化の前のものにする
+    for (const match of line.normalize('NFKC').matchAll(SPEC_NUMBER)) {
+      hits.push({ line: index + 1, number: match[0], text: line.trim() })
+    }
   })
   return hits
 }
@@ -71,26 +75,43 @@ export function isBackendTestFile(file) {
 }
 
 /**
- * 番号を探す範囲の文字を返す。本番のコードは全体、テストとテストの補助と E2E はコメントだけ。
+ * 設定のファイルの置き場所。コメントだけを見る。
+ * - リポジトリのルートの .ts・.mjs・.cjs（knip.ts、.pnpmfile.cjs など）
+ * - 各パッケージ（frontend/admin、frontend/store、frontend/shared、e2e）の直下の *.config.ts・*.config.mjs
+ * - バックエンド（backend/ecsite/）の Gradle の設定のファイル（*.gradle.kts）
+ */
+const CONFIG_FILES = [/^[^/]+\.(?:ts|mjs|cjs)$/,/^(?:frontend\/(?:admin|store|shared)|e2e)\/[^/]+\.config\.(?:ts|mjs)$/, /^backend\/ecsite\/(?:.+\/)?[^/]+\.gradle\.kts$/]
+
+/**
+ * コメントだけを調べる設定のファイルかを返す。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 設定のファイルなら true
+ */
+export function isConfigFile(file) {
+  return CONFIG_FILES.some((pattern) => pattern.test(file))
+}
+
+/**
+ * コメントだけを残す。バックエンドのテストと Gradle の設定のファイル（Kotlin のコメントは Java と同じ書き方）は Java の読み方、
+ * フロントのテスト・テストの補助、E2E、TypeScript・mjs・cjs の設定のファイルは TypeScript の読み方で読む。
  *
  * @param {string} file リポジトリのルートからのパス
  * @param {string} text ソース
- * @returns {string} 探す範囲のソース（行番号は元のソースと同じ）
+ * @returns {string} コメントだけを残したソース（行番号は元と同じ）
  */
-function commentsOf(file, text) {
-  if (isBackendTestFile(file)) return keepJavaComments(text)
-  if (isCommentOnlyTsFile(file)) return keepTsComments(text)
-  return text
+export function commentsOf(file, text) {
+  return /\.(?:tsx?|mjs|cjs)$/.test(file) ? keepTsComments(text) : keepJavaComments(text)
 }
 
 if (isMain(import.meta.url)) {
-  const files = listGitFiles().filter((file) => isProductionFile(file) || isBackendTestFile(file) || isCommentOnlyTsFile(file))
-  exitIfNoFiles(files, '本番のコードとテストのファイル')
+  const files = listGitFiles().filter((file) => isProductionFile(file) || isBackendTestFile(file) || isCommentOnlyTsFile(file) || isConfigFile(file))
+  exitIfNoFiles(files, '本番のコードとテストと設定のファイル')
   let count = 0
   for (const file of files) {
     const text = readFileSync(file, 'utf8')
-    for (const hit of findSpecNumbers(commentsOf(file, text))) {
-      console.log(`${file}:${hit.line} ${hit.number}`)
+    for (const hit of findSpecNumbers(isProductionFile(file) ? text : commentsOf(file, text))) {
+      console.log(`${file}:${hit.line} ${hit.number}（${hit.text}）`)
       count += 1
     }
   }

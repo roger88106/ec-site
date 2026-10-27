@@ -4,7 +4,7 @@ import { createPublishedProduct, taxCategoryWithRate, variantIds } from '../src/
 import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage, placeOrderButton } from '../src/store'
 import { ADMIN_URL } from '../src/urls'
 
-test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画面でカートに入れ、郵便番号でお届け先を補って注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
+test('AC-72、77、82、85、86、87、93、95、101、107、252、255、AC-227-1 店舗画面でカートに入れ、郵便番号でお届け先を補って注文し、キャンセルを申請して管理画面で承認すると、在庫が戻る', async ({
   page,
 }) => {
   const { id: taxCategoryId } = await taxCategoryWithRate(10)
@@ -47,6 +47,7 @@ test('AC-72、77、82、85、86、87、93、95、101、107、252、255 店舗画
     await placeOrderButton(page).click()
     await expect(page.getByText('郵便番号は数字 7 桁で入力してください。')).toBeVisible()
     await expect(page.getByLabel('氏名')).toHaveValue('E2E 太郎')
+    await expect(page.getByLabel('郵便番号')).toBeFocused()
 
     // 直した郵便番号で都道府県と市区町村が補われ、入力済みの住所は変わらない
     await page.getByLabel('郵便番号').fill('100-0001')

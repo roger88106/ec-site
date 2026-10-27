@@ -21,6 +21,11 @@
       "plugins": ["./biome-plugins/no-catch-in-actions.grit"]
     },
     {
+      // 読み上げの領域は status の役割で作り、aria-live を直接書かない。aria-live="off" だけは許す（フロントの書き方 第 10.2 節）
+      "includes": ["src/**", "!**/*.test.ts", "!**/*.test.tsx", "!src/test/**"],
+      "plugins": ["./biome-plugins/no-aria-live.grit"]
+    },
+    {
       // ログは console.* を直接呼ばず、src/lib/server/log.ts で 1 行 1 件の JSON にする（フロントの書き方 第 8.2 節）
       "includes": ["src/**", "!src/lib/server/log.ts", "!**/*.test.ts", "!**/*.test.tsx", "!src/test/**"],
       "linter": { "rules": { "suspicious": { "noConsole": "error" } } }

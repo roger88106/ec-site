@@ -162,31 +162,34 @@ spec 226（E2E の書き方の検査など）が、本 spec のマージの後�
 - 完了条件：DC-225-1〜8 を満たし、`check-all.sh` が通る。
 - 参照：第 3 節の DS-225-1、第 6 節の 2、[spec 185](../archive/1to10/185-new-checks/spec.md) 第 8 節
 
-- [ ] **T225-01-01** [テスト] 走査のテストの補助を `lib/` にまとめ、4 つの走査のテストを表の形に書き換える（DC-225-1、2）。
+- [x] **T225-01-01** [テスト] 走査のテストの補助を `lib/` にまとめ、4 つの走査のテストを表の形に書き換える（DC-225-1、2）。
   - 依存：なし
   - 範囲：`scripts/ci/lib/`（新しい補助とそのテスト）、`lib/exclusions.test.mjs`、`lib/unreadable-line.test.mjs`、`lib/git-files.test.mjs`、`lib/git-env.test.mjs`、`docs/guides/ci.md` の `lib/` の一覧
   - 確認方法：補助のテストで、表の禁じる書き方を含む script を違反として返し、例外の script を返さないこと。4 つのテストで、守る関数を直接使わない形を意図的に 1 つ書くと失敗すること（確認した後に戻す）
-- [ ] **T225-01-02** [テスト] `frontend-rules` のファイルの種類の正規表現を 1 か所にまとめ、規則のまとまりへの振り分けを関数にしてテストで確認する（DC-225-3、4）。
+  - 結果：補助は `lib/scan-rules.mjs`。走査する script の一覧は `listScanScripts(scope)`（範囲は `ci`、`ci+lib`、`all`）、違反は `findRuleViolations(scripts, rules)`（表の行は `{ guard, forbidden, target, exceptions }`）。`git-env` の例外は、ファイルの名前の一致から 2 つのパスの一致に狭めた
+- [x] **T225-01-02** [テスト] `frontend-rules` のファイルの種類の正規表現を 1 か所にまとめ、規則のまとまりへの振り分けを関数にしてテストで確認する（DC-225-3、4）。
   - 依存：なし
   - 範囲：`scripts/ci/frontend-rules.mjs`、`scripts/ci/frontend-rules.test.mjs`
   - 確認方法：振り分けのテストが、各種類の代表のパス（店舗画面・管理画面・共有の本番のソースとテスト、`src/test/` の補助、E2E）を期待するまとまりに入れること。変更の前後で `frontend-rules` の今のリポジトリの結果が同じであること（DN-225-2）
-- [ ] **T225-01-03** [テスト] `main-entry` の対象を `frontend/shared/scripts/` に広げ、`export-constraints.mjs` の `process.argv[1]` との比較を `isMain` の呼び出しに置き換える（DC-225-5、6）。
+  - 結果：種類の正規表現は `SOURCE`、`FRONTEND_TEST`、`FRONTEND_TEST_SUPPORT`、`E2E_FILE`（`TEST` と `TEST_FILE` は削除）。振り分けは `groupTargets(files)` で、`{ sources, frontendTests, testSupport, e2e, tests, testsWithSupport }` を返す。E2E だけの規則は `e2e` に当てる。変更の前後で結果は同じ
+- [x] **T225-01-03** [テスト] `main-entry` の対象を `frontend/shared/scripts/` に広げ、`export-constraints.mjs` の `process.argv[1]` との比較を `isMain` の呼び出しに置き換える（DC-225-5、6）。
   - 依存：なし
   - 範囲：`scripts/ci/main-entry.mjs`、テスト、`frontend/shared/scripts/export-constraints.mjs`、`docs/guides/ci.md` の `main-entry` の行
   - `export-constraints.mjs` は、相対パスで `scripts/ci/lib/is-main.mjs` を import する。管理画面と店舗画面の `generate:api` が動くことを確認する（API の型の生成は CI のフロントの job が行う）
   - 確認方法：`node scripts/ci/main-entry.mjs` が 0 件で通ること。共有のパッケージのテスト（`export-constraints.test.mjs` を含む）が通ること
-- [ ] **T225-01-04** `listGitFiles` の扱い（第 6 節の 2）を、文書とコメントに書く（DC-225-7）。
+- [x] **T225-01-04** `listGitFiles` の扱い（第 6 節の 2）を、文書とコメントに書く（DC-225-7）。
   - 依存：T225-01-01（同じ `lib/git-files.test.mjs` を変える）
   - 範囲：`scripts/ci/lib/git-files.mjs`（先頭のコメント）、`lib/git-files.test.mjs`（テストの名前）、`docs/guides/ci.md`
   - 振る舞いは変えない（第 6 節の 2）。追跡していない無視されないファイルを含めるテストが今あるので、テストの名前に理由を合わせる
   - 確認方法：`ci.md` と `git-files.mjs` に、理由と手元・CI の違いがあること（読んで確認する）。`lib/git-files.test.mjs` が通ること
-- [ ] **T225-01-05** `inputs.ts` の `fireEvent` の理由を、呼び出しの直前の行のコメントだけにする（DC-225-8）。
+- [x] **T225-01-05** `inputs.ts` の `fireEvent` の理由を、呼び出しの直前の行のコメントだけにする（DC-225-8）。
   - 依存：なし
   - 範囲：`frontend/admin/src/test/inputs.ts`
   - 関数の JSDoc から理由の文を削除し、何をするかだけを残す（`frontend-rules` の `fireEvent` の検査は、直前の行のコメントを求める）
   - 確認方法：`node scripts/ci/frontend-rules.mjs` が通ること
-- [ ] **T225-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
+- [x] **T225-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T225-01-01〜05
+  - 結果：重要な観点（高性能と汎用）と一般の観点（汎用を 2 回）で、高 0、必須 1（2 つのレビューで重複）。必須は、`lib/git-files.test.mjs` の `exitIfNoFiles` を呼ぶ検査の一覧が自前の走査のままだったもので、`listScanScripts` を使う形に修正した（一覧は前後で同じ 23 件）。検査を弱めた箇所はなかった
 
 ### 段階 2：ライセンスの一覧の一致と、既定値の削除の規則
 

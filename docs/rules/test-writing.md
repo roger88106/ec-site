@@ -10,7 +10,7 @@
 | 2.1 | テスト名に AC 番号を入れる | 自動（`ac-check.mjs`） |
 | 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`） |
 | 3.1 | 統合テストの土台を使う。ログを確認するテストは、そのテストの中で出た出力だけを確認する | レビュー |
-| 3.2 | テストデータは補助のクラスで作る。イベントの発行の記録を読む操作は、非同期のイベントの補助の中だけに置く | レビュー（記録を読む操作を補助の外で呼ばないことは自動。`scripts/ci/test-helpers.mjs`） |
+| 3.2 | テストデータは補助のクラスで作る。イベントの発行の記録を読む操作は、非同期のイベントの補助の中だけに置く | レビュー（記録を読む操作と、表の手順を補助の外で書かないことは自動。`scripts/ci/test-helpers.mjs`） |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
 | 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない | CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
@@ -115,7 +115,7 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 
 token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
 
-補助以外のテストは、次の表の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。
+補助以外のテストは、次の表の手順を直接書かない。ただし、その操作そのものを確認するテストは除く。CI の `scripts/ci/test-helpers.mjs` が、この表の全ての行について、「補助」と「その操作そのものを確認するテスト」の列のクラス以外のファイルで手順を書いていないかを調べる。2 つの列は、バッククォートで囲んだクラス名をそのまま読むので、クラスの名前を実際のファイルと合わせて書く（括弧の注記は読まない）。表の行や列を変えるときは、script の手順の対応も直す。
 
 | 手順 | 補助 | その操作そのものを確認するテスト |
 |------|------|----------------------------------|

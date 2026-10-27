@@ -10,7 +10,7 @@
 | 2.1 | テスト名に AC 番号を入れる | 自動（`ac-check.mjs`） |
 | 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`） |
 | 3.1 | 統合テストの土台を使う | レビュー |
-| 3.2 | テストデータは補助のクラスで作る | レビュー |
+| 3.2 | テストデータは補助のクラスで作る。イベントの発行の記録を読む操作は、非同期のイベントの補助の中だけに置く | レビュー（記録を読む操作を補助の外で呼ばないことは自動。`scripts/ci/test-helpers.mjs`） |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
 | 4.1 | 画面に見えるもので探す。テストでは `toBeTruthy`・`toBeDefined` を使わない。HTML の属性や要素の並びに依存して確認しない | CSS のクラスの確認、`toBeTruthy`・`toBeDefined`、`getAllBy…` などの結果を `[数字]`・`.at(数字)` で選ぶことは、フロントのテストと E2E で自動。画面のテストの `data-slot`・`querySelector`、HTML の属性の並びに依存する正規表現も自動（`scripts/ci/frontend-rules.mjs`）、他はレビュー |
@@ -111,6 +111,8 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 | `TestJson` | 応答の本文から読む ID（作成の応答の ID など） |
 
 token は `TestTokens`、画像は `TestImages` を使う。
+
+イベントの発行の記録（`EventPublicationRegistry`）を読む操作（`find` で始まる操作）は、非同期のイベントの補助（`AsyncEvents`、`EventPublications`）の中だけに置く。テストは記録を読んで待たずに、補助の待つ操作を呼ぶ。補助を作るために記録を注入して渡すだけのテストは、この規則に反しない。CI の `scripts/ci/test-helpers.mjs` が、統合テストで補助の外の呼び出しを見つける。
 
 理由：テストの本文に、確認する項目だけを残すため。
 

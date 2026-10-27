@@ -309,7 +309,7 @@ DB のテーブルとカラムには、ここと各節の論理名をコメン�
 | 整形の関数 | `@ec-site/shared/lib/format` | 金額・価格・数・日時・税額・郵便番号・軸の値を、画面に表示する文字列にする関数。2 つの画面で共有する |
 | 既定の数の整形 | `formatNumber`（`@ec-site/shared/lib/format`） | 既定のロケールで、3 桁ごとに区切る数の整形。金額の整形の数の部分も同じ |
 | 表示名 | `labels.ts` | API の列挙の値を画面に表示する名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`。ただし、2 つの画面で同じ表示名は、機能の数によらず共有パッケージに置く（[フロントの書き方](../rules/frontend-coding.md) 第 1.1 節） |
-| テストの補助 | `frontend/admin/src/test/`、`frontend/store/src/test/` | 複数のテストで使う、データの作成、API の差し替え、操作、確認の関数。各画面のテストの補助の置き場所に置く（[テストの書き方](../rules/test-writing.md) 第 4.5 節） |
+| テストの補助 | `frontend/admin/src/test/`、`frontend/store/src/test/`、`backend/ecsite/src/integrationTest/java/com/ecsite/` | 複数のテストで使う、データの作成、API の差し替え、操作、確認の関数。各画面のテストの補助の置き場所に置く（[テストの書き方](../rules/test-writing.md) 第 4.5 節）。バックエンドの統合テストの補助は、`com.ecsite` の直下（1 つのパッケージのテストだけが使う補助はそのパッケージ）に置く（[テストの書き方](../rules/test-writing.md) 第 3.2 節） |
 | 型を回避する変換 | `as never`、`as unknown as` | 値の型を検査させずに、別の型として扱わせる書き方。テストでは使わない（[テストの書き方](../rules/test-writing.md) 第 4.6 節） |
 | 注文の表示名 | `orderLabels` | 注文の状態・配送状態・配送業者の表示名を返す関数。2 つの画面で同じ文言なので、共有パッケージの `lib/orderLabels.ts` に置く |
 | 金額の内訳 | `AmountsSummary` | 商品の合計・送料・総額・税率ごとの消費税額を並べて表示する、共有のコンポーネント。カードとページの 2 つの見た目がある |

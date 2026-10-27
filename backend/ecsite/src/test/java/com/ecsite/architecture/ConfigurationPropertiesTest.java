@@ -1,13 +1,22 @@
 package com.ecsite.architecture;
 
 import com.ecsite.ProductionClasses;
+import com.tngtech.archunit.base.DescribedPredicate;
+import com.tngtech.archunit.core.domain.JavaClass;
+import com.tngtech.archunit.core.domain.JavaModifier;
 import com.tngtech.archunit.core.importer.ClassFileImporter;
+import com.tngtech.archunit.lang.ArchCondition;
 import com.tngtech.archunit.lang.ArchRule;
+import com.tngtech.archunit.lang.ConditionEvents;
+import com.tngtech.archunit.lang.SimpleConditionEvent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.boot.context.properties.EnableConfigurationProperties;
 import org.springframework.context.annotation.Configuration;
+
+import java.util.List;
+import java.util.Locale;
 
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.classes;
 import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
@@ -17,6 +26,19 @@ import static org.assertj.core.api.Assertions.assertThat;
  * 設定の値の型と設定のクラスの検査（docs/rules/backend-coding.md 第 6.1 節）。
  */
 class ConfigurationPropertiesTest {
+
+    /**
+     * 秘密の値の項目の名前に含まれる語（小文字）。名前が key で終わる項目も秘密の値とみなす。
+     */
+    private static final List<String> SECRET_WORDS = List.of("secret", "password", "salt", "token", "credential");
+
+    /**
+     * 秘密の値の項目を持つ設定の値の型（{@code @ConfigurationProperties} を付けたクラス）
+     */
+    private static final DescribedPredicate<JavaClass> SECRET_PROPERTIES = DescribedPredicate.describe(
+            "configuration properties with a secret field",
+            javaClass -> javaClass.isAnnotatedWith(ConfigurationProperties.class)
+                    && javaClass.getFields().stream().anyMatch(field -> isSecretFieldName(field.getName())));
 
     @Test
     @DisplayName("@EnableConfigurationProperties を付けるクラスは、設定のクラス（@Configuration）")
@@ -67,6 +89,79 @@ class ConfigurationPropertiesTest {
         assertThat(result.hasViolation()).isTrue();
         assertThat(result.getFailureReport().getDetails())
                 .anyMatch(detail -> detail.contains(PresentationExampleController.class.getName()));
+    }
+
+    @Test
+    @DisplayName("秘密の値の項目を持つ設定の値の型は、toString を宣言する")
+    void secretPropertiesDeclareToString() {
+        ProductionClasses.requireNotEmpty(
+                ProductionClasses.handwritten().stream()
+                        .filter(javaClass -> SECRET_PROPERTIES.test(javaClass))
+                        .toList(),
+                "秘密の値の項目を持つ設定の値の型");
+
+        secretPropertiesRule().check(ProductionClasses.handwritten());
+    }
+
+    @Test
+    @DisplayName("toString の規則は、秘密の値の項目を持ち toString を宣言しない例に当たる")
+    void toStringRuleMatchesExampleWithoutToString() {
+        var examples = new ClassFileImporter().importClasses(SecretWithoutToStringProperties.class);
+
+        var result = secretPropertiesRule().evaluate(examples);
+
+        assertThat(result.hasViolation()).isTrue();
+        assertThat(result.getFailureReport().getDetails())
+                .anyMatch(detail -> detail.contains(SecretWithoutToStringProperties.class.getName()));
+    }
+
+    @Test
+    @DisplayName("toString の規則は、toString を宣言する例と、秘密の値の項目を持たない例に当たらない")
+    void toStringRuleDoesNotMatchCompliantExamples() {
+        var examples = new ClassFileImporter().importClasses(SecretWithToStringProperties.class, ExampleProperties.class);
+
+        assertThat(secretPropertiesRule().evaluate(examples).hasViolation()).isFalse();
+    }
+
+    @Test
+    @DisplayName("秘密の値の項目の名前は、secret、password、salt、token、credential を含むか、key で終わる")
+    void detectsSecretFieldNames() {
+        assertThat(List.of("secretAccessKey", "webhookSecret", "salt", "key", "secretKey", "apiPassword", "accessToken", "credentials"))
+                .allMatch(ConfigurationPropertiesTest::isSecretFieldName);
+        assertThat(List.of("accessKeyId", "value", "endpoint", "keyId", "monkeyBusiness"))
+                .noneMatch(ConfigurationPropertiesTest::isSecretFieldName);
+    }
+
+    /**
+     * 秘密の値の項目を持つ設定の値の型が toString を宣言する規則を作る。
+     *
+     * @return 規則
+     */
+    private static ArchRule secretPropertiesRule() {
+        return classes().that(SECRET_PROPERTIES)
+                .should(new ArchCondition<JavaClass>("toString を宣言する") {
+                    @Override
+                    public void check(JavaClass javaClass, ConditionEvents events) {
+                        // record のコンパイラが作る toString は final で、宣言した toString と区別できないので、final を除く
+                        boolean declared = javaClass.getMethods().stream()
+                                .anyMatch(method -> method.getName().equals("toString")
+                                        && method.getRawParameterTypes().isEmpty()
+                                        && !method.getModifiers().contains(JavaModifier.FINAL));
+                        events.add(new SimpleConditionEvent(javaClass, declared,
+                                "%s は秘密の値の項目を持つが、toString を宣言していない".formatted(javaClass.getName())));
+                    }
+                });
+    }
+
+    /**
+     * 秘密の値の項目の名前かを返す。名前を小文字にして判定する。
+     *
+     * @param name 項目の名前
+     * @return 秘密の値の項目なら true
+     */
+    private static boolean isSecretFieldName(String name) {
+        String lower = name.toLowerCase(Locale.ROOT);
+        return SECRET_WORDS.stream().anyMatch(lower::contains) || lower.endsWith("key");
     }
 
     /**
@@ -125,5 +220,28 @@ class PresentationExampleController {
 
     String value() {
         return properties.value();
+    }
+}
+
+/**
+ * 規則に当たる例：秘密の値の項目を持つが、toString を宣言しない
+ *
+ * @param apiKey 例の秘密の値
+ */
+@ConfigurationProperties("example-secret")
+record SecretWithoutToStringProperties(String apiKey) {
+}
+
+/**
+ * 規則に当たらない例：秘密の値の項目を持ち、toString を宣言する
+ *
+ * @param apiKey 例の秘密の値
+ */
+@ConfigurationProperties("example-secret-safe")
+record SecretWithToStringProperties(String apiKey) {
+
+    @Override
+    public String toString() {
+        return "SecretWithToStringProperties[apiKey=***]";
     }
 }

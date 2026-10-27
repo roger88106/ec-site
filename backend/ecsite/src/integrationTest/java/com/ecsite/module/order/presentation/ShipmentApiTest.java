@@ -255,52 +255,11 @@ class ShipmentApiTest {
                     Arguments.of("欠けている送り状番号", "YAMATO", null, "trackingNumber"));
         }
 
-        /**
-         * 送り状番号の形の誤り。
-         */
-        static Stream<Arguments> malformedTrackingNumbers() {
-            return Stream.of(
-                    Arguments.of("数字とハイフン以外を含む送り状番号", "ABC-123"),
-                    Arguments.of("31 文字の送り状番号", "1".repeat(31)),
-                    Arguments.of("数字を含まない送り状番号", "---"));
-        }
-
         @ParameterizedTest(name = "{0}")
         @MethodSource("invalidInputs")
         @DisplayName("AC-173 配送業者は一覧から選び、送り状番号は必須。誤りは 400 で項目を示し、売上を確定しない")
         void validates(String name, String carrier, String trackingNumber, String field) throws Exception {
             assertRejected(carrier, trackingNumber, field);
-        }
-
-        @ParameterizedTest(name = "{0}")
-        @MethodSource("malformedTrackingNumbers")
-        @DisplayName("送り状番号は数字とハイフンの 30 文字まで（数字が 1 つ以上）。形の誤りは 400 で項目を示し、売上を確定しない")
-        void rejectsMalformedTrackingNumber(String name, String trackingNumber) throws Exception {
-            assertRejected("YAMATO", trackingNumber, "trackingNumber");
-        }
-
-        /**
-         * 400 で項目を示し、売上を確定しないことを確認する。項目が null のときは、項目ごとの誤りが付かないことを確認する
-         */
-        private void assertRejected(String carrier, String trackingNumber, String field) throws Exception {
-            var body = trackingNumber == null
-                    ? """
-                    {"carrier": "%s"}""".formatted(carrier)
-                    : """
-                    {"carrier": "%s", "trackingNumber": "%s"}""".formatted(carrier, trackingNumber);
-
-            var result = mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
-                            .contentType(MediaType.APPLICATION_JSON).content(body))
-                    .andExpect(status().isBadRequest())
-                    .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
-            if (field == null) {
-                // 一覧にない値は、本文を読み取れない誤りなので、項目ごとの誤りは付かない
-                result.andExpect(jsonPath("$.errors").doesNotExist());
-            } else {
-                result.andExpect(jsonPath("$.errors[0].field").value(field));
-            }
-
-            assertThat(gateway.captureCalls()).isZero();
         }
 
         @Test
@@ -313,7 +272,53 @@ class ShipmentApiTest {
         }
     }
 
+    @Nested
+    @DisplayName("送り状番号の形")
+    class TrackingNumberFormat {
+
+        /**
+         * 送り状番号の形の誤り。
+         */
+        static Stream<Arguments> malformedTrackingNumbers() {
+            return Stream.of(
+                    Arguments.of("数字とハイフン以外を含む送り状番号", "ABC-123"),
+                    Arguments.of("31 文字の送り状番号", "1".repeat(31)),
+                    Arguments.of("数字を含まない送り状番号", "---"));
+        }
+
+        @ParameterizedTest(name = "{0}")
+        @MethodSource("malformedTrackingNumbers")
+        @DisplayName("送り状番号は数字とハイフンの 30 文字まで（数字が 1 つ以上）。形の誤りは 400 で項目を示し、売上を確定しない")
+        void rejectsMalformedTrackingNumber(String name, String trackingNumber) throws Exception {
+            assertRejected("YAMATO", trackingNumber, "trackingNumber");
+        }
+    }
+
     // ============================== 補助 ==============================
+
+    /**
+     * 400 で項目を示し、売上を確定しないことを確認する。項目が null のときは、項目ごとの誤りが付かないことを確認する
+     */
+    private void assertRejected(String carrier, String trackingNumber, String field) throws Exception {
+        var body = trackingNumber == null
+                ? """
+                {"carrier": "%s"}""".formatted(carrier)
+                : """
+                {"carrier": "%s", "trackingNumber": "%s"}""".formatted(carrier, trackingNumber);
+
+        var result = mockMvc.perform(post("/api/admin/orders/" + orderId + "/shipment")
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.errorCode").value("INVALID_REQUEST"));
+        if (field == null) {
+            // 一覧にない値は、本文を読み取れない誤りなので、項目ごとの誤りは付かない
+            result.andExpect(jsonPath("$.errors").doesNotExist());
+        } else {
+            result.andExpect(jsonPath("$.errors[0].field").value(field));
+        }
+
+        assertThat(gateway.captureCalls()).isZero();
+    }
 
     /**
      * 出荷を登録する

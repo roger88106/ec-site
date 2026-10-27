@@ -41,7 +41,7 @@ export function getDetailValue(name: string, scope: Scope = screen): HTMLElement
 }
 
 /**
- * {@link getDetailValue} の、項目が現れるまで待つ版。
+ * 項目が現れるまで待つ {@link getDetailValue}。
  *
  * @param name 項目名（`dt` の文字）
  * @param scope 探す範囲。省略すると画面全体
@@ -65,7 +65,7 @@ export function getRow(name: string, scope: Scope = screen): HTMLElement {
 }
 
 /**
- * {@link getRow} の、行が現れるまで待つ版。
+ * 行が現れるまで待つ {@link getRow}。
  *
  * @param name 行の名前の始まりの文字
  * @param scope 探す範囲。省略すると画面全体

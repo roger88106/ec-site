@@ -34,7 +34,7 @@ on:
 permissions:
   contents: read
 
-# 全ての job の JDK の版。バックエンドの toolchain の版（backend/ecsite/gradle/libs.versions.toml の java）と同じにする。
+# 全ての job の JDK のバージョン。バックエンドの toolchain のバージョン（backend/ecsite/gradle/libs.versions.toml の java）と同じにする。
 # setup-java は libs.versions.toml を読めないので、ここに 1 か所だけ書き、各 job が参照する
 env:
   JAVA_VERSION: '21'
@@ -420,8 +420,8 @@ jobs:
         working-directory: e2e
         run: pnpm lint && pnpm typecheck
 
-      # Playwright のブラウザーはキャッシュする（キーは Playwright の版）
-      - name: Playwright の版
+      # Playwright のブラウザーはキャッシュする（キーは Playwright のバージョン）
+      - name: Playwright のバージョン
         id: playwright
         working-directory: e2e
         run: echo "version=$(node -p "require('@playwright/test/package.json').version")" >> "$GITHUB_OUTPUT"

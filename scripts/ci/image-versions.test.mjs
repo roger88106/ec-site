@@ -17,7 +17,7 @@ const compose = [
 ].join('\n')
 
 describe('compose のイメージの読み取り', () => {
-  test('image: の名前と版を読み、同じ名前は 1 つにまとめる', () => {
+  test('image: の名前とバージョンを読み、同じ名前は 1 つにまとめる', () => {
     const images = readComposeImages(compose)
     assert.deepEqual(
       [...images].map(([name, versions]) => [name, [...versions]]),
@@ -56,14 +56,14 @@ describe('compose のイメージの読み取り', () => {
     ])
   })
 
-  test('同じ名前に別の版があれば、両方を残す', () => {
+  test('同じ名前に別のバージョンがあれば、両方を残す', () => {
     const images = readComposeImages(['    image: a/b:1.0.0', '    image: a/b:1.0.1'].join('\n'))
     assert.deepEqual([...images.get('a/b')], ['1.0.0', '1.0.1'])
   })
 })
 
 describe('ソースのイメージの読み取り', () => {
-  test('compose にある名前の版を、書いた行とともに読む', () => {
+  test('compose にある名前のバージョンを、書いた行とともに読む', () => {
     const images = readComposeImages(compose)
     const source = 'x(DockerImageName.parse("postgres:18-alpine"));\nString IMAGE = "quay.io/keycloak/keycloak:26.8.0";'
     assert.deepEqual(readSourceImages(source, images).known, [
@@ -86,17 +86,17 @@ describe('ソースのイメージの読み取り', () => {
   })
 })
 
-describe('版の食い違い', () => {
+describe('バージョンの食い違い', () => {
   const images = readComposeImages(compose)
 
-  test('compose と版が違うものを見つける', () => {
+  test('compose とバージョンが違うものを見つける', () => {
     const files = [{ path: 'A.java', text: 'String IMAGE = "quay.io/keycloak/keycloak:26.8.0";' }]
     assert.deepEqual(findImageProblems(images, files).mismatches, [
       'A.java:1 quay.io/keycloak/keycloak:26.8.0（compose は 26.8.1）',
     ])
   })
 
-  test('版が一致すれば通る。compose にないイメージは報告だけ', () => {
+  test('バージョンが一致すれば通る。compose にないイメージは報告だけ', () => {
     const files = [{ path: 'A.java', text: 'DockerImageName.parse("postgres:18-alpine"); DockerImageName.parse("x/y:1.2.3");' }]
     const result = findImageProblems(images, files)
     assert.deepEqual(result.mismatches, [])
@@ -104,25 +104,25 @@ describe('版の食い違い', () => {
   })
 })
 
-describe('版の固定', () => {
-  test('latest、版のないもの、patch のない版を見つける', () => {
+describe('バージョンの固定', () => {
+  test('latest、バージョンのないもの、patch のないバージョンを見つける', () => {
     const images = readComposeImages(
       ['    image: a/b:latest', '    image: a/c', '    image: a/d:3', '    image: a/e:3.6', '    image: a/f:v1.2.3'].join('\n'),
     )
-    assert.deepEqual(findUnpinned(images), ['a/b:latest', 'a/c（版がない）', 'a/d:3', 'a/e:3.6'])
+    assert.deepEqual(findUnpinned(images), ['a/b:latest', 'a/c（バージョンがない）', 'a/d:3', 'a/e:3.6'])
   })
 
-  test('公式の postgres は major だけの版（18-alpine）を許す', () => {
+  test('公式の postgres は major だけのバージョン（18-alpine）を許す', () => {
     const images = readComposeImages('    image: postgres:18-alpine')
     assert.deepEqual(findUnpinned(images), [])
   })
 
-  test('postgres 以外の major だけの版は許さない', () => {
+  test('postgres 以外の major だけのバージョンは許さない', () => {
     const images = readComposeImages('    image: mysql:8-alpine')
     assert.deepEqual(findUnpinned(images), ['mysql:8-alpine'])
   })
 
-  test('patch のない版を使う seaweedfs は major.minor の版を許す。他のイメージは許さない', () => {
+  test('patch のないバージョンを使う seaweedfs は major.minor のバージョンを許す。他のイメージは許さない', () => {
     const images = readComposeImages(['    image: chrislusf/seaweedfs:4.48', '    image: a/g:4.48'].join('\n'))
     assert.deepEqual(findUnpinned(images), ['a/g:4.48'])
   })

@@ -18,7 +18,7 @@ import static org.mockito.Mockito.mock;
 /**
  * 出荷の公開 API の単体テスト
  */
-class ShippingApiTest {
+class ShippingApiCarrierNameKeyTest {
 
     private final ShippingApi api = new ShippingApi(mock(ShipmentService.class));
 

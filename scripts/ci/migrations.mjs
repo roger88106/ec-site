@@ -165,6 +165,74 @@ function splitActions(body) {
 }
 
 /**
+ * 式の全体が、先頭の ( とそれに対応する最後の ) で囲まれているときの、中の式を返す。
+ *
+ * @param {string} expr 前後の空白のない式
+ * @param {string} open 囲みの前（例：`(` か `CAST(`）
+ * @returns {string | null} 中の式。囲まれていなければ null
+ */
+function unwrap(expr, open) {
+  if (!expr.startsWith(open)) return null
+  let depth = 0
+  for (let i = open.length - 1; i < expr.length; i += 1) {
+    if (expr[i] === '(') depth += 1
+    else if (expr[i] === ')') {
+      depth -= 1
+      if (depth === 0) return i === expr.length - 1 ? expr.slice(open.length, i).trim() : null
+    }
+  }
+  return null
+}
+
+/** 式の末尾の ::型（型名、(長さ)、[] を含む） */
+const TRAILING_CAST = /\s*::\s*[A-Z_"][\w". ]*(?:\([\d,\s]*\))?(?:\s*\[\d*\])*$/
+
+/** 式の末尾の COLLATE 名前 */
+const TRAILING_COLLATE = /\s+COLLATE\s+(?:"[^"]*"|[\w.]+)$/
+
+/**
+ * CAST( 式 AS 型 ) の式の部分を返す。AS は、CAST の括弧の直下（深さ 1）の最後のもの。
+ *
+ * @param {string} expr 前後の空白のない式
+ * @returns {string | null} 式の部分。CAST(… AS 型) の形でなければ null
+ */
+function unwrapCast(expr) {
+  const inner = unwrap(expr.replace(/^CAST\s+\(/, 'CAST('), 'CAST(')
+  if (inner === null) return null
+  let depth = 0
+  let asAt = -1
+  for (let i = 0; i < inner.length; i += 1) {
+    if (inner[i] === '(') depth += 1
+    else if (inner[i] === ')') depth -= 1
+    else if (depth === 0 && /^\sAS\s/.test(inner.slice(i, i + 4))) asAt = i
+  }
+  return asAt === -1 ? null : inner.slice(0, asAt).trim()
+}
+
+/**
+ * SET DEFAULT の式が、結果として NULL になる（既定値の削除と同じ）かを返す。
+ * 外側の括弧、末尾の ::型 と COLLATE、CAST(… AS 型) を、変わらなくなるまで外し、残りが NULL かを見る。
+ * 読み落としより誤検出の側に倒すので、NULL に続けて読めない部分が残る形（NULL の後ろに NULLIF 以外の語が続くなど）も数える。
+ *
+ * @param {string} rawExpr 大文字にして空白を 1 つにした、SET DEFAULT の後ろの式（変更の終わりまで）
+ * @returns {boolean} 既定値の削除なら true
+ */
+function isNullDefault(rawExpr) {
+  let expr = rawExpr.trim()
+  for (;;) {
+    const next = [
+      unwrap(expr, '('),
+      unwrapCast(expr),
+      expr.replace(TRAILING_CAST, ''),
+      expr.replace(TRAILING_COLLATE, ''),
+    ].find((candidate) => candidate !== null && candidate !== expr)
+    if (next === undefined) break
+    expr = next.trim()
+  }
+  return expr === 'NULL' || /^NULL(?![\w])/.test(expr)
+}
+
+/**
  * ALTER TABLE の 1 つの変更が、互換性のない変更なら、その種類を返す。
  *
  * @param {string} action 大文字にして空白を 1 つにした変更（例：DROP COLUMN IF EXISTS X）
@@ -176,10 +244,10 @@ function classifyAction(action) {
   if (/^RENAME\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.renameColumn
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+(?:SET\s+DATA\s+)?TYPE\b/.test(action)) return INCOMPATIBLE_KINDS.changeType
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+NOT\s+NULL\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
-  // 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧と ::型 の変換が付いてもよい）と SET DEFAULT CAST(NULL AS 型)（NULL の括弧も可）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない
+  // 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧、::型、COLLATE、CAST(… AS 型) が何重に付いてもよい）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+DROP\s+DEFAULT\b/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
-  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+DEFAULT\s+(?:\(\s*)*NULL(?=\s*(?:$|\)|::))/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
-  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+DEFAULT\s+(?:\(\s*)*CAST\s*\(\s*(?:\(\s*)*NULL\s*(?:\)\s*)*AS\s/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
+  const setDefault = /^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+DEFAULT\s+(.*)$/.exec(action)
+  if (setDefault && isNullDefault(setDefault[1])) return INCOMPATIBLE_KINDS.dropDefault
   // 主キーの制約の追加は、既存の列に SET NOT NULL を行う
   if (/^ADD\s+(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
   const isAddColumn = /^ADD\s+/.test(action) && !/^ADD\s+(?:CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|EXCLUDE|LIKE)\b/.test(action)

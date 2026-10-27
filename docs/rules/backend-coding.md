@@ -31,7 +31,7 @@
 | 5.2 | 名前の形 | リポジトリと腐敗防止層は自動（ArchUnit）、service とイベントはレビュー |
 | 5.3 | インスタンスを作らないクラス | 自動（ArchUnit） |
 | 5.4 | 整形は IntelliJ の Reformat Code を推奨する（強制しない） | なし |
-| 5.4 | import の並びと使われていない import は強制する | 自動（Checkstyle） |
+| 5.4 | import の並びと、使われていない import と `*` の import（static を含む）は強制する | 自動（Checkstyle） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
 | 6.1 | 秘密の値を持つ設定の record は、`toString` で値を伏せる | `toString` を宣言していることは自動（ArchUnit）。値を伏せていることは単体テスト（`toString` に秘密の値が含まれないこと） |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
@@ -303,7 +303,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
   5. 空行
   6. `import static all other imports`
 - 同じ設定画面の「Class count to use import with *」と「Names count to use static import with *」は、`*` の import を作らないよう、大きな値（999）にする。
-- Checkstyle の `UnusedImports` と `CustomImportOrder`（`backend/ecsite/config/checkstyle/checkstyle.xml`）が、使われていない import と上の並びを、全てのソースセット（main、test、integrationTest、testFixtures、tools）で検査する。違反があれば `./gradlew check` と CI が失敗する。Javadoc の書き漏れの検査だけは main に限る。
+- Checkstyle の `UnusedImports`、`AvoidStarImport`、`CustomImportOrder`（`backend/ecsite/config/checkstyle/checkstyle.xml`）が、使われていない import、`*` の import（static を含む。例外は設けない）、上の並びを、全てのソースセット（main、test、integrationTest、testFixtures、tools）で検査する。違反があれば `./gradlew check` と CI が失敗する。Javadoc の書き漏れの検査だけは main に限る。
 
 理由：今のコードは IntelliJ の書式でほぼそろっている。Spotless で強制する案は、今の書式に最も近い設定でも、読みやすさが下がる変更が出た（測定の記録は [issue #19 のコメント](https://github.com/roger88106/ec-site/issues/19)）。
 

@@ -1,8 +1,8 @@
 package com.ecsite.module.notification.application;
 
 import com.ecsite.common.message.MessageHelper;
-import com.ecsite.module.notification.application.port.ShippingDirectory;
 import com.ecsite.module.notification.application.port.Mailer;
+import com.ecsite.module.notification.application.port.ShippingDirectory;
 import com.ecsite.module.order.event.OrderShipped;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;

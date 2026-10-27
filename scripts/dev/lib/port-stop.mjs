@@ -4,6 +4,12 @@
 import { spawnSync } from 'node:child_process'
 import { killTreeOnWindows } from './child-stop.mjs'
 
+/** 停止したプロセスの終了を待つ上限（ミリ秒）。Windows の Wait-Process と、それ以外の生存の問い合わせで共有する */
+export const STOP_WAIT_MS = 30_000
+
+/** 生存の問い合わせの間隔（ミリ秒） */
+const POLL_INTERVAL_MS = 100
+
 /**
  * ポートで待ち受けるプロセス。
  *
@@ -98,32 +104,82 @@ export function findListeners(ports, deps = { platform: process.platform, spawnS
 
 /**
  * 待ち受けるプロセスを強制終了する。プロセスごとに 1 回だけ止める。<br />
- * Windows は taskkill でツリーごと止め、終わるまで Wait-Process で待つ（上限 30 秒）。
+ * Windows は taskkill でツリーごと止め、終わるまで Wait-Process で待つ。
+ * それ以外は SIGKILL を送り、プロセスの生存の問い合わせ（シグナル 0）を、終わるまで繰り返して待つ。
+ * どちらも上限は {@link STOP_WAIT_MS}。上限を過ぎても例外を投げず、先へ進む（残ったかどうかは、呼ぶ側の再度の問い合わせで判定する）。
  * 終わるのを待つのは、止めた直後に問い合わせると、まだ待ち受けが残って見えることがあるため。
- * それ以外は SIGKILL を送る。すでに終わっていて失敗しても止まらない。
+ * すでに終わっていて kill が失敗しても止まらない。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
- * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync, kill: (pid: number, signal: NodeJS.Signals) => void }} [deps]
- *   OS、指令の実行、シグナルの送り方。テストで差し替える
+ * @param {Partial<StopDeps>} [deps] OS、指令の実行、シグナルの送り方、時計と待ち。テストで差し替える。省いた項目は実際のものを使う
  */
-export function stopListeners(listeners, deps = { platform: process.platform, spawnSync, kill: process.kill.bind(process) }) {
+export function stopListeners(listeners, deps = {}) {
+  const { platform, spawnSync: run, kill, now, sleep } = { ...defaultStopDeps(), ...deps }
   const pids = uniquePids(listeners)
   if (pids.length === 0) return
-  if (deps.platform === 'win32') {
-    for (const pid of pids) killTreeOnWindows(pid, deps.spawnSync)
-    deps.spawnSync(
+  if (platform === 'win32') {
+    for (const pid of pids) killTreeOnWindows(pid, run)
+    run(
       'powershell',
-      ['-NoProfile', '-NonInteractive', '-Command', `Wait-Process -Id ${pids.join(',')} -Timeout 30 -ErrorAction SilentlyContinue`],
+      ['-NoProfile', '-NonInteractive', '-Command', `Wait-Process -Id ${pids.join(',')} -Timeout ${STOP_WAIT_MS / 1000} -ErrorAction SilentlyContinue`],
       { stdio: 'ignore' },
     )
     return
   }
   for (const pid of pids) {
     try {
-      deps.kill(pid, 'SIGKILL')
+      kill(pid, 'SIGKILL')
     } catch {
       // すでに終わっている
     }
+  }
+  const deadline = now() + STOP_WAIT_MS
+  let alive = pids.filter((pid) => isAlive(pid, kill))
+  while (alive.length > 0 && now() < deadline) {
+    sleep(POLL_INTERVAL_MS)
+    alive = alive.filter((pid) => isAlive(pid, kill))
+  }
+}
+
+/**
+ * stopListeners が使う外部の機能。
+ *
+ * @typedef {object} StopDeps
+ * @property {NodeJS.Platform} platform OS
+ * @property {typeof spawnSync} spawnSync 指令の実行
+ * @property {(pid: number, signal: NodeJS.Signals | 0) => void} kill シグナルの送り方（シグナル 0 は生存の問い合わせ）
+ * @property {() => number} now 時計（ミリ秒）
+ * @property {(ms: number) => void} sleep 待ち
+ */
+
+/**
+ * 実際の OS・指令・時計・待ち。
+ *
+ * @returns {StopDeps} 実際の機能
+ */
+function defaultStopDeps() {
+  return {
+    platform: process.platform,
+    spawnSync,
+    kill: process.kill.bind(process),
+    now: Date.now,
+    sleep: (ms) => Atomics.wait(new Int32Array(new SharedArrayBuffer(4)), 0, 0, ms),
+  }
+}
+
+/**
+ * プロセスが生きているか。権限がなく問い合わせられない（EPERM）プロセスは、存在するので生きているとみなす。
+ *
+ * @param {number} pid プロセスの ID
+ * @param {StopDeps['kill']} kill シグナルの送り方
+ * @returns {boolean} 生きていれば true
+ */
+function isAlive(pid, kill) {
+  try {
+    kill(pid, 0)
+    return true
+  } catch (error) {
+    return error?.code === 'EPERM'
   }
 }
 

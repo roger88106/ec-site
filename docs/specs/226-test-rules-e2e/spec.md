@@ -266,13 +266,14 @@ tasks は第 6 節の決定に基づく。
   - 修正の前に E2E の全体を 1 回実行して所要時間を記録し、T226-04-01 で比べる（DN-226-3）
   - 確認方法：`scripts/dev/check-frontend.sh`（E2E の lint と型チェック）と E2E の全体が通ること。撮影の呼び出しに `{}` がないこと（`git grep` で確認する）
   - 結果：修正の前の E2E の全体は 20 件が通り、154 秒（Playwright の実行は 1.9 分）。修正の後は 20 件が通り、129 秒（1.6 分）。補助の新しい形：`loginAdmin(page, account, { path, adminUrl })`、`loginStore(page, account, { returnTo, storeUrl })`、`emptyCart(page, { storeUrl })`、`addToCart(page, productId, { quantity, option, storeUrl })`、`orderCart(page, { storeUrl, name })`（どれも項目は省ける）。撮影は空のオプションを渡さず、`{ storeUrl: STORE }` などの必要な項目だけを渡す。`git grep` で `{}` の呼び出しがないことを確認した。撮影の実行（`pnpm capture`）はスロット 0 だけで対応するため流さず、`check-frontend.sh` の E2E の型チェックと lint で確認した
-- [ ] **T226-03-02** [テスト] Windows 以外で、停止したプロセスの終了を上限まで待つ（DC-226-21、22）。
+- [x] **T226-03-02** [テスト] Windows 以外で、停止したプロセスの終了を上限まで待つ（DC-226-21、22）。
   - 依存：なし
   - 範囲：`scripts/dev/lib/port-stop.mjs`、`scripts/dev/lib/port-stop.test.mjs`
   - 待つ方法は、プロセスの生存の問い合わせ（`kill(pid, 0)`）を、終了するか上限の時刻を過ぎるまで繰り返す形にする。時計と待ちを、テストで差し替えられるようにする。上限の値（30 秒）は Windows と共有の定数にする。理由：Windows 以外で、子でないプロセスの終了を上限付きで待つ標準の指令がなく（`tail --pid` は macOS にない）、外部の指令ではテストが上限の振る舞いを確認できないため
   - 「Windows 以外では SIGKILL を送るだけ」を確認する今のテストと、`stopListeners` の TSDoc を修正する
   - このマシン（Windows）では Windows 以外の実際の停止を確認できない。テストは指令の実行を差し替えて確認し、CI（Linux）で script のテストが通ることを確認する
   - 確認方法：テストで、Windows 以外で、終了を確認したら上限より前に戻ること、上限を過ぎたら待つのをやめて先へ進むこと（例外を投げない）、Windows の振る舞いが変わらないことを確認する
+  - 結果：`port-stop.mjs` に `STOP_WAIT_MS`（30 秒。Windows の `Wait-Process -Timeout` と共有）を加え、Windows 以外は SIGKILL を送った後、`kill(pid, 0)` を 100 ミリ秒おきに、全てのプロセスが終わるか上限を過ぎるまで繰り返す（権限がなく問い合わせられない EPERM は生きているとみなす。上限を過ぎても例外を投げない）。`stopListeners` の差し替えの項目に `now`・`sleep` を加えた（省いた項目は実際のものを使う）。テストを先に書き、`node --test` で 32 件中 4 件の失敗（レッド）を確認してから実装し、32 件が通った（Windows 以外の 4 件を加え、SIGKILL だけを確認していた 1 件を置き換えた。Windows の 1 件は定数の共有を確認する）。Windows 以外の実際の停止はこのマシンで確認できないため、差し替えで確認し、CI（Linux）での script のテストの実行に任せる
 - [ ] **T226-03-03** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T226-03-01、02
 

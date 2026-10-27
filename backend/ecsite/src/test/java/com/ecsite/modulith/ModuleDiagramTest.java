@@ -1,6 +1,7 @@
 package com.ecsite.modulith;
 
 import com.ecsite.ProductionClasses;
+import com.ecsite.contract.Contracts;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -36,7 +37,7 @@ class ModuleDiagramTest {
     /**
      * 全体構成の文書（Gradle がシステムプロパティで渡す）
      */
-    private static final Path OVERVIEW = Path.of(System.getProperty("design.overview"));
+    private static final Path OVERVIEW = Contracts.path("design.overview");
 
     /**
      * 文書の生成の範囲の始まりの印

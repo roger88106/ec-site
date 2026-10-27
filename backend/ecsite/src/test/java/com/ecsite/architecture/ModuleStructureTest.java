@@ -22,6 +22,7 @@ import com.ecsite.architecture.tokenaccess.sample.presentation.PresentationUsesC
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.common.security.CurrentToken;
+import com.ecsite.contract.Contracts;
 import com.ecsite.module.member.api.CurrentMemberIds;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
@@ -129,7 +130,7 @@ class ModuleStructureTest {
     /**
      * バックエンドの書き方（Gradle が system property {@code rules.backend-coding} で渡す）
      */
-    private static final Path RULES_BACKEND_CODING = Path.of(System.getProperty("rules.backend-coding"));
+    private static final Path RULES_BACKEND_CODING = Contracts.path("rules.backend-coding");
 
     /**
      * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの始まり

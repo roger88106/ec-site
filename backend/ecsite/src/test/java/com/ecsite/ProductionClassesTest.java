@@ -1,5 +1,6 @@
 package com.ecsite;
 
+import com.ecsite.contract.Contracts;
 import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -27,7 +28,7 @@ class ProductionClassesTest {
     /**
      * 設計書のディレクトリ（Gradle がシステムプロパティで渡す）
      */
-    private static final Path MODULE_DESIGNS = Path.of(System.getProperty("design.modules.dir"));
+    private static final Path MODULE_DESIGNS = Contracts.path("design.modules.dir");
 
     /**
      * 設計書の表の「レベル」の行。値の最初の文字がレベルを表す

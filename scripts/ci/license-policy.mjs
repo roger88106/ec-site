@@ -87,7 +87,7 @@ export function findLicenseProblems(documented, listed) {
  *
  * @param {string} docText licenses.md の内容
  * @param {{ allowed?: unknown }} policy policy.json の内容
- * @returns {string[]} 問題の文（なければ空）
+ * @returns {{ problems: string[], documentedCount: number }} 問題の文（なければ空）と、文書の「許可」の行のライセンスの件数（行がなければ 0）
  */
 export function findPolicyProblems(docText, policy) {
   const row = readAllowedRow(docText)
@@ -100,17 +100,16 @@ export function findPolicyProblems(docText, policy) {
   } else if (Array.isArray(policy.allowed)) {
     problems.push(...findLicenseProblems(row.licenses, policy.allowed))
   }
-  return problems
+  return { problems, documentedCount: row.licenses?.length ?? 0 }
 }
 
 if (isMain(import.meta.url)) {
   const docText = readFileSync(DOC_FILE, 'utf8')
   const policy = JSON.parse(readFileSync(POLICY_FILE, 'utf8'))
-  const row = readAllowedRow(docText)
-  const problems = findPolicyProblems(docText, policy)
+  const { problems, documentedCount } = findPolicyProblems(docText, policy)
   for (const problem of problems) {
     console.log(problem)
   }
-  console.log(`許可のライセンス：${row.licenses?.length ?? 0} 件、policy.json：${policy.allowed?.length ?? 0} 件、問題：${problems.length} 件`)
+  console.log(`許可のライセンス：${documentedCount} 件、policy.json：${policy.allowed?.length ?? 0} 件、問題：${problems.length} 件`)
   process.exit(problems.length ? 1 : 0)
 }

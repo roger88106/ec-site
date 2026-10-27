@@ -11,7 +11,7 @@
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
 | 1.1 | token の取り出し（`CurrentToken`）と、会員・運営者・会員 ID の取り出し（`CurrentMember`、`CurrentOperator`、`CurrentMemberIds`）は、presentation、`common.security`、表の例外の 2 つだけが使う | 自動（ArchUnit） |
-| 1.1 | jOOQ（`org.jooq` と生成したコード）を使うのは、モジュールの `infrastructure/persistence/` だけ。例外は表の 1 つ | 自動（ArchUnit） |
+| 1.1 | モジュールの中では、jOOQ（`org.jooq` と生成したコード）を使うのは `infrastructure/persistence/` だけ。例外は表の 1 つ | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
 | 1.1 | 共通コードと設定はモジュールに依存しない。共通コードとモジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |

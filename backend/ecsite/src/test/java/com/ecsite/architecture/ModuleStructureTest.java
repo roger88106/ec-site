@@ -154,7 +154,7 @@ class ModuleStructureTest {
     private static final List<AllowedApiUse> ALLOWED_API_USES = List.of(
             // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。
             // 会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために 3 組が増える
-            new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", ProductionClasses.MODULE_PACKAGE + ".*.presentation.."));
+            new AllowedApiUse(CurrentMemberIds.class.getName(), ProductionClasses.MODULE_PACKAGE + ".*.presentation.."));
 
     /**
      * token の取り出し（token、会員、運営者、会員 ID）のクラスの名前。<br />
@@ -171,7 +171,7 @@ class ModuleStructureTest {
      */
     private static final Set<String> TOKEN_ACCESS_EXCEPTIONS = Set.of(
             // 他のモジュールの presentation に会員の ID を渡す公開の API。自身も取り出しの対象（TOKEN_ACCESSORS）で、呼び出し元は presentation に限る
-            "com.ecsite.module.member.api.CurrentMemberIds",
+            CurrentMemberIds.class.getName(),
             // モジュールに属さない API の入口で、役割は presentation 層と同じ
             ME_CONTROLLER);
 

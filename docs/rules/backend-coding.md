@@ -281,7 +281,7 @@ public final class MoneyFormat {
 
 ### 5.4 書式
 
-Java の整形は、IntelliJ IDEA の Reformat Code を推奨する。整形は強制しない（CI と commit の前の hook では検査しない）。ただし、import の並びと使われていない import は、Checkstyle が検査する（下の import の項）。
+Java の整形は、IntelliJ IDEA の Reformat Code を推奨する。整形は強制しない（CI と commit の前の hook では検査しない）。ただし、import の並びと使われていない import と `*` の import は、Checkstyle が検査する（下の import の項）。
 
 - エージェントは、IntelliJ の MCP（`reformat_file`）を使えるとき、変えた Java のファイルを整形してよい。
 - `reformat_file` が整形できるのは、IntelliJ で開いているプロジェクトのファイルだけ。`.claude/worktrees/` の下の作業ツリーのファイルは、その作業ツリーを IntelliJ で開いていなければ、MCP が「ok」を返しても整形しない。整形の後に `git diff` で変わったかを確認する。

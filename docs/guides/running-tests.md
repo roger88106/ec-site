@@ -25,7 +25,7 @@
 
 コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]`（例：`[NullAway]`）で検査が分かる。修正方法は、null の報告なら [バックエンドの書き方](../rules/backend-coding.md) 第 7.1 節、検査を抑えるときは [バックエンドの書き方](../rules/backend-coding.md) 第 7.2 節。`-Werror` を付けているので、警告でもコンパイルが失敗する。
 
-Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）が失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`UnusedImports` は使われていない import を、`CustomImportOrder` は import の並びが決まった順（`java`・`javax` 以外、`java`・`javax`、static）でないものを報告する。Checkstyle は import を修正しないので、報告された import は手動で削除するか、並び替える。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は、本番のコード（`src/main`）の Javadoc の書き漏れなので、Javadoc を書く。修正方法と import の並びは [バックエンドの書き方](../rules/backend-coding.md) 第 5.4 節。test、integrationTest、testFixtures、tools では、Javadoc の 3 つの検査を `backend/ecsite/config/checkstyle/suppressions.xml` で抑えている。
+Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）が失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`UnusedImports` は使われていない import を、`CustomImportOrder` は import の並びが決まった順（`java`・`javax` 以外、`java`・`javax`、static）でないものを報告する。`AvoidStarImport` は `*` の import を報告する。個々の import に書き換える（IntelliJ の設定は[バックエンドの書き方](../rules/backend-coding.md) 第 5.4 節）。Checkstyle は import を修正しないので、報告された import は手動で削除するか、並び替える。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は、本番のコード（`src/main`）の Javadoc の書き漏れなので、Javadoc を書く。修正方法と import の並びは [バックエンドの書き方](../rules/backend-coding.md) 第 5.4 節。test、integrationTest、testFixtures、tools では、Javadoc の 3 つの検査を `backend/ecsite/config/checkstyle/suppressions.xml` で抑えている。
 
 テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`backend/ecsite/build/reports/cpd/cpdCheck.xml`）に重複の場所（ファイルと行）が出る。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[テストの書き方](../rules/test-writing.md) 第 3.5 節）。
 

@@ -17,10 +17,12 @@ import com.ecsite.architecture.layerdeps.module.sample.infrastructure.Infrastruc
 import com.ecsite.architecture.layerdeps.module.sample.presentation.PresentationToPort;
 import com.ecsite.architecture.layerdeps.module.sample.presentation.SamplePresentation;
 import com.ecsite.architecture.tokenaccess.sample.application.ApplicationUsesCurrentMember;
+import com.ecsite.architecture.tokenaccess.sample.infrastructure.directory.DirectoryUsesCurrentMemberIds;
 import com.ecsite.architecture.tokenaccess.sample.presentation.PresentationUsesCurrentMember;
 import com.ecsite.common.security.CurrentMember;
 import com.ecsite.common.security.CurrentOperator;
 import com.ecsite.common.security.CurrentToken;
+import com.ecsite.module.member.api.CurrentMemberIds;
 import com.tngtech.archunit.base.DescribedPredicate;
 import com.tngtech.archunit.core.domain.Dependency;
 import com.tngtech.archunit.core.domain.JavaClass;
@@ -154,17 +156,20 @@ class ModuleStructureTest {
             new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", ProductionClasses.MODULE_PACKAGE + ".*.presentation.."));
 
     /**
-     * token の取り出し（token、会員、運営者）のクラスの名前
+     * token の取り出し（token、会員、運営者、会員 ID）のクラスの名前。<br />
+     * 会員 ID の取り出し（CurrentMemberIds）を含める。他のモジュールの api の規則は infrastructure.directory からの利用を除くので、
+     * それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため。
      */
     private static final Set<String> TOKEN_ACCESSORS = Set.of(
-            CurrentToken.class.getName(), CurrentMember.class.getName(), CurrentOperator.class.getName());
+            CurrentToken.class.getName(), CurrentMember.class.getName(), CurrentOperator.class.getName(),
+            CurrentMemberIds.class.getName());
 
     /**
      * token の取り出しを、presentation 層と common.security の外から使ってよいクラス。<br />
      * 追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.1 節の例外の表にも書く。
      */
     private static final Set<String> TOKEN_ACCESS_EXCEPTIONS = Set.of(
-            // 他のモジュールの presentation に会員の ID を渡す公開の API。呼び出し元を presentation に限る規則（ALLOWED_API_USES）がある
+            // 他のモジュールの presentation に会員の ID を渡す公開の API。自身も取り出しの対象（TOKEN_ACCESSORS）で、呼び出し元は presentation に限る
             "com.ecsite.module.member.api.CurrentMemberIds",
             // モジュールに属さない API の入口で、役割は presentation 層と同じ
             ME_CONTROLLER);
@@ -427,6 +432,17 @@ class ModuleStructureTest {
 
         assertViolation(details, ApplicationUsesCurrentMember.class, CurrentMember.class);
         assertThat(details).noneMatch(detail -> detail.contains(PresentationUsesCurrentMember.class.getName()));
+    }
+
+    @Test
+    @DisplayName("token の取り出しの規則は、infrastructure.directory から会員 ID の取り出しを使う例に当たる")
+    void tokenAccessRuleMatchesDirectoryUsingCurrentMemberIds() {
+        JavaClasses examples = new ClassFileImporter().importClasses(DirectoryUsesCurrentMemberIds.class);
+
+        List<String> details = tokenAccessRule("com.ecsite.architecture.tokenaccess.sample.presentation..")
+                .evaluate(examples).getFailureReport().getDetails();
+
+        assertViolation(details, DirectoryUsesCurrentMemberIds.class, CurrentMemberIds.class);
     }
 
     @Test

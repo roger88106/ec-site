@@ -10,7 +10,7 @@
 | 1.1 | 参照の service は view を返し、presentation は集約を受け取らない（レベル A） | presentation が集約に依存しないことは自動（ArchUnit）、外部の呼び出しの前の読み取りの置き場所はレビュー |
 | 1.1 | 公開の API は、`api/` のクラスが application の service に委ねる。application は `api` に依存しない | `api/` のクラスが service に委ねることはレビュー、application が `api` に依存しないことは自動（ArchUnit） |
 | 1.1 | presentation と `application/model/` は、application の `port/` に依存しない | 自動（ArchUnit） |
-| 1.1 | token の取り出し（`CurrentToken`）と、会員・運営者の取り出し（`CurrentMember`、`CurrentOperator`）は、presentation、`common.security`、表の例外の 2 つだけが使う | 自動（ArchUnit） |
+| 1.1 | token の取り出し（`CurrentToken`）と、会員・運営者・会員 ID の取り出し（`CurrentMember`、`CurrentOperator`、`CurrentMemberIds`）は、presentation、`common.security`、表の例外の 2 つだけが使う | 自動（ArchUnit） |
 | 1.1 | jOOQ（`org.jooq` と生成したコード）を使うのは、モジュールの `infrastructure/persistence/` だけ。例外は表の 1 つ | 自動（ArchUnit） |
 | 1.1 | イベントの置き場所と送り出し | レベル A の application が送り出さないことは自動（ArchUnit）、置き場所はレビュー |
 | 1.1 | 共通コードと設定はモジュールに依存しない。共通コードとモジュールは設定に依存しない | 自動（ArchUnit） |
@@ -88,11 +88,11 @@ module/<モジュール>/
 - **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。`api/` の型を `api/` の外が実装・継承しない。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
 - **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、集約のパッケージの直下に置く。`vo/` に置くと、`vo/` と集約のパッケージが互いに依存して循環するためである（例：order の `BuyerProfile`、`Cancellation`）。
 
-- **認証の情報の取り出し**：token の取り出し（`CurrentToken`）と、会員・運営者の取り出し（`CurrentMember`、`CurrentOperator`）を使えるのは、presentation 層と `common.security` だけにする。application 以降へは、取り出した値（会員の ID など）を引数で渡し、Spring Security の型を出さない。例外は次の 2 つで、増やすときはこの表に理由を書く。
+- **認証の情報の取り出し**：token の取り出し（`CurrentToken`）と、会員・運営者・会員 ID の取り出し（`CurrentMember`、`CurrentOperator`、`CurrentMemberIds`）を使えるのは、presentation 層と `common.security` だけにする。application 以降へは、取り出した値（会員の ID など）を引数で渡し、Spring Security の型を出さない。例外は次の 2 つで、増やすときはこの表に理由を書く。
 
 | 呼び出し元 | 置き場所 | 例外の理由 |
 |------------|----------|------------|
-| `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation に会員の ID を渡す公開の API で、呼び出し元を presentation に限る規則がある（第 1.3 節 ※1） |
+| `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation 層に会員の ID を渡すための公開の API（第 1.3 節 ※1）。`CurrentMemberIds` 自身も取り出しの対象に含め、呼び出し元を presentation 層に限る。理由：他のモジュールの `api/` の規則（第 1.3 節）は `infrastructure/directory/` からの利用を除くので、それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため |
 | `MeController` | `config/security/` | モジュールに属さない API の入口で、役割は presentation 層と同じ。移すとモジュールの構成が変わる |
 
 - **jOOQ の置き場所**：jOOQ（`org.jooq` と、生成したコード `com.ecsite.jooq`）を使えるのは、モジュールの `infrastructure/persistence/` のクラスだけにする。application と domain が永続化の形に依存しないようにするためである。モジュールの外の共通の設定（`config/event/EventPublicationRecords`）は、schema の持ち主の検査（`SchemaOwnershipTest`）が別に見る。例外は次の 1 つで、増やすときはこの表に理由を書く。

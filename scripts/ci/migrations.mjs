@@ -5,7 +5,7 @@
 // 基準は、HEAD と develop・main（origin/ の方を先に見る）のそれぞれとの分岐点の tree。基準にあるものが今の index にない（削除、改名）か、中身が違えば失敗にする。
 // まだ develop にも main にも入っていない自分のブランチで加えたもの（分岐の後に加えたもの）は、番号の振り直しも中身の変更も通す。どの DB にも適用されておらず、checksum が残っていないため。
 // マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
-// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除（DROP SCHEMA を含む）と改名（ALTER SCHEMA … RENAME TO を含む）・スキーマの移動（SET SCHEMA）、列の型の変更、既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）、既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む）。バックエンドの書き方 第 8.1 節）を含むと失敗にする。
+// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除（DROP SCHEMA を含む）と改名（ALTER SCHEMA … RENAME TO を含む）・スキーマの移動（SET SCHEMA）、列の型の変更、既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）、既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む）、既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL）。バックエンドの書き方 第 8.1 節）を含むと失敗にする。
 // 対象外は、今ある 38 のマイグレーションのファイル名の一覧（LEGACY_MIGRATIONS）に入っているものだけ。それ以外は番号が小さくても全て対象にする。一覧にあって実在しない名前は失敗にする。
 // 例外は migrations-exclusions.json に理由を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値）。同じファイルの同じ種類の変更全てに効く。
 // 理由のない除外と、当たる変更がなくなった除外も失敗にする。SQL の字面で探すので、読み落としより誤検出の側に倒す（誤検出は除外で理由を残す）。
@@ -139,6 +139,7 @@ export const INCOMPATIBLE_KINDS = {
   changeType: '列の型の変更',
   setNotNull: '既存の列を NOT NULL にする',
   addNotNullWithoutDefault: '既定値のない NOT NULL の列の追加',
+  dropDefault: '既存の列の既定値の削除',
 }
 
 /**
@@ -164,6 +165,90 @@ function splitActions(body) {
 }
 
 /**
+ * 式の全体が、先頭の ( とそれに対応する最後の ) で囲まれているときの、中の式を返す。
+ *
+ * @param {string} expr 前後の空白のない式
+ * @param {string} open 囲みの前（例：`(` か `CAST(`）
+ * @returns {string | null} 中の式。囲まれていなければ null
+ */
+function unwrap(expr, open) {
+  if (!expr.startsWith(open)) return null
+  let depth = 0
+  for (let i = open.length - 1; i < expr.length; i += 1) {
+    if (expr[i] === '(') depth += 1
+    else if (expr[i] === ')') {
+      depth -= 1
+      if (depth === 0) return i === expr.length - 1 ? expr.slice(open.length, i).trim() : null
+    }
+  }
+  return null
+}
+
+/** 式の末尾の ::型（型名、(長さ)、[] を含む） */
+const TRAILING_CAST = /\s*::\s*[A-Z_"][\w". ]*(?:\([\d,\s]*\))?(?:\s*\[\d*\])*$/
+
+/** 式の末尾の COLLATE 名前 */
+const TRAILING_COLLATE = /\s+COLLATE\s+(?:"[^"]*"|[\w.]+)$/
+
+/**
+ * CAST( 式 AS 型 ) の式の部分を返す。AS は、CAST の括弧の直下（深さ 1）の最後のもの。
+ *
+ * @param {string} expr 前後の空白のない式
+ * @returns {string | null} 式の部分。CAST(… AS 型) の形でなければ null
+ */
+function unwrapCast(expr) {
+  const inner = unwrap(expr.replace(/^CAST\s+\(/, 'CAST('), 'CAST(')
+  if (inner === null) return null
+  let depth = 0
+  let asAt = -1
+  for (let i = 0; i < inner.length; i += 1) {
+    if (inner[i] === '(') depth += 1
+    else if (inner[i] === ')') depth -= 1
+    else if (depth === 0 && /^\sAS\s/.test(inner.slice(i, i + 4))) asAt = i
+  }
+  return asAt === -1 ? null : inner.slice(0, asAt).trim()
+}
+
+/**
+ * SET DEFAULT の式が、結果として NULL になる（既定値の削除と同じ）かを返す。
+ * 外側の括弧、末尾の ::型 と COLLATE、CAST(… AS 型) を、変わらなくなるまで外し、残りが NULL かを見る。
+ * 読み落としより誤検出の側に倒すので、NULL に続けて読めない部分が残る形（NULL の後ろに NULLIF 以外の語が続くなど）も数える。
+ *
+ * @param {string} rawExpr 大文字にして空白を 1 つにした、SET DEFAULT の後ろの式（変更の終わりまで）
+ * @returns {boolean} 既定値の削除なら true
+ */
+function isNullDefault(rawExpr) {
+  let expr = rawExpr.trim()
+  for (;;) {
+    const next = [
+      unwrap(expr, '('),
+      unwrapCast(expr),
+      expr.replace(TRAILING_CAST, ''),
+      expr.replace(TRAILING_COLLATE, ''),
+    ].find((candidate) => candidate !== null && candidate !== expr)
+    if (next === undefined) break
+    expr = next.trim()
+  }
+  return expr === 'NULL' || /^NULL(?![\w])/.test(expr)
+}
+
+/**
+ * ALTER COLUMN の、列の名前より後ろの部分が、互換性のない変更なら、その種類を返す。
+ * 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧、::型、COLLATE、CAST(… AS 型) が何重に付いてもよい）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない。
+ *
+ * @param {string} change 大文字にして空白を 1 つにした、列の名前の後ろ（例：SET DATA TYPE TEXT）
+ * @returns {string | null} INCOMPATIBLE_KINDS の値。なければ null
+ */
+function classifyColumnChange(change) {
+  if (/^(?:SET\s+DATA\s+)?TYPE\b/.test(change)) return INCOMPATIBLE_KINDS.changeType
+  if (/^SET\s+NOT\s+NULL\b/.test(change)) return INCOMPATIBLE_KINDS.setNotNull
+  if (/^DROP\s+DEFAULT\b/.test(change)) return INCOMPATIBLE_KINDS.dropDefault
+  const setDefault = /^SET\s+DEFAULT\s+(.*)$/.exec(change)
+  if (setDefault && isNullDefault(setDefault[1])) return INCOMPATIBLE_KINDS.dropDefault
+  return null
+}
+
+/**
  * ALTER TABLE の 1 つの変更が、互換性のない変更なら、その種類を返す。
  *
  * @param {string} action 大文字にして空白を 1 つにした変更（例：DROP COLUMN IF EXISTS X）
@@ -173,8 +258,12 @@ function classifyAction(action) {
   if (/^DROP\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.dropColumn
   if (/^RENAME\s+TO\b/.test(action) || /^SET\s+SCHEMA\b/.test(action)) return INCOMPATIBLE_KINDS.renameTable
   if (/^RENAME\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.renameColumn
-  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+(?:SET\s+DATA\s+)?TYPE\b/.test(action)) return INCOMPATIBLE_KINDS.changeType
-  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+NOT\s+NULL\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
+  if (/^ALTER\s/.test(action)) {
+    // 列の名前を 1 回だけ分け、種類は名前の後ろで決める（列の名前が type でも取り違えない）。
+    // column は予約語で、引用符なしでは列の名前にならないので、COLUMN は常に省けるキーワードとして読む
+    const parts = /^ALTER\s+(?:COLUMN\s+(?=\S+\s))?(\S+)\s+(.*)$/.exec(action)
+    return parts ? classifyColumnChange(parts[2]) : null
+  }
   // 主キーの制約の追加は、既存の列に SET NOT NULL を行う
   if (/^ADD\s+(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
   const isAddColumn = /^ADD\s+/.test(action) && !/^ADD\s+(?:CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|EXCLUDE|LIKE)\b/.test(action)

@@ -2,7 +2,7 @@
 // 共通の関数（lib/ の関数）を、検査ごとに自前で書き直さないことを、禁じる書き方の表で確認する。
 //
 // 使い方：
-// - テストは、走査する範囲を listScanScripts で求め、表を findRuleViolations に渡し、返りが空であることを確認する
+// - テストは、走査する範囲の script を listScanScripts で取得し、表を findRuleViolations に渡し、返りが空であることを確認する
 // - 表の 1 行は { guard, forbidden, target, exceptions }
 //   - guard：守る関数の名前（違反の報告に添える）
 //   - forbidden：禁じる書き方の正規表現（g・y のフラグは使えない。lastIndex が持ち越されて script を見逃すので、例外にする）
@@ -31,7 +31,7 @@ const SCOPES = {
  * 走査する script の一覧を、名前の順に返す。
  *
  * @param {'ci' | 'ci+lib' | 'all'} scope 走査する範囲
- * @param {string} [root] scripts/ のパス（テストが別の場所に見立てるときに渡す）
+ * @param {string} [root] scripts/ のパス（テストが別のディレクトリを指定するときに渡す）
  * @returns {{ name: string, raw: string, code: string }[]} script の名前（root からの相対パス、/ 区切り）、原文、コメントを除いたコード
  */
 export function listScanScripts(scope, root = defaultRoot) {

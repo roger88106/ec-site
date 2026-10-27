@@ -166,7 +166,7 @@ spec 226（E2E の書き方の検査など）が、本 spec のマージの後�
   - 依存：なし
   - 範囲：`scripts/ci/lib/`（新しい補助とそのテスト）、`lib/exclusions.test.mjs`、`lib/unreadable-line.test.mjs`、`lib/git-files.test.mjs`、`lib/git-env.test.mjs`、`docs/guides/ci.md` の `lib/` の一覧
   - 確認方法：補助のテストで、表の禁じる書き方を含む script を違反として返し、例外の script を返さないこと。4 つのテストで、守る関数を直接使わない形を意図的に 1 つ書くと失敗すること（確認した後に戻す）
-  - 結果：補助は `lib/scan-rules.mjs`。走査する script の一覧は `listScanScripts(scope)`（範囲は `ci`、`ci+lib`、`all`）、違反は `findRuleViolations(scripts, rules)`（表の行は `{ guard, forbidden, target, exceptions }`）。`git-env` の例外は、ファイルの名前の一致から 2 つのパスの一致に狭めた
+  - 結果：補助は `lib/scan-rules.mjs`。走査する script の一覧は `listScanScripts(scope)`（範囲は `ci`、`ci+lib`、`all`）、違反は `findRuleViolations(scripts, rules)`（表の行は `{ guard, forbidden, target, exceptions }`）。`git-env` の例外は、ファイルの名前の一致から 2 つのパスの一致に限定した
 - [x] **T225-01-02** [テスト] `frontend-rules` のファイルの種類の正規表現を 1 か所にまとめ、規則のまとまりへの振り分けを関数にしてテストで確認する（DC-225-3、4）。
   - 依存：なし
   - 範囲：`scripts/ci/frontend-rules.mjs`、`scripts/ci/frontend-rules.test.mjs`
@@ -189,7 +189,7 @@ spec 226（E2E の書き方の検査など）が、本 spec のマージの後�
   - 確認方法：`node scripts/ci/frontend-rules.mjs` が通ること
 - [x] **T225-01-06** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T225-01-01〜05
-  - 結果：重要な観点（高性能と汎用）と一般の観点（汎用を 2 回）で、高 0、必須 1（2 つのレビューで重複）。必須は、`lib/git-files.test.mjs` の `exitIfNoFiles` を呼ぶ検査の一覧が自前の走査のままだったもので、`listScanScripts` を使う形に修正した（一覧は前後で同じ 23 件）。検査を弱めた箇所はなかった
+  - 結果：重要な観点（高性能と汎用）と一般の観点（汎用を 2 回）で、高 0、必須 1（2 つのレビューで重複）。必須は、`lib/git-files.test.mjs` の `exitIfNoFiles` を呼ぶ検査の一覧が検査ごとに独自に書いた走査のままだったもので、`listScanScripts` を使う形に修正した（一覧は前後で同じ 23 件）。検査を弱めた箇所はなかった
 
 ### 段階 2：ライセンスの一覧の一致と、既定値の削除の規則
 
@@ -213,7 +213,7 @@ spec 226（E2E の書き方の検査など）が、本 spec のマージの後�
   - 確認方法：今のリポジトリ（新しいマイグレーションなし）で通ること
 - [x] **T225-02-04** 段階の最後のレビュー（profile「厚め」）を行い、指摘に対応する。
   - 依存：T225-02-01〜03
-  - 結果：重要な観点（高性能と汎用）と一般の観点（汎用を 2 回）で、高 3、必須 0。`SET DEFAULT CAST(NULL AS 型)` の見逃しと、「許可」の行が複数あるときの読み飛ばしは修正した。`ALTER COLUMN … DROP IDENTITY`（と `DROP EXPRESSION`）は、第 6 節の 4 で決めた範囲の外で、本 spec の変更で弱めたものでもないので、第 8 節に残した
+  - 結果：重要な観点（高性能と汎用）と一般の観点（汎用を 2 回）で、高 3、必須 0。`SET DEFAULT CAST(NULL AS 型)` の検出漏れと、「許可」の行が複数あるときに 2 つ目以降の行を照合しないことは修正した。`ALTER COLUMN … DROP IDENTITY`（と `DROP EXPRESSION`）は、第 6 節の 4 で決めた範囲の外で、本 spec の変更で弱めたものでもないので、第 8 節に残した
 
 ### 段階 3：完了
 
@@ -237,4 +237,4 @@ spec 226（E2E の書き方の検査など）が、本 spec のマージの後�
 |------|------|
 | #219 の「起きたら直すもの」 | Java のテキストブロックを `closingParen` が読まない、`design-migrations` の表の別名の誤検出、`note-numbers` の字下げのコードブロックと引用の中の囲み、正規表現かの判定が直前 200 字だけを見る、要素かの判定が型の注釈のない引数を見逃す（内容は [spec 185](../archive/1to10/185-new-checks/spec.md) 第 8 節）。どれも今のコードに該当がない。#219 を閉じるときに、新しい issue にするか、記録だけにするかを起票の案で決める |
 | ライセンスの「条件付き」の一覧の一致 | 第 5 節。表の書き方を `policy.json` と同じ名前にそろえれば、機械で照合できる |
-| IDENTITY と生成列の解除 | `ALTER COLUMN … DROP IDENTITY` は IDENTITY の列の既定値をなくし、前のリリースのアプリの INSERT を失敗させる（NOT NULL のまま残る）。`DROP EXPRESSION` も、NOT NULL の生成列では同じになりうる。第 6 節の 4 で決めた範囲（`DROP DEFAULT`、`SET DEFAULT NULL`）の外なので、規則と検査に加えるかを起票の案で決める（段階 2 のレビューで挙がった） |
+| IDENTITY と生成列の解除 | `ALTER COLUMN … DROP IDENTITY` は IDENTITY の列の既定値をなくす。列は NOT NULL のまま残るので、その列を指定しない前のリリースのアプリの INSERT が失敗する。`DROP EXPRESSION` も、NOT NULL の生成列では INSERT が失敗する可能性がある。第 6 節の 4 で決めた範囲（`DROP DEFAULT`、`SET DEFAULT NULL`）の外なので、規則と検査に加えるかを起票の案で決める（段階 2 のレビューで挙がった） |

@@ -1,7 +1,7 @@
 package com.ecsite.module.order.application.checkout;
 
-import com.ecsite.CatalogTestData;
 import com.ecsite.CapturedLogs;
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;

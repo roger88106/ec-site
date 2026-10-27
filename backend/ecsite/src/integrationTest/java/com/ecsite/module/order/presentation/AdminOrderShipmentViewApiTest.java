@@ -198,7 +198,9 @@ class AdminOrderShipmentViewApiTest {
             mockMvc.perform(get(BASE + "/" + accepted))
                     .andExpect(jsonPath("$.payment.status").value("AUTHORIZATION_EXPIRED"))
                     .andExpect(jsonPath("$.payment.authorizationExpiring").value(false));
-            assertThat(idsOf(lists.listAll("authorizationExpiring", "true"), accepted)).isEmpty();
+            var expiring = lists.listAll("authorizationExpiring", "true");
+            assertThat(idsOf(expiring, accepted, shipped, returned)).isEmpty();
+            assertThat(expiring).allSatisfy(item -> assertThat(item.get("authorizationExpiring")).isEqualTo(true));
         }
 
         @Test
@@ -246,7 +248,9 @@ class AdminOrderShipmentViewApiTest {
         @Test
         @DisplayName("AC-187 与信期限が近い注文で絞り込める。他の条件と組み合わせられる")
         void filtersByAuthorizationExpiring() throws Exception {
-            assertThat(idsOf(lists.listAll("authorizationExpiring", "true"), accepted, shipped, returned)).isEmpty();
+            var notYet = lists.listAll("authorizationExpiring", "true");
+            assertThat(idsOf(notYet, accepted, shipped, returned)).isEmpty();
+            assertThat(notYet).allSatisfy(item -> assertThat(item.get("authorizationExpiring")).isEqualTo(true));
 
             clock.setInstant(AUTHORIZATION_DEADLINE.minus(Duration.ofDays(1)));
             var expiring = lists.listAll("authorizationExpiring", "true");

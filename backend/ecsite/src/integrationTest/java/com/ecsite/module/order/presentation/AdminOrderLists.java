@@ -24,8 +24,16 @@ final class AdminOrderLists {
      */
     private static final String BASE = "/api/admin/orders";
 
+    /**
+     * API を呼ぶ MockMvc
+     */
     private final MockMvc mockMvc;
 
+    /**
+     * コンストラクタ
+     *
+     * @param mockMvc API を呼ぶ MockMvc
+     */
     AdminOrderLists(MockMvc mockMvc) {
         this.mockMvc = mockMvc;
     }

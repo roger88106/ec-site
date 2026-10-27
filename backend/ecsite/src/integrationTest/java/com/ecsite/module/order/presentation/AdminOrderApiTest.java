@@ -180,8 +180,6 @@ class AdminOrderApiTest {
         @DisplayName("AC-99 ページ単位で取得できる")
         void pages() throws Exception {
             for (int i = 0; i < 3; i++) {
-                // 注文日時が同じだと、並びが取得のたびに変わりうる
-                clock.setInstant(DEC_8_LATE.plusSeconds(i));
                 orders.placeOrder(variantId, 1);
             }
             var all = lists.listAll();

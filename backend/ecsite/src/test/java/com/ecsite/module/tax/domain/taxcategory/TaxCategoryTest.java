@@ -1,19 +1,19 @@
 package com.ecsite.module.tax.domain.taxcategory;
 
 import com.ecsite.module.tax.domain.TaxErrorCode;
-import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
-import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.draft;
+import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.newDraft;
+import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 
@@ -395,27 +395,6 @@ class TaxCategoryTest {
      */
     private TaxCategory restore(TaxRate... rates) {
         return factory.restore(new TaxCategory.Snapshot(CATEGORY_ID, "標準", List.of(rates), 3));
-    }
-
-    /**
-     * 税率を作る（ID は新しく振る）。期間の端の null は無限
-     */
-    private static TaxRate rate(String percent, Instant from, Instant to) {
-        return new TaxRate(UUID.randomUUID(), RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
-    }
-
-    /**
-     * 新しい税率（ID なし）の置き換えの要素を作る
-     */
-    private static TaxRateDraft newDraft(String percent, Instant from, Instant to) {
-        return draft(null, percent, from, to);
-    }
-
-    /**
-     * 置き換えの要素を作る。既存の税率を残すなら、その ID を渡す
-     */
-    private static TaxRateDraft draft(UUID id, String percent, Instant from, Instant to) {
-        return new TaxRateDraft(id, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
     }
 
     /**

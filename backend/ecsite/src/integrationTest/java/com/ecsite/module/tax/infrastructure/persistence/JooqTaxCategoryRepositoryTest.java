@@ -8,20 +8,20 @@ import com.ecsite.module.tax.domain.taxcategory.TaxCategoryFactory;
 import com.ecsite.module.tax.domain.taxcategory.TaxRate;
 import com.ecsite.module.tax.domain.taxcategory.TaxRateDraft;
 import com.ecsite.module.tax.domain.taxcategory.port.TaxCategoryRepository;
-import com.ecsite.module.tax.domain.taxcategory.vo.EffectivePeriod;
-import com.ecsite.module.tax.domain.taxcategory.vo.RatePercent;
 import org.jooq.DSLContext;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.math.BigDecimal;
 import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
+import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.draft;
+import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.newDraft;
+import static com.ecsite.module.tax.domain.taxcategory.TestTaxRates.rate;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -197,26 +197,5 @@ class JooqTaxCategoryRepositoryTest {
         category.replaceRates(List.of(drafts), NOW);
         repository.save(category);
         return repository.findById(category.id()).orElseThrow();
-    }
-
-    /**
-     * 税率を作る（ID は新しく振る）。期間の端の null は無限
-     */
-    private static TaxRate rate(String percent, Instant from, Instant to) {
-        return new TaxRate(UUID.randomUUID(), RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
-    }
-
-    /**
-     * 新しい税率（ID なし）の置き換えの要素を作る
-     */
-    private static TaxRateDraft newDraft(String percent, Instant from, Instant to) {
-        return draft(null, percent, from, to);
-    }
-
-    /**
-     * 置き換えの要素を作る。既存の税率を残すなら、その ID を渡す
-     */
-    private static TaxRateDraft draft(UUID id, String percent, Instant from, Instant to) {
-        return new TaxRateDraft(id, RatePercent.of(new BigDecimal(percent)), EffectivePeriod.of(from, to));
     }
 }

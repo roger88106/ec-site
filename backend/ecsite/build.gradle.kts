@@ -38,6 +38,7 @@ plugins {
     alias(libs.plugins.dependency.license.report)
     alias(libs.plugins.errorprone)
     alias(libs.plugins.pitest)
+    alias(libs.plugins.cpd)
     jacoco
     checkstyle
     // mock を包むテスト用の実装など、単体テストと統合テストで共有するもの（src/testFixtures）
@@ -352,6 +353,26 @@ checkstyle {
 tasks.withType<Checkstyle>().configureEach {
     val sourceSetName = name.removePrefix("checkstyle").replaceFirstChar { it.lowercase() }
     setSource(fileTree("src/$sourceSetName/java"))
+}
+
+// -----------------------------------------------------------------------------
+// 重複の検出（PMD の CPD。テストの書き方 第 3.5 節）
+//   テストのソースセット（src/test、src/integrationTest、src/testFixtures）の Java のコードで、100 トークン以上の重複を見つけると失敗する。
+//   直さない重複は、重複の場所を // CPD-OFF 理由 と // CPD-ON で囲む。main は見ない（生成したコードを含むため）。
+//   報告：build/reports/cpd/。CPD はビルドの道具で、アプリと依存のライセンスの検査の構成には入らない（Gradle のプラグインは policy.json の gradlePlugins）
+// -----------------------------------------------------------------------------
+cpd {
+    toolVersion = libs.versions.pmd.get()
+    minimumTokenCount = 100
+    language = "java"
+    // 既定は実行する機械の文字コード。日本語を含むソースを読み違えて、読めないファイルが黙って飛ばされるのを防ぐ
+    encoding = "UTF-8"
+    isIgnoreFailures = false
+}
+
+tasks.cpdCheck {
+    setSource(files("src/test/java", "src/integrationTest/java", "src/testFixtures/java"))
+    include("**/*.java")
 }
 
 // -----------------------------------------------------------------------------

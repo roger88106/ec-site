@@ -1,26 +1,16 @@
 package com.ecsite.module.order.domain.order;
 
-import com.ecsite.common.model.value.Money;
 import com.ecsite.common.model.value.Operator;
 import com.ecsite.module.order.domain.OrderErrorCode;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest;
 import com.ecsite.module.order.domain.order.vo.CancellationRequest.Result;
-import com.ecsite.module.order.domain.order.vo.OrderNumber;
-import com.ecsite.module.order.domain.order.vo.ShippingAddress;
-import com.ecsite.module.order.domain.quote.Amounts;
-import com.ecsite.module.order.domain.quote.Quote;
-import com.ecsite.module.order.domain.quote.QuoteItem;
-import com.ecsite.module.order.domain.quote.TaxAmount;
-import com.ecsite.module.order.domain.quote.VariantInfo;
 import com.ecsite.module.order.event.OrderStatusChanged;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 
-import java.math.BigDecimal;
 import java.time.Duration;
 import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 
 import static com.ecsite.BusinessErrorAssertions.assertBusinessError;
@@ -256,13 +246,7 @@ class OrderCancellationTest {
      * 「受付」の注文（与信の成功の後。成立のイベントは取り出し済み）
      */
     private static Order acceptedOrder() {
-        var variant = new VariantInfo(UUID.randomUUID(), UUID.randomUUID(), "P-1", "P-1-1", "商品", List.of(),
-                Money.of(1000), UUID.randomUUID(), null, true, false);
-        var amounts = new Amounts(Money.of(1100), Money.of(1000), Money.of(2100),
-                List.of(new TaxAmount(BigDecimal.TEN, Money.of(2100), Money.of(190))));
-        var quote = new Quote(List.of(QuoteItem.of(variant, 1, 10, BigDecimal.TEN, Money.of(1100))), amounts, true);
-        var order = Order.place(UUID.randomUUID(), OrderNumber.of("20261008-000001"), UUID.randomUUID(), UUID.randomUUID(), ORDERED_AT,
-                quote, "taro@example.com", ShippingAddress.of("山田 太郎", "1000001", TestAreas.CHIYODA, "千代田 1-1", "0312345678"), BuyerProfile.UNKNOWN);
+        var order = TestOrders.pending(ORDERED_AT);
         order.acceptPayment(ORDERED_AT.plusSeconds(30));
         order.pullEvents();
         return order;

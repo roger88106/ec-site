@@ -17,6 +17,7 @@ import java.util.Set;
 import java.util.TreeSet;
 import java.util.stream.Collectors;
 
+import static com.ecsite.contract.OpenApiNodes.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -105,17 +106,5 @@ class ErrorCodeContractTest {
      */
     private static List<String> strings(Object value) {
         return value == null ? List.of() : ((List<?>) value).stream().map(String::valueOf).toList();
-    }
-
-    /**
-     * YAML の値を Map として返す。
-     *
-     * @param value YAML の値
-     * @return Map。null なら空
-     */
-    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> map(Object value) {
-        return value == null ? Map.of() : (Map<String, Object>) value;
     }
 }

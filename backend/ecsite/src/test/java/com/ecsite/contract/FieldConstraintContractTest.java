@@ -14,6 +14,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Stream;
 
+import static com.ecsite.contract.OpenApiNodes.map;
+import static com.ecsite.contract.OpenApiNodes.resolve;
 import static com.ecsite.jooq.catalog.Tables.CATEGORY;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 import static com.ecsite.jooq.catalog.Tables.PRODUCT_AXIS;
@@ -202,36 +204,5 @@ class FieldConstraintContractTest {
         var field = Class.forName(classAndField[0]).getDeclaredField(classAndField[1]);
         field.setAccessible(true);
         return ((Number) field.get(null)).intValue();
-    }
-
-    /**
-     * {@code $ref}（同じファイルの中への参照）をたどった先を返す。
-     *
-     * @param document 契約の全体
-     * @param node     スキーマ
-     * @return 参照でなければそのもの、参照なら参照の先
-     */
-    private static Map<String, Object> resolve(Map<String, Object> document, Map<String, Object> node) {
-        Map<String, Object> current = node;
-        while (current.get("$ref") instanceof String ref) {
-            Object target = document;
-            for (String key : ref.substring(2).split("/", -1)) {
-                target = map(target).get(key);
-            }
-            current = map(target);
-        }
-        return current;
-    }
-
-    /**
-     * YAML の値を Map として返す。
-     *
-     * @param value YAML の値
-     * @return Map。null なら空
-     */
-    // YAML を読んだ汎用の Map を、契約（OpenAPI）の形が決まっているので、型を当てはめて読む
-    @SuppressWarnings("unchecked")
-    private static Map<String, Object> map(Object value) {
-        return value == null ? Map.of() : (Map<String, Object>) value;
     }
 }

@@ -50,7 +50,7 @@
 
 - 1 つの DC に条件を 1 つ書く。出典の列は、第 3 節の表の番号か issue である。
 - 整理の spec の DC の確認方法は、[開発の進め方](../../rules/workflow.md) 第 1.2 節のとおり plan で決める。規模 M には plan がないので、tasks で決める。
-- 「E2E」は、`e2e/tests/` のテスト、`e2e/showcase/` の撮影、`e2e/src/` の補助をいう。DC-226-16〜18 の「E2E」は、これに E2E の設定（`e2e/playwright*.config.ts`）と準備の script（`e2e/scripts/`）を加えた、`e2e/` の下の全ての TypeScript をいう。「フロントのテスト」は、管理画面・店舗画面・共有パッケージのテスト（`*.test.ts`・`*.test.tsx`）と、テストの補助（`src/test/`）をいう。
+- 「E2E」は、`e2e/` の下の全ての TypeScript（`e2e/tests/` のテスト、`e2e/showcase/` の撮影、`e2e/src/` の補助、E2E の設定 `e2e/playwright*.config.ts`、準備の script `e2e/scripts/`）をいう。#225 の振り分けの関数が返す E2E の一覧と同じ範囲にする。「フロントのテスト」は、管理画面・店舗画面・共有パッケージのテスト（`*.test.ts`・`*.test.tsx`）と、テストの補助（`src/test/`）をいう。
 
 ### DS-226-1 E2E の書き方の検査（D / P1）
 

@@ -42,6 +42,7 @@ describe('検査の対象のファイルの振り分け', () => {
   const support = 'frontend/store/src/test/render.tsx'
   const nestedSupport = 'frontend/admin/src/features/order/test/factory.ts'
   const e2e = 'e2e/src/cart.spec.ts'
+  const supportTest = 'frontend/store/src/test/auth.test.ts'
   const others = ['frontend/store/package.json', 'frontend/store/src/styles.css', 'e2e/playwright.config.js', 'backend/ecsite/build.gradle']
   const all = [store, storeTest, admin, adminTest, shared, sharedTest, support, nestedSupport, e2e, ...others]
 
@@ -69,9 +70,15 @@ describe('検査の対象のファイルの振り分け', () => {
     assert.deepEqual(groupTargets(all).testsWithSupport, [storeTest, adminTest, sharedTest, support, nestedSupport])
   })
 
+  test('テストと補助と E2E のファイルには、重なるファイル（src/test/ の下の .test.ts）が 1 回だけ入る', () => {
+    const grouped = groupTargets([...all, supportTest])
+    assert.deepEqual(grouped.testsWithSupportAndE2e, [storeTest, adminTest, sharedTest, support, nestedSupport, e2e, supportTest])
+    assert.equal(grouped.frontendTests.includes(supportTest) && grouped.testSupport.includes(supportTest), true)
+  })
+
   test('ファイルの順を保ち、どのまとまりにも入らないファイルは捨てる', () => {
     assert.deepEqual(groupTargets([e2e, storeTest, store]).tests, [e2e, storeTest])
-    assert.deepEqual(groupTargets(others), { sources: [], frontendTests: [], testSupport: [], e2e: [], tests: [], testsWithSupport: [] })
+    assert.deepEqual(groupTargets(others), { sources: [], frontendTests: [], testSupport: [], e2e: [], tests: [], testsWithSupport: [], testsWithSupportAndE2e: [] })
   })
 })
 
@@ -701,6 +708,29 @@ describe('E2E の書き方の検査', () => {
     assert.deepEqual(lines(findButtonNameChecks(text)), [1, 2, 3, 7])
   })
 
+  test('name のキーを引用符や [...] で書いても、name として読む', () => {
+    const text = [
+      "await page.getByRole('button', { 'name': '保存' }).click()",
+      'await page.getByRole("button", { "name": 保存 }).click()',
+      "await page.getByRole('button', { ['name']: '保存' }).click()",
+      "await page.getByRole('button', { 'name': '保存', exact: true }).click()",
+      "await page.getByRole('button', { 'name': /^保存$/ }).click()",
+      "await page.getByRole('button', { ['name']: /保存/ }).click()",
+    ].join('\n')
+    assert.deepEqual(lines(findButtonNameChecks(text)), [1, 2, 3, 6])
+  })
+
+  test('正規表現の最上位に | があれば固定していないとみなす。グループ・文字クラス・エスケープの中の | は固定', () => {
+    const text = [
+      "await page.getByRole('button', { name: /^a|b$/ }).click()",
+      "await page.getByRole('button', { name: /^(?:a|b)$/ }).click()",
+      "await page.getByRole('button', { name: /^[a|b]$/ }).click()",
+      "await page.getByRole('button', { name: /^a\\|b$/ }).click()",
+      "await page.getByRole('button', { name: /^(a|b)c|d$/ }).click()",
+    ].join('\n')
+    assert.deepEqual(lines(findButtonNameChecks(text)), [1, 5])
+  })
+
   test('ボタン以外の役割と、名前で探さない呼び出しと、コメントと文字列の中は見つけない', () => {
     const text = [
       "await page.getByRole('cell', { name: '2,200 円' }).click()",
@@ -735,6 +765,26 @@ describe('E2E の書き方の検査', () => {
       'await expect(x).toBeVisible({ timeout: 1000 }, { intervals: [CHECK_TIMEOUT] })',
     ].join('\n')
     assert.deepEqual(lines(findTimeoutLiterals(text)), [1, 2, 3, 4, 5, 6, 8, 10])
+  })
+
+  test('timeout で終わる項目（引用符のキーを含む）と、setDefaultTimeout・setDefaultNavigationTimeout の引数も見つける', () => {
+    const text = [
+      'use: { actionTimeout: 10_000 }',
+      'use: { navigationTimeout: 10000, expectTimeout: ASYNC_TIMEOUT }',
+      "{ 'timeout': 1000 }",
+      '{ "actionTimeout": 5 * 1000 }',
+      'page.setDefaultTimeout(5000)',
+      'page.setDefaultNavigationTimeout(30_000)',
+      'page.setDefaultTimeout(ASYNC_TIMEOUT)',
+      "{ 'timeout': ASYNC_TIMEOUT }",
+      "{ message: 'x', 'intervals': [100] }",
+    ].join('\n')
+    assert.deepEqual(lines(findTimeoutLiterals(text)), [1, 2, 3, 4, 5, 6, 9])
+  })
+
+  test('文字列の中の引用符つきのキーの形は見つけない', () => {
+    const text = ['const note = "a \'timeout\': 5000"', "const other = 'x \"actionTimeout\": 1000'"].join('\n')
+    assert.deepEqual(findTimeoutLiterals(text), [])
   })
 
   test('waits.ts の定数、名前だけの式、型の注釈、文字列とコメントの中の数字は見つけない', () => {
@@ -800,6 +850,18 @@ describe('組み込みの名前をシャドーイングする const・let の検
   test('1 つの宣言に並べた名前と、型の注釈の付いた名前を見つける', () => {
     const text = ['const a = 1, status = 2', 'let b, name', 'const alert: string = "a"', 'const map: Map<string, number> = new Map()', 'const total = sum(1, 2),', '  Set = 1'].join('\n')
     assert.deepEqual(found(text), ['1:status', '2:name', '3:alert', '6:Set'])
+  })
+
+  test('初期値のジェネリクスのカンマの後ろの宣言も見つける。比較の < と > は取り違えない', () => {
+    const text = [
+      'const m = new Map<string, number>(), status = 3',
+      'const a = f<A, B<C, D>>(1), b = 2, name = 3',
+      'const cb = new Map<string, (x: number) => void>(), alert = 1',
+      'const lt = a < b, Set = 1',
+      'const gt = a > b, cookieStore = 1',
+      'const mix = x < y ? p : q, status = 1',
+    ].join('\n')
+    assert.deepEqual(found(text), ['1:status', '2:name', '3:alert', '4:Set', '5:cookieStore', '6:status'])
   })
 
   test('関数の引数、catch の変数、関数・クラスの宣言、import は対象外', () => {

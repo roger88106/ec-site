@@ -1,5 +1,5 @@
 // ソースのコメントを空白に置き換える。走査（コメント・文字列・正規表現の読み分け）は scan-code が行う。
-// - .ts・.tsx：画面のソースを読む検査（hardcoded-text、frontend-rules）が共通で使う（stripComments）
+// - .ts・.tsx：画面のソースとテストを読む検査（hardcoded-text、frontend-rules、globals/lib-globals）が共通で使う（stripComments）。コメントだけを残す keepTsComments は spec-numbers が使う
 // - .java：Java のソースを読む検査（java-rules、env-defaults）が共通で使う（stripJavaComments）
 import { scanCode } from './scan-code.mjs'
 
@@ -49,7 +49,8 @@ export function keepJavaComments(text) {
 
 /**
  * TypeScript のコメントだけを残し、コメントの外（コード、文字列、テンプレートの文字の部分と ${...} の中のコード、正規表現のリテラル）を空白に置き換える。改行は残すので、位置と行番号は元のソースと同じ。<br />
- * コメントの判定は stripComments と同じ。テスト名や test.step の名前などの文字列の中の番号を、コメントの番号と取り違えないために使う。
+ * コメントの判定は stripComments と同じ。テスト名や test.step の名前などの文字列の中の番号を、コメントの番号と取り違えないために使う。<br />
+ * 限界：.tsx の JSX の文字（`<p>It's // here</p>`）は読み分けられない。文字の中の `'`・`"` を文字列の始まりと、`//` をコメントと読み違える。
  *
  * @param {string} text ソース
  * @returns {string} コメントだけを残したソース

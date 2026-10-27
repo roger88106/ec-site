@@ -20,9 +20,53 @@ import {
   findQueryUrlStrings,
   findDefinitions,
   findExportedNames,
+  groupTargets,
   isCommonFile,
   sharedPublicNames,
 } from './frontend-rules.mjs'
+
+describe('検査の対象のファイルの振り分け', () => {
+  const store = 'frontend/store/src/features/cart/components/CartLine.tsx'
+  const storeTest = 'frontend/store/src/features/cart/components/CartLine.test.tsx'
+  const admin = 'frontend/admin/src/features/order/pages/OrderListPage.tsx'
+  const adminTest = 'frontend/admin/src/features/order/pages/OrderListPage.test.tsx'
+  const shared = 'frontend/shared/src/lib/format.ts'
+  const sharedTest = 'frontend/shared/src/lib/format.test.ts'
+  const support = 'frontend/store/src/test/render.tsx'
+  const nestedSupport = 'frontend/admin/src/features/order/test/factory.ts'
+  const e2e = 'e2e/src/cart.spec.ts'
+  const others = ['frontend/store/package.json', 'frontend/store/src/styles.css', 'e2e/playwright.config.js', 'backend/ecsite/build.gradle']
+  const all = [store, storeTest, admin, adminTest, shared, sharedTest, support, nestedSupport, e2e, ...others]
+
+  test('本番のソースには、店舗画面・管理画面・共有のテストでないソースとテストの補助が入る', () => {
+    assert.deepEqual(groupTargets(all).sources, [store, admin, shared, support, nestedSupport])
+  })
+
+  test('画面のテストには、店舗画面・管理画面・共有の単体・結合テストだけが入る', () => {
+    assert.deepEqual(groupTargets(all).frontendTests, [storeTest, adminTest, sharedTest])
+  })
+
+  test('テストの補助には、src の下の test/ ディレクトリ（src/test/ と機能の中の test/）の下のファイルだけが入る', () => {
+    assert.deepEqual(groupTargets(all).testSupport, [support, nestedSupport])
+  })
+
+  test('E2E には、e2e/ の下の TypeScript のファイルだけが入る', () => {
+    assert.deepEqual(groupTargets(all).e2e, [e2e])
+  })
+
+  test('テストの種類のファイルには、画面のテストと E2E が入り、テストの補助は入らない', () => {
+    assert.deepEqual(groupTargets(all).tests, [storeTest, adminTest, sharedTest, e2e])
+  })
+
+  test('テストと補助のファイルには、画面のテストとテストの補助が入り、E2E は入らない', () => {
+    assert.deepEqual(groupTargets(all).testsWithSupport, [storeTest, adminTest, sharedTest, support, nestedSupport])
+  })
+
+  test('ファイルの順を保ち、どのまとまりにも入らないファイルは捨てる', () => {
+    assert.deepEqual(groupTargets([e2e, storeTest, store]).tests, [e2e, storeTest])
+    assert.deepEqual(groupTargets(others), { sources: [], frontendTests: [], testSupport: [], e2e: [], tests: [], testsWithSupport: [] })
+  })
+})
 
 describe('フロントの書き方の検査', () => {
   test('機能のファイルの、ほかの機能の import を見つける', () => {
@@ -270,6 +314,16 @@ describe('共有のパッケージと同じ名前の定義', () => {
       'frontend/shared/src/internal/secret.ts': 'export const secret = 1',
     }
     assert.deepEqual([...sharedPublicNames(exportsMap, files, (file) => sources[file])].sort(), ['Button', 'formatYen'])
+  })
+
+  test('src の外の .test.ts も、公開する名前に入れない', () => {
+    const exportsMap = { './lib/*': './lib/*.ts' }
+    const files = ['frontend/shared/lib/format.ts', 'frontend/shared/lib/format.test.ts']
+    const sources = {
+      'frontend/shared/lib/format.ts': 'export function formatYen() {}',
+      'frontend/shared/lib/format.test.ts': 'export const fromTest = 1',
+    }
+    assert.deepEqual([...sharedPublicNames(exportsMap, files, (file) => sources[file])], ['formatYen'])
   })
 
   test('公開する名前が 0 件のときは、通さずに失敗にする', () => {

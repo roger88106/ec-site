@@ -2,8 +2,8 @@
 // 使い方：node export-constraints.mjs <OpenAPI の YAML> <書き出す .ts>
 import { readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'
-import { fileURLToPath } from 'node:url'
 import { load } from 'js-yaml'
+import { isMain } from '../../../scripts/ci/lib/is-main.mjs'
 
 /** 書き出す制約のキーワード */
 const KEYWORDS = [
@@ -106,7 +106,7 @@ export function renderModule(constraints, source) {
   ].join('\n')
 }
 
-if (process.argv[1] === fileURLToPath(import.meta.url)) {
+if (isMain(import.meta.url)) {
   const [input, output] = process.argv.slice(2)
   const doc = load(readFileSync(input, 'utf8'))
   writeFileSync(output, renderModule(exportConstraints(doc), basename(input)))

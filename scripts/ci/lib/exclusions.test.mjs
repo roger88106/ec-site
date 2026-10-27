@@ -1,5 +1,5 @@
 import assert from 'node:assert/strict'
-import { mkdtempSync, readFileSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
@@ -14,6 +14,7 @@ import {
   findStaleExclusions,
   readExclusions,
 } from './exclusions.mjs'
+import { findRuleViolations, listScanScripts } from './scan-rules.mjs'
 
 /** 除外の一覧の JSON を置く場所 */
 const dir = mkdtempSync(path.join(tmpdir(), 'exclusions-'))
@@ -84,11 +85,8 @@ describe('除外の一覧のパス', () => {
   })
 
   test('検査は、除外の一覧を exclusionsPath で求める（検査ごとにパスを組み立てない）', () => {
-    const ciDir = path.join(path.dirname(fileURLToPath(import.meta.url)), '..')
-    const offenders = readdirSync(ciDir)
-      .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
-      .filter((name) => /readExclusions\((?!exclusionsPath\()/.test(readFileSync(path.join(ciDir, name), 'utf8')))
-    assert.deepEqual(offenders, [])
+    const rules = [{ guard: 'exclusionsPath', forbidden: /readExclusions\((?!exclusionsPath\()/, target: 'raw', exceptions: {} }]
+    assert.deepEqual(findRuleViolations(listScanScripts('ci'), rules), [])
   })
 })
 

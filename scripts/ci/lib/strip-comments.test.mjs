@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { keepJavaComments, stripComments, stripJavaComments } from './strip-comments.mjs'
+import { keepJavaComments, keepTsComments, stripComments, stripJavaComments } from './strip-comments.mjs'
 
 describe('コメントの除去', () => {
   test('行コメントとブロックコメントを空白にし、行の数を変えない', () => {
@@ -106,6 +106,32 @@ describe('Java のコメントだけを残す', () => {
   test('長さと行ごとの長さが元と同じ（行番号が変わらない）', () => {
     const text = 'a /* x\ny */ b // z\n"//w" c'
     const kept = keepJavaComments(text)
+    assert.equal(kept.length, text.length)
+    assert.deepEqual(
+      kept.split('\n').map((line) => line.length),
+      text.split('\n').map((line) => line.length),
+    )
+  })
+})
+
+describe('TypeScript のコメントだけを残す', () => {
+  test('TSDoc、ブロックのコメント、行のコメントを残し、コードを空白にする', () => {
+    const text = ['/** 説明 */', 'const a = 1 /* 注 */', 'const b = 2 // 後ろ'].join('\n')
+    assert.equal(keepTsComments(text), ['/** 説明 */', '            /* 注 */', '            // 後ろ'].join('\n'))
+  })
+
+  test('文字列、テンプレート、正規表現の中の // と /* を残さない', () => {
+    const text = ["const a = 'http://x'", 'const b = `//y ${1} /* z */`', 'const c = /\\/\\/w/ // 注'].join('\n')
+    const kept = keepTsComments(text)
+    assert.equal(kept.includes('http'), false)
+    assert.equal(kept.includes('y'), false)
+    assert.equal(kept.includes('w'), false)
+    assert.equal(kept.includes('// 注'), true)
+  })
+
+  test('長さと行ごとの長さが元と同じ（行番号が変わらない）', () => {
+    const text = 'a /* x\ny */ b // z\n"//w" c'
+    const kept = keepTsComments(text)
     assert.equal(kept.length, text.length)
     assert.deepEqual(
       kept.split('\n').map((line) => line.length),

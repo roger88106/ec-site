@@ -777,10 +777,10 @@ tasks.withType<JavaCompile>().configureEach {
         // Lombok の @NonNull の引数を持つクラスで Error Prone が例外を投げ、コンパイルが失敗するので無効にする
         disable("StringConcatToTextBlock")
         // enum のフィールドは List.of で作る一覧で、Error Prone は List の型を変更できると判断する。
-        // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする（spec 18 第 6 節の 8）
+        // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする
         disable("ImmutableEnumChecker")
         // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
-        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない（spec 18 第 6 節の 8）
+        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない
         if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
             disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
         }
@@ -800,7 +800,7 @@ tasks.withType<JavaCompile>().configureEach {
             // JSpecifyMode は付けない（JDK 22 以上が必要だ。ここは JDK 21）
         } else {
             // test、integrationTest、testFixtures、tools は検査しない。テストは検証の失敗を確認するため、
-            // 意図して null を渡す（spec 18 第 5 節）
+            // 意図して null を渡す
             disable("NullAway")
         }
     }

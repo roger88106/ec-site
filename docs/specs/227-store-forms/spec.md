@@ -172,12 +172,14 @@ spec の確認で、利用者が第 6.1〜6.5 節を全て案 A に決めた（2
 
 実装を始める前の照合で、各 spec の確定した tasks と照合し直す。差があれば、追跡の issue のコメントに書く。
 
+実装の前の照合（2026-10-27。222 のマージの後）で、226 の tasks（T226-02-02）との重なりが増えた。226 は、フロントのテストの、組み込みの名前と同じ変数（`status` など）の名前を変え、検査を Biome の設定で行うこともある。下の表の最後の 2 行に反映した。
+
 | 本 spec で変えるファイル | 重なる spec | 扱い |
 |--------------------------|-------------|------|
 | 店舗画面の構成、AC 一覧、フロントの書き方 | 222（#187 の語の言い換えで全ての文書）。ほかの spec も AC 一覧と規則の文書を変えうる | 222 のマージの後に始める。ほかの spec との衝突は、後でマージする側の pull request で `develop` を取り込んで解消する |
 | `e2e/tests/order.spec.ts`（段階 1） | 226（E2E の書き方の検査で、違反の箇所を直しうる） | 追加は確認の 1 行だけなので待たない。衝突は、後でマージする側が解消する |
-| `frontend/store/biome-plugins/`、`frontend/store/biome.jsonc`（段階 3） | なし | — |
-| 店舗画面のソースとテスト（`OrderForm`、`VariantPicker`、`withActionResult`、`actions/cart.ts`） | なし（222 はコメントの #187 の語だけを変えうる） | 222 のマージの後に始めるので、待つ必要はない |
+| `frontend/store/biome-plugins/`、`frontend/store/biome.jsonc`（段階 3） | 226（シャドーイングの検査を Biome の設定で行うとき、`biome.jsonc` を変える） | 待たない。衝突は、後でマージする側が解消する |
+| 店舗画面のソースとテスト（`OrderForm`、`VariantPicker`、`withActionResult`、`actions/cart.ts`） | 226（T226-02-02 がテストの変数の名前を変える） | 待たない。本 spec で書くテストでは、組み込みの名前（`status`、`name`、`event` など）を変数に使わない。衝突は、後でマージする側が解消する |
 
 段階 3 は Biome の plugin で書く（第 6.5 節）ので、spec 225 と 226 を待たない。GritQL で書けず `scripts/ci/frontend-rules.mjs` に変えるときは、利用者に確認し、段階 3 を両方のマージの後に行う。
 

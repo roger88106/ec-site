@@ -259,7 +259,7 @@ describe('互換性のない変更の検出', () => {
     assert.deepEqual(kinds('alter table if exists only a\n  drop column if exists b;'), [INCOMPATIBLE_KINDS.dropColumn])
     assert.deepEqual(kinds('ALTER TABLE a ADD COLUMN c int, DROP COLUMN b;'), [INCOMPATIBLE_KINDS.dropColumn])
     assert.deepEqual(kinds('ALTER TABLE a DROP CONSTRAINT a_fk;'), [])
-    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b DROP NOT NULL, ALTER COLUMN c DROP DEFAULT;'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b DROP NOT NULL;'), [])
   })
 
   test('表の改名と列の改名を見つけ、制約の改名は見つけない', () => {
@@ -273,11 +273,57 @@ describe('互換性のない変更の検出', () => {
   test('列の型の変更（TYPE、SET DATA TYPE、COLUMN の有無）を見つける', () => {
     assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b TYPE bigint;'), [INCOMPATIBLE_KINDS.changeType])
     assert.deepEqual(kinds('ALTER TABLE a ALTER b SET DATA TYPE text USING b::text;'), [INCOMPATIBLE_KINDS.changeType])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER c TYPE int;'), [INCOMPATIBLE_KINDS.changeType])
+  })
+
+  test('列の名前が type でも、変更の種類は名前の後ろで決める', () => {
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type SET DEFAULT NULL;'), [INCOMPATIBLE_KINDS.dropDefault])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type DROP DEFAULT;'), [INCOMPATIBLE_KINDS.dropDefault])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type SET NOT NULL;'), [INCOMPATIBLE_KINDS.setNotNull])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type SET DEFAULT 1;'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type TYPE int;'), [INCOMPATIBLE_KINDS.changeType])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER type TYPE int;'), [INCOMPATIBLE_KINDS.changeType])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER type SET DEFAULT 1;'), [])
   })
 
   test('既存の列を NOT NULL にする変更を見つける', () => {
     assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b SET NOT NULL;'), [INCOMPATIBLE_KINDS.setNotNull])
     assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b SET DEFAULT 1;'), [])
+  })
+
+  test('既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL）を見つけ、既定値の変更は見つけない', () => {
+    const kind = [INCOMPATIBLE_KINDS.dropDefault]
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c DROP DEFAULT;'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER c DROP DEFAULT;'), kind)
+    assert.deepEqual(kinds('alter table a\n  alter column "c"\n  drop\n  default;'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT NULL;'), kind)
+    assert.deepEqual(kinds('alter table a alter c set default null;'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT NULL::text;'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT (NULL);'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(NULL AS int);'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT (CAST(NULL AS int));'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST((NULL) AS int);'), kind)
+    assert.deepEqual(kinds('alter table a alter c set default cast(null as varchar(10));'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST (\n  NULL\n  AS\n  int\n);'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(NULL AS int)::text;'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(NULL::int AS int);'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(CAST(NULL AS int) AS text);'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT NULL COLLATE "C";'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT (NULL::text[]);'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(NULL AS numeric(10, 2))::numeric(10, 2);'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(0 AS int);'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(0::int AS int);'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(NULLIF(1, 1) AS int)::text;'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT CAST(NULLIF(1, 1) AS int);'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b DROP NOT NULL, ALTER COLUMN c DROP DEFAULT;'), kind)
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b SET DEFAULT 0, ALTER COLUMN c DROP DEFAULT, DROP COLUMN d;'), [INCOMPATIBLE_KINDS.dropDefault, INCOMPATIBLE_KINDS.dropColumn])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT 0;'), [])
+    assert.deepEqual(kinds("ALTER TABLE a ALTER COLUMN c SET DEFAULT 'x';"), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT now();'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET DEFAULT NULLIF(1, 1);'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c SET NOT NULL;'), [INCOMPATIBLE_KINDS.setNotNull])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c DROP NOT NULL;'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN c DROP IDENTITY;'), [])
   })
 
   test('既定値のない NOT NULL の列の追加を見つけ、DEFAULT 付き・NULL を許す列の追加は通す', () => {
@@ -426,6 +472,15 @@ describe('互換性の検査の対象と除外', () => {
   test('除外（<ファイル名>:<種類>）に置いた変更は数えず、使った除外のキーを返す', () => {
     const key = `${newName}:${INCOMPATIBLE_KINDS.dropColumn}`
     const result = scanMigrations([newFile], () => drop + drop, { [key]: '理由' })
+    assert.deepEqual(result.found, [])
+    assert.deepEqual([...result.used], [key])
+  })
+
+  test('既定値の削除も、除外（<ファイル名>:既存の列の既定値の削除）に置けば数えない', () => {
+    const sql = 'ALTER TABLE a ALTER COLUMN c DROP DEFAULT;\n'
+    assert.equal(scanMigrations([newFile], () => sql, {}).found[0].kind, INCOMPATIBLE_KINDS.dropDefault)
+    const key = `${newName}:${INCOMPATIBLE_KINDS.dropDefault}`
+    const result = scanMigrations([newFile], () => sql, { [key]: '理由' })
     assert.deepEqual(result.found, [])
     assert.deepEqual([...result.used], [key])
   })

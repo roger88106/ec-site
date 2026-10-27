@@ -2,7 +2,7 @@
 // 文書は docs/design/licenses.md 第 2 節の表の「許可」の行（2 列目）、policy.json は scripts/ci/licenses/policy.json の allowed。
 // 片方だけ直して一覧がずれると、文書の方針と CI が確認する方針が食い違うため、過不足を失敗にする。
 // 「許可」の行の 2 列目は、先に「。他に、」から後ろの文（ライセンスの名前でない説明）を除いてから、「、」で分けて読む。
-// 行がない、または区切りが読めない（空の項目、空白を含む項目）ときは、読み飛ばすと誤って通るので、失敗にする。
+// 行がない、区切りが読めない（空の項目、空白を含む項目）、「許可」の行が複数あるときは、読み飛ばすと誤って通るので、失敗にする。
 // 使い方：node scripts/ci/license-policy.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'
@@ -17,6 +17,9 @@ const POLICY_FILE = 'scripts/ci/licenses/policy.json'
 /** 読めない項目の理由 */
 const UNREADABLE_REASON = 'ライセンスの識別子を「、」で区切った形で読めない'
 
+/** 「許可」の行が複数あるときの理由 */
+const DUPLICATE_ROW_REASON = '「許可」の行が複数ある（最初の行だけを照合するので、1 行にまとめる）'
+
 /** ライセンスの識別子として読める形（空白を含まない） */
 const LICENSE_ID = /^[\w.+-]+$/
 
@@ -24,10 +27,12 @@ const LICENSE_ID = /^[\w.+-]+$/
  * 文書の第 2 節の「許可」の行から、ライセンスの一覧を読む。
  *
  * @param {string} text licenses.md の内容
- * @returns {{ licenses: string[] | null, unreadable: { line: number, text: string }[] }} ライセンス（書いた順。行がなければ null）と、読めない項目の行（1 始まりの行番号と行の内容）
+ * @returns {{ licenses: string[] | null, unreadable: { line: number, text: string, reason?: string }[] }} ライセンス（書いた順。最初の行だけ。行がなければ null）と、読めない行（1 始まりの行番号、行の内容、既定と違う理由）
  */
 export function readAllowedRow(text) {
   let inSection = false
+  let licenses = null
+  const unreadable = []
   const lines = text.split('\n')
   for (let index = 0; index < lines.length; index++) {
     const line = lines[index].replace(/\r$/, '')
@@ -39,11 +44,18 @@ export function readAllowedRow(text) {
     if (!inSection || cells[1] !== '許可' || cells.length < 4) {
       continue
     }
+    if (licenses !== null) {
+      // 2 つ目以降の行は照合に使わないので、読み飛ばすと、そこにだけ書いたライセンスが誤って通る
+      unreadable.push({ line: index + 1, text: line, reason: DUPLICATE_ROW_REASON })
+      continue
+    }
     const names = cells[2].replace(/。他に、.*$/, '').split('、').map((name) => name.trim())
-    const unreadable = names.some((name) => !LICENSE_ID.test(name)) ? [{ line: index + 1, text: line }] : []
-    return { licenses: names.filter((name) => LICENSE_ID.test(name)), unreadable }
+    if (names.some((name) => !LICENSE_ID.test(name))) {
+      unreadable.push({ line: index + 1, text: line })
+    }
+    licenses = names.filter((name) => LICENSE_ID.test(name))
   }
-  return { licenses: null, unreadable: [] }
+  return { licenses, unreadable }
 }
 
 /**
@@ -72,7 +84,7 @@ export function findLicenseProblems(documented, listed) {
 
 if (isMain(import.meta.url)) {
   const row = readAllowedRow(readFileSync(DOC_FILE, 'utf8'))
-  const problems = row.unreadable.map((item) => describeUnreadableLine({ file: DOC_FILE, line: item.line, text: item.text, reason: UNREADABLE_REASON }))
+  const problems = row.unreadable.map((item) => describeUnreadableLine({ file: DOC_FILE, line: item.line, text: item.text, reason: item.reason ?? UNREADABLE_REASON }))
   const policy = JSON.parse(readFileSync(POLICY_FILE, 'utf8'))
   if (!Array.isArray(policy.allowed)) {
     problems.push(`${POLICY_FILE} に allowed がない`)

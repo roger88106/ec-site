@@ -30,6 +30,17 @@ describe('許可の行の読み取り', () => {
     assert.equal(spaced.unreadable[0].line, 5)
   })
 
+  test('第 2 節に許可の行が 2 つ以上あるときは、2 つ目以降の行を理由つきで出し、ライセンスは最初の行だけ読む', () => {
+    const text = ['## 2. 依存のライセンスの方針', '| 許可 | MIT | a |', '| 許可 | ISC | b |', '| 許可 | Zlib | c |', '## 3. 次'].join('\n')
+    const result = readAllowedRow(text)
+    assert.deepEqual(result.licenses, ['MIT'])
+    assert.deepEqual(
+      result.unreadable.map((item) => item.line),
+      [3, 4],
+    )
+    assert.match(result.unreadable[0].reason, /複数/)
+  })
+
   test('第 2 節の外の許可の行は読まない', () => {
     const text = ['## 1. 前', '| 許可 | MIT | x |', '## 2. 依存のライセンスの方針', '| 区分 | a | b |'].join('\n')
     assert.equal(readAllowedRow(text).licenses, null)

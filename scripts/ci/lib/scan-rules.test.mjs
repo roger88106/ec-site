@@ -108,6 +108,23 @@ describe('禁じる書き方の照合', () => {
     assert.throws(() => findRuleViolations([], [{ guard: 'g', forbidden, exceptions: {} }]), /0 件/)
   })
 
+  test('target が code・raw 以外（綴りの誤り）の行は、行の guard を添えて例外にする', () => {
+    const rules = [{ guard: 'guard-x', forbidden, target: 'cod', exceptions: {} }]
+    assert.throws(() => findRuleViolations(listScanScripts('ci', root), rules), /guard-x/)
+  })
+
+  test('forbidden が正規表現でない行は、行の guard を添えて例外にする', () => {
+    const rules = [{ guard: 'guard-y', forbidden: '禁止語', exceptions: {} }]
+    assert.throws(() => findRuleViolations(listScanScripts('ci', root), rules), /guard-y/)
+  })
+
+  test('forbidden に g・y のフラグがある行は（lastIndex が持ち越されるので）、行の guard を添えて例外にする', () => {
+    for (const flag of ['g', 'y']) {
+      const rules = [{ guard: `guard-${flag}`, forbidden: new RegExp('禁止語', flag), exceptions: {} }]
+      assert.throws(() => findRuleViolations(listScanScripts('ci', root), rules), new RegExp(`guard-${flag}`))
+    }
+  })
+
   test('どの script にも当たらない例外（存在しない script の例外）は例外にする', () => {
     const rules = [{ guard: 'g', forbidden, exceptions: { 'ci/none.mjs': '理由' } }]
     assert.throws(() => findRuleViolations(listScanScripts('ci+lib', root), rules), /ci\/none\.mjs/)

@@ -5,7 +5,7 @@
 // - テストは、走査する範囲を listScanScripts で求め、表を findRuleViolations に渡し、返りが空であることを確認する
 // - 表の 1 行は { guard, forbidden, target, exceptions }
 //   - guard：守る関数の名前（違反の報告に添える）
-//   - forbidden：禁じる書き方の正規表現
+//   - forbidden：禁じる書き方の正規表現（g・y のフラグは使えない。lastIndex が持ち越されて script を見逃すので、例外にする）
 //   - target：'code'（コメントを除いたコード。既定）か 'raw'（原文）
 //   - exceptions：{ script の名前: 例外にする理由 }。守る関数を定義する script など
 // - 新しい共通の関数を加えたときは、そのテストの表に行を追加する（表にない関数は、守られているか確認されない）
@@ -71,6 +71,9 @@ export function findRuleViolations(sources, rules) {
   const known = new Set(sources.map(({ name }) => name))
   const violations = []
   for (const { guard, forbidden, target = 'code', exceptions } of rules) {
+    if (target !== 'code' && target !== 'raw') throw new Error(`${guard} の target が 'code'・'raw' でない：${String(target)}`)
+    if (!(forbidden instanceof RegExp)) throw new Error(`${guard} の forbidden が正規表現でない`)
+    if (forbidden.global || forbidden.sticky) throw new Error(`${guard} の forbidden に g・y のフラグがある（lastIndex が持ち越されて、script を見逃す）`)
     for (const name of Object.keys(exceptions)) {
       if (!known.has(name)) throw new Error(`${guard} の例外 ${name} が、走査する script にない`)
     }

@@ -256,11 +256,11 @@ spec 223 は、単体テストが文書の置き場所を読む処理を、契�
   - 依存：なし
   - 範囲：`ShipmentApiTest`、`docs/design/acceptance-criteria.md`
   - 確認方法：`node scripts/ci/ac-check.mjs` が通る。分けた 2 つのテストの入力の合計が、分ける前と同じであることを確認する。
-- [ ] **T224-02-04** [テスト] 契約の補助を testFixtures に移し、店舗 API の token の契約のテストと Keycloak の統合テストが、それで置き場所を読む形にする（DC-224-12、13。第 6 節の 4）。
+- [x] **T224-02-04** [テスト] 契約の補助を testFixtures に移し、店舗 API の token の契約のテストと Keycloak の統合テストが、それで置き場所を読む形にする（DC-224-12、13。第 6 節の 4）。
   - 依存：なし
   - 範囲：`Contracts`、`ContractsTest`、`StoreApiTokenContractTest`、`KeycloakIntegrationTest`、`backend/ecsite/build.gradle.kts`（置き場所を渡す設定を変えるとき）
   - 確認方法：統合テストの task から置き場所の system property を一時的に外して、2 つのテストが property の名前を示して失敗することを確認する。契約、realm、theme の 3 つの property のそれぞれで確認する。
-- [ ] **T224-02-05** [テスト] トレースの送信の既定（共通の設定は無効で送信先なし、local の profile は有効）を確認するテストを加える（DC-224-14、15）。
+- [x] **T224-02-05** [テスト] トレースの送信の既定（共通の設定は無効で送信先なし、local の profile は有効）を確認するテストを加える（DC-224-14、15）。
   - 依存：なし
   - 範囲：設定を読む新しいテスト（`src/test` か `src/integrationTest`。実装役が設定の読み方で選び、結果に書く）
   - 確認方法：共通の設定と local の profile の値を一時的に入れ替えて、テストが失敗することを確認する。

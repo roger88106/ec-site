@@ -27,12 +27,20 @@ import { createLineLocator } from './lib/line-number.mjs'
 const LOCALE_FILE = 'frontend/shared/src/lib/locale.ts'
 
 /**
- * 調べる画面のソース（テストを除く）。
- * 画面の本番のソースの定義（lib/screen-sources.mjs）とは違い、生成物、shadcn/ui の部品、共有の ui、テストの補助（src/test/）も調べる。
+ * 画面のソース（テストを含む）。
+ * 画面の本番のソースの定義（lib/screen-sources.mjs）とは違い、生成物、shadcn/ui の部品、共有の ui、テストの補助（src/test/）も含む。
  * ロケールの直接の記述と機能の間の import は、どのファイルに書いても規則に反するため、本番のソースに絞らない
  */
-const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/
-const TEST = /\.test\.tsx?$/
+export const SOURCE = /^frontend\/(?:store|admin|shared)\/src\/.*\.tsx?$/
+
+/** 画面の単体・結合テストのファイル */
+export const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
+
+/** 画面のテストの補助のファイル（src/test/ の下） */
+export const FRONTEND_TEST_SUPPORT = /^frontend\/(?:store|admin|shared)\/src\/(?:.*\/)?test\/.*\.tsx?$/
+
+/** E2E のファイル */
+export const E2E_FILE = /^e2e\/.*\.tsx?$/
 
 /** 機能のファイル */
 const FEATURE_FILE = /^frontend\/(store|admin)\/src\/features\/([^/]+)\//
@@ -82,8 +90,29 @@ const CSS_CLASS_CHECK = [
 /** コンポーネントの内部の属性（data-slot）と、DOM のセレクターで探す書き方 */
 const INTERNAL_SELECTOR = [/\bdata-slot\b/, /\bquerySelector(?:All)?\b/]
 
-/** テストの種類のファイル（画面のテストと E2E） */
-const TEST_FILE = /^(?:frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?|e2e\/.*\.tsx?)$/
+/**
+ * ファイルを、規則を当てるまとまりに振り分ける。ファイルの順は保つ。どのまとまりにも入らないファイルは捨てる。
+ * まとまりは重なる：sources はテストの補助を含み、tests と testsWithSupport は画面のテストを含む。
+ *
+ * @param {string[]} files リポジトリのルートからのパス
+ * @returns {{ sources: string[], frontendTests: string[], testSupport: string[], e2e: string[], tests: string[], testsWithSupport: string[] }}
+ *   sources は画面のソース（テストを除く。テストの補助を含む）、frontendTests は画面の単体・結合テスト、testSupport はテストの補助、e2e は E2E、
+ *   tests は画面のテストと E2E、testsWithSupport は画面のテストとテストの補助（E2E を除く）
+ */
+export function groupTargets(files) {
+  const pick = (matches) => files.filter(matches)
+  const isFrontendTest = (file) => FRONTEND_TEST.test(file)
+  const isTestSupport = (file) => FRONTEND_TEST_SUPPORT.test(file)
+  const isE2e = (file) => E2E_FILE.test(file)
+  return {
+    sources: pick((file) => SOURCE.test(file) && !isFrontendTest(file)),
+    frontendTests: pick(isFrontendTest),
+    testSupport: pick(isTestSupport),
+    e2e: pick(isE2e),
+    tests: pick((file) => isFrontendTest(file) || isE2e(file)),
+    testsWithSupport: pick((file) => isFrontendTest(file) || isTestSupport(file)),
+  }
+}
 
 /**
  * 正規表現のどれかに合う行を探す。
@@ -296,7 +325,7 @@ export function sharedPublicNames(exportsMap, files, read) {
     })
   const names = new Set()
   for (const file of files) {
-    if (TEST.test(file) || !/\.tsx?$/.test(file) || !patterns.some((pattern) => pattern.test(file))) continue
+    if (FRONTEND_TEST.test(file) || !/\.tsx?$/.test(file) || !patterns.some((pattern) => pattern.test(file))) continue
     for (const name of findExportedNames(read(file))) names.add(name)
   }
   if (names.size === 0) {
@@ -724,12 +753,6 @@ export function findFireEvents(text) {
   return toHits(text, lineNumbers)
 }
 
-/** フロントのテストのファイル */
-const FRONTEND_TEST = /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/
-
-/** フロントのテストの補助のファイル（src/test/ の下） */
-const FRONTEND_TEST_SUPPORT = /^frontend\/(?:store|admin|shared)\/src\/(?:.*\/)?test\/.*\.tsx?$/
-
 /** 共有の名前と同じ名前の定義の除外のキー（<画面>:<名前>）。画面は store か admin */
 const shadowKey = (file, name) => `${file.split('/')[1]}:${name}`
 
@@ -751,8 +774,9 @@ if (isMain(import.meta.url)) {
     console.log(error.message)
     process.exit(1)
   }
+  const targets = groupTargets(files)
   const shadowing = new Set()
-  for (const file of files.filter((file) => SOURCE.test(file) && !TEST.test(file))) {
+  for (const file of targets.sources) {
     const text = readFileSync(file, 'utf8')
     if (isScreenSource(file) && !file.startsWith('frontend/shared/')) {
       for (const hit of findDefinitions(text, sharedNames)) {
@@ -788,17 +812,17 @@ if (isMain(import.meta.url)) {
       }
     }
   }
-  for (const file of files.filter((file) => TEST_FILE.test(file))) {
+  for (const file of targets.tests) {
     for (const hit of findCssClassChecks(readFileSync(file, 'utf8'))) {
       report(`${file}:${hit.line} CSS のクラスを確認する（役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
     }
   }
-  for (const file of files.filter((file) => /^frontend\/(?:store|admin|shared)\/src\/.*\.test\.tsx?$/.test(file))) {
+  for (const file of targets.frontendTests) {
     for (const hit of findInternalSelectors(readFileSync(file, 'utf8'))) {
       report(`${file}:${hit.line} コンポーネントの内部の属性（data-slot）か querySelector で探す（役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
     }
   }
-  for (const file of files.filter((file) => FRONTEND_TEST.test(file) || FRONTEND_TEST_SUPPORT.test(file))) {
+  for (const file of targets.testsWithSupport) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findTypeCasts(text)) {
       report(`${file}:${hit.line} 理由のコメントのない型を回避する変換（型に合う値を補助で作る。避けられないときは理由をコメントに書く。テストの書き方 第 4.6 節）：${hit.text}`)
@@ -807,7 +831,7 @@ if (isMain(import.meta.url)) {
       report(`${file}:${hit.line} 理由のコメントのない fireEvent の使用（userEvent で操作する。起こせない出来事だけは、同じ行か直前の行のコメントに理由を書く。テストの書き方 第 4.8 節）：${hit.text}`)
     }
   }
-  for (const file of files.filter((file) => FRONTEND_TEST.test(file))) {
+  for (const file of targets.frontendTests) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findMarkupTextChecks(text)) {
       report(`${file}:${hit.line} 描画した HTML の文字を、要素や属性の並びで確かめる（描画した結果を DOM に読み込み、役割と名前で探す。テストの書き方 第 4.1 節）：${hit.text}`)
@@ -819,7 +843,7 @@ if (isMain(import.meta.url)) {
       report(`${file}:${hit.line} 要素のプロパティ・属性を toBe・toEqual で比べる（toBeDisabled、toHaveValue、toHaveAttribute などを使う。テストの書き方 第 4.7 節）：${hit.text}`)
     }
   }
-  for (const file of files.filter((file) => TEST_FILE.test(file))) {
+  for (const file of targets.tests) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findWeakExistenceChecks(text)) {
       report(`${file}:${hit.line} toBeTruthy・toBeDefined で確かめる（toBeInTheDocument か、値の形で確かめる。テストの書き方 第 4.1 節）：${hit.text}`)

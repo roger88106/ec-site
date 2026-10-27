@@ -1,6 +1,8 @@
 // 環境変数の文書（docs/guides/environment.md）の既定値が、コードの設定の型の既定値と一致することを確認する（バックエンドの書き方 第 6.1 節）。
 // - コードの既定値（@ConfigurationProperties の record の @DefaultValue）は、文書に同じ値である
 // - 文書に既定値（時間、数、真偽）を書いた設定は、コードも既定値を持つ
+// - 管理画面の IdP の既定値（VITE_OIDC_AUTHORITY、VITE_OIDC_CLIENT_ID）は、管理画面の認証の設定（oidc.ts）を正とし、
+//   knip の設定、ローカルの検査の script、CI、文書の値がそれと一致する
 // 環境変数の名前は、接頭辞と項目の名前から作る（ecsite.payment の expiryInterval → ECSITE_PAYMENT_EXPIRY_INTERVAL）。
 // 文書の省略形（`ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えて、コードにある名前に合わせる。
 // 時間は、書き方によらず同じ長さなら同じ値とみなす（1m と PT1M）。
@@ -234,6 +236,89 @@ export function compareDefaults(code, doc) {
   return problems.sort()
 }
 
+/** 管理画面の IdP の環境変数（認可サーバーの URL とクライアント ID） */
+const ADMIN_IDP_VARS = ['VITE_OIDC_AUTHORITY', 'VITE_OIDC_CLIENT_ID']
+
+/**
+ * コメントの行（`//`、`#`、`*`、`/*` で始まる行）を除く。
+ *
+ * @param {string} text ソースか script
+ * @returns {string} コメントの行を空にした文
+ */
+function dropCommentLines(text) {
+  return text
+    .split('\n')
+    .map((line) => (/^\s*(?:\/\/|#|\*|\/\*)/.test(line) ? '' : line))
+    .join('\n')
+}
+
+/**
+ * 管理画面の IdP の既定値を書いた置き場所。最初の 1 つ（管理画面の認証の設定）を正とし、残りは正と同じ値でなければならない。<br />
+ * 管理画面の本番のビルドは IdP の値を明示しないと失敗する。そのため、値を 1 つのファイルから読まずに、置き場所ごとに書いて一致を確認する。
+ * 各置き場所の read は、名前の既定値（書き方に当たる全て）を返す。
+ *
+ * @type {{ file: string, read: (text: string, name: string) => string[] }[]}
+ */
+const ADMIN_IDP_PLACES = [
+  {
+    file: 'frontend/admin/src/auth/oidc.ts',
+    read: (text, name) => [...dropCommentLines(text).matchAll(new RegExp(`import\\.meta\\.env\\.${name}\\s*\\?\\?\\s*(['"])(.*?)\\1`, 'g'))].map((match) => match[2]),
+  },
+  {
+    file: 'knip.ts',
+    read: (text, name) => [...dropCommentLines(text).matchAll(new RegExp(`process\\.env\\.${name}\\s*\\?\\?=\\s*(['"])(.*?)\\1`, 'g'))].map((match) => match[2]),
+  },
+  {
+    file: 'scripts/dev/check-frontend.sh',
+    read: (text, name) => [...dropCommentLines(text).matchAll(new RegExp(`\\$\\{${name}:-([^}]*)\\}`, 'g'))].map((match) => match[1]),
+  },
+  {
+    file: '.github/workflows/ci.yml',
+    read: (text, name) =>
+      [...dropCommentLines(text).matchAll(new RegExp(`^\\s*${name}:\\s*(\\S+)\\s*$`, 'gm'))].map((match) => match[1].replace(/^(['"])(.*)\1$/, '$2')),
+  },
+  {
+    file: 'docs/guides/environment.md',
+    read: (text, name) =>
+      text
+        .split(/\r?\n/)
+        .map((line) => line.split('|').slice(1, -1).map((cell) => cell.trim()))
+        .filter((cells) => cells.length >= 3 && cells[0] === `\`${name}\``)
+        .map((cells) => cells.at(-1).replace(/^`(.*)`$/, '$1')),
+  },
+]
+
+/** 管理画面の IdP の既定値を読む置き場所のファイル（リポジトリのルートからのパス） */
+export const ADMIN_IDP_FILES = ADMIN_IDP_PLACES.map((place) => place.file)
+
+/**
+ * 管理画面の IdP の既定値が、置き場所の間で一致するかを調べる。管理画面の認証の設定（`oidc.ts`）を正とする。
+ *
+ * @param {Record<string, string>} texts 置き場所のファイル（ADMIN_IDP_FILES）の中身
+ * @returns {string[]} 食い違いと、読めなかった置き場所の説明（環境変数の順、置き場所の順）
+ */
+export function compareAdminIdp(texts) {
+  const [canonicalPlace, ...others] = ADMIN_IDP_PLACES
+  const problems = []
+  for (const name of ADMIN_IDP_VARS) {
+    const [canonical] = canonicalPlace.read(texts[canonicalPlace.file] ?? '', name)
+    if (canonical === undefined) {
+      problems.push(`${name}：${canonicalPlace.file} の既定値を読めない`)
+      continue
+    }
+    for (const place of others) {
+      const values = place.read(texts[place.file] ?? '', name)
+      if (values.length === 0) problems.push(`${name}：${place.file} の既定値を読めない`)
+      for (const value of values) {
+        if (value !== canonical) {
+          problems.push(`${name}：${place.file} の既定「${value}」が、${canonicalPlace.file} の既定「${canonical}」と違う`)
+        }
+      }
+    }
+  }
+  return problems
+}
+
 if (isMain(import.meta.url)) {
   const javaFiles = listGitFiles(['backend/ecsite/src/main/java/*.java'])
   exitIfNoFiles(javaFiles, '設定を読む Java のファイル')
@@ -242,7 +327,8 @@ if (isMain(import.meta.url)) {
     .filter(({ source }) => stripJavaComments(source).includes('@ConfigurationProperties('))
   const { code, problems: unreadable } = readAllProperties(entries)
   const doc = parseEnvTable(readFileSync(ENV_DOC, 'utf8'), new Set(code.map((row) => row.env)))
-  const problems = [...unreadable, ...compareDefaults(code, doc)]
+  const adminIdp = Object.fromEntries(ADMIN_IDP_FILES.map((file) => [file, readFileSync(file, 'utf8')]))
+  const problems = [...unreadable, ...compareDefaults(code, doc), ...compareAdminIdp(adminIdp)]
   for (const problem of problems) console.log(problem)
   console.log(`環境変数の既定値の食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

@@ -2,11 +2,14 @@ package com.ecsite.config.security;
 
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.core.io.ByteArrayResource;
 
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatIllegalStateException;
 
 /**
  * OpenAPI の操作の一覧の読み方の検査。<br />
@@ -65,5 +68,70 @@ class OpenApiOperationsTest {
     @DisplayName("契約にない操作は空")
     void unknownOperationIsEmpty() {
         assertThat(operations.find("GET", "/api/admin/unknown")).isEmpty();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"GET", "Get"})
+    @DisplayName("パスの下に小文字でない HTTP メソッドがあると、契約のファイル、パス、キーを示して読み込みに失敗する")
+    void rejectsNonLowercaseMethod(String key) {
+        assertThatIllegalStateException()
+                .isThrownBy(() -> load(pathItem(key + ":\n      operationId: getCategories")))
+                .withMessageContainingAll("admin.yaml", "/categories", key);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"gett", "requestBody", "security"})
+    @DisplayName("パスの下に HTTP メソッドと OpenAPI の Path Item の項目の外のキーがあると、契約のファイル、パス、キーを示して読み込みに失敗する")
+    void rejectsUnknownKey(String key) {
+        assertThatIllegalStateException()
+                .isThrownBy(() -> load(pathItem(key + ":\n      operationId: getCategories")))
+                .withMessageContainingAll("admin.yaml", "/categories", key);
+    }
+
+    @Test
+    @DisplayName("パスの下の OpenAPI の Path Item の項目と x- で始まる拡張は、操作として読まずに認める")
+    void acceptsPathItemFields() {
+        var loaded = load(pathItem("""
+                summary: カテゴリ
+                    description: カテゴリの一覧
+                    servers:
+                      - url: /api/admin
+                    parameters:
+                      - name: q
+                        in: query
+                    $ref: '#/components/pathItems/Categories'
+                    x-note: 補足
+                    get:
+                      operationId: getCategories"""));
+
+        assertThat(loaded.find("GET", "/api/admin/categories")).hasValue("getCategories");
+    }
+
+    /**
+     * {@code /categories} の Path Item に、渡したキーと値を置いた契約を作る。
+     *
+     * @param fields Path Item の中身（2 行目以降は Path Item の字下げで書く）
+     * @return 契約
+     */
+    private static String pathItem(String fields) {
+        return """
+                servers:
+                  - url: /api/admin
+                paths:
+                  /categories:
+                    %s
+                """.formatted(fields);
+    }
+
+    /**
+     * 契約を {@code admin.yaml} という名前で読み込む（値は operationId）。
+     *
+     * @param spec 契約
+     * @return 操作の一覧
+     */
+    private static OpenApiOperations<String> load(String spec) {
+        return OpenApiOperations.load(
+                new ByteArrayResource(spec.getBytes(StandardCharsets.UTF_8), "admin.yaml"),
+                (name, operation) -> (String) operation.get("operationId"));
     }
 }

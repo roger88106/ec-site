@@ -341,10 +341,10 @@
 | AC-193-4 | 注文のフォームで欄に誤りがあるとき、その欄の誤りの文が、入力欄の説明として支援技… | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-193-5 | 誤りのある欄は、誤りのある状態として支援技術に伝わる。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
 | AC-193-6 | 欄の補足の文（郵便番号・住所・電話番号の入力の例）も、入力欄の説明として伝わる。 | 有効 | [193](../specs/archive/1to10/193-store-a11y/spec.md) | — | spec | `OrderForm.test.tsx` |
-| AC-227-1 | 注文のフォームの送信が欄の誤りで失敗したとき、フォーカスは、誤りのある欄のうち画… | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
-| AC-227-2 | 最初の誤りの欄が選べない（事実 5）ときは、選べる誤りの欄のうち画面の順で最初の… | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
+| AC-227-1 | 注文のフォームの送信が欄の誤りで失敗したとき、フォーカスは、選べる誤りの欄のうち… | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
+| AC-227-2 | 誤りのある欄が全て選べないときは、フォーカスを移さない。 | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
 | AC-227-3 | 欄の誤りがない失敗（在庫不足、通信の失敗など、フォームの下に出すもの）では、フォ… | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
-| AC-227-4 | 送信の結果を受けた後に欄を入力・選択しても、フォーカスは変わらない。 | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
+| AC-227-4 | フォーカスを移す処理は、送信の結果を受けたときだけ動く。 | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
 | AC-227-5 | 同じ誤りで再び送信に失敗したときも、AC-227-1 のとおりにフォーカスを移す… | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
 | AC-227-6 | バリアントの在庫状況の領域は、status の役割を持つ。 | 有効 | [227](../specs/227-store-forms/spec.md) | — | spec | なし |
 <!-- /generated:ac-list -->

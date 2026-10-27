@@ -82,10 +82,16 @@ export function findLicenseProblems(documented, listed) {
   return problems
 }
 
-if (isMain(import.meta.url)) {
-  const row = readAllowedRow(readFileSync(DOC_FILE, 'utf8'))
+/**
+ * 文書と policy.json を照合して、問題の文を集める。読めない行、policy.json の allowed の欠落、「許可」の行の欠落、過不足の順。
+ *
+ * @param {string} docText licenses.md の内容
+ * @param {{ allowed?: unknown }} policy policy.json の内容
+ * @returns {string[]} 問題の文（なければ空）
+ */
+export function findPolicyProblems(docText, policy) {
+  const row = readAllowedRow(docText)
   const problems = row.unreadable.map((item) => describeUnreadableLine({ file: DOC_FILE, line: item.line, text: item.text, reason: item.reason ?? UNREADABLE_REASON }))
-  const policy = JSON.parse(readFileSync(POLICY_FILE, 'utf8'))
   if (!Array.isArray(policy.allowed)) {
     problems.push(`${POLICY_FILE} に allowed がない`)
   }
@@ -94,6 +100,14 @@ if (isMain(import.meta.url)) {
   } else if (Array.isArray(policy.allowed)) {
     problems.push(...findLicenseProblems(row.licenses, policy.allowed))
   }
+  return problems
+}
+
+if (isMain(import.meta.url)) {
+  const docText = readFileSync(DOC_FILE, 'utf8')
+  const policy = JSON.parse(readFileSync(POLICY_FILE, 'utf8'))
+  const row = readAllowedRow(docText)
+  const problems = findPolicyProblems(docText, policy)
   for (const problem of problems) {
     console.log(problem)
   }

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findLicenseProblems, readAllowedRow } from './license-policy.mjs'
+import { findLicenseProblems, findPolicyProblems, readAllowedRow } from './license-policy.mjs'
 
 const doc = (row) =>
   ['## 2. 依存のライセンスの方針', '', '| 区分 | ライセンス | 扱い |', '|------|------------|------|', row, '| 条件付き | EPL-1.0・2.0 | 条件 |', '', '## 3. 次'].join('\n')
@@ -62,5 +62,53 @@ describe('一覧の照合', () => {
     const problems = findLicenseProblems(['MIT'], ['MIT', 'Zlib'])
     assert.equal(problems.length, 1)
     assert.match(problems[0], /Zlib/)
+  })
+})
+
+describe('問題の集め方', () => {
+  const row = (names) => doc(`| 許可 | ${names} | 扱い |`)
+
+  test('全て一致していれば問題はない', () => {
+    assert.deepEqual(findPolicyProblems(row('MIT、ISC'), { allowed: ['ISC', 'MIT'] }), [])
+  })
+
+  test('「許可」の行がなければ、その問題を出す', () => {
+    const problems = findPolicyProblems(doc('| 禁止 | GPL | 使わない |'), { allowed: ['MIT'] })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /「許可」の行がない/)
+  })
+
+  test('allowed がない、または配列でないときは、その問題を出し、過不足は照合しない', () => {
+    for (const policy of [{}, { allowed: 'MIT' }, { allowed: null }]) {
+      const problems = findPolicyProblems(row('MIT'), policy)
+      assert.equal(problems.length, 1)
+      assert.match(problems[0], /allowed がない/)
+    }
+  })
+
+  test('「許可」の行がなく allowed もないときは、両方の問題を出す', () => {
+    assert.equal(findPolicyProblems(doc('| 禁止 | GPL | 使わない |'), {}).length, 2)
+  })
+
+  test('許可の行が複数あるときは、2 つ目以降の行を問題にする', () => {
+    const text = ['## 2. 依存', '| 許可 | MIT | a |', '| 許可 | ISC | b |', '## 3. 次'].join('\n')
+    const problems = findPolicyProblems(text, { allowed: ['MIT'] })
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /複数/)
+    assert.match(problems[0], /licenses\.md:3/)
+  })
+
+  test('区切りが読めないときは、読めない行を問題にし、読めた分は照合する', () => {
+    const problems = findPolicyProblems(row('MIT、、ISC'), { allowed: ['MIT'] })
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /licenses\.md:5/)
+    assert.match(problems[1], /ISC/)
+  })
+
+  test('過不足があれば、その説明を出す', () => {
+    const problems = findPolicyProblems(row('MIT、ISC'), { allowed: ['MIT', 'Zlib'] })
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /ISC/)
+    assert.match(problems[1], /Zlib/)
   })
 })

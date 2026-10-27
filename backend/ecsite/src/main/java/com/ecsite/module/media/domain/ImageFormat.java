@@ -190,7 +190,7 @@ public enum ImageFormat {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * ftyp の箱（大きさ 4 バイト、"ftyp"、主のブランド、版 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。<br />
+     * ftyp の箱（大きさ 4 バイト、"ftyp"、主のブランド、バージョン 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。<br />
      * 主のブランドが汎用（mif1、msf1）なら、互換のブランドを見る。どちらとも分からなければ HEIF とする（中身は変換で確認する）。
      */
     private static Optional<ImageFormat> detectFtyp(byte[] head) {

@@ -1,6 +1,6 @@
 # フロント（管理画面・店舗画面・E2E）の job の共通の準備：pnpm と Node の準備、workspace の依存のインストール
 name: フロントの準備
-description: pnpm（版はルートの package.json の packageManager）と Node を用意し、workspace の依存を入れる
+description: pnpm（バージョンはルートの package.json の packageManager）と Node を用意し、workspace の依存を入れる
 
 runs:
   using: composite
@@ -14,7 +14,7 @@ runs:
 
     - uses: actions/setup-node@v7
       with:
-        # 版はルートの .node-version。package.json の engines.node は範囲（>=24）で、最新の版に解決されるため使わない
+        # バージョンはルートの .node-version。package.json の engines.node は範囲（>=24）で、最新のバージョンに解決されるため使わない
         node-version-file: .node-version
 
     - name: 依存のインストール

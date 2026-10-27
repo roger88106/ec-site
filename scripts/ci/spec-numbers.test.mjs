@@ -38,7 +38,7 @@ describe('本番のコードの spec の番号の検査', () => {
     )
   })
 
-  test('版の番号（数字の後に . が続くもの）は spec の番号として見つけない', () => {
+  test('バージョンの番号（数字の後に . が続くもの）は spec の番号として見つけない', () => {
     assert.deepEqual(findSpecNumbers('OpenAPI spec 3.1 と spec 3.x に従う'), [])
     assert.deepEqual(
       findSpecNumbers('spec 12 の話。plan 001 と spec 7').map((hit) => hit.number),

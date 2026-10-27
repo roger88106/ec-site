@@ -1,7 +1,7 @@
 /** 追跡の ID を運ぶ要求のヘッダー（W3C Trace Context） */
 export const TRACEPARENT_HEADER = 'traceparent'
 
-/** traceparent の形（版 00、32 桁の追跡の ID、16 桁の区間の ID、印） */
+/** traceparent の形（バージョン 00、32 桁の追跡の ID、16 桁の区間の ID、印） */
 const TRACEPARENT = /^00-([0-9a-f]{32})-[0-9a-f]{16}-[0-9a-f]{2}$/
 
 /**

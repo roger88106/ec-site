@@ -3,7 +3,6 @@ package com.ecsite.contract;
 import com.ecsite.ProductionClasses;
 import com.ecsite.common.error.CommonErrorCode;
 import com.ecsite.common.error.ErrorCodeProvider;
-import com.tngtech.archunit.core.domain.JavaClass;
 import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -69,10 +68,7 @@ class ErrorCodeContractTest {
     @Test
     @DisplayName("AC-275 バックエンドのすべてのエラーのコードが、どちらかの API の全体の列挙にあり、列挙のすべての値がバックエンドにある")
     void backendCodesAgreeWithContracts() {
-        Set<String> backend = ProductionClasses.all().stream()
-                .filter(javaClass -> javaClass.isEnum() && javaClass.isAssignableTo(ErrorCodeProvider.class))
-                .map(JavaClass::reflect)
-                .flatMap(type -> Arrays.stream(type.getEnumConstants()))
+        Set<String> backend = ProductionClasses.errorCodes().stream()
                 .map(constant -> ((ErrorCodeProvider) constant).getCode().code())
                 .collect(Collectors.toCollection(TreeSet::new));
         Set<String> contracts = new TreeSet<>(enumOf("admin.yaml"));

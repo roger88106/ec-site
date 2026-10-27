@@ -61,11 +61,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ModuleStructureTest {
 
     /**
-     * モジュールのパッケージの接頭辞
-     */
-    private static final String MODULE_PACKAGE = "com.ecsite.module";
-
-    /**
      * モジュールの直下に置いてよいパッケージ（層）
      */
     private static final Set<String> LAYERS = Set.of("api", "event", "presentation", "application", "domain", "infrastructure");
@@ -151,7 +146,7 @@ class ModuleStructureTest {
     private static final List<AllowedApiUse> ALLOWED_API_USES = List.of(
             // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。
             // 会員の窓口（port と実装）をモジュールごとに作ると、読み取りだけのために 3 組が増える
-            new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", "com.ecsite.module.*.presentation.."));
+            new AllowedApiUse("com.ecsite.module.member.api.CurrentMemberIds", ProductionClasses.MODULE_PACKAGE + ".*.presentation.."));
 
     @Test
     @DisplayName("モジュールの直下のパッケージは、標準の層の名前だけである")
@@ -230,8 +225,8 @@ class ModuleStructureTest {
     @Test
     @DisplayName("presentation と application.model は、application.port に依存しない（port の型を view にして渡す）")
     void presentationAndApplicationModelDoNotDependOnPort() {
-        noClasses().that().resideInAnyPackage(MODULE_PACKAGE + ".*.presentation..", MODULE_PACKAGE + ".*.application.model..")
-                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + ".*.application.port..")
+        noClasses().that().resideInAnyPackage(ProductionClasses.MODULE_PACKAGE + ".*.presentation..", ProductionClasses.MODULE_PACKAGE + ".*.application.model..")
+                .should().dependOnClassesThat().resideInAPackage(ProductionClasses.MODULE_PACKAGE + ".*.application.port..")
                 .check(ProductionClasses.all());
     }
 
@@ -239,11 +234,11 @@ class ModuleStructureTest {
     @DisplayName("@Transactional は application と infrastructure だけに付ける")
     void transactionalOnlyInApplicationOrInfrastructure() {
         classes().that().areAnnotatedWith(Transactional.class)
-                .should().resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
+                .should().resideInAnyPackage(ProductionClasses.MODULE_PACKAGE + ".*.application..", ProductionClasses.MODULE_PACKAGE + ".*.infrastructure..")
                 .check(ProductionClasses.all());
         methods().that().areAnnotatedWith(Transactional.class)
                 .should().beDeclaredInClassesThat()
-                .resideInAnyPackage(MODULE_PACKAGE + ".*.application..", MODULE_PACKAGE + ".*.infrastructure..")
+                .resideInAnyPackage(ProductionClasses.MODULE_PACKAGE + ".*.application..", ProductionClasses.MODULE_PACKAGE + ".*.infrastructure..")
                 .check(ProductionClasses.all());
     }
 
@@ -253,7 +248,7 @@ class ModuleStructureTest {
         classes().that().areAnnotatedWith(RestController.class)
                 .and().resideInAPackage("com.ecsite..")
                 .and().doNotHaveFullyQualifiedName(ME_CONTROLLER)
-                .should().resideInAPackage(MODULE_PACKAGE + ".*.presentation..")
+                .should().resideInAPackage(ProductionClasses.MODULE_PACKAGE + ".*.presentation..")
                 .check(ProductionClasses.all());
     }
 
@@ -261,7 +256,7 @@ class ModuleStructureTest {
     @DisplayName("共通コードと設定は、モジュールに依存しない")
     void commonAndConfigDependOnNoModule() {
         noClasses().that().resideInAnyPackage("com.ecsite.common..", "com.ecsite.config..")
-                .should().dependOnClassesThat().resideInAPackage(MODULE_PACKAGE + "..")
+                .should().dependOnClassesThat().resideInAPackage(ProductionClasses.MODULE_PACKAGE + "..")
                 .check(ProductionClasses.all());
     }
 
@@ -286,7 +281,7 @@ class ModuleStructureTest {
     @Test
     @DisplayName("モジュールは、設定に依存しない")
     void modulesDependOnNoConfig() {
-        noClasses().that().resideInAPackage(MODULE_PACKAGE + "..")
+        noClasses().that().resideInAPackage(ProductionClasses.MODULE_PACKAGE + "..")
                 .should().dependOnClassesThat().resideInAPackage("com.ecsite.config..")
                 .check(ProductionClasses.all());
     }
@@ -357,7 +352,7 @@ class ModuleStructureTest {
     void noDirectoryPackages() {
         List<String> modulePackages = ProductionClasses.all().stream()
                 .map(JavaClass::getPackageName)
-                .filter(name -> name.startsWith(MODULE_PACKAGE))
+                .filter(name -> name.startsWith(ProductionClasses.MODULE_PACKAGE))
                 .toList();
         ProductionClasses.requireNotEmpty(modulePackages, "モジュールのクラスのパッケージ");
 
@@ -376,7 +371,7 @@ class ModuleStructureTest {
 
         for (String module : modulesWithApi) {
             classes().that().resideOutsideOfPackages(
-                            "%s.%s..".formatted(MODULE_PACKAGE, module), MODULE_PACKAGE + ".*.infrastructure.directory..")
+                            "%s.%s..".formatted(ProductionClasses.MODULE_PACKAGE, module), ProductionClasses.MODULE_PACKAGE + ".*.infrastructure.directory..")
                     .should(notUseApiOf(module))
                     .check(ProductionClasses.all());
         }
@@ -655,7 +650,7 @@ class ModuleStructureTest {
          */
         NotUseApiCondition(String module) {
             super("%s の api を、許可の一覧にない使い方で使わない".formatted(module));
-            this.apiPackage = "%s.%s.api".formatted(MODULE_PACKAGE, module);
+            this.apiPackage = "%s.%s.api".formatted(ProductionClasses.MODULE_PACKAGE, module);
         }
 
         /**
@@ -696,7 +691,7 @@ class ModuleStructureTest {
      * @return パッケージの指定
      */
     private static String layer(String module, String layer) {
-        return "%s.%s.%s..".formatted(MODULE_PACKAGE, module, layer);
+        return "%s.%s.%s..".formatted(ProductionClasses.MODULE_PACKAGE, module, layer);
     }
 
     /**

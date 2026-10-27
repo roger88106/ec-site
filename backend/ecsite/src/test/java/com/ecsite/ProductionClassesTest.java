@@ -47,10 +47,10 @@ class ProductionClassesTest {
         var packages = packageNames(ProductionClasses.handwritten());
 
         assertThat(packages).isNotEmpty();
-        assertThat(packages).noneMatch(name -> name.startsWith("com.ecsite.api.") || name.startsWith("com.ecsite.jooq"));
+        assertThat(packages).noneMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + ".") || name.startsWith(ProductionClasses.JOOQ_PACKAGE));
         assertThat(packageNames(ProductionClasses.all()))
-                .anyMatch(name -> name.startsWith("com.ecsite.api."))
-                .anyMatch(name -> name.startsWith("com.ecsite.jooq"));
+                .anyMatch(name -> name.startsWith(ProductionClasses.API_PACKAGE + "."))
+                .anyMatch(name -> name.startsWith(ProductionClasses.JOOQ_PACKAGE));
     }
 
     @Test
@@ -59,7 +59,7 @@ class ProductionClassesTest {
         var packages = packageNames(ProductionClasses.modules());
 
         assertThat(packages).isNotEmpty();
-        assertThat(packages).allMatch(name -> name.startsWith("com.ecsite.module."));
+        assertThat(packages).allMatch(name -> name.startsWith(ProductionClasses.MODULE_PACKAGE_PREFIX));
         assertThat(packageNames(ProductionClasses.all())).anyMatch(name -> name.startsWith("com.ecsite.config"));
     }
 

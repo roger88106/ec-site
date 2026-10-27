@@ -29,7 +29,7 @@ class ConfigurationPropertiesTest {
     @Test
     @DisplayName("モジュールの設定のクラス（@Configuration）は、infrastructure に置く")
     void moduleConfigurationResidesInInfrastructure() {
-        moduleConfigurationRule("com.ecsite.module..").check(ProductionClasses.handwritten());
+        moduleConfigurationRule(ProductionClasses.MODULE_PACKAGE + "..").check(ProductionClasses.handwritten());
     }
 
     @Test
@@ -50,11 +50,11 @@ class ConfigurationPropertiesTest {
         ProductionClasses.requireNotEmpty(
                 ProductionClasses.handwritten().stream()
                         .filter(javaClass -> javaClass.getPackageName().contains(".presentation")
-                                && javaClass.getPackageName().startsWith("com.ecsite.module."))
+                                && javaClass.getPackageName().startsWith(ProductionClasses.MODULE_PACKAGE_PREFIX))
                         .toList(),
                 "モジュールの presentation のクラス");
 
-        presentationRule("com.ecsite.module.*.presentation..").check(ProductionClasses.handwritten());
+        presentationRule(ProductionClasses.MODULE_PACKAGE + ".*.presentation..").check(ProductionClasses.handwritten());
     }
 
     @Test

@@ -25,11 +25,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 class SchemaOwnershipTest {
 
     /**
-     * jOOQ の生成コードのパッケージ（build.gradle.kts の packageName）
-     */
-    private static final String JOOQ_PACKAGE = "com.ecsite.jooq";
-
-    /**
      * モジュールの名前から、そのモジュールが持つ schema の名前への対応。
      * schema を持たないモジュールは空にする。
      * common の schema（イベントの永続化の表）は Spring Modulith が JDBC で使うので、どのモジュールにも割り当てない。
@@ -66,10 +61,10 @@ class SchemaOwnershipTest {
     void modulesUseOnlyOwnSchema() {
         SCHEMA_BY_MODULE.forEach((module, schema) -> {
             DescribedPredicate<JavaClass> otherSchema = schema
-                    .map(name -> resideInAPackage(JOOQ_PACKAGE + "..")
-                            .and(DescribedPredicate.not(resideInAPackage(JOOQ_PACKAGE + "." + name + ".."))))
-                    .orElseGet(() -> resideInAPackage(JOOQ_PACKAGE + ".."));
-            noClasses().that().resideInAPackage("com.ecsite.module." + module + "..")
+                    .map(name -> resideInAPackage(ProductionClasses.JOOQ_PACKAGE + "..")
+                            .and(DescribedPredicate.not(resideInAPackage(ProductionClasses.JOOQ_PACKAGE + "." + name + ".."))))
+                    .orElseGet(() -> resideInAPackage(ProductionClasses.JOOQ_PACKAGE + ".."));
+            noClasses().that().resideInAPackage(ProductionClasses.MODULE_PACKAGE_PREFIX + module + "..")
                     .should().dependOnClassesThat(otherSchema.as(schema.map(name -> "are jOOQ classes outside schema " + name).orElse("are jOOQ classes")))
                     .check(ProductionClasses.all());
         });
@@ -78,8 +73,8 @@ class SchemaOwnershipTest {
     @Test
     @DisplayName("モジュールの外の手書きのクラスは、jOOQ の生成クラスに依存しない")
     void nonModuleClassesUseNoSchema() {
-        noClasses().that().resideOutsideOfPackages("com.ecsite.module..", JOOQ_PACKAGE + "..")
-                .should().dependOnClassesThat().resideInAPackage(JOOQ_PACKAGE + "..")
+        noClasses().that().resideOutsideOfPackages(ProductionClasses.MODULE_PACKAGE + "..", ProductionClasses.JOOQ_PACKAGE + "..")
+                .should().dependOnClassesThat().resideInAPackage(ProductionClasses.JOOQ_PACKAGE + "..")
                 .check(ProductionClasses.all());
     }
 }

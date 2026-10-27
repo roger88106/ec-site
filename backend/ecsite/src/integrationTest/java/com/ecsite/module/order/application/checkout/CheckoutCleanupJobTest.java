@@ -1,6 +1,7 @@
 package com.ecsite.module.order.application.checkout;
 
 import com.ecsite.CatalogTestData;
+import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
 import com.ecsite.MutableClock;
@@ -201,6 +202,7 @@ class CheckoutCleanupJobTest {
     @Test
     @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
     void logsDeletedCount(CapturedOutput output) {
+        var logStart = CapturedLogs.mark(output);
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
         var checkouts = new ArrayList<UUID>();
@@ -215,7 +217,7 @@ class CheckoutCleanupJobTest {
 
         var deleted = checkouts.size() - remaining(checkouts).size();
         assertThat(deleted).isEqualTo(5);
-        assertThat(output).contains("期限切れの注文手続きを消した：" + deleted + " 件");
+        assertThat(CapturedLogs.since(output, logStart)).contains("期限切れの注文手続きを消した：" + deleted + " 件");
     }
 
     /**

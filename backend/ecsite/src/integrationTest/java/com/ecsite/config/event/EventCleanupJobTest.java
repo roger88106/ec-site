@@ -1,6 +1,7 @@
 package com.ecsite.config.event;
 
 import com.ecsite.AsyncEvents;
+import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -24,6 +25,9 @@ import java.time.Duration;
 import java.time.Instant;
 import java.util.UUID;
 
+import static com.ecsite.config.event.EventPublications.COMPLETION_DATE;
+import static com.ecsite.config.event.EventPublications.EVENT_PUBLICATION;
+import static com.ecsite.config.event.EventPublications.STATUS;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
@@ -82,12 +86,17 @@ class EventCleanupJobTest {
         var recent = publish(new CleanupEvent(UUID.randomUUID(), false));
 
         clock.setInstant(NOW.plus(Duration.ofDays(7)).plus(Duration.ofHours(1)));
+        // 巻き戻せないので、ほかのテストの処理の済んだ古いイベントも消える。消す前に数えて、ログの件数と比べる
+        var expectedDeleted = dsl.fetchCount(EVENT_PUBLICATION,
+                COMPLETION_DATE.lt(clock.instant().minus(Duration.ofDays(7))).and(STATUS.eq("COMPLETED").or(STATUS.isNull())));
+        var logStart = CapturedLogs.mark(output);
         job.cleanUp();
 
         assertThat(publicationCount(old)).isZero();
         assertThat(publicationCount(recent)).isEqualTo(1);
         assertThat(publicationCount(incomplete)).isEqualTo(1);
-        assertThat(output).containsPattern("処理の済んだイベントを消した：[1-9][0-9]* 件");
+        assertThat(expectedDeleted).isPositive();
+        assertThat(CapturedLogs.since(output, logStart)).contains("処理の済んだイベントを消した：" + expectedDeleted + " 件");
     }
 
     /**

@@ -1,5 +1,6 @@
 package com.ecsite.module.cart.application;
 
+import com.ecsite.CapturedLogs;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.OrderTestData;
@@ -177,6 +178,7 @@ class CartCleanupJobTest {
     @Test
     @DisplayName("AC-288 消した件数（分けて消した合計）をログに出す")
     void logsDeletedCount(CapturedOutput output) {
+        var logStart = CapturedLogs.mark(output);
         // ほかのテストが使わない古い時刻にし、消す条件に当たるのを自分の 5 つだけにする
         var longAgo = Instant.parse("2000-01-01T00:00:00Z");
         var carts = new ArrayList<UUID>();
@@ -190,7 +192,7 @@ class CartCleanupJobTest {
 
         var deleted = carts.size() - remaining(carts).size();
         assertThat(deleted).isEqualTo(5);
-        assertThat(output).contains("期限切れのカートを消した：" + deleted + " 件");
+        assertThat(CapturedLogs.since(output, logStart)).contains("期限切れのカートを消した：" + deleted + " 件");
     }
 
     /**

@@ -9,7 +9,7 @@
 | 1.2 | カバレッジと mutation score は、基準の値（許容の幅を含む）を下回らない | 自動（`scripts/ci/report/coverage-baseline.mjs`） |
 | 2.1 | テスト名に AC 番号を入れる | 自動（`ac-check.mjs`） |
 | 2.2 | テスト名は振る舞いを書く | レビュー（`@DisplayName` があることは自動。`scripts/ci/test-names.mjs`）。フロントの `describe` の名前が識別子だけでないことは自動（`scripts/ci/frontend-rules.mjs`） |
-| 3.1 | 統合テストの土台を使う | レビュー |
+| 3.1 | 統合テストの土台を使う。ログを確認するテストは、そのテストの中で出た出力だけを見る | レビュー |
 | 3.2 | テストデータは補助のクラスで作る | レビュー |
 | 3.3 | テストは main と同じパッケージ | 自動（ソースセット） |
 | 3.4 | 単体テストでは補助（`ProductionClasses`、`TestSettings`、`Contracts`）を使う | `ProductionClasses` を使うことは自動（`ProductionClassesTest`）、`TestSettings` と `Contracts` を使うことはレビュー |
@@ -90,10 +90,13 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 - API のテストは `@AutoConfigureMockMvc` の MockMvc で呼び、時刻は `TestClockConfig` で固定する。
 - データを残さないテストは `@Transactional` で巻き戻す。
 - 巻き戻せないテスト（非同期のリスナー、並行、別のトランザクションで確定させるもの）は、テストごとに作る値（UUID、実行ごとの印）でデータを分け、自分のデータだけを確認する。表の全体の数や、一覧の全体を確認しない（テストごとに `reset` する mock の記録は、そのテストのものとみなしてよい）。後処理（`@AfterEach` で削除する）は不要 ※4。
+- ログを確認するテストは、そのテストの中で出た出力だけを見る。`CapturedOutput` は同じクラスの前のテストの出力も含むので、テストの始めに `CapturedLogs.mark` で位置を覚え、確認では `CapturedLogs.since` でその後の出力だけを読む ※5。巻き戻せないテストで、ほかのテストのデータも処理の対象になるときは、処理の前に対象の行を数え、ログの件数がその数と等しいことを確認する（「1 件以上」だけにしない）。
 
 ※3：IdP は起動せず、`TestSecurityConfig` が署名の鍵を `TestTokens` の鍵に差し替える。Keycloak は、それを確認するテストだけが自分で起動する。
 
 ※4：DB はテストの実行ごとに作る（Testcontainers）。削除する処理には、削除の漏れと順序（外部キー）の手間がある。今ある後処理は残してよい。
+
+※5：前のテストが同じ件数のログを出していると、その出力に当たって、件数を誤っていても通る。
 
 理由：テストごとにコンテナを再起動せず、データが他のテストに漏れないようにするため。
 

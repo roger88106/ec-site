@@ -176,9 +176,10 @@ function classifyAction(action) {
   if (/^RENAME\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.renameColumn
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+(?:SET\s+DATA\s+)?TYPE\b/.test(action)) return INCOMPATIBLE_KINDS.changeType
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+NOT\s+NULL\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
-  // 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧と ::型 の変換が付いてもよい）。SET DEFAULT 0 などの変更は数えない
+  // 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧と ::型 の変換が付いてもよい）と SET DEFAULT CAST(NULL AS 型)（NULL の括弧も可）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+DROP\s+DEFAULT\b/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
   if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+DEFAULT\s+(?:\(\s*)*NULL(?=\s*(?:$|\)|::))/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
+  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+DEFAULT\s+(?:\(\s*)*CAST\s*\(\s*(?:\(\s*)*NULL\s*(?:\)\s*)*AS\s/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
   // 主キーの制約の追加は、既存の列に SET NOT NULL を行う
   if (/^ADD\s+(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
   const isAddColumn = /^ADD\s+/.test(action) && !/^ADD\s+(?:CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|EXCLUDE|LIKE)\b/.test(action)

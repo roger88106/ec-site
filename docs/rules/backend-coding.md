@@ -33,7 +33,7 @@
 | 5.4 | 整形は IntelliJ の Reformat Code を推奨する（強制しない） | なし |
 | 5.4 | import の並びと、使われていない import と `*` の import（static を含む）は強制する | 自動（Checkstyle） |
 | 6.1 | 設定の値の型 | 自動（起動のテスト）。`@EnableConfigurationProperties` の置き場所と、`@Configuration` が infrastructure にあること、presentation が設定の値の型に依存しないことは自動（ArchUnit）。型の置き場所と接頭辞、`@Scheduled` の間隔を設定の型から取ることはレビュー |
-| 6.1 | 秘密の値を持つ設定の record（入れ子の型を含む）は、`toString` で値を伏せる。設定の型で Lombok の `@ToString`・`@Data`・`@Value` を使わない | `toString` を宣言していることは自動（ArchUnit）。値を伏せていることは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー |
+| 6.1 | 秘密の値を持つ設定の record（入れ子の型を含む）は、`toString` で値をマスクする。設定の型で Lombok の `@ToString`・`@Data`・`@Value` を使わない | `toString` を宣言していることは自動（ArchUnit）。値をマスクしていることは単体テスト（`toString` に秘密の値が含まれないこと）。Lombok の注釈を使わないことはレビュー |
 | 7.1 | null の扱い（JSpecify の `@Nullable`） | 自動（NullAway、`scripts/ci/java-rules.mjs`）、`@Nullable` と `Optional` の選び方はレビュー |
 | 7.2 | 検査を抑えるとき | `@SuppressWarnings` の理由のコメントは自動（`scripts/ci/java-rules.mjs`） |
 | 8.1 | 新しいマイグレーションは、前のリリースのアプリが動き続けられる変更だけにする（表・列の削除と改名などは 3 段に分ける） | 自動（CI の検査 `migrations`）。3 段に分ける手順の妥当性はレビュー |
@@ -88,12 +88,12 @@ module/<モジュール>/
 - **公開の API**：`api/` は、interface を持たない `@Component` のクラスで、application の service に委ねる。`api/` の型を `api/` の外が実装・継承しない。service は `api/` の型に依存しない（`api/` のクラスが application の view を `api/` の型に変換する）。
 - **domain の直下**：モジュールの domain の直下には、エラーの定義と、複数の集約が使う値を置く（商品とカテゴリが使う表示順の再採番など）。1 つの集約だけが使う値は、その集約の `vo/` に置く。ただし、値が集約のパッケージの型（列挙など）を使うときは、集約のパッケージの直下に置く。`vo/` に置くと、`vo/` と集約のパッケージが互いに依存して循環するためである（例：order の `BuyerProfile`、`Cancellation`）。
 
-- **認証の情報の取り出し**：token の取り出し（`CurrentToken`）と、会員・運営者・会員 ID の取り出し（`CurrentMember`、`CurrentOperator`、`CurrentMemberIds`）を使えるのは、presentation 層と `common.security` だけにする。application 以降へは、取り出した値（会員の ID など）を引数で渡し、Spring Security の型を出さない。例外は次の 2 つで、増やすときはこの表に理由を書く。
+- **認証の情報の取り出し**：token の取り出し（`CurrentToken`）と、会員・運営者・会員 ID の取り出し（`CurrentMember`、`CurrentOperator`、`CurrentMemberIds`）を使えるのは、presentation 層と `common.security` だけにする。application 以降へは、取り出した値（会員の ID など）を引数で渡し、Spring Security の型を公開しない。例外は次の 2 つで、増やすときはこの表に理由を書く。
 
 | 呼び出し元 | 置き場所 | 例外の理由 |
 |------------|----------|------------|
 | `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation 層に会員の ID を渡すための公開の API（第 1.3 節 ※1）。`CurrentMemberIds` 自身も取り出しの対象に含め、呼び出し元を presentation 層に限る。理由：他のモジュールの `api/` の規則（第 1.3 節）は `infrastructure/directory/` からの利用を除くので、それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため |
-| `MeController` | `config/security/` | モジュールに属さない API の入口で、役割は presentation 層と同じ。移すとモジュールの構成が変わる |
+| `MeController` | `config/security/` | モジュールに属さない API のエンドポイントで、役割は presentation 層と同じ。移すとモジュールの構成が変わる |
 
 - **jOOQ の置き場所**：jOOQ（`org.jooq` と、生成したコード `com.ecsite.jooq`）を使えるのは、モジュールの `infrastructure/persistence/` のクラスだけにする。application と domain が永続化の形に依存しないようにするためである。モジュールの外の共通の設定（`config/event/EventPublicationRecords`）は、schema の持ち主の検査（`SchemaOwnershipTest`）が別に見る。例外は次の 1 つで、増やすときはこの表に理由を書く。
 
@@ -303,7 +303,7 @@ import は次のグループの順に並べる。グループの間は空行 1 �
   5. 空行
   6. `import static all other imports`
 - 同じ設定画面の「Class count to use import with *」と「Names count to use static import with *」は、`*` の import を作らないよう、大きな値（999）にする。
-- Checkstyle の `UnusedImports`、`AvoidStarImport`、`CustomImportOrder`（`backend/ecsite/config/checkstyle/checkstyle.xml`）が、使われていない import、`*` の import（static を含む。例外は設けない）、上の並びを、全てのソースセット（main、test、integrationTest、testFixtures、tools）で検査する。違反があれば `./gradlew check` と CI が失敗する。Javadoc の書き漏れの検査だけは main に限る。
+- Checkstyle の `UnusedImports`、`AvoidStarImport`、`CustomImportOrder`（`backend/ecsite/config/checkstyle/checkstyle.xml`）が、使われていない import、`*` の import（static を含む。例外は設けない）、上の並びを、全てのソースセット（main、test、integrationTest、testFixtures、tools）で検査する。違反があれば `./gradlew check` と CI が失敗する。Javadoc の記載漏れの検査だけは main に限る。
 
 理由：今のコードは IntelliJ の書式でほぼそろっている。Spotless で強制する案は、今の書式に最も近い設定でも、読みやすさが下がる変更が出た（測定の記録は [issue #19 のコメント](https://github.com/roger88106/ec-site/issues/19)）。
 
@@ -319,8 +319,8 @@ import は次のグループの順に並べる。グループの間は空行 1 �
 - `@EnableConfigurationProperties` は `@Configuration` のクラスに付ける。条件で切り替える実装（mock など）の設定は、同じ条件の設定のクラスに付ける。
 - 定期の処理の間隔も設定の型の項目で受け、`@Scheduled` は SpEL で設定の型の Bean を参照する（`${...}` の既定値を注釈に書かない）。
 - 注釈が定数しか取らず、環境で変えない値（定期の処理のロックの上限など）は、設定にせず定数にし、理由をコメントに書く。
-- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` に倣う）。理由：record の既定の `toString` は全ての項目を出し、設定の値をログや例外のメッセージに出したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとし、その項目を自分で持つ設定の型が `toString`（`final` でないもの）を宣言していることは構成の検査（`ConfigurationPropertiesTest`）が確認する。設定の型は、`@ConfigurationProperties` の型と、その項目（コレクションと Map の要素の型を含む）から再帰的にたどれる `com.ecsite` の型（注釈のない入れ子の record など）である。理由：外側の型の既定の `toString` は入れ子の型の `toString` を呼ぶので、入れ子の型が宣言しないと値が出るため。値を伏せていることの確認方法は単体テスト（`toString` に秘密の値が含まれないこと）で、隠し方は設定ごとに違うので構成の検査では判定しない。
-- 設定の型では、Lombok の `@ToString`・`@Data`・`@Value` を使わず、`toString` を手で書く。理由：Lombok の注釈はクラスファイルに残らず、作られた `toString` は手で宣言したものと区別できないので、構成の検査が値を出す `toString` を見逃すため。
+- 秘密の値（鍵、パスワード、署名の鍵、ソルト）を持つ設定の record は、`toString` を上書きし、秘密の値を `***` にする（`StripeProperties` と同じ形にする）。理由：record の既定の `toString` は全ての項目を出力し、設定の値をログや例外のメッセージに出力したときに秘密の値が漏れるため。秘密の値の項目は、名前（小文字にして判定）に `secret`、`password`、`salt`、`token`、`credential` を含むか、`key` で終わるものとする。構成の検査（`ConfigurationPropertiesTest`）は、秘密の値の項目を直接宣言している設定の型が、`toString`（`final` でないもの）を宣言していることを確認する。検査の対象の設定の型は、`@ConfigurationProperties` の型と、その項目（コレクションと Map の要素の型を含む）から再帰的にたどれる `com.ecsite` の型（注釈のない入れ子の record など）である。理由：外側の型の既定の `toString` は入れ子の型の `toString` を呼ぶので、入れ子の型が宣言しないと値が出力されるため。値をマスクしていることの確認方法は単体テスト（`toString` に秘密の値が含まれないこと）で、マスクの方法は設定ごとに違うので構成の検査では判定しない。
+- 設定の型では、Lombok の `@ToString`・`@Data`・`@Value` を使わず、`toString` を手動で書く。理由：Lombok の注釈はクラスファイルに残らず、作られた `toString` は手動で宣言したものと区別できないので、構成の検査が値を出力する `toString` を見逃すため。
 
 ※4：本番では設定しない接続の値（S3 互換ストレージの接続先と資格情報。本番は AWS の既定と IAM ロール）は任意にし、本番で使う値（path style を使わない）を既定値にする。
 

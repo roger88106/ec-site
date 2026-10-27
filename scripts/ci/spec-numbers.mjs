@@ -19,18 +19,21 @@ const SOURCE_DIRS = ['backend/ecsite/src/main/', 'frontend/admin/src/', 'fronten
 const EXCLUDED = [/\.test\.tsx?$/, /\/src\/test\//, /\/generated\//, /\/db\/migration\//]
 
 /** spec の番号（AC-12、1→10 の spec の AC-7-1 など）、タスクの番号（T011-01-01、T7-01-01、古い形式の T6803 など）、spec・plan の番号（plan 001、spec 7 など） */
-const SPEC_NUMBER = /\b(?:AC|DC|BR|NFR|US|DS|DN)-\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.)/g
+const SPEC_NUMBER = /\b(?:AC|DC|BR|NFR|US|DS|DN)-?\d+(?:-\d+)?\b|\bT\d+-\d{2}-\d{2}\b|\bT\d{3,4}\b|\b(?:spec|plan) ?\d+\b(?!\.)/g
 
 /**
  * spec・plan・tasks の番号を書いた行を探す。
  *
  * @param {string} text ソース
- * @returns {{ line: number, number: string }[]} 見つけた行と番号
+ * @returns {{ line: number, number: string, text: string }[]} 見つけた行、番号（正規化した後の形）、行の文字（正規化の前）
  */
 export function findSpecNumbers(text) {
   const hits = []
   text.split('\n').forEach((line, index) => {
-    for (const match of line.matchAll(SPEC_NUMBER)) hits.push({ line: index + 1, number: match[0] })
+    // 全角の英字・数字・ハイフンで書いた番号も見つけるため、照合の前に NFKC で正規化する。報告する行の文字は正規化の前のものにする
+    for (const match of line.normalize('NFKC').matchAll(SPEC_NUMBER)) {
+      hits.push({ line: index + 1, number: match[0], text: line.trim() })
+    }
   })
   return hits
 }
@@ -65,7 +68,7 @@ if (isMain(import.meta.url)) {
   for (const file of files) {
     const text = readFileSync(file, 'utf8')
     for (const hit of findSpecNumbers(isBackendTestFile(file) ? keepJavaComments(text) : text)) {
-      console.log(`${file}:${hit.line} ${hit.number}`)
+      console.log(`${file}:${hit.line} ${hit.number}（${hit.text}）`)
       count += 1
     }
   }

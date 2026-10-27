@@ -417,7 +417,7 @@ describe('送信が失敗したとき、誤りの欄へフォーカスを移す'
     expect(screen.getByLabelText('都道府県')).toHaveFocus()
   })
 
-  test('AC-227-5同じ誤りで再び失敗したときも、最初の欄へ移る', async () => {
+  test('AC-227-5 同じ誤りで再び失敗したときも、最初の欄へ移る', async () => {
     const { user, rerender } = renderInBrowser(form())
     rerender(form(fieldErrors('shippingAddress.name', 'shippingAddress.phone')))
     await user.type(screen.getByLabelText('電話番号'), '0312345678')

@@ -69,7 +69,7 @@ describe('バリアントの選択', () => {
     expect(screen.queryByText('色・サイズを選ぶと、在庫状況を表示します。')).not.toBeInTheDocument()
   })
 
-  test('AC-227-6 在庫状況の領域は status の役割を持ち、選択を変えると中の文が替わる', async () => {
+  test('AC-227-6 在庫状況の領域は status の役割を持ち、選択を変えると中の文が変わる', async () => {
     const { user } = renderInBrowser(<Controlled variants={VARIANTS} />)
 
     const region = screen.getByRole('status')

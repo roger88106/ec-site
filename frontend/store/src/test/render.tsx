@@ -27,7 +27,7 @@ export function renderMarkup(element: ReactElement): string {
  * テストのファイルの先頭で jsdom を選ぶ（`// @vitest-environment jsdom`）。
  *
  * @param element 描画する部品
- * @returns 操作に使う user（user-event）と、props を替えて描画し直す rerender
+ * @returns 操作に使う user（user-event）と、props を変えて描画し直す rerender
  */
 export function renderInBrowser(element: ReactElement) {
   const wrap = (child: ReactElement) => (

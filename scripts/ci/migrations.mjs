@@ -233,6 +233,22 @@ function isNullDefault(rawExpr) {
 }
 
 /**
+ * ALTER COLUMN の、列の名前より後ろの部分が、互換性のない変更なら、その種類を返す。
+ * 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧、::型、COLLATE、CAST(… AS 型) が何重に付いてもよい）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない。
+ *
+ * @param {string} change 大文字にして空白を 1 つにした、列の名前の後ろ（例：SET DATA TYPE TEXT）
+ * @returns {string | null} INCOMPATIBLE_KINDS の値。なければ null
+ */
+function classifyColumnChange(change) {
+  if (/^(?:SET\s+DATA\s+)?TYPE\b/.test(change)) return INCOMPATIBLE_KINDS.changeType
+  if (/^SET\s+NOT\s+NULL\b/.test(change)) return INCOMPATIBLE_KINDS.setNotNull
+  if (/^DROP\s+DEFAULT\b/.test(change)) return INCOMPATIBLE_KINDS.dropDefault
+  const setDefault = /^SET\s+DEFAULT\s+(.*)$/.exec(change)
+  if (setDefault && isNullDefault(setDefault[1])) return INCOMPATIBLE_KINDS.dropDefault
+  return null
+}
+
+/**
  * ALTER TABLE の 1 つの変更が、互換性のない変更なら、その種類を返す。
  *
  * @param {string} action 大文字にして空白を 1 つにした変更（例：DROP COLUMN IF EXISTS X）
@@ -242,12 +258,12 @@ function classifyAction(action) {
   if (/^DROP\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.dropColumn
   if (/^RENAME\s+TO\b/.test(action) || /^SET\s+SCHEMA\b/.test(action)) return INCOMPATIBLE_KINDS.renameTable
   if (/^RENAME\s+(?!CONSTRAINT\b)/.test(action)) return INCOMPATIBLE_KINDS.renameColumn
-  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+(?:SET\s+DATA\s+)?TYPE\b/.test(action)) return INCOMPATIBLE_KINDS.changeType
-  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+NOT\s+NULL\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
-  // 既定値の削除は、DROP DEFAULT と、同じ結果になる SET DEFAULT NULL（括弧、::型、COLLATE、CAST(… AS 型) が何重に付いてもよい）。SET DEFAULT 0 や CAST(0 AS int) などの変更は数えない
-  if (/^ALTER\s+(?:COLUMN\s+)?\S+\s+DROP\s+DEFAULT\b/.test(action)) return INCOMPATIBLE_KINDS.dropDefault
-  const setDefault = /^ALTER\s+(?:COLUMN\s+)?\S+\s+SET\s+DEFAULT\s+(.*)$/.exec(action)
-  if (setDefault && isNullDefault(setDefault[1])) return INCOMPATIBLE_KINDS.dropDefault
+  if (/^ALTER\s/.test(action)) {
+    // 列の名前を 1 回だけ分け、種類は名前の後ろで決める（列の名前が type でも取り違えない）。
+    // column は予約語で、引用符なしでは列の名前にならないので、COLUMN は常に省けるキーワードとして読む
+    const parts = /^ALTER\s+(?:COLUMN\s+(?=\S+\s))?(\S+)\s+(.*)$/.exec(action)
+    return parts ? classifyColumnChange(parts[2]) : null
+  }
   // 主キーの制約の追加は、既存の列に SET NOT NULL を行う
   if (/^ADD\s+(?:CONSTRAINT\s+\S+\s+)?PRIMARY\s+KEY\b/.test(action)) return INCOMPATIBLE_KINDS.setNotNull
   const isAddColumn = /^ADD\s+/.test(action) && !/^ADD\s+(?:CONSTRAINT|PRIMARY|FOREIGN|UNIQUE|CHECK|EXCLUDE|LIKE)\b/.test(action)

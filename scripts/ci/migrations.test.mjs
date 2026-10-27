@@ -273,6 +273,17 @@ describe('互換性のない変更の検出', () => {
   test('列の型の変更（TYPE、SET DATA TYPE、COLUMN の有無）を見つける', () => {
     assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN b TYPE bigint;'), [INCOMPATIBLE_KINDS.changeType])
     assert.deepEqual(kinds('ALTER TABLE a ALTER b SET DATA TYPE text USING b::text;'), [INCOMPATIBLE_KINDS.changeType])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER c TYPE int;'), [INCOMPATIBLE_KINDS.changeType])
+  })
+
+  test('列の名前が type でも、変更の種類は名前の後ろで決める', () => {
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type SET DEFAULT NULL;'), [INCOMPATIBLE_KINDS.dropDefault])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type DROP DEFAULT;'), [INCOMPATIBLE_KINDS.dropDefault])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type SET NOT NULL;'), [INCOMPATIBLE_KINDS.setNotNull])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type SET DEFAULT 1;'), [])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER COLUMN type TYPE int;'), [INCOMPATIBLE_KINDS.changeType])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER type TYPE int;'), [INCOMPATIBLE_KINDS.changeType])
+    assert.deepEqual(kinds('ALTER TABLE a ALTER type SET DEFAULT 1;'), [])
   })
 
   test('既存の列を NOT NULL にする変更を見つける', () => {

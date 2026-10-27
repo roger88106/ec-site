@@ -90,6 +90,8 @@ function constantsOf(code, path) {
  * 作成の要求（指定した path そのものへの POST）を探す。<br />
  * 登録の API（税区分、カテゴリ）は、一覧と同じ path への POST で作る。補助 CatalogTestData は `post("/api/admin/…")` と書く。
  * テストは path を定数（`BASE` など）に置くことが多いので、path の文字列そのものと、その path を値に持つ定数を、`post(` の最初の引数として探す。
+ * RestClient・WebTestClient の `.post().uri("…")` と `.post().uri(定数)` も、同じ規則で探す（統合テストの今の要求の書き方は、MockMvc の `post(…)` と RestClient の `.post().uri(…)`）。
+ * 限界：他のクラスの定数（`Other.BASE`）、文字列の連結（`BASE + "/x"`）、変数に入れた path は探さない（同じファイルの定数と文字列そのものだけ）。
  * path に ID や `/rates` を足した要求（取得、税率やカテゴリの変更）は、作った後の変更の要求で、表の手順でないので探さない。
  *
  * @param {string} code コメントを除いた Java のコード
@@ -99,7 +101,10 @@ function constantsOf(code, path) {
 function findPostsTo(code, path) {
   const targets = [`"${path}"`, ...constantsOf(code, path)]
   const alternatives = targets.map((target) => target.replace(/[.*+?^${}()|[\]\\]/g, (char) => `\\${char}`)).join('|')
-  return [...code.matchAll(new RegExp(`(?<!\\w)post\\s*\\(\\s*(?:${alternatives})\\s*[),]`, 'g'))].map((match) => match.index)
+  const mockMvc = [...code.matchAll(new RegExp(`(?<!\\w)post\\s*\\(\\s*(?:${alternatives})\\s*[),]`, 'g'))].map((match) => match.index)
+  // RestClient・WebTestClient の `.post().uri(…)`。`.post()` から次の `;` までの間の `.uri(` の最初の引数を見る
+  const uri = [...code.matchAll(new RegExp(`\\.\\s*post\\s*\\(\\s*\\)[^;]*?\\.\\s*uri\\s*\\(\\s*(?:${alternatives})\\s*[),]`, 'g'))].map((match) => match.index)
+  return [...mockMvc, ...uri]
 }
 
 /**

@@ -253,6 +253,25 @@ describe('テストの書き方の表から読む規則', () => {
     assert.deepEqual(hits('ID を取り出す', body), [3, 4, 5, 6])
   })
 
+  test('登録の要求：RestClient などの .uri(…) の引数（文字列そのもの、同じファイルの定数）も探し、他の path は探さない', () => {
+    const body = [
+      '    private static final String TAX = "/api/admin/tax-categories";',
+      '    void t() {',
+      '        client.post().uri("/api/admin/tax-categories").body(json).retrieve();',
+      '        client.post()',
+      '            .uri(TAX)',
+      '            .body(json);',
+      '        client.post().uri(TAX, id).body(json);',
+      '        client.get().uri(TAX).retrieve();',
+      '        client.post().uri("/api/admin/tax-categories/" + id + "/rates");',
+      '        client.post().uri(OTHER);',
+      '    }',
+    ].join('\n')
+    assert.deepEqual(hits('税区分の登録', body), [4, 5, 8])
+    const category = ['    private static final String BASE = "/api/admin/categories";', '    void t() {', '        client.post().uri(BASE).body(json);', '    }'].join('\n')
+    assert.deepEqual(hits('カテゴリの登録', category), [4])
+  })
+
   test('支払の作成の操作：PaymentApi の変数の create を違反にし、他の create と補助の created は違反にしない', () => {
     const body = [
       '    @Autowired',

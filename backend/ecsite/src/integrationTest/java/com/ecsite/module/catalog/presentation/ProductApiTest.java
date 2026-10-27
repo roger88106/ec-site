@@ -1,5 +1,6 @@
 package com.ecsite.module.catalog.presentation;
 
+import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.MutableClock;
 import com.ecsite.TestClockConfig;
@@ -60,6 +61,11 @@ class ProductApiTest {
      */
     private static final Instant NOW = OffsetDateTime.parse("2026-10-08T00:00:00+09:00").toInstant();
 
+    /**
+     * 有効な税率がない税区分の税率が有効になる日時：2027-04-01 00:00（日本時間）
+     */
+    private static final Instant NOT_YET_EFFECTIVE_FROM = OffsetDateTime.parse("2027-04-01T00:00:00+09:00").toInstant();
+
     @Autowired
     MockMvc mockMvc;
 
@@ -83,17 +89,19 @@ class ProductApiTest {
 
     private String clothing;
 
+    /**
+     * 税区分とカテゴリを作る補助
+     */
+    private CatalogTestData catalog;
+
     @BeforeEach
     void setUp() throws Exception {
         clock.setInstant(NOW);
-        standard = createTaxCategory("標準", """
-                [{"ratePercent": 10}]""");
-        reduced = createTaxCategory("軽減", """
-                [{"ratePercent": 8}]""");
-        notYetEffective = createTaxCategory("将来", """
-                [{"ratePercent": 10, "effectiveFrom": "2027-04-01T00:00:00+09:00"}]""");
-        clothing = createdId(post("/api/admin/categories").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name": "衣類"}"""));
+        catalog = new CatalogTestData(mockMvc, clock);
+        standard = catalog.taxCategory("標準", "10").toString();
+        reduced = catalog.taxCategory("軽減", "8").toString();
+        notYetEffective = catalog.taxCategory("将来", "10", NOT_YET_EFFECTIVE_FROM).toString();
+        clothing = catalog.category("衣類", null).toString();
     }
 
     @Nested
@@ -708,21 +716,7 @@ class ProductApiTest {
     }
 
     // ============================== 補助 ==============================
-    // 商品とバリアントの登録は、このテストが確認する API なので、CatalogTestData を使わず、品番・本文・応答をここで扱う
-
-    /**
-     * 税区分を登録し、税率の一覧（JSON）を設定して、その ID を返す
-     */
-    private String createTaxCategory(String name, String rates) throws Exception {
-        var id = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
-                {"name": "%s"}""".formatted(name)));
-        mockMvc.perform(put("/api/admin/tax-categories/" + id + "/rates")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"version": 0, "rates": %s}""".formatted(rates)))
-                .andExpect(status().isNoContent());
-        return id;
-    }
+    // 商品とバリアントの登録は、このテストが確認する API なので、品番・本文・応答をここで扱う。税区分とカテゴリは CatalogTestData で作る
 
     /**
      * 要求を送って 201 を確認し、応答の本文の ID を返す

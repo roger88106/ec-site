@@ -1,5 +1,6 @@
 package com.ecsite.module.order.application.checkout;
 
+import com.ecsite.CapturedLogs;
 import com.ecsite.CatalogTestData;
 import com.ecsite.IntegrationTest;
 import com.ecsite.InventoryTestData;
@@ -211,11 +212,12 @@ class CheckoutCleanupJobTest {
                 new CheckoutCleanupProperties(Duration.ofHours(1), Duration.ofDays(1), 2), clock);
 
         clock.setInstant(longAgo.plus(TTL).plus(Duration.ofDays(1)).plusSeconds(1));
+        var logStart = CapturedLogs.mark(output);
         smallBatch.cleanUp();
 
         var deleted = checkouts.size() - remaining(checkouts).size();
         assertThat(deleted).isEqualTo(5);
-        assertThat(output).contains("期限切れの注文手続きを消した：" + deleted + " 件");
+        assertThat(CapturedLogs.since(output, logStart)).contains("期限切れの注文手続きを消した：" + deleted + " 件");
     }
 
     /**

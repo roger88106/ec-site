@@ -47,5 +47,5 @@
   - 依存：なし
   - 範囲：`tools/tools/region/RegionMigrationGenerator.java`、`test/tools/region/`、`docs/design/modules/region.md`
   - 確認方法：比べる単体テストは、生成の処理の先頭のコメントを一時的に変えて失敗する。メインの作業ツリーの郵便番号の CSV で `./gradlew generateRegionMigration` を実行し、出力がコミット済みのマイグレーションと一致する。
-- [ ] **T223-01-10** 段階のレビュー（profile「厚め」）と全体の検査：`./gradlew check`、`./gradlew pitest`、`scripts/ci/check-all.sh` を実行する。DC を満たし、追加した検査が違反の例で失敗することを確認する。指摘を修正する。
+- [x] **T223-01-10** 段階のレビュー（profile「厚め」）と全体の検査：`./gradlew check`、`./gradlew pitest`、`scripts/ci/check-all.sh` を実行する。DC を満たし、追加した検査が違反の例で失敗することを確認する。指摘を修正する。
   - 依存：T223-01-01〜09

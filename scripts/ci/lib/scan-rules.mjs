@@ -8,6 +8,7 @@
 //   - forbidden：禁じる書き方の正規表現（g・y のフラグは使えない。lastIndex が持ち越されて script を見逃すので、例外にする）
 //   - target：'code'（コメントを除いたコード。既定）か 'raw'（原文）
 //   - exceptions：{ script の名前: 例外にする理由 }。守る関数を定義する script など
+//     例外の script が、走査する script にない、または禁じる書き方を含まない（例外にする必要がなくなった）ときは、guard と script の名前を添えて例外を投げる
 // - 新しい共通の関数を加えたときは、そのテストの表に行を追加する（表にない関数は、守られているか確認されない）
 import { readFileSync, readdirSync } from 'node:fs'
 import path from 'node:path'
@@ -64,7 +65,7 @@ export function listScanScripts(scope, root = defaultRoot) {
  * @param {{ name: string, raw: string, code: string }[]} sources listScanScripts の返り
  * @param {{ guard: string, forbidden: RegExp, target?: 'code' | 'raw', exceptions: Record<string, string> }[]} rules 守る関数ごとの表
  * @returns {{ guard: string, name: string }[]} 違反した script（表の行の順、script の名前の順）
- * @throws 走査する script が 0 件のとき、または、どの script にも当たらない例外があるとき
+ * @throws 走査する script が 0 件のとき、または、どの script にも当たらない例外、または禁じる書き方を含まない script の例外があるとき
  */
 export function findRuleViolations(sources, rules) {
   if (sources.length === 0) throw new Error('走査する script が 0 件（走査の範囲が空）')
@@ -78,8 +79,12 @@ export function findRuleViolations(sources, rules) {
       if (!known.has(name)) throw new Error(`${guard} の例外 ${name} が、走査する script にない`)
     }
     for (const source of sources) {
-      if (source.name in exceptions) continue
-      if (forbidden.test(source[target])) violations.push({ guard, name: source.name })
+      const hit = forbidden.test(source[target])
+      if (source.name in exceptions) {
+        if (!hit) throw new Error(`${guard} の例外 ${source.name} は、禁じる書き方を含まない（例外にする必要がなくなったので、表から外す）`)
+        continue
+      }
+      if (hit) violations.push({ guard, name: source.name })
     }
   }
   return violations

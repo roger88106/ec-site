@@ -129,4 +129,16 @@ describe('禁じる書き方の照合', () => {
     const rules = [{ guard: 'g', forbidden, exceptions: { 'ci/none.mjs': '理由' } }]
     assert.throws(() => findRuleViolations(listScanScripts('ci+lib', root), rules), /ci\/none\.mjs/)
   })
+
+  test('存在しても禁じる書き方を含まない script の例外（使われなくなった例外）は、guard と script の名前を添えて例外にする', () => {
+    const rules = [{ guard: 'guard-z', forbidden, exceptions: { 'ci/a.mjs': '理由' } }]
+    assert.throws(() => findRuleViolations(listScanScripts('ci+lib', root), rules), /guard-z.*ci\/a\.mjs/)
+  })
+
+  test('使われなくなった例外かどうかも、行の target で見る（code ではコメントの中だけの書き方は含まない）', () => {
+    const code = [{ guard: 'guard-c', forbidden: /禁止語/, exceptions: { 'ci/a.mjs': '理由' } }]
+    assert.throws(() => findRuleViolations(listScanScripts('ci', root), code), /guard-c.*ci\/a\.mjs/)
+    const raw = [{ guard: 'guard-c', forbidden: /禁止語/, target: 'raw', exceptions: { 'ci/a.mjs': '理由' } }]
+    assert.deepEqual(findRuleViolations(listScanScripts('ci', root), raw), [{ guard: 'guard-c', name: 'ci/b.mjs' }])
+  })
 })

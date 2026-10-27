@@ -49,7 +49,7 @@ test('AC-167、174、179、180、183 管理画面で出荷を登録し、mock �
   let orderNumber = ''
 
   await test.step('管理画面：受付の注文に、配送業者と送り状番号を入れて出荷を登録する（AC-167）', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${order.orderId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: `/orders/${order.orderId}` })
     orderNumber = await orderNumberOnAdmin(page)
     await shipOnAdmin(page, trackingNumber)
     await expect(detailValue(page, '状態')).toHaveText('出荷済み')
@@ -87,7 +87,7 @@ test('AC-189、190、191、192 返送の注文を、管理画面で絞り込ん�
   let orderNumber = ''
 
   await test.step('管理画面で出荷を登録し、mock の物流で返送を通知する', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${order.orderId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: `/orders/${order.orderId}` })
     orderNumber = await orderNumberOnAdmin(page)
     await shipOnAdmin(page, '9876-5432-1098')
     await notifyCarrier(page, order.orderId, '返送')

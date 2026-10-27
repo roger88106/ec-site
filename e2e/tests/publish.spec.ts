@@ -16,7 +16,7 @@ test('AC-29、58、62、63、64 管理画面で商品を登録し、バリアン
   const productName = `E2E ${keyword} T シャツ`
 
   await test.step('管理画面：商品を登録する（品番は小文字で入れても大文字になる）', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/products/new`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: '/products/new' })
     await page.getByLabel('商品品番（登録後は変更できません）').fill(code.toLowerCase())
     await expect(page.getByLabel('商品品番（登録後は変更できません）')).toHaveValue(code)
     await page.getByLabel('商品名').fill(productName)

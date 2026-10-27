@@ -50,10 +50,15 @@ export async function submitIdpLogin(page: Page, account: Account): Promise<void
  *
  * @param page 使うページ
  * @param account ログインする運営者のアカウント
- * @param path ログインの後に開く管理画面のパス
- * @param adminUrl 管理画面の URL（既定は E2E の管理画面）
+ * @param options 省けば既定の値を使う
+ * @param options.path ログインの後に開く管理画面のパス（既定は `/`）
+ * @param options.adminUrl 管理画面の URL（既定は E2E の管理画面）
  */
-export async function loginAdmin(page: Page, account: Account, path = '/', adminUrl = ADMIN_URL): Promise<void> {
+export async function loginAdmin(
+  page: Page,
+  account: Account,
+  { path = '/', adminUrl = ADMIN_URL }: { path?: string; adminUrl?: string } = {},
+): Promise<void> {
   await page.goto(`${adminUrl}${path}`)
   await submitIdpLogin(page, account)
   await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()
@@ -64,10 +69,15 @@ export async function loginAdmin(page: Page, account: Account, path = '/', admin
  *
  * @param page 使うページ
  * @param account ログインする会員のアカウント
- * @param returnTo ログインの後に戻る店舗画面のパス
- * @param storeUrl 店舗画面の URL（既定は E2E の店舗画面）
+ * @param options 省けば既定の値を使う
+ * @param options.returnTo ログインの後に戻る店舗画面のパス（既定は `/`）
+ * @param options.storeUrl 店舗画面の URL（既定は E2E の店舗画面）
  */
-export async function loginStore(page: Page, account: Account, returnTo = '/', storeUrl = STORE_URL): Promise<void> {
+export async function loginStore(
+  page: Page,
+  account: Account,
+  { returnTo = '/', storeUrl = STORE_URL }: { returnTo?: string; storeUrl?: string } = {},
+): Promise<void> {
   await page.goto(`${storeUrl}/login?returnTo=${encodeURIComponent(returnTo)}`)
   await submitIdpLogin(page, account)
   await expect(page.getByRole('button', { name: 'ログアウト', exact: true })).toBeVisible()

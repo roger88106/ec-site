@@ -119,7 +119,7 @@ test('AC-162 管理画面で受付の注文をキャンセルすると、支払�
   const orderId = orderIdOf(await payOnMockPage(page))
 
   await test.step('管理画面：受付の注文は与信済みで、運営者がキャンセルする', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/orders/${orderId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: `/orders/${orderId}` })
     await expect(paymentStatus(page)).toHaveText('与信済み')
     await page.getByRole('button', { name: 'キャンセルする', exact: true }).click()
     const dialog = page.getByRole('dialog')

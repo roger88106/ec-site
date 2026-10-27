@@ -28,7 +28,7 @@ test('AC-136、141 閲覧者は注文を見られるが、キャンセルの申�
 
   await test.step('管理画面：閲覧者は注文の詳細を見られるが、承認すると「権限がない」と示され、状態は変わらない', async () => {
     const admin = await browser.newPage()
-    await loginAdmin(admin, ACCOUNTS.viewer, `/orders/${orderId}`)
+    await loginAdmin(admin, ACCOUNTS.viewer, { path: `/orders/${orderId}` })
     await expect(admin.getByText('閲覧 次郎')).toBeVisible()
     await admin.getByRole('button', { name: '申請を承認する', exact: true }).click()
     await admin.getByRole('alertdialog').getByRole('button', { name: '承認してキャンセルする', exact: true }).click()

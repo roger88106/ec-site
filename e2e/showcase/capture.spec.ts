@@ -65,12 +65,12 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
   })
 
   await test.step('店舗画面：会員として、税率の違う 2 品目を注文して支払う', async () => {
-    await loginStore(page, ACCOUNTS.member, '/cart', STORE)
+    await loginStore(page, ACCOUNTS.member, { returnTo: '/cart', storeUrl: STORE })
     // 会員のカートは残るので、前に撮ったときの品目を消す
-    await emptyCart(page, STORE)
-    await addToCart(page, SEED.mug, { option: '白' }, STORE)
-    await addToCart(page, SEED.chocolate, {}, STORE)
-    await orderCart(page, STORE, RECIPIENT)
+    await emptyCart(page, { storeUrl: STORE })
+    await addToCart(page, SEED.mug, { option: '白', storeUrl: STORE })
+    await addToCart(page, SEED.chocolate, { storeUrl: STORE })
+    await orderCart(page, { storeUrl: STORE, name: RECIPIENT })
     // 支払の通知が反映されて「受付」になるまで待つ
     const orderUrl = await payOnMockPage(page)
     paidOrderId = orderIdOf(orderUrl)
@@ -78,15 +78,15 @@ test('機能紹介のページのスクリーンショットを撮る', async ({
   })
 
   await test.step('店舗画面：支払わずに戻った、支払待ちの注文', async () => {
-    await addToCart(page, SEED.mug, { option: '白' }, STORE)
-    await orderCart(page, STORE, RECIPIENT)
+    await addToCart(page, SEED.mug, { option: '白', storeUrl: STORE })
+    await orderCart(page, { storeUrl: STORE, name: RECIPIENT })
     const orderUrl = await leaveMockPage(page, 'やめる')
     await page.goto(orderUrl)
     await shot(page, 'store-payment', page.getByRole('button', { name: '支払う', exact: true }))
   })
 
   await test.step('管理画面：商品、在庫、税率、注文', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, '/', ADMIN)
+    await loginAdmin(page, ACCOUNTS.administrator, { adminUrl: ADMIN })
 
     await page.goto(`${ADMIN}/products`)
     await shot(page, 'admin-products', page.getByRole('link', { name: 'MUG-001' }))

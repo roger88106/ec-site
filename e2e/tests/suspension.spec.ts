@@ -22,7 +22,7 @@ test('AC-28、62、63 管理画面でバリアントを販売停止にすると�
   await page.goto(`${STORE_URL}/products/${productId}`)
   await expect(page.getByRole('button', { name: '赤', exact: true })).toBeEnabled()
 
-  await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
+  await loginAdmin(page, ACCOUNTS.administrator, { path: `/products/${productId}` })
   await page.getByRole('button', { name: `${code}-REDを販売停止`, exact: true }).click()
   await expect(page.getByText('販売停止にしました')).toBeVisible()
 

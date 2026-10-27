@@ -28,7 +28,7 @@ test('AC-37、67、68 管理画面で AVIF の画像を複数登録して並べ�
   })
 
   await test.step('管理画面：画像を 2 枚選ぶと、ストレージへ送って登録する（AC-37）', async () => {
-    await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: `/products/${productId}` })
     await page.getByLabel('画像のファイル').setInputFiles([PHOTO, PHOTO])
     await expect(page.getByText('画像を 2 枚登録しました')).toBeVisible()
     await expect(page.getByRole('img', { name: '画像 1' })).toBeVisible()

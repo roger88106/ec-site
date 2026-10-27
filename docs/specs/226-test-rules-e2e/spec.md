@@ -259,12 +259,13 @@ tasks は第 6 節の決定に基づく。
 - 完了条件：DC-226-19〜22 を満たし、`check-all.sh` と E2E の全体が通る。
 - 参照：第 3 節の 8、9、第 6 節の 5、[spec 194](../archive/1to10/194-e2e-tidy/spec.md) 第 6 節の 5
 
-- [ ] **T226-03-01** E2E の補助の URL を、最後の引数のオプションで受け取る形にそろえ、撮影の呼び出しを修正する（DC-226-19、20）。
+- [x] **T226-03-01** E2E の補助の URL を、最後の引数のオプションで受け取る形にそろえ、撮影の呼び出しを修正する（DC-226-19、20）。
   - 依存：段階 2（T226-02-02、04 が同じ E2E のファイルを変える）
   - 範囲：`e2e/src/auth.ts`、`e2e/src/store.ts`（URL を受け取る補助）、それを呼ぶ `e2e/tests/` と `e2e/showcase/capture.spec.ts`
   - 対象は、URL を受け取る補助（`loginAdmin`、`loginStore`、`emptyCart`、`addToCart`、`orderCart`）だけとする。その補助の他の省略できる引数（遷移先のパス、氏名など）も同じオプションに入れる。URL を受け取らない補助（`fillShipping` など）は変えない。補助の TSDoc の `@param` を修正する
   - 修正の前に E2E の全体を 1 回実行して所要時間を記録し、T226-04-01 で比べる（DN-226-3）
   - 確認方法：`scripts/dev/check-frontend.sh`（E2E の lint と型チェック）と E2E の全体が通ること。撮影の呼び出しに `{}` がないこと（`git grep` で確認する）
+  - 結果：修正の前の E2E の全体は 20 件が通り、154 秒（Playwright の実行は 1.9 分）。修正の後は 20 件が通り、129 秒（1.6 分）。補助の新しい形：`loginAdmin(page, account, { path, adminUrl })`、`loginStore(page, account, { returnTo, storeUrl })`、`emptyCart(page, { storeUrl })`、`addToCart(page, productId, { quantity, option, storeUrl })`、`orderCart(page, { storeUrl, name })`（どれも項目は省ける）。撮影は空のオプションを渡さず、`{ storeUrl: STORE }` などの必要な項目だけを渡す。`git grep` で `{}` の呼び出しがないことを確認した。撮影の実行（`pnpm capture`）はスロット 0 だけで対応するため流さず、`check-frontend.sh` の E2E の型チェックと lint で確認した
 - [ ] **T226-03-02** [テスト] Windows 以外で、停止したプロセスの終了を上限まで待つ（DC-226-21、22）。
   - 依存：なし
   - 範囲：`scripts/dev/lib/port-stop.mjs`、`scripts/dev/lib/port-stop.test.mjs`

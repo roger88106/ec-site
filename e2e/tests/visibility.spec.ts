@@ -43,7 +43,7 @@ for (const [label, change, button, toast] of [
     await page.goto(`${STORE_URL}/products/${productId}`)
     await expect(page.getByRole('heading', { name: productName })).toBeVisible()
 
-    await loginAdmin(page, ACCOUNTS.administrator, `/products/${productId}`)
+    await loginAdmin(page, ACCOUNTS.administrator, { path: `/products/${productId}` })
     await page.getByRole('button', { name: button, exact: true }).click()
     if (change === discontinue) {
       // 販売終了は確認のダイアログで確定する

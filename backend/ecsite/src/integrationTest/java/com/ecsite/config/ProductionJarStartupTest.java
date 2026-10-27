@@ -66,7 +66,7 @@ class ProductionJarStartupTest {
     }
 
     /**
-     * テストを実行している Java のコマンドを返す（本番の jar も同じ版の Java で起動する）。
+     * テストを実行している Java のコマンドを返す（本番の jar も同じバージョンの Java で起動する）。
      */
     private static String javaCommand() {
         return ProcessHandle.current().info().command().orElse("java");

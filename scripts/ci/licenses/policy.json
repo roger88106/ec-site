@@ -1,5 +1,5 @@
 {
-  "$comment": "依存のライセンスの方針（依存とライセンス 第 2 節）。バックエンドの checkLicense と scripts/ci/licenses/check-frontend.mjs が読む。部品の名前の * は任意の文字列",
+  "$comment": "依存のライセンスの方針（依存とライセンス 第 2 節）。バックエンドの checkLicense と scripts/ci/licenses/check-frontend.mjs が読む。scripts/ci/license-policy.mjs が allowed を docs/design/licenses.md 第 2 節の表の「許可」の行と、scripts/ci/gradle-plugins.mjs が gradlePlugins を照合する。部品の名前の * は任意の文字列",
   "allowed": [
     "MIT",
     "MIT-0",
@@ -99,7 +99,7 @@
     "https://www.jooq.org/inc/LICENSE.txt": "Apache-2.0"
   },
   "gradlePlugins": {
-    "$comment": "Gradle のプラグインは依存の構成に出ないので、手で書く。検査 gradle-plugins が、使っているプラグインとの過不足を確認する（版は gradle/libs.versions.toml）",
+    "$comment": "Gradle のプラグインは依存の構成に出ないので、手で書く。検査 gradle-plugins が、使っているプラグインとの過不足を確認する（バージョンは gradle/libs.versions.toml）",
     "org.springframework.boot": "Apache-2.0",
     "io.spring.dependency-management": "Apache-2.0",
     "nu.studer.jooq": "Apache-2.0",

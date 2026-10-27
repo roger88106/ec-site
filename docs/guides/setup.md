@@ -4,7 +4,7 @@
 
 ## 1. 前提
 
-JDK 21、Docker、Node.js 24 以上、pnpm（版は `package.json` の `packageManager`）。
+JDK 21、Docker、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
 
 - `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に JDK 21 のパスを設定してから実行する（例：`export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21…"`）。コンパイルとテストに使う JDK 21 は、Gradle の toolchain がインストール済みの JDK から探す。
 
@@ -152,7 +152,7 @@ Windows は、WinNAT（Docker や WSL が使う）などのために、ポート
 | MCP サーバー | 使う場面 | 準備 |
 |--------------|----------|------|
 | IntelliJ IDEA の MCP サーバー | Java のメソッドの呼び出し元を調べる（同じ名前のメソッドが複数あるとき、移動・削除の前）。依存ライブラリのソースの中のクラスやメソッドを検索する | IntelliJ IDEA でこのプロジェクトを開き、MCP サーバーの機能を有効にして、エージェントに登録する（手順は IntelliJ IDEA の文書） |
-| Context7 | ライブラリの最新の文書を参照する（Spring Boot 4、Spring Modulith 2 など、エージェントの知識より新しい版） | Context7 の手順（`npx ctx7 setup`）で、MCP サーバーとして利用者の全体の設定に登録する。API キーは任意（使える回数が増える） |
+| Context7 | ライブラリの最新の文書を参照する（Spring Boot 4、Spring Modulith 2 など、エージェントの知識より新しいバージョン） | Context7 の手順（`npx ctx7 setup`）で、MCP サーバーとして利用者の全体の設定に登録する。API キーは任意（使える回数が増える） |
 
 理由：同じ名前のメソッドが複数あると、文字列の検索ではどれの呼び出しか区別できない。IDE の呼び出しの階層は、メソッドの型まで区別する。単純な検索では、IDE と文字列の検索で token の消費の差はほとんどない。
 

@@ -5,7 +5,7 @@ import { TRACEPARENT } from '@/test/fixtures'
 /** 要求のヘッダーの traceparent（proxy が付けたもの） */
 
 describe('追跡の ID', () => {
-  test('traceparent は W3C の形（版、32 桁の追跡の ID、16 桁の区間の ID、印）', () => {
+  test('traceparent は W3C の形（バージョン、32 桁の追跡の ID、16 桁の区間の ID、印）', () => {
     expect(newTraceparent()).toMatch(/^00-[0-9a-f]{32}-[0-9a-f]{16}-01$/)
     expect(newTraceparent()).not.toBe(newTraceparent())
   })

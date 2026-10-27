@@ -47,7 +47,7 @@ plugins {
 group = "com.ecsite"
 version = "0.0.1-SNAPSHOT"
 
-// Boot BOM が管理する jOOQ の版をカタログの版で上書きする
+// Boot BOM が管理する jOOQ のバージョンをカタログのバージョンで上書きする
 extra["jooq.version"] = libs.versions.jooq.get()
 
 java {

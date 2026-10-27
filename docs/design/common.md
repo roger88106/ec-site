@@ -20,7 +20,7 @@
 | `common/error/exception/` | 例外の基底 `BaseException`、業務の例外 `BusinessException`、システムの例外 `SystemException` | 業務の規則の違反は `BusinessException.of(...)` で投げる |
 | `common/error/handler/` | `GlobalExceptionHandler`（例外を Problem Details に変換する唯一の場所）、`TraceIdResolver`、`ValidationMessages`（入力の検証の文を作る） | 業務のコードは直接使わない。第 3 節 |
 | `common/message/` | `MessageHelper`（メッセージのコードとパラメータから日本語の文を作る）、`I18nMessage`、`ErrorMessage` | エラーの定義と例外が持つ。エラー以外の文（メールの文面など）は `MessageHelper` で作る |
-| `common/model/base/` | 集約の基底 `AggregateRoot`、`DomainEvent`、集約の版の比較と復元の失敗の扱い `AggregateGuards` | 集約とイベントを定義する |
+| `common/model/base/` | 集約の基底 `AggregateRoot`、`DomainEvent`、集約のバージョンの比較と復元の失敗の扱い `AggregateGuards` | 集約とイベントを定義する |
 | `common/model/value/` | 規則を持つ共通の値。`Money`（円）、`BoundedText`（長さの判定。code point で数える）、`BusinessTime`（業務の日付に切る時間帯）、`Operator`（操作した運営者の写し） | 金額、文字の項目、業務の日付、操作の記録 |
 | `common/paging/` | `PageRequest`（ページは 1 始まり、件数は既定 20・最大 100）、`PageResult` | 一覧の API。応答の型への変換は presentation で行う |
 | `common/persistence/` | `ConstraintViolationTranslator`（DB の制約の違反を業務のエラーに変える） | リポジトリの実装 |

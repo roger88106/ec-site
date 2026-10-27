@@ -215,7 +215,8 @@ spec 181 で構成の検査を spec 186 に分けたとき、spec の範囲だ�
   - 依存：なし
   - 範囲：第 1 節の表の Gradle の設定、バックエンドの行（楽観ロック、形式の項目の `ImageFormat`、`ImageFormatTest` を含む）
   - 確認方法：`./gradlew check`。`scripts/ci/check-all.sh`（Gradle の設定を検査の script が読むため）。`git grep -n "版" -- backend` が 0 行。
-- [ ] **T222-01-05** 検査の script とフロントのコメント、テスト名、出力の文の「版」を「バージョン」にする（DC-222-2、3）。
+- [x] **T222-01-05** 検査の script とフロントのコメント、テスト名、出力の文の「版」を「バージョン」にする（DC-222-2、3）。
+  - 結果：10 ファイルの 60 行を替えた。`image-versions.mjs` と `runtime-versions.mjs` の出力の文（「バージョンの食い違い」など）と、それを期待するテストを同じ commit で替え、`queries.ts` の 2 か所は「項目が現れるまで待つ {@link getDetailValue}。」の形にした。`node --test` 79 件、`check-all.sh`、店舗画面と管理画面の lint とテストが通る（管理画面のテストは `pnpm generate:api` の後）。最後の `git grep` は 12 行で、変えない所は 11 行でなく 12 行（`licenses.md` 第 4 節の「無料で商用に使えるライセンスの範囲で使う。有料版の機能が…」の行にも有料版が残るため）。
   - 依存：T222-01-03、04（最後の全体の確認が両方の置き換えを前提にするため）
   - 範囲：第 1 節の表の検査の script の行、店舗画面の `trace.ts`・`trace.test.ts`、管理画面の `src/test/queries.ts`
   - 確認方法：`node --test` で変えた検査の script のテスト、`check-all.sh`、店舗画面と管理画面の lint とテスト。最後に `git grep -n "版"`（アーカイブ、lock、本 spec を除く）の結果が、第 1 節の変えない所の 11 行だけであること（DC-222-1〜4 の全体の確認）。

@@ -66,6 +66,8 @@
 
 - 今の対象は、画像変換の設定（`ImgproxyProperties`）、画像の保存先の設定（`MediaStorageProperties`）、決済の設定（`StripeProperties`）、出荷の設定（`ShippingProperties`）の 4 つで、全て `toString` を宣言している。
 - `accessKeyId` のように `key` を途中に含む名前は、上の当てはめに当たらないが、同じ型が秘密の値の項目（`secretAccessKey`）を持つので対象になる。
+- 対象の型は、`@ConfigurationProperties` の型と、その項目からたどれる `com.ecsite` の型（入れ子の record など。注釈がない）である。秘密の値の項目を自分で持つ型が、`toString` を宣言する。理由：外側の型の既定の `toString` は入れ子の型の `toString` を呼ぶので、入れ子の型が宣言しないと値が出るため（段階 1 のレビュー、2026-10-27）。
+- Lombok の `@ToString`・`@Data`・`@Value` で作る `toString` は、宣言したものと区別できない（注釈がクラスファイルに残らない）。そのため、設定の型でこれらを使わないことを、バックエンドの書き方の規則に書く。
 - 検査は `toString` の宣言の有無だけを確認する。値を隠しているかは、各設定の型の単体テストが確認する（今のとおり）。理由：隠し方（固定の文字、項目を出さない）が設定ごとに違い、構成の検査では判定できないため。
 
 ### 1.2 契約の読み込みの変更の範囲（DC-223-3、4）
@@ -141,10 +143,12 @@ DC-223-19 の例外：
 
 | 呼び出し元 | 置き場所 | 例外の理由 |
 |------------|----------|------------|
-| 会員 ID を返す公開の API（`CurrentMemberIds`） | `main/module/member/api/` | 他のモジュールの presentation 層に会員 ID を渡すための公開の API で、呼び出し元を presentation 層に限る規則（`ALLOWED_API_USES`）が既にある |
+| 会員 ID を返す公開の API（`CurrentMemberIds`） | `main/module/member/api/` | 他のモジュールの presentation 層に会員 ID を渡すための公開の API。`CurrentMemberIds` 自身も取り出しの対象に加え、呼び出し元を presentation 層に限る ※2 |
 | ログイン中の利用者の情報を返す API（`MeController`） | `main/config/security/` | モジュールに属さない API の入口で、役割は presentation 層と同じ |
 
 - 2 つとも残す。理由：どちらも presentation 層の役割を持ち、移すとモジュールの構成が変わる（spec の範囲を超える）ため。
+
+※2：他のモジュールの公開 API を使う規則（`ALLOWED_API_USES`）は、`infrastructure/directory/` からの利用を対象から除くので、それだけでは directory を経て application 層が会員 ID を得る形を防げない（段階 1 のレビュー、2026-10-27）。
 
 ## 6. モジュールの境界と重複（DS-223-6：DC-223-20〜23）
 
@@ -207,13 +211,13 @@ DC-223-19 の例外：
 | 本 spec の段階 | 変えるファイル | 重なる spec | 順序 |
 |----------------|----------------|-------------|------|
 | 全体 | 文書とコードのコメント | spec 222（#187 の語の置き換え） | spec 222 のマージの後に始める |
-| 1 | `test/architecture/`、`ProductionClasses`、`test/contract/ErrorCodeContractTest.java`、`main/config/security/`、通知・出荷、tools、Checkstyle、バックエンドの書き方 | spec 224（`test/contract/` の契約の補助を `fix/` に移す。T224-02-04） | 並行してよい ※2 |
-| 2 | `scripts/ci/`（`role-permissions`、`spec-numbers`、`env-defaults`、新しい `test-helpers`）、`build.gradle.kts` のコメント、`e2e/` の設定のファイル、テストの書き方、CI の検査、コメントの書き方、用語集 | spec 225（`scripts/ci/lib/` の走査の補助と、検査の script が守る関数の表）、spec 226（`spec-numbers` の対象、E2E、テストの書き方、コメントの書き方）、spec 224（`build.gradle.kts`、テストの書き方） | spec 225 のマージの後に始める ※3 |
+| 1 | `test/architecture/`、`ProductionClasses`、`test/contract/ErrorCodeContractTest.java`、`main/config/security/`、通知・出荷、tools、Checkstyle、バックエンドの書き方 | spec 224（`test/contract/` の契約の補助を `fix/` に移す。T224-02-04） | 並行してよい ※3 |
+| 2 | `scripts/ci/`（`role-permissions`、`spec-numbers`、`env-defaults`、新しい `test-helpers`）、`build.gradle.kts` のコメント、`e2e/` の設定のファイル、テストの書き方、CI の検査、コメントの書き方、用語集 | spec 225（`scripts/ci/lib/` の走査の補助と、検査の script が守る関数の表）、spec 226（`spec-numbers` の対象、E2E、テストの書き方、コメントの書き方）、spec 224（`build.gradle.kts`、テストの書き方） | spec 225 のマージの後に始める ※4 |
 | 3 | `scripts/ci/test-helpers.mjs`、`build.gradle.kts`（CPD）、重複を直すテスト、`test/` の 3 つのテスト、テストの書き方 | spec 224（テストの書き方の統合テストのデータの表、契約の補助、統合テスト） | spec 224 のマージの後に始める（spec の第 7 節） |
 
-※2：段階 1 は契約の補助を変えない。spec 224 が契約の補助を移すと、`ErrorCodeContractTest` の import が変わり、段階 1 の T223-01-01 と同じファイルを変える。後でマージする側が import を合わせる。
+※3：段階 1 は契約の補助を変えない。spec 224 が契約の補助を移すと、`ErrorCodeContractTest` の import が変わり、段階 1 の T223-01-01 と同じファイルを変える。後でマージする側が import を合わせる。
 
-※3：段階 2 の新しい検査の script が、spec 225 が整える共通の関数と走査のテストの表に従うため。spec 226 も spec 225 のマージの後に実装するので、本 spec の段階 2 と同じ時期に `spec-numbers` を変えることがある。そのときは、後でマージする側が `spec-numbers` の対象の定義とコメントの書き方を 1 つにまとめる。
+※4：段階 2 の新しい検査の script が、spec 225 が整える共通の関数と走査のテストの表に従うため。spec 226 も spec 225 のマージの後に実装するので、本 spec の段階 2 と同じ時期に `spec-numbers` を変えることがある。そのときは、後でマージする側が `spec-numbers` の対象の定義とコメントの書き方を 1 つにまとめる。
 
 - spec 227（店舗画面）とは、変えるファイルが重ならない。
 - 共有の文書（テストの書き方、CI の検査、コメントの書き方、用語集）の衝突は、後でマージする pull request が `develop` を取り込んで解消する。

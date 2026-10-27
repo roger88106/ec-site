@@ -225,7 +225,7 @@ SPA がブラウザーで IdP とやり取りし（public client）、token は�
 
 | 項目 | 決まり |
 |------|--------|
-| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY`（既定 `http://localhost:8180/realms/ec-admin`）と `VITE_OIDC_CLIENT_ID`（既定 `ec-admin-web`）。戻り先は画面のトップ ※4 |
+| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID`（既定値は[環境変数](../../guides/environment.md) 第 2 節）。戻り先は画面のトップ ※4 |
 | token の置き場所 | メモリー（`InMemoryWebStorage`）。sessionStorage に置かない（JavaScript から読める場所に残さない）。IdP へ移る間の `state` と PKCE の値だけは sessionStorage |
 | ログインを求める | `auth/AuthGate` が全ての画面をラップし、ログインしていなければ IdP へリダイレクトし、戻ったら元の画面を表示する ※5 |
 | token の更新 | 期限が近ければ refresh token で再取得する（自動）。再取得できなければ（最後の操作から 30 分、またはログインから 8 時間を過ぎたとき）再ログインする |

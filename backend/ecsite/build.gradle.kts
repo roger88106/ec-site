@@ -109,6 +109,8 @@ idea {
 // 依存関係
 // -----------------------------------------------------------------------------
 dependencies {
+    // CPD は Java だけ見る。既定の pmd-dist は全ての言語の部品（約 40 個）を引くので、Java の部品だけにする（pmd-core は pmd-java から入る）
+    "cpd"("net.sourceforge.pmd:pmd-java:${libs.versions.pmd.get()}")
     // --- Spring Boot ---
     implementation(libs.spring.boot.starter.webmvc)
     implementation(libs.spring.boot.starter.validation)
@@ -359,7 +361,7 @@ tasks.withType<Checkstyle>().configureEach {
 // 重複の検出（PMD の CPD。テストの書き方 第 3.5 節）
 //   テストのソースセット（src/test、src/integrationTest、src/testFixtures）の Java のコードで、100 トークン以上の重複を見つけると失敗する。
 //   直さない重複は、重複の場所を // CPD-OFF 理由 と // CPD-ON で囲む。main は見ない（生成したコードを含むため）。
-//   報告：build/reports/cpd/。CPD はビルドの道具で、アプリと依存のライセンスの検査の構成には入らない（Gradle のプラグインは policy.json の gradlePlugins）
+//   報告：build/reports/cpd/。CPD の部品（cpd の構成。Java の部品だけにしている）は、pitest と同じく licenseReport の対象に入れて checkLicense で照合する（Gradle のプラグインは policy.json の gradlePlugins）
 // -----------------------------------------------------------------------------
 cpd {
     toolVersion = libs.versions.pmd.get()
@@ -534,7 +536,7 @@ licenseReport {
         "integrationTestCompileClasspath", "integrationTestRuntimeClasspath",
         "testFixturesCompileClasspath", "testFixturesRuntimeClasspath",
         "annotationProcessor", "jooqGenerator",
-        "pitest",
+        "pitest", "cpd",
     )
     filters = arrayOf(
         PreferPomLicenses(),

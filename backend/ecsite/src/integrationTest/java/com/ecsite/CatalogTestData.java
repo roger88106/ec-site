@@ -70,12 +70,25 @@ public class CatalogTestData {
      * @return 税区分 ID
      */
     public UUID taxCategory(String name, String ratePercent) throws Exception {
+        return taxCategory(name, ratePercent, null);
+    }
+
+    /**
+     * 指定した日時から有効になる税率を 1 つ持つ税区分を作る（終了は空白）。
+     *
+     * @param name          名称
+     * @param ratePercent   率（%）
+     * @param effectiveFrom 有効になる日時（null なら開始は空白）
+     * @return 税区分 ID
+     */
+    public UUID taxCategory(String name, String ratePercent, Instant effectiveFrom) throws Exception {
         var id = createdId(post("/api/admin/tax-categories").contentType(MediaType.APPLICATION_JSON).content("""
                 {"name": "%s"}""".formatted(name)));
         mockMvc.perform(put("/api/admin/tax-categories/" + id + "/rates")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
-                                {"version": 0, "rates": [{"ratePercent": %s}]}""".formatted(ratePercent)))
+                                {"version": 0, "rates": [{"ratePercent": %s, "effectiveFrom": %s}]}"""
+                                .formatted(ratePercent, jsonInstant(effectiveFrom))))
                 .andExpect(status().isNoContent());
         return id;
     }

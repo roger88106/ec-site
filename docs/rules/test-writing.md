@@ -113,7 +113,23 @@ AC を確認するテストは、名前（Java は `@DisplayName`、Vitest・Pla
 | `PaymentTestData` | 支払の作成、与信、売上確定、状態の取得 |
 | `TestJson` | 応答の本文から読む ID（作成の応答の ID など） |
 
-token は `TestTokens`、画像は `TestImages` を使う。
+token は `TestTokens`、画像は `TestImages`、ログの確認は `CapturedLogs` を使う（`CapturedLogs` は `src/integrationTest` の `com.ecsite` の直下）。
+
+補助以外のテストは、次の表の手順を直接書かない。
+
+| 手順 | 補助（検査の対象外） | その操作そのものを確認するテスト（検査の対象外） |
+|------|----------------------|--------------------------------------------------|
+| 在庫の作成 | `InventoryTestData` | `JooqStockItemRepositoryTest` |
+| 税区分の登録の要求 | `CatalogTestData` | `TaxCategoryApiTest`、`AuthorizationTest`、`KeycloakIntegrationTest` |
+| 作成の応答から ID を取り出す処理 | `TestJson`、`CatalogTestData` | `TaxCategoryApiTest`、`CategoryApiTest`、`ProductApiTest`（確認する API の作成の応答） |
+| カテゴリの登録の要求 | `CatalogTestData` | `CategoryApiTest` |
+| 支払の API の作成の操作 | `PaymentTestData` | `PaymentApiTest` |
+
+表の手順に、次のものは含めない。
+
+- Repository のテストが、集約を直接作る処理（支払の Repository のテストなど）
+- 作った後の変更の要求（店舗の鮮度のテストの税率の変更など）
+- 一覧の応答から、複数の ID を読む処理（画像の並び、税率の一覧など）
 
 理由：テストの本文に、確認する項目だけを残すため。
 

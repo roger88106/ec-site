@@ -1,7 +1,7 @@
 // pre-commit.mjs のテスト（node --test scripts/dev/lib/pre-commit.test.mjs）
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
@@ -9,6 +9,7 @@ import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
 import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, checkShell, parseAddedLines, resolveIndexFile, runPreCommit, selectAddedWarnings } from './pre-commit.mjs'
 import { COMMIT_MSG_FAILED, runCommitMsg } from './commit-msg.mjs'
+import { gitBash } from './git-bash.mjs'
 
 describe('一時の index のパス', () => {
   test('相対パスは、リポジトリのルートからの絶対パスにする', () => {
@@ -291,21 +292,6 @@ describe('実際の hook', () => {
   const jaTextCheck = '#!/usr/bin/env bash\ncd "$(dirname "$0")/../.." && node scripts/ci/ja-text.mjs\n'
 
   /**
-   * hook を実行する bash。Windows の素の PATH では、bash が WSL の bash.exe を指すことがあるので、Git の bash を使う
-   * （git が hook を実行するときと同じ bash にする）。
-   *
-   * PATH を差し替えても同じ bash を使えるよう、絶対パスで返す。
-   *
-   * @returns {string} bash のパス（見つからなければ PATH の bash）
-   */
-  function gitBash() {
-    if (process.platform !== 'win32') return spawnSync('bash', ['-c', 'command -v bash'], { encoding: 'utf8' }).stdout.trim() || 'bash'
-    const execPath = spawnSync('git', ['--exec-path'], { env: withoutGitEnv(), encoding: 'utf8' }).stdout.trim()
-    const candidate = path.resolve(execPath, '../../../bin/bash.exe')
-    return existsSync(candidate) ? candidate : 'bash'
-  }
-
-  /**
    * 一時のリポジトリを作り、hook とその script を写して、元の内容を作業ブランチに commit する（本物のリポジトリには触れない）。
    * GIT_ で始まる環境変数は外す（commit の hook の中で試すと、本物のリポジトリの設定を書き換えるため）。
    * 最初のブランチは、既定のブランチ名（init.defaultBranch）によらず作業ブランチにする（hook は develop と main の commit を失敗にするため）。
@@ -497,8 +483,7 @@ describe('実際の commit-msg の hook', () => {
       writeFileSync(path.join(dir, 'scripts/ci/ja-text.json'), MINI_LIST)
       writeFileSync(path.join(dir, 'scripts/ci/related-specs.mjs'), `process.exit(${relatedStatus})\n`)
       writeFileSync(path.join(dir, 'MSG'), message)
-      const bash = process.platform === 'win32' ? gitBashPath(env) : 'bash'
-      const result = spawnSync(bash, ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
+      const result = spawnSync(gitBash(env), ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
       return { status: result.status, output: result.stdout }
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -508,13 +493,6 @@ describe('実際の commit-msg の hook', () => {
   /** hook の終了コードだけを返す */
   function runCommitMsgHook(message, relatedStatus) {
     return runCommitMsgHookFull(message, relatedStatus).status
-  }
-
-  /** Git の bash のパス（hook の実行と同じ bash）。見つからなければ PATH の bash */
-  function gitBashPath(env) {
-    const execPath = spawnSync('git', ['--exec-path'], { env, encoding: 'utf8' }).stdout.trim()
-    const candidate = path.resolve(execPath, '../../../bin/bash.exe')
-    return existsSync(candidate) ? candidate : 'bash'
   }
 
   test('メッセージに使わない語（error）がなければ成功する', () => {

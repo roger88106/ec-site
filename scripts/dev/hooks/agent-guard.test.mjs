@@ -7,7 +7,20 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
-import { createDeps, handleInput, judgeCommand, parseCommands, parseGitInvocation, resolveDir, splitCommands } from './agent-guard.mjs'
+import { gitBash } from '../lib/git-bash.mjs'
+import { createDeps, GH_BUDGET_MS, GIT_TIMEOUT_MS, handleInput, judgeCommand, parseCommands, parseGitInvocation, resolveDir, splitCommands } from './agent-guard.mjs'
+
+/** リポジトリ（作業ツリー）の根 */
+const REPO_ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
+
+/** .claude/settings.json の中身 */
+const SETTINGS = JSON.parse(readFileSync(path.join(REPO_ROOT, '.claude/settings.json'), 'utf8'))
+
+/** settings.json の PreToolUse の hook の設定（matcher と hook の一覧） */
+const PRE_TOOL_USE = SETTINGS.hooks.PreToolUse[0]
+
+/** settings.json の hook の時間切れ（ミリ秒） */
+const HOOK_TIMEOUT_MS = PRE_TOOL_USE.hooks[0].timeout * 1000
 
 /** pre-commit hook を置いたときの中身（開発環境の起動の置き方のとおり） */
 const INSTALLED_HOOK = '#!/bin/sh\n"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" || exit 1\n'
@@ -301,6 +314,30 @@ describe('hook の置き場所を替える git -c core.hooksPath を拒否する
   })
 })
 
+describe('シェルの予約語の後の git・gh も判定する', () => {
+  test('for・if・while の本体、{ } の中、! を前に付けた git・gh を拒否する', () => {
+    const cases = [
+      ['for b in a b; do git push --force origin $b; done', /force push/],
+      ['if true; then git commit -n -m x; fi', /--no-verify/],
+      ['if false; then :; else git push -f; fi', /force push/],
+      ['if false; then :; elif git push -f; then :; fi', /force push/],
+      ['while git push -f; do :; done', /force push/],
+      ['until git push -f; do :; done', /force push/],
+      ['{ git push -f; }', /force push/],
+      ['! gh pr merge 1 --admin', /--admin/],
+      ['for n in 1 2; do gh pr merge $n --squash; done', /--match-head-commit/],
+    ]
+    for (const [command, pattern] of cases) {
+      assertDenied(command, pattern)
+    }
+  })
+
+  test('予約語の後の、読むだけの git は通す', () => {
+    assertPassed('for f in a; do git status; done')
+    assertPassed('if git diff --quiet; then echo same; fi')
+  })
+})
+
 describe('pre-commit hook を置いていないリポジトリの commit を拒否する', () => {
   test('hook のファイルがなければ拒否し、hook のパスと置き方の文書を返す', () => {
     const result = judgeCommand('git commit -m x', CWD, fakeDeps({ files: {} }))
@@ -558,7 +595,7 @@ describe('マージのコマンドを判定する', () => {
     const deps = mergeDeps()
     judgeCommand(MERGE, CWD, deps)
     const { timeout } = deps.ghCalls[0]
-    assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout <= 30000, `時間切れ：${timeout}`)
+    assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout < HOOK_TIMEOUT_MS, `時間切れ：${timeout}`)
   })
 
   test('Dependabot は、本文と Closes の代わりに、変更のファイルと題を危険度の判定に渡して低なら通す', () => {
@@ -741,19 +778,49 @@ describe('実際のリポジトリと作業ツリーで、pre-commit hook を調
   })
 })
 
+describe('.claude/settings.json の hook と permission の設定', () => {
+  test('hook の matcher は、Bash と PowerShell のツールを対象にする', () => {
+    const tools = PRE_TOOL_USE.matcher.split('|')
+    assert.ok(tools.includes('Bash'), PRE_TOOL_USE.matcher)
+    assert.ok(tools.includes('PowerShell'), PRE_TOOL_USE.matcher)
+  })
+
+  test('hook の時間切れは、script の中の gh の合計と git の時間切れを足した値より長い', () => {
+    assert.ok(Number.isFinite(HOOK_TIMEOUT_MS), `hook の時間切れ：${HOOK_TIMEOUT_MS}`)
+    assert.ok(Number.isInteger(GH_BUDGET_MS) && Number.isInteger(GIT_TIMEOUT_MS), `gh：${GH_BUDGET_MS}、git：${GIT_TIMEOUT_MS}`)
+    assert.ok(HOOK_TIMEOUT_MS > GH_BUDGET_MS + GIT_TIMEOUT_MS, `hook：${HOOK_TIMEOUT_MS}、gh と git：${GH_BUDGET_MS + GIT_TIMEOUT_MS}`)
+  })
+
+  test('自動マージの有効化と、settings.json・settings.local.json の Edit で確認を求める', () => {
+    const ask = SETTINGS.permissions.ask
+    for (const rule of [
+      'mcp__ccd_pr__set_auto_merge',
+      'Edit(/.claude/settings.json)',
+      'Edit(/.claude/settings.local.json)',
+      'Edit(//**/.claude/settings.json)',
+      'Edit(//**/.claude/settings.local.json)',
+    ]) {
+      assert.ok(ask.includes(rule), rule)
+    }
+  })
+})
+
 describe('.claude/settings.json の hook のコマンドで、script を探して呼ぶ', () => {
   /** リポジトリ（作業ツリー）の根 */
-  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
+  const repoRoot = REPO_ROOT
   /** settings.json に書いた PreToolUse の hook のコマンド */
-  const hookCommand = JSON.parse(readFileSync(path.join(repoRoot, '.claude/settings.json'), 'utf8')).hooks.PreToolUse[0].hooks[0].command
+  const hookCommand = PRE_TOOL_USE.hooks[0].command
 
-  /** hook のコマンドを bash で、`cwd` を作業ディレクトリにして実行する。CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す */
+  /**
+   * hook のコマンドを Git の bash で、`cwd` を作業ディレクトリにして実行する（hook のコマンドは Git Bash で動く形で書くので、その bash で確認する）。
+   * CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す
+   */
   function runHook(command, cwd, projectDir) {
     const env = withoutGitEnv()
     delete env.CLAUDE_PROJECT_DIR
     if (projectDir !== undefined) env.CLAUDE_PROJECT_DIR = projectDir
     const input = JSON.stringify({ tool_name: 'Bash', tool_input: { command }, cwd, hook_event_name: 'PreToolUse' })
-    return spawnSync('bash', ['-c', hookCommand], { cwd, env, input, encoding: 'utf8' })
+    return spawnSync(gitBash(env), ['-c', hookCommand], { cwd, env, input, encoding: 'utf8' })
   }
 
   /** Git の外の一時ディレクトリで `body` を実行する */
@@ -794,6 +861,31 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
       assert.equal(result.status, 0, result.stderr)
       assert.equal(result.stdout, '')
     })
+  })
+
+  test('script が判定の前に異常終了したとき、git・gh を含む入力は終了コード 2 で止め、含まない入力は通す', () => {
+    const scripts = {
+      // 構文の誤りで、node が読み込みの時点で終了コード 1 で終わる
+      構文の誤り: 'const = 1\n',
+      // 途中まで出力してから異常終了する（途中の出力を判定として渡さない）
+      出力の途中の異常終了: "process.stdout.write('{\"partial\":')\nprocess.exit(1)\n",
+    }
+    for (const [name, script] of Object.entries(scripts)) {
+      inTempDir((dir) => {
+        const git = spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv(), encoding: 'utf8' })
+        assert.equal(git.status, 0, git.stderr)
+        const hooks = path.join(dir, 'scripts', 'dev', 'hooks')
+        mkdirSync(hooks, { recursive: true })
+        writeFileSync(path.join(hooks, 'agent-guard.mjs'), script)
+        const stopped = runHook('git push --force', dir)
+        assert.equal(stopped.status, 2, `${name}：${stopped.stderr}`)
+        assert.match(stopped.stderr, /agent-guard\.mjs/, name)
+        assert.equal(stopped.stdout, '', name)
+        const passed = runHook('echo x', dir)
+        assert.equal(passed.status, 0, `${name}：${passed.stderr}`)
+        assert.equal(passed.stdout, '', name)
+      })
+    }
   })
 
   test('Git の外では、CLAUDE_PROJECT_DIR の script が判定する', () => {

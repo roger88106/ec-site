@@ -278,7 +278,7 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
   - 依存：T246-01-07
   - 範囲：`AGENTS.md`（分け方と hook の置き場所、Git の表のマージ・tag の行）、`docs/guides/setup.md`（DC-246-9、hook を置かないと Claude Code の hook が commit を拒否すること）、`docs/guides/branches.md`（第 2 節の `.claude/` の箇条、第 5 節の ruleset の箇条）、skill `zh-mixing`（設定の手順が分け方に合うこと）
   - 確認方法：DC-246-2、3、9、19 の各文書の該当箇所を、skill `review` の文書のレビューで読む。
-- [ ] **T246-01-11** [リスク] 段階 1 の最後のレビューの指摘（必須 7 件。重複を除いて 6 件）を直す（DC-246-2、5、6、12、17、20）。
+- [x] **T246-01-11** [リスク] 段階 1 の最後のレビューの指摘（必須 7 件。重複を除いて 6 件）を直す（DC-246-2、5、6、12、17、20）。
   - 依存：T246-01-08
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`、`scripts/dev/lib/pre-commit.test.mjs`（Git Bash を求める補助を共通にする）、`.claude/settings.json`、`docs/constitution.md`、`docs/guides/setup.md`
   - 直すもの：シェルの予約語（`then`、`do`、`{`、`!` など）の後の git・gh の判定、script の異常終了のときに git・gh を止める（DC-246-5）、settings.json の中身（matcher、timeout、ask）のテスト、テストで Git Bash を使う、constitution の `.claude/` の行（DC-246-2）、setup.md に pre-commit が止めない形（merge など。第 8 節の 3）を書く。

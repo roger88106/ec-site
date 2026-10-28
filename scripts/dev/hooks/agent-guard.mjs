@@ -22,7 +22,8 @@
 // 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出す。通すときは何も出さない。終了コードは常に 0。
 // 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd、env -C、git -C で決め、前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る
 // （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない）。
-// $(…) とバッククォートの中のコマンド、timeout・env・xargs などを前に付けたコマンドも判定する。
+// $(…) とバッククォートの中のコマンド、timeout・env・xargs などを前に付けたコマンド、
+// シェルの予約語（do、then、{、! など）の後のコマンドも判定する。
 // 判定の中の例外では、git か gh を含むコマンドは拒否し、含まないコマンドは通す
 // （判定の不具合で force push や許可のないマージを通さず、かつ git・gh と関係のない Bash まで止めないため）。
 // ============================================================================
@@ -34,7 +35,7 @@ import { isMain } from '../../ci/lib/is-main.mjs'
 import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, readBodyRisk } from '../../ci/risk.mjs'
 
 /** git の呼び出しの時間切れ（ミリ秒）。hook 全体の時間切れより短くする */
-const GIT_TIMEOUT_MS = 5000
+export const GIT_TIMEOUT_MS = 5000
 
 /**
  * gh の 1 回の呼び出しの時間切れ（ミリ秒）。pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
@@ -42,10 +43,10 @@ const GIT_TIMEOUT_MS = 5000
 const GH_TIMEOUT_MS = 10000
 
 /**
- * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。hook 全体の時間切れ（30 秒以下）から、
+ * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。hook 全体の時間切れ（.claude/settings.json の timeout）から、
  * node の起動と git の呼び出しの分（約 10 秒）を残す。使い切った後のマージは、読まずに確認を求める。
  */
-const GH_BUDGET_MS = 20000
+export const GH_BUDGET_MS = 20000
 
 /** 高の経路の一覧（Dependabot の pull request の危険度の判定に使う） */
 const RISK_CONFIG_FILE = new URL('../../ci/risk.json', import.meta.url)
@@ -156,6 +157,12 @@ const PREFIX_COMMANDS = {
     valueLong: ['arg-file', 'delimiter', 'eof', 'max-args', 'max-chars', 'max-lines', 'max-procs', 'process-slot-var'],
   },
 }
+
+/**
+ * コマンドの前に来て、後ろの語をコマンドとして実行させるシェルの予約語（if・for・while の本体や条件、{ } の中、! の否定）。
+ * `;` で区切った後の `do git push -f` のような形で、git・gh を語の先頭から見分けるために外す。
+ */
+const SHELL_KEYWORDS = ['if', 'then', 'else', 'elif', 'do', 'while', 'until', '!', '{']
 
 /** 前に付けた環境変数のうち、対象のリポジトリを替えるもの（pre-commit hook を調べる rev-parse に渡す） */
 const REPOSITORY_ENV = ['GIT_DIR', 'GIT_WORK_TREE']
@@ -526,7 +533,7 @@ function skipPrefixOptions(words, start, { valueShort, optionalShort = '', value
 }
 
 /**
- * コマンドの前に付けた環境変数の設定と、後ろの語を実行させるコマンド（env、timeout など）を外す。
+ * コマンドの前に付けた環境変数の設定、シェルの予約語（do、then など）、後ろの語を実行させるコマンド（env、timeout など）を外す。
  * env -C はディレクトリを、env -S は語を替える。
  *
  * @param {string[]} raw コマンドの語
@@ -539,11 +546,15 @@ function stripPrefixes(raw, dir, options) {
   let words = raw
   let current = dir
   const assigned = {}
-  // 環境変数の設定と、前に付けるコマンドがなくなるまで外す
+  // 環境変数の設定、予約語、前に付けるコマンドがなくなるまで外す
   while (words.length > 0) {
     const assignment = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/s.exec(words[0])
     if (assignment) {
       assigned[assignment[1]] = assignment[2]
+      words = words.slice(1)
+      continue
+    }
+    if (SHELL_KEYWORDS.includes(words[0])) {
       words = words.slice(1)
       continue
     }

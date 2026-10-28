@@ -245,11 +245,11 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
   - 依存：T246-01-05
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
   - 確認方法：T246-01-05 のテストが通る。`check-all.sh` が通る。
-- [ ] **T246-01-09** [テスト] Claude Code の hook の、PowerShell のツールの判定（DC-246-20）のテストを書き、レッドを確認する。T246-01-06 のレビューで加えた（決めたこと 5）。
+- [x] **T246-01-09** [テスト] Claude Code の hook の、PowerShell のツールの判定（DC-246-20）のテストを書き、レッドを確認する。T246-01-06 のレビューで加えた（決めたこと 5）。
   - 依存：T246-01-06
   - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`
   - 確認方法：DC-246-20 の拒否する例がレッドになる。通す例も持つ。
-- [ ] **T246-01-10** [リスク] Claude Code の hook の、PowerShell のツールの判定を実装する（DC-246-20）。
+- [x] **T246-01-10** [リスク] Claude Code の hook の、PowerShell のツールの判定を実装する（DC-246-20）。
   - 依存：T246-01-09
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
   - 確認方法：T246-01-09 のテストが通る。`check-all.sh` が通る。

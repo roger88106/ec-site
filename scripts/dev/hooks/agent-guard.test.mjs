@@ -758,11 +758,35 @@ describe('hook の入力と出力', () => {
     assert.match(output.hookSpecificOutput.permissionDecisionReason, /tag/)
   })
 
-  test('通すとき、Bash 以外のツール、読めない入力では、何も返さない', () => {
+  test('通すとき、Bash と PowerShell 以外のツール、読めない入力では、何も返さない', () => {
     assert.equal(handleInput(input('git push'), fakeDeps()), '')
     assert.equal(handleInput(input('git push --force', 'Edit'), fakeDeps()), '')
     assert.equal(handleInput('{', fakeDeps()), '')
     assert.equal(handleInput(JSON.stringify({ tool_name: 'Bash', tool_input: {} }), fakeDeps()), '')
+  })
+
+  test('PowerShell のツールで、git・gh と操作の語を含むコマンドは、Bash で実行し直すよう返して拒否する', () => {
+    const commands = [
+      'git push --force',
+      'git tag v1',
+      'gh pr merge 1 --admin',
+      '& "C:\\Program Files\\GitHub CLI\\gh.exe" api -X PUT repos/o/r/rulesets/1',
+      'git -c core.hooksPath=x commit',
+      'git commit -m x',
+      'git.exe PUSH origin',
+    ]
+    for (const command of commands) {
+      const output = JSON.parse(handleInput(input(command, 'PowerShell'), fakeDeps()) || '{}')
+      assert.equal(output.hookSpecificOutput?.permissionDecision, 'deny', command)
+      assert.match(output.hookSpecificOutput.permissionDecisionReason, /Bash/, command)
+    }
+  })
+
+  test('PowerShell のツールで、操作の語のない git・gh と、git・gh を含まないコマンドは通す', () => {
+    const commands = ['git status', 'git log --oneline -3', 'gh pr view 1', 'Get-ChildItem', 'Write-Output digit', 'Write-Output digit push']
+    for (const command of commands) {
+      assert.equal(handleInput(input(command, 'PowerShell'), fakeDeps()), '', command)
+    }
   })
 
   test('判定の中の例外では、git を含むコマンドは拒否し、含まないコマンドは通す', () => {

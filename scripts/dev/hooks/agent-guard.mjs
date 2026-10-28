@@ -15,7 +15,10 @@
 // - ruleset：ruleset とブランチの保護を変える gh api（GET 以外のリクエスト）
 // permission の規則はコマンドの先頭の語でしか判定できず、フルパスの git・gh や、&& でつないだ後ろのコマンドに効かないので、hook で全文を読む。
 //
-// 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash 以外のツールは何もせずに通す。
+// PowerShell のツールのコマンドは書き方を読まず、git か gh と、操作の語（push、commit、tag、merge、api、release、hooksPath）を
+// 語として含めば拒否し、Bash のツールで実行し直すよう返す。それ以外（git status など）は通す。
+//
+// 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash と PowerShell 以外のツールは何もせずに通す。
 // 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出す。通すときは何も出さない。終了コードは常に 0。
 // 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd、env -C、git -C で決め、前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る
 // （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない）。
@@ -1242,6 +1245,27 @@ export function createDeps(env = process.env) {
   }
 }
 
+/** git か gh を語として含むか（git.exe、gh.exe、フルパスを含む。digit のような語の一部は含まない） */
+const GIT_OR_GH_WORD = /\b(git|gh)\b/i
+
+/** hook が判定する操作の語を、語として含むか（大文字と小文字を区別しない） */
+const OPERATION_WORD = /\b(push|commit|tag|merge|api|release|hookspath)\b/i
+
+/**
+ * PowerShell のツールのコマンドを判定する。git か gh と、hook が判定する操作の語の両方を含めば拒否する。
+ * PowerShell の書き方は読まず、語を含むかだけを見る（判定は Bash の 1 か所に置き、読むだけのコマンドは通すため）。
+ *
+ * @param {string} command コマンドの全文
+ * @returns {Decision | null} 判定。通すときは null
+ */
+function judgePowerShell(command) {
+  if (!GIT_OR_GH_WORD.test(command) || !OPERATION_WORD.test(command)) return null
+  return deny(
+    'PowerShell のツールでは、git・gh の push、commit、tag、merge、api、release、hooksPath を含むコマンドを実行しない。' +
+      '同じコマンドを Bash のツールで実行し直す（Bash では、Claude Code の hook がコマンドの全文を読んで判定する）。',
+  )
+}
+
 /**
  * hook の入力（JSON の文字列）を判定し、標準出力に出す文字列を返す。
  * 読めない入力は通す（Claude Code は常に JSON を渡すので、読めないときに全てのツールを止めないため）。
@@ -1258,9 +1282,10 @@ export function handleInput(text, deps = createDeps(), judge = judgeCommand) {
   } catch {
     return ''
   }
-  if (input?.tool_name !== 'Bash') return ''
+  if (input?.tool_name !== 'Bash' && input?.tool_name !== 'PowerShell') return ''
   const command = input.tool_input?.command
   if (typeof command !== 'string' || command === '') return ''
+  if (input.tool_name === 'PowerShell') return output(judgePowerShell(command))
   const cwd = typeof input.cwd === 'string' && input.cwd !== '' ? input.cwd : process.cwd()
   let decision
   try {
@@ -1273,6 +1298,16 @@ export function handleInput(text, deps = createDeps(), judge = judgeCommand) {
         )
       : null
   }
+  return output(decision)
+}
+
+/**
+ * 判定を、標準出力に出す文字列にする。
+ *
+ * @param {Decision | null} decision 判定。通すときは null
+ * @returns {string} 出力する JSON。通すときは空文字
+ */
+function output(decision) {
   if (decision === null) return ''
   return JSON.stringify({ hookSpecificOutput: { hookEventName: 'PreToolUse', permissionDecision: decision.decision, permissionDecisionReason: decision.reason } })
 }

@@ -277,6 +277,13 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
+  test('ローカルにない tag の名前の削除は、ブランチの削除として拒否し、refs/tags/<名前> で指定するよう返す。refs/tags/ で指定すれば確認を求める', () => {
+    assertDenied('git push origin --delete v1', /tag を消すときは `refs\/tags\/<名前>` で指定する/, fakeDeps())
+    for (const command of ['git push origin --delete refs/tags/v1', 'git push origin :refs/tags/v1']) {
+      assertAsked(command, /tag/, fakeDeps())
+    }
+  })
+
   test('$(…) とバッククォートの中の push、ヒアドキュメントの commit に続けた push を拒否する', () => {
     for (const command of [
       'out="$(git push --force 2>&1)"; echo "$out"',
@@ -753,6 +760,36 @@ describe('マージのコマンドを判定する', () => {
       'gh api graphql --input -',
     ]) {
       assertAsked(command, /読めない/, deps)
+    }
+  })
+
+  test('エンドポイントが /graphql と GraphQL の URL の gh api も、GraphQL として mergePullRequest を拒否する', () => {
+    for (const command of [
+      `gh api /graphql -f query='${MERGE_MUTATION}'`,
+      `gh api https://api.github.com/graphql -f query='${MERGE_MUTATION}'`,
+      `gh api https://github.example.com/api/graphql -f query='${MERGE_MUTATION}'`,
+    ]) {
+      assertDenied(command, /mergePullRequest.*--match-head-commit/s, fakeDeps())
+    }
+  })
+
+  test('gh api graphql の本文が $(…)・バッククォート・変数の展開を含むときは、読めない本文として確認を求め、単一引用符の中の GraphQL の変数は通す', () => {
+    for (const command of [
+      'gh api graphql -f query="$(cat merge.graphql)"',
+      "gh api graphql -f query=\"$(cat <<'EOF'\nmutation { mergePullRequest(input: {pullRequestId: \"x\"}) { clientMutationId } }\nEOF\n)\"",
+      'gh api graphql -F query="`cat merge.graphql`"',
+      'gh api graphql -f query="$QUERY"',
+      'gh api graphql --raw-field=query=${QUERY}',
+      'gh api /graphql --field query="$QUERY"',
+    ]) {
+      assertAsked(command, /読めない/, fakeDeps())
+    }
+    for (const command of [
+      `gh api graphql -f query='query { viewer { login } }'`,
+      `gh api graphql -f query='query($n: Int!) { viewer { login } }' -F n=1`,
+      `gh api graphql -f query='${SUB_ISSUE_MUTATION}'`,
+    ]) {
+      assertPassed(command, fakeDeps())
     }
   })
 

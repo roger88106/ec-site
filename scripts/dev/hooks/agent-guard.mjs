@@ -231,7 +231,8 @@ const FORCE_REASON =
 /** リモートのブランチの削除を拒否する理由と代わりの手順 */
 const DELETE_BRANCH_REASON =
   'push 済みのブランチを消して push し直すことも、履歴の書き換えになるので、git push の --delete（-d）と : で始まる refspec でリモートのブランチを消すことはできない（AGENTS.md の Git の表）。' +
-  'マージした作業ブランチはリモートで自動で削除されるので消さない。push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
+  'マージした作業ブランチはリモートで自動で削除されるので消さない。push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。' +
+  'tag を消すときは `refs/tags/<名前>` で指定する（確認を求める）。'
 
 /** 検査の省略を拒否する理由と代わりの手順 */
 const NO_VERIFY_REASON =
@@ -354,6 +355,17 @@ export function splitCommands(command) {
 }
 
 /**
+ * splitCommands が返したコマンドの語の並びごとの、シェルが展開する部分（変数、`$(…)`、バッククォート）を含む語。
+ * 引用符を外した語では、単一引用符の中の `$` と区別できないので、語を読むときに記録する。
+ *
+ * @type {WeakMap<string[], Set<string>>}
+ */
+const EXPANDED_WORDS = new WeakMap()
+
+/** 引用符の外と二重引用符の中で、`$` の次にあれば変数の展開（算術式の `$((` を含む）になる文字 */
+const EXPANSION_START = /^[A-Za-z_0-9{@*#?$!(-]/
+
+/**
  * コマンドの文字列を、`start` から、`closer` で閉じるまで（なければ終わりまで）読み、コマンドを `commands` に加える。
  *
  * @param {string} command コマンドの全文
@@ -367,6 +379,9 @@ function tokenize(command, start, closer, commands) {
   let words = []
   let word = ''
   let inWord = false
+  // 今の語が、シェルが展開する部分を含むか
+  let expanded = false
+  let expandedWords = new Set()
   let dropNextWord = false
   let heredocs = []
   // 括弧（サブシェル）の深さ。$( の中では、深さが 0 の ) で閉じる
@@ -379,20 +394,35 @@ function tokenize(command, start, closer, commands) {
     const end = tokenize(command, at, inner, commands)
     word += inner === ')' ? '$(…)' : '`…`'
     inWord = true
+    expanded = true
     return end + 1
+  }
+  /** `$` を語に加え、変数の展開なら記録する */
+  const addDollar = (at) => {
+    if (EXPANSION_START.test(command[at + 1] ?? '')) expanded = true
+    word += '$'
   }
   const endWord = () => {
     if (!inWord) return
-    if (dropNextWord) dropNextWord = false
-    else words.push(word)
+    if (dropNextWord) {
+      dropNextWord = false
+    } else {
+      words.push(word)
+      if (expanded) expandedWords.add(word)
+    }
     word = ''
     inWord = false
+    expanded = false
   }
   const endCommand = () => {
     endWord()
     dropNextWord = false
-    if (words.length > 0) commands.push(words)
+    if (words.length > 0) {
+      if (expandedWords.size > 0) EXPANDED_WORDS.set(words, expandedWords)
+      commands.push(words)
+    }
     words = []
+    expandedWords = new Set()
   }
   // 1 文字ずつ、引用符・区切り・リダイレクト・ヒアドキュメントを見分けて語を作る
   while (i < n) {
@@ -420,6 +450,9 @@ function tokenize(command, start, closer, commands) {
           i = substitute(i + 2, ')')
         } else if (command[i] === '`') {
           i = substitute(i + 1, '`')
+        } else if (command[i] === '$') {
+          addDollar(i)
+          i++
         } else {
           word += command[i]
           i++
@@ -462,6 +495,7 @@ function tokenize(command, start, closer, commands) {
       if (inWord && /^\d+$/.test(word)) {
         word = ''
         inWord = false
+        expanded = false
       } else {
         endWord()
       }
@@ -477,6 +511,10 @@ function tokenize(command, start, closer, commands) {
       if (c === '(') depth++
       else if (c === ')' && depth > 0) depth--
       endCommand()
+      i++
+    } else if (c === '$') {
+      addDollar(i)
+      inWord = true
       i++
     } else {
       word += c
@@ -643,8 +681,9 @@ function changeDir(words, dir, stack, options) {
  * @param {string} command コマンドの全文
  * @param {string} cwd 入力の cwd
  * @param {PathOptions} [options] パスの解き方
- * @returns {{ words: string[], dir: string, env: Record<string, string>, ghRepo: string | null }[]} コマンドごとの語（前に付けた環境変数の設定などを除いたもの）、
- *   ディレクトリ、対象のリポジトリを替える環境変数、gh の対象のリポジトリ（前に付けた GH_REPO）
+ * @returns {{ words: string[], dir: string, env: Record<string, string>, ghRepo: string | null, expandedWords: Set<string> }[]} コマンドごとの語
+ *   （前に付けた環境変数の設定などを除いたもの）、ディレクトリ、対象のリポジトリを替える環境変数、gh の対象のリポジトリ（前に付けた GH_REPO）、
+ *   シェルが展開する部分を含む語
  */
 export function parseCommands(command, cwd, options = {}) {
   let dir = resolveDir(process.cwd(), cwd, options)
@@ -653,7 +692,7 @@ export function parseCommands(command, cwd, options = {}) {
   for (const raw of splitCommands(command)) {
     const { words, dir: commandDir, env, ghRepo } = stripPrefixes(raw, dir, options)
     if (words.length === 0) continue
-    commands.push({ words, dir: commandDir, env, ghRepo })
+    commands.push({ words, dir: commandDir, env, ghRepo, expandedWords: EXPANDED_WORDS.get(raw) ?? new Set() })
     dir = changeDir(words, dir, stack, options)
   }
   return commands
@@ -915,18 +954,20 @@ const GIT_JUDGES = [judgeHooksPath, judgePush, judgeCommitOptions, judgePreCommi
  * @property {string} dir 実行するディレクトリ
  * @property {string | null} ghRepo 前に付けた GH_REPO
  * @property {string[]} args gh の後の語
+ * @property {Set<string>} expandedWords シェルが展開する部分（変数、`$(…)`、バッククォート）を含む語
  */
 
 /**
  * コマンドが gh の呼び出しなら、gh の後の語を返す。フルパスと gh.exe の形も gh として読む。
  *
- * @param {{ words: string[], dir: string, ghRepo?: string | null }} command コマンドの語、ディレクトリ、前に付けた GH_REPO
+ * @param {{ words: string[], dir: string, ghRepo?: string | null, expandedWords?: Set<string> }} command コマンドの語、ディレクトリ、
+ *   前に付けた GH_REPO、シェルが展開する部分を含む語
  * @returns {GhInvocation | null} gh の呼び出し。gh でなければ null
  */
-export function parseGhInvocation({ words, dir, ghRepo = null }) {
+export function parseGhInvocation({ words, dir, ghRepo = null, expandedWords = new Set() }) {
   const program = words[0].split(/[\\/]/).pop()
   if (!/^gh(\.exe)?$/i.test(program)) return null
-  return { dir, ghRepo, args: words.slice(1) }
+  return { dir, ghRepo, args: words.slice(1), expandedWords }
 }
 
 /**
@@ -994,27 +1035,31 @@ function flagEnabled(options, name) {
 /**
  * gh api graphql の本文を集める。-f・--raw-field の値はそのまま、-F・--field の値は `@<ファイル>` ならファイルの中身、--input はファイルの中身を読む。
  * ファイルは対象のディレクトリからの相対パスで読み、`-`（標準入力）と読めないファイルは、読めないものとして返す。
+ * -f・-F の値がシェルの展開（変数、`$(…)`、バッククォート）を含むときも、中身が分からないので、読めないものとして返す。
  *
  * @param {{ name: string, value: string }[]} options gh api のオプション
- * @param {string} dir 対象のディレクトリ
+ * @param {GhInvocation} gh gh の呼び出し
  * @param {Deps} deps 外部の処理
- * @returns {{ texts: string[], unreadable: string[] }} 読めた本文と、読めなかったファイル
+ * @returns {{ texts: string[], unreadable: string[] }} 読めた本文と、読めなかった本文の説明
  */
-function graphqlBodies(options, dir, deps) {
+function graphqlBodies(options, gh, deps) {
   const texts = []
   const unreadable = []
   const read = (file) => {
-    const text = file === '-' ? null : deps.readText(path.resolve(dir, file))
+    const text = file === '-' ? null : deps.readText(path.resolve(gh.dir, file))
     if (text === null) unreadable.push(file === '-' ? '標準入力' : file)
     else texts.push(text)
   }
+  // 値は、展開を含む語そのものか、その語の後ろの部分（-fquery=… や --field=query=… の = の後）になる
+  const expands = (value) => value !== '' && [...gh.expandedWords].some((word) => word.endsWith(value))
   for (const { name, value } of options) {
     if (name === 'input') {
       read(value)
     } else if (name === 'raw-field' || name === 'field') {
       const fieldValue = value.slice(value.indexOf('=') + 1)
+      if (expands(value)) unreadable.push(`シェルが展開する ${name === 'field' ? '-F' : '-f'} の値`)
       // -F（--field）だけが、@ で始まる値をファイルの中身に置き換える
-      if (name === 'field' && fieldValue.startsWith('@')) read(fieldValue.slice(1))
+      else if (name === 'field' && fieldValue.startsWith('@')) read(fieldValue.slice(1))
       else texts.push(value)
     }
   }
@@ -1025,12 +1070,12 @@ function graphqlBodies(options, dir, deps) {
  * gh api graphql の判定。本文が mutation mergePullRequest を含めば拒否し、enablePullRequestAutoMerge を含むか、本文を読めなければ確認を求める。
  *
  * @param {{ name: string, value: string }[]} options gh api のオプション
- * @param {string} dir 対象のディレクトリ
+ * @param {GhInvocation} gh gh の呼び出し
  * @param {Deps} deps 外部の処理
  * @returns {Decision | null} 判定
  */
-function judgeGraphql(options, dir, deps) {
-  const { texts, unreadable } = graphqlBodies(options, dir, deps)
+function judgeGraphql(options, gh, deps) {
+  const { texts, unreadable } = graphqlBodies(options, gh, deps)
   if (texts.some((text) => GRAPHQL_MERGE.test(text))) return deny(API_MERGE_REASON)
   if (texts.some((text) => GRAPHQL_AUTO_MERGE.test(text))) {
     return ask(`GraphQL の enablePullRequestAutoMerge（予約のマージ）は、マージの時点の条件を判定できないので、確認を求める（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`)
@@ -1044,6 +1089,9 @@ function judgeGraphql(options, dir, deps) {
   return null
 }
 
+/** GraphQL のエンドポイント。gh は `graphql`、`/graphql`、`https://<ホスト>/graphql`（`api/` を含む形も）を同じ GraphQL の API に送る */
+const GRAPHQL_ENDPOINT = /^(?:https?:\/\/[^/]+\/(?:api\/)?|\/)?graphql\/?$/i
+
 /**
  * gh api の判定。GraphQL はマージの mutation を見る（judgeGraphql）。REST は GET 以外のリクエストのうち、マージのパスへのものは拒否し、
  * Release と tag の参照、ruleset とブランチの保護へのものは確認を求める。
@@ -1056,7 +1104,7 @@ function judgeGraphql(options, dir, deps) {
 function judgeGhApi(args, gh, deps) {
   const { positionals, options } = parseGhArgs(args, GH_API_OPTIONS)
   const endpoint = positionals[0] ?? ''
-  if (endpoint === 'graphql') return judgeGraphql(options, gh.dir, deps)
+  if (GRAPHQL_ENDPOINT.test(endpoint)) return judgeGraphql(options, gh, deps)
   // gh api は、-X がなくても本文を送るオプションがあれば POST にする
   const method = (optionValue(options, 'method') ?? (options.some((option) => GH_API_BODY_OPTIONS.includes(option.name)) ? 'POST' : 'GET')).toUpperCase()
   if (method === 'GET') return null

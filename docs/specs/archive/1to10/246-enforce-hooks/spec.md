@@ -105,7 +105,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - **DC-246-13** 同じ hook が、マージのコマンドを次の順に判定する。`gh` をフルパスで呼ぶ形も対象にする。
   1. `gh api` によるマージ（REST の `…/pulls/<番号>/merge` と、GraphQL の mutation `mergePullRequest`）と、`gh pr merge --admin` は拒否し、`gh pr merge --match-head-commit` を使うよう返す。
   2. `gh pr merge` に `--match-head-commit` がなければ拒否する。自動のマージを解除するだけの `--disable-auto` は、マージでないので通す。
-  3. `--auto` と、GraphQL の mutation `enablePullRequestAutoMerge` は確認を求める（予約のマージは、マージの時点の条件を判定できないため）。GraphQL の本文をファイルから読む形で、中身を読めないときも確認を求める。
+  3. `--auto` と、GraphQL の mutation `enablePullRequestAutoMerge` は確認を求める（予約のマージは、マージの時点の条件を判定できないため）。GraphQL の本文を読めないとき（ファイルから読む形、`$(…)` で作る形）も確認を求める。GraphQL の判定は、エンドポイントが `graphql`、`/graphql`、`https://<ホスト>/graphql` のどれでも行う。
   4. DC-246-14 の条件を全て満たせば通す。
   5. それ以外と、pull request の情報を読めないとき（`gh` の失敗、タイムアウト）は、確認を求める。
 - **DC-246-14** 通す条件は、DC-245-26 の条件のうち、未解決の指摘が 0 であること（第 5 節）を除いたものである。
@@ -309,6 +309,10 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
   - 依存：T246-02-03
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`
   - 確認方法：加えたテストが修正の前に失敗し、修正の後に通る。`check-all.sh` が通る。
+- [x] **T246-02-05** [リスク] pull request #268 の再審査の指摘（高 2 件、必須 1 件）を直す（DC-246-10、13）。
+  - 依存：T246-02-04
+  - 範囲：`scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`
+  - 確認方法：加えたテストが修正の前に失敗し、修正の後に通る。`check-all.sh` が通る。
 
 ## 8. 後回しにする作業と起票の案
 
@@ -317,7 +321,7 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 | # | 項目 | 起票の案 |
 |---|------|----------|
 | 1 | 未解決の指摘（重要度が高と必須）が 0 であることを、機械で読める形にして hook の条件に加える | spec 245 のレビューの記録の形が決まってから、issue 担当のセッションの候補の一覧に残す |
-| 2 | `bash -c "…"` に入れたコマンドと、環境変数（`GIT_CONFIG_COUNT` など）や `git config` で hook の置き場所を替えてから commit する形も、hook で判定する。設定 `push.followTags` による tag の push、セッションで先に `export` した `GH_REPO`、ローカルの tag を先に消してからの `git push --delete <tag>` も、hook で判定する。どれも今は通す（T246-01-04、06） | エージェントが意図して使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
+| 2 | `bash -c "…"` に入れたコマンドと、環境変数（`GIT_CONFIG_COUNT` など）や `git config` で hook の置き場所を替えてから commit する形も、hook で判定する。設定 `push.followTags` による tag の push、セッションで先に `export` した `GH_REPO`も、hook で判定する。どれも今は通す。なお、ローカルの tag を先に消してからの `git push --delete <名前>` は、ブランチの削除として拒否する（`refs/tags/<名前>` で指定すれば確認を求める）（T246-01-04、06） | エージェントが意図して使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 | 3 | `develop`・`main` の上の `git merge`・`git cherry-pick`・`git revert`・`git am` も失敗にする。git はこれらで pre-commit hook を実行しない。`develop` の上の `git pull`（merge）を止めないように、判定の条件を決める必要がある（段階 1 のレビュー） | 見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 | 4 | `$(…)`・バッククォート・括弧（サブシェル）の中の `cd` が、外の後ろのコマンドのディレクトリに持ち越される。拒否する側の誤りで、通すべきでないものを通す誤りではない（spec の最後のレビュー） | 見逃しや誤った拒否が起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 

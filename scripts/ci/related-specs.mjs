@@ -163,7 +163,7 @@ if (isMain(import.meta.url)) {
   exitIfShallow()
   const files = listGitFiles(['docs/*.md'])
   exitIfNoFiles(files, '文書')
-  // 除外が要るのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
+  // 除外が必要なのは、そのタスク番号の commit が履歴にあるものだけ（履歴が足りる場合に限って調べる）
   const merging = spawnSync('git', ['rev-parse', '-q', '--verify', 'MERGE_HEAD'], { encoding: 'utf8' }).status === 0
   const allSubjects = execFileSync('git', historyLogArgs(merging), { encoding: 'utf8', maxBuffer: 1 << 28 }).split('\n').filter(Boolean)
   const { failures: exclusionProblems, warnings } = checkRelatedExclusions(exclusions, (prefix) => isPrefixUsed(prefix, allSubjects), process.env.CI === 'true')

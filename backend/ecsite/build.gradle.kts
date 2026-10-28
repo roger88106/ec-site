@@ -80,7 +80,7 @@ sourceSets {
         compileClasspath += sourceSets.main.get().output + sourceSets.test.get().output
         runtimeClasspath += sourceSets.main.get().output + sourceSets.test.get().output
     }
-    // src/tools : 開発で流す道具（地域の最初のデータを作る）。本番の jar に入れない
+    // src/tools : 開発で流すツール（地域の最初のデータを作る）。本番の jar に入れない
     create("tools") {
         compileClasspath += sourceSets.main.get().output + sourceSets.main.get().compileClasspath
         runtimeClasspath += sourceSets.main.get().output + sourceSets.main.get().runtimeClasspath
@@ -343,7 +343,7 @@ tasks.check { dependsOn("compileToolsJava") }
 //     test などは config/checkstyle/suppressions.xml で抑える。上書き（@Override）も見ない。
 //   生成したコード（jOOQ、OpenAPI。build/ の下）は見ない。ほかの規則は入れない。
 //   規則：config/checkstyle/checkstyle.xml、報告：build/reports/checkstyle/
-//   Checkstyle はビルドの道具で、アプリと依存のライセンスの検査の構成には入らない
+//   Checkstyle はビルドのツールで、アプリと依存のライセンスの検査の構成には入らない
 // -----------------------------------------------------------------------------
 checkstyle {
     toolVersion = libs.versions.checkstyle.get()
@@ -805,7 +805,7 @@ tasks.withType<JavaCompile>().configureEach {
         // 誤った報告を消すための注釈（@Immutable、@SuppressWarnings）しか生まないので無効にする
         disable("ImmutableEnumChecker")
         // テストのソースセットだけ、次の 2 つを無効にする。テストの record の配列の成分（検証の確認のため）と、
-        // テストの道具（JsonPath.read と同じ形の read）で、本番の誤りにつながらない
+        // テストのツール（JsonPath.read と同じ形の read）で、本番の誤りにつながらない
         if (name == "compileTestJava" || name == "compileIntegrationTestJava" || name == "compileTestFixturesJava") {
             disable("ArrayRecordComponent", "TypeParameterUnusedInFormals")
         }

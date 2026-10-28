@@ -3,10 +3,13 @@
 //       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする
 //   warning：文脈で言い換えるかを決める語。--warning（--caution も同じ）を付けたときだけ示し、失敗にしない（文書を書くときに見る）
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown と、.github/ の yml・yaml と Markdown。
+// コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
+//   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text
 // 使い方：node scripts/ci/ja-text.mjs [--warning]（リポジトリのルートで）
 //   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする
 import { readFileSync } from 'node:fs'
 import { checkExclusions } from './lib/exclusions.mjs'
+import { codeKind, commentText } from './lib/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
@@ -15,6 +18,14 @@ const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/skills\/.*)\.md|\.github\/.*\.
 
 /** 見ない文書（アーカイブした spec（当時の記録）と、言い換える前の語を例に挙げる言い回しの規則） */
 const EXCLUDED = /^(docs\/specs\/archive\/|\.claude\/skills\/docs\/tech-writing\.md$)/
+
+/**
+ * 調べないコード。
+ * - 生成したコード、依存のパッケージ、ビルドの出力（書き手が直せない）
+ * - アーカイブした spec の下（当時の記録）
+ * - 語を例に挙げるテスト（サンプルの文に、使わない語を書く）
+ */
+const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/specs\/archive\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
 
 /**
  * 行の中に、使わない語を、許す語の外で書いているかを返す。
@@ -89,6 +100,28 @@ export function isTargetDoc(file) {
 }
 
 /**
+ * 調べるコードかを返す。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 調べるなら true
+ */
+export function isTargetCode(file) {
+  return codeKind(file) !== null && !CODE_EXCLUDED.test(file)
+}
+
+/**
+ * コードのコメントとテスト名から、使わない語を書いた行を探す。行番号は元のファイルの行である。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @param {string} text ファイルの内容
+ * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許す語
+ * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語（調べないファイルは空）
+ */
+export function findCodeTerms(file, text, terms) {
+  return isTargetCode(file) ? findTerms(commentText(text, codeKind(file)), terms) : []
+}
+
+/**
  * コミットメッセージから、git が付けるコメントの行（# で始まる行）を除く。行の番号は変えない。
  *
  * @param {string} message コミットメッセージ
@@ -120,16 +153,27 @@ if (isMain(import.meta.url)) {
     console.log(`${warning ? '注意する語' : '使わない語'}：${hits.length}`)
     process.exit(!warning && hits.length ? 1 : 0)
   }
-  const files = listGitFiles().filter((file) => isTargetDoc(file))
+  const gitFiles = listGitFiles()
+  const files = gitFiles.filter((file) => isTargetDoc(file))
   exitIfNoFiles(files, '語を調べる文書')
+  const codeFiles = gitFiles.filter((file) => isTargetCode(file))
+  exitIfNoFiles(codeFiles, '語を調べるコード')
   const texts = files.map((file) => readFileSync(file, 'utf8'))
-  const allowProblems = warning ? [] : findAllowProblems(texts, terms)
+  const codeTexts = codeFiles.map((file) => readFileSync(file, 'utf8'))
+  const allowTexts = [...texts, ...codeFiles.map((file, index) => commentText(codeTexts[index], codeKind(file)))]
+  const allowProblems = warning ? [] : findAllowProblems(allowTexts, terms)
   for (const problem of allowProblems) {
     console.log(problem)
   }
   let count = allowProblems.length
   for (const [index, file] of files.entries()) {
     for (const hit of findTerms(texts[index], terms)) {
+      console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
+      count += 1
+    }
+  }
+  for (const [index, file] of codeFiles.entries()) {
+    for (const hit of findCodeTerms(file, codeTexts[index], terms)) {
       console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
       count += 1
     }

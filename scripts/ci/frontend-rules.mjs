@@ -7,8 +7,8 @@
 // - クエリ付きの URL を文字列で組み立てない（第 6 節）。line-through を直接書かない（第 10.1 節）
 // - テストと E2E で CSS のクラスを確認しない。画面のテストで data-slot と querySelector で探さない（テストの書き方 第 4.1 節）
 // - フロントのテストと補助：理由のコメントのない型の回避（as never、as unknown as）、fireEvent の直接の使用を書かない（第 4.6、4.8 節）
-// - フロントのテスト：describe の名前を識別子だけにしない、要素のプロパティ・属性を toBe・toEqual で比べない、描画した HTML の文字を要素や属性の並びで確かめない（第 2.2、4.7、4.1 節）
-// - フロントのテストと E2E：toBeTruthy・toBeDefined で確かめない、getAllBy…の結果を並びのインデックスで選ばない（第 4.1 節）
+// - フロントのテスト：describe の名前を識別子だけにしない、要素のプロパティ・属性を toBe・toEqual で比べない、描画した HTML の文字を要素や属性の並びで確認しない（第 2.2、4.7、4.1 節）
+// - フロントのテストと E2E：toBeTruthy・toBeDefined で確認しない、getAllBy…の結果を並びのインデックスで選ばない（第 4.1 節）
 // - E2E：.first()・.nth()・.last() と、locator の文字列のセレクターの中の位置（nth=、:nth-child( など）で選ばない、ボタンの名前を完全一致で探す（第 4.1 節）。networkidle で待たない、timeout を含む項目・intervals・setTimeout などの引数に、タイムアウトを数字のリテラルで書かない（e2e/src/waits.ts を除く。第 5 節）
 // - フロントのテストと補助と E2E：TypeScript の lib のグローバルの名前（一覧は globals/lib-globals.json）と同じ名前の const・let を宣言しない（テストの書き方 第 4.10 節）
 // - フロントのテストと補助と E2E：テストの間に空行を置く（テストを閉じる行の直後に test・it・describe を続けない。第 4.11 節）
@@ -592,7 +592,7 @@ function literalsOf(code, from, to) {
 }
 
 /**
- * 描画した HTML の文字を、要素や属性の並びに依存して確かめる所を探す（テストの書き方 第 4.1 節。描画した結果を DOM に読み込み、役割と名前で探す）。
+ * 描画した HTML の文字を、要素や属性の並びに依存して確認する所を探す（テストの書き方 第 4.1 節。描画した結果を DOM に読み込み、役割と名前で探す）。
  * 対象の形は、toMatch・toContain・toBe・toEqual・toStrictEqual の引数の文字列・テンプレート・正規表現に HTML のタグ（`<a`、`</p`）があるもの、
  * toMatch・toContain の引数の文字列・テンプレート・正規表現に属性（`href="`、`aria-label="`）があるもの。
  * 引数のコード（`new Map<string, number>()` の型引数など）は見ない。空の描画の確認（toBe('')）は、引数にタグも属性もないので対象にならない
@@ -738,7 +738,7 @@ const IMPORT_STATEMENT = /\bimport\s+(?:type\s+)?(?:[\w$]+\s*,?\s*)?(?:\*\s*as\s
 
 /**
  * 理由のコメントのない fireEvent の使用を探す（テストの書き方 第 4.8 節。import は除く）。
- * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす（型の変換と同じ）。呼び出しごとに理由が要る。
+ * 理由のコメントは、同じ行のコメントか、直前の行がコメントだけの行であるものとみなす（型の変換と同じ）。呼び出しごとに理由が必要だ。
  * fireEvent を別名で import したとき（import { fireEvent as fe }）は、別名の呼び出し（fe.click(…)、fe(…)）も見つける。
  * 名前空間の import（import * as rtl）の rtl.fireEvent は、fireEvent の語で見つける
  *
@@ -1396,7 +1396,7 @@ if (isMain(import.meta.url)) {
   for (const relative of [...duplicated].filter((relative) => !Object.hasOwn(exclusions, relative))) {
     report(`frontend/{store,admin}/src/${relative} 店舗画面と管理画面に同じ内容のファイルがある（共有パッケージに置く）`)
   }
-  // 除外が要るのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）と、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）だけ
+  // 除外が必要なのは、2 つの画面に同じ内容のファイルがあるもの（キーは src からの相対パス）と、共有と同じ名前の定義があるもの（キーは <画面>:<名前>）だけ
   // （片方が消えた、内容が変わった、定義がなくなったものは不要）
   for (const message of checkExclusions('frontend-rules-exclusions.json', exclusions, (key) => duplicated.has(key) || shadowing.has(key))) {
     report(message)

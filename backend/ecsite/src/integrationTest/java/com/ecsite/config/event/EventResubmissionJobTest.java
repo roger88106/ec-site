@@ -98,7 +98,7 @@ class EventResubmissionJobTest {
     AsyncEvents asyncEvents;
 
     /**
-     * イベントの発行を確かめる補助
+     * イベントの発行を確認する補助
      */
     EventPublications publications;
 

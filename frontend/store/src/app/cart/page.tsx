@@ -12,7 +12,7 @@ import { CartItemControls } from '@/features/cart/components/CartItemControls'
 import { CartMergeNoticeView } from '@/features/cart/components/CartMergeNoticeView'
 import { StartCheckoutForm } from '@/features/cart/components/StartCheckoutForm'
 
-/** ブラウザのタブの題名 */
+/** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('cart.page')
   return { title: t('title') } // カート

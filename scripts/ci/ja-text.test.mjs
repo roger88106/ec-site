@@ -5,7 +5,7 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { findAllowProblems, findTerms, isTargetDoc } from './ja-text.mjs'
+import { findAllowProblems, findCodeTerms, findTerms, isTargetCode, isTargetDoc } from './ja-text.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
 const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
@@ -168,5 +168,80 @@ describe('文書の用語の検査', () => {
     assert.equal(isTargetDoc('.github/actions/setup-frontend/action.yaml'), true)
     assert.equal(isTargetDoc('.github/pull_request_template.md'), true)
     assert.equal(isTargetDoc('frontend/store/.github/workflows/ci.yml'), false)
+  })
+})
+
+describe('日本語の文の検査（コードのコメントとテスト名）', () => {
+  test('アーカイブの外の .java・.kts・.ts・.tsx・.mjs・.cjs・.sh を調べる', () => {
+    for (const file of [
+      'backend/ecsite/src/main/java/A.java',
+      'backend/ecsite/build.gradle.kts',
+      'frontend/store/src/a.ts',
+      'frontend/store/src/a.tsx',
+      'scripts/ci/a.mjs',
+      'scripts/a.cjs',
+      'scripts/dev/a.sh',
+    ]) {
+      assert.equal(isTargetCode(file), true, file)
+    }
+  })
+
+  test('生成したコード、node_modules、ビルドの出力、対象でない拡張子は調べない', () => {
+    for (const file of [
+      'frontend/admin/src/generated/api.ts',
+      'frontend/store/node_modules/x/index.mjs',
+      'backend/ecsite/build/generated/A.java',
+      'frontend/store/.next/server/a.mjs',
+      'frontend/store/dist/a.mjs',
+      'frontend/store/package.json',
+      'docs/guide.md',
+    ]) {
+      assert.equal(isTargetCode(file), false, file)
+    }
+  })
+
+  test('語を挙げる一覧とそのテストは調べない', () => {
+    assert.equal(isTargetCode('scripts/ci/ja-text.test.mjs'), false)
+    assert.equal(isTargetCode('scripts/ci/lib/comment-text.test.mjs'), false)
+  })
+
+  test('Java のコメントと @DisplayName の error を、元の行番号で見つける', () => {
+    const source = ['class A {', '  // 道具を使う', '  @DisplayName("作り修正する")', '  void f() { String s = "道具"; }', '}'].join('\n')
+    assert.deepEqual(
+      findCodeTerms('A.java', source, list.error).map((hit) => `${hit.line}:${hit.word}`),
+      ['2:道具', '3:作り修正'],
+    )
+  })
+
+  test('TypeScript のコメントと describe・it の名前の error を見つける', () => {
+    const source = ["describe('道具の一覧', () => {", "  it('確かめる', () => {})", '})', '// 足す'].join('\n')
+    assert.deepEqual(
+      findCodeTerms('a.test.ts', source, list.error).map((hit) => `${hit.line}:${hit.word}`),
+      ['1:道具', '2:確かめ', '4:足す'],
+    )
+  })
+
+  test('画面の文言の文字列リテラルにある語は error にしない', () => {
+    const source = ['const label = "道具の一覧"', '<p>{t("道具")}</p>', "expect(page.getByText('道具')).toBeVisible()"].join('\n')
+    assert.deepEqual(findCodeTerms('a.tsx', source, list.error), [])
+  })
+
+  test('.kts と .sh のコメントの error を見つける。.sh の 1 行目の #! は調べない', () => {
+    assert.deepEqual(
+      findCodeTerms('build.gradle.kts', 'val x = 1 // 道具', list.error).map((hit) => hit.line),
+      [1],
+    )
+    assert.deepEqual(
+      findCodeTerms('a.sh', '#!/bin/sh\n# 道具\necho 道具', list.error).map((hit) => hit.line),
+      [2],
+    )
+  })
+
+  test('許す語はコメントの中でも通る', () => {
+    assert.deepEqual(findCodeTerms('A.java', '// 有料版の機能', list.error), [])
+  })
+
+  test('対象でないファイルは何も見つけない', () => {
+    assert.deepEqual(findCodeTerms('a.json', '// 道具', list.error), [])
   })
 })

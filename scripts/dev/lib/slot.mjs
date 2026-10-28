@@ -188,7 +188,7 @@ export function slotEnv(slot, target) {
   return { ADMIN_API_PROXY_TARGET: backendOrigin }
 }
 
-/** 共有の基盤のうち、動いていることを確かめるコンテナ */
+/** 共有の基盤のうち、動いていることを確認するコンテナ */
 export const SHARED_CONTAINERS = ['ec-site-postgres', 'ec-site-seaweedfs']
 
 /**
@@ -289,8 +289,8 @@ export function dropBucketsScript(buckets) {
 /**
  * スロットを割り当てる手順。<br />
  * ロックの中では、作業ツリーの一覧を読み、空きを選び、記録を書くだけにする。
- * データベースとバケットの作り直しは長くかかるので、ロックを放した後に流す。
- * 記録を先に書くので、作り直しの間に他の作業ツリーが同じ番号を選ばない。作り直しに失敗しても記録は残す（reset で作り直す）。
+ * データベースとバケットの再作成は長くかかるので、ロックを放した後に流す。
+ * 記録を先に書くので、再作成の間に他の作業ツリーが同じ番号を選ばない。再作成に失敗しても記録は残す（reset で再作成する）。
  *
  * @param {{ main: boolean, readOwnRecord: () => string | null, listWorktrees: () => string,
  *   readRecord: (worktreePath: string) => string | null, withLock: <T>(action: () => T) => Promise<T>,
@@ -304,7 +304,7 @@ export async function assignSlot(deps) {
   const existing = parseSlotRecord(deps.readOwnRecord())
   if (existing !== null) return { kind: 'already', slot: existing }
   const picked = await deps.withLock(() => {
-    // ロックを待つ間に、同じ作業ツリーの別のセッションが割り当てていないかを見直す
+    // ロックを待つ間に、同じ作業ツリーの別のセッションが割り当てていないかを再確認する
     const again = parseSlotRecord(deps.readOwnRecord())
     if (again !== null) return { kind: 'already', slot: again }
     // 一覧もロックの中で読む。待つ間に作られた作業ツリーの割り当ても数えるため

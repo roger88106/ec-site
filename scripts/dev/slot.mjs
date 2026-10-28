@@ -3,7 +3,7 @@
 // 使い方：node scripts/dev/slot.mjs <コマンド>（作業ツリーのどこから流してもよい）
 //   assign                          空いている最小のスロットを割り当て、データベースとバケットを作る。割り当て済みなら番号を示すだけ
 //   release                         スロットのポートで待ち受けるプロセスを停止し、データベースとバケットを削除し、割り当てを解く
-//   reset                           割り当てを変えずに、データベースとバケットを作り直す（バックエンドを止めてから）
+//   reset                           割り当てを変えずに、データベースとバケットを再作成する（バックエンドを止めてから）
 //   show                            スロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧
 //   env                             スロットの環境変数を `export NAME='value'` の形で出す
 //   run <backend|store|admin> [番号]  スロットの環境変数を付けて起動する。番号を渡したときは、作業ツリーのスロットと同じときだけ起動する
@@ -162,7 +162,7 @@ function containerRunning(name) {
 }
 
 /**
- * 共有の基盤が動いていることを確かめる。止まっていれば、メインの作業ツリーで起動するよう示して終わる。
+ * 共有の基盤が動いていることを確認する。止まっていれば、メインの作業ツリーで起動するよう示して終わる。
  *
  * @param {{ mainPath: string }} ctx 作業ツリーの状態
  */
@@ -193,7 +193,7 @@ function dropDatabase(slot) {
 }
 
 /**
- * スロットのデータベースを作り直す。マイグレーションと seed は、次のバックエンドの起動で入る。
+ * スロットのデータベースを再作成する。マイグレーションと seed は、次のバックエンドの起動で入る。
  *
  * @param {number} slot スロットの番号
  */
@@ -203,7 +203,7 @@ function recreateDatabase(slot) {
 }
 
 /**
- * 一時のコンテナとして seaweedfs-init を流す。共有のコンテナは作り直さない。
+ * 一時のコンテナとして seaweedfs-init を流す。共有のコンテナは再作成しない。
  *
  * @param {string} root 作業ツリーのルート（compose の定義を読む場所）
  * @param {string[]} args `docker compose run` の引数（サービス名の前）
@@ -229,7 +229,7 @@ function dropBuckets(root, slot) {
 }
 
 /**
- * スロットの 2 つのバケットを削除してから作り直し、seed の画像を配信のバケットの assets/ に写す。
+ * スロットの 2 つのバケットを削除してから再作成し、seed の画像を配信のバケットの assets/ に写す。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -248,7 +248,7 @@ function recreateBuckets(root, slot) {
 }
 
 /**
- * スロットのデータ（データベースとバケット）を作り直す。assign と reset が使う。
+ * スロットのデータ（データベースとバケット）を再作成する。assign と reset が使う。
  *
  * @param {string} root 作業ツリーのルート
  * @param {number} slot スロットの番号
@@ -296,7 +296,7 @@ async function withLock(ctx, action) {
 }
 
 /**
- * assign：スロットを割り当てる。記録を書いてロックを放してから、データベースとバケットを作り直す。
+ * assign：スロットを割り当てる。記録を書いてロックを放してから、データベースとバケットを再作成する。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */
@@ -378,7 +378,7 @@ async function backendRunning(slot) {
 }
 
 /**
- * reset：割り当てを変えずに、データベースを作り直す。
+ * reset：割り当てを変えずに、データベースを再作成する。
  *
  * @param {ReturnType<typeof context>} ctx 作業ツリーの状態
  */

@@ -263,7 +263,7 @@ describe('待ち受けるプロセスの停止', () => {
     assert.ok(clock.elapsed() < STOP_WAIT_MS)
   })
 
-  test('Windows 以外では、SIGKILL が ESRCH で失敗した（すでに終わっている）プロセスは、今までどおり生存を確かめる', () => {
+  test('Windows 以外では、SIGKILL が ESRCH で失敗した（すでに終わっている）プロセスは、今までどおり生存を確認する', () => {
     const clock = fakeClock()
     const probes = []
     const kill = (pid, signal) => {

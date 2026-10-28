@@ -7,12 +7,12 @@ import { remainingTime } from '@/features/checkout/remainingTime'
 /**
  * 引当の残り時間。1 秒ごとに数え直す。<br />
  * 期限が切れても注文はできるので、操作は止めずに案内だけを替える。
- * サーバーとブラウザの時刻の違いで表示が食い違わないよう、ブラウザで初めて数える。
+ * サーバーとブラウザーの時刻の違いで表示が食い違わないよう、ブラウザーで初めて数える。
  */
 export function RemainingTime({ expiresAt }: { expiresAt: string }) {
   const t = useTranslations('checkout.remaining')
   const [now, setNow] = useState<Date | null>(null)
-  // 今の時刻はブラウザで決める（サーバーの描画と食い違わないよう、最初は出さない）。1 秒ごとに残りを数え直す
+  // 今の時刻はブラウザーで決める（サーバーの描画と食い違わないよう、最初は出さない）。1 秒ごとに残りを数え直す
   useEffect(() => {
     setNow(new Date())
     const timer = setInterval(() => setNow(new Date()), 1000)

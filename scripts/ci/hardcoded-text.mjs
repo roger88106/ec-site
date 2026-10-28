@@ -50,7 +50,7 @@ if (isMain(import.meta.url)) {
   const exclusions = readExclusions(exclusionsPath('hardcoded-text-exclusions.json'))
   const files = listGitFiles(['frontend']).filter(isScreenSource)
   exitIfNoFiles(files, '画面のソース')
-  // 除外のファイルも読む。除外が要るのは、文言を直接書いた行があるファイルだけ
+  // 除外のファイルも読む。除外が必要なのは、文言を直接書いた行があるファイルだけ
   const hitsByFile = scanSources(files, (file) => readFileSync(file, 'utf8'))
   const found = [...hitsByFile].filter(([file]) => !(file in exclusions)).flatMap(([file, hits]) => hits.map((hit) => ({ file, ...hit })))
   const problems = checkExclusions('hardcoded-text-exclusions.json', exclusions, (file) => hitsByFile.has(file))

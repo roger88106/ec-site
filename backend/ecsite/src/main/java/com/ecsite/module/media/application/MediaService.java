@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 
 /**
  * メディアのサービス（docs/design/modules/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
- * ファイルは署名付き URL でブラウザからアップロードのバケットへ直接送られ、用意のときに中身を確認し、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
+ * ファイルは署名付き URL でブラウザーからアップロードのバケットへ直接送られ、用意のときに中身を確認し、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
  */
 @Slf4j
 @Service
@@ -75,7 +75,7 @@ public class MediaService {
         }
         verifySize(contentLength);
 
-        // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザが付ける Content-Type と合う）
+        // 申告された形式のまま署名する（image/heic と image/heif のどちらでも、ブラウザーが付ける Content-Type と合う）
         var presigned = storage.presignUpload(uploadKey, contentType.toLowerCase(Locale.ROOT), contentLength);
         return new ImageUploadView(uploadId, presigned.url(), presigned.headers(), presigned.expiresAt());
     }

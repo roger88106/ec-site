@@ -13,13 +13,13 @@ const FORMAT_ERROR = '画像の形式は JPEG、PNG、WebP、BMP、HEIC / HEIF�
 const SIZE_ERROR = `画像は 1 ファイル ${MAX_BYTES / (1024 * 1024)}MB までです。`
 
 describe('画像の形式の判定', () => {
-  test('AC-39、67、272 受け付ける形式（契約の形式の一覧）は、ブラウザの形式をそのまま使う', () => {
+  test('AC-39、67、272 受け付ける形式（契約の形式の一覧）は、ブラウザーの形式をそのまま使う', () => {
     for (const type of createImageUploadRequestContentTypeValues) {
       expect(imageContentType({ type, name: 'a' })).toBe(type)
     }
   })
 
-  test('AC-67 ブラウザが形式を空や汎用で渡したら、拡張子で補う', () => {
+  test('AC-67 ブラウザーが形式を空や汎用で渡したら、拡張子で補う', () => {
     expect(imageContentType({ type: '', name: 'IMG_0001.HEIC' })).toBe('image/heic')
     expect(imageContentType({ type: '', name: 'photo.heif' })).toBe('image/heif')
     expect(imageContentType({ type: 'application/octet-stream', name: 'photo.avif' })).toBe('image/avif')

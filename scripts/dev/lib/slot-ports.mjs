@@ -4,7 +4,7 @@ import { portBusyMessage, queryFailedMessage, stopFailedMessage, stoppedMessage 
 import { checkBackendStopped } from './slot.mjs'
 
 /**
- * スロットを解除する。ポートで待ち受けるプロセスを止め、空いたことと、バックエンドが応答しないことを確かめてからデータを消す。<br />
+ * スロットを解除する。ポートで待ち受けるプロセスを止め、空いたことと、バックエンドが応答しないことを確認してからデータを消す。<br />
  * 問い合わせが失敗したとき、止めても待ち受けが残るとき、バックエンドが応答するときは、データを消さずに終了コード 1 を返す。
  * 動いているバックエンドのデータベースを消さないため。
  *
@@ -30,12 +30,12 @@ export async function releaseSlot({ slot, ports, platform, find, stop, backendRu
   if (found.listeners.length > 0) {
     stop(found.listeners)
     log(stoppedMessage(found.listeners))
-    // 止まったことを、ポートの待ち受けがなくなったかで確かめる
+    // 止まったことを、ポートの待ち受けがなくなったかで確認する
     const left = find(ports)
     if (!left.ok) return queryFailed(left.reason)
     if (left.listeners.length > 0) return { code: 1, message: stopFailedMessage(left.listeners, platform) }
   }
-  // 問い合わせと別の経路でも、バックエンドが応答しないことを確かめてからデータを消す
+  // 問い合わせと別の経路でも、バックエンドが応答しないことを確認してからデータを消す
   const problem = checkBackendStopped({ slot, running: await backendRunning(), action: '解く' })
   if (problem !== null) return problem
   drop()
@@ -43,7 +43,7 @@ export async function releaseSlot({ slot, ports, platform, find, stop, backendRu
 }
 
 /**
- * バックエンドを起動する前に、バックエンドと運用のポートが使われていないかを確かめる。<br />
+ * バックエンドを起動する前に、バックエンドと運用のポートが使われていないかを確認する。<br />
  * 使われていれば、利用者が別に起動したバックエンドかもしれないので、自動で止めず、止め方を示して起動しない。
  * 問い合わせが失敗したときは、データは壊れず、使われているポートでは起動が失敗するだけなので、警告して起動する。
  *

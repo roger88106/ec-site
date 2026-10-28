@@ -95,7 +95,7 @@
 
 ### コードの中の ng の語
 
-コード（.java、.ts、.tsx、.mjs、.cjs、.kts、.sh）の、`doc-terms` の ng の語がある行の数を次に示す。`git grep -c` の結果で、コメントと文字列を分けていない。コメントとテスト名だけの数は、T249-01-04 で測る。
+コード（.java、.ts、.tsx、.mjs、.cjs、.kts、.sh）の、`doc-terms` の ng の語がある行の数を次に示す。`git grep -c` の結果で、コメントと文字列を分けていない。コメントとテスト名だけの数は、T249-01-04 で測った（次の表）。
 
 | 言い換え先 | 行 |
 |------------|----|
@@ -108,6 +108,34 @@
 | バージョン、第 N 弾 | 0 |
 
 ※4：言い換え先は、`doc-terms.json` の `use` の列である。元の語を書くと、文書の検査が失敗にする。
+
+コメントとテスト名だけの error の数を、修正する前に測った（2026-10-28、T249-01-04）。アーカイブの外の 61 ファイル、100 行で、言い換え先ごとの数は次のとおりである。表の行は、上の `git grep` の表と同じ語の分け方ではない（`git grep` の表は、一覧のその時点の語の一部を数えた。今回は一覧の全ての error の語を数える）。
+
+| 言い換え先 | 行 |
+|------------|----|
+| 確認する・確認方法 | 36 |
+| ブラウザー | 24 |
+| 再作成する・再生成する | 13 |
+| 作業ツリー | 8 |
+| ツール | 7 |
+| 必要だ・必要になる | 6 |
+| 追加する | 5 |
+| レビューする | 1 |
+| バージョン、第 N 弾 | 0 |
+
+- 「作業ツリー」の 8 行は、全て英語の綴りの語である。型の注釈（`@param` の `{{ … }}`）や引数の説明に識別子（フィールド名、引数の名前）を書いた 6 行と、git が追加の作業ツリーの情報を置くディレクトリの名前を書いた 2 行は、識別子と名前を変えない（DN-249-2）ので、許す語に書く（理由つき）。
+- 並行する #250 が変えるファイル（`frontend/admin/src/test/renderApp.tsx`、`frontend/admin/vite.config.ts`、`frontend/store/src/auth/loginRedirect.test.ts`、`frontend/store/vitest.config.ts`、`docs/rules/test-writing.md`）は、修正するファイルに入らない。重なりはない。`frontend/admin/src/test/setup.ts` は #250 の一覧にない別のファイルである。
+
+修正するファイル（61 ファイル）は次のとおりである。
+
+| まとまり | ファイル |
+|----------|----------|
+| backend（19） | `backend/ecsite/build.gradle.kts`、`src/integrationTest/java/com/ecsite/` の `config/event/EventCleanupJobTest.java`・`config/event/EventResubmissionJobTest.java`・`module/order/presentation/CheckoutApiTest.java`・`module/storefront/presentation/StorefrontFreshnessTest.java`、`src/main/java/com/ecsite/` の `config/OpenApiEnumConverterConfig.java`・`config/security/OpenApiOperations.java`・`module/media/application/MediaService.java`・`module/media/domain/ImageFormat.java`・`module/order/application/shipment/OrderShipmentService.java`・`module/reporting/domain/snapshot/StatusHistoryEntry.java`、`src/test/java/com/ecsite/` の `ProductionClasses.java`・`architecture/ModuleStructureTest.java`・`common/model/base/AggregateGuardsTest.java`・`module/media/infrastructure/converter/ImgproxyImageConverterFailureTest.java`・`module/media/infrastructure/storage/S3ObjectStorageFailureTest.java`・`modulith/ModuleDiagramTest.java`、`src/testFixtures/java/com/ecsite/config/security/ErrorCodeCheck.java`、`src/tools/java/com/ecsite/tools/region/RegionMigrationGenerator.java` |
+| frontend/store（13） | `next.config.ts`、`src/app/` の `cart/page.tsx`・`checkout/[checkoutId]/page.tsx`・`layout.tsx`・`orders/[orderId]/page.tsx`・`orders/page.tsx`・`products/[productId]/page.tsx`・`products/page.tsx`・`search/page.tsx`、`src/features/checkout/components/` の `OrderForm.test.tsx`・`OrderForm.tsx`・`RemainingTime.tsx`、`src/lib/cartId.ts` |
+| frontend/admin（8） | `src/app/App.tsx`、`src/features/product/` の `imageUpload.test.ts`・`imageUpload.ts`・`pages/ProductEditPage.test.tsx`、`src/features/report/` の `csv.ts`・`pages/ReportPermission.test.tsx`、`src/lib/format.ts`、`src/test/setup.ts` |
+| frontend/shared（2） | `src/lib/locale.ts`、`src/lib/orderLabels.ts` |
+| e2e（3） | `playwright.config.ts`、`scripts/prepare.ts`、`tests/payment.spec.ts` |
+| scripts（16） | `scripts/ci/` の `frontend-rules.mjs`・`frontend-rules.test.mjs`・`hardcoded-text.mjs`・`related-specs.mjs`・`report/coverage-baseline.mjs`・`runtime-versions.mjs`・`test-helpers.mjs`、`scripts/dev/` の `lib/e2e-lock.mjs`・`lib/port-stop.mjs`・`lib/port-stop.test.mjs`・`lib/slot-lock.mjs`・`lib/slot-ports.mjs`・`lib/slot-ports.test.mjs`・`lib/slot.mjs`・`lib/slot.test.mjs`・`slot.mjs` |
 
 ### 「要求」
 
@@ -401,11 +429,11 @@ HTTP の request の意味の「要求」は「リクエスト」にそろえる
   - 範囲：検査の script と一覧、名前を参照する script とテスト（第 7 節の表の層 1 の検査の行）、新しい error の項目が見つける文書の行
   - 旧い名前を参照する文書（CI の検査の一覧、用語集、skill `docs` の 2 つのファイル）の名前も、同じ commit で変える。理由：CI の検査の一覧と検査の script の対応を `ci-docs` が調べ、途中の commit で失敗するため。説明の中身は T249-01-09 で変える。
   - 確認方法：T249-01-01 のテストが通る。`check-all.sh` が通り、名前を参照する検査のテストも通る。`git grep` で、アーカイブの外に旧い名前の参照がない。
-- [ ] **T249-01-03** [テスト] コメントとテスト名の取り出しのテストを書き、レッドを確認する（DC-249-6、7）。
+- [x] **T249-01-03** [テスト] コメントとテスト名の取り出しのテストを書き、レッドを確認する（DC-249-6、7）。
   - 依存：T249-01-02
   - 範囲：日本語の文の検査のテスト、`scripts/ci/lib/` のテスト
   - 確認方法：テストが失敗する（レッド）。Java の Javadoc と `@DisplayName`、TS の `describe`・`it`、.kts と .sh のコメントを含む。コメントの外の文字列とコードは調べないことを含む。
-- [ ] **T249-01-04** 検査の対象をコメントとテスト名に広げ、見つかった行を修正する（DC-249-6〜8）。
+- [x] **T249-01-04** 検査の対象をコメントとテスト名に広げ、見つかった行を修正する（DC-249-6〜8）。
   - 依存：T249-01-03（同じ commit）
   - 範囲：日本語の文の検査、`scripts/ci/lib/`、見つかった行のファイル
   - 共通の処理（`scripts/ci/lib/` のコメントを取り出す処理）は、関数を加え、他の検査が使う関数の振る舞いを変えない。

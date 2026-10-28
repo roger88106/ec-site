@@ -47,7 +47,7 @@ class ImgproxyImageConverterFailureTest {
     private static final Duration TIMEOUT = Duration.ofSeconds(5);
 
     /**
-     * 時間の上限を確かめるテストの、変換を待つ時間の上限（応答しないサーバーを待つので短くする）
+     * 時間の上限を確認するテストの、変換を待つ時間の上限（応答しないサーバーを待つので短くする）
      */
     private static final Duration SHORT_TIMEOUT = Duration.ofMillis(300);
 

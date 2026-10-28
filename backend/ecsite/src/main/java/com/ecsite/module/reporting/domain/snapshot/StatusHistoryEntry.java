@@ -22,7 +22,7 @@ public record StatusHistoryEntry(UUID eventId, UUID orderId, HistoryKind kind, @
                                  Instant occurredAt, @Nullable ReportCancellationKind cancellationKind, @Nullable Boolean restocked) {
 
     /**
-     * 出来事と状態の型が合うことを確かめる。<br />
+     * 出来事と状態の型が合うことを確認する。<br />
      * 注文の状態の出来事なら状態は注文の状態、配送状態の出来事なら配送状態でなければならない。前の状態は null でもよい。
      *
      * @throws IllegalArgumentException 出来事に合わない型の状態のとき

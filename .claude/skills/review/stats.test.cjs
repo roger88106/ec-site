@@ -4,6 +4,7 @@ const assert = require('node:assert/strict')
 const fs = require('fs')
 const os = require('os')
 const path = require('path')
+const { spawnSync } = require('child_process')
 const { findSpecFiles, readReviewRows, aggregate, formatReport } = require('./stats.cjs')
 
 const HEADER = '| 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |'
@@ -42,6 +43,7 @@ function makeRoot() {
   ].join('\n'))
   write('docs/specs/archive/mvp/303-z/spec.md', '# 表なし\n')
   write('docs/specs/archive/mvp/3040-w/spec.md', '# 番号が似ている\n')
+  write('docs/specs/archive/mvp/305-v/README.md', '# tasks も spec.md もない\n')
   return root
 }
 
@@ -107,7 +109,7 @@ test('出力は弾・profile・spec の番号、時点ごとの行、合計の�
   assert.match(out, /profile：厚め/)
   assert.match(out, /spec：301, 302/)
   assert.match(out, /\| 段階 \| 2 \| 80000 \|/)
-  assert.match(out, /\| `\[リスク\]` のタスクの後 \| 1 \| 10000 \|/)
+  assert.match(out, /\| \[リスク\] のタスクの後 \| 1 \| 10000 \|/)
   const total = out.split('\n').find((l) => l.startsWith('| 合計'))
   assert.match(total, /\| 合計 \| 5 \| 110000 \| 2 \| 3 \| 3 \| 6 \| 75\.0% \|/)
 })
@@ -156,4 +158,43 @@ test('見出しだけで行が 0 件の表は、ファイル名を付けて標�
   }
   assert.equal(messages.length, 1)
   assert.ok(messages[0].includes(file))
+})
+
+test('番号のディレクトリはあるが tasks も spec.md もないときは、空の配列を返す', () => {
+  assert.deepEqual(findSpecFiles(makeRoot(), '305'), [])
+})
+
+test('表を置く文書がない番号は、見つからない番号と同じく標準エラーに出して終了コード 1 になる', () => {
+  const root = makeRoot()
+  const script = path.join(__dirname, 'stats.cjs')
+  const run = (...specs) => spawnSync(process.execPath, [script, '--round', '1', '--profile', 'p', ...specs], { cwd: root, encoding: 'utf8' })
+  const noDocs = run('305')
+  assert.equal(noDocs.status, 1)
+  assert.match(noDocs.stderr, /305/)
+  assert.match(noDocs.stderr, /tasks と spec\.md がない/)
+  assert.equal(noDocs.stdout, '')
+  const notFound = run('999')
+  assert.equal(notFound.status, 1)
+  assert.match(notFound.stderr, /999/)
+  assert.equal(run('301', '302').status, 0)
+})
+
+test('時点の名前のバッククォートの有無をそろえて集計する', () => {
+  const text = [
+    HEADER,
+    SEP,
+    '| `[リスク]` のタスクの後 | 安全 | 高性能 | 1 | 10000 | 1m | 1 | 0 | 0 | 1 |',
+    '| [リスク] のタスクの後 | 安全 | 高性能 | 1 | 20000 | 1m | 0 | 1 | 0 | 1 |',
+  ].join('\n')
+  const { byTime } = aggregate(readReviewRows(text))
+  assert.equal(byTime.length, 1)
+  assert.equal(byTime[0].time, '[リスク] のタスクの後')
+  assert.equal(byTime[0].rows, 2)
+  assert.equal(byTime[0].token, 30000)
+})
+
+test('時点は 段階・spec の最後・pull request の前・[リスク] のタスクの後 の順に並ぶ', () => {
+  const row = (time) => ({ time, token: 0, tokenUnreadable: false, high: 0, must: 0, recommended: 0, adopted: 0 })
+  const { byTime } = aggregate([row('`[リスク]` のタスクの後'), row('pull request の前'), row('spec の最後'), row('段階 1')])
+  assert.deepEqual(byTime.map((t) => t.time), ['段階', 'spec の最後', 'pull request の前', '[リスク] のタスクの後'])
 })

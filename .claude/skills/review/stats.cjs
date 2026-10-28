@@ -4,14 +4,14 @@
 const fs = require('fs'), path = require('path')
 
 const COLUMNS = ['時点', '観点', 'モデル', '回数', 'token', '時間', '高', '必須', '推奨', '採用']
-const TIME_ORDER = ['段階', 'spec の最後', 'pull request の前', '`[リスク]` のタスクの後']
+const TIME_ORDER = ['段階', 'spec の最後', 'pull request の前', '[リスク] のタスクの後']
 
 /**
  * アーカイブの下から、番号の spec の表を持ちうる文書を探す。
  * ディレクトリの名前が「<番号>-」で始まるものを使い、規模 L は tasks/*.md、規模 M は spec.md を返す。
  * @param {string} root リポジトリのルート（docs/specs/archive を含むディレクトリ）
  * @param {string} number spec の番号
- * @returns {string[] | null} 文書のパス。番号の spec が見つからなければ null
+ * @returns {string[] | null} 文書のパス。番号のディレクトリがなければ null、あっても tasks も spec.md もなければ空の配列
  */
 function findSpecFiles(root, number) {
   const dirs = []
@@ -114,7 +114,8 @@ function aggregate(rows) {
   const total = emptySum('合計')
   let tokenUnreadable = 0
   for (const r of rows) {
-    const time = /^段階 \d+$/.test(r.time) ? '段階' : r.time
+    const name = r.time.replaceAll('`', '')
+    const time = /^段階 \d+$/.test(name) ? '段階' : name
     if (!map.has(time)) map.set(time, emptySum(time))
     for (const sum of [map.get(time), total]) {
       sum.rows += 1
@@ -173,11 +174,11 @@ function main() {
   const missing = []
   for (const number of specs) {
     const files = findSpecFiles(root, number)
-    if (!files) missing.push(number)
+    if (!files || !files.length) missing.push(number)
     else for (const f of files) rows.push(...readReviewRows(fs.readFileSync(f, 'utf8'), f))
   }
   if (missing.length) {
-    console.error(`アーカイブに見つからない spec の番号：${missing.join(', ')}`)
+    console.error(`アーカイブに見つからない、または tasks と spec.md がない spec の番号：${missing.join(', ')}`)
     process.exit(1)
   }
   console.log(formatReport({ round, profile, specs }, aggregate(rows)))

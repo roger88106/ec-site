@@ -4,7 +4,7 @@
 
 ## 1. 前提
 
-JDK 21、Docker、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
+JDK 21、Docker（Compose 2.20 以上。ルートの `compose.yaml` が `include` を使うため）、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
 
 - `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に JDK 21 のパスを設定してから実行する（例：`export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21…"`）。コンパイルとテストに使う JDK 21 は、Gradle の toolchain がインストール済みの JDK から探す。
 

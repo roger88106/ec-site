@@ -42,7 +42,6 @@
 /.claude/*
 !/.claude/skills/
 !/.claude/launch.json
-
 ### 秘密の値（どの階層でも例外なく除外） ###
 # 秘密の値は Git に入れない。.env.example のような例外も作らない（例は docs に書く）。
 # 許可リストに足した ! の行が秘密の形のファイルに当たっても戻さないよう、許可リストより後に書く（後に書いた行が優先される）
@@ -110,6 +109,13 @@ out/
 ### VS Code ###
 # エディタの個人の設定。共有しない
 .vscode/
+# Java の拡張（Eclipse JDT LS）が作るプロジェクトの設定とビルドの出力
+.project
+.classpath
+.settings
+.factorypath
+.apt_generated
+bin/
 
 ### OS ###
 # OS が作る管理用のファイル

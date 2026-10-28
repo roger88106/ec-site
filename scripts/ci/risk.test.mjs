@@ -180,6 +180,23 @@ describe('pull request の本文の危険度との比べ', () => {
     assert.deepEqual(readBodyRisk(body('判定：低').replaceAll('\n', '\r\n')), { value: '低' })
   })
 
+  test('閉じていない <!-- の後ろは、GitHub が表示しないので読まない', () => {
+    const text = ['## 危険度', '', '判定：低', '<!-- 閉じていない', '判定：高', '', '## 確認したこと'].join('\n')
+    assert.deepEqual(readBodyRisk(text), { value: '低' })
+    assert.deepEqual(readBodyRisk(['## 危険度', '<!-- 閉じていない', '判定：高'].join('\n')), { error: '「## 危険度」の節に「判定：」の行がない' })
+  })
+
+  test('コメントが続いても、それぞれの中を読まず、表示される部分の判定を読む', () => {
+    const text = ['## 危険度', '<!-- 判定：高 --><!-- 判定：高 -->', '判定：低'].join('\n')
+    assert.deepEqual(readBodyRisk(text), { value: '低' })
+  })
+
+  test('<!--<!-- --> のように入れ子に見えても、最初の --> までを除き、残りを表示される部分として読む', () => {
+    const text = ['## 危険度', '<!--<!-- 判定：高 -->-->', '判定：低'].join('\n')
+    assert.deepEqual(readBodyRisk(text), { value: '低' })
+    assert.deepEqual(readBodyRisk(['## 危険度', '<!--<!-- -->', '判定：低', '-->'].join('\n')), { value: '低' })
+  })
+
   test('本文が低で判定が高のときは失敗にする', () => {
     const result = compareBody('高', body('判定：低'))
     assert.equal(result.ok, false)

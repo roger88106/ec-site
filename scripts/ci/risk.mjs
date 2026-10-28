@@ -238,13 +238,34 @@ export function formatJudgement(result) {
 }
 
 /**
+ * 本文から HTML のコメントを除く。`<!--` から次の `-->` までを除き、閉じていない `<!--` は本文の最後までを除く（GitHub の表示に合わせる）。
+ * 正規表現の置き換えは、除いた結果に `<!--` が残りうるので使わない。
+ *
+ * @param {string} text 本文
+ * @returns {string} コメントを除いた本文
+ */
+function stripHtmlComments(text) {
+  let result = ''
+  let position = 0
+  while (position < text.length) {
+    const open = text.indexOf('<!--', position)
+    if (open === -1) return result + text.slice(position)
+    result += text.slice(position, open)
+    const close = text.indexOf('-->', open + 4)
+    if (close === -1) return result
+    position = close + 3
+  }
+  return result
+}
+
+/**
  * pull request の本文の「## 危険度」の節から、「判定：」の行の値を読む。HTML のコメントの中は読まない。
  *
  * @param {string} body pull request の本文
  * @returns {{ value: '高' | '低' } | { error: string }} 値か、読めない理由
  */
 export function readBodyRisk(body) {
-  const lines = body.replace(/<!--[\s\S]*?-->/g, '').split('\n').map((line) => line.replace(/\r$/, ''))
+  const lines = stripHtmlComments(body).split('\n').map((line) => line.replace(/\r$/, ''))
   const start = lines.findIndex((line) => BODY_HEADING.test(line))
   if (start === -1) return { error: '「## 危険度」の節がない' }
   const rest = lines.slice(start + 1)

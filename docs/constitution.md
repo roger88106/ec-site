@@ -84,7 +84,7 @@ MVP では入れない。導入するときは本節を更新してから spec �
 ```
 ec-site/
 ├── .github/workflows/
-├── .claude/              # エージェントの skill とプレビューの設定（Git に入れて共有する）
+├── .claude/              # エージェントの skill、サブエージェントの定義、プレビューの設定（Git に入れて共有する）
 ├── .local/               # Git に入れないもの（作業用の script、引き継ぎの文書、マシンに固有の設定）
 ├── api/openapi/          # API 契約の正本
 ├── docs/
@@ -117,6 +117,8 @@ ec-site/
 | [review.md](rules/review.md) | 書き方の規則の書き方とレビュー |
 | [comments.md](rules/comments.md) | コメントの書き方 |
 | [subagents.md](rules/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |
+| [resources.md](rules/resources.md) | 作業の形と使用量（profile の決め方、止める閾値、使用量を読む頻度） |
+| [subagents-results.md](rules/subagents-results.md) | エージェントの作業フローの調べた仕組みと実績 |
 | [backend-coding.md](rules/backend-coding.md) | バックエンドの書き方 |
 | [frontend-coding.md](rules/frontend-coding.md) | フロントの書き方 |
 | [test-writing.md](rules/test-writing.md) | テストの書き方 |

@@ -4,6 +4,8 @@
 # - 頻度は週 1 回、月曜の朝（日本時間）。
 # - group：minor と patch は ecosystem ごとに 1 つの pull request にまとめる。
 #   major は group に入れず、1 つずつ pull request にする（影響を個別に見るため）。
+#   例外：github-actions は major も含めて 1 つの pull request にまとめる。
+#   github-actions の更新は危険度が高で利用者が許可するので、許可と CI の待ちを 1 回にするため。
 # - cooldown：リリースから待つ日数。major 30、minor 7、patch 3。公開直後のバージョンの不具合や
 #   供給網の攻撃を避ける。セキュリティの更新は cooldown を待たずに作成される。
 #   github-actions と docker-compose は、GitHub の文書の cooldown の対応表で、
@@ -86,13 +88,11 @@ updates:
       day: monday
       time: "09:00"
       timezone: Asia/Tokyo
+    # major も含めて 1 つの group にする（冒頭の group の例外）
     groups:
-      github-actions-minor-patch:
+      github-actions-all:
         patterns:
           - "*"
-        update-types:
-          - minor
-          - patch
     cooldown:
       default-days: 7
     labels:

@@ -1,0 +1,55 @@
+{
+  "説明": "危険度が高い経路の一覧（risk.mjs が読む）。経路は、/ で終わればディレクトリの下の全て、終わらなければそのファイル。* はディレクトリの 1 つの階層に当たる。テストのファイルも経路で判定する",
+  "groups": [
+    {
+      "name": "エージェントの規則と設定",
+      "paths": ["AGENTS.md", "docs/constitution.md", "docs/rules/", ".claude/", "scripts/ci/", "scripts/dev/hooks/", "docs/guides/branches.md"]
+    },
+    {
+      "name": "CI とリリース",
+      "paths": [".github/"]
+    },
+    {
+      "name": "認証",
+      "paths": [
+        "backend/ecsite/src/*/java/com/ecsite/config/security/",
+        "backend/ecsite/src/*/java/com/ecsite/common/security/",
+        "backend/ecsite/src/test/java/com/ecsite/contract/RealmSettingsContractTest.java",
+        "frontend/store/src/auth/",
+        "frontend/store/src/app/api/auth/",
+        "frontend/admin/src/auth/",
+        "docker/keycloak/realms/"
+      ]
+    },
+    {
+      "name": "支払",
+      "paths": [
+        "backend/ecsite/src/*/java/com/ecsite/module/payment/",
+        "backend/ecsite/src/*/java/com/ecsite/module/order/application/payment/"
+      ]
+    },
+    {
+      "name": "金額",
+      "paths": [
+        "backend/ecsite/src/*/java/com/ecsite/module/tax/",
+        "backend/ecsite/src/*/java/com/ecsite/module/order/application/checkout/"
+      ]
+    },
+    {
+      "name": "権限",
+      "paths": [
+        "docs/design/role-permissions.md",
+        "backend/ecsite/src/test/java/com/ecsite/contract/AdminApiPermissionContractTest.java",
+        "backend/ecsite/src/test/java/com/ecsite/contract/AdminRealmPermissionContractTest.java"
+      ]
+    },
+    {
+      "name": "データベース",
+      "paths": ["backend/ecsite/src/main/resources/db/migration/"]
+    },
+    {
+      "name": "契約",
+      "paths": ["api/openapi/"]
+    }
+  ]
+}

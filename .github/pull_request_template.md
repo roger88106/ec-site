@@ -16,6 +16,12 @@
 
 <!-- L と M は spec へのリンク。S は issue の本文を spec とするので、その issue へのリンクを書く（issue を書く）。 -->
 
+## 危険度
+
+<!-- `node scripts/ci/risk.mjs` の出力を貼る。1 行目の「判定：」の値は「高」か「低」。CI（危険度の照合）が、script の判定と比べる。script の判定より低くしない（高くするのはよい。規模 S の issue で高とした変更など）。 -->
+
+判定：
+
 ## 関連の issue
 
 <!-- マージで閉じる issue を `Closes #番号` で 1 行ずつ書く。追跡の issue と、この pull request で扱った sub-issue を含める。 -->

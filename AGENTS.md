@@ -25,6 +25,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 | `docs` | 文書（docs/、README、AGENTS.md）を書く・修正する・移す |
 | `writing-for-agents` | skill や AGENTS.md を作る、修正する |
 | `review` | 段階・spec の最後のレビュー、plan・tasks の照合、文書のレビュー、全体のレビュー（受け入れ確認） |
+| `zh-mixing` | 中国語で指示する環境で、中国語の字・用語の混入を調べる、設定する |
 
 ## 作業の進め方
 

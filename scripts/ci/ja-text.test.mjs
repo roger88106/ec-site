@@ -6,7 +6,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from './lib/git-env.mjs'
-import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc } from './ja-text.mjs'
+import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments } from './ja-text.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
 const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
@@ -61,7 +61,19 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
     assert.deepEqual(findTerms('有料版の機能', list.error), [])
   })
 
-  test('許す語が使われなくなっていない（一覧の許す語が、全て理由つきである）', () => {
+  test('一覧の許す語が全て理由つきである（allow は配列でなく、各値が空でない文字列）', () => {
+    for (const item of [...list.error, ...list.warning]) {
+      if (item.allow === undefined) continue
+      assert.equal(typeof item.allow, 'object', item.word)
+      assert.equal(Array.isArray(item.allow), false, item.word)
+      for (const [allowed, reason] of Object.entries(item.allow)) {
+        assert.equal(typeof reason, 'string', `${item.word}: ${allowed}`)
+        assert.notEqual(reason.trim(), '', `${item.word}: ${allowed}`)
+      }
+    }
+  })
+
+  test('許す語が使われている場合は問題にならない', () => {
     assert.deepEqual(findAllowProblems(['\u6279\u5224と\u6279\u8a55'], list.error.filter((item) => item.word === BATCH)), [])
   })
 })
@@ -81,6 +93,34 @@ describe('日本語の文の検査（コミットメッセージ）', () => {
   test('# で始まる行は調べない', () => {
     const result = runMessage(`docs: 文書を書き直す\n# 書き修正した\n`)
     assert.equal(result.status, 0)
+  })
+})
+
+describe('日本語の文の検査（git commit -v の差分）', () => {
+  const SCISSORS = '# ------------------------ >8 ------------------------'
+  const verbose = `docs: 文書を直す\n\n本文\n${SCISSORS}\n# Do not modify or remove the line above.\ndiff --git a/docs/a.md b/docs/a.md\n@@ -1 +1 @@\n-道具を使う\n+ツールを使う\n`
+
+  test('はさみの行以降を除く（行の数は変えない）', () => {
+    const stripped = stripMessageComments(verbose)
+    assert.doesNotMatch(stripped, /道具/)
+    assert.equal(stripped.split('\n').length, verbose.split('\n').length)
+  })
+
+  test('はさみの行の下の差分に使わない語があっても成功する', () => {
+    assert.deepEqual(findTerms(stripMessageComments(verbose), [{ word: '道具', use: 'ツール' }]), [])
+    assert.equal(runMessage(verbose.replace('道具', '書き修正')).status, 0)
+  })
+
+  test('はさみの行の上の使わない語は、これまで通り見つける', () => {
+    assert.equal(runMessage(verbose.replace('本文', '書き修正した')).status, 1)
+  })
+})
+
+describe('日本語の文の検査（拡張子のない hook の script）', () => {
+  test('scripts/dev/hooks の下のファイルを検査の対象にする', () => {
+    assert.equal(isTargetCode('scripts/dev/hooks/pre-commit'), true)
+    assert.equal(isTargetCode('scripts/dev/hooks/commit-msg'), true)
+    assert.equal(isTargetCode('scripts/dev/other/pre-commit'), false)
   })
 })
 

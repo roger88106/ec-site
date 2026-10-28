@@ -224,16 +224,23 @@ function printStats(docTexts, codeComments, list) {
   }
 }
 
+/** git commit -v がメッセージのファイルに付ける、はさみの行。この行から下は差分で、git が捨てる */
+const SCISSORS_LINE = /^# -+ >8 -+\r?$/
+
 /**
- * コミットメッセージから、git が付けるコメントの行（# で始まる行）を除く。行の番号は変えない。
+ * コミットメッセージから、git が付けるコメントの行（# で始まる行）と、はさみの行以降（git commit -v の差分）を除く。行の番号は変えない。
  *
  * @param {string} message コミットメッセージ
- * @returns {string} # で始まる行を空にしたメッセージ
+ * @returns {string} 除く行を空にしたメッセージ
  */
 export function stripMessageComments(message) {
+  let cut = false
   return message
     .split('\n')
-    .map((line) => (line.startsWith('#') ? '' : line))
+    .map((line) => {
+      if (SCISSORS_LINE.test(line)) cut = true
+      return cut || line.startsWith('#') ? '' : line
+    })
     .join('\n')
 }
 

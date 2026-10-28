@@ -144,7 +144,7 @@ export function main() {
       spawnSync('git', ['-c', 'core.longpaths=true', 'checkout-index', '-a', `--prefix=${toSlash(prefix)}`], { env, stdio: 'inherit' }).status,
     runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     diffAdded: (env) => {
-      const args = ['-c', 'core.quotepath=false', 'diff', '--cached', '-U0', '--no-color', '--no-ext-diff', '--diff-filter=ACMR']
+      const args = ['-c', 'core.quotepath=false', 'diff', '--cached', '--src-prefix=a/', '--dst-prefix=b/', '-U0', '--no-color', '--no-ext-diff', '--diff-filter=ACMR']
       const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
       return { status: result.status, stdout: result.stdout ?? '' }
     },

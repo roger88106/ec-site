@@ -268,11 +268,11 @@ describe('実際の hook', () => {
    * 検査の script を差し替えた一時のリポジトリで、ファイルをステージして pre-commit の hook を実行する。
    *
    * @param {string} checkAll 検査の script の中身
-   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string> }} [options]
-   *   fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル
+   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string>, gitConfig?: string[] | null }} [options]
+   *   gitConfig は一時のリポジトリだけに設定する git の設定（キーと値）。fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル
    * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
    */
-  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' } } = {}) {
+  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' }, gitConfig = null } = {}) {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
       const env = withoutGitEnv()
@@ -286,6 +286,8 @@ describe('実際の hook', () => {
       }
       mkdirSync(path.join(dir, 'scripts/ci'), { recursive: true })
       const git = initRepo(dir, env, { ...baseline, 'scripts/ci/check-all.sh': checkAll })
+      // 設定は一時のリポジトリの中だけに書く（git は cwd が一時のディレクトリで、GIT_ を外した環境で実行する）
+      if (gitConfig) git('config', ...gitConfig)
       for (const [file, content] of Object.entries(files)) {
         mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
         writeFileSync(path.join(dir, file), content)
@@ -316,8 +318,19 @@ describe('実際の hook', () => {
   })
 
   test('ステージした追加行に使わない語（error）があれば、commit を止める', () => {
-    const { status } = runHook(jaTextCheck, { files: { 'docs/a.md': '道具を使う。\n' } })
-    assert.notEqual(status, 0)
+    const { status, output } = runHook(jaTextCheck, { files: { 'docs/a.md': '道具を使う。\n' } })
+    assert.equal(status, 1)
+    assert.match(output, /docs\/a\.md:1 道具/)
+  })
+
+  test('diff.mnemonicPrefix=true の設定でも、追加行の warning を表示する', () => {
+    const { status, output } = runHook(jaTextCheck, {
+      baseline: { 'docs/a.md': 'ふつうの行。\n' },
+      files: { 'docs/a.md': 'ふつうの行。\nサーバーが要求を受ける。\n' },
+      gitConfig: ['diff.mnemonicPrefix', 'true'],
+    })
+    assert.equal(status, 0)
+    assert.match(output, /docs\/a\.md:2 要求/)
   })
 
   test('使わない語がなければ、日本語の文の検査を通って成功する', () => {
@@ -373,9 +386,9 @@ describe('実際の commit-msg の hook', () => {
    *
    * @param {string} message コミットメッセージのファイルの中身
    * @param {number} relatedStatus 関連 spec の照合の代わりの script が返す終了コード
-   * @returns {number | null} hook の終了コード
+   * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
    */
-  function runCommitMsgHook(message, relatedStatus) {
+  function runCommitMsgHookFull(message, relatedStatus) {
     const dir = mkdtempSync(path.join(tmpdir(), 'commit-msg-test-'))
     try {
       const env = withoutGitEnv()
@@ -388,10 +401,16 @@ describe('実際の commit-msg の hook', () => {
       writeFileSync(path.join(dir, 'scripts/ci/related-specs.mjs'), `process.exit(${relatedStatus})\n`)
       writeFileSync(path.join(dir, 'MSG'), message)
       const bash = process.platform === 'win32' ? gitBashPath(env) : 'bash'
-      return spawnSync(bash, ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' }).status
+      const result = spawnSync(bash, ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
+      return { status: result.status, output: result.stdout }
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
+  }
+
+  /** hook の終了コードだけを返す */
+  function runCommitMsgHook(message, relatedStatus) {
+    return runCommitMsgHookFull(message, relatedStatus).status
   }
 
   /** Git の bash のパス（hook の実行と同じ bash）。見つからなければ PATH の bash */
@@ -406,7 +425,14 @@ describe('実際の commit-msg の hook', () => {
   })
 
   test('メッセージに使わない語（error）があれば失敗する', () => {
-    assert.equal(runCommitMsgHook('道具を追加する\n', 0), 1)
+    const { status, output } = runCommitMsgHookFull('道具を追加する\n', 0)
+    assert.equal(status, 1)
+    assert.match(output, /道具/)
+  })
+
+  test('git commit -v の差分に使わない語があっても、数えない', () => {
+    const message = 'ツールを追加する\n# ------------------------ >8 ------------------------\ndiff --git a/a b/a\n-道具を使う\n'
+    assert.equal(runCommitMsgHook(message, 0), 0)
   })
 
   test('# で始まる行の使わない語は、数えない', () => {

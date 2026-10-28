@@ -26,6 +26,8 @@ export function codeKind(file) {
   if (file.endsWith('.kts')) return 'kts'
   if (/\.(?:tsx?|mjs|cjs)$/.test(file)) return 'ts'
   if (file.endsWith('.sh')) return 'sh'
+  // 拡張子のない hook の script（bash）。中身を読まず、置き場所で決める
+  if (file.startsWith('scripts/dev/hooks/')) return 'sh'
   return null
 }
 

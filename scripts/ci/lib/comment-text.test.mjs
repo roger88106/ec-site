@@ -15,6 +15,12 @@ describe('ファイルの種類', () => {
     assert.equal(codeKind('scripts/a.sh'), 'sh')
   })
 
+  test('拡張子のない hook の script（scripts/dev/hooks の下）は sh にする', () => {
+    assert.equal(codeKind('scripts/dev/hooks/pre-commit'), 'sh')
+    assert.equal(codeKind('scripts/dev/hooks/commit-msg'), 'sh')
+    assert.equal(codeKind('scripts/dev/other/pre-commit'), null)
+  })
+
   test('対象でない拡張子は null にする', () => {
     for (const file of ['a.md', 'a.json', 'a.js', 'a.sql', 'a.yml']) assert.equal(codeKind(file), null, file)
   })

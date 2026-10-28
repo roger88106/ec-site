@@ -8,7 +8,7 @@
 # 検査するのは、ステージした内容（次の commit）だけ。ステージした内容を一時ディレクトリに取り出し、そこで検査する。
 # 処理は scripts/dev/lib/pre-commit.mjs（テストのため）。この script は、入口の pre-commit-main.mjs を呼ぶだけ。
 # 作業ツリーは変えない（stash で退避して戻すと、一部だけをステージしたファイルで戻すときに衝突するため）。
-# 関連 spec の照合（commit のメッセージが要る）は commit-msg の hook で行う。
+# 関連 spec の照合（commit のメッセージが必要になる）は commit-msg の hook で行う。
 # ============================================================================
 ROOT="$(git rev-parse --show-toplevel)"
 # 検査は、この hook と同じ bash で実行する（node が PATH から bash を探すと、Windows では WSL の bash.exe を引くことがある）。

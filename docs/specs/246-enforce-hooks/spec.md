@@ -186,7 +186,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - マージの条件（DC-245-24〜26）と、AGENTS.md の Git の表の行
   - `scripts/ci/risk.mjs` の、hook が使う関数の名前と引数（今のブランチでは `judgeRisk`、`judgeDependabotTitle`、`applyDependabotTitle`、`readBodyRisk`、`isDependabot`）
   - 必須の検査の名前「危険度の照合」と、ruleset に戻したか
-- 照合の結果（2026-10-28、`develop` の af66e826）：設計の差はない。マージの条件は DC-245-26 と AGENTS.md の Git の表のとおりで、DC-246-14 の条件と合う。関数の名前は上のとおりで、`judgeRisk` は高の経路の一覧（`scripts/ci/risk.json` を `parseRiskConfig` で読んだもの）とファイルの中身を読む関数を引数に取る。Dependabot の pull request は spec.md を変えないので、中身を読む関数は常に null を返すものでよい。検査の名前は「危険度の照合」（`.github/workflows/risk.yml`）で、[ブランチとリリース](../../guides/branches.md) 第 3.1 節の必須の検査に載っている（ruleset に戻す作業は issue 担当のセッション）。`branches.md` 第 2 節には spec 245 が `.gitignore` の許可リストの箇条を加えたので、DC-246-2 はこの箇条を直す。
+- 照合の結果（2026-10-28、`develop` の af66e826）：設計の差はない。マージの条件は DC-245-26 と AGENTS.md の Git の表のとおりで、DC-246-14 の条件と合う。関数の名前は上のとおりで、`judgeRisk` は高の経路の一覧（`scripts/ci/risk.json` を `parseRiskConfig` で読んだもの）とファイルの中身を読む関数を引数に取る。Dependabot の pull request は spec.md を変えないので、中身を読む関数は常に null を返すものでよい。検査の名前は「危険度の照合」（`.github/workflows/risk.yml`）で、[ブランチとリリース](../../guides/branches.md) 第 3.1 節の必須の検査に載っている（ruleset に戻す作業は issue 担当のセッション）。`branches.md` 第 2 節には spec 245 が `.gitignore` の許可リストの箇条を加えたので、DC-246-2 はこの箇条を修正する。
 - 本 spec が変えるファイルと、他の spec との重なり（2026-10-28）：
 
 | まとまり | ファイル | 重なる spec |

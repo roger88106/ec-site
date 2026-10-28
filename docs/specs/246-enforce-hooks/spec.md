@@ -253,7 +253,7 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
   - 依存：T246-01-09
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
   - 確認方法：T246-01-09 のテストが通る。`check-all.sh` が通る。
-- [ ] **T246-01-07** [リスク] `.claude/settings.json` を作り、hook と permission を書き、`.gitignore` の許可リストとコメントに加える（DC-246-1、2、5、6、17、20）。
+- [x] **T246-01-07** [リスク] `.claude/settings.json` を作り、hook と permission を書き、`.gitignore` の許可リストとコメントに加える（DC-246-1、2、5、6、17、20）。
   - 依存：T246-01-10
   - hook の matcher は、Bash と PowerShell のツールを対象にする（DC-246-20）。
   - 範囲：`.claude/settings.json`、`.gitignore`
@@ -303,3 +303,23 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 ## 9. 動作の確認の記録
 
 T246-01-07 の確認の結果を、ここに書く。
+
+2026-10-29、commit 17f4dcdb。利用者が不在だったので、確認の画面に利用者が答える形でなく、この作業ツリーで非対話の新しいセッション（`claude -p`、permission mode は default、Bash・Edit・Read・PowerShell を許可）を起動して試した。非対話では、確認を求めた操作は確認の画面の代わりに拒否として記録され、hook の理由の文が残る。セッションの記録の permission の拒否の一覧で、各行を確認した。
+
+| 確認の表の行 | 結果 |
+|--------------|------|
+| DC-246-10 force push | 拒否（理由の文が force の各形と代わりの手順を示す） |
+| DC-246-10 `--no-verify` | 拒否 |
+| DC-246-11 hook のない一時リポジトリの commit | 拒否（`.git/hooks/pre-commit` がないことと置き方を示す） |
+| DC-246-13 `gh pr merge 253` | 拒否（`--match-head-commit` がない） |
+| DC-246-13 フルパスの `gh` で `--match-head-commit 0000000` | 確認（満たさない条件として、開いていない、head の不一致、本文の危険度が高の 3 つを示す） |
+| DC-246-15 `git tag 試し` | 確認 |
+| DC-246-16 `gh api -X PUT …/rulesets/999999999` | 確認 |
+| DC-246-17 作業ツリーの `.claude/settings.json` の Edit | 確認（書き込みの許可を求めて止まった） |
+| DC-246-17 メインの作業ツリーの `.claude/settings.local.json` の Edit | 未確認（試した Edit が変更なしの誤りで終わり、規則の判定まで進まなかった） |
+| DC-246-20 PowerShell の `git tag 試し` | 拒否（Bash で実行し直すよう返す） |
+| DC-246-5 Git の外に `cd` してからの `git -C … push --force` | 拒否。ただし、Claude Code が作業ツリーの外への `cd` を作業ツリーに戻したので、script を見つけられないときの経路は通っていない（その経路はテストで確認した） |
+| 読むだけの `git status`・`git log` | 通った |
+
+- 試した後、作業ツリーに変更はなく、tag も作られていない。
+- 確認の画面の表示（利用者が答える形）と、未確認の行は、利用者が対話のセッションで確認する。

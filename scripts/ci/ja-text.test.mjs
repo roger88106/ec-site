@@ -48,6 +48,12 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
     assert.equal(findTerms(`3${BATCH}に分ける`, list.error).length, 1)
   })
 
+  test('改善のまとまりを数える字で始まる日本語の語は通る', () => {
+    const items = list.error.filter((item) => item.pattern !== undefined && item.examples.hit.some((h) => h.includes(BATCH)))
+    assert.equal(items.length, 1)
+    assert.deepEqual(findTerms('\u6279\u5224的な意見と\u6279\u8a55', items), [])
+  })
+
   test('崩れと確定している複合動詞の 15 語が error になる', () => {
     assert.equal(BROKEN_VERBS.length, 15)
     for (const verb of BROKEN_VERBS) {

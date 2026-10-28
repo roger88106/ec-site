@@ -81,7 +81,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - **DC-246-2** `.gitignore` の `.claude/` の許可リストに `settings.json` があり、許可リストのコメントと [ブランチとリリース](../../guides/branches.md) 第 2 節の `.claude/` の箇条が、`settings.json` を含む形になっている。`settings.local.json` は Git に入らない。
 - **DC-246-3** 分け方（チームの規則は `settings.json`、環境・利用者に固有のものは `settings.local.json`）と、hook の script の置き場所が、AGENTS.md に書いてある。skill `zh-mixing` の設定の手順（`settings.local.json` に書く）と食い違わない。
 - **DC-246-4** hook の script は Git に入り、`node --test` のテストを持ち、`scripts/ci/check-all.sh` の script のテスト（`scripts/dev/**/*.test.mjs`）に含まれる。
-- **DC-246-5** hook の script は、対象のリポジトリとブランチを、hook の入力の `cwd` と、コマンドの中の `cd`・`git -C` で決める。`$CLAUDE_PROJECT_DIR` に頼らない。`settings.json` の hook のコマンドは、セッションの作業ツリーにある script を呼ぶ。
+- **DC-246-5** hook の script は、対象のリポジトリとブランチを、hook の入力の `cwd` と、コマンドの中の `cd`・`git -C` で決め、`$CLAUDE_PROJECT_DIR` を使わない。`settings.json` の hook のコマンドは、hook の作業ディレクトリの作業ツリーにある script を呼ぶ。そこに script がなければ（Bash のツールで前に Git の外や別の作業ツリーに `cd` したとき）、`$CLAUDE_PROJECT_DIR` の下の script を呼ぶ。どちらにもなければ、`git` か `gh` を含むコマンドを止める。hook のコマンドは Git Bash で動く形で書く（T246-01-07 のレビュー）。
 - **DC-246-6** `settings.json` の hook に時間切れ（`timeout`）を書く。script の中の `gh` の呼び出しには、それより短い時間切れを付ける。
 
 ### DS-246-2 `develop`・`main` への直接の commit を失敗にする（D / P1）
@@ -269,7 +269,9 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 | DC-246-13 | フルパスの `gh` で `pr merge <閉じた pull request の番号> --match-head-commit <SHA>` | 確認の画面（利用者が拒否する） |
 | DC-246-15 | `git tag 試し` | 確認の画面（利用者が拒否する） |
 | DC-246-16 | `gh api -X PUT repos/roger88106/ec-site/rulesets/<id>`（本文なし） | 確認の画面（利用者が拒否する） |
+| DC-246-5 | 1 回目の Bash で Git の外（スクラッチパッド）に `cd` し、2 回目の Bash で `git -C <この作業ツリー> push --force --dry-run origin 246-enforce-hooks` | 拒否 |
 | DC-246-17 | `.claude/settings.json` を Edit で書き換える | 確認の画面（利用者が拒否する） |
+| DC-246-17 | メインの作業ツリーの `.claude/settings.local.json` を Edit で書き換える | 確認の画面（利用者が拒否する） |
 | DC-246-20 | PowerShell のツールで `git tag 試し` | 拒否（Bash で実行するよう返す） |
 
 - [x] **T246-01-08** 文書を更新する（DC-246-2、3、9、19）。

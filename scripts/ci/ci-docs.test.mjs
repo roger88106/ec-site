@@ -23,7 +23,7 @@ describe('CI の検査の文書の表の検査', () => {
   })
 
   test('直下の検査だけを選び、テストと下のディレクトリと他の拡張子を除く', () => {
-    const files = ['scripts/ci/ac-check.mjs', 'scripts/ci/ac-check.test.mjs', 'scripts/ci/lib/x.mjs', 'scripts/ci/check-all.sh', 'scripts/ci/doc-terms.json', 'scripts/ci/doc-refs.mjs']
+    const files = ['scripts/ci/ac-check.mjs', 'scripts/ci/ac-check.test.mjs', 'scripts/ci/lib/x.mjs', 'scripts/ci/check-all.sh', 'scripts/ci/ja-text.json', 'scripts/ci/doc-refs.mjs']
     assert.deepEqual(listChecks(files), ['ac-check', 'doc-refs'])
   })
 

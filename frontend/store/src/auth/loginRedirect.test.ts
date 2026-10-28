@@ -56,12 +56,12 @@ describe('ログインの戻り先', () => {
   let handlers: typeof import('@/auth').handlers
 
   beforeAll(async () => {
-    // 読み込みと変換の時間をテストの時間に含めない
+    // `@/auth` は読み込みの時に AUTH_URL を読むので、公開する URL を設定してから読み込む（読み込みと変換の時間をテストの時間に含めない）
+    vi.stubEnv('AUTH_URL', PUBLIC_URL)
     ;({ handlers } = await import('@/auth'))
   })
 
   test('AC-241 ログインで IdP へ移るときの戻り先は公開する URL から作り、リクエストヘッダーのホストを使わない', async () => {
-    vi.stubEnv('AUTH_URL', PUBLIC_URL)
     server.use(idpDiscovery())
 
     const csrf = await handlers.GET(forgedRequest('/csrf'))

@@ -42,7 +42,7 @@ export default defineConfig(({ command, mode }) => {
     test: {
       // 結合テスト（管理画面の構成 第 9 節）のため jsdom で動かす。単体テストもそのまま動く
       environment: 'jsdom',
-      // 既定の数（論理 CPU − 1）が物理コアより多いと 1 テストの時間が延び、タイムアウトで失敗する（issue #250）
+      // 既定の数（論理 CPU − 1）が物理コアより多いと 1 テストの時間が延び、タイムアウトで失敗する
       maxWorkers: '50%',
       setupFiles: ['src/test/setup.ts'],
       // カバレッジは報告と基準の検査に使う（テストの書き方 第 1.2 節）。生成物と shadcn/ui の生成物、テストの補助は数えない

@@ -9,7 +9,7 @@ export default defineConfig({
     },
   },
   test: {
-    // 既定の数（論理 CPU − 1）が物理コアより多いと 1 テストの時間が延び、タイムアウトで失敗する（issue #250）
+    // 既定の数（論理 CPU − 1）が物理コアより多いと 1 テストの時間が延び、タイムアウトで失敗する
     maxWorkers: '50%',
     // サーバーの処理のテストのための置き換えと、API の代わりのサーバー（店舗画面の構成 第 7 節）
     setupFiles: ['src/test/setup.ts'],

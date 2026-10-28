@@ -25,6 +25,7 @@
 | 4.9 | 環境変数は `vi.stubEnv` で変え、`process.env` に代入しない | レビュー |
 | 4.10 | フロントのテストとテストの補助、E2E（`e2e/` の下の全ての TypeScript）の `const`・`let` で、TypeScript の lib のグローバルの名前をシャドーイングしない | 自動（`scripts/ci/frontend-rules.mjs`。名前の一覧は `scripts/ci/globals/lib-globals.mjs` が lib から生成し、CI が一致を確認する） |
 | 4.11 | テストとテストの間に空行を置く | 自動（`scripts/ci/frontend-rules.mjs`。フロントのテストと補助、E2E） |
+| 4.12 | 管理画面の `renderApp` が返す `user` は、入力のキーの間で待たない（`renderApp` を使わないテストは対象外） | レビュー |
 | 5 | 時間で待たない。E2E で `networkidle` で待たず、タイムアウトを数字のリテラルで書かない | 時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`） |
 
 確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
@@ -277,9 +278,9 @@ E2E で作るデータの品番・名称に、実行ごとの印（`E2E-<印>-�
 
 ### 4.12 入力のキーの間で待たない
 
-管理画面の `renderApp` が返す `user` は、入力のキーの間で待たない（`userEvent.setup({ delay: null })`）。キーの間の非同期の処理（キーごとの検索など）を確認するテストだけは、既定の delay の `userEvent.setup()` を使う。
+管理画面の `renderApp` が返す `user` は、入力のキーの間で待たない（`userEvent.setup({ delay: null })`）。キーの間の非同期の処理（キーごとの検索など）を確認するテストだけは、既定の delay の `userEvent.setup()` を使う。`renderApp` を使わないテストの `userEvent.setup()` は対象外（入力が少なく遅くならないため）。
 
-理由：既定では 1 文字ごとにタイマーで待ち、入力の多いテストが遅くなって、タイムアウトで失敗しやすくなるため（issue #250）。
+理由：既定では 1 文字ごとにタイマーで待ち、入力の多いテストが遅くなって、タイムアウトで失敗しやすくなるため。
 
 ## 5. 待ち方
 

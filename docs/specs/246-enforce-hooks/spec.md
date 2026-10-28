@@ -207,12 +207,12 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - 参照：第 1 節、第 3 節、第 6 節、[テストの書き方](../../rules/test-writing.md)、[コメントの書き方](../../rules/comments.md)
 - `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
 
-- [ ] **T246-01-01** [テスト] git の pre-commit hook の、ブランチの判定と表示のテストを書き、レッドを確認する（DC-246-7、8）。
+- [x] **T246-01-01** [テスト] git の pre-commit hook の、ブランチの判定と表示のテストを書き、レッドを確認する（DC-246-7、8）。
   - 依存：なし
   - 範囲：`scripts/dev/lib/pre-commit.test.mjs`
   - 既存の、一時リポジトリで実際に commit するテストを、作業ブランチで commit する形にする。
   - 確認方法：`develop`・`main` で失敗する例がレッドになる。作業ブランチと detached HEAD で通る例を含む。
-- [ ] **T246-01-02** [リスク] git の pre-commit hook に、ブランチの判定を加える（DC-246-7、8）。
+- [x] **T246-01-02** [リスク] git の pre-commit hook に、ブランチの判定を加える（DC-246-7、8）。
   - 依存：T246-01-01
   - 範囲：`scripts/dev/lib/pre-commit.mjs`・`pre-commit-main.mjs`
   - 理由（リスク）：誤ると全ての commit が失敗する。

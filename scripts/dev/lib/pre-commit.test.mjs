@@ -7,7 +7,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
-import { CHECKOUT_FAILED, WARNING_FAILED, checkShell, parseAddedLines, resolveIndexFile, runPreCommit, selectAddedWarnings } from './pre-commit.mjs'
+import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, checkShell, parseAddedLines, resolveIndexFile, runPreCommit, selectAddedWarnings } from './pre-commit.mjs'
 import { COMMIT_MSG_FAILED, runCommitMsg } from './commit-msg.mjs'
 
 describe('一時の index のパス', () => {
@@ -38,25 +38,78 @@ describe('検査を実行する bash', () => {
   })
 })
 
+describe('commit するブランチ', () => {
+  test('develop と main では、commit を失敗にする表示を返す', () => {
+    for (const branch of ['develop', 'main']) {
+      const message = branchRejection(branch)
+      assert.match(message, new RegExp(`${branch} には直接 commit しない`))
+      assert.match(message, /git switch -c <issue の番号>-<短い名前> develop/)
+    }
+  })
+
+  test('作業ブランチと detached HEAD（ブランチを読めないときを含む）では、通す', () => {
+    for (const branch of ['246-enforce-hooks', 'develop-x', 'feature/main', null]) {
+      assert.equal(branchRejection(branch), null)
+    }
+  })
+
+  test('HEAD がブランチを指していれば、そのブランチの名前を返す', () => {
+    assert.equal(branchOfHead({ status: 0, stdout: 'refs/heads/develop\n' }), 'develop')
+    assert.equal(branchOfHead({ status: 0, stdout: 'refs/heads/246-enforce-hooks\r\n' }), '246-enforce-hooks')
+  })
+
+  test('detached HEAD か、HEAD を読めなければ null を返す', () => {
+    assert.equal(branchOfHead({ status: 1, stdout: '' }), null)
+    assert.equal(branchOfHead({ status: 128, stdout: '' }), null)
+    assert.equal(branchOfHead({ status: null, stdout: '' }), null)
+    assert.equal(branchOfHead({ status: 0, stdout: '' }), null)
+  })
+})
+
 /** 呼び出しを記録する外部の処理を作る */
-function fakeDeps({ checkout = 0, check = 0, env = {}, diff = { status: 0, stdout: '' }, warnings = { status: 0, stdout: '' } } = {}) {
-  const calls = { checkout: [], runCheck: [], removed: [], diff: 0, warnings: 0, printed: [] }
+function fakeDeps({ branch = '1-work', checkout = 0, check = 0, env = {}, diff = { status: 0, stdout: '' }, warnings = { status: 0, stdout: '' } } = {}) {
+  const calls = { checkout: [], runCheck: [], removed: [], diff: 0, warnings: 0, printed: [], errors: [], temps: 0 }
   return {
     calls,
     deps: {
       root: '/repo',
       gitDir: '/repo/.git',
+      branch,
       env,
       checkout: (prefix, e) => (calls.checkout.push({ prefix, env: e }), checkout),
       runCheck: (script, e) => (calls.runCheck.push({ script, env: e }), check),
       diffAdded: () => (calls.diff++, diff),
       listWarnings: () => (calls.warnings++, warnings),
       print: (text) => calls.printed.push(text),
-      makeTemp: () => '/tmp/staged',
+      printError: (text) => calls.errors.push(text),
+      makeTemp: () => (calls.temps++, '/tmp/staged'),
       removeTemp: (dir) => calls.removed.push(dir),
     },
   }
 }
+
+describe('ブランチの判定と検査の順', () => {
+  test('develop と main では、取り出しも検査もせずに失敗にし、作業ブランチを作る手順を表示する', () => {
+    for (const branch of ['develop', 'main']) {
+      const { deps, calls } = fakeDeps({ branch })
+      assert.equal(runPreCommit(deps), BRANCH_REJECTED)
+      assert.equal(calls.temps, 0)
+      assert.equal(calls.checkout.length, 0)
+      assert.equal(calls.runCheck.length, 0)
+      assert.equal(calls.errors.length, 1)
+      assert.match(calls.errors[0], /git switch -c /)
+    }
+  })
+
+  test('作業ブランチと detached HEAD では、検査を実行する', () => {
+    for (const branch of ['1-work', null]) {
+      const { deps, calls } = fakeDeps({ branch })
+      assert.equal(runPreCommit(deps), 0)
+      assert.equal(calls.runCheck.length, 1)
+      assert.deepEqual(calls.errors, [])
+    }
+  })
+})
 
 describe('検査の実行と終了コード', () => {
   test('取り出した先の検査の script を、元のリポジトリと取り出した先の作業ツリーで実行する', () => {
@@ -224,6 +277,8 @@ describe('実際の hook', () => {
       .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
       .map((name) => `scripts/ci/lib/${name}`),
   ]
+  /** 一時のリポジトリで commit する作業ブランチ */
+  const WORK_BRANCH = '1-work'
   /** 日本語の文の検査を流す検査の script（実際の check-all.sh のうち、この hook が頼る部分） */
   const jaTextCheck = '#!/usr/bin/env bash\ncd "$(dirname "$0")/../.." && node scripts/ci/ja-text.mjs\n'
 
@@ -243,8 +298,9 @@ describe('実際の hook', () => {
   }
 
   /**
-   * 一時のリポジトリを作り、hook とその script を写して、元の内容を commit する（本物のリポジトリには触れない）。
+   * 一時のリポジトリを作り、hook とその script を写して、元の内容を作業ブランチに commit する（本物のリポジトリには触れない）。
    * GIT_ で始まる環境変数は外す（commit の hook の中で試すと、本物のリポジトリの設定を書き換えるため）。
+   * 最初のブランチは、既定のブランチ名（init.defaultBranch）によらず作業ブランチにする（hook は develop と main の commit を失敗にするため）。
    *
    * @param {string} dir 一時のディレクトリ
    * @param {Record<string, string | undefined>} env GIT_ を外した環境
@@ -254,6 +310,7 @@ describe('実際の hook', () => {
   function initRepo(dir, env, baseline) {
     const git = (...args) => spawnSync('git', args, { cwd: dir, env, encoding: 'utf8' })
     git('init', '-q')
+    git('symbolic-ref', 'HEAD', `refs/heads/${WORK_BRANCH}`)
     git('config', 'user.name', 'test')
     git('config', 'user.email', 'test@example.com')
     git('config', 'commit.gpgsign', 'false')
@@ -275,11 +332,12 @@ describe('実際の hook', () => {
    * 検査の script を差し替えた一時のリポジトリで、ファイルをステージして pre-commit の hook を実行する。
    *
    * @param {string} checkAll 検査の script の中身
-   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string>, gitConfig?: string[] | null }} [options]
-   *   gitConfig は一時のリポジトリだけに設定する git の設定（キーと値）。fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル
-   * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
+   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string>, gitConfig?: string[] | null, head?: string | null }} [options]
+   *   gitConfig は一時のリポジトリだけに設定する git の設定（キーと値）。fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル。
+   *   head は hook を実行するときのブランチ。null なら detached HEAD にする
+   * @returns {{ status: number | null, output: string, error: string }} hook の終了コードと標準出力、標準エラー
    */
-  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' }, gitConfig = null } = {}) {
+  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' }, gitConfig = null, head = WORK_BRANCH } = {}) {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
       const env = withoutGitEnv()
@@ -295,6 +353,8 @@ describe('実際の hook', () => {
       const git = initRepo(dir, env, { ...baseline, 'scripts/ci/check-all.sh': checkAll })
       // 設定は一時のリポジトリの中だけに書く（git は cwd が一時のディレクトリで、GIT_ を外した環境で実行する）
       if (gitConfig) git('config', ...gitConfig)
+      if (head === null) git('checkout', '-q', '--detach')
+      else if (head !== WORK_BRANCH) git('switch', '-q', '-c', head)
       for (const [file, content] of Object.entries(files)) {
         mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
         writeFileSync(path.join(dir, file), content)
@@ -302,11 +362,32 @@ describe('実際の hook', () => {
       git('add', '-A')
       writeFileSync(path.join(dir, 'unstaged.txt'), 'unstaged')
       const result = spawnSync(gitBash(), ['scripts/dev/hooks/pre-commit'], { cwd: dir, env, encoding: 'utf8' })
-      return { status: result.status, output: result.stdout }
+      return { status: result.status, output: result.stdout, error: result.stderr }
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
   }
+
+  /** 実行されたら印を出力して成功する検査の script */
+  const markedCheck = '#!/usr/bin/env bash\necho CHECKED\n'
+
+  test('develop と main では、検査の前に失敗にし、作業ブランチを作る手順を表示する', () => {
+    for (const head of ['develop', 'main']) {
+      const { status, output, error } = runHook(markedCheck, { head })
+      assert.equal(status, BRANCH_REJECTED)
+      assert.doesNotMatch(output, /CHECKED/)
+      assert.match(error, new RegExp(`${head} には直接 commit しない`))
+      assert.match(error, /git switch -c <issue の番号>-<短い名前> develop/)
+    }
+  })
+
+  test('作業ブランチと detached HEAD では、検査を実行して通す', () => {
+    for (const head of [WORK_BRANCH, null]) {
+      const { status, output } = runHook(markedCheck, { head })
+      assert.equal(status, 0)
+      assert.match(output, /CHECKED/)
+    }
+  })
 
   test('検査が成功すれば 0 を返し、ステージした内容だけを検査する', () => {
     const { status, output } = runHook('#!/usr/bin/env bash\ncd "$(dirname "$0")/../.." && ls\n')

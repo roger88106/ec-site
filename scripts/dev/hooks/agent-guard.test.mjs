@@ -362,10 +362,25 @@ const DEPENDABOT = { __typename: 'Bot', login: 'dependabot' }
  * @param {string} name 検査の名前
  * @param {string} [conclusion] 結論
  * @param {string} [status] 状態。COMPLETED でなければ結論は null
+ * @param {string | null} [startedAt] 開始の時刻
+ * @param {string} [workflow] workflow の名前
  */
-function check(name, conclusion = 'SUCCESS', status = 'COMPLETED') {
-  return { __typename: 'CheckRun', name, status, conclusion: status === 'COMPLETED' ? conclusion : null }
+function check(name, conclusion = 'SUCCESS', status = 'COMPLETED', startedAt = '2026-10-28T10:00:00Z', workflow = 'CI') {
+  return {
+    __typename: 'CheckRun',
+    name,
+    status,
+    conclusion: status === 'COMPLETED' ? conclusion : null,
+    startedAt,
+    checkSuite: { workflowRun: { workflow: { name: workflow } } },
+  }
 }
+
+/** 前の実行の開始の時刻 */
+const OLDER = '2026-10-28T09:00:00Z'
+
+/** 再実行の開始の時刻 */
+const NEWER = '2026-10-28T11:00:00Z'
 
 /**
  * gh api graphql が返す pull request を作る。既定は、許可なしにマージする条件を全て満たすもの。
@@ -486,6 +501,36 @@ describe('マージのコマンドを判定する', () => {
     for (const [fields, pattern] of cases) {
       assertAsked(MERGE, pattern, mergeDeps(fields))
     }
+  })
+
+  test('同じ検査が再実行で重なれば、最も新しい実行だけで判定する', () => {
+    const base = [check('危険度の照合'), check('バックエンド')]
+    for (const oldConclusion of ['FAILURE', 'CANCELLED']) {
+      assertPassed(MERGE, mergeDeps({ checks: [...base, check('E2E', oldConclusion, 'COMPLETED', OLDER), check('E2E', 'SUCCESS', 'COMPLETED', NEWER)] }))
+    }
+    assertPassed(MERGE, mergeDeps({ checks: [check('バックエンド'), check('危険度の照合', 'FAILURE', 'COMPLETED', OLDER, '危険度'), check('危険度の照合', 'SUCCESS', 'COMPLETED', NEWER, '危険度')] }))
+    assertPassed(
+      MERGE,
+      mergeDeps({
+        checks: [
+          ...base,
+          { __typename: 'StatusContext', context: '外部の検査', state: 'FAILURE', createdAt: OLDER },
+          { __typename: 'StatusContext', context: '外部の検査', state: 'SUCCESS', createdAt: NEWER },
+        ],
+      }),
+    )
+    assertAsked(MERGE, /終わっていない.*E2E/, mergeDeps({ checks: [...base, check('E2E', 'SUCCESS', 'COMPLETED', OLDER), check('E2E', null, 'IN_PROGRESS', NEWER)] }))
+    assertAsked(MERGE, /成功していない.*E2E/, mergeDeps({ checks: [...base, check('E2E', 'SUCCESS', 'COMPLETED', OLDER), check('E2E', 'FAILURE', 'COMPLETED', NEWER)] }))
+  })
+
+  test('workflow が違えば、同じ名前の検査も別の検査として判定する', () => {
+    const checks = [check('危険度の照合'), check('検査', 'SUCCESS', 'COMPLETED', NEWER, 'A'), check('検査', 'FAILURE', 'COMPLETED', OLDER, 'B')]
+    assertAsked(MERGE, /成功していない.*検査/, mergeDeps({ checks }))
+  })
+
+  test('重なった検査の時刻が読めなければ、確認を求める', () => {
+    const checks = [check('危険度の照合'), check('E2E', 'FAILURE', 'COMPLETED', null), check('E2E', 'SUCCESS', 'COMPLETED', NEWER)]
+    assertAsked(MERGE, /時刻/, mergeDeps({ checks }))
   })
 
   test('欠けた条件が複数あれば、全てを書く', () => {

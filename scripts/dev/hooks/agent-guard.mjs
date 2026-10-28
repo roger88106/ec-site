@@ -81,7 +81,11 @@ const PULL_REQUEST_QUERY = `query($owner: String!, $name: String!, $number: Int!
       }
       commits(last: 1) {
         nodes { commit { statusCheckRollup { contexts(first: 100) {
-          nodes { __typename ... on CheckRun { name status conclusion } ... on StatusContext { context state } }
+          nodes {
+            __typename
+            ... on CheckRun { name status conclusion startedAt checkSuite { workflowRun { workflow { name } } } }
+            ... on StatusContext { context state createdAt }
+          }
           pageInfo { hasNextPage }
         } } } }
       }
@@ -990,14 +994,45 @@ function readPullRequest(target, dir, deps, timeout) {
 }
 
 /**
- * CI の検査が全て終わり、通っているかを調べる。
+ * head の commit の検査を、同じ検査（check run は workflow と名前の組、commit status は context）ごとに、最も新しい実行だけにする。
+ * GitHub は再実行の前の実行も同じ commit に残すので、古い失敗で判定しないため（gh pr checks も名前ごとに新しいものだけを見る）。
+ * 同じ検査が重なり、時刻を読めない実行があるときは、どれが新しいか決められないので、その検査の実行を全て残す。
  *
  * @param {object} pullRequest pull request（GraphQL の形）
+ * @returns {{ nodes: object[], undated: string[], truncated: boolean }} 残した検査、時刻を読めなかった検査の名前、一覧の続きがあるか
+ */
+function latestChecks(pullRequest) {
+  const contexts = pullRequest.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts
+  const groups = new Map()
+  for (const node of contexts?.nodes ?? []) {
+    const key = JSON.stringify(
+      node.__typename === 'CheckRun' ? ['run', node.checkSuite?.workflowRun?.workflow?.name ?? '', node.name] : ['status', node.context ?? node.__typename],
+    )
+    groups.set(key, [...(groups.get(key) ?? []), node])
+  }
+  const nodes = []
+  const undated = []
+  for (const group of groups.values()) {
+    const times = group.map((node) => Date.parse((node.__typename === 'CheckRun' ? node.startedAt : node.createdAt) ?? ''))
+    if (group.length > 1 && times.some(Number.isNaN)) {
+      undated.push(group[0].name ?? group[0].context)
+      nodes.push(...group)
+      continue
+    }
+    // 時刻が同じ実行が複数あれば、どれも残す（どれが新しいか決められないため）
+    const latest = Math.max(...times)
+    nodes.push(...group.filter((_, index) => times[index] === latest || group.length === 1))
+  }
+  return { nodes, undated: [...new Set(undated)], truncated: Boolean(contexts?.pageInfo?.hasNextPage) }
+}
+
+/**
+ * CI の検査が全て終わり、通っているかを調べる。
+ *
+ * @param {{ nodes: object[], undated: string[], truncated: boolean }} checks 同じ検査の最も新しい実行
  * @returns {string[]} 満たさない条件
  */
-function checkProblems(pullRequest) {
-  const contexts = pullRequest.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts
-  const nodes = contexts?.nodes ?? []
+function checkProblems({ nodes, undated, truncated }) {
   if (nodes.length === 0) return ['CI の検査がない（まだ始まっていない）']
   const pending = []
   const failed = []
@@ -1014,7 +1049,8 @@ function checkProblems(pullRequest) {
     }
   }
   const problems = []
-  if (contexts.pageInfo?.hasNextPage) problems.push('CI の検査の一覧を全ては読めない（100 件を超える）')
+  if (truncated) problems.push('CI の検査の一覧を全ては読めない（100 件を超える）')
+  if (undated.length > 0) problems.push(`再実行で重なった CI の検査の時刻を読めず、最も新しい実行を決められない（${undated.join('、')}）`)
   if (pending.length > 0) problems.push(`CI の検査が終わっていない（${[...new Set(pending)].join('、')}）`)
   if (failed.length > 0) problems.push(`CI の検査が成功していない（${[...new Set(failed)].join('、')}）`)
   return problems
@@ -1057,16 +1093,15 @@ function dependabotProblems(pullRequest) {
  * Dependabot 以外の pull request の、危険度と、機能の spec でないことを調べる。
  *
  * @param {object} pullRequest pull request（GraphQL の形）
+ * @param {object[]} checks 同じ検査の最も新しい実行
  * @returns {string[]} 満たさない条件
  */
-function authoredProblems(pullRequest) {
+function authoredProblems(pullRequest, checks) {
   const problems = []
   const bodyRisk = readBodyRisk(pullRequest.body ?? '')
   if ('error' in bodyRisk) problems.push(`本文の危険度を読めない（${bodyRisk.error}）`)
   else if (bodyRisk.value !== '低') problems.push(`本文の危険度が低でない（判定：${bodyRisk.value}）`)
-  const riskChecks = (pullRequest.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts?.nodes ?? []).filter(
-    (node) => node.__typename === 'CheckRun' && node.name === RISK_CHECK,
-  )
+  const riskChecks = checks.filter((node) => node.__typename === 'CheckRun' && node.name === RISK_CHECK)
   if (riskChecks.length === 0 || riskChecks.some((node) => node.status !== 'COMPLETED' || node.conclusion !== 'SUCCESS')) {
     problems.push(`検査「${RISK_CHECK}」が成功していない（ないか、成功以外）`)
   }
@@ -1106,9 +1141,10 @@ export function mergeProblems(pullRequest, headCommit) {
   if (String(pullRequest.headRefOid).toLowerCase() !== headCommit.toLowerCase()) {
     problems.push(`--match-head-commit の commit（${headCommit}）が、pull request の今の head の commit（${pullRequest.headRefOid}）と一致しない`)
   }
-  problems.push(...checkProblems(pullRequest))
+  const checks = latestChecks(pullRequest)
+  problems.push(...checkProblems(checks))
   const dependabot = isDependabot({ author: authorName(pullRequest.author) })
-  problems.push(...(dependabot ? dependabotProblems(pullRequest) : authoredProblems(pullRequest)))
+  problems.push(...(dependabot ? dependabotProblems(pullRequest) : authoredProblems(pullRequest, checks.nodes)))
   return problems
 }
 

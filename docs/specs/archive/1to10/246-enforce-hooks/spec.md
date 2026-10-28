@@ -28,17 +28,17 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 |------|------|----------|--------|
 | `develop` と `main` に直接 commit しない | AGENTS.md の Git の表 | GitHub の ruleset が、pull request を経ない push を拒否する | ローカルの commit はできる。メインの作業ツリーは複数のセッションが使うので、`develop` への commit が他のセッションの取り込みや作業ブランチの作成に混ざる |
 | push 済みの履歴を書き換えない | AGENTS.md の Git の表 | ruleset が `develop` と `main` への force push を拒否する | 作業ブランチへの force push はできる |
-| commit の前の検査を通す | [開発環境の起動](../../guides/setup.md) | `.git/hooks/` に置いた git の pre-commit hook と commit-msg hook | hook は clone ごとに手動で置く。置き忘れると、検査が実行されないまま commit できる。`--no-verify` で検査を省略できる |
+| commit の前の検査を通す | [開発環境の起動](../../../../guides/setup.md) | `.git/hooks/` に置いた git の pre-commit hook と commit-msg hook | hook は clone ごとに手動で置く。置き忘れると、検査が実行されないまま commit できる。`--no-verify` で検査を省略できる |
 | マージは利用者の許可を得てから | AGENTS.md の Git の表 | なし（ruleset の必須の承認数は 0） | `gh pr merge` を許可なしに実行できる |
 | tag は利用者の許可を得てから | AGENTS.md の Git の表 | なし | `git tag`・`gh release create` を実行できる |
-| ruleset を一時的に無効にするのは利用者の許可を得てから | [ブランチとリリース](../../guides/branches.md) 第 5 節 | なし | `gh api` で ruleset を変えられる |
+| ruleset を一時的に無効にするのは利用者の許可を得てから | [ブランチとリリース](../../../../guides/branches.md) 第 5 節 | なし | `gh api` で ruleset を変えられる |
 | `/.local/`・秘密の値を Git に入れない | AGENTS.md の Git の表 | `.gitignore` の許可リスト | なし（強制済み） |
-| `main` には `release-`・`hotfix-` からだけ入れる | [ブランチとリリース](../../guides/branches.md) 第 3.2 節 | CI の必須の検査 | なし（強制済み） |
+| `main` には `release-`・`hotfix-` からだけ入れる | [ブランチとリリース](../../../../guides/branches.md) 第 3.2 節 | CI の必須の検査 | なし（強制済み） |
 
 - ローカルの Claude Code の hook は、全て Git に入らない `.claude/settings.local.json` にある。heredoc の `\` を拒否する PreToolUse、中国語の混入を調べる PostToolUse、`environment.md` を読み込む SessionStart の 3 つである。Git に入る `.claude/settings.json` はない。
-- 「取り込みは merge で行い、rebase しない」（[開発の進め方](../../rules/workflow.md) 第 5.6 節）は、例外のある規則である。push していない commit の fixup に rebase を使うためである。この規則が守ろうとする push 済みの履歴は、force push を拒否すれば書き換えられないので、rebase は hook の対象にしない。
+- 「取り込みは merge で行い、rebase しない」（[開発の進め方](../../../../rules/workflow.md) 第 5.6 節）は、例外のある規則である。push していない commit の fixup に rebase を使うためである。この規則が守ろうとする push 済みの履歴は、force push を拒否すれば書き換えられないので、rebase は hook の対象にしない。
 - 判断を伴う規則（issue から始める、規模の承認、文書が先、利用者が確認する所で止まる）は、hook で判定できない。
-- release と hotfix の手順（[ブランチとリリース](../../guides/branches.md) 第 4、5 節）は、全て作業ブランチと pull request で行い、`develop`・`main` でローカルの commit を作らない。
+- release と hotfix の手順（[ブランチとリリース](../../../../guides/branches.md) 第 4、5 節）は、全て作業ブランチと pull request で行い、`develop`・`main` でローカルの commit を作らない。
 
 ### Claude Code の hook と permission の働き
 
@@ -78,7 +78,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 ### DS-246-1 Git に入れる設定と環境ごとの設定の分け方を決め、文書にする（D / P1）
 
 - **DC-246-1** Git に入る `.claude/settings.json` があり、チームの例外のない規則を強制する hook と permission だけを書く。マシン固有のパスを書かない。
-- **DC-246-2** `.gitignore` の `.claude/` の許可リストに `settings.json` があり、許可リストのコメントと [ブランチとリリース](../../guides/branches.md) 第 2 節の `.claude/` の箇条と、[constitution](../../constitution.md) の文書の地図の `.claude/` の行が、`settings.json` を含む形になっている。`settings.local.json` は Git に入らない。
+- **DC-246-2** `.gitignore` の `.claude/` の許可リストに `settings.json` があり、許可リストのコメントと [ブランチとリリース](../../../../guides/branches.md) 第 2 節の `.claude/` の箇条と、[constitution](../../../../constitution.md) の文書の地図の `.claude/` の行が、`settings.json` を含む形になっている。`settings.local.json` は Git に入らない。
 - **DC-246-3** 分け方（チームの規則は `settings.json`、環境・利用者に固有のものは `settings.local.json`）と、hook の script の置き場所が、AGENTS.md に書いてある。skill `zh-mixing` の設定の手順（`settings.local.json` に書く）と食い違わない。
 - **DC-246-4** hook の script は Git に入り、`node --test` のテストを持ち、`scripts/ci/check-all.sh` の script のテスト（`scripts/dev/**/*.test.mjs`）に含まれる。
 - **DC-246-5** hook の script は、対象のリポジトリとブランチを、hook の入力の `cwd` と、コマンドの中の `cd`・`git -C` で決め、`$CLAUDE_PROJECT_DIR` を使わない。`settings.json` の hook のコマンドは、hook の作業ディレクトリの作業ツリーにある script を呼ぶ。そこに script がなければ（Bash のツールで前に Git の外や別の作業ツリーに `cd` したとき）、`$CLAUDE_PROJECT_DIR` の下の script を呼ぶ。どちらにもないとき、または script が判定の前に異常終了したとき（構文の誤り、import の失敗、node がない）は、`git` か `gh` を含むコマンドを拒否する。hook のコマンドは Git Bash で動く形で書く。Windows の hook は Git Bash で実行されるためである（T246-01-07 と段階 1 のレビュー）。
@@ -88,7 +88,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 
 - **DC-246-7** git の pre-commit hook（`scripts/dev/hooks/pre-commit`）が、今のブランチが `develop` か `main` なら、CI の検査の前に commit を失敗にし、作業ブランチを作る手順を表示する。人の commit も失敗にする。detached HEAD（rebase の途中を含む）は通す。
 - **DC-246-8** 判定と表示のテストがある。既存の、一時リポジトリで実際に commit するテストは、作業ブランチで commit する形にして、既定のブランチ名によらず通る。
-- **DC-246-9** [開発環境の起動](../../guides/setup.md) の hook の置き方が、DC-246-7 の判定を説明する。
+- **DC-246-9** [開発環境の起動](../../../../guides/setup.md) の hook の置き方が、DC-246-7 の判定を説明する。
 
 ### DS-246-3 push 済みの履歴の書き換えと、commit の前の検査の省略を拒否する（D / P1）
 
@@ -96,7 +96,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - `git push` の force（`-f`、`--force`、`--force-with-lease`、`--force-if-includes`、`+` で始まる refspec、リモートの参照を force で更新する `--mirror`）
   - `git commit` と `git push` の `--no-verify`（`git commit -n` を含む）
   - `git -c core.hooksPath=…` で hook の置き場所を替えるコマンド
-- **DC-246-11** 同じ hook が、`git commit` のときに git の pre-commit hook が置かれていなければ拒否し、置き方（[開発環境の起動](../../guides/setup.md)）を示す。置かれているとは、`git rev-parse --git-path hooks/pre-commit` のファイルがあり、`scripts/dev/hooks/pre-commit` を含むことをいう。
+- **DC-246-11** 同じ hook が、`git commit` のときに git の pre-commit hook が置かれていなければ拒否し、置き方（[開発環境の起動](../../../../guides/setup.md)）を示す。置かれているとは、`git rev-parse --git-path hooks/pre-commit` のファイルがあり、`scripts/dev/hooks/pre-commit` を含むことをいう。
 - **DC-246-12** 判定は、`&&`・`;`・`|` でつないだコマンド、`cd` を前に付けたコマンド、`git -C <パス>` を含むコマンドにも適用される。テストが、拒否する例と通す例（通常の `git push`、`git commit --amend`、作業ツリーの中の `git commit` など）を持つ。
 
 ### DS-246-4 利用者の許可が必要な操作で、確認を求める（D / P1）
@@ -120,7 +120,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - **DC-246-16** 同じ hook が、ruleset（ブランチの保護を含む）を変える `gh api`（`-X`・`--method` が `GET` 以外で、パスが `rulesets` か `branches/<名前>/protection`）で確認を求める。`gh api graphql` は対象にしない。
 - **DC-246-17** 次の 2 つで確認を求める。（a）自動マージを有効にする MCP のツール（`mcp__ccd_pr__set_auto_merge`）、（b）`.claude/settings.json`・`.claude/settings.local.json` の Edit・Write。どちらも `.claude/settings.json` の permission の `ask` で書く。
 - **DC-246-18** DC-246-13〜16 の判定に、テストがある。`gh` の呼び出しはテストの中のスタブに差し替え、DC-246-14 の各条件が欠けた例、`Closes` がない例、実行中の検査がある例、タイムアウトの例を持つ。`risk.mjs` は差し替えず、実物を使う。
-- **DC-246-19** AGENTS.md の Git の表の「マージ・tag」の行が、hook が確認を求めることと、hook が見ない条件（担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み）は文章の規則であることを書いている。[ブランチとリリース](../../guides/branches.md) 第 5 節の ruleset の箇条が、確認の画面が表示されることを書いている。
+- **DC-246-19** AGENTS.md の Git の表の「マージ・tag」の行が、hook が確認を求めることと、hook が見ない条件（担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み）は文章の規則であることを書いている。[ブランチとリリース](../../../../guides/branches.md) 第 5 節の ruleset の箇条が、確認の画面が表示されることを書いている。
 - **DC-246-20** 同じ hook が、PowerShell のツールのコマンドのうち、`git` か `gh` を含み、操作の語（`push`、`commit`、`tag`、`merge`、`api`、`release`、`hooksPath`）を含むものを拒否し、Bash のツールで実行するよう返す。それ以外の PowerShell のコマンドは通す。テストが、拒否する例と通す例（`git status`、`git log`、`gh pr view`）を持つ（決めたこと 5）。
 
 ## 4. 守る制約
@@ -138,7 +138,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | 判断を伴う規則（issue から始める、規模の承認、文書が先、確認の所で止まる）の強制 | hook で判定できない。文章の規則のまま残す |
 | 担当のセッションの区別（低の変更をマージするのは issue 担当のセッション） | hook からセッションの役割を見分けられない。文章の規則のまま残す（DC-246-19） |
 | 未解決の指摘のうち、重要度が高と必須のものが 0 であることの確認（DC-245-26 の条件の 1 つ） | レビューの記録は機械で読める形でない。文章の規則のまま残す（第 8 節の 1） |
-| `hotfix-` の後の `main` から `develop` への取り込みで、利用者の許可を求めること（[ブランチとリリース](../../guides/branches.md) 第 5 節） | 取り込みの pull request は `<issue の番号>-<短い名前>` のブランチから `develop` に向かうので、ブランチの名前で見分けられない。文章の規則のまま残す（DC-246-19） |
+| `hotfix-` の後の `main` から `develop` への取り込みで、利用者の許可を求めること（[ブランチとリリース](../../../../guides/branches.md) 第 5 節） | 取り込みの pull request は `<issue の番号>-<短い名前>` のブランチから `develop` に向かうので、ブランチの名前で見分けられない。文章の規則のまま残す（DC-246-19） |
 | Bash のコマンド（`sed` など）による `.claude/settings*.json` の書き換えの確認 | Bash のコマンドの書き込み先を確実には判定できない。Edit・Write だけを対象にする（DC-246-17） |
 | セッションのアーカイブの許可 | アプリの機能で、hook の対象の外である |
 | ローカルの hook（heredoc の `\`、`environment.md` の読み込み、中国語の混入）を `settings.json` に移す | 環境・利用者に固有のもので、分け方（DC-246-3）のとおり `settings.local.json` に残す |
@@ -154,7 +154,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 |----|------|------|------|-----------|
 | 案 A（推奨） | M（spec.md の 1 つのファイル） | 決めた時点で DC が 19、タスクが 9 で、1 つのファイルに収まる | なし | なし |
 | 案 B | S（issue の本文を spec にする） | 文書が最も少ない | マージの条件の決めごとと判定の例が多く、issue の本文では変更を追いにくい | なし（置き場所だけ変わる） |
-| 案 C | L（spec・plan・tasks） | 設計の判断を plan に分けられる | API・データベースを変えず、モジュールにもまたがらないので、[開発の進め方](../../rules/workflow.md) 第 4.2 節の L の基準に当たらない | なし（置き場所だけ変わる） |
+| 案 C | L（spec・plan・tasks） | 設計の判断を plan に分けられる | API・データベースを変えず、モジュールにもまたがらないので、[開発の進め方](../../../../rules/workflow.md) 第 4.2 節の L の基準に当たらない | なし（置き場所だけ変わる） |
 
 ### 決めたこと 2：マージの許可をどう強制するか
 
@@ -197,11 +197,11 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 ### 順序と重なり
 
 - 本 spec は spec 245 のマージの後に実装を始める。理由：マージの hook は、spec 245 の危険度の判定（`scripts/ci/risk.mjs`）、本文の「## 危険度」の節、`--match-head-commit` を使うため。spec の確定は、spec 245 のマージを待たない。
-- 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）では、spec 245 がマージした内容を第 3 節と照合し、差があれば本 spec を先に修正する。照合するものは次のとおりである。
+- 実装を始める前の照合（[開発の進め方](../../../../rules/workflow.md) 第 5.6 節）では、spec 245 がマージした内容を第 3 節と照合し、差があれば本 spec を先に修正する。照合するものは次のとおりである。
   - マージの条件（DC-245-24〜26）と、AGENTS.md の Git の表の行
   - `scripts/ci/risk.mjs` の、hook が使う関数の名前と引数（今のブランチでは `judgeRisk`、`judgeDependabotTitle`、`applyDependabotTitle`、`readBodyRisk`、`isDependabot`）
   - 必須の検査の名前「危険度の照合」と、ruleset に戻したか
-- 照合の結果（2026-10-28、`develop` の af66e826）：設計の差はない。マージの条件は DC-245-26 と AGENTS.md の Git の表のとおりで、DC-246-14 の条件と合う。関数の名前は上のとおりで、`judgeRisk` は高の経路の一覧（`scripts/ci/risk.json` を `parseRiskConfig` で読んだもの）とファイルの中身を読む関数を引数に取る。Dependabot の pull request は spec.md を変えないので、中身を読む関数は常に null を返すものでよい。検査の名前は「危険度の照合」（`.github/workflows/risk.yml`）で、[ブランチとリリース](../../guides/branches.md) 第 3.1 節の必須の検査に載っている（ruleset に戻す作業は issue 担当のセッション）。`branches.md` 第 2 節には spec 245 が `.gitignore` の許可リストの箇条を加えたので、DC-246-2 はこの箇条を修正する。
+- 照合の結果（2026-10-28、`develop` の af66e826）：設計の差はない。マージの条件は DC-245-26 と AGENTS.md の Git の表のとおりで、DC-246-14 の条件と合う。関数の名前は上のとおりで、`judgeRisk` は高の経路の一覧（`scripts/ci/risk.json` を `parseRiskConfig` で読んだもの）とファイルの中身を読む関数を引数に取る。Dependabot の pull request は spec.md を変えないので、中身を読む関数は常に null を返すものでよい。検査の名前は「危険度の照合」（`.github/workflows/risk.yml`）で、[ブランチとリリース](../../../../guides/branches.md) 第 3.1 節の必須の検査に載っている（ruleset に戻す作業は issue 担当のセッション）。`branches.md` 第 2 節には spec 245 が `.gitignore` の許可リストの箇条を加えたので、DC-246-2 はこの箇条を修正する。
 - 本 spec が変えるファイルと、他の spec との重なり（2026-10-28）：
 
 | まとまり | ファイル | 重なる spec |
@@ -219,8 +219,8 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 
 - 前提：spec の確定、spec 245 のマージ、実装を始める前の照合
 - 完了条件：DC-246-1〜20 を満たし、DN-246-1〜5 を守る。
-- 参照：第 1 節、第 3 節、第 6 節、[テストの書き方](../../rules/test-writing.md)、[コメントの書き方](../../rules/comments.md)
-- `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
+- 参照：第 1 節、第 3 節、第 6 節、[テストの書き方](../../../../rules/test-writing.md)、[コメントの書き方](../../../../rules/comments.md)
+- `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../../../rules/workflow.md) 第 2.1 節）。
 
 - [x] **T246-01-01** [テスト] git の pre-commit hook の、ブランチの判定と表示のテストを書き、レッドを確認する（DC-246-7、8）。
   - 依存：なし
@@ -300,9 +300,9 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 
 - [x] **T246-02-01** spec の最後のレビューを行う（skill `review`）。
   - 依存：段階 1
-- [ ] **T246-02-02** pull request の前のレビューを、draft の pull request で行う（skill `review`）。
+- [x] **T246-02-02** pull request の前のレビューを、draft の pull request で行う（skill `review`）。
   - 依存：T246-02-01
-- [ ] **T246-02-03** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
+- [x] **T246-02-03** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
   - 依存：T246-02-02
 
 ## 8. 後回しにする作業と起票の案

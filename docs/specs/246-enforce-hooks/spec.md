@@ -78,10 +78,10 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 ### DS-246-1 Git に入れる設定と環境ごとの設定の分け方を決め、文書にする（D / P1）
 
 - **DC-246-1** Git に入る `.claude/settings.json` があり、チームの例外のない規則を強制する hook と permission だけを書く。マシン固有のパスを書かない。
-- **DC-246-2** `.gitignore` の `.claude/` の許可リストに `settings.json` があり、許可リストのコメントと [ブランチとリリース](../../guides/branches.md) 第 2 節の `.claude/` の箇条が、`settings.json` を含む形になっている。`settings.local.json` は Git に入らない。
+- **DC-246-2** `.gitignore` の `.claude/` の許可リストに `settings.json` があり、許可リストのコメントと [ブランチとリリース](../../guides/branches.md) 第 2 節の `.claude/` の箇条と、[constitution](../../constitution.md) の文書の地図の `.claude/` の行が、`settings.json` を含む形になっている。`settings.local.json` は Git に入らない。
 - **DC-246-3** 分け方（チームの規則は `settings.json`、環境・利用者に固有のものは `settings.local.json`）と、hook の script の置き場所が、AGENTS.md に書いてある。skill `zh-mixing` の設定の手順（`settings.local.json` に書く）と食い違わない。
 - **DC-246-4** hook の script は Git に入り、`node --test` のテストを持ち、`scripts/ci/check-all.sh` の script のテスト（`scripts/dev/**/*.test.mjs`）に含まれる。
-- **DC-246-5** hook の script は、対象のリポジトリとブランチを、hook の入力の `cwd` と、コマンドの中の `cd`・`git -C` で決め、`$CLAUDE_PROJECT_DIR` を使わない。`settings.json` の hook のコマンドは、hook の作業ディレクトリの作業ツリーにある script を呼ぶ。そこに script がなければ（Bash のツールで前に Git の外や別の作業ツリーに `cd` したとき）、`$CLAUDE_PROJECT_DIR` の下の script を呼ぶ。どちらにもなければ、`git` か `gh` を含むコマンドを止める。hook のコマンドは Git Bash で動く形で書く（T246-01-07 のレビュー）。
+- **DC-246-5** hook の script は、対象のリポジトリとブランチを、hook の入力の `cwd` と、コマンドの中の `cd`・`git -C` で決め、`$CLAUDE_PROJECT_DIR` を使わない。`settings.json` の hook のコマンドは、hook の作業ディレクトリの作業ツリーにある script を呼ぶ。そこに script がなければ（Bash のツールで前に Git の外や別の作業ツリーに `cd` したとき）、`$CLAUDE_PROJECT_DIR` の下の script を呼ぶ。どちらにもないとき、または script が判定の前に異常終了したとき（構文の誤り、import の失敗、node がない）は、`git` か `gh` を含むコマンドを止める。hook のコマンドは Git Bash で動く形で書く（T246-01-07 と段階 1 のレビュー）。
 - **DC-246-6** `settings.json` の hook に時間切れ（`timeout`）を書く。script の中の `gh` の呼び出しには、それより短い時間切れを付ける。
 
 ### DS-246-2 `develop`・`main` への直接の commit を失敗にする（D / P1）
@@ -278,6 +278,11 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
   - 依存：T246-01-07
   - 範囲：`AGENTS.md`（分け方と hook の置き場所、Git の表のマージ・tag の行）、`docs/guides/setup.md`（DC-246-9、hook を置かないと Claude Code の hook が commit を拒否すること）、`docs/guides/branches.md`（第 2 節の `.claude/` の箇条、第 5 節の ruleset の箇条）、skill `zh-mixing`（設定の手順が分け方に合うこと）
   - 確認方法：DC-246-2、3、9、19 の各文書の該当箇所を、skill `review` の文書のレビューで読む。
+- [ ] **T246-01-11** [リスク] 段階 1 の最後のレビューの指摘（必須 7 件。重複を除いて 6 件）を直す（DC-246-2、5、6、12、17、20）。
+  - 依存：T246-01-08
+  - 範囲：`scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`、`scripts/dev/lib/pre-commit.test.mjs`（Git Bash を求める補助を共通にする）、`.claude/settings.json`、`docs/constitution.md`、`docs/guides/setup.md`
+  - 直すもの：シェルの予約語（`then`、`do`、`{`、`!` など）の後の git・gh の判定、script の異常終了のときに git・gh を止める（DC-246-5）、settings.json の中身（matcher、timeout、ask）のテスト、テストで Git Bash を使う、constitution の `.claude/` の行（DC-246-2）、setup.md に pre-commit が止めない形（merge など。第 8 節の 3）を書く。
+  - 確認方法：加えたテストが修正の前に失敗し、修正の後に通る。`check-all.sh` が通る。
 
 ### 段階 2：完了
 
@@ -299,6 +304,7 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 |---|------|----------|
 | 1 | 未解決の指摘（重要度が高と必須）が 0 であることを、機械で読める形にして hook の条件に加える | spec 245 のレビューの記録の形が決まってから、issue 担当のセッションの候補の一覧に残す |
 | 2 | `bash -c "…"` に入れたコマンドと、環境変数（`GIT_CONFIG_COUNT` など）や `git config` で hook の置き場所を替えてから commit する形も、hook で判定する。設定 `push.followTags` による tag の push、セッションで先に `export` した `GH_REPO`、ローカルの tag を先に消してからの `git push --delete <tag>` も同じ。今は通す（T246-01-04、06） | エージェントがわざと使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
+| 3 | `develop`・`main` の上の `git merge`・`git cherry-pick`・`git revert`・`git am` も失敗にする。git はこれらで pre-commit hook を実行しない。`develop` の上の `git pull`（merge）を止めないように、判定の条件を決める必要がある（段階 1 のレビュー） | 見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 
 ## 9. 動作の確認の記録
 
@@ -315,11 +321,11 @@ T246-01-07 の確認の結果を、ここに書く。
 | DC-246-13 フルパスの `gh` で `--match-head-commit 0000000` | 確認（満たさない条件として、開いていない、head の不一致、本文の危険度が高の 3 つを示す） |
 | DC-246-15 `git tag 試し` | 確認 |
 | DC-246-16 `gh api -X PUT …/rulesets/999999999` | 確認 |
-| DC-246-17 作業ツリーの `.claude/settings.json` の Edit | 確認（書き込みの許可を求めて止まった） |
+| DC-246-17 作業ツリーの `.claude/settings.json` の Edit | 書き込みの許可を求めて止まった。ただし、非対話の default mode では規則がなくても許可を求めるので、ask の規則が効いたことは示さない。規則があることは、settings.json を読むテストで確認する |
 | DC-246-17 メインの作業ツリーの `.claude/settings.local.json` の Edit | 未確認（試した Edit が変更なしの誤りで終わり、規則の判定まで進まなかった） |
 | DC-246-20 PowerShell の `git tag 試し` | 拒否（Bash で実行し直すよう返す） |
 | DC-246-5 Git の外に `cd` してからの `git -C … push --force` | 拒否。ただし、Claude Code が作業ツリーの外への `cd` を作業ツリーに戻したので、script を見つけられないときの経路は通っていない（その経路はテストで確認した） |
 | 読むだけの `git status`・`git log` | 通った |
 
 - 試した後、作業ツリーに変更はなく、tag も作られていない。
-- 確認の画面の表示（利用者が答える形）と、未確認の行は、利用者が対話のセッションで確認する。
+- 確認の画面の表示（利用者が答える形）と、DC-246-17 の 2 行は、利用者が対話のセッションで確認する。利用者が不在の間に pull request を作るので、T246-01-07 は機械で確認できた範囲で完了とし、残りを pull request の本文の「利用者の確認待ち」に書く（2026-10-29、利用者の特例のもとでの spec 担当の判断）。

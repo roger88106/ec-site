@@ -29,6 +29,13 @@
       ]
     },
     {
+      "name": "金額",
+      "paths": [
+        "backend/ecsite/src/*/java/com/ecsite/module/tax/",
+        "backend/ecsite/src/*/java/com/ecsite/module/order/application/checkout/"
+      ]
+    },
+    {
       "name": "権限",
       "paths": [
         "docs/design/role-permissions.md",

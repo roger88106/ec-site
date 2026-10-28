@@ -54,6 +54,12 @@ describe('変更の危険度の判定', () => {
       'backend/ecsite/src/main/java/com/ecsite/module/payment/domain/Payment.java',
       'backend/ecsite/src/main/java/com/ecsite/module/order/application/payment/PayOrder.java',
     ],
+    '金額': [
+      'backend/ecsite/src/main/java/com/ecsite/module/tax/domain/TaxCalculator.java',
+      'backend/ecsite/src/test/java/com/ecsite/module/tax/domain/TaxCalculatorTest.java',
+      'backend/ecsite/src/main/java/com/ecsite/module/order/application/checkout/CheckoutOrder.java',
+      'backend/ecsite/src/test/java/com/ecsite/module/order/application/checkout/CheckoutOrderTest.java',
+    ],
     '権限': ['docs/design/role-permissions.md'],
     'データベース': ['backend/ecsite/src/main/resources/db/migration/V202611010900__x.sql'],
     '契約': ['api/openapi/admin.yaml'],

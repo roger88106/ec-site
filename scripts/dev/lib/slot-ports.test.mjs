@@ -47,7 +47,7 @@ describe('スロットの解除', () => {
     assert.equal(calls.drop, 1)
   })
 
-  test('待ち受けるプロセスがあれば止め、止めたことを 1 行で示し、空いたことを確かめてからデータを消す', async () => {
+  test('待ち受けるプロセスがあれば止め、止めたことを 1 行で示し、空いたことを確認してからデータを消す', async () => {
     const listeners = [{ port: 18080, pid: 1234 }]
     const { calls, deps } = releaseDeps({ answers: [{ ok: true, listeners }, { ok: true, listeners: [] }] })
     assert.deepEqual(await releaseSlot(deps), { code: 0 })

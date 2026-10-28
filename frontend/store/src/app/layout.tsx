@@ -10,7 +10,7 @@ import './globals.css'
 /** 本文の書体（CSS の変数 --font-sans で使う） */
 const geist = Geist({ subsets: ['latin'], variable: '--font-sans' })
 
-/** ブラウザのタブの題名（画面ごとの題名の後ろに店名を付ける）と、店舗の説明 */
+/** ブラウザーのタブの題名（画面ごとの題名の後ろに店名を付ける）と、店舗の説明 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('app.layout')
   const tCommon = await getTranslations('common')

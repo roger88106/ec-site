@@ -149,7 +149,7 @@ class ModuleStructureTest {
 
     /**
      * 他のモジュールの api を、infrastructure.directory の外から使ってよい組。<br />
-     * 組を足すときは、理由をコメントに書き、バックエンドの書き方 第 1.3 節の例外にも書く。
+     * 組を追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.3 節の例外にも書く。
      */
     private static final List<AllowedApiUse> ALLOWED_API_USES = List.of(
             // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。

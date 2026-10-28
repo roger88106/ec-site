@@ -46,12 +46,12 @@ class S3ObjectStorageFailureTest {
     private static final Duration CALL_TIMEOUT = Duration.ofSeconds(15);
 
     /**
-     * 時間の上限を確かめるテストの、1 回の試行を待つ時間の上限（応答しないサーバーを待つので短くする）
+     * 時間の上限を確認するテストの、1 回の試行を待つ時間の上限（応答しないサーバーを待つので短くする）
      */
     private static final Duration SHORT_ATTEMPT_TIMEOUT = Duration.ofMillis(300);
 
     /**
-     * 時間の上限を確かめるテストの、呼び出しの全体を待つ時間の上限（短くする）
+     * 時間の上限を確認するテストの、呼び出しの全体を待つ時間の上限（短くする）
      */
     private static final Duration SHORT_CALL_TIMEOUT = Duration.ofSeconds(1);
 

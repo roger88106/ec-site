@@ -18,7 +18,7 @@ async function fetchProduct(productId: string) {
   return unwrap(await api.GET('/products/{productId}', { params: { path: { productId } }, ...UNCACHED }))
 }
 
-/** ブラウザのタブの題名を商品名にする（見つからなければ、本文と同じく「見つかりません」） */
+/** ブラウザーのタブの題名を商品名にする（見つからなければ、本文と同じく「見つかりません」） */
 export async function generateMetadata({ params }: PageProps<'/products/[productId]'>): Promise<Metadata> {
   const product = await fetchProduct((await params).productId)
   return { title: product.name }

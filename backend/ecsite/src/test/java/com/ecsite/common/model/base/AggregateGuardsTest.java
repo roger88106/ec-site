@@ -145,9 +145,9 @@ class AggregateGuardsTest {
         }
 
         /**
-         * 例外と、その原因・抑制した例外を再帰的にたどり、どのメッセージにも値がないことを確かめる。
+         * 例外と、その原因・抑制した例外を再帰的にたどり、どのメッセージにも値がないことを確認する。
          *
-         * @param throwable 確かめる例外
+         * @param throwable 確認する例外
          * @param secret    含まれてはいけない値
          * @param visited   たどった例外（輪になった連鎖で止まるため）
          */

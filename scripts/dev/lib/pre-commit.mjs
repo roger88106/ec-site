@@ -1,4 +1,6 @@
-// commit の前の hook（scripts/dev/hooks/pre-commit）の処理。ステージした内容を取り出して、CI の検査を実行する
+// commit の前の hook（scripts/dev/hooks/pre-commit）の処理。ステージした内容を取り出して、CI の検査を実行する。
+// CI の検査には日本語の文の検査（ja-text）が含まれ、ステージした内容の error は失敗にする。
+// 検査が通ったら、ステージした追加行の warning だけを表示する（追加していない既存の行の warning は表示しない。warning は失敗にしない）
 import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
@@ -6,6 +8,65 @@ import path from 'node:path'
 
 /** 取り出しに失敗したときの終了コード（検査の失敗の 1 と区別する） */
 export const CHECKOUT_FAILED = 2
+
+/** 追加行の差分、または warning の一覧の取得に失敗したときの終了コード。取得できないまま成功にしない */
+export const WARNING_FAILED = 3
+
+/**
+ * `git diff --cached -U0` の出力から、追加した行の番号をファイルごとに取り出す。
+ *
+ * @param {string} diff 差分（-U0）
+ * @returns {Map<string, Set<number>>} ファイルのパスと、追加した行の番号（1 から）
+ */
+export function parseAddedLines(diff) {
+  const added = new Map()
+  let lines = null
+  let inHunk = false
+  for (const line of diff.split('\n')) {
+    if (line.startsWith('diff --git ')) {
+      inHunk = false
+      continue
+    }
+    // ファイルの見出しは、ハンクの外（diff --git の後）だけで読む。ハンクの中の `+++ ` は、本文が `++ ` で始まる追加行
+    if (!inHunk && line.startsWith('+++ ')) {
+      const target = line.slice(4).replace(/\r$/, '')
+      if (target === '/dev/null') {
+        lines = null
+        continue
+      }
+      const file = target.replace(/^b\//, '')
+      lines = added.get(file) ?? new Set()
+      added.set(file, lines)
+      continue
+    }
+    const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(line)
+    if (hunk) {
+      inHunk = true
+      if (!lines) continue
+      const count = hunk[2] === undefined ? 1 : Number(hunk[2])
+      for (let i = 0; i < count; i++) lines.add(Number(hunk[1]) + i)
+    }
+  }
+  return added
+}
+
+/**
+ * warning の一覧（ja-text の --warning の出力）から、追加した行の warning だけを選ぶ。
+ * 一覧の行は「<ファイル>:<行> <内容>」の形。ほかの行（件数の行など）は除く。
+ *
+ * @param {string} output ja-text --warning の出力
+ * @param {Map<string, Set<number>>} added 追加した行（parseAddedLines の結果）
+ * @returns {string[]} 追加した行の warning の行
+ */
+export function selectAddedWarnings(output, added) {
+  return output
+    .split('\n')
+    .map((line) => line.replace(/\r$/, ''))
+    .filter((line) => {
+      const hit = /^(.+?):(\d+) /.exec(line)
+      return hit !== null && (added.get(hit[1])?.has(Number(hit[2])) ?? false)
+    })
+}
 
 /**
  * git が GIT_INDEX_FILE に相対パスを渡したときに、リポジトリのルートからの絶対パスにする。
@@ -43,19 +104,30 @@ export function checkShell(env) {
  * @param {Record<string, string | undefined>} deps.env 環境変数
  * @param {(prefix: string, env: Record<string, string | undefined>) => number | null} deps.checkout ステージした内容を prefix の下に取り出す。終了コードを返す
  * @param {(script: string, env: Record<string, string | undefined>) => number | null} deps.runCheck 検査の script を実行する。終了コードを返す
+ * @param {(env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.diffAdded ステージした差分（-U0）を返す
+ * @param {(staged: string, env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で warning の一覧を出力する
+ * @param {(text: string) => void} deps.print warning を表示する
  * @param {() => string} deps.makeTemp 一時ディレクトリを作る
  * @param {(dir: string) => void} deps.removeTemp 一時ディレクトリを消す
  * @returns {number} hook の終了コード
  */
-export function runPreCommit({ root, gitDir, env, checkout, runCheck, makeTemp, removeTemp }) {
+export function runPreCommit({ root, gitDir, env, checkout, runCheck, diffAdded, listWarnings, print, makeTemp, removeTemp }) {
   const indexFile = resolveIndexFile(env.GIT_INDEX_FILE, root)
   const baseEnv = indexFile === undefined ? env : { ...env, GIT_INDEX_FILE: indexFile }
   const staged = makeTemp()
   try {
     if (checkout(`${staged}/`, baseEnv) !== 0) return CHECKOUT_FAILED
     // 検査の script は git（ls-files、log など）を呼ぶ。リポジトリは元のものを使い、作業ツリーだけを取り出した先にする
-    const status = runCheck(`${staged}/scripts/ci/check-all.sh`, { ...baseEnv, GIT_DIR: gitDir, GIT_WORK_TREE: staged })
-    return status ?? 1
+    const checkEnv = { ...baseEnv, GIT_DIR: gitDir, GIT_WORK_TREE: staged }
+    const status = runCheck(`${staged}/scripts/ci/check-all.sh`, checkEnv)
+    if (status !== 0) return status ?? 1
+    // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする
+    const diff = diffAdded(baseEnv)
+    const warnings = listWarnings(staged, checkEnv)
+    if (diff.status !== 0 || warnings.status !== 0) return WARNING_FAILED
+    const lines = selectAddedWarnings(warnings.stdout, parseAddedLines(diff.stdout))
+    if (lines.length > 0) print(`警告：追加した行に warning が ${lines.length} 件ある（読んで、直すかを決める）\n${lines.join('\n')}`)
+    return 0
   } finally {
     removeTemp(staged)
   }
@@ -79,6 +151,16 @@ export function main() {
     checkout: (prefix, env) =>
       spawnSync('git', ['-c', 'core.longpaths=true', 'checkout-index', '-a', `--prefix=${toSlash(prefix)}`], { env, stdio: 'inherit' }).status,
     runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
+    diffAdded: (env) => {
+      const args = ['-c', 'core.quotepath=false', 'diff', '--cached', '--src-prefix=a/', '--dst-prefix=b/', '-U0', '--no-color', '--no-ext-diff', '--diff-filter=ACMR']
+      const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+      return { status: result.status, stdout: result.stdout ?? '' }
+    },
+    listWarnings: (staged, env) => {
+      const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja-text.mjs`, '--warning'], { cwd: staged, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+      return { status: result.status, stdout: result.stdout ?? '' }
+    },
+    print: (text) => console.log(text),
     makeTemp: () => toSlash(mkdtempSync(path.join(tmpdir(), 'pre-commit.'))),
     removeTemp: (dir) => rmSync(dir, { recursive: true, force: true }),
   })

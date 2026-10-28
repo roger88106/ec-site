@@ -10,7 +10,7 @@ import { PageLinks } from '@/components/PageLinks'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
 import { parseSearchQuery, searchHref } from '@/features/catalog/searchQuery'
 
-/** ブラウザのタブの題名 */
+/** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('catalog.search')
   return { title: t('title') } // 検索結果

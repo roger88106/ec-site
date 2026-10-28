@@ -33,7 +33,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 商品・価格・公開状態・在庫の変更が、1 分以内に C 側へ反映されることの確認。<br />
- * 店舗の API は商品・価格・公開状態・在庫をキャッシュしないので、変更は 1 分を待たずに次の照会へ反映される。テストはこの次の照会への反映を確かめる。
+ * 店舗の API は商品・価格・公開状態・在庫をキャッシュしないので、変更は 1 分を待たずに次の照会へ反映される。テストはこの次の照会への反映を確認する。
  * 税率の一覧だけはインスタンス内で 30 秒キャッシュする（docs/design/modules/catalog.md）。テストごとにロールバックする。
  */
 @IntegrationTest

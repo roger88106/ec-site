@@ -109,7 +109,7 @@ export function findListeners(ports, deps = { platform: process.platform, spawnS
  * どちらも上限は {@link STOP_WAIT_MS}。上限を過ぎても例外を投げず、先へ進む（残ったかどうかは、呼ぶ側の再度の問い合わせで判定する）。
  * 終わるのを待つのは、止めた直後に問い合わせると、まだ待ち受けが残って見えることがあるため。
  * 親が終了状態を回収しないゾンビのプロセスは、シグナル 0 が成功し続けて生きていると判定されるので、上限まで待つ（失敗はしない）。
- * すでに終わっていて kill が失敗しても止まらない（その場合も生存を確かめる）。
+ * すでに終わっていて kill が失敗しても止まらない（その場合も生存を確認する）。
  * SIGKILL が権限がなく EPERM で失敗したプロセスは、止められず待っても終わらないので、待たずに先へ進む（残ったかどうかは呼ぶ側が判定する）。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
@@ -134,7 +134,7 @@ export function stopListeners(listeners, deps = {}) {
       kill(pid, 'SIGKILL')
       waiting.push(pid)
     } catch (error) {
-      // すでに終わっている（ESRCH など）プロセスは、念のため生存を確かめる。権限がなく止められない（EPERM）プロセスは、待っても終わらないので待たない
+      // すでに終わっている（ESRCH など）プロセスは、念のため生存を確認する。権限がなく止められない（EPERM）プロセスは、待っても終わらないので待たない
       if (error?.code !== 'EPERM') waiting.push(pid)
     }
   }

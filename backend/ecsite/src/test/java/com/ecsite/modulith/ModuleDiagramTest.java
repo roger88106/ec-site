@@ -108,7 +108,7 @@ class ModuleDiagramTest {
 
         var rendered = render(diagram);
 
-        // 依存の抽出とイベントの組ごとの集約は、固定した内容では確かめられない。generatedDiagramMatchesCode が、コードから作った図を文書と比べて確かめる
+        // 依存の抽出とイベントの組ごとの集約は、固定した内容では確認できない。generatedDiagramMatchesCode が、コードから作った図を文書と比べて確認する
         assertThat(rendered).isEqualTo("""
                 ```mermaid
                 flowchart LR

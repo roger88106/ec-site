@@ -34,7 +34,7 @@ export function toZonedDate(date: Date): string {
   return `${parts.year}-${parts.month}-${parts.day}`
 }
 
-/** 表示のタイムゾーンでの年月日・時分（ゼロ埋め）。ブラウザのタイムゾーンに依存しない */
+/** 表示のタイムゾーンでの年月日・時分（ゼロ埋め）。ブラウザーのタイムゾーンに依存しない */
 function zonedParts(date: Date) {
   const parts = Object.fromEntries(japanDateTimeFormat.formatToParts(date).map((part) => [part.type, part.value]))
   return { year: parts.year, month: parts.month, day: parts.day, hour: parts.hour, minute: parts.minute }

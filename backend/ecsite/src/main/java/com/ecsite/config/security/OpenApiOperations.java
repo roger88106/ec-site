@@ -115,7 +115,7 @@ final class OpenApiOperations<T> {
     }
 
     /**
-     * 操作でないパスの下のキーが、OpenAPI の Path Item の項目か拡張であることを確かめる。
+     * 操作でないパスの下のキーが、OpenAPI の Path Item の項目か拡張であることを確認する。
      *
      * @param contract 契約のファイル
      * @param path     パス

@@ -21,7 +21,7 @@ const FORMAT_LABELS: Readonly<Record<ImageContentType, string>> = {
 }
 
 /**
- * 拡張子からの形式。ブラウザが HEIC などの形式を空で渡すことがあるため（Windows の Chrome など）、拡張子で補う
+ * 拡張子からの形式。ブラウザーが HEIC などの形式を空で渡すことがあるため（Windows の Chrome など）、拡張子で補う
  */
 const CONTENT_TYPES_BY_EXTENSION: Readonly<Record<string, ImageContentType>> = {
   jpg: 'image/jpeg',
@@ -64,7 +64,7 @@ export function imageFormatsLabel(): string {
 export class ImageUploadError extends Error {}
 
 /**
- * 受付に申告する画像の形式。ブラウザの形式が空（または汎用のもの）なら、拡張子で補う。
+ * 受付に申告する画像の形式。ブラウザーの形式が空（または汎用のもの）なら、拡張子で補う。
  *
  * @returns 形式。受け付けない形式なら null
  */

@@ -25,6 +25,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 | `docs` | 文書（docs/、README、AGENTS.md）を書く・修正する・移す |
 | `writing-for-agents` | skill や AGENTS.md を作る、修正する |
 | `review` | 段階・spec の最後のレビュー、plan・tasks の照合、文書のレビュー、全体のレビュー（受け入れ確認） |
+| `zh-mixing` | 中国語で指示する環境で、中国語の字・用語の混入を調べる、設定する |
 
 ## 作業の進め方
 
@@ -64,7 +65,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 
 ## モデルの区分
 
-サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。区分ごとの使う場面は [エージェントの作業フロー](docs/rules/subagents.md) 第 3 節と、レビューの profile の表。作業の種類の表の effort の低・中・高は、`low`・`medium`・`high` に当たる。指定がなければ表の既定を使う。実際のモデルと effort は、使う AI のサービスごとに次の表で決める。サービスやモデルを替えるときは、この表だけを直す。
+サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。区分ごとの使う場面は [エージェントの作業フロー](docs/rules/subagents.md) 第 3 節と、レビューの profile の表。作業の種類の表の effort の低・中・高は、`low`・`medium`・`high` に当たる。指定がなければ表の既定を使う。実際のモデルと effort は、使う AI のサービスごとに次の表で決める。サービスやモデルを替えるときは、この表と、`.claude/agents/` の定義の `model` を直す。
 
 今使う AI のサービスは Claude Code（Anthropic）。
 
@@ -77,9 +78,9 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | | |
 | セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | | |
 
-出典：最上位の既定の effort と選び方は Claude Code の公式の文書（model-config、costs、2026-10-28 確認）。週の 50% は利用者の決定。
+出典：最上位の既定の effort と選び方は公式の文書（model-config、costs、2026-10-28 確認）。週の 50% は利用者の決定。
 
-※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（system prompt とツールの定義など、約 4〜6 万 token）を含み、読める量は約 4 万 token（整理の前の基準の測定。最初の要求が 4.1〜5.7 万 token）。
+※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（system prompt とツールの定義など、約 4〜6 万 token）を含み、読める量は約 4 万 token。
 
 ## Git
 
@@ -90,7 +91,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/rules/workflow.md) 第 2.1 節） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない |
-| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。アーカイブの許可は開発の進め方 第 5.7 節、マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節 |
+| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節 |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（`.gitignore` は [ブランチとリリース](docs/guides/branches.md) 第 2.2 節） |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/guides/branches.md)。

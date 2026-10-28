@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文手続きの受け入れテスト。<br />
- * テストごとにロールバックする。カートの変更のイベントによる引当の解除は、コミットが要るので
+ * テストごとにロールバックする。カートの変更のイベントによる引当の解除は、コミットが必要なので
  * {@link CheckoutCartChangeApiTest} で確認する。
  */
 @IntegrationTest

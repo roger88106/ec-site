@@ -127,7 +127,7 @@ describe('レポートの権限による出し分け', () => {
       await user.click(screen.getByRole('button', { name: '再試行' }))
       await waitFor(() => expect(screen.getByRole('button', { name: '再試行' })).toBeDisabled())
 
-      // 権限を確かめない画面（税区分）を経て別のレポートを開く。画面の部品が新しく作られる
+      // 権限を確認しない画面（税区分）を経て別のレポートを開く。画面の部品が新しく作られる
       server.use(http.get('/tax-categories', ({ response }) => response(200).json({ items: [] })))
       await user.click(screen.getByRole('link', { name: '税区分' }))
       await waitFor(() => expect(router.state.location.pathname).toBe('/tax-categories'))

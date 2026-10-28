@@ -11,7 +11,7 @@ import { QuoteItemSummary } from '@/components/QuoteItemSummary'
 import { OrderForm } from '@/features/checkout/components/OrderForm'
 import { RemainingTime } from '@/features/checkout/components/RemainingTime'
 
-/** ブラウザのタブの題名 */
+/** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('checkout.page')
   return { title: t('title') } // ご注文手続き

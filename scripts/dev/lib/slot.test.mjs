@@ -241,7 +241,7 @@ describe('メインの作業ツリーの判定', () => {
 })
 
 describe('共有の基盤の確認', () => {
-  test('確かめるのは PostgreSQL と SeaweedFS のコンテナ', () => {
+  test('確認するのは PostgreSQL と SeaweedFS のコンテナ', () => {
     assert.deepEqual(SHARED_CONTAINERS, ['ec-site-postgres', 'ec-site-seaweedfs'])
   })
 
@@ -315,7 +315,7 @@ describe('割り当ての順序', () => {
     assert.deepEqual(f.events, [])
   })
 
-  test('ロックの中で一覧を読んで空きを選び記録を書き、ロックを放した後にデータを作り直す（DC-104-2、DC-104-5）', async () => {
+  test('ロックの中で一覧を読んで空きを選び記録を書き、ロックを放した後にデータを再作成する（DC-104-2、DC-104-5）', async () => {
     const f = fakeAssign({ records: { '/wt/other': '1\n' } })
     assert.deepEqual(await assignSlot(f.deps), { kind: 'assigned', slot: 2 })
     assert.deepEqual(f.events, ['lock', 'list（ロックの中）', 'write 2（ロックの中）', 'unlock', 'recreate 2'])
@@ -339,7 +339,7 @@ describe('割り当ての順序', () => {
     assert.equal(f.record(), null)
   })
 
-  test('データの作り直しに失敗しても記録を残して失敗を返す（他の割り当てが同じ番号を選ばない）', async () => {
+  test('データの再作成に失敗しても記録を残して失敗を返す（他の割り当てが同じ番号を選ばない）', async () => {
     const f = fakeAssign({ failRecreate: true })
     const result = await assignSlot(f.deps)
     assert.equal(result.kind, 'recreateFailed')

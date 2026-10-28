@@ -6,7 +6,7 @@ import { TooltipProvider } from '@/components/ui/tooltip'
 
 /** テストでルーターと QueryClient を差し替えられるよう、外から渡す */
 type Props = {
-  /** 画面のルーター。ブラウザでは createBrowserRouter、結合テストでは createMemoryRouter で作る */
+  /** 画面のルーター。ブラウザーでは createBrowserRouter、結合テストでは createMemoryRouter で作る */
   router: ReturnType<typeof createBrowserRouter>
   queryClient: QueryClient
 }

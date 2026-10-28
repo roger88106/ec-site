@@ -48,7 +48,7 @@ describe('用語集の識別子の検査', () => {
   test('検査の script のテストと例の文字、使わない語の一覧、除外の一覧は、コードの根拠にしない', () => {
     assert.equal(isSearchedFile('scripts/ci/glossary-ids.test.mjs'), false)
     assert.equal(isSearchedFile('scripts/ci/report/testdata/pit-mutations.xml'), false)
-    assert.equal(isSearchedFile('scripts/ci/doc-terms.json'), false)
+    assert.equal(isSearchedFile('scripts/ci/ja-text.json'), false)
     assert.equal(isSearchedFile('scripts/ci/glossary-ids-exclusions.json'), false)
     assert.equal(isSearchedFile('scripts/ci/glossary-ids.mjs'), true)
     assert.equal(isSearchedFile('scripts/dev/lib/slot.test.mjs'), true)

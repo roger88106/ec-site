@@ -58,7 +58,7 @@ export function percent2(covered, total) {
 const hundredths = (value) => Math.round(value * 100)
 
 /**
- * 基準のファイルを読み、形を確かめる。
+ * 基準のファイルを読み、形を確認する。
  *
  * @param {string} text 基準のファイルの中身
  * @returns {{ targets: Record<string, Record<string, { value: number, tolerance: number }>> }} 基準
@@ -211,7 +211,7 @@ function main() {
     return
   }
 
-  // 生き残った変異が多いクラス。成功のときも失敗のときも出す（テストを足す所の手がかり）
+  // 生き残った変異が多いクラス。成功のときも失敗のときも出す（テストを追加する所の手がかり）
   const survivorLines = survivors.length === 0 ? [] : [
     `生き残った変異（テストが検出できなかった変異）が多いクラス（上位 ${SURVIVORS_LIMIT} 件）：`,
     ...survivors.map((row) => `  ${row.name}  ${row.survived} / ${row.total}`),

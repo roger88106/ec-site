@@ -112,7 +112,7 @@ describe('お届け先の入力と注文', () => {
   test('AC-248、250 欄は郵便番号・都道府県・市区町村・住所の順で、都道府県は API の一覧から選び、初めは選んでいない', () => {
     const view = renderStatic(form())
 
-    // 各欄を役割と名前（ラベル）で 1 つずつ探し、送る名前を確かめる。画面に出る順は、前の欄が文書の中で先にあることで確かめる
+    // 各欄を役割と名前（ラベル）で 1 つずつ探し、送る名前を確認する。画面に出る順は、前の欄が文書の中で先にあることで確認する
     const fields = [
       { role: 'textbox', label: '郵便番号', name: 'postalCode' },
       { role: 'combobox', label: '都道府県', name: 'prefectureCode' },

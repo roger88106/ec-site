@@ -4,7 +4,7 @@
 // workflow と action の yml は、バージョンを直接書かず、この置き場所を参照する（新しい job の直書きを見つける。フロー形式の `with: { ... }` も読む）。
 // `JAVA_VERSION` は `ci.yml` の最上位の `env` の 1 か所だけで定義する（job の `env` や別のファイルでの上書きを失敗にする）。
 // 3 つの package.json の React の指定（`react`、`react-dom`、`@types/react`、`@types/react-dom`）は、全て `^` の範囲の書き方にそろえる。
-// 1 か所から読めないバージョンは、置き場所の間の一致を検査で確かめる。ずれると、手元と CI で別のバージョンを動かす。
+// 1 か所から読めないバージョンは、置き場所の間の一致を検査で確認する。ずれると、手元と CI で別のバージョンを動かす。
 // 使い方：node scripts/ci/runtime-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

@@ -24,7 +24,7 @@ function field(value: CsvValue): string {
   return NEEDS_QUOTE.test(text) ? `"${text.replaceAll('"', '""')}"` : text
 }
 
-/** CSV をファイルとして保存させる（ブラウザのダウンロード） */
+/** CSV をファイルとして保存させる（ブラウザーのダウンロード） */
 export function downloadCsv(filename: string, csv: string): void {
   const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8' }))
   const link = document.createElement('a')

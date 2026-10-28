@@ -715,7 +715,7 @@ describe('商品画像', () => {
     ).toBeInTheDocument()
   })
 
-  test('AC-67 ブラウザが形式を空で渡す HEIC も、拡張子で形式を補って送る', async () => {
+  test('AC-67 ブラウザーが形式を空で渡す HEIC も、拡張子で形式を補って送る', async () => {
     const state = serveProduct(productDetail())
     const calls = serveUpload(state)
     const { user } = renderApp(PAGE_PATH)

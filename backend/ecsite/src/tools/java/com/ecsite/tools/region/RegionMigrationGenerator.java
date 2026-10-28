@@ -17,7 +17,7 @@ import java.util.stream.Collectors;
  * 先頭のコメントは、適用済みのマイグレーションと同じ文字にする。適用済みのマイグレーションは変えられない
  * （Flyway のチェックサムが変わるため）ので、コメントが指す設計書のパスは、文書を移す前の
  * {@code docs/backend/modules/region.md} のままである。今の設計書のパスは {@code docs/design/modules/region.md}。
- * 先頭の 3 行がコミット済みのマイグレーションと同じことは、単体テストで確かめる。
+ * 先頭の 3 行がコミット済みのマイグレーションと同じことは、単体テストで確認する。
  */
 public final class RegionMigrationGenerator {
 

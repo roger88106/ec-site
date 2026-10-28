@@ -2,10 +2,10 @@
 //   - 定義：行頭（リストの中の字下げを含む）の `※N：`。同じ番号を 2 回定義したら失敗にする。枝番（※2a）も 1 つの注として読み、順序は ※2、※2a、※3 の順
 //   - 本文の参照：定義の行以外の `※N`（他の文書の注を指す `第 N 節 ※N`・`第 N 節の ※N` は除く。「この節 ※1」は同じ文書の参照）。定義も参照も、先の番号より小さい番号が新しく出たら失敗にする（同じ注を何度参照してもよい）
 // 番号が飛ぶこと、参照だけ・定義だけの注は見ない。コードブロック（CommonMark の囲み：字下げしてよく、開きと同じ字（バッククォートか ~）で、同じ数以上で閉じる）とインラインコードの中は数えない。
-// 見る文書は doc-terms と同じ（doc-terms の isTargetDoc を使う）。
+// 見る文書は ja-text と同じ（ja-text の isTargetDoc を使う）。
 // 使い方：node scripts/ci/note-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
-import { isTargetDoc } from './doc-terms.mjs'
+import { isTargetDoc } from './ja-text.mjs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 

@@ -48,7 +48,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
    - `node scripts/ci/ja-text.mjs`（日本語の文の検査。error は使わない語で、失敗になるので修正する）
    - `node scripts/ci/ja-text.mjs --warning`（warning の一覧を出力する。終了コードは 0）。文脈で言い換える語と文体の型の文が、ファイルと行とともに示される。型は、「の」の連なり、長い文、読点の多い文、否定が続く文、複合動詞の崩れの疑いである。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときだけ修正する
    - コードのコメントを修正したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`
-5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。全ての変更は issue から始まり、規模 S は issue を spec とする（[開発の進め方](../../../docs/rules/workflow.md) 第 4 節）。spec の tasks にないタスクの番号は付けない。push と pull request の作成は許可を求めず、マージは利用者の許可を得てから行う（AGENTS.md の Git の表）。
+5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。全ての変更は issue から始まり、規模 S は issue を spec とする（[開発の進め方](../../../docs/rules/workflow.md) 第 4 節）。spec の tasks にないタスクの番号は付けない。push と pull request の作成は許可を求めず、マージの許可と担当は、危険度によって異なる（AGENTS.md の Git の表）。
 
 ## 4. 参照の修正
 

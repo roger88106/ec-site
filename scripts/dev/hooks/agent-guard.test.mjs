@@ -1,7 +1,7 @@
 // agent-guard.mjs（Claude Code の PreToolUse の hook）のテスト（node --test scripts/dev/hooks/agent-guard.test.mjs）
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, realpathSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
@@ -738,6 +738,70 @@ describe('実際のリポジトリと作業ツリーで、pre-commit hook を調
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
+  })
+})
+
+describe('.claude/settings.json の hook のコマンドで、script を探して呼ぶ', () => {
+  /** リポジトリ（作業ツリー）の根 */
+  const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
+  /** settings.json に書いた PreToolUse の hook のコマンド */
+  const hookCommand = JSON.parse(readFileSync(path.join(repoRoot, '.claude/settings.json'), 'utf8')).hooks.PreToolUse[0].hooks[0].command
+
+  /** hook のコマンドを bash で、`cwd` を作業ディレクトリにして実行する。CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す */
+  function runHook(command, cwd, projectDir) {
+    const env = withoutGitEnv()
+    delete env.CLAUDE_PROJECT_DIR
+    if (projectDir !== undefined) env.CLAUDE_PROJECT_DIR = projectDir
+    const input = JSON.stringify({ tool_name: 'Bash', tool_input: { command }, cwd, hook_event_name: 'PreToolUse' })
+    return spawnSync('bash', ['-c', hookCommand], { cwd, env, input, encoding: 'utf8' })
+  }
+
+  /** Git の外の一時ディレクトリで `body` を実行する */
+  function inTempDir(body) {
+    const dir = realpathSync.native(mkdtempSync(path.join(tmpdir(), 'agent-guard-outside-')))
+    try {
+      body(dir)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  }
+
+  test('作業ツリーの中では、CLAUDE_PROJECT_DIR より先に、作業ツリーの script に標準入力を渡す', () => {
+    // commit の前の検査は Git の外の写しでテストを動かすので、一時リポジトリに、標準入力を返すだけの script を置く
+    inTempDir((dir) => {
+      const git = spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv(), encoding: 'utf8' })
+      assert.equal(git.status, 0, git.stderr)
+      const hooks = path.join(dir, 'scripts', 'dev', 'hooks')
+      mkdirSync(hooks, { recursive: true })
+      writeFileSync(path.join(hooks, 'agent-guard.mjs'), "import { readFileSync } from 'node:fs'\nprocess.stdout.write('stub:' + readFileSync(0, 'utf8'))\n")
+      const result = runHook('git push --force', path.join(dir, 'scripts'), repoRoot)
+      assert.equal(result.status, 0, result.stderr)
+      assert.match(result.stdout, /^stub:\{.*git push --force/)
+    })
+  })
+
+  test('script が見つからないとき、git・gh を含む入力は終了コード 2 で止め、理由を標準エラーに出す', () => {
+    inTempDir((dir) => {
+      const result = runHook('git push --force', dir)
+      assert.equal(result.status, 2, result.stderr)
+      assert.match(result.stderr, /agent-guard\.mjs/)
+    })
+  })
+
+  test('script が見つからないとき、git・gh を含まない入力は通す', () => {
+    inTempDir((dir) => {
+      const result = runHook('ls', dir)
+      assert.equal(result.status, 0, result.stderr)
+      assert.equal(result.stdout, '')
+    })
+  })
+
+  test('Git の外では、CLAUDE_PROJECT_DIR の script が判定する', () => {
+    inTempDir((dir) => {
+      const result = runHook('git push --force', dir, repoRoot)
+      assert.equal(result.status, 0, result.stderr)
+      assert.equal(JSON.parse(result.stdout).hookSpecificOutput.permissionDecision, 'deny')
+    })
   })
 })
 

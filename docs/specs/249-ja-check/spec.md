@@ -486,7 +486,7 @@ HTTP の request の意味の「要求」は「リクエスト」にそろえる
   - 範囲：新しい skill（SKILL.md、script、一覧のファイル）、`AGENTS.md` の skill の表
   - 引き継ぐ元は、メインの作業ツリーの `.local/agent/check-zh.mjs` である（Git に入らないので、作業ツリーにない）。
   - 確認方法：T249-02-01 のテストが通る。引き継いだ一覧で、アーカイブの外の指摘が 0 行である。`check-all.sh` が、環境の印がない状態で通る（DN-249-6）。依存のパッケージの定義に差分がない（DN-249-5）。
-- [ ] **T249-02-03** Claude Code の hook から script を呼ぶ入口を作り、skill に設定の手順を書く（DC-249-26、27）。
+- [x] **T249-02-03** Claude Code の hook から script を呼ぶ入口を作り、skill に設定の手順を書く（DC-249-26、27）。
   - 依存：T249-02-02
   - 範囲：新しい skill（hook の入口の script とテスト、SKILL.md の設定の手順）
   - 入口のテストを先に書き、レッドを確認してから入口を作る（同じ commit）。

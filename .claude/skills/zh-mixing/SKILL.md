@@ -37,6 +37,39 @@ git config --local ecsite.instructionLanguage zh
 
 見つかった行は、前後を読み、日本語に直す。コードの識別子は変えない。直せない行（引用など）と誤検出は、次の節で許す語にする。
 
+## 設定の手順
+
+中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く。環境の印がなければ、設定しても何も調べない。
+
+1. 環境の印：`git config --local ecsite.instructionLanguage zh`。`.git/config` に入り、全ての作業ツリーで共有する。
+2. Claude Code の hook（書き込みの後にエージェントへ返す）：`.claude/settings.local.json` の `hooks.PostToolUse` に、次を追加する。入口は `post-tool-use.cjs` で、書いたファイル（`tool_input.file_path`）を調べる。調べる対象は、リポジトリのファイルと memory のファイル（`~/.claude/projects/<プロジェクト>/memory/` の下）で、`/.local/` の下とリポジトリの外の他のファイルは調べない。見つかれば終了コード 2 と標準エラー出力（ファイル、行、語、直し方）で返し、Claude Code がエージェントに渡す。
+
+```json
+{
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Write|Edit|MultiEdit|NotebookEdit",
+        "hooks": [
+          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs\"" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+3. git の hook（commit を止める）：[開発環境の起動](../../../docs/guides/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
+
+| hook | 追加する行 |
+|------|--------|
+| `.git/hooks/pre-commit` | `node "$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs" staged \|\| exit 1` |
+| `.git/hooks/commit-msg` | `node "$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs" message "$1" \|\| exit 1` |
+
+設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外し、`settings.local.json` の上の項目と、git の hook の上の行を削除する。
+
+手元の古い検査（`.local/agent/check-zh.mjs`）からの置き換えは、spec 249 のマージの後に行う。上の 3 つを設定してから、`check-zh.mjs` と、`.git/hooks/` のその行を削除し、`environment.md` の記述をこの節を指す 1 行にする。マージの前に外すと、他の作業ツリーの commit が検査を失う。
+
 ## 一覧の直し方
 
 一覧は `zh-mixing.json` にある。中国語の字をファイルに書くと、この検査が自分自身の追加行で失敗するので、字と用語は `\uXXXX` のエスケープで書く。Windows の Git Bash でも、次のコマンドでエスケープを得られる。

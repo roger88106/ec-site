@@ -172,11 +172,15 @@ function isEnabled(getConfig) {
  * @param {{ cwd?: string, env?: Record<string, string | undefined> }} [options]
  */
 function readConfig(key, { cwd = process.cwd(), env = withoutGitEnv() } = {}) {
-  try {
-    return execFileSync('git', ['config', '--local', '--get', key], { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-  } catch {
-    return undefined
+  // --local はリポジトリの設定、--worktree は作業ツリーごとの設定（作業ツリーごとの設定を有効にしているとき）。グローバルの設定は読まない
+  for (const scope of ['--local', '--worktree']) {
+    try {
+      return execFileSync('git', ['config', scope, '--get', key], { cwd, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
+    } catch {
+      // この範囲に設定がない。次の範囲を読む
+    }
   }
+  return undefined
 }
 
 /**
@@ -298,6 +302,7 @@ module.exports = {
   messageLines,
   isEnabled,
   readConfig,
+  readLocalAllow,
   stagedDiff,
   run,
   formatHits,

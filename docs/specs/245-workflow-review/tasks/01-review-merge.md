@@ -47,7 +47,7 @@
   - 結果：IdP の realm は `docker/keycloak/realms/`（認証）、権限の表は `docs/design/role-permissions.md` と契約のテスト 2 つ（権限）を足した。権限の検査の Java（`config/security/`）と管理画面の `frontend/admin/src/auth/permissions.ts` は認証の経路に入る。バックエンドのテストも高にするため、経路の `*` で `src/main` 以外の階層（`test`、`integrationTest`、`testFixtures`）にも当てる。本文が高で判定が低は成功にする（規模 S の issue で高にしたもの）。出力の例：「判定：高」「- エージェントの規則と設定：.claude/skills/review/SKILL.md、…、ほか 3 件」「当たったファイル：8、宣言した spec：0（差分のファイル 15 件中）」。
 - [x] **T245-01-08** `[P]` `[リスク]` CI の job で、pull request の本文の危険度と script の判定を比べ、食い違えば失敗にする。Dependabot の pull request では比べず、判定をジョブの要約に出力するだけにする。pull request のテンプレートに「危険度」の節を足し、spec 担当のセッションが script の出力を貼る欄にする（DC-245-16、17、28）。
   - 依存：T245-01-07。`ci.yml` は spec 249・246 も変える可能性がある。
-  - 範囲：`.github/workflows/ci.yml`、`.github/pull_request_template.md`
+  - 範囲：`.github/workflows/risk.yml`（新規。本文を書き換えたときに全体の CI を流し直さないため、`ci.yml` から分けた）、`.github/pull_request_template.md`
   - 確認方法：draft の pull request で、本文を書き換えて CI が失敗することを確認し、結果をこのタスクに書く。pull request の作成はタスクにしない（[開発の進め方](../../../rules/workflow.md) 第 4.2 節）。作った pull request のリンクを、追跡の issue に記録する。この pull request を spec の最後まで使う。
   - 結果：本文を書き換えたとき（edited）にも流すため、`ci.yml` でなく別のワークフロー `.github/workflows/risk.yml`（job「危険度の照合」）にした（edited で全体の CI を流し直さないため）。draft の pull request（https://github.com/roger88106/ec-site/pull/253）で確認した：本文が高の run #1 は成功、「判定：低」に書き換えた run #2 は失敗（本文は低だが判定は高）、値を空にした run #3 は失敗（値が高か低でない）、高に戻した run #4 は成功。
 - [ ] **T245-01-09** 変更の危険度の規則を書く。区分と判定、spec の「危険度：高」の宣言と途中で上げること、承認に数えるもの、承認が有効な commit と求め直す条件、危険度ごとの承認の要否、低の変更の issue 担当のマージと後片付け、Dependabot と規模 S の扱いを、エージェントの作業フロー、開発の進め方、AGENTS.md の Git の表に書く。Dependabot の判定は、issue 担当がマージの前にジョブの要約を読むと書く。サービス固有の名前は AGENTS.md の注にだけ書く。本 spec の spec.md に「危険度：高」の行を追加する（DC-245-12、18〜20、22〜28）。

@@ -94,6 +94,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 
 - **DC-246-10** Claude Code の PreToolUse の hook が、Bash のコマンドのうち次を拒否し、理由と代わりの手順をエージェントに返す。
   - `git push` の force（`-f`、`--force`、`--force-with-lease`、`--force-if-includes`、`+` で始まる refspec、リモートの参照を force で更新する `--mirror`）
+  - `git push` によるリモートのブランチの削除（`--delete`・`-d`、`:` で始まる refspec が tag 以外を指すもの）。理由：消して push し直すと、push 済みの履歴を書き換えるのと同じ結果になり、開いた pull request も閉じる。マージした作業ブランチはリモートで自動で削除されるので、通常の作業では消さない（pull request #268 の審査）
   - `git commit` と `git push` の `--no-verify`（`git commit -n` を含む）
   - `git -c core.hooksPath=…` で hook の置き場所を替えるコマンド
 - **DC-246-11** 同じ hook が、`git commit` のときに git の pre-commit hook が置かれていなければ拒否し、置き方（[開発環境の起動](../../../../guides/setup.md)）を示す。置かれているとは、`git rev-parse --git-path hooks/pre-commit` のファイルがあり、`scripts/dev/hooks/pre-commit` を含むことをいう。
@@ -102,9 +103,9 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 ### DS-246-4 利用者の許可が必要な操作で、確認を求める（D / P1）
 
 - **DC-246-13** 同じ hook が、マージのコマンドを次の順に判定する。`gh` をフルパスで呼ぶ形も対象にする。
-  1. `gh api` によるマージ（`…/pulls/<番号>/merge`）と、`gh pr merge --admin` は拒否し、`gh pr merge --match-head-commit` を使うよう返す。
+  1. `gh api` によるマージ（REST の `…/pulls/<番号>/merge` と、GraphQL の mutation `mergePullRequest`）と、`gh pr merge --admin` は拒否し、`gh pr merge --match-head-commit` を使うよう返す。
   2. `gh pr merge` に `--match-head-commit` がなければ拒否する。自動のマージを解除するだけの `--disable-auto` は、マージでないので通す。
-  3. `--auto` があれば確認を求める（予約のマージは、マージの時点の条件を判定できないため）。
+  3. `--auto` と、GraphQL の mutation `enablePullRequestAutoMerge` は確認を求める（予約のマージは、マージの時点の条件を判定できないため）。GraphQL の本文をファイルから読む形で、中身を読めないときも確認を求める。
   4. DC-246-14 の条件を全て満たせば通す。
   5. それ以外と、pull request の情報を読めないとき（`gh` の失敗、タイムアウト）は、確認を求める。
 - **DC-246-14** 通す条件は、DC-245-26 の条件のうち、未解決の指摘が 0 であること（第 5 節）を除いたものである。
@@ -114,9 +115,9 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - pull request が開いている。
   - CI の検査が全て終わっている（実行中のものがない）。
   - 終わった検査が全て、成功、skipped、neutral のいずれかである。neutral を含めるのは、GitHub の必須の検査も neutral を成功と同じに扱い、Dependabot の pull request では CodeQL が neutral を返すためである。
-  - 危険度が低い。（a）Dependabot（作成者が `dependabot[bot]`）以外は、本文の「判定：」が「低」で、検査「危険度の照合」が成功している。（b）Dependabot は、変更のファイルと題を `scripts/ci/risk.mjs` の判定の関数に渡した結果が低である。
+  - 危険度が低い。（a）Dependabot（作成者が `dependabot[bot]`）以外は、本文の「判定：」が「低」で、検査「危険度の照合」が成功している。照合の最も新しい実行は、本文を最後に編集した時刻の後に始まったものである（本文を低に書き換えた直後、書き換える前の本文で成功した照合で通さないため）。（b）Dependabot は、変更のファイルと題を `scripts/ci/risk.mjs` の判定の関数に渡した結果が低である。
   - 機能の spec でない。Dependabot 以外は、本文の `Closes` の issue が 1 つ以上あり、どれにもラベル「種類:機能」がない。
-- **DC-246-15** 同じ hook が、tag の作成（`git tag <名前>`）、tag の push（`git push` の `--tags` と `refs/tags/`、tag の名前の push）、`gh release create` で確認を求める。tag の一覧を読むコマンド（`git tag`、`git tag -l`）は通す。
+- **DC-246-15** 同じ hook が、tag の作成（`git tag <名前>`）、tag の push（`git push` の `--tags` と `refs/tags/`、tag の名前の push）、`gh release create`、GET 以外の `gh api` で Release か tag の参照を作る・変える形（パスが `releases` か `git/refs`・`git/tags` のもの）で確認を求める。tag の一覧を読むコマンド（`git tag`、`git tag -l`）は通す。
 - **DC-246-16** 同じ hook が、ruleset（ブランチの保護を含む）を変える `gh api`（`-X`・`--method` が `GET` 以外で、パスが `rulesets` か `branches/<名前>/protection`）で確認を求める。`gh api graphql` は対象にしない。
 - **DC-246-17** 次の 2 つで確認を求める。（a）自動マージを有効にする MCP のツール（`mcp__ccd_pr__set_auto_merge`）、（b）`.claude/settings.json`・`.claude/settings.local.json` の Edit・Write。どちらも `.claude/settings.json` の permission の `ask` で書く。
 - **DC-246-18** DC-246-13〜16 の判定に、テストがある。`gh` の呼び出しはテストの中のスタブに差し替え、DC-246-14 の各条件が欠けた例、`Closes` がない例、実行中の検査がある例、タイムアウトの例を持つ。`risk.mjs` は差し替えず、実物を使う。
@@ -304,6 +305,10 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
   - 依存：T246-02-01
 - [x] **T246-02-03** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
   - 依存：T246-02-02
+- [x] **T246-02-04** [リスク] pull request #268 の issue 担当のセッションの審査の指摘（高 4 件）を直す（DC-246-10、13〜15）。
+  - 依存：T246-02-03
+  - 範囲：`scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`
+  - 確認方法：加えたテストが修正の前に失敗し、修正の後に通る。`check-all.sh` が通る。
 
 ## 8. 後回しにする作業と起票の案
 

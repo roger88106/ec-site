@@ -234,7 +234,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
-  test('通常の push、upstream の設定、dry-run（-n）、値を取るオプションの値は通す', () => {
+  test('通常の push、upstream の設定、dry-run（-n）、値を取るオプションの値、: だけの refspec は通す', () => {
     for (const command of [
       'git push',
       'git push -u origin 246-enforce-hooks',
@@ -245,8 +245,35 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
       'git push -ofoo origin x',
       'git push -o +x origin x',
       'git push --push-option +x origin x',
+      'git push origin :',
     ]) {
       assertPassed(command)
+    }
+  })
+
+  test('リモートのブランチの削除（--delete とその略記、-d、: で始まる refspec）を拒否し、消して push し直さないよう返す', () => {
+    for (const command of [
+      'git push origin --delete feature',
+      'git push --delete origin feature',
+      'git push --del origin feature',
+      'git push -d origin feature',
+      'git push origin :feature',
+      'git push origin :refs/heads/feature',
+      'git push --repo origin --delete feature',
+      'git push -d origin v1.0.0 feature',
+    ]) {
+      assertDenied(command, /ブランチを消して push し直す.*自動で削除/s, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+  })
+
+  test('tag の削除（tag を指す名前と refs/tags/ の refspec）は拒否せず、確認を求める', () => {
+    for (const command of [
+      'git push origin --delete v1.0.0',
+      'git push -d origin refs/tags/v2',
+      'git push origin :v1.0.0',
+      'git push origin :refs/tags/v2',
+    ]) {
+      assertAsked(command, /tag/, fakeDeps({ tags: ['v1.0.0'] }))
     }
   })
 
@@ -417,6 +444,15 @@ const LOW_BODY = '## 概要\n\n変更の説明\n\nCloses #246\n\n## 危険度\n\
 
 /** gh pr merge の、許可なしに通せる形 */
 const MERGE = `gh pr merge 246 --squash --match-head-commit ${HEAD_SHA}`
+
+/** GraphQL の、pull request をマージする mutation */
+const MERGE_MUTATION = 'mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'
+
+/** GraphQL の、自動マージを有効にする mutation */
+const AUTO_MERGE_MUTATION = 'mutation { enablePullRequestAutoMerge(input: {pullRequestId: "x"}) { clientMutationId } }'
+
+/** GraphQL の、マージでない mutation（sub-issue の追加） */
+const SUB_ISSUE_MUTATION = 'mutation { addSubIssue(input: {issueId: "a", subIssueId: "b"}) { issue { number } } }'
 
 /** Dependabot の作成者（gh api graphql の author の形） */
 const DEPENDABOT = { __typename: 'Bot', login: 'dependabot' }
@@ -664,17 +700,73 @@ describe('マージのコマンドを判定する', () => {
     assertDenied(`${MERGE} --auto && git push --force`, /force push/, mergeDeps())
   })
 
-  test('読むだけの gh と、gh api graphql は通す', () => {
+  test('読むだけの gh と、マージでない gh api graphql は通す', () => {
+    const deps = fakeDeps({ files: { [path.join(CWD, 'sub-issue.graphql')]: SUB_ISSUE_MUTATION } })
     for (const command of [
       'gh pr view 246',
       'gh pr checks 246',
       'gh api repos/roger88106/ec-site/pulls/246',
       'gh api repos/roger88106/ec-site/pulls/246/merge',
-      `gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'`,
+      `gh api graphql -f query='${SUB_ISSUE_MUTATION}'`,
+      `gh api graphql -f query='query { viewer { login } }'`,
+      'gh api graphql -F query=@sub-issue.graphql',
+      'gh api graphql --input sub-issue.graphql',
+      // -f（--raw-field）は @ でファイルを読まないので、文字のまま判定する
+      'gh api graphql -f query=@missing.graphql',
       'echo gh pr merge 246',
     ]) {
-      assertPassed(command)
+      assertPassed(command, deps)
     }
+  })
+
+  test('gh api graphql の mergePullRequest は、本文の渡し方によらず拒否し、gh pr merge --match-head-commit を使うよう返す', () => {
+    const deps = fakeDeps({
+      files: {
+        [path.join(CWD, 'merge.graphql')]: MERGE_MUTATION,
+        [path.join(CWD, 'sub', 'merge.graphql')]: MERGE_MUTATION,
+        [path.join(CWD, 'body.json')]: JSON.stringify({ query: MERGE_MUTATION }),
+      },
+    })
+    for (const command of [
+      `gh api graphql -f query='${MERGE_MUTATION}'`,
+      `gh api graphql -F query='${MERGE_MUTATION}'`,
+      `gh api graphql --raw-field query='${MERGE_MUTATION}'`,
+      `gh api graphql --field=query='${MERGE_MUTATION}'`,
+      'gh api graphql -F query=@merge.graphql',
+      'cd sub && gh api graphql -F query=@merge.graphql',
+      'gh api graphql --input body.json',
+      `"/c/Program Files/GitHub CLI/gh.exe" api graphql -f query='${MERGE_MUTATION}'`,
+    ]) {
+      assertDenied(command, /mergePullRequest.*--match-head-commit/s, deps)
+    }
+  })
+
+  test('gh api graphql の enablePullRequestAutoMerge と、ファイルや標準入力から読めない本文は、確認を求める', () => {
+    const deps = fakeDeps({ files: { [path.join(CWD, 'auto.graphql')]: AUTO_MERGE_MUTATION } })
+    for (const command of [`gh api graphql -f query='${AUTO_MERGE_MUTATION}'`, 'gh api graphql -F query=@auto.graphql']) {
+      assertAsked(command, /enablePullRequestAutoMerge/, deps)
+    }
+    for (const command of [
+      'gh api graphql -F query=@missing.graphql',
+      'gh api graphql -F query=@-',
+      'gh api graphql --input missing.json',
+      'gh api graphql --input -',
+    ]) {
+      assertAsked(command, /読めない/, deps)
+    }
+  })
+
+  test('本文の編集の後に検査「危険度の照合」が再実行されていなければ確認を求め、再実行されていれば通す', () => {
+    // 照合の開始の時刻は、check の既定（10:00）
+    assertAsked(MERGE, /危険度の照合.*編集/, mergeDeps({ lastEditedAt: NEWER }))
+    assertPassed(MERGE, mergeDeps({ lastEditedAt: OLDER }))
+    assertPassed(MERGE, mergeDeps({ lastEditedAt: null }))
+  })
+
+  test('マージの条件を読む問い合わせは、本文の最後の編集の時刻を読む', () => {
+    const deps = mergeDeps()
+    judgeCommand(MERGE, CWD, deps)
+    assert.match(deps.ghCalls[0].args.find((arg) => arg.startsWith('query=')), /\blastEditedAt\b/)
   })
 })
 
@@ -715,6 +807,32 @@ describe('tag の作成と push で確認を求める', () => {
       'gh release view v1.0.0',
     ]) {
       assertPassed(command, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+  })
+
+  test('GET 以外の gh api で、Release と tag の参照（releases、git/refs、git/tags）を作成・変更・削除する形は確認を求める', () => {
+    for (const command of [
+      'gh api repos/roger88106/ec-site/releases -f tag_name=v1.0.0',
+      'gh api repos/{owner}/{repo}/releases --input release.json',
+      'gh api -X PATCH repos/roger88106/ec-site/releases/123 -f tag_name=v2',
+      'gh api -X DELETE /repos/roger88106/ec-site/releases/123',
+      'gh api repos/{owner}/{repo}/git/refs -f ref=refs/tags/v1 -f sha=abc',
+      'gh api repos/roger88106/ec-site/git/tags -f tag=v1 -f message=x -f object=abc -f type=commit',
+      'gh api -X PATCH repos/roger88106/ec-site/git/refs/tags/v1 -f sha=abc',
+      'gh api --method DELETE repos/roger88106/ec-site/git/refs/tags/v1',
+    ]) {
+      assertAsked(command, /tag/)
+    }
+  })
+
+  test('Release と tag の参照を読むだけの gh api は通す', () => {
+    for (const command of [
+      'gh api repos/roger88106/ec-site/releases',
+      'gh api repos/roger88106/ec-site/releases/latest',
+      'gh api repos/roger88106/ec-site/git/refs/tags',
+      'gh api -X GET repos/roger88106/ec-site/git/tags/abc',
+    ]) {
+      assertPassed(command)
     }
   })
 

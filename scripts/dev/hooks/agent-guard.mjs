@@ -4,14 +4,19 @@
 //
 // エージェントが Bash で実行しようとするコマンドの全文を読み、例外のない規則に反するものを拒否する。
 // - push 済みの履歴の書き換え：git push の force（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ の refspec）
+// - リモートのブランチの削除：git push の --delete・-d と、: で始まる refspec のうち tag を指さないもの（削除した後の push は、書き換えと同じ結果になる）
 // - commit の前の検査の省略：git commit・git push の --no-verify、git commit の -n、git -c core.hooksPath=…
 // - pre-commit hook を置いていないリポジトリでの git commit（git rev-parse --git-path hooks/pre-commit のファイルが、
 //   scripts/dev/hooks/pre-commit を呼んでいなければ拒否する。作業ツリーでは共通の .git の hooks を見る）
-// - gh api によるマージ、gh pr merge の --admin と、--match-head-commit のない gh pr merge
+// - gh api によるマージ（REST の …/pulls/<番号>/merge と GraphQL の mergePullRequest）、gh pr merge の --admin と、
+//   --match-head-commit のない gh pr merge
 // 利用者の許可が必要な操作では、確認を求める（利用者に確認の画面を表示させる）。
 // - マージ：gh pr merge のうち、利用者の許可なしにマージしてよい条件（AGENTS.md の Git の表）を満たさないもの。
-//   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）
-// - tag：git tag での作成、git push の --tags・--follow-tags・tag の refspec、gh release create
+//   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）。
+//   予約のマージ（gh pr merge --auto、GraphQL の enablePullRequestAutoMerge）でも確認を求める。
+//   ファイルから読む GraphQL の本文を読めないときも、確認を求める
+// - tag：git tag での作成、git push の --tags・--follow-tags・tag の refspec（tag の削除を含む）、gh release create、
+//   Release と tag の参照を変える gh api（GET 以外のリクエストで、パスが releases・git/refs・git/tags のもの）
 // - ruleset：ruleset とブランチの保護を変える gh api（GET 以外のリクエスト）
 // permission の規則はコマンドの先頭の語でしか判定できず、フルパスの git・gh や、&& でつないだ後ろのコマンドには適用されないので、hook で全文を読む。
 //
@@ -79,7 +84,7 @@ const PENDING_STATES = ['PENDING', 'EXPECTED']
 const PULL_REQUEST_QUERY = `query($owner: String!, $name: String!, $number: Int!) {
   repository(owner: $owner, name: $name) {
     pullRequest(number: $number) {
-      state baseRefName headRefOid title body changedFiles
+      state baseRefName headRefOid title body changedFiles lastEditedAt
       author { __typename login }
       files(first: 100) { nodes { path } pageInfo { hasNextPage } }
       closingIssuesReferences(first: 100) {
@@ -129,6 +134,15 @@ const GH_API_BODY_OPTIONS = ['raw-field', 'field', 'input']
 
 /** gh api のパスのうち、pull request をマージするもの */
 const API_MERGE_PATH = /(^|\/)pulls\/[^/]+\/merge\/?(\?|$)/
+
+/** gh api のパスのうち、Release と tag の参照を作成・変更・削除しうるもの（git/refs は refs/heads/ も含むが、見分けずに確認を求める） */
+const API_TAG_PATHS = [/(^|\/)releases(\/|\?|$)/, /(^|\/)git\/(refs|tags)(\/|\?|$)/]
+
+/** GraphQL の、pull request をマージする mutation */
+const GRAPHQL_MERGE = /\bmergePullRequest\b/
+
+/** GraphQL の、自動マージ（予約のマージ）を有効にする mutation */
+const GRAPHQL_AUTO_MERGE = /\benablePullRequestAutoMerge\b/
 
 /** gh api のパスのうち、ruleset とブランチの保護を変えうるもの */
 const API_RULESET_PATHS = [/(^|\/)rulesets(\/|\?|$)/, /(^|\/)branches\/.+\/protection(\/|\?|$)/]
@@ -214,6 +228,11 @@ const FORCE_REASON =
   'push 済みの履歴を書き換えないため、force push（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ で始まる refspec）は使えない（AGENTS.md の Git の表）。' +
   'push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
 
+/** リモートのブランチの削除を拒否する理由と代わりの手順 */
+const DELETE_BRANCH_REASON =
+  'push 済みのブランチを消して push し直すことも、履歴の書き換えになるので、git push の --delete（-d）と : で始まる refspec でリモートのブランチを消すことはできない（AGENTS.md の Git の表）。' +
+  'マージした作業ブランチはリモートで自動で削除されるので消さない。push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
+
 /** 検査の省略を拒否する理由と代わりの手順 */
 const NO_VERIFY_REASON =
   'commit の前の検査を省略しないため、--no-verify（git commit の -n を含む）は使えない（docs/guides/setup.md 第 2 節の hook）。' +
@@ -226,7 +245,7 @@ const HOOKS_PATH_REASON =
 
 /** gh api のマージを拒否する理由と代わりの手順 */
 const API_MERGE_REASON =
-  'マージは gh api（…/pulls/<番号>/merge）でなく、gh pr merge <番号> --match-head-commit <SHA> で行う（AGENTS.md の Git の表）。' +
+  'マージは gh api（REST の …/pulls/<番号>/merge、GraphQL の mergePullRequest）でなく、gh pr merge <番号> --match-head-commit <SHA> で行う（AGENTS.md の Git の表）。' +
   '承認を求めたときの head の commit を指定して実行し直す。'
 
 /** --admin を拒否する理由と代わりの手順 */
@@ -242,7 +261,7 @@ const NO_MATCH_HEAD_REASON =
 const APPROVE_ONLY_IF_ALLOWED = '利用者が会話でこの操作を許可したときだけ承認する。'
 
 /** tag の作成と push で確認を求める理由 */
-const TAG_REASON = `tag の作成と push（gh release create を含む）は、利用者の許可が必要（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`
+const TAG_REASON = `tag の作成と push（gh release create と、Release・tag の参照を変える gh api を含む）は、利用者の許可が必要（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`
 
 /** ruleset の変更で確認を求める理由 */
 const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は、利用者の許可が必要（docs/guides/branches.md 第 5 節）。${APPROVE_ONLY_IF_ALLOWED}`
@@ -747,17 +766,48 @@ function judgeHooksPath(git) {
 }
 
 /**
- * git push の force と --no-verify を拒否する。dry-run（-n）は通す。
+ * git push の位置引数のうち、refspec を返す。最初の位置引数はリモート（--repo で指定したときは全てが refspec）。
+ *
+ * @param {string[]} longs 長いオプションの名前
+ * @param {string[]} positionals 位置引数
+ * @returns {string[]} refspec
+ */
+function pushRefspecs(longs, positionals) {
+  return longs.includes('repo') ? positionals : positionals.slice(1)
+}
+
+/**
+ * git push が、tag でないリモートの参照を削除するか。--delete（-d）の名前と、: で始まる refspec の先を見る（: だけの refspec は、一致するブランチの push で削除でない）。
+ * tag か、tag かを git で調べられない名前は、ここでは見ない（tag の push の判定で確認を求める）。
  *
  * @param {GitInvocation} git git の呼び出し
+ * @param {Deps} deps 外部の処理
+ * @param {{ longs: string[], shorts: string[], positionals: string[] }} scanned push のオプションと位置引数
+ * @returns {boolean} tag でない参照を削除するなら true
+ */
+function deletesBranch(git, deps, { longs, shorts, positionals }) {
+  const deleting = longs.some((name) => matchesLong(name, ['delete'])) || shorts.includes('d')
+  const targets = pushRefspecs(longs, positionals)
+    .map((refspec) => (deleting ? refspec : refspec.startsWith(':') && refspec !== ':' ? refspec.slice(1) : null))
+    .filter((name) => name !== null && name !== '')
+  return targets.some((name) => refTagState(name, git, deps) === null)
+}
+
+/**
+ * git push の force、リモートのブランチの削除、--no-verify を拒否する。dry-run（-n）は通す。
+ *
+ * @param {GitInvocation} git git の呼び出し
+ * @param {Deps} deps 外部の処理
  * @returns {Decision | null} 判定
  */
-function judgePush(git) {
+function judgePush(git, deps) {
   if (git.subcommand !== 'push') return null
-  const { longs, shorts, positionals } = scanOptions(git.args, PUSH_OPTIONS)
+  const scanned = scanOptions(git.args, PUSH_OPTIONS)
+  const { longs, shorts, positionals } = scanned
   if (longs.some((name) => matchesLong(name, FORCE_OPTIONS)) || shorts.includes('f') || positionals.some((p) => p.startsWith('+'))) {
     return deny(FORCE_REASON)
   }
+  if (deletesBranch(git, deps, scanned)) return deny(DELETE_BRANCH_REASON)
   return longs.some((name) => matchesLong(name, NO_VERIFY_OPTIONS)) ? deny(NO_VERIFY_REASON) : null
 }
 
@@ -844,8 +894,7 @@ function judgeTagPush(git, deps) {
   if (git.subcommand !== 'push') return null
   const { longs, positionals } = scanOptions(git.args, PUSH_OPTIONS)
   if (longs.some((name) => matchesLong(name, TAG_PUSH_OPTIONS))) return ask(TAG_REASON)
-  // 最初の位置引数はリモート（--repo で指定したときは全てが refspec）
-  const refspecs = longs.includes('repo') ? positionals : positionals.slice(1)
+  const refspecs = pushRefspecs(longs, positionals)
   if (refspecs.some((refspec, index) => refspec === 'tag' && index + 1 < refspecs.length)) return ask(TAG_REASON)
   for (const refspec of refspecs) {
     const sides = refspec.replace(/^\+/, '').split(':')
@@ -943,19 +992,76 @@ function flagEnabled(options, name) {
 }
 
 /**
- * gh api の判定。GET 以外のリクエストのうち、マージのパスへのものは拒否し、ruleset とブランチの保護へのものは確認を求める。GraphQL は見ない。
+ * gh api graphql の本文を集める。-f・--raw-field の値はそのまま、-F・--field の値は `@<ファイル>` ならファイルの中身、--input はファイルの中身を読む。
+ * ファイルは対象のディレクトリからの相対パスで読み、`-`（標準入力）と読めないファイルは、読めないものとして返す。
  *
- * @param {string[]} args api の後の語
+ * @param {{ name: string, value: string }[]} options gh api のオプション
+ * @param {string} dir 対象のディレクトリ
+ * @param {Deps} deps 外部の処理
+ * @returns {{ texts: string[], unreadable: string[] }} 読めた本文と、読めなかったファイル
+ */
+function graphqlBodies(options, dir, deps) {
+  const texts = []
+  const unreadable = []
+  const read = (file) => {
+    const text = file === '-' ? null : deps.readText(path.resolve(dir, file))
+    if (text === null) unreadable.push(file === '-' ? '標準入力' : file)
+    else texts.push(text)
+  }
+  for (const { name, value } of options) {
+    if (name === 'input') {
+      read(value)
+    } else if (name === 'raw-field' || name === 'field') {
+      const fieldValue = value.slice(value.indexOf('=') + 1)
+      // -F（--field）だけが、@ で始まる値をファイルの中身に置き換える
+      if (name === 'field' && fieldValue.startsWith('@')) read(fieldValue.slice(1))
+      else texts.push(value)
+    }
+  }
+  return { texts, unreadable }
+}
+
+/**
+ * gh api graphql の判定。本文が mutation mergePullRequest を含めば拒否し、enablePullRequestAutoMerge を含むか、本文を読めなければ確認を求める。
+ *
+ * @param {{ name: string, value: string }[]} options gh api のオプション
+ * @param {string} dir 対象のディレクトリ
+ * @param {Deps} deps 外部の処理
  * @returns {Decision | null} 判定
  */
-function judgeGhApi(args) {
+function judgeGraphql(options, dir, deps) {
+  const { texts, unreadable } = graphqlBodies(options, dir, deps)
+  if (texts.some((text) => GRAPHQL_MERGE.test(text))) return deny(API_MERGE_REASON)
+  if (texts.some((text) => GRAPHQL_AUTO_MERGE.test(text))) {
+    return ask(`GraphQL の enablePullRequestAutoMerge（予約のマージ）は、マージの時点の条件を判定できないので、確認を求める（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`)
+  }
+  if (unreadable.length > 0) {
+    return ask(
+      `gh api graphql の本文（${unreadable.join('、')}）を読めないので、マージか自動マージの有効化を含むかを判定できない。` +
+        `マージでなければ、本文を -f query=… で直接渡すと確認なしで通る。${APPROVE_ONLY_IF_ALLOWED}`,
+    )
+  }
+  return null
+}
+
+/**
+ * gh api の判定。GraphQL はマージの mutation を見る（judgeGraphql）。REST は GET 以外のリクエストのうち、マージのパスへのものは拒否し、
+ * Release と tag の参照、ruleset とブランチの保護へのものは確認を求める。
+ *
+ * @param {string[]} args api の後の語
+ * @param {GhInvocation} gh gh の呼び出し
+ * @param {Deps} deps 外部の処理
+ * @returns {Decision | null} 判定
+ */
+function judgeGhApi(args, gh, deps) {
   const { positionals, options } = parseGhArgs(args, GH_API_OPTIONS)
   const endpoint = positionals[0] ?? ''
-  if (endpoint === 'graphql') return null
+  if (endpoint === 'graphql') return judgeGraphql(options, gh.dir, deps)
   // gh api は、-X がなくても本文を送るオプションがあれば POST にする
   const method = (optionValue(options, 'method') ?? (options.some((option) => GH_API_BODY_OPTIONS.includes(option.name)) ? 'POST' : 'GET')).toUpperCase()
   if (method === 'GET') return null
   if (API_MERGE_PATH.test(endpoint)) return deny(API_MERGE_REASON)
+  if (API_TAG_PATHS.some((pattern) => pattern.test(endpoint))) return ask(TAG_REASON)
   return API_RULESET_PATHS.some((pattern) => pattern.test(endpoint)) ? ask(RULESET_REASON) : null
 }
 
@@ -1157,6 +1263,15 @@ function authoredProblems(pullRequest, checks) {
   if (riskChecks.length === 0 || riskChecks.some((node) => node.status !== 'COMPLETED' || node.conclusion !== 'SUCCESS')) {
     problems.push(`検査「${RISK_CHECK}」が成功していない（ないか、成功以外）`)
   }
+  // 照合は本文の編集でも再実行されるが、再実行が始まるまでは編集の前の本文で成功した実行だけが残るので、編集の後に始まった実行かを見る
+  if (pullRequest.lastEditedAt) {
+    const edited = Date.parse(pullRequest.lastEditedAt)
+    const stale = riskChecks.some((node) => {
+      const started = Date.parse(node.startedAt ?? '')
+      return Number.isNaN(edited) || Number.isNaN(started) || started < edited
+    })
+    if (stale) problems.push(`検査「${RISK_CHECK}」の最も新しい実行が、本文の最後の編集（${pullRequest.lastEditedAt}）の後に始まっていない（編集した後の本文で照合していない）`)
+  }
   const closing = pullRequest.closingIssuesReferences
   const issues = closing?.nodes ?? []
   if (closing?.pageInfo?.hasNextPage || issues.some((issue) => issue.labels?.pageInfo?.hasNextPage)) {
@@ -1241,7 +1356,7 @@ function judgeMerge(args, gh, deps, budget) {
  */
 function judgeGh(gh, deps, budget) {
   const [group, ...rest] = gh.args
-  if (group === 'api') return judgeGhApi(rest)
+  if (group === 'api') return judgeGhApi(rest, gh, deps)
   if (group === 'release') return parseGhArgs(rest, GH_RELEASE_OPTIONS).positionals[0] === 'create' ? ask(TAG_REASON) : null
   if (group === 'pr' && parseGhArgs(rest, GH_PR_OPTIONS).positionals[0] === 'merge') return judgeMerge(rest, gh, deps, budget)
   return null

@@ -1,0 +1,58 @@
+# ============================================================================
+# 変更の危険度の照合（docs/guides/ci.md 第 2 節）
+#
+# pull request の本文の「## 危険度」の節の値と、scripts/ci/risk.mjs の判定（差分のファイルと spec の宣言から決める）を比べる。
+# 本文が判定より低いとき、値が空・節がないときに失敗にする。Dependabot の pull request は比べず、判定をジョブの要約に出すだけにする。
+# 本文を書き換えたとき（edited）にも流す必要があるので、ci.yml とは別のワークフローにする（edited で全体の CI を流し直さないため）。
+# ============================================================================
+
+name: 危険度
+
+on:
+  pull_request:
+    # 本文を書き換えたとき（edited）と、draft を外したとき（ready_for_review）にも照合する
+    types: [opened, edited, synchronize, reopened, ready_for_review]
+    branches: [develop]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: risk-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  risk:
+    name: 危険度の照合
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+
+    steps:
+      # 判定は、pull request の merge commit と origin/develop の分岐点からの差分で決める（全ての branch と履歴が必要）
+      - uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v7
+        with:
+          node-version-file: .node-version
+
+      - name: 本文の危険度と判定を比べる
+        # 本文・作成者・ブランチの名前は信頼できない入力なので、run の中に直接展開せず、環境変数を経由する
+        env:
+          PR_BODY: ${{ github.event.pull_request.body }}
+          PR_AUTHOR: ${{ github.event.pull_request.user.login }}
+          HEAD_REF: ${{ github.head_ref }}
+        # 出力は作業ツリーの外（RUNNER_TEMP）に置く（追跡していないファイルとして差分に入れないため）
+        run: |
+          status=0
+          printf '%s' "$PR_BODY" | node scripts/ci/risk.mjs --body-file - --author "$PR_AUTHOR" --branch "$HEAD_REF" > "$RUNNER_TEMP/risk-output.txt" || status=$?
+          cat "$RUNNER_TEMP/risk-output.txt"
+          {
+            echo '## 危険度'
+            echo
+            echo '```text'
+            cat "$RUNNER_TEMP/risk-output.txt"
+            echo '```'
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit "$status"

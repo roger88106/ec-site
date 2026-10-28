@@ -23,7 +23,7 @@
 
 - 通常の作業ブランチは `develop` から切る。緊急の修正は `main` から切る（第 5 節）。
 - 作業ブランチは、pull request で `develop` に入れる。
-- `develop` に入れる前に、作業ブランチが最新の `develop` を含んでいること。含んでいなければ、`develop` を作業ブランチに取り込む（第 3.1 節）。
+- `develop` と衝突するとき、または `develop` が同じファイルを変えたときは、`develop` を作業ブランチに取り込んでから入れる（[開発の進め方](../rules/workflow.md) 第 5.7 節）。最新の `develop` を含むことは求めない（第 3.1 節）。
 - 完了の定義（`develop` に入れる条件）は [開発の進め方](../rules/workflow.md)。
 
 ## 3. 保護
@@ -36,12 +36,14 @@ GitHub の ruleset を `develop` と `main` に作る。
 |------|-----------|--------|
 | pull request を経ない変更 | 禁止 | 禁止 |
 | approve の数 | 0（理由：利用者が 1 人のため） | 0 |
-| 必須の検査 | CI のジョブのうち、バックエンド、管理画面、店舗画面、E2E と、文書の検査 ※1 | 同左と、元のブランチの検査（第 3.2 節） |
-| マージの前に最新の `develop` を含む | 必須 | なし |
+| 必須の検査 | CI のジョブのうち、バックエンド、管理画面、店舗画面、E2E、文書の検査 ※1 と、危険度の照合 | 危険度の照合を除いた同左と、元のブランチの検査（第 3.2 節） |
+| マージの前に最新の `develop` を含む | なし ※2 | なし |
 | force push | 禁止 | 禁止 |
 | 削除 | 禁止 | 禁止 |
 
 ※1：分けたバックエンドのジョブ（ビルドと単体テスト、統合テスト 1/2・2/2）は登録しない。「バックエンド」がそれらの結果を確認するため（[CI の検査](ci.md) 第 2 節）。
+
+※2：2026-10-28 に外した。理由：続けてマージするときの、取り込みと CI の再実行の待ちをなくすため。代わりに、マージの後に `develop` の CI を見届ける（[開発の進め方](../rules/workflow.md) 第 5.7 節）。
 
 ### 3.2 `main` の元のブランチの制限
 
@@ -82,7 +84,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 ## 5. 緊急の修正
 
 - `hotfix-<issue の番号>-<短い名前>` のブランチを `main` から切り、pull request で `main` に入れる。
-- `main` に入れた後に、`develop` に戻す。`main` から `<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`develop` は、マージの前に最新の `develop` を含むことを必須にしているので、`main` を直接 `develop` に入れる pull request はマージできないため。
+- `main` に入れた後に、`develop` に戻す。`main` から `<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`main` を直接 `develop` に入れる pull request で衝突すると、`main` に commit しなければ解消できないため。
 - 必須の検査が GitHub の障害などで動かず、マージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。
 - `hotfix-` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
 - tag と GitHub の Release は、第 4 節の手順 3、4 と同じ。
@@ -95,13 +97,15 @@ GitHub の ruleset を `develop` と `main` に作る。
 |------|------|
 | 対象 | `gradle`（`/backend/ecsite`）、`npm`（`/`。pnpm の workspace）、`github-actions`（`/`）、`docker-compose`（`/docker`） |
 | 頻度 | 週 1 回（月曜、日本時間） |
-| group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする |
+| group | minor と patch を ecosystem ごとにまとめて 1 つの pull request にする。major は 1 つずつ pull request にする。`github-actions` は major も含めて 1 つの pull request にする ※3 |
 | cooldown | 新しいバージョンがリリースされてから待つ日数。major 30、minor 7、patch 3。`github-actions` と `docker-compose` は、GitHub の文書の cooldown の対応表で SemVer の日数（major・minor・patch）に対応しないため、7 日（`default-days`）にする |
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 
+※3：`github-actions` の更新は危険度が高で、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
+
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
-- `develop` が進んで Dependabot の pull request が最新でなくなったときは、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
+- Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
 - `@types/node` の major は、Dependabot の対象から外す。理由：実行の環境は `.node-version` の Node（`package.json` の `engines.node` はその下限の範囲）で、型の定義だけを上げると、そのバージョンにない API も型の検査を通ってしまうため。Node のバージョンを上げるときに、合わせて上げる。
 - `github-actions` は、ワークフローに加え、ローカルの複合の action（`.github/actions/setup-frontend`）で使う action のバージョンも更新する。理由：`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため、`directories` に複合の action のディレクトリを追加している。複合の action を増やしたら、追加する。
 - 危険度は経路で判定する。`github-actions` の更新（`.github/`）と major は高で、利用者が許可する。他の minor と patch は低で、issue 担当のセッションがマージする。CI の job は本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[エージェントの作業フロー](../rules/subagents.md) 第 4 節）。

@@ -5,7 +5,13 @@ skill `sessions` の「弾の終わり」「段の終わり」の詳細。
 ## 集計と profile の再検討
 
 - `node .claude/skills/review/stats.cjs --round <弾> --profile <profile> <spec の番号...>` を、弾の終わりに issue 担当のセッションが実行する。弾の spec と profile は、issue 担当のセッションが知っている。
+- profile ごとに、その profile で動いた spec だけを渡して実行する。1 つの弾に複数の profile があれば、実行を分ける。理由：profile は spec の起動ごとに決まるため（[作業の形と使用量](../../../docs/rules/resources.md)）。
 - 結果（profile・時点ごとの指摘の数と採用の割合）を読み、profile の再検討を利用者に提案する。レビューを減らすときは、見逃しの台帳で確認してから決める（[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 5 節）。
+
+## 見逃しの台帳
+
+- 弾の終わりに、issue 担当のセッションが台帳（label「見逃し」の issue）を読む（`gh issue list --label 見逃し`）。
+- 本文の「関連」に、エージェントがマージしたと書いたものが 1 件でもあれば、高の経路の一覧と、低のマージの条件の再検討を利用者に提案する。台帳の書き方は [エージェントの作業フロー](../../../docs/rules/subagents.md) 第 5 節。
 
 ## 効果の測定
 

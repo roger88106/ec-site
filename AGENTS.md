@@ -21,7 +21,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 | `local-dev` | スロット（作業ツリーごとの環境）の割り当てと解除、compose・バックエンド・フロントの起動、テストと E2E、commit の前の CI の検査、画面・DB・token の確認 |
 | `new-screen` | 店舗画面・管理画面に画面や操作を追加する、修正する |
 | `handoff` | spec 担当のセッションを途中で別のセッションに替えるときに、引き継ぎの文書を作る（利用者が `/handoff` で呼ぶ） |
-| `retro` | セッションを振り返り、エージェントの環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
+| `retro` | セッションを振り返り、環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
 | `agent-retro` | 後片付けと、弾・段の終わりの振り返り |
 | `docs` | 文書（docs/、README、AGENTS.md）を書く・修正する・移す |
 | `writing-for-agents` | skill や AGENTS.md を作る、修正する |
@@ -67,7 +67,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 
 ## モデルの区分
 
-サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。使う場面と、サービスやモデルを替えるときの手順は、[エージェントの作業フロー](docs/rules/subagents.md) 第 3・5 節と、レビューの profile の表。作業の種類の表の effort の低・中・高は順に `low`・`medium`・`high`。指定がなければ表の既定を使う。実際のモデルと effort は、使う AI のサービスごとに表で決め、替えるときはこの表と、`.claude/agents/` の定義の `model` を直す。
+サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。使う場面と、サービスやモデルを替えるときの手順は、[エージェントの作業フロー](docs/rules/subagents.md) 第 3・5 節と、レビューの profile の表。作業の種類の表の effort の低・中・高は順に `low`・`medium`・`high`。指定がなければ表の既定を使う。実際のモデルと effort は、サービスごとに表で決め、替えるときはこの表と、`.claude/agents/` の定義の `model` を直す。
 
 今使う AI のサービスは Claude Code（Anthropic）。
 
@@ -80,7 +80,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | | |
 | セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | | |
 
-最上位を使えるプランは Max で、Pro は使えない（2026-10-28）。出典は[実績](docs/rules/subagents-results.md)第 5 節。
+最上位を使えるプランは Max で、Pro は使えない（2026-10-28）。出典と軽量の読める量は[実績](docs/rules/subagents-results.md)第 5 節。
 
 ※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（定義なしで約 4 万、`.claude/agents/` の定義ありで約 0.6〜1.9 万 token）を含む。
 

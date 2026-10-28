@@ -22,7 +22,7 @@ If the user passed arguments, treat them as a description of what the next sessi
 - 出典：[mattpocock/skills](https://github.com/mattpocock/skills)（MIT。`../LICENSE-mattpocock-skills`）。以下はこのリポジトリ向けの追記。
 - 文書は OS の一時ディレクトリではなく、リポジトリの `/.local/handoff/yyyyMMddHHmmss-<名前>/` に置く（例：`/.local/handoff/20261012152403-7-dev-process-done/`。名前は spec の 1→10 の形の名前を添える）。`/.local/` は Git に入れないものの置き場所（AGENTS.md）。上の原文の置き場所より、こちらを優先する。日時は作成した時刻。中の MD は 1 つでも、内容ごとに複数に分けてもよい。
 - 新しいセッションは、利用者の指示がなければ、名前の日時が最も新しいディレクトリを読み、書かれた状態（push していない commit、次のタスク）を `git log` と tasks ファイルで確認してから始める。
-- spec 担当のセッションを途中で別のセッションに替えるときに使う。引き継ぎの文書に、追跡の issue の番号を書く。平常のやり取りには使わない。平常は、セッションの親子の関係の通知と、追跡の issue のコメントで行う（[エージェントの作業フロー](../../../docs/rules/subagents.md)）。
+- spec 担当のセッションを途中で別のセッションに替えるときに使う。引き継ぎの文書に、追跡の issue の番号を書く。平常のやり取りには使わない。平常は、セッションの親子の関係の通知と、追跡の issue のコメントで行う（[セッションの運用](../sessions/SKILL.md)）。
 - 古い引き継ぎの文書は利用者が削除する。エージェントは削除せず、削除するかどうかも聞かない。
 - spec 担当のセッションを途中で別のセッションに替えるときに、引き継ぎの文書を作る（AGENTS.md「セッションの始めと終わり」）。spec の区切りの記録は、追跡の issue のコメントに残す。作業の正本は spec のディレクトリの tasks（規模 M は spec.md の中の tasks）と追跡の issue なので、引き継ぎの文書には、次に着手するタスク番号と、tasks・commit に残っていないこと（未確定の判断、手動確認で気づいたこと、ローカルの DB に残したテストデータなど）だけを書く。
 - 「suggested skills」には、AGENTS.md の skill の表から、次の作業で使うものを挙げる。

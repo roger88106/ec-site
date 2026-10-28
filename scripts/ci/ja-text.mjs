@@ -1,11 +1,14 @@
 // 日本語の文を確認する。言い換えの一覧は ja-text.json。
 //   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許す語: 理由} で書く（その中の一致は数えない）
 //       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする
-//   warning：文脈で言い換えるかを決める語。--warning（--caution も同じ）を付けたときだけ示し、失敗にしない（文書を書くときに見る）
+//   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning（--caution も同じ）を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）
+//       文体の型は、1 区間の「の」・字数・読点の数が閾値以上の文、「〜なく〜ない」の形の文、複合動詞の崩れの疑い（かなの直後に助詞を挟まず漢語が続く形）。閾値は ja-text.json の style
+//       コードブロック、表の区切り行、URL、インラインコードは数えない。既定の実行は warning の件数を「警告：」の行で示す
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown と、.github/ の yml・yaml と Markdown。
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text
-// 使い方：node scripts/ci/ja-text.mjs [--warning]（リポジトリのルートで）
+// 使い方：node scripts/ci/ja-text.mjs [--warning | --stats]（リポジトリのルートで）
+//   --stats：閾値ごとの文の数を出力する（閾値を決めるときに見る）
 //   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする
 import { readFileSync } from 'node:fs'
 import { checkExclusions } from './lib/exclusions.mjs'
@@ -121,6 +124,106 @@ export function findCodeTerms(file, text, terms) {
   return isTargetCode(file) ? findTerms(commentText(text, codeKind(file)), terms) : []
 }
 
+/** 文の区間を分ける字（読点・括弧・かぎ括弧・コロン）。1 区間の「の」を数える単位 */
+const CLAUSE_SEPARATOR = /[、，,（）()「」：:]/
+
+/** 動詞の連用形の終わりになるかな（い段とえ段。助詞の「に」「へ」と、「て」「で」は除く） */
+const STEM_ENDING = 'きぎしじちぢひびぴみりいえけげせぜねめれ'
+
+/**
+ * 文書の文を、行番号つきで取り出す。表のセルと「。」で文に分ける。
+ * コードブロック、表の区切り行、URL、リンクの宛先は数えず、インラインコードは 1 字に置き換える（かなを含む文だけを返す）。
+ *
+ * @param {string} text 文書、またはコメントとテスト名だけを残した文書（commentText の結果）
+ * @returns {{ line: number, sentence: string }[]} 行番号（1 から）と文
+ */
+export function proseSentences(text) {
+  const sentences = []
+  let fenced = false
+  text.split('\n').forEach((raw, index) => {
+    if (/^\s*(```|~~~)/.test(raw)) {
+      fenced = !fenced
+      return
+    }
+    if (fenced || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) return
+    const plain = raw
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/https?:\/\/\S+/g, 'U')
+      .replace(/`[^`]*`/g, 'X')
+    const cells = plain.trimStart().startsWith('|') ? plain.split('|') : [plain]
+    for (const cell of cells) {
+      for (const sentence of cell.split('。')) {
+        if (/[ぁ-ん]/.test(sentence)) sentences.push({ line: index + 1, sentence: sentence.trim() })
+      }
+    }
+  })
+  return sentences
+}
+
+/**
+ * 1 つの文の、文体を測る値を返す。
+ *
+ * @param {string} sentence 文
+ * @returns {{ no: number, length: number, comma: number }} 1 区間の「の」の最大の数、字数、読点の数
+ */
+export function measureSentence(sentence) {
+  return {
+    no: Math.max(...sentence.split(CLAUSE_SEPARATOR).map((part) => (part.match(/の/g) ?? []).length)),
+    length: sentence.length,
+    comma: (sentence.match(/、/g) ?? []).length,
+  }
+}
+
+/**
+ * 文体の warning を探す。閾値を渡した項目だけを見る。warning は失敗にしない。
+ * - no：1 区間の「の」の数、length：字数、comma：読点の数（どれも閾値以上を示す）
+ * - negation：「〜なく〜ない」の形の文
+ * - compound：かな（動詞の連用形の終わり）の直後に、助詞を挟まず漢語が続く形（複合動詞の崩れの疑い。「少し修正」も示す）
+ *
+ * @param {string} text 文書、またはコメントとテスト名だけを残した文書
+ * @param {{ no?: number, length?: number, comma?: number, compound?: string[] }} limits 閾値と、崩れの疑いを見る漢語
+ * @returns {{ line: number, kind: 'no' | 'length' | 'comma' | 'negation' | 'compound', word: string, use: string }[]} 見つけた行と種類
+ */
+export function findStyleWarnings(text, limits) {
+  const hits = []
+  const compound = limits.compound?.length ? new RegExp(`[${STEM_ENDING}](?:${limits.compound.join('|')})`, 'g') : null
+  for (const { line, sentence } of proseSentences(text)) {
+    const excerpt = sentence.length > 30 ? `${sentence.slice(0, 30)}…` : sentence
+    const measured = measureSentence(sentence)
+    const add = (kind, word, detail) => hits.push({ line, kind, word, use: `${detail}：「${excerpt}」` })
+    if (limits.no !== undefined && measured.no >= limits.no) add('no', '「の」の連なり', `1 区間に「の」が ${measured.no} 個`)
+    if (limits.length !== undefined && measured.length >= limits.length) add('length', '長い文', `字数が ${measured.length} 字`)
+    if (limits.comma !== undefined && measured.comma >= limits.comma) add('comma', '読点が多い文', `読点が ${measured.comma} 個`)
+    if (/なく.*ない/.test(sentence)) add('negation', '否定が続く文', '「〜なく〜ない」の形')
+    for (const match of compound ? sentence.matchAll(compound) : []) {
+      add('compound', match[0], '複合動詞の崩れの疑い（「〜し直す」の後半だけを替えていないか。かなと漢語の間に助詞があるか）')
+    }
+  }
+  return hits
+}
+
+/**
+ * 閾値ごとの文の数を出力する（閾値を決めるときに使う。--stats）。
+ *
+ * @param {string[]} docTexts 調べる文書の内容
+ * @param {string[]} codeComments コメントとテスト名だけを残した文書
+ * @param {{ warning: { word: string }[], style: { compound: string[] } }} list 一覧
+ */
+function printStats(docTexts, codeComments, list) {
+  for (const [label, texts] of [['文書', docTexts], ['コメントとテスト名', codeComments]]) {
+    const measured = texts.flatMap((text) => proseSentences(text).map(({ sentence }) => measureSentence(sentence)))
+    const countAtLeast = (key, value) => measured.filter((item) => item[key] >= value).length
+    const negation = texts.reduce((n, text) => n + findStyleWarnings(text, {}).filter((hit) => hit.kind === 'negation').length, 0)
+    const compound = texts.reduce((n, text) => n + findStyleWarnings(text, { compound: list.style.compound }).filter((hit) => hit.kind === 'compound').length, 0)
+    const request = texts.reduce((n, text) => n + findTerms(text, list.warning.filter((term) => term.word === '要求')).length, 0)
+    console.log(`${label}：${measured.length} 文`)
+    console.log(`  「の」（1 区間）：${[3, 4, 5, 6].map((v) => `${v}以上 ${countAtLeast('no', v)}`).join('、')}`)
+    console.log(`  字数：${[80, 100, 120].map((v) => `${v}以上 ${countAtLeast('length', v)}`).join('、')}`)
+    console.log(`  読点：${[4, 5, 6].map((v) => `${v}以上 ${countAtLeast('comma', v)}`).join('、')}`)
+    console.log(`  「〜なく〜ない」：${negation}、複合動詞の崩れの疑い：${compound}、「要求」を書いた行：${request}`)
+  }
+}
+
 /**
  * コミットメッセージから、git が付けるコメントの行（# で始まる行）を除く。行の番号は変えない。
  *
@@ -160,7 +263,12 @@ if (isMain(import.meta.url)) {
   exitIfNoFiles(codeFiles, '語を調べるコード')
   const texts = files.map((file) => readFileSync(file, 'utf8'))
   const codeTexts = codeFiles.map((file) => readFileSync(file, 'utf8'))
-  const allowTexts = [...texts, ...codeFiles.map((file, index) => commentText(codeTexts[index], codeKind(file)))]
+  const codeComments = codeFiles.map((file, index) => commentText(codeTexts[index], codeKind(file)))
+  if (args.includes('--stats')) {
+    printStats(texts, codeComments, list)
+    process.exit(0)
+  }
+  const allowTexts = [...texts, ...codeComments]
   const allowProblems = warning ? [] : findAllowProblems(allowTexts, terms)
   for (const problem of allowProblems) {
     console.log(problem)
@@ -178,7 +286,28 @@ if (isMain(import.meta.url)) {
       count += 1
     }
   }
-  console.log(`${warning ? '注意する語' : '使わない語'}：${count}`)
+  // 文体の warning（--warning のときだけ一覧にする。既定の実行は件数だけを示す）
+  const styleHits = []
+  for (const [index, file] of files.entries()) {
+    for (const hit of findStyleWarnings(texts[index], list.style)) styleHits.push({ file, ...hit })
+  }
+  for (const [index, file] of codeFiles.entries()) {
+    for (const hit of findStyleWarnings(codeComments[index], list.style)) styleHits.push({ file, ...hit })
+  }
+  if (warning) {
+    for (const hit of styleHits) {
+      console.log(`${hit.file}:${hit.line} ${hit.word} → ${hit.use}`)
+    }
+    count += styleHits.length
+  } else {
+    // 「警告：」で始まる行は、check-all.sh が通った検査でも出す
+    const warningCount = list.warning.reduce((sum, term) => {
+      const docs = texts.reduce((n, text) => n + findTerms(text, [term]).length, 0)
+      return sum + docs + codeFiles.reduce((n, file, index) => n + findCodeTerms(file, codeTexts[index], [term]).length, 0)
+    }, styleHits.length)
+    console.log(`警告：warning が ${warningCount} 件ある（一覧：node scripts/ci/ja-text.mjs --warning）`)
+  }
+  console.log(`${warning ? '注意する語と文' : '使わない語'}：${count}`)
   process.exit(!warning && count ? 1 : 0)
 }
 

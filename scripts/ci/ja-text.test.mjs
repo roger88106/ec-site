@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { findAllowProblems, findCodeTerms, findTerms, isTargetCode, isTargetDoc } from './ja-text.mjs'
+import { withoutGitEnv } from './lib/git-env.mjs'
+import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc } from './ja-text.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
 const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
@@ -25,12 +26,12 @@ const BROKEN_VERBS = ['書き', '作り', '置き', '読み', 'やり', '考え'
 function runMessage(message) {
   const file = path.join(mkdtempSync(path.join(tmpdir(), 'ja-text-')), 'COMMIT_EDITMSG')
   writeFileSync(file, message)
-  return spawnSync(process.execPath, [SCRIPT, '--message', file], { encoding: 'utf8' })
+  return spawnSync(process.execPath, [SCRIPT, '--message', file], { encoding: 'utf8', env: withoutGitEnv() })
 }
 
 describe('日本語の文の検査（一覧と error の項目）', () => {
   test('一覧の各項目が error か warning のどちらかである', () => {
-    assert.deepEqual(Object.keys(list).sort(), ['error', 'warning'])
+    assert.deepEqual(Object.keys(list).sort(), ['error', 'style', 'warning'])
     for (const item of [...list.error, ...list.warning]) {
       assert.equal(typeof item.word, 'string')
       assert.equal(typeof item.use, 'string')
@@ -243,5 +244,119 @@ describe('日本語の文の検査（コードのコメントとテスト名）'
 
   test('対象でないファイルは何も見つけない', () => {
     assert.deepEqual(findCodeTerms('a.json', '// 道具', list.error), [])
+  })
+})
+
+describe('日本語の文の検査（文体の warning）', () => {
+  /** テストの中の仮の閾値（決めた値は ja-text.json の style） */
+  const LIMITS = { no: 4, length: 30, comma: 3 }
+
+  /** @param {string} text 文書 @param {string} kind 見る種類 @returns {number[]} その種類の warning の行 */
+  function lines(text, kind) {
+    return findStyleWarnings(text, { ...LIMITS, compound: list.style.compound })
+      .filter((hit) => hit.kind === kind)
+      .map((hit) => hit.line)
+  }
+
+  test('1 区間の「の」が閾値以上の文を示す。読点で区切れば同じ数でも示さない', () => {
+    assert.deepEqual(lines('本日の会議の資料の変更の履歴を見る。', 'no'), [1])
+    assert.deepEqual(lines('本日の会議の資料の、変更の履歴を見る。', 'no'), [])
+  })
+
+  test('字数が閾値以上の文を示す。文の区切りは「。」で、行番号は元の行である', () => {
+    const long = 'あ'.repeat(30)
+    assert.deepEqual(lines(`短い文である。\n${long}である。`, 'length'), [2])
+    assert.deepEqual(lines('あ'.repeat(10) + 'である。', 'length'), [])
+  })
+
+  test('読点が閾値以上の文を示す', () => {
+    assert.deepEqual(lines('一、二、三、四とする。', 'comma'), [1])
+    assert.deepEqual(lines('一、二、三とする。', 'comma'), [])
+  })
+
+  test('「〜なく〜ない」の形の文を示す', () => {
+    assert.deepEqual(lines('原因は分からなく修正もできない。', 'negation'), [1])
+    assert.deepEqual(lines('原因は分からないが修正できる。', 'negation'), [])
+  })
+
+  test('コードブロック、表の区切り行、URL、インラインコードは数えない', () => {
+    const text = ['```', '本日の会議の資料の変更の履歴を見る。', '```', '|---|---|', 'https://example.com/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の/の', 'ここは `のののの` と [リンク](https://example.com/の/の) だ。'].join('\n')
+    assert.deepEqual(findStyleWarnings(text, LIMITS), [])
+  })
+
+  test('かなを含まない文は数えない', () => {
+    assert.deepEqual(findStyleWarnings('A, B, C, D, E, F, G, H, I, J, K, L, M, N, O, P。', LIMITS), [])
+  })
+
+  test('かなの直後に助詞を挟まず漢語が続く形を、複合動詞の崩れの疑いとして示す', () => {
+    assert.deepEqual(lines('少し修正する。', 'compound'), [1])
+    assert.deepEqual(lines('設定を作り確認する。', 'compound'), [1])
+  })
+
+  test('「を修正する」「の確認」「して確認」は崩れの疑いにしない', () => {
+    assert.deepEqual(lines('設定を修正する。結果の確認をして確認する。', 'compound'), [])
+  })
+
+  test('「要求」は warning の語になる。「要求する」も示す', () => {
+    assert.equal(findTerms('要求を送る', list.warning).length, 1)
+    assert.equal(findTerms('権限を要求する', list.warning).length, 1)
+  })
+
+  test('閾値は一覧に数値で書いてある', () => {
+    for (const key of ['no', 'length', 'comma']) {
+      assert.equal(typeof list.style[key], 'number', key)
+    }
+    assert.ok(list.style.compound.includes('修正'))
+  })
+})
+
+describe('日本語の文の検査（warning と終了コード）', () => {
+  /**
+   * 一時の git リポジトリで検査を実行する。
+   *
+   * @param {Record<string, string>} files パスと内容
+   * @param {string[]} args 引数
+   * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
+   */
+  function runIn(files, args) {
+    const dir = mkdtempSync(path.join(tmpdir(), 'ja-text-repo-'))
+    spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv() })
+    for (const [name, content] of Object.entries(files)) {
+      const full = path.join(dir, name)
+      mkdirSync(path.dirname(full), { recursive: true })
+      writeFileSync(full, content)
+    }
+    return spawnSync(process.execPath, [SCRIPT, ...args], { cwd: dir, encoding: 'utf8', env: withoutGitEnv() })
+  }
+
+  const longSentence = `${'あ'.repeat(200)}である。要求を送る。少し修正する。\n`
+  const files = { 'docs/a.md': longSentence, 'src/a.mjs': `// ${'い'.repeat(200)}である。\n` }
+
+  test('warning だけのとき、既定の実行は成功し、最後の行は要約の行である', () => {
+    // 許す語が使われなくなったという error を出さないよう、一覧の全ての許す語を 1 行ずつ書く。
+    // リポジトリ本体では実行しない（commit の hook は、Git のない一時の場所で検査を実行するため）
+    const allowWords = [...list.error, ...list.warning].flatMap((item) => Object.keys(item.allow ?? {}))
+    const result = runIn({ ...files, 'docs/allow.md': `${allowWords.join('\n')}\n` }, [])
+    assert.equal(result.status, 0)
+    assert.match(result.stdout, /^警告：warning が \d+ 件/m)
+    const last = result.stdout.trimEnd().split('\n').at(-1)
+    assert.match(last, /^[^：]+：.*\d/)
+  })
+
+  test('--warning は文体・崩れの疑い・「要求」を一覧にし、成功する。最後の行は要約の行である', () => {
+    const result = runIn(files, ['--warning'])
+    assert.equal(result.status, 0)
+    assert.match(result.stdout, /docs\/a\.md:1 .*字数/)
+    assert.match(result.stdout, /src\/a\.mjs:1 .*字数/)
+    assert.match(result.stdout, /docs\/a\.md:1 .*修正/)
+    assert.match(result.stdout, /docs\/a\.md:1 要求/)
+    const last = result.stdout.trimEnd().split('\n').at(-1)
+    assert.match(last, /^[^：]+：.*\d/)
+  })
+
+  test('error があれば失敗にする', () => {
+    const result = runIn({ ...files, 'docs/b.md': '道具を使う。\n' }, [])
+    assert.equal(result.status, 1)
+    assert.match(result.stdout, /docs\/b\.md:1 道具/)
   })
 })

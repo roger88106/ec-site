@@ -11,6 +11,8 @@ const { execFileSync } = require('child_process')
 const zh = require('./zh-mixing.cjs')
 
 const list = zh.loadList()
+/** 許す語を空にした一覧。文書に字・語がないことは、許す語によらず調べる（DC-249-28、30） */
+const strict = { ...list, allow: [] }
 const ja = require('../../../scripts/ci/ja-text.json')
 
 /** 簡体字の U+8FD9。日本語では使わない字 */
@@ -253,6 +255,29 @@ test('本物の git で、ステージした追加行だけを調べる（一時
   })
 })
 
+test('許す語を通す一覧では見逃す行を、許す語を空にした一覧は見つける', () => {
+  const lenient = { ...list, allow: [{ word: SIMPLIFIED, reason: 'テスト' }] }
+  const lines = [{ file: 'SKILL.md', line: 1, text: `x${SIMPLIFIED}` }]
+  assert.deepEqual(zh.scanLines(lines, lenient), [])
+  assert.equal(zh.scanLines(lines, strict).length, 1)
+})
+
+test('名前を変えて追記したファイルの追加行を調べる（一時のリポジトリ）', () => {
+  withTempRepo((dir) => {
+    const env = cleanEnv()
+    const git = (...args) => execFileSync('git', ['-c', 'user.name=t', '-c', 'user.email=t@example.com', ...args], { cwd: dir, env })
+    const base = Array.from({ length: 10 }, (_, i) => `${JAPANESE}${i}`).join('\n')
+    fs.writeFileSync(path.join(dir, 'a.md'), `${base}\n`)
+    git('add', 'a.md')
+    git('commit', '-q', '-m', 'init')
+    git('mv', 'a.md', 'b.md')
+    fs.appendFileSync(path.join(dir, 'b.md'), `x${SIMPLIFIED}\n`)
+    git('add', 'b.md')
+    const hits = zh.scanLines(zh.parseAddedLines(zh.stagedDiff({ cwd: dir, env })), list)
+    assert.deepEqual(hits.map((h) => [h.file, h.line]), [['b.md', 11]])
+  })
+})
+
 // --- 一覧 ---
 
 test('層 1 の一覧（error と warning）と層 2 の一覧に、同じ字・語がない（DC-249-5）', () => {
@@ -274,20 +299,20 @@ test('層 2 の字は 1 字ずつで、重複がない', () => {
 test('一覧と script は、中国語の字を書かず、エスケープだけで書く', () => {
   for (const name of ['zh-mixing.json', 'zh-mixing.cjs', 'zh-mixing.test.cjs']) {
     const body = fs.readFileSync(path.join(__dirname, name), 'utf8')
-    const lines = body.split('\n').filter((line) => zh.findWords(line, list).length > 0)
+    const lines = body.split('\n').filter((line) => zh.findWords(line, strict).length > 0)
     assert.deepEqual(lines, [], name)
   }
 })
 
 test('SKILL.md に、層 2 の字・用語がない（環境の印によらない。DC-249-28）', () => {
   const body = fs.readFileSync(path.join(__dirname, 'SKILL.md'), 'utf8')
-  const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'SKILL.md', line: i + 1, text })), list)
+  const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'SKILL.md', line: i + 1, text })), strict)
   assert.deepEqual(hits.map((h) => h.line), [])
 })
 
 test('校閲役の定義に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-29、30）', () => {
   const body = fs.readFileSync(path.join(__dirname, '..', '..', 'agents', 'ja-proofreader.md'), 'utf8')
-  const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'ja-proofreader.md', line: i + 1, text })), list)
+  const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'ja-proofreader.md', line: i + 1, text })), strict)
   assert.deepEqual(hits.map((h) => h.line), [])
   assert.match(body, /^omitClaudeMd: true$/m)
   assert.match(body, /^tools: Read, Grep, Glob$/m)

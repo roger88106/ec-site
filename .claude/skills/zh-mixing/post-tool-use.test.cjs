@@ -136,3 +136,18 @@ test('入口の script：標準入力の JSON を読み、一時のリポジト�
     assert.deepEqual([g.status, g.stderr], [0, ''])
   })
 })
+
+test('リポジトリの外で呼ばれても、入口は失敗せず、何も出さない（利用者の設定に置いたとき）', () => {
+  withDirs((d) => {
+    const outside = path.join(d.base, 'outside')
+    fs.mkdirSync(outside)
+    const file = put(path.join(outside, 'x.md'), BAD)
+    const env = { ...cleanEnv(), HOME: d.home, USERPROFILE: d.home, GIT_CEILING_DIRECTORIES: d.base }
+    const entry = spawnSync('node', [path.join(__dirname, 'post-tool-use.cjs')], { cwd: outside, env, input: JSON.stringify(input(file, outside)), encoding: 'utf8' })
+    assert.deepEqual([entry.status, entry.stdout, entry.stderr], [0, '', ''])
+    for (const args of [['staged'], ['file', file], ['tracked']]) {
+      const r = spawnSync('node', [path.join(__dirname, 'zh-mixing.cjs'), ...args], { cwd: outside, env, encoding: 'utf8' })
+      assert.deepEqual([r.status, r.stdout, r.stderr], [0, '', ''], args.join(' '))
+    }
+  })
+})

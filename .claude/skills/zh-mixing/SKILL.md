@@ -59,12 +59,16 @@ git config --local ecsite.instructionLanguage zh
 }
 ```
 
+   `.claude/settings.local.json` は Git に入らず、作業ツリーごとのファイルなので、新しい作業ツリーでは置き直す（主の作業ツリーから写す）。環境の印は `.git/config` にあるので、作業ツリーの間で共有される。写さずに済ませるには、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
+
 3. git の hook（commit を止める）：[開発環境の起動](../../../docs/guides/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 
 | hook | 追加する行 |
 |------|--------|
-| `.git/hooks/pre-commit` | `node "$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs" staged \|\| exit 1` |
-| `.git/hooks/commit-msg` | `node "$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs" message "$1" \|\| exit 1` |
+| `.git/hooks/pre-commit` | `f="$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs"; [ ! -f "$f" ] \|\| node "$f" staged \|\| exit 1` |
+| `.git/hooks/commit-msg` | `f="$(git rev-parse --show-toplevel)/.claude/skills/zh-mixing/zh-mixing.cjs"; [ ! -f "$f" ] \|\| node "$f" message "$1" \|\| exit 1` |
+
+`.git/hooks/` は全ての作業ツリーで共有し、script のないブランチ（例えば `main` から切る `release-`・`hotfix-` のブランチ）でも hook が動くので、行は script があるときだけ呼ぶ形にする。
 
 設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外し、`settings.local.json` の上の項目と、git の hook の上の行を削除する。
 

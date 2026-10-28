@@ -191,7 +191,7 @@ function readConfig(key, { cwd = process.cwd(), env = withoutGitEnv() } = {}) {
 function stagedDiff({ cwd = process.cwd(), env = process.env } = {}) {
   return execFileSync(
     'git',
-    ['-c', 'core.quotepath=off', 'diff', '--cached', '-U0', '--no-color', '--src-prefix=a/', '--dst-prefix=b/', '--diff-filter=AM'],
+    ['-c', 'core.quotepath=off', 'diff', '--cached', '-U0', '--no-color', '--src-prefix=a/', '--dst-prefix=b/', '--diff-filter=ACMR'],
     { cwd, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 },
   )
 }

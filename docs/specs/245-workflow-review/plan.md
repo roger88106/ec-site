@@ -61,7 +61,7 @@
 | 12 | 区分は「高」と「低」の 2 つとする。経路の判定と spec の判定の、高い方で決まる | エージェントの作業フロー（新しい節「変更の危険度」）、[開発の進め方](../../rules/workflow.md) 第 5.7 節 | 文書を読む |
 | 13〜15 | 高の経路の一覧を、検査の script の設定のファイル（JSON）に置く。一覧は下の表のとおり | `scripts/ci/risk.json`（新規） | script のテストで、各経路の例が「高」になる |
 | 16 | 検査の script が、`develop` との差分のファイルと、変えた spec の `spec.md` の「危険度：高」の行から判定し、高か低と、当たった経路を出力する。pull request の本文の「危険度」の節に、spec 担当のセッションが script の出力を貼る | `scripts/ci/risk.mjs`（新規）、テスト、`.github/pull_request_template.md` | script のテスト（高の経路、低だけ、spec の宣言、差分なし） |
-| 17 | CI の job が、pull request の本文の危険度と script の判定を比べ、食い違えば失敗にする。本文が低で判定が高のときだけでなく、本文が空のときも失敗にする。Dependabot の pull request では本文と比べず、script の判定をジョブの要約に出力するだけにする。規模 S の pull request は、本文をテンプレートで spec 担当のセッション（または兼ねるセッション）が書くので、比べる対象にする | `.github/workflows/ci.yml`、script の比べる処理とテスト | script のテスト（Dependabot は比べず出力だけ）。作業ブランチの pull request で、本文を書き換えて CI が失敗することを確認する |
+| 17 | CI の job が、pull request の本文の危険度と script の判定を比べ、食い違えば失敗にする。本文が低で判定が高のときだけでなく、本文が空のときも失敗にする。Dependabot の pull request では本文と比べず、script の判定をジョブの要約に出力するだけにする。規模 S の pull request は、本文をテンプレートで spec 担当のセッション（または兼ねるセッション）が書くので、比べる対象にする | `.github/workflows/risk.yml`（`ci.yml` と別にする。本文を書き換えたときに全体の CI を流し直さないため）、script の比べる処理とテスト | script のテスト（Dependabot は比べず出力だけ）。作業ブランチの pull request で、本文を書き換えて CI が失敗することを確認する |
 | 18・19 | spec の冒頭のステータスの下に「危険度：高」の行を書けるようにする。spec 担当のセッションが spec の確認で提案し、利用者が決める。利用者は提案がなくても指定できる | [開発の進め方](../../rules/workflow.md) 第 1.2 節、エージェントの作業フロー | 文書を読む。script のテストで、この行がある spec を変えた差分が「高」になる |
 | 20 | 途中で設計への影響が大きいと分かったら、spec 担当のセッションが spec に「危険度：高」を足し、利用者に報告する。行を消さない | 同上 | 文書を読む |
 | 21 | 危険度が高い変更は、profile によらず、段階の最後と spec の最後の重要な観点を高性能で行う | profile の表の注 | 文書を読む |
@@ -90,7 +90,7 @@
 | 26 | 低で、機能の spec でない変更は、CI が全て通り、未解決の高・必須が 0 なら、issue 担当のセッションがマージする。spec 担当のセッションは pull request を作り、条件を満たしたことを issue 担当のセッションに知らせる。機能の spec と高の変更は、spec 担当のセッションが利用者に許可を求める（今のとおり） | AGENTS.md の Git の表、[開発の進め方](../../rules/workflow.md) 第 5.7 節、エージェントの作業フローの役割の表 | 文書を読む |
 | 27 | 低の変更の後片付けは、issue 担当のセッションがマージしたら spec 担当のセッションに知らせ、spec 担当のセッションが後片付けと振り返り（第 8 節）を行う。セッションのアーカイブの許可は、spec 担当のセッションが pull request の報告と一緒に利用者に求める。許可がなければセッションを残す | [開発の進め方](../../rules/workflow.md) 第 5.7 節、エージェントの作業フロー | 文書を読む |
 | 28 | Dependabot は経路で判定する。GitHub Actions の更新（`.github/` の経路）は高で、利用者が許可する。GitHub Actions の更新の pull request のまとめ方は DC-33 に従う。他の ecosystem の minor と patch は低で、issue 担当がマージする。major は高で、利用者が許可する | エージェントの作業フロー、ブランチとリリースの文書（Dependabot の節）、`.github/dependabot.yml` | 文書を読む。script のテストで Dependabot のブランチの差分の例 |
-| 28 | CI の危険度の job は、Dependabot の pull request では本文と比べず、判定をジョブの要約に出力するだけにする。issue 担当のセッションは、Dependabot の pull request をマージする前に、その判定（低か高）を読む | `.github/workflows/ci.yml`、エージェントの作業フロー | 文書を読む。draft の pull request で出力を確認する |
+| 28 | CI の危険度の job は、Dependabot の pull request では本文と比べず、判定をジョブの要約に出力するだけにする。issue 担当のセッションは、Dependabot の pull request をマージする前に、その判定（低か高）を読む | `.github/workflows/risk.yml`（`ci.yml` と別にする。本文を書き換えたときに全体の CI を流し直さないため）、エージェントの作業フロー | 文書を読む。draft の pull request で出力を確認する |
 | 28 | 規模 S は経路で判定し、spec の宣言はない。issue 担当のセッションが S の issue を起票するときに、設計への影響が大きければ issue に「危険度：高」を書く。script は issue を読まないので、spec 担当のセッションが pull request の本文で高にする。S の本文は spec 担当のセッション（または兼ねるセッション）がテンプレートで書くので、CI で比べる | エージェントの作業フロー、`.github/pull_request_template.md` | 文書を読む |
 | 29・30 | AI のセキュリティのレビューは、認証・支払・権限の経路に当たる変更で、pull request の前に、使うツールのセキュリティのレビューを行う。全ての profile で行う。未解決の指摘があればマージしない | profile の表、skill `review` の使う場面の表、AGENTS.md の注（ツールの名前） | 文書を読む |
 | 31・32 | 見逃しの台帳（第 6 節）に「エージェントがマージ」の列を置く。issue 担当のセッションが弾の終わりに台帳を読み、エージェントがマージした変更の不具合が 1 件でもあれば、高の経路の一覧と DC-26 の条件の再検討を利用者に提案する。この規則は、段階 3 の skill `sessions` のタスクに書く | skill `sessions`（第 7 節） | 文書を読む |
@@ -252,7 +252,7 @@ issue 担当のセッションが、セッションの始めと各 spec の起�
 | skill | `.claude/skills/review/`（`SKILL.md`、`prompts.md`、`stats.cjs` とテスト）、`.claude/skills/sessions/`（新規）、`.claude/skills/agent-retro/`（新規） |
 | サブエージェントの定義 | `.claude/agents/`（読むだけのレビュー役など、新規。第 5 節） |
 | 設定 | MCP の無効化は利用者の全体の設定で、Git の外（第 5 節）。このリポジトリの設定ファイルは変えない |
-| 危険度 | `docs/specs/245-workflow-review/spec.md`（「危険度：高」の行）、`scripts/ci/risk.mjs`、`risk.json`、`risk.test.mjs`（新規）、`scripts/ci/check-all.sh`（登録）、`docs/guides/ci.md`（検査の一覧）、`.github/workflows/ci.yml`、`.github/pull_request_template.md` |
+| 危険度 | `docs/specs/245-workflow-review/spec.md`（「危険度：高」の行）、`scripts/ci/risk.mjs`、`risk.json`、`risk.test.mjs`（新規）、`scripts/ci/check-all.sh`（登録）、`docs/guides/ci.md`（検査の一覧）、`.github/workflows/risk.yml`（新規）、`.github/pull_request_template.md` |
 | マージ | `.github/dependabot.yml`、`docs/guides/branches.md`、GitHub の保護の規則（Git の外） |
 | Git の外 | 利用者の全体の設定（MCP の無効化）、`/.local/agent/environment.md`（profile、閾値、遠隔操作の手順を規則に移し、指す 1 行にする）、`/.local/retro/`（新規）、GitHub の label「見逃し」 |
 | 用語 | `docs/design/glossary.md`（変更の危険度、見逃しの台帳。要否は文書のレビューで決める） |

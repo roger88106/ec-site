@@ -1,13 +1,23 @@
 import assert from 'node:assert/strict'
-import { readFileSync } from 'node:fs'
-import { describe, test } from 'node:test'
+import { execFileSync } from 'node:child_process'
+import { mkdirSync, mkdtempSync, readFileSync, renameSync, rmSync, writeFileSync } from 'node:fs'
+import { tmpdir } from 'node:os'
+import path from 'node:path'
+import { after, before, describe, test } from 'node:test'
+import { listGitFiles } from './lib/git-files.mjs'
+import { removeGitEnv } from './lib/git-env.mjs'
 import {
+  applyDependabotTitle,
+  baseFileReader,
+  checkPullRequest,
   compareBody,
   findDeclaredSpecs,
   findMissingPaths,
   formatJudgement,
   isDependabot,
+  judgeDependabotTitle,
   judgeRisk,
+  listChangedFiles,
   parseRiskConfig,
   readBodyRisk,
 } from './risk.mjs'
@@ -116,18 +126,18 @@ describe('変更の危険度の判定', () => {
 
   test('宣言が冒頭（最初の節の見出しより前）になければ、宣言とみなさない', () => {
     const file = 'docs/specs/901-example/spec.md'
-    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: PLAIN_SPEC })), [])
+    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: PLAIN_SPEC })).specs, [])
   })
 
   test('spec.md でないファイル（plan.md、tasks）の「危険度：高」の行は、宣言とみなさない', () => {
     const files = ['docs/specs/900-example/plan.md', 'docs/specs/900-example/tasks/01-a.md']
     const contents = Object.fromEntries(files.map((file) => [file, DECLARED_SPEC]))
-    assert.deepEqual(findDeclaredSpecs(files, reader(contents)), [])
+    assert.deepEqual(findDeclaredSpecs(files, reader(contents)).specs, [])
   })
 
   test('改行が CRLF の spec.md の宣言も読む', () => {
     const file = 'docs/specs/900-example/spec.md'
-    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: DECLARED_SPEC.replaceAll('\n', '\r\n') })), [file])
+    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: DECLARED_SPEC.replaceAll('\n', '\r\n') })).specs, [file])
   })
 
   test('出力に、判定と、当たった経路（まとまりの名前とファイル）と、宣言した spec が入り、最後の行が要約の行になる', () => {
@@ -210,10 +220,208 @@ describe('pull request の本文の危険度との比べ', () => {
     assert.equal(compareBody('高', body('判定：高\n判定：低')).ok, false)
   })
 
-  test('Dependabot の pull request は、作成者かブランチ名で見分ける', () => {
+  test('Dependabot の pull request は、作成者だけで見分ける', () => {
     assert.equal(isDependabot({ author: 'dependabot[bot]' }), true)
-    assert.equal(isDependabot({ branch: 'dependabot/npm_and_yarn/next-15.5.1' }), true)
-    assert.equal(isDependabot({ author: 'roger88106', branch: '245-workflow-review' }), false)
+    assert.equal(isDependabot({ author: 'roger88106' }), false)
     assert.equal(isDependabot({}), false)
+  })
+
+  test('ブランチ名だけが dependabot/ の人の pull request は、Dependabot とみなさず本文と比べる（ブランチ名は誰でも付けられる）', () => {
+    assert.equal(isDependabot({ author: 'roger88106', branch: 'dependabot/npm_and_yarn/next-15.5.1' }), false)
+    const result = checkPullRequest({ level: '高', body: body('判定：低'), author: 'roger88106', branch: 'dependabot/x' })
+    assert.equal(result.ok, false)
+  })
+
+  test('Dependabot の pull request は本文と比べず、本文が低・空で判定が高でも成功にする', () => {
+    for (const text of [body('判定：低'), '', undefined]) {
+      const result = checkPullRequest({ level: '高', body: text, author: 'dependabot[bot]' })
+      assert.equal(result.ok, true)
+      assert.match(result.message, /Dependabot/)
+    }
+  })
+
+  test('Dependabot でない pull request（規模 S を含む）は本文と比べ、本文が空・低で判定が高なら失敗にする', () => {
+    assert.equal(checkPullRequest({ level: '高', body: '', author: 'roger88106' }).ok, false)
+    assert.equal(checkPullRequest({ level: '高', body: body('判定：低'), author: 'roger88106' }).ok, false)
+    assert.equal(checkPullRequest({ level: '高', body: body('判定：高'), author: 'roger88106' }).ok, true)
+    assert.equal(checkPullRequest({ level: '低', body: body('判定：高'), author: 'roger88106' }).ok, true)
+  })
+
+  test('本文を渡さない（check-all.sh から）ときは比べず成功にし、何も出さない', () => {
+    assert.deepEqual(checkPullRequest({ level: '高' }), { ok: true, message: null })
+  })
+})
+
+describe('spec の宣言の基準のバージョンと書き方', () => {
+  const file = 'docs/specs/900-example/spec.md'
+
+  test('基準のバージョンに宣言があり、差分の後のバージョンで宣言の行を消した spec.md は高になる', () => {
+    const result = judgeRisk([file], CONFIG, reader({ [file]: PLAIN_SPEC }), reader({ [file]: DECLARED_SPEC }))
+    assert.equal(result.level, '高')
+    assert.deepEqual(result.specs, [file])
+  })
+
+  test('改名した spec.md は、元のパスの基準のバージョンの宣言も読む（差分に元のパスが入る）', () => {
+    const moved = 'docs/specs/archive/1to10/900-example/spec.md'
+    const result = judgeRisk([file, moved], CONFIG, reader({ [moved]: PLAIN_SPEC }), reader({ [file]: DECLARED_SPEC }))
+    assert.equal(result.level, '高')
+    assert.deepEqual(result.specs, [file])
+  })
+
+  test('どちらのバージョンにも宣言がなければ低', () => {
+    assert.equal(judgeRisk([file], CONFIG, reader({ [file]: PLAIN_SPEC }), reader({ [file]: PLAIN_SPEC })).level, '低')
+  })
+
+  test('冒頭の「危険度」を含む行が正確な「危険度：高」でなければ、ファイルと行を読めない行として返す', () => {
+    const variants = ['危険度: 高', '**危険度：高**', '危険度：高（理由）', 'ステータス：確定　危険度：高', '- 危険度：高', '危険度：低']
+    for (const variant of variants) {
+      const text = DECLARED_SPEC.replace('危険度：高', variant)
+      const { specs, unreadable } = findDeclaredSpecs([file], reader({ [file]: text }))
+      assert.deepEqual(specs, [], variant)
+      assert.deepEqual(unreadable.map((item) => [item.file, item.line, item.text]), [[file, 4, variant]], variant)
+    }
+  })
+
+  test('正確な宣言の行と、題の行と、最初の節の後の「危険度」は、読めない行にしない', () => {
+    const text = ['# Spec 900：危険度の判定を変える', '', '危険度：高', '', '## 1. 背景', '', '危険度: 高'].join('\n')
+    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: text })).unreadable, [])
+  })
+
+  test('基準のバージョンの書き方は見ない（読めない行にしない）', () => {
+    const base = DECLARED_SPEC.replace('危険度：高', '危険度: 高')
+    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: DECLARED_SPEC }), reader({ [file]: base })).unreadable, [])
+  })
+})
+
+describe('経路の大文字と小文字', () => {
+  test('大文字の違うパス（Windows と macOS では同じ所に入る）も、高の経路に当てる', () => {
+    for (const file of ['.CLAUDE/skills/x/SKILL.md', 'Docs/Rules/x.md', 'agents.md', 'API/OpenAPI/admin.yaml']) {
+      assert.equal(judgeRisk([file], CONFIG, reader({})).level, '高', file)
+    }
+  })
+
+  test('大文字の違う spec.md の宣言も読む', () => {
+    const file = 'Docs/Specs/900-example/SPEC.md'
+    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: DECLARED_SPEC })).specs, [file])
+  })
+})
+
+describe('Dependabot の更新の種類', () => {
+  test('題の major が違えば高', () => {
+    assert.equal(judgeDependabotTitle('deps: bump next from 15.5.1 to 16.0.0').level, '高')
+    assert.equal(judgeDependabotTitle('deps: bump org.flywaydb:flyway-core from 11.3.0 to 12.0.0 in /backend/ecsite').level, '高')
+    assert.equal(judgeDependabotTitle('deps: bump postgres from 17.4-alpine to 18.0-alpine in /docker').level, '高')
+    assert.match(judgeDependabotTitle('deps: bump next from 15.5.1 to 16.0.0').reason, /major/)
+  })
+
+  test('major が 0 で minor が違えば高', () => {
+    assert.equal(judgeDependabotTitle('deps: bump foo from 0.3.1 to 0.4.0').level, '高')
+  })
+
+  test('major の違わない更新は、経路の判定のまま', () => {
+    assert.equal(judgeDependabotTitle('deps: bump next from 15.5.1 to 15.6.0').level, null)
+    assert.equal(judgeDependabotTitle('deps: bump foo from 0.3.1 to 0.3.2').level, null)
+  })
+
+  test('group の名前が -minor-patch で終われば経路の判定のまま、それ以外の group（github-actions-all）は高', () => {
+    assert.equal(judgeDependabotTitle('deps: bump the npm-minor-patch group with 3 updates').level, null)
+    assert.equal(judgeDependabotTitle('deps: bump the gradle-minor-patch group across 1 directory with 2 updates').level, null)
+    assert.equal(judgeDependabotTitle('deps: bump the github-actions-all group across 2 directories with 4 updates').level, '高')
+  })
+
+  test('読めない題・空の題は高', () => {
+    for (const title of ['deps: update dependencies', '', undefined, 'deps: bump foo from abc123 to def456']) {
+      assert.equal(judgeDependabotTitle(title).level, '高', String(title))
+    }
+  })
+
+  test('Dependabot の差分の例：workflow は高、package.json の minor の group は低、major の題は高。理由を出力に出す', () => {
+    const workflow = applyDependabotTitle(judgeRisk(['.github/workflows/ci.yml'], CONFIG, reader({})), 'deps: bump the github-actions-all group with 2 updates')
+    assert.equal(workflow.level, '高')
+    const minor = applyDependabotTitle(judgeRisk(['package.json', 'pnpm-lock.yaml'], CONFIG, reader({})), 'deps: bump the npm-minor-patch group with 3 updates')
+    assert.equal(minor.level, '低')
+    assert.ok(formatJudgement(minor).some((line) => line.startsWith('- Dependabot の更新：group「npm-minor-patch」')))
+    const major = applyDependabotTitle(judgeRisk(['package.json', 'pnpm-lock.yaml'], CONFIG, reader({})), 'deps: bump next from 15.5.1 to 16.0.0')
+    assert.equal(major.level, '高')
+    assert.ok(formatJudgement(major).includes('- Dependabot の更新：major の更新（15.5.1 → 16.0.0）'))
+  })
+
+  test('経路が高なら、題が minor でも高のまま', () => {
+    const result = applyDependabotTitle(judgeRisk(['.github/workflows/ci.yml'], CONFIG, reader({})), 'deps: bump actions/checkout from 7.0.0 to 7.1.0')
+    assert.equal(result.level, '高')
+  })
+})
+
+describe('差分のファイルの求め方', () => {
+  /** 試す Git のリポジトリ */
+  const repo = mkdtempSync(path.join(tmpdir(), 'risk-'))
+  after(() => rmSync(repo, { recursive: true, force: true }))
+
+  const git = (...args) => execFileSync('git', args, { cwd: repo, encoding: 'utf8' })
+  const write = (file, content = 'x\n') => {
+    mkdirSync(path.dirname(path.join(repo, file)), { recursive: true })
+    writeFileSync(path.join(repo, file), content)
+  }
+
+  before(() => {
+    removeGitEnv()
+    git('init', '-q', '-b', 'develop')
+    git('config', 'user.email', 'test@example.com')
+    git('config', 'user.name', 'test')
+    git('config', 'commit.gpgsign', 'false')
+    write('scripts/ci/moved.mjs', 'export const a = 1\n')
+    write('docs/rules/removed.md')
+    write('docs/specs/900-example/spec.md', DECLARED_SPEC)
+    write('README.md')
+    git('add', '-A')
+    git('commit', '-q', '-m', 'base')
+    git('checkout', '-q', '-b', 'feature')
+    // 高の経路から外への移動（改名）、削除、宣言の行を消す変更
+    mkdirSync(path.join(repo, 'tools'), { recursive: true })
+    renameSync(path.join(repo, 'scripts/ci/moved.mjs'), path.join(repo, 'tools/moved.mjs'))
+    rmSync(path.join(repo, 'docs/rules/removed.md'))
+    write('docs/specs/900-example/spec.md', PLAIN_SPEC)
+    git('add', '-A')
+    git('commit', '-q', '-m', 'feature')
+    write('untracked.md')
+  })
+
+  test('改名は元と先の両方、削除したファイル、追跡していないファイルを差分に入れる', () => {
+    const changed = listChangedFiles('develop', listGitFiles([], repo), repo)
+    assert.deepEqual(changed.files, ['docs/rules/removed.md', 'docs/specs/900-example/spec.md', 'scripts/ci/moved.mjs', 'tools/moved.mjs', 'untracked.md'])
+  })
+
+  test('高の経路から外へ移す変更・削除・宣言の行を消す変更は高になる', () => {
+    const changed = listChangedFiles('develop', listGitFiles([], repo), repo)
+    const readFile = (file) => {
+      try {
+        return readFileSync(path.join(repo, file), 'utf8')
+      } catch {
+        return null
+      }
+    }
+    const result = judgeRisk(changed.files, CONFIG, readFile, baseFileReader(changed.base, repo))
+    assert.equal(result.level, '高')
+    assert.deepEqual(result.hits, [{ name: 'エージェントの規則と設定', files: ['docs/rules/removed.md', 'scripts/ci/moved.mjs'] }])
+    assert.deepEqual(result.specs, ['docs/specs/900-example/spec.md'])
+  })
+
+  test('基準の ref がなければ、理由を返す', () => {
+    assert.match(listChangedFiles('nothing', [], repo).error, /分岐点を求められない/)
+  })
+})
+
+describe('危険度の workflow', () => {
+  const workflow = readFileSync(new URL('../../.github/workflows/risk.yml', import.meta.url), 'utf8')
+
+  test('基準（origin/develop）の側の risk.mjs と risk.json でも判定する（変えた後の一覧で自分を低と判定するのを防ぐ）', () => {
+    assert.match(workflow, /git archive origin\/develop scripts\/ci/)
+    assert.match(workflow, /node "\$base_dir\/scripts\/ci\/risk\.mjs" --skip-path-check/)
+  })
+
+  test('作成者と題を渡し、ブランチ名は渡さない', () => {
+    assert.match(workflow, /--author "\$PR_AUTHOR"/)
+    assert.match(workflow, /--title "\$PR_TITLE"/)
+    assert.doesNotMatch(workflow, /--branch/)
   })
 })

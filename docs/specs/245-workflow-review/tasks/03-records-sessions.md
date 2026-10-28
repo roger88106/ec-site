@@ -13,14 +13,16 @@
 - `[P]`：T245-03-01 と 02 の組は、変えるファイルが重ならないので、T245-03-03 以降と並行できる。
 - 大きさ：AGENTS.md、開発の進め方、エージェントの作業フロー、skill `review` を変える各タスクは、確認方法で `wc -c` を測る。
 
-- [ ] **T245-03-01** `[P]` `[テスト]` 集計の script のテストを書く。アーカイブした spec の tasks のレビューの表（T245-01-01 の形）を読み、弾ごとに profile・時点ごとの指摘の数と採用の割合が出ることを確認する。失敗する（レッド）ことを確認する（DC-245-60、DN-245-7）。
+- [x] **T245-03-01** `[P]` `[テスト]` 集計の script のテストを書く。アーカイブした spec の tasks のレビューの表（T245-01-01 の形）を読み、弾ごとに profile・時点ごとの指摘の数と採用の割合が出ることを確認する。失敗する（レッド）ことを確認する（DC-245-60、DN-245-7）。
   - 依存：T245-01-01
   - 範囲：`.claude/skills/review/stats.test.cjs`
   - 確認方法：実装の前にテストが失敗する。commit の本文にレッドを確認したことを書く。
-- [ ] **T245-03-02** `[P]` 集計の script を作る（DC-245-60）。
+  - 結果：stats.cjs がない状態で `node --test .claude/skills/review/stats.test.cjs` を流し、「Cannot find module ./stats.cjs」で失敗する（レッド）ことを確認した。
+- [x] **T245-03-02** `[P]` 集計の script を作る（DC-245-60）。
   - 依存：T245-03-01（同じ実装役が続けて行い、同じ commit にする）
   - 範囲：`.claude/skills/review/stats.cjs`
   - 確認方法：T245-03-01 のテストが通る。
+  - 結果：`node .claude/skills/review/stats.cjs --round <弾> --profile <profile> <spec の番号>...` で集計できる。stats.test.cjs の 7 件が通り、skill 全体の 65 件も通った。
 - [x] **T245-03-03** 見逃しの台帳の規則（GitHub の issue の label「見逃し」、加える時点、本文の「関連」の書き方）と、モデル・指示・profile を替えるときの手順を書く。手順は、見逃した pull request の差分を新しい設定のレビューに渡して件数を数えることと、対象ごとの判断である。AGENTS.md の「モデルの区分」から手順を指す（DC-245-61〜64）。
   - 依存：T245-01-04（label と例が段階 1 でできている）
   - 範囲：`docs/rules/subagents.md`（新しい節「モデルや設定を替えるとき」）、[開発の進め方](../../../rules/workflow.md) 第 4.1 節、`AGENTS.md`

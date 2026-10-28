@@ -1269,6 +1269,7 @@ function judgePowerShell(command) {
 /**
  * hook の入力（JSON の文字列）を判定し、標準出力に出す文字列を返す。
  * 読めない入力は通す（Claude Code は常に JSON を渡すので、読めないときに全てのツールを止めないため）。
+ * 先頭の BOM は除いてから読む。Windows PowerShell 5.1 はパイプで BOM を付け、そのままでは読めずに通してしまうため。
  *
  * @param {string} text 標準入力の全文
  * @param {Deps} [deps] 外部の処理
@@ -1278,7 +1279,7 @@ function judgePowerShell(command) {
 export function handleInput(text, deps = createDeps(), judge = judgeCommand) {
   let input
   try {
-    input = JSON.parse(text)
+    input = JSON.parse(text.startsWith('﻿') ? text.slice(1) : text)
   } catch {
     return ''
   }

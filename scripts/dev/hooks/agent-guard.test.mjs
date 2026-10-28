@@ -758,6 +758,11 @@ describe('hook の入力と出力', () => {
     assert.match(output.hookSpecificOutput.permissionDecisionReason, /tag/)
   })
 
+  test('先頭に BOM が付いた入力も読み、判定する（Windows PowerShell 5.1 はパイプで BOM を付ける）', () => {
+    const output = JSON.parse(handleInput(`﻿${input('git push --force')}`, fakeDeps()) || '{}')
+    assert.equal(output.hookSpecificOutput?.permissionDecision, 'deny')
+  })
+
   test('通すとき、Bash と PowerShell 以外のツール、読めない入力では、何も返さない', () => {
     assert.equal(handleInput(input('git push'), fakeDeps()), '')
     assert.equal(handleInput(input('git push --force', 'Edit'), fakeDeps()), '')

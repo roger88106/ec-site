@@ -52,6 +52,23 @@ issue 担当のセッションと spec 担当のセッションの運用。役�
 
 単線のときは、1 つのセッションが issue 担当と spec 担当を兼ねる。区分は spec 担当の区分（高性能）。理由：資源の調整がほぼ要らず、2 つのセッションが固定で持つ文脈と通知の token を省けるため。兼ねるときも、起票と spec の作業の規則は変えない。
 
+## マージの後
+
+- `develop` の push の CI を、issue 担当のセッションが背景の指令で見届ける。失敗したら、他の pull request のマージを止めてすぐに起票し（[開発の進め方](../../../docs/rules/workflow.md) 第 4.1 節の急ぐ作業）、直るまで次のマージをしない。要点は [開発の進め方](../../../docs/rules/workflow.md) 第 5.7 節。
+- 台帳（[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 5 節）で「エージェントがマージ」が付いた変更に不具合が 1 件でもあれば、利用者に提案する：高の経路の一覧と、低のマージの条件の再検討。
+
+## 弾の終わり
+
+詳細は [弾と段の終わり](rounds.md)。
+
+1. 集計：`node .claude/skills/review/stats.cjs --round <弾> --profile <profile> <spec の番号...>`。profile の再検討を利用者に提案する。
+2. 効果の測定：整理の前の基準と同じ script と方法で測り、測る作業は起票の案に入れる。
+3. 振り返り：skill `agent-retro` で行い、集計して整理の issue の案を利用者に示す。
+
+## 段の終わり
+
+振り返りと、定期の全体のレビュー（提案だけ。材料と手順は [弾と段の終わり](rounds.md)）。
+
 ## ツールの注
 
 使うサービスに固有の名前と手順。サービスを替えるときは、この節だけを修正する（Claude Code のデスクトップアプリ）。
@@ -59,4 +76,5 @@ issue 担当のセッションと spec 担当のセッションの運用。役�
 - セッションへのメッセージ：`mcp__ccd_session_mgmt__send_message`（引数に識別子を渡す。一覧は `list_sessions`）。子のセッションへは `SendMessage` も使える。
 - 遠隔操作：`mcp__ccd_session_mgmt__set_remote_control`。待機中のセッションに入れると「Remote Control requires an active session」で失敗するので、先に短いメッセージを送ってから入れる（6 つで成功を確認した）。
 - 終わったら知らせる指定：背景の実行（`run_in_background`）か、起動したセッションの終了の通知。通知でターンが再開する。
+- 台帳と CI：`gh issue list --label 見逃し`、`gh run list -b develop -L 1`。
 - 使用量：`mcp__ccd_session_mgmt__get_usage`（5 時間と週の使用率、戻る時刻）。

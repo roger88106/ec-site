@@ -1,7 +1,7 @@
 # ============================================================================
 # ローカル開発用のミドルウェア
 #
-#   起動：docker compose up -d（メインの作業ツリーのルートで。追加の作業ツリーでは実行しない。ルートの .env の COMPOSE_FILE がこのファイルを指す）
+#   起動：docker compose up -d（メインの作業ツリーのルートで。追加の作業ツリーでは実行しない。ルートの compose.yaml がこのファイルを読む）
 #   停止：docker compose stop
 #   E2E 用の Keycloak（profile e2e）は、E2E の準備の script が起動する（docs/guides/running-tests.md）
 #

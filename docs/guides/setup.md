@@ -4,7 +4,7 @@
 
 ## 1. 前提
 
-JDK 21、Docker、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
+JDK 21、Docker（Compose 2.20 以上。ルートの `compose.yaml` が `include` を使うため）、Node.js 24 以上、pnpm（バージョンは `package.json` の `packageManager`）。
 
 - `./gradlew` は、環境変数 `JAVA_HOME`（なければ PATH の `java`）の JDK で Gradle を起動する。Gradle の起動には JDK 17 以上が必要なので、PATH の `java` が古いマシンでは、`JAVA_HOME` に JDK 21 のパスを設定してから実行する（例：`export JAVA_HOME="/c/Program Files/Eclipse Adoptium/jdk-21…"`）。コンパイルとテストに使う JDK 21 は、Gradle の toolchain がインストール済みの JDK から探す。
 
@@ -40,7 +40,7 @@ pnpm dev
 | http://localhost:8180 | Keycloak（管理画面は `/admin`、`admin` / `admin`） |
 | http://localhost:8025 | Mailpit（Keycloak とバックエンドが送ったメール。外部には送信しない） |
 
-- `docker compose` はメインの作業ツリーのルートで実行する（作業ツリーでは実行しない。第 9 節。ルートの `.env` の `COMPOSE_FILE` が [docker/compose.yaml](../../docker/compose.yaml) を指す）。DB は `localhost:5432/ec_site`。
+- `docker compose` はメインの作業ツリーのルートで実行する（作業ツリーでは実行しない。第 9 節。ルートの `compose.yaml` が [docker/compose.yaml](../../docker/compose.yaml) を読む）。DB は `localhost:5432/ec_site`。
 - Mailpit の SMTP はホストの 2525 番ポートで待ち受ける（1025 は Windows のシステムプロセスが使うことがあるため使わない）。2525 を他のプログラムが使っていると、バックエンドのメールが Mailpit に届かない。環境変数 `MAILPIT_SMTP_PORT` に空いているポートを設定して、compose とバックエンドを起動する（両方が同じ値を読む）。
 - compose のポートは、このマシン（127.0.0.1）でだけ待ち受ける（ローカル用の管理者のパスワードと DB のパスワードは公開されているため）。同じネットワークの他のマシン（スマートフォンなど）から接続するときは、`docker/.env`（Git に入らない）に `LOCAL_BIND_ADDRESS=0.0.0.0` と書くか、同じ名前の環境変数を設定して、`docker compose up -d` で再作成する。終わったら設定を削除して再作成する。バックエンドと画面の開発サーバーは、この設定の対象外である。
 - 停止するときは `docker compose stop`。E2E を実行した後は、E2E 用の Keycloak（profile `e2e`）も止めるために `docker compose --profile e2e stop` にする。データを再作成するときは第 4 節。作業ツリーごとに環境を分けるときは第 9 節。

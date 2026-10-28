@@ -411,7 +411,7 @@ jobs:
       - uses: ./.github/actions/setup-frontend
 
       # E2E 用の DB と IdP の置き場所（PostgreSQL）と、IdP が送るメールの受け手（Mailpit）。
-      # docker/compose.yaml（ルートの .env が指す）をそのまま使う。E2E 用の DB・Keycloak（profile e2e）の再作成と起動は、
+      # ルートの compose.yaml が読む docker/compose.yaml をそのまま使う。E2E 用の DB・Keycloak（profile e2e）の再作成と起動は、
       # pnpm test の準備の script（e2e/scripts/prepare.ts）が手元と同じように行う
       - name: DB・メールの起動
         run: docker compose up -d --wait postgres mailpit

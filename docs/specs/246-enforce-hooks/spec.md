@@ -103,7 +103,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 
 - **DC-246-13** 同じ hook が、マージのコマンドを次の順に判定する。`gh` をフルパスで呼ぶ形にも働く。
   1. `gh api` によるマージ（`…/pulls/<番号>/merge`）と、`gh pr merge --admin` は拒否し、`gh pr merge --match-head-commit` を使うよう返す。
-  2. `gh pr merge` に `--match-head-commit` がなければ拒否する。
+  2. `gh pr merge` に `--match-head-commit` がなければ拒否する。自動のマージを解除するだけの `--disable-auto` は、マージでないので通す。
   3. `--auto` があれば確認を求める（予約のマージは、マージの時点の条件を判定できないため）。
   4. DC-246-14 の条件を全て満たせば通す。
   5. それ以外と、pull request の情報を読めないとき（`gh` の失敗、時間切れ）は、確認を求める。
@@ -111,7 +111,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - pull request が番号か URL で指定されている（番号のない形は、今のブランチの pull request を指すので、確認を求める）。
   - 向き先が `develop` である。
   - `--match-head-commit` の commit が、pull request の今の head の commit と一致する。
-  - CI の検査が全て終わり、全て成功（skipped を含む）している。実行中のものがあれば満たさない。
+  - CI の検査が全て終わり、全て成功（skipped と neutral を含む。GitHub の必須の検査も neutral を成功と同じに扱い、Dependabot の pull request では CodeQL が neutral を返すため）している。pull request が開いている。実行中のものがあれば満たさない。
   - 危険度が低い。（a）Dependabot（作成者が `dependabot[bot]`）以外は、本文の「判定：」が「低」で、検査「危険度の照合」が成功している。（b）Dependabot は、変更のファイルと題を `scripts/ci/risk.mjs` の判定の関数に渡した結果が低である。
   - 機能の spec でない。Dependabot 以外は、本文の `Closes` の issue が 1 つ以上あり、どれにもラベル「種類:機能」がない。
 - **DC-246-15** 同じ hook が、tag の作成（`git tag <名前>`）、tag の push（`git push` の `--tags` と `refs/tags/`、tag の名前の push）、`gh release create` で確認を求める。tag の一覧を読むコマンド（`git tag`、`git tag -l`）は通す。
@@ -228,7 +228,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - [x] **T246-01-05** [テスト] Claude Code の hook の、確認の判定（DC-246-13〜16）のテストを書き、レッドを確認する（DC-246-18）。
   - 依存：T246-01-04
   - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`
-  - 確認方法：DC-246-18 の例と、フルパスの `gh`、`gh api graphql` を通す例がレッドになる。
+  - 確認方法：DC-246-18 の拒否と確認の例がレッドになる。通す例（フルパスの `gh` で条件を満たす例、`gh api graphql`）も持つ。
 - [x] **T246-01-06** [リスク] Claude Code の hook の、確認の判定を実装する（DC-246-6、13〜16、18）。
   - 依存：T246-01-05
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
@@ -274,7 +274,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | # | 項目 | 起票の案 |
 |---|------|----------|
 | 1 | 未解決の指摘（重要度が高と必須）が 0 であることを、機械で読める形にして hook の条件に加える | spec 245 のレビューの記録の形が決まってから、issue 担当のセッションの候補の一覧に残す |
-| 2 | `bash -c "…"` に入れたコマンドと、環境変数（`GIT_CONFIG_COUNT` など）や `git config` で hook の置き場所を替えてから commit する形も、hook で判定する。今は通す（T246-01-04 のレビュー） | エージェントがわざと使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
+| 2 | `bash -c "…"` に入れたコマンドと、環境変数（`GIT_CONFIG_COUNT` など）や `git config` で hook の置き場所を替えてから commit する形も、hook で判定する。設定 `push.followTags` による tag の push、セッションで先に `export` した `GH_REPO`、ローカルの tag を先に消してからの `git push --delete <tag>` も同じ。今は通す（T246-01-04、06） | エージェントがわざと使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 
 ## 9. 動作の確認の記録
 

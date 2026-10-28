@@ -10,7 +10,7 @@ import { OrderStatusBadge } from '@/features/order/components/OrderStatusBadge'
 import { orderListHref, parseOrderListPage } from '@/features/order/orderListQuery'
 import { paymentDeadlineLabel } from '@/features/order/orderState'
 
-/** ブラウザのタブの題名 */
+/** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('order.list')
   return { title: t('title') } // ご注文履歴

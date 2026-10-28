@@ -145,7 +145,7 @@ describe('フロントの書き方の検査', () => {
     assert.deepEqual(duplicatedFiles(Object.keys(files), read, ['lib/utils.ts']), ['lib/price.ts'])
   })
 
-  test('除外を外した同じ内容のファイルの一覧に、除外がまだ要るファイルが出る', () => {
+  test('除外を外した同じ内容のファイルの一覧に、除外がまだ必要なファイルが出る', () => {
     const files = {
       'frontend/store/src/lib/utils.ts': 'same',
       'frontend/admin/src/lib/utils.ts': 'same',
@@ -504,7 +504,7 @@ describe('テストの書き方の検査', () => {
     assert.deepEqual(lines(findIndexedMultiples(afterBlock)), [3])
   })
 
-  test('描画した HTML の文字を、要素や属性の並びで確かめる所を見つける（空の描画の確認は除く）', () => {
+  test('描画した HTML の文字を、要素や属性の並びで確認する所を見つける（空の描画の確認は除く）', () => {
     const text = [
       "expect(html).toContain('<a href=\"/x\">')",
       'expect(html).toMatch(/<ul[^>]*>/)',

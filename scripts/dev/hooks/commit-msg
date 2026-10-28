@@ -1,10 +1,12 @@
 #!/usr/bin/env bash
 # ============================================================================
-# commit のメッセージを書いた後に、次の commit の関連 spec を照合する（CI の検査）
+# commit のメッセージを書いた後に、次の commit の関連 spec の照合と、メッセージの日本語の文の検査を行う（CI の検査）
 #
 # 置き方（開発環境の起動）：.git/hooks/commit-msg に、この script を呼ぶ 1 行を書く（メッセージのファイルを渡す）。
 # pre-commit の時点ではメッセージがないので、ステージした設計の文書とメッセージの 1 行目のタスク番号は、ここで照合する。
 # commit の履歴の照合は、pre-commit の hook と CI が行う。
+# メッセージに使わない語（日本語の文の検査の error）があれば失敗にする（# で始まる行は除く）。
+# 処理は scripts/dev/lib/commit-msg.mjs（テストのため）。この script は、入口の commit-msg-main.mjs を呼ぶだけ。
 # ============================================================================
 ROOT="$(git rev-parse --show-toplevel)"
-exec node "$ROOT/scripts/ci/related-specs.mjs" --staged "$1"
+exec node "$ROOT/scripts/dev/lib/commit-msg-main.mjs" "$1"

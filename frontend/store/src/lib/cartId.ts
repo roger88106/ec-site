@@ -17,7 +17,7 @@ export function parseCartId(value: string | undefined): string | null {
 }
 
 /**
- * カート ID の Cookie の属性（店舗画面の構成 第 4.4 節）。ブラウザの JavaScript からは読めない。
+ * カート ID の Cookie の属性（店舗画面の構成 第 4.4 節）。ブラウザーの JavaScript からは読めない。
  *
  * @param secure HTTPS だけで送るか（本番では true）
  */

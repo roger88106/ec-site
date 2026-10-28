@@ -42,7 +42,7 @@ export function OrderForm(props: OrderFormProps) {
  * 都道府県と市区町村は一覧から選び、郵便番号が 7 桁になったら補う（店舗画面の構成 第 4.8 節）。
  * 送信中はボタンを押せなくする（二重押しの防止）。エラーのときも入力した値を消さないよう、
  * フォームの action ではなく onSubmit から送る（action で送ると、React が送信の後にフォームを空にする）。<br />
- * サーバーアクションの結果を props で受けるので、結果ごとの表示をテストで確かめられる。
+ * サーバーアクションの結果を props で受けるので、結果ごとの表示をテストで確認できる。
  *
  * @param result     注文のサーバーアクションの結果（送る前は null）
  * @param formAction 入力を送る関数（`useActionState` が返すもの）

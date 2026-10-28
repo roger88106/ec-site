@@ -88,7 +88,7 @@ test('AC-148 mock でカードを拒否させても注文は支払待ちのま�
 })
 
 test('AC-153、155 支払わずに期限を過ぎると、注文が支払期限切れでキャンセルになる', async ({ page }) => {
-  // 設定の時間の上限に、支払の期限と、期限切れを見る間隔を待つ分を足す
+  // 設定の時間の上限に、支払の期限と、期限切れを見る間隔を待つ分を加える
   test.setTimeout(test.info().timeout + PAYMENT_EXPIRY_TIMEOUT)
   await memberCartWith(page, 'EXPIRE')
   await orderCart(page)

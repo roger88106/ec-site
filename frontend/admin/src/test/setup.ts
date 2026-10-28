@@ -39,7 +39,7 @@ afterAll(() => {
 URL.createObjectURL ??= () => 'blob:test'
 URL.revokeObjectURL ??= () => {}
 
-// jsdom にないブラウザの機能を、画面の部品（Sidebar、base-ui）が使う分だけ補う
+// jsdom にないブラウザーの機能を、画面の部品（Sidebar、base-ui）が使う分だけ補う
 window.matchMedia ??= (query: string) =>
   ({
     matches: false,

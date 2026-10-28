@@ -21,7 +21,7 @@ import {
   showsPaymentSection,
 } from '@/features/order/orderState'
 
-/** ブラウザのタブの題名 */
+/** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('order.detail')
   return { title: t('title') } // ご注文の内容

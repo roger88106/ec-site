@@ -202,7 +202,7 @@ public final class ProductionClasses {
     }
 
     /**
-     * ソースの場所が tools の出力かを返す。tools は開発で流す道具で、本番のクラスではない。
+     * ソースの場所が tools の出力かを返す。tools は開発で流すツールで、本番のクラスではない。
      * 単体テストの classpath には、tools の出力のディレクトリ（build/classes/java/tools）が入る。
      *
      * @param location クラスの場所の URI
@@ -234,7 +234,7 @@ public final class ProductionClasses {
         /**
          * {@code com.ecsite} の本番のクラス。<br />
          * 単体テストと統合テストが共有する testFixtures は、テストのコードなので除く。
-         * 単体テストの classpath にある tools は、開発の道具なので除く。
+         * 単体テストの classpath にある tools は、開発のツールなので除く。
          */
         private static final JavaClasses ALL = new ClassFileImporter()
                 .withImportOption(ImportOption.Predefined.DO_NOT_INCLUDE_TESTS)

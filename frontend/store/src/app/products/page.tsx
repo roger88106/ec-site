@@ -11,7 +11,7 @@ import { ListFilterForm } from '@/features/catalog/components/ListFilterForm'
 import { ProductGrid } from '@/features/catalog/components/ProductCard'
 import { listHref, parseListQuery } from '@/features/catalog/listQuery'
 
-/** ブラウザのタブの題名 */
+/** ブラウザーのタブの題名 */
 export async function generateMetadata(): Promise<Metadata> {
   const t = await getTranslations('catalog.list')
   return { title: t('title') } // 商品一覧

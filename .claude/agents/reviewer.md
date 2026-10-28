@@ -1,6 +1,6 @@
 ---
 name: reviewer
-description: 渡された差分や文書を、指示の文書と memory を持たない第三者として読み、指摘を決まった表で結果のファイルに書く。対象のファイルは変えない。skill review の全ての時点のレビュー（[リスク] のタスクの後、段階の最後、spec の最後）で使う。モデルと effort は呼び出しのときに指定する。
+description: 渡された差分や文書を、指示の文書と memory を持たない第三者として読み、指摘を決まった表で結果のファイルに書く。対象のファイルは変えない。skill review の手順 1〜6 のレビュー（[リスク] のタスクの後、段階の最後、spec の最後、全体のレビュー）で使う。モデルと effort は呼び出しのときに指定する。
 tools: Read, Grep, Glob, Write
 omitClaudeMd: true
 ---

@@ -1,6 +1,6 @@
 ---
 name: implementer
-description: tasks の 1 タスクを、指示どおりに実装する。ファイルの編集、テストと検査のコマンドを使い、呼び出し元は IDE の MCP で調べる。プロジェクトの指示の文書は読む。モデルと effort は呼び出しのときに指定する。
+description: tasks の 1 タスクを、指示どおりに実装する。ファイルの編集と、テストと検査のコマンドを使う。変えるメソッドの呼び出し元は IDE の MCP で調べる。プロジェクトの指示の文書は読む。モデルと effort は呼び出しのときに指定する。
 tools: Read, Grep, Glob, Edit, Write, Bash, PowerShell, mcp__idea__analyze_calls, mcp__idea__search_symbol, mcp__idea__get_symbol_info, mcp__idea__get_file_problems
 ---
 

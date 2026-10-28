@@ -142,7 +142,7 @@ test('ステージした差分から、追加した行とその行番号を読�
   ])
 })
 
-test('コミットメッセージは、# で始まる行と、はさみの行以降を除く', () => {
+test('コミットメッセージは、# で始まる行と、切り取り線の行以降を除く', () => {
   const message = ['件名', '# 注釈', '本文', '# ------------------------ >8 ------------------------', '差分の行', ''].join('\n')
   assert.deepEqual(zh.messageLines(message), [
     { file: 'COMMIT_MSG', line: 1, text: '件名' },
@@ -281,11 +281,21 @@ test('名前を変えて追記したファイルの追加行を調べる（一�
 // --- 一覧 ---
 
 test('層 1 の一覧（error と warning）と層 2 の一覧に、同じ字・語がない（DC-249-5）', () => {
-  const layer1 = [...ja.error, ...ja.warning].map((t) => t.word).filter((word) => word !== undefined)
+  const items = [...ja.error, ...ja.warning]
+  const layer1 = items.map((t) => t.word).filter((word) => word !== undefined)
+  const patterns = items.map((t) => t.pattern).filter((pattern) => pattern !== undefined)
   const layer2 = [...list.chars, ...list.words]
+  const hex = (text) => [...text].map((c) => c.codePointAt(0).toString(16))
   for (const a of layer1) {
     for (const b of layer2) {
-      assert.ok(!a.includes(b) && !b.includes(a), `層 1 の ${[...a].map((c) => c.codePointAt(0).toString(16))} と層 2 の ${[...b].map((c) => c.codePointAt(0).toString(16))} が重なる`)
+      assert.ok(!a.includes(b) && !b.includes(a), `層 1 の ${hex(a)} と層 2 の ${hex(b)} が重なる`)
+    }
+  }
+  // pattern の項目も、層 2 の各字・語に当たらない
+  for (const pattern of patterns) {
+    const re = new RegExp(pattern, 'u')
+    for (const b of layer2) {
+      assert.ok(!re.test(b), `層 1 の pattern ${pattern} が層 2 の ${hex(b)} に当たる`)
     }
   }
 })

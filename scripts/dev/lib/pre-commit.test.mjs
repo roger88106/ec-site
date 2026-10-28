@@ -114,8 +114,15 @@ describe('追加した行', () => {
     assert.deepEqual([...parseAddedLines(diff).get('docs/a.md')].sort((a, b) => a - b), [3, 4, 21])
   })
 
+  test('本文が ++ で始まる追加行（差分では +++ の形）を、ファイルの見出しと取り違えない', () => {
+    const body = ['diff --git a/a.md b/a.md', '--- a/a.md', '+++ b/a.md', '@@ -1,0 +2,2 @@', '+x', '+++ y', '@@ -9,0 +11 @@', '+z'].join('\n')
+    const added = parseAddedLines(body)
+    assert.deepEqual([...added.keys()], ['a.md'])
+    assert.deepEqual([...added.get('a.md')].sort((a, b) => a - b), [2, 3, 11])
+  })
+
   test('新しいファイルは全ての行、削除したファイルは行なしになる', () => {
-    const added = parseAddedLines(['--- /dev/null', '+++ b/docs/new.md', '@@ -0,0 +1,3 @@', '+a', '+b', '+c', '--- a/old.md', '+++ /dev/null', '@@ -1,2 +0,0 @@'].join('\n'))
+    const added = parseAddedLines(['diff --git a/docs/new.md b/docs/new.md', '--- /dev/null', '+++ b/docs/new.md', '@@ -0,0 +1,3 @@', '+a', '+b', '+c', 'diff --git a/old.md b/old.md', '--- a/old.md', '+++ /dev/null', '@@ -1,2 +0,0 @@'].join('\n'))
     assert.deepEqual([...added.get('docs/new.md')], [1, 2, 3])
     assert.equal(added.has('old.md'), false)
   })

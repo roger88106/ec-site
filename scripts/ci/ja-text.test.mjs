@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { mkdirSync, mkdtempSync, readFileSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
@@ -25,9 +25,14 @@ const BROKEN_VERBS = ['書き', '作り', '置き', '読み', 'やり', '考え'
  * @returns {import('node:child_process').SpawnSyncReturns<string>} 実行の結果
  */
 function runMessage(message) {
-  const file = path.join(mkdtempSync(path.join(tmpdir(), 'ja-text-')), 'COMMIT_EDITMSG')
-  writeFileSync(file, message)
-  return spawnSync(process.execPath, [SCRIPT, '--message', file], { encoding: 'utf8', env: withoutGitEnv() })
+  const dir = mkdtempSync(path.join(tmpdir(), 'ja-text-'))
+  try {
+    const file = path.join(dir, 'COMMIT_EDITMSG')
+    writeFileSync(file, message)
+    return spawnSync(process.execPath, [SCRIPT, '--message', file], { encoding: 'utf8', env: withoutGitEnv() })
+  } finally {
+    rmSync(dir, { recursive: true, force: true })
+  }
 }
 
 describe('日本語の文の検査（一覧と error の項目）', () => {
@@ -158,18 +163,18 @@ describe('日本語の文の検査（git commit -v の差分）', () => {
   const SCISSORS = '# ------------------------ >8 ------------------------'
   const verbose = `docs: 文書を直す\n\n本文\n${SCISSORS}\n# Do not modify or remove the line above.\ndiff --git a/docs/a.md b/docs/a.md\n@@ -1 +1 @@\n-道具を使う\n+ツールを使う\n`
 
-  test('はさみの行以降を除く（行の数は変えない）', () => {
+  test('切り取り線の行以降を除く（行の数は変えない）', () => {
     const stripped = stripMessageComments(verbose)
     assert.doesNotMatch(stripped, /道具/)
     assert.equal(stripped.split('\n').length, verbose.split('\n').length)
   })
 
-  test('はさみの行の下の差分に使わない語があっても成功する', () => {
+  test('切り取り線の行の下の差分に使わない語があっても成功する', () => {
     assert.deepEqual(findTerms(stripMessageComments(verbose), [{ word: '道具', use: 'ツール' }]), [])
     assert.equal(runMessage(verbose.replace('道具', '書き修正')).status, 0)
   })
 
-  test('はさみの行の上の使わない語は、これまで通り見つける', () => {
+  test('切り取り線の行の上の使わない語は、これまで通り見つける', () => {
     assert.equal(runMessage(verbose.replace('本文', '書き修正した')).status, 1)
   })
 })
@@ -418,13 +423,17 @@ describe('日本語の文の検査（warning と終了コード）', () => {
    */
   function runIn(files, args) {
     const dir = mkdtempSync(path.join(tmpdir(), 'ja-text-repo-'))
-    spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv() })
-    for (const [name, content] of Object.entries(files)) {
-      const full = path.join(dir, name)
-      mkdirSync(path.dirname(full), { recursive: true })
-      writeFileSync(full, content)
+    try {
+      spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv() })
+      for (const [name, content] of Object.entries(files)) {
+        const full = path.join(dir, name)
+        mkdirSync(path.dirname(full), { recursive: true })
+        writeFileSync(full, content)
+      }
+      return spawnSync(process.execPath, [SCRIPT, ...args], { cwd: dir, encoding: 'utf8', env: withoutGitEnv() })
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
     }
-    return spawnSync(process.execPath, [SCRIPT, ...args], { cwd: dir, encoding: 'utf8', env: withoutGitEnv() })
   }
 
   const longSentence = `${'あ'.repeat(200)}である。要求を送る。少し修正する。\n`

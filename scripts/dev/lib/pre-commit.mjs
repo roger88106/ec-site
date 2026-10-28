@@ -21,8 +21,14 @@ export const WARNING_FAILED = 3
 export function parseAddedLines(diff) {
   const added = new Map()
   let lines = null
+  let inHunk = false
   for (const line of diff.split('\n')) {
-    if (line.startsWith('+++ ')) {
+    if (line.startsWith('diff --git ')) {
+      inHunk = false
+      continue
+    }
+    // ファイルの見出しは、ハンクの外（diff --git の後）だけで読む。ハンクの中の `+++ ` は、本文が `++ ` で始まる追加行
+    if (!inHunk && line.startsWith('+++ ')) {
       const target = line.slice(4).replace(/\r$/, '')
       if (target === '/dev/null') {
         lines = null
@@ -34,7 +40,9 @@ export function parseAddedLines(diff) {
       continue
     }
     const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(line)
-    if (hunk && lines) {
+    if (hunk) {
+      inHunk = true
+      if (!lines) continue
       const count = hunk[2] === undefined ? 1 : Number(hunk[2])
       for (let i = 0; i < count; i++) lines.add(Number(hunk[1]) + i)
     }

@@ -1,10 +1,10 @@
 // 日本語の文を確認する。言い換えの一覧は ja-text.json。
 //   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許す語: 理由} で書く（その中の一致は数えない）
 //       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする
-//   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning（--caution も同じ）を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）
+//   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）
 //       文体の型は、1 区間の「の」・字数・読点の数が閾値以上の文、「〜なく〜ない」の形の文、複合動詞の崩れの疑い（かなの直後に助詞を挟まず漢語が続く形）。閾値は ja-text.json の style
 //       コードブロック、表の区切り行、URL、インラインコードは数えない。既定の実行は warning の件数を「警告：」の行で示す
-// 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ の Markdown と、.github/ の yml・yaml と Markdown。
+// 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text
 // 使い方：node scripts/ci/ja-text.mjs [--warning | --stats]（リポジトリのルートで）
@@ -17,7 +17,7 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** 調べる文書 */
-const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/skills\/.*)\.md|\.github\/.*\.(md|ya?ml))$/
+const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/(skills|agents)\/.*)\.md|\.github\/.*\.(md|ya?ml))$/
 
 /** 見ない文書（アーカイブした spec（当時の記録）と、言い換える前の語を例に挙げる言い回しの規則） */
 const EXCLUDED = /^(docs\/specs\/archive\/|\.claude\/skills\/docs\/tech-writing\.md$)/
@@ -294,11 +294,11 @@ function printStats(docTexts, codeComments, list) {
   }
 }
 
-/** git commit -v がメッセージのファイルに付ける、はさみの行。この行から下は差分で、git が捨てる */
+/** git commit -v がメッセージのファイルに付ける、切り取り線の行。この行から下は差分で、git が捨てる */
 const SCISSORS_LINE = /^# -+ >8 -+\r?$/
 
 /**
- * コミットメッセージから、git が付けるコメントの行（# で始まる行）と、はさみの行以降（git commit -v の差分）を除く。行の番号は変えない。
+ * コミットメッセージから、git が付けるコメントの行（# で始まる行）と、切り取り線の行以降（git commit -v の差分）を除く。行の番号は変えない。
  *
  * @param {string} message コミットメッセージ
  * @returns {string} 除く行を空にしたメッセージ
@@ -316,7 +316,7 @@ export function stripMessageComments(message) {
 
 if (isMain(import.meta.url)) {
   const args = process.argv.slice(2)
-  const warning = args.includes('--warning') || args.includes('--caution')
+  const warning = args.includes('--warning')
   const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
   const terms = warning ? list.warning : list.error
   const messageIndex = args.indexOf('--message')

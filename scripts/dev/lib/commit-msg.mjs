@@ -1,4 +1,4 @@
-// commit のメッセージの hook（scripts/dev/hooks/commit-msg）の処理。メッセージのファイルに、2 つの検査を実行する。
+// commit-msg の hook（scripts/dev/hooks/commit-msg）の処理。メッセージのファイルに、2 つの検査を実行する。
 //   1. 関連 spec の照合（scripts/ci/related-specs.mjs --staged <ファイル>）
 //   2. 日本語の文の検査（scripts/ci/ja-text.mjs --message <ファイル>）。error があれば失敗にする
 // 片方が失敗しても、もう片方を実行する（指摘を 1 回で全て見せる）。どちらかが失敗すれば、hook は失敗にする。

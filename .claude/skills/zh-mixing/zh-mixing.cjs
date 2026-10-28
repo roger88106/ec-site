@@ -144,7 +144,7 @@ function parseAddedLines(diff) {
 }
 
 /**
- * コミットメッセージを、調べる行にする。# で始まる行と、はさみの行（# ---- >8 ----）以降は除く。
+ * コミットメッセージを、調べる行にする。# で始まる行と、切り取り線の行（# ---- >8 ----）以降は除く。
  * @param {string} message メッセージのファイルの本文
  */
 function messageLines(message) {

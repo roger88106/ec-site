@@ -36,11 +36,12 @@
 !/docker/seaweedfs/
 
 ### .claude/（許可リスト） ###
-# チームで共有する skill とプレビューの開発サーバーの設定だけを Git に入れる。マシン固有のパスや個人の習慣は書かない。
+# チームで共有する skill、サブエージェントの定義（agents/）、プレビューの開発サーバーの設定だけを Git に入れる。マシン固有のパスや個人の習慣は書かない。
 # settings.local.json や worktrees/ など、置き場所をツールが決めている個人の物は入らない。それ以外の個人の物は /.local に置く（エージェント向けは /.local/agent）。
 # .claude/ の直下に足すときは、ここに 1 行を足す
 /.claude/*
 !/.claude/skills/
+!/.claude/agents/
 !/.claude/launch.json
 ### 秘密の値（どの階層でも例外なく除外） ###
 # 秘密の値は Git に入れない。.env.example のような例外も作らない（例は docs に書く）。

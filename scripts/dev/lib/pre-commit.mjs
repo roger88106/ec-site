@@ -1,4 +1,6 @@
 // commit の前の hook（scripts/dev/hooks/pre-commit）の処理。ステージした内容を取り出して、CI の検査を実行する。
+// 今のブランチが develop か main なら、検査の前に commit を失敗にする（直接 commit しない規則。AGENTS.md の Git の表）。
+// detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。
 // CI の検査には日本語の文の検査（ja-text）が含まれ、ステージした内容の error は失敗にする。
 // 検査が通ったら、ステージした追加行の warning だけを表示する（追加していない既存の行の warning は表示しない。warning は失敗にしない）
 import { spawnSync } from 'node:child_process'
@@ -15,24 +17,46 @@ export const WARNING_FAILED = 3
 /** develop か main に commit しようとしたときの終了コード（検査の失敗と区別する） */
 export const BRANCH_REJECTED = 4
 
-/** 直接 commit しないブランチ。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表） */
-const PROTECTED_BRANCHES = new Set(['develop', 'main'])
+/**
+ * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
+ * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリース 第 2.1 節、第 5 節）。それ以外の変更は、develop から作業ブランチを作る
+ */
+const REJECTIONS = new Map([
+  [
+    'develop',
+    [
+      'develop には直接 commit しない。今の develop から作業ブランチを作り、そこで commit する（今の HEAD から切るので、ステージした変更は持ち越される）。',
+      '',
+      '  git switch -c <issue の番号>-<短い名前>',
+    ],
+  ],
+  [
+    'main',
+    [
+      'main には直接 commit しない。',
+      '緊急の修正なら、今の main から hotfix のブランチを作り、そこで commit する。',
+      '',
+      '  git switch -c hotfix-<issue の番号>-<短い名前>',
+      '',
+      'それ以外の変更は、変更を退避して develop から作業ブランチを作り、そこで変更を戻して commit する。',
+      '',
+      '  git stash push -m <退避の名前>',
+      '  git switch -c <issue の番号>-<短い名前> develop',
+      '  git stash pop',
+    ],
+  ],
+])
 
 /**
  * 今のブランチに commit してよいかを判定し、だめなら表示する手順を返す。
- * detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。判定を誤って全ての commit を止めないため。
+ * detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。判定を誤って全ての commit を失敗にしないため。
  *
  * @param {string | null} branch 今のブランチの名前。detached HEAD か読めなければ null
  * @returns {string | null} commit を失敗にするときの表示。通すなら null
  */
 export function branchRejection(branch) {
-  if (branch === null || !PROTECTED_BRANCHES.has(branch)) return null
-  return [
-    `${branch} には直接 commit しない。develop から作業ブランチを作り、そこで commit する（ステージした変更は持ち越される）。`,
-    'ブランチの名前は <issue の番号>-<短い名前>。',
-    '',
-    '  git switch -c <issue の番号>-<短い名前> develop',
-  ].join('\n')
+  if (branch === null) return null
+  return REJECTIONS.get(branch)?.join('\n') ?? null
 }
 
 /**

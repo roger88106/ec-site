@@ -39,12 +39,20 @@ describe('検査を実行する bash', () => {
 })
 
 describe('commit するブランチ', () => {
-  test('develop と main では、commit を失敗にする表示を返す', () => {
-    for (const branch of ['develop', 'main']) {
-      const message = branchRejection(branch)
-      assert.match(message, new RegExp(`${branch} には直接 commit しない`))
-      assert.match(message, /git switch -c <issue の番号>-<短い名前> develop/)
-    }
+  test('develop では、今の develop から作業ブランチを作る手順を表示する（ステージした変更は持ち越される）', () => {
+    const message = branchRejection('develop')
+    assert.match(message, /develop には直接 commit しない/)
+    assert.match(message, /^ {2}git switch -c <issue の番号>-<短い名前>$/m)
+    assert.match(message, /持ち越される/)
+  })
+
+  test('main では、緊急の修正は main から hotfix のブランチを、それ以外は退避して develop から作業ブランチを作る手順を表示する', () => {
+    const message = branchRejection('main')
+    assert.match(message, /main には直接 commit しない/)
+    assert.match(message, /^ {2}git switch -c hotfix-<issue の番号>-<短い名前>$/m)
+    assert.match(message, /^ {2}git stash push /m)
+    assert.match(message, /^ {2}git switch -c <issue の番号>-<短い名前> develop$/m)
+    assert.doesNotMatch(message, /持ち越される/)
   })
 
   test('作業ブランチと detached HEAD（ブランチを読めないときを含む）では、通す', () => {
@@ -371,13 +379,14 @@ describe('実際の hook', () => {
   /** 実行されたら印を出力して成功する検査の script */
   const markedCheck = '#!/usr/bin/env bash\necho CHECKED\n'
 
-  test('develop と main では、検査の前に失敗にし、作業ブランチを作る手順を表示する', () => {
-    for (const head of ['develop', 'main']) {
+  test('develop と main では、検査の前に失敗にし、ブランチごとの作業ブランチを作る手順を表示する', () => {
+    const expected = { develop: /git switch -c <issue の番号>-<短い名前>$/m, main: /git switch -c hotfix-<issue の番号>-<短い名前>$/m }
+    for (const [head, command] of Object.entries(expected)) {
       const { status, output, error } = runHook(markedCheck, { head })
       assert.equal(status, BRANCH_REJECTED)
       assert.doesNotMatch(output, /CHECKED/)
       assert.match(error, new RegExp(`${head} には直接 commit しない`))
-      assert.match(error, /git switch -c <issue の番号>-<短い名前> develop/)
+      assert.match(error, command)
     }
   })
 

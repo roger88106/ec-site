@@ -20,7 +20,7 @@ description: 段階や spec の最後のレビュー、plan・tasks を書き終
 | リリースの前 | リリースに入る差分 | マイグレーション、設定、互換性、リリースの説明の案を見る |
 | 全体のレビュー（受け入れ確認） | リポジトリ全体 | 手順 1〜6。対象を観点ごとに、さらに範囲（モジュール、アプリ、E2E、文書、script と CI）で分ける |
 
-時点ごとのモデルとレビューの回数は、[エージェントの作業フロー](../../../docs/rules/subagents.md) の profile の表で選ぶ。profile は `/.local/agent/environment.md` で選ぶ。
+時点ごとのモデルとレビューの回数は、[エージェントの作業フロー](../../../docs/rules/subagents.md) の profile の表で選ぶ。profile は issue 担当のセッションが渡す（[作業の形と使用量](../../../docs/rules/resources.md)）。
 
 ## 手順
 

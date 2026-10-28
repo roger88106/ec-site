@@ -117,6 +117,7 @@ ec-site/
 | [review.md](rules/review.md) | 書き方の規則の書き方とレビュー |
 | [comments.md](rules/comments.md) | コメントの書き方 |
 | [subagents.md](rules/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |
+| [resources.md](rules/resources.md) | 作業の形と使用量（profile の決め方、止める閾値、使用量を読む頻度） |
 | [subagents-results.md](rules/subagents-results.md) | エージェントの作業フローの調べた仕組みと実績 |
 | [backend-coding.md](rules/backend-coding.md) | バックエンドの書き方 |
 | [frontend-coding.md](rules/frontend-coding.md) | フロントの書き方 |

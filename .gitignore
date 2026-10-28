@@ -1,24 +1,72 @@
-### ローカル専用 ###
-.local
+### 最上位（許可リスト） ###
+# 全てを除外し、Git に入れる物だけを ! で戻す。秘密の値を置いたファイルや、作業用のファイルが、追加を決めないまま Git に入るのを防ぐ。
+# 最上位にファイルやディレクトリを足すときは、ここに 1 行を足す（除外されたファイルは git add が拒否するので、足し忘れには気づける）
+/*
+!/.claude/
+!/.gitattributes
+!/.github/
+!/.gitignore
+!/.node-version
+!/.pnpmfile.cjs
+!/AGENTS.md
+!/LICENSE
+!/README.md
+!/api/
+!/backend/
+!/compose.yaml
+!/docker/
+!/docs/
+!/e2e/
+!/frontend/
+!/knip.ts
+!/package.json
+!/pnpm-lock.yaml
+!/pnpm-workspace.yaml
+!/scripts/
+!/showcase/
+
+### docker/（許可リスト） ###
+# ローカル用のミドルウェアの設定だけを Git に入れる。docker/.env（LOCAL_BIND_ADDRESS など）は入れない。
+# docker/ の直下に足すときは、ここに 1 行を足す
+/docker/*
+!/docker/compose.yaml
+!/docker/keycloak/
+!/docker/postgres/
+!/docker/seaweedfs/
+
+### .claude/（許可リスト） ###
+# チームで共有する skill とプレビューの開発サーバーの設定だけを Git に入れる。マシン固有のパスや個人の習慣は書かない。
+# settings.local.json や worktrees/ など、置き場所をツールが決めている個人の物は入らない。それ以外の個人の物は /.local に置く（エージェント向けは /.local/agent）。
+# .claude/ の直下に足すときは、ここに 1 行を足す
+/.claude/*
+!/.claude/skills/
+!/.claude/launch.json
+
+### 秘密の値（どの階層でも例外なく除外） ###
+# 秘密の値は Git に入れない。.env.example のような例外も作らない（例は docs に書く）。
+# 上の許可リストで戻した階層の中にも効くよう、許可リストより後に書く
 .env
 .env.*
-!.env.example
-# ルートの .env は compose の設定のファイルの場所だけを持つ（秘密の値は置かない）
-!/.env
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+### ローカル専用 ###
+# マシン固有の物（agent 向けの環境、引き継ぎの文書、スロットなど）の置き場所。どの階層でも除外する
+.local
 
 ### AI ###
 # 共有するルールは AGENTS.md に置く。
 # CLAUDE.md や CLAUDE.local.md を置くと、Claude Code は AGENTS.md を読まなくなるので置かない
 CLAUDE.md
 CLAUDE.local.md
-# .claude はチームで共有する（skill、プレビューの開発サーバーの設定など）。マシン固有のパスや個人の習慣は書かない。
-# Git に入れないものは /.local に置く（エージェント向けは /.local/agent）。置き場所をツールが決めているものだけを、ここに例外として書く
-.claude/settings.local.json
 
 ### Java / Gradle ###
+# ビルドの生成物とログ
 *.class
 *.log
-*.jar
 *.war
 *.nar
 *.ear
@@ -27,27 +75,21 @@ CLAUDE.local.md
 *.rar
 hs_err_pid*
 replay_pid*
-HELP.md
 .gradle
 build/
-# Gradle wrapper は実行に必要なのでコミットする（backend/ecsite/ 配下にあるため ** を付ける）
+# jar はビルドの生成物なので除外するが、Gradle wrapper は実行に必要なのでコミットする（backend/ecsite/ 配下にあるため ** を付ける）
+*.jar
 !**/gradle/wrapper/gradle-wrapper.jar
-!**/src/main/**/build/
-!**/src/test/**/build/
-.kotlin
 
 ### フロントエンド（Node.js / Next.js / Vite） ###
+# 依存とビルドの生成物
 node_modules/
 .next/
 next-env.d.ts
 dist/
-dist-ssr/
 coverage/
 *.tsbuildinfo
 .pnpm-store/
-npm-debug.log*
-pnpm-debug.log*
-.vercel
 # openapi-typescript の生成物（ビルド前に生成する。API の規約）
 frontend/*/src/api/generated/
 e2e/src/generated/
@@ -62,20 +104,6 @@ e2e/blob-report/
 *.iml
 *.ipr
 out/
-!**/src/main/**/out/
-!**/src/test/**/out/
-
-### STS ###
-.apt_generated
-.classpath
-.factorypath
-.project
-.settings
-.springBeans
-.sts4-cache
-bin/
-!**/src/main/**/bin/
-!**/src/test/**/bin/
 
 ### VS Code ###
 .vscode/

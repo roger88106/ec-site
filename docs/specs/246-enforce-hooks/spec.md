@@ -54,13 +54,13 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 
 ### spec 245 との関係
 
-spec 245（作業の流れとレビュー。issue #245、pull request [#253](https://github.com/roger88106/ec-site/pull/253)、ブランチ `245-workflow-review`、マージ前）は、マージの規則を次のように変える。
+spec 245（作業の流れとレビュー。issue #245、pull request [#253](https://github.com/roger88106/ec-site/pull/253)、2026-10-28 に `develop` にマージ済み。アーカイブは `docs/specs/archive/1to10/245-workflow-review/`）は、マージの規則を次のように変えた。
 
 - 危険度が低く、機能の spec でない変更は、CI が全て通り、未解決の指摘のうち重要度が高と必須のものが 0 なら、issue 担当のセッションが利用者の許可なしにマージする（DC-245-26）。
 - 危険度は `scripts/ci/risk.mjs` が、差分の経路と spec の「危険度：高」の行から判定する。pull request の本文の「## 危険度」の節に「判定：低」か「判定：高」を書く。本文の判定が `risk.mjs` の判定より低いと、CI の必須の検査「危険度の照合」が失敗する。Dependabot の pull request は、本文と比べず、経路と題で判定する。
 - マージは `gh pr merge --match-head-commit <SHA>` で、承認を求めたときの head の commit を指定して行う（DC-245-24、25）。
 
-マージの hook は、この例外（低の変更を利用者の許可なしにマージすること）を通し、`--match-head-commit` を求める必要がある。そのため、本 spec は spec 245 のマージの後に実装を始める（第 7 節）。spec 245 の規則は、spec 245 がマージされるまで本 spec の進め方には当てない。
+マージの hook は、この例外（低の変更を利用者の許可なしにマージすること）を通し、`--match-head-commit` を求める必要がある。そのため、本 spec は spec 245 のマージの後に実装を始める（第 7 節）。spec 245 の規則は、実装から本 spec の進め方にも当てる。
 
 ## 2. スコープ
 
@@ -186,6 +186,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - マージの条件（DC-245-24〜26）と、AGENTS.md の Git の表の行
   - `scripts/ci/risk.mjs` の、hook が使う関数の名前と引数（今のブランチでは `judgeRisk`、`judgeDependabotTitle`、`applyDependabotTitle`、`readBodyRisk`、`isDependabot`）
   - 必須の検査の名前「危険度の照合」と、ruleset に戻したか
+- 照合の結果（2026-10-28、`develop` の af66e826）：設計の差はない。マージの条件は DC-245-26 と AGENTS.md の Git の表のとおりで、DC-246-14 の条件と合う。関数の名前は上のとおりで、`judgeRisk` は高の経路の一覧（`scripts/ci/risk.json` を `parseRiskConfig` で読んだもの）とファイルの中身を読む関数を引数に取る。Dependabot の pull request は spec.md を変えないので、中身を読む関数は常に null を返すものでよい。検査の名前は「危険度の照合」（`.github/workflows/risk.yml`）で、[ブランチとリリース](../../guides/branches.md) 第 3.1 節の必須の検査に載っている（ruleset に戻す作業は issue 担当のセッション）。`branches.md` 第 2 節には spec 245 が `.gitignore` の許可リストの箇条を加えたので、DC-246-2 はこの箇条を直す。
 - 本 spec が変えるファイルと、他の spec との重なり（2026-10-28）：
 
 | まとまり | ファイル | 重なる spec |
@@ -259,10 +260,12 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - 前提：段階 1
 - 完了条件：spec の最後のレビューと、pull request の前のレビューを終え、spec をアーカイブに移している。
 
-- [ ] **T246-02-01** spec の最後のレビューと、pull request の前のレビューを行う（skill `review`）。
+- [ ] **T246-02-01** spec の最後のレビューを行う（skill `review`）。
   - 依存：段階 1
-- [ ] **T246-02-02** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
+- [ ] **T246-02-02** pull request の前のレビューを、draft の pull request で行う（skill `review`）。
   - 依存：T246-02-01
+- [ ] **T246-02-03** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
+  - 依存：T246-02-02
 
 ## 8. 後回しにする作業と起票の案
 

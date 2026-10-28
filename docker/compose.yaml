@@ -60,7 +60,7 @@ services:
 
   # 画像のバケット、CORS、公開の設定、ライフサイクル規則を作り、seed の商品画像を写して終わる
   seaweedfs-init:
-    image: amazon/aws-cli:2.38.1
+    image: amazon/aws-cli:2.38.3
     container_name: ec-site-seaweedfs-init
     depends_on:
       seaweedfs:
@@ -187,7 +187,7 @@ services:
   # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する
   # （docs/guides/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
   stripe-cli:
-    image: stripe/stripe-cli:v1.54.0
+    image: stripe/stripe-cli:v1.54.1
     container_name: ec-site-stripe-cli
     profiles: [stripe]
     env_file:

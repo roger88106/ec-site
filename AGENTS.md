@@ -46,8 +46,8 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 
 - tasks の「完了」の条件を満たし、対応する AC のテストが通り、既存のテストを壊していない（`./gradlew check` など）。
 - 文書を更新するタスク（用語集への追加など）を終え、チェックボックスを `[x]` にする。
-- 段階の最後のタスクの後は、段階の完了条件を確認して報告する。MVP の後の進捗は、追跡の issue と milestone で見る（README の 1→10 の節が issue を指す）。
-- spec をアーカイブに移すタスクは tasks の最後にし、同じ pull request に含める。pull request の作成はタスクにしない（開発の進め方 第 4.2 節）。
+- 段階の最後のタスクの後は、段階の完了条件を確認して報告する。MVP の後の進捗は、追跡の issue と milestone で見る（README の 1→10 の節）。
+- spec をアーカイブに移すタスクは tasks の最後にし、同じ pull request に含める。
 - spec の最後のレビューの段階では、変えたコードを [書き方の規則とレビュー](docs/rules/review.md) と照合する。
 
 ### 規則と指示の食い違い
@@ -57,9 +57,9 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 
 ### セッションの始めと終わり
 
-- 始めに直近の CI を確認する（`gh run list -b develop -L 1`）。`develop` の CI が失敗していれば、すぐに起票し（[開発の進め方](docs/rules/workflow.md) 第 4.1 節の急ぐ作業）、spec の作業の前に修正する。
+- 始めに直近の CI を確認する（`gh run list -b develop -L 1`）。`develop` の CI が失敗していれば、すぐに起票し（開発の進め方 第 4.1 節）、spec の作業の前に修正する。
 - 1 つの spec は 1 つの spec 担当のセッションで進め、長くなったら文脈の圧縮で続ける。issue 担当のセッションとのやり取りは [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。
-- 引き継ぎの文書（skill `handoff`）は、spec 担当のセッションを替えるときに作る。置き場所は `/.local/handoff/yyyyMMddHHmmss-<名前>/` に置く。指示がなければ最も新しいものを読む。古いものは利用者が削除する。
+- 引き継ぎの文書（skill `handoff`）は、spec 担当のセッションを替えるときに作る。置き場所は `/.local/handoff/yyyyMMddHHmmss-<名前>/`。指示がなければ最も新しいものを読む。古いものは利用者が削除する。
 - マージの後は、開発の進め方 第 5.7 節の後片付けを行い、許可を得ていればセッションをアーカイブする。
 
 ## モデルの区分
@@ -73,9 +73,10 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 高性能 | `[リスク]` のタスクの実装、原因の調査、重要な観点のレビュー | Claude Opus 5.5 | `claude-opus-5-5` |
 | 汎用 | 実装、判断が必要な作業、一般の観点のレビュー | Claude Sonnet 5.5 | `claude-sonnet-5-5` |
 | 軽量 | 機械的な作業（指示と読む量の合計が 10 万 token を超えないもの）※1 | Claude Haiku 5.5 | `claude-haiku-5-5` |
-| 組み込みのコードレビュー | pull request の前のレビュー | Claude Code の `/code-review` | |
+| 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | |
+| セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | |
 
-※1：Claude Haiku 5.5 は、指示（プロンプト）が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。品質が落ちるという情報もあるが、確認できていない。
+※1：Claude Haiku 5.5 は、指示が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。
 
 ## Git
 

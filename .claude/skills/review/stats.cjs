@@ -50,33 +50,41 @@ function toNumber(cell) {
 
 /**
  * 文書の中の、見出しの行が決まった列の名前と順序の表を読む。
+ * 見出しの行に一致する全ての表を読む。行頭の空白（箇条の下の字下げ）は除いて判定する。
  * 区切りの行の後から、「|」で始まらない行までを読む。見出しの行がなければ空の配列を返す。
+ * 見出しがあって行が 0 件の表は、ファイル名を付けて標準エラーに警告する。
  * @param {string} text 文書の全文
+ * @param {string} [file] 警告に付けるファイル名
  * @returns {{time: string, token: number, tokenUnreadable: boolean, high: number, must: number, recommended: number, adopted: number}[]} 表の行
  */
-function readReviewRows(text) {
-  const lines = text.split(/\r?\n/)
+function readReviewRows(text, file = '(不明)') {
+  const lines = text.split(/\r?\n/).map((l) => l.trimStart())
   const cellsOf = (line) => line.split('|').slice(1, -1).map((c) => c.trim())
-  const start = lines.findIndex((l) => {
-    const cells = cellsOf(l)
-    return cells.length === COLUMNS.length && cells.every((c, i) => c === COLUMNS[i])
-  })
-  if (start < 0) return []
   const rows = []
-  for (const line of lines.slice(start + 2)) {
-    if (!line.startsWith('|')) break
-    const cells = cellsOf(line)
-    if (cells.length < COLUMNS.length) continue
-    const token = toNumber(cells[4])
-    rows.push({
-      time: cells[0],
-      token: token.value,
-      tokenUnreadable: !token.ok,
-      high: toNumber(cells[6]).value,
-      must: toNumber(cells[7]).value,
-      recommended: toNumber(cells[8]).value,
-      adopted: toNumber(cells[9]).value,
-    })
+  for (let start = 0; start < lines.length; start++) {
+    const header = cellsOf(lines[start])
+    if (!lines[start].startsWith('|') || header.length !== COLUMNS.length || !header.every((c, i) => c === COLUMNS[i])) continue
+    let count = 0
+    let i = start + 2
+    for (; i < lines.length; i++) {
+      const line = lines[i]
+      if (!line.startsWith('|')) break
+      const cells = cellsOf(line)
+      if (cells.length < COLUMNS.length) continue
+      const token = toNumber(cells[4])
+      rows.push({
+        time: cells[0],
+        token: token.value,
+        tokenUnreadable: !token.ok,
+        high: toNumber(cells[6]).value,
+        must: toNumber(cells[7]).value,
+        recommended: toNumber(cells[8]).value,
+        adopted: toNumber(cells[9]).value,
+      })
+      count += 1
+    }
+    if (count === 0) console.error(`警告：${file} に見出しだけで行が 0 件の表がある`)
+    start = i - 1
   }
   return rows
 }
@@ -166,7 +174,7 @@ function main() {
   for (const number of specs) {
     const files = findSpecFiles(root, number)
     if (!files) missing.push(number)
-    else for (const f of files) rows.push(...readReviewRows(fs.readFileSync(f, 'utf8')))
+    else for (const f of files) rows.push(...readReviewRows(fs.readFileSync(f, 'utf8'), f))
   }
   if (missing.length) {
     console.error(`アーカイブに見つからない spec の番号：${missing.join(', ')}`)

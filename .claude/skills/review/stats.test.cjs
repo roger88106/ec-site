@@ -111,3 +111,49 @@ test('出力は弾・profile・spec の番号、時点ごとの行、合計の�
   const total = out.split('\n').find((l) => l.startsWith('| 合計'))
   assert.match(total, /\| 合計 \| 5 \| 110000 \| 2 \| 3 \| 3 \| 6 \| 75\.0% \|/)
 })
+
+test('箇条の下の字下げした表（行頭に 4 文字の空白）を読む', () => {
+  const text = [
+    '- [x] T-01 結果',
+    '',
+    `    ${HEADER}`,
+    `    ${SEP}`,
+    '    | 段階 1 | 網羅性 | 汎用 | 1 | 50000 | 3m | 0 | 2 | 1 | 2 |',
+    '    | 段階 2 | 網羅性 | 汎用 | 1 | 30000 | 2m | 1 | 0 | 1 | 2 |',
+    '',
+    '    表の後の字下げした文。',
+  ].join('\n')
+  const rows = readReviewRows(text)
+  assert.equal(rows.length, 2)
+  assert.equal(rows[1].high, 1)
+})
+
+test('同じファイルにある複数の表を全て読む', () => {
+  const text = [
+    HEADER,
+    SEP,
+    '| 段階 1 | 網羅性 | 汎用 | 1 | 50000 | 3m | 0 | 2 | 1 | 2 |',
+    '',
+    '- [x] T-02 結果',
+    '',
+    `    ${HEADER}`,
+    `    ${SEP}`,
+    '    | spec の最後 | 規則 | 高性能 | 1 | 20000 | 4m | 0 | 1 | 1 | 1 |',
+    '    | spec の最後 | 安全 | 高性能 | 1 | 10000 | 1m | 1 | 0 | 0 | 1 |',
+  ].join('\n')
+  assert.equal(readReviewRows(text).length, 3)
+})
+
+test('見出しだけで行が 0 件の表は、ファイル名を付けて標準エラーに警告する', () => {
+  const file = 'docs/specs/archive/x/999-y/tasks/empty.md'
+  const original = console.error
+  const messages = []
+  console.error = (m) => messages.push(String(m))
+  try {
+    assert.deepEqual(readReviewRows(`${HEADER}\n${SEP}\n\n本文\n`, file), [])
+  } finally {
+    console.error = original
+  }
+  assert.equal(messages.length, 1)
+  assert.ok(messages[0].includes(file))
+})

@@ -847,11 +847,14 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
     })
   })
 
-  test('script が見つからないとき、git・gh を含む入力は終了コード 2 で止め、理由を標準エラーに出す', () => {
+  test('script が見つからないとき、git・gh を含む入力（大文字を含む）は終了コード 2 で拒否し、理由を標準エラーに出力する', () => {
     inTempDir((dir) => {
-      const result = runHook('git push --force', dir)
-      assert.equal(result.status, 2, result.stderr)
-      assert.match(result.stderr, /agent-guard\.mjs/)
+      // Windows ではコマンドの名前の大文字と小文字を区別しないので、GIT・Gh も git・gh として扱う
+      for (const command of ['git push --force', 'GIT push --force', 'Gh pr merge 1']) {
+        const result = runHook(command, dir)
+        assert.equal(result.status, 2, `${command}：${result.stderr}`)
+        assert.match(result.stderr, /agent-guard\.mjs/, command)
+      }
     })
   })
 
@@ -863,7 +866,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
     })
   })
 
-  test('script が判定の前に異常終了したとき、git・gh を含む入力は終了コード 2 で止め、含まない入力は通す', () => {
+  test('script が判定の前に異常終了したとき、git・gh を含む入力（大文字を含む）は終了コード 2 で拒否し、含まない入力は通す', () => {
     const scripts = {
       // 構文の誤りで、node が読み込みの時点で終了コード 1 で終わる
       構文の誤り: 'const = 1\n',
@@ -877,10 +880,12 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
         const hooks = path.join(dir, 'scripts', 'dev', 'hooks')
         mkdirSync(hooks, { recursive: true })
         writeFileSync(path.join(hooks, 'agent-guard.mjs'), script)
-        const stopped = runHook('git push --force', dir)
-        assert.equal(stopped.status, 2, `${name}：${stopped.stderr}`)
-        assert.match(stopped.stderr, /agent-guard\.mjs/, name)
-        assert.equal(stopped.stdout, '', name)
+        for (const command of ['git push --force', 'GIT push --force']) {
+          const stopped = runHook(command, dir)
+          assert.equal(stopped.status, 2, `${name}、${command}：${stopped.stderr}`)
+          assert.match(stopped.stderr, /agent-guard\.mjs/, `${name}、${command}`)
+          assert.equal(stopped.stdout, '', `${name}、${command}`)
+        }
         const passed = runHook('echo x', dir)
         assert.equal(passed.status, 0, `${name}：${passed.stderr}`)
         assert.equal(passed.stdout, '', name)

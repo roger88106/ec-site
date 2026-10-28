@@ -118,7 +118,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - **DC-246-16** 同じ hook が、ruleset（ブランチの保護を含む）を変える `gh api`（`-X`・`--method` が `GET` 以外で、パスが `rulesets` か `branches/<名前>/protection`）で確認を求める。`gh api graphql` は対象にしない。
 - **DC-246-17** `.claude/settings.json` の permission で、自動マージを有効にする MCP のツール（`mcp__ccd_pr__set_auto_merge`）と、`.claude/settings.json`・`.claude/settings.local.json` の Edit・Write で、確認を求める。
 - **DC-246-18** DC-246-13〜16 の判定に、テストがある。`gh` の呼び出しはテストの中の偽物に差し替え、DC-246-14 の各条件が欠けた例、`Closes` がない例、実行中の検査がある例、時間切れの例を持つ。`risk.mjs` は差し替えず、実物を使う。
-- **DC-246-19** AGENTS.md の Git の表の「マージ・tag」の行が、hook が確認を求めることと、hook が見ない条件（担当のセッション、未解決の指摘）は文章の規則であることを書いている。[ブランチとリリース](../../guides/branches.md) 第 5 節の ruleset の箇条が、確認の画面が表示されることを書いている。
+- **DC-246-19** AGENTS.md の Git の表の「マージ・tag」の行が、hook が確認を求めることと、hook が見ない条件（担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み）は文章の規則であることを書いている。[ブランチとリリース](../../guides/branches.md) 第 5 節の ruleset の箇条が、確認の画面が表示されることを書いている。
 - **DC-246-20** 同じ hook が、PowerShell のツールのコマンドのうち、`git` か `gh` を含み、操作の語（`push`、`commit`、`tag`、`merge`、`api`、`release`、`hooksPath`）を含むものを拒否し、Bash のツールで実行するよう返す。それ以外の PowerShell のコマンドは通す。テストが、拒否する例と通す例（`git status`、`git log`、`gh pr view`）を持つ（決めたこと 5）。
 
 ## 4. 守る制約
@@ -136,6 +136,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | 判断を伴う規則（issue から始める、規模の承認、文書が先、確認の所で止まる）の強制 | hook で判定できない。文章の規則のまま残す |
 | 担当のセッションの区別（低の変更をマージするのは issue 担当のセッション） | hook からセッションの役割を見分けられない。文章の規則のまま残す（DC-246-19） |
 | 未解決の指摘のうち、重要度が高と必須のものが 0 であることの確認（DC-245-26 の条件の 1 つ） | レビューの記録は機械で読める形でない。文章の規則のまま残す（第 8 節の 1） |
+| `hotfix-` の後の `main` から `develop` への取り込みで、利用者の許可を求めること（[ブランチとリリース](../../guides/branches.md) 第 5 節） | 取り込みの pull request は `<issue の番号>-<短い名前>` のブランチから `develop` に向かうので、ブランチの名前で見分けられない。文章の規則のまま残す（DC-246-19） |
 | Bash のコマンド（`sed` など）による `.claude/settings*.json` の書き換えの確認 | Bash のコマンドの書き込み先を確実には判定できない。Edit・Write だけを対象にする（DC-246-17） |
 | セッションのアーカイブの許可 | アプリの機能で、hook の対象の外である |
 | ローカルの hook（heredoc の `\`、`environment.md` の読み込み、中国語の混入）を `settings.json` に移す | 環境・利用者に固有のもので、分け方（DC-246-3）のとおり `settings.local.json` に残す |
@@ -305,6 +306,7 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 | 1 | 未解決の指摘（重要度が高と必須）が 0 であることを、機械で読める形にして hook の条件に加える | spec 245 のレビューの記録の形が決まってから、issue 担当のセッションの候補の一覧に残す |
 | 2 | `bash -c "…"` に入れたコマンドと、環境変数（`GIT_CONFIG_COUNT` など）や `git config` で hook の置き場所を替えてから commit する形も、hook で判定する。設定 `push.followTags` による tag の push、セッションで先に `export` した `GH_REPO`、ローカルの tag を先に消してからの `git push --delete <tag>` も同じ。今は通す（T246-01-04、06） | エージェントがわざと使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 | 3 | `develop`・`main` の上の `git merge`・`git cherry-pick`・`git revert`・`git am` も失敗にする。git はこれらで pre-commit hook を実行しない。`develop` の上の `git pull`（merge）を止めないように、判定の条件を決める必要がある（段階 1 のレビュー） | 見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
+| 4 | `$(…)`・バッククォート・括弧（サブシェル）の中の `cd` が、外の後ろのコマンドのディレクトリに持ち越される。拒否する側の誤りで、通すべきでないものを通す誤りではない（spec の最後のレビュー） | 見逃しや誤った拒否が起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 
 ## 9. 動作の確認の記録
 

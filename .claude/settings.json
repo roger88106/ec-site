@@ -7,7 +7,7 @@
         "hooks": [
           {
             "type": "command",
-            "command": "i=\"$(cat)\"; f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/scripts/dev/hooks/agent-guard.mjs\" ]; then f=\"$d/scripts/dev/hooks/agent-guard.mjs\"; break; fi; done; if [ -n \"$f\" ]; then o=\"$(printf '%s' \"$i\" | node \"$f\")\"; r=$?; if [ \"$r\" -eq 0 ]; then printf '%s' \"$o\"; exit 0; fi; m=\"Claude Code の hook の script（$f）が判定の前に異常終了した（終了コード $r）。git・gh のコマンドは判定できないので止める。node があることと、script の誤り（構文、import）を確認して修正してから実行し直す。\"; else m=\"Claude Code の hook の script（scripts/dev/hooks/agent-guard.mjs）が見つからない（作業ディレクトリ：$PWD）。git・gh のコマンドは判定できないので止める。セッションの作業ツリーに cd してから実行し直す。\"; fi; if printf '%s' \"$i\" | grep -Eqw 'git|gh'; then echo \"$m\" >&2; exit 2; fi",
+            "command": "i=\"$(cat)\"; f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/scripts/dev/hooks/agent-guard.mjs\" ]; then f=\"$d/scripts/dev/hooks/agent-guard.mjs\"; break; fi; done; if [ -n \"$f\" ]; then o=\"$(printf '%s' \"$i\" | node \"$f\")\"; r=$?; if [ \"$r\" -eq 0 ]; then printf '%s' \"$o\"; exit 0; fi; m=\"Claude Code の hook の script（$f）が判定の前に異常終了した（終了コード $r）。git・gh のコマンドは判定できないので止める。node があることと、script の誤り（構文、import）を確認して修正してから実行し直す。\"; else m=\"Claude Code の hook の script（scripts/dev/hooks/agent-guard.mjs）が見つからない（作業ディレクトリ：$PWD）。git・gh のコマンドは判定できないので止める。セッションの作業ツリーに cd してから実行し直す。\"; fi; if printf '%s' \"$i\" | grep -Eqiw 'git|gh'; then echo \"$m\" >&2; exit 2; fi",
             "timeout": 30
           }
         ]

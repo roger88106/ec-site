@@ -93,7 +93,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/rules/workflow.md) 第 2.1 節） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない |
-| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす低のマージは通す）。担当のセッションと未解決の指摘は hook が見ないので、文章の規則として守る |
+| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、`hotfix-` の後の `main` から `develop` への取り込み、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす低のマージは通す）。担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み（ブランチの名前で見分けられない）は hook が見ないので、文章の規則として守る |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（`.gitignore` は [ブランチとリリース](docs/guides/branches.md) 第 2.2 節） |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/guides/branches.md)。

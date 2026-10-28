@@ -14,7 +14,7 @@ import { createServer } from 'node:net'
 import path from 'node:path'
 import { ADMIN_URL, BACKEND_MANAGEMENT_URL, BACKEND_URL, STORE_URL } from '../src/urls.ts'
 
-/** リポジトリのルート。ルートの .env の COMPOSE_FILE が docker/compose.yaml を指す */
+/** リポジトリのルート。ルートの compose.yaml が docker/compose.yaml を読む */
 const ROOT = path.resolve(import.meta.dirname, '../..')
 
 /** 再作成する database と、その持ち主 */

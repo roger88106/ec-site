@@ -1,0 +1,7 @@
+# リポジトリのルートで docker compose を実行するための入口。
+# 実体は docker/compose.yaml で、ここで include して読む（秘密の値は置かない）。
+# プロジェクトの名前。docker/compose.yaml の name と同じにする（script が docker/compose.yaml を直接読むため、両方に書く）
+name: ec-site
+
+include:
+  - docker/compose.yaml

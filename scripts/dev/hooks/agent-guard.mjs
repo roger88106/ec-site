@@ -18,12 +18,15 @@
 // PowerShell のツールのコマンドは書き方を読まず、git か gh と、操作の語（push、commit、tag、merge、api、release、hooksPath）を
 // 語として含めば拒否し、Bash のツールで実行するよう返す。それ以外（git status など）は通す。
 //
+// .claude/settings.json の hook のコマンドは、tool_input.command に git か gh の語がなければ、この script を起動せずに通す
+// （判定は全て git・gh のコマンドだけが対象なので、他のコマンドで node を起動する時間を省く）。command は node を使わずに awk で取り出し、
+// JSON のエスケープと引用符を戻してから語を探す。Windows では bash -c の引数の \\ が \ に減って届くので、hook のコマンドに \ を書かず、awk の中で作る。
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash と PowerShell 以外のツールは何もせずに通す。
 // 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出力する。通すときは何も出力しない。終了コードは常に 0。
-// 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd、env -C、git -C で決め、前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る
-// （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない）。
+// 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd・pushd・popd、env -C、git -C で決める。前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る
+// （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない。cd・pushd の先が変数かコマンドの置き換えを含めば、ディレクトリを変えない）。
 // $(…) とバッククォートの中のコマンド、timeout・env・xargs などを前に付けたコマンド、
-// シェルの予約語（do、then、{、! など）の後のコマンドも判定する。
+// シェルの予約語（do、then、{、! など）の後のコマンド、function f { … } の本体も判定する。
 // 判定の中で例外が発生したときは、git か gh を含むコマンドは拒否し、含まないコマンドは通す
 // （判定の不具合で force push や許可のないマージを通さず、かつ git・gh と関係のない Bash まで止めないため）。
 // ============================================================================
@@ -558,6 +561,13 @@ function stripPrefixes(raw, dir, options) {
       words = words.slice(1)
       continue
     }
+    // function f { … } は、{ の後ろを本体のコマンドとして読む。{ がなければ（function f() の形）定義の名前だけなので、語を残さない
+    // （function f() { … } の本体は、括弧で区切られた後の { が予約語として外れる）
+    if (words[0] === 'function') {
+      const brace = words.indexOf('{')
+      words = brace < 0 ? [] : words.slice(brace + 1)
+      continue
+    }
     const spec = PREFIX_COMMANDS[words[0]]
     if (!spec) break
     const { index, values } = skipPrefixOptions(words, 1, spec)
@@ -577,8 +587,39 @@ function stripPrefixes(raw, dir, options) {
 }
 
 /**
+ * cd・pushd・popd を実行した後のディレクトリを返す。それ以外のコマンドでは、今のディレクトリを返す。
+ * pushd は前のディレクトリを `stack` に積み（先がなければ、積んだ最後のディレクトリと入れ替え）、popd は積んだ最後のディレクトリに戻す。
+ *
+ * @param {string[]} words コマンドの語
+ * @param {string} dir 今のディレクトリ
+ * @param {string[]} stack pushd で積んだディレクトリ（変える）
+ * @param {PathOptions} options パスの解き方
+ * @returns {string} 後のディレクトリ
+ */
+function changeDir(words, dir, stack, options) {
+  const [name, ...args] = words
+  // popd +1 などの引数のある形は、どのディレクトリに移るかを追わないので、今のままにする
+  if (name === 'popd') return args.length === 0 && stack.length > 0 ? stack.pop() : dir
+  if (name !== 'cd' && name !== 'pushd') return dir
+  const target = args.find((w) => !/^-[LPe@]+$/.test(w))
+  if (name === 'pushd' && target === undefined) {
+    if (stack.length === 0) return dir
+    const top = stack.pop()
+    stack.push(dir)
+    return top
+  }
+  if (name === 'pushd') stack.push(dir)
+  // cd - は前のディレクトリに戻るが、前のディレクトリは追わないので、今のままにする
+  if (target === '-') return dir
+  // 先が変数かコマンドの置き換え（$D、$(…)、`…`）を含むときは、値を読めないので、今のままにする。
+  // 文字どおりのパスにすると、存在しないディレクトリで判定し、リポジトリの中の通常の git commit まで拒否するため
+  if (target !== undefined && /[$`]/.test(target)) return dir
+  return resolveDir(dir, target ?? '~', options)
+}
+
+/**
  * コマンドの全文を、コマンドごとの語と、実行するディレクトリに分ける。
- * ディレクトリは入力の cwd から始め、cd・pushd の後のコマンドでは、その先にする。
+ * ディレクトリは入力の cwd から始め、cd・pushd・popd の後のコマンドでは、移った先にする。
  *
  * @param {string} command コマンドの全文
  * @param {string} cwd 入力の cwd
@@ -588,16 +629,13 @@ function stripPrefixes(raw, dir, options) {
  */
 export function parseCommands(command, cwd, options = {}) {
   let dir = resolveDir(process.cwd(), cwd, options)
+  const stack = []
   const commands = []
   for (const raw of splitCommands(command)) {
     const { words, dir: commandDir, env, ghRepo } = stripPrefixes(raw, dir, options)
     if (words.length === 0) continue
     commands.push({ words, dir: commandDir, env, ghRepo })
-    if (words[0] === 'cd' || words[0] === 'pushd') {
-      const target = words.slice(1).find((w) => !/^-[LPe@]+$/.test(w))
-      // cd - は前のディレクトリに戻るが、前のディレクトリは追わないので、今のままにする
-      if (target !== '-') dir = resolveDir(dir, target ?? '~', options)
-    }
+    dir = changeDir(words, dir, stack, options)
   }
   return commands
 }

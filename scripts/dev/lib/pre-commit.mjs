@@ -39,10 +39,12 @@ const REJECTIONS = new Map([
       '  git switch -c hotfix-<issue の番号>-<短い名前>',
       '',
       'それ以外の変更は、変更を退避して develop から作業ブランチを作り、そこで変更を戻して commit する。',
+      '退避の一覧は作業ツリーの間で共有され、最も新しい退避を戻す git stash pop は、別の作業ツリーの退避を戻すことがある。一覧から、退避の名前の行の commit を選んで戻す。',
       '',
       '  git stash push -m <退避の名前>',
       '  git switch -c <issue の番号>-<短い名前> develop',
-      '  git stash pop',
+      "  git stash list --format='%H %gs'",
+      '  git stash apply <退避の名前の行の commit>',
     ],
   ],
 ])

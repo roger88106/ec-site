@@ -135,6 +135,31 @@ describe('cd と git -C から、対象のディレクトリを決める', () =>
     assert.deepEqual(dirs, [CWD, path.join(CWD, 'sub'), path.join(CWD, 'sub'), path.join(CWD, 'other')])
   })
 
+  test('cd・pushd の先が変数かコマンドの置き換えを含むときは、ディレクトリを変えずに、入力の cwd のリポジトリで判定する', () => {
+    for (const command of [
+      'cd "$(git rev-parse --show-toplevel)" && git commit -m x',
+      'cd "$D" && git commit -m x',
+      'cd $D/sub && git commit -m x',
+      'cd `pwd` && git commit -m x',
+      'pushd "$D" && git commit -m x',
+    ]) {
+      const deps = fakeDeps()
+      assert.equal(judgeCommand(command, CWD, deps), null, command)
+      assert.deepEqual(deps.calls.map((call) => call.cwd), [CWD], command)
+    }
+  })
+
+  test('popd は、対応する pushd の前のディレクトリに戻す', () => {
+    const deps = fakeDeps()
+    assert.equal(judgeCommand('pushd ../no-hook && ls; popd; git commit -m x', CWD, deps), null)
+    assert.deepEqual(deps.calls.map((call) => call.cwd), [CWD])
+    const dirs = parseCommands('pushd a; pushd b; popd; git status; popd; git log', CWD).map((c) => c.dir)
+    assert.deepEqual(dirs, [CWD, path.join(CWD, 'a'), path.join(CWD, 'a', 'b'), path.join(CWD, 'a'), path.join(CWD, 'a'), CWD])
+    // 先のない pushd は、今のディレクトリと積んだ最後のディレクトリを入れ替える
+    const swapped = parseCommands('pushd a; pushd; git status; pushd; git log', CWD).map((c) => c.dir)
+    assert.deepEqual(swapped, [CWD, path.join(CWD, 'a'), CWD, CWD, path.join(CWD, 'a')])
+  })
+
   test('env -C は、そのコマンドのディレクトリだけを替える', () => {
     const commands = parseCommands('env -C sub git status; git log', CWD)
     assert.deepEqual(commands.map((c) => [c.words[0], c.dir]), [['git', path.join(CWD, 'sub')], ['git', CWD]])
@@ -326,6 +351,8 @@ describe('シェルの予約語の後の git・gh も判定する', () => {
       ['{ git push -f; }', /force push/],
       ['! gh pr merge 1 --admin', /--admin/],
       ['for n in 1 2; do gh pr merge $n --squash; done', /--match-head-commit/],
+      ['function p { git push --force origin x; }; p', /force push/],
+      ['function p() { git push --force origin x; }; p', /force push/],
     ]
     for (const [command, pattern] of cases) {
       assertDenied(command, pattern)
@@ -335,6 +362,7 @@ describe('シェルの予約語の後の git・gh も判定する', () => {
   test('予約語の後の、読むだけの git は通す', () => {
     assertPassed('for f in a; do git status; done')
     assertPassed('if git diff --quiet; then echo same; fi')
+    assertPassed('function s { git status; }; s')
   })
 })
 
@@ -813,13 +841,17 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
 
   /**
    * hook のコマンドを Git の bash で、`cwd` を作業ディレクトリにして実行する（hook のコマンドは Git Bash で動く形で書くので、その bash で確認する）。
-   * CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す
+   * CLAUDE_PROJECT_DIR は `projectDir` があるときだけ渡す。`description` は tool_input に、`fields` は入力の最上位に加え、
+   * `binDir` は PATH の先頭に加える
    */
-  function runHook(command, cwd, projectDir) {
+  function runHook(command, cwd, projectDir, { description, fields = {}, binDir } = {}) {
     const env = withoutGitEnv()
     delete env.CLAUDE_PROJECT_DIR
     if (projectDir !== undefined) env.CLAUDE_PROJECT_DIR = projectDir
-    const input = JSON.stringify({ tool_name: 'Bash', tool_input: { command }, cwd, hook_event_name: 'PreToolUse' })
+    // Windows では環境変数が Path という名前のこともあるので、今の名前に加える
+    const pathName = Object.keys(env).find((name) => name.toUpperCase() === 'PATH') ?? 'PATH'
+    if (binDir !== undefined) env[pathName] = `${binDir}${path.delimiter}${env[pathName] ?? ''}`
+    const input = JSON.stringify({ tool_name: 'Bash', tool_input: { command, description }, cwd, hook_event_name: 'PreToolUse', ...fields })
     return spawnSync(gitBash(env), ['-c', hookCommand], { cwd, env, input, encoding: 'utf8' })
   }
 
@@ -863,6 +895,53 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
       const result = runHook('ls', dir)
       assert.equal(result.status, 0, result.stderr)
       assert.equal(result.stdout, '')
+    })
+  })
+
+  test('script が見つからなくても、command に git・gh の語がなければ、cwd・transcript_path・description にあっても通す', () => {
+    inTempDir((dir) => {
+      const cwd = path.join(dir, 'git-work')
+      mkdirSync(cwd)
+      const fields = { transcript_path: path.join(dir, 'gh', 'session.jsonl') }
+      const result = runHook('ls', cwd, undefined, { description: 'git の状態を見る前に ls する', fields })
+      assert.equal(result.status, 0, result.stderr)
+      assert.equal(result.stdout, '')
+    })
+  })
+
+  test('command の JSON のエスケープ（改行、引用符、\\）を戻してから、git・gh の語があるかを調べる', () => {
+    inTempDir((dir) => {
+      // どれも bash では git か gh のコマンドになる
+      for (const command of ['echo "a"\ngit push --force', 'ls; g"it" push -f', "ls; g'i't push -f", 'ls; \\git push -f', 'ls; gi\\t push -f', 'echo "a\\"b" && gh pr merge 1']) {
+        const result = runHook(command, dir)
+        assert.equal(result.status, 2, `${command}：${result.stderr}`)
+      }
+      // 語の一部にある git・gh と、二重引用符で囲んだ \n に続く git は、コマンドにならない
+      for (const command of ['echo digit ghost', 'ls "a\\ngit"']) {
+        const result = runHook(command, dir)
+        assert.equal(result.status, 0, `${command}：${result.stderr}`)
+      }
+    })
+  })
+
+  test('作業ツリーの中でも、command に git・gh の語がなければ、node を起動しない', () => {
+    inTempDir((dir) => {
+      const git = spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv(), encoding: 'utf8' })
+      assert.equal(git.status, 0, git.stderr)
+      const hooks = path.join(dir, 'scripts', 'dev', 'hooks')
+      mkdirSync(hooks, { recursive: true })
+      writeFileSync(path.join(hooks, 'agent-guard.mjs'), '')
+      // PATH の先頭に、起動されたことを出力するだけの node を置く
+      const binDir = path.join(dir, 'fake-bin')
+      mkdirSync(binDir)
+      writeFileSync(path.join(binDir, 'node'), '#!/bin/sh\necho fake-node\n', { mode: 0o755 })
+      const passed = runHook('ls', dir, undefined, { description: 'git の前に ls する', binDir })
+      assert.equal(passed.status, 0, passed.stderr)
+      assert.equal(passed.stdout, '')
+      // 同じ PATH で、git のコマンドでは、置いた node が起動される（この確認方法が効いていることの確認）
+      const called = runHook('git status', dir, undefined, { binDir })
+      assert.equal(called.status, 0, called.stderr)
+      assert.match(called.stdout, /fake-node/)
     })
   })
 

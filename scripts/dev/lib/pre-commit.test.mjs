@@ -51,9 +51,17 @@ describe('commit するブランチ', () => {
     const message = branchRejection('main')
     assert.match(message, /main には直接 commit しない/)
     assert.match(message, /^ {2}git switch -c hotfix-<issue の番号>-<短い名前>$/m)
-    assert.match(message, /^ {2}git stash push /m)
+    assert.match(message, /^ {2}git stash push -m <退避の名前>$/m)
     assert.match(message, /^ {2}git switch -c <issue の番号>-<短い名前> develop$/m)
     assert.doesNotMatch(message, /持ち越される/)
+  })
+
+  test('main で退避した変更は、作業ツリーの間で共有される退避の一覧から、退避の名前の行の commit を選んで戻す（pop は使わない）', () => {
+    const message = branchRejection('main')
+    assert.match(message, /^ {2}git stash list --format='%H %gs'$/m)
+    assert.match(message, /^ {2}git stash apply <退避の名前の行の commit>$/m)
+    assert.match(message, /共有/)
+    assert.doesNotMatch(message, /^ {2}git stash pop/m)
   })
 
   test('作業ブランチと detached HEAD（ブランチを読めないときを含む）では、通す', () => {

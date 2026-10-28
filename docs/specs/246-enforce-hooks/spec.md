@@ -217,11 +217,11 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - 範囲：`scripts/dev/lib/pre-commit.mjs`・`pre-commit-main.mjs`
   - 理由（リスク）：誤ると全ての commit が失敗する。
   - 確認方法：T246-01-01 のテストが通る。この作業ブランチで commit できる。
-- [ ] **T246-01-03** [テスト] Claude Code の hook の、拒否の判定（DC-246-10〜12）のテストを書き、レッドを確認する。
+- [x] **T246-01-03** [テスト] Claude Code の hook の、拒否の判定（DC-246-10〜12）のテストを書き、レッドを確認する。
   - 依存：なし
   - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`（決めたこと 4）
   - 確認方法：DC-246-10 の各形（`+` の refspec、`git commit -n`、`core.hooksPath` を含む）、DC-246-11（作業ツリーの例を含む）、DC-246-12 の拒否する例と通す例がレッドになる。
-- [ ] **T246-01-04** [リスク] Claude Code の hook の、拒否の判定を実装する（DC-246-4、5、10〜12）。
+- [x] **T246-01-04** [リスク] Claude Code の hook の、拒否の判定を実装する（DC-246-4、5、10〜12）。
   - 依存：T246-01-03
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
   - 確認方法：T246-01-03 のテストが通る。`check-all.sh` の script のテストに `agent-guard.test.mjs` が含まれ、通る。

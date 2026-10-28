@@ -14,10 +14,10 @@ description: 段階や spec の最後のレビュー、plan・tasks を書き終
 | 場面 | 対象 | 手順 |
 |------|------|------|
 | `[リスク]` のタスクの後 | そのタスクの差分 | 手順 1〜6（観点は、タスクに関わるもの：金額、セキュリティなど） |
-| 段階・spec の最後のレビュー | 差分（段階または spec の最初の commit の 1 つ前から HEAD まで） | 手順 1〜6 |
+| 段階・spec の最後のレビュー | 差分（段階または spec の最初の commit の 1 つ前から HEAD まで） | 手順 1〜6。中国語で指示する環境では手順 9 も行う |
 | plan・tasks の照合 | spec と plan、spec・plan と tasks | 手順 7 |
 | 文書のレビュー | 新しく書いた、または変えた文書 | 手順 8 |
-| pull request の前 | pull request の差分 | spec との一致と完了の定義を見る。使うツールの組み込みのコードレビュー も使う |
+| pull request の前 | pull request の差分 | spec との一致と完了の定義を見る。使うツールの組み込みのコードレビュー も使う。中国語で指示する環境では手順 9 も行う |
 | リリースの前 | リリースに入る差分 | マイグレーション、設定、互換性、リリースの説明の案を見る |
 | 全体のレビュー（受け入れ確認） | リポジトリ全体 | 手順 1〜6。対象を観点ごとに分け、さらに範囲（バックエンドのモジュール、フロントのアプリ、E2E、文書、script と CI）で分ける |
 
@@ -41,3 +41,16 @@ description: 段階や spec の最後のレビュー、plan・tasks を書き終
    完了の条件：全ての AC・DC が表にある。
 8. 文書をレビューする。日本語だけの文脈のサブエージェント（汎用）に、目指す書き方の見本（[エージェントの作業フロー](../../../docs/rules/subagents.md)、[spec 018 の plan](../../../docs/specs/archive/mvp/018-docs-and-tools/plan.md)）と [文書の言い回しと論理の規則](../docs/tech-writing.md) と、`node scripts/ci/ja-text.mjs --warning` で出力した warning の一覧（対象の文書の行だけ）を渡し、技術文書として不自然な言い回しを候補として挙げさせる。warning の文は、機械が示した候補なので、修正が必要かを読んで判断させる。結果は表（ファイル、行、今の書き方、修正案、理由）で受け取り、spec 担当のセッションが採否を判定する。このレビューは、spec・plan・tasks を書き終えたとき（利用者が確認する前）と、spec の最後のレビューで行う。
    完了の条件：全ての候補の採否が決まっている。
+9. 中国語で指示する環境では、校閲役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）に、変えた日本語を読ませる。環境は `git config --get ecsite.instructionLanguage` の値が `zh` かで決める（[中国語の混入を調べる](../zh-mixing/SKILL.md)）。日本語で指示する環境では行わない。
+   - 対象：最後のレビューと pull request の前のレビューの差分にある、文書、コードのコメント、テスト名、コミットメッセージ。
+   - 渡すもの：差分（`git diff` の出力、または対象のファイルと行の範囲）と、校閲役の定義だけ。会話の要約と中国語の文は渡さない。指示の文は日本語だけで書く。
+   - 結果は表（ファイル、行、今の書き方、修正案、理由）で受け取る。扱いは手順 5・6 と同じで、spec 担当のセッションが事実かを確認して採否を決め、結果を利用者に示す。
+   完了の条件：全ての指摘の採否が決まっている。
+10. 校閲役や他のレビューが見つけ、利用者が確認した型を、機械の検査に加える。加えるのは、利用者が型として確認したものだけで、指摘の一件ごとではない。
+   - 加える先は原因で決める。日本語の書き方の規則に反する型（使わないと決めた語、文体。誰が書いても誤り）は、層 1 の `scripts/ci/ja-text.json`。中国語の混入（中国語の字・語・直訳）は、層 2 の `.claude/skills/zh-mixing/zh-mixing.json`（書き方は [中国語の混入を調べる](../zh-mixing/SKILL.md) の「一覧の直し方」）。同じ字・語を両方に置かない。
+   - 層 1 の項目の形は、`error` と `warning` が `{ "word", "use" }`（`error` は許す語 `allow` も書ける）。文体の型は `style` の閾値と、`scripts/ci/ja-text.mjs` の `findStyleWarnings` で扱う。層 2 には warning がなく、見つかれば失敗にする。
+   - error と warning の分け方：error にするのは、リポジトリの全体（アーカイブした spec を除く）に当てて誤検出が 0 の型か、全ての誤検出を許す語（層 1 は `allow`、層 2 は `allow` の `{ "word", "file", "reason" }`）で除ける型だけである。
+     それ以外は、文脈で正しいかが決まる型なので、warning にする（層 1 だけ）。
+   - 当てて数える：層 1 は、先に `warning` に加え、`node scripts/ci/ja-text.mjs --warning` で一覧にして誤検出を数える。error にするときは `error` に移し、`node scripts/ci/ja-text.mjs` の失敗が 0 になるまで、見つかった行を修正するか許す語を追加する。層 2 は、加えてから `node .claude/skills/zh-mixing/zh-mixing.cjs --force tracked` で全体に当てる。環境の印がなくても `--force` で調べられる。
+   - 加えたら、それぞれの script のテスト（`node --test scripts/ci/ja-text.test.mjs`、`node --test .claude/skills/zh-mixing/zh-mixing.test.cjs`）と `bash scripts/ci/check-all.sh` が通ることを確認する。
+   完了の条件：加えた型ごとに、error か warning かの理由と、全体に当てた誤検出の数が説明できる。

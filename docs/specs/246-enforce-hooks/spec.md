@@ -264,7 +264,7 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 |----|--------------------|------|
 | DC-246-10 | `git push --force --dry-run origin 246-enforce-hooks` | 拒否 |
 | DC-246-10 | `git commit --no-verify --allow-empty -m 試し` | 拒否 |
-| DC-246-11 | pre-commit hook を一時的に別名にして `git commit --allow-empty -m 試し`（試した後に戻す） | 拒否 |
+| DC-246-11 | スクラッチパッドに作った hook のない一時リポジトリで `git commit --allow-empty -m 試し`（理由：作業ツリーの hook はメインの作業ツリーの `.git/hooks/` にあり、別名にすると他のセッションの commit にも響くため） | 拒否 |
 | DC-246-13 | `gh pr merge <閉じた pull request の番号>` | 拒否（`--match-head-commit` がない） |
 | DC-246-13 | フルパスの `gh` で `pr merge <閉じた pull request の番号> --match-head-commit <SHA>` | 確認の画面（利用者が拒否する） |
 | DC-246-15 | `git tag 試し` | 確認の画面（利用者が拒否する） |

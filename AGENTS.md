@@ -8,7 +8,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 1. [constitution](docs/constitution.md)：大綱と文書の地図
 2. [開発の進め方](docs/rules/workflow.md)：SDD と TDD、起票と規模、利用者の確認と中断、完了の定義
 3. 着手する段階の tasks と、冒頭の「参照」の文書（`docs/specs/<番号>-*/`。規模 L は `tasks/`、規模 M は spec.md の中の tasks、規模 S は issue）
-4. コードを書く・レビューする前に、関わる書き方の文書（constitution 第 14 節）。バックエンドは [バックエンドの書き方](docs/rules/backend-coding.md)、フロントは [フロントの書き方](docs/rules/frontend-coding.md)、どちらも [テストの書き方](docs/rules/test-writing.md) と [コメントの書き方](docs/rules/comments.md)
+4. コードを書く・レビューする前に、関わる書き方の文書（constitution 第 14 節の一覧。バックエンド、フロント、テスト、コメント）
 
 マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。ないときは、本書と `docs/` だけで進める。
 
@@ -35,7 +35,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 - 急ぐ作業（不具合、マージの失敗など）は、すぐに起票する（開発の進め方 第 4.1 節）。
 - spec 担当のセッションは、コードを書かず（数行の文書の修正を除く）、実装を実装役に任せ、合否を判定する（[エージェントの作業フロー](docs/rules/subagents.md) 第 4 節）。
 - spec 担当のセッションは、最初のタスクの前に、最新の `develop` を取り込み、plan の前提、範囲、依存、規則、並行する spec との重なりを照合し、差があれば文書を先に直す（開発の進め方 第 5.6 節）。
-- 作業の単位は tasks の 1 タスク。tasks にない作業は始めず、先に tasks への追加を提案する。ただし、実装の前の照合、`develop` の取り込み、pull request の作成、後片付けはタスクにしない（開発の進め方 第 4.2 節、開発の進め方 第 5.6 節、開発の進め方 第 5.7 節）。
+- 作業の単位は tasks の 1 タスク。tasks にない作業は始めず、先に tasks への追加を提案する。ただし、実装の前の照合、`develop` の取り込み、pull request の作成、後片付けはタスクにしない（開発の進め方 第 4.2、5.6、5.7 節）。
 - spec・plan・設計書・OpenAPI の誤りや不足に気づいたら、コードで回避せずに作業を止めて報告する。修正するときは文書が先。
 - 文書で決まっていない設計上の判断は推測せず、選択肢と推奨を示して確認する。
 - 利用者が確認する対象（開発の進め方 第 5.1 節）で止まり、確認を受けてから進む。段階とタスクの間では止まらない（開発の進め方 第 5.2 節）。作業を中断して質問するのは、開発の進め方 第 5.3 節の条件のときだけ。
@@ -78,9 +78,9 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | | |
 | セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | | |
 
-出典：最上位の既定の effort と選び方は公式の文書（model-config、costs、2026-10-28 確認）。週の 50% は利用者の決定。
+出典：最上位の既定の effort と選び方は公式の文書（model-config、costs）、能力と料金は同 models の概要と pricing（2026-10-28 確認）。最上位を使えるプラン（2026-10-28 の時点）は Max で、Pro は使えない。最上位の使用は週の使用量の半分までで、利用者の決定。
 
-※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（system prompt とツールの定義など、約 4〜6 万 token）を含み、読める量は約 4 万 token。
+※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分は、定義なしで約 4 万 token、`.claude/agents/` の定義ありで約 0.6〜1.9 万 token。読める量は、順に約 6 万、約 8〜9 万 token。
 
 ## Git
 

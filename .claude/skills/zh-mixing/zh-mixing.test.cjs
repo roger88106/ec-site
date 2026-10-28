@@ -284,3 +284,11 @@ test('SKILL.md に、層 2 の字・用語がない（環境の印によらな�
   const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'SKILL.md', line: i + 1, text })), list)
   assert.deepEqual(hits.map((h) => h.line), [])
 })
+
+test('校閲役の定義に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-29、30）', () => {
+  const body = fs.readFileSync(path.join(__dirname, '..', '..', 'agents', 'ja-proofreader.md'), 'utf8')
+  const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'ja-proofreader.md', line: i + 1, text })), list)
+  assert.deepEqual(hits.map((h) => h.line), [])
+  assert.match(body, /^omitClaudeMd: true$/m)
+  assert.match(body, /^tools: Read, Grep, Glob$/m)
+})

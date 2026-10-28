@@ -304,6 +304,7 @@ module.exports = {
   readConfig,
   readLocalAllow,
   stagedDiff,
+  withoutGitEnv,
   run,
   formatHits,
 }

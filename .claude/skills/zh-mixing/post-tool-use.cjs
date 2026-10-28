@@ -66,7 +66,7 @@ function handle(input, deps) {
 
 /** 本物の入出力の deps */
 function defaultDeps() {
-  const env = Object.fromEntries(Object.entries(process.env).filter(([name]) => !name.startsWith('GIT_')))
+  const env = zh.withoutGitEnv()
   return {
     getConfig: (cwd, key) => zh.readConfig(key, { cwd, env }),
     readFile: (file) => fs.readFileSync(file, 'utf8'),

@@ -119,13 +119,12 @@ export function findPatternProblems(terms) {
 }
 
 /**
- * 一覧の語を書いた行を探す。許す語が使わない語を含まないときは、設定の誤りとして例外にする。
+ * 一覧の設定の誤り（pattern の誤り、許す語の形の誤り、許す語が使わない語を含まない誤り）を、例外にする。
+ * 一覧を読んだ後に 1 回だけ呼ぶ。
  *
- * @param {string} text 文書
- * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許す語（許す語は {許す語: 理由}）
- * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語
+ * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 一覧の項目
  */
-export function findTerms(text, terms) {
+export function validateTerms(terms) {
   const patternProblems = findPatternProblems(terms)
   if (patternProblems.length) throw new Error(patternProblems.join('\n'))
   for (const term of terms) {
@@ -139,6 +138,16 @@ export function findTerms(text, terms) {
       }
     }
   }
+}
+
+/**
+ * 一覧の語を書いた行を探す。一覧の確認は validateTerms で先に行う。
+ *
+ * @param {string} text 文書
+ * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許す語（許す語は {許す語: 理由}）
+ * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語
+ */
+export function findTerms(text, terms) {
   const hits = []
   text.split('\n').forEach((line, index) => {
     for (const term of terms) {
@@ -318,6 +327,8 @@ if (isMain(import.meta.url)) {
   const args = process.argv.slice(2)
   const warning = args.includes('--warning')
   const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
+  validateTerms(list.error)
+  validateTerms(list.warning)
   const terms = warning ? list.warning : list.error
   const messageIndex = args.indexOf('--message')
   if (messageIndex !== -1) {
@@ -380,7 +391,7 @@ if (isMain(import.meta.url)) {
     // 「警告：」で始まる行は、check-all.sh が通った検査でも出す
     const warningCount = list.warning.reduce((sum, term) => {
       const docs = texts.reduce((n, text) => n + findTerms(text, [term]).length, 0)
-      return sum + docs + codeFiles.reduce((n, file, index) => n + findCodeTerms(file, codeTexts[index], [term]).length, 0)
+      return sum + docs + codeFiles.reduce((n, file, index) => n + (isTargetCode(file) ? findTerms(codeComments[index], [term]).length : 0), 0)
     }, styleHits.length)
     console.log(`警告：warning が ${warningCount} 件ある（一覧：node scripts/ci/ja-text.mjs --warning）`)
   }

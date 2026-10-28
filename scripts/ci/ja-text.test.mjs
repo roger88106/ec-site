@@ -7,7 +7,7 @@ import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from './lib/git-env.mjs'
 import * as jaText from './ja-text.mjs'
-import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments } from './ja-text.mjs'
+import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments, validateTerms } from './ja-text.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
 const list = JSON.parse(readFileSync(new URL('./ja-text.json', import.meta.url), 'utf8'))
@@ -107,7 +107,7 @@ describe('日本語の文の検査（pattern と examples の項目）', () => {
       { pattern: '(', use: 'x', examples: { hit: ['a'], miss: ['b'] } },
     ]
     for (const item of bad) {
-      assert.throws(() => findTerms('a', [item]), Error, item.pattern)
+      assert.throws(() => validateTerms([item]), Error, item.pattern)
       assert.notEqual(jaText.findPatternProblems([item]).length, 0, JSON.stringify(item))
     }
   })
@@ -217,12 +217,12 @@ describe('文書の用語の検査', () => {
 
   test('許す語が使わない語を含まないのは設定の誤りとして失敗にする', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '理由', ウェブ: '理由' } }]
-    assert.throws(() => findTerms('何か', terms), /ウェブ/)
+    assert.throws(() => validateTerms(terms), /ウェブ/)
   })
 
   test('許す語を配列で書くのは設定の誤りとして失敗にする', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー'] }]
-    assert.throws(() => findTerms('何か', terms), /理由/)
+    assert.throws(() => validateTerms(terms), /理由/)
   })
 
   test('許す語に理由がなければ失敗にする', () => {

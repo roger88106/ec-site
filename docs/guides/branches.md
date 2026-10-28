@@ -25,7 +25,7 @@
 - 作業ブランチは、pull request で `develop` に入れる。
 - `develop` と衝突するとき、または `develop` が同じファイルを変えたときは、`develop` を作業ブランチに取り込んでから入れる（[開発の進め方](../rules/workflow.md) 第 5.7 節）。最新の `develop` を含むことは求めない（第 3.1 節）。
 - 完了の定義（`develop` に入れる条件）は [開発の進め方](../rules/workflow.md)。
-- `.gitignore` は許可リストで、Git に入れる物だけを `!` で戻す。`.claude/` の下は、共有する skill、サブエージェントの定義（`agents/`）、プレビューの設定だけを戻す。作業用の script などを置く `/.local/` は Git に入れない。
+- `.gitignore` は許可リストで、Git に入れる物だけを `!` で戻す。`.claude/` の下は、共有する skill、サブエージェントの定義（`agents/`）、プレビューの設定、`settings.json`（チームの hook と permission）だけを戻す。作業用の script などを置く `/.local/` は Git に入れない。
 
 ## 3. 保護
 
@@ -86,7 +86,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 
 - `hotfix-<issue の番号>-<短い名前>` のブランチを `main` から切り、pull request で `main` に入れる。
 - `main` に入れた後に、`develop` に戻す。`main` から `<issue の番号>-<短い名前>` のブランチを切り、`develop` を取り込んでから、pull request で `develop` に入れる。理由：`main` を直接 `develop` に入れる pull request で衝突すると、`main` に commit しなければ解消できないため。
-- 必須の検査が GitHub の障害などで動かず、マージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。
+- 必須の検査が GitHub の障害などで動かず、マージできないときは、利用者の許可を得て ruleset の `enforcement` を一時的に `disabled` にし、マージの後にすぐ `active` に戻す。`gh api` で ruleset を変えると、Claude Code の hook が確認の画面を表示する。
 - `hotfix-` のブランチから `main` へのマージと、その後の `main` から `develop` への取り込みは、issue 担当のセッションが利用者の許可を得て行う。
 - tag と GitHub の Release は、第 4 節の手順 3、4 と同じ。
 

@@ -53,7 +53,7 @@ pnpm dev
 
   | hook | 書く 1 行 | 実行するもの |
   |------|-----------|--------------|
-  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh`。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める |
+  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh`。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める。今のブランチが `develop` か `main` なら、検査の前に commit を失敗にし、作業ブランチの作り方を示す（detached HEAD は通す）。この hook を置いていないと、Claude Code の hook（`scripts/dev/hooks/agent-guard.mjs`）が `git commit` を拒否する |
   | `.git/hooks/commit-msg` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/commit-msg" "$1" \|\| exit 1` | 関連 spec の検査を、ステージした設計の文書と commit のメッセージの 1 行目で実行する（メッセージは pre-commit の時点では決まっていないので、この hook で調べる）。あわせて `ja-text --message` で、メッセージの error（使わない語）を調べ、あれば commit は失敗する |
 
 ## 3. アカウント

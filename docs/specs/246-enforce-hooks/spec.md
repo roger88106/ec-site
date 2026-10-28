@@ -272,7 +272,7 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
 | DC-246-17 | `.claude/settings.json` を Edit で書き換える | 確認の画面（利用者が拒否する） |
 | DC-246-20 | PowerShell のツールで `git tag 試し` | 拒否（Bash で実行するよう返す） |
 
-- [ ] **T246-01-08** 文書を更新する（DC-246-2、3、9、19）。
+- [x] **T246-01-08** 文書を更新する（DC-246-2、3、9、19）。
   - 依存：T246-01-07
   - 範囲：`AGENTS.md`（分け方と hook の置き場所、Git の表のマージ・tag の行）、`docs/guides/setup.md`（DC-246-9、hook を置かないと Claude Code の hook が commit を拒否すること）、`docs/guides/branches.md`（第 2 節の `.claude/` の箇条、第 5 節の ruleset の箇条）、skill `zh-mixing`（設定の手順が分け方に合うこと）
   - 確認方法：DC-246-2、3、9、19 の各文書の該当箇所を、skill `review` の文書のレビューで読む。

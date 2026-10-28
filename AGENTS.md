@@ -93,7 +93,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/rules/workflow.md) 第 2.1 節） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない |
-| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節 |
+| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす低のマージは通す）。担当のセッションと未解決の指摘は hook が見ないので、文章の規則として守る |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（`.gitignore` は [ブランチとリリース](docs/guides/branches.md) 第 2.2 節） |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/guides/branches.md)。
@@ -105,3 +105,4 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 - JDK 21。統合テストと jOOQ のコード生成には Docker が必要。
 - Gradle のプロジェクトは `backend/ecsite/` にある（`./gradlew` もそこで実行する）。リポジトリのルートと `backend/` には Gradle の設定がない。
 - 起動・テストの手順は [開発環境の起動](docs/guides/setup.md) と [テストの実行方法](docs/guides/running-tests.md)。エージェントは skill `local-dev` を使う。
+- Claude Code の hook と permission の書き先は、2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のもの（zh-mixing の hook、利用者の SessionStart など）は `.claude/settings.local.json`（Git に入らない）である。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs` と、git の `pre-commit`・`commit-msg`）。`settings.json` は作業ツリーのブランチに commit されたものが読まれるので、`develop` を取り込んでいない作業ブランチでは効かない。設定はセッションの開始のときに読まれる。

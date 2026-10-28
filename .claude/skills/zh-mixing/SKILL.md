@@ -39,7 +39,7 @@ git config --local ecsite.instructionLanguage zh
 
 ## 設定の手順
 
-中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く。環境の印がなければ、設定しても何も調べない。
+中国語で指示する環境で、次の 3 つを設定する。どれも Git に入らないファイルに書く（チームの規則は `.claude/settings.json`、これは環境に固有なので `.claude/settings.local.json`。[AGENTS.md](../../../AGENTS.md) の環境）。環境の印がなければ、設定しても何も調べない。
 
 1. 環境の印：`git config --local ecsite.instructionLanguage zh`。`.git/config` に入り、全ての作業ツリーで共有する。
 2. Claude Code の hook（書き込みの後にエージェントへ返す）：`.claude/settings.local.json` の `hooks.PostToolUse` に、次を追加する。入口は `post-tool-use.cjs` で、書いたファイル（`tool_input.file_path`）を調べる。調べる対象は、リポジトリのファイルと memory のファイル（`~/.claude/projects/<プロジェクト>/memory/` の下）で、`/.local/` の下とリポジトリの外の他のファイルは調べない。見つかれば終了コード 2 と標準エラー出力（ファイル、行、語、直し方）で返し、Claude Code がエージェントに渡す。

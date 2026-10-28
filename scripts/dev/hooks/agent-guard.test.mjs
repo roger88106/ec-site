@@ -23,8 +23,8 @@ function fakeDeps({ files = { [path.join(CWD, '.git/hooks/pre-commit')]: INSTALL
   const calls = []
   return {
     calls,
-    runGit: (args, cwd) => {
-      calls.push({ args, cwd })
+    runGit: (args, cwd, env = {}) => {
+      calls.push({ args, cwd, env })
       return revParse
     },
     readText: (file) => files[path.resolve(file)] ?? null,
@@ -73,6 +73,23 @@ describe('コマンドの文字列を、1 つずつのコマンドの語に分�
   test('括弧の中のコマンドも区切って読む', () => {
     assert.deepEqual(splitCommands('(cd a && git push -f)'), [['cd', 'a'], ['git', 'push', '-f']])
   })
+
+  test('$(…) とバッククォートの中は、引用符の中でも外でも、別のコマンドとして読む', () => {
+    assert.deepEqual(splitCommands('out="$(git push --force 2>&1)"; echo "$out"'), [['git', 'push', '--force'], ['out=$(…)'], ['echo', '$out']])
+    assert.deepEqual(splitCommands('echo "a `git push -f` b"'), [['git', 'push', '-f'], ['echo', 'a `…` b']])
+    assert.deepEqual(splitCommands('echo $(cd x && git log)'), [['cd', 'x'], ['git', 'log'], ['echo', '$(…)']])
+  })
+
+  test('$(…) の中のヒアドキュメントの本文は、" を含んでもコマンドとして読まない', () => {
+    const command = "git commit -m \"$(cat <<'EOF'\nfix: 12\" の画面\ngit commit -n は拒否する\nEOF\n)\" && git status"
+    assert.deepEqual(splitCommands(command), [['cat'], ['git', 'commit', '-m', '$(…)'], ['git', 'status']])
+  })
+
+  test('引用符、$(…)、バッククォートが閉じていなければ、例外にする', () => {
+    for (const command of ['echo "abc', "echo 'abc", 'echo "$(git log"', 'echo `git log', "git commit -m \"$(cat <<'EOF'\nx\nEOF\n"]) {
+      assert.throws(() => splitCommands(command), /閉じていない/, command)
+    }
+  })
 })
 
 describe('cd と git -C から、対象のディレクトリを決める', () => {
@@ -83,6 +100,11 @@ describe('cd と git -C から、対象のディレクトリを決める', () =>
   test('cd の後のコマンドは、cd の先（相対パスは前のディレクトリから）を使う', () => {
     const dirs = parseCommands('cd sub && git status; cd ../other; git log', CWD).map((c) => c.dir)
     assert.deepEqual(dirs, [CWD, path.join(CWD, 'sub'), path.join(CWD, 'sub'), path.join(CWD, 'other')])
+  })
+
+  test('env -C は、そのコマンドのディレクトリだけを替える', () => {
+    const commands = parseCommands('env -C sub git status; git log', CWD)
+    assert.deepEqual(commands.map((c) => [c.words[0], c.dir]), [['git', path.join(CWD, 'sub')], ['git', CWD]])
   })
 
   test('git -C は、そのコマンドのディレクトリを替える（複数は順に重ねる）', () => {
@@ -133,6 +155,8 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
       'git push origin +HEAD:refs/heads/x',
       'git push --dry-run --force origin x',
       'git push --forc origin x',
+      'git push --mirror origin',
+      'git push --mirr origin',
     ]) {
       assertDenied(command, /force push.*新しい commit/s)
     }
@@ -168,6 +192,37 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
+  test('$(…) とバッククォートの中の push、ヒアドキュメントの commit に続けた push を拒否する', () => {
+    for (const command of [
+      'out="$(git push --force 2>&1)"; echo "$out"',
+      'echo "$(git push -f)"',
+      'echo "`git push -f`"',
+      'x=`git push --force`',
+      "git commit -m \"$(cat <<'EOF'\nfix: 12\" の画面\nEOF\n)\" && git push --force",
+    ]) {
+      assertDenied(command, /force push/)
+    }
+  })
+
+  test('前に付ける timeout・nice・stdbuf・xargs・env（選択肢を含む）を介した push を拒否する', () => {
+    for (const command of [
+      'timeout 60 git push --force',
+      'timeout -k 5 --signal=KILL 60s git push -f',
+      'env -u GIT_TRACE git push -f',
+      'env -i PATH=/usr/bin git push -f',
+      'nice git push -f',
+      'nice -n 5 git push -f',
+      'stdbuf -oL git push --force',
+      'stdbuf -o L git push --force',
+      'echo x | xargs git push --force origin',
+      'xargs -n 1 -I{} git push -f origin {}',
+    ]) {
+      assertDenied(command, /force push/)
+    }
+    assertDenied('env -C sub git commit --no-verify -m x', /--no-verify/)
+    assertPassed('timeout 60 git push origin x')
+  })
+
   test('引用符の中や、git 以外のコマンドの引数の文字列は通す', () => {
     for (const command of ['echo "git push --force"', "grep -n 'git push -f' a.md", 'echo git push --force']) {
       assertPassed(command)
@@ -199,6 +254,7 @@ describe('commit の前の検査の省略を拒否する', () => {
       'git commit --message -n',
       'git commit --amend',
       'git commit --amend --no-edit',
+      "git commit -m \"$(cat <<'EOF'\nfix: 12\" の画面\n\ngit commit -n は拒否する\nEOF\n)\"",
       'git commit -F - -a',
     ]) {
       assertPassed(command)
@@ -252,7 +308,13 @@ describe('pre-commit hook を置いていないリポジトリの commit を拒�
   test('rev-parse は、cd と git -C で決めたディレクトリで、git の前の --git-dir を付けて呼ぶ', () => {
     const deps = fakeDeps({ files: { [path.join(CWD, 'a', 'b', '.git/hooks/pre-commit')]: INSTALLED_HOOK } })
     assert.equal(judgeCommand('cd a && git -C b --git-dir=.git commit -m x', CWD, deps), null)
-    assert.deepEqual(deps.calls, [{ args: ['--git-dir=.git', 'rev-parse', '--git-path', 'hooks/pre-commit'], cwd: path.join(CWD, 'a', 'b') }])
+    assert.deepEqual(deps.calls, [{ args: ['--git-dir=.git', 'rev-parse', '--git-path', 'hooks/pre-commit'], cwd: path.join(CWD, 'a', 'b'), env: {} }])
+  })
+
+  test('前に付けた GIT_DIR・GIT_WORK_TREE は、ディレクトリからの絶対パスにして rev-parse の環境に渡す', () => {
+    const deps = fakeDeps()
+    assert.equal(judgeCommand('GIT_DIR=other/.git GIT_WORK_TREE=other GIT_TRACE=1 git commit -m x', CWD, deps), null)
+    assert.deepEqual(deps.calls[0].env, { GIT_DIR: path.join(CWD, 'other', '.git'), GIT_WORK_TREE: path.join(CWD, 'other') })
   })
 
   test('commit 以外の git のコマンドでは、hook を調べない', () => {
@@ -294,6 +356,12 @@ describe('実際のリポジトリと作業ツリーで、pre-commit hook を調
       assert.equal(judgeCommand('git -C wt commit -m x', root, deps), null)
       assert.equal(judgeCommand('git commit -m x', main, deps), null)
 
+      // GIT_DIR で、hook のない別のリポジトリに commit する形は拒否する
+      const other = path.join(root, 'other')
+      mkdirSync(other)
+      git(other, 'init', '-q')
+      assert.equal(judgeCommand(`GIT_DIR=${other.replaceAll('\\', '/')}/.git git commit -m x`, main, deps)?.decision, 'deny')
+
       // リポジトリでないディレクトリでは、対象を決められないので拒否する
       assert.equal(judgeCommand('git commit -m x', root, deps)?.decision, 'deny')
     } finally {
@@ -328,6 +396,12 @@ describe('hook の入力と出力', () => {
     assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny')
     assert.match(denied.hookSpecificOutput.permissionDecisionReason, /壊れた判定/)
     assert.equal(handleInput(input('ls -la'), fakeDeps(), broken), '')
+  })
+
+  test('引用符や $(…) が閉じていないコマンドは、git を含めば拒否し、含まなければ通す', () => {
+    const denied = JSON.parse(handleInput(input("git commit -m \"$(cat <<'EOF'\nx\nEOF\n"), fakeDeps()))
+    assert.equal(denied.hookSpecificOutput.permissionDecision, 'deny')
+    assert.equal(handleInput(input('echo "abc'), fakeDeps()), '')
   })
 
   test('script を実行すると、標準入力を読み、終了コード 0 で判定を出す', () => {

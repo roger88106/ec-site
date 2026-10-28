@@ -3,7 +3,7 @@
 // 同じディレクトリの pre-commit・commit-msg は git の hook で、これとは別のもの（git でなく Claude Code が実行する）。
 //
 // エージェントが Bash で実行しようとするコマンドの全文を読み、例外のない規則に反するものを拒否する。
-// - push 済みの履歴の書き換え：git push の force（-f、--force、--force-with-lease、--force-if-includes、+ で始まる refspec）
+// - push 済みの履歴の書き換え：git push の force（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ の refspec）
 // - commit の前の検査の省略：git commit・git push の --no-verify、git commit の -n、git -c core.hooksPath=…
 // - pre-commit hook を置いていないリポジトリでの git commit（git rev-parse --git-path hooks/pre-commit のファイルが、
 //   scripts/dev/hooks/pre-commit を呼んでいなければ拒否する。作業ツリーでは共通の .git の hooks を見る）
@@ -11,8 +11,9 @@
 //
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash 以外のツールは何もせずに通す。
 // 出力：拒否するときは hookSpecificOutput の permissionDecision を標準出力に出す。通すときは何も出さない。終了コードは常に 0。
-// 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd と git -C で決める
+// 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd、env -C、git -C で決め、前に付けた GIT_DIR・GIT_WORK_TREE も見る
 // （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない）。
+// $(…) とバッククォートの中のコマンド、timeout・env・xargs などを前に付けたコマンドも判定する。
 // 判定の中の例外では、git を含むコマンドは拒否し、含まないコマンドは通す
 // （判定の不具合で force push などを通さず、かつ git と関係のない Bash まで止めないため）。
 // ============================================================================
@@ -28,11 +29,33 @@ const GIT_TIMEOUT_MS = 5000
 /** 置いた pre-commit hook が呼ぶ script（開発環境の起動 第 2 節の置き方） */
 const PRE_COMMIT_SCRIPT = 'scripts/dev/hooks/pre-commit'
 
-/** コマンドの前に付けても、実行するコマンドが変わらない語 */
-const PREFIX_WORDS = new Set(['command', 'env', 'exec', 'nohup', 'time', 'builtin'])
+/**
+ * 前に付けて、後ろの語を別のコマンドとして実行させるコマンドと、その選択肢。
+ * valueShort・valueLong は値を次の語（短い選択肢は同じ語の続きも）に取るもの、optionalShort は値を同じ語の続きにだけ取るもの、
+ * operands は選択肢の後に読む値の数（timeout の時間）。
+ */
+const PREFIX_COMMANDS = {
+  builtin: { valueShort: '', valueLong: [] },
+  command: { valueShort: '', valueLong: [] },
+  exec: { valueShort: 'a', valueLong: [] },
+  nohup: { valueShort: '', valueLong: [] },
+  time: { valueShort: 'fo', valueLong: ['format', 'output'] },
+  env: { valueShort: 'uCS', valueLong: ['unset', 'chdir', 'split-string'] },
+  timeout: { valueShort: 'sk', valueLong: ['signal', 'kill-after'], operands: 1 },
+  nice: { valueShort: 'n', valueLong: ['adjustment'] },
+  stdbuf: { valueShort: 'ioe', valueLong: ['input', 'output', 'error'] },
+  xargs: {
+    valueShort: 'ILnPsdEa',
+    optionalShort: 'ile',
+    valueLong: ['arg-file', 'delimiter', 'eof', 'max-args', 'max-chars', 'max-lines', 'max-procs', 'process-slot-var'],
+  },
+}
 
-/** force push の長い選択肢 */
-const FORCE_OPTIONS = ['force', 'force-with-lease', 'force-if-includes']
+/** 前に付けた環境変数のうち、対象のリポジトリを替えるもの（pre-commit hook を調べる rev-parse に渡す） */
+const REPOSITORY_ENV = ['GIT_DIR', 'GIT_WORK_TREE']
+
+/** force push の長い選択肢（--mirror は、リモートの参照を force で更新し、リモートにしかない参照を消す） */
+const FORCE_OPTIONS = ['force', 'force-with-lease', 'force-if-includes', 'mirror']
 
 /** 検査を省略する長い選択肢 */
 const NO_VERIFY_OPTIONS = ['no-verify']
@@ -50,7 +73,7 @@ const COMMIT_OPTIONS = {
 
 /** force push を拒否する理由と代わりの手順 */
 const FORCE_REASON =
-  'push 済みの履歴を書き換えないため、force push（-f、--force、--force-with-lease、--force-if-includes、+ で始まる refspec）は使えない（AGENTS.md の Git の表）。' +
+  'push 済みの履歴を書き換えないため、force push（-f、--force、--force-with-lease、--force-if-includes、--mirror、+ で始まる refspec）は使えない（AGENTS.md の Git の表）。' +
   'push 済みの commit を直すときは、修正を新しい commit にして、force を付けずに push する。'
 
 /** 検査の省略を拒否する理由と代わりの手順 */
@@ -71,7 +94,7 @@ const HOOKS_PATH_REASON =
 
 /**
  * @typedef {object} Deps 差し替えられる外部の処理
- * @property {(args: string[], cwd: string) => { status: number | null, stdout: string }} runGit git を実行する
+ * @property {(args: string[], cwd: string, env?: Record<string, string>) => { status: number | null, stdout: string }} runGit git を実行する（env は加える環境変数）
  * @property {(file: string) => string | null} readText ファイルを読む。なければ null
  */
 
@@ -118,19 +141,47 @@ function skipHeredocs(command, start, heredocs) {
  * コマンドの文字列を、1 つずつのコマンドの語の並びに分ける（bash の書き方の、判定に必要な範囲だけを読む）。
  * `&&`・`||`・`;`・`|`・`&`・改行・括弧で区切り、引用符の中は区切らない。
  * コメント、リダイレクトとその先のファイル、ヒアドキュメントの本文は、語に含めない。
+ * `$(…)` とバッククォートの中は、二重引用符の中でも、別のコマンドとして同じ読み方で読み、外のコマンドより前に並べる
+ * （外の語には `$(…)`・`` `…` `` と書く）。
  *
  * @param {string} command コマンドの全文
  * @returns {string[][]} コマンドごとの語（引用符と \ を外したもの）
+ * @throws {Error} 引用符、`$(…)`、バッククォートが閉じていないとき
  */
 export function splitCommands(command) {
   const commands = []
+  tokenize(command, 0, null, commands)
+  return commands
+}
+
+/**
+ * コマンドの文字列を、`start` から、`closer` で閉じるまで（なければ終わりまで）読み、コマンドを `commands` に加える。
+ *
+ * @param {string} command コマンドの全文
+ * @param {number} start 読み始める位置
+ * @param {')' | '`' | null} closer 閉じる文字。`$(` の中は `)`、バッククォートの中は `` ` ``、一番外は null
+ * @param {string[][]} commands 読んだコマンドを加える先
+ * @returns {number} 閉じる文字の位置。一番外では文字列の長さ
+ * @throws {Error} 引用符、`$(…)`、バッククォートが閉じていないとき
+ */
+function tokenize(command, start, closer, commands) {
   let words = []
   let word = ''
   let inWord = false
   let dropNextWord = false
   let heredocs = []
-  let i = 0
+  // 括弧（サブシェル）の深さ。$( の中では、深さが 0 の ) で閉じる
+  let depth = 0
+  let i = start
   const n = command.length
+  const unclosed = (what) => new Error(`閉じていない${what}がある`)
+  /** `$(` か `` ` `` の中を別のコマンドとして読み、外の語には印を残す。閉じる文字の次の位置を返す */
+  const substitute = (at, inner) => {
+    const end = tokenize(command, at, inner, commands)
+    word += inner === ')' ? '$(…)' : '`…`'
+    inWord = true
+    return end + 1
+  }
   const endWord = () => {
     if (!inWord) return
     if (dropNextWord) dropNextWord = false
@@ -147,25 +198,39 @@ export function splitCommands(command) {
   // 1 文字ずつ、引用符・区切り・リダイレクト・ヒアドキュメントを見分けて語を作る
   while (i < n) {
     const c = command[i]
+    if ((closer === '`' && c === '`') || (closer === ')' && c === ')' && depth === 0)) {
+      endCommand()
+      return i
+    }
     if (c === "'") {
       const end = command.indexOf("'", i + 1)
-      word += end < 0 ? command.slice(i + 1) : command.slice(i + 1, end)
+      if (end < 0) throw unclosed("'")
+      word += command.slice(i + 1, end)
       inWord = true
-      i = end < 0 ? n : end + 1
+      i = end + 1
     } else if (c === '"') {
       inWord = true
       i++
-      while (i < n && command[i] !== '"') {
+      while (command[i] !== '"') {
+        if (i >= n) throw unclosed('"')
         // 二重引用符の中の \ は、" \ $ ` 改行の前でだけ働く
         if (command[i] === '\\' && i + 1 < n && '"\\$`\n'.includes(command[i + 1])) {
           if (command[i + 1] !== '\n') word += command[i + 1]
           i += 2
+        } else if (command.startsWith('$(', i) && command[i + 2] !== '(') {
+          i = substitute(i + 2, ')')
+        } else if (command[i] === '`') {
+          i = substitute(i + 1, '`')
         } else {
           word += command[i]
           i++
         }
       }
       i++
+    } else if (command.startsWith('$(', i) && command[i + 2] !== '(') {
+      i = substitute(i + 2, ')')
+    } else if (c === '`') {
+      i = substitute(i + 1, '`')
     } else if (c === '\\') {
       if (i + 1 < n && command[i + 1] !== '\n') {
         word += command[i + 1]
@@ -210,6 +275,8 @@ export function splitCommands(command) {
         dropNextWord = true
       }
     } else if (';&|()'.includes(c)) {
+      if (c === '(') depth++
+      else if (c === ')' && depth > 0) depth--
       endCommand()
       i++
     } else {
@@ -218,8 +285,9 @@ export function splitCommands(command) {
       i++
     }
   }
+  if (closer !== null) throw unclosed(closer === ')' ? ' $(' : ' `')
   endCommand()
-  return commands
+  return n
 }
 
 /**
@@ -240,23 +308,108 @@ export function resolveDir(base, target, { platform = process.platform, home = h
 }
 
 /**
+ * 前に付けたコマンドの選択肢を読み飛ばす。
+ *
+ * @param {string[]} words コマンドの語
+ * @param {number} start 選択肢の始まりの位置
+ * @param {{ valueShort: string, optionalShort?: string, valueLong: string[], operands?: number }} spec 選択肢
+ * @returns {{ index: number, values: { option: string, value: string }[] }} 後ろのコマンドの位置と、値を取った選択肢
+ */
+function skipPrefixOptions(words, start, { valueShort, optionalShort = '', valueLong, operands = 0 }) {
+  const values = []
+  let i = start
+  // 選択肢を、値を取るものは値と一緒に、位置の引数の手前まで読む
+  while (i < words.length) {
+    const word = words[i]
+    if (word === '--') {
+      i++
+      break
+    }
+    if (word === '-') {
+      i++
+      continue
+    }
+    if (!word.startsWith('-')) break
+    if (word.startsWith('--')) {
+      const [name, ...value] = word.slice(2).split('=')
+      if (value.length > 0) {
+        values.push({ option: name, value: value.join('=') })
+      } else if (valueLong.includes(name)) {
+        values.push({ option: name, value: words[i + 1] ?? '' })
+        i++
+      }
+    } else {
+      for (let j = 1; j < word.length; j++) {
+        const option = word[j]
+        if (valueShort.includes(option)) {
+          const rest = word.slice(j + 1)
+          values.push({ option, value: rest !== '' ? rest : (words[i + 1] ?? '') })
+          if (rest === '') i++
+          break
+        }
+        if (optionalShort.includes(option)) break
+      }
+    }
+    i++
+  }
+  return { index: Math.min(i + operands, words.length), values }
+}
+
+/**
+ * コマンドの前に付けた環境変数の設定と、後ろの語を実行させるコマンド（env、timeout など）を外す。
+ * env -C はディレクトリを、env -S は語を替える。
+ *
+ * @param {string[]} raw コマンドの語
+ * @param {string} dir 実行するディレクトリ
+ * @param {PathOptions} options パスの解き方
+ * @returns {{ words: string[], dir: string, env: Record<string, string> }} 実行するコマンドの語、ディレクトリ、対象のリポジトリを替える環境変数
+ */
+function stripPrefixes(raw, dir, options) {
+  let words = raw
+  let current = dir
+  const assigned = {}
+  // 環境変数の設定と、前に付けるコマンドがなくなるまで外す
+  while (words.length > 0) {
+    const assignment = /^([A-Za-z_][A-Za-z0-9_]*)=(.*)$/s.exec(words[0])
+    if (assignment) {
+      assigned[assignment[1]] = assignment[2]
+      words = words.slice(1)
+      continue
+    }
+    const spec = PREFIX_COMMANDS[words[0]]
+    if (!spec) break
+    const { index, values } = skipPrefixOptions(words, 1, spec)
+    let split = []
+    for (const { option, value } of values) {
+      if (words[0] === 'env' && (option === 'C' || option === 'chdir')) current = resolveDir(current, value, options)
+      if (words[0] === 'env' && (option === 'S' || option === 'split-string')) split = splitCommands(value)[0] ?? []
+    }
+    words = [...split, ...words.slice(index)]
+  }
+  const env = {}
+  for (const name of REPOSITORY_ENV) {
+    if (assigned[name] !== undefined && assigned[name] !== '') env[name] = resolveDir(current, assigned[name], options)
+  }
+  return { words, dir: current, env }
+}
+
+/**
  * コマンドの全文を、コマンドごとの語と、実行するディレクトリに分ける。
  * ディレクトリは入力の cwd から始め、cd・pushd の後のコマンドでは、その先にする。
  *
  * @param {string} command コマンドの全文
  * @param {string} cwd 入力の cwd
  * @param {PathOptions} [options] パスの解き方
- * @returns {{ words: string[], dir: string }[]} コマンドごとの語（前に付けた環境変数の設定などを除いたもの）とディレクトリ
+ * @returns {{ words: string[], dir: string, env: Record<string, string> }[]} コマンドごとの語（前に付けた環境変数の設定などを除いたもの）、
+ *   ディレクトリ、対象のリポジトリを替える環境変数
  */
 export function parseCommands(command, cwd, options = {}) {
   let dir = resolveDir(process.cwd(), cwd, options)
   const commands = []
   for (const raw of splitCommands(command)) {
-    let start = 0
-    while (start < raw.length && (/^[A-Za-z_][A-Za-z0-9_]*=/.test(raw[start]) || PREFIX_WORDS.has(raw[start]))) start++
-    const words = raw.slice(start)
+    const { words, dir: commandDir, env } = stripPrefixes(raw, dir, options)
     if (words.length === 0) continue
-    commands.push({ words, dir })
+    commands.push({ words, dir: commandDir, env })
     if (words[0] === 'cd' || words[0] === 'pushd') {
       const target = words.slice(1).find((w) => !/^-[LPe@]+$/.test(w))
       // cd - は前のディレクトリに戻るが、前のディレクトリは追わないので、今のままにする
@@ -273,16 +426,17 @@ export function parseCommands(command, cwd, options = {}) {
  * @property {string[]} pathOptions --git-dir・--work-tree の選択肢（そのまま git に渡せる形）
  * @property {string | null} subcommand サブコマンド
  * @property {string[]} args サブコマンドの後の語
+ * @property {Record<string, string>} env 前に付けた、対象のリポジトリを替える環境変数（GIT_DIR・GIT_WORK_TREE）
  */
 
 /**
  * コマンドが git の呼び出しなら、git の前の選択肢とサブコマンドを読む。フルパスと git.exe の形も git として読む。
  *
- * @param {{ words: string[], dir: string }} command コマンドの語とディレクトリ
+ * @param {{ words: string[], dir: string, env?: Record<string, string> }} command コマンドの語、ディレクトリ、対象のリポジトリを替える環境変数
  * @param {PathOptions} [options] パスの解き方
  * @returns {GitInvocation | null} git の呼び出し。git でなければ null
  */
-export function parseGitInvocation({ words, dir }, options = {}) {
+export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
   const program = words[0].split(/[\\/]/).pop()
   if (!/^git(\.exe)?$/i.test(program)) return null
   let current = dir
@@ -308,7 +462,7 @@ export function parseGitInvocation({ words, dir }, options = {}) {
       i++
     }
   }
-  return { dir: current, configs, pathOptions, subcommand: words[i] ?? null, args: words.slice(i + 1) }
+  return { dir: current, configs, pathOptions, subcommand: words[i] ?? null, args: words.slice(i + 1), env }
 }
 
 /**
@@ -409,7 +563,7 @@ function judgeCommitOptions(git) {
  */
 function judgePreCommitHook(git, deps) {
   if (git.subcommand !== 'commit') return null
-  const result = deps.runGit([...git.pathOptions, 'rev-parse', '--git-path', 'hooks/pre-commit'], git.dir)
+  const result = deps.runGit([...git.pathOptions, 'rev-parse', '--git-path', 'hooks/pre-commit'], git.dir, git.env)
   const relative = result?.status === 0 ? result.stdout.trim() : ''
   if (relative === '') {
     return deny(
@@ -461,7 +615,7 @@ export function judgeCommand(command, cwd, deps, options = {}) {
  */
 export function createDeps(env = process.env) {
   return {
-    runGit: (args, cwd) => spawnSync('git', args, { cwd, env, encoding: 'utf8', timeout: GIT_TIMEOUT_MS, windowsHide: true }),
+    runGit: (args, cwd, extra = {}) => spawnSync('git', args, { cwd, env: { ...env, ...extra }, encoding: 'utf8', timeout: GIT_TIMEOUT_MS, windowsHide: true }),
     readText: (file) => {
       try {
         return readFileSync(file, 'utf8')

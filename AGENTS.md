@@ -60,7 +60,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 - 始めに直近の CI を確認する（`gh run list -b develop -L 1`）。`develop` の CI が失敗していれば、すぐに起票し（開発の進め方 第 4.1 節）、spec の作業の前に修正する。
 - 1 つの spec は 1 つの spec 担当のセッションで進め、長くなったら文脈の圧縮で続ける。issue 担当のセッションとのやり取りは [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。
 - 引き継ぎの文書（skill `handoff`）は、spec 担当のセッションを替えるときに作る。置き場所は `/.local/handoff/yyyyMMddHHmmss-<名前>/`。指示がなければ最も新しいものを読む。古いものは利用者が削除する。
-- マージの後は、開発の進め方 第 5.7 節の後片付けを行い、許可を得ていればセッションをアーカイブする。
+- マージの後は、開発の進め方 第 5.7 節の後片付けを行う。
 
 ## モデルの区分
 
@@ -87,12 +87,14 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/rules/workflow.md) 第 2.1 節） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない |
-| マージ・tag | マージと tag は、利用者の許可を得てから。許可は操作のたびに求める。エージェントは、自分が作った pull request を利用者の許可なしにマージしない。spec 担当のセッションは、マージの許可と一緒に、セッションのアーカイブの許可も求める（開発の進め方 第 5.7 節）。担当：作業ブランチ → `develop` は spec 担当のセッション、`release-` のブランチと `hotfix-` のブランチ → `main`、および `hotfix-` の後の `main` → `develop` は issue 担当のセッション |
-| 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く ※3 |
+| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする（[エージェントの作業フロー](docs/rules/subagents.md) 第 4 節）。spec 担当のセッションは、アーカイブの許可も一緒に求める（開発の進め方 第 5.7 節）。担当：作業ブランチ → `develop` は spec 担当、`release-`・`hotfix-` → `main` と `hotfix-` の後の `main` → `develop` は issue 担当のセッション |
+| 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く ※4 |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/guides/branches.md)。
 
-※3：`.claude` の skill とプレビューの設定は共有するので Git に入れる（マシン固有のパスは書かない）。ツールが置き場所を決めていて `/.local/` に置けないものだけを、`.gitignore` に例外として書く。
+※3：マージは `gh pr merge --match-head-commit <SHA>` で行う。
+
+※4：`.gitignore` は許可リストで、Git に入れる物だけを `!` で戻す。`.claude/` の下は、共有する skill とプレビューの設定だけを戻す。
 
 ## 環境
 

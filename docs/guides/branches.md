@@ -104,6 +104,7 @@ GitHub の ruleset を `develop` と `main` に作る。
 - `develop` が進んで Dependabot の pull request が最新でなくなったときは、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
 - `@types/node` の major は、Dependabot の対象から外す。理由：実行の環境は `.node-version` の Node（`package.json` の `engines.node` はその下限の範囲）で、型の定義だけを上げると、そのバージョンにない API も型の検査を通ってしまうため。Node のバージョンを上げるときに、合わせて上げる。
 - `github-actions` は、ワークフローに加え、ローカルの複合の action（`.github/actions/setup-frontend`）で使う action のバージョンも更新する。理由：`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため、`directories` に複合の action のディレクトリを追加している。複合の action を増やしたら、追加する。
+- 危険度は経路で判定する。`github-actions` の更新（`.github/`）と major は高で、利用者が許可する。他の minor と patch は低で、issue 担当のセッションがマージする。CI の job は本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[エージェントの作業フロー](../rules/subagents.md) 第 4 節）。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
 - Gradle のバージョンを上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<バージョン>-bin.zip.sha256` の値に替える。Dependabot の Gradle の wrapper の更新がこの値も替えるかは確認していないので、更新の pull request で確認する。
 - TypeScript のバージョンを上げる pull request は、`node scripts/ci/globals/lib-globals.mjs --write` で組み込みの名前の一覧（`scripts/ci/globals/lib-globals.json`）を書き直し、差分を確認する。そのうえで `node scripts/ci/frontend-rules.mjs` を実行し、増えた名前によるシャドーイングがないことを確認する。lib の名前が変わると、CI の店舗画面の「組み込みの名前の一覧の確認」が失敗する。

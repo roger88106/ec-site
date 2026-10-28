@@ -1,0 +1,219 @@
+import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
+import { describe, test } from 'node:test'
+import {
+  compareBody,
+  findDeclaredSpecs,
+  findMissingPaths,
+  formatJudgement,
+  isDependabot,
+  judgeRisk,
+  parseRiskConfig,
+  readBodyRisk,
+} from './risk.mjs'
+
+/** 実際の高の経路の一覧 */
+const CONFIG = parseRiskConfig(readFileSync(new URL('./risk.json', import.meta.url), 'utf8'))
+
+/** spec.md の中身を返す関数を作る（一覧にないファイルは読めない＝削除とみなす） */
+const reader = (contents) => (file) => contents[file] ?? null
+
+/** 冒頭に「危険度：高」の行を持つ spec */
+const DECLARED_SPEC = ['# Spec 900：例', '', 'ステータス：確定', '危険度：高', '', '## 1. 背景と目的', ''].join('\n')
+
+/** 冒頭に宣言のない spec（本文の中にだけ「危険度：高」がある） */
+const PLAIN_SPEC = ['# Spec 901：例', '', 'ステータス：確定', '', '## 1. 背景と目的', '', '危険度：高'].join('\n')
+
+/** 高の経路を含まないファイル */
+const LOW_FILES = ['frontend/store/src/features/cart/CartPage.tsx', 'docs/design/modules/catalog.md', 'README.md']
+
+describe('変更の危険度の判定', () => {
+  // まとまりごとに、高の経路の例（テストのファイルも含む）
+  const examples = {
+    'エージェントの規則と設定': ['AGENTS.md', 'docs/constitution.md', 'docs/rules/workflow.md', '.claude/skills/review/SKILL.md', 'scripts/ci/risk.mjs', 'scripts/dev/hooks/pre-commit', 'docs/guides/branches.md'],
+    'CI とリリース': ['.github/workflows/ci.yml', '.github/dependabot.yml'],
+    '認証': [
+      'backend/ecsite/src/main/java/com/ecsite/config/security/SecurityConfig.java',
+      'backend/ecsite/src/main/java/com/ecsite/common/security/CurrentUser.java',
+      'frontend/store/src/auth/session.ts',
+      'frontend/store/src/app/api/auth/[...nextauth]/route.ts',
+      'frontend/admin/src/auth/permissions.ts',
+      'docker/keycloak/realms/ec-store-realm.json',
+    ],
+    '支払': [
+      'backend/ecsite/src/main/java/com/ecsite/module/payment/domain/Payment.java',
+      'backend/ecsite/src/main/java/com/ecsite/module/order/application/payment/PayOrder.java',
+    ],
+    '権限': ['docs/design/role-permissions.md'],
+    'データベース': ['backend/ecsite/src/main/resources/db/migration/V202611010900__x.sql'],
+    '契約': ['api/openapi/admin.yaml'],
+  }
+
+  test('高の経路の一覧は、まとまりの名前と経路を持つ', () => {
+    assert.deepEqual(CONFIG.groups.map((group) => group.name), Object.keys(examples))
+    for (const group of CONFIG.groups) assert.ok(group.paths.length > 0, group.name)
+  })
+
+  for (const [name, files] of Object.entries(examples)) {
+    test(`高の経路のまとまり「${name}」の例は、どれも高になり、そのまとまりに当たる`, () => {
+      for (const file of files) {
+        const result = judgeRisk([file], CONFIG, reader({}))
+        assert.equal(result.level, '高', file)
+        assert.deepEqual(result.hits, [{ name, files: [file] }], file)
+      }
+    })
+  }
+
+  test('テストのファイルも、高の経路の下にあれば高になる（バックエンドは本番のコードと同じパッケージのテスト・統合テスト・テストの補助）', () => {
+    const files = [
+      'backend/ecsite/src/test/java/com/ecsite/module/payment/PaymentTest.java',
+      'backend/ecsite/src/integrationTest/java/com/ecsite/config/security/AuthorizationTest.java',
+      'backend/ecsite/src/testFixtures/java/com/ecsite/config/security/TestTokens.java',
+      'backend/ecsite/src/test/java/com/ecsite/contract/AdminApiPermissionContractTest.java',
+      'frontend/admin/src/auth/permissions.test.ts',
+    ]
+    for (const file of files) assert.equal(judgeRisk([file], CONFIG, reader({})).level, '高', file)
+  })
+
+  test('経路の「*」は、ディレクトリの 1 つの階層に当たる', () => {
+    const config = parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: ['src/*/java/'] }] }))
+    assert.equal(judgeRisk(['src/main/java/A.java'], config, reader({})).level, '高')
+    assert.equal(judgeRisk(['src/main/kotlin/java/A.kt'], config, reader({})).level, '低')
+  })
+
+  test('経路は、ディレクトリの区切りまで一致したときだけ当たる（前方が同じだけの名前は当たらない）', () => {
+    const files = ['AGENTS.md.bak', 'docs/rules-old/a.md', '.claude-local/x', 'api/openapi-legacy/a.yaml']
+    assert.equal(judgeRisk(files, CONFIG, reader({})).level, '低')
+  })
+
+  test('高の経路に当たらないファイルだけなら低になる', () => {
+    const result = judgeRisk(LOW_FILES, CONFIG, reader({}))
+    assert.equal(result.level, '低')
+    assert.deepEqual(result.hits, [])
+    assert.deepEqual(result.specs, [])
+  })
+
+  test('差分がないときは低になる', () => {
+    const result = judgeRisk([], CONFIG, reader({}))
+    assert.equal(result.level, '低')
+    assert.equal(result.total, 0)
+  })
+
+  test('冒頭に「危険度：高」の行がある spec.md を含む差分は、経路が低でも高になる', () => {
+    const file = 'docs/specs/900-example/spec.md'
+    const result = judgeRisk([file, ...LOW_FILES], CONFIG, reader({ [file]: DECLARED_SPEC }))
+    assert.equal(result.level, '高')
+    assert.deepEqual(result.hits, [])
+    assert.deepEqual(result.specs, [file])
+  })
+
+  test('アーカイブへ移した spec.md（移した先が差分に入る）の宣言も読む', () => {
+    const moved = 'docs/specs/archive/1to10/900-example/spec.md'
+    const result = judgeRisk(['docs/specs/900-example/spec.md', moved], CONFIG, reader({ [moved]: DECLARED_SPEC }))
+    assert.equal(result.level, '高')
+    assert.deepEqual(result.specs, [moved])
+  })
+
+  test('宣言が冒頭（最初の節の見出しより前）になければ、宣言とみなさない', () => {
+    const file = 'docs/specs/901-example/spec.md'
+    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: PLAIN_SPEC })), [])
+  })
+
+  test('spec.md でないファイル（plan.md、tasks）の「危険度：高」の行は、宣言とみなさない', () => {
+    const files = ['docs/specs/900-example/plan.md', 'docs/specs/900-example/tasks/01-a.md']
+    const contents = Object.fromEntries(files.map((file) => [file, DECLARED_SPEC]))
+    assert.deepEqual(findDeclaredSpecs(files, reader(contents)), [])
+  })
+
+  test('改行が CRLF の spec.md の宣言も読む', () => {
+    const file = 'docs/specs/900-example/spec.md'
+    assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: DECLARED_SPEC.replaceAll('\n', '\r\n') })), [file])
+  })
+
+  test('出力に、判定と、当たった経路（まとまりの名前とファイル）と、宣言した spec が入り、最後の行が要約の行になる', () => {
+    const spec = 'docs/specs/900-example/spec.md'
+    const files = ['docs/rules/workflow.md', 'api/openapi/admin.yaml', spec, 'README.md']
+    const lines = formatJudgement(judgeRisk(files, CONFIG, reader({ [spec]: DECLARED_SPEC })))
+    assert.equal(lines[0], '判定：高')
+    assert.ok(lines.includes('- エージェントの規則と設定：docs/rules/workflow.md'), lines.join('\n'))
+    assert.ok(lines.includes('- 契約：api/openapi/admin.yaml'), lines.join('\n'))
+    assert.ok(lines.includes(`- spec の宣言：${spec}`), lines.join('\n'))
+    assert.match(lines.at(-1), /^当たったファイル：2、宣言した spec：1（差分のファイル 4 件中）$/)
+  })
+
+  test('当たったファイルが多いまとまりは、先頭の数件と残りの件数だけを出す（本文に貼れる短さにする）', () => {
+    const files = Array.from({ length: 12 }, (_, index) => `.claude/skills/x/file${String(index).padStart(2, '0')}.md`)
+    const lines = formatJudgement(judgeRisk(files, CONFIG, reader({})))
+    const line = lines.find((item) => item.startsWith('- エージェントの規則と設定：'))
+    assert.match(line, /ほか 7 件$/)
+    assert.ok(lines.length <= 4, lines.join('\n'))
+  })
+
+  test('一覧の経路が実在しなければ、誤りとして返す（経路の書き間違いで判定が低になるのを防ぐ）', () => {
+    const config = parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: ['docs/rules/', 'docs/nothing/', 'NOTHING.md'] }] }))
+    assert.deepEqual(findMissingPaths(config, ['docs/rules/workflow.md', 'README.md']), ['docs/nothing/', 'NOTHING.md'])
+  })
+
+  test('一覧の形が違えば（まとまりの名前がない、経路が空）、読むときに失敗にする', () => {
+    assert.throws(() => parseRiskConfig(JSON.stringify({ groups: [{ paths: ['a/'] }] })))
+    assert.throws(() => parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: [] }] })))
+    assert.throws(() => parseRiskConfig(JSON.stringify({})))
+  })
+})
+
+describe('pull request の本文の危険度との比べ', () => {
+  /** 「## 危険度」の節に値を書いた本文 */
+  const body = (value) => ['## 概要', '', '何かを変える', '', '## 危険度', '', '<!-- risk.mjs の出力を貼る -->', '', value, '- 契約：api/openapi/admin.yaml', '', '## 確認したこと', '', '- [x] CI が通る'].join('\n')
+
+  test('本文の「## 危険度」の節の「判定：」の行の値を読む', () => {
+    assert.deepEqual(readBodyRisk(body('判定：高')), { value: '高' })
+    assert.deepEqual(readBodyRisk(body('判定：低').replaceAll('\n', '\r\n')), { value: '低' })
+  })
+
+  test('本文が低で判定が高のときは失敗にする', () => {
+    const result = compareBody('高', body('判定：低'))
+    assert.equal(result.ok, false)
+    assert.match(result.message, /高/)
+  })
+
+  test('本文と判定が一致すれば成功にする', () => {
+    assert.equal(compareBody('高', body('判定：高')).ok, true)
+    assert.equal(compareBody('低', body('判定：低')).ok, true)
+  })
+
+  test('規模 S の issue で高とした変更のように、本文が高で判定が低のときは成功にする（本文で上げてよい）', () => {
+    const result = compareBody('低', body('判定：高'))
+    assert.equal(result.ok, true)
+    assert.match(result.message, /本文で高/)
+  })
+
+  test('節の値が空のときは失敗にする', () => {
+    assert.equal(compareBody('低', body('判定：')).ok, false)
+    assert.equal(compareBody('低', body('')).ok, false)
+  })
+
+  test('「## 危険度」の節がないときは失敗にする', () => {
+    const result = compareBody('低', '## 概要\n\n判定：低\n')
+    assert.equal(result.ok, false)
+    assert.match(result.message, /節がない/)
+  })
+
+  test('本文が空のときは失敗にする', () => {
+    assert.equal(compareBody('低', '').ok, false)
+  })
+
+  test('HTML のコメントの中の「判定：」は値とみなさない', () => {
+    assert.equal(compareBody('低', body('<!-- 判定：低 -->')).ok, false)
+  })
+
+  test('節の中で値が食い違う（「判定：」の行が高と低の両方）ときは失敗にする', () => {
+    assert.equal(compareBody('高', body('判定：高\n判定：低')).ok, false)
+  })
+
+  test('Dependabot の pull request は、作成者かブランチ名で見分ける', () => {
+    assert.equal(isDependabot({ author: 'dependabot[bot]' }), true)
+    assert.equal(isDependabot({ branch: 'dependabot/npm_and_yarn/next-15.5.1' }), true)
+    assert.equal(isDependabot({ author: 'roger88106', branch: '245-workflow-review' }), false)
+    assert.equal(isDependabot({}), false)
+  })
+})

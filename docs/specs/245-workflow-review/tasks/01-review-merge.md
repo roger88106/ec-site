@@ -36,14 +36,15 @@
   - 依存：T245-01-02（同じ skill を変えるため）、T245-01-04（減らす根拠の台帳の例を先に作るため）
   - 範囲：[エージェントの作業フロー](../../../rules/subagents.md) 第 4 節（profile の表）、`.claude/skills/review/SKILL.md`（使う場面の表）、[開発の進め方](../../../rules/workflow.md) 第 5.3 節、`AGENTS.md`（注、中断の行）
   - 確認方法：文書を読む。台帳の例の各件が、変えた後の時点で見つかる時点だったか（段階のレビューで見つかる種類か）を表にして結果に書き、spec の最後と pull request の前を減らしても見逃しが増えないことを確認する（DN-245-2）。根拠の 1 回の弾の記録（[plan](../plan.md) 第 1 節）の再検討が、起票の案に含まれている。`wc -c` で DN-245-4 の大きさを確認し、超えるときはこのタスクの中で実績の表を必要なときに読む文書に移す。
-- [ ] **T245-01-06** `[P]` `[テスト]` 危険度の script のテストを書く。高の経路ごとの例が高になること、低の経路だけが低になること、spec の「危険度：高」の行がある spec を変えた差分が高になること、差分がないことを確認する。pull request の本文の危険度が判定と食い違うこと（本文が低で判定が高、本文が空）と、Dependabot の pull request では本文と比べず判定を出力するだけであること、規模 S の pull request は本文と比べることも確認する。失敗する（レッド）ことを確認する（DC-245-13〜17、28、DN-245-7）。
+- [x] **T245-01-06** `[P]` `[テスト]` 危険度の script のテストを書く。高の経路ごとの例が高になること、低の経路だけが低になること、spec の「危険度：高」の行がある spec を変えた差分が高になること、差分がないことを確認する。pull request の本文の危険度が判定と食い違うこと（本文が低で判定が高、本文が空）と、Dependabot の pull request では本文と比べず判定を出力するだけであること、規模 S の pull request は本文と比べることも確認する。失敗する（レッド）ことを確認する（DC-245-13〜17、28、DN-245-7）。
   - 依存：なし
   - 範囲：`scripts/ci/risk.test.mjs`
   - 確認方法：実装の前にテストが失敗する。commit の本文にレッドを確認したことを書く。
-- [ ] **T245-01-07** `[P]` `[リスク]` 危険度の script と高の経路の一覧を作る。`develop` との差分と spec の宣言から高か低と当たった経路を出力し、pull request の本文の危険度と比べる処理を持たせる。Dependabot の pull request では比べず、判定を出力するだけにする。`scripts/ci/check-all.sh` に登録し、CI の検査の一覧を直す（DC-245-13〜17、28）。
+- [x] **T245-01-07** `[P]` `[リスク]` 危険度の script と高の経路の一覧を作る。`develop` との差分と spec の宣言から高か低と当たった経路を出力し、pull request の本文の危険度と比べる処理を持たせる。Dependabot の pull request では比べず、判定を出力するだけにする。`scripts/ci/check-all.sh` に登録し、CI の検査の一覧を直す（DC-245-13〜17、28）。
   - 依存：T245-01-06（同じ実装役が続けて行い、同じ commit にする）。`check-all.sh` と `ci.md` は spec 249 も変える。
   - 範囲：`scripts/ci/risk.mjs`、`scripts/ci/risk.json`、`scripts/ci/check-all.sh`、`docs/guides/ci.md`
   - 確認方法：T245-01-06 のテストが通る。`scripts/ci/check-all.sh` が通る。高の経路の一覧のうち、実装のときに置き場所を確認するもの（IdP の realm の設定、運営者の権限の表と検査の script）は、今のコードと照合して決め、結果に書く。
+  - 結果：IdP の realm は `docker/keycloak/realms/`（認証）、権限の表は `docs/design/role-permissions.md` と契約のテスト 2 つ（権限）を足した。権限の検査の Java（`config/security/`）と管理画面の `frontend/admin/src/auth/permissions.ts` は認証の経路に入る。バックエンドのテストも高にするため、経路の `*` で `src/main` 以外の階層（`test`、`integrationTest`、`testFixtures`）にも当てる。本文が高で判定が低は成功にする（規模 S の issue で高にしたもの）。出力の例：「判定：高」「- エージェントの規則と設定：.claude/skills/review/SKILL.md、…、ほか 3 件」「当たったファイル：8、宣言した spec：0（差分のファイル 15 件中）」。
 - [ ] **T245-01-08** `[P]` `[リスク]` CI の job で、pull request の本文の危険度と script の判定を比べ、食い違えば失敗にする。Dependabot の pull request では比べず、判定をジョブの要約に出力するだけにする。pull request のテンプレートに「危険度」の節を足し、spec 担当のセッションが script の出力を貼る欄にする（DC-245-16、17、28）。
   - 依存：T245-01-07。`ci.yml` は spec 249・246 も変える可能性がある。
   - 範囲：`.github/workflows/ci.yml`、`.github/pull_request_template.md`

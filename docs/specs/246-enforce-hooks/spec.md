@@ -93,7 +93,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 ### DS-246-3 push 済みの履歴の書き換えと、commit の前の検査の省略を拒否する（D / P1）
 
 - **DC-246-10** Claude Code の PreToolUse の hook が、Bash のコマンドのうち次を拒否し、理由と代わりの手順をエージェントに返す。
-  - `git push` の force（`-f`、`--force`、`--force-with-lease`、`--force-if-includes`、`+` で始まる refspec）
+  - `git push` の force（`-f`、`--force`、`--force-with-lease`、`--force-if-includes`、`+` で始まる refspec、リモートの参照を force で更新する `--mirror`）
   - `git commit` と `git push` の `--no-verify`（`git commit -n` を含む）
   - `git -c core.hooksPath=…` で hook の置き場所を替えるコマンド
 - **DC-246-11** 同じ hook が、`git commit` のときに git の pre-commit hook が置かれていなければ拒否し、置き方（[開発環境の起動](../../guides/setup.md)）を示す。置かれているとは、`git rev-parse --git-path hooks/pre-commit` のファイルがあり、`scripts/dev/hooks/pre-commit` を含むことをいう。
@@ -274,7 +274,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | # | 項目 | 起票の案 |
 |---|------|----------|
 | 1 | 未解決の指摘（重要度が高と必須）が 0 であることを、機械で読める形にして hook の条件に加える | spec 245 のレビューの記録の形が決まってから、issue 担当のセッションの候補の一覧に残す |
-| 2 | `bash -c "…"` と、二重引用符の中の `$(…)` に入れたコマンドも、hook で判定する。今は読まずに通す（T246-01-04） | エージェントがわざと使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
+| 2 | `bash -c "…"` に入れたコマンドと、環境変数（`GIT_CONFIG_COUNT` など）や `git config` で hook の置き場所を替えてから commit する形も、hook で判定する。今は通す（T246-01-04 のレビュー） | エージェントがわざと使う形ではないので、見逃しが起きたときに起票する。issue 担当のセッションの候補の一覧に残す |
 
 ## 9. 動作の確認の記録
 

@@ -273,7 +273,7 @@ const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }]
 
 describe('実際の hook', () => {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
-  /** 実際のリポジトリと同じ置き場所に写す、hook とその hook が読む script（日本語の文の検査と、その検査が読む補助を含む） */
+  /** 実際のリポジトリと同じ置き場所にコピーする、hook とその hook が読む script（日本語の文の検査と、その検査が読む補助を含む） */
   const hookFiles = [
     'scripts/dev/hooks/pre-commit',
     'scripts/dev/hooks/commit-msg',
@@ -292,7 +292,7 @@ describe('実際の hook', () => {
   const jaTextCheck = '#!/usr/bin/env bash\ncd "$(dirname "$0")/../.." && node scripts/ci/ja-text.mjs\n'
 
   /**
-   * 一時のリポジトリを作り、hook とその script を写して、元の内容を作業ブランチに commit する（本物のリポジトリには触れない）。
+   * 一時のリポジトリを作り、hook とその script をコピーして、元の内容を作業ブランチに commit する（本物のリポジトリには触れない）。
    * GIT_ で始まる環境変数は外す（commit の hook の中で試すと、本物のリポジトリの設定を書き換えるため）。
    * 最初のブランチは、既定のブランチ名（init.defaultBranch）によらず作業ブランチにする（hook は develop と main の commit を失敗にするため）。
    *
@@ -464,7 +464,7 @@ describe('実際の commit-msg の hook', () => {
   ]
 
   /**
-   * 一時のディレクトリ（Git のリポジトリでない場所は hook が使えないので、git init する）に hook を写し、
+   * 一時のディレクトリ（Git のリポジトリでない場所は hook が使えないので、git init する）に hook をコピーし、
    * 関連 spec の照合を、終了コードを環境変数で決める代わりの script に差し替えて、hook を実行する。
    *
    * @param {string} message コミットメッセージのファイルの中身

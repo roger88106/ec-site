@@ -13,18 +13,18 @@
 //   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）
 // - tag：git tag での作成、git push の --tags・--follow-tags・tag の refspec、gh release create
 // - ruleset：ruleset とブランチの保護を変える gh api（GET 以外のリクエスト）
-// permission の規則はコマンドの先頭の語でしか判定できず、フルパスの git・gh や、&& でつないだ後ろのコマンドに効かないので、hook で全文を読む。
+// permission の規則はコマンドの先頭の語でしか判定できず、フルパスの git・gh や、&& でつないだ後ろのコマンドには適用されないので、hook で全文を読む。
 //
 // PowerShell のツールのコマンドは書き方を読まず、git か gh と、操作の語（push、commit、tag、merge、api、release、hooksPath）を
-// 語として含めば拒否し、Bash のツールで実行し直すよう返す。それ以外（git status など）は通す。
+// 語として含めば拒否し、Bash のツールで実行するよう返す。それ以外（git status など）は通す。
 //
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash と PowerShell 以外のツールは何もせずに通す。
-// 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出す。通すときは何も出さない。終了コードは常に 0。
+// 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出力する。通すときは何も出力しない。終了コードは常に 0。
 // 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd、env -C、git -C で決め、前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る
 // （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない）。
 // $(…) とバッククォートの中のコマンド、timeout・env・xargs などを前に付けたコマンド、
 // シェルの予約語（do、then、{、! など）の後のコマンドも判定する。
-// 判定の中の例外では、git か gh を含むコマンドは拒否し、含まないコマンドは通す
+// 判定の中で例外が発生したときは、git か gh を含むコマンドは拒否し、含まないコマンドは通す
 // （判定の不具合で force push や許可のないマージを通さず、かつ git・gh と関係のない Bash まで止めないため）。
 // ============================================================================
 import { spawnSync } from 'node:child_process'
@@ -34,16 +34,16 @@ import path from 'node:path'
 import { isMain } from '../../ci/lib/is-main.mjs'
 import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, readBodyRisk } from '../../ci/risk.mjs'
 
-/** git の呼び出しの時間切れ（ミリ秒）。hook 全体の時間切れより短くする */
+/** git の呼び出しのタイムアウト（ミリ秒）。hook 全体のタイムアウトより短くする */
 export const GIT_TIMEOUT_MS = 5000
 
 /**
- * gh の 1 回の呼び出しの時間切れ（ミリ秒）。pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
+ * gh の 1 回の呼び出しのタイムアウト（ミリ秒）。pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
  */
 const GH_TIMEOUT_MS = 10000
 
 /**
- * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。hook 全体の時間切れ（.claude/settings.json の timeout）から、
+ * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。hook 全体のタイムアウト（.claude/settings.json の timeout）から、
  * node の起動と git の呼び出しの分（約 10 秒）を残す。使い切った後のマージは、読まずに確認を求める。
  */
 export const GH_BUDGET_MS = 20000
@@ -98,30 +98,30 @@ const PULL_REQUEST_QUERY = `query($owner: String!, $name: String!, $number: Int!
 }`
 
 /**
- * gh の選択肢の読み方。shortNames は短い選択肢を長い名前にする対応、valueLong は値を取る長い選択肢（短い選択肢も長い名前で書く）。
- * 値を取らない選択肢は、値を "true" として読む。
+ * gh のオプションの読み方。shortNames は短いオプションを長い名前にする対応、valueLong は値を取る長いオプション（短いオプションも長い名前で書く）。
+ * 値を取らないオプションは、値を "true" として読む。
  */
 const GH_PR_OPTIONS = {
   shortNames: { b: 'body', F: 'body-file', t: 'subject', A: 'author-email', R: 'repo', d: 'delete-branch', m: 'merge', r: 'rebase', s: 'squash' },
   valueLong: ['body', 'body-file', 'subject', 'author-email', 'match-head-commit', 'repo'],
 }
 
-/** gh pr merge の選択肢のうち、自動のマージの解除と一緒に書いても解除だけになるもの */
+/** gh pr merge のオプションのうち、自動のマージの解除と一緒に書いても解除だけになるもの */
 const DISABLE_AUTO_OPTIONS = ['disable-auto', 'repo']
 
-/** gh release の選択肢 */
+/** gh release のオプション */
 const GH_RELEASE_OPTIONS = {
   shortNames: { R: 'repo', n: 'notes', F: 'notes-file', t: 'title', d: 'draft', p: 'prerelease' },
   valueLong: ['repo', 'notes', 'notes-file', 'title', 'target', 'discussion-category', 'notes-start-tag', 'latest', 'fail-on-no-commits'],
 }
 
-/** gh api の選択肢 */
+/** gh api のオプション */
 const GH_API_OPTIONS = {
   shortNames: { X: 'method', H: 'header', f: 'raw-field', F: 'field', q: 'jq', t: 'template', p: 'preview', i: 'include' },
   valueLong: ['method', 'header', 'raw-field', 'field', 'input', 'jq', 'template', 'cache', 'preview', 'hostname'],
 }
 
-/** gh api で、-X がなくてもリクエストを POST にする選択肢（本文を送る） */
+/** gh api で、-X がなくてもリクエストを POST にするオプション（本文を送る） */
 const GH_API_BODY_OPTIONS = ['raw-field', 'field', 'input']
 
 /** gh api のパスのうち、pull request をマージするもの */
@@ -137,9 +137,9 @@ const PULL_REQUEST_URL = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)
 const PRE_COMMIT_SCRIPT = 'scripts/dev/hooks/pre-commit'
 
 /**
- * 前に付けて、後ろの語を別のコマンドとして実行させるコマンドと、その選択肢。
- * valueShort・valueLong は値を次の語（短い選択肢は同じ語の続きも）に取るもの、optionalShort は値を同じ語の続きにだけ取るもの、
- * operands は選択肢の後に読む値の数（timeout の時間）。
+ * 前に付けて、後ろの語を別のコマンドとして実行させるコマンドと、そのオプション。
+ * valueShort・valueLong は値を次の語（短いオプションは同じ語の続きも）に取るもの、optionalShort は値を同じ語の続きにだけ取るもの、
+ * operands はオプションの後に読む値の数（timeout の時間）。
  */
 const PREFIX_COMMANDS = {
   builtin: { valueShort: '', valueLong: [] },
@@ -170,18 +170,18 @@ const REPOSITORY_ENV = ['GIT_DIR', 'GIT_WORK_TREE']
 /** 前に付けた環境変数のうち、gh の対象のリポジトリを替えるもの */
 const GH_REPOSITORY_ENV = 'GH_REPO'
 
-/** force push の長い選択肢（--mirror は、リモートの参照を force で更新し、リモートにしかない参照を消す） */
+/** force push の長いオプション（--mirror は、リモートの参照を force で更新し、リモートにしかない参照を削除する） */
 const FORCE_OPTIONS = ['force', 'force-with-lease', 'force-if-includes', 'mirror']
 
-/** 検査を省略する長い選択肢 */
+/** 検査を省略する長いオプション */
 const NO_VERIFY_OPTIONS = ['no-verify']
 
-/** git push の選択肢のうち、値を次の語に取るもの */
+/** git push のオプションのうち、値を次の語に取るもの */
 const PUSH_OPTIONS = { valueShort: 'o', optionalShort: '', valueLong: ['repo', 'receive-pack', 'exec', 'push-option'] }
 
 /**
- * git tag の選択肢のうち、値を次の語（または同じ語の続き）に取るもの。
- * -n は値を同じ語の続きにだけ取るが、一覧の形かを見分けるために選択肢として数えたいので、optionalShort に入れない（続きの数字も選択肢の文字として読むが、判定に使わない）。
+ * git tag のオプションのうち、値を次の語（または同じ語の続き）に取るもの。
+ * -n は値を同じ語の続きにだけ取るが、一覧の形かを見分けるためにオプションとして数えたいので、optionalShort に入れない（続きの数字もオプションの文字として読むが、判定に使わない）。
  */
 const TAG_OPTIONS = {
   valueShort: 'mFu',
@@ -189,16 +189,16 @@ const TAG_OPTIONS = {
   valueLong: ['message', 'file', 'local-user', 'contains', 'no-contains', 'points-at', 'merged', 'no-merged', 'sort', 'format', 'cleanup', 'trailer'],
 }
 
-/** git tag を、作成でなく一覧・削除・検証にする短い選択肢 */
+/** git tag を、作成でなく一覧・削除・検証にする短いオプション */
 const TAG_LIST_SHORTS = ['l', 'd', 'v', 'n']
 
-/** git tag を、作成でなく一覧・削除・検証にする長い選択肢（--contains などは一覧の形になる） */
+/** git tag を、作成でなく一覧・削除・検証にする長いオプション（--contains などは一覧の形になる） */
 const TAG_LIST_LONGS = ['list', 'delete', 'verify', 'contains', 'no-contains', 'points-at', 'merged', 'no-merged']
 
-/** git push で tag を送る長い選択肢 */
+/** git push で tag を送る長いオプション */
 const TAG_PUSH_OPTIONS = ['tags', 'follow-tags']
 
-/** git commit の選択肢のうち、値を次の語（または同じ語の続き）に取るもの */
+/** git commit のオプションのうち、値を次の語（または同じ語の続き）に取るもの */
 const COMMIT_OPTIONS = {
   valueShort: 'mFCct',
   // -u と -S は、値を同じ語の続きにだけ取る
@@ -252,10 +252,10 @@ const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は�
 
 /**
  * @typedef {object} CommandResult 外部のコマンドの結果（spawnSync の結果の一部）
- * @property {number | null} status 終了コード。時間切れなどで終わらなければ null
+ * @property {number | null} status 終了コード。タイムアウトなどで終わらなければ null
  * @property {string} stdout 標準出力
  * @property {string} [stderr] 標準エラー
- * @property {Error & { code?: string }} [error] 起動の失敗や時間切れ（code が ETIMEDOUT）
+ * @property {Error & { code?: string }} [error] 起動の失敗やタイムアウト（code が ETIMEDOUT）
  */
 
 /**
@@ -390,7 +390,7 @@ function tokenize(command, start, closer, commands) {
       i++
       while (command[i] !== '"') {
         if (i >= n) throw unclosed('"')
-        // 二重引用符の中の \ は、" \ $ ` 改行の前でだけ働く
+        // 二重引用符の中の \ は、" \ $ ` 改行の前でだけエスケープとして扱われる
         if (command[i] === '\\' && i + 1 < n && '"\\$`\n'.includes(command[i + 1])) {
           if (command[i + 1] !== '\n') word += command[i + 1]
           i += 2
@@ -485,17 +485,17 @@ export function resolveDir(base, target, { platform = process.platform, home = h
 }
 
 /**
- * 前に付けたコマンドの選択肢を読み飛ばす。
+ * 前に付けたコマンドのオプションを読み飛ばす。
  *
  * @param {string[]} words コマンドの語
- * @param {number} start 選択肢の始まりの位置
- * @param {{ valueShort: string, optionalShort?: string, valueLong: string[], operands?: number }} spec 選択肢
- * @returns {{ index: number, values: { option: string, value: string }[] }} 後ろのコマンドの位置と、値を取った選択肢
+ * @param {number} start オプションの始まりの位置
+ * @param {{ valueShort: string, optionalShort?: string, valueLong: string[], operands?: number }} spec オプション
+ * @returns {{ index: number, values: { option: string, value: string }[] }} 後ろのコマンドの位置と、値を取ったオプション
  */
 function skipPrefixOptions(words, start, { valueShort, optionalShort = '', valueLong, operands = 0 }) {
   const values = []
   let i = start
-  // 選択肢を、値を取るものは値と一緒に、位置の引数の手前まで読む
+  // オプションを、値を取るものは値と一緒に、位置引数の手前まで読む
   while (i < words.length) {
     const word = words[i]
     if (word === '--') {
@@ -606,14 +606,14 @@ export function parseCommands(command, cwd, options = {}) {
  * @typedef {object} GitInvocation git の呼び出し
  * @property {string} dir git -C を当てた後の、実行するディレクトリ
  * @property {string[]} configs -c・--config-env で渡した設定
- * @property {string[]} pathOptions --git-dir・--work-tree の選択肢（そのまま git に渡せる形）
+ * @property {string[]} pathOptions --git-dir・--work-tree のオプション（そのまま git に渡せる形）
  * @property {string | null} subcommand サブコマンド
  * @property {string[]} args サブコマンドの後の語
  * @property {Record<string, string>} env 前に付けた、対象のリポジトリを替える環境変数（GIT_DIR・GIT_WORK_TREE）
  */
 
 /**
- * コマンドが git の呼び出しなら、git の前の選択肢とサブコマンドを読む。フルパスと git.exe の形も git として読む。
+ * コマンドが git の呼び出しなら、git の前のオプションとサブコマンドを読む。フルパスと git.exe の形も git として読む。
  *
  * @param {{ words: string[], dir: string, env?: Record<string, string> }} command コマンドの語、ディレクトリ、対象のリポジトリを替える環境変数
  * @param {PathOptions} [options] パスの解き方
@@ -626,7 +626,7 @@ export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
   const configs = []
   const pathOptions = []
   let i = 1
-  // git の前の選択肢を、サブコマンドまで読む
+  // git の前のオプションを、サブコマンドまで読む
   for (; i < words.length && words[i].startsWith('-'); i++) {
     const word = words[i]
     if (word === '-C') {
@@ -649,18 +649,18 @@ export function parseGitInvocation({ words, dir, env = {} }, options = {}) {
 }
 
 /**
- * サブコマンドの後の語を、長い選択肢・短い選択肢・位置の引数に分ける。選択肢の値は、どれにも含めない。
+ * サブコマンドの後の語を、長いオプション・短いオプション・位置引数に分ける。オプションの値は、どれにも含めない。
  *
  * @param {string[]} args サブコマンドの後の語
- * @param {{ valueShort: string, optionalShort: string, valueLong: string[] }} spec 値を取る選択肢
- * @returns {{ longs: string[], shorts: string[], positionals: string[] }} 長い選択肢の名前（-- と = の後を除く）、短い選択肢の文字、位置の引数
+ * @param {{ valueShort: string, optionalShort: string, valueLong: string[] }} spec 値を取るオプション
+ * @returns {{ longs: string[], shorts: string[], positionals: string[] }} 長いオプションの名前（-- と = の後を除く）、短いオプションの文字、位置引数
  */
 function scanOptions(args, { valueShort, optionalShort, valueLong }) {
   const longs = []
   const shorts = []
   const positionals = []
   let rest = false
-  // 選択肢の値を飛ばしながら、選択肢と位置の引数に分ける
+  // オプションの値を飛ばしながら、オプションと位置引数に分ける
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
     if (rest || arg === '-' || !arg.startsWith('-')) {
@@ -672,7 +672,7 @@ function scanOptions(args, { valueShort, optionalShort, valueLong }) {
       longs.push(name)
       if (!arg.includes('=') && valueLong.includes(name)) i++
     } else {
-      // -an のような短い選択肢の組み合わせ。値を取る文字の後ろは値なので読まない
+      // -an のような短いオプションの組み合わせ。値を取る文字の後ろは値なので読まない
       for (let j = 1; j < arg.length; j++) {
         const option = arg[j]
         if (valueShort.includes(option)) {
@@ -688,10 +688,10 @@ function scanOptions(args, { valueShort, optionalShort, valueLong }) {
 }
 
 /**
- * 長い選択肢の名前が、対象の選択肢のどれかか。git は一意な前方の一致の略記も受け付けるので、3 文字以上の略記も当てる。
+ * 長いオプションの名前が、対象のオプションのどれかか。git は一意な前方の一致の略記も受け付けるので、3 文字以上の略記も当てる。
  *
- * @param {string} name 選択肢の名前
- * @param {string[]} targets 対象の選択肢の名前
+ * @param {string} name オプションの名前
+ * @param {string[]} targets 対象のオプションの名前
  * @returns {boolean} 当たれば true
  */
 function matchesLong(name, targets) {
@@ -791,7 +791,7 @@ function refTagState(name, git, deps) {
   if (name === '' || name.startsWith('refs/') || name.includes('*')) return null
   const result = deps.runGit([...git.pathOptions, 'show-ref', '--verify', '--quiet', `refs/tags/${name}`], git.dir, git.env)
   if (result?.status === 0) return 'tag'
-  // 終了コード 1 はその tag がないこと。null（時間切れ）は調べられない
+  // 終了コード 1 はその tag がないこと。null（タイムアウト）は調べられない
   return result?.status === null || result === undefined ? 'unknown' : null
 }
 
@@ -806,7 +806,7 @@ function judgeTagPush(git, deps) {
   if (git.subcommand !== 'push') return null
   const { longs, positionals } = scanOptions(git.args, PUSH_OPTIONS)
   if (longs.some((name) => matchesLong(name, TAG_PUSH_OPTIONS))) return ask(TAG_REASON)
-  // 最初の位置の引数はリモート（--repo で指定したときは全てが refspec）
+  // 最初の位置引数はリモート（--repo で指定したときは全てが refspec）
   const refspecs = longs.includes('repo') ? positionals : positionals.slice(1)
   if (refspecs.some((refspec, index) => refspec === 'tag' && index + 1 < refspecs.length)) return ask(TAG_REASON)
   for (const refspec of refspecs) {
@@ -843,17 +843,17 @@ export function parseGhInvocation({ words, dir, ghRepo = null }) {
 }
 
 /**
- * gh の選択肢と位置の引数を読む。長い選択肢の略記は読まない（gh は略記を受け付けない）。
+ * gh のオプションと位置引数を読む。長いオプションの略記は読まない（gh は略記を受け付けない）。
  *
  * @param {string[]} args 読む語
- * @param {{ shortNames: Record<string, string>, valueLong: string[] }} spec 選択肢の読み方
- * @returns {{ positionals: string[], options: { name: string, value: string }[] }} 位置の引数と、選択肢（値を取らないものは値が "true"）
+ * @param {{ shortNames: Record<string, string>, valueLong: string[] }} spec オプションの読み方
+ * @returns {{ positionals: string[], options: { name: string, value: string }[] }} 位置引数と、オプション（値を取らないものは値が "true"）
  */
 function parseGhArgs(args, { shortNames, valueLong }) {
   const positionals = []
   const options = []
   let rest = false
-  // 値を取る選択肢は値と一緒に読み、残りを位置の引数にする
+  // 値を取るオプションは値と一緒に読み、残りを位置引数にする
   for (let i = 0; i < args.length; i++) {
     const arg = args[i]
     if (rest || arg === '-' || !arg.startsWith('-')) {
@@ -866,7 +866,7 @@ function parseGhArgs(args, { shortNames, valueLong }) {
       else if (valueLong.includes(name)) options.push({ name, value: args[++i] ?? '' })
       else options.push({ name, value: 'true' })
     } else {
-      // -ds のような短い選択肢の組み合わせ。値を取る文字の後ろは値
+      // -ds のような短いオプションの組み合わせ。値を取る文字の後ろは値
       for (let j = 1; j < arg.length; j++) {
         const name = shortNames[arg[j]] ?? arg[j]
         if (valueLong.includes(name)) {
@@ -882,9 +882,9 @@ function parseGhArgs(args, { shortNames, valueLong }) {
 }
 
 /**
- * 選択肢の最後の値を返す。
+ * オプションの最後の値を返す。
  *
- * @param {{ name: string, value: string }[]} options 選択肢
+ * @param {{ name: string, value: string }[]} options オプション
  * @param {string} name 長い名前
  * @returns {string | null} 値。なければ null
  */
@@ -893,9 +893,9 @@ function optionValue(options, name) {
 }
 
 /**
- * 値を取らない選択肢が有効か（`--auto=false` のような形は無効）。
+ * 値を取らないオプションが有効か（`--auto=false` のような形は無効）。
  *
- * @param {{ name: string, value: string }[]} options 選択肢
+ * @param {{ name: string, value: string }[]} options オプション
  * @param {string} name 長い名前
  * @returns {boolean} 有効なら true
  */
@@ -914,7 +914,7 @@ function judgeGhApi(args) {
   const { positionals, options } = parseGhArgs(args, GH_API_OPTIONS)
   const endpoint = positionals[0] ?? ''
   if (endpoint === 'graphql') return null
-  // gh api は、-X がなくても本文を送る選択肢があれば POST にする
+  // gh api は、-X がなくても本文を送るオプションがあれば POST にする
   const method = (optionValue(options, 'method') ?? (options.some((option) => GH_API_BODY_OPTIONS.includes(option.name)) ? 'POST' : 'GET')).toUpperCase()
   if (method === 'GET') return null
   if (API_MERGE_PATH.test(endpoint)) return deny(API_MERGE_REASON)
@@ -941,15 +941,15 @@ function parseRepository(value) {
  */
 
 /**
- * gh pr merge の位置の引数と -R・GH_REPO から、マージする pull request を決める。
+ * gh pr merge の位置引数と -R・GH_REPO から、マージする pull request を決める。
  *
- * @param {string | undefined} target 位置の引数
+ * @param {string | undefined} target 位置引数
  * @param {string | null} repoOption -R・--repo の値
  * @param {string | null} ghRepo 前に付けた GH_REPO
  * @returns {MergeTarget | { error: string }} pull request か、決められない理由
  */
 function resolveMergeTarget(target, repoOption, ghRepo) {
-  const noTarget = { error: 'pull request を、github.com の番号か URL で指定していない（番号のない形は今のブランチの pull request を指す）' }
+  const noTarget = { error: 'pull request を、番号か github.com の URL で指定していない（番号のない形は今のブランチの pull request を指す）' }
   if (target === undefined) return noTarget
   const url = PULL_REQUEST_URL.exec(target)
   if (url) return { number: Number(url[3]), repository: { owner: url[1], name: url[2] } }
@@ -965,11 +965,11 @@ function resolveMergeTarget(target, repoOption, ghRepo) {
  * gh の結果の失敗を、理由の文にする。
  *
  * @param {CommandResult} result gh の結果
- * @param {number} timeout 渡した時間切れ（ミリ秒）
+ * @param {number} timeout 渡したタイムアウト（ミリ秒）
  * @returns {string | null} 失敗の理由。成功なら null
  */
 function describeGhFailure(result, timeout) {
-  if (result.error?.code === 'ETIMEDOUT') return `gh が時間切れになった（${timeout / 1000} 秒）`
+  if (result.error?.code === 'ETIMEDOUT') return `gh がタイムアウトした（${timeout / 1000} 秒）`
   if (result.status === 0) return null
   const message = (result.stderr ?? '').trim().split('\n')[0] || result.error?.message || `終了コード ${result.status}`
   return `gh が失敗した：${message}`
@@ -981,7 +981,7 @@ function describeGhFailure(result, timeout) {
  * @param {MergeTarget} target マージする pull request
  * @param {string} dir 実行するディレクトリ（リポジトリを gh に決めさせるときに使う）
  * @param {Deps} deps 外部の処理
- * @param {number} timeout 時間切れ（ミリ秒）
+ * @param {number} timeout タイムアウト（ミリ秒）
  * @returns {{ pullRequest: object } | { error: string }} pull request（GraphQL の形）か、読めない理由
  */
 function readPullRequest(target, dir, deps, timeout) {
@@ -1174,7 +1174,7 @@ export function mergeProblems(pullRequest, headCommit) {
  */
 function judgeMerge(args, gh, deps, budget) {
   const { positionals, options } = parseGhArgs(args, GH_PR_OPTIONS)
-  // 自動のマージの解除だけ（マージの選択肢を一緒に書かない形）は、マージしないので通す
+  // 自動のマージの解除だけ（マージのオプションを一緒に書かない形）は、マージしないので通す
   if (flagEnabled(options, 'disable-auto') && options.every((option) => DISABLE_AUTO_OPTIONS.includes(option.name))) return null
   if (flagEnabled(options, 'admin')) return deny(ADMIN_REASON)
   const headCommit = optionValue(options, 'match-head-commit')
@@ -1278,7 +1278,7 @@ function judgePowerShell(command) {
 }
 
 /**
- * hook の入力（JSON の文字列）を判定し、標準出力に出す文字列を返す。
+ * hook の入力（JSON の文字列）を判定し、標準出力に出力する文字列を返す。
  * 読めない入力は通す（Claude Code は常に JSON を渡すので、読めないときに全てのツールを止めないため）。
  * 先頭の BOM は除いてから読む。Windows PowerShell 5.1 はパイプで BOM を付け、そのままでは読めずに通してしまうため。
  *
@@ -1314,7 +1314,7 @@ export function handleInput(text, deps = createDeps(), judge = judgeCommand) {
 }
 
 /**
- * 判定を、標準出力に出す文字列にする。
+ * 判定を、標準出力に出力する文字列にする。
  *
  * @param {Decision | null} decision 判定。通すときは null
  * @returns {string} 出力する JSON。通すときは空文字
@@ -1325,7 +1325,7 @@ function output(decision) {
 }
 
 /**
- * 標準入力を読み、判定を標準出力に出す。
+ * 標準入力を読み、判定を標準出力に出力する。
  */
 async function main() {
   process.stdin.setEncoding('utf8')

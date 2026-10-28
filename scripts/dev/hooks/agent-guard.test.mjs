@@ -19,7 +19,7 @@ const SETTINGS = JSON.parse(readFileSync(path.join(REPO_ROOT, '.claude/settings.
 /** settings.json の PreToolUse の hook の設定（matcher と hook の一覧） */
 const PRE_TOOL_USE = SETTINGS.hooks.PreToolUse[0]
 
-/** settings.json の hook の時間切れ（ミリ秒） */
+/** settings.json の hook のタイムアウト（ミリ秒） */
 const HOOK_TIMEOUT_MS = PRE_TOOL_USE.hooks[0].timeout * 1000
 
 /** pre-commit hook を置いたときの中身（開発環境の起動の置き方のとおり） */
@@ -31,7 +31,7 @@ const CWD = path.resolve(tmpdir(), 'agent-guard-cwd')
 /**
  * git と gh の呼び出しと、ファイルの読み込みを差し替えた依存を作る。
  * rev-parse は `.git/hooks/pre-commit` を返し、show-ref は `tags` にある tag だけを見つける。ファイルは `files`（絶対パスをキー）から読む。
- * gh は `gh`（結果か、引数と選択肢から結果を返す関数）を返す。既定は失敗。
+ * gh は `gh`（結果か、引数とオプションから結果を返す関数）を返す。既定は失敗。
  */
 function fakeDeps({
   files = { [path.join(CWD, '.git/hooks/pre-commit')]: INSTALLED_HOOK },
@@ -118,7 +118,7 @@ describe('コマンドの文字列を、1 つずつのコマンドの語に分�
     assert.deepEqual(splitCommands(command), [['cat'], ['git', 'commit', '-m', '$(…)'], ['git', 'status']])
   })
 
-  test('引用符、$(…)、バッククォートが閉じていなければ、例外にする', () => {
+  test('引用符、$(…)、バッククォートが閉じていなければ、例外を投げる', () => {
     for (const command of ['echo "abc', "echo 'abc", 'echo "$(git log"', 'echo `git log', "git commit -m \"$(cat <<'EOF'\nx\nEOF\n"]) {
       assert.throws(() => splitCommands(command), /閉じていない/, command)
     }
@@ -167,7 +167,7 @@ describe('git の呼び出しを読む', () => {
     assert.deepEqual(parseGitInvocation(command)?.args, ['-f'])
   })
 
-  test('git の前の選択肢（-c、--git-dir など）を飛ばして、サブコマンドを読む', () => {
+  test('git の前のオプション（-c、--git-dir など）を飛ばして、サブコマンドを読む', () => {
     const invocation = parseGitInvocation({ words: ['git', '-c', 'user.name=a', '--no-pager', '--git-dir', 'x/.git', 'commit', '-m', 'y'], dir: CWD })
     assert.equal(invocation.subcommand, 'commit')
     assert.deepEqual(invocation.configs, ['user.name=a'])
@@ -176,7 +176,7 @@ describe('git の呼び出しを読む', () => {
 })
 
 describe('push 済みの履歴を書き換える push を拒否する', () => {
-  test('force の選択肢と + で始まる refspec を拒否し、代わりに新しい commit を push するよう返す', () => {
+  test('force のオプションと + で始まる refspec を拒否し、代わりに新しい commit を push するよう返す', () => {
     for (const command of [
       'git push --force',
       'git push -f origin 246-enforce-hooks',
@@ -209,7 +209,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
-  test('通常の push、upstream の設定、dry-run（-n）、値を取る選択肢の値は通す', () => {
+  test('通常の push、upstream の設定、dry-run（-n）、値を取るオプションの値は通す', () => {
     for (const command of [
       'git push',
       'git push -u origin 246-enforce-hooks',
@@ -237,7 +237,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
     }
   })
 
-  test('前に付ける timeout・nice・stdbuf・xargs・env（選択肢を含む）を介した push を拒否する', () => {
+  test('前に付ける timeout・nice・stdbuf・xargs・env（オプションを含む）を介した push を拒否する', () => {
     for (const command of [
       'timeout 60 git push --force',
       'timeout -k 5 --signal=KILL 60s git push -f',
@@ -264,7 +264,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
 })
 
 describe('commit の前の検査の省略を拒否する', () => {
-  test('commit と push の --no-verify、commit の -n（短い選択肢の組み合わせを含む）を拒否し、問題を直すよう返す', () => {
+  test('commit と push の --no-verify、commit の -n（短いオプションの組み合わせを含む）を拒否し、問題を直すよう返す', () => {
     for (const command of [
       'git commit --no-verify -m x',
       'git commit --amend --no-verify',
@@ -511,7 +511,7 @@ describe('マージのコマンドを判定する', () => {
   test('番号も URL もない gh pr merge は、今のブランチの pull request を指すので、gh を呼ばずに確認を求める', () => {
     for (const command of [`gh pr merge --match-head-commit ${HEAD_SHA}`, `gh pr merge 246-enforce-hooks --match-head-commit ${HEAD_SHA}`]) {
       const deps = mergeDeps()
-      assertAsked(command, /番号か URL/, deps)
+      assertAsked(command, /番号か github\.com の URL/, deps)
       assert.deepEqual(deps.ghCalls, [])
     }
   })
@@ -577,9 +577,9 @@ describe('マージのコマンドを判定する', () => {
     assert.match(result.reason, /Closes/)
   })
 
-  test('gh の失敗、時間切れ、読めない JSON では、確認を求める', () => {
+  test('gh の失敗、タイムアウト、読めない JSON では、確認を求める', () => {
     assertAsked(MERGE, /読めない.*Could not resolve/s, fakeDeps({ gh: { status: 1, stdout: '', stderr: 'GraphQL: Could not resolve to a PullRequest' } }))
-    assertAsked(MERGE, /時間切れ/, fakeDeps({ gh: { status: null, stdout: '', stderr: '', error: Object.assign(new Error('spawnSync gh ETIMEDOUT'), { code: 'ETIMEDOUT' }) } }))
+    assertAsked(MERGE, /タイムアウト/, fakeDeps({ gh: { status: null, stdout: '', stderr: '', error: Object.assign(new Error('spawnSync gh ETIMEDOUT'), { code: 'ETIMEDOUT' }) } }))
     assertAsked(MERGE, /読めない/, fakeDeps({ gh: { status: 0, stdout: '{', stderr: '' } }))
     assertAsked(MERGE, /読めない/, fakeDeps({ gh: { status: 0, stdout: '{"data":{"repository":{"pullRequest":null}}}', stderr: '' } }))
     assertAsked(MERGE, /読めない/, fakeDeps({ gh: () => { throw new Error('gh がない') } }))
@@ -591,11 +591,11 @@ describe('マージのコマンドを判定する', () => {
     assertAsked(MERGE, /一覧/, fakeDeps({ gh: { status: 0, stdout: JSON.stringify(data), stderr: '' } }))
   })
 
-  test('gh には時間切れを渡す', () => {
+  test('gh にはタイムアウトを渡す', () => {
     const deps = mergeDeps()
     judgeCommand(MERGE, CWD, deps)
     const { timeout } = deps.ghCalls[0]
-    assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout < HOOK_TIMEOUT_MS, `時間切れ：${timeout}`)
+    assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout < HOOK_TIMEOUT_MS, `タイムアウト：${timeout}`)
   })
 
   test('Dependabot は、本文と Closes の代わりに、変更のファイルと題を危険度の判定に渡して低なら通す', () => {
@@ -629,7 +629,7 @@ describe('マージのコマンドを判定する', () => {
   })
 
   test('github.com でない URL は、確認を求める', () => {
-    assertAsked(`gh pr merge https://example.com/o/r/pull/246 --match-head-commit ${HEAD_SHA}`, /番号か URL/, mergeDeps())
+    assertAsked(`gh pr merge https://example.com/o/r/pull/246 --match-head-commit ${HEAD_SHA}`, /番号か github\.com の URL/, mergeDeps())
   })
 
   test('つないだコマンドでは、拒否を確認より先に返す', () => {
@@ -785,8 +785,8 @@ describe('.claude/settings.json の hook と permission の設定', () => {
     assert.ok(tools.includes('PowerShell'), PRE_TOOL_USE.matcher)
   })
 
-  test('hook の時間切れは、script の中の gh の合計と git の時間切れを足した値より長い', () => {
-    assert.ok(Number.isFinite(HOOK_TIMEOUT_MS), `hook の時間切れ：${HOOK_TIMEOUT_MS}`)
+  test('hook のタイムアウトは、script の中の gh の合計と git のタイムアウトを足した値より長い', () => {
+    assert.ok(Number.isFinite(HOOK_TIMEOUT_MS), `hook のタイムアウト：${HOOK_TIMEOUT_MS}`)
     assert.ok(Number.isInteger(GH_BUDGET_MS) && Number.isInteger(GIT_TIMEOUT_MS), `gh：${GH_BUDGET_MS}、git：${GIT_TIMEOUT_MS}`)
     assert.ok(HOOK_TIMEOUT_MS > GH_BUDGET_MS + GIT_TIMEOUT_MS, `hook：${HOOK_TIMEOUT_MS}、gh と git：${GH_BUDGET_MS + GIT_TIMEOUT_MS}`)
   })
@@ -834,7 +834,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
   }
 
   test('作業ツリーの中では、CLAUDE_PROJECT_DIR より先に、作業ツリーの script に標準入力を渡す', () => {
-    // commit の前の検査は Git の外の写しでテストを動かすので、一時リポジトリに、標準入力を返すだけの script を置く
+    // commit の前の検査は Git の外のコピーでテストを実行するので、一時リポジトリに、標準入力を返すだけの script を置く
     inTempDir((dir) => {
       const git = spawnSync('git', ['init', '-q'], { cwd: dir, env: withoutGitEnv(), encoding: 'utf8' })
       assert.equal(git.status, 0, git.stderr)
@@ -931,7 +931,7 @@ describe('hook の入力と出力', () => {
     assert.equal(handleInput(JSON.stringify({ tool_name: 'Bash', tool_input: {} }), fakeDeps()), '')
   })
 
-  test('PowerShell のツールで、git・gh と操作の語を含むコマンドは、Bash で実行し直すよう返して拒否する', () => {
+  test('PowerShell のツールで、git・gh と操作の語を含むコマンドは、Bash で実行するよう返して拒否する', () => {
     const commands = [
       'git push --force',
       'git tag v1',
@@ -955,7 +955,7 @@ describe('hook の入力と出力', () => {
     }
   })
 
-  test('判定の中の例外では、git を含むコマンドは拒否し、含まないコマンドは通す', () => {
+  test('判定の中で例外が発生したときは、git を含むコマンドは拒否し、含まないコマンドは通す', () => {
     const broken = () => {
       throw new Error('壊れた判定')
     }
@@ -971,7 +971,7 @@ describe('hook の入力と出力', () => {
     assert.equal(handleInput(input('echo "abc'), fakeDeps()), '')
   })
 
-  test('script を実行すると、標準入力を読み、終了コード 0 で判定を出す', () => {
+  test('script を実行すると、標準入力を読み、終了コード 0 で判定を出力する', () => {
     const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'agent-guard.mjs')
     const run = (command) => spawnSync(process.execPath, [script], { input: input(command), encoding: 'utf8', env: withoutGitEnv() })
     const denied = run('git push --force')

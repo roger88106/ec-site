@@ -36,7 +36,9 @@ export const TEST_OPERATOR_NAME = '管理 花子'
  * API の応答は、先に `server.use(...)` で与えておく。
  * ログインは置き換え、運営者（{@link TEST_OPERATOR_NAME}）がログインしている状態にする。token は付けない。
  * 運営者の権限（自分の権限の一覧の API の応答）は、既定ですべての権限にする。
- * 結合テストのキャッシュは、失敗した取得を繰り返す間隔を 0 にする（回数は本番と同じ）。
+ * 結合テストのキャッシュは、失敗した取得を繰り返す間隔を 0 にする（回数は本番と同じ）。<br />
+ * user は入力のキーの間で待たない（`delay: null`）。既定では 1 文字ごとにタイマーで待ち、入力の多いテストが遅くなるため（issue #250）。
+ * キーの間の非同期の処理を確認するテストでは、この user でなく、既定の delay の `userEvent.setup()` を使う。
  *
  * @param url                 開く画面の URL（例：/tax-categories）
  * @param options.permissions 運営者の権限（既定は {@link ALL_PERMISSIONS}）
@@ -62,7 +64,7 @@ export function renderApp(
   }
   server.use(meHandlers[me]())
   const router = createMemoryRouter(routes, { initialEntries: [url] })
-  const user = userEvent.setup()
+  const user = userEvent.setup({ delay: null })
   const logout = vi.fn()
   const operator: Operator = { name: TEST_OPERATOR_NAME, logout }
   render(

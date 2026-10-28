@@ -1,6 +1,6 @@
 import { HttpResponse, http as mswHttp } from 'msw'
 import { NextRequest } from 'next/server'
-import { describe, expect, test, vi } from 'vitest'
+import { beforeAll, describe, expect, test, vi } from 'vitest'
 import { IDP, server } from '@/test/server'
 
 // Auth.js の本物のリクエストの処理で、IdP への移動の戻り先を確認する（ほかのテストは Auth.js を置き換えている）
@@ -53,10 +53,16 @@ function csrfTokenOf(body: unknown): string {
 }
 
 describe('ログインの戻り先', () => {
+  let handlers: typeof import('@/auth').handlers
+
+  beforeAll(async () => {
+    // 読み込みと変換の時間をテストの時間に含めない
+    ;({ handlers } = await import('@/auth'))
+  })
+
   test('AC-241 ログインで IdP へ移るときの戻り先は公開する URL から作り、リクエストヘッダーのホストを使わない', async () => {
     vi.stubEnv('AUTH_URL', PUBLIC_URL)
     server.use(idpDiscovery())
-    const { handlers } = await import('@/auth')
 
     const csrf = await handlers.GET(forgedRequest('/csrf'))
     const csrfToken = csrfTokenOf(await csrf.json())

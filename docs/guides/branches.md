@@ -25,6 +25,7 @@
 - 作業ブランチは、pull request で `develop` に入れる。
 - `develop` と衝突するとき、または `develop` が同じファイルを変えたときは、`develop` を作業ブランチに取り込んでから入れる（[開発の進め方](../rules/workflow.md) 第 5.7 節）。最新の `develop` を含むことは求めない（第 3.1 節）。
 - 完了の定義（`develop` に入れる条件）は [開発の進め方](../rules/workflow.md)。
+- `.gitignore` は許可リストで、Git に入れる物だけを `!` で戻す。`.claude/` の下は、共有する skill とプレビューの設定だけを戻す。作業用の script などを置く `/.local/` は Git に入れない。
 
 ## 3. 保護
 

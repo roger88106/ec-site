@@ -10,7 +10,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 3. 着手する段階の tasks と、冒頭の「参照」の文書（`docs/specs/<番号>-*/`。規模 L は `tasks/`、規模 M は spec.md の中の tasks、規模 S は issue）
 4. コードを書く・レビューする前に、関わる書き方の文書（constitution 第 14 節）。バックエンドは [バックエンドの書き方](docs/rules/backend-coding.md)、フロントは [フロントの書き方](docs/rules/frontend-coding.md)、どちらも [テストの書き方](docs/rules/test-writing.md) と [コメントの書き方](docs/rules/comments.md)
 
-マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。Git に入らないので、新しい clone にはない。ないときは、本書と `docs/` だけで進める。
+マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。ないときは、本書と `docs/` だけで進める。
 
 ## skill
 
@@ -18,7 +18,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 
 | skill | いつ使うか |
 |-------|------------|
-| `local-dev` | スロット（作業ツリーごとの環境）を割り当てる・解除する、compose・バックエンド・フロントを起動する、テストや E2E を実行する、commit の前に CI の検査を実行する、画面を確認する、DB や token を見る |
+| `local-dev` | スロット（作業ツリーごとの環境）の割り当てと解除、compose・バックエンド・フロントの起動、テストと E2E、commit の前の CI の検査、画面・DB・token の確認 |
 | `new-screen` | 店舗画面・管理画面に画面や操作を追加する、修正する |
 | `handoff` | spec 担当のセッションを途中で別のセッションに替えるときに、引き継ぎの文書を作る（利用者が `/handoff` で呼ぶ） |
 | `retro` | セッションを振り返り、エージェントの環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
@@ -46,7 +46,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 
 - tasks の「完了」の条件を満たし、対応する AC のテストが通り、既存のテストを壊していない（`./gradlew check` など）。
 - 文書を更新するタスク（用語集への追加など）を終え、チェックボックスを `[x]` にする。
-- 段階の最後のタスクの後は、段階の完了条件を確認して報告する。MVP の後の進捗は、追跡の issue と milestone で見る（README の 1→10 の節）。
+- 段階の最後のタスクの後は、段階の完了条件を確認して報告する。
 - spec をアーカイブに移すタスクは tasks の最後にし、同じ pull request に含める。
 - spec の最後のレビューの段階では、変えたコードを [書き方の規則とレビュー](docs/rules/review.md) と照合する。
 
@@ -59,24 +59,27 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 
 - 始めに直近の CI を確認する（`gh run list -b develop -L 1`）。`develop` の CI が失敗していれば、すぐに起票し（開発の進め方 第 4.1 節）、spec の作業の前に修正する。
 - 1 つの spec は 1 つの spec 担当のセッションで進め、長くなったら文脈の圧縮で続ける。issue 担当のセッションとのやり取りは [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。
-- 引き継ぎの文書（skill `handoff`）は、spec 担当のセッションを替えるときに作る。置き場所は `/.local/handoff/yyyyMMddHHmmss-<名前>/`。指示がなければ最も新しいものを読む。古いものは利用者が削除する。
+- 引き継ぎの文書は、spec 担当のセッションを替えるときに作り、始めに読む（置き場所と読み方は skill `handoff`）。
 - マージの後は、開発の進め方 第 5.7 節の後片付けを行う。
 
 ## モデルの区分
 
-サブエージェントに使うモデルは、区分（高性能・汎用・軽量）で決める。区分ごとの使う場面は [エージェントの作業フロー](docs/rules/subagents.md) 第 3 節と、レビューの profile の表。実際のモデルとバージョンは、使う AI のサービスごとに次の表で決める。サービスやモデルを替えるときは、この表だけを直す。
+サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。区分ごとの使う場面は [エージェントの作業フロー](docs/rules/subagents.md) 第 3 節と、レビューの profile の表。作業の種類の表の effort の低・中・高は、`low`・`medium`・`high` に当たる。指定がなければ表の既定を使う。実際のモデルと effort は、使う AI のサービスごとに次の表で決める。サービスやモデルを替えるときは、この表だけを直す。
 
 今使う AI のサービスは Claude Code（Anthropic）。
 
-| 区分 | 使う場面の要点 | モデル | モデルの ID |
-|------|----------------|--------|-------------|
-| 高性能 | `[リスク]` のタスクの実装、原因の調査、重要な観点のレビュー | Claude Opus 5.5 | `claude-opus-5-5` |
-| 汎用 | 実装、判断が必要な作業、一般の観点のレビュー | Claude Sonnet 5.5 | `claude-sonnet-5-5` |
-| 軽量 | 機械的な作業（指示と読む量の合計が 10 万 token を超えないもの）※1 | Claude Haiku 5.5 | `claude-haiku-5-5` |
-| 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | |
-| セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | |
+| 区分 | 使う場面の要点 | モデル | モデルの ID | 既定の effort |
+|------|----------------|--------|-------------|---------------|
+| 最上位 | 調査役が原因を特定できないとき、利用者の指定（上限あり） | Claude Fable 5.1 | `claude-fable-5-1` | `high` |
+| 高性能 | `[リスク]` のタスクの実装、原因の調査、重要な観点のレビュー | Claude Opus 5.5 | `claude-opus-5-5` | `medium` |
+| 汎用 | 実装、判断が必要な作業、一般の観点のレビュー | Claude Sonnet 5.5 | `claude-sonnet-5-5` | `medium` |
+| 軽量 | 機械的な作業（固定の分を含めて 10 万 token を超えないもの）※1 | Claude Haiku 5.5 | `claude-haiku-5-5` | `medium` |
+| 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | | |
+| セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | | |
 
-※1：Claude Haiku 5.5 は、指示が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。
+出典：最上位の既定の effort と選び方は Claude Code の公式の文書（model-config、costs、2026-10-28 確認）。週の 50% は利用者の決定。
+
+※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（system prompt とツールの定義など、約 4〜6 万 token）を含み、読める量は約 4 万 token（整理の前の基準の測定。最初の要求が 4.1〜5.7 万 token）。
 
 ## Git
 
@@ -87,14 +90,12 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/rules/workflow.md) 第 2.1 節） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない |
-| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。spec 担当のセッションは、アーカイブの許可も求める（低の変更では pull request の報告と一緒に。開発の進め方 第 5.7 節）。担当：作業ブランチ → `develop` は、危険度が高い変更と機能の spec は spec 担当、それ以外は issue 担当。`release-`・`hotfix-` → `main` と `hotfix-` の後の `main` → `develop` も issue 担当（[エージェントの作業フロー](docs/rules/subagents.md) 第 4 節） |
-| 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く ※4 |
+| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。アーカイブの許可は開発の進め方 第 5.7 節、マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節 |
+| 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（`.gitignore` は [ブランチとリリース](docs/guides/branches.md) 第 2.2 節） |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/guides/branches.md)。
 
 ※3：マージは `gh pr merge --match-head-commit <SHA>` で行う。
-
-※4：`.gitignore` は許可リストで、Git に入れる物だけを `!` で戻す。`.claude/` の下は、共有する skill とプレビューの設定だけを戻す。
 
 ## 環境
 

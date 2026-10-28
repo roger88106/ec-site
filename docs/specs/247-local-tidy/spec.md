@@ -1,11 +1,11 @@
 # Spec 247：`/.local/` と作業ツリーの置き場所を整理し、ツールを Git に移す
 
-ステータス：草案
+ステータス：確定
 危険度：高
 
 ## 1. 背景と目的
 
-milestone「整理の段階」の第 1 段の spec の 1 つである。追跡の issue は [#247](https://github.com/roger88106/ec-site/issues/247) で、sub-issue は [#22](https://github.com/roger88106/ec-site/issues/22)（skill を、Claude Code 以外のエージェントも読める置き場所に移す）である。作業ブランチは `247-local-tidy` である。整理の spec なので、AC、API、データベースは変えない。規模の見込みは M である（第 6 節の決めたこと 1）。
+milestone「整理の段階」の第 1 段の spec の 1 つである。追跡の issue は [#247](https://github.com/roger88106/ec-site/issues/247) で、sub-issue は [#22](https://github.com/roger88106/ec-site/issues/22)（skill を、Claude Code 以外のエージェントも読める置き場所に移す）である。作業ブランチは `247-local-tidy` である。整理の spec なので、AC、API、データベースは変えない。規模は M で、2026-10-29 に利用者が確認した（第 6 節の決めたこと 1）。
 
 `/.local/` は Git に入らない手元の置き場所で、18 の項目と約 33MB になった。エージェントが使うもの、利用者が使うもの、両方が使うものが混ざり、終わった spec の記録や古い script も残る。`/.local/agent/environment.md`（約 1.2 万バイト）は、SessionStart の hook でセッションの始めと文脈の圧縮の後に毎回文脈に入る。そのうち、このマシンに固有でない内容（Windows や Claude Code に共通の落とし穴）と、経緯の記述（注意された日と回数）が多くを占める。`/.local/agent/` のツール（break-check、backslash-guard など）は Git に入らないので、他のマシンや clone し直した環境で使えず、テストもない。作業ツリーの置き場所は、issue 担当のセッションの備忘録にだけ書いてあり、Git の文書にない。
 
@@ -108,7 +108,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 
 ## 3. 目的と完了条件
 
-完了条件は、第 6 節の推奨の案で書いた。利用者が他の案を選んだら、第 6 節の「変わる DC」のとおり修正する。
+完了条件は、第 6 節で選んだ案（全て推奨の案 A）で書いた。
 
 ### DS-247-1 `/.local/` の項目ごとの用途と保存の期間を決めて文書にし、要らないものを削除する（D / P1）
 
@@ -169,7 +169,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 
 ## 6. 決めたこと
 
-Open questions はない。次の 6 つを、利用者に確認する。互いに独立している。
+2026-10-29 に、利用者が次の 6 つとも案 A（推奨）を確認した。Open questions はない。6 つは互いに独立している。
 
 ### 決めたこと 1：規模
 

@@ -1,0 +1,6 @@
+# リポジトリのルートで docker compose を実行するための入口。
+# 実体は docker/compose.yaml で、ここで include して読む（秘密の値は置かない）。
+name: ec-site
+
+include:
+  - docker/compose.yaml

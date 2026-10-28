@@ -1,6 +1,6 @@
 import { HttpResponse, http as mswHttp } from 'msw'
 import { NextRequest } from 'next/server'
-import { beforeAll, describe, expect, test, vi } from 'vitest'
+import { beforeAll, beforeEach, describe, expect, test, vi } from 'vitest'
 import { IDP, server } from '@/test/server'
 
 // Auth.js の本物のリクエストの処理で、IdP への移動の戻り先を確認する（ほかのテストは Auth.js を置き換えている）
@@ -56,9 +56,14 @@ describe('ログインの戻り先', () => {
   let handlers: typeof import('@/auth').handlers
 
   beforeAll(async () => {
-    // `@/auth` は読み込みの時に AUTH_URL を読むので、公開する URL を設定してから読み込む（読み込みと変換の時間をテストの時間に含めない）
+    // AUTH_URL は読み込みの時（`@/auth`）とリクエストの時（Auth.js）の両方で読まれる。ここは読み込みの時のため（読み込みと変換の時間をテストの時間に含めない）
     vi.stubEnv('AUTH_URL', PUBLIC_URL)
     ;({ handlers } = await import('@/auth'))
+  })
+
+  beforeEach(() => {
+    // afterEach で環境変数が戻るので、リクエストの時のために、テストごとにも設定する
+    vi.stubEnv('AUTH_URL', PUBLIC_URL)
   })
 
   test('AC-241 ログインで IdP へ移るときの戻り先は公開する URL から作り、リクエストヘッダーのホストを使わない', async () => {

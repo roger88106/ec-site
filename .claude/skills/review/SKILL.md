@@ -48,7 +48,7 @@ description: 段階や spec の最後のレビュー、plan・tasks を書き終
    完了の条件：全ての指摘の採否が決まっている。
 10. 校閲役や他のレビューが見つけ、利用者が確認した型を、機械の検査に加える。加えるのは、利用者が型として確認したものだけで、指摘の一件ごとではない。
    - 加える先は原因で決める。日本語の書き方の規則に反する型（使わないと決めた語、文体。誰が書いても誤り）は、層 1 の `scripts/ci/ja-text.json`。中国語の混入（中国語の字・語・直訳）は、層 2 の `.claude/skills/zh-mixing/zh-mixing.json`（書き方は [中国語の混入を調べる](../zh-mixing/SKILL.md) の「一覧の直し方」）。同じ字・語を両方に置かない。
-   - 層 1 の項目の形は、`error` と `warning` が `{ "word", "use" }`（`error` は許す語 `allow` も書ける）。文体の型は `style` の閾値と、`scripts/ci/ja-text.mjs` の `findStyleWarnings` で扱う。層 2 には warning がなく、見つかれば失敗にする。
+   - 層 1 の項目の形は、`error` と `warning` が `{ "word", "use" }`（`error` は許す語 `allow` も書ける）。部分の一致が誤検出になる語は、`word` の代わりに `pattern`（正規表現の文字列。`u` フラグで使う）で書け、`examples` の `hit`（当たる例）と `miss`（当たらない例）を 1 つ以上ずつ必ず書く（テストが全ての例を確認する）。文体の型は `style` の閾値と、`scripts/ci/ja-text.mjs` の `findStyleWarnings` で扱う。層 2 には warning がなく、見つかれば失敗にする。
    - error と warning の分け方：error にするのは、リポジトリの全体（アーカイブした spec を除く）に当てて誤検出が 0 の型か、全ての誤検出を許す語（層 1 は `allow`、層 2 は `allow` の `{ "word", "file", "reason" }`）で除ける型だけである。
      それ以外は、文脈で正しいかが決まる型なので、warning にする（層 1 だけ）。
    - 当てて数える：層 1 は、先に `warning` に加え、`node scripts/ci/ja-text.mjs --warning` で一覧にして誤検出を数える。error にするときは `error` に移し、`node scripts/ci/ja-text.mjs` の失敗が 0 になるまで、見つかった行を修正するか許す語を追加する。層 2 は、加えてから `node .claude/skills/zh-mixing/zh-mixing.cjs --force tracked` で全体に当てる。環境の印がなくても `--force` で調べられる。

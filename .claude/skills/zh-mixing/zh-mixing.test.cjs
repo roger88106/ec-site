@@ -281,7 +281,7 @@ test('名前を変えて追記したファイルの追加行を調べる（一�
 // --- 一覧 ---
 
 test('層 1 の一覧（error と warning）と層 2 の一覧に、同じ字・語がない（DC-249-5）', () => {
-  const layer1 = [...ja.error, ...ja.warning].map((t) => t.word)
+  const layer1 = [...ja.error, ...ja.warning].map((t) => t.word).filter((word) => word !== undefined)
   const layer2 = [...list.chars, ...list.words]
   for (const a of layer1) {
     for (const b of layer2) {

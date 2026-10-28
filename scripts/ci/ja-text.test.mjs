@@ -6,6 +6,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from './lib/git-env.mjs'
+import * as jaText from './ja-text.mjs'
 import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments } from './ja-text.mjs'
 
 const SCRIPT = fileURLToPath(new URL('./ja-text.mjs', import.meta.url))
@@ -33,7 +34,7 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
   test('一覧の各項目が error か warning のどちらかである', () => {
     assert.deepEqual(Object.keys(list).sort(), ['error', 'style', 'warning'])
     for (const item of [...list.error, ...list.warning]) {
-      assert.equal(typeof item.word, 'string')
+      assert.equal(typeof (item.word ?? item.pattern), 'string')
       assert.equal(typeof item.use, 'string')
     }
   })
@@ -75,6 +76,63 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
 
   test('許す語が使われている場合は問題にならない', () => {
     assert.deepEqual(findAllowProblems(['\u6279\u5224と\u6279\u8a55'], list.error.filter((item) => item.word === BATCH)), [])
+  })
+})
+
+/** 和語の「足す」。ファイルに使わない語を書かないよう、エスケープで組み立てる */
+const ADD = '足す'
+
+describe('日本語の文の検査（pattern と examples の項目）', () => {
+  test('一覧の pattern の項目が、examples の hit に当たり miss に当たらない', () => {
+    const patterns = [...list.error, ...list.warning].filter((item) => item.pattern !== undefined)
+    assert.ok(patterns.length >= 1)
+    assert.deepEqual(jaText.findPatternProblems(patterns), [])
+    for (const item of patterns) {
+      for (const hit of item.examples.hit) assert.equal(findTerms(hit, [item]).length, 1, hit)
+      for (const miss of item.examples.miss) assert.deepEqual(findTerms(miss, [item]), [], miss)
+    }
+  })
+
+  test('examples がない・空・hit か miss が空・正規表現が読めない項目は設定の誤りになる', () => {
+    const bad = [
+      { pattern: 'a', use: 'x' },
+      { pattern: 'a', use: 'x', examples: {} },
+      { pattern: 'a', use: 'x', examples: { hit: [], miss: ['b'] } },
+      { pattern: 'a', use: 'x', examples: { hit: ['a'], miss: [] } },
+      { pattern: '(', use: 'x', examples: { hit: ['a'], miss: ['b'] } },
+    ]
+    for (const item of bad) {
+      assert.throws(() => findTerms('a', [item]), Error, item.pattern)
+      assert.notEqual(jaText.findPatternProblems([item]).length, 0, JSON.stringify(item))
+    }
+  })
+
+  test('hit に当たらない例と、miss に当たる例を誤りとして示す', () => {
+    const wrong = { pattern: 'a', use: 'x', examples: { hit: ['b'], miss: ['a'] } }
+    assert.equal(jaText.findPatternProblems([wrong]).length, 2)
+  })
+
+  test('漢字の後の形（不足する・補足する・満足する・充足する）は通り、和語の動詞は error になる', () => {
+    for (const kanji of ['不', '補', '満', '充']) {
+      assert.deepEqual(findTerms(`${kanji}${ADD}`, list.error), [], kanji)
+    }
+    assert.equal(findTerms(`数を${ADD}`, list.error).length, 1)
+    assert.equal(findTerms(`1に2を${ADD}`, list.error).length, 1)
+  })
+
+  test('当たった文字列を word に入れる', () => {
+    const [hit] = findTerms('x12y', [{ pattern: '\\d+', use: 'u', examples: { hit: ['1'], miss: ['x'] } }])
+    assert.equal(hit.word, '12')
+  })
+
+  test('word の項目は今まで通りで、pattern と同じ一覧に混ぜられる', () => {
+    const terms = [{ word: '道具', use: 'ツール' }, { pattern: '\\d', use: 'u', examples: { hit: ['1'], miss: ['a'] } }]
+    assert.deepEqual(findTerms('道具と1', terms).map((hit) => hit.word), ['道具', '1'])
+  })
+
+  test('--message でも pattern の項目が働き、漢字の後の形は成功する', () => {
+    assert.equal(runMessage(`docs: 不${ADD}る\n`).status, 0)
+    assert.equal(runMessage(`docs: 数を${ADD}\n`).status, 1)
   })
 })
 

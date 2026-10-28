@@ -31,25 +31,91 @@ const EXCLUDED = /^(docs\/specs\/archive\/|\.claude\/skills\/docs\/tech-writing\
 const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/specs\/archive\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
 
 /**
+ * 一覧の項目の名前（word、または pattern）を返す。
+ *
+ * @param {{ word?: string, pattern?: string }} term 項目
+ * @returns {string} 項目の名前
+ */
+function termName(term) {
+  return term.word ?? term.pattern
+}
+
+/**
+ * pattern の項目の正規表現を作る。u フラグ付きで、全ての一致を見る。
+ *
+ * @param {{ pattern: string }} term pattern の項目
+ * @returns {RegExp} 正規表現
+ */
+function patternRegExp(term) {
+  return new RegExp(term.pattern, 'gu')
+}
+
+/**
  * 行の中に、使わない語を、許す語の外で書いているかを返す。
  * 日本語に語の境界はないので、使わない語を一部に含む正しい語は、語ごとの許す語（allow）で救う。
+ * word の項目は部分の一致で、pattern の項目は正規表現の一致で見る（漢字の後を除くなどは pattern で書く）。
  *
  * @param {string} line 行
- * @param {{ word: string, allow?: Record<string, string> }} term 使わない語と許す語（許す語と理由）
- * @returns {boolean} 許す語の外に一致があれば true
+ * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }} term 使わない語（または正規表現）と許す語（許す語と理由）
+ * @returns {string | null} 許す語の外にある最初の一致（当たった文字列）。なければ null
  */
-function hasDisallowedMatch(line, term) {
+function disallowedMatch(line, term) {
   const allowed = []
   for (const allow of Object.keys(term.allow ?? {})) {
     for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
       allowed.push([at, at + allow.length])
     }
   }
-  for (let at = line.indexOf(term.word); at !== -1; at = line.indexOf(term.word, at + 1)) {
-    const end = at + term.word.length
-    if (!allowed.some(([from, to]) => from <= at && end <= to)) return true
+  const matches = []
+  if (term.pattern !== undefined) {
+    for (const match of line.matchAll(patternRegExp(term))) matches.push({ at: match.index, text: match[0] })
+  } else {
+    for (let at = line.indexOf(term.word); at !== -1; at = line.indexOf(term.word, at + 1)) {
+      matches.push({ at, text: term.word })
+    }
   }
-  return false
+  for (const { at, text } of matches) {
+    const end = at + text.length
+    if (!allowed.some(([from, to]) => from <= at && end <= to)) return text
+  }
+  return null
+}
+
+/**
+ * pattern の項目の誤りを、表示する文にして返す。
+ * examples（hit：当たる例、miss：当たらない例。どちらも 1 つ以上）が必須で、正規表現が読めること、hit が全て当たり miss が当たらないことを確認する。
+ *
+ * @param {{ word?: string, pattern?: string, allow?: Record<string, string>, examples?: { hit?: string[], miss?: string[] } }[]} terms 一覧の項目（word の項目は見ない）
+ * @returns {string[]} 誤りの文
+ */
+export function findPatternProblems(terms) {
+  const problems = []
+  for (const term of terms) {
+    if (term.pattern === undefined) continue
+    const name = `ja-text.json の pattern「${term.pattern}」`
+    if (term.word !== undefined) {
+      problems.push(`${name}：word と pattern を両方書かない`)
+      continue
+    }
+    try {
+      patternRegExp(term)
+    } catch (error) {
+      problems.push(`${name}：正規表現として不正：${error.message}`)
+      continue
+    }
+    const { hit, miss } = term.examples ?? {}
+    if (!Array.isArray(hit) || hit.length === 0 || !Array.isArray(miss) || miss.length === 0) {
+      problems.push(`${name}：examples の hit と miss（どちらも 1 つ以上の配列）が必要`)
+      continue
+    }
+    for (const example of hit) {
+      if (disallowedMatch(example, term) === null) problems.push(`${name}：hit の例「${example}」に当たらない`)
+    }
+    for (const example of miss) {
+      if (disallowedMatch(example, term) !== null) problems.push(`${name}：miss の例「${example}」に当たる`)
+    }
+  }
+  return problems
 }
 
 /**
@@ -60,10 +126,13 @@ function hasDisallowedMatch(line, term) {
  * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語
  */
 export function findTerms(text, terms) {
+  const patternProblems = findPatternProblems(terms)
+  if (patternProblems.length) throw new Error(patternProblems.join('\n'))
   for (const term of terms) {
     if (Array.isArray(term.allow)) {
-      throw new Error(`「${term.word}」の allow は {許す語: 理由} の形で書く（ja-text.json）`)
+      throw new Error(`「${termName(term)}」の allow は {許す語: 理由} の形で書く（ja-text.json）`)
     }
+    if (term.word === undefined) continue
     for (const allow of Object.keys(term.allow ?? {})) {
       if (!allow.includes(term.word)) {
         throw new Error(`許す語「${allow}」が使わない語「${term.word}」を含まない（ja-text.json）`)
@@ -73,7 +142,8 @@ export function findTerms(text, terms) {
   const hits = []
   text.split('\n').forEach((line, index) => {
     for (const term of terms) {
-      if (hasDisallowedMatch(line, term)) hits.push({ line: index + 1, ...term })
+      const matched = disallowedMatch(line, term)
+      if (matched !== null) hits.push({ ...term, line: index + 1, word: matched })
     }
   })
   return hits
@@ -83,12 +153,12 @@ export function findTerms(text, terms) {
  * 許す語の誤り（理由がない、どの文書にも使われなくなった）を、表示する文にして返す。
  *
  * @param {string[]} texts 調べる文書の内容（全て）
- * @param {{ word: string, allow?: Record<string, string> }[]} terms 語と許す語
+ * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 語（または正規表現）と許す語
  * @returns {string[]} 誤りの文
  */
 export function findAllowProblems(texts, terms) {
   return terms.flatMap((term) =>
-    checkExclusions(`ja-text.json の「${term.word}」の allow`, term.allow ?? {}, (allow) => texts.some((text) => text.includes(allow))),
+    checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => texts.some((text) => text.includes(allow))),
   )
 }
 

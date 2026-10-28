@@ -119,6 +119,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - **DC-246-17** `.claude/settings.json` の permission で、自動マージを有効にする MCP のツール（`mcp__ccd_pr__set_auto_merge`）と、`.claude/settings.json`・`.claude/settings.local.json` の Edit・Write で、確認を求める。
 - **DC-246-18** DC-246-13〜16 の判定に、テストがある。`gh` の呼び出しはテストの中の偽物に差し替え、DC-246-14 の各条件が欠けた例、`Closes` がない例、実行中の検査がある例、時間切れの例を持つ。`risk.mjs` は差し替えず、実物を使う。
 - **DC-246-19** AGENTS.md の Git の表の「マージ・tag」の行が、hook が確認を求めることと、hook が見ない条件（担当のセッション、未解決の指摘）は文章の規則であることを書いている。[ブランチとリリース](../../guides/branches.md) 第 5 節の ruleset の箇条が、確認の画面が表示されることを書いている。
+- **DC-246-20** 同じ hook が、PowerShell のツールのコマンドのうち、`git` か `gh` を含み、操作の語（`push`、`commit`、`tag`、`merge`、`api`、`release`、`hooksPath`）を含むものを拒否し、Bash のツールで実行するよう返す。それ以外の PowerShell のコマンドは通す。テストが、拒否する例と通す例（`git status`、`git log`、`gh pr view`）を持つ（決めたこと 5）。
 
 ## 4. 守る制約
 
@@ -142,7 +143,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 
 ## 6. 決めたこと
 
-2026-10-28 に、利用者が次の 4 つとも案 A（推奨）を確認した。Open questions はない。4 つは互いに独立している。
+2026-10-28 に、利用者が決めたこと 1〜4 の全てで案 A（推奨）を確認した。決めたこと 5 は、実装の途中で 2026-10-29 に確認した。Open questions はない。5 つは互いに独立している。
 
 ### 決めたこと 1：規模
 
@@ -177,6 +178,17 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | 案 A（推奨） | `scripts/dev/hooks/` に置く（例：`agent-guard.mjs` とテスト）。git の hook（`pre-commit`・`commit-msg`）と同じ階層になる | `check-all.sh` の script のテストの glob（`scripts/dev/**/*.test.mjs`）に既に含まれる。`scripts/dev/hooks/` は spec 245 の危険度が高の経路なので、hook を変える pull request は高と判定され、利用者がマージを許可する | git の hook と Claude Code の hook が同じ階層に並ぶので、ファイルの冒頭のコメントで区別する | なし |
 | 案 B | `.claude/hooks/` を作って置く | Claude Code の設定と近い | `.gitignore` の許可リストと `check-all.sh` のテストの glob（`.cjs` だけを含む `.claude/skills/` と別）に追加が必要である。`.claude/` は高の経路なので、危険度は案 A と同じ | DC-246-2、4 に追加の許可リストと glob を加える |
 
+### 決めたこと 5：Bash 以外のシェルのツール
+
+T246-01-06 のレビューで、hook が Bash のツールだけを判定し、PowerShell のツールで実行したマージ・tag・force push を通すことが分かった。2026-10-29 に、利用者が案 A を確認した。
+
+| 案 | 内容 | 利点 | 欠点 | 変わる DC |
+|----|------|------|------|-----------|
+| 案 A（推奨） | PowerShell のコマンドが `git` か `gh` を含み、hook が判定する操作の語（`push`、`commit`、`tag`、`merge`、`api`、`release`、`hooksPath`）を含めば拒否し、Bash で実行するよう返す。それ以外（`git status` など）は通す | 判定は Bash の 1 か所だけで、PowerShell の書き方を読まなくてよい。エージェントは Bash で実行し直すだけで済む | 読むだけの `gh api` なども拒否する | DC-246-20 を加える |
+| 案 B | PowerShell のコマンドが `git` か `gh` を含めば、全て拒否する | 最も単純 | `git status` などの読むだけの操作も拒否する | DC-246-20 を加える |
+| 案 C | PowerShell のコマンドが `git` か `gh` を含めば、確認を求める | エージェントを止めない | 確認の画面が増える | DC-246-20 を加える |
+| 案 D | 扱わず、第 8 節に残す | 今回の作業が増えない | マージ・tag・ruleset の変更を確認なしに実行できる道が残る | なし |
+
 ## 7. tasks
 
 ### 順序と重なり
@@ -203,7 +215,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 ### 段階 1：hook と設定
 
 - 前提：spec の確定、spec 245 のマージ、実装を始める前の照合
-- 完了条件：DC-246-1〜19 を満たし、DN-246-1〜5 を守る。
+- 完了条件：DC-246-1〜20 を満たし、DN-246-1〜5 を守る。
 - 参照：第 1 節、第 3 節、第 6 節、[テストの書き方](../../rules/test-writing.md)、[コメントの書き方](../../rules/comments.md)
 - `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
 
@@ -233,8 +245,17 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - 依存：T246-01-05
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
   - 確認方法：T246-01-05 のテストが通る。`check-all.sh` が通る。
-- [ ] **T246-01-07** [リスク] `.claude/settings.json` を作り、hook と permission を書き、`.gitignore` の許可リストとコメントに加える（DC-246-1、2、5、6、17）。
+- [ ] **T246-01-09** [テスト] Claude Code の hook の、PowerShell のツールの判定（DC-246-20）のテストを書き、レッドを確認する。T246-01-06 のレビューで加えた（決めたこと 5）。
   - 依存：T246-01-06
+  - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`
+  - 確認方法：DC-246-20 の拒否する例がレッドになる。通す例も持つ。
+- [ ] **T246-01-10** [リスク] Claude Code の hook の、PowerShell のツールの判定を実装する（DC-246-20）。
+  - 依存：T246-01-09
+  - 範囲：`scripts/dev/hooks/agent-guard.mjs`
+  - 確認方法：T246-01-09 のテストが通る。`check-all.sh` が通る。
+- [ ] **T246-01-07** [リスク] `.claude/settings.json` を作り、hook と permission を書き、`.gitignore` の許可リストとコメントに加える（DC-246-1、2、5、6、17、20）。
+  - 依存：T246-01-10
+  - hook の matcher は、Bash と PowerShell のツールを対象にする（DC-246-20）。
   - 範囲：`.claude/settings.json`、`.gitignore`
   - hook のコマンドは、セッションの作業ディレクトリから作業ツリーの根を求めて script を呼ぶ形にする（例：`node "$(git rev-parse --show-toplevel)/scripts/dev/hooks/agent-guard.mjs"`）。実際に動く形を、この作業ツリーで動かして確認してから決める。
   - 確認方法：`git check-ignore` で `settings.json` が無視されないことを確認する。hook の設定はセッションの開始のときに読まれるので、この作業ツリーで新しいセッションを起動し、次の表の各行を試す。結果を本 spec の第 9 節に記録する。
@@ -249,6 +270,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | DC-246-15 | `git tag 試し` | 確認の画面（利用者が拒否する） |
 | DC-246-16 | `gh api -X PUT repos/roger88106/ec-site/rulesets/<id>`（本文なし） | 確認の画面（利用者が拒否する） |
 | DC-246-17 | `.claude/settings.json` を Edit で書き換える | 確認の画面（利用者が拒否する） |
+| DC-246-20 | PowerShell のツールで `git tag 試し` | 拒否（Bash で実行するよう返す） |
 
 - [ ] **T246-01-08** 文書を更新する（DC-246-2、3、9、19）。
   - 依存：T246-01-07

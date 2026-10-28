@@ -16,18 +16,31 @@ const INSTALLED_HOOK = '#!/bin/sh\n"$(git rev-parse --show-toplevel)/scripts/dev
 const CWD = path.resolve(tmpdir(), 'agent-guard-cwd')
 
 /**
- * git の呼び出しとファイルの読み込みを差し替えた依存を作る。
- * rev-parse は `.git/hooks/pre-commit` を返し、ファイルは `files`（絶対パスをキー）から読む。
+ * git と gh の呼び出しと、ファイルの読み込みを差し替えた依存を作る。
+ * rev-parse は `.git/hooks/pre-commit` を返し、show-ref は `tags` にある tag だけを見つける。ファイルは `files`（絶対パスをキー）から読む。
+ * gh は `gh`（結果か、引数と選択肢から結果を返す関数）を返す。既定は失敗。
  */
-function fakeDeps({ files = { [path.join(CWD, '.git/hooks/pre-commit')]: INSTALLED_HOOK }, revParse = { status: 0, stdout: '.git/hooks/pre-commit\n' } } = {}) {
+function fakeDeps({
+  files = { [path.join(CWD, '.git/hooks/pre-commit')]: INSTALLED_HOOK },
+  revParse = { status: 0, stdout: '.git/hooks/pre-commit\n' },
+  tags = [],
+  gh = { status: 1, stdout: '', stderr: 'テストの gh は、この例では呼ばれない想定' },
+} = {}) {
   const calls = []
+  const ghCalls = []
   return {
     calls,
+    ghCalls,
     runGit: (args, cwd, env = {}) => {
       calls.push({ args, cwd, env })
+      if (args[0] === 'show-ref') return { status: tags.some((tag) => args.includes(`refs/tags/${tag}`)) ? 0 : 1, stdout: '' }
       return revParse
     },
     readText: (file) => files[path.resolve(file)] ?? null,
+    runGh: (args, options) => {
+      ghCalls.push({ args, ...options })
+      return typeof gh === 'function' ? gh(args, options) : gh
+    },
   }
 }
 
@@ -36,6 +49,13 @@ function assertDenied(command, pattern, deps = fakeDeps()) {
   const result = judgeCommand(command, CWD, deps)
   assert.equal(result?.decision, 'deny', `拒否されない：${command}`)
   assert.match(result.reason, pattern, `理由が違う：${command}`)
+}
+
+/** 判定の結果が確認を求めるもので、理由が `pattern` に一致することを確認する */
+function assertAsked(command, pattern, deps = fakeDeps()) {
+  const result = judgeCommand(command, CWD, deps)
+  assert.equal(result?.decision, 'ask', `確認を求めない：${command}（${JSON.stringify(result)}）`)
+  assert.match(result.reason, pattern, `理由が違う：${command}（${result.reason}）`)
 }
 
 /** 判定の結果が通す（null）ことを確認する */
@@ -182,7 +202,7 @@ describe('push 済みの履歴を書き換える push を拒否する', () => {
       'git push -u origin 246-enforce-hooks',
       'git push -n origin x',
       'git push origin main:refs/heads/main',
-      'git push --follow-tags origin x',
+      'git push --no-follow-tags origin x',
       'git push --no-force-with-lease origin x',
       'git push -ofoo origin x',
       'git push -o +x origin x',
@@ -320,7 +340,301 @@ describe('pre-commit hook を置いていないリポジトリの commit を拒�
   test('commit 以外の git のコマンドでは、hook を調べない', () => {
     const deps = fakeDeps({ files: {} })
     assertPassed('git status && git push origin x && git log', deps)
-    assert.deepEqual(deps.calls, [])
+    assert.deepEqual(deps.calls.filter((call) => call.args.includes('rev-parse')), [])
+  })
+})
+
+/** マージする pull request の今の head の commit */
+const HEAD_SHA = '28361e9899ad2db8de4c6452d1a2b21aa83e370d'
+
+/** 危険度が低で、issue を閉じる本文 */
+const LOW_BODY = '## 概要\n\n変更の説明\n\nCloses #246\n\n## 危険度\n\n<!-- 判定：高 -->\n判定：低\n'
+
+/** gh pr merge の、許可なしに通せる形 */
+const MERGE = `gh pr merge 246 --squash --match-head-commit ${HEAD_SHA}`
+
+/** Dependabot の作成者（gh api graphql の author の形） */
+const DEPENDABOT = { __typename: 'Bot', login: 'dependabot' }
+
+/**
+ * CI の検査（check run）を作る。
+ *
+ * @param {string} name 検査の名前
+ * @param {string} [conclusion] 結論
+ * @param {string} [status] 状態。COMPLETED でなければ結論は null
+ */
+function check(name, conclusion = 'SUCCESS', status = 'COMPLETED') {
+  return { __typename: 'CheckRun', name, status, conclusion: status === 'COMPLETED' ? conclusion : null }
+}
+
+/**
+ * gh api graphql が返す pull request を作る。既定は、許可なしにマージする条件を全て満たすもの。
+ * closing は閉じる issue とそのラベル、files は変更のファイル、checks は CI の検査、ほかの項目は pull request の項目を上書きする。
+ */
+function pullRequest({
+  closing = [{ number: 246, labels: ['種類:整理'] }],
+  files = ['README.md'],
+  checks = [check('危険度の照合'), check('バックエンド'), check('E2E', 'SKIPPED'), check('CodeQL', 'NEUTRAL')],
+  ...fields
+} = {}) {
+  const rollup = checks === null ? null : { contexts: { nodes: checks, pageInfo: { hasNextPage: false } } }
+  return {
+    data: {
+      repository: {
+        pullRequest: {
+          state: 'OPEN',
+          baseRefName: 'develop',
+          headRefOid: HEAD_SHA,
+          title: 'hooks: マージに確認を求める',
+          body: LOW_BODY,
+          author: { __typename: 'User', login: 'roger88106' },
+          changedFiles: files.length,
+          files: { nodes: files.map((file) => ({ path: file })), pageInfo: { hasNextPage: false } },
+          closingIssuesReferences: {
+            nodes: closing.map(({ number, labels }) => ({ number, labels: { nodes: labels.map((name) => ({ name })), pageInfo: { hasNextPage: false } } })),
+            pageInfo: { hasNextPage: false },
+          },
+          commits: { nodes: [{ commit: { statusCheckRollup: rollup } }] },
+          ...fields,
+        },
+      },
+    },
+  }
+}
+
+/** pull request を返す gh を持つ依存を作る */
+function mergeDeps(fields = {}) {
+  return fakeDeps({ gh: { status: 0, stdout: JSON.stringify(pullRequest(fields)), stderr: '' } })
+}
+
+describe('マージのコマンドを判定する', () => {
+  test('gh api のマージと --admin は拒否し、gh pr merge --match-head-commit を使うよう返す', () => {
+    for (const command of [
+      `gh api -X PUT repos/roger88106/ec-site/pulls/246/merge`,
+      `gh api --method PUT /repos/{owner}/{repo}/pulls/246/merge`,
+      `gh api repos/roger88106/ec-site/pulls/246/merge -f merge_method=squash`,
+      `gh pr merge 246 --admin --match-head-commit ${HEAD_SHA}`,
+    ]) {
+      assertDenied(command, /--match-head-commit/, mergeDeps())
+    }
+  })
+
+  test('--match-head-commit がない gh pr merge は拒否する', () => {
+    for (const command of ['gh pr merge 246', 'gh pr merge 246 --squash --auto', 'gh pr merge']) {
+      assertDenied(command, /--match-head-commit/, mergeDeps())
+    }
+  })
+
+  test('--auto は、マージの時点の条件を判定できないので確認を求める', () => {
+    const deps = mergeDeps()
+    assertAsked(`${MERGE} --auto`, /--auto/, deps)
+  })
+
+  test('条件を全て満たすマージは通す（skipped と neutral の検査を含む）', () => {
+    const deps = mergeDeps()
+    assertPassed(MERGE, deps)
+    assert.equal(deps.ghCalls.length, 1)
+  })
+
+  test('フルパスの gh と gh.exe でも判定する', () => {
+    for (const program of ['"/c/Program Files/GitHub CLI/gh.exe"', 'gh.exe', '/usr/bin/gh']) {
+      assertPassed(`${program} pr merge 246 --match-head-commit ${HEAD_SHA}`, mergeDeps())
+      assertDenied(`${program} pr merge 246`, /--match-head-commit/, mergeDeps())
+      assertAsked(`${program} pr merge 246 --match-head-commit ${HEAD_SHA}`, /向き先/, mergeDeps({ baseRefName: 'main' }))
+    }
+  })
+
+  test('番号も URL もない gh pr merge は、今のブランチの pull request を指すので、gh を呼ばずに確認を求める', () => {
+    for (const command of [`gh pr merge --match-head-commit ${HEAD_SHA}`, `gh pr merge 246-enforce-hooks --match-head-commit ${HEAD_SHA}`]) {
+      const deps = mergeDeps()
+      assertAsked(command, /番号か URL/, deps)
+      assert.deepEqual(deps.ghCalls, [])
+    }
+  })
+
+  test('条件が 1 つ欠けると、欠けた条件を書いて確認を求める', () => {
+    const cases = [
+      [{ state: 'MERGED' }, /開いていない/],
+      [{ baseRefName: 'main' }, /向き先.*main/],
+      [{ headRefOid: 'ffffffffffffffffffffffffffffffffffffffff' }, /head/],
+      [{ checks: [check('危険度の照合'), check('E2E', null, 'IN_PROGRESS')] }, /終わっていない.*E2E/],
+      [{ checks: [check('危険度の照合'), check('E2E', null, 'QUEUED')] }, /終わっていない.*E2E/],
+      [{ checks: [check('危険度の照合'), check('E2E', 'FAILURE')] }, /成功していない.*E2E/],
+      [{ checks: [check('危険度の照合'), check('E2E', 'CANCELLED')] }, /成功していない.*E2E/],
+      [{ checks: [check('危険度の照合'), { __typename: 'StatusContext', context: '外部の検査', state: 'PENDING' }] }, /終わっていない.*外部の検査/],
+      [{ checks: [] }, /CI の検査がない/],
+      [{ checks: null }, /CI の検査がない/],
+      [{ checks: [check('バックエンド')] }, /危険度の照合/],
+      [{ checks: [check('危険度の照合', 'SKIPPED'), check('バックエンド')] }, /危険度の照合/],
+      [{ body: LOW_BODY.replace('判定：低', '判定：高') }, /本文の危険度/],
+      [{ body: 'Closes #246' }, /本文の危険度/],
+      [{ closing: [] }, /Closes/],
+      [{ closing: [{ number: 246, labels: ['種類:整理'] }, { number: 247, labels: ['種類:機能'] }] }, /種類:機能.*#247/],
+    ]
+    for (const [fields, pattern] of cases) {
+      assertAsked(MERGE, pattern, mergeDeps(fields))
+    }
+  })
+
+  test('欠けた条件が複数あれば、全てを書く', () => {
+    const result = judgeCommand(MERGE, CWD, mergeDeps({ baseRefName: 'main', closing: [] }))
+    assert.equal(result?.decision, 'ask')
+    assert.match(result.reason, /向き先/)
+    assert.match(result.reason, /Closes/)
+  })
+
+  test('gh の失敗、時間切れ、読めない JSON では、確認を求める', () => {
+    assertAsked(MERGE, /読めない.*Could not resolve/s, fakeDeps({ gh: { status: 1, stdout: '', stderr: 'GraphQL: Could not resolve to a PullRequest' } }))
+    assertAsked(MERGE, /時間切れ/, fakeDeps({ gh: { status: null, stdout: '', stderr: '', error: Object.assign(new Error('spawnSync gh ETIMEDOUT'), { code: 'ETIMEDOUT' }) } }))
+    assertAsked(MERGE, /読めない/, fakeDeps({ gh: { status: 0, stdout: '{', stderr: '' } }))
+    assertAsked(MERGE, /読めない/, fakeDeps({ gh: { status: 0, stdout: '{"data":{"repository":{"pullRequest":null}}}', stderr: '' } }))
+    assertAsked(MERGE, /読めない/, fakeDeps({ gh: () => { throw new Error('gh がない') } }))
+  })
+
+  test('検査・ファイル・閉じる issue・ラベルの一覧が途中までしか読めなければ、確認を求める', () => {
+    const data = pullRequest()
+    data.data.repository.pullRequest.commits.nodes[0].commit.statusCheckRollup.contexts.pageInfo.hasNextPage = true
+    assertAsked(MERGE, /一覧/, fakeDeps({ gh: { status: 0, stdout: JSON.stringify(data), stderr: '' } }))
+  })
+
+  test('gh には時間切れを渡す', () => {
+    const deps = mergeDeps()
+    judgeCommand(MERGE, CWD, deps)
+    const { timeout } = deps.ghCalls[0]
+    assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout <= 30000, `時間切れ：${timeout}`)
+  })
+
+  test('Dependabot は、本文と Closes の代わりに、変更のファイルと題を危険度の判定に渡して低なら通す', () => {
+    const dependabot = { author: DEPENDABOT, body: 'Bumps the gradle-minor-patch group.', closing: [] }
+    const low = { ...dependabot, title: 'deps: bump the gradle-minor-patch group in /backend/ecsite with 4 updates', files: ['backend/ecsite/gradle/libs.versions.toml'] }
+    assertPassed(MERGE, mergeDeps(low))
+    assertAsked(MERGE, /危険度が高.*major/, mergeDeps({ ...low, title: 'deps: bump org.springframework.boot from 3.5.0 to 4.0.0 in /backend/ecsite' }))
+    assertAsked(MERGE, /危険度が高.*CI とリリース/, mergeDeps({ ...low, files: ['.github/workflows/ci.yml'] }))
+    assertAsked(MERGE, /終わっていない/, mergeDeps({ ...low, checks: [check('バックエンド', null, 'IN_PROGRESS')] }))
+  })
+
+  test('作成者の login が dependabot でも、bot でなければ Dependabot として扱わない', () => {
+    assertAsked(MERGE, /本文の危険度/, mergeDeps({ author: { __typename: 'User', login: 'dependabot' }, body: '', closing: [] }))
+  })
+
+  test('対象のリポジトリは、URL、-R・--repo、前に付けた GH_REPO から決め、なければ対象のディレクトリで gh に決めさせる', () => {
+    const cases = [
+      [`gh pr merge https://github.com/roger88106/ec-site/pull/246 --match-head-commit ${HEAD_SHA}`, ['owner=roger88106', 'name=ec-site', 'number=246'], CWD],
+      [`gh pr merge 246 -R other/repo --match-head-commit ${HEAD_SHA}`, ['owner=other', 'name=repo', 'number=246'], CWD],
+      [`gh pr merge 246 --repo=github.com/other/repo --match-head-commit ${HEAD_SHA}`, ['owner=other', 'name=repo', 'number=246'], CWD],
+      [`GH_REPO=other/repo gh pr merge 246 --match-head-commit ${HEAD_SHA}`, ['owner=other', 'name=repo', 'number=246'], CWD],
+      [`cd sub && gh pr merge 246 --match-head-commit ${HEAD_SHA}`, ['owner={owner}', 'name={repo}', 'number=246'], path.join(CWD, 'sub')],
+    ]
+    for (const [command, expected, cwd] of cases) {
+      const deps = mergeDeps()
+      assertPassed(command, deps)
+      assert.equal(deps.ghCalls.length, 1, command)
+      for (const arg of expected) assert.ok(deps.ghCalls[0].args.includes(arg), `${command}：${deps.ghCalls[0].args.join(' ')}`)
+      assert.equal(deps.ghCalls[0].cwd, cwd, command)
+    }
+  })
+
+  test('github.com でない URL は、確認を求める', () => {
+    assertAsked(`gh pr merge https://example.com/o/r/pull/246 --match-head-commit ${HEAD_SHA}`, /番号か URL/, mergeDeps())
+  })
+
+  test('つないだコマンドでは、拒否を確認より先に返す', () => {
+    assertDenied(`${MERGE} --auto && git push --force`, /force push/, mergeDeps())
+  })
+
+  test('読むだけの gh と、gh api graphql は通す', () => {
+    for (const command of [
+      'gh pr view 246',
+      'gh pr checks 246',
+      'gh api repos/roger88106/ec-site/pulls/246',
+      'gh api repos/roger88106/ec-site/pulls/246/merge',
+      `gh api graphql -f query='mutation { mergePullRequest(input: {pullRequestId: "x"}) { clientMutationId } }'`,
+      'echo gh pr merge 246',
+    ]) {
+      assertPassed(command)
+    }
+  })
+})
+
+describe('tag の作成と push で確認を求める', () => {
+  test('tag の作成、tag の push、gh release create で確認を求める', () => {
+    for (const command of [
+      'git tag v1.0.0',
+      'git tag -a v1.0.0 -m リリース',
+      'git tag -s v1.0.0 -m リリース',
+      'git tag -m リリース v1.0.0',
+      'git tag -f v1.0.0 HEAD',
+      'git push --tags',
+      'git push origin --tags',
+      'git push --follow-tags origin x',
+      'git push origin refs/tags/v1.0.0',
+      'git push origin HEAD:refs/tags/v1.0.0',
+      'git push origin tag v1.0.0',
+      'git push origin v1.0.0',
+      'gh release create v1.0.0',
+      '"/c/Program Files/GitHub CLI/gh.exe" release create v1.0.0 --notes x',
+    ]) {
+      assertAsked(command, /tag/, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+  })
+
+  test('tag の一覧と削除、tag でない名前の push、読むだけの gh release は通す', () => {
+    for (const command of [
+      'git tag',
+      'git tag -l',
+      'git tag --list "v*"',
+      'git tag -l v1.*',
+      'git tag -n5',
+      'git tag --contains HEAD',
+      'git tag -d v1.0.0',
+      'git push origin 246-enforce-hooks',
+      'git push -u origin HEAD',
+      'gh release list',
+      'gh release view v1.0.0',
+    ]) {
+      assertPassed(command, fakeDeps({ tags: ['v1.0.0'] }))
+    }
+  })
+
+  test('push の名前が tag かは、対象のディレクトリで git show-ref で調べる', () => {
+    const deps = fakeDeps({ tags: ['v1.0.0'] })
+    assertAsked('git -C sub push origin v1.0.0', /tag/, deps)
+    const showRef = deps.calls.find((call) => call.args[0] === 'show-ref')
+    assert.ok(showRef?.args.includes('refs/tags/v1.0.0'))
+    assert.equal(showRef.cwd, path.join(CWD, 'sub'))
+  })
+})
+
+describe('ruleset とブランチの保護の変更で確認を求める', () => {
+  test('GET 以外のメソッド（-f・-F・--input による POST を含む）で確認を求める', () => {
+    for (const command of [
+      'gh api -X PUT repos/roger88106/ec-site/rulesets/123',
+      'gh api -XPATCH /repos/roger88106/ec-site/rulesets/123',
+      'gh api --method DELETE repos/roger88106/ec-site/rulesets/123',
+      'gh api --method=PUT repos/roger88106/ec-site/rulesets/123 --input ruleset.json',
+      'gh api repos/roger88106/ec-site/rulesets -f name=x',
+      'gh api repos/roger88106/ec-site/rulesets --field enforcement=disabled',
+      'gh api repos/roger88106/ec-site/rulesets --raw-field name=x',
+      'gh api repos/roger88106/ec-site/rulesets --input ruleset.json',
+      'gh api orgs/roger88106/rulesets -F x=1',
+      'gh api -X PUT repos/roger88106/ec-site/branches/main/protection',
+      'gh api -X DELETE repos/roger88106/ec-site/branches/develop/protection/required_status_checks',
+      '"/c/Program Files/GitHub CLI/gh.exe" api -X PUT repos/roger88106/ec-site/rulesets/123',
+    ]) {
+      assertAsked(command, /ruleset/)
+    }
+  })
+
+  test('読むだけの gh api、ruleset でないパス、gh api graphql は通す', () => {
+    for (const command of [
+      'gh api repos/roger88106/ec-site/rulesets',
+      'gh api -X GET repos/roger88106/ec-site/rulesets -f includes_parents=true',
+      'gh api repos/roger88106/ec-site/branches/main/protection',
+      'gh api -X POST repos/roger88106/ec-site/issues -f title=x',
+      `gh api graphql -f query='mutation { updateRepositoryRuleset(input: {}) { clientMutationId } }'`,
+    ]) {
+      assertPassed(command)
+    }
   })
 })
 
@@ -379,6 +693,12 @@ describe('hook の入力と出力', () => {
     assert.equal(output.hookSpecificOutput.hookEventName, 'PreToolUse')
     assert.equal(output.hookSpecificOutput.permissionDecision, 'deny')
     assert.match(output.hookSpecificOutput.permissionDecisionReason, /force push/)
+  })
+
+  test('確認を求めるときは、PreToolUse の ask と理由を JSON で返す', () => {
+    const output = JSON.parse(handleInput(input('git tag v1.0.0'), fakeDeps()))
+    assert.equal(output.hookSpecificOutput.permissionDecision, 'ask')
+    assert.match(output.hookSpecificOutput.permissionDecisionReason, /tag/)
   })
 
   test('通すとき、Bash 以外のツール、読めない入力では、何も返さない', () => {

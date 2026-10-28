@@ -7,24 +7,120 @@
 // - commit の前の検査の省略：git commit・git push の --no-verify、git commit の -n、git -c core.hooksPath=…
 // - pre-commit hook を置いていないリポジトリでの git commit（git rev-parse --git-path hooks/pre-commit のファイルが、
 //   scripts/dev/hooks/pre-commit を呼んでいなければ拒否する。作業ツリーでは共通の .git の hooks を見る）
-// permission の規則はコマンドの先頭の語でしか判定できず、フルパスの git や、&& でつないだ後ろのコマンドに効かないので、hook で全文を読む。
+// - gh api によるマージ、gh pr merge の --admin と、--match-head-commit のない gh pr merge
+// 利用者の許可が必要な操作では、確認を求める（利用者に確認の画面を表示させる）。
+// - マージ：gh pr merge のうち、利用者の許可なしにマージしてよい条件（AGENTS.md の Git の表）を満たさないもの。
+//   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）
+// - tag：git tag での作成、git push の --tags・--follow-tags・tag の refspec、gh release create
+// - ruleset：ruleset とブランチの保護を変える gh api（GET 以外のリクエスト）
+// permission の規則はコマンドの先頭の語でしか判定できず、フルパスの git・gh や、&& でつないだ後ろのコマンドに効かないので、hook で全文を読む。
 //
 // 入力：標準入力の JSON（tool_name、tool_input.command、cwd など）。Bash 以外のツールは何もせずに通す。
-// 出力：拒否するときは hookSpecificOutput の permissionDecision を標準出力に出す。通すときは何も出さない。終了コードは常に 0。
-// 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd、env -C、git -C で決め、前に付けた GIT_DIR・GIT_WORK_TREE も見る
+// 出力：拒否か確認を求めるときは hookSpecificOutput の permissionDecision を標準出力に出す。通すときは何も出さない。終了コードは常に 0。
+// 対象のディレクトリは、入力の cwd を起点に、コマンドの中の cd、env -C、git -C で決め、前に付けた GIT_DIR・GIT_WORK_TREE・GH_REPO も見る
 // （$CLAUDE_PROJECT_DIR は、作業ツリーのセッションでもメインの作業ツリーを指すことがあるので使わない）。
 // $(…) とバッククォートの中のコマンド、timeout・env・xargs などを前に付けたコマンドも判定する。
-// 判定の中の例外では、git を含むコマンドは拒否し、含まないコマンドは通す
-// （判定の不具合で force push などを通さず、かつ git と関係のない Bash まで止めないため）。
+// 判定の中の例外では、git か gh を含むコマンドは拒否し、含まないコマンドは通す
+// （判定の不具合で force push や許可のないマージを通さず、かつ git・gh と関係のない Bash まで止めないため）。
 // ============================================================================
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import { homedir } from 'node:os'
 import path from 'node:path'
 import { isMain } from '../../ci/lib/is-main.mjs'
+import { applyDependabotTitle, isDependabot, judgeRisk, parseRiskConfig, readBodyRisk } from '../../ci/risk.mjs'
 
 /** git の呼び出しの時間切れ（ミリ秒）。hook 全体の時間切れより短くする */
 const GIT_TIMEOUT_MS = 5000
+
+/**
+ * gh の 1 回の呼び出しの時間切れ（ミリ秒）。pull request を読む GraphQL の 1 回のリクエストは、ふだん 1〜3 秒で終わるので、余裕を見て 10 秒にする。
+ */
+const GH_TIMEOUT_MS = 10000
+
+/**
+ * 1 つのコマンドを判定するとき、gh に使える時間の合計（ミリ秒）。hook 全体の時間切れ（30 秒以下）から、
+ * node の起動と git の呼び出しの分（約 10 秒）を残す。使い切った後のマージは、読まずに確認を求める。
+ */
+const GH_BUDGET_MS = 20000
+
+/** 高の経路の一覧（Dependabot の pull request の危険度の判定に使う） */
+const RISK_CONFIG_FILE = new URL('../../ci/risk.json', import.meta.url)
+
+/** 利用者の許可なしにマージしてよい向き先のブランチ */
+const MERGE_BASE = 'develop'
+
+/** pull request の本文の危険度を、本文の判定と照合する CI の検査の名前 */
+const RISK_CHECK = '危険度の照合'
+
+/** 機能の spec の issue に付けるラベル */
+const FEATURE_LABEL = '種類:機能'
+
+/**
+ * 通ったとみなす check run の結論。neutral は、GitHub が必須の検査で成功と同じに扱う結論で、
+ * Dependabot の pull request の CodeQL が警告なしで返すので、成功に含める。
+ */
+const PASSING_CONCLUSIONS = ['SUCCESS', 'SKIPPED', 'NEUTRAL']
+
+/** 終わっていないとみなす commit status の状態 */
+const PENDING_STATES = ['PENDING', 'EXPECTED']
+
+/**
+ * マージの条件を読む GraphQL の問い合わせ。1 回のリクエストで、pull request、変更のファイル、閉じる issue のラベル、head の commit の検査を読む。
+ * 一覧はどれも 1 ページ（100 件）だけ読み、続きがあれば条件を確認できないとする。
+ */
+const PULL_REQUEST_QUERY = `query($owner: String!, $name: String!, $number: Int!) {
+  repository(owner: $owner, name: $name) {
+    pullRequest(number: $number) {
+      state baseRefName headRefOid title body changedFiles
+      author { __typename login }
+      files(first: 100) { nodes { path } pageInfo { hasNextPage } }
+      closingIssuesReferences(first: 100) {
+        nodes { number labels(first: 100) { nodes { name } pageInfo { hasNextPage } } }
+        pageInfo { hasNextPage }
+      }
+      commits(last: 1) {
+        nodes { commit { statusCheckRollup { contexts(first: 100) {
+          nodes { __typename ... on CheckRun { name status conclusion } ... on StatusContext { context state } }
+          pageInfo { hasNextPage }
+        } } } }
+      }
+    }
+  }
+}`
+
+/**
+ * gh の選択肢の読み方。shortNames は短い選択肢を長い名前にする対応、valueLong は値を取る長い選択肢（短い選択肢も長い名前で書く）。
+ * 値を取らない選択肢は、値を "true" として読む。
+ */
+const GH_PR_OPTIONS = {
+  shortNames: { b: 'body', F: 'body-file', t: 'subject', A: 'author-email', R: 'repo', d: 'delete-branch', m: 'merge', r: 'rebase', s: 'squash' },
+  valueLong: ['body', 'body-file', 'subject', 'author-email', 'match-head-commit', 'repo'],
+}
+
+/** gh release の選択肢 */
+const GH_RELEASE_OPTIONS = {
+  shortNames: { R: 'repo', n: 'notes', F: 'notes-file', t: 'title', d: 'draft', p: 'prerelease' },
+  valueLong: ['repo', 'notes', 'notes-file', 'title', 'target', 'discussion-category', 'notes-start-tag', 'latest', 'fail-on-no-commits'],
+}
+
+/** gh api の選択肢 */
+const GH_API_OPTIONS = {
+  shortNames: { X: 'method', H: 'header', f: 'raw-field', F: 'field', q: 'jq', t: 'template', p: 'preview', i: 'include' },
+  valueLong: ['method', 'header', 'raw-field', 'field', 'input', 'jq', 'template', 'cache', 'preview', 'hostname'],
+}
+
+/** gh api で、-X がなくてもリクエストを POST にする選択肢（本文を送る） */
+const GH_API_BODY_OPTIONS = ['raw-field', 'field', 'input']
+
+/** gh api のパスのうち、pull request をマージするもの */
+const API_MERGE_PATH = /(^|\/)pulls\/[^/]+\/merge\/?(\?|$)/
+
+/** gh api のパスのうち、ruleset とブランチの保護を変えうるもの */
+const API_RULESET_PATHS = [/(^|\/)rulesets(\/|\?|$)/, /(^|\/)branches\/.+\/protection(\/|\?|$)/]
+
+/** pull request の URL（github.com のもの） */
+const PULL_REQUEST_URL = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:[/?#].*)?$/i
 
 /** 置いた pre-commit hook が呼ぶ script（開発環境の起動 第 2 節の置き方） */
 const PRE_COMMIT_SCRIPT = 'scripts/dev/hooks/pre-commit'
@@ -54,6 +150,9 @@ const PREFIX_COMMANDS = {
 /** 前に付けた環境変数のうち、対象のリポジトリを替えるもの（pre-commit hook を調べる rev-parse に渡す） */
 const REPOSITORY_ENV = ['GIT_DIR', 'GIT_WORK_TREE']
 
+/** 前に付けた環境変数のうち、gh の対象のリポジトリを替えるもの */
+const GH_REPOSITORY_ENV = 'GH_REPO'
+
 /** force push の長い選択肢（--mirror は、リモートの参照を force で更新し、リモートにしかない参照を消す） */
 const FORCE_OPTIONS = ['force', 'force-with-lease', 'force-if-includes', 'mirror']
 
@@ -62,6 +161,25 @@ const NO_VERIFY_OPTIONS = ['no-verify']
 
 /** git push の選択肢のうち、値を次の語に取るもの */
 const PUSH_OPTIONS = { valueShort: 'o', optionalShort: '', valueLong: ['repo', 'receive-pack', 'exec', 'push-option'] }
+
+/**
+ * git tag の選択肢のうち、値を次の語（または同じ語の続き）に取るもの。
+ * -n は値を同じ語の続きにだけ取るが、一覧の形かを見分けるために選択肢として数えたいので、optionalShort に入れない（続きの数字も選択肢の文字として読むが、判定に使わない）。
+ */
+const TAG_OPTIONS = {
+  valueShort: 'mFu',
+  optionalShort: '',
+  valueLong: ['message', 'file', 'local-user', 'contains', 'no-contains', 'points-at', 'merged', 'no-merged', 'sort', 'format', 'cleanup', 'trailer'],
+}
+
+/** git tag を、作成でなく一覧・削除・検証にする短い選択肢 */
+const TAG_LIST_SHORTS = ['l', 'd', 'v', 'n']
+
+/** git tag を、作成でなく一覧・削除・検証にする長い選択肢（--contains などは一覧の形になる） */
+const TAG_LIST_LONGS = ['list', 'delete', 'verify', 'contains', 'no-contains', 'points-at', 'merged', 'no-merged']
+
+/** git push で tag を送る長い選択肢 */
+const TAG_PUSH_OPTIONS = ['tags', 'follow-tags']
 
 /** git commit の選択肢のうち、値を次の語（または同じ語の続き）に取るもの */
 const COMMIT_OPTIONS = {
@@ -86,16 +204,48 @@ const HOOKS_PATH_REASON =
   'commit の前の検査を実行させるため、git -c core.hooksPath=…（--config-env を含む）で hook の置き場所を替えることはできない。' +
   'core.hooksPath を指定せずに実行する。'
 
+/** gh api のマージを拒否する理由と代わりの手順 */
+const API_MERGE_REASON =
+  'マージは gh api（…/pulls/<番号>/merge）でなく、gh pr merge <番号> --match-head-commit <SHA> で行う（AGENTS.md の Git の表）。' +
+  '承認を求めたときの head の commit を指定して実行し直す。'
+
+/** --admin を拒否する理由と代わりの手順 */
+const ADMIN_REASON =
+  'gh pr merge の --admin は、ruleset の検査を飛ばしてマージするので使えない。' + '--admin を外し、gh pr merge <番号> --match-head-commit <SHA> で実行し直す。'
+
+/** --match-head-commit のないマージを拒否する理由と代わりの手順 */
+const NO_MATCH_HEAD_REASON =
+  'マージは、承認を求めたとき（CI を確認したとき）の head の commit を --match-head-commit で指定して行う（AGENTS.md の Git の表）。' +
+  'gh pr merge <番号> --match-head-commit <SHA> で実行し直す。'
+
+/** 確認の画面で利用者に示す、承認してよいときの説明 */
+const APPROVE_ONLY_IF_ALLOWED = '利用者が会話でこの操作を許可したときだけ承認する。'
+
+/** tag の作成と push で確認を求める理由 */
+const TAG_REASON = `tag の作成と push（gh release create を含む）は、利用者の許可が必要（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`
+
+/** ruleset の変更で確認を求める理由 */
+const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は、利用者の許可が必要（docs/guides/branches.md 第 5 節）。${APPROVE_ONLY_IF_ALLOWED}`
+
 /**
  * @typedef {object} Decision hook の判定
- * @property {'deny'} decision 拒否する
- * @property {string} reason エージェントに返す、理由と代わりの手順
+ * @property {'deny' | 'ask'} decision 拒否するか、利用者に確認を求めるか
+ * @property {string} reason 理由。拒否はエージェントに返す代わりの手順を、確認は利用者が承認してよいときを含める
+ */
+
+/**
+ * @typedef {object} CommandResult 外部のコマンドの結果（spawnSync の結果の一部）
+ * @property {number | null} status 終了コード。時間切れなどで終わらなければ null
+ * @property {string} stdout 標準出力
+ * @property {string} [stderr] 標準エラー
+ * @property {Error & { code?: string }} [error] 起動の失敗や時間切れ（code が ETIMEDOUT）
  */
 
 /**
  * @typedef {object} Deps 差し替えられる外部の処理
- * @property {(args: string[], cwd: string, env?: Record<string, string>) => { status: number | null, stdout: string }} runGit git を実行する（env は加える環境変数）
+ * @property {(args: string[], cwd: string, env?: Record<string, string>) => CommandResult} runGit git を実行する（env は加える環境変数）
  * @property {(file: string) => string | null} readText ファイルを読む。なければ null
+ * @property {(args: string[], options: { cwd: string, timeout: number }) => CommandResult} runGh gh を実行する（timeout はミリ秒）
  */
 
 /**
@@ -112,6 +262,16 @@ const HOOKS_PATH_REASON =
  */
 function deny(reason) {
   return { decision: 'deny', reason }
+}
+
+/**
+ * 確認を求める判定を作る。
+ *
+ * @param {string} reason 理由と、利用者が承認してよいとき
+ * @returns {Decision} 確認を求める判定
+ */
+function ask(reason) {
+  return { decision: 'ask', reason }
 }
 
 /**
@@ -362,7 +522,8 @@ function skipPrefixOptions(words, start, { valueShort, optionalShort = '', value
  * @param {string[]} raw コマンドの語
  * @param {string} dir 実行するディレクトリ
  * @param {PathOptions} options パスの解き方
- * @returns {{ words: string[], dir: string, env: Record<string, string> }} 実行するコマンドの語、ディレクトリ、対象のリポジトリを替える環境変数
+ * @returns {{ words: string[], dir: string, env: Record<string, string>, ghRepo: string | null }} 実行するコマンドの語、ディレクトリ、
+ *   対象のリポジトリを替える環境変数、gh の対象のリポジトリ（前に付けた GH_REPO。なければ null）
  */
 function stripPrefixes(raw, dir, options) {
   let words = raw
@@ -390,7 +551,8 @@ function stripPrefixes(raw, dir, options) {
   for (const name of REPOSITORY_ENV) {
     if (assigned[name] !== undefined && assigned[name] !== '') env[name] = resolveDir(current, assigned[name], options)
   }
-  return { words, dir: current, env }
+  const ghRepo = assigned[GH_REPOSITORY_ENV] ? assigned[GH_REPOSITORY_ENV] : null
+  return { words, dir: current, env, ghRepo }
 }
 
 /**
@@ -400,16 +562,16 @@ function stripPrefixes(raw, dir, options) {
  * @param {string} command コマンドの全文
  * @param {string} cwd 入力の cwd
  * @param {PathOptions} [options] パスの解き方
- * @returns {{ words: string[], dir: string, env: Record<string, string> }[]} コマンドごとの語（前に付けた環境変数の設定などを除いたもの）、
- *   ディレクトリ、対象のリポジトリを替える環境変数
+ * @returns {{ words: string[], dir: string, env: Record<string, string>, ghRepo: string | null }[]} コマンドごとの語（前に付けた環境変数の設定などを除いたもの）、
+ *   ディレクトリ、対象のリポジトリを替える環境変数、gh の対象のリポジトリ（前に付けた GH_REPO）
  */
 export function parseCommands(command, cwd, options = {}) {
   let dir = resolveDir(process.cwd(), cwd, options)
   const commands = []
   for (const raw of splitCommands(command)) {
-    const { words, dir: commandDir, env } = stripPrefixes(raw, dir, options)
+    const { words, dir: commandDir, env, ghRepo } = stripPrefixes(raw, dir, options)
     if (words.length === 0) continue
-    commands.push({ words, dir: commandDir, env })
+    commands.push({ words, dir: commandDir, env, ghRepo })
     if (words[0] === 'cd' || words[0] === 'pushd') {
       const target = words.slice(1).find((w) => !/^-[LPe@]+$/.test(w))
       // cd - は前のディレクトリに戻るが、前のディレクトリは追わないので、今のままにする
@@ -581,11 +743,419 @@ function judgePreCommitHook(git, deps) {
   )
 }
 
-/** git の呼び出しごとに当てる判定。拒否があれば、その時点で終える */
-const GIT_JUDGES = [judgeHooksPath, judgePush, judgeCommitOptions, judgePreCommitHook]
+/**
+ * git tag の、tag の作成で確認を求める。一覧（引数なし、-l、--contains など）、削除（-d）、検証（-v）は通す
+ * （削除はローカルの tag だけを消し、リモートの tag の削除は push の判定で見る）。
+ *
+ * @param {GitInvocation} git git の呼び出し
+ * @returns {Decision | null} 判定
+ */
+function judgeTagCreate(git) {
+  if (git.subcommand !== 'tag') return null
+  const { longs, shorts, positionals } = scanOptions(git.args, TAG_OPTIONS)
+  const listing = shorts.some((option) => TAG_LIST_SHORTS.includes(option)) || longs.some((name) => matchesLong(name, TAG_LIST_LONGS))
+  return positionals.length > 0 && !listing ? ask(TAG_REASON) : null
+}
 
 /**
- * コマンドの全文を判定する。
+ * refspec の片側が tag を指すか。refs/tags/ を含めば tag、refs/ で始まらない名前は、対象のリポジトリにその名前の tag があれば tag とする。
+ *
+ * @param {string} name refspec の片側
+ * @param {GitInvocation} git git の呼び出し
+ * @param {Deps} deps 外部の処理
+ * @returns {'tag' | 'unknown' | null} tag なら 'tag'、git で調べられなければ 'unknown'、tag でなければ null
+ */
+function refTagState(name, git, deps) {
+  if (name.includes('refs/tags/')) return 'tag'
+  if (name === '' || name.startsWith('refs/') || name.includes('*')) return null
+  const result = deps.runGit([...git.pathOptions, 'show-ref', '--verify', '--quiet', `refs/tags/${name}`], git.dir, git.env)
+  if (result?.status === 0) return 'tag'
+  // 終了コード 1 はその tag がないこと。null（時間切れ）は調べられない
+  return result?.status === null || result === undefined ? 'unknown' : null
+}
+
+/**
+ * git push で tag を送る形（--tags、--follow-tags、`tag <名前>`、tag を指す refspec）で確認を求める。
+ *
+ * @param {GitInvocation} git git の呼び出し
+ * @param {Deps} deps 外部の処理
+ * @returns {Decision | null} 判定
+ */
+function judgeTagPush(git, deps) {
+  if (git.subcommand !== 'push') return null
+  const { longs, positionals } = scanOptions(git.args, PUSH_OPTIONS)
+  if (longs.some((name) => matchesLong(name, TAG_PUSH_OPTIONS))) return ask(TAG_REASON)
+  // 最初の位置の引数はリモート（--repo で指定したときは全てが refspec）
+  const refspecs = longs.includes('repo') ? positionals : positionals.slice(1)
+  if (refspecs.some((refspec, index) => refspec === 'tag' && index + 1 < refspecs.length)) return ask(TAG_REASON)
+  for (const refspec of refspecs) {
+    const sides = refspec.replace(/^\+/, '').split(':')
+    for (const side of sides) {
+      const state = refTagState(side, git, deps)
+      if (state === 'tag') return ask(TAG_REASON)
+      if (state === 'unknown') return ask(`push する名前（${side}）が tag かを、git で調べられなかった。${TAG_REASON}`)
+    }
+  }
+  return null
+}
+
+/** git の呼び出しごとに当てる判定。拒否があれば、その時点で終える */
+const GIT_JUDGES = [judgeHooksPath, judgePush, judgeCommitOptions, judgePreCommitHook, judgeTagCreate, judgeTagPush]
+
+/**
+ * @typedef {object} GhInvocation gh の呼び出し
+ * @property {string} dir 実行するディレクトリ
+ * @property {string | null} ghRepo 前に付けた GH_REPO
+ * @property {string[]} args gh の後の語
+ */
+
+/**
+ * コマンドが gh の呼び出しなら、gh の後の語を返す。フルパスと gh.exe の形も gh として読む。
+ *
+ * @param {{ words: string[], dir: string, ghRepo?: string | null }} command コマンドの語、ディレクトリ、前に付けた GH_REPO
+ * @returns {GhInvocation | null} gh の呼び出し。gh でなければ null
+ */
+export function parseGhInvocation({ words, dir, ghRepo = null }) {
+  const program = words[0].split(/[\\/]/).pop()
+  if (!/^gh(\.exe)?$/i.test(program)) return null
+  return { dir, ghRepo, args: words.slice(1) }
+}
+
+/**
+ * gh の選択肢と位置の引数を読む。長い選択肢の略記は読まない（gh は略記を受け付けない）。
+ *
+ * @param {string[]} args 読む語
+ * @param {{ shortNames: Record<string, string>, valueLong: string[] }} spec 選択肢の読み方
+ * @returns {{ positionals: string[], options: { name: string, value: string }[] }} 位置の引数と、選択肢（値を取らないものは値が "true"）
+ */
+function parseGhArgs(args, { shortNames, valueLong }) {
+  const positionals = []
+  const options = []
+  let rest = false
+  // 値を取る選択肢は値と一緒に読み、残りを位置の引数にする
+  for (let i = 0; i < args.length; i++) {
+    const arg = args[i]
+    if (rest || arg === '-' || !arg.startsWith('-')) {
+      positionals.push(arg)
+    } else if (arg === '--') {
+      rest = true
+    } else if (arg.startsWith('--')) {
+      const [name, ...value] = arg.slice(2).split('=')
+      if (value.length > 0) options.push({ name, value: value.join('=') })
+      else if (valueLong.includes(name)) options.push({ name, value: args[++i] ?? '' })
+      else options.push({ name, value: 'true' })
+    } else {
+      // -ds のような短い選択肢の組み合わせ。値を取る文字の後ろは値
+      for (let j = 1; j < arg.length; j++) {
+        const name = shortNames[arg[j]] ?? arg[j]
+        if (valueLong.includes(name)) {
+          const value = arg.slice(j + 1).replace(/^=/, '')
+          options.push({ name, value: value !== '' ? value : (args[++i] ?? '') })
+          break
+        }
+        options.push({ name, value: 'true' })
+      }
+    }
+  }
+  return { positionals, options }
+}
+
+/**
+ * 選択肢の最後の値を返す。
+ *
+ * @param {{ name: string, value: string }[]} options 選択肢
+ * @param {string} name 長い名前
+ * @returns {string | null} 値。なければ null
+ */
+function optionValue(options, name) {
+  return options.findLast((option) => option.name === name)?.value ?? null
+}
+
+/**
+ * 値を取らない選択肢が有効か（`--auto=false` のような形は無効）。
+ *
+ * @param {{ name: string, value: string }[]} options 選択肢
+ * @param {string} name 長い名前
+ * @returns {boolean} 有効なら true
+ */
+function flagEnabled(options, name) {
+  const value = optionValue(options, name)
+  return value !== null && value !== 'false'
+}
+
+/**
+ * gh api の判定。GET 以外のリクエストのうち、マージのパスへのものは拒否し、ruleset とブランチの保護へのものは確認を求める。GraphQL は見ない。
+ *
+ * @param {string[]} args api の後の語
+ * @returns {Decision | null} 判定
+ */
+function judgeGhApi(args) {
+  const { positionals, options } = parseGhArgs(args, GH_API_OPTIONS)
+  const endpoint = positionals[0] ?? ''
+  if (endpoint === 'graphql') return null
+  // gh api は、-X がなくても本文を送る選択肢があれば POST にする
+  const method = (optionValue(options, 'method') ?? (options.some((option) => GH_API_BODY_OPTIONS.includes(option.name)) ? 'POST' : 'GET')).toUpperCase()
+  if (method === 'GET') return null
+  if (API_MERGE_PATH.test(endpoint)) return deny(API_MERGE_REASON)
+  return API_RULESET_PATHS.some((pattern) => pattern.test(endpoint)) ? ask(RULESET_REASON) : null
+}
+
+/**
+ * `[HOST/]OWNER/REPO` の形のリポジトリを読む。github.com 以外のホストは読まない。
+ *
+ * @param {string} value リポジトリ
+ * @returns {{ owner: string, name: string } | null} 所有者と名前。読めなければ null
+ */
+function parseRepository(value) {
+  const parts = value.split('/')
+  if (parts.length === 3 && parts[0].toLowerCase() !== 'github.com') return null
+  const [owner, name] = parts.slice(-2)
+  return parts.length >= 2 && parts.length <= 3 && owner && name ? { owner, name } : null
+}
+
+/**
+ * @typedef {object} MergeTarget マージする pull request
+ * @property {number} number 番号
+ * @property {{ owner: string, name: string } | null} repository リポジトリ。null は対象のディレクトリで gh に決めさせる
+ */
+
+/**
+ * gh pr merge の位置の引数と -R・GH_REPO から、マージする pull request を決める。
+ *
+ * @param {string | undefined} target 位置の引数
+ * @param {string | null} repoOption -R・--repo の値
+ * @param {string | null} ghRepo 前に付けた GH_REPO
+ * @returns {MergeTarget | { error: string }} pull request か、決められない理由
+ */
+function resolveMergeTarget(target, repoOption, ghRepo) {
+  const noTarget = { error: 'pull request を、github.com の番号か URL で指定していない（番号のない形は今のブランチの pull request を指す）' }
+  if (target === undefined) return noTarget
+  const url = PULL_REQUEST_URL.exec(target)
+  if (url) return { number: Number(url[3]), repository: { owner: url[1], name: url[2] } }
+  const number = /^#?(\d+)$/.exec(target)
+  if (!number) return noTarget
+  const repoValue = repoOption ?? ghRepo
+  if (repoValue === null) return { number: Number(number[1]), repository: null }
+  const repository = parseRepository(repoValue)
+  return repository ? { number: Number(number[1]), repository } : { error: `リポジトリの指定（${repoValue}）を読めない` }
+}
+
+/**
+ * gh の結果の失敗を、理由の文にする。
+ *
+ * @param {CommandResult} result gh の結果
+ * @param {number} timeout 渡した時間切れ（ミリ秒）
+ * @returns {string | null} 失敗の理由。成功なら null
+ */
+function describeGhFailure(result, timeout) {
+  if (result.error?.code === 'ETIMEDOUT') return `gh が時間切れになった（${timeout / 1000} 秒）`
+  if (result.status === 0) return null
+  const message = (result.stderr ?? '').trim().split('\n')[0] || result.error?.message || `終了コード ${result.status}`
+  return `gh が失敗した：${message}`
+}
+
+/**
+ * gh api graphql で、マージの条件を読む。
+ *
+ * @param {MergeTarget} target マージする pull request
+ * @param {string} dir 実行するディレクトリ（リポジトリを gh に決めさせるときに使う）
+ * @param {Deps} deps 外部の処理
+ * @param {number} timeout 時間切れ（ミリ秒）
+ * @returns {{ pullRequest: object } | { error: string }} pull request（GraphQL の形）か、読めない理由
+ */
+function readPullRequest(target, dir, deps, timeout) {
+  // リポジトリを指定しないときは、gh が対象のディレクトリのリモートから {owner}・{repo} を埋める（gh pr merge と同じ決め方）
+  const repository = target.repository
+    ? ['-f', `owner=${target.repository.owner}`, '-f', `name=${target.repository.name}`]
+    : ['-F', 'owner={owner}', '-F', 'name={repo}']
+  const args = ['api', 'graphql', '-f', `query=${PULL_REQUEST_QUERY}`, ...repository, '-F', `number=${target.number}`]
+  let result
+  try {
+    result = deps.runGh(args, { cwd: dir, timeout })
+  } catch (error) {
+    return { error: `gh を実行できない：${error instanceof Error ? error.message : String(error)}` }
+  }
+  const failure = describeGhFailure(result, timeout)
+  if (failure !== null) return { error: failure }
+  try {
+    const pullRequest = JSON.parse(result.stdout)?.data?.repository?.pullRequest
+    if (pullRequest && typeof pullRequest === 'object') return { pullRequest }
+  } catch {
+    // 下で、読めない応答として返す
+  }
+  return { error: 'gh の応答（JSON）を読めない' }
+}
+
+/**
+ * CI の検査が全て終わり、通っているかを調べる。
+ *
+ * @param {object} pullRequest pull request（GraphQL の形）
+ * @returns {string[]} 満たさない条件
+ */
+function checkProblems(pullRequest) {
+  const contexts = pullRequest.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts
+  const nodes = contexts?.nodes ?? []
+  if (nodes.length === 0) return ['CI の検査がない（まだ始まっていない）']
+  const pending = []
+  const failed = []
+  // check run（GitHub Actions など）と commit status（外部のサービス）で、終わったか・通ったかの項目が違う
+  for (const node of nodes) {
+    if (node.__typename === 'CheckRun') {
+      if (node.status !== 'COMPLETED') pending.push(node.name)
+      else if (!PASSING_CONCLUSIONS.includes(node.conclusion)) failed.push(`${node.name}：${node.conclusion}`)
+    } else if (node.__typename === 'StatusContext') {
+      if (PENDING_STATES.includes(node.state)) pending.push(node.context)
+      else if (node.state !== 'SUCCESS') failed.push(`${node.context}：${node.state}`)
+    } else {
+      failed.push(`読めない種類の検査：${node.__typename}`)
+    }
+  }
+  const problems = []
+  if (contexts.pageInfo?.hasNextPage) problems.push('CI の検査の一覧を全ては読めない（100 件を超える）')
+  if (pending.length > 0) problems.push(`CI の検査が終わっていない（${[...new Set(pending)].join('、')}）`)
+  if (failed.length > 0) problems.push(`CI の検査が成功していない（${[...new Set(failed)].join('、')}）`)
+  return problems
+}
+
+/**
+ * 高の経路の一覧を読む。
+ *
+ * @returns {{ groups: { name: string, paths: string[] }[] }} 高の経路の一覧
+ */
+function loadRiskConfig() {
+  return parseRiskConfig(readFileSync(RISK_CONFIG_FILE, 'utf8'))
+}
+
+/**
+ * Dependabot の pull request の危険度を、変更のファイルと題から判定する（CI の危険度の照合と同じ関数を使う）。
+ *
+ * @param {object} pullRequest pull request（GraphQL の形）
+ * @returns {string[]} 満たさない条件
+ */
+function dependabotProblems(pullRequest) {
+  const files = pullRequest.files?.nodes?.map((node) => node.path) ?? []
+  if (pullRequest.files?.pageInfo?.hasNextPage || files.length !== pullRequest.changedFiles) {
+    return [`変更のファイルの一覧を全ては読めない（${pullRequest.changedFiles} 件）`]
+  }
+  let config
+  try {
+    config = loadRiskConfig()
+  } catch (error) {
+    return [`高の経路の一覧（scripts/ci/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
+  }
+  // Dependabot は spec.md を変えないので、spec の宣言を読む関数は常に null を返すものでよい
+  const result = applyDependabotTitle(judgeRisk(files, config, () => null), pullRequest.title)
+  if (result.level === '低') return []
+  const reasons = [...result.hits.map((hit) => `${hit.name}：${hit.files.join('、')}`), result.dependabot]
+  return [`Dependabot の更新の危険度が高（${reasons.join('、')}）`]
+}
+
+/**
+ * Dependabot 以外の pull request の、危険度と、機能の spec でないことを調べる。
+ *
+ * @param {object} pullRequest pull request（GraphQL の形）
+ * @returns {string[]} 満たさない条件
+ */
+function authoredProblems(pullRequest) {
+  const problems = []
+  const bodyRisk = readBodyRisk(pullRequest.body ?? '')
+  if ('error' in bodyRisk) problems.push(`本文の危険度を読めない（${bodyRisk.error}）`)
+  else if (bodyRisk.value !== '低') problems.push(`本文の危険度が低でない（判定：${bodyRisk.value}）`)
+  const riskChecks = (pullRequest.commits?.nodes?.[0]?.commit?.statusCheckRollup?.contexts?.nodes ?? []).filter(
+    (node) => node.__typename === 'CheckRun' && node.name === RISK_CHECK,
+  )
+  if (riskChecks.length === 0 || riskChecks.some((node) => node.status !== 'COMPLETED' || node.conclusion !== 'SUCCESS')) {
+    problems.push(`検査「${RISK_CHECK}」が成功していない（ないか、成功以外）`)
+  }
+  const closing = pullRequest.closingIssuesReferences
+  const issues = closing?.nodes ?? []
+  if (closing?.pageInfo?.hasNextPage || issues.some((issue) => issue.labels?.pageInfo?.hasNextPage)) {
+    problems.push('閉じる issue かそのラベルの一覧を全ては読めない（100 件を超える）')
+  }
+  if (issues.length === 0) problems.push('本文の Closes の issue がない（機能の spec でないことを確認できない）')
+  const features = issues.filter((issue) => (issue.labels?.nodes ?? []).some((label) => label.name === FEATURE_LABEL))
+  if (features.length > 0) problems.push(`閉じる issue にラベル「${FEATURE_LABEL}」がある（${features.map((issue) => `#${issue.number}`).join('、')}）`)
+  return problems
+}
+
+/**
+ * gh api graphql の作成者を、risk.mjs の作成者の形にする。GraphQL の Bot の login は `[bot]` を付けないので付ける。
+ *
+ * @param {{ __typename?: string, login?: string } | null | undefined} author 作成者
+ * @returns {string | undefined} 作成者の名前
+ */
+function authorName(author) {
+  if (author?.__typename === 'Bot' && author.login) return `${author.login.replace(/\[bot\]$/, '')}[bot]`
+  return author?.login
+}
+
+/**
+ * pull request が、利用者の許可なしにマージしてよい条件（未解決の指摘が 0 であることを除く）を満たすかを調べる。
+ *
+ * @param {object} pullRequest pull request（GraphQL の形）
+ * @param {string} headCommit --match-head-commit の値
+ * @returns {string[]} 満たさない条件。空なら全て満たす
+ */
+export function mergeProblems(pullRequest, headCommit) {
+  const problems = []
+  if (pullRequest.state !== 'OPEN') problems.push(`pull request が開いていない（${pullRequest.state}）`)
+  if (pullRequest.baseRefName !== MERGE_BASE) problems.push(`向き先が ${MERGE_BASE} でない（${pullRequest.baseRefName}）`)
+  if (String(pullRequest.headRefOid).toLowerCase() !== headCommit.toLowerCase()) {
+    problems.push(`--match-head-commit の commit（${headCommit}）が、pull request の今の head の commit（${pullRequest.headRefOid}）と一致しない`)
+  }
+  problems.push(...checkProblems(pullRequest))
+  const dependabot = isDependabot({ author: authorName(pullRequest.author) })
+  problems.push(...(dependabot ? dependabotProblems(pullRequest) : authoredProblems(pullRequest)))
+  return problems
+}
+
+/**
+ * gh pr merge の判定。--admin と --match-head-commit のない形は拒否し、--auto は確認を求め、
+ * pull request を読んで条件を全て満たせば通し、満たさないか読めなければ確認を求める。
+ *
+ * @param {string[]} args pr の後の語（merge を含む）
+ * @param {GhInvocation} gh gh の呼び出し
+ * @param {Deps} deps 外部の処理
+ * @param {{ deadline: number }} budget gh に使える時間の期限（Date.now() の値）
+ * @returns {Decision | null} 判定
+ */
+function judgeMerge(args, gh, deps, budget) {
+  const { positionals, options } = parseGhArgs(args, GH_PR_OPTIONS)
+  if (flagEnabled(options, 'admin')) return deny(ADMIN_REASON)
+  const headCommit = optionValue(options, 'match-head-commit')
+  if (headCommit === null || headCommit === '') return deny(NO_MATCH_HEAD_REASON)
+  const askMerge = (label, problems) =>
+    ask(`利用者の許可なしにマージしてよい条件（AGENTS.md の Git の表）を満たさないので、確認を求める。pull request：${label}。満たさない条件：${problems.join('。')}。${APPROVE_ONLY_IF_ALLOWED}`)
+  if (flagEnabled(options, 'auto')) return askMerge(positionals[1] ?? '（今のブランチ）', ['--auto（予約のマージ）は、マージの時点の条件を判定できない'])
+  const target = resolveMergeTarget(positionals[1], optionValue(options, 'repo'), gh.ghRepo)
+  if ('error' in target) return askMerge(positionals[1] ?? '（今のブランチ）', [target.error])
+  const label = target.repository ? `${target.repository.owner}/${target.repository.name}#${target.number}` : `#${target.number}（${gh.dir} のリポジトリ）`
+  const timeout = Math.min(GH_TIMEOUT_MS, budget.deadline - Date.now())
+  if (timeout <= 0) return askMerge(label, ['pull request の情報を読めない（1 つのコマンドで gh に使える時間を使い切った）'])
+  const read = readPullRequest(target, gh.dir, deps, timeout)
+  if ('error' in read) return askMerge(label, [`pull request の情報を読めない（${read.error}）`])
+  const problems = mergeProblems(read.pullRequest, headCommit)
+  return problems.length === 0 ? null : askMerge(label, problems)
+}
+
+/**
+ * gh の呼び出しを判定する（マージ、gh release create、gh api）。
+ *
+ * @param {GhInvocation} gh gh の呼び出し
+ * @param {Deps} deps 外部の処理
+ * @param {{ deadline: number }} budget gh に使える時間の期限
+ * @returns {Decision | null} 判定
+ */
+function judgeGh(gh, deps, budget) {
+  const [group, ...rest] = gh.args
+  if (group === 'api') return judgeGhApi(rest)
+  if (group === 'release') return parseGhArgs(rest, GH_RELEASE_OPTIONS).positionals[0] === 'create' ? ask(TAG_REASON) : null
+  if (group === 'pr' && parseGhArgs(rest, GH_PR_OPTIONS).positionals[0] === 'merge') return judgeMerge(rest, gh, deps, budget)
+  return null
+}
+
+/**
+ * コマンドの全文を判定する。拒否があればそれを、なければ最初の確認を返す。
  *
  * @param {string} command コマンドの全文
  * @param {string} cwd 入力の cwd
@@ -595,11 +1165,14 @@ const GIT_JUDGES = [judgeHooksPath, judgePush, judgeCommitOptions, judgePreCommi
  */
 export function judgeCommand(command, cwd, deps, options = {}) {
   const decisions = []
+  const budget = { deadline: Date.now() + GH_BUDGET_MS }
   for (const parsed of parseCommands(command, cwd, options)) {
     const git = parseGitInvocation(parsed, options)
-    if (git === null) continue
-    for (const judge of GIT_JUDGES) {
-      const decision = judge(git, deps)
+    const gh = git === null ? parseGhInvocation(parsed) : null
+    const judges = git === null ? [] : GIT_JUDGES.map((judge) => () => judge(git, deps))
+    if (gh !== null) judges.push(() => judgeGh(gh, deps, budget))
+    for (const judge of judges) {
+      const decision = judge()
       if (decision?.decision === 'deny') return decision
       if (decision) decisions.push(decision)
     }
@@ -608,14 +1181,16 @@ export function judgeCommand(command, cwd, deps, options = {}) {
 }
 
 /**
- * 実際の git とファイルを使う外部の処理を作る。
+ * 実際の git・gh とファイルを使う外部の処理を作る。gh は PATH にあるものを使う。
  *
- * @param {Record<string, string | undefined>} [env] git に渡す環境変数
+ * @param {Record<string, string | undefined>} [env] git と gh に渡す環境変数
  * @returns {Deps} 外部の処理
  */
 export function createDeps(env = process.env) {
   return {
     runGit: (args, cwd, extra = {}) => spawnSync('git', args, { cwd, env: { ...env, ...extra }, encoding: 'utf8', timeout: GIT_TIMEOUT_MS, windowsHide: true }),
+    // hook の中では答えられないので、gh に入力を求めさせない
+    runGh: (args, { cwd, timeout }) => spawnSync('gh', args, { cwd, env: { ...env, GH_PROMPT_DISABLED: '1' }, encoding: 'utf8', timeout, windowsHide: true }),
     readText: (file) => {
       try {
         return readFileSync(file, 'utf8')
@@ -650,10 +1225,10 @@ export function handleInput(text, deps = createDeps(), judge = judgeCommand) {
   try {
     decision = judge(command, cwd, deps)
   } catch (error) {
-    decision = /\bgit\b/i.test(command)
+    decision = /\b(git|gh)\b/i.test(command)
       ? deny(
-          `Claude Code の hook（scripts/dev/hooks/agent-guard.mjs）が、git を含むコマンドの判定で失敗した（${error instanceof Error ? error.message : String(error)}）。` +
-            '判定できない git のコマンドは、force push などを通さないために拒否する。コマンドを単純な形に分けて実行し直し、通らなければ hook の不具合として報告する。',
+          `Claude Code の hook（scripts/dev/hooks/agent-guard.mjs）が、git か gh を含むコマンドの判定で失敗した（${error instanceof Error ? error.message : String(error)}）。` +
+            '判定できない git・gh のコマンドは、force push や許可のないマージを通さないために拒否する。コマンドを単純な形に分けて実行し直し、通らなければ hook の不具合として報告する。',
         )
       : null
   }

@@ -225,11 +225,11 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - 依存：T246-01-03
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
   - 確認方法：T246-01-03 のテストが通る。`check-all.sh` の script のテストに `agent-guard.test.mjs` が含まれ、通る。
-- [ ] **T246-01-05** [テスト] Claude Code の hook の、確認の判定（DC-246-13〜16）のテストを書き、レッドを確認する（DC-246-18）。
+- [x] **T246-01-05** [テスト] Claude Code の hook の、確認の判定（DC-246-13〜16）のテストを書き、レッドを確認する（DC-246-18）。
   - 依存：T246-01-04
   - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`
   - 確認方法：DC-246-18 の例と、フルパスの `gh`、`gh api graphql` を通す例がレッドになる。
-- [ ] **T246-01-06** [リスク] Claude Code の hook の、確認の判定を実装する（DC-246-6、13〜16、18）。
+- [x] **T246-01-06** [リスク] Claude Code の hook の、確認の判定を実装する（DC-246-6、13〜16、18）。
   - 依存：T246-01-05
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`
   - 確認方法：T246-01-05 のテストが通る。`check-all.sh` が通る。

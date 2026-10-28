@@ -425,6 +425,18 @@ describe('マージのコマンドを判定する', () => {
     }
   })
 
+  test('自動のマージの解除（--disable-auto だけの形）は、gh を呼ばずに通す', () => {
+    for (const command of ['gh pr merge 246 --disable-auto', 'gh pr merge --disable-auto', 'gh pr merge 246 -R other/repo --disable-auto']) {
+      const deps = mergeDeps()
+      assertPassed(command, deps)
+      assert.deepEqual(deps.ghCalls, [], command)
+    }
+    assertDenied('gh pr merge 246 --disable-auto --squash', /--match-head-commit/, mergeDeps())
+    assertDenied('gh pr merge 246 --disable-auto --auto', /--match-head-commit/, mergeDeps())
+    assertDenied('gh pr merge 246 --disable-auto --admin', /--admin/, mergeDeps())
+    assertAsked(`gh pr merge 246 --disable-auto --auto --match-head-commit ${HEAD_SHA}`, /--auto/, mergeDeps())
+  })
+
   test('--auto は、マージの時点の条件を判定できないので確認を求める', () => {
     const deps = mergeDeps()
     assertAsked(`${MERGE} --auto`, /--auto/, deps)

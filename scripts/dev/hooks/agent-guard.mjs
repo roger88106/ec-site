@@ -98,6 +98,9 @@ const GH_PR_OPTIONS = {
   valueLong: ['body', 'body-file', 'subject', 'author-email', 'match-head-commit', 'repo'],
 }
 
+/** gh pr merge の選択肢のうち、自動のマージの解除と一緒に書いても解除だけになるもの */
+const DISABLE_AUTO_OPTIONS = ['disable-auto', 'repo']
+
 /** gh release の選択肢 */
 const GH_RELEASE_OPTIONS = {
   shortNames: { R: 'repo', n: 'notes', F: 'notes-file', t: 'title', d: 'draft', p: 'prerelease' },
@@ -1121,6 +1124,8 @@ export function mergeProblems(pullRequest, headCommit) {
  */
 function judgeMerge(args, gh, deps, budget) {
   const { positionals, options } = parseGhArgs(args, GH_PR_OPTIONS)
+  // 自動のマージの解除だけ（マージの選択肢を一緒に書かない形）は、マージしないので通す
+  if (flagEnabled(options, 'disable-auto') && options.every((option) => DISABLE_AUTO_OPTIONS.includes(option.name))) return null
   if (flagEnabled(options, 'admin')) return deny(ADMIN_REASON)
   const headCommit = optionValue(options, 'match-head-commit')
   if (headCommit === null || headCommit === '') return deny(NO_MATCH_HEAD_REASON)

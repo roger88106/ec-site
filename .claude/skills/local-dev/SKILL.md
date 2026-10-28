@@ -126,6 +126,7 @@ node scripts/dev/slot.mjs release  # ポートで待ち受けるプロセスを�
 ```
 
 - 作業ツリーを削除する前に `release` する。`release` せずに削除しても、残った DB とバケットは次の `assign` が再作成するので、手動で削除しない。
+- 自分が動いている作業ツリーは、メインの作業ツリーから `git worktree remove` で削除する。使うツールがセッションのアーカイブで作業ツリーを片付けるときは、それに任せる。
 - `env` の出力は、`bootRun` などを手動で実行するときだけ使い、`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)` のように subshell の中で使う。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
 - メインの作業ツリーで `scripts/dev/reset.sh all` を実行すると、全スロットの DB とバケットも削除される。各作業ツリーで `node scripts/dev/slot.mjs reset` を実行して再作成する。
 - マージの直後（共有の Keycloak に realm を再度取り込む前）は、スロットの画面のログインがリダイレクト先のエラー（Invalid redirect uri）で失敗する。メインの作業ツリーで `scripts/dev/reset.sh keycloak` を実行する。

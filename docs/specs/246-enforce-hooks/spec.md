@@ -1,10 +1,10 @@
 # Spec 246：例外のない規則を hook と permission で強制する
 
-ステータス：草案
+ステータス：確定
 
 ## 1. 背景と目的
 
-milestone「整理の段階」の第 1 段の spec の 1 つである。追跡の issue は [#246](https://github.com/roger88106/ec-site/issues/246) で、sub-issue はない。作業ブランチは `246-enforce-hooks` である。整理の spec なので、AC、API、データベースは変えない。規模は M を提案する（第 6 節の決めること 1）。
+milestone「整理の段階」の第 1 段の spec の 1 つである。追跡の issue は [#246](https://github.com/roger88106/ec-site/issues/246) で、sub-issue はない。作業ブランチは `246-enforce-hooks` である。整理の spec なので、AC、API、データベースは変えない。規模は M で、2026-10-28 に利用者が確認した（第 6 節の決めたこと 1）。
 
 「`develop` と `main` に直接 commit しない」「許可なしにマージしない」「push 済みの履歴を書き換えない」などは、文章の規則でエージェントに守らせている。一方、機械で強制している検査は、導入の後に規則に反した commit やコマンドが残っていない。例は、git の hook による中国語の混入の検査と、Claude Code の hook による heredoc の `\` の検査である。そこで、例外のない規則を洗い出し、hook か permission で強制できるものを強制する。あわせて、Git に入れる Claude Code の設定（`.claude/settings.json`）と、環境ごとの設定（`.claude/settings.local.json`）の分け方を決める。
 
@@ -73,7 +73,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 
 ## 3. 目的と完了条件
 
-完了条件は、第 6 節で推奨の案を選んだときの形で書いた。他の案を選んだときに変わる DC は、第 6 節の各表の「変わる DC」に書いた。
+完了条件は、第 6 節で選んだ案（全て推奨の案 A）で書いた。
 
 ### DS-246-1 Git に入れる設定と環境ごとの設定の分け方を決め、文書にする（D / P1）
 
@@ -140,11 +140,11 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | ローカルの hook（heredoc の `\`、`environment.md` の読み込み、中国語の混入）を `settings.json` に移す | 環境・利用者に固有のもので、分け方（DC-246-3）のとおり `settings.local.json` に残す |
 | `/.local/` の script の整理、skill 化 | #247 が扱う |
 
-## 6. 決めること
+## 6. 決めたこと
 
-利用者に確認する。推奨は全て案 A である。4 つは互いに独立していて、どの組み合わせも選べる。
+2026-10-28 に、利用者が次の 4 つとも案 A（推奨）を確認した。Open questions はない。4 つは互いに独立している。
 
-### 決めること 1：規模
+### 決めたこと 1：規模
 
 | 案 | 内容 | 利点 | 欠点 | 変わる DC |
 |----|------|------|------|-----------|
@@ -152,7 +152,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | 案 B | S（issue の本文を spec にする） | 文書が最も少ない | マージの条件の決めごとと判定の例が多く、issue の本文では変更を追いにくい | なし（置き場所だけ変わる） |
 | 案 C | L（spec・plan・tasks） | 設計の判断を plan に分けられる | API・データベースを変えず、モジュールにもまたがらないので、[開発の進め方](../../rules/workflow.md) 第 4.2 節の L の基準に当たらない | なし（置き場所だけ変わる） |
 
-### 決めること 2：マージの許可をどう強制するか
+### 決めたこと 2：マージの許可をどう強制するか
 
 | 案 | 内容 | 利点 | 欠点 | 変わる DC |
 |----|------|------|------|-----------|
@@ -162,7 +162,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 
 - 利用者が離れているとき（Remote Control）に確認の画面へ答えられるかは、未確認である。案 A・B のどちらでも、答えられないときはマージが進まない（実行されない側に倒れる）。
 
-### 決めること 3：直接の commit をどこで失敗にするか
+### 決めたこと 3：直接の commit をどこで失敗にするか
 
 | 案 | 内容 | 利点 | 欠点 | 変わる DC |
 |----|------|------|------|-----------|
@@ -170,7 +170,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | 案 B | Claude Code の hook で、`develop`・`main` での `git commit` を拒否する | git の hook に手を入れない | 人の commit は止まらない。案 A と DC-246-11 の組み合わせで、エージェントについては同じ効果がある | DC-246-7〜9 を Claude Code の hook の DC に置き換える |
 | 案 C | 案 A と案 B の両方 | 二重に止まる | 同じ判定を 2 か所で持ち、直すときに食い違いうる | DC-246-10 に `develop`・`main` の commit を加える |
 
-### 決めること 4：hook の script の置き場所
+### 決めたこと 4：hook の script の置き場所
 
 | 案 | 内容 | 利点 | 欠点 | 変わる DC |
 |----|------|------|------|-----------|
@@ -191,7 +191,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 | まとまり | ファイル | 重なる spec |
 |----------|----------|-------------|
 | git の hook | `scripts/dev/lib/pre-commit.mjs`・`pre-commit-main.mjs`・`pre-commit.test.mjs` | なし（spec 249 はマージ済み） |
-| Claude Code の hook | `scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`（決めること 4） | なし。spec 245 の `scripts/ci/risk.mjs` を読むだけで変えない |
+| Claude Code の hook | `scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`（決めたこと 4） | なし。spec 245 の `scripts/ci/risk.mjs` を読むだけで変えない |
 | 設定 | `.claude/settings.json`（新規）、`.gitignore`（許可リストとコメント） | spec 247（`.claude/` と `/.local/` の扱い） |
 | 文書 | `AGENTS.md`（Git の表、環境の節）、`docs/guides/setup.md`（hook の置き方）、`docs/guides/branches.md`（第 2 節の `.claude/` の箇条、第 5 節の ruleset の箇条）、skill `zh-mixing`（設定の手順の参照） | spec 245（AGENTS.md の Git の表と ※3、`branches.md` の第 2、3 節）、spec 247（AGENTS.md の環境の節） |
 
@@ -218,7 +218,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
   - 確認方法：T246-01-01 のテストが通る。この作業ブランチで commit できる。
 - [ ] **T246-01-03** [テスト] Claude Code の hook の、拒否の判定（DC-246-10〜12）のテストを書き、レッドを確認する。
   - 依存：なし
-  - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`（決めること 4）
+  - 範囲：`scripts/dev/hooks/agent-guard.test.mjs`（決めたこと 4）
   - 確認方法：DC-246-10 の各形（`+` の refspec、`git commit -n`、`core.hooksPath` を含む）、DC-246-11（作業ツリーの例を含む）、DC-246-12 の拒否する例と通す例がレッドになる。
 - [ ] **T246-01-04** [リスク] Claude Code の hook の、拒否の判定を実装する（DC-246-4、5、10〜12）。
   - 依存：T246-01-03

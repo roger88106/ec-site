@@ -126,16 +126,16 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 ### 4.1 起票
 
 - Dependabot の pull request を除き、全ての変更は issue から始める。
-- 後回しにする作業と未決事項は、issue に起票する。対応時期が決まっているものは milestone `1→10` を付け、「未定」のものには付けない。spec の Non-goals に「1→10」と書く項目も起票する。完了したら issue を閉じる。
+- 後回しにする作業と未決事項は、issue に起票する。対応時期が決まっているものにだけ milestone `1→10` を付ける。spec の Non-goals に「1→10」と書く項目も起票する。完了したら issue を閉じる。
 - 起票の時点は次のとおり。
 
 | 時点 | 起票の方法 |
 |------|------------|
 | spec の途中 | spec（Non-goals、レビューの結果、plan）に記録する |
-| spec の最後 | まとめ方の案を pull request に付ける。利用者が承認したら、issue 担当のセッションが、既存の issue と重複しないように起票する |
+| spec の最後 | まとめ方の案を pull request に付ける。利用者が承認したら、issue 担当のセッションが、重複を避けて起票する |
 | 急ぐ作業（不具合、マージの失敗など） | すぐに起票する |
 
-- issue は `.github/ISSUE_TEMPLATE/` のテンプレート（機能・整理・不具合）で作る。エージェントがコマンドで起票するときも、次の表の項目（\* は必須）と同じ節を本文に使う。
+- issue は `.github/ISSUE_TEMPLATE/` のテンプレート（機能・整理・不具合）で作る。コマンドで起票するときも、次の表の項目（\* は必須）と同じ節を本文に使う。
 
 | テンプレート | 項目 |
 |--------------|------|
@@ -143,20 +143,21 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 | 整理 | 背景と目的\*、整えるもの\*、完了の目安、条件付きの条件、出典、関連 |
 | 不具合 | 起きたこと\*、再現の手順\*、期待した振る舞い\*、発生した場所、関係する AC、関連 |
 
-- spec ごとに追跡の issue を 1 つ作り、その番号を spec の番号とする（[文書の記号と番号](notation.md)）。spec が扱う全ての issue は、追跡の issue の sub-issue として結ぶ。結ぶには、`gh api graphql` の `addSubIssue` を使う。
+- spec ごとに追跡の issue を 1 つ作り、その番号を spec の番号とする（[文書の記号と番号](notation.md)）。spec が扱う全ての issue は、`gh api graphql` の `addSubIssue` で追跡の issue の sub-issue に結ぶ。
 - issue と spec の対応は、次のとおりにする。
 
 | 対応 | 追跡の issue | 結び方 |
 |------|--------------|--------|
 | 1 つの issue を 1 つの spec で扱う | その issue を追跡の issue にする | なし |
 | 複数の issue を 1 つの spec で扱う | 新しく作る | 扱う issue を、追跡の issue の sub-issue にする |
-| 1 つの issue を複数の spec に分ける | spec ごとに新しく作る。元の issue は追跡の issue にしない | 追跡の issue を、元の issue の sub-issue にする |
+| 1 つの issue を複数の spec に分ける | spec ごとに新しく作る（元の issue は除く） | 追跡の issue を、元の issue の sub-issue にする |
 
-- GitHub の sub-issue は、親を 1 つしか持てない。上の結び方で親が 2 つ必要になるときは、片方を本文の「関連」に `#番号` で書く。
+- GitHub の sub-issue は、親を 1 つしか持てない。親が 2 つ必要になるときは、片方を本文の「関連」に `#番号` で書く。
+- 不具合の issue を起票するとき、原因の変更がレビューを通っていれば、label「見逃し」を付ける。「関連」に書く内容は[エージェントの作業フロー](subagents.md) 第 5 節。
 
 ### 4.2 規模
 
-規模（S・M・L）はエージェントが提案し、利用者が承認する。規模ごとの文書は次のとおり。
+規模（S・M・L）はエージェントが提案し、利用者が承認する。文書は次のとおり。
 
 | 規模 | 文書 |
 |------|------|
@@ -172,10 +173,10 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 | AC を追加する・変える | M 以上 |
 | 振る舞いを変えず、範囲が小さい | S |
 
-- 規模 M の spec は、`docs/specs/<番号>-<名前>/spec.md` の 1 つに置く。理由：検査の script（ac-check、progress、spec-dirs）が spec.md を読むため。
-- 完了した 1→10 の spec は、MVP と同じくまとまりごとにアーカイブし、`docs/specs/archive/1to10/` に置く。M の spec も同じ。同じ pull request に含める。理由：マージの後に移すと、pull request がもう 1 つ必要になるため。
-- tasks を作るとき、アーカイブに移すタスクを最後のタスクにする。spec の最後のレビューと pull request の前のレビューは、その前のタスクにする。pull request の作成はタスクにせず、pull request の URL を追跡の issue のコメントに記録する。アーカイブの commit で、そのタスク自身を含む全てのチェックボックスを `[x]` にする。
-- マージの前に、アーカイブの後にタスクを追加するとき（第 5.5 節のレビューの対応、CI の失敗の修正など）は、アーカイブのタスクの後に、そのタスクを済ませる commit で `[x]` の行として追加する（順序を入れ替えない）。`develop` を取り込むだけの commit はタスクにしない。理由：進捗の検査は、アーカイブした spec の全てのタスクが済んでいることを求めるため。
+- 規模 M の spec は、`docs/specs/<番号>-<名前>/spec.md` の 1 つに置く。理由：検査の script が spec.md を読むため。
+- 完了した 1→10 の spec は、MVP と同じくまとまりごとにアーカイブし、`docs/specs/archive/1to10/` に置く。M の spec も同じ。同じ pull request に含める。理由：マージの後に移すと、pull request が 1 つ増えるため。
+- tasks を作るとき、アーカイブに移すタスクを最後のタスクにする。spec の最後のレビューと pull request の前のレビューは、その前のタスクにする。pull request の作成はタスクにせず、pull request の URL を追跡の issue のコメントに記録する。アーカイブの commit で、そのタスクを含む全てのチェックボックスを `[x]` にする。
+- マージの前に、アーカイブの後にタスクを追加するとき（第 5.5 節のレビューの対応、CI の失敗の修正など）は、アーカイブのタスクの後に、そのタスクを済ませる commit で `[x]` の行として追加する（順序を入れ替えない）。`develop` を取り込むだけの commit はタスクにしない。理由：進捗の検査が、アーカイブした spec の全タスクの完了を求めるため。
 
 ## 5. 利用者の確認と中断
 

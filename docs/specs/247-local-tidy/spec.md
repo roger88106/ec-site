@@ -225,6 +225,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
   - AGENTS.md の環境の節、`docs/guides/setup.md`、skill `zh-mixing` の設定の手順
 - 実装を始める前に、最新の `develop`（spec 246 のマージを含む）を作業ブランチに取り込む。取り込まないと、spec 246 の `settings.json` の hook がこの作業ツリーのセッションで効かない（spec 246 第 7 節）。
 - 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）では、spec 246 がマージした内容を第 3 節と照合し、差があれば本 spec を先に修正する。照合するものは、`scripts/dev/hooks/` の置き場所とテストの glob、`settings.json` と `settings.local.json` の分け方の文言、AGENTS.md の環境の節、作業ツリーの設定の読み方の記述、マージの hook が Bash のコマンドの文字列だけを読むこと（DC-247-11）である。
+  - hook のコマンドの書き方：spec 246 は、hook の script のパスを `$CLAUDE_PROJECT_DIR` でなく `git rev-parse --show-toplevel` から求める（issue 担当のセッション、2026-10-29）。DC-247-12 で差し替える `settings.local.json` の 3 つの hook（backslash-guard、session-start、zh-mixing の PostToolUse）と、skill `zh-mixing` の設定の手順の例を、この書き方に合わせるかを照合する。`session-start.mjs` が読む `environment.md` の場所は、hook のコマンドの書き方と別に DC-247-9 で決める。
 - 実装の並行の数の上限は 3 に決まった（issue 担当のセッション、2026-10-29）。利用者の確認を受けたら、issue 担当のセッションに聞かずに始めてよい。
 - 本 spec が変えるファイルと、他の spec との重なり（2026-10-28）：
 

@@ -97,6 +97,13 @@ Git に入れない手元だけの除外は、`.local/agent/zh-allow.txt` に「
 
 同じ字・語を両方に置かない。script のテストが、層 1 の一覧との重なりを調べる。
 
+## 書くときの注意
+
+コミットメッセージと spec は、書いてから検査に止められやすい。書く前に次を守る。
+
+- 層 1 の使わない語（`scripts/ci/ja-text.json` の error の語）は、コミットメッセージと spec に書かない。git の hook `commit-msg` の日本語の検査が失敗にする。書いた後は `node scripts/ci/ja-text.mjs` で確認する。
+- 利用者の中国語の言葉は、日本語に訳して書く。原文を写さない。理由：写した中国語の字・用語を、層 2 の検査（`commit-msg`・`pre-commit`）が失敗にするため。
+
 ## テスト
 
 `node --test .claude/skills/zh-mixing/zh-mixing.test.cjs`。`scripts/ci/check-all.sh` も実行する。テストは、環境の印を注入した値で試し、利用者の環境の git の設定を読まない。

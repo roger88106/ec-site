@@ -245,11 +245,11 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
   - 範囲：`docs/` の全て、第 1 節の「パスを直接書いている箇所」のファイル、`Contracts.java` と `ContractsTest.java`（`backend/ecsite/src/testFixtures/`、テスト）
   - 手順：`git mv` で移し、骨組みの README を置く。リンクは `fix-links.cjs`、パスの文字列は `replace-paths.cjs` で修正する（skill `docs` 第 4 節）。`docs/design/modules` は `docs/design` より先に置き換える（長いパスを先にする）。ツールの対象の外（テスト、`db/seed/local/README.md`）と、正規表現で書いたパスは手動で修正する。
   - 確認方法：DC-279-6 の件数が 0。`bash scripts/ci/check-all.sh`、`./gradlew check`、`node scripts/ci/ja-text.mjs` が通る。`git diff --stat -M` で移したファイルが移動として出る。
-- [ ] **T279-01-03** [テスト] フォルダー名の検査のテストを書き、レッドを確認する（DC-279-17）。
+- [x] **T279-01-03** [テスト] フォルダー名の検査のテストを書き、レッドを確認する（DC-279-17）。
   - 依存：T279-01-02
   - 範囲：`scripts/ci/docs-folders.test.mjs`
   - 確認方法：DC-279-17 の例がレッドになる。
-- [ ] **T279-01-04** フォルダー名の検査を書き、CI の検査の文書に加える（DC-279-15、16、18）。
+- [x] **T279-01-04** フォルダー名の検査を書き、CI の検査の文書に加える（DC-279-15、16、18）。
   - 依存：T279-01-03
   - 範囲：`scripts/ci/docs-folders.mjs`、`docs/06-手順書/ci.md`、skill `docs` 第 1 節
   - 確認方法：T279-01-03 のテストが通る。`bash scripts/ci/check-all.sh` が通る。`docs/` の下に `05-開發規則/` のファイルを置くと失敗する（確認した後に削除する）。

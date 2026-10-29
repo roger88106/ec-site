@@ -126,6 +126,13 @@
 - 照合の結果として、重なるファイルと実装の順序を、plan（規模 M は spec の tasks）に書く。
 - 共有の文書（AC 一覧、用語集）の衝突は、後でマージする pull request が `develop` を取り込んで解消する。
 
+作業ツリーの置き場所と、作業ツリーのセッションが読む設定：
+
+- 置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`。`.gitignore` で無視され、検索の対象にならない。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。Claude のデスクトップアプリが作る作業ツリーも同じ場所に置かれる。IntelliJ の `reformat_file` が使えない注意は [バックエンドの書き方](backend-coding.md)。
+- 作業ツリーのセッションは、メインの作業ツリーの `.claude/settings.local.json` を読む。作業ツリーに `settings.local.json` がなくても、メインの作業ツリーの hook が動く（デスクトップアプリの作業ツリーで動かして確認した、2026-10-29）。`$CLAUDE_PROJECT_DIR` もメインの作業ツリーを指す。
+- Claude Code の文書は、作業ツリーのセッションがその作業ツリーの `settings.local.json` を読むと書いており、spec 246 第 1 節の調べもこの記述による。実際の動きは上のとおりで、文書の記述とは違う。
+- 作業ツリーにない script を hook が呼ぶと失敗するので、`settings.local.json` の hook のコマンドは、script のパスを `git rev-parse --show-toplevel` の作業ツリーから先に探し、なければ `$CLAUDE_PROJECT_DIR` の下を使う形にする（skill `local-dev` の「手元の hook の設定」）。
+
 ## 5. モデルや設定を替えるとき
 
 モデル、レビューの指示、profile、サービスを替えるときは、台帳で新しい設定を試してから決める。

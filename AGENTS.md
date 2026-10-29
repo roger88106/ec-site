@@ -18,7 +18,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 
 | skill | いつ使うか |
 |-------|------------|
-| `local-dev` | スロット（作業ツリーごとの環境）の割り当てと解除、compose・バックエンド・フロントの起動、テストと E2E、commit の前の CI の検査、画面・DB・token の確認 |
+| `local-dev` | スロット（作業ツリーごとの環境）の割り当てと解除、compose・バックエンド・フロントの起動、テストと E2E、commit の前の CI の検査、画面・DB・token の確認、壊しての確認（break-check）、手元の hook の設定 |
 | `new-screen` | 店舗画面・管理画面に画面や操作を追加する、修正する |
 | `handoff` | spec 担当のセッションを途中で別のセッションに替えるときに、引き継ぎの文書を作る（利用者が `/handoff` で呼ぶ） |
 | `retro` | セッションを振り返り、環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
@@ -26,8 +26,10 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 | `docs` | 文書（docs/、README、AGENTS.md）を書く・修正する・移す |
 | `writing-for-agents` | skill や AGENTS.md を作る、修正する |
 | `review` | 段階・spec の最後のレビュー、plan・tasks の照合、文書のレビュー、全体のレビュー（受け入れ確認） |
-| `sessions` | issue 担当と spec 担当の運用（起動、開始の条件、資源の配分）と、セッションへのメッセージ・遠隔操作 |
+| `sessions` | issue 担当と spec 担当の運用（起動、開始の条件、資源の配分）と、セッションへのメッセージ・遠隔操作、Dependabot の pull request のマージ |
 | `zh-mixing` | 中国語で指示する環境で、中国語の字・用語の混入を調べる、設定する |
+
+skill の正本は `.claude/skills/` である。Claude Code、GitHub Copilot、Cursor は `.claude/skills/` を読み、Codex と Gemini CLI は読まない（`.agents/skills/` を読む）。Codex か Gemini CLI を使うときに、`.agents/skills/` を追加する。
 
 ## 作業の進め方
 
@@ -94,7 +96,7 @@ SDD と TDD の流れは [開発の進め方](docs/rules/workflow.md)。エー�
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない |
 | マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、`hotfix-` の後の `main` から `develop` への取り込み、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/rules/subagents.md) 第 4 節。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす低のマージは通す）。担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み（ブランチの名前で見分けられない）は hook が見ないので、文章の規則として守る |
-| 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（`.gitignore` は [ブランチとリリース](docs/guides/branches.md) 第 2.2 節） |
+| 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（項目ごとの中身、使う者、保存の期間は [開発環境の起動](docs/guides/setup.md) 第 10 節、`.gitignore` は [ブランチとリリース](docs/guides/branches.md) 第 2.2 節） |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/guides/branches.md)。
 

@@ -62,6 +62,17 @@ issue 担当のセッションと spec 担当のセッションの運用。役�
 - `.claude/`（skill、サブエージェントの定義、設定）を変えた pull request をマージしたら、issue 担当のセッションが、主のチェックアウトの `develop` を最新にする。理由：skill と定義は主のチェックアウトから読まれ、作業ツリーのバージョンは使われないため。
 - 後片付けで自分をアーカイブできないときは、許可した利用者の言葉を添えて、issue 担当のセッションに頼む（[開発の進め方](../../../docs/rules/workflow.md) 第 5.7 節）。
 
+## Dependabot の pull request のマージ
+
+判定が低の pull request を、issue 担当のセッションがまとめてマージするときに使う。判定の読み方は [エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節。
+
+```bash
+bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処理する
+```
+
+- script は、最新でなければ更新し、CI が終わるのを待って、マージできる pull request ごとに `gh pr merge <番号> --merge --match-head-commit <SHA>` の 1 行を出力する。衝突、失敗、CI が終わらないときは、理由を出して終了コード 1 で止まる。
+- 出力されたコマンドを、エージェントが 1 つずつ実行する。理由：hook は Bash のコマンドの文字列だけを読むので、script の中の `gh pr merge` は判定できないため。
+
 ## 弾の終わり
 
 詳細は [弾と段の終わり](rounds.md)。

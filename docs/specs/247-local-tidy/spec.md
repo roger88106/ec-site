@@ -254,27 +254,27 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 - 参照：第 1 節、第 3 節、第 6 節、[テストの書き方](../../rules/test-writing.md)、[コメントの書き方](../../rules/comments.md)
 - `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
 
-- [ ] **T247-01-01** [テスト] hook の script（`session-start`、`backslash-guard`）のテストを書き、レッドを確認する（DC-247-9）。
+- [x] **T247-01-01** [テスト] hook の script（`session-start`、`backslash-guard`）のテストを書き、レッドを確認する（DC-247-9）。
   - 依存：なし
   - 範囲：`scripts/dev/hooks/session-start.test.mjs`・`backslash-guard.test.mjs`
   - 確認方法：次の例がレッドになる。メインの作業ツリーと、`git worktree add` で作った作業ツリーの両方の `cwd` から、メインの作業ツリーの `/.local/agent/environment.md` を読む例。そのファイルがないときに何も出さない例。heredoc・`node -e` の `\` を拒否する例と、コマンドの他の箇所の `\` を通す例。
-- [ ] **T247-01-02** hook の script を `scripts/dev/hooks/` に移す（DC-247-9、14）。
+- [x] **T247-01-02** hook の script を `scripts/dev/hooks/` に移す（DC-247-9、14）。
   - 依存：T247-01-01
   - 範囲：`scripts/dev/hooks/session-start.mjs`・`backslash-guard.mjs`
   - 確認方法：T247-01-01 のテストが通る。`check-all.sh` の script のテストに含まれる。マシン固有のパスがない。
-- [ ] **T247-01-03** [テスト] break-check のテストを書き、レッドを確認する（DC-247-10）。
+- [x] **T247-01-03** [テスト] break-check のテストを書き、レッドを確認する（DC-247-10）。
   - 依存：なし
   - 範囲：`scripts/dev/break-check.test.mjs`
   - 確認方法：当たらない・2 か所に当たる置き換えで止まる例、テストの後に元に戻る例、シェルのコマンド（`./` で始まるもの）を実行できる例がレッドになる。
-- [ ] **T247-01-04** break-check を `scripts/dev/` に移し、コマンドを Git Bash で実行する（DC-247-10、14）。
+- [x] **T247-01-04** break-check を `scripts/dev/` に移し、コマンドを Git Bash で実行する（DC-247-10、14）。
   - 依存：T247-01-03
   - 範囲：`scripts/dev/break-check.mjs`
   - 確認方法：T247-01-03 のテストが通る。`./gradlew` を含むコマンドで、Gradle の出力の行が出る。マシン固有のパスがない。
-- [ ] **T247-01-05** merge-deps を `scripts/dev/` に移し、マージのコマンドを出力する形にする（DC-247-11）。
+- [x] **T247-01-05** merge-deps を `scripts/dev/` に移し、マージのコマンドを出力する形にする（DC-247-11）。
   - 依存：なし
   - 範囲：`scripts/dev/merge-deps.sh`
   - 確認方法：script の中に `gh pr merge` の実行がなく、出力するコマンドが `--match-head-commit` を含む。`gh` のパスがマシン固有でない（PATH の `gh` を使い、なければ止まる）。`bash -n` が通る。
-- [ ] **T247-01-06** skill と文書を更新する（DC-247-1、2、3、5、7、9〜11、13、15〜17）。
+- [x] **T247-01-06** skill と文書を更新する（DC-247-1、2、3、5、7、9〜11、13、15〜17）。
   - 依存：T247-01-02、04、05
   - 範囲：`AGENTS.md`、`docs/guides/setup.md`、`docs/rules/workflow.md`、`docs/rules/subagents.md`、skill `local-dev`・`sessions`・`zh-mixing`
   - DC-247-3 の後片付けの手順に、DC-247-12 と DC-247-6 の差し替えは含めない（本 spec だけの作業のため、第 9 節に書く）。

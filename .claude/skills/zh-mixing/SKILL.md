@@ -51,7 +51,7 @@ git config --local ecsite.instructionLanguage zh
       {
         "matcher": "Write|Edit|MultiEdit|NotebookEdit",
         "hooks": [
-          { "type": "command", "command": "node \"$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs\"" }
+          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/.claude/skills/zh-mixing/post-tool-use.cjs\" ]; then f=\"$d/.claude/skills/zh-mixing/post-tool-use.cjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
         ]
       }
     ]
@@ -59,7 +59,7 @@ git config --local ecsite.instructionLanguage zh
 }
 ```
 
-   `.claude/settings.local.json` は Git に入らず、作業ツリーごとのファイルなので、新しい作業ツリーでは置き直す（主の作業ツリーから写す）。環境の印は `.git/config` にあるので、作業ツリーの間で共有される。写さずに済ませるには、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
+   `.claude/settings.local.json` は Git に入らない。作業ツリーのセッションは、メインの作業ツリーのこのファイルを読む（[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節）ので、メインの作業ツリーに置けばよい。command は、script を作業ツリーから先に探し、なければメインの作業ツリー（`$CLAUDE_PROJECT_DIR`）の下を使う形にする。環境の印は `.git/config` にあり、作業ツリーの間で共有される。他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
 
 3. git の hook（commit を止める）：[開発環境の起動](../../../docs/guides/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 
@@ -71,8 +71,6 @@ git config --local ecsite.instructionLanguage zh
 `.git/hooks/` は全ての作業ツリーで共有し、script のないブランチ（例えば `main` から切る `release-`・`hotfix-` のブランチ）でも hook が動くので、行は script があるときだけ呼ぶ形にする。
 
 設定を外すには、環境の印を `git config --local --unset ecsite.instructionLanguage` で外し、`settings.local.json` の上の項目と、git の hook の上の行を削除する。
-
-手元の古い検査（`.local/agent/check-zh.mjs`）からの置き換えは、spec 249 のマージの後に行う。上の 3 つを設定してから、`check-zh.mjs` と、`.git/hooks/` のその行を削除し、`environment.md` の記述をこの節を指す 1 行にする。マージの前に外すと、他の作業ツリーの commit が検査を失う。
 
 ## 一覧の直し方
 

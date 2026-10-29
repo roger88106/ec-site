@@ -226,12 +226,12 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 
 ## シェルと Git の落とし穴
 
-- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。Markdown の表のセルの `\|` も同じで、表を含む追記を heredoc で書くと止まる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。
+- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記を heredoc で書くと止まる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。
 - 次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
 
 | 書き方 | 拒否するもの | 避け方 |
 |--------|------------|--------|
-| heredoc・`node -e` の中の `\`（Markdown の表の `\|` を含む） | hook `backslash-guard`（次の節） | 上の箇条のとおり、Markdown の表を含む追記も Edit で書く |
+| heredoc・`node -e` の中の `\`（Markdown の表の `\|` を含む） | hook `backslash-guard`（次の節） | 上の箇条のとおり、`\|` を含む表の追記も Edit で書く |
 | `gh pr edit` と `gh pr ready` など、GitHub の状態を変える `gh` の操作を `&&` や `;` で 1 つにつないだコマンド | auto mode の判定 | pull request の編集・ready・マージ、issue の編集は、1 つのコマンドに操作を 1 つだけ書き、別の呼び出しで実行する |
 | `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` のツールの注） |
 | コミットメッセージの、層 1 の使わない語（`scripts/ci/ja-text.json` の error の語） | git の hook `commit-msg`（日本語の検査） | 書く前に語の一覧を見る（skill `zh-mixing` の「書くときの注意」） |

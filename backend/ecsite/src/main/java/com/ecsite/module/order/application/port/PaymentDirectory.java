@@ -11,7 +11,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 決済の腐敗防止層（docs/design/modules/order.md「支払」）
+ * 決済の腐敗防止層（docs/03-機能仕様/order.md「支払」）
  */
 public interface PaymentDirectory {
 

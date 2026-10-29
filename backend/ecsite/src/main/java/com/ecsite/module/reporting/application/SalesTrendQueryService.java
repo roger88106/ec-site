@@ -9,7 +9,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 /**
- * 売上の推移（docs/design/modules/reporting.md「売上の推移」）。<br />
+ * 売上の推移（docs/03-機能仕様/reporting.md「売上の推移」）。<br />
  * 日ごとに SQL で集計し、区切りへのまとめは Java で行う。
  */
 @Service

@@ -23,7 +23,7 @@ const COMPOSE_FILE = 'docker/compose.yaml'
 const POWERSHELL_FILE = 'scripts/dev/windows/exclude-ports.ps1'
 
 /** ポートを書く文書 */
-const DOC_FILES = ['docs/guides/setup.md', 'docs/guides/running-tests.md']
+const DOC_FILES = ['docs/06-手順書/setup.md', 'docs/06-手順書/running-tests.md']
 
 /** E2E のポートを書く設定（E2E のサーバーの URL、画面のサーバーの `--port`、Playwright の `port:`。読み方は CONFIG_FILES と同じ readConfigPorts） */
 const SOURCE_FILES = ['e2e/src/urls.ts', 'e2e/playwright.config.ts']

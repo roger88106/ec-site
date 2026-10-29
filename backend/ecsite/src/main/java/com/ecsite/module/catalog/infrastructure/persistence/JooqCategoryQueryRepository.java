@@ -27,7 +27,7 @@ class JooqCategoryQueryRepository implements CategoryQueryRepository {
 
     /**
      * すべてのカテゴリを取得する。<br />
-     * 同時の登録で表示順が同じになった兄弟は、登録の古い順、ID の順に並べる（docs/design/modules/catalog.md）。
+     * 同時の登録で表示順が同じになった兄弟は、登録の古い順、ID の順に並べる（docs/03-機能仕様/catalog.md）。
      *
      * @return カテゴリの一覧
      */

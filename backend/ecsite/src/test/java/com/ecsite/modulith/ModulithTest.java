@@ -10,7 +10,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 /**
  * モジュールの境界の検証（バックエンドのアーキテクチャ 第 1 節）。<br />
  * {@code package-info.java} で宣言した依存（{@code allowedDependencies}）以外の依存、内部のパッケージへの参照、
- * モジュール間の循環を検出する。モジュールの依存を変えたら、先に設計の文書（docs/design/modules）を更新する。
+ * モジュール間の循環を検出する。モジュールの依存を変えたら、先に設計の文書（docs/03-機能仕様）を更新する。
  */
 class ModulithTest {
 

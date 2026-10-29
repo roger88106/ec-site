@@ -18,7 +18,7 @@ function makeRoot() {
     fs.mkdirSync(path.dirname(file), { recursive: true })
     fs.writeFileSync(file, text)
   }
-  write('docs/specs/archive/1to10/301-x/tasks/04-review.md', [
+  write('docs/08-spec/archive/1to10/301-x/tasks/04-review.md', [
     '# レビュー',
     '',
     HEADER,
@@ -29,7 +29,7 @@ function makeRoot() {
     '',
     'この文の後の | 段階 9 | x | 汎用 | 1 | 99999 | 1m | 9 | 9 | 9 | 9 | は読まない。',
   ].join('\n'))
-  write('docs/specs/archive/mvp/302-y/spec.md', [
+  write('docs/08-spec/archive/mvp/302-y/spec.md', [
     '# spec',
     '',
     HEADER,
@@ -41,9 +41,9 @@ function makeRoot() {
     '|----|--------|',
     '| 段階 5 | 読まない |',
   ].join('\n'))
-  write('docs/specs/archive/mvp/303-z/spec.md', '# 表なし\n')
-  write('docs/specs/archive/mvp/3040-w/spec.md', '# 番号が似ている\n')
-  write('docs/specs/archive/mvp/305-v/README.md', '# tasks も spec.md もない\n')
+  write('docs/08-spec/archive/mvp/303-z/spec.md', '# 表なし\n')
+  write('docs/08-spec/archive/mvp/3040-w/spec.md', '# 番号が似ている\n')
+  write('docs/08-spec/archive/mvp/305-v/README.md', '# tasks も spec.md もない\n')
   return root
 }
 
@@ -147,7 +147,7 @@ test('同じファイルにある複数の表を全て読む', () => {
 })
 
 test('見出しだけで行が 0 件の表は、ファイル名を付けて標準エラーに警告する', () => {
-  const file = 'docs/specs/archive/x/999-y/tasks/empty.md'
+  const file = 'docs/08-spec/archive/x/999-y/tasks/empty.md'
   const original = console.error
   const messages = []
   console.error = (m) => messages.push(String(m))

@@ -3,7 +3,7 @@ package com.ecsite.module.shipping.application.port;
 import com.ecsite.module.shipping.domain.Carrier;
 
 /**
- * 物流サービスの追跡（docs/design/modules/shipping.md「物流サービス」）。<br />
+ * 物流サービスの追跡（docs/03-機能仕様/shipping.md「物流サービス」）。<br />
  * 物流サービスの型とエラーは、この口の実装（infrastructure）の外に出さない。
  */
 public interface CarrierTracking {

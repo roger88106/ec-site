@@ -19,7 +19,7 @@ import static com.ecsite.jooq.catalog.Tables.PRODUCT;
 /**
  * 商品検索の PostgreSQL による簡易実装（商品カタログモジュールの設計「キーワード検索」）。<br />
  * 商品名と説明に対する部分一致（英字の大文字・小文字は区別しない）。キーワード中のワイルドカード文字はエスケープする。
- * 並びは新着順で固定し、専用のインデックスは作らない（docs/design/modules/catalog.md）。
+ * 並びは新着順で固定し、専用のインデックスは作らない（docs/03-機能仕様/catalog.md）。
  */
 @Repository
 @RequiredArgsConstructor

@@ -12,7 +12,7 @@ import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 
 /**
- * 物流サービスの通知の署名（docs/design/modules/shipping.md「通知のエンドポイント」）。<br />
+ * 物流サービスの通知の署名（docs/03-機能仕様/shipping.md「通知のエンドポイント」）。<br />
  * ヘッダーの値は {@code sha256=} と、本文のバイト列の HMAC-SHA256（16 進、小文字）。
  */
 public final class CarrierSignature {

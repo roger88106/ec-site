@@ -44,7 +44,7 @@
 
 ### フロントエンド
 
-C 側と B 側は別のアプリ。構成は [フロントのアーキテクチャ](design/frontend-architecture.md)。
+C 側と B 側は別のアプリ。構成は [フロントのアーキテクチャ](02-設計/frontend-architecture.md)。
 
 両方で共通：
 
@@ -89,10 +89,14 @@ ec-site/
 ├── api/openapi/          # API 契約の正本
 ├── docs/
 │   ├── constitution.md   # 大綱と文書の地図
-│   ├── rules/            # 規範：開発の進め方、書き方の規則
-│   ├── design/           # 今の設計：全体構成、アーキテクチャ、モジュール、画面、用語集
-│   ├── guides/           # 手順：開発環境の起動、環境変数、CI、テストの実行方法、ブランチとリリース
-│   └── specs/            # 開発記録：spec・plan・tasks（完了した spec は、MVP と 1→10 のまとまりごとに specs/archive/ に移す）
+│   ├── 01-概要/          # 専門知識がなくても読める全体像（システムの概要、業務の流れ、画面の操作の流れ）
+│   ├── 02-設計/          # エンジニア向けの構成（全体の構成、アーキテクチャ、アプリ、権限）
+│   ├── 03-機能仕様/      # 主にエージェント向けの、モジュールごとの業務の規則、状態遷移、データ構造
+│   ├── 04-決定記録/      # 決定の理由（1 つの決定につき 1 ファイル）
+│   ├── 05-開発規則/      # 規範：開発の進め方、書き方の規則
+│   ├── 06-手順書/        # 手順：開発環境の起動、環境変数、CI、テストの実行方法、ブランチとリリース
+│   ├── 07-記録/          # 実績と測定
+│   └── 08-spec/          # 開発記録：spec・plan・tasks（完了した spec は、MVP と 1→10 のまとまりごとに 08-spec/archive/ に移す）
 ├── backend/ecsite/       # バックエンド
 ├── frontend/
 │   ├── store/            # C 側（店舗画面）
@@ -106,68 +110,90 @@ ec-site/
 
 ### 文書の地図
 
-`docs/` は、規範（rules）、今の設計（design）、手順（guides）、開発記録（specs）に分ける。現在の振る舞いはコードを正とし、design の文書はコードを説明する（[開発の進め方](rules/workflow.md) 第 1.5 節）。
+`docs/` は、下の番号付きのフォルダーに分ける。現在の振る舞いはコードを正とし、設計と機能仕様の文書はコードを説明する（[開発の進め方](05-開発規則/workflow.md) 第 1.5 節）。
 
-規範（`docs/rules/`）：
-
-| 文書 | 内容 |
-|------|------|
-| [workflow.md](rules/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方、コードと文書の食い違い |
-| [notation.md](rules/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
-| [review.md](rules/review.md) | 書き方の規則の書き方とレビュー |
-| [comments.md](rules/comments.md) | コメントの書き方 |
-| [subagents.md](rules/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |
-| [resources.md](rules/resources.md) | 作業の形と使用量（profile の決め方、止める閾値、使用量を読む頻度） |
-| [subagents-results.md](rules/subagents-results.md) | エージェントの作業フローの調べた仕組みと実績 |
-| [backend-coding.md](rules/backend-coding.md) | バックエンドの書き方 |
-| [frontend-coding.md](rules/frontend-coding.md) | フロントの書き方 |
-| [test-writing.md](rules/test-writing.md) | テストの書き方 |
-| [api-conventions.md](rules/api-conventions.md) | API の規約 |
-
-今の設計（`docs/design/`）：
+概要（`docs/01-概要/`）：専門知識がなくても読める全体像（システムの概要、業務の流れ、画面の操作の流れ）。中身は、後の spec で書く。
 
 | 文書 | 内容 |
 |------|------|
-| [overview.md](design/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
-| [backend-architecture.md](design/backend-architecture.md) | バックエンドのアーキテクチャ |
-| [modules/](design/modules) | モジュールごとの設計 |
-| [frontend-architecture.md](design/frontend-architecture.md) | フロントのアーキテクチャ |
-| [apps/](design/apps) | アプリごとの構成（管理画面、店舗画面） |
-| [common.md](design/common.md) | 共通コード・ログ・可観測性 |
-| [role-permissions.md](design/role-permissions.md) | ロールと権限の対応表 |
-| [acceptance-criteria.md](design/acceptance-criteria.md) | AC 一覧（状態とテスト） |
-| [glossary.md](design/glossary.md) | 用語集 |
-| [licenses.md](design/licenses.md) | 依存とライセンス |
+| [README.md](01-概要/README.md) | このフォルダーに置く文書 |
 
-手順（`docs/guides/`）：
+設計（`docs/02-設計/`）：エンジニア向けの構成（全体の構成、アーキテクチャ、アプリ、権限）。
 
 | 文書 | 内容 |
 |------|------|
-| [setup.md](guides/setup.md) | 開発環境の起動 |
-| [environment.md](guides/environment.md) | 環境変数 |
-| [ci.md](guides/ci.md) | CI の検査 |
-| [running-tests.md](guides/running-tests.md) | テストの実行方法 |
-| [branches.md](guides/branches.md) | ブランチとリリース |
+| [overview.md](02-設計/overview.md) | 全体構成（モジュールの依存とイベント、外部システム） |
+| [backend-architecture.md](02-設計/backend-architecture.md) | バックエンドのアーキテクチャ |
+| [frontend-architecture.md](02-設計/frontend-architecture.md) | フロントのアーキテクチャ |
+| [apps/](02-設計/apps) | アプリごとの構成（管理画面、店舗画面） |
+| [common.md](02-設計/common.md) | 共通コード・ログ・可観測性 |
+| [role-permissions.md](02-設計/role-permissions.md) | ロールと権限の対応表 |
 
-開発記録（`docs/specs/`）：
+機能仕様（`docs/03-機能仕様/`）：主にエージェント向けの、モジュールごとの業務の規則、状態遷移、データ構造。
 
 | 文書 | 内容 |
 |------|------|
-| [specs/](specs) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `specs/archive/<まとまり>/` に移す。MVP の spec は [specs/archive/mvp/](specs/archive/mvp) にある |
-| [mvp.md](specs/archive/mvp/mvp.md) | MVP の完成までの一覧 |
+| [<モジュール>.md](03-機能仕様) | モジュールごとの設計 |
+| [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（状態とテスト） |
+| [glossary.md](03-機能仕様/glossary.md) | 用語集 |
+
+決定記録（`docs/04-決定記録/`）：決定の理由を、1 つの決定につき 1 ファイルで書く。中身は、後の spec で書く。
+
+| 文書 | 内容 |
+|------|------|
+| [README.md](04-決定記録/README.md) | このフォルダーに置く文書 |
+
+規範（`docs/05-開発規則/`）：
+
+| 文書 | 内容 |
+|------|------|
+| [workflow.md](05-開発規則/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方、コードと文書の食い違い |
+| [notation.md](05-開発規則/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
+| [review.md](05-開発規則/review.md) | 書き方の規則の書き方とレビュー |
+| [comments.md](05-開発規則/comments.md) | コメントの書き方 |
+| [subagents.md](05-開発規則/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |
+| [resources.md](05-開発規則/resources.md) | 作業の形と使用量（profile の決め方、止める閾値、使用量を読む頻度） |
+| [backend-coding.md](05-開発規則/backend-coding.md) | バックエンドの書き方 |
+| [frontend-coding.md](05-開発規則/frontend-coding.md) | フロントの書き方 |
+| [test-writing.md](05-開発規則/test-writing.md) | テストの書き方 |
+| [api-conventions.md](05-開発規則/api-conventions.md) | API の規約 |
+| [licenses.md](05-開発規則/licenses.md) | 依存とライセンス |
+
+手順（`docs/06-手順書/`）：
+
+| 文書 | 内容 |
+|------|------|
+| [setup.md](06-手順書/setup.md) | 開発環境の起動 |
+| [environment.md](06-手順書/environment.md) | 環境変数 |
+| [ci.md](06-手順書/ci.md) | CI の検査 |
+| [running-tests.md](06-手順書/running-tests.md) | テストの実行方法 |
+| [branches.md](06-手順書/branches.md) | ブランチとリリース |
+
+記録（`docs/07-記録/`）：実績と測定。
+
+| 文書 | 内容 |
+|------|------|
+| [subagents-results.md](07-記録/subagents-results.md) | エージェントの作業フローの調べた仕組みと実績 |
+
+開発記録（`docs/08-spec/`）：
+
+| 文書 | 内容 |
+|------|------|
+| [08-spec/](08-spec) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `08-spec/archive/<まとまり>/` に移す。MVP の spec は [08-spec/archive/mvp/](08-spec/archive/mvp) にある |
+| [mvp.md](08-spec/archive/mvp/mvp.md) | MVP の完成までの一覧 |
 
 ## 4. 開発の進め方
 
-仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。細則は [開発の進め方](rules/workflow.md)。
+仕様駆動開発（SDD）で何を作るかを先に決め、テスト駆動開発（TDD）で作る。細則は [開発の進め方](05-開発規則/workflow.md)。
 
-全ての変更は issue から始まる。変更の大きさで規模（S・M・L）を分け、規模ごとに書く文書が違う（[開発の進め方](rules/workflow.md) 第 4 節）。
+全ての変更は issue から始まる。変更の大きさで規模（S・M・L）を分け、規模ごとに書く文書が違う（[開発の進め方](05-開発規則/workflow.md) 第 4 節）。
 
 ### 4.1 仕様駆動開発（SDD：Spec-Driven Development）
 
 spec（何を・なぜ）→ plan（どう作るか）→ tasks（作業の手順）→ 実装。
 
 - spec がコードに先行する。誤りに気づいたら、spec から修正する。
-- spec は「機能」と「整理」の 2 種類（[文書の記号と番号](rules/notation.md)）。
+- spec は「機能」と「整理」の 2 種類（[文書の記号と番号](05-開発規則/notation.md)）。
 
 ### 4.2 テスト駆動開発（TDD：Test-Driven Development）
 
@@ -178,7 +204,7 @@ spec（何を・なぜ）→ plan（どう作るか）→ tasks（作業の手�
 
 ## 5. バックエンドのアーキテクチャ
 
-Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。細則は [バックエンドのアーキテクチャ](design/backend-architecture.md)。
+Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。細則は [バックエンドのアーキテクチャ](02-設計/backend-architecture.md)。
 
 - モジュールが外に公開するのは `api/`（同期の呼び出し）と `event/`（非同期の通知）だけ。他のモジュールのテーブルは読み書きしない。
 - モジュールごとに、複雑さに応じて構成のレベル（フル・簡略・イベントストア）を選ぶ。
@@ -202,7 +228,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 6. 水平スケール
 
-同じアプリを複数のインスタンスで並行して動かせるように作る。細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 5 節。
+同じアプリを複数のインスタンスで並行して動かせるように作る。細則は [バックエンドのアーキテクチャ](02-設計/backend-architecture.md) 第 5 節。
 
 - リクエストをまたぐ状態をメモリやローカルディスクに持たない。
 - 業務上の排他は DB で制御する（JVM の中のロックを使わない）。
@@ -210,7 +236,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 7. データとファイル
 
-細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 6 節。
+細則は [バックエンドのアーキテクチャ](02-設計/backend-architecture.md) 第 6 節。
 
 - PostgreSQL と jOOQ。スキーマの正本は Flyway のマイグレーション。
 - 品番・注文番号など人が使う番号と、識別子（UUID）を分ける。金額は円単位の整数（`Money`）。
@@ -218,29 +244,29 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 8. API
 
-細則は [API の規約](rules/api-conventions.md)。
+細則は [API の規約](05-開発規則/api-conventions.md)。
 
 - 契約先行：OpenAPI（`api/openapi/`）を plan で書き、バックエンドもフロントもそこから生成した型を使う。
 - RESTful JSON。エラーは Problem Details（RFC 9457）に、分岐用のコードと画面に表示できる文を加える。
 
 ## 9. 認証・認可
 
-細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 7 節。
+細則は [バックエンドのアーキテクチャ](02-設計/backend-architecture.md) 第 7 節。
 
 - 認証は IdP（Keycloak）に任せ、自前で作らない。ログインは OIDC、API は OAuth 2.0 の Resource Server として token を検証するだけ。業務のコードは認証の仕組み（Spring Security）に依存しない。
 - 消費者と運営者は IdP の別の realm に分ける。
-- 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](design/backend-architecture.md) 第 7.3 節）を決めてから行う。
+- 公開ネットワークへのデプロイは、その前提（[バックエンドのアーキテクチャ](02-設計/backend-architecture.md) 第 7.3 節）を決めてから行う。
 
 ## 10. 外部連携（決済・物流）
 
-細則は [バックエンドのアーキテクチャ](design/backend-architecture.md) 第 8 節。
+細則は [バックエンドのアーキテクチャ](02-設計/backend-architecture.md) 第 8 節。
 
 - 外部サービスは port 経由で呼び、外部の型を業務のコードに持ち込まない。
 - sandbox があれば使い、なければ内部の mock にする。設定で切り替える。
 
 ## 11. テスト
 
-細則は [テストの書き方](rules/test-writing.md)、実行方法は [テストの実行方法](guides/running-tests.md)。
+細則は [テストの書き方](05-開発規則/test-writing.md)、実行方法は [テストの実行方法](06-手順書/running-tests.md)。
 
 - 全ての AC にテストを対応させ、テスト名に AC 番号を入れる。
 - バックエンドは単体テストと統合テスト（Testcontainers）、フロントは単体テストと結合テスト、つないだ流れは E2E（Playwright）。
@@ -248,7 +274,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 12. CI/CD
 
-細則は [CI の検査](guides/ci.md)、[ブランチとリリース](guides/branches.md)。
+細則は [CI の検査](06-手順書/ci.md)、[ブランチとリリース](06-手順書/branches.md)。
 
 - CI：push と pull request で、バックエンド、フロント、E2E を実行する。文書などだけを変えた push では、バックエンド、フロント、E2E は実行せず、CI の検査の script の全てを実行する。CI が失敗している状態で、次の spec の実装に進まない。
 - ブランチ：作業ブランチを `develop` に、リリースを `main` に pull request で入れる。
@@ -256,19 +282,19 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 13. 書く言語（日本語と英語の使い分け）
 
-細則は [開発の進め方](rules/workflow.md) 第 3 節。
+細則は [開発の進め方](05-開発規則/workflow.md) 第 3 節。
 
 - Git に入るものは全て日本語で書く（文書、コメント、テスト名、コミットメッセージ、エラーメッセージなど）。
 - 識別子（クラス名、API のパス、テーブル名など）は英語。
-- 文書の本文は業務の用語（論理名）で書き、識別子（物理名）との対応は [用語集](design/glossary.md) に置く。
+- 文書の本文は業務の用語（論理名）で書き、識別子（物理名）との対応は [用語集](03-機能仕様/glossary.md) に置く。
 
 ## 14. コードの書き方
 
-書き方は [バックエンド](rules/backend-coding.md)、[フロント](rules/frontend-coding.md)、[テスト](rules/test-writing.md)、[コメント](rules/comments.md) の各文書にある。コードを書く前と、[レビュー](rules/review.md)のときに読む。
+書き方は [バックエンド](05-開発規則/backend-coding.md)、[フロント](05-開発規則/frontend-coding.md)、[テスト](05-開発規則/test-writing.md)、[コメント](05-開発規則/comments.md) の各文書にある。コードを書く前と、[レビュー](05-開発規則/review.md)のときに読む。
 
 ## 15. 依存とライセンス
 
-細則は [依存とライセンス](design/licenses.md)。
+細則は [依存とライセンス](05-開発規則/licenses.md)。
 
 - プロジェクトのライセンスは MIT。
 - 依存は、無料で商用に使えて、コピーレフトでない（使う側のコードの公開を求めない）ものだけを使う。CI で確認する。
@@ -283,4 +309,4 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 16. 未定事項
 
-未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [milestone `1→10` の issue](https://github.com/roger88106/ec-site/milestone/1)、全ての issue は [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。起票の規則は [開発の進め方](rules/workflow.md) 第 4.1 節。
+未定事項と後回しにする作業は、GitHub の issue で管理する。対応時期が 1→10 のものには milestone `1→10` を付ける。現在の一覧は [milestone `1→10` の issue](https://github.com/roger88106/ec-site/milestone/1)、全ての issue は [issue の一覧](https://github.com/roger88106/ec-site/issues) にある。起票の規則は [開発の進め方](05-開発規則/workflow.md) 第 4.1 節。

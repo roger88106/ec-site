@@ -222,7 +222,7 @@ test('Git の外の許す語は、入口の判定にも効く', () => {
 })
 
 test('追跡しているファイルを調べるとき、アーカイブした spec は除く', () => {
-  const files = { 'docs/specs/archive/x/spec.md': SIMPLIFIED, 'docs/a.md': JAPANESE }
+  const files = { 'docs/08-spec/archive/x/spec.md': SIMPLIFIED, 'docs/a.md': JAPANESE }
   const { deps } = makeDeps({ listTracked: () => Object.keys(files), readFile: (f) => files[f] })
   assert.equal(zh.run(['tracked'], deps), 0)
 })

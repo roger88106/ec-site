@@ -20,7 +20,7 @@ import { isMain } from './lib/is-main.mjs'
 const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/(skills|agents)\/.*)\.md|\.github\/.*\.(md|ya?ml))$/
 
 /** 見ない文書（アーカイブした spec（当時の記録）と、言い換える前の語を例に挙げる言い回しの規則） */
-const EXCLUDED = /^(docs\/specs\/archive\/|\.claude\/skills\/docs\/tech-writing\.md$)/
+const EXCLUDED = /^(docs\/08-spec\/archive\/|\.claude\/skills\/docs\/tech-writing\.md$)/
 
 /**
  * 調べないコード。
@@ -28,7 +28,7 @@ const EXCLUDED = /^(docs\/specs\/archive\/|\.claude\/skills\/docs\/tech-writing\
  * - アーカイブした spec の下（当時の記録）
  * - 語を例に挙げるテスト（サンプルの文に、使わない語を書く）
  */
-const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/specs\/archive\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
+const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/08-spec\/archive\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
 
 /**
  * 一覧の項目の名前（word、または pattern）を返す。

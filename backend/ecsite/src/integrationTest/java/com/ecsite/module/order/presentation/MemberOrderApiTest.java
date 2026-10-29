@@ -45,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * 会員の注文の受け入れテスト（docs/design/modules/order.md）。<br />
+ * 会員の注文の受け入れテスト（docs/03-機能仕様/order.md）。<br />
  * 会員の token はテストの鍵で作る（TestTokens）。テストごとにロールバックする。
  */
 @IntegrationTest

@@ -8,7 +8,7 @@ import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Propagation;
 
 /**
- * 返金の依頼のリスナー（docs/design/modules/payment.md「返金」）。<br />
+ * 返金の依頼のリスナー（docs/03-機能仕様/payment.md「返金」）。<br />
  * コミットの後に非同期で、決済サービスで返金し、返金済みにする。
  * 決済サービスはトランザクションの外で呼び（DB の接続を持ったまま待たない）、読み取りと更新は参照・更新のサービスのトランザクションで行う。
  * 決済サービスが失敗したら例外で終わり、イベントは未完了で残って、再発行のジョブがやり直す。

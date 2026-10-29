@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestHeader;
 
 /**
- * Stripe の通知のエンドポイント（docs/design/modules/payment.md「Stripe」）。<br />
+ * Stripe の通知のエンドポイント（docs/03-機能仕様/payment.md「Stripe」）。<br />
  * Stripe が呼ぶ口で、EC の API ではない（OpenAPI に書かず、presentation にも置かない）。認証は付けず、署名で確認する。
  * 処理に失敗したら 5xx を返し、Stripe の再送で処理し直す。
  */

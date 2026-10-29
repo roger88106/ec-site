@@ -3,7 +3,7 @@
 //
 //   使い方：node scripts/ci/ac-check.mjs
 //
-// - AC：spec.md（docs/specs/ の直下とアーカイブの下の spec）の定義の行（MVP の - **AC-n** と、1→10 の - **AC-7-1**）。
+// - AC：spec.md（docs/08-spec/ の直下とアーカイブの下の spec）の定義の行（MVP の - **AC-n** と、1→10 の - **AC-7-1**）。
 //   2 つの形は別の AC として扱う（テスト名の AC-7-1 を AC-7 と読まない）
 // - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
 //   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない。
@@ -15,7 +15,7 @@
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
-// - AC 一覧（docs/design/acceptance-criteria.md）を読む。廃止の AC はテストが必要なく、テストが参照すると失敗する。
+// - AC 一覧（docs/03-機能仕様/acceptance-criteria.md）を読む。廃止の AC はテストが必要なく、テストが参照すると失敗する。
 //   spec と AC 一覧の AC が食い違うとき、状態が有効・変更・廃止でないとき、表が古いときに失敗する。
 //   表の要約・元の spec・テストの列は再作成する列で、--write で書き直す（状態・変えた spec・今の内容は残す）
 // ============================================================================
@@ -220,7 +220,7 @@ const TEST_FILES_SHOWN = 3
  *
  * @param markdown spec.md の本文
  * @param spec     spec のディレクトリの名前（`001-catalog-and-inventory` など）
- * @param specPath docs/specs からの spec のディレクトリのパス（アーカイブの spec は `archive/mvp/001-…`）。省略すると名前
+ * @param specPath docs/08-spec からの spec のディレクトリのパス（アーカイブの spec は `archive/mvp/001-…`）。省略すると名前
  * @returns AC の定義（spec の順）
  */
 export function parseSpecAcDefinitions(markdown, spec, specPath = spec) {
@@ -243,7 +243,7 @@ export function parseSpecAcDefinitions(markdown, spec, specPath = spec) {
 }
 
 /** AC 一覧の文書（リポジトリのルートから） */
-const AC_LIST = 'docs/design/acceptance-criteria.md'
+const AC_LIST = 'docs/03-機能仕様/acceptance-criteria.md'
 
 /** AC 一覧の生成の範囲の印 */
 const LIST_START = '<!-- generated:ac-list -->'
@@ -271,7 +271,7 @@ export function renderAcList({ definitions, previous, testFiles, exclusions }) {
     } else if (exclusions[`AC-${ac}`]) {
       test = '除外'
     }
-    const origin = `[${/^[0-9]+/.exec(spec)?.[0] ?? spec}](../specs/${specPath}/spec.md)`
+    const origin = `[${/^[0-9]+/.exec(spec)?.[0] ?? spec}](../08-spec/${specPath}/spec.md)`
     lines.push(`| AC-${ac} | ${summary} | ${kept.status} | ${origin} | ${kept.changedBy} | ${kept.location} | ${test} |`)
   }
   return `${lines.join('\n')}\n`
@@ -389,7 +389,7 @@ function main() {
   exitIfNoFiles(gitFiles, 'Git のファイル')
   const testSources = findTestFiles(root, gitFiles)
   exitIfNoFiles(testSources, 'テストのファイル')
-  const specsDir = path.join(root, 'docs/specs')
+  const specsDir = path.join(root, 'docs/08-spec')
   const definitions = []
   for (const { name, rel, dir } of listSpecDirs(specsDir)) {
     try {

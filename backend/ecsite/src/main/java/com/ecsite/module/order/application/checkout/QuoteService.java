@@ -26,7 +26,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 見積もりのサービス（docs/design/modules/order.md「見積もり」）。<br />
+ * 見積もりのサービス（docs/03-機能仕様/order.md「見積もり」）。<br />
  * 商品カタログ・在庫・税から必要な値を集め、ドメインの見積もりを組み立てる。
  */
 @Service

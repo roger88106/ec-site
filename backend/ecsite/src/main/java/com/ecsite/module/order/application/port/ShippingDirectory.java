@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 出荷の腐敗防止層（docs/design/modules/order.md「出荷の登録」）
+ * 出荷の腐敗防止層（docs/03-機能仕様/order.md「出荷の登録」）
  */
 public interface ShippingDirectory {
 

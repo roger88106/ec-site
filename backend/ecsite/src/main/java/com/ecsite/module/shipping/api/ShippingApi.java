@@ -13,7 +13,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * 注文に公開する、出荷の API（docs/design/modules/shipping.md「他のモジュールへの公開」）。<br />
+ * 注文に公開する、出荷の API（docs/03-機能仕様/shipping.md「他のモジュールへの公開」）。<br />
  * 出荷を作るのは、呼び出し元（注文）のトランザクションに参加する。
  */
 @Component

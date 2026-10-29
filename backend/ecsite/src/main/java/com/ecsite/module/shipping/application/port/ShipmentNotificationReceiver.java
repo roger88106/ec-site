@@ -4,7 +4,7 @@ import com.ecsite.module.shipping.domain.Carrier;
 import com.ecsite.module.shipping.domain.DeliveryStatus;
 
 /**
- * 物流サービスからの通知のエンドポイント（docs/design/modules/shipping.md「通知のエンドポイント」）。<br />
+ * 物流サービスからの通知のエンドポイント（docs/03-機能仕様/shipping.md「通知のエンドポイント」）。<br />
  * 通知のエンドポイント（HTTP）が、署名を確認し、物流サービスの状態の名前を配送状態に直してから渡す。
  * 通知は重ねて届き、順序が入れ替わるので、何度受けても結果が変わらないように処理する。
  */

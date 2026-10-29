@@ -6,7 +6,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * カートの中身（docs/design/modules/cart.md「他のモジュールへの公開」）。期限切れのカートは品目が空。
+ * カートの中身（docs/03-機能仕様/cart.md「他のモジュールへの公開」）。期限切れのカートは品目が空。
  *
  * @param cartId   カート ID
  * @param memberId 会員 ID（ログインせずに作ったカートは null）。持ち主の確認に使う

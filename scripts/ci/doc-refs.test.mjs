@@ -23,11 +23,11 @@ function check(file, text) {
 
 describe('文書の参照の検査', () => {
   test('進行中の spec は見て、アーカイブした spec は見ない', () => {
-    assert.equal(isExcluded('docs/specs/019-mvp-completion/plan.md'), false)
-    assert.equal(isExcluded('docs/specs/mvp.md'), false)
-    assert.equal(isExcluded('docs/specs/archive/mvp/002-cart-and-order/spec.md'), true)
-    assert.equal(isExcluded('docs/specs/archive/mvp/mvp.md'), false)
-    assert.equal(isExcluded('docs/specs/archive/1to10/mvp.md'), true)
+    assert.equal(isExcluded('docs/08-spec/019-mvp-completion/plan.md'), false)
+    assert.equal(isExcluded('docs/08-spec/mvp.md'), false)
+    assert.equal(isExcluded('docs/08-spec/archive/mvp/002-cart-and-order/spec.md'), true)
+    assert.equal(isExcluded('docs/08-spec/archive/mvp/mvp.md'), false)
+    assert.equal(isExcluded('docs/08-spec/archive/1to10/mvp.md'), true)
     assert.equal(isExcluded('backend/ecsite/src/main/resources/db/migration/V1__a.sql'), true)
   })
 

@@ -7,7 +7,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文の状態の変化（docs/design/modules/order.md「状態遷移」）。<br />
+ * 注文の状態の変化（docs/03-機能仕様/order.md「状態遷移」）。<br />
  * 状態が変わるたびに 1 つ出る（作成の「支払待ち」を含む）。状態が変わらない操作では出ない。
  * レポートが、注文の写しを読み直すきっかけと、状態の履歴に使う。
  *

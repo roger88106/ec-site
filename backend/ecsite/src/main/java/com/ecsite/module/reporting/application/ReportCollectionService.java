@@ -21,7 +21,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 写しと状態の履歴を集めるサービス（docs/design/modules/reporting.md「写しの作り方」）。<br />
+ * 写しと状態の履歴を集めるサービス（docs/03-機能仕様/reporting.md「写しの作り方」）。<br />
  * イベントを受けるたびに、履歴に 1 行追加し、注文の API から今の写しを読み直して上書きする。
  * イベントの中身で写しを差分で直さないので、イベントが何度・どの順で届いても、写しは同じになる。
  */

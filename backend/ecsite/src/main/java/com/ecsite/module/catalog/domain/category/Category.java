@@ -18,7 +18,7 @@ import java.util.UUID;
 
 /**
  * カテゴリの Aggregate Root。<br />
- * 親カテゴリ、名称、階層の深さ、兄弟の中の表示順を持つ（docs/design/modules/catalog.md）。
+ * 親カテゴリ、名称、階層の深さ、兄弟の中の表示順を持つ（docs/03-機能仕様/catalog.md）。
  */
 @Getter
 @Accessors(fluent = true)

@@ -1,7 +1,7 @@
 package com.ecsite.module.payment.domain.payment;
 
 /**
- * 支払の状態（docs/design/modules/payment.md「状態遷移」）
+ * 支払の状態（docs/03-機能仕様/payment.md「状態遷移」）
  */
 public enum PaymentStatus {
 

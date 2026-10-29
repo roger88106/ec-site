@@ -180,7 +180,7 @@ describe('管理画面の IdP の既定値の検査', () => {
       '          VITE_OIDC_AUTHORITY: ' + workflow[0],
       '          VITE_OIDC_CLIENT_ID: ' + workflow[1],
     ].join('\n'),
-    'docs/guides/environment.md': [
+    'docs/06-手順書/environment.md': [
       '| 環境変数 | 内容 | 既定 |',
       '|----------|------|------|',
       '| `VITE_OIDC_AUTHORITY` | IdP（運営者の realm） | `' + doc[0] + '` |',
@@ -218,7 +218,7 @@ describe('管理画面の IdP の既定値の検査', () => {
   })
 
   test('他の置き場所に値がない（読めない）ときも、失敗にする', () => {
-    for (const file of ['knip.ts', 'scripts/dev/check-frontend.sh', '.github/workflows/ci.yml', 'docs/guides/environment.md']) {
+    for (const file of ['knip.ts', 'scripts/dev/check-frontend.sh', '.github/workflows/ci.yml', 'docs/06-手順書/environment.md']) {
       const input = texts()
       input[file] = ''
       const problems = compareAdminIdp(input)

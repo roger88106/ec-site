@@ -14,7 +14,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.tuple;
 
 /**
- * カートを移す処理の単体テスト（docs/design/modules/cart.md）
+ * カートを移す処理の単体テスト（docs/03-機能仕様/cart.md）
  */
 class CartMergeTest {
 

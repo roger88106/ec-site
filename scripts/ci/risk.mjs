@@ -39,7 +39,7 @@ const DECLARATION = '危険度：高'
 const DECLARATION_WORD = '危険度'
 
 /** spec.md（作業中の spec と、アーカイブのまとまりの下の spec）。大文字の違うパスも同じ所に入るので、大小を区別しない */
-const SPEC_FILE = /^docs\/specs\/(?:archive\/(?:[^/]+\/)+)?\d+-[^/]+\/spec\.md$/i
+const SPEC_FILE = /^docs\/08-spec\/(?:archive\/(?:[^/]+\/)+)?\d+-[^/]+\/spec\.md$/i
 
 /** 本文の危険度の節の見出し */
 const BODY_HEADING = /^##\s+危険度\s*$/

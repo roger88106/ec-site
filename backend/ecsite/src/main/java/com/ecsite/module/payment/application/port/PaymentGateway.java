@@ -6,7 +6,7 @@ import com.ecsite.module.payment.domain.payment.PaymentPage;
 import java.util.UUID;
 
 /**
- * 決済サービスの口（docs/design/modules/payment.md「決済サービス」）。<br />
+ * 決済サービスの口（docs/03-機能仕様/payment.md「決済サービス」）。<br />
  * 実装は mock と Stripe で、mock フラグ {@code ecsite.payment.mock.enabled} が立てば mock、なければ Stripe を使う。決済サービスの型とエラーは実装の外に出さない。
  * 売上確定を除き、どの操作も、決済サービスに接続できなければ（時間内に応えない、決済サービスの側の故障、回数の制限）、
  * 外部サービスのエラー（{@code PAYMENT_GATEWAY_UNAVAILABLE}）の {@link com.ecsite.common.error.exception.SystemException} を投げる。

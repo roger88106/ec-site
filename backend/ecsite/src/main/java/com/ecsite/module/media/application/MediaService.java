@@ -26,7 +26,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * メディアのサービス（docs/design/modules/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
+ * メディアのサービス（docs/03-機能仕様/media.md）。公開の API（`api/` の MediaApi）が委ねる先。<br />
  * ファイルは署名付き URL でブラウザーからアップロードのバケットへ直接送られ、用意のときに中身を確認し、WebP に変換して配信のバケットへ置き、登録でアセットを記録する。
  */
 @Slf4j

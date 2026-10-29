@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * アセット（docs/design/modules/media.md「アセット」）。検証して配信のバケットに置いた 1 つのファイル。
+ * アセット（docs/03-機能仕様/media.md「アセット」）。検証して配信のバケットに置いた 1 つのファイル。
  *
  * @param id         アセット ID
  * @param format     形式

@@ -1,6 +1,6 @@
 /**
  * 会員モジュール。<br />
- * IdP のアカウントと、EC の会員 ID の対応を管理する（docs/design/modules/member.md）。
+ * IdP のアカウントと、EC の会員 ID の対応を管理する（docs/03-機能仕様/member.md）。
  * メールアドレスと氏名は持たない（IdP が正本で、token から読む）。
  */
 @org.springframework.modulith.ApplicationModule(id = "member", allowedDependencies = {})

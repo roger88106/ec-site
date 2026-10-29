@@ -17,7 +17,7 @@ public record OrderPayment(Status status, Instant deadline, boolean payable,
                            @Nullable Instant authorizationDeadline, boolean authorizationExpiring) {
 
     /**
-     * 支払の状態（docs/design/modules/payment.md「状態遷移」）
+     * 支払の状態（docs/03-機能仕様/payment.md「状態遷移」）
      */
     public enum Status {
 

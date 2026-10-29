@@ -6,7 +6,7 @@ import org.springframework.boot.autoconfigure.condition.ConditionalOnBooleanProp
 import org.springframework.stereotype.Component;
 
 /**
- * mock の物流サービスの追跡（docs/design/modules/shipping.md「mock」）。<br />
+ * mock の物流サービスの追跡（docs/03-機能仕様/shipping.md「mock」）。<br />
  * 追跡を始めても、物流サービスには何も送らない。
  * テストが追跡を始めた送り状番号を確認するときは、テストで共有するソースの、この mock を包む実装が記録する。
  */

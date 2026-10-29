@@ -3,7 +3,7 @@ package com.ecsite.module.order.domain.order.vo;
 import org.jmolecules.ddd.annotation.ValueObject;
 
 /**
- * お届け先の都道府県と市区町村。コードと、注文の時点の名前の写しを持つ（docs/design/modules/order.md「注文（集約）」）。<br />
+ * お届け先の都道府県と市区町村。コードと、注文の時点の名前の写しを持つ（docs/03-機能仕様/order.md「注文（集約）」）。<br />
  * マスターデータにあるかは、注文の確定で地域の API が確認する。後でマスターデータが変わっても、写しは変えない。
  *
  * @param prefectureCode   都道府県のコード（2 桁）

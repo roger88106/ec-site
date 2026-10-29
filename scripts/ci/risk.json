@@ -3,7 +3,7 @@
   "groups": [
     {
       "name": "エージェントの規則と設定",
-      "paths": ["AGENTS.md", "docs/constitution.md", "docs/rules/", ".claude/", "scripts/ci/", "scripts/dev/hooks/", "docs/guides/branches.md"]
+      "paths": ["AGENTS.md", "docs/constitution.md", "docs/05-開発規則/", ".claude/", "scripts/ci/", "scripts/dev/hooks/", "docs/06-手順書/branches.md"]
     },
     {
       "name": "CI とリリース",
@@ -38,7 +38,7 @@
     {
       "name": "権限",
       "paths": [
-        "docs/design/role-permissions.md",
+        "docs/02-設計/role-permissions.md",
         "backend/ecsite/src/test/java/com/ecsite/contract/AdminApiPermissionContractTest.java",
         "backend/ecsite/src/test/java/com/ecsite/contract/AdminRealmPermissionContractTest.java"
       ]

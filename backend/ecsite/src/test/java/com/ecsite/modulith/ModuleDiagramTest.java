@@ -27,7 +27,7 @@ import java.util.stream.Collectors;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 全体構成の文書（docs/design/overview.md）の図とコードの一致の検証。<br />
+ * 全体構成の文書（docs/02-設計/overview.md）の図とコードの一致の検証。<br />
  * モジュールの依存とイベントの図は、Spring Modulith のモジュールの検出結果から作り、文書の生成の範囲と比べる。
  * 外部システムの図は手で書くので、図に出るモジュールの名前の一覧だけを、コードのモジュールと比べる。
  * システムプロパティ {@code ecsite.update-docs} が {@code true} なら、比べずに文書の生成の範囲を書き直す。
@@ -35,9 +35,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ModuleDiagramTest {
 
     /**
-     * 全体構成の文書（Gradle がシステムプロパティで渡す）
+     * 全体構成の文書（Gradle が system property で渡すリポジトリのルートから）
      */
-    private static final Path OVERVIEW = Contracts.path("design.overview");
+    private static final Path OVERVIEW = Contracts.path("docs/02-設計/overview.md");
 
     /**
      * 文書の生成の範囲の始まりの印

@@ -12,7 +12,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 地域のマスターデータの参照（docs/design/modules/region.md）
+ * 地域のマスターデータの参照（docs/03-機能仕様/region.md）
  */
 @Service
 @Transactional(readOnly = true)

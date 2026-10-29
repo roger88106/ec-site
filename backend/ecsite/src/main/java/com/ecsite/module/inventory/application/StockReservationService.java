@@ -24,7 +24,7 @@ import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
- * 引当のサービス（docs/design/modules/inventory.md「引当」）。<br />
+ * 引当のサービス（docs/03-機能仕様/inventory.md「引当」）。<br />
  * 呼び出し元（注文モジュール）のトランザクションに参加し、注文の成立などと同じトランザクションで在庫を扱う。
  */
 @Slf4j

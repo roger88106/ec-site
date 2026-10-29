@@ -237,7 +237,7 @@ const DELETE_BRANCH_REASON =
 
 /** 検査の省略を拒否する理由と代わりの手順 */
 const NO_VERIFY_REASON =
-  'commit の前の検査を省略しないため、--no-verify（git commit の -n を含む）は使えない（docs/guides/setup.md 第 2 節の hook）。' +
+  'commit の前の検査を省略しないため、--no-verify（git commit の -n を含む）は使えない（docs/06-手順書/setup.md 第 2 節の hook）。' +
   'hook で止まったときは、表示された問題を直して、--no-verify を付けずに実行し直す。'
 
 /** hook の置き場所の変更を拒否する理由と代わりの手順 */
@@ -266,7 +266,7 @@ const APPROVE_ONLY_IF_ALLOWED = '利用者が会話でこの操作を許可し�
 const TAG_REASON = `tag の作成と push（gh release create と、Release・tag の参照を変える gh api を含む）は、利用者の許可が必要（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`
 
 /** ruleset の変更で確認を求める理由 */
-const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は、利用者の許可が必要（docs/guides/branches.md 第 5 節）。${APPROVE_ONLY_IF_ALLOWED}`
+const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は、利用者の許可が必要（docs/06-手順書/branches.md 第 5 節）。${APPROVE_ONLY_IF_ALLOWED}`
 
 /**
  * @typedef {object} Decision hook の判定
@@ -888,7 +888,7 @@ function judgePreCommitHook(git, deps) {
   const state = text === null ? 'がない' : `が ${PRE_COMMIT_SCRIPT} を呼んでいない`
   return deny(
     `commit の前の検査を通すため、git の pre-commit hook を置いていないリポジトリでは commit できない（${hook} ${state}）。` +
-      `docs/guides/setup.md 第 2 節（hook の置き方）のとおり、このファイルに ${PRE_COMMIT_SCRIPT} を呼ぶ 1 行を書いてから commit する。`,
+      `docs/06-手順書/setup.md 第 2 節（hook の置き方）のとおり、このファイルに ${PRE_COMMIT_SCRIPT} を呼ぶ 1 行を書いてから commit する。`,
   )
 }
 

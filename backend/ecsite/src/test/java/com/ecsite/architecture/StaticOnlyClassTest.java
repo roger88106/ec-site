@@ -13,7 +13,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * インスタンスを作らないクラスの検査（docs/rules/backend-coding.md 第 5.3 節）。<br />
+ * インスタンスを作らないクラスの検査（docs/05-開発規則/backend-coding.md 第 5.3 節）。<br />
  * static でないメンバーを持たない最上位のクラスは、final にし、コンストラクタをすべて private にする。
  * コンパイルした後のクラスを読むので、Lombok で作ったコンストラクタも見える。
  */

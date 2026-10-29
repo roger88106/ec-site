@@ -1,4 +1,4 @@
-// spec のディレクトリを探す。spec は docs/specs/ の直下（進行中）か、docs/specs/archive/<まとまり>/ の下（完了してアーカイブした）にある。
+// spec のディレクトリを探す。spec は docs/08-spec/ の直下（進行中）か、docs/08-spec/archive/<まとまり>/ の下（完了してアーカイブした）にある。
 // ac-check.mjs、progress.mjs、scripts/dev/showcase-counts.mjs が使う
 import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
@@ -6,14 +6,14 @@ import path from 'node:path'
 /** spec のディレクトリの名前（<番号>-名前）。1→10 の spec は 0 で埋めない番号（7-dev-process）、MVP は 3 桁の 0 埋め（011-dev-foundation） */
 const SPEC_DIR = /^\d+-/
 
-/** アーカイブのディレクトリ（docs/specs/ から） */
+/** アーカイブのディレクトリ（docs/08-spec/ から） */
 const ARCHIVE = 'archive'
 
 /**
  * spec のディレクトリを、直下とアーカイブのまとまりの下から探す。
  *
- * @param {string} specsDir docs/specs のパス
- * @returns {{ name: string, rel: string, dir: string }[]} 名前、docs/specs からの相対パス（/ 区切り）、絶対パス。番号の順
+ * @param {string} specsDir docs/08-spec のパス
+ * @returns {{ name: string, rel: string, dir: string }[]} 名前、docs/08-spec からの相対パス（/ 区切り）、絶対パス。番号の順
  */
 export function listSpecDirs(specsDir) {
   const parents = ['']
@@ -38,7 +38,7 @@ export function listSpecDirs(specsDir) {
 /**
  * MVP の完成までの一覧を探す。直下になければ、アーカイブのまとまりの下から探す。
  *
- * @param {string} specsDir docs/specs のパス
+ * @param {string} specsDir docs/08-spec のパス
  * @returns {string | null} 一覧のパス。なければ null
  */
 export function findMvpList(specsDir) {

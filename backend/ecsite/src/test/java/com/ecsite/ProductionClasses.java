@@ -40,7 +40,7 @@ public final class ProductionClasses {
 
     /**
      * レベル A のモジュール（バックエンドのアーキテクチャ 第 2 節）。<br />
-     * docs/design/modules の各設計書の「レベル」と一致することは、{@code ProductionClassesTest} が確認する。
+     * docs/03-機能仕様 の各設計書の「レベル」と一致することは、{@code ProductionClassesTest} が確認する。
      */
     public static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order", "payment");
 

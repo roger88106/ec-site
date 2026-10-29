@@ -9,7 +9,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 注文手続き（docs/design/modules/order.md「注文手続き」）。カートから注文に進んだ 1 回の手続きで、引当の持ち主になる。<br />
+ * 注文手続き（docs/03-機能仕様/order.md「注文手続き」）。カートから注文に進んだ 1 回の手続きで、引当の持ち主になる。<br />
  * 作った後は変わらない。
  *
  * @param id          注文手続き ID（引当の持ち主 ID）

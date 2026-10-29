@@ -199,15 +199,12 @@ val unitTestMaxHeap = "768m"
 // 単体テストの JVM の systemProperty。test の task と pitest で同じ値を使う（ないと、設定を読むテストが PIT で失敗する）。
 //   openapi.dir：契約テスト（AdminApiPermissionContractTest など）が読む OpenAPI の置き場所
 //   keycloak.realms.dir：契約テスト（AdminRealmPermissionContractTest など）が読む realm の設定の置き場所
-//   design.overview：図をコードと比べる文書（ModuleDiagramTest）
-//   design.modules.dir：モジュールの設計書の置き場所（ProductionClassesTest が、レベル A の一覧を設計書と比べる）
-//   rules.backend-coding：バックエンドの書き方（ModuleStructureTest が、目安を超えるパッケージの表をコードと比べる）
+//   repo.root：リポジトリのルート。文書と比べるテスト（ModuleDiagramTest、ProductionClassesTest、ModuleStructureTest）が、
+//     ソースに書いた相対パスで文書を読む（Contracts.path）。文書のパスを渡さないのは、Windows では system property の日本語が文字化けするため
 val unitTestSystemProperties = mapOf(
     "openapi.dir" to file("../../api/openapi").absolutePath,
     "keycloak.realms.dir" to file("../../docker/keycloak/realms").absolutePath,
-    "design.overview" to file("../../docs/design/overview.md").absolutePath,
-    "design.modules.dir" to file("../../docs/design/modules").absolutePath,
-    "rules.backend-coding" to file("../../docs/rules/backend-coding.md").absolutePath,
+    "repo.root" to file("../..").absolutePath,
 )
 
 tasks.named<Test>("test") {
@@ -216,9 +213,9 @@ tasks.named<Test>("test") {
     unitTestSystemProperties.forEach { (key, value) -> systemProperty(key, value) }
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
-    inputs.files(fileTree("../../docs/design") { include("overview.md") })
-    inputs.dir("../../docs/design/modules")
-    inputs.file("../../docs/rules/backend-coding.md")
+    inputs.files(fileTree("../../docs/02-設計") { include("overview.md") })
+    inputs.dir("../../docs/03-機能仕様")
+    inputs.file("../../docs/05-開発規則/backend-coding.md")
     // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
     if (project.hasProperty("updateDocs")) {
         systemProperty("ecsite.update-docs", "true")
@@ -406,9 +403,9 @@ pitest {
 tasks.named("pitest") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
-    inputs.files(fileTree("../../docs/design") { include("overview.md") })
-    inputs.dir("../../docs/design/modules")
-    inputs.file("../../docs/rules/backend-coding.md")
+    inputs.files(fileTree("../../docs/02-設計") { include("overview.md") })
+    inputs.dir("../../docs/03-機能仕様")
+    inputs.file("../../docs/05-開発規則/backend-coding.md")
 }
 
 // -----------------------------------------------------------------------------
@@ -811,7 +808,7 @@ tasks.withType<JavaCompile>().configureEach {
         }
         // NullAway は main のコンパイルだけ動かし、報告はエラーにする。
         // 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
-        // （docs/rules/backend-coding.md 第 7 節）。
+        // （docs/05-開発規則/backend-coding.md 第 7 節）。
         if (name == "compileJava") {
             check("NullAway", CheckSeverity.ERROR)
             // com.ecsite.jooq（jOOQ の生成）と com.ecsite.api（OpenAPI の生成）は、注釈のない生成コードとして扱う

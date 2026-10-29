@@ -3,7 +3,7 @@ package com.ecsite.module.shipping.domain;
 import java.util.Locale;
 
 /**
- * 配送業者（docs/design/modules/shipping.md「配送業者」）。運営者が出荷のときに、決まった一覧から選ぶ。
+ * 配送業者（docs/03-機能仕様/shipping.md「配送業者」）。運営者が出荷のときに、決まった一覧から選ぶ。
  */
 public enum Carrier {
 

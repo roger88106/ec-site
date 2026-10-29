@@ -17,7 +17,7 @@ import java.time.Duration;
 import java.time.Instant;
 
 /**
- * mock の物流サービス（docs/design/modules/shipping.md「mock」）。<br />
+ * mock の物流サービス（docs/03-機能仕様/shipping.md「mock」）。<br />
  * 署名付きの通知を作り、HTTP で通知のエンドポイントに送る。本物の物流サービスと同じ道（署名の検証を含む）を通す。
  * mock の画面のボタンと、テストのコードが使う。通知の重複は同じ通知を重ねて送り、順序の入れ替わりと途中の欠けは
  * 送る順序と内容を選び、署名の誤りと合わない送り状番号は、通知を作る口で選べる。

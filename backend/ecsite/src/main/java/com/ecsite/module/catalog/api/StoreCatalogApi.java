@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 店舗向けの商品カタログの API（docs/design/modules/catalog.md「他のモジュールへの公開」）。<br />
+ * 店舗向けの商品カタログの API（docs/03-機能仕様/catalog.md「他のモジュールへの公開」）。<br />
  * 対象は C 側に表示される商品だけ。価格は税込・税抜の両方を返す。
  */
 @Component

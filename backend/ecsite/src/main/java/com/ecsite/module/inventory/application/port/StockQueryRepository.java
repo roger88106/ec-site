@@ -26,7 +26,7 @@ public interface StockQueryRepository {
 
     /**
      * バリアントの調整履歴を取得する。<br />
-     * 調整日時の新しい順。同じ日時なら記録した順の新しい順（docs/design/modules/inventory.md）。
+     * 調整日時の新しい順。同じ日時なら記録した順の新しい順（docs/03-機能仕様/inventory.md）。
      *
      * @param variantId バリアント ID
      * @param request   ページの指定

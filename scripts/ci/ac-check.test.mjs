@@ -235,7 +235,7 @@ describe('AC 一覧', () => {
     assert.match(markdown, /^\| AC \| 要約 \| 状態 \| 元の spec \| 変えた spec \| 今の内容 \| テスト \|$/m)
     assert.match(
       markdown,
-      /^\| AC-1 \| 税区分を名称で登録できる。 \| 有効 \| \[001\]\(\.\.\/specs\/001-catalog-and-inventory\/spec\.md\) \| — \| spec \| `TaxApiTest`、`tax\.spec\.ts` \|$/m,
+      /^\| AC-1 \| 税区分を名称で登録できる。 \| 有効 \| \[001\]\(\.\.\/08-spec\/001-catalog-and-inventory\/spec\.md\) \| — \| spec \| `TaxApiTest`、`tax\.spec\.ts` \|$/m,
     )
     assert.match(markdown, /^\| AC-2 \| .* \| 変更 \| .* \| \[016\]\(\.\.\/specs\/016-master-data\) \| \[税モジュール\]\(\.\.\/backend\/modules\/tax\.md\) \| 除外 \|$/m)
   })
@@ -243,7 +243,7 @@ describe('AC 一覧', () => {
   test('アーカイブの spec の AC は、元の spec のリンクをアーカイブのパスにする', () => {
     const archived = parseSpecAcDefinitions('- **AC-1** 一つ目。', '001-catalog-and-inventory', 'archive/mvp/001-catalog-and-inventory')
     const markdown = renderAcList({ definitions: archived, previous: new Map(), testFiles: new Map(), exclusions: {} })
-    assert.match(markdown, /\| \[001\]\(\.\.\/specs\/archive\/mvp\/001-catalog-and-inventory\/spec\.md\) \|/)
+    assert.match(markdown, /\| \[001\]\(\.\.\/08-spec\/archive\/mvp\/001-catalog-and-inventory\/spec\.md\) \|/)
   })
 
   test('テストのファイルは 3 つまで書き、残りは数を書く。テストも除外もなければ「なし」', () => {
@@ -395,7 +395,7 @@ describe('1→10 の AC（AC-n-m）', () => {
   test('AC 一覧：新しい形の行を作り、元の spec のリンクは 0 埋めのない番号でも書ける。手で書く列を読み戻せる', () => {
     const definitions = parseSpecAcDefinitions('- **AC-12** 一つ目。\n- **AC-7-2** 三つ目。\n- **AC-7-1** 二つ目。', '7-dev-process')
     const markdown = renderAcList({ definitions, previous: new Map(), testFiles: new Map([['7-1', ['a/A.java']]]), exclusions: {} })
-    assert.match(markdown, /^\| AC-7-1 \| 二つ目。 \| 有効 \| \[7\]\(\.\.\/specs\/7-dev-process\/spec\.md\) \| — \| spec \| `A` \|$/m)
+    assert.match(markdown, /^\| AC-7-1 \| 二つ目。 \| 有効 \| \[7\]\(\.\.\/08-spec\/7-dev-process\/spec\.md\) \| — \| spec \| `A` \|$/m)
     assert.ok(markdown.indexOf('| AC-12 |') < markdown.indexOf('| AC-7-1 |'))
     assert.ok(markdown.indexOf('| AC-7-1 |') < markdown.indexOf('| AC-7-2 |'))
     assert.deepEqual(parseAcList(markdown).get('7-1'), { status: '有効', changedBy: '—', location: 'spec' })

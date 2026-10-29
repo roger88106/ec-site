@@ -7,7 +7,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文の腐敗防止層の口（バックエンドのアーキテクチャ 第 1 節、docs/design/modules/storefront.md）。<br />
+ * 注文の腐敗防止層の口（バックエンドのアーキテクチャ 第 1 節、docs/03-機能仕様/storefront.md）。<br />
  * カートの見積もりを、店舗の型で返す。
  */
 public interface OrderDirectory {

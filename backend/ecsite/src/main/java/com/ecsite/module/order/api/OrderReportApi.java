@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * レポートに公開する、レポート用の注文の写しの API（docs/design/modules/order.md「他のモジュールへの公開」）。<br />
+ * レポートに公開する、レポート用の注文の写しの API（docs/03-機能仕様/order.md「他のモジュールへの公開」）。<br />
  * レポートは、注文の状態の変化のイベントを受けるたびに、ここで今の写しを読み直す。
  */
 @Component

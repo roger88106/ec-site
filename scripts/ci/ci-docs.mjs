@@ -1,4 +1,4 @@
-// CI の検査の文書（docs/guides/ci.md）の第 3 節の表と、scripts/ci/ の直下の検査が 1 対 1 に対応することを確認する。
+// CI の検査の文書（docs/06-手順書/ci.md）の第 3 節の表と、scripts/ci/ の直下の検査が 1 対 1 に対応することを確認する。
 // - 直下の検査：*.test.mjs 以外の *.mjs（check-all.sh が引数なしで実行するもの）
 // - 表：第 3 節の最初の表（第 3.1 節より前）の 1 列目の名前（`ac-check` など）
 // 表にない検査と、検査のない表の行の両方を失敗にする。
@@ -8,7 +8,7 @@ import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 
 /** CI の検査の文書 */
-const DOC = 'docs/guides/ci.md'
+const DOC = 'docs/06-手順書/ci.md'
 
 /** 検査を置くディレクトリ */
 const CHECK_DIR = 'scripts/ci/'

@@ -13,44 +13,35 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
  */
 class ContractsTest {
 
-    /**
-     * 名前で読む操作のテストが、値を入れたり消したりする system property の名前（Gradle が渡す名前とは別）
-     */
-    private static final String UNSET_PROPERTY = "ecsite.contracts-test.path";
-
     @Test
-    @DisplayName("system property が渡されないとき、名前で読む操作は property の名前を示して失敗する")
-    void pathFailsWithoutProperty() {
-        System.clearProperty(UNSET_PROPERTY);
-
-        assertThatThrownBy(() -> Contracts.path(UNSET_PROPERTY))
+    @DisplayName("リポジトリのルートが渡されないとき、相対パスで読む操作は property の名前を示して失敗する")
+    void pathFailsWithoutRoot() {
+        assertThatThrownBy(() -> Contracts.resolve("repo.root", null, "docs/02-設計/overview.md"))
                 .isInstanceOf(IllegalStateException.class)
-                .hasMessageContaining(UNSET_PROPERTY)
+                .hasMessageContaining("repo.root")
                 .hasMessageContaining("build.gradle.kts");
     }
 
     @Test
-    @DisplayName("system property が空のとき、名前で読む操作は失敗する")
-    void pathFailsWithBlankProperty() {
-        System.setProperty(UNSET_PROPERTY, " ");
-        try {
-            assertThatThrownBy(() -> Contracts.path(UNSET_PROPERTY))
-                    .isInstanceOf(IllegalStateException.class)
-                    .hasMessageContaining(UNSET_PROPERTY);
-        } finally {
-            System.clearProperty(UNSET_PROPERTY);
-        }
+    @DisplayName("リポジトリのルートが空のとき、相対パスで読む操作は失敗する")
+    void pathFailsWithBlankRoot() {
+        assertThatThrownBy(() -> Contracts.resolve("repo.root", " ", "docs/02-設計/overview.md"))
+                .isInstanceOf(IllegalStateException.class)
+                .hasMessageContaining("repo.root");
     }
 
     @Test
-    @DisplayName("system property が渡されたとき、名前で読む操作はその値を返す")
-    void pathReturnsGivenValue() {
-        System.setProperty(UNSET_PROPERTY, "/docs/overview.md");
-        try {
-            assertThat(Contracts.path(UNSET_PROPERTY)).isEqualTo(Path.of("/docs/overview.md"));
-        } finally {
-            System.clearProperty(UNSET_PROPERTY);
-        }
+    @DisplayName("リポジトリのルートが渡されたとき、相対パスで読む操作はルートに相対パスをつないだ置き場所を返す")
+    void pathResolvesUnderRoot() {
+        assertThat(Contracts.resolve("repo.root", "/repo", "docs/02-設計/overview.md"))
+                .isEqualTo(Path.of("/repo", "docs", "02-設計", "overview.md"));
+    }
+
+    @Test
+    @DisplayName("Gradle が渡したリポジトリのルートで、日本語を含む相対パスの文書が読める")
+    void pathFindsDocumentFromGradleProperty() {
+        assertThat(Contracts.path("docs/02-設計/overview.md")).isRegularFile();
+        assertThat(Contracts.path("docs/03-機能仕様")).isDirectory();
     }
 
     @Test

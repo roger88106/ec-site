@@ -10,7 +10,7 @@ import org.springframework.stereotype.Service;
 import java.util.UUID;
 
 /**
- * 注文の支払画面のサービス（docs/design/modules/order.md「支払」）。<br />
+ * 注文の支払画面のサービス（docs/03-機能仕様/order.md「支払」）。<br />
  * 決済サービスを呼ぶので、トランザクションを持たない（支払画面を作る間、注文の行ロックを持たない）。
  */
 @Service

@@ -9,7 +9,7 @@ import java.util.List;
 import java.util.UUID;
 
 /**
- * レポート用の注文の写し（docs/design/modules/order.md「他のモジュールへの公開」）。<br />
+ * レポート用の注文の写し（docs/03-機能仕様/order.md「他のモジュールへの公開」）。<br />
  * 氏名、住所、電話番号、メールアドレスは載せない。お届け先は郵便番号と都道府県だけ。
  *
  * @param orderId          注文 ID

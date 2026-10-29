@@ -9,7 +9,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 引当のリポジトリ（docs/design/modules/inventory.md「引当」）。<br />
+ * 引当のリポジトリ（docs/03-機能仕様/inventory.md「引当」）。<br />
  * 同じ在庫への引当を 1 つずつ処理するため、判定の前に在庫を行ロックする。
  */
 public interface StockReservationRepository {

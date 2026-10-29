@@ -5,7 +5,7 @@ import com.ecsite.module.shipping.domain.Carrier;
 import java.time.Instant;
 
 /**
- * 物流サービスの通知の本文（docs/design/modules/shipping.md「通知のエンドポイント」）。
+ * 物流サービスの通知の本文（docs/03-機能仕様/shipping.md「通知のエンドポイント」）。
  *
  * @param carrier        配送業者
  * @param trackingNumber 送り状番号

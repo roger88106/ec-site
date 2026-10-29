@@ -17,7 +17,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの公開の API（{@code api/}）の型の検査（docs/rules/backend-coding.md 第 1.1 節）。<br />
+ * モジュールの公開の API（{@code api/}）の型の検査（docs/05-開発規則/backend-coding.md 第 1.1 節）。<br />
  * {@code api/} は interface を持たないクラスで、{@code api/} の型を {@code api/} の外が実装・継承しない。
  * record と列挙は interface でないので対象にならない。
  */

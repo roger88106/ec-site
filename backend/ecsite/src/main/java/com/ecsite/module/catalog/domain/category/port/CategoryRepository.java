@@ -23,7 +23,7 @@ public interface CategoryRepository {
 
     /**
      * 子カテゴリをすべて取得し、トランザクションの終わりまでロックする。<br />
-     * 並び順の同時の変更を直列にするため、ID の順にロックする（docs/design/modules/catalog.md）。
+     * 並び順の同時の変更を直列にするため、ID の順にロックする（docs/03-機能仕様/catalog.md）。
      *
      * @param parentId 親カテゴリ ID。最上位なら null
      * @return 子カテゴリの一覧

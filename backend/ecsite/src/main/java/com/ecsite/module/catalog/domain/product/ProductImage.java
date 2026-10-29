@@ -8,7 +8,7 @@ import java.util.UUID;
 
 /**
  * 商品画像（商品集約の一部）。<br />
- * ファイルはメディアモジュールのアセットで、ここにはアセット ID だけを持つ（docs/design/modules/catalog.md「商品画像」）。
+ * ファイルはメディアモジュールのアセットで、ここにはアセット ID だけを持つ（docs/03-機能仕様/catalog.md「商品画像」）。
  *
  * @param id           画像 ID
  * @param assetId      メディアモジュールのアセット ID

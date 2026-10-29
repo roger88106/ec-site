@@ -15,7 +15,7 @@ import java.util.UUID;
 
 /**
  * 在庫調整。増減量、調整理由、メモを持つ。注文に由来する調整は、注文 ID と注文番号の写しを持つ。<br />
- * 在庫数が負にならないことは、ここではなく、リポジトリの条件付きの更新と DB の CHECK 制約で守る（docs/design/modules/inventory.md）。
+ * 在庫数が負にならないことは、ここではなく、リポジトリの条件付きの更新と DB の CHECK 制約で守る（docs/03-機能仕様/inventory.md）。
  *
  * @param id         在庫調整 ID
  * @param delta      増減量（0 以外）

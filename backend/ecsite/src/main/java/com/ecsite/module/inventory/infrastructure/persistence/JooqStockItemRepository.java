@@ -57,7 +57,7 @@ class JooqStockItemRepository implements StockItemRepository {
     }
 
     /**
-     * 在庫数に増減量を加え、調整履歴を記録する（docs/design/modules/inventory.md）。<br />
+     * 在庫数に増減量を加え、調整履歴を記録する（docs/03-機能仕様/inventory.md）。<br />
      * 更新されなかったら、「負になる」「運営者の調整で上限を超える」「在庫がない」のどれかなので、増減量と今の在庫数でエラーを分ける。
      *
      * @param variantId  バリアント ID
@@ -105,7 +105,7 @@ class JooqStockItemRepository implements StockItemRepository {
     }
 
     /**
-     * 調整が更新されなかったときのエラーを選ぶ（docs/design/modules/inventory.md）。<br />
+     * 調整が更新されなかったときのエラーを選ぶ（docs/03-機能仕様/inventory.md）。<br />
      * 増やす調整は、上限を超えるときのほかは在庫があれば必ず更新されるので、上限を超えないなら更新の時点で在庫がなかったことになる。
      * 更新の後に作られた在庫は在庫数 0 なので、上限を超えない（運営者の 1 回の増減量は上限以下）。「負になる」「上限を超える」と誤らない。
      *

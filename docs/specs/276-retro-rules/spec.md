@@ -207,7 +207,7 @@ milestone「整理の段階」の spec である。追跡の issue は [#276](ht
 - 完了条件：DC-276-1〜18 を満たし、DN-276-1〜4 を守る。
 - 参照：第 1 節、第 3 節、第 6 節、skill `docs`、skill `writing-for-agents`
 
-- [ ] **T276-01-01** 作業ツリーのセッションが読む場所と効く時点を、`claude -p` で確認する（DC-276-4、5）。
+- [x] **T276-01-01** 作業ツリーのセッションが読む場所と効く時点を、`claude -p` で確認する（DC-276-4、5）。
   - 依存：なし
   - 範囲：第 9 節（確認の記録）。本 spec の作業ツリーと、スクラッチパッドの確認用のリポジトリ（DN-276-2、3）
   - 方法：一時の設定（SessionStart の hook で決まった文字列を出力する）、一時の定義、一時の skill を、作業ツリーにだけ置く。作業ツリーで起動した `claude -p` が、それらを読むかを調べる。起動の後に変えたものが、同じ実行の中で反映されるかも調べる。
@@ -264,6 +264,49 @@ milestone「整理の段階」の spec である。追跡の issue は [#276](ht
 ## 9. 作業の記録
 
 T276-01-01 と T276-01-09 の確認の結果を、ここに書く。
+
+### T276-01-01 `claude -p` での確認（2026-10-29）
+
+Claude Code 2.1.309。スクラッチパッドに確認用のリポジトリを作り、メインの作業ツリーと、`git worktree add` で作った作業ツリーに、別の印を持つ設定・定義・skill を置いた。
+
+| 置いたもの | メインの作業ツリー | 作業ツリー |
+|------------|--------------------|------------|
+| `settings.json`（commit した） | SessionStart の hook で `MARK-M-SETTINGS` を出力する | `MARK-W-SETTINGS` を出力する |
+| `settings.local.json`（Git に入らない） | `MARK-M-LOCAL` を出力する | `MARK-W-LOCAL` を出力する |
+| `.claude/agents/` | `m-agent` | `w-agent`（`m-agent` は削除した） |
+| `.claude/skills/` | `m-skill` | `w-skill`（`m-skill` は削除した） |
+
+起動の時に読むもの（`claude -p --model claude-haiku-5-5 --permission-mode default`。文脈の印と、Agent・Skill のツールが示す名前を答えさせた）：
+
+| 起動したディレクトリ | 文脈の印 | 定義 | skill |
+|----------------------|----------|------|-------|
+| メインの作業ツリー | `MARK-M-SETTINGS`、`MARK-M-LOCAL` | `m-agent` | `m-skill` |
+| 作業ツリー | `MARK-W-SETTINGS`、`MARK-W-LOCAL` | `w-agent` | `w-skill` |
+| 作業ツリー（`settings.local.json` を退けた） | `MARK-W-SETTINGS` だけ | `w-agent` | `w-skill` |
+
+- 作業ツリーで起動した `claude -p` は、その作業ツリーの 4 つを読み、メインの作業ツリーのものを読まない。作業ツリーに `settings.local.json` がなくても、メインの作業ツリーのものに戻らない。
+- spec 247 の確認（アプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む）と違う。アプリのセッションの起動の仕方による違いとみられるが、新しいセッションでしか確認できない（T276-01-09）。
+
+起動の後に変えたもの（作業ツリーで起動した `claude -p` の中で、許可した Bash から script を実行して足した）：
+
+| 足したもの | 足した直後 | 10 秒の後 |
+|------------|------------|-----------|
+| `.claude/skills/n-skill/` | Skill のツールが「Unknown skill」。続けて呼び直すと読めた | 読めた |
+| `.claude/agents/n-agent.md` | Agent のツールが「not found」 | 「not found」のまま |
+| `settings.json` の PreToolUse の hook | 次の Bash を止めた | — |
+| `settings.local.json` の PreToolUse の hook | 次の Bash を止めなかった | 止めなかった |
+
+- skill は動いているセッションでも数秒で読まれる。定義は新しいセッションを起動するまで読まれない。
+- `settings.json` の hook の変更は、動いているセッションにすぐ反映される。`settings.local.json` の変更は反映されない。AGENTS.md の環境の節の「設定はセッションの開始のときに読まれる」は、`settings.local.json` にだけ当たる。
+- Claude Code の Write のツールは、`.claude/` の下への書き込みを `--allowedTools Write` でも拒否した。そのため、ファイルは許可した Bash から script で足した。
+
+新しいセッションでしか確認できない組（未確認。T276-01-09 で確認する）：
+
+| 組 | 理由 |
+|----|------|
+| アプリの作業ツリーのセッションの `settings.json`・`agents/`・`skills/` | アプリが作業ツリーのセッションを起動する仕方は、`claude -p` で再現できない。`settings.local.json` は spec 247 で確認済み（メインの作業ツリーのもの） |
+| メインの作業ツリーで起動し、手動の作業ツリーで作業するアプリのセッション | 起動の時の読み方は、メインの作業ツリーで起動した `claude -p` と同じと見込む。アプリのセッションで同じかは未確認 |
+| アプリのセッションで、起動の後に変えたものの反映 | 上の表は `claude -p` の結果 |
 
 ### spec の確認の前のレビュー（2026-10-29）
 

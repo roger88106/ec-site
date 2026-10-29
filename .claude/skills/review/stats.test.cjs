@@ -243,10 +243,20 @@ test('段階 1 と段階 2 は別の時点として扱い、重複を除く行�
   assert.equal(stage.high, 3 + 1)
 })
 
-test('重複を除く行がなく、行が 2 つ以上ある時点の数を警告として出す（行が 1 つだけの時点は数えない）', () => {
+test('重複を除く行がなく、行が 2 つ以上ある組の数を警告として出す（行が 1 つだけの組は数えない）', () => {
   const result = aggregate(readReviewRows(DEDUP_TABLE))
-  assert.equal(result.noDedupTimes, 1)
-  assert.match(formatReport({ round: '1', profile: 'p', specs: ['1'] }, result), /重複を除く行がない時点の数：1/)
+  assert.equal(result.noDedupGroups, 1)
+  assert.match(formatReport({ round: '1', profile: 'p', specs: ['1'] }, result), /重複を除く行がない組（表・時点・回数）の数：1/)
+})
+
+test('回 1・回 2 とも 2 人で重複を除く行がない時点は、組を 2 と数える', () => {
+  const result = aggregate(roundsTable(
+    '| 段階 1 | 網羅性 | 汎用 | 1 | 100 | 1m | 0 | 1 | 0 | 1 |',
+    '| 段階 1 | 規則 | 汎用 | 1 | 100 | 1m | 0 | 1 | 0 | 1 |',
+    '| 段階 1 | 網羅性 | 汎用 | 2 | 100 | 1m | 0 | 1 | 0 | 1 |',
+    '| 段階 1 | 規則 | 汎用 | 2 | 100 | 1m | 0 | 1 | 0 | 1 |',
+  ))
+  assert.equal(result.noDedupGroups, 2)
 })
 
 test('重複を除く行は、同じ表の中の同じ時点にだけ適用され、別の表の同じ時点には適用されない', () => {
@@ -273,7 +283,7 @@ test('1 回目だけに重複を除く行があるとき、2 回目の行の値�
   assert.equal(last.must, 2)
   assert.equal(last.adopted, 3)
   assert.equal(last.rows, 3)
-  assert.equal(result.noDedupTimes, 0)
+  assert.equal(result.noDedupGroups, 0)
 })
 
 test('回数 1・2 の両方に重複を除く行があるとき、後の行は前の行を上書きしない', () => {
@@ -297,8 +307,56 @@ test('レビュー役が 1 人で 2 回の時点は、重複を除く行がな�
     '| 段階 1 | 網羅性 | 汎用 | 2 | 100 | 1m | 0 | 1 | 0 | 1 |',
   )
   const result = aggregate(rows)
-  assert.equal(result.noDedupTimes, 0)
+  assert.equal(result.noDedupGroups, 0)
   assert.equal(result.byTime[0].must, 3)
+})
+
+/** 関数の実行中に標準エラーへ出た警告を集める。 */
+function captureErrors(fn) {
+  const original = console.error
+  const messages = []
+  console.error = (m) => messages.push(String(m))
+  try {
+    fn()
+  } finally {
+    console.error = original
+  }
+  return messages
+}
+
+test('同じ組に重複を除く行が 2 つ以上あるとき、ファイル名を付けて警告し、値は合計する', () => {
+  const text = [
+    HEADER,
+    SEP,
+    '| 段階 1 | 網羅性 | 汎用 | 1 | 100 | 1m | 1 | 0 | 0 | 0 |',
+    '| 段階 1 | 重複を除く | — | 1 | — | — | 1 | 0 | 0 | 0 |',
+    '| 段階 1 | 重複を除く | — | 1 | — | — | 2 | 0 | 0 | 0 |',
+    '| 段階 1 | 重複を除く | — | 2 | — | — | 5 | 0 | 0 | 0 |',
+  ].join('\n')
+  let rows
+  const messages = captureErrors(() => { rows = readReviewRows(text, 'a/b.md') })
+  assert.equal(messages.length, 1)
+  assert.ok(messages[0].includes('a/b.md'))
+  assert.equal(aggregate(rows).byTime[0].high, 8)
+})
+
+test('回数が数で読めない行は「?」の組にまとめ、読める回とは混ぜない', () => {
+  const result = aggregate(roundsTable(
+    '| 段階 1 | 網羅性 | 汎用 | 1 | 100 | 1m | 0 | 1 | 0 | 1 |',
+    '| 段階 1 | 網羅性 | 汎用 | — | 100 | 1m | 0 | 1 | 0 | 1 |',
+    '| 段階 1 | 規則 | 汎用 | — | 100 | 1m | 0 | 1 | 0 | 1 |',
+    '| 段階 1 | 重複を除く | — | 1 | — | — | 0 | 1 | 0 | 1 |',
+  ))
+  // 回 1 は重複を除く行の 1、「?」の組は 2 人の行を合計して 2（警告に数える）
+  assert.equal(result.byTime[0].must, 3)
+  assert.equal(result.noDedupGroups, 1)
+})
+
+test('重複を除く行の回数が数で読めないとき、ファイル名を付けて警告する', () => {
+  const text = [HEADER, SEP, '| 段階 1 | 重複を除く | — | — | — | — | 1 | 0 | 0 | 0 |'].join('\n')
+  const messages = captureErrors(() => readReviewRows(text, 'c/d.md'))
+  assert.equal(messages.length, 1)
+  assert.ok(messages[0].includes('c/d.md'))
 })
 
 test('観点の列のバッククォートを除いて、重複を除く行を見分ける', () => {

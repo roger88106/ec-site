@@ -60,7 +60,7 @@ services:
 
   # 画像のバケット、CORS、公開の設定、ライフサイクル規則を作り、seed の商品画像を写して終わる
   seaweedfs-init:
-    image: amazon/aws-cli:2.38.1
+    image: amazon/aws-cli:2.38.4
     container_name: ec-site-seaweedfs-init
     depends_on:
       seaweedfs:
@@ -83,7 +83,7 @@ services:
   # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 第 7.5 節）。http://localhost:8081
   # アップロードのバケット（ローカル用、E2E 用、スロット 1〜3 の受付）だけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
   imgproxy:
-    image: darthsim/imgproxy:v4.0.18
+    image: darthsim/imgproxy:v4.0.19
     container_name: ec-site-imgproxy
     depends_on:
       seaweedfs:
@@ -187,7 +187,7 @@ services:
   # Stripe の sandbox の通知を、ローカルのバックエンド（8080）へ送る。profile stripe のときだけ起動する
   # （docs/06-手順書/setup.md「Stripe で動かす」）。鍵は Git に入れない /.local/stripe.env から読む
   stripe-cli:
-    image: stripe/stripe-cli:v1.54.0
+    image: stripe/stripe-cli:v1.55.0
     container_name: ec-site-stripe-cli
     profiles: [stripe]
     env_file:

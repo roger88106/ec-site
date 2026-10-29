@@ -230,7 +230,7 @@ milestone「整理の段階」の spec である。追跡の issue は [#276](ht
   - 依存：なし
   - 範囲：`docs/rules/subagents.md`（第 3 節の profile の表、第 4 節の危険度の箇条）、`docs/rules/subagents-results.md`（第 6 節）、skill `review` の SKILL.md（使う場面の表）
   - 確認方法：`git grep 判定器` が、アーカイブした spec 以外で 0 件。
-- [ ] **T276-01-07** 利用者の確認の前と起票の前に校閲役に読ませる規則を書く（DC-276-16〜18）。
+- [x] **T276-01-07** 利用者の確認の前と起票の前に校閲役に読ませる規則を書く（DC-276-16〜18）。
   - 依存：なし
   - 範囲：`docs/rules/workflow.md` 第 5.1 節、skill `review`（SKILL.md、docs-review.md）、skill `sessions`
 - [ ] **T276-01-08** 文書のレビュー（skill `review` の手順 8・9）を行い、指摘を修正する。

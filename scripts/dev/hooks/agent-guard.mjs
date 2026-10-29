@@ -14,7 +14,8 @@
 // - マージ：gh pr merge のうち、利用者の許可なしにマージしてよい条件（AGENTS.md の Git の表）を満たさないもの。
 //   条件は gh で pull request を読んで調べ、読めないときも確認を求める。未解決の指摘が 0 かは読めないので見ない（文章の規則のまま）。
 //   予約のマージ（gh pr merge --auto、GraphQL の enablePullRequestAutoMerge）でも確認を求める。
-//   ファイルから読む GraphQL の本文を読めないときも、確認を求める
+//   GraphQL の本文を読めないとき（ファイルから読む本文、シェルの展開を含む query の値）も、確認を求める。
+//   シェルの展開を含む値も、読める部分に mergePullRequest があれば拒否する。GraphQL の変数（query 以外のキー）の展開は見ない
 // - tag：git tag での作成、git push の --tags・--follow-tags・tag の refspec（tag の削除を含む）、gh release create、
 //   Release と tag の参照を変える gh api（GET 以外のリクエストで、パスが releases・git/refs・git/tags のもの）
 // - ruleset：ruleset とブランチの保護を変える gh api（GET 以外のリクエスト）
@@ -1035,7 +1036,9 @@ function flagEnabled(options, name) {
 /**
  * gh api graphql の本文を集める。-f・--raw-field の値はそのまま、-F・--field の値は `@<ファイル>` ならファイルの中身、--input はファイルの中身を読む。
  * ファイルは対象のディレクトリからの相対パスで読み、`-`（標準入力）と読めないファイルは、読めないものとして返す。
- * -f・-F の値がシェルの展開（変数、`$(…)`、バッククォート）を含むときも、中身が分からないので、読めないものとして返す。
+ * -f・-F の値がシェルの展開（変数、`$(…)`、バッククォート）を含むときも、展開の前の文字列を本文に入れる（読める部分に mergePullRequest があれば拒否するため）。
+ * そのうえで、キー（最初の `=` の前）が `query` の値なら、展開の後の中身が分からないので、読めないものとしても返す。
+ * `query` 以外のキーの値は GraphQL の変数で、操作にならないので、展開を含んでも読めないものにしない。
  *
  * @param {{ name: string, value: string }[]} options gh api のオプション
  * @param {GhInvocation} gh gh の呼び出し
@@ -1056,11 +1059,14 @@ function graphqlBodies(options, gh, deps) {
     if (name === 'input') {
       read(value)
     } else if (name === 'raw-field' || name === 'field') {
-      const fieldValue = value.slice(value.indexOf('=') + 1)
-      if (expands(value)) unreadable.push(`シェルが展開する ${name === 'field' ? '-F' : '-f'} の値`)
-      // -F（--field）だけが、@ で始まる値をファイルの中身に置き換える
-      else if (name === 'field' && fieldValue.startsWith('@')) read(fieldValue.slice(1))
+      const separator = value.indexOf('=')
+      const key = separator === -1 ? value : value.slice(0, separator)
+      const fieldValue = value.slice(separator + 1)
+      const expanded = expands(value)
+      // -F（--field）だけが、@ で始まる値をファイルの中身に置き換える。展開を含むファイルの名前は、どのファイルか分からないので読まない
+      if (name === 'field' && fieldValue.startsWith('@') && !expanded) read(fieldValue.slice(1))
       else texts.push(value)
+      if (expanded && key === 'query') unreadable.push(`シェルが展開する ${name === 'field' ? '-F' : '-f'} の query の値`)
     }
   }
   return { texts, unreadable }
@@ -1068,6 +1074,7 @@ function graphqlBodies(options, gh, deps) {
 
 /**
  * gh api graphql の判定。本文が mutation mergePullRequest を含めば拒否し、enablePullRequestAutoMerge を含むか、本文を読めなければ確認を求める。
+ * 本文の一部が読めなくても、読めた部分の mergePullRequest の拒否と enablePullRequestAutoMerge の確認を先に判定する。
  *
  * @param {{ name: string, value: string }[]} options gh api のオプション
  * @param {GhInvocation} gh gh の呼び出し

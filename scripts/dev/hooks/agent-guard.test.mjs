@@ -793,6 +793,23 @@ describe('マージのコマンドを判定する', () => {
     }
   })
 
+  test('gh api graphql の query の値がシェルの展開を含んでも、mergePullRequest を含めば拒否する', () => {
+    assertDenied(
+      'gh api graphql -f query="mutation { mergePullRequest(input: {pullRequestId: \\"$PR_ID\\"}) { clientMutationId } }"',
+      /mergePullRequest.*--match-head-commit/s,
+      fakeDeps(),
+    )
+  })
+
+  test('gh api graphql の query 以外のキー（GraphQL の変数）の値のシェルの展開は見ず、通す', () => {
+    for (const command of [
+      `gh api graphql -f query='mutation($p: ID!, $c: ID!) { addSubIssue(input: {issueId: $p, subIssueId: $c}) { issue { number } } }' -f p="$PARENT_ID" -f c="$(gh issue view 12 --json id -q .id)"`,
+      `gh api graphql -f query='query($o: String!) { repositoryOwner(login: $o) { id } }' -F o="$OWNER"`,
+    ]) {
+      assertPassed(command, fakeDeps())
+    }
+  })
+
   test('本文の編集の後に検査「危険度の照合」が再実行されていなければ確認を求め、再実行されていれば通す', () => {
     // 照合の開始の時刻は、check の既定（10:00）
     assertAsked(MERGE, /危険度の照合.*編集/, mergeDeps({ lastEditedAt: NEWER }))

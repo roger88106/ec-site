@@ -113,9 +113,9 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 
 ### DS-247-1 `/.local/` の項目ごとの用途と保存の期間を決めて文書にし、要らないものを削除する（D / P1）
 
-- **DC-247-1** [開発環境の起動](../../guides/setup.md) に `/.local/` の節があり、項目ごとに、中身、使う者（エージェント・利用者・両方）、保存の期間（いつ削除するか）を表で書いている。フォルダーの名前と場所は変えない（決めたこと 2）。
+- **DC-247-1** [開発環境の起動](../../../../guides/setup.md) に `/.local/` の節があり、項目ごとに、中身、使う者（エージェント・利用者・両方）、保存の期間（いつ削除するか）を表で書いている。フォルダーの名前と場所は変えない（決めたこと 2）。
 - **DC-247-2** 保存の期間は、少なくとも次を決めている。spec ごとの記録（`review/`、`impl/`、`pr/`）は spec のマージの後の後片付けで削除する。引き継ぎの文書は引き継いだ後に削除する。issue 担当の備忘録（`memo/`）は段・弾の終わりに削除する。振り返り（`retro/`）は skill `agent-retro` が読むので残す。
-- **DC-247-3** [開発の進め方](../../rules/workflow.md) 第 5.7 節の後片付けの手順が、DC-247-2 の spec ごとの記録を削除することを含む。
+- **DC-247-3** [開発の進め方](../../../../rules/workflow.md) 第 5.7 節の後片付けの手順が、DC-247-2 の spec ごとの記録を削除することを含む。
 - **DC-247-4** 削除するものの一覧（第 1 節の表のうち、使う者が「なし」のものと、終わった spec の記録）を利用者に示し、許可を得たものだけを削除している。作業中の他のセッションが使うもの（`memo/refactor1/`、`refactor/`、進行中の spec の `review/`）は削除しない。削除した結果を第 9 節に書く。
 - **DC-247-5** AGENTS.md の Git の表の「入れないもの」の行が、DC-247-1 の節を指す。
 
@@ -124,9 +124,9 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 - **DC-247-6** `environment.md` が 5,000 バイト以下で、このマシンと利用者に固有の内容だけを書いている。固有の内容は、返答の言語、プラン・使用量・並行の数の上限、ツールのパス、IntelliJ の MCP、ないコマンド、アカウントである。経緯（日付と注意された回数）は、理由として必要な箇条だけに残す。
 - **DC-247-7** 固有でない内容は、次の行き先に移っている。移す前にない記述だけを足し、重なる記述は既存の文書を正とする。
   - バックエンドの起動と停止、break-check の使い方、シェルと Git の落とし穴（`\| tail` の終了コード、hook で止まったときのステージ、`node_modules` のある作業ツリーの削除）→ skill `local-dev`
-  - ポートが使えないとき → [開発環境の起動](../../guides/setup.md) 第 7 節（既存）
-  - Stripe のログに出る鍵の扱い → [開発環境の起動](../../guides/setup.md) 第 5 節
-  - 確認の所で止まる、push の許可 → AGENTS.md と [開発の進め方](../../rules/workflow.md)（既存。`environment.md` から削除する）
+  - ポートが使えないとき → [開発環境の起動](../../../../guides/setup.md) 第 7 節（既存）
+  - Stripe のログに出る鍵の扱い → [開発環境の起動](../../../../guides/setup.md) 第 5 節
+  - 確認の所で止まる、push の許可 → AGENTS.md と [開発の進め方](../../../../rules/workflow.md)（既存。`environment.md` から削除する）
 - **DC-247-8** `environment.md` を変える前に、issue 担当のセッションに変える内容を知らせている（`/.local/` は Git に入らず、issue 担当も修正するため）。
 
 ### DS-247-3 ツールを Git に移し、テストを付ける（D / P1）
@@ -136,14 +136,14 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
   - 移した script に、マシン固有のパスを書かない（DN-247-4）。
 - **DC-247-10** `break-check.mjs` が `scripts/dev/break-check.mjs` にあり、テストを持ち、テストのコマンドをシェル（Git Bash）で実行して `./gradlew` も起動できる。Git Bash のパスは、spec 246 が置いた `scripts/dev/lib/git-bash.mjs` の `gitBash()` で求める（名前だけの `bash` は WSL の bash を指すことがあるため）。使い方が skill `local-dev` にある。
 - **DC-247-11** `merge-deps.sh` が `scripts/dev/merge-deps.sh` にあり、使い方が skill `sessions` にある。script はマージを実行せず、最新にして CI を待ち、マージできる pull request ごとに `gh pr merge <番号> --merge --match-head-commit <SHA>` のコマンドを出力する。エージェントがそのコマンドを 1 つずつ実行する。理由：spec 246 の hook は Bash のコマンドの文字列を読むので、script の中の `gh pr merge` を判定できない。
-- **DC-247-12** 本 spec のマージの後の後片付け（[開発の進め方](../../rules/workflow.md) 第 5.7 節）で、メインの作業ツリーの `.claude/settings.local.json` の hook を新しい置き場所の script に替え、`/.local/agent/` の古いツールを削除する。マージの前に替えると、新しい script がメインの作業ツリーになく、メインの作業ツリーを使う他のセッションの hook が動かなくなるためである。替える前に issue 担当に知らせる（DC-247-8 と同じ）。
+- **DC-247-12** 本 spec のマージの後の後片付け（[開発の進め方](../../../../rules/workflow.md) 第 5.7 節）で、メインの作業ツリーの `.claude/settings.local.json` の hook を新しい置き場所の script に替え、`/.local/agent/` の古いツールを削除する。マージの前に替えると、新しい script がメインの作業ツリーになく、メインの作業ツリーを使う他のセッションの hook が動かなくなるためである。替える前に issue 担当に知らせる（DC-247-8 と同じ）。
   - 替えた後の 3 つの hook（backslash-guard、session-start、中国語の混入の PostToolUse）のコマンドは、spec 246 の `settings.json` と同じ書き方にする。script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから求め、そこになければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う（DC-246-5）。理由：メインの作業ツリーの `settings.local.json` は、全ての作業ツリーで使われる（第 1 節）。本 spec の script を含まないブランチでも、メインの作業ツリーの script で動かすためである。
 - **DC-247-13** skill `zh-mixing` の SKILL.md から、「手元の古い検査（`.local/agent/check-zh.mjs`）からの置き換え」の段落を削除している。設定の手順にある Claude Code の hook の例が、DC-247-12 の書き方になっている。
 - **DC-247-14** 移した script のテストが `scripts/ci/check-all.sh` の script のテスト（`scripts/dev/**/*.test.mjs`）に含まれ、通る。
 
 ### DS-247-4 作業ツリーの置き場所を決めて文書にする（D / P2）
 
-- **DC-247-15** [エージェントの作業フロー](../../rules/subagents.md) の並行の単位の節（第 4 節）か skill `sessions` が、作業ツリーの置き場所を `.claude/worktrees/<issue の番号>-<短い名前>` と書いている。あわせて、手動で作る方法（`git worktree add`）と、デスクトップアプリが作る作業ツリーも同じ場所に置かれることを書いている。
+- **DC-247-15** [エージェントの作業フロー](../../../../rules/subagents.md) の並行の単位の節（第 4 節）か skill `sessions` が、作業ツリーの置き場所を `.claude/worktrees/<issue の番号>-<短い名前>` と書いている。あわせて、手動で作る方法（`git worktree add`）と、デスクトップアプリが作る作業ツリーも同じ場所に置かれることを書いている。
 - **DC-247-16** 同じ箇所が、作業ツリーのセッションで読まれる設定（`.claude/settings.local.json` と `$CLAUDE_PROJECT_DIR`）の違いを書いている。内容は、第 1 節の 2026-10-29 の確認にする（デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む）。spec 246 の第 1 節の調べ（文書の記述）と違うことも書く。
 
 ### DS-247-5 skill の置き場所を決めて文書にする（#22）（D / P2）
@@ -179,7 +179,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 |----|------|------|------|-----------|
 | 案 A（推奨） | M（spec.md の 1 つのファイル） | DC が 18、タスクが 12 で、1 つのファイルに収まる | なし | なし |
 | 案 B | S（issue の本文を spec にする） | 文書が最も少ない | 決めることが 6 つあり、issue の本文では変更を追いにくい | なし（置き場所だけ変わる） |
-| 案 C | L（spec・plan・tasks） | 設計の判断を plan に分けられる | API・データベースを変えず、[開発の進め方](../../rules/workflow.md) 第 4.2 節の L の基準に当たらない | なし（置き場所だけ変わる） |
+| 案 C | L（spec・plan・tasks） | 設計の判断を plan に分けられる | API・データベースを変えず、[開発の進め方](../../../../rules/workflow.md) 第 4.2 節の L の基準に当たらない | なし（置き場所だけ変わる） |
 
 ### 決めたこと 2：`/.local/` をどう分けるか
 
@@ -226,7 +226,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
   - hook の script の置き場所 `scripts/dev/hooks/`（spec 246 の決めたこと 4）
   - AGENTS.md の環境の節、`docs/guides/setup.md`、skill `zh-mixing` の設定の手順
 - 実装を始める前に、最新の `develop`（spec 246 のマージを含む）を作業ブランチに取り込む。取り込まないと、spec 246 の `settings.json` の hook がこの作業ツリーのセッションで適用されない（spec 246 第 7 節）。
-- 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）では、spec 246 がマージした内容を第 3 節と照合し、差があれば本 spec を先に修正する。照合するものは、`scripts/dev/hooks/` の置き場所とテストの glob、`settings.json` と `settings.local.json` の分け方の文言、AGENTS.md の環境の節、作業ツリーの設定の読み方の記述、マージの hook が Bash のコマンドの文字列だけを読むこと（DC-247-11）である。
+- 実装を始める前の照合（[開発の進め方](../../../../rules/workflow.md) 第 5.6 節）では、spec 246 がマージした内容を第 3 節と照合し、差があれば本 spec を先に修正する。照合するものは、`scripts/dev/hooks/` の置き場所とテストの glob、`settings.json` と `settings.local.json` の分け方の文言、AGENTS.md の環境の節、作業ツリーの設定の読み方の記述、マージの hook が Bash のコマンドの文字列だけを読むこと（DC-247-11）である。
   - hook のコマンドの書き方：spec 246 は、hook の script のパスを `$CLAUDE_PROJECT_DIR` でなく `git rev-parse --show-toplevel` から求める（issue 担当のセッション、2026-10-29）。DC-247-12 で差し替える `settings.local.json` の 3 つの hook（backslash-guard、session-start、zh-mixing の PostToolUse）と、skill `zh-mixing` の設定の手順の例を、この書き方に合わせるかを照合する。`session-start.mjs` が読む `environment.md` の場所は、hook のコマンドの書き方と別に DC-247-9 で決める。
 - 照合の結果（2026-10-29、`develop` の d57301f7 を取り込んだ後）。設計（第 6 節の決めたこと）は変わらない。
   - `scripts/dev/hooks/` の置き場所、テストの glob（`scripts/dev/**/*.test.mjs`）、AGENTS.md の環境の節の分け方、マージの hook が Bash のコマンドの文字列だけを読むことは、第 3 節と合う。
@@ -251,8 +251,8 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 
 - 前提：spec の確定、spec 246 のマージ、`develop` の取り込み、実装を始める前の照合
 - 完了条件：DC-247-1〜11、13〜17 を満たし、DC-247-6・12 の差し替えの内容を用意している。DN-247-1〜5 を守る。
-- 参照：第 1 節、第 3 節、第 6 節、[テストの書き方](../../rules/test-writing.md)、[コメントの書き方](../../rules/comments.md)
-- `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
+- 参照：第 1 節、第 3 節、第 6 節、[テストの書き方](../../../../rules/test-writing.md)、[コメントの書き方](../../../../rules/comments.md)
+- `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../../../rules/workflow.md) 第 2.1 節）。
 
 - [x] **T247-01-01** [テスト] hook の script（`session-start`、`backslash-guard`）のテストを書き、レッドを確認する（DC-247-9）。
   - 依存：なし
@@ -312,9 +312,10 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
     - 修正したもの：break-check が bash を起動できないときと対象のファイルが読めないときに終了コード 2 にする（高。テストを追加した）。setup.md 第 10 節の `agent/` に `zh-allow.txt` を加える（必須。2 つの観点で重複）。AGENTS.md の hook の script の一覧、hook のコマンドの「`settings.json` と同じ」の書き分け、作業ツリーのセッションが読む設定の主語（デスクトップアプリの作業ツリーに限る）、merge-deps の 2 つ目以降の失敗の扱い、第 9 節の T247-01-07 の記録、校閲の 9 件。
     - 残したもの：なし。
     - 機械の検査に移したもの：なし。break-check の終了コードはテストに加えた。他は文書の内容の照合で、検査に移せない。
-- [ ] **T247-02-02** pull request の前のレビューを、draft の pull request で行う（skill `review`）。本文に `Closes #247` と `Closes #22` を書く（DC-247-18）。
+- [x] **T247-02-02** pull request の前のレビューを、draft の pull request で行う（skill `review`）。本文に `Closes #247` と `Closes #22` を書く（DC-247-18）。
   - 依存：T247-02-01
-- [ ] **T247-02-03** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
+  - 結果：組み込みのコードレビュー（high）で 8 件。6 件を修正した（70639bc5）：break-check の終了コード 126・127 とシグナル、backslash-guard の node の引数と heredoc の終わりの印、session-start の git の環境、merge-deps の待ちの上限。2 件は修正しない：merge-deps のまとめての処理（DC-247-11 の形。skill `sessions` にやり直しを書いた）、`--separate-git-dir` の clone（このリポジトリで使わない）。
+- [x] **T247-02-03** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
   - 依存：T247-02-02
 
 マージの後の後片付けで、DC-247-6 と DC-247-12 の差し替えを、issue 担当のセッションに知らせてから行う。手順は第 9 節に書いたとおりにする。
@@ -351,12 +352,12 @@ T247-01-07〜09 の結果と、マージの後に行う差し替え（DC-247-6�
 
 | 削除した箇条 | 行き先 |
 |--------------|--------|
-| 確認の所で止まる、段階とタスクの間で止まらない | [開発の進め方](../../rules/workflow.md)（既存）。別の件だけに答えたときに聞く 1 文は残した |
+| 確認の所で止まる、段階とタスクの間で止まらない | [開発の進め方](../../../../rules/workflow.md)（既存）。別の件だけに答えたときに聞く 1 文は残した |
 | push と pull request の作成は許可を求めない | AGENTS.md の Git の表（既存） |
 | バックエンドの起動と停止 | skill `local-dev`（停止の手順は既存、java が残る注意を追加した） |
-| WinNAT の手順とスクリプト | [開発環境の起動](../../guides/setup.md) 第 7 節（既存）。`netstat` の中国語の表示と 1025 の注意は残した |
+| WinNAT の手順とスクリプト | [開発環境の起動](../../../../guides/setup.md) 第 7 節（既存）。`netstat` の中国語の表示と 1025 の注意は残した |
 | heredoc の `\`、break-check、`tail` の終了コード、hook で止まったときのステージ、作業ツリーの削除、テストを同時に実行しない | skill `local-dev`（「シェルと Git の落とし穴」「壊しての確認」、スロットの節） |
-| Stripe のログの鍵 | [開発環境の起動](../../guides/setup.md) 第 5 節 |
+| Stripe のログの鍵 | [開発環境の起動](../../../../guides/setup.md) 第 5 節 |
 | 各箇条の日付と注意された回数、試した経緯 | 削除（返答の言語の回数だけ理由として残した） |
 
 ### T247-01-09 `/.local/` の削除（2026-10-29）
@@ -366,9 +367,9 @@ issue 担当のセッションに一覧を知らせ、利用者の許可を得�
 | 区分 | 項目 |
 |------|------|
 | 削除した | `review/` のうち本 spec のもの以外（約 13MB、マージ済みの spec の記録）、`impl/155`・`impl/225`、`pr/157-*`、`handoff/` の 3 つ（issue 担当の古い引き継ぎ）、`issues/`、`ca.txt`、空の `articles/`・`trash/`。空になった `impl/`・`pr/`・`handoff/` も削除した |
-| 残した | `agent/`、`memo/`（issue 担当の判断に任せる）、`retro/`、`refactor/`、`agent-runs/`（結果を [調べた仕組みと実績](../../rules/subagents-results.md) に移したか確認できない）、`masterdata/`、`seed-images/`、`stripe.env`、`e2e-flow/`、`WinNAT再起動.ps1`、`review/202610290000-247-spec` |
+| 残した | `agent/`、`memo/`（issue 担当の判断に任せる）、`retro/`、`refactor/`、`agent-runs/`（結果を [調べた仕組みと実績](../../../../rules/subagents-results.md) に移したか確認できない）、`masterdata/`、`seed-images/`、`stripe.env`、`e2e-flow/`、`WinNAT再起動.ps1`、`review/202610290000-247-spec` |
 
-[開発環境の起動](../../guides/setup.md) 第 10 節の保存の期間のうち、DC-247-2 で決めていないもの（`refactor/`、`issues/`、`agent-runs/`、`e2e-flow/`、`WinNAT再起動.ps1`）も、利用者が同じ確認で承認した。
+[開発環境の起動](../../../../guides/setup.md) 第 10 節の保存の期間のうち、DC-247-2 で決めていないもの（`refactor/`、`issues/`、`agent-runs/`、`e2e-flow/`、`WinNAT再起動.ps1`）も、利用者が同じ確認で承認した。
 
 ### マージの後の差し替えの手順（DC-247-6、12）
 

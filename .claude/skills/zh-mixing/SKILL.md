@@ -59,7 +59,7 @@ git config --local ecsite.instructionLanguage zh
 }
 ```
 
-   `.claude/settings.local.json` は Git に入らない。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーのこのファイルを読む（`git worktree add` で作った作業ツリーは未確認。[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節）ので、メインの作業ツリーに置けばよい。command は、script を作業ツリーから先に探し、なければメインの作業ツリー（`$CLAUDE_PROJECT_DIR`）の下を使う形にする。環境の印は `.git/config` にあり、作業ツリーの間で共有される。他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
+   `.claude/settings.local.json` は Git に入らない。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーのこのファイルを読む（読む場所は、skill `sessions` のツールの注の「作業ツリーのセッションが読むもの」の表）ので、メインの作業ツリーに置けばよい。作業ツリーで起動した `claude -p` は、メインの作業ツリーのこのファイルを読まないので、この hook は動かない（同じ表）。command は、script を作業ツリーから先に探し、なければメインの作業ツリー（`$CLAUDE_PROJECT_DIR`）の下を使う形にする。環境の印は `.git/config` にあり、作業ツリーの間で共有される。他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
 
 3. git の hook（commit を止める）：[開発環境の起動](../../../docs/guides/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 
@@ -96,6 +96,13 @@ Git に入れない手元だけの除外は、`.local/agent/zh-allow.txt` に「
 | 中国語の字・用語が、日本語の文に混ざった | 層 2（この skill の一覧） |
 
 同じ字・語を両方に置かない。script のテストが、層 1 の一覧との重なりを調べる。
+
+## 書くときの注意
+
+コミットメッセージと spec は、書いた後に検査で失敗しやすい。書く前に次を守る。
+
+- 層 1 の使わない語（`scripts/ci/ja-text.json` の error の語）は、コミットメッセージと spec に書かない。git の hook `commit-msg` の日本語の検査が失敗させる。書いた後は `node scripts/ci/ja-text.mjs` で確認する。
+- 利用者の中国語の言葉は、日本語に訳して書く。原文を写さない。理由：写した中国語の字・用語を、層 2 の検査（`commit-msg`・`pre-commit`）が失敗させるため。
 
 ## テスト
 

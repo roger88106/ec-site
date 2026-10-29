@@ -61,7 +61,7 @@ issue の本文のとおりにする。ファイル名は英語のまま変え�
 
 ### パスを直接書いている箇所
 
-2026-10-29 の `develop`（57ed2120）で、アーカイブと本 spec を除いて数えた。調べ方は表の下のコマンドである。
+2026-10-29 の `develop`（57ed2120）で、アーカイブと本 spec を除いて数えた。PR #278 のマージの後（255d76b8）に再集計し、件数は変わらなかった。調べ方は表の下のコマンドである。
 
 | 種類 | 調べ方 | 件数 |
 |------|--------|------|
@@ -70,7 +70,7 @@ issue の本文のとおりにする。ファイル名は英語のまま変え�
 | 同上の内訳：バックエンドのテスト・ツール（`src/test` など）とビルド（`build.gradle.kts` など） | コマンド 1 | 49 行、38 ファイル |
 | 同上の内訳：`scripts/ci/` と `scripts/dev/` | コマンド 1 | 96 行、27 ファイル（そのうちテストが 52 行、8 ファイル） |
 | 同上の内訳：`.claude/`、`.github/`、AGENTS.md、README.md、`docs/`、E2E、compose | コマンド 1 | 151 行、32 ファイル |
-| 正規表現で書いたパス（`docs\/specs\/archive\/` など） | コマンド 2 | 9 行。6 つの script（`doc-refs.mjs`、`ja-text.mjs`、`risk.mjs`、`related-specs.mjs`、`zh-mixing.cjs`、`replace-paths.cjs`）と 2 つのテスト |
+| 正規表現で書いたパス（`docs\/specs\/archive\/` など） | コマンド 2 | 11 行。6 つの script（`doc-refs.mjs`・`ja-text.mjs`・`risk.mjs`・`related-specs.mjs`・`zh-mixing.cjs`・`replace-paths.cjs`）の 7 行と、2 つのテスト（`design-migrations.test.mjs`・`agent-guard.test.mjs`）の 4 行 |
 | 古いフォルダーを指す Markdown の相対リンク | コマンド 3 | 557 行、45 ファイル |
 | 同じフォルダーの中の相対リンク（`(glossary.md)` など） | `node scripts/ci/doc-refs.mjs`（移した後に切れたものが出る） | 移した後に数える |
 
@@ -97,7 +97,7 @@ git grep -n -E '\]\((\.\./)*(docs/)?(design|rules|guides|specs)/' -- '*.md' ':!d
 
 ### 並行する spec との重なり（PR #278）
 
-spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブランチ `276-retro-rules`、2026-10-29 に未マージ）は、次の 12 ファイルを変える（`gh pr diff 278 --name-only`）。
+spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブランチ `276-retro-rules`、2026-10-29 にマージ。`develop` 255d76b8）は、次の 12 ファイルを変える（`gh pr diff 278 --name-only`）。
 
 | ファイル | 本 spec が変えるもの |
 |----------|----------------------|
@@ -106,9 +106,10 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 | `docs/rules/subagents.md` | 移す。リンク |
 | `docs/rules/subagents-results.md` | `07-記録/` に移す。リンク |
 | `.claude/skills/local-dev/SKILL.md`、`review/SKILL.md`、`review/convergence.md`、`review/docs-review.md`、`review/prompts.md`、`sessions/SKILL.md`、`zh-mixing/SKILL.md` | リンクとパスの文字列（あるもの） |
-| `docs/specs/276-retro-rules/spec.md`（新設。マージの前にアーカイブに移る） | `08-spec/archive/1to10/` に移す。中身は変えない |
+| `docs/specs/archive/1to10/276-retro-rules/spec.md`（アーカイブ） | アーカイブと一緒に `08-spec/archive/1to10/` に移す。中身は変えない |
 
 - 重なるのは、spec 276 が書く本文と、本 spec が修正するパスの同じ行または近くの行である。spec 276 のマージの後に実装を始め、spec 276 が追加した行のパスも修正する（第 7 節）。
+- spec 276 の T276-01-09 で、アプリのセッションは、作業ツリーで動くときもメインの作業ツリーの設定・定義・skill を読むと分かった。そのため、本 spec が作業ツリーで変える `.claude/` の skill と hook は、マージするまで、アプリのセッションには効かない。本 spec の実装と検査は、作業ツリーの script を直接実行し、git の hook（作業ツリーの `scripts/dev/hooks/`）で確認するので、影響しない。
 
 ## 2. スコープ
 

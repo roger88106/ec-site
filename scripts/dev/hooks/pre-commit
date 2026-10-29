@@ -1,6 +1,8 @@
 #!/usr/bin/env bash
 # ============================================================================
 # commit の前に、CI の検査の script（scripts/ci/check-all.sh）を流す（CI の検査）
+# 今のブランチが develop か main なら、検査の前に commit を失敗にする（直接 commit しない規則。AGENTS.md の Git の表）。
+# detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。
 #
 # 置き方（開発環境の起動）：.git/hooks/pre-commit に、この script を呼ぶ 1 行を書く。
 # core.hooksPath は使わない（各自が .git/hooks/ に置いた hook と並べられるように）。

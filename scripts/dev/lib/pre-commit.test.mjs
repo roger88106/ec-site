@@ -1,14 +1,15 @@
 // pre-commit.mjs のテスト（node --test scripts/dev/lib/pre-commit.test.mjs）
 import assert from 'node:assert/strict'
 import { spawnSync } from 'node:child_process'
-import { chmodSync, copyFileSync, existsSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
+import { chmodSync, copyFileSync, mkdirSync, mkdtempSync, readdirSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
-import { CHECKOUT_FAILED, WARNING_FAILED, checkShell, parseAddedLines, resolveIndexFile, runPreCommit, selectAddedWarnings } from './pre-commit.mjs'
+import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, checkShell, parseAddedLines, resolveIndexFile, runPreCommit, selectAddedWarnings } from './pre-commit.mjs'
 import { COMMIT_MSG_FAILED, runCommitMsg } from './commit-msg.mjs'
+import { gitBash } from './git-bash.mjs'
 
 describe('一時の index のパス', () => {
   test('相対パスは、リポジトリのルートからの絶対パスにする', () => {
@@ -38,25 +39,94 @@ describe('検査を実行する bash', () => {
   })
 })
 
+describe('commit するブランチ', () => {
+  test('develop では、今の develop から作業ブランチを作る手順を表示する（ステージした変更は持ち越される）', () => {
+    const message = branchRejection('develop')
+    assert.match(message, /develop には直接 commit しない/)
+    assert.match(message, /^ {2}git switch -c <issue の番号>-<短い名前>$/m)
+    assert.match(message, /持ち越される/)
+  })
+
+  test('main では、緊急の修正は main から hotfix のブランチを、それ以外は退避して develop から作業ブランチを作る手順を表示する', () => {
+    const message = branchRejection('main')
+    assert.match(message, /main には直接 commit しない/)
+    assert.match(message, /^ {2}git switch -c hotfix-<issue の番号>-<短い名前>$/m)
+    assert.match(message, /^ {2}git stash push -m <退避の名前>$/m)
+    assert.match(message, /^ {2}git switch -c <issue の番号>-<短い名前> develop$/m)
+    assert.doesNotMatch(message, /持ち越される/)
+  })
+
+  test('main で退避した変更は、作業ツリーの間で共有される退避の一覧から、退避の名前の行の commit を選んで戻す（pop は使わない）', () => {
+    const message = branchRejection('main')
+    assert.match(message, /^ {2}git stash list --format='%H %gs'$/m)
+    assert.match(message, /^ {2}git stash apply <退避の名前の行の commit>$/m)
+    assert.match(message, /共有/)
+    assert.doesNotMatch(message, /^ {2}git stash pop/m)
+  })
+
+  test('作業ブランチと detached HEAD（ブランチを読めないときを含む）では、通す', () => {
+    for (const branch of ['246-enforce-hooks', 'develop-x', 'feature/main', null]) {
+      assert.equal(branchRejection(branch), null)
+    }
+  })
+
+  test('HEAD がブランチを指していれば、そのブランチの名前を返す', () => {
+    assert.equal(branchOfHead({ status: 0, stdout: 'refs/heads/develop\n' }), 'develop')
+    assert.equal(branchOfHead({ status: 0, stdout: 'refs/heads/246-enforce-hooks\r\n' }), '246-enforce-hooks')
+  })
+
+  test('detached HEAD か、HEAD を読めなければ null を返す', () => {
+    assert.equal(branchOfHead({ status: 1, stdout: '' }), null)
+    assert.equal(branchOfHead({ status: 128, stdout: '' }), null)
+    assert.equal(branchOfHead({ status: null, stdout: '' }), null)
+    assert.equal(branchOfHead({ status: 0, stdout: '' }), null)
+  })
+})
+
 /** 呼び出しを記録する外部の処理を作る */
-function fakeDeps({ checkout = 0, check = 0, env = {}, diff = { status: 0, stdout: '' }, warnings = { status: 0, stdout: '' } } = {}) {
-  const calls = { checkout: [], runCheck: [], removed: [], diff: 0, warnings: 0, printed: [] }
+function fakeDeps({ branch = '1-work', checkout = 0, check = 0, env = {}, diff = { status: 0, stdout: '' }, warnings = { status: 0, stdout: '' } } = {}) {
+  const calls = { checkout: [], runCheck: [], removed: [], diff: 0, warnings: 0, printed: [], errors: [], temps: 0 }
   return {
     calls,
     deps: {
       root: '/repo',
       gitDir: '/repo/.git',
+      branch,
       env,
       checkout: (prefix, e) => (calls.checkout.push({ prefix, env: e }), checkout),
       runCheck: (script, e) => (calls.runCheck.push({ script, env: e }), check),
       diffAdded: () => (calls.diff++, diff),
       listWarnings: () => (calls.warnings++, warnings),
       print: (text) => calls.printed.push(text),
-      makeTemp: () => '/tmp/staged',
+      printError: (text) => calls.errors.push(text),
+      makeTemp: () => (calls.temps++, '/tmp/staged'),
       removeTemp: (dir) => calls.removed.push(dir),
     },
   }
 }
+
+describe('ブランチの判定と検査の順', () => {
+  test('develop と main では、取り出しも検査もせずに失敗にし、作業ブランチを作る手順を表示する', () => {
+    for (const branch of ['develop', 'main']) {
+      const { deps, calls } = fakeDeps({ branch })
+      assert.equal(runPreCommit(deps), BRANCH_REJECTED)
+      assert.equal(calls.temps, 0)
+      assert.equal(calls.checkout.length, 0)
+      assert.equal(calls.runCheck.length, 0)
+      assert.equal(calls.errors.length, 1)
+      assert.match(calls.errors[0], /git switch -c /)
+    }
+  })
+
+  test('作業ブランチと detached HEAD では、検査を実行する', () => {
+    for (const branch of ['1-work', null]) {
+      const { deps, calls } = fakeDeps({ branch })
+      assert.equal(runPreCommit(deps), 0)
+      assert.equal(calls.runCheck.length, 1)
+      assert.deepEqual(calls.errors, [])
+    }
+  })
+})
 
 describe('検査の実行と終了コード', () => {
   test('取り出した先の検査の script を、元のリポジトリと取り出した先の作業ツリーで実行する', () => {
@@ -211,7 +281,7 @@ const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }]
 
 describe('実際の hook', () => {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
-  /** 実際のリポジトリと同じ置き場所に写す、hook とその hook が読む script（日本語の文の検査と、その検査が読む補助を含む） */
+  /** 実際のリポジトリと同じ置き場所にコピーする、hook とその hook が読む script（日本語の文の検査と、その検査が読む補助を含む） */
   const hookFiles = [
     'scripts/dev/hooks/pre-commit',
     'scripts/dev/hooks/commit-msg',
@@ -224,27 +294,15 @@ describe('実際の hook', () => {
       .filter((name) => name.endsWith('.mjs') && !name.endsWith('.test.mjs'))
       .map((name) => `scripts/ci/lib/${name}`),
   ]
+  /** 一時のリポジトリで commit する作業ブランチ */
+  const WORK_BRANCH = '1-work'
   /** 日本語の文の検査を流す検査の script（実際の check-all.sh のうち、この hook が頼る部分） */
   const jaTextCheck = '#!/usr/bin/env bash\ncd "$(dirname "$0")/../.." && node scripts/ci/ja-text.mjs\n'
 
   /**
-   * hook を実行する bash。Windows の素の PATH では、bash が WSL の bash.exe を指すことがあるので、Git の bash を使う
-   * （git が hook を実行するときと同じ bash にする）。
-   *
-   * PATH を差し替えても同じ bash を使えるよう、絶対パスで返す。
-   *
-   * @returns {string} bash のパス（見つからなければ PATH の bash）
-   */
-  function gitBash() {
-    if (process.platform !== 'win32') return spawnSync('bash', ['-c', 'command -v bash'], { encoding: 'utf8' }).stdout.trim() || 'bash'
-    const execPath = spawnSync('git', ['--exec-path'], { env: withoutGitEnv(), encoding: 'utf8' }).stdout.trim()
-    const candidate = path.resolve(execPath, '../../../bin/bash.exe')
-    return existsSync(candidate) ? candidate : 'bash'
-  }
-
-  /**
-   * 一時のリポジトリを作り、hook とその script を写して、元の内容を commit する（本物のリポジトリには触れない）。
+   * 一時のリポジトリを作り、hook とその script をコピーして、元の内容を作業ブランチに commit する（本物のリポジトリには触れない）。
    * GIT_ で始まる環境変数は外す（commit の hook の中で試すと、本物のリポジトリの設定を書き換えるため）。
+   * 最初のブランチは、既定のブランチ名（init.defaultBranch）によらず作業ブランチにする（hook は develop と main の commit を失敗にするため）。
    *
    * @param {string} dir 一時のディレクトリ
    * @param {Record<string, string | undefined>} env GIT_ を外した環境
@@ -254,6 +312,7 @@ describe('実際の hook', () => {
   function initRepo(dir, env, baseline) {
     const git = (...args) => spawnSync('git', args, { cwd: dir, env, encoding: 'utf8' })
     git('init', '-q')
+    git('symbolic-ref', 'HEAD', `refs/heads/${WORK_BRANCH}`)
     git('config', 'user.name', 'test')
     git('config', 'user.email', 'test@example.com')
     git('config', 'commit.gpgsign', 'false')
@@ -275,11 +334,12 @@ describe('実際の hook', () => {
    * 検査の script を差し替えた一時のリポジトリで、ファイルをステージして pre-commit の hook を実行する。
    *
    * @param {string} checkAll 検査の script の中身
-   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string>, gitConfig?: string[] | null }} [options]
-   *   gitConfig は一時のリポジトリだけに設定する git の設定（キーと値）。fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル
-   * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
+   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string>, gitConfig?: string[] | null, head?: string | null }} [options]
+   *   gitConfig は一時のリポジトリだけに設定する git の設定（キーと値）。fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル。
+   *   head は hook を実行するときのブランチ。null なら detached HEAD にする
+   * @returns {{ status: number | null, output: string, error: string }} hook の終了コードと標準出力、標準エラー
    */
-  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' }, gitConfig = null } = {}) {
+  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' }, gitConfig = null, head = WORK_BRANCH } = {}) {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
       const env = withoutGitEnv()
@@ -295,6 +355,8 @@ describe('実際の hook', () => {
       const git = initRepo(dir, env, { ...baseline, 'scripts/ci/check-all.sh': checkAll })
       // 設定は一時のリポジトリの中だけに書く（git は cwd が一時のディレクトリで、GIT_ を外した環境で実行する）
       if (gitConfig) git('config', ...gitConfig)
+      if (head === null) git('checkout', '-q', '--detach')
+      else if (head !== WORK_BRANCH) git('switch', '-q', '-c', head)
       for (const [file, content] of Object.entries(files)) {
         mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
         writeFileSync(path.join(dir, file), content)
@@ -302,11 +364,33 @@ describe('実際の hook', () => {
       git('add', '-A')
       writeFileSync(path.join(dir, 'unstaged.txt'), 'unstaged')
       const result = spawnSync(gitBash(), ['scripts/dev/hooks/pre-commit'], { cwd: dir, env, encoding: 'utf8' })
-      return { status: result.status, output: result.stdout }
+      return { status: result.status, output: result.stdout, error: result.stderr }
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }
   }
+
+  /** 実行されたら印を出力して成功する検査の script */
+  const markedCheck = '#!/usr/bin/env bash\necho CHECKED\n'
+
+  test('develop と main では、検査の前に失敗にし、ブランチごとの作業ブランチを作る手順を表示する', () => {
+    const expected = { develop: /git switch -c <issue の番号>-<短い名前>$/m, main: /git switch -c hotfix-<issue の番号>-<短い名前>$/m }
+    for (const [head, command] of Object.entries(expected)) {
+      const { status, output, error } = runHook(markedCheck, { head })
+      assert.equal(status, BRANCH_REJECTED)
+      assert.doesNotMatch(output, /CHECKED/)
+      assert.match(error, new RegExp(`${head} には直接 commit しない`))
+      assert.match(error, command)
+    }
+  })
+
+  test('作業ブランチと detached HEAD では、検査を実行して通す', () => {
+    for (const head of [WORK_BRANCH, null]) {
+      const { status, output } = runHook(markedCheck, { head })
+      assert.equal(status, 0)
+      assert.match(output, /CHECKED/)
+    }
+  })
 
   test('検査が成功すれば 0 を返し、ステージした内容だけを検査する', () => {
     const { status, output } = runHook('#!/usr/bin/env bash\ncd "$(dirname "$0")/../.." && ls\n')
@@ -388,7 +472,7 @@ describe('実際の commit-msg の hook', () => {
   ]
 
   /**
-   * 一時のディレクトリ（Git のリポジトリでない場所は hook が使えないので、git init する）に hook を写し、
+   * 一時のディレクトリ（Git のリポジトリでない場所は hook が使えないので、git init する）に hook をコピーし、
    * 関連 spec の照合を、終了コードを環境変数で決める代わりの script に差し替えて、hook を実行する。
    *
    * @param {string} message コミットメッセージのファイルの中身
@@ -407,8 +491,7 @@ describe('実際の commit-msg の hook', () => {
       writeFileSync(path.join(dir, 'scripts/ci/ja-text.json'), MINI_LIST)
       writeFileSync(path.join(dir, 'scripts/ci/related-specs.mjs'), `process.exit(${relatedStatus})\n`)
       writeFileSync(path.join(dir, 'MSG'), message)
-      const bash = process.platform === 'win32' ? gitBashPath(env) : 'bash'
-      const result = spawnSync(bash, ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
+      const result = spawnSync(gitBash(env), ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
       return { status: result.status, output: result.stdout }
     } finally {
       rmSync(dir, { recursive: true, force: true })
@@ -418,13 +501,6 @@ describe('実際の commit-msg の hook', () => {
   /** hook の終了コードだけを返す */
   function runCommitMsgHook(message, relatedStatus) {
     return runCommitMsgHookFull(message, relatedStatus).status
-  }
-
-  /** Git の bash のパス（hook の実行と同じ bash）。見つからなければ PATH の bash */
-  function gitBashPath(env) {
-    const execPath = spawnSync('git', ['--exec-path'], { env, encoding: 'utf8' }).stdout.trim()
-    const candidate = path.resolve(execPath, '../../../bin/bash.exe')
-    return existsSync(candidate) ? candidate : 'bash'
   }
 
   test('メッセージに使わない語（error）がなければ成功する', () => {

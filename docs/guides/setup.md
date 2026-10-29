@@ -53,8 +53,12 @@ pnpm dev
 
   | hook | 書く 1 行 | 実行するもの |
   |------|-----------|--------------|
-  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh`。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める |
+  | `.git/hooks/pre-commit` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/pre-commit" \|\| exit 1` | `check-all.sh`。ステージした内容（次の commit）だけを、一時ディレクトリに取り出して検査する。ステージしていない変更と未追跡のファイルは検査しない。日本語の文の検査（`ja-text`）の error（使わない語）があれば commit は失敗する。検査が通ったら、ステージした追加行の warning（文体の型など）だけを表示する。warning は commit を止めないので、読んで修正するかを決める。今のブランチが `develop` か `main` なら、検査の前に commit を失敗にし、作業ブランチの作り方を示す（detached HEAD は通す）※1。pre-commit hook を置いていないときは ※2 |
   | `.git/hooks/commit-msg` | `"$(git rev-parse --show-toplevel)/scripts/dev/hooks/commit-msg" "$1" \|\| exit 1` | 関連 spec の検査を、ステージした設計の文書と commit のメッセージの 1 行目で実行する（メッセージは pre-commit の時点では決まっていないので、この hook で調べる）。あわせて `ja-text --message` で、メッセージの error（使わない語）を調べ、あれば commit は失敗する |
+
+  ※1：git が pre-commit hook を実行しない `git merge`・`git cherry-pick`・`git revert`・`git am` は、`develop`・`main` の上でも失敗にならない。
+
+  ※2：pre-commit hook を置いていないと、Claude Code の hook（`scripts/dev/hooks/agent-guard.mjs`）が `git commit` を拒否する。
 
 ## 3. アカウント
 
@@ -186,15 +190,15 @@ node scripts/dev/slot.mjs release
 | コマンド | 内容 |
 |----------|------|
 | `assign` | 空いている最小のスロットを割り当てる。割り当て済みなら番号を示すだけ。スロット 1〜3 が全て使われていれば、使っている作業ツリーのパスを示して終了する。メインの作業ツリーでは何もせずに知らせる |
-| `run backend`、`run store`、`run admin` | スロットの環境変数を付けて起動する。バックエンドは profile `local` で起動し、ポートの使用を確認する ※1。`run store` と `run admin` は、起動の前に `pnpm generate:api` で API の型を生成する（失敗したら起動しない）。停止のシグナルの扱いは ※2 |
+| `run backend`、`run store`、`run admin` | スロットの環境変数を付けて起動する。バックエンドは profile `local` で起動し、ポートの使用を確認する ※3。`run store` と `run admin` は、起動の前に `pnpm generate:api` で API の型を生成する（失敗したら起動しない）。停止のシグナルの扱いは ※4 |
 | `show` | 今のスロットのポート・URL・名前と、全ての作業ツリーのスロットの一覧 |
 | `reset` | 割り当てを変えずに、データベースと 2 つのバケットを再作成する（バックエンドを停止してから）。`scripts/dev/reset.sh` からも実行できる（第 4 節） |
 | `env` | スロットの環境変数を `export` の形で出力する |
 | `release` | スロットの 4 つのポートで待ち受けるプロセスを停止してから、データベースと 2 つのバケットを削除し、割り当てを解除する。ポートの問い合わせが失敗したとき、停止の後も待ち受けが残るとき、停止の後もバックエンドが応答するときは、データを削除せず、停止のコマンドを表示して終了コード 1 で終了する |
 
-※1：バックエンドのポートか運用のポートが使われていれば、待ち受けるプロセスの ID と停止のコマンドを表示して、終了コード 1 で終了する。ポートの問い合わせが失敗したときは、警告して起動する。
+※3：バックエンドのポートか運用のポートが使われていれば、待ち受けるプロセスの ID と停止のコマンドを表示して、終了コード 1 で終了する。ポートの問い合わせが失敗したときは、警告して起動する。
 
-※2：停止のシグナル（Ctrl+C など）の 1 回目で、起動したプロセスを子プロセスも含めて停止し、終了するのを待ってから終了する。2 回目は待たずに終了する。
+※4：停止のシグナル（Ctrl+C など）の 1 回目で、起動したプロセスを子プロセスも含めて停止し、終了するのを待ってから終了する。2 回目は待たずに終了する。
 
 Windows で `run backend` の node を強制終了すると、Gradle のクライアントとバックエンドが残る。`release` で停止できる。割り当てを残したまま停止するときは、スロットのバックエンドのポートで待ち受けるプロセスを停止する（skill `local-dev`）。
 

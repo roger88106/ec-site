@@ -1,4 +1,6 @@
 // commit の前の hook（scripts/dev/hooks/pre-commit）の処理。ステージした内容を取り出して、CI の検査を実行する。
+// 今のブランチが develop か main なら、検査の前に commit を失敗にする（直接 commit しない規則。AGENTS.md の Git の表）。
+// detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。
 // CI の検査には日本語の文の検査（ja-text）が含まれ、ステージした内容の error は失敗にする。
 // 検査が通ったら、ステージした追加行の warning だけを表示する（追加していない既存の行の warning は表示しない。warning は失敗にしない）
 import { spawnSync } from 'node:child_process'
@@ -11,6 +13,65 @@ export const CHECKOUT_FAILED = 2
 
 /** 追加行の差分、または warning の一覧の取得に失敗したときの終了コード。取得できないまま成功にしない */
 export const WARNING_FAILED = 3
+
+/** develop か main に commit しようとしたときの終了コード（検査の失敗と区別する） */
+export const BRANCH_REJECTED = 4
+
+/**
+ * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
+ * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリース 第 2.1 節、第 5 節）。それ以外の変更は、develop から作業ブランチを作る
+ */
+const REJECTIONS = new Map([
+  [
+    'develop',
+    [
+      'develop には直接 commit しない。今の develop から作業ブランチを作り、そこで commit する（今の HEAD から切るので、ステージした変更は持ち越される）。',
+      '',
+      '  git switch -c <issue の番号>-<短い名前>',
+    ],
+  ],
+  [
+    'main',
+    [
+      'main には直接 commit しない。',
+      '緊急の修正なら、今の main から hotfix のブランチを作り、そこで commit する。',
+      '',
+      '  git switch -c hotfix-<issue の番号>-<短い名前>',
+      '',
+      'それ以外の変更は、変更を退避して develop から作業ブランチを作り、そこで変更を戻して commit する。',
+      '退避の一覧は作業ツリーの間で共有され、最も新しい退避を戻す git stash pop は、別の作業ツリーの退避を戻すことがある。一覧から、退避の名前の行の commit を選んで戻す。',
+      '',
+      '  git stash push -m <退避の名前>',
+      '  git switch -c <issue の番号>-<短い名前> develop',
+      "  git stash list --format='%H %gs'",
+      '  git stash apply <退避の名前の行の commit>',
+    ],
+  ],
+])
+
+/**
+ * 今のブランチに commit してよいかを判定し、だめなら表示する手順を返す。
+ * detached HEAD（rebase の途中を含む）とブランチを読めないときは通す。判定を誤って全ての commit を失敗にしないため。
+ *
+ * @param {string | null} branch 今のブランチの名前。detached HEAD か読めなければ null
+ * @returns {string | null} commit を失敗にするときの表示。通すなら null
+ */
+export function branchRejection(branch) {
+  if (branch === null) return null
+  return REJECTIONS.get(branch)?.join('\n') ?? null
+}
+
+/**
+ * `git symbolic-ref -q HEAD` の結果から、今のブランチの名前を取り出す。
+ *
+ * @param {{ status: number | null, stdout: string }} result symbolic-ref の終了コードと出力
+ * @returns {string | null} ブランチの名前。detached HEAD（終了コード 1）か、読めなければ null
+ */
+export function branchOfHead({ status, stdout }) {
+  if (status !== 0) return null
+  const ref = stdout.trim()
+  return ref.startsWith('refs/heads/') ? ref.slice('refs/heads/'.length) : null
+}
 
 /**
  * `git diff --cached -U0` の出力から、追加した行の番号をファイルごとに取り出す。
@@ -94,24 +155,33 @@ export function checkShell(env) {
 }
 
 /**
- * ステージした内容を一時ディレクトリに取り出し、そこで CI の検査を実行して、hook の終了コードを返す。
+ * 今のブランチが develop か main なら、何もせずに 4 を返す。
+ * そうでなければ、ステージした内容を一時ディレクトリに取り出し、そこで CI の検査を実行して、hook の終了コードを返す。
  * 取り出しに失敗したら 2、そうでなければ検査の終了コード（検査が終了コードを返さなければ 1）。
  * 一時ディレクトリは、成功でも失敗でも消す。
  *
  * @param {object} deps 外部の処理（テストで差し替える）
  * @param {string} deps.root リポジトリのルート
  * @param {string} deps.gitDir .git のディレクトリの絶対パス
+ * @param {string | null} deps.branch 今のブランチの名前。detached HEAD か読めなければ null
  * @param {Record<string, string | undefined>} deps.env 環境変数
  * @param {(prefix: string, env: Record<string, string | undefined>) => number | null} deps.checkout ステージした内容を prefix の下に取り出す。終了コードを返す
  * @param {(script: string, env: Record<string, string | undefined>) => number | null} deps.runCheck 検査の script を実行する。終了コードを返す
  * @param {(env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.diffAdded ステージした差分（-U0）を返す
  * @param {(staged: string, env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で warning の一覧を出力する
  * @param {(text: string) => void} deps.print warning を表示する
+ * @param {(text: string) => void} deps.printError commit を失敗にした理由を表示する
  * @param {() => string} deps.makeTemp 一時ディレクトリを作る
  * @param {(dir: string) => void} deps.removeTemp 一時ディレクトリを消す
  * @returns {number} hook の終了コード
  */
-export function runPreCommit({ root, gitDir, env, checkout, runCheck, diffAdded, listWarnings, print, makeTemp, removeTemp }) {
+export function runPreCommit({ root, gitDir, branch, env, checkout, runCheck, diffAdded, listWarnings, print, printError, makeTemp, removeTemp }) {
+  // ブランチの誤りは、時間のかかる検査の前に知らせる
+  const rejection = branchRejection(branch)
+  if (rejection !== null) {
+    printError(rejection)
+    return BRANCH_REJECTED
+  }
   const indexFile = resolveIndexFile(env.GIT_INDEX_FILE, root)
   const baseEnv = indexFile === undefined ? env : { ...env, GIT_INDEX_FILE: indexFile }
   const staged = makeTemp()
@@ -147,6 +217,7 @@ export function main() {
   return runPreCommit({
     root,
     gitDir: toSlash(gitDir),
+    branch: branchOfHead(git(['symbolic-ref', '-q', 'HEAD'])),
     env: process.env,
     checkout: (prefix, env) =>
       spawnSync('git', ['-c', 'core.longpaths=true', 'checkout-index', '-a', `--prefix=${toSlash(prefix)}`], { env, stdio: 'inherit' }).status,
@@ -161,6 +232,7 @@ export function main() {
       return { status: result.status, stdout: result.stdout ?? '' }
     },
     print: (text) => console.log(text),
+    printError: (text) => console.error(text),
     makeTemp: () => toSlash(mkdtempSync(path.join(tmpdir(), 'pre-commit.'))),
     removeTemp: (dir) => rmSync(dir, { recursive: true, force: true }),
   })

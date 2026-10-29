@@ -79,7 +79,8 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 
 - issue 担当のセッションの備忘録は、spec 担当のセッションが `git worktree add` で `.claude/worktrees/<番号>-<短い名前>` に作業ツリーを作ると決めている。デスクトップアプリが作る作業ツリーも `.claude/worktrees/` に置かれる。
 - Git の文書には置き場所の決まりがない。`.gitignore` のコメント（`.claude/` の下の作業ツリーはツールが置き場所を決める）と、`docs/rules/backend-coding.md` の IntelliJ の注意だけが触れる。
-- spec 246 の調べ（第 1 節）では、デスクトップアプリの作業ツリーのセッションは、その作業ツリーの `.claude/settings.local.json` を読み、`$CLAUDE_PROJECT_DIR` はメインの作業ツリーを指す。`git worktree add` で作業ツリーを作ってそこへ移ったセッションは、始めたディレクトリ（メインの作業ツリー）の設定を読み続ける。
+- spec 246 の調べ（第 1 節）では、Claude Code の文書は、作業ツリーのセッションがその作業ツリーの `.claude/settings.local.json` を読むと書いている。`$CLAUDE_PROJECT_DIR` はメインの作業ツリーを指す。`git worktree add` で作業ツリーを作ってそこへ移ったセッションは、始めたディレクトリ（メインの作業ツリー）の設定を読み続ける。
+- 2026-10-29 に本 spec の作業ツリー（デスクトップアプリが作ったもの）で動かして確認すると、文書と違った。この作業ツリーに `.claude/settings.local.json` はないが、メインの作業ツリーの `settings.local.json` の hook（中国語の混入の PostToolUse と SessionStart）が動いた。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む。
 
 ### skill の置き場所（#22）
 
@@ -133,16 +134,17 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 - **DC-247-9** `session-start.mjs` と `backslash-guard.mjs` が `scripts/dev/hooks/` にあり（spec 246 の決めたこと 4 と同じ階層）、`node --test` のテストを持つ。hook の設定は `.claude/settings.local.json` に残し（spec 246 の DC-246-3 の分け方）、設定の手順が skill `local-dev` にある。
   - `session-start.mjs` は、`environment.md` をメインの作業ツリーの `/.local/agent/` から読む。メインの作業ツリーは、hook の入力の `cwd` で `git rev-parse --git-common-dir` を実行して求め、`$CLAUDE_PROJECT_DIR` に頼らない（spec 246 の DC-246-5 と同じ方針）。どの作業ツリーのセッションでも同じファイルを読むためである。
   - 移した script に、マシン固有のパスを書かない（DN-247-4）。
-- **DC-247-10** `break-check.mjs` が `scripts/dev/break-check.mjs` にあり、テストを持ち、テストのコマンドをシェル（Git Bash）で実行して `./gradlew` も起動できる。使い方が skill `local-dev` にある。
+- **DC-247-10** `break-check.mjs` が `scripts/dev/break-check.mjs` にあり、テストを持ち、テストのコマンドをシェル（Git Bash）で実行して `./gradlew` も起動できる。Git Bash のパスは、spec 246 が置いた `scripts/dev/lib/git-bash.mjs` の `gitBash()` で求める（名前だけの `bash` は WSL の bash を指すことがあるため）。使い方が skill `local-dev` にある。
 - **DC-247-11** `merge-deps.sh` が `scripts/dev/merge-deps.sh` にあり、使い方が skill `sessions` にある。script はマージを実行せず、最新にして CI を待ち、マージできる pull request ごとに `gh pr merge <番号> --merge --match-head-commit <SHA>` のコマンドを出力する。エージェントがそのコマンドを 1 つずつ実行する。理由：spec 246 の hook は Bash のコマンドの文字列を読むので、script の中の `gh pr merge` を判定できない。
 - **DC-247-12** 本 spec のマージの後の後片付け（[開発の進め方](../../rules/workflow.md) 第 5.7 節）で、メインの作業ツリーの `.claude/settings.local.json` の hook を新しい置き場所の script に替え、`/.local/agent/` の古いツールを削除する。マージの前に替えると、新しい script がメインの作業ツリーになく、メインの作業ツリーを使う他のセッションの hook が動かなくなるためである。替える前に issue 担当に知らせる（DC-247-8 と同じ）。
-- **DC-247-13** skill `zh-mixing` の SKILL.md から、「手元の古い検査（`.local/agent/check-zh.mjs`）からの置き換え」の段落を削除している。
+  - 替えた後の 3 つの hook（backslash-guard、session-start、中国語の混入の PostToolUse）のコマンドは、spec 246 の `settings.json` と同じ書き方にする。script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから求め、そこになければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う（DC-246-5）。理由：メインの作業ツリーの `settings.local.json` は、全ての作業ツリーで使われる（第 1 節）。本 spec の script を含まないブランチでも、メインの作業ツリーの script で動かすためである。
+- **DC-247-13** skill `zh-mixing` の SKILL.md から、「手元の古い検査（`.local/agent/check-zh.mjs`）からの置き換え」の段落を削除している。設定の手順にある Claude Code の hook の例が、DC-247-12 の書き方になっている。
 - **DC-247-14** 移した script のテストが `scripts/ci/check-all.sh` の script のテスト（`scripts/dev/**/*.test.mjs`）に含まれ、通る。
 
 ### DS-247-4 作業ツリーの置き場所を決めて文書にする（D / P2）
 
 - **DC-247-15** [エージェントの作業フロー](../../rules/subagents.md) の並行の単位の節（第 4 節）か skill `sessions` が、作業ツリーの置き場所を `.claude/worktrees/<issue の番号>-<短い名前>` と書いている。あわせて、手動で作る方法（`git worktree add`）と、デスクトップアプリが作る作業ツリーも同じ場所に置かれることを書いている。
-- **DC-247-16** 同じ箇所が、作業ツリーのセッションで読まれる設定（`.claude/settings.local.json` と `$CLAUDE_PROJECT_DIR`）の違いを書いている。内容は spec 246 の第 1 節の調べ（「Claude Code の hook と permission の働き」）を写し、出典として spec 246 のアーカイブを示す。
+- **DC-247-16** 同じ箇所が、作業ツリーのセッションで読まれる設定（`.claude/settings.local.json` と `$CLAUDE_PROJECT_DIR`）の違いを書いている。内容は、第 1 節の 2026-10-29 の確認にする（デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む）。spec 246 の第 1 節の調べ（文書の記述）と違うことも書く。
 
 ### DS-247-5 skill の置き場所を決めて文書にする（#22）（D / P2）
 
@@ -226,6 +228,13 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 - 実装を始める前に、最新の `develop`（spec 246 のマージを含む）を作業ブランチに取り込む。取り込まないと、spec 246 の `settings.json` の hook がこの作業ツリーのセッションで効かない（spec 246 第 7 節）。
 - 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）では、spec 246 がマージした内容を第 3 節と照合し、差があれば本 spec を先に修正する。照合するものは、`scripts/dev/hooks/` の置き場所とテストの glob、`settings.json` と `settings.local.json` の分け方の文言、AGENTS.md の環境の節、作業ツリーの設定の読み方の記述、マージの hook が Bash のコマンドの文字列だけを読むこと（DC-247-11）である。
   - hook のコマンドの書き方：spec 246 は、hook の script のパスを `$CLAUDE_PROJECT_DIR` でなく `git rev-parse --show-toplevel` から求める（issue 担当のセッション、2026-10-29）。DC-247-12 で差し替える `settings.local.json` の 3 つの hook（backslash-guard、session-start、zh-mixing の PostToolUse）と、skill `zh-mixing` の設定の手順の例を、この書き方に合わせるかを照合する。`session-start.mjs` が読む `environment.md` の場所は、hook のコマンドの書き方と別に DC-247-9 で決める。
+- 照合の結果（2026-10-29、`develop` の d57301f7 を取り込んだ後）。設計（第 6 節の決めたこと）は変わらない。
+  - `scripts/dev/hooks/` の置き場所、テストの glob（`scripts/dev/**/*.test.mjs`）、AGENTS.md の環境の節の分け方、マージの hook が Bash のコマンドの文字列だけを読むことは、第 3 節と合う。
+  - `settings.json` の PreToolUse（`agent-guard.mjs`、Bash と PowerShell）と、`settings.local.json` の backslash-guard（Bash）は、別の hook として両方が動く。判定するもの（git・gh のコマンドと、heredoc・`node -e` の `\`）は重ならない。
+  - 作業ツリーのセッションが読む `settings.local.json` が、spec 246 の第 1 節の記述と違った（第 1 節）。DC-247-16 の内容を、動かして確認したものに修正した。
+  - hook のコマンドの書き方は、spec 246 に合わせる（DC-247-12、13 に追加した）。
+  - spec 246 が置いた `scripts/dev/lib/git-bash.mjs` を break-check で使う（DC-247-10 に追加した）。
+  - 並行する spec はない（`docs/specs/` の下は本 spec だけ）。
 - 実装の並行の数の上限は 3 に決まった（issue 担当のセッション、2026-10-29）。利用者の確認を受けたら、issue 担当のセッションに聞かずに始めてよい。
 - 本 spec が変えるファイルと、他の spec との重なり（2026-10-28）：
 
@@ -273,7 +282,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 - [ ] **T247-01-07** 手元の設定の差し替えを用意し、この作業ツリーで確認する（DC-247-12）。
   - 依存：T247-01-02
   - 範囲：第 9 節（差し替える `settings.local.json` の hook の行）
-  - 確認方法：差し替える hook のコマンドを、この作業ツリーで hook の入力の形の JSON を渡して実行し、`environment.md` が出力されること、heredoc の `\` が拒否されることを確認する。結果を第 9 節に書く。メインの作業ツリーの設定と `/.local/agent/` は変えない。
+  - 確認方法：差し替える hook のコマンド（DC-247-12 の書き方）を、この作業ツリーで実行する。hook の入力の形の JSON を渡し、次を確認する。`environment.md` が出力される。heredoc の `\` が拒否される。中国語の混入が見つかる。結果を第 9 節に書く。メインの作業ツリーの設定と `/.local/agent/` は変えない。
 - [ ] **T247-01-08** 縮めた `environment.md` を用意する（DC-247-6〜8）。
   - 依存：T247-01-06
   - 範囲：`/.local/memo/refactor1/247-environment.md`（差し替える内容。Git に入らない）

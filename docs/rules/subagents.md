@@ -132,7 +132,7 @@
 
 - 置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`。`.gitignore` で無視され、検索の対象にならない。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。Claude のデスクトップアプリが作る作業ツリーも同じ場所に置かれる。IntelliJ の `reformat_file` が使えない注意は [バックエンドの書き方](backend-coding.md)。
 - 作業ツリーのセッションが読む設定・定義・skill と、変更が効く時点は、skill `sessions` のツールの注の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `.claude/settings.local.json` を読む。作業ツリーに `settings.local.json` がなくても、メインの作業ツリーの hook が動く（デスクトップアプリの作業ツリーで動かして確認した、2026-10-29）。`$CLAUDE_PROJECT_DIR` もメインの作業ツリーを指す。
-- Claude Code の文書は、作業ツリーのセッションがその作業ツリーの `settings.local.json` を読むと書いており、spec 246 第 1 節の調べもこの記述による。作業ツリーで起動した `claude -p` は文書の記述のとおりだが、デスクトップアプリの作業ツリーのセッションは上のとおりで、文書の記述とは違う。
+- Claude Code の文書は、作業ツリーのセッションがその作業ツリーの `settings.local.json` を読むと書いており、spec 246 第 1 節の調べもこの記述による。作業ツリーで起動した `claude -p` は文書の記述のとおりだが、デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読み、文書の記述とは違う。
 - 作業ツリーにない script を hook が呼ぶと失敗するので、`settings.local.json` の hook のコマンドは、script のパスを `git rev-parse --show-toplevel` の作業ツリーから先に探し、なければ `$CLAUDE_PROJECT_DIR` の下を使う形にする。探し方は `settings.json` と同じだが、どちらにも見つからないときは、`settings.json` はコマンドを止め、`settings.local.json` の例は何もせず通す（skill `local-dev` の「手元の hook の設定」）。
 
 ## 5. モデルや設定を替えるとき

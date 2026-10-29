@@ -105,7 +105,7 @@ spec 245（作業の流れとレビュー。issue #245、pull request [#253](htt
 - **DC-246-13** 同じ hook が、マージのコマンドを次の順に判定する。`gh` をフルパスで呼ぶ形も対象にする。
   1. `gh api` によるマージ（REST の `…/pulls/<番号>/merge` と、GraphQL の mutation `mergePullRequest`）と、`gh pr merge --admin` は拒否し、`gh pr merge --match-head-commit` を使うよう返す。
   2. `gh pr merge` に `--match-head-commit` がなければ拒否する。自動のマージを解除するだけの `--disable-auto` は、マージでないので通す。
-  3. `--auto` と、GraphQL の mutation `enablePullRequestAutoMerge` は確認を求める（予約のマージは、マージの時点の条件を判定できないため）。GraphQL の本文を読めないとき（ファイルから読む形、`$(…)` で作る形）も確認を求める。シェルの展開を含む `-f`・`-F` の値も、読める部分は 1 の判定に使う（展開を含んでも `mergePullRequest` があれば拒否する）。読めない本文とするのは、キーが `query` の値だけで、GraphQL の変数の値（`query` 以外のキー）は操作にならないので、展開を含んでも見ない。GraphQL の判定は、エンドポイントが `graphql`、`/graphql`、`https://<ホスト>/graphql` のどれでも行う。
+  3. `--auto` と、GraphQL の mutation `enablePullRequestAutoMerge` は確認を求める（予約のマージは、マージの時点の条件を判定できないため）。GraphQL の本文を読めないとき（ファイルから読む形、`$(…)` で作る形）も確認を求める。シェルの展開を含む `-f`・`-F` の値も、読める部分は 1 の判定に使う（展開を含んでも `mergePullRequest` があれば拒否する）。読めない本文とするのは、キーが `query` の値が展開を含むときと、キー（`=` の前）そのものが展開を含むとき（`=` がなく展開を含む値を含む。展開の後に `query` になりうるため）だけで、GraphQL の変数の値（展開を含まないキーで、`query` 以外のもの）は操作にならないので、展開を含んでも見ない。GraphQL の判定は、エンドポイントが `graphql`、`/graphql`、`https://<ホスト>/graphql` のどれでも行う。
   4. DC-246-14 の条件を全て満たせば通す。
   5. それ以外と、pull request の情報を読めないとき（`gh` の失敗、タイムアウト）は、確認を求める。
 - **DC-246-14** 通す条件は、DC-245-26 の条件のうち、未解決の指摘が 0 であること（第 5 節）を除いたものである。
@@ -317,6 +317,10 @@ T246-01-06 のレビューで、hook が Bash のツールだけを判定し、P
   - 依存：T246-02-05
   - 範囲：`scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`
   - 確認方法：指摘の 3 つの例（`$PR_ID` を含む `mergePullRequest` の拒否、`addSubIssue` と読み取りの変数の展開を通す）のテストが修正の前に失敗し、修正の後に通る。`check-all.sh` が通る。
+- [x] **T246-02-07** [リスク] pull request #268 の 4 回目の審査の指摘（高 1 件）を直す（DC-246-13 の 3）。キー（`=` の前）そのものが展開を含む `-f`・`-F` の値（`=` がない値を含む）も、読めない本文として確認を求める。
+  - 依存：T246-02-06
+  - 範囲：`scripts/dev/hooks/agent-guard.mjs`・`agent-guard.test.mjs`
+  - 確認方法：指摘の 3 つの例（`-f "$ARG"`、`-f "$(printf 'query=%s' …)"`、`-f "${K}=$(cat merge.graphql)"`）の確認のテストが修正の前に失敗し、修正の後に通る。`check-all.sh` が通る。
 
 ## 8. 後回しにする作業と起票の案
 

@@ -810,6 +810,18 @@ describe('マージのコマンドを判定する', () => {
     }
   })
 
+  test('gh api graphql の -f・-F のキー（最初の = の前）がシェルの展開を含むときは、query かを判定できないので、読めない本文として確認を求める', () => {
+    for (const command of [
+      'gh api graphql -f "$ARG"',
+      `gh api graphql -f "$(printf 'query=%s' "$(cat merge.graphql)")"`,
+      'gh api graphql -f "${K}=$(cat merge.graphql)"',
+      'gh api graphql -F "$K"=@merge.graphql',
+      'gh api graphql --raw-field="$ARG"',
+    ]) {
+      assertAsked(command, /読めない/, fakeDeps())
+    }
+  })
+
   test('本文の編集の後に検査「危険度の照合」が再実行されていなければ確認を求め、再実行されていれば通す', () => {
     // 照合の開始の時刻は、check の既定（10:00）
     assertAsked(MERGE, /危険度の照合.*編集/, mergeDeps({ lastEditedAt: NEWER }))

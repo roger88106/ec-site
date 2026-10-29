@@ -1,10 +1,15 @@
 // アーカイブした spec の tasks（規模 L）と spec.md（規模 M）のレビューの記録の表を、時点ごとに集計する
 // 使い方：node .claude/skills/review/stats.cjs --round <弾の名前> --profile <profile の名前> <spec の番号> [<spec の番号> ...]
 // 弾と profile は表にないので引数で受ける。結果は標準出力に Markdown の表で出す
+// 同じ時点に複数のレビュー役が動いたときは、観点を「重複を除く」とした行の値を使う（なければ行を足し、その時点の数を出す）
 const fs = require('fs'), path = require('path')
 
 const COLUMNS = ['時点', '観点', 'モデル', '回数', 'token', '時間', '高', '必須', '推奨', '採用']
 const TIME_ORDER = ['段階', 'spec の最後', 'pull request の前', '[リスク] のタスクの後']
+// 同じ時点に複数のレビュー役が動いたとき、重複を除いた数を書く行の観点
+const DEDUP_VIEWPOINT = '重複を除く'
+// 表ごとの番号。同じ表の行だけを同じ時点として突き合わせるために、読んだ表に 1 つずつ付ける
+let nextTableId = 0
 
 /**
  * アーカイブの下から、番号の spec の表を持ちうる文書を探す。
@@ -53,9 +58,10 @@ function toNumber(cell) {
  * 見出しの行に一致する全ての表を読む。行頭の空白（箇条の下の字下げ）は除いて判定する。
  * 区切りの行の後から、「|」で始まらない行までを読む。見出しの行がなければ空の配列を返す。
  * 見出しがあって行が 0 件の表は、ファイル名を付けて標準エラーに警告する。
+ * 各行に、読んだ表の番号（table）と、観点が「重複を除く」の行か（dedup）を付ける。
  * @param {string} text 文書の全文
  * @param {string} [file] 警告に付けるファイル名
- * @returns {{time: string, token: number, tokenUnreadable: boolean, high: number, must: number, recommended: number, adopted: number}[]} 表の行
+ * @returns {{table: number, dedup: boolean, time: string, token: number, tokenUnreadable: boolean, high: number, must: number, recommended: number, adopted: number}[]} 表の行
  */
 function readReviewRows(text, file = '(不明)') {
   const lines = text.split(/\r?\n/).map((l) => l.trimStart())
@@ -64,6 +70,7 @@ function readReviewRows(text, file = '(不明)') {
   for (let start = 0; start < lines.length; start++) {
     const header = cellsOf(lines[start])
     if (!lines[start].startsWith('|') || header.length !== COLUMNS.length || !header.every((c, i) => c === COLUMNS[i])) continue
+    const tableId = nextTableId++
     let count = 0
     let i = start + 2
     for (; i < lines.length; i++) {
@@ -73,6 +80,8 @@ function readReviewRows(text, file = '(不明)') {
       if (cells.length < COLUMNS.length) continue
       const token = toNumber(cells[4])
       rows.push({
+        table: tableId,
+        dedup: cells[1] === DEDUP_VIEWPOINT,
         time: cells[0],
         token: token.value,
         tokenUnreadable: !token.ok,
@@ -105,32 +114,49 @@ function emptySum(time) {
 }
 
 /**
- * 行を時点ごとに集計する。「段階 n」は「段階」にまとめる。
+ * 行を時点ごとに集計する。「段階 n」は、n ごとに突き合わせたあとで「段階」にまとめる。
+ * 同じ表の同じ時点に観点「重複を除く」の行があれば、その時点の高・必須・推奨・採用は、その行の値を使い、他の行の値は足さない。
+ * 行の数と token は、「重複を除く」の行を数えず、足さない。
+ * 「重複を除く」の行がなく、行が 2 つ以上ある時点は、重複して数えているおそれがあるので数を返す。
  * @param {ReturnType<typeof readReviewRows>} rows 表の行
- * @returns {{byTime: ReturnType<typeof emptySum>[], total: ReturnType<typeof emptySum>, tokenUnreadable: number}} 時点ごとの合計、全体の合計、token が読めない行の数
+ * @returns {{byTime: ReturnType<typeof emptySum>[], total: ReturnType<typeof emptySum>, tokenUnreadable: number, noDedupTimes: number}} 時点ごとの合計、全体の合計、token が読めない行の数、重複を除く行がない時点の数
  */
 function aggregate(rows) {
+  // 表と時点（段階 n は n ごと）の組ごとに行を集める
+  const groups = new Map()
+  for (const r of rows) {
+    const name = r.time.replaceAll('`', '')
+    const key = `${r.table}|${name}`
+    if (!groups.has(key)) groups.set(key, { name, rows: [], dedup: null })
+    const group = groups.get(key)
+    if (r.dedup) group.dedup = r
+    else group.rows.push(r)
+  }
   const map = new Map()
   const total = emptySum('合計')
   let tokenUnreadable = 0
-  for (const r of rows) {
-    const name = r.time.replaceAll('`', '')
+  let noDedupTimes = 0
+  for (const { name, rows: reviewers, dedup } of groups.values()) {
     const time = /^段階 \d+$/.test(name) ? '段階' : name
     if (!map.has(time)) map.set(time, emptySum(time))
+    if (!dedup && reviewers.length > 1) noDedupTimes += 1
+    const counted = dedup ? [dedup] : reviewers
     for (const sum of [map.get(time), total]) {
-      sum.rows += 1
-      sum.token += r.token
-      sum.high += r.high
-      sum.must += r.must
-      sum.recommended += r.recommended
-      sum.adopted += r.adopted
+      sum.rows += reviewers.length
+      for (const r of reviewers) sum.token += r.token
+      for (const r of counted) {
+        sum.high += r.high
+        sum.must += r.must
+        sum.recommended += r.recommended
+        sum.adopted += r.adopted
+      }
     }
-    if (r.tokenUnreadable) tokenUnreadable += 1
+    for (const r of reviewers) if (r.tokenUnreadable) tokenUnreadable += 1
   }
   const rank = (t) => (TIME_ORDER.includes(t) ? TIME_ORDER.indexOf(t) : TIME_ORDER.length)
   const byTime = [...map.values()].sort((a, b) => rank(a.time) - rank(b.time))
   for (const sum of [...byTime, total]) sum.rate = rate(sum.adopted, sum.high + sum.must + sum.recommended)
-  return { byTime, total, tokenUnreadable }
+  return { byTime, total, tokenUnreadable, noDedupTimes }
 }
 
 /**
@@ -152,6 +178,7 @@ function formatReport(meta, result) {
     line(result.total),
     '',
     `token が読めない行の数：${result.tokenUnreadable}`,
+    `重複を除く行がない時点の数：${result.noDedupTimes}`,
   ].join('\n')
 }
 

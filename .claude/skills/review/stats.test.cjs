@@ -198,3 +198,59 @@ test('時点は 段階・spec の最後・pull request の前・[リスク] の�
   const { byTime } = aggregate([row('`[リスク]` のタスクの後'), row('pull request の前'), row('spec の最後'), row('段階 1')])
   assert.deepEqual(byTime.map((t) => t.time), ['段階', 'spec の最後', 'pull request の前', '[リスク] のタスクの後'])
 })
+
+/** 重複を除く行の見本の表（段階 1 に 2 人のレビュー役と重複を除く行、段階 2 に 1 人、spec の最後に 2 人で重複を除く行なし）。 */
+const DEDUP_TABLE = [
+  HEADER,
+  SEP,
+  '| 段階 1 | 網羅性 | 汎用 | 1 | 50000 | 3m | 1 | 2 | 1 | 2 |',
+  '| 段階 1 | 規則 | 汎用 | 1 | 30000 | 2m | 1 | 1 | 0 | 1 |',
+  '| 段階 1 | 重複を除く | — | — | — | — | 1 | 2 | 1 | 3 |',
+  '| 段階 2 | 網羅性 | 汎用 | 1 | 10000 | 1m | 0 | 1 | 0 | 1 |',
+  '| spec の最後 | 規則 | 高性能 | 1 | 20000 | 4m | 0 | 1 | 1 | 1 |',
+  '| spec の最後 | 安全 | 高性能 | 1 | 10000 | 1m | 0 | 1 | 0 | 1 |',
+].join('\n')
+
+test('重複を除く行がある時点は、その行の高・必須・推奨・採用を使い、他の行の値は足さない', () => {
+  const stage = aggregate(readReviewRows(DEDUP_TABLE)).byTime.find((t) => t.time === '段階')
+  // 段階 1 は重複を除く行の 1・2・1・3、段階 2 は行の 0・1・0・1 を合計する
+  assert.equal(stage.high, 1)
+  assert.equal(stage.must, 3)
+  assert.equal(stage.recommended, 1)
+  assert.equal(stage.adopted, 4)
+  assert.equal(stage.rate, '80.0%')
+})
+
+test('重複を除く行がない時点は、今までどおり行の値を合計する', () => {
+  const last = aggregate(readReviewRows(DEDUP_TABLE)).byTime.find((t) => t.time === 'spec の最後')
+  assert.equal(last.must, 2)
+  assert.equal(last.recommended, 1)
+  assert.equal(last.adopted, 2)
+})
+
+test('重複を除く行は行の数に数えず、token も足さず、token が読めない行にも数えない', () => {
+  const result = aggregate(readReviewRows(DEDUP_TABLE))
+  const stage = result.byTime.find((t) => t.time === '段階')
+  assert.equal(stage.rows, 3)
+  assert.equal(stage.token, 90000)
+  assert.equal(result.total.rows, 5)
+  assert.equal(result.tokenUnreadable, 0)
+})
+
+test('段階 1 と段階 2 は別の時点として扱い、重複を除く行は同じ n の行にだけ効く', () => {
+  const text = [HEADER, SEP, '| 段階 1 | 網羅性 | 汎用 | 1 | 1 | 1m | 3 | 0 | 0 | 0 |', '| 段階 2 | 網羅性 | 汎用 | 1 | 1 | 1m | 4 | 0 | 0 | 0 |', '| 段階 2 | 重複を除く | — | — | — | — | 1 | 0 | 0 | 0 |'].join('\n')
+  const stage = aggregate(readReviewRows(text)).byTime.find((t) => t.time === '段階')
+  assert.equal(stage.high, 3 + 1)
+})
+
+test('重複を除く行がなく、行が 2 つ以上ある時点の数を警告として出す（行が 1 つだけの時点は数えない）', () => {
+  const result = aggregate(readReviewRows(DEDUP_TABLE))
+  assert.equal(result.noDedupTimes, 1)
+  assert.match(formatReport({ round: '1', profile: 'p', specs: ['1'] }, result), /重複を除く行がない時点の数：1/)
+})
+
+test('重複を除く行は、同じ表の中の同じ時点にだけ効き、別の表の同じ時点には効かない', () => {
+  const second = [HEADER, SEP, '| 段階 1 | 網羅性 | 汎用 | 1 | 5000 | 1m | 5 | 0 | 0 | 5 |'].join('\n')
+  const stage = aggregate([...readReviewRows(DEDUP_TABLE), ...readReviewRows(second)]).byTime.find((t) => t.time === '段階')
+  assert.equal(stage.high, 1 + 0 + 5)
+})

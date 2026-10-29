@@ -14,7 +14,7 @@ import java.util.List;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * リポジトリと腐敗防止層の名前の形の検査（docs/rules/backend-coding.md 第 5.2 節）。<br />
+ * リポジトリと腐敗防止層の名前の形の検査（docs/05-開発規則/backend-coding.md 第 5.2 節）。<br />
  * service とイベントの名前は、用途や時制の判断が必要なので、レビューで確認する。
  */
 class NamingTest {

@@ -8,14 +8,14 @@ describe('設計の文書の関連 spec の検査', () => {
       '| 項目 | 内容 |',
       '|------|------|',
       '| レベル | A |',
-      '| 関連 spec | [007](../../specs/007-payment)、[009](../../specs/009-shipping)、[017](../../specs/017-stability) |',
+      '| 関連 spec | [007](../08-spec/007-payment)、[009](../08-spec/009-shipping)、[017](../08-spec/017-stability) |',
     ].join('\n')
     assert.deepEqual(parseRelatedSpecs(markdown), ['007', '009', '017'])
     assert.equal(parseRelatedSpecs('| 項目 | 内容 |'), null)
   })
 
   test('関連 spec の行の脚注（[1] など）は、spec の番号として読まない', () => {
-    const markdown = '| 関連 spec | [007](../../specs/007-payment)[1]、[9](../../specs/9-shipping) ※[2] |'
+    const markdown = '| 関連 spec | [007](../08-spec/007-payment)[1]、[9](../08-spec/9-shipping) ※[2] |'
     assert.deepEqual(parseRelatedSpecs(markdown), ['007', '9'])
   })
 
@@ -29,7 +29,7 @@ describe('設計の文書の関連 spec の検査', () => {
   })
 
   test('関連 spec の行の [011] と [7] を、別の spec として読む', () => {
-    const markdown = '| 関連 spec | [011](../../specs/archive/mvp/011-dev-foundation)、[7](../../specs/7-dev-process) |'
+    const markdown = '| 関連 spec | [011](../08-spec/archive/mvp/011-dev-foundation)、[7](../08-spec/7-dev-process) |'
     assert.deepEqual(parseRelatedSpecs(markdown), ['011', '7'])
   })
 
@@ -59,10 +59,10 @@ describe('設計の文書の関連 spec の検査', () => {
   })
 
   test('ステージした設計の文書を、次の commit のメッセージの 1 行目と照合する', () => {
-    const payment = { file: 'docs/design/modules/payment.md', markdown: '| 関連 spec | [007](../../specs/007-payment)、[017](../../specs/017-stability) |' }
-    const guide = { file: 'docs/guides/setup.md', markdown: '# 開発環境の起動' }
+    const payment = { file: 'docs/03-機能仕様/payment.md', markdown: '| 関連 spec | [007](../08-spec/007-payment)、[017](../08-spec/017-stability) |' }
+    const guide = { file: 'docs/06-手順書/setup.md', markdown: '# 開発環境の起動' }
     assert.deepEqual(findMissingInStaged([payment, guide], 'payment: 構成を追加する（T019-01-07）', []), [
-      { file: 'docs/design/modules/payment.md', spec: '019' },
+      { file: 'docs/03-機能仕様/payment.md', spec: '019' },
     ])
     assert.deepEqual(findMissingInStaged([payment], 'payment: 期限切れを直す（T017-06-01）', []), [])
     assert.deepEqual(findMissingInStaged([payment], 'docs: 言い回し（T019-05-03）', ['T019-05']), [])
@@ -85,35 +85,35 @@ describe('設計の文書の関連 spec の検査', () => {
 })
 
 describe('関連 spec のリンクの形', () => {
-  const dirs = new Set(['docs/specs/archive/mvp/007-payment', 'docs/specs/archive/1to10/155-backend-structure', 'docs/specs/185-new-checks'])
+  const dirs = new Set(['docs/08-spec/archive/mvp/007-payment', 'docs/08-spec/archive/1to10/155-backend-structure', 'docs/08-spec/185-new-checks'])
   const isDirectory = (path) => dirs.has(path)
-  const check = (row) => findBadRelatedLinks('docs/design/modules/payment.md', `| 関連 spec | ${row} |`, isDirectory)
+  const check = (row) => findBadRelatedLinks('docs/03-機能仕様/payment.md', `| 関連 spec | ${row} |`, isDirectory)
 
   test('spec のディレクトリを指すリンクは、アーカイブの下も進行中の spec も通る', () => {
-    assert.deepEqual(check('[007](../../specs/archive/mvp/007-payment)、[155](../../specs/archive/1to10/155-backend-structure)、[185](../../specs/185-new-checks)'), [])
+    assert.deepEqual(check('[007](../08-spec/archive/mvp/007-payment)、[155](../08-spec/archive/1to10/155-backend-structure)、[185](../08-spec/185-new-checks)'), [])
   })
 
   test('spec.md などのファイルを指すリンクは失敗にする', () => {
-    assert.equal(check('[007](../../specs/archive/mvp/007-payment/spec.md)').length, 1)
+    assert.equal(check('[007](../08-spec/archive/mvp/007-payment/spec.md)').length, 1)
   })
 
   test('存在しないディレクトリ（アーカイブへの移動前の古いパスなど）を指すリンクは失敗にする', () => {
-    assert.equal(check('[007](../../specs/007-payment)').length, 1)
+    assert.equal(check('[007](../08-spec/007-payment)').length, 1)
   })
 
-  test('docs/specs/ の下でないディレクトリを指すリンクは失敗にする', () => {
-    const other = (row) => findBadRelatedLinks('docs/design/modules/payment.md', `| 関連 spec | ${row} |`, () => true)
-    assert.equal(other('[007](../../guides/007-payment)').length, 1)
-    assert.equal(other('[007](../../specs/archive/007-payment)').length, 1)
-    assert.deepEqual(other('[007](../../specs/archive/mvp/007-payment)'), [])
+  test('docs/08-spec/ の下でないディレクトリを指すリンクは失敗にする', () => {
+    const other = (row) => findBadRelatedLinks('docs/03-機能仕様/payment.md', `| 関連 spec | ${row} |`, () => true)
+    assert.equal(other('[007](../06-手順書/007-payment)').length, 1)
+    assert.equal(other('[007](../08-spec/archive/007-payment)').length, 1)
+    assert.deepEqual(other('[007](../08-spec/archive/mvp/007-payment)'), [])
   })
 
   test('リンクの番号と、ディレクトリ名の番号が違うものは失敗にする', () => {
-    assert.equal(check('[155](../../specs/archive/mvp/007-payment)').length, 1)
+    assert.equal(check('[155](../08-spec/archive/mvp/007-payment)').length, 1)
   })
 
   test('関連 spec の行がない文書は見ない', () => {
-    assert.deepEqual(findBadRelatedLinks('docs/guides/setup.md', '# 開発環境の起動', isDirectory), [])
+    assert.deepEqual(findBadRelatedLinks('docs/06-手順書/setup.md', '# 開発環境の起動', isDirectory), [])
   })
 })
 

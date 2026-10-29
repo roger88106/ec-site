@@ -24,7 +24,7 @@ public record OrderShipment(Carrier carrier, String trackingNumber, Status statu
     }
 
     /**
-     * 配送状態（docs/design/modules/shipping.md）
+     * 配送状態（docs/03-機能仕様/shipping.md）
      */
     public enum Status {
 

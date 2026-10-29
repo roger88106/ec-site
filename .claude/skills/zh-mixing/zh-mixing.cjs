@@ -18,7 +18,7 @@ const CONFIG_KEY = 'ecsite.instructionLanguage'
 const ENABLED_VALUE = 'zh'
 const LOCAL_ALLOW = '.local/agent/zh-allow.txt'
 /** 追跡しているファイルを調べるとき、見ないもの（アーカイブした spec は当時の記録） */
-const TRACKED_EXCLUDED = /^docs\/specs\/archive\//
+const TRACKED_EXCLUDED = /^docs\/08-spec\/archive\//
 const COMMIT_MSG = 'COMMIT_MSG'
 
 /**

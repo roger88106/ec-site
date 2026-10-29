@@ -27,7 +27,7 @@ import static com.ecsite.jooq.catalog.Tables.VARIANT;
 import static com.ecsite.jooq.catalog.Tables.VARIANT_AXIS_VALUE;
 
 /**
- * C 側向けの商品照会のクエリリポジトリ（docs/design/modules/catalog.md）
+ * C 側向けの商品照会のクエリリポジトリ（docs/03-機能仕様/catalog.md）
  */
 @Repository
 @RequiredArgsConstructor

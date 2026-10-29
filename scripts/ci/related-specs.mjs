@@ -16,8 +16,8 @@ import { exitIfShallow } from './lib/shallow-clone.mjs'
 /** 概要の表の「関連 spec」の行 */
 const RELATED_ROW = /^\|\s*関連 spec\s*\|(.*)\|\s*$/m
 
-/** spec のディレクトリのパス（リポジトリのルートから）。進行中は docs/specs/<番号>-<名前>、完了したものは docs/specs/archive/<まとまり>/<番号>-<名前> */
-const SPEC_DIRECTORY = /^docs\/specs\/(?:archive\/[^/]+\/)?\d+-[^/]+$/
+/** spec のディレクトリのパス（リポジトリのルートから）。進行中は docs/08-spec/<番号>-<名前>、完了したものは docs/08-spec/archive/<まとまり>/<番号>-<名前> */
+const SPEC_DIRECTORY = /^docs\/08-spec\/(?:archive\/[^/]+\/)?\d+-[^/]+$/
 
 /** 新しい形式のタスク番号。spec の番号は文字列のまま使い、0 で始まる 3 桁（T011-）は MVP、0 で始めない番号（T7-）は 1→10 の spec として区別する */
 const TASK_ID = /(?<![A-Za-z0-9])T(\d+)-\d{2}-\d{2}/g
@@ -35,7 +35,7 @@ export function parseRelatedSpecs(markdown) {
 
 /**
  * 概要の表の「関連 spec」の行のリンクが、spec のディレクトリを指すかを確認する。
- * 正しい形は、`[番号](../../specs/<番号>-<名前>)` か `[番号](../../specs/archive/<まとまり>/<番号>-<名前>)`（spec.md などのファイルや、移動前の古いパスは不可）。
+ * 正しい形は、機能仕様の文書（docs/03-機能仕様/）からは `[番号](../08-spec/<番号>-<名前>)` か `[番号](../08-spec/archive/<まとまり>/<番号>-<名前>)`（spec.md などのファイルや、移動前の古いパスは不可）。
  *
  * @param {string} file 文書のパス（リポジトリのルートから）
  * @param {string} markdown 文書
@@ -47,7 +47,7 @@ export function findBadRelatedLinks(file, markdown, isDirectory) {
   if (!row) return []
   return [...row[1].matchAll(/\[([^\]]*)\]\(([^)\s]*)\)/g)].flatMap(([, text, link]) => {
     const target = posix.normalize(posix.join(posix.dirname(file), link))
-    if (!SPEC_DIRECTORY.test(target)) return [`${file}：関連 spec のリンク ${link} が、docs/specs/ の下の spec のディレクトリを指していない`]
+    if (!SPEC_DIRECTORY.test(target)) return [`${file}：関連 spec のリンク ${link} が、docs/08-spec/ の下の spec のディレクトリを指していない`]
     if (!isDirectory(target)) return [`${file}：関連 spec のリンク ${link} が、spec のディレクトリを指していない`]
     if (!posix.basename(target).startsWith(`${text}-`)) return [`${file}：関連 spec のリンク ${link} の番号が、リンクの文字 ${text} と合わない`]
     return []
@@ -144,7 +144,8 @@ function isDirectory(path) {
 /** 次の commit（ステージした内容とメッセージ）を照合する。commit-msg の hook から呼ぶ */
 function checkStaged(messageFile, excludedPrefixes) {
   const subject = readFileSync(messageFile, 'utf8').split(/\r?\n/)[0]
-  const docs = execFileSync('git', ['diff', '--cached', '--name-only', '--diff-filter=AMR', '--', 'docs/*.md'], { encoding: 'utf8' })
+  // 日本語を含むパスを、引用符と 8 進数の形にせずに読む（core.quotepath の既定のままでは git show に渡せないため）
+  const docs = execFileSync('git', ['-c', 'core.quotepath=false', 'diff', '--cached', '--name-only', '--diff-filter=AMR', '--', 'docs/*.md'], { encoding: 'utf8' })
     .split('\n')
     .filter(Boolean)
     .map((file) => ({ file, markdown: execFileSync('git', ['show', `:${file}`], { encoding: 'utf8' }) }))

@@ -5,7 +5,7 @@ import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { findMvpList, listSpecDirs } from './spec-dirs.mjs'
 
-/** 直下とアーカイブに spec を置いた docs/specs の代わり */
+/** 直下とアーカイブに spec を置いた docs/08-spec の代わり */
 const specsDir = mkdtempSync(path.join(tmpdir(), 'spec-dirs-'))
 for (const dir of ['019-mvp-completion', 'archive/mvp/001-catalog', 'archive/mvp/018-docs', 'archive/mvp/notes', 'templates']) {
   mkdirSync(path.join(specsDir, dir), { recursive: true })

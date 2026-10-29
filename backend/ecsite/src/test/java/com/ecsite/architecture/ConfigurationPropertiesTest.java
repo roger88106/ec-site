@@ -31,7 +31,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 設定の値の型と設定のクラスの検査（docs/rules/backend-coding.md 第 6.1 節）。
+ * 設定の値の型と設定のクラスの検査（docs/05-開発規則/backend-coding.md 第 6.1 節）。
  */
 class ConfigurationPropertiesTest {
 

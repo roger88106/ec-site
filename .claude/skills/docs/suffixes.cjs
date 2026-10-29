@@ -11,9 +11,10 @@ if (!stem) {
 }
 const escaped = stem.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')
 const pattern = new RegExp(`${escaped}(\\p{Script=Hiragana}{1,2})`, 'gu')
-const files = execSync('git ls-files -co --exclude-standard "*.md"', { encoding: 'utf8' })
+// 日本語を含むパスを、引用符と 8 進数の形にせずに読む
+const files = execSync('git -c core.quotepath=false ls-files -co --exclude-standard "*.md"', { encoding: 'utf8' })
   .split('\n')
-  .filter((file) => file && !file.startsWith('docs/specs/archive/') && fs.existsSync(file))
+  .filter((file) => file && !file.startsWith('docs/08-spec/archive/') && fs.existsSync(file))
 const counts = new Map()
 for (const file of files) {
   fs.readFileSync(file, 'utf8').split(/\r?\n/).forEach((line, index) => {

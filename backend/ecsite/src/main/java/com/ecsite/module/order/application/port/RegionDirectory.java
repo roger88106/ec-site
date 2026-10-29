@@ -3,7 +3,7 @@ package com.ecsite.module.order.application.port;
 import java.util.Optional;
 
 /**
- * 地域の腐敗防止層（docs/design/modules/order.md「注文の成立」）。<br />
+ * 地域の腐敗防止層（docs/03-機能仕様/order.md「注文の成立」）。<br />
  * 地域のモジュールを別のサービスに切り出しても、注文はこの型だけを使う。
  */
 public interface RegionDirectory {

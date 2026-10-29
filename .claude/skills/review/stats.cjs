@@ -14,7 +14,7 @@ let nextTableId = 0
 /**
  * アーカイブの下から、番号の spec の表を持ちうる文書を探す。
  * ディレクトリの名前が「<番号>-」で始まるものを使い、規模 L は tasks/*.md、規模 M は spec.md を返す。
- * @param {string} root リポジトリのルート（docs/specs/archive を含むディレクトリ）
+ * @param {string} root リポジトリのルート（docs/08-spec/archive を含むディレクトリ）
  * @param {string} number spec の番号
  * @returns {string[] | null} 文書のパス。番号のディレクトリがなければ null、あっても tasks も spec.md もなければ空の配列
  */
@@ -29,7 +29,7 @@ function findSpecFiles(root, number) {
       else walk(full)
     }
   }
-  walk(path.join(root, 'docs', 'specs', 'archive'))
+  walk(path.join(root, 'docs', '08-spec', 'archive'))
   if (!dirs.length) return null
   const files = []
   for (const dir of dirs) {

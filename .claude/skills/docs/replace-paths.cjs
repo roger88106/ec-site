@@ -1,7 +1,7 @@
 // 文書を移した後に、リンクでないパスの文字（コード・skill・CI・script・文書の本文）を、移した先に置き換える
 // リンクは fix-links.cjs で直す。こちらはリポジトリのルートからのパスの文字だけを見る
 // 使い方：node .claude/skills/docs/replace-paths.cjs 旧パス=新パス ...（リポジトリのルートで。フォルダーも可）
-// 例：node .claude/skills/docs/replace-paths.cjs docs/specs/001-catalog-and-inventory=docs/specs/archive/mvp/001-catalog-and-inventory
+// 例：node .claude/skills/docs/replace-paths.cjs docs/08-spec/001-catalog-and-inventory=docs/08-spec/archive/mvp/001-catalog-and-inventory
 // 次は置き換えない（変えると壊れるもの、当時の記録）：
 //   - 適用済みのマイグレーションと seed（Flyway の checksum が変わり、既存の DB で起動に失敗する）
 //   - テストのデータ（*.test.* のファイル。旧パスを例として持つ）
@@ -10,7 +10,7 @@ const fs = require('node:fs')
 const { execSync } = require('node:child_process')
 
 /** 置き換えないファイル */
-const EXCLUDED = [/^backend\/ecsite\/src\/main\/resources\/db\//, /\.test\.[^/]+$/, /^docs\/specs\/archive\//]
+const EXCLUDED = [/^backend\/ecsite\/src\/main\/resources\/db\//, /\.test\.[^/]+$/, /^docs\/08-spec\/archive\//]
 
 /**
  * 置き換えないファイルか。
@@ -61,7 +61,8 @@ if (require.main === module) {
     console.error(error.message)
     process.exit(2)
   }
-  const files = execSync('git ls-files -co --exclude-standard', { encoding: 'utf8' })
+  // 日本語を含むパスを、引用符と 8 進数の形にせずに読む
+  const files = execSync('git -c core.quotepath=false ls-files -co --exclude-standard', { encoding: 'utf8' })
     .split('\n')
     .filter((file) => file && !isExcluded(file) && fs.existsSync(file))
   let changed = 0

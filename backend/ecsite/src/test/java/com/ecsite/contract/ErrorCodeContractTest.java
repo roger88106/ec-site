@@ -21,7 +21,7 @@ import static com.ecsite.contract.OpenApiNodes.map;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * エラーのコードの契約テスト（docs/rules/api-conventions.md 第 5 節）。<br />
+ * エラーのコードの契約テスト（docs/05-開発規則/api-conventions.md 第 5 節）。<br />
  * API ごとに、全体の列挙（{@code ErrorCode}）が、操作ごとの一覧（{@code x-error-codes}）と共通のエラー
  * （{@code x-common-error-codes}）の和と一致し、バックエンドのエラーのコードと過不足なく一致することを確認する。
  */

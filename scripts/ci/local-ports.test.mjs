@@ -48,7 +48,7 @@ const INPUT = {
   list: LIST,
   compose: COMPOSE,
   powershell: PS1,
-  docs: { 'docs/guides/setup.md': DOC },
+  docs: { 'docs/06-手順書/setup.md': DOC },
   sources: { 'e2e/src/urls.ts': "export const BACKEND_URL = 'http://localhost:8090'" },
 }
 
@@ -106,18 +106,18 @@ describe('ローカルのポートの一覧の検査', () => {
   })
 
   test('文書に一覧にないポートがあれば失敗にする', () => {
-    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/guides/setup.md': `${DOC}\nhttp://localhost:9999` } })
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': `${DOC}\nhttp://localhost:9999` } })
     assert.equal(problems.length, 1)
     assert.match(problems[0], /setup\.md.*9999/)
   })
 
   test('スロットの表の行が、スロットごとの値と違えば失敗にする', () => {
-    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/guides/setup.md': DOC.replace('| 1 | 18080 |', '| 1 | 18081 |') } })
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC.replace('| 1 | 18080 |', '| 1 | 18081 |') } })
     assert.ok(problems.some((problem) => /18081/.test(problem)))
   })
 
   test('一覧のポートがどの文書にも書かれていなければ失敗にする', () => {
-    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/guides/setup.md': DOC.replace(':8090', '') } })
+    const problems = findPortMismatches({ ...INPUT, docs: { 'docs/06-手順書/setup.md': DOC.replace(':8090', '') } })
     assert.equal(problems.length, 1)
     assert.match(problems[0], /8090.*文書/)
   })

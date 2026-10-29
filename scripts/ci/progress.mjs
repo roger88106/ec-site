@@ -1,7 +1,7 @@
 // spec の進捗が、README の進捗の表、MVP の完成までの一覧、tasks のチェックボックスで一致することを確認する（AGENTS.md「完了の基準」）。
 // - tasks がすべて済んだ spec は、2 つの表で「完了」。「完了」の spec は、tasks がすべて済んでいる
 // - 2 つの表の両方にある spec は、状態が同じ
-// - docs/specs/archive/1to10/ の spec（番号を 0 で埋めない）は、tasks がすべて済んでいる。進行中の spec（docs/specs/ の直下）は見ない
+// - docs/08-spec/archive/1to10/ の spec（番号を 0 で埋めない）は、tasks がすべて済んでいる。進行中の spec（docs/08-spec/ の直下）は見ない
 // 表の照合の対象は MVP の spec 011 以降（0 埋めの 3 桁。それより前の spec は、tasks の書き方がそろっていないため）。状態は、表の最後の列の最初の句点まで
 // 使い方：node scripts/ci/progress.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -18,7 +18,7 @@ const MVP_SPEC = /^0\d{2}$/
 /** 表の 1 行目のセルの spec の番号（リンクの文字） */
 const SPEC_CELL = /^\[(0\d{2})\]/
 
-/** 1→10 の spec をアーカイブしたディレクトリ（docs/specs/ から） */
+/** 1→10 の spec をアーカイブしたディレクトリ（docs/08-spec/ から） */
 const ARCHIVE_1TO10 = 'archive/1to10'
 
 /** tasks のタスクの行（字下げした補足の箇条書きは数えない） */
@@ -102,7 +102,7 @@ export function checkProgress(readme, mvp, tasks, firstSpec) {
 /**
  * spec（直下とアーカイブ）の tasks のチェックボックスを数える。
  *
- * @param {string} specsDir docs/specs のパス
+ * @param {string} specsDir docs/08-spec のパス
  * @returns {Map<string, { total: number, done: number }>} spec の番号 → タスクの数
  */
 export function readTasks(specsDir) {
@@ -133,7 +133,7 @@ function readTaskTexts(specDir) {
 /**
  * 1→10 の spec（アーカイブ）の tasks のチェックボックスを数える。
  *
- * @param {string} specsDir docs/specs のパス
+ * @param {string} specsDir docs/08-spec のパス
  * @returns {Map<string, { total: number, done: number }>} spec のディレクトリの名前 → タスクの数。tasks のない spec は total が 0
  */
 export function readArchivedTasks(specsDir) {
@@ -171,10 +171,10 @@ export function checkArchivedTasks(tasks) {
 }
 
 if (isMain(import.meta.url)) {
-  const specsDir = 'docs/specs'
+  const specsDir = 'docs/08-spec'
   const mvpList = findMvpList(specsDir)
   if (!mvpList) {
-    console.log('MVP の完成までの一覧（mvp.md）が、docs/specs/ の直下にもアーカイブの下にもない')
+    console.log('MVP の完成までの一覧（mvp.md）が、docs/08-spec/ の直下にもアーカイブの下にもない')
     process.exit(1)
   }
   const problems = [

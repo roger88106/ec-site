@@ -62,7 +62,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの標準の構成の検査（docs/rules/backend-coding.md 第 1 節）。<br />
+ * モジュールの標準の構成の検査（docs/05-開発規則/backend-coding.md 第 1 節）。<br />
  * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
@@ -128,9 +128,9 @@ class ModuleStructureTest {
     private static final int GUIDELINE_CLASSES_PER_PACKAGE = 10;
 
     /**
-     * バックエンドの書き方（Gradle が system property {@code rules.backend-coding} で渡す）
+     * バックエンドの書き方（Gradle が system property で渡すリポジトリのルートから）
      */
-    private static final Path RULES_BACKEND_CODING = Contracts.path("rules.backend-coding");
+    private static final Path RULES_BACKEND_CODING = Contracts.path("docs/05-開発規則/backend-coding.md");
 
     /**
      * バックエンドの書き方で、パッケージの大きさの表がある節の見出しの始まり

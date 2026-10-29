@@ -39,7 +39,8 @@ function reviewItems(rows) {
 
 /** git で管理している docs/ の文書からチェックリストを作って標準出力に出す。項目がなければ異常終了する。 */
 function main() {
-  const files = execSync('git ls-files "docs/*.md"', { encoding: 'utf8' }).split('\n').filter(Boolean)
+  // 日本語を含むパスを、引用符と 8 進数の形にせずに読む
+  const files = execSync('git -c core.quotepath=false ls-files "docs/*.md"', { encoding: 'utf8' }).split('\n').filter(Boolean)
   const out = []
   for (const file of files) {
     const table = readRuleTable(fs.readFileSync(file, 'utf8'), file)

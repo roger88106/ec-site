@@ -1,4 +1,4 @@
-// ロールと権限の対応表（docs/design/role-permissions.md）が、API の契約と運営者の realm の設定と一致することを確認する。
+// ロールと権限の対応表（docs/02-設計/role-permissions.md）が、API の契約と運営者の realm の設定と一致することを確認する。
 // 表は、管理 API の各操作の x-required-permission、運営者の realm のロール、店舗 API の各操作の security から作る。
 // 権限のない管理 API の操作、security のない店舗 API の操作、realm にない権限、契約の知らない書き方の行（読み飛ばさずに）、文書の表の食い違いで失敗にする。
 // 使い方：node scripts/ci/role-permissions.mjs（リポジトリのルートで。--write で文書の表を書き直す）
@@ -7,7 +7,7 @@ import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** 対応表の文書 */
-const DOCUMENT = 'docs/design/role-permissions.md'
+const DOCUMENT = 'docs/02-設計/role-permissions.md'
 const ADMIN_API = 'api/openapi/admin.yaml'
 const STORE_API = 'api/openapi/store.yaml'
 const ADMIN_REALM = 'docker/keycloak/realms/ec-admin-realm.json'

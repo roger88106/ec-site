@@ -3,7 +3,7 @@ package com.ecsite.tools.region;
 import java.util.Objects;
 
 /**
- * 郵便番号の表の 1 行（docs/design/modules/region.md「マスターデータ」）
+ * 郵便番号の表の 1 行（docs/03-機能仕様/region.md「マスターデータ」）
  *
  * @param postalCode       郵便番号（数字 7 桁）
  * @param municipalityCode 市区町村のコード

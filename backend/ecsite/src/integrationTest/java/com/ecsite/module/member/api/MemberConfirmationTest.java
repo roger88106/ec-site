@@ -32,7 +32,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 
 /**
- * 会員の確認の統合テスト（docs/design/modules/member.md）。<br />
+ * 会員の確認の統合テスト（docs/03-機能仕様/member.md）。<br />
  * 同時の初回の要求を確認するため、要求ごとにコミットする。ロールバックしないので、作った会員を後で消す。
  * トランザクションが読み取り専用かは、会員のリポジトリを包み、呼ばれたときの状態を記録して確認する。
  */

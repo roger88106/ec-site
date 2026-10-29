@@ -10,7 +10,7 @@ import org.springframework.stereotype.Component;
 import java.time.Clock;
 
 /**
- * 注文の出荷を受けて、出荷通知メールを送る（docs/design/modules/notification.md「出荷通知メール」）。<br />
+ * 注文の出荷を受けて、出荷通知メールを送る（docs/03-機能仕様/notification.md「出荷通知メール」）。<br />
  * 注文のコミットの後に、新しいトランザクションで受ける。送ったメールの記録と送信を同じトランザクションで行い、
  * 送信に失敗したら記録ごと巻き戻して、未完了のイベントの再発行で送り直す。
  */

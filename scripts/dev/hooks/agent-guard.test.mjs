@@ -406,12 +406,12 @@ describe('pre-commit hook を置いていないリポジトリの commit を拒�
     assert.equal(result?.decision, 'deny')
     assert.match(result.reason, /pre-commit/)
     assert.ok(result.reason.includes(path.join(CWD, '.git/hooks/pre-commit')), result.reason)
-    assert.match(result.reason, /docs\/guides\/setup\.md/)
+    assert.match(result.reason, /docs\/06-手順書\/setup\.md/)
   })
 
   test('hook のファイルが scripts/dev/hooks/pre-commit を呼んでいなければ拒否する', () => {
     const deps = fakeDeps({ files: { [path.join(CWD, '.git/hooks/pre-commit')]: '#!/bin/sh\nexit 0\n' } })
-    assertDenied('git commit -m x', /docs\/guides\/setup\.md/, deps)
+    assertDenied('git commit -m x', /docs\/06-手順書\/setup\.md/, deps)
   })
 
   test('対象のリポジトリを決められない（rev-parse が失敗する）ときは拒否する', () => {

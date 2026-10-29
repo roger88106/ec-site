@@ -15,14 +15,14 @@ describe('リンクでないパスの置き換え', () => {
   })
 
   test('アーカイブした spec の本文は置き換えない', () => {
-    assert.equal(isExcluded('docs/specs/archive/mvp/001-catalog-and-inventory/spec.md'), true)
+    assert.equal(isExcluded('docs/08-spec/archive/mvp/001-catalog-and-inventory/spec.md'), true)
   })
 
   test('それ以外のファイルは置き換えの対象にする', () => {
-    assert.equal(isExcluded('docs/design/modules/cart.md'), false)
+    assert.equal(isExcluded('docs/03-機能仕様/cart.md'), false)
     assert.equal(isExcluded('.claude/skills/review/SKILL.md'), false)
     assert.equal(isExcluded('scripts/ci/ac-check.mjs'), false)
-    assert.equal(isExcluded('docs/specs/019-mvp-completion/plan.md'), false)
+    assert.equal(isExcluded('docs/08-spec/019-mvp-completion/plan.md'), false)
   })
 
   test('旧パスと、その下のパスを新パスに置き換える', () => {

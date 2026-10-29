@@ -5,7 +5,7 @@ import org.slf4j.Logger;
 import java.util.function.IntSupplier;
 
 /**
- * 期限切れのデータの片付けの共通の処理（docs/design/common.md）。<br />
+ * 期限切れのデータの片付けの共通の処理（docs/02-設計/common.md）。<br />
  * カート、在庫の引当、注文手続きの片付けのジョブが使う。
  * 件数の上限ずつ消し、消した件数が上限と等しい間は繰り返す。
  * {@code @Scheduled} と {@code @SchedulerLock} は注釈の定数しか取れないので、ジョブに残す。

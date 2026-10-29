@@ -18,7 +18,7 @@ import { stripJavaComments } from './lib/strip-comments.mjs'
 export const TARGET_FILE = /^backend\/ecsite\/src\/integrationTest\/java\/com\/ecsite\/.*\.java$/
 
 /** 補助と、操作そのもののテストの表を持つ文書（リポジトリのルートからのパス） */
-export const TEST_WRITING_DOC = 'docs/rules/test-writing.md'
+export const TEST_WRITING_DOC = 'docs/05-開発規則/test-writing.md'
 
 /** イベントの発行の記録を読んでよい、非同期のイベントの補助 */
 export const ASYNC_EVENT_HELPERS = [

@@ -6,7 +6,7 @@ import java.util.UUID;
 
 /**
  * 在庫のリポジトリ。<br />
- * 在庫数の更新は読み込んで書き戻さず、DB 上の差分の加算で行う（docs/design/modules/inventory.md）。
+ * 在庫数の更新は読み込んで書き戻さず、DB 上の差分の加算で行う（docs/03-機能仕様/inventory.md）。
  */
 public interface StockItemRepository {
 

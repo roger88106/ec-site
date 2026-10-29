@@ -13,7 +13,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * 写しを集計する問い合わせ（docs/design/modules/reporting.md「集計」）。<br />
+ * 写しを集計する問い合わせ（docs/03-機能仕様/reporting.md「集計」）。<br />
  * 数える注文と日は売上の数え方で決める。商品を指定したら、その商品の明細だけを数え、送料は含めない。
  */
 public interface ReportQueryRepository {

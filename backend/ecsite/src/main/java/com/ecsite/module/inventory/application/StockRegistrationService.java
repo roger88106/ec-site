@@ -8,7 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.UUID;
 
 /**
- * 在庫の作成と削除のサービス（docs/design/modules/inventory.md）。<br />
+ * 在庫の作成と削除のサービス（docs/03-機能仕様/inventory.md）。<br />
  * 商品カタログのバリアントの登録・削除に合わせて、在庫を作る・消す。
  */
 @Service

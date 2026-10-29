@@ -1,4 +1,4 @@
-// モジュールの設計書（docs/design/modules/<モジュール>.md）の「データモデル」の節に、そのモジュールの全てのバージョン付きのマイグレーションを挙げていることを確認する。
+// モジュールの設計書（docs/03-機能仕様/<モジュール>.md）の「データモデル」の節に、そのモジュールの全てのバージョン付きのマイグレーションを挙げていることを確認する。
 // モジュールは、マイグレーションのファイル名 V<番号>__<接頭辞>_<内容>.sql の接頭辞で決める。接頭辞が設計書の名前と違うものだけ MODULE_OF_PREFIX に置く（ordering は order の設計書）。
 // マイグレーションが設計書に挙がるべきモジュールは、ファイル名の接頭辞のモジュール（common を除く）と、SQL の中のスキーマ付きの表の名前（<スキーマ>.<表>）のスキーマに当たるモジュールの和集合。
 // スキーマ common と CREATE SCHEMA の文は、どのモジュールにも当てない。SQL のコメント（-- と /* */）と文字列の中は見ない（読み飛ばす処理は lib/sql-code.mjs）。
@@ -18,7 +18,7 @@ import { isVersionedMigration } from './migrations.mjs'
 const MIGRATIONS = 'backend/ecsite/src/main/resources/db/migration/'
 
 /** モジュールの設計書の置き場所 */
-const DESIGNS = 'docs/design/modules/'
+const DESIGNS = 'docs/03-機能仕様/'
 
 /** どのモジュールにも属さないマイグレーションの接頭辞 */
 const COMMON_PREFIX = 'common'

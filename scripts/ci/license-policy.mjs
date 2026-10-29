@@ -1,5 +1,5 @@
 // 許可のライセンスの一覧が、文書と policy.json で一致することを確認する。
-// 文書は docs/design/licenses.md 第 2 節の表の「許可」の行（2 列目）、policy.json は scripts/ci/licenses/policy.json の allowed。
+// 文書は docs/05-開発規則/licenses.md 第 2 節の表の「許可」の行（2 列目）、policy.json は scripts/ci/licenses/policy.json の allowed。
 // 片方だけ直すと、文書の方針と CI が確認する方針が食い違うため、過不足を失敗にする。
 // 「許可」の行の 2 列目は、先に「。他に、」から後ろの文（ライセンスの名前でない説明）を除いてから、「、」で分けて読む。
 // 行がない、区切りが読めない（空の項目、空白を含む項目）、「許可」の行が複数あるときは、照合の対象から外れて誤って通るため、失敗にする。
@@ -9,7 +9,7 @@ import { isMain } from './lib/is-main.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
 /** ライセンスの方針の文書 */
-const DOC_FILE = 'docs/design/licenses.md'
+const DOC_FILE = 'docs/05-開発規則/licenses.md'
 
 /** ライセンスの検査の方針 */
 const POLICY_FILE = 'scripts/ci/licenses/policy.json'

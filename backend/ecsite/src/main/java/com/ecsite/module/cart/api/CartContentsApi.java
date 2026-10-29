@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 注文に公開するカートの API（docs/design/modules/cart.md「他のモジュールへの公開」）。<br />
+ * 注文に公開するカートの API（docs/03-機能仕様/cart.md「他のモジュールへの公開」）。<br />
  * 品目を除く操作は、呼び出し元（注文の与信の成功）のトランザクションに参加する。
  */
 @Component

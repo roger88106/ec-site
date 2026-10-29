@@ -1,4 +1,4 @@
-// 環境変数の文書（docs/guides/environment.md）の既定値が、コードの設定の型の既定値と一致することを確認する（バックエンドの書き方 第 6.1 節）。
+// 環境変数の文書（docs/06-手順書/environment.md）の既定値が、コードの設定の型の既定値と一致することを確認する（バックエンドの書き方 第 6.1 節）。
 // - コードの既定値（@ConfigurationProperties の record の @DefaultValue）は、文書に同じ値である
 // - 文書に既定値（時間、数、真偽）を書いた設定は、コードも既定値を持つ
 // - 管理画面の IdP の既定値（VITE_OIDC_AUTHORITY、VITE_OIDC_CLIENT_ID）は、管理画面の認証の設定（oidc.ts）を正とし、
@@ -15,7 +15,7 @@ import { isMain } from './lib/is-main.mjs'
 import { stripJavaComments } from './lib/strip-comments.mjs'
 
 /** 環境変数の文書 */
-const ENV_DOC = 'docs/guides/environment.md'
+const ENV_DOC = 'docs/06-手順書/environment.md'
 
 /** 時間の単位の秒数 */
 const UNIT_SECONDS = { ms: 0.001, s: 1, m: 60, h: 3600, d: 86400 }
@@ -278,7 +278,7 @@ const ADMIN_IDP_PLACES = [
       [...dropCommentLines(text).matchAll(new RegExp(`^\\s*${name}:\\s*(\\S+)\\s*$`, 'gm'))].map((match) => match[1].replace(/^(['"])(.*)\1$/, '$2')),
   },
   {
-    file: 'docs/guides/environment.md',
+    file: 'docs/06-手順書/environment.md',
     read: (text, name) =>
       text
         .split(/\r?\n/)

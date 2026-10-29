@@ -33,7 +33,7 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 /**
- * 画像の変換の imgproxy の実装の、失敗のときの振る舞いのテスト（docs/design/modules/media.md「アップロードの流れ」）。<br />
+ * 画像の変換の imgproxy の実装の、失敗のときの振る舞いのテスト（docs/03-機能仕様/media.md「アップロードの流れ」）。<br />
  * imgproxy の代わりに、テストの中の小さな HTTP サーバーが応答する。
  * imgproxy が応答した（4xx と 500）ときは業務のエラー（変換の失敗）、imgproxy に届かない・時間の上限を超えたときは
  * 外部サービスのエラーになる。

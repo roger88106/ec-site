@@ -13,7 +13,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * カートと注文に公開する、販売可能数と引当の API（docs/design/modules/inventory.md「引当」）。<br />
+ * カートと注文に公開する、販売可能数と引当の API（docs/03-機能仕様/inventory.md「引当」）。<br />
  * 書き込みの操作は呼び出し元のトランザクションに参加する。
  */
 @Component

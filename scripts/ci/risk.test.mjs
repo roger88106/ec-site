@@ -35,12 +35,12 @@ const DECLARED_SPEC = ['# Spec 900：例', '', 'ステータス：確定', '危�
 const PLAIN_SPEC = ['# Spec 901：例', '', 'ステータス：確定', '', '## 1. 背景と目的', '', '危険度：高'].join('\n')
 
 /** 高の経路を含まないファイル */
-const LOW_FILES = ['frontend/store/src/features/cart/CartPage.tsx', 'docs/design/modules/catalog.md', 'README.md']
+const LOW_FILES = ['frontend/store/src/features/cart/CartPage.tsx', 'docs/03-機能仕様/catalog.md', 'docs/07-記録/subagents-results.md', 'README.md']
 
 describe('変更の危険度の判定', () => {
   // まとまりごとに、高の経路の例（テストのファイルも含む）
   const examples = {
-    'エージェントの規則と設定': ['AGENTS.md', 'docs/constitution.md', 'docs/rules/workflow.md', '.claude/skills/review/SKILL.md', 'scripts/ci/risk.mjs', 'scripts/dev/hooks/pre-commit', 'docs/guides/branches.md'],
+    'エージェントの規則と設定': ['AGENTS.md', 'docs/constitution.md', 'docs/05-開発規則/workflow.md', '.claude/skills/review/SKILL.md', 'scripts/ci/risk.mjs', 'scripts/dev/hooks/pre-commit', 'docs/06-手順書/branches.md'],
     'CI とリリース': ['.github/workflows/ci.yml', '.github/dependabot.yml'],
     '認証': [
       'backend/ecsite/src/main/java/com/ecsite/config/security/SecurityConfig.java',
@@ -60,7 +60,7 @@ describe('変更の危険度の判定', () => {
       'backend/ecsite/src/main/java/com/ecsite/module/order/application/checkout/CheckoutOrder.java',
       'backend/ecsite/src/test/java/com/ecsite/module/order/application/checkout/CheckoutOrderTest.java',
     ],
-    '権限': ['docs/design/role-permissions.md'],
+    '権限': ['docs/02-設計/role-permissions.md'],
     'データベース': ['backend/ecsite/src/main/resources/db/migration/V202611010900__x.sql'],
     '契約': ['api/openapi/admin.yaml'],
   }
@@ -98,7 +98,7 @@ describe('変更の危険度の判定', () => {
   })
 
   test('経路は、ディレクトリの区切りまで一致したときだけ当たる（前方が同じだけの名前は当たらない）', () => {
-    const files = ['AGENTS.md.bak', 'docs/rules-old/a.md', '.claude-local/x', 'api/openapi-legacy/a.yaml']
+    const files = ['AGENTS.md.bak', 'docs/05-開発規則-old/a.md', '.claude-local/x', 'api/openapi-legacy/a.yaml']
     assert.equal(judgeRisk(files, CONFIG, reader({})).level, '低')
   })
 
@@ -116,7 +116,7 @@ describe('変更の危険度の判定', () => {
   })
 
   test('冒頭に「危険度：高」の行がある spec.md を含む差分は、経路が低でも高になる', () => {
-    const file = 'docs/specs/900-example/spec.md'
+    const file = 'docs/08-spec/900-example/spec.md'
     const result = judgeRisk([file, ...LOW_FILES], CONFIG, reader({ [file]: DECLARED_SPEC }))
     assert.equal(result.level, '高')
     assert.deepEqual(result.hits, [])
@@ -124,34 +124,34 @@ describe('変更の危険度の判定', () => {
   })
 
   test('アーカイブへ移した spec.md（移した先が差分に入る）の宣言も読む', () => {
-    const moved = 'docs/specs/archive/1to10/900-example/spec.md'
-    const result = judgeRisk(['docs/specs/900-example/spec.md', moved], CONFIG, reader({ [moved]: DECLARED_SPEC }))
+    const moved = 'docs/08-spec/archive/1to10/900-example/spec.md'
+    const result = judgeRisk(['docs/08-spec/900-example/spec.md', moved], CONFIG, reader({ [moved]: DECLARED_SPEC }))
     assert.equal(result.level, '高')
     assert.deepEqual(result.specs, [moved])
   })
 
   test('宣言が冒頭（最初の節の見出しより前）になければ、宣言とみなさない', () => {
-    const file = 'docs/specs/901-example/spec.md'
+    const file = 'docs/08-spec/901-example/spec.md'
     assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: PLAIN_SPEC })).specs, [])
   })
 
   test('spec.md でないファイル（plan.md、tasks）の「危険度：高」の行は、宣言とみなさない', () => {
-    const files = ['docs/specs/900-example/plan.md', 'docs/specs/900-example/tasks/01-a.md']
+    const files = ['docs/08-spec/900-example/plan.md', 'docs/08-spec/900-example/tasks/01-a.md']
     const contents = Object.fromEntries(files.map((file) => [file, DECLARED_SPEC]))
     assert.deepEqual(findDeclaredSpecs(files, reader(contents)).specs, [])
   })
 
   test('改行が CRLF の spec.md の宣言も読む', () => {
-    const file = 'docs/specs/900-example/spec.md'
+    const file = 'docs/08-spec/900-example/spec.md'
     assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: DECLARED_SPEC.replaceAll('\n', '\r\n') })).specs, [file])
   })
 
   test('出力に、判定と、当たった経路（まとまりの名前とファイル）と、宣言した spec が入り、最後の行が要約の行になる', () => {
-    const spec = 'docs/specs/900-example/spec.md'
-    const files = ['docs/rules/workflow.md', 'api/openapi/admin.yaml', spec, 'README.md']
+    const spec = 'docs/08-spec/900-example/spec.md'
+    const files = ['docs/05-開発規則/workflow.md', 'api/openapi/admin.yaml', spec, 'README.md']
     const lines = formatJudgement(judgeRisk(files, CONFIG, reader({ [spec]: DECLARED_SPEC })))
     assert.equal(lines[0], '判定：高')
-    assert.ok(lines.includes('- エージェントの規則と設定：docs/rules/workflow.md'), lines.join('\n'))
+    assert.ok(lines.includes('- エージェントの規則と設定：docs/05-開発規則/workflow.md'), lines.join('\n'))
     assert.ok(lines.includes('- 契約：api/openapi/admin.yaml'), lines.join('\n'))
     assert.ok(lines.includes(`- spec の宣言：${spec}`), lines.join('\n'))
     assert.match(lines.at(-1), /^当たったファイル：2、宣言した spec：1（差分のファイル 4 件中）$/)
@@ -166,8 +166,8 @@ describe('変更の危険度の判定', () => {
   })
 
   test('一覧の経路が実在しなければ、誤りとして返す（経路の書き間違いで判定が低になるのを防ぐ）', () => {
-    const config = parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: ['docs/rules/', 'docs/nothing/', 'NOTHING.md'] }] }))
-    assert.deepEqual(findMissingPaths(config, ['docs/rules/workflow.md', 'README.md']), ['docs/nothing/', 'NOTHING.md'])
+    const config = parseRiskConfig(JSON.stringify({ groups: [{ name: '例', paths: ['docs/05-開発規則/', 'docs/nothing/', 'NOTHING.md'] }] }))
+    assert.deepEqual(findMissingPaths(config, ['docs/05-開発規則/workflow.md', 'README.md']), ['docs/nothing/', 'NOTHING.md'])
   })
 
   test('一覧の形が違えば（まとまりの名前がない、経路が空）、読むときに失敗にする', () => {
@@ -276,7 +276,7 @@ describe('pull request の本文の危険度との比べ', () => {
 })
 
 describe('spec の宣言の基準のバージョンと書き方', () => {
-  const file = 'docs/specs/900-example/spec.md'
+  const file = 'docs/08-spec/900-example/spec.md'
 
   test('基準のバージョンに宣言があり、差分の後のバージョンで宣言の行を消した spec.md は高になる', () => {
     const result = judgeRisk([file], CONFIG, reader({ [file]: PLAIN_SPEC }), reader({ [file]: DECLARED_SPEC }))
@@ -285,7 +285,7 @@ describe('spec の宣言の基準のバージョンと書き方', () => {
   })
 
   test('改名した spec.md は、元のパスの基準のバージョンの宣言も読む（差分に元のパスが入る）', () => {
-    const moved = 'docs/specs/archive/1to10/900-example/spec.md'
+    const moved = 'docs/08-spec/archive/1to10/900-example/spec.md'
     const result = judgeRisk([file, moved], CONFIG, reader({ [moved]: PLAIN_SPEC }), reader({ [file]: DECLARED_SPEC }))
     assert.equal(result.level, '高')
     assert.deepEqual(result.specs, [file])
@@ -318,13 +318,13 @@ describe('spec の宣言の基準のバージョンと書き方', () => {
 
 describe('経路の大文字と小文字', () => {
   test('大文字の違うパス（Windows と macOS では同じ所に入る）も、高の経路に当てる', () => {
-    for (const file of ['.CLAUDE/skills/x/SKILL.md', 'Docs/Rules/x.md', 'agents.md', 'API/OpenAPI/admin.yaml']) {
+    for (const file of ['.CLAUDE/skills/x/SKILL.md', 'Docs/05-開発規則/x.md', 'agents.md', 'API/OpenAPI/admin.yaml']) {
       assert.equal(judgeRisk([file], CONFIG, reader({})).level, '高', file)
     }
   })
 
   test('大文字の違う spec.md の宣言も読む', () => {
-    const file = 'Docs/Specs/900-example/SPEC.md'
+    const file = 'Docs/08-Spec/900-example/SPEC.md'
     assert.deepEqual(findDeclaredSpecs([file], reader({ [file]: DECLARED_SPEC })).specs, [file])
   })
 })
@@ -393,8 +393,8 @@ describe('差分のファイルの求め方', () => {
     git('config', 'user.name', 'test')
     git('config', 'commit.gpgsign', 'false')
     write('scripts/ci/moved.mjs', 'export const a = 1\n')
-    write('docs/rules/removed.md')
-    write('docs/specs/900-example/spec.md', DECLARED_SPEC)
+    write('docs/05-開発規則/removed.md')
+    write('docs/08-spec/900-example/spec.md', DECLARED_SPEC)
     write('README.md')
     git('add', '-A')
     git('commit', '-q', '-m', 'base')
@@ -402,8 +402,8 @@ describe('差分のファイルの求め方', () => {
     // 高の経路から外への移動（改名）、削除、宣言の行を消す変更
     mkdirSync(path.join(repo, 'tools'), { recursive: true })
     renameSync(path.join(repo, 'scripts/ci/moved.mjs'), path.join(repo, 'tools/moved.mjs'))
-    rmSync(path.join(repo, 'docs/rules/removed.md'))
-    write('docs/specs/900-example/spec.md', PLAIN_SPEC)
+    rmSync(path.join(repo, 'docs/05-開発規則/removed.md'))
+    write('docs/08-spec/900-example/spec.md', PLAIN_SPEC)
     git('add', '-A')
     git('commit', '-q', '-m', 'feature')
     write('untracked.md')
@@ -411,7 +411,7 @@ describe('差分のファイルの求め方', () => {
 
   test('改名は元と先の両方、削除したファイル、追跡していないファイルを差分に入れる', () => {
     const changed = listChangedFiles('develop', listGitFiles([], repo), repo)
-    assert.deepEqual(changed.files, ['docs/rules/removed.md', 'docs/specs/900-example/spec.md', 'scripts/ci/moved.mjs', 'tools/moved.mjs', 'untracked.md'])
+    assert.deepEqual(changed.files, ['docs/05-開発規則/removed.md', 'docs/08-spec/900-example/spec.md', 'scripts/ci/moved.mjs', 'tools/moved.mjs', 'untracked.md'])
   })
 
   test('高の経路から外へ移す変更・削除・宣言の行を消す変更は高になる', () => {
@@ -425,8 +425,8 @@ describe('差分のファイルの求め方', () => {
     }
     const result = judgeRisk(changed.files, CONFIG, readFile, baseFileReader(changed.base, repo))
     assert.equal(result.level, '高')
-    assert.deepEqual(result.hits, [{ name: 'エージェントの規則と設定', files: ['docs/rules/removed.md', 'scripts/ci/moved.mjs'] }])
-    assert.deepEqual(result.specs, ['docs/specs/900-example/spec.md'])
+    assert.deepEqual(result.hits, [{ name: 'エージェントの規則と設定', files: ['docs/05-開発規則/removed.md', 'scripts/ci/moved.mjs'] }])
+    assert.deepEqual(result.specs, ['docs/08-spec/900-example/spec.md'])
   })
 
   test('基準の ref がなければ、理由を返す', () => {

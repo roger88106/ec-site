@@ -27,7 +27,7 @@ import java.util.Map;
 import java.util.UUID;
 
 /**
- * mock の物流サービスの画面（docs/design/modules/shipping.md「mock」）。<br />
+ * mock の物流サービスの画面（docs/03-機能仕様/shipping.md「mock」）。<br />
  * 外部の物流サービスの代わりで、EC の API ではない（OpenAPI に書かない）。物流の mock フラグを立てたときだけ出す。
  * 出荷の一覧と、出荷ごとに「配送中」「配達完了」「返送」のボタンを持つ。ボタンを押すと、署名付きの通知を
  * HTTP で自分の通知のエンドポイントに送る。

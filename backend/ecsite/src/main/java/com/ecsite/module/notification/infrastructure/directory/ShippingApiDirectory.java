@@ -8,7 +8,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 /**
- * 出荷の腐敗防止層（バックエンドのアーキテクチャ 第 1 節、docs/design/modules/notification.md）。<br />
+ * 出荷の腐敗防止層（バックエンドのアーキテクチャ 第 1 節、docs/03-機能仕様/notification.md）。<br />
  * 出荷モジュールの API を呼び、配送業者の表示名のキーを得る。
  */
 @Component

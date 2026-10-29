@@ -15,9 +15,9 @@ import {
 const README = [
   '| spec | 種類 | 内容 | 状態 |',
   '|------|------|------|------|',
-  '| [010](docs/specs/010-sales-report) | 機能 | 売上 | 完了。[段階 1〜6](docs/specs/010-sales-report/tasks/) を終えた |',
-  '| [017](docs/specs/017-stability) | 機能 | 安定性 | 完了。直さずに残したことは [レビューの結果](x.md) |',
-  '| [018](docs/specs/018-docs-and-tools) | 整理 | 文書とツールの整理 | 進行中 |',
+  '| [010](docs/08-spec/010-sales-report) | 機能 | 売上 | 完了。[段階 1〜6](docs/08-spec/010-sales-report/tasks/) を終えた |',
+  '| [017](docs/08-spec/017-stability) | 機能 | 安定性 | 完了。直さずに残したことは [レビューの結果](x.md) |',
+  '| [018](docs/08-spec/018-docs-and-tools) | 整理 | 文書とツールの整理 | 進行中 |',
 ].join('\n')
 
 const MVP = [
@@ -72,13 +72,13 @@ describe('進捗の一致の検査', () => {
   test('0 で埋めない番号は MVP の対象に入れない', () => {
     const readme = new Map([['7', '完了']])
     assert.deepEqual(checkProgress(readme, new Map(), new Map([['7', { total: 2, done: 1 }]]), 11), [])
-    assert.deepEqual(parseStatusTable('| [7](docs/specs/7-x) | 機能 | 完了 |'), new Map())
+    assert.deepEqual(parseStatusTable('| [7](docs/08-spec/7-x) | 機能 | 完了 |'), new Map())
   })
 
   test('0 で始まらない 3 桁の番号（123-xxx の 1→10 の spec）は MVP の対象に入れない', () => {
     const readme = new Map([['123', '完了']])
     assert.deepEqual(checkProgress(readme, new Map(), new Map([['123', { total: 2, done: 1 }]]), 11), [])
-    assert.deepEqual(parseStatusTable('| [123](docs/specs/123-x) | 機能 | 完了 |'), new Map())
+    assert.deepEqual(parseStatusTable('| [123](docs/08-spec/123-x) | 機能 | 完了 |'), new Map())
   })
 
   test('tasks を読むとき、123-xxx は MVP の番号にしない', () => {

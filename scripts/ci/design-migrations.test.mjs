@@ -40,7 +40,7 @@ describe('設計書のデータモデルとマイグレーションの照合', (
       designs: { tax: design('V1__tax_a.sql') },
     })
     assert.equal(problems.length, 1)
-    assert.match(problems[0], /docs\/design\/modules\/tax\.md/)
+    assert.match(problems[0], /docs\/03-機能仕様\/tax\.md/)
     assert.match(problems[0], /V2__tax_b\.sql/)
   })
 
@@ -93,7 +93,7 @@ describe('マイグレーションが SQL で触るスキーマのモジュー�
       designs: { payment: design('V1__common_checks.sql'), shipping: design(), tax: design() },
     })
     assert.equal(problems.length, 1)
-    assert.match(problems[0], /docs\/design\/modules\/shipping\.md/)
+    assert.match(problems[0], /docs\/03-機能仕様\/shipping\.md/)
     assert.match(problems[0], /V1__common_checks\.sql/)
   })
 

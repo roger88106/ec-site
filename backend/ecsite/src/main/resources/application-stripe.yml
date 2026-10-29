@@ -1,5 +1,5 @@
 # ============================================================================
-# Stripe の sandbox で動かす設定（docs/guides/setup.md「Stripe で動かす」）
+# Stripe の sandbox で動かす設定（docs/06-手順書/setup.md「Stripe で動かす」）
 #
 # local profile に重ねて使う：spring.profiles.active=local,stripe
 # 秘密の値（STRIPE_SECRET_KEY、STRIPE_WEBHOOK_SECRET）は、Git に入れない /.local/stripe.env から読む。

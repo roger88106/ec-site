@@ -5,7 +5,7 @@ import org.jspecify.annotations.Nullable;
 import java.util.Arrays;
 
 /**
- * 注文時の性別（docs/design/modules/order.md「注文時の年齢と性別」）。<br />
+ * 注文時の性別（docs/03-機能仕様/order.md「注文時の年齢と性別」）。<br />
  * 会員が IdP で選んだ値の写し。「回答しない」は不明（記録しない）と分けて持ち、まとめるのはレポートの側。
  */
 public enum Gender {

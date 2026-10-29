@@ -148,7 +148,8 @@ function main() {
     process.exit(2)
   }
   const renames = renamesPath ? parseRenames(readFileSync(renamesPath, 'utf8')) : []
-  const diffText = execFileSync('git', ['diff', '-M', '-l0', '--no-color', base], {
+  // 日本語を含むパスを、引用符と 8 進数の形にせずに読む
+  const diffText = execFileSync('git', ['-c', 'core.quotepath=false', 'diff', '-M', '-l0', '--no-color', base], {
     encoding: 'utf8',
     maxBuffer: 256 * 1024 * 1024,
   })

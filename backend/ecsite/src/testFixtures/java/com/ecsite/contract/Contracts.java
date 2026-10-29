@@ -30,6 +30,11 @@ public final class Contracts {
     private static final String THEME_DIR = "keycloak.theme.dir";
 
     /**
+     * リポジトリのルートを渡す system property の名前
+     */
+    private static final String REPO_ROOT = "repo.root";
+
+    /**
      * インスタンスを作らない。
      */
     private Contracts() {
@@ -66,14 +71,15 @@ public final class Contracts {
     }
 
     /**
-     * system property で渡された置き場所（ファイルまたはディレクトリ）を返す。契約、realm、テーマ以外の文書などの置き場所を、テストが読むために使う。
+     * リポジトリのルートからの相対パスで、ファイルまたはディレクトリの置き場所を返す。契約、realm、テーマ以外の文書などの置き場所を、テストが読むために使う。<br />
+     * system property ではリポジトリのルートだけを受け取り、相対パスは Java のソースに書く。Windows では、system property の値の日本語がシステムの文字コードに変換されて文字化けし、日本語を含む文書のパスを渡せないため。
      *
-     * @param property system property の名前（例：{@code design.overview}）
-     * @return system property の値
+     * @param relative リポジトリのルートからの相対パス（例：{@code docs/02-設計/overview.md}）
+     * @return system property {@code repo.root} の値に、相対パスをつないだ置き場所
      * @throws IllegalStateException system property が渡されていないとき
      */
-    public static Path path(String property) {
-        return directory(property, System.getProperty(property));
+    public static Path path(String relative) {
+        return resolve(REPO_ROOT, System.getProperty(REPO_ROOT), relative);
     }
 
     /**
@@ -104,6 +110,19 @@ public final class Contracts {
         } catch (IOException e) {
             throw new UncheckedIOException("契約を読めない: " + file, e);
         }
+    }
+
+    /**
+     * system property で渡されたディレクトリに、相対パスをつないだ置き場所を作る。値がなければ、原因を説明して失敗させる。
+     *
+     * @param property system property の名前
+     * @param value    system property の値（渡されなければ null）
+     * @param relative ディレクトリからの相対パス
+     * @return 置き場所
+     * @throws IllegalStateException 値がないとき
+     */
+    static Path resolve(String property, String value, String relative) {
+        return directory(property, value).resolve(relative);
     }
 
     /**

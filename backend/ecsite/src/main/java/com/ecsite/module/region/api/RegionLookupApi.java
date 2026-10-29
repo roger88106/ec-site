@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Optional;
 
 /**
- * 他のモジュールに公開する、地域のマスターデータの参照（docs/design/modules/region.md「他のモジュールへの公開」）。<br />
+ * 他のモジュールに公開する、地域のマスターデータの参照（docs/03-機能仕様/region.md「他のモジュールへの公開」）。<br />
  * 参照だけで、EC に固有の判断を持たない。使う側は腐敗防止層で包む（別のサービスに切り出せるようにするため）。
  */
 @Component

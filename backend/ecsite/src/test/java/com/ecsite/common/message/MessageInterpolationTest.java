@@ -22,7 +22,7 @@ import java.util.stream.Stream;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 規則の値を差し込むメッセージの単体テスト（docs/rules/backend-coding.md 第 3.2 節）。<br />
+ * 規則の値を差し込むメッセージの単体テスト（docs/05-開発規則/backend-coding.md 第 3.2 節）。<br />
  * 差し込む値をドメインの定数から取り、整理の前（数字を文に書いていたとき）と同じ文になることを確認する。
  */
 class MessageInterpolationTest {

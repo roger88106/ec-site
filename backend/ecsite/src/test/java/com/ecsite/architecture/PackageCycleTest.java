@@ -23,7 +23,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * domain のパッケージの循環の検査（docs/rules/backend-coding.md 第 1.1 節）。<br />
+ * domain のパッケージの循環の検査（docs/05-開発規則/backend-coding.md 第 1.1 節）。<br />
  * domain の直下、集約のパッケージ、値のパッケージ（vo）を別々の slice とし、slice の間に循環がないことを確認する。
  */
 class PackageCycleTest {

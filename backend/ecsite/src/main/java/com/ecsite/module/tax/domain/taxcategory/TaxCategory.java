@@ -24,7 +24,7 @@ import java.util.stream.Collectors;
 
 /**
  * 税区分の Aggregate Root。<br />
- * 名称と、税率の一覧を持つ。税率は 1 件ずつではなく、一覧ごと置き換える（docs/design/modules/tax.md）。
+ * 名称と、税率の一覧を持つ。税率は 1 件ずつではなく、一覧ごと置き換える（docs/03-機能仕様/tax.md）。
  */
 @Getter
 @Accessors(fluent = true)

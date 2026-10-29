@@ -255,9 +255,9 @@ describe('文書の用語の検査', () => {
     assert.equal(isTargetDoc('README.md'), true)
     assert.equal(isTargetDoc('AGENTS.md'), true)
     assert.equal(isTargetDoc('.claude/skills/docs/SKILL.md'), true)
-    assert.equal(isTargetDoc('docs/specs/019-mvp-completion/plan.md'), true)
-    assert.equal(isTargetDoc('docs/specs/mvp.md'), true)
-    assert.equal(isTargetDoc('docs/specs/archive/mvp/002-cart-and-order/spec.md'), false)
+    assert.equal(isTargetDoc('docs/08-spec/019-mvp-completion/plan.md'), true)
+    assert.equal(isTargetDoc('docs/08-spec/mvp.md'), true)
+    assert.equal(isTargetDoc('docs/08-spec/archive/mvp/002-cart-and-order/spec.md'), false)
     assert.equal(isTargetDoc('frontend/store/README.md'), false)
   })
 

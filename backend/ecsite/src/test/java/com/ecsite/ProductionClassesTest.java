@@ -26,9 +26,9 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ProductionClassesTest {
 
     /**
-     * 設計書のディレクトリ（Gradle がシステムプロパティで渡す）
+     * モジュールの設計書のディレクトリ（Gradle が system property で渡すリポジトリのルートから）
      */
-    private static final Path MODULE_DESIGNS = Contracts.path("design.modules.dir");
+    private static final Path MODULE_DESIGNS = Contracts.path("docs/03-機能仕様");
 
     /**
      * 設計書の表の「レベル」の行。値の最初の文字がレベルを表す

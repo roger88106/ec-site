@@ -19,7 +19,7 @@ import java.util.Set;
 import java.util.TreeSet;
 
 /**
- * エラーの応答の確認（docs/rules/api-conventions.md 第 5 節）。<br />
+ * エラーの応答の確認（docs/05-開発規則/api-conventions.md 第 5 節）。<br />
  * 応答（MockMvc のすべての結果）で、エラーの本文の {@code errorCode} が、その操作の一覧（{@code x-error-codes}）か
  * 共通のエラー（{@code x-common-error-codes}）にあることを確認する。操作は、認可と同じく契約から照合する。<br />
  * 統合テストでは {@code ErrorCodeCheckConfig} が MockMvc に接続して全ての応答を確認し、検査そのものは単体テストでも確認する。

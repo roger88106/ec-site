@@ -1,6 +1,6 @@
 // 文書を移して切れた Markdown のリンクを、移した先に直す。切れていないリンクは変えない
 // 使い方：node .claude/skills/docs/fix-links.cjs 旧パス=新パス ...（リポジトリのルートからのパス。フォルダーも可）
-// 例：node .claude/skills/docs/fix-links.cjs docs/style/backend.md=docs/rules/backend-coding.md docs/modules=docs/design/modules
+// 例：node .claude/skills/docs/fix-links.cjs docs/style/backend.md=docs/05-開発規則/backend-coding.md docs/modules=docs/03-機能仕様
 // 移す（git mv）のを先に済ませてから流す
 const fs = require('fs'), path = require('path'), { execSync } = require('child_process')
 const MAP = process.argv.slice(2).map((a) => a.split('=').map((p) => p.replace(/\/$/, '')))
@@ -13,7 +13,8 @@ const swap = (p, from, to) => {
   }
   return p
 }
-const files = execSync('git ls-files -co --exclude-standard "*.md"', { encoding: 'utf8' }).split('\n').filter((f) => f && fs.existsSync(f))
+// 日本語を含むパスを、引用符と 8 進数の形にせずに読む
+const files = execSync('git -c core.quotepath=false ls-files -co --exclude-standard "*.md"', { encoding: 'utf8' }).split('\n').filter((f) => f && fs.existsSync(f))
 let changed = 0
 for (const file of files) {
   const dir = path.posix.dirname(file)

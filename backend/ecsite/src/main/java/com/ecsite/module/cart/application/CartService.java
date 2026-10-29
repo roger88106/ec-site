@@ -25,7 +25,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートのサービス（docs/design/modules/cart.md）。<br />
+ * カートのサービス（docs/03-機能仕様/cart.md）。<br />
  * 変更したら、カート変更のイベントを発行する（注文モジュールが引当を解く）。
  * 会員のカートは、持ち主の会員だけが使える。ほかの人には、カートがないときと同じく 404 にする。
  */

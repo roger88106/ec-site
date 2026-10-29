@@ -127,7 +127,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 
 - **DC-279-1** `docs/` の直下が、`constitution.md` と第 1 節の 8 つのフォルダーだけである。
 - **DC-279-2** 各ファイルが、第 1 節の「各ファイルの移動先」の表の場所にある。ファイル名は変えていない。
-- **DC-279-3** 移したファイルが、Git の履歴で移動として追える（`git log --follow` で移す前の履歴が出る）。理由：後の spec で書き換えるときに、元の文書と比べるため。
+- **DC-279-3** 移したファイルが、Git の履歴で移動として追える（`git log --follow` で移す前の履歴が出る）。理由：後の spec で書き換えるときに、元の文書と比べるため。例外は `03-機能仕様/acceptance-criteria.md` で、`git log --follow -M40%` で追える（第 9 節）。
 - **DC-279-4** `01-概要/` と `04-決定記録/` に、骨組みの `README.md` がある。README は、そのフォルダーに置く文書（第 1 節の表の「中身」）と、中身を後の spec で書くことだけを書く。
 - **DC-279-5** `08-spec/` の下の構成（直下に進行中の spec、`archive/mvp/`、`archive/1to10/`）が、今の `docs/specs/` と同じである。
 
@@ -240,7 +240,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
   - 理由：`build.gradle.kts` は、設計書のパスを system property でテストに渡す。Windows では、コマンドラインの引数がシステムの文字コードに変換され、日本語が文字化けするおそれがある。
   - 手順：3 つの文書（`overview.md`、`modules/`、`backend-coding.md`）を新しいパスに仮に移し、`build.gradle.kts` の 3 つのパスを替えて試す。試した後に全て戻す。
   - 確認方法：仮に移した状態で `./gradlew test --tests '*ProductionClassesTest*' --tests '*ModuleDiagramTest*' --tests '*ModuleStructureTest*'` が通る。文字化けするときは、リポジトリのルートを渡してテストの側でパスを組み立てる案を、spec に追加してから進める。結果を第 9 節に書く。
-- [ ] **T279-01-02** ファイルを移し、古いパスを指す参照を全て修正する（DC-279-1〜13）。
+- [x] **T279-01-02** ファイルを移し、古いパスを指す参照を全て修正する（DC-279-1〜13）。
   - 依存：T279-01-01
   - 範囲：`docs/` の全て、第 1 節の「パスを直接書いている箇所」のファイル、`Contracts.java` と `ContractsTest.java`（`backend/ecsite/src/testFixtures/`、テスト）
   - 手順：`git mv` で移し、骨組みの README を置く。リンクは `fix-links.cjs`、パスの文字列は `replace-paths.cjs` で修正する（skill `docs` 第 4 節）。`docs/design/modules` は `docs/design` より先に置き換える（長いパスを先にする）。ツールの対象の外（テスト、`db/seed/local/README.md`）と、正規表現で書いたパスは手動で修正する。
@@ -277,7 +277,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 
 | # | 項目 | 起票の案 |
 |---|------|----------|
-| — | なし | — |
+| 1 | `03-機能仕様/` の直下に、モジュールの文書と、AC 一覧・用語集が並ぶ。`design-migrations.mjs` と `ProductionClassesTest` は、直下の全ての `.md` をモジュールの文書として読む（今は、レベルの行とデータモデルの節がないので通る）。モジュールでない文書を加えると、誤って検査の対象になる | 第 2 段の、`03-機能仕様/` を書き換える spec の範囲に入れる（新しく起票しない） |
 
 ## 9. 作業の記録
 
@@ -289,3 +289,16 @@ T279-01-01 の結果、DC-279-6 の例外の一覧、DC-279-14 の画面の確�
 - 代替案を試し、41 件全てが通った。代替案では、system property にリポジトリのルート（`file("../..").absolutePath`）だけを渡し、`Contracts.path` が Java のソースに書いた日本語の相対パスをつなぐ。Java のソースは UTF-8 でコンパイルされる（`options.encoding`）。Gradle の inputs は、日本語のパスのままで動いた。
 - 新しいパスを読んでいることは、`03-機能仕様/tax.md` を外し、`overview.md` と `backend-coding.md` を空にすると、対応する 4 件が失敗することで確認した。試した変更は全て戻した。
 - DC-279-9 と T279-01-02 の範囲に、この形を加えた。
+
+### T279-01-02 の結果（2026-10-29、commit 80f87732）
+
+- 611 ファイルを変え、そのうち 331 が移動（rename）として出る。アーカイブは全て中身の差がない移動である。
+- DC-279-3 の例外：`03-機能仕様/acceptance-criteria.md` は、全ての行の spec へのリンク（`../specs/` → `../08-spec/`）が変わり、類似度が 40% になるため、Git の既定の閾値（50%）では移動として出ない。`git log --follow -M40% -- docs/03-機能仕様/acceptance-criteria.md` で移す前の履歴が出る。移動だけの commit は hook で止まるので、commit を分けずに例外にした。
+- DC-279-6 の例外：`.claude/skills/docs/replace-paths.test.cjs` の 29、30、33、38、39、42、43、44、53 行（置き換えの入力の例）。
+- 調べ方で見つからず、手動で修正したもの：`ac-check.mjs` が生成するリンク（`../specs/`）、`ac-check.test.mjs` の正規表現（`\.\.\/specs\/`）、`review/stats.cjs` の `path.join(..., 'specs', ...)`。
+- 調べ方に当たるが、変えなかったテストの入力：`ac-check.test.mjs` の `../specs/016-master-data`（中身を読まずに渡すだけのデータ）。
+- 完了条件のために加えたもの：
+  - `scripts/ci/related-specs-exclusions.json` に `T279-01-02` を加えた。移した設計書が全て関連 spec の検査の対象になり、commit-msg の hook で止まるため（前例は T018-06）。
+  - git の出力からパスを読む処理（`related-specs.mjs` の `--staged`、skill `docs` の 3 つの script、`review/checklist.cjs`、`scripts/ci/review/test-diff.mjs`）に、`-c core.quotepath=false` を付けた。付けないと日本語のパスが `"docs/\346..."` の形で出て、ファイルを読めないため。
+- `core.quotepath` の手順は、[開発環境の起動](../../06-手順書/setup.md) 第 1 節に置いた。
+- `./gradlew check`、`bash scripts/ci/check-all.sh`、`node scripts/ci/doc-refs.mjs`、フロントの検査（`check-frontend.sh e2e lint typecheck`）が通った。

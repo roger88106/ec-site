@@ -244,7 +244,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 
 ## 手元の hook の設定
 
-利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む（`git worktree add` で作った作業ツリーは未確認。[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節）ので、メインの作業ツリーに置く。
+利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と効く時点は、skill `sessions` のツールの注の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションはメインの作業ツリーの `settings.local.json` を読むので、メインの作業ツリーに置く。
 
 | hook | イベントと matcher | 働き |
 |------|--------------------|------|

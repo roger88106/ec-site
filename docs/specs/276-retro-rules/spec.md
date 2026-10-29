@@ -216,7 +216,7 @@ milestone「整理の段階」の spec である。追跡の issue は [#276](ht
   - 依存：なし
   - 範囲：skill `local-dev`・`sessions`・`zh-mixing`
   - 確認方法：#271 の表（第 1 節）の全ての行に、避け方がある。
-- [ ] **T276-01-03** 作業ツリーの表と確認の手順を書き、重なる記述を表に合わせる（DC-276-4〜8）。
+- [x] **T276-01-03** 作業ツリーの表と確認の手順を書き、重なる記述を表に合わせる（DC-276-4〜8）。
   - 依存：T276-01-01
   - 範囲：skill `sessions`・`local-dev`・`review`（docs-review.md）、AGENTS.md、`docs/rules/subagents.md`
   - 確認方法：表の各欄が第 9 節の記録と一致する。DC-276-7 の 4 か所が表と食い違わない。

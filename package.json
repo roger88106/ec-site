@@ -15,6 +15,6 @@
     "knip": "pnpm -r --filter \"./frontend/*\" --filter ./e2e run generate:api && knip"
   },
   "devDependencies": {
-    "knip": "^6.42.0"
+    "knip": "^6.42.1"
   }
 }

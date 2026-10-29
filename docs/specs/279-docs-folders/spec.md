@@ -136,7 +136,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 - **DC-279-6** アーカイブの外に、古いパスの文字列が残っていない。第 1 節の「パスを直接書いている箇所」の調べ方（パスの文字列、正規表現、Markdown の相対リンク）の件数が全て 0 である。例外は 2 つだけである。1 つは本 spec の spec.md、もう 1 つは `.claude/skills/docs/replace-paths.test.cjs` のうち、置き換えの入力の例として古いパスを使う行である（行の一覧は第 9 節に書く）。
 - **DC-279-7** `node scripts/ci/doc-refs.mjs` が通る（Markdown のリンクと、文書の名前と節の参照が切れていない）。
 - **DC-279-8** 検査の script とテストの、パスの定数と正規表現が新しいパスを指す。`bash scripts/ci/check-all.sh` が通る。アーカイブを除く検査（`doc-refs`・`ja-text`・`zh-mixing`・`replace-paths`・`suffixes`）は、`docs/08-spec/archive/` を除く。
-- **DC-279-9** `build.gradle.kts` の system property と inputs が新しいパスを指し、`./gradlew check` が通る。`ci.yml` の paths が、`docs/02-設計/overview.md`・`docs/03-機能仕様/*.md`・`docs/05-開発規則/backend-coding.md` を含む。理由：これらの文書を変えた push で、文書と照合するバックエンドの単体テストを実行するため。
+- **DC-279-9** `build.gradle.kts` の inputs が新しいパスを指し、`./gradlew check` が通る。system property では、リポジトリのルート（ASCII のパス）だけを渡し、テストが Java のソースに書いた相対パスでパスを組み立てる（`Contracts.path` と `ContractsTest`）。理由：Windows では、system property の日本語が文字化けするため（T279-01-01、第 9 節）。`ci.yml` の paths が、`docs/02-設計/overview.md`・`docs/03-機能仕様/*.md`・`docs/05-開発規則/backend-coding.md` を含む。理由：これらの文書を変えた push で、文書と照合するバックエンドの単体テストを実行するため。
 - **DC-279-10** `risk.json` の高の経路が、`docs/rules/` の代わりに `docs/05-開発規則/` を、`docs/design/role-permissions.md` の代わりに `docs/02-設計/role-permissions.md` を含む。`docs/07-記録/` は含めない（決めたこと 4）。
 - **DC-279-11** 置き場所を書いた表が、新しい構成に合っている。対象は、constitution 第 3 節（リポジトリ構成の図と文書の地図）、skill `docs` 第 1 節、[開発の進め方](../../rules/workflow.md) 第 1.3 節である。変えるのは、パス、フォルダーの説明、新しいフォルダー 3 つ（`01-概要/`・`04-決定記録/`・`07-記録/`）の行だけである。
 - **DC-279-12** アーカイブのリンクの規則を、アーカイブの中のリンクを修正しない規則に替えている（決めたこと 3）。対象は、[開発の進め方](../../rules/workflow.md) 第 1.4 節（完了した spec はリンクのパスだけを修正する）と、skill `docs` 第 4 節（アーカイブはリンクのパスだけを修正する）である。
@@ -234,7 +234,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 - 参照：第 1 節、第 3 節、第 6 節、skill `docs` 第 4 節、[テストの書き方](../../rules/test-writing.md)、[コメントの書き方](../../rules/comments.md)
 - `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../rules/workflow.md) 第 2.1 節）。
 
-- [ ] **T279-01-01** 日本語のパスを Gradle のテストに渡せるかを、このマシン（Windows）で確認する。
+- [x] **T279-01-01** 日本語のパスを Gradle のテストに渡せるかを、このマシン（Windows）で確認する。
   - 依存：なし
   - 範囲：なし（作業ツリーの中で試し、commit しない）
   - 理由：`build.gradle.kts` は、設計書のパスを system property でテストに渡す。Windows では、コマンドラインの引数がシステムの文字コードに変換され、日本語が文字化けするおそれがある。
@@ -242,7 +242,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
   - 確認方法：仮に移した状態で `./gradlew test --tests '*ProductionClassesTest*' --tests '*ModuleDiagramTest*' --tests '*ModuleStructureTest*'` が通る。文字化けするときは、リポジトリのルートを渡してテストの側でパスを組み立てる案を、spec に追加してから進める。結果を第 9 節に書く。
 - [ ] **T279-01-02** ファイルを移し、古いパスを指す参照を全て修正する（DC-279-1〜13）。
   - 依存：T279-01-01
-  - 範囲：`docs/` の全て、第 1 節の「パスを直接書いている箇所」のファイル
+  - 範囲：`docs/` の全て、第 1 節の「パスを直接書いている箇所」のファイル、`Contracts.java` と `ContractsTest.java`（`backend/ecsite/src/testFixtures/`、テスト）
   - 手順：`git mv` で移し、骨組みの README を置く。リンクは `fix-links.cjs`、パスの文字列は `replace-paths.cjs` で修正する（skill `docs` 第 4 節）。`docs/design/modules` は `docs/design` より先に置き換える（長いパスを先にする）。ツールの対象の外（テスト、`db/seed/local/README.md`）と、正規表現で書いたパスは手動で修正する。
   - 確認方法：DC-279-6 の件数が 0。`bash scripts/ci/check-all.sh`、`./gradlew check`、`node scripts/ci/ja-text.mjs` が通る。`git diff --stat -M` で移したファイルが移動として出る。
 - [ ] **T279-01-03** [テスト] フォルダー名の検査のテストを書き、レッドを確認する（DC-279-17）。
@@ -282,3 +282,10 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 ## 9. 作業の記録
 
 T279-01-01 の結果、DC-279-6 の例外の一覧、DC-279-14 の画面の確認の結果を、ここに書く。
+
+### T279-01-01 の結果（2026-10-29）
+
+- 3 つの文書を新しいパスに仮に移し、system property に日本語のパスを渡すと、3 つのテストの 41 件のうち 38 件が失敗した。原因は `InvalidPathException: Illegal char <?>` で、システムの文字コード（CP950）にない字（「様」「発」）が `?` に変わった。
+- 代替案を試し、41 件全てが通った。代替案では、system property にリポジトリのルート（`file("../..").absolutePath`）だけを渡し、`Contracts.path` が Java のソースに書いた日本語の相対パスをつなぐ。Java のソースは UTF-8 でコンパイルされる（`options.encoding`）。Gradle の inputs は、日本語のパスのままで動いた。
+- 新しいパスを読んでいることは、`03-機能仕様/tax.md` を外し、`overview.md` と `backend-coding.md` を空にすると、対応する 4 件が失敗することで確認した。試した変更は全て戻した。
+- DC-279-9 と T279-01-02 の範囲に、この形を加えた。

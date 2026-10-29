@@ -84,7 +84,7 @@ MVP では入れない。導入するときは本節を更新してから spec �
 ```
 ec-site/
 ├── .github/workflows/
-├── .claude/              # エージェントの skill、サブエージェントの定義、プレビューの設定（Git に入れて共有する）
+├── .claude/              # エージェントの skill、サブエージェントの定義、プレビューの設定、チームの hook と permission（settings.json）。Git に入れて共有する
 ├── .local/               # Git に入れないもの（作業用の script、引き継ぎの文書、マシンに固有の設定）
 ├── api/openapi/          # API 契約の正本
 ├── docs/

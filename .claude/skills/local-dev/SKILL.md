@@ -226,17 +226,29 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 
 ## シェルと Git の落とし穴
 
-- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。手元の hook（`backslash-guard`。次の節）が、heredoc か `node -e` に `\` を含む Bash のコマンドを止める。
+- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記を heredoc で書くと、hook `backslash-guard` に拒否される。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。
+- 次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
+
+| 書き方 | 拒否するもの | 避け方 |
+|--------|------------|--------|
+| heredoc・`node -e` の中の `\`（Markdown の表の `\|` を含む） | hook `backslash-guard`（次の節） | 上の箇条のとおり、`\|` を含む表の追記も Edit で書く |
+| `gh pr edit` と `gh pr ready` など、GitHub の状態を変える `gh` の操作を `&&` や `;` で 1 つにつないだコマンド | auto mode の判定 | pull request の編集・ready・マージ、issue の編集は、1 つのコマンドに操作を 1 つだけ書き、別の呼び出しで実行する |
+| `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` のツールの注） |
+| コミットメッセージの、層 1 の使わない語（`scripts/ci/ja-text.json` の error の語） | git の hook `commit-msg`（日本語の検査） | 書く前に語の一覧を見る（skill `zh-mixing` の「書くときの注意」） |
+| spec やコミットメッセージに写した、利用者の中国語の言葉 | git の hook `commit-msg`・`pre-commit`（中国語の混入の検査） | 日本語に訳して書く（skill `zh-mixing` の「書くときの注意」） |
+| `git -C` と `cd` のパスに変数やコマンドの置き換え（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（`git commit` の対象のリポジトリを決められないとき） | 変数を使わず、絶対パスを直接書く |
+| `cd` で `/.local/` などに移る | 拒否されない。以後のコマンドの作業ディレクトリが意図しない場所になる | `cd` で作業ディレクトリを移さず、`git -C <絶対パス>` と絶対パスを使う |
+
 - 検査を `| tail` に通すと、終了コードが `tail` のものになり、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
 - `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
 
 ## 手元の hook の設定
 
-利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む（`git worktree add` で作った作業ツリーは未確認。[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節）ので、メインの作業ツリーに置く。
+利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と効く時点は、skill `sessions` のツールの注の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションはメインの作業ツリーの `settings.local.json` を読むので、メインの作業ツリーに置く。作業ツリーで起動した `claude -p` は、メインの作業ツリーの `settings.local.json` を読まないので、手元の hook は動かない（表）。
 
 | hook | イベントと matcher | 働き |
 |------|--------------------|------|
-| `session-start.mjs` | SessionStart、`startup\|resume\|compact` | メインの作業ツリーの `/.local/agent/environment.md` を文脈に入れる。どの作業ツリーのセッションでも同じファイルを読む。ファイルがなければ何も出さない |
+| `session-start.mjs` | SessionStart、`startup\|resume\|compact` | メインの作業ツリーの `/.local/agent/environment.md` を文脈に入れる。hook が動くセッションでは、どの作業ツリーでも同じファイルを読む。ファイルがなければ何も出さない |
 | `backslash-guard.mjs` | PreToolUse、`Bash` | heredoc と `node -e` の中の `\` を拒否する。コマンドの他の箇所の `\`（grep の `\|` など）は通す |
 
 command は、script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから探し、なければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う形にする。探し方は `.claude/settings.json` と同じだが、どちらにも見つからないときは、`settings.json` はコマンドを止め、この例は何もせず通す。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。

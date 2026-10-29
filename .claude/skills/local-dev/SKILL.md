@@ -1,6 +1,6 @@
 ---
 name: local-dev
-description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、スロット（作業ツリーごとの環境）、フロント（store・admin）と E2E を要約だけで実行するスクリプト、commit の前の CI の検査、プレビューでの画面の確認方法。バックエンドやフロントを動かす、テストや E2E を実行する、commit する、画面を確認する、DB や token を見るときに使う。
+description: ec-site をローカルで起動・確認する手順。DB・Keycloak（compose）の起動と接続、token の中身の確認、バックエンドの local profile での起動と待ち方、スロット（作業ツリーごとの環境）、フロント（store・admin）と E2E を要約だけで実行するスクリプト、commit の前の CI の検査、プレビューでの画面の確認方法、壊しての確認（break-check）、手元の hook の設定、シェルと Git の落とし穴。バックエンドやフロントを動かす、テストや E2E を実行する、commit する、画面を確認する、DB や token を見るときに使う。
 ---
 
 # ローカルでの起動と確認
@@ -62,6 +62,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 - 起動に失敗したら `bootrun.log` を `grep -n "ERROR\|Caused by" ` で見る。全体を読まない。
 - local profile では、起動時にマイグレーションと seed（`db/seed/base`、`db/seed/local`）が適用される。使い分けは `db/seed/local/README.md`。
 - 停止するときは、ポート 8080 で待ち受けているプロセスを停止する。Windows では PowerShell の `Stop-Process -Id (Get-NetTCPConnection -LocalPort 8080 -State Listen).OwningProcess`（Git Bash には `pkill` がない）。画面の開発サーバーも、ポート（3000、5173）で同じく停止する。
+- `bootRun` のバックグラウンドのタスクをツールで停止しても、java のプロセスが残って 8080 で待ち受け続ける。必ず上の `Stop-Process` で停止し、8080 が空いたことを確認する。
 
 テスト（`backend/ecsite/` で。Docker が必要）：
 
@@ -127,6 +128,7 @@ node scripts/dev/slot.mjs release  # ポートで待ち受けるプロセスを�
 
 - 作業ツリーを削除する前に `release` する。`release` せずに削除しても、残った DB とバケットは次の `assign` が再作成するので、手動で削除しない。
 - 自分が動いている作業ツリーは、メインの作業ツリーから `git worktree remove` で削除する。使うツールがセッションのアーカイブで作業ツリーを片付けるときは、それに任せる。
+- `node_modules` のある作業ツリーを削除すると、Windows ではパスが長すぎて失敗する。`git config core.longpaths true` を設定してから `git worktree remove <パス>` で削除する。失敗が続くときは、PowerShell で `\\?\` を付けたパスを指定して削除する。作業ツリーのセッションが動いていると、ロックで削除できないので、先にセッションをアーカイブする。
 - `env` の出力は、`bootRun` などを手動で実行するときだけ使い、`(eval "$(node scripts/dev/slot.mjs env)"; ./gradlew bootRun ...)` のように subshell の中で使う。export したままの shell で `./gradlew check` を実行すると、スロットの値が統合テストの設定を上書きして失敗しうる。
 - メインの作業ツリーで `scripts/dev/reset.sh all` を実行すると、全スロットの DB とバケットも削除される。各作業ツリーで `node scripts/dev/slot.mjs reset` を実行して再作成する。
 - マージの直後（共有の Keycloak に realm を再度取り込む前）は、スロットの画面のログインがリダイレクト先のエラー（Invalid redirect uri）で失敗する。メインの作業ツリーで `scripts/dev/reset.sh keycloak` を実行する。
@@ -207,4 +209,60 @@ scripts/dev/e2e.sh                                   # ルートで。テスト�
 scripts/dev/e2e.sh tests/payment.spec.ts -g AC-148   # 引数は Playwright にそのまま渡す
 ```
 
-- 準備でポートの EACCES が出たら、Windows の予約範囲（WinNAT）に入っている。`/.local/agent/environment.md` の手順で外す。
+- 準備でポートの EACCES が出たら、Windows の予約範囲（WinNAT）に入っている。`docs/guides/setup.md` 第 7 節の手順で外す。
+
+## 壊しての確認（break-check）
+
+コードをわざと壊してテストが失敗することを確認する（DN の確認など）ときに使う。sed は、当たらない式でも黙って通り、壊したつもりで「通った」と読み違えるため、使わない。
+
+```bash
+node scripts/dev/break-check.mjs <ファイル> <置き換える文字列> <置き換え後> <ディレクトリ> <テストのコマンド>
+node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false && <p" frontend/store "npx vitest run src/x.test.tsx"
+```
+
+- 置き換えは文字列で行い、1 か所に当たらなければ変えずに終了コード 2 で止まる。テストのコマンドは Git Bash で実行するので、`./gradlew` も起動できる。テストの後は、成否によらず、Ctrl+C などの停止のシグナルを受けたときも、元に戻す。
+- 出力は、失敗したテストの行（`×`、`FAILED`、`BUILD`）と件数、最後の `→ 失敗した（壊すと検出できる）` か `→ 通った（壊しても検出できない）`。終了コードは、失敗すれば 0（壊すと検出できた）、通れば 1、置き換えが当たらない・ファイルが読めない・bash を起動できない・テストのコマンドが見つからない（bash の終了コード 127）か実行できない（126）ときは 2（理由は標準エラー出力。コマンドの誤りをテストの失敗と読み違えないため、127 と 126 は 0 にしない）。
+- Gradle のテストでは、出力に `FAILED` か `BUILD` の行があることを確認する。ない失敗は、テスト以外の原因（起動の失敗など）を疑う。
+
+## シェルと Git の落とし穴
+
+- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。手元の hook（`backslash-guard`。次の節）が、heredoc か `node -e` に `\` を含む Bash のコマンドを止める。
+- 検査を `| tail` に通すと、終了コードが `tail` のものになり、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
+- `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
+
+## 手元の hook の設定
+
+利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む（`git worktree add` で作った作業ツリーは未確認。[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節）ので、メインの作業ツリーに置く。
+
+| hook | イベントと matcher | 働き |
+|------|--------------------|------|
+| `session-start.mjs` | SessionStart、`startup\|resume\|compact` | メインの作業ツリーの `/.local/agent/environment.md` を文脈に入れる。どの作業ツリーのセッションでも同じファイルを読む。ファイルがなければ何も出さない |
+| `backslash-guard.mjs` | PreToolUse、`Bash` | heredoc と `node -e` の中の `\` を拒否する。コマンドの他の箇所の `\`（grep の `\|` など）は通す |
+
+command は、script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから探し、なければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う形にする。探し方は `.claude/settings.json` と同じだが、どちらにも見つからないときは、`settings.json` はコマンドを止め、この例は何もせず通す。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。
+
+```json
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "matcher": "startup|resume|compact",
+        "hooks": [
+          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/scripts/dev/hooks/session-start.mjs\" ]; then f=\"$d/scripts/dev/hooks/session-start.mjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
+        ]
+      }
+    ],
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          { "type": "command", "command": "f=; for d in \"$(git rev-parse --show-toplevel 2>/dev/null)\" \"$CLAUDE_PROJECT_DIR\"; do if [ -n \"$d\" ] && [ -f \"$d/scripts/dev/hooks/backslash-guard.mjs\" ]; then f=\"$d/scripts/dev/hooks/backslash-guard.mjs\"; break; fi; done; [ -z \"$f\" ] || node \"$f\"" }
+        ]
+      }
+    ]
+  }
+}
+```
+
+- 既に `hooks` があれば、イベントごとの配列に項目を追加する。設定を変えたら、新しいセッションを起動する。
+- 中国語の混入の PostToolUse の hook は skill `zh-mixing`。

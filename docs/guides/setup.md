@@ -122,7 +122,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
    ./gradlew bootRun --args='--spring.profiles.active=local,stripe'
    ```
 
-- 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で確認する。停止するときは `docker compose --profile stripe stop stripe-cli`。
+- 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で確認する。このログは起動時に通知の署名鍵（`whsec_`）を出力するので、エージェントが読むときは `docker logs ec-site-stripe-cli 2>&1 | grep -v whsec_` で鍵の行を除き、鍵を会話に出さない。停止するときは `docker compose --profile stripe stop stripe-cli`。
 - テストのカード番号は Stripe の文書のもの（成功は `4242 4242 4242 4242`、拒否は `4000 0000 0000 0002`。有効期限は未来の日付、セキュリティコードは任意の 3 桁）。
 - 支払画面に表示される支払方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードだけを有効にする。カード以外の方法（コンビニ、銀行振込など）は与信だけを行えない。カードで払うウォレット（Apple Pay、Google Pay、Link）は MVP の後に再検討する（issue [#44](https://github.com/roger88106/ec-site/issues/44)）。
 - 期限切れを早く確認するときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する。Stripe の支払画面は作成から 31 分で期限が切れるが、その前に支払の期限を過ぎ、期限切れのジョブが支払を閉じる。
@@ -234,3 +234,28 @@ Windows で `run backend` の node を強制終了すると、Gradle のクラ�
 | ポートの追加（`scripts/dev/windows/exclude-ports.ps1`） | 管理者の PowerShell で予約の script を実行する（第 7 節） |
 
 realm を再度取り込む前は、スロットの画面のログインがリダイレクト先のエラー（Invalid redirect uri）で失敗する。
+
+## 10. 手元の置き場所（`/.local/`）
+
+`/.local/` は Git に入らない手元の置き場所である。作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣を置く。ここで扱うのはメインの作業ツリーの `/.local/` である。作業ツリーの `.local/slot` は第 9 節。フォルダーの名前と場所は、Git の文書と skill が参照しているので変えない。
+
+| 項目 | 中身 | 使う者 | 保存の期間 |
+|------|------|--------|------------|
+| `agent/` | `environment.md`（このマシンと利用者に固有の環境と習慣。セッションの始めと文脈の圧縮の後に文脈に入る）、`usage-log.md`（使用量の記録）、`zh-allow.txt`（skill `zh-mixing` の手元だけの除外） | エージェント | `environment.md`、`usage-log.md`、`zh-allow.txt` は残す。ツールは `scripts/dev/` に移したので、`agent/` に script を置かない |
+| `handoff/` | 引き継ぎの文書（skill `handoff`） | 両方 | 引き継いだ後に削除する |
+| `retro/` | 振り返り（skill `agent-retro` が読む） | エージェント | 残す |
+| `review/` | レビューの記録（skill `review`） | エージェント | その spec のマージ後に、後片付けで削除する |
+| `impl/` | 実装役の報告 | エージェント | その spec のマージ後に、後片付けで削除する |
+| `pr/` | pull request の本文の下書き | エージェント | その spec のマージ後に、後片付けで削除する |
+| `memo/` | issue 担当のセッションの備忘録 | エージェント | 段・弾の終わりに削除する |
+| `refactor/` | 整理の段階の目的、候補の一覧、基準 | エージェント | 整理の段階が終わったら削除する |
+| `issues/` | 起票に使った script と JSON | エージェント | 起票が済んだら削除する |
+| `agent-runs/` | モデルの比較の記録 | エージェント | 結果を [調べた仕組みと実績](../rules/subagents-results.md) に移した後に削除する |
+| `e2e-flow/` | 全画面を撮る作業用の Playwright の設定 | 利用者 | 利用者が使う間は残す |
+| `masterdata/` | 日本郵便の郵便番号データ（[地域モジュール](../design/modules/region.md)） | 両方 | 残す |
+| `seed-images/` | 商品画像のプロンプトの一覧 | 利用者 | 残す |
+| `stripe.env` | Stripe の sandbox の鍵（第 5 節） | 両方 | 残す |
+| `WinNAT再起動.ps1` | WinNAT を再起動する script（第 7 節に同じ手順がある） | 利用者 | 利用者が使う間は残す |
+
+- 上の表にないものは、置いたまま忘れた作業用のファイルである。見つけたら、中身の一覧を利用者に示し、許可を得て削除する。
+- spec ごとの記録（`review/`、`impl/`、`pr/`）の削除は、[開発の進め方](../rules/workflow.md) 第 5.7 節の後片付けで行う。

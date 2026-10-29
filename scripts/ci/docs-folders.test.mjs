@@ -32,6 +32,11 @@ describe('docs/ の下のフォルダー名の検査', () => {
     assert.deepEqual(findDocsFolderProblems(['docs/README.md', 'docs/constitution.md']), ['docs/README.md'])
   })
 
+  test('大文字の違う Docs/ と DOCS/ の下のファイルは失敗にし、docsx/ など別の名前は見ない', () => {
+    const files = ['Docs/05-開發規則/x.md', 'DOCS/constitution.md', 'docs/constitution.md', 'docsx/a.md']
+    assert.deepEqual(findDocsFolderProblems(files), ['Docs/05-開發規則/x.md', 'DOCS/constitution.md'])
+  })
+
   test('docs/ の外のファイルは見ない', () => {
     assert.deepEqual(findDocsFolderProblems(['README.md', 'scripts/ci/x.mjs']), [])
   })

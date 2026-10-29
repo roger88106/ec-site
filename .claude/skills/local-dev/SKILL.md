@@ -227,7 +227,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 ## シェルと Git の落とし穴
 
 - `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。Markdown の表のセルの `\|` も同じで、表を含む追記を heredoc で書くと止まる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。
-- 次の書き方は、拒否される。表の「避け方」に替える。
+- 次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
 
 | 書き方 | 拒否するもの | 避け方 |
 |--------|------------|--------|
@@ -244,11 +244,11 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 
 ## 手元の hook の設定
 
-利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と効く時点は、skill `sessions` のツールの注の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションはメインの作業ツリーの `settings.local.json` を読むので、メインの作業ツリーに置く。
+利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と効く時点は、skill `sessions` のツールの注の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションはメインの作業ツリーの `settings.local.json` を読むので、メインの作業ツリーに置く。作業ツリーで起動した `claude -p` は、メインの作業ツリーの `settings.local.json` を読まないので、手元の hook は動かない（表）。
 
 | hook | イベントと matcher | 働き |
 |------|--------------------|------|
-| `session-start.mjs` | SessionStart、`startup\|resume\|compact` | メインの作業ツリーの `/.local/agent/environment.md` を文脈に入れる。どの作業ツリーのセッションでも同じファイルを読む。ファイルがなければ何も出さない |
+| `session-start.mjs` | SessionStart、`startup\|resume\|compact` | メインの作業ツリーの `/.local/agent/environment.md` を文脈に入れる。hook が動くセッションでは、どの作業ツリーでも同じファイルを読む。ファイルがなければ何も出さない |
 | `backslash-guard.mjs` | PreToolUse、`Bash` | heredoc と `node -e` の中の `\` を拒否する。コマンドの他の箇所の `\`（grep の `\|` など）は通す |
 
 command は、script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから探し、なければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う形にする。探し方は `.claude/settings.json` と同じだが、どちらにも見つからないときは、`settings.json` はコマンドを止め、この例は何もせず通す。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。

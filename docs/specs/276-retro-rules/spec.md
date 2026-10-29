@@ -226,7 +226,7 @@ milestone「整理の段階」の spec である。追跡の issue は [#276](ht
 - [x] **T276-01-05** 前提を変える規則と判定の spec の書き方を書く（DC-276-12〜14）。
   - 依存：なし
   - 範囲：skill `review`（convergence.md、prompts.md）、`docs/rules/workflow.md` 第 1.4 節
-- [ ] **T276-01-06** PR #275 で入った「判定器」の語を書き換える（DC-276-15）。
+- [x] **T276-01-06** PR #275 で入った「判定器」の語を書き換える（DC-276-15）。
   - 依存：なし
   - 範囲：`docs/rules/subagents.md`（第 3 節の profile の表、第 4 節の危険度の箇条）、`docs/rules/subagents-results.md`（第 6 節）、skill `review` の SKILL.md（使う場面の表）
   - 確認方法：`git grep 判定器` が、アーカイブした spec 以外で 0 件。

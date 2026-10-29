@@ -226,7 +226,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 
 ## シェルと Git の落とし穴
 
-- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記を heredoc で書くと止まる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。
+- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記を heredoc で書くと、hook `backslash-guard` に拒否される。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。
 - 次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
 
 | 書き方 | 拒否するもの | 避け方 |

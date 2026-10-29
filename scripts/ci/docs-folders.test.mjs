@@ -1,4 +1,5 @@
 import assert from 'node:assert/strict'
+import { readFileSync } from 'node:fs'
 import { describe, test } from 'node:test'
 import { ALLOWED_DOCS_FOLDERS, findDocsFolderProblems } from './docs-folders.mjs'
 
@@ -33,5 +34,16 @@ describe('docs/ の下のフォルダー名の検査', () => {
 
   test('docs/ の外のファイルは見ない', () => {
     assert.deepEqual(findDocsFolderProblems(['README.md', 'scripts/ci/x.mjs']), [])
+  })
+
+  test('許可する名前は全て、constitution.md の第 3 節に「<名前>/」の形で出る', () => {
+    const constitution = readFileSync(new URL('../../docs/constitution.md', import.meta.url), 'utf8')
+    const start = constitution.search(/^## 3\./m)
+    const rest = constitution.slice(start + 1)
+    const next = rest.search(/^## /m)
+    const section = next === -1 ? rest : rest.slice(0, next)
+    assert.notEqual(start, -1)
+    const missing = ALLOWED_DOCS_FOLDERS.filter((name) => !section.includes(`${name}/`))
+    assert.deepEqual(missing, [])
   })
 })

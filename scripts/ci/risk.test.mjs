@@ -35,7 +35,7 @@ const DECLARED_SPEC = ['# Spec 900：例', '', 'ステータス：確定', '危�
 const PLAIN_SPEC = ['# Spec 901：例', '', 'ステータス：確定', '', '## 1. 背景と目的', '', '危険度：高'].join('\n')
 
 /** 高の経路を含まないファイル */
-const LOW_FILES = ['frontend/store/src/features/cart/CartPage.tsx', 'docs/03-機能仕様/catalog.md', 'README.md']
+const LOW_FILES = ['frontend/store/src/features/cart/CartPage.tsx', 'docs/03-機能仕様/catalog.md', 'docs/07-記録/subagents-results.md', 'README.md']
 
 describe('変更の危険度の判定', () => {
   // まとまりごとに、高の経路の例（テストのファイルも含む）

@@ -133,7 +133,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 
 ### DS-279-2 アーカイブの外の、古いパスを指す参照を全て修正する（D / P1）
 
-- **DC-279-6** アーカイブの外に、古いパスの文字列が残っていない。第 1 節の「パスを直接書いている箇所」の調べ方（パスの文字列、正規表現、Markdown の相対リンク）の件数が全て 0 である。例外は 2 つだけである。1 つは本 spec の spec.md、もう 1 つは `.claude/skills/docs/replace-paths.test.cjs` のうち、置き換えの入力の例として古いパスを使う行である（行の一覧は第 9 節に書く）。
+- **DC-279-6** アーカイブの外に、古いパスの文字列が残っていない。第 1 節の「パスを直接書いている箇所」の調べ方（パスの文字列、正規表現、Markdown の相対リンク）の件数が全て 0 である。例外は 2 つだけである。1 つは本 spec の spec.md、もう 1 つは、テストのうち、入力の例として古いパスを使う行である（`.claude/skills/docs/replace-paths.test.cjs` の置き換えの例と、`scripts/ci/docs-folders.test.mjs` の一覧にない名前の例。行の一覧は第 9 節に書く）。
 - **DC-279-7** `node scripts/ci/doc-refs.mjs` が通る（Markdown のリンクと、文書の名前と節の参照が切れていない）。
 - **DC-279-8** 検査の script とテストの、パスの定数と正規表現が新しいパスを指す。`bash scripts/ci/check-all.sh` が通る。アーカイブを除く検査（`doc-refs`・`ja-text`・`zh-mixing`・`replace-paths`・`suffixes`）は、`docs/08-spec/archive/` を除く。
 - **DC-279-9** `build.gradle.kts` の inputs が新しいパスを指し、`./gradlew check` が通る。system property では、リポジトリのルート（ASCII のパス）だけを渡し、テストが Java のソースに書いた相対パスでパスを組み立てる（`Contracts.path` と `ContractsTest`）。理由：Windows では、system property の日本語が文字化けするため（T279-01-01、第 9 節）。`ci.yml` の paths が、`docs/02-設計/overview.md`・`docs/03-機能仕様/*.md`・`docs/05-開発規則/backend-coding.md` を含む。理由：これらの文書を変えた push で、文書と照合するバックエンドの単体テストを実行するため。
@@ -262,9 +262,18 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
   - DC-279-14 の画面の確認
   - spec のアーカイブへの移動
 
-- [ ] **T279-02-01** spec の最後のレビューを行う（skill `review`）。
+- [x] **T279-02-01** spec の最後のレビューを行う（skill `review`）。
   - 依存：段階 1
   - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | 段階をまたぐ影響・ファイルをまたぐ影響・spec との一致 | 高性能 | 1 | 220650 | 5m59s | 0 | 3 | 4 | 6 |
+    | spec の最後 | 校閲 | 汎用 | 1 | 76147 | 0m30s | 0 | 0 | 0 | 0 |
+
+    - 修正した必須：`docs-folders.test.mjs` の `design/` の例を DC-279-6 の例外に加えた。`ci.md` で `related-specs` の行のリンクを新しいパスの形にした。テストの書き方 第 3.4 節の `Contracts.path` の読み方を、相対パスを渡す形にした。
+    - 採用した推奨：`risk.test.mjs` の低の例に `docs/07-記録/` を加えた。`docs-folders.test.mjs` に、許可するフォルダー名が constitution 第 3 節に出ることの確認を加えた（DC-279-16 の機械の検査）。`ci.yml` のコメントと `ci.md` に、AC 一覧と用語集の変更でも実行することを書いた。
+    - 残した推奨：git の出力の `core.quotepath` の検査は、第 8 節の 2 に回した（新しい検査で、本 spec の範囲の外のため）。
 - [ ] **T279-02-02** pull request の前のレビューを、draft の pull request で行う（skill `review`）。本文に `Closes #279` を書く。push の後に DC-279-14 の画面の確認を行う。
   - 依存：T279-02-01
   - 結果：
@@ -278,6 +287,7 @@ spec 276 の PR [#278](https://github.com/roger88106/ec-site/pull/278)（ブラ�
 | # | 項目 | 起票の案 |
 |---|------|----------|
 | 1 | `03-機能仕様/` の直下に、モジュールの文書と、AC 一覧・用語集が並ぶ。`design-migrations.mjs` と `ProductionClassesTest` は、直下の全ての `.md` をモジュールの文書として読む（今は、レベルの行とデータモデルの節がないので通る）。モジュールでない文書を加えると、誤って検査の対象になる | 第 2 段の、`03-機能仕様/` を書き換える spec の範囲に入れる（新しく起票しない） |
+| 2 | git の出力からパスを読む処理に `-z` か `-c core.quotepath=false` を付けることを、確認する検査がない。新しい script で付け忘れると、日本語のパスを読めない（spec の最後のレビューの推奨） | 規模 S で起票する。`scan-rules.mjs` の表に、パスを出力する git のコマンドの行を加える |
 
 ## 9. 作業の記録
 
@@ -294,7 +304,7 @@ T279-01-01 の結果、DC-279-6 の例外の一覧、DC-279-14 の画面の確�
 
 - 611 ファイルを変え、そのうち 331 が移動（rename）として出る。アーカイブは全て中身の差がない移動である。
 - DC-279-3 の例外：`03-機能仕様/acceptance-criteria.md` は、全ての行の spec へのリンク（`../specs/` → `../08-spec/`）が変わり、類似度が 40% になるため、Git の既定の閾値（50%）では移動として出ない。`git log --follow -M40% -- docs/03-機能仕様/acceptance-criteria.md` で移す前の履歴が出る。移動だけの commit は hook で止まるので、commit を分けずに例外にした。
-- DC-279-6 の例外：`.claude/skills/docs/replace-paths.test.cjs` の 29、30、33、38、39、42、43、44、53 行（置き換えの入力の例）。
+- DC-279-6 の例外：`.claude/skills/docs/replace-paths.test.cjs` の 29・30・33・38・39・42・43・44・53 行（置き換えの入力の例）と、T279-01-03 で加えた `scripts/ci/docs-folders.test.mjs` の 27 行（一覧にない名前 `design/` の例。DC-279-17）。
 - 調べ方で見つからず、手動で修正したもの：`ac-check.mjs` が生成するリンク（`../specs/`）、`ac-check.test.mjs` の正規表現（`\.\.\/specs\/`）、`review/stats.cjs` の `path.join(..., 'specs', ...)`。
 - 調べ方に当たるが、変えなかったテストの入力：`ac-check.test.mjs` の `../specs/016-master-data`（中身を読まずに渡すだけのデータ）。
 - 完了条件のために加えたもの：

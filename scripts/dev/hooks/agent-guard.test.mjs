@@ -822,6 +822,16 @@ describe('マージのコマンドを判定する', () => {
     }
   })
 
+  test('gh api graphql の展開を含む値のキーが GraphQL の変数の名前の形でない（ブレース・グロブを含む）ときは、展開の後のキーが query になりうるので、読めない本文として確認を求める', () => {
+    for (const command of [
+      'gh api graphql -f{query,x}="$(cat merge.graphql)"',
+      `gh api graphql -f 'q*'="$(cat merge.graphql)"`,
+      'gh api graphql -F {query,x}=@"$FILE"',
+    ]) {
+      assertAsked(command, /読めない/, fakeDeps())
+    }
+  })
+
   test('本文の編集の後に検査「危険度の照合」が再実行されていなければ確認を求め、再実行されていれば通す', () => {
     // 照合の開始の時刻は、check の既定（10:00）
     assertAsked(MERGE, /危険度の照合.*編集/, mergeDeps({ lastEditedAt: NEWER }))

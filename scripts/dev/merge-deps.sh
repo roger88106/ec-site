@@ -7,7 +7,8 @@
 #   振る舞い：BEHIND なら gh pr update-branch で最新にし、CI が終わるのを待つ。
 #     マージできる状態（CLEAN で失敗がない）なら、次の 1 行を標準出力に出す。
 #       gh pr merge <番号> --merge --match-head-commit <SHA>
-#     DIRTY、待っても CI が終わらない、失敗がある、のときは理由を出して終了コード 1 で止まる
+#     DIRTY、update-branch の後に head が変わらない、待っても CI が終わらない（上限に達する）、失敗がある、
+#     のときは理由を標準エラー出力に出して終了コード 1 で止まる（マージのコマンドは出さない）
 #
 #   この script はマージを実行しない。理由：Claude Code の hook
 #   （scripts/dev/hooks/agent-guard.mjs）は Bash のコマンドの文字列だけを読むので、
@@ -36,24 +37,34 @@ for n in "$@"; do
     old=$(head_sha "$n")
     gh pr update-branch "$n" -R "$repo" >/dev/null || { echo "#$n: update-branch に失敗した" >&2; exit 1; }
     # head が変わる（最新が反映される）まで待つ
+    changed=0
     for _ in $(seq 1 30); do
       sleep 10
-      [ "$(head_sha "$n")" != "$old" ] && break
+      if [ "$(head_sha "$n")" != "$old" ]; then changed=1; break; fi
     done
+    if [ "$changed" = "0" ]; then
+      echo "#$n: update-branch の後に head が変わらないまま待つ上限に達した（最新が反映されていない）" >&2
+      exit 1
+    fi
   elif [ "$state" = "DIRTY" ]; then
     echo "#$n: 衝突している（DIRTY）" >&2
     exit 1
   fi
 
   # バックエンドの検査が表示されて、pending が 0 になるまで待つ
+  ready=0
   for _ in $(seq 1 90); do
     sleep 20
     checks=$(gh pr checks "$n" -R "$repo" 2>/dev/null)
     pending=$(echo "$checks" | grep -cE "pending|queued|in_progress")
     backend=$(echo "$checks" | grep -c "バックエンド")
     state=$(merge_state "$n")
-    [ "$backend" != "0" ] && [ "$pending" = "0" ] && [ "$state" != "UNKNOWN" ] && break
+    if [ "$backend" != "0" ] && [ "$pending" = "0" ] && [ "$state" != "UNKNOWN" ]; then ready=1; break; fi
   done
+  if [ "$ready" = "0" ]; then
+    echo "#$n: CI を待つ上限に達した（バックエンドの検査が出ない、または pending が 0 にならない。state=$state、pending=$pending、バックエンドの検査=$backend）" >&2
+    exit 1
+  fi
 
   fails=$(gh pr checks "$n" -R "$repo" 2>/dev/null | grep -c fail)
   if [ "$state" = "CLEAN" ] && [ "$fails" = "0" ]; then

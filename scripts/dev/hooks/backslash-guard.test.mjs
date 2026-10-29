@@ -44,6 +44,26 @@ describe('heredoc と node -e の中の \\ を拒否する', () => {
   test('node --eval の二重引用符の引数に \\ がある', () => {
     assertDenied('node --eval "console.log(1)\\n"')
   })
+
+  test('node と -e の間に他のオプション（--input-type=module など）があっても、引数の \\ を拒否する', () => {
+    assertDenied("node --input-type=module -e 'console.log(\"a\\nb\")'")
+    assertDenied('node --input-type=module --eval "console.log(1)\\n"')
+    assertDenied("node --no-warnings --input-type=module -e 'console.log(\"a\\nb\")'")
+  })
+
+  test('-p・--print・-pe・-ep の引数の \\ を拒否する', () => {
+    assertDenied("node -p '\"a\\nb\"'")
+    assertDenied("node --print '\"a\\nb\"'")
+    assertDenied("node -pe '\"a\\nb\"'")
+    assertDenied("node -ep '\"a\\nb\"'")
+    assertDenied("node --input-type=module -pe '\"a\\nb\"'")
+  })
+
+  test('終わりの印に - や . を含む heredoc の本文の \\ を拒否する', () => {
+    assertDenied("cat <<'END-JS'\nconst re = /\\d+/\nEND-JS")
+    assertDenied('cat <<EOF.x\nconst re = /\\d+/\nEOF.x')
+    assertDenied('cat <<-END-JS\n\techo a\\nb\n\tEND-JS')
+  })
 })
 
 describe('他の箇所の \\ と、\\ のないコマンドは通す', () => {
@@ -58,6 +78,19 @@ describe('他の箇所の \\ と、\\ のないコマンドは通す', () => {
   test('\\ のない heredoc と node -e は通す', () => {
     assertPassed("cat <<'EOF'\nhello\nEOF")
     assertPassed("node -e 'console.log(1)'")
+  })
+
+  test('-e のない node の引数と、オプションだけの node は通す', () => {
+    assertPassed('node --version')
+    assertPassed("node script.mjs 'a\\b'")
+    assertPassed("node --input-type=module script.mjs 'a\\b'")
+  })
+
+  test('\\ のない node -e（他のオプション付き）と、終わりの印に - や . を含む heredoc は通す', () => {
+    assertPassed("node --input-type=module -e 'console.log(1)'")
+    assertPassed("node -pe 'process.version'")
+    assertPassed("cat <<'END-JS'\nhello\nEND-JS")
+    assertPassed('cat <<EOF.x\nhello\nEOF.x')
   })
 
   test('heredoc の外に \\ があっても、本文になければ通す', () => {

@@ -81,6 +81,17 @@ describe('メインの作業ツリーの environment.md を文脈に入れる', 
     assert.ok(result.stdout.endsWith(ENVIRONMENT), result.stdout)
   })
 
+  test('環境に GIT_DIR があっても、cwd のリポジトリから求める（commit 中の hook の環境で呼ばれても読める）', () => {
+    writeEnvironment()
+    const result = spawnSync(process.execPath, [SCRIPT], {
+      input: inputOf(worktree),
+      encoding: 'utf8',
+      env: { ...withoutGitEnv(), GIT_DIR: path.join(root, 'no-such-repo.git') },
+    })
+    assert.equal(result.status, 0, result.stderr)
+    assert.ok(result.stdout.endsWith(ENVIRONMENT), result.stdout)
+  })
+
   test('CLAUDE_PROJECT_DIR を使わない', () => {
     writeEnvironment()
     const other = path.join(root, 'other')

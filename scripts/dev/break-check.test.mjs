@@ -55,9 +55,21 @@ describe('壊しての確認', () => {
     assert.match(result.stderr, /読めない/)
   })
 
-  test('コマンドが見つからないときは、テストの失敗と同じく終了コード 0 になる（bash は起動できている）', () => {
+  test('コマンドが見つからないときは、テストの失敗と区別して終了コード 2 で止まり、ファイルが元に戻る', () => {
     const result = run('ok = true', 'ok = false', './no-such-command.sh')
-    assert.equal(result.status, 0, result.stdout + result.stderr)
+    assert.equal(result.status, 2, result.stdout + result.stderr)
+    assert.match(result.stderr, /127/)
+    assert.match(result.stderr, /見つからない/)
+    assert.doesNotMatch(result.stdout, /壊すと検出できる/)
+    assert.equal(readFileSync(target, 'utf8'), original)
+  })
+
+  test('コマンドを実行できないとき（終了コード 126）は、終了コード 2 で止まり、ファイルが元に戻る', () => {
+    const result = run('ok = true', 'ok = false', 'exit 126')
+    assert.equal(result.status, 2, result.stdout + result.stderr)
+    assert.match(result.stderr, /126/)
+    assert.match(result.stderr, /実行できない/)
+    assert.doesNotMatch(result.stdout, /壊すと検出できる/)
     assert.equal(readFileSync(target, 'utf8'), original)
   })
 

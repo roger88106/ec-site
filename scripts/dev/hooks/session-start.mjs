@@ -6,12 +6,14 @@
 import { spawnSync } from 'node:child_process'
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
+import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
 
 try {
   const cwd = JSON.parse(readFileSync(0, 'utf8'))?.cwd
   if (typeof cwd !== 'string' || cwd === '') process.exit(0)
 
-  const git = spawnSync('git', ['rev-parse', '--git-common-dir'], { cwd, encoding: 'utf8' })
+  // GIT_DIR などが設定された環境（git の hook の中など）でも cwd のリポジトリを求めるため、GIT_ で始まる変数を外して実行する
+  const git = spawnSync('git', ['rev-parse', '--git-common-dir'], { cwd, encoding: 'utf8', env: withoutGitEnv() })
   if (git.status !== 0) process.exit(0)
 
   // cwd がメインの作業ツリーの直下だと、相対パス（.git）が返る

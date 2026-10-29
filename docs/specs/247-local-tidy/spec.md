@@ -279,11 +279,11 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
   - 範囲：`AGENTS.md`、`docs/guides/setup.md`、`docs/rules/workflow.md`、`docs/rules/subagents.md`、skill `local-dev`・`sessions`・`zh-mixing`
   - DC-247-3 の後片付けの手順に、DC-247-12 と DC-247-6 の差し替えは含めない（本 spec だけの作業のため、第 9 節に書く）。
   - 確認方法：各 DC の該当箇所を、skill `review` の文書のレビューで読む。`check-all.sh` の文書の検査が通る。
-- [ ] **T247-01-07** 手元の設定の差し替えを用意し、この作業ツリーで確認する（DC-247-12）。
+- [x] **T247-01-07** 手元の設定の差し替えを用意し、この作業ツリーで確認する（DC-247-12）。
   - 依存：T247-01-02
   - 範囲：第 9 節（差し替える `settings.local.json` の hook の行）
   - 確認方法：差し替える hook のコマンド（DC-247-12 の書き方）を、この作業ツリーで実行する。hook の入力の形の JSON を渡し、次を確認する。`environment.md` が出力される。heredoc の `\` が拒否される。中国語の混入が見つかる。結果を第 9 節に書く。メインの作業ツリーの設定と `/.local/agent/` は変えない。
-- [ ] **T247-01-08** 縮めた `environment.md` を用意する（DC-247-6〜8）。
+- [x] **T247-01-08** 縮めた `environment.md` を用意する（DC-247-6〜8）。
   - 依存：T247-01-06
   - 範囲：`/.local/memo/refactor1/247-environment.md`（差し替える内容。Git に入らない）
   - 先に issue 担当のセッションに、変える内容を知らせる。
@@ -319,3 +319,41 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 ## 9. 作業の記録
 
 T247-01-07〜09 の結果と、マージの後に行う差し替え（DC-247-6、12）の手順を、ここに書く。
+
+### T247-01-07 手元の hook の差し替えの確認（2026-10-29）
+
+差し替える 3 つの hook のコマンドは、skill `local-dev` の「手元の hook の設定」と skill `zh-mixing` の設定の手順の例のとおり（script のパスを `git rev-parse --show-toplevel` → `$CLAUDE_PROJECT_DIR` の順に探す）。本 spec の作業ツリーで、hook の入力の形の JSON を渡して実行した。
+
+| hook | 入力 | 結果 |
+|------|------|------|
+| session-start | `cwd` が本 spec の作業ツリー | メインの作業ツリーの `environment.md` を前置きの文とともに出力した。終了コード 0 |
+| session-start | `cwd` が Git の外、`$CLAUDE_PROJECT_DIR` が本 spec の作業ツリー | `$CLAUDE_PROJECT_DIR` の下の script で同じ出力になった |
+| backslash-guard | heredoc の本文に `\` | 拒否した。終了コード 2、理由を標準エラー出力に出した |
+| backslash-guard | `ls` | 通した。終了コード 0 |
+| 中国語の混入の PostToolUse | 中国語の用語を含むファイル | 混入を見つけた。終了コード 2 |
+
+メインの作業ツリーの設定と `/.local/agent/` は変えていない。
+
+### T247-01-08 縮めた `environment.md`（2026-10-29）
+
+差し替える内容は `/.local/memo/refactor1/247-environment.md`（4,985 バイト。今は 11,549 バイト）。削除した箇条と行き先：
+
+| 削除した箇条 | 行き先 |
+|--------------|--------|
+| 確認の所で止まる、段階とタスクの間で止まらない | [開発の進め方](../../rules/workflow.md)（既存）。別の件だけに答えたときに聞く 1 文は残した |
+| push と pull request の作成は許可を求めない | AGENTS.md の Git の表（既存） |
+| バックエンドの起動と停止 | skill `local-dev`（停止の手順は既存、java が残る注意を追加した） |
+| WinNAT の手順とスクリプト | [開発環境の起動](../../guides/setup.md) 第 7 節（既存）。`netstat` の中国語の表示と 1025 の注意は残した |
+| heredoc の `\`、break-check、`tail` の終了コード、hook で止まったときのステージ、作業ツリーの削除、テストを同時に実行しない | skill `local-dev`（「シェルと Git の落とし穴」「壊しての確認」、スロットの節） |
+| Stripe のログの鍵 | [開発環境の起動](../../guides/setup.md) 第 5 節 |
+| 各箇条の日付と注意された回数、試した経緯 | 削除（返答の言語の回数だけ理由として残した） |
+
+### マージの後の差し替えの手順（DC-247-6、12）
+
+issue 担当のセッションに知らせてから、メインの作業ツリーで行う。`settings.local.json` の Edit は確認の画面が出る（DC-246-17）。
+
+1. メインの作業ツリーの `develop` に本 spec のマージが入っていることを確認する。
+2. `.claude/settings.local.json` の 3 つの hook のコマンドを、skill `local-dev` と `zh-mixing` の例の形に替える。
+3. `/.local/agent/environment.md` を `/.local/memo/refactor1/247-environment.md` で置き換える。マージまでに issue 担当のセッションが `environment.md` を変えていれば、その変更を先に写す。
+4. `/.local/agent/` の `session-start.mjs`、`backslash-guard.mjs`、`break-check.mjs`、`merge-deps.sh` を削除する。
+5. 新しいセッションを起動し、始めに `environment.md` が文脈に入ることを確認する。

@@ -79,7 +79,7 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 詳細は [弾と段の終わり](rounds.md)。
 
 1. 集計：`node .claude/skills/review/stats.cjs --round <弾> --profile <profile> <spec の番号...>`。profile ごとに、その profile で動いた spec だけを渡して実行する。1 つの弾に複数の profile があれば、実行を分ける（profile は spec の起動ごとに決まる。[作業の形と使用量](../../../docs/rules/resources.md)）。profile の再検討を利用者に提案する。
-2. 効果の測定：spec 245 がマージされた後の最初の弾だけ。整理の前の基準と同じ script と方法で測り、測る作業は、spec 245 の起票の案で作った issue で行う。
+2. 効果の測定：整理の第 2 段の最初の弾だけ（第 1 段の測定は issue #265 で済んだ）。閾値・並行の上限・spec の最後のレビューの量を、整理の前の基準と同じ script と方法に、`stats.cjs` の集計を加えて測り直す。測る作業は、起票の案で作った issue で行う（[rounds.md](rounds.md)）。
 3. 見逃しの台帳を読む：label「見逃し」の issue のうち、本文の「関連」にエージェントがマージしたと書いたものが 1 件でもあれば、高の経路の一覧と、低のマージの条件の再検討を利用者に提案する（台帳の書き方は [エージェントの作業フロー](../../../docs/rules/subagents.md) 第 5 節）。
 4. 振り返り：skill `agent-retro` で行い、集計して整理の issue の案を利用者に示す。
 5. 低の変更の推奨と起票の案：この弾で issue 担当のセッションがマージした低の変更の pull request から、本文の「推奨の指摘の扱い」と起票の案を集めて利用者に示す。利用者が承認したものだけを起票する。理由：低の変更は利用者が pull request を確認しないため（2026-10-28 利用者の決定）。

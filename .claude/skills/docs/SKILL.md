@@ -24,6 +24,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
 | `AGENTS.md`・skill | エージェントに固有の手順だけ。規則は docs/ を指す |
 
 - `docs/` の直下には constitution とフォルダーだけを置く。文書を追加したら constitution の文書の地図にも記載する。
+- `docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と constitution の文書の地図を一緒に修正する。
 - 同じ意味は 1 か所に書き、ほかは指す。
 
 ## 2. 書き方

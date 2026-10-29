@@ -70,7 +70,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 |------|------|----------|--------|
 | `session-start.mjs` | SessionStart の hook。`environment.md` を文脈に入れる | `.claude/settings.local.json` | なし |
 | `backslash-guard.mjs` | PreToolUse の hook。heredoc と `node -e` の中の `\` を拒否する | `.claude/settings.local.json` | なし |
-| `break-check.mjs` | コードの 1 か所を書き換えてテストを流し、失敗するかを確認して戻す | エージェントが手動で | なし。コマンドを cmd.exe で実行するので `./gradlew` が起動できない（`environment.md`） |
+| `break-check.mjs` | コードの 1 か所を書き換えてテストを実行し、失敗するかを確認して戻す | エージェントが手動で | なし。コマンドを cmd.exe で実行するので `./gradlew` が起動できない（`environment.md`） |
 | `merge-deps.sh` | Dependabot の pull request を、最新にして CI を待ち、1 つずつマージする | issue 担当のセッションが手動で | なし |
 
 中国語の混入の検査（`check-zh.mjs`）は、spec 249 が skill `zh-mixing` に置き換えて削除した。skill `zh-mixing` の SKILL.md に、置き換えの手順の段落（spec 249 第 8 節の 8）が残る。
@@ -225,7 +225,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
   - `.claude/settings.json` の新設と、`settings.json` と `settings.local.json` の分け方（DC-246-3）
   - hook の script の置き場所 `scripts/dev/hooks/`（spec 246 の決めたこと 4）
   - AGENTS.md の環境の節、`docs/guides/setup.md`、skill `zh-mixing` の設定の手順
-- 実装を始める前に、最新の `develop`（spec 246 のマージを含む）を作業ブランチに取り込む。取り込まないと、spec 246 の `settings.json` の hook がこの作業ツリーのセッションで効かない（spec 246 第 7 節）。
+- 実装を始める前に、最新の `develop`（spec 246 のマージを含む）を作業ブランチに取り込む。取り込まないと、spec 246 の `settings.json` の hook がこの作業ツリーのセッションで適用されない（spec 246 第 7 節）。
 - 実装を始める前の照合（[開発の進め方](../../rules/workflow.md) 第 5.6 節）では、spec 246 がマージした内容を第 3 節と照合し、差があれば本 spec を先に修正する。照合するものは、`scripts/dev/hooks/` の置き場所とテストの glob、`settings.json` と `settings.local.json` の分け方の文言、AGENTS.md の環境の節、作業ツリーの設定の読み方の記述、マージの hook が Bash のコマンドの文字列だけを読むこと（DC-247-11）である。
   - hook のコマンドの書き方：spec 246 は、hook の script のパスを `$CLAUDE_PROJECT_DIR` でなく `git rev-parse --show-toplevel` から求める（issue 担当のセッション、2026-10-29）。DC-247-12 で差し替える `settings.local.json` の 3 つの hook（backslash-guard、session-start、zh-mixing の PostToolUse）と、skill `zh-mixing` の設定の手順の例を、この書き方に合わせるかを照合する。`session-start.mjs` が読む `environment.md` の場所は、hook のコマンドの書き方と別に DC-247-9 で決める。
 - 照合の結果（2026-10-29、`develop` の d57301f7 を取り込んだ後）。設計（第 6 節の決めたこと）は変わらない。
@@ -245,7 +245,7 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 | skill | `local-dev`、`sessions`、`zh-mixing` | spec 246（`zh-mixing` の設定の手順） |
 | 手元 | `/.local/agent/environment.md`、`.claude/settings.local.json`、`/.local/` の削除するもの | spec 246（DC-246-17 により、`settings*.json` の Edit・Write で確認の画面が出る）。issue 担当のセッション（`environment.md` を修正する） |
 
-- 手元の設定の切り替え（DC-247-12）と `environment.md` の差し替え（DC-247-6）は、本 spec のマージの後の後片付けで行う。マージの前は、新しい script と移した記述がメインの作業ツリーになく、メインの作業ツリーを使う他のセッションが困るためである。段階 1 では、差し替える内容を用意して確認するところまでを行う。
+- 手元の設定の切り替え（DC-247-12）と `environment.md` の差し替え（DC-247-6）は、本 spec のマージの後の後片付けで行う。マージの前は、新しい script と移した記述がメインの作業ツリーになく、メインの作業ツリーを使う他のセッションの hook が動かなくなるためである。段階 1 では、差し替える内容を用意して確認するところまでを行う。
 
 ### 段階 1：ツールと文書
 
@@ -299,8 +299,19 @@ milestone「整理の段階」の第 1 段の spec の 1 つである。追跡�
 - 前提：段階 1
 - 完了条件：spec の最後のレビューと、pull request の前のレビューを終え、spec をアーカイブに移している。pull request の本文に `Closes #22` がある（DC-247-18）。
 
-- [ ] **T247-02-01** spec の最後のレビューを行う（skill `review`）。
+- [x] **T247-02-01** spec の最後のレビューを行う（skill `review`）。
   - 依存：段階 1
+  - 結果：
+
+    | 時点 | 観点 | モデル | 回数 | token | 時間 | 高 | 必須 | 推奨 | 採用 |
+    |------|------|--------|------|-------|------|----|------|------|------|
+    | spec の最後 | spec との一致 | 高性能 | 1 | 81181 | 1m31s | 0 | 1 | 3 | 4 |
+    | spec の最後 | ファイルをまたぐ影響・段階をまたぐ影響 | 汎用 | 1 | 69467 | 1m39s | 1 | 1 | 3 | 5 |
+    | spec の最後 | 日本語の校閲 | 汎用 | 1 | 63301 | 0m44s | 0 | 0 | 9 | 9 |
+
+    - 修正したもの：break-check が bash を起動できないときと対象のファイルが読めないときに終了コード 2 にする（高。テストを追加した）。setup.md 第 10 節の `agent/` に `zh-allow.txt` を加える（必須。2 つの観点で重複）。AGENTS.md の hook の script の一覧、hook のコマンドの「`settings.json` と同じ」の書き分け、作業ツリーのセッションが読む設定の主語（デスクトップアプリの作業ツリーに限る）、merge-deps の 2 つ目以降の失敗の扱い、第 9 節の T247-01-07 の記録、校閲の 9 件。
+    - 残したもの：なし。
+    - 機械の検査に移したもの：なし。break-check の終了コードはテストに加えた。他は文書の内容の照合で、検査に移せない。
 - [ ] **T247-02-02** pull request の前のレビューを、draft の pull request で行う（skill `review`）。本文に `Closes #247` と `Closes #22` を書く（DC-247-18）。
   - 依存：T247-02-01
 - [ ] **T247-02-03** spec をアーカイブ（`docs/specs/archive/1to10/`）に移す。
@@ -327,7 +338,7 @@ T247-01-07〜09 の結果と、マージの後に行う差し替え（DC-247-6�
 | hook | 入力 | 結果 |
 |------|------|------|
 | session-start | `cwd` が本 spec の作業ツリー | メインの作業ツリーの `environment.md` を前置きの文とともに出力した。終了コード 0 |
-| session-start | `cwd` が Git の外、`$CLAUDE_PROJECT_DIR` が本 spec の作業ツリー | `$CLAUDE_PROJECT_DIR` の下の script で同じ出力になった |
+| session-start | シェルの作業ディレクトリが Git の外、入力の `cwd` はメインの作業ツリー、`$CLAUDE_PROJECT_DIR` が本 spec の作業ツリー | `$CLAUDE_PROJECT_DIR` の下の script で同じ出力になった |
 | backslash-guard | heredoc の本文に `\` | 拒否した。終了コード 2、理由を標準エラー出力に出した |
 | backslash-guard | `ls` | 通した。終了コード 0 |
 | 中国語の混入の PostToolUse | 中国語の用語を含むファイル | 混入を見つけた。終了コード 2 |
@@ -357,7 +368,7 @@ issue 担当のセッションに一覧を知らせ、利用者の許可を得�
 | 削除した | `review/` のうち本 spec のもの以外（約 13MB、マージ済みの spec の記録）、`impl/155`・`impl/225`、`pr/157-*`、`handoff/` の 3 つ（issue 担当の古い引き継ぎ）、`issues/`、`ca.txt`、空の `articles/`・`trash/`。空になった `impl/`・`pr/`・`handoff/` も削除した |
 | 残した | `agent/`、`memo/`（issue 担当の判断に任せる）、`retro/`、`refactor/`、`agent-runs/`（結果を [調べた仕組みと実績](../../rules/subagents-results.md) に移したか確認できない）、`masterdata/`、`seed-images/`、`stripe.env`、`e2e-flow/`、`WinNAT再起動.ps1`、`review/202610290000-247-spec` |
 
-[開発環境の起動](../../guides/setup.md) 第 10 節の保存の期間のうち、DC-247-2 で決めていないもの（`refactor/`、`issues/`、`agent-runs/`、`e2e-flow/`、`WinNAT再起動.ps1`）も、利用者が同じ時に承認した。
+[開発環境の起動](../../guides/setup.md) 第 10 節の保存の期間のうち、DC-247-2 で決めていないもの（`refactor/`、`issues/`、`agent-runs/`、`e2e-flow/`、`WinNAT再起動.ps1`）も、利用者が同じ確認で承認した。
 
 ### マージの後の差し替えの手順（DC-247-6、12）
 

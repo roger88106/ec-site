@@ -48,7 +48,20 @@ describe('壊しての確認', () => {
     assert.equal(readFileSync(target, 'utf8'), 'ok\nok\n')
   })
 
-  test('壊すとコマンドが失敗すると、終了コード 0 になり、ファイルが元に戻る', () => {
+  test('対象のファイルがないと、終了コード 2 で止まり、理由を標準エラー出力に出す', () => {
+    const missing = path.join(dir, 'missing.txt')
+    const result = spawnSync('node', [script, missing, 'ok', 'ng', dir, './check.sh'], { encoding: 'utf8' })
+    assert.equal(result.status, 2, result.stdout + result.stderr)
+    assert.match(result.stderr, /読めない/)
+  })
+
+  test('コマンドが見つからないときは、テストの失敗と同じく終了コード 0 になる（bash は起動できている）', () => {
+    const result = run('ok = true', 'ok = false', './no-such-command.sh')
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    assert.equal(readFileSync(target, 'utf8'), original)
+  })
+
+  test('壊したときにコマンドが失敗すれば、終了コード 0 になり、ファイルが元に戻る', () => {
     const result = run('ok = true', 'ok = false', './check.sh')
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.match(result.stdout, /FAILED check/)

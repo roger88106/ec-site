@@ -241,7 +241,7 @@ realm を再度取り込む前は、スロットの画面のログインがリ�
 
 | 項目 | 中身 | 使う者 | 保存の期間 |
 |------|------|--------|------------|
-| `agent/` | `environment.md`（このマシンと利用者に固有の環境と習慣。セッションの始めと文脈の圧縮の後に文脈に入る）、`usage-log.md`（使用量の記録） | エージェント | `environment.md` と `usage-log.md` は残す。ツールは `scripts/dev/` に移したので、`agent/` に script を置かない |
+| `agent/` | `environment.md`（このマシンと利用者に固有の環境と習慣。セッションの始めと文脈の圧縮の後に文脈に入る）、`usage-log.md`（使用量の記録）、`zh-allow.txt`（skill `zh-mixing` の手元だけの除外） | エージェント | `environment.md`、`usage-log.md`、`zh-allow.txt` は残す。ツールは `scripts/dev/` に移したので、`agent/` に script を置かない |
 | `handoff/` | 引き継ぎの文書（skill `handoff`） | 両方 | 引き継いだ後に削除する |
 | `retro/` | 振り返り（skill `agent-retro` が読む） | エージェント | 残す |
 | `review/` | レビューの記録（skill `review`） | エージェント | その spec のマージ後に、後片付けで削除する |

@@ -221,25 +221,25 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 ```
 
 - 置き換えは文字列で行い、1 か所に当たらなければ変えずに終了コード 2 で止まる。テストのコマンドは Git Bash で実行するので、`./gradlew` も起動できる。テストの後は、成否によらず元に戻す。
-- 出力は、失敗したテストの行（`×`、`FAILED`、`BUILD`）と件数、最後の `→ 失敗した（壊すと気づく）` か `→ 通った（壊しても気づかない）`。終了コードは、失敗すれば 0（確認が効いた）、通れば 1。
+- 出力は、失敗したテストの行（`×`、`FAILED`、`BUILD`）と件数、最後の `→ 失敗した（壊すと検出できる）` か `→ 通った（壊しても検出できない）`。終了コードは、失敗すれば 0（壊すと検出できた）、通れば 1、置き換えが当たらない・ファイルが読めない・bash を起動できないときは 2（理由は標準エラー出力）。
 - Gradle のテストでは、出力に `FAILED` か `BUILD` の行があることを確認する。ない失敗は、テスト以外の原因（起動の失敗など）を疑う。
 
 ## シェルと Git の落とし穴
 
-- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に包むと、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。手元の hook（`backslash-guard`。次の節）が、heredoc か `node -e` に `\` を含む Bash のコマンドを止める。
+- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。手元の hook（`backslash-guard`。次の節）が、heredoc か `node -e` に `\` を含む Bash のコマンドを止める。
 - 検査を `| tail` に通すと、終了コードが `tail` のものになり、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
 - `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
 
 ## 手元の hook の設定
 
-利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む（[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節）ので、メインの作業ツリーに置く。
+利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読む（`git worktree add` で作った作業ツリーは未確認。[エージェントの作業フロー](../../../docs/rules/subagents.md) 第 4 節）ので、メインの作業ツリーに置く。
 
 | hook | イベントと matcher | 働き |
 |------|--------------------|------|
 | `session-start.mjs` | SessionStart、`startup\|resume\|compact` | メインの作業ツリーの `/.local/agent/environment.md` を文脈に入れる。どの作業ツリーのセッションでも同じファイルを読む。ファイルがなければ何も出さない |
 | `backslash-guard.mjs` | PreToolUse、`Bash` | heredoc と `node -e` の中の `\` を拒否する。コマンドの他の箇所の `\`（grep の `\|` など）は通す |
 
-command は、script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから探し、なければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う形にする（`.claude/settings.json` と同じ）。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。
+command は、script のパスを、まず `git rev-parse --show-toplevel` の作業ツリーから探し、なければ `$CLAUDE_PROJECT_DIR`（メインの作業ツリー）の下を使う形にする。探し方は `.claude/settings.json` と同じだが、どちらにも見つからないときは、`settings.json` はコマンドを止め、この例は何もせず通す。理由：script を含まないブランチの作業ツリーでも、メインの作業ツリーの script で動かすため。
 
 ```json
 {

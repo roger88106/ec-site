@@ -45,7 +45,7 @@ for n in "$@"; do
     exit 1
   fi
 
-  # バックエンドの検査が現れて、pending が 0 になるまで待つ
+  # バックエンドの検査が表示されて、pending が 0 になるまで待つ
   for _ in $(seq 1 90); do
     sleep 20
     checks=$(gh pr checks "$n" -R "$repo" 2>/dev/null)

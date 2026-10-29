@@ -72,6 +72,7 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 
 - script は、最新でなければ更新し、CI が終わるのを待って、マージできる pull request ごとに `gh pr merge <番号> --merge --match-head-commit <SHA>` の 1 行を出力する。衝突、失敗、CI が終わらないときは、理由を出して終了コード 1 で止まる。
 - 出力されたコマンドを、エージェントが 1 つずつ実行する。理由：hook は Bash のコマンドの文字列だけを読むので、script の中の `gh pr merge` は判定できないため。
+- 1 つ目をマージした後に、2 つ目以降のコマンドが失敗したら（`develop` が進んで最新でなくなるため）、残りの番号で script をやり直す。
 
 ## 弾の終わり
 

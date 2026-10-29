@@ -220,7 +220,7 @@ milestone「整理の段階」の spec である。追跡の issue は [#276](ht
   - 依存：T276-01-01
   - 範囲：skill `sessions`・`local-dev`・`review`（docs-review.md）、AGENTS.md、`docs/rules/subagents.md`
   - 確認方法：表の各欄が第 9 節の記録と一致する。DC-276-7 の 4 か所が表と食い違わない。
-- [ ] **T276-01-04** マージの許可を求めるときに伝えることを書く（DC-276-9〜11）。
+- [x] **T276-01-04** マージの許可を求めるときに伝えることを書く（DC-276-9〜11）。
   - 依存：なし
   - 範囲：`docs/rules/workflow.md` 第 5.7 節、skill `sessions`
 - [ ] **T276-01-05** 前提を変える規則と判定の spec の書き方を書く（DC-276-12〜14）。

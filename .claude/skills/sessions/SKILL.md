@@ -99,6 +99,7 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 - 台帳と CI：`gh issue list --label 見逃し`、`gh run list -b develop -L 1`。
 - 使用量：`mcp__ccd_session_mgmt__get_usage`（5 時間と週の使用率、戻る時刻）。
 - `claude -p` の起動：`claude -p --model <モデル> --permission-mode default --allowedTools "<許すツール>" "<指示>"`。`--permission-mode bypassPermissions` は auto mode の判定が拒否するので使わない。Write のツールは `.claude/` の下に書けない（`--allowedTools Write` でも拒否される。2026-10-29）。確認でファイルを置くときは、許可した Bash から script で置く。
+- マージの許可の確認の画面：hook（`agent-guard`）が、利用者の許可が必要なマージで Claude Code の確認の画面を表示する（AGENTS.md の Git の表）。遠隔操作（Remote Control）では、確認の画面とアプリの「次の一歩」の表示欄が見えないことがある。許可を求めるときの伝え方は [開発の進め方](../../../docs/rules/workflow.md) 第 5.7 節。
 
 ### 作業ツリーのセッションが読むもの
 

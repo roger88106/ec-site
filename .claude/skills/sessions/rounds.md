@@ -15,8 +15,8 @@ skill `sessions` の「弾の終わり」「段の終わり」の詳細。
 
 ## 効果の測定
 
-- 最初の弾（spec 245 のマージの後）で測る。測る作業そのものは spec 245 の完了に含めず、後回しの作業の起票の案に入れる。
-- script と方法は、整理の前の基準（2026-10-27）と同じにする。セッションの記録（jsonl）から spec ごとの token と時間を集計する `/.local/refactor/baseline/tokens.cjs`（`node tokens.cjs sessions|specs`）と、結果の `report.md`。Git に入らないので、新しい clone にはない。ないときは、利用者に所在を聞く。
+- 整理の第 1 段の測定は、issue #265（2026-10-29）で済んだ。閾値・並行の上限・spec の最後のレビューの量は、判断する数が足りず変えていない（[作業の形と使用量](../../../docs/rules/resources.md)）。次は、整理の第 2 段の最初の弾で、この 3 つを測り直す。測る作業そのものは、後回しの作業の起票の案に入れる。
+- 方法は、整理の前の基準（2026-10-27）と同じ script に、レビューの記録の集計（`node .claude/skills/review/stats.cjs`。使い方は [review](../review/SKILL.md) 手順 6 と stats.cjs の冒頭）を加える。セッションの記録（jsonl）から spec ごとの token と時間を集計する `/.local/refactor/baseline/tokens.cjs`（`node tokens.cjs sessions|specs`）と、結果の `report.md`。Git に入らないので、新しい clone にはない。ないときは、利用者に所在を聞く。
 - 比べる項目：レビューの費用の割合、段階ごとの高の件数、待機の token、固定の文脈の大きさ。
 
 ## 振り返り

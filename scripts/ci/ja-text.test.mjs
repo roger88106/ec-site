@@ -415,6 +415,32 @@ describe('日本語の文の検査（文体の warning）', () => {
   })
 })
 
+describe('日本語の文の検査（表のセルの字数の合計）', () => {
+  /** @param {string} text 文書 @returns {number[]} セルごとの合計（行の順） */
+  function totals(text) {
+    return jaText.tableCellTotals(text).map((cell) => cell.total)
+  }
+
+  test('1 つのセルの複数の文の字数を合計する。「。」は数えず、かなのないセルは数えない', () => {
+    assert.deepEqual(totals('| 項目 | あいう。えお。 |'), [5])
+  })
+
+  test('リンクは表示の文字列、インラインコードは 1 字、URL は 1 字で数える', () => {
+    assert.deepEqual(totals('| [あいう](https://example.com/x)と`code`と https://example.com/y です |'), [11])
+  })
+
+  test('表の区切り行と、表でない行は数えない。行番号は元の行である', () => {
+    assert.deepEqual(jaText.tableCellTotals('| あ | い |\n|---|---|\nただの文である。'), [
+      { line: 1, total: 1 },
+      { line: 1, total: 1 },
+    ])
+  })
+
+  test('コードブロックの中の表は数えない', () => {
+    assert.deepEqual(totals('```\n| あいう | えお |\n```\n| か |'), [1])
+  })
+})
+
 describe('日本語の文の検査（warning と終了コード）', () => {
   /**
    * 一時の git リポジトリで検査を実行する。

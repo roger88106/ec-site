@@ -8,7 +8,7 @@
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text
 // 使い方：node scripts/ci/ja-text.mjs [--warning | --stats]（リポジトリのルートで）
-//   --stats：閾値ごとの文の数を出力する（閾値を決めるときに見る）
+//   --stats：閾値ごとの文の数を出力する。表のセルは、セルごとに文の字数を合計して数える（閾値を決めるときに見る）
 //   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする
 import { readFileSync } from 'node:fs'
 import { checkExclusions } from './lib/exclusions.mjs'
@@ -217,7 +217,29 @@ const STEM_ENDING = 'きぎしじちぢひびぴみりいえけげせぜねめ�
  * @returns {{ line: number, sentence: string }[]} 行番号（1 から）と文
  */
 export function proseSentences(text) {
-  const sentences = []
+  return proseCells(text).flatMap(({ line, sentences }) => sentences.map((sentence) => ({ line, sentence })))
+}
+
+/**
+ * 表のセルごとに、文の字数の合計を返す（--stats）。文の取り出し方は proseSentences と同じ。かなを含む文のないセルは含めない。
+ *
+ * @param {string} text 文書、またはコメントとテスト名だけを残した文書
+ * @returns {{ line: number, total: number }[]} 行番号（1 から）とセルの合計
+ */
+export function tableCellTotals(text) {
+  return proseCells(text)
+    .filter(({ table, sentences }) => table && sentences.length > 0)
+    .map(({ line, sentences }) => ({ line, total: sentences.reduce((sum, sentence) => sum + sentence.length, 0) }))
+}
+
+/**
+ * 文書を、表のセルと表でない行に分け、かなを含む文を取り出す。
+ *
+ * @param {string} text 文書
+ * @returns {{ line: number, table: boolean, sentences: string[] }[]} 行番号、表のセルか、文
+ */
+function proseCells(text) {
+  const result = []
   let fenced = false
   text.split('\n').forEach((raw, index) => {
     if (/^\s*(```|~~~)/.test(raw)) {
@@ -229,14 +251,14 @@ export function proseSentences(text) {
       .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
       .replace(/https?:\/\/\S+/g, 'U')
       .replace(/`[^`]*`/g, 'X')
-    const cells = plain.trimStart().startsWith('|') ? plain.split('|') : [plain]
+    const table = plain.trimStart().startsWith('|')
+    const cells = table ? plain.split('|') : [plain]
     for (const cell of cells) {
-      for (const sentence of cell.split('。')) {
-        if (/[ぁ-ん]/.test(sentence)) sentences.push({ line: index + 1, sentence: sentence.trim() })
-      }
+      const sentences = cell.split('。').filter((sentence) => /[ぁ-ん]/.test(sentence)).map((sentence) => sentence.trim())
+      result.push({ line: index + 1, table, sentences })
     }
   })
-  return sentences
+  return result
 }
 
 /**
@@ -299,6 +321,8 @@ function printStats(docTexts, codeComments, list) {
     console.log(`  「の」（1 区間）：${[3, 4, 5, 6].map((v) => `${v}以上 ${countAtLeast('no', v)}`).join('、')}`)
     console.log(`  字数：${[80, 100, 120].map((v) => `${v}以上 ${countAtLeast('length', v)}`).join('、')}`)
     console.log(`  読点：${[4, 5, 6].map((v) => `${v}以上 ${countAtLeast('comma', v)}`).join('、')}`)
+    const cells = texts.flatMap((text) => tableCellTotals(text))
+    console.log(`  表のセルの文の字数の合計：${[40, 60, 80].map((v) => `${v}以上 ${cells.filter((cell) => cell.total >= v).length}`).join('、')}（セル ${cells.length}）`)
     console.log(`  「〜なく〜ない」：${negation}、複合動詞の崩れの疑い：${compound}、「要求」を書いた行：${request}`)
   }
 }

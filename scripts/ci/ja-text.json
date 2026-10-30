@@ -57,6 +57,7 @@
     "no": 4,
     "length": 100,
     "comma": 5,
+    "cell": 80,
     "compound": ["修正", "確認"]
   }
 }

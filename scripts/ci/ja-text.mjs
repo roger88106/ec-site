@@ -3,20 +3,30 @@
 //       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする
 //       語の検査（error と warning の語、allow の照合）は、インラインコード（バッククォートで囲んだ部分）の中を見ない。許す語がインラインコードの中にしか出ないときは、使われていないと見る
 //   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）
-//       文体の型は、1 区間の「の」・字数・読点の数が閾値以上の文、「〜なく〜ない」の形の文、複合動詞の崩れの疑い（かなの直後に助詞を挟まず漢語が続く形）。閾値は ja-text.json の style
+//       文体の型は、1 区間の「の」・字数・読点の数が閾値以上の文、文の字数の合計が閾値以上の表のセル、「〜なく〜ない」の形の文、
+//       複合動詞の崩れの疑い（かなの直後に助詞を挟まず漢語が続く形）。閾値は ja-text.json の style（no、length、comma、cell）
 //       コードブロック、表の区切り行、URL、インラインコードは数えない。既定の実行は warning の件数を「警告：」の行で示す
 //       読点の数は、インラインコードかリンクだけの項目（「第 N 節」が付いてもよい）を区切る読点を数えない（範囲・参照の行の並び）。他の語を含む項目の前後の読点は数える
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text
-// 使い方：node scripts/ci/ja-text.mjs [--warning | --stats]（リポジトリのルートで）
+// 使い方：node scripts/ci/ja-text.mjs [--warning | --stats | --changed]（リポジトリのルートで）
 //   --stats：閾値ごとの文の数を出力する。表のセルは、セルごとに文の字数を合計して数える（閾値を決めるときに見る）
+//   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものと、
+//       文の字数の合計が style.cell（80）以上の表のセルを示す。GitHub Actions の注釈（`::warning file=…,line=…::`）の形で 1 件 1 行に出し、最後に件数の行を出す。
+//       警告があっても終了コードは 0。「の」の連なり、否定、複合動詞の崩れと、語の検査は見ない（語は既定の実行が見る）
+//       差分の基準は、HEAD と origin/develop（なければ develop）のマージベース。マージベースが HEAD（develop への push）なら HEAD の 1 つ目の親
+//       対象のファイルは既定の実行と同じで、削除したファイルは見ない。名前を変えたファイルは、変えていない行を追加行にしない（git の -M）
+//       文は行ごとに測るので、追加行にある文だけを示す。shallow clone では差分を求められないので失敗にする
 //   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする
-import { readFileSync } from 'node:fs'
+import { execFileSync } from 'node:child_process'
+import { existsSync, readFileSync } from 'node:fs'
 import { checkExclusions } from './lib/exclusions.mjs'
 import { codeKind, commentText } from './lib/comment-text.mjs'
-import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
+import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
+import { resolveDiffBase } from './lib/merge-base.mjs'
+import { exitIfShallow } from './lib/shallow-clone.mjs'
 
 /** 調べる文書 */
 const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/(skills|agents)\/.*)\.md|\.github\/.*\.(md|ya?ml))$/
@@ -226,8 +236,8 @@ export function findCodeTerms(file, text, terms) {
 const CLAUSE_SEPARATOR = /[、，,（）()「」：:]/
 
 /** リンクの表示文字列の前後に付ける目印（読点の数で、リンクだけの項目を見分ける。文書に現れない私用領域の字） */
-const LINK_START = ''
-const LINK_END = ''
+const LINK_START = '\uE000'
+const LINK_END = '\uE001'
 
 /** インラインコード（X に置き換え済み）かリンクだけの項目。後ろに「第 N 節」が付いてもよい */
 const REFERENCE_ITEM = new RegExp(`^(X|${LINK_START}[^${LINK_END}]*${LINK_END})(\\s*第\\s*\\d+(\\.\\d+)*\\s*節)?$`)
@@ -331,13 +341,19 @@ function plainSentence(sentence) {
  * - no：1 区間の「の」の数、length：字数、comma：読点の数（どれも閾値以上を示す）
  * - negation：「〜なく〜ない」の形の文
  * - compound：かな（動詞の連用形の終わり）の直後に、助詞を挟まず漢語が続く形（複合動詞の崩れの疑い。「少し修正」も示す）
+ * - cell：表のセルの文の字数の合計（閾値以上を示す。数え方は tableCellTotals）
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書
- * @param {{ no?: number, length?: number, comma?: number, compound?: string[] }} limits 閾値と、崩れの疑いを見る漢語
- * @returns {{ line: number, kind: 'no' | 'length' | 'comma' | 'negation' | 'compound', word: string, use: string }[]} 見つけた行と種類
+ * @param {{ no?: number, length?: number, comma?: number, cell?: number, compound?: string[] }} limits 閾値と、崩れの疑いを見る漢語
+ * @returns {{ line: number, kind: 'no' | 'length' | 'comma' | 'negation' | 'compound' | 'cell', word: string, use: string }[]} 見つけた行と種類（行の順）
  */
 export function findStyleWarnings(text, limits) {
   const hits = []
+  if (limits.cell !== undefined) {
+    for (const { line, total } of tableCellTotals(text)) {
+      if (total >= limits.cell) hits.push({ line, kind: 'cell', word: '長いセル', use: `セルの文の字数の合計が ${total} 字` })
+    }
+  }
   const compound = limits.compound?.length ? new RegExp(`[${STEM_ENDING}](?:${limits.compound.join('|')})`, 'g') : null
   for (const { line, sentence: marked } of proseSentences(text)) {
     const sentence = plainSentence(marked)
@@ -352,7 +368,7 @@ export function findStyleWarnings(text, limits) {
       add('compound', match[0], '複合動詞の崩れの疑い（「〜し直す」の後半だけを替えていないか。かなと漢語の間に助詞があるか）')
     }
   }
-  return hits
+  return hits.sort((a, b) => a.line - b.line)
 }
 
 /**
@@ -399,6 +415,119 @@ export function stripMessageComments(message) {
     .join('\n')
 }
 
+/** git が引用符で囲んだパスの、逃がした字（\ooo は 1 バイト） */
+const QUOTED_ESCAPES = { a: 7, b: 8, t: 9, n: 10, v: 11, f: 12, r: 13, '"': 34, '\\': 92 }
+
+/**
+ * git の差分のパス（"…" で囲み、字を逃がしたもの）を戻す。囲んでいなければそのまま返す。
+ *
+ * @param {string} name 差分の +++ の行のパス
+ * @returns {string} パス
+ */
+function unquotePath(name) {
+  if (!name.startsWith('"') || !name.endsWith('"')) return name
+  const bytes = []
+  const body = name.slice(1, -1)
+  for (let at = 0; at < body.length; at += 1) {
+    if (body[at] !== '\\') {
+      bytes.push(...Buffer.from(body[at], 'utf8'))
+    } else if (/[0-7]{3}/.test(body.slice(at + 1, at + 4))) {
+      bytes.push(Number.parseInt(body.slice(at + 1, at + 4), 8))
+      at += 3
+    } else {
+      at += 1
+      bytes.push(QUOTED_ESCAPES[body[at]] ?? body.charCodeAt(at))
+    }
+  }
+  return Buffer.from(bytes).toString('utf8')
+}
+
+/**
+ * git diff -U0 の出力から、ファイルごとの追加行の番号（新しい方の行）を読む。
+ * 本文の行は hunk の見出しの行数だけ読み飛ばすので、「+++」で始まる追加行を見出しと取り違えない。
+ *
+ * @param {string} output 差分（--src-prefix=a/ --dst-prefix=b/ -U0）
+ * @returns {Map<string, Set<number>>} パス → 追加行の番号（1 から）
+ */
+export function parseAddedLines(output) {
+  const added = new Map()
+  let current = null
+  let remaining = 0
+  for (const line of output.split('\n')) {
+    if (remaining > 0) {
+      if (!line.startsWith('\\')) remaining -= 1
+      continue
+    }
+    if (line.startsWith('+++ ')) {
+      // パスに空白があると、git は後ろにタブを 1 つ付ける
+      const name = unquotePath(line.slice(4).replace(/\t$/, ''))
+      current = name.startsWith('b/') ? name.slice(2) : null
+      if (current !== null && !added.has(current)) added.set(current, new Set())
+      continue
+    }
+    const hunk = /^@@ -\d+(?:,(\d+))? \+(\d+)(?:,(\d+))? @@/.exec(line)
+    if (!hunk) continue
+    const removedCount = Number(hunk[1] ?? 1)
+    const start = Number(hunk[2])
+    const count = Number(hunk[3] ?? 1)
+    remaining = removedCount + count
+    for (let number = start; number < start + count; number += 1) added.get(current)?.add(number)
+  }
+  return added
+}
+
+/**
+ * GitHub Actions の注釈（warning）の行を作る。区切りに使う字（%、改行、プロパティの , と :）を逃がす。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @param {number} line 行（1 から）
+ * @param {string} message 内容
+ * @returns {string} 注釈の行
+ */
+export function formatAnnotation(file, line, message) {
+  const escapeData = (text) => text.replaceAll('%', '%25').replaceAll('\r', '%0D').replaceAll('\n', '%0A')
+  const escapeProperty = (text) => escapeData(text).replaceAll(':', '%3A').replaceAll(',', '%2C')
+  return `::warning file=${escapeProperty(file)},line=${line}::${escapeData(message)}`
+}
+
+/**
+ * 差分の追加行の文体の警告を出力する（--changed）。基準は develop とのマージベース（lib/merge-base）。
+ * 名前を変えたファイルは -M で見分け、変えていない行を追加行にしない。改行コードだけの違いも追加行にしない。
+ * 追跡していない（git add していない）新しいファイルは、全ての行を追加行として見る（CI にはない。手元で commit の前に見るため）。
+ *
+ * @param {{ style: { length: number, comma: number, cell: number } }} list 一覧
+ */
+function printChangedWarnings(list) {
+  exitIfShallow()
+  const git = (args) => execFileSync('git', args, { encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+  const { revision, base } = resolveDiffBase()
+  if (base === null) {
+    console.log('警告：develop（と origin/develop）がない（または履歴が繋がらない）ので、HEAD の 1 つ目の親との差分を見る（初めの commit なら全ての行を追加行として見る）')
+  }
+  const added = revision
+    ? parseAddedLines(git(['-c', 'core.quotePath=false', 'diff', '-M', '--ignore-cr-at-eol', '--no-color', '--no-ext-diff', '--no-textconv', '-U0', '--src-prefix=a/', '--dst-prefix=b/', '--diff-filter=AMR', revision, '--']))
+    : new Map()
+  const untracked = revision ? listUntrackedFiles() : listGitFiles()
+  for (const file of untracked) added.set(file, null)
+  // length、comma、cell だけを見る（「の」の連なり、否定、複合動詞の崩れは形だけでは誤りと判定できないので注釈にしない）。
+  // 否定の型は閾値を渡さなくても示されるので、種類でも絞る
+  const limits = { length: list.style.length, comma: list.style.comma, cell: list.style.cell }
+  const kinds = new Set(Object.keys(limits))
+  let count = 0
+  for (const file of [...added.keys()].sort()) {
+    const doc = isTargetDoc(file)
+    if ((!doc && !isTargetCode(file)) || !existsSync(file)) continue
+    const raw = readFileSync(file, 'utf8')
+    const lines = added.get(file)
+    for (const hit of findStyleWarnings(doc ? raw : commentText(raw, codeKind(file)), limits)) {
+      if (!kinds.has(hit.kind) || (lines !== null && !lines.has(hit.line))) continue
+      console.log(formatAnnotation(file, hit.line, `${hit.word} → ${hit.use}`))
+      count += 1
+    }
+  }
+  console.log(`差分の追加行の文体の警告：${count}`)
+}
+
 if (isMain(import.meta.url)) {
   const args = process.argv.slice(2)
   const warning = args.includes('--warning')
@@ -419,6 +548,10 @@ if (isMain(import.meta.url)) {
     }
     console.log(`${warning ? '注意する語' : '使わない語'}：${hits.length}`)
     process.exit(!warning && hits.length ? 1 : 0)
+  }
+  if (args.includes('--changed')) {
+    printChangedWarnings(list)
+    process.exit(0)
   }
   const gitFiles = listGitFiles()
   const files = gitFiles.filter((file) => isTargetDoc(file))

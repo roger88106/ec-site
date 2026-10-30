@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict'
-import { spawnSync } from 'node:child_process'
+import { execFileSync, spawnSync } from 'node:child_process'
 import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
-import { describe, test } from 'node:test'
-import { fileURLToPath } from 'node:url'
+import { after, describe, test } from 'node:test'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import { withoutGitEnv } from './lib/git-env.mjs'
+import { SHALLOW_CLONE_MESSAGE } from './lib/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
 import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments, validateTerms } from './ja-text.mjs'
 
@@ -408,10 +409,21 @@ describe('日本語の文の検査（文体の warning）', () => {
   })
 
   test('閾値は一覧に数値で書いてある', () => {
-    for (const key of ['no', 'length', 'comma']) {
+    for (const key of ['no', 'length', 'comma', 'cell']) {
       assert.equal(typeof list.style[key], 'number', key)
     }
     assert.ok(list.style.compound.includes('修正'))
+  })
+
+  test('表のセルで、文の字数の合計が閾値以上のものを示す。表でない行は示さない', () => {
+    const cells = (text) => findStyleWarnings(text, { cell: 10 }).filter((hit) => hit.kind === 'cell').map((hit) => hit.line)
+    assert.deepEqual(cells(`| 項目 | ${'あ'.repeat(5)}。${'い'.repeat(5)}。 |`), [1])
+    assert.deepEqual(cells(`| 項目 | ${'あ'.repeat(9)} |`), [])
+    assert.deepEqual(cells(`${'あ'.repeat(20)}である。`), [])
+  })
+
+  test('セルの閾値は 80 字である（T283-01-01 で決めた値）', () => {
+    assert.equal(list.style.cell, 80)
   })
 })
 
@@ -558,5 +570,199 @@ describe('日本語の文の検査（warning と終了コード）', () => {
     const result = runIn({ ...files, 'docs/b.md': '道具を使う。\n' }, [])
     assert.equal(result.status, 1)
     assert.match(result.stdout, /docs\/b\.md:1 道具/)
+  })
+})
+
+describe('日本語の文の検査（差分の追加行の文体：--changed）', () => {
+  const env = withoutGitEnv()
+  const repos = []
+  after(() => repos.forEach((repo) => rmSync(repo, { recursive: true, force: true })))
+
+  /** 字数が閾値（100）以上の文 */
+  const LONG = `${'あ'.repeat(100)}である。`
+  /** 読点が閾値（5）以上の文 */
+  const COMMAS = '一、二、三、四、五、六とする。'
+  /** 文の字数の合計が閾値（80）以上のセルの行（文の字数は 100 に届かない） */
+  const LONG_CELL = `| 項目 | ${'い'.repeat(80)} |`
+
+  /**
+   * 試すリポジトリを作る。files を develop に commit し、作業ブランチ（feature）に切り替えた状態で返す。
+   *
+   * @param {Record<string, string>} files develop にあるファイル
+   * @param {{ developRef?: string }} [options] develop を置く ref
+   */
+  function createRepo(files, { developRef = 'refs/heads/develop' } = {}) {
+    const repo = mkdtempSync(path.join(tmpdir(), 'ja-text-changed-'))
+    repos.push(repo)
+    const git = (...args) => execFileSync('git', args, { cwd: repo, env, encoding: 'utf8', stdio: ['ignore', 'pipe', 'pipe'] })
+    git('init', '-q', '-b', 'main')
+    git('config', 'user.email', 'test@example.com')
+    git('config', 'user.name', 'test')
+    git('config', 'commit.gpgsign', 'false')
+    git('config', 'core.autocrlf', 'false')
+    const write = (name, content) => {
+      const full = path.join(repo, name)
+      mkdirSync(path.dirname(full), { recursive: true })
+      writeFileSync(full, content)
+    }
+    const commit = (message) => {
+      git('add', '-A')
+      git('commit', '-q', '--allow-empty', '-m', message)
+    }
+    for (const [name, content] of Object.entries(files)) write(name, content)
+    commit('base')
+    git('update-ref', developRef, 'HEAD')
+    git('checkout', '-q', '-b', 'feature')
+    const run = (cwd = repo) => spawnSync(process.execPath, [SCRIPT, '--changed'], { cwd, env, encoding: 'utf8' })
+    return { repo, git, write, commit, run }
+  }
+
+  /**
+   * 注釈の行を「パス:行」の並びにする。
+   *
+   * @param {string} stdout 出力
+   * @returns {string[]} 注釈ごとの「パス:行」
+   */
+  function annotated(stdout) {
+    return [...stdout.matchAll(/^::warning file=([^,]+),line=(\d+)::.+$/gm)].map((match) => `${match[1]}:${match[2]}`)
+  }
+
+  test('追加行の長い文、読点の多い文、長いセルに、注釈の形の警告を 1 件 1 行で出す。終了コードは 0 で、最後の行は件数である', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+    r.write('docs/a.md', `短い文である。\n${LONG}\n${COMMAS}\n${LONG_CELL}\n`)
+    r.commit('追加')
+    const result = r.run()
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    assert.deepEqual(annotated(result.stdout), ['docs/a.md:2', 'docs/a.md:3', 'docs/a.md:4'])
+    assert.match(result.stdout, /^::warning file=docs\/a\.md,line=2::.*字数が 103 字/m)
+    assert.match(result.stdout, /^::warning file=docs\/a\.md,line=3::.*読点が 5 個/m)
+    assert.match(result.stdout, /^::warning file=docs\/a\.md,line=4::.*80 字/m)
+    assert.match(result.stdout.trimEnd().split('\n').at(-1), /：3/)
+  })
+
+  test('既存の行（追加行でない行）には警告を出さない', () => {
+    const r = createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n${COMMAS}\n` })
+    r.write('docs/a.md', `${LONG}\n短い文を変えた。\n${COMMAS}\n${LONG}\n`)
+    r.commit('変更')
+    const result = r.run()
+    assert.equal(result.status, 0)
+    assert.deepEqual(annotated(result.stdout), ['docs/a.md:4'])
+  })
+
+  test('commit していない変更と、追跡していない新しい文書の行も、追加行として見る', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+    r.write('docs/a.md', `短い文である。\n${LONG}\n`)
+    r.write('docs/new.md', `${COMMAS}\n`)
+    const result = r.run()
+    assert.deepEqual(annotated(result.stdout), ['docs/a.md:2', 'docs/new.md:1'])
+  })
+
+  test('「の」の連なり、否定、複合動詞の崩れ、語の検査は出さない', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+    r.write('docs/a.md', '短い文である。\n本日の会議の資料の変更の履歴を見る。\n原因は分からなく修正もできない。\n少し修正する。\n道具を使う。要求を送る。\n')
+    r.commit('追加')
+    const result = r.run()
+    assert.equal(result.status, 0)
+    assert.deepEqual(annotated(result.stdout), [])
+  })
+
+  test('表の区切り行、コードブロック、インラインコード、URL は数えない', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+    const fenced = ['```', LONG, COMMAS, '```'].join('\n')
+    const inline = `ここは \`${'の'.repeat(120)}\` と https://example.com/${'あ'.repeat(120)} と [リンク](https://example.com/${'い'.repeat(120)}) だ。`
+    r.write('docs/a.md', `短い文である。\n${fenced}\n|${'-'.repeat(120)}|\n${inline}\n`)
+    r.commit('追加')
+    assert.deepEqual(annotated(r.run().stdout), [])
+  })
+
+  test('対象は既定の実行と同じファイルで、コードはコメントとテスト名だけを見る。削除したファイルは見ない', () => {
+    const r = createRepo({ 'docs/gone.md': '短い文である。\n' })
+    r.write('docs/08-spec/archive/old.md', `${LONG}\n`)
+    r.write('notes.txt', `${LONG}\n`)
+    r.write('src/a.mjs', `const s = '${LONG}'\n// ${LONG}\n`)
+    rmSync(path.join(r.repo, 'docs/gone.md'))
+    r.commit('追加と削除')
+    const result = r.run()
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    assert.deepEqual(annotated(result.stdout), ['src/a.mjs:2'])
+  })
+
+  test('名前を変えたファイルは、変えていない行を追加行として数えない', () => {
+    const body = Array.from({ length: 20 }, (_, index) => `${index}${LONG}`).join('\n')
+    const r = createRepo({ 'docs/old.md': `${body}\n` })
+    r.git('mv', 'docs/old.md', 'docs/new.md')
+    r.write('docs/new.md', `${body}\n${COMMAS}\n`)
+    r.commit('移動')
+    assert.deepEqual(annotated(r.run().stdout), ['docs/new.md:21'])
+  })
+
+  test('改行コードが CRLF のファイルでも、行番号は元の行である', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\r\n次の文である。\r\n' })
+    r.write('docs/a.md', `短い文である。\r\n次の文である。\r\n${LONG}\r\n${LONG_CELL}\r\n`)
+    r.write('src/a.mjs', `// 短い文である。\r\n// ${COMMAS}\r\n`)
+    r.commit('追加')
+    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:3', 'docs/a.md:4', 'src/a.mjs:2'])
+  })
+
+  test('develop への push（merge-base が HEAD 自身）では、1 つ目の親との差分を見る', () => {
+    const r = createRepo({ 'docs/a.md': `${LONG}\n` }, { developRef: 'refs/remotes/origin/develop' })
+    r.git('checkout', '-q', '-B', 'develop')
+    r.write('docs/a.md', `${LONG}\n${COMMAS}\n`)
+    r.commit('push')
+    r.git('update-ref', 'refs/remotes/origin/develop', 'HEAD')
+    const result = r.run()
+    assert.equal(result.status, 0)
+    assert.deepEqual(annotated(result.stdout), ['docs/a.md:2'])
+  })
+
+  test('origin/develop があれば、その分岐点からの差分を見る（CI の checkout）', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\n' }, { developRef: 'refs/remotes/origin/develop' })
+    r.write('docs/a.md', `短い文である。\n${LONG}\n`)
+    r.commit('追加')
+    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:2'])
+  })
+
+  test('shallow clone では差分を求められないので失敗にする', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+    r.write('docs/a.md', `短い文である。\n${LONG}\n`)
+    r.commit('追加')
+    const shallow = mkdtempSync(path.join(tmpdir(), 'ja-text-shallow-'))
+    repos.push(shallow)
+    execFileSync('git', ['clone', '-q', '--depth', '1', '--no-local', pathToFileURL(r.repo).href, path.join(shallow, 'clone')], { env, stdio: 'ignore' })
+    const result = r.run(path.join(shallow, 'clone'))
+    assert.notEqual(result.status, 0)
+    assert.ok(result.stdout.includes(SHALLOW_CLONE_MESSAGE), result.stdout)
+  })
+
+  test('差分の本文の「+++」で始まる追加行を、ファイルの見出しと取り違えない。引用符で囲んだパスと、空白のあるパスを読む', () => {
+    const diff = [
+      'diff --git a/docs/a.md b/docs/a.md',
+      '--- a/docs/a.md',
+      '+++ b/docs/a.md',
+      '@@ -1,0 +2,2 @@',
+      '+++ b/docs/x.md',
+      '+次の行',
+      '@@ -5 +7 @@',
+      '-古い行',
+      '+新しい行',
+      'diff --git "a/docs/q\\"\\346\\227\\245.md" "b/docs/q\\"\\346\\227\\245.md"',
+      '+++ "b/docs/q\\"\\346\\227\\245.md"',
+      '@@ -0,0 +1 @@',
+      '+あ',
+      '\\ No newline at end of file',
+      '+++ b/docs/a b.md\t',
+      '@@ -3,2 +3,0 @@',
+      '-消した行',
+      '-消した行',
+      '',
+    ].join('\n')
+    assert.deepEqual(
+      [...jaText.parseAddedLines(diff)].map(([file, lines]) => [file, [...lines]]),
+      [['docs/a.md', [2, 3, 7]], ['docs/q"日.md', [1]], ['docs/a b.md', []]],
+    )
+  })
+
+  test('注釈の内容とパスの、GitHub Actions が区切りに使う字を逃がす', () => {
+    assert.equal(jaText.formatAnnotation('docs/a,b:c.md', 3, '100% の文\n次'), '::warning file=docs/a%2Cb%3Ac.md,line=3::100%25 の文%0A次')
   })
 })

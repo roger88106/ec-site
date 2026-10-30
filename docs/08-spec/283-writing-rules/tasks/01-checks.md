@@ -33,7 +33,7 @@
   - 依存：T283-01-02
   - 範囲：`scripts/ci/ja-text.mjs`
   - 確認方法：テストが通る。`node scripts/ci/ja-text.mjs` の error が 0。
-- [ ] **T283-01-04** [テスト] [リスク] 差分の追加行の検査のテストを書き、レッドを確認する。項目は次のとおり（DC-283-21〜23）。
+- [x] **T283-01-04** [テスト] [リスク] 差分の追加行の検査のテストを書き、レッドを確認する。項目は次のとおり（DC-283-21〜23）。
   - マージベースからの追加行の文で、字数か読点の数が閾値以上なら、注釈の形の警告を出す。閾値以上の表のセルも同じ。終了コードは 0 である。
   - 既存の行には警告を出さない。
   - `develop` への push では、1 つ目の親との差分を見る。shallow clone では、差分を求められないので失敗にする。
@@ -41,7 +41,7 @@
   - 依存：T283-01-03
   - 範囲：`scripts/ci/ja-text.test.mjs`、`scripts/ci/lib/` のマージベースの関数のテスト
   - 確認方法：テストが失敗する（レッド）。
-- [ ] **T283-01-05** [リスク] T283-01-04 のテストが通る実装を書く。`ja-text.mjs` に `--changed` を加える。マージベースを求める関数を `scripts/ci/lib/` に切り出し、マイグレーションの検査もそれを使う。セルの閾値を `ja-text.json` に書く。script の冒頭の説明に、閾値と対象を書く（DC-283-21〜24）。
+- [x] **T283-01-05** [リスク] T283-01-04 のテストが通る実装を書く。`ja-text.mjs` に `--changed` を加える。マージベースを求める関数を `scripts/ci/lib/` に切り出し、マイグレーションの検査もそれを使う。セルの閾値を `ja-text.json` に書く。script の冒頭の説明に、閾値と対象を書く（DC-283-21〜24）。
   - 依存：T283-01-04
   - 範囲：`scripts/ci/ja-text.mjs`、`scripts/ci/ja-text.json`、`scripts/ci/lib/`、`scripts/ci/migrations.mjs`
   - 確認方法：テストが通る。`node --test scripts/ci/migrations.test.mjs` が変更せずに通る。`scripts/ci/check-all.sh`。このタスクの後に draft の pull request を作る。

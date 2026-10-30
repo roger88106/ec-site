@@ -17,6 +17,7 @@ import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusion
 import { emptyListReason, splitNulList } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
+import { mergeBaseWith, tryGit } from './lib/merge-base.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
 import { blankSqlNonCode } from './lib/sql-code.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
@@ -347,15 +348,6 @@ export function scanMigrations(files, read, exclusions) {
   return { found, unreadable, used, missingLegacy }
 }
 
-/** git を実行し、失敗したら null を返す */
-function tryGit(args, cwd) {
-  try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-  } catch {
-    return null
-  }
-}
-
 /**
  * 守る基準（どこかの DB に適用されうる状態）の commit を決める。<br />
  * まだ develop にも main にも入っていない自分のブランチのマイグレーションは、どの DB にも適用されていないので、振り直してよい。
@@ -375,16 +367,11 @@ export function resolveBaseRevisions(cwd = process.cwd()) {
   const revisions = new Set()
   const bases = []
   for (const branch of ['develop', 'main']) {
-    for (const base of [`origin/${branch}`, branch]) {
-      const ref = (base.includes('/') ? 'refs/remotes/' : 'refs/heads/') + base
-      if (!tryGit(['rev-parse', '--verify', '-q', ref], cwd)) continue
-      const revision = tryGit(['merge-base', 'HEAD', ref], cwd)
-      if (!revision) continue
-      revisions.add(revision)
-      if (revision === head && parent) revisions.add(parent)
-      bases.push(base)
-      break
-    }
+    const found = mergeBaseWith(branch, cwd)
+    if (!found) continue
+    revisions.add(found.revision)
+    if (found.revision === head && parent) revisions.add(parent)
+    bases.push(found.base)
   }
   if (bases.length === 0 && parent) revisions.add(parent)
   return { revisions: [...revisions], bases }

@@ -9,7 +9,7 @@ description: ec-site の文書（docs/、README、AGENTS.md）を書く・修正
 
 ## 1. 置き場所
 
-置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の書き方](../../../docs/05-開発規則/writing.md)の「文書の置き場所」。文書を追加したら地図にも記載する。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と地図を一緒に修正する。
+置き場所は、[constitution](../../../docs/constitution.md)の「文書の地図」と、[文書の書き方](../../../docs/05-開発規則/writing.md)の「文書の置き場所」。手順：文書を追加したら地図に書く。`docs/` の下のフォルダーを追加・変更するときは、`scripts/ci/docs-folders.mjs` の一覧と地図を一緒に修正する。
 
 ## 2. 書き方
 

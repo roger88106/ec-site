@@ -326,6 +326,20 @@ describe('日本語の文の検査（コードのコメントとテスト名）'
     )
   })
 
+  test('テンプレートで書いたテスト名の error も見つける（外側のバッククォートはインラインコードでない）', () => {
+    const source = ['it(`道具を使う`, () => {})', 'test(`${name}の道具`, () => {})', 'it(`複数の', '道具`, () => {})', 'it(`\\`道具\\` と書く`, () => {})'].join('\n')
+    assert.deepEqual(
+      findCodeTerms('a.test.mjs', source, list.error).map((hit) => `${hit.line}:${hit.word}`),
+      ['1:道具', '2:道具', '4:道具'],
+    )
+  })
+
+  test('テンプレートのテスト名は、中の字で文の長さを測る', () => {
+    const name = `${'あ'.repeat(60)}、${'い'.repeat(60)}`
+    const warnings = findStyleWarnings(commentText(`it(\`${name}\`, () => {})\n`, 'ts'), { no: 4, length: 100, comma: 5 }, { kind: 'code' })
+    assert.ok(warnings.some((warning) => /字数が/.test(warning.use)), JSON.stringify(warnings))
+  })
+
   test('画面の文言の文字列リテラルにある語は error にしない', () => {
     const source = ['const label = "道具の一覧"', '<p>{t("道具")}</p>', "expect(page.getByText('道具')).toBeVisible()"].join('\n')
     assert.deepEqual(findCodeTerms('a.tsx', source, list.error), [])

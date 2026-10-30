@@ -52,6 +52,7 @@ describe('文書の参照の検査', () => {
   test('範囲と並びは、両端と各番号を確認する', () => {
     assert.deepEqual(splitSectionNumbers('4〜6・8'), ['4', '6', '8'])
     assert.deepEqual(splitSectionNumbers('4、13'), ['4', '13'])
+    assert.deepEqual(splitSectionNumbers('４～６，８－９ と 10 から 12'), ['4', '6', '8', '9', '10', '12'])
   })
 
   test('リンクの先のファイルと見出しを確認する', () => {
@@ -248,6 +249,33 @@ describe('節の番号の参照の検査', () => {
     assert.deepEqual(lines(problems), ['1', '2'])
     assert.match(problems[1], /（docs\/frontend\/apps\/store\.md の「カート」）/)
     assert.deepEqual(lines(check('backend/Foo.java', '// テストの書き方の第2節')), ['1'])
+  })
+
+  test('全角の空白・チルダ、カンマ、ハイフン、「と」「から」で書いた番号も失敗にし、各番号を確認する', () => {
+    const text = [
+      '店舗画面の構成 第　4　節',
+      '店舗画面の構成 第4　節',
+      '店舗画面の構成 第 4～8 節',
+      '店舗画面の構成 第 4,8 節',
+      '店舗画面の構成 第 4，8 節',
+      '店舗画面の構成 第 4-8 節',
+      '店舗画面の構成 第 4－8 節',
+      '店舗画面の構成 第 4 と 8 節',
+      '店舗画面の構成 第 4 から 8 節',
+    ].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['1', '2', '3', '4', '5', '6', '7', '8', '9'])
+    for (const problem of problems.slice(2)) assert.match(problem, /（docs\/frontend\/apps\/store\.md の「取得」、「文言」）/, problem)
+    assert.deepEqual(lines(check('backend/Foo.java', '// テストの書き方の第　2　節')), ['1'])
+  })
+
+  test('「第」のない節の番号も、「第」のあるものと同じに失敗にする', () => {
+    const text = ['店舗画面の構成 4.5 節', '[テストの書き方](../testing/writing.md) の 2.1 節', 'docs/testing/writing.md の 1 節', '店舗画面の構成の 4、8 節'].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['1', '2', '3', '4'])
+    assert.match(problems[0], /（docs\/frontend\/apps\/store\.md の「カート」）/)
+    assert.deepEqual(lines(check('backend/Foo.java', ['// 店舗画面の構成の 4.5 節', '// 2 節に分ける', '// v1.2 節'].join('\n'))), ['1'])
+    assert.deepEqual(check('docs/dev/setup.md', ['v2 節', 'a3 節', '第 2 段の実装'].join('\n')), [])
   })
 
   test('文書の名前・リンク・パスと「第 N 節」の間に括弧があっても、その文書の節として失敗にする', () => {

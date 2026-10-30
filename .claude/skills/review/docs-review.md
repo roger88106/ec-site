@@ -4,9 +4,9 @@ skill `review` の手順 7〜10 の詳細とひな形。本書の手順 1〜4 �
 
 ## 手順
 
-1. plan と tasks を照合する。plan と tasks を、それぞれ書き終えたときに行う。日本語だけのサブエージェント（汎用）に、spec の各 AC・DC と plan の決定（tasks のときは、各段階の完了の条件と各タスク）を 1 件ずつ照合させる。tasks では、次の 4 点も見させる。(1) 完了の条件が spec の AC・DC・DN より厳しい・緩いもの。(2) 前のタスクが後のタスクで作るものを使う順序。(3) 共有する部品（共通の関数、生成するファイル、共通の設定、AC 一覧など）を変えるタスクと、それを使うタスクの間の、書いていない依存。(4) 並行する spec との変えるファイルの重なりと実装の順序が、plan（規模 M は spec の tasks）に書いてあるか。spec の「背景と目的」の環境の前提（Claude Code や OS の動き）については、文書の記述によるものか、実際に実行して確認したものかを書き分けているかも見させる。結果は表（AC・DC、plan の節またはタスク、合っている・抜けている・食い違う、説明）で受け取る。抜けと食い違いは、確認の前に修正する。
+1. plan と tasks を照合する。plan と tasks を、それぞれ書き終えたときに行う。日本語だけのサブエージェント（汎用）に、spec の各 AC・DC と plan の決定（tasks のときは、各段階の完了の条件と各タスク）を 1 件ずつ照合させる。tasks では、次の 4 点も見させる。(1) 完了の条件が spec の AC・DC・DN より厳しい・緩いもの。(2) 前のタスクが後のタスクで作るものを使う順序。(3) 共有する部品を変えるタスクと、それを使うタスクの間の、書いていない依存。共有する部品は、共通の関数・生成するファイル・共通の設定・AC 一覧などである。(4) 並行する spec との変えるファイルの重なりと実装の順序が、plan（規模 M は spec の tasks）に書いてあるか。spec の「背景と目的」の環境の前提（Claude Code や OS の動き）については、文書の記述によるものか、実際に実行して確認したものかを書き分けているかも見させる。結果は、AC・DC、plan の節またはタスク、合否、説明の表で受け取る。抜けと食い違いは、確認の前に修正する。
    完了の条件：全ての AC・DC が表にある。
-2. 文書をレビューする。日本語だけのサブエージェント（汎用）に、書き方の見本（[エージェントの作業フロー](../../../docs/05-開発規則/subagents.md)、[spec 018 の plan](../../../docs/08-spec/archive/mvp/018-docs-and-tools/plan.md)）と [文書の書き方](../../../docs/05-開発規則/writing.md)（規則として当てはめる）と、`node scripts/ci/ja-text.mjs --warning` で出力した warning の一覧（対象の文書の行だけ）を渡し、不自然な言い回しを候補として挙げさせる。warning の文は機械が示した候補なので、修正が必要かを読んで判断させる。結果は表（ファイル、行、今の書き方、修正案、理由）で受け取り、spec 担当のセッションが採否を判定する。spec・plan・tasks を書き終えたときと、spec の最後に行う。
+2. 文書をレビューする。日本語だけのサブエージェント（汎用）に、次を渡し、不自然な言い回しを候補として挙げさせる。書き方の見本（[エージェントの作業フロー](../../../docs/05-開発規則/subagents.md)、[spec 018 の plan](../../../docs/08-spec/archive/mvp/018-docs-and-tools/plan.md)）。規則として当てはめる[文書の書き方](../../../docs/05-開発規則/writing.md)。`node scripts/ci/ja-text.mjs --warning` で出力した warning の一覧（対象の文書の行だけ）。warning の文は機械が示した候補なので、修正が必要かを読んで判断させる。結果は、ファイル・行・今の書き方・修正案・理由の表で受け取り、spec 担当のセッションが採否を判定する。spec・plan・tasks を書き終えたときと、spec の最後に行う。
    完了の条件：全ての候補の採否が決まっている。
 3. 中国語で指示する環境では、校閲役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）に、変えた日本語を読ませる。環境は、`git config --local --get ecsite.instructionLanguage` の値（なければ、作業ツリーごとの設定にある同じ名前の値。script の `readConfig` と同じ読み方）が `zh` かで決める（グローバルの設定は読まない。[中国語の混入を調べる](../zh-mixing/SKILL.md)）。日本語で指示する環境では行わない。
    - 対象：最後のレビューと pull request の前のレビューの差分にある、文書、コードのコメント、テスト名、コミットメッセージ。加えて、次の 2 つ。利用者の確認の前の、規模 M の spec と規模 L の spec・plan・tasks（全文）。起票とコメントの投稿の前に書く issue の本文（書くセッションの担当によらない）。同時に書いた複数の本文は、1 回にまとめて渡す。
@@ -18,7 +18,7 @@ skill `review` の手順 7〜10 の詳細とひな形。本書の手順 1〜4 �
    - 加える先は原因で決める。日本語の書き方の規則に反する型（使わないと決めた語、文体。誰が書いても誤り）は、層 1 の `scripts/ci/ja-text.json`。中国語の混入（中国語の字・語・直訳）は、層 2 の `.claude/skills/zh-mixing/zh-mixing.json`（書き方は [中国語の混入を調べる](../zh-mixing/SKILL.md) の「一覧の直し方」）。同じ字・語を両方に置かない。
    - 複合動詞の崩れは、確定した語を `error` に加え、疑いを示す漢語を `style` の `compound` に加える。
    - 層 1 の項目の形は、`error` と `warning` が `{ "word", "use" }`（`error` は許容用語 `allow` も書ける）。部分の一致が誤検出になる語は、`word` の代わりに `pattern`（正規表現の文字列。`u` フラグで使う）で書け、`examples` の `hit`（当たる例）と `miss`（当たらない例）を 1 つ以上ずつ必ず書く（テストが全ての例を確認する）。文体の型は `style` の閾値と、`scripts/ci/ja-text.mjs` の `findStyleWarnings` で扱う。層 2 には warning がなく、見つかれば失敗にする。
-   - error と warning の分け方：error にするのは、リポジトリの全体（アーカイブした spec を除く）に当てて誤検出が 0 の型か、全ての誤検出を許容用語（層 1 は `allow`、層 2 は `allow` の `{ "word", "file", "reason" }`）で除ける型だけである。
+   - error と warning の分け方：error にするのは、次のどちらかの型だけである。リポジトリの全体（アーカイブした spec を除く）に当てて誤検出が 0 の型。全ての誤検出を許容用語（層 1 は `allow`、層 2 は `allow` の `{ "word", "file", "reason" }`）で除ける型。
      それ以外は、文脈で正しいかが決まる型なので、層 1 の warning にする。層 2 には warning がないため、それ以外の型は層 2 に加えない。
    - 当てて数える：層 1 は、先に `warning` に加え、`node scripts/ci/ja-text.mjs --warning` で一覧にして誤検出を数える。error にするときは `error` に移し、`node scripts/ci/ja-text.mjs` の失敗が 0 になるまで、見つかった行を修正するか許容用語を追加する。層 2 は、加えてから `node .claude/skills/zh-mixing/zh-mixing.cjs --force tracked` で全体に当てる。環境の印がなくても `--force` で調べられる。
    - 加えたら、それぞれの script のテスト（`node --test scripts/ci/ja-text.test.mjs`、`node --test .claude/skills/zh-mixing/zh-mixing.test.cjs`）と `bash scripts/ci/check-all.sh` が通ることを確認する。

@@ -6,6 +6,7 @@ import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { withoutGitEnv } from './lib/git-env.mjs'
+import { commentText } from './lib/comment-text.mjs'
 import { SHALLOW_CLONE_MESSAGE } from './lib/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
 import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments, validateTerms } from './ja-text.mjs'
@@ -427,6 +428,143 @@ describe('日本語の文の検査（文体の warning）', () => {
   })
 })
 
+describe('日本語の文の検査（複数の行にまたがる文）', () => {
+  /** 決めた値と同じ閾値 */
+  const LIMITS = { no: 4, length: 100, comma: 5 }
+  /** 60 字と 57 字の断片（つなぐと「である」を足して 120 字。どちらも 1 行では閾値に届かない） */
+  const HEAD = 'あ'.repeat(60)
+  const TAIL = `${'い'.repeat(57)}である。`
+
+  /**
+   * @param {string} text 文書
+   * @param {{ kind?: 'markdown' | 'code' | 'lines', added?: Set<number> | null }} [options] 測り方と追加行
+   * @returns {string[]} warning の「種類:行」（行の順）
+   */
+  function hits(text, options) {
+    return findStyleWarnings(text, LIMITS, options).map((hit) => `${hit.kind}:${hit.line}`)
+  }
+
+  test('2 行に分けた 120 字の文を 1 文として測り、文の最初の行に示す', () => {
+    assert.deepEqual(hits(`${HEAD}\n${TAIL}`), ['length:1'])
+    assert.match(findStyleWarnings(`${HEAD}\n${TAIL}`, LIMITS)[0].use, /字数が 120 字/)
+  })
+
+  test('読点が 3 個と 3 個の行に分かれた文を、読点 6 個の 1 文として測る', () => {
+    const result = findStyleWarnings('一、二、三、\n四、五、六、七とする。', LIMITS)
+    assert.deepEqual(result.map((hit) => `${hit.kind}:${hit.line}`), ['comma:1'])
+    assert.match(result[0].use, /読点が 6 個/)
+  })
+
+  test('行の途中の「。」で文を切り、残りを次の行とつなぐ', () => {
+    assert.deepEqual(hits(`短い文である。${HEAD}\n${TAIL}次の文である。`), ['length:1'])
+  })
+
+  test('空行、表の行、見出し、項目の行、コードブロックの前で切る', () => {
+    for (const between of ['', '| 表 | セル |', '## 見出し', '- 項目である。', '1. 項目である。', '```\nコード\n```']) {
+      assert.deepEqual(hits(`${HEAD}\n${between}\n${TAIL}`), [], between)
+    }
+  })
+
+  test('見出しと表の行は、次の行とつながない', () => {
+    assert.deepEqual(hits(`## ${HEAD}\n${TAIL}`), [])
+    assert.deepEqual(hits(`| ${HEAD} |\n${TAIL}`), [])
+  })
+
+  test('項目の行は、続く行（字下げした続きの行）とつなぐ', () => {
+    assert.deepEqual(hits(`- ${HEAD}\n  ${TAIL}`), ['length:1'])
+    assert.deepEqual(hits(`- ${HEAD}\n- ${TAIL}`), [])
+  })
+
+  test('項目の記号より深く字下げしていない行は、項目の続きにしない', () => {
+    assert.deepEqual(hits(`- ${HEAD}\n${TAIL}`), [])
+    assert.deepEqual(hits(`  - ${HEAD}\n  ${TAIL}`), [])
+    assert.deepEqual(hits(commentText(`// - ${HEAD}\n// ${TAIL}\n`, 'ts'), { kind: 'code' }), [])
+    assert.deepEqual(hits(commentText(`// - ${HEAD}\n//   ${TAIL}\n`, 'ts'), { kind: 'code' }), ['length:1'])
+  })
+
+  test('罫線の行（===、--- など）の前後で切る', () => {
+    assert.deepEqual(hits(commentText(`# ${'='.repeat(20)}\n# ${HEAD}\n# ${TAIL}\n`, 'sh'), { kind: 'code' }), ['length:2'])
+    assert.deepEqual(hits(commentText(`// ${HEAD}\n// ${'='.repeat(20)}\n// ${TAIL}\n`, 'ts'), { kind: 'code' }), [])
+  })
+
+  test('コードでは、語の見出しで始まる行（「対象：」など）の前で切る', () => {
+    assert.deepEqual(hits(commentText(`// ${HEAD}\n// 対象：${TAIL}\n`, 'ts'), { kind: 'code' }), [])
+  })
+
+  test('コードでは、日本語の字のない行（コマンドの例など）を前後の行とつながない', () => {
+    assert.deepEqual(hits(commentText(`// ${HEAD}\n// ./gradlew check ${'-Pa=b '.repeat(10)}\n// ${TAIL}\n`, 'ts'), { kind: 'code' }), [])
+  })
+
+  test('文書の最初の front matter の行は、行ごとに測る', () => {
+    assert.deepEqual(hits(`---\nname: ${HEAD}\ndescription: ${TAIL}\n---\n本文である。`), [])
+  })
+
+  test('「の」の連なり、否定、複合動詞の崩れも、つないだ文で見る', () => {
+    const style = (text, kind) => findStyleWarnings(text, { no: 4, compound: list.style.compound }).filter((hit) => hit.kind === kind).map((hit) => hit.line)
+    assert.deepEqual(style('本日の会議の\n資料の変更の履歴を見る。', 'no'), [1])
+    assert.deepEqual(style('原因は分からなく\n修正もできない。', 'negation'), [1])
+    assert.deepEqual(style('作業は、少し\n修正する。', 'compound'), [1])
+  })
+
+  test('kind が lines のとき（.github の yml）は、行ごとに測る', () => {
+    assert.deepEqual(hits(`${HEAD}\n${TAIL}`, { kind: 'lines' }), [])
+  })
+
+  test('コードでは、続くコメントの行をつなぎ、コメントの記号は数えない', () => {
+    assert.deepEqual(hits(commentText(`// ${HEAD}\n// ${TAIL}\nconst a = 1\n`, 'ts'), { kind: 'code' }), ['length:1'])
+    assert.deepEqual(hits(commentText(`/**\n * ${HEAD}\n * ${TAIL}\n */\n`, 'ts'), { kind: 'code' }), ['length:2'])
+    assert.deepEqual(hits(commentText(`# ${HEAD}\n# ${TAIL}\n`, 'sh'), { kind: 'code' }), ['length:1'])
+    assert.match(findStyleWarnings(commentText(`// ${HEAD}\n// ${TAIL}\n`, 'ts'), LIMITS, { kind: 'code' })[0].use, /字数が 120 字/)
+  })
+
+  test('コードでは、コメントでない行、空のコメントの行、項目の行、JSDoc のタグの行、テスト名の前で切る', () => {
+    const cases = [
+      `// ${HEAD}\nconst a = 1\n// ${TAIL}\n`,
+      `// ${HEAD}\n\n// ${TAIL}\n`,
+      `/**\n * ${HEAD}\n *\n * ${TAIL}\n */\n`,
+      `// ${HEAD}\n// - ${TAIL}\n`,
+      `/**\n * @param {string} a ${HEAD}\n * @returns {string} ${TAIL}\n */\n`,
+      `// ${HEAD}\ntest('${TAIL}', () => {})\n`,
+    ]
+    for (const source of cases) assert.deepEqual(hits(commentText(source, 'ts'), { kind: 'code' }), [], source)
+  })
+
+  test('「：」で終わる行（一覧を導く行）は、次の行とつながない', () => {
+    assert.deepEqual(hits(`${HEAD}：\n${TAIL}`), [])
+    assert.deepEqual(hits(commentText(`// ${HEAD}：\n// ${TAIL}\n`, 'ts'), { kind: 'code' }), [])
+  })
+
+  test('コードでは、Javadoc の段落・項目の要素で始まる行の前と、整列の空白を含む行の前後で切る', () => {
+    assert.deepEqual(hits(commentText(`/**\n * ${HEAD}\n * <p>${TAIL}\n */\n`, 'java'), { kind: 'code' }), [])
+    assert.deepEqual(hits(commentText(`/**\n * ${HEAD}\n * <li>${TAIL}\n */\n`, 'java'), { kind: 'code' }), [])
+    assert.deepEqual(hits(commentText(`# ${HEAD}\n#   a.sh store    # ${TAIL}\n`, 'sh'), { kind: 'code' }), [])
+  })
+
+  test('タグの文の型（波括弧の組）は字数に数えない', () => {
+    const type = `{{ ${'a'.repeat(40)}: string,\n *   ${'b'.repeat(40)}: number }}`
+    assert.deepEqual(hits(commentText(`/**\n * @returns ${type} ${HEAD}\n */\n`, 'ts'), { kind: 'code' }), [])
+    assert.deepEqual(hits(commentText(`/**\n * @returns {string} ${HEAD}\n *   ${TAIL}\n */\n`, 'ts'), { kind: 'code' }), ['length:2'])
+  })
+
+  test('JSDoc のタグの行は、字下げした続きの行とつなぐ', () => {
+    assert.deepEqual(hits(commentText(`/**\n * @param {string} a ${HEAD}\n *   ${TAIL}\n */\n`, 'ts'), { kind: 'code' }), ['length:2'])
+  })
+
+  test('追加行を渡すと、文のどれかの行が追加行のときだけ示し、行は文の行のうち最初の追加行にする', () => {
+    const text = `${HEAD}\n${'う'.repeat(10)}\n${TAIL}`
+    assert.deepEqual(hits(text, { added: new Set([2]) }), ['length:2'])
+    assert.deepEqual(hits(text, { added: new Set([3, 2]) }), ['length:2'])
+    assert.deepEqual(hits(text, { added: new Set([4]) }), [])
+    assert.deepEqual(hits(text, { added: null }), ['length:1'])
+  })
+
+  test('styleKind は、Markdown、yml、コードの測り方を返す', () => {
+    assert.equal(jaText.styleKind('docs/a.md'), 'markdown')
+    assert.equal(jaText.styleKind('.github/workflows/ci.yml'), 'lines')
+    assert.equal(jaText.styleKind('scripts/ci/a.mjs'), 'code')
+  })
+})
+
 describe('日本語の文の検査（インラインコードの扱い）', () => {
   /** @param {string} text 文書 @returns {number[]} 読点の数（1 個以上の文ごと。文の順） */
   function commaCounts(text) {
@@ -571,6 +709,13 @@ describe('日本語の文の検査（warning と終了コード）', () => {
     assert.match(last, /^[^：]+：.*\d/)
   })
 
+  test('--warning は、複数の行にまたがる文を 1 文として測り、文の最初の行で示す', () => {
+    const result = runIn({ 'docs/c.md': `短い文である。\n${'あ'.repeat(60)}\n${'い'.repeat(57)}である。\n`, 'src/c.mjs': `// ${'あ'.repeat(60)}\n// ${'い'.repeat(57)}である。\n` }, ['--warning'])
+    assert.equal(result.status, 0)
+    assert.match(result.stdout, /^docs\/c\.md:2 .*字数が 120 字/m)
+    assert.match(result.stdout, /^src\/c\.mjs:1 .*字数が 120 字/m)
+  })
+
   test('error があれば失敗にする', () => {
     const result = runIn({ ...files, 'docs/b.md': '道具を使う。\n' }, [])
     assert.equal(result.status, 1)
@@ -655,6 +800,19 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     const result = r.run()
     assert.equal(result.status, 0)
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:5'])
+  })
+
+  test('複数の行にまたがる文：既存の行だけでできた文には出さず、1 行を足して長くなった文には、足した行に出す', () => {
+    const head = 'あ'.repeat(60)
+    const tail = `${'い'.repeat(57)}である。`
+    // 足した行（95 字）は、1 行では閾値（100）に届かない。前後の行とつなぐと閾値を超える
+    const r = createRepo({ 'docs/a.md': `${head}\n${tail}\n\nこれは\n短い文である。\n`, 'src/a.mjs': `// 短い\n// 文である。\n` })
+    r.write('docs/a.md', `${head}\n${tail}\n\nこれは\n${'う'.repeat(95)}\n短い文である。\n`)
+    r.write('src/a.mjs', `// 短い\n// ${'え'.repeat(95)}\n// 文である。\n`)
+    r.commit('変更')
+    const result = r.run()
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    assert.deepEqual(annotated(result.stdout), ['docs/a.md:5', 'src/a.mjs:2'])
   })
 
   test('改行コードだけを変えた既存の行（LF から CRLF）は追加行にしない。足した行だけに警告を出す', () => {

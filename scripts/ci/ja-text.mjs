@@ -1,25 +1,36 @@
 // 日本語の文を確認する。言い換えの一覧は ja-text.json。
-//   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許す語: 理由} で書く（その中の一致は数えない）
-//       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする
-//       語の検査（error と warning の語、allow の照合）は、インラインコード（バッククォートで囲んだ部分）の中を見ない。許す語がインラインコードの中にしか出ないときは、使われていないと見る
-//   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）
-//       文体の型は、1 区間の「の」・字数・読点の数が閾値以上の文、文の字数の合計が閾値以上の表のセル、「〜なく〜ない」の形の文、
-//       複合動詞の崩れの疑い（かなの直後に助詞を挟まず漢語が続く形）。閾値は ja-text.json の style（no、length、comma、cell）
-//       コードブロック、表の区切り行、URL、インラインコードは数えない。既定の実行は warning の件数を「警告：」の行で示す
-//       読点の数は、インラインコードかリンクだけの項目（「第 N 節」が付いてもよい）を区切る読点を数えない（範囲・参照の行の並び）。他の語を含む項目の前後の読点は数える
+//   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許す語: 理由} で書く（その中の一致は数えない）。
+//       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする。
+//       語の検査（error と warning の語、allow の照合）は、インラインコード（バッククォートで囲んだ部分）の中を見ない。
+//       許す語がインラインコードの中にしか出ないときは、使われていないと見る。
+//   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
+//       文体の型は次のとおり。閾値は ja-text.json の style（no、length、comma、cell）。
+//       - 1 区間の「の」・字数・読点の数が閾値以上の文
+//       - 文の字数の合計が閾値以上の表のセル
+//       - 「〜なく〜ない」の形の文
+//       - 複合動詞の崩れの疑い（かなの直後に助詞を挟まず漢語が続く形）
+//       コードブロック、表の区切り行、URL、インラインコードは数えない。既定の実行は warning の件数を「警告：」の行で示す。
+//       文は「。」で切る。「。」で終わらない行は次の行とつなぎ、複数の行にまたがる文を 1 文として測り、文の最初の行で示す。
+//       Markdown は空行、表の行、見出し、項目の行、コードブロックの前で切る。コードは続くコメントの行だけをつなぐ。
+//       .github の yml は行ごとに測る。表のセルはつながない（取り出し方は proseSentences）。
+//       読点の数は、インラインコードかリンクだけの項目（「第 N 節」が付いてもよい）を区切る読点を数えない（範囲・参照の行の並び）。
+//       他の語を含む項目の前後の読点は数える。
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
-//   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text
+//   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text。
 // 使い方：node scripts/ci/ja-text.mjs [--warning | --stats | --changed]（リポジトリのルートで）
-//   --stats：閾値ごとの文の数を出力する。表のセルは、セルごとに文の字数を合計して数える（閾値を決めるときに見る）
-//   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものと、
-//       文の字数の合計が style.cell（80）以上の表のセルを示す。GitHub Actions の注釈（`::warning file=…,line=…::`）の形で 1 件 1 行に出し、最後に件数の行を出す。
-//       警告があっても終了コードは 0。「の」の連なり、否定、複合動詞の崩れと、語の検査は見ない（語は既定の実行が見る）
-//       差分の基準は、HEAD と origin/develop（なければ develop）のマージベース。マージベースが HEAD のとき、develop・main への push なら HEAD の 1 つ目の親、
-//       それ以外（分けたばかりで commit がない作業ブランチ）なら HEAD（作業ツリーの変更だけを見る）
-//       対象のファイルは既定の実行と同じで、削除したファイルは見ない。名前を変えたファイルは、変えていない行を追加行にしない（git の -M）
-//       文は行ごとに測るので、追加行にある文だけを示す。shallow clone では差分を求められないので失敗にする
-//   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする
+//   --stats：閾値ごとの文の数を出力する。表のセルは、セルごとに文の字数を合計して数える（閾値を決めるときに見る）。
+//   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものを示す。
+//       文の字数の合計が style.cell（80）以上の表のセルも示す。
+//       GitHub Actions の注釈（`::warning file=…,line=…::`）の形で 1 件 1 行に出し、最後に件数の行を出す。
+//       警告があっても終了コードは 0。「の」の連なり、否定、複合動詞の崩れと、語の検査は見ない（語は既定の実行が見る）。
+//       差分の基準は、HEAD と origin/develop（なければ develop）のマージベース。
+//       マージベースが HEAD のときは、develop・main への push なら HEAD の 1 つ目の親にする。
+//       それ以外（分けたばかりで commit がない作業ブランチ）なら HEAD にする（作業ツリーの変更だけを見る）。
+//       対象のファイルは既定の実行と同じで、削除したファイルは見ない。名前を変えたファイルは、変えていない行を追加行にしない（git の -M）。
+//       複数の行にまたがる文は、文の行のどれかが追加行なら示す（行は文の行のうち最初の追加行）。既存の行だけでできた文は示さない。
+//       shallow clone では差分を求められないので失敗にする。
+//   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする。
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
 import { checkExclusions } from './lib/exclusions.mjs'
@@ -246,20 +257,227 @@ const REFERENCE_ITEM = new RegExp(`^(X|${LINK_START}[^${LINK_END}]*${LINK_END})(
 /** 動詞の連用形の終わりになるかな（い段とえ段。助詞の「に」「へ」と、「て」「で」は除く） */
 const STEM_ENDING = 'きぎしじちぢひびぴみりいえけげせぜねめれ'
 
+/** 見出しの行 */
+const HEADING = /^\s*#{1,6}(\s|$)/
+
+/** 項目の行（-、*、+、1. で始まる行） */
+const ITEM = /^\s*([-*+]|\d+[.)])\s/
+
+/** JSDoc・Javadoc のタグの行（@param など） */
+const DOC_TAG = /^@\w/
+
+/** Javadoc の段落と項目の HTML の要素で始まる行（<p>、<li>、<br /> など） */
+const HTML_BLOCK = /^<\/?(p|ul|ol|li|br|pre|table|tr|td|th|dl|dt|dd|blockquote|h\d)\b/i
+
+/** 整列のために空白を 2 つ以上続けた行（使い方の一覧など。行の中の空白の連なりで見分ける） */
+const ALIGNED = /\S {2,}\S/
+
+/** 一覧を導く行（「：」で終わる行。次の行は一覧の項目なので、つながない） */
+const LEAD = /[：:]\s*$/
+
+/** 飾りの罫線の行（===、--- など、記号だけの行） */
+const RULE_LINE = /^[=\-*_#~+]{3,}$/
+
+/** コメントの、語の見出しで始まる行（「使い方：」「対象：」など。定義の一覧の項目）。半角の : は型やコードにも使うので見ない */
+const LABEL = /^[^\s：:、。（）()]{1,24}：\s*\S/
+
+/** 日本語の字（かな・漢字）。コメントで日本語の字のない行は、コードや型、コマンドの例として、前後の行とつながない */
+const JAPANESE = /[ぁ-んァ-ヶ一-龠]/
+
+/** テスト名の行（commentText では、名前の文字列が引用符から始まる） */
+const TEST_NAME = /^\s*['"`]/
+
+/** コードブロックの開閉の行 */
+const FENCE = /^\s*(```|~~~)/
+
 /**
- * 文書の文を、行番号つきで取り出す。表のセルと「。」で文に分ける。
+ * 調べるファイルの、文の測り方を返す。
+ * - markdown：Markdown の文書。「。」で終わらない行を次の行とつなぐ
+ * - lines：.github の yml・yaml。行ごとに測る（キーと値の行をつながない）
+ * - code：コードのコメントとテスト名（commentText の結果）。続くコメントの行をつなぐ
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {'markdown' | 'lines' | 'code'} 測り方
+ */
+export function styleKind(file) {
+  if (/\.ya?ml$/.test(file)) return 'lines'
+  return isTargetDoc(file) ? 'markdown' : 'code'
+}
+
+/**
+ * 行のリンク、URL、インラインコードを、数える形に置き換える。
+ *
+ * @param {string} raw 行
+ * @returns {string} 置き換えた行
+ */
+function plainLine(raw) {
+  return raw
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, `${LINK_START}$1${LINK_END}`)
+    .replace(/https?:\/\/\S+/g, 'U')
+    .replace(/`[^`]*`/g, 'X')
+}
+
+/**
+ * コメントの行から、コメントの記号（行の始めの `//`、`/*`、`*`、`#` と、行の終わりの `*\/`）を除く。
+ *
+ * @param {string} raw commentText の行
+ * @returns {string} 記号を除いた行
+ */
+function commentBody(raw) {
+  return raw
+    .replace(/\r$/, '')
+    .replace(/\s*\*+\/\s*$/, '')
+    .replace(/^\s*(\/\*+|\/\/+|#+|\*+)/, '')
+}
+
+/**
+ * 文の断片をつなぐ。両側が ASCII の字なら空白を挟む（語がつながらないように）。
+ *
+ * @param {string[]} pieces 行ごとの断片（前後の空白を除いたもの）
+ * @returns {string} 文
+ */
+function joinPieces(pieces) {
+  return pieces.reduce((sentence, piece) => (sentence && /[!-~]$/.test(sentence) && /^[!-~]/.test(piece) ? `${sentence} ${piece}` : sentence + piece), '')
+}
+
+/**
+ * 文書の文を、行番号つきで取り出す。「。」で文に分け、「。」で終わらない行は次の行とつないで 1 文にする。
+ *
+ * markdown（文書）では、次の行の前で切る。見出しと表の行は、次の行ともつながない。
+ * - 空行、表の行、見出し、コードブロック、区切りの行
+ * - 項目の行。項目の続きは、項目の記号より深く字下げした行だけとし、浅い行の前で切る（Markdown の項目の段落）
+ * - 文書の最初の front matter（--- で囲んだ行）。この中は行ごとに測る
+ *
+ * code（commentText の結果）では、コメントの記号を除き、続くコメントの行だけをつなぐ。次の行の前で切る。
+ * - コメントでない行（commentText では空の行）と、記号だけの行
+ * - 項目の行（続きの決め方は markdown と同じ）と、タグの行（@param など）
+ * - Javadoc の段落・項目の要素（<p>、<li>、<br /> など）で始まる行
+ * - 語の見出しで始まる行（「対象：」など）
+ * - テスト名の行、整列のために空白を 2 つ以上続けた行（使い方の一覧など）、日本語の字のない行（コード、型、コマンドの例）。
+ *   この 3 つは次の行ともつながない
+ * タグの型（{…}）は、閉じるまで次の行とつなぎ、字数に数えない。
+ *
+ * どの測り方でも、「：」で終わる行（一覧を導く行）は次の行とつながない。
+ * lines では、行ごとに測る。表のセルは、どの測り方でもセルごとの文にする（つながない）。
  * コードブロック、表の区切り行、URL、リンクの宛先は数えず、インラインコードは 1 字に置き換える（かなを含む文だけを返す）。
  * リンクの表示文字列は LINK_START と LINK_END で囲んで返す（measureSentence が読点の数に使う。plainSentence で除く）。
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書（commentText の結果）
- * @returns {{ line: number, sentence: string }[]} 行番号（1 から）と文
+ * @param {'markdown' | 'lines' | 'code'} [kind] 測り方（styleKind）
+ * @returns {{ line: number, lines: number[], sentence: string }[]} 文の最初の行（1 から）、文の全ての行、文
  */
-export function proseSentences(text) {
-  return proseCells(text).flatMap(({ line, sentences }) => sentences.map((sentence) => ({ line, sentence })))
+export function proseSentences(text, kind = 'markdown') {
+  const result = []
+  let pending = []
+  const flush = () => {
+    const joined = joinPieces(pending.map((piece) => piece.text))
+    const sentence = kind === 'code' ? withoutTagType(joined) : joined
+    if (/[ぁ-ん]/.test(sentence)) {
+      const lines = [...new Set(pending.map((piece) => piece.line))]
+      result.push({ line: lines[0], lines, sentence })
+    }
+    pending = []
+  }
+  const append = (line, plain) => {
+    const parts = plain.split('。')
+    parts.forEach((part, index) => {
+      if (part.trim()) pending.push({ line, text: part.trim() })
+      if (index < parts.length - 1) flush()
+    })
+  }
+  let fenced = false
+  let frontMatter = false
+  // 今の項目の記号の字下げ（項目の中でなければ null）
+  let itemIndent = null
+  text.split('\n').forEach((source, index) => {
+    const line = index + 1
+    const testName = kind === 'code' && TEST_NAME.test(source)
+    const raw = kind === 'code' && !testName ? commentBody(source) : source
+    if (FENCE.test(raw)) {
+      flush()
+      itemIndent = null
+      fenced = !fenced
+      return
+    }
+    if (fenced) return
+    if (kind === 'markdown' && index === 0 && raw.trim() === '---') {
+      frontMatter = true
+      return
+    }
+    if (frontMatter) {
+      if (raw.trim() === '---') frontMatter = false
+      else append(line, plainLine(raw))
+      flush()
+      return
+    }
+    const plain = plainLine(raw)
+    const body = plain.trim()
+    if (!body || RULE_LINE.test(body) || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) {
+      flush()
+      itemIndent = null
+      return
+    }
+    if (body.startsWith('|')) {
+      flush()
+      itemIndent = null
+      for (const cell of plain.split('|')) {
+        append(line, cell)
+        flush()
+      }
+      return
+    }
+    // タグの型（{…}）が閉じていなければ、型の続きの行なので、そのままつなぐ（型は withoutTagType で除く）
+    if (kind === 'code' && openTagType(pending)) {
+      append(line, plain)
+      return
+    }
+    const indent = plain.length - plain.trimStart().length
+    const alone = kind === 'lines' || testName || (kind === 'markdown' ? HEADING.test(plain) : ALIGNED.test(body) || !JAPANESE.test(body))
+    const item = ITEM.test(plain)
+    // 項目の続きは、項目の記号より深く字下げした行だけ。浅い行は、項目の後の別の段落にする
+    const itemEnded = !item && itemIndent !== null && indent <= itemIndent
+    if (alone || item || itemEnded || (kind === 'code' && (DOC_TAG.test(body) || HTML_BLOCK.test(body) || LABEL.test(body)))) flush()
+    if (item) itemIndent = indent
+    else if (alone || itemEnded) itemIndent = null
+    append(line, plain)
+    if ((alone || LEAD.test(body)) && !(kind === 'code' && openTagType(pending))) flush()
+  })
+  flush()
+  return result
 }
 
 /**
- * 表のセルごとに、文の字数の合計を返す（--stats）。文の取り出し方は proseSentences と同じ。かなを含む文のないセルは含めない。
+ * 取り出し中の文が、型（波括弧）を閉じていないタグの文かを返す。
+ *
+ * @param {{ text: string }[]} pending 取り出し中の文の断片
+ * @returns {boolean} 型が閉じていなければ true
+ */
+function openTagType(pending) {
+  if (pending.length === 0 || !/^@\w+\s*\{/.test(pending[0].text)) return false
+  const text = pending.map((piece) => piece.text).join('')
+  return (text.match(/\{/g) ?? []).length > (text.match(/\}/g) ?? []).length
+}
+
+/**
+ * タグの文（@param {型} 名前 説明）から、型（波括弧の組）を除く。型は日本語の文でないので、字数に数えない。
+ *
+ * @param {string} sentence 文
+ * @returns {string} 型を除いた文
+ */
+function withoutTagType(sentence) {
+  const tag = /^@\w+\s*/.exec(sentence)
+  if (!tag || sentence[tag[0].length] !== '{') return sentence
+  let depth = 0
+  for (let at = tag[0].length; at < sentence.length; at += 1) {
+    if (sentence[at] === '{') depth += 1
+    if (sentence[at] === '}') depth -= 1
+    if (depth === 0) return tag[0] + sentence.slice(at + 1).trimStart()
+  }
+  return sentence
+}
+
+/**
+ * 表のセルごとに、文の字数の合計を返す（--stats）。表の行はつながないので、セルの文は proseSentences と同じになる。かなを含む文のないセルは含めない。
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書
  * @returns {{ line: number, total: number }[]} 行番号（1 から）とセルの合計
@@ -285,10 +503,7 @@ function proseCells(text) {
       return
     }
     if (fenced || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) return
-    const plain = raw
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, `${LINK_START}$1${LINK_END}`)
-      .replace(/https?:\/\/\S+/g, 'U')
-      .replace(/`[^`]*`/g, 'X')
+    const plain = plainLine(raw)
     const table = plain.trimStart().startsWith('|')
     const cells = table ? plain.split('|') : [plain]
     for (const cell of cells) {
@@ -343,20 +558,26 @@ function plainSentence(sentence) {
  * - negation：「〜なく〜ない」の形の文
  * - compound：かな（動詞の連用形の終わり）の直後に、助詞を挟まず漢語が続く形（複合動詞の崩れの疑い。「少し修正」も示す）
  * - cell：表のセルの文の字数の合計（閾値以上を示す。数え方は tableCellTotals）
+ * 文は proseSentences で取り出し、複数の行にまたがる文は 1 文として見る。行は文の最初の行にする。
+ * 追加行（added）を渡すと、文の行のどれかが追加行の文だけを示し、行は文の行のうち最初の追加行にする（--changed。注釈が差分の中に出るため）。
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書
  * @param {{ no?: number, length?: number, comma?: number, cell?: number, compound?: string[] }} limits 閾値と、崩れの疑いを見る漢語
+ * @param {{ kind?: 'markdown' | 'lines' | 'code', added?: Set<number> | null }} [options] 測り方（styleKind）と追加行（null か省略なら全ての行）
  * @returns {{ line: number, kind: 'no' | 'length' | 'comma' | 'negation' | 'compound' | 'cell', word: string, use: string }[]} 見つけた行と種類（行の順）
  */
-export function findStyleWarnings(text, limits) {
+export function findStyleWarnings(text, limits, { kind = 'markdown', added = null } = {}) {
   const hits = []
   if (limits.cell !== undefined) {
     for (const { line, total } of tableCellTotals(text)) {
+      if (added !== null && !added.has(line)) continue
       if (total >= limits.cell) hits.push({ line, kind: 'cell', word: '長いセル', use: `セルの文の字数の合計が ${total} 字` })
     }
   }
   const compound = limits.compound?.length ? new RegExp(`[${STEM_ENDING}](?:${limits.compound.join('|')})`, 'g') : null
-  for (const { line, sentence: marked } of proseSentences(text)) {
+  for (const { line: first, lines, sentence: marked } of proseSentences(text, kind)) {
+    const line = added === null ? first : lines.find((number) => added.has(number))
+    if (line === undefined) continue
     const sentence = plainSentence(marked)
     const excerpt = sentence.length > 30 ? `${sentence.slice(0, 30)}…` : sentence
     const measured = measureSentence(marked)
@@ -375,16 +596,18 @@ export function findStyleWarnings(text, limits) {
 /**
  * 閾値ごとの文の数を出力する（閾値を決めるときに使う。--stats）。
  *
- * @param {string[]} docTexts 調べる文書の内容
+ * @param {{ text: string, kind: 'markdown' | 'lines' }[]} docs 調べる文書の内容と測り方
  * @param {string[]} codeComments コメントとテスト名だけを残した文書
  * @param {{ warning: { word: string }[], style: { compound: string[] } }} list 一覧
  */
-function printStats(docTexts, codeComments, list) {
-  for (const [label, texts] of [['文書', docTexts], ['コメントとテスト名', codeComments]]) {
-    const measured = texts.flatMap((text) => proseSentences(text).map(({ sentence }) => measureSentence(sentence)))
+function printStats(docs, codeComments, list) {
+  for (const [label, items] of [['文書', docs], ['コメントとテスト名', codeComments.map((text) => ({ text, kind: 'code' }))]]) {
+    const texts = items.map((item) => item.text)
+    const measured = items.flatMap(({ text, kind }) => proseSentences(text, kind).map(({ sentence }) => measureSentence(sentence)))
     const countAtLeast = (key, value) => measured.filter((item) => item[key] >= value).length
-    const negation = texts.reduce((n, text) => n + findStyleWarnings(text, {}).filter((hit) => hit.kind === 'negation').length, 0)
-    const compound = texts.reduce((n, text) => n + findStyleWarnings(text, { compound: list.style.compound }).filter((hit) => hit.kind === 'compound').length, 0)
+    const styleCount = (limits, kind) => items.reduce((n, item) => n + findStyleWarnings(item.text, limits, { kind: item.kind }).filter((hit) => hit.kind === kind).length, 0)
+    const negation = styleCount({}, 'negation')
+    const compound = styleCount({ compound: list.style.compound }, 'compound')
     const request = texts.reduce((n, text) => n + findTerms(text, list.warning.filter((term) => term.word === '要求')).length, 0)
     console.log(`${label}：${measured.length} 文`)
     console.log(`  「の」（1 区間）：${[3, 4, 5, 6].map((v) => `${v}以上 ${countAtLeast('no', v)}`).join('、')}`)
@@ -519,9 +742,10 @@ function printChangedWarnings(list) {
     const doc = isTargetDoc(file)
     if ((!doc && !isTargetCode(file)) || !existsSync(file)) continue
     const raw = readFileSync(file, 'utf8')
-    const lines = added.get(file)
-    for (const hit of findStyleWarnings(doc ? raw : commentText(raw, codeKind(file)), limits)) {
-      if (!kinds.has(hit.kind) || (lines !== null && !lines.has(hit.line))) continue
+    // 文の行のどれかが追加行の文だけを示す（既存の行だけでできた文は示さない）
+    const options = { kind: styleKind(file), added: added.get(file) }
+    for (const hit of findStyleWarnings(doc ? raw : commentText(raw, codeKind(file)), limits, options)) {
+      if (!kinds.has(hit.kind)) continue
       console.log(formatAnnotation(file, hit.line, `${hit.word} → ${hit.use}`))
       count += 1
     }
@@ -563,7 +787,7 @@ if (isMain(import.meta.url)) {
   const codeTexts = codeFiles.map((file) => readFileSync(file, 'utf8'))
   const codeComments = codeFiles.map((file, index) => commentText(codeTexts[index], codeKind(file)))
   if (args.includes('--stats')) {
-    printStats(texts, codeComments, list)
+    printStats(texts.map((text, index) => ({ text, kind: styleKind(files[index]) })), codeComments, list)
     process.exit(0)
   }
   const allowTexts = [...texts, ...codeComments]
@@ -587,10 +811,10 @@ if (isMain(import.meta.url)) {
   // 文体の warning（--warning のときだけ一覧にする。既定の実行は件数だけを示す）
   const styleHits = []
   for (const [index, file] of files.entries()) {
-    for (const hit of findStyleWarnings(texts[index], list.style)) styleHits.push({ file, ...hit })
+    for (const hit of findStyleWarnings(texts[index], list.style, { kind: styleKind(file) })) styleHits.push({ file, ...hit })
   }
   for (const [index, file] of codeFiles.entries()) {
-    for (const hit of findStyleWarnings(codeComments[index], list.style)) styleHits.push({ file, ...hit })
+    for (const hit of findStyleWarnings(codeComments[index], list.style, { kind: 'code' })) styleHits.push({ file, ...hit })
   }
   if (warning) {
     for (const hit of styleHits) {

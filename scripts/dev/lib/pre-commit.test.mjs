@@ -277,7 +277,7 @@ describe('commit のメッセージの検査', () => {
  * 実際の hook のテストが使う、日本語の文の検査の一覧。
  * 本物の一覧は、許容用語が使われていないと失敗にする（小さな一時のリポジトリでは使われない）ので、試す語だけの一覧にする。
  */
-const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }], warning: [{ word: '要求', use: 'リクエスト' }], style: { no: 4, length: 100, comma: 5 } })
+const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }], warning: [{ word: '要求', use: 'リクエスト' }], style: { no: 4, length: 100, comma: 5, cell: 80 } })
 
 describe('実際の hook', () => {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -432,6 +432,21 @@ describe('実際の hook', () => {
     const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': 'ふつうの行。\n' }, files: { 'docs/a.md': 'ふつうの行。\nサーバーが要求を受ける。\n' } })
     assert.equal(status, 0)
     assert.match(output, /docs\/a\.md:2 要求/)
+  })
+
+  test('追加行の表のセルの warning（長いセル）を表示し、commit は成功する', () => {
+    const cell = 'あ'.repeat(85)
+    const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': 'ふつうの行。\n' }, files: { 'docs/a.md': `ふつうの行。\n\n| 列 |\n| --- |\n| ${cell} |\n` } })
+    assert.equal(status, 0)
+    assert.match(output, /docs\/a\.md:5 長いセル/)
+  })
+
+  test('既存の行から始まる文に行を足して閾値以上になったら、その文の warning を（最初の追加行で）表示する', () => {
+    const head = 'あ'.repeat(60)
+    const tail = 'い'.repeat(60)
+    const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': `${head}、\n` }, files: { 'docs/a.md': `${head}、\n${tail}。\n` } })
+    assert.equal(status, 0)
+    assert.match(output, /docs\/a\.md:2 長い文/)
   })
 
   test('追加していない既存の行の warning は表示しない', () => {

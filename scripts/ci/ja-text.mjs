@@ -18,8 +18,10 @@
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text。
-// 使い方：node scripts/ci/ja-text.mjs [--warning | --stats | --changed]（リポジトリのルートで）
+// 使い方：node scripts/ci/ja-text.mjs [--warning [--added] | --stats | --changed]（リポジトリのルートで）
 //   --stats：閾値ごとの文の数を出力する。表のセルは、セルごとに文の字数を合計して数える（閾値を決めるときに見る）。
+//   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。
+//       文は、どれかの行が追加行なら、最初の追加行で示す（--changed と同じ選び方）。
 //   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものを示す。
 //       文の字数の合計が style.cell（80）以上の表のセルも示す。
 //       GitHub Actions の注釈（`::warning file=…,line=…::`）の形で 1 件 1 行に出し、最後に件数の行を出す。
@@ -799,6 +801,11 @@ if (isMain(import.meta.url)) {
   exitIfNoFiles(files, '語を調べる文書')
   const codeFiles = gitFiles.filter((file) => isTargetCode(file))
   exitIfNoFiles(codeFiles, '語を調べるコード')
+  // --added：標準入力の差分（git diff --cached -U0）の追加行だけを --warning の対象にする（commit の前の hook。--changed と同じ選び方）。
+  // 差分にないファイルは、追加行なし（全ての行ではない）
+  const addedMap = warning && args.includes('--added') ? parseAddedLines(readFileSync(0, 'utf8')) : null
+  const addedOf = (file) => (addedMap === null ? null : (addedMap.get(file) ?? new Set()))
+  const isAdded = (file, line) => addedMap === null || addedOf(file).has(line)
   const texts = files.map((file) => readFileSync(file, 'utf8'))
   const codeTexts = codeFiles.map((file) => readFileSync(file, 'utf8'))
   const codeComments = codeFiles.map((file, index) => commentText(codeTexts[index], codeKind(file)))
@@ -816,12 +823,14 @@ if (isMain(import.meta.url)) {
   let count = allowProblems.length
   for (const [index, file] of files.entries()) {
     for (const hit of findTerms(texts[index], terms)) {
+      if (!isAdded(file, hit.line)) continue
       console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
       count += 1
     }
   }
   for (const [index, file] of codeFiles.entries()) {
     for (const hit of findCodeTerms(file, codeTexts[index], terms)) {
+      if (!isAdded(file, hit.line)) continue
       console.log(`${file}:${hit.line} ${hit.word} → ${hit.use}`)
       count += 1
     }
@@ -829,10 +838,10 @@ if (isMain(import.meta.url)) {
   // 文体の warning（--warning のときだけ一覧にする。既定の実行は件数だけを示す）
   const styleHits = []
   for (const [index, file] of files.entries()) {
-    for (const hit of findStyleWarnings(texts[index], list.style, { kind: styleKind(file) })) styleHits.push({ file, ...hit })
+    for (const hit of findStyleWarnings(texts[index], list.style, { kind: styleKind(file), added: addedOf(file) })) styleHits.push({ file, ...hit })
   }
   for (const [index, file] of codeFiles.entries()) {
-    for (const hit of findStyleWarnings(codeComments[index], list.style, codeStyles[index])) styleHits.push({ file, ...hit })
+    for (const hit of findStyleWarnings(codeComments[index], list.style, { ...codeStyles[index], added: addedOf(file) })) styleHits.push({ file, ...hit })
   }
   if (warning) {
     for (const hit of styleHits) {

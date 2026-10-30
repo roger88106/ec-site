@@ -168,7 +168,7 @@ export function checkShell(env) {
  * @param {(prefix: string, env: Record<string, string | undefined>) => number | null} deps.checkout ステージした内容を prefix の下に取り出す。終了コードを返す
  * @param {(script: string, env: Record<string, string | undefined>) => number | null} deps.runCheck 検査の script を実行する。終了コードを返す
  * @param {(env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.diffAdded ステージした差分（-U0）を返す
- * @param {(staged: string, env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で warning の一覧を出力する
+ * @param {(staged: string, env: Record<string, string | undefined>, diff: string) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で、差分（diff）の追加行の warning の一覧を出力する（ja-text --warning --added）
  * @param {(text: string) => void} deps.print warning を表示する
  * @param {(text: string) => void} deps.printError commit を失敗にした理由を表示する
  * @param {() => string} deps.makeTemp 一時ディレクトリを作る
@@ -191,10 +191,12 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, runCheck, di
     const checkEnv = { ...baseEnv, GIT_DIR: gitDir, GIT_WORK_TREE: staged }
     const status = runCheck(`${staged}/scripts/ci/check-all.sh`, checkEnv)
     if (status !== 0) return status ?? 1
-    // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする
+    // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする。
+    // 追加行の選び方（文のどれかの行が追加行）は ja-text が持つ。ここでは、出力の行が追加行であることだけを照合する
     const diff = diffAdded(baseEnv)
-    const warnings = listWarnings(staged, checkEnv)
-    if (diff.status !== 0 || warnings.status !== 0) return WARNING_FAILED
+    if (diff.status !== 0) return WARNING_FAILED
+    const warnings = listWarnings(staged, checkEnv, diff.stdout)
+    if (warnings.status !== 0) return WARNING_FAILED
     const lines = selectAddedWarnings(warnings.stdout, parseAddedLines(diff.stdout))
     if (lines.length > 0) print(`警告：追加した行に warning が ${lines.length} 件ある（読んで、直すかを決める）\n${lines.join('\n')}`)
     return 0
@@ -227,8 +229,9 @@ export function main() {
       const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
       return { status: result.status, stdout: result.stdout ?? '' }
     },
-    listWarnings: (staged, env) => {
-      const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja-text.mjs`, '--warning'], { cwd: staged, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+    listWarnings: (staged, env, diff) => {
+      // 追加行の差分を標準入力で渡し、ja-text が --changed と同じ選び方（文のどれかの行が追加行）で選ぶ
+      const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja-text.mjs`, '--warning', '--added'], { cwd: staged, env, input: diff, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
       return { status: result.status, stdout: result.stdout ?? '' }
     },
     print: (text) => console.log(text),

@@ -9,12 +9,12 @@ info:
     - 価格は商品単位（全バリアント共通）で、税込・税抜の両方を返す。画面では「1,980 円（税抜 1,800 円）」の形で表示する（BR-4）。
     - 一覧の並びが同じ値になる場合は、ID で順序を確定させる（MVP の暫定。API の規約）。
     - 在庫は有無だけを返し、数量は返さない（AC-64）。在庫の有無とカートの判定は、販売可能数（在庫数から有効な引当を除いた数。spec 002 BR-11）で行う。
-    - 認証は、消費者の realm（IdP）が発行した会員の access token（audience `ec-store-api`）を `Authorization: Bearer` で付ける（spec 003、plan 003 第 5.1 節）。
+    - 認証は、消費者の realm（IdP）が発行した会員の access token（audience `ec-store-api`）を `Authorization: Bearer` で付ける（spec 003、plan 003 の「C 側」）。
       - 会員の操作（`security` が `memberToken` だけ）：token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）。
       - 任意の操作（カートの表示と品目の変更の 4 操作。`security` は空の要件 `{}` と `memberToken` の 2 つ）：token があれば会員として扱い、なければログインしていない人として扱う。token が無効なら 401。
       - 公開の操作（`security: []`）：商品・カテゴリ・店舗の情報、カートの作成、都道府県・市区町村・郵便番号。認証は必要ない。
       - 全ての操作に `security` を書く。書いていない操作があると、バックエンドの起動が失敗する（spec 182）。
-    - ログインせずに作ったカートは、推測できないカート ID を知っていることが使える条件になる（plan 002 第 3 節）。会員のカート・注文手続き・注文は、持ち主の会員だけが使える。ほかの人には、ないときと同じく 404 を返す（存在を推測させない。AC-121、126、131）。
+    - ログインせずに作ったカートは、推測できないカート ID を知っていることが使える条件になる（plan 002 の「消費者の識別」）。会員のカート・注文手続き・注文は、持ち主の会員だけが使える。ほかの人には、ないときと同じく 404 を返す（存在を推測させない。AC-121、126、131）。
 servers:
   - url: /api/store
 tags:
@@ -151,7 +151,7 @@ paths:
       operationId: createCart
       security: []
       summary: カートを作る（AC-73）
-      description: 空のカートを作る。返したカート ID を知っていることが、カートを使える条件になる（plan 002 第 3 節）。
+      description: 空のカートを作る。返したカート ID を知っていることが、カートを使える条件になる（plan 002 の「消費者の識別」）。
       responses:
         '201':
           $ref: '#/components/responses/Created'
@@ -507,7 +507,7 @@ paths:
       operationId: getShop
       security: []
       summary: 店舗の情報（AC-96）
-      description: 問い合わせ先など、画面に示す店舗の情報。値はバックエンドの設定（plan 002 第 4 節）。
+      description: 問い合わせ先など、画面に示す店舗の情報。値はバックエンドの設定（plan 002 の「決めたこと」）。
       responses:
         '200':
           description: 店舗の情報
@@ -701,7 +701,7 @@ components:
     ErrorCode:
       type: string
       description: >-
-        この API が返しうるエラーのコード（API の規約 第 5 節）。フロントが分岐に使う。
+        この API が返しうるエラーのコード（API の規約の「エラーの本文」）。フロントが分岐に使う。
         各操作が返しうる業務のエラーは操作の x-error-codes、全ての操作が返しうるエラーは x-common-error-codes。
       x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
       enum:

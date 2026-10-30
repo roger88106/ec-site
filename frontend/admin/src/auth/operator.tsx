@@ -1,6 +1,6 @@
 import { createContext, useContext } from 'react'
 
-/** ログインしている運営者（管理画面の構成 第 10 節） */
+/** ログインしている運営者（管理画面の構成の「ログイン」） */
 export type Operator = {
   /** 氏名（姓 名） */
   name: string

@@ -16,7 +16,7 @@ import { VariantSalesPage } from '@/features/report/pages/VariantSalesPage'
 import { TaxCategoryListPage } from '@/features/tax/pages/TaxCategoryListPage'
 import { TaxRatesPage } from '@/features/tax/pages/TaxRatesPage'
 
-/** 画面の URL（管理画面の構成 第 3 節） */
+/** 画面の URL（管理画面の構成の「画面の URL」） */
 export const routes: RouteObject[] = [
   {
     path: routePatterns.top,

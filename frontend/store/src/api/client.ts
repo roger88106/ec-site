@@ -20,7 +20,7 @@ const {
 } = readServerConfig()
 
 /**
- * 店舗 API の応答を待つ時間の上限を、要求に付ける（店舗画面の構成 第 4.2 節）。上限を過ぎた要求は例外で失敗し、
+ * 店舗 API の応答を待つ時間の上限を、要求に付ける（店舗画面の構成の「エラー」）。上限を過ぎた要求は例外で失敗し、
  * サーバーアクションでは「接続できない」の結果になる。呼ぶときに fetch を替えても（{@link UNCACHED}）効く。
  */
 const timeout: Middleware = {
@@ -30,7 +30,7 @@ const timeout: Middleware = {
 }
 
 /**
- * 画面の要求と同じ追跡の ID（traceparent）を、店舗 API の要求に付ける（店舗画面の構成 第 4.2 節）。
+ * 画面の要求と同じ追跡の ID（traceparent）を、店舗 API の要求に付ける（店舗画面の構成の「エラー」）。
  * バックエンドのログを、画面の要求から辿れるようにする。<br />
  * Next.js はキャッシュの鍵から traceparent を除くので、キャッシュする要求に付けてもキャッシュは使われる。
  * 呼ぶ口（{@link getApi}、{@link getMemberApi}）は connection() の後に返すので、必ず要求の中で動く。
@@ -46,7 +46,7 @@ const trace: Middleware = {
 }
 
 /**
- * 店舗 API の 5xx の応答を、warn のログに出す（店舗画面の構成 第 4.2 節）。<br />
+ * 店舗 API の 5xx の応答を、warn のログに出す（店舗画面の構成の「エラー」）。<br />
  * 出すのは状態コード、エラーコード、メソッド、API の定義のパス（`/orders/{orderId}` の形）だけ。
  * token、Cookie、要求の本文、クエリ（メールアドレスなどを含みうる）は出さない。
  */
@@ -82,7 +82,7 @@ async function errorCodeOf(response: Response): Promise<string | null> {
 }
 
 /**
- * 店舗 API（store.yaml）の公開の口（店舗画面の構成 第 4 節）。token を付けない。<br />
+ * 店舗 API（store.yaml）の公開の口（店舗画面の構成の「API の呼び出し」）。token を付けない。<br />
  * 接続先は環境変数 STORE_API_BASE_URL。結果は Next.js の fetch のキャッシュで最大 60 秒（REVALIDATE_SECONDS）使い回す。
  */
 const api = createClient<paths>({
@@ -92,7 +92,7 @@ const api = createClient<paths>({
 api.use(timeout, trace, serverErrorLog)
 
 /**
- * 店舗 API の会員の口（店舗画面の構成 第 4.6 節）。会員の access token を付け、キャッシュを使わない
+ * 店舗 API の会員の口（店舗画面の構成の「会員の token を付けて呼ぶ」）。会員の access token を付け、キャッシュを使わない
  * （会員ごとに違う結果を、共有のキャッシュに載せないため）。ログインしていなければ token を付けない。
  */
 const memberApi = createClient<paths>({
@@ -112,7 +112,7 @@ memberApi.use({
 })
 
 /**
- * キャッシュを使わずに呼ぶときの、リクエストのオプション（店舗画面の構成 第 4 節）。<br />
+ * キャッシュを使わずに呼ぶときの、リクエストのオプション（店舗画面の構成の「API の呼び出し」）。<br />
  * 1 件を取る API（商品の詳細）に使う。Next.js のキャッシュは、取得し直した応答が 404 だと古い 200 を
  * 置き換えないので、非公開・販売終了にした商品がいつまでも表示されてしまうため。
  */
@@ -131,7 +131,7 @@ export async function getApi() {
 }
 
 /**
- * 会員の操作（/me/**、会員のカート、注文手続き、注文）を呼ぶときに使う（店舗画面の構成 第 4.6 節）。<br />
+ * 会員の操作（/me/**、会員のカート、注文手続き、注文）を呼ぶときに使う（店舗画面の構成の「会員の token を付けて呼ぶ」）。<br />
  * 401 は、呼んだ側でログインの画面へ移す（取得は result.ts の unwrapMember、操作は auth.ts の redirectToLogin）。
  */
 export async function getMemberApi() {

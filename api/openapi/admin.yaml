@@ -5,7 +5,7 @@ info:
   description: |
     B 側（運営者）向けの API。
 
-    - 全ての操作に、運営者の realm（IdP）が発行した access token（audience `ec-admin-api`）を `Authorization: Bearer` で付ける。token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）を返す（バックエンドのアーキテクチャ 第 7 節）。
+    - 全ての操作に、運営者の realm（IdP）が発行した access token（audience `ec-admin-api`）を `Authorization: Bearer` で付ける。token がない・無効・期限切れ・別の realm のものなら 401（`UNAUTHENTICATED`）を返す（バックエンドのアーキテクチャの「認証・認可」）。
     - 各操作に必要な権限を `x-required-permission` に記す。token の権限（`resource_access.ec-admin-api.roles`）に含まれなければ 403（`FORBIDDEN`）を返す。本書にない操作は、権限によらず拒否する（spec 003 NFR-3）。`authenticated` は権限ではなく、ログインしていればよい操作を表す。
     - 同時に編集されうるリソースの更新では、取得時の `version` を送る。一致しなければ 409 を返す。
     - 状態の切り替え（公開・非公開・販売終了、販売停止・解除、注文のキャンセルとその申請の承認）は冪等で、`version` を送らない。すでにその状態なら何もせず 204 を返す。
@@ -647,7 +647,7 @@ paths:
       x-error-codes: [UNSUPPORTED_IMAGE_FORMAT, IMAGE_TOO_LARGE, TOO_MANY_PRODUCT_IMAGES]
       summary: 画像のアップロードを受け付ける（AC-39、40、67、P2）
       description: |
-        形式・サイズ・枚数を確認し、アップロードのバケットへの署名付き URL（PUT）を返す（plan 001 第 7 節）。
+        形式・サイズ・枚数を確認し、アップロードのバケットへの署名付き URL（PUT）を返す（plan 001 の「商品画像」）。
         ブラウザは `uploadUrl` に `headers` を付けてファイルを PUT し、その後 `POST /products/{productId}/images` で登録する。
         受付だけで登録しなかったファイルは、1 日で消える。
       x-required-permission: product:write
@@ -682,7 +682,7 @@ paths:
       x-error-codes: [IMAGE_TOO_LARGE, IMAGE_UPLOAD_NOT_FOUND, INVALID_IMAGE_FILE, IMAGE_CONVERSION_FAILED, TOO_MANY_PRODUCT_IMAGES, IMAGE_SERVICE_UNAVAILABLE]
       summary: 受け付けた画像を登録する（AC-37、39、40、67〜70、296〜298、P2）
       description: |
-        アップロードしたファイルの大きさと形式（先頭のバイト）を確認し、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 第 7.5 節）。
+        アップロードしたファイルの大きさと形式（先頭のバイト）を確認し、WebP に変換して（メタデータを除く）配信のバケットへ置き、商品の画像の最後に加える（plan 001 の「画像の変換」）。
         変換のサービスがファイルを読めない画像は登録せず、400（`IMAGE_CONVERSION_FAILED`）を返す（AC-70、297）。
         変換のサービスやファイル保存のサービスに届かない・時間内に応答がない・その側の故障のときは、502（`IMAGE_SERVICE_UNAVAILABLE`）を返す。しばらくしてからやり直せる（AC-296、298）。
         バリアントと同じく商品の一部で単独の URL を持たないため、`Location` は返さず、本文で ID を返す。
@@ -1424,7 +1424,7 @@ components:
     ErrorCode:
       type: string
       description: >-
-        この API が返しうるエラーのコード（API の規約 第 5 節）。フロントが分岐に使う。
+        この API が返しうるエラーのコード（API の規約の「エラーの本文」）。フロントが分岐に使う。
         各操作が返しうる業務のエラーは操作の x-error-codes、全ての操作が返しうるエラーは x-common-error-codes。
       x-common-error-codes: [NOT_FOUND, CONCURRENT_MODIFICATION, INVALID_REQUEST, METHOD_NOT_ALLOWED, UNAUTHENTICATED, FORBIDDEN, INVALID_MONEY, RESTORE_ERROR, SYSTEM_ERROR]
       enum:

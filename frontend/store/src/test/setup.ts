@@ -5,7 +5,7 @@ import { resetAuth } from '@/test/auth'
 import { resetRequest } from '@/test/next'
 import { server } from '@/test/server'
 
-// サーバーの処理（サーバーアクション、api/、auth.ts、proxy.ts）を Node の上で呼ぶための置き換え（店舗画面の構成 第 7 節）。
+// サーバーの処理（サーバーアクション、api/、auth.ts、proxy.ts）を Node の上で呼ぶための置き換え（店舗画面の構成の「テスト」）。
 // next/navigation は置き換えず、本物の redirect・notFound・unstable_rethrow を使う
 vi.mock('server-only', () => ({}))
 vi.mock('next/headers', async () => {

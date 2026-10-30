@@ -8,7 +8,7 @@ import type { ActionResult } from '@/lib/actionResult'
 type Failure = Extract<ActionResult, { ok: false }>
 
 /**
- * 会員の API の応答が 401（token が無効）なら、ログインの画面へ移す（フロントの書き方 第 3.2 節）。
+ * 会員の API の応答が 401（token が無効）なら、ログインの画面へ移す（フロントの書き方の「結果は ActionResult で返す」）。
  *
  * @param response API の応答
  * @param returnTo ログインの後に戻る画面。なければいまの画面
@@ -21,7 +21,7 @@ export async function redirectIfUnauthenticated(response: Response, returnTo?: s
 
 /**
  * 処理を `withActionResult` で包み、移動先が得られたらその画面へ移す。失敗の結果はそのまま返す。<br />
- * `redirect` は例外で移動を知らせるので、包みの外で呼ぶ（フロントの書き方 第 3.1 節）。
+ * `redirect` は例外で移動を知らせるので、包みの外で呼ぶ（フロントの書き方の「サーバーアクションは withActionResult で包む」）。
  *
  * @param work 処理。成功したら移動先（外部の URL を含む）、失敗したら失敗の結果を返す
  * @returns 失敗の結果（成功したら移動するので戻らない）

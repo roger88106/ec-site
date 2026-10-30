@@ -1,4 +1,4 @@
-// テストが時間で待っていないことを確認する（テストの書き方 第 5 節）。
+// テストが時間で待っていないことを確認する（テストの書き方の「待ち方」）。
 // 時間で待つテストは、遅い環境で失敗し、速い環境で時間を無駄にする。条件で待つ（latch、Playwright の expect の再試行など）。
 // 対象は、バックエンド・画面・E2E のテストに加え、E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助（src/test/）。
 // 時間で待つ呼び出し（Thread.sleep、waitForTimeout、Awaitility の during・pollDelay、Promise で包んだ setTimeout）があると失敗にする。

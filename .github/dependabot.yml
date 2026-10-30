@@ -1,4 +1,4 @@
-# Dependabot の設定。手順と理由は docs/06-手順書/branches.md 第 6 節。
+# Dependabot の設定。手順と理由は ブランチとリリースの「Dependabot」。
 #
 # - 更新の pull request は、既定のブランチ（develop）に対して作成される（target-branch は書かない）。
 # - 頻度は週 1 回、月曜の朝（日本時間）。

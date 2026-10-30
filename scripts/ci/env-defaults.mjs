@@ -1,4 +1,4 @@
-// 環境変数の文書（docs/06-手順書/environment.md）の既定値が、コードの設定の型の既定値と一致することを確認する（バックエンドの書き方 第 6.1 節）。
+// 環境変数の文書（docs/06-手順書/environment.md）の既定値が、コードの設定の型の既定値と一致することを確認する（バックエンドの書き方の「設定の値の型」）。
 // - コードの既定値（@ConfigurationProperties の record の @DefaultValue）は、文書に同じ値である
 // - 文書に既定値（時間、数、真偽）を書いた設定は、コードも既定値を持つ
 // - 管理画面の IdP の既定値（VITE_OIDC_AUTHORITY、VITE_OIDC_CLIENT_ID）は、管理画面の認証の設定（oidc.ts）を正とし、

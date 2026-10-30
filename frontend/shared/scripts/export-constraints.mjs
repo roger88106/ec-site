@@ -1,4 +1,4 @@
-// API の契約（OpenAPI）の入力の制約を、画面が使う定数のファイルに書き出す（フロントの書き方 第 2.3 節）。
+// API の契約（OpenAPI）の入力の制約を、画面が使う定数のファイルに書き出す（フロントの書き方の「入力の制約は契約から書き出した定数」）。
 // 使い方：node export-constraints.mjs <OpenAPI の YAML> <書き出す .ts>
 import { readFileSync, writeFileSync } from 'node:fs'
 import { basename } from 'node:path'

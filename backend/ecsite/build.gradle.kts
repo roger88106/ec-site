@@ -118,14 +118,14 @@ dependencies {
     implementation(libs.spring.boot.starter.restclient)
     // 認証（OAuth 2.0 の Resource Server。運営者・会員の access token を検証する）
     implementation(libs.spring.boot.starter.security.oauth2.resource.server)
-    // --- 可観測性（バックエンドのアーキテクチャ 第 5 節） ---
+    // --- 可観測性（バックエンドのアーキテクチャの「水平スケール」） ---
     // ヘルスチェック（liveness / readiness）、メトリクス（Prometheus）
     implementation(libs.spring.boot.starter.actuator)
     runtimeOnly(libs.micrometer.registry.prometheus)
     // 分散トレーシング（Brave + Zipkin）。エラーレスポンスの traceId にも使う
     implementation(libs.spring.boot.starter.zipkin)
 
-    // --- モジュラーモノリス（バックエンドのアーキテクチャ 第 1 節） ---
+    // --- モジュラーモノリス（バックエンドのアーキテクチャの「モジュラーモノリス」） ---
     implementation(libs.bundles.spring.modulith)
 
     // --- 定期ジョブの分散ロック（ShedLock。ロックは PostgreSQL のテーブルに持つ） ---
@@ -163,7 +163,7 @@ dependencies {
     // test などの classpath にも必要なので、compileOnly でなく implementation にする
     implementation(libs.jspecify)
 
-    // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャ 第 2 節） ---
+    // --- DDD（ドメインのオブジェクトの明示。バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」） ---
     implementation(libs.bundles.jmolecules)
 
     // --- テスト：共有（testFixtures。エラーの種類の検査が契約の YAML と応答の JSON を読む） ---
@@ -333,7 +333,7 @@ tasks.register<JavaExec>("generateRegionMigration") {
 tasks.check { dependsOn("compileToolsJava") }
 
 // -----------------------------------------------------------------------------
-// Checkstyle（Javadoc の書き漏れ：コメントの書き方 第 2 節、import：バックエンドの書き方 第 5.4 節）
+// Checkstyle（Javadoc の書き漏れ：コメントの書き方の「Java」、import：バックエンドの書き方の「書式」）
 //   全てのソースセット（main、test、integrationTest、testFixtures、tools）の Java のファイルで、次を確認する。
 //   ・import：使われていないもの（UnusedImports）と、並び（CustomImportOrder）
 //   ・Javadoc の書き漏れ（クラスとメンバー。private を含む。@param・@return は見ない）は main だけ。
@@ -355,7 +355,7 @@ tasks.withType<Checkstyle>().configureEach {
 }
 
 // -----------------------------------------------------------------------------
-// 重複の検出（PMD の CPD。テストの書き方 第 3.5 節）
+// 重複の検出（PMD の CPD。テストの書き方の「テストのコードの重複」）
 //   テストのソースセット（src/test、src/integrationTest、src/testFixtures）の Java のコードで、100 トークン以上の重複を見つけると失敗する。
 //   直さない重複は、重複の場所を // CPD-OFF 理由 と // CPD-ON で囲む。main は見ない（生成したコードを含むため）。
 //   報告：build/reports/cpd/。CPD の部品（cpd の構成。Java の部品だけにしている）は、pitest と同じく licenseReport の対象に入れて checkLicense で照合する（Gradle のプラグインは policy.json の gradlePlugins）
@@ -409,7 +409,7 @@ tasks.named("pitest") {
 }
 
 // -----------------------------------------------------------------------------
-// カバレッジ（テストの書き方 第 1.2 節。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
+// カバレッジ（テストの書き方の「カバレッジと mutation score の基準」。基準は scripts/ci/report/quality-baseline.json で、下回ると CI が失敗する。この task は報告を作るだけ）
 //   単体と統合の実行データを合わせて 1 つの報告にする。生成したコード（jOOQ、OpenAPI）は数えない。
 //   報告：build/reports/jacoco/coverageReport/（html、xml）
 //   CI はテストをジョブに分けて流すので、他のジョブの実行データとクラスを渡して、報告だけを作る（テストもコンパイルも流さない）：
@@ -564,7 +564,7 @@ tasks.check { dependsOn("checkLicense") }
 
 // -----------------------------------------------------------------------------
 // jOOQ コード生成
-//   スキーマの正本は Flyway のマイグレーション（バックエンドのアーキテクチャ 第 6.2 節）。
+//   スキーマの正本は Flyway のマイグレーション（バックエンドのアーキテクチャの「Flyway」）。
 //   生成時に Testcontainers で使い捨ての PostgreSQL を起動し、マイグレーションを適用してから生成する。
 //   → compose の DB を起動していなくてもビルドできる（Docker は必要）
 //   生成コードはコミットしない（build/ 配下）。
@@ -808,7 +808,7 @@ tasks.withType<JavaCompile>().configureEach {
         }
         // NullAway は main のコンパイルだけ動かし、報告はエラーにする。
         // 注釈のない引数・戻り値・フィールドは null でないとみなし、null を取りうる所は JSpecify の @Nullable で示す
-        // （docs/05-開発規則/backend-coding.md 第 7 節）。
+        // （バックエンドの書き方の「静的解析」）。
         if (name == "compileJava") {
             check("NullAway", CheckSeverity.ERROR)
             // com.ecsite.jooq（jOOQ の生成）と com.ecsite.api（OpenAPI の生成）は、注釈のない生成コードとして扱う

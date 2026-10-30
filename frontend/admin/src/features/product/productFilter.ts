@@ -2,7 +2,7 @@ import { publicationStatusValues } from '@/api/generated/admin'
 import type { PublicationStatus } from '@/api/types'
 import { pageParam } from '@/lib/searchParams'
 
-/** 商品の一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成 第 3 節） */
+/** 商品の一覧の絞り込みとページ。URL のクエリに持つ（管理画面の構成の「画面の URL」） */
 export type ProductFilter = {
   /** 商品品番かバリアント品番（前方一致）。空なら絞り込まない */
   code: string

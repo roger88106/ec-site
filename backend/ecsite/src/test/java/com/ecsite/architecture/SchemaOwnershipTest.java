@@ -22,7 +22,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * schema の持ち主の検査（バックエンドのアーキテクチャ 第 6.1 節）。<br />
+ * schema の持ち主の検査（バックエンドのアーキテクチャの「永続化」）。<br />
  * 各モジュールが自分の schema の jOOQ の生成クラスだけを使うことを、本番のクラスファイルから確認する。
  * jOOQ の生成コード（{@code com.ecsite.jooq.<schema>}）はモジュールのパッケージの外にあるので、
  * {@code ModulithTest} では他のモジュールのテーブルの読み書きを検出できない。
@@ -31,7 +31,7 @@ class SchemaOwnershipTest {
 
     /**
      * jOOQ を、infrastructure/persistence の外から使ってよいクラス。<br />
-     * 追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.1 節の例外の表にも書く。
+     * 追加するときは、理由をコメントに書き、バックエンドの書き方の「標準の構成」の例外の表にも書く。
      */
     private static final List<String> JOOQ_EXCEPTIONS = List.of(
             // mock の物流サービスの画面だけが使う問い合わせで、mock を無効にすると Bean が作られない。

@@ -1,6 +1,6 @@
 # 依存とライセンス
 
-[constitution](../constitution.md) 第 15 節の細則。
+[constitution](../constitution.md)の「依存とライセンス」の細則。
 
 ## 1. プロジェクトのライセンス
 
@@ -28,7 +28,7 @@ MIT。リポジトリ直下の `LICENSE` が正本で、フロントの各プロ
 | タイプ | ライブラリ | ライセンス |
 |------|------|------------|
 | フレームワーク | Spring Boot、Spring Modulith、Spring Security、jMolecules | Apache-2.0 |
-| DB | jOOQ、Flyway | Apache-2.0（有料版あり。第 4 節） |
+| DB | jOOQ、Flyway | Apache-2.0（有料版あり。「有料版がある製品」） |
 | DB | PostgreSQL の JDBC ドライバー | BSD-2-Clause |
 | API・ストレージ・可観測性 | OpenAPI Generator、AWS SDK、Micrometer | Apache-2.0 |
 | ユーティリティ | Lombok | MIT |
@@ -79,7 +79,7 @@ CI のライセンス検査の対象外なので、追加するときに手動�
 | PostgreSQL | PostgreSQL License |
 | Keycloak | Apache-2.0（コミュニティ版） |
 | SeaweedFS、Zipkin、AWS CLI、Stripe CLI（profile `stripe` だけ） | Apache-2.0 |
-| imgproxy | MIT（OSS 版。第 4 節） |
+| imgproxy | MIT（OSS 版。「有料版がある製品」） |
 | Mailpit | MIT |
 
 ### 3.4 データ

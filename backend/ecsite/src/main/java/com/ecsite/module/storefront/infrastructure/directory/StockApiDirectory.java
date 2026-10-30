@@ -12,7 +12,7 @@ import java.util.UUID;
 import java.util.stream.Collectors;
 
 /**
- * 在庫の腐敗防止層（バックエンドのアーキテクチャ 第 1 節、docs/03-機能仕様/storefront.md）。<br />
+ * 在庫の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/03-機能仕様/storefront.md）。<br />
  * 在庫モジュールの API を呼び、在庫のあるバリアントの集合に変換する。
  */
 @Component

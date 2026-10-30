@@ -39,7 +39,7 @@ services:
     ports:
       - "${LOCAL_BIND_ADDRESS:-127.0.0.1}:9411:9411"
 
-  # 画像のファイルの置き場所（S3 互換。plan 001 第 7 節）。http://localhost:8333
+  # 画像のファイルの置き場所（S3 互換。plan 001 の「商品画像」）。http://localhost:8333
   seaweedfs:
     image: chrislusf/seaweedfs:4.48
     container_name: ec-site-seaweedfs
@@ -72,7 +72,7 @@ services:
       AWS_DEFAULT_REGION: us-east-1
       INCOMING_BUCKET: ec-site-images-incoming
       PUBLIC_BUCKET: ec-site-images
-      # E2E 用（plan 004 第 6.1 節）。ローカルの画像と混ざらないよう、別のバケットにする
+      # E2E 用（plan 004 の「E2E の環境」）。ローカルの画像と混ざらないよう、別のバケットにする
       E2E_INCOMING_BUCKET: ec-site-e2e-images-incoming
       E2E_PUBLIC_BUCKET: ec-site-e2e-images
     volumes:
@@ -80,7 +80,7 @@ services:
       # ローカル用の seed の商品画像（db/seed/local/R__media_seed.sql のアセット）
       - ./seaweedfs/seed/assets:/seed/assets:ro
 
-  # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 第 7.5 節）。http://localhost:8081
+  # 画像の変換（WebP への変換、向きの反映、メタデータの除去。plan 001 の「画像の変換」）。http://localhost:8081
   # アップロードのバケット（ローカル用、E2E 用、スロット 1〜3 の受付）だけを、読むだけの資格情報で直接読む。URL の署名の鍵とソルトはローカル専用
   imgproxy:
     image: darthsim/imgproxy:v4.0.18
@@ -112,7 +112,7 @@ services:
       timeout: 3s
       retries: 20
 
-  # 認証（IdP。plan 003 第 2 節）。http://localhost:8180（管理の画面は /admin、admin / admin）
+  # 認証（IdP。plan 003 の「IdP（Keycloak）の設定」）。http://localhost:8180（管理の画面は /admin、admin / admin）
   # 起動時に keycloak/realms/ の realm を取り込む。すでにある realm は取り込み直さない
   keycloak:
     image: quay.io/keycloak/keycloak:26.8.1
@@ -143,7 +143,7 @@ services:
       timeout: 3s
       retries: 40
 
-  # E2E 用の IdP（plan 004 第 6.1 節）。http://localhost:8181。profile e2e でだけ起動する
+  # E2E 用の IdP（plan 004 の「E2E の環境」）。http://localhost:8181。profile e2e でだけ起動する
   # E2E の準備の script（e2e/scripts/prepare.ts）が、database keycloak_e2e を再作成してから起動するので、
   # 毎回、realm の JSON の状態から始まる。E2E で登録した会員は、ローカルの Keycloak に残らない
   keycloak-e2e:

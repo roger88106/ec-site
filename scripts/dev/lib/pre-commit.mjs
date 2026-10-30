@@ -19,7 +19,7 @@ export const BRANCH_REJECTED = 4
 
 /**
  * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
- * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリース 第 2.1 節、第 5 節）。それ以外の変更は、develop から作業ブランチを作る
+ * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリースの「名前」、ブランチとリリースの「緊急の修正」）。それ以外の変更は、develop から作業ブランチを作る
  */
 const REJECTIONS = new Map([
   [

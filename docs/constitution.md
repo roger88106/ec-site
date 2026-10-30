@@ -147,10 +147,11 @@ ec-site/
 
 | 文書 | 内容 |
 |------|------|
-| [workflow.md](05-開発規則/workflow.md) | 開発の進め方（SDD・TDD）、文書の書き方、コードと文書の食い違い |
+| [workflow.md](05-開発規則/workflow.md) | 開発の進め方（SDD・TDD）、起票と規模、利用者の確認、完了の定義、コードと文書の食い違い |
 | [notation.md](05-開発規則/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
 | [review.md](05-開発規則/review.md) | 書き方の規則の書き方とレビュー |
 | [comments.md](05-開発規則/comments.md) | コメントの書き方 |
+| [writing.md](05-開発規則/writing.md) | 文書の書き方（言語、表と注、用語の選び方、言い回しと論理、参照、spec と plan の書き方） |
 | [subagents.md](05-開発規則/subagents.md) | エージェントの作業フロー（サブエージェントへの任せ方） |
 | [resources.md](05-開発規則/resources.md) | 作業の形と使用量（profile の決め方、止める閾値、使用量を読む頻度） |
 | [backend-coding.md](05-開発規則/backend-coding.md) | バックエンドの書き方 |
@@ -282,7 +283,7 @@ Spring Modulith のモジュラーモノリス。デプロイ単位は 1 つ。�
 
 ## 13. 書く言語（日本語と英語の使い分け）
 
-細則は [開発の進め方](05-開発規則/workflow.md) 第 3 節。
+細則は [文書の書き方](05-開発規則/writing.md) 第 1 節。
 
 - Git に入るものは全て日本語で書く（文書、コメント、テスト名、コミットメッセージ、エラーメッセージなど）。
 - 識別子（クラス名、API のパス、テーブル名など）は英語。

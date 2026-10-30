@@ -43,8 +43,8 @@ import { exitIfShallow } from './lib/shallow-clone.mjs'
 /** 調べる文書 */
 const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/(skills|agents)\/.*)\.md|\.github\/.*\.(md|ya?ml))$/
 
-/** 見ない文書（アーカイブした spec（当時の記録）と、言い換える前の語を例に挙げる言い回しの規則） */
-const EXCLUDED = /^(docs\/08-spec\/archive\/|\.claude\/skills\/docs\/tech-writing\.md$)/
+/** 見ない文書（アーカイブした spec（当時の記録）） */
+const EXCLUDED = /^docs\/08-spec\/archive\//
 
 /**
  * 調べないコード。

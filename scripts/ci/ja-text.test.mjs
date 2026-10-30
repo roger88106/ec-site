@@ -253,7 +253,7 @@ describe('文書の用語の検査', () => {
   })
 
   test('docs・README・AGENTS・skill と進行中の spec の Markdown を見て、アーカイブした spec は見ない', () => {
-    assert.equal(isTargetDoc('docs/frontend/coding.md'), true)
+    assert.equal(isTargetDoc('docs/05-開発規則/writing.md'), true)
     assert.equal(isTargetDoc('README.md'), true)
     assert.equal(isTargetDoc('AGENTS.md'), true)
     assert.equal(isTargetDoc('.claude/skills/docs/SKILL.md'), true)
@@ -263,9 +263,6 @@ describe('文書の用語の検査', () => {
     assert.equal(isTargetDoc('frontend/store/README.md'), false)
   })
 
-  test('言い換える前の語を例に挙げる、言い回しの規則の文書は見ない', () => {
-    assert.equal(isTargetDoc('.claude/skills/docs/tech-writing.md'), false)
-  })
 
   test('.github の yml（issue のテンプレート、workflow、action、dependabot）と Markdown を見る', () => {
     assert.equal(isTargetDoc('.github/ISSUE_TEMPLATE/bug.yml'), true)

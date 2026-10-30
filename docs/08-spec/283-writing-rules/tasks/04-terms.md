@@ -10,7 +10,7 @@
 
 - 順序：T283-04-01〜06 は同じファイルを変えるので、番号の順に行う。
 
-- [ ] **T283-04-01** 関連 spec の検査の除外の一覧に、この段階のタスク番号の接頭辞を加える（[plan](../plan.md)の「置き換えの方法」）。
+- [x] **T283-04-01** 関連 spec の検査の除外の一覧に、この段階のタスク番号の接頭辞を加える（[plan](../plan.md)の「置き換えの方法」）。
   - 依存：なし
   - 範囲：`scripts/ci/related-specs-exclusions.json`
   - 確認方法：`node scripts/ci/related-specs.mjs`。

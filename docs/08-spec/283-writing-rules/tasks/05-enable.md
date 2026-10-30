@@ -12,6 +12,7 @@
   - 依存：なし
   - 範囲：`scripts/ci/check-all.sh`、`docs/06-手順書/ci.md`
   - 確認方法：`scripts/ci/check-all.sh`。pull request の CI のログと画面で、注釈が出たことを確認する。
+  - 結果：commit 8f6389d8 の CI（workflow「文書」の job「文書と CI の検査の script」）で、注釈が出た。追加行の警告は 167 件だったが、画面の注釈は warning 10 件だけだった。GitHub は 1 つの step の warning の注釈を 10 件まで表示し、残りを示さない（GitHub のコミュニティの議論 #26703、#68471。公式の文書には書いていない）。そのため、pull request の前のレビューでは、注釈でなく `node scripts/ci/ja-text.mjs --changed` の一覧を読む（T283-05-04）。手元の `check-all.sh` と commit の前の hook は、件数の 1 行だけを示す。
 - [x] **T283-05-02** [テスト] commit の前の hook のテストに、次の 2 つの例を加える（DC-283-25）。
   - ステージした追加行の表のセルの warning が表示され、commit が成功する。今の仕組みで通るなら、レッドの確認は求めない（振る舞いを固定するテスト。[開発の進め方](../../../05-開発規則/workflow.md)の「循環」）。
   - 既存の行から始まる文に行を足して閾値以上になったとき、その文の warning が表示される。複数の行にまたがる文をつないで測るようにした（段階 1 のレビュー）ので、`--warning` の出力の行（文の最初の行）で追加行を選ぶ今の hook では表示されない。レッドを確認する。
@@ -22,7 +23,7 @@
   - 依存：T283-05-02
   - 範囲：`scripts/dev/lib/pre-commit.mjs`、`scripts/ci/ja-text.mjs`
   - 確認方法：テストが通る。`scripts/ci/check-all.sh`。
-- [ ] **T283-05-04** skill `review` の「使う場面」の pull request の前の行に、pull request の注釈の警告を読み、修正するかを決める手順を加える（DC-283-21）。
+- [x] **T283-05-04** skill `review` の「使う場面」の pull request の前の行に、pull request の注釈の警告を読み、修正するかを決める手順を加える（DC-283-21）。
   - 依存：T283-05-01
   - 範囲：`.claude/skills/review/SKILL.md`
   - 確認方法：文書を読む。

@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { ADDED_DIFF_ARGS } from '../../ci/lib/added-diff.mjs'
 
 /** 取り出しに失敗したときの終了コード（検査の失敗の 1 と区別する） */
 export const CHECKOUT_FAILED = 2
@@ -74,59 +75,18 @@ export function branchOfHead({ status, stdout }) {
 }
 
 /**
- * `git diff --cached -U0` の出力から、追加した行の番号をファイルごとに取り出す。
- *
- * @param {string} diff 差分（-U0）
- * @returns {Map<string, Set<number>>} ファイルのパスと、追加した行の番号（1 から）
- */
-export function parseAddedLines(diff) {
-  const added = new Map()
-  let lines = null
-  let inHunk = false
-  for (const line of diff.split('\n')) {
-    if (line.startsWith('diff --git ')) {
-      inHunk = false
-      continue
-    }
-    // ファイルの見出しは、ハンクの外（diff --git の後）だけで読む。ハンクの中の `+++ ` は、本文が `++ ` で始まる追加行
-    if (!inHunk && line.startsWith('+++ ')) {
-      const target = line.slice(4).replace(/\r$/, '')
-      if (target === '/dev/null') {
-        lines = null
-        continue
-      }
-      const file = target.replace(/^b\//, '')
-      lines = added.get(file) ?? new Set()
-      added.set(file, lines)
-      continue
-    }
-    const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(line)
-    if (hunk) {
-      inHunk = true
-      if (!lines) continue
-      const count = hunk[2] === undefined ? 1 : Number(hunk[2])
-      for (let i = 0; i < count; i++) lines.add(Number(hunk[1]) + i)
-    }
-  }
-  return added
-}
-
-/**
- * warning の一覧（ja-text の --warning の出力）から、追加した行の warning だけを選ぶ。
+ * warning の一覧（ja-text の --warning --added の出力）から、warning の行を取り出す。
+ * 追加行の選び方は ja-text が持つ（--changed と同じ）ので、ここでは選び直さない。
  * 一覧の行は「<ファイル>:<行> <内容>」の形。ほかの行（件数の行など）は除く。
  *
- * @param {string} output ja-text --warning の出力
- * @param {Map<string, Set<number>>} added 追加した行（parseAddedLines の結果）
- * @returns {string[]} 追加した行の warning の行
+ * @param {string} output ja-text --warning --added の出力
+ * @returns {string[]} warning の行
  */
-export function selectAddedWarnings(output, added) {
+export function selectWarningLines(output) {
   return output
     .split('\n')
     .map((line) => line.replace(/\r$/, ''))
-    .filter((line) => {
-      const hit = /^(.+?):(\d+) /.exec(line)
-      return hit !== null && (added.get(hit[1])?.has(Number(hit[2])) ?? false)
-    })
+    .filter((line) => /^.+?:\d+ /.test(line))
 }
 
 /**
@@ -192,12 +152,12 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, runCheck, di
     const status = runCheck(`${staged}/scripts/ci/check-all.sh`, checkEnv)
     if (status !== 0) return status ?? 1
     // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする。
-    // 追加行の選び方（文のどれかの行が追加行）は ja-text が持つ。ここでは、出力の行が追加行であることだけを照合する
+    // 追加行の選び方（文のどれかの行が追加行）は ja-text が持つ。ここでは選び直さず、一覧の行をそのまま表示する
     const diff = diffAdded(baseEnv)
     if (diff.status !== 0) return WARNING_FAILED
     const warnings = listWarnings(staged, checkEnv, diff.stdout)
     if (warnings.status !== 0) return WARNING_FAILED
-    const lines = selectAddedWarnings(warnings.stdout, parseAddedLines(diff.stdout))
+    const lines = selectWarningLines(warnings.stdout)
     if (lines.length > 0) print(`警告：追加した行に warning が ${lines.length} 件ある（読んで、直すかを決める）\n${lines.join('\n')}`)
     return 0
   } finally {
@@ -225,7 +185,8 @@ export function main() {
       spawnSync('git', ['-c', 'core.longpaths=true', 'checkout-index', '-a', `--prefix=${toSlash(prefix)}`], { env, stdio: 'inherit' }).status,
     runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     diffAdded: (env) => {
-      const args = ['-c', 'core.quotepath=false', 'diff', '--cached', '--src-prefix=a/', '--dst-prefix=b/', '-U0', '--no-color', '--no-ext-diff', '--diff-filter=ACMR']
+      // --changed と同じ引数（lib/added-diff）。CI の注釈と同じ判定にする
+      const args = [...ADDED_DIFF_ARGS, '--cached', '--']
       const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
       return { status: result.status, stdout: result.stdout ?? '' }
     },

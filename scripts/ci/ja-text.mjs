@@ -35,6 +35,7 @@
 //   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする。
 import { execFileSync } from 'node:child_process'
 import { existsSync, readFileSync } from 'node:fs'
+import { ADDED_DIFF_ARGS } from './lib/added-diff.mjs'
 import { checkExclusions } from './lib/exclusions.mjs'
 import { codeKind, commentText, trailingCommentLines } from './lib/comment-text.mjs'
 import { exitIfNoFiles, listGitFiles, listUntrackedFiles } from './lib/git-files.mjs'
@@ -747,7 +748,7 @@ function printChangedWarnings(list) {
     console.log('警告：develop（と origin/develop）がない（または履歴が繋がらない）ので、HEAD の 1 つ目の親との差分を見る（初めの commit なら全ての行を追加行として見る）')
   }
   const added = revision
-    ? parseAddedLines(git(['-c', 'core.quotePath=false', 'diff', '-M', '--ignore-cr-at-eol', '--no-color', '--no-ext-diff', '--no-textconv', '-U0', '--src-prefix=a/', '--dst-prefix=b/', '--diff-filter=AMR', revision, '--']))
+    ? parseAddedLines(git([...ADDED_DIFF_ARGS, revision, '--']))
     : new Map()
   const untracked = revision ? listUntrackedFiles() : listGitFiles()
   for (const file of untracked) added.set(file, null)

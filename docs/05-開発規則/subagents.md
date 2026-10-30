@@ -70,7 +70,7 @@
 手順（起動、開始の条件、資源の配分、待機、メッセージ、遠隔操作）は skill `sessions`。
 
 - 2 つのセッションは親子の関係にあり、ターンの終わりに親へ通知される。
-- issue 担当のセッションが spec 担当のセッションを起動し、開始の条件を渡す。条件を満たすまで、spec 担当のセッションは始めない。始める前に、[開発の進め方](workflow.md)の「実装を始める前の照合」の照合を行う。
+- issue 担当のセッションが spec 担当のセッションを起動し、開始の条件を渡す。条件を満たすまで、spec 担当のセッションは始めない。始める前に、[開発の進め方](workflow.md)の「実装を始める前の照合」に従って照合する。
 - 記録は、追跡の issue のコメントに残す（開始、pull request、完了）。
 - skill `handoff` は、spec 担当のセッションを途中で別のセッションに替えるときだけに使う。
 - 単線のときは、1 つのセッションが issue 担当と spec 担当を兼ねる（区分は高性能）。
@@ -98,7 +98,7 @@
 - 同じ対象の繰り返しは 3 回まで。上限での手順は skill `review` の convergence.md。
 - skill `review` の手順 1〜6 のレビュー（`[リスク]` のタスクの後、段階の最後、spec の最後、全体のレビュー）は、レビュー役の定義で行う。理由：指示の文書と memory のない第三者に見させるため。手順 7〜10 は別の形で行う。
 - 重要度（高・必須・推奨）の定義と、時点ごとに返す重要度（推奨は spec の最後だけ。機械の検査に移せるかを付ける）は skill `review` の prompts.md。
-- hook（`scripts/dev/hooks/`）、CI の検査の script（`scripts/ci/` の、変更や文書を判定して CI を失敗させるもの。例：`risk.mjs`）、認証・支払・権限の経路のコードを変える spec は、profile によらず、pull request の前に、文脈を持たない高性能のレビュー役（`reviewer`）を 1 回加える。観点は、拒否・判定を別の書き方で回避できないか。理由：spec 246 の hook で、段階・spec の最後・組み込みのコードレビューを通った後に、pull request の後に動く、文脈を持たないレビュー役が重要度「高」の指摘を 10 件見つけた（見逃しの一覧 #270）。各件の種類は[実績](../07-記録/subagents-results.md)の「見逃しの一覧の種類」。
+- hook（`scripts/dev/hooks/`）、CI の検査の script（`scripts/ci/` の、変更や文書を判定して CI を失敗させるもの。例：`risk.mjs`）、認証・支払・権限の経路のコードを変える spec は、profile によらず、pull request の前に、文脈を持たない高性能のレビュー役（`reviewer`）を 1 回加える。観点は、拒否・判定を別の書き方で回避できないか。理由：spec 246 の hook で、段階・spec の最後・組み込みのコードレビューを通った後に、pull request を作ってから動かした、文脈を持たないレビュー役が重要度「高」の指摘を 10 件見つけた（見逃しの一覧 #270）。各件の種類は[実績](../07-記録/subagents-results.md)の「見逃しの一覧の種類」。
 - spec の最後のレビューの量（上の表の「spec の最後」の行）は、[作業の形と使用量](resources.md)の閾値と同じ理由で、整理の第 1 フェーズの測定（issue #265、2026-10-29）では変えない。新しい規則で全ての段階を通った spec が 2 つだけで、判断する数が足りないため。整理の第 2 フェーズの最初のステップでもう一度測る。
 - レビューごとに token、時間、指摘の数、採用した数を記録し、profile を再検討する材料にする。
 
@@ -131,7 +131,7 @@
 作業ツリーの置き場所と、作業ツリーのセッションが読む設定：
 
 - 置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`。`.gitignore` で無視され、検索の対象にならない。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。Claude のデスクトップアプリが作る作業ツリーも同じ場所に置かれる。IntelliJ の `reformat_file` が使えない注意は [バックエンドの書き方](backend-coding.md)。
-- 作業ツリーのセッションが読む設定・定義・skill と、変更が反映される時点は、skill `sessions` のツールの補足の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションは、`.claude/settings.local.json` に限らず、設定・定義・skill をメインの作業ツリーから読む（spec 276、2026-10-29）。作業ツリーに `settings.local.json` がなくても、メインの作業ツリーの hook が動く（デスクトップアプリの作業ツリーで実際に実行して確認した、2026-10-29）。`$CLAUDE_PROJECT_DIR` もメインの作業ツリーを指す。
+- 作業ツリーのセッションが読む設定・定義・skill と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」の表（ツールの補足の中）。デスクトップアプリの作業ツリーのセッションは、`.claude/settings.local.json` に限らず、設定・定義・skill をメインの作業ツリーから読む（spec 276、2026-10-29）。作業ツリーに `settings.local.json` がなくても、メインの作業ツリーの hook が動く（デスクトップアプリの作業ツリーで実際に実行して確認した、2026-10-29）。`$CLAUDE_PROJECT_DIR` もメインの作業ツリーを指す。
 - Claude Code の文書は、作業ツリーのセッションがその作業ツリーの `settings.local.json` を読むと書いており、[spec 246](../08-spec/archive/1to10/246-enforce-hooks/spec.md)の「背景と目的」の調べもこの記述による。作業ツリーで起動した `claude -p` は文書の記述のとおりだが、デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーの `settings.local.json` を読み、文書の記述とは違う。
 - 作業ツリーにない script を hook が呼ぶと失敗するので、`settings.local.json` の hook のコマンドは、script のパスを `git rev-parse --show-toplevel` の作業ツリーから先に探し、なければ `$CLAUDE_PROJECT_DIR` の下を使う形にする。探し方は `settings.json` と同じだが、どちらにも見つからないときは、`settings.json` はコマンドを止め、`settings.local.json` の例は何もせず通す（skill `local-dev` の「手元の hook の設定」）。
 

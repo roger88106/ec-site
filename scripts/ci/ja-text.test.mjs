@@ -632,12 +632,22 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
     assert.deepEqual(commaCounts('このタスクの範囲：`scripts/ci/ja-text.mjs`、`scripts/ci/ja-text.json`、`scripts/ci/lib/`、`scripts/ci/migrations.mjs`'), [])
   })
 
-  test('参照の行：リンクの後に「第 N 節」が付いた項目も、リンクだけの項目として扱う', () => {
-    assert.deepEqual(commaCounts('このタスクの参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 7 節、[plan](../plan.md) 第 5.2 節'), [])
+  test('参照の行：リンクの後に見出しの参照（の「…」）が付いた項目も、参照だけの項目として扱う', () => {
+    assert.deepEqual(commaCounts('このタスクの参照：[plan](../plan.md)の「文体の検査」、[plan](../plan.md)の「段階と変えるファイル」、[spec](../spec.md)'), [])
+  })
+
+  test('参照の行：親の見出しを付けた形（の「A」の「B」）と、文書の名前・skill の名前の後の見出しの参照も、参照だけの項目として扱う', () => {
+    assert.deepEqual(commaCounts('参照：[plan](../plan.md)の「段階 1」の「タスク」、開発の進め方の「起票」、開発の進め方の「規模」、skill `sessions` の「ツールの補足」'), [])
+  })
+
+  test('参照の行：「」の中の読点とコロンで項目を分けない。「」の中の読点は数える', () => {
+    assert.deepEqual(commaCounts('参照：[a](a.md)の「起票、規模」、[b](b.md)の「入力：出力」、[c](c.md)の「d、e」、[f](f.md)'), [2])
+    assert.deepEqual(commaCounts('参照：[a](a.md)の「起票、規模」、[b](b.md)'), [1])
   })
 
   test('他の語を含む項目の前後の読点は数える', () => {
-    assert.deepEqual(commaCounts('このタスクの参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 7 節、[spec](../spec.md) の DS-283-5'), [1])
+    assert.deepEqual(commaCounts('このタスクの参照：[plan](../plan.md)の「A」、[plan](../plan.md)の「B」、[spec](../spec.md) の DS-283-5'), [1])
+    assert.deepEqual(commaCounts('参照：[plan](../plan.md)の「A」、[plan](../plan.md)の「B」、[plan](../plan.md)の「C」、[plan](../plan.md)の「D」、[spec](../spec.md) の DS-283-1〜3、6'), [2])
     assert.deepEqual(commaCounts('`a`、`b` を使い、`c` を直す。'), [2])
   })
 

@@ -59,7 +59,7 @@ git config --local ecsite.instructionLanguage zh
 }
 ```
 
-   `.claude/settings.local.json` は Git に入らない。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーのこのファイルを読む（読む場所は、skill `sessions` のツールの補足の「作業ツリーのセッションが読むもの」の表）ので、メインの作業ツリーに置けばよい。作業ツリーで起動した `claude -p` は、メインの作業ツリーのこのファイルを読まないので、この hook は動かない（同じ表）。command は、script を作業ツリーから先に探し、なければメインの作業ツリー（`$CLAUDE_PROJECT_DIR`）の下を使う形にする。環境の印は `.git/config` にあり、作業ツリーの間で共有される。他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
+   `.claude/settings.local.json` は Git に入らない。デスクトップアプリの作業ツリーのセッションは、メインの作業ツリーのこのファイルを読む（読む場所は、skill `sessions` の「ツールの補足」の「作業ツリーのセッションが読むもの」の表）ので、メインの作業ツリーに置けばよい。作業ツリーで起動した `claude -p` は、メインの作業ツリーのこのファイルを読まないので、この hook は動かない（同じ表）。command は、script を作業ツリーから先に探し、なければメインの作業ツリー（`$CLAUDE_PROJECT_DIR`）の下を使う形にする。環境の印は `.git/config` にあり、作業ツリーの間で共有される。他の置き方として、同じ項目を利用者の設定（`~/.claude/settings.json`）に置く方法もある。その場合は他のリポジトリでも呼ばれ、script がないリポジトリでは node が失敗するので、command を `f="$CLAUDE_PROJECT_DIR/.claude/skills/zh-mixing/post-tool-use.cjs"; [ ! -f "$f" ] || node "$f"` にする。script があるリポジトリでも、環境の印がなければ、入口は何も出さず終了コード 0 で終わり、リポジトリの外で呼ばれても同じである（テストが調べる）。
 
 3. git の hook（commit を止める）：[開発環境の起動](../../../docs/06-手順書/setup.md) の層 1 の行に続けて、次の行を追加する。どちらも、失敗すれば commit が失敗する形にする。
 

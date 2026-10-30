@@ -333,6 +333,27 @@ describe('見出しの番号と、見出しの参照の先', () => {
     assert.deepEqual(problems.map((problem) => problem.match(/：(\S+:\d+) /)[1]), ['docs/process/a.md:2', 'scripts/a.mjs:2'])
   })
 
+  test('skill の名前（skill `<名前>`）の後の見出しの参照は、.claude/skills/<名前>/SKILL.md の見出しとして確認する', () => {
+    const docs = {
+      '.claude/skills/sessions/SKILL.md': '# sessions\n## ツールの補足\n### 作業ツリーのセッションが読むもの\n',
+      'docs/process/a.md': ['skill `sessions` の「ツールの補足」', 'skill `sessions`の「ツールの補足」の「作業ツリーのセッションが読むもの」', 'skill `sessions` の「ツールの注」', 'skill `nothing` の「ない」'].join('\n'),
+      'scripts/a.mjs': '// skill `sessions` の「段の終わり」',
+    }
+    const problems = checkReferences(Object.keys(docs), (path) => docs[path], (path) => path in docs)
+    assert.deepEqual(problems.map((problem) => problem.match(/：(\S+:\d+) /)[1]), ['docs/process/a.md:3', 'scripts/a.mjs:1'])
+  })
+
+  test('skill の名前の後のファイル名（skill `<名前>` の <ファイル名>）は、その skill のフォルダーのファイルとして確認する', () => {
+    const docs = {
+      '.claude/skills/review/SKILL.md': '# review\n## 手順\n',
+      '.claude/skills/review/prompts.md': '# prompts\n## 重要度\n',
+      'docs/process/a.md': ['skill `review` の prompts.md の「重要度」', 'skill `review` の `prompts.md` の「手順」', 'skill `review` の prompts.md の「ない」'].join('\n'),
+    }
+    const problems = checkReferences(Object.keys(docs), (path) => docs[path], (path) => path in docs)
+    assert.deepEqual(problems.map((problem) => problem.match(/：(\S+:\d+) /)[1]), ['docs/process/a.md:2', 'docs/process/a.md:3'])
+    assert.match(problems[0], /\.claude\/skills\/review\/prompts\.md/)
+  })
+
   test('兄弟の「設定」と「設定（任意）」では、完全に一致する見出しを選ぶ', () => {
     const docs = {
       'docs/process/plan.md': '# 計画\n## 1. 設定\n## 2. 設定（任意）\n## 3. 用語（DS-1）\n',

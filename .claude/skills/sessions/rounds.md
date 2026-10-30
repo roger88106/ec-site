@@ -1,6 +1,6 @@
 # ステップとフェーズの終わり
 
-skill `sessions` の「ステップの終わり」「フェーズの終わり」の詳細。
+skill `sessions` の「ステップの終わり」と、skill `sessions` の「フェーズの終わり」の詳細。
 
 ## 集計と profile の再検討
 

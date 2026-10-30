@@ -13,7 +13,8 @@
 //       文は「。」で切る。「。」で終わらない行は次の行とつなぎ、複数の行にまたがる文を 1 文として測り、文の最初の行で示す。
 //       Markdown は空行、表の行、見出し、項目の行、コードブロックの前で切る。コードは続くコメントの行だけをつなぐ。
 //       .github の yml は行ごとに測る。表のセルはつながない（取り出し方は proseSentences）。
-//       読点の数は、インラインコードかリンクだけの項目（「第 N 節」が付いてもよい）を区切る読点を数えない（範囲・参照の行の並び）。
+//       読点の数は、参照だけの項目（インラインコード、リンク、skill `…`、文書の名前の後に `の「…」`・`の「…」の「…」` が付いたもの。
+//       インラインコード・リンク・skill は `の「…」` がなくてもよい）を区切る読点を数えない（範囲・参照の行の並び）。「」の中の読点は、項目を分けないが数える。
 //       他の語を含む項目の前後の読点は数える。
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
@@ -254,8 +255,13 @@ const CLAUSE_SEPARATOR = /[、，,（）()「」：:]/
 const LINK_START = '\uE000'
 const LINK_END = '\uE001'
 
-/** インラインコード（X に置き換え済み）かリンクだけの項目。後ろに「第 N 節」が付いてもよい */
-const REFERENCE_ITEM = new RegExp(`^(X|${LINK_START}[^${LINK_END}]*${LINK_END})(\\s*第\\s*\\d+(\\.\\d+)*\\s*節)?$`)
+/**
+ * 参照だけの項目。インラインコード（X に置き換え済み）、リンク、skill の名前（`skill X`）か、空白のない文書の名前（`開発の進め方` など）。
+ * 後ろに見出しの参照（`の「起票」`。親の見出しを付けた `の「段階 1」の「タスク」` も）が付いてもよい。文書の名前の項目は、見出しの参照が付いたものだけを参照と見る
+ */
+const REFERENCE_ITEM = new RegExp(
+  `^(?:(?:X|${LINK_START}[^${LINK_END}]*${LINK_END}|skill\\s+X)(?:\\s*の「[^「」]*」)*|[^\\s、。「」（）()]+(?:\\s*の「[^「」]*」)+)$`,
+)
 
 /** 動詞の連用形の終わりになるかな（い段とえ段。助詞の「に」「へ」と、「て」「で」は除く） */
 const STEM_ENDING = 'きぎしじちぢひびぴみりいえけげせぜねめれ'
@@ -548,16 +554,38 @@ export function measureSentence(sentence) {
 }
 
 /**
- * 文の読点を数える。インラインコードかリンクだけの項目（「第 N 節」が付いてもよい）の間の読点は数えない。
- * 項目は読点で分け、最初の項目の「範囲：」のような見出しは、コロンまでを除いて見る。
+ * 文の読点を数える。参照だけの項目（REFERENCE_ITEM。インラインコード、リンク、skill の名前、文書の名前と、その後の見出しの参照）の間の読点は数えない。
+ * 項目は「」の外の読点で分け、最初の項目の「範囲：」のような見出しは、「」の外のコロンまでを除いて見る。「」の中の読点は、項目を分けないが数える。
  * 前後の項目の両方が参照だけのときに、その間の読点を数えない（他の語を含む項目の前後の読点は数える）。
  *
  * @param {string} sentence 文（リンクの表示文字列は LINK_START と LINK_END で囲んである）
  * @returns {number} 数える読点の数
  */
 function countCommas(sentence) {
-  const items = sentence.split('、').map((item, index) => (index === 0 ? item.slice(Math.max(item.lastIndexOf('：'), item.lastIndexOf(':')) + 1) : item).trim())
-  return items.slice(1).filter((item, index) => !(REFERENCE_ITEM.test(items[index]) && REFERENCE_ITEM.test(item))).length
+  const parts = splitOutsideQuotes(sentence, '、')
+  // 「」の中の読点は、項目を分けないが数える
+  const quoted = parts.reduce((sum, part) => sum + (part.match(/、/g)?.length ?? 0), 0)
+  const items = parts.map((item, index) => (index === 0 ? splitOutsideQuotes(item, '：:').at(-1) : item).trim())
+  return quoted + items.slice(1).filter((item, index) => !(REFERENCE_ITEM.test(items[index]) && REFERENCE_ITEM.test(item))).length
+}
+
+/**
+ * 文を、かぎ括弧（「」）の外の区切りの字で分ける。見出しの参照の「」の中の読点やコロンで分けないため。
+ *
+ * @param {string} text 文
+ * @param {string} separators 区切りの字（どれか 1 字で分ける）
+ * @returns {string[]} 分けた文字（区切りの字は除く）
+ */
+function splitOutsideQuotes(text, separators) {
+  const parts = ['']
+  let depth = 0
+  for (const char of text) {
+    if (char === '「') depth += 1
+    if (char === '」') depth = Math.max(depth - 1, 0)
+    if (depth === 0 && separators.includes(char)) parts.push('')
+    else parts[parts.length - 1] += char
+  }
+  return parts
 }
 
 /**

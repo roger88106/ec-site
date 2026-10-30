@@ -8,7 +8,8 @@
 //     Markdown は、インラインコードとコードブロックの外の全て（名前のないもの、spec・plan の節も）。コードは、文書の名前・リンク・パスの直後（間の「の」は許す）のものだけ。
 //     指す先の文書に、その番号の見出しがあれば、失敗のメッセージにその見出しを示す。名前のない番号は、Markdown では、直前が行の始め・文の切れ目・表の区切り・
 //     リストの印・`この文書の` のときだけ、その文書自身を指すとして見出しを求める。それ以外の語が直前にあれば、他の文書の節かもしれないので見出しを示さず、先の文書を書くよう示す
-// 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。
+// 文書の名前は、docs/ の下の各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたものと、skill の `skill `<名前>``（.claude/skills/<名前>/SKILL.md を指す）。
+// `skill `<名前>` の <ファイル名>`（`skill `review` の prompts.md`）は、その skill のフォルダーのファイルを指す。リポジトリにない skill の参照は見ない。
 // 見出しの参照と節の番号の参照の先は、直前のリンク、文書の名前、パス（`docs/06-手順書/ci.md`、`notification.md` など）で決める。
 // 直前の印（`` ` ``、「」」、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
 // 見出しの参照と節の番号の参照は、Markdown の他にコードと設定のファイルも見る（TEXT_FILE の拡張子。コメントを切り出さず、文字列も含めてファイルの全体を読む）。
@@ -314,11 +315,15 @@ function resolveEnd(file, text, names, basenames, exists, existingPath) {
       if (/^(https?:|mailto:)/.test(link[1])) return null
       return link[1] ? normalize(join(dirname(file), decodeURIComponent(link[1]))) : file
     }
+    // skill のフォルダーのファイル。リポジトリにない skill（外の skill）は先にしない
+    const skillPath = candidate.match(SKILL_PATH)
+    if (skillPath) return names.has(`skill \`${skillPath[1]}\``) ? `.claude/skills/${skillPath[1]}/${skillPath[2]}` : null
     const path = candidate.match(/([^\s`'"（(「」<>[\]]+\.md)$/)
     if (path) return resolvePath(file, path[1], basenames, exists, existingPath)
     if (/constitution$/.test(candidate)) return 'docs/constitution.md'
     for (const [name, target] of names) {
-      if (candidate.endsWith(name)) return target
+      // skill の名前は末尾がコードの印なので、印を除く前の文字で比べる
+      if (candidate.endsWith(name) || text.endsWith(name)) return target
     }
   }
   return undefined
@@ -347,12 +352,19 @@ function resolvePath(file, path, basenames, exists, existingPath) {
   return existingPath ? null : fromRoot
 }
 
+/** skill の本体のファイル（名前は skill のフォルダーの名前） */
+const SKILL_FILE = /^\.claude\/skills\/([^/]+)\/SKILL\.md$/
+
+/** skill の名前の後のファイル名（`skill `review` の prompts.md`。ファイル名はコードの印で囲んでもよい。末尾のコードの印は除いてある） */
+const SKILL_PATH = /skill\s+`([^`\s]+)`\s*の\s*`?([^\s`'"（(「」<>[\]/]+\.md)$/
+
 /**
- * docs/ の下の文書の、名前とファイル名からパスへの対応を作る。
+ * docs/ の下の文書と skill の、名前とファイル名からパスへの対応を作る。
+ * docs/ の下の文書の名前は 1 行目の見出し、skill の名前は `skill `<名前>``（`.claude/skills/<名前>/SKILL.md` を指す）。
  *
  * @param {string[]} files 調べるファイル
  * @param {(file: string) => string | null} titleOf 文書の 1 行目の見出しを返す関数
- * @returns {{ names: Map<string, string>, basenames: Map<string, string> }} 文書の名前からパスへの対応（長い名前から順）と、ファイル名からパスへの対応（同じ名前が 2 つ以上あるものは除く）
+ * @returns {{ names: Map<string, string>, basenames: Map<string, string> }} 文書の名前からパスへの対応（長い名前から順）と、docs/ の下のファイル名からパスへの対応（同じ名前が 2 つ以上あるものは除く）
  */
 export function documentIndex(files, titleOf) {
   const docs = files.filter((file) => file.startsWith('docs/') && file.endsWith('.md'))
@@ -360,6 +372,11 @@ export function documentIndex(files, titleOf) {
   for (const doc of docs) {
     const title = titleOf(doc)
     if (title) names.set(referenceName(title), doc)
+  }
+  // skill は、1 行目の見出しでなく `skill `<名前>`` の形で参照する
+  for (const file of files) {
+    const skill = file.match(SKILL_FILE)
+    if (skill) names.set(`skill \`${skill[1]}\``, file)
   }
   const counts = {}
   for (const doc of docs) counts[basename(doc)] = (counts[basename(doc)] ?? 0) + 1

@@ -233,7 +233,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 |--------|------------|--------|
 | heredoc・`node -e` の中の `\`（Markdown の表の `\|` を含む） | hook `backslash-guard`（次の節） | 上の箇条のとおり、`\|` を含む表の追記も Edit で書く |
 | `gh pr edit` と `gh pr ready` など、GitHub の状態を変える `gh` の操作を `&&` や `;` で 1 つにつないだコマンド | auto mode の判定 | pull request の編集・ready・マージ、issue の編集は、1 つのコマンドに操作を 1 つだけ書き、別の呼び出しで実行する |
-| `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` のツールの補足） |
+| `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` の「ツールの補足」） |
 | コミットメッセージの、層 1 の使わない語（`scripts/ci/ja-text.json` の error の語） | git の hook `commit-msg`（日本語の検査） | 書く前に語の一覧を見る（skill `zh-mixing` の「書くときの注意」） |
 | spec やコミットメッセージに写した、利用者の中国語の言葉 | git の hook `commit-msg`・`pre-commit`（中国語の混入の検査） | 日本語に訳して書く（skill `zh-mixing` の「書くときの注意」） |
 | `git -C` と `cd` のパスに変数やコマンドの置き換え（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（`git commit` の対象のリポジトリを決められないとき） | 変数を使わず、絶対パスを直接書く |
@@ -244,7 +244,7 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 
 ## 手元の hook の設定
 
-利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と、変更が反映される時点は、skill `sessions` のツールの補足の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションはメインの作業ツリーの `settings.local.json` を読むので、メインの作業ツリーに置く。作業ツリーで起動した `claude -p` は、メインの作業ツリーの `settings.local.json` を読まないので、手元の hook は動かない（表）。
+利用者の環境（Git に入らない `.claude/settings.local.json`）に置く 2 つの hook。script は `scripts/dev/hooks/` にあり、チームの規則の hook（`settings.json`）とは別である（分け方は AGENTS.md の「環境」）。読む場所と、変更が反映される時点は、skill `sessions` の「ツールの補足」の「作業ツリーのセッションが読むもの」の表。デスクトップアプリの作業ツリーのセッションはメインの作業ツリーの `settings.local.json` を読むので、メインの作業ツリーに置く。作業ツリーで起動した `claude -p` は、メインの作業ツリーの `settings.local.json` を読まないので、手元の hook は動かない（表）。
 
 | hook | イベントと matcher | 働き |
 |------|--------------------|------|

@@ -67,7 +67,7 @@
   - 依存：T283-02-01
   - 範囲：`.claude/skills/docs/SKILL.md`、`.claude/skills/docs/tech-writing.md`（削除）、`docs/05-開発規則/workflow.md`、`.claude/skills/review/docs-review.md`、`.claude/agents/ja-proofreader.md`、`scripts/ci/ja-text.mjs`、`scripts/ci/ja-text.test.mjs`、`docs/constitution.md`、`AGENTS.md`、`docs/05-開発規則/comments.md`
   - 確認方法：`git grep tech-writing` がアーカイブの外で 0。正本を検査の対象にしても、`node scripts/ci/ja-text.mjs` の error が 0。`scripts/ci/check-all.sh`。
-- [ ] **T283-02-03** 正本の「用語の選び方」を、[plan](../plan.md) 第 2 節の規則に書き換える。「日本語だけで書く」は、英字を識別子と固有名だけに使う意味だと明確にする。造語の手順が、起票の時点にも当てはまることを書く。正本の「参照」に、[plan](../plan.md) 第 3 節の規則を書く。既存の参照の置き換えは段階 3 で行う（DC-283-7〜11）。
+- [x] **T283-02-03** 正本の「用語の選び方」を、[plan](../plan.md) 第 2 節の規則に書き換える。「日本語だけで書く」は、英字を識別子と固有名だけに使う意味だと明確にする。造語の手順が、起票の時点にも当てはまることを書く。正本の「参照」に、[plan](../plan.md) 第 3 節の規則を書く。既存の参照の置き換えは段階 3 で行う（DC-283-7〜11）。
   - 依存：T283-02-02
   - 範囲：`docs/05-開発規則/writing.md`、`docs/05-開発規則/workflow.md`（「起票」の校閲役の行に、造語の手順を指す句を加えるだけ）
   - 確認方法：文書を読む。規則どうしが矛盾しない。今の「和語より技術文書の語」が残る。

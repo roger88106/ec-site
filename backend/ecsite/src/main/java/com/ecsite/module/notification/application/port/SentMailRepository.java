@@ -4,7 +4,7 @@ import java.time.Instant;
 import java.util.UUID;
 
 /**
- * 送ったメールの記録のリポジトリ（docs/03-機能仕様/notification.md「1 通だけ送る」）
+ * 送ったメールの記録のリポジトリ（docs/03-機能仕様/notification.md の「1 通だけ送る」）
  */
 public interface SentMailRepository {
 

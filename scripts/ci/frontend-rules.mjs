@@ -259,7 +259,7 @@ export function findInternalSelectors(text) {
 }
 
 /**
- * line-through を直接書いた行を探す（フロントの書き方の「取り消し線は <s> で示す」。取り消し線は <s> で示す）。
+ * line-through を直接書いた行を探す（フロントの書き方の「取り消し線は <s> で示す」）。
  *
  * @param {string} text ソース
  * @returns {{ line: number, text: string }[]} 見つけた行

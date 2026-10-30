@@ -1,5 +1,5 @@
 {
-  "$comment": "依存のライセンスの方針（依存とライセンスの「依存のライセンスの方針」）。バックエンドの checkLicense と scripts/ci/licenses/check-frontend.mjs が読む。scripts/ci/license-policy.mjs が allowed を 依存とライセンスの「依存のライセンスの方針」の表の「許可」の行と、scripts/ci/gradle-plugins.mjs が gradlePlugins を照合する。部品の名前の * は任意の文字列",
+  "$comment": "依存のライセンスの方針（依存とライセンスの「依存のライセンスの方針」）。バックエンドの checkLicense と scripts/ci/licenses/check-frontend.mjs が読む。scripts/ci/license-policy.mjs が allowed を依存とライセンスの「依存のライセンスの方針」の表の「許可」の行と、scripts/ci/gradle-plugins.mjs が gradlePlugins を照合する。部品の名前の * は任意の文字列",
   "allowed": [
     "MIT",
     "MIT-0",

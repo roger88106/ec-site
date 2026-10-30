@@ -30,7 +30,7 @@ docker compose stop           # 止める（データは残る）
 
 ## 認証（Keycloak、Mailpit）
 
-realm の設定は `docker/keycloak/realms/` の JSON。アカウントと、JSON を変えたときの再インポートは、[開発環境の起動](../../../docs/06-手順書/setup.md)の「アカウント」（アカウント）と [開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」（再インポート）。
+realm の設定は `docker/keycloak/realms/` の JSON。アカウントと、JSON を変えたときの再インポートは、[開発環境の起動](../../../docs/06-手順書/setup.md)の「アカウント」と [開発環境の起動](../../../docs/06-手順書/setup.md)の「データの再作成」。
 
 ```bash
 scripts/dev/keycloak.sh token ec-admin admin@example.com admin-pass-1   # access token の payload を出す（権限・audience の確認）

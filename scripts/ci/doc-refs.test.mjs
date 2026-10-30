@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkReferences, isExcluded, isTargetFile, readHeadings, referenceName, slug, splitSectionNumbers } from './doc-refs.mjs'
+import { checkReferences, countHeadingMatches, isExcluded, isTargetFile, readHeadings, referenceName, slug, splitSectionNumbers } from './doc-refs.mjs'
 
 /** 調べる文書の組。キーがパス、値が中身 */
 const DOCS = {
@@ -231,12 +231,72 @@ describe('節の番号の参照の検査', () => {
     assert.match(problem, /に書き換える：docs\/dev\/setup\.md:1 /)
   })
 
-  test('Gradle の設定（.kts）も見る。コメントを読めない拡張子（xml、json、jsonc、grit）は見ない', () => {
+  test('Gradle の設定（.kts）と、xml・json・jsonc・grit・ps1 も見る（ファイルの全体を読むので、コメントの読み方は要らない）', () => {
     assert.equal(isTargetFile('backend/ecsite/build.gradle.kts'), true)
     assert.equal(isTargetFile('docs/a.md'), true)
-    assert.equal(isTargetFile('backend/ecsite/config/checkstyle/checkstyle.xml'), false)
-    assert.equal(isTargetFile('package.json'), false)
-    assert.equal(isTargetFile('frontend/store/biome.jsonc'), false)
-    assert.equal(isTargetFile('frontend/store/biome-plugins/no-aria-live.grit'), false)
+    assert.equal(isTargetFile('backend/ecsite/config/checkstyle/checkstyle.xml'), true)
+    assert.equal(isTargetFile('package.json'), true)
+    assert.equal(isTargetFile('frontend/store/biome.jsonc'), true)
+    assert.equal(isTargetFile('frontend/store/biome-plugins/no-aria-live.grit'), true)
+    assert.equal(isTargetFile('scripts/dev/a.ps1'), true)
+    assert.equal(isTargetFile('frontend/store/public/a.png'), false)
+  })
+
+  test('空白のない「第2節」と、全角の数字の「第２節」も失敗にする', () => {
+    const text = ['店舗画面の構成 第4節', '店舗画面の構成 第 ４.５ 節', '第２段の実装'].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['1', '2'])
+    assert.match(problems[1], /（docs\/frontend\/apps\/store\.md の「カート」）/)
+    assert.deepEqual(lines(check('backend/Foo.java', '// テストの書き方の第2節')), ['1'])
+  })
+
+  test('文書の名前・リンク・パスと「第 N 節」の間に括弧があっても、その文書の節として失敗にする', () => {
+    const code = [
+      '// CI の文書（docs/testing/writing.md）の第 2 節の表',
+      '// テストの書き方（`writing.md`）の第 1 節',
+      '// 店舗画面の構成（補足）の第 4 節',
+    ].join('\n')
+    const problems = check('backend/Foo.java', code)
+    assert.deepEqual(lines(problems), ['1', '2', '3'])
+    assert.match(problems[0], /（docs\/testing\/writing\.md の「対応」）/)
+    assert.match(problems[2], /（docs\/frontend\/apps\/store\.md の「取得」）/)
+  })
+
+  test('Markdown で、直前が「（」「、」などで先の文書が決まらないときは、自分の文書の見出しを示さない', () => {
+    const text = ['# 開発環境', '## 4. 起動', '店舗画面の手順（第 4 節）', '[テストの書き方](../testing/writing.md) 第 1 節、第 4 節'].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['3', '4', '4'])
+    assert.doesNotMatch(problems[0], /docs\/dev\/setup\.md の/)
+    assert.match(problems[0], /先の文書を書く/)
+    assert.match(problems[2], /先の文書を書く/)
+  })
+})
+
+describe('見出しの番号と、見出しの参照の先', () => {
+  test('見出しの番号は「1.」か「4.1」の形だけを除く（「1 通だけ送る」の 1 は見出しの一部）', () => {
+    const { sections, headings } = readHeadings('# 通知\n## 1. 送る\n### 1 通だけ送る\n### 1.2 再送\n')
+    assert.deepEqual([...sections.keys()], ['1', '1.2'])
+    assert.equal(countHeadingMatches(headings, ['1 通だけ送る']), 1)
+    assert.equal(countHeadingMatches(headings, ['通だけ送る']), 0)
+  })
+
+  test('パスの後の「」も、その文書の見出しとして確認する', () => {
+    const code = [
+      '// docs/testing/writing.md の「名前」',
+      '// docs/testing/writing.md の「ない」',
+      '// `docs/process/workflow.md` の「ない」',
+      '// （docs/testing/writing.md）の「ない」',
+      '// 外のリポジトリの references/build-features.md の「ない」',
+      '// `${DIR}${module}.md` の「ない」',
+    ].join('\n')
+    assert.deepEqual(lines(check('backend/Foo.java', code)), ['2', '3', '4'])
+  })
+
+  test('兄弟の「設定」と「設定（任意）」では、完全に一致する見出しを選ぶ', () => {
+    const docs = {
+      'docs/process/plan.md': '# 計画\n## 1. 設定\n## 2. 設定（任意）\n## 3. 用語（DS-1）\n',
+      'docs/dev/setup.md': ['[計画](../process/plan.md)の「設定」', '[計画](../process/plan.md)の「設定（任意）」', '[計画](../process/plan.md)の「用語」'].join('\n'),
+    }
+    assert.deepEqual(checkReferences(Object.keys(docs), (path) => docs[path], (path) => path in docs), [])
   })
 })

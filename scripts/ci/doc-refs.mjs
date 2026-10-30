@@ -1,7 +1,12 @@
 // 文書への参照が切れていないことを確認する。
 //   - Markdown のリンク：先のファイルと #見出し があるか（見出しの slug は GitHub と同じ作り方）
+//   - 見出しの参照（`[開発の進め方](../../docs/05-開発規則/workflow.md)の「起票」`、`開発の進め方の「起票」` など）：リンクか文書の名前の直後の「の「…」」だけを読み、
+//     先の文書に、その見出し（番号を除く）が 1 つだけあるか。同じ見出しが 2 つ以上あれば、親の見出しを前に付けた形（`の「段階 1」の「タスク」`）で 1 つに決める。
+//     見出しは、リンクを表示の文字に、コードの印を除き、全角と半角を揃え、空白をまとめて比べる。末尾の全角の括弧の補足（`（DS-283-5：DC-283-21〜25）` など）は、
+//     除いた形でも全て書いた形でも当たる（除くと 2 つ以上に当たるなら、1 つに決まらないとする）。Markdown のコードブロックの中は見ない
 //   - 節の参照（`店舗画面の構成 第 4.5 節` など）：文書の名前・リンク・パスが指す文書に、その番号の見出しがあるか
 // 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。名前のない「第 N 節」は、Markdown ではその文書自身を指す。
+// 節の参照と見出しの参照は、Markdown の他にコードのファイルも見る（文書の名前かリンクで書いたものだけ）。
 // アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
 // ただし、アーカイブの下の MVP の完成までの一覧（mvp.md）は spec の記録でなく一覧の文書で、spec を移すたびにリンクが切れるので見る。
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
@@ -42,14 +47,32 @@ export function slug(heading) {
 }
 
 /**
- * Markdown の見出しを読み、リンクの先にできる slug と、節の番号を集める。
+ * 見出しの参照で比べる形にする。リンクは表示の文字に、コードの印は除き、全角と半角を揃え（NFKC）、空白を 1 つにまとめる。
+ *
+ * @param {string} text 見出しか、参照の「」の中の文字
+ * @returns {string} 比べる形
+ */
+export function headingKey(text) {
+  return text
+    .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+    .replace(/`/g, '')
+    .normalize('NFKC')
+    .replace(/\s+/g, ' ')
+    .trim()
+}
+
+/**
+ * Markdown の見出しを読み、リンクの先にできる slug と、節の番号と、見出しの参照の先を集める。
  *
  * @param {string} text Markdown
- * @returns {{ title: string | null, anchors: Set<string>, sections: Set<string> }} 1 行目の見出し、slug、節の番号
+ * @returns {{ title: string | null, anchors: Set<string>, sections: Set<string>, headings: { keys: Set<string>, ancestors: Set<string>[] }[] }} 1 行目の見出し、slug、節の番号、番号を除いた見出し（keys は比べる形と、末尾の括弧の補足を除いた形。ancestors は親から順の上の見出しの keys）
  */
 export function readHeadings(text) {
   const anchors = new Set()
   const sections = new Set()
+  const headings = []
+  /** 今の見出しの上の見出し（レベル、比べる形） */
+  const stack = []
   const seen = {}
   let title = null
   let inCode = false
@@ -66,8 +89,36 @@ export function readHeadings(text) {
     anchors.add(key)
     const number = match[2].match(/^(\d+(?:\.\d+)*)\.?\s/)
     if (number) sections.add(number[1])
+    const level = match[1].length
+    while (stack.length && stack.at(-1).level >= level) stack.pop()
+    const text = match[2].replace(/^\d+(?:\.\d+)*\.?\s+/, '')
+    // 末尾の全角の括弧の補足（`（DS-283-5：DC-283-21〜25）` など）を除いた形でも当たるようにする
+    const keys = new Set([headingKey(text), headingKey(text.replace(/（[^（）]*）\s*$/, ''))])
+    headings.push({ keys, ancestors: stack.map((item) => item.keys) })
+    stack.push({ level, keys })
   }
-  return { title, anchors, sections }
+  return { title, anchors, sections, headings }
+}
+
+/**
+ * 見出しの参照に当たる見出しの数を数える。親の見出しは、上の見出しに同じ順で含まれれば（子孫でよい）当たる。
+ *
+ * @param {{ keys: Set<string>, ancestors: Set<string>[] }[]} headings 先の文書の見出し
+ * @param {string[]} path 参照の「」の中の文字（親から順、最後が先の見出し）
+ * @returns {number} 当たった見出しの数
+ */
+export function countHeadingMatches(headings, path) {
+  const keys = path.map(headingKey)
+  const target = keys.at(-1)
+  const parents = keys.slice(0, -1)
+  return headings.filter((heading) => {
+    if (!heading.keys.has(target)) return false
+    let index = 0
+    for (const ancestor of heading.ancestors) {
+      if (index < parents.length && ancestor.has(parents[index])) index += 1
+    }
+    return index === parents.length
+  }).length
 }
 
 /**
@@ -118,6 +169,15 @@ export function findReferences(file, text, names, basenames) {
         refs.push({ line: lineNumber, target, anchor: anchor ? decodeURIComponent(anchor) : undefined, text: link })
       }
     }
+    if (!(isMarkdown && inCode)) {
+      // 「」の後に「の「」が続くものは、親から順の見出しとして 1 つの参照にする
+      for (const match of line.matchAll(/(?:\s?の「[^「」\n]*」)+/g)) {
+        const target = resolveHeadingTarget(file, line.slice(0, match.index), names)
+        if (!target) continue
+        const path = [...match[0].matchAll(/「([^「」]*)」/g)].map((quote) => quote[1])
+        refs.push({ line: lineNumber, target, headings: path, text: match[0].trim() })
+      }
+    }
     for (const match of line.matchAll(/第 ([0-9][0-9.・、〜~ ]*?) ?節/g)) {
       const before = line.slice(0, match.index).trimEnd()
       const target = resolveTarget(file, before, names, basenames, isMarkdown)
@@ -128,6 +188,27 @@ export function findReferences(file, text, names, basenames) {
     }
   })
   return refs
+}
+
+/**
+ * 「の「…」」の前の文字から、見出しの参照の先の文書を決める。見るのは、直前がリンクか文書の名前のものだけ。
+ *
+ * @param {string} file 参照のあるファイル
+ * @param {string} before 「の」の前の文字
+ * @param {Map<string, string>} names 文書の名前からファイルのパスへの対応（長い名前から順）
+ * @returns {string | null} 文書のパス。文書を指さない「」なら null
+ */
+function resolveHeadingTarget(file, before, names) {
+  const link = before.match(/\]\(([^)\s#]*)(#[^)]*)?\)$/)
+  if (link) {
+    if (/^(https?:|mailto:)/.test(link[1])) return null
+    return link[1] ? normalize(join(dirname(file), decodeURIComponent(link[1]))) : file
+  }
+  if (/constitution$/.test(before)) return 'docs/constitution.md'
+  for (const [name, target] of names) {
+    if (before.endsWith(name)) return target
+  }
+  return null
 }
 
 /**
@@ -193,6 +274,11 @@ export function checkReferences(files, read, exists) {
         problems.push(`見出しがない：${where}`)
       } else if (ref.section && ref.target.endsWith('.md') && !headingsOf(ref.target).sections.has(ref.section)) {
         problems.push(`節がない（${ref.target} 第 ${ref.section} 節）：${where}`)
+      } else if (ref.headings && ref.target.endsWith('.md')) {
+        const count = countHeadingMatches(headingsOf(ref.target).headings, ref.headings)
+        const quoted = ref.headings.map((heading) => `「${heading}」`).join('の')
+        if (count === 0) problems.push(`見出しがない（${ref.target} の${quoted}）：${where}`)
+        if (count > 1) problems.push(`見出しが 1 つに決まらない（${ref.target} の${quoted}）。親の見出しを前に付ける：${where}`)
       }
     }
   }

@@ -270,6 +270,30 @@ describe('節の番号の参照の検査', () => {
     assert.match(problems[0], /先の文書を書く/)
     assert.match(problems[2], /先の文書を書く/)
   })
+
+  test('Markdown で、直前が名前でない語と「の」のときも、自分の文書の見出しを示さない', () => {
+    const text = ['# 開発環境', '## 2. 起動', '## 4. 停止', '環境変数の文書の第 2 節', '管理画面の第 4 節', '手順は第 2 節'].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['4', '5', '6'])
+    for (const problem of problems) {
+      assert.doesNotMatch(problem, /docs\/dev\/setup\.md の/)
+      assert.match(problem, /先の文書を書く/)
+    }
+  })
+
+  test('Markdown で、直前が行の始め・文の切れ目・表の区切り・リストの印・「この文書の」のときは、自分の文書の見出しを示す', () => {
+    const text = ['# 開発環境', '## 2. 起動', '第 2 節を読む。', '手順。第 2 節', '| a | 第 2 節 |', '- 第 2 節', '（第 2 節）', 'この文書の第 2 節', '本書の第 2 節'].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.equal(problems.length, 7)
+    for (const problem of problems) assert.match(problem, /（docs\/dev\/setup\.md の「起動」）/)
+  })
+
+  test('コードで、名前の直後に開き括弧を挟んだ「第 N 節」も失敗にする', () => {
+    const code = ['// 開発の進め方（第 1 節）', '// 開発の進め方 (第 1 節)', '// 手順（第 1 節）'].join('\n')
+    const problems = check('backend/Foo.java', code)
+    assert.deepEqual(lines(problems), ['1', '2'])
+    assert.match(problems[0], /（docs\/process\/workflow\.md の「SDD」）/)
+  })
 })
 
 describe('見出しの番号と、見出しの参照の先', () => {
@@ -290,6 +314,23 @@ describe('見出しの番号と、見出しの参照の先', () => {
       '// `${DIR}${module}.md` の「ない」',
     ].join('\n')
     assert.deepEqual(lines(check('backend/Foo.java', code)), ['2', '3', '4'])
+  })
+
+  test('ディレクトリまで書いたパスは、ファイルがなければ、同じファイル名の docs/ の文書を先にしない', () => {
+    const code = ['// 外のリポジトリの docs/writing.md の「Install」', '// old/workflow.md の「ない」', '// writing.md の「ない」'].join('\n')
+    // ファイル名だけのパスは、docs/ の下の同じ名前の文書（1 つだけのとき）を先にする
+    assert.deepEqual(lines(check('backend/Foo.java', code)), ['3'])
+  })
+
+  test('パスは、Markdown では参照のあるファイルからの相対を先に、コードではルートからを先に見る', () => {
+    const docs = {
+      'README.md': '# ルート\n## 1. 根\n',
+      'docs/process/README.md': '# 隣\n## 1. 隣の節\n',
+      'docs/process/a.md': ['`README.md` の「隣の節」', '`README.md` の「根」'].join('\n'),
+      'scripts/a.mjs': ['// README.md の「根」', '// README.md の「隣の節」'].join('\n'),
+    }
+    const problems = checkReferences(Object.keys(docs), (path) => docs[path], (path) => path in docs)
+    assert.deepEqual(problems.map((problem) => problem.match(/：(\S+:\d+) /)[1]), ['docs/process/a.md:2', 'scripts/a.mjs:2'])
   })
 
   test('兄弟の「設定」と「設定（任意）」では、完全に一致する見出しを選ぶ', () => {

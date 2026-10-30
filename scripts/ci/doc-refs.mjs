@@ -6,11 +6,11 @@
 //     除いた形でも全て書いた形でも当たる（除くと 2 つ以上に当たるなら、1 つに決まらないとする）。Markdown のコードブロックの中は見ない
 //   - 節の番号の参照（「第」と番号と「節」）：失敗にし、見出しの形に書き換えるよう示す。節の番号は、節を加える・移すたびに変わり、意味の違う節を指したまま通るため。
 //     Markdown は、インラインコードとコードブロックの外の全て（名前のないもの、spec・plan の節も）。コードは、文書の名前・リンク・パスの直後（間の「の」は許す）のものだけ。
-//     指す先の文書に、その番号の見出しがあれば、失敗のメッセージにその見出しを示す。名前のない番号は、Markdown ではその文書自身を指すとして見出しを求める。
-//     ただし、直前が「（」「、」などのときは、前の文書の節かもしれないので見出しを示さず、先の文書を書くよう示す
+//     指す先の文書に、その番号の見出しがあれば、失敗のメッセージにその見出しを示す。名前のない番号は、Markdown では、直前が行の始め・文の切れ目・表の区切り・
+//     リストの印・`この文書の` のときだけ、その文書自身を指すとして見出しを求める。それ以外の語が直前にあれば、他の文書の節かもしれないので見出しを示さず、先の文書を書くよう示す
 // 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。
 // 見出しの参照と節の番号の参照の先は、直前のリンク、文書の名前、パス（`docs/06-手順書/ci.md`、`notification.md` など）で決める。
-// 直前の印（`` ` ``、「」」、「の」）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
+// 直前の印（`` ` ``、「」」、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
 // 見出しの参照と節の番号の参照は、Markdown の他にコードと設定のファイルも見る（TEXT_FILE の拡張子。コメントを切り出さず、文字列も含めてファイルの全体を読む）。
 // アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
 // ただし、アーカイブの下の MVP の完成までの一覧（mvp.md）は spec の記録でなく一覧の文書で、spec を移すたびにリンクが切れるので見る。
@@ -49,6 +49,12 @@ export function isTargetFile(file) {
 
 /** 節の番号の参照（「第 4.2、5.6 節」「第 4〜6・8 節」など。空白のない「第2節」と、全角の数字の「第２節」も） */
 const SECTION_NUMBER = /第 ?([0-9０-９][0-9０-９.．・、〜~ ]*?) ?節/g
+
+/**
+ * 名前のない節の番号を、その文書自身の節とする直前の形（行の始め、文の切れ目、表の区切り、リストの印、`この文書の`・`本書の`。その後の開き括弧は許す）。
+ * これ以外の語が直前にあれば、他の文書の名前かもしれないので、先の文書を決めない
+ */
+const SELF_BEFORE = /(?:^|[。．：:|]|^\s*(?:[-*+]|\d+\.)|この文書の?|本書の?)\s*[（(]?$/
 
 /** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない） */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*\.|\d+(?:\.\d+)+)\s+/
@@ -228,9 +234,11 @@ export function findReferences(file, text, names, basenames, exists = existsSync
       const spec = /(spec|plan|\d{3})(\s*の)?$/.test(before.replace(/[`」]+$/, '').trimEnd())
       const found = spec ? null : resolveDocument(file, before, names, basenames, exists)
       if (!found && !isMarkdown) continue
-      // 名前のない番号は、Markdown ではその文書自身を指す。ただし、直前が「（」「、」などなら、前の文書の節かもしれず、先を決めない
-      const unknown = !found && !spec && /[（(、,・とや]$/.test(before)
-      const target = found ?? (spec || unknown ? null : file)
+      // 名前のない番号は、Markdown では、直前に名前の候補になる語がないときだけ、その文書自身を指すとする。
+      // 語があれば（`環境変数の文書の第 2 節`、`（第 4 節）` の前の語、`、` の後など）、他の文書の節かもしれないので先を決めない
+      const self = !found && !spec && SELF_BEFORE.test(before)
+      const unknown = !found && !spec && !self
+      const target = found ?? (self ? file : null)
       refs.push({ line: lineNumber, target, unknown, sections: splitSectionNumbers(match[1]), text: match[0] })
     }
   })
@@ -267,7 +275,7 @@ function sectionNumberProblem(ref, headingsOf, exists, where) {
  * 直前のリンク、constitution、パス（`docs/06-手順書/ci.md`、`notification.md`）、文書の名前の順に当てる。
  * 名前の後の「の」、パスや名前の印（`` ` ``、「」」）、閉じ括弧（`（docs/06-手順書/ci.md）の`）は除いて読む。
  * 当たらず、末尾が括弧の補足（`店舗画面の構成（補足）の`）なら、補足の前で読み直す。
- * 見出しの参照では、パスはファイルがあるときだけ先にする（外のリポジトリのファイルや、コードの中で組み立てるパスを、切れた参照にしないため）。
+ * 見出しの参照では、パスはファイルがあるとき（ファイル名だけなら docs/ の下に同じ名前の文書があるとき）だけ先にする（外のリポジトリのファイルや、コードの中で組み立てるパスを、切れた参照にしないため）。パスの読み方は resolvePath。
  *
  * @param {string} file 参照のあるファイル
  * @param {string} before 参照の前の文字
@@ -278,7 +286,8 @@ function sectionNumberProblem(ref, headingsOf, exists, where) {
  * @returns {string | null} 文書のパス。決まらなければ null
  */
 export function resolveDocument(file, before, names, basenames, exists = existsSync, existingPath = false) {
-  const text = before.trimEnd().replace(/\s*の$/, '').trimEnd()
+  // 名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、名前の後の「の」を除く
+  const text = before.trimEnd().replace(/[（(]$/, '').trimEnd().replace(/\s*の$/, '').trimEnd()
   const found = resolveEnd(file, text, names, basenames, exists, existingPath)
   if (found !== undefined) return found
   const withoutNote = text.replace(/（[^（）]*）$/, '').trimEnd()
@@ -306,18 +315,36 @@ function resolveEnd(file, text, names, basenames, exists, existingPath) {
       return link[1] ? normalize(join(dirname(file), decodeURIComponent(link[1]))) : file
     }
     const path = candidate.match(/([^\s`'"（(「」<>[\]]+\.md)$/)
-    if (path) {
-      const relative = normalize(join(dirname(file), path[1]))
-      if (exists(path[1])) return normalize(path[1])
-      if (exists(relative)) return relative
-      return basenames.get(basename(path[1])) ?? (existingPath ? null : normalize(path[1]))
-    }
+    if (path) return resolvePath(file, path[1], basenames, exists, existingPath)
     if (/constitution$/.test(candidate)) return 'docs/constitution.md'
     for (const [name, target] of names) {
       if (candidate.endsWith(name)) return target
     }
   }
   return undefined
+}
+
+/**
+ * 参照に書いたパスから、文書のパスを決める。
+ *   - Markdown は参照のあるファイルからの相対を先に（リンクと同じ読み方。`README.md` は隣のファイル）、コードはルートからを先に見る（コメントはルートからのパスで書くため）
+ *   - どちらにもなく、ディレクトリのないファイル名だけ（`notification.md`）なら、docs/ の下の同じ名前の文書（1 つだけのとき）にする
+ *   - ディレクトリまで書いてファイルがないもの（外のリポジトリの `docs/setup.md` など）は、同じ名前の文書に当てない
+ *
+ * @param {string} file 参照のあるファイル
+ * @param {string} path 参照に書いたパス
+ * @param {Map<string, string>} basenames ファイル名からファイルのパスへの対応
+ * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
+ * @param {boolean} existingPath パスを、ファイルがあるときだけ先にするか
+ * @returns {string | null} 文書のパス。existingPath でファイルがなければ null
+ */
+function resolvePath(file, path, basenames, exists, existingPath) {
+  const fromRoot = normalize(path)
+  const relative = normalize(join(dirname(file), path))
+  for (const candidate of file.endsWith('.md') ? [relative, fromRoot] : [fromRoot, relative]) {
+    if (exists(candidate)) return candidate
+  }
+  if (!path.includes('/') && basenames.has(path)) return basenames.get(path)
+  return existingPath ? null : fromRoot
 }
 
 /**

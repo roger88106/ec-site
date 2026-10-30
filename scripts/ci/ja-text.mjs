@@ -15,7 +15,8 @@
 //   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものと、
 //       文の字数の合計が style.cell（80）以上の表のセルを示す。GitHub Actions の注釈（`::warning file=…,line=…::`）の形で 1 件 1 行に出し、最後に件数の行を出す。
 //       警告があっても終了コードは 0。「の」の連なり、否定、複合動詞の崩れと、語の検査は見ない（語は既定の実行が見る）
-//       差分の基準は、HEAD と origin/develop（なければ develop）のマージベース。マージベースが HEAD（develop への push）なら HEAD の 1 つ目の親
+//       差分の基準は、HEAD と origin/develop（なければ develop）のマージベース。マージベースが HEAD のとき、develop・main への push なら HEAD の 1 つ目の親、
+//       それ以外（分けたばかりで commit がない作業ブランチ）なら HEAD（作業ツリーの変更だけを見る）
 //       対象のファイルは既定の実行と同じで、削除したファイルは見ない。名前を変えたファイルは、変えていない行を追加行にしない（git の -M）
 //       文は行ごとに測るので、追加行にある文だけを示す。shallow clone では差分を求められないので失敗にする
 //   node scripts/ci/ja-text.mjs --message <ファイル>：コミットメッセージのファイルを調べる（# で始まる行は除く）。error があれば失敗にする
@@ -322,7 +323,7 @@ export function measureSentence(sentence) {
  * @returns {number} 数える読点の数
  */
 function countCommas(sentence) {
-  const items = sentence.split('、').map((item) => item.slice(Math.max(item.lastIndexOf('：'), item.lastIndexOf(':')) + 1).trim())
+  const items = sentence.split('、').map((item, index) => (index === 0 ? item.slice(Math.max(item.lastIndexOf('：'), item.lastIndexOf(':')) + 1) : item).trim())
   return items.slice(1).filter((item, index) => !(REFERENCE_ITEM.test(items[index]) && REFERENCE_ITEM.test(item))).length
 }
 

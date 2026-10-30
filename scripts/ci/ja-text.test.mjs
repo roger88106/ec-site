@@ -422,7 +422,7 @@ describe('日本語の文の検査（文体の warning）', () => {
     assert.deepEqual(cells(`${'あ'.repeat(20)}である。`), [])
   })
 
-  test('セルの閾値は 80 字である（T283-01-01 で決めた値）', () => {
+  test('セルの閾値は 80 字である', () => {
     assert.equal(list.style.cell, 80)
   })
 })
@@ -479,6 +479,11 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
   test('他の語を含む項目の前後の読点は数える', () => {
     assert.deepEqual(commaCounts('このタスクの参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 7 節、[spec](../spec.md) の DS-283-5'), [1])
     assert.deepEqual(commaCounts('`a`、`b` を使い、`c` を直す。'), [2])
+  })
+
+  test('コロンまでを除くのは最初の項目だけである。語の見出しとインラインコードを組にした項目の間の読点は数える', () => {
+    // かなを含まない文は文として数えないので、最後に「とする」を付ける
+    assert.deepEqual(commaCounts('入力：`a`、出力：`b`、設定：`c`、前提：`d`、結果：`e`、備考：`f` とする。'), [5])
   })
 
   test('普通の文の読点は数える', () => {
@@ -574,7 +579,10 @@ describe('日本語の文の検査（warning と終了コード）', () => {
 })
 
 describe('日本語の文の検査（差分の追加行の文体：--changed）', () => {
+  // CI の push のイベントの変数があると基準の選び方が変わるので外す（手元と CI で同じ結果にする）
   const env = withoutGitEnv()
+  delete env.GITHUB_EVENT_NAME
+  delete env.GITHUB_REF_NAME
   const repos = []
   after(() => repos.forEach((repo) => rmSync(repo, { recursive: true, force: true })))
 
@@ -641,12 +649,28 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
   })
 
   test('既存の行（追加行でない行）には警告を出さない', () => {
-    const r = createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n${COMMAS}\n` })
-    r.write('docs/a.md', `${LONG}\n短い文を変えた。\n${COMMAS}\n${LONG}\n`)
+    const r = createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n${COMMAS}\n${LONG_CELL}\n` })
+    r.write('docs/a.md', `${LONG}\n短い文を変えた。\n${COMMAS}\n${LONG_CELL}\n${LONG}\n`)
     r.commit('変更')
     const result = r.run()
     assert.equal(result.status, 0)
-    assert.deepEqual(annotated(result.stdout), ['docs/a.md:4'])
+    assert.deepEqual(annotated(result.stdout), ['docs/a.md:5'])
+  })
+
+  test('改行コードだけを変えた既存の行（LF から CRLF）は追加行にしない。足した行だけに警告を出す', () => {
+    const r = createRepo({ 'docs/a.md': `${LONG}\n短い文である。\n` })
+    r.write('docs/a.md', `${LONG}\r\n短い文である。\r\n${COMMAS}\r\n`)
+    r.commit('改行コードの変更と追加')
+    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:3'])
+  })
+
+  test('develop から分けたばかりで commit がない作業ブランチでは、HEAD との差分（作業ツリーの変更）だけを見る', () => {
+    const r = createRepo({ 'docs/a.md': '短い文である。\n' })
+    r.write('docs/a.md', `短い文である。\n${LONG}\n`)
+    r.commit('develop の最後の commit')
+    r.git('update-ref', 'refs/heads/develop', 'HEAD')
+    r.write('docs/a.md', `短い文である。\n${LONG}\n${COMMAS}\n`)
+    assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:3'])
   })
 
   test('commit していない変更と、追跡していない新しい文書の行も、追加行として見る', () => {

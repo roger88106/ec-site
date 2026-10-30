@@ -64,6 +64,36 @@ describe('差分の基準（develop との分岐点）', () => {
     assert.deepEqual(resolveDiffBase(r.repo), { revision: parent, base: 'origin/develop' })
   })
 
+  test('develop の上（ブランチの名前が develop）で merge-base が HEAD 自身なら、HEAD の 1 つ目の親を基準にする', () => {
+    const r = createRepo()
+    const parent = r.commit()
+    r.commit()
+    r.git('checkout', '-q', '-b', 'develop')
+    assert.deepEqual(resolveDiffBase(r.repo, {}), { revision: parent, base: 'develop' })
+  })
+
+  test('develop から分けたばかりで commit がない作業ブランチでは、HEAD を基準にする（作業ツリーの変更だけを見る）', () => {
+    const r = createRepo()
+    r.commit()
+    const head = r.commit()
+    r.git('branch', 'develop')
+    r.git('checkout', '-q', '-b', 'feature')
+    assert.deepEqual(resolveDiffBase(r.repo, {}), { revision: head, base: 'develop' })
+  })
+
+  test('ブランチを checkout していない（detached）ときは、CI の develop・main への push のイベントのときだけ親を基準にする', () => {
+    const r = createRepo()
+    const parent = r.commit()
+    const head = r.commit()
+    r.git('branch', 'develop')
+    r.git('checkout', '-q', '--detach')
+    assert.deepEqual(resolveDiffBase(r.repo, { GITHUB_EVENT_NAME: 'push', GITHUB_REF_NAME: 'develop' }), { revision: parent, base: 'develop' })
+    assert.deepEqual(resolveDiffBase(r.repo, { GITHUB_EVENT_NAME: 'push', GITHUB_REF_NAME: 'main' }), { revision: parent, base: 'develop' })
+    assert.deepEqual(resolveDiffBase(r.repo, { GITHUB_EVENT_NAME: 'push', GITHUB_REF_NAME: 'feature' }), { revision: head, base: 'develop' })
+    assert.deepEqual(resolveDiffBase(r.repo, { GITHUB_EVENT_NAME: 'pull_request', GITHUB_REF_NAME: 'develop' }), { revision: head, base: 'develop' })
+    assert.deepEqual(resolveDiffBase(r.repo, {}), { revision: head, base: 'develop' })
+  })
+
   test('develop がないときは、HEAD の 1 つ目の親を基準にし、使った ref は null にする', () => {
     const r = createRepo()
     const parent = r.commit()

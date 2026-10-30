@@ -1,9 +1,11 @@
 // 日本語の文を確認する。言い換えの一覧は ja-text.json。
 //   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許す語: 理由} で書く（その中の一致は数えない）
 //       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする
+//       語の検査（error と warning の語、allow の照合）は、インラインコード（バッククォートで囲んだ部分）の中を見ない。許す語がインラインコードの中にしか出ないときは、使われていないと見る
 //   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）
 //       文体の型は、1 区間の「の」・字数・読点の数が閾値以上の文、「〜なく〜ない」の形の文、複合動詞の崩れの疑い（かなの直後に助詞を挟まず漢語が続く形）。閾値は ja-text.json の style
 //       コードブロック、表の区切り行、URL、インラインコードは数えない。既定の実行は warning の件数を「警告：」の行で示す
+//       読点の数は、インラインコードかリンクだけの項目（「第 N 節」が付いてもよい）を区切る読点を数えない（範囲・参照の行の並び）。他の語を含む項目の前後の読点は数える
 // 見るのは docs/（アーカイブした spec を除く）、README.md、AGENTS.md、.claude/skills/ と .claude/agents/ の Markdown と、.github/ の yml・yaml と Markdown。
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text
@@ -30,6 +32,19 @@ const EXCLUDED = /^(docs\/08-spec\/archive\/|\.claude\/skills\/docs\/tech-writin
  */
 const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/08-spec\/archive\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
 
+/** インラインコード（バッククォートで囲んだ、1 行の中の部分） */
+const INLINE_CODE = /`[^`\n]+`/g
+
+/**
+ * インラインコードを、同じ長さの空白に置き換える（語の一致がコードをまたいで作られないように、字数は保つ）。
+ *
+ * @param {string} text 文書、または行
+ * @returns {string} インラインコードを除いたもの
+ */
+function withoutInlineCode(text) {
+  return text.replace(INLINE_CODE, (code) => ' '.repeat(code.length))
+}
+
 /**
  * 一覧の項目の名前（word、または pattern）を返す。
  *
@@ -55,11 +70,14 @@ function patternRegExp(term) {
  * 日本語に語の境界はないので、使わない語を一部に含む正しい語は、語ごとの許す語（allow）で救う。
  * word の項目は部分の一致で、pattern の項目は正規表現の一致で見る（漢字の後を除くなどは pattern で書く）。
  *
- * @param {string} line 行
+ * インラインコードの中は見ない。
+ *
+ * @param {string} rawLine 行
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }} term 使わない語（または正規表現）と許す語（許す語と理由）
  * @returns {string | null} 許す語の外にある最初の一致（当たった文字列）。なければ null
  */
-function disallowedMatch(line, term) {
+function disallowedMatch(rawLine, term) {
+  const line = withoutInlineCode(rawLine)
   const allowed = []
   for (const allow of Object.keys(term.allow ?? {})) {
     for (let at = line.indexOf(allow); at !== -1; at = line.indexOf(allow, at + 1)) {
@@ -160,6 +178,7 @@ export function findTerms(text, terms) {
 
 /**
  * 許す語の誤り（理由がない、どの文書にも使われなくなった）を、表示する文にして返す。
+ * インラインコードの中の語は検査しないので、そこにしか出ない許す語は、使われていない（不要）と見る。
  *
  * @param {string[]} texts 調べる文書の内容（全て）
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 語（または正規表現）と許す語
@@ -167,7 +186,7 @@ export function findTerms(text, terms) {
  */
 export function findAllowProblems(texts, terms) {
   return terms.flatMap((term) =>
-    checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => texts.some((text) => text.includes(allow))),
+    checkExclusions(`ja-text.json の「${termName(term)}」の allow`, term.allow ?? {}, (allow) => texts.some((text) => withoutInlineCode(text).includes(allow))),
   )
 }
 
@@ -206,12 +225,20 @@ export function findCodeTerms(file, text, terms) {
 /** 文の区間を分ける字（読点・括弧・かぎ括弧・コロン）。1 区間の「の」を数える単位 */
 const CLAUSE_SEPARATOR = /[、，,（）()「」：:]/
 
+/** リンクの表示文字列の前後に付ける目印（読点の数で、リンクだけの項目を見分ける。文書に現れない私用領域の字） */
+const LINK_START = ''
+const LINK_END = ''
+
+/** インラインコード（X に置き換え済み）かリンクだけの項目。後ろに「第 N 節」が付いてもよい */
+const REFERENCE_ITEM = new RegExp(`^(X|${LINK_START}[^${LINK_END}]*${LINK_END})(\\s*第\\s*\\d+(\\.\\d+)*\\s*節)?$`)
+
 /** 動詞の連用形の終わりになるかな（い段とえ段。助詞の「に」「へ」と、「て」「で」は除く） */
 const STEM_ENDING = 'きぎしじちぢひびぴみりいえけげせぜねめれ'
 
 /**
  * 文書の文を、行番号つきで取り出す。表のセルと「。」で文に分ける。
  * コードブロック、表の区切り行、URL、リンクの宛先は数えず、インラインコードは 1 字に置き換える（かなを含む文だけを返す）。
+ * リンクの表示文字列は LINK_START と LINK_END で囲んで返す（measureSentence が読点の数に使う。plainSentence で除く）。
  *
  * @param {string} text 文書、またはコメントとテスト名だけを残した文書（commentText の結果）
  * @returns {{ line: number, sentence: string }[]} 行番号（1 から）と文
@@ -229,7 +256,7 @@ export function proseSentences(text) {
 export function tableCellTotals(text) {
   return proseCells(text)
     .filter(({ table, sentences }) => table && sentences.length > 0)
-    .map(({ line, sentences }) => ({ line, total: sentences.reduce((sum, sentence) => sum + sentence.length, 0) }))
+    .map(({ line, sentences }) => ({ line, total: sentences.reduce((sum, sentence) => sum + plainSentence(sentence).length, 0) }))
 }
 
 /**
@@ -248,7 +275,7 @@ function proseCells(text) {
     }
     if (fenced || (/^\s*\|?[\s:|-]+\|?\s*$/.test(raw) && raw.includes('-'))) return
     const plain = raw
-      .replace(/\[([^\]]*)\]\([^)]*\)/g, '$1')
+      .replace(/\[([^\]]*)\]\([^)]*\)/g, `${LINK_START}$1${LINK_END}`)
       .replace(/https?:\/\/\S+/g, 'U')
       .replace(/`[^`]*`/g, 'X')
     const table = plain.trimStart().startsWith('|')
@@ -268,11 +295,35 @@ function proseCells(text) {
  * @returns {{ no: number, length: number, comma: number }} 1 区間の「の」の最大の数、字数、読点の数
  */
 export function measureSentence(sentence) {
+  const plain = plainSentence(sentence)
   return {
-    no: Math.max(...sentence.split(CLAUSE_SEPARATOR).map((part) => (part.match(/の/g) ?? []).length)),
-    length: sentence.length,
-    comma: (sentence.match(/、/g) ?? []).length,
+    no: Math.max(...plain.split(CLAUSE_SEPARATOR).map((part) => (part.match(/の/g) ?? []).length)),
+    length: plain.length,
+    comma: countCommas(sentence),
   }
+}
+
+/**
+ * 文の読点を数える。インラインコードかリンクだけの項目（「第 N 節」が付いてもよい）の間の読点は数えない。
+ * 項目は読点で分け、最初の項目の「範囲：」のような見出しは、コロンまでを除いて見る。
+ * 前後の項目の両方が参照だけのときに、その間の読点を数えない（他の語を含む項目の前後の読点は数える）。
+ *
+ * @param {string} sentence 文（リンクの表示文字列は LINK_START と LINK_END で囲んである）
+ * @returns {number} 数える読点の数
+ */
+function countCommas(sentence) {
+  const items = sentence.split('、').map((item) => item.slice(Math.max(item.lastIndexOf('：'), item.lastIndexOf(':')) + 1).trim())
+  return items.slice(1).filter((item, index) => !(REFERENCE_ITEM.test(items[index]) && REFERENCE_ITEM.test(item))).length
+}
+
+/**
+ * 文からリンクの目印を除く。
+ *
+ * @param {string} sentence 文
+ * @returns {string} 目印のない文
+ */
+function plainSentence(sentence) {
+  return sentence.replaceAll(LINK_START, '').replaceAll(LINK_END, '')
 }
 
 /**
@@ -288,9 +339,10 @@ export function measureSentence(sentence) {
 export function findStyleWarnings(text, limits) {
   const hits = []
   const compound = limits.compound?.length ? new RegExp(`[${STEM_ENDING}](?:${limits.compound.join('|')})`, 'g') : null
-  for (const { line, sentence } of proseSentences(text)) {
+  for (const { line, sentence: marked } of proseSentences(text)) {
+    const sentence = plainSentence(marked)
     const excerpt = sentence.length > 30 ? `${sentence.slice(0, 30)}…` : sentence
-    const measured = measureSentence(sentence)
+    const measured = measureSentence(marked)
     const add = (kind, word, detail) => hits.push({ line, kind, word, use: `${detail}：「${excerpt}」` })
     if (limits.no !== undefined && measured.no >= limits.no) add('no', '「の」の連なり', `1 区間に「の」が ${measured.no} 個`)
     if (limits.length !== undefined && measured.length >= limits.length) add('length', '長い文', `字数が ${measured.length} 字`)

@@ -415,6 +415,71 @@ describe('日本語の文の検査（文体の warning）', () => {
   })
 })
 
+describe('日本語の文の検査（インラインコードの扱い）', () => {
+  /** @param {string} text 文書 @returns {number[]} 読点の数（1 個以上の文ごと。文の順） */
+  function commaCounts(text) {
+    return findStyleWarnings(text, { comma: 1 })
+      .filter((hit) => hit.kind === 'comma')
+      .map((hit) => Number(/読点が (\d+) 個/.exec(hit.use)[1]))
+  }
+
+  test('語の検査は、インラインコードの中の一致を数えない', () => {
+    const terms = [{ word: '道具', use: 'ツール' }]
+    assert.deepEqual(findTerms('`道具` と書く', terms), [])
+    assert.equal(findTerms('`道具` と道具', terms).length, 1)
+  })
+
+  test('pattern の項目も、インラインコードの中の一致を数えない。行番号は元の行である', () => {
+    const terms = [{ pattern: '道[具ぐ]', use: 'ツール', examples: { hit: ['道具'], miss: ['道'] } }]
+    assert.deepEqual(findTerms('あ\n`道具`\n道ぐ', terms).map((hit) => hit.line), [3])
+  })
+
+  test('インラインコードをまたいだ一致は作らない', () => {
+    assert.deepEqual(findTerms('道`x`具', [{ word: '道具', use: 'ツール' }]), [])
+  })
+
+  test('許す語の照合も、インラインコードを除いた文で行う', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
+    assert.deepEqual(findTerms('`ブラウザー` とブラウザ', terms).map((hit) => hit.line), [1])
+  })
+
+  test('許す語がインラインコードの中にしか出ないときは、使われていない（不要）と見る', () => {
+    const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
+    const problems = findAllowProblems(['`ブラウザー` を開く'], terms)
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /ブラウザー.*不要/)
+    assert.deepEqual(findAllowProblems(['`ブラウザー` を開く', 'ブラウザーを開く'], terms), [])
+  })
+
+  test('コードのコメントの中のインラインコードも、語の検査で数えない', () => {
+    assert.deepEqual(findCodeTerms('a.mjs', '// `道具` を使う', [{ word: '道具', use: 'ツール' }]), [])
+    assert.equal(findCodeTerms('a.mjs', '// `x` と道具', [{ word: '道具', use: 'ツール' }]).length, 1)
+  })
+
+  test('tasks の範囲の行：インラインコードだけの項目を区切る読点は 0 と数える', () => {
+    assert.deepEqual(commaCounts('このタスクの範囲：`scripts/ci/ja-text.mjs`、`scripts/ci/ja-text.json`、`scripts/ci/lib/`、`scripts/ci/migrations.mjs`'), [])
+  })
+
+  test('参照の行：リンクの後に「第 N 節」が付いた項目も、リンクだけの項目として扱う', () => {
+    assert.deepEqual(commaCounts('このタスクの参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 7 節、[plan](../plan.md) 第 5.2 節'), [])
+  })
+
+  test('他の語を含む項目の前後の読点は数える', () => {
+    assert.deepEqual(commaCounts('このタスクの参照：[plan](../plan.md) 第 5 節、[plan](../plan.md) 第 7 節、[spec](../spec.md) の DS-283-5'), [1])
+    assert.deepEqual(commaCounts('`a`、`b` を使い、`c` を直す。'), [2])
+  })
+
+  test('普通の文の読点は数える', () => {
+    assert.deepEqual(commaCounts('一、二、三、四とする。'), [3])
+  })
+
+  test('インラインコードの読点そのものは数えない。字数と「の」は今のとおり', () => {
+    assert.deepEqual(commaCounts('`a、b、c` を使う。'), [])
+    assert.equal(findStyleWarnings('本日の会議の資料の変更の履歴を見る。', { no: 4 }).length, 1)
+    assert.equal(findStyleWarnings('範囲：`a`、`b` を直す。', { length: 10 }).length, 1)
+  })
+})
+
 describe('日本語の文の検査（表のセルの字数の合計）', () => {
   /** @param {string} text 文書 @returns {number[]} セルごとの合計（行の順） */
   function totals(text) {

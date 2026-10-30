@@ -6,7 +6,7 @@ import path from 'node:path'
 import { after, describe, test } from 'node:test'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import { withoutGitEnv } from './lib/git-env.mjs'
-import { commentText } from './lib/comment-text.mjs'
+import { commentText, trailingCommentLines } from './lib/comment-text.mjs'
 import { SHALLOW_CLONE_MESSAGE } from './lib/shallow-clone.mjs'
 import * as jaText from './ja-text.mjs'
 import { findAllowProblems, findCodeTerms, findStyleWarnings, findTerms, isTargetCode, isTargetDoc, stripMessageComments, validateTerms } from './ja-text.mjs'
@@ -491,6 +491,31 @@ describe('日本語の文の検査（複数の行にまたがる文）', () => {
     assert.deepEqual(hits(commentText(`// ${HEAD}\n// 対象：${TAIL}\n`, 'ts'), { kind: 'code' }), [])
   })
 
+  test('コードでは、行末のコメント（コードの後ろのコメント）を前後の行とつながない', () => {
+    const code = (source) => hits(commentText(source, 'ts'), { kind: 'code', trailing: trailingCommentLines(source, 'ts') })
+    assert.deepEqual(code(`const a = 1 // 短い注\n// ${HEAD}\n// ${TAIL}\n`), ['length:2'])
+    assert.deepEqual(code(`a() // ${HEAD}\nb() // ${TAIL}\n`), [])
+    assert.deepEqual(code(`// ${HEAD}\nb() // ${TAIL}\n`), [])
+  })
+
+  test('コードでは、罫線の記号で始まるか終わる行（節の見出し）を前後の行とつながない', () => {
+    const body = `${'い'.repeat(80)}である。`
+    for (const heading of [`--- ${'見'.repeat(30)}（説明） ---`, `===== ${'見'.repeat(30)}`, `${'見'.repeat(30)} -----`]) {
+      assert.deepEqual(hits(commentText(`// ${heading}\n// ${body}\n`, 'ts'), { kind: 'code' }), [], heading)
+    }
+    assert.deepEqual(hits(commentText(`# ---- ${'見'.repeat(30)} ----\n# ${body}\n`, 'sh'), { kind: 'code' }), [])
+  })
+
+  test('コードでは、語の見出しで始まる行の続きは、深く字下げした行だけとする', () => {
+    assert.deepEqual(hits(commentText(`// 使い方：${HEAD}\n// ${TAIL}\n`, 'ts'), { kind: 'code' }), [])
+    assert.deepEqual(hits(commentText(`// 使い方：${HEAD}\n//   ${TAIL}\n`, 'ts'), { kind: 'code' }), ['length:1'])
+  })
+
+  test('コードでは、行末の <br /> の後で切り、<br /> は字数に数えない', () => {
+    assert.deepEqual(hits(commentText(`/**\n * ${HEAD}<br />\n * ${TAIL}\n */\n`, 'java'), { kind: 'code' }), [])
+    assert.deepEqual(hits(commentText(`/**\n * ${'あ'.repeat(97)}<br />\n */\n`, 'java'), { kind: 'code' }), [])
+  })
+
   test('コードでは、日本語の字のない行（コマンドの例など）を前後の行とつながない', () => {
     assert.deepEqual(hits(commentText(`// ${HEAD}\n// ./gradlew check ${'-Pa=b '.repeat(10)}\n// ${TAIL}\n`, 'ts'), { kind: 'code' }), [])
   })
@@ -813,6 +838,15 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     const result = r.run()
     assert.equal(result.status, 0, result.stdout + result.stderr)
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:5', 'src/a.mjs:2'])
+  })
+
+  test('行末のコメントは、次の行のコメントとつながない（短い注だけの追加行に警告を出さない）', () => {
+    const r = createRepo({ 'src/b.mjs': `const a = 1 // ${'え'.repeat(60)}\n` })
+    r.write('src/b.mjs', `const a = 1 // ${'え'.repeat(60)}\n// ${'お'.repeat(57)}である。\n`)
+    r.commit('追加')
+    const result = r.run()
+    assert.equal(result.status, 0, result.stdout + result.stderr)
+    assert.deepEqual(annotated(result.stdout), [])
   })
 
   test('改行コードだけを変えた既存の行（LF から CRLF）は追加行にしない。足した行だけに警告を出す', () => {

@@ -189,6 +189,25 @@ export function extractCommentLines(text, kind) {
 }
 
 /**
+ * 行末のコメント（同じ行のコメントの前にコードがあるもの）が始まる行を返す。
+ * commentText はコメントの位置を残さないので、行頭のコメントと見分けるのに使う（ja-text が、前後の行とつながないために使う）。
+ * テスト名と、ブロックコメントの 2 行目からの行は含めない。
+ *
+ * @param {string} text ソース
+ * @param {'java' | 'kts' | 'ts' | 'sh'} kind ファイルの種類
+ * @returns {Set<number>} 行番号（1 から）
+ */
+export function trailingCommentLines(text, kind) {
+  const ranges = kind === 'sh' ? shellCommentRanges(text) : commentRanges(text, kind === 'ts' ? {} : JAVA_SCAN)
+  const lines = new Set()
+  for (const { from } of ranges) {
+    const start = text.lastIndexOf('\n', from - 1) + 1
+    if (text.slice(start, from).trim()) lines.add(text.slice(0, start).split('\n').length)
+  }
+  return lines
+}
+
+/**
  * ソースから、コメントとテスト名だけを残した文書を返す。行の数と、残した文字の行は元のソースと同じなので、行番号がそのまま使える。
  *
  * @param {string} text ソース

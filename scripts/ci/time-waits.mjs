@@ -3,8 +3,8 @@
 // 対象は、バックエンド・画面・E2E のテストに加え、E2E の実行の script、Playwright・Vitest・Vite の設定、画面のテストの補助（src/test/）。
 // 時間で待つ呼び出し（Thread.sleep、waitForTimeout、Awaitility の during・pollDelay、Promise で包んだ setTimeout）があると失敗にする。
 // 例外は time-waits-exclusions.json に理由を書く。キーは `<ファイル>:<待ちを書いた行の文字>`（前後の空白は除く）。
-// 行番号でなく行の文字で当てるので、行が動いても除外は有効なままで、同じファイルに後から書いた別の待ちは失敗になる。
-// 同じ文字の行は、除外 1 件につき最初の 1 行だけに有効になる（コピーした行は失敗になる）。当たる行がなくなった除外は失敗にする。
+// 行番号でなく行の文字で当てるので、行が動いても除外は当たり続けて、同じファイルに後から書いた別の待ちは失敗になる。
+// 同じ文字の行は、除外 1 件につき最初の 1 行だけに適用される（コピーした行は失敗になる）。当たる行がなくなった除外は失敗にする。
 // 対象のファイルが 0 件のときも失敗にする。
 // 使い方：node scripts/ci/time-waits.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -63,7 +63,7 @@ export function exclusionKey(file, text) {
 }
 
 /**
- * 除外に当たらない待ちを集める。除外は、同じキーの行のうち最初の 1 行だけに有効になる。
+ * 除外に当たらない待ちを集める。除外は、同じキーの行のうち最初の 1 行だけに適用される。
  *
  * @param {Map<string, { line: number, call: string, text: string }[]>} hitsByFile ファイルごとの時間で待つ行
  * @param {Record<string, unknown>} exclusions 除外の一覧

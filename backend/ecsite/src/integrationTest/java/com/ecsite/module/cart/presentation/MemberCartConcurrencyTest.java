@@ -27,7 +27,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 会員のカートの並行性の受け入れテスト（docs/03-機能仕様/cart.md）。<br />
- * 会員ごとの一意制約が有効になっていることを確認するため、要求ごとにコミットする。ロールバックしないので、
+ * 会員ごとの一意制約が働いていることを確認するため、要求ごとにコミットする。ロールバックしないので、
  * テストごとに新しい会員を使い、その会員のカートだけを確認する。作ったデータは消さない。
  */
 @IntegrationTest

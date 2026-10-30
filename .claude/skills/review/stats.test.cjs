@@ -101,11 +101,11 @@ test('指摘が 0 の時点の採用の割合は「—」', () => {
   assert.equal(last.rate, '—')
 })
 
-test('出力は弾・profile・spec の番号、時点ごとの行、合計の行を持つ', () => {
+test('出力はステップ・profile・spec の番号、時点ごとの行、合計の行を持つ', () => {
   const root = makeRoot()
   const rows = [...rowsOf(root, '301'), ...rowsOf(root, '302')]
   const out = formatReport({ round: '6', profile: '厚め', specs: ['301', '302'] }, aggregate(rows))
-  assert.match(out, /弾：6/)
+  assert.match(out, /ステップ：6/)
   assert.match(out, /profile：厚め/)
   assert.match(out, /spec：301, 302/)
   assert.match(out, /\| 段階 \| 2 \| 80000 \|/)

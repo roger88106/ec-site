@@ -71,7 +71,7 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
     assert.deepEqual(findTerms('有料版の機能', list.error), [])
   })
 
-  test('一覧の許す語が全て理由つきである（allow は配列でなく、各値が空でない文字列）', () => {
+  test('一覧の許容用語が全て理由つきである（allow は配列でなく、各値が空でない文字列）', () => {
     for (const item of [...list.error, ...list.warning]) {
       if (item.allow === undefined) continue
       assert.equal(typeof item.allow, 'object', item.word)
@@ -83,7 +83,7 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
     }
   })
 
-  test('許す語が使われている場合は問題にならない', () => {
+  test('許容用語が使われている場合は問題にならない', () => {
     assert.deepEqual(findAllowProblems(['\u6279\u5224と\u6279\u8a55'], list.error.filter((item) => item.word === BATCH)), [])
   })
 })
@@ -201,12 +201,12 @@ describe('文書の用語の検査', () => {
     )
   })
 
-  test('許す語の中の一致は数えない', () => {
+  test('許容用語の中の一致は数えない', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     assert.deepEqual(findTerms('ブラウザーを開く', terms), [])
   })
 
-  test('許す語の外の一致は数える（同じ行に両方あっても）', () => {
+  test('許容用語の外の一致は数える（同じ行に両方あっても）', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     const text = ['ブラウザーを開く', 'ブラウザーとブラウザを比べる', 'ブラウザ'].join('\n')
     assert.deepEqual(
@@ -215,40 +215,40 @@ describe('文書の用語の検査', () => {
     )
   })
 
-  test('許す語の一覧がない語は、これまで通り部分一致で数える', () => {
+  test('許容用語の一覧がない語は、これまで通り部分一致で数える', () => {
     assert.equal(findTerms('道具箱', [{ word: '道具', use: 'ツール' }]).length, 1)
   })
 
-  test('許す語が使わない語を含まないのは設定の誤りとして失敗にする', () => {
+  test('許容用語が使わない語を含まないのは設定の誤りとして失敗にする', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '理由', ウェブ: '理由' } }]
     assert.throws(() => validateTerms(terms), /ウェブ/)
   })
 
-  test('許す語を配列で書くのは設定の誤りとして失敗にする', () => {
+  test('許容用語を配列で書くのは設定の誤りとして失敗にする', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: ['ブラウザー'] }]
     assert.throws(() => validateTerms(terms), /理由/)
   })
 
-  test('許す語に理由がなければ失敗にする', () => {
+  test('許容用語に理由がなければ失敗にする', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: ' ' } }]
     const problems = findAllowProblems(['ブラウザーを開く'], terms)
     assert.equal(problems.length, 1)
     assert.match(problems[0], /ブラウザー.*理由がない/)
   })
 
-  test('どの文書にも使われなくなった許す語を失敗にする', () => {
+  test('どの文書にも使われなくなった許容用語を失敗にする', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     const problems = findAllowProblems(['道具を使う', 'ツールを使う'], terms)
     assert.equal(problems.length, 1)
     assert.match(problems[0], /ブラウザー.*不要/)
   })
 
-  test('許す語が 1 つの文書にでも使われていれば不要とは見ない', () => {
+  test('許容用語が 1 つの文書にでも使われていれば不要とは見ない', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     assert.deepEqual(findAllowProblems(['道具', 'ブラウザーを開く'], terms), [])
   })
 
-  test('許す語のない項目は誤りにしない', () => {
+  test('許容用語のない項目は誤りにしない', () => {
     assert.deepEqual(findAllowProblems(['道具'], [{ word: '道具', use: 'ツール' }]), [])
   })
 
@@ -342,7 +342,7 @@ describe('日本語の文の検査（コードのコメントとテスト名）'
     )
   })
 
-  test('許す語はコメントの中でも通る', () => {
+  test('許容用語はコメントの中でも通る', () => {
     assert.deepEqual(findCodeTerms('A.java', '// 有料版の機能', list.error), [])
   })
 
@@ -610,12 +610,12 @@ describe('日本語の文の検査（インラインコードの扱い）', () =
     assert.deepEqual(findTerms('道`x`具', [{ word: '道具', use: 'ツール' }]), [])
   })
 
-  test('許す語の照合も、インラインコードを除いた文で行う', () => {
+  test('許容用語の照合も、インラインコードを除いた文で行う', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     assert.deepEqual(findTerms('`ブラウザー` とブラウザ', terms).map((hit) => hit.line), [1])
   })
 
-  test('許す語がインラインコードの中にしか出ないときは、使われていない（不要）と見る', () => {
+  test('許容用語がインラインコードの中にしか出ないときは、使われていない（不要）と見る', () => {
     const terms = [{ word: 'ブラウザ', use: 'ブラウザー', allow: { ブラウザー: '長音を付けた正しい語' } }]
     const problems = findAllowProblems(['`ブラウザー` を開く'], terms)
     assert.equal(problems.length, 1)
@@ -710,7 +710,7 @@ describe('日本語の文の検査（warning と終了コード）', () => {
   const files = { 'docs/a.md': longSentence, 'src/a.mjs': `// ${'い'.repeat(200)}である。\n` }
 
   test('warning だけのとき、既定の実行は成功し、最後の行は要約の行である', () => {
-    // 許す語が使われなくなったという error を出さないよう、一覧の全ての許す語を 1 行ずつ書く。
+    // 許容用語が使われなくなったという error を出さないよう、一覧の全ての許容用語を 1 行ずつ書く。
     // リポジトリ本体では実行しない（commit の hook は、Git のない一時の場所で検査を実行するため）
     const allowWords = [...list.error, ...list.warning].flatMap((item) => Object.keys(item.allow ?? {}))
     const result = runIn({ ...files, 'docs/allow.md': `${allowWords.join('\n')}\n` }, [])

@@ -58,7 +58,7 @@ describe('スロットの解除', () => {
     assert.equal(calls.drop, 1)
   })
 
-  test('最初の問い合わせが失敗したら、止めず、データを消さずに終了コード 1 で終わり、止める指令を示す', async () => {
+  test('最初の問い合わせが失敗したら、止めず、データを消さずに終了コード 1 で終わり、止めるコマンドを示す', async () => {
     const { calls, deps } = releaseDeps({ answers: [{ ok: false, reason: 'lsof がない' }] })
     const result = await releaseSlot(deps)
     assert.equal(result.code, 1)
@@ -121,7 +121,7 @@ describe('バックエンドの起動の前のポートの確認', () => {
     })
   })
 
-  test('ポートが使われていれば、起動せず、終了コード 1 でプロセスの ID と止める指令を示す', () => {
+  test('ポートが使われていれば、起動せず、終了コード 1 でプロセスの ID と止めるコマンドを示す', () => {
     const result = checkBackendPorts({
       ports,
       platform: 'win32',

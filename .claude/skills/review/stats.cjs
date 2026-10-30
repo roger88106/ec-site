@@ -1,6 +1,6 @@
 // アーカイブした spec の tasks（規模 L）と spec.md（規模 M）のレビューの記録の表を、時点ごとに集計する
-// 使い方：node .claude/skills/review/stats.cjs --round <弾の名前> --profile <profile の名前> <spec の番号> [<spec の番号> ...]
-// 弾と profile は表にないので引数で受ける。結果は標準出力に Markdown の表で出す
+// 使い方：node .claude/skills/review/stats.cjs --round <ステップの名前> --profile <profile の名前> <spec の番号> [<spec の番号> ...]
+// ステップと profile は表にないので引数で受ける。結果は標準出力に Markdown の表で出す
 // 同じ時点に複数のレビュー役が動いたときは、観点を「重複を除く」とした行の値を使う（なければ行の値を合計し、そのような組（表・時点・回数）の数を出す）。同じ時点の 2 回目以降は、回数ごとに分ける
 const fs = require('fs'), path = require('path')
 
@@ -173,14 +173,14 @@ function aggregate(rows) {
 
 /**
  * 集計を Markdown にする。
- * @param {{round: string, profile: string, specs: string[]}} meta 弾、profile、対象の spec の番号
+ * @param {{round: string, profile: string, specs: string[]}} meta ステップ、profile、対象の spec の番号
  * @param {ReturnType<typeof aggregate>} result 集計の結果
  * @returns {string} Markdown
  */
 function formatReport(meta, result) {
   const line = (s) => `| ${[s.time, s.rows, s.token, s.high, s.must, s.recommended, s.adopted, s.rate].join(' | ')} |`
   return [
-    `弾：${meta.round}`,
+    `ステップ：${meta.round}`,
     `profile：${meta.profile}`,
     `spec：${meta.specs.join(', ')}`,
     '',
@@ -205,7 +205,7 @@ function main() {
     else specs.push(args[i])
   }
   if (!round || !profile || !specs.length) {
-    console.error('使い方：node .claude/skills/review/stats.cjs --round <弾の名前> --profile <profile の名前> <spec の番号> [...]')
+    console.error('使い方：node .claude/skills/review/stats.cjs --round <ステップの名前> --profile <profile の名前> <spec の番号> [...]')
     process.exit(1)
   }
   const root = process.cwd()

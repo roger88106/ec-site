@@ -10,7 +10,7 @@ function fakeChild(pid) {
   return { pid, kills, kill: (signal) => kills.push(signal) }
 }
 
-/** spawnSync の代わり。呼ばれた指令と引数を記録する */
+/** spawnSync の代わり。呼ばれたコマンドと引数を記録する */
 function fakeSpawnSync() {
   const calls = []
   const spawnSync = (command, args) => {

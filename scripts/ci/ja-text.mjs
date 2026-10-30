@@ -1,8 +1,8 @@
 // 日本語の文を確認する。言い換えの一覧は ja-text.json。
-//   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許す語: 理由} で書く（その中の一致は数えない）。
-//       理由のない許す語と、どの文書にも使われなくなった許す語は失敗にする。
+//   error：使わない語。見つけたら失敗にする。使わない語を一部に含む正しい語は、項目の allow に {許容用語: 理由} で書く（その中の一致は数えない）。
+//       理由のない許容用語と、どの文書にも使われなくなった許容用語は失敗にする。
 //       語の検査（error と warning の語、allow の照合）は、インラインコード（バッククォートで囲んだ部分）の中を見ない。
-//       許す語がインラインコードの中にしか出ないときは、使われていないと見る。
+//       許容用語がインラインコードの中にしか出ないときは、使われていないと見る。
 //   warning：文脈で言い換えるかを決める語（「要求」など）と、文体の型。--warning を付けたときだけ一覧にし、失敗にしない（文書を書くときに見る）。
 //       文体の型は次のとおり。閾値は ja-text.json の style（no、length、comma、cell）。
 //       - 1 区間の「の」・字数・読点の数が閾値以上の文
@@ -88,15 +88,15 @@ function patternRegExp(term) {
 }
 
 /**
- * 行の中に、使わない語を、許す語の外で書いているかを返す。
- * 日本語に語の境界はないので、使わない語を一部に含む正しい語は、語ごとの許す語（allow）で救う。
+ * 行の中に、使わない語を、許容用語の外で書いているかを返す。
+ * 日本語に語の境界はないので、使わない語を一部に含む正しい語は、語ごとの許容用語（allow）で救う。
  * word の項目は部分の一致で、pattern の項目は正規表現の一致で見る（漢字の後を除くなどは pattern で書く）。
  *
  * インラインコードの中は見ない。
  *
  * @param {string} rawLine 行
- * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }} term 使わない語（または正規表現）と許す語（許す語と理由）
- * @returns {string | null} 許す語の外にある最初の一致（当たった文字列）。なければ null
+ * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }} term 使わない語（または正規表現）と許容用語（許容用語と理由）
+ * @returns {string | null} 許容用語の外にある最初の一致（当たった文字列）。なければ null
  */
 function disallowedMatch(rawLine, term) {
   const line = withoutInlineCode(rawLine)
@@ -159,7 +159,7 @@ export function findPatternProblems(terms) {
 }
 
 /**
- * 一覧の設定の誤り（pattern の誤り、許す語の形の誤り、許す語が使わない語を含まない誤り）を、例外にする。
+ * 一覧の設定の誤り（pattern の誤り、許容用語の形の誤り、許容用語が使わない語を含まない誤り）を、例外にする。
  * 一覧を読んだ後に 1 回だけ呼ぶ。
  *
  * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 一覧の項目
@@ -169,12 +169,12 @@ export function validateTerms(terms) {
   if (patternProblems.length) throw new Error(patternProblems.join('\n'))
   for (const term of terms) {
     if (Array.isArray(term.allow)) {
-      throw new Error(`「${termName(term)}」の allow は {許す語: 理由} の形で書く（ja-text.json）`)
+      throw new Error(`「${termName(term)}」の allow は {許容用語: 理由} の形で書く（ja-text.json）`)
     }
     if (term.word === undefined) continue
     for (const allow of Object.keys(term.allow ?? {})) {
       if (!allow.includes(term.word)) {
-        throw new Error(`許す語「${allow}」が使わない語「${term.word}」を含まない（ja-text.json）`)
+        throw new Error(`許容用語「${allow}」が使わない語「${term.word}」を含まない（ja-text.json）`)
       }
     }
   }
@@ -184,7 +184,7 @@ export function validateTerms(terms) {
  * 一覧の語を書いた行を探す。一覧の確認は validateTerms で先に行う。
  *
  * @param {string} text 文書
- * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許す語（許す語は {許す語: 理由}）
+ * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許容用語（許容用語は {許容用語: 理由}）
  * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語
  */
 export function findTerms(text, terms) {
@@ -199,11 +199,11 @@ export function findTerms(text, terms) {
 }
 
 /**
- * 許す語の誤り（理由がない、どの文書にも使われなくなった）を、表示する文にして返す。
- * インラインコードの中の語は検査しないので、そこにしか出ない許す語は、使われていない（不要）と見る。
+ * 許容用語の誤り（理由がない、どの文書にも使われなくなった）を、表示する文にして返す。
+ * インラインコードの中の語は検査しないので、そこにしか出ない許容用語は、使われていない（不要）と見る。
  *
  * @param {string[]} texts 調べる文書の内容（全て）
- * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 語（または正規表現）と許す語
+ * @param {{ word?: string, pattern?: string, allow?: Record<string, string> }[]} terms 語（または正規表現）と許容用語
  * @returns {string[]} 誤りの文
  */
 export function findAllowProblems(texts, terms) {
@@ -237,7 +237,7 @@ export function isTargetCode(file) {
  *
  * @param {string} file リポジトリのルートからのパス
  * @param {string} text ファイルの内容
- * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許す語
+ * @param {{ word: string, use: string, allow?: Record<string, string> }[]} terms 語と言い換えと許容用語
  * @returns {{ line: number, word: string, use: string }[]} 見つけた行と語（調べないファイルは空）
  */
 export function findCodeTerms(file, text, terms) {

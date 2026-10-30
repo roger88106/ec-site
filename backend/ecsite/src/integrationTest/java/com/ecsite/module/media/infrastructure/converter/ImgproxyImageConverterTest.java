@@ -133,7 +133,7 @@ class ImgproxyImageConverterTest {
     }
 
     /**
-     * WebP の画素数（幅、高さ）。VP8X（拡張）、VP8（非可逆）、VP8L（可逆）の箱から読む
+     * WebP の画素数（幅、高さ）。VP8X（拡張）、VP8（非可逆）、VP8L（可逆）のボックスから読む
      */
     private static int[] dimensions(byte[] webp) {
         var buffer = ByteBuffer.wrap(webp).order(ByteOrder.LITTLE_ENDIAN);
@@ -145,12 +145,12 @@ class ImgproxyImageConverterTest {
                 var bits = buffer.getInt(21);
                 yield new int[]{(bits & 0x3FFF) + 1, ((bits >> 14) & 0x3FFF) + 1};
             }
-            default -> throw new AssertionError("WebP の箱を読めない：" + chunk);
+            default -> throw new AssertionError("WebP のボックスを読めない：" + chunk);
         };
     }
 
     /**
-     * WebP の EXIF の箱の中身。なければ空
+     * WebP の EXIF のボックスの中身。なければ空
      */
     private static byte[] exifChunk(byte[] webp) {
         var buffer = ByteBuffer.wrap(webp).order(ByteOrder.LITTLE_ENDIAN);
@@ -161,7 +161,7 @@ class ImgproxyImageConverterTest {
             if (name.equals("EXIF")) {
                 return Arrays.copyOfRange(webp, offset + 8, offset + 8 + size);
             }
-            // 箱の大きさは偶数にそろえる
+            // ボックスの大きさは偶数にそろえる
             offset += 8 + size + (size % 2);
         }
         return new byte[0];

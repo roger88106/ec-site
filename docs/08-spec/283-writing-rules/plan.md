@@ -155,7 +155,7 @@
 |------|----------|----|----------|
 | `ja-text` に、差分の追加行の文体を示すオプション（`--changed`）を加える。差分の追加行の文に、字数か読点の数が閾値以上のものがあれば、警告として示す。終了コードは 0 にする | `scripts/ci/ja-text.mjs`、テスト | 21、23 | テスト（レッドから） |
 | CI では、警告を GitHub Actions の注釈（`::warning file=…,line=…::`）で出し、pull request の画面の該当する行に表示する | 同上 | 21 | テスト。pull request の画面で注釈を確認する |
-| 差分の追加行は、`origin/develop`（なければ `develop`）とのマージベース（`git merge-base`）からの追加行とする。マージベースが HEAD のとき（`develop` への push）は、HEAD の 1 つ目の親との差分にする | 同上 | 21、23 | テスト。マージベースの求め方は、マイグレーションの検査（`migrations.mjs`）と同じ形にし、共通の関数を `scripts/ci/lib/` に置く。`migrations.test.mjs` が通る |
+| 差分の追加行は、`origin/develop`（なければ `develop`）とのマージベース（`git merge-base`）からの追加行とする。マージベースが HEAD のとき、CI の `develop`・`main` への push（`GITHUB_EVENT_NAME=push`）では HEAD の 1 つ目の親との差分にし、手元では HEAD との差分（作業ツリーの変更）にする（pull request の前のレビューで、手元の develop で前のマージの行を数えないようにした） | 同上 | 21、23 | テスト。マージベースの求め方は、マイグレーションの検査（`migrations.mjs`）と同じ形にし、共通の関数を `scripts/ci/lib/` に置く。`migrations.test.mjs` が通る |
 | 閾値は今の warning と同じ値（字数 100、読点 5）。`ja-text.json` の `style` を読む | `scripts/ci/ja-text.json` | 21、24 | テスト |
 | 対象は、今の `ja-text` と同じファイル（文書、コードのコメントとテスト名）。表の区切り行、コードブロック、インラインコード、URL は数えない | `scripts/ci/ja-text.mjs` | 24 | テスト |
 | 読点の数では、インラインコードかリンクだけの項目を区切る読点を数えない。リンク・文書の名前・skill の名前の後の見出しの参照（`の「…」`）は項目に含める（段階 3 で参照の形を変えた後、spec の最後のレビューで合わせた） | 同上 | 21 | テスト。理由：tasks の範囲と参照の行のように、ファイルや文書を列挙する行に警告が出るため |

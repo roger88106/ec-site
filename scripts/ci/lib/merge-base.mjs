@@ -40,22 +40,24 @@ export function mergeBaseWith(branch, cwd = process.cwd()) {
 const PUSH_BRANCHES = ['develop', 'main']
 
 /**
- * develop か main への push（の後の状態）かを返す。
- * 現在のブランチの名前が develop か main のとき、または CI の push のイベントで、push の先が develop か main のとき（ブランチを checkout していなくてもよい）。
+ * CI（GitHub Actions）の、develop か main への push のイベントかを返す。
+ * 手元（GITHUB_ACTIONS が true でない）では、develop を checkout していても false にする。
+ * HEAD が origin/develop と同じときに、前のマージの行を追加行に数えないためである。
+ * checkout したブランチの名前は見ない。CI の検査（docs.yml）は push と pull_request のときに実行する。
+ * push のときは、GitHub が GITHUB_EVENT_NAME と GITHUB_REF_NAME を必ず設定する。
  *
- * @param {string} cwd 実行する場所（リポジトリの中）
  * @param {Record<string, string | undefined>} env 環境変数
- * @returns {boolean} develop か main への push なら true
+ * @returns {boolean} CI の develop か main への push なら true
  */
-function isPushToMainline(cwd, env) {
-  if (PUSH_BRANCHES.includes(tryGit(['symbolic-ref', '--short', '-q', 'HEAD'], cwd))) return true
-  return env.GITHUB_EVENT_NAME === 'push' && PUSH_BRANCHES.includes(env.GITHUB_REF_NAME)
+function isCiPushToMainline(env) {
+  return env.GITHUB_ACTIONS === 'true' && env.GITHUB_EVENT_NAME === 'push' && PUSH_BRANCHES.includes(env.GITHUB_REF_NAME)
 }
 
 /**
  * 差分の基準の commit を返す。HEAD と develop との merge-base である。
- * merge-base が HEAD 自身で、develop か main への push（isPushToMainline）のときは、HEAD の 1 つ目の親（マージの前の develop）にする。
- * それ以外で merge-base が HEAD 自身のとき（develop から分けたばかりで commit がない作業ブランチ）は、HEAD にする（作業ツリーの変更だけを見る）。
+ * merge-base が HEAD 自身で、CI の develop・main への push（isCiPushToMainline）なら、HEAD の 1 つ目の親（マージの前）にする。
+ * それ以外で merge-base が HEAD 自身なら、HEAD にする（作業ツリーの変更だけを見る）。
+ * develop から分けたばかりで commit がない作業ブランチと、手元の develop で HEAD が origin/develop と同じときである。
  * develop が求められないとき（ref がない、履歴が繋がらない）は HEAD の 1 つ目の親にし、使った ref を null にする（呼ぶ側が警告を出す）。
  *
  * @param {string} [cwd] 実行する場所（リポジトリの中）。なければ今のディレクトリ
@@ -69,5 +71,5 @@ export function resolveDiffBase(cwd = process.cwd(), env = process.env) {
   const found = mergeBaseWith('develop', cwd)
   if (!found) return { revision: parent, base: null }
   if (found.revision !== head) return { revision: found.revision, base: found.base }
-  return { revision: isPushToMainline(cwd, env) ? parent : head, base: found.base }
+  return { revision: isCiPushToMainline(env) ? parent : head, base: found.base }
 }

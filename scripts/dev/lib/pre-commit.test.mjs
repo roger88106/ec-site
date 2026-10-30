@@ -451,6 +451,22 @@ describe('実際の hook', () => {
     }
   })
 
+  test('diff.renames=copies の設定でも、コピーして長い文を足したファイルに warning を表示する', () => {
+    // コピーの元（old.md）も変えると、git はコピー（C）として見分けられる。コピーとして見分けると、追加行の差分から落ちる
+    // 似ている度合いが git の閾値（50%）を超えるよう、元の行を長い文より十分に多くする
+    const body = Array.from({ length: 40 }, (_, index) => `${index + 1} 番目の行。`).join('\n')
+    const long = `${'あ'.repeat(110)}。`
+    for (const gitConfig of [null, ['diff.renames', 'copies']]) {
+      const { status, output } = runHook(jaTextCheck, {
+        baseline: { 'docs/old.md': `${body}\n` },
+        files: { 'docs/old.md': `${body}\n古い方の新しい行。\n`, 'docs/new.md': `${body}\n${long}\n` },
+        gitConfig,
+      })
+      assert.equal(status, 0)
+      assert.match(output, /docs\/new\.md:41 長い文/, String(gitConfig))
+    }
+  })
+
   test('改行コードだけを変えた行には、warning を表示しない', () => {
     const { status, output } = runHook(jaTextCheck, {
       baseline: { 'docs/a.md': '古い要求の行。\nふつうの行。\n' },

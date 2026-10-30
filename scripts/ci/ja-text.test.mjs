@@ -772,6 +772,7 @@ describe('日本語の文の検査（warning と終了コード）', () => {
 describe('日本語の文の検査（差分の追加行の文体：--changed）', () => {
   // CI の push のイベントの変数があると基準の選び方が変わるので外す（手元と CI で同じ結果にする）
   const env = withoutGitEnv()
+  delete env.GITHUB_ACTIONS
   delete env.GITHUB_EVENT_NAME
   delete env.GITHUB_REF_NAME
   const repos = []
@@ -812,7 +813,7 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     commit('base')
     git('update-ref', developRef, 'HEAD')
     git('checkout', '-q', '-b', 'feature')
-    const run = (cwd = repo) => spawnSync(process.execPath, [SCRIPT, '--changed'], { cwd, env, encoding: 'utf8' })
+    const run = (cwd = repo, extraEnv = {}) => spawnSync(process.execPath, [SCRIPT, '--changed'], { cwd, env: { ...env, ...extraEnv }, encoding: 'utf8' })
     return { repo, git, write, commit, run }
   }
 
@@ -941,15 +942,19 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
     assert.deepEqual(annotated(r.run().stdout), ['docs/a.md:3', 'docs/a.md:4', 'src/a.mjs:2'])
   })
 
-  test('develop への push（merge-base が HEAD 自身）では、1 つ目の親との差分を見る', () => {
+  test('CI の develop への push（merge-base が HEAD 自身）では、1 つ目の親との差分を見る。手元の develop では見ない', () => {
     const r = createRepo({ 'docs/a.md': `${LONG}\n` }, { developRef: 'refs/remotes/origin/develop' })
     r.git('checkout', '-q', '-B', 'develop')
     r.write('docs/a.md', `${LONG}\n${COMMAS}\n`)
     r.commit('push')
     r.git('update-ref', 'refs/remotes/origin/develop', 'HEAD')
-    const result = r.run()
+    const result = r.run(r.repo, { GITHUB_ACTIONS: 'true', GITHUB_EVENT_NAME: 'push', GITHUB_REF_NAME: 'develop' })
     assert.equal(result.status, 0)
     assert.deepEqual(annotated(result.stdout), ['docs/a.md:2'])
+    // 手元（GITHUB_ACTIONS がない）では HEAD を基準にし、前のマージ（push の commit）の行を追加行にしない
+    const local = r.run()
+    assert.equal(local.status, 0)
+    assert.deepEqual(annotated(local.stdout), [])
   })
 
   test('origin/develop があれば、その分岐点からの差分を見る（CI の checkout）', () => {
@@ -1001,5 +1006,16 @@ describe('日本語の文の検査（差分の追加行の文体：--changed）'
 
   test('注釈の内容とパスの、GitHub Actions が区切りに使う字を逃がす', () => {
     assert.equal(jaText.formatAnnotation('docs/a,b:c.md', 3, '100% の文\n次'), '::warning file=docs/a%2Cb%3Ac.md,line=3::100%25 の文%0A次')
+  })
+})
+
+describe('日本語の文の検査（--warning --added の測るファイル）', () => {
+  test('追加行の差分がなければ、全てのファイルを測る', () => {
+    assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md'], null), ['docs/a.md', 'docs/b.md'])
+  })
+
+  test('追加行の差分があれば、差分にあるファイルだけを（順を変えずに）測る。追加行のないファイルも差分にあれば測る', () => {
+    const added = new Map([['docs/b.md', new Set([1])], ['docs/c.md', new Set()], ['docs/x.md', new Set([2])]])
+    assert.deepEqual(jaText.filesToMeasure(['docs/a.md', 'docs/b.md', 'docs/c.md'], added), ['docs/b.md', 'docs/c.md'])
   })
 })

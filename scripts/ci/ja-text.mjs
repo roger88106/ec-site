@@ -29,8 +29,8 @@
 //       GitHub Actions の注釈（`::warning file=…,line=…::`）の形で 1 件 1 行に出し、最後に件数の行を出す。
 //       警告があっても終了コードは 0。「の」の連なり、否定、複合動詞の崩れと、語の検査は見ない（語は既定の実行が見る）。
 //       差分の基準は、HEAD と origin/develop（なければ develop）のマージベース。
-//       マージベースが HEAD のときは、develop・main への push なら HEAD の 1 つ目の親にする。
-//       それ以外（分けたばかりで commit がない作業ブランチ）なら HEAD にする（作業ツリーの変更だけを見る）。
+//       マージベースが HEAD のときは、CI の develop・main への push なら HEAD の 1 つ目の親にする。
+//       それ以外（分けたばかりで commit がない作業ブランチ、手元の develop で HEAD が origin/develop と同じとき）なら HEAD にする（作業ツリーの変更だけを見る）。
 //       対象のファイルは既定の実行と同じで、削除したファイルは見ない。名前を変えたファイルは、変えていない行を追加行にしない（git の -M）。
 //       複数の行にまたがる文は、文の行のどれかが追加行なら示す（行は文の行のうち最初の追加行）。既存の行だけでできた文は示さない。
 //       shallow clone では差分を求められないので失敗にする。
@@ -715,6 +715,18 @@ function unquotePath(name) {
 }
 
 /**
+ * 測るファイルを返す（--warning --added）。追加行の差分があれば、差分にあるファイルだけにする。
+ * 差分にないファイルは追加行がないので、測っても示さない（結果は全てのファイルを測るときと同じ）。
+ *
+ * @param {string[]} files 対象のファイル
+ * @param {Map<string, Set<number> | null> | null} addedMap ファイルごとの追加行。null なら全てのファイルを測る
+ * @returns {string[]} 測るファイル（files の順）
+ */
+export function filesToMeasure(files, addedMap) {
+  return addedMap === null ? files : files.filter((file) => addedMap.has(file))
+}
+
+/**
  * git diff -U0 の出力から、ファイルごとの追加行の番号（新しい方の行）を読む。
  * 本文の行は hunk の見出しの行数だけ読み飛ばすので、「+++」で始まる追加行を見出しと取り違えない。
  *
@@ -827,13 +839,15 @@ if (isMain(import.meta.url)) {
     process.exit(0)
   }
   const gitFiles = listGitFiles()
-  const files = gitFiles.filter((file) => isTargetDoc(file))
-  exitIfNoFiles(files, '語を調べる文書')
-  const codeFiles = gitFiles.filter((file) => isTargetCode(file))
-  exitIfNoFiles(codeFiles, '語を調べるコード')
+  const allDocs = gitFiles.filter((file) => isTargetDoc(file))
+  exitIfNoFiles(allDocs, '語を調べる文書')
+  const allCode = gitFiles.filter((file) => isTargetCode(file))
+  exitIfNoFiles(allCode, '語を調べるコード')
   // --added：標準入力の差分（git diff --cached -U0）の追加行だけを --warning の対象にする（commit の前の hook。--changed と同じ選び方）。
-  // 差分にないファイルは、追加行なし（全ての行ではない）
+  // 差分にないファイルは、追加行なし（全ての行ではない）。追加行がないので測らない（語と文体の warning）
   const addedMap = warning && args.includes('--added') ? parseAddedLines(readFileSync(0, 'utf8')) : null
+  const files = filesToMeasure(allDocs, addedMap)
+  const codeFiles = filesToMeasure(allCode, addedMap)
   const addedOf = (file) => (addedMap === null ? null : (addedMap.get(file) ?? new Set()))
   const isAdded = (file, line) => addedMap === null || addedOf(file).has(line)
   const texts = files.map((file) => readFileSync(file, 'utf8'))

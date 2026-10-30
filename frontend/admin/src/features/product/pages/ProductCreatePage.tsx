@@ -115,7 +115,7 @@ export function ProductCreatePage() {
                 <div className="flex items-center gap-2" key={axis.id}>
                   <Input
                     aria-label={t('axis', { number: index + 1 }) /* 軸の番号 */}
-                    // 「軸を追加」で増えた欄に入力を移す（autoFocus は欄を作ったときだけ効く）
+                    // 「軸を追加」で増えた欄に入力を移す（autoFocus は欄を作ったときだけ有効になる）
                     autoFocus
                     className="w-56"
                     maxLength={schemas.CreateProductRequest.axes.items.maxLength}

@@ -98,7 +98,7 @@ describe('除外は行の文字で当てる', () => {
     assert.deepEqual(found.map((hit) => hit.line), [2])
   })
 
-  test('除外した行と同じ文字の行を後から足しても、除外は 1 行だけに効く', () => {
+  test('除外した行と同じ文字の行を後から足しても、除外は 1 行だけに有効になる', () => {
     const { found } = applyExclusions(hitsOf([`    ${SLEEP}`, `    ${SLEEP}`].join('\n')), { [key]: '理由' })
     assert.deepEqual(found.map((hit) => hit.line), [2])
   })

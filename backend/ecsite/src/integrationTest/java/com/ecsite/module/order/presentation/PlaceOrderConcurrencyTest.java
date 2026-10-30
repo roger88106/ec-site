@@ -43,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * 注文の並行性の受け入れテスト。<br />
- * 行ロックが効いていることを確認するため、要求ごとにコミットする。ロールバックしないが、作ったデータは消さない。
+ * 行ロックが有効になっていることを確認するため、要求ごとにコミットする。ロールバックしないが、作ったデータは消さない。
  * 税区分の名称は一意なので、ほかのテストと重ならない名前にする。
  */
 @IntegrationTest

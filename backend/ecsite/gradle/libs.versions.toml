@@ -106,7 +106,7 @@ awssdk-s3 = { module = "software.amazon.awssdk:s3" }
 postgresql = { module = "org.postgresql:postgresql" }
 flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql" }
 
-# --- jOOQ のコード生成（buildscript。Boot BOM が効かないのでバージョンを指定する） ---
+# --- jOOQ のコード生成（buildscript。Boot BOM が有効にならないのでバージョンを指定する） ---
 buildscript-flyway-core = { module = "org.flywaydb:flyway-core", version.ref = "flyway" }
 buildscript-flyway-database-postgresql = { module = "org.flywaydb:flyway-database-postgresql", version.ref = "flyway" }
 buildscript-postgresql = { module = "org.postgresql:postgresql", version.ref = "postgresql" }

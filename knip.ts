@@ -16,7 +16,7 @@ const config: KnipConfig = {
     // 共有パッケージは、package.json の exports のワイルドカードで全てのファイルが入口になる。
     // 入口の export も、管理画面・店舗画面・テストから使われているかを見る
     'frontend/shared': { includeEntryExports: true },
-    // i18n/types.ts は、どこからも import されず、型の拡張（declare module）で効く。tsconfig が読む
+    // i18n/types.ts は、どこからも import されず、型の拡張（declare module）で有効になる。tsconfig が読む
     'frontend/admin': { entry: ['src/i18n/types.ts'] },
     'frontend/store': { entry: ['src/i18n/types.ts'] },
     // prepare.ts は scripts/run.ts が node の子プロセスで起動する

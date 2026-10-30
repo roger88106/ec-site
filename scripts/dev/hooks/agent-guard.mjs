@@ -57,7 +57,7 @@ const GH_TIMEOUT_MS = 10000
  */
 export const GH_BUDGET_MS = 20000
 
-/** 高の経路の一覧（Dependabot の pull request の危険度の判定に使う） */
+/** 危険度が高い経路の一覧（Dependabot の pull request の危険度の判定に使う） */
 const RISK_CONFIG_FILE = new URL('../../ci/risk.json', import.meta.url)
 
 /** 利用者の許可なしにマージしてよい向き先のブランチ */
@@ -1281,9 +1281,9 @@ function checkProblems({ nodes, undated, truncated }) {
 }
 
 /**
- * 高の経路の一覧を読む。
+ * 危険度が高い経路の一覧を読む。
  *
- * @returns {{ groups: { name: string, paths: string[] }[] }} 高の経路の一覧
+ * @returns {{ groups: { name: string, paths: string[] }[] }} 危険度が高い経路の一覧
  */
 function loadRiskConfig() {
   return parseRiskConfig(readFileSync(RISK_CONFIG_FILE, 'utf8'))
@@ -1304,13 +1304,13 @@ function dependabotProblems(pullRequest) {
   try {
     config = loadRiskConfig()
   } catch (error) {
-    return [`高の経路の一覧（scripts/ci/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
+    return [`危険度が高い経路の一覧（scripts/ci/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
   }
   // Dependabot は spec.md を変えないので、spec の宣言を読む関数は常に null を返すものでよい
   const result = applyDependabotTitle(judgeRisk(files, config, () => null), pullRequest.title)
   if (result.level === '低') return []
   const reasons = [...result.hits.map((hit) => `${hit.name}：${hit.files.join('、')}`), result.dependabot]
-  return [`Dependabot の更新の危険度が高（${reasons.join('、')}）`]
+  return [`Dependabot の更新の危険度が高い（${reasons.join('、')}）`]
 }
 
 /**
@@ -1324,7 +1324,7 @@ function authoredProblems(pullRequest, checks) {
   const problems = []
   const bodyRisk = readBodyRisk(pullRequest.body ?? '')
   if ('error' in bodyRisk) problems.push(`本文の危険度を読めない（${bodyRisk.error}）`)
-  else if (bodyRisk.value !== '低') problems.push(`本文の危険度が低でない（判定：${bodyRisk.value}）`)
+  else if (bodyRisk.value !== '低') problems.push(`本文の危険度の判定が「低」でない（判定：${bodyRisk.value}）`)
   const riskChecks = checks.filter((node) => node.__typename === 'CheckRun' && node.name === RISK_CHECK)
   if (riskChecks.length === 0 || riskChecks.some((node) => node.status !== 'COMPLETED' || node.conclusion !== 'SUCCESS')) {
     problems.push(`検査「${RISK_CHECK}」が成功していない（ないか、成功以外）`)

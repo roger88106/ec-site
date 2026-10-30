@@ -103,13 +103,13 @@ GitHub の ruleset を `develop` と `main` に作る。
 | label | `種類:整理`、`領域:ci`、`依存の更新` |
 | commit のメッセージの前置き | `deps` |
 
-※3：`github-actions` の更新は危険度は高なので、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
+※3：`github-actions` の更新は危険度が高いので、利用者が許可する。1 つにまとめると、許可と CI の待ちが 1 回で済む。
 
 - セキュリティの更新は、cooldown を待たずに作成される。リポジトリの設定で、Dependabot のセキュリティの更新を有効にしている。
 - Dependabot の pull request に `develop` を取り込むとき（衝突するとき、または `develop` が同じファイルを変えたとき）は、pull request に `@dependabot rebase` とコメントして更新させる。理由：画面の「Update branch」で merge commit を追加すると、Dependabot がその pull request を自動で更新しなくなるため。
 - `@types/node` の major は、Dependabot の対象から外す。理由：実行の環境は `.node-version` の Node（`package.json` の `engines.node` はその下限の範囲）で、型の定義だけを上げると、そのバージョンにない API も型の検査を通ってしまうため。Node のバージョンを上げるときに、合わせて上げる。
 - `github-actions` は、ワークフローに加え、ローカルの複合の action（`.github/actions/setup-frontend`）で使う action のバージョンも更新する。理由：`directory: /` は `.github/workflows` とルートの `action.yml` しか見ないため、`directories` に複合の action のディレクトリを追加している。複合の action を増やしたら、追加する。
-- 危険度は、経路と、pull request の題から読む更新の種類で判定する。`github-actions` の更新（`.github/`）と major の更新、題から更新の種類を読めないものは高で、利用者が許可する。他の minor と patch は低で、issue 担当のセッションがマージする。CI の job は作成者で見分け、本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[エージェントの作業フロー](../05-開発規則/subagents.md)の「役割と作業の流れ」）。
+- 危険度は、経路と、pull request の題から読む更新の種類で判定する。`github-actions` の更新（`.github/`）と major の更新、題から更新の種類を読めないものは危険度が高く、利用者が許可する。他の minor と patch は危険度が低く、issue 担当のセッションがマージする。CI の job は作成者で見分け、本文と比べず判定をジョブの要約に出すので、マージの前にその判定を読む（[エージェントの作業フロー](../05-開発規則/subagents.md)の「役割と作業の流れ」）。
 - Dependabot の pull request は、プロジェクトの規則の例外とする。issue を必要とせず、commit のメッセージは英語でよい。
 - Gradle のバージョンを上げるときは、`backend/ecsite/gradle/wrapper/gradle-wrapper.properties` の `distributionSha256Sum` を、`https://services.gradle.org/distributions/gradle-<バージョン>-bin.zip.sha256` の値に替える。Dependabot の Gradle の wrapper の更新がこの値も替えるかは確認していないので、更新の pull request で確認する。
 - TypeScript のバージョンを上げる pull request は、`node scripts/ci/globals/lib-globals.mjs --write` で組み込みの名前の一覧（`scripts/ci/globals/lib-globals.json`）を書き直し、差分を確認する。そのうえで `node scripts/ci/frontend-rules.mjs` を実行し、増えた名前によるシャドーイングがないことを確認する。lib の名前が変わると、CI の店舗画面の「組み込みの名前の一覧の確認」が失敗する。

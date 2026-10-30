@@ -21,7 +21,7 @@ const {
 
 /**
  * 店舗 API の応答を待つ時間の上限を、要求に付ける（店舗画面の構成の「エラー」）。上限を過ぎた要求は例外で失敗し、
- * サーバーアクションでは「接続できない」の結果になる。呼ぶときに fetch を替えても（{@link UNCACHED}）効く。
+ * サーバーアクションでは「接続できない」の結果になる。呼ぶときに fetch を替えても（{@link UNCACHED}）有効になる。
  */
 const timeout: Middleware = {
   onRequest({ request }) {
@@ -123,7 +123,7 @@ export const UNCACHED = {
 /**
  * サーバーコンポーネントから API を呼ぶときに使う。<br />
  * 画面をリクエストのたびに作るようにしてから（connection）、クライアントを返す。
- * ビルドのときに画面を作って API を呼ぶ（バックエンドが必要だ）のを避けるため。API の結果のキャッシュは別に効く。
+ * ビルドのときに画面を作って API を呼ぶ（バックエンドが必要だ）のを避けるため。API の結果のキャッシュは別に有効になる。
  */
 export async function getApi() {
   await connection()

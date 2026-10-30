@@ -97,7 +97,7 @@ sourceSets.test {
 configurations["integrationTestImplementation"].extendsFrom(configurations.testImplementation.get())
 configurations["integrationTestRuntimeOnly"].extendsFrom(configurations.testRuntimeOnly.get())
 
-// IntelliJ に integrationTest をテストソースとして認識させる（@Autowired 等の Spring 補助が効くようになる）
+// IntelliJ に integrationTest をテストソースとして認識させる（@Autowired 等の Spring 補助が有効になる）
 idea {
     module {
         testSources.from(sourceSets["integrationTest"].java.srcDirs)

@@ -88,7 +88,7 @@ test('一覧の許容用語は、見つけても数えない', () => {
   assert.deepEqual(zh.findWords(`a${SIMPLIFIED}b`, custom, 'docs/a.md'), [])
 })
 
-test('ファイルを指定した許容用語は、そのファイルだけで効く', () => {
+test('ファイルを指定した許容用語は、そのファイルだけで有効になる', () => {
   const custom = { ...list, allow: [{ word: SIMPLIFIED, file: 'docs/a.md', reason: 'テスト' }] }
   assert.deepEqual(zh.findWords(`a${SIMPLIFIED}b`, custom, 'docs/a.md'), [])
   assert.deepEqual(zh.findWords(`a${SIMPLIFIED}b`, custom, 'docs/b.md'), [SIMPLIFIED])
@@ -216,7 +216,7 @@ test('コミットメッセージのファイルを調べる', () => {
   assert.ok(!err.join('').includes('COMMIT_MSG:2'))
 })
 
-test('Git の外の許容用語は、入口の判定にも効く', () => {
+test('Git の外の許容用語は、入口の判定にも有効になる', () => {
   const { deps } = makeDeps({ readFile: () => SIMPLIFIED, localAllow: () => [{ word: SIMPLIFIED }] })
   assert.equal(zh.run(['file', 'a.md'], deps), 0)
 })

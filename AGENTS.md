@@ -23,7 +23,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 | `new-screen` | 店舗画面・管理画面に画面や操作を追加する、修正する |
 | `handoff` | spec 担当のセッションを途中で別のセッションに替えるときに、引き継ぎの文書を作る（利用者が `/handoff` で呼ぶ） |
 | `retro` | セッションを振り返り、環境の改善点を挙げる（利用者が `/retro` で呼ぶ） |
-| `agent-retro` | 後片付けと、ステップ・段の終わりの振り返り |
+| `agent-retro` | 後片付けと、ステップ・フェーズの終わりの振り返り |
 | `docs` | 文書（docs/、README、AGENTS.md）を書く・修正する・移す |
 | `writing-for-agents` | skill や AGENTS.md を作る、修正する |
 | `review` | 段階・spec の最後のレビュー、plan・tasks の照合、文書のレビュー、全体のレビュー（受け入れ確認） |
@@ -96,7 +96,7 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない |
-| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、`hotfix-` の後の `main` から `develop` への取り込み、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の高・必須が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/05-開発規則/subagents.md)の「役割と作業の流れ」。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす低のマージは通す）。担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み（ブランチの名前で見分けられない）は hook が見ないので、文章の規則として守る |
+| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、`hotfix-` の後の `main` から `develop` への取り込み、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の重要度「高」「必須」の指摘が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/05-開発規則/subagents.md)の「役割と作業の流れ」。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす、危険度が低い変更のマージは通す）。担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み（ブランチの名前で見分けられない）は hook が見ないので、文章の規則として守る |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（項目ごとの中身、使う者、保存の期間は [開発環境の起動](docs/06-手順書/setup.md)の「手元の置き場所」、`.gitignore` は [ブランチとリリース](docs/06-手順書/branches.md)の「切り方と pull request」） |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/06-手順書/branches.md)。
@@ -108,4 +108,4 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 - JDK 21。統合テストと jOOQ のコード生成には Docker が必要。
 - Gradle のプロジェクトは `backend/ecsite/` にある（`./gradlew` もそこで実行する）。リポジトリのルートと `backend/` には Gradle の設定がない。
 - 起動・テストの手順は [開発環境の起動](docs/06-手順書/setup.md) と [テストの実行方法](docs/06-手順書/running-tests.md)。エージェントは skill `local-dev` を使う。
-- Claude Code の hook と permission の書き先は、2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のもの（zh-mixing の hook、利用者の SessionStart など）は `.claude/settings.local.json`（Git に入らない）である。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs` と、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`。手元の hook は `settings.local.json` に置き、設定は skill `local-dev` の「手元の hook の設定」）。作業ツリーのセッションが読む設定・定義・skill と、変更が効く時点は、skill `sessions` のツールの補足の「作業ツリーのセッションが読むもの」の表。作業ツリーで起動した `claude -p` は、作業ツリーのブランチに commit された `settings.json` を読むので、`develop` を取り込んでいない作業ブランチでは適用されない。その `claude -p` では、動いているセッションに反映されるのは `settings.json` の hook の変更と skill の追加で、`settings.local.json` と `.claude/agents/` の定義の変更は、新しいセッションを起動してから読まれる。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーの（commit していない変更を含む）設定・定義・skill を読み、作業ツリーのものを読まない。作業ブランチの変更を動かして確認するときは、その作業ツリーで `claude -p` を起動する。反映が確認できないときは、新しいセッションを起動する。
+- Claude Code の hook と permission の書き先は、2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のもの（zh-mixing の hook、利用者の SessionStart など）は `.claude/settings.local.json`（Git に入らない）である。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs` と、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`。手元の hook は `settings.local.json` に置き、設定は skill `local-dev` の「手元の hook の設定」）。作業ツリーのセッションが読む設定・定義・skill と、変更が反映される時点は、skill `sessions` のツールの補足の「作業ツリーのセッションが読むもの」の表。作業ツリーで起動した `claude -p` は、作業ツリーのブランチに commit された `settings.json` を読むので、`develop` を取り込んでいない作業ブランチでは適用されない。その `claude -p` では、動いているセッションに反映されるのは `settings.json` の hook の変更と skill の追加で、`settings.local.json` と `.claude/agents/` の定義の変更は、新しいセッションを起動してから読まれる。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーの（commit していない変更を含む）設定・定義・skill を読み、作業ツリーのものを読まない。作業ブランチの変更を実際に実行して確認するときは、その作業ツリーで `claude -p` を起動する。反映が確認できないときは、新しいセッションを起動する。

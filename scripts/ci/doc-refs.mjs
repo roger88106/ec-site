@@ -4,9 +4,11 @@
 //     先の文書に、その見出し（番号を除く）が 1 つだけあるか。同じ見出しが 2 つ以上あれば、親の見出しを前に付けた形（`の「段階 1」の「タスク」`）で 1 つに決める。
 //     見出しは、リンクを表示の文字に、コードの印を除き、全角と半角を揃え、空白をまとめて比べる。末尾の全角の括弧の補足（`（DS-283-5：DC-283-21〜25）` など）は、
 //     除いた形でも全て書いた形でも当たる（除くと 2 つ以上に当たるなら、1 つに決まらないとする）。Markdown のコードブロックの中は見ない
-//   - 節の参照（`店舗画面の構成 第 4.5 節` など）：文書の名前・リンク・パスが指す文書に、その番号の見出しがあるか
-// 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。名前のない「第 N 節」は、Markdown ではその文書自身を指す。
-// 節の参照と見出しの参照は、Markdown の他にコードのファイルも見る（文書の名前かリンクで書いたものだけ）。
+//   - 節の番号の参照（「第」と番号と「節」）：失敗にし、見出しの形に書き換えるよう示す。節の番号は、節を加える・移すたびに変わり、意味の違う節を指したまま通るため。
+//     Markdown は、インラインコードとコードブロックの外の全て（名前のないもの、spec・plan の節も）。コードは、文書の名前・リンク・パスの直後（間の「の」は許す）のものだけ。
+//     指す先の文書に、その番号の見出しがあれば、失敗のメッセージにその見出しを示す。名前のない番号は、Markdown ではその文書自身を指すとして見出しを求める
+// 文書の名前は、各文書の 1 行目の見出しから括弧（`（frontend/store）` など）を除いたもの。
+// 見出しの参照と節の番号の参照は、Markdown の他にコードのファイルも見る（コメントを読める拡張子。文字列も含めてファイルの全体を読む）。
 // アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
 // ただし、アーカイブの下の MVP の完成までの一覧（mvp.md）は spec の記録でなく一覧の文書で、spec を移すたびにリンクが切れるので見る。
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
@@ -28,8 +30,31 @@ export function isExcluded(file) {
   return EXCLUDED.some((pattern) => pattern.test(file))
 }
 
-/** 節の参照を探すファイル */
-const TEXT_FILE = /\.(md|java|ts|tsx|mjs|cjs|js|yml|yaml|sh|toml|properties)$/
+/** 参照を探すファイル。Gradle の設定（.kts）も、コメントに参照を書くので見る */
+const TEXT_FILE = /\.(md|java|kts|ts|tsx|mjs|cjs|js|yml|yaml|sh|toml|properties)$/
+
+/**
+ * 参照を探すファイルか（拡張子で決める）。
+ *
+ * @param {string} file リポジトリのルートからのパス
+ * @returns {boolean} 探すなら true
+ */
+export function isTargetFile(file) {
+  return TEXT_FILE.test(file)
+}
+
+/** 節の番号の参照（「第 4.2、5.6 節」「第 4〜6・8 節」など） */
+const SECTION_NUMBER = /第 ([0-9][0-9.・、〜~ ]*?) ?節/g
+
+/**
+ * Markdown のインラインコードを、同じ長さの空白に替える（位置を変えずに、中の文字を読まないため）。
+ *
+ * @param {string} line 1 行
+ * @returns {string} インラインコードを空白にした行
+ */
+function maskInlineCode(line) {
+  return line.replace(/(`+)(.+?)\1/g, (code) => ' '.repeat(code.length))
+}
 
 /**
  * 見出しを GitHub と同じ形の slug にする。
@@ -65,11 +90,11 @@ export function headingKey(text) {
  * Markdown の見出しを読み、リンクの先にできる slug と、節の番号と、見出しの参照の先を集める。
  *
  * @param {string} text Markdown
- * @returns {{ title: string | null, anchors: Set<string>, sections: Set<string>, headings: { keys: Set<string>, ancestors: Set<string>[] }[] }} 1 行目の見出し、slug、節の番号、番号を除いた見出し（keys は比べる形と、末尾の括弧の補足を除いた形。ancestors は親から順の上の見出しの keys）
+ * @returns {{ title: string | null, anchors: Set<string>, sections: Map<string, string>, headings: { keys: Set<string>, ancestors: Set<string>[] }[] }} 1 行目の見出し、slug、節の番号から見出し（番号を除いたもの）への対応、番号を除いた見出し（keys は比べる形と、末尾の括弧の補足を除いた形。ancestors は親から順の上の見出しの keys）
  */
 export function readHeadings(text) {
   const anchors = new Set()
-  const sections = new Set()
+  const sections = new Map()
   const headings = []
   /** 今の見出しの上の見出し（レベル、比べる形） */
   const stack = []
@@ -87,11 +112,11 @@ export function readHeadings(text) {
       key = `${key}-${seen[key]}`
     } else seen[key] = 0
     anchors.add(key)
+    const text = match[2].replace(/^\d+(?:\.\d+)*\.?\s+/, '')
     const number = match[2].match(/^(\d+(?:\.\d+)*)\.?\s/)
-    if (number) sections.add(number[1])
+    if (number && !sections.has(number[1])) sections.set(number[1], text.trim())
     const level = match[1].length
     while (stack.length && stack.at(-1).level >= level) stack.pop()
-    const text = match[2].replace(/^\d+(?:\.\d+)*\.?\s+/, '')
     // 末尾の全角の括弧の補足（`（DS-283-5：DC-283-21〜25）` など）を除いた形でも当たるようにする
     const keys = new Set([headingKey(text), headingKey(text.replace(/（[^（）]*）\s*$/, ''))])
     headings.push({ keys, ancestors: stack.map((item) => item.keys) })
@@ -151,7 +176,7 @@ export function splitSectionNumbers(numbers) {
  * @param {string} text ファイルの中身
  * @param {Map<string, string>} names 文書の名前からファイルのパスへの対応
  * @param {Map<string, string>} basenames ファイル名（`admin.md` など）からファイルのパスへの対応（同じ名前が 2 つ以上あるものは除く）
- * @returns {{ line: number, target: string, anchor?: string, section?: string, text: string }[]} 参照（anchor はリンクの #、section は節の番号）
+ * @returns {{ line: number, target: string | null, anchor?: string, headings?: string[], sections?: string[], text: string }[]} 参照（anchor はリンクの #、headings は見出しの参照の「」の中、sections は節の番号の参照の番号。target は、Markdown の節の番号の参照で先が決まらなければ null）
  */
 export function findReferences(file, text, names, basenames) {
   const refs = []
@@ -178,16 +203,39 @@ export function findReferences(file, text, names, basenames) {
         refs.push({ line: lineNumber, target, headings: path, text: match[0].trim() })
       }
     }
-    for (const match of line.matchAll(/第 ([0-9][0-9.・、〜~ ]*?) ?節/g)) {
+    if (isMarkdown && inCode) return
+    // Markdown はインラインコードの外の全てを、コードは指す先の文書が決まるものだけを、節の番号の参照にする
+    for (const match of (isMarkdown ? maskInlineCode(line) : line).matchAll(SECTION_NUMBER)) {
       const before = line.slice(0, match.index).trimEnd()
       const target = resolveTarget(file, before, names, basenames, isMarkdown)
-      if (!target) continue
-      for (const section of splitSectionNumbers(match[1])) {
-        refs.push({ line: lineNumber, target, section, text: match[0] })
-      }
+      if (!target && !isMarkdown) continue
+      refs.push({ line: lineNumber, target, sections: splitSectionNumbers(match[1]), text: match[0] })
     }
   })
   return refs
+}
+
+/**
+ * 節の番号で参照したときの、失敗のメッセージを作る。指す先の文書に、その番号の見出しがあれば示す。
+ *
+ * @param {{ target: string | null, sections: string[] }} ref 節の番号の参照
+ * @param {(file: string) => ReturnType<typeof readHeadings>} headingsOf 文書の見出しを返す関数
+ * @param {(file: string) => boolean} exists ファイルがあるかを返す関数
+ * @param {string} where 参照の場所（ファイル:行 参照の文字）
+ * @returns {string} 失敗のメッセージ
+ */
+function sectionNumberProblem(ref, headingsOf, exists, where) {
+  let hint = ''
+  if (ref.target?.endsWith('.md') && exists(ref.target)) {
+    const { sections } = headingsOf(ref.target)
+    const found = ref.sections.filter((number) => sections.has(number)).map((number) => `「${sections.get(number)}」`)
+    const missing = ref.sections.filter((number) => !sections.has(number))
+    const parts = []
+    if (found.length) parts.push(`${ref.target} の${found.join('、')}`)
+    if (missing.length) parts.push(`${found.length ? '' : `${ref.target} に`}番号 ${missing.join('・')} の節はない`)
+    hint = `（${parts.join('、')}）`
+  }
+  return `節の番号で参照している。見出しの形（<文書の名前>の「<見出し>」）に書き換える${hint}：${where}`
 }
 
 /**
@@ -212,20 +260,25 @@ function resolveHeadingTarget(file, before, names) {
 }
 
 /**
- * 「第 N 節」の前の文字から、どの文書を指すかを決める。
+ * 節の番号の前の文字から、どの文書を指すかを決める。
  *
  * @param {string} file 参照のあるファイル
  * @param {string} rawBefore 「第」の前の文字（末尾の空白を除く）
  * @param {Map<string, string>} names 文書の名前からファイルのパスへの対応
  * @param {Map<string, string>} basenames ファイル名からファイルのパスへの対応
  * @param {boolean} isMarkdown 参照のあるファイルが Markdown か
- * @returns {string | null} 文書のパス。見ない参照（spec・plan の節、決められないもの）なら null
+ * @returns {string | null} 文書のパス。spec・plan の節と、決められないものは null
  */
 function resolveTarget(file, rawBefore, names, basenames, isMarkdown) {
-  // `docs/05-開発規則/frontend-coding.md` 第 9.1 節、「店舗画面の構成」第 4 節 のように、名前を印で囲んだもの
-  const before = rawBefore.replace(/[`」]+$/, '').trimEnd()
-  // spec・plan の節は、当時の記録で番号が変わらないので見ない
-  if (/(spec|plan|\d{3})(\s*の)?$/.test(before)) return null
+  // パスや名前を印で囲んだもの（パスをインラインコードに、名前を「」に）は、印を除く
+  const marked = rawBefore.replace(/[`」]+$/, '').trimEnd()
+  // spec・plan の節（`plan 001`、`spec 003 の`）は、指す先の文書を名前で決められない
+  if (/(spec|plan|\d{3})(\s*の)?$/.test(marked)) return null
+  // 名前の後の「の」（文書の名前、「の」、節の番号の順に書いたもの）を除く
+  const before = marked
+    .replace(/\s*の$/, '')
+    .replace(/[`」]+$/, '')
+    .trimEnd()
   const link = before.match(/\]\(([^)\s#]+)(#[^)]*)?\)$/)
   if (link) return /^https?:/.test(link[1]) ? null : normalize(join(dirname(file), link[1]))
   const path = before.match(/([\w./-]+\.md)$/)
@@ -268,12 +321,12 @@ export function checkReferences(files, read, exists) {
   for (const file of files) {
     for (const ref of findReferences(file, read(file), sortedNames, basenames)) {
       const where = `${file}:${ref.line} ${ref.text}`
-      if (!exists(ref.target)) {
+      if (ref.sections) {
+        problems.push(sectionNumberProblem(ref, headingsOf, exists, where))
+      } else if (!exists(ref.target)) {
         problems.push(`ファイルがない：${where}`)
       } else if (ref.anchor && ref.target.endsWith('.md') && !headingsOf(ref.target).anchors.has(ref.anchor)) {
         problems.push(`見出しがない：${where}`)
-      } else if (ref.section && ref.target.endsWith('.md') && !headingsOf(ref.target).sections.has(ref.section)) {
-        problems.push(`節がない（${ref.target} 第 ${ref.section} 節）：${where}`)
       } else if (ref.headings && ref.target.endsWith('.md')) {
         const count = countHeadingMatches(headingsOf(ref.target).headings, ref.headings)
         const quoted = ref.headings.map((heading) => `「${heading}」`).join('の')
@@ -286,7 +339,7 @@ export function checkReferences(files, read, exists) {
 }
 
 if (isMain(import.meta.url)) {
-  const files = listGitFiles().filter((file) => TEXT_FILE.test(file) && !isExcluded(file))
+  const files = listGitFiles().filter((file) => isTargetFile(file) && !isExcluded(file))
   exitIfNoFiles(files, '参照を調べる文書')
   const problems = checkReferences(files, (file) => readFileSync(file, 'utf8'), existsSync)
   for (const problem of problems) console.log(problem)

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkReferences, isExcluded, readHeadings, referenceName, slug, splitSectionNumbers } from './doc-refs.mjs'
+import { checkReferences, isExcluded, isTargetFile, readHeadings, referenceName, slug, splitSectionNumbers } from './doc-refs.mjs'
 
 /** 調べる文書の組。キーがパス、値が中身 */
 const DOCS = {
@@ -42,7 +42,7 @@ describe('文書の参照の検査', () => {
   test('節の番号は見出しの先頭から取り、コードブロックの中は見ない', () => {
     const { title, sections } = readHeadings(DOCS['docs/process/workflow.md'])
     assert.equal(title, '開発の進め方')
-    assert.deepEqual([...sections], ['1', '1.4'])
+    assert.deepEqual([...sections.keys()], ['1', '1.4'])
   })
 
   test('文書の名前は括弧の中を除く', () => {
@@ -52,35 +52,6 @@ describe('文書の参照の検査', () => {
   test('範囲と並びは、両端と各番号を確認する', () => {
     assert.deepEqual(splitSectionNumbers('4〜6・8'), ['4', '6', '8'])
     assert.deepEqual(splitSectionNumbers('4、13'), ['4', '13'])
-  })
-
-  test('文書の名前で書いた節を確認する（コードのコメントも）', () => {
-    const problems = check('backend/Foo.java', '// （店舗画面の構成 第 4.5 節）\n// （店舗画面の構成 第 4.2 節）')
-    assert.equal(problems.length, 1)
-    assert.match(problems[0], /第 4\.2 節/)
-  })
-
-  test('リンク、パス、ファイル名で書いた節を確認する', () => {
-    const text = [
-      '[開発の進め方](../process/workflow.md) 第 1.4 節',
-      '[開発の進め方](../process/workflow.md) 第 3 節',
-      '`docs/testing/writing.md` 第 2.1 節',
-      'store.md 第 9 節',
-    ].join('\n')
-    const problems = check('docs/dev/setup.md', text)
-    assert.deepEqual(
-      problems.map((problem) => problem.match(/:(\d+) /)[1]),
-      ['2', '4'],
-    )
-  })
-
-  test('名前のない節は、Markdown ではその文書自身を指し、コードでは見ない', () => {
-    assert.equal(check('docs/dev/setup.md', '# 開発環境\n## 1. 起動\n第 1 節と第 2 節').length, 1)
-    assert.deepEqual(check('backend/Foo.java', '// 第 99 節'), [])
-  })
-
-  test('spec・plan の節は見ない（当時の記録で番号が変わらない）', () => {
-    assert.deepEqual(check('backend/Foo.java', '// plan 001 第 7 節、spec 003 の第 9 節'), [])
   })
 
   test('リンクの先のファイルと見出しを確認する', () => {
@@ -200,5 +171,72 @@ describe('見出しの参照の検査', () => {
   test('アンカー付きのリンクの後の「」も、リンクの先の文書で確認する', () => {
     const text = '[開発の進め方](../process/workflow.md#1-sdd)の「ない」'
     assert.equal(check('docs/dev/setup.md', text).length, 1)
+  })
+})
+
+describe('節の番号の参照の検査', () => {
+  test('Markdown では、全ての形の「第 N 節」を失敗にする（名前のないもの、spec・plan の節も）', () => {
+    const text = [
+      '# 開発環境',
+      '## 1. 起動',
+      '第 1 節を読む。',
+      '[店舗画面](../frontend/apps/store.md) 第 4.5 節',
+      '店舗画面の構成 第 1・3 節',
+      '開発の進め方 第 4.2、5.6 節',
+      'テストの書き方 第 4〜6 節',
+      'plan 001 第 7 節、spec 003 の第 9 節',
+    ].join('\n')
+    const problems = check('docs/dev/setup.md', text)
+    assert.deepEqual(lines(problems), ['3', '4', '5', '6', '7', '8', '8'])
+    for (const problem of problems) assert.match(problem, /^節の番号で参照している。見出しの形（<文書の名前>の「<見出し>」）に書き換える/)
+  })
+
+  test('Markdown のインラインコードとコードブロックの中の「第 N 節」は失敗にしない', () => {
+    const text = ['例：`開発の進め方 第 4 節` と ``第 5 節`` は使わない。', '```', '開発の進め方 第 4 節', '```', '`a` 第 2 節'].join('\n')
+    assert.deepEqual(lines(check('docs/dev/setup.md', text)), ['5'])
+  })
+
+  test('節でない語（第 2 段、第 3 回など）は失敗にしない', () => {
+    const text = ['第 2 段の実装', '第 3 回のレビュー', '第 1 章', '第 12 条'].join('\n')
+    assert.deepEqual(check('docs/dev/setup.md', text), [])
+    assert.deepEqual(check('backend/Foo.java', '// 店舗画面の構成 第 2 段'), [])
+  })
+
+  test('コードでは、文書の名前・リンク・パスの直後の「第 N 節」を失敗にする', () => {
+    const code = [
+      '// （店舗画面の構成 第 4.5 節）',
+      '// [開発の進め方](../../docs/process/workflow.md) 第 1 節',
+      '// docs/testing/writing.md 第 2.1 節',
+      '// テストの書き方の第 2 節',
+      '// 第 99 節',
+      '// plan 001 第 7 節、spec 003 の第 9 節',
+      "'- [ ] 第 1 節：規則 A',",
+    ].join('\n')
+    assert.deepEqual(lines(check('backend/Foo.java', code)), ['1', '2', '3', '4'])
+  })
+
+  test('失敗のメッセージに、番号から求めた見出しを示す', () => {
+    const [found] = check('backend/Foo.java', '// 店舗画面の構成 第 4.5 節')
+    assert.match(found, /（docs\/frontend\/apps\/store\.md の「カート」）：backend\/Foo\.java:1 /)
+    const [several] = check('docs/dev/setup.md', '店舗画面の構成 第 4・8 節')
+    assert.match(several, /（docs\/frontend\/apps\/store\.md の「取得」、「文言」）/)
+    const [missing] = check('docs/dev/setup.md', '店舗画面の構成 第 4、9 節')
+    assert.match(missing, /（docs\/frontend\/apps\/store\.md の「取得」、番号 9 の節はない）/)
+    const [self] = check('docs/dev/setup.md', '# 開発環境\n## 1. 起動\n第 1 節')
+    assert.match(self, /（docs\/dev\/setup\.md の「起動」）/)
+  })
+
+  test('番号から見出しが求まらないときは、見出しを示さずに失敗にする', () => {
+    const [problem] = check('docs/dev/setup.md', 'plan 001 第 7 節')
+    assert.match(problem, /に書き換える：docs\/dev\/setup\.md:1 /)
+  })
+
+  test('Gradle の設定（.kts）も見る。コメントを読めない拡張子（xml、json、jsonc、grit）は見ない', () => {
+    assert.equal(isTargetFile('backend/ecsite/build.gradle.kts'), true)
+    assert.equal(isTargetFile('docs/a.md'), true)
+    assert.equal(isTargetFile('backend/ecsite/config/checkstyle/checkstyle.xml'), false)
+    assert.equal(isTargetFile('package.json'), false)
+    assert.equal(isTargetFile('frontend/store/biome.jsonc'), false)
+    assert.equal(isTargetFile('frontend/store/biome-plugins/no-aria-live.grit'), false)
   })
 })

@@ -1,7 +1,7 @@
 # seed
 
 開発と E2E で使うデータ。`db/seed/` の下に、使う profile ごとに分けて置く（`application-local.yml` と `application-e2e.yml` の `spring.flyway.locations`）。
-本番相当の環境と統合テストには適用されない（バックエンドのアーキテクチャ 第 6.2 節）。
+本番相当の環境と統合テストには適用されない（バックエンドのアーキテクチャの「Flyway」）。
 
 | 置き場所 | 中身 | 使う profile |
 |----------|------|--------------|

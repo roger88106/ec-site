@@ -27,7 +27,7 @@ pitest-junit5-plugin = "1.2.3"
 dependency-license-report = "3.1.4"
 # コンパイルのときの静的解析（Error Prone）。Gradle のプラグインと検査の本体でバージョンが別
 errorprone-plugin = "5.1.1"
-errorprone = "2.50.0"
+errorprone = "2.51.0"
 # null の検査（Error Prone の検査として動く）
 nullaway = "0.14.3"
 
@@ -40,13 +40,13 @@ spring-modulith = "2.1.2"
 jooq = "3.21.9"
 jooqPlugin = "10.2.1"
 # jOOQ のコード生成（buildscript）で使う。アプリ側は Boot BOM のバージョンになるので、Boot の管理するバージョンに合わせる
-flyway = "13.10.3"
+flyway = "13.11.1"
 postgresql = "42.7.14"
 
 # --- API ---
 openapi-generator = "7.26.0"
 
-jackson-databind-nullable = "0.2.12"
+jackson-databind-nullable = "0.2.13"
 
 # --- ユーティリティ ---
 jmolecules = "2025.0.2"
@@ -58,7 +58,7 @@ shedlock = "7.10.1"
 stripe = "34.0.0"
 
 # --- 画像のファイル（オブジェクトストレージ。plan 001 の「商品画像」） ---
-awssdk = "2.56.0"
+awssdk = "2.57.3"
 
 # --- テスト ---
 testcontainers = "2.0.5"

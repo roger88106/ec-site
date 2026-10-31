@@ -95,7 +95,7 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 | メッセージ | 日本語。1 行目は `<対象>: <要約>`（例：`tax: 税率の一覧の置き換えを実装する`）、決定の理由は本文 |
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
-| push・pull request | push と pull request の作成は、許可を求めない |
+| push・pull request | push と pull request の作成は、許可を求めない。push は段階の最後にする（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」） |
 | マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、`hotfix-` の後の `main` から `develop` への取り込み、tag。操作のたびに求め、head の commit を指定してマージする ※3。それ以外は、CI が全て通り未解決の重要度「高」「必須」の指摘が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/05-開発規則/subagents.md)の「役割と作業の流れ」。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす、危険度が低い変更のマージは通す）。担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み（ブランチの名前で見分けられない）は hook が見ないので、文章の規則として守る |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（項目ごとの中身、使う者、保存の期間は [開発環境の起動](docs/06-手順書/setup.md)の「手元の置き場所」、`.gitignore` は [ブランチとリリース](docs/06-手順書/branches.md)の「切り方と pull request」） |
 

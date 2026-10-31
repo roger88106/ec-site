@@ -27,7 +27,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `ci.yml` | E2E | E2E のコードの lint・型チェック、バックエンド・管理画面・店舗画面を起動してブラウザーで操作する | 同上 |
 | `docs.yml` | 文書と CI の検査の script | `scripts/ci/check-all.sh`（「CI の検査の script」） | 全ての push と pull request（文書だけの push でも実行する） |
 | `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチが `release-` か `hotfix-` で始まる（判定は `scripts/ci/workflow/main-source.mjs`。「CI の検査の script」）。`main` の ruleset の必須の検査（[ブランチとリリース](branches.md)の「`main` の元のブランチの制限」） | `main` への pull request |
-| `risk.yml` | 危険度の照合 | pull request の本文の「## 危険度」の節の「判定：」の値を、`scripts/ci/risk.mjs` の判定（「CI の検査の script」）と比べ、本文が判定より低いとき、値が空・節がないときに失敗にする。判定は pull request の側と基準（`origin/develop`）の側の両方の `risk.mjs`・`risk.json` で行い、どちらかが失敗すれば失敗にする。Dependabot の pull request（作成者で見分ける）は比べず、題から読む更新の種類を入れた判定をジョブの要約に出すだけにする。本文を書き換えたときにも流すので、`ci.yml` とは別のワークフローにする（`edited` で全体の CI を流し直さないため） | `develop` への pull request（開いた、本文を書き換えた、commit を足した、開き直した、draft を外したとき） |
+| `risk.yml` | 危険度の照合 | pull request の本文の「## 危険度」の節の「判定：」の値を、`scripts/ci/risk.mjs` の判定（「CI の検査の script」）と比べ、本文が判定より低いとき、値が空・節がないときに失敗にする。判定は pull request の側と基準（`origin/develop`）の側の両方の `risk.mjs`・`risk.json` で行い、どちらかが失敗すれば失敗にする。Dependabot の pull request（作成者で見分ける）は比べず、題から読む更新の種類を入れた判定をジョブの要約に出すだけにする。本文を書き換えたときにも流すので、`ci.yml` とは別のワークフローにする（`edited` で全体の CI を流し直さないため） | `develop` への draft でない pull request（開いた、本文を書き換えた、commit を足した、開き直した、draft を外したとき）。draft の間はジョブを skip する |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する | `main` で `showcase/` が変わったとき、手動で起動したとき |
 
 バックエンドのジョブの構成：

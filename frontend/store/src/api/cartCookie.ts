@@ -12,7 +12,7 @@ const { cookiePrefix: COOKIE_PREFIX } = readServerConfig()
 const cartCookie = () => cookieName(COOKIE_PREFIX, 'cart_id')
 
 /**
- * Cookie のカート ID を読む（店舗画面の構成 第 4.4 節）。サーバーコンポーネントとサーバーアクションから呼ぶ。
+ * Cookie のカート ID を読む（店舗画面の構成の「カート ID の Cookie」）。サーバーコンポーネントとサーバーアクションから呼ぶ。
  *
  * @returns カート ID。Cookie がない・形の違う値なら null
  */
@@ -30,14 +30,14 @@ export async function writeCartId(cartId: string): Promise<void> {
 }
 
 /**
- * カート ID の Cookie を消す（ログアウト・カートを移した後。店舗画面の構成 第 4.4 節）。サーバーアクションと
+ * カート ID の Cookie を消す（ログアウト・カートを移した後。店舗画面の構成の「カート ID の Cookie」）。サーバーアクションと
  * ルートハンドラーからだけ呼べる。
  */
 export async function deleteCartId(): Promise<void> {
   ;(await cookies()).delete(cartCookie())
 }
 
-/** カートを移した結果の知らせを持つ Cookie の名前（店舗画面の構成 第 4.5 節。接頭辞は {@link cartCookie} と同じ） */
+/** カートを移した結果の知らせを持つ Cookie の名前（店舗画面の構成の「使うカートの選び方」。接頭辞は {@link cartCookie} と同じ） */
 const cartMergeNoticeCookie = () => cookieName(COOKIE_PREFIX, 'cart_merge_notice')
 
 /**

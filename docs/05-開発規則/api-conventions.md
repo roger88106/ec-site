@@ -1,6 +1,6 @@
 # API の規約
 
-[constitution](../constitution.md) 第 8 節の細則。契約の正本は `api/openapi/`（`store.yaml`：店舗、`admin.yaml`：管理画面）、実装の書き方は [バックエンドの書き方](backend-coding.md) 第 2、3 節。
+[constitution](../constitution.md)の「API」の細則。契約の正本は `api/openapi/`（`store.yaml`：店舗、`admin.yaml`：管理画面）、実装の書き方は [バックエンドの書き方](backend-coding.md)の「API の実装」と[バックエンドの書き方](backend-coding.md)の「入力の検証とエラー」。
 
 ## 1. 契約先行
 
@@ -13,11 +13,11 @@ RESTful JSON。OpenAPI を plan に記述し、バックエンドは生成した
 | 接頭辞 | EC の API は全て `/api` で始まる | `/api/store/products` |
 | 契約の範囲 | 2 番目のセグメントは契約の範囲で、モジュールではない。`/api/store`（店舗 API、`store.yaml`、消費者が使う）と `/api/admin`（管理 API、`admin.yaml`、運営者が使う）。1 つの契約の操作を、複数のモジュールが実装する | 店舗 API の `/carts` はカート、`/orders` は注文のモジュール |
 | `servers.url` と `paths` | 契約の `servers.url` が接頭辞（`/api/store`、`/api/admin`）で、`paths` は接頭辞の後ろだけを書く。生成したインターフェースのパスは `servers.url` を含まないので、バックエンドの `ApiPathConfig` が、生成元の契約に応じた接頭辞を Controller に付ける | `paths` の `/products` は、管理 API では `/api/admin/products` |
-| 契約の外の URL | 外部のサービスが呼ぶ通知のエンドポイントは `/api/webhooks/<相手>`。mock の画面は `/api` の外。死活監視とメトリクスは運用ポート（既定 9080）の `/actuator`。応答は [第 4.1 節](#41-openapi-の外のエンドポイント) | `/api/webhooks/stripe`、`/mock-payment`、`/mock-carrier` |
+| 契約の外の URL | 外部のサービスが呼ぶ通知のエンドポイントは `/api/webhooks/<相手>`。mock の画面は `/api` の外。死活監視とメトリクスは運用ポート（既定 9080）の `/actuator`。応答は [「OpenAPI の外のエンドポイント」](#41-openapi-の外のエンドポイント) | `/api/webhooks/stripe`、`/mock-payment`、`/mock-carrier` |
 | リソースの名前 | 小文字の kebab-case の複数形。1 つしかないものは単数形。ログインしている本人は `/me` | `tax-categories`、`image-uploads`、`/shop`、`/me/cart`、`/me/orders`、`/orders/{orderId}/shipment` |
 | パスのパラメータ | camelCase で、何の ID かを名前に書く。`{id}` にしない | `{productId}`、`{variantId}` |
 | ネストの深さ | 親の ID は 2 つまで。集約の一部（バリアント、画像）は集約の下に置く。別の集約は親の下に置かず、上の階層に置く。まとまりの名前を前に置くことがある | `/products/{productId}/variants/{variantId}/image`、`/inventory/variants/{variantId}`、`/reports/...` |
-| 操作を表す URL | 作成・取得・更新・削除で表せない操作は、リソースの下に動詞か状態の名前のセグメントを置く。並び順の変更は `.../order`。メソッドの選び方は [第 3 節](#3-http-メソッド) | `PUT /products/{productId}/publish`、`PUT /orders/{orderId}/cancellation-request/approve`、`POST /me/cart/merge`、`PUT /categories/order` |
+| 操作を表す URL | 作成・取得・更新・削除で表せない操作は、リソースの下に動詞か状態の名前のセグメントを置く。並び順の変更は `.../order`。メソッドの選び方は [「HTTP メソッド」](#3-http-メソッド) | `PUT /products/{productId}/publish`、`PUT /orders/{orderId}/cancellation-request/approve`、`POST /me/cart/merge`、`PUT /categories/order` |
 
 ## 3. HTTP メソッド
 
@@ -53,7 +53,7 @@ RESTful JSON。OpenAPI を plan に記述し、バックエンドは生成した
 
 ※2：403 にすると、そのデータがあることを推測できてしまうため。
 
-※3：外部サービスごとの分け方（どの失敗を 502 にし、どれを 400・500 にするか）は、[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) 第 8 節。`SystemException` に、種類が外部サービスのエラーのエラーコードを付けて投げる。他のシステムの誤りと違い、エラーコードとメッセージを返す（画面が再試行を促せるように）。メッセージは、どのサービスに接続できないかを示す。OpenAPI では、外部サービスを呼ぶ操作に 502（`BadGateway`）とそのエラーコードを書く。
+※3：外部サービスごとの分け方（どの失敗を 502 にし、どれを 400・500 にするか）は、[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携」。`SystemException` に、種類が外部サービスのエラーのエラーコードを付けて投げる。他のシステムの誤りと違い、エラーコードとメッセージを返す（画面が再試行を促せるように）。メッセージは、どのサービスに接続できないかを示す。OpenAPI では、外部サービスを呼ぶ操作に 502（`BadGateway`）とそのエラーコードを書く。
 
 ### 4.1 OpenAPI の外のエンドポイント
 
@@ -66,7 +66,7 @@ RESTful JSON。OpenAPI を plan に記述し、バックエンドは生成した
 | `/mock-payment/{pageId}`（mock の支払画面。決済の mock フラグのときだけ） | ブラウザー | 画面は 200 の HTML、開いていない画面は 404 の HTML。「支払う」「やめる」の操作は 303 で店舗の注文の画面に戻す。「カードを拒否させる」の操作は、状態を変えずに拒否のメッセージを付けて同じ画面を 200 の HTML で返す |
 | `/mock-carrier`（mock の物流の画面。物流の mock フラグのときだけ） | ブラウザー | 画面は 200 の HTML。通知を送ったら 303 で一覧に戻し、送れなければその旨を示した 200 の HTML。ない出荷は 404 の HTML |
 
-- どれも認証を付けない。通知は署名で確認し、mock の画面は本番で公開しない（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) 第 8 節）。
+- どれも認証を付けない。通知は署名で確認し、mock の画面は本番で公開しない（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「外部連携」）。
 - 本文は、エラーのときも Problem の形にしない（呼ぶ側は状態のコードだけを見る）。処理の失敗（5xx）だけは、共通の例外ハンドラー（`GlobalExceptionHandler`）が Problem で返す。
 
 ## 5. エラーの本文

@@ -7,7 +7,7 @@ import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { withoutGitEnv } from '../../ci/lib/git-env.mjs'
-import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, checkShell, parseAddedLines, resolveIndexFile, runPreCommit, selectAddedWarnings } from './pre-commit.mjs'
+import { BRANCH_REJECTED, CHECKOUT_FAILED, WARNING_FAILED, branchOfHead, branchRejection, checkShell, resolveIndexFile, runPreCommit, selectWarningLines } from './pre-commit.mjs'
 import { COMMIT_MSG_FAILED, runCommitMsg } from './commit-msg.mjs'
 import { gitBash } from './git-bash.mjs'
 
@@ -177,47 +177,29 @@ describe('検査の実行と終了コード', () => {
   })
 })
 
-describe('追加した行', () => {
-  const diff = ['diff --git a/docs/a.md b/docs/a.md', '--- a/docs/a.md', '+++ b/docs/a.md', '@@ -3 +3,2 @@', '+x', '+y', '@@ -9,2 +10,0 @@', '-z', '-w', '@@ -20,0 +21 @@', '+v'].join('\n')
-
-  test('差分の追加した行の番号を、ファイルごとに取り出す（削除だけの塊は数えない）', () => {
-    assert.deepEqual([...parseAddedLines(diff).get('docs/a.md')].sort((a, b) => a - b), [3, 4, 21])
-  })
-
-  test('本文が ++ で始まる追加行（差分では +++ の形）を、ファイルの見出しと取り違えない', () => {
-    const body = ['diff --git a/a.md b/a.md', '--- a/a.md', '+++ b/a.md', '@@ -1,0 +2,2 @@', '+x', '+++ y', '@@ -9,0 +11 @@', '+z'].join('\n')
-    const added = parseAddedLines(body)
-    assert.deepEqual([...added.keys()], ['a.md'])
-    assert.deepEqual([...added.get('a.md')].sort((a, b) => a - b), [2, 3, 11])
-  })
-
-  test('新しいファイルは全ての行、削除したファイルは行なしになる', () => {
-    const added = parseAddedLines(['diff --git a/docs/new.md b/docs/new.md', '--- /dev/null', '+++ b/docs/new.md', '@@ -0,0 +1,3 @@', '+a', '+b', '+c', 'diff --git a/old.md b/old.md', '--- a/old.md', '+++ /dev/null', '@@ -1,2 +0,0 @@'].join('\n'))
-    assert.deepEqual([...added.get('docs/new.md')], [1, 2, 3])
-    assert.equal(added.has('old.md'), false)
-  })
-
-  test('warning の一覧から、追加した行の warning だけを選ぶ。件数の行は除く', () => {
-    const added = parseAddedLines(diff)
-    const output = ['docs/a.md:3 要求 → リクエスト', 'docs/a.md:5 要求 → リクエスト', 'docs/b.md:3 要求 → リクエスト', '注意する語と文：3'].join('\n')
-    assert.deepEqual(selectAddedWarnings(output, added), ['docs/a.md:3 要求 → リクエスト'])
+describe('warning の一覧', () => {
+  test('ja-text の出力から、warning の行（ファイル、行、内容）だけを取り出す。件数の行は除く。選び直さない', () => {
+    const output = ['docs/a b.md:3 要求 → リクエスト', 'docs/a.md:5 長い文 → 字数が 121 字', '注意する語と文：2'].join('\n')
+    assert.deepEqual(selectWarningLines(output), ['docs/a b.md:3 要求 → リクエスト', 'docs/a.md:5 長い文 → 字数が 121 字'])
   })
 })
 
 describe('検査が通った後の warning', () => {
   const diff = { status: 0, stdout: ['+++ b/docs/a.md', '@@ -1,0 +2 @@', '+x'].join('\n') }
-  const list = 'docs/a.md:1 要求 → リクエスト\ndocs/a.md:2 要求 → リクエスト\n注意する語と文：2\n'
+  const list = 'docs/a b.md:2 要求 → リクエスト\n注意する語と文：1\n'
 
-  test('追加した行の warning だけを表示し、成功にする', () => {
+  test('ja-text が出力した warning を（選び直さずに）表示し、成功にする。差分は ja-text に渡す', () => {
+    let passed = null
     const { deps, calls } = fakeDeps({ diff, warnings: { status: 0, stdout: list } })
+    deps.listWarnings = (staged, e, text) => ((passed = text), calls.warnings++, { status: 0, stdout: list })
     assert.equal(runPreCommit(deps), 0)
+    assert.equal(passed, diff.stdout)
     assert.equal(calls.printed.length, 1)
-    assert.match(calls.printed[0], /docs\/a\.md:2 /)
-    assert.doesNotMatch(calls.printed[0], /docs\/a\.md:1 /)
+    assert.match(calls.printed[0], /docs\/a b\.md:2 /)
   })
 
-  test('追加した行に warning がなければ、何も表示しない', () => {
-    const { deps, calls } = fakeDeps({ diff: { status: 0, stdout: '' }, warnings: { status: 0, stdout: list } })
+  test('ja-text の出力に warning の行がなければ、何も表示しない', () => {
+    const { deps, calls } = fakeDeps({ diff, warnings: { status: 0, stdout: '注意する語と文：0\n' } })
     assert.equal(runPreCommit(deps), 0)
     assert.deepEqual(calls.printed, [])
   })
@@ -275,9 +257,9 @@ describe('commit のメッセージの検査', () => {
 
 /**
  * 実際の hook のテストが使う、日本語の文の検査の一覧。
- * 本物の一覧は、許す語が使われていないと失敗にする（小さな一時のリポジトリでは使われない）ので、試す語だけの一覧にする。
+ * 本物の一覧は、許容用語が使われていないと失敗にする（小さな一時のリポジトリでは使われない）ので、試す語だけの一覧にする。
  */
-const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }], warning: [{ word: '要求', use: 'リクエスト' }], style: { no: 4, length: 100, comma: 5 } })
+const MINI_LIST = JSON.stringify({ error: [{ word: '道具', use: 'ツール' }], warning: [{ word: '要求', use: 'リクエスト' }], style: { no: 4, length: 100, comma: 5, cell: 80 } })
 
 describe('実際の hook', () => {
   const repoRoot = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../../..')
@@ -334,12 +316,12 @@ describe('実際の hook', () => {
    * 検査の script を差し替えた一時のリポジトリで、ファイルをステージして pre-commit の hook を実行する。
    *
    * @param {string} checkAll 検査の script の中身
-   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string>, gitConfig?: string[] | null, head?: string | null }} [options]
-   *   gitConfig は一時のリポジトリだけに設定する git の設定（キーと値）。fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル。
+   * @param {{ fakeBash?: boolean, baseline?: Record<string, string>, files?: Record<string, string>, removed?: string[], gitConfig?: string[] | string[][] | null, head?: string | null }} [options]
+   *   gitConfig は一時のリポジトリだけに設定する git の設定（キーと値。複数ならその組の配列）。removed はステージの前に消すファイル（名前の変更の元）。fakeBash が true なら、PATH の先頭に、終了コード 42 で終わる偽の bash を置く。baseline は最初に commit するファイル、files はステージするファイル。
    *   head は hook を実行するときのブランチ。null なら detached HEAD にする
    * @returns {{ status: number | null, output: string, error: string }} hook の終了コードと標準出力、標準エラー
    */
-  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' }, gitConfig = null, head = WORK_BRANCH } = {}) {
+  function runHook(checkAll, { fakeBash = false, baseline = {}, files = { 'staged.txt': 'staged' }, removed = [], gitConfig = null, head = WORK_BRANCH } = {}) {
     const dir = mkdtempSync(path.join(tmpdir(), 'pre-commit-test-'))
     try {
       const env = withoutGitEnv()
@@ -354,7 +336,8 @@ describe('実際の hook', () => {
       mkdirSync(path.join(dir, 'scripts/ci'), { recursive: true })
       const git = initRepo(dir, env, { ...baseline, 'scripts/ci/check-all.sh': checkAll })
       // 設定は一時のリポジトリの中だけに書く（git は cwd が一時のディレクトリで、GIT_ を外した環境で実行する）
-      if (gitConfig) git('config', ...gitConfig)
+      if (gitConfig) for (const pair of Array.isArray(gitConfig[0]) ? gitConfig : [gitConfig]) git('config', ...pair)
+      for (const file of removed) rmSync(path.join(dir, file))
       if (head === null) git('checkout', '-q', '--detach')
       else if (head !== WORK_BRANCH) git('switch', '-q', '-c', head)
       for (const [file, content] of Object.entries(files)) {
@@ -432,6 +415,66 @@ describe('実際の hook', () => {
     const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': 'ふつうの行。\n' }, files: { 'docs/a.md': 'ふつうの行。\nサーバーが要求を受ける。\n' } })
     assert.equal(status, 0)
     assert.match(output, /docs\/a\.md:2 要求/)
+  })
+
+  test('追加行の表のセルの warning（長いセル）を表示し、commit は成功する', () => {
+    const cell = 'あ'.repeat(85)
+    const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': 'ふつうの行。\n' }, files: { 'docs/a.md': `ふつうの行。\n\n| 列 |\n| --- |\n| ${cell} |\n` } })
+    assert.equal(status, 0)
+    assert.match(output, /docs\/a\.md:5 長いセル/)
+  })
+
+  test('既存の行から始まる文に行を足して閾値以上になったら、その文の warning を（最初の追加行で）表示する', () => {
+    const head = 'あ'.repeat(60)
+    const tail = 'い'.repeat(60)
+    const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/a.md': `${head}、\n` }, files: { 'docs/a.md': `${head}、\n${tail}。\n` } })
+    assert.equal(status, 0)
+    assert.match(output, /docs\/a\.md:2 長い文/)
+  })
+
+  test('空白や日本語を含むパスのファイルでも、追加行の warning を表示する', () => {
+    // 引用符で囲むパス（" や \ を含むもの）は、Windows ではファイルを作れないので、ここでは試さない（ja-text の unquotePath が戻す）
+    for (const name of ['docs/a b.md', 'docs/ひらがな b.md']) {
+      const { status, output } = runHook(jaTextCheck, { baseline: { [name]: 'ふつうの行。\n' }, files: { [name]: 'ふつうの行。\nサーバーが要求を受ける。\n' } })
+      assert.equal(status, 0, name)
+      assert.match(output, /:2 要求/, name)
+    }
+  })
+
+  test('名前を変えたファイルの変えていない行には、diff.renames=false の設定でも warning を表示しない', () => {
+    const body = ['古い要求の行。', 'ふつうの行。', '二番目の行。', '三番目の行。', '四番目の行。', '五番目の行。'].join('\n')
+    for (const gitConfig of [null, ['diff.renames', 'false']]) {
+      const { status, output } = runHook(jaTextCheck, { baseline: { 'docs/old.md': `${body}\n` }, removed: ['docs/old.md'], files: { 'docs/new.md': `${body}\n新しい行。\n` }, gitConfig })
+      assert.equal(status, 0)
+      assert.doesNotMatch(output, /警告：追加した行/)
+      assert.doesNotMatch(output, /docs\/new\.md:1 /)
+    }
+  })
+
+  test('diff.renames=copies の設定でも、コピーして長い文を足したファイルに warning を表示する', () => {
+    // コピーの元（old.md）も変えると、git はコピー（C）として見分けられる。コピーとして見分けると、追加行の差分から落ちる
+    // 似ている度合いが git の閾値（50%）を超えるよう、元の行を長い文より十分に多くする
+    const body = Array.from({ length: 40 }, (_, index) => `${index + 1} 番目の行。`).join('\n')
+    const long = `${'あ'.repeat(110)}。`
+    for (const gitConfig of [null, ['diff.renames', 'copies']]) {
+      const { status, output } = runHook(jaTextCheck, {
+        baseline: { 'docs/old.md': `${body}\n` },
+        files: { 'docs/old.md': `${body}\n古い方の新しい行。\n`, 'docs/new.md': `${body}\n${long}\n` },
+        gitConfig,
+      })
+      assert.equal(status, 0)
+      assert.match(output, /docs\/new\.md:41 長い文/, String(gitConfig))
+    }
+  })
+
+  test('改行コードだけを変えた行には、warning を表示しない', () => {
+    const { status, output } = runHook(jaTextCheck, {
+      baseline: { 'docs/a.md': '古い要求の行。\nふつうの行。\n' },
+      files: { 'docs/a.md': '古い要求の行。\r\nふつうの行。\r\n' },
+      gitConfig: [['core.autocrlf', 'false'], ['core.safecrlf', 'false']],
+    })
+    assert.equal(status, 0)
+    assert.doesNotMatch(output, /警告：追加した行/)
   })
 
   test('追加していない既存の行の warning は表示しない', () => {

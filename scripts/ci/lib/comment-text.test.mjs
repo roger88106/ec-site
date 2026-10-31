@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { codeKind, commentText, extractCommentLines } from './comment-text.mjs'
+import { codeKind, commentText, extractCommentLines, trailingCommentLines } from './comment-text.mjs'
 
 /** 取り出した文字列を、行番号つきの 1 つの文字列の配列にする */
 function lines(text, kind) {
@@ -99,7 +99,7 @@ describe('TypeScript・JavaScript のコメントとテスト名', () => {
     assert.deepEqual(lines(source, 'ts'), [
       "1:'注文の画面'",
       '2:"確定できる"',
-      '3:`在庫がない`',
+      '3:"在庫がない"',
       "4:'飛ばす'",
       "5:'入れ子'",
       "6:'表の名前 %i'",
@@ -123,7 +123,12 @@ describe('TypeScript・JavaScript のコメントとテスト名', () => {
   })
 
   test('名前が文字列でない呼び出しは読み飛ばす', () => {
-    assert.deepEqual(lines("it(name, () => {})\ntest(`${a}の名前`, () => {})", 'ts'), ['2:`${a}の名前`'])
+    assert.deepEqual(lines("it(name, () => {})\ntest(`${a}の名前`, () => {})", 'ts'), ['2:"Xの名前"'])
+  })
+
+  test('テンプレートの名前は、外側のバッククォートを " に、埋め込み（${…}）を X に、\\` を ` にして取り出す', () => {
+    const source = ['it(`${a.b({ c: 1 })}と${`入れ子${d}`}の名前`, () => {})', 'it(`\\`code\\` を返す`, () => {})', 'test(`複数の', '行の名前`, () => {})', 'it(`${', '  a', '}の名前`, () => {})'].join('\n')
+    assert.deepEqual(lines(source, 'ts'), ['1:"XとXの名前"', '2:"`code` を返す"', '3:"複数の', '4:行の名前"', '5:"X', '7:の名前"'])
   })
 })
 
@@ -141,5 +146,17 @@ describe('取り出した文書', () => {
 
   test('同じ行のコメントとテスト名は 1 行にまとめる', () => {
     assert.equal(commentText("it('名前', () => {}) // 補足", 'ts'), "'名前' // 補足")
+  })
+})
+
+describe('行末のコメントの行', () => {
+  test('コメントの前にコードがある行を返す。行頭のコメント、ブロックコメントの続きの行、テスト名は含めない', () => {
+    const source = ['const a = 1 // 行末の注', '// 行頭の注', 'foo() /* 行末から', '   続く行 */', "it('名前', () => {})", '  /* 字下げした行頭 */'].join('\n')
+    assert.deepEqual([...trailingCommentLines(source, 'ts')], [1, 3])
+  })
+
+  test('Java とシェルでも見分ける', () => {
+    assert.deepEqual([...trailingCommentLines('int a = 1; // 注\n// 行頭\n', 'java')], [1])
+    assert.deepEqual([...trailingCommentLines('#!/bin/sh\necho a # 注\n  # 行頭\n', 'sh')], [2])
   })
 })

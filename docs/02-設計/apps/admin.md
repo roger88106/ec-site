@@ -1,6 +1,6 @@
 # 管理画面（`frontend/admin`）の構成
 
-B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.yaml`）をブラウザーから呼ぶ。店舗画面との違いと共通の決まりは [フロントのアーキテクチャ](../frontend-architecture.md)。新しい画面は第 8 節の手順で作る。
+B 側（運営者）の画面。Vite + React の SPA で、管理 API（`admin.yaml`）をブラウザーから呼ぶ。店舗画面との違いと共通の決まりは [フロントのアーキテクチャ](../frontend-architecture.md)。新しい画面は「画面を追加する手順」で作る。
 
 | 項目 | 内容 |
 |------|------|
@@ -29,7 +29,7 @@ frontend/admin/
 ├── messages/ja.json        # 文言
 └── src/
     ├── app/                # エントリーポイント、ルーター、Provider、レイアウト（Sidebar）、URL（paths.ts）
-    ├── auth/               # ログイン（第 10 節）
+    ├── auth/               # ログイン（「ログイン」の節）
     ├── api/
     │   ├── generated/      # admin.yaml から生成（型と、入力の制約の定数）
     │   ├── client.ts       # クライアント
@@ -95,7 +95,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 - 取得は `$api.useQuery('get', '<パス>', { params })`、更新は `useApiMutation('<メソッド>', '<パス>', { success, invalidate, onSuccess })`。キャッシュのキーとクエリの関数を手動で書かない。
 - 1 つの場所に複数の更新があるときは、`useMutationGroup(...)` で待ち状態・最初のエラー・エラーの消去をまとめる。
 - エラーの応答はクライアントのミドルウェアで `ApiError` にして投げ、画面は `ApiError` だけを扱う。
-- access token はクライアントのミドルウェアで `Authorization` に付ける（第 10 節）。
+- access token はクライアントのミドルウェアで `Authorization` に付ける（「ログイン」）。
 - バックエンドへの呼び出しに、タイムアウトを置かない。ブラウザーの fetch で呼ぶので、画面は止まらず、利用者が操作できるため。
 
 | 応答 | 扱い |
@@ -158,7 +158,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 | 日時 | 入力欄の値は日本時間とみなし、+09:00 のオフセット付きで送る |
 | 列挙（状態、理由など） | 表示名は `lib/` の関数で引き、選択肢は生成した列挙の値の配列から作る |
 | 操作できないもの | ボタンを表示しないか、理由を添える（C 側に表示されたことのある商品は削除のボタンを表示せず、販売終了を案内する） |
-| 操作のフラグと理由 | 下の表の API の値で出し分け、注文・商品の状態や階層の深さから推測しない（[フロントのアーキテクチャ](../frontend-architecture.md) 第 3 節） |
+| 操作のフラグと理由 | 下の表の API の値で出し分け、注文・商品の状態や階層の深さから推測しない（[フロントのアーキテクチャ](../frontend-architecture.md)の「共通の決まり」） |
 
 | API の値 | 画面 |
 |----------|------|
@@ -172,9 +172,9 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 
 1. 使う API が `admin.yaml` にあるかを確認する。なければ、先に plan と `admin.yaml` を修正する。
 2. `features/<機能>/pages/` に画面を作り、ルーターに URL を追加する。機能の入口ならメニューにも追加する。
-3. 取得と更新は第 4 節（再取得するパスを表に追加する）、フォームは第 5 節、知らせ方は第 6 節に従う。
+3. 取得と更新は「API の呼び出し」（再取得するパスを表に追加する）、フォームは「フォーム」、知らせ方は「結果の知らせ方」に従う。
 4. 新しい表示の決まりは `lib/` に置き、単体テストを書く。
-5. 主な操作の流れに結合テストを書く（第 9 節）。
+5. 主な操作の流れに結合テストを書く（「結合テストの書き方」）。
 6. lint、型チェック、テスト、ビルドを通し、開発サーバーで見た目を確認する。
 
 ## 9. 結合テストの書き方
@@ -201,7 +201,7 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 | `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
 | `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
 | `problem(...)` | エラーレスポンスの本文を作る |
-| `getServerError(path)`、`getNetworkError(path)` | 契約にない応答（サーバーのエラー、通信の失敗）を返す、型のない MSW のハンドラーを作る（テストの書き方 第 4.2 節） |
+| `getServerError(path)`、`getNetworkError(path)` | 契約にない応答（サーバーのエラー、通信の失敗）を返す、型のない MSW のハンドラーを作る（テストの書き方の「API の差し替えは型付きの MSW」） |
 | `stockHandler(quantity)` | バリアントの在庫数の取得に、バリアントによらず同じ数で応答する。関数を渡すと、取得のたびに関数の戻り値で応答する |
 | `conflict(response)`、`Reply` | 更新の競合（409）の応答を返す。`Reply` は、条件で応答を変える関数の型で、その関数が返す応答は契約にあるものに限られる |
 | `reportServer.ts` の `serveReportBasics` | レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する。会計年度は 4 月始まり、商品は T シャツ 1 つ（ID は `fixtures.ts` の `SHIRT_ID`）。結合テストだけで使う |
@@ -215,7 +215,7 @@ expect(await screen.findByText('他の人が先に更新しました。再読み
 - 置き場所は、主に確認する画面（`pages/`）の横。
 - リンクの見た目のボタン（共有の `LinkButton`）は、役割が `button` になる。
 - ハンドラーのない API が呼ばれるとテストは失敗する。送った内容は、ハンドラーの中で `request.json()` を変数に取って確認する。
-- バージョンの決まり（第 5 節）は、入力中に他の人が更新した後で、画面に再取得させる（`fireEvent(window, new Event('visibilitychange'))`）。入力が消えず、送るバージョンが変わらないことまで確認する。
+- バージョンの決まり（「フォーム」）は、入力中に他の人が更新した後で、画面に再取得させる（`fireEvent(window, new Event('visibilitychange'))`）。入力が消えず、送るバージョンが変わらないことまで確認する。
 - 管理 API の外への要求（ストレージへの PUT）は、`msw` の `http` で作る（`admin.yaml` の型がないため）。
 - 画面の外で起きること（バックエンドの業務の規則、店舗画面への反映）は確認しない。
 
@@ -225,7 +225,7 @@ SPA がブラウザーで IdP とやり取りし（public client）、token は�
 
 | 項目 | 決まり |
 |------|--------|
-| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID`（既定値は[環境変数](../../06-手順書/environment.md) 第 2 節）。戻り先は画面のトップ ※4 |
+| 設定（`auth/oidc.ts`） | `ec-admin` realm の `ec-admin-web`。認可コード + PKCE。接続先は `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID`（既定値は[環境変数](../../06-手順書/environment.md)の「管理画面」）。戻り先は画面のトップ ※4 |
 | token の置き場所 | メモリー（`InMemoryWebStorage`）。sessionStorage に置かない（JavaScript から読める場所に残さない）。IdP へ移る間の `state` と PKCE の値だけは sessionStorage |
 | ログインを求める | `auth/AuthGate` が全ての画面をラップし、ログインしていなければ IdP へリダイレクトし、戻ったら元の画面を表示する ※5 |
 | token の更新 | 期限が近ければ refresh token で再取得する（自動）。再取得できなければ（最後の操作から 30 分、またはログインから 8 時間を過ぎたとき）再ログインする |
@@ -237,7 +237,7 @@ SPA がブラウザーで IdP とやり取りし（public client）、token は�
 
 ※5：再読み込み・新しいタブではメモリーに token がないので IdP へリダイレクトするが、IdP のログインが残っていれば、パスワードなしですぐ元の画面を表示する。非表示の iframe は使わない。
 
-※6：画面が token の権限を読むと、権限を読む処理がバックエンドと 2 か所になる（バックエンドのアーキテクチャ 第 7.2 節）。権限は再ログインするまで変わらないので、再取得しない。
+※6：画面が token の権限を読むと、権限を読む処理がバックエンドと 2 か所になる（バックエンドのアーキテクチャの「業務のコードとの境界」）。権限は再ログインするまで変わらないので、再取得しない。
 
 ### 10.1 API に付ける token
 

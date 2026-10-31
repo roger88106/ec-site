@@ -7,7 +7,7 @@ import org.springframework.stereotype.Component;
 import java.util.concurrent.atomic.AtomicLong;
 
 /**
- * 未完了のイベントと止めたイベントの件数のメトリクス（バックエンドのアーキテクチャ 第 5 節）。<br />
+ * 未完了のイベントと止めたイベントの件数のメトリクス（バックエンドのアーキテクチャの「水平スケール」）。<br />
  * 再発行のジョブが数え直して値を置く。メトリクスの収集のたびに DB を読まないため。
  */
 @Component

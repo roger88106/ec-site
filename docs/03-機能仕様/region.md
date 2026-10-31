@@ -36,7 +36,7 @@
 | 変換 | tools（`src/tools/java/com/ecsite/tools/region/`）の `PostalCodeCsv`（注記を除き、マスターデータの行にする）。本番のコードには入れない（本番で動かさず、tools とテストだけが使うため） |
 | 郵便番号の一覧 | `src/tools/resources/region/postal-codes.txt`。seed・テスト・E2E が使う郵便番号と、変換の確認に使う郵便番号 |
 | 作り方 | 下の手順。作ったマイグレーションは手動で修正しない |
-| 出典と利用の条件 | [依存とライセンス](../05-開発規則/licenses.md) 第 3.4 節 |
+| 出典と利用の条件 | [依存とライセンス](../05-開発規則/licenses.md)の「データ」 |
 
 1. 日本郵便の郵便番号データのページから `utf_ken_all.zip` をダウンロードし、`/.local/masterdata/utf_ken_all/utf_ken_all.csv` に展開する（Git に入れない）。
 2. `./gradlew generateRegionMigration` を実行する（置き場所を変えるときは `-PpostalCodeCsv=<CSV>`）。都道府県・市区町村・郵便番号の数が出力される。一覧の郵便番号がデータになければ失敗する。

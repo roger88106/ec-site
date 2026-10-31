@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * token から権限への変換（バックエンドのアーキテクチャ 第 7.2 節）。権限を読むのはここだけにする。<br />
+ * token から権限への変換（バックエンドのアーキテクチャの「業務のコードとの境界」）。権限を読むのはここだけにする。<br />
  * 権限は、運営者の realm が管理 API の client role として発行したもの（{@code resource_access.<管理 API>.roles}）だけ。
  * 名前（{@code resource:action}）をそのまま Spring Security の権限にする。
  * ほかの client の role と realm の role（職務の名前）は権限にしない。権限の受け渡し方を変えるときは、ここだけを変える。

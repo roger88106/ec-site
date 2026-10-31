@@ -2,7 +2,7 @@ import 'server-only'
 import { headers } from 'next/headers'
 import { TRACEPARENT_HEADER, traceIdOf } from '@/lib/server/trace'
 
-/** ログのレベル（フロントの書き方 第 8.2 節） */
+/** ログのレベル（フロントの書き方の「サーバーログは 1 行 1 件の JSON」） */
 type Level = 'info' | 'warn' | 'error'
 
 /**
@@ -33,7 +33,7 @@ async function currentTraceId(): Promise<string | null> {
 }
 
 /**
- * 店舗画面のサーバー側のログ（フロントの書き方 第 8.2 節）。`console.*` の代わりに使う。<br />
+ * 店舗画面のサーバー側のログ（フロントの書き方の「サーバーログは 1 行 1 件の JSON」）。`console.*` の代わりに使う。<br />
  * info：調べるための記録。warn：利用者の操作が失敗したが続けられるもの。error：予期しない失敗。
  */
 export const log = {

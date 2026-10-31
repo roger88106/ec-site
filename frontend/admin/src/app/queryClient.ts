@@ -23,7 +23,7 @@ export function lastQueryError(queryClient: QueryClient, queryKey: QueryKey): un
 }
 
 /**
- * サーバー状態のキャッシュを作る（管理画面の構成 第 4 節）。設定は TanStack Query の既定のまま。<br />
+ * サーバー状態のキャッシュを作る（管理画面の構成の「API の呼び出し」）。設定は TanStack Query の既定のまま。<br />
  * ただし 4xx は繰り返しても結果が変わらず、表示が遅れるだけなので繰り返さない。
  * 結合テストでも同じ設定で、テストごとに新しく作る。
  *

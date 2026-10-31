@@ -96,8 +96,8 @@ spec の進み具合（どの段階まで完了したか）は、MVP の spec �
 
 | 記号 | 意味 |
 |------|------|
-| アーキテクチャのレベル `A` | フル：domain / application / infrastructure / presentation（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) 第 2 節） |
-| アーキテクチャのレベル `B` | 簡略：3 層（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) 第 2 節） |
-| アーキテクチャのレベル `C` | イベントストア（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) 第 2 節） |
+| アーキテクチャのレベル `A` | フル：domain / application / infrastructure / presentation（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「モジュール内のアーキテクチャレベル」） |
+| アーキテクチャのレベル `B` | 簡略：3 層（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「モジュール内のアーキテクチャレベル」） |
+| アーキテクチャのレベル `C` | イベントストア（[バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「モジュール内のアーキテクチャレベル」） |
 
 モジュールごとのレベルと選んだ理由は、`docs/03-機能仕様/<module>.md` の冒頭に書く。

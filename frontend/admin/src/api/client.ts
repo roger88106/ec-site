@@ -4,7 +4,7 @@ import { toApiError } from '@/api/errors'
 import type { paths } from '@/api/generated/admin'
 import { currentAccessToken, handleUnauthorized } from '@/auth/token'
 
-/** 運営者の access token を Authorization ヘッダーに付ける（管理画面の構成 第 10 節） */
+/** 運営者の access token を Authorization ヘッダーに付ける（管理画面の構成の「ログイン」） */
 const withAccessToken: Middleware = {
   onRequest({ request }) {
     const accessToken = currentAccessToken()
@@ -16,7 +16,7 @@ const withAccessToken: Middleware = {
 }
 
 /**
- * エラーの応答を ApiError にして投げる。画面は ApiError だけを扱う（管理画面の構成 第 4 節）。<br />
+ * エラーの応答を ApiError にして投げる。画面は ApiError だけを扱う（管理画面の構成の「API の呼び出し」）。<br />
  * 401（token が無効になった）なら、ログインし直す。403 は、ほかのエラーと同じく操作した場所に出す。
  */
 const throwOnError: Middleware = {

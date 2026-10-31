@@ -36,7 +36,7 @@ export default async function CheckoutPage({ params }: PageProps<'/checkout/[che
   if (checkout.orderId) {
     redirect(`/orders/${checkout.orderId}`)
   }
-  // 都道府県は公開のマスターデータなので、キャッシュを使う口で取る（店舗画面の構成 第 4.8 節）
+  // 都道府県は公開のマスターデータなので、キャッシュを使う口で取る（店舗画面の構成の「お届け先の都道府県と市区町村」）
   const prefectures = unwrap(await (await getApi()).GET('/prefectures')).items
 
   return (

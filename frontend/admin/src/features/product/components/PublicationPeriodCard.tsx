@@ -20,7 +20,7 @@ function toValues(product: ProductDetail): Values {
 /**
  * 公開期間の設定。日時は日本時間で、空なら限りがない。<br />
  * 公開中でも期間の外は C 側に表示されず、その時刻で切り替わる。終了が開始より後であることはサーバーが検証する。
- * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
+ * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
 export function PublicationPeriodCard({
   product,

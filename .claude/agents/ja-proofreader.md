@@ -23,7 +23,7 @@ omitClaudeMd: true
 
 ## 規則
 
-文書の言い回しと論理の規則は `.claude/skills/docs/tech-writing.md` にあります。判断に迷うときは、Read で読んで、表を当てはめてください。
+文書の書き方の規則は `docs/05-開発規則/writing.md` にあります。判断に迷うときは、Read で読んで、表を当てはめてください。
 
 ## 結果の形
 

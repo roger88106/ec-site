@@ -1,13 +1,13 @@
 import type { ErrorCode } from '@/api/types'
 import { translate } from '@/i18n/translate'
 
-/** 通信の失敗（バックエンドが止まっているなど）のときの案内（店舗画面の構成 第 6 節） */
+/** 通信の失敗（バックエンドが止まっているなど）のときの案内（店舗画面の構成の「結果の知らせ方」） */
 export function connectionFailedMessage(): string {
   return translate('common.connectionFailed') // サーバーに接続できない案内
 }
 
 /**
- * サーバーアクションの結果（店舗画面の構成 第 6 節）。<br />
+ * サーバーアクションの結果（店舗画面の構成の「結果の知らせ方」）。<br />
  * 失敗は、画面に出す message と、エラーコード、入力欄ごとのメッセージ（項目名 → メッセージ）を持つ。
  */
 export type ActionResult =

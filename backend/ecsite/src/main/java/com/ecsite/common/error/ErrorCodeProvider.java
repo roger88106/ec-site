@@ -8,7 +8,7 @@ import java.util.Locale;
 /**
  * エラーコードプロバイダー。<br />
  * 各モジュールのエラーの定義（enum）が実装する。メッセージのキーは、モジュールの名前と定数の名前から決まる
- * （docs/05-開発規則/backend-coding.md 第 3.2 節）。
+ * （バックエンドの書き方の「エラーは XxxErrorCode と BusinessException」）。
  */
 public interface ErrorCodeProvider {
 

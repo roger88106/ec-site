@@ -485,7 +485,7 @@ describe('互換性の検査の対象と除外', () => {
     assert.deepEqual([...result.used], [key])
   })
 
-  test('除外は種類が違う変更には効かない', () => {
+  test('除外は種類が違う変更には適用されない', () => {
     const key = `${newName}:${INCOMPATIBLE_KINDS.dropTable}`
     const result = scanMigrations([newFile], () => drop, { [key]: '理由' })
     assert.equal(result.found.length, 1)

@@ -9,7 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import java.time.Duration;
 
 /**
- * 引当の片付けの設定（バックエンドのアーキテクチャ 第 5 節）。環境変数で上書きする（例：ECSITE_INVENTORY_CLEANUP_RETENTION）。
+ * 引当の片付けの設定（バックエンドのアーキテクチャの「水平スケール」）。環境変数で上書きする（例：ECSITE_INVENTORY_CLEANUP_RETENTION）。
  *
  * @param interval  片付けのジョブの間隔
  * @param retention 保存期間（引当の期限から、消すまでの時間）

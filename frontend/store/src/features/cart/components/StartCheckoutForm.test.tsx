@@ -5,7 +5,7 @@ import { startCheckout } from '@/actions/cart'
 import { StartCheckoutForm } from '@/features/cart/components/StartCheckoutForm'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
-// 注文手続きに進む操作はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方 第 1 節）
+// 注文手続きに進む操作はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方の「テストの種類と基準」）
 vi.mock('@/actions/cart', () => ({ startCheckout: vi.fn(async () => ({ ok: true })) }))
 
 describe('注文手続きに進む', () => {

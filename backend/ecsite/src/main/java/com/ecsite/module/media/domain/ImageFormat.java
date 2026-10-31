@@ -34,11 +34,11 @@ public enum ImageFormat {
      */
     BMP("BMP", "bmp", "image/bmp"),
     /**
-     * HEIC / HEIF（ftyp の箱のブランドが HEIC の系統。スマートフォンの写真）
+     * HEIC / HEIF（ftyp のボックスのブランドが HEIC の系統。スマートフォンの写真）
      */
     HEIF("HEIC / HEIF", "heic", "image/heic", "image/heif"),
     /**
-     * AVIF（ftyp の箱のブランドが avif・avis）
+     * AVIF（ftyp のボックスのブランドが avif・avis）
      */
     AVIF("AVIF", "avif", "image/avif");
 
@@ -48,7 +48,7 @@ public enum ImageFormat {
     public static final long MAX_BYTES = 10L * 1024 * 1024;
 
     /**
-     * 形式の判定に読む先頭の長さ（バイト）。ftyp の箱の互換のブランドを、いくつか読める長さにする
+     * 形式の判定に読む先頭の長さ（バイト）。ftyp のボックスの互換のブランドを、いくつか読める長さにする
      */
     public static final int SIGNATURE_LENGTH = 32;
 
@@ -83,7 +83,7 @@ public enum ImageFormat {
     private static final byte[] BMP_RESERVED = {0, 0, 0, 0};
 
     /**
-     * HEIC・HEIF・AVIF の ftyp の箱の名前（4〜7 バイト目）
+     * HEIC・HEIF・AVIF の ftyp のボックスの名前（4〜7 バイト目）
      */
     private static final byte[] FTYP = {'f', 't', 'y', 'p'};
 
@@ -190,8 +190,8 @@ public enum ImageFormat {
 // ============================== プライベートメソッド ==============================
 
     /**
-     * ftyp の箱（大きさ 4 バイト、"ftyp"、主のブランド、バージョン 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。<br />
-     * 主のブランドが汎用（mif1、msf1）なら、互換のブランドを見る。どちらとも分からなければ HEIF とする（中身は変換で確認する）。
+     * ftyp のボックス（大きさ 4 バイト、"ftyp"、メジャーブランド、バージョン 4 バイト、互換のブランド…）から、HEIF と AVIF を分ける。<br />
+     * メジャーブランドが汎用（mif1、msf1）なら、互換のブランドを見る。どちらとも分からなければ HEIF とする（中身は変換で確認する）。
      */
     private static Optional<ImageFormat> detectFtyp(byte[] head) {
         if (head.length < 12) {
@@ -218,7 +218,7 @@ public enum ImageFormat {
     }
 
     /**
-     * ftyp の箱の、指定した位置の 4 文字のブランドを読む。
+     * ftyp のボックスの、指定した位置の 4 文字のブランドを読む。
      */
     private static String brand(byte[] data, int offset) {
         return new String(data, offset, 4, StandardCharsets.US_ASCII);

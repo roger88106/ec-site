@@ -5,7 +5,7 @@
 // 次は置き換えない（変えると壊れるもの、当時の記録）：
 //   - 適用済みのマイグレーションと seed（Flyway の checksum が変わり、既存の DB で起動に失敗する）
 //   - テストのデータ（*.test.* のファイル。旧パスを例として持つ）
-//   - アーカイブした spec の本文（当時の記録。開発の進め方 第 1.4 節）
+//   - アーカイブした spec の本文（当時の記録。文書の書き方の「spec と plan の書き方」）
 const fs = require('node:fs')
 const { execSync } = require('node:child_process')
 

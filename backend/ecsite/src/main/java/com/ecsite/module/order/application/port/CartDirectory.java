@@ -8,7 +8,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * カートの腐敗防止層（バックエンドのアーキテクチャ 第 1 節）
+ * カートの腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」）
  */
 public interface CartDirectory {
 

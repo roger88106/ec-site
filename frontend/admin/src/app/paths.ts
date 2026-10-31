@@ -1,7 +1,7 @@
 import { generatePath } from 'react-router'
 
 /**
- * 画面の URL の形（管理画面の構成 第 3 節）。ルーターの定義はこれを使う。<br />
+ * 画面の URL の形（管理画面の構成の「画面の URL」）。ルーターの定義はこれを使う。<br />
  * 画面のコードは URL の文字列を直接書かず、{@link paths} で作る。
  */
 export const routePatterns = {

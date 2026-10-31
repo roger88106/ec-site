@@ -3,7 +3,7 @@ import { granularityValues, reportBasisValues } from '@/api/generated/admin'
 import type { Granularity, ReportBasis } from '@/api/types'
 import { isDate } from '@/features/report/period'
 
-/** レポートの条件。URL のクエリに持つ（再読込とリンクの共有のため。管理画面の構成 第 3 節） */
+/** レポートの条件。URL のクエリに持つ（再読込とリンクの共有のため。管理画面の構成の「画面の URL」） */
 export type ReportCondition = {
   /** 期間（日本時間の日付。両端を含む） */
   from: string

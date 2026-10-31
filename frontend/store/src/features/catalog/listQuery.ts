@@ -4,7 +4,7 @@ import type { ProductSort } from '@/api/types'
 import { translate } from '@/i18n/translate'
 import { firstParam, pageParam, type SearchParams } from '@/lib/searchParams'
 
-/** 商品一覧の絞り込み・並び順・ページ。URL のクエリに持つ（店舗画面の構成 第 3 節） */
+/** 商品一覧の絞り込み・並び順・ページ。URL のクエリに持つ（店舗画面の構成の「画面の URL」） */
 export type ListQuery = {
   /** カテゴリ（子孫を含む）。null は絞り込まない */
   categoryId: string | null

@@ -57,7 +57,7 @@ const GH_TIMEOUT_MS = 10000
  */
 export const GH_BUDGET_MS = 20000
 
-/** 高の経路の一覧（Dependabot の pull request の危険度の判定に使う） */
+/** 危険度が高い経路の一覧（Dependabot の pull request の危険度の判定に使う） */
 const RISK_CONFIG_FILE = new URL('../../ci/risk.json', import.meta.url)
 
 /** 利用者の許可なしにマージしてよい向き先のブランチ */
@@ -151,7 +151,7 @@ const API_RULESET_PATHS = [/(^|\/)rulesets(\/|\?|$)/, /(^|\/)branches\/.+\/prote
 /** pull request の URL（github.com のもの） */
 const PULL_REQUEST_URL = /^https?:\/\/github\.com\/([^/]+)\/([^/]+)\/pull\/(\d+)(?:[/?#].*)?$/i
 
-/** 置いた pre-commit hook が呼ぶ script（開発環境の起動 第 2 節の置き方） */
+/** 置いた pre-commit hook が呼ぶ script（開発環境の起動の「起動」の置き方） */
 const PRE_COMMIT_SCRIPT = 'scripts/dev/hooks/pre-commit'
 
 /**
@@ -237,7 +237,7 @@ const DELETE_BRANCH_REASON =
 
 /** 検査の省略を拒否する理由と代わりの手順 */
 const NO_VERIFY_REASON =
-  'commit の前の検査を省略しないため、--no-verify（git commit の -n を含む）は使えない（docs/06-手順書/setup.md 第 2 節の hook）。' +
+  'commit の前の検査を省略しないため、--no-verify（git commit の -n を含む）は使えない（開発環境の起動の「起動」の hook。docs/06-手順書/setup.md）。' +
   'hook で止まったときは、表示された問題を直して、--no-verify を付けずに実行し直す。'
 
 /** hook の置き場所の変更を拒否する理由と代わりの手順 */
@@ -266,7 +266,7 @@ const APPROVE_ONLY_IF_ALLOWED = '利用者が会話でこの操作を許可し�
 const TAG_REASON = `tag の作成と push（gh release create と、Release・tag の参照を変える gh api を含む）は、利用者の許可が必要（AGENTS.md の Git の表）。${APPROVE_ONLY_IF_ALLOWED}`
 
 /** ruleset の変更で確認を求める理由 */
-const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は、利用者の許可が必要（docs/06-手順書/branches.md 第 5 節）。${APPROVE_ONLY_IF_ALLOWED}`
+const RULESET_REASON = `ruleset（ブランチの保護を含む）の変更は、利用者の許可が必要（ブランチとリリースの「緊急の修正」。docs/06-手順書/branches.md）。${APPROVE_ONLY_IF_ALLOWED}`
 
 /**
  * @typedef {object} Decision hook の判定
@@ -888,7 +888,7 @@ function judgePreCommitHook(git, deps) {
   const state = text === null ? 'がない' : `が ${PRE_COMMIT_SCRIPT} を呼んでいない`
   return deny(
     `commit の前の検査を通すため、git の pre-commit hook を置いていないリポジトリでは commit できない（${hook} ${state}）。` +
-      `docs/06-手順書/setup.md 第 2 節（hook の置き方）のとおり、このファイルに ${PRE_COMMIT_SCRIPT} を呼ぶ 1 行を書いてから commit する。`,
+      `開発環境の起動の「起動」（docs/06-手順書/setup.md。hook の置き方）のとおり、このファイルに ${PRE_COMMIT_SCRIPT} を呼ぶ 1 行を書いてから commit する。`,
   )
 }
 
@@ -1281,9 +1281,9 @@ function checkProblems({ nodes, undated, truncated }) {
 }
 
 /**
- * 高の経路の一覧を読む。
+ * 危険度が高い経路の一覧を読む。
  *
- * @returns {{ groups: { name: string, paths: string[] }[] }} 高の経路の一覧
+ * @returns {{ groups: { name: string, paths: string[] }[] }} 危険度が高い経路の一覧
  */
 function loadRiskConfig() {
   return parseRiskConfig(readFileSync(RISK_CONFIG_FILE, 'utf8'))
@@ -1304,13 +1304,13 @@ function dependabotProblems(pullRequest) {
   try {
     config = loadRiskConfig()
   } catch (error) {
-    return [`高の経路の一覧（scripts/ci/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
+    return [`危険度が高い経路の一覧（scripts/ci/risk.json）を読めない：${error instanceof Error ? error.message : String(error)}`]
   }
   // Dependabot は spec.md を変えないので、spec の宣言を読む関数は常に null を返すものでよい
   const result = applyDependabotTitle(judgeRisk(files, config, () => null), pullRequest.title)
   if (result.level === '低') return []
   const reasons = [...result.hits.map((hit) => `${hit.name}：${hit.files.join('、')}`), result.dependabot]
-  return [`Dependabot の更新の危険度が高（${reasons.join('、')}）`]
+  return [`Dependabot の更新の危険度が高い（${reasons.join('、')}）`]
 }
 
 /**
@@ -1324,7 +1324,7 @@ function authoredProblems(pullRequest, checks) {
   const problems = []
   const bodyRisk = readBodyRisk(pullRequest.body ?? '')
   if ('error' in bodyRisk) problems.push(`本文の危険度を読めない（${bodyRisk.error}）`)
-  else if (bodyRisk.value !== '低') problems.push(`本文の危険度が低でない（判定：${bodyRisk.value}）`)
+  else if (bodyRisk.value !== '低') problems.push(`本文の危険度の判定が「低」でない（判定：${bodyRisk.value}）`)
   const riskChecks = checks.filter((node) => node.__typename === 'CheckRun' && node.name === RISK_CHECK)
   if (riskChecks.length === 0 || riskChecks.some((node) => node.status !== 'COMPLETED' || node.conclusion !== 'SUCCESS')) {
     problems.push(`検査「${RISK_CHECK}」が成功していない（ないか、成功以外）`)

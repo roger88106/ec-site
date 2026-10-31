@@ -1,13 +1,13 @@
 // 適用済みのマイグレーション（バージョン付きの V*.sql）を、追加した後に変えていないことを確認する。
 // Flyway は適用済みのマイグレーションの checksum を確認するので、コメントだけの変更でも、
-// 既に適用した DB で起動に失敗する（バックエンドの書き方、コメントの書き方 第 1 節）。
+// 既に適用した DB で起動に失敗する（バックエンドの書き方、コメントの書き方の「何を書くか」）。
 // 新しい DB で動くテストと CI では見つからないので、ここで確認する。
 // 基準は、HEAD と develop・main（origin/ の方を先に見る）のそれぞれとの分岐点の tree。基準にあるものが今の index にない（削除、改名）か、中身が違えば失敗にする。
 // まだ develop にも main にも入っていない自分のブランチで加えたもの（分岐の後に加えたもの）は、番号の振り直しも中身の変更も通す。どの DB にも適用されておらず、checksum が残っていないため。
 // マイグレーションが 0 件のときも失敗にする。分岐点を求めるので、shallow clone では失敗する。
-// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除（DROP SCHEMA を含む）と改名（ALTER SCHEMA … RENAME TO を含む）・スキーマの移動（SET SCHEMA）、列の型の変更、既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）、既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む）、既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL）。バックエンドの書き方 第 8.1 節）を含むと失敗にする。
+// もう 1 つ、新しいマイグレーションが、前のリリースのアプリが動き続けられない変更（表・列の削除（DROP SCHEMA を含む）と改名（ALTER SCHEMA … RENAME TO を含む）・スキーマの移動（SET SCHEMA）、列の型の変更、既存の列を NOT NULL にする（主キーの追加 ADD PRIMARY KEY を含む）、既定値のない NOT NULL の列の追加（主キーの列、DEFAULT NULL を含む）、既存の列の既定値の削除（DROP DEFAULT、SET DEFAULT NULL）。バックエンドの書き方の「前のリリースのアプリが動き続けられる変更だけにする」）を含むと失敗にする。
 // 対象外は、今ある 38 のマイグレーションのファイル名の一覧（LEGACY_MIGRATIONS）に入っているものだけ。それ以外は番号が小さくても全て対象にする。一覧にあって実在しない名前は失敗にする。
-// 例外は migrations-exclusions.json に理由を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値）。同じファイルの同じ種類の変更全てに効く。
+// 例外は migrations-exclusions.json に理由を書く。キーは `<マイグレーションのファイル名>:<変更の種類>`（種類は INCOMPATIBLE_KINDS の値）。同じファイルの同じ種類の変更全てに適用される。
 // 理由のない除外と、当たる変更がなくなった除外も失敗にする。SQL の字面で探すので、読み落としより誤検出の側に倒す（誤検出は除外で理由を残す）。
 // ドル引用（DO ブロックなど）の中は、文字列とコメントも含め全て字面で探す。
 // 閉じていない文字列・コメント・ドル引用は読めないので、失敗にする（除外できない）。
@@ -17,6 +17,7 @@ import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusion
 import { emptyListReason, splitNulList } from './lib/git-files.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { createLineLocator } from './lib/line-number.mjs'
+import { mergeBaseWith, tryGit } from './lib/merge-base.mjs'
 import { exitIfShallow } from './lib/shallow-clone.mjs'
 import { blankSqlNonCode } from './lib/sql-code.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
@@ -322,7 +323,7 @@ export function exclusionKey(file, kind) {
 }
 
 /**
- * 新しいマイグレーションの互換性のない変更を、除外を引いて集める。除外は、同じファイルの同じ種類の変更全てに効く。
+ * 新しいマイグレーションの互換性のない変更を、除外を引いて集める。除外は、同じファイルの同じ種類の変更全てに適用される。
  *
  * @param {string[]} files マイグレーション（互換性の検査の対象かは、ここで見る）
  * @param {(file: string) => string} read 中身を読む関数
@@ -347,15 +348,6 @@ export function scanMigrations(files, read, exclusions) {
   return { found, unreadable, used, missingLegacy }
 }
 
-/** git を実行し、失敗したら null を返す */
-function tryGit(args, cwd) {
-  try {
-    return execFileSync('git', args, { cwd, encoding: 'utf8', stdio: ['ignore', 'pipe', 'ignore'] }).trim()
-  } catch {
-    return null
-  }
-}
-
 /**
  * 守る基準（どこかの DB に適用されうる状態）の commit を決める。<br />
  * まだ develop にも main にも入っていない自分のブランチのマイグレーションは、どの DB にも適用されていないので、振り直してよい。
@@ -375,16 +367,11 @@ export function resolveBaseRevisions(cwd = process.cwd()) {
   const revisions = new Set()
   const bases = []
   for (const branch of ['develop', 'main']) {
-    for (const base of [`origin/${branch}`, branch]) {
-      const ref = (base.includes('/') ? 'refs/remotes/' : 'refs/heads/') + base
-      if (!tryGit(['rev-parse', '--verify', '-q', ref], cwd)) continue
-      const revision = tryGit(['merge-base', 'HEAD', ref], cwd)
-      if (!revision) continue
-      revisions.add(revision)
-      if (revision === head && parent) revisions.add(parent)
-      bases.push(base)
-      break
-    }
+    const found = mergeBaseWith(branch, cwd)
+    if (!found) continue
+    revisions.add(found.revision)
+    if (found.revision === head && parent) revisions.add(parent)
+    bases.push(found.base)
   }
   if (bases.length === 0 && parent) revisions.add(parent)
   return { revisions: [...revisions], bases }

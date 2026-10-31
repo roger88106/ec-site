@@ -7,7 +7,7 @@
 //   --force を付けると、環境の印がなくても調べる（較正用）
 // 環境の印：git config --local ecsite.instructionLanguage の値が zh のときだけ調べる。印がなければ、何も調べず何も出さず、終了コード 0。
 // 見つかれば終了コード 1 で、ファイル・行・語を標準エラー出力に出す。使い方の誤りは 2。
-// 字・用語の一覧と許す語は zh-mixing.json。Git の外の許す語は .local/agent/zh-allow.txt（「語」か「ファイルのパス<TAB>語」を 1 行ずつ）
+// 字・用語の一覧と許容用語は zh-mixing.json。Git の外の許容用語は .local/agent/zh-allow.txt（「語」か「ファイルのパス<TAB>語」を 1 行ずつ）
 // 層 1（scripts/ci/ja-text.json）にある語は、ここに置かない（同じ語を 2 つの層に置かない）
 const fs = require('fs')
 const path = require('path')
@@ -31,15 +31,15 @@ function withoutGitEnv(env = process.env) {
 }
 
 /**
- * 一覧の形を確認する。許す語には理由が必要だ。
+ * 一覧の形を確認する。許容用語には理由が必要だ。
  * @param {{ chars: string | string[], words: string[], allow?: { word: string, file?: string, reason?: string }[] }} raw 読んだ JSON
  * @returns {{ chars: string[], words: string[], allow: { word: string, file?: string, reason: string }[] }} 字を 1 字ずつにした一覧
  */
 function checkList(raw) {
   const allow = raw.allow ?? []
   for (const entry of allow) {
-    if (!entry.word) throw new Error('許す語に word がない')
-    if (!entry.reason) throw new Error(`許す語に理由がない：${entry.word}`)
+    if (!entry.word) throw new Error('許容用語に word がない')
+    if (!entry.reason) throw new Error(`許容用語に理由がない：${entry.word}`)
   }
   return { chars: [...raw.chars], words: [...raw.words], allow }
 }
@@ -53,7 +53,7 @@ function loadList(file = LIST_PATH) {
 }
 
 /**
- * Git の外の許す語のファイルを読む。
+ * Git の外の許容用語のファイルを読む。
  * @param {string} text 「語」か「ファイルのパス<TAB>語」を 1 行ずつ。# で始まる行と空行は読み飛ばす
  * @returns {{ word: string, file?: string }[]}
  */
@@ -69,11 +69,11 @@ function parseLocalAllow(text) {
 }
 
 /**
- * 1 行から、中国語の字・用語を見つける（許す語を除く）。
+ * 1 行から、中国語の字・用語を見つける（許容用語を除く）。
  * @param {string} text 行
  * @param {{ chars: string[], words: string[], allow: { word: string, file?: string }[] }} list 一覧
- * @param {string} [file] 行があるファイル（ファイルを指定した許す語の判定に使う）
- * @param {{ word: string, file?: string }[]} [extraAllow] Git の外の許す語
+ * @param {string} [file] 行があるファイル（ファイルを指定した許容用語の判定に使う）
+ * @param {{ word: string, file?: string }[]} [extraAllow] Git の外の許容用語
  * @returns {string[]} 見つけた字・用語（重複なし）
  */
 function findWords(text, list, file = '', extraAllow = []) {
@@ -88,7 +88,7 @@ function findWords(text, list, file = '', extraAllow = []) {
  * 行の並びを調べ、見つかった行を返す。
  * @param {{ file: string, line: number, text: string }[]} lines 調べる行
  * @param {object} list 一覧
- * @param {{ word: string, file?: string }[]} [extraAllow] Git の外の許す語
+ * @param {{ word: string, file?: string }[]} [extraAllow] Git の外の許容用語
  * @returns {{ file: string, line: number, text: string, words: string[] }[]}
  */
 function scanLines(lines, list, extraAllow = []) {
@@ -202,7 +202,7 @@ function trackedFiles({ cwd = process.cwd(), env = withoutGitEnv() } = {}) {
 }
 
 /**
- * Git の外の許す語のファイルを読む。作業ツリーになければ、主の作業ツリー（共通の .git の親）を探す。なければ空。
+ * Git の外の許容用語のファイルを読む。作業ツリーになければ、メインの作業ツリー（共通の .git の親）を探す。なければ空。
  * @returns {{ word: string, file?: string }[]}
  */
 function readLocalAllow({ cwd = process.cwd(), env = withoutGitEnv() } = {}) {
@@ -212,7 +212,7 @@ function readLocalAllow({ cwd = process.cwd(), env = withoutGitEnv() } = {}) {
     candidates.push(path.join(git('rev-parse', '--show-toplevel'), LOCAL_ALLOW))
     candidates.push(path.join(path.dirname(path.resolve(cwd, git('rev-parse', '--git-common-dir'))), LOCAL_ALLOW))
   } catch {
-    // リポジトリの外では、許す語のファイルを探さない
+    // リポジトリの外では、許容用語のファイルを探さない
   }
   const found = candidates.find((file) => fs.existsSync(file))
   return found ? parseLocalAllow(fs.readFileSync(found, 'utf8')) : []

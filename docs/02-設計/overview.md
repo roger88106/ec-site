@@ -7,7 +7,7 @@
 - 図は `ModuleDiagramTest`（`backend/ecsite/src/test/java/com/ecsite/modulith/ModuleDiagramTest.java`）がコードから作る。手動で修正しない。
 - 実線は、モジュールが相手の API を呼ぶ（矢印の向きが依存の向き）。点線は、イベントを発行するモジュールから受けるモジュールへ向かい、線の上にイベントの名前を書く。
 - 他のモジュールが受けるイベントだけを書く。リスナーのない公開イベントは図に出ない。
-- 依存は package-info の `allowedDependencies` で宣言し、`ModulithTest` が守らせる（[バックエンドのアーキテクチャ](backend-architecture.md) 第 1 節）。
+- 依存は package-info の `allowedDependencies` で宣言し、`ModulithTest` が守らせる（[バックエンドのアーキテクチャ](backend-architecture.md)の「モジュラーモノリス」）。
 - モジュールの依存かイベントが変わると、テストが失敗する。`backend/ecsite` で `./gradlew test --tests ModuleDiagramTest -PupdateDocs` を実行すると図を再生成するので、差分を確認して commit する。
 
 <!-- generated:modules -->
@@ -109,8 +109,8 @@ flowchart LR
 
 | 外部システム | 使うもの | 接続するモジュール | 詳しい文書 |
 |--------------|----------|--------------------|------------|
-| IdP | Keycloak | なし ※1 | [バックエンドのアーキテクチャ](backend-architecture.md) 第 7 節、[会員モジュール](../03-機能仕様/member.md) |
-| 決済サービス | Stripe（ローカルの既定は mock） | 決済。通知（webhook）を受ける | [決済モジュール](../03-機能仕様/payment.md)、[バックエンドのアーキテクチャ](backend-architecture.md) 第 8 節 |
+| IdP | Keycloak | なし ※1 | [バックエンドのアーキテクチャ](backend-architecture.md)の「認証・認可」、[会員モジュール](../03-機能仕様/member.md) |
+| 決済サービス | Stripe（ローカルの既定は mock） | 決済。通知（webhook）を受ける | [決済モジュール](../03-機能仕様/payment.md)、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」 |
 | 物流サービス | mock だけ（本番の実装はまだない） | 出荷。通知を受ける | [出荷モジュール](../03-機能仕様/shipping.md) |
 | メール | SMTP（ローカルは Mailpit） | 通知 | [通知モジュール](../03-機能仕様/notification.md) |
 | オブジェクトストレージ | S3 互換（ローカルは SeaweedFS）と、画像の変換（imgproxy） | メディア | [メディアモジュール](../03-機能仕様/media.md) |

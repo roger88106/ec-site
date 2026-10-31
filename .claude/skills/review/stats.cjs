@@ -1,6 +1,6 @@
 // アーカイブした spec の tasks（規模 L）と spec.md（規模 M）のレビューの記録の表を、時点ごとに集計する
-// 使い方：node .claude/skills/review/stats.cjs --round <弾の名前> --profile <profile の名前> <spec の番号> [<spec の番号> ...]
-// 弾と profile は表にないので引数で受ける。結果は標準出力に Markdown の表で出す
+// 使い方：node .claude/skills/review/stats.cjs --round <ステップの名前> --profile <profile の名前> <spec の番号> [<spec の番号> ...]
+// ステップと profile は表にないので引数で受ける。結果は標準出力に Markdown の表で出す
 // 同じ時点に複数のレビュー役が動いたときは、観点を「重複を除く」とした行の値を使う（なければ行の値を合計し、そのような組（表・時点・回数）の数を出す）。同じ時点の 2 回目以降は、回数ごとに分ける
 const fs = require('fs'), path = require('path')
 
@@ -112,7 +112,7 @@ function readReviewRows(text, file = '(不明)') {
 /**
  * 採用の割合を百分率で書く。
  * @param {number} adopted 採用の数
- * @param {number} found 指摘の数（高＋必須＋推奨）
+ * @param {number} found 指摘の数（「高」「必須」「推奨」の列の合計）
  * @returns {string} 小数 1 桁の百分率。指摘が 0 なら「—」
  */
 function rate(adopted, found) {
@@ -126,7 +126,7 @@ function emptySum(time) {
 
 /**
  * 行を時点ごとに集計する。「段階 n」は、n ごとに分けて集計したあとで「段階」にまとめる。
- * 表・時点・回数の組ごとにまとめ、その組に観点「重複を除く」の行があれば、高・必須・推奨・採用は、その行の値を使い、他の行の値は合計しない。
+ * 表・時点・回数の組ごとにまとめ、その組に観点「重複を除く」の行があれば、「高」「必須」「推奨」「採用」の列は、その行の値を使い、他の行の値は合計しない。
  * 回数が数として読めない行は、回数「?」の組にまとめる（読める回とは混ぜない）。
  * 行の数と token は、「重複を除く」の行を数えず、合計しない。
  * 「重複を除く」の行がなく、行が 2 つ以上ある組は、重複して数えているおそれがあるので、そのような組の数を返す。
@@ -173,14 +173,14 @@ function aggregate(rows) {
 
 /**
  * 集計を Markdown にする。
- * @param {{round: string, profile: string, specs: string[]}} meta 弾、profile、対象の spec の番号
+ * @param {{round: string, profile: string, specs: string[]}} meta ステップ、profile、対象の spec の番号
  * @param {ReturnType<typeof aggregate>} result 集計の結果
  * @returns {string} Markdown
  */
 function formatReport(meta, result) {
   const line = (s) => `| ${[s.time, s.rows, s.token, s.high, s.must, s.recommended, s.adopted, s.rate].join(' | ')} |`
   return [
-    `弾：${meta.round}`,
+    `ステップ：${meta.round}`,
     `profile：${meta.profile}`,
     `spec：${meta.specs.join(', ')}`,
     '',
@@ -205,7 +205,7 @@ function main() {
     else specs.push(args[i])
   }
   if (!round || !profile || !specs.length) {
-    console.error('使い方：node .claude/skills/review/stats.cjs --round <弾の名前> --profile <profile の名前> <spec の番号> [...]')
+    console.error('使い方：node .claude/skills/review/stats.cjs --round <ステップの名前> --profile <profile の名前> <spec の番号> [...]')
     process.exit(1)
   }
   const root = process.cwd()

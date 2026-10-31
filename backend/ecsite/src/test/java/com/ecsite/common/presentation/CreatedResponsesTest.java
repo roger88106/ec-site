@@ -15,7 +15,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * 作成の応答の補助の単体テスト（バックエンドの書き方 第 2.2 節）
+ * 作成の応答の補助の単体テスト（バックエンドの書き方の「応答への変換は手動で書く」）
  */
 class CreatedResponsesTest {
 

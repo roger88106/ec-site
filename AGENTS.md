@@ -9,7 +9,7 @@ AI エージェント（Claude Code など）がこのリポジトリで作業�
 2. [開発の進め方](docs/05-開発規則/workflow.md)：SDD と TDD、起票と規模、利用者の確認と中断、完了の定義
 3. 着手する段階の tasks と、冒頭の「参照」の文書（`docs/08-spec/<番号>-*/`。規模 L は `tasks/`、規模 M は spec.md の中の tasks、規模 S は issue）
 4. コードを書く・レビューする前に、関わる書き方の文書（constitution の「コードの書き方」の一覧。バックエンド、フロント、テスト、コメント）
-5. 文書（docs/、README、AGENTS.md、spec、plan、tasks）を書く・レビューする前に、[文書の書き方](docs/05-開発規則/writing.md)
+5. 文書（docs/、README、AGENTS.md、spec、plan、tasks、issue の本文とコメント）を書く・レビューする前に、[文書の書き方](docs/05-開発規則/writing.md)。書く前に、skill `docs` の「進め方」も読む（本文は、日本語の要点から、日本語だけの文脈のサブエージェントに書かせる）
 
 マシン固有の環境と利用者個人の習慣（返答の言語など）は、`/.local/agent/environment.md` があれば始めに読んで従う。ないときは、本書と `docs/` だけで進める。
 

@@ -56,7 +56,7 @@
 
 ### 1.4 spec と plan の書き方
 
-AC・DC・plan の節・識別子と、plan と tasks を書くときの注意は、[文書の書き方](writing.md)の「spec と plan の書き方」。参照の書き方は、[文書の書き方](writing.md)の「参照」。
+AC・DC・plan の節・識別子と、plan と tasks を書くときの注意は、[文書の書き方](writing.md)の「spec と plan の書き方」。参照の書き方は、[文書の書き方](writing.md)の「参照」。spec・plan・tasks の本文も、skill `docs` の「進め方」のとおり、日本語の要点からサブエージェントに書かせる。
 
 ### 1.5 コードと文書の食い違い
 

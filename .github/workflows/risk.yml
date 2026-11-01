@@ -15,6 +15,7 @@ name: 危険度
 on:
   pull_request:
     # 本文を書き換えたとき（edited）と、draft を外したとき（ready_for_review）にも照合する
+    # draft の間は、ジョブの条件で照合しない。本文の「## 危険度」の節は draft を外す前に書くので、draft の間は必ず失敗するため
     types: [opened, edited, synchronize, reopened, ready_for_review]
     branches: [develop]
 
@@ -28,6 +29,8 @@ concurrency:
 jobs:
   risk:
     name: 危険度の照合
+    # 条件で skip したジョブは成功として報告され、必須の検査として通る（draft の pull request はもともとマージできない）
+    if: github.event.pull_request.draft == false
     runs-on: ubuntu-latest
     timeout-minutes: 5
 

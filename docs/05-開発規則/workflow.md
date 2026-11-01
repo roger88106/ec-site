@@ -56,7 +56,7 @@
 
 ### 1.4 spec と plan の書き方
 
-AC・DC・plan の節・識別子と、plan と tasks を書くときの注意は、[文書の書き方](writing.md)の「spec と plan の書き方」。参照の書き方は、[文書の書き方](writing.md)の「参照」。
+AC・DC・plan の節・識別子と、plan と tasks を書くときの注意は、[文書の書き方](writing.md)の「spec と plan の書き方」。参照の書き方は、[文書の書き方](writing.md)の「参照」。spec・plan・tasks の本文も、skill `docs` の「進め方」のとおり、日本語の要点からサブエージェントに書かせる。
 
 ### 1.5 コードと文書の食い違い
 
@@ -163,6 +163,20 @@ CI の検査の script（`scripts/ci/`）のテストは、commit の前の hook
 - 完了した 1→10 の spec は、MVP と同じくまとまりごとにアーカイブし、`docs/08-spec/archive/1to10/` に置く（M の spec も同じ）。同じ pull request に含める。理由：後に移すと pull request が増えるため。
 - tasks を作るとき、アーカイブに移すタスクを最後にし、spec の最後のレビューと pull request の前のレビューをその前のタスクにする。アーカイブの commit で、そのタスクを含む全てのチェックボックスを `[x]` にする。pull request の作成はタスクにせず、spec の最後のレビューの後に draft で作り、URL を追跡の issue に記録する。pull request の前のレビューは draft で行い、指摘に対応して draft を外す。理由：先に作ると、レビュー中に止まっても、作業とレビューの記録が pull request に残るため。
 - マージの前に、アーカイブの後にタスクを追加するとき（「pull request のレビューの対応」で行う修正、CI の失敗の修正など）は、アーカイブのタスクの後に、そのタスクを済ませる commit で `[x]` の行として追加する。`develop` を取り込むだけの commit はタスクにしない。理由：進捗の検査が、アーカイブした spec の全タスクの完了を求めるため。
+
+### 4.3 push のタイミング
+
+作業ブランチの push は、段階の最後（段階のない規模 S・M では、作業の最後）に行う。段階の途中は commit だけにする。理由：push のたびに CI が全て実行されるが、段階の途中の CI の結果は使わないため。
+
+段階の途中で push してよいのは、次のときだけ。
+
+| とき | 例 |
+|------|----|
+| CI でしか確認できないことを確認する | Linux での E2E、CodeQL、GitHub での Markdown の表示 |
+| 量の大きいタスクの途中で、バックアップを残す | 複数の commit にわたるタスクの区切り |
+| セッションの交代や引き継ぎの前 | skill `handoff` で引き継ぎの文書を作るとき |
+
+draft の pull request では、危険度の照合（`risk.yml`）を実行しない（[CI の検査](../06-手順書/ci.md)の「CI のジョブ」）。本文の「## 危険度」の節は、draft を外す前に書く。
 
 ## 5. 利用者の確認と中断
 

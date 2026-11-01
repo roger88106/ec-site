@@ -32,27 +32,29 @@
 | M-13 | 見逃し | 「和語より技術文書の語」の今の規則と、口頭の語を避ける規則が、DC-283-7〜9 と矛盾しない形で残る。 | `口頭の語` | `docs/08-spec/283-writing-rules/spec.md`（`5b6d3e6a`） | error |
 | M-14 | 見逃し | 起動の形ごとに、設定・定義・skill を読む場所と、変更が効く時点。 | `効く` | `.claude/skills/sessions/SKILL.md`（`faa8823b`） | error |
 
-M-14 は、語の数（13）と件数（14）をそろえるために、`効く` に 2 件目を加えた例である。
+M-14 は、見逃しの例を 14 件にするために加えた、`効く` の 2 件目の例である。
 
 ### 誤検出の例
 
 | 番号 | 種類 | 例文 | 挙げるべき語句 | 出典 | ja-text の扱い |
 |------|------|------|----------------|------|----------------|
-| F-01 | 誤検出 | 日付をまたぐ境界の確認に使う | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/AdminOrderApiTest.java`（`dd607cc1`）。見逃しの例 M-03 と同じ語を正しく使う文。最初に選んだ workflow.md の文は、「旧い」（常用漢字表にない読み）を含むので替えた | `境界` は、なし |
+| F-01 | 誤検出 | 日付をまたぐ境界の確認に使う | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/AdminOrderApiTest.java`（`dd607cc1`）。見逃しの例 M-03 と同じ語を正しく使う文 ※2 | `境界` は、なし |
 | F-02 | 誤検出 | 規模 M の spec と、規模 L の spec・plan・tasks は、文書のレビュー（skill `review` の手順 8）と校閲役（同 手順 9。中国語で指示する環境で行う）を通してから、利用者の確認に出す。 | なし | `docs/05-開発規則/workflow.md`（`135843cc`）。アーカイブした spec 276（`docs/08-spec/archive/1to10/276-retro-rules/spec.md`）の校閲の記録で「残したもの」 | なし |
 | F-03 | 誤検出 | これらは、次の 3 段に分ける。 | なし | `docs/05-開発規則/backend-coding.md`（`1e1093ea`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（別の意味の `段`）。見逃しの例 M-07 と同じ語を正しく使う文 | `段` は、warning（「3 段に分ける」は当てない） |
 | F-04 | 誤検出 | 進み具合は台帳のファイルに書く ※1。 | なし | `docs/07-記録/subagents-results.md`（`5382ea5f`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（定着した「台帳」）。見逃しの例 M-05 と同じ語を正しく使う文 | `台帳` は、warning |
 | F-05 | 誤検出 | policy.json から checkLicense の許可の一覧を作る | なし | `backend/ecsite/build.gradle.kts`（`8bbc72a7`）。アーカイブした spec 276（`docs/08-spec/archive/1to10/276-retro-rules/spec.md`）の校閲の記録で「残したもの」（「許可の一覧」） | なし |
-| F-06 | 誤検出 | 指定した持ち主のうち、引当が残っているもの | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/StockReservationCleanupJobTest.java`（`f7e5d755`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（別の意味の `持ち主の`）。見逃しの例 M-08 の `主の` を含む文 | `主の` は、error（「持ち主の」は当てない） |
+| F-06 | 誤検出 | 指定した持ち主のうち、引当が残っているもの | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/StockReservationCleanupJobTest.java`（`f7e5d755`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（別の意味の `持ち主の`）。見逃しの例 M-08 の `主の` を含む文 ※3 | `主の` は、error（「持ち主の」は当てない） |
 
 見逃しの例 14 件、誤検出の例 6 件である。誤検出の例の「挙げるべき語句」は、挙げてはいけないので「なし」とする。
+
+※2：F-01 は、最初に選んだ `docs/05-開発規則/workflow.md` の文の「旧い」が常用漢字表にない読みで、一般の技術文書では「古い」と書くので、別の文に替えた（2026-11-01、issue 担当のセッションの判断）。
+
+※3：F-06 は、最初に選んだ文の「ほかの」が規則（「他の」は漢字で書く）に反していたので、同じ語を使う別の文に替えた（2026-11-01）。
 
 誤検出の例には、挙げてはいけない語の他に、[文書の書き方](../../../../docs/05-開発規則/writing.md)の規則に反する箇所がない文を選ぶ。理由：規則に反する箇所への正しい指摘も、誤検出に数えられるため。
 
 - 採点の後に例を替えるときは、採点された校閲役の出力を理由にしない。例の欠陥（規則への違反、常用漢字表にない読みなど）を根拠として、その例の行に書く。理由：評価の一覧を校閲役に合わせると、採点の結果が実際より良く見えるため。
 - 根拠が規則に書かれていないときは、利用者か、採点されていないモデルに判断を求める。
-- F-06 は、最初に選んだ文の「ほかの」が規則（「他の」は漢字で書く）に反していたので、同じ語を使う別の文に替えた（2026-11-01）。
-- F-01 は、最初に選んだ文の「旧い」が常用漢字表にない読みで、一般の技術文書では「古い」と書くので、別の文に替えた（2026-11-01、issue 担当のセッションの判断）。
 
 ## 入力の作り方
 

@@ -62,5 +62,5 @@ pull request の画面の注釈は、1 つの step で 10 件までしか表示�
    完了の条件：全ての指摘の扱いが決まっている。
 7. plan と tasks を照合する。手順とひな形は [docs-review.md](docs-review.md)。
 8. 文書をレビューする。手順とひな形は [docs-review.md](docs-review.md)。
-9. 中国語で指示する環境では、検出役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）、確認役 `ja-proof-verifier`（[定義](../../agents/ja-proof-verifier.md)）の順に、変えた日本語を読ませる。確認役が「挙げる」とした候補だけを、spec 担当のセッションが採否の対象にする。環境の決め方、対象と時点、手順は [docs-review.md](docs-review.md)の手順 3。
+9. 中国語で指示する環境では、検出役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）、確認役 `ja-proof-verifier`（[定義](../../agents/ja-proof-verifier.md)）の順に、変えた日本語を読ませる。採否の対象、環境の決め方、対象と時点、手順は [docs-review.md](docs-review.md)の手順 3。
 10. 校閲役や他のレビューが見つけ、利用者が確認した型を、機械の検査に加える。手順は [docs-review.md](docs-review.md)。

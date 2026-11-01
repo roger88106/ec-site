@@ -242,7 +242,7 @@ spec の最後に、次をまとめ方の案として pull request に付ける�
   - 依存：T284-01-03
   - 範囲：`docs/06-手順書/ci.md`、`scripts/ci/lib/*.mjs` の先頭のコメント、`docs/07-記録/ci-results.md`（新規）
   - 確認方法：`bash scripts/ci/check-all.sh` が通る。`wc -c docs/06-手順書/ci.md` が 26,000 以下。
-- [ ] **T284-01-05** `related-specs` と `design-migrations`、その写しと記述を削る（DC-284-14〜19）。
+- [x] **T284-01-05** `related-specs` と `design-migrations`、その写しと記述を削る（DC-284-14〜19）。
   - 依存：T284-01-04（同じ `ci.md` を変えるため）
   - 範囲：DC-284-14〜18 のファイル、設計書 15 ファイル、2 つの検査を指す記述の次の箇所
     - commit-msg の hook（`scripts/dev/lib/commit-msg.mjs` とテスト）：関連 spec の照合を外し、メッセージの `ja-text` の検査だけを実行する。
@@ -261,7 +261,7 @@ spec の最後に、次をまとめ方の案として pull request に付ける�
   - 範囲：新しい検査、`docs/06-手順書/ci.md` の検査の表、決めたこと 4 の対象のファイル、決めたこと 3 の文書
   - 手順：今の違反は、[エージェントの作業フロー](../../05-開発規則/subagents.md)の 2 行（冒頭の「Claude Code など」、「並行」の節の「Claude Code の文書は」）である。修正は、サービスに依存しない言葉に替えるか、skill `sessions` の「ツールの補足」に移す。
   - 確認方法：T284-01-06 のテストが通る。`bash scripts/ci/check-all.sh` が通る。規則の本文に名前を 1 つ書くと失敗する（確認した後に戻す）。
-- [ ] **T284-01-08** 小さな誤りを修正する（DC-284-28〜36）。
+- [x] **T284-01-08** 小さな誤りを修正する（DC-284-28〜36）。
   - 依存：なし
   - 範囲：`docs/02-設計/frontend-architecture.md`、`.claude/agents/ja-proofreader.md`、`.claude/agents/ja-proof-verifier.md`、skill `review` の docs-review.md、`docs/05-開発規則/subagents.md`、AGENTS.md の「モデルの区分」
   - 確認方法：`node scripts/ci/doc-refs.mjs` が通る。`git grep -n '^model:' .claude/agents/` の結果に 2 つの定義がない。
@@ -291,3 +291,7 @@ spec の最後に、次をまとめ方の案として pull request に付ける�
 | `frontend-rules` | 組み込みの名前の個数（約 990） | 一覧のファイルから読める |
 | `java-rules` | 規則ごとの、バックエンドの書き方の節へのリンク | 先頭の 1 か所のリンクにまとめた |
 | `migrations` | マイグレーションの件数と、型の変換の書き方の細部 | 件数は変わるので書かない。細部はコードから読める |
+
+### T284-01-05 の判断
+
+- `catalog` と `region` の「データモデル」の節は、マイグレーションを表の列に持ち、補足の列に設計の説明（制約、他のモジュールが表を読む理由など）がある。本文の説明に当たるので、表とリンクを残した（DC-284-17）。他の 10 の設計書は、リンクだけを並べた行を削った。

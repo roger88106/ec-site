@@ -137,11 +137,12 @@ ec-site/
 | [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（状態とテスト） |
 | [glossary.md](03-機能仕様/glossary.md) | 用語集 |
 
-決定記録（`docs/04-決定記録/`）：決定の理由を、1 つの決定につき 1 ファイルで書く。中身は、後の spec で書く。
+決定記録（`docs/04-決定記録/`）：決定の理由を、1 つの決定につき 1 ファイルで書く。
 
 | 文書 | 内容 |
 |------|------|
-| [README.md](04-決定記録/README.md) | このフォルダーに置く文書 |
+| [README.md](04-決定記録/README.md) | 決定記録の形 |
+| [subagent-delegation.md](04-決定記録/subagent-delegation.md) | サブエージェントへの任せ方で取り入れたもの |
 
 規範（`docs/05-開発規則/`）：
 

@@ -5,7 +5,7 @@ export default defineConfig({
   test: {
     // jest-dom の照合の関数（toBeDisabled など）を使えるようにする
     setupFiles: ['@testing-library/jest-dom/vitest'],
-    // カバレッジは報告と基準の検査に使う（テストの書き方 第 1.2 節）。shadcn/ui の生成物、テストの補助は数えない
+    // カバレッジは報告と基準の検査に使う（テストの書き方の「カバレッジと mutation score の基準」）。shadcn/ui の生成物、テストの補助は数えない
     coverage: {
       provider: 'v8',
       include: ['src/**/*.{ts,tsx}'],

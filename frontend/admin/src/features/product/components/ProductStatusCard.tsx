@@ -37,7 +37,7 @@ export function ProductStatusCard({ product }: { product: ProductDetail }) {
   const remove = useApiMutation('delete', '/products/{productId}', {
     success: t('deleted'), // 削除の知らせ
     invalidate,
-    // 先に一覧へ移り、削除した商品の詳細を取得し直さない（404 になるため。管理画面の構成 第 4 節）
+    // 先に一覧へ移り、削除した商品の詳細を取得し直さない（404 になるため。管理画面の構成の「API の呼び出し」）
     onSuccess: () => {
       navigate(paths.products())
       queryClient.removeQueries({ queryKey: ['get', '/products/{productId}'] })

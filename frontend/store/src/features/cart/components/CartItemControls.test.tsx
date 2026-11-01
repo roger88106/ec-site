@@ -7,7 +7,7 @@ import { CartItemControls } from '@/features/cart/components/CartItemControls'
 import { quoteItem } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
-// 数量の変更と削除はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方 第 1 節）
+// 数量の変更と削除はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方の「テストの種類と基準」）
 vi.mock('@/actions/cart', () => ({
   changeCartItemQuantity: vi.fn(async () => ({ ok: true })),
   removeCartItem: vi.fn(async () => ({ ok: true })),
@@ -56,7 +56,7 @@ describe('カートの品目の操作', () => {
 
     expect(unpurchasable.getByText('購入できません')).toBeInTheDocument()
     expect(unpurchasable.getByText('在庫が足りません。数量を減らしてください')).toBeInTheDocument()
-    // 合計に含めない小計も金額は残す（取り消し線は見た目なので目視で確認する。テストの書き方 第 1 節）
+    // 合計に含めない小計も金額は残す（取り消し線は見た目なので目視で確認する。テストの書き方の「テストの種類と基準」）
     expect(unpurchasable.getByText('2,200 円')).toBeInTheDocument()
   })
 

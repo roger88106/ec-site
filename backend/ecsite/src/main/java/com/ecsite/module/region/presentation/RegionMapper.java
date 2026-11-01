@@ -12,7 +12,7 @@ import org.springframework.stereotype.Component;
 import java.util.List;
 
 /**
- * 地域の API の型への変換（バックエンドの書き方 第 2.2 節）
+ * 地域の API の型への変換（バックエンドの書き方の「応答への変換は手動で書く」）
  */
 @Component
 class RegionMapper {

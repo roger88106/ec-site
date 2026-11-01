@@ -1,7 +1,7 @@
 'use client'
 
 import { useTranslations } from 'next-intl'
-/** 取得の失敗など、予期しないエラーの画面（店舗画面の構成 第 6 節） */
+/** 取得の失敗など、予期しないエラーの画面（店舗画面の構成の「結果の知らせ方」） */
 export default function ErrorPage({ reset }: { error: Error; reset: () => void }) {
   const t = useTranslations('app.error')
   return (

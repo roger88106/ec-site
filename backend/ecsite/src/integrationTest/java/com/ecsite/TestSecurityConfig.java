@@ -43,7 +43,7 @@ public class TestSecurityConfig {
 
     /**
      * テストだけの Controller（{@code /api/test-*}。エラーの応答の形などを確認する）を、認証なしで使えるようにする。<br />
-     * 本番の filter chain は、決めていない URL を拒むため（バックエンドのアーキテクチャ 第 7.2 節）。
+     * 本番の filter chain は、決めていない URL を拒むため（バックエンドのアーキテクチャの「業務のコードとの境界」）。
      *
      * @param http HTTP の設定
      * @return テストだけの Controller の filter chain

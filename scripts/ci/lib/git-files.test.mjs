@@ -6,7 +6,7 @@ import path from 'node:path'
 import { after, before, describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import { removeGitEnv, withoutGitEnv } from './git-env.mjs'
-import { emptyListReason, listGitFiles, splitNulList } from './git-files.mjs'
+import { emptyListReason, listGitFiles, listUntrackedFiles, splitNulList } from './git-files.mjs'
 import { findRuleViolations, listScanScripts } from './scan-rules.mjs'
 
 /** 試す Git のリポジトリ */
@@ -65,6 +65,10 @@ describe('Git の対象のファイルの一覧', () => {
 
   test('パスの指定があれば、その下だけを返す', () => {
     assert.deepEqual(listGitFiles(['frontend', 'docs'], repo), ['docs/a.md', 'frontend/app.ts'])
+  })
+
+  test('追跡していないファイルだけの一覧は、無視されるファイルと追跡しているファイルを返さない', () => {
+    assert.deepEqual(listUntrackedFiles([], repo), ['untracked.txt'])
   })
 })
 

@@ -3,7 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
-  "description": "管理画面と店舗画面で共有する処理・部品・テーマ。TypeScript のソースのまま使い、ビルドしない（フロントの書き方 第 5 節）",
+  "description": "管理画面と店舗画面で共有する処理・部品・テーマ。TypeScript のソースのまま使い、ビルドしない（フロントの書き方の「共有パッケージ」）",
   "exports": {
     "./lib/*": "./src/lib/*.ts",
     "./components/*": "./src/components/*.tsx",

@@ -2,7 +2,7 @@ import type { FieldValues, Path, UseFormSetError } from 'react-hook-form'
 import { fieldErrors } from '@/api/errors'
 
 /**
- * サーバーの入力検証エラー（errors[]）を、対応する入力欄に付ける（管理画面の構成 第 5 節）。<br />
+ * サーバーの入力検証エラー（errors[]）を、対応する入力欄に付ける（管理画面の構成の「フォーム」）。<br />
  * 付けた項目の名前を返す。フォームにない項目のエラーは、呼び出し側がフォームの下に出す。
  */
 export function setServerFieldErrors<T extends FieldValues>(

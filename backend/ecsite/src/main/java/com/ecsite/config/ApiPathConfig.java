@@ -9,7 +9,7 @@ import java.util.Arrays;
 import java.util.Map;
 
 /**
- * API のパスのプレフィックス（バックエンドのアーキテクチャ 第 4 節）。<br />
+ * API のパスのプレフィックス（バックエンドのアーキテクチャの「C 側と B 側」）。<br />
  * OpenAPI から生成したインターフェースのパスは {@code servers.url} を含まないので、
  * 実装する Controller に、生成元の契約に応じたプレフィックスを付ける。
  * <ul>

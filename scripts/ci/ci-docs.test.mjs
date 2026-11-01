@@ -18,7 +18,7 @@ const DOC = [
 ].join('\n')
 
 describe('CI の検査の文書の表の検査', () => {
-  test('第 3 節の表の 1 列目の名前を、第 3.1 節より前の範囲から読む', () => {
+  test('見出し `## 3.` の節の表の 1 列目の名前を、`### 3.1` より前の範囲から読む', () => {
     assert.deepEqual(readTableChecks(DOC), ['ac-check', 'doc-refs'])
   })
 

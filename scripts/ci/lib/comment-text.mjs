@@ -1,6 +1,7 @@
 // ソースから、日本語の文を書く所（コメントとテスト名）だけを、行番号つきで取り出す。コメントの外の文字列とコードは取り出さない（画面の文言などを調べないため）。
 // - Java・Gradle の設定（.kts）：// と /* */（Javadoc を含む）のコメントと、@DisplayName("…") の文字列
 // - TypeScript・JavaScript（.ts、.tsx、.mjs、.cjs）：コメントと、describe・it・test（test.describe、it.each(表)('…')、test.skip などを含む）の名前の文字列
+// - テンプレートで書いたテスト名：外側のバッククォートは文字列の区切りなので " に替え、埋め込み（${…}）は X に替えて取り出す
 // - シェル（.sh）：# のコメント（1 行目の #! を除く）
 // 走査（コメント・文字列の読み分け）は scan-code が行う。ja-text が使う
 import { closingParen } from './closing-paren.mjs'
@@ -73,7 +74,7 @@ function javaTestNameRanges(text) {
  * 修飾（.only、.skip、.each(表) など）は読み飛ばし、名前が文字列でもテンプレートでもない呼び出しは取り出さない。
  *
  * @param {string} text ソース
- * @returns {{ from: number, to: number }[]} 名前の区間（引用符を含む）
+ * @returns {{ from: number, to: number, template?: boolean }[]} 名前の区間（引用符を含む）。template はテンプレートで書いた名前
  */
 function tsTestNameRanges(text) {
   const strings = new Map()
@@ -99,10 +100,63 @@ function tsTestNameRanges(text) {
     }
     if (text[pos] !== '(') continue
     const from = pos + 1 + /^\s*/.exec(text.slice(pos + 1))[0].length
-    if (text[from] === '`') ranges.push({ from, to: templateEnd(text, from) })
+    if (text[from] === '`') ranges.push({ from, to: templateEnd(text, from), template: true })
     else if (strings.has(from)) ranges.push({ from, to: strings.get(from) })
   }
   return ranges
+}
+
+/**
+ * テンプレートで書いたテスト名を、文字列の名前と同じ形にする。外側のバッククォートは文字列の区切りなので " に替え
+ * （ja-text が名前の全体をインラインコードと読まないように）、`\``（エスケープしたバッククォート）は ` に戻す（名前の中のインラインコード）。
+ * 埋め込み（`${…}`）は、中の式がコードなので X の 1 字に替える（インラインコードと同じ数え方）。式の中の改行は残し、行の数を変えない。
+ *
+ * @param {string} text ソース
+ * @param {number} from 始まりの ` の位置
+ * @param {number} to 終わりの次の位置
+ * @returns {string} 名前（行の数は元の区間と同じ）
+ */
+function templateName(text, from, to) {
+  let name = '"'
+  let i = from + 1
+  while (i < to) {
+    if (text[i] === '\\') {
+      name += text[i + 1] === '`' ? '`' : text.slice(i, i + 2)
+      i += 2
+    } else if (text[i] === '`') {
+      name += '"'
+      i += 1
+    } else if (text[i] === '$' && text[i + 1] === '{') {
+      const end = embeddedEnd(text, i + 2)
+      name += `X${text.slice(i, end).replace(/[^\n]/g, '')}`
+      i = end
+    } else {
+      name += text[i]
+      i += 1
+    }
+  }
+  return name
+}
+
+/**
+ * テンプレートの埋め込み（`${…}`）を閉じる } の次の位置を返す。中の文字列・入れ子のテンプレート・波括弧は読み飛ばす。
+ *
+ * @param {string} text ソース
+ * @param {number} start `${` の次の位置
+ * @returns {number} 閉じる } の次の位置。閉じなければソースの終わり
+ */
+function embeddedEnd(text, start) {
+  let braces = 0
+  const at = scanCode(text, { start }, (type, from, to, depth) => {
+    if (type !== 'code' || depth !== 0) return false
+    if (text[from] === '{') braces += 1
+    if (text[from] === '}') {
+      if (braces === 0) return true
+      braces -= 1
+    }
+    return false
+  })
+  return Math.min(at + 1, text.length)
 }
 
 /**
@@ -175,17 +229,34 @@ export function extractCommentLines(text, kind) {
   const lineStarts = [0]
   for (let i = text.indexOf('\n'); i !== -1; i = text.indexOf('\n', i + 1)) lineStarts.push(i + 1)
   const byLine = new Map()
-  for (const { from, to } of ranges) {
-    let line = lineStarts.findLastIndex((start) => start <= from)
-    for (let at = from; at < to; ) {
-      const end = Math.min(to, lineEnd(text, at))
-      const part = text.slice(at, end).replace(/\r$/, '')
-      if (part.trim()) byLine.set(line + 1, [...(byLine.get(line + 1) ?? []), part])
-      at = end + 1
-      line += 1
-    }
+  for (const { from, to, template } of ranges) {
+    const line = lineStarts.findLastIndex((start) => start <= from)
+    const segment = template ? templateName(text, from, to) : text.slice(from, to)
+    segment.split('\n').forEach((raw, offset) => {
+      const part = raw.replace(/\r$/, '')
+      if (part.trim()) byLine.set(line + offset + 1, [...(byLine.get(line + offset + 1) ?? []), part])
+    })
   }
   return [...byLine].map(([line, parts]) => ({ line, text: parts.join(' ') }))
+}
+
+/**
+ * 行末のコメント（同じ行のコメントの前にコードがあるもの）が始まる行を返す。
+ * commentText はコメントの位置を残さないので、行頭のコメントと見分けるのに使う（ja-text が、前後の行とつながないために使う）。
+ * テスト名と、ブロックコメントの 2 行目からの行は含めない。
+ *
+ * @param {string} text ソース
+ * @param {'java' | 'kts' | 'ts' | 'sh'} kind ファイルの種類
+ * @returns {Set<number>} 行番号（1 から）
+ */
+export function trailingCommentLines(text, kind) {
+  const ranges = kind === 'sh' ? shellCommentRanges(text) : commentRanges(text, kind === 'ts' ? {} : JAVA_SCAN)
+  const lines = new Set()
+  for (const { from } of ranges) {
+    const start = text.lastIndexOf('\n', from - 1) + 1
+    if (text.slice(start, from).trim()) lines.add(text.slice(0, start).split('\n').length)
+  }
+  return lines
 }
 
 /**

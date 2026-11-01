@@ -9,7 +9,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税の腐敗防止層（バックエンドのアーキテクチャ 第 1 節）。<br />
+ * 税の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」）。<br />
  * 税モジュールの API を、商品カタログが必要とする形で包む。税モジュールの型を商品カタログの内部に持ち込まない。
  */
 public interface TaxDirectory {

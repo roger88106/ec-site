@@ -68,6 +68,32 @@ describe('注の番号の検査', () => {
     assert.equal(findNoteProblems(['a ※2', 'この節の ※1', '※1：1', '※2：2'].join('\n')).length, 1)
   })
 
+  test('リンクか文書の名前の後の「の「…」 ※N」「の「…」の ※N」は、他の文書の見出しの注を指すので、この文書の参照に数えない', () => {
+    const names = new Map([['架空の文書', 'docs/x/fictional.md']])
+    assert.deepEqual(findNoteProblems(['[開発の進め方](../../docs/05-開発規則/workflow.md)の「起票」 ※3 を参照', 'a ※1', '※1：理由'].join('\n'), names), [])
+    assert.deepEqual(findNoteProblems(['架空の文書の「起票」の ※3 を参照', 'a ※1', '※1：理由'].join('\n'), names), [])
+    assert.deepEqual(findNoteProblems(['架空の文書の「段階 1」の「タスク」 ※3 を参照', 'a ※1', '※1：理由'].join('\n'), names), [])
+  })
+
+  test('インラインコードで書いたパスの後と、外のリンクの後の「の「…」 ※N」も、他の文書の注として数えない', () => {
+    const basenames = new Map([['setup.md', 'docs/06-手順書/setup.md']])
+    assert.deepEqual(findNoteProblems(['`docs/06-手順書/setup.md` の「アカウント」 ※3 を参照', 'a ※1', '※1：理由'].join('\n'), new Map(), 'docs/a.md', basenames), [])
+    assert.deepEqual(findNoteProblems(['[外](https://example.com/a)の「Y」 ※3 を参照', 'a ※1', '※1：理由'].join('\n')), [])
+    // インラインコードの中の ※N は、前と同じく数えない
+    assert.deepEqual(findNoteProblems(['a ※2', '`の「x」 ※1`', '※2：2'].join('\n')), [])
+  })
+
+  test('前がリンクか文書の名前でない「の「…」 ※N」（この文書の「…」、表の「…」）は、同じ文書の注として数える', () => {
+    const names = new Map([['開発の進め方', 'docs/05-開発規則/workflow.md']])
+    assert.equal(findNoteProblems(['a ※2', 'この文書の「起票」 ※1', '※1：1', '※2：2'].join('\n'), names).length, 1)
+    assert.equal(findNoteProblems(['a ※2', '表の「許可」 ※1', '※1：1', '※2：2'].join('\n'), names).length, 1)
+    assert.equal(findNoteProblems(['a ※2', '[同じ文書](#起票)の「起票」 ※1', '※1：1', '※2：2'].join('\n'), names).length, 1)
+  })
+
+  test('文書の名前を付けない「「…」 ※N」は、同じ文書にある見出しの注を指すので参照に数える', () => {
+    assert.equal(findNoteProblems(['a ※2', '（「起票」 ※1）', '※1：1', '※2：2'].join('\n')).length, 1)
+  })
+
   test('字下げした囲みのコードブロックの中は数えない', () => {
     const text = ['a ※2', '- 手順', '  ```', '  ※1 の例', '  ```', 'b ※2', '※2：理由'].join('\n')
     assert.deepEqual(findNoteProblems(text), [])

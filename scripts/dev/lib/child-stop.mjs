@@ -12,7 +12,7 @@ export const STOP_SIGNALS = ['SIGINT', 'SIGTERM', 'SIGHUP']
  *
  * @param {import('node:child_process').ChildProcess} child 子のプロセス
  * @param {NodeJS.Signals} signal Windows 以外で子に送るシグナル
- * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync }} [deps] OS と指令の実行。テストで差し替える
+ * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync }} [deps] OS とコマンドの実行。テストで差し替える
  */
 export function stopChild(child, signal, deps = { platform: process.platform, spawnSync }) {
   if (child.pid === undefined) return
@@ -28,7 +28,7 @@ export function stopChild(child, signal, deps = { platform: process.platform, sp
  * spawnSync は終了コードが 0 以外でも例外を投げないので、プロセスがすでに終わっていて taskkill が失敗しても止まらない。
  *
  * @param {number} pid プロセスの ID
- * @param {typeof spawnSync} [run] 指令の実行。テストで差し替える
+ * @param {typeof spawnSync} [run] コマンドの実行。テストで差し替える
  */
 export function killTreeOnWindows(pid, run = spawnSync) {
   run('taskkill', ['/pid', String(pid), '/T', '/F'], { stdio: 'ignore' })

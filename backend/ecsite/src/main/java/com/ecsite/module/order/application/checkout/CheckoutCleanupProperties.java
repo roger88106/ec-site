@@ -9,7 +9,7 @@ import org.springframework.validation.annotation.Validated;
 import java.time.Duration;
 
 /**
- * 注文手続きの片付けの設定（バックエンドのアーキテクチャ 第 5 節）。環境変数で上書きする（例：ECSITE_ORDER_CLEANUP_RETENTION）。
+ * 注文手続きの片付けの設定（バックエンドのアーキテクチャの「水平スケール」）。環境変数で上書きする（例：ECSITE_ORDER_CLEANUP_RETENTION）。
  *
  * @param interval  片付けのジョブの間隔
  * @param retention 保存期間（注文手続きの期限から、消すまでの時間）

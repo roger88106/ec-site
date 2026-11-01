@@ -1,6 +1,6 @@
 # ロールと権限の対応表
 
-どのロールが、どの API の操作を実行できるかの一覧。認証と認可の方式は [バックエンドのアーキテクチャ](backend-architecture.md) 第 7 節、ロールと権限の名前の意味は [用語集](../03-機能仕様/glossary.md)にある。
+どのロールが、どの API の操作を実行できるかの一覧。認証と認可の方式は [バックエンドのアーキテクチャ](backend-architecture.md)の「認証・認可」、ロールと権限の名前の意味は [用語集](../03-機能仕様/glossary.md)にある。
 
 - 表は `scripts/ci/role-permissions.mjs` が、管理 API の契約（各操作の `x-required-permission`）、運営者の realm の設定（`docker/keycloak/realms/ec-admin-realm.json` のロール）、店舗 API の契約（各操作の `security`）から作る。手動で修正しない。
 - 契約か realm の設定を変えると、CI の検査が失敗する。ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認して commit する。

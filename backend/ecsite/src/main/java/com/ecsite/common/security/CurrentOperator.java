@@ -11,7 +11,7 @@ import java.util.stream.Stream;
 
 /**
  * 要求の token の運営者を取り出す。管理 API の presentation 層が使う。<br />
- * Spring Security の型は、ここより先（application 層）に出さない（バックエンドのアーキテクチャ 第 7.2 節）。
+ * Spring Security の型は、ここより先（application 層）に出さない（バックエンドのアーキテクチャの「業務のコードとの境界」）。
  * 管理 API の filter chain は運営者の realm の token だけを受け付けるので、ここで取り出せるのは運営者だけ。
  */
 @Component

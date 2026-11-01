@@ -26,7 +26,7 @@ function fakeClock() {
   }
 }
 
-/** spawnSync の代わり。呼ばれた指令と引数を記録し、決めた出力を返す */
+/** spawnSync の代わり。呼ばれたコマンドと引数を記録し、決めた出力を返す */
 function fakeSpawnSync(stdout = '') {
   const calls = []
   const spawnSync = (command, args) => {
@@ -133,7 +133,7 @@ describe('待ち受けるプロセスの探し方', () => {
     assert.match(result.reason, /Permission denied/)
   })
 
-  test('問い合わせの指令を流せないときは、待ち受けなしとせず、失敗を返す', () => {
+  test('問い合わせのコマンドを流せないときは、待ち受けなしとせず、失敗を返す', () => {
     const spawnSync = () => ({ status: null, stdout: null, error: new Error('spawnSync lsof ENOENT') })
     const result = findListeners([18080], { platform: 'linux', spawnSync, ownPid: 1 })
     assert.equal(result.ok, false)
@@ -144,7 +144,7 @@ describe('待ち受けるプロセスの探し方', () => {
     ['win32', 1],
     ['linux', 2],
   ]) {
-    test(`${platform} で問い合わせの指令が終了コード ${status} で終わったときは、失敗を返す`, () => {
+    test(`${platform} で問い合わせのコマンドが終了コード ${status} で終わったときは、失敗を返す`, () => {
       const spawnSync = () => ({ status, stdout: '', stderr: 'アクセスが拒否された' })
       const result = findListeners([18080], { platform, spawnSync, ownPid: 1 })
       assert.equal(result.ok, false)
@@ -320,35 +320,35 @@ describe('示す文', () => {
     assert.match(message, /5678（ポート 13000）/)
   })
 
-  test('ポートが使われているときは、プロセスの ID と、release と手動の停止の指令を示す（Windows）', () => {
+  test('ポートが使われているときは、プロセスの ID と、release と手動の停止のコマンドを示す（Windows）', () => {
     const message = portBusyMessage(listeners, { platform: 'win32', canRelease: true })
     assert.match(message, /1234（ポート 18080、19080）/)
     assert.match(message, /node scripts\/dev\/slot\.mjs release/)
     assert.match(message, /Stop-Process -Id 1234,5678 -Force/)
   })
 
-  test('ポートが使われているときの手動の停止の指令は、Windows 以外では kill', () => {
+  test('ポートが使われているときの手動の停止のコマンドは、Windows 以外では kill', () => {
     assert.match(portBusyMessage(listeners, { platform: 'linux', canRelease: true }), /kill 1234 5678/)
   })
 
-  test('停止しても待ち受けが残ったときは、プロセスの ID と手動の停止の指令、release の流し直しを示す', () => {
+  test('停止しても待ち受けが残ったときは、プロセスの ID と手動の停止のコマンド、release の流し直しを示す', () => {
     const message = stopFailedMessage(listeners, 'win32')
     assert.match(message, /5678（ポート 13000）/)
     assert.match(message, /Stop-Process -Id 1234,5678 -Force/)
     assert.match(message, /もう一度 node scripts\/dev\/slot\.mjs release/)
   })
 
-  test('問い合わせが失敗したときは、理由と、ポートで探して止める指令を示す（Windows）', () => {
+  test('問い合わせが失敗したときは、理由と、ポートで探して止めるコマンドを示す（Windows）', () => {
     const message = queryFailedMessage([18080, 19080], 'ENOENT', 'win32')
     assert.match(message, /ENOENT/)
     assert.match(message, /Stop-Process -Id \(Get-NetTCPConnection -LocalPort 18080,19080 -State Listen\)\.OwningProcess -Force/)
   })
 
-  test('問い合わせが失敗したときの止める指令は、Windows 以外では lsof と kill', () => {
+  test('問い合わせが失敗したときの止めるコマンドは、Windows 以外では lsof と kill', () => {
     assert.match(queryFailedMessage([18080, 19080], 'ENOENT', 'linux'), /kill \$\(lsof -t -sTCP:LISTEN -iTCP:18080 -iTCP:19080\)/)
   })
 
-  test('解除できない（メインの作業ツリーの）ときは、release を示さず、手動の停止の指令だけを示す', () => {
+  test('解除できない（メインの作業ツリーの）ときは、release を示さず、手動の停止のコマンドだけを示す', () => {
     const message = portBusyMessage(listeners, { platform: 'win32', canRelease: false })
     assert.doesNotMatch(message, /release/)
     assert.match(message, /Stop-Process -Id 1234,5678 -Force/)

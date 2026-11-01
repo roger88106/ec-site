@@ -1,7 +1,7 @@
 import { describe, expect, test } from 'vitest'
 import { placeOrderErrors } from '@/features/checkout/placeOrderErrors'
 
-describe('注文のエラーの出し方（店舗画面の構成 第 6 節）', () => {
+describe('注文のエラーの出し方（店舗画面の構成の「結果の知らせ方」）', () => {
   test('AC-86、264 入力検証エラーは、API の項目名を入力欄に対応させ、API の文をそのまま出す', () => {
     const errors = placeOrderErrors({
       ok: false,

@@ -16,7 +16,7 @@ import java.util.regex.Pattern;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * B 側 API の権限の記載漏れを検出する契約テスト（バックエンドのアーキテクチャ 第 7 節）。<br />
+ * B 側 API の権限の記載漏れを検出する契約テスト（バックエンドのアーキテクチャの「認証・認可」）。<br />
  * {@code admin.yaml} のすべての操作に {@code x-required-permission} があり、{@code resource:action} の形か、
  * ログインしていればよい操作を表す {@code authenticated} であることを確認する。
  * 認証の導入時に、この記載から認可を組み立てる。

@@ -26,7 +26,30 @@ export function splitNulList(output) {
  * @returns {string[]} cwd からの相対パス（/ 区切り）。名前の順
  */
 export function listGitFiles(pathspecs = [], cwd = process.cwd()) {
-  const output = execFileSync('git', ['ls-files', '-z', '-co', '--exclude-standard', '--', ...pathspecs], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
+  return listFiles(['-co'], pathspecs, cwd)
+}
+
+/**
+ * 追跡していない、無視されないファイルの一覧を返す（差分に出ない新しいファイルを、全ての行を追加行として見る検査が使う。ja-text の --changed）。
+ *
+ * @param {string[]} [pathspecs] 探すパス。なければリポジトリの全体
+ * @param {string} [cwd] 実行する場所（リポジトリの中）。なければ今のディレクトリ
+ * @returns {string[]} cwd からの相対パス（/ 区切り）。名前の順
+ */
+export function listUntrackedFiles(pathspecs = [], cwd = process.cwd()) {
+  return listFiles(['-o'], pathspecs, cwd)
+}
+
+/**
+ * git ls-files の一覧を、作業ツリーにあるものだけにして返す。
+ *
+ * @param {string[]} kinds 一覧の種類の引数（-co、-o）
+ * @param {string[]} pathspecs 探すパス
+ * @param {string} cwd 実行する場所
+ * @returns {string[]} 相対パス。名前の順
+ */
+function listFiles(kinds, pathspecs, cwd) {
+  const output = execFileSync('git', ['ls-files', '-z', ...kinds, '--exclude-standard', '--', ...pathspecs], { cwd, encoding: 'utf8', maxBuffer: 64 * 1024 * 1024 })
   return [...new Set(splitNulList(output))].filter((file) => existsSync(path.join(cwd, file))).sort()
 }
 

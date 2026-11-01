@@ -3,7 +3,7 @@ import type { JWT } from 'next-auth/jwt'
 import { type Mock, vi } from 'vitest'
 
 /**
- * サーバーの処理のテストで、Auth.js（next-auth）の代わりに使うログインの状態（店舗画面の構成 第 7 節）。<br />
+ * サーバーの処理のテストで、Auth.js（next-auth）の代わりに使うログインの状態（店舗画面の構成の「テスト」）。<br />
  * setup.ts が next-auth・next-auth/jwt をこれに置き換える。auth.ts は本物を使うので、auth.ts が Auth.js に渡した設定
  * （コールバック、イベント）は config から呼んで確認する。
  */

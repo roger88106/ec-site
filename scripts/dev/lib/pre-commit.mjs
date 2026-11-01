@@ -7,6 +7,7 @@ import { spawnSync } from 'node:child_process'
 import { mkdtempSync, rmSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
+import { ADDED_DIFF_ARGS } from '../../ci/lib/added-diff.mjs'
 
 /** 取り出しに失敗したときの終了コード（検査の失敗の 1 と区別する） */
 export const CHECKOUT_FAILED = 2
@@ -19,7 +20,7 @@ export const BRANCH_REJECTED = 4
 
 /**
  * 直接 commit しないブランチと、そのときに表示する手順。変更は作業ブランチから pull request で入れる（AGENTS.md の Git の表）。
- * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリース 第 2.1 節、第 5 節）。それ以外の変更は、develop から作業ブランチを作る
+ * main の作業ブランチは緊急の修正だけで、main から切る（ブランチとリリースの「名前」、ブランチとリリースの「緊急の修正」）。それ以外の変更は、develop から作業ブランチを作る
  */
 const REJECTIONS = new Map([
   [
@@ -74,59 +75,18 @@ export function branchOfHead({ status, stdout }) {
 }
 
 /**
- * `git diff --cached -U0` の出力から、追加した行の番号をファイルごとに取り出す。
- *
- * @param {string} diff 差分（-U0）
- * @returns {Map<string, Set<number>>} ファイルのパスと、追加した行の番号（1 から）
- */
-export function parseAddedLines(diff) {
-  const added = new Map()
-  let lines = null
-  let inHunk = false
-  for (const line of diff.split('\n')) {
-    if (line.startsWith('diff --git ')) {
-      inHunk = false
-      continue
-    }
-    // ファイルの見出しは、ハンクの外（diff --git の後）だけで読む。ハンクの中の `+++ ` は、本文が `++ ` で始まる追加行
-    if (!inHunk && line.startsWith('+++ ')) {
-      const target = line.slice(4).replace(/\r$/, '')
-      if (target === '/dev/null') {
-        lines = null
-        continue
-      }
-      const file = target.replace(/^b\//, '')
-      lines = added.get(file) ?? new Set()
-      added.set(file, lines)
-      continue
-    }
-    const hunk = /^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@/.exec(line)
-    if (hunk) {
-      inHunk = true
-      if (!lines) continue
-      const count = hunk[2] === undefined ? 1 : Number(hunk[2])
-      for (let i = 0; i < count; i++) lines.add(Number(hunk[1]) + i)
-    }
-  }
-  return added
-}
-
-/**
- * warning の一覧（ja-text の --warning の出力）から、追加した行の warning だけを選ぶ。
+ * warning の一覧（ja-text の --warning --added の出力）から、warning の行を取り出す。
+ * 追加行の選び方は ja-text が持つ（--changed と同じ）ので、ここでは選び直さない。
  * 一覧の行は「<ファイル>:<行> <内容>」の形。ほかの行（件数の行など）は除く。
  *
- * @param {string} output ja-text --warning の出力
- * @param {Map<string, Set<number>>} added 追加した行（parseAddedLines の結果）
- * @returns {string[]} 追加した行の warning の行
+ * @param {string} output ja-text --warning --added の出力
+ * @returns {string[]} warning の行
  */
-export function selectAddedWarnings(output, added) {
+export function selectWarningLines(output) {
   return output
     .split('\n')
     .map((line) => line.replace(/\r$/, ''))
-    .filter((line) => {
-      const hit = /^(.+?):(\d+) /.exec(line)
-      return hit !== null && (added.get(hit[1])?.has(Number(hit[2])) ?? false)
-    })
+    .filter((line) => /^.+?:\d+ /.test(line))
 }
 
 /**
@@ -168,7 +128,7 @@ export function checkShell(env) {
  * @param {(prefix: string, env: Record<string, string | undefined>) => number | null} deps.checkout ステージした内容を prefix の下に取り出す。終了コードを返す
  * @param {(script: string, env: Record<string, string | undefined>) => number | null} deps.runCheck 検査の script を実行する。終了コードを返す
  * @param {(env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.diffAdded ステージした差分（-U0）を返す
- * @param {(staged: string, env: Record<string, string | undefined>) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で warning の一覧を出力する
+ * @param {(staged: string, env: Record<string, string | undefined>, diff: string) => { status: number | null, stdout: string }} deps.listWarnings 取り出した先で、差分（diff）の追加行の warning の一覧を出力する（ja-text --warning --added）
  * @param {(text: string) => void} deps.print warning を表示する
  * @param {(text: string) => void} deps.printError commit を失敗にした理由を表示する
  * @param {() => string} deps.makeTemp 一時ディレクトリを作る
@@ -191,11 +151,13 @@ export function runPreCommit({ root, gitDir, branch, env, checkout, runCheck, di
     const checkEnv = { ...baseEnv, GIT_DIR: gitDir, GIT_WORK_TREE: staged }
     const status = runCheck(`${staged}/scripts/ci/check-all.sh`, checkEnv)
     if (status !== 0) return status ?? 1
-    // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする
+    // 検査が通ったら、追加行の warning を表示する。差分か一覧を取得できなければ、表示できないまま成功にせず失敗にする。
+    // 追加行の選び方（文のどれかの行が追加行）は ja-text が持つ。ここでは選び直さず、一覧の行をそのまま表示する
     const diff = diffAdded(baseEnv)
-    const warnings = listWarnings(staged, checkEnv)
-    if (diff.status !== 0 || warnings.status !== 0) return WARNING_FAILED
-    const lines = selectAddedWarnings(warnings.stdout, parseAddedLines(diff.stdout))
+    if (diff.status !== 0) return WARNING_FAILED
+    const warnings = listWarnings(staged, checkEnv, diff.stdout)
+    if (warnings.status !== 0) return WARNING_FAILED
+    const lines = selectWarningLines(warnings.stdout)
     if (lines.length > 0) print(`警告：追加した行に warning が ${lines.length} 件ある（読んで、直すかを決める）\n${lines.join('\n')}`)
     return 0
   } finally {
@@ -223,12 +185,14 @@ export function main() {
       spawnSync('git', ['-c', 'core.longpaths=true', 'checkout-index', '-a', `--prefix=${toSlash(prefix)}`], { env, stdio: 'inherit' }).status,
     runCheck: (script, env) => spawnSync(checkShell(env), [toSlash(script)], { env, stdio: 'inherit' }).status,
     diffAdded: (env) => {
-      const args = ['-c', 'core.quotepath=false', 'diff', '--cached', '--src-prefix=a/', '--dst-prefix=b/', '-U0', '--no-color', '--no-ext-diff', '--diff-filter=ACMR']
+      // --changed と同じ引数（lib/added-diff）。CI の注釈と同じ判定にする
+      const args = [...ADDED_DIFF_ARGS, '--cached', '--']
       const result = spawnSync('git', args, { env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
       return { status: result.status, stdout: result.stdout ?? '' }
     },
-    listWarnings: (staged, env) => {
-      const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja-text.mjs`, '--warning'], { cwd: staged, env, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
+    listWarnings: (staged, env, diff) => {
+      // 追加行の差分を標準入力で渡し、ja-text が --changed と同じ選び方（文のどれかの行が追加行）で選ぶ
+      const result = spawnSync(process.execPath, [`${staged}/scripts/ci/ja-text.mjs`, '--warning', '--added'], { cwd: staged, env, input: diff, encoding: 'utf8', maxBuffer: 256 * 1024 * 1024 })
       return { status: result.status, stdout: result.stdout ?? '' }
     },
     print: (text) => console.log(text),

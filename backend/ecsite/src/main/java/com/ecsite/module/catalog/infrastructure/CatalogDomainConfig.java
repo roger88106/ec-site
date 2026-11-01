@@ -7,7 +7,7 @@ import org.springframework.context.annotation.Configuration;
 
 /**
  * 商品カタログモジュールの domain の部品を、Spring の部品にする。<br />
- * domain は Spring に依存しないので、注釈を付けずにここで登録する（バックエンドのアーキテクチャ 第 2 節）。
+ * domain は Spring に依存しないので、注釈を付けずにここで登録する（バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」）。
  */
 @Configuration(proxyBeanMethods = false)
 class CatalogDomainConfig {

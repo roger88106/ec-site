@@ -39,7 +39,7 @@ public final class ProductionClasses {
             "test classes", javaClass -> javaClass.getName().matches(".*Test(\\$.*)?") || isTestFixture(javaClass));
 
     /**
-     * レベル A のモジュール（バックエンドのアーキテクチャ 第 2 節）。<br />
+     * レベル A のモジュール（バックエンドのアーキテクチャの「モジュール内のアーキテクチャレベル」）。<br />
      * docs/03-機能仕様 の各設計書の「レベル」と一致することは、{@code ProductionClassesTest} が確認する。
      */
     public static final List<String> LEVEL_A_MODULES = List.of("tax", "catalog", "inventory", "order", "payment");

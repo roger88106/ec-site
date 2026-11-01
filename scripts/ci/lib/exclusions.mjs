@@ -1,6 +1,6 @@
 // 検査の除外の一覧（<検査>-exclusions.json）を読み、理由のない除外と不要になった除外を見つける。
 // 除外の一覧の形は、全ての検査で {キー: 理由}。キーが何を指すか（AC 番号、ファイルのパス、識別子など）は検査が決める。
-// ac-check、ja-text、frontend-rules、glossary-ids、hardcoded-text、message-numbers、migrations、related-specs、time-waits が使う（ja-text は、ja-text.json の許す語の誤りの文だけに使う）。
+// ac-check、ja-text、frontend-rules、glossary-ids、hardcoded-text、message-numbers、migrations、related-specs、time-waits が使う（ja-text は、ja-text.json の許容用語の誤りの文だけに使う）。
 // パスは exclusionsPath で求め、誤りの文は checkExclusions などで作る（検査が文を直接組み立てない）
 import { readFileSync } from 'node:fs'
 import { fileURLToPath } from 'node:url'

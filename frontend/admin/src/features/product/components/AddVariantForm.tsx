@@ -24,7 +24,7 @@ function emptyValues(product: ProductDetail): Values {
 
 /**
  * バリアントの登録。品番の英小文字は大文字にする。<br />
- * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成 第 5 節）。
+ * 送るバージョンは hooks/useVersionedForm で扱う（管理画面の構成の「フォーム」）。
  */
 export function AddVariantForm({ product, refetch }: { product: ProductDetail; refetch: () => Promise<unknown> }) {
   const { form, baseVersion, reloadAfter } = useVersionedForm(product, emptyValues, refetch)

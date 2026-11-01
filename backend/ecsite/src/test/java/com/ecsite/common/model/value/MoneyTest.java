@@ -9,7 +9,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 /**
- * 金額の単体テスト（バックエンドのアーキテクチャ 第 6.1 節）
+ * 金額の単体テスト（バックエンドのアーキテクチャの「永続化」）
  */
 class MoneyTest {
 

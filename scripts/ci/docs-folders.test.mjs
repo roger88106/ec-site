@@ -41,7 +41,7 @@ describe('docs/ の下のフォルダー名の検査', () => {
     assert.deepEqual(findDocsFolderProblems(['README.md', 'scripts/ci/x.mjs']), [])
   })
 
-  test('許可する名前は全て、constitution.md の第 3 節に「<名前>/」の形で出る', () => {
+  test('許可する名前は全て、constitution.md の番号 3 の節（`## 3.`）に「<名前>/」の形で出る', () => {
     const constitution = readFileSync(new URL('../../docs/constitution.md', import.meta.url), 'utf8')
     const start = constitution.search(/^## 3\./m)
     const rest = constitution.slice(start + 1)

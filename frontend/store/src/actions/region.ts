@@ -6,7 +6,7 @@ import type { Municipality, PostalCodeAddress } from '@/api/types'
 import { normalizePostalCode } from '@/lib/postalCode'
 
 /**
- * 都道府県の市区町村の一覧を取る（店舗画面の構成 第 4.8 節）。読むだけなので、失敗は投げずに null で返す
+ * 都道府県の市区町村の一覧を取る（店舗画面の構成の「お届け先の都道府県と市区町村」）。読むだけなので、失敗は投げずに null で返す
  * （一覧を出せなくても、消費者は都道府県を選び直せる）。
  *
  * @param prefectureCode 都道府県のコード
@@ -24,7 +24,7 @@ export async function listMunicipalities(prefectureCode: string): Promise<Munici
 }
 
 /**
- * 郵便番号の住所を引く（店舗画面の構成 第 4.8 節）。読むだけなので、失敗は投げずに空で返す
+ * 郵便番号の住所を引く（店舗画面の構成の「お届け先の都道府県と市区町村」）。読むだけなので、失敗は投げずに空で返す
  * （補えなくても、消費者は一覧から選べる）。
  *
  * @param postalCode 郵便番号（ハイフンは任意）

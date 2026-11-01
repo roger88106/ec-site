@@ -446,7 +446,7 @@ describe('pre-commit hook を置いていないリポジトリの commit を拒�
 /** マージする pull request の今の head の commit */
 const HEAD_SHA = '28361e9899ad2db8de4c6452d1a2b21aa83e370d'
 
-/** 危険度が低で、issue を閉じる本文 */
+/** 危険度が低く、issue を閉じる本文 */
 const LOW_BODY = '## 概要\n\n変更の説明\n\nCloses #246\n\n## 危険度\n\n<!-- 判定：高 -->\n判定：低\n'
 
 /** gh pr merge の、許可なしに通せる形 */
@@ -669,7 +669,7 @@ describe('マージのコマンドを判定する', () => {
     assert.ok(Number.isInteger(timeout) && timeout > 0 && timeout < HOOK_TIMEOUT_MS, `タイムアウト：${timeout}`)
   })
 
-  test('Dependabot は、本文と Closes の代わりに、変更のファイルと題を危険度の判定に渡して低なら通す', () => {
+  test('Dependabot は、本文と Closes の代わりに、変更のファイルと題を危険度の判定に渡して、危険度が低いなら通す', () => {
     const dependabot = { author: DEPENDABOT, body: 'Bumps the gradle-minor-patch group.', closing: [] }
     const low = { ...dependabot, title: 'deps: bump the gradle-minor-patch group in /backend/ecsite with 4 updates', files: ['backend/ecsite/gradle/libs.versions.toml'] }
     assertPassed(MERGE, mergeDeps(low))
@@ -1132,7 +1132,7 @@ describe('.claude/settings.json の hook のコマンドで、script を探し�
       const passed = runHook('ls', dir, undefined, { description: 'git の前に ls する', binDir })
       assert.equal(passed.status, 0, passed.stderr)
       assert.equal(passed.stdout, '')
-      // 同じ PATH で、git のコマンドでは、置いた node が起動される（この確認方法が効いていることの確認）
+      // 同じ PATH で、git のコマンドでは、置いた node が起動される（この確認方法で検出できることの確認）
       const called = runHook('git status', dir, undefined, { binDir })
       assert.equal(called.status, 0, called.stderr)
       assert.match(called.stdout, /fake-node/)

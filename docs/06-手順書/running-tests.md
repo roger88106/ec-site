@@ -19,15 +19,15 @@
 
 ※1：jOOQ のコード生成は Testcontainers の PostgreSQL にマイグレーションを適用して行うため、マイグレーションか生成の設定が変わったときだけ Docker が必要（変わらなければ `generateJooq UP-TO-DATE` でスキップされる）。
 
-※2：PIT は変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、時間の多くはその実行に使われる。手元はコンパイル済みで約 2 分（実測 1 分 57 秒）。CI の手順は 2 分 1 秒から 2 分 28 秒（[CI の検査](ci.md) 第 3.1 節）。
+※2：PIT は変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、時間の多くはその実行に使われる。手元はコンパイル済みで約 2 分（実測 1 分 57 秒）。CI の手順は 2 分 1 秒から 2 分 28 秒（[CI の検査](ci.md)の「カバレッジと mutation score の基準の検査」）。
 
 単体テストには、構成と契約の検査も含まれる：モジュールの境界（`ModulithTest`）、アーキテクチャの規則（`architecture/` の ArchUnit）、契約の制約（`contract/`）、エラーの定義とメッセージの対応（`MessageContractTest`）。
 
-コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]`（例：`[NullAway]`）で検査が分かる。修正方法は、null の報告なら [バックエンドの書き方](../05-開発規則/backend-coding.md) 第 7.1 節、検査を抑えるときは [バックエンドの書き方](../05-開発規則/backend-coding.md) 第 7.2 節。`-Werror` を付けているので、警告でもコンパイルが失敗する。
+コンパイルが Error Prone や NullAway で失敗したときは、エラーの行の `[検査の名前]`（例：`[NullAway]`）で検査が分かる。修正方法は、null の報告なら [バックエンドの書き方](../05-開発規則/backend-coding.md)の「null の扱い」、検査を抑えるときは [バックエンドの書き方](../05-開発規則/backend-coding.md)の「検査を抑えるとき」。`-Werror` を付けているので、警告でもコンパイルが失敗する。
 
-Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）が失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`UnusedImports` は使われていない import を、`CustomImportOrder` は import の並びが決まった順（`java`・`javax` 以外、`java`・`javax`、static）でないものを報告する。`AvoidStarImport` は `*` の import を報告する。個々の import に書き換える。Checkstyle は import を修正しないので、報告された import は手動で削除するか、並び替える。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は、本番のコード（`src/main`）の Javadoc の記載漏れなので、Javadoc を書く。修正方法と import の並びは [バックエンドの書き方](../05-開発規則/backend-coding.md) 第 5.4 節。test、integrationTest、testFixtures、tools では、Javadoc の 3 つの検査を `backend/ecsite/config/checkstyle/suppressions.xml` で抑えている。
+Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）が失敗したときは、エラーの行の `[検査の名前]` で検査が分かる。`UnusedImports` は使われていない import を、`CustomImportOrder` は import の並びが決まった順（`java`・`javax` 以外、`java`・`javax`、static）でないものを報告する。`AvoidStarImport` は `*` の import を報告する。個々の import に書き換える。Checkstyle は import を修正しないので、報告された import は手動で削除するか、並び替える。`MissingJavadocType`・`MissingJavadocMethod`・`JavadocVariable` は、本番のコード（`src/main`）の Javadoc の記載漏れなので、Javadoc を書く。修正方法と import の並びは [バックエンドの書き方](../05-開発規則/backend-coding.md)の「書式」。test、integrationTest、testFixtures、tools では、Javadoc の 3 つの検査を `backend/ecsite/config/checkstyle/suppressions.xml` で抑えている。
 
-テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`backend/ecsite/build/reports/cpd/cpdCheck.xml`）に重複の場所（ファイルと行）が出る。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[テストの書き方](../05-開発規則/test-writing.md) 第 3.5 節）。
+テストのコードの重複（`cpdCheck`）が失敗したときは、報告（`backend/ecsite/build/reports/cpd/cpdCheck.xml`）に重複の場所（ファイルと行）が出る。補助に移すか、移せない理由があるときだけ `// CPD-OFF 理由` と `// CPD-ON` で囲む（[テストの書き方](../05-開発規則/test-writing.md)の「テストのコードの重複」）。
 
 ## 2. 管理画面・店舗画面
 
@@ -38,7 +38,7 @@ Checkstyle（`checkstyleMain`、`checkstyleTest`、`checkstyleTools` など）�
 pnpm lint && pnpm typecheck && pnpm test && pnpm build
 ```
 
-- 管理画面の `pnpm build`（本番ビルド）は、環境変数 `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がないと失敗する（[環境変数](environment.md)）。ローカルの値で確認するときは、環境変数の文書の第 2 節の既定値を付けて実行する（`VITE_OIDC_AUTHORITY=<既定値> VITE_OIDC_CLIENT_ID=<既定値> pnpm build`）。
+- 管理画面の `pnpm build`（本番ビルド）は、環境変数 `VITE_OIDC_AUTHORITY` と `VITE_OIDC_CLIENT_ID` がないと失敗する（[環境変数](environment.md)）。ローカルの値で確認するときは、[環境変数](environment.md)の「管理画面」の既定値を付けて実行する（`VITE_OIDC_AUTHORITY=<既定値> VITE_OIDC_CLIENT_ID=<既定値> pnpm build`）。
 - `pnpm test` はカバレッジのレポートを `coverage/index.html` に生成する。共有パッケージ（`frontend/shared`）の `pnpm test` も、上と同じ Vitest のカバレッジの設定（v8）でカバレッジを取り、`coverage/coverage-summary.json` に出力する。
 - 管理画面の結合テストはバックエンドなしで実行できる（API の応答は MSW）。
 - 要約だけを出力する `scripts/dev/check-frontend.sh` でも実行できる（管理画面のビルドの環境変数は、未設定ならローカルの値を使う）。
@@ -64,13 +64,13 @@ pnpm test
 | データ | 管理 API で作り、品番・名称に実行ごとの識別子（`E2E-<印>-…`）を付ける |
 
 - バックエンドの起動に JDK 21 を使うため、`JAVA_HOME` に JDK 21 のパスを設定しておく。
-- 手元の開発のバックエンド（:8080）と、スロットのバックエンド（[開発環境の起動](setup.md) 第 9 節）と並行して実行できる。
+- 手元の開発のバックエンド（:8080）と、スロットのバックエンド（[開発環境の起動](setup.md)の「スロット」）と並行して実行できる。
 - メインの作業ツリーでも、作業ツリーでも、`pnpm test`（`e2e/scripts/run.ts`）を実行できる。E2E は DB（`ec_site_e2e`）、IdP、ポートを共有するので、全ての作業ツリーで 1 つずつ実行する。実行中は git の共通のディレクトリに `ec-site-e2e.lock`（作業ツリーのパス、PID、開始の時刻）を置き、他の作業ツリーで実行中なら、所有者の作業ツリーのパスと開始の時刻を示して終了コード 1 で終了する。所有者のプロセスがなければ、古いロックとして再取得する。停止のシグナル（Ctrl+C など）の 1 回目で、実行中の子プロセスを停止し、終了するのを待ってからロックを削除して終了する。2 回目は待たずに終了する。PID が別のプロセスに再利用されて終了し続けるときは、示されたロックのファイルを削除してよい。E2E の実行中の印はこのロックだけで、`scripts/dev/check-frontend.sh` もこのロックを見て、所有者がその作業ツリーで動いているあいだは画面のビルド（E2E が配る `dist` の入れ替え）を止める（`scripts/dev/e2e.sh` でも `e2e/` の `pnpm test` でも同じ）。
 - E2E は常にスロット 0 の固定の環境で実行する。スロットの環境変数（`node scripts/dev/slot.mjs env` の出力など）を shell に設定していても、E2E のエントリポイントが取り除いてから実行する。
 - 管理画面・店舗画面を、E2E のポート（:4173、:3100）で起動したままにしない。E2E は起動済みのサーバーを使わず、ポートが使われていれば停止する。別の作業ツリーのコードに対して実行することを防ぐため。
 - 店舗画面の API のキャッシュは、E2E では 1 秒（`STORE_API_REVALIDATE_SECONDS`）。
 - 決済は mock で、外部の決済サービスに接続しない。支払の期限は、期限切れを待つテストのため 12 秒（`application-e2e.yml`）。注文から mock の画面で支払うまでの操作は、この期限内に完了する（CI で 2 秒ほど）。
-- compose の設定を変えたコミットを取り込んだら、メインの作業ツリーで [開発環境の起動](setup.md) 第 9 節の手順（共有の基盤の設定を変える変更をマージしたとき）で反映する。作業ツリーでは `docker compose up -d` を実行しない。
+- compose の設定を変えたコミットを取り込んだら、メインの作業ツリーで [開発環境の起動](setup.md)の「スロット」の手順（共有の基盤の設定を変える変更をマージしたとき）で反映する。作業ツリーでは `docker compose up -d` を実行しない。
 - 結果の要約だけを見るときは、ルートで `scripts/dev/e2e.sh [Playwright の引数]`（テストごとの ok / x と失敗の要点だけを出力し、全体はログのファイルに残す）。
 - 失敗したときは `test-results/` のスクリーンショットとトレース（`pnpm exec playwright show-trace <trace.zip>`）を確認する。
 
@@ -90,7 +90,7 @@ node scripts/ci/review/test-diff.mjs <元の commit> [名前の対応のファ�
 
 ## 5. カバレッジと mutation score の基準の検査
 
-CI と同じ検査を、手元で実行できる（[テストの書き方](../05-開発規則/test-writing.md) 第 1.2 節、[CI の検査](ci.md) 第 3.1 節）。先に、対象のテストを実行して報告を作る。
+CI と同じ検査を、手元で実行できる（[テストの書き方](../05-開発規則/test-writing.md)の「カバレッジと mutation score の基準」、[CI の検査](ci.md)の「カバレッジと mutation score の基準の検査」）。先に、対象のテストを実行して報告を作る。
 
 ```bash
 # ルートで：node scripts/ci/report/coverage-baseline.mjs <対象> <報告のパス> [--write]

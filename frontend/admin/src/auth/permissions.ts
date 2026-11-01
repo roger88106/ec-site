@@ -35,7 +35,7 @@ type PermissionsReady = {
 type Permissions = PermissionsLoading | PermissionsFailed | PermissionsReady
 
 /**
- * ログインしている運営者の権限を、管理 API の自分の権限の一覧から読む（管理画面の構成 第 10 節）。<br />
+ * ログインしている運営者の権限を、管理 API の自分の権限の一覧から読む（管理画面の構成の「ログイン」）。<br />
  * 画面は token を自分で読まない。権限はログインし直すまで変わらないので、取り直さない（失敗したときの再試行は除く）。
  */
 export function usePermissions(): Permissions {

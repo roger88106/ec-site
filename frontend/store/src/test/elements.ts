@@ -2,7 +2,7 @@ import { screen } from '@testing-library/react'
 import { expect } from 'vitest'
 
 /**
- * 役割と名前で探したボタン（押せるかどうかと、押している状態を見る。店舗画面の構成 第 7 節）。
+ * 役割と名前で探したボタン（押せるかどうかと、押している状態を見る。店舗画面の構成の「テスト」）。
  *
  * @param name ボタンの名前
  * @returns ボタン。ボタンでなければ、テストを失敗させる

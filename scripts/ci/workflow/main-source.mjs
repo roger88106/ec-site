@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 // ============================================================================
-// main への pull request の元のブランチの判定（docs/06-手順書/branches.md 第 3.2 節）
+// main への pull request の元のブランチの判定（ブランチとリリースの「main の元のブランチの制限」）
 //
 //   使い方：node scripts/ci/workflow/main-source.mjs <元のブランチの名前>
 //

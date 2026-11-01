@@ -19,7 +19,7 @@ spring:
     # 実際の接続先（Mailpit のホストと割り当てられたポート）は TestcontainersConfig が上書きする
     host: localhost
   flyway:
-    # Testcontainers の PostgreSQL にマイグレーションを適用する（バックエンドのアーキテクチャ 第 6.2 節）
+    # Testcontainers の PostgreSQL にマイグレーションを適用する（バックエンドのアーキテクチャの「Flyway」）
     enabled: true
 
 management:

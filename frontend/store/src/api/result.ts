@@ -32,7 +32,7 @@ export function unwrap<T>(result: FetchResult<T>): T {
 
 /**
  * 会員の口の取得の結果を {@link unwrap} する。401（token が無効になった）なら、いまの画面に戻るように
- * ログインの画面へ移す（店舗画面の構成 第 9 節）。
+ * ログインの画面へ移す（店舗画面の構成の「ログイン」）。
  */
 export async function unwrapMember<T>(result: FetchResult<T>): Promise<T> {
   if (result.response.status === 401) {

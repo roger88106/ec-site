@@ -5,7 +5,7 @@ import { translate } from '@/i18n/translate'
 const CONCURRENT_MODIFICATION: ErrorCode = 'CONCURRENT_MODIFICATION'
 
 /**
- * API がエラーを返した（管理画面の構成 第 4 節）。<br />
+ * API がエラーを返した（管理画面の構成の「API の呼び出し」）。<br />
  * 本文がエラーレスポンス（API の規約）なら {@link problem} に入る。プロキシのエラーなどで本文の形が違えば undefined。
  */
 export class ApiError extends Error {

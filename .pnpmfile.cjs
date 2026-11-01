@@ -14,7 +14,7 @@ module.exports = {
         if (peer !== EXPECTED_PEER) {
           throw new Error(
             `openapi-typescript の peer の依存 typescript が ${peer ?? '(なし)'} に変わった。` +
-              'TypeScript 7 で動くなら .pnpmfile.cjs を削除し、動かないならフックの対象の範囲を直す（フロントのアーキテクチャ 第 3 節）',
+              'TypeScript 7 で動くなら .pnpmfile.cjs を削除し、動かないならフックの対象の範囲を直す（フロントのアーキテクチャの「共通の決まり」）',
           )
         }
         const { typescript: _peer, ...peerDependencies } = pkg.peerDependencies

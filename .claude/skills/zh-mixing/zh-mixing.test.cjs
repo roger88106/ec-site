@@ -11,7 +11,7 @@ const { execFileSync } = require('child_process')
 const zh = require('./zh-mixing.cjs')
 
 const list = zh.loadList()
-/** 許す語を空にした一覧。文書に字・語がないことは、許す語によらず調べる（DC-249-28、30） */
+/** 許容用語を空にした一覧。文書に字・語がないことは、許容用語によらず調べる（DC-249-28、30） */
 const strict = { ...list, allow: [] }
 const ja = require('../../../scripts/ci/ja-text.json')
 
@@ -81,20 +81,20 @@ test('同じ行の字と用語を、まとめて見つける', () => {
   assert.ok(found.includes(SIMPLIFIED))
 })
 
-// --- 許す語 ---
+// --- 許容用語 ---
 
-test('一覧の許す語は、見つけても数えない', () => {
+test('一覧の許容用語は、見つけても数えない', () => {
   const custom = { ...list, allow: [{ word: SIMPLIFIED, reason: 'テスト' }] }
   assert.deepEqual(zh.findWords(`a${SIMPLIFIED}b`, custom, 'docs/a.md'), [])
 })
 
-test('ファイルを指定した許す語は、そのファイルだけで効く', () => {
+test('ファイルを指定した許容用語は、そのファイルだけで有効になる', () => {
   const custom = { ...list, allow: [{ word: SIMPLIFIED, file: 'docs/a.md', reason: 'テスト' }] }
   assert.deepEqual(zh.findWords(`a${SIMPLIFIED}b`, custom, 'docs/a.md'), [])
   assert.deepEqual(zh.findWords(`a${SIMPLIFIED}b`, custom, 'docs/b.md'), [SIMPLIFIED])
 })
 
-test('Git の外の許す語は、語だけでもファイルと語でも書ける', () => {
+test('Git の外の許容用語は、語だけでもファイルと語でも書ける', () => {
   const extra = zh.parseLocalAllow(['# 注釈', '', SIMPLIFIED, `docs/a.md\t${FIRST_WORD}`].join('\n'))
   assert.deepEqual(extra, [{ word: SIMPLIFIED }, { file: 'docs/a.md', word: FIRST_WORD }])
   assert.deepEqual(zh.findWords(`${SIMPLIFIED}`, list, 'x.md', extra), [])
@@ -102,7 +102,7 @@ test('Git の外の許す語は、語だけでもファイルと語でも書け�
   assert.deepEqual(zh.findWords(FIRST_WORD, list, 'docs/b.md', extra), [FIRST_WORD])
 })
 
-test('許す語に理由がなければ、一覧の読み込みが失敗する', () => {
+test('許容用語に理由がなければ、一覧の読み込みが失敗する', () => {
   assert.throws(() => zh.checkList({ chars: '', words: [], allow: [{ word: 'x' }] }), /理由/)
 })
 
@@ -216,7 +216,7 @@ test('コミットメッセージのファイルを調べる', () => {
   assert.ok(!err.join('').includes('COMMIT_MSG:2'))
 })
 
-test('Git の外の許す語は、入口の判定にも効く', () => {
+test('Git の外の許容用語は、入口の判定にも有効になる', () => {
   const { deps } = makeDeps({ readFile: () => SIMPLIFIED, localAllow: () => [{ word: SIMPLIFIED }] })
   assert.equal(zh.run(['file', 'a.md'], deps), 0)
 })
@@ -225,6 +225,20 @@ test('追跡しているファイルを調べるとき、アーカイブした s
   const files = { 'docs/08-spec/archive/x/spec.md': SIMPLIFIED, 'docs/a.md': JAPANESE }
   const { deps } = makeDeps({ listTracked: () => Object.keys(files), readFile: (f) => files[f] })
   assert.equal(zh.run(['tracked'], deps), 0)
+})
+
+test('追跡しているファイルを調べるとき、評価の一覧の置き場所（review の evals）は除く', () => {
+  const files = { '.claude/skills/review/evals/cases.md': SIMPLIFIED, 'docs/a.md': JAPANESE }
+  const { deps } = makeDeps({ listTracked: () => Object.keys(files), readFile: (f) => files[f] })
+  assert.equal(zh.run(['tracked'], deps), 0)
+})
+
+test('ステージした追加行を調べるとき、評価の一覧の置き場所（review の evals）は除く', () => {
+  const diff = (file, text) => ['diff --git a/' + file + ' b/' + file, '--- a/' + file, '+++ b/' + file, '@@ -0,0 +1 @@', `+${text}`].join('\n')
+  const evals = makeDeps({ stagedDiff: () => diff('.claude/skills/review/evals/cases.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], evals.deps), 0)
+  const other = makeDeps({ stagedDiff: () => diff('.claude/skills/review/SKILL.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], other.deps), 1)
 })
 
 test('入口の指定がなければ、使い方を出して 2', () => {
@@ -255,7 +269,7 @@ test('本物の git で、ステージした追加行だけを調べる（一時
   })
 })
 
-test('許す語を通す一覧では見逃す行を、許す語を空にした一覧は見つける', () => {
+test('許容用語を通す一覧では見逃す行を、許容用語を空にした一覧は見つける', () => {
   const lenient = { ...list, allow: [{ word: SIMPLIFIED, reason: 'テスト' }] }
   const lines = [{ file: 'SKILL.md', line: 1, text: `x${SIMPLIFIED}` }]
   assert.deepEqual(zh.scanLines(lines, lenient), [])
@@ -320,10 +334,12 @@ test('SKILL.md に、層 2 の字・用語がない（環境の印によらな�
   assert.deepEqual(hits.map((h) => h.line), [])
 })
 
-test('校閲役の定義に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-29、30）', () => {
-  const body = fs.readFileSync(path.join(__dirname, '..', '..', 'agents', 'ja-proofreader.md'), 'utf8')
-  const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'ja-proofreader.md', line: i + 1, text })), strict)
-  assert.deepEqual(hits.map((h) => h.line), [])
-  assert.match(body, /^omitClaudeMd: true$/m)
-  assert.match(body, /^tools: Read, Grep, Glob$/m)
-})
+for (const agent of ['ja-proofreader.md', 'ja-proof-verifier.md']) {
+  test(`校閲の 2 つの役割の定義（${agent}）に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-29、30）`, () => {
+    const body = fs.readFileSync(path.join(__dirname, '..', '..', 'agents', agent), 'utf8')
+    const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: agent, line: i + 1, text })), strict)
+    assert.deepEqual(hits.map((h) => h.line), [])
+    assert.match(body, /^omitClaudeMd: true$/m)
+    assert.match(body, /^tools: Read, Grep, Glob$/m)
+  })
+}

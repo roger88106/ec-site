@@ -3,7 +3,7 @@
         "-//Checkstyle//DTD SuppressionFilter Configuration 1.2//EN"
         "https://checkstyle.org/dtds/suppressions_1_2.dtd">
 <!--
-  Javadoc の書き漏れの検査は、本番のコード（src/main）だけにする（コメントの書き方 第 2 節）。
+  Javadoc の書き漏れの検査は、本番のコード（src/main）だけにする（コメントの書き方の「Java」）。
   main 以外のソースセット（test、integrationTest、testFixtures、tools）では、この 3 つの検査を抑える。
   import の検査（UnusedImports、CustomImportOrder）は全てのソースセットで行う。
 -->

@@ -11,7 +11,7 @@ import {
 import { paths } from '@/app/paths'
 import type { Permission } from '@/auth/permissions'
 
-/** 左のメニュー。各機能の入口（一覧）だけを並べる（管理画面の構成 第 3 節）。表示名は文言の app.menu のキー */
+/** 左のメニュー。各機能の入口（一覧）だけを並べる（管理画面の構成の「画面の URL」）。表示名は文言の app.menu のキー */
 export const menu = [
   { to: paths.products(), labelKey: 'products', icon: BoxesIcon }, // 商品
   { to: paths.categories(), labelKey: 'categories', icon: FolderTreeIcon }, // カテゴリ

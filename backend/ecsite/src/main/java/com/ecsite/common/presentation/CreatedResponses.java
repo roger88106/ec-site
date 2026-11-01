@@ -10,7 +10,7 @@ import java.net.URI;
 import java.util.UUID;
 
 /**
- * 作成の応答（201、Location、作成した ID）を作る（バックエンドの書き方 第 2.2 節）。<br />
+ * 作成の応答（201、Location、作成した ID）を作る（バックエンドの書き方の「応答への変換は手動で書く」）。<br />
  * 作成した ID の型は、管理 API と店舗の API で別に生成されるので、API ごとに分ける。
  */
 @NoArgsConstructor(access = AccessLevel.PRIVATE)

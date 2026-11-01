@@ -1,6 +1,6 @@
-// CI の検査の文書（docs/06-手順書/ci.md）の第 3 節の表と、scripts/ci/ の直下の検査が 1 対 1 に対応することを確認する。
+// CI の検査の文書（docs/06-手順書/ci.md）の「CI の検査の script」の表と、scripts/ci/ の直下の検査が 1 対 1 に対応することを確認する。
 // - 直下の検査：*.test.mjs 以外の *.mjs（check-all.sh が引数なしで実行するもの）
-// - 表：第 3 節の最初の表（第 3.1 節より前）の 1 列目の名前（`ac-check` など）
+// - 表：見出し `## 3.` の節の、最初の下の見出し（`### 3.1`）より前の表の 1 列目の名前（`ac-check` など）
 // 表にない検査と、検査のない表の行の両方を失敗にする。
 // 使い方：node scripts/ci/ci-docs.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -14,7 +14,7 @@ const DOC = 'docs/06-手順書/ci.md'
 const CHECK_DIR = 'scripts/ci/'
 
 /**
- * 文書の第 3 節の表（第 3.1 節より前）の 1 列目の名前を読む。
+ * 文書の見出し `## 3.` の節の表（最初の下の見出し `### 3.1` より前）の 1 列目の名前を読む。
  *
  * @param {string} markdown 文書の中身
  * @returns {string[]} 表の順の名前
@@ -56,7 +56,7 @@ export function compareChecks(tableNames, checkNames) {
   const table = new Set(tableNames)
   const checks = new Set(checkNames)
   for (const name of checkNames) {
-    if (!table.has(name)) problems.push(`表にない検査：${name}（${DOC} 第 3 節の表に行を加える）`)
+    if (!table.has(name)) problems.push(`表にない検査：${name}（${DOC} の「CI の検査の script」の表に行を加える）`)
   }
   for (const name of table) {
     if (!checks.has(name)) problems.push(`検査のない表の行：${name}（${CHECK_DIR} の直下に ${name}.mjs がない）`)

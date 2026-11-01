@@ -9,7 +9,7 @@ export type StderrRecord = {
 }
 
 /**
- * 標準エラー出力（process.stderr.write）を差し替えて、書いた内容を記録する（店舗画面の構成 第 7 節）。<br />
+ * 標準エラー出力（process.stderr.write）を差し替えて、書いた内容を記録する（店舗画面の構成の「テスト」）。<br />
  * 差し替えは setup.ts の restoreAllMocks で各テストの後に戻る。
  *
  * @returns 書いた内容を読む関数

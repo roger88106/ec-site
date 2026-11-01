@@ -69,22 +69,22 @@ class ImageFormatTest {
             assertThat(ImageFormat.detect("BMW is a car".getBytes(StandardCharsets.US_ASCII))).isEmpty();
         }
 
-        @ParameterizedTest(name = "主のブランド {0}")
+        @ParameterizedTest(name = "メジャーブランド {0}")
         @CsvSource({"heic", "heix", "heim", "heis", "hevc", "hevx"})
-        @DisplayName("AC-67 ftyp の主のブランドが HEIC の系統なら HEIF")
+        @DisplayName("AC-67 ftyp のメジャーブランドが HEIC の系統なら HEIF")
         void detectsHeifByMajorBrand(String brand) {
             assertThat(ImageFormat.detect(ftyp(brand, "mif1", brand))).contains(ImageFormat.HEIF);
         }
 
-        @ParameterizedTest(name = "主のブランド {0}")
+        @ParameterizedTest(name = "メジャーブランド {0}")
         @CsvSource({"avif", "avis"})
-        @DisplayName("AC-67 ftyp の主のブランドが avif・avis なら AVIF")
+        @DisplayName("AC-67 ftyp のメジャーブランドが avif・avis なら AVIF")
         void detectsAvifByMajorBrand(String brand) {
             assertThat(ImageFormat.detect(ftyp(brand, "mif1", "miaf"))).contains(ImageFormat.AVIF);
         }
 
         @Test
-        @DisplayName("AC-67 主のブランドが汎用（mif1、msf1）なら、互換のブランドで HEIF と AVIF を分ける")
+        @DisplayName("AC-67 メジャーブランドが汎用（mif1、msf1）なら、互換のブランドで HEIF と AVIF を分ける")
         void detectsByCompatibleBrands() {
             assertThat(ImageFormat.detect(ftyp("mif1", "mif1", "heic"))).contains(ImageFormat.HEIF);
             assertThat(ImageFormat.detect(ftyp("mif1", "mif1", "miaf", "avif"))).contains(ImageFormat.AVIF);
@@ -126,7 +126,7 @@ class ImageFormatTest {
     }
 
     /**
-     * ISO の基本メディアファイルの ftyp ボックス（大きさ、"ftyp"、主のブランド、バージョン、互換のブランド）
+     * ISO の基本メディアファイルの ftyp ボックス（大きさ、"ftyp"、メジャーブランド、バージョン、互換のブランド）
      */
     private static byte[] ftyp(String majorBrand, String... compatibleBrands) {
         var out = new ByteArrayOutputStream();

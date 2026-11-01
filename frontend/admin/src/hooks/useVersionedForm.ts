@@ -5,7 +5,7 @@ import { type DefaultValues, type FieldValues, type UseFormReturn, useForm } fro
 type Versioned = { version: number }
 
 /**
- * 同時に編集されうるリソースのフォーム（管理画面の構成 第 5 節）。<br />
+ * 同時に編集されうるリソースのフォーム（管理画面の構成の「フォーム」）。<br />
  * 送るバージョン（{@link baseVersion}）は、フォームを作ったときのリソースのもの。
  * <ul>
  *   <li>入力を変える前にリソースが変わったら（自分の別の操作など）、フォームを最新の値で再作成する。</li>

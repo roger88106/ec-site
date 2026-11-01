@@ -10,7 +10,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税の腐敗防止層（バックエンドのアーキテクチャ 第 1 節）。税込単価と消費税額の計算は、税モジュールに任せる。
+ * 税の腐敗防止層（バックエンドのアーキテクチャの「モジュラーモノリス」）。税込単価と消費税額の計算は、税モジュールに任せる。
  */
 public interface TaxDirectory {
 

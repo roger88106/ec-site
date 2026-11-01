@@ -6,13 +6,13 @@ description: ec-site のフロントに画面や操作を追加するときの�
 # 画面を追加するときの型
 
 決まりの正本は [店舗画面の構成](../../../docs/02-設計/apps/store.md) と [管理画面の構成](../../../docs/02-設計/apps/admin.md)。
-本書はその要点と、そのままコピーできる最小の例。迷ったら正本を読む（store.md 第 4〜6・8 節、admin.md 第 4〜6・8・9 節）。
+本書はその要点と、そのままコピーできる最小の例。迷ったら正本を読む（[店舗画面の構成](../../../docs/02-設計/apps/store.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」、[管理画面の構成](../../../docs/02-設計/apps/admin.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」「結合テストの書き方」）。
 
 共通の前提：
 
-- 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に修正する（開発の進め方 第 1 節）。
+- 使う API が OpenAPI（`api/openapi/store.yaml`、`admin.yaml`）にあること。なければ止めて、plan と OpenAPI を先に修正する（開発の進め方の「仕様駆動開発」）。
 - 画面の文言・コメントは日本語。コメントは何をするかを書き、決定の経緯はコミットメッセージに書く。
-- 表示の文言は、コードに直接書かず文言ファイル（`messages/ja.json`）に置き、`t('キー')` で引いて、後ろに表示する内容をコメントで書く（フロントの書き方 第 7 節）。下の例の `foo.*` のキーは、文言ファイルに追加する。
+- 表示の文言は、コードに直接書かず文言ファイル（`messages/ja.json`）に置き、`t('キー')` で引いて、後ろに表示する内容をコメントで書く（フロントの書き方の「表示の文言とロケール」）。下の例の `foo.*` のキーは、文言ファイルに追加する。
 - 表示の決まり（列挙の表示名、金額の整形など）は関数にして `lib/` か `features/<機能>/` に置き、単体テストを横に置く。
 - 終わったら `scripts/dev/check-frontend.sh <store|admin>` を通し、プレビューで表示を確認する（skill `local-dev`）。
 
@@ -22,7 +22,7 @@ description: ec-site のフロントに画面や操作を追加するときの�
 
 1. 書こうとする表示や処理（整形、表示名、リンクのボタン、選択肢、ID や戻り先の判定など）に当たる行を、「使う場面」の列から探す。
 2. あれば、その部品を import して使う。自分で同じものを書かない。
-3. 表にないものを 2 つの画面で使うときは、各画面に書かず `frontend/shared` に置く。置き場所と条件は [フロントの書き方](../../../docs/05-開発規則/frontend-coding.md) 第 5.1 節。共有に置いたら、この表に 1 行を追加する。
+3. 表にないものを 2 つの画面で使うときは、各画面に書かず `frontend/shared` に置く。置き場所と条件は [フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「入れるもの・入れないもの」。共有に置いたら、この表に 1 行を追加する。
 
 | 置き場所（import のパス） | 役割 | 使う場面 |
 |---------------------------|------|----------|
@@ -41,7 +41,7 @@ description: ec-site のフロントに画面や操作を追加するときの�
 | `messages/ja.json` | 共有の文言（`common`） | 2 つの画面で同じ文言。列挙の表示名、「すべて」、接続の失敗など |
 | `scripts/export-constraints.mjs` | OpenAPI の入力の制約を、画面が使う定数のファイルに書き出す。各画面の API の生成で使う | 画面の入力欄の制約。直接は実行せず、各画面の API 生成の script から実行する |
 
-※1：既定と違う書式（符号付き、率など）は使う画面の `lib/` に置き（1 つの機能だけで使うなら、その機能のディレクトリに置く。[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md) 第 1.1 節）、ロケールは `lib/locale` から取る。
+※1：既定と違う書式（符号付き、率など）は使う画面の `lib/` に置き（1 つの機能だけで使うなら、その機能のディレクトリに置く。[フロントの書き方](../../../docs/05-開発規則/frontend-coding.md)の「画面に依存しない処理は `lib/` の関数」）、ロケールは `lib/locale` から取る。
 
 ## 店舗画面（`frontend/store`）
 
@@ -127,7 +127,7 @@ export async function updateFoo(_previous: ActionResult | null, formData: FormDa
 
 ### フォーム（`features/<機能>/components/FooForm.tsx`）
 
-結果の表示をテストするフォームは、`useActionState` を呼ぶコンポーネントと、結果を props で受ける表示のコンポーネントに分ける（例：`OrderForm` と `OrderFormView`）。テストは表示のコンポーネントに結果を渡す。結果の表示をテストしない他のフォームは、分けなくてよい。同じ読み上げの領域が残るなど、結果の表示の遷移を確認するときは、分けずにサーバーアクションを `vi.mock` で差し替え、jsdom で操作する（`CancellationRequestForm.test.tsx`。テストの書き方 第 1 節）。
+結果の表示をテストするフォームは、`useActionState` を呼ぶコンポーネントと、結果を props で受ける表示のコンポーネントに分ける（例：`OrderForm` と `OrderFormView`）。テストは表示のコンポーネントに結果を渡す。結果の表示をテストしない他のフォームは、分けなくてよい。同じ読み上げの領域が残るなど、結果の表示の遷移を確認するときは、分けずにサーバーアクションを `vi.mock` で差し替え、jsdom で操作する（`CancellationRequestForm.test.tsx`。テストの書き方の「テストの種類と基準」）。
 
 ```tsx
 'use client'
@@ -143,7 +143,7 @@ export function FooForm({ fooId }: { fooId: string }) {
   const t = useTranslations('foo.form')
   const [result, formAction, pending] = useActionState(updateFoo, null)
   return (
-    // 失敗の読み上げの領域は、送る前から描く（店舗画面の構成 第 6 節）。領域が最後の子なので、親は flex と gap で並べる
+    // 失敗の読み上げの領域は、送る前から描く（店舗画面の構成の「結果の知らせ方」）。領域が最後の子なので、親は flex と gap で並べる
     <form action={formAction} className="flex flex-col items-start gap-3">
       <input name="fooId" type="hidden" value={fooId} />
       {/* 入力欄。誤りは欄の下に表示し、aria-describedby と aria-invalid で入力欄に結び付ける（OrderForm の Field） */}
@@ -167,9 +167,9 @@ export function FooForm({ fooId }: { fooId: string }) {
 | `src/api/client.ts` | `$api`（openapi-react-query） |
 | `src/api/useApiMutation.ts` | 更新の操作（成功の知らせ、続きの処理、一覧の再取得） |
 | `src/api/useMutationGroup.ts` | 1 つの場所の複数の更新の操作の、待ち状態・最初のエラー・エラーの消去 |
-| `src/api/invalidate.ts` | 再取得するパスの前方一致 `ApiPathPrefix`。新しいパスは admin.md 第 4 節の表にも追加する |
+| `src/api/invalidate.ts` | 再取得するパスの前方一致 `ApiPathPrefix`。新しいパスは [管理画面の構成](../../../docs/02-設計/apps/admin.md)の「API の呼び出し」の表にも追加する |
 | `src/components/` | `PageHeader`、`QueryState`、`ErrorMessage`、`ConfirmDialog`、`Pagination`、`DateTime`、`Price` |
-| `src/hooks/useVersionedForm.ts` | バージョンを持つリソースのフォーム（409 の扱い。admin.md 第 5 節） |
+| `src/hooks/useVersionedForm.ts` | バージョンを持つリソースのフォーム（409 の扱い。[管理画面の構成](../../../docs/02-設計/apps/admin.md)の「フォーム」） |
 
 似た既存の例：一覧と URL の絞り込みは `features/order/pages/OrderListPage.tsx` と `features/order/orderFilter.ts`、詳細は `OrderDetailPage.tsx`、確認つきの操作は `features/order/components/OrderActions.tsx`、フォームは `features/inventory/components/AdjustStockForm.tsx`、結合テストは `features/inventory/pages/StockPage.test.tsx`。
 
@@ -234,7 +234,7 @@ export function FooActions({ fooId }: { fooId: string }) {
   const t = useTranslations('foo.actions')
   const close = useApiMutation('put', '/foos/{fooId}/close', {
     success: t('closed'), // 〇〇の知らせ
-    invalidate: ['/foos'], // 影響する取得をパスの前方一致で再取得する（admin.md 第 4 節の表）
+    invalidate: ['/foos'], // 影響する取得をパスの前方一致で再取得する（管理画面の構成の「API の呼び出し」の表）
   })
   return (
     <div className="space-y-3">
@@ -259,7 +259,7 @@ export function FooActions({ fooId }: { fooId: string }) {
 
 ### 結合テスト（`pages/FooPage.test.tsx`）
 
-書き方は admin.md 第 9 節。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API は全てハンドラーを渡す、テスト名に AC 番号。
+書き方は [管理画面の構成](../../../docs/02-設計/apps/admin.md)の「結合テストの書き方」。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API は全てハンドラーを渡す、テスト名に AC 番号。
 
 ## 画面を追加し終えたら
 

@@ -37,7 +37,7 @@ const FIELD_BY_ERROR_CODE: Partial<Record<ErrorCode, OrderField>> = {
 const BACK_TO_CART_ERROR_CODES = new Set<ErrorCode>(['OUT_OF_STOCK', 'CART_CHANGED'])
 
 /**
- * 注文のサーバーアクションの結果を、フォームに出すエラーにする（店舗画面の構成 第 6 節）。<br />
+ * 注文のサーバーアクションの結果を、フォームに出すエラーにする（店舗画面の構成の「結果の知らせ方」）。<br />
  * 入力欄に対応するエラーはその欄に、それ以外はフォームの下に出す。
  */
 export function placeOrderErrors(result: ActionResult | null): PlaceOrderErrors {

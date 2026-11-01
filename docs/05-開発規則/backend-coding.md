@@ -16,7 +16,7 @@
 | 1.1 | 共通コードと設定はモジュールに依存しない。共通コードとモジュールは設定に依存しない | 自動（ArchUnit） |
 | 1.2 | モジュールの外に出すのは `api/` と `event/` だけ | 自動（ModulithTest） |
 | 1.3 | 他のモジュールは腐敗防止層で包む。列挙は `switch` 式で変換する | 置き場所と、他のモジュールの `api` を使うのが `infrastructure/directory/` だけであること（許可の一覧の 1 件を除く）、実装が public でないことは自動（ArchUnit）。変換の書き忘れは自動（コンパイル）で、全ての値の対応は変換ごとの単体テストで確認する。`valueOf(x.name())` と、domain・永続化以外での名前の文字列からの `valueOf`・`fromValue` を使わないことは自動（`scripts/ci/java-rules.mjs`）。port と実装の分け方はレビュー |
-| 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数を第 1.4 節の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー |
+| 1.4 | パッケージの大きさ | 上限は自動（ArchUnit）。目安を超えるパッケージの一覧と数を「パッケージの大きさ」の表と照合することは自動（`ModuleStructureTest`）。表の「分けない理由」の妥当性はレビュー |
 | 1.5 | 共通の型と金額 | 金額は自動（ArchUnit）、置き場所と基準、金額の計算はレビュー |
 | 2.1 | 生成した interface を実装する。`@RestController` は presentation だけに付ける（`MeController` を除く） | `@RestController` の置き場所は自動（ArchUnit）、実装は自動（コンパイル）、契約にない endpoint はレビュー |
 | 2.2 | 応答への変換は手動で書く | 生成したモデルの組み立ては自動（ArchUnit）、他はレビュー |
@@ -57,7 +57,7 @@ module/<モジュール>/
 ├── domain/             業務の型。エラーの定義（<モジュール>ErrorCode。集約ごとに分けてよい）
 │   └── <集約>/         集約、vo/（値）、port/（Repository、domain が使う Directory）
 └── infrastructure/     port の実装
-    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。第 6.1 節）
+    ├── <モジュール>Config  設定のクラス（設定の値の型を有効にする、domain の部品を Bean にする。「設定の値の型」）
     ├── persistence/    jOOQ の Repository と、それが使うクラス
     ├── directory/      他のモジュールの api を呼ぶ Directory の実装（腐敗防止層）
     └── <外部>/          外部の仕組み（storage、converter、cache など）
@@ -77,7 +77,7 @@ module/<モジュール>/
 
 | レベル | 中身の違い |
 |--------|------------|
-| A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS）。例外：状態を DB の更新の条件で守るモジュール（今は在庫だけ）は、集約のクラスを持たなくてよい（理由は [バックエンドのアーキテクチャ](../02-設計/backend-architecture.md) 第 2 節 ※3） |
+| A | 集約は jMolecules で明示し、Repository の port は `domain/<集約>/port/`。command と query の service・Repository を分ける（CQRS）。例外：状態を DB の更新の条件で守るモジュール（今は在庫だけ）は、集約のクラスを持たなくてよい（理由は [バックエンドのアーキテクチャ](../02-設計/backend-architecture.md)の「モジュール内のアーキテクチャレベル」 ※3） |
 | B | domain は振る舞いの少ない型でよく、集約ごとのパッケージは作らない。port は全て `application/port/`。CQRS なし。`application/model/` は必要なときだけ。クラスが多いときは、用途で domain を分けてよい（`domain/<用途>/`。reporting の `domain/snapshot/` と `domain/sales/`） |
 
 層の中の役割：
@@ -92,7 +92,7 @@ module/<モジュール>/
 
 | 呼び出し元 | 置き場所 | 例外の理由 |
 |------------|----------|------------|
-| `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation 層に会員の ID を渡すための公開の API（第 1.3 節 ※1）。`CurrentMemberIds` 自身も取り出しの対象に含め、呼び出し元を presentation 層に限る。理由：他のモジュールの `api/` の規則（第 1.3 節）は `infrastructure/directory/` からの利用を除くので、それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため |
+| `CurrentMemberIds` | `member/api/` | 他のモジュールの presentation 層に会員の ID を渡すための公開の API（「他のモジュールは腐敗防止層で包む」 ※1）。`CurrentMemberIds` 自身も取り出しの対象に含め、呼び出し元を presentation 層に限る。理由：他のモジュールの `api/` の規則（「他のモジュールは腐敗防止層で包む」）は `infrastructure/directory/` からの利用を除くので、それだけでは directory を経て application 層が要求の会員 ID を得る形を防げないため |
 | `MeController` | `config/security/` | モジュールに属さない API のエンドポイントで、役割は presentation 層と同じ。移すとモジュールの構成が変わる |
 
 - **jOOQ の置き場所**：jOOQ（`org.jooq` と、生成したコード `com.ecsite.jooq`）を使えるのは、モジュールの `infrastructure/persistence/` のクラスだけにする。application と domain が永続化の形に依存しないようにするためである。モジュールの外の共通の設定（`config/event/EventPublicationRecords`）は、schema の持ち主の検査（`SchemaOwnershipTest`）が別に見る。例外は次の 1 つで、増やすときはこの表に理由を書く。
@@ -142,7 +142,7 @@ module/<モジュール>/
 
 - 共通コード（`common/`）には、2 つ以上のモジュールが使うものだけを置く。1 つのモジュールだけが使うものは、そのモジュールに置く。例外は横断の仕組み（エラーの応答、ログ、入力の検証のメッセージ、認証の情報の取り出し）で、全てのモジュールの要求の処理に関わり、どのモジュールにも属さないので、`common/` に置く。
 - モジュールに共通の型は `common/model/` に置く。`base/`：集約の基底（`AggregateRoot`、`DomainEvent`、`AggregateGuards`）、`value/`：値（`Money`、`BoundedText`、`BusinessTime`、`Operator`）。
-- 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものは、そのモジュールの domain に置く。置き場所（集約の `vo/` か domain の直下）は第 1.1 節のとおり。
+- 共通の値にするのは、2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つものだけ。1 つのモジュールだけのものは、そのモジュールの domain に置く。置き場所（集約の `vo/` か domain の直下）は「標準の構成」のとおり。
 - 金額は、モジュールの内部と公開の型（`api/` の record、command、view）で `Money` を使う。整数で持つのは presentation、infrastructure（DB）、設定の値の型だけ。設定の値の金額は、使う所で `Money` にする。
 - 金額の掛け算・割り算は、`Money` の操作と税の計算（`TaxCalculator`）の中だけで行う。端数が出る計算は、端数の扱い（切り捨て など）をメソッドで明示する。
 - 例外として、商品の一覧の税込価格の絞り込みと並べ替えは、SQL で税込価格を計算する。計算するクラスは `catalog.infrastructure.persistence.PriceInclTaxField` で、式は 税抜価格 × (100 + 税率) ÷ 100 の切り捨て。理由：税区分ごとに税率が違い、税抜の順と税込の順が一致しない。一覧は DB で `LIMIT`・`OFFSET` を使ってページングするので、絞り込みと並べ替えも DB で行う必要がある。`TaxCalculator` と同じ結果になることは、端数の境界値を含めて `PriceInclTaxFieldTest` で確認する。
@@ -155,7 +155,7 @@ module/<モジュール>/
 
 Controller は OpenAPI から生成した interface（`XxxApi`）を実装する。パスと入力の形は interface に任せ、`@RequestMapping` を書かない。
 
-例外：外部のサービスとのやり取りのエンドポイント（決済・物流の通知、mock の支払画面と物流の画面。[API の規約](api-conventions.md) 第 4.1 節）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](../03-機能仕様/payment.md)、[出荷モジュール](../03-機能仕様/shipping.md)）。
+例外：外部のサービスとのやり取りのエンドポイント（決済・物流の通知、mock の支払画面と物流の画面。[API の規約](api-conventions.md)の「OpenAPI の外のエンドポイント」）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済モジュール](../03-機能仕様/payment.md)、[出荷モジュール](../03-機能仕様/shipping.md)）。
 
 例外：ログインした人の情報を返す操作（`MeController`）は、モジュールの presentation でなく `config/security/` に置く。認可の設定と同じ権限の変換（`PermissionConverter`）を使い、どのモジュールにも属さないため。`@RestController` の置き場所の検査（ArchUnit）は、`MeController` だけを完全修飾名で除く。
 
@@ -227,7 +227,7 @@ DB の制約でしか守れない規則（一意性など）の違反は、リ�
 
 - `@Transactional` は application の service のクラスに付ける。参照だけなら `readOnly = true`。api と presentation には付けない。
 - 例外：infrastructure で、別のトランザクションが必要なもの（呼び出し元と別に確定させる記録など）。付けた所に理由を書く。
-- 外部サービス（決済、画像の変換、ファイル保存、物流、メールなど）は、トランザクションの外で呼び、タイムアウトを設定する。呼ぶ前の読み取りと呼んだ後の更新を、それぞれのトランザクションにする（第 1.1 節「外部の呼び出しの前の読み取り」）。イベントのリスナーで呼ぶときは、リスナーをトランザクションなし（`@ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)`）にする。
+- 外部サービス（決済、画像の変換、ファイル保存、物流、メールなど）は、トランザクションの外で呼び、タイムアウトを設定する。呼ぶ前の読み取りと呼んだ後の更新を、それぞれのトランザクションにする（「標準の構成」「外部の呼び出しの前の読み取り」）。イベントのリスナーで呼ぶときは、リスナーをトランザクションなし（`@ApplicationModuleListener(propagation = Propagation.NOT_SUPPORTED)`）にする。
 - 外で呼べないものは、呼ぶ所と設計書に理由を書く（出荷のメール：[通知モジュール](../03-機能仕様/notification.md)）。
 
 理由：1 つの操作を 1 つのトランザクションにし、境界を層で決めるため。外部サービスを待つ間に DB の接続を持つと、外部サービスが遅いときに接続が尽き、関係のない操作まで止まるため。
@@ -375,7 +375,7 @@ public record SignedNotification(byte[] body, String signature) {
 
 ### 8.1 前のリリースのアプリが動き続けられる変更だけにする
 
-マイグレーションはデプロイごとに 1 回適用し、起動時には適用しない（[環境変数](../06-手順書/environment.md) 第 1 節）。マイグレーションを適用してからアプリを入れ替えるまでの間、前のバージョンのアプリが新しいスキーマで動く。
+マイグレーションはデプロイごとに 1 回適用し、起動時には適用しない（[環境変数](../06-手順書/environment.md)の「バックエンド」）。マイグレーションを適用してからアプリを入れ替えるまでの間、前のバージョンのアプリが新しいスキーマで動く。
 
 新しいマイグレーションは、前のリリースのアプリが動き続けられる変更だけにする。次の変更は、1 つのリリースでしない。
 

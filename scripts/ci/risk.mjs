@@ -1,5 +1,5 @@
 // 変更の危険度（高か低）を、develop との差分のファイルと、差分に含まれる spec.md の宣言から判定する。
-// - 経路：差分のファイルが、高の経路の一覧（risk.json）のどれかの下にあれば高。テストのファイルも経路で判定する。
+// - 経路：差分のファイルが、危険度が高い経路の一覧（risk.json）のどれかの下にあれば高。テストのファイルも経路で判定する。
 //   経路とファイルは小文字にしてから比べる（Windows と macOS では、大文字の違うパスが同じ所に入るため）
 // - spec の宣言：差分に含まれる spec.md（アーカイブへの移動を含む）の冒頭（最初の節の見出しより前）に「危険度：高」の行があれば高。
 //   差分の後のバージョンと基準（分岐点）のバージョンの両方を読み、どちらかにあれば高（宣言の行を消す変更を低にしないため。改名は元のパスの基準のバージョンを読む）。
@@ -23,7 +23,7 @@ import { isMain } from './lib/is-main.mjs'
 import { isShallowRepository, SHALLOW_CLONE_MESSAGE } from './lib/shallow-clone.mjs'
 import { describeUnreadableLine } from './lib/unreadable-line.mjs'
 
-/** 高の経路の一覧 */
+/** 危険度が高い経路の一覧 */
 const CONFIG_FILE = new URL('./risk.json', import.meta.url)
 
 /** 差分の基準の既定の ref */
@@ -60,7 +60,7 @@ const UPDATE_GROUP = /\bthe\s+(\S+)\s+group\b/i
 const MINOR_PATCH_GROUP = '-minor-patch'
 
 /**
- * 高の経路の一覧（risk.json の中身）を読む。形が違えば例外を投げる（読めない一覧で、全てを低と判定しないため）。
+ * 危険度が高い経路の一覧（risk.json の中身）を読む。形が違えば例外を投げる（読めない一覧で、全てを低と判定しないため）。
  *
  * @param {string} text risk.json の中身
  * @returns {{ groups: { name: string, paths: string[] }[] }} まとまり（一覧の順）
@@ -96,7 +96,7 @@ function matchesPath(pattern, file) {
 /**
  * 一覧の経路のうち、どのファイルにも当たらないもの（経路の書き間違い、置き場所の移動）を返す。
  *
- * @param {{ groups: { name: string, paths: string[] }[] }} config 高の経路の一覧
+ * @param {{ groups: { name: string, paths: string[] }[] }} config 危険度が高い経路の一覧
  * @param {string[]} files リポジトリの全てのファイル
  * @returns {string[]} 当たるファイルのない経路（一覧の順）
  */
@@ -149,7 +149,7 @@ export function findDeclaredSpecs(files, readFile, readBaseFile = () => null) {
  * 差分のファイルから危険度を判定する。経路の判定と spec の宣言の、高い方にする。
  *
  * @param {string[]} files 差分のファイル（リポジトリのルートからのパス）
- * @param {{ groups: { name: string, paths: string[] }[] }} config 高の経路の一覧
+ * @param {{ groups: { name: string, paths: string[] }[] }} config 危険度が高い経路の一覧
  * @param {(file: string) => string | null} readFile 差分の後の中身を返す。ないファイルは null
  * @param {(file: string) => string | null} [readBaseFile] 基準のバージョンの中身を返す。基準にないファイルは null
  * @returns {{ level: '高' | '低', hits: { name: string, files: string[] }[], specs: string[],
@@ -329,7 +329,7 @@ function tryGit(args, cwd) {
 }
 
 /**
- * 差分のファイルを返す。基準は HEAD と ref の分岐点。改名は、元と先の両方のパスにする（高の経路から出す改名も当てるため）。
+ * 差分のファイルを返す。基準は HEAD と ref の分岐点。改名は、元と先の両方のパスにする（危険度が高い経路から出す改名も当てるため）。
  * 手元で commit の前に確認できるよう、作業ツリーの変更と、追跡していない無視されないファイルも含める。
  *
  * @param {string} ref 基準の ref

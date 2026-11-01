@@ -62,7 +62,7 @@ import static com.tngtech.archunit.lang.syntax.ArchRuleDefinition.noClasses;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * モジュールの標準の構成の検査（docs/05-開発規則/backend-coding.md 第 1 節）。<br />
+ * モジュールの標準の構成の検査（バックエンドの書き方の「層とパッケージ」）。<br />
  * 層の名前と依存の向き、注釈の置き場所、パッケージの大きさを、本番のクラスファイルから確認する。
  * モジュールの境界（モジュールの間の依存）は {@code ModulithTest} が確認する。
  */
@@ -79,7 +79,7 @@ class ModuleStructureTest {
     private static final Pattern LAYERED_PACKAGE = Pattern.compile("^(.*\\.module\\.[^.]+)\\.([^.]+)(?:\\.(.*))?$");
 
     /**
-     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドの書き方 第 1.1 節の表）。<br />
+     * 層ごとの、同じモジュールの中で依存してよい先（バックエンドの書き方の「標準の構成」の表）。<br />
      * 層の中の自分自身への依存は、表に書かなくても許す。他のモジュールと共通コードへの依存は、この表の対象でない
      * （モジュールの間は {@code ModulithTest} と {@code otherModulesApiIsUsedOnlyByDirectories} が確認する）。
      * presentation の domain への依存は、エラーの定義と値の型に限るが、集約に依存しないことは
@@ -123,7 +123,7 @@ class ModuleStructureTest {
     private static final int MAX_CLASSES_PER_PACKAGE = 20;
 
     /**
-     * 1 つのパッケージの直下のクラスの数の目安。超えて分けないパッケージは、バックエンドの書き方 第 1.4 節の表に理由を書く
+     * 1 つのパッケージの直下のクラスの数の目安。超えて分けないパッケージは、バックエンドの書き方の「パッケージの大きさ」の表に理由を書く
      */
     private static final int GUIDELINE_CLASSES_PER_PACKAGE = 10;
 
@@ -149,7 +149,7 @@ class ModuleStructureTest {
 
     /**
      * 他のモジュールの api を、infrastructure.directory の外から使ってよい組。<br />
-     * 組を追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.3 節の例外にも書く。
+     * 組を追加するときは、理由をコメントに書き、バックエンドの書き方の「他のモジュールは腐敗防止層で包む」の例外にも書く。
      */
     private static final List<AllowedApiUse> ALLOWED_API_USES = List.of(
             // 会員の ID は token から読むだけで、presentation が application へ引数で渡す。
@@ -167,7 +167,7 @@ class ModuleStructureTest {
 
     /**
      * token の取り出しを、presentation 層と common.security の外から使ってよいクラス。<br />
-     * 追加するときは、理由をコメントに書き、バックエンドの書き方 第 1.1 節の例外の表にも書く。
+     * 追加するときは、理由をコメントに書き、バックエンドの書き方の「標準の構成」の例外の表にも書く。
      */
     private static final Set<String> TOKEN_ACCESS_EXCEPTIONS = Set.of(
             // 他のモジュールの presentation に会員の ID を渡す公開の API。自身も取り出しの対象（TOKEN_ACCESSORS）で、呼び出し元は presentation に限る
@@ -324,10 +324,10 @@ class ModuleStructureTest {
     }
 
     @Test
-    @DisplayName("目安を超えるパッケージは、バックエンドの書き方 第 1.4 節の表と、パッケージも数も一致する")
+    @DisplayName("目安を超えるパッケージは、バックエンドの書き方の「パッケージの大きさ」の表と、パッケージも数も一致する")
     void oversizedPackagesMatchTable() throws IOException {
         Map<String, Integer> table = oversizedTable(Files.readAllLines(RULES_BACKEND_CODING, StandardCharsets.UTF_8));
-        ProductionClasses.requireNotEmpty(table.entrySet(), "バックエンドの書き方 第 1.4 節の表の行");
+        ProductionClasses.requireNotEmpty(table.entrySet(), "バックエンドの書き方の「パッケージの大きさ」の表の行");
 
         assertThat(oversizedMismatches(classCountByPackage(ProductionClasses.all()), table)).isEmpty();
     }
@@ -544,7 +544,7 @@ class ModuleStructureTest {
     }
 
     /**
-     * バックエンドの書き方 第 1.4 節の、目安を超えるパッケージの表を読む。<br />
+     * バックエンドの書き方の「パッケージの大きさ」の、目安を超えるパッケージの表を読む。<br />
      * 見出しの後の最初の表だけを読む。表の行のうち、1 列目がバッククォートで囲んだパッケージの名前で、2 列目が数の行を読み、
      * 表の後の行（本文や 2 つ目の表）は読まない。
      *

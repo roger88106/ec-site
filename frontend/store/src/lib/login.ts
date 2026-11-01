@@ -5,7 +5,7 @@ import type { Route } from 'next'
 const HOME: Route = '/'
 
 /**
- * ログインの後に戻る画面（店舗画面の構成 第 9 節）。店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。
+ * ログインの後に戻る画面（店舗画面の構成の「ログイン」）。店舗画面の中のパスだけを受け付け、外のサイトへは戻さない。
  *
  * @param value 指定された戻り先
  * @returns 戻り先のパス（クエリを含む）。受け付けなければ店舗のトップ
@@ -29,7 +29,7 @@ export function loginPath(returnTo: string, options: { register?: boolean } = {}
 }
 
 /**
- * access token を取り直すか（店舗画面の構成 第 9 節）。
+ * access token を取り直すか（店舗画面の構成の「ログイン」）。
  *
  * @param expiresAt     access token の期限（UNIX 時刻の秒）。分からなければ undefined
  * @param nowSeconds    今の時刻（UNIX 時刻の秒）

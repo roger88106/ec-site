@@ -1,4 +1,4 @@
-// 本番のコードと、テストのコメントに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方 第 1 節）。
+// 本番のコードと、テストのコメントに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方の「何を書くか」）。
 // 規則は言葉で書き、spec との対応はテストの名前（@DisplayName、test の名前）に書く。
 // - 本番のコード：行の全体を見る
 // - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）

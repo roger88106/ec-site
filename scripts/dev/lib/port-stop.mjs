@@ -17,13 +17,13 @@ const POLL_INTERVAL_MS = 100
  */
 
 /**
- * 問い合わせの指令の出力から、待ち受けるプロセスを読む。<br />
+ * 問い合わせのコマンドの出力から、待ち受けるプロセスを読む。<br />
  * Windows は「ポート プロセスの ID 状態」の行（findListeners の PowerShell が出す形）で、状態が Listen の行だけを読む。
  * 状態は .NET の列挙の名前なので、OS の言語で変わらない。
  * それ以外は lsof の -F pn の出力（p の行がプロセス、n の行がアドレス）で、接続（-> を含むアドレス）を読まない。
  * どちらも、渡したポート以外、自分のプロセス、ID 0（どのプロセスにも属さない接続）を読まず、同じ組（IPv4 と IPv6）は 1 つにする。
  *
- * @param {string} text 指令の出力
+ * @param {string} text コマンドの出力
  * @param {{ platform: NodeJS.Platform, ports: number[], ownPid: number }} options OS、対象のポート、自分のプロセスの ID
  * @returns {Listener[]} 待ち受けるプロセス
  */
@@ -67,13 +67,13 @@ function byPortOrder(listeners, ports) {
 /**
  * ポートで待ち受けるプロセスを探す。<br />
  * Windows は PowerShell の Get-NetTCPConnection、それ以外は lsof で問い合わせる。netstat を使わないのは、状態の列が OS の言語で変わるため。
- * 待ち受けがないことと、問い合わせの失敗（指令を流せない、誤りで終わった）を分けて返す。
+ * 待ち受けがないことと、問い合わせの失敗（コマンドを流せない、誤りで終わった）を分けて返す。
  * 失敗を待ち受けなしとみなすと、動いているバックエンドのデータベースを解除で消すため。
  * 一致なしとみなすのは、Get-NetTCPConnection の ObjectNotFound（どのポートにも接続がない）と、
  * lsof が誤りの出力なしに終了コード 1 で終わったときだけ。lsof は誤りでも 1 で終わるので、警告を -w で消し、出力の有無で分ける。
  *
  * @param {number[]} ports 対象のポート
- * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync, ownPid: number }} [deps] OS、指令の実行、自分のプロセスの ID。テストで差し替える
+ * @param {{ platform: NodeJS.Platform, spawnSync: typeof spawnSync, ownPid: number }} [deps] OS、コマンドの実行、自分のプロセスの ID。テストで差し替える
  * @returns {{ ok: true, listeners: Listener[] } | { ok: false, reason: string }} 待ち受けるプロセスか、失敗の理由
  */
 export function findListeners(ports, deps = { platform: process.platform, spawnSync, ownPid: process.pid }) {
@@ -113,7 +113,7 @@ export function findListeners(ports, deps = { platform: process.platform, spawnS
  * SIGKILL が権限がなく EPERM で失敗したプロセスは、止められず待っても終わらないので、待たずに先へ進む（残ったかどうかは呼ぶ側が判定する）。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
- * @param {Partial<StopDeps>} [deps] OS、指令の実行、シグナルの送り方、時計と待ち。テストで差し替える。省いた項目は実際のものを使う
+ * @param {Partial<StopDeps>} [deps] OS、コマンドの実行、シグナルの送り方、時計と待ち。テストで差し替える。省いた項目は実際のものを使う
  */
 export function stopListeners(listeners, deps = {}) {
   const { platform, spawnSync: run, kill, now, sleep } = { ...defaultStopDeps(), ...deps }
@@ -151,14 +151,14 @@ export function stopListeners(listeners, deps = {}) {
  *
  * @typedef {object} StopDeps
  * @property {NodeJS.Platform} platform OS
- * @property {typeof spawnSync} spawnSync 指令の実行
+ * @property {typeof spawnSync} spawnSync コマンドの実行
  * @property {(pid: number, signal: NodeJS.Signals | 0) => void} kill シグナルの送り方（シグナル 0 は生存の問い合わせ）
  * @property {() => number} now 時計（ミリ秒）
  * @property {(ms: number) => void} sleep 待ち
  */
 
 /**
- * 実際の OS・指令・時計・待ち。
+ * 実際の OS・コマンド・時計・待ち。
  *
  * @returns {StopDeps} 実際の機能
  */
@@ -224,7 +224,7 @@ export function stoppedMessage(listeners) {
 }
 
 /**
- * ポートが使われていて起動しないときに示す文。停止の指令（解除できるときは release も）を示す。
+ * ポートが使われていて起動しないときに示す文。停止のコマンド（解除できるときは release も）を示す。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
  * @param {{ platform: NodeJS.Platform, canRelease: boolean }} options OS と、スロットを解除できるか（メインの作業ツリーは解除できない）
@@ -253,7 +253,7 @@ export function stopFailedMessage(listeners, platform) {
 }
 
 /**
- * ポートの問い合わせが失敗したときに示す文。プロセスの ID が分からないので、ポートで探して止める指令を示す。
+ * ポートの問い合わせが失敗したときに示す文。プロセスの ID が分からないので、ポートで探して止めるコマンドを示す。
  *
  * @param {number[]} ports 問い合わせたポート
  * @param {string} reason 失敗の理由
@@ -269,11 +269,11 @@ export function queryFailedMessage(ports, reason, platform) {
 }
 
 /**
- * 手動でプロセスを止める指令。
+ * 手動でプロセスを止めるコマンド。
  *
  * @param {Listener[]} listeners 待ち受けるプロセス
  * @param {NodeJS.Platform} platform OS
- * @returns {string} 指令
+ * @returns {string} コマンド
  */
 function manualStopCommand(listeners, platform) {
   const pids = uniquePids(listeners)

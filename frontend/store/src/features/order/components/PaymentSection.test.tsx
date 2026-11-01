@@ -6,7 +6,7 @@ import { PaymentSection } from '@/features/order/components/PaymentSection'
 import { order } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
-// 支払う操作はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方 第 1 節）
+// 支払う操作はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する。動作はサーバーアクションのテストと E2E で確認する（テストの書き方の「テストの種類と基準」）
 vi.mock('@/actions/order', () => ({ payOrder: vi.fn(async () => ({ ok: true })) }))
 
 /** 支払待ちの注文（支払える） */

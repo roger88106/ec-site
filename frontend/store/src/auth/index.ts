@@ -15,7 +15,7 @@ import { loginPath, safeReturnTo } from '@/lib/login'
 import { fetchWithTimeout } from '@/lib/server/timeout'
 
 /**
- * ログイン（店舗画面の構成 第 9 節）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
+ * ログイン（店舗画面の構成の「ログイン」）。Auth.js の設定と、ログインの状態・token を読む関数を `@/auth` に集める
  * （ライブラリを替えるときの範囲を狭くするため）。<br />
  * 接続先と secret は環境変数（`config.ts`。本番で値がなければ起動に失敗する）。token の取り直しは `refresh.ts`、
  * ログアウトの URL は `logout.ts`。外からは `@/auth` だけを import する。
@@ -47,7 +47,7 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
       issuer: ISSUER,
       clientId: CLIENT_ID,
       clientSecret: CLIENT_SECRET,
-      // IdP への呼び出し（discovery、token の交換、userinfo）に、待つ時間の上限を付ける（店舗画面の構成 第 9.1 節）
+      // IdP への呼び出し（discovery、token の交換、userinfo）に、待つ時間の上限を付ける（店舗画面の構成の「token の更新」）
       [customFetch]: fetchWithTimeout(IDP_TIMEOUT_SECONDS),
     }),
   ],
@@ -126,7 +126,7 @@ export const getAccessToken = cache(async (): Promise<string | null> => {
 })
 
 /**
- * ログインの画面へ移す（店舗画面の構成 第 9 節）。ログインの後は、指定の画面（なければいまの画面）に戻る。
+ * ログインの画面へ移す（店舗画面の構成の「ログイン」）。ログインの後は、指定の画面（なければいまの画面）に戻る。
  *
  * @param returnTo ログインの後に戻る画面
  */

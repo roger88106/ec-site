@@ -22,7 +22,7 @@ import {
   readBodyRisk,
 } from './risk.mjs'
 
-/** 実際の高の経路の一覧 */
+/** 実際の危険度が高い経路の一覧 */
 const CONFIG = parseRiskConfig(readFileSync(new URL('./risk.json', import.meta.url), 'utf8'))
 
 /** spec.md の中身を返す関数を作る（一覧にないファイルは読めない＝削除とみなす） */
@@ -34,11 +34,11 @@ const DECLARED_SPEC = ['# Spec 900：例', '', 'ステータス：確定', '危�
 /** 冒頭に宣言のない spec（本文の中にだけ「危険度：高」がある） */
 const PLAIN_SPEC = ['# Spec 901：例', '', 'ステータス：確定', '', '## 1. 背景と目的', '', '危険度：高'].join('\n')
 
-/** 高の経路を含まないファイル */
+/** 危険度が高い経路を含まないファイル */
 const LOW_FILES = ['frontend/store/src/features/cart/CartPage.tsx', 'docs/03-機能仕様/catalog.md', 'docs/07-記録/subagents-results.md', 'README.md']
 
 describe('変更の危険度の判定', () => {
-  // まとまりごとに、高の経路の例（テストのファイルも含む）
+  // まとまりごとに、危険度が高い経路の例（テストのファイルも含む）
   const examples = {
     'エージェントの規則と設定': ['AGENTS.md', 'docs/constitution.md', 'docs/05-開発規則/workflow.md', '.claude/skills/review/SKILL.md', 'scripts/ci/risk.mjs', 'scripts/dev/hooks/pre-commit', 'docs/06-手順書/branches.md'],
     'CI とリリース': ['.github/workflows/ci.yml', '.github/dependabot.yml'],
@@ -65,13 +65,13 @@ describe('変更の危険度の判定', () => {
     '契約': ['api/openapi/admin.yaml'],
   }
 
-  test('高の経路の一覧は、まとまりの名前と経路を持つ', () => {
+  test('危険度が高い経路の一覧は、まとまりの名前と経路を持つ', () => {
     assert.deepEqual(CONFIG.groups.map((group) => group.name), Object.keys(examples))
     for (const group of CONFIG.groups) assert.ok(group.paths.length > 0, group.name)
   })
 
   for (const [name, files] of Object.entries(examples)) {
-    test(`高の経路のまとまり「${name}」の例は、どれも高になり、そのまとまりに当たる`, () => {
+    test(`危険度が高い経路のまとまり「${name}」の例は、どれも高になり、そのまとまりに当たる`, () => {
       for (const file of files) {
         const result = judgeRisk([file], CONFIG, reader({}))
         assert.equal(result.level, '高', file)
@@ -80,7 +80,7 @@ describe('変更の危険度の判定', () => {
     })
   }
 
-  test('テストのファイルも、高の経路の下にあれば高になる（バックエンドは本番のコードと同じパッケージのテスト・統合テスト・テストの補助）', () => {
+  test('テストのファイルも、危険度が高い経路の下にあれば高になる（バックエンドは本番のコードと同じパッケージのテスト・統合テスト・テストの補助）', () => {
     const files = [
       'backend/ecsite/src/test/java/com/ecsite/module/payment/PaymentTest.java',
       'backend/ecsite/src/integrationTest/java/com/ecsite/config/security/AuthorizationTest.java',
@@ -102,7 +102,7 @@ describe('変更の危険度の判定', () => {
     assert.equal(judgeRisk(files, CONFIG, reader({})).level, '低')
   })
 
-  test('高の経路に当たらないファイルだけなら低になる', () => {
+  test('危険度が高い経路に当たらないファイルだけなら低になる', () => {
     const result = judgeRisk(LOW_FILES, CONFIG, reader({}))
     assert.equal(result.level, '低')
     assert.deepEqual(result.hits, [])
@@ -317,7 +317,7 @@ describe('spec の宣言の基準のバージョンと書き方', () => {
 })
 
 describe('経路の大文字と小文字', () => {
-  test('大文字の違うパス（Windows と macOS では同じ所に入る）も、高の経路に当てる', () => {
+  test('大文字の違うパス（Windows と macOS では同じ所に入る）も、危険度が高い経路に当てる', () => {
     for (const file of ['.CLAUDE/skills/x/SKILL.md', 'Docs/05-開発規則/x.md', 'agents.md', 'API/OpenAPI/admin.yaml']) {
       assert.equal(judgeRisk([file], CONFIG, reader({})).level, '高', file)
     }
@@ -399,7 +399,7 @@ describe('差分のファイルの求め方', () => {
     git('add', '-A')
     git('commit', '-q', '-m', 'base')
     git('checkout', '-q', '-b', 'feature')
-    // 高の経路から外への移動（改名）、削除、宣言の行を消す変更
+    // 危険度が高い経路から外への移動（改名）、削除、宣言の行を消す変更
     mkdirSync(path.join(repo, 'tools'), { recursive: true })
     renameSync(path.join(repo, 'scripts/ci/moved.mjs'), path.join(repo, 'tools/moved.mjs'))
     rmSync(path.join(repo, 'docs/05-開発規則/removed.md'))
@@ -414,7 +414,7 @@ describe('差分のファイルの求め方', () => {
     assert.deepEqual(changed.files, ['docs/05-開発規則/removed.md', 'docs/08-spec/900-example/spec.md', 'scripts/ci/moved.mjs', 'tools/moved.mjs', 'untracked.md'])
   })
 
-  test('高の経路から外へ移す変更・削除・宣言の行を消す変更は高になる', () => {
+  test('危険度が高い経路から外へ移す変更・削除・宣言の行を消す変更は高になる', () => {
     const changed = listChangedFiles('develop', listGitFiles([], repo), repo)
     const readFile = (file) => {
       try {

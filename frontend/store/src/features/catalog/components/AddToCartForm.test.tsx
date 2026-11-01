@@ -8,7 +8,7 @@ import type { ActionResult } from '@/lib/actionResult'
 import { VARIANT_ID } from '@/test/fixtures'
 import { renderInBrowser, renderStatic } from '@/test/render'
 
-// カートに入れる操作はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する（テストの書き方 第 1 節）
+// カートに入れる操作はサーバーアクションを通るので、結果の表示だけを、差し替えた結果で確認する（テストの書き方の「テストの種類と基準」）
 vi.mock('@/actions/cart', () => ({ addToCart: vi.fn(async () => ({ ok: true })) }))
 
 /** 買えるバリアント */

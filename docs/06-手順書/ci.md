@@ -42,9 +42,9 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
   - `ci.yml` の `shard` の一覧。
   - この文書の、ジョブの名前の「1/2・2/2」と「2 つのジョブ」「3 つのジョブ」の書き方（「手元での実行」の表、「CI のジョブ」）。
   - `backend/ecsite/build.gradle.kts` の `integrationTestShards` の既定の数（`integrationTestShardCount` の `orElse`）。
-- 統合テストのフォークの数（`maxParallelForks`）は 1。2 にしても 10% 以上は短くならなかった（遅い方のジョブで約 2%）。CI で測って 10% 以上短くなれば、`-PintegrationTestForks=2` にする。
+- 統合テストのフォークの数（`maxParallelForks`）は 1。CI で測って 10% 以上短くなれば、`-PintegrationTestForks=2` にする。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「統合テストのフォークの数」。
 - 「バックエンド」は、各ジョブが保存したカバレッジの実行データとクラスを集めて、1 つの報告にする（コンパイルもテストもしない）。各ジョブが別々にコンパイルしたクラスの実行データを合わせるので、クラスが一致しないと JaCoCo が警告を出し、「バックエンド」が注釈（warning）を出す。
-- E2E は、ブラウザーの OS の依存を apt で入れない。ランナーのイメージに依存が入っていて、apt の取得に数分から 30 分かかることがあったため。失敗時の画面の撮影では、日本語のフォントがなく文字が四角になることがある。読めないときは、手元の `scripts/dev/e2e.sh` で再現する。
+- E2E は、ブラウザーの OS の依存を apt で入れない。ランナーのイメージに依存が入っているため。失敗時の画面の撮影では、日本語のフォントがなく文字が四角になることがある。読めないときは、手元の `scripts/dev/e2e.sh` で再現する。
 - Node のバージョンは `.node-version`、JDK のバージョンは `ci.yml` の `JAVA_VERSION` と `libs.versions.toml` の `java` に書く。1 か所にできない組は、検査 `runtime-versions`（「CI の検査の script」）が一致を確認する。
 
 CI の検査の script は、文書だけの変更でも結果が変わる（文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec など）ので、文書だけの push でも実行する `docs.yml` で実行する。
@@ -66,23 +66,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
   - 除外の一覧を持つなら、パスを `exclusionsPath`、誤りの文を `checkExclusions`（`lib/exclusions.mjs`）で作る。
   - 画面のソースを読むなら `lib/screen-sources.mjs` を使う。行番号が必要なら `lib/line-number.mjs` を使う。
 - 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。「カバレッジと mutation score の基準の検査」）と、画面の依存が必要な検査（`licenses/`）、TypeScript の依存が必要な、組み込みの名前の一覧の生成と確認（`globals/` の下の `lib-globals.mjs`。一覧の `lib-globals.json` を `frontend-rules` が読む。下の `frontend-rules` の行）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
-- 複数の script が使う関数は `lib/` に置く（テストは `*.test.mjs`）。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
-  - `spec-dirs.mjs`：spec のディレクトリ（`docs/08-spec/` の直下とアーカイブの下）を探す。
-  - `git-files.mjs`：Git の対象のファイル（追跡しているファイルと、追跡していない無視されないファイル）の一覧を返す。Git の一覧を読む検査は、対象が 0 件のとき（`exitIfNoFiles`）失敗にする。追跡していないファイルも含めるのは、検査を commit の前に実行し、新しく作ったファイルがその時点では `git add` されていないことが多いため（追跡しているファイルだけにすると、新しいテストや文書が検査されないまま手元で通り、CI で初めて失敗する）。CI の作業ツリーには追跡していないファイルがない。そのため、手元にだけある commit しないファイルで、手元だけ失敗することがある。また、commit し忘れたファイルを指す参照は、手元で通り CI で失敗することがある。手元だけの失敗は、ファイルを `.gitignore` に書くか `/.local/` に置いて避ける。
-  - `screen-sources.mjs`：画面の本番のソース（admin・store・shared の `src` の `.ts`・`.tsx` から、テスト・生成物・ui を除く）の定義。
-  - `exclusions.mjs`：除外の一覧（`{キー: 理由}`）を読み、理由のない除外と不要になった除外を見つける。除外の一覧のパス（`exclusionsPath`）と、誤りの文（`checkExclusions`）も作る。検査が文を直接組み立てない（テストが走査する）。
-  - `unreadable-line.mjs`：検査が読めなかった行を、`ファイル:行 内容（理由）` の形の失敗の文にする（`describeUnreadableLine`）。検査が文を直接組み立てない（テストが走査する）。
-  - `git-env.mjs`：Git を呼ぶテストが、`GIT_` の環境変数を外す（`withoutGitEnv`、`removeGitEnv`）。外す処理はここだけに置く。守っているかは `git-env.test.mjs` が確認する（`scripts/` の下の `.mjs` が `startsWith('GIT_')` などで自分で外していると失敗にする）。
-  - `scan-rules.mjs`：検査の script を走査して、共通の関数を使っているかを確認するテストの補助。走査する script の一覧（`listScanScripts`。範囲は `ci`、`ci+lib`、`all`）と、表を受け取り違反を返す関数（`findRuleViolations`）を持つ。表には、共通の関数ごとに「禁じる書き方」と「例外の script」を書く。`exclusions.test.mjs`・`unreadable-line.test.mjs`・`git-files.test.mjs`・`git-env.test.mjs` が使う。新しい共通の関数を加えたときは、その関数の使用を確認するテストの表に行を追加する。
-  - `sql-code.mjs`：SQL のコメント（`--`、入れ子の `/* */`）と文字列の中を空白にする（`blankSqlNonCode`）。マイグレーションを読む検査（`migrations`、`design-migrations`）が共通で使う。
-  - `scan-code.mjs`：ソースを、コード・コメント・文字列・正規表現のリテラルの区間に分けて読む（`scanCode`）。コメント・文字列・正規表現を読み飛ばす処理はここだけにあり、閉じ括弧の探し方・コメントの除去・テストの関数の読み方が使う。TypeScript と Java の違いは選択肢（`regex`、`templates`、`textBlocks`）で決める。
-  - `strip-comments.mjs`：ソースのコメントを空白に置き換える。TypeScript は `stripComments`、Java は `stripJavaComments`（文字列とテキストブロックの中の `//` はコメントにしない）。コメントだけを残す `keepTsComments`・`keepJavaComments` もある（`spec-numbers` が使う）。TSX の JSX のテキスト（`<p>It's // here</p>`）の中の `'`・`"`・`//` を、文字列やコメントと誤って判定する限界がある。
-  - `closing-paren.mjs`：開き括弧に対応する閉じ括弧の位置を求める（文字列とコメントの中は数えない）。TypeScript は正規表現のリテラルの中も数えない。Java には正規表現のリテラルがないので、呼び出し元が `regex: false` を渡して `/` を割り算と読む。
-  - `is-main.mjs`：script（`scripts/` の下と `frontend/shared/scripts/` の下）が直接実行されたか（import されたのでないか）を判定する。画面の API の生成も読むので、node の標準のモジュールの他を import しない。シンボリックリンク経由でも同じファイルなら直接実行とみなす。
-  - `shallow-clone.mjs`：shallow clone（commit の履歴が途中までのリポジトリ）かを確認する。履歴を読む検査が、shallow clone では失敗にするために使う。
-  - `line-number.mjs`：文字列の中の位置から行番号を求める。
-  - `test-files.mjs`：テストのファイルの探し方と、テストの関数の読み方（AC の照合と機能紹介の数え方が使う）。`each` の表は括弧の対応で読み、表の中の関数の呼び出しでテスト名が切れない。
-  - `check-result.mjs`：検査の成功・失敗の判定（`check-all.sh` が使う）。終了コードが 0 でも、最後の行が要約の行でなければ（script のテストは、テストが 0 件なら）失敗にする。成功は `OK` の 1 行で示す。
+- 複数の検査が使う関数は `lib/` に置き（テストは `*.test.mjs`）、役割は各ファイルの先頭のコメントに書く。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
 
 各検査の詳しい説明（確認すること、失敗したときの修正の手順、除外の書き方）は、script の先頭のコメントにある。
 
@@ -137,9 +121,9 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 - 検査の手順は、報告を保存した後に置く（失敗しても報告が残る）。位置は、管理画面、店舗画面、「バックエンド」のジョブでは最後。「バックエンド（ビルドと単体テスト）」のジョブでは、失敗時のテストレポートの保存の前。店舗画面のジョブは、店舗画面と共有パッケージの 2 つの手順で検査する。
 - 基準は対象ごとの合計で、ファイルごとの基準はない。
 - 失敗したときは、ログと summary に出る対象、基準、今回の値、差を確認し、テストを追加して値を戻す。正当な理由で下げるときは、手元で `--write` を実行して基準のファイルを更新する。更新したファイルは同じ pull request に含め、pull request に理由を書く。手元の実行は [テストの実行方法](running-tests.md)の「カバレッジと mutation score の基準の検査」。
-- バックエンドのカバレッジは、統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつく。観測した最大の欠けは、行 0.02 ポイント、分岐 0.11 ポイント（分岐 2 つ分）。分岐 1 つは約 0.05 ポイントで、同じ競合の分岐が他にもありうるため、`backend` の許容の幅は、行 0.10、分岐 0.30（どちらも約 6 つ分）にしている。
-- PIT は、ビルドと単体テストのジョブの、単体テストの後で実行する（`./gradlew pitest`。`check` には含まれない）。変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、毎回そのジョブの時間が 2 分ほど増える（手順の実測は 2 分 1 秒から 2 分 28 秒）。報告は artifact `pitest-backend` に保存する。
-- このジョブ（実測 3 分 41 秒から 4 分 10 秒）は、統合テストの遅い方のジョブ（実測 5 分 41 秒から 6 分 15 秒）より早く終わるので、`ci.yml` の全体の時間は遅い方のジョブで決まる。同じ commit の 4 回の実測の全体は 6 分 22 秒から 7 分 10 秒で、8 分以下だった。
+- バックエンドのカバレッジは、統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつく。そのため `backend` の許容の幅は、行 0.10、分岐 0.30 にしている。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」。
+- PIT は、ビルドと単体テストのジョブの、単体テストの後で実行する（`./gradlew pitest`。`check` には含まれない）。変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、そのジョブの時間が増える。報告は artifact `pitest-backend` に保存する。
+- このジョブは、統合テストの遅い方のジョブより早く終わるので、`ci.yml` の全体の時間は遅い方のジョブで決まる。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」。
 
 ## 4. GitHub のセキュリティの機能
 

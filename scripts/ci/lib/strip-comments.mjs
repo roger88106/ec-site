@@ -1,5 +1,7 @@
 // ソースのコメントを空白に置き換える。走査（コメント・文字列・正規表現の読み分け）は scan-code が行う。
 // - .ts・.tsx：画面のソースとテストを読む検査（hardcoded-text、frontend-rules、globals/lib-globals）が共通で使う（stripComments）。コメントだけを残す keepTsComments は spec-numbers が使う
+// Java は、文字列とテキストブロックの中の // をコメントにしない。
+// 限界：TSX の JSX のテキスト（<p>It's // here</p>）の中の '・"・// を、文字列やコメントと誤って判定する。
 // - .java：Java のソースを読む検査（java-rules、env-defaults）が共通で使う（stripJavaComments）
 import { scanCode } from './scan-code.mjs'
 

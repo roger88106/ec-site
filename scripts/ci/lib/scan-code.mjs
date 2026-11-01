@@ -1,5 +1,6 @@
 // ソースを、コード・コメント・文字列・正規表現のリテラルの区間に分けて読む。コメント・文字列・正規表現を読み飛ばす処理は、ここだけにある。
 // - 閉じ括弧の探し方（closing-paren）、コメントの除去（strip-comments）、テストの関数の読み方（test-files）が使う
+// 関数は scanCode。選択肢は regex、templates、textBlocks。
 // - TypeScript と Java の違いは選択肢で決める。Java には正規表現のリテラルとテンプレートがなく、テキストブロックがある
 
 /**

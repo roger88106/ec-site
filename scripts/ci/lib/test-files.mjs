@@ -1,4 +1,5 @@
 // テストのファイルの探し方と、テストの関数の読み方。
+// each の表は括弧の対応で読むので、表の中の関数の呼び出しでテスト名が切れない。
 // AC の照合（ac-check）と、機能紹介の数え方（scripts/dev/showcase-counts）が使う
 import path from 'node:path'
 import { closingParen } from './closing-paren.mjs'

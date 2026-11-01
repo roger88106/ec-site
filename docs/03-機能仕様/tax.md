@@ -6,7 +6,6 @@
 |------|------|
 | レベル | A（期間の重複・途切れの禁止、開始済みの税率の変更制限など、不変条件が多い） |
 | 依存 | なし |
-| 関連 spec | [001](../08-spec/archive/mvp/001-catalog-and-inventory)、[002](../08-spec/archive/mvp/002-cart-and-order)、[018](../08-spec/archive/mvp/018-docs-and-tools)、[155](../08-spec/archive/1to10/155-backend-structure) |
 
 ## 税区分（集約）
 
@@ -77,8 +76,6 @@ tax/
 | API | 税率ごとの消費税額の計算 | 注文 |
 
 ## データモデル
-
-[V202610091000__tax_create_tax_category.sql](../../backend/ecsite/src/main/resources/db/migration/V202610091000__tax_create_tax_category.sql)、[V202610101300__common_comment_logical_names.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101300__common_comment_logical_names.sql)
 
 - 排他制約の範囲型は、null の端を無限として扱う。
 - 排他制約の検査は、置き換えの書き込みが終わるまで遅延させる ※2。検査はリポジトリが書き込みの最後に行い、違反を業務のエラーに変える ※3。

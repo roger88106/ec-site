@@ -13,7 +13,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 - CI で失敗したら、まず個別のジョブ（バックエンド（ビルドと単体テスト）、バックエンド（統合テスト 1/2・2/2）、管理画面、店舗画面、文書と CI の検査の script）の結果を確認する。「バックエンド」は、他の 3 つのジョブ（ビルドと単体テスト、統合テスト 1/2・2/2）の結果を確認するジョブなので、先に他の 3 つを確認する。E2E は他のジョブを待たずに始まるため、個別のジョブで分かる失敗（コンパイルの誤りなど）でも E2E が失敗する。
 - 手元のバックエンドのコマンドは、CI のようにジョブに分けず、単体テストと統合テストの全てを実行する。
-- commit の hook が実行するのは、次の 4 つだけである。ステージした内容に対する `check-all.sh`（`ja-text` の error を含む）、追加行の `ja-text` の warning の表示、関連 spec の照合、メッセージの `ja-text` の検査（[開発環境の起動](setup.md)の「起動」）。テストは時間がかかるため、変更した箇所に応じて手動で実行する（[テストの実行方法](running-tests.md)）。
+- commit の hook が実行するのは、次の 3 つだけである。ステージした内容に対する `check-all.sh`（`ja-text` の error を含む）、追加行の `ja-text` の warning の表示、メッセージの `ja-text` の検査（[開発環境の起動](setup.md)の「起動」）。テストは時間がかかるため、変更した箇所に応じて手動で実行する（[テストの実行方法](running-tests.md)）。
 
 ## 2. CI のジョブ
 
@@ -47,7 +47,9 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 - E2E は、ブラウザーの OS の依存を apt で入れない。ランナーのイメージに依存が入っているため。失敗時の画面の撮影では、日本語のフォントがなく文字が四角になることがある。読めないときは、手元の `scripts/dev/e2e.sh` で再現する。
 - Node のバージョンは `.node-version`、JDK のバージョンは `ci.yml` の `JAVA_VERSION` と `libs.versions.toml` の `java` に書く。1 か所にできない組は、検査 `runtime-versions`（「CI の検査の script」）が一致を確認する。
 
-CI の検査の script は、文書だけの変更でも結果が変わる（文書の参照・用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子、設計の文書の関連 spec など）ので、文書だけの push でも実行する `docs.yml` で実行する。
+CI の検査の script は、文書だけの変更でも結果が変わる ※1。そのため、文書だけの push でも実行する `docs.yml` で実行する。
+
+※1：文書の参照と用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子など。
 
 `ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.github/ISSUE_TEMPLATE/`、`.github/dependabot.yml`、`.gitignore`、`LICENSE`。ただし、全体構成の文書（`docs/02-設計/overview.md`）は、バックエンドの単体テストが図と照合するので、Markdown でも実行する。モジュールの設計書（`docs/03-機能仕様/*.md`。同じフォルダーの AC 一覧と用語集だけを変えた push でも実行する）と、バックエンドの書き方（`docs/05-開発規則/backend-coding.md`）も、Markdown でも実行する。`ProductionClassesTest` が設計書のレベルをレベル A の一覧と照合し、`ModuleStructureTest` がパッケージの大きさの表を照合するため。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所で、`scripts/dev/ports.json` はその `lib/slot.mjs` が読むポートの一覧なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
 
@@ -76,7 +78,6 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | `ci-docs` | ci.md の表の名前と scripts/ci/ の検査が 1 対 1 に対応し、表が 2 列で、検査の先頭が `//` のコメントで始まることを確認する |
 | `compose-ports` | compose の全ての ports が、既定でこのマシンだけで待ち受ける `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action を置いたディレクトリが、Dependabot の github-actions の directories に入っていることを確認する |
-| `design-migrations` | モジュールの設計書のデータモデルの節に、そのモジュールのバージョン付きのマイグレーションが全て挙がっていることを確認する |
 | `doc-refs` | Markdown のリンクと見出しの参照の先が存在し、節の番号の参照（第 N 節）が残っていないことを確認する |
 | `docs-folders` | docs/ の下の全てのファイルが、constitution.md か許可したフォルダーの下にあることを確認する |
 | `ja-text` | 日本語の文に使わない語（error）がないことを確認し、文脈で決める語と長い文などの文体の型を warning として示す。 |
@@ -98,7 +99,6 @@ CI の検査の script は、文書だけの変更でも結果が変わる（文
 | `migrations` | 適用済みのマイグレーションを追加後に変えていないことと、新しいマイグレーションが前のリリースのアプリを停止させる変更を含まないことを確認する。 |
 | `note-numbers` | 文書の注の番号が、1 つの文書の中で重複せず、出る順に並ぶことを確認する。 |
 | `progress` | MVP の spec の進捗が、README の表、完成までの一覧、tasks のチェックボックスで一致することを確認する。 |
-| `related-specs` | 設計の文書を変えた commit の spec が、その文書の概要の表にある「関連 spec」の行に載っていることを確認する。 |
 | `risk` | 変更の危険度（高か低）を、危険度が高い経路と spec の宣言から判定し、pull request の本文の判定と比べる。 |
 | `role-permissions` | ロールと権限の対応表が、API の契約と運営者の realm の設定から再作成した表と一致することを確認する。 |
 | `runtime-versions` | JDK と Node のバージョンが置き場所の間で一致し、workflow が直接書かずにそれを参照していることを確認する。 |

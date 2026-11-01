@@ -5,7 +5,6 @@ C 側（消費者）の画面。Next.js（App Router）で、店舗 API（`store
 | 項目 | 内容 |
 |------|------|
 | 依存 | 店舗 API（`store.yaml`）、消費者の realm（IdP。ログイン）、共有のパッケージ（`frontend/shared`） |
-| 関連 spec | [007](../../08-spec/archive/mvp/007-payment)、[009](../../08-spec/archive/mvp/009-shipping)、[012](../../08-spec/archive/mvp/012-test-safety-net)、[014](../../08-spec/archive/mvp/014-frontend-consistency)、[015](../../08-spec/archive/mvp/015-security)、[016](../../08-spec/archive/mvp/016-master-data)、[017](../../08-spec/archive/mvp/017-stability)、[104](../../08-spec/archive/1to10/104-parallel-local-env)、[134](../../08-spec/archive/1to10/134-admin-tidy)、[135](../../08-spec/archive/1to10/135-store-cleanup)、[157](../../08-spec/archive/1to10/157-frontend-tidy)、[184](../../08-spec/archive/1to10/184-frontend-tests)、[193](../../08-spec/archive/1to10/193-store-a11y)、[192](../../08-spec/archive/1to10/192-unused-code) |
 
 ## 1. 技術
 

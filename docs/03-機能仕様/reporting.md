@@ -6,7 +6,6 @@
 |------|------|
 | レベル | B（集約の不変条件がなく、写しと集計だけ。理由は後述） |
 | 依存 | 注文（API、イベント）、出荷（イベント）、商品カタログ・地域（API）。他のモジュールはレポートに依存しない |
-| 関連 spec | [010](../08-spec/archive/mvp/010-sales-report)、[013](../08-spec/archive/mvp/013-backend-consistency)、[016](../08-spec/archive/mvp/016-master-data)、[018](../08-spec/archive/mvp/018-docs-and-tools)、[155](../08-spec/archive/1to10/155-backend-structure) |
 
 ## レベルを B とした理由
 
@@ -141,8 +140,6 @@ reporting/
 件数が増えて、索引と日付での分割で足りなくなったら、写しを列指向の分析用のデータベースに移す。写しを持つのはレポートだけなので、`infrastructure` の写しの保存と集計の実装を替えれば済み、他のモジュールは変わらない。導入のときに、依存とライセンスを確認する。
 
 ## データモデル
-
-[V202610151200__reporting_create_report.sql](../../backend/ecsite/src/main/resources/db/migration/V202610151200__reporting_create_report.sql)、[V202610201000__common_add_enum_column_checks.sql](../../backend/ecsite/src/main/resources/db/migration/V202610201000__common_add_enum_column_checks.sql)
 
 - schema は `reporting`。注文・バリアント・商品・会員は他のモジュールの ID なので、外部キーは張らない。
 - 注文の写しは、注文 ID を主キーにする。注文日と出荷日（日本時間の日付）を列に持ち、索引を付ける（日で集計するため）。

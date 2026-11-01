@@ -6,7 +6,6 @@
 |------|------|
 | レベル | A（支払の状態遷移、外部からの通知の重複と順序の入れ替わり、期限切れとの競合） |
 | 依存 | なし（注文が決済の API を呼び、決済は結果をイベントで伝える ※1） |
-| 関連 spec | [007](../08-spec/archive/mvp/007-payment)、[009](../08-spec/archive/mvp/009-shipping)、[013](../08-spec/archive/mvp/013-backend-consistency)、[015](../08-spec/archive/mvp/015-security)、[017](../08-spec/archive/mvp/017-stability)、[018](../08-spec/archive/mvp/018-docs-and-tools)、[155](../08-spec/archive/1to10/155-backend-structure)、[182](../08-spec/archive/1to10/182-payment-security) |
 
 ※1：決済が注文のイベントを受けると、モジュールが循環する。
 
@@ -187,8 +186,6 @@ payment/
 | イベント | 与信の成功、支払の期限切れ | 注文 |
 
 ## データモデル
-
-[V202610140910__payment_create_payment.sql](../../backend/ecsite/src/main/resources/db/migration/V202610140910__payment_create_payment.sql)、[V202610150900__payment_add_authorized_at.sql](../../backend/ecsite/src/main/resources/db/migration/V202610150900__payment_add_authorized_at.sql)、[V202610201200__payment_add_awaiting_authorization_since.sql](../../backend/ecsite/src/main/resources/db/migration/V202610201200__payment_add_awaiting_authorization_since.sql)、[V202610201000__common_add_enum_column_checks.sql](../../backend/ecsite/src/main/resources/db/migration/V202610201000__common_add_enum_column_checks.sql)
 
 - schema は `payment`。
 - 注文 ID は他のモジュールの ID なので、外部キーは張らない。注文 ID に一意制約を付ける。

@@ -6,7 +6,6 @@ IdP（Keycloak）のアカウントと、EC の会員 ID の対応を管理す�
 |------|------|
 | レベル | B（不変条件は「1 つのアカウントに 1 人の会員」だけ） |
 | 依存 | なし（カート・注文・店舗の presentation から API で呼ばれる） |
-| 関連 spec | [003](../08-spec/archive/mvp/003-auth)、[017](../08-spec/archive/mvp/017-stability) |
 
 ## 会員
 
@@ -54,8 +53,6 @@ member/
 | API | アカウント ID から会員 ID を求める（なければ作る） | カート、注文、店舗 |
 
 ## データモデル
-
-[V202610121000__member_create_member.sql](../../backend/ecsite/src/main/resources/db/migration/V202610121000__member_create_member.sql)
 
 - 会員 ID とは別に、アカウント ID を一意で持つ。
 - 登録日時は、会員を作った日時（IdP で登録した日時ではない）。

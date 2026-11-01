@@ -6,7 +6,6 @@
 |------|------|
 | レベル | B（品目の上限と合算だけで、状態遷移を持たない） |
 | 依存 | 商品カタログ・在庫（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../08-spec/archive/mvp/002-cart-and-order)、[003](../08-spec/archive/mvp/003-auth)、[007](../08-spec/archive/mvp/007-payment)、[017](../08-spec/archive/mvp/017-stability)、[019](../08-spec/archive/mvp/019-mvp-completion)、[155](../08-spec/archive/1to10/155-backend-structure) |
 
 ## カート
 
@@ -75,8 +74,6 @@ cart/
 | イベント | カート変更（カート ID） | 注文（引当を解く） |
 
 ## データモデル
-
-[V202610111100__cart_create_cart.sql](../../backend/ecsite/src/main/resources/db/migration/V202610111100__cart_create_cart.sql)、[V202610121100__cart_add_member_id.sql](../../backend/ecsite/src/main/resources/db/migration/V202610121100__cart_add_member_id.sql)、[V202610201120__cart_add_cart_updated_at_index.sql](../../backend/ecsite/src/main/resources/db/migration/V202610201120__cart_add_cart_updated_at_index.sql)
 
 - バリアントと会員は他のモジュールの ID なので、外部キーは張らない。
 - 品目は入れた順の連番を持つ。保存では品目を削除して再挿入するので、連番は再採番される。

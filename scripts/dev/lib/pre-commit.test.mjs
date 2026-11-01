@@ -225,31 +225,22 @@ describe('commit のメッセージの検査', () => {
     return { calls, run: (name, args) => (calls.push({ name, args }), codes[name]) }
   }
 
-  test('関連 spec の照合と日本語の文の検査の両方を、メッセージのファイルを渡して実行する', () => {
-    const { calls, run } = fakeRun({ 'related-specs': 0, 'ja-text': 0 })
+  test('日本語の文の検査を、メッセージのファイルを渡して実行する', () => {
+    const { calls, run } = fakeRun({ 'ja-text': 0 })
     assert.equal(runCommitMsg({ file: '.git/MSG', run }), 0)
-    assert.deepEqual(calls, [
-      { name: 'related-specs', args: ['--staged', '.git/MSG'] },
-      { name: 'ja-text', args: ['--message', '.git/MSG'] },
-    ])
+    assert.deepEqual(calls, [{ name: 'ja-text', args: ['--message', '.git/MSG'] }])
   })
 
-  test('片方が失敗しても、もう片方を実行し、全体は失敗にする', () => {
-    const first = fakeRun({ 'related-specs': 1, 'ja-text': 0 })
-    assert.equal(runCommitMsg({ file: 'm', run: first.run }), 1)
-    assert.equal(first.calls.length, 2)
-    const second = fakeRun({ 'related-specs': 0, 'ja-text': 1 })
-    assert.equal(runCommitMsg({ file: 'm', run: second.run }), 1)
-    assert.equal(second.calls.length, 2)
+  test('検査が失敗すれば、全体は失敗にする', () => {
+    assert.equal(runCommitMsg({ file: 'm', run: fakeRun({ 'ja-text': 1 }).run }), 1)
   })
 
   test('終了コードを返さない（シグナルでの終了など）検査は、失敗にする', () => {
-    assert.equal(runCommitMsg({ file: 'm', run: fakeRun({ 'related-specs': null, 'ja-text': 0 }).run }), 1)
-    assert.equal(runCommitMsg({ file: 'm', run: fakeRun({ 'related-specs': 0, 'ja-text': null }).run }), 1)
+    assert.equal(runCommitMsg({ file: 'm', run: fakeRun({ 'ja-text': null }).run }), 1)
   })
 
   test('メッセージのファイルがなければ、検査を実行せずに失敗にする', () => {
-    const { calls, run } = fakeRun({ 'related-specs': 0, 'ja-text': 0 })
+    const { calls, run } = fakeRun({ 'ja-text': 0 })
     assert.equal(runCommitMsg({ file: undefined, run }), COMMIT_MSG_FAILED)
     assert.equal(calls.length, 0)
   })
@@ -515,14 +506,12 @@ describe('実際の commit-msg の hook', () => {
   ]
 
   /**
-   * 一時のディレクトリ（Git のリポジトリでない場所は hook が使えないので、git init する）に hook をコピーし、
-   * 関連 spec の照合を、終了コードを環境変数で決める代わりの script に差し替えて、hook を実行する。
+   * 一時のディレクトリ（Git のリポジトリでない場所は hook が使えないので、git init する）に hook をコピーして、hook を実行する。
    *
    * @param {string} message コミットメッセージのファイルの中身
-   * @param {number} relatedStatus 関連 spec の照合の代わりの script が返す終了コード
    * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
    */
-  function runCommitMsgHookFull(message, relatedStatus) {
+  function runCommitMsgHookFull(message) {
     const dir = mkdtempSync(path.join(tmpdir(), 'commit-msg-test-'))
     try {
       const env = withoutGitEnv()
@@ -532,7 +521,6 @@ describe('実際の commit-msg の hook', () => {
         copyFileSync(path.join(repoRoot, file), path.join(dir, file))
       }
       writeFileSync(path.join(dir, 'scripts/ci/ja-text.json'), MINI_LIST)
-      writeFileSync(path.join(dir, 'scripts/ci/related-specs.mjs'), `process.exit(${relatedStatus})\n`)
       writeFileSync(path.join(dir, 'MSG'), message)
       const result = spawnSync(gitBash(env), ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
       return { status: result.status, output: result.stdout }
@@ -542,34 +530,26 @@ describe('実際の commit-msg の hook', () => {
   }
 
   /** hook の終了コードだけを返す */
-  function runCommitMsgHook(message, relatedStatus) {
-    return runCommitMsgHookFull(message, relatedStatus).status
+  function runCommitMsgHook(message) {
+    return runCommitMsgHookFull(message).status
   }
 
   test('メッセージに使わない語（error）がなければ成功する', () => {
-    assert.equal(runCommitMsgHook('ツールを追加する\n', 0), 0)
+    assert.equal(runCommitMsgHook('ツールを追加する\n'), 0)
   })
 
   test('メッセージに使わない語（error）があれば失敗する', () => {
-    const { status, output } = runCommitMsgHookFull('道具を追加する\n', 0)
+    const { status, output } = runCommitMsgHookFull('道具を追加する\n')
     assert.equal(status, 1)
     assert.match(output, /道具/)
   })
 
   test('git commit -v の差分に使わない語があっても、数えない', () => {
     const message = 'ツールを追加する\n# ------------------------ >8 ------------------------\ndiff --git a/a b/a\n-道具を使う\n'
-    assert.equal(runCommitMsgHook(message, 0), 0)
+    assert.equal(runCommitMsgHook(message), 0)
   })
 
   test('# で始まる行の使わない語は、数えない', () => {
-    assert.equal(runCommitMsgHook('ツールを追加する\n# 道具\n', 0), 0)
-  })
-
-  test('関連 spec の照合が失敗すれば、メッセージが正しくても失敗する', () => {
-    assert.equal(runCommitMsgHook('ツールを追加する\n', 1), 1)
-  })
-
-  test('関連 spec の照合とメッセージの検査の両方が失敗しても、失敗する', () => {
-    assert.notEqual(runCommitMsgHook('道具を追加する\n', 1), 0)
+    assert.equal(runCommitMsgHook('ツールを追加する\n# 道具\n'), 0)
   })
 })

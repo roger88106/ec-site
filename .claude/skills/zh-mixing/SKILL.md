@@ -31,7 +31,7 @@ git config --local ecsite.instructionLanguage zh
 | 指定したファイル | `node .claude/skills/zh-mixing/zh-mixing.cjs file <パス>...` |
 | ステージした追加行 | `node .claude/skills/zh-mixing/zh-mixing.cjs staged` |
 | コミットメッセージのファイル | `node .claude/skills/zh-mixing/zh-mixing.cjs message <ファイル>` |
-| Git が追跡している全てのファイル（アーカイブした spec を除く） | `node .claude/skills/zh-mixing/zh-mixing.cjs tracked` |
+| Git が追跡している全てのファイル（アーカイブした spec と、評価の一覧の置き場所 `.claude/skills/review/evals/` を除く） | `node .claude/skills/zh-mixing/zh-mixing.cjs tracked` |
 
 環境の印がなくても調べるときは、`--force` を付ける（一覧を較正するとき）。
 

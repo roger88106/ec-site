@@ -227,6 +227,20 @@ test('追跡しているファイルを調べるとき、アーカイブした s
   assert.equal(zh.run(['tracked'], deps), 0)
 })
 
+test('追跡しているファイルを調べるとき、評価の一覧の置き場所（review の evals）は除く', () => {
+  const files = { '.claude/skills/review/evals/cases.md': SIMPLIFIED, 'docs/a.md': JAPANESE }
+  const { deps } = makeDeps({ listTracked: () => Object.keys(files), readFile: (f) => files[f] })
+  assert.equal(zh.run(['tracked'], deps), 0)
+})
+
+test('ステージした追加行を調べるとき、評価の一覧の置き場所（review の evals）は除く', () => {
+  const diff = (file, text) => ['diff --git a/' + file + ' b/' + file, '--- a/' + file, '+++ b/' + file, '@@ -0,0 +1 @@', `+${text}`].join('\n')
+  const evals = makeDeps({ stagedDiff: () => diff('.claude/skills/review/evals/cases.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], evals.deps), 0)
+  const other = makeDeps({ stagedDiff: () => diff('.claude/skills/review/SKILL.md', SIMPLIFIED) })
+  assert.equal(zh.run(['staged'], other.deps), 1)
+})
+
 test('入口の指定がなければ、使い方を出して 2', () => {
   const { deps, err } = makeDeps()
   assert.equal(zh.run([], deps), 2)
@@ -320,10 +334,12 @@ test('SKILL.md に、層 2 の字・用語がない（環境の印によらな�
   assert.deepEqual(hits.map((h) => h.line), [])
 })
 
-test('校閲役の定義に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-29、30）', () => {
-  const body = fs.readFileSync(path.join(__dirname, '..', '..', 'agents', 'ja-proofreader.md'), 'utf8')
-  const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: 'ja-proofreader.md', line: i + 1, text })), strict)
-  assert.deepEqual(hits.map((h) => h.line), [])
-  assert.match(body, /^omitClaudeMd: true$/m)
-  assert.match(body, /^tools: Read, Grep, Glob$/m)
-})
+for (const agent of ['ja-proofreader.md', 'ja-proof-verifier.md']) {
+  test(`校閲の 2 つの役割の定義（${agent}）に、層 2 の字・用語がない。文脈を絞る設定がある（環境の印によらない。DC-249-29、30）`, () => {
+    const body = fs.readFileSync(path.join(__dirname, '..', '..', 'agents', agent), 'utf8')
+    const hits = zh.scanLines(body.split(/\r?\n/).map((text, i) => ({ file: agent, line: i + 1, text })), strict)
+    assert.deepEqual(hits.map((h) => h.line), [])
+    assert.match(body, /^omitClaudeMd: true$/m)
+    assert.match(body, /^tools: Read, Grep, Glob$/m)
+  })
+}

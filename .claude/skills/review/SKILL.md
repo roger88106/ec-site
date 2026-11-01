@@ -25,7 +25,7 @@ description: 段階や spec の最後のレビュー、plan・tasks を書き終
 組み込みのコードレビューは、draft で先に作った pull request に使う。level は毎回明示する。順は [開発の進め方](../../../docs/05-開発規則/workflow.md)の「規模」。
 認証・支払・権限の経路を変えるなら、セキュリティのレビューも行う。
 hook・CI の検査の script・認証・支払・権限の経路を変える spec は、文脈を持たない高性能のレビュー役（`reviewer`）も 1 回加える（[エージェントの作業フロー](../../../docs/05-開発規則/subagents.md)の「役割と作業の流れ」）。
-中国語で指示する環境では手順 9 も行う。
+中国語で指示する環境では手順 9 も行う（校閲の対象と時点は、[docs-review.md](docs-review.md)の手順 3）。
 差分の追加行の文体の警告は、spec 担当のセッションが `node scripts/ci/ja-text.mjs --changed` を実行する。一覧の警告を 1 件ずつ読み、修正するかを決める。
 修正しないものは、理由をレビューの記録に書く。警告だけでは失敗にしないので、閾値を超える必要がある文は、そのまま残してよい。
 pull request の画面の注釈は、1 つの step で 10 件までしか表示されない。一覧は注釈でなく、上のコマンドで読む。
@@ -62,5 +62,5 @@ pull request の画面の注釈は、1 つの step で 10 件までしか表示�
    完了の条件：全ての指摘の扱いが決まっている。
 7. plan と tasks を照合する。手順とひな形は [docs-review.md](docs-review.md)。
 8. 文書をレビューする。手順とひな形は [docs-review.md](docs-review.md)。
-9. 中国語で指示する環境では、校閲役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）に変えた日本語を読ませる。環境の決め方と手順は [docs-review.md](docs-review.md)。
+9. 中国語で指示する環境では、検出役 `ja-proofreader`（[定義](../../agents/ja-proofreader.md)）、確認役 `ja-proof-verifier`（[定義](../../agents/ja-proof-verifier.md)）の順に、変えた日本語を読ませる。採否の対象、環境の決め方、対象と時点、手順は [docs-review.md](docs-review.md)の手順 3。
 10. 校閲役や他のレビューが見つけ、利用者が確認した型を、機械の検査に加える。手順は [docs-review.md](docs-review.md)。

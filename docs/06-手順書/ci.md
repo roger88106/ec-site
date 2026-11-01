@@ -76,7 +76,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | script | 目的 |
 |--------|------|
 | `ac-check` | 機能の spec の全ての AC が、テスト名（@DisplayName、test・it の第 1 引数）に 1 つずつ含まれることを、AC 一覧と照合する |
-| `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査と `lib/` の 1 行目のコメントを確認する |
+| `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査と `lib/` の 1 行目のコメント、検査の先頭のコメントの「失敗したとき：」と「除外：」の行を確認する |
 | `compose-ports` | compose の全ての ports が、既定でこのマシンだけで待ち受ける `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action を置いたディレクトリが、Dependabot の github-actions の directories に入っていることを確認する |
 | `doc-refs` | Markdown のリンクと見出しの参照の先が存在し、節の番号の参照（第 N 節）が残っていないことを確認する |

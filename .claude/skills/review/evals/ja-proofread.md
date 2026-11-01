@@ -17,8 +17,8 @@
 
 | 番号 | 種類 | 例文 | 挙げるべき語句 | 出典 | ja-text の扱い |
 |------|------|------|----------------|------|----------------|
-| M-01 | 見逃し | 判定器や検査に止められる形と避け方を skill にまとめる | `判定器` | `docs/specs/276-retro-rules/spec.md`（`d14eaea4`） | なし |
-| M-02 | 見逃し | skill `review` の prompts.md の指示のひな形に、護りの spec では、意図して作った回避の形を高にしないことがある。 | `護り` | `docs/specs/276-retro-rules/spec.md`（`d14eaea4`） | なし |
+| M-01 | 見逃し | 判定器や検査に止められる形と避け方を skill にまとめる | `判定器` | `docs/specs/276-retro-rules/spec.md`（`d14eaea4`） | error |
+| M-02 | 見逃し | skill `review` の prompts.md の指示のひな形に、護りの spec では、意図して作った回避の形を高にしないことがある。 | `護り` | `docs/specs/276-retro-rules/spec.md`（`d14eaea4`） | error |
 | M-03 | 見逃し | 判定が護りか境界かを、DC で先に決める。 | `境界` | `docs/specs/276-retro-rules/spec.md`（`d14eaea4`） | なし |
 | M-04 | 見逃し | hook（`scripts/dev/hooks/`）、CI の検査の script（`scripts/ci/` の、変更や文書を判定して CI を失敗させるもの。例：`risk.mjs`）、認証・支払・権限の経路のコードを変える spec は、profile によらず、pull request の前に、無記憶の高性能のレビュー役（`reviewer`）を 1 回加える。 | `無記憶` | `docs/05-開発規則/subagents.md`（`89b4f21e`） | error |
 | M-05 | 見逃し | モデル、レビューの指示、profile、サービスを替えるときは、台帳で新しい設定を試してから決める。 | `台帳` | `docs/05-開発規則/subagents.md`（`89b4f21e`） | warning |

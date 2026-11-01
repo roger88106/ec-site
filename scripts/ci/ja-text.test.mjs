@@ -88,6 +88,18 @@ describe('日本語の文の検査（一覧と error の項目）', () => {
   })
 })
 
+describe('日本語の文の検査（校閲の評価の一覧の語）', () => {
+  test('「判定器」は error になり、「判定」「検査」は通る', () => {
+    assert.equal(findTerms('判定器や検査に止められる形', list.error).length, 1)
+    assert.deepEqual(findTerms('判定の結果を検査の script が示す', list.error), [])
+  })
+
+  test('「護り」は error になり、「守り」「防止」は通る', () => {
+    assert.equal(findTerms('護りの spec では、回避の形を高にしない', list.error).length, 1)
+    assert.deepEqual(findTerms('守りの設定と誤りの防止', list.error), [])
+  })
+})
+
 /** 和語の「足す」。ファイルに使わない語を書かないよう、エスケープで組み立てる */
 const ADD = '足す'
 

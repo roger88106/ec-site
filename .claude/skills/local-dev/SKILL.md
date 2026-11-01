@@ -226,7 +226,20 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 
 ## シェルと Git の落とし穴
 
-- `\` や正規表現を含む書き換えは、Edit で行う（新しいファイルは Write）。heredoc（`<<'EOF'` も）と `node -e` の文字列に入れると、Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れる。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記を heredoc で書くと、hook `backslash-guard` に拒否される。置き換えの script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。
+hook や検査に止められてからコマンドを書き換えないよう、初めから次の手順で行う。
+
+- 複数のファイルの置き換えと、`\` や正規表現を含む書き換えは、初めから Edit で行う（新しいファイルは Write）。script が必要なときは、Write でスクラッチパッドに `.cjs` を書いて node で実行する。heredoc（`<<'EOF'` も）と `node -e` の文字列に `\` を入れない。理由：Windows の Git Bash では `\` が落ちて、正規表現が黙って壊れるため。hook `backslash-guard` も、heredoc と `node -e` の中の `\` を拒否する。Markdown の表のセルの `\|` も同じで、`\|` を含む表の追記も Edit で書く。
+- コミットメッセージは、スクラッチパッドのファイルに書き、`node scripts/ci/ja-text.mjs --message <ファイル>` で検査してから、`git commit -F <ファイル>` で commit する。理由：hook `commit-msg` が、`scripts/ci/ja-text.json` の error の語を含むメッセージを拒否するため。文書で語を言い換えたときの、言い換える前の語も error の語なので、メッセージに書くと止まる。
+- CI を待つときは、バックグラウンドで実行し、ワークフローのファイル名・`event`・commit で絞る。フォアグラウンドで長い `sleep` を実行しない（Claude Code の Bash ツールが拒否する）。絞らないと、同じ commit の別のワークフロー（Dependabot の更新など）の完了で待ちが終わる。
+
+  ```bash
+  gh run list -c <SHA> -w docs.yml -e push --json databaseId -q '.[0].databaseId'   # 実行の ID。push の直後は空のことがある
+  gh run watch <ID> --exit-status
+  ```
+
+  - push で待つワークフローは、変えたファイルで決まる。`.md` と `.claude/` の下のファイルだけなら、ワークフロー「CI」（`ci.yml`）は push で実行されないので、ワークフロー「文書」（`docs.yml`）だけを待つ。理由：`ci.yml` の push の `paths` がそれらを除くため。ただし、モジュールの設計書など一部の `.md` は、`paths` が個別に指定しているので、push でも「CI」が実行される。pull request では、「CI」は変えたファイルによらず実行される。
+- commit の前の hook（`pre-commit`）は、作業ツリーでなく index（ステージした内容）を検査する。ステージしていない変更は検査に入らない。そのため、前の段階の変更を参照するファイルを先に commit すると、参照先が index にないので、hook が切れた参照として commit を止める。段階の順に commit する。
+  - `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
 - 次の書き方は、拒否されるか、意図しない結果になる。表の「避け方」に替える。
 
 | 書き方 | 拒否するもの | 避け方 |
@@ -234,13 +247,12 @@ node scripts/dev/break-check.mjs frontend/store/src/x.tsx "{!ok && <p" "{false &
 | heredoc・`node -e` の中の `\`（Markdown の表の `\|` を含む） | hook `backslash-guard`（次の節） | 上の箇条のとおり、`\|` を含む表の追記も Edit で書く |
 | `gh pr edit` と `gh pr ready` など、GitHub の状態を変える `gh` の操作を `&&` や `;` で 1 つにつないだコマンド | auto mode の判定 | pull request の編集・ready・マージ、issue の編集は、1 つのコマンドに操作を 1 つだけ書き、別の呼び出しで実行する |
 | `claude -p` の `--permission-mode bypassPermissions` | auto mode の判定 | `--permission-mode default` と `--allowedTools` を使う（skill `sessions` の「ツールの補足」） |
-| コミットメッセージの、層 1 の使わない語（`scripts/ci/ja-text.json` の error の語） | git の hook `commit-msg`（日本語の検査） | 書く前に語の一覧を見る（skill `zh-mixing` の「書くときの注意」） |
+| コミットメッセージの、層 1 の使わない語（`scripts/ci/ja-text.json` の error の語） | git の hook `commit-msg`（日本語の検査） | 上の箇条のとおり、commit の前に `--message` で検査する。語の一覧は skill `zh-mixing` の「書くときの注意」 |
 | spec やコミットメッセージに写した、利用者の中国語の言葉 | git の hook `commit-msg`・`pre-commit`（中国語の混入の検査） | 日本語に訳して書く（skill `zh-mixing` の「書くときの注意」） |
 | `git -C` と `cd` のパスに変数やコマンドの置き換え（`git -C "$D" commit`、`cd "$(...)"` など） | hook `agent-guard`（`git commit` の対象のリポジトリを決められないとき） | 変数を使わず、絶対パスを直接書く |
 | `cd` で `/.local/` などに移る | 拒否されない。以後のコマンドの作業ディレクトリが意図しない場所になる | `cd` で作業ディレクトリを移さず、`git -C <絶対パス>` と絶対パスを使う |
 
 - 検査を `| tail` に通すと、終了コードが `tail` のものになり、`&&` で続く commit が検査の失敗でも実行される。検査と commit は別の呼び出しにするか、`set -o pipefail` を付ける。
-- `git add -A && git commit` が hook で止まると、ステージしたものが残る。続けて一部のファイルだけを `git add` して commit すると、残っていたものも入る。止まったら `git reset -q` でステージを外してから、入れるものだけを `git add` する。
 
 ## 手元の hook の設定
 

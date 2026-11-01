@@ -38,14 +38,16 @@ M-14 は、語の数（13）と件数（14）をそろえるために、`効く`
 
 | 番号 | 種類 | 例文 | 挙げるべき語句 | 出典 | ja-text の扱い |
 |------|------|------|----------------|------|----------------|
-| F-01 | 誤検出 | 値（上限、件数、期限など）を変えるときは、AC の番号によらず、旧い値をテスト（バックエンド、画面、E2E）と文言の全体で検索する。境界の値（上限と上限 ＋ 1）は、別の AC のテストにもある。 | なし | `docs/05-開発規則/workflow.md`（`135843cc`）。見逃しの例 M-03 と同じ語を正しく使う文 | `境界` は、なし |
+| F-01 | 誤検出 | 日付をまたぐ境界の確認に使う | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/order/presentation/AdminOrderApiTest.java`（`dd607cc1`）。見逃しの例 M-03 と同じ語を正しく使う文 | `境界` は、なし |
 | F-02 | 誤検出 | 規模 M の spec と、規模 L の spec・plan・tasks は、文書のレビュー（skill `review` の手順 8）と校閲役（同 手順 9。中国語で指示する環境で行う）を通してから、利用者の確認に出す。 | なし | `docs/05-開発規則/workflow.md`（`135843cc`）。アーカイブした spec 276（`docs/08-spec/archive/1to10/276-retro-rules/spec.md`）の校閲の記録で「残したもの」 | なし |
 | F-03 | 誤検出 | これらは、次の 3 段に分ける。 | なし | `docs/05-開発規則/backend-coding.md`（`1e1093ea`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（別の意味の `段`）。見逃しの例 M-07 と同じ語を正しく使う文 | `段` は、warning（「3 段に分ける」は当てない） |
 | F-04 | 誤検出 | 進み具合は台帳のファイルに書く ※1。 | なし | `docs/07-記録/subagents-results.md`（`5382ea5f`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（定着した「台帳」）。見逃しの例 M-05 と同じ語を正しく使う文 | `台帳` は、warning |
 | F-05 | 誤検出 | policy.json から checkLicense の許可の一覧を作る | なし | `backend/ecsite/build.gradle.kts`（`8bbc72a7`）。アーカイブした spec 276（`docs/08-spec/archive/1to10/276-retro-rules/spec.md`）の校閲の記録で「残したもの」（「許可の一覧」） | なし |
-| F-06 | 誤検出 | ほかのテストの引当も消えるので、自分の持ち主の引当だけを確認する。 | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/StockReservationCleanupJobTest.java`（`f7e5d755`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（別の意味の `持ち主の`）。見逃しの例 M-08 の `主の` を含む文 | `主の` は、error（「持ち主の」は当てない） |
+| F-06 | 誤検出 | 指定した持ち主のうち、引当が残っているもの | なし | `backend/ecsite/src/integrationTest/java/com/ecsite/module/inventory/application/StockReservationCleanupJobTest.java`（`f7e5d755`）。アーカイブした spec 283（`docs/08-spec/archive/1to10/283-writing-rules/tasks/04-terms.md`）の校閲の記録で「残したもの」（別の意味の `持ち主の`）。見逃しの例 M-08 の `主の` を含む文 | `主の` は、error（「持ち主の」は当てない） |
 
 見逃しの例 14 件、誤検出の例 6 件である。誤検出の例の「挙げるべき語句」は、挙げてはいけないので「なし」とする。
+
+誤検出の例には、挙げてはいけない語の他に、規則に反する箇所がない文を選ぶ。理由：別の正しい指摘も、誤検出に数えられるため。F-01 と F-06 は、最初に選んだ文に他の指摘（「旧い」「ほかの」）があったので、同じ語を使う別の文に替えた（2026-11-01）。
 
 ## 入力の作り方
 

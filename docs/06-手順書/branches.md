@@ -1,6 +1,6 @@
 # ブランチとリリース
 
-ブランチの構成、作業ブランチの作り方、保護、リリースと緊急の修正の手順、Dependabot の設定。CI/CD の決まりは [constitution](../constitution.md)の「CI/CD」。CI のジョブは [CI の検査](ci.md)。設定のフラグ、完了の定義、マージの許可と担当は [開発の進め方](../05-開発規則/workflow.md) と [AGENTS.md](../../AGENTS.md)。
+ブランチの構成、作業ブランチの作り方、保護、リリースと緊急の修正の手順、Dependabot の設定。CI/CD の決まりは [constitution](../constitution.md)の「CI/CD」。CI のジョブは [CI の検査](ci.md)。設定のフラグと完了の定義は [開発の進め方](../05-開発規則/workflow.md)、マージの許可と担当は [開発の進め方](../05-開発規則/workflow.md)の「マージの許可と後片付け」。
 
 ## 1. ブランチの構成
 

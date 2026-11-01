@@ -29,7 +29,7 @@ description: ec-site の文書（docs/、README、AGENTS.md、spec、plan、task
    - `node scripts/ci/ja-text.mjs`（日本語の文の検査。error は使わない語で、失敗になるので修正する）
    - `node scripts/ci/ja-text.mjs --warning`（warning の一覧を出力する。終了コードは 0）。文脈で言い換える語と文体の型の文が、ファイルと行とともに示される。型は、「の」が続く文・長い文・読点の多い文・否定が続く文・複合動詞が崩れた疑いのある文である。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する
    - コードのコメントを修正したら、フロントは `pnpm lint`、バックエンドは `./gradlew check`
-5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。全ての変更は issue から始まり、規模 S は issue を spec とする（[開発の進め方](../../../docs/05-開発規則/workflow.md)の「起票と規模」）。spec の tasks にないタスクの番号は付けない。push と pull request の作成は許可を求めず、マージの許可と担当は、危険度によって異なる（AGENTS.md の Git の表）。
+5. commit を分ける：文書のまとまりごとに 1 つ、参照の修正は最後に 1 つ。全ての変更は issue から始まり、規模 S は issue を spec とする（[開発の進め方](../../../docs/05-開発規則/workflow.md)の「起票と規模」）。spec の tasks にないタスクの番号は付けない。push と pull request の作成は許可を求めず、マージの許可と担当は、危険度によって異なる（[開発の進め方](../../../docs/05-開発規則/workflow.md)の「マージの許可と後片付け」）。
 
 ## 4. 参照の修正
 

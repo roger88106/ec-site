@@ -76,7 +76,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | script | 目的 |
 |--------|------|
 | `ac-check` | 機能の spec の全ての AC が、テスト名（@DisplayName、test・it の第 1 引数）に 1 つずつ含まれることを、AC 一覧と照合する |
-| `ci-docs` | ci.md の表の名前と scripts/ci/ の検査が 1 対 1 に対応し、表が 2 列で、検査と `lib/` の各ファイルの 1 行目が `//` のコメントであることを確認する |
+| `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査と `lib/` の 1 行目のコメントを確認する |
 | `compose-ports` | compose の全ての ports が、既定でこのマシンだけで待ち受ける `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action を置いたディレクトリが、Dependabot の github-actions の directories に入っていることを確認する |
 | `doc-refs` | Markdown のリンクと見出しの参照の先が存在し、節の番号の参照（第 N 節）が残っていないことを確認する |
@@ -103,7 +103,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | `risk` | 変更の危険度（高か低）を、危険度が高い経路と spec の宣言から判定し、pull request の本文の判定と比べる。 |
 | `role-permissions` | ロールと権限の対応表が、API の契約と運営者の realm の設定から再作成した表と一致することを確認する。 |
 | `runtime-versions` | JDK と Node のバージョンが置き場所の間で一致し、workflow が直接書かずにそれを参照していることを確認する。 |
-| `service-names` | 規則の本文（constitution と開発規則）に、AI のサービス固有の名前がない（コードスパン、コードブロック、リンク先を除く）ことを確認する |
+| `service-names` | 規則の本文に、AI のサービス固有の名前がない（コードスパンのパス、コードブロック、リンク先を除く）ことを確認する |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する。 |
 | `spec-numbers` | 本番のコードとテスト・設定のコメントに、spec・plan・tasks の番号が書かれていないことを確認する。 |
 | `test-names` | バックエンドの全てのテストに、表示の名前（`@DisplayName`）があることを確認する。 |

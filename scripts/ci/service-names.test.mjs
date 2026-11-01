@@ -11,12 +11,15 @@
 //   findServiceNameProblems(files: { path: string, text: string }[]): string[]
 //     files は対象のファイルのパスと本文。名前が許可する形の外にある行ごとに 'パス:行番号'（行番号は 1 始まり）を、
 //     ファイルの順・行の順に返す。1 行に複数あっても、その行は 1 回だけ返す。違反がなければ []。
-//     許可する形は、インラインのコードスパン（`...`）の中と、Markdown のリンク先（](...) の括弧の中）と、コードブロック（``` で囲んだ行）の中。
-//     リンクの表示の文字（[...] の中）は本文として扱う。名前は大文字小文字を区別せず、名前の境界で判定する。
+//     許可する形は、インラインのコードスパン（`...`。中身が名前だけのものを除く）の中と、Markdown のリンク先（](...) の括弧の中の、
+//     最初の空白より前か <...> の中）と、コードブロック（``` で囲んだ行）の中。
+//     リンクの表示の文字（[...] の中）とリンクのタイトル（"..."）は本文として扱う。名前は大文字小文字を区別せず、名前の境界で判定する。
+//   findUnclosedFences(files: { path: string, text: string }[]): string[]
+//     囲みを開いたままファイルが終わったファイルごとに、開きの行を `ファイル:行 内容（理由）` の形で返す。
 
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { SERVICE_NAMES, findServiceNameProblems, isTargetFile } from './service-names.mjs'
+import { SERVICE_NAMES, findServiceNameProblems, findUnclosedFences, isTargetFile } from './service-names.mjs'
 
 const check = (text, path = 'docs/05-開発規則/x.md') => findServiceNameProblems([{ path, text }])
 
@@ -88,6 +91,49 @@ describe('サービス固有の名前の検査', () => {
   test('長い囲みの中の短い囲みの字では閉じず、囲みの外の名前は違反にする', () => {
     const text = ['````', '```', 'Claude', '````', 'Opus'].join('\n')
     assert.deepEqual(check(text), ['docs/05-開発規則/x.md:5'])
+  })
+
+  test('2 つのバッククォートで囲んだコードスパンより後ろにある、本文の名前は違反にする', () => {
+    assert.deepEqual(check('``a`b`` を使う。Claude を使う。`x`'), ['docs/05-開発規則/x.md:1'])
+  })
+
+  test('2 つのバッククォートで囲んだ中にあるパスは、違反にしない', () => {
+    assert.deepEqual(check('``.claude/`x`/`` を読む'), [])
+  })
+
+  test('コードスパンの中身が名前だけのときは、本文として違反にする', () => {
+    assert.deepEqual(check('`Claude Code` の設定を使う'), ['docs/05-開発規則/x.md:1'])
+    assert.deepEqual(check('` Opus ` で実装する'), ['docs/05-開発規則/x.md:1'])
+    assert.deepEqual(check('``sonnet`` で実装する'), ['docs/05-開発規則/x.md:1'])
+  })
+
+  test('リンクのタイトルにある名前は、本文として違反にする', () => {
+    assert.deepEqual(check('[文書](../x.md "Claude の文書") を見る'), ['docs/05-開発規則/x.md:1'])
+    assert.deepEqual(check("[文書](<../a b.md> 'Opus') を見る"), ['docs/05-開発規則/x.md:1'])
+  })
+
+  test('山括弧で囲んだリンク先の中の名前は、違反にしない', () => {
+    assert.deepEqual(check('[文書](<../../.claude/a b.md>) を見る'), [])
+  })
+
+  test('囲みを開いたままファイルが終わったら、開きの行を、閉じていないコードブロックとして失敗にする', () => {
+    const problems = findUnclosedFences([{ path: 'docs/05-開発規則/x.md', text: ['本文', '```', 'Claude'].join('\n') }])
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /^docs\/05-開発規則\/x\.md:2 .*コードブロックが閉じていない/)
+  })
+
+  test('開きより短い閉じと、違う字の閉じは、閉じていないコードブロックとして失敗にする', () => {
+    const shorter = ['````', 'x', '```', 'Claude'].join('\n')
+    const otherChar = ['```', 'x', '~~~', 'Claude'].join('\n')
+    for (const text of [shorter, otherChar]) {
+      const problems = findUnclosedFences([{ path: 'docs/05-開発規則/x.md', text }])
+      assert.equal(problems.length, 1, text)
+      assert.match(problems[0], /x\.md:1 /)
+    }
+  })
+
+  test('閉じたコードブロックは、閉じていないコードブロックの検査が通る', () => {
+    assert.deepEqual(findUnclosedFences([{ path: 'docs/05-開発規則/x.md', text: ['```', 'Claude', '```', '~~~', 'x', '~~~~'].join('\n') }]), [])
   })
 
   test('語の一部に当たるもの（claudette、cursory）は違反にしない', () => {

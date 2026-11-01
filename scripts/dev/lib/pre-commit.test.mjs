@@ -219,11 +219,20 @@ describe('検査が通った後の warning', () => {
 })
 
 describe('commit のメッセージの検査', () => {
-  /** 実行した script を記録し、script ごとの終了コードを返す */
+  /** 実行した script を記録し、script ごとの終了コードと、要約の行のある出力を返す */
   function fakeRun(codes) {
     const calls = []
-    return { calls, run: (name, args) => (calls.push({ name, args }), codes[name]) }
+    return { calls, run: (name, args) => (calls.push({ name, args }), { status: codes[name], output: '使わない語：0\n' }) }
   }
+
+  test('終了コード 0 でも、出力の最後の行が要約の行でなければ、失敗にして理由を表示する', () => {
+    const logs = []
+    for (const output of ['', '何もしない\n']) {
+      assert.equal(runCommitMsg({ file: 'm', run: () => ({ status: 0, output }), log: (text) => logs.push(text) }), 1)
+    }
+    assert.equal(logs.length, 2)
+    assert.match(logs[0], /要約の行/)
+  })
 
   test('日本語の文の検査を、メッセージのファイルを渡して実行する', () => {
     const { calls, run } = fakeRun({ 'ja-text': 0 })
@@ -511,7 +520,7 @@ describe('実際の commit-msg の hook', () => {
    * @param {string} message コミットメッセージのファイルの中身
    * @returns {{ status: number | null, output: string }} hook の終了コードと標準出力
    */
-  function runCommitMsgHookFull(message) {
+  function runCommitMsgHookFull(message, jaText) {
     const dir = mkdtempSync(path.join(tmpdir(), 'commit-msg-test-'))
     try {
       const env = withoutGitEnv()
@@ -520,6 +529,7 @@ describe('実際の commit-msg の hook', () => {
         mkdirSync(path.dirname(path.join(dir, file)), { recursive: true })
         copyFileSync(path.join(repoRoot, file), path.join(dir, file))
       }
+      if (jaText !== undefined) writeFileSync(path.join(dir, 'scripts/ci/ja-text.mjs'), jaText)
       writeFileSync(path.join(dir, 'scripts/ci/ja-text.json'), MINI_LIST)
       writeFileSync(path.join(dir, 'MSG'), message)
       const result = spawnSync(gitBash(env), ['scripts/dev/hooks/commit-msg', 'MSG'], { cwd: dir, env, encoding: 'utf8' })
@@ -542,6 +552,18 @@ describe('実際の commit-msg の hook', () => {
     const { status, output } = runCommitMsgHookFull('道具を追加する\n')
     assert.equal(status, 1)
     assert.match(output, /道具/)
+  })
+
+  test('検査が成功するときも、検査の出力（要約の行）を表示する', () => {
+    const { status, output } = runCommitMsgHookFull('ツールを追加する\n')
+    assert.equal(status, 0)
+    assert.match(output, /使わない語：0/)
+  })
+
+  test('日本語の文の検査が何も調べずに終了コード 0 で終わる（要約の行がない）と、hook は失敗する', () => {
+    const { status, output } = runCommitMsgHookFull('道具を追加する\n', '// 直接実行の判定が外れた検査の代わり\n')
+    assert.equal(status, 1)
+    assert.match(output, /要約の行/)
   })
 
   test('git commit -v の差分に使わない語があっても、数えない', () => {

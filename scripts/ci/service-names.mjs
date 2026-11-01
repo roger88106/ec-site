@@ -3,7 +3,7 @@
 // 名前の一覧（SERVICE_NAMES）はこの script の 1 か所だけに置く。大文字・小文字は区別しない。名前の境界は ASCII の英数字だけを、語を構成する文字として判定する（claudette、cursory は対象にしない。日本語の字や記号が前後にある名前は対象にする）。
 // 名前を書いてよい場所（許可する形）は 3 つ。
 //   - パスと識別子のインラインのコードスパン（`.claude/`、`CLAUDE.md` など）の中。コードスパンは、開きと同じ数のバッククォートの並びで閉じる形で読む（lib/code-span.mjs）。
-//     中身が名前だけ（前後の空白を除く。`Claude Code` など）のコードスパンは、パスでも識別子でもないので本文として扱う
+//     パスと識別子のコードスパンは、パスや識別子の字（/ . _ - \ @ $ =）を 1 つ以上含むもの。含まないもの（`Claude Code`、`Claude Code の設定`、`Opus 4` など）は、中身を本文として扱う
 //   - Markdown のリンク先（](...) の括弧の中の、最初の空白より前か、<...> の中）。リンクのタイトル（"..."）とリンクの表示の文字（[...] の中）は本文として扱う
 //   - コードブロックの中（ディレクトリの構成の図のパスなど）。囲みを開いたままファイルが終わったら、その後の本文を読めないので、開きの行を失敗にする（開きより短い閉じ、違う字の閉じも閉じとみなさない）
 // 判定は誤りの防止で、字を分ける、全角にするなどの意図した回避は対象にしない。
@@ -22,8 +22,8 @@ export const SERVICE_NAMES = ['Claude Code', 'Claude', 'Opus', 'Sonnet', 'Haiku'
 /** 名前の前後が ASCII の英数字でないこと（\b は日本語の字を語の字とみなすので使わない） */
 const NAME_PATTERN = new RegExp(`(?<![A-Za-z0-9])(?:${SERVICE_NAMES.join('|')})(?![A-Za-z0-9])`, 'i')
 
-/** 名前だけ（前後の空白を除く）の文字列 */
-const NAME_ONLY = new RegExp(`^(?:${SERVICE_NAMES.join('|')})$`, 'i')
+/** パスや識別子の字。コードスパンの中身がこれを含めば、パスか識別子として許す */
+const IDENTIFIER_CHARS = /[/._\-\\@$=]/
 
 /** リンク先（`](` の後の、<...> か、最初の空白か `)` より前） */
 const LINK_TARGET = /\]\((?:<[^>]*>|[^\s)]*)/g
@@ -42,13 +42,13 @@ export function isTargetFile(path) {
 }
 
 /**
- * 許可する形（パスと識別子のコードスパンの中、リンク先）を空白に替える。中身が名前だけのコードスパンは、中身を本文として残す。
+ * 許可する形（パスと識別子のコードスパンの中、リンク先）を空白に替える。パスや識別子の字を含まないコードスパンは、中身を本文として残す。
  *
  * @param {string} line 1 行
  * @returns {string} 本文だけが残る行
  */
 function stripAllowed(line) {
-  return replaceCodeSpans(line, (content) => (NAME_ONLY.test(content.trim()) ? ` ${content} ` : ' ')).replace(LINK_TARGET, '] (')
+  return replaceCodeSpans(line, (content) => (IDENTIFIER_CHARS.test(content) ? ' ' : ` ${content} `)).replace(LINK_TARGET, '] (')
 }
 
 /**

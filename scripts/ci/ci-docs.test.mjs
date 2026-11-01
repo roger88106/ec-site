@@ -78,6 +78,19 @@ describe('CI の検査の文書の表の検査', () => {
     assert.match(problems[0], /ci\.md:2 .*バッククォート/)
   })
 
+  test('表の途中の、前に空白のある行と、最初の縦線のない行は、読み飛ばさずに失敗にする', () => {
+    const doc = ['## 3. CI の検査の script', '| script | 目的 |', '|---|---|', '| `a` | x |', ' | `old-check` | x |', '`old-check` | x | y |', '', '本文の行'].join('\n')
+    const problems = checkTableColumns(doc)
+    assert.equal(problems.length, 2)
+    assert.match(problems[0], /ci\.md:5 .*縦線で始める/)
+    assert.match(problems[1], /ci\.md:6 .*縦線で始める/)
+  })
+
+  test('表の後の空行より後ろの、縦線で始まらない行は、表の行とみなさない', () => {
+    const doc = ['## 3. CI の検査の script', '本文の行', '| `a` | x |', '', '本文の行', ' 字下げした本文'].join('\n')
+    assert.deepEqual(checkTableColumns(doc), [])
+  })
+
   test('末尾の縦線がない表の行は、読み飛ばさずに失敗にする', () => {
     const doc = ['## 3. CI の検査の script', '| `a` | x'].join('\n')
     const problems = checkTableColumns(doc)

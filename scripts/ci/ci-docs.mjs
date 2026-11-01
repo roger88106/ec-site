@@ -5,6 +5,7 @@
 // 2. 表が 2 列（script と目的）でない。詳しい説明を表に戻さず、script の先頭のコメントに書くため。読めない書き方の行も失敗にする
 //    - 列は縦線で数える。コードスパン（開きと同じ数のバッククォートで閉じる。lib/code-span.mjs）の中の縦線と、エスケープした縦線（\|）は数えない
 //    - 組にならないバッククォートが残る行は、列を数えられないので失敗にする
+//    - 表の行の後から空行までの、縦線で始まらない行（前に空白のある行、最初の縦線のない行）は、表の行として表示されるのに検査から漏れるので失敗にする
 //    - 見出しの行と区切りの行を除き、1 列目は名前の形（| `名前` |）にする。名前を読めない行を数え漏らさないため
 //    - 例外として、名前の後に（`引数`）だけを書いた行（ja-text の --changed の行）は、同じ名前の行の実行の仕方として許す。名前には数えず、同じ名前の行がなければ失敗にする
 // 3. 直下の検査と lib/ の各ファイル（テストを除く）の 1 行目が `//` で始まらない。先頭のコメントのない script を残さないため
@@ -125,6 +126,7 @@ export function compareChecks(tableNames, checkNames) {
 /**
  * 文書の表（`## 3.` の節の、最初の `### 3.1` より前）の各行が 2 列であることを確認する。
  * 縦線で始まり縦線で終わらない行は、列を数えられないので読み飛ばさずに失敗にする。
+ * 表の行の後から空行までの、縦線で始まらない行（前に空白のある行、最初の縦線のない行）も、名前と列の検査から漏れるので失敗にする。
  *
  * @param {string} markdown 文書の中身
  * @returns {string[]} 2 列でない行と読めない行の説明
@@ -132,11 +134,21 @@ export function compareChecks(tableNames, checkNames) {
 export function checkTableColumns(markdown) {
   const problems = []
   let inSection = false
+  // 表を読んでいる途中か（空行で終わる）。GFM では、前に空白がある行や、最初の縦線がない行も、表の行になる
+  let inTable = false
   markdown.split('\n').forEach((raw, index) => {
     const line = raw.trimEnd()
     if (/^#{2,3} /.test(line)) inSection = /^## 3\. /.test(line)
-    if (!inSection || !line.startsWith('|')) return
+    if (!inSection || line.trim() === '') {
+      inTable = false
+      return
+    }
     const item = { file: DOC, line: index + 1, text: line }
+    if (!line.startsWith('|')) {
+      if (inTable) problems.push(describeUnreadableLine({ ...item, reason: '表の行は縦線で始める。前に空白を置かず、最初の縦線を省かない' }))
+      return
+    }
+    inTable = true
     if (!/^\|.*\|$/.test(line) || line === '|') {
       problems.push(describeUnreadableLine({ ...item, reason: '表の行の読み方が分からない。行の最後を縦線で閉じる' }))
       return

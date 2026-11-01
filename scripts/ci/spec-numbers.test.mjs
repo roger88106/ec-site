@@ -1,7 +1,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { keepJavaComments, keepTsComments } from './lib/strip-comments.mjs'
-import { commentsOf, findSpecNumbers, isBackendTestFile, isCommentOnlyTsFile, isConfigFile, isProductionFile } from './spec-numbers.mjs'
+import { commentsOf, findSpecNumbers, isBackendTestFile, isCommentOnlyTsFile, isConfigFile, isProductionFile, isScriptFile } from './spec-numbers.mjs'
 
 describe('本番のコードの spec の番号の検査', () => {
   test('AC・DC などの番号、タスクの番号、spec・plan の番号を見つける', () => {
@@ -196,6 +196,63 @@ describe('本番のコードの spec の番号の検査', () => {
       findSpecNumbers(keepJavaComments(text)).map((hit) => `${hit.line} ${hit.number}`),
       ['2 spec 12'],
     )
+  })
+})
+
+describe('scripts/ の下の script のコメントの spec の番号の検査', () => {
+  test('scripts/ の下の .mjs・.cjs・.sh と、拡張子のない hook の script を、コメントだけを見る対象にする', () => {
+    for (const file of [
+      'scripts/ci/spec-numbers.mjs',
+      'scripts/ci/spec-numbers.test.mjs',
+      'scripts/ci/lib/git-files.mjs',
+      'scripts/dev/foo.cjs',
+      'scripts/ci/check-all.sh',
+      'scripts/dev/hooks/pre-commit',
+    ]) {
+      assert.equal(isScriptFile(file), true, file)
+    }
+  })
+
+  test('scripts/ の下でも script でないファイルと、scripts/ の外のファイルは対象にしない', () => {
+    for (const file of [
+      'scripts/ci/ja-text.json',
+      'scripts/dev/lib/slot-lock.d.mts',
+      'scripts/dev/windows/exclude-ports.ps1',
+      'scripts/ci/report/testdata/pit-mutations.xml',
+      'e2e/scripts/seed.ts',
+      'docker/seaweedfs/init.sh',
+      'knip.ts',
+    ]) {
+      assert.equal(isScriptFile(file), false, file)
+    }
+  })
+
+  test('.mjs・.cjs の script は、コメントの番号だけを見つける（文字列、テンプレート、正規表現のリテラルは見ない）', () => {
+    const text = [
+      '// 検査の対象（T284-01-02）',
+      "const input = 'AC-1'",
+      'const name = `spec 7 ${input}`',
+      'const pattern = /DC-3/',
+      '/** 判定（plan 12） */',
+    ].join('\n')
+    for (const file of ['scripts/ci/foo.mjs', 'scripts/ci/foo.test.mjs', 'scripts/dev/foo.cjs']) {
+      assert.deepEqual(
+        findSpecNumbers(commentsOf(file, text)).map((hit) => `${hit.line} ${hit.number}`),
+        ['1 T284-01-02', '5 plan 12'],
+        file,
+      )
+    }
+  })
+
+  test('.sh と hook の script は、# のコメントの番号だけを見つける（引用符の中は見ない）', () => {
+    const text = ['#!/usr/bin/env bash', '# 全ての検査を実行する（AC-7-1）', 'echo "T7-01-01"', "echo 'spec 3' # US-2"].join('\n')
+    for (const file of ['scripts/ci/check-all.sh', 'scripts/dev/hooks/pre-commit']) {
+      assert.deepEqual(
+        findSpecNumbers(commentsOf(file, text)).map((hit) => `${hit.line} ${hit.number}`),
+        ['2 AC-7-1', '4 US-2'],
+        file,
+      )
+    }
   })
 })
 

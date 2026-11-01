@@ -5,7 +5,7 @@
 #   使い方：scripts/dev/e2e.sh [Playwright の引数...]
 #     例：scripts/dev/e2e.sh                              # すべて
 #         scripts/dev/e2e.sh tests/payment.spec.ts        # 1 つのファイル
-#         scripts/dev/e2e.sh tests/payment.spec.ts -g AC-148
+#         scripts/dev/e2e.sh tests/payment.spec.ts -g "決済"
 #
 # バックエンド・管理画面・店舗画面の起動のログは多いので、出力の全体は LOG_DIR（既定は一時ディレクトリ）に残し、
 # 次だけを出す：準備の結果、テストごとの ok / x、失敗の Error の行と error-context.md のパス、件数のまとめ。

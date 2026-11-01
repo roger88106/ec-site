@@ -1,4 +1,4 @@
-// CI の検査の文書（docs/06-手順書/ci.md）の「CI の検査の script」の表と、scripts/ci/ の検査を確認する。次の 3 つのどれかに当てはまると失敗にする。
+// CI の検査の文書（docs/06-手順書/ci.md）の「CI の検査の script」の表と、scripts/ci/ の検査を確認する。次の 4 つのどれかに当てはまると失敗にする。
 // 1. 表の名前と直下の検査が 1 対 1 に対応しない（表にない検査、検査のない表の行、同じ名前の行）
 //    - 直下の検査：*.test.mjs 以外の *.mjs（check-all.sh が引数なしで実行するもの）
 //    - 表：見出し `## 3.` の節の、最初の下の見出し（`### 3.1`）より前の表の 1 列目の名前（`ac-check` など）
@@ -9,7 +9,11 @@
 //    - 見出しの行と区切りの行を除き、1 列目は名前の形（| `名前` |）にする。名前を読めない行を数え漏らさないため
 //    - 例外として、名前の後に（`引数`）だけを書いた行（ja-text の --changed の行）は、同じ名前の行の実行の仕方として許す。名前には数えず、同じ名前の行がなければ失敗にする
 // 3. 直下の検査と lib/ の各ファイル（テストを除く）の 1 行目が `//` で始まらない。先頭のコメントのない script を残さないため
+// 4. 直下の検査の先頭のコメント（1 行目から続く `//` の行）に、「失敗したとき：」の行と「除外：」の行がない。書き漏らしを防ぐため
+//    - 行は、`//` の後に空白と箇条書きの `-` を置いてよい（// 失敗したとき：、// - 失敗したとき：）。行の途中の文字列は数えない
+//    - lib/ のファイルは、役割だけを書くので対象にしない
 // 失敗したとき：表に行を加えるか、不要な行を削除する。先頭のコメントのない script には、先頭のコメントを書く。
+//   「失敗したとき：」か「除外：」の行がない検査には、先頭のコメントにその行を書く（除外がなければ「除外：なし」）。
 // 除外：なし
 // 使い方：node scripts/ci/ci-docs.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
@@ -189,12 +193,36 @@ export function checkFirstLines(sources) {
     .map(({ file, text }) => describeUnreadableLine({ file, line: 1, text: text.split('\n')[0], reason: '1 行目がコメントでない。script の先頭に、何を確認するかを `//` のコメントで書く' }))
 }
 
+/** 直下の検査が先頭のコメントに書く、必須の行の接頭辞 */
+const REQUIRED_COMMENT_LINES = ['失敗したとき：', '除外：']
+
+/**
+ * 直下の検査の先頭のコメント（1 行目から続く `//` の行）に、「失敗したとき：」か「除外：」の行がない script を見つける。
+ * 行は `//` の後に空白と箇条書きの `-` を置いてよい。
+ *
+ * @param {{ file: string, text: string }[]} sources 直下の検査のパスと中身
+ * @returns {string[]} 行のない script の説明
+ */
+export function checkCommentLines(sources) {
+  const problems = []
+  for (const { file, text } of sources) {
+    const lines = text.split('\n')
+    const end = lines.findIndex((line) => !line.startsWith('//'))
+    const comment = end === -1 ? lines : lines.slice(0, end)
+    const missing = REQUIRED_COMMENT_LINES.filter((label) => !comment.some((line) => new RegExp(`^//\\s*(?:-\\s*)?${label}`).test(line)))
+    if (!missing.length) continue
+    const hint = missing.includes('除外：') ? '。除外がなければ「除外：なし」' : ''
+    problems.push(`先頭のコメントに行がない：${file}（${missing.map((label) => `「${label}」`).join('、')}の行を書く${hint}）`)
+  }
+  return problems
+}
+
 if (isMain(import.meta.url)) {
   const checkFiles = listGitFiles([CHECK_DIR])
   exitIfNoFiles(checkFiles, `検査（${CHECK_DIR}）`)
   const doc = readFileSync(DOC, 'utf8')
   const sources = listCommentTargets(checkFiles).map((file) => ({ file, text: readFileSync(file, 'utf8') }))
-  const problems = [...compareChecks(readTableChecks(doc), listChecks(checkFiles)), ...checkTableColumns(doc), ...checkTableNames(doc), ...checkFirstLines(sources)]
+  const problems = [...compareChecks(readTableChecks(doc), listChecks(checkFiles)), ...checkTableColumns(doc), ...checkTableNames(doc), ...checkFirstLines(sources), ...checkCommentLines(sources.filter(({ file }) => !file.startsWith(`${CHECK_DIR}lib/`)))]
   for (const problem of problems) console.log(problem)
   console.log(`食い違い：${problems.length}`)
   process.exit(problems.length ? 1 : 0)

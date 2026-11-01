@@ -76,7 +76,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | script | 目的 |
 |--------|------|
 | `ac-check` | 機能の spec の全ての AC が、テスト名（@DisplayName、test・it の第 1 引数）に 1 つずつ含まれることを、AC 一覧と照合する |
-| `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査と `lib/` の 1 行目のコメントを確認する |
+| `ci-docs` | この表と検査の 1 対 1 の対応、表の 2 列、検査と `lib/` の 1 行目のコメント、検査の先頭のコメントの「失敗したとき：」と「除外：」の行を確認する |
 | `compose-ports` | compose の全ての ports が、既定でこのマシンだけで待ち受ける `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action を置いたディレクトリが、Dependabot の github-actions の directories に入っていることを確認する |
 | `doc-refs` | Markdown のリンクと見出しの参照の先が存在し、節の番号の参照（第 N 節）が残っていないことを確認する |
@@ -105,7 +105,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | `runtime-versions` | JDK と Node のバージョンが置き場所の間で一致し、workflow が直接書かずにそれを参照していることを確認する。 |
 | `service-names` | 規則の本文に、AI のサービス固有の名前がない（コードスパンのパス、コードブロック、リンク先を除く）ことを確認する |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する。 |
-| `spec-numbers` | 本番のコードとテスト・設定のコメントに、spec・plan・tasks の番号が書かれていないことを確認する。 |
+| `spec-numbers` | 本番のコードと、テストと設定のファイルと `scripts/` の下の script の、それぞれのコメントに、spec・plan・tasks の番号が書かれていないことを確認する。 |
 | `test-names` | バックエンドの全てのテストに、表示の名前（`@DisplayName`）があることを確認する。 |
 | `time-waits` | テストが、決まった時間だけ待つ書き方をしていないことを確認する。 |
 

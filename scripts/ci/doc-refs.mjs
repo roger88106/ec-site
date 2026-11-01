@@ -2,7 +2,7 @@
 //   - Markdown のリンク：先のファイルと #見出し があるか（見出しの slug は GitHub と同じ作り方）
 //   - 見出しの参照（`[開発の進め方](../../docs/05-開発規則/workflow.md)の「起票」`、`開発の進め方の「起票」` など）：リンクか文書の名前の直後の「の「…」」だけを読み、
 //     先の文書に、その見出し（番号を除く）が 1 つだけあるか。同じ見出しが 2 つ以上あれば、親の見出しを前に付けた形（`の「段階 1」の「タスク」`）で 1 つに決める。
-//     見出しは、リンクを表示の文字に、コードの印を除き、全角と半角を揃え、空白をまとめて比べる。末尾の全角の括弧の補足（`（DS-283-5：DC-283-21〜25）` など）は、
+//     見出しは、リンクを表示の文字に、コードの印を除き、全角と半角を揃え、空白をまとめて比べる。末尾の全角の括弧の補足（`（DS-s-n：DC-s-n〜m）` など）は、
 //     除いた形でも全て書いた形でも当たる（除くと 2 つ以上に当たるなら、1 つに決まらないとする）。Markdown のコードブロックの中は見ない
 //   - 節の番号の参照（番号と「節」。前の「第」はあってもなくてもよい）：失敗にし、見出しの形に書き換えるよう示す。節の番号は、節を加える・移すたびに変わり、意味の違う節を指したまま通るため。
 //     番号の間の区切りは「・」「、」「〜」「～」「~」「,」「，」「-」「－」「と」「から」で、空白は半角・全角のどちらでもよい（`第　3　節`、`第 4～6 節`、`第 3 と 4 節`）。
@@ -152,7 +152,7 @@ export function readHeadings(text) {
     }
     const level = match[1].length
     while (stack.length && stack.at(-1).level >= level) stack.pop()
-    // 末尾の全角の括弧の補足（`（DS-283-5：DC-283-21〜25）` など）を除いた形でも当たるようにする
+    // 末尾の全角の括弧の補足（`（DS-s-n：DC-s-n〜m）` など）を除いた形でも当たるようにする
     const exact = headingKey(text)
     const keys = new Set([exact, headingKey(text.replace(/（[^（）]*）\s*$/, ''))])
     headings.push({ exact, keys, ancestors: stack.map((item) => item.keys) })
@@ -249,7 +249,7 @@ export function findReferences(file, text, names, basenames, exists = existsSync
     // Markdown はインラインコードの外の全てを、コードは指す先の文書が決まるものだけを、節の番号の参照にする
     for (const match of (isMarkdown ? maskInlineCode(line) : line).matchAll(SECTION_NUMBER)) {
       const before = line.slice(0, match.index).trimEnd()
-      // spec・plan の節（`plan 001`、`spec 003 の`）は、指す先の文書を名前で決められない
+      // spec・plan の節（`plan` の後に番号が続く形と、`spec` の後に番号と `の` が続く形）は、指す先の文書を名前で決められない
       const spec = /(spec|plan|\d{3})(\s*の)?$/.test(before.replace(/[`」]+$/, '').trimEnd())
       const found = spec ? null : resolveDocument(file, before, names, basenames, exists)
       if (!found && !isMarkdown) continue

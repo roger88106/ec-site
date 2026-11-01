@@ -177,6 +177,7 @@ ec-site/
 |------|------|
 | [subagents-results.md](07-記録/subagents-results.md) | エージェントの作業フローの調べた仕組みと実績 |
 | [ci-results.md](07-記録/ci-results.md) | CI の実測（設定の値の根拠） |
+| [context-size.md](07-記録/context-size.md) | 毎回読む文書と固定の文脈の大きさ |
 
 開発記録（`docs/08-spec/`）：
 

@@ -110,6 +110,7 @@ git grep -n -e related-specs -e design-migrations -e "関連 spec" -- ':!docs/08
 - **DC-284-33** 同じ手順に、確認役の区分（高性能）を呼び出しで指定すると書いてある。
 - **DC-284-34** [エージェントの作業フロー](../../05-開発規則/subagents.md)の「役割と作業の流れ」で、定義にモデルを書かない役の一覧に、検出役がある。
 - **DC-284-35** 同じ一覧に、確認役がある。
+- **DC-284-36** AGENTS.md の「モデルの区分」に、モデルを替えるときに `.claude/agents/` の定義の `model` を修正する、という記述がない。理由：DC-284-30・31 の後は、`model` を書く定義がなくなるため（実装の始めに見つけ、2026-11-01 に追加した）。
 
 ## 4. 守る制約
 
@@ -130,7 +131,7 @@ git grep -n -e related-specs -e design-migrations -e "関連 spec" -- ':!docs/08
 | skill `docs` と skill `retro` の SKILL.md にある `coding.md` への参照 | spec 283 で済んだ |
 | 「写しを守る検査の候補」のうち「残す」とした検査の写しの削除 | 候補の表の推奨の列に従う。第 2 フェーズの spec 4・5 で扱うもの以外は残す |
 | 基準の検査の説明が、[テストの実行方法](../../06-手順書/running-tests.md)と CI の検査の両方にある重複 | 手順書の整理として、本 spec の起票の案（「起票の案」）に入れる |
-| 毎回読む文書（AGENTS.md、開発の進め方、エージェントの作業フロー）の整理 | 第 2 フェーズの spec 3 で扱う。本 spec は DC-284-26 と DC-284-30〜35 の数行だけを変える |
+| 毎回読む文書（AGENTS.md、開発の進め方、エージェントの作業フロー）の整理 | 第 2 フェーズの spec 3 で扱う。本 spec は DC-284-26 と DC-284-30〜36 の数行だけを変える |
 
 ## 6. 決めたこと
 
@@ -198,8 +199,8 @@ git grep -n -e related-specs -e design-migrations -e "関連 spec" -- ':!docs/08
 
 | 重なり | 扱い |
 |--------|------|
-| #301（規模 S。`.claude/settings.json` の許可と AGENTS.md の Git の表） | 本 spec は AGENTS.md と `settings.json` を変えないので重ならない |
-| [エージェントの作業フロー](../../05-開発規則/subagents.md)、skill `review` の docs-review.md、校閲役の 2 つの定義 | DC-284-26 と DC-284-30〜35 で変える。spec 295 が書いた内容を変更するので、実装を始める前の照合で、今の本文を確認する |
+| #301（規模 S。`.claude/settings.json` の許可と AGENTS.md の Git の表） | マージ済み（PR #304）。本 spec が変える AGENTS.md の 1 文（DC-284-36）は、別の節にある |
+| [エージェントの作業フロー](../../05-開発規則/subagents.md)、skill `review` の docs-review.md、校閲役の 2 つの定義 | DC-284-26 と DC-284-30〜36 で変える。spec 295 が書いた内容を変更するので、実装を始める前の照合で、今の本文を確認する |
 
 ## 8. 起票の案
 
@@ -221,7 +222,7 @@ spec の最後に、次をまとめ方の案として pull request に付ける�
 ### 段階 1：検査の説明と写しの整理
 
 - 前提：spec の確定、`develop` の取り込み、実装を始める前の照合
-- 完了条件：DC-284-1〜35 を満たし、DN-284-1〜6 を守る。
+- 完了条件：DC-284-1〜36 を満たし、DN-284-1〜6 を守る。
 - 参照：「背景と目的」、「目的と完了条件」、「決めたこと」、[コメントの書き方](../../05-開発規則/comments.md)、[テストの書き方](../../05-開発規則/test-writing.md)
 - `[テスト]` のタスクは手元でレッドを確認し、続く実装のタスクと同じ commit に入れる。commit の本文に、レッドを確認したことを書く（[開発の進め方](../../05-開発規則/workflow.md)の「循環」）。
 
@@ -260,9 +261,9 @@ spec の最後に、次をまとめ方の案として pull request に付ける�
   - 範囲：新しい検査、`docs/06-手順書/ci.md` の検査の表、決めたこと 4 の対象のファイル、決めたこと 3 の文書
   - 手順：今の違反は、[エージェントの作業フロー](../../05-開発規則/subagents.md)の 2 行（冒頭の「Claude Code など」、「並行」の節の「Claude Code の文書は」）である。修正は、サービスに依存しない言葉に替えるか、skill `sessions` の「ツールの補足」に移す。
   - 確認方法：T284-01-06 のテストが通る。`bash scripts/ci/check-all.sh` が通る。規則の本文に名前を 1 つ書くと失敗する（確認した後に戻す）。
-- [ ] **T284-01-08** 小さな誤りを修正する（DC-284-28〜35）。
+- [ ] **T284-01-08** 小さな誤りを修正する（DC-284-28〜36）。
   - 依存：なし
-  - 範囲：`docs/02-設計/frontend-architecture.md`、`.claude/agents/ja-proofreader.md`、`.claude/agents/ja-proof-verifier.md`、skill `review` の docs-review.md、`docs/05-開発規則/subagents.md`
+  - 範囲：`docs/02-設計/frontend-architecture.md`、`.claude/agents/ja-proofreader.md`、`.claude/agents/ja-proof-verifier.md`、skill `review` の docs-review.md、`docs/05-開発規則/subagents.md`、AGENTS.md の「モデルの区分」
   - 確認方法：`node scripts/ci/doc-refs.mjs` が通る。`git grep -n '^model:' .claude/agents/` の結果に 2 つの定義がない。
 
 ### 段階 2：完了

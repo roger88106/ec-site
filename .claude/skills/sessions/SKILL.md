@@ -122,7 +122,7 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 
 ### 作業ツリーのセッションが読むもの
 
-作業ツリーの置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`。`.gitignore` で無視され、検索の対象にならない。デスクトップアプリが作る作業ツリーも同じ場所に置かれる。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。IntelliJ の `reformat_file` が使えない注意は [バックエンドの書き方](../../../docs/05-開発規則/backend-coding.md)。
+作業ツリーの置き場所は `.claude/worktrees/<issue の番号>-<短い名前>`。`.gitignore` で無視され、検索の対象にならない。デスクトップアプリが作る作業ツリーも同じ場所に置かれる。手動で作るときは、メインの作業ツリーで `git worktree add .claude/worktrees/<issue の番号>-<短い名前> -b <issue の番号>-<短い名前> develop`。IntelliJ の `reformat_file` が使えないことの注意は [バックエンドの書き方](../../../docs/05-開発規則/backend-coding.md)。
 
 起動の形ごとに、設定・定義・skill を読む場所と、変更が反映される時点。作業ツリーとメインの作業ツリーに、出力が違う一時の設定・定義・skill を置いて実際に実行し、どちらを読んだかを確認した（Claude Code 2.1.309、2026-10-29、[spec 276](../../../docs/08-spec/archive/1to10/276-retro-rules/spec.md)の「作業の記録」）。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーの、commit していない変更を含む内容を読む。
 
@@ -132,12 +132,13 @@ bash scripts/dev/merge-deps.sh 101 102   # 番号の pull request を順に処�
 | アプリのメインの作業ツリーのセッション | メインの作業ツリーのもの | メインの作業ツリーのもの。hook の変更は 10 秒ほどで反映される | メインの作業ツリーのもの。足した定義は、10 秒後は読まれず、40 秒後には読まれた | メインの作業ツリーのもの。足した skill は 10 秒ほどで読まれる |
 | 作業ツリーで起動した `claude -p` | 作業ツリーのもの。hook の変更は、動いているセッションにすぐ反映される | 作業ツリーのもの。メインの作業ツリーのものは、作業ツリーにないときも読まない。変更は、動いているセッションに反映されない | 作業ツリーのもの。起動の後に足した定義は、新しいセッションまで読まれない | 作業ツリーのもの。起動の後に足した skill は、数秒で読まれる（足した直後の最初の呼び出しは失敗しうる） |
 
-メインの作業ツリーで起動した `claude -p` は、メインの作業ツリーの 4 つを読む。作業ツリーで起動した `claude -p` は、その作業ブランチに commit された `settings.json` を読むので、`develop` を取り込んでいない作業ブランチには、`develop` の hook の変更が反映されない。アプリの作業ツリーのセッションでも、`$CLAUDE_PROJECT_DIR` はメインの作業ツリーを指す。アプリのセッションの `settings.json` の hook の変更が反映される時点は、確認していない。手動の作業ツリーで作業するアプリのセッションも確認していないが、読む場所は起動したディレクトリで決まる（上の 3 行）ので、メインの作業ツリーのものを読むと見込む。
+メインの作業ツリーで起動した `claude -p` は、メインの作業ツリーの 4 つを読む。作業ツリーで起動した `claude -p` は、その作業ブランチに commit された `settings.json` を読むので、`develop` を取り込んでいない作業ブランチには、`develop` の `settings.json` の変更（hook と permissions）が反映されない。アプリの作業ツリーのセッションでも、`$CLAUDE_PROJECT_DIR` はメインの作業ツリーを指す。アプリのセッションの `settings.json` の hook の変更が反映される時点は、確認していない。手動の作業ツリーで作業するアプリのセッションも確認していないが、読む場所は起動したディレクトリで決まる（上の 3 行）ので、メインの作業ツリーのものを読むと見込む。
 
-Claude Code の公式の文書は、設定のファイル（permissions と hooks）、定義、skill の変更が再起動なしで反映されると書いている（[settings](https://code.claude.com/docs/en/settings)、[sub-agents](https://code.claude.com/docs/en/sub-agents)、[skills](https://code.claude.com/docs/en/skills)。起動の時になかったフォルダーは監視しない）。アプリのセッションの定義・skill・`settings.local.json` の hook の実測は、文書と合う。`claude -p` の実測（`settings.local.json` と定義の変更が反映されない）は、文書と違う。原因は確認していない（1 回の実行が短いことなどの可能性）。
+Claude Code の公式の文書は、設定のファイル（permissions と hooks）、定義、skill の変更が再起動なしで反映されると書いている（[settings](https://code.claude.com/docs/en/settings)、[sub-agents](https://code.claude.com/docs/en/sub-agents)、[skills](https://code.claude.com/docs/en/skills)。起動の時になかったフォルダーは監視しない）。アプリのセッションの定義・skill・`settings.local.json` の hook の実測は、文書と合う。`claude -p` の実測（`settings.local.json` と定義の変更が反映されない）は、文書と違う。原因は確認していない（1 回の実行が短いことなどの可能性）。また、公式の文書は、作業ツリーのセッションがその作業ツリーの `settings.local.json` を読むと書いている。作業ツリーで起動した `claude -p` は文書のとおりで、アプリの作業ツリーのセッションは文書と違い、メインの作業ツリーのものを読む。
 
 定義・skill・hook を変える spec は、マージの前に、変更を入れた作業ツリーで次を確認する。アプリの作業ツリーのセッションは、作業ツリーの変更を読まないので、確認に使えない。
 
 1. その作業ツリーのディレクトリで `claude -p` を起動する（起動の形は、上の「`claude -p` の起動」）。`claude -p` はメインの作業ツリーの `settings.local.json` を読まないので、`settings.local.json` の hook は、作業ツリーの `.claude/settings.local.json` に置いて確認する。
 2. 変更が読まれることを確認する（hook は出力か拒否、定義は Agent のツールが示す名前、skill は Skill のツールが示す名前）。
 3. 読まれない起動の形があれば、spec に書き、マージの後の動きを利用者に伝える。
+4. 反映が確認できないときは、新しいセッションを起動して確認する。

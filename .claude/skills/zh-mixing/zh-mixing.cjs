@@ -17,10 +17,10 @@ const LIST_PATH = path.join(__dirname, 'zh-mixing.json')
 const CONFIG_KEY = 'ecsite.instructionLanguage'
 const ENABLED_VALUE = 'zh'
 const LOCAL_ALLOW = '.local/agent/zh-allow.txt'
-/** 評価の一覧の置き場所（中国語の混入を例として書くので、どの入口でも見ない） */
+/** 評価の一覧の置き場所（中国語の混入を例として書くので、tracked と staged の入口と、書いたファイルの検査の hook（post-tool-use.cjs）で見ない。file の入口は、明示したパスを調べる） */
 const EVALS_EXCLUDED = /^\.claude\/skills\/review\/evals\//
-/** 追跡しているファイルを調べるとき、見ないもの（アーカイブした spec は当時の記録） */
-const TRACKED_EXCLUDED = /^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\//
+/** アーカイブした spec（当時の記録なので、追跡しているファイルを調べるとき見ない） */
+const ARCHIVE_EXCLUDED = /^docs\/08-spec\/archive\//
 const COMMIT_MSG = 'COMMIT_MSG'
 
 /**
@@ -276,7 +276,7 @@ function run(argv, deps) {
   } else {
     lines = deps
       .listTracked()
-      .filter((file) => !TRACKED_EXCLUDED.test(file))
+      .filter((file) => !ARCHIVE_EXCLUDED.test(file) && !EVALS_EXCLUDED.test(file))
       .flatMap((file) => {
         let body
         try {
@@ -295,6 +295,7 @@ function run(argv, deps) {
 
 module.exports = {
   CONFIG_KEY,
+  EVALS_EXCLUDED,
   checkList,
   loadList,
   parseLocalAllow,

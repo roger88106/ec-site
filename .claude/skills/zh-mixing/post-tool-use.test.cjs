@@ -99,6 +99,15 @@ test('/.local/ の下、リポジトリの外の他のファイル、memory 以�
   })
 })
 
+test('評価の一覧の置き場所（.claude/skills/review/evals/）の下は、字があっても調べない', () => {
+  withDirs((d) => {
+    const file = put(path.join(d.root, '.claude', 'skills', 'review', 'evals', 'ja-proofread.md'), BAD)
+    assert.deepEqual(hook.handle(input(file, d.root), makeDeps(d)), SILENT)
+    const other = put(path.join(d.root, '.claude', 'skills', 'review', 'other.md'), BAD)
+    assert.equal(hook.handle(input(other, d.root), makeDeps(d)).code, 2)
+  })
+})
+
 test('ファイルのパスがない入力と、読めないファイルは何も返さない', () => {
   withDirs((d) => {
     const deps = makeDeps(d)

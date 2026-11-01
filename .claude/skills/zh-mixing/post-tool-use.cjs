@@ -2,7 +2,7 @@
 // 入力：標準入力の JSON（tool_input.file_path、cwd）。
 // 出力：見つかれば終了コード 2 と標準エラー（Claude Code がエージェントに返す）。何もなければ終了コード 0 で何も出さない。
 // 調べる対象：リポジトリのファイルと、memory のファイル（~/.claude/projects/<プロジェクト>/memory/ の下）。
-// 調べないもの：/.local/ の下、リポジトリの外の他のファイル、ファイルのパスのない入力。環境の印がなければ何もしない。
+// 調べないもの：/.local/ の下、評価の一覧の置き場所（.claude/skills/review/evals/）の下、リポジトリの外の他のファイル、ファイルのパスのない入力。環境の印がなければ何もしない。
 // 設定の手順は SKILL.md。
 const fs = require('fs')
 const os = require('os')
@@ -20,7 +20,7 @@ function isInside(parent, child) {
 function isTarget(file, repoRoot, home) {
   if (repoRoot && isInside(repoRoot, file)) {
     const rel = path.relative(repoRoot, file).split(path.sep)
-    return rel[0] !== '.local'
+    return rel[0] !== '.local' && !zh.EVALS_EXCLUDED.test(rel.join('/'))
   }
   const projects = path.join(home, '.claude', 'projects')
   if (!isInside(projects, file)) return false

@@ -15,7 +15,11 @@
     ]
   },
   "permissions": {
+    "allow": [
+      "Bash(gh pr ready *)"
+    ],
     "ask": [
+      "Bash(gh pr ready *--undo*)",
       "mcp__ccd_pr__set_auto_merge",
       "Edit(/.claude/settings.json)",
       "Edit(/.claude/settings.local.json)",

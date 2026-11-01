@@ -70,22 +70,31 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 
 ## モデルの区分
 
-サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。使う場面と、サービスやモデルを替えるときの手順は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「任せる作業とモデル」と[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「モデルや設定を替えるとき」、レビューの profile の表。そこでの effort の低・中・高は、順に `low`・`medium`・`high`。指定がなければ、下の表の既定の effort を使う。実際のモデルと effort はサービスごとに表で決め、替えるときは表を修正する。
+サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。区分ごとの使う場面と、作業ごとの区分と effort は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「任せる作業とモデル」にある。サービスやモデルを替えるときの手順は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「モデルや設定を替えるとき」。
+
+そこでの effort の低・中・高は、順に `low`・`medium`・`high`。指定がなければ、下の表の既定の effort を使う。実際のモデルと effort はサービスごとに表で決め、替えるときは表を修正する。
 
 今使う AI のサービスは Claude Code（Anthropic）。
 
-| 区分 | 使う場面の要点 | モデル | モデルの ID | 既定の effort |
-|------|----------------|--------|-------------|---------------|
-| 最上位 | 調査役が原因を特定できないとき、利用者の指定（上限あり） | Claude Fable 5.1 | `claude-fable-5-1` | `high` |
-| 高性能 | `[リスク]` のタスクの実装、原因の調査、重要な観点のレビュー | Claude Opus 5.5 | `claude-opus-5-5` | `medium` |
-| 汎用 | 実装、判断が必要な作業、一般の観点のレビュー | Claude Sonnet 5.5 | `claude-sonnet-5-5` | `medium` |
-| 軽量 | 機械的な作業（固定の分を含めて 10 万 token を超えないもの）※1 | Claude Haiku 5.5 | `claude-haiku-5-5` | `medium` |
-| 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | | |
-| セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | | |
+| 区分 | モデル | モデルの ID | 既定の effort |
+|------|--------|-------------|---------------|
+| 最上位 | Claude Fable 5.1 | `claude-fable-5-1` | `high` |
+| 高性能 | Claude Opus 5.5 | `claude-opus-5-5` | `medium` |
+| 汎用 | Claude Sonnet 5.5 | `claude-sonnet-5-5` | `medium` |
+| 軽量 | Claude Haiku 5.5 ※1 | `claude-haiku-5-5` | `medium` |
 
 最上位を使えるプランは Max で、Pro は使えない（2026-10-28）。出典と軽量の読める量は[実績](docs/07-記録/subagents-results.md)の「モデルの区分の出典と軽量の読める量」。
 
 ※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（定義なしで約 4 万、`.claude/agents/` の定義ありで約 0.6〜1.9 万 token）を含む。
+
+### レビューのツール
+
+使う時点は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「レビューの時点と profile」。
+
+| ツール | 名前 | level の指定 |
+|--------|------|--------------|
+| 組み込みのコードレビュー | Claude Code の `/code-review` | 毎回指定する（厚め high、標準 medium、節約 low） |
+| セキュリティのレビュー | Claude Code の `/security-review` | |
 
 ## Git
 

@@ -7,6 +7,7 @@
 // - 区切りが読めない（空の項目、空白を含む項目）
 // - 「許可」の行が複数ある
 // 失敗したとき：文書の「許可」の行と allowed の片方を修正したら、もう片方も同じに修正する。
+// 除外：なし
 // 使い方：node scripts/ci/license-policy.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'

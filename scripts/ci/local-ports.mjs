@@ -27,6 +27,7 @@
 //   ポートを加えるときは、次を同時に修正する。
 //   - 一覧、compose、Windows の script
 //   - 文書、設定とスクリプト、realm の redirect URI
+// 除外：なし
 // 使い方：node scripts/ci/local-ports.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'

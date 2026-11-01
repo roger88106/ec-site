@@ -1,4 +1,4 @@
-// commit の履歴を読む検査（migrations）が、shallow clone では失敗にするための確認
+// commit の履歴を読む検査（migrations、ja-text の --changed、risk）が、shallow clone では失敗にするための確認
 import { execFileSync } from 'node:child_process'
 
 /** shallow clone で履歴を読めないときの失敗の文（何をすればよいかを含む） */

@@ -7,7 +7,7 @@ const DOC = [
   '## 2. CI のジョブ',
   '| `not-a-check` | x |',
   '## 3. CI の検査の script',
-  '| script | 確認すること |',
+  '| script | 目的 |',
   '|--------|--------------|',
   '| `ac-check` | AC |',
   '| `doc-refs` | 参照 |',

@@ -1,11 +1,11 @@
 // 複合の action（action.yml）を置いたディレクトリが、Dependabot の github-actions の対象に入っていることを確認する。
 // 対象は .github/dependabot.yml の directories。
 // Dependabot の `/` は .github/workflows とルートの action.yml だけを見る。
-// だから `.github/actions/<名前>/` の中の `uses:` は、
+// そのため `.github/actions/<名前>/` の中の `uses:` は、
 // そのディレクトリを `directories` に加えなければ更新されない。加え忘れると、action のバージョンが古いまま残る。`*` は 1 つの階層として読む。
-// `directory`・`directories` の節に、知っている書き方に当たらない行があるときも失敗にする。
+// `directory`・`directories` の節に、対応している書き方に当たらない行があるときも失敗にする。
 // 読み飛ばすと、対象を見落として通るため。ファイルと行を表示する。
-//   - 知っている書き方：`directory: 値` と、字下げのそろった `- 値` の項目
+//   - 対応している書き方：`directory: 値` と、字下げのそろった `- 値` の項目
 //   - 当たらない行の例：`directories: [...]` のフロー形式、値のない `directory:`、字下げのそろわない行
 // 失敗したとき：新しい複合の action のディレクトリを directories に加える。対応していない書き方の行は、directories の下に 1 行ずつ `- 値` で書くか、検査の読み方を追加する。
 // 除外：なし
@@ -28,8 +28,8 @@ const cleanValue = (text) =>
 /**
  * dependabot.yml の github-actions の節（`- package-ecosystem: github-actions` から次の `- package-ecosystem:` まで）を読む。<br />
  * YAML のライブラリを使わず、`directory: 値` と、`directories:` の下の字下げのそろった `- 値` の項目だけを読む。
- * 読む節（`directory`、`directories` の行と、その下の行）の中で、知っている書き方に当たらない行
- * （フロー形式の `directories: [...]`、値のない `directory:`、項目でない行、字下げのそろわない項目）は、読み飛ばさずに `unknown` に入れる。
+ * 読む節（`directory` と `directories` の行と、その下の行）の中の、フロー形式の `directories: [...]`・値のない `directory:`・項目でない行・字下げのそろわない項目など、
+ * 対応していない書き方の行は、読み飛ばさずに `unknown` に入れる。
  * 空行とコメントは除く。
  *
  * @param {string} text dependabot.yml の内容
@@ -103,7 +103,7 @@ export function readActionsDirectories(text) {
 }
 
 /**
- * dependabot.yml の github-actions の節で、知っている書き方に当たらない行を探す。
+ * dependabot.yml の github-actions の節で、対応している書き方に当たらない行を探す。
  *
  * @param {string} text dependabot.yml の内容
  * @returns {{ line: number, text: string }[]} 知らない書き方の行（行の順）

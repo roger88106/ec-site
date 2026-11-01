@@ -42,8 +42,8 @@
 //   分割代入と for…of の宣言を含む。{ a: name } は右側の name を見る。
 //   関数の引数、catch の変数、関数・クラスの宣言、import は対象外。
 //   根拠は、テストの書き方の「組み込みの名前をシャドーイングしない」。
-//   名前の一覧は手動で書かず、node scripts/ci/globals/lib-globals.mjs --write が、入れた TypeScript の lib の宣言のファイルから生成する。
-//   --write なしは一覧と今の lib の名前が一致するかを確認し、違えば失敗にする。この確認は、ci.yml の店舗画面 job で実行する。手順の名前は「組み込みの名前の一覧の確認」（docs.yml は依存を入れず lib を読めないため）
+//   名前の一覧は手動で書かない。node scripts/ci/globals/lib-globals.mjs --write が、インストールした TypeScript の lib の宣言のファイルから生成する。
+//   --write なしは一覧と今の lib の名前が一致するかを確認し、違えば失敗にする。この確認は、ci.yml の店舗画面 job で実行する。step の名前は「組み込みの名前の一覧の確認」（docs.yml は依存をインストールせず lib を読めないため）
 // - フロントのテストと補助と E2E：テストを閉じる行の直後に、空行なしで test・it・describe を続けない。
 //   テストを閉じる行は、}) と、test('a', () => {}) のように 1 行で閉じるテスト。
 //   続けない対象は、test.each(・describe.skip(・test.describe.serial( などの形を含む。

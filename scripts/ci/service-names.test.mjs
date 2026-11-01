@@ -1,4 +1,4 @@
-// service-names.mjs のテスト（T284-01-06、DC-284-21・24・25）。
+// service-names.mjs のテスト。
 //
 // テストが前提にする service-names.mjs の export:
 //   SERVICE_NAMES: string[]
@@ -83,6 +83,11 @@ describe('サービス固有の名前の検査', () => {
   test('コードブロックの外の名前は違反にする', () => {
     const text = ['Claude', '```', 'Claude', '```', 'Opus'].join('\n')
     assert.deepEqual(check(text), ['docs/05-開発規則/x.md:1', 'docs/05-開発規則/x.md:5'])
+  })
+
+  test('長い囲みの中の短い囲みの字では閉じず、囲みの外の名前は違反にする', () => {
+    const text = ['````', '```', 'Claude', '````', 'Opus'].join('\n')
+    assert.deepEqual(check(text), ['docs/05-開発規則/x.md:5'])
   })
 
   test('語の一部に当たるもの（claudette、cursory）は違反にしない', () => {

@@ -62,12 +62,13 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
   - 引数なしで実行できる `.mjs` を直下に置き、テストを `*.test.mjs` に書く。`check-all.sh`、CI、hook は修正しなくてよい。
   - 処理は `if (isMain(import.meta.url)) { … }`（`lib/is-main.mjs`）の中に書き、テストが import しても動かないようにする。
   - 違反は標準出力に出し、最後の行に要約の行（`<何>：<件数>`。例：`切れた参照：0`）を出して、違反があれば終了コード 1 にする。
+  - 先頭のコメント（1 行目から `//`）に、確認すること、失敗したとき、除外を書く。
   - この節の表に行を加える（`ci-docs` の検査が、表と直下の script の対応を確認する）。
   - Git の一覧は `listGitFiles`（`lib/git-files.mjs`）で求め、`git ls-files` を直接呼ばない。対象が 0 件のとき `exitIfNoFiles`（文は `emptyListReason`）で失敗にする。0 件で失敗にすることは、`lib/git-files.test.mjs` が `scripts/ci/` の直下の検査を走査して確認する。
   - 対応していない書き方の行は、読み飛ばさずに `describeUnreadableLine`（`lib/unreadable-line.mjs`）で `ファイル:行 内容（理由）` の形にして出し、失敗にする。
   - 除外の一覧を持つなら、パスを `exclusionsPath`、誤りの文を `checkExclusions`（`lib/exclusions.mjs`）で作る。
   - 画面のソースを読むなら `lib/screen-sources.mjs` を使う。行番号が必要なら `lib/line-number.mjs` を使う。
-- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。「カバレッジと mutation score の基準の検査」）と、画面の依存が必要な検査（`licenses/`）、TypeScript の依存が必要な、組み込みの名前の一覧の生成と確認（`globals/` の下の `lib-globals.mjs`。一覧の `lib-globals.json` を `frontend-rules` が読む。下の `frontend-rules` の行）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
+- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。「カバレッジと mutation score の基準の検査」）と、画面の依存が必要な検査（`licenses/`）、TypeScript の依存が必要な、組み込みの名前の一覧の生成と確認（`globals/` の下の `lib-globals.mjs`。一覧の `lib-globals.json` を `frontend-rules` が読む。`frontend-rules.mjs` の先頭のコメント）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
 - 複数の検査が使う関数は `lib/` に置き（テストは `*.test.mjs`）、役割は各ファイルの先頭のコメントに書く。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
 
 各検査の詳しい説明（確認すること、失敗したときの修正の手順、除外の書き方）は、script の先頭のコメントにある。
@@ -75,7 +76,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | script | 目的 |
 |--------|------|
 | `ac-check` | 機能の spec の全ての AC が、テスト名（@DisplayName、test・it の第 1 引数）に 1 つずつ含まれることを、AC 一覧と照合する |
-| `ci-docs` | ci.md の表の名前と scripts/ci/ の検査が 1 対 1 に対応し、表が 2 列で、検査の先頭が `//` のコメントで始まることを確認する |
+| `ci-docs` | ci.md の表の名前と scripts/ci/ の検査が 1 対 1 に対応し、表が 2 列で、検査と `lib/` の各ファイルの 1 行目が `//` のコメントであることを確認する |
 | `compose-ports` | compose の全ての ports が、既定でこのマシンだけで待ち受ける `${LOCAL_BIND_ADDRESS:-127.0.0.1}:` で始まることを確認する |
 | `dependabot-actions` | 複合の action を置いたディレクトリが、Dependabot の github-actions の directories に入っていることを確認する |
 | `doc-refs` | Markdown のリンクと見出しの参照の先が存在し、節の番号の参照（第 N 節）が残っていないことを確認する |
@@ -102,7 +103,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | `risk` | 変更の危険度（高か低）を、危険度が高い経路と spec の宣言から判定し、pull request の本文の判定と比べる。 |
 | `role-permissions` | ロールと権限の対応表が、API の契約と運営者の realm の設定から再作成した表と一致することを確認する。 |
 | `runtime-versions` | JDK と Node のバージョンが置き場所の間で一致し、workflow が直接書かずにそれを参照していることを確認する。 |
-| `service-names` | 規則の本文（constitution と開発規則）に、AI のサービス固有の名前がない（コードスパンとリンク先のパスを除く）ことを確認する |
+| `service-names` | 規則の本文（constitution と開発規則）に、AI のサービス固有の名前がない（コードスパン、コードブロック、リンク先を除く）ことを確認する |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する。 |
 | `spec-numbers` | 本番のコードとテスト・設定のコメントに、spec・plan・tasks の番号が書かれていないことを確認する。 |
 | `test-names` | バックエンドの全てのテストに、表示の名前（`@DisplayName`）があることを確認する。 |

@@ -28,7 +28,7 @@ jobs:
     steps:
       - uses: actions/checkout@v7
         with:
-          # マイグレーションの検査（migrations）が commit の履歴を読むので、全ての branch を取得して origin/develop と origin/main との分岐点を求める
+          # 全ての branch を取得する。migrations、ja-text の --changed、risk が、origin/develop と origin/main との分岐点を求めるため
           fetch-depth: 0
 
       - uses: actions/setup-node@v7

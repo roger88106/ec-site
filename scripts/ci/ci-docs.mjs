@@ -2,7 +2,7 @@
 // 1. 表の名前と直下の検査が 1 対 1 に対応しない（表にない検査、検査のない表の行、同じ名前の行）
 //    - 直下の検査：*.test.mjs 以外の *.mjs（check-all.sh が引数なしで実行するもの）
 //    - 表：見出し `## 3.` の節の、最初の下の見出し（`### 3.1`）より前の表の 1 列目の名前（`ac-check` など）
-// 2. 表が 2 列（script と確認すること）でない。詳しい説明を表に戻さず、script の先頭のコメントに書くため。読めない書き方の行も失敗にする
+// 2. 表が 2 列（script と目的）でない。詳しい説明を表に戻さず、script の先頭のコメントに書くため。読めない書き方の行も失敗にする
 // 3. 直下の検査と lib/ の各ファイル（テストを除く）の 1 行目が `//` で始まらない。先頭のコメントのない script を残さないため
 // 失敗したとき：表に行を加えるか、不要な行を削除する。先頭のコメントのない script には、先頭のコメントを書く。
 // 除外：なし
@@ -94,7 +94,7 @@ export function checkTableColumns(markdown) {
     }
     // バッククォートの中の縦線と、エスケープした縦線は、列の区切りではない
     const cells = line.replaceAll('\\|', '').replace(/`[^`]*`/g, '').slice(1, -1).split('|').length
-    if (cells !== TABLE_COLUMNS) problems.push(describeUnreadableLine({ ...item, reason: `${cells} 列ある。表は ${TABLE_COLUMNS} 列（script と確認すること）にし、詳しい説明は script の先頭のコメントに書く` }))
+    if (cells !== TABLE_COLUMNS) problems.push(describeUnreadableLine({ ...item, reason: `${cells} 列ある。表は ${TABLE_COLUMNS} 列（script と目的）にし、詳しい説明は script の先頭のコメントに書く` }))
   })
   return problems
 }

@@ -3,6 +3,7 @@
 // コメント（/* */ か //）を求める。キーを組み立てる呼び出し（t(`…${x}`)）は、表示が値で変わるので見ない。
 // 対象は、店舗画面・管理画面・共有パッケージの本番ソース（.ts、.tsx）と、店舗画面・管理画面の src/test/ 内のテスト補助と、generated/ 内の .tsx。
 // 失敗したとき：呼び出しの後に `/* 表示する内容 */` か `// 表示する内容` を書く。
+// 除外：なし
 // 使い方：node scripts/ci/message-comments.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { closingParen } from './lib/closing-paren.mjs'

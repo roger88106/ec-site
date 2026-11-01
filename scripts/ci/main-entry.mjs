@@ -6,6 +6,7 @@
 // - import.meta.url・filename の比較と endsWith
 // - import.meta.main、require.main
 // 失敗したとき：判定を isMain(import.meta.url) に替える（.cjs は import.meta を使えないので、.mjs にして isMain を使う）。
+// 除外：なし
 // 使い方：node scripts/ci/main-entry.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

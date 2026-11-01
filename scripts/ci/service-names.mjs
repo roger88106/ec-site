@@ -1,6 +1,6 @@
 // docs/constitution.md と docs/05-開発規則/ の下の *.md の本文に、AI のサービス固有の名前（SERVICE_NAMES）がないことを確認する。
 // 理由：規則の本文はサービスに依存しない言葉で書き、サービスごとの名前は skill `sessions` の「ツールの補足」などに集めるため（サービスやモデルを替えたときに、規則を直さなくてよくする）。
-// 名前の一覧（SERVICE_NAMES）はこの script の 1 か所だけに置く。大文字・小文字は区別しない。名前の境界は ASCII の英数字だけを語の字として判定する（claudette、cursory は対象にしない。日本語の字や記号が前後にある名前は対象にする）。
+// 名前の一覧（SERVICE_NAMES）はこの script の 1 か所だけに置く。大文字・小文字は区別しない。名前の境界は ASCII の英数字だけを、語を構成する文字として判定する（claudette、cursory は対象にしない。日本語の字や記号が前後にある名前は対象にする）。
 // 名前を書いてよい場所（許可する形）は 3 つ。インラインのコードスパン（`...`）の中、Markdown のリンク先（](...) の括弧の中）、コードブロックの中（ディレクトリの構成の図のパスなど）。
 // パスと識別子（`.claude/`、`CLAUDE.md` など）はこの形で書く。リンクの表示の文字（[...] の中）は本文として扱う。
 // 判定は誤りの防止で、字を分ける、全角にするなどの意図した回避は対象にしない。
@@ -16,6 +16,9 @@ export const SERVICE_NAMES = ['Claude Code', 'Claude', 'Opus', 'Sonnet', 'Haiku'
 
 /** 名前の前後が ASCII の英数字でないこと（\b は日本語の字を語の字とみなすので使わない） */
 const NAME_PATTERN = new RegExp(`(?<![A-Za-z0-9])(?:${SERVICE_NAMES.join('|')})(?![A-Za-z0-9])`, 'i')
+
+/** コードブロックの囲みの行（開きの字の並びと、その後の文字列） */
+const FENCE = /^\s*(`{3,}|~{3,})(.*)$/
 
 /**
  * 検査の対象のファイルか。
@@ -46,13 +49,19 @@ function stripAllowed(line) {
 export function findServiceNameProblems(files) {
   const problems = []
   for (const { path, text } of files) {
-    let inFence = false
+    // 囲みの開きの字と数。同じ字で同じ数以上の行だけで閉じる（CommonMark と同じ）
+    let fence = null
     text.split('\n').forEach((line, index) => {
-      if (/^\s*(```|~~~)/.test(line)) {
-        inFence = !inFence
+      const match = line.match(FENCE)
+      if (fence) {
+        if (match && match[1][0] === fence.char && match[1].length >= fence.length && match[2].trim() === '') fence = null
         return
       }
-      if (!inFence && NAME_PATTERN.test(stripAllowed(line))) problems.push(`${path}:${index + 1}`)
+      if (match && !(match[1][0] === '`' && match[2].includes('`'))) {
+        fence = { char: match[1][0], length: match[1].length }
+        return
+      }
+      if (NAME_PATTERN.test(stripAllowed(line))) problems.push(`${path}:${index + 1}`)
     })
   }
   return problems

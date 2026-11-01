@@ -5,11 +5,12 @@
 // - 本番のソースで、列挙型の変換に name() を渡さない（valueOf(x.name())、fromValue(x.name())。改行やコメントを挟んだ書き方も見る）。値を追加したときの写し忘れをコンパイルで見つけられないため
 // - 本番のソースのうち domain と infrastructure/persistence 以外で、列挙型を名前の文字列から変換しない。
 //   対象は valueOf(文字列リテラル以外)、fromValue(文字列リテラル以外)。
-//   間の列挙を文字列で受け渡すと、相手に値を追加したときに気づけないため。
+//   モジュールやレイヤーの間で列挙を文字列で受け渡すと、相手に値を追加したときに気づけないため。
 // - 本番・テスト・tools のソースで、JSpecify（org.jspecify.annotations.Nullable）以外の Nullable を使わない。NullAway が見る注釈をそろえるため。Nullable を含むパッケージのワイルドカード import（jakarta.annotation.* など）も同じ
 // - 全てのソースセットで、@SuppressWarnings の直前の行に、理由を // のコメントで書く。なぜ検査を抑えてよいかを残すため
 //   間にある他の注釈の行は飛ばす。Javadoc だけでは違反にする。
 // 失敗したとき：テストでは定型コードを手動で書く。列挙型は switch 式で変換する。Nullable は org.jspecify.annotations.Nullable に替える。@SuppressWarnings の直前の行に、なぜ抑えてよいかを // で書く。
+// 除外：なし
 // 使い方：node scripts/ci/java-rules.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { closingParen } from './lib/closing-paren.mjs'

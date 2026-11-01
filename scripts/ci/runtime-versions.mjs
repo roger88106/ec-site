@@ -4,7 +4,7 @@
 // workflow と action の yml は、バージョンを直接書かず、この置き場所を参照する。
 //   - java-version は env.JAVA_VERSION を参照する
 //   - Node は node-version-file: .node-version の形で参照する
-//   この形でなければ失敗にする。新しい job の直書きを見つける。フロー形式の `with: { ... }` も読む。yml が 1 件もなければ失敗にする。
+//   この形でなければ失敗にする。新しい job に直接書いたバージョンを見つける。フロー形式の `with: { ... }` も読む。yml が 1 件もなければ失敗にする。
 // `JAVA_VERSION` は `ci.yml` の最上位の `env` の 1 か所だけで定義する（job の `env` や別のファイルでの上書きを失敗にする）。
 // 3 つの package.json（管理画面、店舗画面、共有）の dependencies と devDependencies にある React の指定は、書き方をそろえる。
 //   対象は `react`、`react-dom`、`@types/react`、`@types/react-dom`。全て `^1.2.3` の範囲の書き方にする。

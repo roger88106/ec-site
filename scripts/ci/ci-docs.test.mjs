@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { checkFirstLines, checkTableColumns, checkTableNames, compareChecks, listChecks, listCommentTargets, readTableChecks } from './ci-docs.mjs'
+import { checkCommentLines, checkFirstLines, checkTableColumns, checkTableNames, compareChecks, listChecks, listCommentTargets, readTableChecks } from './ci-docs.mjs'
 
 const DOC = [
   '# CI の検査',
@@ -159,5 +159,33 @@ describe('CI の検査の文書の表の検査', () => {
     assert.equal(problems.length, 2)
     assert.match(problems[0], /scripts\/ci\/a\.mjs:1 /)
     assert.match(problems[1], /scripts\/ci\/lib\/b\.mjs:1 /)
+  })
+
+  test('直下の検査の先頭のコメントに「失敗したとき：」と「除外：」の行があれば、検査が通る（`//` の直後に書く形と箇条書きの形）', () => {
+    const problems = checkCommentLines([
+      { file: 'scripts/ci/a.mjs', text: '// 確認すること\n// 失敗したとき：直す\n// 除外：なし\nimport x from "y"\n' },
+      { file: 'scripts/ci/b.mjs', text: '// ====\n// 確認すること\n//\n// - 失敗したとき：直す\n// - 除外：b.json に {キー: 理由}\n// ====\nimport x from "y"\n' },
+    ])
+    assert.deepEqual(problems, [])
+  })
+
+  test('直下の検査の先頭のコメントに「失敗したとき：」か「除外：」の行がなければ、ファイルつきで失敗にする', () => {
+    const problems = checkCommentLines([
+      { file: 'scripts/ci/a.mjs', text: '// 確認すること\n// 除外：なし\n' },
+      { file: 'scripts/ci/b.mjs', text: '// 確認すること\n// 失敗したとき：直す\n' },
+      { file: 'scripts/ci/c.mjs', text: '// 確認すること\n' },
+    ])
+    assert.equal(problems.length, 3)
+    assert.match(problems[0], /scripts\/ci\/a\.mjs.*失敗したとき：/)
+    assert.match(problems[1], /scripts\/ci\/b\.mjs.*除外：/)
+    assert.match(problems[2], /scripts\/ci\/c\.mjs.*失敗したとき：.*除外：/)
+  })
+
+  test('先頭のコメントより後ろの行と、行の途中の「失敗したとき：」「除外：」は、行として数えない', () => {
+    const problems = checkCommentLines([
+      { file: 'scripts/ci/a.mjs', text: '// 確認すること\nimport x from "y"\n// 失敗したとき：直す\n// 除外：なし\n' },
+      { file: 'scripts/ci/b.mjs', text: '// 確認すること。失敗したとき：直す。除外：なし\n' },
+    ])
+    assert.equal(problems.length, 2)
   })
 })

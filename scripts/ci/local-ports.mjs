@@ -4,7 +4,7 @@
 // - compose（docker/compose.yaml）のホスト側のポート（共有の基盤）
 // - Windows の予約の script（scripts/dev/windows/exclude-ports.ps1）の表（スロットごとにずらした分を含む）
 // - Playwright の設定（e2e/src/urls.ts、e2e/playwright.config.ts）の E2E のポート
-// - 開発環境の起動の文書とテストの実行方法の文書（`:ポート` の書き方と、スロットの表の行）
+// - setup.md（開発環境の起動）と running-tests.md（テストの実行方法）（`:ポート` の書き方と、スロットの表の行）
 // - ポートを直接書く設定とスクリプト（CONFIG_FILES）。例は次のとおり。
 //   - Keycloak の realm の redirect URI
 //   - バックエンドの application*.yml と local の seed
@@ -19,7 +19,7 @@
 // - 一覧にないポートが書かれている
 // - 一覧のポートが書かれていない
 // - 一覧の中でポートが重なる
-// - compose のホスト側のポートを読めない項目（既定値のない変数、範囲）がある（ファイルと行を出す）
+// - compose のホスト側のポートを読めない項目（既定値のない変数、範囲）がある（ファイルと行を出力する）
 // 対象外：テストコードの中のポート（単体テストの URL の例で、一覧のポートと同じである必要がない）、
 // 開発の文書のうち DOC_FILES 以外（ポートの一覧を書く文書ではない）。
 // compose の待ち受けるアドレス（LOCAL_BIND_ADDRESS）は compose-ports が確認する。この検査は、ポートの番号だけを照合する。

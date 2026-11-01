@@ -23,7 +23,7 @@
 //   変数に入れてから選ぶ形も見る。根拠は、テストの書き方の「画面に見えるもので探す」。
 // - E2E（e2e/ の下の全ての TypeScript）：次を書かない。
 //   - .first()・.nth()・.last() で選ぶこと。
-//   - locator の文字列のセレクターの中の位置で選ぶこと。位置は nth=、:nth-match(、:nth-child(、:first-child、:last-child など。
+//   - locator のセレクター文字列内の位置で選ぶこと。位置は nth=、:nth-match(、:nth-child(、:first-child、:last-child など。
 //   - getByRole('button', …) の名前を、完全一致にせずに探すこと。
 //     name が正規表現のリテラルなら先頭の ^ と末尾の $ を固定し、それ以外は exact: true を付けると、完全一致になる。
 //     連鎖の途中や複数の行にまたがる呼び出しも見る。
@@ -42,8 +42,8 @@
 //   分割代入と for…of の宣言を含む。{ a: name } は右側の name を見る。
 //   関数の引数、catch の変数、関数・クラスの宣言、import は対象外。
 //   根拠は、テストの書き方の「組み込みの名前をシャドーイングしない」。
-//   名前の一覧は手で書かず、node scripts/ci/globals/lib-globals.mjs --write が、入れた TypeScript の lib の宣言のファイルから生成する。
-//   --write なしは一覧と今の lib の名前が一致するかを確認し、違えば失敗にする。この確認は ci.yml の店舗画面の job の「組み込みの名前の一覧の確認」の手順で流す（docs.yml は依存を入れず lib を読めないため）
+//   名前の一覧は手動で書かず、node scripts/ci/globals/lib-globals.mjs --write が、入れた TypeScript の lib の宣言のファイルから生成する。
+//   --write なしは一覧と今の lib の名前が一致するかを確認し、違えば失敗にする。この確認は、ci.yml の店舗画面 job で実行する。手順の名前は「組み込みの名前の一覧の確認」（docs.yml は依存を入れず lib を読めないため）
 // - フロントのテストと補助と E2E：テストを閉じる行の直後に、空行なしで test・it・describe を続けない。
 //   テストを閉じる行は、}) と、test('a', () => {}) のように 1 行で閉じるテスト。
 //   続けない対象は、test.each(・describe.skip(・test.describe.serial( などの形を含む。
@@ -51,7 +51,7 @@
 //   test.beforeEach(・test.use(・test.step(・test.info() などは見ない。根拠は、テストの書き方の「テストとテストの間に空行を置く」。
 // 失敗したとき：2 つの機能で使うものは components/ か lib/ に置く。ロケールは LOCALE・TIME_ZONE を使う。同じファイルは共有パッケージに移す。
 //   組み込みの名前の変数は、意味の分かる名前（status → orderStatus）にする。
-//   TypeScript を上げて lib の名前が変わったときは、lib-globals.mjs --write で一覧を書き直す。
+//   TypeScript を上げて lib の名前が変わったときは、lib-globals.mjs --write で一覧を書き換える。
 //   クエリは URLSearchParams で組み立てる。
 //   テストは役割と名前で確認する。CSS のクラス、data-slot、querySelector は使わない。
 //   要素の状態は、toBeInTheDocument・toBeDisabled・toHaveValue・toHaveAttribute など jest-dom で確認する。

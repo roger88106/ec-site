@@ -3,7 +3,8 @@
 //   node .claude/skills/zh-mixing/zh-mixing.cjs file <パス>...     … 指定したファイルを調べる
 //   node .claude/skills/zh-mixing/zh-mixing.cjs staged             … ステージした追加行を調べる（git の pre-commit）
 //   node .claude/skills/zh-mixing/zh-mixing.cjs message <ファイル> … コミットメッセージのファイルを調べる（git の commit-msg）
-//   node .claude/skills/zh-mixing/zh-mixing.cjs tracked            … Git が追跡しているファイル全体を調べる（アーカイブした spec を除く。較正用）
+//   node .claude/skills/zh-mixing/zh-mixing.cjs tracked            … Git が追跡しているファイル全体を調べる（較正用）
+//     アーカイブした spec と、評価の一覧の置き場所 .claude/skills/review/evals/ を除く
 //   --force を付けると、環境の印がなくても調べる（較正用）
 // 環境の印：git config --local ecsite.instructionLanguage の値が zh のときだけ調べる。印がなければ、何も調べず何も出さず、終了コード 0。
 // 見つかれば終了コード 1 で、ファイル・行・語を標準エラー出力に出す。使い方の誤りは 2。

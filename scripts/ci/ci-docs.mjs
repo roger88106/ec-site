@@ -193,7 +193,7 @@ export function checkFirstLines(sources) {
     .map(({ file, text }) => describeUnreadableLine({ file, line: 1, text: text.split('\n')[0], reason: '1 行目がコメントでない。script の先頭に、何を確認するかを `//` のコメントで書く' }))
 }
 
-/** 直下の検査の先頭のコメントに必須の行の接頭辞 */
+/** 直下の検査が先頭のコメントに書く、必須の行の接頭辞 */
 const REQUIRED_COMMENT_LINES = ['失敗したとき：', '除外：']
 
 /**

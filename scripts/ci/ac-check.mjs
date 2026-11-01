@@ -4,20 +4,24 @@
 //   使い方：node scripts/ci/ac-check.mjs
 //
 // - AC：spec.md（docs/08-spec/ の直下とアーカイブの下の spec）の定義の行（MVP の - **AC-n** と、1→10 の - **AC-7-1**）。
-//   2 つの形は別の AC として扱う（テスト名の AC-7-1 を AC-7 と読まない）
+//   2 つの形は別の AC として扱う（テスト名の AC-7-1 を AC-7 と読まない）。番号は文書の記号と番号の「spec の番号」
 // - テスト名：Java のメソッドの @DisplayName（src/test、src/integrationTest）と、
 //   Vitest・Playwright の test・it の第 1 引数（*.test.ts(x)、*.spec.ts）。まとまりの名前（describe、クラス）は読まない。
-//   skip・fixme のテストと、skip・fixme のまとまりの中のテストは数えない。Git の対象のファイルだけを読む
+//   skip・fixme のテストと、skip・fixme のまとまりの中のテスト、コメント・文字列の中の呼び出しは数えない。Git の対象のファイルだけを読む
 // - 次のときに失敗する：テスト名に出ない AC がある、テスト名の AC 番号が範囲（AC-8〜10）で書かれている、
 //   新しい形の後に数字だけの番号を並べている（AC-7-1、2。AC-7-1、AC-7-2 と書く）、
 //   空白で区切った AC の並びがある（AC-1 AC-2。AC-1、AC-2 と書く）、
 //   テスト名を読めない test・it の呼び出し（名前が文字列でない、each の括弧が閉じない、知らない修飾が付いている）がある、テストのファイルが 0 件、
 //   spec にない AC 番号がテスト名にある、除外の一覧（ac-exclusions.json）が正しくない
 // - テスト名に出ない AC は、CI（環境変数 CI=true）でだけ失敗にし、手元では警告にする。
+//   spec を書いてからテストを書くまでの間も commit できるようにし、テストの漏れは CI で防ぐため。
 //   手元で CI と同じに確認するとき：CI=true node scripts/ci/ac-check.mjs
 // - AC 一覧（docs/03-機能仕様/acceptance-criteria.md）を読む。廃止の AC はテストが必要なく、テストが参照すると失敗する。
 //   spec と AC 一覧の AC が食い違うとき、状態が有効・変更・廃止でないとき、表が古いときに失敗する。
 //   表の要約・元の spec・テストの列は再作成する列で、--write で書き直す（状態・変えた spec・今の内容は残す）
+// - 失敗したとき：テストを追加するか、テスト名に AC を書く。範囲や空白の並びは、読点で 1 つずつ書く（AC-1、AC-2）。
+//   読めない test・it の呼び出しは ファイル:行 を出して失敗にするので、テスト名を文字列で書く。表が古いときは --write で再生成する
+// - 除外：ac-exclusions.json に {キー: 理由}。キーは AC（AC-n）。テストがある AC の除外は失敗にする
 // ============================================================================
 import { existsSync, readFileSync, writeFileSync } from 'node:fs'
 import path from 'node:path'

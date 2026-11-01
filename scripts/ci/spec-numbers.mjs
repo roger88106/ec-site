@@ -1,10 +1,13 @@
 // 本番のコードと、テストのコメントに、spec・plan・tasks の番号を書いた所がないことを確認する（コメントの書き方の「何を書くか」）。
 // 規則は言葉で書き、spec との対応はテストの名前（@DisplayName、test の名前）に書く。
+// 番号は、MVP の AC-n や T011-…、1→10 の AC-7-1 や T7-…。記号と数字の間に区切りのない形（AC10）と、全角で書いた形（NFKC で正規化して照合する）も見つける。
 // - 本番のコード：行の全体を見る
 // - バックエンドのテストとテストの補助（src/test、src/integrationTest、src/testFixtures の .java）：コメントだけを見る（@DisplayName の文字列は見ない）
 // - 設定のファイル（ルートの .ts・.mjs・.cjs、各パッケージ直下の *.config.ts・*.config.mjs、backend/ecsite/ の *.gradle.kts）：コメントだけを見る
-// - フロントのテストとテストの補助（*.test.ts(x)、src/test/）と、E2E（e2e/ の下の全ての TypeScript）：コメントだけを見る（テスト名と test.step の名前などの文字列、テンプレート文字列、正規表現のリテラルは見ない）
+// - フロントのテストとテストの補助（*.test.ts(x)、src/test/）と、E2E（e2e/ の下の全ての TypeScript。設定と e2e/scripts/ を含む）：コメントだけを見る（テスト名と test.step の名前などの文字列、テンプレート文字列、正規表現のリテラルは見ない）
 // 生成物、適用済みのマイグレーションは見ない。
+// 失敗したとき：番号を削除し、規則を言葉で書く。spec との対応はテストの名前に書く。
+// 除外：なし。
 // 使い方：node scripts/ci/spec-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

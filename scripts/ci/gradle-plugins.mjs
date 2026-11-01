@@ -1,8 +1,11 @@
-// Gradle のプラグインの id が、ライセンスの検査の一覧（scripts/ci/licenses/policy.json の gradlePlugins）と一致することを確認する。
-// Gradle のプラグインは依存の構成（licenseReport が読む構成）に出ないので、ライセンスは policy.json に手で書いている。
-// プラグインを追加・削除して一覧を直し忘れると、ライセンスを確認しないプラグインが入る、または使わないものが残るため、過不足を失敗にする。
+// Gradle のプラグインの id が、ライセンスの検査の一覧（scripts/ci/licenses/policy.json の gradlePlugins）と過不足なく一致することを確認する。
+// Gradle のプラグインは依存の構成（licenseReport が読む構成）に出ないので、ライセンスは policy.json に手動で書いている。
+// プラグインを追加・削除して一覧を修正し忘れると、ライセンスを確認しないプラグインが入る、または使わないものが残るため、過不足を失敗にする。
 // プラグインの id は、`gradle/libs.versions.toml` の `[plugins]`（1 行の表と文字列）と、`build.gradle.kts` の `plugins {}` に直接書いた `id("…")`・`kotlin("…")` から読む。
+// java、jacoco のように `.` のない id は Gradle の組み込みで、別の成果物として入らないので対象にしない。
 // 読めない書き方（`[plugins.名前]` の表、複数行の表、`plugins {}` の中の知らない行、`apply(plugin = "…")`）は、読み飛ばすと誤って通るので、ファイル:行を出して失敗にする。
+// 失敗したとき：プラグインを加える・外すときは、gradlePlugins にライセンスを確認して加える・削除する。
+// 除外：なし
 // 使い方：node scripts/ci/gradle-plugins.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

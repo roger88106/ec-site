@@ -2,7 +2,8 @@
 // 手元の既定：`backend/ecsite/build.gradle.kts` の `integrationTestShardCount` の `.orElse(N)`（`integrationTestShards` が各側のクラスを示すときの数）。
 // CI：`.github/workflows/ci.yml` の統合テストの job の matrix の `shard` の一覧の数（総数は `strategy.job-total` で読むので、一覧の数が正）。
 // ずれると、手元で見る分け方（./gradlew integrationTestShards）と、CI が実際に分ける分け方が変わる。
-// `shard` の一覧は、`[1, 2]` の形か、`- 1` の行の並びだけを読む。ほかの書き方（式、空の一覧、複数の定義）は、読み飛ばさず失敗にする。
+// `shard` の一覧は、`[1, 2]` の形か、`- 1` の行の並びだけを読む。ほかの書き方（式、空の一覧、複数の定義）と、数でない `.orElse` は、読み飛ばさず失敗にする。
+// 失敗したとき：分ける数を、ci.yml の `shard` の一覧と `.orElse(N)` で合わせる。
 // 使い方：node scripts/ci/integration-shards.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'

@@ -13,10 +13,18 @@
 // `skill `<名前>` の <ファイル名>`（`skill `review` の prompts.md`）は、その skill のフォルダーのファイルを指す。リポジトリにない skill の参照は見ない。
 // 見出しの参照と節の番号の参照の先は、直前のリンク、文書の名前、パス（`docs/06-手順書/ci.md`、`notification.md` など）で決める。
 // 直前の印（`` ` ``、「」」、「の」）と、名前と番号の間の開き括弧（`開発の進め方（` の後の番号）と、閉じ括弧（`（docs/06-手順書/ci.md）の`）と、末尾の括弧の補足（`店舗画面の構成（補足）の`）は除いて読む。
-// 見出しの参照と節の番号の参照は、Markdown の他にコードと設定のファイルも見る（TEXT_FILE の拡張子。コメントを切り出さず、文字列も含めてファイルの全体を読む）。
+// 見出しの参照と節の番号の参照は、Markdown の他に、次のコードと設定のファイルも見る。
+//   - JVM：.java、.kts、.properties、.xml
+//   - TypeScript と JavaScript：.ts、.tsx、.mjs、.cjs、.js
+//   - 設定：.yml、.yaml、.toml、.json、.jsonc
+//   - script：.sh、.ps1
+//   - その他：.grit
+// コメントを切り出さず、文字列も含めてファイルの全体を読む。
 // アーカイブした spec（当時の記録で、番号が変わらない）と、適用済みのマイグレーション（直せない）は見ない。
 // ただし、アーカイブの下の MVP の完成までの一覧（mvp.md）は spec の記録でなく一覧の文書で、spec を移すたびにリンクが切れるので見る。
 // この検査のテストと ja-text のテストも見ない。検査の例として、切れた参照と `第 N 節` をわざと書くため。
+// 失敗したとき：リンクか見出しの参照を修正する（skill `docs`）。
+// 除外：なし
 // 使い方：node scripts/ci/doc-refs.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { basename, dirname, join, normalize } from 'node:path/posix'

@@ -1,12 +1,32 @@
 // ローカルのポートの一覧（scripts/dev/ports.json）と、一覧を読めない所のポートが食い違わないことを確認する。
 // 一覧を読む所（スロットの script `scripts/dev/lib/slot.mjs`）は検査の対象にしない。
-// 一覧を読めない所：compose（docker/compose.yaml）、Windows の予約の script、Playwright の設定（E2E のポート）、開発環境の起動の文書、
-// そして、ポートを直接書く設定とスクリプト（Keycloak の realm の redirect URI、バックエンドの application*.yml、.claude/launch.json、
-// 画面の認証の設定、起動の補助の script、CI の workflow など。CONFIG_FILES）。
-// 設定のポートは、一覧から決まる値（スロットでずらした値を含む）であることを確認する。realm は、一覧の画面のポートが全て redirect URI にあることも確認する。
+// 一覧を読めない所は次のとおり。
+// - compose（docker/compose.yaml）のホスト側のポート（共有の基盤）
+// - Windows の予約の script（scripts/dev/windows/exclude-ports.ps1）の表（スロットごとにずらした分を含む）
+// - Playwright の設定（e2e/src/urls.ts、e2e/playwright.config.ts）の E2E のポート
+// - 開発環境の起動の文書とテストの実行方法の文書（`:ポート` の書き方と、スロットの表の行）
+// - ポートを直接書く設定とスクリプト（CONFIG_FILES）。例は次のとおり。
+//   - Keycloak の realm の redirect URI
+//   - バックエンドの application*.yml と local の seed
+//   - .claude/launch.json
+//   - 画面の認証の設定
+//   - 起動の補助の script
+//   - CI の workflow
+// 設定のポートは、一覧から決まる値（スロットでずらした値を含む）であることを確認する。
+// E2E の設定は、E2E のポートと、E2E が使う共有の IdP・Mailpit のポートだけを許し、開発の画面のポートなどに替えると失敗にする。
+// realm は、一覧の画面のポートが、スロットごとの分と E2E を含めて全て redirect URI にあることも確認する。
+// 失敗にする場合：
+// - 一覧にないポートが書かれている
+// - 一覧のポートが書かれていない
+// - 一覧の中でポートが重なる
+// - compose のホスト側のポートを読めない項目（既定値のない変数、範囲）がある（ファイルと行を出す）
 // 対象外：テストコードの中のポート（単体テストの URL の例で、一覧のポートと同じである必要がない）、
 // 開発の文書のうち DOC_FILES 以外（ポートの一覧を書く文書ではない）。
 // compose の待ち受けるアドレス（LOCAL_BIND_ADDRESS）は compose-ports が確認する。この検査は、ポートの番号だけを照合する。
+// 失敗したとき：一覧と、食い違う所のどちらかを修正する。
+//   ポートを加えるときは、次を同時に修正する。
+//   - 一覧、compose、Windows の script
+//   - 文書、設定とスクリプト、realm の redirect URI
 // 使い方：node scripts/ci/local-ports.mjs（リポジトリのルートで）
 import { existsSync, readFileSync } from 'node:fs'
 import { isMain } from './lib/is-main.mjs'

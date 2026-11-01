@@ -20,6 +20,12 @@
 // コードも見る：アーカイブの外の .java、.kts、.ts、.tsx、.mjs、.cjs、.sh の、コメントとテスト名（@DisplayName、describe・it・test の名前）だけを調べる。
 //   コメントの外の文字列とコード（画面の文言など）は調べない。取り出し方は lib/comment-text。
 //   テンプレートで書いたテスト名（it(`…`)）の外側のバッククォートは文字列の区切りで、インラインコードとして隠さない（埋め込みの ${…} は X の 1 字にする）。
+// コミットメッセージは、commit の hook が --message で調べる。
+// 調べない所：アーカイブした spec、評価の一覧（.claude/skills/review/evals/）、語を例に挙げるファイル（ja-text と comment-text のテスト）。
+// 失敗したとき：error の語を言い換える。warning は --warning で一覧を出力し（終了コードは 0）、示された文を読んで修正するかを決める。既定の実行は warning の件数だけを示す。
+// 除外：部分の一致が誤検出になる語は、項目を word の代わりに pattern（正規表現）で書き、examples の hit（当たる例）と miss（当たらない例）を必ず書く。
+//   examples がない、正規表現が読めない、例が合わない項目は失敗にする。
+//   使わない語を含む正しい語は、error の項目の allow に書く（上の error の行）。使わない語を含まない許容用語も失敗にする。
 // 使い方：node scripts/ci/ja-text.mjs [--warning [--added] | --stats | --changed]（リポジトリのルートで）
 //   --stats：閾値ごとの文の数を出力する。表のセルは、セルごとに文の字数を合計して数える（閾値を決めるときに見る）。
 //   --added：--warning と合わせて、標準入力の差分（git diff --cached -U0）の追加行だけを一覧にする（commit の前の hook）。
@@ -27,6 +33,7 @@
 //   --changed：差分の追加行の文で、字数が style.length（100）以上か読点が style.comma（5）以上のものを示す。
 //       文の字数の合計が style.cell（80）以上の表のセルも示す。
 //       GitHub Actions の注釈（`::warning file=…,line=…::`）の形で 1 件 1 行に出し、最後に件数の行を出す。
+//       注釈は GitHub が 1 つの step で 10 件までしか表示しないので、一覧の代わりにしない。手元は件数だけを示す。一覧は --changed の出力を読み、文を分けるかを決める。
 //       警告があっても終了コードは 0。「の」の連なり、否定、複合動詞の崩れと、語の検査は見ない（語は既定の実行が見る）。
 //       差分の基準は、HEAD と origin/develop（なければ develop）のマージベース。
 //       マージベースが HEAD のときは、CI の develop・main への push なら HEAD の 1 つ目の親にする。

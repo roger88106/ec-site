@@ -1,5 +1,7 @@
 // バックエンドのすべてのテストに、表示の名前（@DisplayName）があることを確認する（テストの書き方の「名前は振る舞いを書く」）。
 // テストのメソッド（@Test・@ParameterizedTest）の注釈のまとまりに @DisplayName がなければ失敗する。構文は解析しない。
+// 失敗したとき：振る舞いを書いた名前を付ける。
+// 除外：なし。
 // 使い方：node scripts/ci/test-names.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

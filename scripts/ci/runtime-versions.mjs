@@ -1,10 +1,17 @@
 // 実行環境（JDK と Node）のバージョンが、複数の置き場所で一致していることを確認する。
 // JDK：`.github/workflows/ci.yml` の `env.JAVA_VERSION` と `backend/ecsite/gradle/libs.versions.toml` の `java` が同じ値。
-// Node：`.node-version` の値が、ルートの `package.json` の `engines.node`（`>=N` の形）の範囲を満たす。
-// workflow と action の yml は、バージョンを直接書かず、この置き場所を参照する（新しい job の直書きを見つける。フロー形式の `with: { ... }` も読む）。
+// Node：`.node-version` の値が、ルートの `package.json` の `engines.node`（`>=N` の形だけを扱う）の範囲を満たす。
+// workflow と action の yml は、バージョンを直接書かず、この置き場所を参照する。
+//   - java-version は env.JAVA_VERSION を参照する
+//   - Node は node-version-file: .node-version の形で参照する
+//   この形でなければ失敗にする。新しい job の直書きを見つける。フロー形式の `with: { ... }` も読む。yml が 1 件もなければ失敗にする。
 // `JAVA_VERSION` は `ci.yml` の最上位の `env` の 1 か所だけで定義する（job の `env` や別のファイルでの上書きを失敗にする）。
-// 3 つの package.json の React の指定（`react`、`react-dom`、`@types/react`、`@types/react-dom`）は、全て `^` の範囲の書き方にそろえる。
+// 3 つの package.json（管理画面、店舗画面、共有）の dependencies と devDependencies にある React の指定は、書き方をそろえる。
+//   対象は `react`、`react-dom`、`@types/react`、`@types/react-dom`。全て `^1.2.3` の範囲の書き方にする。
+// peerDependencies は使う側に許す範囲を書くので対象にしない。
 // 1 か所から読めないバージョンは、置き場所の間の一致を検査で確認する。ずれると、手元と CI で別のバージョンを動かす。
+// 失敗したとき：置き場所のバージョンをそろえる。新しい job は、バージョンを直接書かずこの形で参照する。Node のバージョンを上げるときは .node-version と engines.node を合わせる。
+// 除外：なし。
 // 使い方：node scripts/ci/runtime-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

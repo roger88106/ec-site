@@ -1,7 +1,14 @@
-// 複合の action（action.yml）を置いたディレクトリが、Dependabot の github-actions の対象（.github/dependabot.yml）に入っていることを確認する。
-// Dependabot の `/` は .github/workflows とルートの action.yml だけを見るので、`.github/actions/<名前>/` の中の `uses:` は、
-// そのディレクトリを `directories` に加えなければ更新されない。加え忘れると、action のバージョンが古いまま残る。
-// `directory`・`directories` の節に、知っている書き方に当たらない行があるときも失敗にする（読み飛ばすと、対象を見落として通るため）。
+// 複合の action（action.yml）を置いたディレクトリが、Dependabot の github-actions の対象に入っていることを確認する。
+// 対象は .github/dependabot.yml の directories。
+// Dependabot の `/` は .github/workflows とルートの action.yml だけを見る。
+// だから `.github/actions/<名前>/` の中の `uses:` は、
+// そのディレクトリを `directories` に加えなければ更新されない。加え忘れると、action のバージョンが古いまま残る。`*` は 1 つの階層として読む。
+// `directory`・`directories` の節に、知っている書き方に当たらない行があるときも失敗にする。
+// 読み飛ばすと、対象を見落として通るため。ファイルと行を表示する。
+//   - 知っている書き方：`directory: 値` と、字下げのそろった `- 値` の項目
+//   - 当たらない行の例：`directories: [...]` のフロー形式、値のない `directory:`、字下げのそろわない行
+// 失敗したとき：新しい複合の action のディレクトリを directories に加える。対応していない書き方の行は、directories の下に 1 行ずつ `- 値` で書くか、検査の読み方を追加する。
+// 除外：なし
 // 使い方：node scripts/ci/dependabot-actions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

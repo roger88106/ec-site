@@ -48,16 +48,17 @@ import { exitIfShallow } from './lib/shallow-clone.mjs'
 /** 調べる文書 */
 const DOCS = /^((docs\/.*|README|AGENTS|\.claude\/(skills|agents)\/.*)\.md|\.github\/.*\.(md|ya?ml))$/
 
-/** 見ない文書（アーカイブした spec（当時の記録）） */
-const EXCLUDED = /^docs\/08-spec\/archive\//
+/** 見ない文書（アーカイブした spec（当時の記録）、評価の一覧の置き場所（使わない語を例として書く）） */
+const EXCLUDED = /^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\//
 
 /**
  * 調べないコード。
  * - 生成したコード、依存のパッケージ、ビルドの出力（書き手が直せない）
  * - アーカイブした spec の下（当時の記録）
+ * - 評価の一覧の置き場所（使わない語を例として書く）
  * - 語を例に挙げるテスト（サンプルの文に、使わない語を書く）
  */
-const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/08-spec\/archive\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
+const CODE_EXCLUDED = /(^|\/)(node_modules|generated|build|dist|\.next)\/|^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\/|^scripts\/ci\/(ja-text\.test\.mjs|lib\/comment-text\.test\.mjs)$/
 
 /** インラインコード（バッククォートで囲んだ、1 行の中の部分） */
 const INLINE_CODE = /`[^`\n]+`/g

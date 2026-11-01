@@ -310,6 +310,13 @@ describe('日本語の文の検査（コードのコメントとテスト名）'
     assert.equal(isTargetCode('scripts/ci/lib/comment-text.test.mjs'), false)
   })
 
+  test('評価の一覧の置き場所（review の evals）の文書とコードは調べない', () => {
+    assert.equal(isTargetDoc('.claude/skills/review/evals/cases.md'), false)
+    assert.equal(isTargetDoc('.claude/skills/review/SKILL.md'), true)
+    assert.equal(isTargetCode('.claude/skills/review/evals/check.mjs'), false)
+    assert.equal(isTargetCode('.claude/skills/review/check.mjs'), true)
+  })
+
   test('Java のコメントと @DisplayName の error を、元の行番号で見つける', () => {
     const source = ['class A {', '  // 道具を使う', '  @DisplayName("作り修正する")', '  void f() { String s = "道具"; }', '}'].join('\n')
     assert.deepEqual(

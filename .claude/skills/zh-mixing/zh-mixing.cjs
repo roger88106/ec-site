@@ -17,8 +17,10 @@ const LIST_PATH = path.join(__dirname, 'zh-mixing.json')
 const CONFIG_KEY = 'ecsite.instructionLanguage'
 const ENABLED_VALUE = 'zh'
 const LOCAL_ALLOW = '.local/agent/zh-allow.txt'
+/** 評価の一覧の置き場所（中国語の混入を例として書くので、どの入口でも見ない） */
+const EVALS_EXCLUDED = /^\.claude\/skills\/review\/evals\//
 /** 追跡しているファイルを調べるとき、見ないもの（アーカイブした spec は当時の記録） */
-const TRACKED_EXCLUDED = /^docs\/08-spec\/archive\//
+const TRACKED_EXCLUDED = /^docs\/08-spec\/archive\/|^\.claude\/skills\/review\/evals\//
 const COMMIT_MSG = 'COMMIT_MSG'
 
 /**
@@ -268,7 +270,7 @@ function run(argv, deps) {
   if (mode === 'file') {
     lines = rest.flatMap((file) => fileLines(file.replace(/\\/g, '/'), deps.readFile(file)))
   } else if (mode === 'staged') {
-    lines = parseAddedLines(deps.stagedDiff())
+    lines = parseAddedLines(deps.stagedDiff()).filter(({ file }) => !EVALS_EXCLUDED.test(file))
   } else if (mode === 'message') {
     lines = messageLines(deps.readFile(rest[0]))
   } else {

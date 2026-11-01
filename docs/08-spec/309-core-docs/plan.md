@@ -45,7 +45,7 @@
 | サブエージェントへの任せ方の規則 | `subagents.md`（取り入れるものの表を、理由のない規則の箇条にする） | なし |
 | 任せ方の決定とその理由 | 決定記録（確認 1） | `subagents.md`、`subagents-results.md` |
 | 文書のフォルダーの説明 | constitution の「文書の地図」 | constitution の「リポジトリ構成」の木、`workflow.md` の「文書の置き場所」 |
-| 文書の書き方への案内 | `workflow.md` の「spec と plan の書き方」 | `workflow.md` の「文書の書き方」の節は削除する |
+| 文書の書き方への案内 | `workflow.md` の「spec と plan の書き方」 | `workflow.md` の文書の書き方の節は削除する |
 | 作業ツリーの置き場所、作業ツリーのセッションが読む設定 | skill `sessions` の「作業ツリーのセッションが読むもの」 | `subagents.md`、`AGENTS.md` の「環境」 |
 | `settings.local.json` の hook のコマンドの形 | skill `local-dev` の「手元の hook の設定」 | `subagents.md`（削除する）、`AGENTS.md` の「環境」 |
 

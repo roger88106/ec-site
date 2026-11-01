@@ -20,7 +20,7 @@
   - 依存：T309-02-02、確認 2 の決定
   - 範囲：`docs/05-開発規則/subagents.md`、`docs/05-開発規則/resources.md`、`docs/07-記録/subagents-results.md`
   - 確認方法：文書を読む
-- [ ] **T309-02-04** 文書の置き場所と案内：constitution の「リポジトリ構成」の木にある、`docs/` 配下のコメントを削除する。`workflow.md` の「文書の置き場所」の表を spec と issue に関わる行にする。`workflow.md` の「文書の書き方」の節を削除する（DC-309-7〜9）。
+- [ ] **T309-02-04** 文書の置き場所と案内：constitution の「リポジトリ構成」の木にある、`docs/` 配下のコメントを削除する。`workflow.md` の「文書の置き場所」の表を spec と issue に関わる行にする。`workflow.md` の文書の書き方の節を削除する（DC-309-7〜9）。
   - 依存：T309-02-03
   - 範囲：`docs/constitution.md`、`docs/05-開発規則/workflow.md`、`doc-refs` が報告する、参照を修正する文書
   - 確認方法：`node scripts/ci/doc-refs.mjs` が通る

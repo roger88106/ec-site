@@ -8,7 +8,7 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。
 
-- [x] **T309-01-01** 決定記録の形を `docs/04-決定記録/README.md` に書く。任せ方の決定と理由（`subagents.md` の「取り入れるもの・取り入れないもの」と `subagents-results.md` の「取り入れる判断の理由」）を、決定記録の 1 つのファイルにまとめる。`subagents-results.md` の「取り入れる判断の理由」は、決定記録を指す 1 文の節にし、冒頭の節の一覧も修正する。`subagents.md` の、その節へのリンクは、決定記録へのリンクに修正する。constitution の「文書の地図」に加える（DC-309-11 の一部。満たすのは段階 2 の T309-02-06 の後）。
+- [x] **T309-01-01** 決定記録の形を `docs/04-決定記録/README.md` に書く。任せ方の決定と理由（`subagents.md` の旧節（取り入れるもの・取り入れないもの）と `subagents-results.md` の「取り入れる判断の理由」）を、決定記録の 1 つのファイルにまとめる。`subagents-results.md` の「取り入れる判断の理由」は、決定記録を指す 1 文の節にし、冒頭の節の一覧も修正する。`subagents.md` の、その節へのリンクは、決定記録へのリンクに修正する。constitution の「文書の地図」に加える（DC-309-11 の一部。満たすのは段階 2 の T309-02-06 の後）。
   - 依存：確認 1 の決定
   - 範囲：`docs/04-決定記録/`、`docs/07-記録/subagents-results.md`、`docs/constitution.md`、`docs/05-開発規則/subagents.md`（リンクの修正だけ）。`subagents.md` の表を規則の箇条にするのは段階 2（T309-02-06）
   - 確認方法：文書を読む。決定と理由が、元の 2 か所と照合して欠けていない。`node scripts/ci/doc-refs.mjs` が通る。確認 1 で案 B なら、`subagents-results.md` に 1 か所にまとめる

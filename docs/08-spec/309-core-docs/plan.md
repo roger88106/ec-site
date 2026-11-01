@@ -86,13 +86,13 @@ skill `sessions`・`review` は、指す側のうち、本 spec では正本を�
 
 | 決定 | 置き場所 | DC | 確認方法 |
 |------|----------|----|----------|
-| 任せ方の決定（`subagents.md` の「取り入れるもの・取り入れないもの」の決定と理由）と、`subagents-results.md` の「取り入れる判断の理由」を、決定記録の 1 つのファイルにまとめる ※3 | `docs/04-決定記録/`、`docs/07-記録/subagents-results.md` | 11 | 文書を読む |
+| 任せ方の決定（`subagents.md` の旧節（取り入れるもの・取り入れないもの）の決定と理由）と、`subagents-results.md` の「取り入れる判断の理由」を、決定記録の 1 つのファイルにまとめる ※3 | `docs/04-決定記録/`、`docs/07-記録/subagents-results.md` | 11 | 文書を読む |
 | `subagents-results.md` の「取り入れる判断の理由」は、決定記録を指す 1 文の節にする。冒頭の節の一覧も修正する | `docs/07-記録/subagents-results.md` | 11 | 文書を読む |
 | `subagents.md` の、`subagents-results.md` の「取り入れる判断の理由」へのリンクは、決定記録へのリンクに修正する | `docs/05-開発規則/subagents.md` | 11 | `node scripts/ci/doc-refs.mjs` |
 | 決定記録の形は、`docs/04-決定記録/README.md` に最小の形で書く | `docs/04-決定記録/README.md` | 11 | 文書を読む |
 | 最小の形は、1 つの決定につき 1 ファイルで、節は背景・決定・理由・日付・関連とする。spec 4（設計書の型と試作）が型を決めるときに再検討してよい | `docs/04-決定記録/README.md` | 11 | 文書を読む |
-| `subagents.md` の「調べた仕組み」の節を削除する（記録は `subagents-results.md` にある） | `docs/05-開発規則/subagents.md` | 12 | `node scripts/ci/doc-refs.mjs` |
-| `subagents.md` の「取り入れるもの・取り入れないもの」の表を、理由のない規則の箇条（サブエージェントへの任せ方）にする。決定と理由は決定記録へ | `docs/05-開発規則/subagents.md` | 13 | 文書を読む |
+| `subagents.md` の旧節（調べた仕組み）を削除する（記録は `subagents-results.md` にある） | `docs/05-開発規則/subagents.md` | 12 | `node scripts/ci/doc-refs.mjs` |
+| `subagents.md` の旧節（取り入れるもの・取り入れないもの）の表を、理由のない規則の箇条（サブエージェントへの任せ方）にする。決定と理由は決定記録へ | `docs/05-開発規則/subagents.md` | 13 | 文書を読む |
 | spec 246 の経緯（pull request の前のレビュー役を加える理由）は、`subagents.md` では 1 文の規則と記録へのリンクにする。詳しい表は `subagents-results.md` の「見逃しの一覧の種類」にある | `docs/05-開発規則/subagents.md` | 14 | 文書を読む |
 | 「整理の第 1 フェーズの測定（#265）では値を変えない」の文は、確認 2 の案 A（推奨）では、`resources.md` に 1 行だけ置く | `docs/05-開発規則/resources.md` | 15 | 文書を読む |
 | 上の 1 行の対象は、作業の形の表、止める閾値、spec の最後のレビューの量とする | `docs/05-開発規則/resources.md` | 15 | 文書を読む |

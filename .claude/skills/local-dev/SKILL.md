@@ -159,7 +159,7 @@ curl -s --retry 60 --retry-delay 3 --retry-all-errors -m 5 -o /dev/null -w '%{ht
 
 ## CI の検査の script
 
-`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで実行する（hook を置いていれば commit のときに実行される）。各検査の中身、失敗したときの修正方法、除外の書き方は [CI の検査](../../../docs/06-手順書/ci.md)。
+`./gradlew check` と `check-frontend.sh` に入っていない CI の検査。commit の前にルートで実行する（hook を置いていれば commit のときに実行される）。各検査の目的は [CI の検査](../../../docs/06-手順書/ci.md)の表にある。中身と失敗したときの修正の手順と除外の書き方は、各 script の先頭のコメントにある。
 
 ```bash
 scripts/ci/check-all.sh

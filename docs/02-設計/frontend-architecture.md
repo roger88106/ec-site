@@ -23,7 +23,7 @@ frontend/
 | 利用者 | 消費者 | 運営者 |
 | フレームワーク | Next.js（App Router） | Vite + React（SPA）、React Router |
 | API を呼ぶ場所 | サーバーだけ（ブラウザーから API を呼ばない） | ブラウザー（開発時は Vite が `/api` を転送） |
-| 取得 | サーバーコンポーネント。Next.js の fetch キャッシュ（最大 60 秒） | TanStack Query + openapi-react-query |
+| 取得 | サーバーコンポーネント。キャッシュするのは一覧・検索・カテゴリだけ（最大 60 秒）。詳しくは [店舗画面（`frontend/store`）の構成](apps/store.md)の「キャッシュ」 | TanStack Query + openapi-react-query |
 | 更新 | サーバーアクション。結果は `ActionResult` | `useApiMutation`。結果は toast と操作した場所 |
 | フォーム | `useActionState` | React Hook Form |
 | ログイン | Auth.js。サーバーが IdP とやり取りする（confidential client） | oidc-client-ts。ブラウザーが IdP とやり取りする（public client、PKCE） |

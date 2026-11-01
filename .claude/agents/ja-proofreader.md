@@ -2,7 +2,6 @@
 name: ja-proofreader
 description: 渡された日本語を、日本語の技術文書の読者として読み、引っかかりうる語句を候補として多めに表で返す。対象は、差分の追加行、確認の前の全文、issue の本文とコメント。挙げるかの判定はしない（ja-proof-verifier が行う）。ファイルを変えない。
 tools: Read, Grep, Glob
-model: sonnet
 omitClaudeMd: true
 ---
 

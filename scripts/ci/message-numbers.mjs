@@ -1,7 +1,9 @@
 // バックエンドのエラーの文に、数字を直接書いていないことを確認する（バックエンドの書き方の「エラーは XxxErrorCode と BusinessException」）。
 // 上限・桁数などの値を文に書くと、規則の値が変わったときに文が取り残される。値はドメインの定数から {名前} で差し込む。
-// 差し込み（{max} など）を除いた文に数字があれば失敗にする。数え方の言葉（「1 つだけ」など）で規則の値でないものは、
-// 理由を添えて message-numbers-exclusions.json に書く。メールの文（ecsite.notification.*）はエラーの文でないので見ない。
+// 差し込み（{max} など）を除いた文に数字があれば失敗にする。
+// 除外：数え方の言葉（「1 つだけ」など）で規則の値でないものは、message-numbers-exclusions.json に {キー: 理由} で書く。キーはメッセージのキー。除外の一覧の、不要になったキーも失敗にする。
+// メールの文（ecsite.notification.*）はエラーの文でないので見ない。
+// 失敗したとき：値をドメインの定数から {名前} で差し込む。
 // 使い方：node scripts/ci/message-numbers.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'

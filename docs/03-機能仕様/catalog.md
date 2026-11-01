@@ -6,7 +6,6 @@
 |------|------|
 | レベル | A（軸の組み合わせの一意性、公開の条件など、不変条件が多い） |
 | 依存 | 税（API）、メディア（API。商品画像のファイル） |
-| 関連 spec | [001](../08-spec/archive/mvp/001-catalog-and-inventory)、[002](../08-spec/archive/mvp/002-cart-and-order)、[013](../08-spec/archive/mvp/013-backend-consistency)、[017](../08-spec/archive/mvp/017-stability)、[018](../08-spec/archive/mvp/018-docs-and-tools)、[019](../08-spec/archive/mvp/019-mvp-completion)、[155](../08-spec/archive/1to10/155-backend-structure) |
 
 ## 商品（集約）
 

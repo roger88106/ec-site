@@ -3,6 +3,7 @@
 // 追跡しているファイルだけにすると、新しいファイルが検査されずに手元で通り、CI で初めて失敗する。
 // 手元と CI の違い：CI の作業ツリーには追跡していないファイルがない。手元にだけある commit しないファイルで、手元だけ失敗することがある（.gitignore に書くか /.local/ に置いて避ける）。
 // commit し忘れたファイルを指す参照は、手元で通り CI で失敗することがある。
+// Git の一覧を読む検査は、対象が 0 件のとき失敗にする（exitIfNoFiles。文は emptyListReason）。
 // ファイルを探す検査（doc-refs、ja-text、frontend-rules、java-rules、message-comments、spec-numbers、test-names、time-waits など）が使う
 import { execFileSync } from 'node:child_process'
 import { existsSync } from 'node:fs'

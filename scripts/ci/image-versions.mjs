@@ -1,6 +1,12 @@
 // コンテナのイメージのバージョンが、compose、Gradle、統合テストで一致することと、compose のバージョンが patch まで固定されていることを確認する。
 // compose の `image:` の `名前:バージョン` を正とし、同じ名前のイメージを書いた Gradle と統合テストのコードのバージョンが違えば失敗にする。
 // バージョンがずれると、手元（compose）と CI（Testcontainers）で別のイメージを動かすことになり、片方だけで起きる不具合を見逃す。
+// compose の全てのイメージは patch まで固定する。latest、バージョンなし、3 や 3.6 は失敗にする。
+//   patch のないタグの付け方が正しい postgres（major だけ）と chrislusf/seaweedfs（major.minor だけ）は許す。
+// compose にないイメージを統合テストが使うときは、照合する相手がないので「警告：」で報告するだけにする。
+// 既定値のない変数を差し込んだ `image:` の行は、バージョンを決められないので、ファイルと行を出して失敗にする。
+// 失敗したとき：統合テストと Gradle のバージョンを compose のバージョンにそろえる。compose のバージョンは patch まで書く。
+// 除外：なし
 // 使い方：node scripts/ci/image-versions.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

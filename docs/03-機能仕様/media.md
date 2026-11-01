@@ -7,7 +7,6 @@
 |------|------|
 | レベル | B（業務の不変条件はなく、ストレージとの連携が中心） |
 | 依存 | なし（使う側から API で呼ばれる） |
-| 関連 spec | [001](../08-spec/archive/mvp/001-catalog-and-inventory)、[016](../08-spec/archive/mvp/016-master-data)、[017](../08-spec/archive/mvp/017-stability)、[018](../08-spec/archive/mvp/018-docs-and-tools)、[131](../08-spec/archive/1to10/131-ci-tidy)、[155](../08-spec/archive/1to10/155-backend-structure) |
 | 範囲外 | サイトの静的ファイル（ロゴ、CSS、JavaScript）。フロントのビルド成果物として、フロントの配信（CDN）が配信する |
 
 ## アセット
@@ -89,8 +88,6 @@ media/
 イベント（アセット解放）はモジュールの中だけで使う。
 
 ## データモデル
-
-[V202610101100__media_create_asset.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101100__media_create_asset.sql)、[V202610101200__catalog_move_product_image_files_to_media.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101200__catalog_move_product_image_files_to_media.sql)、[V202610101300__common_comment_logical_names.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101300__common_comment_logical_names.sql)、[V202610201000__common_add_enum_column_checks.sql](../../backend/ecsite/src/main/resources/db/migration/V202610201000__common_add_enum_column_checks.sql)
 
 - 使う側からの外部キーは受けない。
 - 配信キーは、アセットごとに記録する。用意で作るアセットは `assets/{アセット ID}.webp`、商品カタログから移したアセットは `products/{productId}/{imageId}.{拡張子}`（拡張子は記録した形式）。

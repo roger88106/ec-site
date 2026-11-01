@@ -2,7 +2,6 @@
 name: ja-proof-verifier
 description: ja-proofreader の候補の表と校閲の対象を受け取り、候補ごとに「挙げる」か「挙げない」かを判定し、理由とともに表で返す。新しい候補は加えない。ファイルを変えない。
 tools: Read, Grep, Glob
-model: opus
 omitClaudeMd: true
 ---
 

@@ -1,6 +1,7 @@
 // 検査の script を走査して、共通の関数の使用を確認するテストの補助。
 // 共通の関数（lib/ の関数）を、検査ごとに自前で書き直さないことを、禁じる書き方の表で確認する。
 //
+// 走査する script の範囲は、listScanScripts に ci、ci+lib、all で指定する。
 // 使い方：
 // - テストは、走査する範囲の script を listScanScripts で取得し、表を findRuleViolations に渡し、返りが空であることを確認する
 // - 表の 1 行は { guard, forbidden, target, exceptions }

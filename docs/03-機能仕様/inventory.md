@@ -6,7 +6,6 @@
 |------|------|
 | レベル | A（並行して調整されても失われないこと、引当と減算） |
 | 依存 | 商品カタログ（イベント） |
-| 関連 spec | [001](../08-spec/archive/mvp/001-catalog-and-inventory)、[002](../08-spec/archive/mvp/002-cart-and-order)、[017](../08-spec/archive/mvp/017-stability)、[018](../08-spec/archive/mvp/018-docs-and-tools)、[019](../08-spec/archive/mvp/019-mvp-completion)、[155](../08-spec/archive/1to10/155-backend-structure) |
 
 ## 在庫と在庫調整
 
@@ -118,13 +117,6 @@ inventory/
 | API | 引き当てる、解く、減算に置き換える、戻す | 注文 |
 
 ## データモデル
-
-- [V202610091600__inventory_create_stock_item.sql](../../backend/ecsite/src/main/resources/db/migration/V202610091600__inventory_create_stock_item.sql)：在庫、在庫調整
-- [V202610111000__inventory_create_stock_reservation.sql](../../backend/ecsite/src/main/resources/db/migration/V202610111000__inventory_create_stock_reservation.sql)：引当、注文の調整理由と注文
-- [V202610121400__inventory_add_operator_name.sql](../../backend/ecsite/src/main/resources/db/migration/V202610121400__inventory_add_operator_name.sql)：運営者の氏名の写し
-- [V202610201100__inventory_add_stock_reservation_expires_at_index.sql](../../backend/ecsite/src/main/resources/db/migration/V202610201100__inventory_add_stock_reservation_expires_at_index.sql)：引当の片付けが期限で探す索引
-- [V202610101300__common_comment_logical_names.sql](../../backend/ecsite/src/main/resources/db/migration/V202610101300__common_comment_logical_names.sql)：テーブルと列の論理名
-- [V202610121200__ordering_add_member_id.sql](../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)：注文手続きに会員 ID を加えるときに、会員のいない注文手続きの引当を削除する（注文モジュールのマイグレーション）
 
 - バリアント・商品・注文手続き・注文は他のモジュールの ID なので、外部キーは張らない。
 - 商品を持つのは、B 側で商品ごとの在庫数の合計を出すため。

@@ -1,20 +1,66 @@
 // フロントの書き方の規則のうち、ソースの文字で確認できるものを確認する（フロントの書き方の「機能ごとに features/<機能>/」、フロントの書き方の「入れるもの・入れないもの」、フロントの書き方の「ロケールは 1 か所」）。
-// - 機能（features/<機能>/）は、ほかの機能を import しない
+// - 機能（features/<機能>/）は、ほかの機能を import しない（@/features/ のほか、相対パス、export … from、import() の書き方も見る）
 // - ロケールとタイムゾーンは frontend/shared/src/lib/locale.ts だけに書く。Intl と toLocaleString にロケールを直接書かない
 // - 店舗画面と管理画面に、同じ相対パスで同じ内容のファイルを置かない（共有パッケージに置く）
 // - 店舗画面と管理画面の本番のソースに、共有パッケージが公開する名前と同じ名前の関数・定数・クラスを定義しない（フロントの書き方の「入れるもの・入れないもの」。公開する名前は shared の package.json の exports から読む）
 // - 共通の置き場所（actions/、lib/、api/）は features/ を import しない（フロントの書き方の「機能ごとに features/<機能>/」）
 // - クエリ付きの URL を文字列で組み立てない（フロントの書き方の「画面の URL」）。line-through を直接書かない（フロントの書き方の「取り消し線は <s> で示す」）
-// - テストと E2E で CSS のクラスを確認しない。画面のテストで data-slot と querySelector で探さない（テストの書き方の「画面に見えるもので探す」）
-// - フロントのテストと補助：理由のコメントのない型の回避（as never、as unknown as）、fireEvent の直接の使用を書かない（テストの書き方の「型を回避する変換を使わない」と、テストの書き方の「fireEvent を直接使わない」）
-// - フロントのテスト：describe の名前を識別子だけにしない、要素のプロパティ・属性を toBe・toEqual で比べない、描画した HTML の文字を要素や属性の並びで確認しない（テストの書き方の「名前は振る舞いを書く」、テストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」と、テストの書き方の「画面に見えるもので探す」）
-// - フロントのテストと E2E：toBeTruthy・toBeDefined で確認しない、getAllBy…の結果を並びのインデックスで選ばない（テストの書き方の「画面に見えるもので探す」）
-// - E2E：.first()・.nth()・.last() と、locator の文字列のセレクターの中の位置（nth=、:nth-child( など）で選ばない、ボタンの名前を完全一致で探す（テストの書き方の「画面に見えるもので探す」）。networkidle で待たない、timeout を含む項目・intervals・setTimeout などの引数に、タイムアウトを数字のリテラルで書かない（e2e/src/waits.ts を除く。テストの書き方の「待ち方」）
-// - フロントのテストと補助と E2E：TypeScript の lib のグローバルの名前（一覧は globals/lib-globals.json）と同じ名前の const・let を宣言しない（テストの書き方の「組み込みの名前をシャドーイングしない」）
-// - フロントのテストと補助と E2E：テストの間に空行を置く（テストを閉じる行の直後に test・it・describe を続けない。テストの書き方の「テストとテストの間に空行を置く」）
+// - テストと E2E で CSS のクラスを確認しない。画面のテストで data-slot と querySelector・querySelectorAll で探さない（テストの書き方の「画面に見えるもので探す」）
+// - フロントのテストと補助（src/test/）：理由のコメントのない型の回避（as never、as unknown as）を書かない。fireEvent の直接の使用も書かない。
+//   根拠は、テストの書き方の「型を回避する変換を使わない」と、テストの書き方の「fireEvent を直接使わない」。
+//   fireEvent は import の別名（import { fireEvent as fe }）と rtl.fireEvent の形も見る。
+//   理由のコメントは、呼び出しごとに同じ行か、コメントだけの直前の行に書く
+// - フロントのテスト：describe の名前を識別子だけにしない。描画した HTML の文字を要素や属性の並びで確認しない（空の描画の確認 toBe('') は除く）。
+//   根拠は、テストの書き方の「名前は振る舞いを書く」と、テストの書き方の「画面に見えるもので探す」。
+//   要素の .disabled・.checked・.value・getAttribute(…) を toBe・toEqual で比べない。プロパティの持ち主が要素のものだけを見る。
+//   要素とみなすものは、次のとおり。
+//   - getBy…・queryBy…・findBy…・screen.・within( の結果
+//   - それを入れた変数
+//   - 要素の型（HTMLInputElement など）の変数
+//   - document.・container. からたどる形
+//   result.current.value のような値は見ない。根拠は、テストの書き方の「要素のプロパティ・属性・状態を jest-dom で確認する」。
+// - フロントのテストと E2E：toBeTruthy・toBeDefined で確認しない。getAllBy…・findAllBy…・queryAllBy… の結果を [数字]・.at(数字) で選ばない。
+//   変数に入れてから選ぶ形も見る。根拠は、テストの書き方の「画面に見えるもので探す」。
+// - E2E（e2e/ の下の全ての TypeScript）：次を書かない。
+//   - .first()・.nth()・.last() で選ぶこと。
+//   - locator のセレクター文字列内の位置で選ぶこと。位置は nth=、:nth-match(、:nth-child(、:first-child、:last-child など。
+//   - getByRole('button', …) の名前を、完全一致にせずに探すこと。
+//     name が正規表現のリテラルなら先頭の ^ と末尾の $ を固定し、それ以外は exact: true を付けると、完全一致になる。
+//     連鎖の途中や複数の行にまたがる呼び出しも見る。
+//     オプションが name を読めない形（変数、name のない展開）も見つける。
+//     name に正規表現を入れた変数は追わず、文字列にして exact: true を付ける規則で防ぐ。
+//     根拠は、テストの書き方の「画面に見えるもので探す」。
+//   - networkidle で待つこと。
+//   - 数字のリテラルを含む式（10_000、5 * 1000）を、次の値に書くこと。
+//     - timeout を含む項目の値（timeout、actionTimeout、navigationTimeout など。引用符で囲んだキーを含む）
+//     - intervals の項目の値
+//     - setTimeout・test.setTimeout・setDefaultTimeout・setDefaultNavigationTimeout の引数
+//     デフォルト引数、型の注釈つきの既定値、三項演算子は見ない。定数を定義する e2e/src/waits.ts を除く。E2E の設定は見る。
+//     根拠は、テストの書き方の「待ち方」。
+// - フロントのテストと補助と E2E：TypeScript の lib（ES と DOM）のグローバルの名前と同じ名前の const・let を宣言しない。
+//   名前の一覧は globals/lib-globals.json。
+//   分割代入と for…of の宣言を含む。{ a: name } は右側の name を見る。
+//   関数の引数、catch の変数、関数・クラスの宣言、import は対象外。
+//   根拠は、テストの書き方の「組み込みの名前をシャドーイングしない」。
+//   名前の一覧は手動で書かない。node scripts/ci/globals/lib-globals.mjs --write が、インストールした TypeScript の lib の宣言のファイルから生成する。
+//   --write なしは一覧と今の lib の名前が一致するかを確認し、違えば失敗にする。この確認は、ci.yml の店舗画面 job で実行する。step の名前は「組み込みの名前の一覧の確認」（docs.yml は依存をインストールせず lib を読めないため）
+// - フロントのテストと補助と E2E：テストを閉じる行の直後に、空行なしで test・it・describe を続けない。
+//   テストを閉じる行は、}) と、test('a', () => {}) のように 1 行で閉じるテスト。
+//   続けない対象は、test.each(・describe.skip(・test.describe.serial( などの形を含む。
+//   間にコメントの行があっても、空行がなければ見つける。
+//   test.beforeEach(・test.use(・test.step(・test.info() などは見ない。根拠は、テストの書き方の「テストとテストの間に空行を置く」。
+// 失敗したとき：2 つの機能で使うものは components/ か lib/ に置く。ロケールは LOCALE・TIME_ZONE を使う。同じファイルは共有パッケージに移す。
+//   組み込みの名前の変数は、意味の分かる名前（status → orderStatus）にする。
+//   TypeScript を上げて lib の名前が変わったときは、lib-globals.mjs --write で一覧を書き換える。
+//   クエリは URLSearchParams で組み立てる。
+//   テストは役割と名前で確認する。CSS のクラス、data-slot、querySelector は使わない。
+//   要素の状態は、toBeInTheDocument・toBeDisabled・toHaveValue・toHaveAttribute など jest-dom で確認する。
+//   操作は userEvent で行う。取り消し線は <s> で示す。
+//   actions/・lib/・api/ が使うものは、features/ の外の共通の置き場所に移す。
+//   共有のパッケージにあるものは、同じ名前で定義せず共有のものを使う
+// 除外：frontend-rules-exclusions.json に {キー: 理由}。キーは src からの相対パス（同じ内容のファイル。生成物の読む場所など）か <画面>:<名前>（共有と同じ名前の定義。例：store:translate）。不要になった除外は失敗にする。
+//   fireEvent の使用は除外の一覧に書かず、呼び出しの同じ行か直前の行に理由のコメントを書く
 // 使い方：node scripts/ci/frontend-rules.mjs（リポジトリのルートで）
-// 同じ内容でよいファイル（生成物の読む場所など）は frontend-rules-exclusions.json に、src からの相対パスと理由を書く。共有と同じ名前の定義でよいもの（各画面の translate など）は、キー <画面>:<名前> と理由を書く
-// fireEvent を使ってよいのは、同じ行のコメントか、コメントだけの直前の行に理由を書いた呼び出しだけ（除外の一覧には書かない）
 import { readFileSync } from 'node:fs'
 import path from 'node:path'
 import { closingParen } from './lib/closing-paren.mjs'

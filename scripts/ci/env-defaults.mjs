@@ -1,13 +1,19 @@
 // 環境変数の文書（docs/06-手順書/environment.md）の既定値が、コードの設定の型の既定値と一致することを確認する（バックエンドの書き方の「設定の値の型」）。
 // - コードの既定値（@ConfigurationProperties の record の @DefaultValue）は、文書に同じ値である
 // - 文書に既定値（時間、数、真偽）を書いた設定は、コードも既定値を持つ
-// - 管理画面の IdP の既定値（VITE_OIDC_AUTHORITY、VITE_OIDC_CLIENT_ID）は、管理画面の認証の設定（oidc.ts）を正とし、
-//   knip の設定、ローカルの検査の script、CI、文書の値がそれと一致する
+// - 管理画面の IdP の既定値は、管理画面の認証の設定（frontend/admin/src/auth/oidc.ts）を正とする。
+//   他の置き場所の値が、それと一致する。
+//   対象の変数：VITE_OIDC_AUTHORITY、VITE_OIDC_CLIENT_ID
+//   他の置き場所：knip.ts、scripts/dev/check-frontend.sh、CI の管理画面のビルド（.github/workflows/ci.yml）、環境変数の文書
+//   値を 1 つのファイルから読まないのは、本番のビルドが、ローカルの値で成功しないようにするため。
+//   どれかの値が違う、または読めないときは失敗にする。
 // 環境変数の名前は、接頭辞と項目の名前から作る（ecsite.payment の expiryInterval → ECSITE_PAYMENT_EXPIRY_INTERVAL）。
 // 文書の省略形（`ECSITE_PAYMENT_DEADLINE`、`_EXPIRY_INTERVAL`）は、前の名前の後ろを置き換えて、コードにある名前に合わせる。
 // 時間は、書き方によらず同じ長さなら同じ値とみなす（1m と PT1M）。
 // Java のコメントの中の注釈は読まない。設定の値のクラスを 1 つも読めないとき、読めないクラス（record でない、引数やプロパティが 0 件など）があるとき、
 // Java のファイルが 0 件のときも失敗にする。
+// 失敗したとき：文書の表の行か値を修正する。管理画面の IdP は、食い違った置き場所の値を認証の設定にそろえる（認証の設定の値を変えるときは、全ての置き場所を同時に修正する）。
+// 除外：なし
 // 使い方：node scripts/ci/env-defaults.mjs（リポジトリのルートで）
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'

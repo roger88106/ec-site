@@ -1,6 +1,11 @@
 // 用語集（docs/03-機能仕様/glossary.md）の識別子の列の名前が、コードか DB のマイグレーションにあることを確認する（文書の書き方の「言い回しと論理」にある「事実」）。
-// 調べる場所は backend/、frontend/、api/、docker/、e2e/、scripts/ の Git のファイル（生成物を除く）。
-// 名前の形の例（XxxRepository など、Xxx を含むもの）は調べない。コードにない語でよいものは glossary-ids-exclusions.json に名前と理由を書く。
+// 調べる場所は、次のディレクトリの Git のファイル（生成物を除く）か、ファイルのパス。
+//   - backend/、frontend/、api/
+//   - docker/、e2e/、scripts/
+// scripts/ci/ のテスト、testdata/、ja-text.json、除外の一覧は根拠にしない。kebab-case の設定の名前は camelCase の語でもよい。
+// 名前の形の例（XxxRepository など、Xxx、<…>、* を含むもの）は調べない。
+// 失敗したとき：用語集の識別子を、今のコードの名前に修正する。
+// 除外：glossary-ids-exclusions.json に {キー: 理由}。キーは識別子。コードにない語でよいものを書く。用語集にない識別子の除外は失敗にする（コードに偶然の一致があっても除外は残す）
 // 使い方：node scripts/ci/glossary-ids.mjs（リポジトリのルートで）
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'
 import { readFileSync } from 'node:fs'

@@ -1,5 +1,7 @@
 // 画面の入力の制約（長さ・範囲）に、数字を直接書いた所がないことを確認する（フロントの書き方の「入力の制約は契約から書き出した定数」）。
 // 制約は API の契約から書き出した定数（src/api/generated/constraints.ts）を使う。
+// 失敗したとき：数字を、API の契約から書き出した定数に替える。
+// 除外：なし
 // 使い方：node scripts/ci/input-constraints.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

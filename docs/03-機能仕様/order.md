@@ -6,7 +6,6 @@
 |------|------|
 | レベル | A（状態遷移、注文時点の写し、在庫との強い一貫性） |
 | 依存 | カート（API、イベント）、決済（API、イベント）、出荷・商品カタログ・在庫・税・地域（API）、会員（API。presentation だけ） |
-| 関連 spec | [002](../08-spec/archive/mvp/002-cart-and-order)、[003](../08-spec/archive/mvp/003-auth)、[007](../08-spec/archive/mvp/007-payment)、[009](../08-spec/archive/mvp/009-shipping)、[010](../08-spec/archive/mvp/010-sales-report)、[013](../08-spec/archive/mvp/013-backend-consistency)、[016](../08-spec/archive/mvp/016-master-data)、[017](../08-spec/archive/mvp/017-stability)、[018](../08-spec/archive/mvp/018-docs-and-tools)、[155](../08-spec/archive/1to10/155-backend-structure) |
 
 ## 見積もり
 
@@ -181,8 +180,6 @@ order/
 ※7：注文 ID で、注文番号、会員 ID、注文日時、状態、キャンセル（日時、種類、在庫に戻したか）、お届け先の郵便番号と都道府県、注文時の年齢と性別、金額（総額、送料、消費税の合計、送料の消費税）、明細（商品、バリアント、軸の値、数量、税率、税込小計、税抜小計）を返す。氏名、住所、電話番号、メールアドレスは返さない。送料の消費税は、注文日時の送料の税区分の税率で、送料から求める（税率ごとの消費税額は、明細と送料を合わせて求めているため）。出荷の情報は、レポートが出荷のイベントから持つ。
 
 ## データモデル
-
-[V202610111200__ordering_create_order.sql](../../backend/ecsite/src/main/resources/db/migration/V202610111200__ordering_create_order.sql)、[V202610121200__ordering_add_member_id.sql](../../backend/ecsite/src/main/resources/db/migration/V202610121200__ordering_add_member_id.sql)、[V202610121410__ordering_add_operator.sql](../../backend/ecsite/src/main/resources/db/migration/V202610121410__ordering_add_operator.sql)、[V202610140920__ordering_add_pending_payment.sql](../../backend/ecsite/src/main/resources/db/migration/V202610140920__ordering_add_pending_payment.sql)、[V202610151000__ordering_add_shipped.sql](../../backend/ecsite/src/main/resources/db/migration/V202610151000__ordering_add_shipped.sql)、[V202610151010__ordering_add_cancellation_restocked.sql](../../backend/ecsite/src/main/resources/db/migration/V202610151010__ordering_add_cancellation_restocked.sql)、[V202610151100__ordering_add_buyer_profile.sql](../../backend/ecsite/src/main/resources/db/migration/V202610151100__ordering_add_buyer_profile.sql)、[V202610200920__ordering_add_shipping_area_codes.sql](../../backend/ecsite/src/main/resources/db/migration/V202610200920__ordering_add_shipping_area_codes.sql)、[V202610201110__ordering_add_checkout_expires_at_index.sql](../../backend/ecsite/src/main/resources/db/migration/V202610201110__ordering_add_checkout_expires_at_index.sql)
 
 - schema は `ordering`（`order` は SQL の予約語のため）。
 - カート・バリアント・会員は他のモジュールの ID なので、外部キーは張らない。

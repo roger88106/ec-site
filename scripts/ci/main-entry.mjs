@@ -1,7 +1,12 @@
 // script（scripts/ と frontend/shared/scripts/ の下）が、直接実行されたかの判定を共通の関数（lib/is-main.mjs の isMain）だけで行うことを確認する。
 // 判定の書き方が複数あると、シンボリックリンクや Windows のパスの違いで、直接実行しても何も検査せずに成功する script ができる。
-// 対象は scripts/ と frontend/shared/scripts/ の下の、テストでない .mjs と .cjs（scripts/dev/ も含む。テストは直接実行しない）。コメントと文字列の中は読まない。
-// argv の 2 つ目の要素を取り出す書き方（argv[1]、argv.at(1)、分割代入）、import.meta.url・filename の比較、import.meta.main、require.main があると失敗にする。対象のファイルが 0 件のときも失敗にする。
+// 対象は scripts/ と frontend/shared/scripts/ の下の、テストでない .mjs と .cjs（scripts/dev/ も含む。テストは直接実行しない）。コメントと文字列の中は読まない。判定を定義する lib/is-main.mjs は除く。
+// 次があると失敗にする。対象のファイルが 0 件のときも失敗にする。
+// - argv の 2 つ目の要素を取得する書き方（argv[1]、argv.at(1)、分割代入）
+// - import.meta.url・filename の比較と endsWith
+// - import.meta.main、require.main
+// 失敗したとき：判定を isMain(import.meta.url) に替える（.cjs は import.meta を使えないので、.mjs にして isMain を使う）。
+// 除外：なし
 // 使い方：node scripts/ci/main-entry.mjs（リポジトリのルートで）
 import { readFileSync } from 'node:fs'
 import { exitIfNoFiles, listGitFiles } from './lib/git-files.mjs'

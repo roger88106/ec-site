@@ -6,7 +6,6 @@
 |------|------|
 | レベル | B（業務の規則は「同じ注文に同じ種類のメールは 1 通」だけで、集約に守らせる不変条件がない） |
 | 依存 | 注文（イベントだけ。注文の API は呼ばない ※1）、出荷（公開 API の「配送業者の表示名のキーを返す」操作だけ ※2） |
-| 関連 spec | [009](../08-spec/archive/mvp/009-shipping)、[011](../08-spec/archive/mvp/011-dev-foundation)、[017](../08-spec/archive/mvp/017-stability)、[155](../08-spec/archive/1to10/155-backend-structure) |
 
 ※1：メールに必要な値（宛先、注文番号、配送業者、送り状番号）は、イベント「注文の出荷」に載っている。
 
@@ -58,8 +57,6 @@ notification/
 なし。
 
 ## データモデル
-
-[V202610151020__notification_create_sent_mail.sql](../../backend/ecsite/src/main/resources/db/migration/V202610151020__notification_create_sent_mail.sql)
 
 - schema は `notification`。注文は他のモジュールの ID なので、外部キーは張らない。
 - 送ったメールは、注文 ID、メールの種類（`SHIPMENT`）、宛先、送った日時を持つ。注文 ID とメールの種類の組で一意。

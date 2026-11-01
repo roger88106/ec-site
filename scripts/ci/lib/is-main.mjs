@@ -1,4 +1,5 @@
 // script（scripts/ の下と frontend/shared/scripts/ の下）が直接実行されたか（import されたのでないか）の判定。
+// シンボリックリンク経由でも同じファイルなら直接実行とみなす。
 // 画面の API の生成（frontend/shared/scripts/）も相対パスで読むので、node の標準のモジュールの他を import しない。
 import { realpathSync } from 'node:fs'
 import path from 'node:path'

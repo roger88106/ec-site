@@ -11,7 +11,7 @@
 | 変えた spec | 変更・廃止にした spec。有効なら「—」 | 手動で書く |
 | 今の内容 | 今の規則の全文。有効の AC は定義の文、変更の AC は今の規則と根拠の文書 | 手動で書く |
 
-- 全ての列を手動で書く。進行中の spec の AC は、アーカイブに移す前に、ルートで `node scripts/ci/ac-check.mjs --write` を実行して一覧に転記し、モジュールと今の内容を書く。
+- 全ての列を手動で書く。spec で AC を追加したら、同じ commit で、ルートで `node scripts/ci/ac-check.mjs --write` を実行して一覧に転記し、モジュールを書き、今の内容の spec の中だけで通じる参照を書き換える。
 - AC とテストの対応は `node scripts/ci/ac-check.mjs --tests` で表示する。
 - CI の検査 `ac-check`（[CI の検査](../06-手順書/ci.md)）がこの一覧を読む。次のときに失敗する。
   - 進行中の spec の AC が、一覧にない。

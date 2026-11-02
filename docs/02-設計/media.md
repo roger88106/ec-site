@@ -21,7 +21,7 @@
 | ストレージ | Amazon S3（AWS SDK v2）。ローカルと CI は SeaweedFS | `ecsite.media.storage` |
 | 画像の変換 | 別コンテナの imgproxy を HTTP で呼ぶ | `ecsite.media.converter` |
 
-どちらも port（`ObjectStorage`、`ImageConverter`）の裏に置く。ストレージの操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする。タイムアウトと失敗の扱いは、[メディアモジュール](../03-機能仕様/media.md)の「業務規則」に書く。
+どちらも port（`ObjectStorage`、`ImageConverter`）の実装として置く。ストレージの操作は、AWS（S3）と GCP（GCS）の両方にあるものだけにする。署名付き PUT の URL、ファイルの情報、先頭の読み取り、書き込み、削除が該当する。タイムアウトと失敗の扱いは、[メディアモジュール](../03-機能仕様/media.md)の「業務規則」に書く。
 
 ## 処理の流れ
 
@@ -51,7 +51,7 @@ sequenceDiagram
 
 ### アセットの解放
 
-商品カタログが画像や商品を削除するとき、自分のトランザクションの中で解放を呼ぶ。配信のファイルは、コミットの後にメディアの中のイベントで削除する。業務規則は [メディアモジュール](../03-機能仕様/media.md) の「アセットを手放す」に書く。
+商品カタログが画像や商品を削除するとき、自分のトランザクションの中で解放を呼ぶ。配信のファイルは、コミットの後にメディアの中のイベントで削除する。業務規則は [メディアモジュール](../03-機能仕様/media.md) の「アセットの解放」に書く。
 
 ```mermaid
 sequenceDiagram
@@ -65,7 +65,7 @@ sequenceDiagram
 
 ## API
 
-なし。メディアは、他のモジュールの API で呼ばれるだけで、店舗 API・管理 API の operation を持たない。画像のアップロードの operation（`createImageUpload` など）は、商品カタログの API に置く。
+なし。メディアは、他のモジュールから API で呼ばれるだけで、店舗 API・管理 API の operation を持たない。画像のアップロードの operation（`createImageUpload` など）は、商品カタログの API に置く。
 
 ## パッケージの構成
 

@@ -25,7 +25,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 | `ci.yml` | 管理画面 | lint、型チェック、テスト、ビルド、カバレッジの要約、カバレッジの基準の検査 | 同上 |
 | `ci.yml` | 店舗画面 | 画面の依存のライセンスの検査、使われていないファイル・export・依存の検査（knip。管理画面・店舗画面・共有パッケージ・E2E のコード全体を、ルートで 1 回）、組み込みの名前の一覧の確認（`scripts/ci/globals/lib-globals.mjs`。TypeScript の lib の名前と一致するか）、共有パッケージ（lint、型チェック、テスト、カバレッジの要約）、店舗画面（lint、型チェック、テスト、ビルド、カバレッジの要約）、店舗画面と共有パッケージのカバレッジの基準の検査 | 同上 |
 | `ci.yml` | E2E | E2E のコードの lint・型チェック、バックエンド・管理画面・店舗画面を起動してブラウザーで操作する | 同上 |
-| `docs.yml` | 文書と CI の検査の script | `scripts/ci/check-all.sh`（「CI の検査の script」） | 全ての push と pull request（文書だけの push でも実行する） |
+| `docs.yml` | 文書と CI の検査の script | `scripts/ci/check-all.sh`（「CI の検査の script」）、Mermaid の図の描画の検査（`scripts/ci/mermaid/mermaid-check.mjs`。「Mermaid の図の描画の検査」）。後者は、前の step（`check-all.sh`）が失敗しても実行する | 全ての push と pull request（文書だけの push でも実行する） |
 | `main-source.yml` | main への元のブランチ | `main` への pull request の元のブランチが `release-` か `hotfix-` で始まる（判定は `scripts/ci/workflow/main-source.mjs`。「CI の検査の script」）。`main` の ruleset の必須の検査（[ブランチとリリース](branches.md)の「`main` の元のブランチの制限」） | `main` への pull request |
 | `risk.yml` | 危険度の照合 | pull request の本文の「## 危険度」の節の「判定：」の値を、`scripts/ci/risk.mjs` の判定（「CI の検査の script」）と比べ、本文が判定より低いとき、値が空・節がないときに失敗にする。判定は pull request の側と基準（`origin/develop`）の側の両方の `risk.mjs`・`risk.json` で行い、どちらかが失敗すれば失敗にする。Dependabot の pull request（作成者で見分ける）は比べず、題から読む更新の種類を入れた判定をジョブの要約に出すだけにする。本文を書き換えたときにも流すので、`ci.yml` とは別のワークフローにする（`edited` で全体の CI を流し直さないため） | `develop` への draft でない pull request（開いた、本文を書き換えた、commit を足した、開き直した、draft を外したとき）。draft の間はジョブを skip する |
 | `pages.yml` | 機能紹介のページ | `showcase/` を GitHub Pages に公開する | `main` で `showcase/` が変わったとき、手動で起動したとき |
@@ -68,7 +68,13 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
   - 対応していない書き方の行は、読み飛ばさずに `describeUnreadableLine`（`lib/unreadable-line.mjs`）で `ファイル:行 内容（理由）` の形にして出し、失敗にする。
   - 除外の一覧を持つなら、パスを `exclusionsPath`、誤りの文を `checkExclusions`（`lib/exclusions.mjs`）で作る。
   - 画面のソースを読むなら `lib/screen-sources.mjs` を使う。行番号が必要なら `lib/line-number.mjs` を使う。
-- 引数が必要な補助の script（`report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`。「カバレッジと mutation score の基準の検査」）と、画面の依存が必要な検査（`licenses/`）、TypeScript の依存が必要な、組み込みの名前の一覧の生成と確認（`globals/` の下の `lib-globals.mjs`。一覧の `lib-globals.json` を `frontend-rules` が読む。`frontend-rules.mjs` の先頭のコメント）、workflow から呼ぶ判定（`workflow/` の下の `main-source.mjs`。元のブランチの名前が引数）、レビューで手動で使う補助（`review/` の下の `test-diff.mjs`。[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）は、下のディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
+- 次の補助の script は、各ディレクトリに置く。`check-all.sh` は、これらの script のテストだけを実行し、script 自体は実行しない。
+  - `report/` の下の `coverage-summary.mjs`、`coverage-baseline.mjs`、`mutation-report.mjs`：引数が必要（「カバレッジと mutation score の基準の検査」）。
+  - `licenses/`：画面の依存が必要な検査。
+  - `globals/` の下の `lib-globals.mjs`：TypeScript の依存が必要な、組み込みの名前の一覧の生成と確認（一覧の `lib-globals.json` を `frontend-rules` が読む。`frontend-rules.mjs` の先頭のコメント）。
+  - `workflow/` の下の `main-source.mjs`：workflow から呼ぶ判定（元のブランチの名前が引数）。
+  - `review/` の下の `test-diff.mjs`：レビューで手動で使う補助（[テストの実行方法](running-tests.md)の「既存のテストを変えていないことの確認」）。
+  - `mermaid/` の下の `mermaid-check.mjs`：Chrome とネットワークが必要な Mermaid の図の描画の検査（「Mermaid の図の描画の検査」）。
 - 複数の検査が使う関数は `lib/` に置き（テストは `*.test.mjs`）、役割は各ファイルの先頭のコメントに書く。画面のソースを読む検査は `screen-sources.mjs` の定義を使い、違う対象を読む検査は理由を書く。
 
 各検査の詳しい説明（確認すること、失敗したときの修正の手順、除外の書き方）は、script の先頭のコメントにある。
@@ -106,6 +112,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | `service-names` | 規則の本文に、AI のサービス固有の名前がない（コードスパンのパス、コードブロック、リンク先を除く）ことを確認する |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する。 |
 | `spec-numbers` | 本番のコードと、テストと設定のファイルと `scripts/` の下の script の、それぞれのコメントに、spec・plan・tasks の番号が書かれていないことを確認する。 |
+| `spec-structure` | spec・plan・tasks と機能仕様について、構造（節の名前と順）と ID の定義・参照を確認する。失敗したら、文書を雛形 `docs/08-spec/templates/` に合わせる。判定の区分は誤りの防止（誤って書いたものを失敗にする）。 |
 | `test-names` | バックエンドの全てのテストに、表示の名前（`@DisplayName`）があることを確認する。 |
 | `time-waits` | テストが、決まった時間だけ待つ書き方をしていないことを確認する。 |
 
@@ -126,6 +133,20 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 - バックエンドのカバレッジは、統合テストの同時実行の競合があるときだけ実行される分岐があり、実行ごとにばらつく。そのため `backend` の許容の幅は、行 0.10、分岐 0.30 にしている。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「バックエンドのカバレッジのばらつき」。
 - PIT は、ビルドと単体テストのジョブの、単体テストの後で実行する（`./gradlew pitest`。`check` には含まれない）。変異の前に全ての単体テストを 1 回実行してカバレッジを取るので、そのジョブの時間が増える。報告は artifact `pitest-backend` に保存する。
 - このジョブは、統合テストの遅い方のジョブより早く終わるので、`ci.yml` の全体の時間は遅い方のジョブで決まる。根拠の実測は [CI の実測](../07-記録/ci-results.md)の「PIT とジョブの時間」。
+
+### 3.2 Mermaid の図の描画の検査
+
+文書の Mermaid の図が描画できることを確認する検査。`scripts/ci/mermaid/mermaid-check.mjs` が、Markdown のコードブロックから図を取り出し、mermaid-cli で描画する。描画できない図があれば失敗にする。取り出した図が 0 件のときも、検査が何も見ずに成功するのを防ぐため、失敗にする。
+
+- 対象の文書は、Git で扱う全ての `.md` である（アーカイブ `docs/08-spec/archive/` を除く）。GitHub は、置き場所によらず図を描画するため。
+- 次の図は描画しないが、見つけたら失敗にする。
+  - 箇条書き・引用・4 個以上の字下げの中の図（対象にしない書き方の図）
+  - 他のコードブロックの中の、図の開きの形の行（前のコードブロックが閉じていない疑い）。`markdown`・`md` のコードブロックの中は、囲みの字が外側と違うか外側より短い行（雛形の骨組み）を除く
+- 実行するのは、CI の `docs.yml` だけである。描画に Chrome とネットワーク（mermaid-cli の取得）が必要で遅いため、`check-all.sh` と commit の前の hook では実行しない。
+- script は `scripts/ci/` の直下に置かない（直下の検査は `check-all.sh` が全て実行する）。script のテストは、他の script のテストと同じく `check-all.sh` が実行する。
+- 手元では、ルートで `node scripts/ci/mermaid/mermaid-check.mjs` を実行する。Chrome の場所は、環境変数 `MERMAID_CHROME` で指定する。指定しないときは、既定の場所（Windows の Chrome、macOS の Chrome、`/usr/bin/google-chrome`、chromium）を順に探す。
+- CI のランナー（ubuntu-latest）には Google Chrome が `/usr/bin/google-chrome` に入っているので、`MERMAID_CHROME` は指定しない。
+- 失敗したときは、出力の図の位置（文書と行）と描画のエラーを確認し、図の構文を修正する。対象にしない書き方の図は、字下げしないコードブロックに移す。閉じていない疑いは、前のコードブロックの閉じの行を加える。
 
 ## 4. GitHub のセキュリティの機能
 

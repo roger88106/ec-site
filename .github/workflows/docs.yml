@@ -3,7 +3,8 @@
 #
 # 文書だけを変えた push でも実行する（ci.yml は文書だけの push では実行しないため、別のワークフローにする）。
 # 文書の参照・用語、AC 一覧、対応表、進捗の表などは、
-# 文書だけの変更で崩れるので、CI の検査の script の全て（scripts/ci/check-all.sh）をここで実行する。
+# 文書だけの変更で崩れるので、CI の検査の script の全て（scripts/ci/check-all.sh）と、
+# Mermaid の図が描画できるかの検査（scripts/ci/mermaid/mermaid-check.mjs）をここで実行する。
 # ============================================================================
 
 name: 文書
@@ -40,3 +41,10 @@ jobs:
         run: scripts/ci/check-all.sh
         env:
           CI: 'true'
+
+      # Mermaid の図が描画できるかの検査。Chrome とネットワークが必要で遅いので、check-all.sh と commit の前の hook では実行せず、ここだけで実行する。
+      # Chrome は、ランナーに入っている /usr/bin/google-chrome を script が探す（環境変数 MERMAID_CHROME は不要）。
+      # 前の step の失敗とは独立した検査なので、前の step が失敗しても実行し、両方の失敗を 1 回の実行で見えるようにする（中止されたときは実行しない）
+      - name: Mermaid の図の描画
+        if: ${{ !cancelled() }}
+        run: node scripts/ci/mermaid/mermaid-check.mjs

@@ -112,11 +112,14 @@ ec-site/
 
 `docs/` は、下の番号付きのフォルダーに分ける。現在の振る舞いはコードを正とし、設計と機能仕様の文書はコードを説明する（[開発の進め方](05-開発規則/workflow.md)の「コードと文書の食い違い」）。
 
-概要（`docs/01-概要/`）：専門知識がなくても読める全体像（システムの概要、業務の流れ、画面の操作の流れ）。中身は、後の spec で書く。
+概要（`docs/01-概要/`）：専門知識がなくても読める全体像（システムの概要、業務の流れ、画面の操作の流れ）。
 
 | 文書 | 内容 |
 |------|------|
 | [README.md](01-概要/README.md) | このフォルダーに置く文書 |
+| [template.md](01-概要/template.md) | 概要の雛形 |
+| [system.md](01-概要/system.md) | システムの全体像 |
+| [order.md](01-概要/order.md) | 注文の流れ |
 
 設計（`docs/02-設計/`）：エンジニア向けの構成（全体の構成、アーキテクチャ、アプリ、権限）。
 
@@ -128,12 +131,15 @@ ec-site/
 | [apps/](02-設計/apps) | アプリごとの構成（管理画面、店舗画面） |
 | [common.md](02-設計/common.md) | 共通コード・ログ・可観測性 |
 | [role-permissions.md](02-設計/role-permissions.md) | ロールと権限の対応表 |
+| [template.md](02-設計/template.md) | モジュールの設計の雛形 |
+| [order.md](02-設計/order.md) | 注文の設計（境界、処理の流れ、API の一覧、パッケージの構成） |
 
 機能仕様（`docs/03-機能仕様/`）：主にエージェント向けの、モジュールごとの業務の規則、状態遷移、データ構造。
 
 | 文書 | 内容 |
 |------|------|
-| [<モジュール>.md](03-機能仕様) | モジュールごとの設計 |
+| [<モジュール>.md](03-機能仕様) | モジュールごとの機能仕様（業務規則、状態の遷移、データモデル、今有効な AC） |
+| [template.md](03-機能仕様/template.md) | 機能仕様の雛形 |
 | [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（状態とテスト） |
 | [glossary.md](03-機能仕様/glossary.md) | 用語集 |
 
@@ -143,6 +149,8 @@ ec-site/
 |------|------|
 | [README.md](04-決定記録/README.md) | 決定記録の形 |
 | [subagent-delegation.md](04-決定記録/subagent-delegation.md) | サブエージェントへの任せ方で取り入れたもの |
+| [template.md](04-決定記録/template.md) | 決定記録の雛形 |
+| [order-capture-before-shipment.md](04-決定記録/order-capture-before-shipment.md) | 出荷の登録で、注文を出荷済みにする前に売上を確定する |
 
 規範（`docs/05-開発規則/`）：
 
@@ -185,6 +193,7 @@ ec-site/
 |------|------|
 | [08-spec/](08-spec) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `08-spec/archive/<まとまり>/` に移す。MVP の spec は [08-spec/archive/mvp/](08-spec/archive/mvp) にある |
 | [mvp.md](08-spec/archive/mvp/mvp.md) | MVP の完成までの一覧 |
+| [08-spec/templates/](08-spec/templates) | spec・plan・tasks の雛形と見本（機能・整理、規模 L・M） |
 
 ## 4. 開発の進め方
 

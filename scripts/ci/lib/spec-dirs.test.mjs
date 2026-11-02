@@ -3,7 +3,7 @@ import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { after, describe, test } from 'node:test'
-import { findMvpList, listSpecDirs } from './spec-dirs.mjs'
+import { findMvpList, isSpecDirName, listSpecDirs } from './spec-dirs.mjs'
 
 /** 直下とアーカイブに spec を置いた docs/08-spec の代わり */
 const specsDir = mkdtempSync(path.join(tmpdir(), 'spec-dirs-'))
@@ -39,6 +39,11 @@ describe('spec のディレクトリ', () => {
     } finally {
       rmSync(mixed, { recursive: true, force: true })
     }
+  })
+
+  test('spec のディレクトリの名前は <番号>-名前 の形（0 埋めの有無を問わない）', () => {
+    for (const name of ['321-design-templates', '7-dev-process', '011-dev-foundation']) assert.equal(isSpecDirName(name), true, name)
+    for (const name of ['design-templates', '321_design-templates', 'archive', 'templates', '321']) assert.equal(isSpecDirName(name), false, name)
   })
 
   test('spec のディレクトリの絶対パスを返す', () => {

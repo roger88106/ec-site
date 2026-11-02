@@ -9,9 +9,9 @@
 
 実装は実装役（汎用）に 1 タスクずつ任せる。文書の本文は、spec 担当の日本語の要点から、日本語だけの文脈の実装役が書く。
 
-- [ ] **T326-06-01** レベルの行を、全てのモジュールの ③ から ② に移す。② と ③ の雛形、`ProductionClassesTest`、レベル・依存の書き方の規則を変える（DC-326-24、25）。
+- [x] **T326-06-01** レベルの行を、全てのモジュールの ③ から ② に移す。② と ③ の雛形、`ProductionClassesTest`、レベル・依存の書き方の規則を変える（DC-326-24、25）。
   - 依存：段階 5 の完了
-  - 範囲：`docs/02-設計/template.md`、`docs/03-機能仕様/template.md`、`docs/02-設計/` と `docs/03-機能仕様/` の各モジュールの文書、`ProductionClassesTest`、`docs/05-開発規則/writing.md` の「表と注」、`docs/05-開発規則/notation.md` の「モジュールの設計書の記号」
+  - 範囲：`docs/02-設計/template.md`、`docs/03-機能仕様/template.md`、`docs/02-設計/` と `docs/03-機能仕様/` の各モジュールの文書、`ProductionClassesTest`、`docs/05-開発規則/writing.md` の「表と注」、`docs/05-開発規則/notation.md` の「モジュールの設計書の記号」。テストが読む文書の場所に合わせて、Gradle のテストの入力（`backend/ecsite/build.gradle.kts`）、CI を流す paths（`.github/workflows/ci.yml`）と、その説明（`docs/06-手順書/ci.md`）、レベルの理由を書く所を指す文（`docs/02-設計/backend-architecture.md`）も変える（段階 6 の実装の前の照合で見つかった）
   - 確認方法：`backend/ecsite/` で `./gradlew check` が通る。③ にレベルの行が残らない。② の 1 つのレベルを変えて、テストが失敗することを確認する
 - [x] **T326-06-02** 用語集の節「開発」を、`docs/05-開発規則/` の新しい文書（開発の用語集）に移し、`docs/constitution.md` の「文書の地図」に載せる。用語集を読む検査の読む先を確認し、必要なら修正する（DC-326-10、26）。
   - 依存：なし

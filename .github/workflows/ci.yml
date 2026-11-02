@@ -25,8 +25,7 @@ on:
       - '!.github/dependabot.yml'     # 依存の更新の設定（更新の pull request で CI が流れる）
       - '!.gitignore'
       - '!LICENSE'
-      - 'docs/02-設計/overview.md' # 全体構成の文書。バックエンドの単体テスト（ModuleDiagramTest）が図と照合する
-      - 'docs/03-機能仕様/*.md' # モジュールの設計書。バックエンドの単体テスト（ProductionClassesTest）がレベル A の一覧と照合する。AC 一覧と用語集の変更でも流れる
+      - 'docs/02-設計/*.md' # 全体構成とモジュールの設計。バックエンドの単体テストが、全体構成の図（ModuleDiagramTest）と、モジュールの設計のレベル（ProductionClassesTest）を照合する
       - 'docs/05-開発規則/backend-coding.md' # バックエンドの書き方。バックエンドの単体テスト（ModuleStructureTest）がパッケージの大きさの表と照合する
   # pull request は、変えたファイルによらずいつも流す（develop と main に入る前に必ず確認する）
   pull_request:

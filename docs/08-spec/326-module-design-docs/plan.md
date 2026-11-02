@@ -304,7 +304,7 @@
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
 | レベルの行を ② に移す | `docs/02-設計/template.md`、`docs/03-機能仕様/template.md`、注文の ② と ③、各モジュールの ② と ③ | 文書を読む |
-| `ProductionClassesTest` が ② を読む | `ProductionClassesTest` | `backend/ecsite/` で `./gradlew check` が通る |
+| `ProductionClassesTest` が ② を読む。テストの入力と CI を流す paths も ② に合わせる | `ProductionClassesTest`、`backend/ecsite/build.gradle.kts`、`.github/workflows/ci.yml`、`docs/06-手順書/ci.md` | `backend/ecsite/` で `./gradlew check` が通る |
 | レベル・依存・番号の書き方を、決定に合わせる | `docs/05-開発規則/writing.md` の「表と注」、`docs/05-開発規則/notation.md` の「モジュールの設計書の記号」 | 文書を読む |
 
 - 確認 6 が案 A である理由：レベルはパッケージの構成の区分で、② の内容である。全てのモジュールに ② ができる（確認 4 が案 A のとき）。spec 4 は、② が注文にしかないので ③ に残した。

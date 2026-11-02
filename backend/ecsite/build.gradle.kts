@@ -214,6 +214,7 @@ tasks.named<Test>("test") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
     inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
+    inputs.file("../../docs/03-機能仕様/glossary.md")
     inputs.file("../../docs/05-開発規則/backend-coding.md")
     // -PupdateDocs を付けると、ModuleDiagramTest が比べずに文書の図を書き直す（PIT には渡さない）
     if (project.hasProperty("updateDocs")) {
@@ -403,6 +404,7 @@ tasks.named("pitest") {
     inputs.dir("../../api/openapi")
     inputs.dir("../../docker/keycloak/realms")
     inputs.files(fileTree("../../docs/02-設計") { include("*.md") })
+    inputs.file("../../docs/03-機能仕様/glossary.md")
     inputs.file("../../docs/05-開発規則/backend-coding.md")
 }
 

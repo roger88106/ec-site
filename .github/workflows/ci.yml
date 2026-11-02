@@ -26,6 +26,7 @@ on:
       - '!.gitignore'
       - '!LICENSE'
       - 'docs/02-設計/*.md' # 全体構成とモジュールの設計。バックエンドの単体テストが、全体構成の図（ModuleDiagramTest）と、モジュールの設計のレベル（ProductionClassesTest）を照合する
+      - 'docs/03-機能仕様/glossary.md' # 用語集。バックエンドの単体テスト（ModuleDiagramTest）が、全体構成の図に出すモジュールとイベントの名前を読む
       - 'docs/05-開発規則/backend-coding.md' # バックエンドの書き方。バックエンドの単体テスト（ModuleStructureTest）がパッケージの大きさの表と照合する
   # pull request は、変えたファイルによらずいつも流す（develop と main に入る前に必ず確認する）
   pull_request:

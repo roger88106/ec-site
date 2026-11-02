@@ -51,7 +51,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 
 ※1：文書の参照と用語、AC 一覧、ロールと権限の対応表、用語集の識別子など。
 
-`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.github/ISSUE_TEMPLATE/`、`.github/dependabot.yml`、`.gitignore`、`LICENSE`。ただし、全体構成とモジュールの設計（`docs/02-設計/*.md`）は、バックエンドの単体テストが照合するので、Markdown でも実行する。`ModuleDiagramTest` が全体構成の図を、`ProductionClassesTest` がモジュールの設計のレベルをレベル A の一覧と照合する。バックエンドの書き方（`docs/05-開発規則/backend-coding.md`）も、`ModuleStructureTest` がパッケージの大きさの表を照合するため、Markdown でも実行する。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所で、`scripts/dev/ports.json` はその `lib/slot.mjs` が読むポートの一覧なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
+`ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.github/ISSUE_TEMPLATE/`、`.github/dependabot.yml`、`.gitignore`、`LICENSE`。ただし、全体構成とモジュールの設計（`docs/02-設計/*.md`）は、バックエンドの単体テストが照合するので、Markdown でも実行する。`ModuleDiagramTest` が全体構成の図を、`ProductionClassesTest` がモジュールの設計のレベルをレベル A の一覧と照合する。用語集（`docs/03-機能仕様/glossary.md`）も、`ModuleDiagramTest` が図に出すモジュールとイベントの名前を読むため、Markdown でも実行する。バックエンドの書き方（`docs/05-開発規則/backend-coding.md`）も、`ModuleStructureTest` がパッケージの大きさの表を照合するため、Markdown でも実行する。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所で、`scripts/dev/ports.json` はその `lib/slot.mjs` が読むポートの一覧なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
 
 ## 3. CI の検査の script
 

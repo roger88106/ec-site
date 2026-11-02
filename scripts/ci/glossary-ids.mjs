@@ -1,4 +1,4 @@
-// 用語集（docs/03-機能仕様/glossary.md）の識別子の列の名前が、コードか DB のマイグレーションにあることを確認する（文書の書き方の「言い回しと論理」にある「事実」）。
+// 用語集（docs/03-機能仕様/glossary.md）と開発の用語集（docs/05-開発規則/glossary.md）の識別子の列の名前が、コードか DB のマイグレーションにあることを確認する（文書の書き方の「言い回しと論理」にある「事実」）。
 // 調べる場所は、次のディレクトリの Git のファイル（生成物を除く）か、ファイルのパス。
 //   - backend/、frontend/、api/
 //   - docker/、e2e/、scripts/
@@ -12,8 +12,8 @@ import { readFileSync } from 'node:fs'
 import { checkExclusions, exclusionsPath, readExclusions } from './lib/exclusions.mjs'
 import { isMain } from './lib/is-main.mjs'
 
-/** 用語集 */
-const GLOSSARY = 'docs/03-機能仕様/glossary.md'
+/** 調べる用語集（業務の用語集と、開発の用語集） */
+export const GLOSSARIES = ['docs/03-機能仕様/glossary.md', 'docs/05-開発規則/glossary.md']
 
 /** 調べる場所 */
 const SEARCH_ROOTS = ['backend', 'frontend', 'api', 'docker', 'e2e', 'scripts']
@@ -110,10 +110,17 @@ if (isMain(import.meta.url)) {
   const allPaths = listGitFiles().join('\n')
   const contents = [allPaths, ...files.map((file) => readFileSync(file, 'utf8'))]
   const tokens = new Set(contents.flatMap((text) => text.match(/\w+/g) ?? []))
-  const ids = parseGlossaryIds(readFileSync(GLOSSARY, 'utf8'))
-  const absent = findMissing(ids, tokens, contents.join('\n'))
-  const missing = absent.filter((id) => !(id in exclusions))
-  for (const id of missing) console.log(`${GLOSSARY}：識別子 \`${id}\` がコードにない`)
+  const ids = []
+  const missing = []
+  for (const glossary of GLOSSARIES) {
+    const glossaryIds = parseGlossaryIds(readFileSync(glossary, 'utf8'))
+    ids.push(...glossaryIds)
+    const absent = findMissing(glossaryIds, tokens, contents.join('\n'))
+    for (const id of absent.filter((name) => !(name in exclusions))) {
+      missing.push(id)
+      console.log(`${glossary}：識別子 \`${id}\` がコードにない`)
+    }
+  }
   const problems = checkExclusions('glossary-ids-exclusions.json', exclusions, (id) => isExclusionNeeded(id, ids))
   for (const problem of problems) console.log(problem)
   const count = missing.length + problems.length

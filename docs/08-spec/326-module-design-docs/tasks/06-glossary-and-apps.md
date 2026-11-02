@@ -13,7 +13,7 @@
   - 依存：段階 5 の完了
   - 範囲：`docs/02-設計/template.md`、`docs/03-機能仕様/template.md`、`docs/02-設計/` と `docs/03-機能仕様/` の各モジュールの文書、`ProductionClassesTest`、`docs/05-開発規則/writing.md` の「表と注」、`docs/05-開発規則/notation.md` の「モジュールの設計書の記号」
   - 確認方法：`backend/ecsite/` で `./gradlew check` が通る。③ にレベルの行が残らない。② の 1 つのレベルを変えて、テストが失敗することを確認する
-- [ ] **T326-06-02** 用語集の「開発」の節を、`docs/05-開発規則/` の新しい文書（開発の用語集）に移し、`docs/constitution.md` の「文書の地図」に載せる。用語集を読む検査の読む先を確認し、必要なら修正する（DC-326-10、26）。
+- [x] **T326-06-02** 用語集の節「開発」を、`docs/05-開発規則/` の新しい文書（開発の用語集）に移し、`docs/constitution.md` の「文書の地図」に載せる。用語集を読む検査の読む先を確認し、必要なら修正する（DC-326-10、26）。
   - 依存：なし
   - 範囲：`docs/05-開発規則/` の新しい文書、`docs/03-機能仕様/glossary.md`、`scripts/ci/` の用語集を読む検査、`docs/constitution.md`
   - 確認方法：移した用語が新しい文書にあり、用語集にない。新しい文書が「文書の地図」にある。`doc-refs` と `scripts/ci/check-all.sh` が通る

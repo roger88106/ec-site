@@ -157,6 +157,7 @@ ec-site/
 | 文書 | 内容 |
 |------|------|
 | [workflow.md](05-開発規則/workflow.md) | 開発の進め方（SDD・TDD）、起票と規模、利用者の確認、完了の定義、コードと文書の食い違い |
+| [glossary.md](05-開発規則/glossary.md) | 開発の用語集（開発の進め方・ツール・テスト・セッションの役割などの用語） |
 | [notation.md](05-開発規則/notation.md) | spec・tasks とモジュールの設計書の記号と番号 |
 | [review.md](05-開発規則/review.md) | 書き方の規則の書き方とレビュー |
 | [comments.md](05-開発規則/comments.md) | コメントの書き方 |

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryIds } from './glossary-ids.mjs'
+import { GLOSSARIES, findMissing, isExclusionNeeded, isSearchedFile, parseGlossaryIds } from './glossary-ids.mjs'
 
 const GLOSSARY = [
   '| 用語 | 識別子 | 意味 |',
@@ -54,6 +54,12 @@ describe('用語集の識別子の検査', () => {
     assert.equal(isSearchedFile('scripts/dev/lib/slot.test.mjs'), true)
     assert.equal(isSearchedFile('backend/ecsite/src/Foo.java'), true)
     assert.equal(isSearchedFile('frontend/store/logo.png'), false)
+  })
+})
+
+describe('調べる用語集', () => {
+  test('業務の用語集と開発の用語集の両方を読む', () => {
+    assert.deepEqual(GLOSSARIES, ['docs/03-機能仕様/glossary.md', 'docs/05-開発規則/glossary.md'])
   })
 })
 

@@ -1,7 +1,8 @@
 // 文書への参照が切れていないことを確認する。
 //   - Markdown のリンク：先のファイルと #見出し があるか（見出しの slug は GitHub と同じ作り方）
 //   - Markdown のリンクテキスト：# の付かない、docs/ の下の文書へのリンクで、リンクテキストが文書の名前か（略した名前を見つけるため）。許可する形は isAllowedLinkLabel
-//   - 見出しの参照（`[開発の進め方](../../docs/05-開発規則/workflow.md)の「起票」`、`開発の進め方の「起票」` など）：リンクか文書の名前の直後の「の「…」」だけを読み、
+//   - 見出しの参照（`[開発の進め方](../../docs/05-開発規則/workflow.md)の「起票」`、`開発の進め方の「起票」` など）：リンクか文書の名前の直後の「の「…」」と、
+//     「の」を挟まずにパスかリンクの直後に書いた「…」（`docs/03-機能仕様/order.md「支払」`。文書の名前の直後と、空白や閉じ括弧を挟んだものは読まない）だけを読み、
 //     先の文書に、その見出し（番号を除く）が 1 つだけあるか。同じ見出しが 2 つ以上あれば、親の見出しを前に付けた形（`の「段階 1」の「タスク」`）で 1 つに決める。
 //     見出しは、リンクを表示の文字に、コードの印を除き、全角と半角を揃え、空白をまとめて比べる。末尾の全角の括弧の補足（`（DS-s-n：DC-s-n〜m）` など）は、
 //     除いた形でも全て書いた形でも当たる（除くと 2 つ以上に当たるなら、1 つに決まらないとする）。Markdown のコードブロックの中は見ない
@@ -75,6 +76,12 @@ const SECTION_NUMBER = new RegExp(`(?:第[ 　]*)?(?<![0-9０-９.．\\w])(${SEC
  * これ以外の語が直前にあれば、他の文書の名前かもしれないので、先の文書を決めない
  */
 const SELF_BEFORE = /(?:^|[。．：:|]|^\s*(?:[-*+]|\d+\.)|この文書の?|本書の?)\s*[（(]?$/
+
+/**
+ * 「の」のない見出しの参照（`order.md「支払」`）の直前の形。パス（`.md` の後のバッククォートは許す）か、Markdown のリンクの直後だけ。
+ * 文書の名前の直後（`用語集「写し」`）、空白・閉じ括弧・「」」を挟んだ形は、語の引用と見分けられないので読まない
+ */
+const NO_PARTICLE_BEFORE = /(?:\.md`?|\]\([^)\s]+\))$/
 
 /** 見出しの先頭の番号（`1.` か `4.1` の形。`### 1 通だけ送る` の 1 は見出しの一部なので除かない） */
 const HEADING_NUMBER = /^(\d+(?:\.\d+)*\.|\d+(?:\.\d+)+)\s+/
@@ -264,19 +271,28 @@ export function findReferences(file, text, names, basenames, exists = existsSync
         const ref = { line: lineNumber, target, anchor: anchor ? decodeURIComponent(anchor) : undefined, text: link }
         // 画像（`![…](…)`）の文字は、リンクテキストとして見ない
         if (label !== undefined && line[match.index - 1] !== '!') {
-          // 見出しの参照の読み方（resolveDocument）と同じく、間の空白と、閉じる印（`` ` ``、「」」、閉じ括弧）を挟んでもよい
-          Object.assign(ref, { label, headingRef: /^[`」）)]*\s*の「/.test(line.slice(match.index + whole.length)) })
+          // 見出しの参照の読み方（resolveDocument）と同じく、「の「」の前には間の空白と、閉じる印（`` ` ``、「」」、閉じ括弧）を挟んでもよい。「の」のない「」は直後だけ
+          Object.assign(ref, { label, headingRef: /^(?:[`」）)]*\s*の「|「)/.test(line.slice(match.index + whole.length)) })
         }
         refs.push(ref)
       }
     }
     if (!(isMarkdown && inCode)) {
-      // 「」の後に「の「」が続くものは、親から順の見出しとして 1 つの参照にする
-      for (const match of line.matchAll(/(?:\s?の「[^「」\n]*」)+/g)) {
-        const target = resolveDocument(file, line.slice(0, match.index), names, basenames, exists, true)
+      // 「」の後に「の「」が続くものは、親から順の見出しとして 1 つの参照にする。
+      // 最初の「」は、「の」を挟むか、パスかリンクの直後（NO_PARTICLE_BEFORE）に書いたものだけを読む。読まないときは、続く「の「」から読む
+      for (const match of line.matchAll(/(\s?の)?(「[^「」\n]*」)(?:\s?の「[^「」\n]*」)*/g)) {
+        let start = match.index
+        let text = match[0]
+        if (!match[1] && !NO_PARTICLE_BEFORE.test(line.slice(0, start))) {
+          const first = match[2]
+          start += first.length
+          text = text.slice(first.length)
+          if (!text) continue
+        }
+        const target = resolveDocument(file, line.slice(0, start), names, basenames, exists, true)
         if (!target) continue
-        const path = [...match[0].matchAll(/「([^「」]*)」/g)].map((quote) => quote[1])
-        refs.push({ line: lineNumber, target, headings: path, text: match[0].trim() })
+        const path = [...text.matchAll(/「([^「」]*)」/g)].map((quote) => quote[1])
+        refs.push({ line: lineNumber, target, headings: path, text: text.trim() })
       }
     }
     if (isMarkdown && inCode) return

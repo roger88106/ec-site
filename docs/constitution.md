@@ -140,7 +140,7 @@ ec-site/
 |------|------|
 | [<モジュール>.md](03-機能仕様) | モジュールごとの機能仕様（業務規則、状態の遷移、データモデル、今有効な AC） |
 | [template.md](03-機能仕様/template.md) | 機能仕様の雛形 |
-| [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（状態とテスト） |
+| [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（AC の正本。状態と今の内容） |
 | [glossary.md](03-機能仕様/glossary.md) | 用語集 |
 
 決定記録（`docs/04-決定記録/`）：決定の理由を、1 つの決定につき 1 ファイルで書く。

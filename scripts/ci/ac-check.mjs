@@ -3,16 +3,16 @@
 // 目的：AC の今の内容を AC 一覧の 1 か所に置き、③ の表とテストとの対応を、AC 一覧と食い違わせない。
 //   AC の内容を得るために、アーカイブの spec は読まない。
 // 読むもの：
-//   - AC 一覧：生成の印（<!-- generated:ac-list --> とその閉じ）の範囲の表。改行コードは LF にそろえて読む
+//   - AC 一覧：生成のマーカー（<!-- generated:ac-list --> とその閉じ）の範囲の表。改行コードは LF にそろえて読む
 //   - AC 一覧の列：AC・モジュール・状態・元の spec・変えた spec・今の内容。全て手動で書く
 //   - AC：MVP の AC-n と、1→10 の AC-s-n（s は spec の番号、n は連番）。2 つの形は別の AC として扱う。
 //     AC-s-n を AC-s と読まない。番号は、文書の記号と番号の「spec の番号」
 //   - ③ のモジュールの名前：次の 2 つが両方ある名前と、common（共通。③ の表に生成しない）。
 //     backend/ecsite/src/main/java/com/ecsite/module/<名前>/ と docs/03-機能仕様/<名前>.md
-//   - ③ の表：構造の検査の対象の一覧（spec-structure.mjs の FUNCTIONAL_SPECS）にある ③ の、印の範囲。
-//     印は「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ
+//   - ③ の表：構造の検査の対象の一覧（spec-structure.mjs の FUNCTIONAL_SPECS）にある ③ の、マーカーの範囲。
+//     マーカーは「今有効な AC」の節の <!-- generated:module-ac --> とその閉じ
 //   - ③ の表の中身：AC 一覧から作る。列は AC、今の内容、元の spec。0 件なら「なし。」の 1 行。
-//     状態が有効・変更で、モジュールがその ③ の AC を、AC の順に置く
+//     状態が有効か変更で、列「モジュール」がその ③ の名前の AC を、AC の順に置く
 //   - ③ の表の比べ方：範囲の先頭と末尾の空行を除き、改行コードを LF にそろえて、完全一致で比べる。
 //     全角と半角などは正規化しない
 //   - 進行中の spec：docs/08-spec/ の直下の spec.md の、定義の行（- **AC-…**）。spec.md のないディレクトリは飛ばす。
@@ -22,18 +22,21 @@
 //   - 読まないテスト名：まとまりの名前（describe、クラス）、skip・fixme のテスト、skip・fixme のまとまりの中のテスト。
 //     コメント・文字列の中の呼び出しも読まない
 // 次のときに失敗する：
-//   - AC 一覧の範囲：印の範囲がない、2 組ある、閉じが前にある
-//   - AC 一覧の形：列が違う、行のセルの数が違う、表の行でない行がある（黙って落とさない）、AC の番号の形が違う
+//   - AC 一覧の範囲：マーカーの範囲がない、2 組ある、閉じが前にある
+//   - AC 一覧の形：列が違う、行のセルの数が違う、表の行でない行がある（読み飛ばさない）、AC の番号の形が違う。
+//     表の中に空行がある（GFM の表はそこで切れる。表より前と、表より後の空行は許す）
 //   - AC 一覧の行：同じ AC の行が 2 つある、状態が有効・変更・廃止でない
 //   - モジュール：有効・変更の AC で、③ の名前か common の 1 つでない。廃止の AC は空でもよい
-//   - 変えた spec：有効の AC で「—」でない、変更・廃止の AC でない
+//   - 変えた spec：有効の AC で「—」以外、変更・廃止の AC で空か「—」
 //   - 元の spec：[<番号>](../08-spec/<パス>/spec.md) の形でない、そのディレクトリがない
 //   - 今の内容：有効・変更の AC で、空か仮の値（—、なし、<…>）。<br /> がある
 //   - 今の内容の参照：spec の中だけで通じる参照（※1、事実 2、US の番号、spec の「…」）がある
-//   - 今の内容の根拠：変更と common の AC で、根拠（<文書の名前>の「<見出し>」）がない
-//   - ③ の印：一覧にある ③ の印の組がない、1 組でない、閉じが前にある、「今有効な AC」の節の外にある、節をまたぐ
+//   - 今の内容の根拠：変更と common の AC で、根拠（リンク [<文書の名前>](<パス>) と、その直後の「の「<見出し>」」）がない。
+//     リンクのない「…の「…」」は根拠と読まない（doc-refs が見出しの実在を確認できないため）
+//   - ③ のマーカー：一覧にある ③ のマーカーの組がない、1 組でない、閉じが前にある、「今有効な AC」の節の外にある、節をまたぐ
 //   - ③ の節と表：一覧にある ③ に「今有効な AC」の節がない、表が古い
-//   - その他の印：一覧にない ③ に印がある。既知の印（generated:ac-list、generated:module-ac）でない generated: のコメントがある
+//   - ③ の名前：一覧にある ③ の名前に、バックエンドのモジュールのディレクトリがない
+//   - その他のマーカー：一覧にない ③ にマーカーがある。既知のマーカー（generated:ac-list、generated:module-ac）でない generated: のコメントがある
 //   - 進行中の spec：AC が AC 一覧にない、AC 一覧の元の spec がその spec でない（番号の重なり）、定義の行が崩れている。
 //     spec から消した AC が、AC 一覧に有効・変更で残っている
 //   - テスト名の AC：AC 一覧にない AC 番号がある、廃止の AC を参照する
@@ -47,14 +50,14 @@
 //   - AC 一覧の行を修正する。進行中の spec の AC がないときは --write で転記し、モジュールの列を書く。
 //     転記した行はモジュールが空なので、書くまで失敗する
 //   - ③ の表が古いときは、--write で書き換えて差分を確認する。
-//     印と節の誤りは手動で修正する（そのとき --write は何も書かずに失敗する）
+//     マーカーと節の誤りは手動で修正する（そのとき --write は何も書かずに失敗する）
 //   - テストを追加するか、テスト名に AC を書く。AC は読点で 1 つずつ書く（AC-n、AC-m）。
 //     読めない呼び出しは ファイル:行 を示すので、テスト名を文字列で書く
 // 除外：ac-exclusions.json に {キー: 理由}。キーは AC 一覧の有効・変更の AC（AC-n）。
 //   テストがある AC、AC 一覧にない AC、廃止の AC の除外は失敗にする
 // 使い方（リポジトリのルートで）：
 //   - node scripts/ci/ac-check.mjs：照合する
-//   - node scripts/ci/ac-check.mjs --write：AC 一覧にない進行中の spec の AC を転記し、③ の印の範囲を書き換える。
+//   - node scripts/ci/ac-check.mjs --write：AC 一覧にない進行中の spec の AC を転記し、③ のマーカーの範囲を書き換える。
 //     範囲の外と、一覧にない ③ は変えない
 //   - node scripts/ci/ac-check.mjs --tests：AC とテストの対応を表示する（対応は Git に置かない）
 import { existsSync, readdirSync, readFileSync, writeFileSync } from 'node:fs'
@@ -265,17 +268,17 @@ const MODULE_COLUMNS = ['AC', '今の内容', '元の spec']
 /** ③ に生成する表の、見出しと区切りの行 */
 const MODULE_TABLE_HEAD = ['| AC | 今の内容 | 元の spec |', '|----|----------|-----------|']
 
-/** 対応する AC が 0 件のモジュールの、印の範囲の中の行 */
+/** 対応する AC が 0 件のモジュールの、マーカーの範囲の中の行 */
 const NO_ACS = 'なし。'
 
-/** ③ の生成の表を置く節 */
-const MODULE_AC_SECTION = '今有効な AC'
+/** ③ の生成の表を置く節。雛形の骨組みの ## にあることを、テストで確認する */
+export const MODULE_AC_SECTION = '今有効な AC'
 
-/** 生成の印の名前（AC 一覧の表と、③ の表） */
+/** 生成のマーカーの名前（AC 一覧の表と、③ の表） */
 const LIST_MARK = 'ac-list'
 const MODULE_MARK = 'module-ac'
 
-/** 生成の印の形（開きは `<!-- generated:<名前> -->`、閉じは `<!-- /generated:<名前> -->`） */
+/** 生成のマーカーの形（開きは `<!-- generated:<名前> -->`、閉じは `<!-- /generated:<名前> -->`） */
 const MARK = /^(\/?)generated:(ac-list|module-ac)$/
 
 /** 表の区切りの行 */
@@ -290,8 +293,11 @@ const ORIGIN_LINK = /^\[([0-9]+)\]\(\.\.\/08-spec\/((?:archive\/[^/()\s]+\/)?([0
 /** 今の内容に残してはいけない、spec の中だけで通じる参照（※1、事実 2、US の番号、spec の節） */
 const SPEC_ONLY_REFS = [/※[0-9]/, /事実\s*[0-9]/, /US-[0-9]/, /spec\s*の「/]
 
-/** 今の内容の根拠の形：「<文書の名前>の「<見出し>」」 */
-const BASIS = /\S+の「[^「」]+」/
+/**
+ * 今の内容の根拠の形：リンク（[<文書の名前>](<パス>)）と、その直後の「の「<見出し>」」。リンクのない「…の「…」」は当たらない。
+ * 理由：doc-refs が見出しの実在を確認できるのは、リンクの後の「の「…」」だけのため
+ */
+const BASIS = /\[[^\]]+\]\([^()\s]+\)の「[^「」]+」/
 
 /** 今の内容の仮の値（`<…>`。英字で始まる HTML のタグは除く） */
 const PLACEHOLDER = /<[^\x00-\x7F][^<>]*>/
@@ -339,11 +345,11 @@ export function splitRow(line) {
 }
 
 /**
- * 文書から、生成の印を読む。コードブロックと 1 行のコードの中は読まない。
- * `generated:` を含むコメントで、既知の印の形でないもの（綴りの誤り）と、行に単独で書いていない印は問題にする。
+ * 文書から、生成のマーカーを読む。コードブロックと 1 行のコードの中は読まない。
+ * `generated:` を含むコメントで、既知のマーカーの形でないもの（綴りの誤り）と、行に単独で書いていないマーカーは問題にする。
  *
  * @param {string} text 文書（LF）
- * @returns {{ marks: { name: string, close: boolean, line: number }[], problems: string[] }} 印（出る順。line は 1 から）と問題
+ * @returns {{ marks: { name: string, close: boolean, line: number }[], problems: string[] }} マーカー（出る順。line は 1 から）と問題
  */
 export function findMarks(text) {
   const lines = text.split('\n')
@@ -371,11 +377,11 @@ export function findMarks(text) {
 }
 
 /**
- * 1 つの名前の印の組を、ただ 1 組として読む。
+ * 1 つの名前のマーカーの組を、ただ 1 組として読む。
  *
- * @param {{ name: string, close: boolean, line: number }[]} marks findMarks の印
- * @param {string} name 印の名前
- * @returns {{ pair: { open: number, close: number } | null, problems: string[] }} 組（開きと閉じの行）と問題。印が 1 つもなければ pair も problems も空
+ * @param {{ name: string, close: boolean, line: number }[]} marks findMarks のマーカー
+ * @param {string} name マーカーの名前
+ * @returns {{ pair: { open: number, close: number } | null, problems: string[] }} 組（開きと閉じの行）と問題。マーカーが 1 つもなければ pair も problems も空
  */
 function readPair(marks, name) {
   const own = marks.filter((mark) => mark.name === name)
@@ -390,11 +396,11 @@ function readPair(marks, name) {
 }
 
 /**
- * AC 一覧の文書から、生成の印の範囲の表を読む。行を黙って落とさず、読めない行は問題にする。
+ * AC 一覧の文書から、生成のマーカーの範囲の表を読む。行を読み飛ばさず、読めない行は問題にする。
  *
  * @param {string} document AC 一覧の文書（改行は LF でも CRLF でもよい）
  * @returns {{ rows: { ac: number | string, label: string, module: string, status: string, origin: string, changedBy: string, content: string, line: number }[], problems: string[], pair: { open: number, close: number } | null }}
- *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：印の範囲（読めなければ null）
+ *   rows：AC の行（書いた順。line は 1 から）。problems：問題（行を付ける）。pair：マーカーの範囲（読めなければ null）
  */
 export function readAcList(document) {
   const text = toLf(document)
@@ -407,9 +413,17 @@ export function readAcList(document) {
   const lines = text.split('\n')
   const rows = []
   let tableLine = 0
+  // 空行は、表より前と表より後だけ許す。GFM の表は空行で切れ、後ろの行が表にならないため
+  const filled = []
+  for (let number = pair.open + 1; number < pair.close; number++) {
+    if (lines[number - 1].trim() !== '') filled.push(number)
+  }
   for (let number = pair.open + 1; number < pair.close; number++) {
     const line = lines[number - 1]
-    if (line.trim() === '') continue
+    if (line.trim() === '') {
+      if (number > filled[0] && number < filled.at(-1)) problems.push(`${number} 行：AC 一覧の表の途中に空行がある（表がそこで切れる）`)
+      continue
+    }
     const cells = splitRow(line)
     tableLine++
     if (cells === null) {
@@ -493,7 +507,7 @@ export function checkAcRows({ rows, modules, specDirExists }) {
     if (row.status === '変更' && (row.changedBy === '' || row.changedBy === '—')) add('変更の AC の変えた spec がない')
     if (['', '—', '-', 'なし'].includes(row.content) || PLACEHOLDER.test(row.content)) add(`今の内容が空か仮の値（${row.content}）`)
     else if ((row.status === '変更' || row.module === COMMON) && !BASIS.test(row.content)) {
-      add('今の内容に、根拠を「<文書の名前>の「<見出し>」」の形で添える')
+      add('今の内容に、根拠を、リンク（[<文書の名前>](<パス>)）と、その直後の「の「<見出し>」」の形で添える')
     }
   }
   return problems
@@ -636,7 +650,7 @@ export function listModuleNames({ backendDirs, docFiles }) {
  *
  * @param {ReturnType<typeof readAcList>['rows']} rows AC 一覧の行
  * @param {string} module モジュールの名前
- * @returns {string} 印の範囲の中に置く行（LF。末尾に改行を付けない）。0 件なら「なし。」
+ * @returns {string} マーカーの範囲の中に置く行（LF。末尾に改行を付けない）。0 件なら「なし。」
  */
 export function renderModuleTable(rows, module) {
   const selected = rows.filter((row) => ACTIVE.includes(row.status) && row.module === module && module !== COMMON).sort((a, b) => compareAc(a.ac, b.ac))
@@ -645,9 +659,9 @@ export function renderModuleTable(rows, module) {
 }
 
 /**
- * ③ の文書の、生成の印と「今有効な AC」の表を調べる。
- * 構造の検査の対象の一覧にある ③ は、「今有効な AC」の節の中に印の組が必須で、範囲の中が生成した表と同じでなければならない。
- * 一覧にない ③ は、印を置かない。
+ * ③ の文書の、生成のマーカーと「今有効な AC」の表を調べる。
+ * 構造の検査の対象の一覧にある ③ は、「今有効な AC」の節の中にマーカーの組が必須で、範囲の中が生成した表と同じでなければならない。
+ * 一覧にない ③ は、マーカーを置かない。
  *
  * @param {object} input
  * @param {string} input.text ③ の文書（改行は LF でも CRLF でもよい）
@@ -761,7 +775,7 @@ function report(result, root, strict) {
 }
 
 /**
- * テスト名を読めない呼び出しを、失敗の文にして返す。読めないテストは AC の照合から消えるので、黙って落とさない。
+ * テスト名を読めない呼び出しを、失敗の文にして返す。読めないテストは AC の照合から消えるので、読み飛ばさない。
  *
  * @param {string} source Vitest・Playwright のテストのソース
  * @param {string} rel 表示するファイルのパス

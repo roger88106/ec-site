@@ -5,7 +5,8 @@ import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
-import { checkArchivedTasks, countTasks, readArchivedTasks } from './progress.mjs'
+import { withoutGitEnv } from './lib/git-env.mjs'
+import { checkArchiveGroups, checkArchivedTasks, countTasks, readArchivedTasks } from './progress.mjs'
 
 describe('1→10 のアーカイブの進捗の検査', () => {
   test('tasks のチェックボックスを数える', () => {
@@ -43,6 +44,22 @@ describe('1→10 のアーカイブの進捗の検査', () => {
           ['4-order', { total: 2, done: 1 }],
         ]),
       )
+    } finally {
+      rmSync(specsDir, { recursive: true, force: true })
+    }
+  })
+
+  test('1→10 の spec が 0 件なら、食い違いとして返す', () => {
+    assert.equal(checkArchivedTasks(new Map()).length, 1)
+  })
+
+  test('アーカイブの下の、mvp と 1to10 以外のディレクトリを食い違いとして返す。ファイルは見ない', () => {
+    const specsDir = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      for (const dir of ['archive/mvp', 'archive/1to10', 'archive/1to1O', 'archive/done']) mkdirSync(path.join(specsDir, dir), { recursive: true })
+      writeFileSync(path.join(specsDir, 'archive', 'README.md'), '説明\n')
+      assert.deepEqual(checkArchiveGroups(specsDir).map((line) => line.split('：')[0]), ['archive/1to1O', 'archive/done'])
+      assert.deepEqual(checkArchiveGroups(path.join(specsDir, 'none')), [])
     } finally {
       rmSync(specsDir, { recursive: true, force: true })
     }
@@ -115,7 +132,7 @@ describe('script として実行する', () => {
         mkdirSync(path.dirname(path.join(root, file)), { recursive: true })
         writeFileSync(path.join(root, file), text)
       }
-      return spawnSync(process.execPath, [script], { cwd: root, encoding: 'utf8' })
+      return spawnSync(process.execPath, [script], { cwd: root, encoding: 'utf8', env: withoutGitEnv() })
     } finally {
       rmSync(root, { recursive: true, force: true })
     }
@@ -125,6 +142,26 @@ describe('script として実行する', () => {
     const result = run('- [x] **T3-01-01** a\n- [ ] **T3-01-02** b')
     assert.equal(result.status, 1)
     assert.match(result.stdout, /1→10 の spec 3-cart：tasks に残りが 1 ある/)
+  })
+
+  test('1→10 のアーカイブの下の spec が 0 件なら、何も見ずに通らず失敗する', () => {
+    const root = mkdtempSync(path.join(tmpdir(), 'progress-'))
+    try {
+      mkdirSync(path.join(root, 'docs/08-spec/archive/1to10'), { recursive: true })
+      const result = spawnSync(process.execPath, [script], { cwd: root, encoding: 'utf8', env: withoutGitEnv() })
+      assert.equal(result.status, 1, result.stdout)
+      assert.match(result.stdout, /archive\/1to10\/ の下に spec が 1 件もない/)
+    } finally {
+      rmSync(root, { recursive: true, force: true })
+    }
+  })
+
+  test('アーカイブの下に mvp と 1to10 以外のディレクトリがあれば、失敗する', () => {
+    for (const group of ['1to1O', 'misc']) {
+      const result = run('- [x] **T3-01-01** a', { [`docs/08-spec/archive/${group}/5-x/tasks/01.md`]: '- [ ] **T5-01-01** a\n' })
+      assert.equal(result.status, 1, `${group}: ${result.stdout}`)
+      assert.match(result.stdout, new RegExp(`archive/${group}`))
+    }
   })
 
   test('MVP の部分を見ない：README の表と mvp.md の有無や食い違いによらず成功する', () => {

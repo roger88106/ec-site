@@ -49,7 +49,7 @@ CI のジョブと、CI の検査の script の一覧。CI の決まり（失敗
 
 CI の検査の script は、文書だけの変更でも結果が変わる ※1。そのため、文書だけの push でも実行する `docs.yml` で実行する。
 
-※1：文書の参照と用語、AC 一覧、ロールと権限の対応表、進捗の表、用語集の識別子など。
+※1：文書の参照と用語、AC 一覧、ロールと権限の対応表、用語集の識別子など。
 
 `ci.yml` は、次のファイルだけを変えた push では実行しない：Markdown、`.claude/`、`scripts/dev/`、`showcase/`、`pages.yml`、`.github/ISSUE_TEMPLATE/`、`.github/dependabot.yml`、`.gitignore`、`LICENSE`。ただし、全体構成の文書（`docs/02-設計/overview.md`）は、バックエンドの単体テストが図と照合するので、Markdown でも実行する。モジュールの設計書（`docs/03-機能仕様/*.md`。同じフォルダーの AC 一覧と用語集だけを変えた push でも実行する）と、バックエンドの書き方（`docs/05-開発規則/backend-coding.md`）も、Markdown でも実行する。`ProductionClassesTest` が設計書のレベルをレベル A の一覧と照合し、`ModuleStructureTest` がパッケージの大きさの表を照合するため。また、`scripts/dev/lib/` は E2E の script から使う script の置き場所で、`scripts/dev/ports.json` はその `lib/slot.mjs` が読むポートの一覧なので、`scripts/dev/` の下でも実行する。pull request はいつも実行する。
 
@@ -107,7 +107,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 | `note-numbers` | 文書の注の番号が、1 つの文書の中で重複せず、出る順に並ぶことを確認する。 |
 | `progress` | 1→10 のアーカイブの spec の tasks が、全て済んでいることを確認する。 |
 | `risk` | 変更の危険度（高か低）を、危険度が高い経路と spec の宣言から判定し、pull request の本文の判定と比べる。 |
-| `role-permissions` | ロールと権限の対応表が、API の契約と運営者の realm の設定から再作成した表と一致することを確認する。表を Git に置くのは、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないため。 |
+| `role-permissions` | ロールと権限の対応表が、API の契約と運営者の realm の設定から再作成した表と一致することを確認する。表は、エンジニアが読む設計の文書で、契約と realm の変更でしか変わらないので、Git に置く。 |
 | `runtime-versions` | JDK と Node のバージョンが置き場所の間で一致し、workflow が直接書かずにそれを参照していることを確認する。 |
 | `service-names` | 規則の本文に、AI のサービス固有の名前がない（コードスパンのパス、コードブロック、リンク先を除く）ことを確認する |
 | `test-helpers` | 統合テストが、テストの補助だけが呼んでよい操作を、補助の外で呼んでいないことを確認する。 |

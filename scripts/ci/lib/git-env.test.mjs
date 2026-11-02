@@ -51,4 +51,16 @@ describe('GIT_ の環境変数を外す補助', () => {
     ]
     assert.deepEqual(findRuleViolations(listScanScripts('all'), rules), [])
   })
+
+  test('テストが git を直接呼ぶ所は、同じ行に env: を渡す（ファイルが removeGitEnv を使う場合を除く）', () => {
+    const gitCall = /\b(?:execFileSync|spawnSync|execFile|spawn)\(\s*['"`]git['"`]|\bexecSync\(\s*['"`]git\b/
+    const missing = []
+    for (const { name, code } of listScanScripts('all')) {
+      if (!name.endsWith('.test.mjs') || /\bremoveGitEnv\(\)/.test(code)) continue
+      code.split('\n').forEach((line, index) => {
+        if (gitCall.test(line) && !/\benv\b/.test(line)) missing.push(`${name}:${index + 1}`)
+      })
+    }
+    assert.deepEqual(missing, [])
+  })
 })

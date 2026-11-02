@@ -1,7 +1,8 @@
 // Chrome とネットワークは使わない。描画は偽の関数に替える。
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { buildCommand, checkDocs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, quoteArg, summaryLine, toMarkdown } from './mermaid-check.mjs'
+import { emptyListReason } from '../lib/git-files.mjs'
+import { buildCommand, checkDocs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, quoteArg, runCheck, summaryLine, toMarkdown } from './mermaid-check.mjs'
 
 const FENCE = '```'
 
@@ -10,7 +11,7 @@ function sources(text) {
   return extractMermaidBlocks(text).diagrams.map((diagram) => diagram.source)
 }
 
-describe('Mermaid の図の読み取り：拾う', () => {
+describe('Mermaid の図の読み取り：取り出す', () => {
   test('行頭の ```mermaid のコードブロック', () => {
     assert.deepEqual(extractMermaidBlocks(`文\n${FENCE}mermaid\ngraph TD\n  A-->B\n${FENCE}\n`), {
       diagrams: [{ line: 2, source: 'graph TD\n  A-->B' }],
@@ -51,7 +52,7 @@ describe('Mermaid の図の読み取り：拾う', () => {
     assert.deepEqual(sources(`${FENCE}mermaid\r\nA\r\nB\r\n${FENCE}`), ['A\nB'])
   })
 
-  test('1 つのファイルの複数の図を順に拾い、開きの行を返す', () => {
+  test('1 つのファイルの複数の図を順に取り出し、開きの行を返す', () => {
     const text = `${FENCE}mermaid\nA\n${FENCE}\n\n${FENCE}mermaid\nB\n${FENCE}\n`
     assert.deepEqual(extractMermaidBlocks(text).diagrams, [
       { line: 1, source: 'A' },
@@ -63,12 +64,12 @@ describe('Mermaid の図の読み取り：拾う', () => {
     assert.deepEqual(extractMermaidBlocks(`段落\n${FENCE}mermaid\nA\n${FENCE}`).diagrams, [{ line: 2, source: 'A' }])
   })
 
-  test('空の図は、空の本文で拾う', () => {
+  test('空の図は、空の本文で取り出す', () => {
     assert.deepEqual(sources(`${FENCE}mermaid\n${FENCE}`), [''])
   })
 })
 
-describe('Mermaid の図の読み取り：拾わない', () => {
+describe('Mermaid の図の読み取り：取り出さない', () => {
   test('4 つのバッククォートの囲みに入った ```mermaid（雛形の骨組み）', () => {
     assert.deepEqual(extractMermaidBlocks('````markdown\n```mermaid\nA\n```\n````\n'), { diagrams: [], unclosed: [] })
   })
@@ -94,7 +95,7 @@ describe('Mermaid の図の読み取り：拾わない', () => {
     assert.deepEqual(extractMermaidBlocks(`${FENCE}mermaid\`x\`\n本文\n`), { diagrams: [], unclosed: [] })
   })
 
-  test('3 個のバッククォートの markdown の囲みに入った ```mermaid（外側の閉じが新しい開きになり、mermaid でないので捨てる）', () => {
+  test('3 個のバッククォートの markdown の囲みに入った ```mermaid（外側の閉じが新しい開きになり、mermaid でないので取り出さない）', () => {
     const text = '```markdown\n```mermaid\nA\n```\n```\n'
     assert.deepEqual(extractMermaidBlocks(text), { diagrams: [], unclosed: [] })
   })
@@ -160,23 +161,29 @@ describe('描画の結果の判定', () => {
 })
 
 describe('ファイルごとの描画', () => {
-  /** 描画を記録し、`BAD` を含む入力を失敗にする偽の描画 */
+  /** 入力の図の数（Markdown なら mermaid のコードブロックの数、図の本文なら 1） */
+  function diagramCount(input, kind) {
+    return kind === 'markdown' ? input.split('mermaid\n').length - 1 : 1
+  }
+
+  /** 描画を記録し、`BAD` を含む入力を失敗にし、できた SVG の数を図の数にする偽の描画 */
   function fakeRender() {
     const calls = []
-    const render = (markdown) => {
-      calls.push(markdown)
-      return markdown.includes('BAD') ? 'Parse error' : null
+    const render = (input, kind) => {
+      calls.push({ input, kind })
+      return input.includes('BAD') ? { error: 'Parse error', outputs: 0 } : { error: null, outputs: diagramCount(input, kind) }
     }
     return { calls, render }
   }
 
-  test('全ての図が描ければ、ファイルごとに 1 回だけ描画する', () => {
+  test('全ての図が描画できれば、ファイルごとに 1 回だけ描画する', () => {
     const { calls, render } = fakeRender()
     const text = `${FENCE}mermaid\nA\n${FENCE}\n\n${FENCE}mermaid\nB\n${FENCE}\n`
     const result = checkDocs([{ file: 'docs/a.md', text }, { file: 'docs/b.md', text }], render)
     assert.deepEqual(result, { problems: [], count: 4 })
     assert.equal(calls.length, 2)
-    assert.ok(calls[0].includes('A') && calls[0].includes('B'))
+    assert.ok(calls[0].input.includes('A') && calls[0].input.includes('B'))
+    assert.equal(calls[0].kind, 'markdown')
   })
 
   test('図のないファイルは描画しない', () => {
@@ -194,6 +201,8 @@ describe('ファイルごとの描画', () => {
     assert.equal(result.count, 4)
     // bad.md：まとめて 1 回 + 図ごとに 3 回、good.md：1 回
     assert.equal(calls.length, 5)
+    // 図ごとの描画は、図の本文だけを入力にする（本文の中の ``` や ::: に影響されない）
+    assert.deepEqual(calls.slice(1, 4).map((call) => [call.kind, call.input]), [['diagram', 'A'], ['diagram', 'BAD'], ['diagram', 'C']])
   })
 
   test('複数の図が失敗したら、それぞれの行を示す', () => {
@@ -202,10 +211,48 @@ describe('ファイルごとの描画', () => {
     assert.deepEqual(checkDocs([{ file: 'docs/a.md', text }], render).problems.map((problem) => problem.line), [1, 7])
   })
 
-  test('まとめては失敗し、図ごとには全て通るときは、最初の図の行に、まとめての誤りを示す', () => {
-    const render = (markdown) => (markdown.split('mermaid').length > 2 ? 'まとめての失敗' : null)
+  test('まとめては失敗し、図ごとには全て通るときは、最初の図の行に、まとめて描画したときの誤りを示す', () => {
+    const render = (input, kind) => (kind === 'markdown' ? { error: 'まとめての失敗', outputs: 0 } : { error: null, outputs: 1 })
     const text = `${FENCE}mermaid\nA\n${FENCE}\n${FENCE}mermaid\nB\n${FENCE}\n`
     assert.deepEqual(checkDocs([{ file: 'docs/a.md', text }], render).problems, [{ file: 'docs/a.md', line: 1, message: 'まとめての失敗' }])
+  })
+
+  test('出力の SVG が図の数より少なければ、プロセスが成功でも失敗とし、図ごとに描画する', () => {
+    // 2 つ目の図の本文に ``` で終わる行があり、mermaid-cli がその図を取り出せない場合を想定した偽の描画
+    const calls = []
+    const render = (input, kind) => {
+      calls.push(kind)
+      if (kind === 'markdown') return { error: null, outputs: 1 }
+      return input === 'B' ? { error: null, outputs: 0 } : { error: null, outputs: 1 }
+    }
+    const text = `${FENCE}mermaid\nA\n${FENCE}\n${FENCE}mermaid\nB\n${FENCE}\n`
+    const result = checkDocs([{ file: 'docs/a.md', text }], render)
+    assert.equal(result.problems.length, 1)
+    assert.equal(result.problems[0].line, 4)
+    assert.match(result.problems[0].message, /足りない/)
+    assert.deepEqual(calls, ['markdown', 'diagram', 'diagram'])
+  })
+
+  test('本文に行末の ``` か ::: がある図は、まとめて描画せず、図ごとに描画する（まとめると途中で切れるため）', () => {
+    const { calls, render } = fakeRender()
+    const text = `${FENCE}mermaid\nA\n${FENCE}\n${FENCE}mermaid\n%% 注 :::\nB\n${FENCE}\n${FENCE}mermaid\nC ${FENCE}x\n${FENCE}\n`
+    const result = checkDocs([{ file: 'docs/a.md', text }], render)
+    assert.deepEqual(result.problems, [])
+    assert.deepEqual(calls.map((call) => call.kind), ['diagram', 'diagram', 'diagram'])
+  })
+
+  test('図ごとの描画でも、出力の SVG ができなければ失敗とする', () => {
+    const render = () => ({ error: null, outputs: 0 })
+    const text = `${FENCE}mermaid\nA\n${FENCE}\n`
+    const result = checkDocs([{ file: 'docs/a.md', text }], render)
+    assert.equal(result.problems.length, 1)
+    assert.match(result.problems[0].message, /0 個/)
+  })
+
+  test('出力の SVG が図の数より多くても、失敗とする', () => {
+    const render = () => ({ error: null, outputs: 3 })
+    const text = `${FENCE}mermaid\nA\n${FENCE}\n${FENCE}mermaid\nB\n${FENCE}\n`
+    assert.ok(checkDocs([{ file: 'docs/a.md', text }], render).problems.length > 0)
   })
 
   test('閉じていない図は、行を示して失敗にし、他の図は描画する', () => {
@@ -219,10 +266,85 @@ describe('ファイルごとの描画', () => {
     assert.equal(result.count, 2)
   })
 
-  test('図の本文のバッククォートより長い囲みで、描画の入力を作る', () => {
-    const markdown = toMarkdown(['a\n````\nb'])
-    assert.ok(markdown.startsWith('`````mermaid\n'))
-    assert.ok(markdown.trimEnd().endsWith('`````'))
+  test('描画の入力の Markdown は、図ごとに 3 個のバッククォートのコードブロックにする（mermaid-cli が読み取る形）', () => {
+    assert.equal(toMarkdown(['A', 'B']), `${FENCE}mermaid\nA\n${FENCE}\n\n${FENCE}mermaid\nB\n${FENCE}\n`)
+  })
+})
+
+describe('検査の本体（runCheck）', () => {
+  /** 呼び出しを記録する偽の外部処理。上書きで差し替える */
+  function fakeDeps(overrides = {}) {
+    const log = { events: [], out: [], err: [] }
+    const text = `${FENCE}mermaid\nA\n${FENCE}\n`
+    const deps = {
+      findChrome: () => '/chrome',
+      listDocs: () => [{ file: 'docs/a.md', text }],
+      makeWork: () => {
+        log.events.push('make')
+        return '/work'
+      },
+      removeWork: (work) => log.events.push(`remove ${work}`),
+      makeRender: () => () => ({ error: null, outputs: 1 }),
+      out: (line) => log.out.push(line),
+      err: (line) => log.err.push(line),
+      ...overrides,
+    }
+    return { deps, log }
+  }
+
+  test('Chrome がなければ、作業のディレクトリを作らずに終了コード 2', () => {
+    const { deps, log } = fakeDeps({ findChrome: () => null })
+    assert.equal(runCheck(deps), 2)
+    assert.deepEqual(log.events, [])
+    assert.match(log.err[0], /Chrome/)
+  })
+
+  test('全て描画できれば終了コード 0 で、要約の行を出し、作業のディレクトリを削除する', () => {
+    const { deps, log } = fakeDeps()
+    assert.equal(runCheck(deps), 0)
+    assert.deepEqual(log.out, [summaryLine(0, 1)])
+    assert.deepEqual(log.events, ['make', 'remove /work'])
+  })
+
+  test('描画が失敗したら、終了コード 1 と、図の位置と要約の行を出力する', () => {
+    const { deps, log } = fakeDeps({ makeRender: () => () => ({ error: 'Parse error', outputs: 0 }) })
+    assert.equal(runCheck(deps), 1)
+    assert.deepEqual(log.err, ['docs/a.md:1\nParse error'])
+    assert.deepEqual(log.out, [summaryLine(1, 1)])
+  })
+
+  test('描画が失敗しても、作業のディレクトリを削除する', () => {
+    const { deps, log } = fakeDeps({ makeRender: () => () => ({ error: 'Parse error', outputs: 0 }) })
+    runCheck(deps)
+    assert.deepEqual(log.events, ['make', 'remove /work'])
+  })
+
+  test('描画の関数が例外を投げても、作業のディレクトリを削除する', () => {
+    const { deps, log } = fakeDeps({
+      makeRender: () => () => {
+        throw new Error('想定外')
+      },
+    })
+    assert.throws(() => runCheck(deps), /想定外/)
+    assert.deepEqual(log.events, ['make', 'remove /work'])
+  })
+
+  test('取り出した図が 0 件なら、終了コード 1 と理由を出力する', () => {
+    const { deps, log } = fakeDeps({ listDocs: () => [{ file: 'docs/a.md', text: '本文のみ\n' }] })
+    assert.equal(runCheck(deps), 1)
+    assert.deepEqual(log.out, [emptyListReason([], 'Mermaid の図')])
+  })
+
+  test('対象の文書が 0 件なら、作業のディレクトリを作らずに終了コード 1', () => {
+    const { deps, log } = fakeDeps({ listDocs: () => [] })
+    assert.equal(runCheck(deps), 1)
+    assert.deepEqual(log.events, [])
+  })
+
+  test('閉じていない図だけでも、図の数に数えて失敗にする（0 件の失敗とは別）', () => {
+    const { deps, log } = fakeDeps({ listDocs: () => [{ file: 'docs/a.md', text: `${FENCE}mermaid\nA\n` }] })
+    assert.equal(runCheck(deps), 1)
+    assert.deepEqual(log.out, [summaryLine(1, 1)])
   })
 })
 
@@ -257,7 +379,7 @@ describe('起動の引数', () => {
     assert.equal(quoteArg('C:\\Users\\a b\\Temp\\x.md'), '"C:\\Users\\a b\\Temp\\x.md"')
   })
 
-  test('起動の命令は、全ての引数を引用符で囲み、空白のあるパスが 1 つの引数になる', () => {
+  test('起動のコマンドは、全ての引数を引用符で囲み、空白のあるパスが 1 つの引数になる', () => {
     const command = buildCommand('npx', ['--yes', '@mermaid-js/mermaid-cli@12.0.0', '-i', 'C:\\Temp\\a b\\in.md'])
     assert.equal(command, 'npx "--yes" "@mermaid-js/mermaid-cli@12.0.0" "-i" "C:\\Temp\\a b\\in.md"')
   })

@@ -61,6 +61,7 @@ export const FUNCTIONAL_SPECS = [
   'docs/03-機能仕様/storefront.md',
   'docs/03-機能仕様/payment.md',
   'docs/03-機能仕様/shipping.md',
+  'docs/03-機能仕様/notification.md',
   'docs/03-機能仕様/reporting.md',
 ]
 

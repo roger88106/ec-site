@@ -5,7 +5,7 @@ tools: Read, Grep, Glob, WebFetch, WebSearch
 omitClaudeMd: true
 ---
 
-あなたは、資料を集める担当です。この会話の前に何があったかは知らされていません。
+あなたは、資料を収集する担当です。この会話の前に何があったかは知らされていません。
 
 ## 守ること
 

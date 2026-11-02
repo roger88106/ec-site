@@ -123,16 +123,16 @@
 | BR-1 税込価格 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | tax：業務規則の「税込価格」 | 有効 |
 | BR-2 C 側に表示される商品 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog：業務規則の「C 側の表示と検索」の「表示される条件」 | 有効 |
 | BR-3 日時 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-4 価格の表示 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | storefront（段階 3〜5 で移す） |  |
+| BR-4 価格の表示 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | storefront：業務規則の「価格の表示」 | 有効。③ になかった文を、意味を変えずに加えた |
 | BR-5 品番 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog：業務規則の「商品（集約）」 | 有効 |
 | BR-6 送料 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：見積もり | 有効。金額の既定（1,000 円）、標準税率、設定で変えられることは、コード（`OrderProperties`）と一致する |
 | BR-7 金額 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：見積もり | 有効 |
 | BR-8 消費税額 | [002](../archive/mvp/002-cart-and-order/spec.md) | tax：業務規則の「税率ごとの消費税額」 | 有効 |
 | BR-9 注文の状態 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：状態の遷移 | 有効。定義は 002 にだけある。「支払待ち」と「出荷済み」は BR-14 と BR-18 が加える。今の ③ の遷移は、BR-9 の遷移を全て含む |
 | BR-10 注文番号 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：注文の成立 | 有効。形式は 002 の plan で決めた形（注文日の 8 桁、ハイフン、ランダムな 6 桁）を書いた |
-| BR-11 引当と販売可能数 | [002](../archive/mvp/002-cart-and-order/spec.md) | inventory：業務規則の「引当」 | 変更。元の BR は「在庫数を減らすのは注文の成立だけ」だが、③ とコードでは、運営者の調整・注文の成立・キャンセルで在庫数が変わる。引当が在庫数を減らさない意味は保つ。カートへの追加を販売可能数で判定する部分は、カートの ③ で扱う |
+| BR-11 引当と販売可能数 | [002](../archive/mvp/002-cart-and-order/spec.md) | inventory：業務規則の「引当」、cart：業務規則の「品目の追加と変更」（カートへの追加を販売可能数で判定する部分） | 変更。元の BR は「在庫数を減らすのは注文の成立だけ」だが、③ とコードでは、運営者の調整・注文の成立・キャンセルで在庫数が変わる。引当が在庫数を減らさない意味は保つ。カートへの追加を販売可能数で判定する部分は、カートの ③ で扱う |
 | BR-12 職務 | [003](../archive/mvp/003-auth/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-13 会員の識別 | [003](../archive/mvp/003-auth/spec.md) | member（段階 3〜5 で移す） |  |
+| BR-13 会員の識別 | [003](../archive/mvp/003-auth/spec.md) | member：業務規則の「会員」 | 有効。元の定義の 2 項目それぞれに番号を付けた |
 | BR-14 注文の状態 | [007](../archive/mvp/007-payment/spec.md) | order：状態の遷移 | 有効 |
 | BR-15 支払の状態 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
 | BR-16 支払の期限 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
@@ -153,10 +153,10 @@
 | BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-32 認可の既定 | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-33 値の置き場所 | [016](../archive/mvp/016-master-data/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
-| BR-34 地方公共団体コード | [016](../archive/mvp/016-master-data/spec.md) | region（段階 3〜5 で移す） |  |
+| BR-34 地方公共団体コード | [016](../archive/mvp/016-master-data/spec.md) | region：業務規則の「マスターデータ」 | 有効 |
 | BR-35 お届け先の写し | [016](../archive/mvp/016-master-data/spec.md) | order：注文（集約） | 有効 |
-| BR-36 郵便番号の使い方 | [016](../archive/mvp/016-master-data/spec.md) | region（段階 3〜5 で移す） |  |
-| BR-37 郵便番号のマスターデータ | [016](../archive/mvp/016-master-data/spec.md) | region（段階 3〜5 で移す） |  |
+| BR-36 郵便番号の使い方 | [016](../archive/mvp/016-master-data/spec.md) | region：業務規則の「マスターデータ」 | 有効。③ になかった文を、意味を変えずに加えた |
+| BR-37 郵便番号のマスターデータ | [016](../archive/mvp/016-master-data/spec.md) | region：業務規則の「マスターデータ」 | 有効。元の定義の 3 項目それぞれに番号を付けた（1 項目は ③ になかった文を加えた） |
 | BR-38 保存期間 | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-39 外部サービスのエラー | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-40 外部サービスとの通信 | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |

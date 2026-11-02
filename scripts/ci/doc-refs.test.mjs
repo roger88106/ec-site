@@ -333,10 +333,16 @@ describe('リンクテキストの検査', () => {
     'docs/rules/workflow.md': '# 開発の進め方\n## 起票\n',
     'docs/rules/backend.md': '# バックエンドの書き方\n',
     'docs/rules/api.md': '# ＡＰＩ の規約\n',
+    'docs/rules/ci.md': '# CI (GitHub Actions) の検査\n',
     'docs/rules/untitled.md': '本文だけ\n',
     'docs/design/apps/store.md': '# 店舗画面（`frontend/store`）の構成\n',
     'docs/08-spec/archive/mvp/002-cart/spec.md': '# Spec 002：カート\n## 背景と目的\n',
+    'docs/08-spec/archive/mvp/002-cart/plan.md': '# Plan 002：カート\n',
     'docs/08-spec/archive/mvp/007-payment/tasks/08-review.md': '# 段階 8：レビュー\n',
+    'docs/08-spec/archive/mvp/mvp.md': '# MVP の完成までの一覧\n',
+    'docs/rules/sub/README.md': '# 概要\n',
+    'docs/design/overview.md': '# 全体構成\n',
+    'README.md': '# EC Site\n',
     '.claude/agents/proofreader.md': '# 校閲役\n',
     'docs/rules/badge.svg': '',
   }
@@ -350,7 +356,9 @@ describe('リンクテキストの検査', () => {
    */
   function checkLinks(file, text) {
     const files = { ...LINKED, [file]: text }
-    return checkReferences(Object.keys(files), (path) => files[path], (path) => path in files)
+    // フォルダーへのリンクのため、フォルダーのパスもあるとする
+    const exists = (path) => path in files || Object.keys(files).some((key) => key.startsWith(`${path}/`))
+    return checkReferences(Object.keys(files), (path) => files[path], exists)
   }
 
   test('文書の名前でないリンクテキストを失敗にする（見出しの参照の有無によらない）', () => {
@@ -365,7 +373,7 @@ describe('リンクテキストの検査', () => {
     ].join('\n')
     const problems = checkLinks('docs/rules/a.md', text)
     assert.deepEqual(lines(problems), ['1', '2', '3', '4', '5', '6', '7', '7'])
-    assert.match(problems[0], /^リンクテキストが文書の名前でない（docs\/records\/results\.md の名前は「エージェントの作業フローの調べた仕組みと実績」）：docs\/rules\/a\.md:1 \[実績\]/)
+    assert.match(problems[0], /^リンクテキスト「実績」が文書の名前でない（docs\/records\/results\.md の名前は「エージェントの作業フローの調べた仕組みと実績」）：docs\/rules\/a\.md:1 \.\.\/records\/results\.md$/)
   })
 
   test('別の文書の名前、リンク先と違うファイル名とパス、名前に見出しを含めたリンクテキストを失敗にする', () => {
@@ -376,13 +384,21 @@ describe('リンクテキストの検査', () => {
       '[開発の進め方の「起票」](workflow.md)',
       '[開発の進め方](workflow.md)と[レビュー](review.md)',
       '[](workflow.md)',
+      '[一覧](../08-spec/archive/mvp/mvp.md)',
     ].join('\n')
-    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3', '4', '5', '6'])
+    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3', '4', '5', '6', '7'])
   })
 
-  test('見出しの参照の形では、ファイル名のリンクテキストを失敗にする（リンクと「の」の間の空白と、バッククォートで囲んだファイル名も）', () => {
-    const text = ['[workflow.md](workflow.md)の「起票」', '[workflow.md](workflow.md) の「起票」', '[`workflow.md`](workflow.md)の「起票」', '[workflow.md](workflow.md)'].join('\n')
-    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3'])
+  test('見出しの参照の形では、ファイル名のリンクテキストを失敗にする（リンクと「の」の間の空白、閉じる印、バッククォートで囲んだファイル名も）', () => {
+    const text = [
+      '[workflow.md](workflow.md)の「起票」',
+      '[workflow.md](workflow.md) の「起票」',
+      '[workflow.md](workflow.md)  の「起票」',
+      '`[workflow.md](workflow.md)`の「起票」',
+      '[`workflow.md`](workflow.md)の「起票」',
+      '[workflow.md](workflow.md)',
+    ].join('\n')
+    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3', '4', '5'])
   })
 
   test('docs/ の外のファイルから docs/ の文書へのリンクも見る', () => {
@@ -415,6 +431,13 @@ describe('リンクテキストの検査', () => {
       '[./workflow.md](workflow.md)',
       '[../rules/workflow.md](../rules/workflow.md)',
       '[![状態](badge.svg)](workflow.md)',
+      '[CI (GitHub Actions) の検査](ci.md)',
+      '[CI の検査](ci.md)',
+      '[MVP の完成までの一覧](../08-spec/archive/mvp/mvp.md)',
+      '[plan](../08-spec/archive/mvp/002-cart/plan.md)',
+      '[README](../../README.md)',
+      '[README.md](sub/README.md)',
+      '[設計](../design)',
     ].join('\n')
     assert.deepEqual(checkLinks('docs/rules/a.md', text), [])
   })

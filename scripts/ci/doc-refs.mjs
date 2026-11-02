@@ -202,7 +202,7 @@ const SPEC_RECORD = /^docs\/08-spec\/(?:.+\/)?(?:(?:spec|plan)\.md|tasks\/[^/]+\
 
 /**
  * リンクテキストが、許可する形か。許可する形は次のどれか。
- *   - 文書の名前（リンクテキストと 1 行目の見出しの両方から括弧の補足を除き、headingKey の形で比べる。リンクテキストは半角の括弧の補足も除く）
+ *   - 文書の名前（リンクテキストと 1 行目の見出しの両方から、全角と半角の括弧の補足を除き、headingKey の形で比べる）
  *   - リンク先のファイル名かパス（バッククォートで囲んでもよい。パスは、リンクのあるファイルからの相対か、ルートからで、リンク先と同じファイルを指すもの）。
  *     見出しの参照（直後の「の「…」」）の形では許可しない（参照の形は文書の名前で書くため）
  *   - リンク先が constitution で、リンクテキストが `constitution`（resolveEnd が constitution の名前として読む。大文字と小文字は区別しない）
@@ -214,7 +214,8 @@ const SPEC_RECORD = /^docs\/08-spec\/(?:.+\/)?(?:(?:spec|plan)\.md|tasks\/[^/]+\
  * @returns {boolean} 許可する形なら true
  */
 export function isAllowedLinkLabel(file, ref, title) {
-  if (headingKey(referenceName(ref.label.replace(/\([^()]*\)/g, ''))) === headingKey(referenceName(title))) return true
+  const nameKey = (text) => headingKey(referenceName(text).replace(/\([^()]*\)/g, ''))
+  if (nameKey(ref.label) === nameKey(title)) return true
   if (SPEC_RECORD.test(ref.target)) return true
   const plain = ref.label.replace(/`/g, '').trim()
   if (ref.target === 'docs/constitution.md' && plain.toLowerCase() === 'constitution') return true
@@ -263,7 +264,8 @@ export function findReferences(file, text, names, basenames, exists = existsSync
         const ref = { line: lineNumber, target, anchor: anchor ? decodeURIComponent(anchor) : undefined, text: link }
         // 画像（`![…](…)`）の文字は、リンクテキストとして見ない
         if (label !== undefined && line[match.index - 1] !== '!') {
-          Object.assign(ref, { label, headingRef: /^\s?の「/.test(line.slice(match.index + whole.length)) })
+          // 見出しの参照の読み方（resolveDocument）と同じく、間の空白と、閉じる印（`` ` ``、「」」、閉じ括弧）を挟んでもよい
+          Object.assign(ref, { label, headingRef: /^[`」）)]*\s*の「/.test(line.slice(match.index + whole.length)) })
         }
         refs.push(ref)
       }
@@ -467,7 +469,7 @@ export function checkReferences(files, read, exists) {
         // # の付くリンクは見出しを指すので見ない。docs/ の下の文書（1 行目に見出しがあるもの）へのリンクだけ、リンクテキストを見る
         const title = ref.target.startsWith('docs/') && ref.target.endsWith('.md') ? headingsOf(ref.target).title : null
         if (title && !isAllowedLinkLabel(file, ref, title)) {
-          problems.push(`リンクテキストが文書の名前でない（${ref.target} の名前は「${referenceName(title)}」）：${file}:${ref.line} [${ref.label}](${ref.text})`)
+          problems.push(`リンクテキスト「${ref.label}」が文書の名前でない（${ref.target} の名前は「${referenceName(title)}」）：${where}`)
         }
       } else if (ref.headings && ref.target.endsWith('.md')) {
         const count = countHeadingMatches(headingsOf(ref.target).headings, ref.headings)

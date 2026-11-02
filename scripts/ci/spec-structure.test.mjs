@@ -513,6 +513,7 @@ describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
       'docs/03-機能仕様/media.md',
       'docs/03-機能仕様/cart.md',
       'docs/03-機能仕様/member.md',
+      'docs/03-機能仕様/region.md',
     ])
   })
 })

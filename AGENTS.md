@@ -85,7 +85,7 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 | 汎用 | Claude Sonnet 5.5 | `claude-sonnet-5-5` | `medium` |
 | 軽量 | Claude Haiku 5.5 ※1 | `claude-haiku-5-5` | `medium` |
 
-最上位を使えるプランは Max で、Pro は使えない（2026-10-28）。出典と軽量の読める量は[実績](docs/07-記録/subagents-results.md)の「モデルの区分の出典と軽量の読める量」。
+最上位を使えるプランは Max で、Pro は使えない（2026-10-28）。出典と軽量の読める量は[エージェントの作業フローの調べた仕組みと実績](docs/07-記録/subagents-results.md)の「モデルの区分の出典と軽量の読める量」。
 
 ※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（定義なしで約 4 万、`.claude/agents/` の定義ありで約 0.6〜1.9 万 token）を含む。
 

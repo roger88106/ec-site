@@ -4,7 +4,7 @@
 
 - 表は `scripts/ci/role-permissions.mjs` が、管理 API の契約（各操作の `x-required-permission`）、運営者の realm の設定（`docker/keycloak/realms/ec-admin-realm.json` のロール）、店舗 API の契約（各操作の `security`）から作る。手動で修正しない。
 - 契約か realm の設定を変えると、CI の検査が失敗する。ルートで `node scripts/ci/role-permissions.mjs --write` を実行して表を再生成し、差分を確認して commit する。
-- 管理画面は、権限のない画面のうちレポートの画面だけをメニューから外す（[管理画面](apps/admin.md)）。ほかの操作は画面に表示されるが、権限がなければ API が 403 を返す。
+- 管理画面は、権限のない画面のうちレポートの画面だけをメニューから外す（[管理画面の構成](apps/admin.md)）。ほかの操作は画面に表示されるが、権限がなければ API が 403 を返す。
 - 操作のパスは、契約の `servers.url`（管理 API は `/api/admin`、店舗 API は `/api/store`）の後ろの部分。
 - 管理 API の「ログインだけ」は、権限によらず、運営者としてログインしていればよい操作。店舗 API の「会員」はログインが必要な操作、「任意」はログインしていれば会員として扱う操作（カート）、「不要」はログインが必要ない操作。
 

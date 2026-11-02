@@ -28,7 +28,7 @@
 | 4.12 | 管理画面の `renderApp` が返す `user` は、入力のキーの間で待たない（`renderApp` を使わないテストは対象外） | レビュー |
 | 5 | 時間で待たない。E2E で `networkidle` で待たず、タイムアウトを数字のリテラルで書かない | 時間で待つことは自動（`scripts/ci/time-waits.mjs`）、`networkidle` と、タイムアウトの数字のリテラル（`timeout` を含む項目、`intervals`、`setTimeout`・`setDefaultTimeout` などの引数。`e2e/src/waits.ts` を除く）も自動（`scripts/ci/frontend-rules.mjs`） |
 
-確認方法が「レビュー」のものは、各 spec の [レビュー](review.md) で読む。
+確認方法が「レビュー」のものは、各 spec のレビューで、[書き方の規則とレビュー](review.md)に従って読む。
 
 ## 1. テストの種類と基準
 

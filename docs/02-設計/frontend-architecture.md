@@ -1,6 +1,6 @@
 # フロントのアーキテクチャ
 
-[constitution](../constitution.md)の「技術スタック」の細則。書き方は [フロントの書き方](../05-開発規則/frontend-coding.md)、アプリごとの構成は [管理画面](apps/admin.md) と [店舗画面](apps/store.md)。
+[constitution](../constitution.md)の「技術スタック」の細則。書き方は [フロントの書き方](../05-開発規則/frontend-coding.md)、アプリごとの構成は [管理画面の構成](apps/admin.md) と [店舗画面の構成](apps/store.md)。
 
 ## 1. 全体の構成
 

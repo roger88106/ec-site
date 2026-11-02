@@ -33,7 +33,7 @@ const SEED = {
 async function shot(page: Page, name: string, ready: Locator) {
   await expect(ready).toBeVisible()
   await expect.poll(() => page.evaluate(() => Array.from(document.images).every((image) => image.complete))).toBe(true)
-  // 店舗画面の開発のサーバーが出す Next.js の印（画面の左下）は、本番の画面にないので写さない
+  // 店舗画面の開発のサーバーが表示する Next.js の印（画面の左下）は、本番の画面にないので写さない
   await page.screenshot({
     path: path.join(OUT, `${name}.png`),
     fullPage: true,
@@ -46,7 +46,7 @@ test('注文の流れのスクリーンショットを撮る', async ({ page }) 
 
   await test.step('店舗画面：カートから注文して支払う', async () => {
     await loginStore(page, ACCOUNTS.member, { returnTo: '/cart', storeUrl: STORE })
-    // 会員のカートは残るので、前に撮ったときの品目を消す
+    // 会員のカートは残るので、前に撮ったときの品目を削除する
     await emptyCart(page, { storeUrl: STORE })
     await addToCart(page, SEED.mug, { option: '白', storeUrl: STORE })
     await addToCart(page, SEED.chocolate, { storeUrl: STORE })

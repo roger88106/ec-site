@@ -34,27 +34,30 @@ skill の正本は `.claude/skills/` である。Claude Code、GitHub Copilot、
 
 ## 作業の進め方
 
-SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)。エージェントは次も守る。
+SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)、役割とサブエージェントへの任せ方は [エージェントの作業フロー](docs/05-開発規則/subagents.md)。場面ごとに、次の節を読む。
 
-- Dependabot の pull request を除き、全ての変更は issue から始める。規模（S・M・L）を提案し、利用者が承認してから進める（開発の進め方の「起票と規模」）。
-- 急ぐ作業（不具合、マージの失敗など）は、すぐに起票する（開発の進め方の「起票」）。
-- spec 担当のセッションは、コードを書かず（数行の文書の修正を除く）、実装を実装役に任せ、合否を判定する（[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「役割と作業の流れ」）。
-- spec 担当のセッションは、最初のタスクの前に、最新の `develop` を取り込み、plan の前提、範囲、依存、規則、並行する spec との重なりを照合し、差があれば文書を先に直す（開発の進め方の「実装を始める前の照合」）。
-- 作業の単位は tasks の 1 タスク。tasks にない作業は始めず、先に tasks への追加を提案する。ただし、実装の前の照合、`develop` の取り込み、pull request の作成、後片付けはタスクにしない（開発の進め方の「規模」、開発の進め方の「実装を始める前の照合」と開発の進め方の「マージの許可と後片付け」）。
+| 場面 | 読む節 |
+|------|--------|
+| 起票と規模の提案 | [開発の進め方](docs/05-開発規則/workflow.md)の「起票」と「規模」 |
+| 急ぐ作業（不具合、マージの失敗など） | [開発の進め方](docs/05-開発規則/workflow.md)の「起票」 |
+| spec 担当の役割（コードを書かない、合否の判定） | [エージェントの作業フロー](docs/05-開発規則/subagents.md)の「役割と作業の流れ」 |
+| 実装を始める前 | [開発の進め方](docs/05-開発規則/workflow.md)の「実装を始める前の照合」 |
+| 利用者の確認、中断する箇所、質問する条件 | [開発の進め方](docs/05-開発規則/workflow.md)の「利用者の確認と中断」 |
+| 後回しの作業と未決事項 | [開発の進め方](docs/05-開発規則/workflow.md)の「起票」 |
+| 完了の条件、アーカイブ、pull request | [開発の進め方](docs/05-開発規則/workflow.md)の「規模」と「完了の定義」 |
+| マージと後片付け | [開発の進め方](docs/05-開発規則/workflow.md)の「マージの許可と後片付け」 |
+
+次は、本書にだけある規則である。
+
+- 作業の単位は tasks の 1 タスク。tasks にない作業は始めず、先に tasks への追加を提案する。ただし、実装の前の照合、`develop` の取り込み、pull request の作成、後片付けはタスクにしない。
 - spec・plan・設計書・OpenAPI の誤りや不足に気づいたら、コードで回避せずに作業を止めて報告する。修正するときは文書が先。
 - 文書で決まっていない設計上の判断は推測せず、選択肢と推奨を示して確認する。
-- 利用者が確認する対象（開発の進め方の「利用者が確認する対象」）で止まり、確認を受けてから進む。段階とタスクの間では止まらない（開発の進め方の「待たないこと」）。作業を中断して質問するのは、開発の進め方の「中断して質問する条件」に当たるときだけ。
-- 確認事項は、plan と tasks の確認でまとめて質問する（開発の進め方の「まとめて質問する」）。
 - `[テスト]` のタスクは、失敗する（レッド）ことを確認してから実装に進む。テストを通すためにテストを弱めない。仕様と合わないと思ったら、変えずに報告する。
-- 後回しにする作業と未決事項は、spec に記録する。spec の最後に、起票のまとめ方の案を pull request に付ける。利用者が承認したら、issue 担当のセッションが起票する（開発の進め方の「起票」）。
 
 ### 完了の基準
 
-- tasks の「完了」の条件を満たし、対応する AC のテストが通り、既存のテストを壊していない（`./gradlew check` など）。
-- 文書を更新するタスク（用語集への追加など）を終え、チェックボックスを `[x]` にする。
-- 段階の最後のタスクの後は、段階の完了条件を確認して報告する。
-- spec をアーカイブに移すタスクは tasks の最後にし、同じ pull request に含める。pull request は draft で先に作る（開発の進め方の「規模」）。
-- 段階の最後のレビューで、変えたコードを [書き方の規則とレビュー](docs/05-開発規則/review.md) と照合する。
+- tasks の「完了」の条件を満たし、対応する AC のテストが通り、既存のテストを壊していない（`./gradlew check` など）。文書を更新するタスクを終え、チェックボックスを `[x]` にする。
+- 段階の最後のタスクの後は、段階の完了条件を確認して報告する。段階の最後のレビューで、変えたコードを [書き方の規則とレビュー](docs/05-開発規則/review.md) と照合する。
 
 ### 規則と指示の食い違い
 
@@ -66,26 +69,34 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 - 始めに直近の CI を確認する（`gh run list -b develop -L 1`）。`develop` の CI が失敗していれば、すぐに起票し（開発の進め方の「起票」）、spec の作業の前に修正する。
 - 1 つの spec は 1 つの spec 担当のセッションで進め、長くなったら文脈の圧縮で続ける。issue 担当のセッションとのやり取りは [エージェントの作業フロー](docs/05-開発規則/subagents.md)の「役割と作業の流れ」。
 - 引き継ぎの文書は、spec 担当のセッションを替えるときに作り、始めに読む（置き場所と読み方は skill `handoff`）。
-- マージの後は、開発の進め方の「マージの許可と後片付け」に従って後片付けを行う。
 
 ## モデルの区分
 
-サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。使う場面と、サービスやモデルを替えるときの手順は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「任せる作業とモデル」と[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「モデルや設定を替えるとき」、レビューの profile の表。そこでの effort の低・中・高は、順に `low`・`medium`・`high`。指定がなければ、下の表の既定の effort を使う。実際のモデルと effort はサービスごとに表で決め、替えるときは表を修正する。
+サブエージェントに使うモデルは、区分（最上位・高性能・汎用・軽量）で決める。区分ごとの使う場面と、作業ごとの区分と effort は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「任せる作業とモデル」にある。サービスやモデルを替えるときの手順は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「モデルや設定を替えるとき」。
+
+「任せる作業とモデル」の表の effort の低・中・高は、順に `low`・`medium`・`high`。指定がなければ、下の表の既定の effort を使う。実際のモデルと effort はサービスごとに表で決め、替えるときは表を修正する。
 
 今使う AI のサービスは Claude Code（Anthropic）。
 
-| 区分 | 使う場面の要点 | モデル | モデルの ID | 既定の effort |
-|------|----------------|--------|-------------|---------------|
-| 最上位 | 調査役が原因を特定できないとき、利用者の指定（上限あり） | Claude Fable 5.1 | `claude-fable-5-1` | `high` |
-| 高性能 | `[リスク]` のタスクの実装、原因の調査、重要な観点のレビュー | Claude Opus 5.5 | `claude-opus-5-5` | `medium` |
-| 汎用 | 実装、判断が必要な作業、一般の観点のレビュー | Claude Sonnet 5.5 | `claude-sonnet-5-5` | `medium` |
-| 軽量 | 機械的な作業（固定の分を含めて 10 万 token を超えないもの）※1 | Claude Haiku 5.5 | `claude-haiku-5-5` | `medium` |
-| 組み込みのコードレビュー | pull request の前。level は毎回指定する（厚め high、標準 medium、節約 low） | Claude Code の `/code-review` | | |
-| セキュリティのレビュー | 認証・支払・権限の経路を変える変更の、pull request の前 | Claude Code の `/security-review` | | |
+| 区分 | モデル | モデルの ID | 既定の effort |
+|------|--------|-------------|---------------|
+| 最上位 | Claude Fable 5.1 | `claude-fable-5-1` | `high` |
+| 高性能 | Claude Opus 5.5 | `claude-opus-5-5` | `medium` |
+| 汎用 | Claude Sonnet 5.5 | `claude-sonnet-5-5` | `medium` |
+| 軽量 | Claude Haiku 5.5 ※1 | `claude-haiku-5-5` | `medium` |
 
 最上位を使えるプランは Max で、Pro は使えない（2026-10-28）。出典と軽量の読める量は[実績](docs/07-記録/subagents-results.md)の「モデルの区分の出典と軽量の読める量」。
 
 ※1：Claude Haiku 5.5 は、1 回の要求が 10 万 token を超えると、入力・出力・キャッシュの全ての単価が 5 倍になる（Anthropic の料金の文書、2026-10-20 確認）。固定の分（定義なしで約 4 万、`.claude/agents/` の定義ありで約 0.6〜1.9 万 token）を含む。
+
+### レビューのツール
+
+使う時点は、[エージェントの作業フロー](docs/05-開発規則/subagents.md)の「レビューの時点と profile」。
+
+| ツール | 名前 | level の指定 |
+|--------|------|--------------|
+| 組み込みのコードレビュー | Claude Code の `/code-review` | 毎回指定する（厚め high、標準 medium、節約 low） |
+| セキュリティのレビュー | Claude Code の `/security-review` | |
 
 ## Git
 
@@ -96,7 +107,7 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 | 単位 | いつコミットしてもよいが、1 つのコミットに複数のタスクを混ぜない（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「循環」） |
 | 修正 | push していないコミットへの小さな修正は、amend・fixup で入れる。push 済みは書き換えない |
 | push・pull request | push と pull request の作成は、許可を求めない ※3。push は段階の最後にする（例外は [開発の進め方](docs/05-開発規則/workflow.md)の「push のタイミング」） |
-| マージ・tag | 利用者の許可が必要なのは、危険度が高い変更、機能の spec、`release-`・`hotfix-` の pull request、`hotfix-` の後の `main` から `develop` への取り込み、tag。操作のたびに求め、head の commit を指定してマージする ※4。それ以外は、CI が全て通り未解決の重要度「高」「必須」の指摘が 0 なら、issue 担当のセッションがマージする。マージの担当は [エージェントの作業フロー](docs/05-開発規則/subagents.md)の「役割と作業の流れ」。Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす、危険度が低い変更のマージは通す）。担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み（ブランチの名前で見分けられない）は hook が見ないので、文章の規則として守る |
+| マージ・tag | 許可と担当は [開発の進め方](docs/05-開発規則/workflow.md)の「マージの許可と後片付け」。マージは head の commit を指定する ※4。hook の扱いは ※5 |
 | 入れないもの | 作業用の script、テストデータ、引き継ぎの文書、マシン固有のパス、個人の習慣は `/.local/` に置く（項目ごとの中身、使う者、保存の期間は [開発環境の起動](docs/06-手順書/setup.md)の「手元の置き場所」、`.gitignore` は [ブランチとリリース](docs/06-手順書/branches.md)の「切り方と pull request」） |
 
 ※2：ブランチの構成、作業ブランチ、保護、リリースは [ブランチとリリース](docs/06-手順書/branches.md)。
@@ -105,9 +116,11 @@ SDD と TDD の流れは [開発の進め方](docs/05-開発規則/workflow.md)�
 
 ※4：マージは `gh pr merge --match-head-commit <SHA>` で行う。
 
+※5：Claude Code の hook は、条件を満たさないマージ、tag、ruleset の変更で確認の画面を表示する（条件を満たす、危険度が低い変更のマージは通す）。担当のセッション、未解決の指摘、`hotfix-` の後の `main` から `develop` への取り込み（ブランチの名前で見分けられない）は hook が見ないので、文書に書いた規則として守る。
+
 ## 環境
 
 - JDK 21。統合テストと jOOQ のコード生成には Docker が必要。
 - Gradle のプロジェクトは `backend/ecsite/` にある（`./gradlew` もそこで実行する）。リポジトリのルートと `backend/` には Gradle の設定がない。
 - 起動・テストの手順は [開発環境の起動](docs/06-手順書/setup.md) と [テストの実行方法](docs/06-手順書/running-tests.md)。エージェントは skill `local-dev` を使う。
-- Claude Code の hook と permission の書き先は、2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のもの（zh-mixing の hook、利用者の SessionStart など）は `.claude/settings.local.json`（Git に入らない）である。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs` と、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`。手元の hook は `settings.local.json` に置き、設定は skill `local-dev` の「手元の hook の設定」）。作業ツリーのセッションが読む設定・定義・skill と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」の表（ツールの補足の中）。作業ツリーで起動した `claude -p` は、作業ツリーのブランチに commit された `settings.json` を読むので、`develop` を取り込んでいない作業ブランチでは適用されない。その `claude -p` では、動いているセッションに反映されるのは `settings.json` の hook の変更と skill の追加で、`settings.local.json` と `.claude/agents/` の定義の変更は、新しいセッションを起動してから読まれる。アプリのセッションは、作業ツリーで動くときも、メインの作業ツリーの（commit していない変更を含む）設定・定義・skill を読み、作業ツリーのものを読まない。作業ブランチの変更を実際に実行して確認するときは、その作業ツリーで `claude -p` を起動する。反映が確認できないときは、新しいセッションを起動する。
+- Claude Code の hook と permission の書き先は、2 つに分ける。チームの例外のない規則は `.claude/settings.json`（Git に入る）、環境・利用者に固有のもの（zh-mixing の hook、利用者の SessionStart など）は `.claude/settings.local.json`（Git に入らない）である。hook の script は `scripts/dev/hooks/` に置く（Claude Code の `agent-guard.mjs` と、git の `pre-commit`・`commit-msg`、手元の hook の `session-start.mjs`・`backslash-guard.mjs`。手元の hook は `settings.local.json` に置き、設定は skill `local-dev` の「手元の hook の設定」）。作業ツリーのセッションが読む設定・定義・skill と、変更が反映される時点は、skill `sessions` の「作業ツリーのセッションが読むもの」。

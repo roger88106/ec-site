@@ -59,6 +59,17 @@ schema は `tax`。テーブルは、税区分（`tax_category`）と税率（`t
 
 ```mermaid
 erDiagram
+    tax_category {
+        uuid id PK
+        varchar name UK
+    }
+    tax_rate {
+        uuid id PK
+        uuid tax_category_id FK
+        numeric rate_percent
+        timestamptz effective_from
+        timestamptz effective_to
+    }
     tax_category ||--o{ tax_rate : "持つ"
 ```
 

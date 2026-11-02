@@ -38,7 +38,7 @@
 
 ## データモデル
 
-<schema、テーブルの関係（Mermaid の erDiagram）、列の規則を書く。列の正本は Flyway のマイグレーション。>
+<schema、テーブルの関係（Mermaid の erDiagram）、列の規則を書く。erDiagram に描く列は、主キー、外部キー、業務規則で触れる列で、全ての列でなくてよい。列の正本は Flyway のマイグレーション。>
 
 ## 今有効な AC
 

@@ -467,6 +467,65 @@ describe('見出しの番号と、見出しの参照の先', () => {
     assert.deepEqual(lines(check('backend/Foo.java', code)), ['2', '3', '4'])
   })
 
+  test('「の」を挟まずにパスかリンクの直後に書いた「」も、その文書の見出しとして確認する', () => {
+    const code = [
+      '// docs/testing/writing.md「名前」',
+      '// docs/testing/writing.md「ない」',
+      '// （docs/testing/writing.md「ない」）',
+      '// docs/process/tasks.md「段階 1」の「タスク」',
+      '// docs/process/tasks.md「段階 1」の「ない」',
+      '// docs/process/tasks.md「タスク」',
+      '# docs/testing/writing.md「ない」',
+    ].join('\n')
+    assert.deepEqual(lines(check('backend/Foo.java', code)), ['2', '3', '5', '6', '7'])
+    const text = ['`docs/testing/writing.md`「ない」', '[テストの書き方](../testing/writing.md)「ない」', '[テストの書き方](../testing/writing.md)「対応」'].join('\n')
+    assert.deepEqual(lines(check('docs/dev/setup.md', text)), ['1', '2'])
+  })
+
+  test('「の」のない「」は、文書の名前の直後、空白を挟んだもの、ファイルのないパス、.md でないファイルの後では読まない', () => {
+    const code = [
+      '// テストの書き方「ない」',
+      '// docs/testing/writing.md 「ない」',
+      '// 外のリポジトリの references/build.md「Install」',
+      '// `${DIR}${module}.md`「ない」',
+      '// build.gradle.kts「ない」',
+      '// 「書き言葉」と書く。',
+      '// docs/testing/writing.md の語「ない」',
+      '// a.mdx「ない」',
+      '// （地域モジュールの設計書「ない」）',
+      '// db/seed/local/README.md「ない」',
+    ].join('\n')
+    assert.deepEqual(check('backend/Foo.java', code), [])
+    const docs = { ...DOCS, 'docs/dev/a.png': '', 'docs/dev/setup.md': ['```', 'docs/testing/writing.md「ない」', '```', '[外](https://example.com/a.md)「ない」', '[図](a.png)「ない」'].join('\n') }
+    assert.deepEqual(checkReferences(Object.keys(docs), (path) => docs[path], (path) => path in docs), [])
+  })
+
+  test('「の」のない参照は、YAML のコメントでも確認する', () => {
+    assert.deepEqual(lines(check('docker/compose.yaml', '# docs/testing/writing.md「ない」')), ['1'])
+  })
+
+  test('「の」のない「」は直後だけを読む（閉じ括弧、「」」、全角の空白、改行を挟んだものは読まない）', () => {
+    const code = ['// （docs/testing/writing.md）「ない」', '// 「docs/testing/writing.md」「ない」', '// docs/testing/writing.md　「ない」', '// docs/testing/writing.md', '//「ない」'].join('\n')
+    assert.deepEqual(check('backend/Foo.java', code), [])
+  })
+
+  test('「の」のない参照は、1 行に 2 つあるとき、# の付いたリンクの後、「」の中でも確認する。読まない最初の「」に続く「の「」も確認する', () => {
+    const code = [
+      '// （docs/testing/writing.md「名前」と docs/testing/writing.md「ない」）',
+      '// 「docs/testing/writing.md「ない」」',
+      '// 「docs/testing/writing.md」の「ない」',
+      '// 「docs/testing/writing.md」の「名前」',
+    ].join('\n')
+    assert.deepEqual(lines(check('backend/Foo.java', code)), ['1', '2', '3'])
+    assert.deepEqual(lines(check('docs/dev/setup.md', '[テストの書き方](../testing/writing.md#1-名前)「ない」')), ['1'])
+  })
+
+  test('「の」のない見出しの参照の形でも、ファイル名のリンクテキストを失敗にする', () => {
+    const problems = check('docs/dev/setup.md', '[writing.md](../testing/writing.md)「名前」')
+    assert.equal(problems.length, 1)
+    assert.match(problems[0], /^リンクテキスト「writing\.md」が文書の名前でない/)
+  })
+
   test('ディレクトリまで書いたパスは、ファイルがなければ、同じファイル名の docs/ の文書を先にしない', () => {
     const code = ['// 外のリポジトリの docs/writing.md の「Install」', '// old/workflow.md の「ない」', '// writing.md の「ない」'].join('\n')
     // ファイル名だけのパスは、docs/ の下の同じ名前の文書（1 つだけのとき）を先にする

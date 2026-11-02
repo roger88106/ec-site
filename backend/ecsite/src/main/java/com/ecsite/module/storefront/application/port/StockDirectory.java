@@ -5,7 +5,7 @@ import java.util.Set;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層の口（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/03-機能仕様/storefront.md）。<br />
+ * 在庫の腐敗防止層の口（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/storefront.md の「境界」）。<br />
  * 在庫があるバリアントを返す。
  */
 public interface StockDirectory {

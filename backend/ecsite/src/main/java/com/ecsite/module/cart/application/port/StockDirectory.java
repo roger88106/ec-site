@@ -3,7 +3,7 @@ package com.ecsite.module.cart.application.port;
 import java.util.UUID;
 
 /**
- * 在庫の腐敗防止層の口（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/03-機能仕様/cart.md）。<br />
+ * 在庫の腐敗防止層の口（バックエンドのアーキテクチャの「モジュラーモノリス」、docs/02-設計/cart.md の「境界」）。<br />
  * バリアントの販売可能数を返す。
  */
 public interface StockDirectory {

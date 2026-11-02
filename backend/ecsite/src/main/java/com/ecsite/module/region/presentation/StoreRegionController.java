@@ -13,7 +13,7 @@ import org.springframework.web.bind.annotation.RestController;
 
 /**
  * 地域のコントローラー（C 側。store.yaml の tag: region）。<br />
- * 3 つとも token なしで使える。店舗モジュールを通さず、地域モジュールが受ける（docs/02-設計/region.md「API」）。
+ * 3 つとも token なしで使える。店舗モジュールを通さず、地域モジュールが受ける（docs/03-機能仕様/region.md「参照」、docs/02-設計/region.md「API」）。
  */
 @RestController
 @RequiredArgsConstructor

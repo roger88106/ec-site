@@ -134,21 +134,21 @@
 | BR-12 職務 | [003](../archive/mvp/003-auth/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-13 会員の識別 | [003](../archive/mvp/003-auth/spec.md) | member：業務規則の「会員」 | 有効。元の定義の 2 項目それぞれに番号を付けた |
 | BR-14 注文の状態 | [007](../archive/mvp/007-payment/spec.md) | order：状態の遷移 | 有効 |
-| BR-15 支払の状態 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
-| BR-16 支払の期限 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
-| BR-17 決済サービスからの通知 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
+| BR-15 支払の状態 | [007](../archive/mvp/007-payment/spec.md) | payment：業務規則の「支払（集約）」「支払の状態」と、状態の遷移 | 有効 |
+| BR-16 支払の期限 | [007](../archive/mvp/007-payment/spec.md) | payment：業務規則の「支払の期限」 | 有効。元の定義の 2 項目それぞれに番号を付けた |
+| BR-17 決済サービスからの通知 | [007](../archive/mvp/007-payment/spec.md) | payment：業務規則の「決済サービスからの通知」 | 有効。元の定義の 5 項目それぞれに番号を付けた |
 | BR-18 注文状態 | [009](../archive/mvp/009-shipping/spec.md) | order：状態の遷移 | 有効 |
-| BR-19 配送状態 | [009](../archive/mvp/009-shipping/spec.md) | shipping（段階 3〜5 で移す） |  |
-| BR-20 与信期限 | [009](../archive/mvp/009-shipping/spec.md) | payment（段階 3〜5 で移す） |  |
-| BR-21 支払状態 | [009](../archive/mvp/009-shipping/spec.md) | payment（段階 3〜5 で移す） |  |
-| BR-22 物流サービスからの通知 | [009](../archive/mvp/009-shipping/spec.md) | shipping（段階 3〜5 で移す） |  |
-| BR-23 出荷の単位 | [009](../archive/mvp/009-shipping/spec.md) | shipping（段階 3〜5 で移す） |  |
-| BR-24 期間と区切り | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
-| BR-25 売上の数え方 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
-| BR-26 売上額 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
-| BR-27 年齢層 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
-| BR-28 レポートの権限 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
-| BR-29 性別 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す）、order：注文時の年齢と性別 | order の分（記録する値と不明の扱い）は有効。テスト名の BR-29 は、order と reporting の両方にある |
+| BR-19 配送状態 | [009](../archive/mvp/009-shipping/spec.md) | shipping：業務規則の「配送状態」と、状態の遷移 | 有効 |
+| BR-20 与信期限 | [009](../archive/mvp/009-shipping/spec.md) | payment：業務規則の「与信期限」 | 有効。元の定義の 2 項目それぞれに番号を付けた。plan で決めるとした日数は、コードと ③ のとおり（設定で変えられる） |
+| BR-21 支払状態 | [009](../archive/mvp/009-shipping/spec.md) | payment：業務規則の「支払の状態」と、状態の遷移 | 有効 |
+| BR-22 物流サービスからの通知 | [009](../archive/mvp/009-shipping/spec.md) | shipping：業務規則の「通知のエンドポイント」と、状態の遷移 | 有効。元の定義の 3 項目それぞれに番号を付けた |
+| BR-23 出荷の単位 | [009](../archive/mvp/009-shipping/spec.md) | shipping：業務規則の「出荷（集約）」 | 有効 |
+| BR-24 期間と区切り | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「集計」と「売上の推移」 | 有効。元の定義の 3 項目それぞれに番号を付けた。③ になかった文を、意味を変えずに加えた |
+| BR-25 売上の数え方 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「集計」 | 有効。③ とコードは状態の一覧（受付・キャンセル申請中・出荷済み）で述べ、元の定義は「与信が成功し、キャンセルでない注文」で述べる。意味は同じ |
+| BR-26 売上額 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「集計」 | 有効。元の定義の 3 項目それぞれに番号を付けた |
+| BR-27 年齢層 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」 | 有効 |
+| BR-28 レポートの権限 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「権限」 | 有効。元の定義の 2 項目それぞれに番号を付けた。③ になかった文を、意味を変えずに加えた |
+| BR-29 性別 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」（「不明」の扱い）、order：業務規則の「注文時の年齢と性別」（選べる値） | order の分（記録する値と不明の扱い）は有効。テスト名の BR-29 は、order と reporting の両方にある |
 | BR-30 外部サービスの mock | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-32 認可の既定 | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |

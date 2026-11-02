@@ -1,10 +1,11 @@
 import assert from 'node:assert/strict'
-import { mkdirSync, mkdtempSync, rmSync, writeFileSync } from 'node:fs'
+import { mkdirSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { describe, test } from 'node:test'
 import { fileURLToPath } from 'node:url'
 import {
+  checkFunctionalDocs,
   checkFunctionalSpec,
   checkPlan,
   checkSpec,
@@ -17,12 +18,18 @@ import {
   FEATURE_SECTIONS,
   findTargets,
   fillTemplate,
-  FUNCTIONAL_SECTIONS,
   FUNCTIONAL_SPECS,
+  readSkeleton,
   REFACTOR_SECTIONS,
 } from './spec-structure.mjs'
 
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '../..')
+
+/** 機能仕様の節（雛形の骨組みの `##` の名前と順） */
+const SECTIONS = ['業務規則', '状態の遷移', 'データモデル', '今有効な AC']
+
+/** 機能仕様の本文（節ごとに文を置く） */
+const functionalText = (names) => names.map((name) => `## ${name}\n\n文。\n`).join('\n')
 
 /** 既知の spec の番号（進行中とアーカイブのディレクトリの番号と、見本の番号） */
 const KNOWN = new Set(['321', '283', '7', '011', '900'])
@@ -474,33 +481,202 @@ describe('ID の定義と参照（DC-321-20）', () => {
 })
 
 describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
-  const functional = (names) => names.map((name) => `## ${name}\n\n文。\n`).join('\n')
-
   test('業務規則、状態の遷移、データモデル、今有効な AC の順なら問題がない', () => {
-    assert.deepEqual(checkFunctionalSpec(`# 注文\n\n${functional(FUNCTIONAL_SECTIONS)}`), [])
+    assert.deepEqual(checkFunctionalSpec(`# 注文\n\n${functionalText(SECTIONS)}`, SECTIONS), [])
   })
 
   test('節の順が違えば失敗にする', () => {
-    const swapped = [FUNCTIONAL_SECTIONS[1], FUNCTIONAL_SECTIONS[0], ...FUNCTIONAL_SECTIONS.slice(2)]
-    assertOne(checkFunctionalSpec(functional(swapped)), /位置が違う/)
+    const swapped = [SECTIONS[1], SECTIONS[0], ...SECTIONS.slice(2)]
+    assertOne(checkFunctionalSpec(functionalText(swapped), SECTIONS), /位置が違う/)
   })
 
   test('節が欠ける、加わる場合は失敗にする', () => {
-    assertOne(checkFunctionalSpec(functional(FUNCTIONAL_SECTIONS.slice(0, 3))), /節「今有効な AC」がない/)
-    assertOne(checkFunctionalSpec(functional([...FUNCTIONAL_SECTIONS, '余分'])), /決めた節にない見出し「余分」/)
+    assertOne(checkFunctionalSpec(functionalText(SECTIONS.slice(0, 3)), SECTIONS), /節「今有効な AC」がない/)
+    assertOne(checkFunctionalSpec(functionalText([...SECTIONS, '余分']), SECTIONS), /決めた節にない見出し「余分」/)
   })
 
   test('### の見出しとコードブロックの中の見出しは見ない', () => {
-    const text = `${functional(FUNCTIONAL_SECTIONS)}\n### 小節\n\n\`\`\`\n## 余分\n\`\`\`\n`
-    assert.deepEqual(checkFunctionalSpec(text), [])
+    const text = `${functionalText(SECTIONS)}\n### 小節\n\n\`\`\`\n## 余分\n\`\`\`\n`
+    assert.deepEqual(checkFunctionalSpec(text, SECTIONS), [])
   })
 
   test('閉じていないコードブロックは失敗にする', () => {
-    assertOne(checkFunctionalSpec(`${functional(FUNCTIONAL_SECTIONS)}\n\`\`\`\n`), /閉じていないコードブロック/)
+    assertOne(checkFunctionalSpec(`${functionalText(SECTIONS)}\n\`\`\`\n`, SECTIONS), /閉じていないコードブロック/)
   })
 
   test('登録している機能仕様は注文だけである', () => {
     assert.deepEqual(FUNCTIONAL_SPECS, ['docs/03-機能仕様/order.md'])
+  })
+})
+
+describe('③ の節の名前を雛形の骨組みから読む（DC-326-3、#325）', () => {
+  const HEADING = '## 写して使う骨組み'
+  const BODY_LINES = ['# <モジュールの論理名>モジュール', '', '## 業務規則', '', '<注>', '', '## 状態の遷移', '', '## データモデル', '', '## 今有効な AC', '']
+
+  /** 雛形を作る。body は骨組みの中の行、open と close は囲み、before と after は骨組みの節の前と後ろ */
+  function template({ body = BODY_LINES, open = '````markdown', close = '````', before = '## この雛形の使い方\n\n表。\n\n', after = '' } = {}) {
+    return `# 機能仕様の雛形\n\n${before}${HEADING}\n\n${open}\n${body.join('\n')}\n${close}\n\n${after}`
+  }
+
+  const sectionsOf = (text) => readSkeleton(text).sections
+  const problemsOf = (text) => readSkeleton(text).problems
+
+  test('骨組みの ## を、出る順に読む', () => {
+    assert.deepEqual(readSkeleton(template()), { sections: SECTIONS, problems: [] })
+  })
+
+  test('リポジトリの雛形から、固定の 4 つの節を読む', () => {
+    assert.deepEqual(readSkeleton(readFileSync(path.join(ROOT, 'docs/03-機能仕様/template.md'), 'utf8')), { sections: SECTIONS, problems: [] })
+  })
+
+  test('検出する：雛形の ## の順を入れ替えると、古い順の ③ が失敗になる', () => {
+    const sections = sectionsOf(template({ body: ['## 状態の遷移', '## 業務規則', '## データモデル', '## 今有効な AC'] }))
+    assertOne(checkFunctionalSpec(functionalText(SECTIONS), sections), /位置が違う/)
+  })
+
+  test('検出する：雛形に節を加えると、その節のない ③ が失敗になる', () => {
+    const sections = sectionsOf(template({ body: [...BODY_LINES, '## 追加', ''] }))
+    assertOne(checkFunctionalSpec(functionalText(SECTIONS), sections), /節「追加」がない/)
+  })
+
+  test('検出する：雛形の節を消すと、その節が残る ③ が失敗になる', () => {
+    const sections = sectionsOf(template({ body: ['## 業務規則', '## 状態の遷移', '## データモデル'] }))
+    assertOne(checkFunctionalSpec(functionalText(SECTIONS), sections), /決めた節にない見出し「今有効な AC」/)
+  })
+
+  test('検出する：③ に同じ名前の ## が 2 回ある', () => {
+    assertOne(checkFunctionalSpec(functionalText([...SECTIONS, '業務規則']), SECTIONS), /「業務規則」が 2 回ある/)
+  })
+
+  test('検出する：全角と半角の空白だけ違う名前は、正規化せずに別の名前にする', () => {
+    const sections = sectionsOf(template({ body: ['## 業務規則', '## 状態の遷移', '## データモデル', '## 今有効な　AC'] }))
+    const problems = checkFunctionalSpec(functionalText(SECTIONS), sections)
+    assert.ok(problems.some((problem) => /節「今有効な　AC」がない/.test(problem)), problems.join('\n'))
+    assert.ok(problems.some((problem) => /決めた節にない見出し「今有効な AC」/.test(problem)), problems.join('\n'))
+  })
+
+  test('検出する：③ に、骨組みの外（雛形の使い方）の ## の名前がある', () => {
+    assertOne(checkFunctionalSpec(functionalText([...SECTIONS, 'この雛形の使い方']), SECTIONS), /決めた節にない見出し「この雛形の使い方」/)
+  })
+
+  test('検出する：③ で骨組みと同じ名前の節を ### にすると、その節が欠ける', () => {
+    assertOne(checkFunctionalSpec('## 業務規則\n## 状態の遷移\n## データモデル\n### 今有効な AC\n', SECTIONS), /節「今有効な AC」がない/)
+  })
+
+  test('失敗にする：見出し「写して使う骨組み」がない（名前を変えた、### にした）', () => {
+    assertOne(problemsOf(template().replace(HEADING, '## 写して使う骨格')), /「写して使う骨組み」の見出しがない/)
+    assertOne(problemsOf(template().replace(HEADING, '### 写して使う骨組み')), /「写して使う骨組み」の見出しがない/)
+  })
+
+  test('失敗にする：その見出しが 2 つある', () => {
+    assertOne(problemsOf(template({ after: `${HEADING}\n\n文。\n` })), /「写して使う骨組み」の見出しが 2 つある/)
+  })
+
+  test('失敗にする：見出しの節にコードブロックがない', () => {
+    assertOne(problemsOf(`# 雛形\n\n${HEADING}\n\n## 業務規則\n\n文。\n`), /コードブロックが 0 個/)
+  })
+
+  test('失敗にする：同じ節にコードブロックが 2 つ以上ある', () => {
+    assertOne(problemsOf(template({ close: '````\n\n```\n例\n```' })), /コードブロックが 2 個/)
+  })
+
+  test('失敗にする：骨組みのコードブロックが閉じていない', () => {
+    const text = `# 雛形\n\n${HEADING}\n\n\`\`\`\n${BODY_LINES.join('\n')}\n`
+    assert.ok(problemsOf(text).some((problem) => /閉じていない/.test(problem)), problemsOf(text).join('\n'))
+    assert.deepEqual(sectionsOf(text), [])
+  })
+
+  test('失敗にする：骨組みから読んだ ## が 0 件', () => {
+    assertOne(problemsOf(template({ body: ['# 題', '', '文。'] })), /## の節が 0 件/)
+  })
+
+  test('失敗にする：骨組みの ## に同じ名前が 2 つある', () => {
+    assertOne(problemsOf(template({ body: ['## 業務規則', '## 状態の遷移', '## 業務規則'] })), /「業務規則」が 2 回ある/)
+  })
+
+  test('失敗にする：雛形のファイルがない、または読めない', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'spec-structure-'))
+    try {
+      assertOne(checkFunctionalDocs({ templateFile: path.join(dir, 'none.md'), specs: [] }), /雛形を読めない/)
+      assertOne(checkFunctionalDocs({ templateFile: dir, specs: [] }), /雛形を読めない/)
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  for (const [label, open, close] of [
+    ['3 個の ` と info string markdown', '```markdown', '```'],
+    ['3 個の ` と info string md', '```md', '```'],
+    ['3 個の ` と info string なし', '```', '```'],
+    ['~~~', '~~~', '~~~'],
+    ['1 個の空白で字下げした開き', ' ````markdown', '````'],
+    ['3 個の空白で字下げした開き', '   ````markdown', '   ````'],
+  ]) {
+    test(`検出しない：骨組みを ${label} で囲んでも読む`, () => {
+      assert.deepEqual(readSkeleton(template({ open, close })), { sections: SECTIONS, problems: [] })
+    })
+  }
+
+  test('検出しない：CRLF の雛形でも、名前に CR が残らない', () => {
+    assert.deepEqual(readSkeleton(template().replaceAll('\n', '\r\n')), { sections: SECTIONS, problems: [] })
+  })
+
+  test('検出しない：骨組みの ## の末尾にある閉じの # と空白', () => {
+    const sections = sectionsOf(template({ body: ['## 業務規則 ##', '## 状態の遷移   ', '## データモデル', '## 今有効な AC #'] }))
+    assert.deepEqual(sections, SECTIONS)
+  })
+
+  test('検出しない：骨組みの中の ### と # の題', () => {
+    assert.deepEqual(sectionsOf(template({ body: ['# 題', '## 業務規則', '### 小見出し', '## 状態の遷移', '## データモデル', '## 今有効な AC'] })), SECTIONS)
+  })
+
+  test('検出しない：骨組みの中の HTML のコメント、1 行のコード、入れ子のコードブロックの中の ##', () => {
+    const body = [
+      '## 業務規則', '<!--', '## コメント', '-->', '`## 1 行のコード`', '```', '## 入れ子', '```',
+      '## 状態の遷移', '## データモデル', '## 今有効な AC',
+    ]
+    assert.deepEqual(readSkeleton(template({ body })), { sections: SECTIONS, problems: [] })
+  })
+
+  test('検出しない：骨組みの <…> の注が、文の途中で ## に言及している', () => {
+    const body = ['## 業務規則', '<注。見出し ## 余分 に言及する。>', '## 状態の遷移', '## データモデル', '## 今有効な AC']
+    assert.deepEqual(sectionsOf(template({ body })), SECTIONS)
+  })
+
+  test('検出しない：骨組みの外にある、使い方の表や箇条での ## の言及', () => {
+    const before = '## この雛形の使い方\n\n| 項目 | 内容 |\n|---|---|\n| 節 | ## 余分 を足す |\n\n- 節は ## 余分 の形\n\n'
+    assert.deepEqual(readSkeleton(template({ before })), { sections: SECTIONS, problems: [] })
+  })
+
+  test('検出しない：骨組みの後ろに別の ## の節を加えても、読むコードブロックは 1 つだけ', () => {
+    assert.deepEqual(readSkeleton(template({ after: '## 補足\n\n```\n例\n```\n' })), { sections: SECTIONS, problems: [] })
+  })
+
+  test('検出しない：③ の本文のコードブロックにある ##', () => {
+    assert.deepEqual(checkFunctionalSpec(`${functionalText(SECTIONS)}\n\`\`\`\n## 余分\n\`\`\`\n`, SECTIONS), [])
+  })
+
+  test('検出しない：骨組みの 1 行目の # の題を変えても、節の名前の検査に影響しない', () => {
+    const sections = sectionsOf(template({ body: ['# 別の題', ...BODY_LINES.slice(1)] }))
+    assert.deepEqual(checkFunctionalSpec(functionalText(SECTIONS), sections), [])
+  })
+
+  test('検出しない：固定の節に書き換えた ③ の一覧にない文書は検査しない', () => {
+    const dir = mkdtempSync(path.join(tmpdir(), 'spec-structure-'))
+    try {
+      const templateFile = path.join(dir, 'template.md')
+      const listed = path.join(dir, 'listed.md')
+      const unlisted = path.join(dir, 'unlisted.md')
+      writeFileSync(templateFile, template())
+      writeFileSync(listed, functionalText(SECTIONS))
+      writeFileSync(unlisted, '## 古い節\n')
+      assert.deepEqual(checkFunctionalDocs({ templateFile, specs: [listed] }), [])
+      const problems = checkFunctionalDocs({ templateFile, specs: [listed, unlisted] })
+      assert.ok(problems.length > 0 && problems.every((problem) => /unlisted\.md：/.test(problem)), problems.join('\n'))
+      assert.ok(problems.some((problem) => /「古い節」/.test(problem)), problems.join('\n'))
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
   })
 })
 

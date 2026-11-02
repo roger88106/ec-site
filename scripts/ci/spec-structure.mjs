@@ -18,7 +18,9 @@
 //       - spec の箇条の先頭の太字
 //       - spec の見出しの先頭の US・DS
 //       - tasks のタスクの行の先頭
-//   - 機能仕様：`##` の節が、業務規則、状態の遷移、データモデル、今有効な AC の順である（FUNCTIONAL_SPECS の文書だけ）
+//   - 機能仕様：`##` の節の名前と順が、雛形と完全に同じである（FUNCTIONAL_SPECS の文書だけ。script に節の名前を持たない）。
+//     雛形は docs/03-機能仕様/template.md。見出し「写して使う骨組み」の節にある、ただ 1 つのコードブロックの `##` を読む。
+//     雛形の側が読めないときは失敗にする：見出しがない・2 つある、コードブロックが 1 つでない・閉じていない、`##` が 0 件・同じ名前が 2 回、雛形のファイルを読めない
 //   - 見出しは、ATX（閉じの `#` は名前に含めない）と Setext（段落の行の直後の `---` は `##`、`===` は `#`）を読む
 //   - コードブロック、HTML のコメント、1 行のコードの中は読まない。閉じていないコードブロックは失敗にする（後ろを読めないため）
 // 検査の対象：次の 4 つ。アーカイブは見ない（当時の記録で、形が古いため）。
@@ -32,6 +34,7 @@
 // 使い方：node scripts/ci/spec-structure.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
+import { readCodeBlocks } from './lib/code-block.mjs'
 import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from './lib/doc-structure.mjs'
 import { isMain } from './lib/is-main.mjs'
 import { ARCHIVE, isSpecDirName, listSpecDirs } from './lib/spec-dirs.mjs'
@@ -45,11 +48,14 @@ export const REFACTOR_SECTIONS = ['背景と目的', 'スコープ', '目的と�
 /** plan の最後の `##` の節 */
 const PLAN_LAST_SECTIONS = ['段階と変えるファイル', '利用者に確認すること']
 
-/** 機能仕様の `##` の節 */
-export const FUNCTIONAL_SECTIONS = ['業務規則', '状態の遷移', 'データモデル', '今有効な AC']
-
 /** 固定の節に書き換えた機能仕様（他のモジュールは、書き換えたときに加える） */
 export const FUNCTIONAL_SPECS = ['docs/03-機能仕様/order.md']
+
+/** 機能仕様の雛形。`##` の節の名前と順は、この雛形の骨組みから読む */
+const FUNCTIONAL_TEMPLATE = 'docs/03-機能仕様/template.md'
+
+/** 機能仕様の雛形で、骨組みのコードブロックを置く節の見出し */
+const SKELETON_HEADING = '写して使う骨組み'
 
 /** 進行中の spec の置き場所 */
 const SPECS_DIR = 'docs/08-spec'
@@ -161,13 +167,65 @@ export function checkStage(text, fileName, number) {
 }
 
 /**
+ * 機能仕様の雛形から、骨組みの `##` の節の名前と順を読む。
+ * 見出し「写して使う骨組み」の節（次の `##` まで）にある、ただ 1 つのコードブロックの中の `##` を読む。
+ *
+ * @param {string} text 機能仕様の雛形の内容
+ * @returns {{ sections: string[], problems: string[] }} sections：節の名前（出る順）。problems：読めない理由（あれば sections は空）
+ */
+export function readSkeleton(text) {
+  const fail = (problem) => ({ sections: [], problems: [problem] })
+  const unclosed = checkUnclosedCodeBlocks(text)
+  if (unclosed.length > 0) return { sections: [], problems: unclosed }
+  const h2 = readHeadings(text).filter((heading) => heading.level === 2)
+  const found = h2.filter((heading) => heading.title === SKELETON_HEADING)
+  if (found.length === 0) return fail(`「${SKELETON_HEADING}」の見出しがない`)
+  if (found.length > 1) return fail(`「${SKELETON_HEADING}」の見出しが ${found.length} つある（${found.map((heading) => `${heading.line} 行`).join('、')}）`)
+  const next = h2.find((heading) => heading.line > found[0].line)
+  const blocks = readCodeBlocks(text).filter((block) => block.line > found[0].line && (next === undefined || block.line < next.line))
+  if (blocks.length !== 1) return fail(`「${SKELETON_HEADING}」の節のコードブロックが ${blocks.length} 個ある（ただ 1 つにする）`)
+  const sections = readHeadings(blocks[0].body.join('\n')).filter((heading) => heading.level === 2).map((heading) => heading.title)
+  if (sections.length === 0) return fail(`「${SKELETON_HEADING}」のコードブロックに ## の節が 0 件`)
+  const duplicated = sections.filter((title, index) => sections.indexOf(title) !== index)
+  if (duplicated.length > 0) return fail(`「${SKELETON_HEADING}」のコードブロックで、「${duplicated[0]}」が 2 回ある`)
+  return { sections, problems: [] }
+}
+
+/**
+ * 固定の節に書き換えた機能仕様の全てを、雛形の骨組みと照合する。
+ *
+ * @param {{ templateFile: string, specs: string[] }} options templateFile：機能仕様の雛形のパス。specs：検査する機能仕様のパス
+ * @returns {string[]} 問題の文（ファイルのパスを前に付ける）
+ */
+export function checkFunctionalDocs({ templateFile, specs }) {
+  let template
+  try {
+    template = readFileSync(templateFile, 'utf8')
+  } catch {
+    return [`${templateFile.replaceAll('\\', '/')}：雛形を読めない`]
+  }
+  const { sections, problems } = readSkeleton(template)
+  if (problems.length > 0) return problems.map((problem) => `${templateFile.replaceAll('\\', '/')}：${problem}`)
+  return specs.flatMap((file) => {
+    let text
+    try {
+      text = readFileSync(file, 'utf8')
+    } catch {
+      return [`${file.replaceAll('\\', '/')}：機能仕様を読めない`]
+    }
+    return checkFunctionalSpec(text, sections).map((problem) => `${file.replaceAll('\\', '/')}：${problem}`)
+  })
+}
+
+/**
  * 固定の節に書き換えた機能仕様の `##` の節を調べる。
  *
  * @param {string} text 機能仕様の内容
+ * @param {string[]} sections 雛形の骨組みから読んだ `##` の節の名前と順
  * @returns {string[]} 問題の文
  */
-export function checkFunctionalSpec(text) {
-  return [...checkUnclosedCodeBlocks(text), ...checkSections(readHeadings(text), 2, FUNCTIONAL_SECTIONS)]
+export function checkFunctionalSpec(text, sections) {
+  return [...checkUnclosedCodeBlocks(text), ...checkSections(readHeadings(text), 2, sections)]
 }
 
 /**
@@ -368,9 +426,7 @@ function main() {
   const examples = existsSync(EXAMPLES_DIR) ? readdirSync(EXAMPLES_DIR, { withFileTypes: true }).filter((entry) => entry.isDirectory()) : []
   for (const entry of examples) problems.push(...checkSpecDir(path.join(EXAMPLES_DIR, entry.name), EXAMPLE_NUMBER, known))
   problems.push(...checkTemplates(TEMPLATES_DIR))
-  for (const file of FUNCTIONAL_SPECS) {
-    problems.push(...checkFunctionalSpec(readFileSync(file, 'utf8')).map((problem) => `${file}：${problem}`))
-  }
+  problems.push(...checkFunctionalDocs({ templateFile: FUNCTIONAL_TEMPLATE, specs: FUNCTIONAL_SPECS }))
   for (const problem of problems) console.log(problem)
   console.log(`構造の問題：${problems.length}（spec ${targets.length}、見本 ${examples.length}、雛形 ${Object.keys(TEMPLATE_FILES).length + 1}、機能仕様 ${FUNCTIONAL_SPECS.length}）`)
   process.exit(problems.length > 0 ? 1 : 0)

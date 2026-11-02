@@ -130,6 +130,7 @@ ec-site/
 | [common.md](02-設計/common.md) | 共通コード・ログ・可観測性 |
 | [role-permissions.md](02-設計/role-permissions.md) | ロールと権限の対応表 |
 | [template.md](02-設計/template.md) | モジュールの設計の雛形 |
+| [order.md](02-設計/order.md) | 注文の設計（境界、処理の流れ、API の一覧、パッケージの構成） |
 
 機能仕様（`docs/03-機能仕様/`）：主にエージェント向けの、モジュールごとの業務の規則、状態遷移、データ構造。
 

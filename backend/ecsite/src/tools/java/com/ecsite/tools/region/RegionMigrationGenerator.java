@@ -15,7 +15,7 @@ import java.util.stream.Collectors;
  * （docs/03-機能仕様/region.md「最初のデータ」）。<br />
  * Gradle のタスク {@code generateRegionMigration} から呼ぶ。本番の jar には入らない。<br />
  * 先頭のコメントは、適用済みのマイグレーションと同じ文字にする。適用済みのマイグレーションは変えられない
- * （Flyway のチェックサムが変わるため）ので、コメントが指す設計書のパスは、文書を移す前の
+ * （Flyway のチェックサムが変わるため）。そのため、コメントが指す設計書のパスは、文書を移す前の
  * {@code docs/backend/modules/region.md} のままである。今の機能仕様のパスは {@code docs/03-機能仕様/region.md}。
  * 先頭の 3 行がコミット済みのマイグレーションと同じことは、単体テストで確認する。
  */

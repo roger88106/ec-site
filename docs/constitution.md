@@ -119,6 +119,7 @@ ec-site/
 | [README.md](01-概要/README.md) | このフォルダーに置く文書 |
 | [template.md](01-概要/template.md) | 概要の雛形 |
 | [system.md](01-概要/system.md) | システムの全体像 |
+| [order.md](01-概要/order.md) | 注文の流れ |
 
 設計（`docs/02-設計/`）：エンジニア向けの構成（全体の構成、アーキテクチャ、アプリ、権限）。
 

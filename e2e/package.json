@@ -14,7 +14,8 @@
     "typecheck": "pnpm generate:api && tsc --noEmit",
     "lint": "biome check --error-on-warnings",
     "lint:fix": "biome check --write",
-    "capture": "playwright test -c playwright.showcase.config.ts"
+    "capture": "playwright test -c playwright.showcase.config.ts",
+    "capture:docs": "playwright test -c playwright.docs.config.ts"
   },
   "devDependencies": {
     "@biomejs/biome": "^2.5.15",

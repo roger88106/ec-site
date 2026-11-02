@@ -20,8 +20,10 @@
 
 | 種類 | 書くこと | 番号 |
 |------|----------|------|
-| 機能 | 背景と目的、User stories、受け入れ条件、業務ルール、非機能要件、Non-goals、Open questions | US・AC・BR・NFR |
-| 整理 | 背景と目的、目的、完了の条件、非機能要件、Non-goals、Open questions | DS・DC・DN |
+| 機能 | 背景と目的・スコープ・User stories・受け入れ条件・業務ルール・非機能要件・依存・Non-goals・Open questions | US・AC・BR・NFR |
+| 整理 | 背景と目的・スコープ・目的と完了条件・変える範囲・非機能要件・依存・Non-goals・Open questions | DS・DC・DN |
+
+節の名前と順、冒頭の種類・規模・ステータスの行は、[spec の雛形と見本](../08-spec/templates/README.md)の雛形のとおりにする。構造の検査（`scripts/ci/spec-structure.mjs`）が確認する。
 
 - 機能の spec は、単独で検証できる機能の縦切り（バーティカルスライス）1 つ。
 - 整理の spec は、消費者・運営者に見える振る舞いを変えない。変える必要が出たら、機能の spec にする。

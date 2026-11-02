@@ -60,6 +60,8 @@ export const FUNCTIONAL_SPECS = [
   'docs/03-機能仕様/region.md',
   'docs/03-機能仕様/storefront.md',
   'docs/03-機能仕様/payment.md',
+  'docs/03-機能仕様/shipping.md',
+  'docs/03-機能仕様/reporting.md',
 ]
 
 /** 機能仕様の雛形。`##` の節の名前と順は、この雛形の骨組みから読む */

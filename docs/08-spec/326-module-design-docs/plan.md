@@ -105,7 +105,7 @@
 |------|--------|----------|
 | アーカイブの spec の BR（BR-1〜BR-40）のうち、今有効なものを ③ の業務規則に移す | `docs/03-機能仕様/` の各モジュールの文書 | 「BR の行き先」の表。移した BR の文を、元の spec と並べて読む |
 | 今有効でない BR（変更・廃止）は、移さない理由を「BR の行き先」に書く。段階 3〜5 の各 ③ のタスクで書く | 本書 | 表を読む |
-| BR-9 が 2 つの spec で定義されている件を調べ、扱いを決める。段階 2 の最初に行う | 本書の「BR の行き先」 | 2 つの定義を読み、行き先を表に書く |
+| BR-9 の定義を調べ、扱いを決める（spec の今の状態に「2 つの spec で定義されている」と書いたが、段階 2 の調査で 002 だけと分かった）。段階 2 の最初に行う | 本書の「BR の行き先」 | 2 つの定義を読み、行き先を表に書く |
 | 「BR の行き先」に BR-1〜BR-40 の全件があることを確認する | 本書の「BR の行き先」 | 段階 5 の最後のレビューの前に、表を読む |
 | ③ の業務規則に BR の番号を残し、`writing.md` の「表と注」の例外に加える | `docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md`、`docs/03-機能仕様/template.md` | 文書を読む。`doc-refs` が通る |
 
@@ -119,7 +119,53 @@
 
 | BR | 元の spec | 移した先 | 扱い |
 |----|-----------|----------|------|
-|  |  |  |  |
+| BR-1 税込価格 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | tax（段階 3〜5 で移す） |  |
+| BR-2 C 側に表示される商品 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog（段階 3〜5 で移す） |  |
+| BR-3 日時 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-4 価格の表示 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | storefront（段階 3〜5 で移す） |  |
+| BR-5 品番 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog（段階 3〜5 で移す） |  |
+| BR-6 送料 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：見積もり | 有効。金額の既定（1,000 円）、標準税率、設定で変えられることは、コード（`OrderProperties`）と一致する |
+| BR-7 金額 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：見積もり | 有効 |
+| BR-8 消費税額 | [002](../archive/mvp/002-cart-and-order/spec.md) | tax（段階 3〜5 で移す） |  |
+| BR-9 注文の状態 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：状態の遷移 | 有効。定義は 002 にだけある。「支払待ち」と「出荷済み」は BR-14 と BR-18 が加える。今の ③ の遷移は、BR-9 の遷移を全て含む |
+| BR-10 注文番号 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：注文の成立 | 有効。形式は 002 の plan で決めた形（注文日の 8 桁、ハイフン、ランダムな 6 桁）を書いた |
+| BR-11 引当と販売可能数 | [002](../archive/mvp/002-cart-and-order/spec.md) | inventory（段階 3〜5 で移す） |  |
+| BR-12 職務 | [003](../archive/mvp/003-auth/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-13 会員の識別 | [003](../archive/mvp/003-auth/spec.md) | member（段階 3〜5 で移す） |  |
+| BR-14 注文の状態 | [007](../archive/mvp/007-payment/spec.md) | order：状態の遷移 | 有効 |
+| BR-15 支払の状態 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
+| BR-16 支払の期限 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
+| BR-17 決済サービスからの通知 | [007](../archive/mvp/007-payment/spec.md) | payment（段階 3〜5 で移す） |  |
+| BR-18 注文状態 | [009](../archive/mvp/009-shipping/spec.md) | order：状態の遷移 | 有効 |
+| BR-19 配送状態 | [009](../archive/mvp/009-shipping/spec.md) | shipping（段階 3〜5 で移す） |  |
+| BR-20 与信期限 | [009](../archive/mvp/009-shipping/spec.md) | payment（段階 3〜5 で移す） |  |
+| BR-21 支払状態 | [009](../archive/mvp/009-shipping/spec.md) | payment（段階 3〜5 で移す） |  |
+| BR-22 物流サービスからの通知 | [009](../archive/mvp/009-shipping/spec.md) | shipping（段階 3〜5 で移す） |  |
+| BR-23 出荷の単位 | [009](../archive/mvp/009-shipping/spec.md) | shipping（段階 3〜5 で移す） |  |
+| BR-24 期間と区切り | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
+| BR-25 売上の数え方 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
+| BR-26 売上額 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
+| BR-27 年齢層 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
+| BR-28 レポートの権限 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す） |  |
+| BR-29 性別 | [010](../archive/mvp/010-sales-report/spec.md) | reporting（段階 3〜5 で移す）、order：注文時の年齢と性別 | order の分（記録する値と不明の扱い）は有効。テスト名の BR-29 は、order と reporting の両方にある |
+| BR-30 外部サービスの mock | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-32 認可の既定 | [015](../archive/mvp/015-security/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-33 値の置き場所 | [016](../archive/mvp/016-master-data/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-34 地方公共団体コード | [016](../archive/mvp/016-master-data/spec.md) | region（段階 3〜5 で移す） |  |
+| BR-35 お届け先の写し | [016](../archive/mvp/016-master-data/spec.md) | order：注文（集約） | 有効 |
+| BR-36 郵便番号の使い方 | [016](../archive/mvp/016-master-data/spec.md) | region（段階 3〜5 で移す） |  |
+| BR-37 郵便番号のマスターデータ | [016](../archive/mvp/016-master-data/spec.md) | region（段階 3〜5 で移す） |  |
+| BR-38 保存期間 | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-39 外部サービスのエラー | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+| BR-40 外部サービスとの通信 | [017](../archive/mvp/017-stability/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
+
+- BR-9 の調査（T326-02-01）：BR-9 の定義は 002 にだけある。007 の BR-14 と 009 の BR-18 は、BR-9 に遷移を加える別の BR で、BR-9 を再定義していない。行は 1 つで、BR-9 は order に移す。`git grep -n "BR-9"` でコードの側に見つかるのは、次の 3 つ。どれも 002 の BR-9 の注文の状態を指す。
+  - フロントのテスト名（`orderLabels.test.ts` の「BR-9、14」「BR-9、14、18」）
+  - マイグレーションのコメント（`V202610111200__ordering_create_order.sql`）
+  - OpenAPI の状態の説明（`store.yaml`、`admin.yaml`）
+- 行き先が `common` の BR は、どのモジュールの ③ にも属さない規則（構成、認可、設定の置き場所など）。段階 3〜5 で、置き場所を決める。
+- BR-29 は、注文時の記録（order）と集計の区分（reporting）にまたがる。行き先は reporting とする。注文の ③ の性別の記録には、BR の番号を付けない。
 
 ## AC の正本と ac-check（DS-326-4：DC-326-14〜21）
 
@@ -295,7 +341,7 @@
 | 3 | `tasks/03-catalog-modules.md` | 税、商品カタログ、在庫、メディアの ② と ③（BR の移動を含む） | DC-326-1〜2、DC-326-4〜8、DC-326-11〜13 のその分 | 段階 2 の完了 |
 | 4 | `tasks/04-purchase-modules.md` | カート、会員、地域、店舗の ② と ③ | 同上 | 段階 3 の完了 |
 | 5 | `tasks/05-fulfillment-modules.md` | 決済、出荷、通知、レポートの ② と ③。文書の地図への追加、「BR の行き先」の全件の確認 | 同上。DC-326-10 | 段階 4 の完了 |
-| 6 | `tasks/06-glossary-and-apps.md` | レベルの行、用語集、アプリの設計書の節、マイグレーションの一覧、#12、起票の案（タスクは tasks にある） | DC-326-9、DC-326-10、DC-326-21、DC-326-24〜28 | 段階 5 の完了 |
+| 6 | `tasks/06-glossary-and-apps.md` | レベルの行、用語集、アプリの設計書の節、マイグレーションの一覧、#12、起票の案、共通の BR（タスクは tasks にある） | DC-326-9、DC-326-10、DC-326-21、DC-326-24〜28、DC-326-11〜13 の共通の分 | 段階 5 の完了 |
 | 7 | `tasks/07-review.md` | spec の最後のレビュー、draft の pull request の作成（起票の案を載せる）、pull request の前のレビュー、アーカイブ | DC-326-29〜32 | 段階 6 の完了 |
 
 変えるファイル：

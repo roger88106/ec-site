@@ -504,8 +504,11 @@ describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
     assertOne(checkFunctionalSpec(`${functionalText(SECTIONS)}\n\`\`\`\n`, SECTIONS), /閉じていないコードブロック/)
   })
 
-  test('登録している機能仕様は注文だけである', () => {
-    assert.deepEqual(FUNCTIONAL_SPECS, ['docs/03-機能仕様/order.md'])
+  test('登録している機能仕様は、書き換え済みの ③ だけである', () => {
+    assert.deepEqual(FUNCTIONAL_SPECS, [
+      'docs/03-機能仕様/order.md',
+      'docs/03-機能仕様/tax.md',
+    ])
   })
 })
 

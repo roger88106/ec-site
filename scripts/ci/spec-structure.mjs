@@ -49,7 +49,10 @@ export const REFACTOR_SECTIONS = ['背景と目的', 'スコープ', '目的と�
 const PLAN_LAST_SECTIONS = ['段階と変えるファイル', '利用者に確認すること']
 
 /** 固定の節に書き換えた機能仕様（他のモジュールは、書き換えたときに加える） */
-export const FUNCTIONAL_SPECS = ['docs/03-機能仕様/order.md']
+export const FUNCTIONAL_SPECS = [
+  'docs/03-機能仕様/order.md',
+  'docs/03-機能仕様/tax.md',
+]
 
 /** 機能仕様の雛形。`##` の節の名前と順は、この雛形の骨組みから読む */
 const FUNCTIONAL_TEMPLATE = 'docs/03-機能仕様/template.md'

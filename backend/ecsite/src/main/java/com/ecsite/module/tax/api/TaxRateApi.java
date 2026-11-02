@@ -15,7 +15,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * 税モジュールが商品カタログと注文に公開する API（docs/03-機能仕様/tax.md「他のモジュールへの公開」）
+ * 税モジュールが商品カタログと注文に公開する API（docs/02-設計/tax.md「他のモジュールへの公開」）
  */
 @Component
 @RequiredArgsConstructor

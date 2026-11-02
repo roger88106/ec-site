@@ -33,7 +33,7 @@ const SEED = {
 async function shot(page: Page, name: string, ready: Locator) {
   await expect(ready).toBeVisible()
   await expect.poll(() => page.evaluate(() => Array.from(document.images).every((image) => image.complete))).toBe(true)
-  // 店舗画面の開発のサーバーが表示する Next.js の印（画面の左下）は、本番の画面にないので写さない
+  // 店舗画面の開発サーバーが表示する Next.js のインジケーター（画面の左下）は、本番の画面にないので写さない
   await page.screenshot({
     path: path.join(OUT, `${name}.png`),
     fullPage: true,

@@ -112,20 +112,20 @@
 | AC-87 | 注文が成立すると、全品目の在庫数を注文数だけ減らし、引当を解除する。 | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | [注文モジュール](order.md)（注文の成立）、[在庫モジュール](inventory.md)（操作） | `OrderForm.test.tsx`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` ほか 2 |
 | AC-88 | 空のカート、または購入できない品目（AC-80）を含むカートは注文できない。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CheckoutApiTest`、`OrderTest` |
 | AC-89 | 確認した総額と、注文時点で計算した総額が異なる場合（その間に価格や税率が変わった… | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `PlaceOrderApiTest`、`checkout.test.ts`、`placeOrderErrors.test.ts` |
-| AC-90 | 注文が成立すると注文番号を採番し、カートを空にする。 | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | [注文モジュール](order.md)（状態遷移の後の箇条）、[カートモジュール](cart.md)（カート） | `PlaceOrderApiTest` |
+| AC-90 | 注文が成立すると注文番号を採番し、カートを空にする。 | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | [注文モジュール](order.md)（状態の遷移）、[カートモジュール](cart.md)（カート） | `PlaceOrderApiTest` |
 | AC-91 | 同じ注文の送信が繰り返されても（二度押し、通信の再送）、注文は 1 件だけ作られ… | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `JooqOrderRepositoryTest`、`PlaceOrderApiTest`、`PlaceOrderConcurrencyTest` |
 | AC-92 | 注文には、注文時点の商品品番、バリアント品番、商品名、軸の値、税抜単価、税率、税… | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `OrderCatalogApiTest`、`OrderTest`、`PlaceOrderApiTest` |
 | AC-93 | 注文の直後に、注文番号、注文日時、明細、金額の内訳（BR-7、8）、お届け先、状… | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md) | [店舗画面](../02-設計/apps/store.md)の「支払画面への移動と戻り」 | `PlaceOrderApiTest`、`order.spec.ts` |
-| AC-94 | 注文の URL を知っていれば、後から同じ内容を見られる。 | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md) | [注文モジュール](order.md)（注文（集約）の操作の表） | `PlaceOrderApiTest` |
-| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md) | [注文モジュール](order.md)（注文（集約）の操作の表、状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`order.spec.ts` ほか 2 |
+| AC-94 | 注文の URL を知っていれば、後から同じ内容を見られる。 | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md) | [注文モジュール](order.md)（注文（集約）） | `PlaceOrderApiTest` |
+| AC-95 | 注文の URL の画面から、「受付」の注文のキャンセルを申請できる。 | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [003](../08-spec/archive/mvp/003-auth/spec.md) | [注文モジュール](order.md)（注文（集約）、状態の遷移） | `CancellationApiTest`、`OrderCancellationTest`、`order.spec.ts` ほか 2 |
 | AC-96 | キャンセルの申請は、1 つの注文につき 1 回だけ。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`StorefrontShopTest` ほか 2 |
 | AC-97 | 全ての注文を、注文日時の新しい順に一覧できる。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx` |
 | AC-98 | 注文番号の前方一致、状態、注文日の範囲（BR-3）で絞り込める。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderListPage.test.tsx`、`orderFilter.test.ts` |
 | AC-99 | ページ単位で取得できる。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest` |
 | AC-100 | 注文番号、注文日時、状態、明細（AC-92 の写しと数量、小計）、金額の内訳（B… | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest`、`OrderDetailPage.test.tsx`、`labels.test.ts` |
-| AC-101 | 「キャンセル申請中」の注文の申請を承認すると、キャンセルになり、明細の数量だけ在… | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md)、[009](../08-spec/archive/mvp/009-shipping/spec.md) | [注文モジュール](order.md)（状態遷移）、[決済モジュール](payment.md)（与信の取消） | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` ほか 1 |
+| AC-101 | 「キャンセル申請中」の注文の申請を承認すると、キャンセルになり、明細の数量だけ在… | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md)、[009](../08-spec/archive/mvp/009-shipping/spec.md) | [注文モジュール](order.md)（状態の遷移）、[決済モジュール](payment.md)（与信の取消） | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` ほか 1 |
 | AC-102 | 申請を却下すると「受付」に戻る。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
-| AC-103 | 運営者の判断で、「受付」または「キャンセル申請中」の注文を、申請の承認によらずに… | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md)、[009](../08-spec/archive/mvp/009-shipping/spec.md) | [注文モジュール](order.md)（状態遷移） | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
+| AC-103 | 運営者の判断で、「受付」または「キャンセル申請中」の注文を、申請の承認によらずに… | 変更 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | [007](../08-spec/archive/mvp/007-payment/spec.md)、[009](../08-spec/archive/mvp/009-shipping/spec.md) | [注文モジュール](order.md)（状態の遷移） | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
 | AC-104 | キャンセルと在庫の戻しは、両方とも実行されるか、どちらも実行されない。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CancellationAtomicityTest` |
 | AC-105 | キャンセル済みの注文へのキャンセル・承認は、成功し、在庫は戻さない（consti… | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `CancellationApiTest`、`OrderCancellationTest`、`OrderDetailPage.test.tsx` |
 | AC-106 | キャンセル済みの注文も、一覧・詳細に表示される。 | 有効 | [002](../08-spec/archive/mvp/002-cart-and-order/spec.md) | — | spec | `AdminOrderApiTest` |
@@ -153,7 +153,7 @@
 | AC-128 | 注文は、注文した会員に結び付く。 | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
 | AC-129 | ログインしている会員は、自分の注文を注文日時の新しい順に一覧できる。 | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest`、`orderListQuery.test.ts` |
 | AC-130 | 一覧から注文の詳細（AC-93 と同じ内容）に遷移し、キャンセルを申請できる（A… | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | spec | `MemberOrderApiTest` |
-| AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 変更 | [003](../08-spec/archive/mvp/003-auth/spec.md) | [015](../08-spec/archive/mvp/015-security/spec.md) | [注文モジュール](order.md)（注文（集約）の操作の表：ログインしていなければ 401） | `MemberOrderApiTest` |
+| AC-131 | 注文の詳細の参照とキャンセルの申請は、注文した会員だけができる。 | 変更 | [003](../08-spec/archive/mvp/003-auth/spec.md) | [015](../08-spec/archive/mvp/015-security/spec.md) | [注文モジュール](order.md)（注文（集約）：ログインしていなければ 401） | `MemberOrderApiTest` |
 | AC-132 | 管理画面は、ログインしなければ何も表示しない。 | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | spec | `AuthGate.test.tsx`、`login.test.ts` |
 | AC-133 | 運営者のアカウントは、会員のアカウントとは別にある（constitution 1… | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | spec | `KeycloakIntegrationTest` |
 | AC-134 | 運営者は自分で登録できない。 | 有効 | [003](../08-spec/archive/mvp/003-auth/spec.md) | — | spec | `RealmSettingsContractTest` |

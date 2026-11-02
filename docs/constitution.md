@@ -138,7 +138,7 @@ ec-site/
 
 | 文書 | 内容 |
 |------|------|
-| [<モジュール>.md](03-機能仕様) | モジュールごとの設計 |
+| [<モジュール>.md](03-機能仕様) | モジュールごとの機能仕様（業務規則、状態の遷移、データモデル、今有効な AC） |
 | [template.md](03-機能仕様/template.md) | 機能仕様の雛形 |
 | [acceptance-criteria.md](03-機能仕様/acceptance-criteria.md) | AC 一覧（状態とテスト） |
 | [glossary.md](03-機能仕様/glossary.md) | 用語集 |

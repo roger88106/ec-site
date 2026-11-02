@@ -54,6 +54,7 @@ export const FUNCTIONAL_SPECS = [
   'docs/03-機能仕様/tax.md',
   'docs/03-機能仕様/catalog.md',
   'docs/03-機能仕様/inventory.md',
+  'docs/03-機能仕様/media.md',
 ]
 
 /** 機能仕様の雛形。`##` の節の名前と順は、この雛形の骨組みから読む */

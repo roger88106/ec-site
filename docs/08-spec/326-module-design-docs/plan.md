@@ -120,17 +120,17 @@
 
 | BR | 元の spec | 移した先 | 扱い |
 |----|-----------|----------|------|
-| BR-1 税込価格 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | tax（段階 3〜5 で移す） |  |
-| BR-2 C 側に表示される商品 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog（段階 3〜5 で移す） |  |
+| BR-1 税込価格 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | tax：業務規則の「税込価格」 | 有効 |
+| BR-2 C 側に表示される商品 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog：業務規則の「C 側の表示と検索」の「表示される条件」 | 有効 |
 | BR-3 日時 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-4 価格の表示 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | storefront（段階 3〜5 で移す） |  |
-| BR-5 品番 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog（段階 3〜5 で移す） |  |
+| BR-5 品番 | [001](../archive/mvp/001-catalog-and-inventory/spec.md) | catalog：業務規則の「商品（集約）」 | 有効 |
 | BR-6 送料 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：見積もり | 有効。金額の既定（1,000 円）、標準税率、設定で変えられることは、コード（`OrderProperties`）と一致する |
 | BR-7 金額 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：見積もり | 有効 |
-| BR-8 消費税額 | [002](../archive/mvp/002-cart-and-order/spec.md) | tax（段階 3〜5 で移す） |  |
+| BR-8 消費税額 | [002](../archive/mvp/002-cart-and-order/spec.md) | tax：業務規則の「税率ごとの消費税額」 | 有効 |
 | BR-9 注文の状態 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：状態の遷移 | 有効。定義は 002 にだけある。「支払待ち」と「出荷済み」は BR-14 と BR-18 が加える。今の ③ の遷移は、BR-9 の遷移を全て含む |
 | BR-10 注文番号 | [002](../archive/mvp/002-cart-and-order/spec.md) | order：注文の成立 | 有効。形式は 002 の plan で決めた形（注文日の 8 桁、ハイフン、ランダムな 6 桁）を書いた |
-| BR-11 引当と販売可能数 | [002](../archive/mvp/002-cart-and-order/spec.md) | inventory（段階 3〜5 で移す） |  |
+| BR-11 引当と販売可能数 | [002](../archive/mvp/002-cart-and-order/spec.md) | inventory：業務規則の「引当」 | 変更。元の BR は「在庫数を減らすのは注文の成立だけ」だが、③ とコードでは、運営者の調整・注文の成立・キャンセルで在庫数が変わる。引当が在庫数を減らさない意味は保つ。カートへの追加を販売可能数で判定する部分は、カートの ③ で扱う |
 | BR-12 職務 | [003](../archive/mvp/003-auth/spec.md) | common（段階 6 で、今の規則がある共通の文書に移す） |  |
 | BR-13 会員の識別 | [003](../archive/mvp/003-auth/spec.md) | member（段階 3〜5 で移す） |  |
 | BR-14 注文の状態 | [007](../archive/mvp/007-payment/spec.md) | order：状態の遷移 | 有効 |

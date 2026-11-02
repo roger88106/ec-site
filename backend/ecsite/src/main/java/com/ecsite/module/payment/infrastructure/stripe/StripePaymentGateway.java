@@ -21,7 +21,7 @@ import java.time.Clock;
 import java.time.Duration;
 
 /**
- * Stripe の決済サービス（docs/03-機能仕様/payment.md「Stripe」）。<br />
+ * Stripe の決済サービス（docs/02-設計/payment.md「Stripe」）。<br />
  * 支払画面は Checkout Session（与信だけを取る）、与信は PaymentIntent。売上確定は PaymentIntent の capture、返金は Refund。
  * Stripe の型とエラーはこのクラスの外に出さない。
  */

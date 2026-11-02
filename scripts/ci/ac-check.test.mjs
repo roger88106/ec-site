@@ -1019,11 +1019,11 @@ describe('--write を script として実行する', () => {
   const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'ac-check.mjs')
   const LIST = 'docs/03-機能仕様/acceptance-criteria.md'
   const ORDER = 'docs/03-機能仕様/order.md'
-  const PAYMENT = 'docs/03-機能仕様/payment.md'
+  const PAYMENT = 'docs/03-機能仕様/legacy.md'
   const SPEC = 'docs/08-spec/5-x/spec.md'
 
   /** 構造の検査の対象の一覧にない ③（マーカーがなく、表は AC 一覧と違う） */
-  const paymentText = ['# 決済モジュール', '', '## 今有効な AC', '', ...MODULE_HEADER, moduleRow('AC-9', '古い。'), ''].join('\n')
+  const paymentText = ['# 旧モジュール', '', '## 今有効な AC', '', ...MODULE_HEADER, moduleRow('AC-9', '古い。'), ''].join('\n')
 
   /** 書き換える前のファイル。AC 一覧にない進行中の spec の AC と、古い注文の ③ の表がある */
   function fixture(overrides = {}) {

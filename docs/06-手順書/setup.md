@@ -98,7 +98,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 ## 5. Stripe で動かす
 
-既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済の設計は [決済モジュール](../03-機能仕様/payment.md)。
+既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済の設計は [決済の設計](../02-設計/payment.md)の「外部のサービス」。
 
 1. Stripe のアカウントと sandbox を作り、ダッシュボードの「開発者 → API キー」のシークレットキー（`sk_test_` で始まる）を、`/.local/stripe.env` に書く。このファイルは Git に入らない。鍵を会話やコミットに含めない。
 

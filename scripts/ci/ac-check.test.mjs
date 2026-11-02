@@ -1019,18 +1019,18 @@ describe('--write を script として実行する', () => {
   const script = path.join(path.dirname(fileURLToPath(import.meta.url)), 'ac-check.mjs')
   const LIST = 'docs/03-機能仕様/acceptance-criteria.md'
   const ORDER = 'docs/03-機能仕様/order.md'
-  const CART = 'docs/03-機能仕様/cart.md'
+  const PAYMENT = 'docs/03-機能仕様/payment.md'
   const SPEC = 'docs/08-spec/5-x/spec.md'
 
   /** 構造の検査の対象の一覧にない ③（マーカーがなく、表は AC 一覧と違う） */
-  const cartText = ['# カートモジュール', '', '## 今有効な AC', '', ...MODULE_HEADER, moduleRow('AC-9', '古い。'), ''].join('\n')
+  const paymentText = ['# 決済モジュール', '', '## 今有効な AC', '', ...MODULE_HEADER, moduleRow('AC-9', '古い。'), ''].join('\n')
 
   /** 書き換える前のファイル。AC 一覧にない進行中の spec の AC と、古い注文の ③ の表がある */
   function fixture(overrides = {}) {
     return {
       [LIST]: listDoc(listRow({ ac: 'AC-1', content: '一つ目。' })),
       [ORDER]: moduleDoc([moduleRow('AC-1', '古い。')]),
-      [CART]: cartText,
+      [PAYMENT]: paymentText,
       [SPEC]: '- **AC-5-1** 転記する。\n',
       ...overrides,
     }
@@ -1073,7 +1073,7 @@ describe('--write を script として実行する', () => {
     assert.equal(status, 0, stdout)
     assert.match(after[LIST], /^\| AC-5-1 \| {2}\| 有効 \| \[5\]\(\.\.\/08-spec\/5-x\/spec\.md\) \| — \| 転記する。 \|$/m)
     assert.equal(after[ORDER], moduleDoc([...MODULE_HEADER, moduleRow('AC-1', '一つ目。')]))
-    assert.equal(after[CART], cartText)
+    assert.equal(after[PAYMENT], paymentText)
   })
 })
 

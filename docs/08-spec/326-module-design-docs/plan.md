@@ -150,7 +150,7 @@
 | BR-28 レポートの権限 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「権限」 | 有効。元の定義の 2 項目それぞれに番号を付けた。③ になかった文を、意味を変えずに加えた |
 | BR-29 性別 | [010](../archive/mvp/010-sales-report/spec.md) | reporting：業務規則の「地域・年齢層・性別」（「不明」の扱い）、order：業務規則の「注文時の年齢と性別」（選べる値） | order の分（記録する値と不明の扱い）は有効。テスト名の BR-29 は、order と reporting の両方にある |
 | BR-30 外部サービスの mock | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「外部連携（決済・物流）」 | 有効 |
-| BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「設定の値の型」、[環境変数](../../06-手順書/environment.md)の「管理画面」と「店舗画面」 | 有効 |
+| BR-31 設定が足りないとき | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドの書き方](../../05-開発規則/backend-coding.md)の「設定の値の型」、[環境変数](../../06-手順書/environment.md)の「管理画面」と「店舗画面」、[フロントの書き方](../../05-開発規則/frontend-coding.md)の「環境変数は起動時に確認する」、[店舗画面の構成](../../02-設計/apps/store.md)と[管理画面の構成](../../02-設計/apps/admin.md)の「ログイン」 | 有効 |
 | BR-32 認可の既定 | [015](../archive/mvp/015-security/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「業務のコードとの境界」 | 有効 |
 | BR-33 値の置き場所 | [016](../archive/mvp/016-master-data/spec.md) | common：[バックエンドのアーキテクチャ](../../02-設計/backend-architecture.md)の「値の置き場所」 | 有効 |
 | BR-34 地方公共団体コード | [016](../archive/mvp/016-master-data/spec.md) | region：業務規則の「マスターデータ」 | 有効 |
@@ -304,7 +304,7 @@
 | 何を | どこに | 確認方法 |
 |------|--------|----------|
 | レベルの行を ② に移す | `docs/02-設計/template.md`、`docs/03-機能仕様/template.md`、注文の ② と ③、各モジュールの ② と ③ | 文書を読む |
-| `ProductionClassesTest` が ② を読む。テストの入力と CI を流す paths も ② に合わせる | `ProductionClassesTest`、`backend/ecsite/build.gradle.kts`、`.github/workflows/ci.yml`、`docs/06-手順書/ci.md` | `backend/ecsite/` で `./gradlew check` が通る |
+| `ProductionClassesTest` が ② を読む。テストの入力と、CI を実行する paths も ② に合わせる | `ProductionClassesTest`、`backend/ecsite/build.gradle.kts`、`.github/workflows/ci.yml`、`docs/06-手順書/ci.md` | `backend/ecsite/` で `./gradlew check` が通る |
 | レベル・依存・番号の書き方を、決定に合わせる | `docs/05-開発規則/writing.md` の「表と注」、`docs/05-開発規則/notation.md` の「モジュールの設計書の記号」 | 文書を読む |
 
 - 確認 6 が案 A である理由：レベルはパッケージの構成の区分で、② の内容である。全てのモジュールに ② ができる（確認 4 が案 A のとき）。spec 4 は、② が注文にしかないので ③ に残した。

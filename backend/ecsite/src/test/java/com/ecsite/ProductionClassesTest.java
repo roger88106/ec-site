@@ -26,12 +26,12 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 class ProductionClassesTest {
 
     /**
-     * モジュールの設計のディレクトリ（Gradle が system property で渡すリポジトリのルートから）
+     * モジュールの設計書のディレクトリ（Gradle が system property で渡すリポジトリのルートから）
      */
     private static final Path MODULE_DESIGNS = Contracts.path("docs/02-設計");
 
     /**
-     * モジュールの設計の表の「レベル」の行。値の最初の文字がレベルを表す
+     * モジュールの設計書の表の「レベル」の行。値の最初の文字がレベルを表す
      */
     private static final Pattern LEVEL_ROW = Pattern.compile("^\\| レベル \\| (\\S)", Pattern.MULTILINE);
 
@@ -166,7 +166,7 @@ class ProductionClassesTest {
     }
 
     @Test
-    @DisplayName("レベル A のモジュールの一覧は、モジュールの設計の「レベル」の行が A のモジュールと一致する")
+    @DisplayName("レベル A のモジュールの一覧は、モジュールの設計書の「レベル」の行が A のモジュールと一致する")
     void levelAModulesMatchDesignDocuments() throws IOException {
         Set<String> documented;
         try (Stream<Path> files = Files.list(MODULE_DESIGNS)) {
@@ -182,9 +182,9 @@ class ProductionClassesTest {
     }
 
     /**
-     * モジュールの設計のレベルが A かを返す。
+     * モジュールの設計書のレベルが A かを返す。
      *
-     * @param file モジュールの設計
+     * @param file モジュールの設計書
      * @return 「レベル」の行の最初の文字が A なら true
      */
     private static boolean isLevelA(Path file) {
@@ -192,7 +192,7 @@ class ProductionClassesTest {
             Matcher matcher = LEVEL_ROW.matcher(Files.readString(file, StandardCharsets.UTF_8));
             return matcher.find() && matcher.group(1).equals("A");
         } catch (IOException e) {
-            throw new IllegalStateException("モジュールの設計を読めない: " + file, e);
+            throw new IllegalStateException("モジュールの設計書を読めない: " + file, e);
         }
     }
 

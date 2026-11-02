@@ -255,7 +255,7 @@ Next.js の `typedRoutes` で、画面の置き場所と照合する。クエリ
 | ログインの状態 | サーバー側で `currentMember()`（ログインしていれば氏名とメールアドレス、していなければ `null`）。クライアントコンポーネントでは取らず、必要なら props で渡す |
 | アカウント | ヘッダーから IdP のアカウント画面（`<issuer>/account`）へ遷移する。変えた氏名は次のログインから反映する |
 
-※7：既定値はローカルと CI だけで使う値（realm の JSON と同じ）で、開発モードとテストでだけ使う。本番モードでは、この 5 つと `STORE_API_BASE_URL` がなければ起動時に失敗する（`src/auth/config.ts`）。E2E は `playwright.config.ts` で渡す。
+※7：既定値はローカルと CI だけで使う値（realm の JSON と同じ）で、開発モードとテストでだけ使う。本番モードでは、この 5 つと `STORE_API_BASE_URL` がなければ起動時に失敗する（BR-31）。確認は `src/auth/config.ts` で行う。E2E は `playwright.config.ts` で渡す。
 
 ※8：Auth.js は `AUTH_URL` があれば、リクエストの URL をそれに置き換える。`trustHost` は指定しない。ログインの戻り先のテストは、このファイルだけ実際の Auth.js を使う（`auth/loginRedirect.test.ts`）。
 

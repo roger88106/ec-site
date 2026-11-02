@@ -6,7 +6,11 @@ description: ec-site のフロントに画面や操作を追加するときの�
 # 画面を追加するときの型
 
 決まりの正本は [店舗画面の構成](../../../docs/02-設計/apps/store.md) と [管理画面の構成](../../../docs/02-設計/apps/admin.md)。
-本書はその要点と、そのままコピーできる最小の例。迷ったら正本を読む（[店舗画面の構成](../../../docs/02-設計/apps/store.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」、[管理画面の構成](../../../docs/02-設計/apps/admin.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」「結合テストの書き方」）。
+本書はその要点と、そのままコピーできる最小の例。迷ったら、次の正本を読む。
+
+- [店舗画面の構成](../../../docs/02-設計/apps/store.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」
+- [管理画面の構成](../../../docs/02-設計/apps/admin.md)の「API の呼び出し」から「結果の知らせ方」までと「画面を追加する手順」
+- [テストの書き方](../../../docs/05-開発規則/test-writing.md)の「管理画面の結合テストは、本物の描画で、API だけを差し替える」
 
 共通の前提：
 
@@ -259,7 +263,7 @@ export function FooActions({ fooId }: { fooId: string }) {
 
 ### 結合テスト（`pages/FooPage.test.tsx`）
 
-書き方は [管理画面の構成](../../../docs/02-設計/apps/admin.md)の「結合テストの書き方」。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API は全てハンドラーを渡す、テスト名に AC 番号。
+書き方は [テストの書き方](../../../docs/05-開発規則/test-writing.md)の「管理画面の結合テストは、本物の描画で、API だけを差し替える」。要点：`server.use(http.get('/foos', ({ response }) => response(200).json({...})))`、`const { user } = renderApp('/foos')`、要素は役割と名前で探す、呼ばれる API は全てハンドラーを渡す、テスト名に AC 番号。
 
 ## 画面を追加し終えたら
 

@@ -179,7 +179,14 @@ Biome の設定（`biome.jsonc`）に従う。インデント 2、行の長さ 1
 
 ### 8.1 環境変数は起動時に確認する
 
-本番（`NODE_ENV=production`）で、Cookie の暗号の鍵（`AUTH_SECRET`）、IdP の client ID と secret、IdP と API の場所、店舗画面を公開する URL がなければ、起動（`instrumentation.ts` の `register()`）で足りない名前を並べて失敗させる。ローカル用の既定値は、開発モードとテストでだけ使う ※2。任意の設定（既定値のあるもの）も、同じ所（`src/auth/config.ts` の `readServerConfig()`）で読み、各所で `process.env` を読まない（`NODE_ENV` など、Next.js が決める実行のモードは除く）。管理画面は接続先をビルドの時に埋め込むので、本番ビルドで確認する（管理画面の構成の「ログイン」）。
+本番（`NODE_ENV=production`）では、次の設定がなければ、起動（`instrumentation.ts` の `register()`）で足りない名前を並べて失敗させる。
+
+- Cookie の暗号の鍵（`AUTH_SECRET`）
+- IdP の client ID と secret
+- IdP と API の場所
+- 店舗画面を公開する URL
+
+ローカル用の既定値は、開発モードとテストでだけ使う（BR-31） ※2。任意の設定（既定値のあるもの）も、同じ所（`src/auth/config.ts` の `readServerConfig()`）で読み、各所で `process.env` を読まない（`NODE_ENV` など、Next.js が決める実行のモードは除く）。管理画面は接続先をビルドの時に埋め込むので、本番ビルドで確認する（管理画面の構成の「ログイン」）。
 
 ※2：モジュールの読み込み時には確認しない。`next build` も本番モードで動き、CI のビルドには secret がないため。
 

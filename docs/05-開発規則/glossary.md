@@ -13,7 +13,7 @@
 | アーカイブ | | 完了した spec を、MVP などのまとまりごとに移す置き場所（`docs/08-spec/archive/<まとまり>/`）。当時の記録として残し、文書の言い回しの検査から外す |
 | AC 一覧 | `docs/03-機能仕様/acceptance-criteria.md` | 全ての AC の状態、モジュール、今の内容の正本。`ac-check` が読み、③ の「今有効な AC」の表を生成し、テスト名と照合する |
 | 言い換えの一覧 | `scripts/ci/ja-text.json` | 日本語の文の検査の一覧。使わない語は error（CI で失敗）、文脈で決める語と文体の型は warning（失敗にしない） |
-| 受け入れ確認 | | レビュー skill でリポジトリ全体（バックエンド、フロント、E2E、文書、script と CI）をレビューし、完成の条件を満たすかを判断すること（skill `review` の「使う場面」） |
+| 受け入れ確認 | | レビュー skill でリポジトリ全体をレビューし、完成の条件を満たすかを判断すること。対象は、バックエンド・フロント・E2E・文書・script と CI（skill `review` の「使う場面」） |
 | 文書レビュー | | 日本語だけの文脈のサブエージェントが、見本の文書と言い回しの規則を基に、技術文書として不自然な言い回しの候補を挙げるレビュー。利用者が採否を決める（skill `review`） |
 | 日本語だけの文脈 | | サブエージェントへの指示と読ませる文書を、日本語だけにすること。利用者との会話の言語が文書に混ざらないようにする（[エージェントの作業フロー](subagents.md)） |
 | CI の検査の script | `scripts/ci/*.mjs` | `./gradlew check` と画面の検査のほかに CI が実行する、文書とコードの検査の script。手元では `scripts/ci/check-all.sh` でまとめて実行する（[CI の検査](../06-手順書/ci.md)） |
@@ -24,11 +24,11 @@
 | カバレッジの基準 | `scripts/ci/report/quality-baseline.json` | カバレッジと mutation score の、対象ごとの値と許容の幅（`tolerance`）。CI が今回の値と比べる（[CI の検査](../06-手順書/ci.md)の「カバレッジと mutation score の基準の検査」） |
 | mock フラグ | `ecsite.<モジュール>.mock.enabled` | 外部サービスの代わりに、内部の mock を使う設定。立てたときだけ mock を使い、立てなければ本番の実装を使う（本番の実装がない物流は、起動に失敗する）。ローカルと E2E の設定だけで立てる |
 | 本番の実装 | | 外部サービスの port の、本物のサービスにつなぐ実装（決済の Stripe）。mock と同じ port を実装する |
-| テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗を起こす・呼ばれた操作を記録する操作を追加した実装。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
+| テスト用の決済サービス | `TestPaymentGateway` | テストで、決済の mock をラップし、失敗させる操作と、呼ばれた操作を記録する機能を加えた実装。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
 | テスト用の物流サービス | `TestCarrierTracking` | テストで、物流の mock をラップし、追跡を始めた送り状番号を記録する実装。統合テストでは `TestCarrierTrackingConfig` が、mock フラグを立てたときだけ追跡として使う。テストで共有するソース（`src/testFixtures`）に置き、本番の jar に入らない |
 | 業務ポート | `server.port` | API と mock の画面を提供するポート（ローカル 8080、E2E 8090）。公開するのはこのポートだけ |
 | 運用ポート | `management.server.port` | 死活監視とメトリクス（`/actuator/*`）を提供するポート（ローカル 9080、E2E 9090）。外部に公開しない |
-| 共有の基盤 | | compose で動かすミドルウェア（PostgreSQL のサーバー、Keycloak、SeaweedFS、imgproxy、Mailpit、Zipkin）。全ての作業ツリーで 1 つを使う |
+| 共有の基盤 | | compose で動かすミドルウェア。PostgreSQL のサーバー・Keycloak・SeaweedFS・imgproxy・Mailpit・Zipkin の 6 つで、全ての作業ツリーで 1 つを使う |
 | メインの作業ツリー | | 作業ツリーのうち、リポジトリを clone したもの。スロット 0 を使う |
 | スロット | `.local/slot`、`scripts/dev/slot.mjs` | 作業ツリーに割り当てる番号。0 はメインの作業ツリー、1〜3 はそれ以外の作業ツリー。番号ごとにデータベース、画像のバケット、ポートが決まる。割り当てと解除は `scripts/dev/slot.mjs`、割り当てた番号は作業ツリーの `.local/slot` に記録する（リポジトリに入れない） |
 | スロットの環境 | | 1 つのスロットのデータベース、画像のバケット、バックエンド、店舗画面、管理画面 |
@@ -37,16 +37,16 @@
 | 非同期の処理の待ち | `AsyncEvents` | 統合テストで、コミットの後に動くイベントのリスナーが終わる（または失敗する）のを、イベントの発行の記録で待つ補助（[テストの書き方](test-writing.md)の「待ち方」） |
 | 標準の構成 | | どのモジュールも従う、層とパッケージの名前と置き場所（[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
 | 腐敗防止層 | `XxxDirectory` | 他のモジュールの API を呼び、その情報を自分のモジュールの型に変換するクラス。インターフェースは使う層の `port/`、実装は `infrastructure/directory/` |
-| 参照の service | `XxxQueryService` | データを更新しない application の service。読み取り専用のトランザクションで、view（または外部への要求の型）を返し、集約を返さない（[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
+| 参照の service | `XxxQueryService` | データを更新しない application の service。読み取り専用のトランザクションで、view（または外部へのリクエストの型）を返し、集約を返さない（[バックエンドの書き方](backend-coding.md)の「標準の構成」） |
 | 更新の service | `XxxCommandService` など | データを更新する application の service。参照だけのメソッドを持たない |
 | view | `application/model/view/` | 参照の service が返す、表示や使う側に必要な項目だけの型。画面の操作の可否は、view を作る所で集約の判定を呼んで入れる |
 | 作成の応答 | `CreatedResponses` | 作成の API の応答（201、作成したものの Location、作成した ID）。共通の補助で作る |
 | jest-dom | `@testing-library/jest-dom` | DOM の要素の状態を確認する照合の関数（`toBeDisabled`、`toHaveAttribute`、`toHaveAccessibleName` など）を Vitest に加えるライブラリ。管理画面と店舗画面はテストの setup、共有のパッケージは vitest の setupFiles で読み込み、型は照合の関数を使うテストのファイルで `@testing-library/jest-dom/vitest` を読み込んで得る |
-| テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストの変更が、本番のクラスの移動と名前の変更に伴うものだけであることを確認する script。対応は spec の名前の対応のファイル（`renames.txt`）に書く |
+| テストの差分の検査 | `scripts/ci/review/test-diff.mjs` | 整理の spec で、既存のテストに加えた変更が、本番のクラスの移動と改名に伴うものだけであることを確認する script。対応は、spec にある旧名と新名の対応表（`renames.txt`）に書く |
 | 共通の値の型 | `common/model/value/` | 2 つ以上のモジュールで使い、規則（範囲、丸め、比べ方）を持つ値の型（金額、文字の長さの上限など） |
 | メッセージのキー | `ecsite.<モジュール>.<名前>` | エラーの文を `messages.properties` から取得するためのキー。エラーの定義（enum の定数）の名前から決まる |
 | 共有パッケージ | `frontend/shared`（`@ec-site/shared`） | 店舗画面と管理画面の両方で使う、UI のコンポーネント・関数・文言を置くパッケージ（[フロントの書き方](frontend-coding.md)の「入れるもの・入れないもの」） |
-| 共有の文言 | `common.*` | 共有パッケージの文言。2 つの画面で同じ役割の文を置き、各画面の文言と浅く合わせて使う（[フロントの書き方](frontend-coding.md)の「表示の文言は文言ファイルに置く」） |
+| 共有の文言 | `common.*` | 共有パッケージの文言。2 つの画面で同じ役割の文を置き、各画面の文言と、最上位のキーの単位で合わせて使う（[フロントの書き方](frontend-coding.md)の「表示の文言は文言ファイルに置く」） |
 | 整形の関数 | `@ec-site/shared/lib/format` | 金額・価格・数・日時・税額・郵便番号・軸の値を、画面に表示する文字列にする関数。2 つの画面で共有する |
 | 既定の数の整形 | `formatNumber`（`@ec-site/shared/lib/format`） | 既定のロケールで、3 桁ごとに区切る数の整形。金額の整形の数の部分も同じ |
 | 表示名 | `labels.ts` | API の列挙の値を画面に表示する名前と、Badge の見た目。1 つの機能だけで使うなら `features/<機能>/labels.ts`、2 つ以上なら `lib/labels.ts`。ただし、2 つの画面で同じ表示名は、機能の数によらず共有パッケージに置く（[フロントの書き方](frontend-coding.md)の「画面に依存しない処理は `lib/` の関数」） |
@@ -57,7 +57,7 @@
 | リンクの見た目のボタン | `LinkButton` | Button の見た目で、リンクの要素（`a`）を描画する共有のコンポーネント。要素は呼び出す側が渡し、`LinkButton` はどちらのルーターにも依存しない |
 | 文言のキーのコメントの検査 | `scripts/ci/message-comments.mjs` | 画面のコードで文言を取得する `t('…')` の呼び出しに、出る文を示すコメントがあることを確認する script（[コメントの書き方](comments.md)の「文言をキーにした所」） |
 | 追跡の issue | | spec 1 つに 1 つの issue。番号が spec の番号になる |
-| issue 担当のセッション | | 起票し、資源の配分と並行の可否を決め、spec 担当のセッションを起動するセッション。危険度が低い変更のマージと、リリースの内容のまとめも行う |
+| issue 担当のセッション | | 起票し、作業の形と profile、並行の可否を決め、spec 担当のセッションを起動するセッション。危険度が低い変更のマージと、リリースの内容のまとめも行う |
 | spec 担当のセッション | | spec 1 つを担当するセッション。利用者と文書を作り、実装とレビューをサブエージェントに任せ、判定する。コードを書かない |
 | 実装役 | | spec 担当のセッションから実装を任される、サブエージェント |
 | 資料収集役 | | spec 担当のセッションから、判断を伴わない資料の収集（該当箇所の要約、事実の確認）を任される、サブエージェント（定義は `researcher`） |

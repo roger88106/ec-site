@@ -178,45 +178,7 @@ URL は `src/app/paths.ts` で作る（ルーターは `routePatterns`、リン�
 
 ## 9. 結合テストの書き方
 
-画面を本物のルーター・キャッシュ・toast で描画し、API の応答だけを MSW で差し替えて、利用者と同じように操作する。
-
-```tsx
-// features/<機能>/pages/<画面>.test.tsx
-server.use(
-  http.get('/tax-categories', ({ response }) => response(200).json({ items: [...] })),
-  http.put('/tax-categories/{taxCategoryId}/rates', ({ response }) =>
-    conflict(response),
-  ),
-)
-const { user } = renderApp('/tax-categories/<ID>')
-await user.click(await screen.findByRole('button', { name: '保存' }))
-expect(await screen.findByText('他の人が先に更新しました。再読み込みしてください')).toBeInTheDocument()
-```
-
-| 補助（`src/test/`） | 内容 |
-|---------------------|------|
-| `renderApp(url, { permissions, me })` | その URL で画面全体を描画し、`user`（user-event）と `router` を返す。運営者の権限は既定で全て。`me` で自分の権限の一覧の応答を、サーバーのエラー（`serverError`）、通信の失敗（`networkError`）、応答しない（`pending`）に差し替えられる。キャッシュの再試行の回数は本番と同じにし、間隔は 0 にする |
-| `renderApp.tsx` の `ALL_PERMISSIONS`、`TEST_OPERATOR_NAME` | `ALL_PERMISSIONS` は運営者の権限の既定（全て）。`TEST_OPERATOR_NAME` はログインしている運営者の名前で、画面の表示の確認に使う |
-| `http` | `admin.yaml` の型に合った MSW のハンドラーを作る（パス・本文・状態が契約になければ型エラー） |
-| `server` | API の代わりに応答する。既定のハンドラーは持たず、テストごとに `server.use(...)` で渡す |
-| `problem(...)` | エラーレスポンスの本文を作る |
-| `getServerError(path)`、`getNetworkError(path)` | 契約にない応答（サーバーのエラー、通信の失敗）を返す、型のない MSW のハンドラーを作る（テストの書き方の「API の差し替えは型付きの MSW」） |
-| `stockHandler(quantity)` | バリアントの在庫数の取得に、バリアントによらず同じ数で応答する。関数を渡すと、取得のたびに関数の戻り値で応答する |
-| `conflict(response)`、`Reply` | 更新の競合（409）の応答を返す。`Reply` は、条件で応答を変える関数の型で、その関数が返す応答は契約にあるものに限られる |
-| `reportServer.ts` の `serveReportBasics` | レポートの画面が条件の入力で使う API（レポートの設定、商品の一覧）に応答する。会計年度は 4 月始まり、商品は T シャツ 1 つ（ID は `fixtures.ts` の `SHIRT_ID`）。結合テストだけで使う |
-| `setup.ts` | 全てのテストに共通の設定。各テストの後に、`vi.restoreAllMocks()`（`vi.spyOn` で差し替えたものを戻す）、toast の消去、描画した部品の撤去、偽の時計（`vi.useFakeTimers`）の復元、ハンドラーの初期化を実行する。ハンドラーのない API が呼ばれたときは、テストを失敗させる |
-| `fixtures.ts` | 応答に使うデータと、テストで共有する定数（`SHIRT_ID`、競合の知らせの文言 `CONFLICT_MESSAGE`）。関係のない項目には一般的な値を入れ、確認する項目だけを引数で渡す。MSW に依存しないので、単体テストからも読める |
-| `queries.ts` | 詳細の項目の値、一覧の行、一覧のセル（`getCell`）を、名前で探す。`getListItemContaining` は、渡した要素を含む一覧の項目を返す。名前は、項目の値では項目名、行では行の名前、セルでは行の名前と列の見出し。行の見出しのセル（`th scope="row"`）も列に含め、入れ子の表の中の見出しとセルは外の表の列に数えない。テストのファイルでは DOM の位置を指定しない |
-| `download.ts` | ファイルのダウンロード（URL の作成とリンクのクリック）を差し替え、保存名と本文を返す。`download` の属性のないリンクのクリックは記録せず、本物のクリックの処理に渡す。テストの後に、差し替えを元の実装に戻す |
-| `inputs.ts` の `typeDateTime` | 日時の入力（`datetime-local`）に値（`yyyy-MM-ddTHH:mm`）を入れる。user-event は `datetime-local` に入力できず、jsdom は `value` への代入では入力の通知（`input`・`change` イベント）を発火しないので、補助の中で `fireEvent.change` を使う |
-| `inputs.ts` の `returnToTab` | 別のタブから戻ったこと（window の `visibilitychange`）を発火し、画面に再取得させる。user-event に対応する操作がないので `fireEvent` を使う |
-
-- 置き場所は、主に確認する画面（`pages/`）の横。
-- リンクの見た目のボタン（共有の `LinkButton`）は、役割が `button` になる。
-- ハンドラーのない API が呼ばれるとテストは失敗する。送った内容は、ハンドラーの中で `request.json()` を変数に取って確認する。
-- バージョンの決まり（「フォーム」）は、入力中に他の人が更新した後で、画面に再取得させる（`fireEvent(window, new Event('visibilitychange'))`）。入力が消えず、送るバージョンが変わらないことまで確認する。
-- 管理 API の外への要求（ストレージへの PUT）は、`msw` の `http` で作る（`admin.yaml` の型がないため）。
-- 画面の外で起きること（バックエンドの業務の規則、店舗画面への反映）は確認しない。
+テストの書き方は [テストの書き方](../../05-開発規則/test-writing.md)の「管理画面の結合テストは、本物の描画に API だけを差し替える」。
 
 ## 10. ログイン
 

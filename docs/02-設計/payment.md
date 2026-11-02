@@ -27,28 +27,30 @@
 
 | 役割 | 実装 | 設定 |
 |------|------|------|
-| 決済サービス | Stripe（`stripe-java`）。ローカル・E2E・統合テストは mock | 実装の選択は `ecsite.payment.mock.enabled`。Stripe は `ecsite.payment.stripe`、mock は `ecsite.payment.mock` |
+| 決済サービス | Stripe（`stripe-java`）。ローカル・E2E・統合テストは mock。選び方は下の「実装の選択」 | Stripe は `ecsite.payment.stripe`、mock は `ecsite.payment.mock` |
+
+Stripe の API のバージョンは、`stripe-java` のものに固定される。ライブラリのバージョンを上げると変わる。
 
 #### port
 
-支払画面を作る、支払画面を閉じる、与信を取り消す、売上を確定する、返金する、の 5 つの操作を持つ（`PaymentGateway`）。売上確定の結果は、成功・与信期限切れ・接続できない、の 3 つに変換する。決済サービスの型とエラーは `infrastructure` の外に出さない。外部のサービスの失敗の分け方は、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」の表に従う。売上確定の結果と、操作ごとの失敗の扱いは、[決済モジュール](../03-機能仕様/payment.md)の「決済サービスとの通信」に書く。
+支払画面を作る、支払画面を閉じる、与信を取り消す、売上を確定する、返金する、の 5 つの操作を持つ。売上確定の結果は、成功・与信期限切れ・接続できない、の 3 つに変換する。決済サービスの型とエラーは `infrastructure` の外に出さない。外部のサービスの失敗の分け方は、[バックエンドのアーキテクチャ](backend-architecture.md)の「外部連携」の表に従う。売上確定の結果と、操作ごとの失敗の扱いは、[決済モジュール](../03-機能仕様/payment.md)の「決済サービスとの通信」に書く。
 
 | 項目 | 内容 |
 |------|------|
 | 実装の選択 | mock フラグ（`ecsite.payment.mock.enabled`）が有効なら mock、そうでなければ Stripe を使う。フラグが有効でなく、Stripe の鍵が不足していれば、起動に失敗する ※1 |
-| 支払画面から戻る先 | 店舗の注文の画面。URL は設定（`ecsite.payment.return-url`）の雛形に注文 ID を入れて作る。要求から受け取らない ※2 |
+| 支払画面から戻る先 | 店舗の注文の画面。URL は設定（`ecsite.payment.return-url`）の雛形に注文 ID を入れて作る。リクエストから受け取らない ※2 |
 
 ※1：設定を忘れたまま、mock で注文を受けないため。mock フラグは、ローカル・E2E・統合テストの設定ファイルだけに書く。
 
-※2：戻る先を要求から受け取ると、任意のサイトへ移す踏み台（オープンリダイレクト）にされるため。
+※2：戻る先をリクエストから受け取ると、任意のサイトへ移す踏み台（オープンリダイレクト）にされるため。
 
 #### mock
 
 - 決済の mock フラグを立てたときだけ動く。フラグがなければ、mock の支払画面は 404。
-- バックエンドが `/mock-payment/{支払画面の ID}` に簡易な HTML を返す。「支払う」「カードを拒否させる」「やめる」の操作を持つ。応答は [API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」。
+- バックエンドが `/mock-payment/{支払画面の ID}` に簡易な HTML を返す。「支払う」「カードを拒否させる」「やめる」の操作を持つ。応答の規則は [API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」にある。
 - 「支払う」は与信の成功の通知を、HTTP を通さずに通知の処理に直接渡してから、店舗の注文の画面に戻す。「カードを拒否させる」は画面に拒否を示し、状態を変えない。
 - 本番の mock は、port と支払画面の操作（支払う、支払を済ませる、与信の成功を通知する、画面と与信の参照を読む）だけを持つ。売上を確定した与信の取消は、Stripe と同じく拒否する。
-- テストのコードは、mock をラップするテスト用の実装（`TestPaymentGateway`。テストで共有するソース `src/testFixtures` に置き、本番の jar に入らない）を使う。与信の成功、通知の遅れ・重複・順序の入れ替わり、閉じる前に支払が済んでいたこと、取消の失敗（回数を指定）、売上確定の与信期限切れ、売上確定の接続の失敗（回数を指定）、返金の失敗（回数を指定）、売上確定の最中の処理（注文のキャンセルなど）を発生させ、売上確定・返金・取消の記録を確認する。統合テストでは、これを決済サービスとして使う（`TestPaymentGatewayConfig`）。
+- テストのコードは、mock をラップするテスト用の実装（テストで共有するソース `src/testFixtures` に置き、本番の jar に入らない）を使う。与信の成功、通知の遅れ・重複・順序の入れ替わり、閉じる前に支払が済んでいたこと、取消の失敗（回数を指定）、売上確定の与信期限切れ、売上確定の接続の失敗（回数を指定）、返金の失敗（回数を指定）、売上確定の最中の処理（注文のキャンセルなど）を発生させ、売上確定・返金・取消の記録を確認する。統合テストでは、これを決済サービスとして使う。
 
 #### Stripe
 
@@ -56,8 +58,9 @@
 |------|------|
 | 支払画面 | Checkout Session（`mode=payment`、`capture_method=manual`、通貨 JPY、金額は総額の 1 行）。支払画面 ID は Session の ID |
 | 画面の期限 | 作ってから 31 分（Stripe の最短の 30 分に、時計のずれの余裕を加える） |
+| タイムアウトと再試行 | 1 回のリクエストごとに接続 5 秒、応答 20 秒。通信の失敗は、`stripe-java` が同じ冪等キーで 2 回まで再試行する |
 | 支払の方法 | Session では指定しない（Stripe の API が受け付けない）。ダッシュボードの設定で決まり、カードだけを有効にする（カードで払うウォレット（Apple Pay、Google Pay、Link）は有効にしない） |
-| 通知のエンドポイント | `POST /api/webhooks/stripe`。認証は付けず、署名（ヘッダー `Stripe-Signature`、鍵 `STRIPE_WEBHOOK_SECRET`）で確認する。署名が合わない・古い通知は 400 で拒否する。応答は [API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」 |
+| 通知のエンドポイント | `POST /api/webhooks/stripe`。認証は付けず、署名（ヘッダー `Stripe-Signature`、鍵 `STRIPE_WEBHOOK_SECRET`）で確認する。署名が合わない・古い通知は 400 で拒否する。応答の規則は [API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」にある |
 | 秘密の値 | `STRIPE_SECRET_KEY`、`STRIPE_WEBHOOK_SECRET`（[環境変数](../06-手順書/environment.md)） |
 
 通知の種類と、支払への反映：
@@ -77,10 +80,10 @@
 | 操作 | 呼ぶもの | 応答と結果 |
 |------|----------|------------|
 | 売上確定 | PaymentIntent の capture（総額。冪等キー `capture-<注文 ID>`） | 成功なら PaymentIntent は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
-| 売上確定済みの売上確定 | 同上（冪等キーが違う） | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`succeeded` なら成功とする |
+| 売上確定済みの PaymentIntent の売上確定 | 同上（冪等キーが違う） | 400 `payment_intent_unexpected_state`。PaymentIntent を読み、`succeeded` なら成功とする |
 | 与信が切れた PaymentIntent の売上確定 | 同上 | 与信が切れると Stripe が PaymentIntent を取り消す（`canceled`）。400 `payment_intent_unexpected_state` を受けたら PaymentIntent を読み、`canceled` なら与信期限切れとする ※3 |
 | 返金 | Refund（PaymentIntent の総額。冪等キー `refund-<注文 ID>`） | 成功なら Refund は `succeeded`。同じ冪等キーで再送すると、最初と同じ応答 |
-| 返金済みの返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
+| 返金済みの PaymentIntent の返金 | 同上（冪等キーが違う） | 400 `charge_already_refunded`。成功とする |
 
 ※3：与信は 7 日待たないと切れないので、sandbox では与信を取り消した PaymentIntent で、同じ応答（400 `payment_intent_unexpected_state`、状態 `canceled`）になることを確認した。
 
@@ -194,7 +197,7 @@ sequenceDiagram
 
 ## API
 
-なし。決済は、注文から API で呼ばれるだけで、店舗 API・管理 API の operation を持たない。決済サービスが呼ぶ通知のエンドポイント（`POST /api/webhooks/stripe`）と、mock の支払画面（`/mock-payment/{支払画面の ID}`）は、EC の API ではないので OpenAPI に書かない。応答は [API の規約](../05-開発規則/api-conventions.md)の「OpenAPI の外のエンドポイント」。
+なし。決済は、注文から API で呼ばれるだけで、店舗 API・管理 API の operation を持たない。決済サービスが呼ぶ通知のエンドポイント（`POST /api/webhooks/stripe`）と、mock の支払画面（`/mock-payment/{支払画面の ID}`）は、EC の API ではないので OpenAPI に書かない。
 
 ## パッケージの構成
 
@@ -208,7 +211,8 @@ payment/
 │   ├── model/view/         # 表示の型
 │   └── port/               # 決済サービス、通知の受信、参照
 ├── domain/                 # エラーの定義
-│   └── payment/            # 支払（集約）、状態、依頼
+│   └── payment/        # 支払（集約）、状態、依頼
+│       └── port/       # 支払のリポジトリ
 └── infrastructure/
     ├── persistence/        # リポジトリの実装
     ├── mock/               # mock の決済サービスと支払画面

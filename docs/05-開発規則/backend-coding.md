@@ -155,7 +155,7 @@ module/<モジュール>/
 
 Controller は OpenAPI から生成した interface（`XxxApi`）を実装する。パスと入力の形は interface に任せ、`@RequestMapping` を書かない。
 
-例外：外部のサービスとのやり取りのエンドポイント（決済・物流の通知、mock の支払画面と物流の画面。[API の規約](api-conventions.md)の「OpenAPI の外のエンドポイント」）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済の設計](../02-設計/payment.md)、[出荷モジュール](../03-機能仕様/shipping.md)）。
+例外：外部のサービスとのやり取りのエンドポイント（決済・物流の通知、mock の支払画面と物流の画面。[API の規約](api-conventions.md)の「OpenAPI の外のエンドポイント」）は EC の API ではないので、OpenAPI に書かず、そのサービスの型と一緒に `infrastructure` に置く。`@RestController` は presentation だけに付けるので、`@Controller` と `ResponseEntity` で書く（[決済の設計](../02-設計/payment.md)、[出荷の設計](../02-設計/shipping.md)）。
 
 例外：ログインした人の情報を返す操作（`MeController`）は、モジュールの presentation でなく `config/security/` に置く。認可の設定と同じ権限の変換（`PermissionConverter`）を使い、どのモジュールにも属さないため。`@RestController` の置き場所の検査（ArchUnit）は、`MeController` だけを完全修飾名で除く。
 

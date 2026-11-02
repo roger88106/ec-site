@@ -98,7 +98,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 
 ## 5. Stripe で動かす
 
-既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済の設計は [決済の設計](../02-設計/payment.md)の「外部のサービス」。
+既定の起動（profile `local`）は、決済サービスに mock を使い、外部に接続しない。Stripe の sandbox で確認するときだけ、次の手順で切り替える。決済サービスの接続の設計は [決済の設計](../02-設計/payment.md)の「外部のサービス」。
 
 1. Stripe のアカウントと sandbox を作り、ダッシュボードの「開発者 → API キー」のシークレットキー（`sk_test_` で始まる）を、`/.local/stripe.env` に書く。このファイルは Git に入らない。鍵を会話やコミットに含めない。
 
@@ -126,7 +126,7 @@ realm の設定は [docker/keycloak/realms/](../../docker/keycloak/realms) の J
 - 転送した通知と応答は `docker logs -f ec-site-stripe-cli` で確認する。このログは起動時に通知の署名鍵（`whsec_`）を出力するので、エージェントが読むときは `docker logs ec-site-stripe-cli 2>&1 | grep -v whsec_` で鍵の行を除き、鍵を会話に出さない。停止するときは `docker compose --profile stripe stop stripe-cli`。
 - テストのカード番号は Stripe の文書のもの（成功は `4242 4242 4242 4242`、拒否は `4000 0000 0000 0002`。有効期限は未来の日付、セキュリティコードは任意の 3 桁）。
 - 支払画面に表示される支払方法は、ダッシュボードの「設定 → 決済手段」で決まる。カードだけを有効にする。カード以外の方法（コンビニ、銀行振込など）は与信だけを行えない。カードで払うウォレット（Apple Pay、Google Pay、Link）は MVP の後に再検討する（issue [#44](https://github.com/roger88106/ec-site/issues/44)）。
-- 期限切れを早く確認するときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する。Stripe の支払画面は作成から 31 分で期限が切れるが、その前に支払の期限を過ぎ、期限切れのジョブが支払を閉じる。
+- 期限切れを早く確認するときは、`--ecsite.payment.deadline=PT3M --ecsite.payment.expiry-interval=PT20S` を追加する。Stripe の支払画面の期限は長い（[決済の設計](../02-設計/payment.md)の「Stripe」）が、その前に支払の期限を過ぎ、期限切れのジョブが支払を閉じる。
 - seed の注文（`db/seed/local/`）の与信は mock のもので、Stripe には存在しない。Stripe で動かすときは、seed の注文を出荷すると売上確定で失敗する。出荷は、Stripe で支払った注文で確認する。
 
 ## 6. 機能紹介のページのスクリーンショット

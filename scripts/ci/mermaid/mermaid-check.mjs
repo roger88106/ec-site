@@ -1,8 +1,13 @@
 // 文書の Mermaid の図（```mermaid、~~~mermaid のコードブロック）が、mermaid-cli で描画できることを確認する（判定の区分：誤りの防止。構文の誤りの検査）。
 // 目的：GitHub は構文の誤りのある図を「Unable to render」と表示するだけで、push して画面を見るまで気づけないため。
-// 対象の文書：docs/ の下の .md。アーカイブ（docs/08-spec/archive/）は対象にしない。
+// 対象の文書：Git で扱う全ての .md（GitHub は置き場所によらず図を描画するため）。アーカイブ（docs/08-spec/archive/）は対象にしない。
 // 図の取り出し：コードブロックは lib/code-block で読む（CommonMark と同じ。HTML のコメントの中、他のコードブロックの中は読まない）。
-//   閉じていない mermaid のコードブロックは失敗にする。箇条書き・引用・HTML のブロック・front matter の中の図は対象にしない（使っていないため）。
+//   閉じていない mermaid のコードブロックは失敗にする。
+//   箇条書き・引用・4 個以上の字下げの中の図は、「対象にしない書き方の図」として失敗にする。中身は描画しない（使っていない書き方の解釈は加えないため）。
+//     見る行：コードブロックとコメントの外で、行頭の空白・`>`・箇条の記号を除くと ```mermaid か ~~~mermaid で始まる行
+//   コードブロックの本文に図の開きの形の行があれば、「前のコードブロックが閉じていない疑い」として失敗にする。
+//     理由：閉じを書き忘れると、図がコードとして表示され、取り出されないため。mermaid と markdown・md のコードブロックは除く（後者は雛形の骨組みを書く）
+//   HTML のブロック・front matter の中の図は対象にしない（使っていないため）。
 //   取り出した図が 0 件のときも失敗にする（取り出しの不具合で、何も検査せずに成功するのを防ぐ）。
 // 描画：ファイルごとに 1 回、そのファイルの図だけを並べた一時の Markdown を mermaid-cli に渡す。出力の SVG が図の数だけできたかを確認する。足りなければ失敗にする
 //   （mermaid-cli は、行頭の記号がちょうど 3 個のコードブロックだけを取り出し、図が 1 つも取り出されなくても終了コード 0 で終わるため）。
@@ -10,10 +15,12 @@
 //   失敗したファイルだけ、図ごとに、図の本文だけの .mmd を入力にして再描画し、失敗した図の行（元のファイルの行）を示す。
 //   描画のプロセスが失敗したら、エラーの出力が空でも失敗にする。
 // mermaid-cli は依存に入れず、バージョンを固定して npx で取得する。ブラウザーは取得せず（PUPPETEER_SKIP_DOWNLOAD）、手元の Chrome を使う。
-// Chrome の場所は環境変数 MERMAID_CHROME。指定しないときは、既定の場所を順に探す（Windows の Chrome、google-chrome、chromium）。
+// Chrome の場所は環境変数 MERMAID_CHROME。指定しないときは、既定の場所を順に探す（Windows の Chrome、macOS の Chrome、google-chrome、chromium）。
+//   Linux では --no-sandbox を付ける（CI のランナーでは、サンドボックスを使えないことがあるため）。
 //   見つからなければ、作業のディレクトリを作る前に、理由を出して終了コード 2 で終わる。
 // script を scripts/ci/ の直下に置かない理由：直下の script は check-all.sh と commit の前の hook が全て実行する。この検査は Chrome とネットワークが必要で遅いので、実行するのは CI の文書のワークフローだけにする。
 // 失敗したとき：出力された文書と行の図の構文を修正する（mermaid-cli のエラーメッセージに、構文が崩れた箇所の前後が表示される）。閉じていないコードブロックは、閉じの行を追加する。
+//   対象にしない書き方の図は、字下げしないコードブロックに移す。図でなく書き方の例なら、markdown のコードブロックか 1 行のコードに入れる。
 // 除外：なし
 // 使い方：node scripts/ci/mermaid/mermaid-check.mjs（リポジトリのルートで）
 import { execFileSync, execSync } from 'node:child_process'
@@ -21,6 +28,7 @@ import { existsSync, mkdtempSync, readdirSync, readFileSync, rmSync, statSync, w
 import { tmpdir } from 'node:os'
 import path from 'node:path'
 import { readCodeBlocks } from '../lib/code-block.mjs'
+import { readDocument } from '../lib/doc-structure.mjs'
 import { emptyListReason, listGitFiles } from '../lib/git-files.mjs'
 import { isMain } from '../lib/is-main.mjs'
 
@@ -31,6 +39,7 @@ const MERMAID_CLI = '@mermaid-js/mermaid-cli@12.0.0'
 const CHROME_CANDIDATES = [
   'C:/Program Files/Google/Chrome/Application/chrome.exe',
   'C:/Program Files (x86)/Google/Chrome/Application/chrome.exe',
+  '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome',
   '/usr/bin/google-chrome',
   '/usr/bin/chromium',
 ]
@@ -38,32 +47,71 @@ const CHROME_CANDIDATES = [
 /** mermaid-cli が図の終わりとみなす行（行末の ``` か :::）。本文にあると、まとめた Markdown では図がそこで切れる */
 const CUTTING_LINE = /(`{3}|:{3})[^\S\n]*$/m
 
+/** 図の開きの形（囲みの記号と、先頭の語が mermaid の info string）。` の囲みの info string には ` を含めない（1 行のコードの範囲になるため） */
+const MERMAID_OPEN = /^(?:`{3,}(?:\s*mermaid)(?:\s[^`]*)?|~{3,}\s*mermaid(?:\s.*)?)$/i
+
+/** 0〜3 個の空白で字下げした、図の開きの形の行（コードブロックの本文の中で、閉じていない疑いを見る） */
+const INDENTED_MERMAID_OPEN = /^ {0,3}(\S.*)$/
+
+/** 行頭の空白・`>`・箇条の記号（`-`、`*`、`+`、`1.`、`1)`）の並び */
+const LINE_PREFIX = /^(?:[ \t]|>|[-*+][ \t]|\d{1,9}[.)][ \t])*/
+
+/** 本文に図の開きの形の行があってよいコードブロック（雛形の骨組みを書く） */
+const SKELETON_INFOS = ['markdown', 'md']
+
 /**
  * 対象の文書かを返す。
  *
  * @param {string} file リポジトリのルートからのパス
- * @returns {boolean} docs/ の下の .md で、アーカイブでなければ true
+ * @returns {boolean} .md で、アーカイブでなければ true
  */
 export function isMermaidTargetDoc(file) {
-  return /^docs\/.*\.md$/.test(file) && !file.startsWith('docs/08-spec/archive/')
+  return file.endsWith('.md') && !file.startsWith('docs/08-spec/archive/')
+}
+
+/**
+ * 行が、字下げ 0〜3 個の図の開きの形かを返す。
+ *
+ * @param {string} line 1 行
+ * @returns {boolean} 図の開きの形なら true
+ */
+function isMermaidOpen(line) {
+  const match = INDENTED_MERMAID_OPEN.exec(line)
+  return match !== null && MERMAID_OPEN.test(match[1].trimEnd())
 }
 
 /**
  * 文書の中の Mermaid の図を取り出す。
  *
  * @param {string} text 文書の内容
- * @returns {{ diagrams: { line: number, source: string }[], unclosed: number[] }}
- *   diagrams は閉じた図の開きの行（1 から）と本文、unclosed は閉じていない図の開きの行
+ * @returns {{ diagrams: { line: number, source: string }[], unclosed: number[], misplaced: { line: number, message: string }[] }}
+ *   - diagrams：閉じた図の開きの行（1 から）と本文
+ *   - unclosed：閉じていない図の開きの行
+ *   - misplaced：対象にしない書き方の図と、前のコードブロックが閉じていない疑いの図の、行と理由（行の順）
  */
 export function extractMermaidBlocks(text) {
   const diagrams = []
   const unclosed = []
+  const misplaced = []
   for (const block of readCodeBlocks(text)) {
-    if (block.info.split(/\s+/)[0].toLowerCase() !== 'mermaid') continue
+    const language = block.info.split(/\s+/)[0].toLowerCase()
+    if (language !== 'mermaid') {
+      if (SKELETON_INFOS.includes(language)) continue
+      block.body.forEach((line, index) => {
+        if (isMermaidOpen(line)) misplaced.push({ line: block.line + 1 + index, message: '前のコードブロックが閉じていない疑い（コードブロックの中に、図の開きの形の行がある）' })
+      })
+      continue
+    }
     if (block.closed) diagrams.push({ line: block.line, source: block.body.join('\n') })
     else unclosed.push(block.line)
   }
-  return { diagrams, unclosed }
+  // コードブロックとコメントの外の行（取り出した図の開きは、readDocument が空にする）
+  readDocument(text).lines.forEach((line, index) => {
+    if (MERMAID_OPEN.test(line.replace(LINE_PREFIX, '').trimEnd())) {
+      misplaced.push({ line: index + 1, message: '対象にしない書き方の図（箇条書き・引用の中など）がある（図は、字下げしないコードブロックに書く）' })
+    }
+  })
+  return { diagrams, unclosed, misplaced: misplaced.sort((a, b) => a.line - b.line) }
 }
 
 /**
@@ -113,15 +161,19 @@ export function renderFailure(result, expected) {
  * @param {(input: string, kind: 'markdown' | 'diagram') => { error: string | null, outputs: number }} render
  *   描画する関数。kind が markdown なら入力は Markdown、diagram なら図の本文だけ。outputs はできた SVG の数
  * @returns {{ problems: { file: string, line: number, message: string }[], count: number }}
- *   problems は描画できない図と閉じていない図（ファイル・開きの行・理由）、count は図の数（閉じていない図を含む）
+ *   problems は描画できない図、閉じていない図、対象にしない書き方の図、閉じていない疑いの図（ファイル・開きの行・理由）、
+ *   count は図の数（描画しない図を含む）
  */
 export function checkDocs(docs, render) {
   const problems = []
   let count = 0
   for (const { file, text } of docs) {
-    const { diagrams, unclosed } = extractMermaidBlocks(text)
-    count += diagrams.length + unclosed.length
-    const found = unclosed.map((line) => ({ file, line, message: '閉じていないコードブロックがある（閉じの行が足りない）' }))
+    const { diagrams, unclosed, misplaced } = extractMermaidBlocks(text)
+    count += diagrams.length + unclosed.length + misplaced.length
+    const found = [
+      ...unclosed.map((line) => ({ file, line, message: '閉じていないコードブロックがある（閉じの行が足りない）' })),
+      ...misplaced.map(({ line, message }) => ({ file, line, message })),
+    ]
     if (diagrams.length > 0) {
       // 本文に行末の ``` か ::: がある図は、まとめた Markdown では途中で切れる（切れても SVG はできるので数では検出できない）。まとめて描画せず、図ごとに描画する
       const cutting = diagrams.some((diagram) => CUTTING_LINE.test(diagram.source))
@@ -160,6 +212,17 @@ export function summaryLine(failed, count) {
 export function findChrome(env, exists) {
   if (env.MERMAID_CHROME) return exists(env.MERMAID_CHROME) ? env.MERMAID_CHROME : null
   return CHROME_CANDIDATES.find((candidate) => exists(candidate)) ?? null
+}
+
+/**
+ * puppeteer の設定を作る。
+ *
+ * @param {string} chrome Chrome の実行ファイルのパス
+ * @param {string} platform 実行する OS（process.platform の値）
+ * @returns {{ executablePath: string, args: string[] }} 設定。Linux のときだけ --no-sandbox を付ける（CI のランナーでは、サンドボックスを使えないことがあるため）
+ */
+export function puppeteerConfig(chrome, platform) {
+  return { executablePath: chrome, args: platform === 'linux' ? ['--no-sandbox'] : [] }
 }
 
 /**
@@ -250,7 +313,7 @@ export function runCheck(deps) {
     return 2
   }
   const docs = deps.listDocs()
-  const noDocs = emptyListReason(docs, 'docs/ の文書')
+  const noDocs = emptyListReason(docs, '対象の文書（.md）')
   if (noDocs) {
     deps.out(noDocs)
     return 1
@@ -274,13 +337,12 @@ export function runCheck(deps) {
 function main() {
   const code = runCheck({
     findChrome: () => findChrome(process.env, existsSync),
-    listDocs: () => listGitFiles(['docs']).filter(isMermaidTargetDoc).map((file) => ({ file, text: readFileSync(file, 'utf8') })),
+    listDocs: () => listGitFiles().filter(isMermaidTargetDoc).map((file) => ({ file, text: readFileSync(file, 'utf8') })),
     makeWork: () => mkdtempSync(path.join(tmpdir(), 'mermaid-check-')),
     removeWork: (work) => rmSync(work, { recursive: true, force: true }),
     makeRender: (work, chrome) => {
       const config = path.join(work, 'puppeteer.json')
-      // CI（Linux）では、サンドボックスを使えないことがある
-      writeFileSync(config, JSON.stringify({ executablePath: chrome, args: ['--no-sandbox'] }))
+      writeFileSync(config, JSON.stringify(puppeteerConfig(chrome, process.platform)))
       return createRenderer(work, config)
     },
     out: (line) => console.log(line),

@@ -2,7 +2,7 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
 import { emptyListReason } from '../lib/git-files.mjs'
-import { buildCommand, checkDocs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, quoteArg, runCheck, summaryLine, toMarkdown } from './mermaid-check.mjs'
+import { buildCommand, checkDocs, describeFailure, extractMermaidBlocks, findChrome, isMermaidTargetDoc, puppeteerConfig, quoteArg, runCheck, summaryLine, toMarkdown } from './mermaid-check.mjs'
 
 const FENCE = '```'
 
@@ -16,6 +16,7 @@ describe('Mermaid の図の読み取り：取り出す', () => {
     assert.deepEqual(extractMermaidBlocks(`文\n${FENCE}mermaid\ngraph TD\n  A-->B\n${FENCE}\n`), {
       diagrams: [{ line: 2, source: 'graph TD\n  A-->B' }],
       unclosed: [],
+      misplaced: [],
     })
   })
 
@@ -71,49 +72,52 @@ describe('Mermaid の図の読み取り：取り出す', () => {
 
 describe('Mermaid の図の読み取り：取り出さない', () => {
   test('4 つのバッククォートの囲みに入った ```mermaid（雛形の骨組み）', () => {
-    assert.deepEqual(extractMermaidBlocks('````markdown\n```mermaid\nA\n```\n````\n'), { diagrams: [], unclosed: [] })
+    assert.deepEqual(extractMermaidBlocks('````markdown\n```mermaid\nA\n```\n````\n'), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
   test('表のセルに書いたコード ```mermaid', () => {
-    assert.deepEqual(extractMermaidBlocks('| 書き方 | ```mermaid |\n|---|---|\n| a | `' + FENCE + 'mermaid` |\n'), { diagrams: [], unclosed: [] })
+    assert.deepEqual(extractMermaidBlocks('| 書き方 | ```mermaid |\n|---|---|\n| a | `' + FENCE + 'mermaid` |\n'), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
   test('他の言語のコードブロック', () => {
-    assert.deepEqual(extractMermaidBlocks(`${FENCE}java\nint a;\n${FENCE}\n${FENCE}\nplain\n${FENCE}\n`), { diagrams: [], unclosed: [] })
-  })
-
-  test('4 個以上の空白かタブで字下げした ```mermaid', () => {
-    assert.deepEqual(extractMermaidBlocks(`    ${FENCE}mermaid\n    A\n    ${FENCE}\n`), { diagrams: [], unclosed: [] })
-    assert.deepEqual(extractMermaidBlocks(`\t${FENCE}mermaid\n\tA\n\t${FENCE}\n`), { diagrams: [], unclosed: [] })
+    assert.deepEqual(extractMermaidBlocks(`${FENCE}java\nint a;\n${FENCE}\n${FENCE}\nplain\n${FENCE}\n`), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
   test('先頭の語が mermaid でない（```mermaids）', () => {
-    assert.deepEqual(extractMermaidBlocks(`${FENCE}mermaids\nA\n${FENCE}\n`), { diagrams: [], unclosed: [] })
+    assert.deepEqual(extractMermaidBlocks(`${FENCE}mermaids\nA\n${FENCE}\n`), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
   test('バッククォートの開きの info string にバッククォートがある（1 行のコードの範囲）', () => {
-    assert.deepEqual(extractMermaidBlocks(`${FENCE}mermaid\`x\`\n本文\n`), { diagrams: [], unclosed: [] })
+    assert.deepEqual(extractMermaidBlocks(`${FENCE}mermaid\`x\`\n本文\n`), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
   test('3 個のバッククォートの markdown の囲みに入った ```mermaid（外側の閉じが新しい開きになり、mermaid でないので取り出さない）', () => {
     const text = '```markdown\n```mermaid\nA\n```\n```\n'
-    assert.deepEqual(extractMermaidBlocks(text), { diagrams: [], unclosed: [] })
+    assert.deepEqual(extractMermaidBlocks(text), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
-  test('~~~ に入った ```mermaid と、``` に入った ~~~mermaid', () => {
-    assert.deepEqual(extractMermaidBlocks('~~~\n```mermaid\nA\n```\n~~~\n'), { diagrams: [], unclosed: [] })
-    assert.deepEqual(extractMermaidBlocks('```\n~~~mermaid\nA\n~~~\n```\n'), { diagrams: [], unclosed: [] })
+  test('markdown・md の ~~~ に入った ```mermaid と、markdown・md の ``` に入った ~~~mermaid（雛形の骨組み）', () => {
+    assert.deepEqual(extractMermaidBlocks('~~~markdown\n```mermaid\nA\n```\n~~~\n'), { diagrams: [], unclosed: [], misplaced: [] })
+    assert.deepEqual(extractMermaidBlocks('```md\n~~~mermaid\nA\n~~~\n```\n'), { diagrams: [], unclosed: [], misplaced: [] })
+  })
+
+  test('mermaid の図の本文の中の ```mermaid の行は、閉じていない疑いにしない（描画の検査に任せる）', () => {
+    assert.deepEqual(extractMermaidBlocks('````mermaid\n```mermaid\n````\n').misplaced, [])
+  })
+
+  test('コードブロックの中の、字下げした ```mermaid と、引用の中の ```mermaid', () => {
+    assert.deepEqual(extractMermaidBlocks('````markdown\n    ```mermaid\n> ```mermaid\n````\n').misplaced, [])
   })
 
   test('HTML のコメントの中', () => {
-    assert.deepEqual(extractMermaidBlocks('<!--\n```mermaid\nA\n```\n-->\n'), { diagrams: [], unclosed: [] })
+    assert.deepEqual(extractMermaidBlocks('<!--\n```mermaid\nA\n```\n-->\n'), { diagrams: [], unclosed: [], misplaced: [] })
     assert.deepEqual(extractMermaidBlocks('<!-- 説明 -->\n```mermaid\nA\n```\n').diagrams.length, 1)
   })
 })
 
 describe('Mermaid の図の読み取り：失敗にする', () => {
   test('閉じていない ```mermaid のコードブロック（開きの行を返す）', () => {
-    assert.deepEqual(extractMermaidBlocks('文\n```mermaid\nA\n'), { diagrams: [], unclosed: [2] })
+    assert.deepEqual(extractMermaidBlocks('文\n```mermaid\nA\n'), { diagrams: [], unclosed: [2], misplaced: [] })
   })
 
   test('閉じが開きより短い', () => {
@@ -133,17 +137,62 @@ describe('Mermaid の図の読み取り：失敗にする', () => {
   })
 
   test('開きの行がファイルの最後の行', () => {
-    assert.deepEqual(extractMermaidBlocks('文\n```mermaid'), { diagrams: [], unclosed: [2] })
+    assert.deepEqual(extractMermaidBlocks('文\n```mermaid'), { diagrams: [], unclosed: [2], misplaced: [] })
+  })
+
+  /** 対象にしない書き方の図の行 */
+  function misplacedLines(text) {
+    return extractMermaidBlocks(text).misplaced.filter((item) => /対象にしない書き方の図/.test(item.message)).map((item) => item.line)
+  }
+
+  test('4 個以上の空白かタブで字下げした ```mermaid は、対象にしない書き方の図として失敗にする（中身は取り出さない）', () => {
+    const indented = extractMermaidBlocks(`文\n    ${FENCE}mermaid\n    A\n    ${FENCE}\n`)
+    assert.deepEqual(indented.diagrams, [])
+    assert.deepEqual(indented.misplaced.map((item) => item.line), [2])
+    assert.match(indented.misplaced[0].message, /対象にしない書き方の図（箇条書き・引用の中など）/)
+    assert.deepEqual(misplacedLines(`\t${FENCE}mermaid\n\tA\n\t${FENCE}\n`), [1])
+  })
+
+  test('箇条書き・番号付きの項目・引用の中の ```mermaid と ~~~mermaid は、対象にしない書き方の図として失敗にする', () => {
+    assert.deepEqual(misplacedLines(`- ${FENCE}mermaid\n  A\n  ${FENCE}\n`), [1])
+    assert.deepEqual(misplacedLines(`10. 項目\n\n    ${FENCE}mermaid\n    A\n    ${FENCE}\n`), [3])
+    assert.deepEqual(misplacedLines(`> ${FENCE}mermaid\n> A\n> ${FENCE}\n`), [1])
+    assert.deepEqual(misplacedLines('> - ~~~Mermaid\n'), [1])
+    assert.deepEqual(misplacedLines(`1. > ${FENCE} mermaid 説明\n`), [1])
+  })
+
+  test('取り出した図の開き、閉じていない図の開き、コメントの中、1 行のコードの中は、対象にしない書き方の図にしない', () => {
+    assert.deepEqual(misplacedLines(`  ${FENCE}mermaid\nA\n${FENCE}\n`), [])
+    assert.deepEqual(misplacedLines(`${FENCE}mermaid\nA\n`), [])
+    assert.deepEqual(misplacedLines(`<!--\n> ${FENCE}mermaid\n-->\n`), [])
+    assert.deepEqual(misplacedLines(`- \`${FENCE}mermaid\` と書く\n- ${FENCE}mermaids\n`), [])
+  })
+
+  test('mermaid でも markdown・md でもないコードブロックの本文に、図の開きの形の行があれば、前のコードブロックが閉じていない疑いとして失敗にする', () => {
+    const text = `${FENCE}java\nint a;\n\n${FENCE}mermaid\nA\n${FENCE}\n`
+    const result = extractMermaidBlocks(text)
+    assert.deepEqual(result.diagrams, [])
+    assert.deepEqual(result.misplaced.map((item) => item.line), [4])
+    assert.match(result.misplaced[0].message, /前のコードブロックが閉じていない疑い/)
+    assert.deepEqual(extractMermaidBlocks('~~~\n```mermaid\nA\n```\n~~~\n').misplaced.map((item) => item.line), [2])
+    assert.deepEqual(extractMermaidBlocks('```\n~~~mermaid\nA\n~~~\n```\n').misplaced.map((item) => item.line), [2])
+    assert.deepEqual(extractMermaidBlocks('````text\n   ```Mermaid 説明\n````\n').misplaced.map((item) => item.line), [2])
+  })
+
+  test('コードブロックの本文の、4 個以上字下げした ```mermaid と、先頭の語が mermaid でない行は、閉じていない疑いにしない', () => {
+    assert.deepEqual(extractMermaidBlocks('```java\n    ```mermaid\n```mermaids\n```\n').misplaced, [])
   })
 })
 
 describe('対象の文書', () => {
-  test('docs/ の下の .md。アーカイブと、docs/ の外と、.md でないものは除く', () => {
+  test('Git で扱う全ての .md。アーカイブと、.md でないものは除く', () => {
     assert.equal(isMermaidTargetDoc('docs/02-設計/order.md'), true)
     assert.equal(isMermaidTargetDoc('docs/08-spec/321-design-templates/plan.md'), true)
+    assert.equal(isMermaidTargetDoc('README.md'), true)
+    assert.equal(isMermaidTargetDoc('.claude/skills/docs/SKILL.md'), true)
     assert.equal(isMermaidTargetDoc('docs/08-spec/archive/mvp/002-cart-and-order/spec.md'), false)
-    assert.equal(isMermaidTargetDoc('README.md'), false)
     assert.equal(isMermaidTargetDoc('docs/01-概要/img/system.drawio.svg'), false)
+    assert.equal(isMermaidTargetDoc('docs/a.mdx'), false)
   })
 })
 
@@ -266,6 +315,18 @@ describe('ファイルごとの描画', () => {
     assert.equal(result.count, 2)
   })
 
+  test('対象にしない書き方の図と、閉じていない疑いの図は、行と理由を示して失敗にし、図の数に数える', () => {
+    const { calls, render } = fakeRender()
+    const text = `${FENCE}mermaid\nA\n${FENCE}\n> ${FENCE}mermaid\n${FENCE}java\n${FENCE}mermaid\nB\n${FENCE}\n`
+    const result = checkDocs([{ file: 'docs/a.md', text }], render)
+    assert.deepEqual(result.problems.map((problem) => [problem.line, /対象にしない/.test(problem.message), /閉じていない疑い/.test(problem.message)]), [
+      [4, true, false],
+      [6, false, true],
+    ])
+    assert.equal(result.count, 3)
+    assert.equal(calls.length, 1)
+  })
+
   test('描画の入力の Markdown は、図ごとに 3 個のバッククォートのコードブロックにする（mermaid-cli が読み取る形）', () => {
     assert.equal(toMarkdown(['A', 'B']), `${FENCE}mermaid\nA\n${FENCE}\n\n${FENCE}mermaid\nB\n${FENCE}\n`)
   })
@@ -366,11 +427,21 @@ describe('Chrome の場所', () => {
     assert.equal(findChrome({}, exists('/usr/bin/chromium')), '/usr/bin/chromium')
     assert.equal(findChrome({}, exists('/usr/bin/google-chrome', '/usr/bin/chromium')), '/usr/bin/google-chrome')
     assert.equal(findChrome({}, exists('C:/Program Files/Google/Chrome/Application/chrome.exe')), 'C:/Program Files/Google/Chrome/Application/chrome.exe')
+    const mac = '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
+    assert.equal(findChrome({}, exists(mac)), mac)
   })
 
   test('どこにもなければ null を返す（環境変数の場所が実在しないときも、既定の場所に替えない）', () => {
     assert.equal(findChrome({}, exists()), null)
     assert.equal(findChrome({ MERMAID_CHROME: '/nowhere' }, exists('/usr/bin/chromium')), null)
+  })
+})
+
+describe('puppeteer の設定', () => {
+  test('Chrome の場所を入れ、Linux のときだけ --no-sandbox を付ける', () => {
+    assert.deepEqual(puppeteerConfig('/usr/bin/google-chrome', 'linux'), { executablePath: '/usr/bin/google-chrome', args: ['--no-sandbox'] })
+    assert.deepEqual(puppeteerConfig('C:/chrome.exe', 'win32'), { executablePath: 'C:/chrome.exe', args: [] })
+    assert.deepEqual(puppeteerConfig('/Applications/x', 'darwin'), { executablePath: '/Applications/x', args: [] })
   })
 })
 

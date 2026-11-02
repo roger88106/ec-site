@@ -1,7 +1,7 @@
 import path from 'node:path'
 import { test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
-import { RECIPIENT, SEED, shot as shotTo } from '../src/screenshot'
+import { makeShot, RECIPIENT, SEED } from '../src/screenshot'
 import { notifyCarrier, shipOnAdmin } from '../src/shipping'
 import {
   SHOWCASE_ADMIN_URL as ADMIN,
@@ -14,7 +14,7 @@ import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage, placeOrde
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/order')
 
 /** 画面を撮って OUT に置く */
-const shot = shotTo.bind(null, OUT)
+const shot = makeShot(OUT)
 
 test('注文の流れのスクリーンショットを撮る', async ({ page }) => {
   let orderId = ''

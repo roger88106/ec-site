@@ -9,6 +9,7 @@ import {
   checkPlan,
   checkSpec,
   checkSpecDir,
+  checkSpecDirNames,
   checkSpecFiles,
   checkStage,
   checkTemplates,
@@ -218,6 +219,21 @@ describe('spec の構造（DC-321-19）', () => {
 
   test('閉じていないコードブロックは失敗にする', () => {
     assertOne(check({ ...baseFiles(), 'spec.md': `${specText()}\n\`\`\`\n## 読めない節\n` }), /閉じていないコードブロック/)
+  })
+
+  test('Setext の見出し（段落の直後の ---）は ## の見出しとして読み、決めた節になければ失敗にする', () => {
+    assertOne(check({ ...baseFiles(), 'spec.md': `${specText()}\n区切りのつもり\n---\n` }), /決めた節にない見出し「区切りのつもり」/)
+  })
+
+  test('閉じの # のある見出し（## 依存 ##）は、名前を「依存」と読む', () => {
+    assert.deepEqual(check(edit(baseFiles(), 'spec.md', '## 依存', '## 依存 ##')), [])
+  })
+
+  test('HTML のコメントの中の節と定義は数えない', () => {
+    const problems = check(edit(baseFiles(), 'spec.md', '## 依存', '<!--\n## 依存\n-->'))
+    assertOne(problems, /節「依存」がない/)
+    const hidden = check(edit(baseFiles(), 'spec.md', '- **DC-321-2** 条件 2。', '<!--\n- **DC-321-2** 条件 2。\n-->'))
+    assert.ok(hidden.some((problem) => /DC-321-2 が定義されていない/.test(problem)), hidden.join('\n'))
   })
 
   test('checkSpec は問題の文だけを返す', () => {
@@ -502,6 +518,15 @@ describe('雛形（DC-321-18、DC-321-19）', () => {
     assert.equal(fillTemplate('<!-- 注釈 `x` -->'), '<!-- 注釈 `x` -->')
   })
 
+  test('HTML のタグ（<br/>、<details>、</details>、属性のあるタグ）は置き換えない', () => {
+    const tags = '<br/> <br> <details> <summary>要約</summary> </details> <a href="x.md" title="説明">a</a> <img src="a.png" />'
+    assert.equal(fillTemplate(tags), tags)
+  })
+
+  test('英字で始まる <…> でも、HTML のタグの形でないもの（<plan へのリンク>・<ID の範囲>・<n>・<m>・<N>）は置き換える', () => {
+    assert.equal(fillTemplate('<plan へのリンク> <ID の範囲> <n> <m> <N> <spec または作業>'), '仮 仮 1 2 1 spec')
+  })
+
   test('リポジトリの雛形は、置き換えた後の構造の検査を通る', () => {
     assert.deepEqual(checkTemplates(path.join(ROOT, 'docs/08-spec/templates')), [])
   })
@@ -552,6 +577,26 @@ describe('検査の対象（DC-321-19）', () => {
       const { targets, known } = findTargets(dir)
       assert.deepEqual(targets.map((target) => [path.basename(target.dir), target.number]), [['7-old-root', '7'], ['321-new', '321']])
       assert.deepEqual([...known].sort(), ['011', '283', '321', '7', '900'])
+    } finally {
+      rmSync(dir, { recursive: true, force: true })
+    }
+  })
+
+  test('docs/08-spec/ の直下の、archive と templates 以外で <番号>-<名前> の形でないディレクトリは失敗にする', () => {
+    const dir = makeSpecs({
+      '321-new/spec.md': specText(),
+      'design-templates/spec.md': '',
+      '321_design-templates/spec.md': '',
+      'archive/mvp/011-dev-foundation/spec.md': '',
+      'archive/group/memo.md': '',
+      'templates/spec-feature.md': '',
+      'mvp.md': '',
+    })
+    try {
+      assert.deepEqual(checkSpecDirNames(dir), [
+        '321_design-templates：spec のディレクトリの名前が <番号>-<名前> でない',
+        'design-templates：spec のディレクトリの名前が <番号>-<名前> でない',
+      ])
     } finally {
       rmSync(dir, { recursive: true, force: true })
     }

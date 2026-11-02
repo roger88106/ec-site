@@ -35,6 +35,38 @@ describe('見出しの読み方（DC-321-19）', () => {
   test('字下げが 4 つ以上の行は見出しにしない', () => {
     assert.deepEqual(readHeadings('    ## 字下げ\n## 見出し'), [{ level: 2, title: '見出し', line: 2 }])
   })
+
+  test('ATX の見出しの閉じの # は、名前に含めない', () => {
+    assert.deepEqual(readHeadings('## 依存 ##\n### 小節 #   \n## C#'), [
+      { level: 2, title: '依存', line: 1 },
+      { level: 3, title: '小節', line: 2 },
+      { level: 2, title: 'C#', line: 3 },
+    ])
+  })
+
+  test('HTML のコメントの中の見出しは読まない（行頭の <!-- から --> まで、閉じのない行頭の <!-- から文書の終わりまで）', () => {
+    assert.deepEqual(readHeadings('## 外\n<!--\n## 中\n-->\n## 後'), [
+      { level: 2, title: '外', line: 1 },
+      { level: 2, title: '後', line: 5 },
+    ])
+    assert.deepEqual(readHeadings('## 外\n<!-- 閉じ忘れ\n## 中'), [{ level: 2, title: '外', line: 1 }])
+  })
+
+  test('段落の行の直後の --- と === の行は、その段落を Setext の見出し（## と #）として読む', () => {
+    assert.deepEqual(readHeadings('前\n\n段落\n---\n\n題\n==='), [
+      { level: 2, title: '段落', line: 3 },
+      { level: 1, title: '題', line: 6 },
+    ])
+    assert.deepEqual(readHeadings('段落の 1 行目\n2 行目\n  ---  '), [{ level: 2, title: '段落の 1 行目 2 行目', line: 1 }])
+  })
+
+  test('段落の行でない行（空行・見出し・箇条・表・引用）の後ろの --- は、見出しにしない', () => {
+    assert.deepEqual(readHeadings('文\n\n---\n'), [])
+    assert.deepEqual(readHeadings('- 箇条\n---\n1. 番号\n---\n| 表 |\n---\n> 引用\n---'), [])
+    assert.deepEqual(readHeadings('## 見出し\n---'), [{ level: 2, title: '見出し', line: 1 }])
+    assert.deepEqual(readHeadings('```\n段落\n```\n---'), [])
+    assert.deepEqual(readHeadings('<!-- 注 -->\n---'), [])
+  })
 })
 
 describe('閉じていないコードブロックの検査（DC-321-19）', () => {
@@ -123,6 +155,11 @@ describe('ID の定義の読み方（DC-321-20）', () => {
     assert.deepEqual(collectDefinitions(text), [])
   })
 
+  test('HTML のコメントの中は定義にしない', () => {
+    const text = ['<!--', '- **AC-321-5** 取り下げた条件', '-->', '<!-- - **AC-321-6** 1 行 -->', '- [ ] **T321-01-01** <!-- 注 --> 内容'].join('\n')
+    assert.deepEqual(collectDefinitions(text).map((definition) => definition.id), ['T321-01-01'])
+  })
+
   test('ID の番号と連番は、書かれたままの文字で返す（0 で埋めた連番を見分けるため）', () => {
     const [definition] = collectDefinitions('- **DC-321-01** 文')
     assert.equal(definition.number, '321')
@@ -176,6 +213,29 @@ describe('ID の参照の読み方（DC-321-20）', () => {
     }
   })
 
+  test('表のセルの区切り・太字・リンク・かぎかっこ・「など」が続く数は、列挙として読む（空白を挟んでよい）', () => {
+    for (const text of ['| DC-321-1、99 |', 'DC-321-1、99 など', 'DC-321-1、99など', '**DC-321-1、99**', '[DC-321-1、99](x.md)', '「DC-321-1、99」', 'DC-321-1、99 |']) {
+      assert.deepEqual(ids(text), ['DC-321-1', 'DC-321-99'], text)
+    }
+  })
+
+  test('範囲の記号は 〜（U+301C）、～（U+FF5E）、~ で、前後の空白を許す。列挙の要素の範囲も同じ', () => {
+    for (const text of ['DC-321-1〜3', 'DC-321-1～3', 'DC-321-1~3', 'DC-321-1 〜 3', 'DC-321-1 ～3', 'DC-321-1〜 3 件']) {
+      assert.deepEqual(ids(text), ['DC-321-1', 'DC-321-2', 'DC-321-3'], text)
+    }
+    for (const text of ['DC-321-1、5〜6', 'DC-321-1、5～6', 'DC-321-1、5 〜 6', 'DC-321-1、321-5 ～ 6']) {
+      assert.deepEqual(ids(text), ['DC-321-1', 'DC-321-5', 'DC-321-6'], text)
+    }
+    assert.deepEqual(ids('DC-321-1 ～ 2026-11-05'), ['DC-321-1'])
+  })
+
+  test('範囲の端に同じ接頭辞と同じ spec の番号の ID を書く形（DS-321-2〜DS-321-5）は、範囲として読む', () => {
+    assert.deepEqual(new Set(ids('DS-321-2〜DS-321-5')), new Set(['DS-321-2', 'DS-321-3', 'DS-321-4', 'DS-321-5']))
+    assert.deepEqual(new Set(ids('DS-321-2 ～ DS-321-4')), new Set(['DS-321-2', 'DS-321-3', 'DS-321-4']))
+    assert.deepEqual(ids('DS-321-2〜DC-321-8'), ['DS-321-2', 'DC-321-8'])
+    assert.deepEqual(ids('DS-321-2〜DS-322-8'), ['DS-321-2', 'DS-322-8'])
+  })
+
   test('範囲の端（`〜` の後ろの数）は、数字・`-`・`.` が続かなければ常に読む', () => {
     assert.deepEqual(ids('AC-321-1〜3 件'), ['AC-321-1', 'AC-321-2', 'AC-321-3'])
     assert.deepEqual(ids('DC-321-1〜3 を満たす'), ['DC-321-1', 'DC-321-2', 'DC-321-3'])
@@ -203,6 +263,14 @@ describe('ID の参照の読み方（DC-321-20）', () => {
 
   test('1 行のコードとコードブロックの中の ID は読まない', () => {
     assert.deepEqual(ids('文 `DC-321-99` 文\n```\nAC-321-98\n```\n~~~\nBR-321-97\n~~~\n文 ``DN-321-96`` 文'), [])
+  })
+
+  test('HTML のコメントの中の ID は読まない。コメントの後ろの ID は読む', () => {
+    assert.deepEqual(ids('<!--\nAC-321-5\n-->\n文 <!-- DC-321-99 --> DC-321-3'), ['DC-321-3'])
+  })
+
+  test('行の途中の、閉じのない <!-- の後ろの ID は読む（コメントにならないため）', () => {
+    assert.deepEqual(ids('文 <!-- DC-321-4\nDC-321-5'), ['DC-321-4', 'DC-321-5'])
   })
 
   test('1 行のコードの後ろの ID は読む', () => {
@@ -234,6 +302,20 @@ describe('ID の参照の読み方（DC-321-20）', () => {
   test('タスクの ID と、連番の範囲を開く', () => {
     assert.deepEqual(ids('T321-03-04'), ['T321-03-04'])
     assert.deepEqual(ids('T321-03-01〜03'), ['T321-03-01', 'T321-03-02', 'T321-03-03'])
+  })
+
+  test('タスクの ID の後ろの `、<2 桁>` と `、<2 桁>〜<2 桁>` を、spec の ID と同じ規則で列挙として読む', () => {
+    assert.deepEqual(ids('依存：T321-01-01、99'), ['T321-01-01', 'T321-01-99'])
+    assert.deepEqual(ids('T321-01-08、09 は'), ['T321-01-08', 'T321-01-09'])
+    assert.deepEqual(ids('T321-01-01、03〜04、06'), ['T321-01-01', 'T321-01-03', 'T321-01-04', 'T321-01-06'])
+    assert.deepEqual(ids('| T321-01-01、02 |'), ['T321-01-01', 'T321-01-02'])
+    assert.deepEqual(ids('T321-01-01～03'), ['T321-01-01', 'T321-01-02', 'T321-01-03'])
+  })
+
+  test('タスクの ID の後ろの、列挙の規則に合わない数は、列挙にしない', () => {
+    assert.deepEqual(ids('T321-01-01、02 件'), ['T321-01-01'])
+    assert.deepEqual(ids('T321-01-01、2026-11-05'), ['T321-01-01'])
+    assert.deepEqual(ids('T321-01-01、3 の'), ['T321-01-01'])
   })
 
   test('段階か連番が 2 桁でないタスクの ID は問題にする', () => {

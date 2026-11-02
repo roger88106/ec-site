@@ -7,7 +7,17 @@ import path from 'node:path'
 const SPEC_DIR = /^\d+-/
 
 /** アーカイブのディレクトリ（docs/08-spec/ から） */
-const ARCHIVE = 'archive'
+export const ARCHIVE = 'archive'
+
+/**
+ * ディレクトリの名前が、spec のディレクトリの名前（<番号>-名前）の形かを返す。
+ *
+ * @param {string} name ディレクトリの名前
+ * @returns {boolean} 形が合えば true
+ */
+export function isSpecDirName(name) {
+  return SPEC_DIR.test(name)
+}
 
 /**
  * spec のディレクトリを、直下とアーカイブのまとまりの下から探す。
@@ -26,7 +36,7 @@ export function listSpecDirs(specsDir) {
   return parents
     .flatMap((parent) =>
       readdirSync(path.join(specsDir, parent), { withFileTypes: true })
-        .filter((entry) => entry.isDirectory() && SPEC_DIR.test(entry.name))
+        .filter((entry) => entry.isDirectory() && isSpecDirName(entry.name))
         .map((entry) => {
           const rel = parent ? `${parent}/${entry.name}` : entry.name
           return { name: entry.name, rel, dir: path.join(specsDir, rel) }

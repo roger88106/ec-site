@@ -10,17 +10,19 @@
 //   - tasks（段階のファイル）：ファイル名 `NN-<名前>.md`（NN は 2 桁）、1 行目 `# 段階 <N>：…`（N はファイル名の番号と同じ）、前提・完了条件・参照の箇条、`## タスク`
 //   - ID：spec の ID は spec の番号の次に連番（0 で埋めない）。タスクの ID は `T<spec の番号>-<段階 2 桁>-<連番 2 桁>`（段階はファイルの段階と同じ）。
 //     機能の spec は US・AC・BR・NFR を、整理の spec は DS・DC・DN を定義する。同じ ID を 2 回定義しない
-//   - 参照：範囲（`〜`）と列挙（`、`）を展開した ID の spec の番号が、既知の spec（進行中とアーカイブのディレクトリ、見本の番号）の番号である。
-//     列挙に読むのは、`AC-<番号>-1、2` の形と、同じ spec の番号を付けた `DC-<番号>-4〜6、<番号>-32` の形だけ。
+//   - 参照：範囲（`〜`、`～`、`~`。前後の空白を許す）と列挙（`、`）を展開した ID の spec の番号が、既知の spec（進行中とアーカイブのディレクトリ、見本の番号）の番号である。
+//     列挙に読むのは、`AC-<番号>-1、2` の形と、同じ spec の番号を付けた `DC-<番号>-4〜6、<番号>-32` の形と、タスクの `T<番号>-01-01、02` の形だけ。
+//     範囲の端には、同じ接頭辞と同じ番号の ID（`DS-<番号>-2〜DS-<番号>-8`）も書ける。
 //     同じ spec の ID は、spec か tasks に定義がある。範囲は逆順にせず、999 件までにする。
 //     定義は次の 3 つだけ。他の太字は参照として読む
 //       - spec の箇条の先頭の太字
 //       - spec の見出しの先頭の US・DS
 //       - tasks のタスクの行の先頭
 //   - 機能仕様：`##` の節が、業務規則、状態の遷移、データモデル、今有効な AC の順である（FUNCTIONAL_SPECS の文書だけ）
-//   - コードブロックと 1 行のコードの中は読まない。閉じていないコードブロックは失敗にする（後ろを読めないため）
+//   - 見出しは、ATX（閉じの `#` は名前に含めない）と Setext（段落の行の直後の `---` は `##`、`===` は `#`）を読む
+//   - コードブロック、HTML のコメント、1 行のコードの中は読まない。閉じていないコードブロックは失敗にする（後ろを読めないため）
 // 検査の対象：次の 4 つ。アーカイブは見ない（当時の記録で、形が古いため）。
-//   - docs/08-spec/ の直下の進行中の spec
+//   - docs/08-spec/ の直下の進行中の spec。直下のディレクトリ（archive と templates を除く）の名前が `<番号>-<名前>` でなければ失敗にする（対象から外れるため）
 //   - 雛形の見本（docs/08-spec/templates/examples/ の下）
 //   - 雛形（`<…>` を仮の値に置き換えて検査する）
 //   - 固定の節に書き換えた機能仕様
@@ -32,7 +34,7 @@ import { existsSync, readdirSync, readFileSync } from 'node:fs'
 import path from 'node:path'
 import { checkSections, checkUnclosedCodeBlocks, collectDefinitions, collectReferences, readDocument, readHeadings } from './lib/doc-structure.mjs'
 import { isMain } from './lib/is-main.mjs'
-import { listSpecDirs } from './lib/spec-dirs.mjs'
+import { ARCHIVE, isSpecDirName, listSpecDirs } from './lib/spec-dirs.mjs'
 
 /** 機能の spec の `##` の節 */
 export const FEATURE_SECTIONS = ['背景と目的', 'スコープ', 'User stories', '受け入れ条件', '業務ルール', '非機能要件', '依存', 'Non-goals', 'Open questions']
@@ -259,10 +261,16 @@ export function checkSpecDir(dir, number, known) {
 }
 
 /**
+ * HTML のタグの形（`<br/>`、`</details>`、`<a href="…">`）。名前は英字で始まり、属性の名前は英字で始まる。
+ * 属性の形まで見る理由：`<plan へのリンク>` のような、英字で始まる雛形の `<…>` をタグと読まないため
+ */
+const HTML_TAG = /^\/?[A-Za-z][A-Za-z0-9-]*(?:\s+[A-Za-z_:][\w:.-]*(?:\s*=\s*(?:"[^"]*"|'[^']*'|[^\s"'=<>`]+))?)*\s*\/?$/
+
+/**
  * 雛形の `<…>` の中身を、仮の値にする。
  *
  * @param {string} content `<` と `>` の間の文字
- * @returns {string} 仮の値
+ * @returns {string | null} 仮の値。HTML のタグなら null（置き換えない）
  */
 function placeholderValue(content) {
   const options = content.split(/\s*または\s*/)
@@ -273,11 +281,13 @@ function placeholderValue(content) {
   if (content === 'm') return '2'
   // ID の形（接頭辞、番号、連番）は、中身を残す
   if (/^[A-Z]{1,3}-\d/.test(content)) return content
+  // 上の雛形の形（`<n>` など）は、タグの形にも合うので、先に決める
+  if (HTML_TAG.test(content)) return null
   return '仮'
 }
 
 /**
- * 雛形の `<…>` を、仮の値に置き換える。番号は見本の番号、段階と連番は 2 桁にする。HTML の注釈（`<!-- … -->`）は置き換えない。
+ * 雛形の `<…>` を、仮の値に置き換える。番号は見本の番号、段階と連番は 2 桁にする。HTML の注釈（`<!-- … -->`）とタグ（`<br/>`、`<details>`）は置き換えない。
  *
  * @param {string} text 雛形の内容
  * @returns {string} 置き換えた内容
@@ -288,7 +298,7 @@ export function fillTemplate(text) {
   filled = filled.replace(new RegExp(`(T${EXAMPLE_NUMBER}-01-)<n(?:\\+(\\d+))?>`, 'g'), (_, head, plus) => `${head}${String(4 + Number(plus ?? 0)).padStart(2, '0')}`)
   // 入れ子は、内側から順に置き換える
   for (;;) {
-    const next = filled.replace(/<(?!!--)([^<>]*)>/g, (_, content) => placeholderValue(content))
+    const next = filled.replace(/<(?!!--)([^<>]*)>/g, (tag, content) => placeholderValue(content) ?? tag)
     if (next === filled) return filled
     filled = next
   }
@@ -336,8 +346,23 @@ export function findTargets(specsDir) {
   }
 }
 
+/**
+ * docs/08-spec/ の直下のディレクトリの名前を調べる。名前を誤った spec は、検査の対象から外れて失敗にならないため。
+ *
+ * @param {string} specsDir docs/08-spec のパス
+ * @returns {string[]} 問題の文（ディレクトリの名前を前に付ける）。アーカイブと雛形のディレクトリは見ない
+ */
+export function checkSpecDirNames(specsDir) {
+  const templates = path.basename(TEMPLATES_DIR)
+  return readdirSync(specsDir, { withFileTypes: true })
+    .filter((entry) => entry.isDirectory() && entry.name !== ARCHIVE && entry.name !== templates && !isSpecDirName(entry.name))
+    .map((entry) => `${entry.name}：spec のディレクトリの名前が <番号>-<名前> でない`)
+    .sort()
+}
+
 function main() {
   const problems = []
+  problems.push(...checkSpecDirNames(SPECS_DIR).map((problem) => `${SPECS_DIR}/${problem}`))
   const { targets, known } = findTargets(SPECS_DIR)
   for (const target of targets) problems.push(...checkSpecDir(target.dir, target.number, known))
   const examples = existsSync(EXAMPLES_DIR) ? readdirSync(EXAMPLES_DIR, { withFileTypes: true }).filter((entry) => entry.isDirectory()) : []

@@ -1,6 +1,6 @@
 import assert from 'node:assert/strict'
 import { describe, test } from 'node:test'
-import { readCodeBlocks } from './code-block.mjs'
+import { readBlocks, readCodeBlocks } from './code-block.mjs'
 
 describe('囲みのコードブロックの読み方', () => {
   test('開き・閉じ・info string・行・中身を返す', () => {
@@ -86,8 +86,42 @@ describe('囲みのコードブロックの読み方', () => {
     assert.equal(readCodeBlocks('```x\n<!--\n```\n```y\n```').length, 2)
   })
 
+  test('行の途中の <!-- は、同じ行に --> がなければコメントの開きにしない（ただの文字）', () => {
+    assert.equal(readCodeBlocks('HTML のコメントは <!-- で始める\n```x\n```').length, 1)
+    assert.equal(readCodeBlocks('文 <!-- a --> 文 <!-- b\n```x\n```').length, 1)
+  })
+
+  test('行頭（0〜3 個の空白の後）の <!-- は、後ろの行に続くコメントの開きにする', () => {
+    assert.deepEqual(readCodeBlocks('   <!-- a\n```x\n```\n-->'), [])
+    assert.equal(readCodeBlocks('    <!-- a\n```x\n```\n-->').length, 1)
+  })
+
   test('複数のコードブロックを出る順に返す', () => {
     const blocks = readCodeBlocks('```a\n```\n\n```b\nx\n```')
     assert.deepEqual(blocks.map((block) => [block.info, block.line]), [['a', 1], ['b', 4]])
+  })
+})
+
+describe('HTML のコメントの範囲の読み方', () => {
+  test('コメントの範囲を、行と、行の中の始めと終わりの位置で返す', () => {
+    assert.deepEqual(readBlocks('文 <!-- a --> 文\n<!-- b\nc\nd -->e').comments, [
+      { line: 1, start: 2, end: 12 },
+      { line: 2, start: 0, end: 6 },
+      { line: 3, start: 0, end: 1 },
+      { line: 4, start: 0, end: 5 },
+    ])
+  })
+
+  test('行の途中の、閉じのない <!-- は、コメントの範囲にしない', () => {
+    assert.deepEqual(readBlocks('文 <!-- a\nb -->').comments, [])
+  })
+
+  test('コードブロックの中と 1 行のコードの中の <!-- は、コメントの範囲にしない', () => {
+    assert.deepEqual(readBlocks('```x\n<!-- a -->\n```\n`<!-- b -->`').comments, [])
+  })
+
+  test('コードブロックは、readCodeBlocks と同じものを返す', () => {
+    const text = '<!-- a -->\n```x\nb\n```'
+    assert.deepEqual(readBlocks(text).codeBlocks, readCodeBlocks(text))
   })
 })

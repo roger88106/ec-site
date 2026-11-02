@@ -138,11 +138,15 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 
 文書の Mermaid の図が描画できることを確認する検査。`scripts/ci/mermaid/mermaid-check.mjs` が、Markdown のコードブロックから図を取り出し、mermaid-cli で描画する。描画できない図があれば失敗にする。取り出した図が 0 件のときも、検査が何も見ずに成功するのを防ぐため、失敗にする。
 
+- 対象の文書は、Git で扱う全ての `.md` である（アーカイブ `docs/08-spec/archive/` を除く）。GitHub は、置き場所によらず図を描画するため。
+- 次の図は描画しないが、見つけたら失敗にする。
+  - 箇条書き・引用・4 個以上の字下げの中の図（対象にしない書き方の図）
+  - 他のコードブロックの中の、図の開きの形の行（前のコードブロックが閉じていない疑い）。`markdown`・`md` のコードブロックの中は除く
 - 実行するのは、CI の `docs.yml` だけである。描画に Chrome とネットワーク（mermaid-cli の取得）が必要で遅いため、`check-all.sh` と commit の前の hook では実行しない。
 - script は `scripts/ci/` の直下に置かない（直下の検査は `check-all.sh` が全て実行する）。script のテストは、他の script のテストと同じく `check-all.sh` が実行する。
-- 手元では、ルートで `node scripts/ci/mermaid/mermaid-check.mjs` を実行する。Chrome の場所は、環境変数 `MERMAID_CHROME` で指定する。指定しないときは、既定の場所（Windows の Chrome、`/usr/bin/google-chrome`、chromium）を順に探す。
+- 手元では、ルートで `node scripts/ci/mermaid/mermaid-check.mjs` を実行する。Chrome の場所は、環境変数 `MERMAID_CHROME` で指定する。指定しないときは、既定の場所（Windows の Chrome、macOS の Chrome、`/usr/bin/google-chrome`、chromium）を順に探す。
 - CI のランナー（ubuntu-latest）には Google Chrome が `/usr/bin/google-chrome` に入っているので、`MERMAID_CHROME` は指定しない。
-- 失敗したときは、出力の図の位置（文書と行）と描画のエラーを確認し、図の構文を修正する。
+- 失敗したときは、出力の図の位置（文書と行）と描画のエラーを確認し、図の構文を修正する。対象にしない書き方の図は、字下げしないコードブロックに移す。閉じていない疑いは、前のコードブロックの閉じの行を加える。
 
 ## 4. GitHub のセキュリティの機能
 

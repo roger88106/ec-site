@@ -508,6 +508,7 @@ describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
     assert.deepEqual(FUNCTIONAL_SPECS, [
       'docs/03-機能仕様/order.md',
       'docs/03-機能仕様/tax.md',
+      'docs/03-機能仕様/catalog.md',
     ])
   })
 })

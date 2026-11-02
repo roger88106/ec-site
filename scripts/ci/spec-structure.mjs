@@ -52,6 +52,7 @@ const PLAN_LAST_SECTIONS = ['段階と変えるファイル', '利用者に確�
 export const FUNCTIONAL_SPECS = [
   'docs/03-機能仕様/order.md',
   'docs/03-機能仕様/tax.md',
+  'docs/03-機能仕様/catalog.md',
 ]
 
 /** 機能仕様の雛形。`##` の節の名前と順は、この雛形の骨組みから読む */

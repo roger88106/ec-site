@@ -193,6 +193,7 @@ ec-site/
 |------|------|
 | [08-spec/](08-spec) | spec・plan・tasks。進行中の spec は直下に置き、完了した spec は、まとまりごとに `08-spec/archive/<まとまり>/` に移す。MVP の spec は [08-spec/archive/mvp/](08-spec/archive/mvp) にある |
 | [mvp.md](08-spec/archive/mvp/mvp.md) | MVP の完成までの一覧 |
+| [08-spec/templates/](08-spec/templates) | spec・plan・tasks の雛形と見本（機能・整理、規模 L・M） |
 
 ## 4. 開発の進め方
 

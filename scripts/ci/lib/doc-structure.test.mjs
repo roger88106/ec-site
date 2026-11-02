@@ -152,19 +152,44 @@ describe('ID の参照の読み方（DC-321-20）', () => {
     assert.deepEqual(references, [{ id: 'AC-321-2', number: '321', line: 2, text: 'AC-321-2' }])
   })
 
-  test('助数詞が続く数は、列挙にしない', () => {
+  test('区切り・「の」「と」・助詞が続かない数は、列挙にしない（件数、日付、桁など）', () => {
+    assert.deepEqual(ids('AC-321-1、2 段階'), ['AC-321-1'])
+    assert.deepEqual(ids('AC-321-1、30 秒'), ['AC-321-1'])
+    assert.deepEqual(ids('DC-400-3、2026-11-05 に確認'), ['DC-400-3'])
+    assert.deepEqual(ids('AC-321-1、2 桁の数'), ['AC-321-1'])
     assert.deepEqual(ids('AC-321-1、2 件'), ['AC-321-1'])
     assert.deepEqual(ids('AC-321-1、2つ'), ['AC-321-1'])
-    assert.deepEqual(ids('AC-321-1、3 個'), ['AC-321-1'])
-    assert.deepEqual(ids('AC-321-1、4 行'), ['AC-321-1'])
-    assert.deepEqual(ids('AC-321-1、5 回'), ['AC-321-1'])
-    assert.deepEqual(ids('AC-321-1、6 目'), ['AC-321-1'])
-    assert.deepEqual(ids('AC-321-1、22 件'), ['AC-321-1'])
-    assert.deepEqual(ids('AC-321-1、2〜5 件'), ['AC-321-1'])
+    assert.deepEqual(ids('AC-321-1、2〜5 件'), ['AC-321-1', 'AC-321-2', 'AC-321-3', 'AC-321-4', 'AC-321-5'])
+    assert.deepEqual(ids('AC-321-1、2026-11-05'), ['AC-321-1'])
   })
 
-  test('助数詞の続かない数は、列挙として読む', () => {
-    assert.deepEqual(ids('AC-321-1、2 を満たす'), ['AC-321-1', 'AC-321-2'])
+  test('区切り・行末・「の」「と」・助詞が続く数は、列挙として読む', () => {
+    assert.deepEqual(ids('DC-321-4、6 の前半、13'), ['DC-321-4', 'DC-321-6', 'DC-321-13'])
+    assert.deepEqual(ids('AC-321-1、2 と 3'), ['AC-321-1', 'AC-321-2'])
+    for (const tail of ['、', '〜3', '）', ')', '。', '：', ' 。', 'の', 'と']) {
+      assert.deepEqual(ids(`AC-321-1、2${tail}`).slice(0, 2), ['AC-321-1', 'AC-321-2'], tail)
+    }
+    assert.deepEqual(ids('AC-321-1、2'), ['AC-321-1', 'AC-321-2'])
+    assert.deepEqual(ids('AC-321-1、2 '), ['AC-321-1', 'AC-321-2'])
+    for (const particle of ['を満たす', 'が成り立つ', 'は不要', 'に従う', 'で確認', 'も同じ', 'や 3']) {
+      assert.deepEqual(ids(`AC-321-1、2 ${particle}`).slice(0, 2), ['AC-321-1', 'AC-321-2'], particle)
+    }
+  })
+
+  test('範囲の端（`〜` の後ろの数）は、数字・`-`・`.` が続かなければ常に読む', () => {
+    assert.deepEqual(ids('AC-321-1〜3 件'), ['AC-321-1', 'AC-321-2', 'AC-321-3'])
+    assert.deepEqual(ids('DC-321-1〜3 を満たす'), ['DC-321-1', 'DC-321-2', 'DC-321-3'])
+    assert.deepEqual(ids('DC-321-1〜2026-11-05'), ['DC-321-1'])
+    assert.deepEqual(ids('DC-321-1〜3.5'), ['DC-321-1'])
+    assert.deepEqual(ids('AC-321-1〜3 の範囲'), ['AC-321-1', 'AC-321-2', 'AC-321-3'])
+    assert.deepEqual(ids('AC-321-1〜3、5'), ['AC-321-1', 'AC-321-2', 'AC-321-3', 'AC-321-5'])
+  })
+
+  test('`、<spec の番号>-<連番>` は、spec の番号が直前の ID と同じときだけ列挙として読む', () => {
+    assert.deepEqual(ids('DC-7-4〜6、7-32、7-37'), ['DC-7-4', 'DC-7-5', 'DC-7-6', 'DC-7-32', 'DC-7-37'])
+    assert.deepEqual(ids('DC-7-4、8-32'), ['DC-7-4'])
+    assert.deepEqual(ids('DC-7-4、7-32〜34'), ['DC-7-4', 'DC-7-32', 'DC-7-33', 'DC-7-34'])
+    assert.deepEqual(ids('DC-7-4、7-32 件'), ['DC-7-4'])
   })
 
   test('番号が文字の記号、語の途中の接頭辞、MVP の ID は読まない', () => {

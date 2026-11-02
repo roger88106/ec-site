@@ -339,8 +339,12 @@ describe('ID の定義と参照（DC-321-20）', () => {
     assertOne(check(edit(baseFiles(), 'spec.md', '- **DC-321-2** 条件 2。', '- **DC-321-2** 条件 2。DC-321-99 を見る。')), /spec\.md：.*DC-321-99 が定義されていない/)
   })
 
-  test('自分の spec の中の、存在しない spec の番号（AC-312-1）の参照は失敗にする', () => {
+  test('検査する spec の中の、存在しない spec の番号（AC-312-1）の参照は失敗にする', () => {
     assertOne(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：AC-312-1 を見る。')), /plan\.md：5 行：AC-312-1 の spec（番号 312）がない/)
+  })
+
+  test('存在しない spec の番号の失敗の文は、まだ作業ブランチにない spec を「spec <番号>」と書く案内を含む', () => {
+    assertOne(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：AC-312-1 を見る。')), /まだ作業ブランチにない spec は「spec <番号>」と書く/)
   })
 
   test('存在しない spec の番号の ID を定義すれば失敗にする', () => {
@@ -424,8 +428,13 @@ describe('ID の定義と参照（DC-321-20）', () => {
     assert.deepEqual(check(files), [])
   })
 
-  test('「AC-321-1、2 件」の「2 件」は、AC-321-2 の参照にしない', () => {
-    assert.deepEqual(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：DC-321-1、7 件の確認と、DC-321-2、3 つ目の確認。')), [])
+  test('ID の後の「7 件」「30 秒」「日付」は列挙にせず、定義のない ID の失敗にしない', () => {
+    assert.deepEqual(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：DC-321-1、7 件の確認と、DC-321-2、30 秒待ち、DC-321-2、2026-11-05 に確認。')), [])
+  })
+
+  test('他の spec の番号の列挙（DC-321-1、321-2）は読み、定義のない連番は失敗にする', () => {
+    assert.deepEqual(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：DC-321-1、321-2。')), [])
+    assertOne(check(edit(baseFiles(), 'plan.md', '前提：文。', '前提：DC-321-1、321-9。')), /DC-321-9 が定義されていない/)
   })
 
   test('日付、commit の ID、issue の番号、TDD、語の途中の AC- は読まない', () => {
@@ -448,7 +457,7 @@ describe('ID の定義と参照（DC-321-20）', () => {
   })
 })
 
-describe('固定の節に書き換えた ③（DC-321-21）', () => {
+describe('固定の節に書き換えた機能仕様（DC-321-21）', () => {
   const functional = (names) => names.map((name) => `## ${name}\n\n文。\n`).join('\n')
 
   test('業務規則、状態の遷移、データモデル、今有効な AC の順なら問題がない', () => {
@@ -474,7 +483,7 @@ describe('固定の節に書き換えた ③（DC-321-21）', () => {
     assertOne(checkFunctionalSpec(`${functional(FUNCTIONAL_SECTIONS)}\n\`\`\`\n`), /閉じていないコードブロック/)
   })
 
-  test('今は注文だけを登録している', () => {
+  test('登録している機能仕様は注文だけである', () => {
     assert.deepEqual(FUNCTIONAL_SPECS, ['docs/03-機能仕様/order.md'])
   })
 })

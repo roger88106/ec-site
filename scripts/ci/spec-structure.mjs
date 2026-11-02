@@ -1,16 +1,17 @@
 // spec・plan・tasks と、固定の節に書き換えた機能仕様（docs/03-機能仕様/）の構造を確認する。
 // 目的：構造の誤り（節の名前と順、ID の定義と参照の食い違い）を、書いた時点で見つける。人がレビューで見つけると、見落としや数え間違いが出るため。
-// 判定の区分：誤りの防止（誤って書いたものを失敗にする）。意図して作った回避（検査を通すための書き方）は対象にしない。
+// 判定の区分：誤りの防止（誤って書いたものを失敗にする）。意図して作った回避（検査を通すための書き方）は拒否の対象にしない。
 //   許可する形の一覧で判定する。禁止する形の一覧に、回避の形を 1 つずつ加えることはしない。
 // 許可する形：
-//   - spec：1 行目 `# Spec <番号>：…`、3 行目 `種類：機能（整理）　規模：L（M）　ステータス：草案（確定）`（区切りは全角の空白、コロンは全角）、
+//   - spec：1 行目 `# Spec <番号>：…`、3 行目 `種類：機能 または 整理　規模：L または M　ステータス：草案 または 確定`（区切りは全角の空白、コロンは全角）、
 //     種類ごとに決めた `##` の節の名前と順（規模 M は最後に `## tasks`）。`###` の見出しは見ない
-//   - plan：1 行目 `# Plan <番号>：…`、3 行目 `ステータス：草案（承認済み（tasks 作成済み））　対象：…`、最後の 2 つの節（段階と変えるファイル、利用者に確認すること）。
+//   - plan：1 行目 `# Plan <番号>：…`、3 行目 `ステータス：草案 または 承認済み（tasks 作成済み）　対象：…`、最後の 2 つの節（段階と変えるファイル、利用者に確認すること）。
 //     その前の決定の節は、見出しの末尾に担当の `（DS-…）` か `（US-…）` を書く
 //   - tasks（段階のファイル）：ファイル名 `NN-<名前>.md`（NN は 2 桁）、1 行目 `# 段階 <N>：…`（N はファイル名の番号と同じ）、前提・完了条件・参照の箇条、`## タスク`
 //   - ID：spec の ID は spec の番号の次に連番（0 で埋めない）。タスクの ID は `T<spec の番号>-<段階 2 桁>-<連番 2 桁>`（段階はファイルの段階と同じ）。
 //     機能の spec は US・AC・BR・NFR を、整理の spec は DS・DC・DN を定義する。同じ ID を 2 回定義しない
-//   - 参照：範囲（`〜`）と列挙（`、`）を開いた ID の番号が、既知の spec（進行中とアーカイブのディレクトリ、見本の番号）である。
+//   - 参照：範囲（`〜`）と列挙（`、`）を展開した ID の spec の番号が、既知の spec（進行中とアーカイブのディレクトリ、見本の番号）の番号である。
+//     列挙に読むのは、`AC-<番号>-1、2` の形と、同じ spec の番号を付けた `DC-<番号>-4〜6、<番号>-32` の形だけ。
 //     同じ spec の ID は、spec か tasks に定義がある。範囲は逆順にせず、999 件までにする。
 //     定義は次の 3 つだけ。他の太字は参照として読む
 //       - spec の箇条の先頭の太字
@@ -18,13 +19,13 @@
 //       - tasks のタスクの行の先頭
 //   - 機能仕様：`##` の節が、業務規則、状態の遷移、データモデル、今有効な AC の順である（FUNCTIONAL_SPECS の文書だけ）
 //   - コードブロックと 1 行のコードの中は読まない。閉じていないコードブロックは失敗にする（後ろを読めないため）
-// 見る所：次の 4 つ。アーカイブは見ない（当時の記録で、形が古いため）。
+// 検査の対象：次の 4 つ。アーカイブは見ない（当時の記録で、形が古いため）。
 //   - docs/08-spec/ の直下の進行中の spec
 //   - 雛形の見本（docs/08-spec/templates/examples/ の下）
 //   - 雛形（`<…>` を仮の値に置き換えて検査する）
 //   - 固定の節に書き換えた機能仕様
 // 失敗したとき：示された文書の節の名前と順、ID の定義と参照を、雛形（docs/08-spec/templates/）に合わせて修正する。
-//   本文で ID の書き方を例に挙げるときは、1 行のコード（`…`）の中に書く。
+//   本文で ID の書き方を例に挙げるときは、1 行のコード（`…`）の中に書く。理由：コードの中は参照として読まないため。
 // 除外：なし
 // 使い方：node scripts/ci/spec-structure.mjs（リポジトリのルートで）
 import { existsSync, readdirSync, readFileSync } from 'node:fs'
@@ -202,7 +203,7 @@ function checkIds(files, number, known, { resolve, meta }) {
     problems.push(...referenceProblems.map((problem) => `${file}：${problem}`))
     for (const reference of references) {
       let problem = null
-      if (!known.has(reference.number) && reference.number !== number) problem = `${reference.text} の spec（番号 ${reference.number}）がない`
+      if (!known.has(reference.number) && reference.number !== number) problem = `${reference.text} の spec（番号 ${reference.number}）がない（まだ作業ブランチにない spec は「spec <番号>」と書く）`
       else if (resolve && reference.number === number && !defined.has(reference.id)) problem = `${reference.id} が定義されていない`
       const message = problem && `${file}：${reference.line} 行：${problem}`
       if (message && !reported.has(message)) {
@@ -300,7 +301,7 @@ const TEMPLATE_FILES = { 'spec-feature.md': 'spec.md', 'plan.md': 'plan.md', 'ta
  * 雛形を、`<…>` を仮の値に置き換えて検査する。機能の spec の雛形、plan、段階のファイルを 1 組、整理の spec の雛形を別に検査する。
  *
  * @param {string} dir 雛形のディレクトリ
- * @param {{ transform?: (name: string, text: string) => string }} [options] transform：読んだ雛形を置き換える前に変える関数（テストで雛形の誤りを作る）
+ * @param {{ transform?: (name: string, text: string) => string }} [options] transform：`<…>` を置き換える前の雛形を書き換える関数（テストで雛形に誤りを入れるため）
  * @returns {string[]} 問題の文（雛形のファイル名を前に付ける）
  */
 export function checkTemplates(dir, { transform = (_name, text) => text } = {}) {

@@ -147,6 +147,7 @@ ec-site/
 | [README.md](04-決定記録/README.md) | 決定記録の形 |
 | [subagent-delegation.md](04-決定記録/subagent-delegation.md) | サブエージェントへの任せ方で取り入れたもの |
 | [template.md](04-決定記録/template.md) | 決定記録の雛形 |
+| [order-capture-before-shipment.md](04-決定記録/order-capture-before-shipment.md) | 出荷の登録で、注文を出荷済みにする前に売上を確定する |
 
 規範（`docs/05-開発規則/`）：
 

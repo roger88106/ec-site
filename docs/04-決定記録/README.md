@@ -15,4 +15,5 @@
 | 文書 | 内容 |
 |------|------|
 | [template.md](template.md) | 決定記録の雛形 |
+| [order-capture-before-shipment.md](order-capture-before-shipment.md) | 出荷の登録で、注文を出荷済みにする前に売上を確定する |
 | [subagent-delegation.md](subagent-delegation.md) | サブエージェントへの任せ方で取り入れたもの |

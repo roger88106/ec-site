@@ -1,5 +1,6 @@
 // 文書への参照が切れていないことを確認する。
 //   - Markdown のリンク：先のファイルと #見出し があるか（見出しの slug は GitHub と同じ作り方）
+//   - Markdown のリンクテキスト：# の付かない、docs/ の下の文書へのリンクで、リンクテキストが文書の名前か（略した名前を見つけるため）。許可する形は isAllowedLinkLabel
 //   - 見出しの参照（`[開発の進め方](../../docs/05-開発規則/workflow.md)の「起票」`、`開発の進め方の「起票」` など）：リンクか文書の名前の直後の「の「…」」だけを読み、
 //     先の文書に、その見出し（番号を除く）が 1 つだけあるか。同じ見出しが 2 つ以上あれば、親の見出しを前に付けた形（`の「段階 1」の「タスク」`）で 1 つに決める。
 //     見出しは、リンクを表示の文字に、コードの印を除き、全角と半角を揃え、空白をまとめて比べる。末尾の全角の括弧の補足（`（DS-s-n：DC-s-n〜m）` など）は、
@@ -196,6 +197,32 @@ export function referenceName(title) {
   return title.replace(/（[^）]*）/g, '').replace(/`/g, '').trim()
 }
 
+/** spec の記録（spec・plan・tasks の文書）。番号や役割（`002`、`spec <番号>`、`レビューの結果`）でリンクするので、リンクテキストを見ない */
+const SPEC_RECORD = /^docs\/08-spec\/(?:.+\/)?(?:(?:spec|plan)\.md|tasks\/[^/]+\.md)$/
+
+/**
+ * リンクテキストが、許可する形か。許可する形は次のどれか。
+ *   - 文書の名前（リンクテキストと 1 行目の見出しの両方から、全角と半角の括弧の補足を除き、headingKey の形で比べる）
+ *   - リンク先のファイル名かパス（バッククォートで囲んでもよい。パスは、リンクのあるファイルからの相対か、ルートからで、リンク先と同じファイルを指すもの）。
+ *     見出しの参照（直後の「の「…」」）の形では許可しない（参照の形は文書の名前で書くため）
+ *   - リンク先が constitution で、リンクテキストが `constitution`（resolveEnd が constitution の名前として読む。大文字と小文字は区別しない）
+ *   - リンク先が spec の記録（リンクテキストは見ない。番号の取り違えは見つけない）
+ *
+ * @param {string} file リンクのあるファイル
+ * @param {{ label: string, target: string, headingRef: boolean }} ref リンク（label はリンクテキスト）
+ * @param {string} title リンク先の文書の 1 行目の見出し
+ * @returns {boolean} 許可する形なら true
+ */
+export function isAllowedLinkLabel(file, ref, title) {
+  const nameKey = (text) => headingKey(referenceName(text).replace(/\([^()]*\)/g, ''))
+  if (nameKey(ref.label) === nameKey(title)) return true
+  if (SPEC_RECORD.test(ref.target)) return true
+  const plain = ref.label.replace(/`/g, '').trim()
+  if (ref.target === 'docs/constitution.md' && plain.toLowerCase() === 'constitution') return true
+  if (ref.headingRef || !plain.endsWith('.md')) return false
+  return plain === basename(ref.target) || [normalize(join(dirname(file), plain)), normalize(plain)].includes(ref.target)
+}
+
 /**
  * 「第 4〜6・8 節」の番号の部分を、確認する番号に分ける（範囲は両端だけ。全角の数字・空白・記号は半角に揃える）。
  *
@@ -229,11 +256,18 @@ export function findReferences(file, text, names, basenames, exists = existsSync
     if (isMarkdown && line.startsWith('```')) inCode = !inCode
     const lineNumber = index + 1
     if (isMarkdown && !inCode) {
-      for (const [, link] of line.matchAll(/\]\(([^)\s]+)\)/g)) {
+      for (const match of line.matchAll(/(?:\[([^[\]]*))?\]\(([^)\s]+)\)/g)) {
+        const [whole, label, link] = match
         if (/^(https?:|mailto:)/.test(link)) continue
         const [path, anchor] = link.split('#')
         const target = path ? normalize(join(dirname(file), decodeURIComponent(path))) : file
-        refs.push({ line: lineNumber, target, anchor: anchor ? decodeURIComponent(anchor) : undefined, text: link })
+        const ref = { line: lineNumber, target, anchor: anchor ? decodeURIComponent(anchor) : undefined, text: link }
+        // 画像（`![…](…)`）の文字は、リンクテキストとして見ない
+        if (label !== undefined && line[match.index - 1] !== '!') {
+          // 見出しの参照の読み方（resolveDocument）と同じく、間の空白と、閉じる印（`` ` ``、「」」、閉じ括弧）を挟んでもよい
+          Object.assign(ref, { label, headingRef: /^[`」）)]*\s*の「/.test(line.slice(match.index + whole.length)) })
+        }
+        refs.push(ref)
       }
     }
     if (!(isMarkdown && inCode)) {
@@ -431,6 +465,12 @@ export function checkReferences(files, read, exists) {
         problems.push(`ファイルがない：${where}`)
       } else if (ref.anchor && ref.target.endsWith('.md') && !headingsOf(ref.target).anchors.has(ref.anchor)) {
         problems.push(`見出しがない：${where}`)
+      } else if (ref.label !== undefined && !ref.anchor) {
+        // # の付くリンクは見出しを指すので見ない。docs/ の下の文書（1 行目に見出しがあるもの）へのリンクだけ、リンクテキストを見る
+        const title = ref.target.startsWith('docs/') && ref.target.endsWith('.md') ? headingsOf(ref.target).title : null
+        if (title && !isAllowedLinkLabel(file, ref, title)) {
+          problems.push(`リンクテキスト「${ref.label}」が文書の名前でない（${ref.target} の名前は「${referenceName(title)}」）：${where}`)
+        }
       } else if (ref.headings && ref.target.endsWith('.md')) {
         const count = countHeadingMatches(headingsOf(ref.target).headings, ref.headings)
         const quoted = ref.headings.map((heading) => `「${heading}」`).join('の')

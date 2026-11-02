@@ -9,7 +9,7 @@ const DOCS = {
   'docs/process/workflow.md': '# 開発の進め方\n## 1. SDD\n### 1.4 spec と plan の書き方\n```\n## 9. コードの中\n```\n',
   'docs/process/tasks.md': '# 段階の一覧\n## 段階 1\n### タスク\n## 段階 2\n### タスク\n#### 確認\n',
   'docs/process/marks.md':
-    '# 記号の文書\n## 1. `pnpm` の置き場所\n## 2. [OpenAPI](workflow.md) の規則\n## 3. 全角（Ａ１）の  見出し\n',
+    '# 記号の文書\n## 1. `pnpm` の置き場所\n## 2. [OpenAPI](https://www.openapis.org/) の規則\n## 3. 全角（Ａ１）の  見出し\n',
 }
 
 /**
@@ -84,8 +84,8 @@ describe('見出しの参照の検査', () => {
     const text = [
       '[開発の進め方](../process/workflow.md)の「spec と plan の書き方」',
       '[開発の進め方](../process/workflow.md)の「TDD」',
-      '[店舗画面](../frontend/apps/store.md)の「カート」',
-      '[店舗画面](../frontend/apps/store.md)の「4.5 カート」',
+      '[店舗画面の構成](../frontend/apps/store.md)の「カート」',
+      '[店舗画面の構成](../frontend/apps/store.md)の「4.5 カート」',
     ].join('\n')
     const problems = check('docs/dev/setup.md', text)
     assert.deepEqual(lines(problems), ['2', '4'])
@@ -140,11 +140,11 @@ describe('見出しの参照の検査', () => {
 
   test('見出しは、前後と連続の空白、全角と半角、コードとリンクの記号の違いを除いて比べる', () => {
     const text = [
-      '[記号](../process/marks.md)の「pnpm の置き場所」',
-      '[記号](../process/marks.md)の「`pnpm` の置き場所」',
-      '[記号](../process/marks.md)の「 OpenAPI の規則 」',
-      '[記号](../process/marks.md)の「全角(A1)の 見出し」',
-      '[記号](../process/marks.md)の「pnpmの置き場所」',
+      '[記号の文書](../process/marks.md)の「pnpm の置き場所」',
+      '[記号の文書](../process/marks.md)の「`pnpm` の置き場所」',
+      '[記号の文書](../process/marks.md)の「 OpenAPI の規則 」',
+      '[記号の文書](../process/marks.md)の「全角(A1)の 見出し」',
+      '[記号の文書](../process/marks.md)の「pnpmの置き場所」',
     ].join('\n')
     assert.deepEqual(lines(check('docs/dev/setup.md', text)), ['5'])
   })
@@ -181,7 +181,7 @@ describe('節の番号の参照の検査', () => {
       '# 開発環境',
       '## 1. 起動',
       '第 1 節を読む。',
-      '[店舗画面](../frontend/apps/store.md) 第 4.5 節',
+      '[店舗画面の構成](../frontend/apps/store.md) 第 4.5 節',
       '店舗画面の構成 第 1・3 節',
       '開発の進め方 第 4.2、5.6 節',
       'テストの書き方 第 4〜6 節',
@@ -321,6 +321,129 @@ describe('節の番号の参照の検査', () => {
     const problems = check('backend/Foo.java', code)
     assert.deepEqual(lines(problems), ['1', '2'])
     assert.match(problems[0], /（docs\/process\/workflow\.md の「SDD」）/)
+  })
+})
+
+describe('リンクテキストの検査', () => {
+  /** リンク先の文書の組（1 行目の見出しが文書の名前） */
+  const LINKED = {
+    'docs/constitution.md': '# EC Site Constitution\n## 文書の地図\n',
+    'docs/records/results.md': '# エージェントの作業フローの調べた仕組みと実績\n## 実績\n',
+    'docs/rules/review.md': '# 書き方の規則とレビュー\n',
+    'docs/rules/workflow.md': '# 開発の進め方\n## 起票\n',
+    'docs/rules/backend.md': '# バックエンドの書き方\n',
+    'docs/rules/api.md': '# ＡＰＩ の規約\n',
+    'docs/rules/ci.md': '# CI (GitHub Actions) の検査\n',
+    'docs/rules/untitled.md': '本文だけ\n',
+    'docs/design/apps/store.md': '# 店舗画面（`frontend/store`）の構成\n',
+    'docs/08-spec/archive/mvp/002-cart/spec.md': '# Spec 002：カート\n## 背景と目的\n',
+    'docs/08-spec/archive/mvp/002-cart/plan.md': '# Plan 002：カート\n',
+    'docs/08-spec/archive/mvp/007-payment/tasks/08-review.md': '# 段階 8：レビュー\n',
+    'docs/08-spec/archive/mvp/mvp.md': '# MVP の完成までの一覧\n',
+    'docs/rules/sub/README.md': '# 概要\n',
+    'docs/design/overview.md': '# 全体構成\n',
+    'README.md': '# EC Site\n',
+    '.claude/agents/proofreader.md': '# 校閲役\n',
+    'docs/rules/badge.svg': '',
+  }
+
+  /**
+   * 文書の組に 1 つのファイルを追加して、リンクテキストの問題を探す。
+   *
+   * @param {string} file 追加するファイルのパス
+   * @param {string} text 追加するファイルの中身
+   * @returns {string[]} リンクテキストの問題の説明
+   */
+  function checkLinks(file, text) {
+    const files = { ...LINKED, [file]: text }
+    // フォルダーへのリンクのため、フォルダーのパスもあるとする
+    const exists = (path) => path in files || Object.keys(files).some((key) => key.startsWith(`${path}/`))
+    return checkReferences(Object.keys(files), (path) => files[path], exists)
+  }
+
+  test('文書の名前でないリンクテキストを失敗にする（見出しの参照の有無によらない）', () => {
+    const text = [
+      '[実績](../records/results.md)の「実績」',
+      '[レビュー](review.md) で読む',
+      '[店舗画面](../design/apps/store.md)',
+      '[開発の進め](workflow.md)',
+      '[バックエンドの書き方](review.md)',
+      '[レビュー](./review.md)',
+      '`[レビュー](review.md)の「x」`',
+    ].join('\n')
+    const problems = checkLinks('docs/rules/a.md', text)
+    assert.deepEqual(lines(problems), ['1', '2', '3', '4', '5', '6', '7', '7'])
+    assert.match(problems[0], /^リンクテキスト「実績」が文書の名前でない（docs\/records\/results\.md の名前は「エージェントの作業フローの調べた仕組みと実績」）：docs\/rules\/a\.md:1 \.\.\/records\/results\.md$/)
+  })
+
+  test('別の文書の名前、リンク先と違うファイル名とパス、名前に見出しを含めたリンクテキストを失敗にする', () => {
+    const text = [
+      '[開発の進め方](../constitution.md)',
+      '[review.md](workflow.md)',
+      '[docs/design/workflow.md](workflow.md)',
+      '[開発の進め方の「起票」](workflow.md)',
+      '[開発の進め方](workflow.md)と[レビュー](review.md)',
+      '[](workflow.md)',
+      '[一覧](../08-spec/archive/mvp/mvp.md)',
+    ].join('\n')
+    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3', '4', '5', '6', '7'])
+  })
+
+  test('見出しの参照の形では、ファイル名のリンクテキストを失敗にする（リンクと「の」の間の空白、閉じる印、バッククォートで囲んだファイル名も）', () => {
+    const text = [
+      '[workflow.md](workflow.md)の「起票」',
+      '[workflow.md](workflow.md) の「起票」',
+      '[workflow.md](workflow.md)  の「起票」',
+      '`[workflow.md](workflow.md)`の「起票」',
+      '[`workflow.md`](workflow.md)の「起票」',
+      '[workflow.md](workflow.md)',
+    ].join('\n')
+    assert.deepEqual(lines(checkLinks('docs/rules/a.md', text)), ['1', '2', '3', '4', '5'])
+  })
+
+  test('docs/ の外のファイルから docs/ の文書へのリンクも見る', () => {
+    assert.deepEqual(lines(checkLinks('AGENTS.md', '[実績](docs/records/results.md)の「実績」')), ['1'])
+  })
+
+  test('文書の名前、ファイル名、パス、constitution、spec の記録へのリンクは通す', () => {
+    const text = [
+      '[開発の進め方](workflow.md)の「起票」',
+      '[店舗画面（`frontend/store`）の構成](../design/apps/store.md)',
+      '[店舗画面の構成](../design/apps/store.md)',
+      '[workflow.md](workflow.md)',
+      '[`docs/rules/workflow.md`](workflow.md)',
+      '[constitution](../constitution.md)の「文書の地図」',
+      '[002](../08-spec/archive/mvp/002-cart/spec.md)',
+      '[spec 002](../08-spec/archive/mvp/002-cart/spec.md)の「背景と目的」',
+      '[レビューの結果](../08-spec/archive/mvp/007-payment/tasks/08-review.md)',
+      '[定義](../../.claude/agents/proofreader.md)',
+      '[起票](workflow.md#起票)',
+      '[外の文書](https://example.com/a.md)',
+      '```',
+      '[実績](../records/results.md)',
+      '```',
+      '[本文だけの文書](untitled.md)',
+      '[API の規約](api.md)',
+      '[店舗画面(`frontend/store`)の構成](../design/apps/store.md)',
+      '[ 開発の進め方 ](workflow.md)',
+      '[Constitution](../constitution.md)',
+      '[EC Site Constitution](../constitution.md)',
+      '[./workflow.md](workflow.md)',
+      '[../rules/workflow.md](../rules/workflow.md)',
+      '[![状態](badge.svg)](workflow.md)',
+      '[CI (GitHub Actions) の検査](ci.md)',
+      '[CI の検査](ci.md)',
+      '[MVP の完成までの一覧](../08-spec/archive/mvp/mvp.md)',
+      '[plan](../08-spec/archive/mvp/002-cart/plan.md)',
+      '[README](../../README.md)',
+      '[README.md](sub/README.md)',
+      '[設計](../design)',
+    ].join('\n')
+    assert.deepEqual(checkLinks('docs/rules/a.md', text), [])
+  })
+
+  test('リンク先の文書がないときは、ファイルがないことだけを示す', () => {
+    assert.deepEqual(checkLinks('docs/rules/a.md', '[ない文書](../design/none.md)'), ['ファイルがない：docs/rules/a.md:1 ../design/none.md'])
   })
 })
 

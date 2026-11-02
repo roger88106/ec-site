@@ -24,7 +24,7 @@ description: ec-site の文書（docs/、README、AGENTS.md、spec、plan、task
    - 既存の文書の言い回しのレビュー：skill `review` の文書のレビューの手順（見本を渡す）で行う。
 3. 文書を移した、見出しを変えた、節を別の文書に移したときは、「参照の修正」で参照を修正する。
 4. 確認する。次が全て通ること：
-   - `node scripts/ci/doc-refs.mjs`（Markdown のリンクと、見出しの参照 `<文書の名前>の「<見出し>」`。節の番号の参照は失敗にする。CI の docs.yml でも実行する）
+   - `node scripts/ci/doc-refs.mjs`（Markdown のリンク、リンクテキストが文書の名前か、見出しの参照 `<文書の名前>の「<見出し>」`。節の番号の参照は失敗にする。CI の docs.yml でも実行する）
    - `node scripts/ci/note-numbers.mjs`（注の番号 `※N` が、1 つの文書の中で重複せず、出る順に並ぶ）
    - `node scripts/ci/ja-text.mjs`（日本語の文の検査。error は使わない語で、失敗になるので修正する）
    - `node scripts/ci/ja-text.mjs --warning`（warning の一覧を出力する。終了コードは 0）。文脈で言い換える語と文体の型の文が、ファイルと行とともに示される。型は、「の」が続く文・長い文・読点の多い文・否定が続く文・複合動詞が崩れた疑いのある文である。示された文を読み、修正するかを 1 件ずつ決める。自分が書いた・変えた行を優先し、既存の行は、同じ文を変えるときに限って修正する

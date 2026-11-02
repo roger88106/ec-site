@@ -81,6 +81,18 @@ function isMermaidOpen(line) {
 }
 
 /**
+ * 図の開きの形の行の囲みが、外側のコードブロックと同じ字で、外側以上の長さかを返す（外側の閉じ忘れの疑い）。
+ *
+ * @param {string} line 図の開きの形の行（字下げ 0〜3 個）
+ * @param {{ char: string, length: number }} outer 外側のコードブロック
+ * @returns {boolean} 同じ字で外側以上の長さなら true
+ */
+function closesLikeOuter(line, outer) {
+  const fence = /^ {0,3}(`+|~+)/.exec(line)[1]
+  return fence[0] === outer.char && fence.length >= outer.length
+}
+
+/**
  * 文書の中の Mermaid の図を取り出す。
  *
  * @param {string} text 文書の内容
@@ -96,9 +108,12 @@ export function extractMermaidBlocks(text) {
   for (const block of readCodeBlocks(text)) {
     const language = block.info.split(/\s+/)[0].toLowerCase()
     if (language !== 'mermaid') {
-      if (SKELETON_INFOS.includes(language)) continue
+      const skeleton = SKELETON_INFOS.includes(language)
       block.body.forEach((line, index) => {
-        if (isMermaidOpen(line)) misplaced.push({ line: block.line + 1 + index, message: '前のコードブロックが閉じていない疑い（コードブロックの中に、図の開きの形の行がある）' })
+        if (!isMermaidOpen(line)) return
+        // 雛形の骨組みの外側の囲みは、字が違うか、内側より長い。外側と同じ字で外側以上の長さなら、閉じ忘れ
+        if (skeleton && !closesLikeOuter(line, block)) return
+        misplaced.push({ line: block.line + 1 + index, message: '前のコードブロックが閉じていない疑い（コードブロックの中に、図の開きの形の行がある）' })
       })
       continue
     }

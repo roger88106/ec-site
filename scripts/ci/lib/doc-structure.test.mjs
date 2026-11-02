@@ -67,6 +67,23 @@ describe('見出しの読み方（DC-321-19）', () => {
     assert.deepEqual(readHeadings('```\n段落\n```\n---'), [])
     assert.deepEqual(readHeadings('<!-- 注 -->\n---'), [])
   })
+
+  test('Setext の見出しは、上へ集めて止まった行が、空行・見出し・区切り線・文書の始めのときだけにする', () => {
+    assert.deepEqual(readHeadings('- 箇条\n続きの行\n---'), [])
+    assert.deepEqual(readHeadings('> 引用\n続き\n---'), [])
+    assert.deepEqual(readHeadings('<details>\n文\n---'), [])
+    assert.deepEqual(readHeadings('## 前\n段落\n---'), [
+      { level: 2, title: '前', line: 1 },
+      { level: 2, title: '段落', line: 2 },
+    ])
+    assert.deepEqual(readHeadings('***\n段落\n---'), [{ level: 2, title: '段落', line: 2 }])
+  })
+
+  test('Setext の見出しの最初の行が 4 個以上の字下げなら、見出しにしない', () => {
+    assert.deepEqual(readHeadings('文\n\n    字下げ\n---'), [])
+    assert.deepEqual(readHeadings('    字下げ\n---'), [])
+    assert.deepEqual(readHeadings('文\n\n   三つ\n---'), [{ level: 2, title: '三つ', line: 3 }])
+  })
 })
 
 describe('閉じていないコードブロックの検査（DC-321-19）', () => {
@@ -315,7 +332,15 @@ describe('ID の参照の読み方（DC-321-20）', () => {
   test('タスクの ID の後ろの、列挙の規則に合わない数は、列挙にしない', () => {
     assert.deepEqual(ids('T321-01-01、02 件'), ['T321-01-01'])
     assert.deepEqual(ids('T321-01-01、2026-11-05'), ['T321-01-01'])
-    assert.deepEqual(ids('T321-01-01、3 の'), ['T321-01-01'])
+    assert.deepEqual(ids('T321-01-01、3 件'), ['T321-01-01'])
+  })
+
+  test('タスクの ID の後ろの、列挙の終わりが続く 2 桁でない数（範囲の端も）は、2 桁でない問題にする', () => {
+    assert.deepEqual(collectReferences('依存：T321-01-01、3').problems, ['1 行：タスクの段階と連番が 2 桁でない（T321-01-01、3）'])
+    assert.equal(collectReferences('T321-01-01、2〜3 は').problems.length, 1)
+    assert.equal(collectReferences('T321-01-01、3 の').problems.length, 1)
+    assert.equal(collectReferences('T321-01-01、02〜3 は').problems.length, 1)
+    assert.equal(collectReferences('T321-01-01、2026-11-05').problems.length, 0)
   })
 
   test('段階か連番が 2 桁でないタスクの ID は問題にする', () => {

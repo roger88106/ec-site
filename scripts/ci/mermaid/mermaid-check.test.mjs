@@ -91,14 +91,13 @@ describe('Mermaid の図の読み取り：取り出さない', () => {
     assert.deepEqual(extractMermaidBlocks(`${FENCE}mermaid\`x\`\n本文\n`), { diagrams: [], unclosed: [], misplaced: [] })
   })
 
-  test('3 個のバッククォートの markdown の囲みに入った ```mermaid（外側の閉じが新しい開きになり、mermaid でないので取り出さない）', () => {
-    const text = '```markdown\n```mermaid\nA\n```\n```\n'
-    assert.deepEqual(extractMermaidBlocks(text), { diagrams: [], unclosed: [], misplaced: [] })
-  })
-
   test('markdown・md の ~~~ に入った ```mermaid と、markdown・md の ``` に入った ~~~mermaid（雛形の骨組み）', () => {
     assert.deepEqual(extractMermaidBlocks('~~~markdown\n```mermaid\nA\n```\n~~~\n'), { diagrams: [], unclosed: [], misplaced: [] })
     assert.deepEqual(extractMermaidBlocks('```md\n~~~mermaid\nA\n~~~\n```\n'), { diagrams: [], unclosed: [], misplaced: [] })
+  })
+
+  test('markdown の ```` に入った ```mermaid（外側より短い）は失敗にしない', () => {
+    assert.deepEqual(extractMermaidBlocks('````markdown\n```mermaid\nA\n```\n````\n').misplaced, [])
   })
 
   test('mermaid の図の本文の中の ```mermaid の行は、閉じていない疑いにしない（描画の検査に任せる）', () => {
@@ -134,6 +133,13 @@ describe('Mermaid の図の読み取り：失敗にする', () => {
 
   test('4 個以上字下げした閉じ（他に閉じがない）', () => {
     assert.deepEqual(extractMermaidBlocks('```mermaid\nA\n    ```\n').unclosed, [1])
+  })
+
+  test('markdown・md のコードブロックの閉じ忘れ（本文の図の開きが、外側と同じ字で外側以上の長さ）は、閉じていない疑いにする', () => {
+    const text = '```markdown\n## 骨組み\n\n```mermaid\ngraph TD\n```\n'
+    assert.deepEqual(extractMermaidBlocks(text).misplaced.map((item) => item.line), [4])
+    assert.match(extractMermaidBlocks(text).misplaced[0].message, /閉じていない疑い/)
+    assert.deepEqual(extractMermaidBlocks('~~~md\n~~~~mermaid\n~~~\n').misplaced.map((item) => item.line), [2])
   })
 
   test('開きの行がファイルの最後の行', () => {

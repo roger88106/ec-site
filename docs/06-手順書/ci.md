@@ -141,7 +141,7 @@ CI の検査の script は、文書だけの変更でも結果が変わる ※1�
 - 対象の文書は、Git で扱う全ての `.md` である（アーカイブ `docs/08-spec/archive/` を除く）。GitHub は、置き場所によらず図を描画するため。
 - 次の図は描画しないが、見つけたら失敗にする。
   - 箇条書き・引用・4 個以上の字下げの中の図（対象にしない書き方の図）
-  - 他のコードブロックの中の、図の開きの形の行（前のコードブロックが閉じていない疑い）。`markdown`・`md` のコードブロックの中は除く
+  - 他のコードブロックの中の、図の開きの形の行（前のコードブロックが閉じていない疑い）。`markdown`・`md` のコードブロックの中は、囲みの字が外側と違うか外側より短い行（雛形の骨組み）を除く
 - 実行するのは、CI の `docs.yml` だけである。描画に Chrome とネットワーク（mermaid-cli の取得）が必要で遅いため、`check-all.sh` と commit の前の hook では実行しない。
 - script は `scripts/ci/` の直下に置かない（直下の検査は `check-all.sh` が全て実行する）。script のテストは、他の script のテストと同じく `check-all.sh` が実行する。
 - 手元では、ルートで `node scripts/ci/mermaid/mermaid-check.mjs` を実行する。Chrome の場所は、環境変数 `MERMAID_CHROME` で指定する。指定しないときは、既定の場所（Windows の Chrome、macOS の Chrome、`/usr/bin/google-chrome`、chromium）を順に探す。

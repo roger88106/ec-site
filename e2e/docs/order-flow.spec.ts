@@ -1,6 +1,7 @@
 import path from 'node:path'
-import { expect, type Locator, type Page, test } from '@playwright/test'
+import { test } from '@playwright/test'
 import { ACCOUNTS, loginAdmin, loginStore } from '../src/auth'
+import { RECIPIENT, SEED, shot as shotTo } from '../src/screenshot'
 import { notifyCarrier, shipOnAdmin } from '../src/shipping'
 import {
   SHOWCASE_ADMIN_URL as ADMIN,
@@ -12,34 +13,8 @@ import { addToCart, emptyCart, fillShipping, orderIdOf, payOnMockPage, placeOrde
 /** 撮った画像の置き場所（docs/01-概要/order.md が載せる） */
 const OUT = path.resolve(import.meta.dirname, '../../docs/01-概要/img/order')
 
-/** 注文のお届け先の氏名（撮った画像に写る） */
-const RECIPIENT = '山田 花子'
-
-/** local の seed の ID（db/seed/local/） */
-const SEED = {
-  /** マグカップ（色を選ぶ商品） */
-  mug: '00000000-0000-0000-0000-000000002014',
-  /** 板チョコレート（軽減税率 8%） */
-  chocolate: '00000000-0000-0000-0000-000000002012',
-}
-
-/**
- * 画面の全体を撮る。表示が出て、画像が読み込まれるのを待ってから撮る。
- *
- * @param page 撮るページ
- * @param name ファイルの名前（拡張子なし）
- * @param ready 表示されたら撮ってよい要素
- */
-async function shot(page: Page, name: string, ready: Locator) {
-  await expect(ready).toBeVisible()
-  await expect.poll(() => page.evaluate(() => Array.from(document.images).every((image) => image.complete))).toBe(true)
-  // 店舗画面の開発サーバーが表示する Next.js のインジケーター（画面の左下）は、本番の画面にないので写さない
-  await page.screenshot({
-    path: path.join(OUT, `${name}.png`),
-    fullPage: true,
-    style: 'nextjs-portal { display: none; }',
-  })
-}
+/** 画面を撮って OUT に置く */
+const shot = shotTo.bind(null, OUT)
 
 test('注文の流れのスクリーンショットを撮る', async ({ page }) => {
   let orderId = ''

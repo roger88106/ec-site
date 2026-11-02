@@ -124,11 +124,13 @@ DS ごとに DC を書く。DC は 1 つに条件を 1 つ書く。確認方法�
 | まとまり | ファイル |
 |----------|----------|
 | 設計書 | `docs/01-概要/`、`docs/02-設計/order.md`（新規）、`docs/02-設計/template.md`（新規）、`docs/03-機能仕様/order.md`、`docs/03-機能仕様/template.md`（新規）、`docs/04-決定記録/` |
-| 規則 | `docs/constitution.md`、`docs/05-開発規則/workflow.md`、`docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md`、`docs/06-手順書/ci.md` |
+| 規則 | `docs/constitution.md`、`docs/05-開発規則/workflow.md`、`docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md`、`docs/06-手順書/ci.md`、`AGENTS.md`、`.claude/skills/review/prompts.md`、`docs/06-手順書/setup.md`、`docs/05-開発規則/test-writing.md` |
+| 設計書の案内 | `docs/03-機能仕様/acceptance-criteria.md`、`docs/02-設計/overview.md`、`docs/02-設計/backend-architecture.md` |
 | spec の雛形 | `docs/08-spec/templates/`（新規） |
-| 検査の script | `scripts/ci/` の Mermaid の検査と構造の検査とテスト、`.github/workflows/docs.yml` |
-| 画像を撮る script | `e2e/docs/`、`e2e/playwright.docs.config.ts`、`e2e/package.json`、`e2e/tsconfig.json` |
-| バックエンドのテスト | Open questions の決定による（`ProductionClassesTest` など） |
+| 検査の script | `scripts/ci/` の Mermaid の検査と構造の検査とテスト、共通の関数（`scripts/ci/lib/code-span.mjs`、`scripts/ci/lib/spec-dirs.mjs` の先頭のコメント）、`.github/workflows/docs.yml` |
+| 画像を撮る script | `e2e/docs/`、`e2e/src/` の補助、`e2e/showcase/capture.spec.ts`、`e2e/playwright.docs.config.ts`、`e2e/package.json`、`e2e/tsconfig.json` |
+| 本番のコードのコメント | `backend/ecsite/src/main/java/com/ecsite/module/order/`、`module/reporting/`（DN-321-1 の例外。見出しを指す参照の修正だけ） |
+| バックエンドのテスト | Open questions の決定による（`ProductionClassesTest` など）。実際に変えたのは `ModulithTest.java` のコメントだけ |
 
 ## 非機能要件
 

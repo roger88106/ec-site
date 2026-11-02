@@ -242,10 +242,13 @@
 | まとまり | ファイル |
 |----------|----------|
 | 設計書 | `docs/01-概要/`、`docs/02-設計/order.md`、`docs/02-設計/template.md`、`docs/03-機能仕様/order.md`、`docs/03-機能仕様/template.md`、`docs/04-決定記録/` |
-| 規則 | `docs/constitution.md`、`docs/05-開発規則/workflow.md`、`docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md`、`docs/06-手順書/ci.md` |
+| 規則 | `docs/constitution.md`、`docs/05-開発規則/workflow.md`、`docs/05-開発規則/writing.md`、`docs/05-開発規則/notation.md`、`docs/06-手順書/ci.md`、`AGENTS.md`、`.claude/skills/review/prompts.md`、`docs/06-手順書/setup.md`、`docs/05-開発規則/test-writing.md` |
+| 設計書の案内 | `docs/03-機能仕様/acceptance-criteria.md`、`docs/02-設計/overview.md`、`docs/02-設計/backend-architecture.md` |
 | spec の雛形 | `docs/08-spec/templates/` |
-| 検査の script | `scripts/ci/spec-structure.mjs`、`scripts/ci/lib/doc-structure.mjs`、`scripts/ci/mermaid/`、コードブロックの読み方の共通の関数（`scripts/ci/lib/` の下）、各テスト、`.github/workflows/docs.yml` |
-| 画像を撮る script | `e2e/docs/order-flow.spec.ts`、`e2e/playwright.docs.config.ts`、`e2e/package.json`、`e2e/tsconfig.json` |
+| 検査の script | `scripts/ci/spec-structure.mjs`、`scripts/ci/lib/doc-structure.mjs`、`scripts/ci/mermaid/`、コードブロックの読み方の共通の関数（`scripts/ci/lib/` の下）、`scripts/ci/lib/code-span.mjs` と `scripts/ci/lib/spec-dirs.mjs`（先頭のコメント）、各テスト、`.github/workflows/docs.yml` |
+| 画像を撮る script | `e2e/docs/order-flow.spec.ts`、`e2e/src/screenshot.ts`（撮影の補助）、`e2e/showcase/capture.spec.ts`、`e2e/playwright.docs.config.ts`、`e2e/package.json`、`e2e/tsconfig.json` |
+| 本番のコードのコメント | `backend/ecsite/src/main/java/com/ecsite/module/order/`、`module/reporting/`（DN-321-1 の例外） |
+| バックエンドのテストのコメント | `ModulithTest.java` |
 
 ## 利用者に確認すること
 

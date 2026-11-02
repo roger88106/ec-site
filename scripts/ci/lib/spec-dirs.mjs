@@ -1,5 +1,5 @@
 // spec のディレクトリを探す。spec は docs/08-spec/ の直下（進行中）か、docs/08-spec/archive/<まとまり>/ の下（完了してアーカイブした）にある。
-// ac-check.mjs、progress.mjs、scripts/dev/showcase-counts.mjs が使う
+// ac-check.mjs、progress.mjs、spec-structure.mjs、scripts/dev/showcase-counts.mjs が使う
 import { existsSync, readdirSync } from 'node:fs'
 import path from 'node:path'
 

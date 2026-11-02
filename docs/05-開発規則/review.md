@@ -1,6 +1,6 @@
 # 書き方の規則とレビュー
 
-書き方の規則（[バックエンド](backend-coding.md)、[フロント](frontend-coding.md)、[テスト](test-writing.md)、[コメント](comments.md)）の書き方と、段階の最後のレビューでの使い方。
+書き方の規則（[バックエンドの書き方](backend-coding.md)、[フロントの書き方](frontend-coding.md)、[テストの書き方](test-writing.md)、[コメントの書き方](comments.md)）を書くときの形と、段階の最後のレビューでの使い方。
 
 ## 1. 規則の書き方
 
